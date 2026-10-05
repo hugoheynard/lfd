@@ -19,13 +19,14 @@ propre droit staff (`b2b_accounting`) et son propre espace dans le back-office.
 
 ### Les plans du mandat et du RIB
 
-| Doc                                                                                  | État                                                                                            |
-| ------------------------------------------------------------------------------------ | ----------------------------------------------------------------------------------------------- |
-| [`plan-rib-client.md`](plan-rib-client.md)                                           | ✅ en production — le client voit et saisit le RIB de sa société                                |
-| [`plan-mandat-client.md`](plan-mandat-client.md)                                     | ✅ en production — le mandat côté client, derrière le drapeau `customerMandate`                 |
-| [`plan-mandat-deux-schemas.md`](plan-mandat-deux-schemas.md)                         | ✅ en production — CORE ou interentreprises au choix de l'entité, figé sur le mandat            |
-| [`plan-mentions-obligatoires-du-mandat.md`](plan-mentions-obligatoires-du-mandat.md) | 🟡 commité, pas déployé — SIREN, forme juridique du titulaire, frappe refusée sans ses mentions |
-| [`plan-restes-du-mandat.md`](plan-restes-du-mandat.md)                               | 🟡 lots 1-3 construits — `DtOfSgntr`, verrou du créancier, purge ; amendement différé           |
+| Doc                                                                                  | État                                                                                                                                                            |
+| ------------------------------------------------------------------------------------ | --------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| [`plan-rib-client.md`](plan-rib-client.md)                                           | ✅ en production — le client voit et saisit le RIB de sa société                                                                                                |
+| [`plan-mandat-client.md`](plan-mandat-client.md)                                     | ✅ en production — le mandat côté client, derrière le drapeau `customerMandate`                                                                                 |
+| [`plan-mandat-deux-schemas.md`](plan-mandat-deux-schemas.md)                         | ✅ en production — CORE ou interentreprises au choix de l'entité, figé sur le mandat                                                                            |
+| [`plan-mentions-obligatoires-du-mandat.md`](plan-mentions-obligatoires-du-mandat.md) | 🟡 commité, pas déployé — SIREN, forme juridique du titulaire, frappe refusée sans ses mentions                                                                 |
+| [`plan-restes-du-mandat.md`](plan-restes-du-mandat.md)                               | 🟡 lots 1-3 construits — `DtOfSgntr`, verrou du créancier, purge ; amendement différé                                                                           |
+| [`plan-lot-de-prelevement-fige.md`](plan-lot-de-prelevement-fige.md)                 | 📐 plan v2, contredit par `vitruve` — figer le lot `pain.008`, un état d'encaissement par commande, identifiants SEPA par lot ; prérequis S4-0 des sous-comptes |
 
 ### Les todos du sujet
 
