@@ -1,0 +1,22 @@
+.body {
+  display: flex;
+  flex-direction: column;
+  gap: var(--fold-space-md);
+}
+
+.actions {
+  display: inline-flex;
+  gap: var(--fold-space-sm);
+}
+
+.totals {
+  --fold-field-list-label-width: 12rem;
+}
+
+.ttc {
+  font-variant-numeric: tabular-nums;
+}
+
+.ref {
+  font-variant-numeric: tabular-nums;
+}

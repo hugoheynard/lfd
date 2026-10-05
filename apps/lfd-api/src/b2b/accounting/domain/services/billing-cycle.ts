@@ -77,6 +77,24 @@ export function defaultClosureAfter(now: Date): Date {
   return firstOfMonthAfter(instantToLocal(now).day);
 }
 
+/**
+ * Le cycle **calendaire** d'un mois : du 1er à 00h00 locales au 1er du mois
+ * suivant, même heure.
+ *
+ * C'est le cycle par défaut, celui que `cycleAt` rend tant qu'aucune clôture
+ * n'est enregistrée. Le relevé l'emploie pour énumérer les cycles PASSÉS, que
+ * `cycleAt` ne sait pas reconstituer (plan `agregation-des-commandes`, §2).
+ *
+ * @param year  année civile, quatre chiffres.
+ * @param month 1 à 12 — la validation de forme est faite par l'appelant
+ *              (`StatementMonth`), ce module ne l'interprète pas.
+ * @throws {BillingCycleBoundaryError} l'heure de clôture n'existe pas ce jour-là.
+ */
+export function calendarCycle(year: number, month: number): BillingCycle {
+  const first = `${String(year)}-${String(month).padStart(2, "0")}-01`;
+  return { startsAt: atLocalMidnight(first), closesAt: firstOfMonthAfter(first) };
+}
+
 /** `"2026-09-10"` → l'instant du 2026-09-01 à 00h00 locales. */
 function firstOfThisMonth(day: string): Date {
   return atLocalMidnight(`${day.slice(0, 7)}-01`);

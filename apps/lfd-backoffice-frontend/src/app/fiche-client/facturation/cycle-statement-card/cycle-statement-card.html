@@ -1,0 +1,138 @@
+<fold-card>
+  <fold-element-title
+    cardHeader
+    variant="title"
+    icon="receipt"
+    title="Relevé de cycle"
+    subtitle="Les commandes passées au compte sur un mois, et ce qu’elles doivent. Calculé par le serveur, au centime du prélèvement."
+  >
+    <span titleAction class="actions">
+      @if (canExport()) {
+        <button
+          foldButton
+          size="sm"
+          emphasis="outline"
+          icon="download"
+          [disabled]="month() === null || exporting()"
+          (click)="exportCsv()"
+          data-statement-export
+        >
+          Exporter en CSV
+        </button>
+      }
+    </span>
+  </fold-element-title>
+
+  <div class="body">
+    @if (cycleChoices().length > 0) {
+      <fold-listbox
+        label="Cycle"
+        hint="Un cycle va du 1er du mois à 00h00 au 1er du mois suivant, heure de Paris."
+        [options]="cycleChoices()"
+        [value]="month()"
+        (selectionChange)="onMonth($event)"
+        data-statement-cycle
+      />
+    }
+
+    @switch (state()) {
+      @case ('loading') {
+        <fold-loading message="Lecture du relevé…" />
+      }
+      @case ('error') {
+        <fold-empty-state
+          tone="alert"
+          title="Impossible de lire le relevé"
+          subtitle="La lecture a échoué — les commandes, elles, sont intactes."
+        >
+          <button foldButton (click)="retry()">Réessayer</button>
+        </fold-empty-state>
+      }
+      @default {
+        @if (statement(); as statement) {
+          <!-- Ce que le relevé EST, avant ce qu'il dit : provisoire, et pas
+               tout le chiffre d'affaires. Le périmètre vient du serveur. -->
+          <fold-callout appearance="inset" variant="warning" data-statement-provisional>
+            <strong>Relevé provisoire.</strong> Il est recalculé à chaque lecture&nbsp;: une
+            commande annulée après coup en sort. Ce n’est pas une facture.
+            {{ statement.scope }}
+          </fold-callout>
+
+          <fold-field-list class="totals" data-statement-totals>
+            <fold-field label="Période">
+              {{ title(statement) }}
+              @if (statement.cycle.inProgress) {
+                <fold-badge variant="info" content="en cours, non clos" />
+              }
+            </fold-field>
+            <fold-field label="Commandes">{{ statement.totals.orderCount }}</fold-field>
+            <fold-field label="Marchandises HT">{{ euros(statement.totals.htCents) }}</fold-field>
+            <fold-field label="Livraison HT">
+              {{ euros(statement.totals.deliveryFeeCents) }}
+            </fold-field>
+            <fold-field label="Surtaxe de retard HT">
+              {{ euros(statement.totals.lateFeeCents) }}
+            </fold-field>
+            @for (share of statement.totals.vatByRate; track share.rate) {
+              <fold-field [label]="rate(share.rate)">{{ euros(share.amountCents) }}</fold-field>
+            }
+            @if (statement.totals.unventilatedVatCents > 0) {
+              <fold-field label="TVA non ventilée" data-statement-unventilated>
+                {{ euros(statement.totals.unventilatedVatCents) }}
+              </fold-field>
+            }
+            <fold-field label="TTC">
+              <strong class="ttc">{{ euros(statement.totals.totalCents) }}</strong>
+            </fold-field>
+          </fold-field-list>
+
+          @if (statement.totals.unventilatedVatCents > 0) {
+            <fold-callout appearance="inset" variant="neutral">
+              Des commandes antérieures au 7 septembre 2026 n’ont pas de TVA ventilée par
+              taux&nbsp;: leur TVA est comptée à part, telle qu’elle a été facturée.
+            </fold-callout>
+          }
+
+          @if (statement.orders.length === 0) {
+            <fold-empty-state
+              title="Aucune commande au compte sur ce cycle"
+              subtitle="Les commandes réglées par carte, gratuites ou annulées n’entrent pas dans le relevé."
+            />
+          } @else {
+            <fold-data-table
+              caption="Commandes du cycle"
+              narrowLayout="cards"
+              hover
+              zebra
+              clickable
+              [columns]="columns"
+              [rows]="statement.orders"
+              [rowKey]="rowKey"
+              (rowClick)="open($event)"
+            >
+              <ng-template foldCell="date" let-row>{{ day(row.placedAt) }}</ng-template>
+              <ng-template foldCell="reference" let-row>
+                <span class="ref">{{ row.orderNumber }}</span>
+              </ng-template>
+              <ng-template foldCell="ht" let-row>{{ euros(row.htCents) }}</ng-template>
+              <ng-template foldCell="discounts" let-row>
+                {{ euros(row.discountCents + row.voucherDiscountCents) }}
+              </ng-template>
+              <ng-template foldCell="delivery" let-row>{{
+                euros(row.deliveryFeeCents)
+              }}</ng-template>
+              <ng-template foldCell="lateFee" let-row>{{ euros(row.lateFeeCents) }}</ng-template>
+              <ng-template foldCell="vat" let-row>
+                {{ euros(row.vatCents) }}
+                @if (!row.vatVentilated) {
+                  <fold-badge variant="neutral" content="non ventilée" />
+                }
+              </ng-template>
+              <ng-template foldCell="total" let-row>{{ euros(row.totalCents) }}</ng-template>
+            </fold-data-table>
+          }
+        }
+      }
+    }
+  </div>
+</fold-card>

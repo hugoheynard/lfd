@@ -64,6 +64,11 @@
       </fold-callout>
     }
 
+    <!-- Le relevé d'un cycle, calculé par le serveur au centime du
+         prélèvement (plan agrégation des commandes, A2). Le registre
+         ci-dessous reste la vue d'ensemble, lue côté écran. -->
+    <app-cycle-statement-card [companyId]="id()" />
+
     @if (maybeTruncated()) {
       <fold-callout appearance="inset" variant="warning">
         Ce compte dépasse la fenêtre de lecture : les périodes les plus anciennes sont incomplètes.

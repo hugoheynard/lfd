@@ -13,6 +13,9 @@ import { SetPreNotificationHandler } from "./application/commands/set-pre-notifi
 import { ExportCycleAuditHandler } from "./application/queries/export-cycle-audit.handler.js";
 import { ExportCycleDraftHandler } from "./application/queries/export-cycle-draft.handler.js";
 import { GetCurrentBillingCycleHandler } from "./application/queries/get-current-billing-cycle.handler.js";
+import { ExportCycleStatementHandler } from "./application/queries/export-cycle-statement.handler.js";
+import { GetCycleStatementHandler } from "./application/queries/get-cycle-statement.handler.js";
+import { ListStatementCyclesHandler } from "./application/queries/list-statement-cycles.handler.js";
 import { GetMandateSchemeUsageHandler } from "./application/queries/get-mandate-scheme-usage.handler.js";
 import { ExportSampleMandateHandler } from "./application/queries/export-sample-mandate.handler.js";
 import { GetLegalEntityLogoHandler } from "./application/queries/get-legal-entity-logo.handler.js";
@@ -20,15 +23,18 @@ import { GetLegalEntityHandler } from "./application/queries/get-legal-entity.ha
 import { ListLegalEntitiesHandler } from "./application/queries/list-legal-entities.handler.js";
 import { BillableOrdersReader } from "./domain/ports/billable-orders.reader.js";
 import { CreditorReader } from "./domain/ports/creditor.reader.js";
+import { CycleOrdersReader } from "./domain/ports/cycle-orders.reader.js";
 import { FirstMandateLedger } from "./domain/ports/first-mandate-ledger.js";
 import { LegalEntityLogoReader } from "./domain/ports/legal-entity-logo.reader.js";
 import { LegalEntityReader } from "./domain/ports/legal-entity.reader.js";
 import { LegalEntityRepository } from "./domain/ports/legal-entity.repository.js";
 import { AdminBillingCycleController } from "./http/admin-billing-cycle.controller.js";
+import { AdminCycleStatementsController } from "./http/admin-cycle-statements.controller.js";
 import { AdminLegalEntitiesController } from "./http/admin-legal-entities.controller.js";
 import { AdminLegalEntityBankingController } from "./http/admin-legal-entity-banking.controller.js";
 import { AdminLegalEntityDocumentsController } from "./http/admin-legal-entity-documents.controller.js";
 import { PrismaBillableOrdersReader } from "./infrastructure/prisma-billable-orders.reader.js";
+import { PrismaCycleOrdersReader } from "./infrastructure/prisma-cycle-orders.reader.js";
 import { PrismaCreditorReader } from "./infrastructure/prisma-creditor.reader.js";
 import { PrismaFirstMandateLedger } from "./infrastructure/prisma-first-mandate-ledger.js";
 import { PrismaLegalEntityLogoReader } from "./infrastructure/prisma-legal-entity-logo.reader.js";
@@ -68,12 +74,14 @@ import { PrismaLegalEntityRepository } from "./infrastructure/prisma-legal-entit
     AdminLegalEntityBankingController,
     AdminLegalEntityDocumentsController,
     AdminBillingCycleController,
+    AdminCycleStatementsController,
   ],
   providers: [
     { provide: LegalEntityRepository, useClass: PrismaLegalEntityRepository },
     { provide: LegalEntityReader, useClass: PrismaLegalEntityReader },
     { provide: CreditorReader, useClass: PrismaCreditorReader },
     { provide: BillableOrdersReader, useClass: PrismaBillableOrdersReader },
+    { provide: CycleOrdersReader, useClass: PrismaCycleOrdersReader },
     { provide: LegalEntityLogoReader, useClass: PrismaLegalEntityLogoReader },
     { provide: FirstMandateLedger, useClass: PrismaFirstMandateLedger },
     DeclareLegalEntityHandler,
@@ -93,6 +101,9 @@ import { PrismaLegalEntityRepository } from "./infrastructure/prisma-legal-entit
     GetCurrentBillingCycleHandler,
     ExportCycleDraftHandler,
     ExportCycleAuditHandler,
+    ListStatementCyclesHandler,
+    GetCycleStatementHandler,
+    ExportCycleStatementHandler,
     GetLegalEntityLogoHandler,
   ],
   // `LegalEntityLogoReader` sort avec `CreditorReader`, et pas seul : le seul

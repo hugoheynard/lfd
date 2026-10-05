@@ -29,6 +29,7 @@ import { AdminCompaniesService } from '../../comptes-clients/admin-companies.ser
 import { AdminOrdersService } from '../../commandes/orders.service';
 import { NotifyService } from '../../notify.service';
 import { periodCsv, periodFileName } from './billing-csv';
+import { CycleStatementCard } from './cycle-statement-card/cycle-statement-card';
 import {
   groupByYear,
   ledgerRows,
@@ -64,6 +65,7 @@ const ORDERS_WINDOW = 200;
   selector: 'app-client-facturation-page',
   changeDetection: ChangeDetectionStrategy.OnPush,
   imports: [
+    CycleStatementCard,
     FoldBadgeComponent,
     FoldButtonComponent,
     FoldCalloutComponent,

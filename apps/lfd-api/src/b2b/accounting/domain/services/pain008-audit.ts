@@ -1,3 +1,5 @@
+import { CSV_BOM, CSV_SEPARATOR, csvEuros as euros, csvQuoted as quoted } from "./csv-cells.js";
+
 /**
  * **Le contrôle du lot** — un CSV lu DEPUIS le fichier XML, jamais à côté.
  *
@@ -30,19 +32,8 @@
  * pas si le fichier est accepté par la banque — seul le portail le dira.
  */
 
-const SEPARATOR = ";";
-
-/**
- * Le BOM UTF-8, en séquence d'échappement et non en caractère.
- *
- * ⚠️ Écrit au naturel, il est **invisible à la relecture** — et rien ne l'attrape :
- * ni le typecheck, ni `no-irregular-whitespace` d'ESLint, qui ne le considère
- * pas comme une espace irrégulière à cette position. Un éditeur ou un outil de
- * normalisation peut alors le manger sans qu'un diff le montre, et le CSV
- * s'ouvre en Latin-1 chez le comptable. Constaté deux fois dans ce dépôt, dont
- * une le 2026-09-10 en écrivant CE fichier.
- */
-const BOM = "\uFEFF";
+const SEPARATOR = CSV_SEPARATOR;
+const BOM = CSV_BOM;
 
 const HEADERS = [
   "Rang",
@@ -213,22 +204,4 @@ function centsOf(amount: string): number {
   const units = Number(matched[2]);
   const decimals = Number((matched[3] ?? "").padEnd(2, "0"));
   return sign * (units * 100 + decimals);
-}
-
-/** Centimes → `1 516,48`, virgule décimale et sans symbole : le tableur somme. */
-function euros(cents: number): string {
-  const sign = cents < 0 ? "-" : "";
-  const absolute = Math.abs(cents);
-  return `${sign}${String(Math.trunc(absolute / 100))},${String(absolute % 100).padStart(2, "0")}`;
-}
-
-/**
- * Tout est cité, y compris ce qui n'en a pas besoin.
- *
- * Une référence de mandat peut contenir le `;` du jeu SEPA ? Non — mais une
- * raison sociale, oui, et un tableur décalerait alors toute la ligne. Citer
- * partout coûte deux caractères et supprime la question.
- */
-function quoted(value: string): string {
-  return `"${value.replace(/"/gu, '""')}"`;
 }

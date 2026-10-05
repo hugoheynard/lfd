@@ -46,6 +46,7 @@
   "test/customer-mandate-options.e2e-spec.ts": 7327,
   "test/customer-mandate.e2e-spec.ts": 11066,
   "test/customer-sheet.e2e-spec.ts": 6802,
+  "test/cycle-statements.e2e-spec.ts": 7232,
   "test/day-change-triggers.e2e-spec.ts": 5791,
   "test/day-supervision.e2e-spec.ts": 3937,
   "test/day-version.e2e-spec.ts": 11867,
