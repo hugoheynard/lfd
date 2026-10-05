@@ -22,6 +22,7 @@ import {
 
 import type { CompanyIdentityView } from '../company-identity.view-model';
 import { KbisCapturePanel } from '../kbis-capture-panel/kbis-capture-panel';
+import { legalFormLabelFor } from '../legal-form-label';
 
 /**
  * Carte **Identité légale** d'une société — présentation pure.
@@ -102,6 +103,11 @@ export class CompanyIdentityCard {
    * le rendu serveur, où `matchMedia` n'existe pas.
    */
   protected readonly handheld = isHandheld();
+
+  /** La forme juridique en mots, jamais la clé stockée. */
+  protected readonly legalFormLabel = computed(() =>
+    legalFormLabelFor(this.identity().formeJuridique),
+  );
 
   private readonly panels = inject(FoldPanelHostService);
 
