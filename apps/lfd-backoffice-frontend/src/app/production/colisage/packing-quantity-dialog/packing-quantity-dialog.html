@@ -1,0 +1,46 @@
+<fold-panel-header [title]="data().title" closeLabel="Fermer" />
+
+<fold-panel-body>
+  <!-- Entrée confirme : un formulaire, sans requête. -->
+  <form
+    class="pqd-form"
+    [attr.data-pending-drop]="data().gesture === 'drop' ? '' : null"
+    [attr.data-pending-withdrawal]="data().gesture === 'withdrawal' ? '' : null"
+    (submit)="$event.preventDefault(); confirm()"
+  >
+    @if (refusal(); as refusal) {
+      <fold-callout variant="alert" data-quantity-refusal>{{ refusal }}</fold-callout>
+    }
+    <fold-number-input
+      label="Combien ?"
+      size="lg"
+      align="center"
+      spinner="plusminus"
+      controls="outside"
+      [hint]="'Tout : ' + data().max"
+      [min]="1"
+      [max]="data().max"
+      [integer]="true"
+      [value]="quantity()"
+      (valueChange)="setQuantity($event)"
+    />
+  </form>
+</fold-panel-body>
+
+<fold-panel-footer>
+  <button foldButton size="lg" emphasis="outline" intent="neutral" type="button" (click)="cancel()">
+    Annuler
+  </button>
+  <button
+    foldButton
+    size="lg"
+    type="button"
+    [disabled]="data().busy()"
+    [loading]="data().busy()"
+    (click)="confirm()"
+    [attr.data-confirm-drop]="data().gesture === 'drop' ? '' : null"
+    [attr.data-confirm-withdrawal]="data().gesture === 'withdrawal' ? '' : null"
+  >
+    {{ data().confirmLabel }}
+  </button>
+</fold-panel-footer>

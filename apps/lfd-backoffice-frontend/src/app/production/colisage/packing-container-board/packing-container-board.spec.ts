@@ -10,7 +10,7 @@ import type {
 } from '@lfd/contracts';
 import { provideRouter } from '@angular/router';
 import { By } from '@angular/platform-browser';
-import { FoldIconComponent } from 'fold-ng';
+import { FoldIconComponent, FoldPanelHostComponent } from 'fold-ng';
 import { beforeEach, describe, expect, it } from 'vitest';
 
 import { PermissionsStore } from '../../../auth/permissions.store';
@@ -149,12 +149,19 @@ class FakeContainers {
 
 let api: FakeContainers;
 let rereads: number;
+/** Le dialogue « combien ? » vit dans l'hôte des panneaux, hors du tableau. */
+let overlay: ComponentFixture<FoldPanelHostComponent>;
 
 async function settle(fixture: ComponentFixture<PackingContainerBoard>): Promise<void> {
   for (let tick = 0; tick < 4; tick += 1) {
     await new Promise((resolve) => setTimeout(resolve));
     fixture.detectChanges();
+    overlay.detectChanges();
   }
+}
+
+function dialog(): HTMLElement {
+  return overlay.nativeElement as HTMLElement;
 }
 
 async function render(
@@ -182,6 +189,7 @@ async function render(
       },
     ],
   });
+  overlay = TestBed.createComponent(FoldPanelHostComponent);
   const fixture = TestBed.createComponent(PackingContainerBoard);
   fixture.componentRef.setInput('sheet', served);
   fixture.detectChanges();
@@ -226,22 +234,22 @@ describe('les contenants d’une commande `listed` (K2b)', () => {
   });
 
   it('un dépôt demande combien, « tout » par défaut, et répartit cette quantité', async () => {
-    const { fixture, el } = await render(
+    const { fixture } = await render(
       sheet({ lines: [line({ allocated: 5, unallocated: 15 })], containerList: [container({})] }),
     );
     fixture.componentInstance.askQuantity('c-1', 'CRO');
     await settle(fixture);
-    const ask = el.querySelector('[data-pending-drop]');
-    expect(said(ask)).toContain('Croissant — combien ?');
-    expect(said(ask)).toContain('Tout : 15');
-    click(el, '[data-confirm-drop]');
+    expect(said(dialog())).toContain('Mettre « Croissant » dans A3K');
+    expect(said(dialog().querySelector('[data-pending-drop]'))).toContain('Tout : 15');
+    expect(said(dialog().querySelector('[data-confirm-drop]'))).toBe('Mettre dedans');
+    click(dialog(), '[data-confirm-drop]');
     await settle(fixture);
     expect(api.allocated).toEqual([{ containerId: 'c-1', sku: 'CRO', quantity: 15 }]);
-    expect(el.querySelector('[data-pending-drop]')).toBeNull();
+    expect(dialog().querySelector('[data-pending-drop]')).toBeNull();
   });
 
   it('un article glissé vers l’autre contenant y part tout entier, d’un appel, et relit', async () => {
-    const { fixture, el } = await render(
+    const { fixture } = await render(
       sheet({
         containerList: [
           container({ lines: [{ sku: 'CRO', productName: 'Croissant', quantity: 10 }] }),
@@ -251,14 +259,14 @@ describe('les contenants d’une commande `listed` (K2b)', () => {
     );
     fixture.componentInstance.askTransfer({ containerId: 'c-1', sku: 'CRO' }, 'c-2');
     await settle(fixture);
-    const ask = el.querySelector('[data-container="c-2"] [data-pending-drop]');
-    expect(said(ask)).toContain('Tout : 10');
-    click(el, '[data-confirm-drop]');
+    expect(said(dialog())).toContain('Déplacer « Croissant » vers B7Q');
+    expect(said(dialog().querySelector('[data-pending-drop]'))).toContain('Tout : 10');
+    click(dialog(), '[data-confirm-drop]');
     await settle(fixture);
     expect(api.transferred).toEqual([{ from: 'c-1', sku: 'CRO', to: 'c-2', quantity: 10 }]);
     expect(api.allocated).toEqual([]);
     expect(rereads).toBe(1);
-    expect(el.querySelector('[data-pending-drop]')).toBeNull();
+    expect(dialog().querySelector('[data-pending-drop]')).toBeNull();
   });
 
   it('ne déplace pas vers le contenant de départ, et sans second contenant ne propose rien', async () => {
@@ -272,7 +280,7 @@ describe('les contenants d’une commande `listed` (K2b)', () => {
     expect(el.querySelector('[data-share="CRO"].is-draggable')).toBeNull();
     fixture.componentInstance.askTransfer({ containerId: 'c-1', sku: 'CRO' }, 'c-1');
     await settle(fixture);
-    expect(el.querySelector('[data-pending-drop]')).toBeNull();
+    expect(dialog().querySelector('[data-pending-drop]')).toBeNull();
   });
 
   it('une ligne toute répartie porte une coche', async () => {
@@ -284,12 +292,12 @@ describe('les contenants d’une commande `listed` (K2b)', () => {
   });
 
   it('ne demande rien pour une ligne déjà toute répartie', async () => {
-    const { fixture, el } = await render(
+    const { fixture } = await render(
       sheet({ lines: [line({ allocated: 20, unallocated: 0 })], containerList: [container({})] }),
     );
     fixture.componentInstance.askQuantity('c-1', 'CRO');
     await settle(fixture);
-    expect(el.querySelector('[data-pending-drop]')).toBeNull();
+    expect(dialog().querySelector('[data-pending-drop]')).toBeNull();
   });
 
   it('retire une partie d’une répartition : « tout » par défaut, puis la quantité dite', async () => {
@@ -305,8 +313,8 @@ describe('les contenants d’une commande `listed` (K2b)', () => {
     );
     click(el, '[data-withdraw]');
     await settle(fixture);
-    const ask = el.querySelector('[data-pending-withdrawal]');
-    expect(said(ask)).toContain('Croissant — combien retirer ?');
+    expect(said(dialog())).toContain('Retirer « Croissant » de A3K');
+    const ask = dialog().querySelector('[data-pending-withdrawal]');
     expect(said(ask)).toContain('Tout : 10');
     expect(api.withdrawn).toEqual([]);
     const input = ask?.querySelector('input');
@@ -316,10 +324,10 @@ describe('les contenants d’une commande `listed` (K2b)', () => {
       input.dispatchEvent(new Event('input'));
     }
     await settle(fixture);
-    click(el, '[data-confirm-withdrawal]');
+    click(dialog(), '[data-confirm-withdrawal]');
     await settle(fixture);
     expect(api.withdrawn).toEqual([{ containerId: 'c-1', sku: 'CRO', quantity: 4 }]);
-    expect(el.querySelector('[data-pending-withdrawal]')).toBeNull();
+    expect(dialog().querySelector('[data-pending-withdrawal]')).toBeNull();
   });
 
   it('dit tel quel le refus du serveur à l’annulation d’un bac chargé', async () => {

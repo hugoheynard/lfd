@@ -4,6 +4,7 @@ import {
   ChangeDetectionStrategy,
   Component,
   computed,
+  DestroyRef,
   effect,
   inject,
   input,
@@ -26,6 +27,8 @@ import {
   FoldIconComponent,
   FoldLoadingStateComponent,
   FoldNumberInputComponent,
+  FoldPanelHostService,
+  type FoldPanelRef,
 } from 'fold-ng';
 
 import { PermissionsStore } from '../../../auth/permissions.store';
@@ -42,6 +45,10 @@ import {
   unallocatedOf,
 } from '../container-board';
 import { PackingContainerGestures } from '../packing-container-gestures';
+import {
+  PackingQuantityDialog,
+  type PackingQuantityDialogData,
+} from '../packing-quantity-dialog/packing-quantity-dialog';
 
 /** Au plus tant de sacs par bac — la borne du contrat, recopiée (zod hors du paquet). */
 const MAX_INNER_BAGS = 50;
@@ -61,27 +68,6 @@ type Loadable<T> =
   | { readonly status: 'loading' }
   | { readonly status: 'error' }
   | { readonly status: 'ready'; readonly value: T };
-
-/** Ce qu'on retire en partie : la répartition, et ce qu'elle porte. */
-interface PendingWithdrawal {
-  readonly orderId: string;
-  readonly containerId: string;
-  readonly sku: string;
-  readonly max: number;
-}
-
-/**
- * Un dépôt qui attend sa quantité : la ligne, le contenant, et ce qui reste.
- * `fromContainerId` non nul : un DÉPLACEMENT depuis un autre contenant.
- */
-interface PendingDrop {
-  readonly orderId: string;
-  readonly containerId: string;
-  readonly fromContainerId: string | null;
-  readonly sku: string;
-  readonly productName: string;
-  readonly max: number;
-}
 
 /** Ce qu'on glisse depuis un contenant : la répartition d'une ligne. */
 export interface MovingShare {
@@ -144,6 +130,7 @@ export class PackingContainerBoard {
   protected readonly gestures = inject(PackingContainerGestures);
   private readonly permissions = inject(PermissionsStore);
   private readonly binTypes = inject(DeliveryBinsService);
+  private readonly panels = inject(FoldPanelHostService);
 
   /** La commande ouverte, `containerMode = listed`. */
   readonly sheet = input.required<PackingSheet>();
@@ -189,22 +176,10 @@ export class PackingContainerBoard {
     () => this.gestures.refusal()?.code === EMPTY_PROPOSAL_CODE,
   );
   protected readonly maxInnerBags = MAX_INNER_BAGS;
+  private readonly refusalMessage = computed(() => this.gestures.refusal()?.message ?? null);
 
-  private readonly pendingDrop = signal<PendingDrop | null>(null);
-  /** Le dépôt en attente, s'il porte sur la commande ouverte. */
-  protected readonly pending = computed(() => {
-    const drop = this.pendingDrop();
-    return drop !== null && drop.orderId === this.sheet().orderId ? drop : null;
-  });
-  protected readonly pendingQuantity = signal<number | null>(null);
-
-  private readonly pendingWithdrawal = signal<PendingWithdrawal | null>(null);
-  /** Le retrait en attente, s'il porte sur la commande ouverte. */
-  protected readonly withdrawing = computed(() => {
-    const pending = this.pendingWithdrawal();
-    return pending !== null && pending.orderId === this.sheet().orderId ? pending : null;
-  });
-  protected readonly withdrawQuantity = signal<number | null>(null);
+  /** La question « combien ? » ouverte, s'il y en a une. */
+  private dialog: FoldPanelRef | null = null;
 
   protected readonly dragDelay = DRAG_START_DELAY;
   protected readonly title = containerTitle;
@@ -231,10 +206,10 @@ export class PackingContainerBoard {
         this.choosing.set(false);
         this.sharing.set(false);
         this.halves.set({ status: 'idle' });
-        this.pendingDrop.set(null);
-        this.pendingWithdrawal.set(null);
+        this.closeDialog();
       });
     });
+    inject(DestroyRef).onDestroy(() => this.closeDialog());
   }
 
   protected draggable(line: PackingLine): boolean {
@@ -318,62 +293,37 @@ export class PackingContainerBoard {
    */
   askTransfer(share: MovingShare, toContainerId: string): void {
     const from = this.containers().find((candidate) => candidate.id === share.containerId);
+    const to = this.containers().find((candidate) => candidate.id === toContainerId);
     const portion = from?.lines.find((candidate) => candidate.sku === share.sku);
-    if (portion === undefined || !this.editable() || share.containerId === toContainerId) {
+    if (portion === undefined || to === undefined || !this.editable() || from === to) {
       return;
     }
-    this.pendingDrop.set({
-      orderId: this.sheet().orderId,
-      containerId: toContainerId,
-      fromContainerId: share.containerId,
-      sku: share.sku,
-      productName: portion.productName,
+    const orderId = this.sheet().orderId;
+    this.ask({
+      gesture: 'drop',
+      title: `Déplacer « ${portion.productName} » vers ${containerTitle(to)}`,
+      confirmLabel: 'Déplacer ici',
       max: portion.quantity,
+      submit: (quantity) =>
+        this.gestures.transfer(orderId, share.containerId, share.sku, toContainerId, quantity),
     });
-    this.pendingQuantity.set(portion.quantity);
   }
 
   /** Le dépôt, sans le glisser : utile au clavier et dans les tests. */
   askQuantity(containerId: string, sku: string): void {
     const line = this.sheet().lines.find((candidate) => candidate.sku === sku);
-    if (line === undefined || !this.draggable(line)) {
+    const target = this.containers().find((candidate) => candidate.id === containerId);
+    if (line === undefined || target === undefined || !this.draggable(line)) {
       return;
     }
-    const max = unallocatedOf(line);
-    this.pendingDrop.set({
-      orderId: this.sheet().orderId,
-      containerId,
-      fromContainerId: null,
-      sku,
-      productName: line.productName,
-      max,
+    const orderId = this.sheet().orderId;
+    this.ask({
+      gesture: 'drop',
+      title: `Mettre « ${line.productName} » dans ${containerTitle(target)}`,
+      confirmLabel: 'Mettre dedans',
+      max: unallocatedOf(line),
+      submit: (quantity) => this.gestures.allocate(orderId, containerId, sku, quantity),
     });
-    this.pendingQuantity.set(max);
-  }
-
-  protected cancelDrop(): void {
-    this.pendingDrop.set(null);
-  }
-
-  protected async confirmDrop(): Promise<void> {
-    const drop = this.pending();
-    const quantity = this.pendingQuantity();
-    if (drop === null || quantity === null || !Number.isInteger(quantity) || quantity <= 0) {
-      return;
-    }
-    const accepted =
-      drop.fromContainerId === null
-        ? await this.gestures.allocate(drop.orderId, drop.containerId, drop.sku, quantity)
-        : await this.gestures.transfer(
-            drop.orderId,
-            drop.fromContainerId,
-            drop.sku,
-            drop.containerId,
-            quantity,
-          );
-    if (accepted) {
-      this.pendingDrop.set(null);
-    }
   }
 
   /** « Retirer » : on demande combien, « tout » par défaut. */
@@ -382,38 +332,40 @@ export class PackingContainerBoard {
     if (share === undefined || !this.editable()) {
       return;
     }
-    this.pendingWithdrawal.set({
-      orderId: this.sheet().orderId,
-      containerId: container.id,
-      sku,
+    const orderId = this.sheet().orderId;
+    this.ask({
+      gesture: 'withdrawal',
+      title: `Retirer « ${share.productName} » de ${containerTitle(container)}`,
+      confirmLabel: 'Retirer',
       max: share.quantity,
+      submit: (quantity) => this.gestures.withdraw(orderId, container.id, sku, quantity),
     });
-    this.withdrawQuantity.set(share.quantity);
-  }
-
-  protected cancelWithdrawal(): void {
-    this.pendingWithdrawal.set(null);
-  }
-
-  protected async confirmWithdrawal(): Promise<void> {
-    const pending = this.withdrawing();
-    const quantity = this.withdrawQuantity();
-    if (pending === null || quantity === null || !Number.isInteger(quantity) || quantity <= 0) {
-      return;
-    }
-    const accepted = await this.gestures.withdraw(
-      pending.orderId,
-      pending.containerId,
-      pending.sku,
-      quantity,
-    );
-    if (accepted) {
-      this.pendingWithdrawal.set(null);
-    }
   }
 
   protected async voidContainer(container: PackingContainerView): Promise<void> {
     await this.gestures.void(this.sheet().orderId, container.id);
+  }
+
+  /** Ouvre la question « combien ? » ; le geste serveur reste celui du tableau. */
+  private ask(question: Omit<PackingQuantityDialogData, 'busy' | 'refusal'>): void {
+    this.closeDialog();
+    const data: PackingQuantityDialogData = {
+      ...question,
+      busy: this.gestures.busy,
+      refusal: this.refusalMessage,
+    };
+    const ref = this.panels.open<PackingQuantityDialogData>(PackingQuantityDialog, { data });
+    this.dialog = ref;
+    void ref.closed.then(() => {
+      if (this.dialog === ref) {
+        this.dialog = null;
+      }
+    });
+  }
+
+  private closeDialog(): void {
+    this.dialog?.close();
+    this.dialog = null;
   }
 
   private async loadTypes(): Promise<void> {

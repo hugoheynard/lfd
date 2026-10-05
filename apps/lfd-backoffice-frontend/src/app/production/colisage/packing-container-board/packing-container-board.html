@@ -305,65 +305,8 @@
                       ></button>
                     }
                   </li>
-                  @if (withdrawing(); as pending) {
-                    @if (pending.containerId === container.id && pending.sku === share.sku) {
-                      <li class="cb-ask" data-pending-withdrawal>
-                        <fold-number-input
-                          [label]="share.productName + ' — combien retirer ?'"
-                          [hint]="'Tout : ' + pending.max"
-                          [min]="1"
-                          [max]="pending.max"
-                          [integer]="true"
-                          [value]="withdrawQuantity()"
-                          (valueChange)="withdrawQuantity.set($event)"
-                        />
-                        <div class="cb-ask-actions">
-                          <button
-                            foldButton
-                            [disabled]="gestures.busy()"
-                            [loading]="gestures.busy()"
-                            (click)="confirmWithdrawal()"
-                            data-confirm-withdrawal
-                          >
-                            Retirer
-                          </button>
-                          <button foldButton emphasis="soft" (click)="cancelWithdrawal()">
-                            Annuler
-                          </button>
-                        </div>
-                      </li>
-                    }
-                  }
                 }
               </ul>
-            }
-
-            @if (pending(); as drop) {
-              @if (drop.containerId === container.id) {
-                <div class="cb-ask" data-pending-drop>
-                  <fold-number-input
-                    [label]="drop.productName + ' — combien ?'"
-                    [hint]="'Tout : ' + drop.max"
-                    [min]="1"
-                    [max]="drop.max"
-                    [integer]="true"
-                    [value]="pendingQuantity()"
-                    (valueChange)="pendingQuantity.set($event)"
-                  />
-                  <div class="cb-ask-actions">
-                    <button
-                      foldButton
-                      [disabled]="gestures.busy()"
-                      [loading]="gestures.busy()"
-                      (click)="confirmDrop()"
-                      data-confirm-drop
-                    >
-                      {{ drop.fromContainerId === null ? 'Mettre dedans' : 'Déplacer ici' }}
-                    </button>
-                    <button foldButton emphasis="soft" (click)="cancelDrop()">Annuler</button>
-                  </div>
-                </div>
-              }
             }
           </fold-card>
         </div>

@@ -129,12 +129,6 @@
 
 .cb-actions,
 .cb-formats,
-.cb-ask-actions {
-  display: flex;
-  flex-wrap: wrap;
-  gap: var(--fold-space-sm);
-}
-
 .cb-shares {
   display: flex;
   flex-direction: column;
@@ -159,14 +153,6 @@
   display: flex;
   flex-wrap: wrap;
   gap: var(--fold-space-xs);
-}
-
-.cb-ask {
-  display: flex;
-  flex-direction: column;
-  gap: var(--fold-space-sm);
-  padding-top: var(--fold-space-sm);
-  border-top: 1px solid var(--fold-color-border);
 }
 
 /* Le contenant que survole une ligne : il se désigne. */
