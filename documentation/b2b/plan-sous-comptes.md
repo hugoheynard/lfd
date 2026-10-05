@@ -163,10 +163,106 @@ une permission :
   être actif. Même règle dans `activation-gate` et dans les avertissements.
 - **Cesser de suivre `billing`** remet le sous-compte devant sa propre
   checklist. S'il n'a ni SIRET ni RIB, il passe `pending`, et il le dit.
-- **Le KBIS** est celui du principal.
+- **Le KBIS** est celui du principal, tant que `billing` est suivi.
 
-- **Le statut et le KBIS** restent propres. Seul le **payeur** suspendu
-  bloque (§2.4).
+- **Le statut** reste propre. Seul le **payeur** suspendu bloque (§2.4).
+  Le KBIS suit `billing` (§2.1 bis).
+
+### 2.1 ter Le prélèvement d'un sous-compte qui suit `billing` — trois formes
+
+Un mandat SEPA lie un créancier, un **débiteur** et un compte. Un même
+débiteur peut signer plusieurs mandats, chacun avec sa RUM, sur le même
+IBAN ou sur des IBAN différents. Le sous-compte qui suit `billing` a donc
+trois formes de prélèvement. Le **client** choisit (Hugo, 2026-10-05), et le
+staff peut le régler à sa place :
+
+| Forme                     | Débiteur nommé          | IBAN                 | Mandat                                  | Relevé bancaire      |
+| ------------------------- | ----------------------- | -------------------- | --------------------------------------- | -------------------- |
+| **mandat du principal**   | la société du principal | celui du principal   | celui du principal                      | une ligne par débit  |
+| **mandat du sous-compte** | la société du principal | celui du principal   | un mandat du sous-compte, sa propre RUM | une ligne par chalet |
+| **RIB propre**            | la société du principal | celui du sous-compte | un mandat du sous-compte, sa propre RUM | sur un autre compte  |
+
+- **Le débiteur est toujours la société du principal**, avec son SIREN, sa
+  forme juridique et sa raison sociale (les mentions obligatoires du
+  mandat). La frappe d'un mandat de sous-compte lit donc l'**identité
+  résolue** (`billing` suivi), et non la ligne du sous-compte, qui n'a pas
+  de SIREN. Aujourd'hui, `mint-blockers.ts:58` bloquerait sur
+  `siren_missing`.
+- **Un RIB propre est un `CompanyBankAccount` du sous-compte.** Le sous-compte
+  est une `Company` : la règle « un RIB par société » tient telle quelle.
+- **Le seul cas interdit reste l'inverse** : une identité propre prélevée sur
+  le compte d'une autre société.
+- **Le choix du mandat à prélever** suit la forme en vigueur **à la date du
+  prélèvement**. Le mandat du sous-compte, s'il existe et qu'il est actif,
+  sinon celui du principal. `debtor-mandate.reader.ts:72` (`activeFor`) devient
+  « le mandat de ce payeur pour ce sous-compte ».
+- La forme est une **décision datée** de plus, sur le même modèle que
+  `company_follows`.
+
+**Ce que le prélèvement doit gagner pour porter ces formes** (`vitruve`,
+troisième passage, 2026-10-05) :
+
+- **Le mandat désigne son compte.** Aujourd'hui, l'IBAN est celui du
+  `CompanyBankAccount` de `mandate.companyId`
+  (`payments/infrastructure/prisma-debtor-mandate.reader.ts`, ~47-70). Un
+  mandat de sous-compte sur l'IBAN du principal serait **sauté**, et rendrait
+  tout le fichier non déposable (`cycle-draft-support.ts`, ~87).
+  `payment_mandates` gagne donc `bank_account_id`, posé à la frappe et lu
+  par le lecteur.
+- **Le mandat fige son débiteur.** `PaymentMandate` ne porte que
+  `companyId`. Il gagne un instantané du débiteur à la frappe : SIREN,
+  raison sociale, forme juridique. Un changement d'identité du principal ne
+  réécrit pas un mandat signé : il en demande un nouveau.
+- **L'assiette groupe par (payeur, mandat effectif)**, et non par
+  `companyId`. Chaque commande résout son mandat : celui de son sous-compte
+  s'il est actif, sinon celui du payeur. On obtient ainsi une ligne par
+  chalet dans les formes 2 et 3.
+- **La frappe lit l'identité résolue** dans la lecture partagée
+  `mint-readiness.ts:45-58` (`findHolder`), et pas seulement dans
+  `mint-blockers.ts:58` : les deux écrans et la frappe la lisent.
+- **Détacher, ou passer en identité propre, révoque** les mandats actifs du
+  sous-compte qui nomment le principal. Sinon, le même mandat prélèverait
+  pour une autre identité, ce qui est le cas interdit. La révocation est
+  datée, et le mandat reste en base.
+- **La forme est une décision datée** dans sa propre table
+  (`company_collection_form`), à côté de `company_follows`. La date qui
+  compte est la **clôture du cycle** (`cycleAt`), jamais l'heure du
+  téléchargement.
+
+### 2.1 quater Un sous-compte détaché avec des impayés — et ce qui manque pour le dire
+
+**La décision (Hugo, 2026-10-05)** : le principal n'est jamais débité
+d'office pour un sous-compte qui ne le suit plus. La commande sort du
+prélèvement. Elle est signalée en admin et au principal, et se règle à la
+main.
+
+🔴 **Le code d'aujourd'hui ne peut pas le porter, et c'est un manque du
+prélèvement lui-même, pas des sous-comptes.** Un lot n'est jamais
+« constitué » : `buildCycleDraft` recalcule tout à chaque téléchargement
+(`prisma-billable-orders.reader.ts:48-74`, fenêtre sur `created_at`). Trois
+conséquences :
+
+- deux téléchargements du même cycle peuvent différer, et rien ne dit
+  lequel a été déposé ;
+- une commande écartée n'est **enregistrée nulle part** : il n'y a rien à
+  signaler ;
+- une commande d'un cycle clos n'entre dans **aucun** lot ultérieur : rien
+  ne peut la reprendre.
+
+D'où un **prérequis de S4**, appelé **S4-0**, utile à tous les clients et pas
+seulement aux sous-comptes :
+
+- **un lot figé** : la constitution d'un cycle enregistre ses commandes,
+  leur mandat et leur montant. Les téléchargements relisent ce lot, ils ne
+  le recalculent pas ;
+- **un état d'encaissement par commande** : à prélever, dans un lot,
+  écartée (avec sa raison), réglée autrement. Une commande écartée entre
+  dans l'assiette du lot suivant si son motif a disparu ;
+- c'est ce qui donne ses données au signalement « 3 commandes du chalet X
+  restent à régler ».
+
+S4-0 touche l'argent et le fichier déposé à la banque : il a besoin de son
+propre plan et de son propre passage `vitruve`.
 
 ### 2.2 Le tarif — deux clés, pas une
 
@@ -219,6 +315,9 @@ chemins à rouvrir au lot) :
   seulement celui de la société déclarée. Un sous-compte qui suit `billing`
   d'un principal suspendu est refusé, avec un message qui nomme le
   principal.
+- **Compte de groupe sans livraison** (§4) : la passation refuse une
+  commande au nom du principal lui-même, aux trois entrées
+  (`PlaceOrderHandler`, saisie staff, abonnements).
 - **Le principal doit être actif** pour qu'un sous-compte commence à suivre
   `billing` : tenu par l'agrégat au geste « suivre », sous le verrou du §5.
 
@@ -283,6 +382,15 @@ sert jamais à répondre « mes données » :
 
 ## 4. Les écrans d'administration
 
+- **Badge « Sous-compte de _Principal_ »**, cliquable vers le principal,
+  partout où un client apparaît : liste des clients, cockpit commercial,
+  fiche, commandes. Chaque sous-compte reste un client **à part entière**
+  dans le cockpit, sans total de groupe (Hugo, 2026-10-05).
+- **Case « Compte de groupe, sans livraison »** sur un principal : une
+  holding qui négocie et ne commande jamais. Cochée, la checklist
+  d'activation n'exige ni adresse de livraison ni préférence d'acheminement,
+  et la passation refuse toute commande au nom du principal lui-même.
+
 Calqués sur la barre de déclinaisons de la fiche produit.
 
 - **Fiche client du principal** : un bloc « Sous-comptes » liste les enfants
@@ -338,14 +446,15 @@ seconde ligne, contre une écriture faite hors du geste.
 
 ## 6. Les lots
 
-| Lot    | Contenu                                                                                                                                                                                                                                                                                                                                                                               | Dépend de |
-| ------ | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | --------- |
-| **S1** | migration §5 ; `Company` porte son parent ; table et port `company_follows` ; gestes staff `CreateSubAccount`, `AttachToParent`, `DetachFromParent`, `FollowParent(aspect)`, `StopFollowing(aspect)` sous le verrou ; fiche staff : parent et enfants ; e2e, dont les deux courses                                                                                                    | —         |
-| **S2** | écrans admin §4                                                                                                                                                                                                                                                                                                                                                                       | S1        |
-| **S3** | `pricing` : `pricingCompanyId` dans `parties`, résolu à la date ; Q6 tranchée et bâtie ; e2e : aligné, désaligné, puis **relecture d'une commande d'avant l'alignement** au tarif d'alors                                                                                                                                                                                             | S1        |
-| **S4** | `billing` : checklist d'activation du §2.1 bis ; copie de `billed_company_id` aux trois entrées de passation (il nomme aussi l'**acheteur** sur la facture : une facture relue après un « détacher » garde l'acheteur d'alors) ; export comptable lu par le payeur ; garde « payeur suspendu » ; bascule des lecteurs du §2.3 ; routes client du §3 ; e2e jusqu'au fichier `pain.008` | S1        |
-| **S5** | `contacts` : lecture combinée                                                                                                                                                                                                                                                                                                                                                         | S1        |
-| **S6** | côté client (plateforme) : la voie d'accès du §3 dans le résolveur du mur ; le sélecteur de société liste les sous-comptes ; e2e : le principal agit dans un sous-compte, un sous-compte ne voit ni le principal ni ses frères, détacher coupe                                                                                                                                        | S1–S4     |
+| Lot      | Contenu                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                    | Dépend de |
+| -------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ | --------- |
+| **S1**   | migration §5 ; `Company` porte son parent ; table et port `company_follows` ; gestes staff `CreateSubAccount`, `AttachToParent`, `DetachFromParent`, `FollowParent(aspect)`, `StopFollowing(aspect)` sous le verrou ; fiche staff : parent et enfants ; e2e, dont les deux courses                                                                                                                                                                                                                                                         | —         |
+| **S2**   | écrans admin §4                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                            | S1        |
+| **S3**   | `pricing` : `pricingCompanyId` dans `parties`, résolu à la date ; Q6 tranchée et bâtie ; e2e : aligné, désaligné, puis **relecture d'une commande d'avant l'alignement** au tarif d'alors                                                                                                                                                                                                                                                                                                                                                  | S1        |
+| **S4-0** | prérequis, **son propre plan** : lot de prélèvement figé, état d'encaissement par commande (§2.1 quater)                                                                                                                                                                                                                                                                                                                                                                                                                                   | —         |
+| **S4**   | `billing` : les trois formes de prélèvement (§2.1 ter), frappe sur l'identité résolue, choix du mandat à date ; impayés d'un sous-compte détaché (§2.1 quater) ; checklist d'activation du §2.1 bis ; copie de `billed_company_id` aux trois entrées de passation (il nomme aussi l'**acheteur** sur la facture : une facture relue après un « détacher » garde l'acheteur d'alors) ; export comptable lu par le payeur ; garde « payeur suspendu » ; bascule des lecteurs du §2.3 ; routes client du §3 ; e2e jusqu'au fichier `pain.008` | S1        |
+| **S5**   | `contacts` : lecture combinée                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                              | S1        |
+| **S6**   | côté client (plateforme) : la voie d'accès du §3 dans le résolveur du mur ; le sélecteur de société liste les sous-comptes ; e2e : le principal agit dans un sous-compte, un sous-compte ne voit ni le principal ni ses frères, détacher coupe                                                                                                                                                                                                                                                                                             | S1–S4     |
 
 **Ordre** : S1, S2, S3, puis S4. Entre S3 et S4, un sous-compte peut suivre
 le tarif du principal tout en payant pour lui-même. C'est **voulu** : un
@@ -396,6 +505,31 @@ après le retour du cabinet sur Q3.
   client ne le voit pas et ne peut pas le changer. À la création d'un
   sous-compte, `pricing` n'est **pas** coché d'office : la case n'apparaît
   qu'à qui a le droit de tarification.
+
+**Revue adversariale avec Hugo, 2026-10-05 :**
+
+- **R1 — Prélèvement des sous-comptes.** Option donnée au client : mandat du
+  principal, mandat par sous-compte, ou RIB propre (§2.1 ter).
+- **R2 — Relevé mensuel** par sous-compte ou consolidé : **option donnée au
+  client**. Il n'existe aujourd'hui aucun relevé, seulement une facture par
+  commande. L'option se pose **avec** le relevé, dans son propre plan. Une
+  colonne sans lecteur n'est pas posée d'avance.
+- **R3 — Impayés d'un sous-compte détaché** : signalés en admin et au
+  principal, jamais débités d'office (§2.1 quater).
+- **R4 — Le Club Med renégocie pour un seul établissement.** _Pas tranché.
+  Défaut : pas de copie de la mercuriale. Il retombe au tarif public
+  jusqu'à ce que le commercial lui en pose une._
+- **R5 — Un établissement sort pendant un engagement de volume.** _Pas
+  tranché. Défaut : ses commandes passées restent comptées, les suivantes
+  non (le suivi est daté)._
+- **R6 — Le principal holding** qui ne commande pas : oui, par une case
+  explicite (§4).
+- **R7 — Le personnel d'un sous-compte** voit les prix : aucun rôle neuf.
+- **R8 — Le principal choisit le sous-compte** avant de commander : pas de
+  panier réparti.
+- **R9 — Cockpit** : chaque sous-compte est vu seul, avec un badge cliquable
+  vers son principal (§4).
+- **R10 — Plus d'un niveau.** _Pas tranché. Défaut : un seul niveau._
 
 ## 8. Ce que ce plan ne fait pas
 
