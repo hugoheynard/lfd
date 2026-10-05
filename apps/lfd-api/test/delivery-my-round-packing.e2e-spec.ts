@@ -43,6 +43,22 @@ const POINT = { lat: 45.6, lng: 6.1 };
 /** Ce qui ne doit JAMAIS apparaître dans la vue du livreur. */
 const MONEY = /cents|price|total|amount|prix|montant|vat|tva/iu;
 
+/**
+ * Les NOMS de champs d'une réponse, à toute profondeur. On cherche l'argent
+ * dans les clés, pas dans les valeurs : un identifiant tiré au hasard peut
+ * contenir « TVA » (CI du 2026-10-05, `…E1TVA`), et le test rougissait sans
+ * qu'aucun montant ne passe.
+ */
+function keysOf(value: unknown): string[] {
+  if (Array.isArray(value)) {
+    return value.flatMap(keysOf);
+  }
+  if (value !== null && typeof value === "object") {
+    return Object.entries(value).flatMap(([key, inner]) => [key, ...keysOf(inner)]);
+  }
+  return [];
+}
+
 let ctx: E2eContext;
 
 beforeAll(async () => {
@@ -115,7 +131,7 @@ describe("la fiche de l'arrêt et l'avancement du colisage (PL4)", () => {
       { sku: "VIE-001", name: "Croissant", quantity: 6, requiresCold: false },
     ]);
     expect(mine.stops[1]?.sheet).toEqual([]);
-    expect(JSON.stringify(mine)).not.toMatch(MONEY);
+    expect(keysOf(mine).filter((key) => MONEY.test(key))).toEqual([]);
   });
 
   it("suit une déclaration de bac et une commande prête — « 1 arrêt prêt sur 2 »", async () => {
