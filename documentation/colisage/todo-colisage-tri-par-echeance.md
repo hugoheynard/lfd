@@ -15,7 +15,7 @@ de départ du véhicule** — il faut donc tenir compte du délai de livraison.
 
 - **Le tri actuel est la référence de commande** :
   `packingBoardOf` range les bacs par `reference`
-  (`apps/lfd-api/src/production/domain/services/production-packing.ts`). C'est
+  (apps/lfd-api/src/production/domain/services/production-packing.ts (retiré en K3c)). C'est
   l'ordre du numéro lu sur le bon, pas celui du départ.
 - **Une commande ne porte qu'un JOUR**, pas une heure :
   `requested_delivery_date` est un `date` Postgres

@@ -29,7 +29,7 @@ Ouvert le 2026-09-28.
 | Le compte à produire est une ligne par `(service_day, sku)`, avec `quantity` et un état « fait » en trois colonnes : `done_at`, `done_by`, `done_initials`. `done_at = null` est le seul état « pas fait ».                           | `prisma/schema/production.prisma`, `ProductionCount`                                |
 | Cocher / décocher = `MarkWorksheetLineCommand` / `UnmarkWorksheetLineCommand`, qui passent par `itemToMark` puis une **écriture ciblée** `markProduced` (six postes cochent six fiches en même temps ; un `save` réécrit la journée). | `application/commands/mark-worksheet-line.*`, `prisma-production-day.repository.ts` |
 | Recocher réécrit l'heure et les initiales : « le dernier geste est le vrai ».                                                                                                                                                         | JSDoc de `MarkWorksheetLineHandler`                                                 |
-| Le colisage refuse une ligne dont le SKU n'est pas coché au compte : `awaitingOf` est un **booléen par SKU pour toute la journée**.                                                                                                   | `domain/services/production-packing.ts`, `awaitingOf`                               |
+| Le colisage refuse une ligne dont le SKU n'est pas coché au compte : `awaitingOf` est un **booléen par SKU pour toute la journée**.                                                                                                   | domain/services/production-packing.ts (retiré en K3c), `awaitingOf`                 |
 | Mettre une ligne au bac = écriture ciblée `markPackedLine`, sans verrou : l'agrégat a déjà dit oui.                                                                                                                                   | `prisma-production-day.repository.ts`                                               |
 | **Le réglage « contenant » existe déjà** : `production_container` (`sku`, `units_per_container`, `singular`, `plural`) — « 4 tourneuses », « plaque entière ». La fiche d'atelier s'en sert pour traduire une quantité en matériel.   | `ProductionContainer`, `production-worksheet.ts` (`containerLabelOf`)               |
 | Le contrat de la fiche porte `done`, `doneAt`, `initials` par ligne, et `doneCount` / `doneUnits` / `remainingUnits` par rayon, comptés au serveur.                                                                                   | `packages/contracts/src/production-worksheet.ts`                                    |
@@ -138,7 +138,7 @@ dangereux qu'il nommait.
     sortie.
   - Pas de file hors ligne côté fournil à rejouer (cherché le 2026-09-28 dans
     `apps/lfd-backoffice-frontend/src/app/production` : aucune ; le commentaire
-    de `production-day.packing.ts` qui l'évoque parle du scan).
+    de production-day.packing.ts (retiré en K3c) qui l'évoque parle du scan).
 
 ### D4 — Le colisage puise dans ce qui est sorti
 
@@ -151,7 +151,7 @@ disponible(sku) = sorti(sku) − Σ quantités des lignes de ce SKU au bac (bacs
 Une ligne peut aller au bac **si `disponible ≥ sa quantité`** ; le refus nomme
 le manque (« il manque 8 croissants sortis »). Le premier sac de 12 se remplit
 dès que 12 sont sortis. La garde est `lineToFill` / `isAwaitingProduction`
-(`production-day.packing.ts`) ; `lineToPack`, qui sert aussi à **ressortir** du
+(production-day.packing.ts (retiré en K3c)) ; `lineToPack`, qui sert aussi à **ressortir** du
 bac, garde son asymétrie : ressortir n'est jamais refusé par le four.
 
 Suivent le même calcul : `awaitingProduction` de la fiche de colis, et
@@ -271,7 +271,7 @@ Relevés par `vitruve` le 2026-09-28 (grep sur `done`, `doneAt`,
 - **API** : `production-worksheet.ts`, `production-worksheet-groups.ts`
   (`doneCount`, `doneUnits`), `production-worksheet-reading.service.ts`,
   `production-packing.ts` (`awaitingOf`, `resourcesOf`),
-  `production-day.packing.ts`, `production-count.ts` (`absorbArrivals`).
+  production-day.packing.ts (retiré en K3c), `production-count.ts` (`absorbArrivals`).
 - **Back-office** : `supervision/packing-cards.ts`,
   `supervision/preparation-shelves.ts`, `supervision/preparation-column/*`,
   `commercial/cockpit/cockpit-bar/today-handovers.ts`,

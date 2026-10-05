@@ -122,7 +122,7 @@ reste). Deux avertissements à l'écran, au moment de « Prête » :
 
 ⚠️ **Ce sont des avertissements d'écran, pas des refus serveur.** Déclarer une
 commande prête ne demande aujourd'hui **aucun** container (vérifié le
-2026-09-30 : `production-day.packing.ts` ne lit `containers` qu'au pas « + / − »),
+2026-09-30 : production-day.packing.ts (retiré en K3c) ne lit `containers` qu'au pas « + / − »),
 et un refus serveur demanderait au fournil de lire les bacs de la livraison —
 l'import que D1 interdit. « Partir » refuse déjà une tournée incomplète : le
 filet dur est là, au chargement.

@@ -8,16 +8,16 @@
 
 Le colisage est aujourd'hui **coupé en deux et logé chez deux autres** :
 
-| Morceau                                                             | Où                                                                                 | Écrivain                                              |
-| ------------------------------------------------------------------- | ---------------------------------------------------------------------------------- | ----------------------------------------------------- |
-| Ligne « au bac » (`packed_at/by/initials`)                          | `production.production_order_line`                                                 | `ProductionDay` (`production-day.packing.ts`, gardes) |
-| Bac fermé, nombre de contenants (`packed_at/by`, `container_count`) | `production.production_order`                                                      | `ProductionDay.pack` / `declareContainers`            |
-| Annonce « prête » au commerce                                       | `OrderPackedEvent` (`production/channels/commerce`) → `on-order-packed.handler.ts` | production                                            |
-| Bacs déclarés, code court, demi-bacs                                | `delivery.delivery_bin`                                                            | livraison                                             |
-| Colisage proposé                                                    | `delivery/domain/services/propose-packing.ts`                                      | livraison                                             |
-| Écran                                                               | `/production/colisage` (rail Production), droit `production_packing`               | —                                                     |
+| Morceau                                                             | Où                                                                                               | Écrivain                                                            |
+| ------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------ | ------------------------------------------------------------------- |
+| Ligne « au bac » (`packed_at/by/initials`)                          | `production.production_order_line`                                                               | `ProductionDay` (production-day.packing.ts (retiré en K3c), gardes) |
+| Bac fermé, nombre de contenants (`packed_at/by`, `container_count`) | `production.production_order`                                                                    | `ProductionDay.pack` / `declareContainers`                          |
+| Annonce « prête » au commerce                                       | `OrderPackedEvent` (`production/channels/commerce`) → on-order-packed.handler.ts (retiré en K3c) | production                                                          |
+| Bacs déclarés, code court, demi-bacs                                | `delivery.delivery_bin`                                                                          | livraison                                                           |
+| Colisage proposé                                                    | `delivery/domain/services/propose-packing.ts`                                                    | livraison                                                           |
+| Écran                                                               | `/production/colisage` (rail Production), droit `production_packing`                             | —                                                                   |
 
-Le commentaire de `production-day.packing.ts` dit **pourquoi ce n'est pas deux
+Le commentaire de production-day.packing.ts (retiré en K3c) dit **pourquoi ce n'est pas deux
 agrégats** : une ligne ne se met au bac que si elle est **sortie du four**
 (`LineNotProducedYetError`, via `availableOf` des fournées) et seulement
 journée **arrêtée** (`ProductionDayNotClosedError`). C'est la vraie couture.
@@ -109,14 +109,14 @@ Aucune migration n'accorde de droit : `production_packing` reste la ressource
 - **La motivation est fragile.** Contrairement à `handover`, le colisage
   garde deux règles en forme de JOUR (journée arrêtée, quantité sortie du
   four). Sorti, chaque geste devient « vérifier par le canal, puis écrire
-  ailleurs », sans verrou — la couture que `production-day.packing.ts` donne
+  ailleurs », sans verrou — la couture que production-day.packing.ts (retiré en K3c) donne
   comme raison d'un seul agrégat.
 - **Q3 répondue** : la livraison lit « colisée » par le COMMERCE
   (`OrderStatus.ready`, via `OnOrderPacked`) ; « Partir » bloque sur
   l'étiquetage et le chargement des bacs, pas sur `ready`. Aucune arête
   `delivery → packing`. La chaîne `OrderPackedEvent → ready` doit survivre,
   et b2b l'importe depuis `production/channels/commerce`.
-- Routes API déjà servies (`production-packing.controller.ts`,
+- Routes API déjà servies (production-packing.controller.ts (retiré en K3c),
   `production-supervision.controller.ts`) : à garder. Portes à armer :
   `context-boundaries`, datasource, `prisma-schema-layout`,
   `prisma-model-ownership`, §1 de CLAUDE.md. Irréversible après P2.
@@ -332,7 +332,7 @@ sequenceDiagram
   (requête de comptage).
 - **Le critère de bascule** : une `packing_order` existe pour ce jour. Les
   routes déjà servies et la supervision
-  (`get-production-day-status.handler.ts`, `get-production-packing.handler.ts`)
+  (`get-production-day-status.handler.ts`, get-production-packing.handler.ts (retiré en K3c))
   le lisent, et suivent le bon chemin.
 - **Q4 (le grain du geste)** se tranche **avant** l'étape 1 : sans elle,
   rien n'est colisable après la bascule.
@@ -586,7 +586,7 @@ en cours.
   de trop (`seed-retour-<jour>`). Le rechargement vide aussi les remises, les
   demandes de retour et les tables `packing.*` — il échouait sinon dès la
   première fournée remise (clé `Restrict` posée en K1).
-- **La répétition** : `apps/lfd-api/test/packing-switch.e2e-spec.ts` joue la même journée
+- **La répétition** : apps/lfd-api/test/packing-switch.e2e-spec.ts (retiré en K3c) joue la même journée
   sur l'ancien poste (journée rendue `legacy` en base : depuis K2, aucune
   clôture ne la fait plus naître) et sur le colisage, et compare ce que
   l'écran et le commerce en voient ; les faits diffèrent, et c'est écrit.
@@ -625,7 +625,7 @@ en cours.
 ## 17. K3 — le colisage sert son poste, l'ancien chemin disparaît (plan, 2026-10-04)
 
 > Suite du §16 (« sauvage »). K2b et sa suite sont bâtis. Relu dans le code le
-> 2026-10-04 : `get-production-packing.handler.ts` (le fournil compose le
+> 2026-10-04 : get-production-packing.handler.ts (retiré en K3c) (le fournil compose le
 > poste : son plan, `packedDayReading`, le contrôle qualité, les auteurs, puis
 > `overlayStation` pose le colisage par-dessus) ; `PackingStation` /
 > `PackingStationReader` (déclarés par le fournil, implémentés par le colisage) ;
@@ -739,9 +739,9 @@ le code.
   containers), la route `POST admin/production/batch/:date/sheets/:reference/packed`,
   leurs commandes et handlers (`mark`/`unmark`-packing-line, `pack-order`,
   `declare`/`step`-packing-containers), `GetProductionPacking*`, le calcul du
-  poste côté fournil (`production-packing.ts`, `packing-container-list.ts`),
+  poste côté fournil (`production-packing.ts`, packing-container-list.ts (retiré en K3c)),
   `PackedDayReading`, `overlayStation`, les gardes de colisage de la journée
-  (`production-day.packing.ts`, `pack()`, `lineToPack`, `availableOf`…) et
+  (production-day.packing.ts (retiré en K3c), `pack()`, `lineToPack`, `availableOf`…) et
   leurs erreurs mortes.
 - **`PackingStation` / `PackingStationReader`** (canal), `PackingStationService`,
   `PrismaPackingStationReader`.

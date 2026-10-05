@@ -800,7 +800,7 @@ Saisie de la référence en dernier recours.
 
 La v2 a été contredite : deux `BLOQUANT`, sept `SÉRIEUX`. Le nombre de sacs,
 gravé au colisage par une écriture nue et sans « décolisage »
-(`pack-order.handler.ts`, `markPacked`), ne pouvait plus être corrigé ; et un
+(pack-order.handler.ts (retiré en K3c), `markPacked`), ne pouvait plus être corrigé ; et un
 sac n'avait pas d'identité — `(référence, n)` ne tient que si `n` ne bouge
 jamais. La v3 change de modèle plutôt que de rapiécer :
 
