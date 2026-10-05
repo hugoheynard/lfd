@@ -13,6 +13,7 @@ import {
 import { MandateMentionsMissingError } from "../../../domain/errors/mint-blocker-errors.js";
 import type { MintBlocker } from "../../../domain/services/mint-blockers.js";
 import {
+  FixedDebtors,
   bankAccount,
   InMemoryBankAccounts,
   StepPublisher,
@@ -129,6 +130,7 @@ function build(
       events,
       new StepUnitOfWork(steps),
       ledger,
+      new FixedDebtors(mandates),
     ),
     written,
     steps,
@@ -175,6 +177,13 @@ describe("MintMandateHandler — frapper sans signer", () => {
         paymentType: "recurrent",
         companyId: "cmp_1",
         creditorId: "ent_1",
+        bankAccountId: "cba_1",
+        debtor: {
+          companyId: "cmp_1",
+          siren: "732829320",
+          name: "Refuge du Col SARL",
+          legalForm: "SARL",
+        },
         reference: "LFC-GAGNANT",
       }),
       id: "mdt_gagnant",
@@ -268,6 +277,13 @@ describe("MintMandateHandler — frapper sans signer", () => {
         paymentType: "recurrent",
         companyId: "cmp_1",
         creditorId: "ent_1",
+        bankAccountId: "cba_1",
+        debtor: {
+          companyId: "cmp_1",
+          siren: "732829320",
+          name: "Refuge du Col SARL",
+          legalForm: "SARL",
+        },
         reference: "LFC-GAGNANT",
       }),
       id: "mdt_gagnant",
@@ -313,6 +329,13 @@ describe("MintMandateHandler — frapper sans signer", () => {
         paymentType: "recurrent",
         companyId: "cmp_1",
         creditorId: "ent_1",
+        bankAccountId: "cba_1",
+        debtor: {
+          companyId: "cmp_1",
+          siren: "732829320",
+          name: "Refuge du Col SARL",
+          legalForm: "SARL",
+        },
         reference: "LFC-DEJA-LA",
       }),
       id: "mdt_1",

@@ -13,6 +13,7 @@ import { OrderRepository } from "../../domain/ports/order.repository.js";
 import { ensureOrderMember } from "../../domain/services/order-access.js";
 import { paymentUrlFor } from "../../domain/services/payment-link.js";
 import { OrderDrafting } from "../services/order-drafting.service.js";
+import { accountStanding } from "../services/order-settlement.js";
 import {
   PlaceOrderForCustomerCommand,
   type PlaceOrderForCustomerResult,
@@ -112,7 +113,7 @@ export class PlaceOrderForCustomerHandler implements ICommandHandler<
     companyId: string,
   ): Promise<{ clientSecret: string } | null> {
     if (settlement === "account") {
-      await this.ensureSettlesOnAccount(companyId);
+      await this.ensureSettlesOnAccount(companyId, order.billedCompanyId);
       order.deferPayment();
       return null;
     }
@@ -131,12 +132,13 @@ export class PlaceOrderForCustomerHandler implements ICommandHandler<
     return { clientSecret: intent.clientSecret };
   }
 
-  /** Le crédit se négocie société par société : il se constate, il ne se suppose pas. */
-  private async ensureSettlesOnAccount(companyId: string): Promise<void> {
-    if ((await this.guard.companyStatusOf(companyId)) !== "active") {
-      throw new AccountSettlementNotGrantedError();
-    }
-    const standing = await this.guard.settlesOnAccount(companyId);
+  /**
+   * Le crédit se négocie société par société : il se constate, il ne se
+   * suppose pas. Celui du PAYEUR (T44) — la règle est celle du client, écrite
+   * une fois dans `accountStanding`.
+   */
+  private async ensureSettlesOnAccount(companyId: string, payerId: string | null): Promise<void> {
+    const standing = await accountStanding(this.guard, { companyId, payerId });
     if (standing !== "granted") {
       throw new AccountSettlementNotGrantedError(standing === "blocked");
     }

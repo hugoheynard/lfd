@@ -35,6 +35,8 @@ function snapshot(overrides: Partial<MandateSnapshot> = {}): MandateSnapshot {
     proofStorageKey: null,
     proofFileName: null,
     creditorId: null,
+    bankAccountId: null,
+    debtor: null,
     ...overrides,
   };
 }
@@ -137,6 +139,13 @@ describe("mintMandate — le mandat qu'on frappe soi-même", () => {
       paymentType: "recurrent",
       companyId: "cmp_1",
       creditorId: "ent_1",
+      bankAccountId: "cba_1",
+      debtor: {
+        companyId: "cmp_1",
+        siren: "732829320",
+        name: "Refuge du Col SARL",
+        legalForm: "SARL",
+      },
       reference: "LFC-9P2X4B-260912-K7M3QT",
     });
 
@@ -151,6 +160,13 @@ describe("mintMandate — le mandat qu'on frappe soi-même", () => {
       paymentType: "recurrent",
       companyId: "cmp_1",
       creditorId: "ent_1",
+      bankAccountId: "cba_1",
+      debtor: {
+        companyId: "cmp_1",
+        siren: "732829320",
+        name: "Refuge du Col SARL",
+        legalForm: "SARL",
+      },
       reference: "LFC-X",
     });
 
@@ -164,6 +180,13 @@ describe("mintMandate — le mandat qu'on frappe soi-même", () => {
       paymentType: "recurrent",
       companyId: "cmp_1",
       creditorId: "ent_1",
+      bankAccountId: "cba_1",
+      debtor: {
+        companyId: "cmp_1",
+        siren: "732829320",
+        name: "Refuge du Col SARL",
+        legalForm: "SARL",
+      },
       reference: "LFC-X",
     });
 

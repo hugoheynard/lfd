@@ -415,12 +415,18 @@ describe("l'index d'unicité du brouillon, traduit par l'adaptateur", () => {
   it("traduit la violation en MandateDraftAlreadyExistsError, pas en erreur brute", async () => {
     const repository = ctx.app.get(PaymentMandateRepository);
     const issuer = await ctx.prisma.legalEntity.findFirstOrThrow({ select: { id: true } });
+    const account = await ctx.prisma.companyBankAccount.findUniqueOrThrow({
+      where: { companyId },
+      select: { id: true },
+    });
     const draft = (reference: string) =>
       mintMandate({
         scheme: "B2B",
         paymentType: "recurrent",
         companyId,
         creditorId: issuer.id,
+        bankAccountId: account.id,
+        debtor: { companyId, siren: "", name: "", legalForm: "" },
         reference,
       });
 

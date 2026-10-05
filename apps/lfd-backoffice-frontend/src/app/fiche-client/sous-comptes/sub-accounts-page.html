@@ -26,6 +26,15 @@
               (changed)="fiche.reload()"
             />
           </fold-card>
+          <!-- La forme de prélèvement n'a de sens que pour un SITE : le serveur
+               la refuse à un compte qui paie seul (§2.1 ter). -->
+          @if (followsBilling(c.hierarchy.follows)) {
+            <app-collection-form-card
+              [companyId]="c.id"
+              [parent]="parent"
+              [current]="c.hierarchy.collectionForm?.form ?? null"
+            />
+          }
           <fold-card data-follow-reminders>
             <fold-element-title
               cardHeader

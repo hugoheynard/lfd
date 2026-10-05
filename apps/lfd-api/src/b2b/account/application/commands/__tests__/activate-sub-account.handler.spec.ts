@@ -96,6 +96,7 @@ function chaletView(parentStatus: "active" | "pending"): AdminCompanyDetailView 
       subAccounts: [],
       follows: [{ aspect: "billing", since: clock.now().toISOString() }],
       groupWithoutDelivery: false,
+      collectionForm: null,
     },
   };
 }

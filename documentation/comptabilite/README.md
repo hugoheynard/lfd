@@ -33,11 +33,12 @@ propre droit staff (`b2b_accounting`) et son propre espace dans le back-office.
 Elles vivent **ici** et non dans `../todos/` (décidé par Hugo le 2026-09-15) :
 tout ce qui touche la RUM et le SEPA se lit au même endroit.
 
-| Todo                                                                       | Ce qui reste                                                                                                   |
-| -------------------------------------------------------------------------- | -------------------------------------------------------------------------------------------------------------- |
-| [`todo-mandat-restes-de-la-frappe.md`](todo-mandat-restes-de-la-frappe.md) | 🟡 l'amendement d'un mandat actif, différé jusqu'à la réponse de la banque                                     |
-| [`todo-mandat-core-contre-b2b.md`](todo-mandat-core-contre-b2b.md)         | 🔴 libellé bancaire du mandat interentreprises, « 13 mois », second débit d'un ponctuel, questions à la banque |
-| [`todo-rib-client-transmission.md`](todo-rib-client-transmission.md)       | 🔴 sécurité de la transmission de l'IBAN saisi par le client                                                   |
+| Todo                                                                       | Ce qui reste                                                                                                                  |
+| -------------------------------------------------------------------------- | ----------------------------------------------------------------------------------------------------------------------------- |
+| [`todo-mandat-restes-de-la-frappe.md`](todo-mandat-restes-de-la-frappe.md) | 🟡 l'amendement d'un mandat actif, différé jusqu'à la réponse de la banque                                                    |
+| [`todo-mandat-core-contre-b2b.md`](todo-mandat-core-contre-b2b.md)         | 🔴 libellé bancaire du mandat interentreprises, « 13 mois », second débit d'un ponctuel, questions à la banque                |
+| [`todo-rib-client-transmission.md`](todo-rib-client-transmission.md)       | 🔴 sécurité de la transmission de l'IBAN saisi par le client                                                                  |
+| [`todo-rejets-bancaires.md`](todo-rejets-bancaires.md)                     | 🔴 les rejets et contestations d'un prélèvement déposé : rien ne revient aujourd'hui, une commande rejetée reste « prélevée » |
 
 > **Fusion du 2026-09-12.** Trois documents se partageaient le prélèvement — le
 > socle Stripe, la conception directe, et le format du fichier. Ils se

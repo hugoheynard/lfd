@@ -12,6 +12,7 @@ function debits() {
     orders: [order("c_port", { placedAt: new Date("2026-08-10T08:00:00.000Z") }), order("c_port")],
     follows: [],
     mandates: [mandate("c_port")],
+    collectionForms: new Map(),
     consumedMandates: new Set(),
     companyNames: new Map([["c_port", "Boulangerie du Port"]]),
     liveSchemes: [],

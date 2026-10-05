@@ -19,33 +19,38 @@ export class PrismaBillableOrdersReader extends BillableOrdersReader {
   }
 
   async billableBetween(from: Date, to: Date): Promise<readonly BillableCompany[]> {
+    // Par (société, payeur copié), puis replié sur le PAYEUR en mémoire :
+    // `groupBy` ne sait pas grouper sur `COALESCE(billed_company_id, company_id)`.
+    // ⚠️ Une commande d'avant S4 (payeur nul) reste sur sa société : cet aperçu
+    // ne résout pas les suivis datés, le lot figé le fait (`billedPayerOf`).
     const rows = await this.prisma.order.groupBy({
-      by: ["companyId"],
+      by: ["companyId", "billedCompanyId"],
       where: billableOrderWhere(from, to),
       _sum: { totalCents: true },
       _count: { _all: true },
     });
+    const byPayer = new Map<string, { orderCount: number; totalCents: number }>();
+    for (const row of rows) {
+      const payerId = row.billedCompanyId ?? row.companyId;
+      if (payerId === null) {
+        continue;
+      }
+      const sum = byPayer.get(payerId) ?? { orderCount: 0, totalCents: 0 };
+      byPayer.set(payerId, {
+        orderCount: sum.orderCount + row._count._all,
+        totalCents: sum.totalCents + (row._sum.totalCents ?? 0),
+      });
+    }
 
     const companies = await this.prisma.company.findMany({
-      where: { id: { in: rows.flatMap((row) => (row.companyId === null ? [] : [row.companyId])) } },
+      where: { id: { in: [...byPayer.keys()] } },
       select: { id: true, raisonSociale: true },
     });
     const nameOf = new Map(companies.map((company) => [company.id, company.raisonSociale]));
 
-    return rows.flatMap((row) => {
-      const companyId = row.companyId;
-      const companyName = companyId === null ? undefined : nameOf.get(companyId);
-      if (companyId === null || companyName === undefined) {
-        return [];
-      }
-      return [
-        {
-          companyId,
-          companyName,
-          orderCount: row._count._all,
-          totalCents: row._sum.totalCents ?? 0,
-        },
-      ];
+    return [...byPayer.entries()].flatMap(([companyId, sum]) => {
+      const companyName = nameOf.get(companyId);
+      return companyName === undefined ? [] : [{ companyId, companyName, ...sum }];
     });
   }
 }

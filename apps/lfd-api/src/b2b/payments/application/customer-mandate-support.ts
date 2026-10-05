@@ -14,7 +14,11 @@ import {
   CompanyNotFoundForMandateError,
 } from "../domain/errors/mandate-errors.js";
 import type { CompanyBankAccountRepository } from "../domain/ports/company-bank-account.repository.js";
+import type { MandateDebtorReader } from "../domain/ports/mandate-debtor.reader.js";
 import type { PaymentMandateRepository } from "../domain/payment-mandate.repository.js";
+import type { MandateDebtorSnapshot, PaymentMandate } from "../domain/entities/payment-mandate.js";
+import { MandateAccountChangedError } from "../domain/errors/sub-account-mandate-errors.js";
+import type { Clock } from "../../../platform/time/clock.js";
 
 /**
  * Le mandat d'un client, **composé une seule fois pour deux gestes**.
@@ -34,6 +38,9 @@ export interface CustomerMandateDeps {
   readonly creditors: CreditorReader;
   readonly logos: LegalEntityLogoReader;
   readonly store: DocumentStore;
+  /** Le débiteur et le compte RÉSOLUS — la société du principal pour un site (§2.1 ter). */
+  readonly debtors: MandateDebtorReader;
+  readonly clock: Clock;
 }
 
 export interface CustomerMandateDocument {
@@ -58,13 +65,16 @@ export async function buildCustomerMandate(
   deps: CustomerMandateDeps,
   companyId: string,
 ): Promise<CustomerMandateDocument> {
-  const account = await deps.accounts.findByCompany(companyId);
+  // 🔴 Le compte et le débiteur RÉSOLUS (plan-sous-comptes §2.1 ter) : un
+  // site qui suit `billing` imprime la société du principal, et le RIB de son
+  // principal tant qu'il n'a pas le sien.
+  const resolved = await deps.debtors.resolve(companyId, deps.clock.now());
+  if (resolved === null) {
+    throw new CompanyNotFoundForMandateError(companyId);
+  }
+  const account = await deps.accounts.findByCompany(resolved.accountCompanyId);
   if (account === null) {
     throw new CompanyBankAccountNotFoundError(companyId);
-  }
-  const holder = await deps.mandates.findHolder(companyId);
-  if (holder === null) {
-    throw new CompanyNotFoundForMandateError(companyId);
   }
 
   const creditor = await deps.creditors.soleIssuer();
@@ -82,6 +92,7 @@ export async function buildCustomerMandate(
   const issued = await deps.mandates.findAwaitingProof(companyId);
   const printable = issued !== null && issued.status === "draft" ? issued : null;
   const reference = printable === null ? null : printable.toSnapshot().reference;
+  const debtor = printableDebtor(printable, account.id) ?? resolved.debtor;
 
   // 🔴 La forme d'un brouillon est la SIENNE, figée à la frappe (objection 2 du
   // plan `plan-mandat-deux-schemas.md`) : l'entité peut être passée à un autre
@@ -98,8 +109,8 @@ export async function buildCustomerMandate(
     creditor,
     logo,
     {
-      companyName: holder.companyName,
-      siren: holder.siren,
+      companyName: debtor.name,
+      siren: debtor.siren,
       holder: account.account.holder,
       holderLegalForm: account.account.holderLegalForm,
       addressLine1: address.line1,
@@ -123,6 +134,27 @@ export async function buildCustomerMandate(
     creditorIdentifier: creditor.ics,
     creditorName: creditor.name,
   };
+}
+
+/**
+ * Le débiteur que le BROUILLON a figé à sa frappe, ou `null` (aucun brouillon,
+ * ou brouillon d'avant S4 : le débiteur résolu aujourd'hui s'imprime).
+ *
+ * @throws {MandateAccountChangedError} le brouillon nomme un autre compte que
+ *   celui qu'on imprimerait — la forme du site a changé depuis la frappe.
+ */
+function printableDebtor(
+  printable: PaymentMandate | null,
+  accountId: string,
+): MandateDebtorSnapshot | null {
+  if (printable === null) {
+    return null;
+  }
+  const snapshot = printable.toSnapshot();
+  if (snapshot.bankAccountId !== null && snapshot.bankAccountId !== accountId) {
+    throw new MandateAccountChangedError(snapshot.reference);
+  }
+  return snapshot.debtor;
 }
 
 /**

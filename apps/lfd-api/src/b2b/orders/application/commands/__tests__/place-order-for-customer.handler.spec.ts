@@ -1,4 +1,5 @@
 import { RecordingPublisher } from "../../../../../platform/events/__tests__/recording-publisher.js";
+import { FixedOrderPayers, ownPayers } from "./payer-doubles.js";
 import { InMemoryProductCatalog } from "../../../../catalog/infrastructure/in-memory-product-catalog.js";
 import type { AdminPlaceOrderPayload, PickupAddressView } from "@lfd/contracts";
 
@@ -311,6 +312,7 @@ function handler(
     readonly events?: RecordingPublisher;
     readonly clientBaseUrl?: string | null;
     readonly delivery?: DeliveryAvailabilityView;
+    readonly payers?: FixedOrderPayers;
   } = {},
 ): PlaceOrderForCustomerHandler {
   // `in` et non `??` : `null` est une valeur que les tests passent EXPRÈS, et
@@ -350,6 +352,7 @@ function handler(
       noLateFee,
       new CustomerAudiences(guardDouble),
       new OrderOperations(noSaleOperations(PRICED_AT)),
+      options.payers ?? ownPayers(),
     ),
     repo(sink),
     options.payments ?? payments(),
@@ -597,6 +600,7 @@ describe("PlaceOrderForCustomerHandler — le règlement", () => {
         noLateFee,
         new CustomerAudiences(guard("orders")),
         new OrderOperations(noSaleOperations(PRICED_AT)),
+        ownPayers(),
       ),
       repo(sink),
       payments(intents),
@@ -613,5 +617,47 @@ describe("PlaceOrderForCustomerHandler — le règlement", () => {
     expect(intents.intent).toBeNull();
     expect(sink.placed?.paymentStatus).toBe("not_required");
     expect(result.paymentUrl).toBeUndefined();
+  });
+});
+
+/**
+ * S4 (`plan-sous-comptes.md` §2.3, T44) : la saisie staff copie le payeur et
+ * lit les termes du PAYEUR, comme le client — c'est la même règle
+ * (`accountStanding`), écrite une fois.
+ */
+describe("PlaceOrderForCustomerHandler — un site facturé à son principal", () => {
+  const payers = new FixedOrderPayers(
+    new Map([
+      [
+        "c1",
+        {
+          companyId: "c1",
+          companyName: "Chalet Edelweiss",
+          groupWithoutDelivery: false,
+          billingFollow: { payerId: "alpes", payerName: "Alpes Chalets", payerStatus: "active" },
+        },
+      ],
+    ]),
+  );
+
+  it("passe au compte sur le crédit du principal, et le copie sur la commande", async () => {
+    const sink = { placed: null as OrderToPlace | null };
+    const asked: string[] = [];
+    const payerGuard: OrderGuardReader = {
+      roleOf: () => Promise.resolve("orders"),
+      companyStatusOf: () => Promise.resolve("active"),
+      settlesOnAccount: (companyId) => {
+        asked.push(companyId);
+        return Promise.resolve(companyId === "alpes" ? "granted" : "none");
+      },
+    };
+
+    await handler(payerGuard, sink, { payers }).execute(
+      new PlaceOrderForCustomerCommand("staff_1", payload({ settlement: "account" })),
+    );
+
+    expect(sink.placed?.billedCompanyId).toBe("alpes");
+    expect(sink.placed?.paymentStatus).toBe("not_required");
+    expect(asked).toEqual(["alpes"]);
   });
 });

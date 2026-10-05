@@ -39,6 +39,7 @@ function subscribers(email: string | null = "camille@example.test") {
     stripePaymentIntentId: "pi_1",
     clientele: "public",
     loyaltyVoucherId: null,
+    billedCustomer: null,
   });
   const recipients = new OneRecipientReader(email);
   const work = new ImmediateWork();

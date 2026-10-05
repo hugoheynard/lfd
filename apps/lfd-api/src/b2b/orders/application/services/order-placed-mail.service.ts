@@ -79,7 +79,7 @@ export class OrderPlacedMail {
         // La feuille PROJETÉE, pas la vue : ni SKU, ni tarif d'entrée, ni nom
         // d'étage tarifaire. Le courriel n'a rien à masquer parce qu'il n'a rien
         // reçu de plus.
-        sheet: clientSheetOf(owned.view),
+        sheet: clientSheetOf(owned.view, owned.billedCustomer),
         handoverToken: token,
         // Vide quand l'origine n'est pas configurée : le gabarit omet alors le
         // bouton plutôt que de poser un lien relatif, inerte dans une boîte mail.

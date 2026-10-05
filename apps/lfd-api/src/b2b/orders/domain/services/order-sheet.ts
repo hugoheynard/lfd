@@ -237,12 +237,22 @@ function clientCustomerOf(order: OrderView): SheetCustomer {
   return { tradeName: order.customerLabel, legalName: order.customerLabel };
 }
 
-/** La feuille du client : son engagement, dans ses mots. */
-export function clientSheetOf(order: OrderView): ClientSheet {
+/**
+ * La feuille du client : son engagement, dans ses mots.
+ *
+ * `billedCustomer` : quand un AUTRE a réglé — un site facturé à son principal
+ * (`plan-sous-comptes.md` §2.3, §3) —, le bon porte le nom du site et la
+ * raison sociale du PAYEUR copié à la passation : c'est la mention légale.
+ * `null`, et c'est le cas de toute commande d'une société qui paie seule.
+ */
+export function clientSheetOf(
+  order: OrderView,
+  billedCustomer: SheetCustomer | null = null,
+): ClientSheet {
   return {
     ...commonOf(order),
     audience: "client",
-    customer: clientCustomerOf(order),
+    customer: billedCustomer ?? clientCustomerOf(order),
     lines: order.lines.map(clientLineOf),
     money: moneyOf(order),
   };

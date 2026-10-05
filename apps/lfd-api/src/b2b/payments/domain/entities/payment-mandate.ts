@@ -52,6 +52,26 @@ export interface MandateSnapshot {
    */
   readonly scheme: SepaScheme;
   readonly paymentType: MandatePaymentType;
+  /**
+   * Le compte que ce mandat débite (§2.1 ter, T8). `null` pour un mandat
+   * d'avant S4 : il débite le RIB de sa société.
+   */
+  readonly bankAccountId: string | null;
+  /** `null` pour un mandat d'avant S4 : son débiteur est sa société. */
+  readonly debtor: MandateDebtorSnapshot | null;
+}
+
+/**
+ * Le **débiteur figé à la frappe** (`plan-sous-comptes.md` §2.1 ter, T9) : les
+ * mentions obligatoires du mandat, telles qu'elles étaient ce jour-là. Pour un
+ * site qui suit `billing`, c'est la société du principal ; sinon la société
+ * elle-même. Un changement d'identité ne réécrit pas un papier signé.
+ */
+export interface MandateDebtorSnapshot {
+  readonly companyId: string;
+  readonly siren: string;
+  readonly name: string;
+  readonly legalForm: string;
 }
 
 /** Un mandat prêt à être écrit : tout sauf l'identité, que la base donne. */
@@ -84,9 +104,15 @@ export function mintMandate(input: {
   readonly reference: string;
   readonly scheme: SepaScheme;
   readonly paymentType: MandatePaymentType;
+  /** Le RIB que le mandat nomme — celui du payeur, ou celui du site en « RIB propre ». */
+  readonly bankAccountId: string;
+  /** Le débiteur RÉSOLU à la frappe (§2.1 ter) — jamais la ligne nue d'un site. */
+  readonly debtor: MandateDebtorSnapshot;
 }): MandateToCreate {
   return {
     companyId: input.companyId,
+    bankAccountId: input.bankAccountId,
+    debtor: input.debtor,
     creditorId: input.creditorId,
     reference: input.reference,
     scheme: input.scheme,
@@ -181,6 +207,16 @@ export class PaymentMandate {
 
   get status(): MandateStatus {
     return this.statusValue;
+  }
+
+  /** Le compte que ce mandat débite, `null` pour un mandat d'avant S4. */
+  get bankAccountId(): string | null {
+    return this.identity.bankAccountId;
+  }
+
+  /** La société débitrice — figée à la frappe, sa propre société avant S4. */
+  get debtorCompanyId(): string {
+    return this.identity.debtor?.companyId ?? this.companyId;
   }
 
   /** Peut-on prélever sur ce mandat ? Un seul état l'autorise. */

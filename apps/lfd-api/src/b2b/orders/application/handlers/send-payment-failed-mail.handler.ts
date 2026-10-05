@@ -79,7 +79,7 @@ export class SendPaymentFailedMail implements IEventHandler<OrderPaymentFailedEv
       to: recipient.email,
       template: "customer.payment-failed",
       data: {
-        sheet: clientSheetOf(owned.view),
+        sheet: clientSheetOf(owned.view, owned.billedCustomer),
         // Le règlement se reprend sur l'écran de la commande. Vide quand
         // l'origine n'est pas configurée : le gabarit omet alors le bouton
         // plutôt que de poser un lien inerte dans une boîte mail.

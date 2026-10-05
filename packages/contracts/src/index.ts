@@ -111,6 +111,7 @@ export type {
   CompanyBankAccountSectionView,
   CompanyBankAccountView,
   CustomerBankAccountSectionView,
+  CustomerBilledToView,
   CustomerBankAccountView,
   CustomerMandateOptionsSectionView,
   CustomerMandateOptionsView,
@@ -1682,6 +1683,8 @@ export {
   attachToParentPayloadSchema,
   followAspectPayloadSchema,
   groupWithoutDeliveryPayloadSchema,
+  COLLECTION_FORMS,
+  collectionFormPayloadSchema,
 } from "./sub-accounts.js";
 export type {
   CompanyFollowAspect,
@@ -1696,4 +1699,8 @@ export type {
   AttachToParentPayload,
   FollowAspectPayload,
   GroupWithoutDeliveryPayload,
+  CollectionForm,
+  CollectionFormPayload,
+  DetachedUnpaidOrderView,
+  DetachedUnpaidOrdersView,
 } from "./sub-accounts.js";

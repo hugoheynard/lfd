@@ -3,6 +3,7 @@ import { inject, Injectable } from '@angular/core';
 import { firstValueFrom } from 'rxjs';
 
 import type {
+  CollectionForm,
   CompanyFollowAspect,
   CompanyHierarchyView,
   CreatedIdResponse,
@@ -80,6 +81,15 @@ export class AdminCompanyHierarchyService {
     await firstValueFrom(
       this.http.post<void>(`${this.base(companyId)}/group-without-delivery`, { enabled }),
     );
+  }
+
+  /**
+   * La forme de prélèvement d'un site qui suit `billing` (§2.1 ter) : décision
+   * datée, à l'instant du geste. Le serveur refuse (`409`) un compte qui paie
+   * seul ; reposer la forme en vigueur n'écrit rien.
+   */
+  async setCollectionForm(companyId: string, form: CollectionForm): Promise<void> {
+    await firstValueFrom(this.http.put<void>(`${this.base(companyId)}/collection-form`, { form }));
   }
 
   private base(companyId: string): string {

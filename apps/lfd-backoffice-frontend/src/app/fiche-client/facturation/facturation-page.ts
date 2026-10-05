@@ -30,6 +30,7 @@ import { AdminOrdersService } from '../../commandes/orders.service';
 import { NotifyService } from '../../notify.service';
 import { periodCsv, periodFileName } from './billing-csv';
 import { CycleStatementCard } from './cycle-statement-card/cycle-statement-card';
+import { DetachedUnpaidCard } from '../detached-unpaid-card/detached-unpaid-card';
 import {
   groupByYear,
   ledgerRows,
@@ -66,6 +67,7 @@ const ORDERS_WINDOW = 200;
   changeDetection: ChangeDetectionStrategy.OnPush,
   imports: [
     CycleStatementCard,
+    DetachedUnpaidCard,
     FoldBadgeComponent,
     FoldButtonComponent,
     FoldCalloutComponent,

@@ -4,6 +4,7 @@ import { CompanyNotFoundForMandateError } from "../../../domain/errors/mandate-e
 import { MandateMentionsMissingError } from "../../../domain/errors/mint-blocker-errors.js";
 import type { MandateHolder } from "../../../domain/payment-mandate.repository.js";
 import {
+  FixedDebtors,
   bankAccountWithoutLegalForm,
   CREDITOR,
   FixedCreditors,
@@ -36,13 +37,14 @@ function world(setup: {
   const accounts = new InMemoryBankAccounts(steps);
   accounts.stored = (setup.withAccount ?? true) ? bankAccountWithoutLegalForm() : null;
   const creditors = new FixedCreditors(setup.issuer === undefined ? CREDITOR : setup.issuer);
+  const debtors = new FixedDebtors(mandates);
   return {
     read: () =>
-      new GetMandateMintBlockersHandler(mandates, accounts, creditors)
+      new GetMandateMintBlockersHandler(mandates, accounts, creditors, debtors, new FixedClock(NOW))
         .execute(new GetMandateMintBlockersQuery("cmp_1"))
         .then((view) => view.blockers),
     issuerScheme: () =>
-      new GetMandateMintBlockersHandler(mandates, accounts, creditors)
+      new GetMandateMintBlockersHandler(mandates, accounts, creditors, debtors, new FixedClock(NOW))
         .execute(new GetMandateMintBlockersQuery("cmp_1"))
         .then((view) => view.issuerScheme),
     mint: () =>
@@ -55,6 +57,7 @@ function world(setup: {
         new StepPublisher(steps),
         new StepUnitOfWork(steps),
         new RecordingFirstMandateLedger(),
+        debtors,
       ).execute(new MintMandateCommand("cmp_1")),
     mandates,
   };

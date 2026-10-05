@@ -1,3 +1,4 @@
+import type { CollectionFormName } from "../../../domain/value-objects/collection-form.js";
 import type { LegalEntityView } from "@lfd/contracts";
 
 import { IdGenerator } from "../../../../../platform/id/id-generator.js";
@@ -73,6 +74,10 @@ export class FakeCandidates extends CollectionCandidatesReader {
   }
   billingFollowsOf(): Promise<readonly BillingFollow[]> {
     return Promise.resolve(this.follows);
+  }
+  forms = new Map<string, CollectionFormName>();
+  collectionFormsAt(): Promise<ReadonlyMap<string, CollectionFormName>> {
+    return Promise.resolve(this.forms);
   }
   companyNames(ids: readonly string[]): Promise<ReadonlyMap<string, string>> {
     return Promise.resolve(new Map(ids.map((id) => [id, `Société ${id}`])));

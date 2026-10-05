@@ -1,4 +1,9 @@
 import { RecordingPublisher } from "../../../../../platform/events/__tests__/recording-publisher.js";
+import { FixedOrderPayers, ownPayers } from "./payer-doubles.js";
+import {
+  GroupAccountOrderRefusedError,
+  OrderPayerNotActiveError,
+} from "../../../domain/errors/order-payer-errors.js";
 import { InMemoryProductCatalog } from "../../../../catalog/infrastructure/in-memory-product-catalog.js";
 import type {
   BillingAddressPayload,
@@ -402,6 +407,7 @@ function drafting(
     readonly delivery?: DeliveryAvailabilityView;
     readonly sale?: SaleOperations;
     readonly book?: DeliveryDefaultsReader;
+    readonly payers?: FixedOrderPayers;
   } = {},
 ): OrderDrafting {
   return new OrderDrafting(
@@ -436,6 +442,7 @@ function drafting(
     noLateFee,
     new CustomerAudiences(companiesAt(audience.status === undefined ? "active" : audience.status)),
     new OrderOperations(audience.sale ?? noSaleOperations(PRICED_AT)),
+    audience.payers ?? ownPayers(),
   );
 }
 
@@ -1558,5 +1565,129 @@ describe("PlaceOrderHandler — créneau ou échéance", () => {
     const book = new BookWithDeadlines({ windowMode: "deadline", deadlines: ["06:00", "11:00"] });
 
     await expect(place(undefined, { book })).rejects.toThrow(DeliveryWindowRequiredError);
+  });
+});
+
+/**
+ * S4 (`plan-sous-comptes.md` §2.3, §2.4, T44) : un site qui suit `billing`
+ * commande au compte de son PRINCIPAL. Le payeur est copié sur la commande,
+ * et ce sont les termes du payeur qui décident du règlement au compte.
+ */
+describe("PlaceOrderHandler — un site facturé à son principal", () => {
+  const SITE = {
+    companyId: "chalet",
+    companyName: "Chalet Edelweiss",
+    groupWithoutDelivery: false,
+  } as const;
+
+  function siteHandler(
+    payers: FixedOrderPayers,
+    sink: { placed: OrderToPlace | null },
+    asked: string[],
+  ): PlaceOrderHandler {
+    // Seul le principal a un crédit : le site n'a rien d'accordé à son nom.
+    const payerGuard: OrderGuardReader = {
+      roleOf: () => Promise.resolve("orders"),
+      companyStatusOf: () => Promise.resolve("active"),
+      settlesOnAccount: (companyId) => {
+        asked.push(companyId);
+        return Promise.resolve(companyId === "alpes" ? "granted" : "none");
+      },
+    };
+    return new PlaceOrderHandler(
+      payerGuard,
+      drafting(pickups(LABO_POINT), zones(), versionsAt(CURRENT_VERSION), { payers }),
+      capturingRepo(sink),
+      payments({ intent: null }),
+      events(),
+      noWaivers,
+      new FixedClock(PRICED_AT),
+      freeKeys,
+      noReader,
+      directWork,
+      new FixedVoucherQuotes(),
+      new RecordingRedemption(),
+    );
+  }
+
+  function following(status: OrderCompanyStatus): FixedOrderPayers {
+    return new FixedOrderPayers(
+      new Map([
+        [
+          "chalet",
+          {
+            ...SITE,
+            billingFollow: {
+              payerId: "alpes",
+              payerName: "Alpes Chalets Privés",
+              payerStatus: status,
+            },
+          },
+        ],
+      ]),
+    );
+  }
+
+  it("copie le principal sur la commande et lit SES termes pour le compte", async () => {
+    const sink = { placed: null as OrderToPlace | null };
+    const asked: string[] = [];
+    const payers = following("active");
+
+    await siteHandler(payers, sink, asked).execute(
+      new PlaceOrderCommand("u1", payload({ settlement: "account" }), "chalet"),
+    );
+
+    expect(sink.placed?.companyId).toBe("chalet");
+    expect(sink.placed?.billedCompanyId).toBe("alpes");
+    expect(sink.placed?.paymentStatus).toBe("not_required");
+    expect(asked).toEqual(["alpes"]);
+    // Le payeur est lu à l'instant de la passation, pas à une date choisie par l'appelant.
+    expect(payers.asked).toEqual([{ companyId: "chalet", at: PRICED_AT }]);
+  });
+
+  it("copie la société elle-même quand elle paie seule", async () => {
+    const sink = { placed: null as OrderToPlace | null };
+
+    await siteHandler(ownPayers(), sink, []).execute(
+      new PlaceOrderCommand("u1", payload({ settlement: "card" }), "chalet"),
+    );
+
+    expect(sink.placed?.billedCompanyId).toBe("chalet");
+  });
+
+  it("refuse un site dont le principal est suspendu, en le nommant, sans rien écrire (Q4)", async () => {
+    const sink = { placed: null as OrderToPlace | null };
+
+    const refusal = siteHandler(following("suspended"), sink, []).execute(
+      new PlaceOrderCommand("u1", payload({ settlement: "account" }), "chalet"),
+    );
+
+    await expect(refusal).rejects.toBeInstanceOf(OrderPayerNotActiveError);
+    await expect(refusal).rejects.toThrow(/Alpes Chalets Privés/u);
+    expect(sink.placed).toBeNull();
+  });
+
+  it("refuse une commande au nom d'un compte de groupe sans livraison", async () => {
+    const sink = { placed: null as OrderToPlace | null };
+    const group = new FixedOrderPayers(
+      new Map([
+        [
+          "cimes",
+          {
+            companyId: "cimes",
+            companyName: "Groupe Hôtelier des Cimes",
+            groupWithoutDelivery: true,
+            billingFollow: null,
+          },
+        ],
+      ]),
+    );
+
+    const refusal = siteHandler(group, sink, []).execute(
+      new PlaceOrderCommand("u1", payload(), "cimes"),
+    );
+
+    await expect(refusal).rejects.toBeInstanceOf(GroupAccountOrderRefusedError);
+    expect(sink.placed).toBeNull();
   });
 });

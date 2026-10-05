@@ -294,6 +294,10 @@ model CompanyBankAccount {
   createdAt DateTime @default(now()) @map("created_at")
   updatedAt DateTime @updatedAt @map("updated_at")
 
+  /// Les mandats qui débitent ce compte — ceux de la société, et ceux de ses
+  /// sites qui gardent son RIB (§2.1 ter).
+  mandates PaymentMandate[]
+
   @@map("company_bank_accounts")
   @@schema("public")
 }
@@ -312,7 +316,24 @@ model PaymentMandate {
   id String @id @default(cuid())
 
   companyId String  @map("company_id")
-  company   Company @relation(fields: [companyId], references: [id], onDelete: Cascade)
+  company   Company @relation("MandateCompany", fields: [companyId], references: [id], onDelete: Cascade)
+
+  /// Le compte que ce mandat débite (`plan-sous-comptes.md` §2.1 ter, T8) —
+  /// posé à la frappe. Celui du principal pour un site qui garde son RIB,
+  /// celui du site pour un « RIB propre ». `null` = mandat d'avant S4 : il
+  /// débite le RIB de sa société, comme hier.
+  bankAccountId String?             @map("bank_account_id")
+  bankAccount   CompanyBankAccount? @relation(fields: [bankAccountId], references: [id], onDelete: Restrict)
+
+  /// Le DÉBITEUR figé à la frappe (§2.1 ter, T9) : la société du principal pour
+  /// un site qui suit `billing`, la société elle-même sinon. Un changement
+  /// d'identité ne réécrit pas un mandat signé — il en demande un nouveau.
+  /// Tous `null` pour un mandat d'avant S4 : son débiteur est sa société.
+  debtorCompanyId String?  @map("debtor_company_id")
+  debtorCompany   Company? @relation("MandateDebtor", fields: [debtorCompanyId], references: [id], onDelete: Restrict)
+  debtorSiren     String?  @map("debtor_siren")
+  debtorName      String?  @map("debtor_name")
+  debtorLegalForm String?  @map("debtor_legal_form")
 
   // Colonnes MORTES depuis le 2026-09-19 : vestiges des mandats Stripe, qui
   // n'existent plus (aucun en production). Ni lues ni écrites ; leur
@@ -380,6 +401,7 @@ model PaymentMandate {
   // Le `pain.008` écrit cette date en `DtOfSgntr` ; sans la contrainte, un
   // actif écrit par Prisma direct l'obligerait à en inventer une.
   @@index([companyId, status])
+  @@index([debtorCompanyId])
   @@map("payment_mandates")
   @@schema("public")
 }

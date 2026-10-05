@@ -32,6 +32,11 @@ import {
 } from "../../domain/ports/bank-account-guard.reader.js";
 import { CompanyBankAccountRepository } from "../../domain/ports/company-bank-account.repository.js";
 import { CustomerMandateGate } from "../../domain/ports/customer-mandate-gate.js";
+import {
+  MandateDebtorReader,
+  type BilledTo,
+  type ResolvedMandateDebtor,
+} from "../../domain/ports/mandate-debtor.reader.js";
 import { STRICT_JOURNAL_FACTS } from "../../../../platform/journal/__tests__/strict-journal-facts.js";
 
 /**
@@ -112,6 +117,8 @@ export function mandate(overrides: Partial<MandateSnapshot> = {}): PaymentMandat
     proofStorageKey: null,
     proofFileName: null,
     creditorId: "ent_1",
+    bankAccountId: null,
+    debtor: null,
     ...overrides,
   });
 }
@@ -229,6 +236,44 @@ export class InMemoryMandates extends PaymentMandateRepository {
 
   findHolder(): Promise<MandateHolder | null> {
     return Promise.resolve(this.holder);
+  }
+}
+
+/**
+ * Le débiteur résolu, doublé à la main. Par défaut, la société paie seule et
+ * son débiteur est le détenteur que `InMemoryMandates` déclare — c'est ce que
+ * toutes les suites d'avant S4 supposaient. `billedTo` en fait un site qui
+ * suit `billing`, `ownIban` un site en « RIB propre ».
+ */
+export class FixedDebtors extends MandateDebtorReader {
+  billedTo: BilledTo | null = null;
+  ownIban = false;
+  /** Les mentions du payeur quand `billedTo` est posé. */
+  payerSiren = "552100554";
+
+  constructor(private readonly mandates: Pick<PaymentMandateRepository, "findHolder">) {
+    super();
+  }
+
+  async resolve(companyId: string): Promise<ResolvedMandateDebtor | null> {
+    const holder = await this.mandates.findHolder(companyId);
+    if (holder === null) {
+      return null;
+    }
+    const payer = this.billedTo;
+    return {
+      debtor:
+        payer === null
+          ? { companyId, siren: holder.siren, name: holder.companyName, legalForm: "SARL" }
+          : {
+              companyId: payer.companyId,
+              siren: this.payerSiren,
+              name: payer.name,
+              legalForm: "SAS",
+            },
+      accountCompanyId: payer === null || this.ownIban ? companyId : payer.companyId,
+      billedTo: payer,
+    };
   }
 }
 

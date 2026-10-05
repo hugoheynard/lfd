@@ -1,0 +1,44 @@
+@if (loadError()) {
+  <fold-callout variant="alert" data-detached-unpaid-error>
+    Impossible de lire les commandes de sites détachés restant à régler.
+    <button foldButton size="sm" emphasis="soft" (click)="retry()">Réessayer</button>
+  </fold-callout>
+} @else if (orders().length > 0) {
+  <fold-card data-detached-unpaid>
+    <fold-element-title
+      cardHeader
+      variant="title"
+      icon="receipt"
+      title="Commandes restant à régler"
+      [subtitle]="
+        orders().length +
+        ' commande' +
+        (orders().length > 1 ? 's' : '') +
+        ' · ' +
+        euros(totalCents()) +
+        ' TTC'
+      "
+    />
+    <div class="body">
+      <fold-callout appearance="inset" variant="warning">
+        Ces commandes ont été passées par un site depuis détaché de son principal. Elles ne seront
+        pas prélevées sur le compte du principal&nbsp;; à régler par lien de paiement ou à la main.
+      </fold-callout>
+      <ul class="orders">
+        @for (order of orders(); track order.orderId) {
+          <li [attr.data-detached-unpaid-order]="order.orderId">
+            <a [routerLink]="['/comptes-clients', order.site.id, 'commandes', order.orderId]">{{
+              order.orderNumber
+            }}</a>
+            — {{ day(order.placedAt) }} · {{ order.site.enseigne }}, réglée alors par
+            <a [routerLink]="['/comptes-clients', order.payer.id]">{{ order.payer.enseigne }}</a>
+            · <strong class="amount">{{ euros(order.totalCents) }}</strong>
+          </li>
+        }
+      </ul>
+      <p class="total" data-detached-unpaid-total>
+        Total restant à régler&nbsp;: <strong class="amount">{{ euros(totalCents()) }}</strong> TTC
+      </p>
+    </div>
+  </fold-card>
+}

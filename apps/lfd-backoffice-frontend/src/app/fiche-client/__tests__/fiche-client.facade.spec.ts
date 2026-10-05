@@ -42,7 +42,13 @@ const COMPANY: AdminCompanyDetail = {
   activatedAt: null,
   warnings: [],
   vatNumberRequired: true,
-  hierarchy: { parent: null, subAccounts: [], follows: [], groupWithoutDelivery: false },
+  hierarchy: {
+    parent: null,
+    subAccounts: [],
+    follows: [],
+    groupWithoutDelivery: false,
+    collectionForm: null,
+  },
   addresses: { billing: null, deliveries: [] },
   contacts: [],
   fulfillmentPreference: {

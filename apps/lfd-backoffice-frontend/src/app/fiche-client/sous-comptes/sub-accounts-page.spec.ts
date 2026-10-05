@@ -56,6 +56,7 @@ function principal(hierarchy: Partial<CompanyHierarchyView> = {}): AdminCompanyD
       subAccounts: [],
       follows: [],
       groupWithoutDelivery: false,
+      collectionForm: null,
       ...hierarchy,
     },
   };
@@ -137,6 +138,24 @@ describe('ClientSubAccountsPage', () => {
     expect(host.querySelector('[data-follow-reminder="pricing"]')?.textContent).toContain(
       'non suivi',
     );
+  });
+});
+
+describe('ClientSubAccountsPage — facturation d’un site', () => {
+  it('propose la forme de prélèvement à un site, pas à une entité qui règle seule', () => {
+    const parent = { id: 'p1', enseigne: 'Alpes Chalets', status: 'active' as const };
+    const site = principal({
+      parent,
+      follows: [{ aspect: 'billing', since: '2026-09-10T08:00:00.000Z' }],
+    });
+    expect(
+      (boot(site).nativeElement as HTMLElement).querySelector('[data-collection-form]'),
+    ).not.toBeNull();
+
+    const entity = principal({ parent, follows: [] });
+    expect(
+      (boot(entity).nativeElement as HTMLElement).querySelector('[data-collection-form]'),
+    ).toBeNull();
   });
 });
 

@@ -3,11 +3,10 @@ import type { DeliveryAddressPayload } from "@lfd/contracts";
 import { ActivateCompanyByStaffCommand } from "../../b2b/account/application/commands/activate-company.command.js";
 import { AddContactByStaffCommand } from "../../b2b/account/application/commands/add-contact-by-staff.command.js";
 import { CreateSubAccountCommand } from "../../b2b/account/application/commands/create-sub-account.command.js";
-import { GrantTermsCommand } from "../../b2b/account/application/commands/grant-terms.command.js";
 import { UpdateDeliveryAddressByStaffCommand } from "../../b2b/account/application/commands/update-delivery-address-by-staff.command.js";
 import { SetCompanyBankAccountCommand } from "../../b2b/payments/application/commands/set-company-bank-account.command.js";
 import { SetMandateOptionsCommand } from "../../b2b/payments/application/commands/set-mandate-options.command.js";
-import { CompanyStatus, DeferredTerm } from "../../platform/database/client/client.js";
+import { CompanyStatus } from "../../platform/database/client/client.js";
 import type { ClientContext } from "./client.seed.js";
 import { type NeighbourClient, seedFictiveClients } from "./neighbour-clients.seed.js";
 import { asStaff, SEED_STAFF_SUB } from "./order-placing.seed.js";
@@ -275,25 +274,21 @@ async function ensureReachable(
 }
 
 /**
- * Le terme mensuel, puis la porte.
+ * La porte du site.
  *
- * ⚠️ **Le terme est accordé AU CHALET**, et c'est un contournement daté : avant
- * S4, la passation lit les termes de la société de la commande
- * (`prisma-order-guard.reader.ts`, `settlesOnAccount`), pas ceux du payeur
- * (vérifié le 2026-10-05). Sans lui, chaque commande d'un chalet partirait en
- * carte. S4 le rendra inutile.
+ * Aucun terme n'est accordé AU CHALET : depuis S4, la passation lit les
+ * termes du PAYEUR (`order-settlement.ts`, `accountStanding`), et le chalet
+ * commande au compte de son principal. Le contournement daté qui lui
+ * accordait le mensuel a été retiré au lot S4 (plan-sous-comptes, T44).
  */
 async function activateSite({ prisma, commands, now }: ClientContext, companyId: string) {
   const company = await prisma.company.findUnique({
     where: { id: companyId },
-    select: { status: true, grantedTerms: true },
+    select: { status: true },
   });
-  await asStaff(now, async () => {
-    if (company?.grantedTerms.length === 0) {
-      await commands.execute(new GrantTermsCommand(companyId, [DeferredTerm.monthly]));
-    }
-    if (company?.status === CompanyStatus.pending) {
-      await commands.execute(new ActivateCompanyByStaffCommand(companyId, SEED_STAFF_SUB));
-    }
-  });
+  if (company?.status === CompanyStatus.pending) {
+    await asStaff(now, () =>
+      commands.execute(new ActivateCompanyByStaffCommand(companyId, SEED_STAFF_SUB)),
+    );
+  }
 }

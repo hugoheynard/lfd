@@ -68,6 +68,8 @@ export const ACCOUNT_FACTS = {
   parentFollowed: "company.parent_followed",
   /** Un aspect du principal cesse d'être suivi. */
   parentUnfollowed: "company.parent_unfollowed",
+  /** La forme de prélèvement d'un site, décidée à une date (S4, §2.1 ter). */
+  collectionFormSet: "company.collection_form_set",
   /** « Compte de groupe, sans livraison », coché ou décoché. */
   groupWithoutDeliverySet: "company.group_without_delivery_set",
   /** Un agent écrit l'adresse de facturation — celle qui part sur les factures. */

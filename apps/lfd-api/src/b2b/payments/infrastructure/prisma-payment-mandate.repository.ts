@@ -133,6 +133,11 @@ export class PrismaPaymentMandateRepository extends PaymentMandateRepository {
         acceptedAt: snapshot.acceptedAt,
         revokedAt: snapshot.revokedAt,
         creditorId: snapshot.creditorId,
+        bankAccountId: snapshot.bankAccountId,
+        debtorCompanyId: snapshot.debtor?.companyId ?? null,
+        debtorSiren: snapshot.debtor?.siren ?? null,
+        debtorName: snapshot.debtor?.name ?? null,
+        debtorLegalForm: snapshot.debtor?.legalForm ?? null,
         // Écrits à la création, jamais réécrits par `save` : figés.
         scheme: snapshot.scheme,
         paymentType: snapshot.paymentType,
@@ -244,5 +249,20 @@ function toSnapshot(row: MandateRow): MandateSnapshot {
     scheme: row.scheme,
     paymentType: row.paymentType,
     creditorId: row.creditorId,
+    bankAccountId: row.bankAccountId,
+    debtor: debtorOf(row),
+  };
+}
+
+/** Le débiteur figé, ou `null` pour un mandat frappé avant S4 (colonnes nulles). */
+function debtorOf(row: MandateRow): MandateSnapshot["debtor"] {
+  if (row.debtorCompanyId === null) {
+    return null;
+  }
+  return {
+    companyId: row.debtorCompanyId,
+    siren: row.debtorSiren ?? "",
+    name: row.debtorName ?? "",
+    legalForm: row.debtorLegalForm ?? "",
   };
 }

@@ -11,18 +11,32 @@ import type {
   PaymentMandateRepository,
 } from "../domain/payment-mandate.repository.js";
 import type { CompanyBankAccountRepository } from "../domain/ports/company-bank-account.repository.js";
+import type {
+  MandateDebtorReader,
+  ResolvedMandateDebtor,
+} from "../domain/ports/mandate-debtor.reader.js";
+import type { Clock } from "../../../platform/time/clock.js";
 import { type MintBlocker, mintBlockersOf } from "../domain/services/mint-blockers.js";
 
-/** Les trois lectures qu'il faut pour juger une frappe. */
+/** Les lectures qu'il faut pour juger une frappe, et l'instant auquel on la juge. */
 export interface MintReadinessDeps {
   readonly mandates: PaymentMandateRepository;
   readonly accounts: CompanyBankAccountRepository;
   readonly creditors: CreditorReader;
+  readonly debtors: MandateDebtorReader;
+  readonly clock: Clock;
 }
 
 /** Ce qu'une frappe lirait, et ce qui l'empêcherait. */
 export interface MintReadiness {
+  /** La société du mandat — sa référence entre dans la RUM. */
   readonly holder: MandateHolder;
+  /**
+   * Le débiteur RÉSOLU (plan-sous-comptes §2.1 ter) : la société du principal
+   * pour un site qui suit `billing`, et le compte que le mandat débiterait.
+   */
+  readonly debtor: ResolvedMandateDebtor;
+  /** Le RIB du compte débité — celui du payeur, ou celui du site en « RIB propre ». */
   readonly account: CompanyBankAccount | null;
   /** L'émetteur unique et complet, ou `null` — absent, incomplet ou en double. */
   readonly issuer: CreditorSnapshot | null;
@@ -47,17 +61,21 @@ export async function readMintReadiness(
   companyId: string,
 ): Promise<MintReadiness> {
   const holder = await deps.mandates.findHolder(companyId);
-  if (holder === null) {
+  const debtor = await deps.debtors.resolve(companyId, deps.clock.now());
+  if (holder === null || debtor === null) {
     throw new CompanyNotFoundForMandateError(companyId);
   }
-  const account = await deps.accounts.findByCompany(companyId);
+  // 🔴 L'identité RÉSOLUE, pas la ligne de la société (T9) : un site qui suit
+  // `billing` n'a pas de SIREN, et son mandat nomme celui du principal. Lue
+  // ici, elle l'est par la frappe ET par les deux écrans qui l'annoncent.
+  const account = await deps.accounts.findByCompany(debtor.accountCompanyId);
   const issuer = await soleIssuerOrNull(deps.creditors);
   const blockers = mintBlockersOf({
     bankAccount: account?.account ?? null,
     issuerScheme: issuer?.mandateScheme ?? null,
-    debtor: holder,
+    debtor: { companyName: debtor.debtor.name, siren: debtor.debtor.siren },
   });
-  return { holder, account, issuer, blockers };
+  return { holder, debtor, account, issuer, blockers };
 }
 
 /**

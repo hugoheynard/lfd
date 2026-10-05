@@ -10,6 +10,7 @@ import {
 import { MandateMentionsMissingError } from "../../../domain/errors/mint-blocker-errors.js";
 import type { BankAccountRole } from "../../../domain/ports/bank-account-guard.reader.js";
 import {
+  FixedDebtors,
   activeMandate,
   bankAccount,
   bankAccountWithoutLegalForm,
@@ -47,6 +48,7 @@ function harness(
   }
   const events = new StepPublisher(steps);
   const ledger = new RecordingFirstMandateLedger(steps);
+  const debtors = new FixedDebtors(mandates);
   const handler = new MintMyCompanyMandateHandler(
     new FixedGuard(steps, options.role === undefined ? "owner" : options.role),
     new FixedGate(steps, options.open ?? true),
@@ -58,9 +60,10 @@ function harness(
     events,
     new StepUnitOfWork(steps),
     ledger,
+    debtors,
   );
   const run = () => handler.execute(new MintMyCompanyMandateCommand("usr_1", "cmp_1"));
-  return { steps, mandates, accounts, events, ledger, run };
+  return { steps, mandates, accounts, events, ledger, debtors, run };
 }
 
 describe("MintMyCompanyMandateHandler — le client génère son mandat", () => {

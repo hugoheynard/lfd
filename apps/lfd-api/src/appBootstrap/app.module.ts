@@ -4,6 +4,7 @@ import { AppController } from "./app.controller.js";
 import { AppService } from "./app.service.js";
 import { AccountModule } from "../b2b/account/account.module.js";
 import { PricingFollowJournalModule } from "./pricing-follow-journal.module.js";
+import { SiteMandateRevocationModule } from "./site-mandate-revocation.module.js";
 import { AlertsModule } from "../b2b/alerts/alerts.module.js";
 import { ClientNotesModule } from "../b2b/client-notes/client-notes.module.js";
 import { DeliveryZonesModule } from "../b2b/delivery-zones/delivery-zones.module.js";
@@ -164,6 +165,7 @@ import { FeatureAccessGuard } from "../b2b/feature-access/http/feature-access.gu
     IssuedMandatesModule,
     PricingAdminModule,
     PricingFollowJournalModule,
+    SiteMandateRevocationModule,
     OrderPricingModule,
     // La façade de lecture du prix. Après Orders, dont elle emprunte la recette.
     PricerModule,

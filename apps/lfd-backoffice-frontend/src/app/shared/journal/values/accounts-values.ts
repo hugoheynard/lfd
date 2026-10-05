@@ -150,6 +150,13 @@ export const FOLLOW_ASPECT = domain('aspect suivi du compte principal', {
   contacts: 'Contacts',
 });
 
+/** La forme de prélèvement d'un site (`company.collection_form_set`, S4). */
+export const COLLECTION_FORM = domain('forme de prélèvement', {
+  principal_mandate: 'Mandat du compte principal',
+  own_mandate_principal_iban: 'Mandat du site, sur le compte du principal',
+  own_iban: 'Mandat et compte du site',
+});
+
 /** Comment un sous-compte a été lié à son principal (`company.parent_attached`). */
 export const PARENT_LINK_VIA = domain('lien vers le compte principal', {
   created: 'Créé comme sous-compte',
@@ -181,6 +188,7 @@ export const ACCOUNTS_VALUES: ValueFamily = {
     SUPPORT_CHANNEL,
     FOLLOW_ASPECT,
     PARENT_LINK_VIA,
+    COLLECTION_FORM,
   ],
   strings: {
     fields: CHANGED_FIELD,

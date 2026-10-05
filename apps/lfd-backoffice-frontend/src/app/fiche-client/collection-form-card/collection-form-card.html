@@ -1,0 +1,39 @@
+<fold-card data-collection-form>
+  <fold-element-title
+    cardHeader
+    variant="title"
+    icon="banknote"
+    title="Facturation"
+    subtitle="Groupée avec le principal, ou séparée par site. Chaque choix prend effet à sa date."
+  />
+  <div class="body">
+    <fold-listbox
+      label="Forme de prélèvement"
+      placeholder="Choisir une forme"
+      [options]="options()"
+      [value]="form()"
+      [disabled]="saving()"
+      (selectionChange)="choose($event)"
+      data-collection-form-choice
+    />
+    <ul class="choices">
+      @for (choice of choices(); track choice.value) {
+        <li [attr.data-collection-form-consequence]="choice.value">
+          <strong>{{ choice.label }}</strong> — {{ choice.consequence }}
+        </li>
+      }
+    </ul>
+    @if (ownMandate()) {
+      <fold-callout variant="info" data-collection-form-debtor>
+        Le mandat du site nomme pour débiteur&nbsp;: <strong>{{ parent().enseigne }}</strong
+        >, la société du principal.
+      </fold-callout>
+    }
+    @if (form() === 'own_iban') {
+      <app-bank-account-section [companyId]="companyId()" />
+    }
+    @if (refusal(); as refusal) {
+      <fold-callout variant="alert" data-collection-form-refusal>{{ refusal }}</fold-callout>
+    }
+  </div>
+</fold-card>

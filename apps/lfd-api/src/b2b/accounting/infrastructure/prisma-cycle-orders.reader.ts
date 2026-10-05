@@ -43,7 +43,10 @@ export class PrismaCycleOrdersReader extends CycleOrdersReader {
     const rows = await this.prisma.order.findMany({
       where: {
         ...billableOrderWhere(cycle.startsAt, cycle.closesAt),
-        companyId: { in: [...companyIds] },
+        // Les commandes de ces sociétés, ET celles qu'elles paient (le payeur
+        // copié, S4) : un site détaché depuis reste sur le relevé de qui l'a
+        // réglé. Le tri par payeur est fait par le domaine (`billedPayerOf`).
+        OR: [{ companyId: { in: [...companyIds] } }, { billedCompanyId: { in: [...companyIds] } }],
       },
       orderBy: [{ createdAt: "asc" }, { orderNumber: "asc" }],
       select: {
@@ -59,6 +62,7 @@ export class PrismaCycleOrdersReader extends CycleOrdersReader {
         vatShares: true,
         totalCents: true,
         companyId: true,
+        billedCompanyId: true,
         company: { select: { raisonSociale: true, enseigne: true } },
       },
     });
@@ -75,6 +79,7 @@ export class PrismaCycleOrdersReader extends CycleOrdersReader {
       placedAt: row.createdAt,
       // Jamais vide : `billableOrderWhere` exige une société.
       companyId: row.companyId ?? "",
+      billedCompanyId: row.billedCompanyId,
       siteName: row.company === null ? "" : companyDisplayName(row.company),
       subtotalCents: row.subtotalCents,
       discountCents: row.discountCents,

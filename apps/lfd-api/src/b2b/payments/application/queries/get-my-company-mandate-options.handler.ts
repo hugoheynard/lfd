@@ -7,6 +7,8 @@ import { BankAccountGuardReader } from "../../domain/ports/bank-account-guard.re
 import { CompanyBankAccountRepository } from "../../domain/ports/company-bank-account.repository.js";
 import { CustomerMandateGate } from "../../domain/ports/customer-mandate-gate.js";
 import { ensureCustomerMandateAccess } from "../customer-mandate-access.js";
+import { MandateDebtorReader } from "../../domain/ports/mandate-debtor.reader.js";
+import { Clock } from "../../../../platform/time/clock.js";
 import { readMintReadiness } from "../mint-readiness.js";
 import { GetMyCompanyMandateOptionsQuery } from "./get-my-company-mandate-options.query.js";
 
@@ -49,6 +51,8 @@ export class GetMyCompanyMandateOptionsHandler implements IQueryHandler<
     private readonly accounts: CompanyBankAccountRepository,
     private readonly creditors: CreditorReader,
     private readonly mandates: PaymentMandateRepository,
+    private readonly debtors: MandateDebtorReader,
+    private readonly clock: Clock,
   ) {}
 
   async execute({
@@ -61,12 +65,22 @@ export class GetMyCompanyMandateOptionsHandler implements IQueryHandler<
       companyId,
     );
 
-    const { account, issuer, blockers } = await readMintReadiness(
-      { mandates: this.mandates, accounts: this.accounts, creditors: this.creditors },
+    const { account, debtor, issuer, blockers } = await readMintReadiness(
+      {
+        mandates: this.mandates,
+        accounts: this.accounts,
+        creditors: this.creditors,
+        debtors: this.debtors,
+        clock: this.clock,
+      },
       companyId,
     );
+    // 🔴 Les zones vivent sur la ligne du RIB DÉBITÉ. Un site qui garde le RIB
+    // de son principal ne les lit pas : ce sont celles du principal, et aucune
+    // route client ne résout vers lui (plan-sous-comptes §3).
+    const own = account !== null && debtor.accountCompanyId === companyId;
     return {
-      options: account === null ? null : optionsOf(account.options),
+      options: own ? optionsOf(account.options) : null,
       issuerScheme: issuer?.mandateScheme ?? null,
       mintBlockers: blockers,
     };

@@ -83,6 +83,7 @@ const ORDER: CycleOrder = {
   orderNumber: "CMD-1",
   placedAt: new Date("2026-09-12T08:00:00.000Z"),
   companyId: "c1",
+  billedCompanyId: null,
   siteName: "Boulangerie du Port",
   subtotalCents: 1_000,
   discountCents: 0,

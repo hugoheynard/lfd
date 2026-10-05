@@ -1,4 +1,5 @@
 import type { OrderCollectionState } from "../entities/order-collection.js";
+import type { CollectionFormName } from "../value-objects/collection-form.js";
 import type { SepaScheme } from "../value-objects/sepa-scheme.js";
 import type { BillingFollow } from "./statement-billing.reader.js";
 
@@ -13,6 +14,8 @@ export interface CollectableOrder {
   /** La société qui a commandé — le site, pour un sous-compte. */
   readonly companyId: string;
   readonly placedAt: Date;
+  /** Le payeur copié à la passation (S4), `null` pour une commande d'avant. */
+  readonly billedCompanyId: string | null;
   readonly totalCents: number;
   /** `null` = aucune ligne d'état : la commande est `due` par défaut. */
   readonly collection: OrderCollectionState | null;
@@ -42,6 +45,16 @@ export abstract class CollectionCandidatesReader {
 
   /** Toutes les périodes `billing` de ces sociétés (le site suit son payeur). */
   abstract billingFollowsOf(companyIds: readonly string[]): Promise<readonly BillingFollow[]>;
+
+  /**
+   * La forme de prélèvement de ces sites en vigueur à `at` — la CLÔTURE du
+   * cycle, jamais l'heure du téléchargement (plan-sous-comptes §2.1 ter). Un
+   * site absent de la carte n'a pas de décision : `principal_mandate`.
+   */
+  abstract collectionFormsAt(
+    companyIds: readonly string[],
+    at: Date,
+  ): Promise<ReadonlyMap<string, CollectionFormName>>;
 
   /** La raison sociale de ces sociétés — ce qui s'imprime en `Dbtr/Nm`. */
   abstract companyNames(companyIds: readonly string[]): Promise<ReadonlyMap<string, string>>;

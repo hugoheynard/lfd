@@ -27,6 +27,8 @@ function mandate(proof: { key: string; name: string } | null): PaymentMandate {
     proofStorageKey: proof?.key ?? null,
     proofFileName: proof?.name ?? null,
     creditorId: "ent_1",
+    bankAccountId: null,
+    debtor: null,
   });
 }
 

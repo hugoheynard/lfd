@@ -9,6 +9,7 @@ import { SecretGenerator } from "../../../../platform/secret/secret-generator.js
 import { MandateDraftAlreadyExistsError } from "../../domain/errors/mandate-errors.js";
 import { PaymentMandateRepository } from "../../domain/payment-mandate.repository.js";
 import { CompanyBankAccountRepository } from "../../domain/ports/company-bank-account.repository.js";
+import { MandateDebtorReader } from "../../domain/ports/mandate-debtor.reader.js";
 import { mintDraftMandate } from "../mint-mandate-support.js";
 import { MintMandateCommand } from "./mint-mandate.command.js";
 
@@ -48,6 +49,7 @@ export class MintMandateHandler implements ICommandHandler<MintMandateCommand, s
     private readonly events: DomainEventPublisher,
     private readonly uow: UnitOfWork,
     private readonly ledger: FirstMandateLedger,
+    private readonly debtors: MandateDebtorReader,
   ) {}
 
   async execute(command: MintMandateCommand): Promise<string> {
@@ -56,6 +58,7 @@ export class MintMandateHandler implements ICommandHandler<MintMandateCommand, s
         mandates: this.mandates,
         accounts: this.accounts,
         creditors: this.creditors,
+        debtors: this.debtors,
         clock: this.clock,
         secrets: this.secrets,
         events: this.events,

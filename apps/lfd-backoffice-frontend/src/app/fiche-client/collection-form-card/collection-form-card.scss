@@ -1,0 +1,13 @@
+.body {
+  display: flex;
+  flex-direction: column;
+  gap: var(--fold-space-sm);
+}
+
+.choices {
+  margin: 0;
+  padding-inline-start: var(--fold-space-lg);
+  display: flex;
+  flex-direction: column;
+  gap: var(--fold-space-xs);
+}

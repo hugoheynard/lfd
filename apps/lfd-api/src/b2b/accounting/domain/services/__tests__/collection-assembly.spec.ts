@@ -1,3 +1,4 @@
+import type { CollectionMandate } from "../../ports/collection-mandates.reader.js";
 import type { BillingFollow } from "../../ports/statement-billing.reader.js";
 import { assembleCollection, type AssemblyInput } from "../collection-assembly.js";
 import { ENTITY_ID, SEPTEMBER, mandate, order } from "./collection-fixtures.js";
@@ -12,6 +13,7 @@ function input(overrides: Partial<AssemblyInput>): AssemblyInput {
     orders: [],
     follows: [],
     mandates: [],
+    collectionForms: new Map(),
     consumedMandates: new Set(),
     companyNames: new Map([
       ["c_port", "Boulangerie du Port"],
@@ -144,5 +146,136 @@ describe("assembleCollection — qui paie quoi, sous quel mandat", () => {
     );
 
     expect(result.debits.get("B2B")?.map((d) => d.payerId)).toEqual(["c_principal", "c_port"]);
+  });
+});
+
+/**
+ * S4 (`plan-sous-comptes.md` §2.1 ter) : le payeur COPIÉ à la passation, et le
+ * mandat effectif choisi selon la forme de prélèvement du site à la clôture.
+ */
+describe("assembleCollection — les sites d'un principal (S4)", () => {
+  const SITE_IBAN = "FR7630004000039876543210943";
+
+  /** Un mandat porté par un site, qui nomme le principal débiteur. */
+  function siteMandate(
+    site: string,
+    overrides: Partial<CollectionMandate> = {},
+  ): CollectionMandate {
+    return mandate(site, { debtorCompanyId: "c_principal", ...overrides });
+  }
+
+  it("lit le payeur copié, même sans période qui le couvre", () => {
+    const copied = order("c_chalet", { billedCompanyId: "c_principal" });
+
+    const result = assembleCollection(
+      input({ orders: [copied], follows: [follow(null)], mandates: [mandate("c_principal")] }),
+    );
+
+    expect(result.debits.get("B2B")?.[0]?.payerId).toBe("c_principal");
+  });
+
+  it("forme 1 (mandat du principal) : les sites tombent sur UNE ligne du principal", () => {
+    const result = assembleCollection(
+      input({
+        orders: [
+          order("c_chalet", { billedCompanyId: "c_principal" }),
+          order("c_chalet_2", { billedCompanyId: "c_principal" }),
+        ],
+        follows: [follow(null), { ...follow(null), companyId: "c_chalet_2" }],
+        mandates: [mandate("c_principal"), siteMandate("c_chalet")],
+      }),
+    );
+
+    const lines = result.debits.get("B2B") ?? [];
+    expect(lines).toHaveLength(1);
+    expect(lines[0]?.mandate.mandateId).toBe("m_c_principal");
+  });
+
+  it("forme 2 (mandat du site, RIB du principal) : une ligne PAR SITE, au nom du principal", () => {
+    const result = assembleCollection(
+      input({
+        orders: [
+          order("c_chalet", { billedCompanyId: "c_principal", totalCents: 300 }),
+          order("c_chalet_2", { billedCompanyId: "c_principal", totalCents: 500 }),
+        ],
+        // Les deux sites suivent encore : un site détaché sortirait `payer_detached`.
+        follows: [follow(null), { ...follow(null), companyId: "c_chalet_2" }],
+        mandates: [mandate("c_principal"), siteMandate("c_chalet"), siteMandate("c_chalet_2")],
+        collectionForms: new Map([
+          ["c_chalet", "own_mandate_principal_iban"],
+          ["c_chalet_2", "own_mandate_principal_iban"],
+        ]),
+      }),
+    );
+
+    const lines = result.debits.get("B2B") ?? [];
+    expect(lines.map((line) => line.mandate.mandateId).sort()).toEqual([
+      "m_c_chalet",
+      "m_c_chalet_2",
+    ]);
+    expect(lines.every((line) => line.payerId === "c_principal")).toBe(true);
+    expect(lines.every((line) => line.debtorName === "Club Principal")).toBe(true);
+  });
+
+  it("forme 3 (RIB propre) : le site est débité sur SON compte", () => {
+    const result = assembleCollection(
+      input({
+        orders: [order("c_chalet", { billedCompanyId: "c_principal" })],
+        follows: [follow(null)],
+        mandates: [mandate("c_principal"), siteMandate("c_chalet", { iban: SITE_IBAN })],
+        collectionForms: new Map([["c_chalet", "own_iban"]]),
+      }),
+    );
+
+    expect(result.debits.get("B2B")?.[0]?.mandate.iban).toBe(SITE_IBAN);
+  });
+
+  it.each(["own_mandate_principal_iban", "own_iban"] as const)(
+    "forme %s sans mandat de site : `no_mandate` nomme le SITE, jamais de repli sur le principal",
+    (form) => {
+      const result = assembleCollection(
+        input({
+          orders: [order("c_chalet", { billedCompanyId: "c_principal" })],
+          follows: [follow(null)],
+          mandates: [mandate("c_principal")],
+          collectionForms: new Map([["c_chalet", form]]),
+          companyNames: new Map([
+            ["c_chalet", "Chalet"],
+            ["c_principal", "Club Principal"],
+          ]),
+        }),
+      );
+
+      expect(result.debits.size).toBe(0);
+      expect(result.exclusions.map((e) => e.reason)).toEqual(["no_mandate"]);
+      expect(result.unmandatedCompanies).toEqual(["Chalet"]);
+    },
+  );
+
+  it("n'emprunte jamais le mandat d'un site qui nomme un AUTRE débiteur", () => {
+    const result = assembleCollection(
+      input({
+        orders: [order("c_chalet", { billedCompanyId: "c_principal" })],
+        follows: [follow(null)],
+        mandates: [mandate("c_principal"), siteMandate("c_chalet", { debtorCompanyId: "c_autre" })],
+        collectionForms: new Map([["c_chalet", "own_iban"]]),
+      }),
+    );
+
+    expect(result.debits.size).toBe(0);
+    expect(result.exclusions.map((e) => e.reason)).toEqual(["no_mandate"]);
+  });
+
+  it("ne prend pas le mandat de site d'une société qui paie seule pour le sien", () => {
+    // Le principal paie ses propres commandes : un mandat de site porté par
+    // lui-même au nom d'un autre ne compte pas.
+    const result = assembleCollection(
+      input({
+        orders: [order("c_port", { billedCompanyId: "c_port" })],
+        mandates: [mandate("c_port", { debtorCompanyId: "c_principal" })],
+      }),
+    );
+
+    expect(result.exclusions.map((e) => e.reason)).toEqual(["no_mandate"]);
   });
 });

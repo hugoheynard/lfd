@@ -87,7 +87,13 @@ describe('AdminCompaniesService', () => {
       suspensionCause: null,
       ...company,
       vatNumberRequired: true,
-      hierarchy: { parent: null, subAccounts: [], follows: [], groupWithoutDelivery: false },
+      hierarchy: {
+        parent: null,
+        subAccounts: [],
+        follows: [],
+        groupWithoutDelivery: false,
+        collectionForm: null,
+      },
       addresses: { billing: null, deliveries: [] },
       contacts: [],
       fulfillmentPreference: {

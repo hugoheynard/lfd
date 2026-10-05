@@ -1,3 +1,4 @@
+import { FixedClock } from "../../../../../platform/time/fixed-clock.js";
 import type { CreditorSnapshot } from "../../../../accounting/domain/creditor-snapshot.js";
 import {
   EntityCannotCollectError,
@@ -11,6 +12,7 @@ import { CustomerMandateClosedError } from "../../../domain/errors/mandate-error
 import { MandateOptions } from "../../../domain/value-objects/mandate-options.js";
 import type { BankAccountRole } from "../../../domain/ports/bank-account-guard.reader.js";
 import {
+  FixedDebtors,
   bankAccount,
   bankAccountWithoutLegalForm,
   CREDITOR,
@@ -31,16 +33,21 @@ function harness(
 ) {
   const steps = new Steps();
   const accounts = new InMemoryBankAccounts(steps);
+  const mandates = new InMemoryMandates(steps);
+  const debtors = new FixedDebtors(mandates);
   const handler = new GetMyCompanyMandateOptionsHandler(
     new FixedGuard(steps, role),
     new FixedGate(steps, open),
     accounts,
     new FixedCreditors(issuer),
-    new InMemoryMandates(steps),
+    mandates,
+    debtors,
+    new FixedClock(new Date("2026-09-14T09:00:00.000Z")),
   );
   return {
     steps,
     accounts,
+    debtors,
     run: () => handler.execute(new GetMyCompanyMandateOptionsQuery("usr_1", "cmp_1")),
   };
 }
@@ -121,6 +128,8 @@ describe("GetMyCompanyMandateOptionsHandler — un émetteur mal configuré ne c
       new InMemoryBankAccounts(new Steps()),
       creditors,
       new InMemoryMandates(new Steps()),
+      new FixedDebtors(new InMemoryMandates(new Steps())),
+      new FixedClock(new Date("2026-09-14T09:00:00.000Z")),
     );
 
     await expect(
@@ -150,5 +159,30 @@ describe("GetMyCompanyMandateOptionsHandler — ce qui empêche de générer", (
 
     await expect(b2b.run()).resolves.toMatchObject({ mintBlockers: ["holder_legal_form_missing"] });
     await expect(core.run()).resolves.toMatchObject({ mintBlockers: [] });
+  });
+});
+
+/**
+ * Plan-sous-comptes §3 : les zones vivent sur la ligne du RIB DÉBITÉ. Un site
+ * qui garde le RIB de son principal ne lit jamais celles du principal.
+ */
+describe("GetMyCompanyMandateOptionsHandler — un site facturé à son principal", () => {
+  it("ne rend pas les zones du RIB du principal", async () => {
+    const scene = harness();
+    scene.accounts.stored = bankAccount("alpes");
+    scene.debtors.billedTo = { companyId: "alpes", name: "Alpes Chalets" };
+
+    await expect(scene.run()).resolves.toMatchObject({ options: null });
+  });
+
+  it("rend les siennes à un site en RIB propre", async () => {
+    const scene = harness();
+    scene.accounts.stored = bankAccount();
+    scene.debtors.billedTo = { companyId: "alpes", name: "Alpes Chalets" };
+    scene.debtors.ownIban = true;
+
+    await expect(scene.run()).resolves.toMatchObject({
+      options: { debtorReference: "", contractNumber: "" },
+    });
   });
 });

@@ -14,6 +14,8 @@ import { MandateMintedEvent } from "../domain/events/payment-mandate.events.js";
 import type { PaymentMandateRepository } from "../domain/payment-mandate.repository.js";
 import type { CompanyBankAccountRepository } from "../domain/ports/company-bank-account.repository.js";
 import { Rum } from "../domain/value-objects/rum.js";
+import type { MandateDebtorReader } from "../domain/ports/mandate-debtor.reader.js";
+import type { MandateDebtorSnapshot } from "../domain/entities/payment-mandate.js";
 import { readMintReadiness } from "./mint-readiness.js";
 import { mandateCompanyOf } from "./mandate-journal-names.js";
 
@@ -22,6 +24,8 @@ export interface MintMandateDeps {
   readonly mandates: PaymentMandateRepository;
   readonly accounts: CompanyBankAccountRepository;
   readonly creditors: CreditorReader;
+  /** Le débiteur résolu — la société du principal pour un site (§2.1 ter). */
+  readonly debtors: MandateDebtorReader;
   /** Le verrou du créancier imprimé, posé dans la transaction de la frappe. */
   readonly ledger: FirstMandateLedger;
   readonly clock: Clock;
@@ -41,6 +45,9 @@ interface MintIssuer {
   readonly creditorId: string;
   readonly scheme: SepaScheme;
   readonly paymentType: MandatePaymentType;
+  /** Le compte que le mandat nommera, et son débiteur figé (§2.1 ter). */
+  readonly bankAccountId: string;
+  readonly debtor: MandateDebtorSnapshot;
 }
 
 export type MintOutcome =
@@ -96,10 +103,17 @@ export async function mintDraftMandate(
  * référence client et l'émetteur utiles au tirage.
  */
 async function mintPreconditions(deps: MintMandateDeps, companyId: string): Promise<MintIssuer> {
-  const { holder, issuer: creditor, blockers } = await readMintReadiness(deps, companyId);
-  // `creditor === null` implique `issuer_missing` dans `blockers` : la seconde
-  // condition ne sert qu'à le dire au compilateur.
-  if (blockers.length > 0 || creditor === null) {
+  const {
+    holder,
+    debtor,
+    account,
+    issuer: creditor,
+    blockers,
+  } = await readMintReadiness(deps, companyId);
+  // `creditor === null` implique `issuer_missing`, `account === null`
+  // `bank_account_missing` : les deux dernières conditions ne servent qu'à le
+  // dire au compilateur.
+  if (blockers.length > 0 || creditor === null || account === null) {
     throw new MandateMentionsMissingError(blockers);
   }
   // 🔴 Le schéma et le type sont RECOPIÉS ici, une fois : le mandat les fige, et
@@ -109,6 +123,8 @@ async function mintPreconditions(deps: MintMandateDeps, companyId: string): Prom
     creditorId: creditor.legalEntityId,
     scheme: creditor.mandateScheme,
     paymentType: creditor.mandatePaymentType,
+    bankAccountId: account.id,
+    debtor: debtor.debtor,
   };
 }
 
@@ -142,6 +158,8 @@ async function writeMinted(
         reference: rum.value,
         scheme: issuer.scheme,
         paymentType: issuer.paymentType,
+        bankAccountId: issuer.bankAccountId,
+        debtor: issuer.debtor,
       }),
     );
     await deps.ledger.note(issuer.creditorId, mintedAt);

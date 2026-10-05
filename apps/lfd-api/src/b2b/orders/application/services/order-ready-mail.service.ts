@@ -70,7 +70,7 @@ export class OrderReadyMail {
       to: recipient.email,
       template: "customer.order-ready",
       data: {
-        sheet: clientSheetOf(owned.view),
+        sheet: clientSheetOf(owned.view, owned.billedCustomer),
         handoverToken: token,
         orderUrl: client === null ? "" : `${client}/mes-commandes`,
         handoverUrl: token === null || admin === null ? "" : `${admin}/retrait/${token}`,

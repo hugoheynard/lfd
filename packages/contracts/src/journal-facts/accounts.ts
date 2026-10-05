@@ -1,7 +1,7 @@
 import { z } from "zod";
 
 import { deferredTermSchema } from "../company.js";
-import { companyFollowAspectSchema } from "../sub-accounts.js";
+import { COLLECTION_FORMS, companyFollowAspectSchema } from "../sub-accounts.js";
 import { DOORSTEP_RULES } from "../delivery-doorstep-rule.js";
 import { companyMemberRoleSchema } from "../company-member.js";
 import { fulfillmentMethodSchema } from "../order.js";
@@ -239,6 +239,14 @@ export const ACCOUNTS_AND_CARTS_FACTS = {
       aspect: companyFollowAspectSchema,
       until: instant(),
     }),
+  ),
+  /**
+   * La forme de prélèvement d'un site qui suit `billing`, à partir de `since`
+   * (plan-sous-comptes §2.1 ter, lot S4, 2026-10-05). Décision datée : le lot
+   * lit celle en vigueur à la clôture. Né ce jour-là : aucune forme d'avant.
+   */
+  "company.collection_form_set": fact(
+    payload({ subjectLabel: subjectLabel(), form: z.enum(COLLECTION_FORMS), since: instant() }),
   ),
   /** La case « Compte de groupe, sans livraison » (§4), cochée ou décochée. */
   "company.group_without_delivery_set": fact(

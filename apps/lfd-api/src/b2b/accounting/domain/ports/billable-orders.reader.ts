@@ -22,6 +22,7 @@
 
 /** Ce qu'une société doit pour un cycle. Agrégé : un débit par société. */
 export interface BillableCompany {
+  /** Le PAYEUR (`COALESCE(billed_company_id, company_id)`, plan-sous-comptes §2.3). */
   readonly companyId: string;
   /** La raison sociale, telle qu'elle s'imprimera en `Dbtr/Nm`. */
   readonly companyName: string;

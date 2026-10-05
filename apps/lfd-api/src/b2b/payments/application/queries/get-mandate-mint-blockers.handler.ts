@@ -4,6 +4,8 @@ import { type IQueryHandler, QueryHandler } from "@nestjs/cqrs";
 import { CreditorReader } from "../../../accounting/domain/ports/creditor.reader.js";
 import { PaymentMandateRepository } from "../../domain/payment-mandate.repository.js";
 import { CompanyBankAccountRepository } from "../../domain/ports/company-bank-account.repository.js";
+import { MandateDebtorReader } from "../../domain/ports/mandate-debtor.reader.js";
+import { Clock } from "../../../../platform/time/clock.js";
 import { readMintReadiness } from "../mint-readiness.js";
 import { GetMandateMintBlockersQuery } from "./get-mandate-mint-blockers.query.js";
 
@@ -42,11 +44,19 @@ export class GetMandateMintBlockersHandler implements IQueryHandler<
     private readonly mandates: PaymentMandateRepository,
     private readonly accounts: CompanyBankAccountRepository,
     private readonly creditors: CreditorReader,
+    private readonly debtors: MandateDebtorReader,
+    private readonly clock: Clock,
   ) {}
 
   async execute({ companyId }: GetMandateMintBlockersQuery): Promise<MandateMintReadinessView> {
     const { blockers, issuer } = await readMintReadiness(
-      { mandates: this.mandates, accounts: this.accounts, creditors: this.creditors },
+      {
+        mandates: this.mandates,
+        accounts: this.accounts,
+        creditors: this.creditors,
+        debtors: this.debtors,
+        clock: this.clock,
+      },
       companyId,
     );
     return { blockers, issuerScheme: issuer?.mandateScheme ?? null };

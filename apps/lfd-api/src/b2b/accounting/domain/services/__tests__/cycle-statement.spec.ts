@@ -13,6 +13,7 @@ function order(overrides: Partial<CycleOrder>): CycleOrder {
     orderNumber: `CMD-${String(seq)}`,
     placedAt: PLACED_AT,
     companyId: "c-port",
+    billedCompanyId: null,
     siteName: "Boulangerie du Port",
     subtotalCents: 0,
     discountCents: 0,

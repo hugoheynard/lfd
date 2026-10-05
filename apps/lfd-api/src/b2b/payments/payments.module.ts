@@ -24,6 +24,7 @@ import { SetMyCompanyBankAccountHandler } from "./application/commands/set-my-co
 import { SetMandateOptionsHandler } from "./application/commands/set-mandate-options.handler.js";
 import { GetCompanyBankAccountHandler } from "./application/queries/get-company-bank-account.handler.js";
 import { GetMyCompanyBankAccountHandler } from "./application/queries/get-my-company-bank-account.handler.js";
+import { GetMyCompanyBilledToHandler } from "./application/queries/get-my-company-billed-to.handler.js";
 import { GetMandateProofHandler } from "./application/queries/get-mandate-proof.handler.js";
 import { GetMandateMintBlockersHandler } from "./application/queries/get-mandate-mint-blockers.handler.js";
 import { PreviewCustomerMandateHandler } from "./application/queries/preview-customer-mandate.handler.js";
@@ -32,6 +33,11 @@ import { RevokeMandateHandler } from "./application/commands/revoke-mandate.hand
 import { GetCompanyMandateHandler } from "./application/queries/get-company-mandate.handler.js";
 import { PrismaBankAccountGuardReader } from "./infrastructure/prisma-bank-account-guard.reader.js";
 import { PrismaCompanyBankAccountRepository } from "./infrastructure/prisma-company-bank-account.repository.js";
+import { MandateDebtorReader } from "./domain/ports/mandate-debtor.reader.js";
+import { PrismaMandateDebtorReader } from "./infrastructure/prisma-mandate-debtor.reader.js";
+import { SiteMandatesReader } from "./domain/ports/site-mandates.reader.js";
+import { PrismaSiteMandatesReader } from "./infrastructure/prisma-site-mandates.reader.js";
+import { SiteMandateRevoker } from "./application/site-mandate-revoker.js";
 import { PrismaPaymentMandateRepository } from "./infrastructure/prisma-payment-mandate.repository.js";
 import { StripePaymentGateway } from "./infrastructure/stripe-payment-gateway.js";
 import { AdminCompanyBankAccountController } from "./http/admin-company-bank-account.controller.js";
@@ -99,6 +105,9 @@ import { StripeCheckoutGateway } from "./infrastructure/stripe-checkout-gateway.
   providers: [
     { provide: PaymentGateway, useClass: StripePaymentGateway },
     { provide: PaymentMandateRepository, useClass: PrismaPaymentMandateRepository },
+    { provide: MandateDebtorReader, useClass: PrismaMandateDebtorReader },
+    { provide: SiteMandatesReader, useClass: PrismaSiteMandatesReader },
+    SiteMandateRevoker,
     {
       provide: CompanyBankAccountRepository,
       useClass: PrismaCompanyBankAccountRepository,
@@ -134,6 +143,7 @@ import { StripeCheckoutGateway } from "./infrastructure/stripe-checkout-gateway.
     GetCompanyBankAccountHandler,
     SetMyCompanyBankAccountHandler,
     GetMyCompanyBankAccountHandler,
+    GetMyCompanyBilledToHandler,
     PreviewCustomerMandateHandler,
     MintMyCompanyMandateHandler,
     AttachMyCompanyMandateProofHandler,
@@ -142,6 +152,6 @@ import { StripeCheckoutGateway } from "./infrastructure/stripe-checkout-gateway.
     SetMyCompanyMandateOptionsHandler,
     GetMyCompanyMandateOptionsHandler,
   ],
-  exports: [PaymentGateway],
+  exports: [PaymentGateway, SiteMandateRevoker],
 })
 export class PaymentsModule {}

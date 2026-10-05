@@ -193,6 +193,7 @@ function readerOf(order: OrderView | null): OrderReader {
           stripePaymentIntentId: null,
           clientele: "public",
           loyaltyVoucherId: null,
+          billedCustomer: null,
         },
   );
 }

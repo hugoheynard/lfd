@@ -19,6 +19,7 @@ function order(companyId: string, siteName: string, placedAt: Date, cents: numbe
     orderNumber: `CMD-${String(seq)}`,
     placedAt,
     companyId,
+    billedCompanyId: null,
     siteName,
     subtotalCents: cents,
     discountCents: 0,

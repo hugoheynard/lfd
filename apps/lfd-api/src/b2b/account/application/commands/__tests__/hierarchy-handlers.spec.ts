@@ -35,6 +35,7 @@ import {
   InMemoryFollows,
   RecordingHierarchyLock,
   RecordingPricingJournal,
+  RecordingSiteMandates,
 } from "./hierarchy-doubles.js";
 
 /** L'horloge de la requête : les périodes s'ouvrent à SON instant, jamais à une date du calendrier. */
@@ -48,6 +49,7 @@ interface World {
   readonly lock: RecordingHierarchyLock;
   readonly events: RecordingPublisher;
   readonly pricing: RecordingPricingJournal;
+  readonly mandates: RecordingSiteMandates;
 }
 
 function world(companies: readonly Company[], follows: readonly SubAccountFollows[] = []): World {
@@ -60,6 +62,7 @@ function world(companies: readonly Company[], follows: readonly SubAccountFollow
     lock: new RecordingHierarchyLock(log),
     events: new RecordingPublisher(),
     pricing: new RecordingPricingJournal(),
+    mandates: new RecordingSiteMandates(log),
   };
 }
 
@@ -209,6 +212,7 @@ describe("Rattacher et détacher", () => {
       clock,
       new DirectUnitOfWork(),
       w.pricing,
+      w.mandates,
     ).execute(new DetachFromParentCommand("chalet"));
 
     const order = w.log.calls.filter((call) => call.startsWith("save"));
@@ -218,6 +222,43 @@ describe("Rattacher et détacher", () => {
     const fact = w.events.traced[0]?.journalFact();
     expect(fact?.type).toBe("company.parent_detached");
     expect(fact?.payload["closedAspects"]).toEqual(["billing", "pricing"]);
+  });
+
+  /** S4 (§2.1 ter) : le principal n'est plus le débiteur d'un site détaché. */
+  it("détacher un site qui suivait `billing` révoque ses mandats au nom du principal, sous le verrou", async () => {
+    const w = world([principalCompany(), chaletCompany()], [chaletFollowing()]);
+
+    await new DetachFromParentHandler(
+      w.companies,
+      w.follows,
+      w.lock,
+      w.events,
+      clock,
+      new DirectUnitOfWork(),
+      w.pricing,
+      w.mandates,
+    ).execute(new DetachFromParentCommand("chalet"));
+
+    expect(w.mandates.revoked).toEqual([{ siteId: "chalet", payerId: "groupe", at: clock.now() }]);
+    expect(w.log.calls[0]).toBe("lock");
+    expect(w.log.calls.at(-1)).toBe("revokeMandates:chalet:groupe");
+  });
+
+  it("détacher un sous-compte qui ne suivait pas `billing` ne révoque rien", async () => {
+    const w = world([principalCompany(), chaletCompany()]);
+
+    await new DetachFromParentHandler(
+      w.companies,
+      w.follows,
+      w.lock,
+      w.events,
+      clock,
+      new DirectUnitOfWork(),
+      w.pricing,
+      w.mandates,
+    ).execute(new DetachFromParentCommand("chalet"));
+
+    expect(w.mandates.revoked).toEqual([]);
   });
 });
 
@@ -242,6 +283,7 @@ describe("Suivre et cesser de suivre", () => {
       clock,
       new DirectUnitOfWork(),
       w.pricing,
+      w.mandates,
     );
   }
 
@@ -273,6 +315,24 @@ describe("Suivre et cesser de suivre", () => {
     const fact = w.events.traced[0]?.journalFact();
     expect(fact?.type).toBe("company.parent_unfollowed");
     expect(fact?.payload["parent"]).toEqual({ id: "groupe", name: "Alpes Chalets" });
+  });
+
+  /** S4 (§2.1 ter) : passer en identité propre révoque les mandats qui nomment le principal. */
+  it("cesser de suivre `billing` révoque les mandats du site au nom du principal", async () => {
+    const w = world([principalCompany(), chaletCompany()], [chaletFollowing()]);
+
+    await stopHandler(w).execute(new StopFollowingParentCommand("chalet", "billing"));
+
+    expect(w.mandates.revoked).toEqual([{ siteId: "chalet", payerId: "groupe", at: clock.now() }]);
+    expect(w.log.calls[0]).toBe("lock");
+  });
+
+  it("cesser de suivre le tarif ne touche à aucun mandat", async () => {
+    const w = world([principalCompany(), chaletCompany()], [chaletFollowing()]);
+
+    await stopHandler(w).execute(new StopFollowingParentCommand("chalet", "pricing"));
+
+    expect(w.mandates.revoked).toEqual([]);
   });
 
   it("cesser de suivre ce qu'on ne suit pas ne s'inscrit pas", async () => {

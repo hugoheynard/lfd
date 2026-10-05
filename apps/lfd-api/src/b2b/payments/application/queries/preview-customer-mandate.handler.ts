@@ -7,6 +7,8 @@ import { LegalEntityLogoReader } from "../../../accounting/domain/ports/legal-en
 import { DocumentStore } from "../../../../platform/storage/document-store.js";
 import { CompanyBankAccountRepository } from "../../domain/ports/company-bank-account.repository.js";
 import { PaymentMandateRepository } from "../../domain/payment-mandate.repository.js";
+import { MandateDebtorReader } from "../../domain/ports/mandate-debtor.reader.js";
+import { Clock } from "../../../../platform/time/clock.js";
 import { buildCustomerMandate } from "../customer-mandate-support.js";
 import { PreviewCustomerMandateQuery } from "./preview-customer-mandate.query.js";
 
@@ -49,6 +51,8 @@ export class PreviewCustomerMandateHandler implements IQueryHandler<
     private readonly creditors: CreditorReader,
     private readonly logos: LegalEntityLogoReader,
     private readonly store: DocumentStore,
+    private readonly debtors: MandateDebtorReader,
+    private readonly clock: Clock,
   ) {}
 
   async execute({ companyId }: PreviewCustomerMandateQuery): Promise<CustomerMandatePdf> {
@@ -59,6 +63,8 @@ export class PreviewCustomerMandateHandler implements IQueryHandler<
         creditors: this.creditors,
         logos: this.logos,
         store: this.store,
+        debtors: this.debtors,
+        clock: this.clock,
       },
       companyId,
     );

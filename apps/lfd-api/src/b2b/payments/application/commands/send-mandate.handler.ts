@@ -13,6 +13,8 @@ import {
 import { MandateSentEvent } from "../../domain/events/payment-mandate.events.js";
 import { CompanyBankAccountRepository } from "../../domain/ports/company-bank-account.repository.js";
 import { PaymentMandateRepository } from "../../domain/payment-mandate.repository.js";
+import { MandateDebtorReader } from "../../domain/ports/mandate-debtor.reader.js";
+import { Clock } from "../../../../platform/time/clock.js";
 import { buildCustomerMandate } from "../customer-mandate-support.js";
 import { SendMandateCommand } from "./send-mandate.command.js";
 
@@ -66,6 +68,8 @@ export class SendMandateHandler implements ICommandHandler<SendMandateCommand, v
     private readonly store: DocumentStore,
     @Inject(MAILER) private readonly mailer: B2bMailer,
     private readonly events: DomainEventPublisher,
+    private readonly debtors: MandateDebtorReader,
+    private readonly clock: Clock,
   ) {}
 
   async execute(command: SendMandateCommand): Promise<void> {
@@ -89,6 +93,8 @@ export class SendMandateHandler implements ICommandHandler<SendMandateCommand, v
         creditors: this.creditors,
         logos: this.logos,
         store: this.store,
+        debtors: this.debtors,
+        clock: this.clock,
       },
       command.companyId,
     );

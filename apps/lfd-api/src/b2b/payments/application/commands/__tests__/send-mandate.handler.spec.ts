@@ -1,3 +1,4 @@
+import { FixedClock } from "../../../../../platform/time/fixed-clock.js";
 import { MailerSendError, type MailReceipt, type SendMailArgs } from "@lfd/mailer";
 
 import { LegalEntityLogoReader } from "../../../../accounting/domain/ports/legal-entity-logo.reader.js";
@@ -5,6 +6,7 @@ import type { B2bMails } from "../../../../../platform/mailer/mail-templates.js"
 import type { B2bMailer } from "../../../../../platform/mailer/mailer.tokens.js";
 import { MandateNotSendableError } from "../../../domain/errors/mandate-errors.js";
 import {
+  FixedDebtors,
   activeMandate,
   bankAccount,
   FixedCreditors,
@@ -60,6 +62,8 @@ function harness(providerId: string | null = "re_1") {
     new MemoryStore(steps),
     mailer,
     events,
+    new FixedDebtors(mandates),
+    new FixedClock(new Date("2026-09-14T09:00:00.000Z")),
   );
   return {
     steps,

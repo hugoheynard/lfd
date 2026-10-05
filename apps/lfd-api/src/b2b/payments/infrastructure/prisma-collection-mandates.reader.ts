@@ -11,6 +11,7 @@ import {
 import { FieldCipher } from "../../../platform/crypto/field-cipher.js";
 import { PrismaService } from "../../../platform/database/prisma.service.js";
 import { TechnicalError } from "../../../platform/shared/errors/app-error.js";
+import { debitedAccounts } from "./mandate-accounts.js";
 
 /**
  * Les mandats actifs, **tous créanciers confondus**, pour la constitution d'un
@@ -30,28 +31,25 @@ export class PrismaCollectionMandatesReader extends CollectionMandatesReader {
     if (companyIds.length === 0) {
       return [];
     }
-    const [mandates, accounts] = await Promise.all([
-      this.prisma.paymentMandate.findMany({
-        where: { companyId: { in: [...companyIds] }, status: "active" },
-        orderBy: { id: "asc" },
-        select: {
-          id: true,
-          companyId: true,
-          creditorId: true,
-          reference: true,
-          scheme: true,
-          paymentType: true,
-          acceptedAt: true,
-        },
-      }),
-      this.prisma.companyBankAccount.findMany({
-        where: { companyId: { in: [...companyIds] } },
-        select: { companyId: true, ibanSealed: true, bic: true },
-      }),
-    ]);
-    const accountOf = new Map(accounts.map((row) => [row.companyId, row]));
+    const mandates = await this.prisma.paymentMandate.findMany({
+      where: { companyId: { in: [...companyIds] }, status: "active" },
+      orderBy: { id: "asc" },
+      select: {
+        id: true,
+        companyId: true,
+        bankAccountId: true,
+        debtorCompanyId: true,
+        creditorId: true,
+        reference: true,
+        scheme: true,
+        paymentType: true,
+        acceptedAt: true,
+      },
+    });
+    // Le compte que le mandat DÉSIGNE (T8), pas celui de sa société.
+    const accountOf = await debitedAccounts(this.prisma, mandates);
     return mandates.flatMap((mandate) => {
-      const account = accountOf.get(mandate.companyId);
+      const account = accountOf(mandate);
       if (account === undefined) {
         return [];
       }
@@ -62,6 +60,7 @@ export class PrismaCollectionMandatesReader extends CollectionMandatesReader {
         {
           mandateId: mandate.id,
           companyId: mandate.companyId,
+          debtorCompanyId: mandate.debtorCompanyId ?? mandate.companyId,
           creditorId: mandate.creditorId,
           reference: mandate.reference,
           iban: this.cipher.open(account.ibanSealed),
@@ -77,8 +76,9 @@ export class PrismaCollectionMandatesReader extends CollectionMandatesReader {
 
 /**
  * La relecture du dépôt : chaque mandat d'un lot est-il encore actif, et sur
- * quel compte ? L'IBAN est celui du RIB recopié AUJOURD'HUI — un changement de
- * RIB après constitution se voit donc ici.
+ * quel compte ? L'IBAN est celui du compte que le mandat désigne, tel que son
+ * RIB est recopié AUJOURD'HUI — un changement de RIB après constitution se
+ * voit donc ici.
  */
 @Injectable()
 export class PrismaMandateRecheckReader extends MandateRecheckReader {
@@ -92,20 +92,20 @@ export class PrismaMandateRecheckReader extends MandateRecheckReader {
   async currentOf(mandateIds: readonly string[]): Promise<ReadonlyMap<string, MandateNow>> {
     const mandates = await this.prisma.paymentMandate.findMany({
       where: { id: { in: [...mandateIds] } },
-      select: { id: true, companyId: true, status: true },
+      select: { id: true, companyId: true, bankAccountId: true, status: true },
     });
-    const accounts = await this.prisma.companyBankAccount.findMany({
-      where: { companyId: { in: mandates.map((mandate) => mandate.companyId) } },
-      select: { companyId: true, ibanSealed: true },
-    });
-    const ibanOf = new Map(
-      accounts.map((row) => [row.companyId, this.cipher.open(row.ibanSealed)]),
-    );
+    const accountOf = await debitedAccounts(this.prisma, mandates);
     return new Map(
-      mandates.map((mandate) => [
-        mandate.id,
-        { active: mandate.status === "active", iban: ibanOf.get(mandate.companyId) ?? null },
-      ]),
+      mandates.map((mandate) => {
+        const account = accountOf(mandate);
+        return [
+          mandate.id,
+          {
+            active: mandate.status === "active",
+            iban: account === undefined ? null : this.cipher.open(account.ibanSealed),
+          },
+        ];
+      }),
     );
   }
 }

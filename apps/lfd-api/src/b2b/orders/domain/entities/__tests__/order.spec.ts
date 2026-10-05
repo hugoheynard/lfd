@@ -1,3 +1,4 @@
+import { BilledWithoutCompanyError } from "../../errors/order-payer-errors.js";
 import type { BillingAddressPayload } from "@lfd/contracts";
 
 import {
@@ -38,6 +39,7 @@ const food = (qty: number, priceCents = 200, rate = 5.5): OrderLineInput => ({
 function draftInput(over: Partial<DraftOrderInput> = {}): DraftOrderInput {
   return {
     companyId: null,
+    billedCompanyId: null,
     placedByStaffId: null,
     // L'acheminement CONVENU, figé à la commande : ici, le défaut du point.
     agreed: {
@@ -518,6 +520,20 @@ describe("Order — le bon de fidélité", () => {
   it.each([0, -5, 1.5])("refuse un bon d'une valeur de %p centimes", (valueCents) => {
     expect(() => Order.draft(draftInput({ voucher: { id: "v1", valueCents } }))).toThrow(
       InvalidOrderVoucherError,
+    );
+  });
+});
+
+describe("Order.draft — le payeur copié (plan-sous-comptes §2.3)", () => {
+  it("porte le payeur jusqu'à la persistance", () => {
+    expect(deferred({ companyId: "chalet", billedCompanyId: "alpes" }).billedCompanyId).toBe(
+      "alpes",
+    );
+  });
+
+  it("refuse un payeur sur une commande sans société — l'image du CHECK en base", () => {
+    expect(() => Order.draft(draftInput({ companyId: null, billedCompanyId: "alpes" }))).toThrow(
+      BilledWithoutCompanyError,
     );
   });
 });

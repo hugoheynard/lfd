@@ -28,6 +28,8 @@ import {
 import { OrderCutoffReader } from "../../domain/ports/order-cutoff.reader.js";
 import { OrderCutoffWaiverGate } from "../../domain/ports/order-cutoff-waiver.gate.js";
 import { OrderLateFeeReader } from "../../domain/ports/order-late-fee.reader.js";
+import { OrderPayerReader } from "../../domain/ports/order-payer.reader.js";
+import { orderPayerOf } from "../../domain/services/order-payer.js";
 import { ProductCatalogReader } from "../../../catalog/domain/ports/product-catalog.reader.js";
 import { ensureWithinOrderCutoff } from "../../domain/services/order-cutoff-guard.js";
 import { Clock } from "../../../../platform/time/clock.js";
@@ -120,6 +122,7 @@ export class OrderDrafting {
     private readonly lateFees: OrderLateFeeReader,
     private readonly audiences: CustomerAudiences,
     private readonly operations: OrderOperations,
+    private readonly payers: OrderPayerReader,
   ) {}
 
   /**
@@ -141,6 +144,11 @@ export class OrderDrafting {
     content: OrderContent,
     voucher: OrderVoucher | null,
   ): Promise<DraftedOrder> {
+    // 🔴 Le payeur se décide ICI, et en premier : c'est le seul chemin que les
+    // trois portes de passation partagent (client, saisie staff, boutique), et
+    // un refus — payeur suspendu, compte de groupe — ne doit rien coûter de
+    // plus que cette lecture (plan-sous-comptes §2.3, §2.4).
+    const billedCompanyId = await this.payerOf(parties.companyId);
     // Lue AVANT la résolution, et l'ordre est un choix. Une validation qui
     // tomberait pile entre les deux ne peut alors que rendre l'estampille
     // ANCIENNE de ce que les lignes portent — jamais l'inverse. Une estampille
@@ -186,6 +194,7 @@ export class OrderDrafting {
     const order = Order.draft({
       agreed,
       companyId: parties.companyId,
+      billedCompanyId,
       placedByUserId: parties.placedByUserId,
       placedByStaffId: parties.placedByStaffId,
       fulfillment: {
@@ -365,6 +374,14 @@ export class OrderDrafting {
    *
    * @throws {DeliveryClosedForAudienceError} la livraison est fermée à la clientèle.
    */
+  /** Le payeur à copier, à l'instant de la passation — `null` sans société. */
+  private async payerOf(companyId: string | null): Promise<string | null> {
+    if (companyId === null) {
+      return null;
+    }
+    return orderPayerOf(await this.payers.standingAt(companyId, this.clock.now()));
+  }
+
   private async resolveFulfillment(
     content: OrderContent,
     subtotalCents: number,

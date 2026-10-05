@@ -42,7 +42,13 @@ function company(over: Partial<AdminCompanyDetail> = {}): AdminCompanyDetail {
     // Le DÉTAIL : c'est lui que la fiche projette, et lui seul qui sait si la
     // forme juridique impose un numéro de TVA.
     vatNumberRequired: true,
-    hierarchy: { parent: null, subAccounts: [], follows: [], groupWithoutDelivery: false },
+    hierarchy: {
+      parent: null,
+      subAccounts: [],
+      follows: [],
+      groupWithoutDelivery: false,
+      collectionForm: null,
+    },
     addresses: { billing: null, deliveries: [] },
     contacts: [],
     fulfillmentPreference: {
@@ -104,7 +110,13 @@ describe('admin-company-view', () => {
     return {
       ...company(),
       vatNumberRequired: false,
-      hierarchy: { parent: null, subAccounts: [], follows: [], groupWithoutDelivery: false },
+      hierarchy: {
+        parent: null,
+        subAccounts: [],
+        follows: [],
+        groupWithoutDelivery: false,
+        collectionForm: null,
+      },
       addresses: { billing: null, deliveries: [] },
       contacts: [HOLDER, ...book],
       fulfillmentPreference: {

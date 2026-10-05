@@ -7,6 +7,7 @@ import {
   type PlaceShopOrderPayload,
 } from "@lfd/contracts";
 
+import { ownPayers } from "./payer-doubles.js";
 import { FeatureLevelResolver } from "../../../../feature-access/application/feature-level.resolver.js";
 import { FeatureLevelLookup } from "../../../../feature-access/domain/ports/feature-level.lookup.js";
 import { PublicDeliveryClosedError } from "../../../../feature-access/domain/public-delivery-closed.error.js";
@@ -260,6 +261,7 @@ function drafting(): OrderDrafting {
     noLateFee,
     new CustomerAudiences(noCompanies),
     new OrderOperations(noSaleOperations(PRICED_AT)),
+    ownPayers(),
   );
 }
 

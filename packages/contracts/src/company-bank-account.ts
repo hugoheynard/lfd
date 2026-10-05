@@ -120,6 +120,19 @@ export type CustomerBankAccountView = Omit<
   "debtorReference" | "contractNumber"
 >;
 
+/**
+ * `GET /companies/:companyId/billed-to` — **à qui ce site est facturé**
+ * (`plan-sous-comptes.md` §3).
+ *
+ * Un site qui suit `billing` est facturé et prélevé au nom de son principal.
+ * Ses routes RIB et mandat restent murées sur lui-même : elles ne rendent ni
+ * l'IBAN ni le mandat du principal. Cette route rend la seule mention qu'il en
+ * voit — le nom du payeur —, et `null` pour une société qui paie seule.
+ */
+export interface CustomerBilledToView {
+  readonly billedTo: { readonly name: string } | null;
+}
+
 /** `GET /companies/:companyId/bank-account` — enveloppé, pour la même raison que la vue staff. */
 export interface CustomerBankAccountSectionView {
   /** `null` tant qu'aucun RIB n'a été déposé. */

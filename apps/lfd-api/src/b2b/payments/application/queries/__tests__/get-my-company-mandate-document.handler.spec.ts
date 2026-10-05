@@ -1,3 +1,4 @@
+import { FixedClock } from "../../../../../platform/time/fixed-clock.js";
 import { drawnText } from "../../../../accounting/domain/services/__tests__/pdf-drawn-text.js";
 import { LegalEntityLogoReader } from "../../../../accounting/domain/ports/legal-entity-logo.reader.js";
 import {
@@ -11,6 +12,7 @@ import {
 import type { PaymentMandate } from "../../../domain/entities/payment-mandate.js";
 import type { BankAccountRole } from "../../../domain/ports/bank-account-guard.reader.js";
 import {
+  FixedDebtors,
   activeMandate,
   bankAccount,
   FixedCreditors,
@@ -52,6 +54,7 @@ function harness(
   const mandates = options.mandates ?? new InMemoryMandates(steps);
   const accounts = new InMemoryBankAccounts(steps);
   accounts.stored = bankAccount();
+  const debtors = new FixedDebtors(mandates);
   const handler = new GetMyCompanyMandateDocumentHandler(
     new FixedGuard(steps, options.role === undefined ? "owner" : options.role),
     new FixedGate(steps, options.open ?? true),
@@ -60,8 +63,11 @@ function harness(
     new FixedCreditors(),
     new NoLogo(),
     new MemoryStore(steps),
+    debtors,
+    new FixedClock(new Date("2026-09-14T09:00:00.000Z")),
   );
   return {
+    debtors,
     mandates,
     accounts,
     run: () => handler.execute(new GetMyCompanyMandateDocumentQuery("usr_1", "cmp_1")),

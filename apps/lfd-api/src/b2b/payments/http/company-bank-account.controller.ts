@@ -1,6 +1,7 @@
 import {
   type CustomerBankAccountSectionView,
   type CustomerBankAccountView,
+  type CustomerBilledToView,
   type SetCompanyBankAccountPayload,
   setCompanyBankAccountPayloadSchema,
 } from "@lfd/contracts";
@@ -12,6 +13,7 @@ import type { Principal } from "../../../platform/auth/principal.js";
 import { ZodBody } from "../../../platform/shared/http/zod-body.pipe.js";
 import { SetMyCompanyBankAccountCommand } from "../application/commands/set-my-company-bank-account.command.js";
 import { GetMyCompanyBankAccountQuery } from "../application/queries/get-my-company-bank-account.query.js";
+import { GetMyCompanyBilledToQuery } from "../application/queries/get-my-company-billed-to.query.js";
 
 /**
  * Surface **client** du RIB de sa société — la section RIB de `/mon-compte`.
@@ -53,6 +55,21 @@ export class CompanyBankAccountController {
       CustomerBankAccountView | null
     >(new GetMyCompanyBankAccountQuery(user.userId, companyId));
     return { account };
+  }
+
+  /**
+   * À qui la société est facturée : `{ billedTo: { name } }` pour un site qui
+   * suit `billing`, `{ billedTo: null }` sinon (plan-sous-comptes §3). Jamais
+   * l'IBAN ni le mandat du payeur — ses routes restent murées sur le site.
+   */
+  @Get(":companyId/billed-to")
+  async billedTo(
+    @CurrentUser() user: Principal,
+    @Param("companyId") companyId: string,
+  ): Promise<CustomerBilledToView> {
+    return this.queries.execute<GetMyCompanyBilledToQuery, CustomerBilledToView>(
+      new GetMyCompanyBilledToQuery(user.userId, companyId),
+    );
   }
 
   /**

@@ -44,7 +44,7 @@ export async function readHierarchy(
   row: HierarchyRow,
   now: Date,
 ): Promise<CompanyHierarchyView> {
-  const [follows, children] = await Promise.all([
+  const [follows, children, form] = await Promise.all([
     prisma.companyFollow.findMany({ ...OPEN_FOLLOWS, where: { companyId: row.id, validTo: null } }),
     prisma.company.findMany({
       where: { parentCompanyId: row.id },
@@ -63,6 +63,17 @@ export async function readHierarchy(
         follows: OPEN_FOLLOWS,
       },
     }),
+    // La forme qui couvre `now` (début inclus, fin exclue) — un sous-compte seulement.
+    row.parentCompany === null
+      ? Promise.resolve(null)
+      : prisma.companyCollectionForm.findFirst({
+          where: {
+            companyId: row.id,
+            validFrom: { lte: now },
+            OR: [{ validTo: null }, { validTo: { gt: now } }],
+          },
+          select: { form: true, validFrom: true },
+        }),
   ]);
   return {
     parent: row.parentCompany,
@@ -75,6 +86,7 @@ export async function readHierarchy(
     })),
     follows: inForce(follows, now),
     groupWithoutDelivery: row.groupWithoutDelivery,
+    collectionForm: form === null ? null : { form: form.form, since: form.validFrom.toISOString() },
   };
 }
 

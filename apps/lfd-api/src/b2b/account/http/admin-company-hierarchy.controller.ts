@@ -1,17 +1,19 @@
 import {
   attachToParentPayloadSchema,
+  collectionFormPayloadSchema,
   createSubAccountPayloadSchema,
   followAspectPayloadSchema,
   groupWithoutDeliveryPayloadSchema,
   hasStaffPermission,
   type AttachToParentPayload,
+  type CollectionFormPayload,
   type CreatedIdResponse,
   type CreateSubAccountPayload,
   type FollowAspectPayload,
   type GroupWithoutDeliveryPayload,
   type StaffPermission,
 } from "@lfd/contracts";
-import { Body, Controller, HttpCode, HttpStatus, Param, Post } from "@nestjs/common";
+import { Body, Controller, HttpCode, HttpStatus, Param, Post, Put } from "@nestjs/common";
 import { CommandBus } from "@nestjs/cqrs";
 
 import { AdminSurface } from "../../../platform/auth/admin-surface.decorator.js";
@@ -21,6 +23,7 @@ import { AttachToParentCommand } from "../application/commands/attach-to-parent.
 import { CreateSubAccountCommand } from "../application/commands/create-sub-account.command.js";
 import { DetachFromParentCommand } from "../application/commands/detach-from-parent.command.js";
 import { FollowParentCommand } from "../application/commands/follow-parent.command.js";
+import { SetCollectionFormCommand } from "../application/commands/set-collection-form.command.js";
 import { SetGroupWithoutDeliveryCommand } from "../application/commands/set-group-without-delivery.command.js";
 import { StopFollowingParentCommand } from "../application/commands/stop-following-parent.command.js";
 
@@ -118,6 +121,22 @@ export class AdminCompanyHierarchyController {
   ): Promise<void> {
     await this.commands.execute<SetGroupWithoutDeliveryCommand, void>(
       new SetGroupWithoutDeliveryCommand(companyId, payload.enabled),
+    );
+  }
+
+  /**
+   * La forme de prélèvement d'un site qui suit `billing` (plan-sous-comptes
+   * §2.1 ter) : décision datée, à l'instant du geste. `409` si le site paie
+   * seul. Le client la choisira lui-même plus tard ; le staff peut la régler.
+   */
+  @Put("collection-form")
+  @HttpCode(HttpStatus.NO_CONTENT)
+  async setCollectionForm(
+    @Param("companyId") companyId: string,
+    @Body(new ZodBody(collectionFormPayloadSchema)) payload: CollectionFormPayload,
+  ): Promise<void> {
+    await this.commands.execute<SetCollectionFormCommand, void>(
+      new SetCollectionFormCommand(companyId, payload.form),
     );
   }
 }

@@ -45,6 +45,7 @@ export function order(
     orderNumber: `CMD-${String(seq).padStart(3, "0")}`,
     companyId,
     placedAt: new Date("2026-09-15T08:00:00.000Z"),
+    billedCompanyId: null,
     totalCents: 1_000,
     collection: null,
     ...overrides,
@@ -58,6 +59,7 @@ export function mandate(
   return {
     mandateId: `m_${companyId}`,
     companyId,
+    debtorCompanyId: companyId,
     creditorId: ENTITY_ID,
     reference: `RUM-${companyId}`,
     iban: "FR7630004000031234567890143",

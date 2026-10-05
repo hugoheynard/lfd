@@ -249,14 +249,20 @@ model Company {
   memberships        Membership[]
   contacts           CompanyContact[]
   addresses          Address[]
-  orders             Order[]
+  orders             Order[]                 @relation("OrderCompany")
+  /// Les commandes dont cette société est le PAYEUR copié (§2.3).
+  billedOrders       Order[]                 @relation("OrderBilledCompany")
   /// Les dérogations d'heure limite accordées à ce client.
   orderCutoffWaivers OrderCutoffWaiver[]
   orderDraft         OrderDraft?
   // Les paniers en cours composés POUR cette société — un par personne.
   shopCarts          ShopCart[]
   supportRequests    SupportRequest[]
-  mandates           PaymentMandate[]
+  mandates           PaymentMandate[]        @relation("MandateCompany")
+  /// Les mandats qui la nomment DÉBITEUR — les siens, et ceux de ses sites.
+  debtorMandates     PaymentMandate[]        @relation("MandateDebtor")
+  /// Les formes de prélèvement datées de ce site (§2.1 ter).
+  collectionForms    CompanyCollectionForm[]
   // Le RIB du client — au plus un (`company_id` est unique côté table).
   bankAccount        CompanyBankAccount?
   // Les liens de paiement libres adressés à ce client (cf. payments/).
@@ -312,6 +318,37 @@ model CompanyFollow {
   @@id([companyId, aspect, validFrom])
   @@index([parentId])
   @@map("company_follows")
+  @@schema("public")
+}
+
+/// Comment un site qui suit `billing` est prélevé (plan-sous-comptes §2.1 ter).
+/// Le débiteur nommé est toujours la société du principal.
+enum CollectionForm {
+  /// le mandat du principal, sur son RIB — une ligne pour la société
+  principal_mandate
+  /// un mandat du site (sa RUM), sur le RIB du principal — une ligne par site
+  own_mandate_principal_iban
+  /// un mandat du site, sur le RIB du site — une ligne par site
+  own_iban
+
+  @@schema("public")
+}
+
+/// Une **période** de forme de prélèvement d'un site (§2.1 ter). Datée, comme
+/// `company_follows` : la forme qui compte est celle en vigueur à la clôture
+/// du cycle, jamais celle du téléchargement. Sans période : `principal_mandate`.
+/// Deux périodes ne se chevauchent pas (`company_collection_form_no_overlap`,
+/// en migration).
+model CompanyCollectionForm {
+  companyId String         @map("company_id")
+  company   Company        @relation(fields: [companyId], references: [id])
+  form      CollectionForm
+  validFrom DateTime       @map("valid_from") @db.Timestamptz(3)
+  /// `null` = en cours.
+  validTo   DateTime?      @map("valid_to") @db.Timestamptz(3)
+
+  @@id([companyId, validFrom])
+  @@map("company_collection_form")
   @@schema("public")
 }
 

@@ -154,6 +154,9 @@ import { AttachToParentHandler } from "./application/commands/attach-to-parent.h
 import { DetachFromParentHandler } from "./application/commands/detach-from-parent.handler.js";
 import { FollowParentHandler } from "./application/commands/follow-parent.handler.js";
 import { StopFollowingParentHandler } from "./application/commands/stop-following-parent.handler.js";
+import { SetCollectionFormHandler } from "./application/commands/set-collection-form.handler.js";
+import { CollectionFormRepository } from "./domain/ports/collection-form.repository.js";
+import { PrismaCollectionFormRepository } from "./infrastructure/prisma-collection-form.repository.js";
 import { SetGroupWithoutDeliveryHandler } from "./application/commands/set-group-without-delivery.handler.js";
 import { AccountHierarchyLock } from "./domain/ports/account-hierarchy.lock.js";
 import { CompanyFollowsReader } from "./domain/ports/company-follows.reader.js";
@@ -282,10 +285,12 @@ import { CustomerPrincipalResolver } from "./infrastructure/customer-principal.r
     DetachFromParentHandler,
     FollowParentHandler,
     StopFollowingParentHandler,
+    SetCollectionFormHandler,
     SetGroupWithoutDeliveryHandler,
     { provide: AccountHierarchyLock, useClass: PrismaAccountHierarchyLock },
     { provide: CompanyFollowsReader, useClass: PrismaCompanyFollowsReader },
     { provide: CompanyFollowsRepository, useClass: PrismaCompanyFollowsRepository },
+    { provide: CollectionFormRepository, useClass: PrismaCollectionFormRepository },
     ChangeCompanyStatusHandler,
     GetCustomerSheetHandler,
     UploadKbisByStaffHandler,

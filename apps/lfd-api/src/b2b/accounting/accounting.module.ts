@@ -16,6 +16,14 @@ import { OrderCollectionRepository } from "./domain/ports/order-collection.repos
 import { OrderNumbersReader } from "./domain/ports/order-numbers.reader.js";
 import { RecordedClosureReader } from "./domain/ports/recorded-closure.reader.js";
 import { AdminCollectionBatchesController } from "./http/admin-collection-batches.controller.js";
+import { AdminDetachedUnpaidController } from "./http/admin-detached-unpaid.controller.js";
+import { CompanyDetachedUnpaidController } from "./http/company-detached-unpaid.controller.js";
+import { DetachedUnpaidReader } from "./domain/ports/detached-unpaid.reader.js";
+import { UnpaidAccessReader } from "./domain/ports/unpaid-access.reader.js";
+import { PrismaDetachedUnpaidReader } from "./infrastructure/prisma-detached-unpaid.reader.js";
+import { PrismaUnpaidAccessReader } from "./infrastructure/prisma-unpaid-access.reader.js";
+import { GetDetachedUnpaidOrdersHandler } from "./application/queries/get-detached-unpaid-orders.handler.js";
+import { GetMyDetachedUnpaidOrdersHandler } from "./application/queries/get-my-detached-unpaid-orders.handler.js";
 import { PrismaCollectionBatchReader } from "./infrastructure/prisma-collection-batch.reader.js";
 import { PrismaCollectionBatchRepository } from "./infrastructure/prisma-collection-batch.repository.js";
 import { PrismaCollectionCandidatesReader } from "./infrastructure/prisma-collection-candidates.reader.js";
@@ -105,6 +113,8 @@ import { PrismaLegalEntityRepository } from "./infrastructure/prisma-legal-entit
     AdminBillingCycleController,
     AdminCycleStatementsController,
     AdminCollectionBatchesController,
+    AdminDetachedUnpaidController,
+    CompanyDetachedUnpaidController,
   ],
   providers: [
     { provide: LegalEntityRepository, useClass: PrismaLegalEntityRepository },
@@ -124,6 +134,11 @@ import { PrismaLegalEntityRepository } from "./infrastructure/prisma-legal-entit
     { provide: CollectionLock, useClass: PrismaCollectionLock },
     { provide: CancelledOrdersReader, useClass: PrismaCancelledOrdersReader },
     { provide: OrderNumbersReader, useClass: PrismaOrderNumbersReader },
+    // Les impayés d'un site détaché (plan-sous-comptes §2.1 quater).
+    { provide: DetachedUnpaidReader, useClass: PrismaDetachedUnpaidReader },
+    { provide: UnpaidAccessReader, useClass: PrismaUnpaidAccessReader },
+    GetDetachedUnpaidOrdersHandler,
+    GetMyDetachedUnpaidOrdersHandler,
     ConstituteCollectionBatchesHandler,
     CancelCollectionBatchHandler,
     DepositCollectionBatchHandler,

@@ -8,6 +8,9 @@ import { PaymentMandateRepository } from "../../domain/payment-mandate.repositor
 import { BankAccountGuardReader } from "../../domain/ports/bank-account-guard.reader.js";
 import { CompanyBankAccountRepository } from "../../domain/ports/company-bank-account.repository.js";
 import { CustomerMandateGate } from "../../domain/ports/customer-mandate-gate.js";
+import { MandateDebtorReader } from "../../domain/ports/mandate-debtor.reader.js";
+import { Clock } from "../../../../platform/time/clock.js";
+import { ensureSiteDebitsOwnAccount } from "../site-mandate-guard.js";
 import { buildCustomerMandate } from "../customer-mandate-support.js";
 import { ensureCustomerMandateAccess } from "../customer-mandate-access.js";
 import { GetMyCompanyMandateDocumentQuery } from "./get-my-company-mandate-document.query.js";
@@ -41,6 +44,8 @@ export class GetMyCompanyMandateDocumentHandler implements IQueryHandler<
     private readonly creditors: CreditorReader,
     private readonly logos: LegalEntityLogoReader,
     private readonly store: DocumentStore,
+    private readonly debtors: MandateDebtorReader,
+    private readonly clock: Clock,
   ) {}
 
   async execute(query: GetMyCompanyMandateDocumentQuery): Promise<CustomerMandatePdf> {
@@ -50,6 +55,7 @@ export class GetMyCompanyMandateDocumentHandler implements IQueryHandler<
       query.companyId,
     );
 
+    await ensureSiteDebitsOwnAccount(this.debtors, query.companyId, this.clock.now());
     if ((await this.mandates.findDraft(query.companyId)) === null) {
       throw new MandateDocumentNotFoundError(query.companyId);
     }
@@ -60,6 +66,8 @@ export class GetMyCompanyMandateDocumentHandler implements IQueryHandler<
         creditors: this.creditors,
         logos: this.logos,
         store: this.store,
+        debtors: this.debtors,
+        clock: this.clock,
       },
       query.companyId,
     );

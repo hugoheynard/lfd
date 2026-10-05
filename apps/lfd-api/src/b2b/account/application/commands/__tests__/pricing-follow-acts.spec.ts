@@ -24,6 +24,7 @@ import {
   InMemoryFollows,
   RecordingHierarchyLock,
   RecordingPricingJournal,
+  RecordingSiteMandates,
 } from "./hierarchy-doubles.js";
 
 /**
@@ -45,6 +46,7 @@ function world(companies: readonly Company[], follows: readonly SubAccountFollow
     lock: new RecordingHierarchyLock(log),
     events: new RecordingPublisher(),
     pricing: new RecordingPricingJournal(),
+    mandates: new RecordingSiteMandates(log),
   };
 }
 type World = ReturnType<typeof world>;
@@ -76,6 +78,7 @@ function stop(w: World) {
     clock,
     new DirectUnitOfWork(),
     w.pricing,
+    w.mandates,
   );
 }
 
@@ -154,6 +157,7 @@ describe("le suivi du tarif, au journal des prix", () => {
       clock,
       new DirectUnitOfWork(),
       w.pricing,
+      w.mandates,
     ).execute(new DetachFromParentCommand("chalet"));
 
     expect(w.pricing.ended).toEqual([
@@ -173,6 +177,7 @@ describe("le suivi du tarif, au journal des prix", () => {
       clock,
       new DirectUnitOfWork(),
       w.pricing,
+      w.mandates,
     ).execute(new DetachFromParentCommand("chalet"));
 
     expect(w.pricing.ended).toEqual([]);

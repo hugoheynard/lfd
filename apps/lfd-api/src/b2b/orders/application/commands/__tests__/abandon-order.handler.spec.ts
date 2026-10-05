@@ -153,6 +153,7 @@ function build(scenario: Scenario = {}) {
     stripePaymentIntentId: scenario.intent === undefined ? "pi_1" : scenario.intent,
     clientele: scenario.clientele === undefined ? "public" : scenario.clientele,
     loyaltyVoucherId: scenario.voucher ?? null,
+    billedCustomer: null,
   });
   const vouchers = new RecordingRedemption();
   const handler = new AbandonOrderHandler(

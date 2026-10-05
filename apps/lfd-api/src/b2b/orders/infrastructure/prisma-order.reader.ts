@@ -21,6 +21,7 @@ import {
   type OrderView,
   type PaymentStatus,
   type SheetContact,
+  type SheetCustomer,
   type AtelierSheet,
   type RecurringDeltas,
   recurringDeltasSchema,
@@ -233,6 +234,10 @@ export class PrismaOrderReader extends OrderReader {
         stripePaymentIntentId: true,
         clientele: true,
         loyaltyVoucherId: true,
+        billedCompanyId: true,
+        billedCompany: { select: { raisonSociale: true } },
+        // Élargit la sélection commune : le bon nomme le site par son enseigne.
+        company: { select: { raisonSociale: true, enseigne: true } },
       },
     });
     if (row === null) {
@@ -245,6 +250,7 @@ export class PrismaOrderReader extends OrderReader {
       stripePaymentIntentId: row.stripePaymentIntentId,
       clientele: row.clientele,
       loyaltyVoucherId: row.loyaltyVoucherId,
+      billedCustomer: billedCustomerOf(row),
     };
   }
 
@@ -548,6 +554,30 @@ interface NameableRow {
     readonly email: string;
     readonly firstName: string;
     readonly lastName: string;
+  };
+}
+
+/**
+ * Le client du bon quand un AUTRE a réglé (plan-sous-comptes §2.3) : le nom du
+ * site en tête, la raison sociale du payeur copié en mention légale.
+ */
+function billedCustomerOf(row: {
+  readonly companyId: string | null;
+  readonly billedCompanyId: string | null;
+  readonly billedCompany: { readonly raisonSociale: string } | null;
+  readonly company: { readonly raisonSociale: string; readonly enseigne: string } | null;
+}): SheetCustomer | null {
+  if (
+    row.billedCompanyId === null ||
+    row.billedCompanyId === row.companyId ||
+    row.billedCompany === null ||
+    row.company === null
+  ) {
+    return null;
+  }
+  return {
+    tradeName: companyDisplayName(row.company),
+    legalName: row.billedCompany.raisonSociale,
   };
 }
 

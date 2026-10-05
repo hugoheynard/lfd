@@ -1,4 +1,4 @@
-import type { CompanyFollowAspect } from "@lfd/contracts";
+import type { CollectionForm, CompanyFollowAspect } from "@lfd/contracts";
 import type { JournalFactType } from "@lfd/contracts/journal-facts";
 
 import { ACCOUNT_FACTS } from "./account-facts.js";
@@ -94,5 +94,22 @@ export class GroupWithoutDeliverySetEvent extends CompanyStaffAct {
   }
   protected override details(): Record<string, unknown> {
     return { enabled: this.enabled };
+  }
+}
+
+/** La forme de prélèvement d'un site, à partir de `since` (plan-sous-comptes §2.1 ter). */
+export class CollectionFormSetEvent extends CompanyStaffAct {
+  constructor(
+    company: NamedRef,
+    readonly form: CollectionForm,
+    readonly since: Date,
+  ) {
+    super(company);
+  }
+  protected type(): JournalFactType {
+    return ACCOUNT_FACTS.collectionFormSet;
+  }
+  protected override details(): Record<string, unknown> {
+    return { form: this.form, since: this.since.toISOString() };
   }
 }

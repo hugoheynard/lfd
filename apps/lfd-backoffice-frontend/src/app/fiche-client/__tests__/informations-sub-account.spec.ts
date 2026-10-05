@@ -60,6 +60,7 @@ function company(hierarchy: Partial<CompanyHierarchyView> = {}): AdminCompanyDet
       subAccounts: [],
       follows: [],
       groupWithoutDelivery: false,
+      collectionForm: null,
       ...hierarchy,
     },
   };

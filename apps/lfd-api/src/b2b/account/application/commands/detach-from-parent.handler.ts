@@ -8,6 +8,7 @@ import { AccountHierarchyLock } from "../../domain/ports/account-hierarchy.lock.
 import { CompanyFollowsRepository } from "../../domain/ports/company-follows.repository.js";
 import { CompanyRepository } from "../../domain/ports/company.repository.js";
 import { PricingFollowJournal } from "../../domain/ports/pricing-follow.journal.js";
+import { SiteMandateRevocation } from "../../domain/ports/site-mandate-revocation.js";
 import { loadCompany, loadParentOf, named } from "../services/account-hierarchy-support.js";
 import { DetachFromParentCommand } from "./detach-from-parent.command.js";
 
@@ -15,6 +16,10 @@ import { DetachFromParentCommand } from "./detach-from-parent.command.js";
  * Détache un sous-compte : ferme ses suivis en cours, PUIS retire le lien.
  * L'ordre compte — la base refuse une période en cours qui ne suit pas le
  * principal actuel (`company_follows_current_parent`).
+ *
+ * Un site qui suivait `billing` voit révoquer, dans la même transaction, ses
+ * mandats qui nomment le principal (plan-sous-comptes §2.1 ter, S4) : le
+ * principal n'est plus son débiteur.
  */
 @CommandHandler(DetachFromParentCommand)
 export class DetachFromParentHandler implements ICommandHandler<DetachFromParentCommand, void> {
@@ -26,6 +31,7 @@ export class DetachFromParentHandler implements ICommandHandler<DetachFromParent
     private readonly clock: Clock,
     private readonly uow: UnitOfWork,
     private readonly pricingJournal: PricingFollowJournal,
+    private readonly siteMandates: SiteMandateRevocation,
   ) {}
 
   async execute(command: DetachFromParentCommand): Promise<void> {
@@ -37,10 +43,14 @@ export class DetachFromParentHandler implements ICommandHandler<DetachFromParent
       const now = this.clock.now();
       // Lue AVANT de fermer : l'acte de fin cite le début de la période.
       const pricing = follows.followsAt("pricing", now);
+      const billing = follows.followsAt("billing", now);
       const closed = follows.closeAll(now);
       await this.follows.save(follows);
       child.company.detachFromParent();
       await this.companies.save(child.company);
+      if (billing !== null) {
+        await this.siteMandates.revokeNaming(child.id, billing.parentId, now);
+      }
       await this.events.publishTraced(new ParentDetachedEvent(named(child), named(parent), closed));
       if (pricing !== null && closed.includes("pricing")) {
         await this.pricingJournal.followEnded({

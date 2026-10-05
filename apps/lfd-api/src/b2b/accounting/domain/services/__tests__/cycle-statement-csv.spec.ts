@@ -20,6 +20,7 @@ function order(overrides: Partial<CycleOrder>): CycleOrder {
     orderNumber: "CMD-1",
     placedAt: new Date("2026-09-14T22:30:00.000Z"),
     companyId: "c-port",
+    billedCompanyId: null,
     siteName: "Boulangerie du Port",
     subtotalCents: 10_000,
     discountCents: 500,

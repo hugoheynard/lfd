@@ -93,6 +93,8 @@ export function draftMandate(): PaymentMandate {
     proofStorageKey: null,
     proofFileName: null,
     creditorId: "ent_1",
+    bankAccountId: null,
+    debtor: null,
   });
 }
 
@@ -108,5 +110,7 @@ export function activeMandate(): PaymentMandate {
     proofStorageKey: null,
     proofFileName: null,
     creditorId: null,
+    bankAccountId: null,
+    debtor: null,
   });
 }

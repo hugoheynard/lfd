@@ -83,6 +83,13 @@ export interface CompanyHierarchyView {
   readonly follows: readonly FollowedAspectView[];
   /** « Compte de groupe, sans livraison » (§4). */
   readonly groupWithoutDelivery: boolean;
+  /**
+   * La forme de prélèvement EN VIGUEUR d'un sous-compte (§2.1 ter), depuis
+   * `since`. `null` hors sous-compte, ou tant qu'aucune forme n'a été posée :
+   * l'assemblage du lot applique alors `principal_mandate` (le mandat du
+   * principal, facturation groupée).
+   */
+  readonly collectionForm: { readonly form: CollectionForm; readonly since: string } | null;
 }
 
 /**
@@ -119,3 +126,49 @@ export type FollowAspectPayload = z.infer<typeof followAspectPayloadSchema>;
 /** `POST /admin/companies/:companyId/group-without-delivery`. */
 export const groupWithoutDeliveryPayloadSchema = z.strictObject({ enabled: z.boolean() });
 export type GroupWithoutDeliveryPayload = z.infer<typeof groupWithoutDeliveryPayloadSchema>;
+
+/**
+ * Comment un site qui suit `billing` est prélevé (`plan-sous-comptes.md`
+ * §2.1 ter). Le débiteur nommé est toujours la société du principal :
+ * - `principal_mandate` : le mandat du principal — une ligne pour la société ;
+ * - `own_mandate_principal_iban` : un mandat du site, sur le RIB du principal ;
+ * - `own_iban` : un mandat du site, sur le RIB du site.
+ *
+ * Les deux dernières donnent une ligne par site au prélèvement, et c'est la
+ * « facturation séparée » du §2.1 côté prélèvement.
+ */
+export const COLLECTION_FORMS = [
+  "principal_mandate",
+  "own_mandate_principal_iban",
+  "own_iban",
+] as const;
+export type CollectionForm = (typeof COLLECTION_FORMS)[number];
+
+/** `PUT /admin/companies/:companyId/collection-form` — décision datée, à l'instant du geste. */
+export const collectionFormPayloadSchema = z.strictObject({ form: z.enum(COLLECTION_FORMS) });
+export type CollectionFormPayload = z.infer<typeof collectionFormPayloadSchema>;
+
+/**
+ * Une commande d'un site **détaché** qui reste à régler à la main
+ * (`plan-sous-comptes.md` §2.1 quater) : passée au compte de son principal,
+ * écartée du prélèvement parce que le site ne le suit plus. Le principal n'est
+ * jamais débité d'office ; la liste sert à la régler autrement.
+ */
+export interface DetachedUnpaidOrderView {
+  readonly orderId: string;
+  readonly orderNumber: string;
+  /** ISO 8601 — la passation. */
+  readonly placedAt: string;
+  readonly totalCents: number;
+  /** Le site qui a commandé. */
+  readonly site: CompanyRefView;
+  /** Le principal qui le réglait à la commande — le payeur copié. */
+  readonly payer: CompanyRefView;
+  /** ISO 8601 — quand le lot l'a écartée. */
+  readonly excludedAt: string;
+}
+
+/** `GET …/detached-unpaid-orders` — de la plus ancienne à la plus récente. */
+export interface DetachedUnpaidOrdersView {
+  readonly orders: readonly DetachedUnpaidOrderView[];
+}

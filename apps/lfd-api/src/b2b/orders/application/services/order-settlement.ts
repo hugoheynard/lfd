@@ -38,7 +38,11 @@ export async function settleOrder(
   settlement: OrderSettlement | null,
 ): Promise<CreatedIntent | null> {
   const requiresCard =
-    (await requiresCardFor(ports.guard, companyId, settlement)) && order.totalCents > 0;
+    (await requiresCardFor(
+      ports.guard,
+      { companyId, payerId: order.billedCompanyId },
+      settlement,
+    )) && order.totalCents > 0;
   if (!requiresCard) {
     order.deferPayment();
     return null;
@@ -59,10 +63,11 @@ export async function settleOrder(
  */
 async function requiresCardFor(
   guard: SettlementPorts["guard"],
-  companyId: string | null,
+  parties: SettlementParties,
   settlement: OrderSettlement | null,
 ): Promise<boolean> {
-  const standing = await accountStanding(guard, companyId);
+  const { companyId } = parties;
+  const standing = await accountStanding(guard, parties);
   const onAccount = standing === "granted";
   // **Payer comptant est toujours possible**, y compris pour une société à qui
   // le mensuel a été accordé. Le crédit est une facilité, pas une obligation :
@@ -86,22 +91,36 @@ async function requiresCardFor(
   return !onAccount;
 }
 
+/** La société qui commande, et le payeur copié sur la commande. */
+export interface SettlementParties {
+  readonly companyId: string | null;
+  /** `null` sans société ; la société elle-même quand elle paie seule. */
+  readonly payerId: string | null;
+}
+
 /**
- * Une société **active** à qui un crédit a été accordé, et dont le
- * prélèvement n'est pas bloqué, peut régler au compte.
+ * Une société **active** dont le PAYEUR a un crédit accordé, et un
+ * prélèvement non bloqué, peut régler au compte.
+ *
+ * 🔴 Les termes lus sont ceux du payeur (`plan-sous-comptes.md` §2.3, T44) :
+ * un site qui suit `billing` commande au compte de son principal. Le statut lu
+ * reste celui de la société qui commande — un site en attente ne commande pas
+ * au compte de qui que ce soit ; celui du payeur a déjà été jugé à la
+ * composition (`orderPayerOf`).
  *
  * Sans entreprise, ou entreprise non activée : jamais. Le crédit se négocie
  * avec une société cliente, pas avec un panier.
  */
-async function accountStanding(
+export async function accountStanding(
   guard: SettlementPorts["guard"],
-  companyId: string | null,
+  parties: SettlementParties,
 ): Promise<AccountSettlementStanding> {
+  const { companyId } = parties;
   if (companyId === null) {
     return "none";
   }
   if ((await guard.companyStatusOf(companyId)) !== "active") {
     return "none";
   }
-  return guard.settlesOnAccount(companyId);
+  return guard.settlesOnAccount(parties.payerId ?? companyId);
 }

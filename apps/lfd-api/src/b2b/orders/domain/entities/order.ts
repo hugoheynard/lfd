@@ -8,6 +8,7 @@ import type {
 } from "@lfd/contracts";
 
 import { EmptyOrderError, InvalidOrderPaymentError } from "../errors/order-errors.js";
+import { BilledWithoutCompanyError } from "../errors/order-payer-errors.js";
 import type { VatShare } from "@lfd/money";
 
 import {
@@ -44,6 +45,7 @@ export class Order {
 
   private constructor(
     private readonly companyId: string | null,
+    private readonly billedCompanyIdValue: string | null,
     private readonly placedByUserId: string,
     private readonly placedByStaffId: string | null,
     private readonly fulfillment: OrderFulfillmentInput,
@@ -69,6 +71,10 @@ export class Order {
   static draft(input: DraftOrderInput): Order {
     if (input.lines.length === 0) {
       throw new EmptyOrderError();
+    }
+    // L'image du CHECK `order_billed_needs_company` : refusé ici, avant la base.
+    if (input.companyId === null && input.billedCompanyId !== null) {
+      throw new BilledWithoutCompanyError();
     }
     if (input.discountCents < 0 || input.deliveryFeeCents < 0 || input.lateFeeCents < 0) {
       throw new InvalidOrderPaymentError("Remise, frais et surtaxe doivent être positifs.");
@@ -113,6 +119,7 @@ export class Order {
     });
     return new Order(
       input.companyId,
+      input.billedCompanyId,
       input.placedByUserId,
       input.placedByStaffId,
       fulfillment,
@@ -133,6 +140,14 @@ export class Order {
       vatShares,
       totalCents,
     );
+  }
+
+  /**
+   * Le payeur copié à la passation — celui dont les termes décident du
+   * règlement au compte (T44), et que tout lecteur de l'argent lit ensuite.
+   */
+  get billedCompanyId(): string | null {
+    return this.billedCompanyIdValue;
   }
 
   /** Total **TTC** à encaisser — la source pour dimensionner l'intention Stripe. */
@@ -165,6 +180,7 @@ export class Order {
     }
     return {
       companyId: this.companyId,
+      billedCompanyId: this.billedCompanyIdValue,
       clientele: clienteleOf(this.companyId),
       placedByUserId: this.placedByUserId,
       placedByStaffId: this.placedByStaffId,

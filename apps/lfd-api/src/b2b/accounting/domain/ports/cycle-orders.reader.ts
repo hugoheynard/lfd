@@ -26,6 +26,8 @@ export interface CycleOrder {
   readonly placedAt: Date;
   /** La société qui a commandé (`company_id`) — le site, quand c'est un sous-compte. */
   readonly companyId: string;
+  /** Le payeur copié à la passation (S4), `null` pour une commande d'avant. */
+  readonly billedCompanyId: string | null;
   /**
    * Le nom sous lequel ce site se reconnaît (`companyDisplayName` : l'enseigne,
    * à défaut la raison sociale). Deux chalets d'une même société ont la même

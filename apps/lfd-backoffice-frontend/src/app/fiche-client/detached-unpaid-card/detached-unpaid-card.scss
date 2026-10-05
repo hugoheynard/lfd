@@ -1,0 +1,22 @@
+.body {
+  display: flex;
+  flex-direction: column;
+  gap: var(--fold-space-sm);
+}
+
+.orders {
+  margin: 0;
+  padding-inline-start: var(--fold-space-lg);
+  display: flex;
+  flex-direction: column;
+  gap: var(--fold-space-xs);
+}
+
+.total {
+  margin: 0;
+  text-align: right;
+}
+
+.amount {
+  font-variant-numeric: tabular-nums;
+}

@@ -39,6 +39,8 @@ function snapshot(overrides: Partial<MandateSnapshot>): MandateSnapshot {
     proofStorageKey: PROOF_KEY,
     proofFileName: "mandat-signe.pdf",
     creditorId: "ent_1",
+    bankAccountId: null,
+    debtor: null,
     ...overrides,
   };
 }

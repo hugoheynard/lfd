@@ -47,6 +47,12 @@ export interface OrderVoucher {
 /** Ce qu'il faut pour **composer** une commande (prix/frais déjà résolus serveur). */
 export interface DraftOrderInput {
   readonly companyId: string | null;
+  /**
+   * Le PAYEUR résolu à la passation (`orderPayerOf`, `plan-sous-comptes.md`
+   * §2.3) : le principal d'un site qui suit `billing`, sinon la société.
+   * `null` sans société — l'agrégat refuse un payeur sans elle.
+   */
+  readonly billedCompanyId: string | null;
   /** Au nom de qui — toujours un client, même quand l'équipe saisit pour lui. */
   readonly placedByUserId: string;
   /** Qui l'a saisie chez LFC, ou `null` quand le client a commandé seul. */
@@ -101,6 +107,8 @@ export interface DraftOrderInput {
 /** État de la commande sérialisé pour la persistance — aucun type Prisma ici. */
 export interface OrderToPlace {
   readonly companyId: string | null;
+  /** Le payeur copié (cf. {@link DraftOrderInput.billedCompanyId}). */
+  readonly billedCompanyId: string | null;
   /** Qui commande, déduit par l'agrégat — cf. `clienteleOf` dans `order-fulfillment.ts`. */
   readonly clientele: OrderClientele;
   readonly placedByUserId: string;

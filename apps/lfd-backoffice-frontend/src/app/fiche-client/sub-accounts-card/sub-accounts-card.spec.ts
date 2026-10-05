@@ -57,6 +57,7 @@ function principal(hierarchy: Partial<CompanyHierarchyView> = {}): AdminCompanyD
       subAccounts: [],
       follows: [],
       groupWithoutDelivery: false,
+      collectionForm: null,
       ...hierarchy,
     },
   };

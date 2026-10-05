@@ -22,21 +22,29 @@ export function billingFollowAt(
 }
 
 /**
- * 🔴 **Le payeur d'une commande — le SEUL endroit où il se résout** (vue payeur
- * du relevé, avant S4).
+ * 🔴 **Le payeur d'une commande — le SEUL endroit où il se lit.**
  *
- * Une commande est réglée par le principal que son site suivait en `billing`
- * **à la date de la commande** ; sinon par la société qui a commandé. Le suivi
- * d'aujourd'hui ne déplace jamais une commande d'hier : un site détaché en
- * cours de mois laisse ses commandes d'avant chez le principal.
+ * Depuis S4, le payeur est COPIÉ sur la commande à sa passation
+ * (`orders.billed_company_id`, plan-sous-comptes §2.3) : c'est lui, et la
+ * résolution vivante n'y entre plus. Réaligner un site ne déplace jamais une
+ * commande déjà passée d'un payeur à l'autre.
  *
- * S4 remplace ce calcul par la valeur figée à la passation,
- * `COALESCE(billed_company_id, company_id)` (plan-sous-comptes §2.3) : c'est
- * cette fonction, et elle seule, qu'il faudra retirer.
+ * ⚠️ **La résolution à date ne sert plus qu'aux commandes d'AVANT S4**, qui
+ * n'ont pas la colonne (aucun remplissage rétroactif, §5) : le principal que
+ * le site suivait en `billing` à la date de la commande, sinon la société qui
+ * a commandé. Elle disparaîtra quand plus aucun relevé ni lot ne lira une
+ * commande sans payeur copié.
  */
 export function billedPayerOf(
-  order: { readonly companyId: string; readonly placedAt: Date },
+  order: {
+    readonly companyId: string;
+    readonly placedAt: Date;
+    readonly billedCompanyId: string | null;
+  },
   follows: readonly BillingFollow[],
 ): string {
+  if (order.billedCompanyId !== null) {
+    return order.billedCompanyId;
+  }
   return billingFollowAt(order.companyId, order.placedAt, follows)?.payerId ?? order.companyId;
 }

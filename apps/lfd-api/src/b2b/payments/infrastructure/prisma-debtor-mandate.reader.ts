@@ -7,6 +7,7 @@ import {
 import { FieldCipher } from "../../../platform/crypto/field-cipher.js";
 import { PrismaService } from "../../../platform/database/prisma.service.js";
 import { TechnicalError } from "../../../platform/shared/errors/app-error.js";
+import { debitedAccounts } from "./mandate-accounts.js";
 
 /**
  * Adaptateur du port que la comptabilité déclare, **rangé côté `payments`**
@@ -30,30 +31,25 @@ export class PrismaDebtorMandateReader extends DebtorMandateReader {
       return new Map();
     }
 
-    const [mandates, accounts] = await Promise.all([
-      this.prisma.paymentMandate.findMany({
-        where: { companyId: { in: [...companyIds] }, status: "active" },
-        // Schéma et type lus SUR LE MANDAT : figés à la frappe, ils disent ce que
-        // le papier signé autorise, quel que soit le réglage courant de l'entité.
-        select: {
-          id: true,
-          companyId: true,
-          reference: true,
-          scheme: true,
-          paymentType: true,
-          acceptedAt: true,
-        },
-      }),
-      this.prisma.companyBankAccount.findMany({
-        where: { companyId: { in: [...companyIds] } },
-        select: { companyId: true, ibanSealed: true, bic: true },
-      }),
-    ]);
-
-    const accountOf = new Map(accounts.map((row) => [row.companyId, row]));
+    const mandates = await this.prisma.paymentMandate.findMany({
+      where: { companyId: { in: [...companyIds] }, status: "active" },
+      // Schéma et type lus SUR LE MANDAT : figés à la frappe, ils disent ce que
+      // le papier signé autorise, quel que soit le réglage courant de l'entité.
+      select: {
+        id: true,
+        companyId: true,
+        bankAccountId: true,
+        reference: true,
+        scheme: true,
+        paymentType: true,
+        acceptedAt: true,
+      },
+    });
+    // Le compte que le mandat DÉSIGNE (T8) ; celui de sa société avant S4.
+    const accountOf = await debitedAccounts(this.prisma, mandates);
     const found = new Map<string, DebtorMandate>();
     for (const mandate of mandates) {
-      const account = accountOf.get(mandate.companyId);
+      const account = accountOf(mandate);
       if (account === undefined) {
         // Mandat signé, compte jamais recopié. Une absence, pas une panne : la
         // société sort du lot en étant nommée, plutôt que d'y entrer sans IBAN.

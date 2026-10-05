@@ -6,6 +6,7 @@ import {
   type CollectableOrder,
 } from "../domain/ports/collection-candidates.reader.js";
 import type { BillingFollow } from "../domain/ports/statement-billing.reader.js";
+import type { CollectionFormName } from "../domain/value-objects/collection-form.js";
 import type { SepaScheme } from "../domain/value-objects/sepa-scheme.js";
 import { billableOrderWhere } from "./billable-order-criterion.js";
 import { toOrderCollectionState } from "./order-collection.mapper.js";
@@ -36,7 +37,14 @@ export class PrismaCollectionCandidatesReader extends CollectionCandidatesReader
     const orders = await this.prisma.order.findMany({
       where: billableOrderWhere(floor, closesAt),
       orderBy: [{ createdAt: "asc" }, { orderNumber: "asc" }],
-      select: { id: true, orderNumber: true, companyId: true, createdAt: true, totalCents: true },
+      select: {
+        id: true,
+        orderNumber: true,
+        companyId: true,
+        billedCompanyId: true,
+        createdAt: true,
+        totalCents: true,
+      },
     });
     const states = await this.prisma.orderCollection.findMany({
       where: { orderId: { in: orders.map((order) => order.id) } },
@@ -53,6 +61,7 @@ export class PrismaCollectionCandidatesReader extends CollectionCandidatesReader
           orderNumber: order.orderNumber,
           companyId: order.companyId,
           placedAt: order.createdAt,
+          billedCompanyId: order.billedCompanyId,
           totalCents: order.totalCents,
           collection: state === undefined ? null : toOrderCollectionState(state),
         },
@@ -78,6 +87,21 @@ export class PrismaCollectionCandidatesReader extends CollectionCandidatesReader
       validFrom: row.validFrom,
       validTo: row.validTo,
     }));
+  }
+
+  async collectionFormsAt(
+    companyIds: readonly string[],
+    at: Date,
+  ): Promise<ReadonlyMap<string, CollectionFormName>> {
+    const rows = await this.prisma.companyCollectionForm.findMany({
+      where: {
+        companyId: { in: [...companyIds] },
+        validFrom: { lte: at },
+        OR: [{ validTo: null }, { validTo: { gt: at } }],
+      },
+      select: { companyId: true, form: true },
+    });
+    return new Map(rows.map((row) => [row.companyId, row.form]));
   }
 
   async companyNames(companyIds: readonly string[]): Promise<ReadonlyMap<string, string>> {

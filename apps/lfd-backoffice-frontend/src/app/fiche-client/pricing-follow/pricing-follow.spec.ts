@@ -12,6 +12,7 @@ const ALONE: CompanyHierarchyView = {
   subAccounts: [],
   follows: [],
   groupWithoutDelivery: false,
+  collectionForm: null,
 };
 
 async function boot(

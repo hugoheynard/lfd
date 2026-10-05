@@ -25,7 +25,13 @@ function withGate(
 ): AdminCompanyDetail {
   return {
     kbis: null,
-    hierarchy: { parent: null, subAccounts: [], follows: [], groupWithoutDelivery: false },
+    hierarchy: {
+      parent: null,
+      subAccounts: [],
+      follows: [],
+      groupWithoutDelivery: false,
+      collectionForm: null,
+    },
     ...over,
     gate: { canActivate: false, blocking: [], checklist: ALL_TODO, ...gate },
   } as AdminCompanyDetail;
@@ -41,6 +47,7 @@ const SITE = {
     subAccounts: [],
     follows: [{ aspect: 'billing', since: '2026-09-10T08:00:00.000Z' }],
     groupWithoutDelivery: false,
+    collectionForm: null,
   },
 } as Partial<AdminCompanyDetail>;
 

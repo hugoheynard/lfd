@@ -15,6 +15,7 @@ import { FicheClientActions } from '../informations/fiche-client.actions';
 import { FicheClientFacade } from '../informations/fiche-client.facade';
 import { FicheClientPanels } from '../informations/fiche-client.panels';
 import { FicheClientStore } from '../informations/fiche-client.store';
+import { CollectionFormCard } from '../collection-form-card/collection-form-card';
 import { FollowParentToggle } from '../follow-parent-toggle/follow-parent-toggle';
 import { ParentBanner } from '../parent-banner/parent-banner';
 import { SubAccountsCard } from '../sub-accounts-card/sub-accounts-card';
@@ -56,6 +57,11 @@ export function followReminders(follows: readonly FollowedAspectView[]): readonl
   });
 }
 
+/** Le compte suit-il la facturation de son principal — est-ce un site ? */
+export function followsBilling(follows: readonly FollowedAspectView[]): boolean {
+  return follows.some((follow) => follow.aspect === 'billing');
+}
+
 /**
  * **L'onglet Sous-comptes** de la fiche (`plan-sous-comptes.md` §4) — sorti
  * d'Informations, où S2 l'avait posé, pour que la hiérarchie se lise d'un bloc.
@@ -76,6 +82,7 @@ export function followReminders(follows: readonly FollowedAspectView[]): readonl
     FoldElementTitleComponent,
     FoldEmptyStateComponent,
     FoldLoadingStateComponent,
+    CollectionFormCard,
     FollowParentToggle,
     ParentBanner,
     SubAccountsCard,
@@ -90,6 +97,7 @@ export class ClientSubAccountsPage {
   protected readonly fiche = inject(FicheClientFacade);
 
   protected readonly reminders = followReminders;
+  protected readonly followsBilling = followsBilling;
 
   constructor() {
     void this.fiche.start(this.route.snapshot.paramMap.get('id'));

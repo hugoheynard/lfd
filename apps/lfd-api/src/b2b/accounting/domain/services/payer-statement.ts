@@ -68,8 +68,15 @@ function payerElsewhere(
   order: CycleOrder,
   followsOfPayer: readonly BillingFollow[],
 ): StatementPayer | null {
+  const payerId = billedPayerOf(order, followsOfPayer);
+  if (payerId === order.companyId) {
+    return null;
+  }
+  // Une commande copiée au nom d'un principal l'a été pendant une période qui
+  // la couvre : le nom est celui de cette période. Faute de la trouver, l'id —
+  // jamais un nom inventé.
   const follow = billingFollowAt(order.companyId, order.placedAt, followsOfPayer);
-  return follow === null ? null : { companyId: follow.payerId, name: follow.payerName };
+  return { companyId: payerId, name: follow?.payerId === payerId ? follow.payerName : payerId };
 }
 
 /** Un groupe par site qui a au moins une commande réglée par le payeur, par nom. */

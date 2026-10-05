@@ -13,8 +13,15 @@ const FOLLOW: BillingFollow = {
   validTo: TO,
 };
 
-function at(iso: string): { companyId: string; placedAt: Date } {
-  return { companyId: "chalet", placedAt: new Date(iso) };
+interface Placed {
+  companyId: string;
+  placedAt: Date;
+  billedCompanyId: string | null;
+}
+
+/** Une commande d'avant S4 : aucun payeur copié, la résolution à date décide. */
+function at(iso: string): Placed {
+  return { companyId: "chalet", placedAt: new Date(iso), billedCompanyId: null };
 }
 
 describe("billedPayerOf", () => {
@@ -27,8 +34,12 @@ describe("billedPayerOf", () => {
   });
 
   it("prend le début inclus et la fin exclue — la borne [) de la contrainte d'exclusion", () => {
-    expect(billedPayerOf({ companyId: "chalet", placedAt: FROM }, [FOLLOW])).toBe("alpes");
-    expect(billedPayerOf({ companyId: "chalet", placedAt: TO }, [FOLLOW])).toBe("chalet");
+    expect(
+      billedPayerOf({ companyId: "chalet", placedAt: FROM, billedCompanyId: null }, [FOLLOW]),
+    ).toBe("alpes");
+    expect(
+      billedPayerOf({ companyId: "chalet", placedAt: TO, billedCompanyId: null }, [FOLLOW]),
+    ).toBe("chalet");
   });
 
   it("garde le suivi en cours ouvert vers l'avenir", () => {
@@ -38,5 +49,17 @@ describe("billedPayerOf", () => {
 
   it("ignore la période d'un autre site", () => {
     expect(billingFollowAt("autre", new Date("2026-09-15T08:00:00.000Z"), [FOLLOW])).toBeNull();
+  });
+
+  it("lit le payeur COPIÉ à la passation, quelles que soient les périodes", () => {
+    // Le site a cessé de suivre avant la commande, mais elle a été passée
+    // (et copiée) au nom du principal : la copie fait foi (§2.3).
+    const copied = { ...at("2026-09-25T08:00:00.000Z"), billedCompanyId: "alpes" };
+    expect(billedPayerOf(copied, [FOLLOW])).toBe("alpes");
+  });
+
+  it("ne déplace jamais une commande copiée vers le principal d'une période qui la couvre", () => {
+    const own = { ...at("2026-09-15T08:00:00.000Z"), billedCompanyId: "chalet" };
+    expect(billedPayerOf(own, [FOLLOW])).toBe("chalet");
   });
 });

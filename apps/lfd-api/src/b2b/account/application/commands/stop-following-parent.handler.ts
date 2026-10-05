@@ -8,6 +8,7 @@ import { AccountHierarchyLock } from "../../domain/ports/account-hierarchy.lock.
 import { CompanyFollowsRepository } from "../../domain/ports/company-follows.repository.js";
 import { CompanyRepository } from "../../domain/ports/company.repository.js";
 import { PricingFollowJournal } from "../../domain/ports/pricing-follow.journal.js";
+import { SiteMandateRevocation } from "../../domain/ports/site-mandate-revocation.js";
 import { loadCompany, named } from "../services/account-hierarchy-support.js";
 import { StopFollowingParentCommand } from "./stop-following-parent.command.js";
 
@@ -19,6 +20,9 @@ import { StopFollowingParentCommand } from "./stop-following-parent.command.js";
  * (§2.1 bis) veut un passage `pending` « s'il n'a ni SIRET ni RIB », et ce
  * critère n'est pas tranché (cf. le rapport du lot). La fiche, elle, montre
  * aussitôt l'identité légale manquante.
+ *
+ * Cesser de suivre `billing` RÉVOQUE, dans la même transaction, les mandats du
+ * site qui nomment le principal (plan-sous-comptes §2.1 ter, S4).
  */
 @CommandHandler(StopFollowingParentCommand)
 export class StopFollowingParentHandler implements ICommandHandler<
@@ -33,6 +37,7 @@ export class StopFollowingParentHandler implements ICommandHandler<
     private readonly clock: Clock,
     private readonly uow: UnitOfWork,
     private readonly pricingJournal: PricingFollowJournal,
+    private readonly siteMandates: SiteMandateRevocation,
   ) {}
 
   async execute(command: StopFollowingParentCommand): Promise<void> {
@@ -60,6 +65,9 @@ export class StopFollowingParentHandler implements ICommandHandler<
       await this.events.publishTraced(
         new ParentUnfollowedEvent(named(child), named(parent), command.aspect, now),
       );
+      if (command.aspect === "billing") {
+        await this.siteMandates.revokeNaming(child.id, closed.parentId, now);
+      }
     });
   }
 }

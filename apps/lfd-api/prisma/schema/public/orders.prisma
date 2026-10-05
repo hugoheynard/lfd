@@ -72,7 +72,16 @@ model Order {
   // qu'au client connecté (`placedByUserId` = LE mur sans entreprise). Elle se
   // rattache à une société plus tard (rapatriement — cf. doc flux commande).
   companyId String?  @map("company_id")
-  company   Company? @relation(fields: [companyId], references: [id])
+  company   Company? @relation("OrderCompany", fields: [companyId], references: [id])
+
+  /// Le PAYEUR, copié à la passation (`plan-sous-comptes.md` §2.3) : le principal
+  /// que le site suivait en `billing` à cet instant, sinon la société elle-même.
+  /// Après la passation, tout ce qui touche l'argent lit
+  /// `COALESCE(billed_company_id, company_id)` — réaligner un site ne déplace
+  /// jamais une commande passée. `null` sur les commandes d'avant S4 (aucun
+  /// remplissage rétroactif) ; un CHECK l'interdit sans `company_id`.
+  billedCompanyId String?  @map("billed_company_id")
+  billedCompany   Company? @relation("OrderBilledCompany", fields: [billedCompanyId], references: [id], onDelete: Restrict)
 
   // AU NOM DE QUI la commande est passée — toujours un client. Quand l'équipe
   // la saisit au téléphone, c'est le contact du compte qui est porté ici : la
@@ -281,6 +290,7 @@ model Order {
   lines OrderLine[]
 
   @@index([companyId])
+  @@index([billedCompanyId])
   @@index([placedByUserId])
   @@index([placedByStaffId])
   @@index([requestedDeliveryDate])

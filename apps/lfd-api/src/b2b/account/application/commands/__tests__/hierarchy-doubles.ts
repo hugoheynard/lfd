@@ -10,6 +10,9 @@ import {
   PricingFollowJournal,
   type PricingFollowEntry,
 } from "../../../domain/ports/pricing-follow.journal.js";
+import { SiteMandateRevocation } from "../../../domain/ports/site-mandate-revocation.js";
+import { CollectionFormHistory } from "../../../domain/entities/collection-form-history.js";
+import { CollectionFormRepository } from "../../../domain/ports/collection-form.repository.js";
 import { CompanyFollowsRepository } from "../../../domain/ports/company-follows.repository.js";
 import { CompanyRepository, type KbisLocation } from "../../../domain/ports/company.repository.js";
 import type { FollowPeriod } from "../../../domain/value-objects/follow-period.js";
@@ -129,6 +132,41 @@ export class RecordingPricingJournal extends PricingFollowJournal {
   }
   followEnded(entry: PricingFollowEntry & { readonly validTo: Date }): Promise<void> {
     this.ended.push(entry);
+    return Promise.resolve();
+  }
+}
+
+/** La révocation des mandats d'un site, enregistrée — et inscrite au journal d'appels. */
+export class RecordingSiteMandates extends SiteMandateRevocation {
+  readonly revoked: { siteId: string; payerId: string; at: Date }[] = [];
+
+  constructor(private readonly log: CallLog = new CallLog()) {
+    super();
+  }
+
+  revokeNaming(siteId: string, payerId: string, at: Date): Promise<void> {
+    this.log.calls.push(`revokeMandates:${siteId}:${payerId}`);
+    this.revoked.push({ siteId, payerId, at });
+    return Promise.resolve();
+  }
+}
+
+/** Les formes de prélèvement en mémoire : l'historique chargé, et ce qui a été écrit. */
+export class InMemoryCollectionForms extends CollectionFormRepository {
+  readonly saved: CollectionFormHistory[] = [];
+
+  constructor(private readonly stored: Map<string, CollectionFormHistory> = new Map()) {
+    super();
+  }
+
+  load(companyId: string): Promise<CollectionFormHistory> {
+    return Promise.resolve(
+      this.stored.get(companyId) ?? CollectionFormHistory.reconstitute(companyId, []),
+    );
+  }
+
+  save(history: CollectionFormHistory): Promise<void> {
+    this.saved.push(history);
     return Promise.resolve();
   }
 }

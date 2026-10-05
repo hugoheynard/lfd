@@ -4,7 +4,13 @@ import type { SepaScheme } from "../value-objects/sepa-scheme.js";
 /** Un mandat ACTIF, avec son créancier — ce qui rattache une commande à une entité. */
 export interface CollectionMandate {
   readonly mandateId: string;
+  /** La société qui PORTE le mandat — le site, pour un mandat de site (§2.1 ter). */
   readonly companyId: string;
+  /**
+   * La société DÉBITRICE figée à la frappe — le principal pour un mandat de
+   * site, la société elle-même sinon (et pour tout mandat d'avant S4).
+   */
+  readonly debtorCompanyId: string;
   /** `null` = RUM reprise d'un autre créancier : elle ne rattache à aucune entité. */
   readonly creditorId: string | null;
   readonly reference: string;
@@ -29,5 +35,6 @@ export interface CollectionMandate {
  * Un mandat actif sans compte recopié n'est pas rendu : il ne peut rien débiter.
  */
 export abstract class CollectionMandatesReader {
+  /** Les mandats actifs que PORTENT ces sociétés — payeurs et sites. */
   abstract activeFor(companyIds: readonly string[]): Promise<readonly CollectionMandate[]>;
 }

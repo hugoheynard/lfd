@@ -95,6 +95,6 @@ export class GetOrderSheetPdfHandler implements IQueryHandler<
       owned.companyId === null ? null : await this.guard.roleOf(query.actorUserId, owned.companyId);
     ensureOrderVisible(owned, query.actorUserId, role, query.orderId);
 
-    return this.archive.pdfOf(clientSheetOf(owned.view));
+    return this.archive.pdfOf(clientSheetOf(owned.view, owned.billedCustomer));
   }
 }

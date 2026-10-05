@@ -12,7 +12,7 @@ import {
   type PhraseFact,
   type Segment,
 } from '../phrase';
-import { FOLLOW_ASPECT } from '../values/accounts-values';
+import { COLLECTION_FORM, FOLLOW_ASPECT } from '../values/accounts-values';
 
 /**
  * **Les sous-comptes** — le lien d'un client vers son compte principal, et
@@ -150,12 +150,26 @@ const groupWithoutDeliverySet: Phrase = (fact) =>
     ['subjectLabel', 'enabled'],
   );
 
+/** « a réglé le prélèvement du client « X » : mandat du site… » (S4, §2.1 ter). */
+const collectionFormSet: Phrase = (fact) =>
+  byActor(
+    fact,
+    [
+      text('a réglé le prélèvement '),
+      ...ofClient(fact),
+      text(' : '),
+      valueIn(COLLECTION_FORM, fact.payload['form'], { inSentence: true }),
+    ],
+    ['subjectLabel', 'form', 'since'],
+  );
+
 export const SUB_ACCOUNT_PHRASES = {
   'company.parent_attached': parentAttached,
   'company.parent_detached': parentDetached,
   'company.parent_followed': alignment('a aligné', 'since'),
   'company.parent_unfollowed': alignment('a désaligné', 'until'),
   'company.group_without_delivery_set': groupWithoutDeliverySet,
+  'company.collection_form_set': collectionFormSet,
   'pricing_follow.started': followOnChild('a aligné', 'sur', ['validFrom']),
   'pricing_follow.ended': followOnChild('a désaligné', 'de', ['validFrom', 'validTo']),
   'pricing_follower.joined': followOnParent('a aligné', 'sur', ['validFrom']),

@@ -100,6 +100,7 @@ import { ListPersonalOrdersHandler } from "./application/queries/list-personal-o
 import { CustomerSkuReader } from "./domain/ports/customer-sku.reader.js";
 import { OrderCutoffReader } from "./domain/ports/order-cutoff.reader.js";
 import { OrderGuardReader } from "./domain/ports/order-guard.reader.js";
+import { OrderPayerReader } from "./domain/ports/order-payer.reader.js";
 import { OrderReader } from "./domain/ports/order.reader.js";
 import { OrderDraftRepository } from "./domain/ports/order-draft.repository.js";
 import { ShopCartRepository } from "./domain/ports/shop-cart.repository.js";
@@ -107,6 +108,7 @@ import { OrderIdempotencyStore } from "./domain/ports/order-idempotency.store.js
 import { OrderRepository } from "./domain/ports/order.repository.js";
 import { PrismaCustomerSkuReader } from "./infrastructure/prisma-customer-sku.reader.js";
 import { PrismaOrderGuardReader } from "./infrastructure/prisma-order-guard.reader.js";
+import { PrismaOrderPayerReader } from "./infrastructure/prisma-order-payer.reader.js";
 import { PrismaOrderDraftRepository } from "./infrastructure/prisma-order-draft.repository.js";
 import { PrismaShopCartRepository } from "./infrastructure/prisma-shop-cart.repository.js";
 import { PrismaOrderReader } from "./infrastructure/prisma-order.reader.js";
@@ -322,6 +324,7 @@ import { AdminSupervisionController } from "./http/admin-supervision.controller.
     // d'ajouter un cache à l'une et pas à l'autre.
     { provide: OrderCutoffReader, useExisting: OrderCutoffRepository },
     { provide: OrderGuardReader, useClass: PrismaOrderGuardReader },
+    { provide: OrderPayerReader, useClass: PrismaOrderPayerReader },
     // Le port étroit du statut, sur la MÊME instance que le garde : la clientèle
     // n'a besoin que de lui, et deux lecteurs du statut n'auraient aucune raison
     // de diverger — donc aucune raison d'exister deux fois.

@@ -2,6 +2,11 @@ import type { CollectionExclusionReason } from "../entities/order-collection.js"
 import type { CollectableOrder } from "../ports/collection-candidates.reader.js";
 import type { CollectionMandate } from "../ports/collection-mandates.reader.js";
 import type { BillingFollow } from "../ports/statement-billing.reader.js";
+import {
+  collectsOnSiteMandate,
+  DEFAULT_COLLECTION_FORM,
+  type CollectionFormName,
+} from "../value-objects/collection-form.js";
 import type { SepaScheme } from "../value-objects/sepa-scheme.js";
 import { billedPayerOf, billingFollowAt } from "./billed-payer.js";
 import { SEQUENCE_ORDER, sequenceTypeOf } from "./pain008-document.js";
@@ -17,9 +22,13 @@ import { SEQUENCE_ORDER, sequenceTypeOf } from "./pain008-document.js";
  * 2. si ce payeur n'est plus suivi **aujourd'hui** → `payer_detached` : le
  *    principal n'est jamais débité d'office pour un sous-compte qui ne le suit
  *    plus (Hugo, 2026-10-05, plan-sous-comptes §2.1 quater) ;
- * 3. **le mandat effectif** est le mandat actif du payeur ; aucun →
- *    `no_mandate` ; deux créanciers → `ambiguous_creditor` (une interdiction,
- *    pas un tirage) ;
+ * 3. **le mandat effectif** (plan-sous-comptes §2.1 ter) : pour un site réglé
+ *    par son principal dont la forme, à la clôture, est « mandat du site »
+ *    (sur le RIB du principal ou le sien), le mandat actif du SITE qui nomme
+ *    ce principal débiteur ; à défaut, ou dans la forme « mandat du
+ *    principal », le mandat actif du payeur. Aucun → `no_mandate` ; deux
+ *    créanciers → `ambiguous_creditor` (une interdiction, pas un tirage).
+ *    Les lignes se groupent PAR MANDAT : une par site dans les formes 2 et 3 ;
  * 4. un mandat d'une AUTRE entité laisse la commande intacte : elle appartient
  *    au lot de cette entité-là ;
  * 5. un mandat ponctuel déjà prélevé → `one_off_consumed` ;
@@ -41,6 +50,8 @@ export interface AssemblyInput {
   readonly orders: readonly CollectableOrder[];
   readonly follows: readonly BillingFollow[];
   readonly mandates: readonly CollectionMandate[];
+  /** La forme de prélèvement des sites à la clôture ; absent = `principal_mandate`. */
+  readonly collectionForms: ReadonlyMap<string, CollectionFormName>;
   readonly consumedMandates: ReadonlySet<string>;
   readonly companyNames: ReadonlyMap<string, string>;
   readonly liveSchemes: readonly SepaScheme[];
@@ -122,13 +133,12 @@ function judge(order: CollectableOrder, input: AssemblyInput): Verdict {
       return { kind: "exclude", reason: "payer_detached", payerId };
     }
   }
-  const candidates = input.mandates.filter(
-    (mandate) => mandate.companyId === payerId && mandate.creditorId !== null,
-  );
+  const { candidates, answerable } = effectiveMandates(order, payerId, input);
   const creditors = new Set(candidates.map((mandate) => mandate.creditorId));
   const mandate = candidates[0];
   if (mandate === undefined) {
-    return { kind: "exclude", reason: "no_mandate", payerId };
+    // `payerId` porte ici qui NOMMER : le site quand il a choisi son mandat.
+    return { kind: "exclude", reason: "no_mandate", payerId: answerable };
   }
   if (creditors.size > 1) {
     return { kind: "exclude", reason: "ambiguous_creditor", payerId };
@@ -143,6 +153,37 @@ function judge(order: CollectableOrder, input: AssemblyInput): Verdict {
     return { kind: "elsewhere" };
   }
   return { kind: "debit", payerId, mandate };
+}
+
+/**
+ * Les mandats parmi lesquels la commande se prélève, et qui nommer s'il n'y en
+ * a aucun. Forme 1 (ou payeur = société) : ceux du payeur. Formes 2 et 3 :
+ * ceux du SITE qui nomment ce payeur, et eux seuls — le site a choisi son
+ * mandat, débiter le principal en silence est le cas interdit (Hugo,
+ * 2026-10-05) ; sans mandat de site, `no_mandate` nomme le site (Q2).
+ * Un mandat sans créancier ne rattache à aucune entité : il compte comme absent.
+ */
+function effectiveMandates(
+  order: CollectableOrder,
+  payerId: string,
+  input: AssemblyInput,
+): { readonly candidates: readonly CollectionMandate[]; readonly answerable: string } {
+  const usable = input.mandates.filter((mandate) => mandate.creditorId !== null);
+  const form = input.collectionForms.get(order.companyId) ?? DEFAULT_COLLECTION_FORM;
+  if (payerId !== order.companyId && collectsOnSiteMandate(form)) {
+    return {
+      candidates: usable.filter(
+        (mandate) => mandate.companyId === order.companyId && mandate.debtorCompanyId === payerId,
+      ),
+      answerable: order.companyId,
+    };
+  }
+  return {
+    candidates: usable.filter(
+      (mandate) => mandate.companyId === payerId && mandate.debtorCompanyId === payerId,
+    ),
+    answerable: payerId,
+  };
 }
 
 function groupByScheme(

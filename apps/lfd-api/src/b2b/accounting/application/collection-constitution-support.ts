@@ -46,7 +46,14 @@ export async function readAssembly(
   const orders = await candidates.collectableOrders(floor, cycle.closesAt);
   const follows = await candidates.billingFollowsOf(unique(orders.map((order) => order.companyId)));
   const payers = unique(orders.map((order) => billedPayerOf(order, follows)));
-  const mandates = await readers.mandates.activeFor(payers);
+  // Les sites réglés par un autre : leur propre mandat peut être l'effectif
+  // (formes 2 et 3, plan-sous-comptes §2.1 ter), jugé à la CLÔTURE du cycle.
+  const sites = unique(
+    orders
+      .filter((order) => billedPayerOf(order, follows) !== order.companyId)
+      .map((o) => o.companyId),
+  );
+  const mandates = await readers.mandates.activeFor(unique([...payers, ...sites]));
   const oneOffs = mandates.filter((mandate) => mandate.paymentType === "one_off");
   const assembly = assembleCollection({
     legalEntityId,
@@ -55,8 +62,10 @@ export async function readAssembly(
     orders,
     follows,
     mandates,
+    collectionForms: await candidates.collectionFormsAt(sites, cycle.closesAt),
     consumedMandates: await candidates.consumedMandates(oneOffs.map((m) => m.mandateId)),
-    companyNames: await candidates.companyNames(payers),
+    // Les sites aussi : en formes 2 et 3, c'est le site qu'on nomme sans mandat.
+    companyNames: await candidates.companyNames(unique([...payers, ...sites])),
     liveSchemes: await candidates.liveSchemes(legalEntityId, cycle.closesAt),
   });
   return { cycle, previousClosure, assembly };

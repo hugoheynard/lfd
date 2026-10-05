@@ -12,7 +12,9 @@ import { BankAccountGuardReader } from "../../domain/ports/bank-account-guard.re
 import { CompanyBankAccountRepository } from "../../domain/ports/company-bank-account.repository.js";
 import { CustomerMandateGate } from "../../domain/ports/customer-mandate-gate.js";
 import { ensureCustomerMandateAccess } from "../customer-mandate-access.js";
+import { MandateDebtorReader } from "../../domain/ports/mandate-debtor.reader.js";
 import { mintDraftMandate } from "../mint-mandate-support.js";
+import { ensureSiteDebitsOwnAccount } from "../site-mandate-guard.js";
 import { MintMyCompanyMandateCommand } from "./mint-my-company-mandate.command.js";
 
 /**
@@ -44,6 +46,7 @@ export class MintMyCompanyMandateHandler implements ICommandHandler<
     private readonly events: DomainEventPublisher,
     private readonly uow: UnitOfWork,
     private readonly ledger: FirstMandateLedger,
+    private readonly debtors: MandateDebtorReader,
   ) {}
 
   async execute(command: MintMyCompanyMandateCommand): Promise<string> {
@@ -52,6 +55,10 @@ export class MintMyCompanyMandateHandler implements ICommandHandler<
       command.actorUserId,
       command.companyId,
     );
+
+    // Un site prélevé sur le compte de son principal ne frappe pas depuis son
+    // espace : le papier imprimerait l'IBAN du principal (plan-sous-comptes §3).
+    await ensureSiteDebitsOwnAccount(this.debtors, command.companyId, this.clock.now());
 
     const current = await this.mandates.findCurrent(command.companyId);
     if (current?.debitable() === true) {
@@ -63,6 +70,7 @@ export class MintMyCompanyMandateHandler implements ICommandHandler<
         mandates: this.mandates,
         accounts: this.accounts,
         creditors: this.creditors,
+        debtors: this.debtors,
         clock: this.clock,
         secrets: this.secrets,
         events: this.events,

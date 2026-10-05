@@ -214,8 +214,11 @@ staff peut le régler à sa place :
 - **Le seul cas interdit reste l'inverse** : une identité propre prélevée sur
   le compte d'une autre société.
 - **Le choix du mandat à prélever** suit la forme en vigueur **à la date du
-  prélèvement**. Le mandat du sous-compte, s'il existe et qu'il est actif,
-  sinon celui du principal. `debtor-mandate.reader.ts:72` (`activeFor`) devient
+  prélèvement**. Forme 1 : le mandat du principal. Formes 2 et 3 : le mandat
+  actif du sous-compte qui nomme le principal, et lui seul — sans lui, la
+  commande sort `no_mandate` en nommant le site et le lot ne se dépose pas
+  (Q2). Jamais de repli sur le mandat du principal : le site a choisi son
+  mandat (Hugo, 2026-10-05, corrigé au bâti de S4). `debtor-mandate.reader.ts:72` (`activeFor`) devient
   « le mandat de ce payeur pour ce sous-compte ».
 - La forme est une **décision datée** de plus, sur le même modèle que
   `company_follows`.
@@ -235,8 +238,8 @@ troisième passage, 2026-10-05) :
   raison sociale, forme juridique. Un changement d'identité du principal ne
   réécrit pas un mandat signé : il en demande un nouveau.
 - **L'assiette groupe par (payeur, mandat effectif)**, et non par
-  `companyId`. Chaque commande résout son mandat : celui de son sous-compte
-  s'il est actif, sinon celui du payeur. On obtient ainsi une ligne par
+  `companyId`. Chaque commande résout son mandat selon la forme du site :
+  le mandat du payeur en forme 1, celui du sous-compte en formes 2 et 3. On obtient ainsi une ligne par
   chalet dans les formes 2 et 3.
 - **La frappe lit l'identité résolue** dans la lecture partagée
   `mint-readiness.ts:45-58` (`findHolder`), et pas seulement dans
