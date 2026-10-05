@@ -18,9 +18,9 @@
 
 ## 2. En cours
 
-| Lot                                                                                   | État                   | Ce qui reste                                 |
-| ------------------------------------------------------------------------------------- | ---------------------- | -------------------------------------------- |
-| **K3** — le colisage sert son poste, l'ancien chemin disparaît (« sauvage », §16–§17) | K3a (serveur) en cours | K3b (écran), K3c (code mort), un déploiement |
+| Lot                                                                                   | État                                               | Ce qui reste                |
+| ------------------------------------------------------------------------------------- | -------------------------------------------------- | --------------------------- |
+| **K3** — le colisage sert son poste, l'ancien chemin disparaît (« sauvage », §16–§17) | K3a commité et poussé ; K3b commité ; K3c en cours | un déploiement de K3b + K3c |
 
 ## 3. L'ordre pour refermer la boucle colisage ↔ livraison
 

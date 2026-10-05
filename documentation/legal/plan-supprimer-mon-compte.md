@@ -6,6 +6,20 @@
 > d'office** : données réelles, mur tenant, frontière d'identité (Auth0).
 > Suite du §6 de [`plan-page-confidentialite.md`](plan-page-confidentialite.md).
 
+## 0. Où on en est (2026-10-05)
+
+- **v2 écrite** après la contradiction de `vitruve` (§8) : rien n'est bâti.
+- **À trancher par Hugo avant de bâtir :**
+  - **Q1** — le détenteur seul d'une société sans autre membre (§5, §8) ;
+  - **Q2** — le journal : réécrire ou non les faits qui portent un nom ou une
+    adresse, et sur quelle base RGPD (§5, §8) ;
+  - **Q3** — un délai de rétractation, ou immédiat (§5) ;
+  - **Q4** — le nom du client sur les commandes conservées : figé avant
+    anonymisation, ou « Client supprimé » (§8).
+- **À relever au bâti** : chaque ligne du §3 rouverte à la main (✔), et les
+  systèmes tiers (Stripe, émetteur de factures, Resend) avec leur geste.
+- **Le texte publié** ne change pas avant le déploiement du geste (§6).
+
 ## 1. Ce qui existe (relu le 2026-10-05)
 
 - **Aucun geste** ne supprime ni n'anonymise un client : ni bouton dans la
