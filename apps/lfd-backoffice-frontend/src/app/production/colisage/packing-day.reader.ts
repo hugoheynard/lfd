@@ -19,11 +19,6 @@ type LoadState = 'loading' | 'ready' | 'error';
  * commande ouverte, attend {@link refresh} et compare. L'enregistrer ici aurait
  * obligé le lecteur à connaître la commande ouverte, ou à un `effect` lisant ce
  * qu'il écrit.
- *
- * 🔴 **Il porte aussi l'état montré des cases et les coches en vol** (`shown`,
- * `busy`) : {@link applyRead} les efface. Les confier aux gestes aurait fait deux
- * propriétaires pour une même règle — « une lecture inscrite remplace l'état
- * montré, sauf ce qui est encore en vol ».
  */
 @Injectable()
 export class PackingDayReader {
@@ -81,19 +76,6 @@ export class PackingDayReader {
    */
   private readonly readFailed = signal(false);
   readonly refreshFailed = this.readFailed.asReadonly();
-
-  /**
-   * **L'état montré d'une case le temps de son envoi**, par
-   * `AAAA-MM-JJ RÉFÉRENCE SKU` (`packingMarkKey`) — la seule chose que l'écran
-   * garde. Un booléen : sans lui, un `fold-checkbox` cliqué ne reviendrait pas en
-   * arrière sur un refus.
-   */
-  private readonly shownMarks = signal<ReadonlyMap<string, boolean>>(new Map());
-  readonly shown = this.shownMarks.asReadonly();
-
-  /** Les coches en train de partir, même clé — leur case est désarmée. */
-  private readonly busyMarks = signal<ReadonlySet<string>>(new Set());
-  readonly busy = this.busyMarks.asReadonly();
 
   /** Le rang de la dernière lecture lancée. Une réponse lente n'écrase jamais une plus récente. */
   private readSeq = 0;
@@ -160,8 +142,8 @@ export class PackingDayReader {
   }
 
   /**
-   * **La relecture qui suit une écriture acceptée** — coche, containers ou
-   * déclaration. Elle note l'écriture, puis relit.
+   * **La relecture qui suit une écriture acceptée** — contenants, déclaration
+   * ou réouverture. Elle note l'écriture, puis relit.
    *
    * 🔴 **Elle n'est PAS soumise à la règle `lastWriteAt`**, et c'est tout ce qui
    * la sépare de {@link refresh} : l'écriture et son départ tombent dans la même
@@ -191,40 +173,15 @@ export class PackingDayReader {
     }
   }
 
-  /** Pose ou retire l'état montré d'une case (`null` = retirer). */
-  setShown(key: string, packed: boolean | null): void {
-    const next = new Map(this.shownMarks());
-    if (packed === null) {
-      next.delete(key);
-    } else {
-      next.set(key, packed);
-    }
-    this.shownMarks.set(next);
-  }
-
-  /** Marque une coche comme partie, ou revenue. */
-  setBusy(key: string, busy: boolean): void {
-    const next = new Set(this.busyMarks());
-    if (busy) {
-      next.add(key);
-    } else {
-      next.delete(key);
-    }
-    this.busyMarks.set(next);
-  }
-
   /**
    * Inscrit une lecture réussie : la journée, sa date — celle de la RÉPONSE, pas
-   * de la demande —, l'heure de lecture. L'état montré des cases s'efface, sauf
-   * celui des cases dont l'envoi est encore en vol.
+   * de la demande —, l'heure de lecture.
    */
   private applyRead(served: ProductionPackingView): void {
     this.view.set(served);
     this.readDate.set(served.date);
     this.readAt.set(new Date().toISOString());
     this.readFailed.set(false);
-    const inFlight = this.busyMarks();
-    this.shownMarks.set(new Map([...this.shownMarks()].filter(([key]) => inFlight.has(key))));
   }
 
   /**
@@ -233,7 +190,7 @@ export class PackingDayReader {
    *
    * ⚠️ **Le seul endroit où l'horloge du poste décide encore quelque chose** :
    * QUELLE date demander. Le contrat n'offre qu'une lecture par date
-   * (`GET …/packing?date=`) ; le passer au serveur demande une route de plus. Le
+   * (`GET admin/packing/:date/board`) ; le passer au serveur demande une route de plus. Le
    * MOT affiché, lui, vient du serveur (`relativeDay`).
    */
   private async workedDay(): Promise<ProductionPackingView> {

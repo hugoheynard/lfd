@@ -26,23 +26,15 @@
     } @else if (order.fulfillmentMethod === 'delivery') {
       <app-packing-bin-row [orderId]="order.orderId" />
     } @else {
-      <app-packing-containers
-        [count]="order.containers"
-        [editable]="canSetContainers()"
-        [busy]="containersBusy()"
-        (step)="containerStep.emit($event)"
-      />
+      <!-- K3b : le compte « + / − » n'est plus servi — lecture seule. -->
+      <app-packing-containers [count]="order.containers" [editable]="false" />
     }
 
     @if (!listed()) {
       <div class="co-lines">
         @for (line of order.lines; track line.sku) {
-          <app-packing-line
-            [line]="shownLine(line)"
-            [locked]="order.packedAt !== null || busySkus().has(line.sku)"
-            [hit]="hitSkus().has(line.sku)"
-            (toggled)="toggled.emit({ line, packed: $event })"
-          />
+          <!-- K3b : la coche du fournil n'est plus servie — lecture seule. -->
+          <app-packing-line [line]="line" [locked]="true" [hit]="hitSkus().has(line.sku)" />
         } @empty {
           <fold-empty-state
             title="Cette commande est vide"
@@ -58,7 +50,23 @@
       @if (order.packedAt !== null) {
         <p class="co-closed-said">
           <fold-icon name="package-check" size="sm" />
-          Commande déclarée prête — le commerce l'a appris. Rien ne revient dessus.
+          Commande déclarée prête — le commerce l'a appris.
+        </p>
+        <!-- K3b : rouvrir le RANGEMENT des bacs ; la commande reste prête au
+             commerce. Le serveur refuse si un bac est chargé ou la tournée
+             partie, et l'écran dit son refus tel quel. -->
+        <button
+          foldButton
+          emphasis="outline"
+          [disabled]="reopening()"
+          [loading]="reopening()"
+          (click)="reopen.emit()"
+          data-reopen
+        >
+          Rouvrir le rangement des bacs
+        </button>
+        <p class="co-closed-said">
+          La commande reste prête au commerce : seul le rangement se rouvre.
         </p>
         <!-- Lot 4 bis : les bacs d'une livraison se déclarent ici, une fois
              la commande prête. Le composant décide seul de ce qu'il montre selon le droit

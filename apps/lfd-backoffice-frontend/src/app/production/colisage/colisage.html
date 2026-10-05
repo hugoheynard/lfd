@@ -1,5 +1,5 @@
 <!--
-  **Le poste de colisage.** Une commande ouverte, ses lignes cochables, et la ressource
+  **Le poste de colisage.** Une commande ouverte, ses contenants, et la ressource
   à côté — les deux plateaux de la balance, jamais l'un sans l'autre.
 
   🔴 **Aucun chiffre de cet écran n'est calculé ici** (décidé le 2026-09-14). Volumes,
@@ -114,21 +114,16 @@
       </fold-callout>
     }
 
-    @if (gestures.closeFailed()) {
+    @if (gestures.closeFailed(); as reason) {
       <fold-callout variant="alert" class="co-note">
-        La commande n'a pas pu être déclarée prête — rien n'a été annoncé au commerce, et les coches
-        sont intactes. Réessayez.
+        La commande n'a pas pu être déclarée prête — rien n'a été annoncé au commerce. {{ reason }}
       </fold-callout>
     }
 
-    <!--
-      🔴 La coche n'a pas été enregistrée — un article pas encore sorti du four,
-      une commande déclarée prête entre-temps sur un autre poste. La case est
-      revenue en arrière : il reste à le DIRE.
-    -->
-    @if (gestures.markFailed(); as failed) {
-      <fold-callout variant="alert" class="co-note co-mark-failed">
-        La coche n'a pas été enregistrée — {{ failed }}
+    <!-- Le refus du serveur, tel quel : un bac chargé, une tournée partie. -->
+    @if (gestures.reopenFailed(); as reason) {
+      <fold-callout variant="alert" class="co-note co-reopen-failed">
+        Le rangement n'a pas pu être rouvert — {{ reason }}
       </fold-callout>
     }
 
@@ -145,20 +140,10 @@
       </fold-callout>
     }
 
-    <!-- Le compte de containers sert à charger un véhicule. L'écran n'en tient
-         aucun : un geste refusé laisse à l'écran le compte servi, et l'échec se
-         dit. -->
     <!-- Lot PC2 : sans les tournées, la liste garde l'ordre servi — on le DIT. -->
     @if (rounds.failed()) {
       <fold-callout variant="warning" class="co-note" data-rounds-failed>
         Les tournées n’ont pas pu être lues — les commandes restent dans l’ordre des références.
-      </fold-callout>
-    }
-
-    @if (gestures.containersFailed()) {
-      <fold-callout variant="alert" class="co-note">
-        Le nombre de containers n’a pas pu être enregistré — c’est celui du serveur qui est affiché.
-        Réessayez.
       </fold-callout>
     }
   </fold-page-section>
@@ -178,7 +163,7 @@
     <fold-empty-state
       tone="alert"
       title="Impossible de lire les commandes"
-      subtitle="La lecture a échoué — ce qui a été coché, lui, est intact."
+      subtitle="La lecture a échoué — ce qui a été rangé, lui, est intact."
     >
       <button foldButton (click)="load()">Réessayer</button>
     </fold-empty-state>
@@ -236,17 +221,13 @@
           <app-packing-open-order
             [sheet]="current()"
             [stack]="stack()"
-            [shownPacked]="openShown()"
-            [busySkus]="openBusy()"
             [hitSkus]="hits()"
             [searching]="searching()"
-            [canSetContainers]="canSetContainers()"
-            [containersBusy]="gestures.containersBusy()"
             [closing]="gestures.closing()"
+            [reopening]="gestures.reopening()"
             [readyLabel]="readyLabel()"
-            (toggled)="onLineToggled($event)"
-            (containerStep)="stepContainers($event)"
             (declareReady)="declareCurrent()"
+            (reopen)="reopenCurrent()"
           />
 
           <app-packing-resources

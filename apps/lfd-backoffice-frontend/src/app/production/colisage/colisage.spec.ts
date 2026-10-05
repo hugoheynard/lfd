@@ -3,11 +3,9 @@ import { type ComponentFixture, TestBed } from '@angular/core/testing';
 import { provideRouter } from '@angular/router';
 import type {
   DeliveryPackingRoundView,
-  PackingContainerStep,
   PackingLine,
   PackingResource,
   PackingSheet,
-  ProductionPackingAck,
   ProductionPackingView,
 } from '@lfd/contracts';
 import { beforeEach, describe, expect, it } from 'vitest';
@@ -157,43 +155,26 @@ function readyBac(over: Partial<PackingSheet> = {}): PackingSheet {
   });
 }
 
-/** Une coche telle que le service l'a reçue. */
-interface SentPackingMark {
-  readonly date: string;
-  readonly reference: string;
-  readonly sku: string;
-  readonly packed: boolean;
-  readonly initials: string;
-}
-
 class FakePackingService {
   packingView: ProductionPackingView | null = view();
   /** Les journées demandées, dans l'ordre — chaque relecture s'y inscrit. */
   readonly asked: string[] = [];
   /** Une réponse par journée ; à défaut, `packingView` pour toutes. */
   readonly byDay = new Map<string, ProductionPackingView>();
+  /** Les commandes fermées (« Déclarer prête »), par identifiant. */
   readonly closed: string[] = [];
-  closeRefuses = false;
-  /** Les sens envoyés pour les containers, dans l'ordre. */
-  readonly containerSteps: { reference: string; step: PackingContainerStep }[] = [];
-  containersRefuse = false;
-  /** Les coches envoyées, dans l'ordre. */
-  readonly marks: SentPackingMark[] = [];
-  /** Ce que le serveur répond aux coches — `null` = il les accepte. */
-  markError: unknown = null;
-  /** Retenir les réponses, pour éprouver ce qui se passe PENDANT un envoi ou une lecture. */
-  holdMarks = false;
+  closeError: unknown = null;
+  /** Les commandes rouvertes, par identifiant. */
+  readonly reopened: string[] = [];
+  reopenError: unknown = null;
+  /** Retenir les lectures, pour éprouver ce qui se passe PENDANT une lecture. */
   holdReads = false;
-  holdSteps = false;
-  private readonly heldMarks: (() => void)[] = [];
   private readonly heldReads: (() => void)[] = [];
-  private readonly heldSteps: (() => void)[] = [];
 
   async packing(date: string): Promise<ProductionPackingView | never> {
     this.asked.push(date);
     // 🔴 La réponse est prise AU DÉPART de la lecture, comme un vrai serveur
-    // photographie son état : une relecture partie avant un geste doit revenir
-    // avec l'état d'avant, sinon on ne peut pas éprouver qu'elle est jetée.
+    // photographie son état.
     const served = this.byDay.get(date) ?? this.packingView;
     if (this.holdReads) {
       await new Promise<void>((resolve) => this.heldReads.push(resolve));
@@ -204,58 +185,22 @@ class FakePackingService {
     return served;
   }
 
-  async mark(
-    date: string,
-    reference: string,
-    sku: string,
-    packed: boolean,
-    initials: string,
-  ): Promise<void> {
-    this.marks.push({ date, reference, sku, packed, initials });
-    if (this.holdMarks) {
-      await new Promise<void>((resolve) => this.heldMarks.push(resolve));
+  async closeOrder(_date: string, orderId: string): Promise<void> {
+    if (this.closeError !== null) {
+      throw this.closeError;
     }
-    if (this.markError !== null) {
-      throw this.markError;
-    }
+    this.closed.push(orderId);
   }
 
-  async stepContainers(
-    _date: string,
-    reference: string,
-    step: PackingContainerStep,
-  ): Promise<void> {
-    this.containerSteps.push({ reference, step });
-    if (this.holdSteps) {
-      await new Promise<void>((resolve) => this.heldSteps.push(resolve));
+  async reopenOrder(_date: string, orderId: string): Promise<void> {
+    if (this.reopenError !== null) {
+      throw this.reopenError;
     }
-    if (this.containersRefuse) {
-      throw new Error('containers refusés');
-    }
-  }
-
-  async packOrder(date: string, reference: string): Promise<ProductionPackingAck> {
-    if (this.closeRefuses) {
-      throw new Error('déclaration refusée');
-    }
-    this.closed.push(reference);
-    return { reference, packedAt: `${date}T05:00:00`, packedBy: 'staff', alreadyPacked: false };
-  }
-
-  releaseMarks(): void {
-    for (const resolve of this.heldMarks.splice(0)) {
-      resolve();
-    }
+    this.reopened.push(orderId);
   }
 
   releaseReads(): void {
     for (const resolve of this.heldReads.splice(0)) {
-      resolve();
-    }
-  }
-
-  releaseSteps(): void {
-    for (const resolve of this.heldSteps.splice(0)) {
       resolve();
     }
   }
@@ -309,15 +254,6 @@ function said(element: Element | null | undefined): string {
 
 const premiere = (el: HTMLElement): boolean =>
   el.querySelector('.co-line')?.classList.contains('is-packed') ?? false;
-
-const premiereCase = (el: HTMLElement): HTMLInputElement | null =>
-  el.querySelector('.co-line input[type="checkbox"]');
-
-const plus = (el: HTMLElement): HTMLButtonElement | null =>
-  el.querySelector('.co-container-step--add');
-
-const moins = (el: HTMLElement): HTMLButtonElement | null =>
-  el.querySelector('.co-container-step:not(.co-container-step--add)');
 
 /** Bascule la colonne de gauche sur une pile — « En cours » ou « Prêtes ». */
 function openStack(fixture: ComponentFixture<Colisage>, stack: 'todo' | 'ready'): void {
@@ -541,75 +477,6 @@ describe('le poste de colisage', () => {
     expect(said(orders[1])).toContain('12 / 12 produits');
   });
 
-  /* ── LES COCHES ──────────────────────────────────────────────────────────── */
-
-  it('🔴 relit après une coche acceptée, et affiche ce qui revient', async () => {
-    const { fixture, el } = await render();
-    const readsBefore = api.asked.length;
-    // Ce que le serveur aura calculé une fois la coche inscrite.
-    api.packingView = view({
-      sheets: [
-        bac({
-          lines: [line({ packed: true, initials: 'MJ' }), line({ sku: 'BAG', quantity: 8 })],
-          packedLines: 1,
-          remainingLines: 1,
-          packedPieces: 12,
-        }),
-      ],
-    });
-
-    premiereCase(el)?.click();
-    await settle(fixture);
-
-    expect(api.marks).toEqual([
-      { date: today(), reference: 'CMD-001', sku: 'CRO', packed: true, initials: 'MJ' },
-    ]);
-    expect(api.asked.length).toBeGreaterThan(readsBefore);
-    expect(premiere(el)).toBe(true);
-    expect(said(el.querySelector('.co-figure-value'))).toBe('1 / 2');
-    expect(said(el.querySelector('.co-bac'))).toContain('12 / 20 produits');
-  });
-
-  it('coche à l’écran tout de suite, et désarme la case le temps de l’envoi', async () => {
-    const { fixture, el } = await render();
-    api.holdMarks = true;
-
-    premiereCase(el)?.click();
-    fixture.detectChanges();
-
-    expect(premiere(el)).toBe(true);
-    expect(premiereCase(el)?.disabled).toBe(true);
-
-    api.releaseMarks();
-    await settle(fixture);
-
-    expect(premiereCase(el)?.disabled).toBe(false);
-  });
-
-  /**
-   * Régression : une coche de colisage refusée restait affichée, et la balance
-   * comptait comme réparti ce que le serveur n'avait jamais accepté (constaté le
-   * 2026-09-14).
-   */
-  it('🔴 remet la case en arrière quand le serveur refuse, et DIT pourquoi', async () => {
-    const { fixture, el } = await render();
-    const readsBefore = api.asked.length;
-    api.markError = new HttpErrorResponse({
-      status: 409,
-      error: { message: 'Croissant n’est pas encore sorti du four.' },
-    });
-
-    premiereCase(el)?.click();
-    await settle(fixture);
-
-    expect(premiere(el)).toBe(false);
-    const message = said(el.querySelector('.co-mark-failed'));
-    expect(message).toContain('Hôtel du Parc');
-    expect(message).toContain('Croissant n’est pas encore sorti du four.');
-    // Refusée, il n'y a rien de nouveau à relire.
-    expect(api.asked.length).toBe(readsBefore);
-  });
-
   describe('la relecture', () => {
     function relancer(): void {
       void watched.at(-1)?.reload();
@@ -646,47 +513,6 @@ describe('le poste de colisage', () => {
     });
 
     /**
-     * 🔴 Deux pièges en un. Une relecture PÉRIODIQUE partie avant une coche
-     * acceptée revient avec l'état d'avant : elle doit être jetée. Et la
-     * relecture D'APRÈS écriture, partie après, ne doit PAS l'être — la règle
-     * `lastWriteAt` l'aurait jetée dans la même milliseconde.
-     */
-    it('🔴 jette la relecture partie avant la coche, et garde celle d’après', async () => {
-      const { fixture, el } = await render();
-      api.holdMarks = true;
-      premiereCase(el)?.click();
-      fixture.detectChanges();
-
-      // La relecture périodique part MAINTENANT : elle photographie l'état d'avant.
-      api.holdReads = true;
-      relancer();
-
-      // Le serveur a inscrit la coche : la relecture d'après écriture le lira.
-      api.packingView = view({
-        sheets: [
-          bac({
-            lines: [line({ packed: true, initials: 'MJ' }), line({ sku: 'BAG' })],
-            packedLines: 1,
-            remainingLines: 1,
-          }),
-        ],
-      });
-      api.releaseMarks();
-      await settle(fixture);
-      expect(premiere(el)).toBe(true);
-
-      api.releaseReads();
-      await settle(fixture);
-      await settle(fixture);
-
-      expect(premiere(el)).toBe(true);
-      // « 1 / 2 » ne peut venir que de la relecture d'après : la périodique
-      // disait « 0 / 2 ». Si elle avait gagné, ou si la bonne avait été jetée,
-      // ce serait 0.
-      expect(said(el.querySelector('.co-figure-value'))).toBe('1 / 2');
-    });
-
-    /**
      * 🔴 Le cas multiposte : la commande qu'on a sous les yeux est déclarée
      * prête ailleurs. La relecture la range dans les prêtes — l'écran le DIT.
      */
@@ -717,7 +543,7 @@ describe('le poste de colisage', () => {
 
   /* ── LA DÉCLARATION ──────────────────────────────────────────────────────── */
 
-  it('déclare la commande prête, relit, et n’envoie aucune coche', async () => {
+  it('déclare la commande prête au colisage (`close`), et relit', async () => {
     api.packingView = view({ sheets: [bac({ canDeclareReady: true })] });
 
     const { fixture, el } = await render();
@@ -725,21 +551,24 @@ describe('le poste de colisage', () => {
     el.querySelector<HTMLButtonElement>('.co-close button')?.click();
     await settle(fixture);
 
-    expect(api.closed).toEqual(['CMD-001']);
-    expect(api.marks).toHaveLength(0);
+    expect(api.closed).toEqual(['o-CMD-001']);
     expect(api.asked.length).toBeGreaterThan(readsBefore);
   });
 
   /** Un fait irréversible échoue VISIBLEMENT plutôt que d'attendre en silence. */
   it('garde l’échec de déclaration à l’écran, et le redit', async () => {
     api.packingView = view({ sheets: [bac({ canDeclareReady: true })] });
-    api.closeRefuses = true;
+    api.closeError = new HttpErrorResponse({
+      status: 409,
+      error: { code: 'packing.containers.unallocated', message: 'Il reste des pièces à répartir.' },
+    });
 
     const { fixture, el } = await render();
     el.querySelector<HTMLButtonElement>('.co-close button')?.click();
     await settle(fixture);
 
     expect(el.querySelector('fold-callout')?.getAttribute('variant')).toBe('alert');
+    expect(el.textContent).toContain('Il reste des pièces à répartir.');
     expect(el.querySelector('.co-line')).not.toBeNull();
   });
 
@@ -752,7 +581,45 @@ describe('le poste de colisage', () => {
     openStack(fixture, 'ready');
 
     expect(el.querySelector<HTMLInputElement>('.co-line input')?.disabled).toBe(true);
-    expect(el.querySelector('.co-close button')).toBeNull();
+    expect(el.querySelector('[data-declare-ready]')).toBeNull();
+    expect(el.textContent).toContain('Commande déclarée prête');
+  });
+
+  /* ── ROUVRIR (K3b) ───────────────────────────────────────────────────────── */
+
+  it('rouvre le rangement d’une commande prête, relit, et la suit dans « en cours »', async () => {
+    api.packingView = view({ sheets: [readyBac()], todoCount: 0, readyCount: 1 });
+    const { fixture, el } = await render();
+    openStack(fixture, 'ready');
+    expect(el.textContent).toContain('La commande reste prête au commerce');
+    const readsBefore = api.asked.length;
+
+    // Rouverte : le serveur la rend sans `packedAt`.
+    api.packingView = view({ sheets: [bac()], todoCount: 1, readyCount: 0 });
+    el.querySelector<HTMLButtonElement>('[data-reopen]')?.click();
+    await settle(fixture);
+
+    expect(api.reopened).toEqual(['o-CMD-001']);
+    expect(api.asked.length).toBeGreaterThan(readsBefore);
+    expect(el.querySelector('[data-declare-ready]')).not.toBeNull();
+    expect(said(el.querySelector('.co-title'))).toBe('Hôtel du Parc');
+  });
+
+  it('🔴 dit le refus du serveur TEL QUEL quand le rangement ne se rouvre pas', async () => {
+    api.packingView = view({ sheets: [readyBac()], todoCount: 0, readyCount: 1 });
+    api.reopenError = new HttpErrorResponse({
+      status: 409,
+      error: { message: 'Le bac B-12 est déjà chargé dans la tournée.' },
+    });
+    const { fixture, el } = await render();
+    openStack(fixture, 'ready');
+
+    el.querySelector<HTMLButtonElement>('[data-reopen]')?.click();
+    await settle(fixture);
+
+    expect(said(el.querySelector('.co-reopen-failed'))).toContain(
+      'Le bac B-12 est déjà chargé dans la tournée.',
+    );
     expect(el.textContent).toContain('Commande déclarée prête');
   });
 
@@ -895,54 +762,15 @@ describe('le poste de colisage', () => {
   });
 
   /* ── LES CONTAINERS ──────────────────────────────────────────────────────
-     Un sens, pas un total : l'écran envoie `add` ou `remove`, le serveur
-     compte, l'écran relit. */
+     K3b : le compte « + / − » du fournil n'est plus servi — le compte d'une
+     commande `counted` se lit, il ne se règle plus. */
 
-  it('🔴 « + » envoie `add`, relit, et montre le compte servi', async () => {
-    api.packingView = view({ sheets: [retrait()] });
-    const { fixture, el } = await render();
-    expect(el.querySelectorAll('.co-container')).toHaveLength(0);
-    const readsBefore = api.asked.length;
-    api.packingView = view({ sheets: [retrait({ containers: 1 })] });
-
-    plus(el)?.click();
-    await settle(fixture);
-
-    expect(api.containerSteps).toEqual([{ reference: 'CMD-001', step: 'add' }]);
-    expect(api.asked.length).toBeGreaterThan(readsBefore);
-    expect(el.querySelectorAll('.co-container')).toHaveLength(1);
-    expect(said(el.querySelector('.pc-band-sum'))).toBe('1 container');
-  });
-
-  it('🔴 « − » envoie `remove`, relit, et montre le compte servi', async () => {
+  it('🔴 n’offre plus « + » ni « − » sur une commande au compte', async () => {
     api.packingView = view({ sheets: [retrait({ containers: 2 })] });
-    const { fixture, el } = await render();
+    const { el } = await render();
+
     expect(el.querySelectorAll('.co-container')).toHaveLength(2);
-    api.packingView = view({ sheets: [retrait({ containers: 1 })] });
-
-    moins(el)?.click();
-    await settle(fixture);
-
-    expect(api.containerSteps).toEqual([{ reference: 'CMD-001', step: 'remove' }]);
-    expect(el.querySelectorAll('.co-container')).toHaveLength(1);
-  });
-
-  /**
-   * 🔴 Aucune comparaison à zéro côté écran : le serveur rend `remove` à zéro
-   * sans effet, et c'est à lui de savoir ce que vaut un retrait.
-   */
-  it('laisse « − » offert à zéro container — c’est le serveur qui sait', async () => {
-    api.packingView = view({ sheets: [retrait()] });
-    const { fixture, el } = await render();
-
-    expect(said(el.querySelector('.pc-band-sum'))).toBe('0 container');
-    expect(moins(el)).not.toBeNull();
-    expect(moins(el)?.disabled).toBe(false);
-
-    moins(el)?.click();
-    await settle(fixture);
-
-    expect(api.containerSteps).toEqual([{ reference: 'CMD-001', step: 'remove' }]);
+    expect(el.querySelector('.co-container-step')).toBeNull();
   });
 
   it('ne numérote pas les tuiles : le seul nombre est celui du serveur', async () => {
@@ -955,24 +783,6 @@ describe('le poste de colisage', () => {
     for (const tile of Array.from(tiles)) {
       expect(said(tile)).toBe('');
     }
-  });
-
-  it('désarme « + » et « − » pendant l’envoi, et seulement pendant', async () => {
-    api.packingView = view({ sheets: [retrait()] });
-    const { fixture, el } = await render();
-    api.holdSteps = true;
-
-    plus(el)?.click();
-    fixture.detectChanges();
-
-    expect(plus(el)?.disabled).toBe(true);
-    expect(moins(el)?.disabled).toBe(true);
-
-    api.releaseSteps();
-    await settle(fixture);
-
-    expect(plus(el)?.disabled).toBe(false);
-    expect(moins(el)?.disabled).toBe(false);
   });
 
   it('🔴 ne laisse plus toucher au compte d’une commande DÉCLARÉE PRÊTE', async () => {
@@ -989,22 +799,6 @@ describe('le poste de colisage', () => {
     expect(el.querySelector('.co-container-step')).toBeNull();
   });
 
-  /**
-   * Un compte de containers sert à charger un véhicule : le montrer enregistré
-   * alors qu'il ne l'est pas ferait partir un camion sur une croyance.
-   */
-  it('🔴 garde le compte servi quand le geste est refusé, et le DIT', async () => {
-    api.containersRefuse = true;
-    api.packingView = view({ sheets: [retrait()] });
-
-    const { fixture, el } = await render();
-    plus(el)?.click();
-    await settle(fixture);
-
-    expect(el.querySelectorAll('.co-container')).toHaveLength(0);
-    expect(el.textContent).toContain('containers n’a pas pu être enregistré');
-  });
-
   /* ── L'ATTENTE DE PRODUCTION ───────────────────────────────────────────── */
 
   /**
@@ -1012,7 +806,7 @@ describe('le poste de colisage', () => {
    * la balance comptait comme réparti ce qui n'était jamais sorti du four — le
    * reste devenait faux dans le seul sens qui coûte, optimiste.
    */
-  it('🔴 ne laisse PAS cocher une ligne en attente de la prod, et le dit', async () => {
+  it('🔴 dit qu’une ligne attend la prod, et ne la laisse pas cocher', async () => {
     api.packingView = view({
       sheets: [
         bac({
@@ -1028,23 +822,12 @@ describe('le poste de colisage', () => {
     const boxes = el.querySelectorAll<HTMLInputElement>('.co-line input');
 
     expect(boxes).toHaveLength(2);
+    // K3b : plus aucune coche — les lignes se rangent dans les contenants.
     expect(boxes[0]?.disabled).toBe(true);
-    // L'autre ligne reste cochable : l'attente est PAR ARTICLE, pas par commande.
-    expect(boxes[1]?.disabled).toBe(false);
+    expect(boxes[1]?.disabled).toBe(true);
     expect(said(el.querySelector('.co-line.is-awaiting .co-awaiting'))).toContain(
       'En attente de la prod',
     );
-  });
-
-  it('un clic forcé sur une ligne en attente n’envoie rien', async () => {
-    api.packingView = view({ sheets: [bac({ lines: [line({ awaitingProduction: true })] })] });
-
-    const { fixture, el } = await render();
-    premiereCase(el)?.click();
-    fixture.detectChanges();
-
-    expect(api.marks).toHaveLength(0);
-    expect(premiere(el)).toBe(false);
   });
 
   /**
@@ -1180,19 +963,6 @@ describe('le poste de colisage', () => {
     expect(el.querySelectorAll('.co-res.is-hit')).toHaveLength(1);
   });
 
-  it('une ligne surlignée reste cochable', async () => {
-    api.packingView = searchable();
-    const { fixture, el } = await render();
-
-    type(fixture, 'croissant');
-    const box = el.querySelector<HTMLInputElement>('.co-line.is-hit input');
-
-    expect(box?.disabled).toBe(false);
-    box?.click();
-    fixture.detectChanges();
-    expect(api.marks).toHaveLength(1);
-  });
-
   it('DIT sobrement quand rien ne correspond, plutôt que de ne rien changer', async () => {
     api.packingView = searchable();
     const { fixture, el } = await render();
@@ -1302,7 +1072,7 @@ describe('le poste de colisage', () => {
     el.querySelector<HTMLButtonElement>('.co-close button')?.click();
     await settle(fixture);
 
-    expect(api.closed).toEqual(['CMD-001']);
+    expect(api.closed).toEqual(['o-CMD-001']);
     expect(said(el.querySelector('.co-title'))).toBe('Café Neuf');
     expect(el.textContent).toContain('Hôtel du Parc est déclarée prête');
     // Et les compteurs sont ceux que le serveur a relus.

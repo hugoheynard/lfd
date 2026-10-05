@@ -21,7 +21,7 @@ import { B2B_API_BASE } from '../api/api-config';
  * colisage) et parlent de l'identifiant de commande, pas de la référence.
  *
  * Aucun état ici : chaque geste part, et le poste se RELIT par
- * `GET admin/production/packing?date=`.
+ * `GET admin/packing/:date/board`.
  */
 @Injectable({ providedIn: 'root' })
 export class PackingContainersService {

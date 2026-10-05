@@ -1,11 +1,11 @@
 import { type ComponentFixture, TestBed } from '@angular/core/testing';
-import type { PackingContainerStep, PackingLine, PackingSheet } from '@lfd/contracts';
+import type { PackingLine, PackingSheet } from '@lfd/contracts';
 import { describe, expect, it } from 'vitest';
 
 import { PermissionsStore } from '../../../auth/permissions.store';
 import { DeliveryBinsService } from '../../../livraison/delivery-bins.service';
 import { DeliveryLoadingService } from '../../../livraison/delivery-loading.service';
-import { PackingOpenOrder, type PackingLineToggle } from './packing-open-order';
+import { PackingOpenOrder } from './packing-open-order';
 
 /**
  * Un composant de présentation : il affiche ce qu'on lui donne — y compris un
@@ -62,10 +62,7 @@ function render(inputs: Readonly<Record<string, unknown>>): ComponentFixture<Pac
     ],
   });
   const fixture = TestBed.createComponent(PackingOpenOrder);
-  for (const [name, value] of Object.entries({
-    canSetContainers: true,
-    ...inputs,
-  })) {
+  for (const [name, value] of Object.entries(inputs)) {
     fixture.componentRef.setInput(name, value);
   }
   fixture.detectChanges();
@@ -154,47 +151,34 @@ describe('la commande ouverte du colisage', () => {
     expect(declared).toBe(1);
   });
 
-  it('émet la coche avec la ligne SERVIE et le sens voulu', () => {
-    const fixture = render({ sheet: sheet() });
-    const host: HTMLElement = fixture.nativeElement;
-    const toggles: PackingLineToggle[] = [];
-    fixture.componentInstance.toggled.subscribe((toggle) => toggles.push(toggle));
-
-    host.querySelector<HTMLInputElement>('.co-line input[type="checkbox"]')?.click();
-
-    expect(toggles).toHaveLength(1);
-    expect(toggles[0]?.packed).toBe(true);
-    expect(toggles[0]?.line.sku).toBe('CRO');
-    expect(toggles[0]?.line.packed).toBe(false);
-  });
-
-  it('émet un sens de container, `add` ou `remove` — sur un retrait', () => {
+  it('🔴 ne laisse plus cocher ni compter (K3b) : lignes et compte en lecture seule', () => {
     const fixture = render({ sheet: sheet({ containers: 3, fulfillmentMethod: 'pickup' }) });
     const host: HTMLElement = fixture.nativeElement;
-    const steps: PackingContainerStep[] = [];
-    fixture.componentInstance.containerStep.subscribe((step) => steps.push(step));
 
-    host.querySelector<HTMLButtonElement>('.co-container-step--add')?.click();
-    host
-      .querySelector<HTMLButtonElement>('.co-container-step:not(.co-container-step--add)')
-      ?.click();
-
-    expect(steps).toEqual(['add', 'remove']);
+    for (const box of Array.from(host.querySelectorAll<HTMLInputElement>('.co-line input'))) {
+      expect(box.disabled).toBe(true);
+    }
+    expect(host.querySelector('.co-container-step')).toBeNull();
   });
 
-  it('recouvre seulement l’état de la case en vol, et la désarme', () => {
-    const fixture = render({
-      sheet: sheet(),
-      shownPacked: new Map([['CRO', true]]),
-      busySkus: new Set(['CRO']),
-    });
+  it('offre « Rouvrir » sur une commande prête, et l’émet', () => {
+    const fixture = render({ sheet: sheet({ packedAt: '2026-10-05T05:00:00' }) });
     const host: HTMLElement = fixture.nativeElement;
-    const lines = host.querySelectorAll('.co-line');
+    let reopened = 0;
+    fixture.componentInstance.reopen.subscribe(() => (reopened += 1));
 
-    expect(lines).toHaveLength(2);
-    expect(lines[0]?.classList.contains('is-packed')).toBe(true);
-    expect(lines[0]?.querySelector<HTMLInputElement>('input')?.disabled).toBe(true);
-    expect(lines[1]?.classList.contains('is-packed')).toBe(false);
+    expect(host.querySelector('[data-declare-ready]')).toBeNull();
+    host.querySelector<HTMLButtonElement>('[data-reopen]')?.click();
+
+    expect(reopened).toBe(1);
+    expect(said(host.querySelector('.co-close'))).toContain('reste prête au commerce');
+  });
+
+  it('désarme « Rouvrir » pendant la réouverture en vol', () => {
+    const fixture = render({ sheet: sheet({ packedAt: '2026-10-05T05:00:00' }), reopening: true });
+    const host: HTMLElement = fixture.nativeElement;
+
+    expect(host.querySelector<HTMLButtonElement>('[data-reopen]')?.disabled).toBe(true);
   });
 
   it('dit lequel des deux cas quand aucune commande n’est ouverte', () => {

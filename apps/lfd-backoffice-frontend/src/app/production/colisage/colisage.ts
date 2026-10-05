@@ -12,16 +12,16 @@ import {
   FoldSurfaceDirective,
 } from 'fold-ng';
 
-import type { PackingContainerStep, PackingSheet, ProductionPackingView } from '@lfd/contracts';
+import type { PackingSheet, ProductionPackingView } from '@lfd/contracts';
 
-import { methodLabel, packingMarkKey, type PackingStack } from '../packing-board';
+import { methodLabel, type PackingStack } from '../packing-board';
 import { isoDay } from '../worksheet-day';
 import { PermissionsStore } from '../../auth/permissions.store';
 import { DayVersionWatcher } from '../../shared/day-version/day-version-watcher';
 import type { DayJournal } from '../../shared/day-version/day-version.service';
 import { PackingDayReader } from './packing-day.reader';
 import { PackingGestures } from './packing-gestures';
-import { PackingOpenOrder, type PackingLineToggle } from './packing-open-order/packing-open-order';
+import { PackingOpenOrder } from './packing-open-order/packing-open-order';
 import { PackingOrders } from './packing-orders/packing-orders';
 import { PackingResources } from './packing-resources/packing-resources';
 import { PackingRoundsReader } from './packing-rounds.reader';
@@ -41,13 +41,12 @@ import { foundOnlyElsewhere, hitLinesByOrder, normaliseTerm, searchHits } from '
  *
  * 🔴 **L'écran n'additionne rien** (décidé le 2026-09-14). Tout chiffre et toute
  * règle affichés viennent du serveur, et l'écran relit après chaque geste
- * accepté. Les deux seules choses gardées ne sont pas des chiffres : l'état d'une
- * case le temps de son envoi, et le choix de ce que la recherche surligne.
+ * accepté. La seule chose gardée n'est pas un chiffre : le choix de ce que la
+ * recherche surligne.
  *
  * **Quatre responsabilités, quatre fichiers** (découpé le 2026-09-14) :
- * - {@link PackingDayReader} — CE QU'ON LIT : la journée, les relectures, l'état
- *   montré des cases ;
- * - {@link PackingGestures} — CE QU'ON FAIT : cocher, compter, déclarer, avec
+ * - {@link PackingDayReader} — CE QU'ON LIT : la journée et ses relectures ;
+ * - {@link PackingGestures} — CE QU'ON FAIT : déclarer prête, rouvrir, avec
  *   leurs envois et leurs échecs ;
  * - `packing-search.ts` — ce que la recherche désigne, en fonctions pures ;
  * - **ce composant — LA NAVIGATION** : la commande et la pile choisies, le QR,
@@ -251,44 +250,6 @@ export class Colisage {
       : 'Déclarer prête pour la livraison';
   });
 
-  /** « + » et « − » s'offrent-ils sur la commande ouverte ? La règle est aux gestes. */
-  protected readonly canSetContainers = computed(() => {
-    const sheet = this.current();
-    return sheet !== null && this.gestures.canStepContainers(sheet);
-  });
-
-  /** L'état montré des cases de la commande OUVERTE, par SKU — une projection, pas un chiffre. */
-  protected readonly openShown = computed<ReadonlyMap<string, boolean>>(() => {
-    const sheet = this.current();
-    const out = new Map<string, boolean>();
-    if (sheet === null) {
-      return out;
-    }
-    for (const line of sheet.lines) {
-      const shown = this.day
-        .shown()
-        .get(packingMarkKey(this.day.date(), sheet.reference, line.sku));
-      if (shown !== undefined) {
-        out.set(line.sku, shown);
-      }
-    }
-    return out;
-  });
-
-  /** Les SKU de la commande ouverte dont la coche est en vol. */
-  protected readonly openBusy = computed<ReadonlySet<string>>(() => {
-    const sheet = this.current();
-    if (sheet === null) {
-      return new Set();
-    }
-    const busy = this.day.busy();
-    return new Set(
-      sheet.lines
-        .filter((line) => busy.has(packingMarkKey(this.day.date(), sheet.reference, line.sku)))
-        .map((line) => line.sku),
-    );
-  });
-
   /** La lecture initiale — et « Réessayer ». Elle ouvre ensuite la commande du QR. */
   protected async load(): Promise<void> {
     this.gestures.forgetOrderFailures();
@@ -373,20 +334,6 @@ export class Colisage {
     this.term.set('');
   }
 
-  protected onLineToggled(event: PackingLineToggle): void {
-    const sheet = this.current();
-    if (sheet !== null) {
-      void this.gestures.toggle(sheet, event.line, event.packed);
-    }
-  }
-
-  protected stepContainers(step: PackingContainerStep): void {
-    const sheet = this.current();
-    if (sheet !== null) {
-      void this.gestures.stepContainers(sheet, step);
-    }
-  }
-
   /**
    * « Déclarer prête » sur la commande ouverte — puis l'écran **réagit**.
    *
@@ -405,6 +352,23 @@ export class Colisage {
       void this.rounds.load(this.day.date());
       this.chosen.set(null);
       this.justDeclared.set(sheet.customerLabel);
+    }
+  }
+
+  /**
+   * « Rouvrir » sur une commande déclarée prête : le RANGEMENT seulement — elle
+   * reste prête au commerce. Acceptée, elle revient dans « en cours », et
+   * l'écran la suit là-bas pour qu'on puisse reprendre ses contenants.
+   */
+  protected async reopenCurrent(): Promise<void> {
+    const sheet = this.current();
+    if (sheet === null || sheet.packedAt === null) {
+      return;
+    }
+    this.justDeclared.set(null);
+    if (await this.gestures.reopen(sheet)) {
+      this.stack.set('todo');
+      this.chosen.set(sheet.reference);
     }
   }
 
