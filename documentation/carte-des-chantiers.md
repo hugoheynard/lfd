@@ -18,9 +18,9 @@
 
 ## 2. En cours
 
-| Lot                            | État                                 | Ce qui reste                                                 |
-| ------------------------------ | ------------------------------------ | ------------------------------------------------------------ |
-| **K2b** — les bacs au colisage | écran fini ; serveur en fin de tests | test racine, commit, déploiement (serveur et écran ensemble) |
+| Lot                                                                                   | État                   | Ce qui reste                                 |
+| ------------------------------------------------------------------------------------- | ---------------------- | -------------------------------------------- |
+| **K3** — le colisage sert son poste, l'ancien chemin disparaît (« sauvage », §16–§17) | K3a (serveur) en cours | K3b (écran), K3c (code mort), un déploiement |
 
 ## 3. L'ordre pour refermer la boucle colisage ↔ livraison
 
@@ -29,7 +29,8 @@ clôture ──► colisage (K1/K2 ✅) ──► bacs (K2b ⏳) ──► charg
    └──────────────────────────► livraison « prêt à appliquer » (CA6)
 ```
 
-1. **K2b** : finir, déployer.
+1. ~~**K2b** : finir, déployer~~ — déployé le 2026-10-05 (`84de845`).
+   1 bis. **K3** (Hugo, « plier le colisage d'une traite ») : K3a, K3b, K3c, un déploiement.
 2. **Observer une vraie journée** en production : colisage au domaine, « retour
    en attente », commande prête, boîte d'envoi vide. Corriger avant d'avancer.
 3. **E3** : le départ d'une tournée et les commandes rapportées deviennent des
