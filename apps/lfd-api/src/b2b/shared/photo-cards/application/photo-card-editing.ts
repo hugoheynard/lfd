@@ -15,8 +15,8 @@ import type {
  * séquence reçoit des value objects, pas des octets) ; il fournit ce qui part
  * dans la transaction avec l'écriture.
  *
- * Extraite de la procédure de livraison le 2026-09-15 (plan
- * `documentation/b2b/plan-notes-photo-du-commercial.md`, D8) : la séquence et
+ * Extraite de la procédure de livraison le 2026-09-15 (doc
+ * `documentation/b2b/notes-du-commercial.md`) : la séquence et
  * son ordre ne s'écrivent qu'une fois pour les étapes et pour les notes.
  *
  * ## L'ordre des gestes est le sujet

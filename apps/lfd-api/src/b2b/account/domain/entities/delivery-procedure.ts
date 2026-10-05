@@ -73,7 +73,7 @@ const STEP_LIST_RULES: PhotoCardListRules = {
  *
  * Les trois règles sont celles de {@link PhotoCardList}, que la procédure porte
  * en champ privé depuis le 2026-09-15 : le carnet de notes du commercial a la
- * même (plan `documentation/b2b/plan-notes-photo-du-commercial.md`, D8). Le
+ * même (`documentation/b2b/notes-du-commercial.md`). Le
  * vocabulaire public, lui, reste celui des étapes.
  */
 export class DeliveryProcedure {

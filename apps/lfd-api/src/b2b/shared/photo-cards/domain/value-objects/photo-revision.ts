@@ -5,8 +5,8 @@
  * Commune aux étapes de livraison et aux notes du commercial : chaque usage
  * compose sa clé en `…/{cardId}-{revision}`, avec des ULID qui n'ont pas de
  * tiret. Le dernier tiret est donc celui que l'usage a posé, et c'est pour ça
- * qu'aucun suffixe ne se colle après la révision (plan
- * `documentation/b2b/plan-notes-photo-du-commercial.md`, D7) : la vignette
+ * qu'aucun suffixe ne se colle après la révision (doc
+ * `documentation/b2b/notes-du-commercial.md`) : la vignette
  * d'une note se range sous un dossier `thumbs/`, pas sous un `-thumb`.
  *
  * L'écran invalide son image sur ce seul suffixe.

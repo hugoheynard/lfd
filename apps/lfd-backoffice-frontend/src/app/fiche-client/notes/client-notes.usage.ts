@@ -19,7 +19,7 @@ import type {
 /**
  * Ce qui fait des cartes photo du socle les **notes du commercial** : leurs
  * bornes, leur politique de photo et leurs mots. Tout vient du contrat, rien
- * n'est recopié (plan « notes photo du commercial », D2, D7 bis).
+ * n'est recopié (`documentation/b2b/notes-du-commercial.md`).
  */
 
 export const CLIENT_NOTE_LIMITS: PhotoCardLimits = {

@@ -9,7 +9,7 @@ import type { UploadedPhotoPart } from "../../shared/photo-cards/http/photo-card
  * lisible et sa vignette. Servir une image reste `servePhoto` du socle.
  *
  * Pas dans le socle : la vignette est propre aux notes, les étapes de livraison
- * n'en ont pas (plan `documentation/b2b/plan-notes-photo-du-commercial.md`, D7 bis).
+ * n'en ont pas (`documentation/b2b/notes-du-commercial.md`).
  */
 
 /**

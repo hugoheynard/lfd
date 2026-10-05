@@ -1,5 +1,5 @@
-// Les notes photo du commercial sur un compte client — plan
-// `documentation/b2b/plan-notes-photo-du-commercial.md`.
+// Les notes photo du commercial sur un compte client — doc
+// `documentation/b2b/notes-du-commercial.md`.
 //
 // Racine d'agrégat (`ClientNotebook`, `src/b2b/client-notes/`) : le carnet d'UNE
 // société, qui naît à la première note et ne se supprime jamais. Ses notes, elles,

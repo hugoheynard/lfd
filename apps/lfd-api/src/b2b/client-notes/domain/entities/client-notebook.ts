@@ -63,8 +63,7 @@ const NOTE_LIST_RULES: PhotoCardListRules = {
  * écriture : le nombre de notes, une note inconnue, et un ordre qui doit être
  * une permutation EXACTE des notes présentes. Ce sont celles de
  * {@link PhotoCardList}, que le carnet porte en champ privé — la procédure de
- * livraison a la même (plan `documentation/b2b/plan-notes-photo-du-commercial.md`,
- * D8). Ce qui est au carnet : l'ajout **en tête** (la dernière note est celle
+ * livraison a la même (`documentation/b2b/notes-du-commercial.md`). Ce qui est au carnet : l'ajout **en tête** (la dernière note est celle
  * qu'on cherche) et l'**auteur**, figé au dépôt et qu'aucun geste ne réécrit.
  *
  * Le carnet ne connaît pas le stockage objet : il porte la clé de la photo

@@ -13,7 +13,7 @@ export abstract class ClientNotebookRepository {
 
   /**
    * Écrit le carnet **en une transaction**, en ne touchant que ce qui a changé
-   * (plan `documentation/b2b/plan-notes-photo-du-commercial.md`, D11) : la
+   * (`documentation/b2b/notes-du-commercial.md`) : la
    * racine si elle est neuve, les notes retirées, la note ajoutée ou refaite, et
    * la position des notes qui ont bougé.
    */

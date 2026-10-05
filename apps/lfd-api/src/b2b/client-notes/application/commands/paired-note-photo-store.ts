@@ -12,8 +12,7 @@ const logger = new Logger("PairedNotePhotoStore");
  * une PAIRE — la photo lisible sous sa clé, la vignette sous la clé dérivée.
  *
  * Pourquoi un décorateur du port plutôt qu'une option du socle : la vignette est
- * propre aux notes (plan `documentation/b2b/plan-notes-photo-du-commercial.md`,
- * D7 bis), et la séquence du socle (`photo-card-editing.ts`) ne range et ne
+ * propre aux notes (`documentation/b2b/notes-du-commercial.md`), et la séquence du socle (`photo-card-editing.ts`) ne range et ne
  * supprime qu'UNE clé par carte. Ce magasin fait de cette clé une paire, sans
  * que le socle ni la procédure de livraison n'en sachent rien.
  *

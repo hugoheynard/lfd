@@ -14,8 +14,8 @@ import {
  * **600 Ko** par photo lisible. L'écran la réduit à 2400 px de grand côté
  * avant l'envoi : ce qui arrive au-delà n'a pas été réduit.
  *
- * ⚠️ Estimée, pas encore mesurée sur de vraies photos de notes (plan
- * `documentation/b2b/plan-notes-photo-du-commercial.md`, D7 bis). `@lfd/contracts`
+ * ⚠️ Estimée, pas encore mesurée sur de vraies photos de notes (doc
+ * `documentation/b2b/notes-du-commercial.md`). `@lfd/contracts`
  * en garde une copie (`CLIENT_NOTE_PHOTO_MAX_BYTES`) ; le test tient la parité.
  */
 export const CLIENT_NOTE_PHOTO_MAX_BYTES = 600 * 1024;

@@ -34,7 +34,7 @@ const MISSING_THUMBNAIL =
  * l'éditeur photo-cartes ne parle que de notes.
  *
  * Staff seulement : aucune route client ne sert ces notes, et la lecture exige
- * `b2b_client_notes:read` (plan « notes photo du commercial », D5).
+ * `b2b_client_notes:read` (`documentation/b2b/notes-du-commercial.md`).
  *
  * La photo part toujours **avec sa vignette**, et la liste ne lit qu'elles : la
  * photo lisible n'est demandée qu'à l'ouverture en grand (D7 bis).

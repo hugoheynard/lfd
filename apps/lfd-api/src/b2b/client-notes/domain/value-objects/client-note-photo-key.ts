@@ -20,8 +20,8 @@ export function clientNotePhotoKey(companyId: string, noteId: string, revision: 
  * pourrait désigner la vignette d'une autre révision.
  *
  * Pas de suffixe `-thumb` : la révision se lit après le dernier tiret, et un
- * suffixe la ferait lire `thumb` (plan
- * `documentation/b2b/plan-notes-photo-du-commercial.md`, D7).
+ * suffixe la ferait lire `thumb` (doc
+ * `documentation/b2b/notes-du-commercial.md`).
  */
 export function clientNoteThumbnailKey(photoKey: string): string {
   const folderEnd = photoKey.lastIndexOf("/") + 1;
