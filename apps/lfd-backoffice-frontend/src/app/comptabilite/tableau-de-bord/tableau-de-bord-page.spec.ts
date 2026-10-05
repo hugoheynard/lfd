@@ -318,8 +318,8 @@ describe('TableauDeBordPage — les brouillons du lot, un par schéma', () => {
     const { fixture } = await render(new FakeDashboard(), ready());
 
     expect(draftButtons(fixture).map((b) => b.textContent?.trim())).toEqual([
-      'Brouillon CORE',
-      'Brouillon interentreprises',
+      'Aperçu CORE, non déposable',
+      'Aperçu interentreprises, non déposable',
     ]);
     expect(auditButtons(fixture).map((b) => b.textContent?.trim())).toEqual([
       'Contrôler CORE en CSV',

@@ -182,6 +182,10 @@ model LegalEntity {
   // émetteur, et le FK empêche d'effacer une entité qu'un papier signé cite.
   mandates PaymentMandate[]
 
+  // Les lots de prélèvement constitués sous cette entité (plan
+  // `plan-lot-de-prelevement-fige.md`). Côté inverse obligatoire pour Prisma.
+  collectionBatches CollectionBatch[]
+
   createdAt DateTime @default(now()) @map("created_at")
   updatedAt DateTime @updatedAt @map("updated_at")
 

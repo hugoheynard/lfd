@@ -1,4 +1,8 @@
-import { MANDATE_STATUS_LABELS, SEPA_SCHEME_LABELS } from '@lfd/contracts';
+import {
+  MANDATE_STATUS_LABELS,
+  ORDER_COLLECTION_STATE_LABELS,
+  SEPA_SCHEME_LABELS,
+} from '@lfd/contracts';
 
 import { domain, type ValueFamily } from './value-domain';
 
@@ -25,6 +29,21 @@ export const PROOF_PURGE_CAUSE = domain('cause d’effacement d’une preuve de 
   draft_voided: 'Brouillon annulé',
 });
 
+/** L'état d'encaissement d'une commande (lot de prélèvement figé, 2026-10-05). */
+export const ORDER_COLLECTION_STATE = domain(
+  'état d’encaissement avant un règlement hors prélèvement',
+  {
+    due: ORDER_COLLECTION_STATE_LABELS.due,
+    excluded: ORDER_COLLECTION_STATE_LABELS.excluded,
+  },
+);
+
 export const ACCOUNTING_VALUES: ValueFamily = {
-  enums: [SEPA_SCHEME, MANDATE_STATUS, DRAFT_VOIDING_CAUSE, PROOF_PURGE_CAUSE],
+  enums: [
+    SEPA_SCHEME,
+    MANDATE_STATUS,
+    DRAFT_VOIDING_CAUSE,
+    PROOF_PURGE_CAUSE,
+    ORDER_COLLECTION_STATE,
+  ],
 };

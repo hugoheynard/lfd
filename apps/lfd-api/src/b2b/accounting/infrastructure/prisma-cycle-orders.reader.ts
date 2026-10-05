@@ -62,6 +62,13 @@ export class PrismaCycleOrdersReader extends CycleOrdersReader {
         company: { select: { raisonSociale: true, enseigne: true } },
       },
     });
+    // `order_collection` n'a pas de relation vers `orders` (id opaque) : une
+    // seconde lecture. L'absence de ligne vaut `due`.
+    const states = await this.prisma.orderCollection.findMany({
+      where: { orderId: { in: rows.map((row) => row.id) } },
+      select: { orderId: true, state: true },
+    });
+    const stateOf = new Map(states.map((state) => [state.orderId, state.state]));
     return rows.map((row) => ({
       id: row.id,
       orderNumber: row.orderNumber,
@@ -77,6 +84,7 @@ export class PrismaCycleOrdersReader extends CycleOrdersReader {
       vatCents: row.vatCents,
       vatShares: parseVatShares(row.vatShares),
       totalCents: row.totalCents,
+      collectionState: stateOf.get(row.id) ?? "due",
     }));
   }
 }

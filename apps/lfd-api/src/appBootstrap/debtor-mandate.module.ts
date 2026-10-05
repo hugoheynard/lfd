@@ -1,6 +1,12 @@
 import { Global, Module } from "@nestjs/common";
 
 import { DebtorMandateReader } from "../b2b/accounting/domain/ports/debtor-mandate.reader.js";
+import { CollectionMandatesReader } from "../b2b/accounting/domain/ports/collection-mandates.reader.js";
+import { MandateRecheckReader } from "../b2b/accounting/domain/ports/mandate-recheck.reader.js";
+import {
+  PrismaCollectionMandatesReader,
+  PrismaMandateRecheckReader,
+} from "../b2b/payments/infrastructure/prisma-collection-mandates.reader.js";
 import { PrismaDebtorMandateReader } from "../b2b/payments/infrastructure/prisma-debtor-mandate.reader.js";
 
 /**
@@ -21,10 +27,18 @@ import { PrismaDebtorMandateReader } from "../b2b/payments/infrastructure/prisma
  * parce qu'un `pain.008` en porte par construction — on ne peut pas demander à
  * une banque de débiter un compte qu'on lui tairait. Ce qui se tient, c'est que
  * rien d'autre ne les recopie sur le trajet : le CSV de contrôle les masque.
+ *
+ * Depuis le 2026-10-05, deux fils de plus pour le lot figé
+ * (`plan-lot-de-prelevement-fige.md`) : les mandats actifs avec leur créancier
+ * (constitution) et la relecture des mandats d'un lot (dépôt).
  */
 @Global()
 @Module({
-  providers: [{ provide: DebtorMandateReader, useClass: PrismaDebtorMandateReader }],
-  exports: [DebtorMandateReader],
+  providers: [
+    { provide: DebtorMandateReader, useClass: PrismaDebtorMandateReader },
+    { provide: CollectionMandatesReader, useClass: PrismaCollectionMandatesReader },
+    { provide: MandateRecheckReader, useClass: PrismaMandateRecheckReader },
+  ],
+  exports: [DebtorMandateReader, CollectionMandatesReader, MandateRecheckReader],
 })
 export class DebtorMandateModule {}

@@ -53,6 +53,17 @@ export const comptabiliteRoutes: Routes = [
           ),
       },
       {
+        // Les lots de prélèvement figés : constituer, annuler, déposer, et les
+        // commandes écartées. Les gestes demandent `b2b_accounting:write`.
+        // Plan : documentation/comptabilite/plan-lot-de-prelevement-fige.md (P2).
+        path: 'lots-de-prelevement',
+        title: 'Lots de prélèvement — LFC B2B admin',
+        loadComponent: () =>
+          import('./lots-de-prelevement/lots-de-prelevement-page').then(
+            (m) => m.LotsDePrelevementPage,
+          ),
+      },
+      {
         // Faire régler par carte : commandes impayées et liens libres. Les
         // gestes (renvoyer, créer, annuler, plafond) demandent
         // `b2b_accounting:write` ; l'écran les masque sans ce droit.

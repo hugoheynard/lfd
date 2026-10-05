@@ -92,6 +92,7 @@ const ORDER: CycleOrder = {
   vatCents: 55,
   vatShares: null,
   totalCents: 1_055,
+  collectionState: "due",
 };
 
 describe("ListStatementCyclesHandler", () => {

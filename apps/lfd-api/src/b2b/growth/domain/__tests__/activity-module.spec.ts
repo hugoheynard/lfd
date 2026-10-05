@@ -135,6 +135,8 @@ describe("moduleOf — la comptabilité", () => {
     // Les liens de paiement libres (2026-09-25) : un geste de la comptabilité.
     ["payment_link.created", "comptabilite"],
     ["payment_link.cancelled", "comptabilite"],
+    ["collection.batch_constituted", "comptabilite"],
+    ["collection.order_settled_otherwise", "comptabilite"],
     ["accounting_settings.payment_link_cap_set", "comptabilite"],
     // La fidélité (2026-09-26) : le ratio, les bons et les ajustements.
     ["loyalty_settings.set", "comptabilite"],
@@ -144,7 +146,7 @@ describe("moduleOf — la comptabilité", () => {
     expect(moduleOf(type)).toBe(module);
   });
 
-  it("le filtre du module ne ramène que ses six préfixes", () => {
+  it("le filtre du module ne ramène que ses sept préfixes", () => {
     expect(prefixesOf("comptabilite")).toEqual([
       "legal_entity.",
       "payment_mandate.",
@@ -152,6 +154,7 @@ describe("moduleOf — la comptabilité", () => {
       "accounting_settings.",
       "loyalty_settings.",
       "loyalty.",
+      "collection.",
     ]);
   });
 

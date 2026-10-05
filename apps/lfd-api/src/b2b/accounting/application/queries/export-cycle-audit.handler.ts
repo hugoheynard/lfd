@@ -4,6 +4,7 @@ import { Clock } from "../../../../platform/time/clock.js";
 import { BillableOrdersReader } from "../../domain/ports/billable-orders.reader.js";
 import { CreditorReader } from "../../domain/ports/creditor.reader.js";
 import { DebtorMandateReader } from "../../domain/ports/debtor-mandate.reader.js";
+import { RecordedClosureReader } from "../../domain/ports/recorded-closure.reader.js";
 import { auditCsv } from "../../domain/services/pain008-audit.js";
 import { buildCycleDraft } from "../cycle-draft-support.js";
 import { ExportCycleAuditQuery } from "./billing-cycle-queries.js";
@@ -32,6 +33,7 @@ export class ExportCycleAuditHandler implements IQueryHandler<
     private readonly creditors: CreditorReader,
     private readonly billable: BillableOrdersReader,
     private readonly debtors: DebtorMandateReader,
+    private readonly closures: RecordedClosureReader,
     private readonly clock: Clock,
   ) {}
 
@@ -41,6 +43,7 @@ export class ExportCycleAuditHandler implements IQueryHandler<
         creditors: this.creditors,
         billable: this.billable,
         debtors: this.debtors,
+        closures: this.closures,
         clock: this.clock,
       },
       query.legalEntityId,

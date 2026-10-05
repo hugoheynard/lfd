@@ -1,6 +1,7 @@
 import { z } from "zod";
 
 import { mandateStatusSchema } from "../payment-mandate.js";
+import { COLLECTION_FACTS } from "./collection.js";
 import {
   cents,
   count,
@@ -262,4 +263,7 @@ export const ACCOUNTING_FACTS = {
       remainderCents: cents(),
     }),
   ),
+
+  // Le lot de prélèvement figé (2026-10-05) — `collection.ts`.
+  ...COLLECTION_FACTS,
 } as const satisfies JournalFactFamily;

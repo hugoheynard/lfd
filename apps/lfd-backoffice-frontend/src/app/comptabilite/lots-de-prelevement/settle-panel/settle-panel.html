@@ -1,0 +1,22 @@
+<fold-panel-header title="Réglée autrement" [subtitle]="subtitle()" />
+
+<div class="body">
+  <fold-input
+    label="Comment a-t-elle été réglée ?"
+    placeholder="Virement du 3 octobre, référence…"
+    required
+    hint="Obligatoire : c'est la seule trace du règlement. Au plus 500 caractères."
+    [(value)]="note"
+  />
+
+  @if (error(); as message) {
+    <fold-callout appearance="inset" variant="alert" announce>{{ message }}</fold-callout>
+  }
+</div>
+
+<footer class="foot">
+  <button foldButton emphasis="outline" intent="neutral" (click)="close()">Annuler</button>
+  <button foldButton [disabled]="!canSubmit()" [loading]="saving()" (click)="submit()">
+    Marquer réglée
+  </button>
+</footer>

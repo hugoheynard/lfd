@@ -15,6 +15,7 @@ import type {
   CycleStatementView,
   StatementCycleView,
 } from '@lfd/contracts';
+import { ORDER_COLLECTION_STATE_LABELS } from '@lfd/contracts';
 import { formatCents, formatOrderDate } from '@lfd/b2b-ui/order';
 import {
   FoldBadgeComponent,
@@ -107,6 +108,8 @@ export class CycleStatementCard {
     { key: 'lateFee', label: 'Surtaxe', numeric: true },
     { key: 'vat', label: 'TVA', numeric: true },
     { key: 'total', label: 'TTC', numeric: true },
+    // L'état d'encaissement, lu dans `order_collection` (lot figé, P2).
+    { key: 'collection', label: 'État' },
   ];
 
   protected readonly rowKey = (order: CycleStatementOrderView): string => order.id;
@@ -218,5 +221,10 @@ export class CycleStatementCard {
     } catch {
       this.state.set('error');
     }
+  }
+
+  /** « À prélever », « Dans un lot », « Prélevée »… */
+  protected collectionOf(row: CycleStatementOrderView): string {
+    return ORDER_COLLECTION_STATE_LABELS[row.collectionState];
   }
 }

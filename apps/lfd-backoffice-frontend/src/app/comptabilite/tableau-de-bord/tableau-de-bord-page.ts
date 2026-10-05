@@ -203,10 +203,14 @@ export class TableauDeBordPage {
    * d'abord, l'interentreprises ensuite.
    */
   protected readonly draftSchemes: readonly DraftScheme[] = [
-    { scheme: 'CORE', draftLabel: 'Brouillon CORE', auditLabel: 'Contrôler CORE en CSV' },
+    {
+      scheme: 'CORE',
+      draftLabel: 'Aperçu CORE, non déposable',
+      auditLabel: 'Contrôler CORE en CSV',
+    },
     {
       scheme: 'B2B',
-      draftLabel: 'Brouillon interentreprises',
+      draftLabel: 'Aperçu interentreprises, non déposable',
       auditLabel: 'Contrôler interentreprises en CSV',
     },
   ];

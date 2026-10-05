@@ -153,6 +153,7 @@
                     }
                   </ng-template>
                   <ng-template foldCell="total" let-row>{{ euros(row.totalCents) }}</ng-template>
+                  <ng-template foldCell="collection" let-row>{{ collectionOf(row) }}</ng-template>
                 </fold-data-table>
               </section>
             }

@@ -124,3 +124,36 @@ function atLocalMidnight(day: string): Date {
   }
   return instant;
 }
+
+/**
+ * Cet instant est-il une clôture **calendaire** — un 1er du mois à 00h00
+ * locales ?
+ *
+ * La première clôture enregistrée doit l'être (plan
+ * `plan-lot-de-prelevement-fige.md`, §6 bis) : le relevé de cycle a montré des
+ * mois civils aux clients, et une première clôture ailleurs ferait changer de
+ * relevé des commandes déjà montrées.
+ */
+export function isCalendarClosure(instant: Date): boolean {
+  const local = instantToLocal(instant);
+  return local.day.endsWith("-01") && local.time === CYCLE_CLOSING_TIME;
+}
+
+/**
+ * **Le cycle qu'on constitue** à `now` : celui qui s'est clos au dernier 1er du
+ * mois (00h00 locales) atteint, et qui part de la dernière clôture enregistrée
+ * AVANT lui — ou, s'il n'y en a pas, du 1er du mois précédent.
+ *
+ * Toujours clos par construction : sa clôture est ≤ `now`. La constitution ne
+ * choisit pas d'instant — une clôture anticipée n'est pas proposée (Q1 : la
+ * comptabilité constitue à la main, après la clôture).
+ */
+export function cycleToConstitute(now: Date, previousClosure: Date | null): BillingCycle {
+  const closesAt = cycleAt(now, null).startsAt;
+  const calendarStart = cycleAt(new Date(closesAt.getTime() - 1), null).startsAt;
+  return {
+    startsAt:
+      previousClosure !== null && previousClosure < closesAt ? previousClosure : calendarStart,
+    closesAt,
+  };
+}

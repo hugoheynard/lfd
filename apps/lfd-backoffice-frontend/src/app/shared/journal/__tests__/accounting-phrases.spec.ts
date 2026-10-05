@@ -247,3 +247,56 @@ describe('les mandats', () => {
     expect(purged.namesActor).toBe(false);
   });
 });
+
+describe('le lot de prélèvement figé', () => {
+  const batch = {
+    subjectLabel: 'Lot B2B 202609',
+    legalEntity: { id: 'le_1', name: ENTITY },
+    scheme: 'B2B',
+    cycleClosesAt: '2026-09-30T22:00:00.000Z',
+    lineCount: 3,
+    totalCents: 123_400,
+  };
+
+  function ofBatch(type: string, payload: Record<string, unknown>): FactInput {
+    return { ...entity(type, payload), subjectType: 'collection_batch', subjectId: 'b_1' };
+  }
+
+  it('dit la constitution, et nomme les sociétés sans mandat qui la rendent indéposable', () => {
+    const constituted = sentence(
+      ofBatch('collection.batch_constituted', {
+        ...batch,
+        depositable: false,
+        unmandatedCompanies: ['Chalet Sans Mandat'],
+        excludedCount: 1,
+      }),
+    );
+
+    expect(constituted).toContain('Colette Martin a constitué le lot « Lot B2B 202609 »');
+    expect(constituted).toContain('« La Folie Douce SAS »');
+    expect(constituted).toContain('non déposable — sans mandat : Chalet Sans Mandat');
+  });
+
+  it('dit l’annulation et le dépôt', () => {
+    expect(sentence(ofBatch('collection.batch_cancelled', batch))).toContain('a annulé le lot');
+    expect(sentence(ofBatch('collection.batch_deposited', batch))).toContain(
+      'a marqué déposé le lot',
+    );
+  });
+
+  it('dit la commande réglée autrement, avec sa note', () => {
+    const settled = sentence({
+      ...entity('collection.order_settled_otherwise', {
+        subjectLabel: 'CMD-42',
+        amountCents: 1_200,
+        previousState: 'excluded',
+        note: 'virement du 3',
+      }),
+      subjectType: 'order',
+      subjectId: 'o_1',
+    });
+
+    expect(settled).toContain('a noté la commande « CMD-42 » réglée autrement');
+    expect(settled).toContain('« virement du 3 »');
+  });
+});

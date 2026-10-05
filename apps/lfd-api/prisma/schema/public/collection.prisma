@@ -1,0 +1,155 @@
+// ─────────────────────────────────────────────────────────────────────────────
+// Le lot de prélèvement figé — plan
+// `documentation/comptabilite/plan-lot-de-prelevement-fige.md` (P1, P2).
+// ─────────────────────────────────────────────────────────────────────────────
+//
+// Propriétaire : `src/b2b/accounting/`. Le fichier `pain.008` y est STOCKÉ,
+// rendu une fois à la constitution, et relu (empreinte vérifiée) à chaque
+// téléchargement.
+//
+// 🔴 Contraintes INVISIBLES ici — elles vivent dans la migration
+// `20261005140000_le_lot_de_prelevement_fige`, Prisma ne sait pas les exprimer :
+//   · un seul lot NON annulé par (entité, schéma, clôture) — index partiel ;
+//   · un lot déposé porte son instant et son auteur, un lot annulé aussi ;
+//   · un montant de ligne est strictement positif ;
+//   · une commande `batched`/`collected` cite sa ligne, une `excluded` sa
+//     raison, une `settled_otherwise` sa note et son auteur ;
+//   · `collection_floor` n'a qu'une ligne.
+
+/// L'état d'un lot. `constituted` est le seul dont on sort.
+enum CollectionBatchStatus {
+  constituted
+  deposited
+  cancelled
+
+  @@schema("public")
+}
+
+/// L'état d'encaissement d'une commande. L'absence de ligne vaut `due`.
+enum OrderCollectionState {
+  due
+  batched
+  excluded
+  collected
+  settled_otherwise
+
+  @@schema("public")
+}
+
+/// Pourquoi une commande a été écartée d'un lot. Une VALEUR : elle ne se
+/// renomme que par migration.
+enum CollectionExclusionReason {
+  no_mandate
+  payer_detached
+  one_off_consumed
+  ambiguous_creditor
+
+  @@schema("public")
+}
+
+/// Un lot : UN fichier `pain.008` d'une entité, d'un schéma, d'un cycle.
+model CollectionBatch {
+  /// ULID — il entre dans `MsgId`, `PmtInfId` et `EndToEndId` (format arrêté).
+  id String @id
+
+  legalEntityId String      @map("legal_entity_id")
+  legalEntity   LegalEntity @relation(fields: [legalEntityId], references: [id], onDelete: Restrict)
+
+  scheme SepaScheme
+
+  cycleStartsAt DateTime @map("cycle_starts_at") @db.Timestamptz(3)
+  /// Exclusive. La dernière d'une entité EST sa clôture enregistrée.
+  cycleClosesAt DateTime @map("cycle_closes_at") @db.Timestamptz(3)
+
+  status CollectionBatchStatus
+
+  constitutedAt        DateTime  @map("constituted_at") @db.Timestamptz(3)
+  /// Identifiant staff LOCAL — jamais un `sub`.
+  constitutedByStaffId String    @map("constituted_by_staff_id")
+  depositedAt          DateTime? @map("deposited_at") @db.Timestamptz(3)
+  depositedByStaffId   String?   @map("deposited_by_staff_id")
+  cancelledAt          DateTime? @map("cancelled_at") @db.Timestamptz(3)
+  cancelledByStaffId   String?   @map("cancelled_by_staff_id")
+
+  /// Les sociétés du cycle sans mandat prélevable : le lot n'est pas
+  /// déposable tant qu'il en nomme une (Q2, interdiction gardée).
+  unmandatedCompanies String[] @default([]) @map("unmandated_companies")
+
+  /// Le fichier, rendu UNE fois. `CreDtTm` = `constituted_at`.
+  xml        String
+  fileSha256 String @map("file_sha256")
+
+  lines CollectionBatchLine[]
+
+  @@index([legalEntityId, cycleClosesAt])
+  @@map("collection_batch")
+  @@schema("public")
+}
+
+/// Une ligne du fichier : UN débiteur, ses commandes, le mandat figé.
+model CollectionBatchLine {
+  batchId String          @map("batch_id")
+  batch   CollectionBatch @relation(fields: [batchId], references: [id], onDelete: Restrict)
+  rank    Int
+
+  endToEndId String @unique @map("end_to_end_id")
+
+  mandateId        String   @map("mandate_id")
+  mandateReference String   @map("mandate_reference")
+  mandateSignedAt  DateTime @map("mandate_signed_at") @db.Timestamptz(3)
+  /// La société débitée — le payeur.
+  debtorCompanyId  String   @map("debtor_company_id")
+  debtorName       String   @map("debtor_name")
+  /// Scellé (AES-256-GCM, `FieldCipher`) — comme `company_bank_accounts`.
+  debtorIbanSealed String   @map("debtor_iban_sealed")
+  debtorIbanLast4  String   @map("debtor_iban_last4")
+  debtorBic        String?  @map("debtor_bic")
+  /// `RCUR` | `OOFF`.
+  sequence         String
+  amountCents      Int      @map("amount_cents")
+  orderCount       Int      @map("order_count")
+  /// Dont commandes de cycles antérieurs — reprises.
+  priorOrderCount  Int      @map("prior_order_count")
+
+  orders OrderCollection[]
+
+  @@id([batchId, rank])
+  @@index([mandateId])
+  @@map("collection_batch_line")
+  @@schema("public")
+}
+
+/// L'état d'encaissement d'UNE commande. `order_id` est opaque.
+model OrderCollection {
+  orderId String @id @map("order_id")
+
+  state OrderCollectionState
+
+  batchId  String?              @map("batch_id")
+  lineRank Int?                 @map("line_rank")
+  line     CollectionBatchLine? @relation(fields: [batchId, lineRank], references: [batchId, rank], onDelete: Restrict)
+
+  exclusionReason CollectionExclusionReason? @map("exclusion_reason")
+
+  amountCents Int @map("amount_cents")
+
+  settledNote      String? @map("settled_note")
+  settledByStaffId String? @map("settled_by_staff_id")
+
+  updatedAt DateTime @map("updated_at") @db.Timestamptz(3)
+
+  @@index([state])
+  @@index([batchId])
+  @@map("order_collection")
+  @@schema("public")
+}
+
+/// Le plancher : aucune commande créée avant n'entre dans un lot. Une ligne,
+/// posée par la migration à l'instant de son déploiement.
+model CollectionFloor {
+  id      Boolean  @id @default(true)
+  floorAt DateTime @map("floor_at") @db.Timestamptz(3)
+
+  @@map("collection_floor")
+  @@schema("public")
+}

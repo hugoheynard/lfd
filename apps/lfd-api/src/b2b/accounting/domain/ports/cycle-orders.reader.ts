@@ -1,3 +1,4 @@
+import type { OrderCollectionStateName } from "../entities/order-collection.js";
 import type { BillingCycle } from "../services/billing-cycle.js";
 
 /**
@@ -44,6 +45,11 @@ export interface CycleOrder {
    */
   readonly vatShares: readonly FrozenVatShare[] | null;
   readonly totalCents: number;
+  /**
+   * L'état d'encaissement (`order_collection`, lot figé P2) — `due` quand
+   * aucune ligne ne la cite : aucun lot ne l'a encore vue.
+   */
+  readonly collectionState: OrderCollectionStateName;
 }
 
 /** La société d'un relevé, sous ses deux noms. */

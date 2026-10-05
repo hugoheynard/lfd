@@ -224,6 +224,60 @@ function capOf(raw: unknown): Segment {
   return raw === null ? value('aucun') : inUnit('cents', raw);
 }
 
+// ─── Le lot de prélèvement figé (2026-10-05) ────────────────────────────────
+
+const BATCH: Noun = { the: 'le lot', a: 'un lot' };
+
+/**
+ * « … a constitué le lot « Lot B2B 202609 » de l'entité émettrice « X » —
+ * 3 lignes, 1 234,00 € ». Le plan : `plan-lot-de-prelevement-fige.md`.
+ */
+function onBatch(verb: string, after: (fact: PhraseFact) => Segment[] = nothing): Phrase {
+  return (fact) => {
+    const label = subjectLabelOf(fact);
+    const head =
+      label === null
+        ? [text(BATCH.a)]
+        : [text(`${BATCH.the} « `), subject(fact, label), text(' »')];
+    return byActor(
+      fact,
+      [
+        text(`${verb} `),
+        ...head,
+        text(' de '),
+        ...cite(ENTITY[''], fact.payload['legalEntity']),
+        text(' — '),
+        value(`${String(optional(fact.payload['lineCount']) ?? '?')} ligne(s)`),
+        text(', '),
+        inUnit('cents', fact.payload['totalCents']),
+        ...after(fact),
+      ],
+      [
+        'subjectLabel',
+        'legalEntity',
+        'scheme',
+        'cycleClosesAt',
+        'lineCount',
+        'totalCents',
+        'depositable',
+        'unmandatedCompanies',
+        'excludedCount',
+      ],
+    );
+  };
+}
+
+/** Q2 : un lot qui nomme une société sans mandat ne se dépose pas — la phrase le dit. */
+function notDepositable(fact: PhraseFact): Segment[] {
+  const raw = fact.payload['unmandatedCompanies'];
+  const names = Array.isArray(raw)
+    ? raw.filter((name): name is string => typeof name === 'string')
+    : [];
+  return names.length === 0
+    ? []
+    : [text(', non déposable — sans mandat : '), value(names.join(', '))];
+}
+
 export const ACCOUNTING_PHRASES = {
   'legal_entity.declared': onEntity(
     'a déclaré',
@@ -315,4 +369,25 @@ export const ACCOUNTING_PHRASES = {
       ],
       ['subjectLabel', 'from', 'to'],
     ),
+  'collection.batch_constituted': onBatch('a constitué', notDepositable),
+  'collection.batch_cancelled': onBatch('a annulé'),
+  'collection.batch_deposited': onBatch('a marqué déposé'),
+  'collection.order_settled_otherwise': (fact) => {
+    const number = subjectLabelOf(fact);
+    return byActor(
+      fact,
+      [
+        text('a noté '),
+        ...(number === null
+          ? [text('une commande')]
+          : [text('la commande « '), subject(fact, number), text(' »')]),
+        text(' réglée autrement ('),
+        inUnit('cents', fact.payload['amountCents']),
+        text(') : « '),
+        name(optional(fact.payload['note']) ?? '—'),
+        text(' »'),
+      ],
+      ['subjectLabel', 'amountCents', 'previousState', 'note'],
+    );
+  },
 } as const satisfies Partial<Record<JournalFactType, Phrase>>;

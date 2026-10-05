@@ -42,3 +42,11 @@ export const ACCOUNTING_FACTS = {
   legalEntityArchived: "legal_entity.archived",
   legalEntityRestored: "legal_entity.restored",
 } as const satisfies Readonly<Record<string, JournalFactType>>;
+
+/** Les faits du lot de prélèvement figé (plan `plan-lot-de-prelevement-fige.md`). */
+export const COLLECTION_FACT_TYPES = {
+  batchConstituted: "collection.batch_constituted",
+  batchCancelled: "collection.batch_cancelled",
+  batchDeposited: "collection.batch_deposited",
+  orderSettledOtherwise: "collection.order_settled_otherwise",
+} as const satisfies Readonly<Record<string, JournalFactType>>;

@@ -5,6 +5,7 @@ import { buildCycleDraft } from "../cycle-draft-support.js";
 import { BillableOrdersReader } from "../../domain/ports/billable-orders.reader.js";
 import { CreditorReader } from "../../domain/ports/creditor.reader.js";
 import { DebtorMandateReader } from "../../domain/ports/debtor-mandate.reader.js";
+import { RecordedClosureReader } from "../../domain/ports/recorded-closure.reader.js";
 import { ExportCycleDraftQuery } from "./billing-cycle-queries.js";
 
 /** Le fichier et le nom qu'on propose au navigateur. */
@@ -24,10 +25,8 @@ export interface CycleDraftFile {
  * Ce qui reste incomplet — l'IBAN du débiteur, sa RUM — l'est de l'autre côté,
  * et le rendu le marque plutôt que de l'inventer. Voir le JSDoc de `pain008.ts`.
  *
- * ⚠️ `null` en clôture précédente : aucune clôture n'est encore enregistrée
- * (vérifié le 2026-09-10 — rien n'en écrit dans `src/`). Le cycle se rabat donc
- * sur le mois calendaire, et ce sera la même ligne à changer ici et dans
- * `get-current-billing-cycle.handler.ts` le jour venu.
+ * La clôture précédente est celle du dernier lot vivant de l'entité
+ * (`RecordedClosureReader`) depuis le lot figé, 2026-10-05.
  */
 @QueryHandler(ExportCycleDraftQuery)
 export class ExportCycleDraftHandler implements IQueryHandler<
@@ -38,6 +37,7 @@ export class ExportCycleDraftHandler implements IQueryHandler<
     private readonly creditors: CreditorReader,
     private readonly billable: BillableOrdersReader,
     private readonly debtors: DebtorMandateReader,
+    private readonly closures: RecordedClosureReader,
     private readonly clock: Clock,
   ) {}
 
@@ -47,6 +47,7 @@ export class ExportCycleDraftHandler implements IQueryHandler<
         creditors: this.creditors,
         billable: this.billable,
         debtors: this.debtors,
+        closures: this.closures,
         clock: this.clock,
       },
       query.legalEntityId,
@@ -66,7 +67,10 @@ export class ExportCycleDraftHandler implements IQueryHandler<
       // Le schéma et le SIREN y entrent depuis le 2026-09-15 : un cycle rend
       // deux fichiers, et deux fichiers du même nom s'écrasent dans un dossier
       // de téléchargements — c'est alors le mauvais qu'on dépose.
-      fileName: `${draft.depositable ? "" : "BROUILLON-"}prelevement-${draft.scheme}-${draft.creditorSiren}-${draft.cycleTag}.xml`,
+      //
+      // `APERCU-` en tête depuis le 2026-10-05 : l'aperçu n'est plus le fichier
+      // qu'on dépose — c'est celui d'un lot constitué.
+      fileName: `APERCU-${draft.depositable ? "" : "BROUILLON-"}prelevement-${draft.scheme}-${draft.creditorSiren}-${draft.cycleTag}.xml`,
     };
   }
 }

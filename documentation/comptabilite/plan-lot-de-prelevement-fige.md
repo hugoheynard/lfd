@@ -1,9 +1,9 @@
 # Le lot de prélèvement figé
 
 > 📐 **Plan v2, rien n'est bâti** (2026-10-05). Prérequis **S4-0** du chantier
-> sous-comptes ([`../b2b/plan-sous-comptes.md`](../b2b/plan-sous-comptes.md),
+> sous-comptes ([`../b2b/comptes-client/plan-sous-comptes.md`](../b2b/comptes-client/plan-sous-comptes.md),
 > §2.1 quater), mais il sert à **tous** les clients prélevés. Trouvaille T10 du
-> [ledger](../b2b/ledger-sous-comptes.md).
+> [ledger](../b2b/comptes-client/ledger-sous-comptes.md).
 >
 > La v1 a été contredite par `vitruve` le même jour : quatre objections
 > BLOQUANTES et huit SÉRIEUSES. Le §8 dit où chacune est reprise.
@@ -23,11 +23,12 @@
     société, sans regarder le créancier ;
   - le rendu se fait par `pain.008`.
 - **Les identifiants SEPA ne dépendent que du cycle** : `MsgId` =
-  `<cycleTag>-<scheme>` (`pain008.ts:~141`), `PmtInfId` = `MsgId-SEQ`
-  (`:206`), `EndToEndId` = `<cycle>-<schéma>-<rang>` (`:237`). `CreDtTm`
-  vient de l'heure du rendu (`:~152`).
+  `<cycleTag>-<scheme>` (`pain008.ts:134`), `PmtInfId` = `MsgId-SEQ`
+  (`:142`), `EndToEndId` = `<cycle>-<schéma>-<rang>` (`:174`). `CreDtTm`
+  vient de l'heure du rendu (`pain008-document.ts:101`). Lignes relues le
+  2026-10-05 après la découpe du rendu commun (P1).
 - **Une ligne de prélèvement est un débiteur**, pas une commande
-  (`pain008.ts:233`). Le port ne rend que des sommes par société, sans
+  (`pain008-document.ts:172`). Le port ne rend que des sommes par société, sans
   `order_id`.
 - **Rien n'est écrit** : ni lot, ni état par commande, ni dépôt.
 

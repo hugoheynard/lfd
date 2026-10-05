@@ -32,6 +32,7 @@ function order(overrides: Partial<CycleOrder>): CycleOrder {
       { rate: 20, amountCents: 300 },
     ],
     totalCents: 12_000,
+    collectionState: "due",
     ...overrides,
   };
 }

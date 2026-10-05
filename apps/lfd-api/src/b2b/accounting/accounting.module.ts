@@ -1,5 +1,32 @@
 import { Module } from "@nestjs/common";
 
+import { CancelCollectionBatchHandler } from "./application/commands/cancel-collection-batch.handler.js";
+import { ConstituteCollectionBatchesHandler } from "./application/commands/constitute-collection-batches.handler.js";
+import { DepositCollectionBatchHandler } from "./application/commands/deposit-collection-batch.handler.js";
+import { SettleOrderOtherwiseHandler } from "./application/commands/settle-order-otherwise.handler.js";
+import { ExportCollectionBatchAuditHandler } from "./application/queries/export-collection-batch-audit.handler.js";
+import { ExportCollectionBatchFileHandler } from "./application/queries/export-collection-batch-file.handler.js";
+import { GetCollectionCycleHandler } from "./application/queries/get-collection-cycle.handler.js";
+import { CancelledOrdersReader } from "./domain/ports/cancelled-orders.reader.js";
+import { CollectionBatchReader } from "./domain/ports/collection-batch.reader.js";
+import { CollectionBatchRepository } from "./domain/ports/collection-batch.repository.js";
+import { CollectionCandidatesReader } from "./domain/ports/collection-candidates.reader.js";
+import { CollectionLock } from "./domain/ports/collection-lock.js";
+import { OrderCollectionRepository } from "./domain/ports/order-collection.repository.js";
+import { OrderNumbersReader } from "./domain/ports/order-numbers.reader.js";
+import { RecordedClosureReader } from "./domain/ports/recorded-closure.reader.js";
+import { AdminCollectionBatchesController } from "./http/admin-collection-batches.controller.js";
+import { PrismaCollectionBatchReader } from "./infrastructure/prisma-collection-batch.reader.js";
+import { PrismaCollectionBatchRepository } from "./infrastructure/prisma-collection-batch.repository.js";
+import { PrismaCollectionCandidatesReader } from "./infrastructure/prisma-collection-candidates.reader.js";
+import { PrismaCollectionLock } from "./infrastructure/prisma-collection-lock.js";
+import {
+  PrismaCancelledOrdersReader,
+  PrismaOrderNumbersReader,
+} from "./infrastructure/prisma-collection-orders.readers.js";
+import { PrismaOrderCollectionRepository } from "./infrastructure/prisma-order-collection.repository.js";
+import { PrismaRecordedClosureReader } from "./infrastructure/prisma-recorded-closure.reader.js";
+
 import { AssignCreditorIdentifierHandler } from "./application/commands/assign-creditor-identifier.handler.js";
 import { CorrectLegalEntityHandler } from "./application/commands/correct-legal-entity.handler.js";
 import { DeclareLegalEntityHandler } from "./application/commands/declare-legal-entity.handler.js";
@@ -77,6 +104,7 @@ import { PrismaLegalEntityRepository } from "./infrastructure/prisma-legal-entit
     AdminLegalEntityDocumentsController,
     AdminBillingCycleController,
     AdminCycleStatementsController,
+    AdminCollectionBatchesController,
   ],
   providers: [
     { provide: LegalEntityRepository, useClass: PrismaLegalEntityRepository },
@@ -87,6 +115,22 @@ import { PrismaLegalEntityRepository } from "./infrastructure/prisma-legal-entit
     { provide: StatementBillingReader, useClass: PrismaStatementBillingReader },
     { provide: LegalEntityLogoReader, useClass: PrismaLegalEntityLogoReader },
     { provide: FirstMandateLedger, useClass: PrismaFirstMandateLedger },
+    // Le lot de prélèvement figé (plan `plan-lot-de-prelevement-fige.md`).
+    { provide: CollectionCandidatesReader, useClass: PrismaCollectionCandidatesReader },
+    { provide: RecordedClosureReader, useClass: PrismaRecordedClosureReader },
+    { provide: CollectionBatchRepository, useClass: PrismaCollectionBatchRepository },
+    { provide: OrderCollectionRepository, useClass: PrismaOrderCollectionRepository },
+    { provide: CollectionBatchReader, useClass: PrismaCollectionBatchReader },
+    { provide: CollectionLock, useClass: PrismaCollectionLock },
+    { provide: CancelledOrdersReader, useClass: PrismaCancelledOrdersReader },
+    { provide: OrderNumbersReader, useClass: PrismaOrderNumbersReader },
+    ConstituteCollectionBatchesHandler,
+    CancelCollectionBatchHandler,
+    DepositCollectionBatchHandler,
+    SettleOrderOtherwiseHandler,
+    GetCollectionCycleHandler,
+    ExportCollectionBatchFileHandler,
+    ExportCollectionBatchAuditHandler,
     DeclareLegalEntityHandler,
     CorrectLegalEntityHandler,
     AssignCreditorIdentifierHandler,

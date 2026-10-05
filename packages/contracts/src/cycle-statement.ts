@@ -1,5 +1,6 @@
 import { z } from "zod";
 
+import type { OrderCollectionStateView } from "./collection-batch.js";
 import type { VatShareView } from "./order.js";
 
 /**
@@ -60,6 +61,11 @@ export interface CycleStatementOrderView {
   readonly vatVentilated: boolean;
   readonly vatCents: number;
   readonly totalCents: number;
+  /**
+   * L'état d'encaissement (`order_collection`, lot P2 du lot figé) — `due`
+   * quand aucun lot ne l'a encore vue.
+   */
+  readonly collectionState: OrderCollectionStateView;
 }
 
 /** Une société qui en règle une autre. */

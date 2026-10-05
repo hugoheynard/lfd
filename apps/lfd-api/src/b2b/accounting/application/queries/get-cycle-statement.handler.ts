@@ -89,5 +89,6 @@ function toOrderView(line: StatementLine): CycleStatementOrderView {
     vatVentilated: line.vatVentilated,
     vatCents: line.vatCents,
     totalCents: line.totalCents,
+    collectionState: line.collectionState,
   };
 }

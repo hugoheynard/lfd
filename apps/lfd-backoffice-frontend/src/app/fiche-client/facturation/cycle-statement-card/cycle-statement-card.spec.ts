@@ -51,6 +51,7 @@ const ORDER: CycleStatementOrderView = {
   vatVentilated: true,
   vatCents: 523,
   totalCents: 11_523,
+  collectionState: 'collected',
 };
 
 function totalsOf(unventilatedVatCents = 0, count = 1): CycleStatementTotalsView {
@@ -183,6 +184,8 @@ describe('CycleStatementCard', () => {
     expect(text(fixture)).toContain('TVA 5,5 %');
     expect(text(fixture)).toContain('CMD-1');
     expect(text(fixture).replace(/\s/gu, '')).toContain('115,23€');
+    // L'état d'encaissement, lu dans `order_collection` (lot figé, P2).
+    expect(text(fixture)).toContain('Prélevée');
   });
 
   it('ne montre la ligne « TVA non ventilée » que si elle existe', async () => {

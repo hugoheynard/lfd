@@ -22,6 +22,7 @@ function order(overrides: Partial<CycleOrder>): CycleOrder {
     vatCents: 0,
     vatShares: [],
     totalCents: 0,
+    collectionState: "due",
     ...overrides,
   };
 }

@@ -170,6 +170,9 @@ const PREFIXES: Readonly<Record<ActivityModule, readonly string[]>> = {
     // PAS `loyalty_settings.` — le point fait partie du préfixe.
     "loyalty_settings.",
     "loyalty.",
+    // Le lot de prélèvement figé — constitué, annulé, déposé, et la commande
+    // réglée autrement (plan `plan-lot-de-prelevement-fige.md`, 2026-10-05).
+    "collection.",
   ],
 };
 
