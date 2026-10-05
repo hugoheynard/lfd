@@ -110,3 +110,65 @@ conservé) reste juste. **Ne pas le publier avant le déploiement du geste.**
 | S2  | Le bouton de la boutique, le geste du back-office                                      |
 | S3  | Le texte publié en trois langues                                                       |
 | S4  | (plus tard) Le rappel de suppression de Meta                                           |
+
+## 8. Contradiction de `vitruve` (2026-10-05), et la v2
+
+**BLOQUANTS, levés :**
+
+1. **Le jeton recréerait le compte** (`CustomerPrincipalResolver` :
+   `findBySub(sub) ?? provision(token)`). → Dans la transaction, la personne
+   passe `disabled` (le résolveur refuse déjà un compte désactivé) et **garde
+   son `auth0_sub`** jusqu'à ce que l'abonné confirme la suppression chez Auth0.
+   Ensuite, une **pierre tombale** : l'empreinte du `sub` dans une table que
+   `provision` consulte avant de créer, pour qu'un jeton encore valide ne
+   recrée rien. Le `sub` en clair disparaît alors.
+2. **L'abonné Auth0 n'aurait plus le `sub`** → réglé par 1 : il le lit sur la
+   ligne désactivée (lecteur à inscrire dans `lint:auth0-id-readers`). Le fait
+   ne porte toujours que l'identifiant de la personne.
+3. **« Rejoué jusqu'au succès » était faux** (dix essais, puis lettre morte).
+   → L'ordre est écrit : base d'abord, Auth0 ensuite, on ne réactive jamais.
+   Un 404 d'Auth0 compte comme un succès (idempotent). La lettre morte de
+   `user.erased` est un état surveillé (carte de santé, rejeu
+   `POST /admin/outbox/replay`). Le port `CustomerIdentity` gagne `deleteUser` ;
+   `DELETE /api/v2/users/{id}` emporte les identités liées, donc « délier
+   d'abord » disparaît.
+4. **Les factures ne sont pas en base** : la facturation vit chez des tiers.
+   → Une section par **système tiers**, à relever au bâti : Stripe (le
+   Customer d'un particulier, `stripe_customer_id`, liens de paiement),
+   l'émetteur de factures, Resend (liste de suppression, appariement des
+   rebonds). Chacun a son geste, ou la raison de ne rien faire.
+5. **Tables oubliées** : `production.production_order.customer_label`,
+   `packing.packing_order.customer_label` (noms recopiés dans d'autres blocs),
+   `feature_access_exemptions.email`, `company_contacts` et les contacts de
+   `companies` pour **tout** membre (pas seulement le détenteur),
+   `client_notes`, `growth.leads` / `appointments`,
+   `subscriptions.delivery_address_snapshot`, `delivery_stop_execution`. →
+   **Pas une seule transaction** : la base du commerce s'anonymise dans la
+   sienne, et le fait `user.erased` est écouté par chaque bloc qui a recopié
+   un nom (production, colisage, livraison), chacun anonymisant chez lui —
+   c'est exactement ce que la boîte d'envoi permet sans franchir la matrice.
+6. **Les abonnements continueraient** → l'anonymisation **clôt** les
+   abonnements actifs de la personne par l'agrégat `Subscription`.
+
+**SÉRIEUX, tranchés ou ouverts :**
+
+- **Le journal** porte des données personnelles dans ses `payload`
+  (`user.registered` porte l'e-mail). Q2 s'élargit : relever tous les types de
+  fait qui en portent. Ne pas réécrire demande une base écrite
+  (RGPD art. 17.3 b ou e), pas seulement « journal opposable ».
+- **Le détenteur** : un refus sans issue n'a pas de base RGPD. → Pas de refus
+  définitif : le staff transfère la détention, ou la personne est anonymisée
+  et la société garde un contact « à ressaisir » signalé sur sa fiche.
+  « Commande en cours » et « solde dû » **diffèrent** la suppression (au plus
+  un mois, art. 12.3), ils ne la refusent pas.
+- **Le nom sur la pièce comptable** : une commande ne fige pas le nom, il vient
+  de `users`. → Figer le nom du client sur les commandes facturées **avant**
+  d'anonymiser, ou décider qu'une pièce interne peut dire « Client supprimé »
+  (à trancher, Q4).
+- **Les invités** (sans `auth0_sub`) n'ont que le geste du back-office ;
+  l'identité du demandeur se vérifie par l'adresse de la commande.
+- `supprime+<id>@invalid` ne doit pas déclencher `refuseSecondAccount` : à
+  vérifier au bâti.
+
+**Q4 pour Hugo** — sur les commandes conservées, le nom du client doit-il
+rester (figé avant anonymisation) ou devenir « Client supprimé » ?
