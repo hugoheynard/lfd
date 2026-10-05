@@ -166,7 +166,7 @@ describe("le mur", () => {
   it("🔴 sert l'étiquette PUBLIQUE en « perso », même à qui a UNE société négociée", async () => {
     // Sans la valeur réservée, une seule société était servie quoi qu'on
     // déclare : le perso était inexprimable. Il ouvre le tarif hors mercuriale —
-    // par décision (plan-espace-de-travail, Q1).
+    // par décision (Q1, cf. `documentation/b2b/comptes-client/espace-de-travail.md`).
     //
     // 🔴 Et ce tarif est l'ÉTIQUETTE, pas le prix du canal pro : se déclarer en
     // perso, c'est acheter comme un particulier. Ce cas nommait le prix pro

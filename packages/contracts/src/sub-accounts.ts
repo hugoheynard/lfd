@@ -5,7 +5,7 @@ import { deliveryAddressPayloadSchema } from "./address.js";
 
 /**
  * **Les sous-comptes d'un compte pro** — plan
- * `documentation/b2b/plan-sous-comptes.md` (lot S1).
+ * `documentation/b2b/comptes-client/plan-sous-comptes.md` (lot S1).
  *
  * Un sous-compte EST une société (§1) : il commande, il est livré, il a ses
  * adresses. Ce qui est neuf se limite au LIEN vers son principal et aux

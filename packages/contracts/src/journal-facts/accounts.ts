@@ -200,7 +200,7 @@ export const ACCOUNTS_AND_CARTS_FACTS = {
   ),
   "company.direct_debit_unblocked": fact(payload({ subjectLabel: subjectLabel() })),
   /**
-   * LES SOUS-COMPTES (plan `documentation/b2b/plan-sous-comptes.md`, lot S1,
+   * LES SOUS-COMPTES (plan `documentation/b2b/comptes-client/plan-sous-comptes.md`, lot S1,
    * 2026-10-05). Le sujet est toujours le SOUS-COMPTE ; le principal est cité
    * nommé, sous son nom du moment. Nés ce jour-là : aucune forme d'avant.
    *

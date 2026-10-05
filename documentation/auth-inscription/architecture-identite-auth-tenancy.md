@@ -175,7 +175,7 @@ Depuis le 2026-09-15, l'en-tête accepte aussi la valeur réservée `personal` :
 elle résout « aucune société » **quel que soit** le nombre de rattachements, une
 seule société comprise. En accès, ça ne franchit aucun mur ; en prix, ça ouvre
 le tarif catalogue hors mercuriale, par décision
-([`../b2b/plan-espace-de-travail.md`](../b2b/plan-espace-de-travail.md), D1 et Q1).
+([`../b2b/comptes-client/espace-de-travail.md`](../b2b/comptes-client/espace-de-travail.md)).
 
 ## 6. Back-office admin (privilégié) — 2 portes + pas de backdoor
 

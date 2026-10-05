@@ -1,5 +1,5 @@
 /**
- * E2E des **sous-comptes** (plan `documentation/b2b/plan-sous-comptes.md`,
+ * E2E des **sous-comptes** (plan `documentation/b2b/comptes-client/plan-sous-comptes.md`,
  * lot S1) : créer, rattacher, détacher, suivre — sur le vrai Postgres.
  *
  * Ce que seul l'e2e prouve : la contrainte d'exclusion des périodes, les

@@ -16,7 +16,7 @@ export interface WorkspaceOption {
 
 /**
  * **L'espace dans lequel la personne travaille** — le perso, ou une de ses
- * sociétés (`documentation/b2b/plan-espace-de-travail.md`, D5 et D6).
+ * sociétés (`documentation/b2b/comptes-client/espace-de-travail.md`).
  *
  * ## Pourquoi il décide côté front
  *

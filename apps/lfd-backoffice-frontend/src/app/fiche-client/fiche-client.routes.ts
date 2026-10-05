@@ -54,7 +54,7 @@ export const ficheClientRoutes: Routes = [
         // 🔴 `b2b_client_notes:read` et non le droit du parent. La fiche s'ouvre
         // avec `b2b_companies:read`, que portent aussi la comptabilité et le
         // support ; les notes de la commerciale ne sont qu'à elle et à
-        // l'administrateur (Hugo, 2026-09-15 — `documentation/b2b/notes-du-commercial.md`).
+        // l'administrateur (Hugo, 2026-09-15 — `documentation/b2b/comptes-client/notes-du-commercial.md`).
         path: 'notes',
         canActivate: [permissionGuard('b2b_client_notes:read')],
         loadComponent: () => import('./notes/notes-page').then((m) => m.ClientNotesPage),

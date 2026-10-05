@@ -7,7 +7,7 @@ import { canWriteAddresses } from '../addresses/addresses-section';
 
 /**
  * **Ce qui manque au dossier**, tel que Mon compte le dit — la table du §2.2 du
- * plan `documentation/b2b/plan-mon-compte-a-completer.md`, et rien d'autre.
+ * plan `documentation/b2b/comptes-client/plan-mon-compte-a-completer.md`, et rien d'autre.
  *
  * Aucune règle d'activation ici : le serveur dit ce qui bloque (`ActivationGate`)
  * et ce qui empêche de générer le mandat (`mintBlockers`). Cette fonction ne

@@ -17,8 +17,8 @@ import type { PrincipalMembership } from "./principal.js";
  *   franchit aucun mur ; en **prix**, il en ouvre : un rattaché commande alors
  *   hors de sa mercuriale (donc avec les promotions qu'elle scelle), hors du
  *   cumul d'un engagement de volume, et en perso même quand sa société est
- *   suspendue. Ouvert sans condition par décision (Hugo, 2026-09-15, Q1 de
- *   `documentation/b2b/plan-espace-de-travail.md`).
+ *   suspendue. Ouvert sans condition par décision (Hugo, 2026-09-15 —
+ *   `documentation/b2b/comptes-client/espace-de-travail.md`).
  * - **aucun rattachement** — `null`. La personne commande à titre personnel :
  *   c'est le parcours par défaut de la boutique, pas un trou à combler.
  * - **un seul** — celui-là. Ce n'est **pas** le raccourci que `principal.ts`

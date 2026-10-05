@@ -1,6 +1,6 @@
 /**
  * E2E du **verdict d'activation servi au client** —
- * plan `documentation/b2b/plan-mon-compte-a-completer.md` §2.1.
+ * plan `documentation/b2b/comptes-client/plan-mon-compte-a-completer.md` §2.1.
  *
  * Ce que seul le vrai SQL prouve : que la route relit la fiche par le même
  * lecteur que la porte d'activation (les codes rendus sont ceux que la base

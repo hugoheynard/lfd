@@ -262,7 +262,7 @@ export const staffResourceSchema = z.enum([
    *
    * Détachée de `b2b_companies` (Hugo, 2026-09-15) : `comptabilite` et `support`
    * lisent la fiche client, et ne doivent pas lire les notes internes de la
-   * commerciale. Cf. `documentation/b2b/notes-du-commercial.md`.
+   * commerciale. Cf. `documentation/b2b/comptes-client/notes-du-commercial.md`.
    */
   "b2b_client_notes",
   /** Le reste du paramétrage : contenu, zones de livraison, créneaux, retraits. */

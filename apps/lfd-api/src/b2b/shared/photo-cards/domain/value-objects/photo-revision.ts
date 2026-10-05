@@ -6,7 +6,7 @@
  * compose sa clé en `…/{cardId}-{revision}`, avec des ULID qui n'ont pas de
  * tiret. Le dernier tiret est donc celui que l'usage a posé, et c'est pour ça
  * qu'aucun suffixe ne se colle après la révision (doc
- * `documentation/b2b/notes-du-commercial.md`) : la vignette
+ * `documentation/b2b/comptes-client/notes-du-commercial.md`) : la vignette
  * d'une note se range sous un dossier `thumbs/`, pas sous un `-thumb`.
  *
  * L'écran invalide son image sur ce seul suffixe.

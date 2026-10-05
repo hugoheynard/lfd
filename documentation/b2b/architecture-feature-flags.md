@@ -9,7 +9,7 @@
 > ce qui est permanent n'est pas un flag, c'est de l'autorisation.
 >
 > Décidé le **2026-08-12**. Prérequis lu :
-> [`architecture-activation-configuration-b2b.md`](architecture-activation-configuration-b2b.md)
+> [`architecture-activation-configuration-b2b.md`](comptes-client/architecture-activation-configuration-b2b.md)
 > — la config plateforme, dont ce système reprend la forme (une config globale,
 > un module backend, une page de réglage staff) mais **pas** la sémantique : là
 > ce sont des exigences métier durables, ici des interrupteurs temporaires.

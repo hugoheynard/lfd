@@ -41,7 +41,7 @@ export const appConfig: ApplicationConfig = {
     provideBrowserGlobalErrorListeners(),
     provideRouter(routes),
     // L'espace de travail déclaré sur chaque requête vers l'API, une fois connu
-    // (`documentation/b2b/plan-espace-de-travail.md`, D6).
+    // (`documentation/b2b/comptes-client/espace-de-travail.md`).
     provideHttpClient(
       withFetch(),
       withInterceptors([workspaceInterceptor, identityConflictInterceptor]),

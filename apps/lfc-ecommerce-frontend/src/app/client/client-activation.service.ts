@@ -9,7 +9,7 @@ import { AuthFacade } from '../auth/auth.facade';
 /**
  * **Le verdict d'activation de la société**, tel que le serveur le rend au
  * client (`GET /companies/:companyId/activation`, plan
- * `documentation/b2b/plan-mon-compte-a-completer.md` §2.1).
+ * `documentation/b2b/comptes-client/plan-mon-compte-a-completer.md` §2.1).
  *
  * L'écran ne recalcule pas ce qui manque : il lit la même fonction que celle
  * qui garde la porte côté staff. Une règle écrite deux fois finit par se

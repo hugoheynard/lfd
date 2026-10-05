@@ -16,7 +16,7 @@ import type {
  * dans la transaction avec l'écriture.
  *
  * Extraite de la procédure de livraison le 2026-09-15 (doc
- * `documentation/b2b/notes-du-commercial.md`) : la séquence et
+ * `documentation/b2b/comptes-client/notes-du-commercial.md`) : la séquence et
  * son ordre ne s'écrivent qu'une fois pour les étapes et pour les notes.
  *
  * ## L'ordre des gestes est le sujet

@@ -17,7 +17,7 @@
 >
 > Prérequis lus : [`architecture-identite-auth-tenancy.md`](architecture-identite-auth-tenancy.md)
 > (Auth0 authentifie, notre base autorise ; le mur `company_id`) et
-> [`../b2b/architecture-activation-configuration-b2b.md`](../b2b/architecture-activation-configuration-b2b.md)
+> [`../b2b/comptes-client/architecture-activation-configuration-b2b.md`](../b2b/comptes-client/architecture-activation-configuration-b2b.md)
 > (quelles pièces sont exigées — la config que le verdict d'activation consomme).
 >
 > **Statut : ✅ livré**, sauf §8 (gestes de fin de vie) et §9 (branchements prod,

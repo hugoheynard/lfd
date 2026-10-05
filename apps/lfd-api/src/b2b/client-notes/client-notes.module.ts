@@ -22,7 +22,7 @@ import { PrismaNotebookCompanies } from "./infrastructure/prisma-notebook-compan
 
 /**
  * **Les notes du commercial** sur un compte client — doc
- * `documentation/b2b/notes-du-commercial.md`.
+ * `documentation/b2b/comptes-client/notes-du-commercial.md`.
  *
  * Importe `AccountModule` pour le seul `StaffDirectory` : l'auteur d'une note est
  * figé comme celui d'un écart d'accès aux fonctionnalités, par le même port.

@@ -487,7 +487,7 @@ export interface CompletionItemCopy {
 
 /**
  * **Ce qui manque au dossier**, dit au client (plan
- * `documentation/b2b/plan-mon-compte-a-completer.md` §2.2). Les clés d'`items`
+ * `documentation/b2b/comptes-client/plan-mon-compte-a-completer.md` §2.2). Les clés d'`items`
  * sont les éléments de la table du plan, et la liste est fermée : un élément de
  * plus est une ligne de plus dans les trois langues, pas une chaîne composée.
  */

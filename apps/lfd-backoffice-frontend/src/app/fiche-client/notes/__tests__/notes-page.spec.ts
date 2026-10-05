@@ -18,7 +18,7 @@ import { ClientNotesPage } from '../notes-page';
 /**
  * L'onglet **Notes** : qui le voit, qui y écrit, et ce qui transite — les
  * vignettes seulement, à leur passage à l'écran ; la photo lisible à
- * l'ouverture en grand (`documentation/b2b/notes-du-commercial.md`).
+ * l'ouverture en grand (`documentation/b2b/comptes-client/notes-du-commercial.md`).
  *
  * La passerelle n'est PAS doublée : ce sont les vraies requêtes que l'écran
  * émet, interceptées par le banc HTTP.

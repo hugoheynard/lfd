@@ -1,5 +1,5 @@
 /**
- * E2E du **tarif des sous-comptes** (plan `documentation/b2b/plan-sous-comptes.md`,
+ * E2E du **tarif des sous-comptes** (plan `documentation/b2b/comptes-client/plan-sous-comptes.md`,
  * lot S3, §2.2 et Q6) — sur le vrai Postgres.
  *
  * Ce que seul l'e2e prouve : que la période de suivi `pricing` écrite par le

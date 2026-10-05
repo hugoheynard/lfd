@@ -4,7 +4,7 @@ import { z } from "zod";
  * Contrat de fil des **alertes de compte client** — les règles qui font remarquer
  * au commercial qu'un client vient de prendre un produit inédit, ou trois fois
  * moins que d'habitude. Cf.
- * `documentation/b2b/architecture-alertes-compte-client.md`.
+ * `documentation/b2b/comptes-client/architecture-alertes-compte-client.md`.
  *
  * La distinction qui porte le modèle : un **type** d'alerte est du code (un
  * détecteur a besoin d'un algorithme), une **règle** est de la donnée (seuils,

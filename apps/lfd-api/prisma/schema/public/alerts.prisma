@@ -1,5 +1,5 @@
 // ─────────────────────────────────────────────────────────────────────────────
-// Alertes de compte client — cf. documentation/b2b/architecture-alertes-compte-client.md
+// Alertes de compte client — cf. documentation/b2b/comptes-client/architecture-alertes-compte-client.md
 // ─────────────────────────────────────────────────────────────────────────────
 
 /// Le réglage **global** d'un type d'alerte : une ligne par type, valable pour

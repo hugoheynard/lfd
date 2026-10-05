@@ -11,7 +11,7 @@ import { z } from "zod";
  *
  * Les bornes ci-dessous sont des COPIES que l'écran énonce ; l'agrégat et le
  * value object de la photo restent l'autorité.
- * Cf. `documentation/b2b/notes-du-commercial.md`.
+ * Cf. `documentation/b2b/comptes-client/notes-du-commercial.md`.
  */
 
 /** Cinquante notes au plus par client (Hugo, 2026-09-15). */

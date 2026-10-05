@@ -2,7 +2,7 @@
  * E2E des **refus de la procédure de livraison, mot pour mot** — et des
  * en-têtes de sa photo.
  *
- * Un filet de caractérisation (`documentation/b2b/notes-du-commercial.md`) : il fige ce que le code EN PRODUCTION renvoie, avant que la procédure ne
+ * Un filet de caractérisation (`documentation/b2b/comptes-client/notes-du-commercial.md`) : il fige ce que le code EN PRODUCTION renvoie, avant que la procédure ne
  * délègue à un socle partagé. Les messages sont affichés tels quels à l'écran,
  * client comme staff : un message qui change est un changement observable, même
  * sous le même statut.

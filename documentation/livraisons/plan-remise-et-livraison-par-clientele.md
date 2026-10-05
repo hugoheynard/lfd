@@ -9,7 +9,7 @@
 > remise appliquée au panier) et porte une **migration**. **Contredit par
 > `vitruve` le 2026-09-15** (§7) : le `BLOQUANT` est tranché par Hugo le même jour (Q3 : société **active** seulement).
 >
-> Lu avant : [`plan-espace-de-travail.md`](../b2b/plan-espace-de-travail.md) (l'espace
+> Lu avant : [`espace-de-travail.md`](../b2b/comptes-client/espace-de-travail.md) (l'espace
 > perso ou pro, bâti le même jour) et
 > [`analyse-boutique-publique.md`](../b2b/analyse-boutique-publique.md), dont ce plan
 > **remplace** deux propositions (§2, D8).

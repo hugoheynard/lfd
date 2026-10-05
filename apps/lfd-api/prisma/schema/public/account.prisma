@@ -226,7 +226,7 @@ model Company {
   activatedByRole    String? @map("activated_by_role")
 
   /// Le compte PRINCIPAL dont celui-ci est un sous-compte, ou `null`
-  /// (`documentation/b2b/plan-sous-comptes.md`, §1–§2). La STRUCTURE actuelle,
+  /// (`documentation/b2b/comptes-client/plan-sous-comptes.md`, §1–§2). La STRUCTURE actuelle,
   /// pour la fiche — qui suivait qui à une date se lit dans `company_follows`.
   /// Profondeur 1 : tenue par l'agrégat sous le verrou consultatif de la
   /// hiérarchie, et en seconde ligne par un déclencheur (§5).

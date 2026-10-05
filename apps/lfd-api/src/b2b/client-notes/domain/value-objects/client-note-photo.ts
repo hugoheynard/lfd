@@ -15,7 +15,7 @@ import {
  * avant l'envoi : ce qui arrive au-delà n'a pas été réduit.
  *
  * ⚠️ Estimée, pas encore mesurée sur de vraies photos de notes (doc
- * `documentation/b2b/notes-du-commercial.md`). `@lfd/contracts`
+ * `documentation/b2b/comptes-client/notes-du-commercial.md`). `@lfd/contracts`
  * en garde une copie (`CLIENT_NOTE_PHOTO_MAX_BYTES`) ; le test tient la parité.
  */
 export const CLIENT_NOTE_PHOTO_MAX_BYTES = 600 * 1024;

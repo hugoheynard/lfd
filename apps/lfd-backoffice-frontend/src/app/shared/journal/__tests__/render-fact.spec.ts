@@ -183,7 +183,7 @@ describe('le détail, d’après le schéma qui valide la charge', () => {
   });
 
   it('ne rend aucun contenu de note du commercial, même d’une charge hors schéma', () => {
-    // `documentation/b2b/notes-du-commercial.md` : une note supprimée ne reste lisible nulle part.
+    // `documentation/b2b/comptes-client/notes-du-commercial.md` : une note supprimée ne reste lisible nulle part.
     const rendered = renderFact(
       fact({
         type: 'company.client_note_edited_by_staff',

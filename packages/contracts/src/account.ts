@@ -37,7 +37,7 @@ export interface NavPreferences {
    *
    * Une préférence et non une autorité : le serveur revérifie l'en-tête
    * {@link WORKSPACE_HEADER} contre les rattachements à chaque requête.
-   * Cf. `documentation/b2b/plan-espace-de-travail.md`.
+   * Cf. `documentation/b2b/comptes-client/espace-de-travail.md`.
    */
   readonly workspace: string | null;
 }

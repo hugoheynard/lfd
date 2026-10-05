@@ -19,7 +19,7 @@ export type ClientNoteStaffAction =
  * Un agent a modifié le carnet de notes d'un client.
  *
  * 🔴 **La charge ne porte AUCUN contenu** — ni titre, ni description, ni clé de
- * photo (`documentation/b2b/notes-du-commercial.md`). Le
+ * photo (`documentation/b2b/comptes-client/notes-du-commercial.md`). Le
  * journal est append-only : une note « supprimée définitivement » y resterait
  * lisible pour toujours. Le fait dit qui (la ligne de journal), quand, sur quel
  * client, quelle note et quel geste ; l'état courant du carnet dit le reste.

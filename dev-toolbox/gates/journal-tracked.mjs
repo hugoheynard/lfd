@@ -138,7 +138,7 @@ const FEATURE_ACCESS_ZONE = "feature-access";
 
 /**
  * **Les notes du commercial** sur un compte client (2026-09-15, doc
- * `documentation/b2b/notes-du-commercial.md`). Une note se
+ * `documentation/b2b/comptes-client/notes-du-commercial.md`). Une note se
  * supprime DÉFINITIVEMENT, photo comprise : le journal est la seule mémoire de
  * « qui a retiré cette note, et quand » — sans jamais en garder le contenu.
  *

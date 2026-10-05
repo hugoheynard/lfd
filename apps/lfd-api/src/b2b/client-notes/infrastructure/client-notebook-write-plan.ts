@@ -43,7 +43,7 @@ export interface NotebookWritePlan {
 
 /**
  * **Ce qui a changé entre la base et l'agrégat** (doc
- * `documentation/b2b/notes-du-commercial.md`).
+ * `documentation/b2b/comptes-client/notes-du-commercial.md`).
  *
  * Pur, pour se tester sans base. L'agrégat ne note pas ce qu'il a modifié : il
  * rend son état, et c'est la comparaison avec les lignes relues — sous le verrou

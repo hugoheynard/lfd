@@ -546,7 +546,7 @@ const bankAccountChanged: Phrase = (fact) => {
  *
  * Le fait ne porte AUCUN contenu — ni titre, ni description, ni photo — et la
  * phrase n'en invente pas : une note supprimée définitivement ne doit rester
- * lisible nulle part, journal compris (`documentation/b2b/notes-du-commercial.md`).
+ * lisible nulle part, journal compris (`documentation/b2b/comptes-client/notes-du-commercial.md`).
  * Le geste se dit par le seul dictionnaire des valeurs (`CLIENT_NOTE_ACTION`) ;
  * un geste qu'il ne connaît pas n'est pas un mot : la phrase se tait sur lui,
  * et reste vraie.

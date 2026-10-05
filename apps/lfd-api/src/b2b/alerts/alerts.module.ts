@@ -45,7 +45,7 @@ import { PrismaProductNormStore } from "./infrastructure/prisma-product-norm.sto
  * **Alertes de compte client** — les règles qui font remarquer au commercial
  * qu'un client vient de prendre un produit inédit, ou trois fois moins que
  * d'habitude. Cf.
- * `documentation/b2b/architecture-alertes-compte-client.md`.
+ * `documentation/b2b/comptes-client/architecture-alertes-compte-client.md`.
  *
  * Contexte à part, et pas un coin de `growth/` : le langage n'est pas celui de
  * l'acquisition (règle, dérogation, détecteur, alerte), et il porte sa propre

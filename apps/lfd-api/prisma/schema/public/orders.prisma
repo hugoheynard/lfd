@@ -1,6 +1,6 @@
 /// Mode d'**acheminement** d'une commande. `delivery` = livraison à une adresse ;
 /// `pickup` = retrait au point de retrait (labo), fallback tant que la livraison
-/// n'existe pas. Cf. `documentation/b2b/architecture-activation-configuration-b2b.md`.
+/// n'existe pas. Cf. `documentation/b2b/comptes-client/architecture-activation-configuration-b2b.md`.
 enum FulfillmentMethod {
   delivery
   pickup
@@ -717,7 +717,7 @@ model OrderDraft {
 /// travail** (depuis le 2026-09-15). `company_id` vide = le perso, comme les
 /// commandes ; sinon la société pour laquelle elle compose. Un client qui
 /// travaille pour deux sociétés a donc trois paniers, et en changer d'espace ne
-/// mélange pas ses lignes. Cf. `documentation/b2b/plan-espace-de-travail.md`, D9.
+/// mélange pas ses lignes. Cf. `documentation/b2b/comptes-client/espace-de-travail.md`.
 ///
 /// L'unicité `(user_id, company_id) NULLS NOT DISTINCT` n'est PAS déclarée ici :
 /// Prisma ne sait pas l'exprimer, et un `@@unique` ordinaire laisserait passer

@@ -49,7 +49,7 @@ interface MutableCard<C extends PhotoCardText> {
 /**
  * **Une liste ordonnée de cartes à photo** — la mécanique commune aux étapes
  * d'une procédure de livraison et aux notes d'un commercial (doc
- * `documentation/b2b/notes-du-commercial.md`).
+ * `documentation/b2b/comptes-client/notes-du-commercial.md`).
  *
  * Ce n'est pas un agrégat : elle n'a pas d'identité. C'est la part d'invariant
  * que les deux agrégats partagent, et qu'ils portent en champ privé en gardant

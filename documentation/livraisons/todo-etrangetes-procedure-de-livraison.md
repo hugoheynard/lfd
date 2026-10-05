@@ -1,7 +1,7 @@
 # TODO — ce que le filet de la procédure de livraison a figé, et qui cloche
 
 > **État au 2026-09-15** : relevé par le filet du lot 0 du
-> [notes photo du commercial](../b2b/notes-du-commercial.md), **rien n'est
+> [notes photo du commercial](../b2b/comptes-client/notes-du-commercial.md), **rien n'est
 > corrigé**. Chaque point est figé tel quel par un test nommé d'après le
 > comportement : le corriger fera rougir ce test, et c'est voulu — c'est un
 > changement observable, à faire APRÈS l'extraction du socle, pas pendant.

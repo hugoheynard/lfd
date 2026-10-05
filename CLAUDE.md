@@ -387,7 +387,7 @@ et c'est `appBootstrap/` qui le relie à son adaptateur. Personne n'importe
 
 🔴 **`src/b2b/shared/` est le premier dossier partagé au niveau d'un bloc
 métier** (2026-09-15, `shared/photo-cards/` — doc
-[`documentation/b2b/notes-du-commercial.md`](documentation/b2b/notes-du-commercial.md)).
+[`documentation/b2b/comptes-client/notes-du-commercial.md`](documentation/b2b/comptes-client/notes-du-commercial.md)).
 Il est admis parce que la **règle** est commune, pas seulement le code : une
 liste ordonnée de cartes à photo, bornée, permutée exactement, dont les
 étapes de livraison et les notes du commercial obéissent à la même mécanique.
