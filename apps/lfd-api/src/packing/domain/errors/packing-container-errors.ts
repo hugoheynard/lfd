@@ -74,6 +74,16 @@ export class WithdrawBeyondContentError extends BusinessError {
   }
 }
 
+/** Déplacer des pièces d'un contenant vers lui-même. */
+export class MoveToSameContainerError extends DomainError {
+  constructor(reference: string) {
+    super(
+      "packing.container.move_to_same",
+      `Commande ${reference} : le contenant de départ et celui d'arrivée sont le même. Choisissez un autre contenant d'arrivée.`,
+    );
+  }
+}
+
 /** Fermer une commande dont une quantité n'est pas répartie (§3). */
 export class UnallocatedLinesError extends BusinessError {
   constructor(reference: string, productNames: readonly string[]) {

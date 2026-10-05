@@ -1,5 +1,6 @@
 import {
   InvalidContainerQuantityError,
+  MoveToSameContainerError,
   OverAllocationError,
   PackingContainerNotFoundError,
   PackingContainerVoidedError,
@@ -151,6 +152,29 @@ export class OrderContents {
       throw new WithdrawBeyondContentError(line.productName, held);
     }
     this.shift(containerId, line.sku, -pieces);
+    return pieces;
+  }
+
+  /**
+   * Déplace des pièces d'une ligne d'un contenant vivant à un autre de la même
+   * commande. Ce que les contenants vivants portent de l'article ne change pas.
+   *
+   * @returns les pièces déplacées.
+   * @throws {MoveToSameContainerError} @throws {InvalidContainerQuantityError}
+   * @throws {WithdrawBeyondContentError}
+   */
+  move(fromId: string, toId: string, line: DueLine, quantity: number): number {
+    if (fromId === toId) {
+      throw new MoveToSameContainerError(this.reference);
+    }
+    const pieces = piecesToMove(quantity);
+    this.live(toId);
+    const held = heldIn(this.live(fromId), line.sku);
+    if (pieces > held) {
+      throw new WithdrawBeyondContentError(line.productName, held);
+    }
+    this.shift(fromId, line.sku, -pieces);
+    this.shift(toId, line.sku, pieces);
     return pieces;
   }
 

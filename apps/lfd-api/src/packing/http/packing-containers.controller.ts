@@ -4,8 +4,10 @@ import {
   type MovePackingPieces,
   type OpenedPackingContainer,
   type OpenPackingContainer,
+  type TransferPackingPieces,
   movePackingPiecesSchema,
   openPackingContainerSchema,
+  transferPackingPiecesSchema,
 } from "@lfd/contracts";
 import { Body, Controller, Get, HttpCode, Param, Post } from "@nestjs/common";
 import { CommandBus, QueryBus } from "@nestjs/cqrs";
@@ -17,6 +19,7 @@ import { ApplyPackingProposalCommand } from "../application/containers/apply-pac
 import { GetShareableHalvesQuery } from "../application/containers/get-shareable-halves.query.js";
 import { AllocateToContainerCommand } from "../application/containers/allocate-to-container.command.js";
 import { GetPackingProposalQuery } from "../application/containers/get-packing-proposal.query.js";
+import { MoveBetweenContainersCommand } from "../application/containers/move-between-containers.command.js";
 import { OpenPackingContainerCommand } from "../application/containers/open-packing-container.command.js";
 import { VoidPackingContainerCommand } from "../application/containers/void-packing-container.command.js";
 import { WithdrawFromContainerCommand } from "../application/containers/withdraw-from-container.command.js";
@@ -28,7 +31,7 @@ const NO_CONTENT = 204;
 /**
  * **La colonne Contenants du poste de colisage** (K2b,
  * `colisage/colisage.md` §5–§5.1) : créer un bac ou un sac,
- * y glisser une quantité d'une ligne, l'en ressortir, annuler un contenant,
+ * y glisser une quantité d'une ligne, l'en ressortir, la déplacer vers un autre, annuler un contenant,
  * proposer un colisage et l'appliquer, lister les moitiés partageables.
  *
  * Sous `production_packing` : le droit de qui tient le poste — `write` pour
@@ -99,6 +102,31 @@ export class PackingContainersController {
   ): Promise<void> {
     await this.commands.execute<WithdrawFromContainerCommand, void>(
       new WithdrawFromContainerCommand(dayOf(date), orderId, containerId, sku, body.quantity),
+    );
+  }
+
+  /**
+   * **Déplacer** une quantité d'une ligne vers un autre contenant de la même
+   * commande, en un seul geste : la réserve ne bouge pas.
+   */
+  @Post("containers/:containerId/lines/:sku/transfer")
+  @HttpCode(NO_CONTENT)
+  async transfer(
+    @Param("date") date: string,
+    @Param("orderId") orderId: string,
+    @Param("containerId") containerId: string,
+    @Param("sku") sku: string,
+    @Body(new ZodBody(transferPackingPiecesSchema)) body: TransferPackingPieces,
+  ): Promise<void> {
+    await this.commands.execute<MoveBetweenContainersCommand, void>(
+      new MoveBetweenContainersCommand(
+        dayOf(date),
+        orderId,
+        containerId,
+        body.toContainerId,
+        sku,
+        body.quantity,
+      ),
     );
   }
 

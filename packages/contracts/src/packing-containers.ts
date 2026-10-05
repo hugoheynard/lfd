@@ -58,6 +58,17 @@ export const movePackingPiecesSchema = z.strictObject({
 });
 export type MovePackingPieces = z.infer<typeof movePackingPiecesSchema>;
 
+/**
+ * Déplacer des pièces d'une ligne vers un autre contenant de la même commande.
+ * Le contenant de départ et l'article sont dans le chemin ; la quantité et
+ * « pas vers lui-même » sont validés au domaine.
+ */
+export const transferPackingPiecesSchema = z.strictObject({
+  toContainerId: z.string().min(1, "le contenant d'arrivée"),
+  quantity: z.number().int("un nombre entier de pièces"),
+});
+export type TransferPackingPieces = z.infer<typeof transferPackingPiecesSchema>;
+
 /** Une ligne d'un contenant : l'article et combien il en porte. */
 export interface PackingContainerLineView {
   readonly sku: string;

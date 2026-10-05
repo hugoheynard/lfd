@@ -15,6 +15,7 @@ import type {
   DeliveryBinDetailView,
   OpenedPackingContainer,
   PackingSheet as PackingSheetView,
+  ProductionPackingView,
 } from "@lfd/contracts";
 
 import { PackingSheet } from "../src/packing/domain/entities/packing-sheet.js";
@@ -254,6 +255,49 @@ describe("la colonne Contenants — le colisage tient le contenu, la livraison g
     await staff()
       .post(`${base(delivery.orderId)}/close`)
       .expect(204);
+  });
+
+  it("déplace 18 croissants d'un bac à l'autre en un geste : la réserve et le poste n'en bougent pas", async () => {
+    const { delivery } = await day();
+    const typeId = await binTypeId(ctx);
+    const first = await openBin(delivery.orderId, typeId);
+    const second = await openBin(delivery.orderId, typeId);
+    const lines = `${base(delivery.orderId)}/containers/${first}/lines/${CROISSANT}`;
+    await staff().post(lines).send({ quantity: 18 }).expect(204);
+    const counters = (view: ProductionPackingView) => ({
+      resources: view.resources,
+      orderCount: view.orderCount,
+      todoCount: view.todoCount,
+      readyCount: view.readyCount,
+    });
+    const before = await packing(ctx);
+    const stock = () =>
+      ctx.prisma.packingStock.findUniqueOrThrow({
+        where: { serviceDay_sku: { serviceDay: SERVICE_DAY, sku: CROISSANT } },
+      });
+    expect((await stock()).packed).toBe(18);
+
+    await staff()
+      .post(`${lines}/transfer`)
+      .send({ toContainerId: second, quantity: 18 })
+      .expect(204);
+
+    const sheet = await sheetOf(delivery.orderId);
+    expect(sheet?.containerList?.map((container) => container.pieces)).toEqual([0, 18]);
+    expect(sheet?.lines[0]).toMatchObject({ allocated: 18, unallocated: 2 });
+    expect((await stock()).packed).toBe(18);
+    expect(counters(await packing(ctx))).toEqual(counters(before));
+
+    const beyond = await staff()
+      .post(`${lines}/transfer`)
+      .send({ toContainerId: second, quantity: 1 });
+    expect(beyond.status).toBe(409);
+    expect(codeOf(beyond)).toBe("packing.container.withdraw_beyond");
+    const same = await staff()
+      .post(`${base(delivery.orderId)}/containers/${second}/lines/${CROISSANT}/transfer`)
+      .send({ toContainerId: second, quantity: 1 });
+    expect(codeOf(same)).toBe("packing.container.move_to_same");
+    expect((await sheetOf(delivery.orderId))?.containerList?.map((c) => c.pieces)).toEqual([0, 18]);
   });
 
   it("un retrait se colise en sacs ; un bac lui est refusé par la livraison", async () => {

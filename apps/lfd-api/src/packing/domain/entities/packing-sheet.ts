@@ -242,6 +242,11 @@ export class PackingSheet {
     return pieces;
   }
 
+  /** @returns les pièces déplacées — la réserve et l'état « au bac » de la ligne n'en bougent pas. */
+  move(fromId: string, toId: string, sku: string, quantity: number): number {
+    return this.contents.move(fromId, toId, this.listedLine(sku), quantity);
+  }
+
   /** Annule un contenant ; ses lignes restent, ignorées. @returns ce qui retourne à la réserve. */
   voidContainer(containerId: string, mark: ContainerMark): readonly ContainerLine[] {
     this.assertListedAndOpen();

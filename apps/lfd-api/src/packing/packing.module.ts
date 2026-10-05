@@ -10,6 +10,7 @@ import { AllocateToContainerHandler } from "./application/containers/allocate-to
 import { GetPackingProposalHandler } from "./application/containers/get-packing-proposal.handler.js";
 import { OpenPackingContainerHandler } from "./application/containers/open-packing-container.handler.js";
 import { VoidPackingContainerHandler } from "./application/containers/void-packing-container.handler.js";
+import { MoveBetweenContainersHandler } from "./application/containers/move-between-containers.handler.js";
 import { WithdrawFromContainerHandler } from "./application/containers/withdraw-from-container.handler.js";
 import { PackingContainersController } from "./http/packing-containers.controller.js";
 import { PrismaContainerManagedOrders } from "./infrastructure/prisma-container-managed-orders.js";
@@ -77,6 +78,7 @@ import { PrismaPackingBoardReader } from "./infrastructure/prisma-packing-board.
     OpenPackingContainerHandler,
     AllocateToContainerHandler,
     WithdrawFromContainerHandler,
+    MoveBetweenContainersHandler,
     VoidPackingContainerHandler,
     GetPackingProposalHandler,
     ApplyPackingProposalHandler,
