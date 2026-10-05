@@ -9,6 +9,8 @@ import type {
   PackingSheet,
 } from '@lfd/contracts';
 import { provideRouter } from '@angular/router';
+import { By } from '@angular/platform-browser';
+import { FoldIconComponent } from 'fold-ng';
 import { beforeEach, describe, expect, it } from 'vitest';
 
 import { PermissionsStore } from '../../../auth/permissions.store';
@@ -99,6 +101,7 @@ class FakeContainers {
   readonly allocated: { containerId: string; sku: string; quantity: number }[] = [];
   readonly withdrawn: { containerId: string; sku: string; quantity: number }[] = [];
   readonly voided: string[] = [];
+  readonly transferred: { from: string; sku: string; to: string; quantity: number }[] = [];
   voidRefusal: unknown = null;
   proposals = 0;
   proposalRefusal: unknown = null;
@@ -121,6 +124,11 @@ class FakeContainers {
 
   withdraw(_d: string, _o: string, containerId: string, sku: string, quantity: number) {
     this.withdrawn.push({ containerId, sku, quantity });
+    return Promise.resolve();
+  }
+
+  transfer(_d: string, _o: string, from: string, sku: string, to: string, quantity: number) {
+    this.transferred.push({ from, sku, to, quantity });
     return Promise.resolve();
   }
 
@@ -230,6 +238,53 @@ describe('les contenants d’une commande `listed` (K2b)', () => {
     await settle(fixture);
     expect(api.allocated).toEqual([{ containerId: 'c-1', sku: 'CRO', quantity: 15 }]);
     expect(el.querySelector('[data-pending-drop]')).toBeNull();
+  });
+
+  it('« Déplacer vers… » porte toute la répartition vers l’autre contenant, d’un appel, et relit', async () => {
+    const { fixture, el } = await render(
+      sheet({
+        containerList: [
+          container({ lines: [{ sku: 'CRO', productName: 'Croissant', quantity: 10 }] }),
+          container({ id: 'c-2', label: 'B7Q', binId: 'b-2', binCode: 'B7Q' }),
+        ],
+      }),
+    );
+    click(el, '[data-move]');
+    await settle(fixture);
+    const targets = el.querySelectorAll('[data-move-to]');
+    expect(targets).toHaveLength(1);
+    click(el, '[data-move-to="c-2"]');
+    await settle(fixture);
+    const ask = el.querySelector('[data-container="c-2"] [data-pending-drop]');
+    expect(said(ask)).toContain('Tout : 10');
+    click(el, '[data-confirm-drop]');
+    await settle(fixture);
+    expect(api.transferred).toEqual([{ from: 'c-1', sku: 'CRO', to: 'c-2', quantity: 10 }]);
+    expect(api.allocated).toEqual([]);
+    expect(rereads).toBe(1);
+    expect(el.querySelector('[data-pending-drop]')).toBeNull();
+  });
+
+  it('ne déplace pas vers le contenant de départ, et sans second contenant ne propose rien', async () => {
+    const { fixture, el } = await render(
+      sheet({
+        containerList: [
+          container({ lines: [{ sku: 'CRO', productName: 'Croissant', quantity: 10 }] }),
+        ],
+      }),
+    );
+    expect(el.querySelector('[data-move]')).toBeNull();
+    fixture.componentInstance.askTransfer({ containerId: 'c-1', sku: 'CRO' }, 'c-1');
+    await settle(fixture);
+    expect(el.querySelector('[data-pending-drop]')).toBeNull();
+  });
+
+  it('une ligne toute répartie porte une coche', async () => {
+    const { fixture } = await render(
+      sheet({ lines: [line({ allocated: 20, unallocated: 0 })], containerList: [container({})] }),
+    );
+    const icon = fixture.debugElement.query(By.css('[data-line="CRO"] fold-icon'));
+    expect((icon.componentInstance as FoldIconComponent).name()).toBe('check');
   });
 
   it('ne demande rien pour une ligne déjà toute répartie', async () => {

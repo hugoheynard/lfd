@@ -150,6 +150,17 @@
   gap: var(--fold-space-md);
 }
 
+.cb-share.is-draggable {
+  cursor: grab;
+  touch-action: none;
+}
+
+.cb-targets {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--fold-space-xs);
+}
+
 .cb-ask {
   display: flex;
   flex-direction: column;

@@ -70,13 +70,34 @@ interface PendingWithdrawal {
   readonly max: number;
 }
 
-/** Un dépôt qui attend sa quantité : la ligne, le contenant, et ce qui reste. */
+/**
+ * Un dépôt qui attend sa quantité : la ligne, le contenant, et ce qui reste.
+ * `fromContainerId` non nul : un DÉPLACEMENT depuis un autre contenant.
+ */
 interface PendingDrop {
   readonly orderId: string;
   readonly containerId: string;
+  readonly fromContainerId: string | null;
   readonly sku: string;
   readonly productName: string;
   readonly max: number;
+}
+
+/** Ce qu'on glisse depuis un contenant : la répartition d'une ligne. */
+export interface MovingShare {
+  readonly containerId: string;
+  readonly sku: string;
+}
+
+function isMovingShare(data: unknown): data is MovingShare {
+  return (
+    typeof data === 'object' &&
+    data !== null &&
+    'containerId' in data &&
+    typeof data.containerId === 'string' &&
+    'sku' in data &&
+    typeof data.sku === 'string'
+  );
 }
 
 /**
@@ -86,7 +107,8 @@ interface PendingDrop {
  *
  * On crée un bac (livraison) ou un sac (retrait), on y **glisse** une ligne,
  * et l'écran demande combien (« tout » par défaut) : une ligne se coupe entre
- * deux contenants. On retire tout ou partie d'une répartition, on annule un
+ * deux contenants. Une répartition se glisse aussi d'un contenant à l'autre
+ * (ou « Déplacer vers… », au clavier) : un seul geste serveur, `transfer`. On retire tout ou partie d'une répartition, on annule un
  * contenant ; « Proposer » est appliqué par le serveur sur un clic, jamais
  * d'office, et une livraison peut prendre la moitié libre d'un arrêt voisin
  * (plan §7).
@@ -191,9 +213,12 @@ export class PackingContainerBoard {
   protected readonly allocated = allocatedOf;
   protected readonly done = isLineInContainers;
 
-  /** Seules les lignes de produits entrent dans un contenant. */
+  /** Une ligne de produit, ou la répartition d'un autre contenant. */
   protected readonly acceptsProducts = (drag: CdkDrag<unknown>): boolean =>
-    typeof drag.data === 'string';
+    typeof drag.data === 'string' || isMovingShare(drag.data);
+
+  /** La répartition dont on choisit la destination (« Déplacer vers… »), s'il y en a une. */
+  protected readonly moving = signal<MovingShare | null>(null);
   /** La colonne des produits ne reçoit rien : on retire par le bouton. */
   protected readonly acceptsNothing = (): boolean => false;
 
@@ -210,6 +235,7 @@ export class PackingContainerBoard {
         this.halves.set({ status: 'idle' });
         this.pendingDrop.set(null);
         this.pendingWithdrawal.set(null);
+        this.moving.set(null);
       });
     });
   }
@@ -278,10 +304,54 @@ export class PackingContainerBoard {
 
   /** Une ligne lâchée sur un contenant : on demande combien, « tout » par défaut. */
   protected dropped(event: CdkDragDrop<string, unknown, unknown>): void {
-    if (event.previousContainer === event.container || typeof event.item.data !== 'string') {
+    if (event.previousContainer === event.container) {
       return;
     }
-    this.askQuantity(event.container.data, event.item.data);
+    const data = event.item.data;
+    if (typeof data === 'string') {
+      this.askQuantity(event.container.data, data);
+    } else if (isMovingShare(data)) {
+      this.askTransfer(data, event.container.data);
+    }
+  }
+
+  /** Les autres contenants de la commande — les destinations d'un déplacement. */
+  protected targetsOf(containerId: string): readonly PackingContainerView[] {
+    return this.containers().filter((candidate) => candidate.id !== containerId);
+  }
+
+  /** « Déplacer vers… » : déplie (ou replie) les destinations de cette répartition. */
+  protected toggleMoving(containerId: string, sku: string): void {
+    const current = this.moving();
+    const same = current?.containerId === containerId && current.sku === sku;
+    this.moving.set(same ? null : { containerId, sku });
+  }
+
+  protected isMoving(containerId: string, sku: string): boolean {
+    const current = this.moving();
+    return current?.containerId === containerId && current.sku === sku;
+  }
+
+  /**
+   * Un déplacement, sans le glisser : on demande combien, « tout » par défaut —
+   * toute la quantité de la ligne dans le contenant de départ.
+   */
+  askTransfer(share: MovingShare, toContainerId: string): void {
+    const from = this.containers().find((candidate) => candidate.id === share.containerId);
+    const portion = from?.lines.find((candidate) => candidate.sku === share.sku);
+    if (portion === undefined || !this.editable() || share.containerId === toContainerId) {
+      return;
+    }
+    this.moving.set(null);
+    this.pendingDrop.set({
+      orderId: this.sheet().orderId,
+      containerId: toContainerId,
+      fromContainerId: share.containerId,
+      sku: share.sku,
+      productName: portion.productName,
+      max: portion.quantity,
+    });
+    this.pendingQuantity.set(portion.quantity);
   }
 
   /** Le dépôt, sans le glisser : utile au clavier et dans les tests. */
@@ -294,6 +364,7 @@ export class PackingContainerBoard {
     this.pendingDrop.set({
       orderId: this.sheet().orderId,
       containerId,
+      fromContainerId: null,
       sku,
       productName: line.productName,
       max,
@@ -311,12 +382,16 @@ export class PackingContainerBoard {
     if (drop === null || quantity === null || !Number.isInteger(quantity) || quantity <= 0) {
       return;
     }
-    const accepted = await this.gestures.allocate(
-      drop.orderId,
-      drop.containerId,
-      drop.sku,
-      quantity,
-    );
+    const accepted =
+      drop.fromContainerId === null
+        ? await this.gestures.allocate(drop.orderId, drop.containerId, drop.sku, quantity)
+        : await this.gestures.transfer(
+            drop.orderId,
+            drop.fromContainerId,
+            drop.sku,
+            drop.containerId,
+            quantity,
+          );
     if (accepted) {
       this.pendingDrop.set(null);
     }

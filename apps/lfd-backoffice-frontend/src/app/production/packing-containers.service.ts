@@ -7,6 +7,7 @@ import type {
   MovePackingPieces,
   OpenedPackingContainer,
   OpenPackingContainer,
+  TransferPackingPieces,
 } from '@lfd/contracts';
 
 import { B2B_API_BASE } from '../api/api-config';
@@ -58,6 +59,21 @@ export class PackingContainersService {
     const body: MovePackingPieces = { quantity };
     await firstValueFrom(
       this.http.post<void>(`${this.lineUrl(date, orderId, containerId, sku)}/withdrawal`, body),
+    );
+  }
+
+  /** Déplace `quantity` pièces d'une ligne vers un autre contenant de la même commande. */
+  async transfer(
+    date: string,
+    orderId: string,
+    fromContainerId: string,
+    sku: string,
+    toContainerId: string,
+    quantity: number,
+  ): Promise<void> {
+    const body: TransferPackingPieces = { toContainerId, quantity };
+    await firstValueFrom(
+      this.http.post<void>(`${this.lineUrl(date, orderId, fromContainerId, sku)}/transfer`, body),
     );
   }
 

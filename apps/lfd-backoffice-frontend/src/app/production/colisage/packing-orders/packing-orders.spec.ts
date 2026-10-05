@@ -1,5 +1,7 @@
 import { type ComponentFixture, TestBed } from '@angular/core/testing';
 import type { PackingLine, PackingSheet } from '@lfd/contracts';
+import { By } from '@angular/platform-browser';
+import { FoldIconComponent } from 'fold-ng';
 import { describe, expect, it } from 'vitest';
 
 import type { PackingStack } from '../../packing-board';
@@ -134,6 +136,22 @@ describe('la liste des commandes du colisage', () => {
     expect(orders[0]?.classList.contains('is-open')).toBe(true);
     expect(orders[1]?.classList.contains('is-closed')).toBe(true);
     expect(said(orders[1])).toContain('Prête');
+  });
+
+  it('dit le mode par son icône — comptoir ou camion —, et une commande prête par une coche', () => {
+    const fixture = render({
+      sheets: [
+        sheet({ fulfillmentMethod: 'pickup' }),
+        sheet({ reference: 'CMD-002', packedAt: '2026-01-01T05:00:00', packedBy: 'Paul' }),
+      ],
+    });
+    const name = (selector: string): string[] =>
+      fixture.debugElement
+        .queryAll(By.css(selector))
+        .map((icon) => (icon.componentInstance as FoldIconComponent).name());
+
+    expect(name('.co-bac-where fold-icon')).toEqual(['store', 'truck']);
+    expect(name('.co-bac-closed fold-icon')).toEqual(['check']);
   });
 
   it('montre les quantités des lignes trouvées, une par une, sans somme', () => {

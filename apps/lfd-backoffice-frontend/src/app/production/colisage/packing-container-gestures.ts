@@ -14,7 +14,7 @@ export interface ContainerRefusal {
 
 /**
  * **CE QU'ON FAIT dans la colonne Contenants** (K2b) — créer, répartir,
- * retirer, annuler, proposer, partager une moitié — avec l'envoi en vol et le
+ * déplacer, retirer, annuler, proposer, partager une moitié — avec l'envoi en vol et le
  * dernier refus.
  *
  * Fourni par {@link PackingContainerBoard} ; il injecte le
@@ -52,6 +52,19 @@ export class PackingContainerGestures {
 
   withdraw(orderId: string, containerId: string, sku: string, quantity: number): Promise<boolean> {
     return this.write((date) => this.api.withdraw(date, orderId, containerId, sku, quantity));
+  }
+
+  /** Déplace des pièces d'un contenant à l'autre, en un seul geste côté serveur. */
+  transfer(
+    orderId: string,
+    fromContainerId: string,
+    sku: string,
+    toContainerId: string,
+    quantity: number,
+  ): Promise<boolean> {
+    return this.write((date) =>
+      this.api.transfer(date, orderId, fromContainerId, sku, toContainerId, quantity),
+    );
   }
 
   void(orderId: string, containerId: string): Promise<boolean> {

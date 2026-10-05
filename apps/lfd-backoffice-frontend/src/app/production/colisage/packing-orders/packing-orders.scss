@@ -118,6 +118,9 @@
 }
 
 .co-bac-where {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--fold-space-xs);
   font-size: var(--fold-text-xs);
   color: var(--fold-color-text-muted);
 }

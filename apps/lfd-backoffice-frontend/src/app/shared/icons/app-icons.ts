@@ -511,6 +511,15 @@ const IMAGE_ICON =
  * `as const` n'est pas décoratif : c'est lui qui donne à `keyof typeof` des
  * littéraux, donc à l'augmentation de types une liste exacte.
  */
+// Poignée de glisser-déposer : deux colonnes de trois points, la forme que
+// tout le monde reconnaît comme « attrape-moi ». fold n'en a pas (vérifié le
+// 2026-10-05 : ni grip, ni drag, ni dots dans `FoldIconName`).
+const GRIP_ICON =
+  '<svg viewBox="0 0 24 24" fill="currentColor">' +
+  '<circle cx="9" cy="5" r="1.6"/><circle cx="15" cy="5" r="1.6"/>' +
+  '<circle cx="9" cy="12" r="1.6"/><circle cx="15" cy="12" r="1.6"/>' +
+  '<circle cx="9" cy="19" r="1.6"/><circle cx="15" cy="19" r="1.6"/></svg>';
+
 export const APP_ICONS = {
   basha: BASHA_ICON,
   catalog: CATALOG_ICON,
@@ -518,6 +527,7 @@ export const APP_ICONS = {
   collections: COLLECTIONS_ICON,
   dashboard: DASHBOARD_ICON,
   gauge: GAUGE_ICON,
+  grip: GRIP_ICON,
   image: IMAGE_ICON,
   integrations: INTEGRATIONS_ICON,
   category: CATEGORY_ICON,

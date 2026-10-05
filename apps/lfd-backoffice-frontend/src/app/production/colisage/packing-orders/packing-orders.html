@@ -58,8 +58,13 @@
           <!-- L'acheminement : le mode et le lieu disent sur quelle pile la
                commande va. ⚠️ Pas d'heure : une commande porte un JOUR de service
                et rien de plus fin (vérifié le 2026-09-13). -->
-          <span class="co-bac-where"
-            >{{ method(sheet) }} · {{ sheet.destination }}
+          <span class="co-bac-where">
+            <fold-icon
+              [name]="sheet.fulfillmentMethod === 'delivery' ? 'truck' : 'store'"
+              size="sm"
+              [attr.data-method-icon]="sheet.fulfillmentMethod"
+            />
+            {{ method(sheet) }} · {{ sheet.destination }}
             @if (entry.stop; as stop) {
               · arrêt {{ stop.position }}
             }
@@ -89,7 +94,7 @@
             >
             @if (sheet.packedAt !== null) {
               <span class="co-bac-closed">
-                <fold-icon name="package-check" size="sm" />
+                <fold-icon name="check" size="sm" data-ready-icon />
                 Prête
               </span>
             }

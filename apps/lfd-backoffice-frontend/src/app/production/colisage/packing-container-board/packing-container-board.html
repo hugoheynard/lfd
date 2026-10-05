@@ -1,5 +1,6 @@
 <!--
-  **PRODUITS | CONTENANTS** — une ligne se glisse dans un contenant ; « À
+  **PRODUITS | CONTENANTS** — une ligne se glisse dans un contenant, une
+  répartition d'un contenant à l'autre (ou « Déplacer vers… ») ; « À
   répartir », la troisième colonne, reste celle du poste. Le groupe relie la
   liste des produits à chaque contenant.
 -->
@@ -28,9 +29,9 @@
           [attr.data-line]="line.sku"
         >
           @if (done(line)) {
-            <fold-icon name="package-check" size="sm" />
+            <fold-icon name="check" size="sm" />
           } @else {
-            <fold-icon name="more-vertical" size="sm" />
+            <fold-icon name="grip" size="sm" />
           }
           <span class="cb-qty" [attr.data-line-shares]="line.sku"
             >{{ allocated(line) }}<span class="cb-of"> / {{ line.quantity }}</span></span
@@ -274,9 +275,37 @@
             @if (container.lines.length > 0) {
               <ul class="cb-shares">
                 @for (share of container.lines; track share.sku) {
-                  <li class="cb-share">
+                  <!-- Une répartition se glisse vers un autre contenant de la commande. -->
+                  <li
+                    class="cb-share"
+                    cdkDrag
+                    [cdkDragData]="{ containerId: container.id, sku: share.sku }"
+                    [cdkDragDisabled]="!editable() || containers().length < 2"
+                    [cdkDragStartDelay]="dragDelay"
+                    [class.is-draggable]="editable() && containers().length > 1"
+                    [attr.data-share]="share.sku"
+                  >
+                    @if (editable() && containers().length > 1) {
+                      <fold-icon name="grip" size="sm" />
+                    }
                     <span class="cb-qty">{{ share.quantity }}</span>
                     <span class="cb-name">{{ share.productName }}</span>
+                    @if (editable() && containers().length > 1) {
+                      <button
+                        foldButton
+                        size="sm"
+                        emphasis="soft"
+                        [disabled]="gestures.busy()"
+                        [attr.aria-expanded]="isMoving(container.id, share.sku)"
+                        (click)="toggleMoving(container.id, share.sku)"
+                        [attr.aria-label]="
+                          'Déplacer ' + share.productName + ' de ' + title(container) + ' vers…'
+                        "
+                        data-move
+                      >
+                        Déplacer vers…
+                      </button>
+                    }
                     @if (editable()) {
                       <button
                         foldButton
@@ -293,6 +322,24 @@
                       </button>
                     }
                   </li>
+                  @if (isMoving(container.id, share.sku)) {
+                    <li class="cb-targets" data-move-targets>
+                      @for (target of targetsOf(container.id); track target.id) {
+                        <button
+                          foldButton
+                          size="sm"
+                          emphasis="outline"
+                          [disabled]="gestures.busy()"
+                          (click)="
+                            askTransfer({ containerId: container.id, sku: share.sku }, target.id)
+                          "
+                          [attr.data-move-to]="target.id"
+                        >
+                          {{ title(target) }}
+                        </button>
+                      }
+                    </li>
+                  }
                   @if (withdrawing(); as pending) {
                     @if (pending.containerId === container.id && pending.sku === share.sku) {
                       <li class="cb-ask" data-pending-withdrawal>
@@ -346,7 +393,7 @@
                       (click)="confirmDrop()"
                       data-confirm-drop
                     >
-                      Mettre dedans
+                      {{ drop.fromContainerId === null ? 'Mettre dedans' : 'Déplacer ici' }}
                     </button>
                     <button foldButton emphasis="soft" (click)="cancelDrop()">Annuler</button>
                   </div>
