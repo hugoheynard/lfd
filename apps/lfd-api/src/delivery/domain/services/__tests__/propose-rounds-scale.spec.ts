@@ -5,8 +5,16 @@ import { planeCost } from "./line-cost.js";
 
 const STOP_COUNT = 60;
 const HOUR = 3600;
-/** L7b-C2 : borné à 2 s pour 60 arrêts. */
-const BUDGET_MS = 2000;
+/**
+ * L7b-C2 : borné à 2 s pour 60 arrêts — **relâché à 3 s le 2026-10-05**, sur
+ * décision de Hugo. Depuis le départ à rebours (CA2), le calcul prend 0,56 s
+ * de processeur sur un poste et 2,06 s sur la machine de la CI (×3,7) : la
+ * borne tombait au hasard du runner. La promesse reste 2 s ; le travail
+ * d'algorithme qui la tiendra est noté dans
+ * `documentation/livraisons/todo-calculateur.md`, et le banc à 200 clients
+ * mesurera le temps du conteneur, le seul qui compte.
+ */
+const BUDGET_MS = 3000;
 const MICROSECONDS_PER_MS = 1000;
 
 /**
@@ -62,7 +70,7 @@ function tabulated(cost: CostFn, ids: readonly string[]): CostFn {
 }
 
 describe("proposer à l'échelle (L7b-C2)", () => {
-  it("rend soixante arrêts sur quatre véhicules en moins de deux secondes, sans rien perdre", () => {
+  it("rend soixante arrêts sur quatre véhicules en moins de trois secondes, sans rien perdre", () => {
     const { stops, cost } = spiral();
     let proposal: ReturnType<typeof proposeRounds> = { tours: [], overflow: [] };
 

@@ -105,3 +105,32 @@ des tailles différentes :
   nombre de bacs.
 
 À trancher d'abord avec le dépôt : empile-t-on des Bacs M sur des Bacs L ?
+
+## La vitesse de « Proposer » (2026-10-05)
+
+La borne L7b-C2 (60 arrêts en 2 s de processeur) a été **relâchée à 3 s en
+CI** le 2026-10-05, sur décision de Hugo : mesuré 0,56 s sur un poste, 2,06 s
+sur la machine de la CI. La promesse produit reste 2 s. Ce qui coûte, relevé
+au profileur le 2026-10-04 :
+
+- `scoreVehicle` (`vehicle-plan.ts`) refait **tout le véhicule, en deux passes**
+  (la passe arrière `latestDepartures` de CA2, puis la passe avant) pour
+  **chaque geste essayé** par `improvePlans` — des milliers par proposition ;
+  `latestDeparture` seul pèse près de la moitié du temps ;
+- la mémoïsation par configuration (`memoizedScore`, 2026-10-04) n'a gagné
+  que 20 % : les configurations se répètent peu.
+
+À faire, du plus rentable au plus lourd :
+
+1. **Score incrémental** : un geste ne touche qu'une ou deux tournées ; garder
+   par tournée ses horaires (départ au plus tard, arrivées) et ne recalculer
+   que la tournée changée et la chaîne qui la suit dans le véhicule.
+2. **Élaguer avant de scorer** : pour un geste dans une tournée (Or-opt,
+   2-opt), calculer d'abord la variation de trajet ; ne scorer que s'il peut
+   améliorer (moins de trajet, ou une tournée en retard).
+3. **Fusionner les deux passes** de `scoreVehicle` quand aucune fenêtre ne
+   contraint la tournée.
+4. **Mesurer sur le conteneur** au banc à 200 clients (p95 < 5 s) : c'est le
+   seul temps qui compte, et il n'a jamais été mesuré.
+
+Revenir à 2 s en CI une fois 1 et 2 faits.
