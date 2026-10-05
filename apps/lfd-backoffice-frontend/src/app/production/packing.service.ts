@@ -12,8 +12,8 @@ import { B2B_API_BASE } from '../api/api-config';
  *
  * Servi par le bloc colisage depuis K3b (`colisage/plan-domaine-colisage.md`
  * §17) : `admin/packing/:date/…`. Les routes du fournil
- * (`admin/production/packing/…`) ne sont plus appelées d'ici — coche de ligne
- * et compte « + / − » ont disparu avec elles.
+ * (`admin/production/packing/…`) sont retirées du serveur (K3c) — coche de
+ * ligne et compte « + / − » avec elles.
  *
  * Aucun état gardé ici, et aucun chiffre fabriqué : un geste part directement,
  * et l'écran relit ce que le serveur a calculé.

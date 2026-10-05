@@ -13,7 +13,7 @@ import { randomUUID } from "node:crypto";
  * La version se lit par les deux routes du lot V2, dont les droits sont
  * éprouvés à la fin.
  */
-import type { DayVersionView } from "@lfd/contracts";
+import type { DayVersionView, OpenedPackingContainer } from "@lfd/contracts";
 
 import { PaymentGateway } from "../src/b2b/payments/domain/payment-gateway.js";
 import { AdminTokenVerifier } from "../src/platform/auth/admin-token.verifier.js";
@@ -26,7 +26,7 @@ import {
   type E2eContext,
 } from "./e2e-harness.js";
 import { createUser } from "./factories.js";
-import { asCountedContainers } from "./production-day-fixture.js";
+import { packingOrderPath } from "./production-day-fixture.js";
 
 const MEMBER = "auth0|member-day-version";
 const DAY = serviceDay();
@@ -166,20 +166,31 @@ async function readyToPack(): Promise<{ orderId: string; reference: string }> {
   // Depuis K2, la journée naît au colisage : la liste à coliser et la remise
   // de la fournée lui arrivent par la boîte d'envoi, hors de la requête.
   await ctx.drain();
-  // K2b : ces commandes comptent leurs contenants (ancien écran) — le sujet
-  // de la suite n'est pas le colisage, mais ce que la coche et le « + » déclenchent.
-  await asCountedContainers(ctx, DAY);
   return { orderId, reference: (await planned(orderId)).reference };
 }
 
-const packLine = (reference: string, sku: string) =>
+/** Un sac ouvert au colisage pour la commande — rend son identifiant. */
+async function openBag(orderId: string): Promise<string> {
+  return jsonBody<OpenedPackingContainer>(
+    await staff()
+      .post(`${packingOrderPath(orderId, DAY)}/containers`)
+      .send({ nature: "bag" })
+      .expect(201),
+  ).containerId;
+}
+
+/** Les six croissants de la commande glissés dans le contenant. */
+const packLine = (orderId: string, containerId: string) =>
   staff()
-    .put(`/admin/production/packing/${DAY}/sheets/${reference}/lines/${sku}`)
-    .send({ initials: "MB" })
+    .post(`${packingOrderPath(orderId, DAY)}/containers/${containerId}/lines/${CROISSANT}`)
+    .send({ quantity: 6 })
     .expect(204);
 
-const packed = (reference: string) =>
-  staff().post(`/admin/production/batch/${DAY}/sheets/${reference}/packed`).expect(201);
+/** La commande déclarée prête au colisage. */
+const packed = (orderId: string) =>
+  staff()
+    .post(`${packingOrderPath(orderId, DAY)}/close`)
+    .expect(204);
 
 describe("le journal du COMMERCE avance à chaque écriture de commande", () => {
   it("passer", async () => {
@@ -211,9 +222,9 @@ describe("le journal du COMMERCE avance à chaque écriture de commande", () => 
   });
 
   it("retirer — par le statut de la commande, sans surveiller `order_handover`", async () => {
-    const { orderId, reference } = await readyToPack();
-    await packLine(reference, CROISSANT);
-    await packed(reference);
+    const { orderId } = await readyToPack();
+    await packLine(orderId, await openBag(orderId));
+    await packed(orderId);
     await ctx.drain();
     const { handoverToken } = await ctx.prisma.order.findUniqueOrThrow({
       where: { id: orderId },
@@ -284,27 +295,24 @@ describe("le journal du FOURNIL avance à chaque geste du fournil", () => {
     expect(after).toBeGreaterThan(before);
   });
 
-  it("cocher une ligne au bac", async () => {
-    const { reference } = await readyToPack();
-    const { before, after } = await around("production", () => packLine(reference, CROISSANT));
+  it("glisser une ligne dans un contenant, au colisage", async () => {
+    const { orderId } = await readyToPack();
+    const bag = await openBag(orderId);
+    const { before, after } = await around("production", () => packLine(orderId, bag));
     expect(after).toBeGreaterThan(before);
   });
 
-  it("poser un container", async () => {
-    const { reference } = await readyToPack();
-    const { before, after } = await around("production", () =>
-      staff()
-        .post(`/admin/production/packing/${DAY}/sheets/${reference}/containers/add`)
-        .expect(204),
-    );
+  it("ouvrir un contenant, au colisage", async () => {
+    const { orderId } = await readyToPack();
+    const { before, after } = await around("production", () => openBag(orderId));
     expect(after).toBeGreaterThan(before);
   });
 
   it("fermer le sac — et le commerce l'apprend aussi (la commande passe prête)", async () => {
-    const { reference } = await readyToPack();
-    await packLine(reference, CROISSANT);
+    const { orderId } = await readyToPack();
+    await packLine(orderId, await openBag(orderId));
     const commerce = await version("commerce");
-    const { before, after } = await around("production", () => packed(reference));
+    const { before, after } = await around("production", () => packed(orderId));
     expect(after).toBeGreaterThan(before);
     expect(await version("commerce")).toBeGreaterThan(commerce);
   });

@@ -19,7 +19,6 @@ const BATCH: ProductionBatchSnapshot = {
 function sheet(orderId: string): ProductionOrderSnapshot {
   return {
     packed: null,
-    containers: 0,
     orderId,
     reference: `CMD-${orderId}`,
     customerLabel: "Trois Ponts",

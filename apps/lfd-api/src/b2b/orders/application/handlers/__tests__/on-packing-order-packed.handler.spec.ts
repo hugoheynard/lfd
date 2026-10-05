@@ -30,7 +30,7 @@ describe("OnPackingOrderPacked — le bac fermé AU COLISAGE (K2)", () => {
 
   it("rend la commande prête, avec l'instant et l'auteur du FAIT", async () => {
     const { sent, handler } = await subject();
-    // La charge telle que le colisage l'écrit — celle de `production.order_packed`.
+    // La charge telle que le colisage l'écrit (`PackingOrderPackedEvent`).
     await handler.handle({
       eventId: "evt_1",
       type: PACKING_ORDER_PACKED,

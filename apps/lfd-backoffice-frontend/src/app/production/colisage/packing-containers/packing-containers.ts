@@ -1,6 +1,4 @@
-import { ChangeDetectionStrategy, Component, computed, input, output } from '@angular/core';
-
-import type { PackingContainerStep } from '@lfd/contracts';
+import { ChangeDetectionStrategy, Component, computed, input } from '@angular/core';
 
 /**
  * **Les containers d'une commande** — les contenants qu'on charge dans le
@@ -12,15 +10,10 @@ import type { PackingContainerStep } from '@lfd/contracts';
  * ne réutilise aucun de ses noms pour que la confusion n'ait pas d'endroit où
  * naître.
  *
- * 🔴 **Il ne compte rien.** « + » et « − » émettent un SENS (`add`, `remove`) ;
- * le parent l'envoie, le serveur calcule le nouveau compte, et l'écran relit.
- * `count` est donc toujours le chiffre servi — jamais un compte tenu ici.
- *
- * **Une BOUCLE, alors que le contrat ne porte qu'un nombre.** Les produits y
- * seront glissés-déposés, et ce nombre deviendra la longueur d'une liste de
- * containers nommés : le jour venu, `slots` devient la liste elle-même, chaque
- * tuile gagne un nom et une zone de dépôt, et la page au-dessus ne change pas
- * d'une ligne.
+ * 🔴 **Lecture seule depuis K3c** (`plan-domaine-colisage.md` §17.3) : le
+ * compte « + / − » n'est plus servi. Il ne reste que pour montrer le compte
+ * d'une commande `counted`, colisée avec l'ancien poste ; une commande `listed`
+ * tient ses contenants dans `PackingContainerBoard`.
  */
 @Component({
   selector: 'app-packing-containers',
@@ -31,15 +24,6 @@ import type { PackingContainerStep } from '@lfd/contracts';
 export class PackingContainers {
   /** Le compte SERVI. */
   readonly count = input.required<number>();
-
-  /** Une commande déclarée prête ne change plus de compte : rien ne revient dessus. */
-  readonly editable = input(true);
-
-  /** Un envoi en vol : les deux boutons se désarment, et seulement pendant ce temps. */
-  readonly busy = input(false);
-
-  /** Le sens demandé. Le parent envoie, puis relit ce que le serveur a compté. */
-  readonly step = output<PackingContainerStep>();
 
   /**
    * Une tuile par container servi — **sans numéro**. Un rang affiché aurait été

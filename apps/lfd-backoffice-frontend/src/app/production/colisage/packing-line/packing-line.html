@@ -9,7 +9,6 @@
   [checked]="line().packed"
   [disabled]="frozen()"
   [ariaLabel]="boxLabel()"
-  (checkedChange)="toggled.emit($event)"
 />
 
 <span class="co-qty">{{ line().quantity }}</span>

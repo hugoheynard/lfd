@@ -76,6 +76,19 @@ describe("le rechargement de dev joue la journée du jour au colisage (K2)", () 
         await ctx.prisma.outboxMessage.count({ where: { type: "packing.order_packed" } }),
       ).toBe(sealed);
 
+      // K3c : plus d'ancien poste — aucune commande `counted`, et chaque bac de
+      // livraison du jour est né au colisage, par un contenant.
+      expect(
+        await ctx.prisma.packingOrder.count({
+          where: { serviceDay: day, containerMode: "counted" },
+        }),
+      ).toBe(0);
+      const bins = await ctx.prisma.deliveryBin.count({ where: { voidedAt: null } });
+      expect(bins).toBeGreaterThan(0);
+      expect(await ctx.prisma.packingContainer.count({ where: { binId: { not: null } } })).toBe(
+        bins,
+      );
+
       // La fournée reprise : rendue entière par le colisage, annulée au fournil.
       const request = await ctx.prisma.productionReturnRequest.findFirstOrThrow({
         where: { serviceDay: day },

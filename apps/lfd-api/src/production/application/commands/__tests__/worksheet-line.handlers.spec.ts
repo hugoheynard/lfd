@@ -3,7 +3,6 @@ import { DirectUnitOfWork } from "../../../../platform/database/__tests__/direct
 import { FixedClock } from "../../../../platform/time/fixed-clock.js";
 import type { ProducibleOrder } from "../../../channels/commerce/day-orders.reader.js";
 import { ProductionDay } from "../../../domain/entities/production-day.js";
-import { BatchStillPackedError } from "../../../domain/errors/batch-errors.js";
 import {
   ProducedItemNotFoundError,
   ProductionDayNotClosedError,
@@ -58,21 +57,6 @@ function legacyChecked(): ProductionDay {
     counts: snapshot.counts.map((item) => ({
       ...item,
       done: { at: EARLIER, by: "auth0|karim", initials: "KA" },
-    })),
-  });
-}
-
-/** La même, dont la ligne est au bac — les pièces sont dans un sac. */
-function packed(base: ProductionDay): ProductionDay {
-  const snapshot = base.toSnapshot();
-  return ProductionDay.fromSnapshot({
-    ...snapshot,
-    orders: snapshot.orders.map((order) => ({
-      ...order,
-      lines: order.lines.map((line) => ({
-        ...line,
-        packed: { at: NOW, by: "staff-2", initials: "" },
-      })),
     })),
   });
 }
@@ -207,20 +191,6 @@ describe("UnmarkWorksheetLineHandler — « tout annuler »", () => {
     expect(trace).toEqual([`lock:${DAY}`, "load", `record:${inherited}`, `cancel:${inherited}`]);
     expect(store.batches[0]).toMatchObject({ id: inherited, quantity: 30 });
     expect(store.batches[0]?.cancelled).not.toBeNull();
-  });
-
-  it("🔴 REFUSE de décocher une ligne dont des pièces sont dans des sacs", async () => {
-    // Le seul changement de comportement de l'ancien contrat, et il est voulu :
-    // décocher laisserait le colisage mentir.
-    const { store, unmark } = setup(packed(legacyChecked()));
-
-    await expect(
-      unmark.execute(new UnmarkWorksheetLineCommand(DAY, SKU, "staff-9")),
-    ).rejects.toThrow("30 « Pain de seigle » sont déjà dans des sacs");
-    await expect(
-      unmark.execute(new UnmarkWorksheetLineCommand(DAY, SKU, "staff-9")),
-    ).rejects.toBeInstanceOf(BatchStillPackedError);
-    expect(store.writes).toHaveLength(0);
   });
 
   it("porte les mêmes deux refus structurels que la coche", async () => {

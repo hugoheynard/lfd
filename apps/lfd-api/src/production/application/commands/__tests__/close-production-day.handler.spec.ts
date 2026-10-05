@@ -89,24 +89,6 @@ class Days extends ProductionDayRepository {
     this.current = day;
     return Promise.resolve();
   }
-
-  /** Non utilisé par la clôture : rejeter plutôt que rendre une valeur muette. */
-  markPacked(): Promise<boolean> {
-    return Promise.reject(new Error("non utilisé"));
-  }
-
-  /** Idem — le colisage est un geste du poste de bacs, pas de la clôture. */
-  markPackedLine(): Promise<void> {
-    return Promise.reject(new Error("non utilisé"));
-  }
-
-  recordContainerCount(): Promise<void> {
-    return Promise.reject(new Error("non utilisé"));
-  }
-
-  stepContainerCount(): Promise<boolean> {
-    return Promise.reject(new Error("non utilisé"));
-  }
 }
 
 /**

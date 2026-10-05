@@ -49,11 +49,14 @@ export class SupervisionService {
     );
   }
 
-  /** Les bacs du jour — le même contrat que `production/packing`. */
+  /**
+   * Les bacs du jour — le board du colisage, celui que lit le poste, ouvert
+   * aussi à `b2b_supervision:read` (plan du colisage, §17.6).
+   */
   async packing(date: string): Promise<ProductionPackingView> {
     return firstValueFrom(
       this.http.get<ProductionPackingView>(
-        `${B2B_API_BASE}/admin/supervision/packing?date=${encodeURIComponent(date)}`,
+        `${B2B_API_BASE}/admin/packing/${encodeURIComponent(date)}/board`,
       ),
     );
   }

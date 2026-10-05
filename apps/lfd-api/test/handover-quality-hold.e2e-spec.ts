@@ -22,7 +22,8 @@ import {
   type E2eContext,
 } from "./e2e-harness.js";
 import { createUser } from "./factories.js";
-import { asCountedContainers } from "./production-day-fixture.js";
+import { binTypeId } from "./delivery-loading-scene.js";
+import { coliseOrder } from "./production-day-fixture.js";
 
 const MEMBER = "auth0|member-quality-hold";
 const DAY = serviceDay();
@@ -124,19 +125,24 @@ async function place(lines: Lines, fulfillment: "pickup" | "delivery" = "pickup"
   return row.id;
 }
 
-/** Colise une commande du plan : chaque ligne cochée, puis le bac fermé. */
+/**
+ * Colise une commande du plan AU COLISAGE (K3c) : un sac pour un retrait, un
+ * bac pour une livraison, toutes ses lignes dedans, puis la commande fermée.
+ */
 async function pack(orderId: string): Promise<void> {
-  const order = await ctx.prisma.productionOrder.findFirstOrThrow({
+  const { fulfillmentMethod } = await ctx.prisma.productionOrder.findFirstOrThrow({
     where: { serviceDay: DAY, orderId },
-    select: { reference: true, lines: { select: { sku: true } } },
+    select: { fulfillmentMethod: true },
   });
-  for (const line of order.lines) {
-    await staff()
-      .put(`/admin/production/packing/${DAY}/sheets/${order.reference}/lines/${line.sku}`)
-      .send({ initials: "MB" })
-      .expect(204);
-  }
-  await staff().post(`/admin/production/batch/${DAY}/sheets/${order.reference}/packed`).expect(201);
+  await coliseOrder(ctx, {
+    staff: E2E_STAFF_SUB,
+    day: DAY,
+    orderId,
+    container:
+      fulfillmentMethod === "delivery"
+        ? { nature: "bin", binTypeId: await binTypeId(ctx), half: false, innerBags: 0 }
+        : { nature: "bag" },
+  });
 }
 
 /**
@@ -161,11 +167,9 @@ async function seedDay() {
   // Depuis K2, la journée naît au colisage : la liste à coliser et la remise
   // lui arrivent par la boîte d'envoi, hors de la requête.
   await ctx.drain();
-  // K2b : ces commandes comptent leurs contenants (ancien écran) — le sujet
-  // de la suite n'est pas le colisage, mais ce que la coche et le « + » déclenchent.
-  await asCountedContainers(ctx, DAY);
   await pack(croissants);
   await pack(delivery);
+  await ctx.drain();
   return { croissants, mixed, baguettes, delivery };
 }
 

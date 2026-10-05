@@ -76,19 +76,6 @@ export class AtelierSheetNotFoundError extends ResourceNotFoundError {
   }
 }
 
-/**
- * Le bac est **déjà fait**.
- *
- * Deux mains sur la même feuille est le cas NORMAL au fournil, pas une anomalie :
- * le premier scan est le seul vrai, et le second ne doit ni réécrire l'heure ni
- * changer l'identité qui l'a déclaré.
- */
-export class OrderAlreadyPackedError extends BusinessError {
-  constructor(reference: string) {
-    super("production.order.already_packed", `Le colisage de ${reference} est déjà déclaré.`);
-  }
-}
-
 /** Un jour de service s'écrit `AAAA-MM-JJ`, et rien d'autre. */
 export class InvalidServiceDayError extends DomainError {
   constructor(value: string) {
@@ -127,119 +114,6 @@ export class ProducedItemNotFoundError extends ResourceNotFoundError {
     super(
       "production.item.not_found",
       `Aucun article « ${sku} » au compte à produire du ${serviceDay}.`,
-    );
-  }
-}
-
-/**
- * Aucune ligne sous ce SKU dans le **bac** de cette commande.
- *
- * ⚠️ Ce n'est pas {@link ProducedItemNotFoundError} : un article peut très bien
- * être au compte à produire du jour sans être dans CE bon-là. Le poste de
- * colisage coche une ligne de commande, pas un article du four — d'où deux
- * refus distincts, qui ne se remplacent pas.
- */
-export class PackingLineNotFoundError extends ResourceNotFoundError {
-  constructor(sku: string, reference: string) {
-    super("production.packing.line_not_found", `Aucune ligne « ${sku} » sur le bon ${reference}.`);
-  }
-}
-
-/**
- * Le bac est **fermé**, et son contenu ne bouge plus.
- *
- * La fermeture est le fait irréversible du colisage : le commerce en tire son
- * « prête pour le client », et le client l'apprend. Laisser décocher une ligne
- * après coup ferait mentir ce qui a déjà été annoncé — c'est pour ça que le
- * refus porte sur les DEUX gestes, cocher comme décocher.
- */
-export class PackedOrderSealedError extends BusinessError {
-  constructor(reference: string) {
-    super(
-      "production.packing.order_sealed",
-      `Le bac de ${reference} est fermé : son contenu a été annoncé au client et ne se modifie plus. Signalez l'écart au commerce plutôt que de le corriger ici.`,
-    );
-  }
-}
-
-/**
- * Le nombre de containers annoncé n'en est pas un.
- *
- * Un `DomainError` et pas un refus métier : ce n'est pas l'état de la journée
- * qui interdit le geste, c'est la donnée qui ne peut pas exister. On ne charge
- * pas deux bacs et demi dans un véhicule, ni moins que zéro.
- *
- * Le plafond en fait partie depuis le 2026-09-14 : le compte se calcule
- * désormais au serveur, pas par pas, et un plafond tenu par le seul schéma de
- * la route aurait laissé le « + » le franchir. Il vaut
- * `MAX_CONTAINERS_PER_ORDER`, le même nombre que `setPackingContainersSchema`.
- */
-export class InvalidContainerCountError extends DomainError {
-  constructor(value: number) {
-    super(
-      "production.packing.invalid_container_count",
-      `Nombre de containers invalide : ${String(value)}. Saisissez un nombre entier de bacs, de zéro à 99.`,
-    );
-  }
-}
-
-/**
- * L'article n'est **pas encore sorti du four**, et il ne peut pas entrer dans
- * un bac.
- *
- * Ce n'est pas un droit qui manque, c'est une marchandise qui n'existe pas
- * encore : la balance compterait comme réparti ce qui n'a jamais été fabriqué,
- * et le reste affiché deviendrait faux dans le seul sens qui coûte — optimiste.
- *
- * Depuis les fournées (plan `plan-fournees-progressives.md`, D4), « sorti »
- * se compte : la ligne passe dès que le disponible couvre SA quantité, pas
- * quand tout l'article est sorti.
- *
- * ⚠️ Le refus ne vaut que dans **un** sens. Ressortir du bac une ligne devenue
- * « en attente » reste autorisé : refuser les deux sens enfermerait l'exploitant avec un bac
- * qu'il ne peut ni compléter ni corriger.
- */
-export class LineNotProducedYetError extends BusinessError {
-  /**
-   * @param missing combien de pièces sorties manquent pour CETTE ligne — ce que
-   *   le four a sorti moins ce que les bacs ont déjà pris (D4 des fournées).
-   */
-  constructor(productName: string, missing: number) {
-    super(
-      "production.packing.not_produced_yet",
-      `Il manque ${String(missing)} « ${productName} » sortis du four pour remplir cette ligne. Déclarez la fournée sur la fiche d'atelier avant de la mettre au bac.`,
-    );
-  }
-}
-
-/**
- * La commande a atteint le **plafond de containers**.
- *
- * Un refus métier (409) et pas une donnée invalide : le geste « + » est bien
- * formé, c'est l'état de la commande qui ne le permet plus.
- */
-export class ContainerCeilingReachedError extends BusinessError {
-  constructor(reference: string, ceiling: number) {
-    super(
-      "production.packing.container_ceiling",
-      `La commande ${reference} compte déjà ${String(ceiling)} containers, le maximum. Vérifiez le compte avant d'en ajouter : une commande n'en occupe jamais autant.`,
-    );
-  }
-}
-
-/**
- * Le compte de containers **a bougé pendant l'envoi**.
- *
- * L'écriture est atomique et bornée en base : quand elle ne s'applique pas
- * alors que l'état relu juste après la permettrait, c'est qu'un autre poste a
- * changé la commande entre les deux. Refuser plutôt que réessayer en silence :
- * celui qui appuie doit relire ce que son voisin vient de faire.
- */
-export class ContainerStepConflictError extends BusinessError {
-  constructor(reference: string) {
-    super(
-      "production.packing.container_step_conflict",
-      `Le nombre de containers de ${reference} vient d'être modifié depuis un autre poste. Relisez le poste, puis recommencez si besoin.`,
     );
   }
 }

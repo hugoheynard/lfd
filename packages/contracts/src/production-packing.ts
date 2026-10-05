@@ -1,7 +1,6 @@
 import { z } from "zod";
 
 import type { PackingContainerView } from "./packing-containers.js";
-import { workshopInitialsSchema } from "./production-worksheet.js";
 
 /**
  * **Le colisage** — répartir ce qui est sorti du four dans les bacs des clients.
@@ -39,14 +38,6 @@ export const productionPackingQuerySchema = z.object({
   date: z.string().regex(/^\d{4}-\d{2}-\d{2}$/u, "date attendue au format AAAA-MM-JJ"),
 });
 export type ProductionPackingQuery = z.infer<typeof productionPackingQuerySchema>;
-
-/**
- * Cocher une ligne de bac. Les initiales suivent la même règle que la fiche
- * d'atelier — trois lettres au plus, et le vide est permis : on coche d'abord,
- * on signe si on veut.
- */
-export const markPackingLineSchema = z.object({ initials: workshopInitialsSchema });
-export type MarkPackingLine = z.infer<typeof markPackingLineSchema>;
 
 /**
  * Une ligne d'un bac : ce qui est dû, et si c'est dedans.
@@ -117,10 +108,8 @@ export interface PackingSheet {
    * ni la même personne. Les confondre mettrait un réglage de four sur un bon de
    * livraison.
    *
-   * Un simple compte pour l'instant, et c'est délibéré : ce qu'on sait
-   * aujourd'hui, c'est **combien**. Le jour où l'on posera chaque produit dans
-   * un container nommé, ce champ deviendra la longueur de cette liste — et ce
-   * qui aura été compté d'ici là restera vrai.
+   * Sur `listed`, la longueur de `containerList` ; sur `counted`, le compte
+   * de l'ancien poste, en lecture seule (K3c).
    */
   readonly containers: number;
   readonly customerLabel: string;
@@ -176,12 +165,11 @@ export interface PackingSheet {
    * **Comment la commande tient ses contenants** (K2b, ajouté le 2026-10-04,
    * `colisage/plan-les-bacs-au-colisage.md` §5.1) :
    *
-   * - `counted` — l'ancien écran : `containers` se règle par « + » / « − »,
-   *   les lignes se cochent, les bacs de livraison se déclarent après
-   *   « prête » ;
+   * - `counted` — colisée avec l'ancien poste : **en lecture seule** depuis
+   *   K3c (`plan-domaine-colisage.md` §17.6) — ni remplie, ni fermée, ni
+   *   rouverte ; `canDeclareReady` y vaut toujours `false` ;
    * - `listed` — la colonne Contenants : on y crée des bacs et des sacs, on y
-   *   glisse les lignes ; `containers` est le nombre de contenants, en lecture
-   *   seule, et « + » / « − » comme la coche sont refusés.
+   *   glisse les lignes ; `containers` est le nombre de contenants.
    *
    * Facultatif dans le TYPE seulement : le serveur l'envoie toujours.
    */
@@ -262,31 +250,3 @@ export interface ProductionPackingView {
    */
   readonly relativeDay: "today" | "tomorrow" | null;
 }
-
-/**
- * **Ajouter ou retirer UN container** à une commande — le geste du poste depuis
- * le 2026-09-14.
- *
- * Un sens, pas un total : c'est le serveur qui calcule le nouveau compte. Un
- * total envoyé par l'écran perdait un container dès que deux postes appuyaient
- * sur « + » en même temps — chacun envoyait le même nombre.
- */
-export const packingContainerStepSchema = z.enum(["add", "remove"]);
-export type PackingContainerStep = z.infer<typeof packingContainerStepSchema>;
-
-/**
- * @deprecated Depuis le 2026-09-14 — le poste envoie un sens
- * ({@link packingContainerStepSchema}), plus un total. La route `PUT` reste
- * servie **un déploiement de plus** parce qu'elle est en production (CLAUDE.md
- * §0 : un contrat servi se déprécie, il ne disparaît pas dans le même passage).
- *
- * Déclarer combien de containers une commande occupe.
- *
- * Le plafond n'est pas décoratif : il n'existe pas de commande à mille bacs, et
- * une saisie qui part en boucle doit buter quelque part plutôt que d'écrire un
- * nombre que personne ne relira.
- */
-export const setPackingContainersSchema = z.object({
-  containers: z.number().int().min(0).max(99, "cent containers, ce n'est plus une commande"),
-});
-export type SetPackingContainers = z.infer<typeof setPackingContainersSchema>;

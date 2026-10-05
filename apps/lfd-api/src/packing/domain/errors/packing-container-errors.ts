@@ -11,35 +11,15 @@ import {
  */
 
 /**
- * La commande COMPTE ses contenants (ancien écran) : elle est née avant la
- * colonne Contenants, ou ses bacs ont été déclarés par la livraison. Aucun bac
- * existant n'est repris (§5, bascule).
+ * La commande a été colisée avec l'ANCIEN poste (`counted`) : elle est née
+ * avant la colonne Contenants. Depuis K3c (`plan-domaine-colisage.md` §17.6),
+ * elle est en lecture seule — ni remplie, ni fermée, ni rouverte ici.
  */
 export class ContainersCountedError extends BusinessError {
   constructor(reference: string) {
     super(
       "packing.containers.counted",
-      `La commande ${reference} compte ses contenants avec « + » et « − » : elle est née avant la colonne Contenants, et elle se finit sur l'ancien écran. Les bacs de livraison s'y déclarent une fois la commande prête.`,
-    );
-  }
-}
-
-/** La commande LISTE ses contenants : le compte ne se règle plus à la main (§5.1). */
-export class ContainersListedError extends BusinessError {
-  constructor(reference: string) {
-    super(
-      "packing.containers.listed",
-      `La commande ${reference} liste ses contenants : le nombre de contenants se lit dans la colonne Contenants. Créez ou annulez un contenant plutôt que de le compter.`,
-    );
-  }
-}
-
-/** Sur une commande `listed`, une ligne entre au bac en la glissant dans un contenant. */
-export class LineGoesIntoContainerError extends BusinessError {
-  constructor(reference: string) {
-    super(
-      "packing.containers.line_by_container",
-      `Sur la commande ${reference}, une ligne se met au bac en la glissant dans un contenant de la colonne Contenants : la cocher ne dirait pas dans lequel.`,
+      `Commande ${reference} colisée avec l'ancien poste : elle ne se modifie plus ici. Si elle doit changer, voyez-le avec l'administrateur.`,
     );
   }
 }

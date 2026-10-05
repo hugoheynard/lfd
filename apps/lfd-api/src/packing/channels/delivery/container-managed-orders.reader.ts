@@ -1,8 +1,7 @@
 /**
  * **« Cette commande est-elle gérée au colisage ? »** — port que le colisage
  * DÉCLARE et IMPLÉMENTE lui-même, et que la livraison lit (plan
- * `documentation/colisage/plan-les-bacs-au-colisage.md`, K2b, §5.1, B1 ; même
- * figure que `LegacyPackingReader`).
+ * `documentation/colisage/plan-les-bacs-au-colisage.md`, K2b, §5.1, B1).
  *
  * Une commande dont les contenants se listent au colisage (`container_mode =
  * 'listed'`) n'a qu'une porte pour ses bacs : `BinDesk`. Les anciennes routes

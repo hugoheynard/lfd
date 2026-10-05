@@ -10,34 +10,17 @@ import type { PackingOwner } from "../value-objects/packing-owner.js";
  * `production-day.ts` les réexporte — l'agrégat reste le point d'entrée.
  */
 
-/** Une ligne de commande, figée du côté de la production. */
+/**
+ * Une ligne de commande, figée du côté de la production.
+ *
+ * Plus de `packed` depuis K3c (`colisage/plan-domaine-colisage.md` §17.3) : ce
+ * qui est au bac, c'est le colisage qui le tient. Les colonnes
+ * `production_order_line.packed_*` restent en base, ni lues ni écrites.
+ */
 export interface ProductionLineSnapshot {
   readonly sku: string;
   readonly productName: string;
   readonly quantity: number;
-  /** `null` = la ligne n'est pas encore dans le bac. C'est le fait du FOURNIL. */
-  readonly packed: PackedLineMark | null;
-}
-
-/**
- * **La ligne est dans le bac**, telle que le poste de colisage la constate.
- *
- * ## Pourquoi un type à part, et pas un {@link PackedMark} élargi
- *
- * `PackedMark` porte la FERMETURE du bac, et rien ne signe une fermeture : elle
- * arrive par un scan, sans crayon. Lui ajouter `initials` lui donnerait un champ
- * qu'aucune colonne ne stocke et que personne n'écrit — exactement l'état que le
- * commentaire de `PackedMark` raconte avoir coûté cher, à l'envers.
- *
- * Sa forme est celle de {@link DoneMark}, et c'est une coïncidence de forme, pas
- * de sens : l'un dit « c'est sorti du four », l'autre « c'est dans le bac de ce
- * client-là ». Les fusionner ferait qu'un renommage de l'un renommerait l'autre.
- */
-export interface PackedLineMark {
-  readonly at: Date;
-  readonly by: string;
-  /** Vide autorisé sur une ligne pourtant au bac — on coche d'abord, on signe si on veut. */
-  readonly initials: string;
 }
 
 /**
@@ -56,17 +39,14 @@ export interface PackedMark {
 
 /** Une commande, figée du côté de la production. */
 export interface ProductionOrderSnapshot {
-  /** `null` = le bac n'est pas fait. C'est le fait du FOURNIL, pas du commerce. */
-  readonly packed: PackedMark | null;
   /**
-   * **Combien de containers cette commande occupe** — les bacs du véhicule.
-   * `0` = personne ne les a encore comptés.
-   *
-   * 🔴 Rien à voir avec le `ContainerRule` de la fiche d'atelier, qui est le
-   * matériel du FOUR réglé par SKU. Celui-ci se compte par COMMANDE, au
-   * colisage. Les deux mots se ressemblent et ne désignent pas le même objet.
+   * La fermeture du bac **au colisage**, ou `null`. Le dépôt ne la lit ni ne
+   * l'écrit depuis K3c (`colisage/plan-domaine-colisage.md` §17.3) : elle vaut
+   * `null` au chargement, et seule `SealedDayReading` la pose, en lecture, à
+   * partir de `PackedOrdersReader`. Les colonnes `production_order.packed_*` et
+   * `container_count` restent en base, mortes.
    */
-  readonly containers: number;
+  readonly packed: PackedMark | null;
   readonly orderId: string;
   readonly reference: string;
   readonly customerLabel: string;

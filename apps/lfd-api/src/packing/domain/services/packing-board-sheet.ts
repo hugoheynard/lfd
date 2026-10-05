@@ -15,12 +15,14 @@ export interface SheetContext {
 }
 
 /**
- * **La règle de « Déclarer prête »** — la même que l'ancien poste
- * (`canDeclareReady` du fournil, décidé le 2026-09-14) : toutes les lignes au
- * bac, une ligne au moins, pas déjà fermée.
+ * **La règle de « Déclarer prête »** — celle de l'ancien poste (décidée le
+ * 2026-09-14) : toutes les lignes au bac, une ligne au moins, pas déjà fermée ;
+ * et, depuis K3c, une commande `listed` — une commande colisée avec l'ancien
+ * poste est en lecture seule (§17.6), l'agrégat refuserait de la fermer.
  */
 export function canDeclareReady(order: BoardOrder): boolean {
   return (
+    order.containerMode === "listed" &&
     order.packed === null &&
     order.lines.length > 0 &&
     order.lines.every((line) => line.packed !== null)

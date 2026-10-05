@@ -1,14 +1,11 @@
 import {
   BagOnDeliveryError,
   ContainersCountedError,
-  ContainersListedError,
-  LineGoesIntoContainerError,
   ProposalOverContainersError,
   UnallocatedLinesError,
 } from "../errors/packing-container-errors.js";
 import {
   ContainerCeilingReachedError,
-  InvalidContainerCountError,
   PackedOrderSealedError,
   PackingLineNotFoundError,
 } from "../errors/packing-station-errors.js";
@@ -21,7 +18,6 @@ import {
 
 import {
   type ContainerMode,
-  type ContainerStep,
   MAX_CONTAINERS_PER_ORDER,
   type PackingSheetSnapshot,
   type SheetLine,
@@ -31,7 +27,6 @@ import {
 
 export {
   type ContainerMode,
-  type ContainerStep,
   MAX_CONTAINERS_PER_ORDER,
   type PackingSheetSnapshot,
   type SheetLine,
@@ -43,10 +38,14 @@ export {
  * **Le bac d'une commande** — l'agrégat du poste de colisage (plan
  * `documentation/colisage/plan-domaine-colisage.md`, K2, §12.2).
  *
- * Les règles de l'ancien poste y déménagent, telles quelles : une ligne est
- * réversible tant que le bac est ouvert ; un bac fermé ne bouge plus — ni
- * ligne, ni compte de containers — parce que le commerce a annoncé « prête » ;
- * le compte de containers est borné.
+ * Une ligne est réversible tant que le bac est ouvert ; un bac fermé ne bouge
+ * plus parce que le commerce a annoncé « prête » ; les contenants sont bornés.
+ *
+ * 🔴 **Une commande `counted` est en lecture seule** depuis K3c
+ * (`plan-domaine-colisage.md` §17.3, §17.6) : colisée avec l'ancien poste,
+ * elle ne se ferme, ne se rouvre ni ne se remplit plus ici
+ * (`ContainersCountedError`). La coche, le compte « + / − » et le total de
+ * containers sont partis avec l'ancien poste.
  *
  * Ce qu'il ne décide PAS : si la marchandise existe. C'est la réserve
  * (`PackingStock`) qui le dit ; le service du poste les fait parler ensemble,
@@ -115,40 +114,21 @@ export class PackingSheet {
   }
 
   /**
-   * La ligne entre au bac. Recocher réécrit la signature — le dernier geste
-   * est le vrai — sans prendre de pièce de plus.
-   *
-   * @returns les pièces que ce geste PREND à la réserve (0 sur un recocher).
-   */
-  put(sku: string, mark: SheetLineMark): number {
-    this.assertCounted(() => new LineGoesIntoContainerError(this.reference));
-    const line = this.lineToTouch(sku);
-    this.replaceLine({ ...line, packed: mark });
-    return line.packed === null ? line.quantity : 0;
-  }
-
-  /** @returns les pièces que ce geste REND à la réserve (0 si elle n'y était pas). */
-  takeOut(sku: string): number {
-    this.assertCounted(() => new LineGoesIntoContainerError(this.reference));
-    const line = this.lineToTouch(sku);
-    this.replaceLine({ ...line, packed: null });
-    return line.packed === null ? 0 : line.quantity;
-  }
-
-  /**
    * Le bac est fermé — le fait irréversible du colisage.
    *
    * « Déjà fait » n'est pas un refus : c'est une réannonce (le rescan répare un
    * abonné perdu), décidée par l'appelant. La signature rendue est alors celle
    * d'ORIGINE, jamais celle du rescan.
+   *
+   * @throws {ContainersCountedError} une commande colisée avec l'ancien poste.
+   * @throws {UnallocatedLinesError} une ligne n'est pas entièrement répartie.
    */
   seal(mark: SheetMark): { readonly mark: SheetMark; readonly fresh: boolean } {
+    this.assertListed();
     if (this.packedValue !== null) {
       return { mark: this.packedValue, fresh: false };
     }
-    if (this.containerMode === "listed") {
-      this.assertAllAllocated();
-    }
+    this.assertAllAllocated();
     this.packedValue = mark;
     return { mark, fresh: true };
   }
@@ -166,8 +146,10 @@ export class PackingSheet {
    * refusé AVANT par la livraison (`BinDesk`), dans la même unité de travail.
    *
    * @returns `false` si le bac était déjà ouvert : rien à rouvrir, rien à écrire.
+   * @throws {ContainersCountedError} une commande colisée avec l'ancien poste.
    */
   reopen(): boolean {
+    this.assertListed();
     if (this.packedValue === null) {
       return false;
     }
@@ -178,40 +160,6 @@ export class PackingSheet {
   /** Les bacs de livraison vivants de la commande — ceux que la livraison doit libérer. */
   get liveBinIds(): readonly string[] {
     return this.contents.liveBinIds;
-  }
-
-  /**
-   * Un container de plus ou de moins. Un retrait à zéro est sans effet.
-   *
-   * @throws {PackedOrderSealedError} le bac est fermé.
-   * @throws {ContainerCeilingReachedError} un ajout au plafond.
-   */
-  step(step: ContainerStep): void {
-    this.assertOpen();
-    this.assertCounted(() => new ContainersListedError(this.reference));
-    if (step === "add") {
-      if (this.containersValue >= MAX_CONTAINERS_PER_ORDER) {
-        throw new ContainerCeilingReachedError(this.reference, MAX_CONTAINERS_PER_ORDER);
-      }
-      this.containersValue += 1;
-      return;
-    }
-    this.containersValue = Math.max(0, this.containersValue - 1);
-  }
-
-  /**
-   * Le TOTAL de containers (route dépréciée, encore servie).
-   *
-   * @throws {PackedOrderSealedError} le bac est fermé.
-   * @throws {InvalidContainerCountError} ce n'est pas un nombre de bacs.
-   */
-  declareContainers(containers: number): void {
-    this.assertOpen();
-    this.assertCounted(() => new ContainersListedError(this.reference));
-    if (!Number.isInteger(containers) || containers < 0 || containers > MAX_CONTAINERS_PER_ORDER) {
-      throw new InvalidContainerCountError(containers);
-    }
-    this.containersValue = containers;
   }
 
   toSnapshot(): PackingSheetSnapshot {
@@ -328,14 +276,12 @@ export class PackingSheet {
 
   private assertListedAndOpen(): void {
     this.assertOpen();
-    if (this.containerMode !== "listed") {
-      throw new ContainersCountedError(this.reference);
-    }
+    this.assertListed();
   }
 
-  private assertCounted(refusal: () => Error): void {
-    if (this.containerMode === "listed") {
-      throw refusal();
+  private assertListed(): void {
+    if (this.containerMode !== "listed") {
+      throw new ContainersCountedError(this.reference);
     }
   }
 

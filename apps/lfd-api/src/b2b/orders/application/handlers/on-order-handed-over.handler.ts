@@ -18,7 +18,7 @@ export const ON_ORDER_HANDED_OVER = "b2b.orders.mark-fulfilled";
 /**
  * **Le commerce apprend qu'une commande a été retirée**, et ferme la sienne.
  *
- * Même figure que `OnOrderPacked`, et pour la même raison : ce qui change n'est
+ * Même figure que `OnPackingOrderPacked`, et pour la même raison : ce qui change n'est
  * pas ce que le commerce fait, c'est **qui le déclenche**. Le retrait, par un
  * fait — et non plus une route hébergée ici, sur un geste que le commerce ne
  * voit pas.

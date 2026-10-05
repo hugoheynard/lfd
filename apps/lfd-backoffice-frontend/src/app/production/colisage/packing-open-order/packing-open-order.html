@@ -12,28 +12,19 @@
 
     <!--
       **LES CONTAINERS DE LA COMMANDE** — au-dessus des lignes parce qu'on les
-      compte en remplissant, pas après.
-
-      🔴 Une LIVRAISON choisit un bac d'un format (lot PC1, D2) : la rangée
-      déclare chaque bac à la livraison, et le compte anonyme n'apparaît plus.
-      Le RETRAIT garde son compte (D4) : le serveur compte, le poste relit.
+      remplit, pas après. Une commande `listed` (K2b) les tient dans une
+      colonne, et ses lignes s'y GLISSENT. Une commande `counted` a été colisée
+      avec l'ancien poste : tout est en lecture seule (§17.6).
     -->
     @if (listed()) {
-      <!-- K2b (`plan-les-bacs-au-colisage.md` §5.1) : la commande `listed`
-           tient ses contenants dans une colonne, et ses lignes se GLISSENT —
-           ni compte, ni coche. Les commandes `counted` gardent ce qui suit. -->
       <app-packing-container-board [sheet]="order" />
-    } @else if (order.fulfillmentMethod === 'delivery') {
-      <app-packing-bin-row [orderId]="order.orderId" />
     } @else {
-      <!-- K3b : le compte « + / − » n'est plus servi — lecture seule. -->
-      <app-packing-containers [count]="order.containers" [editable]="false" />
-    }
-
-    @if (!listed()) {
+      <fold-callout variant="info" data-legacy-order>
+        Commande colisée avec l'ancien poste : elle ne se modifie plus ici.
+      </fold-callout>
+      <app-packing-containers [count]="order.containers" />
       <div class="co-lines">
         @for (line of order.lines; track line.sku) {
-          <!-- K3b : la coche du fournil n'est plus servie — lecture seule. -->
           <app-packing-line [line]="line" [locked]="true" [hit]="hitSkus().has(line.sku)" />
         } @empty {
           <fold-empty-state
@@ -46,71 +37,57 @@
       </div>
     }
 
-    <div class="co-close">
-      @if (order.packedAt !== null) {
-        <p class="co-closed-said">
-          <fold-icon name="package-check" size="sm" />
-          Commande déclarée prête — le commerce l'a appris.
-        </p>
-        <!-- K3b : rouvrir le RANGEMENT des bacs ; la commande reste prête au
+    <!-- Une commande `counted` : ni « Prête » ni « Rouvrir » (§17.6). -->
+    @if (listed()) {
+      <div class="co-close">
+        @if (order.packedAt !== null) {
+          <p class="co-closed-said">
+            <fold-icon name="package-check" size="sm" />
+            Commande déclarée prête — le commerce l'a appris.
+          </p>
+          <!-- K3b : rouvrir le RANGEMENT des bacs ; la commande reste prête au
              commerce. Le serveur refuse si un bac est chargé ou la tournée
              partie, et l'écran dit son refus tel quel. -->
-        <button
-          foldButton
-          emphasis="outline"
-          [disabled]="reopening()"
-          [loading]="reopening()"
-          (click)="reopen.emit()"
-          data-reopen
-        >
-          Rouvrir le rangement des bacs
-        </button>
-        <p class="co-closed-said">
-          La commande reste prête au commerce : seul le rangement se rouvre.
-        </p>
-        <!-- Lot 4 bis : les bacs d'une livraison se déclarent ici, une fois
-             la commande prête. Le composant décide seul de ce qu'il montre selon le droit
-             `production_packing:write` ou `delivery_loading:write` ; « Prête » n'en dépend pas. -->
-        @if (order.fulfillmentMethod === 'delivery' && !listed()) {
-          <app-packing-bins [orderId]="order.orderId" />
-        }
-      } @else {
-        <!-- Le MODE est dans le libellé : « retrait » sur une commande livrée
+          <button
+            foldButton
+            emphasis="outline"
+            [disabled]="reopening()"
+            [loading]="reopening()"
+            (click)="reopen.emit()"
+            data-reopen
+          >
+            Rouvrir le rangement des bacs
+          </button>
+          <p class="co-closed-said">
+            La commande reste prête au commerce : seul le rangement se rouvre.
+          </p>
+        } @else {
+          <!-- Le MODE est dans le libellé : « retrait » sur une commande livrée
              serait faux. 🔴 Actif selon `canDeclareReady`, la règle du SERVEUR,
              et désarmé pendant la déclaration en vol. -->
-        <!-- Lot PC1, D3 : des avertissements d'écran, au moment de « Prête ». -->
-        @if (warning()) {
-          <fold-callout variant="warning" data-ready-warnings>
-            @for (said of binWarnings(); track said) {
-              <span class="co-warning">{{ said }}</span>
-            }
-            <span class="co-warning"
-              >Déclarez un bac, ou confirmez : la commande partira ainsi.</span
-            >
-          </fold-callout>
-        }
-        <button
-          foldButton
-          block
-          size="lg"
-          [disabled]="!order.canDeclareReady || closing()"
-          [loading]="closing()"
-          (click)="askReady()"
-          data-declare-ready
-        >
-          {{ warning() ? 'Déclarer prête quand même' : readyLabel() }}
-        </button>
-        @if (!order.canDeclareReady && !closing()) {
-          <!-- ⚠️ Le nombre est celui du serveur (`remainingLines`), mais la
+          <button
+            foldButton
+            block
+            size="lg"
+            [disabled]="!order.canDeclareReady || closing()"
+            [loading]="closing()"
+            (click)="declareReady.emit()"
+            data-declare-ready
+          >
+            {{ readyLabel() }}
+          </button>
+          @if (!order.canDeclareReady && !closing()) {
+            <!-- ⚠️ Le nombre est celui du serveur (`remainingLines`), mais la
                PHRASE décrit la règle d'aujourd'hui : le serveur dit « non » sans
                dire pourquoi. -->
-          <p class="co-closed-said">
-            {{ order.remainingLines }} ligne{{ order.remainingLines > 1 ? 's' : '' }}
-            encore dehors — la commande se déclare prête quand tout est dedans.
-          </p>
+            <p class="co-closed-said">
+              {{ order.remainingLines }} ligne{{ order.remainingLines > 1 ? 's' : '' }}
+              encore dehors — la commande se déclare prête quand tout est dedans.
+            </p>
+          }
         }
-      }
-    </div>
+      </div>
+    }
   } @else {
     <!-- La pile affichée est vide : on dit LEQUEL des deux cas c'est. -->
     <fold-empty-state

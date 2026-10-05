@@ -8,13 +8,15 @@
  *   doublé en mémoire la mimerait, il ne la prouverait pas ;
  * - **la course** : deux mises au bac simultanées sur 12 disponibles pour deux
  *   lignes de 12 — une seule passe, parce que le verrou `FOR UPDATE` de la
- *   journée les sérialise ;
+ *   réserve du colisage les sérialise ;
+ * - **le retour** : annuler ou décocher une fournée remise DEMANDE un retour
+ *   au colisage (K2), qui rend ce qui n'est pas au bac — rien, si tout y est.
  * - **la version** avance à chaque fournée, par le déclencheur de la table.
  *
  * ⚠️ Le verrou est éprouvé par l'adaptateur `pg`, pas à travers Prisma
  * Accelerate (le plan le laisse ouvert).
  */
-import type { DayVersionView } from "@lfd/contracts";
+import type { DayVersionView, PackingSheet } from "@lfd/contracts";
 
 import { createUser } from "./factories.js";
 import { jsonBody, type E2eContext } from "./e2e-harness.js";
@@ -23,14 +25,14 @@ import {
   MEMBER,
   SERVICE_DAY,
   STAFF,
+  bagLines,
   bootstrapProductionDay,
   cancelBatch,
-  closeLegacyPlan,
+  closePlan,
   markLine,
-  pack,
+  packing,
   place,
   recordBatch,
-  references,
   storedBatches,
   worksheetLine,
 } from "./production-day-fixture.js";
@@ -55,12 +57,29 @@ beforeEach(async () => {
   await createUser(ctx.prisma, { auth0Sub: MEMBER });
 });
 
-/** Deux bacs de 12 croissants, plan arrêté : 24 au compte. */
-async function twoBagsOfTwelve(): Promise<readonly string[]> {
+/** La boîte d'envoi vidée : liste à coliser, remises, demandes de retour et réponses. */
+async function settle(): Promise<void> {
+  for (let round = 0; round < 4; round += 1) {
+    await ctx.drain();
+  }
+}
+
+/** Deux bacs de 12 croissants, plan arrêté : 24 au compte. Rend les bacs du poste. */
+async function twoBagsOfTwelve(): Promise<readonly PackingSheet[]> {
   await place(ctx, issued, [{ sku: CROISSANT, quantity: 12 }]);
   await place(ctx, issued, [{ sku: CROISSANT, quantity: 12 }]);
-  await closeLegacyPlan(ctx);
-  return references(ctx);
+  await closePlan(ctx);
+  await settle();
+  return (await packing(ctx)).sheets;
+}
+
+/** Un sac au colisage, et les 12 croissants de la commande dedans — rend le statut. */
+async function bagOf(sheet: PackingSheet | undefined): Promise<number> {
+  if (sheet === undefined) {
+    throw new Error("La journée devait porter deux bacs.");
+  }
+  await settle();
+  return bagLines(ctx, sheet);
 }
 
 async function version(): Promise<number> {
@@ -111,7 +130,10 @@ describe("déclarer une fournée", () => {
   it("le rejeu d'une fournée ANNULÉE réussit et ne la ressuscite pas", async () => {
     await twoBagsOfTwelve();
     await recordBatch(ctx, FIRST, 12);
+    await settle();
     expect(await cancelBatch(ctx, FIRST)).toBe(204);
+    // Le colisage rend tout ce qui n'est pas au bac : la fournée s'annule.
+    await settle();
 
     expect(await recordBatch(ctx, FIRST, 12)).toBe(204);
 
@@ -121,20 +143,25 @@ describe("déclarer une fournée", () => {
 });
 
 describe("annuler une fournée", () => {
-  it("🔴 est refusé quand ses pièces sont déjà dans un sac", async () => {
+  it("🔴 ses pièces déjà dans un sac : le colisage n'en rend rien, la fournée compte encore", async () => {
     const [first] = await twoBagsOfTwelve();
     await recordBatch(ctx, FIRST, 12);
-    expect(await pack(ctx, first ?? "")).toBe(204);
+    expect(await bagOf(first)).toBe(204);
 
-    expect(await cancelBatch(ctx, FIRST)).toBe(409);
+    expect(await cancelBatch(ctx, FIRST)).toBe(204);
+    await settle();
+
     expect((await worksheetLine(ctx)).produced).toBe(12);
+    expect((await storedBatches(ctx))[0]?.cancelledAt).toBeNull();
   });
 
   it("annuler deux fois est un succès silencieux ; une fournée inconnue, 404", async () => {
     await twoBagsOfTwelve();
     await recordBatch(ctx, FIRST, 12);
+    await settle();
 
     expect(await cancelBatch(ctx, FIRST)).toBe(204);
+    await settle();
     expect(await cancelBatch(ctx, FIRST)).toBe(204);
     expect(await cancelBatch(ctx, SECOND)).toBe(404);
   });
@@ -144,24 +171,23 @@ describe("le colisage puise dans ce qui est sorti (D4)", () => {
   it("🔴 LA COURSE : 12 disponibles, deux lignes de 12 au même instant — une seule passe", async () => {
     const [first, second] = await twoBagsOfTwelve();
     await recordBatch(ctx, FIRST, 12);
+    await settle();
 
-    const statuses = await Promise.all([pack(ctx, first ?? ""), pack(ctx, second ?? "")]);
+    const statuses = await Promise.all([bagOf(first), bagOf(second)]);
 
     expect([...statuses].sort()).toEqual([204, 409]);
-    const packed = await ctx.prisma.productionOrderLine.count({
-      where: { order: { serviceDay: SERVICE_DAY }, packedAt: { not: null } },
-    });
-    expect(packed).toBe(1);
+    const sheets = (await packing(ctx)).sheets;
+    expect(sheets.reduce((total, sheet) => total + sheet.packedPieces, 0)).toBe(12);
   });
 
   it("le premier sac se remplit dès que ses 12 sont sortis, sans attendre les 24", async () => {
     const [first, second] = await twoBagsOfTwelve();
     await recordBatch(ctx, FIRST, 12);
 
-    expect(await pack(ctx, first ?? "")).toBe(204);
-    expect(await pack(ctx, second ?? "")).toBe(409);
+    expect(await bagOf(first)).toBe(204);
+    expect(await bagOf(second)).toBe(409);
     await recordBatch(ctx, SECOND, 12);
-    expect(await pack(ctx, second ?? "")).toBe(204);
+    expect(await bagOf(second)).toBe(204);
   });
 });
 
@@ -176,17 +202,18 @@ describe("l'ancienne case, traduite", () => {
     expect(await worksheetLine(ctx)).toMatchObject({ produced: 24, done: true, initials: "MB" });
   });
 
-  it("🔴 décocher est refusé tant que des pièces sont au bac", async () => {
+  it("🔴 décocher ce qui est au bac : le colisage n'en rend que le reste", async () => {
     const [first] = await twoBagsOfTwelve();
     await markLine(ctx);
-    await pack(ctx, first ?? "");
+    expect(await bagOf(first)).toBe(204);
 
-    const refused = await ctx
+    await ctx
       .asSub(STAFF)
       .delete(`/admin/production/worksheet/${SERVICE_DAY}/lines/${CROISSANT}/done`)
-      .expect(409);
+      .expect(204);
+    await settle();
 
-    expect(JSON.stringify(refused.body)).toContain("12 « Croissant » sont déjà dans des sacs");
-    expect((await worksheetLine(ctx)).done).toBe(true);
+    // 24 sortis, 12 dans un sac : le colisage rend 12, la fiche en garde 12.
+    expect((await worksheetLine(ctx)).produced).toBe(12);
   });
 });

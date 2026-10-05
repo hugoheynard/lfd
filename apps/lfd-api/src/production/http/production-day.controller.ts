@@ -3,7 +3,6 @@ import {
   type ProductionDueThresholdsView,
   type ProductionForecastQuery,
   type ProductionForecastView,
-  type ProductionPackingAck,
   type ProductionPlanClosure,
   productionBatchQuerySchema,
   productionForecastQuerySchema,
@@ -15,9 +14,7 @@ import { CommandBus, QueryBus } from "@nestjs/cqrs";
 
 import { AdminSurface, RequirePermission } from "../../platform/auth/admin-surface.decorator.js";
 import { ZodQuery } from "../../platform/shared/http/zod-body.pipe.js";
-import { StaffUserId } from "../../platform/auth/staff.decorator.js";
 import { CloseProductionDayCommand } from "../application/commands/close-production-day.command.js";
-import { PackOrderCommand } from "../application/commands/pack-order.command.js";
 import { GetAtelierSheetPdfQuery } from "../application/queries/get-atelier-sheet-pdf.query.js";
 import { GetProductionCountPdfQuery } from "../application/queries/get-production-count-pdf.query.js";
 import { GetProductionDayStatusQuery } from "../application/queries/get-production-day-status.query.js";
@@ -41,9 +38,11 @@ import type { ProductionPaper } from "../application/services/production-paper.s
  * dépôt, ni port de lecture. `lint:controller-buses` le tient.
  *
  * `production_plan` — l'état, l'arrêt, le prévisionnel, le compte à produire
- * —, sauf deux routes qui servent d'autres postes et portent leur garde
- * (2026-10-01, `documentation/livraisons/plan-droits-par-geste.md`, 5.1) : la fiche d'atelier imprimable
- * (`production_worksheet`) et « prête » (`production_packing`).
+ * —, sauf la fiche d'atelier imprimable, qui sert un autre poste et porte sa
+ * garde (`production_worksheet`, 2026-10-01,
+ * `documentation/livraisons/plan-droits-par-geste.md`, 5.1). « Prête » ne vit
+ * plus ici depuis K3c : elle se déclare au colisage
+ * (`POST admin/packing/:date/orders/:orderId/close`).
  */
 @Controller("admin/production")
 @AdminSurface("production_plan")
@@ -52,50 +51,6 @@ export class ProductionDayController {
     private readonly commands: CommandBus,
     private readonly queries: QueryBus,
   ) {}
-
-  /**
-   * **Ce qu'une journée dit d'elle-même** — et la divergence, s'il y en a une.
-   *
-   * ⚠️ `pendingInCommerce` est le contrepoids du couplage minimal : la
-   * production publie, le commerce s'abonne, et le bus vit en processus. Un
-   * abonné qui échoue laisse des commandes `placed` sur une journée close, et
-   * sans cette lecture la divergence n'existerait que dans la tête de celui qui
-   * la cherche. Zéro attendu ; autre chose se rattrape en reclosant.
-   */
-  /**
-   * **Le bac est fait.** Le geste que la feuille d'atelier annonce, et le seul
-   * du fournil qui écrive un fait de fabrication.
-   *
-   * 🔴 Cette route vivait dans `b2b/orders/http/`, sous
-   * `admin/production/packing/:reference/ready` : le fournil déclarait son
-   * travail en écrivant dans les tables du commerce. Elle est ici, et écrit chez
-   * la production ; le commerce apprend par `OrderPackedEvent` et fait avancer
-   * SON statut vers `ready`.
-   *
-   * Le jour accompagne la référence : une feuille appartient à une journée, et
-   * c'est elle qui porte l'agrégat.
-   *
-   * Porte staff comme tout `/admin/*`. Elle ne fait pas office de preuve
-   * contradictoire — le colisage est un fait interne — mais elle décide **qui**
-   * l'a déclaré, et ça ne vient jamais de la charge utile.
-   *
-   * ⚠️ **Elle répondait `204`, et un second scan levait `409`.** Elle rend
-   * désormais l'accusé du colisage, `alreadyPacked` compris : rescanner
-   * **réannonce** le fait déjà gravé au lieu de refuser, parce que c'était le
-   * seul rattrapage possible d'un abonné qui a échoué. Cf.
-   * `ProductionPackingAck`.
-   */
-  @Post("batch/:date/sheets/:reference/packed")
-  @RequirePermission("production_packing:write")
-  async pack(
-    @Param("date") date: string,
-    @Param("reference") reference: string,
-    @StaffUserId() staffUserId: string,
-  ): Promise<ProductionPackingAck> {
-    return this.commands.execute<PackOrderCommand, ProductionPackingAck>(
-      new PackOrderCommand(productionBatchQuerySchema.parse({ date }).date, reference, staffUserId),
-    );
-  }
 
   /**
    * **Le compte à produire du jour, en PDF** — ce qu'on affiche au mur.
@@ -192,6 +147,15 @@ export class ProductionDayController {
     );
   }
 
+  /**
+   * **Ce qu'une journée dit d'elle-même** — et la divergence, s'il y en a une.
+   *
+   * ⚠️ `pendingInCommerce` est le contrepoids du couplage minimal : la
+   * production publie, le commerce s'abonne, et le bus vit en processus. Un
+   * abonné qui échoue laisse des commandes `placed` sur une journée close, et
+   * sans cette lecture la divergence n'existerait que dans la tête de celui qui
+   * la cherche. Zéro attendu ; autre chose se rattrape en reclosant.
+   */
   @Get("batch/:date/status")
   async status(@Param("date") date: string): Promise<ProductionDayStatus> {
     return this.queries.execute<GetProductionDayStatusQuery, ProductionDayStatus>(

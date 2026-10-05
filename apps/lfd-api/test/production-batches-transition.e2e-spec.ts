@@ -9,8 +9,9 @@
  *   aucune fournée (objections B1, B2 de `vitruve`) ;
  * - **30 cochés puis 30 → 42** : le retirage matérialise la coche avant de
  *   changer la quantité, et la ligne n'est pas complète ;
- * - **le retirage pendant un colisage** n'efface plus le colisage : `save`
- *   recharge la journée sous le verrou.
+ * - **le retirage** ne détruit pas le colisage de l'ANCIEN poste : `save`
+ *   recharge la journée sous le verrou, et recopie telles quelles les colonnes
+ *   `packed_*` qu'il ne lit plus (K3c) — un historique réel y est écrit.
  *
  * 🔴 Deux gestes sont écrits en SQL, et chacun le dit : la coche de l'ANCIEN
  * binaire (le nouveau n'écrit plus `done_*`, aucun handler ne sait donc la
@@ -26,12 +27,12 @@ import {
   CROISSANT,
   MEMBER,
   SERVICE_DAY,
+  bagLines,
   bootstrapProductionDay,
-  closeLegacyPlan,
-  pack,
+  closePlan,
   packing,
   place,
-  references,
+  recordBatch,
   retake,
   storedBatches,
   worksheetLine,
@@ -86,7 +87,7 @@ async function legacyCheck(sku = CROISSANT): Promise<void> {
 describe("le rattrapage", () => {
   it("🔴 rejoué deux fois, y compris après un save, ne double aucune fournée", async () => {
     await place(ctx, issued, [{ sku: CROISSANT, quantity: 30 }]);
-    await closeLegacyPlan(ctx);
+    await closePlan(ctx);
     await legacyCheck();
 
     await runBackfill();
@@ -109,7 +110,7 @@ describe("le rattrapage", () => {
 
   it("une coche héritée non rattrapée se lit quand même comme sortie", async () => {
     await place(ctx, issued, [{ sku: CROISSANT, quantity: 30 }]);
-    await closeLegacyPlan(ctx);
+    await closePlan(ctx);
     await legacyCheck();
 
     expect(await worksheetLine(ctx)).toMatchObject({ produced: 30, done: true, initials: "LG" });
@@ -120,7 +121,7 @@ describe("le rattrapage", () => {
 describe("le retirage", () => {
   it("🔴 30 cochés puis 30 → 42 : la ligne n'est PAS complète", async () => {
     await place(ctx, issued, [{ sku: CROISSANT, quantity: 30 }]);
-    await closeLegacyPlan(ctx);
+    await closePlan(ctx);
     await legacyCheck();
     await place(ctx, issued, [{ sku: CROISSANT, quantity: 12 }]);
 
@@ -138,15 +139,20 @@ describe("le retirage", () => {
     ]);
   });
 
-  it("🔴 un colisage validé PENDANT un retirage n'est plus effacé", async () => {
+  it("🔴 le colisage de l'ancien poste, écrit PENDANT un retirage, n'est pas effacé", async () => {
     // Le trou d'avant les fournées : le retirage lisait la journée, le colisage
     // passait, puis `save` réécrivait les lignes depuis sa lecture — le bac
-    // redevenait vide. On tient le verrou de la journée à la main, on lance le
-    // retirage (il attend), on colise dans la même fenêtre, on relâche.
+    // redevenait vide. Depuis K3c, le domaine ne lit plus ces colonnes ; `save`
+    // les RECOPIE, et c'est ce qu'on éprouve : on tient le verrou de la journée
+    // à la main, on lance le retirage (il attend), on écrit le colisage de
+    // l'ancien poste dans la même fenêtre, on relâche.
     await place(ctx, issued, [{ sku: CROISSANT, quantity: 12 }]);
-    await closeLegacyPlan(ctx);
+    await closePlan(ctx);
     await legacyCheck();
-    const [reference] = await references(ctx);
+    const { reference } = await ctx.prisma.productionOrder.findFirstOrThrow({
+      where: { serviceDay: SERVICE_DAY },
+      select: { reference: true },
+    });
     await place(ctx, issued, [{ sku: CROISSANT, quantity: 6 }]);
 
     let retaking: Promise<void> = Promise.resolve();
@@ -155,27 +161,50 @@ describe("le retirage", () => {
         WHERE "service_day" = ${SERVICE_DAY} FOR UPDATE`;
       retaking = retake(ctx);
       await waitForLockWaiter();
-      // Ce que la mise au bac écrit, dans la fenêtre où le retirage attend.
+      // Ce que l'ancien poste écrivait, dans la fenêtre où le retirage attend.
+      await tx.productionOrder.updateMany({
+        where: { serviceDay: SERVICE_DAY, reference },
+        data: { packedAt: new Date(), packedBy: "staff-e2e", containerCount: 2 },
+      });
       await tx.productionOrderLine.updateMany({
-        where: { order: { serviceDay: SERVICE_DAY, reference: reference ?? "" } },
+        where: { order: { serviceDay: SERVICE_DAY, reference } },
         data: { packedAt: new Date(), packedBy: "staff-e2e", packedInitials: "MB" },
       });
     });
     await retaking;
 
-    const view = await packing(ctx);
-    expect(view.sheets).toHaveLength(2);
-    const kept = view.sheets.find((sheet) => sheet.reference === reference);
-    expect(kept?.lines[0]).toMatchObject({ packed: true, initials: "MB" });
+    expect(await ctx.prisma.productionOrder.count({ where: { serviceDay: SERVICE_DAY } })).toBe(2);
+    const kept = await ctx.prisma.productionOrder.findFirstOrThrow({
+      where: { serviceDay: SERVICE_DAY, reference },
+      select: {
+        packedBy: true,
+        containerCount: true,
+        lines: { select: { packedBy: true, packedInitials: true } },
+      },
+    });
+    expect(kept).toMatchObject({
+      packedBy: "staff-e2e",
+      containerCount: 2,
+      lines: [{ packedBy: "staff-e2e", packedInitials: "MB" }],
+    });
   });
 
   it("le verrou n'empêche pas de coliser après un retirage", async () => {
     await place(ctx, issued, [{ sku: CROISSANT, quantity: 12 }]);
-    await closeLegacyPlan(ctx);
-    await legacyCheck();
-    const [reference] = await references(ctx);
+    await closePlan(ctx);
+    await place(ctx, issued, [{ sku: CROISSANT, quantity: 6 }]);
+    await retake(ctx);
+    // Une fournée REMISE au colisage — une coche héritée ne l'est jamais.
+    expect(await recordBatch(ctx, "01K6A0000000000000000000T1", 18)).toBe(204);
+    for (let round = 0; round < 4; round += 1) {
+      await ctx.drain();
+    }
+    const [sheet] = (await packing(ctx)).sheets;
+    if (sheet === undefined) {
+      throw new Error("La journée devait porter un bac.");
+    }
 
-    expect(await pack(ctx, reference ?? "")).toBe(204);
+    expect(await bagLines(ctx, sheet)).toBe(204);
   });
 });
 

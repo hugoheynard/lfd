@@ -9,8 +9,8 @@ import type { PackingSheet } from '@lfd/contracts';
  * refaisait `allocated` et `remaining` à chaque coche, et deux calculs du même
  * chiffre divergent à la première règle modifiée d'un seul côté. Tout chiffre
  * vient désormais du serveur (`documentation/colisage/plan-poste-de-colisage.md`,
- * « L'écran n'additionne rien ») ; il ne reste ici qu'un type de pile, une clé
- * et un libellé. Le filtre de texte de la recherche vit dans
+ * « L'écran n'additionne rien ») ; il ne reste ici qu'un type de pile et un
+ * libellé. Le filtre de texte de la recherche vit dans
  * `colisage/packing-search.ts` depuis le 2026-09-14.
  */
 
@@ -20,11 +20,6 @@ import type { PackingSheet } from '@lfd/contracts';
  * des commandes la parlent tous les deux.
  */
 export type PackingStack = 'todo' | 'ready';
-
-/** La clé d'une case en cours d'envoi : une ligne d'une commande d'une journée. */
-export function packingMarkKey(date: string, reference: string, sku: string): string {
-  return `${date} ${reference} ${sku}`;
-}
 
 /** « Retrait » / « Livraison » — sur quelle pile le bac va. */
 export function methodLabel(method: PackingSheet['fulfillmentMethod']): string {

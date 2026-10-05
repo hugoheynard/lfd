@@ -64,35 +64,6 @@
   background: var(--fold-color-surface-card);
 }
 
-/* 🔴 À la taille d'une case du fournil : on les actionne les mains prises, et un
-   contrôle de 24 px se rate une fois sur trois. */
-.co-container-step {
-  display: grid;
-  place-items: center;
-  width: var(--co-box);
-  height: var(--co-box);
-  border: 1px solid var(--fold-color-border);
-  border-radius: var(--fold-radius-md);
-  background: var(--fold-color-surface-card);
-  color: var(--fold-color-text-secondary);
-  font-size: var(--fold-text-xl);
-  font-weight: var(--fold-weight-bold);
-  line-height: var(--fold-leading-none);
-  cursor: pointer;
-}
-
-/* Pendant l'envoi seulement : le serveur n'a pas encore compté. */
-.co-container-step:disabled {
-  cursor: progress;
-  opacity: 0.5;
-}
-
-/* L'ajout est le geste courant : c'est le seul des deux qui s'annonce. */
-.co-container-step--add {
-  border-color: var(--fold-color-primary);
-  color: var(--fold-color-primary);
-}
-
 .pc-none {
   margin: 0;
   font-size: var(--fold-text-sm);

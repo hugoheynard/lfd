@@ -20,14 +20,10 @@ import type {
 /** La commande, recopiée telle qu'elle était — jamais une référence vers elle. */
 export function freezeOrder(order: ProducibleOrder): ProductionOrderSnapshot {
   return {
-    // Une journée qu'on vient d'arrêter n'a rien de colisé : le fournil n'a pas
-    // encore commencé. L'écrire ici plutôt que de le laisser deviner évite qu'un
-    // champ absent passe pour un bac fait.
+    // Une journée qu'on vient d'arrêter n'a rien de colisé. L'écrire ici
+    // plutôt que de le laisser deviner évite qu'un champ absent passe pour un
+    // bac fait.
     packed: null,
-    // Personne n'a encore compté les bacs de cette commande. `0` le dit, et
-    // c'est la même valeur qu'une commande dont on aurait dit « aucun » — la
-    // distinction n'a pas de sens tant qu'on n'a rien chargé.
-    containers: 0,
     orderId: order.orderId,
     reference: order.reference,
     customerLabel: order.customerLabel,
@@ -38,11 +34,6 @@ export function freezeOrder(order: ProducibleOrder): ProductionOrderSnapshot {
       sku: line.sku,
       productName: line.productName,
       quantity: line.quantity,
-      // Une commande qu'on vient d'inscrire n'a rien au bac : le colisage n'a
-      // pas commencé. Même geste que le `packed: null` de la commande juste
-      // au-dessus, et pour la même raison — un champ absent passerait pour une
-      // ligne déjà rangée.
-      packed: null,
     })),
   };
 }

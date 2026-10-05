@@ -1,5 +1,12 @@
 import { randomUUID } from "node:crypto";
-import type { ProductionPackingView, ProductionWorksheetView, WorkshopLine } from "@lfd/contracts";
+import type {
+  OpenPackingContainer,
+  OpenedPackingContainer,
+  PackingSheet,
+  ProductionPackingView,
+  ProductionWorksheetView,
+  WorkshopLine,
+} from "@lfd/contracts";
 
 import { AdminTokenVerifier } from "../src/platform/auth/admin-token.verifier.js";
 import { PaymentGateway } from "../src/b2b/payments/domain/payment-gateway.js";
@@ -17,11 +24,10 @@ import { settleCardPayments } from "./card-payments.js";
 /**
  * **Une journée de fournil, par l'API** — ce que les suites des fournées
  * partagent : passer des commandes payées, arrêter le plan, lire la fiche et le
- * poste. Tout passe par les vraies routes ; rien n'est semé à la main, sauf ce
- * que chaque suite dit explicitement faire à la place de l'ANCIEN binaire.
+ * poste. Tout passe par les vraies routes ; rien n'est semé à la main.
  *
- * Même mécanique que `production-packing.e2e-spec.ts`, factorisée pour deux
- * suites plutôt que recopiée une troisième fois.
+ * Depuis K3c, le poste est celui du colisage : `packing` lit son board,
+ * `bagLines` remplit un sac, `closeOrder` déclare prête.
  */
 
 export const MEMBER = "auth0|member";
@@ -135,43 +141,6 @@ export async function closePlan(ctx: E2eContext): Promise<void> {
   await ctx.asSub(STAFF).post(`/admin/production/batch/${SERVICE_DAY}/close`).expect(201);
 }
 
-/**
- * **La journée, colisée par l'ANCIEN poste** — telle qu'une journée arrêtée
- * avant la bascule du colisage (plan `colisage/plan-domaine-colisage.md`, K2).
- *
- * Une écriture en base, et c'est délibéré : depuis K2, aucune clôture ne fait
- * plus naître de journée `legacy` (« on bascule direct », Hugo, 2026-10-04),
- * mais le binaire sert encore celles qui le sont. Les suites qui éprouvent
- * l'ancien poste les reconstituent ainsi ; aucune autre colonne n'est touchée.
- */
-export async function asLegacyPacking(ctx: E2eContext, day = SERVICE_DAY): Promise<void> {
-  // `updateMany` : une clôture refusée (journée vide) n'a pas de ligne, et le
-  // refus est ce que la suite éprouve.
-  await ctx.prisma.productionDay.updateMany({
-    where: { serviceDay: day },
-    data: { packingOwner: "legacy" },
-  });
-}
-
-/**
- * Rend les commandes déjà inscrites au colisage à l'ancien compte de
- * contenants (`counted`) — celles d'une journée arrêtée AVANT K2b, que ce
- * binaire n'inscrit plus (`listed` depuis K2b, `plan-les-bacs-au-colisage.md`
- * §5.1). À appeler après que la liste à coliser a été livrée.
- */
-export async function asCountedContainers(ctx: E2eContext, day = SERVICE_DAY): Promise<void> {
-  await ctx.prisma.packingOrder.updateMany({
-    where: { serviceDay: day },
-    data: { containerMode: "counted" },
-  });
-}
-
-/** Arrête le plan, puis le rend à l'ancien poste — cf. {@link asLegacyPacking}. */
-export async function closeLegacyPlan(ctx: E2eContext): Promise<void> {
-  await closePlan(ctx);
-  await asLegacyPacking(ctx);
-}
-
 export async function retake(ctx: E2eContext): Promise<void> {
   await ctx.asSub(STAFF).post(`/admin/production/worksheet/${SERVICE_DAY}/retake`).expect(201);
 }
@@ -206,19 +175,116 @@ export async function markLine(ctx: E2eContext, sku = CROISSANT): Promise<number
   return response.status;
 }
 
-/** Met une ligne au bac, et rend le statut HTTP. */
-export async function pack(ctx: E2eContext, reference: string, sku = CROISSANT): Promise<number> {
-  const response = await ctx
-    .asSub(STAFF)
-    .put(`/admin/production/packing/${SERVICE_DAY}/sheets/${reference}/lines/${sku}`)
-    .send({ initials: "MB" });
-  return response.status;
+/**
+ * **Le poste de colisage**, tel que le colisage le sert (`GET
+ * admin/packing/:date/board`, K3a) — l'ancien poste du fournil est retiré
+ * (K3c, `colisage/plan-domaine-colisage.md` §17.3).
+ */
+export async function packing(ctx: E2eContext, day = SERVICE_DAY): Promise<ProductionPackingView> {
+  return jsonBody<ProductionPackingView>(
+    await ctx.asSub(STAFF).get(`/admin/packing/${day}/board`).expect(200),
+  );
 }
 
-export async function packing(ctx: E2eContext): Promise<ProductionPackingView> {
-  return jsonBody<ProductionPackingView>(
-    await ctx.asSub(STAFF).get(`/admin/production/packing?date=${SERVICE_DAY}`).expect(200),
+/** Le bac d'une commande au poste, par sa référence — une référence absente est le bug. */
+export async function sheetOf(ctx: E2eContext, reference: string): Promise<PackingSheet> {
+  const sheet = (await packing(ctx)).sheets.find((candidate) => candidate.reference === reference);
+  if (sheet === undefined) {
+    throw new Error(`Le poste du ${SERVICE_DAY} ne porte aucun bac « ${reference} ».`);
+  }
+  return sheet;
+}
+
+/** L'adresse des gestes d'une commande au colisage. */
+export function packingOrderPath(orderId: string, day = SERVICE_DAY): string {
+  return `/admin/packing/${day}/orders/${orderId}`;
+}
+
+/**
+ * **Un sac, et des lignes glissées dedans** — le geste du colisage pour un
+ * retrait. Sans `lines`, toutes les lignes de la commande, entières. Rend le
+ * statut de la DERNIÈRE répartition (204 attendu) : un refus du colisage
+ * (« pas encore sorti du four ») est ce que certaines suites éprouvent.
+ */
+export async function bagLines(
+  ctx: E2eContext,
+  sheet: Pick<PackingSheet, "orderId" | "lines">,
+  lines: readonly { readonly sku: string; readonly quantity: number }[] = sheet.lines,
+): Promise<number> {
+  const bag = jsonBody<OpenedPackingContainer>(
+    await ctx
+      .asSub(STAFF)
+      .post(`${packingOrderPath(sheet.orderId)}/containers`)
+      .send({ nature: "bag" })
+      .expect(201),
   );
+  let status = 204;
+  for (const line of lines) {
+    const response = await ctx
+      .asSub(STAFF)
+      .post(`${packingOrderPath(sheet.orderId)}/containers/${bag.containerId}/lines/${line.sku}`)
+      .send({ quantity: line.quantity });
+    status = response.status;
+  }
+  return status;
+}
+
+/** Ce qu'il faut pour coliser une commande d'une suite : sa fiche staff, son jour, son contenant. */
+export interface PackingTarget {
+  readonly staff: string;
+  readonly day: string;
+  readonly orderId: string;
+  readonly container: OpenPackingContainer;
+}
+
+/**
+ * **Une commande remplie au colisage, sans la fermer** : un contenant ouvert
+ * (un sac pour un retrait, un bac pour une livraison), toutes ses lignes
+ * glissées dedans. Rend le bac de livraison né au colisage, s'il y en a.
+ */
+export async function fillOrder(ctx: E2eContext, order: PackingTarget): Promise<string | null> {
+  const agent = () => ctx.asSub(order.staff);
+  const path = packingOrderPath(order.orderId, order.day);
+  const sheetOfOrder = async (): Promise<PackingSheet | undefined> =>
+    jsonBody<ProductionPackingView>(
+      await agent().get(`/admin/packing/${order.day}/board`).expect(200),
+    ).sheets.find((candidate) => candidate.orderId === order.orderId);
+  const sheet = await sheetOfOrder();
+  if (sheet === undefined) {
+    throw new Error(`La commande ${order.orderId} n'est pas au colisage du ${order.day}.`);
+  }
+  const opened = jsonBody<OpenedPackingContainer>(
+    await agent().post(`${path}/containers`).send(order.container).expect(201),
+  );
+  for (const line of sheet.lines) {
+    await agent()
+      .post(`${path}/containers/${opened.containerId}/lines/${line.sku}`)
+      .send({ quantity: line.quantity })
+      .expect(204);
+  }
+  const filled = await sheetOfOrder();
+  const container = filled?.containerList?.find((entry) => entry.id === opened.containerId);
+  return container?.binId ?? null;
+}
+
+/**
+ * **Une commande colisée de bout en bout, au colisage** : remplie
+ * ({@link fillOrder}), puis déclarée prête. Pour les suites dont le sujet n'est
+ * pas le colisage mais ce qu'il déclenche — avec leur propre jour et leur
+ * propre fiche staff.
+ */
+export async function coliseOrder(ctx: E2eContext, order: PackingTarget): Promise<string | null> {
+  const binId = await fillOrder(ctx, order);
+  await ctx
+    .asSub(order.staff)
+    .post(`${packingOrderPath(order.orderId, order.day)}/close`)
+    .expect(204);
+  return binId;
+}
+
+/** « Déclarer prête » au colisage, et rend le statut HTTP. */
+export async function closeOrder(ctx: E2eContext, orderId: string): Promise<number> {
+  return (await ctx.asSub(STAFF).post(`${packingOrderPath(orderId)}/close`)).status;
 }
 
 /** La ligne de la fiche d'atelier pour un SKU — une fiche qui l'ignore est le bug. */

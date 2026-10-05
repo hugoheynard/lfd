@@ -14,6 +14,7 @@ import { type DayWatch, DayVersionWatcher } from '../../shared/day-version/day-v
 import { DeliveryBinsService } from '../../livraison/delivery-bins.service';
 import { DeliveryLoadingService } from '../../livraison/delivery-loading.service';
 import { PermissionsStore } from '../../auth/permissions.store';
+import { PackingContainersService } from '../packing-containers.service';
 import { PackingService } from '../packing.service';
 import { Colisage } from './colisage';
 
@@ -140,8 +141,18 @@ function retrait(over: Partial<PackingSheet> = {}): PackingSheet {
 }
 
 /** Une commande déclarée prête, ses lignes dans le bac. */
+/**
+ * La même commande, tenue dans la colonne Contenants (`listed`, K2b) — la seule
+ * qui se déclare prête ou se rouvre depuis K3c. `bac()` reste une commande
+ * colisée avec l'ancien poste (`containerMode` absent = `counted`), en lecture
+ * seule (§17.6).
+ */
+function listed(over: Partial<PackingSheet> = {}): PackingSheet {
+  return bac({ containerMode: 'listed', containerList: [], ...over });
+}
+
 function readyBac(over: Partial<PackingSheet> = {}): PackingSheet {
-  return bac({
+  return listed({
     lines: [line({ packed: true, initials: 'PL' })],
     lineCount: 1,
     packedLines: 1,
@@ -294,7 +305,11 @@ describe('le poste de colisage', () => {
         // ce poste de test n'a pas — il montre la phrase, sans service.
         { provide: PermissionsStore, useValue: { identity: () => ME, can: () => false } },
         { provide: DeliveryLoadingService, useValue: fakeDelivery },
-        { provide: DeliveryBinsService, useValue: {} },
+        {
+          provide: DeliveryBinsService,
+          useValue: { binTypes: () => Promise.resolve({ types: [] }) },
+        },
+        { provide: PackingContainersService, useValue: {} },
       ],
     });
     rounds = [];
@@ -334,11 +349,11 @@ describe('le poste de colisage', () => {
     it('rend « Déclarer prête » ACTIF quand le serveur le permet, ligne dehors ou non', async () => {
       // Deux lignes dehors — un écran qui appliquerait « tout est dans le bac »
       // désarmerait le bouton. La règle est au serveur, et il dit oui.
-      api.packingView = view({ sheets: [bac({ canDeclareReady: true, remainingLines: 2 })] });
+      api.packingView = view({ sheets: [listed({ canDeclareReady: true, remainingLines: 2 })] });
 
       const { el } = await render();
 
-      expect(el.querySelectorAll('.co-line')).toHaveLength(2);
+      expect(el.querySelectorAll('.cb-line')).toHaveLength(2);
       expect(el.querySelector<HTMLButtonElement>('.co-close button')?.disabled).toBe(false);
     });
 
@@ -346,7 +361,7 @@ describe('le poste de colisage', () => {
       // Toutes les lignes cochées : un écran qui calculerait armerait le bouton.
       api.packingView = view({
         sheets: [
-          bac({
+          listed({
             lines: [line({ packed: true }), line({ sku: 'BAG', quantity: 8, packed: true })],
             canDeclareReady: false,
           }),
@@ -360,7 +375,9 @@ describe('le poste de colisage', () => {
 
     it('affiche les lignes, les piles et la journée telles que comptées au serveur', async () => {
       api.packingView = view({
-        sheets: [bac({ lineCount: 9, packedLines: 5, remainingLines: 42, canDeclareReady: false })],
+        sheets: [
+          listed({ lineCount: 9, packedLines: 5, remainingLines: 42, canDeclareReady: false }),
+        ],
         orderCount: 50,
         todoCount: 31,
         readyCount: 4,
@@ -370,7 +387,7 @@ describe('le poste de colisage', () => {
 
       // Le compte AVANT de lire les chiffres : deux lignes et une commande
       // réellement servies, que l'écran ne doit pas recompter.
-      expect(el.querySelectorAll('.co-line')).toHaveLength(2);
+      expect(el.querySelectorAll('.cb-line')).toHaveLength(2);
       expect(el.querySelectorAll('.co-bac')).toHaveLength(1);
 
       const figures = el.querySelectorAll('.co-figure-value');
@@ -544,7 +561,7 @@ describe('le poste de colisage', () => {
   /* ── LA DÉCLARATION ──────────────────────────────────────────────────────── */
 
   it('déclare la commande prête au colisage (`close`), et relit', async () => {
-    api.packingView = view({ sheets: [bac({ canDeclareReady: true })] });
+    api.packingView = view({ sheets: [listed({ canDeclareReady: true })] });
 
     const { fixture, el } = await render();
     const readsBefore = api.asked.length;
@@ -557,7 +574,7 @@ describe('le poste de colisage', () => {
 
   /** Un fait irréversible échoue VISIBLEMENT plutôt que d'attendre en silence. */
   it('garde l’échec de déclaration à l’écran, et le redit', async () => {
-    api.packingView = view({ sheets: [bac({ canDeclareReady: true })] });
+    api.packingView = view({ sheets: [listed({ canDeclareReady: true })] });
     api.closeError = new HttpErrorResponse({
       status: 409,
       error: { code: 'packing.containers.unallocated', message: 'Il reste des pièces à répartir.' },
@@ -569,7 +586,7 @@ describe('le poste de colisage', () => {
 
     expect(el.querySelector('fold-callout')?.getAttribute('variant')).toBe('alert');
     expect(el.textContent).toContain('Il reste des pièces à répartir.');
-    expect(el.querySelector('.co-line')).not.toBeNull();
+    expect(el.querySelector('.cb-line')).not.toBeNull();
   });
 
   it('🔴 ne laisse plus rien cocher sur une commande DÉCLARÉE PRÊTE', async () => {
@@ -580,9 +597,21 @@ describe('le poste de colisage', () => {
     // la sienne, exactement comme on le ferait pour vérifier un colis.
     openStack(fixture, 'ready');
 
-    expect(el.querySelector<HTMLInputElement>('.co-line input')?.disabled).toBe(true);
     expect(el.querySelector('[data-declare-ready]')).toBeNull();
     expect(el.textContent).toContain('Commande déclarée prête');
+  });
+
+  it('🔴 une commande colisée avec l’ancien poste se lit, et le DIT — ni « Prête » ni « Rouvrir »', async () => {
+    api.packingView = view({ sheets: [bac({ canDeclareReady: true })] });
+
+    const { el } = await render();
+
+    expect(el.querySelectorAll('.co-line')).toHaveLength(2);
+    expect(el.querySelector('[data-declare-ready]')).toBeNull();
+    expect(el.querySelector('[data-reopen]')).toBeNull();
+    expect(said(el.querySelector('[data-legacy-order]'))).toBe(
+      "Commande colisée avec l'ancien poste : elle ne se modifie plus ici.",
+    );
   });
 
   /* ── ROUVRIR (K3b) ───────────────────────────────────────────────────────── */
@@ -595,7 +624,7 @@ describe('le poste de colisage', () => {
     const readsBefore = api.asked.length;
 
     // Rouverte : le serveur la rend sans `packedAt`.
-    api.packingView = view({ sheets: [bac()], todoCount: 1, readyCount: 0 });
+    api.packingView = view({ sheets: [listed()], todoCount: 1, readyCount: 0 });
     el.querySelector<HTMLButtonElement>('[data-reopen]')?.click();
     await settle(fixture);
 
@@ -785,9 +814,9 @@ describe('le poste de colisage', () => {
     }
   });
 
-  it('🔴 ne laisse plus toucher au compte d’une commande DÉCLARÉE PRÊTE', async () => {
+  it('🔴 montre le compte d’une commande prête de l’ancien poste, sans « + / − »', async () => {
     api.packingView = view({
-      sheets: [readyBac({ containers: 2, fulfillmentMethod: 'pickup' })],
+      sheets: [readyBac({ containerMode: 'counted', containers: 2, fulfillmentMethod: 'pickup' })],
       todoCount: 0,
       readyCount: 1,
     });
@@ -1050,8 +1079,8 @@ describe('le poste de colisage', () => {
   it('🔴 enchaîne sur la commande suivante après une déclaration, et le DIT', async () => {
     api.packingView = view({
       sheets: [
-        bac({ reference: 'CMD-001', customerLabel: 'Hôtel du Parc', canDeclareReady: true }),
-        bac({ reference: 'CMD-002', customerLabel: 'Café Neuf' }),
+        listed({ reference: 'CMD-001', customerLabel: 'Hôtel du Parc', canDeclareReady: true }),
+        listed({ reference: 'CMD-002', customerLabel: 'Café Neuf' }),
       ],
       orderCount: 2,
       todoCount: 2,
@@ -1063,7 +1092,7 @@ describe('le poste de colisage', () => {
     api.packingView = view({
       sheets: [
         readyBac({ reference: 'CMD-001', customerLabel: 'Hôtel du Parc' }),
-        bac({ reference: 'CMD-002', customerLabel: 'Café Neuf' }),
+        listed({ reference: 'CMD-002', customerLabel: 'Café Neuf' }),
       ],
       orderCount: 2,
       todoCount: 1,

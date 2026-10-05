@@ -3,14 +3,16 @@ import { randomUUID } from "node:crypto";
  * E2E des **portes de la Supervision** — `documentation/order/plan-supervision-du-jour.md`,
  * §3, §4 et lot 1.
  *
- * Trois lectures des postes (fiche d'atelier, colisage, file du comptoir)
- * rouvertes sous `b2b_supervision`, plus `supervision/day`. Ce qui ne se prouve
- * qu'ici :
+ * Deux lectures des postes (fiche d'atelier, file du comptoir) rouvertes sous
+ * `b2b_supervision`, le board du colisage ouvert AUSSI à ce droit (K3c, plan
+ * du colisage §17.6), plus `supervision/day`. Ce qui ne se prouve qu'ici :
  *
  * - **le droit seul suffit** : une personne qui n'a QUE `b2b_supervision:read`
- *   lit les quatre routes, et se voit toujours refuser les trois postes ;
+ *   lit les quatre routes, et se voit toujours refuser les deux postes rejoués
+ *   ainsi que tout geste du colisage ;
  * - **c'est la même lecture** : sur les mêmes données, la route de supervision
  *   rend exactement ce que rend le poste — une seconde porte, pas une copie ;
+ *   le colisage, lui, n'a qu'une route, que les deux droits lisent ;
  * - **le jour par défaut est celui du serveur**, quand `supervision/day` n'en
  *   reçoit pas.
  *
@@ -23,6 +25,7 @@ import {
   instantToLocal,
   type DaySupervisionView,
   type HandoverQueueView,
+  type OpenedPackingContainer,
   type ProductionPackingView,
   type ProductionWorksheetView,
 } from "@lfd/contracts";
@@ -38,7 +41,6 @@ import {
   type E2eContext,
 } from "./e2e-harness.js";
 import { createUser } from "./factories.js";
-import { asCountedContainers } from "./production-day-fixture.js";
 
 const MEMBER = "auth0|member";
 const SUPERVISOR = "staff-supervision-seule";
@@ -79,7 +81,7 @@ const fakeGateway = {
   cancelIntent: () => Promise.resolve({ kind: "cancelled" as const }),
 };
 
-/** Les trois lectures : la porte de la Supervision, et celle du poste qu'elle rejoue. */
+/** Les deux lectures rejouées : la porte de la Supervision, et celle du poste. */
 const PAIRS = [
   {
     column: "préparation",
@@ -87,16 +89,14 @@ const PAIRS = [
     station: `/admin/production/worksheet?date=${SERVICE_DAY}`,
   },
   {
-    column: "colisage",
-    supervision: `/admin/supervision/packing?date=${SERVICE_DAY}`,
-    station: `/admin/production/packing?date=${SERVICE_DAY}`,
-  },
-  {
     column: "retrait",
     supervision: `/admin/supervision/handover?jour=${SERVICE_DAY}`,
     station: `/admin/handover/file?jour=${SERVICE_DAY}`,
   },
 ] as const;
+
+/** La colonne colisage : le board du colisage lui-même, sous `b2b_supervision:read` aussi. */
+const BOARD = `/admin/packing/${SERVICE_DAY}/board`;
 
 let ctx: E2eContext;
 
@@ -178,19 +178,22 @@ async function seedWorkedDay(): Promise<void> {
     .send({ initials: "KA" })
     .expect(204);
   await ctx.drain();
-  // K2b : ces commandes comptent leurs contenants (ancien écran) — le sujet
-  // de la suite n'est pas le colisage, mais ce que la coche et le « + » déclenchent.
-  await asCountedContainers(ctx, SERVICE_DAY);
-  const packing = jsonBody<ProductionPackingView>(
-    await staff.get(`/admin/production/packing?date=${SERVICE_DAY}`).expect(200),
-  );
-  const reference = packing.sheets[0]?.reference;
-  if (reference === undefined) {
+  const packing = jsonBody<ProductionPackingView>(await staff.get(BOARD).expect(200));
+  const orderId = packing.sheets[0]?.orderId;
+  if (orderId === undefined) {
     throw new Error(`La journée du ${SERVICE_DAY} n'a produit aucun bac à coliser.`);
   }
+  const bag = jsonBody<OpenedPackingContainer>(
+    await staff
+      .post(`/admin/packing/${SERVICE_DAY}/orders/${orderId}/containers`)
+      .send({ nature: "bag" })
+      .expect(201),
+  );
   await staff
-    .put(`/admin/production/packing/${SERVICE_DAY}/sheets/${reference}/lines/${CROISSANT}`)
-    .send({ initials: "MB" })
+    .post(
+      `/admin/packing/${SERVICE_DAY}/orders/${orderId}/containers/${bag.containerId}/lines/${CROISSANT}`,
+    )
+    .send({ quantity: 12 })
     .expect(204);
 }
 
@@ -202,16 +205,35 @@ describe("le droit b2b_supervision, seul", () => {
     for (const { supervision } of PAIRS) {
       await agent.get(supervision).expect(200);
     }
+    await agent.get(BOARD).expect(200);
     await agent.get(`/admin/supervision/day?date=${SERVICE_DAY}`).expect(200);
   });
 
-  it("n'ouvre AUCUN des trois postes qu'elle rejoue", async () => {
+  it("n'ouvre AUCUN des deux postes qu'elle rejoue", async () => {
     await supervisorOnly();
     const agent = ctx.asSub(SUPERVISOR);
 
     for (const { station } of PAIRS) {
       await agent.get(station).expect(403);
     }
+  });
+
+  it("🔴 lit le board du colisage, sans pouvoir y faire un seul geste", async () => {
+    await supervisorOnly();
+    await seedWorkedDay();
+    const orderId = jsonBody<ProductionPackingView>(
+      await ctx.asSub(E2E_STAFF_SUB).get(BOARD).expect(200),
+    ).sheets[0]?.orderId;
+    if (orderId === undefined) {
+      throw new Error("La journée devait porter un bac.");
+    }
+    const agent = ctx.asSub(SUPERVISOR);
+
+    await agent.post(`/admin/packing/${SERVICE_DAY}/orders/${orderId}/close`).expect(403);
+    await agent
+      .post(`/admin/packing/${SERVICE_DAY}/orders/${orderId}/containers`)
+      .send({ nature: "bag" })
+      .expect(403);
   });
 });
 
@@ -223,6 +245,7 @@ describe("sans le droit", () => {
     for (const { supervision } of PAIRS) {
       await agent.get(supervision).expect(403);
     }
+    await agent.get(BOARD).expect(403);
     await agent.get(`/admin/supervision/day?date=${SERVICE_DAY}`).expect(403);
   });
 });
@@ -247,10 +270,8 @@ describe("la même lecture que le poste", () => {
     const worksheet = jsonBody<ProductionWorksheetView>(
       await agent.get(PAIRS[0].supervision).expect(200),
     );
-    const packing = jsonBody<ProductionPackingView>(
-      await agent.get(PAIRS[1].supervision).expect(200),
-    );
-    const queue = jsonBody<HandoverQueueView>(await agent.get(PAIRS[2].supervision).expect(200));
+    const packing = jsonBody<ProductionPackingView>(await agent.get(BOARD).expect(200));
+    const queue = jsonBody<HandoverQueueView>(await agent.get(PAIRS[1].supervision).expect(200));
 
     expect(worksheet.generatedAt).not.toBeNull();
     expect(packing.sheets).toHaveLength(1);
@@ -259,12 +280,15 @@ describe("la même lecture que le poste", () => {
 });
 
 describe("la forme du jour", () => {
-  it.each(PAIRS)("la colonne $column refuse un jour mal formé (400)", async (pair) => {
-    await supervisorOnly();
-    const malformed = pair.supervision.replace(SERVICE_DAY, "03-10-2026");
+  it.each([...PAIRS.map((pair) => pair.supervision), BOARD])(
+    "%s refuse un jour mal formé (400)",
+    async (path) => {
+      await supervisorOnly();
+      const malformed = path.replace(SERVICE_DAY, "03-10-2026");
 
-    await ctx.asSub(SUPERVISOR).get(malformed).expect(400);
-  });
+      await ctx.asSub(SUPERVISOR).get(malformed).expect(400);
+    },
+  );
 });
 
 describe("supervision/day sans date", () => {

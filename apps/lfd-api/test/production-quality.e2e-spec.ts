@@ -36,7 +36,7 @@ import {
 import { createUser } from "./factories.js";
 import { TEST_RECOMPUTE_TOKEN } from "./setup-env.js";
 import { storageKeys } from "./storage.js";
-import { asCountedContainers } from "./production-day-fixture.js";
+import { coliseOrder } from "./production-day-fixture.js";
 
 const MEMBER = "auth0|member-quality";
 const READER = "staff-supervision-lecture";
@@ -145,9 +145,6 @@ async function seedDay(): Promise<{ packed: string; open: string }> {
   // Depuis K2, la journée naît au colisage : la liste à coliser et la remise
   // lui arrivent par la boîte d'envoi, hors de la requête.
   await ctx.drain();
-  // K2b : ces commandes comptent leurs contenants (ancien écran) — le sujet
-  // de la suite n'est pas le colisage, mais ce que la coche et le « + » déclenchent.
-  await asCountedContainers(ctx, DAY);
   const orders = await ctx.prisma.productionOrder.findMany({
     where: { serviceDay: DAY },
     select: { orderId: true, reference: true, lines: { select: { sku: true } } },
@@ -157,13 +154,13 @@ async function seedDay(): Promise<{ packed: string; open: string }> {
   if (single === undefined || mixed === undefined) {
     throw new Error(`La journée du ${DAY} n'a pas les deux commandes attendues.`);
   }
-  await admin()
-    .put(`/admin/production/packing/${DAY}/sheets/${single.reference}/lines/${CROISSANT}`)
-    .send({ initials: "MB" })
-    .expect(204);
-  await admin()
-    .post(`/admin/production/batch/${DAY}/sheets/${single.reference}/packed`)
-    .expect(201);
+  // Colisée AU COLISAGE (K3c) : un sac, ses croissants dedans, déclarée prête.
+  await coliseOrder(ctx, {
+    staff: E2E_STAFF_SUB,
+    day: DAY,
+    orderId: single.orderId,
+    container: { nature: "bag" },
+  });
   return { packed: single.orderId, open: mixed.orderId };
 }
 
@@ -288,7 +285,7 @@ describe("le poste de colisage voit la retenue (lot PC2)", () => {
     const { packed, open } = await seedDay();
     const heldOf = async (): Promise<Record<string, boolean | undefined>> => {
       const view = jsonBody<ProductionPackingView>(
-        await admin().get(`/admin/production/packing?date=${DAY}`).expect(200),
+        await admin().get(`/admin/packing/${DAY}/board`).expect(200),
       );
       return Object.fromEntries(view.sheets.map((sheet) => [sheet.orderId, sheet.qualityHeld]));
     };

@@ -6,7 +6,6 @@ import { ProductionDay } from "../../../domain/entities/production-day.js";
 import {
   BatchConflictError,
   BatchNotFoundError,
-  BatchStillPackedError,
   InvalidBatchQuantityError,
 } from "../../../domain/errors/batch-errors.js";
 import {
@@ -76,27 +75,6 @@ function legacyChecked(): ProductionDay {
       done: { at: EARLIER, by: "auth0|karim", initials: "KA" },
     })),
   });
-}
-
-/** Le bac de `CMD-0001` rempli (24 croissants), puis FERMÉ. */
-function sealedBag(base: ProductionDay): ProductionDay {
-  const snapshot = base.toSnapshot();
-  const day = ProductionDay.fromSnapshot({
-    ...snapshot,
-    orders: snapshot.orders.map((order) =>
-      order.reference === "CMD-0001"
-        ? {
-            ...order,
-            lines: order.lines.map((line) => ({
-              ...line,
-              packed: { at: NOW, by: "staff-2", initials: "" },
-            })),
-          }
-        : order,
-    ),
-  });
-  day.pack("CMD-0001", NOW, "staff-2");
-  return day;
 }
 
 function setup(base: ProductionDay = closedDay()) {
@@ -227,31 +205,6 @@ describe("CancelBatchHandler", () => {
     await expect(
       setup().cancel.execute(new CancelBatchCommand(DAY, SECOND, "staff-3")),
     ).rejects.toBeInstanceOf(BatchNotFoundError);
-  });
-
-  it("🔴 REFUSE d'annuler ce qui est parti dans un bac FERMÉ", async () => {
-    // 24 sortis, 24 dans un sac fermé : annuler laisserait 0 sorti pour 24 au
-    // bac. Le sac est parti avec ses croissants.
-    const { store, record: handler, cancel } = setup(sealedBag(closedDay()));
-    await handler.execute(record(FIRST, 24));
-
-    await expect(cancel.execute(new CancelBatchCommand(DAY, FIRST, "staff-3"))).rejects.toThrow(
-      "24 « Croissant » sont déjà dans des sacs : ressortez-les du bac avant d'annuler cette fournée.",
-    );
-    await expect(
-      cancel.execute(new CancelBatchCommand(DAY, FIRST, "staff-3")),
-    ).rejects.toBeInstanceOf(BatchStillPackedError);
-    expect(store.batches[0]?.cancelled).toBeNull();
-  });
-
-  it("laisse annuler une fournée dont le reste couvre encore le bac", async () => {
-    const { store, record: handler, cancel } = setup(sealedBag(closedDay()));
-    await handler.execute(record(FIRST, 24));
-    await handler.execute(record(SECOND, 6));
-
-    await cancel.execute(new CancelBatchCommand(DAY, SECOND, "staff-3"));
-
-    expect(store.batches.find((batch) => batch.id === SECOND)?.cancelled).not.toBeNull();
   });
 
   it("annule une coche héritée en la matérialisant d'abord", async () => {

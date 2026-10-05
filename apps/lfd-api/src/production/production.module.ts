@@ -1,15 +1,10 @@
 import { Module } from "@nestjs/common";
 
 import { CloseProductionDayHandler } from "./application/commands/close-production-day.handler.js";
-import { DeclarePackingContainersHandler } from "./application/commands/declare-packing-containers.handler.js";
-import { MarkPackingLineHandler } from "./application/commands/mark-packing-line.handler.js";
-import { StepPackingContainersHandler } from "./application/commands/step-packing-containers.handler.js";
 import { MarkWorksheetLineHandler } from "./application/commands/mark-worksheet-line.handler.js";
-import { PackOrderHandler } from "./application/commands/pack-order.handler.js";
 import { RemoveProductionContainerHandler } from "./application/commands/remove-production-container.handler.js";
 import { RetakeProductionDayHandler } from "./application/commands/retake-production-day.handler.js";
 import { SetProductionContainerHandler } from "./application/commands/set-production-container.handler.js";
-import { UnmarkPackingLineHandler } from "./application/commands/unmark-packing-line.handler.js";
 import { UnmarkWorksheetLineHandler } from "./application/commands/unmark-worksheet-line.handler.js";
 import { CancelBatchHandler } from "./application/commands/cancel-batch.handler.js";
 import { RecordBatchHandler } from "./application/commands/record-batch.handler.js";
@@ -43,7 +38,6 @@ import { GetProductionCountPdfHandler } from "./application/queries/get-producti
 import { GetProductionDayStatusHandler } from "./application/queries/get-production-day-status.handler.js";
 import { GetProductionForecastHandler } from "./application/queries/get-production-forecast.handler.js";
 import { GetProductionDueThresholdsHandler } from "./application/queries/get-production-due-thresholds.handler.js";
-import { GetProductionPackingHandler } from "./application/queries/get-production-packing.handler.js";
 import { GetProductionWorksheetHandler } from "./application/queries/get-production-worksheet.handler.js";
 import { ListProductionContainersHandler } from "./application/queries/list-production-containers.handler.js";
 import { ProductionPapers } from "./application/services/production-paper.service.js";
@@ -55,7 +49,6 @@ import { ProductionBatchRepository } from "./domain/ports/production-batch.repos
 import { ProductionDayLock } from "./domain/ports/production-day.lock.js";
 import { ProductionPlanReader } from "./domain/ports/production-plan.reader.js";
 import { ProductionDayController } from "./http/production-day.controller.js";
-import { ProductionPackingController } from "./http/production-packing.controller.js";
 import { ProductionSupervisionController } from "./http/production-supervision.controller.js";
 import { ProductionWorksheetController } from "./http/production-worksheet.controller.js";
 import {
@@ -66,13 +59,11 @@ import { PrismaProductionDayRepository } from "./infrastructure/prisma-productio
 import { PrismaProductionBatchRepository } from "./infrastructure/prisma-production-batch.repository.js";
 import { PrismaProductionDayLock } from "./infrastructure/prisma-production-day.lock.js";
 import { PrismaProductionPlanReader } from "./infrastructure/prisma-production-plan.reader.js";
-import { DayLegacyPackingReader } from "./application/services/day-legacy-packing.reader.js";
 import { PackingHandoffs } from "./application/services/packing-handoffs.service.js";
 import { ProductionHandoffLedger } from "./domain/ports/production-handoff.ledger.js";
 import { ProductionHandoffReader } from "./domain/ports/production-handoff.reader.js";
 import { PrismaProductionHandoffLedger } from "./infrastructure/prisma-production-handoff.ledger.js";
 import { PrismaProductionHandoffReader } from "./infrastructure/prisma-production-handoff.reader.js";
-import { PackedDayReading } from "./application/services/packed-day-reading.service.js";
 import { SealedDayReading } from "./application/services/sealed-day-reading.service.js";
 import { ChannelQualityHeldOrdersReader } from "./application/services/channel-quality-held-orders.reader.js";
 import { DayPlannedDestinationsReader } from "./application/services/day-planned-destinations.reader.js";
@@ -98,7 +89,6 @@ import { PrismaProductionReturnRequests } from "./infrastructure/prisma-producti
   controllers: [
     ProductionDayController,
     ProductionWorksheetController,
-    ProductionPackingController,
     ProductionSupervisionController,
     ProductionQualityController,
     QualityUploadSweepController,
@@ -106,15 +96,10 @@ import { PrismaProductionReturnRequests } from "./infrastructure/prisma-producti
   ],
   providers: [
     CloseProductionDayHandler,
-    PackOrderHandler,
     MarkWorksheetLineHandler,
     UnmarkWorksheetLineHandler,
     RecordBatchHandler,
     CancelBatchHandler,
-    MarkPackingLineHandler,
-    UnmarkPackingLineHandler,
-    DeclarePackingContainersHandler,
-    StepPackingContainersHandler,
     RetakeProductionDayHandler,
     SetProductionContainerHandler,
     RemoveProductionContainerHandler,
@@ -123,7 +108,6 @@ import { PrismaProductionReturnRequests } from "./infrastructure/prisma-producti
     GetProductionDueThresholdsHandler,
     GetProductionWorksheetHandler,
     GetCurrentProductionWorksheetHandler,
-    GetProductionPackingHandler,
     ListProductionContainersHandler,
     GetProductionCountPdfHandler,
     GetAtelierSheetPdfHandler,
@@ -170,25 +154,16 @@ import { PrismaProductionReturnRequests } from "./infrastructure/prisma-producti
     // La bascule (K2) : les retours demandés au colisage, et sa réponse.
     { provide: ProductionReturnRequests, useClass: PrismaProductionReturnRequests },
     OnPackingReturned,
-    // La journée telle que le poste la voit, bacs compris (K2) — une lecture.
-    PackedDayReading,
     // Les bacs fermés seulement — l'état du jour et le contrôle qualité (K3a).
     SealedDayReading,
     // Publiés pour le poste servi par le colisage (K3a) ; reliés par
     // `PackingFeedModule`.
     ChannelQualityHeldOrdersReader,
     DayPlannedDestinationsReader,
-    // Publié pour la route de contrôle de l'ombre ; relié par `PackingFeedModule`.
-    DayLegacyPackingReader,
   ],
   // La lecture des contrôles sert aussi la retenue que la production PUBLIE au
   // retrait (`channels/handover/`, QC3) — son adaptateur est relié par la
   // racine de composition, qui a besoin de ce port pour le construire.
-  exports: [
-    QualityCheckReader,
-    DayLegacyPackingReader,
-    ChannelQualityHeldOrdersReader,
-    DayPlannedDestinationsReader,
-  ],
+  exports: [QualityCheckReader, ChannelQualityHeldOrdersReader, DayPlannedDestinationsReader],
 })
 export class ProductionModule {}

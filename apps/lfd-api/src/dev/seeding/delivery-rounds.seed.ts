@@ -1,10 +1,9 @@
+import type { OpenPackingContainer } from "@lfd/contracts";
 import type { CommandBus } from "@nestjs/cqrs";
 
 import { AssignDeliveryStopCommand } from "../../delivery/application/commands/assign-delivery-stop.command.js";
 import { ChooseDepartureCommand } from "../../delivery/application/commands/choose-departure.command.js";
-import { DeclareDeliveryBinsCommand } from "../../delivery/application/commands/declare-delivery-bins.command.js";
 import { LoadDeliveryBinCommand } from "../../delivery/application/commands/load-delivery-bin.command.js";
-import { ShareDeliveryBinCommand } from "../../delivery/application/commands/share-delivery-bin.command.js";
 import { OpenDeliveryRoundCommand } from "../../delivery/application/commands/open-delivery-round.command.js";
 import type { PrismaClient } from "../../platform/database/client/client.js";
 import { asStaff, SEED_STAFF_SUB } from "./order-placing.seed.js";
@@ -15,7 +14,7 @@ import { asStaff, SEED_STAFF_SUB } from "./order-placing.seed.js";
  * Même discipline que le reste du semis : un véhicule entre par
  * `AddVehicleCommand` (donc par la plaque que le value object normalise et
  * l'unicité qu'il tient), une tournée s'ouvre, reçoit ses arrêts, ses bacs
- * sont déclarés puis chargés — chaque geste par sa commande. Une tournée posée
+ * naissent au colisage puis sont chargés — chaque geste par sa commande. Une tournée posée
  * en Prisma aurait peint l'écran sans rien éprouver.
  */
 
@@ -98,7 +97,7 @@ export async function chooseLaboDeparture(
   );
 }
 
-/** Ce qu'un arrêt déclare : des bacs d'UN type, entiers, et au besoin une moitié. */
+/** Ce qu'un arrêt reçoit : des bacs d'UN type, entiers, et au besoin une moitié. */
 export interface SeedBins {
   /** L'identifiant du type (semé par `seedBinTypes`). */
   readonly binTypeId: string;
@@ -107,15 +106,9 @@ export interface SeedBins {
   readonly innerBags: number;
 }
 
-/** Un arrêt à poser : la commande, ses bacs, et s'il prend l'autre moitié du bac de l'arrêt d'avant. */
+/** Un arrêt à poser : la commande, et si ses bacs sont déjà chargés. */
 export interface RoundStop {
   readonly orderId: string;
-  readonly bins: readonly SeedBins[];
-  /**
-   * Partage le demi-bac déclaré par l'arrêt PRÉCÉDENT (lot 4 bis, v2-4) : les
-   * sacs posés dans sa moitié. Absent = aucun partage.
-   */
-  readonly sharesPreviousHalf?: { readonly innerBags: number };
   /**
    * Ses bacs sont-ils déjà chargés ? Absent = oui. `false` laisse l'arrêt à
    * charger : l'écran « Charger » montre alors un chargement en cours, pas une
@@ -124,31 +117,62 @@ export interface RoundStop {
   readonly loaded?: boolean;
 }
 
-/** Ce que la tournée composée porte. */
-export interface ComposedRound {
-  readonly roundId: string;
+/** Ce que la tournée chargée porte. */
+export interface LoadedRound {
   readonly stops: number;
   readonly loadedBins: number;
-  readonly sharedBins: number;
 }
 
 /**
- * **Une tournée composée et chargée, pas partie.**
- *
- * Ouverte, puis chaque arrêt affecté dans l'ordre donné (l'affectation ajoute
- * en dernier), puis les bacs déclarés — APRÈS l'affectation : un partage n'est
- * permis qu'entre deux arrêts consécutifs, et c'est la tournée qui en juge —,
- * puis chacun chargé par son identifiant, comme le ferait le scan de son QR.
+ * **Les contenants qu'un arrêt ouvre au colisage** — un par bac entier, plus
+ * la moitié s'il y en a une, et l'autre moitié d'un bac voisin s'il la
+ * partage. Depuis K3c (`plan-domaine-colisage.md` §17.3), un bac de livraison
+ * naît au colisage ; la déclaration après « prête » n'est plus jouée ici.
+ * Les sacs intérieurs d'un groupe vont à son premier bac.
+ */
+export function binContainers(
+  bins: readonly SeedBins[],
+  share: { readonly partnerBinId: string; readonly innerBags: number } | null,
+): readonly OpenPackingContainer[] {
+  const opened: OpenPackingContainer[] = share === null ? [] : [{ nature: "bin", ...share }];
+  for (const group of bins) {
+    const halves = group.half ? [true] : [];
+    const wholes: boolean[] = Array.from({ length: group.whole }, () => false);
+    for (const [index, half] of [...wholes, ...halves].entries()) {
+      const innerBags = index === 0 ? group.innerBags : 0;
+      opened.push({ nature: "bin", binTypeId: group.binTypeId, half, innerBags });
+    }
+  }
+  return opened;
+}
+
+/** La moitié vivante d'un bac de la commande — celle qu'un arrêt voisin peut partager. */
+export async function halfBinOf(context: RoundsContext, orderId: string): Promise<string> {
+  const bin = await context.prisma.deliveryBin.findFirst({
+    where: { orderId, half: { not: null }, voidedAt: null },
+    select: { id: true },
+  });
+  if (bin === null) {
+    throw new Error(`La commande ${orderId} n'a aucune moitié de bac à partager.`);
+  }
+  return bin.id;
+}
+
+/**
+ * **Une tournée ouverte, ses arrêts affectés dans l'ordre donné** —
+ * l'affectation ajoute en dernier. AVANT le colisage : un partage de moitié
+ * n'est permis qu'entre deux arrêts consécutifs, et c'est la tournée qui en
+ * juge.
  *
  * La version de la tournée est relue avant chaque affectation : c'est le jeton
  * de concurrence que l'écran enverrait, et le deviner serait tricher avec le
  * garde qu'il porte.
  */
-export async function composeLoadedRound(
+export async function composeRound(
   context: RoundsContext,
   round: { readonly day: string; readonly vehicleId: string; readonly at: Date },
   stops: readonly RoundStop[],
-): Promise<ComposedRound> {
+): Promise<string> {
   const roundId = await asStaff(round.at, () =>
     context.commands.execute<OpenDeliveryRoundCommand, string>(
       new OpenDeliveryRoundCommand({ day: round.day, vehicleId: round.vehicleId }),
@@ -165,61 +189,32 @@ export async function composeLoadedRound(
       ),
     );
   }
-  const binIds = await declareRoundBins(context, round.at, stops);
-  for (const binId of binIds.toLoad) {
-    await asStaff(round.at, () =>
-      context.commands.execute(new LoadDeliveryBinCommand(roundId, { binId }, SEED_STAFF_SUB)),
-    );
-  }
-  return {
-    roundId,
-    stops: stops.length,
-    loadedBins: binIds.toLoad.length,
-    sharedBins: binIds.shared,
-  };
+  return roundId;
 }
 
-/** Déclare les bacs de chaque arrêt, puis l'autre moitié de ceux qui partagent. */
-async function declareRoundBins(
+/**
+ * **Les bacs des arrêts chargés, chargés** — chacun par son identifiant, comme
+ * le ferait le scan de son QR. Les bacs sont ceux que le colisage a fait
+ * naître (une lecture du semis, qui a les droits de la racine).
+ */
+export async function loadRound(
   context: RoundsContext,
-  at: Date,
+  round: { readonly roundId: string; readonly at: Date },
   stops: readonly RoundStop[],
-): Promise<{ readonly toLoad: readonly string[]; readonly shared: number }> {
-  const toLoad: string[] = [];
-  let lastHalf: string | null = null;
-  let shared = 0;
-  for (const stop of stops) {
-    const all: string[] = [];
-    const share = stop.sharesPreviousHalf;
-    if (share !== undefined && lastHalf !== null) {
-      const partnerBinId = lastHalf;
-      all.push(
-        await asStaff(at, () =>
-          context.commands.execute<ShareDeliveryBinCommand, string>(
-            new ShareDeliveryBinCommand({
-              orderId: stop.orderId,
-              partnerBinId,
-              innerBags: share.innerBags,
-            }),
-          ),
-        ),
-      );
-      shared += 1;
-    }
-    lastHalf = null;
-    for (const bins of stop.bins) {
-      const declared = await asStaff(at, () =>
-        context.commands.execute<DeclareDeliveryBinsCommand, readonly string[]>(
-          new DeclareDeliveryBinsCommand({ orderId: stop.orderId, ...bins }),
-        ),
-      );
-      all.push(...declared);
-      // La moitié, quand il y en a une, est la dernière déclarée.
-      lastHalf = bins.half ? (declared.at(-1) ?? null) : lastHalf;
-    }
-    if (stop.loaded !== false) {
-      toLoad.push(...all);
-    }
+): Promise<LoadedRound> {
+  const orderIds = stops.filter((stop) => stop.loaded !== false).map((stop) => stop.orderId);
+  const bins = await context.prisma.deliveryBin.findMany({
+    where: { orderId: { in: orderIds }, voidedAt: null },
+    select: { id: true, orderId: true },
+    orderBy: { createdAt: "asc" },
+  });
+  const ordered = orderIds.flatMap((orderId) => bins.filter((bin) => bin.orderId === orderId));
+  for (const bin of ordered) {
+    await asStaff(round.at, () =>
+      context.commands.execute(
+        new LoadDeliveryBinCommand(round.roundId, { binId: bin.id }, SEED_STAFF_SUB),
+      ),
+    );
   }
-  return { toLoad, shared };
+  return { stops: stops.length, loadedBins: ordered.length };
 }

@@ -130,21 +130,4 @@ export class BatchBackedDays extends ProductionDayRepository {
     this.saved += 1;
     return Promise.resolve();
   }
-
-  /** Aucun geste de fournée ne touche au colisage : rejeter plutôt que rendre muet. */
-  markPacked(): Promise<boolean> {
-    return Promise.reject(new Error("non utilisé"));
-  }
-
-  markPackedLine(): Promise<void> {
-    return Promise.reject(new Error("non utilisé"));
-  }
-
-  recordContainerCount(): Promise<void> {
-    return Promise.reject(new Error("non utilisé"));
-  }
-
-  stepContainerCount(): Promise<boolean> {
-    return Promise.reject(new Error("non utilisé"));
-  }
 }

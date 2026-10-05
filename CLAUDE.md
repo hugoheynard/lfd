@@ -353,11 +353,11 @@ faits des autres — il n'est pas un hub.
 🔴 **`packing` ne lit le fournil que par son canal** (2026-10-04, plan
 [`documentation/colisage/plan-domaine-colisage.md`](documentation/colisage/plan-domaine-colisage.md),
 §12–§13). Le fournil DÉCLARE et publie `production/channels/packing/` — les
-faits de la liste à coliser, de la remise et du retour, et le port de lecture
-de l'ancien chemin que seule la route de contrôle de l'ombre lit. `production →
-packing` reste interdit : le fournil publie, il ne sait pas qui écoute. En K1,
-le colisage ne tient qu'une ombre ; `production_day.packing_owner` dit qui
-colise réellement une journée, et vaut toujours `legacy`.
+faits de la liste à coliser, de la remise et du retour. `production →
+packing` reste interdit : le fournil publie, il ne sait pas qui écoute. Depuis
+K3c (2026-10-05), l'ancien poste du fournil, l'ombre et sa route de contrôle
+sont retirés : le colisage est le seul poste. `production_day.packing_owner`
+reste en base et nomme encore `legacy` les journées colisées avant la bascule.
 
 🔴 **`delivery` implémente ce que le colisage déclare** (2026-10-04, K2b,
 [`documentation/colisage/plan-les-bacs-au-colisage.md`](documentation/colisage/plan-les-bacs-au-colisage.md),

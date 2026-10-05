@@ -30,8 +30,8 @@ import { MarkOrderReadyCommand } from "./mark-order-ready.command.js";
  *
  * ## Idempotente, depuis le 2026-10-04
  *
- * Son seul appelant est l'abonné DURABLE du colisage (`OnOrderPacked`, vérifié
- * le 2026-10-04), livré au moins une fois et à chaque rescan du fournil. Une
+ * Son seul appelant est l'abonné DURABLE du colisage (`OnPackingOrderPacked`,
+ * vérifié le 2026-10-05), livré au moins une fois et à chaque réannonce. Une
  * commande déjà prête — par un fait précédent ou par l'autre côté d'une course —
  * est donc un succès SANS effet : ni écriture, ni `OrderReadyEvent`, donc ni
  * second courriel ni seconde ligne de journal. Avant, elle levait

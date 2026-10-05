@@ -1,5 +1,5 @@
 import { SealedDayReading } from "../../services/sealed-day-reading.service.js";
-import { FixedPackedOrders } from "../../__tests__/station-doubles.js";
+import { sealedAt } from "../../__tests__/station-doubles.js";
 import { DirectUnitOfWork } from "../../../../platform/database/__tests__/direct-unit-of-work.js";
 import { RecordingPublisher } from "../../../../platform/events/__tests__/recording-publisher.js";
 import { FixedClock } from "../../../../platform/time/fixed-clock.js";
@@ -42,8 +42,8 @@ function subject(gone: ReadonlyMap<string, OrderOutOfHand> = new Map()) {
     new InMemoryChecks(table),
     new InMemoryCheckReader(table),
     new SealedDayReading(
-      new FixedDays(closedDay(DAY, clock.now(), ["ord_2"])),
-      new FixedPackedOrders(),
+      new FixedDays(closedDay(DAY, clock.now(), [])),
+      sealedAt(clock.now(), ["ord_2"]),
     ),
     new QualityPhotoAttachment(new InMemoryUploads(table), new InMemoryProductionStore(), clock),
     new FixedOrderCustody(gone),
@@ -120,8 +120,8 @@ describe("RenderQualityCheckHandler — la garde (BQ)", () => {
       new InMemoryChecks(before.table),
       new InMemoryCheckReader(before.table),
       new SealedDayReading(
-        new FixedDays(closedDay(DAY, new Date(0), ["ord_2"])),
-        new FixedPackedOrders(),
+        new FixedDays(closedDay(DAY, new Date(0), [])),
+        sealedAt(new Date(0), ["ord_2"]),
       ),
       new QualityPhotoAttachment(
         new InMemoryUploads(before.table),

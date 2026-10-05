@@ -73,22 +73,6 @@ export class FixedDays extends ProductionDayRepository {
   save(): Promise<void> {
     return Promise.reject(new Error("non utilisé"));
   }
-
-  markPacked(): Promise<boolean> {
-    return Promise.reject(new Error("non utilisé"));
-  }
-
-  markPackedLine(): Promise<void> {
-    return Promise.reject(new Error("non utilisé"));
-  }
-
-  recordContainerCount(): Promise<void> {
-    return Promise.reject(new Error("non utilisé"));
-  }
-
-  stepContainerCount(): Promise<boolean> {
-    return Promise.reject(new Error("non utilisé"));
-  }
 }
 
 /** La table des contrôles — l'unicité de l'`id` et des dépôts, comme en base. */

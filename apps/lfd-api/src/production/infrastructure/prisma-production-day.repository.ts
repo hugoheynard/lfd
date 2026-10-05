@@ -1,12 +1,8 @@
 import { Injectable } from "@nestjs/common";
 
 import { PrismaService } from "../../platform/database/prisma.service.js";
-import { ProductionDay, type PackedLineMark } from "../domain/entities/production-day.js";
+import { ProductionDay } from "../domain/entities/production-day.js";
 import { ProductionDayRepository } from "../domain/ports/production-day.repository.js";
-import {
-  type ContainerStep,
-  MAX_CONTAINERS_PER_ORDER,
-} from "../domain/value-objects/container-step.js";
 import type { ServiceDay } from "../domain/value-objects/service-day.value-object.js";
 import { BATCH_COLUMNS, batchOf, returnsByBatch } from "./prisma-production-batch.repository.js";
 
@@ -50,19 +46,7 @@ export class PrismaProductionDayRepository extends ProductionDayRepository {
             fulfillmentMethod: true,
             destination: true,
             dueAt: true,
-            packedAt: true,
-            packedBy: true,
-            containerCount: true,
-            lines: {
-              select: {
-                sku: true,
-                productName: true,
-                quantity: true,
-                packedAt: true,
-                packedBy: true,
-                packedInitials: true,
-              },
-            },
+            lines: { select: { sku: true, productName: true, quantity: true } },
           },
         },
         counts: {
@@ -89,8 +73,9 @@ export class PrismaProductionDayRepository extends ProductionDayRepository {
     return ProductionDay.fromSnapshot({
       serviceDay: row.serviceDay,
       closedAt: row.closedAt,
-      // Même recollage que le colisage juste en dessous, et même raison :
-      // l'agrégat ne connaît pas l'état où l'instant existe sans son auteur.
+      // Les deux colonnes sont nullables : le mapper les recolle en un couple,
+      // ou en `null` — l'agrégat ne connaît pas l'état où l'instant existe
+      // sans son auteur.
       retaken:
         row.retakenAt === null || row.retakenBy === null
           ? null
@@ -98,15 +83,9 @@ export class PrismaProductionDayRepository extends ProductionDayRepository {
       // Le CHECK de la base n'admet que ces deux valeurs.
       packingOwner: row.packingOwner === "packing" ? "packing" : "legacy",
       orders: row.orders.map((order) => ({
-        // Les deux colonnes restent nullables en base — c'est la même ligne
-        // avant et après le colisage. Le mapper les recolle en un couple, ou en
-        // `null` : l'agrégat n'a pas à connaître l'état où l'une existe sans
-        // l'autre, parce que rien ne le produit.
-        packed:
-          order.packedAt === null || order.packedBy === null
-            ? null
-            : { at: order.packedAt, by: order.packedBy },
-        containers: order.containerCount,
+        // Le colisage n'est plus lu ici depuis K3c (§17.3) : c'est le colisage
+        // qui le tient, et `SealedDayReading` le pose en lecture.
+        packed: null,
         orderId: order.orderId,
         reference: order.reference,
         customerLabel: order.customerLabel,
@@ -119,13 +98,6 @@ export class PrismaProductionDayRepository extends ProductionDayRepository {
           sku: line.sku,
           productName: line.productName,
           quantity: line.quantity,
-          // Même recollage que le colisage de la commande : `packed_at` seul
-          // décide, les initiales ont un défaut vide. Une ligne mise au bac
-          // sans signature reste une ligne au bac.
-          packed:
-            line.packedAt === null || line.packedBy === null
-              ? null
-              : { at: line.packedAt, by: line.packedBy, initials: line.packedInitials },
         })),
       })),
       counts: row.counts.map((count) => ({
@@ -144,117 +116,6 @@ export class PrismaProductionDayRepository extends ProductionDayRepository {
   }
 
   /**
-   * Grave le colisage, **conditionné en base**.
-   *
-   * `packedAt: null` dans le `where` : c'est la base qui arbitre, donc deux
-   * postes qui scannent la même feuille au même moment produisent exactement un
-   * colisage. Une `save` de l'agrégat ne le pourrait pas — elle réécrit la
-   * journée entière, et le second écrasement effacerait le premier.
-   */
-  async markPacked(day: ServiceDay, reference: string, at: Date, by: string): Promise<boolean> {
-    const { count } = await this.prisma.productionOrder.updateMany({
-      where: { serviceDay: day.value, reference, packedAt: null },
-      data: { packedAt: at, packedBy: by },
-    });
-    return count === 1;
-  }
-
-  /**
-   * Met une ligne au bac, ou l'en ressort — **une écriture ciblée**.
-   *
-   * ⚠️ Une écriture nue, comme {@link markPacked}, et la justification monte
-   * d'un cran : `save` réécrit la journée entière (elle efface commandes ET
-   * lignes avant de les recréer), et deux postes colisent deux bacs différents
-   * au même moment — c'est le cas NORMAL du poste, où chacun tient un bon. Le
-   * second écrasement effacerait tout le remplissage du premier. Ici chacun ne
-   * touche que sa ligne.
-   *
-   * Le `where` remonte jusqu'à la journée par la relation : `production_order`
-   * n'est unique que sur `(service_day, order_id)`, donc une référence seule ne
-   * désigne pas une ligne — deux journées peuvent porter la même commande si le
-   * commerce la déplace.
-   *
-   * Les invariants restent dans l'agrégat (`lineToPack`, `lineToFill`), bac
-   * fermé compris : ce qui passe ici a déjà été refusé ou accepté par lui, SOUS
-   * le verrou de la journée que l'appelant a pris (D4 des fournées).
-   */
-  async markPackedLine(
-    day: ServiceDay,
-    reference: string,
-    sku: string,
-    mark: PackedLineMark | null,
-  ): Promise<void> {
-    await this.prisma.productionOrderLine.updateMany({
-      where: { sku, order: { serviceDay: day.value, reference } },
-      data: {
-        packedAt: mark?.at ?? null,
-        packedBy: mark?.by ?? null,
-        packedInitials: mark?.initials ?? "",
-      },
-    });
-  }
-
-  /**
-   * Grave le nombre de containers d'une commande — **une écriture ciblée**.
-   *
-   * ⚠️ Une écriture nue, comme {@link markPackedLine}, et la justification est
-   * la même : `save` réécrit la journée entière, et deux postes tiennent deux
-   * bons au même moment. Le second écrasement effacerait le remplissage et le
-   * compte du premier ; ici chacun ne touche que sa commande.
-   *
-   * Le `where` porte la journée ET la référence : `production_order` n'est
-   * unique que sur `(service_day, order_id)`, donc une référence seule ne
-   * désigne pas une ligne.
-   *
-   * Les invariants restent dans l'agrégat (`declareContainers`), bac fermé
-   * compris : ce qui passe ici a déjà été refusé ou accepté par lui.
-   */
-  async recordContainerCount(
-    day: ServiceDay,
-    reference: string,
-    containers: number,
-  ): Promise<void> {
-    await this.prisma.productionOrder.updateMany({
-      where: { serviceDay: day.value, reference },
-      data: { containerCount: containers },
-    });
-  }
-
-  /**
-   * Un container de plus ou de moins, **atomique en SQL**.
-   *
-   * 🔴 `increment` / `decrement` compilent en `SET container_count =
-   * container_count ± 1` : c'est la base qui lit et écrit d'un seul geste, et
-   * c'est la seule forme qui compose deux « + » simultanés. Un `load` → calcul →
-   * `recordContainerCount` perdrait l'un des deux, exactement comme le total
-   * envoyé par l'écran le faisait avant le 2026-09-14.
-   *
-   * Le `WHERE` porte les deux bornes et `packed_at IS NULL` : la condition et
-   * l'écriture sont la même instruction, donc aucun poste ne peut passer entre
-   * les deux. Même partage que {@link markPacked} — l'agrégat a déjà dit si le
-   * geste a un sens, la base ne tranche que la course.
-   */
-  async stepContainerCount(
-    day: ServiceDay,
-    reference: string,
-    step: ContainerStep,
-  ): Promise<boolean> {
-    const { count } = await this.prisma.productionOrder.updateMany({
-      where:
-        step === "add"
-          ? {
-              serviceDay: day.value,
-              reference,
-              packedAt: null,
-              containerCount: { lt: MAX_CONTAINERS_PER_ORDER },
-            }
-          : { serviceDay: day.value, reference, packedAt: null, containerCount: { gt: 0 } },
-      data: { containerCount: step === "add" ? { increment: 1 } : { decrement: 1 } },
-    });
-    return count === 1;
-  }
-
-  /**
    * Écrit la journée **en entier**, dans une seule transaction.
    *
    * ⚠️ Les enfants sont remplacés, pas fusionnés : l'agrégat est l'autorité, et
@@ -266,8 +127,15 @@ export class PrismaProductionDayRepository extends ProductionDayRepository {
    *
    * 🔴 Elle prend d'abord le verrou de la journée (D4 des fournées) — la même
    * requête que `PrismaProductionDayLock`, écrite ici parce qu'elle doit viser
-   * `tx`. L'appelant a chargé l'agrégat sous ce verrou : le colisage réécrit
-   * ci-dessous est donc celui d'après le dernier geste de bac, pas d'avant.
+   * `tx`. L'appelant a chargé l'agrégat sous ce verrou.
+   *
+   * 🔴 **Le colisage de l'ancien poste est RECOPIÉ, jamais interprété.** Les
+   * colonnes `packed_*` et `container_count` ne sont plus ni lues par le
+   * domaine ni écrites par un geste (K3c, §17.3), mais les journées colisées
+   * avant la bascule les portent : effacer puis recréer les commandes d'un
+   * retirage les remettrait à vide, et un historique réel disparaîtrait
+   * (CLAUDE.md §0). Elles passent donc de l'ancienne ligne à la nouvelle, telles
+   * quelles, par `carriedPacking`.
    *
    * Les fournées ne sont ni lues ni écrites ici : elles ne dépendent pas du
    * compte, et un retirage les laisse intactes. `done_*` n'est plus écrit (§5 :
@@ -296,6 +164,7 @@ export class PrismaProductionDayRepository extends ProductionDayRepository {
           packingOwner: snapshot.packingOwner,
         },
       });
+      const carried = await carriedPacking(tx, snapshot.serviceDay);
       await tx.productionOrder.deleteMany({ where: { serviceDay: snapshot.serviceDay } });
       await tx.productionCount.deleteMany({ where: { serviceDay: snapshot.serviceDay } });
       for (const order of snapshot.orders) {
@@ -308,24 +177,13 @@ export class PrismaProductionDayRepository extends ProductionDayRepository {
             fulfillmentMethod: order.fulfillmentMethod,
             destination: order.destination,
             dueAt: order.dueAt,
-            packedAt: order.packed === null ? null : order.packed.at,
-            packedBy: order.packed === null ? null : order.packed.by,
-            // 🔴 Réécrit, pas perdu — même raison que le remplissage des lignes
-            // plus bas : les commandes sont effacées puis recréées ici, et un
-            // retirage ferait sinon recompter tous les bacs déjà comptés.
-            containerCount: order.containers,
+            ...carried.orders.get(order.orderId),
             lines: {
               create: order.lines.map((line) => ({
                 sku: line.sku,
                 productName: line.productName,
                 quantity: line.quantity,
-                // 🔴 Le remplissage du bac est RÉÉCRIT, pas perdu. Les
-                // lignes sont effacées puis recréées ici ; sans ces trois
-                // champs, un retirage viderait tous les bacs en cours et le
-                // fournil recommencerait un colisage déjà fait.
-                packedAt: line.packed?.at ?? null,
-                packedBy: line.packed?.by ?? null,
-                packedInitials: line.packed?.initials ?? "",
+                ...carried.lines.get(`${order.orderId}/${line.sku}`),
               })),
             },
           },
@@ -343,4 +201,84 @@ export class PrismaProductionDayRepository extends ProductionDayRepository {
       }
     });
   }
+}
+
+/** Le colisage de l'ancien poste d'une commande, tel que la base le porte. */
+interface CarriedOrderPacking {
+  readonly packedAt: Date | null;
+  readonly packedBy: string | null;
+  readonly containerCount: number;
+}
+
+/** Le colisage de l'ancien poste d'une ligne, tel que la base le porte. */
+interface CarriedLinePacking {
+  readonly packedAt: Date | null;
+  readonly packedBy: string | null;
+  readonly packedInitials: string;
+}
+
+/** Ce que `carriedPacking` relit d'une journée — la seule lecture restante des colonnes mortes. */
+interface CarriedPacking {
+  readonly orders: ReadonlyMap<string, CarriedOrderPacking>;
+  /** Par `<orderId>/<sku>`. */
+  readonly lines: ReadonlyMap<string, CarriedLinePacking>;
+}
+
+/** Le client transactionnel, réduit à la seule lecture dont la recopie a besoin. */
+interface PackingCarrierClient {
+  readonly productionOrder: {
+    findMany(args: {
+      where: { serviceDay: string };
+      select: {
+        orderId: true;
+        packedAt: true;
+        packedBy: true;
+        containerCount: true;
+        lines: { select: { sku: true; packedAt: true; packedBy: true; packedInitials: true } };
+      };
+    }): Promise<
+      readonly (CarriedOrderPacking & {
+        readonly orderId: string;
+        readonly lines: readonly (CarriedLinePacking & { readonly sku: string })[];
+      })[]
+    >;
+  };
+}
+
+/**
+ * **Relit le colisage de l'ancien poste**, pour le recopier tel quel (cf.
+ * `save`). Rien ne l'interprète : il passe d'une ligne effacée à la ligne
+ * recréée, et une commande ou une ligne nouvelle naît avec les défauts de la
+ * base.
+ */
+async function carriedPacking(
+  tx: PackingCarrierClient,
+  serviceDay: string,
+): Promise<CarriedPacking> {
+  const rows = await tx.productionOrder.findMany({
+    where: { serviceDay },
+    select: {
+      orderId: true,
+      packedAt: true,
+      packedBy: true,
+      containerCount: true,
+      lines: { select: { sku: true, packedAt: true, packedBy: true, packedInitials: true } },
+    },
+  });
+  return {
+    orders: new Map(
+      rows.map((row) => [
+        row.orderId,
+        { packedAt: row.packedAt, packedBy: row.packedBy, containerCount: row.containerCount },
+      ]),
+    ),
+    lines: new Map(
+      rows.flatMap((row) =>
+        row.lines.map((line) => [
+          `${row.orderId}/${line.sku}`,
+          { packedAt: line.packedAt, packedBy: line.packedBy, packedInitials: line.packedInitials },
+        ]),
+      ),
+    ),
+  };
 }

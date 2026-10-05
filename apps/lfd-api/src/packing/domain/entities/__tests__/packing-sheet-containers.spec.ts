@@ -1,9 +1,7 @@
 import {
   BagOnDeliveryError,
   ContainersCountedError,
-  ContainersListedError,
   InvalidContainerQuantityError,
-  LineGoesIntoContainerError,
   OverAllocationError,
   PackingContainerNotFoundError,
   PackingContainerVoidedError,
@@ -150,22 +148,11 @@ describe("PackingSheet — la colonne Contenants (K2b)", () => {
     expect(() => target.withdraw("c_1", "PAC", 1)).toThrow(PackedOrderSealedError);
   });
 
-  it("sur `listed`, refuse le « + » / « − », le total et la coche — en nommant la colonne", () => {
-    const target = sheet();
-
-    expect(() => target.step("add")).toThrow(ContainersListedError);
-    expect(() => target.declareContainers(2)).toThrow(ContainersListedError);
-    expect(() => target.step("add")).toThrow(/colonne Contenants/u);
-    expect(() => target.put("CRO", { ...MARK, initials: "" })).toThrow(LineGoesIntoContainerError);
-    expect(() => target.takeOut("CRO")).toThrow(LineGoesIntoContainerError);
-  });
-
-  it("sur `counted`, la colonne est refusée et l'ancien écran reste servi", () => {
+  it("sur `counted`, la colonne est refusée : la commande est en lecture seule", () => {
     const target = sheet("counted");
 
     expect(() => target.openContainer(bag("c_1"))).toThrow(ContainersCountedError);
-    target.step("add");
-    expect(target.containers).toBe(1);
+    expect(() => target.assertCanApplyProposal()).toThrow(ContainersCountedError);
   });
 
   it("borne le nombre de contenants vivants au plafond d'une commande", () => {

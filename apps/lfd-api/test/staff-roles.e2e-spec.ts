@@ -78,7 +78,6 @@ const SURFACES: readonly { readonly resource: StaffResource; readonly path: stri
    * rouvertes sous `b2b_supervision`, sans `b2b_orders` (plan §3).
    */
   { resource: "b2b_supervision", path: "/admin/supervision/preparation?date=2026-01-01" },
-  { resource: "b2b_supervision", path: "/admin/supervision/packing?date=2026-01-01" },
   { resource: "b2b_supervision", path: "/admin/supervision/handover?jour=2026-01-01" },
   /**
    * Les LIMITES DE PRIX (2026-09-26) — détachées de `b2b_pricing` : la

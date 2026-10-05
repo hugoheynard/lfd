@@ -5,7 +5,6 @@ import {
   ProductionDayNotClosedError,
 } from "../errors/production-errors.js";
 import { absorbArrivals, countOf, freezeOrder } from "../services/production-count.js";
-import type { ContainerStep } from "../value-objects/container-step.js";
 import {
   LEGACY_PACKING_OWNER,
   PACKING_PACKING_OWNER,
@@ -13,21 +12,18 @@ import {
 } from "../value-objects/packing-owner.js";
 import { ServiceDay } from "../value-objects/service-day.value-object.js";
 import * as batching from "./production-day.batches.js";
-import * as packing from "./production-day.packing.js";
 import type {
   DoneMark,
   PackedMark,
   ProductionBatchSnapshot,
   ProducedItemSnapshot,
   ProductionDaySnapshot,
-  ProductionLineSnapshot,
   ProductionOrderSnapshot,
 } from "./production-day.snapshot.js";
 
 // La forme de la journée vit à côté ; réexportée : l'agrégat reste le point d'entrée.
 export type {
   DoneMark,
-  PackedLineMark,
   ProductionBatchSnapshot,
   PackedMark,
   ProducedItemSnapshot,
@@ -135,11 +131,6 @@ export class ProductionDay {
     return batching.producedOf(this, sku);
   }
 
-  /** Sorti − au bac, bacs fermés compris (D4). Cf. `production-day.batches.ts`. */
-  availableOf(sku: string): number {
-    return batching.availableOf(this, sku);
-  }
-
   /** La fournée à déclarer, sans muter — refus : `production-day.batches.ts`. */
   batchToRecord(
     id: string,
@@ -183,66 +174,6 @@ export class ProductionDay {
     const inherited = batching.inheritedBatchesOf(this, sku);
     this.batchesValue = [...this.batchesValue, ...inherited];
     return inherited;
-  }
-
-  /**
-   * **Le bac est fait** — le colisage d'une commande de cette journée. Les
-   * trois refus et leurs raisons (dont l'absence de refus sur une commande
-   * annulée) sont sur `sheetToSeal`, dans `production-day.packing.ts`.
-   */
-  pack(reference: string, at: Date, by: string): ProductionOrderSnapshot {
-    const packed: ProductionOrderSnapshot = {
-      ...packing.sheetToSeal(this, reference),
-      packed: { at, by },
-    };
-    this.ordersValue = this.ordersValue.map((order) =>
-      order.reference === reference ? packed : order,
-    );
-    return packed;
-  }
-
-  /** Garde du colisage, sans muter — refus et raisons : `production-day.packing.ts`. */
-  sheetToPack(reference: string): ProductionOrderSnapshot {
-    return packing.sheetToPack(this, reference);
-  }
-
-  /** Garde du colisage, sans muter — refus et raisons : `production-day.packing.ts`. */
-  lineToPack(reference: string, sku: string): ProductionLineSnapshot {
-    return packing.lineToPack(this, reference, sku);
-  }
-
-  /** Garde du colisage, sans muter — refus et raisons : `production-day.packing.ts`. */
-  lineToFill(reference: string, sku: string): ProductionLineSnapshot {
-    return packing.lineToFill(this, reference, sku);
-  }
-
-  /** Rien de disponible pour ce SKU ? Cf. `isAwaitingProduction`, `production-day.packing.ts`. */
-  isAwaitingProduction(sku: string): boolean {
-    return packing.isAwaitingProduction(this, sku);
-  }
-
-  /** Garde du colisage, sans muter — refus et raisons : `production-day.packing.ts`. */
-  sheetToCount(reference: string): ProductionOrderSnapshot {
-    return packing.sheetToCount(this, reference);
-  }
-
-  /** Garde du colisage, sans muter — refus et raisons : `production-day.packing.ts`. */
-  containerStepOn(reference: string, step: ContainerStep): ProductionOrderSnapshot {
-    return packing.containerStepOn(this, reference, step);
-  }
-
-  /**
-   * **Annoncer combien de containers la commande occupe** — un TOTAL.
-   *
-   * @deprecated Depuis le 2026-09-14 — le poste envoie un sens
-   * ({@link containerStepOn}). Refus : `containersToDeclare`.
-   */
-  declareContainers(reference: string, containers: number): ProductionOrderSnapshot {
-    const counted = packing.containersToDeclare(this, reference, containers);
-    this.ordersValue = this.ordersValue.map((order) =>
-      order.reference === reference ? counted : order,
-    );
-    return counted;
   }
 
   /**

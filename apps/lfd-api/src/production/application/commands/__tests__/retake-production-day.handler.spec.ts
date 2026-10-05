@@ -62,22 +62,6 @@ class Days extends ProductionDayRepository {
     this.saved = day;
     return Promise.resolve();
   }
-
-  markPacked(): Promise<boolean> {
-    return Promise.reject(new Error("non utilisé"));
-  }
-
-  markPackedLine(): Promise<void> {
-    return Promise.reject(new Error("non utilisé"));
-  }
-
-  recordContainerCount(): Promise<void> {
-    return Promise.reject(new Error("non utilisé"));
-  }
-
-  stepContainerCount(): Promise<boolean> {
-    return Promise.reject(new Error("non utilisé"));
-  }
 }
 
 /** Une journée arrêtée sur la seule commande `ord_1`, coche posée ou non. */

@@ -1,4 +1,4 @@
-import { ChangeDetectionStrategy, Component, computed, input, output } from '@angular/core';
+import { ChangeDetectionStrategy, Component, computed, input } from '@angular/core';
 import { FoldCheckboxComponent } from 'fold-ng';
 
 import type { PackingLine as PackingLineView } from '@lfd/contracts';
@@ -43,9 +43,6 @@ export class PackingLine {
 
   /** La recherche désigne cet article — une SÉLECTION, pas un état. */
   readonly hit = input(false);
-
-  /** L'état demandé par la personne. Le parent écrit d'abord, envoie ensuite. */
-  readonly toggled = output<boolean>();
 
   /** Figée par la déclaration, ou par un four qui n'a pas encore sorti l'article. */
   protected readonly frozen = computed(() => this.locked() || this.line().awaitingProduction);

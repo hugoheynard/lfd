@@ -86,7 +86,6 @@ import { GetOrderSheetPdfHandler } from "./application/queries/get-order-sheet-p
 import { OrderSheetArchive } from "./application/services/order-sheet-archive.service.js";
 import { OnProductionDayClosed } from "./application/handlers/on-production-day-closed.handler.js";
 import { OnOrderHandedOver } from "./application/handlers/on-order-handed-over.handler.js";
-import { OnOrderPacked } from "./application/handlers/on-order-packed.handler.js";
 import { OnPackingOrderPacked } from "./application/handlers/on-packing-order-packed.handler.js";
 import { PrismaDayOrdersReader } from "./infrastructure/prisma-day-orders.reader.js";
 import { DueThresholds } from "./application/services/due-thresholds.service.js";
@@ -232,8 +231,7 @@ import { AdminSupervisionController } from "./http/admin-supervision.controller.
     DueThresholds,
     { provide: DeadlineOrdersReader, useClass: PrismaDeadlineOrdersReader },
     OnProductionDayClosed,
-    OnOrderPacked,
-    // Le même fait publié par le colisage (K2) : les deux types pendant un déploiement.
+    // Le bac fermé au colisage — le seul fait « bac fait » depuis K3c.
     OnPackingOrderPacked,
     OnOrderHandedOver,
     GetProductionBatchHandler,

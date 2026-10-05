@@ -1,10 +1,10 @@
-import type { BinTypePayload } from "@lfd/contracts";
+import type { BinTypePayload, OpenPackingContainer } from "@lfd/contracts";
 
 import { AddBinTypeCommand } from "../../delivery/application/commands/add-bin-type.command.js";
 import { ReactivateBinTypeCommand } from "../../delivery/application/commands/reactivate-bin-type.command.js";
 import { SetBinCapacityCommand } from "../../delivery/application/commands/set-bin-capacity.command.js";
 import { asStaff } from "./order-placing.seed.js";
-import type { RoundsContext, SeedBins } from "./delivery-rounds.seed.js";
+import { binContainers, type RoundsContext, type SeedBins } from "./delivery-rounds.seed.js";
 
 /**
  * **Le catalogue des bacs et quelques contenances** (lot 4 bis, tranche B —
@@ -134,4 +134,16 @@ export function resolveBins(
     }
     return { binTypeId, ...rest };
   });
+}
+
+/** La Folie Douce commande large : huit Bacs L, ouverts au colisage du comptoir. */
+const COUNTER_DELIVERY_BINS: readonly DayBins[] = [
+  { type: BIN_L, whole: 8, half: false, innerBags: 3 },
+];
+
+/** Les contenants de la livraison du comptoir — colisée avec la file du comptoir (K3c). */
+export function counterDeliveryContainers(
+  binTypes: ReadonlyMap<string, string>,
+): readonly OpenPackingContainer[] {
+  return binContainers(resolveBins(binTypes, COUNTER_DELIVERY_BINS), null);
 }

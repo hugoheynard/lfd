@@ -34,9 +34,8 @@ const NO_CONTENT = 204;
  * Sous `production_packing` : le droit de qui tient le poste — `write` pour
  * les gestes, `read` pour la proposition. Aucun droit neuf, aucun rôle touché.
  *
- * Le poste se RELIT par `GET admin/packing/:date/board` (K3a — le fournil
- * sert encore `GET admin/production/packing?date=` jusqu'à K3c) : ces routes
- * ne rendent rien d'autre qu'un identifiant de contenant.
+ * Le poste se RELIT par `GET admin/packing/:date/board` : ces routes ne
+ * rendent rien d'autre qu'un identifiant de contenant.
  *
  * Il n'injecte que des bus — `lint:controller-buses`.
  */

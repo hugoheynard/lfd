@@ -6,7 +6,7 @@
  * Le colisage tient le contenu, la livraison garde le bac. Ce qui ne se voit
  * qu'ici : un bac né au poste est celui que la livraison imprime et charge ;
  * ses refus (type archivé, bac chargé, tournée partie) remontent à l'écran ;
- * les anciennes routes refusent une commande `listed` ; et le bac et son
+ * la déclaration de la livraison refuse une commande `listed` ; et le bac et son
  * contenant s'écrivent ensemble, ou pas du tout.
  */
 import { randomUUID } from "node:crypto";
@@ -214,14 +214,8 @@ describe("la colonne Contenants — le colisage tient le contenu, la livraison g
     expect(await ctx.prisma.packingContainer.count()).toBe(0);
   });
 
-  it("les anciennes routes refusent une commande `listed`, en nommant la colonne", async () => {
+  it("la déclaration de la livraison refuse une commande `listed`, en nommant le colisage", async () => {
     const { delivery } = await day();
-
-    const step = await staff().post(
-      `/admin/production/packing/${SERVICE_DAY}/sheets/${delivery.reference}/containers/add`,
-    );
-    expect(step.status).toBe(409);
-    expect(codeOf(step)).toBe("packing.containers.listed");
 
     const declared = await staff()
       .post(BINS)
@@ -246,9 +240,7 @@ describe("la colonne Contenants — le colisage tient le contenu, la livraison g
       .post(`${base(delivery.orderId)}/containers/${first}/lines/${CROISSANT}`)
       .send({ quantity: 10 })
       .expect(204);
-    const early = await staff().post(
-      `/admin/production/batch/${SERVICE_DAY}/sheets/${delivery.reference}/packed`,
-    );
+    const early = await staff().post(`${base(delivery.orderId)}/close`);
     expect(codeOf(early)).toBe("packing.containers.unallocated");
     await staff()
       .post(`${base(delivery.orderId)}/containers/${second}/lines/${CROISSANT}`)
@@ -260,8 +252,8 @@ describe("la colonne Contenants — le colisage tient le contenu, la livraison g
     expect(sheet?.lines[0]).toMatchObject({ packed: true, allocated: 20, unallocated: 0 });
     expect(sheet?.canDeclareReady).toBe(true);
     await staff()
-      .post(`/admin/production/batch/${SERVICE_DAY}/sheets/${delivery.reference}/packed`)
-      .expect(201);
+      .post(`${base(delivery.orderId)}/close`)
+      .expect(204);
   });
 
   it("un retrait se colise en sacs ; un bac lui est refusé par la livraison", async () => {

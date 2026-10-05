@@ -3,10 +3,7 @@ import { Module } from "@nestjs/common";
 import { OnHandedToPacking } from "./application/handlers/on-handed-to-packing.handler.js";
 import { OnPackingListDrawn } from "./application/handlers/on-packing-list-drawn.handler.js";
 import { OnReturnRequested } from "./application/handlers/on-return-requested.handler.js";
-import { ComparePackingShadowHandler } from "./application/queries/compare-packing-shadow.handler.js";
 import { PackingShadowLedger } from "./domain/ports/packing-shadow.ledger.js";
-import { PackingShadowReader } from "./domain/ports/packing-shadow.reader.js";
-import { PackingShadowController } from "./http/packing-shadow.controller.js";
 import { ApplyPackingProposalHandler } from "./application/containers/apply-packing-proposal.handler.js";
 import { GetShareableHalvesHandler } from "./application/containers/get-shareable-halves.handler.js";
 import { AllocateToContainerHandler } from "./application/containers/allocate-to-container.handler.js";
@@ -17,9 +14,7 @@ import { WithdrawFromContainerHandler } from "./application/containers/withdraw-
 import { PackingContainersController } from "./http/packing-containers.controller.js";
 import { PrismaContainerManagedOrders } from "./infrastructure/prisma-container-managed-orders.js";
 import { PrismaPackingShadowLedger } from "./infrastructure/prisma-packing-shadow.ledger.js";
-import { PrismaPackingShadowReader } from "./infrastructure/prisma-packing-shadow.reader.js";
 import { PackingReturnDesk } from "./application/returns/packing-return-desk.service.js";
-import { PackingStationService } from "./application/station/packing-station.service.js";
 import { PackingReturnLedger, PackingReturnReader } from "./domain/ports/packing-return.ledger.js";
 import { PackingSheetRepository } from "./domain/ports/packing-sheet.repository.js";
 import { PackingStockRepository } from "./domain/ports/packing-stock.repository.js";
@@ -28,7 +23,6 @@ import {
   PrismaPackingReturnReader,
 } from "./infrastructure/prisma-packing-return.ledger.js";
 import { PrismaPackingSheetRepository } from "./infrastructure/prisma-packing-sheet.repository.js";
-import { PrismaPackingStationReader } from "./infrastructure/prisma-packing-station.reader.js";
 import { PrismaPackingStockRepository } from "./infrastructure/prisma-packing-stock.repository.js";
 import { GetPackingBoardHandler } from "./application/board/get-packing-board.handler.js";
 import { ClosePackingOrderHandler } from "./application/station/close-packing-order.handler.js";
@@ -44,13 +38,10 @@ import { PrismaPackingBoardReader } from "./infrastructure/prisma-packing-board.
  * `documentation/colisage/plan-domaine-colisage.md`, §12–§15).
  *
  * K1 : trois abonnés durables remplissent le schéma `packing` à partir des
- * faits du fournil, et une route de contrôle compare.
+ * faits du fournil (`PackingShadowLedger` garde ce nom : les noms d'abonnés
+ * sont les clés des reçus déjà posés).
  *
- * K2 : le poste d'une journée `packing` est ICI. Le fournil garde les routes —
- * l'adresse des QR imprimés — et remet le geste par deux ports qu'il déclare
- * (`PackingStation`, `PackingStationReader`) ; ce module en exporte les
- * implémentations, que `PackingFeedModule` relie. Les retours du fournil sont
- * tranchés par `PackingReturnDesk`.
+ * K2 : les retours du fournil sont tranchés par `PackingReturnDesk`.
  *
  * K2b : la colonne Contenants — ses routes, ses gestes, et le canal
  * `packing/channels/delivery/` (`BinDesk` implémenté par la livraison,
@@ -64,27 +55,18 @@ import { PrismaPackingBoardReader } from "./infrastructure/prisma-packing-board.
  * implémente `PackedOrdersReader`, que le fournil lit pour l'état du jour et
  * le contrôle qualité. Tous reliés par `PackingFeedModule`.
  *
- * `LegacyPackingReader` n'est pas déclaré ici : c'est un port que la
- * production publie et implémente, relié par `PackingFeedModule` — le
- * colisage n'importe pas le module du fournil.
+ * K3c : l'ancien chemin est retiré — le poste du fournil, ses ports
+ * (`PackingStation`, `PackingStationReader`), l'ombre et sa route de
+ * comparaison (`LegacyPackingReader`). Plan, §17.3.
  */
 @Module({
-  controllers: [
-    PackingShadowController,
-    PackingContainersController,
-    PackingBoardController,
-    PackingOrdersController,
-  ],
+  controllers: [PackingContainersController, PackingBoardController, PackingOrdersController],
   providers: [
     OnPackingListDrawn,
     OnHandedToPacking,
     OnReturnRequested,
-    ComparePackingShadowHandler,
     { provide: PackingShadowLedger, useClass: PrismaPackingShadowLedger },
-    { provide: PackingShadowReader, useClass: PrismaPackingShadowReader },
-    // Le poste réel (K2).
-    PackingStationService,
-    PrismaPackingStationReader,
+    // Les retours du fournil (K2).
     PackingReturnDesk,
     { provide: PackingSheetRepository, useClass: PrismaPackingSheetRepository },
     { provide: PackingStockRepository, useClass: PrismaPackingStockRepository },
@@ -107,11 +89,6 @@ import { PrismaPackingBoardReader } from "./infrastructure/prisma-packing-board.
     { provide: PackingBoardReader, useClass: PrismaPackingBoardReader },
     PrismaPackedOrdersReader,
   ],
-  exports: [
-    PackingStationService,
-    PrismaPackingStationReader,
-    PrismaContainerManagedOrders,
-    PrismaPackedOrdersReader,
-  ],
+  exports: [PrismaContainerManagedOrders, PrismaPackedOrdersReader],
 })
 export class PackingModule {}

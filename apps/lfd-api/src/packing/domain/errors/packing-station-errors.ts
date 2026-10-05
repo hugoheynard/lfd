@@ -1,8 +1,4 @@
-import {
-  BusinessError,
-  DomainError,
-  ResourceNotFoundError,
-} from "../../../platform/shared/errors/app-error.js";
+import { BusinessError, ResourceNotFoundError } from "../../../platform/shared/errors/app-error.js";
 
 /**
  * **Les refus du poste de colisage**, déménagés du fournil avec la bascule
@@ -11,9 +7,8 @@ import {
  * 🔴 Les CODES et les messages sont ceux du poste d'avant
  * (`production/domain/errors/production-errors.ts`) : le contrat des routes ne
  * change pas, et l'écran qui lit un code le retrouve à l'identique. Seul le
- * propriétaire de la règle a changé. Les raisons détaillées de chaque refus
- * restent écrites au-dessus des originaux, qui servent encore les journées
- * `legacy`.
+ * propriétaire de la règle a changé. Les originaux du fournil sont retirés
+ * avec l'ancien poste (K3c).
  */
 
 /** Le bac est fermé : son contenu a été annoncé au client et ne bouge plus. */
@@ -53,16 +48,6 @@ export class ContainerCeilingReachedError extends BusinessError {
     super(
       "production.packing.container_ceiling",
       `La commande ${reference} compte déjà ${String(ceiling)} containers, le maximum. Vérifiez le compte avant d'en ajouter : une commande n'en occupe jamais autant.`,
-    );
-  }
-}
-
-/** Un total de containers qui n'en est pas un. */
-export class InvalidContainerCountError extends DomainError {
-  constructor(value: number) {
-    super(
-      "production.packing.invalid_container_count",
-      `Nombre de containers invalide : ${String(value)}. Saisissez un nombre entier de bacs, de zéro à 99.`,
     );
   }
 }

@@ -115,19 +115,22 @@ describe("packingBoardOf — le poste servi par le colisage (K3a)", () => {
     });
   });
 
-  it("« Déclarer prête » : toutes les lignes au bac, une au moins, pas déjà fermée", () => {
+  it("« Déclarer prête » : toutes les lignes au bac, une au moins, pas déjà fermée, `listed`", () => {
+    const full = [line("CRO", 1, true), line("PAI", 1, true)];
     const view = packingBoardOf(
       sources({
         orders: [
-          order({ orderId: "1", lines: [line("CRO", 1, true), line("PAI", 1, true)] }),
+          order({ orderId: "1", lines: full }),
           order({ orderId: "2", lines: [line("CRO", 1, true), line("PAI", 1)] }),
           order({ orderId: "3", lines: [] }),
+          // Colisée avec l'ancien poste : lecture seule (K3c, §17.6), même pleine.
+          order({ orderId: "4", lines: full, containerMode: "counted" }),
         ],
         stocks: [],
       }),
     );
 
-    expect(view.sheets.map((sheet) => sheet.canDeclareReady)).toEqual([true, false, false]);
+    expect(view.sheets.map((sheet) => sheet.canDeclareReady)).toEqual([true, false, false, false]);
   });
 
   it("listed : répartie = la somme sur les contenants vivants ; « À répartir » le reste", () => {

@@ -1,5 +1,5 @@
 import { SealedDayReading } from "../../services/sealed-day-reading.service.js";
-import { FixedPackedOrders } from "../../__tests__/station-doubles.js";
+import { sealedAt } from "../../__tests__/station-doubles.js";
 import { DirectUnitOfWork } from "../../../../platform/database/__tests__/direct-unit-of-work.js";
 import { RecordingPublisher } from "../../../../platform/events/__tests__/recording-publisher.js";
 import { FixedIdGenerator } from "../../../../platform/id/fixed-id-generator.js";
@@ -51,12 +51,12 @@ function subject(packed: readonly string[] = ["ord_2"]) {
   const uploads = new InMemoryUploads(table);
   const store = new InMemoryProductionStore();
   const events = new RecordingPublisher();
-  const days = new FixedDays(closedDay(DAY, clock.now(), packed));
+  const days = new FixedDays(closedDay(DAY, clock.now(), []));
   const attachment = new QualityPhotoAttachment(uploads, store, clock);
   const handler = new RenderQualityCheckHandler(
     checks,
     new InMemoryCheckReader(table),
-    new SealedDayReading(days, new FixedPackedOrders()),
+    new SealedDayReading(days, sealedAt(clock.now(), packed)),
     attachment,
     new FixedOrderCustody(),
     events,

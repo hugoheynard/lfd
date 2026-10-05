@@ -11,7 +11,12 @@ import { randomUUID } from "node:crypto";
  * carnet, et personne ne l'aurait vu avant qu'un client change son contact
  * entre la commande et la livraison.
  */
-import type { HandoverQueueView, OrderHandoverView, ProductionBatchView } from "@lfd/contracts";
+import type {
+  HandoverQueueView,
+  OrderHandoverView,
+  ProductionBatchView,
+  ProductionPackingView,
+} from "@lfd/contracts";
 
 import { CustomerRole } from "../src/platform/database/client/client.js";
 import { AdminTokenVerifier } from "../src/platform/auth/admin-token.verifier.js";
@@ -23,7 +28,8 @@ import {
   serviceDay,
   type E2eContext,
 } from "./e2e-harness.js";
-import { asLegacyPacking } from "./production-day-fixture.js";
+import { binTypeId } from "./delivery-loading-scene.js";
+import { fillOrder, packingOrderPath } from "./production-day-fixture.js";
 import { attachTo, createCompany, createUser } from "./factories.js";
 import { settleCardPayments } from "./card-payments.js";
 
@@ -280,35 +286,70 @@ describe("la fiche de production lit ce qui a été convenu", () => {
 });
 
 /**
- * Le **colisage** : le scan qui déclare une commande prête.
+ * Le **colisage** : « Déclarer prête », AU COLISAGE depuis K3c
+ * (`colisage/plan-domaine-colisage.md` §17.3 — la route du fournil
+ * `batch/:date/sheets/:reference/packed` est retirée).
  *
- * Deux choses ne se prouvent qu'ici. La **course** — deux postes qui scannent la
- * même feuille au même moment ne doivent produire qu'un seul fait, et c'est la
- * base qui arbitre. Et le fait que la lecture se fasse par le **numéro**, qui
- * est imprimé en clair : rien à protéger, mais rien à deviner non plus.
+ * Deux choses ne se prouvent qu'ici. La **course** — deux postes qui ferment la
+ * même commande au même moment ne doivent produire qu'un seul fait. Et la
+ * lecture par le **numéro** imprimé en clair, servie par le commerce.
  */
+
+/** La boîte d'envoi vidée : liste à coliser, remises, faits du colisage. */
+async function settle(context: E2eContext): Promise<void> {
+  for (let round = 0; round < 4; round += 1) {
+    await context.drain();
+  }
+}
+
 /**
- * Arrête la journée d'une commande, puis déclare son bac fait.
- *
- * 🔴 Le colisage est un fait de la PRODUCTION depuis le 2026-09-07 : il passe
- * par sa route, dans sa journée, et une commande qu'aucune clôture n'a inscrite
- * n'est pas colisable. Les blocs qui l'utilisaient comme un simple `POST` sur le
- * commerce doivent donc clôturer d'abord — ce que l'ancienne route, hébergée
- * chez le commerce, n'exigeait pas.
+ * Arrête la journée d'une commande, sort ses articles du four, et la remplit au
+ * colisage — un sac pour un retrait, un bac pour une livraison — sans la
+ * fermer. Rend sa cible au colisage, que {@link closeAtPacking} ferme.
  */
-async function closeAndPack(
+async function readyToClose(
   context: E2eContext,
   day: string,
   reference: string,
-  expected = 201,
-): Promise<void> {
-  await context.asSub("staff-e2e").post(`/admin/production/batch/${day}/close`);
-  // L'ancien poste : cette suite l'éprouve (K2 — cf. `asLegacyPacking`).
-  await asLegacyPacking(context, day);
-  await context
-    .asSub("staff-e2e")
-    .post(`/admin/production/batch/${day}/sheets/${reference}/packed`)
-    .expect(expected);
+): Promise<{ readonly staff: string; readonly day: string; readonly orderId: string }> {
+  const staff = context.asSub("staff-e2e");
+  await staff.post(`/admin/production/batch/${day}/close`);
+  await settle(context);
+  const order = await context.prisma.productionOrder.findFirstOrThrow({
+    where: { serviceDay: day, reference },
+    select: { orderId: true, fulfillmentMethod: true, lines: { select: { sku: true } } },
+  });
+  for (const { sku } of order.lines) {
+    await context
+      .asSub("staff-e2e")
+      .put(`/admin/production/worksheet/${day}/lines/${sku}/done`)
+      .send({ initials: "KA" })
+      .expect(204);
+  }
+  await settle(context);
+  const target = { staff: "staff-e2e", day, orderId: order.orderId };
+  await fillOrder(context, {
+    ...target,
+    container:
+      order.fulfillmentMethod === "delivery"
+        ? { nature: "bin", binTypeId: await binTypeId(context), half: false, innerBags: 0 }
+        : { nature: "bag" },
+  });
+  return target;
+}
+
+/** Fermer au colisage — « Déclarer prête ». */
+function closeAtPacking(
+  context: E2eContext,
+  target: { readonly day: string; readonly orderId: string },
+) {
+  return context.asSub("staff-e2e").post(`${packingOrderPath(target.orderId, target.day)}/close`);
+}
+
+/** Arrête la journée d'une commande, la colise et la déclare prête, au colisage. */
+async function closeAndPack(context: E2eContext, day: string, reference: string): Promise<void> {
+  const target = await readyToClose(context, day, reference);
+  await closeAtPacking(context, target).expect(204);
 }
 
 describe("le colisage", () => {
@@ -336,26 +377,18 @@ describe("le colisage", () => {
     return jsonBody<{ orderNumber: string }>(response).orderNumber;
   }
 
-  /**
-   * Passe une commande ET arrête la journée.
-   *
-   * 🔴 Le colisage est désormais un fait de la PRODUCTION, et une commande
-   * qu'aucune clôture n'a inscrite n'est pas à fabriquer aujourd'hui. Le
-   * scénario du fournil commence donc à la clôture, ce que l'ancienne route —
-   * hébergée par le commerce — n'exigeait pas.
-   */
-  async function placeAndClose(): Promise<string> {
+  /** Passe une commande, arrête sa journée et la remplit au colisage — prête à fermer. */
+  async function placeAndFill() {
     const reference = await placeOne();
-    await ctx.asSub("staff-e2e").post(`/admin/production/batch/${SERVICE_DAY}/close`).expect(201);
-    await asLegacyPacking(ctx, SERVICE_DAY);
-    return reference;
+    return { reference, ...(await readyToClose(ctx, SERVICE_DAY, reference)) };
   }
 
-  /** Déclare le bac fait, par la route du fournil. */
-  function packing(reference: string) {
-    return ctx
-      .asSub("staff-e2e")
-      .post(`/admin/production/batch/${SERVICE_DAY}/sheets/${reference}/packed`);
+  /** Le bac de la commande, tel que le poste le lit. */
+  async function sheetOf(reference: string) {
+    const view = jsonBody<ProductionPackingView>(
+      await ctx.asSub("staff-e2e").get(`/admin/packing/${SERVICE_DAY}/board`).expect(200),
+    );
+    return view.sheets.find((sheet) => sheet.reference === reference);
   }
 
   /** Attend que le COMMERCE ait appris — il l'apprend par un abonné. */
@@ -377,40 +410,34 @@ describe("le colisage", () => {
     return last.status;
   }
 
-  it("grave le colisage CHEZ LA PRODUCTION, et le commerce l'apprend", async () => {
-    // Les deux moitiés du couplage : le fournil ferme le bac et publie ; le
+  it("ferme le bac AU COLISAGE, et le commerce l'apprend", async () => {
+    // Les deux moitiés du couplage : le colisage ferme le bac et publie ; le
     // commerce s'abonne et fait avancer SON statut. Deux faits, deux tables.
-    const reference = await placeAndClose();
+    const target = await placeAndFill();
 
-    await packing(reference).expect(201);
+    await closeAtPacking(ctx, target).expect(204);
 
-    const packed = await ctx.prisma.productionOrder.findFirstOrThrow({
-      where: { reference },
-      select: { packedAt: true, packedBy: true },
-    });
-    expect(packed.packedAt).not.toBeNull();
-    expect(packed.packedBy).toBe(E2E_STAFF_ID);
-    expect(await eventuallyReady(reference)).toBe("ready");
+    const sheet = await sheetOf(target.reference);
+    expect(sheet?.packedAt).not.toBeNull();
+    expect(sheet?.packedBy).toBe(E2E_STAFF_ID);
+    expect(await eventuallyReady(target.reference)).toBe("ready");
   });
 
-  it("date la transition du COLISAGE, pas de sa réception", async () => {
+  it("date la transition de la FERMETURE, pas de sa réception", async () => {
     // L'abonné tourne un instant plus tard. Prendre l'heure à la réception
     // daterait la transition du moment où on l'a apprise, pas de celui où elle a
     // eu lieu — et c'est cette heure-là qu'on cherche quand une commande arrive
     // en retard.
-    const reference = await placeAndClose();
-    await packing(reference).expect(201);
-    await eventuallyReady(reference);
+    const target = await placeAndFill();
+    await closeAtPacking(ctx, target).expect(204);
+    await eventuallyReady(target.reference);
 
-    const packed = await ctx.prisma.productionOrder.findFirstOrThrow({
-      where: { reference },
-      select: { packedAt: true },
-    });
+    const sheet = await sheetOf(target.reference);
     const order = await ctx.prisma.order.findUniqueOrThrow({
-      where: { orderNumber: reference },
+      where: { orderNumber: target.reference },
       select: { readyAt: true, readyBy: true },
     });
-    expect(order.readyAt?.toISOString()).toBe(packed.packedAt?.toISOString());
+    expect(order.readyAt?.toISOString()).toBe(sheet?.packedAt);
     expect(order.readyBy).toBe(E2E_STAFF_ID);
   });
 
@@ -419,9 +446,9 @@ describe("le colisage", () => {
    * la commande, puis à la charge utile du journal (plan de l'auteur, D2).
    */
   it("écrit l'id de fiche dans la charge utile de `order.ready`", async () => {
-    const reference = await placeAndClose();
-    await packing(reference).expect(201);
-    await eventuallyReady(reference);
+    const target = await placeAndFill();
+    await closeAtPacking(ctx, target).expect(204);
+    await eventuallyReady(target.reference);
     await ctx.drain();
 
     // La fiche est renommée APRÈS le colisage : la ligne garde le nom du moment (D5).
@@ -441,96 +468,74 @@ describe("le colisage", () => {
     });
   });
 
-  it("RÉANNONCE au second scan, sans toucher à l'attestation", async () => {
-    // 🔴 Ce cas attendait un 409 jusqu'au 2026-09-08, et c'était le piège : le
-    // bus vit en processus et n'est pas rejoué, donc un abonné qui échoue
+  it("RÉANNONCE à la seconde fermeture, sans toucher à l'attestation", async () => {
+    // 🔴 Ce cas attendait un 409 jusqu'au 2026-09-08 : un abonné qui échouait
     // laissait la commande en arrière POUR TOUJOURS — le refus fermait le seul
-    // geste qui répare. Deux mains sur la même feuille est d'ailleurs le cas
-    // normal au fournil.
-    const reference = await placeAndClose();
-    const first = jsonBody<{ packedAt: string; packedBy: string; alreadyPacked: boolean }>(
-      await packing(reference).expect(201),
-    );
-    expect(first.alreadyPacked).toBe(false);
+    // geste qui répare. Deux mains sur la même commande est le cas normal.
+    const target = await placeAndFill();
+    await closeAtPacking(ctx, target).expect(204);
+    const first = await sheetOf(target.reference);
 
-    const again = jsonBody<{ packedAt: string; packedBy: string; alreadyPacked: boolean }>(
-      await packing(reference).expect(201),
-    );
+    await closeAtPacking(ctx, target).expect(204);
 
-    expect(again.alreadyPacked).toBe(true);
-    // L'heure et l'auteur restent ceux du PREMIER scan : c'est à ce moment-là
-    // que le bac a été fermé, et une réannonce n'est pas un second colisage.
-    expect(again.packedAt).toBe(first.packedAt);
-    expect(again.packedBy).toBe(first.packedBy);
+    // L'heure et l'auteur restent ceux de la PREMIÈRE fermeture.
+    const again = await sheetOf(target.reference);
+    expect(again?.packedAt).toBe(first?.packedAt);
+    expect(again?.packedBy).toBe(first?.packedBy);
   });
 
-  it("RATTRAPE un commerce resté en arrière, en rescannant la feuille", async () => {
-    // Le scénario entier, joué : on colise, on remet la commande en arrière à la
-    // main — ce que ferait un abonné mort en vol —, et on rescanne. Sans la
+  it("RATTRAPE un commerce resté en arrière, en refermant la commande", async () => {
+    // Le scénario entier, joué : on ferme, on remet la commande en arrière à la
+    // main — ce que ferait un abonné mort en vol —, et on referme. Sans la
     // réannonce, il n'existait aucun moyen de la faire avancer.
-    const reference = await placeAndClose();
-    await packing(reference).expect(201);
-    await eventuallyReady(reference);
+    const target = await placeAndFill();
+    await closeAtPacking(ctx, target).expect(204);
+    await eventuallyReady(target.reference);
 
     await ctx.prisma.order.update({
-      where: { orderNumber: reference },
+      where: { orderNumber: target.reference },
       data: { status: "confirmed", readyAt: null, readyBy: null },
     });
 
-    await packing(reference).expect(201);
+    await closeAtPacking(ctx, target).expect(204);
+    await settle(ctx);
 
-    expect(await eventuallyReady(reference)).toBe("ready");
+    expect(await eventuallyReady(target.reference)).toBe("ready");
   });
 
-  it("REFUSE de coliser sur une journée qui n'est pas arrêtée", async () => {
-    // Une commande qu'aucune clôture n'a inscrite n'est pas à fabriquer
-    // aujourd'hui. Le refus dit le geste de sortie : clôturer d'abord.
+  it("REFUSE de fermer une commande que le colisage n'a pas reçue — journée pas arrêtée", async () => {
+    // Une commande qu'aucune clôture n'a inscrite n'est pas au colisage : le
+    // refus dit d'attendre, et nomme la carte de santé si elle n'arrive pas.
     const reference = await placeOne();
-
-    const refused = await packing(reference).expect(409);
-
-    expect(jsonBody<{ message: string }>(refused).message).toContain("Clôturez le plan du soir");
-  });
-
-  it("REFUSE une référence qui n'est pas dans cette journée", async () => {
-    await placeAndClose();
-
-    const refused = await ctx
-      .asSub("staff-e2e")
-      .post(`/admin/production/batch/${SERVICE_DAY}/sheets/ORD-INEXISTANTE/packed`)
-      .expect(404);
-
-    expect(jsonBody<{ message: string }>(refused).message).toContain("Aucune feuille d'atelier");
-  });
-
-  it("ne produit QU'UN colisage quand deux postes scannent en même temps", async () => {
-    // La course, la seule chose que le vrai SQL prouve : le `where packed_at IS
-    // NULL` fait arbitrer la BASE, pas l'ordre d'arrivée des requêtes. Une
-    // `load` → `save` de l'agrégat ne le pourrait pas — elle réécrit la journée
-    // entière, et le second écrasement effacerait le premier.
-    const reference = await placeAndClose();
-
-    const results = await Promise.all([packing(reference), packing(reference)]);
-
-    // Les deux répondent `201` depuis que le second scan réannonce ; ce qui les
-    // distingue est `alreadyPacked`, et un seul peut le porter à `false`.
-    const acks = results.map((response) =>
-      jsonBody<{ packedAt: string; packedBy: string; alreadyPacked: boolean }>(response),
-    );
-    expect(acks.filter((ack) => !ack.alreadyPacked)).toHaveLength(1);
-
-    // 🔴 Et surtout : les DEUX annoncent le même instant. Le perdant relit
-    // l'attestation du gagnant plutôt que de publier la sienne — publier son
-    // propre `now` daterait le bac d'un moment qui n'a rien fermé, et le
-    // commerce recopierait cette heure-là.
-    expect(acks[0]?.packedAt).toBe(acks[1]?.packedAt);
-    expect(acks[0]?.packedBy).toBe(acks[1]?.packedBy);
-
-    const row = await ctx.prisma.productionOrder.findFirstOrThrow({
-      where: { reference },
-      select: { packedAt: true },
+    const { id } = await ctx.prisma.order.findUniqueOrThrow({
+      where: { orderNumber: reference },
+      select: { id: true },
     });
-    expect(row.packedAt?.toISOString()).toBe(acks[0]?.packedAt);
+
+    const refused = await closeAtPacking(ctx, { day: SERVICE_DAY, orderId: id }).expect(409);
+
+    expect(jsonBody<{ message: string }>(refused).message).toContain(
+      "pas encore arrivé au poste de colisage",
+    );
+  });
+
+  it("ne produit QU'UNE fermeture quand deux postes ferment en même temps", async () => {
+    // La course, que seul le vrai SQL prouve : le verrou du bac sérialise les
+    // deux gestes. Le second est une réannonce — même instant, même auteur.
+    const target = await placeAndFill();
+
+    const results = await Promise.all([closeAtPacking(ctx, target), closeAtPacking(ctx, target)]);
+
+    expect(results.map((response) => response.status)).toEqual([204, 204]);
+    const facts = await ctx.prisma.outboxMessage.findMany({
+      where: { type: "packing.order_packed" },
+      select: { key: true, payload: true },
+    });
+    const fresh = facts.filter((fact) => !fact.key.includes(":reannounced:"));
+    expect(fresh).toHaveLength(1);
+    // 🔴 Les DEUX annoncent le même instant : le perdant relit la fermeture du
+    // gagnant plutôt que de publier son propre `now`.
+    expect(new Set(facts.map((fact) => JSON.stringify(fact.payload))).size).toBe(1);
   });
 
   it("lit la commande derrière le code AVANT de déclarer quoi que ce soit", async () => {
@@ -626,22 +631,14 @@ describe("les courriels d'une commande", () => {
     expect(await templatesSent()).toEqual(["customer.order-placed", "customer.order-ready"]);
   });
 
-  it("n'écrit qu'UNE fois quand deux postes scannent en même temps", async () => {
-    // La garantie ne vient pas de la clé d'idempotence — elle vient de
-    // l'écriture conditionnée en base : un seul poste gagne, un seul publie.
+  it("n'écrit qu'UNE fois quand deux postes ferment en même temps", async () => {
+    // La garantie vient du verrou du bac et de la clé du fait : une seule
+    // fermeture fraîche ; l'autre réannonce, et le commerce n'en fait rien.
     const reference = await placeOne();
+    const target = await readyToClose(ctx, SERVICE_DAY, reference);
 
-    await ctx.asSub("staff-e2e").post(`/admin/production/batch/${SERVICE_DAY}/close`);
-    await asLegacyPacking(ctx, SERVICE_DAY);
-    await Promise.all([
-      ctx
-        .asSub("staff-e2e")
-        .post(`/admin/production/batch/${SERVICE_DAY}/sheets/${reference}/packed`),
-      ctx
-        .asSub("staff-e2e")
-        .post(`/admin/production/batch/${SERVICE_DAY}/sheets/${reference}/packed`),
-    ]);
-    await ctx.drain();
+    await Promise.all([closeAtPacking(ctx, target), closeAtPacking(ctx, target)]);
+    await settle(ctx);
 
     const ready = (await templatesSent()).filter((name) => name === "customer.order-ready");
     expect(ready).toHaveLength(1);
@@ -744,19 +741,12 @@ describe("le journal d'une commande", () => {
     expect(JSON.stringify(fact?.payload)).toContain(reference);
   });
 
-  it("n'écrit QU'UN témoin quand deux postes scannent le même colisage", async () => {
+  it("n'écrit QU'UN témoin quand deux postes ferment la même commande", async () => {
     const reference = await placeAndReady();
-    await ctx.asSub("staff-e2e").post(`/admin/production/batch/${SERVICE_DAY}/close`).expect(201);
-    await asLegacyPacking(ctx, SERVICE_DAY);
+    const target = await readyToClose(ctx, SERVICE_DAY, reference);
 
-    await Promise.all([
-      ctx
-        .asSub("staff-e2e")
-        .post(`/admin/production/batch/${SERVICE_DAY}/sheets/${reference}/packed`),
-      ctx
-        .asSub("staff-e2e")
-        .post(`/admin/production/batch/${SERVICE_DAY}/sheets/${reference}/packed`),
-    ]);
+    await Promise.all([closeAtPacking(ctx, target), closeAtPacking(ctx, target)]);
+    await settle(ctx);
 
     const ready = (await journalTypes()).filter((type) => type === "order.ready");
     expect(ready).toHaveLength(1);
@@ -804,7 +794,6 @@ describe("le plan du soir", () => {
       .asSub("staff-e2e")
       .post(`/admin/production/batch/${day}/close`)
       .expect(201);
-    await asLegacyPacking(ctx, day);
     return jsonBody<Closure>(response);
   }
 
@@ -904,17 +893,16 @@ describe("le plan du soir", () => {
     expect((await dayStatus(SERVICE_DAY)).pendingInCommerce).toBe(0);
   });
 
-  it("MONTRE un colisage que le commerce n'a pas appris, et le rescan le répare", async () => {
+  it("MONTRE un colisage que le commerce n'a pas appris, et la refermeture le répare", async () => {
     // 🔴 Cette divergence-là ne se voyait NULLE PART avant le 2026-09-08 :
     // `pendingInCommerce` ne détecte qu'une clôture perdue. Le client restait
-    // bloqué à « au fournil » et personne ne pouvait l'apprendre.
+    // bloqué à « au fournil » et personne ne pouvait l'apprendre. Depuis K3a,
+    // l'état du jour lit « colisée ? » au colisage.
     const reference = await place(SERVICE_DAY);
-    await closePlan(SERVICE_DAY);
+    const target = await readyToClose(ctx, SERVICE_DAY, reference);
     await eventuallyStatus(reference, "confirmed");
-    await ctx
-      .asSub("staff-e2e")
-      .post(`/admin/production/batch/${SERVICE_DAY}/sheets/${reference}/packed`)
-      .expect(201);
+    await closeAtPacking(ctx, target).expect(204);
+    await settle(ctx);
     await eventuallyStatus(reference, "ready");
     expect((await dayStatus(SERVICE_DAY)).packedBehind).toBe(0);
 
@@ -925,10 +913,8 @@ describe("le plan du soir", () => {
     });
     expect((await dayStatus(SERVICE_DAY)).packedBehind).toBe(1);
 
-    await ctx
-      .asSub("staff-e2e")
-      .post(`/admin/production/batch/${SERVICE_DAY}/sheets/${reference}/packed`)
-      .expect(201);
+    await closeAtPacking(ctx, target).expect(204);
+    await settle(ctx);
 
     expect(await eventuallyStatus(reference, "ready")).toBe("ready");
     expect((await dayStatus(SERVICE_DAY)).packedBehind).toBe(0);

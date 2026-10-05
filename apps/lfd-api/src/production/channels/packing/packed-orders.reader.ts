@@ -9,8 +9,7 @@ export interface PackedOrderSeal {
  * DÉCLARE et que le colisage IMPLÉMENTE (plan `colisage/plan-domaine-colisage.md`,
  * §17.2, K3a).
  *
- * La forme de `PackingStationReader` réduite au seul besoin des lecteurs qui
- * restent chez le fournil — l'état de la journée et le contrôle qualité : ils
+ * Un port étroit, au seul besoin des lecteurs qui restent chez le fournil — l'état de la journée et le contrôle qualité : ils
  * ne lisent ni les lignes, ni les contenants, ni la réserve, seulement les bacs
  * fermés (ISP).
  *

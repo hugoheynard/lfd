@@ -1,11 +1,9 @@
 import type { PackingContainerState } from "./order-contents.js";
 
 /**
- * Le plafond d'une commande : **99 containers** — le même nombre que l'ancien
- * poste (`production/domain/value-objects/container-step.ts`) et que
- * `setPackingContainersSchema` côté contrat. Recopié et non importé : le
- * colisage n'atteint le fournil que par son canal, et ce nombre est désormais
- * une règle du colisage (§11 MINEURS). Les trois bougent ensemble.
+ * Le plafond d'une commande : **99 contenants** — une règle du colisage
+ * (§11 MINEURS), seule depuis que l'ancien poste et son compte « + / − » sont
+ * retirés (K3c).
  */
 export const MAX_CONTAINERS_PER_ORDER = 99;
 
@@ -29,8 +27,9 @@ export interface SheetLine {
 }
 
 /**
- * `counted` : l'ancien écran, un compte de contenants. `listed` : la colonne
- * Contenants (K2b), posé à l'inscription de la liste à coliser.
+ * `counted` : colisée avec l'ancien poste — en lecture seule depuis K3c
+ * (§17.6). `listed` : la colonne Contenants (K2b), posé à l'inscription de la
+ * liste à coliser.
  */
 export type ContainerMode = "counted" | "listed";
 
@@ -49,6 +48,3 @@ export interface PackingSheetSnapshot {
   /** Vide sur `counted`. */
   readonly containerList: readonly PackingContainerState[];
 }
-
-/** Un pas de container — le type du canal, structurellement. */
-export type ContainerStep = "add" | "remove";

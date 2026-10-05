@@ -729,3 +729,81 @@ le code.
 - **Une commande encore `counted`** s'affiche en lecture seule avec un court
   message : « Commande colisée avec l'ancien poste : elle ne se modifie plus
   ici. »
+
+### 17.7 K3c bâti (2026-10-05) — l'ancien chemin retiré
+
+**Retiré du code** (rien en base) :
+
+- **Le poste du fournil** : `ProductionPackingController` entier
+  (`GET admin/production/packing`, coche, décoche, total et « + / − » des
+  containers), la route `POST admin/production/batch/:date/sheets/:reference/packed`,
+  leurs commandes et handlers (`mark`/`unmark`-packing-line, `pack-order`,
+  `declare`/`step`-packing-containers), `GetProductionPacking*`, le calcul du
+  poste côté fournil (`production-packing.ts`, `packing-container-list.ts`),
+  `PackedDayReading`, `overlayStation`, les gardes de colisage de la journée
+  (`production-day.packing.ts`, `pack()`, `lineToPack`, `availableOf`…) et
+  leurs erreurs mortes.
+- **`PackingStation` / `PackingStationReader`** (canal), `PackingStationService`,
+  `PrismaPackingStationReader`.
+- **`production.order_packed`** (`OrderPackedEvent`) et son abonné
+  `OnOrderPacked`. Le parseur de charge a suivi le fait restant :
+  `PackingOrderPackedEvent.fromPayload`, lu par `OnPackingOrderPacked`.
+- **L'ombre de K1** : la route `GET admin/packing/shadow`, sa requête, son
+  lecteur, `shadow-comparison`, `packable`, et `LegacyPackingReader`.
+  `PackingShadowLedger` reste : c'est l'écriture des trois abonnés, et le nom
+  des reçus déjà posés.
+- **La Supervision** lit `GET admin/packing/:date/board` (ouvert à
+  `production_packing:read` **ou** `b2b_supervision:read`) ;
+  `GET admin/supervision/packing` est retirée.
+- **Contrats** : `PackingContainerStep`, `markPackingLineSchema`,
+  `setPackingContainersSchema`, `ProductionPackingAck`.
+- **Écran** : la coche (`toggled`), le « + / − » (`step`), `packingMarkKey`, la
+  rangée « + format » et le panneau des bacs après « prête »
+  (`PackingBinRow`, `PackingBins`), leurs fonctions pures et les appels du
+  service de livraison qu'eux seuls faisaient (`declareBins`, `shareBin`,
+  `freeHalves`, `packingProposal`).
+- **Le compte de containers du fournil** : le port d'écriture perd
+  `markPacked`, `markPackedLine`, `recordContainerCount`, `stepContainerCount`.
+
+**Tranché en bâtissant** :
+
+- **Une commande `counted` est en lecture seule jusque dans l'agrégat** :
+  `PackingSheet.seal()` et `reopen()` la refusent (`packing.containers.counted`,
+  message réécrit : « colisée avec l'ancien poste : elle ne se modifie plus
+  ici »), et `canDeclareReady` y vaut `false`. L'écran l'affiche avec ce
+  message, sans « Prête » ni « Rouvrir ».
+- **Les colonnes `packed_*` / `container_count` du fournil** ne sont plus lues
+  par le domaine ni écrites par un geste. **Mais `save` les recopie** : le
+  retirage efface puis recrée les commandes de la journée, et les journées
+  colisées avec l'ancien poste les portent — sans recopie, un retirage aurait
+  effacé un historique réel (CLAUDE.md §0). Recopie aveugle, dans
+  l'adaptateur seul (`carriedPacking`) ; l'e2e
+  `production-batches-transition` la tient.
+- **`SealedDayReading` demande au colisage pour TOUTE journée** : une journée
+  `legacy` n'a plus de bac fermé aux yeux du fournil (état du jour, contrôle
+  qualité). C'est le « une journée `legacy` restante n'est plus colisable »
+  du §16.
+- **La garde « déjà au bac » des fournées** (`BatchStillPackedError`) est
+  retirée : elle lisait les lignes au bac du fournil. Sur une journée
+  `packing`, annuler ou décocher une fournée remise demande un retour, et le
+  colisage ne rend que ce qui n'est pas au bac. Sur une journée `legacy`,
+  l'annulation reste immédiate et n'a plus de garde.
+- **Le semis de dev** colise au colisage : un sac au comptoir, des bacs ouverts
+  par la colonne Contenants pour les livraisons (la tournée est composée
+  AVANT, pour que le partage d'une moitié trouve son voisin), puis la
+  tournée chargée. Plus aucune commande `counted` n'en sort.
+
+**Reste, volontairement** :
+
+- **En base** : `production_order.packed_at` / `packed_by` /
+  `container_count`, `production_order_line.packed_*`,
+  `packing_order.container_mode` (valeur `counted` comprise), et
+  `production_day.packing_owner`. Aucune colonne supprimée, aucun `DROP` ; leur
+  suppression est un geste à part, sur ordre de Hugo.
+- **La déclaration des bacs par la livraison** (`POST/partage/partenaires`
+  sous `admin/livraison/colisage/bacs`) : l'écran du colisage ne l'appelle
+  plus, mais la livraison s'en sert encore — ses e2e de chargement et de
+  départ bâtissent leurs bacs par elle, sur des commandes que le colisage ne
+  tient pas. La retirer est un lot de la livraison.
+- **`packing_owner` et la branche `legacy` des fournées** (annulation
+  immédiate, `return_requested` `legacy: true`) : hors de la liste du §17.3.

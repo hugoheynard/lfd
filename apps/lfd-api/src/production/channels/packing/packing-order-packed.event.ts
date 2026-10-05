@@ -1,4 +1,5 @@
 import type { DurableEvent, DurableFact } from "../../../platform/outbox/durable-event.js";
+import { TechnicalError } from "../../../platform/shared/errors/app-error.js";
 
 /** Nom stable du fait, clé de routage vers `@DurableHandler`. */
 export const PACKING_ORDER_PACKED = "packing.order_packed";
@@ -7,13 +8,18 @@ export const PACKING_ORDER_PACKED = "packing.order_packed";
  * **Le bac d'une commande est fait — au colisage** (plan
  * `documentation/colisage/plan-domaine-colisage.md`, §12.1, K2).
  *
- * Remplace `production.order_packed` pour une journée `packing` : l'émetteur
- * change, la charge reste la même (`{ orderId, reference, packedAt, packedBy }`),
- * si bien que le commerce la relit par `OrderPackedEvent.fromPayload`. Il
- * écoute les DEUX types pendant un déploiement (§11) ; l'ancien se retire en K3.
+ * Le SEUL fait « bac fait » depuis K3c : `production.order_packed`, que
+ * publiait l'ancien poste du fournil, est retiré avec lui (§17.3). Le commerce
+ * en tire le sien — `ready` — et publie `OrderReadyEvent`. Les nommer pareil
+ * serait une erreur : « colisé » dit ce qu'on a fait, « prête » ce que le
+ * client peut attendre.
  *
- * La clé suit la règle de l'ancien fait : `packing.order_packed:<orderId>`, et
- * un rescan d'un bac déjà fait publie un fait NEUF (`…:reannounced:<instant>`).
+ * La charge : `{ orderId, reference, packedAt, packedBy }` — ni forme Prisma,
+ * ni montant, ni ligne. La **référence** est ce que le commerce résout.
+ *
+ * La clé : `packing.order_packed:<orderId>` ; refermer après « Rouvrir » publie
+ * la même clé, absorbée. Fermer un bac déjà fermé publie un fait NEUF
+ * (`…:reannounced:<instant>`) : la réannonce, filet humain d'un abonné perdu.
  *
  * Déclaré par le fournil dans son canal (§12.1) — le colisage le publie, le
  * commerce le lit par `production/channels/commerce/`.
@@ -45,5 +51,38 @@ export class PackingOrderPackedEvent implements DurableEvent {
         packedBy: this.packedBy,
       },
     };
+  }
+
+  /**
+   * Relit le contrat côté abonné. Un payload hors forme est une faute
+   * d'émetteur : la livraison échoue, est reprise, puis reste en message mort.
+   *
+   * @throws {PackingOrderPackedPayloadError}
+   */
+  static fromPayload(payload: Readonly<Record<string, unknown>>): PackingOrderPackedEvent {
+    const { orderId, reference, packedAt, packedBy } = payload;
+    const at = typeof packedAt === "string" ? new Date(packedAt) : null;
+    if (
+      typeof orderId !== "string" ||
+      typeof reference !== "string" ||
+      typeof packedBy !== "string" ||
+      at === null ||
+      Number.isNaN(at.getTime())
+    ) {
+      throw new PackingOrderPackedPayloadError();
+    }
+    return new PackingOrderPackedEvent(orderId, reference, at, packedBy);
+  }
+}
+
+/** Le fait `packing.order_packed` reçu ne respecte pas son contrat. */
+export class PackingOrderPackedPayloadError extends TechnicalError {
+  constructor() {
+    super(
+      "order_packed.payload_invalid",
+      "Le fait « bac fait » reçu est illisible (commande, référence, instant ou auteur manquant) : " +
+        "le commerce n'a pas déclaré la commande prête. Le message reste dans la boîte d'envoi ; " +
+        "corriger l'émetteur puis le rejouer depuis la carte de santé.",
+    );
   }
 }

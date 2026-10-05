@@ -5,6 +5,7 @@ import { CLIENT_ENSEIGNE } from "./client.seed.js";
 import { DELIVERY_CLIENTS, seedDeliveryClients } from "./delivery-clients.seed.js";
 import { resetDeliveryRounds, type DeliveryRoundsResetReport } from "./delivery-rounds.seed.js";
 import { NEIGHBOURS, seedNeighbourClients } from "./neighbour-clients.seed.js";
+import { counterDeliveryContainers, seedBinTypes } from "./delivery-bins.seed.js";
 import {
   advanceDeliveryDay,
   placeDeliveryDay,
@@ -14,6 +15,7 @@ import {
   asStaff,
   atHour,
   isoDay,
+  ONE_BAG,
   packFully,
   place,
   type PlacedOrder,
@@ -511,7 +513,10 @@ async function seedToday(
   // Les produits déjà cochés en fournée ce jour, comptoir et livraison
   // confondus : une ligne de fournée ne se coche qu'une fois.
   const baked = new Set<string>();
-  await advanceCounter(context, counter, today, baked);
+  // Les types de bacs AVANT le colisage : une livraison ouvre ses bacs au
+  // colisage depuis K3c, celle du comptoir comprise.
+  const binTypes = await seedBinTypes(context);
+  await advanceCounter(context, counter, { today, baked, binTypes });
   // Une fournée de trop, reprise : l'annulation que le colisage tranche (K2).
   await asStaff(atHour(today, PACKED_HOUR), () => seedReturnedBatch(context, forDay));
   const counterDelivery = counter.find((placed) => placed.entry.point === null);
@@ -522,6 +527,7 @@ async function seedToday(
     // rejoint la tournée de Val d'Isère sans repasser au colisage.
     alreadyPacked: counterDelivery === undefined ? [] : [counterDelivery.order],
     baked,
+    binTypes,
   });
 }
 
@@ -556,9 +562,13 @@ async function placeCounter(
 async function advanceCounter(
   context: SeedContext,
   counter: readonly { readonly order: PlacedOrder; readonly entry: CounterOrder }[],
-  today: Date,
-  baked: Set<string>,
+  day: {
+    readonly today: Date;
+    readonly baked: Set<string>;
+    readonly binTypes: ReadonlyMap<string, string>;
+  },
 ): Promise<void> {
+  const { today, baked } = day;
   const forDay = isoDay(today);
   const packedAt = atHour(today, PACKED_HOUR);
   for (const { order, entry } of counter) {
@@ -571,7 +581,9 @@ async function advanceCounter(
     // 🔴 **Par les gestes du fournil, pas par le statut** (2026-09-28). Cocher
     // en fournée, poser dans le bac et fermer le sac rend la commande prête par
     // l'événement du colisage — le chemin réel, donc un seul état partout.
-    await asStaff(packedAt, () => packFully(context, forDay, order.reference, baked));
+    // Un sac au comptoir ; la livraison du comptoir, ses bacs (K3c).
+    const containers = entry.point === null ? counterDeliveryContainers(day.binTypes) : ONE_BAG;
+    await asStaff(packedAt, () => packFully(context, forDay, order.reference, baked, containers));
     if (entry.outcome === "handed_over") {
       const handedOverAt = atHour(today, entry.handedOverHour ?? HANDED_OVER_HOUR);
       // `manual` et non `scan` : le semis n'a pas de jeton en main, et une

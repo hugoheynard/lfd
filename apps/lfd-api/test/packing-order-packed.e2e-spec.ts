@@ -1,11 +1,13 @@
 import { randomUUID } from "node:crypto";
 /**
  * Le colisage passe par la boîte d'envoi (plan
- * `documentation/journalisation/plan-evenements-durables.md`, lot E1).
+ * `documentation/journalisation/plan-evenements-durables.md`, lot E1) — au
+ * COLISAGE depuis K3c (`colisage/plan-domaine-colisage.md` §17.3) : le fait est
+ * `packing.order_packed`, l'ancien `production.order_packed` est retiré.
  *
- * Ce que seul le vrai Postgres prouve : que le fait tombe avec le colisage,
+ * Ce que seul le vrai Postgres prouve : que le fait tombe avec la fermeture,
  * qu'un abonné du commerce qui échoue est repris par le balayage sans agir deux
- * fois, et que deux postes qui scannent ensemble n'écrivent qu'un colisage.
+ * fois, et que deux postes qui ferment ensemble n'écrivent qu'une fermeture.
  */
 import { AdminTokenVerifier } from "../src/platform/auth/admin-token.verifier.js";
 import { PrismaService } from "../src/platform/database/prisma.service.js";
@@ -20,11 +22,11 @@ import {
   type PlacedOrder,
 } from "../src/b2b/orders/domain/ports/order.repository.js";
 import type { HandoverVia } from "../src/b2b/orders/domain/services/handover.js";
-import { ON_ORDER_PACKED } from "../src/b2b/orders/application/handlers/on-order-packed.handler.js";
+import { ON_PACKING_ORDER_PACKED } from "../src/b2b/orders/application/handlers/on-packing-order-packed.handler.js";
 import { PrismaOrderRepository } from "../src/b2b/orders/infrastructure/prisma-order.repository.js";
 import { bootstrapE2e, daysAgo, jsonBody, serviceDay, type E2eContext } from "./e2e-harness.js";
 import { createUser } from "./factories.js";
-import { asLegacyPacking } from "./production-day-fixture.js";
+import { bagLines, closeOrder, markLine, sheetOf } from "./production-day-fixture.js";
 import { settleCardPayments } from "./card-payments.js";
 import { TEST_RECOMPUTE_TOKEN } from "./setup-env.js";
 
@@ -141,8 +143,11 @@ beforeEach(async () => {
   await createUser(ctx.prisma, { auth0Sub: MEMBER });
 });
 
-/** Passe une commande payée, arrête la journée, et rend sa référence. */
-async function placeAndClose(): Promise<string> {
+/**
+ * Passe une commande payée, arrête la journée, sort l'article du four et le
+ * met dans un sac au colisage. Rend la référence et l'identifiant de commande.
+ */
+async function placeAndClose(): Promise<{ readonly reference: string; readonly orderId: string }> {
   const point =
     (await ctx.prisma.pickupAddress.findFirst({ select: { id: true } })) ??
     (await ctx.prisma.pickupAddress.create({ data: { ...SITE, isDefault: true } }));
@@ -163,14 +168,17 @@ async function placeAndClose(): Promise<string> {
   );
   await settleCardPayments(ctx, issuedIntents);
   await ctx.asSub(STAFF).post(`/admin/production/batch/${SERVICE_DAY}/close`).expect(201);
-  // L'ancien poste, que cette suite éprouve (K2 — cf. `asLegacyPacking`).
-  await asLegacyPacking(ctx, SERVICE_DAY);
   await ctx.drain();
-  return placed.orderNumber;
+  expect(await markLine(ctx, "VIE-001")).toBe(204);
+  await ctx.drain();
+  const sheet = await sheetOf(ctx, placed.orderNumber);
+  expect(await bagLines(ctx, sheet)).toBe(204);
+  return { reference: placed.orderNumber, orderId: sheet.orderId };
 }
 
-function packing(reference: string) {
-  return ctx.asSub(STAFF).post(`/admin/production/batch/${SERVICE_DAY}/sheets/${reference}/packed`);
+/** Fermer au colisage — « Déclarer prête ». */
+async function packing(orderId: string): Promise<void> {
+  expect(await closeOrder(ctx, orderId)).toBe(204);
 }
 
 async function sweep(): Promise<void> {
@@ -190,36 +198,40 @@ async function readinessOf(reference: string) {
 }
 
 function packedFacts() {
-  return ctx.prisma.outboxMessage.findMany({ where: { type: "production.order_packed" } });
+  return ctx.prisma.outboxMessage.findMany({ where: { type: "packing.order_packed" } });
 }
 
 describe("le colisage passe par la boîte d'envoi", () => {
   it("le colisage écrit le fait, et le commerce déclare la commande prête", async () => {
-    const reference = await placeAndClose();
+    const { reference, orderId } = await placeAndClose();
 
-    const ack = jsonBody<{ packedAt: string }>(await packing(reference).expect(201));
+    await packing(orderId);
     await ctx.drain();
 
     const order = await readinessOf(reference);
     const [fact] = await packedFacts();
-    expect(fact?.key).toBe(`production.order_packed:${order.id}`);
-    expect(order).toMatchObject({ status: "ready", readyAt: new Date(ack.packedAt) });
+    const { packedAt } = await sheetOf(ctx, reference);
+    expect(fact?.key).toBe(`packing.order_packed:${order.id}`);
+    if (packedAt === null) {
+      throw new Error("La commande fermée au colisage devait porter son instant.");
+    }
+    expect(order).toMatchObject({ status: "ready", readyAt: new Date(packedAt) });
     const [delivery] = await ctx.prisma.outboxDelivery.findMany({
-      where: { subscriber: ON_ORDER_PACKED },
+      where: { subscriber: ON_PACKING_ORDER_PACKED },
     });
     expect(delivery?.deliveredAt).not.toBeNull();
   });
 
   it("l'abonné qui échoue est repris par le balayage, et n'agit qu'une fois", async () => {
-    const reference = await placeAndClose();
+    const { reference, orderId } = await placeAndClose();
     orders.failuresLeft = 1;
 
-    await packing(reference).expect(201);
+    await packing(orderId);
     await ctx.drain();
 
     expect((await readinessOf(reference)).status).toBe("confirmed");
     const [failed] = await ctx.prisma.outboxDelivery.findMany({
-      where: { subscriber: ON_ORDER_PACKED },
+      where: { subscriber: ON_PACKING_ORDER_PACKED },
     });
     expect(failed).toMatchObject({ attempts: 1, deliveredAt: null });
 
@@ -234,15 +246,15 @@ describe("le colisage passe par la boîte d'envoi", () => {
     expect(await ctx.prisma.activityEvent.count({ where: { type: "order.ready" } })).toBe(1);
   });
 
-  it("deux postes qui scannent ensemble : un seul colisage, un seul effet", async () => {
-    const reference = await placeAndClose();
+  it("deux postes qui ferment ensemble : une seule fermeture, un seul effet", async () => {
+    const { reference, orderId } = await placeAndClose();
 
-    await Promise.all([packing(reference).expect(201), packing(reference).expect(201)]);
+    await Promise.all([packing(orderId), packing(orderId)]);
     await ctx.drain();
 
-    // Le fait du colisage est unique par sa clé. Un scan qui arrive APRÈS la
-    // validation du gagnant est un rescan, donc un fait de réannonce — dont la
-    // livraison ne fait rien sur une commande déjà prête.
+    // Le fait du colisage est unique par sa clé. Une fermeture qui arrive APRÈS
+    // la validation de la gagnante est une réannonce — dont la livraison ne
+    // fait rien sur une commande déjà prête.
     const facts = await packedFacts();
     expect(facts.filter((fact) => !fact.key.includes(":reannounced:"))).toHaveLength(1);
     expect(orders.readyWrites).toBe(1);
@@ -250,19 +262,19 @@ describe("le colisage passe par la boîte d'envoi", () => {
     expect((await readinessOf(reference)).status).toBe("ready");
   });
 
-  it("un rescan est un fait NEUF, livré sans second effet", async () => {
+  it("fermer un bac déjà fermé est un fait NEUF, livré sans second effet", async () => {
     // Régression : `MarkOrderReadyCommand` refusait une commande déjà prête. Le
-    // fait du rescan échouait à chaque essai, puis restait en message mort.
-    const reference = await placeAndClose();
-    await packing(reference).expect(201);
+    // fait de la réannonce échouait à chaque essai, puis restait en message mort.
+    const { orderId } = await placeAndClose();
+    await packing(orderId);
     await ctx.drain();
 
-    await packing(reference).expect(201);
+    await packing(orderId);
     await ctx.drain();
 
     expect(await packedFacts()).toHaveLength(2);
     const deliveries = await ctx.prisma.outboxDelivery.findMany({
-      where: { subscriber: ON_ORDER_PACKED },
+      where: { subscriber: ON_PACKING_ORDER_PACKED },
     });
     expect(deliveries.map((delivery) => delivery.deliveredAt === null)).toEqual([false, false]);
     expect(orders.readyWrites).toBe(1);

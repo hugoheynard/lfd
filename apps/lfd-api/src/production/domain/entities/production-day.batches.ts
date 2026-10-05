@@ -7,7 +7,6 @@ import {
   InvalidBatchQuantityError,
   BatchNotFoundError,
   BatchReturnPendingError,
-  BatchStillPackedError,
 } from "../errors/batch-errors.js";
 import {
   activeBatchesOf,
@@ -28,8 +27,8 @@ import type {
  * annule ou qu'on décoche, **sans rien muter** (plan
  * `documentation/production/plan-fournees-progressives.md`, D3, D4).
  *
- * Même figure que `production-day.packing.ts`, et pour la même raison : le
- * fichier de l'agrégat dépasserait trois cents lignes. La journée reste le seul
+ * Hors de `production-day.ts` parce que le fichier de l'agrégat dépasserait
+ * trois cents lignes. La journée reste le seul
  * point d'entrée — chaque garde est exposée par une méthode de `ProductionDay`.
  */
 
@@ -59,28 +58,6 @@ export function producedOf(state: BatchState, sku: string): number {
     (total, batch) => total + batch.quantity,
     0,
   );
-}
-
-/** Les pièces de ce SKU déjà au bac, **bacs fermés compris** (D4). */
-export function packedOf(state: BatchState, sku: string): number {
-  let packed = 0;
-  for (const order of state.orders) {
-    for (const line of order.lines) {
-      if (line.sku === sku && line.packed !== null) {
-        packed += line.quantity;
-      }
-    }
-  }
-  return packed;
-}
-
-/**
- * **Le disponible** : sorti − au bac (D4). Peut être négatif sur une journée
- * colisée par l'ancien binaire, qui ne comptait rien ; la garde le lit comme
- * « rien de disponible », sans jamais le corriger.
- */
-export function availableOf(state: BatchState, sku: string): number {
-  return producedOf(state, sku) - packedOf(state, sku);
 }
 
 /** Le nom lu par le fournil : celui du compte, sinon celui d'un bon. */
@@ -140,8 +117,6 @@ export function batchToComplete(
  * fois est un succès silencieux (D3).
  *
  * @throws {BatchNotFoundError} aucune fournée de ce jour sous cet `id`.
- * @throws {BatchStillPackedError} il resterait moins de pièces sorties que de
- *   pièces au bac, bacs fermés compris.
  * @throws {BatchReturnPendingError} un retour est déjà demandé au colisage (K2).
  */
 export function batchToCancel(state: BatchState, id: string): ProductionBatchSnapshot | null {
@@ -155,19 +130,15 @@ export function batchToCancel(state: BatchState, id: string): ProductionBatchSna
   if (target.pendingReturn > 0) {
     throw new BatchReturnPendingError(productNameOf(state, target.sku), target.pendingReturn);
   }
-  const packed = packedOf(state, target.sku);
-  if (producedOf(state, target.sku) - target.quantity < packed) {
-    throw new BatchStillPackedError(productNameOf(state, target.sku), packed, "cancel");
-  }
   return target;
 }
 
 /**
  * Les fournées que l'ancienne commande « décocher » annule : **toutes** celles
- * de la ligne (D3). Refusé dès qu'une pièce de ce SKU est au bac — le seul
- * changement de comportement de l'ancien contrat, et il est voulu.
+ * de la ligne (D3). Ce qui est au bac, le colisage le tranche : la décoche
+ * d'une fournée remise lui DEMANDE un retour (K2) ; la garde « déjà au bac »
+ * de l'ancien poste est retirée avec lui (K3c).
  *
- * @throws {BatchStillPackedError} des pièces de cet article sont dans des sacs.
  * @throws {BatchReturnPendingError} un retour est déjà demandé au colisage (K2).
  */
 export function batchesToUncheck(
@@ -178,10 +149,6 @@ export function batchesToUncheck(
   const pending = active.reduce((total, batch) => total + batch.pendingReturn, 0);
   if (pending > 0) {
     throw new BatchReturnPendingError(productNameOf(state, sku), pending);
-  }
-  const packed = packedOf(state, sku);
-  if (active.length > 0 && packed > 0) {
-    throw new BatchStillPackedError(productNameOf(state, sku), packed, "uncheck");
   }
   return active;
 }

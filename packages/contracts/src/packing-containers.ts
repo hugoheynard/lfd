@@ -20,7 +20,7 @@ import { z } from "zod";
  * - `GET shareable-halves` → `DeliveryBinFreeHalvesView` — les moitiés libres
  *   des arrêts voisins ; partager = `POST containers` avec `partnerBinId`.
  *
- * Le poste se relit ensuite par `GET admin/production/packing?date=` : chaque
+ * Le poste se relit ensuite par `GET admin/packing/:date/board` : chaque
  * `PackingSheet` porte `containerMode`, `containerList`, et chaque ligne
  * `allocated` / `unallocated`.
  */

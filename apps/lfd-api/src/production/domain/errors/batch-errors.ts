@@ -50,26 +50,6 @@ export class BatchNotFoundError extends ResourceNotFoundError {
 }
 
 /**
- * **Des pièces de cette fournée sont déjà dans des sacs.**
- *
- * Après l'annulation, il resterait moins de pièces sorties que de pièces au
- * bac — bacs FERMÉS compris (D3) : un sac parti l'est avec ses croissants, et le
- * colisage mentirait. Le geste de sortie est de ressortir du bac d'abord.
- *
- * Deux gestes y mènent, et le message nomme celui qu'on vient de faire :
- * annuler une fournée, ou décocher la ligne (qui les annule toutes).
- */
-export class BatchStillPackedError extends BusinessError {
-  constructor(productName: string, packed: number, gesture: "cancel" | "uncheck") {
-    const exit = gesture === "cancel" ? "d'annuler cette fournée" : "de décocher la ligne";
-    super(
-      "production.batch.still_packed",
-      `${String(packed)} « ${productName} » sont déjà dans des sacs : ressortez-les du bac avant ${exit}.`,
-    );
-  }
-}
-
-/**
  * Un **retour est déjà demandé** au colisage pour cette fournée, sans réponse
  * encore (journée `packing`, colisage K2, §13 B2). Le redemander ferait deux
  * demandes pour les mêmes pièces ; la réponse arrive par la boîte d'envoi, et

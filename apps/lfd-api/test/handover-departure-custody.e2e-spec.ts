@@ -19,7 +19,7 @@ import { currentTransaction } from "../src/platform/database/transaction.store.j
 import { PrismaUnitOfWork, UnitOfWork } from "../src/platform/database/unit-of-work.js";
 import { settleCardPayments } from "./card-payments.js";
 import { ADMIN_VERIFIER_OVERRIDE, addVehicle, assign, openRound } from "./delivery-rounds-scene.js";
-import { declareBins, depart, loadBin } from "./delivery-loading-scene.js";
+import { binTypeId, depart, loadBin } from "./delivery-loading-scene.js";
 import {
   bootstrapE2e,
   daysAgo,
@@ -29,7 +29,7 @@ import {
   type E2eContext,
 } from "./e2e-harness.js";
 import { createUser } from "./factories.js";
-import { asCountedContainers } from "./production-day-fixture.js";
+import { coliseOrder } from "./production-day-fixture.js";
 
 const MEMBER = "auth0|member-custody";
 const DAY = serviceDay();
@@ -150,8 +150,12 @@ async function place(fulfillment: "pickup" | "delivery"): Promise<string> {
   return row.id;
 }
 
-/** La journée arrêtée, la fournée sortie, et la commande colisée. */
-async function closeAndPack(orderIds: readonly string[]): Promise<void> {
+/**
+ * La journée arrêtée, la fournée sortie, et chaque commande colisée AU
+ * COLISAGE — un sac pour un retrait, un bac pour une livraison (K3c). Rend le
+ * bac de chaque livraison.
+ */
+async function closeAndPack(orderIds: readonly string[]): Promise<ReadonlyMap<string, string>> {
   await staff().post(`/admin/production/batch/${DAY}/close`).expect(201);
   await staff()
     .put(`/admin/production/worksheet/${DAY}/lines/${CROISSANT}/done`)
@@ -160,32 +164,39 @@ async function closeAndPack(orderIds: readonly string[]): Promise<void> {
   // Depuis K2, la journée naît au colisage : la liste à coliser et la remise
   // lui arrivent par la boîte d'envoi, hors de la requête.
   await ctx.drain();
-  // K2b : ces commandes comptent leurs contenants (ancien écran) — le sujet
-  // de la suite n'est pas le colisage, mais ce que la coche et le « + » déclenchent.
-  await asCountedContainers(ctx, DAY);
+  const bins = new Map<string, string>();
   for (const orderId of orderIds) {
-    const order = await ctx.prisma.productionOrder.findFirstOrThrow({
+    const { fulfillmentMethod } = await ctx.prisma.productionOrder.findFirstOrThrow({
       where: { serviceDay: DAY, orderId },
-      select: { reference: true },
+      select: { fulfillmentMethod: true },
     });
-    await staff()
-      .put(`/admin/production/packing/${DAY}/sheets/${order.reference}/lines/${CROISSANT}`)
-      .send({ initials: "MB" })
-      .expect(204);
-    await staff()
-      .post(`/admin/production/batch/${DAY}/sheets/${order.reference}/packed`)
-      .expect(201);
+    const binId = await coliseOrder(ctx, {
+      staff: E2E_STAFF_SUB,
+      day: DAY,
+      orderId,
+      container:
+        fulfillmentMethod === "delivery"
+          ? { nature: "bin", binTypeId: await binTypeId(ctx), half: false, innerBags: 0 }
+          : { nature: "bag" },
+    });
+    if (binId !== null) {
+      bins.set(orderId, binId);
+    }
   }
+  await ctx.drain();
+  return bins;
 }
 
 /** Une livraison colisée, composée dans une tournée, son bac chargé. */
 async function loadedDelivery(): Promise<{ readonly orderId: string; readonly roundId: string }> {
   const orderId = await place("delivery");
-  await closeAndPack([orderId]);
   const roundId = await openRound(ctx, DAY, await addVehicle(ctx, "Kangoo"));
   await assign(ctx, DAY, roundId, orderId);
-  const [binId] = await declareBins(ctx, orderId, 1);
-  await loadBin(ctx, roundId, { binId: binId ?? "" }).expect(204);
+  const binId = (await closeAndPack([orderId])).get(orderId);
+  if (binId === undefined) {
+    throw new Error("La livraison colisée devait porter son bac.");
+  }
+  await loadBin(ctx, roundId, { binId }).expect(204);
   return { orderId, roundId };
 }
 

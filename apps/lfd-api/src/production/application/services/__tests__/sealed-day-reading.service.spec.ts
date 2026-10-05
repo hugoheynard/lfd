@@ -9,14 +9,18 @@ const AT = new Date(1_000);
 const DAY = ServiceDay.of("2030-03-12");
 
 describe("SealedDayReading — la journée et ses bacs fermés (K3a)", () => {
-  it("une journée `legacy` se lit telle que le fournil la tient, sans demander au colisage", async () => {
+  it("🔴 une journée `legacy` aussi demande au colisage — le fournil ne lit plus ses colonnes (K3c)", async () => {
     const legacy = closedDay(DAY, AT, ["ord_2"]);
     const packed = new FixedPackedOrders(new Map([["ord_1", { at: AT, by: "x" }]]));
 
     const day = await new SealedDayReading(new FixedDays(legacy), packed).load(DAY);
 
-    expect(day).toBe(legacy);
-    expect(packed.asked).toEqual([]);
+    expect(packed.asked).toEqual([DAY.value]);
+    expect(day.orders.find((order) => order.orderId === "ord_1")?.packed).toEqual({
+      at: AT,
+      by: "x",
+    });
+    expect(day.orders.find((order) => order.orderId === "ord_2")?.packed).toBeNull();
   });
 
   it("une journée `packing` lit « colisée ? » au colisage, et seulement ça", async () => {

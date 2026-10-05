@@ -58,22 +58,6 @@ class Days extends ProductionDayRepository {
   save(): Promise<void> {
     return Promise.reject(new Error("une lecture n'écrit rien"));
   }
-
-  markPacked(): Promise<boolean> {
-    return Promise.reject(new Error("une lecture n'écrit rien"));
-  }
-
-  markPackedLine(): Promise<void> {
-    return Promise.reject(new Error("une lecture n'écrit rien"));
-  }
-
-  recordContainerCount(): Promise<void> {
-    return Promise.reject(new Error("une lecture n'écrit rien"));
-  }
-
-  stepContainerCount(): Promise<boolean> {
-    return Promise.reject(new Error("une lecture n'écrit rien"));
-  }
 }
 
 class Commerce extends DayOrdersReader {

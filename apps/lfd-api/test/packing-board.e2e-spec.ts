@@ -3,9 +3,10 @@
  * `documentation/colisage/plan-domaine-colisage.md`, §17, K3a.
  *
  * Ce qui ne se voit qu'ici : `GET admin/packing/:date/board` rend, sur une
- * vraie journée, exactement ce que rend encore l'ancien
- * `GET admin/production/packing` ; fermer au colisage rend la commande prête au
- * commerce ; rouvrir ne touche qu'au rangement (la commande reste prête, et la
+ * vraie journée, les piles et le « pas encore sorti du four » que la fiche
+ * d'atelier débloque ; une commande colisée avec l'ancien poste (`counted`)
+ * est en lecture seule (K3c, §17.6) ; fermer au colisage rend la commande
+ * prête au commerce ; rouvrir ne touche qu'au rangement (la commande reste prête, et la
  * refermer n'écrit pas de fait neuf) ; rouvrir est refusé sur un bac chargé ;
  * et l'état du jour comme le contrôle qualité lisent « colisée ? » au colisage.
  */
@@ -30,7 +31,7 @@ import {
   STAFF,
   bootstrapProductionDay,
   closePlan,
-  packing,
+  markLine,
   place,
   recordBatch,
   relayGate,
@@ -171,7 +172,7 @@ async function packedFacts(): Promise<number> {
 }
 
 describe("GET admin/packing/:date/board — le poste lu au colisage", () => {
-  it("🔴 rend exactement l'ancien poste du fournil, sur la même journée", async () => {
+  it("compte les piles d'une vraie journée : une prête, une à faire", async () => {
     const { delivery, pickup } = await day();
     // Des lignes réparties, un contenant, un bac fermé : tout ce que l'écran lit.
     await fillDelivery(delivery.orderId);
@@ -183,8 +184,42 @@ describe("GET admin/packing/:date/board — le poste lu au colisage", () => {
 
     const served = await board();
 
-    expect(served).toEqual(await packing(ctx));
     expect(served).toMatchObject({ orderCount: 2, readyCount: 1, todoCount: 1 });
+    expect(served.sheets.find((s) => s.orderId === delivery.orderId)).toMatchObject({
+      containers: 1,
+      packedPieces: 20,
+      canDeclareReady: true,
+    });
+  });
+
+  it("🔴 refuse un article pas encore sorti du four, et l'accepte quand la FICHE est cochée", async () => {
+    // Les deux postes se parlent par la remise : c'est une coche de la fiche
+    // d'atelier qui débloque le sac. Rien d'autre que la base ne le prouve.
+    await place(ctx, issued, [{ sku: CROISSANT, quantity: 12 }]);
+    await closePlan(ctx);
+    await settle();
+    const [sheet] = (await board()).sheets;
+    if (sheet === undefined) {
+      throw new Error("La journée devait porter un bac.");
+    }
+    expect(sheet.lines[0]?.awaitingProduction).toBe(true);
+    const bag = jsonBody<OpenedPackingContainer>(
+      await staff()
+        .post(`${base(sheet.orderId)}/containers`)
+        .send({ nature: "bag" })
+        .expect(201),
+    );
+    const into = () =>
+      staff()
+        .post(`${base(sheet.orderId)}/containers/${bag.containerId}/lines/${CROISSANT}`)
+        .send({ quantity: 12 });
+    expect((await into()).status).toBe(409);
+
+    expect(await markLine(ctx)).toBe(204);
+    await settle();
+
+    expect((await board()).sheets[0]?.lines[0]?.awaitingProduction).toBe(false);
+    await into().expect(204);
   });
 
   it("une journée jamais arrêtée se lit « plan non arrêté »", async () => {
@@ -193,6 +228,42 @@ describe("GET admin/packing/:date/board — le poste lu au colisage", () => {
 
   it("refuse une date hors forme", async () => {
     await staff().get(`/admin/packing/demain/board`).expect(400);
+  });
+});
+
+describe("une commande colisée avec l'ancien poste (`counted`, K3c, §17.6)", () => {
+  /**
+   * Une commande inscrite AVANT la colonne Contenants — un état que ce binaire
+   * ne produit plus, reconstitué en base : c'est le sujet du test.
+   */
+  async function asCounted(orderId: string): Promise<void> {
+    await ctx.prisma.packingOrder.updateMany({
+      where: { serviceDay: SERVICE_DAY, orderId },
+      data: { containerMode: "counted" },
+    });
+  }
+
+  it("🔴 se lit, mais ne se ferme plus : « Déclarer prête » est désarmé et refusé", async () => {
+    const { pickup } = await day();
+    await asCounted(pickup.orderId);
+
+    const sheet = (await board()).sheets.find((s) => s.orderId === pickup.orderId);
+    expect(sheet).toMatchObject({ containerMode: "counted", canDeclareReady: false });
+
+    const refused = await staff().post(`${base(pickup.orderId)}/close`);
+    expect(refused.status).toBe(409);
+    expect(JSON.stringify(refused.body)).toContain("colisée avec l'ancien poste");
+    expect(await packedFacts()).toBe(0);
+  });
+
+  it("ne reçoit plus de contenant", async () => {
+    const { pickup } = await day();
+    await asCounted(pickup.orderId);
+
+    await staff()
+      .post(`${base(pickup.orderId)}/containers`)
+      .send({ nature: "bag" })
+      .expect(409);
   });
 });
 

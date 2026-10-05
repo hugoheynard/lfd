@@ -1,16 +1,19 @@
 import { type ComponentFixture, TestBed } from '@angular/core/testing';
+import { provideRouter } from '@angular/router';
 import type { PackingLine, PackingSheet } from '@lfd/contracts';
 import { describe, expect, it } from 'vitest';
 
 import { PermissionsStore } from '../../../auth/permissions.store';
 import { DeliveryBinsService } from '../../../livraison/delivery-bins.service';
-import { DeliveryLoadingService } from '../../../livraison/delivery-loading.service';
+import { PackingContainersService } from '../../packing-containers.service';
+import { PackingDayReader } from '../packing-day.reader';
 import { PackingOpenOrder } from './packing-open-order';
 
 /**
  * Un composant de présentation : il affiche ce qu'on lui donne — y compris un
  * chiffre ou une règle incohérents avec les lignes, tels quels — et il émet le
- * bon geste.
+ * bon geste. Une commande `counted` (colisée avec l'ancien poste) est en
+ * lecture seule (plan du colisage, §17.6).
  */
 
 function line(over: Partial<PackingLine> = {}): PackingLine {
@@ -22,6 +25,8 @@ function line(over: Partial<PackingLine> = {}): PackingLine {
     initials: null,
     packedAt: null,
     awaitingProduction: false,
+    allocated: 0,
+    unallocated: 12,
     ...over,
   };
 }
@@ -44,21 +49,28 @@ function sheet(over: Partial<PackingSheet> = {}): PackingSheet {
     packedAt: null,
     packedBy: null,
     packedByName: null,
+    containerMode: 'listed',
+    containerList: [],
     ...over,
   };
 }
 
-/**
- * La rangée « + format » d'une livraison (lot PC1) lit la livraison : sans le
- * droit, elle se tait — ces cas-là parlent de la commande, pas des bacs.
- */
+/** La colonne des contenants (`listed`) lit ses services : on les tient muets. */
 function render(inputs: Readonly<Record<string, unknown>>): ComponentFixture<PackingOpenOrder> {
   TestBed.resetTestingModule();
   TestBed.configureTestingModule({
     providers: [
+      provideRouter([]),
       { provide: PermissionsStore, useValue: { can: () => false } },
-      { provide: DeliveryLoadingService, useValue: {} },
-      { provide: DeliveryBinsService, useValue: {} },
+      { provide: PackingContainersService, useValue: {} },
+      {
+        provide: PackingDayReader,
+        useValue: { date: () => '2026-10-05', rereadAfterWrite: () => Promise.resolve(true) },
+      },
+      {
+        provide: DeliveryBinsService,
+        useValue: { binTypes: () => Promise.resolve({ types: [] }) },
+      },
     ],
   });
   const fixture = TestBed.createComponent(PackingOpenOrder);
@@ -73,69 +85,43 @@ function said(element: Element | null | undefined): string {
   return (element?.textContent ?? '').replace(/\s+/gu, ' ').trim();
 }
 
-describe('les bacs d’une commande prête (lot 4 bis)', () => {
-  function renderWithBins(over: Partial<PackingSheet>): HTMLElement {
-    TestBed.resetTestingModule();
-    TestBed.configureTestingModule({
-      providers: [
-        { provide: PermissionsStore, useValue: { can: () => false } },
-        { provide: DeliveryLoadingService, useValue: {} },
-        { provide: DeliveryBinsService, useValue: {} },
-      ],
-    });
-    const fixture = TestBed.createComponent(PackingOpenOrder);
-    fixture.componentRef.setInput(
-      'sheet',
-      sheet({ packedAt: '2026-10-01T05:00:00.000Z', ...over }),
-    );
-    fixture.detectChanges();
-    return fixture.nativeElement as HTMLElement;
-  }
-
-  it('se déclarent sur une livraison prête', () => {
-    expect(renderWithBins({}).querySelector('app-packing-bins')).not.toBeNull();
-  });
-
-  it('pas sur un retrait', () => {
-    expect(
-      renderWithBins({ fulfillmentMethod: 'pickup' }).querySelector('app-packing-bins'),
-    ).toBeNull();
-  });
-});
-
 describe('la commande ouverte du colisage', () => {
-  it('affiche les lignes dans le bac telles que servies, même incohérentes', () => {
-    const fixture = render({ sheet: sheet({ lineCount: 9, packedLines: 5 }) });
-    const host: HTMLElement = fixture.nativeElement;
+  it('affiche le compte servi, même incohérent avec les lignes', () => {
+    const host: HTMLElement = render({
+      sheet: sheet({ lineCount: 9, packedLines: 5 }),
+    }).nativeElement;
 
-    // Deux lignes réellement là, et le serveur dit « 5 sur 9 » : c'est ce qui se lit.
-    expect(host.querySelectorAll('.co-line')).toHaveLength(2);
     expect(said(host.querySelector('.co-band-sum'))).toBe('5 lignes sur 9 dans la commande');
+    expect(host.querySelector('app-packing-container-board')).not.toBeNull();
   });
 
   it('arme « Déclarer prête » selon le serveur, ligne dehors ou non', () => {
-    const fixture = render({ sheet: sheet({ canDeclareReady: true, remainingLines: 2 }) });
-    const host: HTMLElement = fixture.nativeElement;
+    const host: HTMLElement = render({
+      sheet: sheet({ canDeclareReady: true, remainingLines: 2 }),
+    }).nativeElement;
 
-    expect(host.querySelector<HTMLButtonElement>('.co-close button')?.disabled).toBe(false);
+    expect(host.querySelector<HTMLButtonElement>('[data-declare-ready]')?.disabled).toBe(false);
     expect(said(host.querySelector('.co-close'))).not.toContain('encore dehors');
   });
 
   it('désarme « Déclarer prête » pendant la déclaration en vol', () => {
-    const fixture = render({ sheet: sheet({ canDeclareReady: true }), closing: true });
-    const host: HTMLElement = fixture.nativeElement;
+    const host: HTMLElement = render({
+      sheet: sheet({ canDeclareReady: true }),
+      closing: true,
+    }).nativeElement;
 
-    expect(host.querySelector<HTMLButtonElement>('.co-close button')?.disabled).toBe(true);
+    expect(host.querySelector<HTMLButtonElement>('[data-declare-ready]')?.disabled).toBe(true);
   });
 
   it('dit les lignes encore dehors avec le chiffre servi', () => {
-    const fixture = render({ sheet: sheet({ canDeclareReady: false, remainingLines: 42 }) });
-    const host: HTMLElement = fixture.nativeElement;
+    const host: HTMLElement = render({
+      sheet: sheet({ canDeclareReady: false, remainingLines: 42 }),
+    }).nativeElement;
 
     expect(said(host.querySelector('.co-close'))).toContain('42 lignes encore dehors');
   });
 
-  it('émet la déclaration', () => {
+  it('émet la déclaration au premier appui, avec le libellé du mode', () => {
     const fixture = render({
       sheet: sheet({ canDeclareReady: true }),
       readyLabel: 'Déclarer prête pour la livraison',
@@ -144,21 +130,11 @@ describe('la commande ouverte du colisage', () => {
     let declared = 0;
     fixture.componentInstance.declareReady.subscribe(() => (declared += 1));
 
-    const button = host.querySelector<HTMLButtonElement>('.co-close button');
+    const button = host.querySelector<HTMLButtonElement>('[data-declare-ready]');
     expect(said(button)).toBe('Déclarer prête pour la livraison');
     button?.click();
 
     expect(declared).toBe(1);
-  });
-
-  it('🔴 ne laisse plus cocher ni compter (K3b) : lignes et compte en lecture seule', () => {
-    const fixture = render({ sheet: sheet({ containers: 3, fulfillmentMethod: 'pickup' }) });
-    const host: HTMLElement = fixture.nativeElement;
-
-    for (const box of Array.from(host.querySelectorAll<HTMLInputElement>('.co-line input'))) {
-      expect(box.disabled).toBe(true);
-    }
-    expect(host.querySelector('.co-container-step')).toBeNull();
   });
 
   it('offre « Rouvrir » sur une commande prête, et l’émet', () => {
@@ -175,104 +151,56 @@ describe('la commande ouverte du colisage', () => {
   });
 
   it('désarme « Rouvrir » pendant la réouverture en vol', () => {
-    const fixture = render({ sheet: sheet({ packedAt: '2026-10-05T05:00:00' }), reopening: true });
-    const host: HTMLElement = fixture.nativeElement;
+    const host: HTMLElement = render({
+      sheet: sheet({ packedAt: '2026-10-05T05:00:00' }),
+      reopening: true,
+    }).nativeElement;
 
     expect(host.querySelector<HTMLButtonElement>('[data-reopen]')?.disabled).toBe(true);
   });
 
   it('dit lequel des deux cas quand aucune commande n’est ouverte', () => {
-    const todo = render({ sheet: null, stack: 'todo' });
-    const todoHost: HTMLElement = todo.nativeElement;
+    const todoHost: HTMLElement = render({ sheet: null, stack: 'todo' }).nativeElement;
     expect(todoHost.textContent).toContain('Tout est déclaré prêt');
 
-    const ready = render({ sheet: null, stack: 'ready' });
-    const readyHost: HTMLElement = ready.nativeElement;
+    const readyHost: HTMLElement = render({ sheet: null, stack: 'ready' }).nativeElement;
     expect(readyHost.textContent).toContain('Rien n’est encore prêt');
   });
 });
 
-describe('le « + » choisit un bac sur une livraison (lot PC1)', () => {
-  /** Un poste qui peut déclarer, et une livraison sans bac ni froid. */
-  function renderDeclaring(over: Partial<PackingSheet>): ComponentFixture<PackingOpenOrder> {
-    TestBed.resetTestingModule();
-    TestBed.configureTestingModule({
-      providers: [
-        { provide: PermissionsStore, useValue: { can: () => true } },
-        {
-          provide: DeliveryLoadingService,
-          useValue: {
-            orderBins: (orderId: string) =>
-              Promise.resolve({ orderId, reference: 'CMD-001', bins: [], round: null }),
-            packingProposal: () => Promise.reject(new Error('sans proposition')),
-          },
-        },
-        {
-          provide: DeliveryBinsService,
-          useValue: { binTypes: () => Promise.resolve({ types: [] }) },
-        },
-      ],
-    });
-    const fixture = TestBed.createComponent(PackingOpenOrder);
-    fixture.componentRef.setInput('sheet', sheet(over));
-    fixture.detectChanges();
-    return fixture;
-  }
+describe('une commande colisée avec l’ancien poste (`counted`, §17.6)', () => {
+  const MESSAGE = "Commande colisée avec l'ancien poste : elle ne se modifie plus ici.";
 
-  async function settle(fixture: ComponentFixture<PackingOpenOrder>): Promise<void> {
-    await new Promise((resolve) => setTimeout(resolve));
-    fixture.detectChanges();
-  }
-
-  it('une livraison montre la rangée des bacs, et plus le compte anonyme', () => {
-    const host: HTMLElement = render({ sheet: sheet() }).nativeElement;
-
-    expect(host.querySelector('app-packing-bin-row')).not.toBeNull();
-    expect(host.querySelector('app-packing-containers')).toBeNull();
-  });
-
-  it('un retrait garde son compte anonyme, sans rangée (D4)', () => {
+  it.each([
+    ['à préparer', null],
+    ['prête', '2026-10-05T05:00:00'],
+  ])('%s : le dit, et n’offre ni « Prête » ni « Rouvrir »', (_case, packedAt) => {
     const host: HTMLElement = render({
-      sheet: sheet({ fulfillmentMethod: 'pickup' }),
+      sheet: sheet({ containerMode: 'counted', canDeclareReady: true, packedAt, containers: 3 }),
     }).nativeElement;
 
-    expect(host.querySelector('app-packing-containers')).not.toBeNull();
-    expect(host.querySelector('app-packing-bin-row')).toBeNull();
+    expect(said(host.querySelector('[data-legacy-order]'))).toBe(MESSAGE);
+    expect(host.querySelector('[data-declare-ready]')).toBeNull();
+    expect(host.querySelector('[data-reopen]')).toBeNull();
+    expect(host.querySelector('app-packing-container-board')).toBeNull();
   });
 
-  it('🔴 avertit au premier appui sur « Prête » (aucun bac), déclare au second — jamais un refus', async () => {
-    const fixture = renderDeclaring({ canDeclareReady: true });
-    await settle(fixture);
-    const host: HTMLElement = fixture.nativeElement;
-    let declared = 0;
-    fixture.componentInstance.declareReady.subscribe(() => (declared += 1));
+  it('montre ses lignes et son compte sans rien laisser toucher', () => {
+    const host: HTMLElement = render({
+      sheet: sheet({ containerMode: 'counted', containers: 3, fulfillmentMethod: 'pickup' }),
+    }).nativeElement;
 
-    host.querySelector<HTMLButtonElement>('[data-declare-ready]')?.click();
-    fixture.detectChanges();
-
-    expect(declared).toBe(0);
-    expect(said(host.querySelector('[data-ready-warnings]'))).toContain(
-      'Aucun bac déclaré pour cette livraison.',
-    );
-    expect(said(host.querySelector('[data-declare-ready]'))).toBe('Déclarer prête quand même');
-
-    host.querySelector<HTMLButtonElement>('[data-declare-ready]')?.click();
-    fixture.detectChanges();
-
-    expect(declared).toBe(1);
+    expect(host.querySelectorAll('.co-line')).toHaveLength(2);
+    for (const box of Array.from(host.querySelectorAll<HTMLInputElement>('.co-line input'))) {
+      expect(box.disabled).toBe(true);
+    }
+    expect(host.querySelector('.co-container-step')).toBeNull();
   });
 
-  it('un retrait se déclare au premier appui : rien à avertir', () => {
-    const fixture = render({
-      sheet: sheet({ canDeclareReady: true, fulfillmentMethod: 'pickup' }),
-    });
-    let declared = 0;
-    fixture.componentInstance.declareReady.subscribe(() => (declared += 1));
+  it('une commande d’avant le mode (`containerMode` absent) se lit comme `counted`', () => {
+    const { containerMode: _dropped, ...legacy } = sheet();
+    const host: HTMLElement = render({ sheet: legacy }).nativeElement;
 
-    (fixture.nativeElement as HTMLElement)
-      .querySelector<HTMLButtonElement>('[data-declare-ready]')
-      ?.click();
-
-    expect(declared).toBe(1);
+    expect(host.querySelector('[data-legacy-order]')).not.toBeNull();
   });
 });

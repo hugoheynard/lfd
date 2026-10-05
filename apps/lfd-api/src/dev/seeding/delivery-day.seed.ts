@@ -6,10 +6,16 @@ import {
   type DayBins,
   DEFAULT_BINS,
   resolveBins,
-  seedBinTypes,
 } from "./delivery-bins.seed.js";
 import { FLEET, seedFleet } from "./delivery-fleet.seed.js";
-import { chooseLaboDeparture, composeLoadedRound, type RoundStop } from "./delivery-rounds.seed.js";
+import {
+  binContainers,
+  chooseLaboDeparture,
+  composeRound,
+  halfBinOf,
+  loadRound,
+  type RoundStop,
+} from "./delivery-rounds.seed.js";
 import {
   assignSeedDriver,
   prismaDriverReader,
@@ -346,8 +352,13 @@ export async function placeDeliveryDay(
 }
 
 /**
- * Colise ce qui doit être prêt, sème la flotte et le départ, compose la
- * tournée de Val d'Isère. À appeler APRÈS le plan du soir.
+ * Sème la flotte et le départ, compose la tournée de Val d'Isère, colise ce
+ * qui doit être prêt, puis charge. À appeler APRÈS le plan du soir.
+ *
+ * 🔴 **La tournée AVANT le colisage** depuis K3c (`plan-domaine-colisage.md`
+ * §17.3) : un bac de livraison naît au colisage, et partager une moitié exige
+ * deux arrêts consécutifs de la même tournée. Une commande non prête entre
+ * dans la tournée — la feuille de route le dit — mais n'a pas de bac.
  */
 export async function advanceDeliveryDay(
   context: SeedContext,
@@ -357,33 +368,29 @@ export async function advanceDeliveryDay(
     /** Les livraisons du jour déjà colisées ailleurs (le comptoir) — rang 4 de la tournée. */
     readonly alreadyPacked: readonly PlacedOrder[];
     readonly baked: Set<string>;
+    /** Les types de bacs semés (`seedBinTypes`), par nom. */
+    readonly binTypes: ReadonlyMap<string, string>;
   },
 ): Promise<DeliveryDayReport> {
   const forDay = isoDay(day.today);
-  for (const { order, entry } of day.placed) {
-    if (entry.ready) {
-      await asStaff(atHour(day.today, PACKED_HOUR), () =>
-        packFully(context, forDay, order.reference, day.baked),
-      );
-    }
-  }
   const vehicles = await seedFleet(context);
   await chooseLaboDeparture(context, LABO);
   const vehicleId = vehicles.get(ROUND_VEHICLE);
   if (vehicleId === undefined) {
     throw new Error(`Véhicule « ${ROUND_VEHICLE} » absent de la flotte semée.`);
   }
-  const binTypes = await seedBinTypes(context);
-  const stops = roundStops(day.placed, day.alreadyPacked, binTypes);
+  const stops = roundStops(day.placed, day.alreadyPacked);
   const loadedAt = atHour(day.today, LOADING_HOUR, LOADING_MINUTE);
-  const round = await composeLoadedRound(context, { day: forDay, vehicleId, at: loadedAt }, stops);
+  const roundId = await composeRound(context, { day: forDay, vehicleId, at: loadedAt }, stops);
+  const sharedBins = await packDeliveries(context, forDay, day);
+  const round = await loadRound(context, { roundId, at: loadedAt }, stops);
   const driver = await assignSeedDriver(
     {
       commands: context.commands,
       reader: prismaDriverReader(context.prisma),
       requester: context.requester,
     },
-    { roundId: round.roundId, at: loadedAt },
+    { roundId, at: loadedAt },
   );
   const deliveriesToday = day.placed.length + day.alreadyPacked.length;
   return {
@@ -395,41 +402,68 @@ export async function advanceDeliveryDay(
     rounds: 1,
     stopsInRound: round.stops,
     loadedBins: round.loadedBins,
-    sharedBins: round.sharedBins,
+    sharedBins,
     driver,
     unassigned: deliveriesToday - round.stops,
   };
 }
 
-/** Les arrêts de la tournée, dans l'ordre de la vallée. */
+/**
+ * Colise les livraisons prêtes, dans l'ordre de la tournée — une moitié se
+ * partage avec l'arrêt PRÉCÉDENT, qui doit donc avoir ouvert la sienne.
+ * Rend le nombre de moitiés partagées.
+ */
+async function packDeliveries(
+  context: SeedContext,
+  forDay: string,
+  day: {
+    readonly today: Date;
+    readonly placed: readonly PlacedDelivery[];
+    readonly baked: Set<string>;
+    readonly binTypes: ReadonlyMap<string, string>;
+  },
+): Promise<number> {
+  const byStop = new Map(
+    day.placed.flatMap((placed) =>
+      placed.entry.stop === null ? [] : [[placed.entry.stop, placed.order.id] as const],
+    ),
+  );
+  const ordered = [...day.placed].sort(
+    (left, right) =>
+      (left.entry.stop ?? Number.MAX_SAFE_INTEGER) - (right.entry.stop ?? Number.MAX_SAFE_INTEGER),
+  );
+  let shared = 0;
+  for (const { order, entry } of ordered.filter((placed) => placed.entry.ready)) {
+    const previous = entry.stop === null ? undefined : byStop.get(entry.stop - 1);
+    const share =
+      entry.sharesPreviousHalf === undefined || previous === undefined
+        ? null
+        : { partnerBinId: await halfBinOf(context, previous), ...entry.sharesPreviousHalf };
+    shared += share === null ? 0 : 1;
+    const containers = binContainers(resolveBins(day.binTypes, entry.bins ?? DEFAULT_BINS), share);
+    await asStaff(atHour(day.today, PACKED_HOUR), () =>
+      packFully(context, forDay, order.reference, day.baked, containers),
+    );
+  }
+  return shared;
+}
+
+/** Les arrêts de la tournée, dans l'ordre de la vallée — prêts ou non. */
 function roundStops(
   placed: readonly PlacedDelivery[],
   alreadyPacked: readonly PlacedOrder[],
-  binTypes: ReadonlyMap<string, string>,
 ): readonly RoundStop[] {
   const ranked = placed.flatMap(({ order, entry }) =>
     entry.stop === null
       ? []
-      : [
-          {
-            rank: entry.stop,
-            orderId: order.id,
-            bins: entry.bins ?? DEFAULT_BINS,
-            loaded: entry.loaded === true,
-            ...(entry.sharesPreviousHalf === undefined
-              ? {}
-              : { sharesPreviousHalf: entry.sharesPreviousHalf }),
-          },
-        ],
+      : [{ rank: entry.stop, orderId: order.id, loaded: entry.loaded === true }],
   );
-  // La Folie Douce commande large : huit Bacs L, encore à charger.
   const counter = alreadyPacked.map((order) => ({
     rank: COUNTER_DELIVERY_STOP,
     orderId: order.id,
-    bins: [{ type: BIN_L, whole: 8, half: false, innerBags: 3 }],
     loaded: false,
   }));
   return [...ranked, ...counter]
     .sort((left, right) => left.rank - right.rank)
-    .map(({ rank: _rank, bins, ...stop }) => ({ ...stop, bins: resolveBins(binTypes, bins) }));
+    .map(({ rank: _rank, ...stop }) => stop);
 }

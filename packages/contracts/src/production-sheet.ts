@@ -90,35 +90,6 @@ export interface ProductionDayStatus {
   readonly handedOverBehind: number;
 }
 
-/**
- * Ce que rend le **colisage** d'une fiche — et surtout s'il vient d'avoir lieu.
- *
- * ## Pourquoi ce n'est plus un 204
- *
- * La route répondait `204`, et un second scan levait `409`. C'était défendable
- * — sauf que ça fermait le seul rattrapage possible : le bus vit en processus,
- * n'est ni persisté ni rejoué, et un abonné qui échoue laissait la commande en
- * arrière **sans aucun moyen de la faire avancer**. Le refus interdisait
- * précisément le geste qui répare.
- *
- * Deux mains sur la même feuille est d'ailleurs le cas NORMAL au fournil, pas
- * une anomalie. Rescanner **réannonce** donc le fait déjà gravé, sans toucher à
- * l'attestation : l'heure et l'auteur restent ceux du premier scan.
- *
- * `alreadyPacked` dit laquelle des deux choses vient d'arriver, plutôt que de
- * rendre deux fois la même réponse sans dire pourquoi. Même figure que
- * `alreadyClosed` sur la clôture.
- */
-export interface ProductionPackingAck {
-  readonly reference: string;
-  /** ISO du colisage — celui du PREMIER scan, si c'en est un second. */
-  readonly packedAt: string;
-  /** L'identité staff qui a fait le bac, figée au premier scan. */
-  readonly packedBy: string;
-  /** `true` = le bac était déjà fait, et le fait vient d'être réannoncé. */
-  readonly alreadyPacked: boolean;
-}
-
 export interface ProductionBatchView {
   /** `AAAA-MM-JJ`, la journée servie. */
   readonly date: string;

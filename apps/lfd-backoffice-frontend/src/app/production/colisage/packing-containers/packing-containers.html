@@ -13,33 +13,4 @@
   } @empty {
     <p class="pc-none">Aucun container déclaré.</p>
   }
-
-  <!--
-    Deux cibles franches, et grandes : on les actionne les mains prises.
-
-    🔴 Le « − » est TOUJOURS là, zéro compris. Le désarmer à zéro demanderait à
-    l'écran de comparer un compte ; or c'est le serveur qui sait ce que vaut un
-    retrait, et il rend `remove` à zéro sans effet. Désarmés PENDANT l'envoi
-    seulement : c'est la seule chose que l'écran sait mieux que le serveur.
-  -->
-  @if (editable()) {
-    <button
-      type="button"
-      class="co-container-step"
-      aria-label="Retirer un container"
-      [disabled]="busy()"
-      (click)="step.emit('remove')"
-    >
-      −
-    </button>
-    <button
-      type="button"
-      class="co-container-step co-container-step--add"
-      aria-label="Ajouter un container"
-      [disabled]="busy()"
-      (click)="step.emit('add')"
-    >
-      +
-    </button>
-  }
 </div>

@@ -7,9 +7,6 @@
  * | `PackingListDrawnEvent` | fait durable     | une commande à coliser, avec son échéance     |
  * | `HandedToPackingEvent`  | fait durable     | une fournée sortie = remise au colisage       |
  * | `ReturnRequestedEvent`  | fait durable     | une fournée remise, puis annulée              |
- * | `LegacyPackingReader`   | port publié (K1) | le colisable de l'ancien chemin, pour comparer |
- * | `PackingStation`        | port (K2)        | le poste d'une journée `packing`, en écriture |
- * | `PackingStationReader`  | port (K2)        | le même, en lecture                           |
  * | `PackingReturnedEvent`  | fait durable     | la réponse du colisage à un retour            |
  * | `PackingOrderPackedEvent` | fait durable   | un bac fermé au colisage — lu par le commerce |
  * | `QualityHeldOrdersReader` | port publié (K3a) | les commandes retenues au contrôle, pour le poste |
@@ -26,11 +23,6 @@ export {
   PRODUCTION_HANDED_TO_PACKING,
 } from "./handed-to-packing.event.js";
 export {
-  LegacyPackingReader,
-  type LegacyPackingDay,
-  type LegacyPackingOrder,
-} from "./legacy-packing.reader.js";
-export {
   PRODUCTION_PACKING_LIST_DRAWN,
   PackingListDrawnEvent,
   PackingListDrawnPayloadError,
@@ -42,26 +34,17 @@ export {
   ReturnRequestedEvent,
   ReturnRequestedPayloadError,
 } from "./return-requested.event.js";
-export { PACKING_ORDER_PACKED, PackingOrderPackedEvent } from "./packing-order-packed.event.js";
+export {
+  PACKING_ORDER_PACKED,
+  PackingOrderPackedEvent,
+  PackingOrderPackedPayloadError,
+} from "./packing-order-packed.event.js";
 export {
   PACKING_RETURNED,
   PackingReturnedEvent,
   PackingReturnedPayloadError,
 } from "./packing-returned.event.js";
 export { PackingDayVersionReader } from "./packing-day-version.reader.js";
-export {
-  PackingStation,
-  PackingStationReader,
-  type StationContainer,
-  type StationDay,
-  type StationLine,
-  type StationLineMark,
-  type StationOrder,
-  type StationOrderRef,
-  type StationSeal,
-  type StationSealAck,
-  type StationStock,
-} from "./packing-station.js";
 export { PackedOrdersReader, type PackedOrderSeal } from "./packed-orders.reader.js";
 export { PlannedDestinationsReader } from "./planned-destinations.reader.js";
 export { QualityHeldOrdersReader } from "./quality-held-orders.reader.js";

@@ -40,8 +40,7 @@ const ORDER_SELECT = {
 /**
  * Le poste d'une journée, lu dans les tables du colisage (K3a) — sans verrou.
  *
- * Défense en profondeur (K2b, §5.1, B1), comme `PrismaPackingStationReader` :
- * un contenant dont le bac n'est plus vivant chez la livraison n'est ni servi,
+ * Défense en profondeur (K2b, §5.1, B1) : un contenant dont le bac n'est plus vivant chez la livraison n'est ni servi,
  * ni compté.
  */
 @Injectable()

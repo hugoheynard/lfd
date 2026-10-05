@@ -3,16 +3,10 @@ import {
   type ShadowOrderToDraw,
   type ShadowReceipt,
 } from "../../domain/ports/packing-shadow.ledger.js";
-import {
-  PackingShadowReader,
-  type ShadowDay,
-  type ShadowStock,
-} from "../../domain/ports/packing-shadow.reader.js";
 
 /**
  * L'ombre en mémoire, avec la sémantique de la vraie : une commande inscrite
- * une fois, un reçu une fois, une réserve qui s'additionne. Elle implémente les
- * DEUX ports (lecture et écriture) par deux classes, sur le même état.
+ * une fois, un reçu une fois, une réserve qui s'additionne.
  */
 export class InMemoryShadow extends PackingShadowLedger {
   readonly orders = new Map<string, ShadowOrderToDraw>();
@@ -46,22 +40,5 @@ export class InMemoryShadow extends PackingShadowLedger {
   /** La réserve d'un article, ou `undefined` si rien n'y est jamais arrivé. */
   stockOf(serviceDay: string, sku: string): { received: number; returned: number } | undefined {
     return this.stocks.get(`${serviceDay}/${sku}`);
-  }
-}
-
-/** La lecture de l'ombre, adossée au même état. */
-export class InMemoryShadowReader extends PackingShadowReader {
-  constructor(private readonly shadow: InMemoryShadow) {
-    super();
-  }
-
-  dayOf(serviceDay: string): Promise<ShadowDay> {
-    const orders = [...this.shadow.orders.values()].filter(
-      (order) => order.serviceDay === serviceDay,
-    );
-    const stocks: ShadowStock[] = [...this.shadow.stocks.entries()]
-      .filter(([key]) => key.startsWith(`${serviceDay}/`))
-      .map(([key, stock]) => ({ sku: key.slice(serviceDay.length + 1), ...stock, packed: 0 }));
-    return Promise.resolve({ orders, stocks });
   }
 }

@@ -53,12 +53,15 @@ function staffGesture(
 /**
  * Le colisage : « Cécile Martin a déclaré la commande ORD-142 prête ».
  *
- * Le fait s'écrit dans le contexte de la requête du scan (`POST
- * …/sheets/:reference/packed` → `OrderPackedEvent` → `MarkOrderReadyCommand` →
- * `OrderReadyEvent` → `OnOrderReady`, tout en processus, sans quitter le
- * contexte de requête ; vérifié le 2026-09-19). Seule réserve : un rescan qui
- * rattrape un abonné en échec écrit la ligne sous le nom de celui qui a
- * RESCANNÉ, `readyBy` restant celui du premier scan.
+ * Le fait part de la fermeture AU COLISAGE (`POST
+ * admin/packing/:date/orders/:orderId/close` → `packing.order_packed` dans la
+ * boîte d'envoi → `OnPackingOrderPacked` → `MarkOrderReadyCommand` →
+ * `OrderReadyEvent` → `OnOrderReady`) : hors de la requête du geste, livré par
+ * le relais. La phrase nomme donc `readyBy` — la fiche qui a fermé, portée par
+ * le fait —, et ne retombe sur l'auteur de la ligne que pour une ligne d'avant
+ * qui ne la cite pas. Une réannonce (fermer un bac déjà fermé) n'écrit aucune
+ * ligne : le commerce ne fait rien sur une commande déjà prête (vérifié le
+ * 2026-10-05 ; l'ancienne route `…/sheets/:reference/packed` est retirée, K3c).
  */
 function orderReady(fact: PhraseFact): Said {
   return staffGesture(
