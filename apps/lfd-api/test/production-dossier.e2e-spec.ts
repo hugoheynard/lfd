@@ -7,7 +7,7 @@
 import { Buffer } from "node:buffer";
 
 import { ProductionDayRepository } from "../src/production/domain/ports/production-day.repository.js";
-import { pdfPages } from "../src/production/domain/services/__tests__/pdf-text.js";
+import { pdfPages } from "../src/platform/pdf/__tests__/pdf-text.js";
 import { ServiceDay } from "../src/production/domain/value-objects/service-day.value-object.js";
 import { jsonBody, type E2eContext } from "./e2e-harness.js";
 import { createUser } from "./factories.js";

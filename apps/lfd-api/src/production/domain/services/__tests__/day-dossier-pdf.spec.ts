@@ -1,7 +1,7 @@
 import type { ProductionOrderSnapshot } from "../../entities/production-day.js";
 import { dayDossierOf } from "../day-dossier.js";
 import { dayDossierPdfKey, renderDayDossierPdf } from "../day-dossier-pdf.js";
-import { pdfPages } from "./pdf-text.js";
+import { pdfPages } from "../../../../platform/pdf/__tests__/pdf-text.js";
 
 /**
  * **Le dossier du jour, en PDF** : ce que le papier dit, page par page.

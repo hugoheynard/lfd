@@ -81,6 +81,7 @@
   "test/delivery-purchase-scenarios.e2e-spec.ts": 5160,
   "test/delivery-purchase-table.e2e-spec.ts": 4030,
   "test/delivery-road-routing.e2e-spec.ts": 3897,
+  "test/delivery-round-paper.e2e-spec.ts": 6800,
   "test/delivery-round-finish.e2e-spec.ts": 3607,
   "test/delivery-rounds-guards.e2e-spec.ts": 5442,
   "test/delivery-rounds.e2e-spec.ts": 6166,

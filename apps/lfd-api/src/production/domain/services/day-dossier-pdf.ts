@@ -14,7 +14,6 @@ import {
   ROW_GRAY,
   WIDTH,
   drawQr,
-  methodLabel,
   parisDateTime,
   put,
   putCaps,
@@ -24,7 +23,8 @@ import {
   weekdayLongDate,
   weekdayShortDate,
   type Doc,
-} from "./paper-pdf-kit.js";
+} from "../../../platform/pdf/paper-pdf-kit.js";
+import { methodLabel } from "./fulfillment-method-label.js";
 
 /**
  * **Le dossier du jour, en PDF** — le récapitulatif, puis un bon par commande,

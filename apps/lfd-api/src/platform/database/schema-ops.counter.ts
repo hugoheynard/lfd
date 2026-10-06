@@ -235,6 +235,15 @@ const NON_PUBLIC_SCHEMA_OF_MODEL: Readonly<Record<string, string>> = {
   // La remise au colisage (2026-10-04, `colisage/colisage.md`, K1) :
   // une ligne par fournée déclarée, et une par retour.
   ProductionHandoff: "production",
+  // L'arrêt du plan et l'envoi du dossier (2026-10-06,
+  // `production/arret-du-plan.md`, `production/dossier-prod-du-jour.md`) : le
+  // réglage, les jours fermés, la tentative d'arrêt automatique, les
+  // destinataires du dossier et la trace de chaque envoi.
+  ProductionSettings: "production",
+  ProductionClosedDay: "production",
+  ProductionAutoCloseAttempt: "production",
+  ProductionDossierRecipient: "production",
+  ProductionDossierDispatch: "production",
   // La livraison : son code vit dans `src/delivery/`, ses tables dans son
   // propre schéma depuis le 2026-09-30 (`plan-schema-delivery.md`, SD-D1). Un
   // pic sur la flotte est un geste de réglage, rare par nature.

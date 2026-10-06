@@ -139,6 +139,7 @@ import { COMPOSITION_PREREQUISITES_PROVIDERS } from "./composition-prerequisites
 import { DAY_JOURNAL_CONTROLLERS, DAY_JOURNAL_PROVIDERS } from "./day-journal.providers.js";
 import { DOORSTEP_CONTROLLERS, DOORSTEP_PROVIDERS } from "./doorstep.providers.js";
 import { DRIVER_CONTROLLERS, DRIVER_PROVIDERS } from "./driver.providers.js";
+import { ROUND_PAPER_CONTROLLERS, ROUND_PAPER_PROVIDERS } from "./round-paper.providers.js";
 import {
   PURCHASE_LIBRARY_CONTROLLERS,
   PURCHASE_LIBRARY_PROVIDERS,
@@ -183,6 +184,7 @@ import {
     ...PURCHASE_LIBRARY_CONTROLLERS,
     ...DAY_JOURNAL_CONTROLLERS,
     ...DRIVER_CONTROLLERS,
+    ...ROUND_PAPER_CONTROLLERS,
     ...DOORSTEP_CONTROLLERS,
   ],
   providers: [
@@ -252,6 +254,7 @@ import {
     ...DAY_JOURNAL_PROVIDERS,
     ...COMPOSITION_PREREQUISITES_PROVIDERS,
     ...DRIVER_PROVIDERS,
+    ...ROUND_PAPER_PROVIDERS,
     ...DOORSTEP_PROVIDERS,
     { provide: BinTypeRepository, useClass: PrismaBinTypeRepository },
     { provide: BinTypeLookup, useExisting: BinTypeRepository },

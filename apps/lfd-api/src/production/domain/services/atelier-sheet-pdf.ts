@@ -12,13 +12,13 @@ import {
   drawQr,
   longDate,
   parisDate,
-  methodLabel,
   put,
   putCaps,
   putRight,
   render,
   rule,
-} from "./paper-pdf-kit.js";
+} from "../../../platform/pdf/paper-pdf-kit.js";
+import { methodLabel } from "./fulfillment-method-label.js";
 
 /**
  * **Les papiers du fournil** — la feuille d'une commande, et le compte du jour.

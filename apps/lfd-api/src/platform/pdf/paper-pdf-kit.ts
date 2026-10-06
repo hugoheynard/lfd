@@ -5,13 +5,16 @@ import PDFDocument from "pdfkit";
 import QRCode from "qrcode-generator";
 
 /**
- * **La trousse des papiers du fournil** — page, polices, traits, QR et rendu
- * déterministe, partagés par la feuille d'atelier, le compte à produire et le
- * dossier du jour.
+ * **La trousse des papiers imprimés** — page A4, polices, traits, QR, dates
+ * françaises et rendu déterministe. Aucune règle métier : ce que dit un papier
+ * appartient au contexte qui le dessine.
  *
  * Sortie d'`atelier-sheet-pdf.ts` le 2026-10-06, quand le dossier du jour est
  * venu en troisième : trois papiers du même fournil qui dessineraient chacun
- * leurs marges finiraient par ne plus se ressembler.
+ * leurs marges finiraient par ne plus se ressembler. Montée du fournil dans
+ * `platform/` le même jour, quand la feuille de tournée de la livraison en a eu
+ * besoin : `delivery → production` est fermé, et une trousse sans métier n'a
+ * pas à vivre dans un bloc métier.
  */
 
 export const PAGE_WIDTH = 595.28;
@@ -234,9 +237,4 @@ export async function render(
   doc.end();
   await done;
   return Buffer.concat(chunks);
-}
-
-/** « Retrait » / « Livraison », en un mot — le fournil charge, il ne facture pas. */
-export function methodLabel(method: "pickup" | "delivery"): string {
-  return method === "pickup" ? "Retrait" : "Livraison";
 }

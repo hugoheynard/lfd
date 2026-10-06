@@ -8,7 +8,7 @@ import { ProductionDay } from "../../../domain/entities/production-day.js";
 import { ProductionDayRetakenEvent } from "../../../domain/events/production-day-retaken.event.js";
 import type { StoredDossierRecipient } from "../../../domain/ports/dossier-recipients.reader.js";
 import { AUTOMATIC_SIGNER, staffSigner } from "../../../domain/entities/plan-signer.js";
-import { parisDateTime, weekdayLongDate } from "../../../domain/services/paper-pdf-kit.js";
+import { parisDateTime, weekdayLongDate } from "../../../../platform/pdf/paper-pdf-kit.js";
 import { ServiceDay } from "../../../domain/value-objects/service-day.value-object.js";
 import { Directory, RecipientsRows, staffCard } from "../../__tests__/dossier-recipient-doubles.js";
 import {

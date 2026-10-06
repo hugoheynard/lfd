@@ -1,5 +1,5 @@
 import { renderProductionCountPdf } from "../atelier-sheet-pdf.js";
-import { pdfPages } from "./pdf-text.js";
+import { pdfPages } from "../../../../platform/pdf/__tests__/pdf-text.js";
 
 /** Le compte à produire : la date de son pied. Instant recopié, jamais comparé à l'horloge. */
 describe("renderProductionCountPdf", () => {

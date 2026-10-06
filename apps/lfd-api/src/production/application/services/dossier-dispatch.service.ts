@@ -17,7 +17,7 @@ import {
   dossierCountsOf,
   type DossierAddressee,
 } from "../../domain/services/dossier-addressees.js";
-import { parisDateTime, weekdayLongDate } from "../../domain/services/paper-pdf-kit.js";
+import { parisDateTime, weekdayLongDate } from "../../../platform/pdf/paper-pdf-kit.js";
 import { PlanArrestBell } from "./plan-arrest-bell.js";
 import { ProductionPapers, type ProductionPaper } from "./production-paper.service.js";
 
