@@ -103,13 +103,19 @@ interface Placed {
  *   du PREMIER des deux arrêts, en dernier : en haut de sa pile (v2-4). Ses
  *   deux moitiés y sont listées, côte à côte ; c'est UN bac physique.
  * - Piles : chaque bac physique va sur la dernière pile ouverte de son type si
- *   elle n'a pas atteint `maxStack` ET que sa rangée est encore la rangée
+ *   elle n'a pas atteint ses étages ET que sa rangée est encore la rangée
  *   ouverte, sinon il en ouvre une. Une pile porte donc plusieurs arrêts : le
  *   suivant chargé — livré avant — est au-dessus.
  * - Une pile se pose au sol dès qu'elle s'ouvre (G-D4 ter, 2026-10-03) : sans
  *   ça, le premier arrêt de la tournée finissait sur une pile du FOND, ouverte
  *   par le dernier arrêt, et l'arrêt se retrouvait coupé entre le fond et les
  *   portes (constaté sur le semis, Hugo).
+ * - Les étages d'une pile sont `min(maxStack, ⌊hauteur utile ÷ hauteur du
+ *   bac⌋)` (`FloorPlacer.levelsOf`, la règle de la stratégie A) : jusqu'au
+ *   2026-10-06, seul `maxStack` comptait, et deux mannes de 715 mm montaient
+ *   l'une sur l'autre dans une caisse de 140 cm. Un bac plus haut que la
+ *   caisse ouvre une pile hors plancher (`floor_over`). Sans plancher connu,
+ *   aucun plafond : `unknown_cargo` le dit déjà, et la garde le refuse.
  *
  * @param stops les arrêts vivants dans l'ordre de passage, leurs bacs non annulés.
  */
@@ -182,9 +188,11 @@ function buildPlan(
     .stacks()
     .map((stack) => ({ ...stack, placement: placements?.get(stack.stackIndex) ?? null }));
   const offFloor = stacks.filter((stack) => stack.placement?.kind === "off_floor");
-  const floorOver = floorOverWarning(vehicle, offFloor.length, [
-    ...new Set(offFloor.flatMap((stack) => stack.stopPositions)),
-  ]);
+  const floorOver = floorOverWarning(
+    vehicle,
+    { offFloor: offFloor.length, tooTall: placer?.tooTallStacks().size ?? 0 },
+    [...new Set(offFloor.flatMap((stack) => stack.stopPositions))],
+  );
   return {
     steps,
     stacks,
@@ -276,9 +284,10 @@ class Stacker {
 
   private stackFor(binType: PlanBinType): OpenStack {
     const last = this.lastOfType.get(binType.id);
+    const levels = this.placer?.levelsOf(binType) ?? binType.maxStack;
     if (
       last !== undefined &&
-      last.height < binType.maxStack &&
+      last.height < levels &&
       (this.mode === "compact" || (this.placer?.canGrow(last.stackIndex) ?? true))
     ) {
       return last;
@@ -291,7 +300,11 @@ class Stacker {
     };
     this.all.push(stack);
     this.lastOfType.set(binType.id, stack);
-    this.placer?.place({ stackIndex: stack.stackIndex, ...binType });
+    if (levels === 0) {
+      this.placer?.refuseTooTall(stack.stackIndex);
+    } else {
+      this.placer?.place({ stackIndex: stack.stackIndex, ...binType });
+    }
     return stack;
   }
 

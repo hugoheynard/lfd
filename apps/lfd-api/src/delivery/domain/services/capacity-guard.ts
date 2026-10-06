@@ -1,3 +1,4 @@
+import { floorInMm, stackLevels } from "./floor/floor-geometry.js";
 import type { LoadingWarningKind } from "./loading-warnings.js";
 import { type PlanBin, physicalKey, planLoading, type PlanStop } from "./loading-plan.js";
 import type { PlanVehicle } from "./loading-volume.js";
@@ -105,7 +106,9 @@ function uniquePhysical(bins: readonly PlanBin[]): readonly PlanBin[] {
 /**
  * Deux conditions NÉCESSAIRES, sans poser une pile : les litres extérieurs
  * (sec et froid, comme `loadingVolumeOf`), et la surface au sol des piles
- * les plus hautes possible (`maxStack`) face à celle du plancher.
+ * les plus hautes possible — `maxStack` borné par le plafond, la règle de
+ * `stackLevels` — face à celle du plancher. Un bac sec plus haut que la
+ * caisse ne tient pas.
  */
 function withinBounds(bins: readonly PlanBin[], vehicle: PlanVehicle): boolean {
   const cold = vehicle.refrigeratedLiters !== null;
@@ -121,9 +124,12 @@ function withinBounds(bins: readonly PlanBin[], vehicle: PlanVehicle): boolean {
     }
     const entry = perType.get(binType.id) ?? {
       count: 0,
-      maxStack: Math.max(1, binType.maxStack),
+      maxStack: levelsIn(vehicle, binType, cold),
       footprintMm2: binType.outerLengthMm * binType.outerWidthMm,
     };
+    if (entry.maxStack === 0) {
+      return false;
+    }
     entry.count += 1;
     perType.set(binType.id, entry);
   }
@@ -141,4 +147,13 @@ function withinBounds(bins: readonly PlanBin[], vehicle: PlanVehicle): boolean {
     stacksMm2 += Math.ceil(entry.count / entry.maxStack) * entry.footprintMm2;
   }
   return stacksMm2 <= floorMm2;
+}
+
+/** Les étages d'un type dans ce véhicule ; un isotherme en caisse froide n'a que sa pile. */
+function levelsIn(vehicle: PlanVehicle, binType: PlanBin["binType"], cold: boolean): number {
+  const pile = Math.max(1, binType.maxStack);
+  if ((binType.isotherm && cold) || vehicle.floor === null) {
+    return pile;
+  }
+  return stackLevels(floorInMm(vehicle.floor), binType.outerHeightMm, pile);
 }

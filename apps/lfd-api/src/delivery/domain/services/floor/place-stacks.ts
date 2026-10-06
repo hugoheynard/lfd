@@ -1,6 +1,6 @@
 import { MM_PER_CM } from "../../value-objects/bin-type-dimensions.js";
 import type { CargoFloor } from "../../value-objects/cargo-floor.js";
-import { type FloorMm, floorInMm, freeWidthMm } from "./floor-geometry.js";
+import { type FloorMm, floorInMm, freeWidthMm, stackLevels } from "./floor-geometry.js";
 import type { RowOrientation } from "./maximize-format.js";
 
 /**
@@ -95,6 +95,7 @@ export class FloorPlacer {
   private readonly rowOf = new Map<number, number>();
   private readonly elsewhere = new Map<number, StackPlacement>();
   private blocked = false;
+  private readonly tooTall = new Set<number>();
   private readonly floor: FloorMm;
   private readonly gapMm: number;
 
@@ -120,6 +121,39 @@ export class FloorPlacer {
       return;
     }
     this.rowOf.set(stack.stackIndex, this.rows.length);
+  }
+
+  /**
+   * **Combien d'étages une pile de ce type peut monter** : la règle de la
+   * stratégie A (`stackLevels`), plafond de la caisse compris. Un isotherme
+   * qui part en caisse réfrigérée n'est borné que par sa pile : la hauteur
+   * de la caisse froide n'est pas mesurée (le froid reste en litres, G-Q3).
+   * Zéro : le bac est plus haut que la caisse, il ne tient pas debout.
+   */
+  levelsOf(binType: {
+    readonly isotherm: boolean;
+    readonly outerHeightMm: number;
+    readonly maxStack: number;
+  }): number {
+    if (binType.isotherm && this.refrigerated) {
+      return binType.maxStack;
+    }
+    return stackLevels(this.floor, binType.outerHeightMm, binType.maxStack);
+  }
+
+  /**
+   * Une pile dont le bac est plus haut que la caisse : hors plancher, SANS
+   * bloquer les suivantes — elle n'occupe aucune place au sol, elle n'y entre
+   * pas du tout.
+   */
+  refuseTooTall(stackIndex: number): void {
+    this.tooTall.add(stackIndex);
+    this.elsewhere.set(stackIndex, { kind: "off_floor" });
+  }
+
+  /** Les piles refusées par `refuseTooTall`. */
+  tooTallStacks(): ReadonlySet<number> {
+    return this.tooTall;
   }
 
   /**

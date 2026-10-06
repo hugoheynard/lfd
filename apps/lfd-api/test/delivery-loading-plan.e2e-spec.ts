@@ -244,6 +244,57 @@ describe("le plan de chargement d'une tournée composée", () => {
     },
   );
 
+  /**
+   * Régression (2026-10-06) : la hauteur utile de la caisse n'était jamais
+   * comparée à celle d'une pile. Deux mannes de 715 mm, pile max 2, font
+   * 1430 mm : le plan les empilait dans une caisse de 140 cm.
+   */
+  it.each([
+    [140, [1, 1], ["floor", "off_floor"]],
+    [145, [2], ["floor"]],
+  ])(
+    "deux mannes (pile max 2) dans une caisse de %i cm : piles %j",
+    async (heightCm, heights, kinds) => {
+      const vehicle = await admin(ctx)
+        .post(VEHICLES)
+        .send({
+          name: "Caisse basse",
+          plate: "PL-321-AN",
+          cargo: { lengthCm: 70, widthCm: 50, heightCm },
+        })
+        .expect(201);
+      const manne = await admin(ctx)
+        .post(`${LOADING}/bacs`)
+        .send({
+          name: "Manne à pain",
+          outer: { lengthMm: 665, widthMm: 460, heightMm: 715 },
+          inner: { lengthMm: 645, widthMm: 440, heightMm: 695 },
+          isotherm: false,
+          maxStack: 2,
+          divisible: false,
+        })
+        .expect(201);
+      const roundId = await openRound(ctx, DAY, jsonBody<CreatedIdResponse>(vehicle).id);
+      const order = await seedDelivery(ctx, DAY);
+      await assign(ctx, DAY, roundId, order.id);
+      await declareTypedBins(ctx, {
+        orderId: order.id,
+        binTypeId: jsonBody<CreatedIdResponse>(manne).id,
+        whole: 2,
+        half: false,
+        innerBags: 0,
+      });
+
+      const plan = jsonBody<DeliveryLoadingPlanView>(await planOf(roundId).expect(200));
+
+      expect(plan.stacks.map((stack) => stack.height)).toEqual(heights);
+      expect(plan.stacks.map((stack) => stack.placement?.kind)).toEqual(kinds);
+      expect(plan.warnings.some((warning) => warning.kind === "floor_over")).toBe(
+        kinds.includes("off_floor"),
+      );
+    },
+  );
+
   it("une tournée inconnue répond 404", async () => {
     await planOf("round_inconnue").expect(404);
   });

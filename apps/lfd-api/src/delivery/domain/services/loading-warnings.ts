@@ -76,22 +76,28 @@ function redoWarnings(units: readonly PlanUnit[]): readonly LoadingWarning[] {
  * `floor_over` (G-D4) : des piles ne trouvent pas de place au sol. S'AJOUTE à
  * `dry_over` — on peut tenir en litres sans tenir en forme, et l'inverse.
  *
+ * Un bac plus haut que la caisse (2026-10-06) est une pile hors plancher de
+ * plus, et le message le nomme : retirer un arrêt n'y changerait rien.
+ *
+ * @param stacks `offFloor` compte TOUTES les piles hors plancher, `tooTall` en fait partie.
  * @param stopPositions les arrêts des piles hors plancher, sans doublon.
  */
 export function floorOverWarning(
   vehicle: PlanVehicle,
-  offFloorStacks: number,
+  stacks: { readonly offFloor: number; readonly tooTall: number },
   stopPositions: readonly number[],
 ): LoadingWarning | null {
-  if (offFloorStacks === 0) {
+  if (stacks.offFloor === 0) {
     return null;
   }
   const named = stopsLabel([...stopPositions].sort((a, b) => a - b));
   const piles =
-    offFloorStacks === 1 ? "1 pile ne tient pas" : `${offFloorStacks} piles ne tiennent pas`;
+    stacks.offFloor === 1 ? "1 pile ne tient pas" : `${stacks.offFloor} piles ne tiennent pas`;
+  const tall =
+    stacks.tooTall === 0 ? "" : `, dont ${stacks.tooTall} dont le bac est plus haut que la caisse`;
   return {
     kind: "floor_over",
-    message: `${piles} au sol de « ${vehicle.name} »${named} : retirez un arrêt de la tournée ou changez de véhicule.`,
+    message: `${piles} au sol de « ${vehicle.name} »${named}${tall} : retirez un arrêt de la tournée ou changez de véhicule.`,
   };
 }
 
