@@ -69,11 +69,12 @@ describe("moduleOf — le fournil", () => {
     ["production_quality.hold_lifted", "production"],
     ["production_settings.close_changed", "production"],
     ["production_closed_day.added", "production"],
+    ["production_dossier_recipient.added", "production"],
   ])("%s se range sous %s", (type, module) => {
     expect(moduleOf(type)).toBe(module);
   });
 
-  it("le filtre du module production ne ramène que ses six préfixes", () => {
+  it("le filtre du module production ne ramène que ses sept préfixes", () => {
     // Les contenants du colisage (K2b, 2026-10-04) : le poste est au fournil.
     // Les réglages du fournil (A1, 2026-10-06) : l'arrêt du plan, les jours fermés.
     expect(prefixesOf("production")).toEqual([
@@ -83,6 +84,7 @@ describe("moduleOf — le fournil", () => {
       "packing_container.",
       "production_settings.",
       "production_closed_day.",
+      "production_dossier_recipient.",
     ]);
   });
 });
