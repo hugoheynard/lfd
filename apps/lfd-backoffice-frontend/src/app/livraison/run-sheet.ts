@@ -1,5 +1,6 @@
 import type {
   DeliveryContact,
+  DeliveryRunSheetRoundView,
   DeliveryRunSheetStopView,
   DeliveryRunSheetView,
   GpsPoint,
@@ -162,6 +163,8 @@ export interface RunSheetSummary {
   readonly deliveries: number;
   readonly packed: number;
   readonly withoutAtelierSheet: number;
+  /** Tournées composées ce jour-là, telles que le serveur les compte. */
+  readonly rounds: number;
 }
 
 export function summaryOf(view: DeliveryRunSheetView): RunSheetSummary {
@@ -170,6 +173,7 @@ export function summaryOf(view: DeliveryRunSheetView): RunSheetSummary {
     deliveries: live.length,
     packed: live.filter((stop) => stop.state === 'ready' || stop.state === 'handed_over').length,
     withoutAtelierSheet: live.filter((stop) => stop.withoutAtelierSheet).length,
+    rounds: view.roundCount,
   };
 }
 
@@ -184,12 +188,22 @@ export function longDayOf(isoDay: string): string {
   }).format(new Date(Date.UTC(year ?? 0, (month ?? 1) - 1, day ?? 1)));
 }
 
-/**
- * Le titre-chiffre de la bande : « 14 adresses · 9 colisées ». La partie
- * tournées attend que la vue porte la composition (2026-10-06).
- */
+/** « 2 tournées », « 1 tournée », « aucune tournée composée ». */
+export function roundCountLabel(rounds: number): string {
+  if (rounds === 0) {
+    return 'aucune tournée composée';
+  }
+  return `${String(rounds)} tournée${rounds > 1 ? 's' : ''}`;
+}
+
+/** Le titre-chiffre de la bande : « 14 adresses · 9 colisées · 2 tournées ». */
 export function headlineOf(summary: RunSheetSummary): string {
   const addresses = `${String(summary.deliveries)} adresse${summary.deliveries > 1 ? 's' : ''}`;
   const packed = `${String(summary.packed)} colisée${summary.packed > 1 ? 's' : ''}`;
-  return `${addresses} · ${packed}`;
+  return `${addresses} · ${packed} · ${roundCountLabel(summary.rounds)}`;
+}
+
+/** « Kangoo blanc · arrêt 2 » — la tournée d'un arrêt et son rang dedans. */
+export function roundBadgeOf(round: DeliveryRunSheetRoundView): string {
+  return `${round.label} · arrêt ${String(round.position)}`;
 }

@@ -13,6 +13,11 @@
   </fold-element-title>
 
   <div class="flags">
+    @if (item.round; as round) {
+      <fold-badge variant="info" [content]="roundBadgeOf(round)" data-round />
+    } @else {
+      <fold-badge variant="warning" content="Hors tournée" data-off-round />
+    }
     @if (item.window?.source === 'default') {
       <fold-badge variant="neutral" content="Horaire par défaut" data-default-window />
     }

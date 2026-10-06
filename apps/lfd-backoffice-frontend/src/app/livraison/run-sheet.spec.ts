@@ -11,6 +11,8 @@ import {
   stateLabelOf,
   stopTitleOf,
   headlineOf,
+  roundBadgeOf,
+  roundCountLabel,
   longDayOf,
   summaryOf,
   telHrefOf,
@@ -113,7 +115,7 @@ describe('summaryOf', () => {
         stopOf({ state: 'cancelled', withoutAtelierSheet: true }),
       ],
     });
-    expect(summary).toEqual({ deliveries: 3, packed: 2, withoutAtelierSheet: 1 });
+    expect(summary).toEqual({ deliveries: 3, packed: 2, withoutAtelierSheet: 1, rounds: 0 });
   });
 });
 
@@ -154,11 +156,23 @@ describe('longDayOf / headlineOf', () => {
   });
 
   it('accorde les pluriels', () => {
-    expect(headlineOf({ deliveries: 14, packed: 9, withoutAtelierSheet: 0 })).toBe(
-      '14 adresses · 9 colisées',
+    expect(headlineOf({ deliveries: 14, packed: 9, withoutAtelierSheet: 0, rounds: 2 })).toBe(
+      '14 adresses · 9 colisées · 2 tournées',
     );
-    expect(headlineOf({ deliveries: 1, packed: 0, withoutAtelierSheet: 0 })).toBe(
-      '1 adresse · 0 colisée',
+    expect(headlineOf({ deliveries: 1, packed: 0, withoutAtelierSheet: 0, rounds: 1 })).toBe(
+      '1 adresse · 0 colisée · 1 tournée',
+    );
+  });
+
+  it('compte les tournées, et dit quand aucune n’est composée', () => {
+    expect(roundCountLabel(0)).toBe('aucune tournée composée');
+    expect(roundCountLabel(1)).toBe('1 tournée');
+    expect(roundCountLabel(3)).toBe('3 tournées');
+  });
+
+  it('nomme la tournée et le rang d’un arrêt', () => {
+    expect(roundBadgeOf({ roundId: 'r-1', label: 'Kangoo blanc', position: 2 })).toBe(
+      'Kangoo blanc · arrêt 2',
     );
   });
 });

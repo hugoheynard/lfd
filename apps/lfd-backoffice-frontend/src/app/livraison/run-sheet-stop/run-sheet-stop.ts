@@ -14,6 +14,7 @@ import {
   contactNameOf,
   mapHrefOf,
   onSiteLabelOf,
+  roundBadgeOf,
   stateLabelOf,
   stopTitleOf,
   telHrefOf,
@@ -54,6 +55,7 @@ export class RunSheetStop {
   readonly canSeePhotos = input(false);
 
   protected readonly windowLabel = windowLabel;
+  protected readonly roundBadgeOf = roundBadgeOf;
   protected readonly stateLabelOf = stateLabelOf;
   protected readonly stopTitleOf = stopTitleOf;
   protected readonly addressLinesOf = addressLinesOf;

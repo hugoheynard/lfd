@@ -214,7 +214,7 @@ describe('DeliveryPage', () => {
       (day) =>
         Promise.resolve({
           day,
-          roundCount: 0,
+          roundCount: 2,
           stops: [
             stopOf({ orderId: 'a', state: 'ready' }),
             stopOf({ orderId: 'b', state: 'expected', withoutAtelierSheet: true }),
@@ -229,9 +229,42 @@ describe('DeliveryPage', () => {
       'Livraisons du mercredi 7 octobre',
     );
     expect(element.querySelector('[data-headline]')?.textContent).toContain(
-      '2 adresses · 1 colisée',
+      '2 adresses · 1 colisée · 2 tournées',
     );
     expect(element.querySelector('[data-summary-no-sheet]')).not.toBeNull();
+  });
+
+  it('dit « aucune tournée composée » quand le jour n’en a pas', async () => {
+    const { element } = await mount((day) =>
+      Promise.resolve({ day, roundCount: 0, stops: [stopOf({})] }),
+    );
+    expect(element.querySelector('[data-headline]')?.textContent).toContain(
+      'aucune tournée composée',
+    );
+  });
+
+  it('badge chaque arrêt de sa tournée et de son rang, ou « Hors tournée »', async () => {
+    const { element } = await mount((day) =>
+      Promise.resolve({
+        day,
+        roundCount: 1,
+        stops: [
+          stopOf({
+            orderId: 'a',
+            reference: 'CMD-A',
+            round: { roundId: 'r-1', label: 'Kangoo blanc', position: 2 },
+          }),
+          stopOf({ orderId: 'b', reference: 'CMD-B', round: null }),
+        ],
+      }),
+    );
+    const stops = element.querySelectorAll('[data-stop]');
+    expect(stops[0]?.querySelector('[data-round]')?.textContent).toContain(
+      'Kangoo blanc · arrêt 2',
+    );
+    expect(stops[0]?.querySelector('[data-off-round]')).toBeNull();
+    expect(stops[1]?.querySelector('[data-off-round]')?.textContent).toContain('Hors tournée');
+    expect(stops[1]?.querySelector('[data-round]')).toBeNull();
   });
 
   it('tait l’avertissement sans feuille d’atelier quand il n’y en a aucune', async () => {
