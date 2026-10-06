@@ -63,28 +63,20 @@
   (miroir associatif, sans engagement de disponibilité — garder Geofabrik en
   repli).
 
-## La capacité du véhicule à la composition — à faire (Hugo, 2026-10-03)
+## La capacité du véhicule à la composition — reste (Hugo, 2026-10-03)
 
-« Proposer » ne regarde ni les litres, ni le plancher, ni les bacs : il peut
-composer une tournée qui ne tiendra pas dans la camionnette, et seul le plan
-de chargement le dit, au dépôt, une fois les tournées figées
-([`algorithme-de-preparation-de-tournee.md`](algorithme-de-preparation-de-tournee.md), §8).
-Hugo : on démarre ainsi, et on le note.
+« Proposer » tient compte de la place depuis CA4 (2026-10-06, non commité) :
+voir [`composition-automatique.md`](composition-automatique.md), §5. Ce qui
+reste :
 
-La piste discutée le 2026-10-03, à écrire en plan avant de bâtir :
-
-- une **demande par arrêt en bacs** : les bacs déclarés, sinon l'estimation
-  par les lignes et les contenances (la proposition de colisage la fait déjà),
-  sinon « inconnu », signalé et jamais inventé ;
-- « Proposer » n'accepte un arrêt dans une tournée que si `planLoading` tient
-  encore (compactage permis), testé sur la meilleure position seulement ;
 - la composition à la main **avertit** sans refuser : une jauge litres +
   plancher par tournée ;
-- un seul algorithme pour la composition et le chargement.
-
-À trancher : prévenir quand une tournée qui tenait sur l'estimation ne tient
-plus une fois les vrais bacs déclarés ; le poids (I5) reste hors champ tant
-qu'aucun bac n'en porte.
+- prévenir quand une tournée qui tenait sur l'estimation ne tient plus une
+  fois les vrais bacs déclarés ;
+- le poids (I5) reste hors champ tant qu'aucun bac n'en porte ;
+- les lignes des commandes sont lues une commande à la fois par « Proposer »
+  (le port du commerce n'a pas de lecture groupée) : environ 200 requêtes à
+  200 clients. À grouper si le banc le montre.
 
 ## Des piles mêlant plusieurs tailles de bac — à réfléchir (Hugo, 2026-10-03)
 

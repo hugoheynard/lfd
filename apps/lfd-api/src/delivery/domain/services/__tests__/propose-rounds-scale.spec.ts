@@ -1,6 +1,8 @@
 import { RoutingSettings } from "../../value-objects/routing-settings.js";
+import { capacityGuardOf, type CompositionCapacity } from "../capacity-guard.js";
 import { type PlannableStop, proposeRounds } from "../propose-rounds.js";
 import type { CostFn } from "../../ports/distance-matrix.js";
+import { binsOf, measured } from "./capacity-fixtures.js";
 import { planeCost } from "./line-cost.js";
 
 const STOP_COUNT = 60;
@@ -72,7 +74,11 @@ function tabulated(cost: CostFn, ids: readonly string[]): CostFn {
 describe("proposer à l'échelle (L7b-C2)", () => {
   it("rend soixante arrêts sur quatre véhicules en moins de trois secondes, sans rien perdre", () => {
     const { stops, cost } = spiral();
-    let proposal: ReturnType<typeof proposeRounds> = { tours: [], overflow: [] };
+    let proposal: ReturnType<typeof proposeRounds> = {
+      tours: [],
+      overflow: [],
+      capacityRefused: [],
+    };
 
     const spent = cpuMillisecondsOf(() => {
       proposal = proposeRounds({
@@ -89,5 +95,50 @@ describe("proposer à l'échelle (L7b-C2)", () => {
     const placed = proposal.tours.flatMap((tour) => tour.stops.map((stop) => stop.id));
     expect(placed.length + proposal.overflow.length).toBe(STOP_COUNT);
     expect(new Set(placed).size).toBe(placed.length);
+  });
+
+  /**
+   * CA4 : la même journée, un à trois bacs par arrêt, dans quatre petites
+   * caisses (130 × 125 cm) — la place oblige à une tournée de plus. Mesuré le
+   * 2026-10-06 sur un poste (médiane de 7) : 163 ms sans capacité, 111 ms
+   * avec — le majorant refuse tôt et la caisse pleine coupe la recherche.
+   */
+  it("avec la capacité, tient la même borne, et aucune tournée ne déborde", () => {
+    const { stops, cost } = spiral();
+    const vehicleIds = ["v1", "v2", "v3", "v4"];
+    const small = measured("Kangoo", 130, 125, 140);
+    const capacity: CompositionCapacity = {
+      vehicles: new Map(vehicleIds.map((id) => [id, small])),
+      bins: new Map(stops.map((stop, index) => [stop.id, binsOf(stop.id, 1 + (index % 3))])),
+    };
+    let proposal: ReturnType<typeof proposeRounds> = {
+      tours: [],
+      overflow: [],
+      capacityRefused: [],
+    };
+
+    const spent = cpuMillisecondsOf(() => {
+      proposal = proposeRounds({
+        depotId: "depot",
+        stops,
+        vehicles: vehicleIds.map((id) => ({ id, name: id })),
+        recomposable: [],
+        cost,
+        settings: RoutingSettings.defaults(),
+        capacity,
+      });
+    });
+
+    expect(spent).toBeLessThan(BUDGET_MS);
+    const placed = proposal.tours.flatMap((tour) => tour.stops.map((stop) => stop.id));
+    expect(placed.length + proposal.overflow.length + proposal.capacityRefused.length).toBe(
+      STOP_COUNT,
+    );
+    const guard = capacityGuardOf(capacity);
+    expect(
+      proposal.tours.every((tour) =>
+        guard.fits(tour.vehicleId, [{ roundId: null, stops: tour.stops }]),
+      ),
+    ).toBe(true);
   });
 });

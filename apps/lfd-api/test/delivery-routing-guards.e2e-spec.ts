@@ -30,7 +30,7 @@ import {
   PROPOSAL,
   propose,
   seedDeparture,
-  seedLocatedDelivery,
+  seedPlannableDelivery,
   time,
   TIMING,
   MEASURED,
@@ -65,7 +65,7 @@ function messageOf(response: Response): string {
 /** Une tournée composée à la main, avec une commande située. */
 async function composed(vehicleName: string, gps: typeof NORTH) {
   const roundId = await openRound(ctx, DAY, await addVehicle(ctx, vehicleName, MEASURED));
-  const orderId = await seedLocatedDelivery(ctx, DAY, gps);
+  const orderId = await seedPlannableDelivery(ctx, DAY, gps);
   const stopId = await assign(ctx, DAY, roundId, orderId);
   return { roundId, orderId, stopId };
 }
@@ -74,10 +74,10 @@ describe("la composition a changé depuis la proposition", () => {
   it("une version périmée est refusée — « reproposez » —, et rien n'est appliqué", async () => {
     await seedDeparture(ctx);
     const manual = await composed("Kangoo", NORTH);
-    await seedLocatedDelivery(ctx, DAY, SOUTH);
+    await seedPlannableDelivery(ctx, DAY, SOUTH);
     const view = await propose(ctx, `jour=${DAY}&toutRecomposer=true`);
     // Quelqu'un compose entre la proposition et l'application.
-    await assign(ctx, DAY, manual.roundId, await seedLocatedDelivery(ctx, DAY, NORTH));
+    await assign(ctx, DAY, manual.roundId, await seedPlannableDelivery(ctx, DAY, NORTH));
     const before = await roundOf(ctx, DAY, manual.roundId);
 
     const refused = await apply(ctx, payloadOf(view)).expect(409);
@@ -96,7 +96,7 @@ describe("ce que la proposition ne touche jamais (L7-C5)", () => {
     await loadBin(ctx, gone.roundId, { binId: binId ?? "" }).expect(204);
     expect((await depart(ctx, gone.roundId)).status).toBe(204);
     await addVehicle(ctx, "Trafic", MEASURED);
-    await seedLocatedDelivery(ctx, DAY, SOUTH);
+    await seedPlannableDelivery(ctx, DAY, SOUTH);
 
     const view = await propose(ctx, `jour=${DAY}&toutRecomposer=true`);
 
@@ -154,7 +154,7 @@ describe("chronométrer refuse ce qu'appliquer refuserait (L10b-C2)", () => {
   it("un arrêt non situé : 409, en renvoyant au carnet", async () => {
     await seedDeparture(ctx);
     const kangoo = await addVehicle(ctx, "Kangoo", MEASURED);
-    const lost = await seedLocatedDelivery(ctx, DAY, null);
+    const lost = await seedPlannableDelivery(ctx, DAY, null);
 
     const refused = await time(ctx, {
       day: DAY,

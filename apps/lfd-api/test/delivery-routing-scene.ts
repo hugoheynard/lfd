@@ -24,7 +24,7 @@ import { DistanceMatrix } from "../src/delivery/domain/ports/distance-matrix.js"
 import { RouteGeometry } from "../src/delivery/domain/ports/route-geometry.js";
 import { CustomerRole } from "../src/platform/database/client/client.js";
 import { type E2eOverride, jsonBody, type E2eContext } from "./e2e-harness.js";
-import { binTypeId } from "./delivery-loading-scene.js";
+import { binTypeId, LOADING } from "./delivery-loading-scene.js";
 import { admin, ROUNDS } from "./delivery-rounds-scene.js";
 import { attachTo, createCompany, createUser } from "./factories.js";
 
@@ -61,9 +61,58 @@ export async function seedDeparture(ctx: E2eContext, gps: boolean = true): Promi
 /** Des cotes utiles quelconques : « Proposer » exige un véhicule mesuré (CA-D3). */
 export const MEASURED = { lengthCm: 250, widthCm: 160, heightCm: 140 } as const;
 
-/** Le catalogue minimal : « Proposer » exige un type de bac en service (CA-D3). */
-export async function seedBinCatalog(ctx: E2eContext): Promise<void> {
-  await binTypeId(ctx);
+/**
+ * Le produit des livraisons qu'on propose : depuis CA4, une commande dont on
+ * ne sait pas les bacs n'est jamais placée, et le Bac M en contient dix.
+ */
+export const BREAD_SKU = "PAIN-ROUTING";
+export const BREAD_PER_BIN = 10;
+
+/**
+ * Le catalogue minimal : « Proposer » exige un type de bac en service
+ * (CA-D3), et une contenance pour estimer les bacs (CA4) — posée par la
+ * vraie route de la grille.
+ */
+export async function seedBinCatalog(ctx: E2eContext): Promise<string> {
+  const typeId = await binTypeId(ctx);
+  await admin(ctx)
+    .put(`${LOADING}/contenances`)
+    .send({ binTypeId: typeId, sku: BREAD_SKU, units: BREAD_PER_BIN })
+    .expect(204);
+  return typeId;
+}
+
+/**
+ * Pose `quantity` pains sur une commande semée. Écrit en Prisma, comme la
+ * commande elle-même : le commerce n'a pas d'agrégat de ligne à qui le
+ * demander hors d'une passation complète — dette de `test/factories.ts`.
+ */
+export async function withBread(ctx: E2eContext, orderId: string, quantity = 1): Promise<void> {
+  await ctx.prisma.orderLine.create({
+    data: {
+      orderId,
+      sku: BREAD_SKU,
+      productNameSnapshot: "Pain",
+      unitPriceMillicents: 100_000,
+      quantity,
+      lineTotalCents: quantity * 100,
+    },
+  });
+}
+
+/**
+ * `seedLocatedDelivery`, avec un pain : une livraison dont « Proposer » sait
+ * la demande — un Bac M estimé (CA4).
+ */
+export async function seedPlannableDelivery(
+  ctx: E2eContext,
+  day: string,
+  gps: { readonly lat: number; readonly lng: number } | null,
+  stopMinutes?: number,
+): Promise<string> {
+  const orderId = await seedLocatedDelivery(ctx, day, gps, stopMinutes);
+  await withBread(ctx, orderId);
+  return orderId;
 }
 
 let sequence = 0;

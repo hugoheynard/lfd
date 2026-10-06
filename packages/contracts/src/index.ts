@@ -1046,6 +1046,8 @@ export type {
   DeliveryProposedRoundView,
   DeliveryUnlocatedReason,
   DeliveryUnlocatedOrderView,
+  DeliveryUnfitReason,
+  DeliveryUnfitOrderView,
   DeliveryCostEstimate,
   DeliveryKeptRoundReason,
   DeliveryKeptRoundView,

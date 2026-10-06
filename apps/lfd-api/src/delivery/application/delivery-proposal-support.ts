@@ -58,7 +58,9 @@ export interface KeptRound {
  * tournée partie, jamais une tournée où un bac est chargé. Sans « tout
  * recomposer », aucune autre non plus. Et une tournée dont un arrêt est signalé
  * (à retirer à la main, Q11) ou non situé reste telle quelle : la proposition
- * ne défait pas un placement qu'elle ne saurait pas refaire. Une commande
+ * ne défait pas un placement qu'elle ne saurait pas refaire — ni une tournée
+ * dont un arrêt n'a pas de demande en bacs connue (CA4) : sa place n'y serait
+ * pas vérifiable. Une commande
  * RAPPORTÉE placée un autre jour que sa date demandée n'est pas signalée pour
  * cette seule raison (`decisions-par-defaut-2026-10-02.md`, § 4).
  */
@@ -70,6 +72,8 @@ export function classifyRounds(input: {
   /** Les commandes composées qui ont été rapportées : un autre jour ne les signale pas (RL1). */
   readonly broughtBack: ReadonlySet<string>;
   readonly located: ReadonlyMap<string, LocatedStop>;
+  /** Les commandes dont on ne connaît pas les bacs (CA4). */
+  readonly unknownDemand: ReadonlySet<string>;
   readonly recomposeAll: boolean;
 }): { readonly recomposable: readonly RoundRow[]; readonly kept: readonly KeptRound[] } {
   const recomposable: RoundRow[] = [];
@@ -113,19 +117,27 @@ function keptReason(
   const unlocated = round.stops.some(
     (stop) => (input.located.get(stop.orderId)?.point ?? null) === null,
   );
-  return unlocated ? "unlocated_stop" : null;
+  if (unlocated) {
+    return "unlocated_stop";
+  }
+  return round.stops.some((stop) => input.unknownDemand.has(stop.orderId))
+    ? "unknown_demand_stop"
+    : null;
 }
 
 /**
  * **Où insérer** (mode `insert`) : les tournées au dépôt des véhicules cochés,
  * dont chaque arrêt est situé — sans quoi on ne saurait pas chronométrer ce
- * qu'on y ajoute. Une tournée chargée reste éligible : Hugo a dit « non
- * parties » (2026-09-29) ; l'arrêt inséré n'a pas de bac, et « Partir » le dira.
+ * qu'on y ajoute — ni de dire si ce qu'on y ajoute tient dans la caisse
+ * quand un arrêt n'a pas de demande en bacs connue (CA4). Une tournée chargée
+ * reste éligible : Hugo a dit « non parties » (2026-09-29) ; l'arrêt inséré
+ * n'a pas de bac, et « Partir » le dira.
  */
 export function insertableRounds(input: {
   readonly rounds: readonly RoundRow[];
   readonly vehicleIds: ReadonlySet<string>;
   readonly located: ReadonlyMap<string, LocatedStop>;
+  readonly unknownDemand: ReadonlySet<string>;
 }): { readonly insertable: readonly RoundRow[]; readonly kept: readonly KeptRound[] } {
   const insertable: RoundRow[] = [];
   const kept: KeptRound[] = [];
@@ -138,6 +150,8 @@ export function insertableRounds(input: {
       round.stops.some((stop) => (input.located.get(stop.orderId)?.point ?? null) === null)
     ) {
       kept.push({ round, reason: "unlocated_stop" });
+    } else if (round.stops.some((stop) => input.unknownDemand.has(stop.orderId))) {
+      kept.push({ round, reason: "unknown_demand_stop" });
     } else {
       insertable.push(round);
     }

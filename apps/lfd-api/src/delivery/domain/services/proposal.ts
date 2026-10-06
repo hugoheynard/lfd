@@ -35,4 +35,9 @@ export interface Proposal {
   readonly tours: readonly ProposedTour[];
   /** Les commandes à répartir qu'aucune tournée ne peut recevoir (plus de passage permis). */
   readonly overflow: readonly string[];
+  /**
+   * Les commandes qu'aucune place ne tenait dans la caisse (CA4) — à
+   * répartir, ou restées dans leur tournée d'origine (« tout recomposer »).
+   */
+  readonly capacityRefused: readonly string[];
 }

@@ -28,7 +28,7 @@ import {
   forgetRoutingScene,
   PROPOSAL,
   seedDeparture,
-  seedLocatedDelivery,
+  seedPlannableDelivery,
   time,
   MEASURED,
   seedBinCatalog,
@@ -68,7 +68,7 @@ describe("sans OSRM, le calcul refuse — plus de vol d'oiseau (L10b-C5)", () =>
   it("« Proposer » : 409, la phrase à lire, rien d'écrit", async () => {
     await seedDeparture(ctx);
     await addVehicle(ctx, "Kangoo", MEASURED);
-    await seedLocatedDelivery(ctx, DAY, { lat: 45.69, lng: 5.91 });
+    await seedPlannableDelivery(ctx, DAY, { lat: 45.69, lng: 5.91 });
 
     const refused = await admin(ctx).get(`${PROPOSAL}?jour=${DAY}`).expect(409);
 
@@ -79,7 +79,7 @@ describe("sans OSRM, le calcul refuse — plus de vol d'oiseau (L10b-C5)", () =>
   it("« Chronométrer » : 409, la même phrase", async () => {
     await seedDeparture(ctx);
     const kangoo = await addVehicle(ctx, "Kangoo", MEASURED);
-    const order = await seedLocatedDelivery(ctx, DAY, { lat: 45.69, lng: 5.91 });
+    const order = await seedPlannableDelivery(ctx, DAY, { lat: 45.69, lng: 5.91 });
 
     const refused = await time(ctx, {
       day: DAY,

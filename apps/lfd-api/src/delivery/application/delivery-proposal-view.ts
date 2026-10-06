@@ -29,6 +29,8 @@ export interface ProposalViewInputs {
   readonly stops: ReadonlyMap<string, LocatedStop>;
   /** Les commandes non situées, dans l'ordre où on les a lues. */
   readonly unlocated: readonly LocatedStop[];
+  /** Les commandes à répartir, situées, dont on ne connaît pas les bacs (CA4). */
+  readonly unknownDemand: readonly string[];
   /** Le tracé de chaque tournée de `proposal.tours`, dans le même ordre (L10b-C4). */
   readonly lines: readonly (RouteLine | null)[];
 }
@@ -68,6 +70,18 @@ export function proposalViewOf(inputs: ProposalViewInputs): DeliveryRoundProposa
       orderId,
       reference: reference(orderId),
     })),
+    unfit: [
+      ...inputs.unknownDemand.map((orderId) => ({
+        orderId,
+        reference: reference(orderId),
+        reason: "unknown_demand" as const,
+      })),
+      ...inputs.proposal.capacityRefused.map((orderId) => ({
+        orderId,
+        reference: reference(orderId),
+        reason: "capacity" as const,
+      })),
+    ],
     kept: inputs.kept.map(({ round, reason }) => ({
       roundId: round.id,
       vehicleName: round.vehicleName,

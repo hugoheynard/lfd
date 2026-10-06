@@ -150,6 +150,7 @@ export class RoundsPreview {
       ...(this.composed()?.rounds.flatMap((round) => round.stops.map(({ stop }) => stop)) ?? []),
       ...(proposal?.unlocated ?? []),
       ...(proposal?.overflow ?? []),
+      ...(proposal?.unfit ?? []),
     ];
     for (const ref of refs) {
       const sheet = sheets.get(ref.orderId) ?? null;

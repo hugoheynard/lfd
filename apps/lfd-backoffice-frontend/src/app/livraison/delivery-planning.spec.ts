@@ -76,6 +76,7 @@ const PROPOSAL: DeliveryRoundProposalView = {
   ],
   unlocated: [],
   overflow: [],
+  unfit: [],
   kept: [{ roundId: 'r-9', vehicleName: 'Camionnette 3', passage: 1, reason: 'loaded' }],
   versions: [
     { roundId: 'r-1', version: 4 },

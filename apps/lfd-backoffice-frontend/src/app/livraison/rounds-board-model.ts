@@ -37,8 +37,13 @@ import { timeLabel } from '../shared/window-label';
 /** Le nom de la liste « À répartir » parmi les listes du tableau — jamais un identifiant de tournée. */
 export const POOL_KEY = '__pool__';
 
-/** Pourquoi le calcul a laissé une commande à répartir (aperçu seulement). */
-export type BoardReason = 'unlocated' | 'overflow';
+/**
+ * Pourquoi le calcul a laissé une commande à répartir (aperçu seulement) :
+ * sans point GPS, plus de passage permis, ou la place (CA4) — aucune caisse
+ * ne la tient (`capacity`), ou l'on ne sait pas combien de bacs elle
+ * occupera (`unknown_demand`).
+ */
+export type BoardReason = 'unlocated' | 'overflow' | 'capacity' | 'unknown_demand';
 
 /** Une commande à répartir. */
 export interface BoardOrder {
@@ -295,15 +300,14 @@ function poolOfPreview(
   known: Board,
   proposal: DeliveryRoundProposalView,
 ): readonly BoardOrder[] {
-  const unlocated = new Set(proposal.unlocated.map((order) => order.orderId));
-  const overflow = new Set(proposal.overflow.map((order) => order.orderId));
+  const reasons = reasonsOf(proposal);
   const orders = new Map<string, BoardOrder>([
     ...known.pool.map((order) => [order.orderId, order] as const),
     ...known.rounds.flatMap((round) =>
       round.stops.map((stop) => [stop.orderId, orderOfStop(stop)] as const),
     ),
   ]);
-  for (const ref of [...proposal.unlocated, ...proposal.overflow]) {
+  for (const ref of [...proposal.unlocated, ...proposal.overflow, ...proposal.unfit]) {
     if (!orders.has(ref.orderId)) {
       orders.set(ref.orderId, {
         orderId: ref.orderId,
@@ -319,9 +323,22 @@ function poolOfPreview(
     if (order === undefined) {
       return [];
     }
-    const reason = unlocated.has(id) ? 'unlocated' : overflow.has(id) ? 'overflow' : null;
-    return [{ ...order, reason }];
+    return [{ ...order, reason: reasons.get(id) ?? null }];
   });
+}
+
+/** La raison de chaque commande que le calcul a laissée à répartir ; la première l'emporte. */
+function reasonsOf(proposal: DeliveryRoundProposalView): ReadonlyMap<string, BoardReason> {
+  const reasons = new Map<string, BoardReason>();
+  const add = (orderId: string, reason: BoardReason): void => {
+    if (!reasons.has(orderId)) {
+      reasons.set(orderId, reason);
+    }
+  };
+  proposal.unlocated.forEach((order) => add(order.orderId, 'unlocated'));
+  proposal.overflow.forEach((order) => add(order.orderId, 'overflow'));
+  proposal.unfit.forEach((order) => add(order.orderId, order.reason));
+  return reasons;
 }
 
 function roundsById(composed: ComposedDay): Map<string, ComposedRound> {
@@ -348,6 +365,7 @@ export function previewPoolOf(
     ...(composed?.rounds.flatMap((round) => round.stops.map(({ stop }) => stop.orderId)) ?? []),
     ...proposal.unlocated.map((order) => order.orderId),
     ...proposal.overflow.map((order) => order.orderId),
+    ...proposal.unfit.map((order) => order.orderId),
   ];
   return [...new Set(candidates)].filter((id) => !placed.has(id));
 }
@@ -468,6 +486,15 @@ export function orderTagsOf(order: BoardOrder): readonly OrderCardTag[] {
   }
   if (order.reason === 'overflow') {
     tags.push({ label: 'Ne tient dans aucune tournée (durée max.)', variant: 'warning' });
+  }
+  if (order.reason === 'capacity') {
+    tags.push({ label: 'Ne tient dans aucun véhicule (place)', variant: 'warning' });
+  }
+  if (order.reason === 'unknown_demand') {
+    tags.push({
+      label: 'Bacs inconnus · déclarez les bacs ou les contenances',
+      variant: 'warning',
+    });
   }
   return tags;
 }

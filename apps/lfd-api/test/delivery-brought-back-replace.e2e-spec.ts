@@ -42,6 +42,7 @@ import {
   seedDeparture,
   MEASURED,
   seedBinCatalog,
+  withBread,
 } from "./delivery-routing-scene.js";
 import {
   bootstrapE2e,
@@ -205,6 +206,8 @@ describe("Une commande rapportée repart (RL1)", () => {
     await seedDeparture(ctx);
     // « Proposer » exige un véhicule mesuré (CA-D3) : celui de la livraison n'a pas de cotes.
     await addVehicle(ctx, "Trafic", MEASURED);
+    // Et une demande en bacs connue (CA4) : un pain, un Bac M estimé.
+    await withBread(ctx, orderId);
 
     const view = await propose(ctx, `jour=${NEXT_DAY}`);
 

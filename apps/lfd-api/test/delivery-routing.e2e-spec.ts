@@ -28,6 +28,8 @@ import {
   propose,
   seedDeparture,
   seedLocatedDelivery,
+  seedPlannableDelivery,
+  withBread,
   timed,
   MEASURED,
   seedBinCatalog,
@@ -124,7 +126,7 @@ describe("les réglages du calcul (L7-C13, L7-C15)", () => {
 describe("situer les arrêts (L7-C9)", () => {
   it("sans géocodeur configuré, refuse en renvoyant au carnet — et n'écrit rien", async () => {
     await seedDeparture(ctx);
-    await seedLocatedDelivery(ctx, DAY, null);
+    await seedPlannableDelivery(ctx, DAY, null);
 
     const refused = await admin(ctx).post(`${ROUNDS}/situer?jour=${DAY}`).expect(409);
 
@@ -144,14 +146,14 @@ describe("proposer, puis appliquer (L7-C3 à C6)", () => {
     await addVehicle(ctx, "Trafic", MEASURED);
     // Aix-les-Bains au nord, Montmélian au sud-est.
     const north = [
-      await seedLocatedDelivery(ctx, DAY, { lat: 45.69, lng: 5.91 }),
-      await seedLocatedDelivery(ctx, DAY, { lat: 45.7, lng: 5.92 }),
+      await seedPlannableDelivery(ctx, DAY, { lat: 45.69, lng: 5.91 }),
+      await seedPlannableDelivery(ctx, DAY, { lat: 45.7, lng: 5.92 }),
     ];
     const south = [
-      await seedLocatedDelivery(ctx, DAY, { lat: 45.5, lng: 6.05 }),
-      await seedLocatedDelivery(ctx, DAY, { lat: 45.49, lng: 6.06 }),
+      await seedPlannableDelivery(ctx, DAY, { lat: 45.5, lng: 6.05 }),
+      await seedPlannableDelivery(ctx, DAY, { lat: 45.49, lng: 6.06 }),
     ];
-    const lost = await seedLocatedDelivery(ctx, DAY, null);
+    const lost = await seedPlannableDelivery(ctx, DAY, null);
     return { north, south, lost };
   }
 
@@ -245,11 +247,11 @@ describe("proposer, puis appliquer (L7-C3 à C6)", () => {
     const vehicleId = await addVehicle(ctx, "Kangoo", MEASURED);
     const roundId = await openRound(ctx, DAY, vehicleId);
     // À la main : le plus loin d'abord, ce que l'optimiseur n'aurait pas fait.
-    const far = await seedLocatedDelivery(ctx, DAY, { lat: 45.7, lng: 5.92 });
-    const near = await seedLocatedDelivery(ctx, DAY, { lat: 45.6, lng: 5.9 });
+    const far = await seedPlannableDelivery(ctx, DAY, { lat: 45.7, lng: 5.92 });
+    const near = await seedPlannableDelivery(ctx, DAY, { lat: 45.6, lng: 5.9 });
     await assign(ctx, DAY, roundId, far);
     await assign(ctx, DAY, roundId, near);
-    const fresh = await seedLocatedDelivery(ctx, DAY, { lat: 45.65, lng: 5.91 });
+    const fresh = await seedPlannableDelivery(ctx, DAY, { lat: 45.65, lng: 5.91 });
 
     const view = await propose(ctx, `jour=${DAY}&mode=insert`);
     expect(view.mode).toBe("insert");
@@ -270,14 +272,53 @@ describe("proposer, puis appliquer (L7-C3 à C6)", () => {
   });
 });
 
+describe("la place des véhicules dans « Proposer » (CA4)", () => {
+  /** Une seule pile de Bacs M au sol (70 × 50 cm), cinq bacs de haut. */
+  const ONE_STACK = { lengthCm: 70, widthCm: 50, heightCm: 120 } as const;
+
+  async function delivery(pains: number | null): Promise<string> {
+    const orderId = await seedLocatedDelivery(ctx, DAY, { lat: 45.69, lng: 5.91 });
+    if (pains !== null) {
+      await withBread(ctx, orderId, pains);
+    }
+    return orderId;
+  }
+
+  it("un petit véhicule qui déborderait : un second passage, une commande trop grosse et une sans bacs connus restent à répartir", async () => {
+    await seedDeparture(ctx);
+    const bike = await addVehicle(ctx, "Vélo-cargo", ONE_STACK);
+    // Trois bacs chacune (trente pains, dix par bac) : ensemble, six bacs pour une pile de cinq.
+    const first = await delivery(30);
+    const second = await delivery(30);
+    const huge = await delivery(60);
+    const unknown = await delivery(null);
+
+    const view = await propose(ctx, `jour=${DAY}`);
+
+    expect(view.rounds.every((round) => round.vehicleId === bike)).toBe(true);
+    expect(view.rounds.map((round) => round.stops.map((stop) => stop.orderId))).toHaveLength(2);
+    expect(view.rounds.flatMap((round) => round.stops.map((stop) => stop.orderId)).sort()).toEqual(
+      [first, second].sort(),
+    );
+    expect(view.unfit.map(({ orderId, reason }) => [orderId, reason]).sort()).toEqual(
+      [
+        [huge, "capacity"],
+        [unknown, "unknown_demand"],
+      ].sort(),
+    );
+    expect(view.unfit.every((order) => order.reference.startsWith("TRN-"))).toBe(true);
+    expect(view.overflow).toEqual([]);
+  });
+});
+
 describe("chronométrer une composition glissée à la main (L10b-C2)", () => {
   it("chronomètre dans l'ordre donné, trace chaque tournée, et n'écrit rien", async () => {
     await seedDeparture(ctx);
     const kangoo = await addVehicle(ctx, "Kangoo", MEASURED);
     const roundId = await openRound(ctx, DAY, kangoo);
-    const placed = await seedLocatedDelivery(ctx, DAY, { lat: 45.69, lng: 5.91 });
+    const placed = await seedPlannableDelivery(ctx, DAY, { lat: 45.69, lng: 5.91 });
     await assign(ctx, DAY, roundId, placed);
-    const dragged = await seedLocatedDelivery(ctx, DAY, { lat: 45.5, lng: 6.05 });
+    const dragged = await seedPlannableDelivery(ctx, DAY, { lat: 45.5, lng: 6.05 });
     const before = await ctx.prisma.deliveryRound.findMany({ select: { id: true, version: true } });
 
     const view = await timed(ctx, {
@@ -299,8 +340,8 @@ describe("chronométrer une composition glissée à la main (L10b-C2)", () => {
   it("compte chez un arrêt le temps de livraison de SON adresse, lu par le canal (L7b-C4)", async () => {
     await seedDeparture(ctx);
     const kangoo = await addVehicle(ctx, "Kangoo", MEASURED);
-    const usual = await seedLocatedDelivery(ctx, DAY, { lat: 45.69, lng: 5.91 });
-    const slow = await seedLocatedDelivery(ctx, DAY, { lat: 45.69, lng: 5.91 }, 45);
+    const usual = await seedPlannableDelivery(ctx, DAY, { lat: 45.69, lng: 5.91 });
+    const slow = await seedPlannableDelivery(ctx, DAY, { lat: 45.69, lng: 5.91 }, 45);
 
     const view = await timed(ctx, {
       day: DAY,

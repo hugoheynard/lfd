@@ -1,4 +1,5 @@
 import type { CostFn } from "../ports/distance-matrix.js";
+import { capacityGuardOf, type CompositionCapacity, NO_CAPACITY_LIMIT } from "./capacity-guard.js";
 import type { RoutingSettings } from "../value-objects/routing-settings.js";
 import { compareIds } from "./compare-ids.js";
 import { improvePlans } from "./improve-plans.js";
@@ -46,6 +47,8 @@ export interface ProposalInput {
    * (L7t-C2, `busyStarts`) ; absent : libre dès minuit du jour (CA2).
    */
   readonly starts?: ReadonlyMap<string, VehicleStart>;
+  /** La place des véhicules et la demande des commandes (CA4) ; absente : rien n'est refusé. */
+  readonly capacity?: CompositionCapacity;
 }
 
 /** D'où part ce véhicule : son retour estimé s'il est occupé, sinon minuit du jour (CA2). */
@@ -64,6 +67,10 @@ export function startOf(
  * améliorée par gestes locaux tant que le coût baisse. Un second passage
  * n'existe que si la journée ne tient pas autrement : il coûte une tournée
  * ouverte, que la tournée existante évite dès qu'elle peut prendre l'arrêt.
+ *
+ * Une place qui ferait déborder la caisse n'en est pas une (CA4,
+ * `capacity`) : ce que rien ne peut porter est rendu dans
+ * `capacityRefused`, jamais posé en surcharge.
  *
  * Ce qui ne tient nulle part — plus de passage permis — déborde : à répartir, signalé, jamais
  * tronqué en silence. S'il vient d'une tournée existante, il y RESTE, en
@@ -87,16 +94,21 @@ export function proposeRounds(input: ProposalInput): Proposal {
     ...startOf(input, vehicle.id),
     routes: [],
   }));
-  const built = insertCheapest(input, initial, stops, "anywhere");
-  const plans = improvePlans(input, built.plans, new Set());
+  const guard = input.capacity === undefined ? NO_CAPACITY_LIMIT : capacityGuardOf(input.capacity);
+  const built = insertCheapest(input, initial, stops, "anywhere", guard);
+  const plans = improvePlans(input, built.plans, new Set(), guard);
   const tours = plans.flatMap((plan) => toursOf(input, plan));
-  const spilled = built.unplaced.flatMap((stop) => byId.get(stop.id) ?? []);
+  const spilled = built.unplaced.flatMap(({ stop }) => byId.get(stop.id) ?? []);
+  const refused = new Set(
+    built.unplaced.filter(({ reason }) => reason === "capacity").map(({ stop }) => stop.id),
+  );
   return {
     tours: keepAtHome(input, tours, spilled),
     overflow: spilled
-      .filter((stop) => stop.homeRoundId === null)
+      .filter((stop) => stop.homeRoundId === null && !refused.has(stop.id))
       .map((stop) => stop.id)
       .sort(compareIds),
+    capacityRefused: [...refused].sort(compareIds),
   };
 }
 

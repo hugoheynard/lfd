@@ -137,7 +137,8 @@ flowchart TD
     H --> J[durée longue = signal seulement]
     I --> J
     J --> K[aperçu : départ, retour, km par tournée]
-    K -.->|non bâti : CA4| L[capacité : bacs vs véhicule]
+    C -.->|CA4| L[capacité : chaque insertion<br/>doit tenir au plan de chargement]
+    L -.->|rien ne tient| M[à répartir, raison « capacité »]
 ```
 
 ## 3. État réel, lot par lot (vérifié le 2026-10-06)
@@ -152,7 +153,7 @@ flowchart TD
 | **CA3b** | Plusieurs créneaux ou échéances par adresse (`slotList`, l'ancien `slots` dérivé)                                                                                 | ✅ bâti     | `d4972386a`, écrans `b7ee1c883`                                |
 | §14.2    | Mode par défaut : échéance (migration `20261004090000_echeance_par_defaut`)                                                                                       | ✅ bâti     | `d4972386a`                                                    |
 | Horaire  | Une tournée garde son départ, son retour et ses km prévus, et le PDF les imprime                                                                                  | ✅ bâti     | `3e9da566c`, aperçu `a9fb52c04`                                |
-| **CA4**  | La capacité entre dans la composition : demande en bacs par commande, `planLoading` à l'insertion                                                                 | ❌ pas bâti | voir `todo-calculateur.md`                                     |
+| **CA4**  | La capacité entre dans la composition : demande en bacs par commande (déclarés, sinon estimés, sinon inconnue), `planLoading` à chaque insertion                  | ✅ bâti     | non commité (2026-10-06)                                       |
 | **Banc** | 200 clients, calcul pur, p95 < 5 s                                                                                                                                | ❌ pas bâti | seul existe le test à 60 arrêts (< 3 s CPU en CI)              |
 | **CA5**  | Le prévisionnel avec des contraintes humaines stockées (épinglage), une version par jour, et l'alerte rouge                                                       | 🟡 partiel  | le calcul à la lecture existe ; contraintes et alerte absentes |
 | **CA6a** | Abonné à `production.day_closed`, table `delivery.delivery_day_readiness` (migration `20261007110000_le_plan_arrete_pour_la_livraison`), cloche, query et bandeau | ✅ bâti     | `4b79a8e06`                                                    |
@@ -238,10 +239,30 @@ flowchart TD
    jamais placée (règle déjà en place, `locateFromCache`). Reste hors CA0 : un
    changement de date ou d'adresse après la passation n'est rattrapé qu'à
    l'arrêt du plan ou par le geste « Situer ».
-2. **CA4.** Faire entrer la capacité dans la composition, en partant de la
-   demande en bacs de chaque commande : les bacs déclarés, sinon une estimation
-   par les contenances, sinon « inconnue », et dans ce dernier cas la commande
-   reste à répartir. `planLoading` doit tenir à chaque insertion.
+2. ~~**CA4.**~~ Bâti le 2026-10-06, non commité. Chaque commande a une
+   demande en bacs (`stopDemandOf`) : ses bacs déclarés non annulés, sinon
+   l'estimation du colisage (`proposePacking`, lignes × contenances, une
+   moitié comptée pour un bac entier), sinon « inconnue ». Une commande à
+   répartir dont la demande est inconnue n'est jamais placée et le dit
+   (`unfit`, raison `unknown_demand`). Une tournée recomposable ou insérable
+   qui porte un tel arrêt est gardée telle quelle (`unknown_demand_stop`), car
+   la place n'y serait pas vérifiable. À chaque essai d'insertion qui battrait
+   la meilleure place, et à chaque geste d'amélioration retenu, la garde
+   (`capacityGuardOf`) vérifie que la tournée tient : d'abord deux majorants
+   (litres, surface des piles au sol), puis `planLoading`, compactage permis.
+   Les alertes qui refusent sont `dry_over`, `cold_over`, `floor_over` et
+   `unknown_cargo`. Un véhicule sans cotes ne porte donc aucun bac. Une place
+   qui déborde n'est pas une place : la recherche passe à la suivante (autre
+   véhicule, autre passage). Si rien ne tient, la commande reste à répartir
+   avec la raison `capacity`. La capacité est une contrainte dure et jamais
+   une pénalité : l'ordre des échéances (CA-D1) n'est pas touché. L'écran
+   des tournées affiche les deux raisons sur la carte « À répartir ».
+   Mesure sur le test à 60 arrêts (poste, médiane de 7, temps processeur) :
+   158 ms au commit `0aa07eb63`, 163 ms sans capacité, 111 ms avec une
+   capacité qui contraint (quatre caisses de 130 × 125 cm, 1 à 3 bacs par
+   arrêt). Reste hors CA4 : la jauge de la composition à la main, et
+   l'alerte quand les bacs déclarés ne tiennent plus là où l'estimation
+   tenait (`todo-calculateur.md`).
 3. **Banc à 200 clients.** Mesurer le calcul pur (matrice à part) : 200 arrêts,
    4 véhicules, 2 passages, 10 contraintes, médiane et p95 sur 20 tirages, une
    graine fixe. Seuil : p95 < 5 s, mesuré dans le conteneur. Les seuils restent

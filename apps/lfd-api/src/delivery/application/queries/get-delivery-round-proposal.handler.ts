@@ -8,7 +8,6 @@ import {
   DepartureCandidatesReader,
 } from "../../channels/commerce/index.js";
 import { BroughtBackOrdersReader } from "../../domain/ports/brought-back-orders.reader.js";
-import type { RoundRow } from "../../domain/ports/delivery-rounds.reader.js";
 import {
   ActiveBinTypesReader,
   MeasuredVehiclesReader,
@@ -25,11 +24,10 @@ import { RouteGeometry } from "../../domain/ports/route-geometry.js";
 import { ensureComposable } from "../../domain/services/composition-prerequisites.js";
 import { insertIntoRounds } from "../../domain/services/insert-into-rounds.js";
 import type { PlanningVehicle, Proposal } from "../../domain/services/proposal.js";
-import { type PlannableStop, proposeRounds } from "../../domain/services/propose-rounds.js";
+import { proposeRounds } from "../../domain/services/propose-rounds.js";
 import { busyStarts } from "../../domain/services/vehicle-availability.js";
 import type { VehicleStart } from "../../domain/services/vehicle-plan.js";
 import type { RoutingSettings } from "../../domain/value-objects/routing-settings.js";
-import type { GeoPoint } from "../../domain/value-objects/geo-point.js";
 import {
   chosenVehicles,
   classifyRounds,
@@ -48,12 +46,10 @@ import {
   type LocatedStop,
   routingSettingsOf,
   routingStopFor,
-  routingStopOf,
 } from "../delivery-routing-support.js";
+import { DEPOT_ID, pointsOf, poolOf, unknownDemandAmong } from "../delivery-proposal-pool.js";
+import { ProposalCapacity, type ProposalCapacityReading } from "../proposal-capacity.js";
 import { GetDeliveryRoundProposalQuery } from "./get-delivery-round-proposal.query.js";
-
-/** L'identifiant du départ dans la matrice : aucun identifiant de commande ne le porte. */
-const DEPOT_ID = "depot";
 
 /** Ce que les deux modes partagent. */
 interface PlanInputs {
@@ -62,6 +58,7 @@ interface PlanInputs {
   readonly vehicles: readonly PlanningVehicle[];
   readonly departure: LocatedDeparture;
   readonly settings: RoutingSettings;
+  readonly capacity: ProposalCapacityReading;
 }
 
 /** Une proposition calculée, et les tournées qu'elle ne touche pas. */
@@ -81,6 +78,11 @@ interface Planned {
  * Une camionnette qui porte une tournée chargée ou partie n'est libre qu'à
  * son retour estimé (L7t-C2) ; si un arrêt de cette tournée n'est pas situé,
  * elle ne reçoit rien (`fleetOccupationOf`).
+ *
+ * **La place entre dans le calcul** (CA4) : chaque commande occupe ses bacs
+ * déclarés, sinon ceux qu'estime le colisage ; une place qui ferait déborder
+ * une caisse n'est pas prise. Une commande dont on ne sait pas les bacs
+ * n'est jamais placée, et le dit (`unfit`).
  *
  * **Refusée sans socle** (CA-D3) : aucun véhicule en service avec ses cotes,
  * ou aucun type de bac en service — c'est le premier contrôle.
@@ -111,6 +113,7 @@ export class GetDeliveryRoundProposalHandler implements IQueryHandler<
     private readonly states: DeliveryOrderStatesReader,
     private readonly measured: MeasuredVehiclesReader,
     private readonly binTypes: ActiveBinTypesReader,
+    private readonly place: ProposalCapacity,
   ) {}
 
   async execute(query: GetDeliveryRoundProposalQuery): Promise<DeliveryRoundProposalView> {
@@ -129,11 +132,16 @@ export class GetDeliveryRoundProposalHandler implements IQueryHandler<
       query.day,
     );
     const stops = await this.locate(day);
+    const capacity = await this.place.of([
+      ...day.unassigned,
+      ...day.rounds.flatMap((round) => round.stops.map((stop) => stop.orderId)),
+    ]);
     const mode = query.recomposeAll ? "new_rounds" : (query.mode ?? settings.defaultMode);
+    const inputs = { day, stops, vehicles, departure, settings, capacity };
     const planned =
       mode === "insert" && !query.recomposeAll
-        ? await this.planInsertion({ day, stops, vehicles, departure, settings })
-        : await this.planNewRounds(query, { day, stops, vehicles, departure, settings });
+        ? await this.planInsertion(inputs)
+        : await this.planNewRounds(query, inputs);
     const unlocated = day.unassigned.flatMap((id) => {
       const stop = stops.get(id);
       return stop !== undefined && stop.point === null ? [stop] : [];
@@ -147,6 +155,7 @@ export class GetDeliveryRoundProposalHandler implements IQueryHandler<
     return proposalViewOf({
       ...{ day: query.day, mode, departure, settings: { ...settings.values(), source } },
       ...{ proposal: planned.proposal, rounds: day.rounds, kept: planned.kept, stops, unlocated },
+      unknownDemand: unknownDemandAmong(day.unassigned, stops, capacity.unknown),
       lines,
     });
   }
@@ -163,9 +172,10 @@ export class GetDeliveryRoundProposalHandler implements IQueryHandler<
       facts: ctx.day.facts,
       broughtBack: ctx.day.broughtBack,
       located: ctx.stops,
+      unknownDemand: ctx.capacity.unknown,
       recomposeAll: query.recomposeAll,
     });
-    const pool = poolOf(ctx.day.unassigned, recomposable, ctx.stops);
+    const pool = poolOf(ctx.day.unassigned, recomposable, ctx.stops, ctx.capacity.unknown);
     const occupation = fleetOccupationOf(kept, ctx.stops);
     const cost = await this.costOf(ctx, [
       ...pool.map((stop) => stop.id),
@@ -186,6 +196,7 @@ export class GetDeliveryRoundProposalHandler implements IQueryHandler<
         kept.map(({ round }) => round),
       ),
       starts: startsOf(ctx.settings, cost, occupation.busy),
+      capacity: ctx.capacity.capacity,
     });
     return { proposal, kept };
   }
@@ -196,8 +207,9 @@ export class GetDeliveryRoundProposalHandler implements IQueryHandler<
       rounds: ctx.day.rounds,
       vehicleIds: new Set(ctx.vehicles.map((vehicle) => vehicle.id)),
       located: ctx.stops,
+      unknownDemand: ctx.capacity.unknown,
     });
-    const pool = poolOf(ctx.day.unassigned, [], ctx.stops);
+    const pool = poolOf(ctx.day.unassigned, [], ctx.stops, ctx.capacity.unknown);
     const occupation = fleetOccupationOf(kept, ctx.stops);
     const roundStops = [
       ...insertable.flatMap((round) => round.stops.map((stop) => stop.orderId)),
@@ -217,6 +229,7 @@ export class GetDeliveryRoundProposalHandler implements IQueryHandler<
       settings: ctx.settings,
       passageLimits: passageLimitsOf(ctx.settings.multiplePassages, ctx.vehicles, ctx.day.rounds),
       starts: startsOf(ctx.settings, cost, occupation.busy),
+      capacity: ctx.capacity.capacity,
     });
     const touched = new Set(proposal.tours.map((tour) => tour.roundId));
     const unchanged = insertable
@@ -236,39 +249,6 @@ export class GetDeliveryRoundProposalHandler implements IQueryHandler<
     const located = await locateFromCache(points, this.cache, this.clock.now());
     return new Map(located.map((stop) => [stop.orderId, stop]));
   }
-}
-
-/** Les arrêts à placer : les commandes à répartir situées, puis ceux des tournées recomposables. */
-function poolOf(
-  unassigned: readonly string[],
-  recomposable: readonly RoundRow[],
-  stops: ReadonlyMap<string, LocatedStop>,
-): readonly PlannableStop[] {
-  const plannable = (orderId: string, homeRoundId: string | null): PlannableStop[] => {
-    const stop = stops.get(orderId);
-    return stop?.point == null ? [] : [{ ...routingStopOf(stop), homeRoundId }];
-  };
-  return [
-    ...unassigned.flatMap((orderId) => plannable(orderId, null)),
-    ...recomposable.flatMap((round) =>
-      round.stops.flatMap((stop) => plannable(stop.orderId, round.id)),
-    ),
-  ];
-}
-
-function pointsOf(
-  depot: GeoPoint,
-  orderIds: readonly string[],
-  stops: ReadonlyMap<string, LocatedStop>,
-): ReadonlyMap<string, GeoPoint> {
-  const points = new Map<string, GeoPoint>([[DEPOT_ID, depot]]);
-  for (const orderId of orderIds) {
-    const point = stops.get(orderId)?.point;
-    if (point != null) {
-      points.set(orderId, point);
-    }
-  }
-  return points;
 }
 
 /** D'où part chaque camionnette occupée par une tournée chargée ou partie (L7t-C2). */

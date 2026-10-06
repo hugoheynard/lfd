@@ -37,9 +37,10 @@ import {
   InMemoryGeocodeCache,
   InMemoryRoutingSettings,
   RoundsReaderOver,
-  vehicleView,
 } from "../../commands/__tests__/routing-doubles.js";
 import { GetDeliveryRoundProposalHandler } from "../get-delivery-round-proposal.handler.js";
+import { type DeliveryOrderLinesReader } from "../../../channels/commerce/index.js";
+import { BreadForEveryOrder, measuredVehicleView, proposalCapacity } from "./capacity-doubles.js";
 import { GetDeliveryRoundProposalQuery } from "../get-delivery-round-proposal.query.js";
 
 // Un jour comparé aux jours des commandes écrites ici — jamais à l'horloge.
@@ -114,8 +115,14 @@ function scene(
     readonly broughtBack?: FixedBroughtBackOrders;
     readonly measuredVehicleIds?: readonly string[];
     readonly activeBinTypeIds?: readonly string[];
+    readonly lines?: DeliveryOrderLinesReader;
+    readonly fleet?: FixedFleet;
   } = {},
 ) {
+  // CA4 : deux véhicules mesurés, une commande = un bac (un pain, dix par bac).
+  const fleet =
+    options.fleet ??
+    new FixedFleet([measuredVehicleView("v1", "Kangoo"), measuredVehicleView("v2", "Trafic")]);
   const rounds = new InMemoryDeliveryRounds(
     departed(),
     roundWith("r_loaded", DAY, "v2", ["o9"]),
@@ -127,7 +134,7 @@ function scene(
     new InMemoryRoutingSettings(options.settings ?? null),
     new FixedDeparture(null).reader,
     new FixedDeparture(options.labo === undefined ? LABO : options.labo),
-    new FixedFleet([vehicleView("v1", "Kangoo"), vehicleView("v2", "Trafic")]),
+    fleet,
     new RoundsReaderOver(rounds),
     orders,
     new FixedLoadedStops(["r_loaded_s1"]),
@@ -141,6 +148,7 @@ function scene(
     ),
     new FixedMeasuredVehicles(options.measuredVehicleIds ?? ["v1"]),
     new FixedActiveBinTypes(options.activeBinTypeIds ?? ["bin_m"]),
+    proposalCapacity(fleet, options.lines === undefined ? {} : { lines: options.lines }),
   );
   return { handler, rounds };
 }
@@ -419,5 +427,44 @@ describe("GetDeliveryRoundProposalHandler — les camionnettes occupées (lot 7 
 
       expect(view.kept.find((kept) => kept.roundId === "r_open")?.reason).toBe("signaled_stop");
     });
+  });
+});
+
+describe("GetDeliveryRoundProposalHandler — la place (CA4)", () => {
+  it("une commande dont on ne connaît pas les bacs n'est pas placée, et le dit", async () => {
+    const { handler } = scene({ lines: new BreadForEveryOrder(new Map(), new Set(["o1", "o5"])) });
+
+    const view = await handler.execute(new GetDeliveryRoundProposalQuery(DAY, null, false));
+
+    expect(placed(view)).toEqual(["o2", "o3", "o4", "o7"]);
+    // o5 n'est pas située : elle reste dans `unlocated`, pas deux fois.
+    expect(view.unfit).toEqual([{ orderId: "o1", reference: "CMD-o1", reason: "unknown_demand" }]);
+  });
+
+  it("une commande trop grosse pour toutes les caisses reste à répartir, raison « capacité »", async () => {
+    // Une seule pile de Bacs M au sol (70 × 50 cm) : sept bacs (piles de six) ne tiennent pas.
+    const small = { lengthCm: 70, widthCm: 50, heightCm: 140 };
+    const fleet = new FixedFleet([
+      measuredVehicleView("v1", "Vélo 1", small),
+      measuredVehicleView("v2", "Vélo 2", small),
+    ]);
+    const { handler } = scene({ fleet, lines: new BreadForEveryOrder(new Map([["o1", 70]])) });
+
+    const view = await handler.execute(new GetDeliveryRoundProposalQuery(DAY, null, false));
+
+    expect(placed(view)).not.toContain("o1");
+    expect(view.unfit).toEqual([{ orderId: "o1", reference: "CMD-o1", reason: "capacity" }]);
+    expect(view.overflow).toEqual([]);
+  });
+
+  it("« tout recomposer » garde telle quelle une tournée dont un arrêt n'a pas de bacs connus", async () => {
+    const { handler } = scene({ lines: new BreadForEveryOrder(new Map(), new Set(["o10"])) });
+
+    const view = await handler.execute(new GetDeliveryRoundProposalQuery(DAY, ["v1"], true));
+
+    expect(view.kept).toContainEqual(
+      expect.objectContaining({ roundId: "r_open", reason: "unknown_demand_stop" }),
+    );
+    expect(placed(view)).not.toContain("o10");
   });
 });

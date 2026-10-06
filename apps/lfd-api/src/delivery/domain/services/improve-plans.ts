@@ -1,3 +1,4 @@
+import { type CapacityGuard, NO_CAPACITY_LIMIT } from "./capacity-guard.js";
 import type { PlanningContext } from "./proposal.js";
 import { type MoveScope, nearnessOf } from "./move-scope.js";
 import { intraRouteMoves, type Move, relocations, swaps, tailExchanges } from "./route-moves.js";
@@ -61,6 +62,10 @@ const NEIGHBOURHOODS = [intraRouteMoves, relocations, swaps, tailExchanges] as c
  * paire où rien n'améliore est notée propre, et n'est rouverte que si l'un
  * des deux a changé — c'est ce qui tient soixante arrêts sous deux secondes.
  *
+ * Un geste qui ferait déborder une caisse (`guard`, CA4) n'est pas pris :
+ * la capacité est une contrainte dure, jugée après le score — seul un geste
+ * qui améliore est soumis au plan de chargement.
+ *
  * Premier geste améliorant, paires et voisinages parcourus dans un ordre
  * fixe : aucun aléa, même entrée, même résultat.
  */
@@ -68,6 +73,7 @@ export function improvePlans(
   ctx: PlanningContext,
   plans: readonly VehiclePlan[],
   pinned: ReadonlySet<string>,
+  guard: CapacityGuard = NO_CAPACITY_LIMIT,
 ): readonly VehiclePlan[] {
   const current = [...plans];
   const score = memoizedScore(ctx);
@@ -86,7 +92,13 @@ export function improvePlans(
       }
       const members = a === b ? [a] : [a, b];
       const scope = { pinned, crossOnly: a !== b, near };
-      const found = firstImprovement(score, freeStart(ctx), members, current, scores, scope);
+      const found = firstImprovement(
+        { score, guard, free: freeStart(ctx) },
+        members,
+        current,
+        scores,
+        scope,
+      );
       if (found === null) {
         const set = clean.get(routesA) ?? new WeakSet<Routes>();
         set.add(routesB);
@@ -115,10 +127,16 @@ interface Found {
   readonly scores: readonly VehicleScore[];
 }
 
-/** Le premier geste qui améliore, parmi les véhicules `members` seulement. */
+/** Ce que la recherche d'un geste lit, fixe pendant tout le calcul. */
+interface Search {
+  readonly score: ScoreFn;
+  readonly guard: CapacityGuard;
+  readonly free: VehicleStart;
+}
+
+/** Le premier geste qui améliore ET tient dans les caisses, parmi les véhicules `members`. */
 function firstImprovement(
-  score: ScoreFn,
-  free: VehicleStart,
+  { score, guard, free }: Search,
   members: readonly number[],
   plans: readonly VehiclePlan[],
   scores: readonly VehicleScore[],
@@ -130,7 +148,13 @@ function firstImprovement(
     for (const move of neighbourhood(sub, scope)) {
       const after = move.map(({ vehicle, routes }) => score(routes, sub[vehicle] ?? free));
       const before = move.map(({ vehicle }) => subScores[vehicle]);
-      if (improves(before, after)) {
+      if (
+        improves(before, after) &&
+        move.every(({ vehicle, routes }) => {
+          const plan = sub[vehicle];
+          return plan === undefined || guard.fits(plan.vehicle.id, routes);
+        })
+      ) {
         return { move, scores: after };
       }
     }

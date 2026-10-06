@@ -145,13 +145,32 @@ export interface DeliveryUnlocatedOrderView extends DeliveryRoundOrderRef {
 }
 
 /**
+ * Pourquoi « Proposer » laisse une commande située à répartir à cause de la
+ * place (CA4) : aucune tournée ne la tient dans la caisse d'un véhicule
+ * (`capacity`), ou l'on ne sait pas combien de bacs elle occupera — ni bac
+ * déclaré, ni contenance pour tous ses produits (`unknown_demand`).
+ */
+export type DeliveryUnfitReason = "capacity" | "unknown_demand";
+
+export interface DeliveryUnfitOrderView extends DeliveryRoundOrderRef {
+  readonly reason: DeliveryUnfitReason;
+}
+
+/**
  * Pourquoi une tournée existante n'est pas dans `rounds` : partie, chargée
- * (recomposition), un arrêt non situé ou signalé, non demandée (sans « tout
- * recomposer », ou véhicule non coché), ou `unchanged` — éligible à
+ * (recomposition), un arrêt non situé ou signalé, un arrêt dont on ne connaît
+ * pas les bacs (CA4 : la place n'y serait pas vérifiable), non demandée (sans
+ * « tout recomposer », ou véhicule non coché), ou `unchanged` — éligible à
  * l'insertion, mais rien n'y a été inséré.
  */
 export type DeliveryKeptRoundReason =
-  "departed" | "loaded" | "unlocated_stop" | "signaled_stop" | "not_requested" | "unchanged";
+  | "departed"
+  | "loaded"
+  | "unlocated_stop"
+  | "signaled_stop"
+  | "unknown_demand_stop"
+  | "not_requested"
+  | "unchanged";
 
 export interface DeliveryKeptRoundView {
   readonly roundId: string;
@@ -194,8 +213,15 @@ export interface DeliveryRoundProposalView {
   readonly rounds: readonly DeliveryProposedRoundView[];
   /** Sans point : exclues, à répartir à la main. */
   readonly unlocated: readonly DeliveryUnlocatedOrderView[];
-  /** Situées, mais qu'aucune tournée ne peut tenir dans la durée maximale. */
+  /** Situées, mais qu'aucune tournée ne peut recevoir (plus de passage permis). */
   readonly overflow: readonly DeliveryRoundOrderRef[];
+  /**
+   * Situées, mais que la place exclut (CA4) : rien ne les tient dans une
+   * caisse, ou leur demande en bacs est inconnue. Une commande « tout
+   * recomposer » refusée pour la place reste dans sa tournée d'origine, et y
+   * figure aussi.
+   */
+  readonly unfit: readonly DeliveryUnfitOrderView[];
   /** Les tournées du jour que la proposition ne touche pas, et pourquoi. */
   readonly kept: readonly DeliveryKeptRoundView[];
   /** Les versions de TOUTES les tournées du jour lues. */

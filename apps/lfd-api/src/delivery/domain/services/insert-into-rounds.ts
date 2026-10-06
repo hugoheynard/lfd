@@ -1,3 +1,4 @@
+import { capacityGuardOf, type CompositionCapacity, NO_CAPACITY_LIMIT } from "./capacity-guard.js";
 import { compareIds } from "./compare-ids.js";
 import { improvePlans } from "./improve-plans.js";
 import { insertCheapest } from "./insert-cheapest.js";
@@ -25,6 +26,8 @@ export interface InsertionInput extends PlanningContext {
   readonly passageLimits?: ReadonlyMap<string, number>;
   /** D'où part chaque véhicule occupé par une tournée PARTIE (L7t-C2) ; absent : minuit du jour (CA2). */
   readonly starts?: ReadonlyMap<string, VehicleStart>;
+  /** La place des véhicules et la demande des commandes (CA4) ; absente : rien n'est refusé. */
+  readonly capacity?: CompositionCapacity;
 }
 
 /**
@@ -40,6 +43,10 @@ export interface InsertionInput extends PlanningContext {
  * déplace pas. Ce qui ne tient nulle part va à des tournées neuves, APRÈS
  * celles du véhicule, seulement s'il a encore droit à un passage
  * (`passageLimits`) ; sinon déborde, signalé.
+ *
+ * Une insertion qui ferait déborder la caisse est refusée (CA4) ; la
+ * recherche passe à la meilleure place suivante, sur ce véhicule, un autre,
+ * ou un autre passage. Ce que rien ne porte va dans `capacityRefused`.
  *
  * Ne rend que les tournées existantes qui ont reçu un arrêt, puis les neuves.
  * Déterministe.
@@ -59,11 +66,18 @@ export function insertIntoRounds(input: InsertionInput): Proposal {
   });
   const pinned = new Set(input.rounds.flatMap((round) => round.stops.map((stop) => stop.id)));
   const pending = [...input.stops].sort((a, b) => compareIds(a.id, b.id));
-  const built = insertCheapest(input, initial, pending, "after_existing");
-  const plans = improvePlans(input, built.plans, pinned);
+  const guard = input.capacity === undefined ? NO_CAPACITY_LIMIT : capacityGuardOf(input.capacity);
+  const built = insertCheapest(input, initial, pending, "after_existing", guard);
+  const plans = improvePlans(input, built.plans, pinned, guard);
+  const idsOf = (reason: "no_passage" | "capacity"): readonly string[] =>
+    built.unplaced
+      .filter((entry) => entry.reason === reason)
+      .map(({ stop }) => stop.id)
+      .sort(compareIds);
   return {
     tours: plans.flatMap((plan) => toursOf(input, plan, pinned)),
-    overflow: built.unplaced.map((stop) => stop.id).sort(compareIds),
+    overflow: idsOf("no_passage"),
+    capacityRefused: idsOf("capacity"),
   };
 }
 

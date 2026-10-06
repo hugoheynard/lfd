@@ -70,6 +70,7 @@ describe('le calculateur de tournée — dérivations pures', () => {
       rounds: [],
       unlocated: [],
       overflow: [],
+      unfit: [],
       kept: [],
       versions: [],
     });
