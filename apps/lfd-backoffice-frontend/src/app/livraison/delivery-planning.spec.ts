@@ -301,8 +301,16 @@ describe('applyPayloadOfPlan', () => {
 });
 
 describe('planSummary', () => {
-  it('compte livraisons, camionnettes, hors créneau et pas prêtes', () => {
-    expect(planSummary(plan())).toEqual({ deliveries: 4, vans: 3, late: 1, notReady: 2 });
+  it('compte livraisons, camionnettes, tournées, distance, hors créneau et pas prêtes', () => {
+    // Deux tournées proposées chronométrées à 12,1 km ; la gardée n'a pas d'heures.
+    expect(planSummary(plan())).toEqual({
+      deliveries: 4,
+      vans: 3,
+      late: 1,
+      notReady: 2,
+      meters: 24_200,
+      rounds: 3,
+    });
   });
 });
 

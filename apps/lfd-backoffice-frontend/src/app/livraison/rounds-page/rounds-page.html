@@ -110,6 +110,16 @@
                 variant="info"
                 [content]="preview.summary().vans + ' camionnettes'"
               />
+              <fold-badge
+                radius="square"
+                variant="info"
+                [content]="
+                  preview.summary().rounds +
+                  (preview.summary().rounds > 1 ? ' tournées · ' : ' tournée · ') +
+                  kmLabel(preview.summary().meters)
+                "
+                data-summary-distance
+              />
               @if (preview.summary().late > 0) {
                 <fold-badge
                   radius="square"

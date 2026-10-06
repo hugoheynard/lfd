@@ -12,6 +12,8 @@ import {
   orderTagsOf,
   POOL_KEY,
   relaidBoard,
+  roundKmLabel,
+  roundTimingLabel,
   stopEdgeOf,
   vehicleGroupsOf,
 } from './rounds-board-model';
@@ -140,5 +142,28 @@ describe('les cartes', () => {
     expect(mapRowPrefixOf(first!, true, true)).toBe('P1 · ');
     expect(mapRowPrefixOf(second!, false, true)).toBe('Kangoo 2 · ');
     expect(mapRowPrefixOf(first!, false, false)).toBe('');
+  });
+});
+
+describe('roundKmLabel / roundTimingLabel', () => {
+  it('arrondit au kilomètre, et dit « < 1 km » sous le kilomètre', () => {
+    expect(roundKmLabel(41_499)).toBe('41 km');
+    expect(roundKmLabel(41_500)).toBe('42 km');
+    expect(roundKmLabel(999)).toBe('< 1 km');
+    expect(roundKmLabel(0)).toBe('< 1 km');
+    expect(roundKmLabel(1_000)).toBe('1 km');
+    expect(roundKmLabel(1_234_000)).toBe(`${(1234).toLocaleString('fr-FR')} km`);
+  });
+
+  it('compose départ, retour et distance', () => {
+    expect(
+      roundTimingLabel({
+        departureTime: '05:40',
+        returnTime: '08:15',
+        meters: 42_000,
+        minutes: 155,
+        overDuration: false,
+      }),
+    ).toBe('Départ 5 h 40 · Retour 8 h 15 · 42 km');
   });
 });

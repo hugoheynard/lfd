@@ -76,6 +76,7 @@ import {
   listsOf,
   POOL_KEY,
   relaidBoard,
+  roundKmLabel,
 } from '../rounds-board-model';
 import { type RoundGesture, RoundsBoard } from '../rounds-board/rounds-board';
 import { RoundsPreview } from '../rounds-preview';
@@ -363,6 +364,7 @@ export class RoundsPage {
   protected readonly dayLabel = computed(() => serviceDayLabel(this.day()));
   protected readonly roundLabel = roundLabel;
   protected readonly stopCountLabel = stopCountLabel;
+  protected readonly kmLabel = roundKmLabel;
   protected readonly undoMs = UNDO_MS;
 
   /** Un numéro par lecture : une réponse lente d'un autre jour n'écrase pas la bonne. */

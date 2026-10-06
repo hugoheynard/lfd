@@ -4,7 +4,12 @@ import type {
   DeliveryRunSheetStopView,
 } from '@lfd/contracts';
 
-import { type PlannedRound, type PlannedStop, stopNameOf } from './delivery-planning';
+import {
+  type PlannedRound,
+  type PlannedStop,
+  type PlannedTiming,
+  stopNameOf,
+} from './delivery-planning';
 import {
   broughtBackLabel,
   type ComposedDay,
@@ -17,6 +22,7 @@ import {
   windowShortLabel,
 } from './delivery-rounds';
 import type { OrderCardEdge, OrderCardTag } from './order-card/order-card';
+import { timeLabel } from '../shared/window-label';
 
 /**
  * Le tableau de l'organisateur de tournées
@@ -76,6 +82,12 @@ export interface BoardRound {
   readonly vehicleRetired: boolean;
   readonly driver: DeliveryRoundDriverView | null;
   readonly geometry: readonly (readonly [number, number])[] | null;
+  /**
+   * Départ, retour et distance estimés — dans l'aperçu seulement. Une tournée
+   * enregistrée n'en porte pas : `DeliveryRoundView` ne les sert pas (vérifié
+   * le 2026-10-06), et `null` aussi tant qu'une colonne attend son chronométrage.
+   */
+  readonly timing: PlannedTiming | null;
   readonly stops: readonly BoardStop[];
 }
 
@@ -113,6 +125,7 @@ function roundOfComposed(composed: ComposedRound, geometries: Geometries): Board
     vehicleRetired: round.vehicleRetired,
     driver: round.driver,
     geometry: geometries.get(round.id) ?? null,
+    timing: null,
     stops: composed.stops.map(({ stop, sheet, windowClash }) => ({
       orderId: stop.orderId,
       stopId: stop.stopId,
@@ -251,6 +264,7 @@ export function boardOfPlan(
       vehicleRetired: current?.round.vehicleRetired ?? false,
       driver: current?.round.driver ?? null,
       geometry: planned.geometry,
+      timing: planned.timing,
       stops: withClashes(stops),
     };
   });
@@ -520,7 +534,7 @@ export function plannedOfBoard(round: BoardRound): PlannedRound {
     kept: false,
     keptReason: null,
     touched: false,
-    timing: null,
+    timing: round.timing,
     geometry: round.geometry,
     stops: round.stops.map((stop) => ({
       orderId: stop.orderId,
@@ -543,4 +557,17 @@ export function mapRowPrefixOf(round: BoardRound, inVehicle: boolean, several: b
   }
   const first = round.vehicleName.trim().split(/\s+/u)[0] ?? round.vehicleName;
   return round.passage > 1 ? `${first} ${String(round.passage)} · ` : `${first} · `;
+}
+
+const METERS_PER_KM = 1000;
+
+/** « 42 km » — à l'entier ; sous le kilomètre, « < 1 km » plutôt qu'un « 0 km » qui ment. */
+export function roundKmLabel(meters: number): string {
+  const km = Math.round(meters / METERS_PER_KM);
+  return meters < METERS_PER_KM || km < 1 ? '< 1 km' : `${km.toLocaleString('fr-FR')} km`;
+}
+
+/** « Départ 5 h 40 · Retour 8 h 15 · 42 km » — l'en-tête d'une tournée proposée. */
+export function roundTimingLabel(timing: PlannedTiming): string {
+  return `Départ ${timeLabel(timing.departureTime)} · Retour ${timeLabel(timing.returnTime)} · ${roundKmLabel(timing.meters)}`;
 }
