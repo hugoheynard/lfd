@@ -294,6 +294,68 @@ describe('le prévisionnel — arrêter le plan', () => {
   });
 
   /**
+   * Le rattrapage est une alerte de PAGE (2026-10-06) : naviguer vers une
+   * autre semaine faisait disparaître la bande, alors que l'oubli restait.
+   */
+  describe('le rattrapage hors de la fenêtre affichée', () => {
+    async function mountAway(
+      offset: number,
+      todayClosed: boolean,
+    ): Promise<{ page: PrevisionnelPage; closeDay: ReturnType<typeof vi.fn>; el: HTMLElement }> {
+      let closed = todayClosed;
+      const forecastCall = vi.fn(async (from: string, to: string) =>
+        from === dayIn(0) && to === dayIn(0)
+          ? forecast([day(dayIn(0), { closed })])
+          : forecast([day(dayIn(offset)), day(dayIn(offset + 1))]),
+      );
+      const closeDay = vi.fn(async (date: string) => {
+        closed = true;
+        return { date, absorbed: 5, alreadyClosed: false, closedAt: new Date().toISOString() };
+      });
+      TestBed.configureTestingModule({
+        providers: [
+          provideRouter([]),
+          { provide: ProductionService, useValue: { forecast: forecastCall, closeDay } },
+          { provide: AdminCatalogService, useValue: { list: async () => [] } },
+        ],
+      });
+      const fixture = TestBed.createComponent(PrevisionnelPage);
+      const page = fixture.componentInstance;
+      page['from'].set(dayIn(offset));
+      // L'effet du constructeur part ici et repose « lecture en cours » : on le
+      // laisse partir AVANT de rejouer le chargement qu'on attend.
+      fixture.detectChanges();
+      await TestBed.runInInjectionContext(() => page['load']());
+      fixture.detectChanges();
+      return { page, closeDay, el: fixture.nativeElement as HTMLElement };
+    }
+
+    it('visible sur la semaine suivante quand aujourd’hui est ouvert avec commandes', async () => {
+      const { el } = await mountAway(7, false);
+      expect(el.textContent).toContain('n’a pas été arrêté hier soir');
+      expect(el.textContent).toContain(dayMonthOf(0));
+    });
+
+    it('visible sur la semaine précédente', async () => {
+      const { el } = await mountAway(-7, false);
+      expect(el.textContent).toContain('n’a pas été arrêté hier soir');
+    });
+
+    it('absent quand aujourd’hui est arrêté', async () => {
+      const { page, el } = await mountAway(7, true);
+      expect(page['dayToCatchUp']()).toBeUndefined();
+      expect(el.textContent).not.toContain('n’a pas été arrêté hier soir');
+    });
+
+    it('l’arrêt depuis une autre semaine vise aujourd’hui et éteint la bande', async () => {
+      const { page, closeDay } = await mountAway(7, false);
+      await page['arrest'](page['dayToCatchUp']()?.date ?? '');
+      expect(closeDay).toHaveBeenCalledWith(dayIn(0));
+      expect(page['dayToCatchUp']()).toBeUndefined();
+    });
+  });
+
+  /**
    * L'état bascule `open` → `overdue` à l'heure d'alerte sans qu'aucune donnée
    * ne change : seule une relecture périodique peut le montrer.
    */

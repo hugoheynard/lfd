@@ -16,8 +16,10 @@
     hier soir : il passe AVANT tout le reste, en bande pleine largeur sous
     l'en-tête de l'application — `appearance="flat"`, la bande que fold prévoit pour ça —, parce que tant qu'il ne l'est pas, rien ne
     part en fournée. La bande du soir, elle, reste sous le titre.
+    Alerte de PAGE : elle tient quelle que soit la fenêtre et la lecture
+    (matrice ou dossier) — `dayToCatchUp` lit aujourd'hui à part.
   -->
-  @if (view() === 'matrix' && state() === 'ready') {
+  @if (state() === 'ready') {
     @if (dayToCatchUp(); as day) {
       <fold-page-section bleed class="pv-catch-up">
         <fold-callout variant="alert" appearance="flat">

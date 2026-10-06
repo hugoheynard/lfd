@@ -7,7 +7,11 @@ import {
   signal,
 } from '@angular/core';
 import { ActivatedRoute, Router } from '@angular/router';
-import type { CatalogItemView, ProductionForecastView } from '@lfd/contracts';
+import type {
+  CatalogItemView,
+  ProductionForecastDay,
+  ProductionForecastView,
+} from '@lfd/contracts';
 import {
   FoldButtonComponent,
   FoldCalloutComponent,
@@ -189,9 +193,20 @@ export class PrevisionnelPage {
   );
 
   /**
+   * **La journée d'aujourd'hui, lue à part** quand la fenêtre affichée ne la
+   * contient pas (2026-10-06) : le rattrapage est une alerte de PAGE, pas de
+   * fenêtre — naviguer vers la semaine suivante ne répare pas l'oubli.
+   *
+   * `null` tant que rien n'est lu, ou quand la lecture a échoué : la bande se
+   * tait alors, et la relecture suivante réessaie.
+   */
+  private readonly todayRead = signal<ProductionForecastDay | null>(null);
+
+  /**
    * **Le plan d'aujourd'hui, oublié la veille** (décidé le 2026-10-06) : la
-   * journée du jour, si elle est dans la fenêtre, encore ouverte et porteuse de
-   * commandes.
+   * journée du jour, encore ouverte et porteuse de commandes — **quelle que
+   * soit la fenêtre affichée**. Lue dans la matrice quand elle la contient,
+   * sinon dans `todayRead`.
    *
    * Séparé de `dayToArrest` parce que ce n'est pas le même geste : celui-ci
    * répare un oubli, et il se dit en alerte — tant que le plan du jour n'est
@@ -199,11 +214,14 @@ export class PrevisionnelPage {
    * pas proposés : leur fournée est faite, l'arrêter maintenant n'en tirerait
    * plus rien.
    */
-  protected readonly dayToCatchUp = computed(() =>
-    this.headers().find(
-      (header) => header.date === this.today && !header.closed && header.orderCount > 0,
-    ),
-  );
+  protected readonly dayToCatchUp = computed(() => {
+    const inWindow = this.forecast()?.days.find((day) => day.date === this.today);
+    const day = inWindow ?? this.todayRead();
+    if (day === null || day.date !== this.today || day.closed || day.orderCount === 0) {
+      return undefined;
+    }
+    return forecastHeaders([day], null, this.today)[0];
+  });
 
   /**
    * La journée dont on a ouvert la confirmation — sa date, pas un booléen.
@@ -265,9 +283,13 @@ export class PrevisionnelPage {
     const seq = ++this.readSeq;
     const from = this.from();
     try {
-      const forecast = await this.production.forecast(from, windowEnd(from));
+      const [forecast, today] = await Promise.all([
+        this.production.forecast(from, windowEnd(from)),
+        this.readToday(from),
+      ]);
       if (seq === this.readSeq) {
         this.forecast.set(forecast);
+        this.todayRead.set(today);
       }
     } catch {
       // Silencieux par construction : la lecture précédente reste juste à
@@ -343,6 +365,24 @@ export class PrevisionnelPage {
     }
   }
 
+  /**
+   * La journée d'aujourd'hui, **seulement si la fenêtre ne la contient pas** :
+   * sinon la matrice la porte déjà, et `dayToCatchUp` la lit là — une seconde
+   * requête relirait la même ligne. Une fenêtre d'un jour (`from = to`), que
+   * `ServiceRange` admet. Un échec rend `null` : la bande se tait, l'écran reste.
+   */
+  private async readToday(from: string): Promise<ProductionForecastDay | null> {
+    if (from <= this.today && this.today <= windowEnd(from)) {
+      return null;
+    }
+    try {
+      const read = await this.production.forecast(this.today, this.today);
+      return read.days.find((day) => day.date === this.today) ?? null;
+    } catch {
+      return null;
+    }
+  }
+
   protected async load(from: string = this.from()): Promise<void> {
     const seq = ++this.readSeq;
     this.state.set('loading');
@@ -352,14 +392,16 @@ export class PrevisionnelPage {
       // — mais elle ne doit pas se taire non plus, d'où le `null` plutôt qu'un
       // tableau vide : les deux se lisent pareil à l'affichage, et un seul des
       // deux est une panne.
-      const [forecast, catalogue] = await Promise.all([
+      const [forecast, catalogue, today] = await Promise.all([
         this.production.forecast(from, windowEnd(from)),
         this.catalog.list().catch(() => null),
+        this.readToday(from),
       ]);
       if (seq !== this.readSeq) {
         return;
       }
       this.forecast.set(forecast);
+      this.todayRead.set(today);
       this.shelvesLost.set(catalogue === null);
       this.catalogue.set(catalogue ?? []);
       this.state.set('ready');
