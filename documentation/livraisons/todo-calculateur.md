@@ -76,13 +76,17 @@
 ## La capacité du véhicule à la composition — reste (Hugo, 2026-10-03)
 
 « Proposer » tient compte de la place depuis CA4 (2026-10-06, non commité) :
-voir [`composition-automatique.md`](composition-automatique.md), §5. Ce qui
-reste :
+voir [`composition-automatique.md`](composition-automatique.md), §5. Une
+commande aux bacs inconnus est placée sans contrôle et sa tournée dite
+« place non vérifiée » (correction du 2026-10-06). Ce qui reste :
 
 - la composition à la main **avertit** sans refuser : une jauge litres +
   plancher par tournée ;
-- prévenir quand une tournée qui tenait sur l'estimation ne tient plus une
-  fois les vrais bacs déclarés ;
+- prévenir quand une tournée qui tenait sur l'estimation — ou dont la place
+  n'était pas vérifiée — ne tient plus une fois les vrais bacs déclarés ;
+- la mention « place non vérifiée » n'est que dans l'aperçu de la
+  proposition : la composition enregistrée ne la porte pas (sa vue ne lit pas
+  la demande en bacs) ;
 - le poids (I5) reste hors champ tant qu'aucun bac n'en porte ;
 - les lignes des commandes sont lues une commande à la fois par « Proposer »
   (le port du commerce n'a pas de lecture groupée) : environ 200 requêtes à

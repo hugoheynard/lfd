@@ -40,10 +40,10 @@ export const POOL_KEY = '__pool__';
 /**
  * Pourquoi le calcul a laissé une commande à répartir (aperçu seulement) :
  * sans point GPS, plus de passage permis, ou la place (CA4) — aucune caisse
- * ne la tient (`capacity`), ou l'on ne sait pas combien de bacs elle
- * occupera (`unknown_demand`).
+ * ne la tient (`capacity`). Une commande aux bacs inconnus n'y est plus : elle
+ * est placée, et sa tournée dit « place non vérifiée » (2026-10-06).
  */
-export type BoardReason = 'unlocated' | 'overflow' | 'capacity' | 'unknown_demand';
+export type BoardReason = 'unlocated' | 'overflow' | 'capacity';
 
 /** Une commande à répartir. */
 export interface BoardOrder {
@@ -93,6 +93,12 @@ export interface BoardRound {
    * le 2026-10-06), et `null` aussi tant qu'une colonne attend son chronométrage.
    */
   readonly timing: PlannedTiming | null;
+  /**
+   * Combien de ses arrêts n'ont pas de bacs connus — aperçu seulement : la
+   * proposition les place sans contrôler leur place (2026-10-06), donc la
+   * tournée n'a pas de place vérifiée tant que ce compte n'est pas nul.
+   */
+  readonly unknownDemand: number;
   readonly stops: readonly BoardStop[];
 }
 
@@ -131,6 +137,7 @@ function roundOfComposed(composed: ComposedRound, geometries: Geometries): Board
     driver: round.driver,
     geometry: geometries.get(round.id) ?? null,
     timing: null,
+    unknownDemand: 0,
     stops: composed.stops.map(({ stop, sheet, windowClash }) => ({
       orderId: stop.orderId,
       stopId: stop.stopId,
@@ -251,6 +258,7 @@ export function boardOfPlan(
   const knownStops = new Map(
     known.rounds.flatMap((round) => round.stops.map((stop) => [stop.orderId, stop] as const)),
   );
+  const unknownDemand = new Set(proposal.unknownDemand.map((order) => order.orderId));
   const rounds = plan.map((planned): BoardRound => {
     const current = planned.roundId === null ? undefined : live.get(planned.roundId);
     const before = new Set(current?.stops.map(({ stop }) => stop.orderId) ?? []);
@@ -270,6 +278,7 @@ export function boardOfPlan(
       driver: current?.round.driver ?? null,
       geometry: planned.geometry,
       timing: planned.timing,
+      unknownDemand: stops.filter((stop) => unknownDemand.has(stop.orderId)).length,
       stops: withClashes(stops),
     };
   });
@@ -490,13 +499,17 @@ export function orderTagsOf(order: BoardOrder): readonly OrderCardTag[] {
   if (order.reason === 'capacity') {
     tags.push({ label: 'Ne tient dans aucun véhicule (place)', variant: 'warning' });
   }
-  if (order.reason === 'unknown_demand') {
-    tags.push({
-      label: 'Bacs inconnus · déclarez les bacs ou les contenances',
-      variant: 'warning',
-    });
-  }
   return tags;
+}
+
+/** « Place non vérifiée — 2 commandes sans bacs connus », ou `null` si la place l'est. */
+export function unverifiedPlaceLabel(round: Pick<BoardRound, 'unknownDemand'>): string | null {
+  const count = round.unknownDemand;
+  if (count === 0) {
+    return null;
+  }
+  const orders = count === 1 ? '1 commande' : `${String(count)} commandes`;
+  return `Place non vérifiée — ${orders} sans bacs connus`;
 }
 
 /** La commande attend un point GPS : le lien vers le carnet se montre. */

@@ -81,8 +81,11 @@ interface Planned {
  *
  * **La place entre dans le calcul** (CA4) : chaque commande occupe ses bacs
  * déclarés, sinon ceux qu'estime le colisage ; une place qui ferait déborder
- * une caisse n'est pas prise. Une commande dont on ne sait pas les bacs
- * n'est jamais placée, et le dit (`unfit`).
+ * une caisse n'est pas prise. Une commande dont on ne sait pas les bacs est
+ * placée SANS contrôle (2026-10-06) : elle n'occupe rien au calcul, la part
+ * connue de sa tournée reste contrôlée — un minorant de la charge réelle,
+ * donc un refus sûr — et la vue la nomme (`unknownDemand`) pour que l'écran
+ * dise « place non vérifiée ».
  *
  * **Refusée sans socle** (CA-D3) : aucun véhicule en service avec ses cotes,
  * ou aucun type de bac en service — c'est le premier contrôle.
@@ -132,10 +135,11 @@ export class GetDeliveryRoundProposalHandler implements IQueryHandler<
       query.day,
     );
     const stops = await this.locate(day);
-    const capacity = await this.place.of([
+    const considered = [
       ...day.unassigned,
       ...day.rounds.flatMap((round) => round.stops.map((stop) => stop.orderId)),
-    ]);
+    ];
+    const capacity = await this.place.of(considered);
     const mode = query.recomposeAll ? "new_rounds" : (query.mode ?? settings.defaultMode);
     const inputs = { day, stops, vehicles, departure, settings, capacity };
     const planned =
@@ -155,7 +159,7 @@ export class GetDeliveryRoundProposalHandler implements IQueryHandler<
     return proposalViewOf({
       ...{ day: query.day, mode, departure, settings: { ...settings.values(), source } },
       ...{ proposal: planned.proposal, rounds: day.rounds, kept: planned.kept, stops, unlocated },
-      unknownDemand: unknownDemandAmong(day.unassigned, stops, capacity.unknown),
+      unknownDemand: unknownDemandAmong(considered, capacity.unknown),
       lines,
     });
   }
@@ -172,10 +176,9 @@ export class GetDeliveryRoundProposalHandler implements IQueryHandler<
       facts: ctx.day.facts,
       broughtBack: ctx.day.broughtBack,
       located: ctx.stops,
-      unknownDemand: ctx.capacity.unknown,
       recomposeAll: query.recomposeAll,
     });
-    const pool = poolOf(ctx.day.unassigned, recomposable, ctx.stops, ctx.capacity.unknown);
+    const pool = poolOf(ctx.day.unassigned, recomposable, ctx.stops);
     const occupation = fleetOccupationOf(kept, ctx.stops);
     const cost = await this.costOf(ctx, [
       ...pool.map((stop) => stop.id),
@@ -207,9 +210,8 @@ export class GetDeliveryRoundProposalHandler implements IQueryHandler<
       rounds: ctx.day.rounds,
       vehicleIds: new Set(ctx.vehicles.map((vehicle) => vehicle.id)),
       located: ctx.stops,
-      unknownDemand: ctx.capacity.unknown,
     });
-    const pool = poolOf(ctx.day.unassigned, [], ctx.stops, ctx.capacity.unknown);
+    const pool = poolOf(ctx.day.unassigned, [], ctx.stops);
     const occupation = fleetOccupationOf(kept, ctx.stops);
     const roundStops = [
       ...insertable.flatMap((round) => round.stops.map((stop) => stop.orderId)),

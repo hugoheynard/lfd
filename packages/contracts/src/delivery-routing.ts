@@ -146,11 +146,11 @@ export interface DeliveryUnlocatedOrderView extends DeliveryRoundOrderRef {
 
 /**
  * Pourquoi « Proposer » laisse une commande située à répartir à cause de la
- * place (CA4) : aucune tournée ne la tient dans la caisse d'un véhicule
- * (`capacity`), ou l'on ne sait pas combien de bacs elle occupera — ni bac
- * déclaré, ni contenance pour tous ses produits (`unknown_demand`).
+ * place (CA4) : aucune tournée ne la tient dans la caisse d'un véhicule.
+ * `unknown_demand` est retiré le 2026-10-06 : une commande aux bacs inconnus
+ * est placée, et nommée dans `unknownDemand`.
  */
-export type DeliveryUnfitReason = "capacity" | "unknown_demand";
+export type DeliveryUnfitReason = "capacity";
 
 export interface DeliveryUnfitOrderView extends DeliveryRoundOrderRef {
   readonly reason: DeliveryUnfitReason;
@@ -158,19 +158,12 @@ export interface DeliveryUnfitOrderView extends DeliveryRoundOrderRef {
 
 /**
  * Pourquoi une tournée existante n'est pas dans `rounds` : partie, chargée
- * (recomposition), un arrêt non situé ou signalé, un arrêt dont on ne connaît
- * pas les bacs (CA4 : la place n'y serait pas vérifiable), non demandée (sans
+ * (recomposition), un arrêt non situé ou signalé, non demandée (sans
  * « tout recomposer », ou véhicule non coché), ou `unchanged` — éligible à
  * l'insertion, mais rien n'y a été inséré.
  */
 export type DeliveryKeptRoundReason =
-  | "departed"
-  | "loaded"
-  | "unlocated_stop"
-  | "signaled_stop"
-  | "unknown_demand_stop"
-  | "not_requested"
-  | "unchanged";
+  "departed" | "loaded" | "unlocated_stop" | "signaled_stop" | "not_requested" | "unchanged";
 
 export interface DeliveryKeptRoundView {
   readonly roundId: string;
@@ -217,11 +210,17 @@ export interface DeliveryRoundProposalView {
   readonly overflow: readonly DeliveryRoundOrderRef[];
   /**
    * Situées, mais que la place exclut (CA4) : rien ne les tient dans une
-   * caisse, ou leur demande en bacs est inconnue. Une commande « tout
-   * recomposer » refusée pour la place reste dans sa tournée d'origine, et y
-   * figure aussi.
+   * caisse. Une commande « tout recomposer » refusée pour la place reste dans
+   * sa tournée d'origine, et y figure aussi.
    */
   readonly unfit: readonly DeliveryUnfitOrderView[];
+  /**
+   * Les commandes du jour dont on ne connaît pas les bacs — ni bac déclaré,
+   * ni contenance pour tous leurs produits (2026-10-06). Elles sont placées
+   * sans contrôle de place : une tournée qui en porte une a sa place NON
+   * vérifiée, ce que l'écran dit colonne par colonne.
+   */
+  readonly unknownDemand: readonly DeliveryRoundOrderRef[];
   /** Les tournées du jour que la proposition ne touche pas, et pourquoi. */
   readonly kept: readonly DeliveryKeptRoundView[];
   /** Les versions de TOUTES les tournées du jour lues. */

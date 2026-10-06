@@ -9,7 +9,7 @@ const HOUR = 3600;
 const settings = (multiplePassages: boolean): RoutingSettings =>
   RoutingSettings.define({ ...RoutingSettings.DEFAULTS, stopMinutes: 0, multiplePassages });
 const loose = (id: string): PlannableStop => ({ id, window: null, homeRoundId: null });
-const COST = lineCost({ depot: 0, a: 3, b: 4, c: 5, n: 6 });
+const COST = lineCost({ depot: 0, a: 3, b: 4, c: 5, n: 6, u: 4 });
 const ids = (tour: ProposedTour | undefined): readonly string[] =>
   (tour?.stops ?? []).map((stop) => stop.id);
 
@@ -146,5 +146,80 @@ describe("la capacité dans « Proposer » (CA4)", () => {
     expect(proposal.tours).toEqual([]);
     expect(proposal.capacityRefused).toEqual(["n"]);
     expect(proposal.overflow).toEqual([]);
+  });
+
+  describe("une demande inconnue (2026-10-06) : placée sans contrôle, la part connue reste contrôlée", () => {
+    it("une commande absente de la capacité est placée, même dans une caisse pleine de bacs connus", () => {
+      const proposal = proposeRounds({
+        depotId: "depot",
+        stops: [loose("a"), loose("u")],
+        vehicles: [{ id: "v1", name: "Vélo" }],
+        recomposable: [],
+        cost: COST,
+        settings: settings(false),
+        // a remplit la pile (cinq bacs) ; u n'a pas de demande connue.
+        capacity: capacityOf({ v1: ONE_STACK }, { a: 5 }),
+      });
+
+      expect(proposal.tours.map((tour) => [...ids(tour)].sort())).toEqual([["a", "u"]]);
+      expect(proposal.capacityRefused).toEqual([]);
+    });
+
+    it("une tournée mêlée dont la part connue déborde déjà refuse la commande connue de trop", () => {
+      const proposal = insertIntoRounds({
+        depotId: "depot",
+        cost: COST,
+        settings: settings(false),
+        stops: [{ id: "n", window: null }],
+        vehicles: [{ id: "v1", name: "Vélo" }],
+        rounds: [
+          {
+            roundId: "r1",
+            vehicleId: "v1",
+            vehicleName: "Vélo",
+            passage: 1,
+            stops: [
+              { id: "u", window: null },
+              { id: "a", window: null },
+            ],
+          },
+        ],
+        passageLimits: new Map([["v1", 0]]),
+        // a (4) + n (2) = six bacs pour une pile de cinq, quoi que porte u.
+        capacity: capacityOf({ v1: ONE_STACK }, { a: 4, n: 2 }),
+      });
+
+      expect(proposal.tours).toEqual([]);
+      expect(proposal.capacityRefused).toEqual(["n"]);
+    });
+
+    it("une tournée mêlée dont la part connue tient reçoit la commande connue", () => {
+      const proposal = insertIntoRounds({
+        depotId: "depot",
+        cost: COST,
+        settings: settings(false),
+        stops: [{ id: "n", window: null }],
+        vehicles: [{ id: "v1", name: "Vélo" }],
+        rounds: [
+          {
+            roundId: "r1",
+            vehicleId: "v1",
+            vehicleName: "Vélo",
+            passage: 1,
+            stops: [
+              { id: "u", window: null },
+              { id: "a", window: null },
+            ],
+          },
+        ],
+        passageLimits: new Map([["v1", 0]]),
+        capacity: capacityOf({ v1: ONE_STACK }, { a: 3, n: 2 }),
+      });
+
+      expect(proposal.tours.map((tour) => [tour.roundId, [...ids(tour)].sort()])).toEqual([
+        ["r1", ["a", "n", "u"]],
+      ]);
+      expect(proposal.capacityRefused).toEqual([]);
+    });
   });
 });

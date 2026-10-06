@@ -17,7 +17,7 @@ import { packingLinesOf } from "./packing-lines.js";
 /** La place et la demande, et les commandes dont la demande est inconnue. */
 export interface ProposalCapacityReading {
   readonly capacity: CompositionCapacity;
-  /** Ni bac déclaré, ni estimation possible : elles ne sont jamais placées par le calcul. */
+  /** Ni bac déclaré, ni estimation possible : placées sans contrôle, leur tournée dite « place non vérifiée ». */
   readonly unknown: ReadonlySet<string>;
 }
 

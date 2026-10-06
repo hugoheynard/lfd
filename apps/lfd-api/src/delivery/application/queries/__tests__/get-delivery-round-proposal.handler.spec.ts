@@ -431,14 +431,23 @@ describe("GetDeliveryRoundProposalHandler — les camionnettes occupées (lot 7 
 });
 
 describe("GetDeliveryRoundProposalHandler — la place (CA4)", () => {
-  it("une commande dont on ne connaît pas les bacs n'est pas placée, et le dit", async () => {
+  /**
+   * Régression : avant le 2026-10-06, une commande aux bacs inconnus restait
+   * à répartir (`unknown_demand`) — sans contenances réglées, « Proposer » ne
+   * plaçait presque rien avant le colisage.
+   */
+  it("une commande dont on ne connaît pas les bacs est placée, et nommée « place non vérifiée »", async () => {
     const { handler } = scene({ lines: new BreadForEveryOrder(new Map(), new Set(["o1", "o5"])) });
 
     const view = await handler.execute(new GetDeliveryRoundProposalQuery(DAY, null, false));
 
-    expect(placed(view)).toEqual(["o2", "o3", "o4", "o7"]);
-    // o5 n'est pas située : elle reste dans `unlocated`, pas deux fois.
-    expect(view.unfit).toEqual([{ orderId: "o1", reference: "CMD-o1", reason: "unknown_demand" }]);
+    expect(placed(view)).toEqual(["o1", "o2", "o3", "o4", "o7"]);
+    expect(view.unfit).toEqual([]);
+    // o5 n'est pas située, mais ses bacs sont inconnus aussi : l'écran la retrouvera si on la place.
+    expect(view.unknownDemand).toEqual([
+      { orderId: "o1", reference: "CMD-o1" },
+      { orderId: "o5", reference: "CMD-o5" },
+    ]);
   });
 
   it("une commande trop grosse pour toutes les caisses reste à répartir, raison « capacité »", async () => {
@@ -457,14 +466,27 @@ describe("GetDeliveryRoundProposalHandler — la place (CA4)", () => {
     expect(view.overflow).toEqual([]);
   });
 
-  it("« tout recomposer » garde telle quelle une tournée dont un arrêt n'a pas de bacs connus", async () => {
+  /** Régression : avant le 2026-10-06, la tournée était gardée (`unknown_demand_stop`). */
+  it("« tout recomposer » reprend une tournée dont un arrêt n'a pas de bacs connus", async () => {
     const { handler } = scene({ lines: new BreadForEveryOrder(new Map(), new Set(["o10"])) });
 
     const view = await handler.execute(new GetDeliveryRoundProposalQuery(DAY, ["v1"], true));
 
-    expect(view.kept).toContainEqual(
-      expect.objectContaining({ roundId: "r_open", reason: "unknown_demand_stop" }),
+    expect(view.kept.map((kept) => kept.roundId)).not.toContain("r_open");
+    expect(placed(view)).toContain("o10");
+    expect(view.unknownDemand.map((order) => order.orderId)).toEqual(["o10"]);
+  });
+
+  it("Insérer : une tournée dont un arrêt n'a pas de bacs connus reste éligible", async () => {
+    const { handler } = scene({ lines: new BreadForEveryOrder(new Map(), new Set(["o10"])) });
+
+    const view = await handler.execute(
+      new GetDeliveryRoundProposalQuery(DAY, ["v1"], false, "insert"),
     );
-    expect(placed(view)).not.toContain("o10");
+
+    // Avant le 2026-10-06, r_open était gardée (`unknown_demand_stop`) et rien n'y entrait.
+    const open = view.rounds.find((round) => round.roundId === "r_open");
+    expect(open?.stops.map((stop) => stop.orderId)).toEqual(expect.arrayContaining(["o10", "o1"]));
+    expect(view.unknownDemand.map((order) => order.orderId)).toEqual(["o10"]);
   });
 });

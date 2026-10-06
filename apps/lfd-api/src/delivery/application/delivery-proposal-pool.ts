@@ -7,21 +7,19 @@ import { type LocatedStop, routingStopOf } from "./delivery-routing-support.js";
 export const DEPOT_ID = "depot";
 
 /**
- * Les arrêts à placer : les commandes à répartir situées et dont la demande
- * en bacs est connue (CA4), puis ceux des tournées recomposables — qui, eux,
- * l'ont toujours (`classifyRounds` garde une tournée dont un arrêt ne l'a pas).
+ * Les arrêts à placer : les commandes à répartir situées, puis ceux des
+ * tournées recomposables. Une demande en bacs inconnue n'écarte plus personne
+ * (décision du 2026-10-06) : la commande est placée sans contrôle de place, et
+ * sa tournée est dite « place non vérifiée » (`unknownDemandAmong`).
  */
 export function poolOf(
   unassigned: readonly string[],
   recomposable: readonly RoundRow[],
   stops: ReadonlyMap<string, LocatedStop>,
-  unknownDemand: ReadonlySet<string>,
 ): readonly PlannableStop[] {
   const plannable = (orderId: string, homeRoundId: string | null): PlannableStop[] => {
     const stop = stops.get(orderId);
-    return stop?.point == null || unknownDemand.has(orderId)
-      ? []
-      : [{ ...routingStopOf(stop), homeRoundId }];
+    return stop?.point == null ? [] : [{ ...routingStopOf(stop), homeRoundId }];
   };
   return [
     ...unassigned.flatMap((orderId) => plannable(orderId, null)),
@@ -31,15 +29,16 @@ export function poolOf(
   ];
 }
 
-/** Les commandes à répartir, situées, que la demande inconnue écarte du calcul (CA4). */
+/**
+ * Les commandes considérées dont la demande en bacs est inconnue, dans l'ordre
+ * lu et sans doublon : une tournée qui en porte une a sa place NON vérifiée
+ * (décision du 2026-10-06) — l'écran le dit, colonne par colonne.
+ */
 export function unknownDemandAmong(
-  unassigned: readonly string[],
-  stops: ReadonlyMap<string, LocatedStop>,
+  orderIds: readonly string[],
   unknownDemand: ReadonlySet<string>,
 ): readonly string[] {
-  return unassigned.filter(
-    (orderId) => stops.get(orderId)?.point != null && unknownDemand.has(orderId),
-  );
+  return [...new Set(orderIds)].filter((orderId) => unknownDemand.has(orderId));
 }
 
 /** Les points de la matrice : le départ, puis chaque commande située. */

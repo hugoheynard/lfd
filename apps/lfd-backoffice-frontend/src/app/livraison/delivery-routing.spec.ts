@@ -71,6 +71,7 @@ describe('le calculateur de tournée — dérivations pures', () => {
       unlocated: [],
       overflow: [],
       unfit: [],
+      unknownDemand: [],
       kept: [],
       versions: [],
     });

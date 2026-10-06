@@ -17,8 +17,10 @@ export interface DeclaredStopBin {
  * 2. `estimated` : sinon, la proposition de colisage (lignes × contenances)
  *    dit combien il en faudra ;
  * 3. `unknown` : sinon on ne sait pas — et on ne l'invente pas. La commande
- *    reste à répartir, signalée : une demande inventée ferait passer une
- *    tournée pour chargeable sans que personne l'ait vérifié.
+ *    est placée SANS contrôle de place (décision du 2026-10-06 : sans
+ *    contenances réglées, le refus laissait presque tout à répartir avant le
+ *    colisage), et sa tournée est dite « place non vérifiée ». Une demande
+ *    inventée, elle, la ferait passer pour vérifiée.
  */
 export type StopDemand =
   | { readonly kind: "declared"; readonly bins: readonly PlanBin[] }

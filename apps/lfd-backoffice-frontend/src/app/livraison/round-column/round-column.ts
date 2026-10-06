@@ -29,6 +29,7 @@ import {
   stopAriaOf,
   stopEdgeOf,
   stopTagsOf,
+  unverifiedPlaceLabel,
 } from '../rounds-board-model';
 
 /** Un rang qui monte (−1) ou descend (+1) — l'équivalent clavier du glisser. */
@@ -130,6 +131,9 @@ export class RoundColumn {
     const timing = this.round().timing;
     return timing === null ? null : roundTimingLabel(timing);
   });
+
+  /** La proposition y a placé des commandes aux bacs inconnus : la place n'est pas contrôlée. */
+  protected readonly unverifiedPlace = computed(() => unverifiedPlaceLabel(this.round()));
 
   protected readonly stopCountLabel = stopCountLabel;
   protected readonly incidentCountLabel = incidentCountLabel;

@@ -150,6 +150,7 @@ const PROPOSAL: DeliveryRoundProposalView = {
   unlocated: [],
   overflow: [{ orderId: 'o-4', reference: 'CMD-4' }],
   unfit: [],
+  unknownDemand: [],
   kept: [{ roundId: 'r-1', vehicleName: 'Kangoo', passage: 1, reason: 'not_requested' }],
   versions: [
     { roundId: 'r-1', version: 4 },

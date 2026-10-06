@@ -144,9 +144,6 @@ describe('les cartes', () => {
     expect(orderTagsOf({ ...base, reason: 'capacity' }).map((tag) => tag.label)).toEqual([
       'Ne tient dans aucun véhicule (place)',
     ]);
-    expect(orderTagsOf({ ...base, reason: 'unknown_demand' }).map((tag) => tag.label)).toEqual([
-      'Bacs inconnus · déclarez les bacs ou les contenances',
-    ]);
   });
 
   it('préfixe la liste sous la carte par le passage, ou le véhicule', () => {

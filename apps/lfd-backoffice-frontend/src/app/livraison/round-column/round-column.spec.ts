@@ -35,6 +35,7 @@ function round(overrides: Partial<BoardRound> = {}): BoardRound {
     driver: null,
     geometry: null,
     timing: null,
+    unknownDemand: 0,
     stops: [stop('1'), stop('2')],
     ...overrides,
   };
@@ -191,5 +192,18 @@ describe('RoundColumn', () => {
   it('une tournée sans chronométrage ne montre ni heures ni distance', () => {
     const { element } = mount(round());
     expect(element.querySelector('[data-round-timing]')).toBeNull();
+  });
+
+  it('une tournée aux commandes sans bacs connus dit que sa place n’est pas vérifiée, et comment la vérifier', () => {
+    const { element } = mount(round({ unknownDemand: 2 }));
+    const mention = element.querySelector('[data-unverified-place]');
+    expect(mention?.textContent).toContain('Place non vérifiée — 2 commandes sans bacs connus');
+    expect(mention?.textContent).toContain('Réglez les contenances des produits');
+    expect(mention?.textContent).toContain('bacs déclarés au colisage');
+  });
+
+  it('une tournée dont la place est vérifiée ne montre aucune mention', () => {
+    const { element } = mount(round());
+    expect(element.querySelector('[data-unverified-place]')).toBeNull();
   });
 });

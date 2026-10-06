@@ -60,6 +60,15 @@
       </div>
     }
 
+    @if (unverifiedPlace(); as label) {
+      <div class="line sub" data-unverified-place>
+        <fold-badge radius="square" variant="neutral" [content]="label" />
+        <span class="note">
+          Réglez les contenances des produits, ou attendez les bacs déclarés au colisage.
+        </span>
+      </div>
+    }
+
     <div class="count" data-stop-count>{{ stopCountLabel(round().stops.length) }}</div>
 
     @if (canSort()) {

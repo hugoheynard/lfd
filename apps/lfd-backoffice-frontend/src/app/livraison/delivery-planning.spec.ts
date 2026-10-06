@@ -20,6 +20,7 @@ import {
   withTimings,
 } from './delivery-planning';
 import { type ComposedDay, movedOrder } from './delivery-rounds';
+import { boardOfPlan, unverifiedPlaceLabel } from './rounds-board-model';
 import { stopOf } from './run-sheet.fixture';
 
 const SETTINGS: DeliveryRoutingSettingsView = {
@@ -77,6 +78,7 @@ const PROPOSAL: DeliveryRoundProposalView = {
   unlocated: [],
   overflow: [],
   unfit: [],
+  unknownDemand: [],
   kept: [{ roundId: 'r-9', vehicleName: 'Camionnette 3', passage: 1, reason: 'loaded' }],
   versions: [
     { roundId: 'r-1', version: 4 },
@@ -190,6 +192,23 @@ describe('planOf', () => {
 
     expect(loaded).toMatchObject({ lock: 'loaded', kept: true, timing: null, vehicleId: 'v-3' });
     expect(loaded?.stops.map((line) => line.orderId)).toEqual(['o-9']);
+  });
+});
+
+describe('la place non vérifiée (2026-10-06)', () => {
+  it('compte, colonne par colonne, les commandes placées sans bacs connus', () => {
+    const proposal = { ...PROPOSAL, unknownDemand: [{ orderId: 'o-2', reference: 'CMD-2' }] };
+    const board = boardOfPlan(planOf(proposal, null), [], null, proposal);
+    expect(board.rounds.map((round) => [round.key, round.unknownDemand])).toEqual([
+      ['r-1', 1],
+      ['new:v-2:1', 0],
+      ['r-9', 0],
+    ]);
+    expect(board.rounds.map(unverifiedPlaceLabel)).toEqual([
+      'Place non vérifiée — 1 commande sans bacs connus',
+      null,
+      null,
+    ]);
   });
 });
 

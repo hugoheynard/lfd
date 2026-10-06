@@ -284,7 +284,12 @@ describe("la place des véhicules dans « Proposer » (CA4)", () => {
     return orderId;
   }
 
-  it("un petit véhicule qui déborderait : un second passage, une commande trop grosse et une sans bacs connus restent à répartir", async () => {
+  /**
+   * Régression : avant le 2026-10-06, la commande sans ligne restait à
+   * répartir (`unknown_demand`) ; elle est désormais placée, sa tournée dite
+   * « place non vérifiée ».
+   */
+  it("un petit véhicule qui déborderait : un second passage, la trop grosse reste à répartir, celle sans bacs connus est placée", async () => {
     await seedDeparture(ctx);
     const bike = await addVehicle(ctx, "Vélo-cargo", ONE_STACK);
     // Trois bacs chacune (trente pains, dix par bac) : ensemble, six bacs pour une pile de cinq.
@@ -298,15 +303,13 @@ describe("la place des véhicules dans « Proposer » (CA4)", () => {
     expect(view.rounds.every((round) => round.vehicleId === bike)).toBe(true);
     expect(view.rounds.map((round) => round.stops.map((stop) => stop.orderId))).toHaveLength(2);
     expect(view.rounds.flatMap((round) => round.stops.map((stop) => stop.orderId)).sort()).toEqual(
-      [first, second].sort(),
+      [first, second, unknown].sort(),
     );
-    expect(view.unfit.map(({ orderId, reason }) => [orderId, reason]).sort()).toEqual(
-      [
-        [huge, "capacity"],
-        [unknown, "unknown_demand"],
-      ].sort(),
-    );
+    expect(view.unfit.map(({ orderId, reason }) => [orderId, reason])).toEqual([
+      [huge, "capacity"],
+    ]);
     expect(view.unfit.every((order) => order.reference.startsWith("TRN-"))).toBe(true);
+    expect(view.unknownDemand.map((order) => order.orderId)).toEqual([unknown]);
     expect(view.overflow).toEqual([]);
   });
 });

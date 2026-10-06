@@ -11,8 +11,11 @@ const MM2_PER_CM2 = 100;
 /**
  * **Ce que la composition sait de la place** (CA4) : la charge de chaque
  * véhicule, et les bacs de chaque commande dont la demande est CONNUE.
- * Une commande absente de `bins` n'occupe rien : c'est le cas d'un arrêt
- * placé à la main dont la tournée n'est pas recomposée.
+ * Une commande absente de `bins` n'occupe rien : demande inconnue, ou arrêt
+ * placé à la main dont la tournée n'est pas recomposée. Une tournée mêlée est
+ * donc jugée sur sa part CONNUE (2026-10-06) — un minorant de sa charge
+ * réelle : si cette part déborde déjà, la tournée déborde, le refus est sûr ;
+ * si elle tient, rien n'est promis, et l'écran le dit.
  */
 export interface CompositionCapacity {
   readonly vehicles: ReadonlyMap<string, PlanVehicle>;
