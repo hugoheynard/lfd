@@ -30,6 +30,8 @@ interface SentMail {
   readonly data: {
     readonly completed?: boolean;
     readonly orderCount?: number;
+    readonly firstName?: string;
+    readonly arrestedBy?: string;
     readonly pdfBase64?: string;
     readonly fileName?: string;
   };
@@ -106,6 +108,24 @@ describe("l'envoi du dossier du jour (E3)", () => {
     expect(facts.map((fact) => fact.payload)).toEqual([
       { subjectLabel: SERVICE_DAY, serviceDay: SERVICE_DAY, sent: 2, failed: 0, completed: false },
     ]);
+  });
+
+  it("dit qui a arrêté le plan — le nom figé à l'arrêt — et salue un externe sans nom tout court", async () => {
+    await ctx
+      .asSub(STAFF)
+      .post(RECIPIENTS)
+      .send({ kind: "external", email: "imprimerie@x.test" })
+      .expect(201);
+    await place(ctx, issued, [{ sku: CROISSANT, quantity: 12 }]);
+
+    await closePlan(ctx);
+    await ctx.drain();
+
+    expect(dossiers().map((mail) => mail.data)).toMatchObject([
+      { firstName: "", arrestedBy: "par Opérateur E2E" },
+    ]);
+    const day = await ctx.prisma.productionDay.findUnique({ where: { serviceDay: SERVICE_DAY } });
+    expect(day?.closedByName).toBe("Opérateur E2E");
   });
 
   it("un retirage qui absorbe renvoie le dossier « complété » à chacun", async () => {

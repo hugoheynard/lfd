@@ -46,6 +46,16 @@ model ProductionDay {
   retakenAt DateTime? @map("retaken_at")
   retakenBy String?   @map("retaken_by")
 
+  /// **Qui a arrêté le plan** (2026-10-06) : l'id de la fiche staff, ou
+  /// `auto-close` pour l'arrêt automatique. `null` : une journée arrêtée avant
+  /// que la colonne existe — l'auteur est inconnu, le papier n'en dit rien.
+  closedBy      String? @map("closed_by")
+  /// Son nom, FIGÉ à l'arrêt : le dossier imprimé ne change pas si la fiche
+  /// est renommée. `null` pour un arrêt automatique ou un auteur inconnu.
+  closedByName  String? @map("closed_by_name")
+  /// Le nom de qui a complété (`retakenBy`), figé au retirage.
+  retakenByName String? @map("retaken_by_name")
+
   /// **Qui colise cette journée** — `legacy` (le poste du fournil, ses colonnes
   /// `packed_*`) ou `packing` (le bloc du colisage). Écrite dans la transaction
   /// de la clôture, et une journée garde le propriétaire qu'elle a eu à sa

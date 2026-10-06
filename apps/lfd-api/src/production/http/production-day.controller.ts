@@ -21,6 +21,7 @@ import { GetProductionCountPdfQuery } from "../application/queries/get-productio
 import { GetProductionDayStatusQuery } from "../application/queries/get-production-day-status.query.js";
 import { GetProductionForecastQuery } from "../application/queries/get-production-forecast.query.js";
 import { GetProductionDueThresholdsQuery } from "../application/queries/get-production-due-thresholds.query.js";
+import { StaffUserId } from "../../platform/auth/staff.decorator.js";
 import type { ProductionPaper } from "../application/services/production-paper.service.js";
 
 /**
@@ -203,9 +204,16 @@ export class ProductionDayController {
    */
   @Post("batch/:date/close")
   @RequirePermission("production_count_stop:write")
-  async close(@Param("date") date: string): Promise<ProductionPlanClosure> {
+  async close(
+    @Param("date") date: string,
+    @StaffUserId() staffUserId: string,
+  ): Promise<ProductionPlanClosure> {
     return this.commands.execute<CloseProductionDayCommand, ProductionPlanClosure>(
-      new CloseProductionDayCommand(productionBatchQuerySchema.parse({ date }).date),
+      new CloseProductionDayCommand(
+        productionBatchQuerySchema.parse({ date }).date,
+        "manual",
+        staffUserId,
+      ),
     );
   }
 }

@@ -23,24 +23,6 @@ export class InvalidRecipientEmailError extends DomainError {
   }
 }
 
-/** Ce qui manque à un destinataire externe. */
-export type RecipientNamePart = "firstName" | "lastName";
-
-const NAME_WORDS: Readonly<Record<RecipientNamePart, string>> = {
-  firstName: "le prénom",
-  lastName: "le nom",
-};
-
-/** Un externe sans prénom ou sans nom : le dossier arriverait à « personne ». */
-export class RecipientNameRequiredError extends DomainError {
-  constructor(part: RecipientNamePart) {
-    super(
-      "production.dossier_recipient.name_required",
-      `Il manque ${NAME_WORDS[part]} du destinataire : saisissez son prénom et son nom, pour qu'on sache à qui part le dossier.`,
-    );
-  }
-}
-
 /** Une adresse — ou une fiche — déjà dans la liste. */
 export class DuplicateDossierRecipientError extends BusinessError {
   constructor(email: string, holder: string) {

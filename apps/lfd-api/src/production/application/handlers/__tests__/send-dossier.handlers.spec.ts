@@ -7,7 +7,8 @@ import { ProductionDayClosedEvent } from "../../../channels/commerce/production-
 import { ProductionDay } from "../../../domain/entities/production-day.js";
 import { ProductionDayRetakenEvent } from "../../../domain/events/production-day-retaken.event.js";
 import type { StoredDossierRecipient } from "../../../domain/ports/dossier-recipients.reader.js";
-import { frenchDayLabel } from "../../../domain/services/auto-close-round.js";
+import { AUTOMATIC_SIGNER, staffSigner } from "../../../domain/entities/plan-signer.js";
+import { parisDateTime, weekdayLongDate } from "../../../domain/services/paper-pdf-kit.js";
 import { ServiceDay } from "../../../domain/value-objects/service-day.value-object.js";
 import { Directory, RecipientsRows, staffCard } from "../../__tests__/dossier-recipient-doubles.js";
 import {
@@ -60,7 +61,7 @@ function order(orderId: string, quantity: number): ProducibleOrder {
 
 function closedDay(): ProductionDay {
   const day = ProductionDay.open(ServiceDay.of(DAY));
-  day.close([order("ord_1", 12)], CLOSED);
+  day.close([order("ord_1", 12)], CLOSED, null);
   return day;
 }
 
@@ -119,8 +120,12 @@ describe("l'envoi du dossier à l'arrêt", () => {
     expect(first?.template).toBe("staff.production-dossier");
     expect(first?.data).toMatchObject({
       firstName: "Paul",
-      dayLabel: frenchDayLabel(DAY),
+      dayLabel: weekdayLongDate(DAY),
+      arrestedAtLabel: parisDateTime(CLOSED),
+      arrestedBy: "",
       orderCount: 1,
+      pickupCount: 1,
+      deliveryCount: 0,
       pieceCount: 12,
       completed: false,
       fileName: `dossier-du-jour-${DAY}.pdf`,
@@ -129,6 +134,17 @@ describe("l'envoi du dossier à l'arrêt", () => {
     expect(events.traced.map((event) => event.journalFact().payload)).toEqual([
       { subjectLabel: DAY, serviceDay: DAY, sent: 2, failed: 0, completed: false },
     ]);
+  });
+
+  it.each([
+    ["par qui l'a arrêté", staffSigner("staff-1", "Marie Dupont"), "par Marie Dupont"],
+    ["« automatiquement »", AUTOMATIC_SIGNER, "automatiquement"],
+  ] as const)("dit l'auteur de l'arrêt %s", async (_case, signer, expected) => {
+    const day = ProductionDay.open(ServiceDay.of(DAY));
+    day.close([order("ord_1", 12)], CLOSED, signer);
+    const { closed, mailer } = setup([PAUL], day);
+    await closed.handle(closure());
+    expect(mailer.sent[0]?.data).toMatchObject({ arrestedBy: expected });
   });
 
   it("un refus n'arrête pas les autres : noté, nommé dans UNE alerte, jamais retenté", async () => {
@@ -175,7 +191,7 @@ describe("l'envoi du dossier à l'arrêt", () => {
 
   it("ignore l'arrêt d'une journée reprise depuis : le retirage enverra le dossier complété", async () => {
     const day = closedDay();
-    day.retake([order("ord_1", 12), order("ord_2", 4)], RETAKEN, "staff-1");
+    day.retake([order("ord_1", 12), order("ord_2", 4)], RETAKEN, "staff-1", null);
     const { closed, mailer } = setup([PAUL], day);
     await closed.handle(closure());
     expect(mailer.sent).toEqual([]);
@@ -185,13 +201,19 @@ describe("l'envoi du dossier à l'arrêt", () => {
 describe("l'envoi du dossier complété, au retirage", () => {
   it("renvoie à chacun, « complété », avec les commandes absorbées", async () => {
     const day = closedDay();
-    day.retake([order("ord_1", 12), order("ord_2", 4)], RETAKEN, "staff-1");
+    day.retake([order("ord_1", 12), order("ord_2", 4)], RETAKEN, "staff-1", "Marie Dupont");
     const { retaken, mailer, events } = setup([PAUL, JEANNE], day);
 
     await retaken.handle(retake());
 
     expect(mailer.sent).toHaveLength(2);
-    expect(mailer.sent[0]?.data).toMatchObject({ completed: true, orderCount: 2, pieceCount: 16 });
+    expect(mailer.sent[0]?.data).toMatchObject({
+      completed: true,
+      orderCount: 2,
+      pieceCount: 16,
+      arrestedAtLabel: parisDateTime(RETAKEN),
+      arrestedBy: "par Marie Dupont",
+    });
     expect(mailer.sent[0]?.idempotencyKey).toBe(
       `production-dossier:${DAY}:${RETAKEN.toISOString()}:r-paul`,
     );
@@ -202,7 +224,7 @@ describe("l'envoi du dossier complété, au retirage", () => {
 
   it("ignore un retirage dépassé par un plus récent", async () => {
     const day = closedDay();
-    day.retake([order("ord_1", 12), order("ord_2", 4)], RETAKEN, "staff-1");
+    day.retake([order("ord_1", 12), order("ord_2", 4)], RETAKEN, "staff-1", null);
     const { retaken, mailer } = setup([PAUL], day);
     await retaken.handle(retake(CLOSED));
     expect(mailer.sent).toEqual([]);

@@ -2,8 +2,10 @@
 export class AddExternalDossierRecipientCommand {
   constructor(
     readonly email: string,
-    readonly firstName: string,
-    readonly lastName: string,
+    /** Facultatif (Hugo, 2026-10-06) ; vide se lit comme absent. */
+    readonly firstName: string | null,
+    /** Facultatif ; vide se lit comme absent. */
+    readonly lastName: string | null,
     /** Facultatif ; vide se lit comme absent. */
     readonly jobTitle: string | null,
     /** L'identité staff de qui inscrit, résolue par le guard. Jamais dans la charge utile. */

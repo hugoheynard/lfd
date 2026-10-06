@@ -14,6 +14,11 @@ export class CloseProductionDayCommand {
      * écrit « automatiquement » plutôt qu'un nom. La clôture est la même.
      */
     readonly trigger: CloseTrigger = "manual",
+    /**
+     * La fiche staff qui arrête, résolue par le guard — le dossier dit « arrêté
+     * par … » (2026-10-06). `null` : l'arrêt automatique, ou un semis.
+     */
+    readonly staffUserId: string | null = null,
   ) {}
 }
 

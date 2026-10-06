@@ -1,4 +1,4 @@
-import type { DossierStaffCard } from "../entities/dossier-recipient.js";
+import { type DossierStaffCard, UNNAMED_EXTERNAL_LABEL } from "../entities/dossier-recipient.js";
 import type { ProductionOrderSnapshot } from "../entities/production-day.js";
 import type { StoredDossierRecipient } from "../ports/dossier-recipients.reader.js";
 
@@ -17,8 +17,12 @@ export interface DossierAddressee {
   /** La ligne de la liste — la clé de la trace d'envoi. */
   readonly recipientId: string;
   readonly email: string;
+  /** Vide quand on ne le connaît pas (un externe sans prénom). */
   readonly firstName: string;
-  /** « Prénom Nom », pour la trace et l'alerte. */
+  /**
+   * « Prénom Nom », pour la trace et l'alerte ; « un destinataire externe »
+   * pour un externe sans nom — jamais l'adresse.
+   */
   readonly name: string;
 }
 
@@ -51,8 +55,8 @@ function addresseeOf(
     return {
       recipientId: row.id,
       email: row.email,
-      firstName: row.firstName,
-      name: fullName(row.firstName, row.lastName),
+      firstName: row.firstName ?? "",
+      name: fullName(row.firstName ?? "", row.lastName ?? "") || UNNAMED_EXTERNAL_LABEL,
     };
   }
   const card = cards.get(row.staffUserId);
@@ -71,19 +75,36 @@ function fullName(firstName: string, lastName: string): string {
   return `${firstName} ${lastName}`.trim();
 }
 
-/** Ce que l'objet de l'e-mail annonce : les commandes et les pièces figées. */
+/** Ce que l'e-mail annonce : les commandes (par mode) et les pièces figées. */
 export interface DossierCounts {
   readonly orders: number;
+  readonly pickup: number;
+  readonly delivery: number;
   readonly pieces: number;
 }
 
 /** Les mêmes comptes que l'en-tête du dossier (`dayDossierOf`). */
 export function dossierCountsOf(orders: readonly ProductionOrderSnapshot[]): DossierCounts {
+  const pickup = orders.filter((order) => order.fulfillmentMethod === "pickup").length;
   return {
     orders: orders.length,
+    pickup,
+    delivery: orders.length - pickup,
     pieces: orders.reduce(
       (sum, order) => sum + order.lines.reduce((lines, line) => lines + line.quantity, 0),
       0,
     ),
   };
+}
+
+/**
+ * « 2 en retrait, 1 en livraison » — une part à zéro ne s'écrit pas ; vide
+ * quand il n'y a aucune commande. Partagé par le papier et l'e-mail.
+ */
+export function methodSplitOf(pickup: number, delivery: number): string {
+  const parts = [
+    pickup > 0 ? `${String(pickup)} en retrait` : "",
+    delivery > 0 ? `${String(delivery)} en livraison` : "",
+  ];
+  return parts.filter((part) => part !== "").join(", ");
 }

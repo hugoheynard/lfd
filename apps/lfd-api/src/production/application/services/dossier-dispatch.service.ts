@@ -4,6 +4,7 @@ import { DomainEventPublisher } from "../../../platform/events/domain-event-publ
 import { MAILER, type B2bMailer } from "../../../platform/mailer/mailer.tokens.js";
 import { Clock } from "../../../platform/time/clock.js";
 import { StaffContacts } from "../../../staff/directory/domain/staff-contacts.js";
+import { signedBy, staffSigner } from "../../domain/entities/plan-signer.js";
 import type { ProductionDay } from "../../domain/entities/production-day.js";
 import { DossierSentJournalEvent } from "../../domain/events/dossier-dispatch.events.js";
 import {
@@ -11,12 +12,12 @@ import {
   type DossierDispatchSlot,
 } from "../../domain/ports/dossier-dispatch.log.js";
 import { DossierRecipientsReader } from "../../domain/ports/dossier-recipients.reader.js";
-import { frenchDayLabel } from "../../domain/services/auto-close-round.js";
 import {
   dossierAddresseesOf,
   dossierCountsOf,
   type DossierAddressee,
 } from "../../domain/services/dossier-addressees.js";
+import { parisDateTime, weekdayLongDate } from "../../domain/services/paper-pdf-kit.js";
 import { PlanArrestBell } from "./plan-arrest-bell.js";
 import { ProductionPapers, type ProductionPaper } from "./production-paper.service.js";
 
@@ -135,8 +136,12 @@ export class DossierDispatch {
         template: "staff.production-dossier",
         data: {
           firstName: addressee.firstName,
-          dayLabel: frenchDayLabel(slot.serviceDay),
+          dayLabel: weekdayLongDate(slot.serviceDay),
+          arrestedAtLabel: parisDateTime(occasion.at),
+          arrestedBy: arrestedByOf(day, occasion),
           orderCount: counts.orders,
+          pickupCount: counts.pickup,
+          deliveryCount: counts.delivery,
           pieceCount: counts.pieces,
           completed: occasion.completed,
           pdfBase64: paper.bytes.toString("base64"),
@@ -160,4 +165,15 @@ export class DossierDispatch {
       tally.failedNames.push(addressee.name);
     }
   }
+}
+
+/**
+ * « par Marie Dupont », « automatiquement », ou vide : l'auteur FIGÉ de
+ * l'arrêt — ou du retirage, pour un dossier complété.
+ */
+function arrestedByOf(day: ProductionDay, occasion: DossierOccasion): string {
+  if (!occasion.completed) {
+    return signedBy(day.closedBy);
+  }
+  return day.retakenByName === null ? "" : signedBy(staffSigner("", day.retakenByName));
 }

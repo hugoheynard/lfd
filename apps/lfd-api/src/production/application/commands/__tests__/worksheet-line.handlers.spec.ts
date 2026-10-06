@@ -45,7 +45,7 @@ const ORDER: ProducibleOrder = {
 /** Une journée déjà arrêtée, qui porte un seul article au compte. */
 function closedDay(): ProductionDay {
   const day = ProductionDay.open(ServiceDay.of(DAY));
-  day.close([ORDER], new Date("2026-09-13T04:20:00.000Z"));
+  day.close([ORDER], new Date("2026-09-13T04:20:00.000Z"), null);
   // L'ancien poste : depuis K2, une clôture naît au colisage.
   return legacyOf(day);
 }

@@ -35,13 +35,17 @@ type LoadState =
       readonly candidates: readonly DossierStaffCandidateView[];
     };
 
-/** « Prénom Nom », ou l'e-mail quand la fiche a disparu de l'annuaire. */
+/**
+ * « Prénom Nom », ou l'e-mail quand il n'y a pas de nom : une fiche disparue
+ * de l'annuaire, ou une personne externe inscrite sans nom (facultatif depuis
+ * le 2026-10-06).
+ */
 export function recipientName(recipient: {
-  readonly firstName: string;
-  readonly lastName: string;
+  readonly firstName: string | null;
+  readonly lastName: string | null;
   readonly email: string;
 }): string {
-  const name = `${recipient.firstName} ${recipient.lastName}`.trim();
+  const name = `${recipient.firstName ?? ''} ${recipient.lastName ?? ''}`.trim();
   return name === '' ? recipient.email || 'Fiche disparue' : name;
 }
 
@@ -117,12 +121,7 @@ export class DossierRecipientsCard implements OnInit {
   );
 
   protected readonly canAddExternal = computed(
-    () =>
-      this.canWrite() &&
-      !this.busy() &&
-      this.email().trim() !== '' &&
-      this.firstName().trim() !== '' &&
-      this.lastName().trim() !== '',
+    () => this.canWrite() && !this.busy() && this.email().trim() !== '',
   );
 
   // Pas au constructeur : le droit d'écriture, une entrée, n'y est pas encore lu.
@@ -150,12 +149,14 @@ export class DossierRecipientsCard implements OnInit {
       return;
     }
     const jobTitle = this.jobTitle().trim();
+    const firstName = this.firstName().trim();
+    const lastName = this.lastName().trim();
     await this.gesture(async () => {
       await this.api.addDossierRecipient({
         kind: 'external',
         email: this.email().trim(),
-        firstName: this.firstName().trim(),
-        lastName: this.lastName().trim(),
+        firstName: firstName === '' ? null : firstName,
+        lastName: lastName === '' ? null : lastName,
         jobTitle: jobTitle === '' ? null : jobTitle,
       });
       this.email.set('');

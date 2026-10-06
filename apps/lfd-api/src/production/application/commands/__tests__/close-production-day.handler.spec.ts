@@ -1,3 +1,7 @@
+import {
+  FixedStaffAuthorDirectory,
+  authorsKnownAs,
+} from "../../../../staff/directory/domain/__tests__/fixed-staff-author-directory.js";
 import { UnitOfWork } from "../../../../platform/database/unit-of-work.js";
 import type { JournaledEvent } from "../../../../platform/journal/journal-fact.js";
 import { RecordingPublisher } from "../../../../platform/events/__tests__/recording-publisher.js";
@@ -195,6 +199,9 @@ function subject(day: ProductionDay, rows: readonly ProducibleOrder[]) {
       uow,
       durable,
       new RecordingDayLock(),
+      new FixedStaffAuthorDirectory(
+        authorsKnownAs({ firstName: "Marie", lastName: "Dupont" }, "staff-1"),
+      ),
     ),
   };
 }
@@ -249,6 +256,28 @@ describe("clore une journée", () => {
     expect(events.traced.map((event) => event.journalFact().payload)).toEqual([
       { subjectLabel: DAY, serviceDay: DAY, absorbed: 1, automatic: true },
     ]);
+  });
+
+  it("FIGE qui a arrêté, nom compris, à l'arrêt manuel", async () => {
+    const { handler, days } = subject(ProductionDay.open(ServiceDay.of(DAY)), [order()]);
+
+    await handler.execute(new CloseProductionDayCommand(DAY, "manual", "staff-1"));
+
+    expect(days.saved?.closedBy).toEqual({
+      kind: "staff",
+      staffUserId: "staff-1",
+      name: "Marie Dupont",
+    });
+  });
+
+  it("FIGE « automatiquement » à l'arrêt automatique, et rien quand l'auteur est inconnu", async () => {
+    const auto = subject(ProductionDay.open(ServiceDay.of(DAY)), [order()]);
+    await auto.handler.execute(new CloseProductionDayCommand(DAY, "automatic"));
+    expect(auto.days.saved?.closedBy).toEqual({ kind: "automatic" });
+
+    const anonymous = subject(ProductionDay.open(ServiceDay.of(DAY)), [order()]);
+    await anonymous.handler.execute(new CloseProductionDayCommand(DAY));
+    expect(anonymous.days.saved?.closedBy).toBeNull();
   });
 
   it("JOURNALISE la clôture — la date de service et le nombre inscrit", async () => {
@@ -346,7 +375,7 @@ describe("clore une journée", () => {
 describe("réannoncer une journée déjà close", () => {
   it("BALAIE quand même : une commande passée après la clôture meurt aussi (S4)", async () => {
     const closed = ProductionDay.open(ServiceDay.of(DAY));
-    closed.close([order()], EARLIER);
+    closed.close([order()], EARLIER, null);
     const { handler, sweeper } = subject(closed, [order()]);
 
     await handler.execute(new CloseProductionDayCommand(DAY));
@@ -359,7 +388,7 @@ describe("réannoncer une journée déjà close", () => {
     // Il porte les commandes de l'INSTANTANÉ (ord_1), jamais `ord_2` arrivée
     // après l'arrêt : le commerce n'absorbe que ce que le fournil a compté.
     const closed = ProductionDay.open(ServiceDay.of(DAY));
-    closed.close([order()], EARLIER);
+    closed.close([order()], EARLIER, null);
     const { handler, days, events, durable } = subject(closed, [
       order(),
       order({ orderId: "ord_2" }),
@@ -386,7 +415,7 @@ describe("réannoncer une journée déjà close", () => {
     // Dédupliquée sur la clé de la clôture, elle ne ferait rien — un bouton de
     // réparation sans effet. Cf. `ProductionDayClosedEvent`, « La clé ».
     const closed = ProductionDay.open(ServiceDay.of(DAY));
-    closed.close([order()], EARLIER);
+    closed.close([order()], EARLIER, null);
     const { handler, durable } = subject(closed, [order()]);
 
     await handler.execute(new CloseProductionDayCommand(DAY));
@@ -399,7 +428,7 @@ describe("réannoncer une journée déjà close", () => {
   it("n'écrit AUCUN fait au journal — rien n'a changé", async () => {
     // Un second « arrêtée » dirait une heure et un auteur qui n'ont rien arrêté.
     const closed = ProductionDay.open(ServiceDay.of(DAY));
-    closed.close([order()], EARLIER);
+    closed.close([order()], EARLIER, null);
     const { handler, events } = subject(closed, [order()]);
 
     await handler.execute(new CloseProductionDayCommand(DAY));
@@ -412,7 +441,7 @@ describe("réannoncer une journée déjà close", () => {
     // Une requête de moins, et surtout aucun risque de croire qu'on a lu ce
     // qu'on va écrire : une journée close ne relit pas ce qui a changé depuis.
     const closed = ProductionDay.open(ServiceDay.of(DAY));
-    closed.close([order()], EARLIER);
+    closed.close([order()], EARLIER, null);
     const { handler, commerce } = subject(closed, [order()]);
 
     await handler.execute(new CloseProductionDayCommand(DAY));

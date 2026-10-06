@@ -1,5 +1,4 @@
 import {
-  RecipientNameRequiredError,
   SuspendedStaffRecipientError,
   UnknownStaffRecipientError,
 } from "../errors/dossier-recipient-errors.js";
@@ -32,12 +31,15 @@ export interface StaffRecipientTarget {
   readonly card: DossierStaffCard | null;
 }
 
-/** Une autre personne, saisie en entier. */
+/**
+ * Une autre personne, saisie. Seule l'adresse est requise (Hugo,
+ * 2026-10-06) : le prénom et le nom sont `null` quand on ne les a pas.
+ */
 export interface ExternalRecipientTarget {
   readonly kind: "external";
   readonly email: RecipientEmail;
-  readonly firstName: string;
-  readonly lastName: string;
+  readonly firstName: string | null;
+  readonly lastName: string | null;
   readonly jobTitle: string | null;
 }
 
@@ -55,7 +57,7 @@ export interface RecipientAuthorship {
  * `documentation/production/dossier-prod-du-jour.md`, décision 4, lot E2).
  *
  * Ses factories refusent ce qui ne pourrait pas recevoir le dossier : une
- * fiche inconnue ou suspendue, un externe sans nom, une adresse fausse. Le
+ * fiche inconnue ou suspendue, une adresse fausse. Le
  * doublon, lui, se juge contre la liste : c'est {@link DossierRecipients}.
  */
 export class DossierRecipient {
@@ -93,33 +95,29 @@ export class DossierRecipient {
   }
 
   /**
-   * Le poste vide se lit comme absent : il est facultatif.
+   * Seule l'adresse est requise : prénom, nom et poste sont facultatifs, et
+   * un champ vide se lit comme absent (`null`).
    *
    * @throws {InvalidRecipientEmailError} l'adresse est manifestement fausse.
-   * @throws {RecipientNameRequiredError} le prénom ou le nom est vide.
    */
   static ofExternal(
     input: {
       readonly email: string;
-      readonly firstName: string;
-      readonly lastName: string;
+      readonly firstName?: string | null | undefined;
+      readonly lastName?: string | null | undefined;
       readonly jobTitle?: string | null | undefined;
     },
     by: RecipientAuthorship,
   ): DossierRecipient {
-    const email = RecipientEmail.of(input.email);
-    const firstName = input.firstName.trim();
-    const lastName = input.lastName.trim();
-    if (firstName === "") {
-      throw new RecipientNameRequiredError("firstName");
-    }
-    if (lastName === "") {
-      throw new RecipientNameRequiredError("lastName");
-    }
-    const jobTitle = input.jobTitle?.trim() ?? "";
     return new DossierRecipient(
       by.id,
-      { kind: "external", email, firstName, lastName, jobTitle: jobTitle === "" ? null : jobTitle },
+      {
+        kind: "external",
+        email: RecipientEmail.of(input.email),
+        firstName: optionalText(input.firstName),
+        lastName: optionalText(input.lastName),
+        jobTitle: optionalText(input.jobTitle),
+      },
       by.addedBy,
       by.addedAt,
     );
@@ -138,14 +136,30 @@ export class DossierRecipient {
     return this.target.card === null ? null : this.target.card.email;
   }
 
-  /** « Prénom Nom » — l'id de la fiche, à défaut de mieux. */
+  /**
+   * « Prénom Nom » ; « un destinataire externe » pour un externe sans nom —
+   * jamais son adresse : ce libellé part au journal, qui n'écrit aucun e-mail.
+   * Une fiche disparue se nomme par son id, à défaut de mieux.
+   */
   get label(): string {
     if (this.target.kind === "external") {
-      return personName(this.target.firstName, this.target.lastName, this.id);
+      return personName(
+        this.target.firstName ?? "",
+        this.target.lastName ?? "",
+        UNNAMED_EXTERNAL_LABEL,
+      );
     }
     const { card, staffUserId } = this.target;
     return card === null ? staffUserId : personName(card.firstName, card.lastName, staffUserId);
   }
+}
+
+/** Le libellé d'un externe dont on n'a ni prénom ni nom. */
+export const UNNAMED_EXTERNAL_LABEL = "un destinataire externe";
+
+function optionalText(value: string | null | undefined): string | null {
+  const trimmed = value?.trim() ?? "";
+  return trimmed === "" ? null : trimmed;
 }
 
 function personName(firstName: string, lastName: string, fallback: string): string {

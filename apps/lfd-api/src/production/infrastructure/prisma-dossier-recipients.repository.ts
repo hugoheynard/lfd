@@ -37,12 +37,7 @@ function storedOf(row: RecipientRow): StoredDossierRecipient {
   if (row.kind === "staff" && row.staffUserId !== null) {
     return { id: row.id, kind: "staff", staffUserId: row.staffUserId };
   }
-  if (
-    row.kind === "external" &&
-    row.email !== null &&
-    row.firstName !== null &&
-    row.lastName !== null
-  ) {
+  if (row.kind === "external" && row.email !== null) {
     return {
       id: row.id,
       kind: "external",

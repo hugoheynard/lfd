@@ -1,3 +1,7 @@
+import {
+  FixedStaffAuthorDirectory,
+  authorsKnownAs,
+} from "../../../../staff/directory/domain/__tests__/fixed-staff-author-directory.js";
 import { DirectUnitOfWork } from "../../../../platform/database/__tests__/direct-unit-of-work.js";
 import { RecordingPublisher } from "../../../../platform/events/__tests__/recording-publisher.js";
 import { FixedClock } from "../../../../platform/time/fixed-clock.js";
@@ -68,7 +72,7 @@ class Days extends ProductionDayRepository {
 /** Une journée arrêtée sur la seule commande `ord_1`, coche posée ou non. */
 function closedDay(initials: string | null = null): ProductionDay {
   const day = ProductionDay.open(ServiceDay.of(DAY));
-  day.close([order("ord_1", 30)], TIRAGE);
+  day.close([order("ord_1", 30)], TIRAGE, null);
   if (initials !== null) {
     const marked = day.toSnapshot();
     return ProductionDay.fromSnapshot({
@@ -99,6 +103,9 @@ function subject(
     batches,
     lock,
     durable,
+    new FixedStaffAuthorDirectory(
+      authorsKnownAs({ firstName: "Marie", lastName: "Dupont" }, "staff-1"),
+    ),
   );
 }
 

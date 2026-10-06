@@ -5,12 +5,18 @@ import { UnitOfWork } from "../../../platform/database/unit-of-work.js";
 import { DomainEventPublisher } from "../../../platform/events/domain-event-publisher.js";
 import { DurablePublisher } from "../../../platform/outbox/durable-publisher.js";
 import { Clock } from "../../../platform/time/clock.js";
+import { StaffAuthorDirectory } from "../../../staff/directory/domain/staff-author-directory.js";
 import {
   DayOrdersReader,
   type ProducibleOrder,
 } from "../../channels/commerce/day-orders.reader.js";
 import { PendingSettlementSweeper } from "../../channels/commerce/pending-settlement.sweeper.js";
 import { ProductionDayClosedEvent } from "../../channels/commerce/production-day-closed.event.js";
+import {
+  AUTOMATIC_SIGNER,
+  type PlanSigner,
+  staffSigner,
+} from "../../domain/entities/plan-signer.js";
 import type { ProductionDay } from "../../domain/entities/production-day.js";
 import { ProductionDayClosedJournalEvent } from "../../domain/events/production-day.events.js";
 import { ProductionDayLock } from "../../domain/ports/production-day.lock.js";
@@ -114,6 +120,7 @@ export class CloseProductionDayHandler implements ICommandHandler<
     private readonly uow: UnitOfWork,
     private readonly durable: DurablePublisher,
     private readonly lock: ProductionDayLock,
+    private readonly authors: StaffAuthorDirectory,
   ) {}
 
   async execute(command: CloseProductionDayCommand): Promise<ProductionPlanClosure> {
@@ -132,7 +139,23 @@ export class CloseProductionDayHandler implements ICommandHandler<
     // Les commandes du commerce sont lues AVANT le verrou, comme au retirage :
     // pas de lecture d'un autre bloc sous un verrou tenu.
     const producible = await this.orders.producibleFor(day);
-    return this.closeUnderLock(day, producible, command.trigger === "automatic");
+    const signer = await this.signerOf(command);
+    return this.closeUnderLock(day, producible, signer);
+  }
+
+  /**
+   * Qui arrête, nom FIGÉ maintenant (le papier ne bouge plus). Un arrêt
+   * manuel sans fiche (un semis) reste anonyme : on n'invente pas d'auteur.
+   */
+  private async signerOf(command: CloseProductionDayCommand): Promise<PlanSigner | null> {
+    if (command.trigger === "automatic") {
+      return AUTOMATIC_SIGNER;
+    }
+    if (command.staffUserId === null) {
+      return null;
+    }
+    const authors = await this.authors.identify([command.staffUserId]);
+    return staffSigner(command.staffUserId, authors.nameOf(command.staffUserId));
   }
 
   /**
@@ -144,8 +167,9 @@ export class CloseProductionDayHandler implements ICommandHandler<
   private async closeUnderLock(
     day: ServiceDay,
     producible: readonly ProducibleOrder[],
-    automatic: boolean,
+    signer: PlanSigner | null,
   ): Promise<ProductionPlanClosure> {
+    const automatic = signer?.kind === "automatic";
     return this.uow.run(async () => {
       await this.lock.lock(day);
       const current = await this.days.load(day);
@@ -153,7 +177,7 @@ export class CloseProductionDayHandler implements ICommandHandler<
         return this.republish(day, current);
       }
       const now = this.clock.now();
-      current.close(producible, now);
+      current.close(producible, now, signer);
       await this.days.save(current);
       await this.events.publishTraced(
         new ProductionDayClosedJournalEvent(day.value, current.orders.length, automatic),

@@ -5,6 +5,7 @@ import { UnitOfWork } from "../../../platform/database/unit-of-work.js";
 import { DomainEventPublisher } from "../../../platform/events/domain-event-publisher.js";
 import { DurablePublisher } from "../../../platform/outbox/durable-publisher.js";
 import { Clock } from "../../../platform/time/clock.js";
+import { StaffAuthorDirectory } from "../../../staff/directory/domain/staff-author-directory.js";
 import { DayOrdersReader } from "../../channels/commerce/day-orders.reader.js";
 import type { ProductionOrderSnapshot } from "../../domain/entities/production-day.js";
 import { ProductionDayRetakenEvent } from "../../domain/events/production-day-retaken.event.js";
@@ -86,11 +87,15 @@ export class RetakeProductionDayHandler implements ICommandHandler<
     private readonly batches: ProductionBatchRepository,
     private readonly lock: ProductionDayLock,
     private readonly durable: DurablePublisher,
+    private readonly authors: StaffAuthorDirectory,
   ) {}
 
   async execute(command: RetakeProductionDayCommand): Promise<ProductionWorksheetRetake> {
     const day = ServiceDay.of(command.serviceDay);
     const producible = await this.orders.producibleFor(day);
+    // Hors du verrou, comme toute lecture d'un autre bloc : le nom est FIGÉ au
+    // retirage, le dossier dit « complété par … » sans relire l'annuaire.
+    const byName = (await this.authors.identify([command.staffUserId])).nameOf(command.staffUserId);
 
     const outcome = await this.uow.run(async () => {
       await this.lock.lock(day);
@@ -98,7 +103,7 @@ export class RetakeProductionDayHandler implements ICommandHandler<
       const inherited = locked.materialize();
       const before = locked.orders;
       const now = this.clock.now();
-      const absorbed = locked.retake(producible, now, command.staffUserId);
+      const absorbed = locked.retake(producible, now, command.staffUserId, byName);
       if (absorbed > 0) {
         for (const batch of inherited) {
           await this.batches.record(day, batch);

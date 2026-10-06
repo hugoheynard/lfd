@@ -15,7 +15,8 @@ export type StoredDossierRecipient =
       readonly id: string;
       readonly kind: "external";
       readonly email: string;
-      readonly firstName: string;
-      readonly lastName: string;
+      /** `null` : facultatif, non saisi. */
+      readonly firstName: string | null;
+      readonly lastName: string | null;
       readonly jobTitle: string | null;
     };

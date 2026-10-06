@@ -5,6 +5,7 @@ import { ProductionDay } from "../domain/entities/production-day.js";
 import { ProductionDayRepository } from "../domain/ports/production-day.repository.js";
 import type { ServiceDay } from "../domain/value-objects/service-day.value-object.js";
 import { BATCH_COLUMNS, batchOf, returnsByBatch } from "./prisma-production-batch.repository.js";
+import { signerColumns, signerOf } from "./production-day-signer.columns.js";
 import { SHEET_COLUMNS, sheetDetailsOf, sheetRowOf } from "./production-order-sheet.columns.js";
 
 /**
@@ -38,6 +39,9 @@ export class PrismaProductionDayRepository extends ProductionDayRepository {
         closedAt: true,
         retakenAt: true,
         retakenBy: true,
+        closedBy: true,
+        closedByName: true,
+        retakenByName: true,
         packingOwner: true,
         orders: {
           select: {
@@ -75,6 +79,8 @@ export class PrismaProductionDayRepository extends ProductionDayRepository {
     return ProductionDay.fromSnapshot({
       serviceDay: row.serviceDay,
       closedAt: row.closedAt,
+      closedBy: signerOf(row.closedBy, row.closedByName),
+      retakenByName: row.retakenByName,
       // Les deux colonnes sont nullables : le mapper les recolle en un couple,
       // ou en `null` — l'agrégat ne connaît pas l'état où l'instant existe
       // sans son auteur.
@@ -162,12 +168,16 @@ export class PrismaProductionDayRepository extends ProductionDayRepository {
           closedAt: snapshot.closedAt,
           retakenAt: snapshot.retaken?.at ?? null,
           retakenBy: snapshot.retaken?.by ?? null,
+          ...signerColumns(snapshot.closedBy),
+          retakenByName: snapshot.retakenByName,
           packingOwner: snapshot.packingOwner,
         },
         update: {
           closedAt: snapshot.closedAt,
           retakenAt: snapshot.retaken?.at ?? null,
           retakenBy: snapshot.retaken?.by ?? null,
+          ...signerColumns(snapshot.closedBy),
+          retakenByName: snapshot.retakenByName,
           packingOwner: snapshot.packingOwner,
         },
       });

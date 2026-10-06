@@ -50,7 +50,7 @@ function batch(id: string, quantity: number, cancelled = false): ProductionBatch
 /** La journée arrêtée, avec ses fournées. */
 function day(batches: readonly ProductionBatchSnapshot[]): ProductionDay {
   const open = ProductionDay.open(ServiceDay.of(DAY));
-  open.close(ORDERS, AT);
+  open.close(ORDERS, AT, null);
   const snapshot = open.toSnapshot();
   return ProductionDay.fromSnapshot({ ...snapshot, batches });
 }

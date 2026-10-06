@@ -50,7 +50,7 @@ export const ORDERS: readonly ProducibleOrder[] = [
 /** Une journée arrêtée ; `packed` : les commandes dont le bac est fermé. */
 export function closedDay(day: ServiceDay, at: Date, packed: readonly string[]): ProductionDay {
   const open = ProductionDay.open(day);
-  open.close(ORDERS, at);
+  open.close(ORDERS, at, null);
   const snapshot = open.toSnapshot();
   return ProductionDay.fromSnapshot({
     ...snapshot,

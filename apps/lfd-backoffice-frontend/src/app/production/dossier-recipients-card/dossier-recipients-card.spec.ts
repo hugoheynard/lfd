@@ -176,6 +176,25 @@ describe('Production › Réglages — les destinataires du dossier', () => {
     ]);
   });
 
+  it('ajoute une autre personne avec son seul e-mail — nom et prénom facultatifs', async () => {
+    const fixture = await boot();
+    emit(fixture, '[data-external-email]', 'valueChange', 'fournil@ext.fr');
+    fixture.detectChanges();
+    const add = fixture.nativeElement.querySelector('[data-add-external]') as HTMLButtonElement;
+    expect(add.disabled).toBe(false);
+    click(fixture, '[data-add-external]');
+    await settle(fixture);
+    expect(wire.added).toEqual([
+      {
+        kind: 'external',
+        email: 'fournil@ext.fr',
+        firstName: null,
+        lastName: null,
+        jobTitle: null,
+      },
+    ]);
+  });
+
   it('affiche le refus du serveur tel quel', async () => {
     const fixture = await boot();
     wire.refuse = 'Cette adresse reçoit déjà le dossier.';

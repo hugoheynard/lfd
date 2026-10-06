@@ -2,7 +2,6 @@ import {
   DossierRecipientNotFoundError,
   DuplicateDossierRecipientError,
   InvalidRecipientEmailError,
-  RecipientNameRequiredError,
   SuspendedStaffRecipientError,
   UnknownStaffRecipientError,
 } from "../../errors/dossier-recipient-errors.js";
@@ -77,11 +76,33 @@ describe("DossierRecipient — qui peut recevoir le dossier", () => {
   });
 
   it.each([
-    ["sans prénom", { firstName: " ", lastName: "Roux" }],
-    ["sans nom", { firstName: "Jeanne", lastName: "" }],
-  ])("refuse un externe %s", (_case, names) => {
-    expect(() => DossierRecipient.ofExternal({ email: "j@x.fr", ...names }, by("r-1"))).toThrow(
-      RecipientNameRequiredError,
+    ["sans prénom ni nom", {}],
+    ["aux noms blancs", { firstName: " ", lastName: "" }],
+    ["aux noms nuls", { firstName: null, lastName: null }],
+  ])("accepte un externe %s : seule l'adresse est requise", (_case, names) => {
+    const recipient = DossierRecipient.ofExternal({ email: "J@X.fr", ...names }, by("r-1"));
+    expect(recipient.target).toMatchObject({ firstName: null, lastName: null, jobTitle: null });
+    expect(recipient.email).toBe("j@x.fr");
+  });
+
+  it("nomme un externe sans nom « un destinataire externe », jamais par son adresse", () => {
+    expect(DossierRecipient.ofExternal({ email: "j@x.fr" }, by("r-1")).label).toBe(
+      "un destinataire externe",
+    );
+  });
+
+  it("garde le prénom seul quand le nom manque", () => {
+    const recipient = DossierRecipient.ofExternal(
+      { email: "j@x.fr", firstName: "Jeanne" },
+      by("r-1"),
+    );
+    expect(recipient.target).toMatchObject({ firstName: "Jeanne", lastName: null });
+    expect(recipient.label).toBe("Jeanne");
+  });
+
+  it("refuse toujours un externe sans adresse", () => {
+    expect(() => DossierRecipient.ofExternal({ email: " ", firstName: "J" }, by("r-1"))).toThrow(
+      InvalidRecipientEmailError,
     );
   });
 

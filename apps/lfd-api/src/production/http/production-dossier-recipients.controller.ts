@@ -71,8 +71,8 @@ export class ProductionDossierRecipientsController {
         : await this.commands.execute<AddExternalDossierRecipientCommand, string>(
             new AddExternalDossierRecipientCommand(
               body.email,
-              body.firstName,
-              body.lastName,
+              body.firstName ?? null,
+              body.lastName ?? null,
               body.jobTitle ?? null,
               staffUserId,
             ),

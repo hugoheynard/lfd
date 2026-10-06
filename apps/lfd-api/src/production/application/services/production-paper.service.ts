@@ -127,7 +127,13 @@ export class ProductionPapers {
     const shelves = await this.shelvesOrNull(snapshot.serviceDay, snapshot.orders);
     const bytes = await renderDayDossierPdf(
       dayDossierOf(snapshot.orders, shelves),
-      { serviceDay: snapshot.serviceDay, closedAt, retakenAt },
+      {
+        serviceDay: snapshot.serviceDay,
+        closedAt,
+        closedBy: snapshot.closedBy,
+        retakenAt,
+        retakenByName: snapshot.retakenByName,
+      },
       (reference) => this.colisageUrl(reference),
     );
     if (shelves !== null) {

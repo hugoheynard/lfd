@@ -99,14 +99,14 @@
               />
               <fold-input
                 label="Prénom"
-                required
+                optional
                 [value]="firstName()"
                 (valueChange)="firstName.set($event)"
                 data-external-first-name
               />
               <fold-input
                 label="Nom"
-                required
+                optional
                 [value]="lastName()"
                 (valueChange)="lastName.set($event)"
                 data-external-last-name

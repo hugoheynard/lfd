@@ -8,7 +8,7 @@ import { z } from "zod";
  * d'ajouter : une personne du personnel, choisie dans l'annuaire — son nom et
  * son e-mail se relisent à chaque lecture —, ou une autre personne, saisie.
  *
- * Les charges ne disent que la FORME : une adresse mal formée, un nom vide, un
+ * Les charges ne disent que la FORME : une adresse mal formée, un
  * doublon ou une fiche inconnue ou suspendue sont refusés par le domaine
  * (400 / 404 / 409), avec un message qui nomme le cas.
  */
@@ -19,12 +19,16 @@ export const dossierStaffRecipientPayloadSchema = z.object({
   staffUserId: z.string().trim().min(1),
 });
 
-/** `POST …/dossier-recipients` — une autre personne. */
+/**
+ * `POST …/dossier-recipients` — une autre personne. Seul l'e-mail est requis
+ * (Hugo, 2026-10-06) : prénom, nom et poste absents, `null` ou vides se lisent
+ * comme non saisis.
+ */
 export const dossierExternalRecipientPayloadSchema = z.object({
   kind: z.literal("external"),
   email: z.string(),
-  firstName: z.string(),
-  lastName: z.string(),
+  firstName: z.string().nullish(),
+  lastName: z.string().nullish(),
   jobTitle: z.string().nullish(),
 });
 
@@ -42,8 +46,13 @@ export interface DossierRecipientView {
   readonly kind: DossierRecipientKind;
   /** Vide pour une fiche staff qui n'existe plus dans l'annuaire. */
   readonly email: string;
-  readonly firstName: string;
-  readonly lastName: string;
+  /**
+   * `null` : un externe inscrit sans prénom (facultatif depuis le
+   * 2026-10-06). Une fiche staff disparue rend `""`.
+   */
+  readonly firstName: string | null;
+  /** `null` : un externe inscrit sans nom. Une fiche staff disparue rend `""`. */
+  readonly lastName: string | null;
   readonly jobTitle: string | null;
   readonly staffUserId: string | null;
   /**

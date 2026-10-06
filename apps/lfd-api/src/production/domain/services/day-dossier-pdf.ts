@@ -1,6 +1,8 @@
 import type { Buffer } from "node:buffer";
 
+import { type PlanSigner, signedVerb, staffSigner } from "../entities/plan-signer.js";
 import type { ProductionOrderSnapshot } from "../entities/production-day.js";
+import { methodSplitOf } from "./dossier-addressees.js";
 import type { DayDossier, DossierRecapGroup } from "./day-dossier.js";
 import { dossierSheetHeadOf, type DossierSheetHead } from "./dossier-sheet-head.js";
 import {
@@ -47,8 +49,12 @@ const SCAN_SIZE = 26 * MM;
 export interface DossierStamp {
   readonly serviceDay: string;
   readonly closedAt: Date;
+  /** Qui l'a arrêté — `null` : inconnu (journée arrêtée avant 2026-10-06). */
+  readonly closedBy: PlanSigner | null;
   /** Le dernier retirage, `null` tant que la journée porte son tirage d'origine. */
   readonly retakenAt: Date | null;
+  /** Qui a complété, nom figé au retirage ; `null` si inconnu. */
+  readonly retakenByName: string | null;
 }
 
 /**
@@ -93,8 +99,12 @@ export function renderDayDossierPdf(
  *
  * `v3` (2026-10-06) : le lot dit le jour de service en toutes lettres
  * (« Lot pour le mercredi 7 octobre 2026 ») et chaque pied porte « x/N ».
+ *
+ * `v4` (2026-10-06) : le pied dit QUI a arrêté (« Arrêté par Marie Dupont le
+ * … », « Arrêté automatiquement le … ») et qui a complété ; le récapitulatif
+ * sépare les commandes en retrait et en livraison.
  */
-export const DOSSIER_LAYOUT_VERSION = "v3";
+export const DOSSIER_LAYOUT_VERSION = "v4";
 
 export function dayDossierPdfKey(serviceDay: string, retakenAt: Date | null): string {
   const base = `${serviceDay}/dossier-du-jour-${DOSSIER_LAYOUT_VERSION}`;
@@ -108,9 +118,15 @@ function plural(count: number, word: string): string {
   return `${String(count)} ${word}${count > 1 ? "s" : ""}`;
 }
 
-/** « N commandes · P pièces » — le lot compté, en une phrase. */
+/**
+ * « N commandes (R en retrait, L en livraison) · P pièces » — le lot compté,
+ * en une phrase. Une part à zéro ne s'écrit pas : « 3 commandes (3 en retrait) ».
+ */
 function lotCount(dossier: DayDossier): string {
-  return `${plural(dossier.sheets.length, "commande")} · ${plural(dossier.pieces, "pièce")}`;
+  const pickup = dossier.sheets.filter((order) => order.fulfillmentMethod === "pickup").length;
+  const split = methodSplitOf(pickup, dossier.sheets.length - pickup);
+  const orders = plural(dossier.sheets.length, "commande");
+  return `${split === "" ? orders : `${orders} (${split})`} · ${plural(dossier.pieces, "pièce")}`;
 }
 
 function drawRecap(doc: Doc, dossier: DayDossier, stamp: DossierStamp): void {
@@ -271,11 +287,12 @@ function footers(doc: Doc, stamp: DossierStamp): void {
 
 /** Le pied : quand le tirage a été arrêté — et complété —, puis « x/N ». */
 function footer(doc: Doc, stamp: DossierStamp, folio: string): void {
-  const arrested = `Arrêté le ${parisDateTime(stamp.closedAt)}`;
+  const arrested = `${signedVerb("Arrêté", stamp.closedBy)} ${parisDateTime(stamp.closedAt)}`;
+  const completer = stamp.retakenByName === null ? null : staffSigner("", stamp.retakenByName);
   const text =
     stamp.retakenAt === null
       ? arrested
-      : `${arrested} — complété le ${parisDateTime(stamp.retakenAt)}`;
+      : `${arrested} — ${signedVerb("complété", completer)} ${parisDateTime(stamp.retakenAt)}`;
   put(doc, `${text} · ${folio}`, LEFT, PAGE_HEIGHT - MARGIN_Y, { size: 9 });
   putRight(doc, "La Folie Coffee — fournil", RIGHT, PAGE_HEIGHT - MARGIN_Y, 9);
 }

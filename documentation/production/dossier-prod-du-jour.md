@@ -18,19 +18,19 @@ faut fabriquer, puis un bon par commande. Il se lit à deux endroits :
 Depuis le 2026-10-06, on n'imprime plus depuis le navigateur : l'impression était l'écran, menu compris.
 
 Le PDF serveur ne bouge plus une fois tiré : il est archivé
-(`<jour>/dossier-du-jour-v3.pdf`). Après un retirage qui ajoute des commandes,
+(`<jour>/dossier-du-jour-v4.pdf`). Après un retirage qui ajoute des commandes,
 un second dossier « complété » est archivé à côté
-(`<jour>/dossier-du-jour-v3-retirage-<instant>.pdf`) ; l'original reste.
+(`<jour>/dossier-du-jour-v4-retirage-<instant>.pdf`) ; l'original reste.
 
 ## Page 1 — le récapitulatif
 
-| Ce qu'on lit                                                                                  | D'où ça vient                                                                                                                    |
-| --------------------------------------------------------------------------------------------- | -------------------------------------------------------------------------------------------------------------------------------- |
-| « Lot pour le mercredi 7 octobre 2026 » (le jour de retrait/livraison), N commandes, P pièces | les commandes figées à l'arrêt (fournil, `production_order`)                                                                     |
-| Les rayons, dans l'ordre du catalogue                                                         | le **catalogue d'aujourd'hui**, lu au commerce au premier tirage (`WorkshopShelvesReader`), puis figé dans l'archive             |
-| Par rayon, chaque produit : quantité, nom, SKU, nombre de commandes ; le plus gros d'abord    | les lignes figées des commandes (quantité, nom et SKU copiés à l'arrêt)                                                          |
-| « Hors catalogue »                                                                            | un SKU qui n'a plus de rayon                                                                                                     |
-| « Rayon inconnu »                                                                             | la lecture des rayons a échoué : le dossier est servi quand même, **mais pas archivé**, pour qu'un tirage suivant ait les rayons |
+| Ce qu'on lit                                                                                                                                                                                        | D'où ça vient                                                                                                                    |
+| --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | -------------------------------------------------------------------------------------------------------------------------------- |
+| « Lot pour le mercredi 7 octobre 2026 » (le jour de retrait/livraison), « N commandes (R en retrait, L en livraison) · P pièces » — une part à zéro ne s'écrit pas : « 3 commandes (3 en retrait) » | les commandes figées à l'arrêt (fournil, `production_order`)                                                                     |
+| Les rayons, dans l'ordre du catalogue                                                                                                                                                               | le **catalogue d'aujourd'hui**, lu au commerce au premier tirage (`WorkshopShelvesReader`), puis figé dans l'archive             |
+| Par rayon, chaque produit : quantité, nom, SKU, nombre de commandes ; le plus gros d'abord                                                                                                          | les lignes figées des commandes (quantité, nom et SKU copiés à l'arrêt)                                                          |
+| « Hors catalogue »                                                                                                                                                                                  | un SKU qui n'a plus de rayon                                                                                                     |
+| « Rayon inconnu »                                                                                                                                                                                   | la lecture des rayons a échoué : le dossier est servi quand même, **mais pas archivé**, pour qu'un tirage suivant ait les rayons |
 
 ## Pages suivantes — un bon par commande
 
@@ -59,11 +59,17 @@ encore d'avenant, il vaudrait toujours 0.
 
 ## Le pied de chaque page
 
-« Arrêté le mercredi 7 octobre 2026 à 00:30 », puis « — complété le … » après un
-retirage, puis le folio « x/N » (« 3/12 ») : toutes les pages du fichier sont
+« Arrêté par Marie Dupont le mardi 6 octobre 2026 à 20:00 » — « Arrêté
+automatiquement le … » pour l'arrêt automatique, « Arrêté le … » quand l'auteur
+est inconnu (journée arrêtée avant le 2026-10-06) —, puis « — complété par … le
+… » après un retirage, puis le folio « x/N » (« 3/12 ») : toutes les pages du fichier sont
 comptées, pages « SUITE » comprises — une feuille manquante se voit. Le jour de
 la semaine est aussi dans les pieds de la feuille d'atelier et du compte à
-produire (même formatteur). Depuis le 2026-10-06, la clé d'archive est `v3`. L'heure est **celle de Paris** (jusqu'au 2026-10-06, les papiers du
+produire (même formatteur). L'auteur de l'arrêt est **figé à l'arrêt** (`production_day.closed_by` : l'id de
+la fiche, ou `auto-close` ; `closed_by_name` : son nom ce jour-là), et celui du
+retirage au retirage (`retaken_by_name`) : le papier ne bouge pas si la fiche
+est renommée. Depuis le 2026-10-06, la clé d'archive est `v4` (l'auteur, et le
+compte retrait/livraison). L'heure est **celle de Paris** (jusqu'au 2026-10-06, les papiers du
 fournil l'écrivaient en UTC : un arrêt fait après 22 h ou 23 h s'imprimait à la
 veille).
 
@@ -79,19 +85,49 @@ destinataires (`production_settings`) :
 - **le personnel**, choisi dans l'annuaire : son nom et son e-mail sont relus
   à chaque envoi — un changement d'adresse suit, une fiche suspendue ou sans
   adresse est sautée ;
-- **une autre personne** : e-mail, prénom, nom, poste (facultatif).
+- **une autre personne** : seul l'e-mail est requis ; prénom, nom et poste
+  sont facultatifs (2026-10-06). Sans nom, la liste rend `firstName` /
+  `lastName` à `null`, le journal et l'alerte la disent « un destinataire
+  externe » — jamais son adresse —, et l'e-mail la salue « Bonjour, ».
 
 Une même adresse n'est inscrite qu'une fois (sans tenir compte de la casse,
 personnel et externes confondus). Un retrait archive la ligne. Le journal
 nomme la personne, jamais son adresse.
 
 **Quand ça part** : à chaque arrêt du plan, manuel ou automatique, et de
-nouveau après un retirage qui ajoute des commandes (« — complété » dans
+nouveau après un retirage qui ajoute des commandes (« complété » dans
 l'objet). Une réannonce, une clôture déjà dépassée par un retirage ou un
 retirage déjà dépassé n'envoient rien : le dernier tirage envoie le sien.
 
-**Ce qui part** : un e-mail par destinataire, objet « Dossier du mercredi 7
-octobre — N commandes, P pièces », le PDF joint (`dossier-du-jour-<jour>.pdf`).
+**Ce qui part** : un e-mail par destinataire (gabarit `staff.production-dossier`,
+`apps/lfd-api/src/platform/mailer/production-dossier-mail.ts`), le PDF joint
+(`dossier-du-jour-<jour>.pdf`).
+
+- Objet : « Dossier de production — plan du mercredi 7 octobre 2026 » ; après
+  un retirage : « Dossier de production complété — plan du mercredi 7 octobre
+  2026 » (le jour de service, heure de Paris).
+- Corps :
+
+  > Bonjour Paul, _(« Bonjour, » sans prénom)_
+  >
+  > Le plan de production du mercredi 7 octobre 2026 a été arrêté par Marie
+  > Dupont le mardi 6 octobre 2026 à 20:00. _(« arrêté automatiquement le … » ;
+  > « arrêté le … » si l'auteur est inconnu)_
+  >
+  > Vous trouverez en pièce jointe le dossier à imprimer : un récapitulatif de
+  > ce qu'il faut fabriquer, puis un bon par commande.
+  >
+  > En chiffres : 3 commandes — 2 en retrait, 1 en livraison — et 40 pièces.
+  >
+  > La Folie Douce — fournil
+
+  Après un retirage, la deuxième phrase devient « Le plan du … a été complété
+  par … le … : de nouvelles commandes ont été ajoutées à la fournée. », et
+  « Ce dossier remplace le précédent. » précède la signature.
+
+- Pied : « Cet e-mail part automatiquement à chaque arrêt du plan. Pour ne
+  plus le recevoir, demandez à l'équipe de vous retirer des destinataires
+  (Production › Réglages). »
 
 **Une seule fois** : l'envoi est déclenché par un fait livré « au moins une
 fois » ; une trace par (journée, instant de l'arrêt ou du retirage,

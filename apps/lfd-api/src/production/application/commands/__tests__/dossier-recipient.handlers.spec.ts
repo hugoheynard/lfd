@@ -5,7 +5,7 @@ import { FixedClock } from "../../../../platform/time/fixed-clock.js";
 import {
   DossierRecipientNotFoundError,
   DuplicateDossierRecipientError,
-  RecipientNameRequiredError,
+  InvalidRecipientEmailError,
   SuspendedStaffRecipientError,
   UnknownStaffRecipientError,
 } from "../../../domain/errors/dossier-recipient-errors.js";
@@ -113,11 +113,24 @@ describe("AddExternalDossierRecipientHandler", () => {
     expect(table.saves).toBe(1);
   });
 
-  it("refuse un externe sans nom, avant tout chargement", async () => {
-    const { addExternal, table } = subject();
-    await expect(addExternal.execute(jeanne("j@x.fr", " "))).rejects.toThrow(
-      RecipientNameRequiredError,
+  it("inscrit un externe sans nom et le journalise « un destinataire externe », sans l'adresse", async () => {
+    const { addExternal, table, events } = subject();
+    await addExternal.execute(
+      new AddExternalDossierRecipientCommand("j@x.fr", null, null, null, "s-admin"),
     );
+    expect(table.saves).toBe(1);
+    expect(events.traced[0]?.journalFact().payload).toEqual({
+      subjectLabel: "un destinataire externe",
+      kind: "external",
+      staffUserId: null,
+    });
+  });
+
+  it("refuse un externe sans adresse, avant tout chargement", async () => {
+    const { addExternal, table } = subject();
+    await expect(
+      addExternal.execute(new AddExternalDossierRecipientCommand(" ", null, null, null, "s-admin")),
+    ).rejects.toThrow(InvalidRecipientEmailError);
     expect(table.saves).toBe(0);
   });
 });

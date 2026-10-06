@@ -1,3 +1,4 @@
+import type { PlanSigner } from "./plan-signer.js";
 import type { OrderSheetDetails } from "../../channels/commerce/day-orders.reader.js";
 import type { PackingOwner } from "../value-objects/packing-owner.js";
 
@@ -131,8 +132,12 @@ export interface ProductionBatchSnapshot {
 export interface ProductionDaySnapshot {
   readonly serviceDay: string;
   readonly closedAt: Date | null;
+  /** Qui a arrêté le plan — `null` : journée ouverte, ou arrêtée avant 2026-10-06. */
+  readonly closedBy: PlanSigner | null;
   /** Le dernier retirage — `null` tant que la journée porte son tirage d'origine. */
   readonly retaken: PackedMark | null;
+  /** Le nom, figé au retirage, de qui l'a fait ; `null` si inconnu. */
+  readonly retakenByName: string | null;
   /** Qui colise la journée — écrit à la clôture (colisage, §13, B1). */
   readonly packingOwner: PackingOwner;
   readonly orders: readonly ProductionOrderSnapshot[];

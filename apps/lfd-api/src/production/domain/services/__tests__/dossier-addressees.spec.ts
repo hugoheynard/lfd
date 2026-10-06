@@ -1,6 +1,6 @@
 import type { DossierStaffCard } from "../../entities/dossier-recipient.js";
 import type { StoredDossierRecipient } from "../../ports/dossier-recipients.reader.js";
-import { dossierAddresseesOf, dossierCountsOf } from "../dossier-addressees.js";
+import { dossierAddresseesOf, dossierCountsOf, methodSplitOf } from "../dossier-addressees.js";
 
 /** **À qui part le dossier** (plan `dossier-prod-du-jour.md`, E3). */
 
@@ -62,23 +62,54 @@ describe("dossierAddresseesOf", () => {
 });
 
 describe("dossierCountsOf", () => {
-  it("compte les commandes et toutes leurs pièces", () => {
+  it("compte les commandes, par mode, et toutes leurs pièces", () => {
     const line = (quantity: number) => ({ sku: "VIE-001", productName: "Croissant", quantity });
-    const order = (orderId: string, quantities: readonly number[]) => ({
+    const order = (
+      orderId: string,
+      quantities: readonly number[],
+      fulfillmentMethod: "pickup" | "delivery" = "pickup",
+    ) => ({
       orderId,
       reference: orderId,
       customerLabel: "",
-      fulfillmentMethod: "pickup" as const,
+      fulfillmentMethod,
       destination: "",
       dueAt: null,
       sheetDetails: null,
       lines: quantities.map(line),
       packed: null,
     });
-    expect(dossierCountsOf([order("a", [12, 3]), order("b", [5])])).toEqual({
+    expect(dossierCountsOf([order("a", [12, 3]), order("b", [5], "delivery")])).toEqual({
       orders: 2,
+      pickup: 1,
+      delivery: 1,
       pieces: 20,
     });
-    expect(dossierCountsOf([])).toEqual({ orders: 0, pieces: 0 });
+    expect(dossierCountsOf([])).toEqual({ orders: 0, pickup: 0, delivery: 0, pieces: 0 });
+  });
+});
+
+describe("methodSplitOf", () => {
+  it("dit retrait et livraison, et tait la part à zéro", () => {
+    expect(methodSplitOf(2, 1)).toBe("2 en retrait, 1 en livraison");
+    expect(methodSplitOf(3, 0)).toBe("3 en retrait");
+    expect(methodSplitOf(0, 4)).toBe("4 en livraison");
+    expect(methodSplitOf(0, 0)).toBe("");
+  });
+});
+
+describe("dossierAddresseesOf — un externe sans nom", () => {
+  it("le salue tout court et le nomme « un destinataire externe », jamais par son adresse", () => {
+    const nameless: StoredDossierRecipient = {
+      id: "r-x",
+      kind: "external",
+      email: "x@x.fr",
+      firstName: null,
+      lastName: null,
+      jobTitle: null,
+    };
+    expect(dossierAddresseesOf([nameless], new Map())).toEqual([
+      { recipientId: "r-x", email: "x@x.fr", firstName: "", name: "un destinataire externe" },
+    ]);
   });
 });

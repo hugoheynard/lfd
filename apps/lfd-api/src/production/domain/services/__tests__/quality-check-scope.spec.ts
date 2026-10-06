@@ -32,6 +32,7 @@ function day(packed: boolean): ProductionDay {
       },
     ],
     AT,
+    null,
   );
   const snapshot = open.toSnapshot();
   return ProductionDay.fromSnapshot({

@@ -29,7 +29,13 @@ function order(reference: string, quantity: number): ProductionOrderSnapshot {
 
 const DOSSIER = dayDossierOf([order("LFC-0002", 4), order("LFC-0001", 6)], new Map());
 
-const STAMP = { serviceDay: DAY, closedAt: CLOSED, retakenAt: null };
+const STAMP = {
+  serviceDay: DAY,
+  closedAt: CLOSED,
+  retakenAt: null,
+  closedBy: null,
+  retakenByName: null,
+};
 
 describe("renderDayDossierPdf — le bon figé à l'arrêt (E1b)", () => {
   it("imprime l'enseigne, la raison sociale, l'adresse, la fenêtre, le contact, la signature, l'origine et la note", async () => {
@@ -96,13 +102,13 @@ describe("renderDayDossierPdf", () => {
     const pages = pdfPages(
       await renderDayDossierPdf(
         DOSSIER,
-        { serviceDay: DAY, closedAt: CLOSED, retakenAt: null },
+        { serviceDay: DAY, closedAt: CLOSED, retakenAt: null, closedBy: null, retakenByName: null },
         () => "",
       ),
     );
     expect(pages).toHaveLength(3);
     expect(pages[0]).toContain("À FABRIQUER");
-    expect(pages[0]).toContain("2 commandes · 10 pièces");
+    expect(pages[0]).toContain("2 commandes (2 en livraison) · 10 pièces");
     expect(pages[0]).toContain("2 cdes");
     expect(pages[1]).toContain("BON 1/2");
     expect(pages[1]).toContain("LFC-0001");
@@ -116,7 +122,13 @@ describe("renderDayDossierPdf", () => {
     const pages = pdfPages(
       await renderDayDossierPdf(
         DOSSIER,
-        { serviceDay: DAY, closedAt: CLOSED, retakenAt: RETAKEN },
+        {
+          serviceDay: DAY,
+          closedAt: CLOSED,
+          retakenAt: RETAKEN,
+          closedBy: null,
+          retakenByName: null,
+        },
         () => "",
       ),
     );
@@ -124,7 +136,13 @@ describe("renderDayDossierPdf", () => {
   });
 
   it("rend les mêmes octets pour les mêmes entrées — le tirage est reproductible", async () => {
-    const stamp = { serviceDay: DAY, closedAt: CLOSED, retakenAt: null };
+    const stamp = {
+      serviceDay: DAY,
+      closedAt: CLOSED,
+      retakenAt: null,
+      closedBy: null,
+      retakenByName: null,
+    };
     const first = await renderDayDossierPdf(DOSSIER, stamp, () => "https://admin/colisage/x");
     const second = await renderDayDossierPdf(DOSSIER, stamp, () => "https://admin/colisage/x");
     expect(first.equals(second)).toBe(true);
@@ -140,7 +158,7 @@ describe("renderDayDossierPdf", () => {
     const pages = pdfPages(
       await renderDayDossierPdf(
         dossier,
-        { serviceDay: DAY, closedAt: CLOSED, retakenAt: null },
+        { serviceDay: DAY, closedAt: CLOSED, retakenAt: null, closedBy: null, retakenByName: null },
         () => "",
       ),
     );
@@ -158,6 +176,36 @@ describe("renderDayDossierPdf", () => {
     expect(pages[1]).toContain("LOT POUR LE JEU. 8 OCT. · BON 1/2");
   });
 
+  it("dit qui a arrêté le plan, et qui l'a complété", async () => {
+    const byMarie = pdfPages(
+      await renderDayDossierPdf(
+        DOSSIER,
+        {
+          ...STAMP,
+          closedBy: { kind: "staff", staffUserId: "s-1", name: "Marie Dupont" },
+          retakenAt: RETAKEN,
+          retakenByName: "Paul Martin",
+        },
+        () => "",
+      ),
+    );
+    expect(byMarie[0]).toContain("Arrêté par Marie Dupont le mercredi 7 octobre 2026");
+    expect(byMarie[0]).toContain("complété par Paul Martin le mercredi 7 octobre 2026");
+    const automatic = pdfPages(
+      await renderDayDossierPdf(DOSSIER, { ...STAMP, closedBy: { kind: "automatic" } }, () => ""),
+    );
+    expect(automatic[0]).toContain("Arrêté automatiquement le mercredi 7 octobre 2026");
+  });
+
+  it("sépare retrait et livraison dans le compte du lot", async () => {
+    const mixed = dayDossierOf(
+      [order("LFC-0001", 4), { ...order("LFC-0002", 6), fulfillmentMethod: "pickup" }],
+      new Map(),
+    );
+    const pages = pdfPages(await renderDayDossierPdf(mixed, STAMP, () => ""));
+    expect(pages[0]).toContain("2 commandes (1 en retrait, 1 en livraison) · 10 pièces");
+  });
+
   it("numérote chaque page « x/N » dans le pied", async () => {
     const pages = pdfPages(await renderDayDossierPdf(DOSSIER, STAMP, () => ""));
     expect(pages).toHaveLength(3);
@@ -170,7 +218,7 @@ describe("renderDayDossierPdf", () => {
 describe("dayDossierPdfKey — la version de mise en page", () => {
   it("n'est plus la clé d'avant E1b : un dossier archivé à l'ancien papier n'est jamais resservi", () => {
     expect(dayDossierPdfKey(DAY, null)).not.toBe(`${DAY}/dossier-du-jour.pdf`);
-    expect(dayDossierPdfKey(DAY, RETAKEN)).toContain("-v3-retirage-");
+    expect(dayDossierPdfKey(DAY, RETAKEN)).toContain("-v4-retirage-");
   });
 });
 
@@ -178,7 +226,7 @@ describe("dayDossierPdfKey", () => {
   it("une clé pour la clôture, une autre par retirage : le complément n'écrase pas l'original", () => {
     const original = dayDossierPdfKey(DAY, null);
     const completed = dayDossierPdfKey(DAY, RETAKEN);
-    expect(original).toBe(`${DAY}/dossier-du-jour-v3.pdf`);
+    expect(original).toBe(`${DAY}/dossier-du-jour-v4.pdf`);
     expect(completed).not.toBe(original);
     expect(completed.startsWith(`${DAY}/`)).toBe(true);
   });

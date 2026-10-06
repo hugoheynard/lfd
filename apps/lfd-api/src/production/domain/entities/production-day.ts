@@ -20,6 +20,7 @@ import type {
   ProductionDaySnapshot,
   ProductionOrderSnapshot,
 } from "./production-day.snapshot.js";
+import type { PlanSigner } from "./plan-signer.js";
 
 // La forme de la journée vit à côté ; réexportée : l'agrégat reste le point d'entrée.
 export type {
@@ -66,7 +67,9 @@ export class ProductionDay {
   private constructor(
     readonly day: ServiceDay,
     private closedAtValue: Date | null,
+    private closedByValue: PlanSigner | null,
     private retakenValue: PackedMark | null,
+    private retakenByNameValue: string | null,
     private packingOwnerValue: PackingOwner,
     private ordersValue: readonly ProductionOrderSnapshot[],
     private countsValue: readonly ProducedItemSnapshot[],
@@ -78,7 +81,7 @@ export class ProductionDay {
    * qu'on puisse fabriquer sans lire la base.
    */
   static open(day: ServiceDay): ProductionDay {
-    return new ProductionDay(day, null, null, LEGACY_PACKING_OWNER, [], [], []);
+    return new ProductionDay(day, null, null, null, null, LEGACY_PACKING_OWNER, [], [], []);
   }
 
   /** Rehydrate depuis l'adaptateur. Les value objects revalident au passage. */
@@ -86,7 +89,9 @@ export class ProductionDay {
     return new ProductionDay(
       ServiceDay.of(snapshot.serviceDay),
       snapshot.closedAt,
+      snapshot.closedBy,
       snapshot.retaken,
+      snapshot.retakenByName,
       snapshot.packingOwner,
       snapshot.orders,
       snapshot.counts,
@@ -100,6 +105,16 @@ export class ProductionDay {
 
   get closedAt(): Date | null {
     return this.closedAtValue;
+  }
+
+  /** Qui a arrêté le plan, ou `null` (ouverte, ou arrêtée avant qu'on le garde). */
+  get closedBy(): PlanSigner | null {
+    return this.closedByValue;
+  }
+
+  /** Le nom, figé au retirage, de qui a complété ; `null` si inconnu. */
+  get retakenByName(): string | null {
+    return this.retakenByNameValue;
   }
 
   /** Le dernier retirage, ou `null` — la fiche dit quel tirage elle montre. */
@@ -186,10 +201,12 @@ export class ProductionDay {
    * interrupteur, décision de Hugo du 2026-10-04. Une journée `legacy` ne naît
    * plus : elle ne se relit que depuis la base (`fromSnapshot`).
    *
+   * @param by qui arrête — `null` quand on ne le sait pas (un semis) : le
+   *   dossier dit alors « Arrêté le … », sans inventer d'auteur.
    * @throws {ProductionDayAlreadyClosedError} elle l'est déjà — cf. l'en-tête.
    * @throws {ProductionDayEmptyError} rien à produire ce jour-là.
    */
-  close(orders: readonly ProducibleOrder[], at: Date): void {
+  close(orders: readonly ProducibleOrder[], at: Date, by: PlanSigner | null): void {
     if (this.isClosed) {
       throw new ProductionDayAlreadyClosedError(this.day.value);
     }
@@ -199,6 +216,7 @@ export class ProductionDay {
     this.ordersValue = orders.map(freezeOrder);
     this.countsValue = countOf(orders);
     this.closedAtValue = at;
+    this.closedByValue = by;
     // Écrit ici et nulle part ailleurs (colisage, §13, B1) : la journée garde
     // le propriétaire qu'elle a reçu en s'arrêtant.
     this.packingOwnerValue = PACKING_PACKING_OWNER;
@@ -225,7 +243,7 @@ export class ProductionDay {
    *   arrivé, et c'est une information, pas une erreur.
    * @throws {ProductionDayNotClosedError} il n'y a pas de tirage à reprendre.
    */
-  retake(orders: readonly ProducibleOrder[], at: Date, by: string): number {
+  retake(orders: readonly ProducibleOrder[], at: Date, by: string, byName: string | null): number {
     if (!this.isClosed) {
       throw new ProductionDayNotClosedError(this.day.value);
     }
@@ -236,6 +254,7 @@ export class ProductionDay {
     this.ordersValue = absorbed.orders;
     this.countsValue = absorbed.counts;
     this.retakenValue = { at, by };
+    this.retakenByNameValue = byName;
     return absorbed.count;
   }
 
@@ -244,7 +263,9 @@ export class ProductionDay {
     return {
       serviceDay: this.day.value,
       closedAt: this.closedAtValue,
+      closedBy: this.closedByValue,
       retaken: this.retakenValue,
+      retakenByName: this.retakenByNameValue,
       packingOwner: this.packingOwnerValue,
       orders: this.ordersValue,
       counts: this.countsValue,

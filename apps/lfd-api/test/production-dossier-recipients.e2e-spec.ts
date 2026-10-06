@@ -164,12 +164,38 @@ describe("inscrire des destinataires", () => {
 
   it.each([
     ["une adresse mal formée", { email: "jeanne.x.test", firstName: "J", lastName: "R" }],
-    ["un nom vide", { email: "j@x.test", firstName: "J", lastName: " " }],
+    ["une adresse vide", { email: " " }],
   ])("refuse (400) %s", async (_case, body) => {
     await admin()
       .post(ROUTE)
       .send({ kind: "external", ...body })
       .expect(400);
+  });
+
+  it("inscrit (201) un externe sans prénom ni nom : seule l'adresse est requise", async () => {
+    const { id } = jsonBody<CreatedIdResponse>(
+      await admin()
+        .post(ROUTE)
+        .send({ kind: "external", email: "imprimerie@x.test", lastName: " " })
+        .expect(201),
+    );
+
+    expect(await list()).toEqual([
+      {
+        id,
+        kind: "external",
+        email: "imprimerie@x.test",
+        firstName: null,
+        lastName: null,
+        jobTitle: null,
+        staffUserId: null,
+      },
+    ]);
+    const added = await ctx.prisma.activityEvent.findFirst({
+      where: { type: "production_dossier_recipient.added", subjectId: id },
+    });
+    expect(added?.payload).toMatchObject({ subjectLabel: "un destinataire externe" });
+    expect(JSON.stringify(added?.payload)).not.toContain("imprimerie@x.test");
   });
 });
 

@@ -96,6 +96,8 @@ describe("mode automatique", () => {
 
     const day = await ctx.prisma.productionDay.findUnique({ where: { serviceDay: SERVICE_DAY } });
     expect(day?.closedAt).not.toBeNull();
+    // Le dossier dira « Arrêté automatiquement le … » (2026-10-06).
+    expect(day).toMatchObject({ closedBy: "auto-close", closedByName: null });
     const attempts = await ctx.prisma.productionAutoCloseAttempt.findMany();
     expect(attempts).toMatchObject([{ serviceDay: SERVICE_DAY, outcome: "closed" }]);
     const facts = await ctx.prisma.activityEvent.findMany({

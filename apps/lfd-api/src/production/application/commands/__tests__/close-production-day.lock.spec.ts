@@ -1,3 +1,4 @@
+import { FixedStaffAuthorDirectory } from "../../../../staff/directory/domain/__tests__/fixed-staff-author-directory.js";
 import { DirectUnitOfWork } from "../../../../platform/database/__tests__/direct-unit-of-work.js";
 import { RecordingPublisher } from "../../../../platform/events/__tests__/recording-publisher.js";
 import type { DurableFact } from "../../../../platform/outbox/durable-event.js";
@@ -95,7 +96,7 @@ function open(): ProductionDay {
 
 function closed(): ProductionDay {
   const day = open();
-  day.close([ORDER], EARLIER);
+  day.close([ORDER], EARLIER, null);
   return day;
 }
 
@@ -113,6 +114,7 @@ function subject(sequence: ProductionDay[]) {
     new DirectUnitOfWork(),
     durable,
     new RecordingDayLock(trace),
+    new FixedStaffAuthorDirectory(),
   );
   return { handler, days, events, durable, trace };
 }
