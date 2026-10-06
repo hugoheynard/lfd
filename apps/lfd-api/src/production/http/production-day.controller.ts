@@ -37,9 +37,9 @@ import type { ProductionPaper } from "../application/services/production-paper.s
  * Le contrôleur n'injecte qu'un **bus**, comme tous les autres : ni service, ni
  * dépôt, ni port de lecture. `lint:controller-buses` le tient.
  *
- * `production_plan` — l'état, l'arrêt, le prévisionnel, le compte à produire
- * —, sauf la fiche d'atelier imprimable, qui sert un autre poste et porte sa
- * garde (`production_worksheet`, 2026-10-01,
+ * `production_plan` — l'état, le prévisionnel, le compte à produire —, sauf
+ * l'arrêt, sous `production_count_stop` depuis le 2026-10-06, et sauf la
+ * fiche d'atelier imprimable, qui sert un autre poste et porte sa garde (`production_worksheet`, 2026-10-01,
  * `documentation/livraisons/plan-droits-par-geste.md`, 5.1). « Prête » ne vit
  * plus ici depuis K3c : elle se déclare au colisage
  * (`POST admin/packing/:date/orders/:orderId/close`).
@@ -175,8 +175,13 @@ export class ProductionDayController {
    * recalcule rien — le compte à produire est un instantané — mais republie le
    * fait, ce dont le commerce a besoin si son abonné a échoué. La réponse dit
    * laquelle des deux choses vient d'arriver (`alreadyClosed`).
+   *
+   * Sous **`production_count_stop:write`** depuis le 2026-10-06, et non sous
+   * `production_plan:write` : arrêter le compte n'est pas le même geste que
+   * lire le plan (plan `documentation/production/plan-arret-du-plan.md`, §6).
    */
   @Post("batch/:date/close")
+  @RequirePermission("production_count_stop:write")
   async close(@Param("date") date: string): Promise<ProductionPlanClosure> {
     return this.commands.execute<CloseProductionDayCommand, ProductionPlanClosure>(
       new CloseProductionDayCommand(productionBatchQuerySchema.parse({ date }).date),

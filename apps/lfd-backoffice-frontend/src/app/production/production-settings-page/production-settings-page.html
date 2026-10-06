@@ -1,0 +1,150 @@
+<fold-page-layout title="Réglages du fournil" icon="sliders">
+  @switch (state().status) {
+    @case ('loading') {
+      <fold-loading message="Lecture des réglages du fournil…" />
+    }
+    @case ('error') {
+      <fold-empty-state tone="alert" title="Les réglages du fournil n’ont pas pu être lus.">
+        <button foldButton emphasis="outline" (click)="retry()" data-retry>Réessayer</button>
+      </fold-empty-state>
+    }
+    @case ('ready') {
+      <div class="cards">
+        <fold-card data-close-settings>
+          <div class="stack">
+            <fold-element-title
+              variant="title"
+              title="Arrêt du plan"
+              subtitle="Comment le plan du lendemain s’arrête, chaque soir."
+            >
+              @if (canWrite()) {
+                <button
+                  titleAction
+                  foldButton
+                  size="sm"
+                  [loading]="saving()"
+                  [disabled]="!canSave()"
+                  (click)="save()"
+                  data-save-close
+                >
+                  Enregistrer
+                </button>
+              }
+            </fold-element-title>
+
+            @if (closeRefusal(); as message) {
+              <fold-callout variant="alert" announce data-close-refusal>{{ message }}</fold-callout>
+            }
+
+            <fold-view-toggle
+              ariaLabel="Mode d’arrêt du plan"
+              [options]="modeOptions()"
+              [value]="mode()"
+              (valueChange)="onMode($event)"
+              data-mode
+            />
+
+            @if (mode() === 'manual') {
+              <fold-time
+                label="Heure d’alerte"
+                hint="À partir de cette heure, le bouton d’arrêt apparaît ; passé l’heure sans arrêt, la journée passe en alerte."
+                [value]="alertAt()"
+                [min]="earliest"
+                [max]="latest"
+                [step]="step"
+                [readOnly]="!canWrite()"
+                (valueChange)="alertAt.set($event)"
+                data-alert-at
+              />
+            } @else {
+              <fold-time
+                label="Heure d’arrêt"
+                hint="Le plan du lendemain s’arrête tout seul à cette heure, à cinq minutes près. Le bouton reste pour un arrêt anticipé."
+                [value]="closeAt()"
+                [min]="earliest"
+                [max]="latest"
+                [step]="step"
+                [readOnly]="!canWrite()"
+                (valueChange)="closeAt.set($event)"
+                data-close-at
+              />
+            }
+            <p class="note">{{ boundsHint }}</p>
+
+            @if (autoImpossible(); as reason) {
+              <fold-callout variant="warning" data-auto-impossible>{{ reason }}</fold-callout>
+            } @else if (cutoffSentence(); as sentence) {
+              <fold-callout variant="info" data-cutoff>
+                {{ sentence }} Une heure d’arrêt automatique ne peut pas la précéder.
+              </fold-callout>
+            }
+          </div>
+        </fold-card>
+
+        <fold-card data-closed-days>
+          <div class="stack">
+            <fold-element-title
+              variant="title"
+              title="Jours fermés du fournil"
+              subtitle="La veille d’un jour fermé, aucune alerte « rien à arrêter »."
+            />
+
+            @if (dayRefusal(); as message) {
+              <fold-callout variant="alert" announce data-day-refusal>{{ message }}</fold-callout>
+            }
+
+            @if (closedDays().length === 0) {
+              <fold-empty-state
+                title="Aucun jour fermé à venir"
+                subtitle="Le fournil produit tous les jours où l’on prend commande."
+              >
+                <fold-icon empty-icon name="calendar" />
+              </fold-empty-state>
+            } @else {
+              <ul class="days">
+                @for (day of closedDays(); track day.date) {
+                  <li class="day" data-closed-day>
+                    <span>{{ day.label }}</span>
+                    @if (canWrite()) {
+                      <fold-button-icon
+                        icon="close"
+                        size="sm"
+                        [tooltip]="'Rouvrir le ' + day.label"
+                        [disabled]="dayBusy()"
+                        (clicked)="removeDay(day.date)"
+                        data-remove-day
+                      />
+                    }
+                  </li>
+                }
+              </ul>
+            }
+
+            @if (canWrite()) {
+              <div class="add">
+                <fold-date
+                  label="Fermer un jour"
+                  [min]="today"
+                  [value]="newDay()"
+                  (valueChange)="newDay.set($event)"
+                  data-new-day
+                />
+                <button
+                  foldButton
+                  emphasis="outline"
+                  icon="plus"
+                  [loading]="dayBusy()"
+                  [disabled]="!canAddDay()"
+                  (click)="addDay()"
+                  data-add-day
+                >
+                  Ajouter
+                </button>
+              </div>
+            }
+          </div>
+        </fold-card>
+      </div>
+    }
+  }
+</fold-page-layout>

@@ -633,6 +633,19 @@ export type {
   WorkshopBatch,
   WorkshopLineContainer,
 } from "./production-batches.js";
+export {
+  productionCloseModeSchema,
+  productionCloseSettingsPayloadSchema,
+  productionClosedDayPayloadSchema,
+} from "./production-settings.js";
+export type {
+  ProductionCloseMode,
+  ProductionCloseSettingsPayload,
+  ProductionCloseSettingsView,
+  ProductionClosedDayPayload,
+  ProductionLatestOrderCutoffView,
+  ProductionSettingsView,
+} from "./production-settings.js";
 export { deliveryZonePayloadSchema, longestMatchingPrefix } from "./delivery-zone.js";
 export type {
   DeliveryZonePayload,

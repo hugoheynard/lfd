@@ -19,6 +19,7 @@ import { OPERATION_PHRASES } from './operation-phrases';
 import { ORDERS_PHRASES } from './orders-phrases';
 import { PRICING_PHRASES } from './pricing-phrases';
 import { PRODUCTION_QUALITY_PHRASES } from './production-quality-phrases';
+import { PRODUCTION_SETTINGS_PHRASES } from './production-settings-phrases';
 import { REFERENTIAL_PHRASES } from './referential-phrases';
 import { REFERENTIAL_SETTINGS_PHRASES } from './referential-settings-phrases';
 import { SETTINGS_PHRASES } from './settings-phrases';
@@ -165,6 +166,7 @@ export const PHRASES: Readonly<Record<JournalFactType, Phrase>> = {
   ...HANDOVER_PROOF_PHRASES,
   ...PACKING_CONTAINER_PHRASES,
   ...PRODUCTION_QUALITY_PHRASES,
+  ...PRODUCTION_SETTINGS_PHRASES,
   ...PRICING_PHRASES,
   ...ACCOUNTS_PHRASES,
   ...SUB_ACCOUNT_PHRASES,

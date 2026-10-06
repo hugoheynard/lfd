@@ -33,6 +33,10 @@ const UNWATCHED: Readonly<Record<string, string>> = {
   "production.order_handover_proof":
     "les pièces d'une remise à la porte (B1, 2026-10-01) : la remise clôt l'arrêt, qui fait déjà bouger la journée de la livraison ; son jour n'existe que dans une table d'un autre bloc (D3), comme `order_handover`",
   "production.production_container": "un réglage par SKU, sans journée",
+  // Les réglages du fournil (plan d'arrêt du plan, A1, 2026-10-06).
+  "production.production_settings": "le réglage unique de l'arrêt du plan, sans journée",
+  "production.production_closed_day":
+    "le calendrier des jours fermés : aucune lecture versionnée d'une journée ne le lit encore (A1) — le jour où le prévisionnel l'affichera (A3), il prendra son déclencheur",
   "production.production_quality_upload":
     "un dépôt de photo en attente, sans journée — il n'y entre qu'en devenant une photo, surveillée",
   // Les bases de la livraison (lot 2, 2026-09-29) n'appartiennent à aucune

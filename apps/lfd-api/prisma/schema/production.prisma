@@ -539,3 +539,41 @@ model ProductionDayChange {
   @@map("day_change")
   @@schema("production")
 }
+
+/// **L'arrêt du plan, automatique ou manuel** — le réglage unique du fournil
+/// (plan `documentation/production/plan-arret-du-plan.md`, §2, lot A1).
+///
+/// Une ligne au plus, d'identifiant `house` (contrainte en base). Son ABSENCE
+/// est le réglage de départ — manuel, alerte à 20:00 (Q1) —, dit une seule fois
+/// par le domaine (`ProductionCloseSettings.initial`) : la migration n'insère
+/// rien, pour qu'il n'y ait pas deux défauts à tenir d'accord.
+///
+/// `close_mode` : `auto` | `manual`. L'heure du mode est requise (contrainte en
+/// base, et refus de l'agrégat) ; celle de l'autre mode est gardée.
+model ProductionSettings {
+  id        String   @id @default("house")
+  closeMode String   @map("close_mode")
+  /// `HH:MM`, heure de la maison — l'arrêt automatique du plan du lendemain.
+  closeAt   String?  @map("close_at") @db.VarChar(5)
+  /// `HH:MM`, heure de la maison — l'alerte du mode manuel.
+  alertAt   String?  @map("alert_at") @db.VarChar(5)
+  updatedBy String   @map("updated_by")
+  updatedAt DateTime @map("updated_at") @db.Timestamptz(6)
+
+  @@map("production_settings")
+  @@schema("production")
+}
+
+/// **Un jour où le fournil ne produit pas** (Q6, lot A1).
+///
+/// Clé naturelle : la journée, `AAAA-MM-JJ`. Un réglage de calendrier, pas un
+/// fait daté : retirer un jour fermé le supprime, et le journal garde qui l'a
+/// posé ou retiré.
+model ProductionClosedDay {
+  serviceDay String   @id @map("service_day") @db.VarChar(10)
+  declaredBy String   @map("declared_by")
+  declaredAt DateTime @map("declared_at") @db.Timestamptz(6)
+
+  @@map("production_closed_day")
+  @@schema("production")
+}

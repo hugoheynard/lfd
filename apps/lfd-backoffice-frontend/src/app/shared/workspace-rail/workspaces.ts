@@ -154,6 +154,14 @@ export const PRODUCTION_VIEWS: readonly WorkspaceView[] = [
     icon: 'production',
     needs: 'production_worksheet:read',
   },
+  {
+    // Lot A1 du plan d'arrêt (2026-10-06) : l'arrêt du plan et les jours fermés.
+    key: 'reglages',
+    label: 'Réglages',
+    link: '/production/reglages',
+    icon: 'sliders',
+    needs: 'production_settings:read',
+  },
 ];
 
 /**

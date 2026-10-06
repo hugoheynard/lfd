@@ -46,3 +46,6 @@ export {
   type DueThresholdKind,
   type SkuDueThresholds,
 } from "./due-thresholds.reader.js";
+// L'heure limite de commande, que l'arrêt automatique ne précède pas (A1, Q5).
+export { OrderCutoffRulesReader } from "./order-cutoff-rules.reader.js";
+export type { OrderCutoffRule } from "../../domain/services/latest-order-cutoff.js";

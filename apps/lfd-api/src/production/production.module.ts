@@ -1,5 +1,16 @@
 import { Module } from "@nestjs/common";
 
+import { AddProductionClosedDayHandler } from "./application/commands/add-production-closed-day.handler.js";
+import { ChangeProductionCloseSettingsHandler } from "./application/commands/change-production-close-settings.handler.js";
+import { RemoveProductionClosedDayHandler } from "./application/commands/remove-production-closed-day.handler.js";
+import { GetProductionSettingsHandler } from "./application/queries/get-production-settings.handler.js";
+import { ProductionCloseSettingsRepository } from "./domain/ports/production-close-settings.repository.js";
+import { ProductionClosedDayRepository } from "./domain/ports/production-closed-day.repository.js";
+import { ProductionSettingsReader } from "./domain/ports/production-settings.reader.js";
+import { ProductionSettingsController } from "./http/production-settings.controller.js";
+import { PrismaProductionCloseSettingsRepository } from "./infrastructure/prisma-production-close-settings.repository.js";
+import { PrismaProductionClosedDayRepository } from "./infrastructure/prisma-production-closed-day.repository.js";
+import { PrismaProductionSettingsReader } from "./infrastructure/prisma-production-settings.reader.js";
 import { CloseProductionDayHandler } from "./application/commands/close-production-day.handler.js";
 import { MarkWorksheetLineHandler } from "./application/commands/mark-worksheet-line.handler.js";
 import { RemoveProductionContainerHandler } from "./application/commands/remove-production-container.handler.js";
@@ -93,6 +104,7 @@ import { PrismaProductionReturnRequests } from "./infrastructure/prisma-producti
     ProductionQualityController,
     QualityUploadSweepController,
     ProductionDayVersionController,
+    ProductionSettingsController,
   ],
   providers: [
     CloseProductionDayHandler,
@@ -160,6 +172,20 @@ import { PrismaProductionReturnRequests } from "./infrastructure/prisma-producti
     // `PackingFeedModule`.
     ChannelQualityHeldOrdersReader,
     DayPlannedDestinationsReader,
+    // Les réglages du fournil — l'arrêt du plan et les jours fermés (A1) :
+    // schéma `production`, deux dépôts et un lecteur (ISP). L'heure limite
+    // vient du commerce par `OrderCutoffRulesReader`, relié par
+    // `ProductionFeedModule`.
+    ChangeProductionCloseSettingsHandler,
+    AddProductionClosedDayHandler,
+    RemoveProductionClosedDayHandler,
+    GetProductionSettingsHandler,
+    {
+      provide: ProductionCloseSettingsRepository,
+      useClass: PrismaProductionCloseSettingsRepository,
+    },
+    { provide: ProductionClosedDayRepository, useClass: PrismaProductionClosedDayRepository },
+    { provide: ProductionSettingsReader, useClass: PrismaProductionSettingsReader },
   ],
   // La lecture des contrôles sert aussi la retenue que la production PUBLIE au
   // retrait (`channels/handover/`, QC3) — son adaptateur est relié par la

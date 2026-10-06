@@ -2,6 +2,8 @@ import { Global, Module } from "@nestjs/common";
 
 import { CatalogModule } from "../b2b/catalog/catalog.module.js";
 import { CatalogWorkshopShelvesReader } from "../b2b/catalog/infrastructure/catalog-workshop-shelves.reader.js";
+import { ProductionOrderCutoffRulesReader } from "../b2b/order-cutoffs/infrastructure/production-order-cutoff-rules.reader.js";
+import { OrderCutoffsModule } from "../b2b/order-cutoffs/order-cutoffs.module.js";
 import { OrdersModule } from "../b2b/orders/orders.module.js";
 import { PendingSettlementSweep } from "../b2b/orders/application/services/pending-settlement-sweep.service.js";
 import { DueThresholds } from "../b2b/orders/application/services/due-thresholds.service.js";
@@ -12,6 +14,7 @@ import {
   DayOrdersReader,
   DueThresholdsReader,
   ExpectedProductionReader,
+  OrderCutoffRulesReader,
   PendingCommerceOrdersReader,
   PendingSettlementSweeper,
   WorkshopShelvesReader,
@@ -44,7 +47,7 @@ import {
  */
 @Global()
 @Module({
-  imports: [OrdersModule, CatalogModule],
+  imports: [OrdersModule, CatalogModule, OrderCutoffsModule],
   providers: [
     { provide: DayOrdersReader, useClass: PrismaDayOrdersReader },
     // Le contrepoids du couplage minimal, relié au même endroit : la production
@@ -67,11 +70,15 @@ import {
     // Le compte à rebours par échéance (vagues, V0) : l'échéance et les marges
     // sont au commerce, la production ne reçoit que des seuils.
     { provide: DueThresholdsReader, useExisting: DueThresholds },
+    // L'heure limite la plus tardive, que l'arrêt automatique du plan ne
+    // précède pas (plan d'arrêt du plan, Q5) : les règles sont au commerce.
+    { provide: OrderCutoffRulesReader, useClass: ProductionOrderCutoffRulesReader },
   ],
   exports: [
     DayOrdersReader,
     DueThresholdsReader,
     ExpectedProductionReader,
+    OrderCutoffRulesReader,
     PendingCommerceOrdersReader,
     PendingSettlementSweeper,
     WorkshopShelvesReader,

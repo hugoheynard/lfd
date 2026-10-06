@@ -1,0 +1,36 @@
+.cards,
+.stack {
+  display: flex;
+  flex-direction: column;
+  gap: var(--fold-space-md);
+}
+
+.note {
+  margin: 0;
+  color: var(--fold-color-text-muted);
+  font-size: var(--fold-text-sm);
+}
+
+.days {
+  display: flex;
+  flex-direction: column;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.day {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--fold-space-sm);
+  padding-block: var(--fold-space-xs);
+  border-bottom: 1px solid var(--fold-color-border);
+}
+
+.add {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: flex-end;
+  gap: var(--fold-space-sm);
+}

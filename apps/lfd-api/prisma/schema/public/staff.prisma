@@ -94,6 +94,11 @@ enum StaffResource {
   production_plan
   production_worksheet
   production_packing
+  /// L'ARRÊT DU PLAN — sorti de `production_plan:write` (2026-10-06,
+  /// `documentation/production/plan-arret-du-plan.md`, §6) ; et les RÉGLAGES
+  /// du fournil : mode d'arrêt, heures, jours fermés.
+  production_count_stop
+  production_settings
   /// LE RETRAIT AU COMPTOIR — la file, la remise, le scan (même plan).
   handover_counter
   /// La FEUILLE DE ROUTE du jour, sortie de `b2b_orders` (2026-09-29,

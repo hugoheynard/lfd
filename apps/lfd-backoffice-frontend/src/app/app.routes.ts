@@ -602,6 +602,17 @@ export const routes: Routes = [
         loadComponent: () =>
           import('./production/previsionnel/previsionnel-page').then((m) => m.PrevisionnelPage),
       },
+      {
+        // L'arrêt du plan et les jours fermés (plan-arret-du-plan.md, lot A1) :
+        // lecture sous `production_settings:read`, la page se fige sans `:write`.
+        path: 'reglages',
+        canActivate: [permissionGuard('production_settings:read')],
+        title: 'Réglages du fournil — LFC B2B admin',
+        loadComponent: () =>
+          import('./production/production-settings-page/production-settings-page').then(
+            (m) => m.ProductionSettingsPage,
+          ),
+      },
       // Le colisage est un poste à part depuis le 2026-10-04
       // (`documentation/colisage/colisage.md`, P0) : l'ancienne
       // adresse reste valide — c'est le favori des postes de labo.

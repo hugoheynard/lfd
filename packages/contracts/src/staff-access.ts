@@ -283,7 +283,14 @@ export const staffResourceSchema = z.enum([
   // Sortis de `b2b_orders` le 2026-10-01, un par geste
   // (`documentation/livraisons/plan-droits-par-geste.md`, DG-D1 et 5.1). La
   // version de journée du fournil s'ouvre à n'importe lequel des quatre.
-  /** **Le plan du soir** — l'état de la journée, l'arrêter, le lot du jour, le prévisionnel. */
+  /**
+   * **Le plan du soir** — l'état de la journée, le lot du jour, le prévisionnel.
+   *
+   * ⚠️ Son `write` ne porte plus aucun geste depuis le 2026-10-06 : l'arrêt du
+   * plan a son droit, `production_count_stop` (plan
+   * `documentation/production/plan-arret-du-plan.md`, §6). La valeur reste,
+   * une valeur d'enum ne se retire pas.
+   */
   "production_plan",
   /** **La fiche d'atelier** — la lire, cocher, reprendre, régler les contenants du four. */
   "production_worksheet",
@@ -293,6 +300,19 @@ export const staffResourceSchema = z.enum([
    * `delivery_loading` (une porte élargie, aucun droit déplacé — plan 5.3).
    */
   "production_packing",
+  /**
+   * **Arrêter le plan** — le soir, en avance sur l'heure automatique, ou en
+   * rattrapage du jour même (Hugo, 2026-10-06 : « ça ne peut pas être le même
+   * droit pour une ligne du fournil et l'arrêt du compte de prod »). Sorti de
+   * `production_plan:write`. Seul son `write` ouvre un geste.
+   */
+  "production_count_stop",
+  /**
+   * **Les réglages du fournil** — l'arrêt du plan automatique ou manuel, ses
+   * heures, et le calendrier des jours fermés (plan
+   * `documentation/production/plan-arret-du-plan.md`, §2 et §6).
+   */
+  "production_settings",
 
   // ── `handover.` — LE RETRAIT ────────────────────────────────────────────
   /** **Le retrait au comptoir** — la file, la remise manuelle, le scan du QR. */
@@ -503,6 +523,8 @@ export const STAFF_RESOURCE_LABELS: Readonly<Record<StaffResource, string>> = {
   production_plan: "Production — Plan du soir",
   production_worksheet: "Production — Fiche d'atelier",
   production_packing: "Production — Colisage",
+  production_count_stop: "Production — Arrêt du plan",
+  production_settings: "Production — Réglages",
   handover_counter: "Retrait au comptoir",
   b2b_companies: "Comptes clients",
   b2b_orders: "Commandes",
@@ -605,6 +627,8 @@ export const ROLE_GRANTS: Readonly<Record<StaffRole, RoleGrants>> = {
     b2b_orders: "write",
     b2b_place_order: "write",
     production_plan: "write",
+    production_count_stop: "write",
+    production_settings: "write",
     production_worksheet: "write",
     production_packing: "write",
     handover_counter: "write",
@@ -663,6 +687,10 @@ export const ROLE_GRANTS: Readonly<Record<StaffRole, RoleGrants>> = {
     // Les gestes sortis de `b2b_orders` le 2026-10-01, reçus par la bascule.
     b2b_place_order: "write",
     production_plan: "write",
+    // L'arrêt du plan, sorti de `production_plan:write` le 2026-10-06 : la
+    // graine le reconduit ; voir les heures d'arrêt sans les régler.
+    production_count_stop: "write",
+    production_settings: "read",
     production_worksheet: "write",
     production_packing: "write",
     handover_counter: "write",
@@ -732,6 +760,10 @@ export const ROLE_GRANTS: Readonly<Record<StaffRole, RoleGrants>> = {
     // l'écran s'il le veut).
     b2b_place_order: "write",
     production_plan: "write",
+    // L'arrêt du plan, sorti de `production_plan:write` le 2026-10-06 : la
+    // graine le reconduit ; voir les heures d'arrêt sans les régler.
+    production_count_stop: "write",
+    production_settings: "read",
     production_worksheet: "write",
     production_packing: "write",
     handover_counter: "write",
@@ -801,6 +833,10 @@ export const ROLE_GRANTS: Readonly<Record<StaffRole, RoleGrants>> = {
     // Reçus par la bascule du 2026-10-01.
     b2b_place_order: "write",
     production_plan: "write",
+    // L'arrêt du plan, sorti de `production_plan:write` le 2026-10-06 : la
+    // graine le reconduit ; voir les heures d'arrêt sans les régler.
+    production_count_stop: "write",
+    production_settings: "read",
     production_worksheet: "write",
     production_packing: "write",
     handover_counter: "write",

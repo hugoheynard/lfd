@@ -112,6 +112,12 @@ export const CONTAINER_NATURE = domain('nature d’un contenant', {
   bag: 'Sac',
 });
 
+/** Le mode d'arrêt du plan du lendemain (`production_settings.close_changed`, lot A1). */
+export const PRODUCTION_CLOSE_MODE = domain('mode d’arrêt du plan', {
+  auto: 'Automatique',
+  manual: 'Manuel',
+});
+
 export const ORDERS_VALUES: ValueFamily = {
   enums: [
     WEEKDAY,
@@ -129,6 +135,7 @@ export const ORDERS_VALUES: ValueFamily = {
     HANDOVER_PROOF_ERASURE_CAUSE,
     WINDOW_MODE,
     CONTAINER_NATURE,
+    PRODUCTION_CLOSE_MODE,
   ],
   literals: {
     // Ce qu'un contrôle qualité juge (`target.kind`).

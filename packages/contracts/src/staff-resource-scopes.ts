@@ -156,7 +156,9 @@ export const STAFF_RESOURCE_SCOPES: Readonly<Record<StaffResource, StaffResource
   },
   production_plan: {
     read: "Voir le plan du soir : l'état de la journée, le lot à produire et son PDF, le prévisionnel.",
-    write: "Arrêter la journée de production.",
+    // L'arrêt est parti sous `production_count_stop` le 2026-10-06 : ce niveau
+    // n'ouvre plus rien, et le dit (le modèle n'a pas de niveau « sans écriture »).
+    write: "N'ajoute rien : arrêter le plan relève de « Production — Arrêt du plan ».",
   },
   production_worksheet: {
     read: "Lire la fiche d'atelier du jour, la fiche PDF d'une commande et les contenants du four.",
@@ -166,6 +168,16 @@ export const STAFF_RESOURCE_SCOPES: Readonly<Record<StaffResource, StaffResource
     read: "Voir le colisage du jour, commande par commande, et ouvrir la fiche d'un bac — celle de son QR —, une lecture partagée avec Chargement.",
     write:
       "Coliser : ajuster quantités et contenants, marquer une commande colisée, et ouvrir le panneau des bacs — déclarer, partager, annuler —, partagé avec Chargement.",
+  },
+  production_count_stop: {
+    read: "N'ouvre rien seul : l'état du plan se lit sous « Production — Plan du soir ».",
+    write:
+      "Arrêter le plan d'une journée — le soir pour le lendemain, en avance sur l'heure d'arrêt automatique, ou en rattrapage le jour même.",
+  },
+  production_settings: {
+    read: "Voir si le plan s'arrête tout seul ou à la main, son heure d'arrêt ou d'alerte, l'heure limite de commande qui la borne, et les jours fermés du fournil.",
+    write:
+      "Choisir l'arrêt automatique ou manuel, en régler les heures, et ajouter ou retirer un jour fermé.",
   },
   handover_counter: {
     read: "Voir la file des retraits et le détail d'une commande à remettre.",

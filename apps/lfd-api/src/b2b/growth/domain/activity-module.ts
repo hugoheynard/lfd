@@ -149,6 +149,9 @@ const PREFIXES: Readonly<Record<ActivityModule, readonly string[]>> = {
     "production_container.",
     "production_quality.",
     "packing_container.",
+    // Les réglages du fournil — l'arrêt du plan, les jours fermés (A1, 2026-10-06).
+    "production_settings.",
+    "production_closed_day.",
   ],
   // Le travail de la comptabilité (Hugo, 2026-09-19). `accounting_rules.` n'y
   // est PAS : il reste sous `pim`, à côté des taux qu'il accompagne.

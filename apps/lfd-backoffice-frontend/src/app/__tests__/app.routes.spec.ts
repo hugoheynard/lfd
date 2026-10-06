@@ -218,6 +218,7 @@ const SCREENS: Readonly<Record<string, ScreenAccess>> = {
   production: OPEN,
   'production/journee': 'production_worksheet:read',
   'production/previsionnel': 'production_plan:read',
+  'production/reglages': 'production_settings:read',
   // LE COMPTOIR non plus : la file de retrait (`handover_counter`) et la
   // commande pro (`b2b_place_order`) sont deux droits. Attester un retrait
   // passe par `retrait/:token`, qui exige l'écriture.
