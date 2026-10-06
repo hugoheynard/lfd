@@ -57,6 +57,24 @@ describe("« Mes données » — l'accusé et sa lecture", () => {
     expect(view.notice.sections.length).toBe(CURRENT_DRIVER_NOTICE.sections.length);
   });
 
+  /**
+   * La v2 (position au geste, 2026-10-06) : un livreur qui a accusé la v1 voit
+   * le dialogue UNE fois de plus, puis plus jamais pour cette version.
+   */
+  it("un accusé de la version précédente ne vaut pas : le dialogue se rouvre une fois", async () => {
+    expect(CURRENT).toBe(2);
+    store.rows.set(`st_paul|${String(CURRENT - 1)}`, FIRST);
+
+    expect((await read.execute(new GetMyDriverNoticeQuery("st_paul"))).acknowledgedAt).toBeNull();
+
+    clock = new FixedClock(LATER);
+    await new AcknowledgeDriverNoticeHandler(store, clock).execute(
+      new AcknowledgeDriverNoticeCommand("st_paul", CURRENT),
+    );
+    const view = await read.execute(new GetMyDriverNoticeQuery("st_paul"));
+    expect(view.acknowledgedAt).toBe(LATER.toISOString());
+  });
+
   it("accuse à l'heure de l'horloge, et la lecture le rend", async () => {
     await acknowledge.execute(new AcknowledgeDriverNoticeCommand("st_paul", CURRENT));
 

@@ -3,7 +3,7 @@ import type { BillingAddressPayload, GpsPoint, MyDeliveryStopView } from '@lfd/c
 /**
  * **Partir vers les arrêts** — les liens de navigation de « Ma tournée »
  * (`documentation/livraisons/plan-ma-tournee.md`, MT-D6 ;
- * `plan-y-aller-et-position.md`, YA-D1 à YA-D3).
+ * `gps-y-aller-et-position.md`, YA-D1 à YA-D3).
  *
  * Tout est pur : aucune lecture du téléphone ni de l'horloge, sauf le choix
  * d'application, lu et écrit par un stockage passé en paramètre.
@@ -45,8 +45,10 @@ export interface NavigationTarget {
 
 /**
  * Les arrêts restants (YA-D1) : dans l'ordre de passage, sans ceux qui sont
- * clos. `closedAt` est écrit par `closeStop` : la clôture sans remise (lot A
- * de « À la porte ») et « Remis au client » (B1) — vérifié le 2026-10-01.
+ * clos. `closedAt` est écrit par `closeStop` : la clôture sans remise, la
+ * remise, le dépôt et la décision « Rapporter » d'un commercial — vérifié le
+ * 2026-10-06. La chaîne geste → relecture → liens est éprouvée de bout en bout
+ * (YA3 : `delivery-gesture-position.e2e-spec.ts`, `my-round-page.spec.ts`).
  */
 export function remainingStops(
   stops: readonly MyDeliveryStopView[],

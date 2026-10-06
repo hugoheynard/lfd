@@ -6,6 +6,7 @@ import { Clock } from "../../../platform/time/clock.js";
 import { DoorstepStopNotFoundError } from "../../domain/errors/delivery-doorstep-errors.js";
 import { DeliveryStopArrivedEvent } from "../../domain/events/delivery-doorstep.events.js";
 import { DoorstepStopRepository } from "../../domain/ports/doorstep-stop.repository.js";
+import { gesturePositionOf } from "../doorstep-support.js";
 import { DeclareStopArrivalCommand } from "./declare-stop-arrival.command.js";
 
 /**
@@ -17,9 +18,11 @@ import { DeclareStopArrivalCommand } from "./declare-stop-arrival.command.js";
  * arrêt qui n'en est pas, est un 404 qui ne confirme rien. Une seconde
  * arrivée ne réécrit rien et ne journalise rien : la route rend 204 quand
  * même — le livreur qui rejoue après une perte de réseau n'a rien à corriger.
+ * La position du téléphone, quand l'écran l'envoie, s'écrit avec l'arrivée
+ * (YA-D4).
  *
  * @throws {DoorstepStopNotFoundError} @throws {DoorstepRoundNotDepartedError}
- * @throws {DoorstepStopClosedError}
+ * @throws {DoorstepStopClosedError} @throws {GesturePositionInvalidError}
  */
 @CommandHandler(DeclareStopArrivalCommand)
 export class DeclareStopArrivalHandler implements ICommandHandler<DeclareStopArrivalCommand, void> {
@@ -31,6 +34,7 @@ export class DeclareStopArrivalHandler implements ICommandHandler<DeclareStopArr
   ) {}
 
   async execute(command: DeclareStopArrivalCommand): Promise<void> {
+    const position = gesturePositionOf(command.position);
     await this.uow.run(async () => {
       const stop = await this.stops.loadForDriver(
         command.roundId,
@@ -40,7 +44,7 @@ export class DeclareStopArrivalHandler implements ICommandHandler<DeclareStopArr
       if (stop === null) {
         throw new DoorstepStopNotFoundError();
       }
-      if (!stop.arrive(this.clock.now())) {
+      if (!stop.arrive(this.clock.now(), position)) {
         return;
       }
       await this.stops.save(stop);

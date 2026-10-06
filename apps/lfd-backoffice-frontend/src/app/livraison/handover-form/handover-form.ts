@@ -11,6 +11,7 @@ import { HANDOVER_RECEIVER_NAME_MAX, HANDOVER_RECEIVER_NAME_MIN } from '@lfd/con
 import { httpErrorMessage } from '@lfd/endpoints';
 import { FoldButtonComponent, FoldCalloutComponent, FoldInputComponent } from 'fold-ng';
 
+import { GesturePositionReader } from '../gesture-position';
 import { MyDeliveryRoundService } from '../my-delivery-round.service';
 import { ProofPhoto } from '../proof-photo/proof-photo';
 import { SignaturePad } from '../signature-pad/signature-pad';
@@ -38,6 +39,7 @@ import { SignaturePad } from '../signature-pad/signature-pad';
 })
 export class HandoverForm {
   private readonly service = inject(MyDeliveryRoundService);
+  private readonly positions = inject(GesturePositionReader);
 
   readonly roundId = input.required<string>();
   readonly stopId = input.required<string>();
@@ -79,7 +81,10 @@ export class HandoverForm {
     this.sending.set(true);
     this.refusal.set(null);
     try {
+      // Au geste seulement (YA-D4) ; indisponible, le geste part sans elle.
+      const position = await this.positions.read();
       await this.service.handOver(this.roundId(), this.stopId(), {
+        position,
         version: this.version(),
         receiverName: this.receiverName().trim(),
         photo,

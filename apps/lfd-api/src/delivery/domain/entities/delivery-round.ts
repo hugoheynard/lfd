@@ -22,6 +22,7 @@ import {
   RoundNotDepartedForReturnError,
   RoundStopsWithoutOutcomeError,
 } from "../errors/delivery-doorstep-errors.js";
+import type { GesturePosition } from "../value-objects/gesture-position.js";
 import type { PlannedTiming } from "../value-objects/planned-timing.js";
 import { isCalendarDay } from "../value-objects/service-day.js";
 import { SharedBinToRedoError } from "../errors/delivery-bin-declaration-errors.js";
@@ -425,18 +426,30 @@ export class DeliveryRound {
    * qu'il avait, les arrêts vivants restants se resserrent en 1..n (I2) ; la
    * numérotation du livreur, figée au départ, ne bouge pas.
    *
+   * `position` : celle du téléphone au geste (YA-D4), ou `null` — refus du
+   * navigateur, pas de signal, ou clôture décidée au bureau. Jamais exigée.
+   *
    * @throws {DoorstepRoundNotDepartedError} la tournée est au dépôt.
    * @throws {DeliveryRoundReturnedError} elle est déjà rentrée (I8).
    * @throws {DeliveryStopNotFoundError} @throws {DeliveryStopClosedError}
    */
-  closeStop(stopId: string, at: Date): void {
+  closeStop(stopId: string, at: Date, position: GesturePosition | null = null): void {
     if (this.currentDepartedAt === null) {
       throw new DoorstepRoundNotDepartedError();
     }
     this.ensureOnTheRoad();
     const { index, stop } = this.findOpen(stopId);
     this.open = this.open.filter((_, position) => position !== index);
-    this.closed = [...this.closed, { ...stop, position: index + 1, closedAt: at }];
+    this.closed = [
+      ...this.closed,
+      {
+        ...stop,
+        position: index + 1,
+        closedAt: at,
+        // Sans relevé, rien à écrire : les colonnes d'un arrêt ouvert sont nulles.
+        ...(position === null ? {} : { closedPosition: position }),
+      },
+    ];
     this.touch(at);
   }
 

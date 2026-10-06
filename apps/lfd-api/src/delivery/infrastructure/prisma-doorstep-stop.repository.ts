@@ -92,7 +92,13 @@ export class PrismaDoorstepStopRepository extends DoorstepStopRepository {
     }
     await this.prisma.deliveryStopExecution.updateMany({
       where: { stopId: stop.stopId, arrivedAt: null },
-      data: { arrivedAt: stop.arrivedAt },
+      data: {
+        arrivedAt: stop.arrivedAt,
+        // La position au geste (YA-D4), écrite avec l'arrivée et jamais relue.
+        arrivedLat: stop.arrivalPosition?.lat ?? null,
+        arrivedLng: stop.arrivalPosition?.lng ?? null,
+        arrivedAccuracyM: stop.arrivalPosition?.accuracyM ?? null,
+      },
     });
   }
 }

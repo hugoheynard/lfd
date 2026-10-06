@@ -22,7 +22,7 @@
 > `livreur` (L6-C4) et l'affectation (L6-Q7) — **sans les gestes à la porte**
 > (remis, déposé, raté), qui restaient en dette — bâtis depuis, sauf « raté »
 > (état au 2026-10-06 dans `a-la-porte.md`). Et les lots YA1-YA2 de
-> [`plan-y-aller-et-position.md`](plan-y-aller-et-position.md).
+> [`gps-y-aller-et-position.md`](gps-y-aller-et-position.md).
 >
 > ⚠️ Frontière de sécurité neuve (un rôle, un mur par livreur) : **`vitruve`
 > avant de bâtir** (CLAUDE.md § 9 bis).

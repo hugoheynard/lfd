@@ -6,6 +6,7 @@ import {
   DoorstepRoundNotDepartedError,
   DoorstepStopClosedError,
 } from "../../errors/delivery-doorstep-errors.js";
+import { GesturePosition } from "../../value-objects/gesture-position.js";
 
 // Des instants comparés entre eux seulement, jamais à l'horloge.
 const DEPARTED = new Date(1_000);
@@ -35,6 +36,24 @@ describe("DoorstepStop.arrive — « Je suis arrivé » (AP-D6)", () => {
 
     expect(door.arrive(ARRIVED)).toBe(true);
     expect(door.arrivedAt).toBe(ARRIVED);
+  });
+
+  it("porte la position du téléphone avec l'arrivée, et rien sans relevé (YA-D4)", () => {
+    const position = GesturePosition.take({ lat: 45.46, lng: 6.9, accuracyM: 8 });
+    const door = stop();
+    expect(door.arrive(ARRIVED, position)).toBe(true);
+    expect(door.arrivalPosition).toBe(position);
+
+    const blind = stop();
+    blind.arrive(ARRIVED);
+    expect(blind.arrivalPosition).toBeNull();
+  });
+
+  it("une seconde arrivée ne garde pas sa position : le premier relevé fait foi", () => {
+    const door = stop({ arrivedAt: ARRIVED });
+
+    expect(door.arrive(LATER, GesturePosition.take({ lat: 1, lng: 1, accuracyM: 1 }))).toBe(false);
+    expect(door.arrivalPosition).toBeNull();
   });
 
   it("une seconde arrivée ne réécrit rien : le premier instant fait foi", () => {

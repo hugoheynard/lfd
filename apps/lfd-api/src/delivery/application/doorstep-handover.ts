@@ -19,6 +19,7 @@ import type { CitedOrder } from "../domain/events/delivery-round.events.js";
 import { citeStopOrder } from "../domain/events/delivery-doorstep.events.js";
 import { DeliveryRoundRepository } from "../domain/ports/delivery-round.repository.js";
 import { DoorstepStopRepository } from "../domain/ports/doorstep-stop.repository.js";
+import type { GesturePosition } from "../domain/value-objects/gesture-position.js";
 import { ensureFreshForDriver } from "./doorstep-support.js";
 
 const logger = new Logger("DoorstepHandover");
@@ -36,6 +37,8 @@ export interface DoorstepHandoverGesture {
   readonly version: number;
   /** Qui a réceptionné ; `null` : personne — le dépôt (`deposit` au retrait). */
   readonly receiverName: string | null;
+  /** La position du téléphone au geste (YA-D4), ou `null` : pas de relevé. */
+  readonly position: GesturePosition | null;
   /** Ce que CET arrêt exige du geste — sous le verrou, avant l'attestation. */
   readonly admit: (stop: DoorstepStop) => void;
 }
@@ -131,7 +134,7 @@ export class DoorstepHandover {
       receiverName: gesture.receiverName,
       proofs: staged,
     });
-    round.closeStop(stop.stopId, this.clock.now());
+    round.closeStop(stop.stopId, this.clock.now(), gesture.position);
     await this.rounds.save(round);
     this.afterCommit.defer(publish, PUBLISH);
     return { round, order: citeStopOrder(stop.orderId, stop.reference) };

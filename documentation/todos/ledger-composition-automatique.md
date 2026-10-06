@@ -96,6 +96,16 @@
   (~32 mannes semées). Le changement de démo « manne pile 2 » attend, non
   commité, dans `src/dev/seeding/`.
 
+## File ouverte après le chantier (2026-10-06)
+
+- **Suggestions de correction du carnet par les positions** (Hugo : « ajoute-le
+  à la file ») : après ~3 livraisons concordantes à plus de ~50 m du point,
+  une suggestion au bureau (« la porte semble être à 120 m ») — Appliquer /
+  Ignorer ; appliquée, elle pose au carnet la porte réelle et un point de
+  stationnement, que le livreur voit à la tournée suivante. Jamais
+  automatique. Après la position au geste (YA4).
+- **Départ durable (DD1)** : plan v2 contredit, en attente de lancement.
+
 ## Ordre suivi
 
 CA0 (géocodage à la commande) → CA4 (capacité) → banc à 200 clients →

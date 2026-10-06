@@ -107,7 +107,13 @@ describe('HandoverForm — « Remis au client » (B1)', () => {
     expect(wire.sent).toEqual([
       {
         stopId: 's-1',
-        handover: { version: 7, receiverName: 'Mme Durand', photo: PHOTO, signature: null },
+        handover: {
+          version: 7,
+          receiverName: 'Mme Durand',
+          photo: PHOTO,
+          signature: null,
+          position: null,
+        },
       },
     ]);
     expect(wire.handedOver).toBe(1);

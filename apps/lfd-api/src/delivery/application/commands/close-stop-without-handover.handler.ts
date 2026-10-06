@@ -16,7 +16,7 @@ import {
   DeliveryStopClosedWithoutHandoverEvent,
 } from "../../domain/events/delivery-doorstep.events.js";
 import { DeliveryRoundRepository } from "../../domain/ports/delivery-round.repository.js";
-import { ensureFreshForDriver } from "../doorstep-support.js";
+import { ensureFreshForDriver, gesturePositionOf } from "../doorstep-support.js";
 import { CloseStopWithoutHandoverCommand } from "./close-stop-without-handover.command.js";
 
 /**
@@ -32,13 +32,15 @@ import { CloseStopWithoutHandoverCommand } from "./close-stop-without-handover.c
  *    réseau ne doit pas se lire comme un conflit ;
  * 3. la version présentée est vérifiée ;
  * 4. le commerce dit où en est la commande — encore à remettre : 409 nommé ;
- * 5. `closeStop` sur l'agrégat (l'exception écrite à I6), `save`, le fait.
+ * 5. `closeStop` sur l'agrégat (l'exception écrite à I6), avec la position du
+ *    téléphone quand l'écran l'a relevée (YA-D4), `save`, le fait.
  *
  * Aucune attestation, aucune remise : la commande n'est pas touchée.
  *
  * @throws {DriverRoundNotFoundError} @throws {DoorstepStopNotFoundError}
  * @throws {DoorstepRoundStaleError} @throws {StopStillToHandOverError}
  * @throws {DoorstepRoundNotDepartedError} @throws {DeliveryRoundReturnedError}
+ * @throws {GesturePositionInvalidError}
  */
 @CommandHandler(CloseStopWithoutHandoverCommand)
 export class CloseStopWithoutHandoverHandler implements ICommandHandler<
@@ -55,6 +57,8 @@ export class CloseStopWithoutHandoverHandler implements ICommandHandler<
   ) {}
 
   async execute(command: CloseStopWithoutHandoverCommand): Promise<void> {
+    // Refusée avant tout verrou : une position impossible ne doit rien ouvrir.
+    const position = gesturePositionOf(command.payload);
     await this.uow.run(async () => {
       const round = await this.rounds.loadForDriver(command.roundId, command.staffUserId);
       if (round === null) {
@@ -69,7 +73,7 @@ export class CloseStopWithoutHandoverHandler implements ICommandHandler<
       ensureFreshForDriver(round, command.payload.version);
       const orderId = orderOfLiveStop(round, command.stopId);
       const [cause, reference] = await this.causeOf(orderId);
-      round.closeStop(command.stopId, this.clock.now());
+      round.closeStop(command.stopId, this.clock.now(), position);
       await this.rounds.save(round);
       await this.events.publishTraced(
         new DeliveryStopClosedWithoutHandoverEvent(round, citeStopOrder(orderId, reference), cause),

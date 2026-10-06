@@ -83,3 +83,41 @@ export async function orderStatus(ctx: E2eContext, orderId: string): Promise<str
   });
   return order.status;
 }
+
+/**
+ * Une tournée de `count` arrêts chargés, affectée à `driver`, partie par lui ;
+ * les arrêts dans l'ordre de passage (`gps-y-aller-et-position.md`, YA3).
+ */
+export async function departedStops(
+  ctx: E2eContext,
+  driver: DoorDriver,
+  count: number,
+): Promise<{ readonly roundId: string; readonly stops: readonly DepartedStop[] }> {
+  const roundId = await openRound(ctx, DOOR_DAY, await addVehicle(ctx, "Kangoo"));
+  const orderIds: string[] = [];
+  for (let index = 0; index < count; index += 1) {
+    const orderId = await seedLocatedDelivery(ctx, DOOR_DAY, POINT);
+    await assign(ctx, DOOR_DAY, roundId, orderId);
+    const bins = await declareBins(ctx, orderId, 1);
+    await loadBin(ctx, roundId, { binId: bins[0] ?? "" }).expect(204);
+    orderIds.push(orderId);
+  }
+  const { version } = await roundOf(ctx, DOOR_DAY, roundId);
+  await admin(ctx)
+    .put(`${ROUNDS}/${roundId}/livreur`)
+    .send({ staffUserId: driver.id, version })
+    .expect(204);
+  await driver.agent
+    .post(`${MY_ROUND}/${roundId}/depart`)
+    .send({ version: (await myRound(driver.agent, roundId)).version })
+    .expect(204);
+  const rows = await ctx.prisma.deliveryRoundStop.findMany({
+    where: { roundId },
+    orderBy: { position: "asc" },
+    select: { id: true, orderId: true },
+  });
+  return {
+    roundId,
+    stops: rows.map((row) => ({ roundId, orderId: row.orderId, stopId: row.id })),
+  };
+}

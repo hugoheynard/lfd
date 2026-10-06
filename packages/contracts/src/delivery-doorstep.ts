@@ -7,7 +7,10 @@ import { z } from "zod";
  *
  * Routes du livreur (`admin/livraison/ma-tournee/:roundId…`, sous
  * `delivery_doorstep`, le même mur que « Ma tournée ») :
- * - `POST /arrets/:stopId/arrivee` → 204, idempotente ;
+ * - `POST /arrets/:stopId/arrivee` (corps facultatif
+ *   {@link declareStopArrivalPayloadSchema}) → 204, idempotente ;
+ * - l'arrivée et les trois gestes qui closent un arrêt acceptent la position du téléphone,
+ *   facultative ({@link GesturePositionFields}, YA-D4) ;
  * - `POST /incidents` (multipart : {@link reportDeliveryIncidentFieldsSchema}
  *   + `photo` facultative) → {@link ReportedDeliveryIncidentResponse} ;
  * - `POST /arrets/:stopId/cloture-sans-remise` (corps
@@ -82,12 +85,66 @@ export interface ReportedDeliveryIncidentResponse {
 }
 
 /**
+ * **La position du téléphone au geste** (`documentation/livraisons/gps-y-aller-et-position.md`,
+ * YA-D4) — facultative sur les trois gestes qui closent un arrêt : remise,
+ * dépôt, clôture sans remise. Absente : refus du navigateur ou pas de signal,
+ * et le geste s'enregistre quand même. Présente : les trois champs ensemble.
+ *
+ * Des champs À PLAT plutôt qu'un objet : la remise et le dépôt sont en
+ * multipart, où un champ est une chaîne — d'où `coerce`. Les bornes sont celles
+ * de la FORME ; le domaine (`GesturePosition`) les retient de toute façon.
+ */
+const gesturePositionShape = {
+  positionLat: z.coerce.number().min(-90).max(90).optional(),
+  positionLng: z.coerce.number().min(-180).max(180).optional(),
+  positionAccuracyM: z.coerce.number().nonnegative().optional(),
+};
+
+/** Les trois champs de position ensemble, ou aucun. */
+function positionAllOrNone(fields: {
+  readonly positionLat?: number | undefined;
+  readonly positionLng?: number | undefined;
+  readonly positionAccuracyM?: number | undefined;
+}): boolean {
+  const given = [fields.positionLat, fields.positionLng, fields.positionAccuracyM].filter(
+    (value) => value !== undefined,
+  ).length;
+  return given === 0 || given === 3;
+}
+
+const POSITION_ALL_OR_NONE = {
+  message: "position incomplète : latitude, longitude et précision vont ensemble",
+  path: ["positionLat"],
+};
+
+/** Les champs de position d'un geste, tels que le serveur les lit. */
+export interface GesturePositionFields {
+  readonly positionLat?: number | undefined;
+  readonly positionLng?: number | undefined;
+  readonly positionAccuracyM?: number | undefined;
+}
+
+/**
+ * « Je suis arrivé » — le corps est FACULTATIF : la position du téléphone, ou
+ * rien (YA-D4). Un appel sans corps reste valide.
+ */
+export const declareStopArrivalPayloadSchema = z.preprocess(
+  // Sans corps (l'écran d'avant, un rejeu) : Nest passe `undefined`.
+  (body) => body ?? {},
+  z.object({ ...gesturePositionShape }).refine(positionAllOrNone, POSITION_ALL_OR_NONE),
+);
+export type DeclareStopArrivalPayload = z.infer<typeof declareStopArrivalPayloadSchema>;
+
+/**
  * Clore un arrêt SANS remise — la commande a déjà été retirée au comptoir, ou
  * annulée (AP-D2, L6-C11). La version de la tournée lue par l'écran.
  */
-export const closeStopWithoutHandoverPayloadSchema = z.object({
-  version: z.number().int().nonnegative(),
-});
+export const closeStopWithoutHandoverPayloadSchema = z
+  .object({
+    version: z.number().int().nonnegative(),
+    ...gesturePositionShape,
+  })
+  .refine(positionAllOrNone, POSITION_ALL_OR_NONE);
 export type CloseStopWithoutHandoverPayload = z.infer<typeof closeStopWithoutHandoverPayloadSchema>;
 
 /** Le nom tapé de qui réceptionne : au moins, au plus (`a-la-porte.md`, Mineurs). */
@@ -102,10 +159,13 @@ export const HANDOVER_RECEIVER_NAME_MAX = 80;
  * exigées, c'est le domaine qui les refuse, avec ses mots. `version` : celle
  * de la tournée lue par l'écran — un champ de formulaire est une chaîne.
  */
-export const handOverStopFieldsSchema = z.object({
-  version: z.coerce.number().int().nonnegative(),
-  receiverName: z.string().default(""),
-});
+export const handOverStopFieldsSchema = z
+  .object({
+    version: z.coerce.number().int().nonnegative(),
+    receiverName: z.string().default(""),
+    ...gesturePositionShape,
+  })
+  .refine(positionAllOrNone, POSITION_ALL_OR_NONE);
 export type HandOverStopFields = z.infer<typeof handOverStopFieldsSchema>;
 
 /**
@@ -114,9 +174,12 @@ export type HandOverStopFields = z.infer<typeof handOverStopFieldsSchema>;
  * signature : personne n'a réceptionné. La permission du dépôt et la photo
  * exigée, c'est le domaine qui les refuse, avec ses mots.
  */
-export const depositStopFieldsSchema = z.object({
-  version: z.coerce.number().int().nonnegative(),
-});
+export const depositStopFieldsSchema = z
+  .object({
+    version: z.coerce.number().int().nonnegative(),
+    ...gesturePositionShape,
+  })
+  .refine(positionAllOrNone, POSITION_ALL_OR_NONE);
 export type DepositStopFields = z.infer<typeof depositStopFieldsSchema>;
 
 /**

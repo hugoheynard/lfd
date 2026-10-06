@@ -26,10 +26,13 @@ import { LIVE_STOP, type Tx, writeRound, writeStops } from "./delivery-round.wri
  * terminée », PL2) et `planned_*` (l'horaire prévu, I10) — écrivain : la tournée. Il LIT et VERROUILLE `delivery_bin_load` (`saveMove`),
  * sans jamais l'écrire : l'écrivain en est l'exécution.
  *
- * `closed_at` — écrivain : la tournée, par `closeStop`. Depuis le 2026-10-01
- * (plan « À la porte », lot A), seule la clôture SANS remise le pose ; la
- * remise et le dépôt le poseront au lot suivant. Il est RELU et RÉÉCRIT tel
- * quel : l'ignorer à l'écriture le ferait écraser par le premier `save` venu.
+ * `closed_at` — écrivain : la tournée, par `closeStop` (clôture sans remise,
+ * remise, dépôt, décision du commercial). Il est RELU et RÉÉCRIT tel quel :
+ * l'ignorer à l'écriture le ferait écraser par le premier `save` venu.
+ *
+ * `closed_lat`, `closed_lng`, `closed_accuracy_m` (YA-D4) — l'inverse,
+ * délibérément : jamais relus, écrits par le seul geste qui clôt l'arrêt. La
+ * purge à 60 jours les efface sans qu'un `save` plus tardif puisse les rendre.
  *
  * ## La version
  *

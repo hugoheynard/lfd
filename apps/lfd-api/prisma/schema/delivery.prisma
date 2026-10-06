@@ -198,18 +198,26 @@ model DeliveryRound {
 ///
 /// `order_id` est OPAQUE : aucune clé étrangère vers `public.orders`.
 model DeliveryRoundStop {
-  id         String    @id
-  roundId    String    @map("round_id")
-  orderId    String    @map("order_id")
+  id              String    @id
+  roundId         String    @map("round_id")
+  orderId         String    @map("order_id")
   /// Dénormalisé depuis la tournée : le déclencheur de journée le lit ici (C6).
-  serviceDay String    @map("service_day") @db.VarChar(10)
+  serviceDay      String    @map("service_day") @db.VarChar(10)
   /// 1..n, contigu parmi les arrêts vivants de la tournée (I2, tenu par l'agrégat).
-  position   Int
-  removedAt  DateTime? @map("removed_at")
+  position        Int
+  removedAt       DateTime? @map("removed_at")
   /// Écrivain : la tournée, par `closeStop` — posé depuis le 2026-10-01 par la
   /// clôture sans remise (plan « À la porte », AP-D2).
-  closedAt   DateTime? @map("closed_at")
-  createdAt  DateTime  @map("created_at")
+  closedAt        DateTime? @map("closed_at")
+  /// La position du téléphone AU GESTE qui a clos l'arrêt (YA-D4,
+  /// `gps-y-aller-et-position.md`) — jamais en continu. Les trois ensemble ou
+  /// aucune (CHECK) ; nulles : refus du navigateur, pas de signal, clôture par
+  /// un commercial, ou effacées par la purge à 60 jours. Écrivain : la tournée,
+  /// par `closeStop` ; effaceur : `PurgeStalePositionsHandler`.
+  closedLat       Float?    @map("closed_lat")
+  closedLng       Float?    @map("closed_lng")
+  closedAccuracyM Float?    @map("closed_accuracy_m")
+  createdAt       DateTime  @map("created_at")
 
   round     DeliveryRound          @relation(fields: [roundId], references: [id], onDelete: Restrict)
   binLoads  DeliveryBinLoad[]
@@ -351,6 +359,13 @@ model DeliveryStopExecution {
   /// tournée ; nul tant que le livreur ne l'a pas déclaré. La donnée manque,
   /// elle ne s'invente pas.
   arrivedAt         DateTime? @map("arrived_at")
+  /// La position du téléphone à « Je suis arrivé » (YA-D4,
+  /// `gps-y-aller-et-position.md`), écrite avec `arrived_at` et une seule fois.
+  /// Les trois ensemble ou aucune (CHECK) ; nulles : position indisponible, ou
+  /// effacées par la purge à 60 jours (`PurgeStalePositionsHandler`).
+  arrivedLat        Float?    @map("arrived_lat")
+  arrivedLng        Float?    @map("arrived_lng")
+  arrivedAccuracyM  Float?    @map("arrived_accuracy_m")
 
   stop DeliveryRoundStop @relation(fields: [stopId], references: [id], onDelete: Restrict)
 

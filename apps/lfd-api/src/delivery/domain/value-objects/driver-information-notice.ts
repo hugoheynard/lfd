@@ -1,3 +1,5 @@
+import { POSITION_RETENTION_DAYS } from "../services/position-retention.js";
+
 /**
  * **Le texte d'information du livreur sur ses données** — source unique
  * (`documentation/legal/rgpd-livreur.md`, §7 point 2 et §8).
@@ -12,13 +14,16 @@
  * tant qu'on n'a pas écrit ici une nouvelle version — et une nouvelle version
  * réaffiche le dialogue une fois à chaque livreur.
  *
- * Ce qu'il n'annonce PAS, délibérément : la position du téléphone. Elle n'est
- * pas bâtie (vérifié le 2026-10-06 : aucune colonne, aucun code) ; elle
- * entrera avec le lot 5 de `plan-y-aller-et-position.md`, et une version 2.
+ * **Version 2** (2026-10-06) : la position du téléphone, relevée au geste
+ * seulement (`documentation/livraisons/gps-y-aller-et-position.md`, YA-D4).
+ * Hugo, le même jour : on PRÉVIENT, on ne demande pas — le texte énonce un
+ * fait, et ne propose aucun refus. Le geste n'est jamais bloqué par une
+ * position indisponible : c'est un comportement, pas une option offerte.
  *
- * Les durées : le registre les dit toutes `aucune-limite-decidee` ou
- * `a-decider` pour le livreur et le réceptionnaire (vérifié le 2026-10-06) —
- * le texte le dit, sans en inventer. Le contact n'existe dans aucun document
+ * Les durées : seule la position en a une, `POSITION_RETENTION_DAYS` (60 j) ;
+ * le registre dit toutes les autres `aucune-limite-decidee` ou `a-decider`
+ * pour le livreur et le réceptionnaire (vérifié le 2026-10-06) — le texte le
+ * dit, sans en inventer. Le contact n'existe dans aucun document
  * légal du dépôt (`texte-politique-de-confidentialite.md` le laisse « À
  * COMPLÉTER ») : il reste à compléter ici aussi.
  */
@@ -39,7 +44,7 @@ export const RECEIVER_SENTENCE =
   "« Nous enregistrons votre nom, une photo de la livraison et, si besoin, votre signature, pour prouver que la commande vous a été remise. »";
 
 export const CURRENT_DRIVER_NOTICE: DriverInformationNotice = {
-  version: 1,
+  version: 2,
   title: "Vos données de livreur",
   intro:
     "Avant de démarrer, voici ce que l'application enregistre quand vous livrez, pourquoi, qui le voit et combien de temps. Ce n'est pas une demande d'accord : c'est une information. Vous pouvez relire ce texte à tout moment dans « Mes données ».",
@@ -49,6 +54,7 @@ export const CURRENT_DRIVER_NOTICE: DriverInformationNotice = {
       lines: [
         "Les tournées qui vous sont affectées.",
         "L'heure de départ de votre tournée, l'heure de votre arrivée à chaque arrêt, l'heure de clôture de chaque arrêt et l'heure de votre retour.",
+        `La position de votre téléphone est relevée au moment de chaque geste (arrivée, remise, dépôt, clôture d'un arrêt sans remise), jamais en continu. Si le téléphone ne la donne pas, le geste est enregistré sans elle.`,
         "Les bacs que vous chargez, et quand.",
         "Les problèmes que vous signalez : leur motif, votre note, la photo si vous en prenez une, et l'heure.",
         "Votre nom sur ces gestes — chargement, remise, signalement, retour — pour savoir qui a fait quoi.",
@@ -67,13 +73,14 @@ export const CURRENT_DRIVER_NOTICE: DriverInformationNotice = {
       heading: "Pourquoi",
       lines: [
         "Organiser et suivre les livraisons, garder la trace des bacs, traiter les problèmes signalés, et prouver la remise de la commande en cas de litige.",
+        "La position relevée au geste sert d'abord à vous faciliter les tournées suivantes : des adresses justes, l'endroit où se garer, la bonne porte, les consignes d'accès — pour vous et pour le prochain livreur. Elle sert aussi à prouver la livraison en cas de litige. Elle ne sert jamais à suivre vos déplacements, ni à mesurer votre vitesse ou votre temps de travail.",
       ],
     },
     {
       heading: "Ce que nous n'en faisons pas",
       lines: [
-        "Ces heures ne servent ni à mesurer votre vitesse, ni à contrôler votre temps de travail.",
-        "L'application ne relève pas la position de votre téléphone.",
+        "Ces heures et ces positions ne servent ni à mesurer votre vitesse, ni à contrôler votre temps de travail.",
+        "Aucune position n'est relevée entre deux gestes : ni pendant le trajet, ni pendant les pauses, ni après le retour.",
       ],
     },
     {
@@ -88,7 +95,8 @@ export const CURRENT_DRIVER_NOTICE: DriverInformationNotice = {
     {
       heading: "Combien de temps",
       lines: [
-        "La durée de conservation de ces données est en cours de définition. Ce texte sera mis à jour quand elle sera fixée.",
+        `Les positions relevées au geste sont effacées au bout de ${String(POSITION_RETENTION_DAYS)} jours ; l'heure du geste, elle, reste.`,
+        "La durée de conservation des autres données est en cours de définition. Ce texte sera mis à jour quand elle sera fixée.",
       ],
     },
     {

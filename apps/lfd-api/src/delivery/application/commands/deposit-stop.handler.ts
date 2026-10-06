@@ -5,6 +5,7 @@ import { DomainEventPublisher } from "../../../platform/events/domain-event-publ
 import { DeliveryStopDepositedEvent } from "../../domain/events/delivery-doorstep.events.js";
 import { DoorstepDeposit } from "../../domain/value-objects/doorstep-deposit.js";
 import { DoorstepHandover, type DoorstepHandoverGesture } from "../doorstep-handover.js";
+import { gesturePositionOf } from "../doorstep-support.js";
 import { DepositStopCommand } from "./deposit-stop.command.js";
 
 /**
@@ -20,7 +21,7 @@ import { DepositStopCommand } from "./deposit-stop.command.js";
  * fait, dans l'unité de travail. Le reste vit dans `DoorstepHandover`.
  *
  * @throws {DepositPhotoMissingError} @throws {DepositNotAllowedError}
- * @throws {DepositSignatureRequiredError}
+ * @throws {DepositSignatureRequiredError} @throws {GesturePositionInvalidError}
  * @throws ceux de `DoorstepHandover.closeAtDoor`.
  */
 @CommandHandler(DepositStopCommand)
@@ -38,6 +39,7 @@ export class DepositStopHandler implements ICommandHandler<DepositStopCommand, v
       roundId: command.roundId,
       stopId: command.stopId,
       version: command.fields.version,
+      position: gesturePositionOf(command.fields),
       receiverName: null,
       admit: (stop) => {
         stop.ensureDepositPermitted();

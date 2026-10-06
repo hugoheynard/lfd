@@ -9,6 +9,7 @@ import {
   DeliveryRoundStaleError,
   OrderAlreadyInRoundError,
 } from "../domain/errors/delivery-round-errors.js";
+import type { GesturePosition } from "../domain/value-objects/gesture-position.js";
 import type { PlannedTiming } from "../domain/value-objects/planned-timing.js";
 
 /**
@@ -140,10 +141,32 @@ export async function writeStops(tx: Tx, round: DeliveryRound): Promise<void> {
             position: stop.position,
             removedAt: stop.removedAt,
             closedAt: stop.closedAt,
+            ...positionColumns(stop.closedPosition),
           },
         }),
     );
   }
+}
+
+/**
+ * Les colonnes de la position au geste (YA-D4) — écrites SEULEMENT par le geste
+ * qui clôt l'arrêt (`closedPosition` présente) ; absente, rien n'est écrit, et
+ * la purge à 60 jours reste seule à les toucher ensuite. Toutes trois ou aucune
+ * (CHECK `delivery_round_stop_closed_position_check`).
+ */
+function positionColumns(position: GesturePosition | undefined): {
+  readonly closedLat?: number;
+  readonly closedLng?: number;
+  readonly closedAccuracyM?: number;
+} {
+  if (position === undefined) {
+    return {};
+  }
+  return {
+    closedLat: position.lat,
+    closedLng: position.lng,
+    closedAccuracyM: position.accuracyM,
+  };
 }
 
 /**

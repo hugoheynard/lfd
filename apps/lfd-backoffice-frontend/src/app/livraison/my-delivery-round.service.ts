@@ -4,6 +4,7 @@ import type {
   CloseStopWithoutHandoverPayload,
   DepartDeliveryRoundPayload,
   DeliveryIncidentFamily,
+  GesturePositionFields,
   MyDeliveryRoundsView,
   MyDeliveryRoundView,
   ReportedDeliveryIncidentResponse,
@@ -11,6 +12,7 @@ import type {
 import { firstValueFrom } from 'rxjs';
 
 import { B2B_API_BASE } from '../api/api-config';
+import { appendPosition } from './gesture-position';
 
 const MY_ROUND = `${B2B_API_BASE}/admin/livraison/ma-tournee`;
 
@@ -42,6 +44,8 @@ export interface DoorstepHandover {
   readonly photo: Blob;
   /** Le tracé au doigt, en PNG ; `null` quand il n'est pas exigé et pas fait. */
   readonly signature: Blob | null;
+  /** La position du téléphone au geste (YA-D4) ; `null` : indisponible. */
+  readonly position: GesturePositionFields | null;
 }
 
 /** Un dépôt avec preuve, tel que l'écran le compose (`a-la-porte.md`, B2). */
@@ -50,6 +54,8 @@ export interface DoorstepDeposit {
   readonly version: number;
   /** Prise par l'appareil — toujours : c'est la seule preuve du dépôt. */
   readonly photo: Blob;
+  /** La position du téléphone au geste (YA-D4) ; `null` : indisponible. */
+  readonly position: GesturePositionFields | null;
 }
 
 /**
@@ -98,9 +104,13 @@ export class MyDeliveryRoundService {
 
   // ── À la porte (`a-la-porte.md`, lot A), sous `delivery_doorstep` ──
 
-  /** « Je suis arrivé » — rejouée, la route répond pareil. */
-  async arrive(roundId: string, stopId: string): Promise<void> {
-    await firstValueFrom(this.http.post(`${stopUrl(roundId, stopId)}/arrivee`, null));
+  /** « Je suis arrivé » — rejouée, la route répond pareil ; la position facultative (YA-D4). */
+  async arrive(
+    roundId: string,
+    stopId: string,
+    position: GesturePositionFields | null,
+  ): Promise<void> {
+    await firstValueFrom(this.http.post(`${stopUrl(roundId, stopId)}/arrivee`, position ?? {}));
   }
 
   /** « Déclarer un problème » — en multipart, la photo sous `photo`. */
@@ -144,6 +154,7 @@ export class MyDeliveryRoundService {
     if (handover.signature !== null) {
       body.append('signature', handover.signature, 'signature.png');
     }
+    appendPosition(body, handover.position);
     await firstValueFrom(this.http.post(`${stopUrl(roundId, stopId)}/remise`, body));
   }
 
@@ -155,6 +166,7 @@ export class MyDeliveryRoundService {
     const body = new FormData();
     body.append('version', String(deposit.version));
     body.append('photo', deposit.photo, 'depot.jpg');
+    appendPosition(body, deposit.position);
     await firstValueFrom(this.http.post(`${stopUrl(roundId, stopId)}/depot`, body));
   }
 

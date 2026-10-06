@@ -111,6 +111,11 @@
                 @if (refusal(); as refusal) {
                   <fold-callout variant="alert" data-refusal>{{ refusal }}</fold-callout>
                 }
+                @if (gestures() && positions.unavailable()) {
+                  <fold-callout variant="info" data-position-unavailable>
+                    Position indisponible : le dernier geste est enregistré sans elle.
+                  </fold-callout>
+                }
                 @if (gestures()) {
                   <div class="actions">
                     @if (reportingRound()) {

@@ -10,6 +10,7 @@ import {
 import { httpErrorMessage } from '@lfd/endpoints';
 import { FoldButtonComponent, FoldCalloutComponent } from 'fold-ng';
 
+import { GesturePositionReader } from '../gesture-position';
 import { MyDeliveryRoundService } from '../my-delivery-round.service';
 import { ProofPhoto } from '../proof-photo/proof-photo';
 
@@ -29,6 +30,7 @@ import { ProofPhoto } from '../proof-photo/proof-photo';
 })
 export class DepositForm {
   private readonly service = inject(MyDeliveryRoundService);
+  private readonly positions = inject(GesturePositionReader);
 
   readonly roundId = input.required<string>();
   readonly stopId = input.required<string>();
@@ -52,7 +54,10 @@ export class DepositForm {
     this.sending.set(true);
     this.refusal.set(null);
     try {
+      // Au geste seulement (YA-D4) ; indisponible, le geste part sans elle.
+      const position = await this.positions.read();
       await this.service.deposit(this.roundId(), this.stopId(), {
+        position,
         version: this.version(),
         photo,
       });

@@ -7,6 +7,7 @@ import {
   StopClosedWithoutHandoverError,
 } from "../../../domain/errors/delivery-doorstep-errors.js";
 import { DriverRoundNotFoundError } from "../../../domain/errors/delivery-driver-errors.js";
+import { GesturePositionInvalidError } from "../../../domain/errors/gesture-position-errors.js";
 import type { DoorstepStopState } from "../../../domain/entities/doorstep-stop.js";
 import { HandOverStopCommand } from "../hand-over-stop.command.js";
 import { HandOverStopHandler } from "../hand-over-stop.handler.js";
@@ -78,6 +79,56 @@ describe("HandOverStopHandler — « Remis au client » (B1)", () => {
 
     expect(attestor.published).toEqual(["attested:o_1"]);
     expect(attestor.discarded).toEqual([]);
+  });
+
+  it("YA-D4 : la position du téléphone part avec la clôture ; sans elle, l'arrêt se clôt quand même", async () => {
+    const located = scene();
+    await located.handler.execute(
+      new HandOverStopCommand(
+        PAUL,
+        "r_1",
+        "s_1",
+        {
+          version: 2,
+          receiverName: "Mme Durand",
+          positionLat: 45.46,
+          positionLng: 6.9,
+          positionAccuracyM: 12,
+        },
+        JPEG,
+        null,
+      ),
+    );
+    const closed = located.rounds
+      .stored("r_1")
+      ?.toSnapshot()
+      .stops.find((stop) => stop.id === "s_1");
+    expect(closed?.closedPosition).toMatchObject({ lat: 45.46, lng: 6.9, accuracyM: 12 });
+
+    const blind = scene();
+    await blind.handler.execute(remis());
+    const unlocated = blind.rounds
+      .stored("r_1")
+      ?.toSnapshot()
+      .stops.find((stop) => stop.id === "s_1");
+    expect(unlocated?.closedAt).not.toBeNull();
+    expect(unlocated).not.toHaveProperty("closedPosition");
+  });
+
+  it("YA-D4 : une position impossible refuse le geste AVANT tout envoi", async () => {
+    const { handler, attestor, rounds } = scene();
+    const forged = new HandOverStopCommand(
+      PAUL,
+      "r_1",
+      "s_1",
+      { version: 2, receiverName: "Mme Durand", positionLat: 45, positionLng: 6 },
+      JPEG,
+      null,
+    );
+
+    await expect(handler.execute(forged)).rejects.toThrow(GesturePositionInvalidError);
+    expect(attestor.attested).toEqual([]);
+    expect(rounds.stored("r_1")?.hasClosed("s_1")).toBe(false);
   });
 
   it("🔴 AP-D1 : `closeStop` qui échoue — rien ne publie, les pièces sont retirées", async () => {

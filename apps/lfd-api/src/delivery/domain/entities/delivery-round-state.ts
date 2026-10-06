@@ -4,6 +4,7 @@
  * l'agrégat sous sa taille ; il y est ré-exporté.
  */
 
+import type { GesturePosition } from "../value-objects/gesture-position.js";
 import type { PlannedTiming } from "../value-objects/planned-timing.js";
 
 /**
@@ -16,6 +17,14 @@ export interface DeliveryStopState {
   readonly orderId: string;
   readonly position: number;
   readonly closedAt: Date | null;
+  /**
+   * La position relevée au geste qui vient de clore l'arrêt (YA-D4).
+   * **Présente seulement dans l'écriture de CE geste** : un arrêt
+   * réhydraté ne la porte pas (absente), et l'adaptateur n'écrit les colonnes
+   * de position que lorsqu'elle est présente — un `save` ultérieur ne peut donc
+   * ni réécrire une position que la purge a effacée, ni l'effacer lui-même.
+   */
+  readonly closedPosition?: GesturePosition;
 }
 
 /** Un arrêt retiré pendant cette écriture : la ligne reste, `removedAt` posé. */

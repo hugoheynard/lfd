@@ -14,6 +14,8 @@ import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { PermissionsStore } from '../../auth/permissions.store';
 import { type DayWatch, DayVersionWatcher } from '../../shared/day-version/day-version-watcher';
 import { DriverNoticeGate } from '../driver-notice-gate';
+import { fixedGeolocation, refusingGeolocation } from '../gesture-position.fixture';
+import { GesturePositionReader } from '../gesture-position';
 import { MyDeliveryLoadingService } from '../my-delivery-loading.service';
 import { type IncidentReport, MyDeliveryRoundService } from '../my-delivery-round.service';
 import { myRoundOf, mySheetLineOf, myStopOf } from '../my-round.fixture';
@@ -133,7 +135,10 @@ async function boot(
             return Promise.resolve();
           },
           stepPhoto: (): Promise<Blob> => Promise.resolve(new Blob(['x'])),
-          arrive: (id: string, stopId: string): Promise<void> => gesture(`arrive ${id} ${stopId}`),
+          arrive: (id: string, stopId: string, position: unknown): Promise<void> =>
+            gesture(
+              `arrive ${id} ${stopId}${position === null ? '' : ` ${JSON.stringify(position)}`}`,
+            ),
           closeWithoutHandover: (id: string, stopId: string, payload: unknown): Promise<void> =>
             gesture(`close ${id} ${stopId} ${JSON.stringify(payload)}`),
           returnToDepot: (id: string): Promise<void> => gesture(`return ${id}`),
@@ -749,5 +754,77 @@ describe('MyRoundPage — charger sa tournée (PL1)', () => {
       round: myRoundOf({ departedAt: '2026-10-01T05:42:00.000Z' }),
     });
     expect(element.querySelector('[data-open-loading]')).toBeNull();
+  });
+});
+
+describe('MyRoundPage — YA3 : un arrêt clos sort des liens, de bout en bout', () => {
+  const departedAt = '2026-10-01T06:00:00.000Z';
+
+  /**
+   * La chaîne entière, côté écran : le geste part, la tournée est RELUE, et
+   * c'est son `closedAt` — posé par le serveur — qui retire l'arrêt de « Y
+   * aller » et de « Toute la tournée ». Rien n'est mémorisé dans le téléphone.
+   */
+  it('clore le premier arrêt : « Y aller » vise le suivant, les tronçons ne le portent plus', async () => {
+    const first = myStopOf({ rank: 1, orderState: 'cancelled' });
+    const second = myStopOf({ rank: 2 });
+    const { fixture, element } = await boot({
+      round: myRoundOf({ departedAt, stops: [first, second] }),
+      afterGesture: myRoundOf({
+        departedAt,
+        stops: [{ ...first, closedAt: '2026-10-01T07:00:00.000Z' }, second],
+      }),
+    });
+    const target = (stop: typeof first): string =>
+      `destination=${String(stop.gps?.lat)},${String(stop.gps?.lng)}`;
+    expect(element.querySelector('[data-go-to]')?.getAttribute('href')).toContain(target(first));
+
+    const card = element.querySelectorAll('[data-my-stop]')[0];
+    card?.querySelector<HTMLElement>('[data-close-without]')?.click();
+    await settle(fixture);
+    [...(card?.querySelectorAll<HTMLButtonElement>('button') ?? [])]
+      .find((button) => button.textContent?.trim() === 'Clore')
+      ?.click();
+    await settle(fixture);
+
+    expect(wire.calls).toContain('round r-1');
+    const goTo = element.querySelectorAll('[data-go-to]');
+    expect(goTo).toHaveLength(1);
+    expect(goTo[0]?.getAttribute('href')).toContain(target(second));
+    for (const leg of element.querySelectorAll('[data-legs] a')) {
+      expect(leg.getAttribute('href')).not.toContain(
+        `${String(first.gps?.lat)},${String(first.gps?.lng)}`,
+      );
+    }
+  });
+});
+
+describe('MyRoundPage — la position au geste (YA-D4)', () => {
+  const departedAt = '2026-10-01T06:00:00.000Z';
+
+  it('« Je suis arrivé » envoie la position relevée au geste, sans mention', async () => {
+    const { fixture, element } = await boot({ round: myRoundOf({ departedAt }) });
+    TestBed.inject(GesturePositionReader).source = fixedGeolocation(45.46, 6.9, 12);
+
+    click(element, '[data-arrive]');
+    await settle(fixture);
+
+    expect(wire.calls).toContain(
+      'arrive r-1 s-1 {"positionLat":45.46,"positionLng":6.9,"positionAccuracyM":12}',
+    );
+    expect(element.querySelector('[data-position-unavailable]')).toBeNull();
+  });
+
+  it('position refusée : le geste part quand même, et l’écran dit « position indisponible »', async () => {
+    const { fixture, element } = await boot({ round: myRoundOf({ departedAt }) });
+    TestBed.inject(GesturePositionReader).source = refusingGeolocation();
+
+    click(element, '[data-arrive]');
+    await settle(fixture);
+
+    expect(wire.calls).toContain('arrive r-1 s-1');
+    expect(element.querySelector('[data-position-unavailable]')?.textContent).toContain(
+      'Position indisponible',
+    );
   });
 });

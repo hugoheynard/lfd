@@ -1,6 +1,8 @@
 import {
   type CloseStopWithoutHandoverPayload,
   closeStopWithoutHandoverPayloadSchema,
+  type DeclareStopArrivalPayload,
+  declareStopArrivalPayloadSchema,
   type DepositStopFields,
   depositStopFieldsSchema,
   type HandOverStopFields,
@@ -63,16 +65,17 @@ export class MyDeliveryDoorstepController {
     private readonly queries: QueryBus,
   ) {}
 
-  /** « Je suis arrivé » — 204, même rejoué. */
+  /** « Je suis arrivé » — 204, même rejoué ; la position facultative (YA-D4). */
   @Post(":roundId/arrets/:stopId/arrivee")
   @HttpCode(HttpStatus.NO_CONTENT)
   async arrive(
     @StaffUserId() staffUserId: string,
     @Param("roundId") roundId: string,
     @Param("stopId") stopId: string,
+    @Body(new ZodBody(declareStopArrivalPayloadSchema)) payload: DeclareStopArrivalPayload,
   ): Promise<void> {
     await this.commands.execute<DeclareStopArrivalCommand, void>(
-      new DeclareStopArrivalCommand(staffUserId, roundId, stopId),
+      new DeclareStopArrivalCommand(staffUserId, roundId, stopId, payload),
     );
   }
 

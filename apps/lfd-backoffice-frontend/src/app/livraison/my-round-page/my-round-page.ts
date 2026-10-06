@@ -44,6 +44,7 @@ import {
   writeNavigationApp,
 } from '../my-round-navigation';
 import { DriverNoticeGate } from '../driver-notice-gate';
+import { GesturePositionReader } from '../gesture-position';
 import { MyDeliveryRoundService } from '../my-delivery-round.service';
 import { allStopsReady, readyStopsLabel } from '../my-round-packing';
 import { MyRoundStop } from '../my-round-stop/my-round-stop';
@@ -70,7 +71,7 @@ function deviceStorage(): Storage | null {
 
 /**
  * **Ma tournée** — la page du livreur (`documentation/livraisons/plan-ma-tournee.md`,
- * MT-D7 ; navigation `plan-y-aller-et-position.md`, YA2). Pensée téléphone
+ * MT-D7 ; navigation `gps-y-aller-et-position.md`, YA2). Pensée téléphone
  * d'abord : une colonne, de grands boutons.
  *
  * Aujourd'hui seulement : une tournée s'ouvre d'elle-même, plusieurs se
@@ -90,6 +91,10 @@ function deviceStorage(): Storage | null {
  *
  * **Charger** (PL1) : au dépôt, « Charger » ouvre le chargement de SA tournée
  * dans la page — le même écran que celui du dépôt, par la porte du livreur.
+ *
+ * **La position au geste** (`gps-y-aller-et-position.md`, YA-D4) : chaque
+ * geste à la porte relève la position du téléphone, une fois ; indisponible,
+ * le geste part sans elle et la page le dit (« position indisponible »).
  *
  * **Ses données** (`rgpd-livreur.md`, §7 point 2) : « Commencer ma tournée »
  * présente d'abord le texte d'information tant que sa version courante n'est
@@ -123,6 +128,8 @@ export class MyRoundPage {
   private readonly permissions = inject(PermissionsStore);
   private readonly router = inject(Router);
   private readonly notice = inject(DriverNoticeGate);
+  /** La position au geste (YA-D4) : son absence se dit, elle ne bloque rien. */
+  protected readonly positions = inject(GesturePositionReader);
   private readonly storage = deviceStorage();
 
   private readonly today = parisDayOf(new Date());
@@ -299,7 +306,7 @@ export class MyRoundPage {
   /** « Je suis arrivé » sur l'arrêt suivant. */
   protected arrive(stop: MyDeliveryStopView): Promise<void> {
     return this.gesture(
-      (round) => this.service.arrive(round.id, stop.stopId),
+      async (round) => this.service.arrive(round.id, stop.stopId, await this.positions.read()),
       'L’arrivée n’a pas pu être enregistrée.',
     );
   }
@@ -307,8 +314,11 @@ export class MyRoundPage {
   /** Clore sans remise, avec la version lue : une tournée changée entre-temps est refusée. */
   protected closeWithoutHandover(stop: MyDeliveryStopView): Promise<void> {
     return this.gesture(
-      (round) =>
-        this.service.closeWithoutHandover(round.id, stop.stopId, { version: round.version }),
+      async (round) =>
+        this.service.closeWithoutHandover(round.id, stop.stopId, {
+          version: round.version,
+          ...(await this.positions.read()),
+        }),
       'L’arrêt n’a pas pu être clos.',
     );
   }

@@ -2,6 +2,8 @@ import { HttpErrorResponse } from '@angular/common/http';
 import { type ComponentFixture, TestBed } from '@angular/core/testing';
 import { describe, expect, it } from 'vitest';
 
+import { fixedGeolocation } from '../gesture-position.fixture';
+import { GesturePositionReader } from '../gesture-position';
 import { type DoorstepDeposit, MyDeliveryRoundService } from '../my-delivery-round.service';
 import { DepositForm } from './deposit-form';
 
@@ -87,8 +89,26 @@ describe('DepositForm — « Déposé avec preuve » (B2)', () => {
     sendButton(fixture).click();
     await settle(fixture);
 
-    expect(wire.sent).toEqual([{ stopId: 's-1', deposit: { version: 7, photo: PHOTO } }]);
+    // Sans géolocalisation (le navigateur de test n'en a pas) : partie sans position.
+    expect(wire.sent).toEqual([
+      { stopId: 's-1', deposit: { version: 7, photo: PHOTO, position: null } },
+    ]);
     expect(wire.deposited).toBe(1);
+  });
+
+  it('YA-D4 : relève la position du téléphone AU GESTE et l’envoie avec le dépôt', async () => {
+    const { fixture, wire } = await boot();
+    TestBed.inject(GesturePositionReader).source = fixedGeolocation(45.46, 6.9, 12);
+    await takePhoto(fixture);
+
+    sendButton(fixture).click();
+    await settle(fixture);
+
+    expect(wire.sent[0]?.deposit.position).toEqual({
+      positionLat: 45.46,
+      positionLng: 6.9,
+      positionAccuracyM: 12,
+    });
   });
 
   it('un refus du serveur s’affiche tel quel, et le formulaire reste ouvert', async () => {

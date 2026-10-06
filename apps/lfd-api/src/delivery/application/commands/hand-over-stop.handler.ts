@@ -5,6 +5,7 @@ import { DomainEventPublisher } from "../../../platform/events/domain-event-publ
 import { DeliveryStopHandedOverEvent } from "../../domain/events/delivery-doorstep.events.js";
 import { DoorstepReceipt } from "../../domain/value-objects/doorstep-receipt.js";
 import { DoorstepHandover, type DoorstepHandoverGesture } from "../doorstep-handover.js";
+import { gesturePositionOf } from "../doorstep-support.js";
 import { HandOverStopCommand } from "./hand-over-stop.command.js";
 
 /**
@@ -19,6 +20,7 @@ import { HandOverStopCommand } from "./hand-over-stop.command.js";
  * `DoorstepHandover`.
  *
  * @throws ceux de `DoorstepReceipt`, et ceux de `DoorstepHandover.closeAtDoor`.
+ * @throws {GesturePositionInvalidError} la position envoyée est impossible (YA-D4).
  */
 @CommandHandler(HandOverStopCommand)
 export class HandOverStopHandler implements ICommandHandler<HandOverStopCommand, void> {
@@ -39,6 +41,7 @@ export class HandOverStopHandler implements ICommandHandler<HandOverStopCommand,
       roundId: command.roundId,
       stopId: command.stopId,
       version: command.fields.version,
+      position: gesturePositionOf(command.fields),
       receiverName: receipt.receiverName,
       admit: (stop) => {
         receipt.ensureSignedIf(stop.signatureRequired, stop.label);

@@ -8,6 +8,7 @@ import {
   DoorstepStopClosedError,
 } from "../errors/delivery-doorstep-errors.js";
 import { depositPermitted } from "../services/deposit-rule.js";
+import type { GesturePosition } from "../value-objects/gesture-position.js";
 
 /** La tournée d'un arrêt, telle que le journal la cite : véhicule, jour, passage. */
 export interface DoorstepRoundKey {
@@ -58,6 +59,8 @@ export interface DoorstepStopState {
  */
 export class DoorstepStop {
   private currentArrivedAt: Date | null;
+  /** La position relevée à CETTE arrivée ; jamais réhydratée (YA-D4). */
+  private currentArrivalPosition: GesturePosition | null = null;
 
   private constructor(private readonly state: DoorstepStopState) {
     this.currentArrivedAt = state.arrivedAt;
@@ -96,17 +99,23 @@ export class DoorstepStop {
     return this.currentArrivedAt;
   }
 
+  /** La position du téléphone à l'arrivée déclarée par ce geste, ou `null`. */
+  get arrivalPosition(): GesturePosition | null {
+    return this.currentArrivalPosition;
+  }
+
   /**
    * **« Je suis arrivé »** — une fois par arrêt. Une seconde arrivée (un
    * nouvel essai après une perte de réseau) rend `false` et ne réécrit rien :
-   * le premier instant fait foi. Vérifiée AVANT la clôture : un arrêt arrivé
+   * le premier instant fait foi — et sa position, facultative (YA-D4), avec
+   * lui. Vérifiée AVANT la clôture : un arrêt arrivé
    * puis clos répond encore « déjà fait » à qui rejoue son arrivée.
    *
    * @throws {DoorstepRoundNotDepartedError} la tournée est au dépôt.
    * @throws {DeliveryRoundReturnedError} elle est rentrée (PL2).
    * @throws {DoorstepStopClosedError} l'arrêt est clos sans arrivée déclarée.
    */
-  arrive(at: Date): boolean {
+  arrive(at: Date, position: GesturePosition | null = null): boolean {
     if (this.currentArrivedAt !== null) {
       return false;
     }
@@ -120,6 +129,7 @@ export class DoorstepStop {
       throw new DoorstepStopClosedError();
     }
     this.currentArrivedAt = at;
+    this.currentArrivalPosition = position;
     return true;
   }
 

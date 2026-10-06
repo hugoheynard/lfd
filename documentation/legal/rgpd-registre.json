@@ -1,8 +1,8 @@
 {
   "$commentaire": "Registre machine des données personnelles du staff et des réceptionnaires. Tenu par `pnpm lint:rgpd-staff` (dev-toolbox/gates/rgpd-staff.mjs) contre apps/lfd-api/prisma/schema. Prose et raisons : documentation/legal/rgpd-livreur.md §8. Pas un avis juridique.",
   "texteInformation": {
-    "version": 1,
-    "empreinte": "0b1afb83846cd11d"
+    "version": 2,
+    "empreinte": "84c2108d32430d44"
   },
   "entrees": [
     {
@@ -240,12 +240,45 @@
       "information": true
     },
     {
+      "colonne": "delivery.delivery_round_stop.closed_accuracy_m",
+      "personne": "livreur",
+      "categorie": "position",
+      "finalite": "Position du téléphone au geste (remise, dépôt, clôture sans remise), jamais en continu : d'abord faciliter les tournées suivantes du livreur (adresses justes, où se garer, la bonne porte, les consignes d'accès — pour lui et pour le prochain livreur), puis prouver la livraison en cas de litige. Jamais suivre ses déplacements, ni mesurer sa vitesse ou son temps de travail.",
+      "conservation": {
+        "jours": 60
+      },
+      "purge": "apps/lfd-api/src/delivery/application/commands/purge-stale-positions.handler.ts",
+      "information": true
+    },
+    {
       "colonne": "delivery.delivery_round_stop.closed_at",
       "personne": "livreur",
       "categorie": "horodatage-geste",
       "finalite": "Heure de clôture de l'arrêt (remise, dépôt, clôture sans remise) : suivre la tournée.",
       "conservation": "aucune-limite-decidee",
       "purge": null,
+      "information": true
+    },
+    {
+      "colonne": "delivery.delivery_round_stop.closed_lat",
+      "personne": "livreur",
+      "categorie": "position",
+      "finalite": "Position du téléphone au geste (remise, dépôt, clôture sans remise), jamais en continu : d'abord faciliter les tournées suivantes du livreur (adresses justes, où se garer, la bonne porte, les consignes d'accès — pour lui et pour le prochain livreur), puis prouver la livraison en cas de litige. Jamais suivre ses déplacements, ni mesurer sa vitesse ou son temps de travail.",
+      "conservation": {
+        "jours": 60
+      },
+      "purge": "apps/lfd-api/src/delivery/application/commands/purge-stale-positions.handler.ts",
+      "information": true
+    },
+    {
+      "colonne": "delivery.delivery_round_stop.closed_lng",
+      "personne": "livreur",
+      "categorie": "position",
+      "finalite": "Position du téléphone au geste (remise, dépôt, clôture sans remise), jamais en continu : d'abord faciliter les tournées suivantes du livreur (adresses justes, où se garer, la bonne porte, les consignes d'accès — pour lui et pour le prochain livreur), puis prouver la livraison en cas de litige. Jamais suivre ses déplacements, ni mesurer sa vitesse ou son temps de travail.",
+      "conservation": {
+        "jours": 60
+      },
+      "purge": "apps/lfd-api/src/delivery/application/commands/purge-stale-positions.handler.ts",
       "information": true
     },
     {
@@ -294,12 +327,45 @@
       "information": false
     },
     {
+      "colonne": "delivery.delivery_stop_execution.arrived_accuracy_m",
+      "personne": "livreur",
+      "categorie": "position",
+      "finalite": "Position du téléphone au geste (« Je suis arrivé »), jamais en continu : d'abord faciliter les tournées suivantes du livreur (adresses justes, où se garer, la bonne porte, les consignes d'accès — pour lui et pour le prochain livreur), puis prouver la livraison en cas de litige. Jamais suivre ses déplacements, ni mesurer sa vitesse ou son temps de travail.",
+      "conservation": {
+        "jours": 60
+      },
+      "purge": "apps/lfd-api/src/delivery/application/commands/purge-stale-positions.handler.ts",
+      "information": true
+    },
+    {
       "colonne": "delivery.delivery_stop_execution.arrived_at",
       "personne": "livreur",
       "categorie": "horodatage-geste",
       "finalite": "« Je suis arrivé » : instant de la porte.",
       "conservation": "aucune-limite-decidee",
       "purge": null,
+      "information": true
+    },
+    {
+      "colonne": "delivery.delivery_stop_execution.arrived_lat",
+      "personne": "livreur",
+      "categorie": "position",
+      "finalite": "Position du téléphone au geste (« Je suis arrivé »), jamais en continu : d'abord faciliter les tournées suivantes du livreur (adresses justes, où se garer, la bonne porte, les consignes d'accès — pour lui et pour le prochain livreur), puis prouver la livraison en cas de litige. Jamais suivre ses déplacements, ni mesurer sa vitesse ou son temps de travail.",
+      "conservation": {
+        "jours": 60
+      },
+      "purge": "apps/lfd-api/src/delivery/application/commands/purge-stale-positions.handler.ts",
+      "information": true
+    },
+    {
+      "colonne": "delivery.delivery_stop_execution.arrived_lng",
+      "personne": "livreur",
+      "categorie": "position",
+      "finalite": "Position du téléphone au geste (« Je suis arrivé »), jamais en continu : d'abord faciliter les tournées suivantes du livreur (adresses justes, où se garer, la bonne porte, les consignes d'accès — pour lui et pour le prochain livreur), puis prouver la livraison en cas de litige. Jamais suivre ses déplacements, ni mesurer sa vitesse ou son temps de travail.",
+      "conservation": {
+        "jours": 60
+      },
+      "purge": "apps/lfd-api/src/delivery/application/commands/purge-stale-positions.handler.ts",
       "information": true
     },
     {

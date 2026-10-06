@@ -71,7 +71,7 @@ Par arrêt, dans `delivery_stop_execution` : `departed_at` (départ de la
 tournée), `arrived_at`, et la clôture. Rien n'est calculé à l'écriture : des
 instants du `Clock`, les durées (trajet, sur place, écart à la fenêtre) se
 liront. **Aucun écran de statistiques n'existe** ; la position relevée aux
-gestes est le lot YA4 ([`plan-y-aller-et-position.md`](plan-y-aller-et-position.md), AP-D10).
+gestes est bâtie depuis le 2026-10-06 (YA4, [`gps-y-aller-et-position.md`](gps-y-aller-et-position.md), AP-D10).
 
 ## 3. Déclarer un problème
 
