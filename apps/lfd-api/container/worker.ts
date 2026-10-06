@@ -328,19 +328,29 @@ async function triggerQualityUploadSweep(env: Env): Promise<void> {
     "admin/livraison/journal/sweep",
     "admin/livraison/geocodage/sweep",
   ]) {
-    try {
-      const response = await backend(env).fetch(
-        new Request(`https://internal/${path}`, {
-          method: "POST",
-          headers: { "x-lfc-recompute-token": token },
-        }),
-      );
-      if (!response.ok) {
-        console.error(`balayage nocturne ${path} : HTTP ${String(response.status)}`);
-      }
-    } catch (error) {
-      console.error(`balayage nocturne ${path} : ${String(error)}`);
+    await postSweep(env, token, path);
+  }
+}
+
+/**
+ * Un appel machine du cron, qui ne lève jamais et ne se tait jamais : un
+ * statut non 2xx ou une erreur réseau s'écrit dans les logs du Worker, puis le
+ * cron continue (2026-10-06 : les échecs étaient avalés en silence, et un
+ * arrêt automatique du plan raté ne laissait aucune trace).
+ */
+async function postSweep(env: Env, token: string, path: string): Promise<void> {
+  try {
+    const response = await backend(env).fetch(
+      new Request(`https://internal/${path}`, {
+        method: "POST",
+        headers: { "x-lfc-recompute-token": token },
+      }),
+    );
+    if (!response.ok) {
+      console.error(`cron ${path} : HTTP ${String(response.status)}`);
     }
+  } catch (error) {
+    console.error(`cron ${path} : ${String(error)}`);
   }
 }
 
@@ -359,12 +369,7 @@ async function triggerOutboxSweep(env: Env): Promise<void> {
   if (!token) {
     return;
   }
-  await backend(env).fetch(
-    new Request("https://internal/admin/outbox/sweep", {
-      method: "POST",
-      headers: { "x-lfc-recompute-token": token },
-    }),
-  );
+  await postSweep(env, token, "admin/outbox/sweep");
 }
 
 /**
@@ -382,12 +387,7 @@ async function triggerAutoClose(env: Env): Promise<void> {
   if (!token) {
     return;
   }
-  await backend(env).fetch(
-    new Request("https://internal/admin/production/auto-close", {
-      method: "POST",
-      headers: { "x-lfc-recompute-token": token },
-    }),
-  );
+  await postSweep(env, token, "admin/production/auto-close");
 }
 
 /**
@@ -403,19 +403,14 @@ async function triggerRoundsGapBell(env: Env): Promise<void> {
   if (!token) {
     return;
   }
-  await backend(env).fetch(
-    new Request("https://internal/admin/livraison/hors-tournee/sweep", {
-      method: "POST",
-      headers: { "x-lfc-recompute-token": token },
-    }),
-  );
+  await postSweep(env, token, "admin/livraison/hors-tournee/sweep");
 }
 
 /**
  * Les balayages du cron de rafraîchissement, chacun pour soi : un échec de
  * l'un (container qui répond mal, réseau) ne prive pas les suivants de leur
- * tour. Le prochain passage est dans cinq minutes, et un cron en échec n'a
- * aucun lecteur — l'échec est donc avalé ici, comme celui de `keepWarm`.
+ * tour. Le prochain passage est dans cinq minutes ; l'échec ne fait pas
+ * échouer le cron, mais `postSweep` l'écrit dans les logs du Worker.
  */
 async function refreshSweeps(env: Env): Promise<void> {
   await keepWarm(env);
