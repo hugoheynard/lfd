@@ -3,7 +3,9 @@ import type { JournalFactType } from '@lfd/contracts/journal-facts';
 import { recordOf } from '../payload-read';
 import {
   byActor,
+  countOf,
   inUnit,
+  said,
   subject,
   subjectLabelOf,
   text,
@@ -61,6 +63,32 @@ const dossierRecipient =
       ['subjectLabel', 'kind', 'staffUserId'],
     );
 
+/**
+ * « Le dossier du 7 octobre 2026 a été envoyé à 2 destinataires (1 échec) »
+ * (plan `plan-envoi-du-dossier.md`, E3). L'auteur est le système : la phrase
+ * dit le geste, sans nom. Ni adresse ni nom de destinataire — la cloche
+ * nomme les échecs.
+ */
+const dossierSent: Phrase = (fact) => {
+  const day = inUnit('day', fact.payload['serviceDay']).text;
+  const sent = countOf(fact.payload['sent'], 'destinataire', 'destinataires');
+  const failed = countOf(fact.payload['failed'], 'échec', 'échecs');
+  const completed = fact.payload['completed'] === true;
+  return {
+    ...said(
+      [
+        text(completed ? 'Le dossier complété du ' : 'Le dossier du '),
+        subject(fact, day),
+        text(' a été envoyé à '),
+        ...(sent === null ? [text('ses destinataires')] : [sent]),
+        ...(failed === null || fact.payload['failed'] === 0 ? [] : [text(' ('), failed, text(')')]),
+      ],
+      ['subjectLabel', 'serviceDay', 'sent', 'failed', 'completed'],
+    ),
+    namesActor: true,
+  };
+};
+
 export const PRODUCTION_SETTINGS_PHRASES = {
   'production_settings.close_changed': (fact) =>
     byActor(
@@ -83,4 +111,5 @@ export const PRODUCTION_SETTINGS_PHRASES = {
     'a retiré ',
     ' des destinataires du dossier du jour',
   ),
+  'production_day.dossier_sent': dossierSent,
 } as const satisfies Partial<Record<JournalFactType, Phrase>>;

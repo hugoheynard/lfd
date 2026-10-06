@@ -7,6 +7,7 @@ import { DurablePublisher } from "../../../platform/outbox/durable-publisher.js"
 import { Clock } from "../../../platform/time/clock.js";
 import { DayOrdersReader } from "../../channels/commerce/day-orders.reader.js";
 import type { ProductionOrderSnapshot } from "../../domain/entities/production-day.js";
+import { ProductionDayRetakenEvent } from "../../domain/events/production-day-retaken.event.js";
 import { ProductionDayRetakenJournalEvent } from "../../domain/events/production-day.events.js";
 import { ProductionBatchRepository } from "../../domain/ports/production-batch.repository.js";
 import { ProductionDayLock } from "../../domain/ports/production-day.lock.js";
@@ -31,6 +32,11 @@ import { RetakeProductionDayCommand } from "./retake-production-day.command.js";
  * `colisage/colisage.md`, §11, B2) : un `production.packing_list_drawn`
  * par commande ABSORBÉE, dans la même unité de travail — sans quoi elles
  * n'arriveraient jamais à la liste à coliser.
+ *
+ * Et AU FOURNIL lui-même (2026-10-06, plan `production/plan-envoi-du-dossier.md`,
+ * E3) : `production.day_retaken`, durable, dans la même unité de travail —
+ * c'est lui qui fait repartir le dossier complété. Seulement quand des
+ * commandes sont absorbées, comme tout le reste.
  *
  * Il ne publie rien AU COMMERCE. Un retirage n'inscrit aucune commande NOUVELLE
  * au commerce : celles qu'il absorbe sont les mêmes `placed` qu'une clôture
@@ -100,6 +106,9 @@ export class RetakeProductionDayHandler implements ICommandHandler<
         await this.days.save(locked);
         await this.events.publishTraced(new ProductionDayRetakenJournalEvent(day.value, absorbed));
         await this.publishArrivals(day, arrivalsBetween(before, locked.orders), now);
+        await this.durable.publish(
+          new ProductionDayRetakenEvent(day.value, now, absorbed).durableFact(),
+        );
       }
       return { day: locked, absorbed };
     });

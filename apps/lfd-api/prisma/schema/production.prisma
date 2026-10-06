@@ -652,3 +652,32 @@ model ProductionDossierRecipient {
   @@map("production_dossier_recipient")
   @@schema("production")
 }
+
+/// **Une trace d'envoi du dossier du jour** — une par destinataire et par
+/// envoi (plan `documentation/production/plan-envoi-du-dossier.md`, lot E3).
+///
+/// Un envoi est désigné par sa journée et son instant d'origine : la clôture,
+/// ou un retirage (`occasion_at`). La clé primaire EST l'idempotence : le fait
+/// durable est livré au moins une fois, et seule la livraison dont la ligne
+/// entre (`ON CONFLICT DO NOTHING`) écrit au destinataire. `outcome` :
+/// `pending` (pris) puis `sent` | `failed`. Un échec n'est pas retenté tout
+/// seul : la ligne existe, la redélivrance la saute. Une trace, pas un
+/// agrégat : aucune règle ne refuse son écriture. Pas d'adresse e-mail : le
+/// nom au moment de l'envoi suffit à relire, et l'adresse se relit à la fiche.
+model ProductionDossierDispatch {
+  serviceDay    String    @map("service_day") @db.VarChar(10)
+  occasionAt    DateTime  @map("occasion_at") @db.Timestamptz(6)
+  recipientId   String    @map("recipient_id")
+  recipientName String    @map("recipient_name")
+  outcome       String
+  /// L'identifiant du fournisseur, seulement en `sent` (et `null` à blanc).
+  providerId    String?   @map("provider_id")
+  /// Le message du refus, seulement en `failed`.
+  failure       String?
+  claimedAt     DateTime  @map("claimed_at") @db.Timestamptz(6)
+  settledAt     DateTime? @map("settled_at") @db.Timestamptz(6)
+
+  @@id([serviceDay, occasionAt, recipientId])
+  @@map("production_dossier_dispatch")
+  @@schema("production")
+}

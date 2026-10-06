@@ -62,3 +62,26 @@ describe('les destinataires du dossier (production_dossier_recipient.*)', () => 
     );
   });
 });
+
+describe('le dossier envoyé (production_day.dossier_sent)', () => {
+  const payload = {
+    subjectLabel: '2026-12-24',
+    serviceDay: '2026-12-24',
+    sent: 2,
+    failed: 0,
+    completed: false,
+  };
+
+  it('dit le jour et le nombre de destinataires, sans auteur ni détail', () => {
+    const sent = { ...fact('production_day.dossier_sent', payload), actorType: 'system' as const };
+    expect(sentence(sent)).toMatch(/^Le dossier du .*24.* a été envoyé à 2 destinataires$/u);
+    expect(renderFact(sent).detail).toEqual([]);
+  });
+
+  it('dit les échecs, et le dossier complété après un retirage', () => {
+    const sent = fact('production_day.dossier_sent', { ...payload, failed: 1, completed: true });
+    expect(sentence(sent)).toMatch(
+      /^Le dossier complété du .*24.* a été envoyé à 2 destinataires \(1 échec\)$/u,
+    );
+  });
+});

@@ -64,3 +64,11 @@ imprimé au fournil sans passer par l'écran.
 2. **E2** — destinataires (table, agrégat, routes) + section de Réglages
    (personnel choisi dans l'annuaire, externe avec nom, prénom, poste).
 3. **E3** — envoi à l'arrêt et au retirage, idempotent, alerte d'échec.
+
+## E3 — bâti le 2026-10-06
+
+- Le retirage publie le fait durable `production.day_retaken` (`{ serviceDay, retakenAt, absorbed }`) dans son unité de travail, seulement si des commandes sont absorbées ; `production.day_closed` porte désormais `reannouncedAt` dans sa charge (additif), pour que l'envoi ignore une réannonce.
+- Deux abonnés durables du fournil (`SendDossierOnDayClosed`, `SendDossierOnDayRetaken`) appellent `DossierDispatch` : liste relue (fiches suspendues, disparues ou sans adresse écartées, une adresse servie une fois), PDF par `dossierOf`, un e-mail `staff.production-dossier` par destinataire, PDF joint. Une clôture déjà reprise, ou un retirage dépassé, n'envoie rien : le dernier tirage enverra le sien.
+- Idempotence : table `production.production_dossier_dispatch`, clé `(journée, instant de clôture ou de retirage, destinataire)`, prise par `ON CONFLICT DO NOTHING` avant l'envoi ; la même clé part en `Idempotency-Key` chez Resend.
+- Échec : noté dans la trace, jamais retenté ; les autres partent ; une alerte `production.dossier_not_sent` (cloche + push, `production_count_stop:write`) nomme les personnes, clé `(nature, journée, instant)`.
+- Journal : `production_day.dossier_sent` (`sent`, `failed`, `completed`, sans adresse ni nom), phrase « Le dossier du … a été envoyé à N destinataires ».

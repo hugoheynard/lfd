@@ -62,6 +62,10 @@ export class ProductionDayClosedEvent implements DurableEvent {
         serviceDay: this.serviceDay,
         closedAt: this.closedAt.toISOString(),
         orderIds: [...this.orderIds],
+        // Ajouté le 2026-10-06 (E3) : l'abonné ne voit que la charge, pas la
+        // clé, et l'envoi du dossier ignore une réannonce. Absent des faits
+        // écrits avant : relu comme une clôture.
+        reannouncedAt: this.reannouncedAt?.toISOString() ?? null,
       },
     };
   }
@@ -73,18 +77,20 @@ export class ProductionDayClosedEvent implements DurableEvent {
    * @throws {ProductionDayClosedPayloadError}
    */
   static fromPayload(payload: Readonly<Record<string, unknown>>): ProductionDayClosedEvent {
-    const { serviceDay, closedAt, orderIds } = payload;
+    const { serviceDay, closedAt, orderIds, reannouncedAt } = payload;
     const at = typeof closedAt === "string" ? new Date(closedAt) : null;
+    const again = typeof reannouncedAt === "string" ? new Date(reannouncedAt) : null;
     if (
       typeof serviceDay !== "string" ||
       at === null ||
       Number.isNaN(at.getTime()) ||
       !Array.isArray(orderIds) ||
-      !orderIds.every((id): id is string => typeof id === "string")
+      !orderIds.every((id): id is string => typeof id === "string") ||
+      (again !== null && Number.isNaN(again.getTime()))
     ) {
       throw new ProductionDayClosedPayloadError();
     }
-    return new ProductionDayClosedEvent(serviceDay, at, orderIds);
+    return new ProductionDayClosedEvent(serviceDay, at, orderIds, again);
   }
 }
 

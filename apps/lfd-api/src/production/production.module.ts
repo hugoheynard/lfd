@@ -105,6 +105,11 @@ import { SealedDayReading } from "./application/services/sealed-day-reading.serv
 import { ChannelQualityHeldOrdersReader } from "./application/services/channel-quality-held-orders.reader.js";
 import { DayPlannedDestinationsReader } from "./application/services/day-planned-destinations.reader.js";
 import { OnPackingReturned } from "./application/handlers/on-packing-returned.handler.js";
+import { SendDossierOnDayClosed } from "./application/handlers/send-dossier-on-day-closed.handler.js";
+import { SendDossierOnDayRetaken } from "./application/handlers/send-dossier-on-day-retaken.handler.js";
+import { DossierDispatch } from "./application/services/dossier-dispatch.service.js";
+import { DossierDispatchLog } from "./domain/ports/dossier-dispatch.log.js";
+import { PrismaDossierDispatchLog } from "./infrastructure/prisma-dossier-dispatch.log.js";
 import { ProductionReturnRequests } from "./domain/ports/production-return.requests.js";
 import { PrismaProductionReturnRequests } from "./infrastructure/prisma-production-return.requests.js";
 
@@ -233,6 +238,12 @@ import { PrismaProductionReturnRequests } from "./infrastructure/prisma-producti
     ListDossierStaffCandidatesHandler,
     { provide: DossierRecipientsRepository, useClass: PrismaDossierRecipientsRepository },
     { provide: DossierRecipientsReader, useClass: PrismaDossierRecipientsReader },
+    // L'envoi du dossier (E3) : deux abonnés durables du fournil, un service
+    // partagé, et sa trace d'envoi dans le schéma `production`.
+    SendDossierOnDayClosed,
+    SendDossierOnDayRetaken,
+    DossierDispatch,
+    { provide: DossierDispatchLog, useClass: PrismaDossierDispatchLog },
   ],
   // La lecture des contrôles sert aussi la retenue que la production PUBLIE au
   // retrait (`channels/handover/`, QC3) — son adaptateur est relié par la

@@ -209,7 +209,12 @@ describe("RetakeProductionDayHandler — la liste à coliser (colisage, K1, §11
 
     await handler.execute(new RetakeProductionDayCommand(DAY, "staff-1"));
 
-    expect(durable.facts.map((fact) => fact.key)).toEqual([
+    // Le fait du retirage (E3) part aussi : il a son propre test, plus bas.
+    expect(
+      durable.facts
+        .filter((fact) => fact.type === "production.packing_list_drawn")
+        .map((fact) => fact.key),
+    ).toEqual([
       `production.packing_list_drawn:${DAY}:ord_2`,
       `production.packing_list_drawn:${DAY}:ord_3`,
     ]);
@@ -231,5 +236,30 @@ describe("RetakeProductionDayHandler — la liste à coliser (colisage, K1, §11
     await handler.execute(new RetakeProductionDayCommand(DAY, "staff-1"));
 
     expect(durable.facts).toEqual([]);
+  });
+});
+
+describe("RetakeProductionDayHandler — le fait du retirage (plan-envoi-du-dossier.md, E3)", () => {
+  it("publie `production.day_retaken` une fois, daté du retirage, avec le nombre absorbé", async () => {
+    const durable = new RecordingDurable();
+    const handler = subject(
+      new Days(closedDay()),
+      [order("ord_1", 30), order("ord_2", 12), order("ord_3", 4)],
+      new RecordingPublisher(),
+      new InMemoryBatches(),
+      new RecordingDayLock(),
+      durable,
+    );
+
+    await handler.execute(new RetakeProductionDayCommand(DAY, "staff-1"));
+
+    const retaken = durable.facts.filter((fact) => fact.type === "production.day_retaken");
+    expect(retaken).toEqual([
+      {
+        type: "production.day_retaken",
+        key: `production.day_retaken:${DAY}:${NOW.toISOString()}`,
+        payload: { serviceDay: DAY, retakenAt: NOW.toISOString(), absorbed: 2 },
+      },
+    ]);
   });
 });

@@ -191,6 +191,7 @@
   "test/production-forecast.e2e-spec.ts": 4555,
   "test/production-journal.e2e-spec.ts": 5901,
   "test/production-quality.e2e-spec.ts": 8117,
+  "test/production-dossier-mail.e2e-spec.ts": 8308,
   "test/production-dossier-recipients.e2e-spec.ts": 9472,
   "test/production-dossier.e2e-spec.ts": 5454,
   "test/production-settings.e2e-spec.ts": 9567,

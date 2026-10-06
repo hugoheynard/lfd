@@ -1,6 +1,6 @@
 import { z } from "zod";
 
-import { clockTime, day, fact, payload, subjectLabel } from "./fact.js";
+import { clockTime, count, day, fact, payload, subjectLabel } from "./fact.js";
 
 /**
  * **Les réglages du fournil** (plan `documentation/production/arret-du-plan.md`,
@@ -45,4 +45,19 @@ export const PRODUCTION_SETTINGS_FACTS = {
   "production_dossier_recipient.added": fact(dossierRecipient()),
   /** Elle ne le recevra plus. */
   "production_dossier_recipient.removed": fact(dossierRecipient()),
+  /**
+   * Le dossier du jour est parti (plan `plan-envoi-du-dossier.md`, E3) : à la
+   * clôture, ou complété après un retirage. Des comptes seulement — aucune
+   * adresse ni aucun nom de destinataire : les échecs se nomment dans la
+   * cloche, pas au journal. L'auteur est le système.
+   */
+  "production_day.dossier_sent": fact(
+    payload({
+      subjectLabel: subjectLabel(),
+      serviceDay: day(),
+      sent: count(),
+      failed: count(),
+      completed: z.boolean(),
+    }),
+  ),
 } as const;

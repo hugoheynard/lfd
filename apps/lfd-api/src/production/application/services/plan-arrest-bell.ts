@@ -18,7 +18,7 @@ const AUDIENCE: StaffPermission = "production_count_stop:write";
 const FORECAST_LINK = "/production/previsionnel";
 
 /**
- * Les quatre natures — une notification par nature ET par journée (S8).
+ * Les natures — une notification par nature ET par journée (S8).
  *
  * `autoCloseStalled` (Q8) a sa nature propre plutôt que de réutiliser
  * `notArrested` : la clé de celle-ci peut être déjà prise pour la journée (une
@@ -31,6 +31,7 @@ export const PLAN_ARREST_NOTICES = {
   notArrested: "production.plan_not_arrested",
   todayNotArrested: "production.plan_today_not_arrested",
   autoCloseStalled: "production.plan_auto_close_stalled",
+  dossierNotSent: "production.dossier_not_sent",
 } as const;
 
 type PlanArrestKind = (typeof PLAN_ARREST_NOTICES)[keyof typeof PLAN_ARREST_NOTICES];
@@ -91,18 +92,47 @@ export class PlanArrestBell {
     });
   }
 
+  /**
+   * Le dossier du jour n'a pas pu partir à certains destinataires (plan
+   * `plan-envoi-du-dossier.md`, décision 5, E3). Une alerte par ENVOI, pas
+   * par journée : la clé porte l'instant de la clôture ou du retirage, sans
+   * quoi l'échec d'un dossier complété serait avalé par celui de l'arrêt.
+   */
+  async dossierNotSent(
+    day: ServiceDay,
+    occasionAt: Date,
+    names: readonly string[],
+    at: Date,
+  ): Promise<void> {
+    const label = frenchDayLabel(day.value);
+    await this.ring(
+      PLAN_ARREST_NOTICES.dossierNotSent,
+      day,
+      at,
+      {
+        subject: `Le dossier du ${label} n'a pas pu être envoyé à ${names.join(", ")}`,
+        body: `L'envoi a été refusé pour ${names.join(", ")}. Vérifiez leur adresse dans Production › Réglages, puis transmettez-leur le dossier téléchargé depuis le prévisionnel ; il ne repartira pas tout seul.`,
+      },
+      occasionAt.toISOString(),
+    );
+  }
+
   private async ring(
     kind: PlanArrestKind,
     day: ServiceDay,
     at: Date,
     words: Pick<StaffNotice, "subject" | "body">,
+    occasion: string | null = null,
   ): Promise<void> {
     await this.notifier.notify([
       {
         kind,
         ...words,
         link: FORECAST_LINK,
-        idempotencyKey: `notification:${kind}:${day.value}`,
+        idempotencyKey:
+          occasion === null
+            ? `notification:${kind}:${day.value}`
+            : `notification:${kind}:${day.value}:${occasion}`,
         occurredAt: at,
         audience: AUDIENCE,
       },

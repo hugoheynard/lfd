@@ -13,6 +13,10 @@ import {
   renderDeliveryEnRouteMail,
   type DeliveryEnRouteMailData,
 } from "./delivery-en-route-mail.js";
+import {
+  renderProductionDossierMail,
+  type ProductionDossierMailData,
+} from "./production-dossier-mail.js";
 import { MANDATE_TO_SIGN_WORDING, type MandateMailScheme } from "./mandate-to-sign-wording.js";
 import { qrPng } from "./qr-image.js";
 
@@ -318,6 +322,8 @@ export interface B2bMails {
     readonly firstName: string;
     readonly backOfficeUrl: string;
   };
+  /** **Le dossier du jour**, PDF joint. Cf. `production-dossier-mail.ts`. */
+  "staff.production-dossier": ProductionDossierMailData;
   /** Un client demande à être rappelé ou écrit. Destinataire : la boîte de l'équipe. */
   "staff.support-requested": {
     readonly contactName: string;
@@ -784,6 +790,7 @@ export function b2bMailTemplates(brand: MailBranding): TemplateRegistry<B2bMails
         footer: "Alerte interne LFC — envoyée à l'équipe commerciale.",
       }),
     }),
+    "staff.production-dossier": (data) => renderProductionDossierMail(data, staffMail),
     "staff.password-reset": (data) => ({
       subject: sanitiseSubject("Votre lien de mot de passe — back-office La Folie Douce"),
       html: staffMail({
