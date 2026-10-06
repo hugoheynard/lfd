@@ -209,9 +209,6 @@
       Ce que la clôture a inscrit, ou la panne. Un `fold-callout` : le contenu
       reste à l'écran dans les deux cas, c'est un après-coup, pas un état.
     -->
-    @if (arrestSaid(); as said) {
-      <fold-callout variant="info" class="pv-arrest-note">{{ said }}</fold-callout>
-    }
     @if (arrestFailed()) {
       <fold-callout variant="warning" class="pv-arrest-note">
         Le plan n’a pas pu être arrêté — rien n’a été figé, et les commandes sont intactes.

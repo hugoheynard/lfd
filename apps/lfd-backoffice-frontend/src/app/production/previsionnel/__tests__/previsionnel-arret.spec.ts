@@ -9,6 +9,7 @@ import { beforeEach, describe, expect, it, vi } from 'vitest';
 
 import { AdminCatalogService } from '../../../commandes/catalog.service';
 import { PrevisionnelPage } from '../previsionnel-page';
+import { NotifyService } from '../../../notify.service';
 import { ProductionService } from '../../production.service';
 import { ProductionSettingsService } from '../../production-settings.service';
 import { PermissionsStore } from '../../../auth/permissions.store';
@@ -90,6 +91,9 @@ async function render(view: ProductionForecastView): Promise<HTMLElement> {
   return fixture.nativeElement as HTMLElement;
 }
 
+/** Les toasts de la page, observés : le compte rendu d'un arrêt part là (2026-10-06). */
+const toasts = { success: vi.fn(), info: vi.fn(), error: vi.fn() };
+
 async function mount(
   view: ProductionForecastView,
   closure: ProductionPlanClosure | Error = {
@@ -113,6 +117,7 @@ async function mount(
         useValue: { forecast: async () => view, closeDay },
       },
       { provide: AdminCatalogService, useValue: { list: async () => [] } },
+      { provide: NotifyService, useValue: toasts },
     ],
   });
   const page = TestBed.runInInjectionContext(() => new PrevisionnelPage());
@@ -123,6 +128,9 @@ async function mount(
 describe('le prévisionnel — arrêter le plan', () => {
   beforeEach(() => {
     TestBed.resetTestingModule();
+    toasts.success.mockClear();
+    toasts.info.mockClear();
+    toasts.error.mockClear();
   });
 
   /**
@@ -195,7 +203,7 @@ describe('le prévisionnel — arrêter le plan', () => {
     await page['arrest'](dayIn(1));
 
     expect(closeDay).toHaveBeenCalledWith(dayIn(1));
-    expect(page['arrestSaid']()).toContain('14 commande');
+    expect(toasts.success).toHaveBeenCalledWith(expect.stringContaining('14 commandes inscrites'));
     expect(page['arrestFailed']()).toBe(false);
   });
 
@@ -216,7 +224,7 @@ describe('le prévisionnel — arrêter le plan', () => {
     await page['arrest'](dayIn(1));
 
     expect(page['arrestFailed']()).toBe(false);
-    expect(page['arrestSaid']()).toContain('déjà arrêtée');
+    expect(toasts.info).toHaveBeenCalledWith(expect.stringContaining('déjà arrêté'));
   });
 
   it('dit la panne sans prétendre que quelque chose a été figé', async () => {
@@ -225,7 +233,7 @@ describe('le prévisionnel — arrêter le plan', () => {
     await page['arrest'](dayIn(1));
 
     expect(page['arrestFailed']()).toBe(true);
-    expect(page['arrestSaid']()).toBeNull();
+    expect(toasts.success).not.toHaveBeenCalled();
   });
 
   /**

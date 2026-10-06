@@ -29,6 +29,7 @@ import { AdminCatalogService } from '../../commandes/catalog.service';
 import { refreshWhileVisible } from '../../shared/periodic-refresh';
 import { ProductionService } from '../production.service';
 import { ProductionSettingsService } from '../production-settings.service';
+import { NotifyService } from '../../notify.service';
 import { DossierDuJour, defaultDossierDate } from './dossier-du-jour/dossier-du-jour';
 import { ForecastTable } from './forecast-table/forecast-table';
 import { forecastRayons, totalOfRayons } from './previsionnel-matrix';
@@ -131,6 +132,7 @@ export class PrevisionnelPage {
   private readonly router = inject(Router);
   private readonly route = inject(ActivatedRoute);
   private readonly settings = inject(ProductionSettingsService);
+  private readonly notify = inject(NotifyService);
   private readonly permissions = inject(PermissionsStore);
 
   /**
@@ -293,14 +295,12 @@ export class PrevisionnelPage {
   protected readonly arresting = signal(false);
 
   /**
-   * Ce que la dernière clôture a inscrit, ou ce qui l'a empêchée.
-   *
-   * Un CHIFFRE (« 14 commandes inscrites au plan »), jamais un « c'est fait » :
-   * c'est la grammaire de tous les bandeaux de ce back-office, et c'est aussi
-   * la seule façon de voir qu'on vient d'arrêter une journée à trois commandes
-   * alors qu'on en attendait trente.
+   * Ce qui a empêché la dernière clôture. Le compte rendu d'une clôture
+   * RÉUSSIE ne vit plus ici : c'est un toast qui nomme la journée (Hugo,
+   * 2026-10-06) — un bandeau restait affiché sous le bouton suivant et
+   * parlait de la journée d'avant (« 3 commandes inscrites » pour mardi, sous
+   * « Arrêter le plan du mercredi »).
    */
-  protected readonly arrestSaid = signal<string | null>(null);
   protected readonly arrestFailed = signal(false);
 
   /** « du 3 au 9 septembre » — la plage, dite comme on la dit. */
@@ -401,16 +401,20 @@ export class PrevisionnelPage {
   protected async arrest(date: string): Promise<void> {
     this.arresting.set(true);
     this.arrestFailed.set(false);
-    this.arrestSaid.set(null);
+    const named = this.aheadHeaders().find((header) => header.date === date);
+    const plan = named === undefined ? 'Plan' : `Plan du ${named.weekday} ${named.dayMonth}`;
     try {
       const closure = await this.production.closeDay(date);
-      this.arrestSaid.set(
-        closure.alreadyClosed
-          ? 'Cette journée était déjà arrêtée — rien n’a été recalculé.'
-          : `${closure.absorbed} commande${closure.absorbed > 1 ? 's' : ''} inscrite${
-              closure.absorbed > 1 ? 's' : ''
-            } au plan.`,
-      );
+      // Un CHIFFRE, jamais « c'est fait » : c'est la seule façon de voir qu'on
+      // vient d'arrêter une journée à trois commandes quand on en attendait trente.
+      if (closure.alreadyClosed) {
+        this.notify.info(`${plan} : déjà arrêté — rien n’a été recalculé.`);
+      } else {
+        const n = closure.absorbed;
+        this.notify.success(
+          `${plan} arrêté : ${n} commande${n > 1 ? 's' : ''} inscrite${n > 1 ? 's' : ''}.`,
+        );
+      }
       await this.load();
     } catch {
       // Le détail du refus n'est pas affiché : les deux cas possibles — journée
