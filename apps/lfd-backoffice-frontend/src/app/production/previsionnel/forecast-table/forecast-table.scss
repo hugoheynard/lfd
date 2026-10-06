@@ -385,9 +385,12 @@
   background: var(--fold-color-primary-surface);
 }
 
-/* Le passé : atténué, toujours lisible — c'est un fait, pas un sujet. */
+/* Le passé : une surcouche grise, comme le pic a la sienne (Hugo,
+   2026-10-06), et l'encre atténuée — un fait, pas un sujet. Plus d'opacité :
+   elle délavait aussi le fond, et la colonne ne se lisait plus comme un bloc. */
 .pv-cell[data-tone='past'] {
-  opacity: 0.6;
+  background: var(--fold-color-surface-subtle);
+  color: var(--fold-color-text-muted);
 }
 
 /* Le fournil fermé : rayé plutôt qu'estompé, pour ne pas se confondre avec le
