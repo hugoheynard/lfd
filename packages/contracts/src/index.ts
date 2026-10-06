@@ -1056,6 +1056,8 @@ export type {
   ApplyDeliveryProposalPayload,
   TimeDeliveryRoundsPayload,
   DeliveryRoundTimingView,
+  DeliveryTimedRoundView,
+  DeliveryTimedStopView,
 } from "./delivery-routing.js";
 export {
   SIMULATION_MAX_STOPS,

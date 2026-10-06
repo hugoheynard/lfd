@@ -286,12 +286,20 @@ describe('chronométrer', () => {
       ],
     };
 
-    const timed = withTimings(moved, sent, view);
+    // Le chronométrage dit en plus, par arrêt, l'alerte rouge (CA5) : aucune ici.
+    const timedView = {
+      ...view,
+      rounds: view.rounds.map((round) => ({
+        ...round,
+        stops: round.stops.map((stop) => ({ ...stop, placementLate: false })),
+      })),
+    };
+    const timed = withTimings(moved, sent, timedView);
     expect(timed[0]?.timing?.departureTime).toBe('06:10');
     expect(timed[0]?.stops.map((line) => line.arrival)).toEqual(['06:15', '06:30']);
 
     const movedAgain = glide(moved, { key: 'r-1', index: 1 }, { key: 'r-1', index: 0 }) ?? [];
-    expect(withTimings(movedAgain, sent, view)[0]?.timing).toBeNull();
+    expect(withTimings(movedAgain, sent, timedView)[0]?.timing).toBeNull();
   });
 });
 

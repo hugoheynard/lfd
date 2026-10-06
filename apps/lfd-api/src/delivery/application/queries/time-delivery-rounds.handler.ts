@@ -14,10 +14,11 @@ import { RouteGeometry } from "../../domain/ports/route-geometry.js";
 import { RoutingSettingsReader } from "../../domain/ports/routing-settings.reader.js";
 import { RoutingVehicleNotFoundError } from "../../domain/errors/delivery-routing-errors.js";
 import type { PlanningVehicle } from "../../domain/services/proposal.js";
+import { placementLateOrders } from "../../domain/services/placement-lateness.js";
 import { type ComposedRound, timeComposition } from "../../domain/services/time-composition.js";
 import type { GeoPoint } from "../../domain/value-objects/geo-point.js";
 import { chosenVehicles } from "../delivery-proposal-support.js";
-import { proposedRoundView } from "../delivery-proposal-view.js";
+import { timedRoundView } from "../delivery-proposal-view.js";
 import { routeLinesOf } from "../delivery-route-lines.js";
 import {
   locatedDeparture,
@@ -40,6 +41,8 @@ const DEPOT_ID = "depot";
  * **Chronométrer** (L10b-C2) : la composition glissée à l'écran, dans l'ordre
  * donné, avec les réglages en vigueur et le départ réglé — `timeRoute` du
  * domaine, par la route. N'écrit rien ; ne sort que vers la carte routière.
+ * Chaque arrêt dit si sa place le rend intenable (CA5, l'alerte rouge) : le
+ * calcul le nomme, il ne le déplace pas.
  *
  * Refuse ce qu'« Appliquer » refuserait : commande inconnue, d'un autre jour,
  * annulée ou au comptoir ; tournée inconnue ; tournée partie ou chargée dont
@@ -110,9 +113,12 @@ export class TimeDeliveryRoundsHandler implements IQueryHandler<
       (id) => stops.get(id)?.point,
     );
     const reference = (orderId: string): string => stops.get(orderId)?.reference ?? "";
+    const late = placementLateOrders({ depotId: DEPOT_ID, cost, settings }, tours);
     return {
       day: composition.day,
-      rounds: tours.map((tour, index) => proposedRoundView(tour, reference, lines[index] ?? null)),
+      rounds: tours.map((tour, index) =>
+        timedRoundView(tour, reference, lines[index] ?? null, late),
+      ),
     };
   }
 

@@ -9,6 +9,7 @@ import type {
   DeliveryRoundDriverView,
   DeliveryRoundProposalView,
   DeliveryRoundsDayView,
+  DeliveryRoundTimingView,
   DeliveryRunSheetView,
   StaffPermission,
   VehicleView,
@@ -166,6 +167,49 @@ interface Wire {
 
 let wire: Wire;
 
+/**
+ * Le chronométrage de la composition enregistrée ; nul par défaut : pas de
+ * calcul routier. Sinon, les commandes que leur place rend intenables (CA5).
+ */
+let placementLate: readonly string[] | null = null;
+
+function timingOf(payload: {
+  readonly day: string;
+  readonly rounds: readonly {
+    readonly roundId: string | null;
+    readonly vehicleId: string;
+    readonly orderIds: readonly string[];
+  }[];
+}): Promise<DeliveryRoundTimingView> {
+  const late = placementLate;
+  if (late === null) {
+    return Promise.reject(new Error('pas de calcul routier'));
+  }
+  return Promise.resolve({
+    day: payload.day,
+    rounds: payload.rounds.map((round, index) => ({
+      roundId: round.roundId,
+      vehicleId: round.vehicleId,
+      vehicleName: 'Kangoo',
+      passage: index + 1,
+      departureTime: '05:00',
+      returnTime: '08:00',
+      meters: 1000,
+      minutes: 180,
+      overDuration: false,
+      geometry: null,
+      stops: round.orderIds.map((orderId) => ({
+        orderId,
+        reference: '',
+        arrival: '07:00',
+        window: null,
+        windowMissed: late.includes(orderId),
+        placementLate: late.includes(orderId),
+      })),
+    })),
+  });
+}
+
 /** Ce que la livraison a appris de la clôture (CA6a) ; nul par défaut : plan non arrêté. */
 let arrested: DeliveryDayArrestView | null = null;
 
@@ -266,7 +310,7 @@ async function boot(
         provide: DeliveryRoutingService,
         useValue: {
           // Sans calcul routier : la carte garde ses repères, l'aperçu ses heures d'origine.
-          time: () => Promise.reject(new Error('pas de calcul routier')),
+          time: timingOf,
           settings: () => Promise.reject(new Error('non lu')),
           apply: (payload: unknown) => outcome(`apply ${JSON.stringify(payload)}`),
         } satisfies Partial<Record<keyof DeliveryRoutingService, unknown>>,
@@ -317,6 +361,7 @@ function chooseDriver(fixture: ComponentFixture<RoundsPage>, index: number): voi
 
 afterEach(() => {
   vi.restoreAllMocks();
+  placementLate = null;
   firstReturned = null;
   dayIncidents = [];
 });
@@ -383,6 +428,17 @@ describe('RoundsPage', () => {
     // Le signal met « Retirer de la tournée » en avant (Q11).
     expect(button(stops[1], '[data-remove]').className).toContain('danger');
     expect(element.querySelector('[data-summary-alerts]')?.textContent).toContain('1 à régler');
+  });
+
+  it('alerte rouge : une commande que sa place rend intenable — badge, liseré, « à régler » (CA5)', async () => {
+    placementLate = ['o-1'];
+    const { element } = await boot();
+
+    const stop = element.querySelector('[data-round] [data-stop]');
+    expect(stop?.textContent).toContain('CMD-1');
+    expect(stop?.textContent).toContain('Échéance intenable à cette place — la déplacer');
+    // L'annulée (1) et la place intenable (1) : le geste n'est pas défait, il est à régler.
+    expect(element.querySelector('[data-summary-alerts]')?.textContent).toContain('2 à régler');
   });
 
   it('badge « Rapportée le … » sur une commande rapportée, à répartir comme placée (RL1)', async () => {

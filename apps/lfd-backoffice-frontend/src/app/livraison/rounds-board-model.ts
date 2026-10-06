@@ -1,6 +1,7 @@
 import type {
   DeliveryRoundDriverView,
   DeliveryRoundProposalView,
+  DeliveryRoundTimingView,
   DeliveryRunSheetStopView,
 } from '@lfd/contracts';
 
@@ -71,6 +72,12 @@ export interface BoardStop {
   readonly proposed: boolean;
   /** Le calcul l'y fait arriver après son créneau. */
   readonly windowMissed: boolean;
+  /**
+   * 🔴 L'alerte rouge (CA5, §9) — composition enregistrée seulement : à cette
+   * place, l'échéance ne tient pas, alors que livrée seule elle tiendrait. Le
+   * geste du bureau l'emporte : le calcul ne la déplace pas, il la nomme.
+   */
+  readonly placementLate: boolean;
 }
 
 /** Une tournée du tableau — enregistrée, ou à ouvrir dans l'aperçu. */
@@ -117,12 +124,41 @@ export interface Board {
 /** Les tracés connus, par clé de tournée. */
 export type Geometries = ReadonlyMap<string, readonly (readonly [number, number])[]>;
 
+/** Ce que le chronométrage de la composition enregistrée en dit : tracés et alertes rouges (CA5). */
+export interface ComposedTiming {
+  readonly geometries: Geometries;
+  /** Les commandes que leur place rend intenables. */
+  readonly placementLate: ReadonlySet<string>;
+}
+
+export const NO_TIMING: ComposedTiming = { geometries: new Map(), placementLate: new Set() };
+
+/** Le chronométrage des tournées `timed`, rendu dans le même ordre, lu pour le tableau. */
+export function composedTimingOf(
+  timed: readonly { readonly id: string }[],
+  view: DeliveryRoundTimingView,
+): ComposedTiming {
+  return {
+    geometries: new Map(
+      timed.flatMap((round, index) => {
+        const geometry = view.rounds[index]?.geometry ?? null;
+        return geometry === null ? [] : [[round.id, geometry] as const];
+      }),
+    ),
+    placementLate: new Set(
+      view.rounds.flatMap((round) =>
+        round.stops.filter((stop) => stop.placementLate).map((stop) => stop.orderId),
+      ),
+    ),
+  };
+}
+
 function withClashes(stops: readonly BoardStop[]): readonly BoardStop[] {
   const clashes = windowClashes(stops);
   return stops.map((stop, index) => ({ ...stop, windowClash: clashes[index] ?? null }));
 }
 
-function roundOfComposed(composed: ComposedRound, geometries: Geometries): BoardRound {
+function roundOfComposed(composed: ComposedRound, timing: ComposedTiming): BoardRound {
   const { round } = composed;
   return {
     key: round.id,
@@ -135,7 +171,7 @@ function roundOfComposed(composed: ComposedRound, geometries: Geometries): Board
     frozen: round.departedAt !== null,
     vehicleRetired: round.vehicleRetired,
     driver: round.driver,
-    geometry: geometries.get(round.id) ?? null,
+    geometry: timing.geometries.get(round.id) ?? null,
     timing: null,
     unknownDemand: 0,
     stops: composed.stops.map(({ stop, sheet, windowClash }) => ({
@@ -149,14 +185,15 @@ function roundOfComposed(composed: ComposedRound, geometries: Geometries): Board
       broughtBackAt: stop.broughtBackAt ?? null,
       proposed: false,
       windowMissed: false,
+      placementLate: timing.placementLate.has(stop.orderId),
     })),
   };
 }
 
 /** La composition enregistrée, telle que le tableau la montre. */
-export function boardOfComposed(composed: ComposedDay, geometries: Geometries = new Map()): Board {
+export function boardOfComposed(composed: ComposedDay, timing: ComposedTiming = NO_TIMING): Board {
   return {
-    rounds: composed.rounds.map((round) => roundOfComposed(round, geometries)),
+    rounds: composed.rounds.map((round) => roundOfComposed(round, timing)),
     pool: composed.unassigned.map(({ order, sheet }) => ({
       orderId: order.orderId,
       reference: order.reference,
@@ -189,6 +226,7 @@ function stopOfOrder(order: BoardOrder): BoardStop {
     broughtBackAt: order.broughtBackAt,
     proposed: false,
     windowMissed: false,
+    placementLate: false,
   };
 }
 
@@ -229,7 +267,9 @@ export function relaidBoard(board: Board, lists: OrderLists): Board {
       const stop = stops.get(id);
       return stop === undefined ? [] : [stop];
     });
-    return { ...round, stops: withClashes(placed) };
+    // La place a changé : l'alerte rouge attend le prochain chronométrage (CA5).
+    const untimed = placed.map((stop) => ({ ...stop, placementLate: false }));
+    return { ...round, stops: withClashes(untimed) };
   });
   const poolIds = lists[POOL_KEY];
   const pool =
@@ -301,6 +341,8 @@ function plannedStopOnBoard(
     broughtBackAt: known?.broughtBackAt ?? null,
     proposed,
     windowMissed: stop.windowMissed,
+    // L'aperçu dit son propre retard (`windowMissed`) ; le rouge est celui du geste enregistré.
+    placementLate: false,
   };
 }
 
@@ -382,7 +424,11 @@ export function previewPoolOf(
 /** Ce qui est à régler dans une tournée : fenêtres intenables et signaux (Q11). */
 export function alertCountOf(round: BoardRound): number {
   return round.stops.reduce(
-    (count, stop) => count + stop.signals.length + (stop.windowClash === null ? 0 : 1),
+    (count, stop) =>
+      count +
+      stop.signals.length +
+      (stop.windowClash === null ? 0 : 1) +
+      (stop.placementLate ? 1 : 0),
     0,
   );
 }
@@ -517,9 +563,15 @@ export function needsGps(order: BoardOrder): boolean {
   return order.reason === 'unlocated' || (order.reason === null && unlocated(order.sheet));
 }
 
+/** L'alerte rouge, en toutes lettres, avec le geste qui la lève (CA5). */
+export const PLACEMENT_LATE_LABEL = 'Échéance intenable à cette place — la déplacer';
+
 /** Les étiquettes d'un arrêt : signaux, fenêtre intenable, rapportée, pas prête. */
 export function stopTagsOf(stop: BoardStop): readonly OrderCardTag[] {
   const tags: OrderCardTag[] = stop.signals.map((label) => ({ label, variant: 'alert' }));
+  if (stop.placementLate) {
+    tags.push({ label: PLACEMENT_LATE_LABEL, variant: 'alert' });
+  }
   if (stop.windowClash !== null) {
     tags.push({ label: `Fenêtre intenable après ${stop.windowClash}`, variant: 'warning' });
   }
@@ -534,7 +586,7 @@ export function stopTagsOf(stop: BoardStop): readonly OrderCardTag[] {
 
 /** Le liseré d'un arrêt : le signal l'emporte, puis la fenêtre, puis la proposition. */
 export function stopEdgeOf(stop: BoardStop): OrderCardEdge {
-  if (stop.signals.length > 0) {
+  if (stop.signals.length > 0 || stop.placementLate) {
     return 'alert';
   }
   if (stop.windowClash !== null) {
@@ -581,7 +633,8 @@ export function plannedOfBoard(round: BoardRound): PlannedRound {
       reference: stop.reference,
       arrival: null,
       window: stop.window,
-      windowMissed: stop.windowMissed,
+      // La carte marque en rouge un retard de l'aperçu comme une place intenable (CA5).
+      windowMissed: stop.windowMissed || stop.placementLate,
       sheet: stop.sheet,
     })),
   };

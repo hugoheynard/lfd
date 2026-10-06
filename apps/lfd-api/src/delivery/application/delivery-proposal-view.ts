@@ -4,6 +4,7 @@ import type {
   DeliveryProposedRoundView,
   DeliveryRoundProposalView,
   DeliveryRoutingSettingsView,
+  DeliveryTimedRoundView,
 } from "@lfd/contracts";
 
 import type { RoundRow } from "../domain/ports/delivery-rounds.reader.js";
@@ -106,6 +107,23 @@ export function proposedRoundView(
       ...stopTimesView(tour, index),
     })),
     geometry: line,
+  };
+}
+
+/**
+ * Une tournée de la composition chronométrée (CA5) : la vue d'une tournée
+ * proposée, chaque arrêt dit en plus si sa PLACE le rend intenable.
+ */
+export function timedRoundView(
+  tour: ProposedTour,
+  reference: (orderId: string) => string,
+  line: RouteLine | null,
+  placementLate: ReadonlySet<string>,
+): DeliveryTimedRoundView {
+  const view = proposedRoundView(tour, reference, line);
+  return {
+    ...view,
+    stops: view.stops.map((stop) => ({ ...stop, placementLate: placementLate.has(stop.orderId) })),
   };
 }
 

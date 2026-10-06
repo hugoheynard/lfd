@@ -233,6 +233,38 @@ describe("TimeDeliveryRoundsHandler — « Chronométrer » (L10b-C2)", () => {
     expect(view.rounds[0]?.roundId).toBe("r_loaded");
   });
 
+  describe("l'alerte rouge : la place rend l'échéance intenable (CA5, §9)", () => {
+    // o1 tient « avant 00:20 » livrée seule ; « late », à ~40 km, ne tient
+    // pas « avant 00:10 » même seule — aucune place ne la sauverait.
+    const deadlines = POINTS.map((point) => {
+      if (point.orderId === "o1") {
+        return { ...point, window: { start: null, end: "00:20" } };
+      }
+      return point.orderId === "late" ? { ...point, window: { start: null, end: "00:10" } } : point;
+    });
+
+    it("rouge pour une commande que sa place met en retard, alors que seule elle tiendrait", async () => {
+      const view = await time(scene({ points: deadlines }).handler, [
+        { roundId: null, vehicleId: "v1", orderIds: ["late", "o1", "o2"] },
+      ]);
+
+      const stops = view.rounds[0]?.stops ?? [];
+      expect(stops.map((stop) => [stop.orderId, stop.windowMissed, stop.placementLate])).toEqual([
+        ["late", true, false],
+        ["o1", true, true],
+        ["o2", false, false],
+      ]);
+    });
+
+    it("rien de rouge quand la même commande est mise à une place qui la tient", async () => {
+      const view = await time(scene({ points: deadlines }).handler, [
+        { roundId: null, vehicleId: "v1", orderIds: ["o1", "o2"] },
+      ]);
+
+      expect(view.rounds[0]?.stops.some((stop) => stop.placementLate)).toBe(false);
+    });
+  });
+
   describe("refuse, en le nommant", () => {
     it.each<[string, Rounds, new (...args: never[]) => Error]>([
       [

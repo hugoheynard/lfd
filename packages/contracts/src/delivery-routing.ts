@@ -279,8 +279,24 @@ export const timeDeliveryRoundsPayloadSchema = z.object({
 });
 export type TimeDeliveryRoundsPayload = z.infer<typeof timeDeliveryRoundsPayloadSchema>;
 
+/** Un arrêt d'une composition chronométrée (CA5). */
+export interface DeliveryTimedStopView extends DeliveryProposedStopView {
+  /**
+   * 🔴 L'alerte rouge (CA5, §9) : en retard À CETTE PLACE, alors que livrée
+   * seule, partie dès minuit, la commande tiendrait. C'est la place — un
+   * geste du bureau — qui la rend intenable ; le calcul ne la déplace pas.
+   * Faux pour un arrêt à l'heure, ou en retard même seul.
+   */
+  readonly placementLate: boolean;
+}
+
+/** Une tournée d'une composition chronométrée. */
+export interface DeliveryTimedRoundView extends DeliveryProposedRoundView {
+  readonly stops: readonly DeliveryTimedStopView[];
+}
+
 /** La composition chronométrée, dans l'ordre reçu. */
 export interface DeliveryRoundTimingView {
   readonly day: string;
-  readonly rounds: readonly DeliveryProposedRoundView[];
+  readonly rounds: readonly DeliveryTimedRoundView[];
 }

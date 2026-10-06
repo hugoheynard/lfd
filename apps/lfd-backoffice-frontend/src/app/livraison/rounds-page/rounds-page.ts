@@ -69,10 +69,12 @@ import {
   type Board,
   type BoardDrop,
   boardOfComposed,
-  type Geometries,
+  type ComposedTiming,
+  composedTimingOf,
   layoutOps,
   type LayoutOp,
   listsOf,
+  NO_TIMING,
   POOL_KEY,
   relaidBoard,
   roundKmLabel,
@@ -232,8 +234,8 @@ export class RoundsPage {
   protected readonly departure = computed<MapDeparture | null>(
     () => this.preview.proposal()?.departurePoint ?? this.departurePoint(),
   );
-  /** Les tracés de la composition enregistrée, chronométrée à la lecture. */
-  private readonly geometries = signal<Geometries>(new Map());
+  /** Les tracés et les alertes rouges (CA5) de la composition enregistrée, chronométrée à la lecture. */
+  private readonly timing = signal<ComposedTiming>(NO_TIMING);
   /** Le geste en vol, montré avant que le serveur ne l'ait confirmé. */
   private readonly optimistic = signal<OrderLists | null>(null);
 
@@ -270,7 +272,7 @@ export class RoundsPage {
     if (composed === null) {
       return null;
     }
-    const board = boardOfComposed(composed, this.geometries());
+    const board = boardOfComposed(composed, this.timing());
     const pending = this.optimistic();
     return pending === null ? board : relaidBoard(board, pending);
   });
@@ -817,7 +819,7 @@ export class RoundsPage {
           composed: composeDay(rounds, sheet),
           incidents: rounds.incidents,
         });
-        void this.loadGeometries(rounds, request);
+        void this.loadTiming(rounds, request);
       }
     } catch {
       if (request === this.request) {
@@ -827,14 +829,16 @@ export class RoundsPage {
   }
 
   /**
-   * Les tracés de la composition enregistrée, pour la carte : une LECTURE
+   * Les tracés de la composition enregistrée, pour la carte, et ses arrêts
+   * que leur place rend intenables — l'alerte rouge (CA5) : une LECTURE
    * (« chronométrer », L10b-C2). Sans calcul routier, la carte garde ses
-   * repères seuls — rien ne s'affiche en erreur pour un tracé absent.
+   * repères seuls et rien n'est rouge — rien ne s'affiche en erreur pour un
+   * chronométrage absent.
    */
-  private async loadGeometries(rounds: DeliveryRoundsDayView, request: number): Promise<void> {
+  private async loadTiming(rounds: DeliveryRoundsDayView, request: number): Promise<void> {
     const timed = rounds.rounds.filter((round) => round.stops.length > 0);
     if (timed.length === 0) {
-      this.geometries.set(new Map());
+      this.timing.set(NO_TIMING);
       return;
     }
     try {
@@ -847,18 +851,11 @@ export class RoundsPage {
         })),
       });
       if (request === this.request) {
-        this.geometries.set(
-          new Map(
-            timed.flatMap((round, index) => {
-              const geometry = view.rounds[index]?.geometry ?? null;
-              return geometry === null ? [] : [[round.id, geometry] as const];
-            }),
-          ),
-        );
+        this.timing.set(composedTimingOf(timed, view));
       }
     } catch {
       if (request === this.request) {
-        this.geometries.set(new Map());
+        this.timing.set(NO_TIMING);
       }
     }
   }

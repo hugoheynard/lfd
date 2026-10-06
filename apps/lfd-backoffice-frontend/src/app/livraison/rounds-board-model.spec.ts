@@ -5,16 +5,20 @@ import type { ComposedDay } from './delivery-rounds';
 import {
   alertCountOf,
   boardOfComposed,
+  composedTimingOf,
   dropTargetOf,
   layoutOps,
   listsOf,
   mapRowPrefixOf,
   orderTagsOf,
+  PLACEMENT_LATE_LABEL,
+  plannedOfBoard,
   POOL_KEY,
   relaidBoard,
   roundKmLabel,
   roundTimingLabel,
   stopEdgeOf,
+  stopTagsOf,
   vehicleGroupsOf,
 } from './rounds-board-model';
 import { stopOf } from './run-sheet.fixture';
@@ -103,6 +107,66 @@ describe('le tableau de la composition', () => {
     const assigned = relaidBoard(board, { 'r-3': ['4'], [POOL_KEY]: [] });
     expect(assigned.pool).toEqual([]);
     expect(assigned.rounds[2]?.stops[0]).toMatchObject({ orderId: '4', stopId: null });
+  });
+});
+
+describe('l’alerte rouge : la place rend l’échéance intenable (CA5)', () => {
+  const timing = composedTimingOf([{ id: 'r-2' }], {
+    day: '2030-03-12',
+    rounds: [
+      {
+        roundId: 'r-2',
+        vehicleId: 'v-2',
+        vehicleName: 'Trafic frigo',
+        passage: 1,
+        departureTime: '05:00',
+        returnTime: '08:00',
+        meters: 1000,
+        minutes: 180,
+        overDuration: false,
+        geometry: [[5.9, 45.6]],
+        stops: [
+          {
+            orderId: '2',
+            reference: 'CMD-2',
+            arrival: '06:00',
+            window: null,
+            windowMissed: false,
+            placementLate: false,
+          },
+          {
+            orderId: '3',
+            reference: 'CMD-3',
+            arrival: '07:00',
+            window: null,
+            windowMissed: true,
+            placementLate: true,
+          },
+        ],
+      },
+    ],
+  });
+  const board = boardOfComposed(COMPOSED, timing);
+  const late = board.rounds[1]!.stops[1]!;
+
+  it('lit le chronométrage : tracé par tournée, commandes intenables à leur place', () => {
+    expect([...timing.geometries.keys()]).toEqual(['r-2']);
+    expect([...timing.placementLate]).toEqual(['3']);
+    expect(late.placementLate).toBe(true);
+    expect(board.rounds[1]!.stops[0]!.placementLate).toBe(false);
+  });
+
+  it('badge rouge, liseré rouge, compté « à régler », marqueur en retard sur la carte', () => {
+    expect(stopTagsOf(late)).toContainEqual({ label: PLACEMENT_LATE_LABEL, variant: 'alert' });
+    expect(stopEdgeOf(late)).toBe('alert');
+    // Annulée (1) + fenêtre intenable C8 (1) + place intenable (1).
+    expect(alertCountOf(board.rounds[1]!)).toBe(3);
+    expect(plannedOfBoard(board.rounds[1]!).stops[1]?.windowMissed).toBe(true);
+  });
+
+  it('un geste en vol efface le rouge jusqu’au prochain chronométrage', () => {
+    const next = relaidBoard(board, { 'r-2': ['3', '2'] });
+    expect(next.rounds[1]?.stops.some((stop) => stop.placementLate)).toBe(false);
   });
 });
 

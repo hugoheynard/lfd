@@ -21,6 +21,7 @@ function stop(orderId: string): BoardStop {
     broughtBackAt: null,
     proposed: false,
     windowMissed: false,
+    placementLate: false,
   };
 }
 

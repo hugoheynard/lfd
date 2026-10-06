@@ -40,12 +40,7 @@ export interface CompositionInput {
  */
 export function timeComposition(input: CompositionInput): readonly ProposedTour[] {
   const maxSeconds = input.settings.maxRoundMinutes * SECONDS_PER_MINUTE;
-  const clock: RouteClock = {
-    earliestDeparture: DAY_START,
-    stopSeconds: input.settings.stopMinutes * SECONDS_PER_MINUTE,
-    idleDeparture: input.settings.earliestDepartureMinute * SECONDS_PER_MINUTE,
-    safetySeconds: input.settings.safetyMarginMinutes * SECONDS_PER_MINUTE,
-  };
+  const clock = compositionClockOf(input.settings);
   const timedById = timeByVehicle(input, clock);
   const passages = new Map<string, number>();
   return input.rounds.map((round, index) => {
@@ -63,6 +58,16 @@ export function timeComposition(input: CompositionInput): readonly ProposedTour[
       overDuration: durationOf(timed) > maxSeconds,
     };
   });
+}
+
+/** L'horloge d'une composition : plancher à minuit du jour (CA2, Q1), réglages en vigueur. */
+export function compositionClockOf(settings: RoutingSettings): RouteClock {
+  return {
+    earliestDeparture: DAY_START,
+    stopSeconds: settings.stopMinutes * SECONDS_PER_MINUTE,
+    idleDeparture: settings.earliestDepartureMinute * SECONDS_PER_MINUTE,
+    safetySeconds: settings.safetyMarginMinutes * SECONDS_PER_MINUTE,
+  };
 }
 
 /** Chaque tournée chronométrée avec les autres passages de son véhicule, indexée comme reçue. */

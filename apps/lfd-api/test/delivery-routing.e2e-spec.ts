@@ -332,6 +332,8 @@ describe("chronométrer une composition glissée à la main (L10b-C2)", () => {
     expect(view.day).toBe(DAY);
     expect(view.rounds[0]?.stops.map((stop) => stop.orderId)).toEqual([dragged, placed]);
     expect(view.rounds[0]?.departureTime).toBe("06:00");
+    // Sans échéance, aucune place n'est intenable : pas d'alerte rouge (CA5).
+    expect(view.rounds[0]?.stops.map((stop) => stop.placementLate)).toEqual([false, false]);
     // Départ, deux arrêts, retour : le double trace la ligne brisée.
     expect(view.rounds[0]?.geometry).toHaveLength(4);
     expect(
