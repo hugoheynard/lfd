@@ -115,6 +115,10 @@ const ADMITTED = new Map([
     "le semis de développement déclare les comptes des clients de la journée de livraison (sub fictifs `seed|…`), même raison",
   ],
   [
+    "apps/lfd-api/src/dev/seeding/tomorrow-rounds-clients.seed.ts",
+    "le semis de développement déclare les comptes des maisons des tournées de demain (sub fictifs `seed|…`), même raison",
+  ],
+  [
     `${STAFF_DIR}directory/domain/staff-user-state.ts`,
     "l'état d'une fiche porte son `sub` pour la seule propagation d'adresse",
   ],

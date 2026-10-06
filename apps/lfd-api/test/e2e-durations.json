@@ -100,6 +100,7 @@
   "test/dev-scenario.e2e-spec.ts": 59240,
   "test/dev-seed-driver.e2e-spec.ts": 14230,
   "test/dev-seed-packing.e2e-spec.ts": 8028,
+  "test/dev-seed-tomorrow-rounds.e2e-spec.ts": 17054,
   "test/devis-comptable.e2e-spec.ts": 4320,
   "test/direct-debit-blocks.e2e-spec.ts": 6182,
   "test/families-in-data-migration.e2e-spec.ts": 4921,

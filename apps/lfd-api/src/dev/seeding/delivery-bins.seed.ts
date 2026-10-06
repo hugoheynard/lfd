@@ -13,12 +13,23 @@ import { binContainers, type RoundsContext, type SeedBins } from "./delivery-rou
  * l'extérieur » et l'unicité du nom.
  *
  * Trois types : un petit isotherme, et deux cloisonnables — de quoi montrer
- * un bac entier, un demi-bac, un bac partagé et le froid.
+ * un bac entier, un demi-bac, un bac partagé et le froid. Et la manne à pain,
+ * le contenant par défaut d'une commande (`delivery-settings.seed.ts`).
  */
 
 export const BIN_S = "Bac S isotherme";
 export const BIN_M = "Bac M";
 export const BIN_L = "Bac L";
+/**
+ * La manne à pain (2026-10-06) : le contenant que le calcul des tournées
+ * compte par défaut pour une commande dont il ne sait rien. Haute, non
+ * empilable, non divisible — c'est elle qui fait la place au sol.
+ */
+export const BIN_MANNE = "Manne à pain";
+/** Combien de ficelles une manne prend : l'hôtel des tournées de demain en commande trois. */
+export const FICELLES_PER_MANNE = 80;
+/** Le SKU que seule la manne sait contenir — la ficelle artisane. */
+export const MANNE_SKU = "PAI-010";
 
 const BIN_TYPES: readonly BinTypePayload[] = [
   {
@@ -45,6 +56,14 @@ const BIN_TYPES: readonly BinTypePayload[] = [
     maxStack: 5,
     divisible: true,
   },
+  {
+    name: BIN_MANNE,
+    outer: { lengthMm: 665, widthMm: 460, heightMm: 715 },
+    inner: { lengthMm: 625, widthMm: 420, heightMm: 690 },
+    isotherm: false,
+    maxStack: 1,
+    divisible: false,
+  },
 ];
 
 /** Combien d'unités un bac ENTIER contient, par type et par SKU. */
@@ -62,6 +81,9 @@ const CAPACITIES: readonly {
   { bin: BIN_L, sku: "VIE-001", units: 60 },
   { bin: BIN_M, sku: "VIE-002", units: 40 },
   { bin: BIN_L, sku: "VIE-002", units: 60 },
+  // La ficelle n'a de contenance qu'en manne : la commande qui n'en porte que
+  // s'estime en mannes, et rien d'autre ne change d'estimation.
+  { bin: BIN_MANNE, sku: MANNE_SKU, units: FICELLES_PER_MANNE },
 ];
 
 /**

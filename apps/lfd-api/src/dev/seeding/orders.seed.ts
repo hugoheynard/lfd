@@ -3,22 +3,12 @@ import type { S3StorageConfig } from "@lfd/storage";
 import { STILL_SOLD } from "../../b2b/catalog/infrastructure/sellable-filter.js";
 import { purgeScenario, type ScenarioPurgeReport } from "../scenario/purge/scenario-purge.js";
 import { resolveScenarioScope } from "../scenario/purge/scenario-scope.js";
-import { CLIENT_ENSEIGNE } from "./client.seed.js";
 import { COUNTER, PICKUP_WINDOW } from "./counter-day.seed.js";
 import { PEAK_AHEAD, placePeak, placeTomorrow, TOMORROW } from "./ahead-days.seed.js";
-import { DELIVERY_CLIENTS, seedDeliveryClients } from "./delivery-clients.seed.js";
+import { seedDeliverySettings } from "./delivery-settings.seed.js";
 import type { DeliveryDayReport } from "./delivery-day.seed.js";
-import { NEIGHBOURS, seedNeighbourClients } from "./neighbour-clients.seed.js";
 import { CORPUS_SKUS, HISTORY_COUNT, HISTORY_EVERY_DAYS, linesFor } from "./order-lines.seed.js";
-import {
-  isoDay,
-  place,
-  resolveTarget,
-  type SeedContext,
-  type SeedLine,
-  shiftDays,
-  type Target,
-} from "./order-placing.seed.js";
+import { isoDay, place, type SeedContext, type SeedLine, shiftDays } from "./order-placing.seed.js";
 import {
   advanceToday,
   closeTodayPlan,
@@ -26,6 +16,8 @@ import {
   type ScenarioDay,
   scenarioDayOf,
 } from "./today.seed.js";
+import { placeTomorrowRounds, TOMORROW_ROUNDS_SKUS } from "./tomorrow-rounds.seed.js";
+import { prepareClients, type ScenarioClients } from "./scenario-clients.seed.js";
 
 export type { SeedContext } from "./order-placing.seed.js";
 
@@ -97,14 +89,6 @@ export interface OrdersReport extends ScenarioResetResult {
   readonly delivery: DeliveryDayReport;
 }
 
-/** Les clients du scénario, résolus — de quoi poser et de quoi purger. */
-interface ScenarioClients {
-  /** Le client de référence puis les voisins : les rangs de la file du comptoir. */
-  readonly counter: readonly Target[];
-  readonly byEnseigne: ReadonlyMap<string, Target>;
-  readonly companyIds: readonly string[];
-}
-
 /**
  * **Le scénario entier, d'une traite** : la remise à l'état de base, puis les
  * étapes de la journée — ce que font `pnpm seed:orders`, « Recharger les
@@ -149,6 +133,9 @@ export async function resetScenario(
   await context.settle();
   await ensureSkusExist(context);
   const clients = await prepareClients(context);
+  // Les réglages de livraison AVANT les commandes : « Proposer » sur demain
+  // doit répondre dès la remise à l'état de base (`delivery-settings.seed.ts`).
+  await seedDeliverySettings(context);
   const day = scenarioDayOf(context.now);
   const scope = await resolveScenarioScope(context.prisma, clients.companyIds, [
     isoDay(shiftDays(day.today, -1)),
@@ -159,36 +146,6 @@ export async function resetScenario(
   const purge = await purgeScenario(context.prisma, scope, buckets);
   const placed = await placeScenario(context, clients, day);
   return { ...placed, purge };
-}
-
-/**
- * Les voisins et les clients de la journée de livraison — semés ici,
- * idempotents, pour que la ligne de commande `seed:orders` suffise sans
- * rejouer tout le semis.
- */
-async function prepareClients(context: SeedContext): Promise<ScenarioClients> {
-  const target = await resolveTarget(context);
-  await seedNeighbourClients(context);
-  await seedDeliveryClients(context);
-  const neighbours = await Promise.all(
-    NEIGHBOURS.map((neighbour) => resolveTarget(context, neighbour.raisonSociale)),
-  );
-  const deliveryClients = await Promise.all(
-    DELIVERY_CLIENTS.map((client) => resolveTarget(context, client.raisonSociale)),
-  );
-  const byEnseigne = new Map<string, Target>(
-    [
-      [CLIENT_ENSEIGNE, target],
-      ...NEIGHBOURS.map((neighbour, rank) => [neighbour.enseigne, neighbours[rank]] as const),
-      ...DELIVERY_CLIENTS.map((client, rank) => [client.enseigne, deliveryClients[rank]] as const),
-    ].filter((entry): entry is readonly [string, Target] => entry[1] !== undefined),
-  );
-  const counter = [target, ...neighbours];
-  return {
-    counter,
-    byEnseigne,
-    companyIds: [...counter, ...deliveryClients].map((client) => client.companyId),
-  };
 }
 
 /** Toutes les commandes du scénario, posées par le vrai handler, du plus ancien au plus récent. */
@@ -235,18 +192,20 @@ async function placeScenario(
   // de livraison. Posées seulement : la suite est faite d'étapes.
   const todayCount = await placeToday(context, clients, day, await wideLines(context));
   await placeTomorrow(context, clients.counter, today);
+  // Et les tournées de demain : trois camionnettes, par la place au sol.
+  const tomorrowRounds = await placeTomorrowRounds(context, clients.byEnseigne, today);
   await placePeak(context, target, {
     today,
     halves: [await spreadLines(context, 0), await spreadLines(context, 1)],
   });
 
   return {
-    placed: placed + 1 + todayCount + TOMORROW.length + 2,
+    placed: placed + 1 + todayCount + TOMORROW.length + tomorrowRounds + 2,
     yesterday: isoDay(shiftDays(today, -1)),
     today: day.forDay,
     counterToday: COUNTER.length,
     tomorrow: isoDay(shiftDays(today, 1)),
-    tomorrowCount: TOMORROW.length,
+    tomorrowCount: TOMORROW.length + tomorrowRounds,
     peakDay: isoDay(shiftDays(today, PEAK_AHEAD)),
   };
 }
@@ -263,7 +222,7 @@ async function placeScenario(
  * la commande résout la déclinaison par défaut, comme la boutique.
  */
 async function ensureSkusExist(context: SeedContext): Promise<void> {
-  const wanted = [...CORPUS_SKUS];
+  const wanted = [...new Set([...CORPUS_SKUS, ...TOMORROW_ROUNDS_SKUS])];
   const known = await context.prisma.catalogItem.findMany({
     // `STILL_SOLD` et pas un `withdrawnAt: null` recopié : la condition du
     // retrait est NOMMÉE une fois, et la porte `withdrawn-filter` refuse une
