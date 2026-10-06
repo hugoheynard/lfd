@@ -1,0 +1,1201 @@
+{
+  "$commentaire": "Registre machine des données personnelles du staff et des réceptionnaires. Tenu par `pnpm lint:rgpd-staff` (dev-toolbox/gates/rgpd-staff.mjs) contre apps/lfd-api/prisma/schema. Prose et raisons : documentation/legal/rgpd-livreur.md §8. Pas un avis juridique.",
+  "texteInformation": {
+    "version": null,
+    "empreinte": null
+  },
+  "entrees": [
+    {
+      "colonne": "delivery.delivery_bin_load.loaded_by",
+      "personne": "livreur",
+      "categorie": "auteur-geste",
+      "finalite": "Qui a chargé le bac : garde des bacs.",
+      "conservation": "aucune-limite-decidee",
+      "purge": null,
+      "information": false
+    },
+    {
+      "colonne": "delivery.delivery_departure.updated_by_name",
+      "personne": "staff",
+      "categorie": "identite",
+      "finalite": "Nom figé de l'auteur d'un geste sur `delivery_departure`, lisible même si la fiche staff change.",
+      "conservation": "aucune-limite-decidee",
+      "purge": null,
+      "information": false
+    },
+    {
+      "colonne": "delivery.delivery_departure.updated_by_staff_id",
+      "personne": "staff",
+      "categorie": "auteur-geste",
+      "finalite": "Tracer quel membre du staff a fait le geste (`updated_by_staff_id`) sur `delivery_departure`.",
+      "conservation": "aucune-limite-decidee",
+      "purge": null,
+      "information": false
+    },
+    {
+      "colonne": "delivery.delivery_doorstep_settings.updated_by_name",
+      "personne": "staff",
+      "categorie": "identite",
+      "finalite": "Nom figé de l'auteur d'un geste sur `delivery_doorstep_settings`, lisible même si la fiche staff change.",
+      "conservation": "aucune-limite-decidee",
+      "purge": null,
+      "information": false
+    },
+    {
+      "colonne": "delivery.delivery_doorstep_settings.updated_by_staff_id",
+      "personne": "staff",
+      "categorie": "auteur-geste",
+      "finalite": "Tracer quel membre du staff a fait le geste (`updated_by_staff_id`) sur `delivery_doorstep_settings`.",
+      "conservation": "aucune-limite-decidee",
+      "purge": null,
+      "information": false
+    },
+    {
+      "colonne": "delivery.delivery_incident.photo_key",
+      "personne": "receptionnaire",
+      "categorie": "photo",
+      "finalite": "Photo d'un problème à la porte (peut montrer une personne, un lieu) : trancher le problème.",
+      "conservation": "a-decider",
+      "purge": null,
+      "information": false
+    },
+    {
+      "colonne": "delivery.delivery_incident.reported_by",
+      "personne": "livreur",
+      "categorie": "auteur-geste",
+      "finalite": "Qui a signalé le problème à la porte : prévenir le commercial, trancher.",
+      "conservation": "a-decider",
+      "purge": null,
+      "information": false
+    },
+    {
+      "colonne": "delivery.delivery_incident.reported_by_name",
+      "personne": "livreur",
+      "categorie": "identite",
+      "finalite": "Nom figé de l'auteur du signalement.",
+      "conservation": "a-decider",
+      "purge": null,
+      "information": false
+    },
+    {
+      "colonne": "delivery.delivery_purchase_bin_candidate.created_by_staff_id",
+      "personne": "staff",
+      "categorie": "auteur-geste",
+      "finalite": "Tracer quel membre du staff a fait le geste (`created_by_staff_id`) sur `delivery_purchase_bin_candidate`.",
+      "conservation": "aucune-limite-decidee",
+      "purge": null,
+      "information": false
+    },
+    {
+      "colonne": "delivery.delivery_purchase_bin_candidate.updated_by_name",
+      "personne": "staff",
+      "categorie": "identite",
+      "finalite": "Nom figé de l'auteur d'un geste sur `delivery_purchase_bin_candidate`, lisible même si la fiche staff change.",
+      "conservation": "aucune-limite-decidee",
+      "purge": null,
+      "information": false
+    },
+    {
+      "colonne": "delivery.delivery_purchase_bin_candidate.updated_by_staff_id",
+      "personne": "staff",
+      "categorie": "auteur-geste",
+      "finalite": "Tracer quel membre du staff a fait le geste (`updated_by_staff_id`) sur `delivery_purchase_bin_candidate`.",
+      "conservation": "aucune-limite-decidee",
+      "purge": null,
+      "information": false
+    },
+    {
+      "colonne": "delivery.delivery_purchase_scenario.created_by_staff_id",
+      "personne": "staff",
+      "categorie": "auteur-geste",
+      "finalite": "Tracer quel membre du staff a fait le geste (`created_by_staff_id`) sur `delivery_purchase_scenario`.",
+      "conservation": "aucune-limite-decidee",
+      "purge": null,
+      "information": false
+    },
+    {
+      "colonne": "delivery.delivery_purchase_scenario.updated_by_name",
+      "personne": "staff",
+      "categorie": "identite",
+      "finalite": "Nom figé de l'auteur d'un geste sur `delivery_purchase_scenario`, lisible même si la fiche staff change.",
+      "conservation": "aucune-limite-decidee",
+      "purge": null,
+      "information": false
+    },
+    {
+      "colonne": "delivery.delivery_purchase_scenario.updated_by_staff_id",
+      "personne": "staff",
+      "categorie": "auteur-geste",
+      "finalite": "Tracer quel membre du staff a fait le geste (`updated_by_staff_id`) sur `delivery_purchase_scenario`.",
+      "conservation": "aucune-limite-decidee",
+      "purge": null,
+      "information": false
+    },
+    {
+      "colonne": "delivery.delivery_purchase_vehicle_candidate.created_by_staff_id",
+      "personne": "staff",
+      "categorie": "auteur-geste",
+      "finalite": "Tracer quel membre du staff a fait le geste (`created_by_staff_id`) sur `delivery_purchase_vehicle_candidate`.",
+      "conservation": "aucune-limite-decidee",
+      "purge": null,
+      "information": false
+    },
+    {
+      "colonne": "delivery.delivery_purchase_vehicle_candidate.updated_by_name",
+      "personne": "staff",
+      "categorie": "identite",
+      "finalite": "Nom figé de l'auteur d'un geste sur `delivery_purchase_vehicle_candidate`, lisible même si la fiche staff change.",
+      "conservation": "aucune-limite-decidee",
+      "purge": null,
+      "information": false
+    },
+    {
+      "colonne": "delivery.delivery_purchase_vehicle_candidate.updated_by_staff_id",
+      "personne": "staff",
+      "categorie": "auteur-geste",
+      "finalite": "Tracer quel membre du staff a fait le geste (`updated_by_staff_id`) sur `delivery_purchase_vehicle_candidate`.",
+      "conservation": "aucune-limite-decidee",
+      "purge": null,
+      "information": false
+    },
+    {
+      "colonne": "delivery.delivery_round.departed_at",
+      "personne": "livreur",
+      "categorie": "horodatage-geste",
+      "finalite": "Départ de tournée : mesure du temps de tournée, garde des bacs.",
+      "conservation": "aucune-limite-decidee",
+      "purge": null,
+      "information": false
+    },
+    {
+      "colonne": "delivery.delivery_round.driver_staff_id",
+      "personne": "livreur",
+      "categorie": "affectation",
+      "finalite": "Dire à qui est la tournée ; c'est aussi le mur du livreur (il ne voit que ses tournées).",
+      "conservation": "aucune-limite-decidee",
+      "purge": null,
+      "information": false
+    },
+    {
+      "colonne": "delivery.delivery_round.returned_at",
+      "personne": "livreur",
+      "categorie": "horodatage-geste",
+      "finalite": "Retour de tournée : mesure du temps de tournée, garde des bacs.",
+      "conservation": "aucune-limite-decidee",
+      "purge": null,
+      "information": false
+    },
+    {
+      "colonne": "delivery.delivery_round.returned_by",
+      "personne": "livreur",
+      "categorie": "auteur-geste",
+      "finalite": "Qui a déclaré le retour de tournée : garde des bacs.",
+      "conservation": "aucune-limite-decidee",
+      "purge": null,
+      "information": false
+    },
+    {
+      "colonne": "delivery.delivery_round.returned_by_name",
+      "personne": "livreur",
+      "categorie": "identite",
+      "finalite": "Nom figé de l'auteur du retour, lisible même si la fiche staff change.",
+      "conservation": "aucune-limite-decidee",
+      "purge": null,
+      "information": false
+    },
+    {
+      "colonne": "delivery.delivery_routing_settings.updated_by_name",
+      "personne": "staff",
+      "categorie": "identite",
+      "finalite": "Nom figé de l'auteur d'un geste sur `delivery_routing_settings`, lisible même si la fiche staff change.",
+      "conservation": "aucune-limite-decidee",
+      "purge": null,
+      "information": false
+    },
+    {
+      "colonne": "delivery.delivery_routing_settings.updated_by_staff_id",
+      "personne": "staff",
+      "categorie": "auteur-geste",
+      "finalite": "Tracer quel membre du staff a fait le geste (`updated_by_staff_id`) sur `delivery_routing_settings`.",
+      "conservation": "aucune-limite-decidee",
+      "purge": null,
+      "information": false
+    },
+    {
+      "colonne": "delivery.delivery_simulation_scenario.created_by_staff_id",
+      "personne": "staff",
+      "categorie": "auteur-geste",
+      "finalite": "Tracer quel membre du staff a fait le geste (`created_by_staff_id`) sur `delivery_simulation_scenario`.",
+      "conservation": "aucune-limite-decidee",
+      "purge": null,
+      "information": false
+    },
+    {
+      "colonne": "delivery.delivery_simulation_scenario.updated_by_name",
+      "personne": "staff",
+      "categorie": "identite",
+      "finalite": "Nom figé de l'auteur d'un geste sur `delivery_simulation_scenario`, lisible même si la fiche staff change.",
+      "conservation": "aucune-limite-decidee",
+      "purge": null,
+      "information": false
+    },
+    {
+      "colonne": "delivery.delivery_simulation_scenario.updated_by_staff_id",
+      "personne": "staff",
+      "categorie": "auteur-geste",
+      "finalite": "Tracer quel membre du staff a fait le geste (`updated_by_staff_id`) sur `delivery_simulation_scenario`.",
+      "conservation": "aucune-limite-decidee",
+      "purge": null,
+      "information": false
+    },
+    {
+      "colonne": "delivery.delivery_stop_execution.arrived_at",
+      "personne": "livreur",
+      "categorie": "horodatage-geste",
+      "finalite": "« Je suis arrivé » : instant de la porte.",
+      "conservation": "aucune-limite-decidee",
+      "purge": null,
+      "information": false
+    },
+    {
+      "colonne": "delivery.stop_decision.decided_by",
+      "personne": "staff",
+      "categorie": "auteur-geste",
+      "finalite": "Tracer quel membre du staff a fait le geste (`decided_by`) sur `stop_decision`.",
+      "conservation": "aucune-limite-decidee",
+      "purge": null,
+      "information": false
+    },
+    {
+      "colonne": "delivery.stop_decision.decided_by_name",
+      "personne": "staff",
+      "categorie": "identite",
+      "finalite": "Nom figé de l'auteur d'un geste sur `stop_decision`, lisible même si la fiche staff change.",
+      "conservation": "aucune-limite-decidee",
+      "purge": null,
+      "information": false
+    },
+    {
+      "colonne": "packing.container.opened_by",
+      "personne": "staff",
+      "categorie": "auteur-geste",
+      "finalite": "Tracer quel membre du staff a fait le geste (`opened_by`) sur `container`.",
+      "conservation": "aucune-limite-decidee",
+      "purge": null,
+      "information": false
+    },
+    {
+      "colonne": "packing.container.voided_by",
+      "personne": "staff",
+      "categorie": "auteur-geste",
+      "finalite": "Tracer quel membre du staff a fait le geste (`voided_by`) sur `container`.",
+      "conservation": "aucune-limite-decidee",
+      "purge": null,
+      "information": false
+    },
+    {
+      "colonne": "packing.packing_line.packed_by",
+      "personne": "staff",
+      "categorie": "auteur-geste",
+      "finalite": "Tracer quel membre du staff a fait le geste (`packed_by`) sur `packing_line`.",
+      "conservation": "aucune-limite-decidee",
+      "purge": null,
+      "information": false
+    },
+    {
+      "colonne": "packing.packing_order.packed_by",
+      "personne": "staff",
+      "categorie": "auteur-geste",
+      "finalite": "Tracer quel membre du staff a fait le geste (`packed_by`) sur `packing_order`.",
+      "conservation": "aucune-limite-decidee",
+      "purge": null,
+      "information": false
+    },
+    {
+      "colonne": "pim.b2b_channel_binding.published_by",
+      "personne": "staff",
+      "categorie": "auteur-geste",
+      "finalite": "Tracer quel membre du staff a fait le geste (`published_by`) sur `b2b_channel_binding`.",
+      "conservation": "aucune-limite-decidee",
+      "purge": null,
+      "information": false
+    },
+    {
+      "colonne": "pim.catalog_revision.taken_by",
+      "personne": "staff",
+      "categorie": "auteur-geste",
+      "finalite": "Tracer quel membre du staff a fait le geste (`taken_by`) sur `catalog_revision`.",
+      "conservation": "aucune-limite-decidee",
+      "purge": null,
+      "information": false
+    },
+    {
+      "colonne": "pim.catalog_revision_publication.published_by",
+      "personne": "staff",
+      "categorie": "auteur-geste",
+      "finalite": "Tracer quel membre du staff a fait le geste (`published_by`) sur `catalog_revision_publication`.",
+      "conservation": "aucune-limite-decidee",
+      "purge": null,
+      "information": false
+    },
+    {
+      "colonne": "pim.category.updated_by",
+      "personne": "staff",
+      "categorie": "auteur-geste",
+      "finalite": "Tracer quel membre du staff a fait le geste (`updated_by`) sur `category`.",
+      "conservation": "aucune-limite-decidee",
+      "purge": null,
+      "information": false
+    },
+    {
+      "colonne": "pim.order_time_limit.updated_by",
+      "personne": "staff",
+      "categorie": "auteur-geste",
+      "finalite": "Tracer quel membre du staff a fait le geste (`updated_by`) sur `order_time_limit`.",
+      "conservation": "aucune-limite-decidee",
+      "purge": null,
+      "information": false
+    },
+    {
+      "colonne": "pim.product.updated_by",
+      "personne": "staff",
+      "categorie": "auteur-geste",
+      "finalite": "Tracer quel membre du staff a fait le geste (`updated_by`) sur `product`.",
+      "conservation": "aucune-limite-decidee",
+      "purge": null,
+      "information": false
+    },
+    {
+      "colonne": "pim.product_packaging.updated_by",
+      "personne": "staff",
+      "categorie": "auteur-geste",
+      "finalite": "Tracer quel membre du staff a fait le geste (`updated_by`) sur `product_packaging`.",
+      "conservation": "aucune-limite-decidee",
+      "purge": null,
+      "information": false
+    },
+    {
+      "colonne": "pim.product_readiness.ready_by",
+      "personne": "staff",
+      "categorie": "auteur-geste",
+      "finalite": "Tracer quel membre du staff a fait le geste (`ready_by`) sur `product_readiness`.",
+      "conservation": "aucune-limite-decidee",
+      "purge": null,
+      "information": false
+    },
+    {
+      "colonne": "pim.product_variant.updated_by",
+      "personne": "staff",
+      "categorie": "auteur-geste",
+      "finalite": "Tracer quel membre du staff a fait le geste (`updated_by`) sur `product_variant`.",
+      "conservation": "aucune-limite-decidee",
+      "purge": null,
+      "information": false
+    },
+    {
+      "colonne": "production.order_handover.handed_over_by",
+      "personne": "livreur",
+      "categorie": "auteur-geste",
+      "finalite": "Qui a remis la commande, au comptoir ou à la porte : l'attestation de remise.",
+      "conservation": "aucune-limite-decidee",
+      "purge": null,
+      "information": false
+    },
+    {
+      "colonne": "production.order_handover_proof.photo_key",
+      "personne": "receptionnaire",
+      "categorie": "photo",
+      "finalite": "Photo de la marchandise remise : preuve de remise.",
+      "conservation": "a-decider",
+      "purge": "apps/lfd-api/src/handover/application/commands/purge-handover-proofs-older-than.command.ts",
+      "information": false
+    },
+    {
+      "colonne": "production.order_handover_proof.receiver_name",
+      "personne": "receptionnaire",
+      "categorie": "identite",
+      "finalite": "Nom de la personne qui a reçu la commande : preuve de remise.",
+      "conservation": "a-decider",
+      "purge": "apps/lfd-api/src/handover/application/commands/purge-handover-proofs-older-than.command.ts",
+      "information": false
+    },
+    {
+      "colonne": "production.order_handover_proof.recorded_by",
+      "personne": "livreur",
+      "categorie": "auteur-geste",
+      "finalite": "Qui a constitué la pièce de remise (preuve de livraison).",
+      "conservation": "a-decider",
+      "purge": "apps/lfd-api/src/handover/application/commands/purge-handover-proofs-older-than.command.ts",
+      "information": false
+    },
+    {
+      "colonne": "production.order_handover_proof.signature_key",
+      "personne": "receptionnaire",
+      "categorie": "signature",
+      "finalite": "Signature tracée au doigt par le réceptionnaire : preuve de remise.",
+      "conservation": "a-decider",
+      "purge": "apps/lfd-api/src/handover/application/commands/purge-handover-proofs-older-than.command.ts",
+      "information": false
+    },
+    {
+      "colonne": "production.production_batch.cancelled_by",
+      "personne": "staff",
+      "categorie": "auteur-geste",
+      "finalite": "Tracer quel membre du staff a fait le geste (`cancelled_by`) sur `production_batch`.",
+      "conservation": "aucune-limite-decidee",
+      "purge": null,
+      "information": false
+    },
+    {
+      "colonne": "production.production_batch.recorded_by",
+      "personne": "staff",
+      "categorie": "auteur-geste",
+      "finalite": "Tracer quel membre du staff a fait le geste (`recorded_by`) sur `production_batch`.",
+      "conservation": "aucune-limite-decidee",
+      "purge": null,
+      "information": false
+    },
+    {
+      "colonne": "production.production_closed_day.declared_by",
+      "personne": "staff",
+      "categorie": "auteur-geste",
+      "finalite": "Tracer quel membre du staff a fait le geste (`declared_by`) sur `production_closed_day`.",
+      "conservation": "aucune-limite-decidee",
+      "purge": null,
+      "information": false
+    },
+    {
+      "colonne": "production.production_container.updated_by",
+      "personne": "staff",
+      "categorie": "auteur-geste",
+      "finalite": "Tracer quel membre du staff a fait le geste (`updated_by`) sur `production_container`.",
+      "conservation": "aucune-limite-decidee",
+      "purge": null,
+      "information": false
+    },
+    {
+      "colonne": "production.production_count.done_by",
+      "personne": "staff",
+      "categorie": "auteur-geste",
+      "finalite": "Tracer quel membre du staff a fait le geste (`done_by`) sur `production_count`.",
+      "conservation": "aucune-limite-decidee",
+      "purge": null,
+      "information": false
+    },
+    {
+      "colonne": "production.production_day.closed_by",
+      "personne": "staff",
+      "categorie": "auteur-geste",
+      "finalite": "Tracer quel membre du staff a fait le geste (`closed_by`) sur `production_day`.",
+      "conservation": "aucune-limite-decidee",
+      "purge": null,
+      "information": false
+    },
+    {
+      "colonne": "production.production_day.closed_by_name",
+      "personne": "staff",
+      "categorie": "identite",
+      "finalite": "Nom figé de l'auteur d'un geste sur `production_day`, lisible même si la fiche staff change.",
+      "conservation": "aucune-limite-decidee",
+      "purge": null,
+      "information": false
+    },
+    {
+      "colonne": "production.production_day.retaken_by",
+      "personne": "staff",
+      "categorie": "auteur-geste",
+      "finalite": "Tracer quel membre du staff a fait le geste (`retaken_by`) sur `production_day`.",
+      "conservation": "aucune-limite-decidee",
+      "purge": null,
+      "information": false
+    },
+    {
+      "colonne": "production.production_day.retaken_by_name",
+      "personne": "staff",
+      "categorie": "identite",
+      "finalite": "Nom figé de l'auteur d'un geste sur `production_day`, lisible même si la fiche staff change.",
+      "conservation": "aucune-limite-decidee",
+      "purge": null,
+      "information": false
+    },
+    {
+      "colonne": "production.production_dossier_recipient.added_by",
+      "personne": "staff",
+      "categorie": "auteur-geste",
+      "finalite": "Tracer quel membre du staff a fait le geste (`added_by`) sur `production_dossier_recipient`.",
+      "conservation": "aucune-limite-decidee",
+      "purge": null,
+      "information": false
+    },
+    {
+      "colonne": "production.production_dossier_recipient.removed_by",
+      "personne": "staff",
+      "categorie": "auteur-geste",
+      "finalite": "Tracer quel membre du staff a fait le geste (`removed_by`) sur `production_dossier_recipient`.",
+      "conservation": "aucune-limite-decidee",
+      "purge": null,
+      "information": false
+    },
+    {
+      "colonne": "production.production_order.packed_by",
+      "personne": "staff",
+      "categorie": "auteur-geste",
+      "finalite": "Tracer quel membre du staff a fait le geste (`packed_by`) sur `production_order`.",
+      "conservation": "aucune-limite-decidee",
+      "purge": null,
+      "information": false
+    },
+    {
+      "colonne": "production.production_order_line.packed_by",
+      "personne": "staff",
+      "categorie": "auteur-geste",
+      "finalite": "Tracer quel membre du staff a fait le geste (`packed_by`) sur `production_order_line`.",
+      "conservation": "aucune-limite-decidee",
+      "purge": null,
+      "information": false
+    },
+    {
+      "colonne": "production.production_quality_check.checked_by",
+      "personne": "staff",
+      "categorie": "auteur-geste",
+      "finalite": "Tracer quel membre du staff a fait le geste (`checked_by`) sur `production_quality_check`.",
+      "conservation": "aucune-limite-decidee",
+      "purge": null,
+      "information": false
+    },
+    {
+      "colonne": "production.production_quality_upload.uploaded_by",
+      "personne": "staff",
+      "categorie": "auteur-geste",
+      "finalite": "Tracer quel membre du staff a fait le geste (`uploaded_by`) sur `production_quality_upload`.",
+      "conservation": "aucune-limite-decidee",
+      "purge": null,
+      "information": false
+    },
+    {
+      "colonne": "production.production_return_request.requested_by",
+      "personne": "staff",
+      "categorie": "auteur-geste",
+      "finalite": "Tracer quel membre du staff a fait le geste (`requested_by`) sur `production_return_request`.",
+      "conservation": "aucune-limite-decidee",
+      "purge": null,
+      "information": false
+    },
+    {
+      "colonne": "production.production_settings.updated_by",
+      "personne": "staff",
+      "categorie": "auteur-geste",
+      "finalite": "Tracer quel membre du staff a fait le geste (`updated_by`) sur `production_settings`.",
+      "conservation": "aucune-limite-decidee",
+      "purge": null,
+      "information": false
+    },
+    {
+      "colonne": "public.account_alert_overrides.updated_by",
+      "personne": "staff",
+      "categorie": "auteur-geste",
+      "finalite": "Tracer quel membre du staff a fait le geste (`updated_by`) sur `account_alert_overrides`.",
+      "conservation": "aucune-limite-decidee",
+      "purge": null,
+      "information": false
+    },
+    {
+      "colonne": "public.account_alerts.acknowledged_by",
+      "personne": "staff",
+      "categorie": "auteur-geste",
+      "finalite": "Tracer quel membre du staff a fait le geste (`acknowledged_by`) sur `account_alerts`.",
+      "conservation": "aucune-limite-decidee",
+      "purge": null,
+      "information": false
+    },
+    {
+      "colonne": "public.accounting_settings.updated_by_staff_id",
+      "personne": "staff",
+      "categorie": "auteur-geste",
+      "finalite": "Tracer quel membre du staff a fait le geste (`updated_by_staff_id`) sur `accounting_settings`.",
+      "conservation": "aucune-limite-decidee",
+      "purge": null,
+      "information": false
+    },
+    {
+      "colonne": "public.alert_rule_settings.updated_by",
+      "personne": "staff",
+      "categorie": "auteur-geste",
+      "finalite": "Tracer quel membre du staff a fait le geste (`updated_by`) sur `alert_rule_settings`.",
+      "conservation": "aucune-limite-decidee",
+      "purge": null,
+      "information": false
+    },
+    {
+      "colonne": "public.catalog_delivery.accepted_by",
+      "personne": "staff",
+      "categorie": "auteur-geste",
+      "finalite": "Tracer quel membre du staff a fait le geste (`accepted_by`) sur `catalog_delivery`.",
+      "conservation": "aucune-limite-decidee",
+      "purge": null,
+      "information": false
+    },
+    {
+      "colonne": "public.catalog_item_overrides.decided_by",
+      "personne": "staff",
+      "categorie": "auteur-geste",
+      "finalite": "Tracer quel membre du staff a fait le geste (`decided_by`) sur `catalog_item_overrides`.",
+      "conservation": "aucune-limite-decidee",
+      "purge": null,
+      "information": false
+    },
+    {
+      "colonne": "public.catalog_operation_overrides.decided_by",
+      "personne": "staff",
+      "categorie": "auteur-geste",
+      "finalite": "Tracer quel membre du staff a fait le geste (`decided_by`) sur `catalog_operation_overrides`.",
+      "conservation": "aucune-limite-decidee",
+      "purge": null,
+      "information": false
+    },
+    {
+      "colonne": "public.catalog_versions.created_by",
+      "personne": "staff",
+      "categorie": "auteur-geste",
+      "finalite": "Tracer quel membre du staff a fait le geste (`created_by`) sur `catalog_versions`.",
+      "conservation": "aucune-limite-decidee",
+      "purge": null,
+      "information": false
+    },
+    {
+      "colonne": "public.client_notes.created_by_name",
+      "personne": "staff",
+      "categorie": "identite",
+      "finalite": "Nom figé de l'auteur d'un geste sur `client_notes`, lisible même si la fiche staff change.",
+      "conservation": "aucune-limite-decidee",
+      "purge": null,
+      "information": false
+    },
+    {
+      "colonne": "public.client_notes.created_by_staff_id",
+      "personne": "staff",
+      "categorie": "auteur-geste",
+      "finalite": "Tracer quel membre du staff a fait le geste (`created_by_staff_id`) sur `client_notes`.",
+      "conservation": "aucune-limite-decidee",
+      "purge": null,
+      "information": false
+    },
+    {
+      "colonne": "public.collection_batch.cancelled_by_staff_id",
+      "personne": "staff",
+      "categorie": "auteur-geste",
+      "finalite": "Tracer quel membre du staff a fait le geste (`cancelled_by_staff_id`) sur `collection_batch`.",
+      "conservation": "aucune-limite-decidee",
+      "purge": null,
+      "information": false
+    },
+    {
+      "colonne": "public.collection_batch.constituted_by_staff_id",
+      "personne": "staff",
+      "categorie": "auteur-geste",
+      "finalite": "Tracer quel membre du staff a fait le geste (`constituted_by_staff_id`) sur `collection_batch`.",
+      "conservation": "aucune-limite-decidee",
+      "purge": null,
+      "information": false
+    },
+    {
+      "colonne": "public.collection_batch.deposited_by_staff_id",
+      "personne": "staff",
+      "categorie": "auteur-geste",
+      "finalite": "Tracer quel membre du staff a fait le geste (`deposited_by_staff_id`) sur `collection_batch`.",
+      "conservation": "aucune-limite-decidee",
+      "purge": null,
+      "information": false
+    },
+    {
+      "colonne": "public.companies.activated_by_name",
+      "personne": "staff",
+      "categorie": "identite",
+      "finalite": "Nom figé de l'auteur d'un geste sur `companies`, lisible même si la fiche staff change.",
+      "conservation": "aucune-limite-decidee",
+      "purge": null,
+      "information": false
+    },
+    {
+      "colonne": "public.companies.activated_by_staff_id",
+      "personne": "staff",
+      "categorie": "auteur-geste",
+      "finalite": "Tracer quel membre du staff a fait le geste (`activated_by_staff_id`) sur `companies`.",
+      "conservation": "aucune-limite-decidee",
+      "purge": null,
+      "information": false
+    },
+    {
+      "colonne": "public.companies.direct_debit_blocked_by",
+      "personne": "staff",
+      "categorie": "auteur-geste",
+      "finalite": "Tracer quel membre du staff a fait le geste (`direct_debit_blocked_by`) sur `companies`.",
+      "conservation": "aucune-limite-decidee",
+      "purge": null,
+      "information": false
+    },
+    {
+      "colonne": "public.companies.kbis_certified_by_name",
+      "personne": "staff",
+      "categorie": "identite",
+      "finalite": "Nom figé de l'auteur d'un geste sur `companies`, lisible même si la fiche staff change.",
+      "conservation": "aucune-limite-decidee",
+      "purge": null,
+      "information": false
+    },
+    {
+      "colonne": "public.companies.kbis_certified_by_staff_id",
+      "personne": "staff",
+      "categorie": "auteur-geste",
+      "finalite": "Tracer quel membre du staff a fait le geste (`kbis_certified_by_staff_id`) sur `companies`.",
+      "conservation": "aucune-limite-decidee",
+      "purge": null,
+      "information": false
+    },
+    {
+      "colonne": "public.company_mercuriales.archived_by",
+      "personne": "staff",
+      "categorie": "auteur-geste",
+      "finalite": "Tracer quel membre du staff a fait le geste (`archived_by`) sur `company_mercuriales`.",
+      "conservation": "aucune-limite-decidee",
+      "purge": null,
+      "information": false
+    },
+    {
+      "colonne": "public.company_mercuriales.created_by",
+      "personne": "staff",
+      "categorie": "auteur-geste",
+      "finalite": "Tracer quel membre du staff a fait le geste (`created_by`) sur `company_mercuriales`.",
+      "conservation": "aucune-limite-decidee",
+      "purge": null,
+      "information": false
+    },
+    {
+      "colonne": "public.company_mercuriales.paused_by",
+      "personne": "staff",
+      "categorie": "auteur-geste",
+      "finalite": "Tracer quel membre du staff a fait le geste (`paused_by`) sur `company_mercuriales`.",
+      "conservation": "aucune-limite-decidee",
+      "purge": null,
+      "information": false
+    },
+    {
+      "colonne": "public.delivery_settings.updated_by_name",
+      "personne": "staff",
+      "categorie": "identite",
+      "finalite": "Nom figé de l'auteur d'un geste sur `delivery_settings`, lisible même si la fiche staff change.",
+      "conservation": "aucune-limite-decidee",
+      "purge": null,
+      "information": false
+    },
+    {
+      "colonne": "public.delivery_settings.updated_by_staff_id",
+      "personne": "staff",
+      "categorie": "auteur-geste",
+      "finalite": "Tracer quel membre du staff a fait le geste (`updated_by_staff_id`) sur `delivery_settings`.",
+      "conservation": "aucune-limite-decidee",
+      "purge": null,
+      "information": false
+    },
+    {
+      "colonne": "public.feature_access_exemptions.created_by_name",
+      "personne": "staff",
+      "categorie": "identite",
+      "finalite": "Nom figé de l'auteur d'un geste sur `feature_access_exemptions`, lisible même si la fiche staff change.",
+      "conservation": "aucune-limite-decidee",
+      "purge": null,
+      "information": false
+    },
+    {
+      "colonne": "public.feature_access_exemptions.created_by_staff_id",
+      "personne": "staff",
+      "categorie": "auteur-geste",
+      "finalite": "Tracer quel membre du staff a fait le geste (`created_by_staff_id`) sur `feature_access_exemptions`.",
+      "conservation": "aucune-limite-decidee",
+      "purge": null,
+      "information": false
+    },
+    {
+      "colonne": "public.feature_access_overrides.updated_by_name",
+      "personne": "staff",
+      "categorie": "identite",
+      "finalite": "Nom figé de l'auteur d'un geste sur `feature_access_overrides`, lisible même si la fiche staff change.",
+      "conservation": "aucune-limite-decidee",
+      "purge": null,
+      "information": false
+    },
+    {
+      "colonne": "public.feature_access_overrides.updated_by_staff_id",
+      "personne": "staff",
+      "categorie": "auteur-geste",
+      "finalite": "Tracer quel membre du staff a fait le geste (`updated_by_staff_id`) sur `feature_access_overrides`.",
+      "conservation": "aucune-limite-decidee",
+      "purge": null,
+      "information": false
+    },
+    {
+      "colonne": "public.loyalty_settings.updated_by_staff_id",
+      "personne": "staff",
+      "categorie": "auteur-geste",
+      "finalite": "Tracer quel membre du staff a fait le geste (`updated_by_staff_id`) sur `loyalty_settings`.",
+      "conservation": "aucune-limite-decidee",
+      "purge": null,
+      "information": false
+    },
+    {
+      "colonne": "public.loyalty_vouchers.cancelled_by_staff_id",
+      "personne": "staff",
+      "categorie": "auteur-geste",
+      "finalite": "Tracer quel membre du staff a fait le geste (`cancelled_by_staff_id`) sur `loyalty_vouchers`.",
+      "conservation": "aucune-limite-decidee",
+      "purge": null,
+      "information": false
+    },
+    {
+      "colonne": "public.mercuriale_drafts.updated_by",
+      "personne": "staff",
+      "categorie": "auteur-geste",
+      "finalite": "Tracer quel membre du staff a fait le geste (`updated_by`) sur `mercuriale_drafts`.",
+      "conservation": "aucune-limite-decidee",
+      "purge": null,
+      "information": false
+    },
+    {
+      "colonne": "public.order_collection.settled_by_staff_id",
+      "personne": "staff",
+      "categorie": "auteur-geste",
+      "finalite": "Tracer quel membre du staff a fait le geste (`settled_by_staff_id`) sur `order_collection`.",
+      "conservation": "aucune-limite-decidee",
+      "purge": null,
+      "information": false
+    },
+    {
+      "colonne": "public.order_cutoff_waiver.granted_by_staff_id",
+      "personne": "staff",
+      "categorie": "auteur-geste",
+      "finalite": "Tracer quel membre du staff a fait le geste (`granted_by_staff_id`) sur `order_cutoff_waiver`.",
+      "conservation": "aucune-limite-decidee",
+      "purge": null,
+      "information": false
+    },
+    {
+      "colonne": "public.order_drafts.saved_by_staff_id",
+      "personne": "staff",
+      "categorie": "auteur-geste",
+      "finalite": "Tracer quel membre du staff a fait le geste (`saved_by_staff_id`) sur `order_drafts`.",
+      "conservation": "aucune-limite-decidee",
+      "purge": null,
+      "information": false
+    },
+    {
+      "colonne": "public.order_late_fee.updated_by",
+      "personne": "staff",
+      "categorie": "auteur-geste",
+      "finalite": "Tracer quel membre du staff a fait le geste (`updated_by`) sur `order_late_fee`.",
+      "conservation": "aucune-limite-decidee",
+      "purge": null,
+      "information": false
+    },
+    {
+      "colonne": "public.orders.handed_over_by",
+      "personne": "livreur",
+      "categorie": "auteur-geste",
+      "finalite": "Projection côté commerce de l'auteur de la remise (comptoir ou porte).",
+      "conservation": "aucune-limite-decidee",
+      "purge": null,
+      "information": false
+    },
+    {
+      "colonne": "public.orders.placed_by_staff_id",
+      "personne": "staff",
+      "categorie": "auteur-geste",
+      "finalite": "Tracer quel membre du staff a fait le geste (`placed_by_staff_id`) sur `orders`.",
+      "conservation": "aucune-limite-decidee",
+      "purge": null,
+      "information": false
+    },
+    {
+      "colonne": "public.orders.ready_by",
+      "personne": "staff",
+      "categorie": "auteur-geste",
+      "finalite": "Tracer quel membre du staff a fait le geste (`ready_by`) sur `orders`.",
+      "conservation": "aucune-limite-decidee",
+      "purge": null,
+      "information": false
+    },
+    {
+      "colonne": "public.payment_links.cancelled_by_staff_id",
+      "personne": "staff",
+      "categorie": "auteur-geste",
+      "finalite": "Tracer quel membre du staff a fait le geste (`cancelled_by_staff_id`) sur `payment_links`.",
+      "conservation": "aucune-limite-decidee",
+      "purge": null,
+      "information": false
+    },
+    {
+      "colonne": "public.payment_links.created_by_staff_id",
+      "personne": "staff",
+      "categorie": "auteur-geste",
+      "finalite": "Tracer quel membre du staff a fait le geste (`created_by_staff_id`) sur `payment_links`.",
+      "conservation": "aucune-limite-decidee",
+      "purge": null,
+      "information": false
+    },
+    {
+      "colonne": "public.platform_content.updated_by",
+      "personne": "staff",
+      "categorie": "auteur-geste",
+      "finalite": "Tracer quel membre du staff a fait le geste (`updated_by`) sur `platform_content`.",
+      "conservation": "aucune-limite-decidee",
+      "purge": null,
+      "information": false
+    },
+    {
+      "colonne": "public.price_floors.archived_by",
+      "personne": "staff",
+      "categorie": "auteur-geste",
+      "finalite": "Tracer quel membre du staff a fait le geste (`archived_by`) sur `price_floors`.",
+      "conservation": "aucune-limite-decidee",
+      "purge": null,
+      "information": false
+    },
+    {
+      "colonne": "public.price_floors.created_by",
+      "personne": "staff",
+      "categorie": "auteur-geste",
+      "finalite": "Tracer quel membre du staff a fait le geste (`created_by`) sur `price_floors`.",
+      "conservation": "aucune-limite-decidee",
+      "purge": null,
+      "information": false
+    },
+    {
+      "colonne": "public.price_rules.archived_by",
+      "personne": "staff",
+      "categorie": "auteur-geste",
+      "finalite": "Tracer quel membre du staff a fait le geste (`archived_by`) sur `price_rules`.",
+      "conservation": "aucune-limite-decidee",
+      "purge": null,
+      "information": false
+    },
+    {
+      "colonne": "public.price_rules.created_by",
+      "personne": "staff",
+      "categorie": "auteur-geste",
+      "finalite": "Tracer quel membre du staff a fait le geste (`created_by`) sur `price_rules`.",
+      "conservation": "aucune-limite-decidee",
+      "purge": null,
+      "information": false
+    },
+    {
+      "colonne": "public.price_rules.paused_by",
+      "personne": "staff",
+      "categorie": "auteur-geste",
+      "finalite": "Tracer quel membre du staff a fait le geste (`paused_by`) sur `price_rules`.",
+      "conservation": "aucune-limite-decidee",
+      "purge": null,
+      "information": false
+    },
+    {
+      "colonne": "public.price_templates.created_by",
+      "personne": "staff",
+      "categorie": "auteur-geste",
+      "finalite": "Tracer quel membre du staff a fait le geste (`created_by`) sur `price_templates`.",
+      "conservation": "aucune-limite-decidee",
+      "purge": null,
+      "information": false
+    },
+    {
+      "colonne": "public.staff_notifications.read_by",
+      "personne": "staff",
+      "categorie": "auteur-geste",
+      "finalite": "Tracer quel membre du staff a fait le geste (`read_by`) sur `staff_notifications`.",
+      "conservation": "aucune-limite-decidee",
+      "purge": null,
+      "information": false
+    },
+    {
+      "colonne": "public.staff_permission_overrides.granted_by_staff_id",
+      "personne": "staff",
+      "categorie": "auteur-geste",
+      "finalite": "Tracer quel membre du staff a fait le geste (`granted_by_staff_id`) sur `staff_permission_overrides`.",
+      "conservation": "aucune-limite-decidee",
+      "purge": null,
+      "information": false
+    },
+    {
+      "colonne": "public.staff_push_subscriptions.auth",
+      "personne": "staff",
+      "categorie": "appareil",
+      "finalite": "Secret du navigateur pour chiffrer la notification.",
+      "conservation": "aucune-limite-decidee",
+      "purge": null,
+      "information": false
+    },
+    {
+      "colonne": "public.staff_push_subscriptions.endpoint",
+      "personne": "staff",
+      "categorie": "appareil",
+      "finalite": "Prévenir l'appareil (cloche du back-office) : URL du service de push.",
+      "conservation": "aucune-limite-decidee",
+      "purge": null,
+      "information": false
+    },
+    {
+      "colonne": "public.staff_push_subscriptions.p256dh",
+      "personne": "staff",
+      "categorie": "appareil",
+      "finalite": "Clé du navigateur pour chiffrer la notification.",
+      "conservation": "aucune-limite-decidee",
+      "purge": null,
+      "information": false
+    },
+    {
+      "colonne": "public.staff_push_subscriptions.staff_user_id",
+      "personne": "staff",
+      "categorie": "appareil",
+      "finalite": "Rattacher l'abonnement à la fiche.",
+      "conservation": "aucune-limite-decidee",
+      "purge": null,
+      "information": false
+    },
+    {
+      "colonne": "public.staff_users.auth0_id",
+      "personne": "staff",
+      "categorie": "identite",
+      "finalite": "Relier la connexion Auth0 à la fiche (lecteurs tenus par lint:auth0-id-readers).",
+      "conservation": "a-decider",
+      "purge": null,
+      "information": false
+    },
+    {
+      "colonne": "public.staff_users.email",
+      "personne": "staff",
+      "categorie": "identite",
+      "finalite": "Annuaire et invitation ; identité de connexion.",
+      "conservation": "a-decider",
+      "purge": null,
+      "information": false
+    },
+    {
+      "colonne": "public.staff_users.first_name",
+      "personne": "staff",
+      "categorie": "identite",
+      "finalite": "Annuaire, invitation, auteur des gestes.",
+      "conservation": "a-decider",
+      "purge": null,
+      "information": false
+    },
+    {
+      "colonne": "public.staff_users.job_title",
+      "personne": "staff",
+      "categorie": "identite",
+      "finalite": "Annuaire : intitulé de poste.",
+      "conservation": "a-decider",
+      "purge": null,
+      "information": false
+    },
+    {
+      "colonne": "public.staff_users.last_name",
+      "personne": "staff",
+      "categorie": "identite",
+      "finalite": "Annuaire, invitation, auteur des gestes.",
+      "conservation": "a-decider",
+      "purge": null,
+      "information": false
+    },
+    {
+      "colonne": "public.staff_users.phone",
+      "personne": "staff",
+      "categorie": "identite",
+      "finalite": "Annuaire : joindre la personne.",
+      "conservation": "a-decider",
+      "purge": null,
+      "information": false
+    },
+    {
+      "colonne": "public.storefront.updated_by_staff_id",
+      "personne": "staff",
+      "categorie": "auteur-geste",
+      "finalite": "Tracer quel membre du staff a fait le geste (`updated_by_staff_id`) sur `storefront`.",
+      "conservation": "aucune-limite-decidee",
+      "purge": null,
+      "information": false
+    },
+    {
+      "colonne": "public.users.invited_by",
+      "personne": "staff",
+      "categorie": "auteur-geste",
+      "finalite": "Tracer quel membre du staff a fait le geste (`invited_by`) sur `users`.",
+      "conservation": "aucune-limite-decidee",
+      "purge": null,
+      "information": false
+    },
+    {
+      "colonne": "public.volume_commitments.archived_by",
+      "personne": "staff",
+      "categorie": "auteur-geste",
+      "finalite": "Tracer quel membre du staff a fait le geste (`archived_by`) sur `volume_commitments`.",
+      "conservation": "aucune-limite-decidee",
+      "purge": null,
+      "information": false
+    },
+    {
+      "colonne": "public.volume_commitments.created_by",
+      "personne": "staff",
+      "categorie": "auteur-geste",
+      "finalite": "Tracer quel membre du staff a fait le geste (`created_by`) sur `volume_commitments`.",
+      "conservation": "aucune-limite-decidee",
+      "purge": null,
+      "information": false
+    },
+    {
+      "colonne": "public.volume_ladders.archived_by",
+      "personne": "staff",
+      "categorie": "auteur-geste",
+      "finalite": "Tracer quel membre du staff a fait le geste (`archived_by`) sur `volume_ladders`.",
+      "conservation": "aucune-limite-decidee",
+      "purge": null,
+      "information": false
+    },
+    {
+      "colonne": "public.volume_ladders.created_by",
+      "personne": "staff",
+      "categorie": "auteur-geste",
+      "finalite": "Tracer quel membre du staff a fait le geste (`created_by`) sur `volume_ladders`.",
+      "conservation": "aucune-limite-decidee",
+      "purge": null,
+      "information": false
+    },
+    {
+      "colonne": "public.volume_ladders.paused_by",
+      "personne": "staff",
+      "categorie": "auteur-geste",
+      "finalite": "Tracer quel membre du staff a fait le geste (`paused_by`) sur `volume_ladders`.",
+      "conservation": "aucune-limite-decidee",
+      "purge": null,
+      "information": false
+    }
+  ],
+  "exclusions": [
+    {
+      "colonne": "delivery.delivery_stop_execution.gps_lat",
+      "raison": "Point GPS de l'ADRESSE du carnet, figé au départ pour la navigation — pas la position du livreur (rgpd-livreur.md §2, migration 20261001120300_le_depart_fige_le_rang_et_le_point). Donnée du client, hors périmètre de ce registre."
+    },
+    {
+      "colonne": "delivery.delivery_stop_execution.gps_lng",
+      "raison": "Point GPS de l'ADRESSE du carnet, figé au départ pour la navigation — pas la position du livreur (rgpd-livreur.md §2). Donnée du client, hors périmètre de ce registre."
+    },
+    {
+      "colonne": "growth.company_terminations.initiated_by",
+      "raison": "Vaut `client` ou `commercial` (commentaire du schéma) : un rôle, pas une personne."
+    },
+    {
+      "colonne": "public.client_notes.photo_key",
+      "raison": "Photo jointe à une note du commercial sur un CLIENT : donnée du client, hors staff et réceptionnaire. L'auteur de la note (`created_by_*`) est, lui, au registre."
+    },
+    {
+      "colonne": "public.delivery_procedure_steps.photo_key",
+      "raison": "Photo d'une étape de la procédure d'accès d'un CLIENT, posée par le commercial : donnée du client (politique de confidentialité), hors staff et réceptionnaire."
+    }
+  ]
+}

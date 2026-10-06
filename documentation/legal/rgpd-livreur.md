@@ -177,6 +177,43 @@ Vérifié le 2026-10-06.
 
 ---
 
+## 8. Ce que la porte tient
+
+Depuis le 2026-10-06, l'inventaire des §2 et §3 a une forme machine :
+[`rgpd-registre.json`](rgpd-registre.json), une entrée par colonne
+`schéma.table.colonne` (personne, catégorie, finalité, conservation, purge,
+information). `pnpm lint:rgpd-staff` (`dev-toolbox/gates/rgpd-staff.mjs`) le
+confronte au schéma Prisma à chaque exécution de `lint:gates`.
+
+- **Colonnes candidates**, détectées par leur nom Postgres (`@map` compris) :
+  `*_by`, `*_by_name`, `*_staff_id`, `driver_*`, `receiver_name`, `photo_key`,
+  `signature_key`, et `*_lat` / `*_lng` / `*_accuracy_m` dans le schéma
+  `delivery` seulement. Une candidate absente du registre fait échouer.
+- **Registre périmé** : une entrée ou une exclusion qui ne nomme aucune colonne
+  existante fait échouer. Le registre porte aussi des colonnes que les motifs
+  ne voient pas (fiche `staff_users`, abonnements push, `departed_at`,
+  `returned_at`, `arrived_at`).
+- **Champs** : obligatoires et aux valeurs admises ; une `purge` cite un
+  fichier qui existe.
+- **Exclusions**, chacune avec sa raison dans le registre : le point GPS de
+  l'adresse (`delivery_stop_execution.gps_lat/lng`), `company_terminations.initiated_by`
+  (un rôle, pas une personne), les photos des notes et des procédures d'accès
+  d'un client (données du client).
+- **Le texte d'information** : `texteInformation.version` est `null` tant que
+  le dialogue d'information du livreur n'existe pas. Dès qu'il a une version,
+  l'empreinte des entrées `livreur` (colonne et catégorie) doit être celle que
+  le texte a vue : ajouter ou recatégoriser une donnée du livreur exige une
+  nouvelle version du texte.
+- **Dette affichée, sans échec** : le nombre d'entrées en `a-decider`, en
+  `aucune-limite-decidee` et en `information: false`.
+
+Ce qu'elle ne tient pas : une donnée personnelle dans une colonne au nom neutre
+(`note`, `contact` du snapshot de départ), ni le contenu des `jsonb`. Le
+`contact` convenu, lu par le livreur (§3), n'est pas au registre : il n'est ni
+du staff ni le réceptionnaire attesté.
+
+---
+
 ## Annexe — brouillon de fiche du registre : « Livraison et preuves de remise »
 
 > Brouillon. Chaque ligne est **à valider par un juriste ou un DPO**.

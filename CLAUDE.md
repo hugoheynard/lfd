@@ -54,7 +54,12 @@
 >   qui écoute un fait d'un autre bloc vit sur le bus en mémoire, et un
 >   redémarrage laisse les deux blocs en désaccord sans que personne le sache ;
 >   entre deux blocs, l'abonné est un `@DurableHandler`, et les abonnés qui
->   restent à basculer sont une dette comptée qui ne peut que décroître. C'est la
+>   restent à basculer sont une dette comptée qui ne peut que décroître. Et
+>   **42** depuis le 2026-10-06 avec `lint:rgpd-staff` : chaque colonne qui
+>   porte une donnée personnelle d'un membre du staff ou d'un réceptionnaire
+>   est au registre `documentation/legal/rgpd-registre.json`, que le texte
+>   d'information du livreur lira — une colonne absente est une donnée qu'on
+>   ne lui aura pas annoncée ; les durées non décidées sont comptées. C'est la
 >   **seule** correction faite dans le corps, parce qu'un chiffre faux se vérifie
 >   en une commande et trompe tout de suite ;
 > - le dossier **`documentation/pricing/`** (ouvert le 2026-09-06) et le dossier
@@ -1174,7 +1179,7 @@ pnpm --filter lfd-api seed:pim       # catalogue rejoué PAR LE BUS (cible local
 pnpm lint               # turbo, toutes les apps
 pnpm test
 pnpm build
-pnpm lint:gates         # les 41 portes du dépôt, d'un coup
+pnpm lint:gates         # les 42 portes du dépôt, d'un coup
 pnpm lint:no-direct-env # gate repo : aucun accès direct à process.env
 ```
 
