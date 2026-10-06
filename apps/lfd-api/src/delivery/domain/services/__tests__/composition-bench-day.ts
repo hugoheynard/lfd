@@ -6,6 +6,7 @@ import type { PlanningVehicle, Proposal } from "../proposal.js";
 import type { PlannableStop, ProposalInput } from "../propose-rounds.js";
 import { binsOf, measured } from "./capacity-fixtures.js";
 import { planeCost } from "./line-cost.js";
+import type { CompositionZones } from "../zone-rule.js";
 
 /**
  * La journée du banc à 200 clients (composition-automatique.md §5 point 3) :
@@ -92,8 +93,30 @@ export interface BenchDay {
   readonly insertion: (composed: Proposal) => InsertionInput;
 }
 
-/** La journée de la graine `seed`, avec `stopCount` arrêts. */
-export function benchDay(seed: number, stopCount: number): BenchDay {
+/**
+ * Le tirage « avec zones » (2026-10-06) : la moitié nord et la moitié sud du
+ * disque, chaque Kangoo restreint à une moitié, les Trafic partout. Les zones
+ * se DÉDUISENT des positions déjà tirées : la scène est la même graine pour
+ * graine, seule la règle change.
+ */
+export function zonesOf(
+  positions: Readonly<Record<string, readonly [number, number]>>,
+): CompositionZones {
+  return {
+    vehicles: new Map([
+      ["v3", new Set(["north"])],
+      ["v4", new Set(["south"])],
+    ]),
+    stops: new Map(
+      Object.entries(positions).flatMap(([id, [, y]]) =>
+        id === "depot" ? [] : [[id, y >= 0 ? "north" : "south"] as const],
+      ),
+    ),
+  };
+}
+
+/** La journée de la graine `seed`, avec `stopCount` arrêts ; `zoned` : le tirage avec zones. */
+export function benchDay(seed: number, stopCount: number, zoned = false): BenchDay {
   const random = seededRandom(seed);
   const positions: Record<string, readonly [number, number]> = { depot: [0, 0] };
   const stops: PlannableStop[] = [];
@@ -120,6 +143,7 @@ export function benchDay(seed: number, stopCount: number): BenchDay {
   const cost = tabulated(planeCost(positions), Object.keys(positions));
   const settings = RoutingSettings.defaults();
   const passageLimits = new Map(VEHICLES.map((vehicle) => [vehicle.id, PASSAGES_PER_VEHICLE]));
+  const zones = zoned ? { zones: zonesOf(positions) } : {};
   const complete: ProposalInput = {
     depotId: "depot",
     stops,
@@ -129,6 +153,7 @@ export function benchDay(seed: number, stopCount: number): BenchDay {
     settings,
     passageLimits,
     capacity,
+    ...zones,
   };
   const newcomers = new Set(stops.slice(-INSERTED_COUNT).map((stop) => stop.id));
   const insertion = (composed: Proposal): InsertionInput => ({
@@ -136,6 +161,7 @@ export function benchDay(seed: number, stopCount: number): BenchDay {
     cost,
     settings,
     capacity,
+    ...zones,
     vehicles: VEHICLES,
     passageLimits: new Map(
       VEHICLES.map((vehicle) => [

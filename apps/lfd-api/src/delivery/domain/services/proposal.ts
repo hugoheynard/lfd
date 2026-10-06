@@ -40,4 +40,9 @@ export interface Proposal {
    * répartir, ou restées dans leur tournée d'origine (« tout recomposer »).
    */
   readonly capacityRefused: readonly string[];
+  /**
+   * Les commandes qu'aucun véhicule autorisé sur leur zone ne peut prendre
+   * (2026-10-06) — à répartir, ou restées dans leur tournée d'origine.
+   */
+  readonly zoneRefused: readonly string[];
 }

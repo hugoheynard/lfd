@@ -85,6 +85,11 @@ model DeliveryVehicle {
   /// schéma `production` n'en a aucun, et une valeur d'enum ne se retire pas.
   energy String?
 
+  /// Les zones de livraison où ce véhicule peut aller (identifiants OPAQUES de
+  /// `public.delivery_zones`, aucune clé étrangère) ; vide = partout. Migration
+  /// `20261007140000_les_zones_d_un_vehicule`.
+  allowedZoneIds String[] @default([]) @map("allowed_zone_ids")
+
   rounds DeliveryRound[]
 
   @@map("delivery_vehicle")

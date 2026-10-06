@@ -72,7 +72,7 @@ describe("insérer dans les tournées existantes (mode insert)", () => {
   it("une tournée qui ne reçoit rien n'est pas proposée", () => {
     const proposal = insertIntoRounds(input({ stops: [] }));
 
-    expect(proposal).toEqual({ tours: [], overflow: [], capacityRefused: [] });
+    expect(proposal).toEqual({ tours: [], overflow: [], capacityRefused: [], zoneRefused: [] });
   });
 
   it("un véhicule sans tournée en reçoit une neuve", () => {

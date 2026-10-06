@@ -7,6 +7,7 @@ import { DeliveryOrdersReader, DeliveryOrderStatesReader } from "../../channels/
 import { BroughtBackOrdersReader } from "../../domain/ports/brought-back-orders.reader.js";
 import { DeliveryIncidentsReader } from "../../domain/ports/delivery-incidents.reader.js";
 import { DeliveryRoundsReader } from "../../domain/ports/delivery-rounds.reader.js";
+import { FleetReader } from "../../domain/ports/fleet.reader.js";
 import { ordersToReplace } from "../brought-back-support.js";
 import { deliveryIncidentView } from "../delivery-incident-view.js";
 import { driverNamesOf, driversNow } from "../delivery-driver-support.js";
@@ -17,7 +18,8 @@ import { GetDeliveryRoundsDayQuery } from "./get-delivery-rounds-day.query.js";
  * La composition d'un jour : les tournées, leurs arrêts signalés, leur
  * livreur (et s'il peut encore conduire), ce qui reste à répartir, et les
  * problèmes signalés par les livreurs (`plan-a-la-porte.md`, § 3), et les
- * commandes rapportées à replacer, quel que soit le jour (lot RL1). Une
+ * commandes rapportées à replacer, quel que soit le jour (lot RL1), et les
+ * arrêts posés hors des zones de leur véhicule (2026-10-06). Une
  * lecture : elle n'écrit rien.
  */
 @QueryHandler(GetDeliveryRoundsDayQuery)
@@ -33,6 +35,7 @@ export class GetDeliveryRoundsDayHandler implements IQueryHandler<
     private readonly incidents: DeliveryIncidentsReader,
     private readonly broughtBack: BroughtBackOrdersReader,
     private readonly states: DeliveryOrderStatesReader,
+    private readonly fleet: FleetReader,
   ) {}
 
   async execute(query: GetDeliveryRoundsDayQuery): Promise<DeliveryRoundsDayView> {
@@ -46,12 +49,13 @@ export class GetDeliveryRoundsDayHandler implements IQueryHandler<
     const driverIds = rounds.flatMap((round) =>
       round.driverStaffId === null ? [] : [round.driverStaffId],
     );
-    const [composed, assigned, drivers, driverNames, broughtBack] = await Promise.all([
+    const [composed, assigned, drivers, driverNames, broughtBack, fleet] = await Promise.all([
       this.orders.byIds(composedIds),
       this.rounds.composedAmong(expected.map((order) => order.orderId)),
       driversNow(this.holders),
       driverNamesOf(this.directory, driverIds),
       this.broughtBack.lastAmong([...composedIds, ...awaiting.map((order) => order.orderId)]),
+      this.fleet.list(),
     ]);
     const view = deliveryRoundsDayView({
       day: query.day,
@@ -63,6 +67,11 @@ export class GetDeliveryRoundsDayHandler implements IQueryHandler<
       driverNames,
       awaiting,
       broughtBack,
+      vehicleZones: new Map(
+        fleet
+          .filter((vehicle) => vehicle.allowedZoneIds.length > 0)
+          .map((vehicle) => [vehicle.id, new Set(vehicle.allowedZoneIds)]),
+      ),
     });
     return { ...view, incidents: incidents.map(deliveryIncidentView) };
   }

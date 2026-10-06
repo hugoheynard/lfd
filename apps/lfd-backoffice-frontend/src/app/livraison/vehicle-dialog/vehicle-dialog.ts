@@ -8,7 +8,7 @@ import {
   signal,
   untracked,
 } from '@angular/core';
-import type { VehicleEnergy, VehiclePayload, VehicleView } from '@lfd/contracts';
+import type { DeliveryZoneView, VehicleEnergy, VehiclePayload, VehicleView } from '@lfd/contracts';
 import { httpErrorMessage } from '@lfd/endpoints';
 import {
   FoldBadgeComponent,
@@ -18,6 +18,7 @@ import {
   FoldFieldsetComponent,
   FoldInputComponent,
   FoldListboxComponent,
+  FoldMultiselectComponent,
   FoldNumberInputComponent,
   FoldPanelBodyComponent,
   FoldPanelFooterComponent,
@@ -27,6 +28,7 @@ import {
   type FoldPanelDefaults,
 } from 'fold-ng';
 
+import { DeliveryZonesService } from '../../b2b/reglages/delivery-zones.service';
 import { DeliverySettingsService } from '../delivery-settings.service';
 import {
   CARGO_CM_MAX,
@@ -42,6 +44,7 @@ import {
   volumeLabel,
   type VehicleLoadDraft,
 } from '../vehicle-load';
+import { sameZones, zoneOptionsOf } from '../vehicle-zones';
 
 /** Ajouter (`vehicle` absent) ou corriger un véhicule. */
 export interface VehicleDialogData {
@@ -63,7 +66,8 @@ const PLATE_MAX = 20;
  * value object du serveur qui fait foi, et le dupliquer ferait deux règles.
  *
  * La charge part toujours COMPLÈTE — passages de roue compris (G4) : absent vaut `null` côté serveur, donc
- * une correction qui omettrait les dimensions ou l'énergie les effacerait.
+ * une correction qui omettrait les dimensions ou l'énergie les effacerait. Les
+ * zones autorisées aussi (2026-10-06) : absentes, elles valent « partout ».
  */
 @Component({
   selector: 'app-vehicle-dialog',
@@ -76,6 +80,7 @@ const PLATE_MAX = 20;
     FoldFieldsetComponent,
     FoldInputComponent,
     FoldListboxComponent,
+    FoldMultiselectComponent,
     FoldNumberInputComponent,
     FoldPanelBodyComponent,
     FoldPanelFooterComponent,
@@ -90,6 +95,7 @@ export class VehicleDialog implements FoldPanelContent<VehicleDialogData> {
   readonly data = input.required<VehicleDialogData>();
 
   private readonly api = inject(DeliverySettingsService);
+  private readonly zonesApi = inject(DeliveryZonesService);
   private readonly panel = inject(FoldPanelRef);
 
   protected readonly name = signal('');
@@ -98,6 +104,14 @@ export class VehicleDialog implements FoldPanelContent<VehicleDialogData> {
   protected readonly energyOptions = ENERGY_OPTIONS;
   protected readonly load = signal<VehicleLoadDraft>(loadDraftOf(undefined));
   protected readonly saving = signal(false);
+  /** Les zones autorisées choisies ; vide = partout (2026-10-06). */
+  protected readonly allowedZoneIds = signal<readonly string[]>([]);
+  private readonly zones = signal<readonly DeliveryZoneView[]>([]);
+  /** La liste des zones n'a pas pu être lue : on garde ce qui est choisi, et on le dit. */
+  protected readonly zonesUnavailable = signal(false);
+  protected readonly zoneOptions = computed(() =>
+    zoneOptionsOf(this.zones(), this.allowedZoneIds()),
+  );
 
   protected readonly bounds = {
     cmMin: CARGO_CM_MIN,
@@ -150,6 +164,7 @@ export class VehicleDialog implements FoldPanelContent<VehicleDialogData> {
       vehicle.name === this.name().trim() &&
       vehicle.plate === this.plate().trim() &&
       vehicle.energy === this.energy() &&
+      sameZones(vehicle.allowedZoneIds, this.allowedZoneIds()) &&
       // Ce qui PARTIRAIT, pas la saisie : décocher puis recocher le froid
       // sans rien changer n'est pas une correction.
       JSON.stringify(readLoad(loadDraftOf(vehicle))) === JSON.stringify(this.reading())
@@ -169,8 +184,18 @@ export class VehicleDialog implements FoldPanelContent<VehicleDialogData> {
         this.plate.set(vehicle?.plate ?? '');
         this.energy.set(vehicle?.energy ?? null);
         this.load.set(loadDraftOf(vehicle));
+        this.allowedZoneIds.set(vehicle?.allowedZoneIds ?? []);
       });
     });
+    void this.loadZones();
+  }
+
+  private async loadZones(): Promise<void> {
+    try {
+      this.zones.set(await this.zonesApi.list());
+    } catch {
+      this.zonesUnavailable.set(true);
+    }
   }
 
   /** Pose un champ du chargement ; les autres restent. */
@@ -191,6 +216,7 @@ export class VehicleDialog implements FoldPanelContent<VehicleDialogData> {
       wheelArches: reading.wheelArches,
       refrigeration: reading.refrigeration,
       energy: this.energy(),
+      allowedZoneIds: [...this.allowedZoneIds()],
     };
     const vehicle = this.data().vehicle;
     this.saving.set(true);

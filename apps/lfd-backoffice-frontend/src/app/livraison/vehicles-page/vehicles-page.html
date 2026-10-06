@@ -84,6 +84,9 @@
                 @if (energyLine(vehicle.energy); as energy) {
                   <span data-energy>{{ energy }}</span>
                 }
+                @if (zonesOf(vehicle); as zones) {
+                  <span data-zones>{{ zones }}</span>
+                }
               </div>
             </fold-card>
           }

@@ -40,6 +40,7 @@ const ORDERS = new LocatedDeliveryOrders(
       address: null,
       window: null,
       stopMinutes: null,
+      zoneId: null,
     },
   ],
 );

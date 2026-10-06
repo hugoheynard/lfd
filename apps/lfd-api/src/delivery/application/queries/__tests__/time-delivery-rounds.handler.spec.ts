@@ -54,6 +54,7 @@ function at(orderId: string, lat: number, lng: number): DeliveryStopPoint {
     address: null,
     window: null,
     stopMinutes: null,
+    zoneId: null,
   };
 }
 

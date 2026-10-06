@@ -35,12 +35,13 @@ export class PrismaVehicleRepository extends VehicleRepository {
   }
 
   async save(vehicle: Vehicle): Promise<void> {
-    const { id, cargo, wheelArches, refrigeration, energy, ...row } = vehicle.toState();
+    const { id, cargo, wheelArches, refrigeration, energy, allowedZoneIds, ...row } =
+      vehicle.toState();
     const load = loadColumnsOf(cargo, wheelArches, refrigeration);
     try {
       await this.prisma.deliveryVehicle.upsert({
         where: { id },
-        create: { id, ...row, ...load, energy },
+        create: { id, ...row, ...load, energy, allowedZoneIds: [...allowedZoneIds] },
         update: {
           name: row.name,
           plate: row.plate,
@@ -48,6 +49,7 @@ export class PrismaVehicleRepository extends VehicleRepository {
           updatedAt: row.updatedAt,
           ...load,
           energy,
+          allowedZoneIds: [...allowedZoneIds],
         },
       });
     } catch (error: unknown) {

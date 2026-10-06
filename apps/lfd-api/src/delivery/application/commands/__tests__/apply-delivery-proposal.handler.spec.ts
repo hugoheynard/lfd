@@ -55,6 +55,7 @@ const POINTS: readonly DeliveryStopPoint[] = [
   address: null,
   window: null,
   stopMinutes: null,
+  zoneId: null,
 }));
 
 function scene(

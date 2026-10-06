@@ -41,11 +41,12 @@ export const POOL_KEY = '__pool__';
 
 /**
  * Pourquoi le calcul a laissé une commande à répartir (aperçu seulement) :
- * sans point GPS, plus de passage permis, ou la place (CA4) — aucune caisse
- * ne la tient (`capacity`). Une commande aux bacs inconnus n'y est plus : elle
+ * sans point GPS, plus de passage permis, la place (CA4) — aucune caisse
+ * ne la tient (`capacity`) —, ou aucun véhicule autorisé sur sa zone
+ * (`zone`, 2026-10-06). Une commande aux bacs inconnus n'y est plus : elle
  * est placée, et sa tournée dit « place non vérifiée » (2026-10-06).
  */
-export type BoardReason = 'unlocated' | 'overflow' | 'capacity';
+export type BoardReason = 'unlocated' | 'overflow' | 'capacity' | 'zone';
 
 /** Une commande à répartir. */
 export interface BoardOrder {
@@ -84,6 +85,12 @@ export interface BoardStop {
    * des réglages (2026-10-06) — « 1 × Manne (par défaut) ». `null` sinon.
    */
   readonly defaultDemand: string | null;
+  /**
+   * Composition enregistrée seulement : le véhicule n'est pas autorisé sur la
+   * zone de la commande (2026-10-06). Posée avant la restriction, ou glissée
+   * à la main : dit, jamais défait.
+   */
+  readonly outOfZone: boolean;
 }
 
 /** Une tournée du tableau — enregistrée, ou à ouvrir dans l'aperçu. */
@@ -193,6 +200,7 @@ function roundOfComposed(composed: ComposedRound, timing: ComposedTiming): Board
       windowMissed: false,
       placementLate: timing.placementLate.has(stop.orderId),
       defaultDemand: null,
+      outOfZone: stop.outOfZone === true,
     })),
   };
 }
@@ -235,6 +243,7 @@ function stopOfOrder(order: BoardOrder): BoardStop {
     windowMissed: false,
     placementLate: false,
     defaultDemand: null,
+    outOfZone: false,
   };
 }
 
@@ -361,6 +370,8 @@ function plannedStopOnBoard(
     // L'aperçu dit son propre retard (`windowMissed`) ; le rouge est celui du geste enregistré.
     placementLate: false,
     defaultDemand,
+    // Comme le rouge : l'étiquette est celle de la composition enregistrée.
+    outOfZone: false,
   };
 }
 
@@ -563,6 +574,9 @@ export function orderTagsOf(order: BoardOrder): readonly OrderCardTag[] {
   if (order.reason === 'capacity') {
     tags.push({ label: 'Ne tient dans aucun véhicule (place)', variant: 'warning' });
   }
+  if (order.reason === 'zone') {
+    tags.push({ label: ZONE_REFUSED_LABEL, variant: 'warning' });
+  }
   return tags;
 }
 
@@ -584,7 +598,13 @@ export function needsGps(order: BoardOrder): boolean {
 /** L'alerte rouge, en toutes lettres, avec le geste qui la lève (CA5). */
 export const PLACEMENT_LATE_LABEL = 'Échéance intenable à cette place — la déplacer';
 
-/** Les étiquettes d'un arrêt : signaux, fenêtre intenable, rapportée, pas prête. */
+/** Aucun véhicule autorisé sur la zone de la commande ne peut la prendre (2026-10-06). */
+export const ZONE_REFUSED_LABEL = 'Aucun véhicule autorisé sur cette zone';
+
+/** L'arrêt est posé dans un véhicule qui n'est pas autorisé sur sa zone, et le geste qui le lève. */
+export const OUT_OF_ZONE_LABEL = 'Hors des zones du véhicule — le déplacer';
+
+/** Les étiquettes d'un arrêt : signaux, fenêtre intenable, hors zone, rapportée, pas prête. */
 export function stopTagsOf(stop: BoardStop): readonly OrderCardTag[] {
   const tags: OrderCardTag[] = stop.signals.map((label) => ({ label, variant: 'alert' }));
   if (stop.placementLate) {
@@ -592,6 +612,9 @@ export function stopTagsOf(stop: BoardStop): readonly OrderCardTag[] {
   }
   if (stop.windowClash !== null) {
     tags.push({ label: `Fenêtre intenable après ${stop.windowClash}`, variant: 'warning' });
+  }
+  if (stop.outOfZone) {
+    tags.push({ label: OUT_OF_ZONE_LABEL, variant: 'warning' });
   }
   if (stop.broughtBackAt !== null) {
     tags.push({ label: broughtBackLabel(stop.broughtBackAt), variant: 'warning' });

@@ -69,6 +69,7 @@ function at(orderId: string, lat: number, lng: number): DeliveryStopPoint {
     address: address(orderId),
     window: null,
     stopMinutes: null,
+    zoneId: null,
   };
 }
 
@@ -469,6 +470,42 @@ describe("GetDeliveryRoundProposalHandler — la place (CA4)", () => {
     expect(placed(view)).not.toContain("o1");
     expect(view.unfit).toEqual([{ orderId: "o1", reference: "CMD-o1", reason: "capacity" }]);
     expect(view.overflow).toEqual([]);
+  });
+
+  it("zones (2026-10-06) : aucun véhicule autorisé sur la zone d'une commande, raison « zone »", async () => {
+    const fleet = new FixedFleet([
+      { ...measuredVehicleView("v1", "Kangoo"), allowedZoneIds: ["z_nord"] },
+      { ...measuredVehicleView("v2", "Trafic"), allowedZoneIds: ["z_nord"] },
+    ]);
+    const points = POINTS.map((point) =>
+      point.orderId === "o1" ? { ...point, zoneId: "z_sud" } : { ...point, zoneId: "z_nord" },
+    );
+    const { handler } = scene({ fleet, points });
+
+    const view = await handler.execute(new GetDeliveryRoundProposalQuery(DAY, null, false));
+
+    expect(placed(view)).toEqual(["o2", "o3", "o4", "o7"]);
+    expect(view.unfit).toEqual([{ orderId: "o1", reference: "CMD-o1", reason: "zone" }]);
+    expect(view.overflow).toEqual([]);
+  });
+
+  it("zones : « Insérer » ne pose une commande que dans le véhicule autorisé sur sa zone", async () => {
+    const fleet = new FixedFleet([
+      { ...measuredVehicleView("v1", "Kangoo"), allowedZoneIds: ["z_nord"] },
+      measuredVehicleView("v2", "Trafic"),
+    ]);
+    const points = POINTS.map((point) =>
+      point.orderId === "o1" ? { ...point, zoneId: "z_sud" } : point,
+    );
+    const { handler } = scene({ fleet, points });
+
+    const view = await handler.execute(
+      new GetDeliveryRoundProposalQuery(DAY, null, false, "insert"),
+    );
+
+    const holder = view.rounds.find((round) => round.stops.some((stop) => stop.orderId === "o1"));
+    expect(holder?.vehicleId).toBe("v2");
+    expect(view.unfit).toEqual([]);
   });
 
   /** Régression : avant le 2026-10-06, la tournée était gardée (`unknown_demand_stop`). */

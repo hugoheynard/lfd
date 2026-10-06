@@ -144,6 +144,7 @@ export class FixedDeliveryOrders extends DeliveryOrdersReader {
           address: null,
           window: null,
           stopMinutes: null,
+          zoneId: order.zoneId,
         })),
     );
   }
@@ -198,6 +199,7 @@ export function deliveryOn(
     status: "active",
     day,
     delivery: true,
+    zoneId: null,
     ...overrides,
   };
 }

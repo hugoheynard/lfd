@@ -99,6 +99,8 @@ const vehicleLoadSpace = () => ({
     .optional(),
   /** L'énergie (L2b-C6) — texte libre ici : le journal garde ce qui a été écrit. */
   energy: z.string().min(1).nullable().optional(),
+  /** Les zones autorisées (identifiants), vide = partout — absentes avant le 2026-10-06. */
+  allowedZoneIds: z.array(z.string()).optional(),
 });
 
 /** Un geste sur un véhicule : son nom en libellé, et sa plaque. */

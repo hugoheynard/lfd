@@ -40,6 +40,7 @@ export class AddVehicleHandler implements ICommandHandler<AddVehicleCommand, str
       wheelArches: command.payload.wheelArches,
       refrigeration: command.payload.refrigeration,
       energy: command.payload.energy,
+      allowedZoneIds: command.payload.allowedZoneIds,
       at: this.clock.now(),
     });
     await this.uow.run(async () => {

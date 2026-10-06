@@ -15,6 +15,7 @@ function inputs(overrides: Partial<DeliveryRoundsDayInputs> = {}): DeliveryRound
     driverNames: new Map(),
     awaiting: [],
     broughtBack: new Map(),
+    vehicleZones: new Map(),
     ...overrides,
   };
 }
@@ -84,6 +85,7 @@ describe("deliveryRoundsDayView", () => {
       status: "active" as const,
       day: DAY,
       delivery: true,
+      zoneId: null,
       ...change,
     };
     const view = deliveryRoundsDayView(
@@ -135,6 +137,7 @@ describe("deliveryRoundsDayView", () => {
       status: "active" as const,
       day: "2030-03-10",
       delivery: true,
+      zoneId: null,
     };
     const view = deliveryRoundsDayView(
       inputs({
@@ -194,5 +197,33 @@ describe("deliveryRoundsDayView", () => {
       { staffUserId: "staff_ancien", name: null, canDrive: false },
       null,
     ]);
+  });
+
+  it.each([
+    ["véhicule restreint, commande d'une autre zone", "z_sud", ["z_nord"], true],
+    ["véhicule restreint, commande de sa zone", "z_nord", ["z_nord"], false],
+    ["véhicule restreint, commande sans zone", null, ["z_nord"], false],
+    ["véhicule partout", "z_sud", null, false],
+  ] as const)("hors zone (2026-10-06) — %s", (_label, zoneId, allowed, flagged) => {
+    const order = {
+      orderId: "o_1",
+      reference: "A",
+      customerLabel: "Maison A",
+      status: "active" as const,
+      day: DAY,
+      delivery: true,
+      zoneId,
+    };
+    const view = deliveryRoundsDayView(
+      inputs({
+        rounds: [round],
+        composed: new Map([["o_1", order]]),
+        vehicleZones: allowed === null ? new Map() : new Map([["v_1", new Set(allowed)]]),
+      }),
+    );
+
+    const stop = view.rounds[0]?.stops[0];
+    expect(stop?.outOfZone).toBe(flagged ? true : undefined);
+    expect(stop?.signals).toEqual([]);
   });
 });

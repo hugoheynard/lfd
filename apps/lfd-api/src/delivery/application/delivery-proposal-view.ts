@@ -74,11 +74,18 @@ export function proposalViewOf(inputs: ProposalViewInputs): DeliveryRoundProposa
       orderId,
       reference: reference(orderId),
     })),
-    unfit: inputs.proposal.capacityRefused.map((orderId) => ({
-      orderId,
-      reference: reference(orderId),
-      reason: "capacity" as const,
-    })),
+    unfit: [
+      ...inputs.proposal.capacityRefused.map((orderId) => ({
+        orderId,
+        reference: reference(orderId),
+        reason: "capacity" as const,
+      })),
+      ...inputs.proposal.zoneRefused.map((orderId) => ({
+        orderId,
+        reference: reference(orderId),
+        reason: "zone" as const,
+      })),
+    ],
     unknownDemand: inputs.unknownDemand.map((orderId) => ({
       orderId,
       reference: reference(orderId),

@@ -35,6 +35,8 @@ export interface DeliveryOrderFacts extends DeliveryOrderRef {
   readonly day: string | null;
   /** Encore en livraison, ou passée en retrait au comptoir. */
   readonly delivery: boolean;
+  /** La zone de livraison FIGÉE à la passation (identifiant opaque), ou `null`. */
+  readonly zoneId: string | null;
 }
 
 /** Une fenêtre convenue, `HH:MM` ; `start` nul = « dès l'ouverture ». */
@@ -66,6 +68,11 @@ export interface DeliveryStopPoint {
    * lu sous le même mur que le point GPS ; `null` : le réglage global (L7b-C4).
    */
   readonly stopMinutes: number | null;
+  /**
+   * La zone de livraison FIGÉE à la passation — celle qui a fixé le frais —,
+   * identifiant opaque, ou `null` (2026-10-06, zones autorisées d'un véhicule).
+   */
+  readonly zoneId: string | null;
 }
 
 /**

@@ -86,6 +86,12 @@ export const vehiclePayloadSchema = z.object({
   refrigeration: vehicleRefrigerationPayloadSchema.nullable().optional(),
   /** Énergie ; `null` ou absent = non renseignée (même règle : absent efface). */
   energy: vehicleEnergySchema.nullable().optional(),
+  /**
+   * Les zones de livraison où le véhicule peut aller (identifiants des zones) ;
+   * vide ou absent = partout (même règle : absent efface). La composition
+   * n'essaie jamais une commande d'une autre zone dans ce véhicule.
+   */
+  allowedZoneIds: z.array(z.string().trim().min(1)).max(50).optional(),
 });
 export type VehiclePayload = z.infer<typeof vehiclePayloadSchema>;
 
@@ -110,6 +116,12 @@ export interface VehicleView {
   readonly refrigeration: VehicleRefrigerationView | null;
   /** Énergie, ou `null` si non renseignée (L2b-C6). */
   readonly energy: VehicleEnergy | null;
+  /**
+   * Les zones de livraison autorisées (identifiants), vide = partout. Un
+   * identifiant peut ne plus désigner aucune zone (supprimée depuis) : il
+   * n'autorise alors rien.
+   */
+  readonly allowedZoneIds: readonly string[];
 }
 
 /**

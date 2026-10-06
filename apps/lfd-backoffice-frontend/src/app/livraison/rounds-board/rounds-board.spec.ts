@@ -23,6 +23,7 @@ function stop(orderId: string): BoardStop {
     windowMissed: false,
     placementLate: false,
     defaultDemand: null,
+    outOfZone: false,
   };
 }
 

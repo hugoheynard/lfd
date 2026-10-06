@@ -25,6 +25,7 @@ const FLEET: VehiclesView = {
       wheelArches: null,
       refrigeration: null,
       energy: null,
+      allowedZoneIds: [],
     },
     {
       id: 'v-trafic',
@@ -36,6 +37,7 @@ const FLEET: VehiclesView = {
       wheelArches: null,
       refrigeration: null,
       energy: null,
+      allowedZoneIds: [],
     },
     {
       id: 'v-master',
@@ -47,6 +49,7 @@ const FLEET: VehiclesView = {
       wheelArches: { lengthCm: 90, protrusionCm: 22, fromBackCm: 80, heightCm: 30 },
       refrigeration: null,
       energy: null,
+      allowedZoneIds: [],
     },
     {
       id: 'v-retire',
@@ -58,6 +61,7 @@ const FLEET: VehiclesView = {
       wheelArches: null,
       refrigeration: null,
       energy: null,
+      allowedZoneIds: [],
     },
   ],
 };

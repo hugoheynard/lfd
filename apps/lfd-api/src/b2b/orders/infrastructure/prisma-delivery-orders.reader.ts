@@ -21,6 +21,7 @@ const DELIVERY_ORDER_SELECT = {
   status: true,
   fulfillmentMethod: true,
   requestedDeliveryDate: true,
+  deliveryZoneId: true,
 } as const;
 
 /** Le nom du client — la règle de la file du comptoir (`customerLabelOf`). */
@@ -53,6 +54,7 @@ const STOP_POINT_SELECT = {
   deliveryAddressId: true,
   fulfillment: true,
   deliveryAddressSnapshot: true,
+  deliveryZoneId: true,
 } as const;
 
 /** Les consignes d'une adresse du carnet, telles que le mur les rend. */
@@ -119,6 +121,7 @@ export class PrismaDeliveryOrdersReader extends DeliveryOrdersReader {
       customerLabel: customerLabelOf(row),
       day: row.requestedDeliveryDate?.toISOString().slice(0, 10) ?? null,
       delivery: row.fulfillmentMethod === "delivery",
+      zoneId: row.deliveryZoneId,
     }));
   }
 
@@ -178,6 +181,7 @@ export class PrismaDeliveryOrdersReader extends DeliveryOrdersReader {
         stopMinutes: walled?.stopMinutes ?? null,
         address: snapshotOf(row.deliveryAddressSnapshot),
         window: window === null ? null : { start: window.start, end: window.end },
+        zoneId: row.deliveryZoneId,
       };
     });
   }

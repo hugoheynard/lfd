@@ -2,6 +2,7 @@ import { insertIntoRounds } from "../insert-into-rounds.js";
 import type { Proposal } from "../proposal.js";
 import { proposeRounds } from "../propose-rounds.js";
 import { benchDay, INSERTED_COUNT } from "./composition-bench-day.js";
+import { outOfZoneStops } from "./zone-check.js";
 
 /**
  * Le banc à 200 clients (composition-automatique.md §5 point 3) : le calcul
@@ -14,7 +15,12 @@ import { benchDay, INSERTED_COUNT } from "./composition-bench-day.js";
  * Jest (modules ESM en VM) rendait le même calcul environ cinq fois plus lent
  * que Node nu — 34,6 s contre 7,0 s pour la graine 9, mesuré le 2026-10-06.
  * Le conteneur exécute du Node nu ; c'est lui qu'on imite.
+ *
+ * `--zones` (`bench:composition:zones`, 2026-10-06) : la même scène, chaque
+ * Kangoo restreint à une moitié du disque. Le banc échoue si un arrêt finit
+ * dans un véhicule non autorisé sur sa zone.
  */
+const ZONED = process.argv.includes("--zones");
 const STOP_COUNT = 200;
 const DRAWS = 20;
 const P95 = 0.95;
@@ -36,11 +42,23 @@ function cpuMilliseconds<T>(run: () => T): readonly [T, number] {
 }
 
 function measure(seed: number): Measure {
-  const day = benchDay(seed, STOP_COUNT);
+  const day = benchDay(seed, STOP_COUNT, ZONED);
   const [composed, completeMs] = cpuMilliseconds(() => proposeRounds(day.complete));
   const input = day.insertion(composed);
   const [inserted, insertMs] = cpuMilliseconds(() => insertIntoRounds(input));
+  const strays = [
+    ...outOfZoneStops(composed, day.complete.zones),
+    ...outOfZoneStops(inserted, input.zones),
+  ];
+  if (strays.length > 0) {
+    process.stderr.write(`graine ${String(seed)} : hors zone ${strays.join(", ")}\n`);
+    process.exitCode = 1;
+  }
   return { completeMs, insertMs, composed, inserted };
+}
+
+function unplacedOf(proposal: Proposal): number {
+  return proposal.overflow.length + proposal.capacityRefused.length + proposal.zoneRefused.length;
 }
 
 /** Le rang le plus proche (nearest-rank) : sur 20 tirages, le p95 est le 19ᵉ. */
@@ -58,11 +76,12 @@ function report(measures: readonly Measure[]): string {
     (m, index) =>
       `  graine ${String(index + 1).padStart(2)} | complet ${ms(m.completeMs)} | insérer ${ms(m.insertMs)}` +
       ` | tournées ${String(m.composed.tours.length).padStart(2)}` +
-      ` | à répartir ${String(m.composed.overflow.length + m.composed.capacityRefused.length).padStart(3)}` +
-      ` | insérés non placés ${String(m.inserted.overflow.length + m.inserted.capacityRefused.length)}/${String(INSERTED_COUNT)}`,
+      ` | à répartir ${String(unplacedOf(m.composed)).padStart(3)}` +
+      ` | dont zone ${String(m.composed.zoneRefused.length).padStart(2)}` +
+      ` | insérés non placés ${String(unplacedOf(m.inserted))}/${String(INSERTED_COUNT)}`,
   );
   return [
-    `Banc « Proposer » — ${String(STOP_COUNT)} arrêts, 4 véhicules, 2 passages, ${String(DRAWS)} tirages (temps processeur)`,
+    `Banc « Proposer » — ${String(STOP_COUNT)} arrêts, 4 véhicules, 2 passages, ${String(DRAWS)} tirages (temps processeur)${ZONED ? ", avec zones" : ""}`,
     ...rows,
     `  complet : médiane ${ms(quantile(complete, 0.5))} · p95 ${ms(quantile(complete, P95))} · max ${ms(Math.max(...complete))}`,
     `  insérer : médiane ${ms(quantile(insert, 0.5))} · p95 ${ms(quantile(insert, P95))} · max ${ms(Math.max(...insert))}`,

@@ -332,6 +332,7 @@ describe("proposer (L7-C5, L7-C15, L7b-C1 à C3)", () => {
       tours: [],
       overflow: [],
       capacityRefused: [],
+      zoneRefused: [],
     });
   });
 });

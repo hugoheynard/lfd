@@ -11,10 +11,12 @@ import {
   listsOf,
   mapRowPrefixOf,
   orderTagsOf,
+  OUT_OF_ZONE_LABEL,
   PLACEMENT_LATE_LABEL,
   plannedOfBoard,
   POOL_KEY,
   relaidBoard,
+  ZONE_REFUSED_LABEL,
   roundKmLabel,
   roundTimingLabel,
   stopEdgeOf,
@@ -208,6 +210,35 @@ describe('les cartes', () => {
     expect(orderTagsOf({ ...base, reason: 'capacity' }).map((tag) => tag.label)).toEqual([
       'Ne tient dans aucun véhicule (place)',
     ]);
+  });
+
+  it('dit qu’aucun véhicule autorisé sur sa zone ne peut prendre la commande (2026-10-06)', () => {
+    const sheet = stopOf({ state: 'ready' });
+    const base = { orderId: '1', reference: 'CMD-1', sheet, broughtBackAt: null };
+    expect(orderTagsOf({ ...base, reason: 'zone' }).map((tag) => tag.label)).toEqual([
+      ZONE_REFUSED_LABEL,
+    ]);
+  });
+
+  it('étiquette l’arrêt enregistré hors des zones de son véhicule, sans le signaler', () => {
+    const composed: ComposedDay = {
+      rounds: [
+        {
+          round: round({ stops: [{ ...stopRef('1'), outOfZone: true }, stopRef('2')] }),
+          stops: [
+            { stop: { ...stopRef('1'), outOfZone: true }, sheet: null, windowClash: null },
+            { stop: stopRef('2'), sheet: null, windowClash: null },
+          ],
+        },
+      ],
+      unassigned: [],
+    };
+    const [first, second] = boardOfComposed(composed).rounds[0]?.stops ?? [];
+    expect(first?.outOfZone).toBe(true);
+    expect(stopTagsOf(first!).map((tag) => tag.label)).toContain(OUT_OF_ZONE_LABEL);
+    expect(first?.signals).toEqual([]);
+    expect(second?.outOfZone).toBe(false);
+    expect(stopTagsOf(second!).map((tag) => tag.label)).not.toContain(OUT_OF_ZONE_LABEL);
   });
 
   it('préfixe la liste sous la carte par le passage, ou le véhicule', () => {

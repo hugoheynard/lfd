@@ -29,6 +29,7 @@ function point(orderId: string, overrides: Partial<DeliveryStopPoint> = {}): Del
     address: null,
     window: null,
     stopMinutes: null,
+    zoneId: null,
     ...overrides,
   };
 }

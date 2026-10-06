@@ -75,6 +75,7 @@ describe("AddVehicleHandler", () => {
       wheelArches: null,
       refrigeration: null,
       energy: null,
+      allowedZoneIds: [],
     });
   });
 
@@ -186,6 +187,7 @@ describe("CorrectVehicleHandler", () => {
         wheelArches: null,
         refrigeration: null,
         energy: null,
+        allowedZoneIds: [],
       },
       after: {
         name: "Kangoo gris",
@@ -194,6 +196,7 @@ describe("CorrectVehicleHandler", () => {
         wheelArches: null,
         refrigeration: null,
         energy: null,
+        allowedZoneIds: [],
       },
     });
   });
@@ -230,7 +233,33 @@ describe("CorrectVehicleHandler", () => {
       cargo: null,
       refrigeration: null,
       energy: null,
+      allowedZoneIds: [],
     });
+  });
+
+  it("trace les zones autorisées avant et après (2026-10-06)", async () => {
+    const vehicles = new InMemoryVehicles(vehicle("v_1", "Kangoo", "AB-123-CD"));
+    const { clock, events, uow } = tools();
+
+    await new CorrectVehicleHandler(
+      vehicles,
+      new MeasuredVehiclesOver(vehicles),
+      clock,
+      events,
+      uow,
+    ).execute(
+      new CorrectVehicleCommand("v_1", {
+        name: "Kangoo",
+        plate: "AB-123-CD",
+        allowedZoneIds: ["z_nord"],
+      }),
+    );
+
+    expect(events.traced[0]?.journalFact().payload).toMatchObject({
+      before: { allowedZoneIds: [] },
+      after: { allowedZoneIds: ["z_nord"] },
+    });
+    expect(vehicles.saved.at(-1)?.toState().allowedZoneIds).toEqual(["z_nord"]);
   });
 
   it("trace les passages de roue ajoutés, et refuse ceux qui sortent du plancher (G4)", async () => {

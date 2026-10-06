@@ -12,6 +12,7 @@ import {
   type VehicleScore,
   type VehicleStart,
 } from "./vehicle-plan.js";
+import { NO_ZONE_RULE, type ZoneRule } from "./zone-rule.js";
 
 /**
  * Garde-fou de durée (L7b-C2) : chaque geste retenu baisse STRICTEMENT le
@@ -53,6 +54,12 @@ const NEIGHBOURHOODS = [intraRouteMoves, relocations, swaps, tailExchanges] as c
  * la capacité est une contrainte dure, jugée après le score — seul un geste
  * qui améliore est soumis au plan de chargement.
  *
+ * Un geste qui ferait entrer un arrêt dans un véhicule non autorisé sur sa
+ * zone (`zones`, 2026-10-06) n'est pas même noté : la règle est jugée avant
+ * le minorant, et seulement entre deux véhicules — un geste dans un véhicule
+ * seul ne lui apporte aucun arrêt neuf. Sans véhicule restreint, elle ne
+ * coûte rien.
+ *
  * Premier geste améliorant, paires et voisinages parcourus dans un ordre
  * fixe : aucun aléa, même entrée, même résultat.
  */
@@ -61,6 +68,7 @@ export function improvePlans(
   plans: readonly VehiclePlan[],
   pinned: ReadonlySet<string>,
   guard: CapacityGuard = NO_CAPACITY_LIMIT,
+  zones: ZoneRule = NO_ZONE_RULE,
 ): readonly VehiclePlan[] {
   const current = [...plans];
   const score: ScoreFn = (routes, start) => scoreVehicle(ctx, routes, start);
@@ -81,7 +89,7 @@ export function improvePlans(
       const members = a === b ? [a] : [a, b];
       const scope = { pinned, crossOnly: a !== b, near };
       const found = firstImprovement(
-        { score, floor, guard, free: freeStart(ctx) },
+        { score, floor, guard, zones, free: freeStart(ctx) },
         members,
         current,
         scores,
@@ -120,12 +128,13 @@ interface Search {
   readonly score: ScoreFn;
   readonly floor: CostFloor;
   readonly guard: CapacityGuard;
+  readonly zones: ZoneRule;
   readonly free: VehicleStart;
 }
 
 /** Le premier geste qui améliore ET tient dans les caisses, parmi les véhicules `members`. */
 function firstImprovement(
-  { score, floor, guard, free }: Search,
+  { score, floor, guard, zones, free }: Search,
   members: readonly number[],
   plans: readonly VehiclePlan[],
   scores: readonly VehicleScore[],
@@ -133,8 +142,15 @@ function firstImprovement(
 ): Found | null {
   const sub = members.flatMap((index) => plans[index] ?? []);
   const subScores = members.flatMap((index) => scores[index] ?? []);
+  const zoned = scope.crossOnly && zones.restricts;
   for (const neighbourhood of NEIGHBOURHOODS) {
     for (const move of neighbourhood(sub, scope)) {
+      if (
+        zoned &&
+        !move.every(({ vehicle, routes }) => zoneAdmits(zones, sub[vehicle], routes, scope))
+      ) {
+        continue;
+      }
       const before = totalOf(move.map(({ vehicle }) => subScores[vehicle]));
       // Écarté sans chronométrer : même son meilleur cas n'améliore pas (`bestCase`).
       const lowest = move.reduce(
@@ -157,6 +173,16 @@ function firstImprovement(
     }
   }
   return null;
+}
+
+/** Le véhicule peut-il recevoir ces tournées ? Un arrêt épinglé ne quitte pas le sien. */
+function zoneAdmits(
+  zones: ZoneRule,
+  plan: VehiclePlan | undefined,
+  routes: Routes,
+  scope: MoveScope,
+): boolean {
+  return plan === undefined || zones.admits(plan.vehicle.id, routes, scope.pinned);
 }
 
 /** Applique un geste trouvé sur une sous-liste : ses indices sont ceux de `members`. */

@@ -145,23 +145,24 @@ flowchart TD
 
 ## 3. État réel, lot par lot (vérifié le 2026-10-06)
 
-| Lot      | Contenu                                                                                                                                                                                                                 | État        | Commit                                                       |
-| -------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ----------- | ------------------------------------------------------------ |
-| **CA0**  | Situer l'adresse (géocodage) dès la commande, en fond après validation ; rattrapage à la commande suivante du jour, à l'arrêt du plan et au retirage                                                                    | ✅ bâti     | `0aa07eb63`                                                  |
-| **CA1**  | Sans véhicule actif mesuré ni type de bac en service, « Proposer » refuse avec la phrase ; on ne peut pas retirer le dernier                                                                                            | ✅ bâti     | `57ed88723`                                                  |
-| **CA1b** | Pas de livraison sans échéance ni créneau à la passation                                                                                                                                                                | ✅ bâti     | `8089a262c`                                                  |
-| **CA2**  | Départ à rebours dès minuit, marge visée ; `maxRoundMinutes` devient un simple signal, sans pénalité de durée                                                                                                           | ✅ bâti     | `0cf2aaf30` (points validés `dc4bd9779`)                     |
-| **CA3**  | Réglage créneau / échéance (global, puis par adresse), affichage « avant HH:MM »                                                                                                                                        | ✅ bâti     | `8089a262c`, écrans `6f245b864`                              |
-| **CA3b** | Plusieurs créneaux ou échéances par adresse (`slotList`, l'ancien `slots` dérivé)                                                                                                                                       | ✅ bâti     | `d4972386a`, écrans `b7ee1c883`                              |
-| §14.2    | Mode par défaut : échéance (migration `20261004090000_echeance_par_defaut`)                                                                                                                                             | ✅ bâti     | `d4972386a`                                                  |
-| Horaire  | Une tournée garde son départ, son retour et ses km prévus, et le PDF les imprime                                                                                                                                        | ✅ bâti     | `3e9da566c`, aperçu `a9fb52c04`                              |
-| **CA4**  | La capacité entre dans la composition : demande en bacs par commande (déclarés, sinon estimés, sinon inconnue — placée, « place non vérifiée »), `planLoading` à chaque insertion                                       | ✅ bâti     | `4010899a1`, correction `bb7ba8fd1`                          |
-| **CA4b** | Contenant par défaut d'une commande (type de bac + nombre) dans les réglages du calcul ; demande déclarés → estimés → défaut → inconnue ; « (par défaut) » sur l'arrêt de l'aperçu ; archiver le type choisi est refusé | ✅ bâti     | non commité (2026-10-06)                                     |
-| **Banc** | 200 clients, calcul pur, p95 < 5 s (`bench:composition`, qualité `bench:composition:quality`) ; complet p95 4,1 s, Insérer p95 0,15 s, sur un poste (§5 point 3)                                                        | ✅ bâti     | `97d163fdd`, accélération `aca1ee895` ; conteneur non mesuré |
-| **CA5**  | Épinglage = les tournées enregistrées (aucune table) ; versions par tournée déjà exigées (409) ; alerte rouge « échéance intenable à cette place » à l'écran des tournées                                               | ✅ bâti     | `59e011547`                                                  |
-| **CA6a** | Abonné à `production.day_closed`, table `delivery.delivery_day_readiness` (migration `20261007110000_le_plan_arrete_pour_la_livraison`), cloche, query et bandeau                                                       | ✅ bâti     | `4b79a8e06`                                                  |
-| **CA6b** | `production.day_retaken` passe dans le canal avec `orderIds` ; un abonné ajoute les absorbées et sonne                                                                                                                  | ✅ bâti     | `d5900081e`                                                  |
-| **CA7**  | Place suggérée pour une commande arrivée sur un jour déjà appliqué (dérogation, retirage)                                                                                                                               | ❌ pas bâti | aujourd'hui, « Insérer » les prend comme non placées         |
+| Lot       | Contenu                                                                                                                                                                                                                 | État        | Commit                                                       |
+| --------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ----------- | ------------------------------------------------------------ |
+| **CA0**   | Situer l'adresse (géocodage) dès la commande, en fond après validation ; rattrapage à la commande suivante du jour, à l'arrêt du plan et au retirage                                                                    | ✅ bâti     | `0aa07eb63`                                                  |
+| **CA1**   | Sans véhicule actif mesuré ni type de bac en service, « Proposer » refuse avec la phrase ; on ne peut pas retirer le dernier                                                                                            | ✅ bâti     | `57ed88723`                                                  |
+| **CA1b**  | Pas de livraison sans échéance ni créneau à la passation                                                                                                                                                                | ✅ bâti     | `8089a262c`                                                  |
+| **CA2**   | Départ à rebours dès minuit, marge visée ; `maxRoundMinutes` devient un simple signal, sans pénalité de durée                                                                                                           | ✅ bâti     | `0cf2aaf30` (points validés `dc4bd9779`)                     |
+| **CA3**   | Réglage créneau / échéance (global, puis par adresse), affichage « avant HH:MM »                                                                                                                                        | ✅ bâti     | `8089a262c`, écrans `6f245b864`                              |
+| **CA3b**  | Plusieurs créneaux ou échéances par adresse (`slotList`, l'ancien `slots` dérivé)                                                                                                                                       | ✅ bâti     | `d4972386a`, écrans `b7ee1c883`                              |
+| §14.2     | Mode par défaut : échéance (migration `20261004090000_echeance_par_defaut`)                                                                                                                                             | ✅ bâti     | `d4972386a`                                                  |
+| Horaire   | Une tournée garde son départ, son retour et ses km prévus, et le PDF les imprime                                                                                                                                        | ✅ bâti     | `3e9da566c`, aperçu `a9fb52c04`                              |
+| **CA4**   | La capacité entre dans la composition : demande en bacs par commande (déclarés, sinon estimés, sinon inconnue — placée, « place non vérifiée »), `planLoading` à chaque insertion                                       | ✅ bâti     | `4010899a1`, correction `bb7ba8fd1`                          |
+| **CA4b**  | Contenant par défaut d'une commande (type de bac + nombre) dans les réglages du calcul ; demande déclarés → estimés → défaut → inconnue ; « (par défaut) » sur l'arrêt de l'aperçu ; archiver le type choisi est refusé | ✅ bâti     | non commité (2026-10-06)                                     |
+| **Banc**  | 200 clients, calcul pur, p95 < 5 s (`bench:composition`, qualité `bench:composition:quality`) ; complet p95 4,1 s, Insérer p95 0,15 s, sur un poste (§5 point 3)                                                        | ✅ bâti     | `97d163fdd`, accélération `aca1ee895` ; conteneur non mesuré |
+| **CA5**   | Épinglage = les tournées enregistrées (aucune table) ; versions par tournée déjà exigées (409) ; alerte rouge « échéance intenable à cette place » à l'écran des tournées                                               | ✅ bâti     | `59e011547`                                                  |
+| **Zones** | Zones autorisées d'un véhicule (vide = partout) ; contrainte dure de « Proposer » et d'« Insérer » ; raison `zone` ; étiquette « hors zone » sur un arrêt enregistré                                                    | ✅ bâti     | non commité (2026-10-06)                                     |
+| **CA6a**  | Abonné à `production.day_closed`, table `delivery.delivery_day_readiness` (migration `20261007110000_le_plan_arrete_pour_la_livraison`), cloche, query et bandeau                                                       | ✅ bâti     | `4b79a8e06`                                                  |
+| **CA6b**  | `production.day_retaken` passe dans le canal avec `orderIds` ; un abonné ajoute les absorbées et sonne                                                                                                                  | ✅ bâti     | `d5900081e`                                                  |
+| **CA7**   | Place suggérée pour une commande arrivée sur un jour déjà appliqué (dérogation, retirage)                                                                                                                               | ❌ pas bâti | aujourd'hui, « Insérer » les prend comme non placées         |
 
 ## 4. Les décisions d'Hugo en vigueur
 
@@ -212,6 +213,31 @@ flowchart TD
   refusé** avec la phrase qui renvoie au réglage, plutôt que de vider le
   réglage en silence ; choisir un type archivé est refusé aussi. Le réglage
   entre au fait `delivery_routing.settings_updated` (type nommé).
+- **Les zones autorisées d'un véhicule (2026-10-06, Hugo : « et si je
+  décide de restreindre un ou plusieurs véhicules sur une zone ? »).** La
+  fiche d'un véhicule porte une liste de zones de livraison ; **vide =
+  partout**, l'état de toute la flotte d'avant la règle. Les zones sont
+  celles du commerce (Réglages → Zones de livraison, préfixes de code
+  postal) : aucun second découpage. La zone d'une commande est celle
+  **figée à la passation** (`orders.delivery_zone_id`, celle qui a fixé le
+  frais), lue par le canal du commerce — pas recalculée depuis le code
+  postal. C'est une **contrainte dure**, comme la capacité : un arrêt n'est
+  jamais essayé dans un véhicule non autorisé sur sa zone, ni à
+  l'insertion, ni dans les gestes d'amélioration (jugée avant le score : elle
+  ne coûte qu'une lecture). **Une commande sans zone connue va partout** :
+  la règle restreint, elle n'invente pas, et elle ne doit pas bloquer une
+  commande d'avant les zones. Si aucun véhicule autorisé ne peut la prendre
+  (aucun n'est autorisé), elle reste à répartir, raison `zone` (« Aucun
+  véhicule autorisé sur cette zone ») ; si un véhicule autorisé existe mais
+  ne la tient pas, la raison reste la sienne (capacité, passages). Une
+  tournée **enregistrée** qui viole la règle (posée avant, ou glissée à la
+  main) n'est jamais défaite : l'arrêt porte l'étiquette « Hors des zones du
+  véhicule — le déplacer » (`outOfZone`, ce n'est pas un `signals` : la
+  tournée reste recomposable), et « Insérer » le laisse où il est (épinglé).
+  « Chronométrer » et le simulateur ne lisent pas les zones. Une zone
+  supprimée au commerce laisse un identifiant qui n'autorise plus rien ;
+  l'écran du véhicule la nomme « Zone supprimée » pour qu'on la retire. Le
+  champ entre au journal de la fiche (`allowedZoneIds`).
 - **Une tournée chargée n'est jamais touchée.** Un seul bac chargé suffit à la
   figer (`classifyRounds`).
 - **§9.** « Appliquer » est un clic du bureau, jamais automatique. Le geste
@@ -365,6 +391,15 @@ flowchart TD
    `improvePlans` atteint sa borne de 400 gestes sur les graines lentes :
    le résultat y est déjà fixé par la borne, en gestes, pas en temps.
    Reste : mesurer dans le conteneur (`todo-calculateur.md`).
+
+   **Avec zones (2026-10-06).** Sans véhicule restreint, la règle est
+   `NO_ZONE_RULE` et ne refuse rien : `bench:composition:quality` reste 40/40
+   identique. Le tirage `pnpm --filter lfd-api bench:composition:zones`
+   (même scène, chaque Kangoo restreint à une moitié du disque, les Trafic
+   partout) échoue si un arrêt finit hors zone. Mesure du 2026-10-06 (poste,
+   temps processeur) : sans zones complet p95 4,5 s · Insérer p95 0,15 s ;
+   avec zones complet médiane 2,5 s · p95 4,9 s · max 5,3 s, Insérer p95
+   0,14 s, aucun arrêt hors zone.
 
 4. ~~**CA5.**~~ Bâti le 2026-10-06. Décisions détaillées dans
    le ledger de la composition automatique (D20 à D27).

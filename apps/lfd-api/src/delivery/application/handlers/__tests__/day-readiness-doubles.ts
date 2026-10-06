@@ -51,6 +51,7 @@ export function orderFact(
     customerLabel: "Client",
     day: null,
     delivery: options.delivery ?? true,
+    zoneId: null,
   };
 }
 

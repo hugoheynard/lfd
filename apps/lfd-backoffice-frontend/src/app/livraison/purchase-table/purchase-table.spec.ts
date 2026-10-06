@@ -51,6 +51,7 @@ const FLEET: VehicleView[] = [
     wheelArches: null,
     refrigeration: null,
     energy: null,
+    allowedZoneIds: [],
   },
   {
     // Sans espace utile : il ne se compare à rien, il n'est pas proposé.
@@ -63,6 +64,7 @@ const FLEET: VehicleView[] = [
     wheelArches: null,
     refrigeration: null,
     energy: null,
+    allowedZoneIds: [],
   },
 ];
 

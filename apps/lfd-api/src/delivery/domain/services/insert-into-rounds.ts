@@ -6,6 +6,8 @@ import type { PlanningContext, PlanningVehicle, Proposal, ProposedTour } from ".
 import { startOf, tourOf } from "./propose-rounds.js";
 import type { RoutingStop } from "./route-timing.js";
 import { timeVehicle, type VehiclePlan, type VehicleStart } from "./vehicle-plan.js";
+import { type CompositionZones, zoneRuleOf } from "./zone-rule.js";
+import type { UnplacedReason } from "./insert-cheapest.js";
 
 /** Une tournée existante, au dépôt, dont chaque arrêt est situé : on peut y insérer. */
 export interface InsertableRound {
@@ -28,6 +30,8 @@ export interface InsertionInput extends PlanningContext {
   readonly starts?: ReadonlyMap<string, VehicleStart>;
   /** La place des véhicules et la demande des commandes (CA4) ; absente : rien n'est refusé. */
   readonly capacity?: CompositionCapacity;
+  /** Les zones autorisées des véhicules et la zone des commandes ; absentes : partout. */
+  readonly zones?: CompositionZones;
 }
 
 /**
@@ -47,6 +51,9 @@ export interface InsertionInput extends PlanningContext {
  * Une insertion qui ferait déborder la caisse est refusée (CA4) ; la
  * recherche passe à la meilleure place suivante, sur ce véhicule, un autre,
  * ou un autre passage. Ce que rien ne porte va dans `capacityRefused`.
+ * Une commande n'est jamais essayée dans un véhicule non autorisé sur sa zone
+ * (`zones`) ; sans aucun véhicule autorisé, elle va dans `zoneRefused`. Un
+ * arrêt déjà placé hors de sa zone y reste : il est épinglé.
  *
  * Ne rend que les tournées existantes qui ont reçu un arrêt, puis les neuves.
  * Déterministe.
@@ -67,9 +74,10 @@ export function insertIntoRounds(input: InsertionInput): Proposal {
   const pinned = new Set(input.rounds.flatMap((round) => round.stops.map((stop) => stop.id)));
   const pending = [...input.stops].sort((a, b) => compareIds(a.id, b.id));
   const guard = input.capacity === undefined ? NO_CAPACITY_LIMIT : capacityGuardOf(input.capacity);
-  const built = insertCheapest(input, initial, pending, "after_existing", guard);
-  const plans = improvePlans(input, built.plans, pinned, guard);
-  const idsOf = (reason: "no_passage" | "capacity"): readonly string[] =>
+  const zones = zoneRuleOf(input.zones);
+  const built = insertCheapest(input, initial, pending, "after_existing", guard, zones);
+  const plans = improvePlans(input, built.plans, pinned, guard, zones);
+  const idsOf = (reason: UnplacedReason): readonly string[] =>
     built.unplaced
       .filter((entry) => entry.reason === reason)
       .map(({ stop }) => stop.id)
@@ -78,6 +86,7 @@ export function insertIntoRounds(input: InsertionInput): Proposal {
     tours: plans.flatMap((plan) => toursOf(input, plan, pinned)),
     overflow: idsOf("no_passage"),
     capacityRefused: idsOf("capacity"),
+    zoneRefused: idsOf("zone"),
   };
 }
 

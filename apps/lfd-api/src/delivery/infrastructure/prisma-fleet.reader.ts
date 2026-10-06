@@ -36,6 +36,7 @@ export class PrismaFleetReader extends FleetReader {
         wheelArches: wheelArchesOfRow(row),
         refrigeration: refrigerationOfRow(row),
         energy: row.energy === null ? null : vehicleEnergyOf(row.energy),
+        allowedZoneIds: row.allowedZoneIds,
       };
     });
   }

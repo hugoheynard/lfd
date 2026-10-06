@@ -12,6 +12,7 @@ import {
   InvalidWheelArchesError,
   WheelArchesWithoutCargoError,
 } from "../../errors/delivery-floor-errors.js";
+import { InvalidVehicleZonesError } from "../../errors/delivery-zone-errors.js";
 import { activeOnDay, Vehicle } from "../vehicle.js";
 
 const CREATED = new Date(0);
@@ -36,6 +37,7 @@ describe("Vehicle", () => {
       wheelArches: null,
       refrigeration: null,
       energy: null,
+      allowedZoneIds: [],
     });
     expect(vehicle.inService).toBe(true);
   });
@@ -229,5 +231,39 @@ describe("« actif ce jour-là » (C5, corrigé par C14)", () => {
     vehicle.retire(new Date("2030-03-12T15:00:00.000Z"));
     expect(vehicle.activeOn("2030-03-12")).toBe(true);
     expect(vehicle.activeOn("2030-03-13")).toBe(false);
+  });
+});
+
+describe("les zones autorisées (2026-10-06)", () => {
+  it("vide par défaut : partout", () => {
+    expect(kangoo().allowedZones.everywhere).toBe(true);
+  });
+
+  it("entre avec ses zones ; une correction qui les omet les efface, comme le reste de la fiche", () => {
+    const vehicle = Vehicle.register({
+      id: "v_1",
+      name: "Kangoo",
+      plate: "AB-123-CD",
+      allowedZoneIds: ["z_sud", "z_nord"],
+      at: CREATED,
+    });
+    expect(vehicle.toState().allowedZoneIds).toEqual(["z_nord", "z_sud"]);
+    expect(vehicle.identity.allowedZoneIds).toEqual(["z_nord", "z_sud"]);
+
+    vehicle.correct({ name: "Kangoo", plate: "AB-123-CD" }, LATER);
+    expect(vehicle.allowedZones.everywhere).toBe(true);
+  });
+
+  it("refuse une zone vide sans rien corriger", () => {
+    const vehicle = kangoo();
+    expect(() =>
+      vehicle.correct({ name: "Autre", plate: "AB-123-CD", allowedZoneIds: [" "] }, LATER),
+    ).toThrow(InvalidVehicleZonesError);
+    expect(vehicle.name).toBe("Kangoo blanc");
+  });
+
+  it("revalide les zones lues en base", () => {
+    const state = { ...kangoo().toState(), allowedZoneIds: [""] };
+    expect(() => Vehicle.restore(state)).toThrow(InvalidVehicleZonesError);
   });
 });

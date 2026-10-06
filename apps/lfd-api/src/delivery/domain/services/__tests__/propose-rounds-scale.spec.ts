@@ -78,6 +78,7 @@ describe("proposer à l'échelle (L7b-C2)", () => {
       tours: [],
       overflow: [],
       capacityRefused: [],
+      zoneRefused: [],
     };
 
     const spent = cpuMillisecondsOf(() => {
@@ -115,6 +116,7 @@ describe("proposer à l'échelle (L7b-C2)", () => {
       tours: [],
       overflow: [],
       capacityRefused: [],
+      zoneRefused: [],
     };
 
     const spent = cpuMillisecondsOf(() => {

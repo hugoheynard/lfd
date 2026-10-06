@@ -109,6 +109,8 @@ export interface LocatedStop {
   readonly window: TimeWindow | null;
   /** Le temps de livraison sur place de son adresse, en secondes ; `null` : le réglage (L7b-C4). */
   readonly stopSeconds: number | null;
+  /** Sa zone de livraison figée à la passation, ou `null` : permise partout. */
+  readonly zoneId: string | null;
 }
 
 /**
@@ -136,6 +138,7 @@ export async function locateFromCache(
       unlocated: located !== null ? null : point.address === null ? "no_address" : "not_geocoded",
       window: timeWindowOf(point.window),
       stopSeconds: point.stopMinutes === null ? null : point.stopMinutes * SECONDS_PER_MINUTE,
+      zoneId: point.zoneId,
     };
   });
 }

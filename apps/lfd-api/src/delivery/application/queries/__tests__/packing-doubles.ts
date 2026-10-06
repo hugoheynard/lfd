@@ -80,6 +80,7 @@ export function deliveryOrder(orderId: string, reference: string): DeliveryOrder
     customerLabel: `Client ${reference}`,
     day: null,
     delivery: true,
+    zoneId: null,
   };
 }
 

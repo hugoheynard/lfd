@@ -32,6 +32,8 @@ export interface DeliveryRoundsDayInputs {
   readonly awaiting: readonly DeliveryOrderRef[];
   /** La dernière fois qu'une commande à replacer ou composée a été rapportée. */
   readonly broughtBack: ReadonlyMap<string, Date>;
+  /** Les zones autorisées des véhicules RESTREINTS ; absent : partout (2026-10-06). */
+  readonly vehicleZones: ReadonlyMap<string, ReadonlySet<string>>;
 }
 
 /**
@@ -46,7 +48,9 @@ export interface DeliveryRoundsDayInputs {
  *   main (Q11) ; une commande rapportée n'est jamais `not_this_day` ;
  * - **véhicule retiré** : un retrait et une affectation simultanés ont pu
  *   passer (C14) ; on le dit ;
- * - **livreur sans accès** : affecté, puis privé du droit de conduire (MT-D2 v2).
+ * - **livreur sans accès** : affecté, puis privé du droit de conduire (MT-D2 v2) ;
+ * - **hors zone** : le véhicule n'est pas autorisé sur la zone de l'arrêt
+ *   (2026-10-06) — dit, jamais défait.
  *
  * Les signalements de la journée s'y ajoutent dans le handler : ils ne
  * dépendent d'aucune de ces entrées.
@@ -98,7 +102,7 @@ function roundView(round: RoundRow, inputs: DeliveryRoundsDayInputs): DeliveryRo
             meters: round.planned.meters,
           },
     driver: driverView(round.driverStaffId, inputs),
-    stops: round.stops.map((stop) => stopView(stop, inputs)),
+    stops: round.stops.map((stop) => stopView(stop, round.vehicleId, inputs)),
   };
 }
 
@@ -121,7 +125,11 @@ function driverView(
   };
 }
 
-function stopView(stop: RoundStopRow, inputs: DeliveryRoundsDayInputs): DeliveryRoundStopView {
+function stopView(
+  stop: RoundStopRow,
+  vehicleId: string,
+  inputs: DeliveryRoundsDayInputs,
+): DeliveryRoundStopView {
   const order = inputs.composed.get(stop.orderId);
   const broughtBackAt = inputs.broughtBack.get(stop.orderId);
   const view: DeliveryRoundStopView = {
@@ -134,9 +142,17 @@ function stopView(stop: RoundStopRow, inputs: DeliveryRoundsDayInputs): Delivery
     signals: order === undefined ? [] : signalsOf(order, inputs.day, broughtBackAt !== undefined),
     orderDay: order?.day ?? null,
   };
+  const flagged = outOfZone(order?.zoneId ?? null, inputs.vehicleZones.get(vehicleId))
+    ? { ...view, outOfZone: true }
+    : view;
   return broughtBackAt === undefined
-    ? view
-    : { ...view, broughtBackAt: broughtBackAt.toISOString() };
+    ? flagged
+    : { ...flagged, broughtBackAt: broughtBackAt.toISOString() };
+}
+
+/** Un véhicule restreint, et une commande d'une zone qu'il n'a pas. Sans zone : partout. */
+function outOfZone(zoneId: string | null, allowed: ReadonlySet<string> | undefined): boolean {
+  return zoneId !== null && allowed !== undefined && !allowed.has(zoneId);
 }
 
 function signalsOf(

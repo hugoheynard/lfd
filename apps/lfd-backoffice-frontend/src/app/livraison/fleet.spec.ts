@@ -14,6 +14,7 @@ function vehicle(id: string, retiredAt: string | null = null): VehicleView {
     wheelArches: null,
     refrigeration: null,
     energy: null,
+    allowedZoneIds: [],
   };
 }
 

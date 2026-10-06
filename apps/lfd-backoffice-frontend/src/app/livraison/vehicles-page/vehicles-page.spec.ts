@@ -1,11 +1,12 @@
 import { HttpErrorResponse } from '@angular/common/http';
 import { type ComponentFixture, TestBed } from '@angular/core/testing';
-import type { StaffPermission, VehicleView } from '@lfd/contracts';
+import type { DeliveryZoneView, StaffPermission, VehicleView } from '@lfd/contracts';
 import { FoldPanelHostService } from 'fold-ng';
 import { describe, expect, it } from 'vitest';
 
 import { PermissionsStore } from '../../auth/permissions.store';
 import { NotifyService } from '../../notify.service';
+import { DeliveryZonesService } from '../../b2b/reglages/delivery-zones.service';
 import { DeliverySettingsService } from '../delivery-settings.service';
 import { VehicleDialog } from '../vehicle-dialog/vehicle-dialog';
 import { VehiclesPage } from './vehicles-page';
@@ -21,8 +22,13 @@ function vehicle(id: string, name: string, retiredAt: string | null = null): Veh
     wheelArches: null,
     refrigeration: null,
     energy: null,
+    allowedZoneIds: [],
   };
 }
+
+const ZONES: readonly DeliveryZoneView[] = [
+  { id: 'z_aix', postalPrefixes: ['731'], label: 'Aix', fee: { mode: 'amount', cents: 0 } },
+];
 
 interface Wire {
   vehicles: VehicleView[] | null;
@@ -33,6 +39,8 @@ interface Wire {
   opened: { component: unknown; data: unknown }[];
   answer: (result: boolean | undefined) => void;
   said: string[];
+  /** Les zones du commerce ; `null` : la lecture échoue. */
+  zones: readonly DeliveryZoneView[] | null;
 }
 
 let wire: Wire;
@@ -46,6 +54,7 @@ function writeOutcome(): Promise<void> {
 async function boot(
   vehicles: VehicleView[] | null,
   grants: readonly StaffPermission[] = ['delivery_settings:read', 'delivery_settings:write'],
+  zones: readonly DeliveryZoneView[] | null = ZONES,
 ): Promise<ComponentFixture<VehiclesPage>> {
   wire = {
     vehicles,
@@ -56,6 +65,7 @@ async function boot(
     opened: [],
     answer: () => undefined,
     said: [],
+    zones,
   };
   TestBed.resetTestingModule();
   TestBed.configureTestingModule({
@@ -88,6 +98,15 @@ async function boot(
         useValue: { can: (permission: StaffPermission) => grants.includes(permission) },
       },
       { provide: NotifyService, useValue: { success: (m: string) => wire.said.push(m) } },
+      {
+        provide: DeliveryZonesService,
+        useValue: {
+          list: () =>
+            wire.zones === null
+              ? Promise.reject(new Error('indisponible'))
+              : Promise.resolve(wire.zones),
+        } satisfies Pick<DeliveryZonesService, 'list'>,
+      },
       {
         provide: FoldPanelHostService,
         useValue: {
@@ -183,6 +202,25 @@ describe('VehiclesPage', () => {
     expect(all(fixture, '[data-energy]').map((line) => line.textContent.trim())).toEqual([
       'Électrique',
     ]);
+  });
+
+  it('dit les zones d’un véhicule restreint, rien pour un véhicule qui va partout', async () => {
+    const fixture = await boot([
+      { ...vehicle('1', 'Kangoo'), allowedZoneIds: ['z_aix'] },
+      vehicle('3', 'Jumpy'),
+    ]);
+    expect(all(fixture, '[data-zones]').map((line) => line.textContent.trim())).toEqual([
+      'Zone : Aix',
+    ]);
+  });
+
+  it('sans la liste des zones, les compte sans les dire supprimées', async () => {
+    const fixture = await boot(
+      [{ ...vehicle('1', 'Kangoo'), allowedZoneIds: ['z_aix'] }],
+      undefined,
+      null,
+    );
+    expect(all(fixture, '[data-zones]')[0]?.textContent.trim()).toBe('Restreint à 1 zone');
   });
 
   it('dit la flotte vide sans inventer de nombre', async () => {

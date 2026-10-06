@@ -30,6 +30,21 @@
       (valueChange)="energy.set($event)"
       data-energy
     />
+    <fold-multiselect
+      label="Zones autorisées"
+      placeholder="Partout"
+      clearLabel="Partout"
+      allowClear
+      [hint]="
+        zonesUnavailable()
+          ? 'La liste des zones n’a pas pu être lue — les zones choisies sont gardées.'
+          : 'Vide : partout. Le calcul des tournées ne lui confie jamais une commande d’une autre zone.'
+      "
+      [options]="zoneOptions()"
+      [value]="allowedZoneIds()"
+      (valueChange)="allowedZoneIds.set($event)"
+      data-zones
+    />
 
     <fold-fieldset
       legend="Espace de chargement (intérieur, cm)"

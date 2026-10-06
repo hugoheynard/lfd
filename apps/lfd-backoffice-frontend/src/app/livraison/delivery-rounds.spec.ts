@@ -202,6 +202,7 @@ describe('vehiclesActiveOn (C14)', () => {
     wheelArches: null,
     refrigeration: null,
     energy: null,
+    allowedZoneIds: [],
   });
 
   it('propose un véhicule retiré le jour même ou après, pas avant', () => {

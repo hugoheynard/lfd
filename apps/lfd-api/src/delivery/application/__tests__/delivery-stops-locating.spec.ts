@@ -41,6 +41,7 @@ function point(orderId: string): DeliveryStopPoint {
     address: address(`${orderId} rue du Pont`),
     window: null,
     stopMinutes: null,
+    zoneId: null,
   };
 }
 

@@ -139,6 +139,7 @@ export function vehicleView(
     wheelArches: null,
     refrigeration: null,
     energy: null,
+    allowedZoneIds: [],
   };
 }
 

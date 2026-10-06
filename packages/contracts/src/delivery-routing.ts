@@ -163,12 +163,13 @@ export interface DeliveryUnlocatedOrderView extends DeliveryRoundOrderRef {
 }
 
 /**
- * Pourquoi « Proposer » laisse une commande située à répartir à cause de la
- * place (CA4) : aucune tournée ne la tient dans la caisse d'un véhicule.
- * `unknown_demand` est retiré le 2026-10-06 : une commande aux bacs inconnus
- * est placée, et nommée dans `unknownDemand`.
+ * Pourquoi « Proposer » laisse une commande située à répartir : aucune
+ * tournée ne la tient dans la caisse d'un véhicule (`capacity`, CA4), ou
+ * aucun véhicule autorisé sur sa zone ne peut la prendre (`zone`,
+ * 2026-10-06). `unknown_demand` est retiré le 2026-10-06 : une commande aux
+ * bacs inconnus est placée, et nommée dans `unknownDemand`.
  */
-export type DeliveryUnfitReason = "capacity";
+export type DeliveryUnfitReason = "capacity" | "zone";
 
 export interface DeliveryUnfitOrderView extends DeliveryRoundOrderRef {
   readonly reason: DeliveryUnfitReason;

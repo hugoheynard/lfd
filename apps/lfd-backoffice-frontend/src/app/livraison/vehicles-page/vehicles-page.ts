@@ -1,5 +1,5 @@
 import { ChangeDetectionStrategy, Component, computed, inject, signal } from '@angular/core';
-import type { VehicleView } from '@lfd/contracts';
+import type { DeliveryZoneView, VehicleView } from '@lfd/contracts';
 import { httpErrorMessage } from '@lfd/endpoints';
 import {
   FoldButtonComponent,
@@ -15,10 +15,12 @@ import {
 
 import { PermissionsStore } from '../../auth/permissions.store';
 import { NotifyService } from '../../notify.service';
+import { DeliveryZonesService } from '../../b2b/reglages/delivery-zones.service';
 import { DeliverySettingsService } from '../delivery-settings.service';
 import { activeCountLabel, retiredOnLabel, splitFleet } from '../fleet';
 import { energyLabel, vehicleLoadLine, wheelArchesLabel } from '../vehicle-load';
 import { VehicleDialog, type VehicleDialogData } from '../vehicle-dialog/vehicle-dialog';
+import { zonesLine } from '../vehicle-zones';
 
 type FleetState =
   | { readonly status: 'loading' }
@@ -55,6 +57,7 @@ type FleetState =
 })
 export class VehiclesPage {
   private readonly api = inject(DeliverySettingsService);
+  private readonly zonesApi = inject(DeliveryZonesService);
   private readonly panels = inject(FoldPanelHostService);
   private readonly notify = inject(NotifyService);
   private readonly permissions = inject(PermissionsStore);
@@ -79,8 +82,29 @@ export class VehiclesPage {
   protected readonly archesLine = wheelArchesLabel;
   protected readonly energyLine = energyLabel;
 
+  /** Les zones du commerce, pour nommer celles d'un véhicule ; `null` tant qu'on ne les a pas lues. */
+  private readonly zones = signal<readonly DeliveryZoneView[] | null>(null);
+
+  /** « Zones : Aix », ou `null` : il va partout (2026-10-06). */
+  protected zonesOf(vehicle: VehicleView): string | null {
+    return zonesLine(vehicle.allowedZoneIds, this.zones());
+  }
+
   constructor() {
     void this.load();
+    void this.loadZones();
+  }
+
+  /**
+   * Une ligne secondaire : son échec laisse la flotte à l'écran, et les zones
+   * d'un véhicule restreint sont comptées sans être nommées (`zonesLine`).
+   */
+  private async loadZones(): Promise<void> {
+    try {
+      this.zones.set(await this.zonesApi.list());
+    } catch {
+      this.zones.set(null);
+    }
   }
 
   protected retry(): void {

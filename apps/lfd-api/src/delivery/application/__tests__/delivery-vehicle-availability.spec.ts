@@ -27,6 +27,7 @@ function located(orderId: string, situated: boolean): LocatedStop {
     unlocated: situated ? null : "not_geocoded",
     window: null,
     stopSeconds: null,
+    zoneId: null,
   };
 }
 

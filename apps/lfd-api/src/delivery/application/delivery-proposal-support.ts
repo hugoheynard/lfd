@@ -24,7 +24,7 @@ export async function chosenVehicles(
   fleet: FleetReader,
   day: string,
   vehicleIds: readonly string[] | null,
-): Promise<readonly PlanningVehicle[]> {
+): Promise<readonly ChosenVehicle[]> {
   const all = await fleet.list();
   const active = (retiredAt: string | null): boolean =>
     activeOnDay(retiredAt === null ? null : new Date(retiredAt), day);
@@ -33,7 +33,7 @@ export async function chosenVehicles(
     if (rolling.length === 0) {
       throw new NoVehicleForProposalError(day);
     }
-    return rolling.map(({ id, name }) => ({ id, name }));
+    return rolling.map(({ id, name, allowedZoneIds }) => ({ id, name, allowedZoneIds }));
   }
   return [...new Set(vehicleIds)].map((id) => {
     const vehicle = all.find((candidate) => candidate.id === id);
@@ -43,8 +43,13 @@ export async function chosenVehicles(
     if (!active(vehicle.retiredAt)) {
       throw new VehicleInactiveOnDayError(vehicle.name, day);
     }
-    return { id: vehicle.id, name: vehicle.name };
+    return { id: vehicle.id, name: vehicle.name, allowedZoneIds: vehicle.allowedZoneIds };
   });
+}
+
+/** Un véhicule de la proposition, et les zones où il peut aller (vide = partout). */
+export interface ChosenVehicle extends PlanningVehicle {
+  readonly allowedZoneIds: readonly string[];
 }
 
 /** Une tournée du jour que la proposition garde telle quelle. */

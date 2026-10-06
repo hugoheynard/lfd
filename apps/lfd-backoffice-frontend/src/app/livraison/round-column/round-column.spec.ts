@@ -19,6 +19,7 @@ function stop(orderId: string, overrides: Partial<BoardStop> = {}): BoardStop {
     windowMissed: false,
     placementLate: false,
     defaultDemand: null,
+    outOfZone: false,
     ...overrides,
   };
 }

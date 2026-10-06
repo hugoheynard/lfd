@@ -1,10 +1,11 @@
 import { HttpErrorResponse } from '@angular/common/http';
 import { type ComponentFixture, TestBed } from '@angular/core/testing';
 import { By } from '@angular/platform-browser';
-import type { VehicleEnergy, VehiclePayload, VehicleView } from '@lfd/contracts';
-import { FoldListboxComponent, FoldPanelRef } from 'fold-ng';
+import type { DeliveryZoneView, VehicleEnergy, VehiclePayload, VehicleView } from '@lfd/contracts';
+import { FoldListboxComponent, FoldMultiselectComponent, FoldPanelRef } from 'fold-ng';
 import { describe, expect, it } from 'vitest';
 
+import { DeliveryZonesService } from '../../b2b/reglages/delivery-zones.service';
 import { DeliverySettingsService } from '../delivery-settings.service';
 import { VehicleDialog, type VehicleDialogData } from './vehicle-dialog';
 
@@ -14,6 +15,8 @@ interface Wire {
   closes: unknown[];
   /** Le refus à rendre à la prochaine écriture, ou `null`. */
   refuse: string | null;
+  /** Les zones du commerce ; `null` : la lecture échoue. */
+  zones: readonly DeliveryZoneView[] | null;
 }
 
 let wire: Wire;
@@ -28,6 +31,7 @@ const KANGOO: VehicleView = {
   wheelArches: null,
   refrigeration: null,
   energy: null,
+  allowedZoneIds: [],
 };
 
 const FRIGO: VehicleView = {
@@ -37,7 +41,13 @@ const FRIGO: VehicleView = {
   cargo: { lengthCm: 250, widthCm: 170, heightCm: 130, volumeLiters: 5525 },
   refrigeration: { volumeLiters: 400, minTempC: 0, maxTempC: 4 },
   energy: 'electric',
+  allowedZoneIds: [],
 };
+
+const ZONES: readonly DeliveryZoneView[] = [
+  { id: 'z_aix', postalPrefixes: ['731'], label: 'Aix', fee: { mode: 'amount', cents: 0 } },
+  { id: 'z_sud', postalPrefixes: ['738'], label: '', fee: { mode: 'amount', cents: 0 } },
+];
 
 function write(): Promise<void> {
   return wire.refuse === null
@@ -45,8 +55,11 @@ function write(): Promise<void> {
     : Promise.reject(new HttpErrorResponse({ status: 409, error: { message: wire.refuse } }));
 }
 
-async function boot(data: VehicleDialogData): Promise<ComponentFixture<VehicleDialog>> {
-  wire = { adds: [], updates: [], closes: [], refuse: null };
+async function boot(
+  data: VehicleDialogData,
+  zones: readonly DeliveryZoneView[] | null = ZONES,
+): Promise<ComponentFixture<VehicleDialog>> {
+  wire = { adds: [], updates: [], closes: [], refuse: null, zones };
   TestBed.resetTestingModule();
   TestBed.configureTestingModule({
     imports: [VehicleDialog],
@@ -63,6 +76,15 @@ async function boot(data: VehicleDialogData): Promise<ComponentFixture<VehicleDi
             return write();
           },
         } satisfies Pick<DeliverySettingsService, 'addVehicle' | 'updateVehicle'>,
+      },
+      {
+        provide: DeliveryZonesService,
+        useValue: {
+          list: () =>
+            wire.zones === null
+              ? Promise.reject(new Error('indisponible'))
+              : Promise.resolve(wire.zones),
+        } satisfies Pick<DeliveryZonesService, 'list'>,
       },
       { provide: FoldPanelRef, useValue: new FoldPanelRef(1, (r) => wire.closes.push(r)) },
     ],
@@ -135,6 +157,7 @@ describe('VehicleDialog', () => {
         wheelArches: null,
         refrigeration: null,
         energy: null,
+        allowedZoneIds: [],
       },
     ]);
     expect(wire.closes).toEqual([true]);
@@ -171,6 +194,7 @@ describe('VehicleDialog', () => {
           wheelArches: null,
           refrigeration: null,
           energy: null,
+          allowedZoneIds: [],
         },
       },
     ]);
@@ -201,6 +225,7 @@ describe('VehicleDialog', () => {
         wheelArches: null,
         refrigeration: null,
         energy: null,
+        allowedZoneIds: [],
       },
     ]);
   });
@@ -264,6 +289,7 @@ describe('VehicleDialog', () => {
       wheelArches: null,
       refrigeration: { volumeLiters: 400, minTempC: 0, maxTempC: 4 },
       energy: 'electric',
+      allowedZoneIds: [],
     });
   });
 
@@ -323,5 +349,56 @@ describe('VehicleDialog', () => {
     await submit(fixture);
     expect(host(fixture).textContent).toContain('dépassent le plancher');
     expect(wire.closes).toEqual([]);
+  });
+
+  describe('les zones autorisées (2026-10-06)', () => {
+    const multiselect = (fixture: ComponentFixture<VehicleDialog>) =>
+      fixture.debugElement.query(By.directive(FoldMultiselectComponent))
+        .componentInstance as FoldMultiselectComponent<string>;
+
+    it('propose les zones du commerce, nommées par leur libellé ou leurs préfixes', async () => {
+      const fixture = await boot({});
+      expect(multiselect(fixture).options()).toEqual([
+        { value: 'z_aix', label: 'Aix' },
+        { value: 'z_sud', label: '738' },
+      ]);
+    });
+
+    it('les zones choisies partent dans la charge ; corriger le nom les renvoie', async () => {
+      const fixture = await boot({ vehicle: { ...KANGOO, allowedZoneIds: ['z_aix'] } });
+      expect(multiselect(fixture).value()).toEqual(['z_aix']);
+      type(fixture, 0, 'Kangoo gris');
+      await submit(fixture);
+      expect(wire.updates[0]?.payload.allowedZoneIds).toEqual(['z_aix']);
+
+      multiselect(fixture).value.set([]);
+      fixture.detectChanges();
+      await submit(fixture);
+      expect(wire.updates[1]?.payload.allowedZoneIds).toEqual([]);
+    });
+
+    it('changer seulement les zones est une correction', async () => {
+      const fixture = await boot({ vehicle: KANGOO });
+      expect(submitButton(fixture).disabled).toBe(true);
+      multiselect(fixture).value.set(['z_sud']);
+      fixture.detectChanges();
+      expect(submitButton(fixture).disabled).toBe(false);
+    });
+
+    it('une zone supprimée depuis reste nommée, pour qu’on puisse la retirer', async () => {
+      const fixture = await boot({ vehicle: { ...KANGOO, allowedZoneIds: ['z_disparue'] } });
+      expect(multiselect(fixture).options()).toContainEqual({
+        value: 'z_disparue',
+        label: 'Zone supprimée',
+      });
+    });
+
+    it('sans la liste des zones, le choix est gardé et on le dit', async () => {
+      const fixture = await boot({ vehicle: { ...KANGOO, allowedZoneIds: ['z_aix'] } }, null);
+      expect(host(fixture).querySelector('[data-zones]')?.textContent).toContain('pas pu être lue');
+      type(fixture, 0, 'Kangoo gris');
+      await submit(fixture);
+      expect(wire.updates[0]?.payload.allowedZoneIds).toEqual(['z_aix']);
+    });
   });
 });

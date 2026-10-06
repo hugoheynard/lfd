@@ -23,12 +23,13 @@ import type { CostFn } from "../../domain/ports/distance-matrix.js";
 import { RouteGeometry } from "../../domain/ports/route-geometry.js";
 import { ensureComposable } from "../../domain/services/composition-prerequisites.js";
 import { insertIntoRounds } from "../../domain/services/insert-into-rounds.js";
-import type { PlanningVehicle, Proposal } from "../../domain/services/proposal.js";
+import type { Proposal } from "../../domain/services/proposal.js";
 import { proposeRounds } from "../../domain/services/propose-rounds.js";
 import { busyStarts } from "../../domain/services/vehicle-availability.js";
 import type { VehicleStart } from "../../domain/services/vehicle-plan.js";
 import type { RoutingSettings } from "../../domain/value-objects/routing-settings.js";
 import {
+  type ChosenVehicle,
   chosenVehicles,
   classifyRounds,
   insertableRounds,
@@ -55,13 +56,14 @@ import {
   unknownDemandAmong,
 } from "../delivery-proposal-pool.js";
 import { ProposalCapacity, type ProposalCapacityReading } from "../proposal-capacity.js";
+import { compositionZonesOf } from "../proposal-zones.js";
 import { GetDeliveryRoundProposalQuery } from "./get-delivery-round-proposal.query.js";
 
 /** Ce que les deux modes partagent. */
 interface PlanInputs {
   readonly day: ProposalDayReading;
   readonly stops: ReadonlyMap<string, LocatedStop>;
-  readonly vehicles: readonly PlanningVehicle[];
+  readonly vehicles: readonly ChosenVehicle[];
   readonly departure: LocatedDeparture;
   readonly settings: RoutingSettings;
   readonly capacity: ProposalCapacityReading;
@@ -94,6 +96,11 @@ interface Planned {
  * dise « place non vérifiée ». Le contenant par défaut des réglages
  * (2026-10-06) passe avant l'inconnu : la commande occupe alors ce défaut,
  * contrôlé comme le reste, et la vue la nomme (`defaultDemand`).
+ *
+ * **Les zones autorisées entrent dans le calcul** (2026-10-06) : une commande
+ * n'est jamais essayée dans un véhicule restreint à d'autres zones ; sans
+ * zone connue, elle va partout. Ce qu'aucun véhicule autorisé ne peut
+ * prendre reste à répartir, raison `zone`.
  *
  * **Refusée sans socle** (CA-D3) : aucun véhicule en service avec ses cotes,
  * ou aucun type de bac en service — c'est le premier contrôle.
@@ -209,6 +216,7 @@ export class GetDeliveryRoundProposalHandler implements IQueryHandler<
       ),
       starts: startsOf(ctx.settings, cost, occupation.busy),
       capacity: ctx.capacity.capacity,
+      zones: compositionZonesOf(ctx.vehicles, ctx.stops),
     });
     return { proposal, kept };
   }
@@ -241,6 +249,7 @@ export class GetDeliveryRoundProposalHandler implements IQueryHandler<
       passageLimits: passageLimitsOf(ctx.settings.multiplePassages, ctx.vehicles, ctx.day.rounds),
       starts: startsOf(ctx.settings, cost, occupation.busy),
       capacity: ctx.capacity.capacity,
+      zones: compositionZonesOf(ctx.vehicles, ctx.stops),
     });
     const touched = new Set(proposal.tours.map((tour) => tour.roundId));
     const unchanged = insertable

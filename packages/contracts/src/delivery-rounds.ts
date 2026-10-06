@@ -127,6 +127,13 @@ export interface DeliveryRoundStopView {
    * commerce (`decisions-par-defaut-2026-10-02.md`, § 4, lot RL1).
    */
   readonly broughtBackAt?: string;
+  /**
+   * `true` : le véhicule de la tournée n'est pas autorisé sur la zone de la
+   * commande (2026-10-06) — posée avant la restriction, ou glissée à la main.
+   * Rien n'est défait ; absent sinon. Ce n'est pas un `signals` : la tournée
+   * reste recomposable, et « tout recomposer » la replace dans sa zone.
+   */
+  readonly outOfZone?: boolean;
 }
 
 export type DeliveryRoundStopSignal = "cancelled" | "not_this_day" | "not_delivery";

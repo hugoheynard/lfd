@@ -3,6 +3,7 @@ import { compareIds } from "./compare-ids.js";
 import type { PlanningContext } from "./proposal.js";
 import { DAY_START, type RoutingStop } from "./route-timing.js";
 import { isBetterScore, type Routes, scoreVehicle, type VehiclePlan } from "./vehicle-plan.js";
+import { NO_ZONE_RULE, type ZoneRule } from "./zone-rule.js";
 
 /** Où une tournée neuve peut s'ouvrir parmi celles d'un véhicule. */
 export type NewRoutePlacement = "anywhere" | "after_existing";
@@ -17,10 +18,11 @@ interface Placement {
 
 /**
  * Pourquoi un arrêt n'a trouvé place nulle part : plus aucun passage permis
- * (`no_passage`), ou des places existaient mais aucune ne tenait dans la
- * caisse (`capacity`, CA4).
+ * (`no_passage`), des places existaient mais aucune ne tenait dans la
+ * caisse (`capacity`, CA4), ou aucun véhicule n'est autorisé sur sa zone
+ * (`zone`, 2026-10-06).
  */
-export type UnplacedReason = "no_passage" | "capacity";
+export type UnplacedReason = "no_passage" | "capacity" | "zone";
 
 export interface UnplacedStop {
   readonly stop: RoutingStop;
@@ -47,6 +49,12 @@ export interface UnplacedStop {
  * `isBetterScore`. Seule une place qui battrait la meilleure est soumise au
  * plan de chargement.
  *
+ * 🔴 **Les zones aussi** (2026-10-06) : un véhicule qui n'est pas autorisé
+ * sur la zone de l'arrêt (`zones`) n'est pas même essayé — avant le score,
+ * puisque la règle ne coûte qu'une lecture. Si AUCUN véhicule ne l'est,
+ * l'arrêt reste à répartir avec la raison `zone` ; sinon, la raison est celle
+ * des véhicules autorisés.
+ *
  * Rend les véhicules complétés et ce qui n'a trouvé place nulle part, dans
  * l'ordre de priorité, avec sa raison. Déterministe : parcours dans un ordre fixe, et seule
  * une amélioration STRICTE remplace la meilleure place.
@@ -57,14 +65,20 @@ export function insertCheapest(
   pending: readonly RoutingStop[],
   newRoutes: NewRoutePlacement,
   guard: CapacityGuard = NO_CAPACITY_LIMIT,
+  zones: ZoneRule = NO_ZONE_RULE,
 ): { readonly plans: readonly VehiclePlan[]; readonly unplaced: readonly UnplacedStop[] } {
   const current = [...plans];
   const unplaced: UnplacedStop[] = [];
   for (const stop of byPriority(pending)) {
-    const { best, refused } = cheapestPlacement(ctx, current, stop, newRoutes, guard);
+    const { best, refused, zoneBlocked } = cheapestPlacement(
+      { ctx, newRoutes, guard, zones },
+      current,
+      stop,
+    );
     const target = best === null ? undefined : current[best.vehicle];
     if (best === null || target === undefined) {
-      unplaced.push({ stop, reason: refused ? "capacity" : "no_passage" });
+      const reason = zoneBlocked ? "zone" : refused ? "capacity" : "no_passage";
+      unplaced.push({ stop, reason });
       continue;
     }
     current[best.vehicle] = { ...target, routes: best.routes };
@@ -86,16 +100,30 @@ export function byPriority(stops: readonly RoutingStop[]): readonly RoutingStop[
   );
 }
 
+/** Ce que la recherche d'une place lit, fixe pendant toute l'insertion. */
+interface PlacementSearch {
+  readonly ctx: PlanningContext;
+  readonly newRoutes: NewRoutePlacement;
+  readonly guard: CapacityGuard;
+  readonly zones: ZoneRule;
+}
+
+/** `zoneBlocked` : au moins un véhicule écarté pour la zone, et aucun autorisé. */
 function cheapestPlacement(
-  ctx: PlanningContext,
+  { ctx, newRoutes, guard, zones }: PlacementSearch,
   plans: readonly VehiclePlan[],
   stop: RoutingStop,
-  newRoutes: NewRoutePlacement,
-  guard: CapacityGuard,
-): { readonly best: Placement | null; readonly refused: boolean } {
+): { readonly best: Placement | null; readonly refused: boolean; readonly zoneBlocked: boolean } {
   let best: Placement | null = null;
   let refused = false;
+  let allowed = false;
+  let blocked = false;
   for (const [vehicle, plan] of plans.entries()) {
+    if (!zones.allows(plan.vehicle.id, stop.id)) {
+      blocked = true;
+      continue;
+    }
+    allowed = true;
     const before = scoreVehicle(ctx, plan.routes, plan);
     for (const routes of placementsOf(plan, stop, newRoutes)) {
       const after = scoreVehicle(ctx, routes, plan);
@@ -113,7 +141,7 @@ function cheapestPlacement(
       }
     }
   }
-  return { best, refused };
+  return { best, refused, zoneBlocked: blocked && !allowed };
 }
 
 /** Toutes les façons de poser l'arrêt chez ce véhicule : dans une tournée, ou dans une neuve. */
