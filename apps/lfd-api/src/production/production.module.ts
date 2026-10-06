@@ -24,6 +24,18 @@ import { ProductionSettingsController } from "./http/production-settings.control
 import { PrismaProductionCloseSettingsRepository } from "./infrastructure/prisma-production-close-settings.repository.js";
 import { PrismaProductionClosedDayRepository } from "./infrastructure/prisma-production-closed-day.repository.js";
 import { PrismaProductionSettingsReader } from "./infrastructure/prisma-production-settings.reader.js";
+import { AddExternalDossierRecipientHandler } from "./application/commands/add-external-dossier-recipient.handler.js";
+import { AddStaffDossierRecipientHandler } from "./application/commands/add-staff-dossier-recipient.handler.js";
+import { RemoveDossierRecipientHandler } from "./application/commands/remove-dossier-recipient.handler.js";
+import { ListDossierRecipientsHandler } from "./application/queries/list-dossier-recipients.handler.js";
+import { ListDossierStaffCandidatesHandler } from "./application/queries/list-dossier-staff-candidates.handler.js";
+import { DossierRecipientsReader } from "./domain/ports/dossier-recipients.reader.js";
+import { DossierRecipientsRepository } from "./domain/ports/dossier-recipients.repository.js";
+import { ProductionDossierRecipientsController } from "./http/production-dossier-recipients.controller.js";
+import {
+  PrismaDossierRecipientsReader,
+  PrismaDossierRecipientsRepository,
+} from "./infrastructure/prisma-dossier-recipients.repository.js";
 import { CloseProductionDayHandler } from "./application/commands/close-production-day.handler.js";
 import { MarkWorksheetLineHandler } from "./application/commands/mark-worksheet-line.handler.js";
 import { RemoveProductionContainerHandler } from "./application/commands/remove-production-container.handler.js";
@@ -58,6 +70,7 @@ import {
 import { PrismaQualityUploadRepository } from "./infrastructure/prisma-quality-upload.repository.js";
 import { GetAtelierSheetPdfHandler } from "./application/queries/get-atelier-sheet-pdf.handler.js";
 import { GetCurrentProductionWorksheetHandler } from "./application/queries/get-current-production-worksheet.handler.js";
+import { GetDayDossierPdfHandler } from "./application/queries/get-day-dossier-pdf.handler.js";
 import { GetProductionCountPdfHandler } from "./application/queries/get-production-count-pdf.handler.js";
 import { GetProductionDayStatusHandler } from "./application/queries/get-production-day-status.handler.js";
 import { GetProductionForecastHandler } from "./application/queries/get-production-forecast.handler.js";
@@ -118,6 +131,7 @@ import { PrismaProductionReturnRequests } from "./infrastructure/prisma-producti
     QualityUploadSweepController,
     ProductionDayVersionController,
     ProductionSettingsController,
+    ProductionDossierRecipientsController,
     AutoCloseController,
   ],
   providers: [
@@ -144,6 +158,7 @@ import { PrismaProductionReturnRequests } from "./infrastructure/prisma-producti
     GetCurrentProductionWorksheetHandler,
     ListProductionContainersHandler,
     GetProductionCountPdfHandler,
+    GetDayDossierPdfHandler,
     GetAtelierSheetPdfHandler,
     ProductionPapers,
     // La lecture de la fiche, partagée par la route datée et la route « en
@@ -208,6 +223,16 @@ import { PrismaProductionReturnRequests } from "./infrastructure/prisma-producti
     },
     { provide: ProductionClosedDayRepository, useClass: PrismaProductionClosedDayRepository },
     { provide: ProductionSettingsReader, useClass: PrismaProductionSettingsReader },
+    // Les destinataires du dossier du jour (`plan-envoi-du-dossier.md`, E2) :
+    // schéma `production` ; les fiches du personnel se relisent par les ports
+    // de lecture de l'annuaire (`StaffContacts`, `ReachableStaff`), globaux.
+    AddStaffDossierRecipientHandler,
+    AddExternalDossierRecipientHandler,
+    RemoveDossierRecipientHandler,
+    ListDossierRecipientsHandler,
+    ListDossierStaffCandidatesHandler,
+    { provide: DossierRecipientsRepository, useClass: PrismaDossierRecipientsRepository },
+    { provide: DossierRecipientsReader, useClass: PrismaDossierRecipientsReader },
   ],
   // La lecture des contrôles sert aussi la retenue que la production PUBLIE au
   // retrait (`channels/handover/`, QC3) — son adaptateur est relié par la

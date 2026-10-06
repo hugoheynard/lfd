@@ -647,6 +647,17 @@ export type {
   ProductionLatestOrderCutoffView,
   ProductionSettingsView,
 } from "./production-settings.js";
+export {
+  dossierExternalRecipientPayloadSchema,
+  dossierRecipientPayloadSchema,
+  dossierStaffRecipientPayloadSchema,
+} from "./production-dossier-recipients.js";
+export type {
+  DossierRecipientKind,
+  DossierRecipientPayload,
+  DossierRecipientView,
+  DossierStaffCandidateView,
+} from "./production-dossier-recipients.js";
 export { deliveryZonePayloadSchema, longestMatchingPrefix } from "./delivery-zone.js";
 export type {
   DeliveryZonePayload,

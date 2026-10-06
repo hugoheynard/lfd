@@ -596,3 +596,36 @@ model ProductionAutoCloseAttempt {
   @@map("production_auto_close_attempt")
   @@schema("production")
 }
+
+/// **Un destinataire du dossier du jour** (plan
+/// `documentation/production/plan-envoi-du-dossier.md`, décisions 3-4, lot E2).
+///
+/// Deux formes, et une seule par ligne (`production_dossier_recipient_kind_check`) :
+/// - `staff` : une RÉFÉRENCE à une fiche de l'annuaire (`staff_user_id`, sans
+///   clé étrangère — l'annuaire est un autre bloc). Le nom et l'e-mail ne sont
+///   pas copiés : ils se relisent à la lecture et à l'envoi, pour qu'un départ
+///   ou un changement d'adresse suive ;
+/// - `external` : une autre personne, avec son e-mail, son nom, son prénom et
+///   son poste facultatif.
+///
+/// Un retrait ARCHIVE (`removed_at`) : le journal et la ligne disent ensemble
+/// qui a été destinataire. Les deux index uniques partiels tiennent, en base,
+/// « une fiche une fois » et « une adresse externe une fois » parmi les lignes
+/// vivantes ; le doublon d'une adresse externe avec celle d'une fiche (qui
+/// n'est pas copiée) est refusé par l'agrégat `DossierRecipients`.
+model ProductionDossierRecipient {
+  id          String    @id
+  kind        String
+  staffUserId String?   @map("staff_user_id")
+  email       String?
+  firstName   String?   @map("first_name")
+  lastName    String?   @map("last_name")
+  jobTitle    String?   @map("job_title")
+  addedBy     String    @map("added_by")
+  addedAt     DateTime  @map("added_at") @db.Timestamptz(6)
+  removedBy   String?   @map("removed_by")
+  removedAt   DateTime? @map("removed_at") @db.Timestamptz(6)
+
+  @@map("production_dossier_recipient")
+  @@schema("production")
+}

@@ -221,6 +221,7 @@ export const KEY_LABELS: Readonly<Record<string, string>> = {
   sku: 'SKU',
   skus: 'Articles',
   source: 'Source de la reprise',
+  staffUserId: 'Fiche du personnel',
   startAt: 'Début',
   startDate: 'Début',
   status: 'Statut',

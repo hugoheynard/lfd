@@ -35,6 +35,9 @@ const UNWATCHED: Readonly<Record<string, string>> = {
   "production.production_container": "un réglage par SKU, sans journée",
   // Les réglages du fournil (plan d'arrêt du plan, A1, 2026-10-06).
   "production.production_settings": "le réglage unique de l'arrêt du plan, sans journée",
+  // Les destinataires du dossier du jour (plan d'envoi du dossier, E2, 2026-10-06).
+  "production.production_dossier_recipient":
+    "la liste des destinataires du dossier, un réglage sans journée — l'envoi d'une journée (E3) aura sa trace à lui",
   "production.production_quality_upload":
     "un dépôt de photo en attente, sans journée — il n'y entre qu'en devenant une photo, surveillée",
   // Les bases de la livraison (lot 2, 2026-09-29) n'appartiennent à aucune

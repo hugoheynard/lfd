@@ -43,3 +43,22 @@ describe('les jours fermés (production_closed_day.*)', () => {
     );
   });
 });
+
+describe('les destinataires du dossier (production_dossier_recipient.*)', () => {
+  const payload = {
+    subjectLabel: 'Jeanne Roux',
+    kind: 'external',
+    staffUserId: null,
+  };
+
+  it('dit la personne, ajoutée puis retirée, sans rien laisser au détail', () => {
+    const added = fact('production_dossier_recipient.added', payload);
+    expect(sentence(added)).toBe(
+      'Colette Martin a ajouté Jeanne Roux aux destinataires du dossier du jour',
+    );
+    expect(renderFact(added).detail).toEqual([]);
+    expect(sentence(fact('production_dossier_recipient.removed', payload))).toBe(
+      'Colette Martin a retiré Jeanne Roux des destinataires du dossier du jour',
+    );
+  });
+});

@@ -1,7 +1,16 @@
 import type { JournalFactType } from '@lfd/contracts/journal-facts';
 
 import { recordOf } from '../payload-read';
-import { byActor, inUnit, subject, text, valueIn, type Phrase, type Segment } from '../phrase';
+import {
+  byActor,
+  inUnit,
+  subject,
+  subjectLabelOf,
+  text,
+  valueIn,
+  type Phrase,
+  type Segment,
+} from '../phrase';
 import { PRODUCTION_CLOSE_MODE } from '../values/orders-values';
 
 /**
@@ -38,6 +47,20 @@ const closedDay =
       ['subjectLabel', 'serviceDay'],
     );
 
+/**
+ * « a ajouté Jeanne Martin aux destinataires du dossier du jour » (plan
+ * `plan-envoi-du-dossier.md`, E2). Le fait ne porte pas l'adresse : le journal
+ * n'écrit aucun e-mail.
+ */
+const dossierRecipient =
+  (verb: string, tail: string): Phrase =>
+  (fact) =>
+    byActor(
+      fact,
+      [text(verb), subject(fact, subjectLabelOf(fact) ?? 'une personne'), text(tail)],
+      ['subjectLabel', 'kind', 'staffUserId'],
+    );
+
 export const PRODUCTION_SETTINGS_PHRASES = {
   'production_settings.close_changed': (fact) =>
     byActor(
@@ -52,4 +75,12 @@ export const PRODUCTION_SETTINGS_PHRASES = {
     ),
   'production_closed_day.added': closedDay('a fermé le fournil le '),
   'production_closed_day.removed': closedDay('a rouvert le fournil le '),
+  'production_dossier_recipient.added': dossierRecipient(
+    'a ajouté ',
+    ' aux destinataires du dossier du jour',
+  ),
+  'production_dossier_recipient.removed': dossierRecipient(
+    'a retiré ',
+    ' des destinataires du dossier du jour',
+  ),
 } as const satisfies Partial<Record<JournalFactType, Phrase>>;

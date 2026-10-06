@@ -19,6 +19,19 @@ const closeSettings = () =>
 
 const closedDay = () => payload({ subjectLabel: subjectLabel(), serviceDay: day() });
 
+/**
+ * Un destinataire du dossier du jour (plan `plan-envoi-du-dossier.md`, E2),
+ * nommé « Prénom Nom » au moment du geste. Son adresse n'y est PAS : le
+ * journal n'écrit aucun e-mail (`closure.spec.ts`). `staffUserId` dit si
+ * c'était une fiche du personnel.
+ */
+const dossierRecipient = () =>
+  payload({
+    subjectLabel: subjectLabel(),
+    kind: z.enum(["staff", "external"]),
+    staffUserId: z.string().nullable(),
+  });
+
 export const PRODUCTION_SETTINGS_FACTS = {
   /** Le mode ou une heure a changé. `before` est le réglage en vigueur, défaut compris. */
   "production_settings.close_changed": fact(
@@ -28,4 +41,8 @@ export const PRODUCTION_SETTINGS_FACTS = {
   "production_closed_day.added": fact(closedDay()),
   /** Ce jour redevient un jour de production. */
   "production_closed_day.removed": fact(closedDay()),
+  /** Une personne recevra le dossier du jour à chaque arrêt du plan. */
+  "production_dossier_recipient.added": fact(dossierRecipient()),
+  /** Elle ne le recevra plus. */
+  "production_dossier_recipient.removed": fact(dossierRecipient()),
 } as const;

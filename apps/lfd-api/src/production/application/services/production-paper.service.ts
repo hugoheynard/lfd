@@ -1,10 +1,12 @@
 import { Buffer } from "node:buffer";
 
-import { Injectable } from "@nestjs/common";
+import type { CatalogFamilyView } from "@lfd/contracts";
+import { Injectable, Logger } from "@nestjs/common";
 
 import { AppConfig } from "../../../platform/config/app-config.js";
 import { DocumentStorageUnavailableError } from "../../../platform/shared/errors/storage-errors.js";
 import { ProductionDocumentStore } from "../../../platform/storage/production-document-store.js";
+import { WorkshopShelvesReader } from "../../channels/commerce/workshop-shelves.reader.js";
 import type {
   ProductionDay,
   ProductionOrderSnapshot,
@@ -16,6 +18,8 @@ import {
   renderAtelierSheetPdf,
   renderProductionCountPdf,
 } from "../../domain/services/atelier-sheet-pdf.js";
+import { dayDossierOf } from "../../domain/services/day-dossier.js";
+import { dayDossierPdfKey, renderDayDossierPdf } from "../../domain/services/day-dossier-pdf.js";
 
 /** Un papier servi : ses octets et le nom proposé au téléchargement. */
 export interface ProductionPaper {
@@ -53,9 +57,12 @@ export interface ProductionPaper {
  */
 @Injectable()
 export class ProductionPapers {
+  private readonly logger = new Logger(ProductionPapers.name);
+
   constructor(
     private readonly documents: ProductionDocumentStore,
     private readonly config: AppConfig,
+    private readonly shelves: WorkshopShelvesReader,
   ) {}
 
   /** La feuille d'une commande, avec son QR de colisage. */
@@ -87,6 +94,63 @@ export class ProductionPapers {
       `compte-a-produire-${snapshot.serviceDay}.pdf`,
       () => renderProductionCountPdf(snapshot.counts, snapshot.serviceDay, closedAt),
     );
+  }
+
+  /**
+   * **Le dossier du jour** — récapitulatif par rayon, puis un bon par commande,
+   * lus dans ce que la journée a figé.
+   *
+   * Archivé **par tirage arrêté** : la clé porte l'instant du dernier retirage
+   * (`dayDossierPdfKey`), si bien qu'un retirage fabrique un dossier complété
+   * sans écraser celui qui était parti avant.
+   *
+   * ⚠️ Les rayons viennent du catalogue d'AUJOURD'HUI (comme l'écran) et sont
+   * figés au premier tirage. Un commerce muet ne bloque pas le papier — tout va
+   * en « Rayon inconnu » —, mais ce dossier dégradé n'est **pas archivé** : le
+   * tirage suivant le refera avec ses rayons.
+   *
+   * @throws {ProductionDayNotClosedError} la journée n'est pas arrêtée.
+   */
+  async dossierOf(day: ProductionDay): Promise<ProductionPaper> {
+    const snapshot = day.toSnapshot();
+    const closedAt = snapshot.closedAt;
+    if (closedAt === null) {
+      throw new ProductionDayNotClosedError(snapshot.serviceDay);
+    }
+    const retakenAt = snapshot.retaken?.at ?? null;
+    const key = dayDossierPdfKey(snapshot.serviceDay, retakenAt);
+    const fileName = `dossier-du-jour-${snapshot.serviceDay}.pdf`;
+    const archived = await this.readArchived(key);
+    if (archived !== null) {
+      return { bytes: archived, fileName };
+    }
+    const shelves = await this.shelvesOrNull(snapshot.serviceDay, snapshot.orders);
+    const bytes = await renderDayDossierPdf(
+      dayDossierOf(snapshot.orders, shelves),
+      { serviceDay: snapshot.serviceDay, closedAt, retakenAt },
+      (reference) => this.colisageUrl(reference),
+    );
+    if (shelves !== null) {
+      await this.archive(key, bytes);
+    }
+    return { bytes, fileName };
+  }
+
+  /** Les rayons des SKU du jour, ou `null` — panne journalisée, jamais tue. */
+  private async shelvesOrNull(
+    serviceDay: string,
+    orders: readonly ProductionOrderSnapshot[],
+  ): Promise<ReadonlyMap<string, CatalogFamilyView> | null> {
+    const skus = [...new Set(orders.flatMap((order) => order.lines.map((line) => line.sku)))];
+    try {
+      return await this.shelves.shelvesOf(skus);
+    } catch (error) {
+      this.logger.error(
+        `Dossier du ${serviceDay} : rayons illisibles, tiré en « Rayon inconnu » et non archivé.`,
+        error instanceof Error ? error.stack : String(error),
+      );
+      return null;
+    }
   }
 
   /**

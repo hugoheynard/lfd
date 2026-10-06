@@ -118,6 +118,12 @@ export const PRODUCTION_CLOSE_MODE = domain('mode d’arrêt du plan', {
   manual: 'Manuel',
 });
 
+/** La forme d'un destinataire du dossier du jour (plan `plan-envoi-du-dossier.md`, E2). */
+export const DOSSIER_RECIPIENT_KIND = domain('sorte de destinataire', {
+  staff: 'Personnel',
+  external: 'Autre personne',
+});
+
 export const ORDERS_VALUES: ValueFamily = {
   enums: [
     WEEKDAY,
@@ -136,6 +142,7 @@ export const ORDERS_VALUES: ValueFamily = {
     WINDOW_MODE,
     CONTAINER_NATURE,
     PRODUCTION_CLOSE_MODE,
+    DOSSIER_RECIPIENT_KIND,
   ],
   literals: {
     // Ce qu'un contrôle qualité juge (`target.kind`).

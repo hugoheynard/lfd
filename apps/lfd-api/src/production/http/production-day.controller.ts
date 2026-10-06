@@ -16,6 +16,7 @@ import { AdminSurface, RequirePermission } from "../../platform/auth/admin-surfa
 import { ZodQuery } from "../../platform/shared/http/zod-body.pipe.js";
 import { CloseProductionDayCommand } from "../application/commands/close-production-day.command.js";
 import { GetAtelierSheetPdfQuery } from "../application/queries/get-atelier-sheet-pdf.query.js";
+import { GetDayDossierPdfQuery } from "../application/queries/get-day-dossier-pdf.query.js";
 import { GetProductionCountPdfQuery } from "../application/queries/get-production-count-pdf.query.js";
 import { GetProductionDayStatusQuery } from "../application/queries/get-production-day-status.query.js";
 import { GetProductionForecastQuery } from "../application/queries/get-production-forecast.query.js";
@@ -71,6 +72,26 @@ export class ProductionDayController {
       response,
       await this.queries.execute<GetProductionCountPdfQuery, ProductionPaper>(
         new GetProductionCountPdfQuery(productionBatchQuerySchema.parse({ date }).date),
+      ),
+    );
+  }
+
+  /**
+   * **Le dossier du jour, en PDF** — le récapitulatif, puis un bon par
+   * commande : le paquet qui part au fournil, en un seul fichier.
+   *
+   * Même surface et même garde que le compte à produire, et même refus tant
+   * que la journée n'est pas arrêtée : il se lit dans ce qu'elle a figé.
+   */
+  @Get("batch/:date/dossier.pdf")
+  async dossier(
+    @Param("date") date: string,
+    @Res({ passthrough: true }) response: Response,
+  ): Promise<StreamableFile> {
+    return this.paper(
+      response,
+      await this.queries.execute<GetDayDossierPdfQuery, ProductionPaper>(
+        new GetDayDossierPdfQuery(productionBatchQuerySchema.parse({ date }).date),
       ),
     );
   }

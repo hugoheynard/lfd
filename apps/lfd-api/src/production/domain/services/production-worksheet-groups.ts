@@ -91,7 +91,7 @@ export function worksheetGroupsOf(
 }
 
 /** Position, puis nom, puis id : deux homonymes restent chacun d'un bloc. */
-function byPositionThenName(left: CatalogFamilyView, right: CatalogFamilyView): number {
+export function byPositionThenName(left: CatalogFamilyView, right: CatalogFamilyView): number {
   const delta = left.position - right.position;
   if (delta !== 0) {
     return delta;
