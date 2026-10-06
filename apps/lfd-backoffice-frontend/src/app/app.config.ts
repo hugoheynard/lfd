@@ -9,7 +9,8 @@ import {
 
 import { provideSentry, provideStaleBundleReload, provideWebVitals } from '@lfd/front-ops';
 
-import { APP_REVISION_VALUE, B2B_API_BASE_VALUE, SENTRY_DSN_VALUE } from './api/api.env.generated';
+import { APP_REVISION_VALUE, SENTRY_DSN_VALUE } from './api/api.env.generated';
+import { B2B_API_BASE } from './api/api-config';
 import { routes } from './app.routes';
 import { ADDRESS_WRITER, LFD_NOTIFY } from '@lfd/b2b-ui/panel';
 
@@ -30,7 +31,12 @@ export const appConfig: ApplicationConfig = {
     provideAppIcons(),
     // Ce que l'équipe vit vraiment sur cet écran, et ce qui casse dans son
     // navigateur : deux choses qu'aucune sonde ne peut constater du dehors.
-    provideWebVitals(OPS_NODE, B2B_API_BASE_VALUE),
+    //
+    // 🔴 `B2B_API_BASE`, pas la valeur générée brute (2026-10-06) : seule la
+    // première est remplacée en dev (`api-config.dev.ts`, fileReplacements).
+    // La valeur brute envoyait les mesures du poste local à l'origine de
+    // production lue dans le `.env` — `ERR_NAME_NOT_RESOLVED` à chaque page.
+    provideWebVitals(OPS_NODE, B2B_API_BASE),
     ...provideSentry({
       dsn: SENTRY_DSN_VALUE,
       release: APP_REVISION_VALUE,
