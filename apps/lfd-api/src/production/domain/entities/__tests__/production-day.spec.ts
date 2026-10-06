@@ -25,6 +25,7 @@ function order(overrides: Partial<ProducibleOrder> = {}): ProducibleOrder {
     fulfillmentMethod: "pickup",
     destination: "Le Labo",
     dueAt: null,
+    clientele: null,
     sheetDetails: null,
     lines: [{ sku: "VIE-001", productName: "Croissant", quantity: 40 }],
     ...overrides,
@@ -228,6 +229,36 @@ describe("la journée et le colisage (plan colisage, K1)", () => {
     );
 
     expect(day.orders.map((sheet) => sheet.sheetDetails)).toEqual([null, DETAILS]);
+  });
+
+  it("la clôture fige la clientèle de chaque commande, inconnue comprise", () => {
+    const day = opened();
+
+    day.close(
+      [
+        order({ clientele: "pro" }),
+        order({ orderId: "ord_2", clientele: "public" }),
+        order({ orderId: "ord_3", clientele: null }),
+      ],
+      AT,
+      null,
+    );
+
+    expect(day.orders.map((sheet) => sheet.clientele)).toEqual(["pro", "public", null]);
+  });
+
+  it("le retirage fige la clientèle des commandes qu'il absorbe", () => {
+    const day = opened();
+    day.close([order({ clientele: "pro" })], AT, null);
+
+    day.retake(
+      [order({ clientele: "pro" }), order({ orderId: "ord_2", clientele: "public" })],
+      LATER,
+      "staff-1",
+      null,
+    );
+
+    expect(day.orders.map((sheet) => sheet.clientele)).toEqual(["pro", "public"]);
   });
 
   it("le propriétaire survit à l'aller-retour par l'instantané", () => {

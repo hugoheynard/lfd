@@ -29,6 +29,7 @@ export const ORDERS: readonly ProducibleOrder[] = [
     fulfillmentMethod: "pickup",
     destination: "Le Labo",
     dueAt: null,
+    clientele: null,
     sheetDetails: null,
     lines: [{ sku: CROISSANT, productName: "Croissant", quantity: 12 }],
   },
@@ -39,6 +40,7 @@ export const ORDERS: readonly ProducibleOrder[] = [
     fulfillmentMethod: "delivery",
     destination: "Val d'Isère",
     dueAt: null,
+    clientele: null,
     sheetDetails: null,
     lines: [
       { sku: CROISSANT, productName: "Croissant", quantity: 4 },

@@ -9,6 +9,7 @@ function sheet(overrides: Partial<PackingSheet> = {}): PackingSheet {
     orderId: 'o-CMD-1',
     containers: 0,
     customerLabel: 'Client',
+    clientele: null,
     fulfillmentMethod: 'pickup',
     destination: 'Boutique',
     lines: [],

@@ -11,6 +11,7 @@ function sheet(reference: string, awaited: readonly string[]): PackingSheet {
     orderId: `o-${reference}`,
     containers: 0,
     customerLabel: reference,
+    clientele: null,
     fulfillmentMethod: 'pickup',
     destination: 'Boutique',
     lines: skus.map((sku) => ({

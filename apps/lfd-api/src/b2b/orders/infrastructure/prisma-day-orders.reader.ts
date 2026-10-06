@@ -68,6 +68,7 @@ export class PrismaDayOrdersReader extends DayOrdersReader {
         note: true,
         fromSubscriptionId: true,
         placedByStaffId: true,
+        clientele: true,
         company: {
           select: {
             enseigne: true,
@@ -96,6 +97,9 @@ export class PrismaDayOrdersReader extends DayOrdersReader {
         row.deliveryAddressSnapshot,
       ),
       dueAt: dueAtOf(row.fulfillment),
+      // La colonne figée par l'agrégat, telle quelle : un `NULL` d'avant la
+      // distinction reste inconnu, il n'est pas redéduit de `company_id`.
+      clientele: row.clientele,
       lines: row.lines.map((line) => ({
         sku: line.sku,
         productName: line.productNameSnapshot,

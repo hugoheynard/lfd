@@ -27,6 +27,7 @@ function day(packed: boolean): ProductionDay {
         fulfillmentMethod: "pickup",
         destination: "Le Labo",
         dueAt: null,
+        clientele: null,
         sheetDetails: null,
         lines: [{ sku: "VIE-001", productName: "Croissant", quantity: 12 }],
       },

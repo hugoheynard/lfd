@@ -35,6 +35,7 @@ function sheet(reference: string, customerLabel: string, skus: readonly string[]
     orderId: `o-${reference}`,
     containers: 0,
     customerLabel,
+    clientele: null,
     fulfillmentMethod: 'pickup',
     destination: 'Boutique',
     lines: skus.map(line),

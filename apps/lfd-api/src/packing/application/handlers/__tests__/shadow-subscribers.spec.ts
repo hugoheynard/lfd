@@ -29,13 +29,14 @@ function delivery(fact: { type: string; payload: Readonly<Record<string, unknown
   return { eventId: "evt", type: fact.type, payload: fact.payload };
 }
 
-function drawn(orderId = "ord_1") {
+function drawn(orderId = "ord_1", clientele: "pro" | "public" | null = null) {
   return new PackingListDrawnEvent(DAY, AT, {
     orderId,
     reference: `CMD-${orderId}`,
     customerLabel: "Trois Ponts",
     fulfillmentMethod: "pickup",
     dueAt: "07:00",
+    clientele,
     lines: [
       { sku: "CRO", productName: "Croissant", quantity: 2 },
       { sku: "CRO", productName: "Croissant", quantity: 1 },
@@ -81,11 +82,24 @@ describe("OnPackingListDrawn", () => {
         customerLabel: "Trois Ponts",
         fulfillmentMethod: "pickup",
         dueAt: "07:00",
+        clientele: null,
         drawnAt: AT,
         // K2b : toute commande inscrite désormais liste ses contenants.
         containerMode: "listed",
         lines: [{ sku: "CRO", productName: "Croissant", quantity: 3 }],
       },
+    ]);
+  });
+
+  it("range la clientèle que le fournil a figée", async () => {
+    const { shadow, list } = setup();
+
+    await list.handle(delivery(drawn("ord_pro", "pro")));
+    await list.handle(delivery(drawn("ord_pub", "public")));
+
+    expect([...shadow.orders.values()].map((order) => [order.orderId, order.clientele])).toEqual([
+      ["ord_pro", "pro"],
+      ["ord_pub", "public"],
     ]);
   });
 

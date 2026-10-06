@@ -1,4 +1,4 @@
-import type { OrderSheetDetails } from "../channels/commerce/day-orders.reader.js";
+import type { Clientele, OrderSheetDetails } from "../channels/commerce/day-orders.reader.js";
 
 /**
  * **Le bon figé à l'arrêt, colonne par colonne** (E1b, 2026-10-06) — les deux
@@ -98,4 +98,12 @@ export function sheetRowOf(details: OrderSheetDetails | null): SheetRow {
     note: details?.note ?? null,
     recurring: details?.recurring ?? null,
   };
+}
+
+/**
+ * `production_order.clientele` ramenée dans son union. Le CHECK n'admet que
+ * `pro`, `public` ou `NULL` ; `NULL` = journée figée avant la colonne.
+ */
+export function clienteleOf(value: string | null): Clientele | null {
+  return value === "pro" || value === "public" ? value : null;
 }

@@ -101,6 +101,15 @@ describe("le rechargement de dev joue la journée du jour au colisage (K2)", () 
       });
       expect(batch.cancelledAt).not.toBeNull();
 
+      // Le badge « Pro » / « Public » du poste (2026-10-06) : chaque commande
+      // semée passe par la clôture réelle, sa clientèle arrive donc rangée.
+      expect(
+        await ctx.prisma.packingOrder.count({ where: { serviceDay: day, clientele: null } }),
+      ).toBe(0);
+      expect(
+        await ctx.prisma.packingOrder.count({ where: { serviceDay: day, clientele: "pro" } }),
+      ).toBeGreaterThan(0);
+
       // Rien n'est resté en route : aucune livraison en échec.
       expect(await ctx.prisma.outboxDelivery.count({ where: { lastError: { not: null } } })).toBe(
         0,

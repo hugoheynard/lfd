@@ -114,6 +114,12 @@ export interface PackingSheet {
   readonly containers: number;
   readonly customerLabel: string;
   readonly fulfillmentMethod: "pickup" | "delivery";
+  /**
+   * **Qui commande** — le badge « Pro » / « Public » du poste (2026-10-06).
+   * `null` = inconnue : journée arrêtée avant le champ, ou commande d'avant la
+   * distinction côté commerce. L'écran n'affiche alors rien.
+   */
+  readonly clientele: "pro" | "public" | null;
   readonly destination: string;
   readonly lines: readonly PackingLine[];
   /** Le nombre de lignes de la commande — compté au serveur, l'écran ne compte rien. */

@@ -36,6 +36,7 @@ function order(overrides: Partial<ProducibleOrder> = {}): ProducibleOrder {
     fulfillmentMethod: "pickup",
     destination: "Le Labo",
     dueAt: null,
+    clientele: null,
     sheetDetails: null,
     lines: [{ sku: "VIE-001", productName: "Croissant", quantity: 40 }],
     ...overrides,
@@ -154,6 +155,7 @@ function listFact(source: ProducibleOrder, drawnAt: Date) {
     customerLabel: source.customerLabel,
     fulfillmentMethod: source.fulfillmentMethod,
     dueAt: source.dueAt,
+    clientele: null,
     lines: source.lines,
   }).durableFact();
 }

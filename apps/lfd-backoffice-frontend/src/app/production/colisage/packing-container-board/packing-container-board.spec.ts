@@ -63,6 +63,7 @@ function sheet(over: Partial<PackingSheet>): PackingSheet {
     reference: 'CMD-1',
     containers: 0,
     customerLabel: 'Le Refuge',
+    clientele: null,
     fulfillmentMethod: 'delivery',
     destination: 'Annecy',
     lines: [line({})],

@@ -6,7 +6,12 @@ import { ProductionDayRepository } from "../domain/ports/production-day.reposito
 import type { ServiceDay } from "../domain/value-objects/service-day.value-object.js";
 import { BATCH_COLUMNS, batchOf, returnsByBatch } from "./prisma-production-batch.repository.js";
 import { signerColumns, signerOf } from "./production-day-signer.columns.js";
-import { SHEET_COLUMNS, sheetDetailsOf, sheetRowOf } from "./production-order-sheet.columns.js";
+import {
+  SHEET_COLUMNS,
+  clienteleOf,
+  sheetDetailsOf,
+  sheetRowOf,
+} from "./production-order-sheet.columns.js";
 
 /**
  * L'adaptateur Prisma de la journée de production.
@@ -51,6 +56,7 @@ export class PrismaProductionDayRepository extends ProductionDayRepository {
             fulfillmentMethod: true,
             destination: true,
             dueAt: true,
+            clientele: true,
             ...SHEET_COLUMNS,
             lines: { select: { sku: true, productName: true, quantity: true } },
           },
@@ -102,6 +108,7 @@ export class PrismaProductionDayRepository extends ProductionDayRepository {
         fulfillmentMethod: order.fulfillmentMethod === "delivery" ? "delivery" : "pickup",
         destination: order.destination,
         dueAt: order.dueAt,
+        clientele: clienteleOf(order.clientele),
         lines: order.lines.map((line) => ({
           sku: line.sku,
           productName: line.productName,
@@ -194,6 +201,7 @@ export class PrismaProductionDayRepository extends ProductionDayRepository {
             fulfillmentMethod: order.fulfillmentMethod,
             destination: order.destination,
             dueAt: order.dueAt,
+            clientele: order.clientele,
             ...sheetRowOf(order.sheetDetails),
             ...carried.orders.get(order.orderId),
             lines: {

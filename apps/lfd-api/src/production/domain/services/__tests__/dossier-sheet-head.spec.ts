@@ -25,6 +25,7 @@ function order(overrides: Partial<ProductionOrderSnapshot> = {}): ProductionOrde
     fulfillmentMethod: "delivery",
     destination: "3 rue du Four, Val d'Isère",
     dueAt: "07:00",
+    clientele: null,
     sheetDetails: DETAILS,
     lines: [],
     ...overrides,

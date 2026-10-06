@@ -18,6 +18,8 @@ export interface BoardOrder {
   readonly reference: string;
   readonly customerLabel: string;
   readonly fulfillmentMethod: "pickup" | "delivery";
+  /** `pro` / `public` ; `null` = inconnue. */
+  readonly clientele: "pro" | "public" | null;
   /** L'instant du tirage qui l'a inscrite — celui de la clôture pour les premières. */
   readonly drawnAt: Date;
   readonly packed: SheetMark | null;

@@ -15,6 +15,7 @@ function order(
     fulfillmentMethod: "pickup",
     destination: "Le Labo",
     dueAt: null,
+    clientele: null,
     sheetDetails: null,
     packed: null,
     lines: [{ sku: "CRO", productName: "Croissant", quantity: 12 }],

@@ -14,6 +14,12 @@ export interface ProducibleLine {
   readonly quantity: number;
 }
 
+/**
+ * **Qui commande** : `pro` (passée pour une société) ou `public`. Le commerce
+ * la tranche (`clienteleOf`), le fournil la recopie sans la recalculer.
+ */
+export type Clientele = "pro" | "public";
+
 /** L'adresse d'acheminement, en champs postaux — de quoi l'écrire en lignes. */
 export interface SheetAddress {
   readonly line1: string;
@@ -99,6 +105,15 @@ export interface ProducibleOrder {
    * la liste à coliser attribue ce qui sort du four par échéance croissante.
    */
   readonly dueAt: string | null;
+  /**
+   * **Qui commande** — pour le badge « Pro » / « Public » du colisage
+   * (2026-10-06). À côté de `sheetDetails` et pas dedans : ce n'est pas le
+   * papier du bon, c'est un fait que la liste à coliser transporte, et il ne
+   * doit pas disparaître avec un bloc `sheetDetails` nul. `null` = commande
+   * d'avant la distinction côté commerce (`orders.clientele` nul, jamais
+   * rattrapé : « sans société » ne voulait pas dire « public »).
+   */
+  readonly clientele: Clientele | null;
   readonly lines: readonly ProducibleLine[];
   /**
    * Le reste du bon (E1b). Toujours rempli par le commerce ; `null` ne se

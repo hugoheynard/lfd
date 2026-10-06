@@ -16,6 +16,7 @@
  * production » pour parler au retrait.
  */
 export {
+  type Clientele,
   DayOrdersReader,
   type OrderSheetDetails,
   type ProducibleLine,

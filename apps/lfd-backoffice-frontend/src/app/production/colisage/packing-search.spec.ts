@@ -30,6 +30,7 @@ function sheet(reference: string, lines: readonly PackingLine[]): PackingSheet {
     orderId: `o-${reference}`,
     containers: 0,
     customerLabel: reference,
+    clientele: null,
     fulfillmentMethod: 'delivery',
     destination: 'ici',
     lines,

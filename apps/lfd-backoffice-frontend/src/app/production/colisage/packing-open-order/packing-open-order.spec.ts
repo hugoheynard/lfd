@@ -37,6 +37,7 @@ function sheet(over: Partial<PackingSheet> = {}): PackingSheet {
     orderId: 'o-CMD-001',
     containers: 0,
     customerLabel: 'Hôtel du Parc',
+    clientele: null,
     fulfillmentMethod: 'delivery',
     destination: '12 rue des Lilas',
     lines: [line(), line({ sku: 'BAG', productName: 'Baguette', quantity: 8 })],

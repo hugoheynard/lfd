@@ -8,6 +8,8 @@ export interface ShadowOrderToDraw {
   readonly customerLabel: string;
   readonly fulfillmentMethod: "pickup" | "delivery";
   readonly dueAt: string | null;
+  /** `pro` / `public` ; `null` = inconnue (fait publié sans le champ). */
+  readonly clientele: "pro" | "public" | null;
   readonly drawnAt: Date;
   /**
    * `listed` depuis K2b (`colisage.md` §5.1) : toute commande

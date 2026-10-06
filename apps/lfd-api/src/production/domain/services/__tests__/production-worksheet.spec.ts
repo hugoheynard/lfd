@@ -51,6 +51,7 @@ function arrival(orderId: string, lines: readonly [string, string, number][]): P
     fulfillmentMethod: "pickup",
     destination: "Le Labo",
     dueAt: null,
+    clientele: null,
     sheetDetails: null,
     lines: lines.map(([sku, productName, quantity]) => ({ sku, productName, quantity })),
   };

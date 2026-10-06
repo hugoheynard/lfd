@@ -28,7 +28,12 @@
             · {{ method(order) }} · {{ order.destination }}
           }
         </p>
-        <h1 class="co-title">{{ current()?.customerLabel ?? 'Colisage' }}</h1>
+        <h1 class="co-title">
+          {{ current()?.customerLabel ?? 'Colisage' }}
+          @if (current(); as order) {
+            <app-clientele-badge [clientele]="order.clientele" />
+          }
+        </h1>
       </div>
 
       <!-- Tablette seulement (≤ 1366 px) : la liste des commandes se replie, et

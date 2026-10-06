@@ -24,6 +24,9 @@ model PackingOrder {
   fulfillmentMethod String  @map("fulfillment_method")
   /// `HH:mm` — début du créneau, sinon fin de l'échéance ; `null` = en dernier.
   dueAt             String? @map("due_at") @db.VarChar(5)
+  /// `pro` ou `public`, tel que le fournil l'a figé (2026-10-06). `null` =
+  /// inconnu : fait publié sans le champ. CHECK en base.
+  clientele         String? @db.VarChar(6)
 
   /// L'instant du tirage (clôture ou retirage) qui l'a inscrite — celui du fournil.
   drawnAt DateTime @map("drawn_at") @db.Timestamptz(6)

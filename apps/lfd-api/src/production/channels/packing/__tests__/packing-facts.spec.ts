@@ -21,6 +21,7 @@ const ORDER: PackingListOrder = {
   customerLabel: "Trois Ponts",
   fulfillmentMethod: "delivery",
   dueAt: "07:30",
+  clientele: null,
   lines: [{ sku: "VIE-001", productName: "Croissant", quantity: 12 }],
 };
 
@@ -38,6 +39,31 @@ describe("PackingListDrawnEvent", () => {
         new PackingListDrawnEvent(DAY, AT, order),
       );
     }
+  });
+
+  it("porte la clientèle, et la relit `pro` comme `public`", () => {
+    for (const clientele of ["pro", "public"] as const) {
+      const fact = new PackingListDrawnEvent(DAY, AT, { ...ORDER, clientele }).durableFact();
+      expect(fact.payload["order"]).toMatchObject({ clientele });
+      expect(PackingListDrawnEvent.fromPayload(fact.payload).order.clientele).toBe(clientele);
+    }
+  });
+
+  it("🔴 un fait écrit SANS clientèle (binaire d'avant) se lit « inconnue », il n'est pas refusé", () => {
+    const { clientele: _absent, ...older } = { ...ORDER, clientele: "pro" };
+    const payload = {
+      ...new PackingListDrawnEvent(DAY, AT, ORDER).durableFact().payload,
+      order: older,
+    };
+    expect(PackingListDrawnEvent.fromPayload(payload).order.clientele).toBeNull();
+  });
+
+  it("une clientèle hors vocabulaire se lit « inconnue »", () => {
+    const payload = {
+      ...new PackingListDrawnEvent(DAY, AT, ORDER).durableFact().payload,
+      order: { ...ORDER, clientele: "vip" },
+    };
+    expect(PackingListDrawnEvent.fromPayload(payload).order.clientele).toBeNull();
   });
 
   it.each([

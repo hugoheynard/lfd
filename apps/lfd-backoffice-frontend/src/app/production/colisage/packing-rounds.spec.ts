@@ -17,6 +17,7 @@ function sheet(
     reference: `CMD-${orderId}`,
     containers: 0,
     customerLabel: orderId,
+    clientele: null,
     fulfillmentMethod,
     destination: '',
     lines: [],

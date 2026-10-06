@@ -28,6 +28,7 @@ export class PrismaPackingShadowLedger extends PackingShadowLedger {
           customerLabel: order.customerLabel,
           fulfillmentMethod: order.fulfillmentMethod,
           dueAt: order.dueAt,
+          clientele: order.clientele,
           drawnAt: order.drawnAt,
           containerMode: order.containerMode,
         },

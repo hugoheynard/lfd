@@ -30,6 +30,7 @@ export function freezeOrder(order: ProducibleOrder): ProductionOrderSnapshot {
     fulfillmentMethod: order.fulfillmentMethod,
     destination: order.destination,
     dueAt: order.dueAt,
+    clientele: order.clientele,
     lines: order.lines.map((line) => ({
       sku: line.sku,
       productName: line.productName,
@@ -131,6 +132,7 @@ export function absorbArrivals(
         fulfillmentMethod: order.fulfillmentMethod,
         destination: order.destination,
         dueAt: order.dueAt,
+        clientele: order.clientele,
         lines: order.lines,
         sheetDetails: order.sheetDetails,
       })),

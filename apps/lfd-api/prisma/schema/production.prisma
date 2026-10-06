@@ -102,6 +102,11 @@ model ProductionOrder {
   /// alors en DERNIER dans l'attribution du colisable.
   dueAt String? @map("due_at") @db.VarChar(5)
 
+  /// **Qui commande** : `pro` ou `public`, recopié du commerce à l'arrêt
+  /// (2026-10-06, badge du colisage). `null` = journée figée avant la colonne,
+  /// ou commande d'avant la distinction côté commerce. CHECK en base.
+  clientele String? @db.VarChar(6)
+
   /// **Le reste du bon, figé à l'arrêt** (plan `production/plan-envoi-du-
   /// dossier.md`, E1b, 2026-10-06) : ce que le dossier du jour imprime au-delà
   /// de l'étiquette. Résolu par le commerce, recopié tel quel.

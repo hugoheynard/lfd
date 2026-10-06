@@ -18,6 +18,7 @@ const ORDER_SELECT = {
   reference: true,
   customerLabel: true,
   fulfillmentMethod: true,
+  clientele: true,
   drawnAt: true,
   packedAt: true,
   packedBy: true,
@@ -78,6 +79,7 @@ interface OrderRow {
   readonly reference: string;
   readonly customerLabel: string;
   readonly fulfillmentMethod: string;
+  readonly clientele: string | null;
   readonly drawnAt: Date;
   readonly packedAt: Date | null;
   readonly packedBy: string | null;
@@ -104,6 +106,8 @@ function boardOrderOf(row: OrderRow, liveBins: ReadonlySet<string>): BoardOrder 
     customerLabel: row.customerLabel,
     // Même lecture que le dépôt des bacs (`PrismaPackingSheetRepository`).
     fulfillmentMethod: row.fulfillmentMethod === "delivery" ? "delivery" : "pickup",
+    // Le CHECK de la table n'admet que ces deux valeurs, ou `NULL`.
+    clientele: row.clientele === "pro" || row.clientele === "public" ? row.clientele : null,
     drawnAt: row.drawnAt,
     // Les CHECK de la table tiennent `packed_at` et `packed_by` ensemble.
     packed:

@@ -31,6 +31,7 @@ function sheet(over: Partial<PackingSheet> = {}): PackingSheet {
     orderId: 'o-CMD-001',
     containers: 0,
     customerLabel: 'Hôtel du Parc',
+    clientele: null,
     fulfillmentMethod: 'delivery',
     destination: '12 rue des Lilas',
     lines: [line()],
@@ -91,6 +92,22 @@ describe('la liste des commandes du colisage', () => {
     expect(said(host.querySelector('.co-band-sum'))).toBe('50 sur la journée');
     expect(said(host.querySelector('.co-stack'))).toContain('En cours 31');
     expect(said(host.querySelector('.co-stack'))).toContain('Prêtes 4');
+  });
+
+  it('pose « Pro » ou « Public » après le nom, et rien quand la clientèle est inconnue', () => {
+    const fixture = render({
+      sheets: [
+        sheet({ reference: 'CMD-001', customerLabel: 'Hôtel du Parc', clientele: 'pro' }),
+        sheet({ reference: 'CMD-002', customerLabel: 'Léa Martin', clientele: 'public' }),
+        sheet({ reference: 'CMD-003', customerLabel: 'Café Neuf', clientele: null }),
+      ],
+    });
+    const who = Array.from(
+      (fixture.nativeElement as HTMLElement).querySelectorAll('.co-bac-who'),
+      (element) => said(element),
+    );
+
+    expect(who).toEqual(['Hôtel du Parc Pro', 'Léa Martin Public', 'Café Neuf']);
   });
 
   it('émet la référence de la commande choisie', () => {

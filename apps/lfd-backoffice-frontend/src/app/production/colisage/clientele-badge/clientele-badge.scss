@@ -1,0 +1,6 @@
+// Posé après le nom, sur la même ligne — dans la liste comme dans le titre.
+:host {
+  display: inline-flex;
+  vertical-align: middle;
+  margin-inline-start: var(--fold-space-xs);
+}

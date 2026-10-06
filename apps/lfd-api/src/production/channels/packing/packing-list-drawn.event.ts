@@ -1,5 +1,6 @@
 import type { DurableEvent, DurableFact } from "../../../platform/outbox/durable-event.js";
 import { TechnicalError } from "../../../platform/shared/errors/app-error.js";
+import type { Clientele } from "../commerce/day-orders.reader.js";
 import { instantOf, piecesOf, recordOf, textOf } from "./payload-fields.js";
 
 /** Nom stable du fait, clé de routage vers `@DurableHandler`. */
@@ -21,6 +22,11 @@ export interface PackingListOrder {
   readonly fulfillmentMethod: "pickup" | "delivery";
   /** `HH:mm` — début du créneau, sinon fin de l'échéance ; `null` = en dernier. */
   readonly dueAt: string | null;
+  /**
+   * `pro` / `public` (2026-10-06, badge du poste). `null` = inconnue — et
+   * c'est aussi ce que rend un fait écrit avant le champ, qui ne le porte pas.
+   */
+  readonly clientele: Clientele | null;
   readonly lines: readonly PackingListLine[];
 }
 
@@ -89,6 +95,7 @@ function orderOf(value: unknown): PackingListOrder | null {
   const customerLabel = raw["customerLabel"];
   const method = raw["fulfillmentMethod"];
   const dueAt = raw["dueAt"];
+  const clientele = clienteleOf(raw["clientele"]);
   const lines = linesOf(raw["lines"]);
   if (
     orderId === null ||
@@ -100,7 +107,15 @@ function orderOf(value: unknown): PackingListOrder | null {
   ) {
     return null;
   }
-  return { orderId, reference, customerLabel, fulfillmentMethod: method, dueAt, lines };
+  return { orderId, reference, customerLabel, fulfillmentMethod: method, dueAt, clientele, lines };
+}
+
+/**
+ * Additif : un fait déjà écrit sans le champ (ou avec une valeur inconnue)
+ * rend `null` plutôt que d'être refusé — le colisage l'inscrit quand même.
+ */
+function clienteleOf(value: unknown): Clientele | null {
+  return value === "pro" || value === "public" ? value : null;
 }
 
 function linesOf(value: unknown): readonly PackingListLine[] | null {

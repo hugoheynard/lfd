@@ -142,6 +142,7 @@
   "test/orders.e2e-spec.ts": 10565,
   "test/outbox.e2e-spec.ts": 4964,
   "test/packing-board.e2e-spec.ts": 9171,
+  "test/packing-clientele.e2e-spec.ts": 10764,
   "test/packing-containers.e2e-spec.ts": 5707,
   "test/packing-order-packed.e2e-spec.ts": 5590,
   "test/packing-proposal.e2e-spec.ts": 4791,

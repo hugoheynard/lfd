@@ -62,6 +62,7 @@ function order(orderId: string, packedBy: string | null): BoardOrder {
     reference: `CMD-${orderId}`,
     customerLabel: "Le Bistrot",
     fulfillmentMethod: "pickup",
+    clientele: null,
     drawnAt: AT,
     packed: packedBy === null ? null : { at: AT, by: packedBy },
     containers: 0,

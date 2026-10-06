@@ -22,6 +22,7 @@ function order(reference: string, quantity: number): ProductionOrderSnapshot {
     fulfillmentMethod: "delivery",
     destination: "3 rue du Four",
     dueAt: "07:30",
+    clientele: null,
     sheetDetails: null,
     lines: [{ sku: "VIE-001", productName: "Croissant", quantity }],
   };

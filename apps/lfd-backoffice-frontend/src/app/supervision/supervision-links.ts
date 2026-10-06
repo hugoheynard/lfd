@@ -9,7 +9,7 @@ import type { StaffPermission } from '@lfd/contracts';
  * renvoi qui pointerait dessus mènerait vers un refus.
  */
 export const SUPERVISION_LINKS = {
-  preparation: { path: '/production/journee', label: 'Ouvrir la fournée' },
+  preparation: { path: '/fournil', label: 'Ouvrir la fournée' },
   packing: { path: '/colisage', label: 'Ouvrir le colisage' },
   handover: { path: '/comptoir/retrait', label: 'Ouvrir le retrait' },
 } as const;

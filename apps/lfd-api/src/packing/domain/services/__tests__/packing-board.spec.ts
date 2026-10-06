@@ -25,6 +25,7 @@ function order(overrides: Partial<BoardOrder> & Pick<BoardOrder, "orderId">): Bo
     reference: `CMD-${overrides.orderId}`,
     customerLabel: "Le Bistrot",
     fulfillmentMethod: "delivery",
+    clientele: null,
     drawnAt: CLOSED,
     packed: null,
     containers: 0,
@@ -97,6 +98,21 @@ describe("packingBoardOf — le poste servi par le colisage (K3a)", () => {
 
     expect(view.sheets.map((sheet) => sheet.reference)).toEqual(["CMD-1", "CMD-2"]);
     expect(view).toMatchObject({ orderCount: 2, todoCount: 1, readyCount: 1 });
+  });
+
+  it("sert la clientèle rangée, inconnue comprise", () => {
+    const view = packingBoardOf(
+      sources({
+        orders: [
+          order({ orderId: "1", clientele: "pro" }),
+          order({ orderId: "2", clientele: "public" }),
+          order({ orderId: "3", clientele: null }),
+        ],
+        stocks: [],
+      }),
+    );
+
+    expect(view.sheets.map((sheet) => sheet.clientele)).toEqual(["pro", "public", null]);
   });
 
   it("pose la destination, l'auteur nommé et la retenue que le handler a résolus", () => {

@@ -193,9 +193,7 @@ describe('PreparationColumn', () => {
   });
 
   it('renvoie vers la fournée, seulement si on le lui permet', async () => {
-    expect((await mount(BOARD)).querySelector('a')?.getAttribute('href')).toBe(
-      '/production/journee',
-    );
+    expect((await mount(BOARD)).querySelector('a')?.getAttribute('href')).toBe('/fournil');
     TestBed.resetTestingModule();
     expect((await mount(BOARD, false)).querySelector('a')).toBeNull();
   });

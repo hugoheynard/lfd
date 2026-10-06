@@ -84,6 +84,7 @@ function bac(over: Partial<PackingSheet> = {}): PackingSheet {
     orderId: 'o-CMD-001',
     containers: 0,
     customerLabel: 'Hôtel du Parc',
+    clientele: null,
     fulfillmentMethod: 'delivery',
     destination: '12 rue des Lilas',
     lines: [line(), line({ sku: 'BAG', productName: 'Baguette', quantity: 8 })],
@@ -680,6 +681,17 @@ describe('le poste de colisage', () => {
 
     expect(said(el.querySelector('.co-title'))).toBe('Café Neuf');
     expect(said(el.querySelector('.co-bac.is-open'))).toContain('Café Neuf');
+  });
+
+  it('pose le badge de clientèle après le nom, dans le titre de la commande ouverte', async () => {
+    api.packingView = view({
+      sheets: [bac(), bac({ reference: 'CMD-002', customerLabel: 'Café Neuf', clientele: 'pro' })],
+    });
+
+    const { el } = await render('CMD-002');
+
+    expect(said(el.querySelector('.co-title'))).toBe('Café Neuf Pro');
+    expect(el.querySelector('.co-title [data-clientele="pro"]')).not.toBeNull();
   });
 
   it('🔴 DIT la référence inconnue en toutes lettres, plutôt qu’un écran vide', async () => {

@@ -37,6 +37,7 @@ function sheet(reference: string, overrides: Partial<PackingSheet> = {}): Packin
     orderId: `o-${reference}`,
     containers: 0,
     customerLabel: `Client ${reference}`,
+    clientele: null,
     fulfillmentMethod: 'pickup',
     destination: 'Boutique',
     lines: [packingLine()],

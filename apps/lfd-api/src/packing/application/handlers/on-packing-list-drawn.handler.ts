@@ -39,6 +39,7 @@ export class OnPackingListDrawn implements DurableSubscriber {
       customerLabel: event.order.customerLabel,
       fulfillmentMethod: event.order.fulfillmentMethod,
       dueAt: event.order.dueAt,
+      clientele: event.order.clientele,
       drawnAt: event.drawnAt,
       // K2b : la colonne Contenants s'ouvre pour toute commande inscrite
       // désormais ; les commandes déjà inscrites restent `counted`.

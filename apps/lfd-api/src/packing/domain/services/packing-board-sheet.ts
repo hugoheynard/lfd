@@ -44,6 +44,7 @@ export function sheetOf(order: BoardOrder, context: SheetContext): PackingSheet 
     containers: order.containers,
     customerLabel: order.customerLabel,
     fulfillmentMethod: order.fulfillmentMethod,
+    clientele: order.clientele,
     destination: context.destinationOf(order.orderId),
     lines: linesOf(order, context.awaiting, allocatedOf),
     lineCount: order.lines.length,

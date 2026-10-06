@@ -112,6 +112,7 @@ function packingView(closedAt: string | null = 'x'): ProductionPackingView {
               reference: 'CMD-1',
               containers: 2,
               customerLabel: 'Traiteur Vermeil',
+              clientele: null,
               fulfillmentMethod: 'pickup',
               destination: 'Boutique',
               lineCount: 1,
@@ -372,7 +373,7 @@ describe('SupervisionPage', () => {
     const targets = Array.from(root(fixture).querySelectorAll('a')).map((a) =>
       a.getAttribute('href'),
     );
-    expect(targets).toContain('/production/journee');
+    expect(targets).toContain('/fournil');
     expect(targets).toContain('/comptoir/retrait');
   });
 
@@ -394,7 +395,7 @@ describe('SupervisionPage', () => {
       a.getAttribute('href'),
     );
     expect(targets).toContain('/comptoir/retrait');
-    expect(targets).not.toContain('/production/journee');
+    expect(targets).not.toContain('/fournil');
   });
 
   it('n’a aucun bouton d’action : ni geste, ni case à cocher', async () => {

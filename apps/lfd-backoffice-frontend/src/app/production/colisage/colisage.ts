@@ -20,6 +20,7 @@ import { PermissionsStore } from '../../auth/permissions.store';
 import { DayVersionWatcher } from '../../shared/day-version/day-version-watcher';
 import type { DayJournal } from '../../shared/day-version/day-version.service';
 import { narrowViewport } from '../../shared/viewport/narrow-viewport';
+import { ClienteleBadge } from './clientele-badge/clientele-badge';
 import { PackingDayReader } from './packing-day.reader';
 import { PackingGestures } from './packing-gestures';
 import { PackingOpenOrder } from './packing-open-order/packing-open-order';
@@ -69,6 +70,7 @@ const COMPACT_MASTHEAD_QUERY = '(max-width: 1366px)';
   selector: 'app-colisage',
   changeDetection: ChangeDetectionStrategy.OnPush,
   imports: [
+    ClienteleBadge,
     FoldButtonComponent,
     FoldCalloutComponent,
     FoldEmptyStateComponent,

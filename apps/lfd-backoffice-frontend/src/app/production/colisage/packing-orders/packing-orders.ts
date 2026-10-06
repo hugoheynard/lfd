@@ -9,6 +9,7 @@ import {
 import type { DeliveryPackingRoundView, PackingLine, PackingSheet } from '@lfd/contracts';
 
 import { methodLabel, type PackingStack } from '../../packing-board';
+import { ClienteleBadge } from '../clientele-badge/clientele-badge';
 import {
   type PackingGroup,
   packingGroups,
@@ -40,7 +41,7 @@ import {
 @Component({
   selector: 'app-packing-orders',
   changeDetection: ChangeDetectionStrategy.OnPush,
-  imports: [FoldBadgeComponent, FoldIconComponent, FoldViewToggleComponent],
+  imports: [ClienteleBadge, FoldBadgeComponent, FoldIconComponent, FoldViewToggleComponent],
   templateUrl: './packing-orders.html',
   styleUrl: './packing-orders.scss',
   host: {
