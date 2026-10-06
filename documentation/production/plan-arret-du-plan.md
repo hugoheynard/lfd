@@ -217,3 +217,8 @@ jours fermés du fournil dans Réglages ?
   partie ou retouchée), sous `production_count_stop` ; fait durable
   « plan rouvert » que commerce, livraison et colisage défont. Dernier lot (A4),
   à concevoir en détail avant d'être bâti.
+
+- **`production_plan:write`** (Hugo, 2026-10-06, option 1) : laissé vide,
+  décrit « N'ajoute rien ». Incohérence assumée : il reste proposé à l'écran
+  des rôles sans rien garder. Le modèle des ressources en lecture seule est en
+  TODO : [`droits-et-permissions/todo-ressources-en-lecture-seule.md`](../droits-et-permissions/todo-ressources-en-lecture-seule.md).
