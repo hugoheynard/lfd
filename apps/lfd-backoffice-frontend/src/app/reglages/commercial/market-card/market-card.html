@@ -52,15 +52,13 @@
                 <span class="sec-muted"> acteurs</span>
               }
             </span>
-            <button
-              type="button"
-              class="sec-remove"
+            <fold-button-icon
+              icon="close"
+              size="sm"
               [disabled]="busy()"
-              (click)="removeZone(zone.codePostal)"
-              [attr.aria-label]="'Retirer la zone ' + zone.codePostal"
-            >
-              ×
-            </button>
+              [tooltip]="'Retirer la zone ' + zone.codePostal"
+              (clicked)="removeZone(zone.codePostal)"
+            />
           </li>
         } @empty {
           <li class="sec-empty">Aucune zone ciblée.</li>
@@ -89,15 +87,13 @@
           <li class="mk-row">
             <span class="mk-key sec-num">{{ naf.code }}</span>
             <span class="mk-count">{{ naf.label }}</span>
-            <button
-              type="button"
-              class="sec-remove"
+            <fold-button-icon
+              icon="close"
+              size="sm"
               [disabled]="busy()"
-              (click)="removeNaf(naf.code)"
-              [attr.aria-label]="'Retirer le code ' + naf.code"
-            >
-              ×
-            </button>
+              [tooltip]="'Retirer le code NAF ' + naf.code"
+              (clicked)="removeNaf(naf.code)"
+            />
           </li>
         } @empty {
           <li class="sec-empty">Aucune catégorie ciblée.</li>

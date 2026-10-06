@@ -45,14 +45,12 @@
                 [value]="range.endTime"
                 (valueChange)="setEnd(day.index, $index, $event)"
               />
-              <button
-                type="button"
-                class="sec-remove"
-                (click)="removeRange(day.index, $index)"
-                aria-label="Retirer la plage"
-              >
-                ×
-              </button>
+              <fold-button-icon
+                icon="close"
+                size="sm"
+                [tooltip]="'Retirer la plage ' + range.startTime + '–' + range.endTime"
+                (clicked)="removeRange(day.index, $index)"
+              />
             </li>
           } @empty {
             <li class="wk-closed">Fermé</li>

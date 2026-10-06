@@ -9,6 +9,7 @@ import {
 } from '@angular/core';
 import {
   FoldButtonComponent,
+  FoldButtonIconComponent,
   FoldCardComponent,
   FoldElementTitleComponent,
   FoldTimeComponent,
@@ -51,7 +52,13 @@ import {
 @Component({
   selector: 'app-week-grid-card',
   changeDetection: ChangeDetectionStrategy.OnPush,
-  imports: [FoldCardComponent, FoldElementTitleComponent, FoldTimeComponent, FoldButtonComponent],
+  imports: [
+    FoldCardComponent,
+    FoldElementTitleComponent,
+    FoldTimeComponent,
+    FoldButtonComponent,
+    FoldButtonIconComponent,
+  ],
   templateUrl: './week-grid-card.html',
   styleUrl: './week-grid-card.scss',
 })

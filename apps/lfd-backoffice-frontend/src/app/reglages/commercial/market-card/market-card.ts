@@ -2,6 +2,7 @@ import { DatePipe, DecimalPipe } from '@angular/common';
 import { ChangeDetectionStrategy, Component, computed, inject, signal } from '@angular/core';
 import {
   FoldButtonComponent,
+  FoldButtonIconComponent,
   FoldCalloutComponent,
   FoldCardComponent,
   FoldElementTitleComponent,
@@ -31,6 +32,7 @@ const POSTAL_CODE = /^\d{5}$/u;
     FoldElementTitleComponent,
     FoldInputComponent,
     FoldButtonComponent,
+    FoldButtonIconComponent,
     DatePipe,
     DecimalPipe,
     FoldCalloutComponent,

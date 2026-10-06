@@ -50,33 +50,6 @@
   }
 }
 
-.sec-remove {
-  flex: 0 0 auto;
-  width: 1.6rem;
-  height: 1.6rem;
-  padding: 0;
-  border: 0;
-  border-radius: var(--fold-radius-md);
-  background: transparent;
-  color: var(--fold-color-text-muted);
-  font-size: 1.05rem;
-  line-height: 1;
-  cursor: pointer;
-  transition:
-    background 120ms ease,
-    color 120ms ease;
-
-  &:hover:not(:disabled) {
-    background: var(--fold-color-surface-hover, rgba(0, 0, 0, 0.05));
-    color: var(--fold-color-alert);
-  }
-
-  &:disabled {
-    opacity: 0.4;
-    cursor: default;
-  }
-}
-
 .sec-muted {
   color: var(--fold-color-text-muted);
 }
