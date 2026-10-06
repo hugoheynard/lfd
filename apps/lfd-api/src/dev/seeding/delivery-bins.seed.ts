@@ -22,11 +22,12 @@ export const BIN_M = "Bac M";
 export const BIN_L = "Bac L";
 /**
  * La manne à pain (2026-10-06) : le contenant que le calcul des tournées
- * compte par défaut pour une commande dont il ne sait rien. Haute, non
- * empilable, non divisible — c'est elle qui fait la place au sol.
+ * compte par défaut pour une commande dont il ne sait rien. Haute, pilée
+ * par deux au plus (Hugo, 2026-10-06 : « on peut stacker 2 mannes »), non
+ * divisible — c'est elle qui fait la place au sol.
  */
 export const BIN_MANNE = "Manne à pain";
-/** Combien de ficelles une manne prend : l'hôtel des tournées de demain en commande trois. */
+/** Combien de ficelles une manne prend : les hôtels des tournées de demain en commandent par mannes. */
 export const FICELLES_PER_MANNE = 80;
 /** Le SKU que seule la manne sait contenir — la ficelle artisane. */
 export const MANNE_SKU = "PAI-010";
@@ -61,7 +62,7 @@ const BIN_TYPES: readonly BinTypePayload[] = [
     outer: { lengthMm: 665, widthMm: 460, heightMm: 715 },
     inner: { lengthMm: 625, widthMm: 420, heightMm: 690 },
     isotherm: false,
-    maxStack: 1,
+    maxStack: 2,
     divisible: false,
   },
 ];

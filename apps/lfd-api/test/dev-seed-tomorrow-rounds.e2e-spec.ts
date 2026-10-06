@@ -13,9 +13,8 @@ import type { DeliveryRoundProposalView, DevSeedReport } from "@lfd/contracts";
 import { planLoading, type PlanStop } from "../src/delivery/domain/services/loading-plan.js";
 import { CargoFloor } from "../src/delivery/domain/value-objects/cargo-floor.js";
 import { FLEET } from "../src/dev/seeding/delivery-fleet.seed.js";
-import { HOTEL_MANNES } from "../src/dev/seeding/tomorrow-rounds.seed.js";
 import { TOMORROW_ROUNDS_CLIENTS } from "../src/dev/seeding/tomorrow-rounds-clients.seed.js";
-import { MANNES_HOTEL } from "../src/dev/seeding/tomorrow-rounds-houses.js";
+import { estimatedMannes } from "../src/dev/seeding/tomorrow-rounds-houses.js";
 import { seedDriverRole } from "./delivery-driver-scene.js";
 import { ADMIN_VERIFIER_OVERRIDE, admin } from "./delivery-rounds-scene.js";
 import { PROPOSAL, ROAD_ROUTING_OVERRIDES } from "./delivery-routing-scene.js";
@@ -25,7 +24,8 @@ import { bootstrapE2e, type E2eContext, jsonBody } from "./e2e-harness.js";
 const RELOAD = "/admin/dev/seed/reload";
 /** Un rechargement complet sème des dizaines de commandes : cf. `dev-seed-driver.e2e-spec.ts`. */
 const TIMEOUT_MS = 240_000;
-const MANNE = { lengthMm: 665, widthMm: 460, heightMm: 715 } as const;
+/** La manne semée : pilée par deux au plus (Hugo, 2026-10-06). */
+const MANNE = { lengthMm: 665, widthMm: 460, heightMm: 715, maxStack: 2 } as const;
 const DAY_MS = 24 * 60 * 60 * 1000;
 
 let ctx: E2eContext;
@@ -55,7 +55,7 @@ async function propose(query: string): Promise<DeliveryRoundProposalView> {
   );
 }
 
-/** Combien de mannes une camionnette de la flotte semée pose au sol — le plan de chargement le dit. */
+/** Combien de mannes une camionnette de la flotte semée porte, piles comprises — le plan de chargement le dit. */
 function mannesOnFloor(vehicleName: string): number {
   const vehicle = FLEET.find((candidate) => candidate.name === vehicleName);
   if (vehicle?.cargo === undefined || vehicle.cargo === null) {
@@ -63,7 +63,7 @@ function mannesOnFloor(vehicleName: string): number {
   }
   const floor = CargoFloor.of({ ...vehicle.cargo, wheelArches: vehicle.wheelArches ?? null });
   const binType = {
-    ...{ id: "manne", name: "Manne", isotherm: false, maxStack: 1 },
+    ...{ id: "manne", name: "Manne", isotherm: false, maxStack: MANNE.maxStack },
     ...{ outerLengthMm: MANNE.lengthMm, outerWidthMm: MANNE.widthMm },
     outerHeightMm: MANNE.heightMm,
   };
@@ -112,18 +112,18 @@ describe("les tournées de demain du semis", () => {
     "chaque tournée tient au sol de sa camionnette, en mannes",
     async () => {
       const view = await propose("mode=new_rounds");
-      const hotel = await ctx.prisma.order.findFirstOrThrow({
-        where: {
-          requestedDeliveryDate: new Date(`${tomorrow}T00:00:00.000Z`),
-          company: { enseigne: MANNES_HOTEL },
-        },
-        select: { id: true },
+      const orders = await ctx.prisma.order.findMany({
+        where: { requestedDeliveryDate: new Date(`${tomorrow}T00:00:00.000Z`) },
+        select: { id: true, company: { select: { enseigne: true } } },
       });
+      // Les maisons à mannes comptent leurs ficelles ; les autres, le défaut.
+      const estimated = new Map(
+        orders.map((order) => [order.id, estimatedMannes(order.company?.enseigne ?? "")]),
+      );
       const defaulted = new Map(view.defaultDemand.map((order) => [order.orderId, order.count]));
       for (const round of view.rounds) {
         const mannes = round.stops.reduce(
-          (sum, stop) =>
-            sum + (stop.orderId === hotel.id ? HOTEL_MANNES : (defaulted.get(stop.orderId) ?? 0)),
+          (sum, stop) => sum + (estimated.get(stop.orderId) ?? defaulted.get(stop.orderId) ?? 0),
           0,
         );
         expect({
@@ -134,6 +134,15 @@ describe("les tournées de demain du semis", () => {
     },
     TIMEOUT_MS,
   );
+
+  /**
+   * Régression (2026-10-06) : le plan de chargement ignorait la hauteur de la
+   * caisse et comptait dix-huit mannes à chaque camionnette. Deux mannes font
+   * 1430 mm : seule la caisse de 145 cm les empile.
+   */
+  it("chaque camionnette porte ses mannes plafond compris : 18, 9 et 9", () => {
+    expect(FLEET.slice(0, 3).map((vehicle) => mannesOnFloor(vehicle.name))).toEqual([18, 9, 9]);
+  });
 
   it(
     "avec deux camionnettes seulement, la place manque",

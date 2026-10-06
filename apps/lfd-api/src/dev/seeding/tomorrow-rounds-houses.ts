@@ -11,6 +11,8 @@
 
 /** L'hôtel qui prend trois mannes : sa commande est estimée par les contenances. */
 export const MANNES_HOTEL = "Hôtel Le Grand Névé";
+/** Combien de mannes l'Hôtel Le Grand Névé prend. */
+export const HOTEL_MANNES = 3;
 
 /** Une maison, dite en une ligne : le reste se dérive. */
 export interface TomorrowHouse {
@@ -24,7 +26,21 @@ export interface TomorrowHouse {
   readonly lng: number;
   readonly deadline: string;
   readonly contact: readonly [string, string, string];
+  /**
+   * Combien de mannes de ficelles la maison commande, estimées par la
+   * contenance ; absent, elle ne commande que du pain sans contenance et
+   * compte une manne par défaut.
+   */
+  readonly mannes?: number;
 }
+
+/**
+ * Ce que prend un grand hôtel : trois mannes de ficelles ; une résidence,
+ * deux. Recalé le 2026-10-06 quand le plan de chargement a appris le plafond
+ * de la caisse : 33 mannes en tout, cf. `tomorrow-rounds.seed.ts`.
+ */
+const LARGE_HOTEL_MANNES = 3;
+const RESIDENCE_MANNES = 2;
 
 const VDI = { codePostal: "73150", ville: "Val d'Isère" } as const;
 const TIGNES = { codePostal: "73320", ville: "Tignes" } as const;
@@ -42,6 +58,7 @@ export const TOMORROW_HOUSES: readonly TomorrowHouse[] = [
     lng: 6.9772,
     deadline: "06:30",
     contact: ["Laure", "Vibert", "06 11 52 40 83"],
+    mannes: HOTEL_MANNES,
   },
   {
     slug: "combe-folle",
@@ -53,6 +70,7 @@ export const TOMORROW_HOUSES: readonly TomorrowHouse[] = [
     lng: 7.005,
     deadline: "07:00",
     contact: ["Marc", "Duverney", "06 22 63 51 94"],
+    mannes: LARGE_HOTEL_MANNES,
   },
   {
     slug: "trois-combes",
@@ -97,6 +115,7 @@ export const TOMORROW_HOUSES: readonly TomorrowHouse[] = [
     lng: 6.988,
     deadline: "08:30",
     contact: ["Hervé", "Perrin", "06 66 07 95 38"],
+    mannes: RESIDENCE_MANNES,
   },
   {
     slug: "snack-front-de-neige",
@@ -120,6 +139,7 @@ export const TOMORROW_HOUSES: readonly TomorrowHouse[] = [
     lng: 6.907,
     deadline: "06:00",
     contact: ["Damien", "Revel", "06 88 29 17 50"],
+    mannes: LARGE_HOTEL_MANNES,
   },
   {
     slug: "chalet-almes",
@@ -164,6 +184,7 @@ export const TOMORROW_HOUSES: readonly TomorrowHouse[] = [
     lng: 6.892,
     deadline: "08:30",
     contact: ["Victor", "Girod", "06 32 63 51 94"],
+    mannes: RESIDENCE_MANNES,
   },
   {
     slug: "auberge-brevieres",
@@ -198,6 +219,7 @@ export const TOMORROW_HOUSES: readonly TomorrowHouse[] = [
     lng: 6.801,
     deadline: "06:00",
     contact: ["Camille", "Rey", "06 65 96 84 27"],
+    mannes: LARGE_HOTEL_MANNES,
   },
   {
     slug: "residence-lauzes",
@@ -209,6 +231,7 @@ export const TOMORROW_HOUSES: readonly TomorrowHouse[] = [
     lng: 6.788,
     deadline: "07:00",
     contact: ["Bastien", "Vial", "06 76 07 95 38"],
+    mannes: RESIDENCE_MANNES,
   },
   {
     slug: "epicerie-arpette",
@@ -268,3 +291,8 @@ export const TOMORROW_HOUSES: readonly TomorrowHouse[] = [
     contact: ["Rose", "Blanc-Tailleur", "06 31 52 40 83"],
   },
 ];
+
+/** Les mannes de ficelles d'une maison, ou `null` si elle compte au défaut. */
+export function estimatedMannes(enseigne: string): number | null {
+  return TOMORROW_HOUSES.find((house) => house.enseigne === enseigne)?.mannes ?? null;
+}
