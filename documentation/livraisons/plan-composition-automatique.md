@@ -589,10 +589,10 @@ absorbed }` : un **compte**, pas la liste. Le fait vit dans
 
 ### 16.4 Lots
 
-| Lot      | Contenu                                                                             | Migration |
-| -------- | ----------------------------------------------------------------------------------- | --------- |
-| **CA6a** | la table, l'abonné à la clôture, la cloche, l'état lu par l'écran (route + bandeau) | oui       |
-| **CA6b** | `day_retaken` dans le canal avec `orderIds`, l'abonné du retirage                   | non       |
+| Lot          | Contenu                                                                                                                   | Migration |
+| ------------ | ------------------------------------------------------------------------------------------------------------------------- | --------- |
+| ~~**CA6a**~~ | ~~la table, l'abonné à la clôture, la cloche, l'état lu par l'écran (route + bandeau)~~ — bâti le 2026-10-06, non commité | oui       |
+| **CA6b**     | `day_retaken` dans le canal avec `orderIds`, l'abonné du retirage                                                         | non       |
 
 ### 16.5 Contradiction de `vitruve` (2026-10-06) et corrections
 

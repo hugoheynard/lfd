@@ -19,15 +19,34 @@ import {
  * réécrite : elle refuse de proposer, et rien d'autre ne change pour elle.
  */
 
-/** @throws {NoMeasuredVehicleError} @throws {NoActiveBinTypeError} */
-export function ensureComposable(input: {
+/** Ce qui manque au socle ; le véhicule d'abord, comme le refus de « Proposer ». */
+export type CompositionGap = "no_measured_vehicle" | "no_active_bin_type";
+
+/** Ce que les deux ports ont lu du socle. */
+export interface CompositionBase {
   readonly measuredVehicleIds: readonly string[];
   readonly activeBinTypeIds: readonly string[];
-}): void {
+}
+
+/**
+ * La même règle que `ensureComposable`, dite sans lever : pour qui doit
+ * l'ANNONCER (la cloche du plan arrêté, l'écran des tournées, CA6a) plutôt
+ * que refuser un geste.
+ */
+export function compositionGapOf(input: CompositionBase): CompositionGap | null {
   if (input.measuredVehicleIds.length === 0) {
+    return "no_measured_vehicle";
+  }
+  return input.activeBinTypeIds.length === 0 ? "no_active_bin_type" : null;
+}
+
+/** @throws {NoMeasuredVehicleError} @throws {NoActiveBinTypeError} */
+export function ensureComposable(input: CompositionBase): void {
+  const gap = compositionGapOf(input);
+  if (gap === "no_measured_vehicle") {
     throw new NoMeasuredVehicleError();
   }
-  if (input.activeBinTypeIds.length === 0) {
+  if (gap === "no_active_bin_type") {
     throw new NoActiveBinTypeError();
   }
 }

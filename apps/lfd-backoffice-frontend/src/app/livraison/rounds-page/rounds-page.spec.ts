@@ -4,6 +4,7 @@ import { By } from '@angular/platform-browser';
 import { ActivatedRoute, convertToParamMap, Router } from '@angular/router';
 import { FoldDropdownItemComponent } from 'fold-ng';
 import type {
+  DeliveryDayArrestView,
   DeliveryIncidentView,
   DeliveryRoundDriverView,
   DeliveryRoundProposalView,
@@ -163,6 +164,9 @@ interface Wire {
 
 let wire: Wire;
 
+/** Ce que la livraison a appris de la clôture (CA6a) ; nul par défaut : plan non arrêté. */
+let arrested: DeliveryDayArrestView | null = null;
+
 function outcome(call: string): Promise<void> {
   wire.calls.push(call);
   return wire.refuse === null ? Promise.resolve() : Promise.reject(wire.refuse);
@@ -221,6 +225,7 @@ async function boot(
           unassignDriver: (roundId: string, payload: unknown) =>
             outcome(`unassignDriver ${roundId} ${JSON.stringify(payload)}`),
           returnToDepot: (roundId: string) => outcome(`return ${roundId}`),
+          readiness: (day: string) => Promise.resolve({ day, arrested }),
         } satisfies Partial<Record<keyof DeliveryRoundsService, unknown>>,
       },
       {
@@ -819,5 +824,38 @@ describe('RoundsPage — à la porte (lot A, PL2)', () => {
     const first = element.querySelectorAll('[data-round]')[0];
     expect(first?.querySelector('[data-round-state]')?.textContent).toContain('Rentrée 12 h 30');
     expect(first?.querySelector('[data-return-round]')).toBeNull();
+  });
+});
+
+describe('RoundsPage — le plan arrêté (CA6a)', () => {
+  afterEach(() => {
+    arrested = null;
+  });
+
+  it('plan non arrêté : aucun bandeau', async () => {
+    const { element } = await boot();
+
+    expect(element.querySelector('[data-readiness-arrested]')).toBeNull();
+    expect(element.querySelector('[data-readiness-gap]')).toBeNull();
+  });
+
+  it('arrêté : « Proposer les tournées » du bandeau ouvre le panneau', async () => {
+    arrested = {
+      closedAt: '2026-10-06T16:00:00.000Z',
+      deliveryCount: 12,
+      unplacedCount: 3,
+      compositionGap: null,
+    };
+    const { fixture, element } = await boot();
+
+    expect(element.querySelector('[data-readiness-arrested]')?.textContent).toContain(
+      '12 livraisons, dont 3 hors tournée',
+    );
+    button(element, '[data-readiness-propose]').click();
+    fixture.detectChanges();
+
+    const planner = fixture.debugElement.query(By.directive(PlannerPopover))
+      .componentInstance as PlannerPopover;
+    expect(planner.open()).toBe(true);
   });
 });

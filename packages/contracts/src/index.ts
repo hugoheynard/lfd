@@ -910,6 +910,11 @@ export type {
   UnassignDeliveryDriverPayload,
 } from "./delivery-rounds.js";
 export type {
+  DeliveryDayReadinessView,
+  DeliveryDayArrestView,
+  DeliveryCompositionGap,
+} from "./delivery-day-readiness.js";
+export type {
   MyDeliveryRoundsView,
   MyDeliveryRoundSummaryView,
   MyDeliveryRoundFreeze,

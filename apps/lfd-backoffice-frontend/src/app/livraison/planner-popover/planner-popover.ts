@@ -5,6 +5,7 @@ import {
   effect,
   inject,
   input,
+  model,
   output,
   signal,
   untracked,
@@ -99,7 +100,8 @@ export class PlannerPopover {
   /** Les arrêts viennent d'être situés : un aperçu affiché les ignorait. */
   readonly located = output();
 
-  protected readonly open = signal(false);
+  /** Ouvert : la page peut l'ouvrir d'ailleurs (« Proposer » du bandeau du plan arrêté). */
+  readonly open = model(false);
   private readonly unchecked = signal<ReadonlySet<string>>(new Set());
   protected readonly recomposeAll = signal(false);
   /** `null` : le serveur prend le défaut des réglages (qu'on n'a pas pu lire). */

@@ -734,3 +734,22 @@ model DeliveryPurchaseScenario {
   @@map("delivery_purchase_scenario")
   @@schema("delivery")
 }
+
+/// **Le plan arrêté, vu par la livraison** (plan de composition automatique,
+/// §16.5, CA6a) : par journée, l'ENSEMBLE des livraisons que les clôtures du
+/// fournil lui ont apprises. Écrit par l'abonné à `production.day_closed`, qui
+/// ne calcule rien ; lu par l'écran des tournées (« Plan arrêté »).
+///
+/// Une ligne par journée : une journée close ne se rouvre pas (S1).
+/// `closedAt` est nul tant qu'aucune clôture n'est reçue (un retirage reçu
+/// d'abord, CA6b). `deliveryOrderIds` ne fait que grandir (union).
+model DeliveryDayReadiness {
+  serviceDay       String    @id @map("service_day") @db.VarChar(10)
+  closedAt         DateTime? @map("closed_at") @db.Timestamptz(6)
+  deliveryOrderIds String[]  @default([]) @map("delivery_order_ids")
+  createdAt        DateTime  @map("created_at") @db.Timestamptz(6)
+  updatedAt        DateTime  @map("updated_at") @db.Timestamptz(6)
+
+  @@map("delivery_day_readiness")
+  @@schema("delivery")
+}

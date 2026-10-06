@@ -7,6 +7,7 @@ import {
   NoMeasuredVehicleError,
 } from "../../errors/delivery-composition-errors.js";
 import {
+  compositionGapOf,
   ensureActiveBinTypeRemains,
   ensureComposable,
   ensureMeasuredVehicleRemains,
@@ -140,5 +141,23 @@ describe("ensureActiveBinTypeRemains", () => {
     const archived = bin("b1");
     archived.archive(AT);
     expect(() => ensureActiveBinTypeRemains(archived, [])).not.toThrow();
+  });
+});
+
+describe("compositionGapOf — la même règle, dite sans lever (CA6a)", () => {
+  it("rien ne manque : null", () => {
+    expect(compositionGapOf({ measuredVehicleIds: ["v1"], activeBinTypeIds: ["b1"] })).toBeNull();
+  });
+
+  it("le véhicule d'abord, comme le refus de « Proposer »", () => {
+    expect(compositionGapOf({ measuredVehicleIds: [], activeBinTypeIds: [] })).toBe(
+      "no_measured_vehicle",
+    );
+  });
+
+  it("puis le type de bac", () => {
+    expect(compositionGapOf({ measuredVehicleIds: ["v1"], activeBinTypeIds: [] })).toBe(
+      "no_active_bin_type",
+    );
   });
 });

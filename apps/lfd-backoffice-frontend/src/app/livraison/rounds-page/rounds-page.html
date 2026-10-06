@@ -74,6 +74,7 @@
               [canReadSettings]="canReadSettings()"
               [disabled]="busy() || state().status !== 'ready'"
               [previewing]="preview.active()"
+              [(open)]="plannerOpen"
               (proposed)="showProposal($event)"
               (located)="located()"
             />
@@ -105,6 +106,15 @@
           }
         </div>
       </div>
+
+      @if (!preview.active()) {
+        <app-day-readiness-banner
+          [day]="day()"
+          [refresh]="state()"
+          [canWrite]="canWrite()"
+          (propose)="plannerOpen.set(true)"
+        />
+      }
 
       @if (preview.proposal(); as proposal) {
         <fold-card padding="sm" radius="md" class="preview" data-preview>

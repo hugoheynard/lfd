@@ -1,0 +1,30 @@
+@if (state().status === 'error') {
+  <fold-callout variant="warning" data-readiness-failed>
+    L’état du plan de ce jour n’a pas pu être lu : on ne sait pas s’il est arrêté. Rechargez la page
+    pour réessayer.
+  </fold-callout>
+} @else if (arrest(); as arrest) {
+  @if (gapWords(); as gap) {
+    <fold-callout variant="alert" data-readiness-gap>
+      <strong>Plan arrêté — {{ countLabel() }}</strong
+      >, mais impossible de proposer les tournées : {{ gap }}.
+    </fold-callout>
+  } @else {
+    <fold-callout variant="success" data-readiness-arrested>
+      <strong>Plan arrêté</strong> — {{ countLabel() }}, dont {{ arrest.unplacedCount }} hors
+      tournée.
+      @if (canWrite() && arrest.unplacedCount > 0) {
+        <button
+          actions
+          foldButton
+          size="sm"
+          icon="edit"
+          (click)="propose.emit()"
+          data-readiness-propose
+        >
+          Proposer les tournées
+        </button>
+      }
+    </fold-callout>
+  }
+}

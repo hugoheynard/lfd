@@ -3,6 +3,7 @@ import { inject, Injectable } from '@angular/core';
 import type {
   AssignDeliveryDriverPayload,
   AssignDeliveryStopPayload,
+  DeliveryDayReadinessView,
   DeliveryDriversView,
   DeliveryRoundsDayView,
   MoveDeliveryStopPayload,
@@ -49,6 +50,15 @@ export class DeliveryRoundsService {
   day(day: string): Promise<DeliveryRoundsDayView> {
     return firstValueFrom(
       this.http.get<DeliveryRoundsDayView>(`${ROUNDS}?jour=${encodeURIComponent(day)}`),
+    );
+  }
+
+  /** Le plan de ce jour est-il arrêté ? (CA6a) — ce que la livraison a appris de la clôture. */
+  readiness(day: string): Promise<DeliveryDayReadinessView> {
+    return firstValueFrom(
+      this.http.get<DeliveryDayReadinessView>(
+        `${ROUNDS}/plan-arrete?jour=${encodeURIComponent(day)}`,
+      ),
     );
   }
 

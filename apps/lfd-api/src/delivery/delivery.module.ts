@@ -138,6 +138,7 @@ import { PrismaVehicleRoundsReader } from "./infrastructure/prisma-vehicle-round
 import { PrismaVehicleRepository } from "./infrastructure/prisma-vehicle.repository.js";
 import { COMPOSITION_PREREQUISITES_PROVIDERS } from "./composition-prerequisites.providers.js";
 import { DAY_JOURNAL_CONTROLLERS, DAY_JOURNAL_PROVIDERS } from "./day-journal.providers.js";
+import { DAY_READINESS_CONTROLLERS, DAY_READINESS_PROVIDERS } from "./day-readiness.providers.js";
 import { DOORSTEP_CONTROLLERS, DOORSTEP_PROVIDERS } from "./doorstep.providers.js";
 import { DRIVER_CONTROLLERS, DRIVER_PROVIDERS } from "./driver.providers.js";
 import { ROUND_PAPER_CONTROLLERS, ROUND_PAPER_PROVIDERS } from "./round-paper.providers.js";
@@ -184,6 +185,7 @@ import {
     BinCapacitiesController,
     ...PURCHASE_LIBRARY_CONTROLLERS,
     ...DAY_JOURNAL_CONTROLLERS,
+    ...DAY_READINESS_CONTROLLERS,
     ...DRIVER_CONTROLLERS,
     ...ROUND_PAPER_CONTROLLERS,
     ...DOORSTEP_CONTROLLERS,
@@ -255,6 +257,7 @@ import {
     GetBinCapacitiesHandler,
     ...PURCHASE_LIBRARY_PROVIDERS,
     ...DAY_JOURNAL_PROVIDERS,
+    ...DAY_READINESS_PROVIDERS,
     ...COMPOSITION_PREREQUISITES_PROVIDERS,
     ...DRIVER_PROVIDERS,
     ...ROUND_PAPER_PROVIDERS,

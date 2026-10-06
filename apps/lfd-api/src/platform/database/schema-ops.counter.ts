@@ -276,6 +276,9 @@ const NON_PUBLIC_SCHEMA_OF_MODEL: Readonly<Record<string, string>> = {
   DeliveryPurchaseBinCandidate: "delivery",
   // Les scénarios d'achat (lot B3) : une sélection nommée, enregistrée à la main.
   DeliveryPurchaseScenario: "delivery",
+  // Le plan arrêté vu par la livraison (CA6a) : une ligne par journée, écrite
+  // par l'abonné à la clôture — quelques écritures par jour.
+  DeliveryDayReadiness: "delivery",
   // La boîte d'envoi (plan-boite-d-envoi, BE1) : le relais l'écrit surtout en
   // SQL brut — compté dans le seau brut ; seul le rejeu passe par ces modèles.
   OutboxMessage: "platform",

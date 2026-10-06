@@ -62,6 +62,7 @@ import {
   PlannerPopover,
   type PlannerVehicle,
 } from '../planner-popover/planner-popover';
+import { DayReadinessBanner } from '../day-readiness-banner/day-readiness-banner';
 import type { StopShift } from '../round-column/round-column';
 import {
   alertCountOf,
@@ -147,6 +148,7 @@ const CONFLICT = 409;
     FoldPopoverTriggerDirective,
     FoldToastComponent,
     FoldViewToggleComponent,
+    DayReadinessBanner,
     PlannerPopover,
     RoundsBoard,
   ],
@@ -196,6 +198,8 @@ export class RoundsPage {
   private readonly reload = signal(0);
 
   protected readonly canWrite = computed(() => this.permissions.can('delivery_rounds:write'));
+  /** Le panneau « Proposer les tournées » — le bandeau du plan arrêté peut l'ouvrir (CA6a). */
+  protected readonly plannerOpen = signal(false);
   protected readonly canReadSettings = computed(() =>
     canReadDeliverySettings((permission) => this.permissions.can(permission)),
   );
