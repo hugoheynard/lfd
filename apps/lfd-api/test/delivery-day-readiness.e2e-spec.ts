@@ -7,10 +7,14 @@
  * Ce que seul le vrai Postgres prouve : que la ligne tombe avec le relais,
  * que le reçu de la boîte d'envoi rend le rejeu sans effet, et que la route
  * de l'écran lit ce qui a été rangé.
+ *
+ * CA6b : un vrai retirage publie `production.day_retaken` avec les commandes
+ * absorbées ; l'abonné du retirage les ajoute et sonne le seul delta.
  */
 import type { DeliveryDayReadinessView } from "@lfd/contracts";
 
 import { LEARN_ARRESTED_PLAN } from "../src/delivery/application/handlers/learn-arrested-plan.handler.js";
+import { LEARN_RETAKEN_PLAN } from "../src/delivery/application/handlers/learn-retaken-plan.handler.js";
 import { bootstrapE2e, daysAgo, jsonBody, serviceDay, type E2eContext } from "./e2e-harness.js";
 import { binTypeId } from "./delivery-loading-scene.js";
 import {
@@ -50,6 +54,11 @@ async function closePlan(): Promise<{ readonly closedAt: string }> {
   return jsonBody<{ readonly closedAt: string }>(response);
 }
 
+async function retakePlan(): Promise<void> {
+  await admin(ctx).post(`/admin/production/worksheet/${DAY}/retake`).expect(201);
+  await ctx.drain();
+}
+
 async function readiness(): Promise<DeliveryDayReadinessView> {
   return jsonBody<DeliveryDayReadinessView>(
     await admin(ctx).get(`${ROUNDS}/plan-arrete?jour=${DAY}`).expect(200),
@@ -60,6 +69,7 @@ function bells() {
   return ctx.prisma.staffNotification.findMany({
     where: { kind: KIND },
     select: { subject: true, body: true, audience: true },
+    orderBy: [{ occurredAt: "asc" }, { id: "asc" }],
   });
 }
 
@@ -146,5 +156,47 @@ describe("la livraison apprend la clôture du fournil", () => {
         compositionGap: null,
       },
     });
+  });
+});
+
+describe("la livraison apprend le retirage du fournil (CA6b)", () => {
+  it("un vrai retirage ajoute les livraisons absorbées et sonne le delta", async () => {
+    await seedDelivery(ctx, DAY);
+    await closePlan();
+    const late = await seedDelivery(ctx, DAY);
+    await seedDelivery(ctx, DAY);
+
+    await retakePlan();
+
+    const row = await ctx.prisma.deliveryDayReadiness.findUniqueOrThrow({
+      where: { serviceDay: DAY },
+    });
+    expect(row.deliveryOrderIds).toHaveLength(3);
+    expect(row.deliveryOrderIds).toContain(late.id);
+    const subjects = (await bells()).map((bell) => bell.subject);
+    expect(subjects).toHaveLength(2);
+    expect(subjects[0]).toMatch(/est arrêté : 1 livraison à mettre en tournées$/u);
+    expect(subjects[1]).toMatch(/est complété : 2 nouvelles livraisons à placer$/u);
+    expect((await readiness()).arrested?.deliveryCount).toBe(3);
+  });
+
+  it("le rejeu du retirage ne sonne pas une seconde fois", async () => {
+    await seedDelivery(ctx, DAY);
+    await closePlan();
+    await seedDelivery(ctx, DAY);
+    await retakePlan();
+
+    await ctx.prisma.outboxDelivery.updateMany({
+      where: { subscriber: LEARN_RETAKEN_PLAN },
+      data: { claimedUntil: daysAgo(1) },
+    });
+    await ctx
+      .http()
+      .post("/admin/outbox/sweep")
+      .set("x-lfc-recompute-token", TEST_RECOMPUTE_TOKEN)
+      .expect(200);
+    await ctx.drain();
+
+    expect(await bells()).toHaveLength(2);
   });
 });

@@ -48,7 +48,8 @@ function deliveries(count: number): string {
 /**
  * **La cloche du plan arrêté** (plan de composition automatique, §16.5) : elle
  * ne sonne que si l'ensemble a GRANDI, et dit de combien. La première fois,
- * c'est l'arrêt ; ensuite, ce sont des livraisons nouvelles à placer.
+ * c'est l'arrêt (tout l'ensemble est annoncé : `added === total`) ; ensuite,
+ * un retirage ou une réannonce complète le plan de livraisons à placer.
  *
  * Sans socle de composition (CA-D3), elle le dit : proposer refuserait.
  */
@@ -62,7 +63,7 @@ export function planArrestedWords(input: {
   const first = input.added === input.total;
   const subject = first
     ? `Le plan du ${label} est arrêté : ${deliveries(input.total)} à mettre en tournées`
-    : `Plan du ${label} : ${input.added > 1 ? `${String(input.added)} nouvelles livraisons` : "1 nouvelle livraison"} à placer`;
+    : `Le plan du ${label} est complété : ${input.added > 1 ? `${String(input.added)} nouvelles livraisons` : "1 nouvelle livraison"} à placer`;
   const body =
     input.gap === null
       ? "Ouvrez Organisation de tournées et lancez « Proposer les tournées » ; rien n'est appliqué sans vous."

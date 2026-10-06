@@ -5,7 +5,7 @@ import { FixedClock } from "../../../../platform/time/fixed-clock.js";
 import type { ProducibleOrder } from "../../../channels/commerce/day-orders.reader.js";
 import { ProductionDayClosedEvent } from "../../../channels/commerce/production-day-closed.event.js";
 import { ProductionDay } from "../../../domain/entities/production-day.js";
-import { ProductionDayRetakenEvent } from "../../../domain/events/production-day-retaken.event.js";
+import { ProductionDayRetakenEvent } from "../../../channels/delivery/index.js";
 import type { StoredDossierRecipient } from "../../../domain/ports/dossier-recipients.reader.js";
 import { AUTOMATIC_SIGNER, staffSigner } from "../../../domain/entities/plan-signer.js";
 import { parisDateTime, weekdayLongDate } from "../../../../platform/pdf/paper-pdf-kit.js";
@@ -99,7 +99,7 @@ function closure(reannouncedAt: Date | null = null) {
 }
 
 function retake(at: Date = RETAKEN) {
-  const fact = new ProductionDayRetakenEvent(DAY, at, 1).durableFact();
+  const fact = new ProductionDayRetakenEvent(DAY, at, 1, ["o1"]).durableFact();
   return { eventId: "evt-2", type: fact.type, payload: fact.payload };
 }
 

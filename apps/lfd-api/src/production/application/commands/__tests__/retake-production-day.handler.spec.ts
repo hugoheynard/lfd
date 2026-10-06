@@ -248,7 +248,7 @@ describe("RetakeProductionDayHandler — la liste à coliser (colisage, K1, §11
 });
 
 describe("RetakeProductionDayHandler — le fait du retirage (dossier-prod-du-jour.md, E3)", () => {
-  it("publie `production.day_retaken` une fois, daté du retirage, avec le nombre absorbé", async () => {
+  it("publie `production.day_retaken` une fois, daté du retirage, avec le nombre et la liste absorbés", async () => {
     const durable = new RecordingDurable();
     const handler = subject(
       new Days(closedDay()),
@@ -266,7 +266,12 @@ describe("RetakeProductionDayHandler — le fait du retirage (dossier-prod-du-jo
       {
         type: "production.day_retaken",
         key: `production.day_retaken:${DAY}:${NOW.toISOString()}`,
-        payload: { serviceDay: DAY, retakenAt: NOW.toISOString(), absorbed: 2 },
+        payload: {
+          serviceDay: DAY,
+          retakenAt: NOW.toISOString(),
+          absorbed: 2,
+          orderIds: ["ord_2", "ord_3"],
+        },
       },
     ]);
   });

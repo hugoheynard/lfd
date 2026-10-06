@@ -26,10 +26,10 @@ describe("planArrestedWords — la cloche du plan arrêté", () => {
   it("une croissance ensuite dit les nouvelles à placer", () => {
     expect(
       planArrestedWords({ serviceDay: "2026-10-07", added: 2, total: 14, gap: null }).subject,
-    ).toBe("Plan du mercredi 7 octobre : 2 nouvelles livraisons à placer");
+    ).toBe("Le plan du mercredi 7 octobre est complété : 2 nouvelles livraisons à placer");
     expect(
       planArrestedWords({ serviceDay: "2026-10-07", added: 1, total: 14, gap: null }).subject,
-    ).toBe("Plan du mercredi 7 octobre : 1 nouvelle livraison à placer");
+    ).toBe("Le plan du mercredi 7 octobre est complété : 1 nouvelle livraison à placer");
   });
 
   it("sans véhicule mesuré, la cloche dit qu'on ne peut pas proposer, et où régler", () => {

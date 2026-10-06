@@ -7,8 +7,8 @@ import {
 } from "../../../platform/outbox/durable-handler.js";
 import { Clock } from "../../../platform/time/clock.js";
 import {
-  PRODUCTION_DAY_CLOSED,
-  ProductionDayClosedEvent,
+  PRODUCTION_DAY_RETAKEN,
+  ProductionDayRetakenEvent,
 } from "../../../production/channels/delivery/index.js";
 import { DeliveryOrdersReader } from "../../channels/commerce/index.js";
 import { DeliveryDayReadiness } from "../../domain/entities/delivery-day-readiness.js";
@@ -17,30 +17,28 @@ import { PlanArrestedBell } from "../plan-arrested-bell.js";
 import { activeDeliveriesAmong } from "./arrested-plan-deliveries.js";
 
 /** Nom STABLE de l'abonné — clé de son reçu dans la boîte d'envoi. */
-export const LEARN_ARRESTED_PLAN = "delivery.learn-arrested-plan";
+export const LEARN_RETAKEN_PLAN = "delivery.learn-retaken-plan";
 
 /**
- * **La livraison apprend que le plan est arrêté** (plan de composition
- * automatique, §16.5, CA6a ; arête `delivery → production` par le canal
- * `production/channels/delivery/`, §15).
+ * **La livraison apprend qu'un retirage complète le plan** (plan de
+ * composition automatique, §16.5, CA6b ; canal `production/channels/delivery/`).
  *
- * Il ne CALCULE rien — l'abonné tourne dans une transaction, et la
- * proposition appelle le réseau (B1). Il range et il sonne :
+ * Même discipline que `LearnArrestedPlan` : il ne calcule rien, il range
+ * l'UNION des livraisons non annulées absorbées par le retirage, et sonne
+ * seulement si l'ensemble grandit.
  *
- * - borné aux `orderIds` DU FAIT, jamais au statut `confirmed` (l'abonné du
- *   commerce peut ne pas être passé) ;
- * - n'en garde que les livraisons NON annulées, lues au commerce par le canal ;
- * - en fait l'UNION dans l'ensemble du jour (`DeliveryDayReadiness`) ;
- * - sonne seulement si l'ensemble a grandi — à la première clôture reçue,
- *   tout l'ensemble, y compris ce qu'un retirage arrivé avant elle a rangé.
- *
- * Aucun ordre supposé, idempotent : un fait rejoué ou une réannonce qui
- * recouvre n'ajoute rien, donc ne sonne pas. Il ne lève sur aucun cas métier ;
- * seul un fait illisible échoue, et finit en message mort visible.
+ * - **Avant la clôture** (aucun ordre supposé entre les deux faits) : il crée
+ *   la ligne sans instant d'arrêt et NE SONNE PAS. Un retirage implique une
+ *   clôture ; quand elle arrivera, elle annoncera le total, celles-ci
+ *   comprises. Sonner « nouvelles livraisons » d'un plan que le bureau n'a
+ *   jamais vu arrêté lui donnerait un delta sans base.
+ * - **Ancien fait sans liste** (écrit avant CA6b) : il ne fait rien et ne lève
+ *   pas — le compte seul ne dit pas QUELLES commandes ranger, et un refus
+ *   ferait un message mort pour un fait normal.
  */
 @Injectable()
-@DurableHandler({ type: PRODUCTION_DAY_CLOSED, subscriber: LEARN_ARRESTED_PLAN })
-export class LearnArrestedPlan implements DurableSubscriber {
+@DurableHandler({ type: PRODUCTION_DAY_RETAKEN, subscriber: LEARN_RETAKEN_PLAN })
+export class LearnRetakenPlan implements DurableSubscriber {
   constructor(
     private readonly orders: DeliveryOrdersReader,
     private readonly days: DeliveryDayReadinessRepository,
@@ -49,12 +47,15 @@ export class LearnArrestedPlan implements DurableSubscriber {
   ) {}
 
   async handle(delivery: DurableDelivery): Promise<void> {
-    const event = ProductionDayClosedEvent.fromPayload(delivery.payload);
+    const event = ProductionDayRetakenEvent.fromPayload(delivery.payload);
+    if (event.orderIds === null) {
+      return;
+    }
     const deliveryIds = await activeDeliveriesAmong(this.orders, event.orderIds);
     const now = this.clock.now();
     const day =
       (await this.days.load(event.serviceDay)) ?? DeliveryDayReadiness.start(event.serviceDay, now);
-    const announced = day.learnClosure(event.closedAt, deliveryIds, now);
+    const announced = day.learnRetake(deliveryIds, now);
     await this.days.save(day);
     if (announced > 0) {
       await this.bell.ring({

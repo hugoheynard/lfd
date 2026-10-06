@@ -94,7 +94,7 @@ describe("LearnArrestedPlan — la livraison apprend que le plan est arrêté", 
     expect(days.rows.get(DAY)?.deliveryOrderIds).toEqual(["d1", "d2", "d3"]);
     expect(notifier.notified.map((notice) => notice.subject)).toEqual([
       "Le plan du mercredi 7 octobre est arrêté : 2 livraisons à mettre en tournées",
-      "Plan du mercredi 7 octobre : 1 nouvelle livraison à placer",
+      "Le plan du mercredi 7 octobre est complété : 1 nouvelle livraison à placer",
     ]);
     expect(new Set(notifier.notified.map((notice) => notice.idempotencyKey)).size).toBe(2);
   });

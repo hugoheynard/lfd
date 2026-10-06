@@ -16,13 +16,14 @@ export interface DeliveryDayReadinessState {
  * fournil lui ont apprises.
  *
  * L'invariant est structurel : l'ensemble ne fait que grandir. Chaque fait
- * — clôture, réannonce, plus tard retirage (CA6b) — en fait l'UNION ; un fait
+ * — clôture, réannonce, retirage (CA6b) — en fait l'UNION ; un fait
  * rejoué, ou une réannonce qui recouvre ce qu'on sait déjà, n'ajoute rien.
  * Aucun ordre d'arrivée n'est supposé : `closedAt` se pose à la première
  * clôture reçue et ne bouge plus (une journée close ne se rouvre pas, S1).
  *
- * Ce que l'appelant en tire — sonner ou non — est le nombre de livraisons
- * AJOUTÉES, rendu par `learnClosure`.
+ * Ce que l'appelant en tire — sonner ou non — est le nombre de livraisons à
+ * ANNONCER, rendu par `learnClosure` et `learnRetake` : rien n'est annoncé
+ * tant que le plan n'est pas arrêté, et l'arrêt annonce tout ce qu'on sait.
  */
 export class DeliveryDayReadiness {
   private constructor(
@@ -75,12 +76,34 @@ export class DeliveryDayReadiness {
    * Une clôture (ou sa réannonce) reçue : ses livraisons rejoignent
    * l'ensemble, et l'instant d'arrêt se pose s'il manquait.
    *
-   * @returns le nombre de livraisons qui n'étaient pas encore connues.
+   * @returns ce qu'il y a à ANNONCER : à la première clôture reçue, tout
+   *   l'ensemble — y compris ce qu'un retirage arrivé avant elle avait déjà
+   *   rangé ; ensuite, les seules livraisons qui n'étaient pas encore connues.
    */
   learnClosure(closedAt: Date, deliveryOrderIds: readonly string[], at: Date): number {
+    const wasArrested = this.closed !== null;
+    const added = this.union(deliveryOrderIds, at);
+    this.closed ??= closedAt;
+    return wasArrested ? added : this.ids.size;
+  }
+
+  /**
+   * Un retirage reçu (CA6b) : ses livraisons absorbées rejoignent l'ensemble.
+   * Aucun ordre n'est supposé : arrivé avant la clôture, il range sans poser
+   * d'instant d'arrêt.
+   *
+   * @returns ce qu'il y a à ANNONCER : les livraisons nouvelles si le plan est
+   *   déjà arrêté ; rien sinon — la clôture, quand elle arrivera, annoncera
+   *   le total, celles-ci comprises.
+   */
+  learnRetake(deliveryOrderIds: readonly string[], at: Date): number {
+    const added = this.union(deliveryOrderIds, at);
+    return this.closed === null ? 0 : added;
+  }
+
+  private union(deliveryOrderIds: readonly string[], at: Date): number {
     const before = this.ids.size;
     this.ids = new Set([...this.ids, ...deliveryOrderIds]);
-    this.closed ??= closedAt;
     this.touchedAt = at;
     return this.ids.size - before;
   }

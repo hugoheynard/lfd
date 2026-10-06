@@ -62,7 +62,7 @@ describe("DeliveryDayReadiness — l'ensemble des livraisons d'un plan arrêté"
     expect(day.closedAt).toBe(CLOSED);
   });
 
-  it("une ligne relue sans clôture la reçoit ensuite (le retirage arrivé d'abord, CA6b)", () => {
+  it("une ligne relue sans clôture la reçoit ensuite, et l'arrêt annonce TOUT l'ensemble (CA6b)", () => {
     const day = DeliveryDayReadiness.restore({
       serviceDay: DAY,
       closedAt: null,
@@ -71,8 +71,35 @@ describe("DeliveryDayReadiness — l'ensemble des livraisons d'un plan arrêté"
       updatedAt: AT,
     });
 
-    expect(day.learnClosure(CLOSED, ["z", "y"], LATER)).toBe(1);
+    // Le retirage arrivé d'abord n'a rien annoncé : c'est l'arrêt qui dit le total.
+    expect(day.learnClosure(CLOSED, ["z", "y"], LATER)).toBe(2);
     expect(day.closedAt).toBe(CLOSED);
     expect(day.createdAt).toBe(AT);
+  });
+
+  it("un retirage avant la clôture range sans arrêter, et n'annonce rien", () => {
+    const day = DeliveryDayReadiness.start(DAY, AT);
+
+    expect(day.learnRetake(["r1", "r2"], AT)).toBe(0);
+    expect(day.closedAt).toBeNull();
+    expect(day.deliveryOrderIds).toEqual(["r1", "r2"]);
+  });
+
+  it("un retirage après la clôture annonce ses seules livraisons nouvelles", () => {
+    const day = DeliveryDayReadiness.start(DAY, AT);
+    day.learnClosure(CLOSED, ["a", "b"], AT);
+
+    expect(day.learnRetake(["b", "c", "d"], LATER)).toBe(2);
+    expect(day.deliveryOrderIds).toEqual(["a", "b", "c", "d"]);
+    expect(day.closedAt).toBe(CLOSED);
+    expect(day.updatedAt).toBe(LATER);
+  });
+
+  it("un retirage rejoué n'annonce rien", () => {
+    const day = DeliveryDayReadiness.start(DAY, AT);
+    day.learnClosure(CLOSED, ["a"], AT);
+    day.learnRetake(["c"], LATER);
+
+    expect(day.learnRetake(["c"], LATER)).toBe(0);
   });
 });

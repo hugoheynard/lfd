@@ -8,7 +8,7 @@ import {
 import {
   PRODUCTION_DAY_RETAKEN,
   ProductionDayRetakenEvent,
-} from "../../domain/events/production-day-retaken.event.js";
+} from "../../channels/delivery/index.js";
 import { ProductionDayRepository } from "../../domain/ports/production-day.repository.js";
 import { ServiceDay } from "../../domain/value-objects/service-day.value-object.js";
 import { DossierDispatch } from "../services/dossier-dispatch.service.js";
