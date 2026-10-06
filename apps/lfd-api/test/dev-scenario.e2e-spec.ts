@@ -139,6 +139,26 @@ describe("le scénario du jour, étape par étape", () => {
     TIMEOUT_MS,
   );
 
+  /**
+   * Régression : la purge ne vidait ni `delivery_day_readiness` ni la cloche
+   * « plan arrêté » ; l'ensemble grandissait à chaque remise et la cloche
+   * resonnait (« 17 nouvelles livraisons », 2026-10-06).
+   */
+  it(
+    "la remise ne laisse ni l'ensemble des livraisons du jour, ni la cloche « plan arrêté » qu'il a fait sonner",
+    async () => {
+      const { day } = await reset();
+      const bells = {
+        idempotencyKey: { startsWith: `notification:delivery.plan_arrested:${day}:` },
+      };
+      expect(await ctx.prisma.deliveryDayReadiness.count({ where: { serviceDay: day } })).toBe(0);
+      expect(await ctx.prisma.staffNotification.count({ where: bells })).toBe(0);
+      await next();
+      expect(await ctx.prisma.staffNotification.count({ where: bells })).toBe(1);
+    },
+    TIMEOUT_MS,
+  );
+
   it(
     "refuse « suivant » à l'étape 5, en le disant",
     async () => {
