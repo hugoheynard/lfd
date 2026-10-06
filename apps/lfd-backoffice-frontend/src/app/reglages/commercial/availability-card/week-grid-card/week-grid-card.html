@@ -57,8 +57,16 @@
           }
         </ul>
 
-        <button type="button" class="wk-add" (click)="addRange(day.index)">
-          + Ajouter une plage
+        <button
+          foldButton
+          type="button"
+          class="wk-add"
+          emphasis="soft"
+          size="sm"
+          icon="plus"
+          (click)="addRange(day.index)"
+        >
+          Ajouter une plage
         </button>
       </section>
     }

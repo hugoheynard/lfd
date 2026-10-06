@@ -1,7 +1,6 @@
 import { ChangeDetectionStrategy, Component, computed, inject, signal } from '@angular/core';
 import {
   FoldButtonComponent,
-  FoldIconComponent,
   FoldElementTitleComponent,
   FoldEmptyStateComponent,
   FoldLoadingStateComponent,
@@ -40,7 +39,6 @@ function count(people: readonly PendingAccess[], kind: PendingAccess['kind']): n
   changeDetection: ChangeDetectionStrategy.OnPush,
   imports: [
     FoldButtonComponent,
-    FoldIconComponent,
     FoldElementTitleComponent,
     FoldEmptyStateComponent,
     FoldLoadingStateComponent,

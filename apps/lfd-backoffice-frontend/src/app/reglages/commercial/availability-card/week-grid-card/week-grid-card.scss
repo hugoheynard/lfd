@@ -74,21 +74,9 @@
   font-size: var(--fold-text-sm);
 }
 
+// Le bouton fold s'étirerait sur toute la colonne du jour.
 .wk-add {
   align-self: flex-start;
-  padding: 0;
-  border: 0;
-  background: none;
-  color: var(--fold-color-primary);
-  font: inherit;
-  font-size: var(--fold-text-xs, 0.75rem);
-  font-weight: 550;
-  cursor: pointer;
-
-  &:hover {
-    text-decoration: underline;
-    text-underline-offset: 2px;
-  }
 }
 
 .sec-warn {
