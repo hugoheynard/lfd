@@ -144,22 +144,22 @@ flowchart TD
 
 ## 3. État réel, lot par lot (vérifié le 2026-10-06)
 
-| Lot      | Contenu                                                                                                                                                                           | État        | Commit                                               |
-| -------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ----------- | ---------------------------------------------------- |
-| **CA0**  | Situer l'adresse (géocodage) dès la commande, en fond après validation ; rattrapage à la commande suivante du jour, à l'arrêt du plan et au retirage                              | ✅ bâti     | non commité (2026-10-06)                             |
-| **CA1**  | Sans véhicule actif mesuré ni type de bac en service, « Proposer » refuse avec la phrase ; on ne peut pas retirer le dernier                                                      | ✅ bâti     | `57ed88723`                                          |
-| **CA1b** | Pas de livraison sans échéance ni créneau à la passation                                                                                                                          | ✅ bâti     | `8089a262c`                                          |
-| **CA2**  | Départ à rebours dès minuit, marge visée ; `maxRoundMinutes` devient un simple signal, sans pénalité de durée                                                                     | ✅ bâti     | `0cf2aaf30` (points validés `dc4bd9779`)             |
-| **CA3**  | Réglage créneau / échéance (global, puis par adresse), affichage « avant HH:MM »                                                                                                  | ✅ bâti     | `8089a262c`, écrans `6f245b864`                      |
-| **CA3b** | Plusieurs créneaux ou échéances par adresse (`slotList`, l'ancien `slots` dérivé)                                                                                                 | ✅ bâti     | `d4972386a`, écrans `b7ee1c883`                      |
-| §14.2    | Mode par défaut : échéance (migration `20261004090000_echeance_par_defaut`)                                                                                                       | ✅ bâti     | `d4972386a`                                          |
-| Horaire  | Une tournée garde son départ, son retour et ses km prévus, et le PDF les imprime                                                                                                  | ✅ bâti     | `3e9da566c`, aperçu `a9fb52c04`                      |
-| **CA4**  | La capacité entre dans la composition : demande en bacs par commande (déclarés, sinon estimés, sinon inconnue — placée, « place non vérifiée »), `planLoading` à chaque insertion | ✅ bâti     | non commité (2026-10-06)                             |
-| **Banc** | 200 clients, calcul pur, p95 < 5 s (`bench:composition`, qualité `bench:composition:quality`) ; complet p95 4,1 s, Insérer p95 0,15 s, sur un poste (§5 point 3)                  | ✅ bâti     | non commité (2026-10-06) ; conteneur non mesuré      |
-| **CA5**  | Épinglage = les tournées enregistrées (aucune table) ; versions par tournée déjà exigées (409) ; alerte rouge « échéance intenable à cette place » à l'écran des tournées         | ✅ bâti     | non commité (2026-10-06)                             |
-| **CA6a** | Abonné à `production.day_closed`, table `delivery.delivery_day_readiness` (migration `20261007110000_le_plan_arrete_pour_la_livraison`), cloche, query et bandeau                 | ✅ bâti     | `4b79a8e06`                                          |
-| **CA6b** | `production.day_retaken` passe dans le canal avec `orderIds` ; un abonné ajoute les absorbées et sonne                                                                            | ✅ bâti     | `d5900081e`                                          |
-| **CA7**  | Place suggérée pour une commande arrivée sur un jour déjà appliqué (dérogation, retirage)                                                                                         | ❌ pas bâti | aujourd'hui, « Insérer » les prend comme non placées |
+| Lot      | Contenu                                                                                                                                                                           | État        | Commit                                                       |
+| -------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ----------- | ------------------------------------------------------------ |
+| **CA0**  | Situer l'adresse (géocodage) dès la commande, en fond après validation ; rattrapage à la commande suivante du jour, à l'arrêt du plan et au retirage                              | ✅ bâti     | `0aa07eb63`                                                  |
+| **CA1**  | Sans véhicule actif mesuré ni type de bac en service, « Proposer » refuse avec la phrase ; on ne peut pas retirer le dernier                                                      | ✅ bâti     | `57ed88723`                                                  |
+| **CA1b** | Pas de livraison sans échéance ni créneau à la passation                                                                                                                          | ✅ bâti     | `8089a262c`                                                  |
+| **CA2**  | Départ à rebours dès minuit, marge visée ; `maxRoundMinutes` devient un simple signal, sans pénalité de durée                                                                     | ✅ bâti     | `0cf2aaf30` (points validés `dc4bd9779`)                     |
+| **CA3**  | Réglage créneau / échéance (global, puis par adresse), affichage « avant HH:MM »                                                                                                  | ✅ bâti     | `8089a262c`, écrans `6f245b864`                              |
+| **CA3b** | Plusieurs créneaux ou échéances par adresse (`slotList`, l'ancien `slots` dérivé)                                                                                                 | ✅ bâti     | `d4972386a`, écrans `b7ee1c883`                              |
+| §14.2    | Mode par défaut : échéance (migration `20261004090000_echeance_par_defaut`)                                                                                                       | ✅ bâti     | `d4972386a`                                                  |
+| Horaire  | Une tournée garde son départ, son retour et ses km prévus, et le PDF les imprime                                                                                                  | ✅ bâti     | `3e9da566c`, aperçu `a9fb52c04`                              |
+| **CA4**  | La capacité entre dans la composition : demande en bacs par commande (déclarés, sinon estimés, sinon inconnue — placée, « place non vérifiée »), `planLoading` à chaque insertion | ✅ bâti     | `4010899a1`, correction `bb7ba8fd1`                          |
+| **Banc** | 200 clients, calcul pur, p95 < 5 s (`bench:composition`, qualité `bench:composition:quality`) ; complet p95 4,1 s, Insérer p95 0,15 s, sur un poste (§5 point 3)                  | ✅ bâti     | `97d163fdd`, accélération `aca1ee895` ; conteneur non mesuré |
+| **CA5**  | Épinglage = les tournées enregistrées (aucune table) ; versions par tournée déjà exigées (409) ; alerte rouge « échéance intenable à cette place » à l'écran des tournées         | ✅ bâti     | `59e011547`                                                  |
+| **CA6a** | Abonné à `production.day_closed`, table `delivery.delivery_day_readiness` (migration `20261007110000_le_plan_arrete_pour_la_livraison`), cloche, query et bandeau                 | ✅ bâti     | `4b79a8e06`                                                  |
+| **CA6b** | `production.day_retaken` passe dans le canal avec `orderIds` ; un abonné ajoute les absorbées et sonne                                                                            | ✅ bâti     | `d5900081e`                                                  |
+| **CA7**  | Place suggérée pour une commande arrivée sur un jour déjà appliqué (dérogation, retirage)                                                                                         | ❌ pas bâti | aujourd'hui, « Insérer » les prend comme non placées         |
 
 ## 4. Les décisions d'Hugo en vigueur
 
@@ -239,7 +239,7 @@ flowchart TD
 
 **Lots non bâtis, dans l'ordre**
 
-1. ~~**CA0.**~~ Bâti le 2026-10-06, non commité. Sur `order.placed`, le
+1. ~~**CA0.**~~ Bâti le 2026-10-06. Sur `order.placed`, le
    commerce appelle `DeliveryOrderPlacedListener` (déclaré et implémenté par
    la livraison, `delivery/channels/commerce/`). La livraison relit la
    commande, puis, après la validation et en fond (`AfterCommit` +
@@ -251,11 +251,11 @@ flowchart TD
    jamais placée (règle déjà en place, `locateFromCache`). Reste hors CA0 : un
    changement de date ou d'adresse après la passation n'est rattrapé qu'à
    l'arrêt du plan ou par le geste « Situer ».
-2. ~~**CA4.**~~ Bâti le 2026-10-06, non commité. Chaque commande a une
+2. ~~**CA4.**~~ Bâti le 2026-10-06. Chaque commande a une
    demande en bacs (`stopDemandOf`) : ses bacs déclarés non annulés, sinon
    l'estimation du colisage (`proposePacking`, lignes × contenances, une
    moitié comptée pour un bac entier), sinon « inconnue ». **Corrigé le
-   2026-10-06 (non commité)** : une commande à demande inconnue est placée
+   2026-10-06** : une commande à demande inconnue est placée
    sans contrôle (elle n'occupe rien dans `CompositionCapacity`), une tournée
    mêlée est contrôlée sur sa part connue, et la proposition nomme ces
    commandes (`unknownDemand`) pour que chaque colonne de l'aperçu dise
@@ -284,7 +284,7 @@ flowchart TD
    graine fixe. Seuil : p95 < 5 s, mesuré dans le conteneur. Les seuils restent
    à valider par Hugo. Le test actuel s'arrête à 60 arrêts, avec une borne
    relâchée à 3 s.
-   **Bâti le 2026-10-06 (non commité).** Script `tsx`
+   **Bâti le 2026-10-06.** Script `tsx`
    `apps/lfd-api/src/delivery/domain/services/__tests__/propose-rounds.bench.ts`,
    scène
    `apps/lfd-api/src/delivery/domain/services/__tests__/composition-bench-day.ts` (mulberry32, graines 1..20, matrice plane
@@ -304,7 +304,7 @@ flowchart TD
    sous Jest, le calcul est ~7 fois plus lent qu'en Node nu, et la garde
    coûtait ~40 s de CI ; le test à 60 arrêts reste la garde.
    **Seuil tenu sur le poste le 2026-10-06, propositions inchangées**
-   (non commité). Trois gestes, tous EXACTS (aucun ne change ce que
+   (`aca1ee895`). Trois gestes, tous EXACTS (aucun ne change ce que
    `improvePlans` retient, seulement ce qu'il évite de calculer) :
    - un **minorant** du coût (`apps/lfd-api/src/delivery/domain/services/cost-floor.ts`) : route + livraisons +
      ouvertures, noté une fois par tournée neuve. `isBetterScore` est
@@ -332,7 +332,7 @@ flowchart TD
    le résultat y est déjà fixé par la borne, en gestes, pas en temps.
    Reste : mesurer dans le conteneur (`todo-calculateur.md`).
 
-4. ~~**CA5.**~~ Bâti le 2026-10-06, non commité. Décisions détaillées dans
+4. ~~**CA5.**~~ Bâti le 2026-10-06. Décisions détaillées dans
    le ledger de la composition automatique (D20 à D27).
    - **Pas de table d'épinglage, pas de migration.** La contrainte humaine
      est déjà en base : c'est la tournée enregistrée. « Insérer » n'en
