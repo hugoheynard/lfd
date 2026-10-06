@@ -25,9 +25,9 @@ describe('la plage du prévisionnel', () => {
   it('dit la distance plutôt que la date — c’est la vraie question', () => {
     const headers = forecastHeaders(
       [
-        { date: '2026-09-03', totalUnits: 100, orderCount: 12, closed: true },
-        { date: '2026-09-04', totalUnits: 200, orderCount: 9, closed: false },
-        { date: '2026-09-05', totalUnits: 900, orderCount: 47, closed: false },
+        { date: '2026-09-03', totalUnits: 100, orderCount: 12, closed: true, state: 'closed' },
+        { date: '2026-09-04', totalUnits: 200, orderCount: 9, closed: false, state: 'open' },
+        { date: '2026-09-05', totalUnits: 900, orderCount: 47, closed: false, state: 'open' },
       ],
       '2026-09-05',
       '2026-09-03',
@@ -42,7 +42,7 @@ describe('la plage du prévisionnel', () => {
 
   it('compte à rebours sur une fenêtre déjà passée', () => {
     const headers = forecastHeaders(
-      [{ date: '2026-09-01', totalUnits: 0, orderCount: 0, closed: true }],
+      [{ date: '2026-09-01', totalUnits: 0, orderCount: 0, closed: true, state: 'closed' }],
       null,
       '2026-09-03',
     );
@@ -56,8 +56,8 @@ describe('la plage du prévisionnel', () => {
   it('marque le pic que le serveur a désigné, même si ce n’est pas le maximum affiché', () => {
     const headers = forecastHeaders(
       [
-        { date: '2026-09-03', totalUnits: 100, orderCount: 3, closed: false },
-        { date: '2026-09-04', totalUnits: 900, orderCount: 21, closed: false },
+        { date: '2026-09-03', totalUnits: 100, orderCount: 3, closed: false, state: 'open' },
+        { date: '2026-09-04', totalUnits: 900, orderCount: 21, closed: false, state: 'open' },
       ],
       '2026-09-03',
       '2026-09-03',
@@ -67,7 +67,7 @@ describe('la plage du prévisionnel', () => {
 
   it('ne marque aucun pic quand le serveur n’en désigne pas', () => {
     const headers = forecastHeaders(
-      [{ date: '2026-09-03', totalUnits: 0, orderCount: 0, closed: false }],
+      [{ date: '2026-09-03', totalUnits: 0, orderCount: 0, closed: false, state: 'open' }],
       null,
       '2026-09-03',
     );
@@ -76,11 +76,41 @@ describe('la plage du prévisionnel', () => {
 
   it('abrège le jour et la date en français', () => {
     const headers = forecastHeaders(
-      [{ date: '2026-09-03', totalUnits: 0, orderCount: 0, closed: false }],
+      [{ date: '2026-09-03', totalUnits: 0, orderCount: 0, closed: false, state: 'open' }],
       null,
       '2026-09-03',
     );
     expect(headers[0]?.weekday).toBe('jeu.');
     expect(headers[0]?.dayMonth).toBe('3 sept.');
+  });
+
+  it('traduit l’état serveur en surcouche et en mot d’en-tête', () => {
+    const days = (['past', 'closed', 'closed', 'overdue', 'closedDay', 'open'] as const).map(
+      (state, index) => ({
+        date: `2026-09-0${String(index + 1)}`,
+        totalUnits: 1,
+        orderCount: 1,
+        closed: state === 'closed',
+        state,
+      }),
+    );
+    const headers = forecastHeaders(days, null, '2026-09-02');
+
+    expect(headers.map((h) => h.tone)).toEqual([
+      'past',
+      'current',
+      null,
+      'overdue',
+      'closedDay',
+      null,
+    ]);
+    expect(headers.map((h) => h.stateLabel)).toEqual([
+      null,
+      'Arrêté',
+      'Arrêté',
+      'Plan non arrêté',
+      'Fournil fermé',
+      null,
+    ]);
   });
 });

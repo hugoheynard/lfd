@@ -22,6 +22,7 @@ import {
 } from 'fold-ng';
 
 import { AdminCatalogService } from '../../commandes/catalog.service';
+import { refreshWhileVisible } from '../../shared/periodic-refresh';
 import { ProductionService } from '../production.service';
 import { DossierDuJour } from './dossier-du-jour/dossier-du-jour';
 import { ForecastTable } from './forecast-table/forecast-table';
@@ -29,6 +30,14 @@ import { forecastRayons, totalOfRayons } from './previsionnel-matrix';
 import { FORECAST_DAYS, forecastHeaders, isoDay, shiftDay, windowEnd } from './previsionnel-range';
 
 type LoadState = 'loading' | 'ready' | 'error';
+
+/**
+ * Tous les combien le prévisionnel se relit tant que l'onglet est visible.
+ * Une minute : l'état `overdue` bascule à une heure dite, et une minute de
+ * retard sur une alerte horaire ne se voit pas ; 15 s relirait une matrice de
+ * sept jours quatre fois plus pour rien.
+ */
+const FORECAST_REFRESH_MS = 60_000;
 
 /**
  * Les deux lectures du soir, et l'ordre est celui du geste : on regarde ce qui
@@ -234,10 +243,41 @@ export class PrevisionnelPage {
       : `du ${first.dayMonth} au ${last.dayMonth}`;
   });
 
+  /** Le numéro de la dernière lecture partie : une réponse lente n'écrase pas une plus récente. */
+  private readSeq = 0;
+
   constructor() {
     effect(() => {
       void this.load(this.from());
     });
+    // 🔴 L'état d'une colonne dépend de l'HEURE autant que des données : la
+    // journée passe `open` → `overdue` à l'heure d'alerte sans qu'aucune ligne
+    // ne bouge, donc aucune version de journée ne le signalerait. Même mécanisme
+    // que la fiche et le colisage, mais à la minute : le seuil est horaire, et
+    // la matrice est plus lourde qu'une fiche.
+    refreshWhileVisible(() => this.refresh(), FORECAST_REFRESH_MS);
+  }
+
+  /**
+   * Relecture **silencieuse** : pas d'écran de chargement, rien de ce qui est
+   * choisi ne bouge. Un échec garde la matrice affichée — elle sera relue à la
+   * minute suivante.
+   */
+  protected async refresh(): Promise<void> {
+    if (this.state() !== 'ready') {
+      return;
+    }
+    const seq = ++this.readSeq;
+    const from = this.from();
+    try {
+      const forecast = await this.production.forecast(from, windowEnd(from));
+      if (seq === this.readSeq) {
+        this.forecast.set(forecast);
+      }
+    } catch {
+      // Silencieux par construction : la lecture précédente reste juste à
+      // l'heure près, et la prochaine relecture réessaie.
+    }
   }
 
   /** Une fenêtre en avant ou en arrière — sept jours, pas une semaine calendaire. */
@@ -309,6 +349,7 @@ export class PrevisionnelPage {
   }
 
   protected async load(from: string = this.from()): Promise<void> {
+    const seq = ++this.readSeq;
     this.state.set('loading');
     try {
       // Le catalogue part avec la matrice : sans lui, la grille n'a pas de
@@ -320,12 +361,17 @@ export class PrevisionnelPage {
         this.production.forecast(from, windowEnd(from)),
         this.catalog.list().catch(() => null),
       ]);
+      if (seq !== this.readSeq) {
+        return;
+      }
       this.forecast.set(forecast);
       this.shelvesLost.set(catalogue === null);
       this.catalogue.set(catalogue ?? []);
       this.state.set('ready');
     } catch {
-      this.state.set('error');
+      if (seq === this.readSeq) {
+        this.state.set('error');
+      }
     }
   }
 }

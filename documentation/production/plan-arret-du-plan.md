@@ -225,7 +225,7 @@ jours fermés du fournil dans Réglages ?
 
 ## A2 — bâti le 2026-10-06
 
-Tour pur `domain/services/auto-close-round.ts`, route machine
+Tour pur `apps/lfd-api/src/production/domain/services/auto-close-round.ts`, route machine
 `admin/production/auto-close` appelée par le Worker, trace
 `production.production_auto_close_attempt` (prise par `ON CONFLICT DO
 NOTHING`), acteur `system/auto-close`, notifications
@@ -234,3 +234,20 @@ NOTHING`), acteur `system/auto-close`, notifications
 retentative** après un échec : l'alerte part avec la raison. **Ouvert** : une
 tentative restée `pending` (processus mort entre la prise et l'issue) ne
 déclenche ni retentative ni alerte (Q8).
+
+**Q8** (Hugo, 2026-10-06) — bâti le 2026-10-06 : une tentative `pending`
+depuis plus de quinze minutes (`STALLED_ATTEMPT_AFTER_MS`) déclenche une
+alerte dédiée `production.plan_auto_close_stalled` (clé
+`notification:<type>:<jour>`), sans retentative. Nature propre plutôt que
+`plan_not_arrested` : la clé de celle-ci peut être déjà prise pour la journée
+(alerte manuelle avant un passage en automatique).
+
+## A3 — backend bâti le 2026-10-06
+
+`ProductionForecastDay.state` (`past` / `closed` / `overdue` / `closedDay` /
+`open`), calculé par `apps/lfd-api/src/production/domain/services/forecast-day-state.ts` à partir des
+seuils du tour (`armed`, `attemptNeedsHand`, `todayNeedsCatchUp`). `closed`
+reste. Déclencheurs `day_change` sur `production_closed_day` et
+`production_auto_close_attempt` (migration
+`20261006140000_le_previsionnel_suit_l_arret_du_plan`). Les surcouches de
+l'écran restent à faire.

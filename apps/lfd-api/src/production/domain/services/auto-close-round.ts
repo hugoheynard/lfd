@@ -1,6 +1,7 @@
 import { minutesOfDay, weekdayOf } from "@lfd/contracts";
 
 import type { CloseSettingsValues } from "../entities/production-close-settings.js";
+import type { AutoCloseOutcome } from "../ports/auto-close-attempts.js";
 
 /**
  * **Le tour de l'arrêt du plan** — ce que le passage du cron (toutes les cinq minutes) décide pour
@@ -19,8 +20,35 @@ export interface TomorrowState {
   readonly isClosedDay: boolean;
   /** Le plan est déjà arrêté — à la main (arrêt anticipé) ou par un tour précédent. */
   readonly isPlanClosed: boolean;
-  /** Une tentative automatique est déjà tracée pour cette journée (B2). */
-  readonly attempted: boolean;
+  /** La tentative automatique tracée pour cette journée (B2), ou `null`. */
+  readonly attempt: AttemptTrace | null;
+}
+
+/** Une tentative d'arrêt automatique telle que la trace la garde. */
+export interface AttemptTrace {
+  readonly outcome: AutoCloseOutcome;
+  readonly attemptedAt: Date;
+}
+
+/**
+ * Au-delà, une tentative encore `pending` est tenue pour morte (Q8, Hugo,
+ * 2026-10-06) : une clôture vivante se tranche en quelques secondes, et le
+ * cron repasse toutes les cinq minutes — quinze minutes, c'est trois tours
+ * sans issue écrite, donc un processus tombé entre la prise et l'issue.
+ */
+export const STALLED_ATTEMPT_AFTER_MS = 15 * 60 * 1000;
+
+/** La tentative est-elle restée `pending` plus de quinze minutes ? */
+export function attemptStalled(attempt: AttemptTrace, now: Date): boolean {
+  return (
+    attempt.outcome === "pending" &&
+    now.getTime() - attempt.attemptedAt.getTime() > STALLED_ATTEMPT_AFTER_MS
+  );
+}
+
+/** L'arrêt automatique n'a pas abouti : il a échoué, ou il est resté en suspens. */
+export function attemptNeedsHand(attempt: AttemptTrace, now: Date): boolean {
+  return attempt.outcome === "failed" || attemptStalled(attempt, now);
 }
 
 /**
@@ -28,9 +56,12 @@ export interface TomorrowState {
  * - `attempt_close` : mode automatique, l'heure est passée — tenter l'arrêt,
  *   une seule fois (la trace tranche entre deux instances) ;
  * - `alert_if_orders` : mode manuel, l'heure d'alerte est passée — prévenir,
- *   si le lendemain porte des commandes.
+ *   si le lendemain porte des commandes ;
+ * - `alert_stalled` : la tentative est restée `pending` plus de quinze
+ *   minutes (Q8) — prévenir qu'il faut arrêter à la main. Pas de retentative :
+ *   on ne sait pas jusqu'où la tentative morte est allée chez Stripe.
  */
-export type TomorrowStep = "nothing" | "attempt_close" | "alert_if_orders";
+export type TomorrowStep = "nothing" | "attempt_close" | "alert_if_orders" | "alert_stalled";
 
 /**
  * Le pas du tour pour le lendemain.
@@ -41,16 +72,28 @@ export type TomorrowStep = "nothing" | "attempt_close" | "alert_if_orders";
  */
 export function tomorrowStep(
   settings: CloseSettingsValues,
-  time: string,
+  moment: { readonly time: string; readonly now: Date },
   tomorrow: TomorrowState,
 ): TomorrowStep {
   if (tomorrow.isClosedDay || tomorrow.isPlanClosed) {
     return "nothing";
   }
-  if (settings.mode === "auto") {
-    return !tomorrow.attempted && reached(time, settings.closeAt) ? "attempt_close" : "nothing";
+  if (tomorrow.attempt !== null && attemptStalled(tomorrow.attempt, moment.now)) {
+    return "alert_stalled";
   }
-  return reached(time, settings.alertAt) ? "alert_if_orders" : "nothing";
+  if (settings.mode === "auto") {
+    return tomorrow.attempt === null && armed(settings, moment.time) ? "attempt_close" : "nothing";
+  }
+  return armed(settings, moment.time) ? "alert_if_orders" : "nothing";
+}
+
+/**
+ * L'heure qui compte pour le lendemain est-elle passée ? `close_at` en
+ * automatique, `alert_at` en manuel — le même seuil pour le tour (A2) et pour
+ * l'état du prévisionnel (A3), qui ne le recopient pas.
+ */
+export function armed(settings: CloseSettingsValues, time: string): boolean {
+  return reached(time, settings.mode === "auto" ? settings.closeAt : settings.alertAt);
 }
 
 /**

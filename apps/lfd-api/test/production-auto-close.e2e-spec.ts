@@ -153,6 +153,42 @@ describe("mode automatique", () => {
   });
 });
 
+describe("la tentative restée en suspens (Q8)", () => {
+  it("passé quinze minutes, une alerte dédiée, une seule, et aucune nouvelle tentative", async () => {
+    await place(ctx, issued, [{ sku: CROISSANT, quantity: 4 }]);
+    await setAuto();
+    // Le processus est mort entre la prise et l'issue : la trace reste `pending`.
+    await ctx.prisma.productionAutoCloseAttempt.create({
+      data: {
+        serviceDay: SERVICE_DAY,
+        attemptedAt: houseInstant(EVE, "21:00"),
+        outcome: "pending",
+      },
+    });
+
+    clock.set(houseInstant(EVE, "21:10"));
+    expect((await tour()).outcome).toBe("nothing");
+    expect(await noticesOf("production.plan_auto_close_stalled")).toHaveLength(0);
+
+    clock.set(houseInstant(EVE, "21:20"));
+    expect((await tour()).outcome).toBe("stalled");
+    clock.advanceMs(5 * 60 * 1000);
+    expect((await tour()).outcome).toBe("stalled");
+
+    const notices = await noticesOf("production.plan_auto_close_stalled");
+    expect(notices).toHaveLength(1);
+    expect(notices[0]).toMatchObject({
+      audience: "production_count_stop:write",
+      idempotencyKey: `notification:production.plan_auto_close_stalled:${SERVICE_DAY}`,
+    });
+    const day = await ctx.prisma.productionDay.findUnique({ where: { serviceDay: SERVICE_DAY } });
+    expect(day?.closedAt ?? null).toBeNull();
+    expect(await ctx.prisma.productionAutoCloseAttempt.findMany()).toMatchObject([
+      { outcome: "pending" },
+    ]);
+  });
+});
+
 describe("mode manuel (le réglage de départ, alerte à 20:00)", () => {
   it("passé l'heure, une seule alerte — et le plan n'est pas arrêté", async () => {
     await place(ctx, issued, [{ sku: CROISSANT, quantity: 4 }]);

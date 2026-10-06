@@ -1,4 +1,4 @@
-import type { ProductionForecastDay } from '@lfd/contracts';
+import type { ProductionForecastDay, ProductionForecastDayState } from '@lfd/contracts';
 
 /**
  * La **plage** du prévisionnel et ses en-têtes de colonne — de l'arithmétique
@@ -40,6 +40,48 @@ export interface ForecastHeader {
   readonly today: boolean;
   /** Le jour le plus chargé de la plage — la seule colonne teintée. */
   readonly peak: boolean;
+  /** L'état calculé par le serveur, à l'heure de Paris — jamais recalculé ici. */
+  readonly state: ProductionForecastDayState;
+  /**
+   * La surcouche de la colonne entière (plan d'arrêt §5), ou `null` :
+   * `overdue` en alerte, `current` = production du jour arrêtée (accent),
+   * `past` grisée, `closedDay` atténuée autrement.
+   */
+  readonly tone: ForecastColumnTone | null;
+  /** Le mot court de l'en-tête qui nomme l'état — `null` quand rien n'est à dire. */
+  readonly stateLabel: string | null;
+}
+
+/** Les surcouches de colonne. Une journée future arrêtée n'en a pas : son mot suffit. */
+export type ForecastColumnTone = 'overdue' | 'current' | 'past' | 'closedDay';
+
+function toneOf(state: ProductionForecastDayState, today: boolean): ForecastColumnTone | null {
+  switch (state) {
+    case 'overdue':
+      return 'overdue';
+    case 'past':
+      return 'past';
+    case 'closedDay':
+      return 'closedDay';
+    case 'closed':
+      return today ? 'current' : null;
+    case 'open':
+      return null;
+  }
+}
+
+function stateLabelOf(state: ProductionForecastDayState): string | null {
+  switch (state) {
+    case 'overdue':
+      return 'Plan non arrêté';
+    case 'closed':
+      return 'Arrêté';
+    case 'closedDay':
+      return 'Fournil fermé';
+    case 'past':
+    case 'open':
+      return null;
+  }
 }
 
 /** `AAAA-MM-JJ` d'un instant, en heure LOCALE — le jour tel que l'équipe le dit. */
@@ -95,6 +137,9 @@ export function forecastHeaders(
       closed: day.closed,
       today: day.date === today,
       peak: day.date === peakDate,
+      state: day.state,
+      tone: toneOf(day.state, day.date === today),
+      stateLabel: stateLabelOf(day.state),
     };
   });
 }

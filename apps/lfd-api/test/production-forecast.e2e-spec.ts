@@ -15,11 +15,13 @@ import { randomUUID } from "node:crypto";
  * sources vivent dans deux schémas Postgres différents, et rien d'autre qu'un
  * aller-retour complet ne peut dire qu'elles se recollent.
  */
-import type { ProductionForecastView } from "@lfd/contracts";
+import { addDays, localToInstant, type ProductionForecastView } from "@lfd/contracts";
 
 import { CustomerRole } from "../src/platform/database/client/client.js";
 import { AdminTokenVerifier } from "../src/platform/auth/admin-token.verifier.js";
 import { PaymentGateway } from "../src/b2b/payments/domain/payment-gateway.js";
+import { Clock } from "../src/platform/time/clock.js";
+import { FixedClock } from "../src/platform/time/fixed-clock.js";
 import { bootstrapE2e, jsonBody, serviceDay, type E2eContext } from "./e2e-harness.js";
 import { settleCardPayments } from "./card-payments.js";
 import { attachTo, createCompany, createUser } from "./factories.js";
@@ -69,11 +71,15 @@ const fakeGateway = {
 
 let ctx: E2eContext;
 
+/** L'horloge, fixée à maintenant à chaque cas — l'état d'une journée dépend de l'heure (A3). */
+const clock = new FixedClock(new Date());
+
 beforeAll(async () => {
   ctx = await bootstrapE2e({
     overrides: [
       { token: AdminTokenVerifier, value: stubAdminVerifier },
       { token: PaymentGateway, value: fakeGateway },
+      { token: Clock, value: clock },
     ],
   });
 });
@@ -83,8 +89,18 @@ afterAll(async () => {
 });
 
 beforeEach(async () => {
+  clock.set(new Date());
   await ctx.reset();
 });
+
+/** L'instant de la maison `time` le jour `day`. */
+function houseInstant(day: string, time: string): Date {
+  const instant = localToInstant(day, time);
+  if (instant === null) {
+    throw new TypeError(`heure locale inexistante : ${day} ${time}`);
+  }
+  return instant;
+}
 
 /** Une société active, son membre, et la zone qui rend l'adresse livrable. */
 async function seedSociete(): Promise<string> {
@@ -179,12 +195,19 @@ describe("le prévisionnel du fournil", () => {
       totalUnits: 6,
       orderCount: 1,
       closed: false,
+      state: "open",
     });
 
     await ctx.asSub("staff-e2e").post(`/admin/production/batch/${DAY_1}/close`).expect(201);
 
     const after = await forecast(DAY_1, DAY_1);
-    expect(after.days[0]).toEqual({ date: DAY_1, totalUnits: 6, orderCount: 1, closed: true });
+    expect(after.days[0]).toEqual({
+      date: DAY_1,
+      totalUnits: 6,
+      orderCount: 1,
+      closed: true,
+      state: "closed",
+    });
     expect(after.lines[0]?.quantities).toEqual([6]);
   });
 
@@ -227,5 +250,54 @@ describe("le prévisionnel du fournil", () => {
     expect(view.peakDate).toBeNull();
     expect(view.totalUnits).toBe(0);
     expect(view.days).toHaveLength(3);
+  });
+
+  describe("l'état de chaque journée, à l'heure de la maison (A3)", () => {
+    const states = async (): Promise<string[]> =>
+      (await forecast(DAY_1, DAY_3)).days.map((day) => `${day.date}:${day.state}`);
+
+    it("la veille, passé l'heure d'alerte (manuel, 20:00), la journée non arrêtée est en retard", async () => {
+      const companyId = await seedSociete();
+      await placeOrder(companyId, DAY_1, [{ sku: "VIE-001", quantity: 6 }]);
+      const eve = addDays(DAY_1, -1);
+
+      clock.set(houseInstant(eve, "19:55"));
+      expect(await states()).toEqual([`${DAY_1}:open`, `${DAY_2}:open`, `${DAY_3}:open`]);
+
+      clock.set(houseInstant(eve, "20:05"));
+      expect(await states()).toEqual([`${DAY_1}:overdue`, `${DAY_2}:open`, `${DAY_3}:open`]);
+
+      clock.set(houseInstant(DAY_2, "08:00"));
+      expect(await states()).toEqual([`${DAY_1}:past`, `${DAY_2}:open`, `${DAY_3}:open`]);
+    });
+
+    it("un jour fermé du fournil se dit `closedDay`, et rouvert redevient ouvert", async () => {
+      await seedSociete();
+      await ctx
+        .asSub("staff-e2e")
+        .post("/admin/production/settings/closed-days")
+        .send({ date: DAY_2 })
+        .expect(204);
+      expect(await states()).toEqual([`${DAY_1}:open`, `${DAY_2}:closedDay`, `${DAY_3}:open`]);
+
+      await ctx
+        .asSub("staff-e2e")
+        .delete(`/admin/production/settings/closed-days/${DAY_2}`)
+        .expect(204);
+      expect(await states()).toEqual([`${DAY_1}:open`, `${DAY_2}:open`, `${DAY_3}:open`]);
+    });
+
+    it("fermer un jour inscrit la journée au journal des changements (le prévisionnel se relit)", async () => {
+      await seedSociete();
+      await ctx.prisma.productionDayChange.deleteMany();
+      await ctx
+        .asSub("staff-e2e")
+        .post("/admin/production/settings/closed-days")
+        .send({ date: DAY_2 })
+        .expect(204);
+
+      const rows = await ctx.prisma.productionDayChange.findMany({ select: { serviceDay: true } });
+      expect(rows.map((row) => row.serviceDay)).toContain(DAY_2);
+    });
   });
 });

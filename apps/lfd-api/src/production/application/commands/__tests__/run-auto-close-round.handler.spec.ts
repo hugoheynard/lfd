@@ -17,6 +17,7 @@ import {
 } from "../../../domain/ports/auto-close-attempts.js";
 import { AutoCloseRoundReader } from "../../../domain/ports/auto-close-round.reader.js";
 import { AutomaticDayCloser } from "../../../domain/ports/automatic-day-closer.js";
+import type { AttemptTrace } from "../../../domain/services/auto-close-round.js";
 import { ServiceDay } from "../../../domain/value-objects/service-day.value-object.js";
 import {
   ClosedDaysTable,
@@ -54,13 +55,18 @@ function order(orderId: string): ProducibleOrder {
 class Fournil extends AutoCloseRoundReader {
   readonly closedPlans = new Set<string>();
   readonly attempts = new Map<string, AutoCloseOutcome>();
+  readonly attemptedAt = new Map<string, Date>();
 
   isPlanClosed(day: ServiceDay): Promise<boolean> {
     return Promise.resolve(this.closedPlans.has(day.value));
   }
 
-  isAttempted(day: ServiceDay): Promise<boolean> {
-    return Promise.resolve(this.attempts.has(day.value));
+  attemptOf(day: ServiceDay): Promise<AttemptTrace | null> {
+    const outcome = this.attempts.get(day.value);
+    const attemptedAt = this.attemptedAt.get(day.value);
+    return Promise.resolve(
+      outcome === undefined || attemptedAt === undefined ? null : { outcome, attemptedAt },
+    );
   }
 }
 
@@ -73,11 +79,12 @@ class Attempts extends AutoCloseAttempts {
     super();
   }
 
-  claim(day: ServiceDay): Promise<boolean> {
+  claim(day: ServiceDay, at: Date): Promise<boolean> {
     if (this.lost || this.fournil.attempts.has(day.value)) {
       return Promise.resolve(false);
     }
     this.fournil.attempts.set(day.value, "pending");
+    this.fournil.attemptedAt.set(day.value, at);
     return Promise.resolve(true);
   }
 
@@ -264,6 +271,55 @@ describe("le tour en mode automatique", () => {
     s.commerce.orders.set(TOMORROW, [order("o1")]);
 
     expect((await s.handler.execute()).outcome).toBe("closed");
+  });
+});
+
+describe("la tentative restée en suspens (Q8)", () => {
+  /** Le processus est mort entre la prise et l'issue : la trace dit `pending` depuis `minutes`. */
+  function stalledSince(s: ReturnType<typeof subject>, minutes: number): void {
+    s.fournil.attempts.set(TOMORROW, "pending");
+    s.fournil.attemptedAt.set(TOMORROW, new Date(s.clock.now().getTime() - minutes * 60 * 1000));
+  }
+
+  it("au-delà de quinze minutes : une alerte dédiée, une seule, sans retentative", async () => {
+    const s = subject("21:20");
+    s.setMode("auto");
+    s.commerce.orders.set(TOMORROW, [order("o1")]);
+    stalledSince(s, 16);
+
+    expect((await s.handler.execute()).outcome).toBe("stalled");
+    s.clock.advanceMs(5 * 60 * 1000);
+    expect((await s.handler.execute()).outcome).toBe("stalled");
+
+    expect(s.closer.closed).toEqual([]);
+    expect(s.fournil.attempts.get(TOMORROW)).toBe("pending");
+    expect(s.bell.notices).toHaveLength(1);
+    expect(s.bell.notices[0]).toMatchObject({
+      kind: "production.plan_auto_close_stalled",
+      idempotencyKey: `notification:production.plan_auto_close_stalled:${TOMORROW}`,
+      audience: "production_count_stop:write",
+      subject: "L'arrêt automatique du plan du mercredi 7 octobre n'a pas abouti",
+    });
+    expect(s.bell.notices[0]?.body).toContain("arrêtez-le à la main");
+  });
+
+  it("avant quinze minutes : rien encore", async () => {
+    const s = subject("21:10");
+    s.setMode("auto");
+    stalledSince(s, 10);
+
+    expect((await s.handler.execute()).outcome).toBe("nothing");
+    expect(s.bell.notices).toEqual([]);
+  });
+
+  it("arrêtée entre-temps à la main : pas d'alerte", async () => {
+    const s = subject("21:20");
+    s.setMode("auto");
+    stalledSince(s, 16);
+    s.fournil.closedPlans.add(TOMORROW);
+
+    expect((await s.handler.execute()).outcome).toBe("nothing");
+    expect(s.bell.notices).toEqual([]);
   });
 });
 

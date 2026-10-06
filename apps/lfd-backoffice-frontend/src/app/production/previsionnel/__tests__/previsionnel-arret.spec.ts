@@ -49,6 +49,7 @@ function day(
     totalUnits: 120,
     orderCount: options.orderCount ?? 4,
     closed: options.closed ?? false,
+    state: options.closed === true ? 'closed' : 'open',
   };
 }
 
@@ -289,6 +290,34 @@ describe('le prévisionnel — arrêter le plan', () => {
       await page['arrest'](page['dayToCatchUp']()?.date ?? '');
 
       expect(closeDay).toHaveBeenCalledWith(dayIn(0));
+    });
+  });
+
+  /**
+   * L'état bascule `open` → `overdue` à l'heure d'alerte sans qu'aucune donnée
+   * ne change : seule une relecture périodique peut le montrer.
+   */
+  describe('la relecture périodique', () => {
+    it('relit en silence et fait passer la colonne en alerte', async () => {
+      let served = forecast([day(dayIn(1))]);
+      TestBed.configureTestingModule({
+        providers: [
+          provideRouter([]),
+          { provide: ProductionService, useValue: { forecast: async () => served } },
+          { provide: AdminCatalogService, useValue: { list: async () => [] } },
+        ],
+      });
+      const page = TestBed.runInInjectionContext(() => new PrevisionnelPage());
+      await TestBed.runInInjectionContext(() => page['load']());
+      expect(page['headers']()[0]?.tone).toBeNull();
+
+      served = forecast([{ ...day(dayIn(1)), state: 'overdue' }]);
+      const refreshing = page['refresh']();
+      expect(page['state']()).toBe('ready');
+      await refreshing;
+
+      expect(page['headers']()[0]?.tone).toBe('overdue');
+      expect(page['headers']()[0]?.stateLabel).toBe('Plan non arrêté');
     });
   });
 });

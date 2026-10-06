@@ -18,10 +18,18 @@
       <span class="pv-col-label">Produit</span>
     </div>
     @for (day of headers(); track day.date) {
-      <div class="pv-cell pv-day" [class.is-peak]="day.peak" [class.is-open]="!day.closed">
+      <div
+        class="pv-cell pv-day"
+        [class.is-peak]="day.peak"
+        [class.is-open]="!day.closed"
+        [attr.data-tone]="day.tone"
+      >
         <span class="pv-day-offset">{{ day.offset }}{{ day.peak ? ' · pic' : '' }}</span>
         <span class="pv-day-date">{{ day.weekday }} {{ day.dayMonth }}</span>
         <span class="pv-day-total">{{ day.totalUnits }}</span>
+        @if (day.stateLabel; as label) {
+          <span class="pv-day-state">{{ label }}</span>
+        }
       </div>
     }
   </div>
@@ -48,7 +56,7 @@
         >
       </span>
       @for (day of headers(); track day.date; let column = $index) {
-        <span class="pv-cell pv-rayon-sum" [class.is-peak]="day.peak">
+        <span class="pv-cell pv-rayon-sum" [class.is-peak]="day.peak" [attr.data-tone]="day.tone">
           {{ rayon.quantities[column] || '' }}
         </span>
       }
@@ -64,7 +72,11 @@
           @for (cell of line.cells; track $index; let column = $index) {
             <!-- Un zéro est une cellule VIDE, pas un « 0 » : une
                  grille de zéros se lit comme une grille pleine. -->
-            <div class="pv-cell pv-qty" [class.is-peak]="headers()[column]?.peak">
+            <div
+              class="pv-cell pv-qty"
+              [class.is-peak]="headers()[column]?.peak"
+              [attr.data-tone]="headers()[column]?.tone"
+            >
               @if (cell.quantity > 0) {
                 <span class="pv-qty-value">{{ cell.quantity }}</span>
                 @if (cell.exceptional) {
@@ -102,7 +114,12 @@
         <span class="pv-col-label">Total pièces</span>
       </div>
       @for (day of headers(); track day.date) {
-        <div class="pv-cell pv-foot-total" [class.is-peak]="day.peak" [class.is-open]="!day.closed">
+        <div
+          class="pv-cell pv-foot-total"
+          [class.is-peak]="day.peak"
+          [class.is-open]="!day.closed"
+          [attr.data-tone]="day.tone"
+        >
           {{ day.totalUnits || '' }}
         </div>
       }
@@ -113,7 +130,7 @@
         <span class="pv-col-label">Commandes</span>
       </div>
       @for (day of headers(); track day.date) {
-        <div class="pv-cell pv-foot-orders" [class.is-peak]="day.peak">
+        <div class="pv-cell pv-foot-orders" [class.is-peak]="day.peak" [attr.data-tone]="day.tone">
           {{ day.orderCount || '' }}
         </div>
       }

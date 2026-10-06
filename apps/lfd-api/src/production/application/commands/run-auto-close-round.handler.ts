@@ -32,6 +32,10 @@ import {
  * alerte s'il porte des commandes. Pour AUJOURD'HUI : jamais d'arrêt, une
  * alerte de rattrapage s'il porte des commandes sans plan arrêté.
  *
+ * Une tentative restée `pending` plus de quinze minutes (processus mort entre
+ * la prise et l'issue) n'est pas retentée non plus : une alerte dédiée part,
+ * une fois par journée (Q8).
+ *
  * ## Une tentative, pas une boucle
  *
  * Une clôture qui casse (autre chose que « vide ») n'est PAS retentée au tour
@@ -78,13 +82,21 @@ export class RunAutoCloseRoundHandler implements ICommandHandler<
     day: ServiceDay,
     now: Date,
   ): Promise<AutoCloseRoundTomorrow> {
-    const step = tomorrowStep(settings, time, {
-      isClosedDay: (await this.settings.closedDaysFrom(day.value)).includes(day.value),
-      isPlanClosed: await this.days.isPlanClosed(day),
-      attempted: await this.days.isAttempted(day),
-    });
+    const step = tomorrowStep(
+      settings,
+      { time, now },
+      {
+        isClosedDay: (await this.settings.closedDaysFrom(day.value)).includes(day.value),
+        isPlanClosed: await this.days.isPlanClosed(day),
+        attempt: await this.days.attemptOf(day),
+      },
+    );
     if (step === "attempt_close") {
       return this.attempt(day, now);
+    }
+    if (step === "alert_stalled") {
+      await this.bell.autoCloseStalled(day, now);
+      return "stalled";
     }
     if (step === "alert_if_orders" && (await this.orders.producibleFor(day)).length > 0) {
       await this.bell.notArrested(day, now);

@@ -27,6 +27,9 @@ function header(over: Partial<ForecastHeader> = {}): ForecastHeader {
     closed: true,
     today: true,
     peak: false,
+    state: 'closed',
+    tone: 'current',
+    stateLabel: 'Arrêté',
     ...over,
   };
 }
@@ -41,6 +44,9 @@ const HEADERS: readonly ForecastHeader[] = [
     closed: false,
     today: false,
     peak: true,
+    state: 'open',
+    tone: null,
+    stateLabel: null,
   }),
 ];
 
@@ -136,5 +142,33 @@ describe('ForecastTable', () => {
     expect(fixture.nativeElement.querySelectorAll('.pv-day.is-peak')).toHaveLength(1);
     expect(fixture.nativeElement.querySelectorAll('.pv-foot-total.is-peak')).toHaveLength(1);
     expect(fixture.nativeElement.querySelectorAll('.pv-foot-orders.is-peak')).toHaveLength(1);
+  });
+
+  it('pose l’état sur TOUTE la colonne, de la tête au pied, et le nomme en tête', () => {
+    const fixture = TestBed.createComponent(ForecastTable);
+    fixture.componentRef.setInput('headers', [
+      header({ tone: 'overdue', state: 'overdue', stateLabel: 'Plan non arrêté' }),
+      header({
+        date: '2026-09-04',
+        tone: 'closedDay',
+        state: 'closedDay',
+        stateLabel: 'Fournil fermé',
+      }),
+    ]);
+    fixture.componentRef.setInput('rayons', RAYONS);
+    fixture.detectChanges();
+    const el: HTMLElement = fixture.nativeElement;
+
+    // tête + rayon + deux produits + deux pieds = six cellules par colonne
+    expect(el.querySelectorAll('[data-tone="overdue"]')).toHaveLength(6);
+    expect(el.querySelectorAll('[data-tone="closedDay"]')).toHaveLength(6);
+    const labels = [...el.querySelectorAll('.pv-day-state')].map((n) => n.textContent?.trim());
+    expect(labels).toEqual(['Plan non arrêté', 'Fournil fermé']);
+  });
+
+  it('ne pose aucune surcouche sur une colonne sans ton', () => {
+    const fixture = mount();
+    expect(fixture.nativeElement.querySelectorAll('[data-tone="current"]')).toHaveLength(6);
+    expect(fixture.nativeElement.querySelectorAll('[data-tone]')).toHaveLength(6);
   });
 });

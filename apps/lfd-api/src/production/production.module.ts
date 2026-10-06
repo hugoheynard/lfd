@@ -3,11 +3,13 @@ import { Module } from "@nestjs/common";
 import { RunAutoCloseRoundHandler } from "./application/commands/run-auto-close-round.handler.js";
 import { BusAutomaticDayCloser } from "./application/services/bus-automatic-day-closer.js";
 import { PlanArrestBell } from "./application/services/plan-arrest-bell.js";
+import { AutoCloseAttemptLog } from "./domain/ports/auto-close-attempt-log.js";
 import { AutoCloseAttempts } from "./domain/ports/auto-close-attempts.js";
 import { AutoCloseRoundReader } from "./domain/ports/auto-close-round.reader.js";
 import { AutomaticDayCloser } from "./domain/ports/automatic-day-closer.js";
 import { AutoCloseController } from "./http/auto-close.controller.js";
 import {
+  PrismaAutoCloseAttemptLog,
   PrismaAutoCloseAttempts,
   PrismaAutoCloseRoundReader,
 } from "./infrastructure/prisma-auto-close-round.js";
@@ -127,6 +129,7 @@ import { PrismaProductionReturnRequests } from "./infrastructure/prisma-producti
     { provide: AutomaticDayCloser, useClass: BusAutomaticDayCloser },
     { provide: AutoCloseRoundReader, useClass: PrismaAutoCloseRoundReader },
     { provide: AutoCloseAttempts, useClass: PrismaAutoCloseAttempts },
+    { provide: AutoCloseAttemptLog, useClass: PrismaAutoCloseAttemptLog },
     MarkWorksheetLineHandler,
     UnmarkWorksheetLineHandler,
     RecordBatchHandler,

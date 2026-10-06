@@ -43,6 +43,25 @@ export const productionForecastQuerySchema = z.object({
 });
 export type ProductionForecastQuery = z.infer<typeof productionForecastQuerySchema>;
 
+/**
+ * **L'état d'une colonne**, calculé par le serveur à l'heure de Paris (plan
+ * `documentation/production/plan-arret-du-plan.md`, §5, lot A3) — l'écran ne
+ * refait pas le calcul d'heure :
+ *
+ * - `past` : journée avant aujourd'hui ;
+ * - `closed` : plan arrêté (et pas passée) ;
+ * - `overdue` : plan non arrêté et en retard — aujourd'hui avec des commandes ;
+ *   demain non vide, non fermé, l'heure d'alerte (manuel) ou d'arrêt (auto)
+ *   passée ; ou un arrêt automatique échoué ou en suspens depuis plus de
+ *   quinze minutes ;
+ * - `closedDay` : jour fermé du fournil ;
+ * - `open` : le reste.
+ *
+ * Un état dépend de l'HEURE autant que des données : le même jour passe
+ * `open` → `overdue` sans qu'aucune ligne ne bouge en base.
+ */
+export type ProductionForecastDayState = "past" | "closed" | "overdue" | "closedDay" | "open";
+
 /** Une colonne : un jour de service, son total, et s'il est arrêté. */
 export interface ProductionForecastDay {
   /** `AAAA-MM-JJ`. */
@@ -69,6 +88,12 @@ export interface ProductionForecastDay {
    * l'écran existe pour montrer.
    */
   readonly closed: boolean;
+  /**
+   * L'état de la colonne. Ne remplace pas `closed` : `closed` dit d'où vient
+   * le chiffre (compte arrêté ou demande ouverte) et reste vrai sur une
+   * journée passée, là où `state` vaut alors `past`.
+   */
+  readonly state: ProductionForecastDayState;
 }
 
 /** Une ligne : un produit, et ce qu'il pèse chaque jour de la plage. */

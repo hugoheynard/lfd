@@ -353,3 +353,56 @@
 .pv-grid.is-dense .pv-sku {
   display: none;
 }
+
+/* ── L'ÉTAT DE LA COLONNE (plan d'arrêt §5, 2026-10-06) ─────────────────────
+   Calculé par le serveur, posé sur TOUTES les cellules de la colonne, de la tête
+   au pied — même règle que le pic : un repère qui s'arrête en route n'en est pas
+   un. Écrit APRÈS le pic : le plan oublié l'emporte sur le jour chargé, parce
+   que c'est lui qui empêche la fournée de partir. */
+.pv-cell[data-tone='overdue'] {
+  background: var(--fold-color-alert-surface);
+  box-shadow:
+    inset 1px 0 0 var(--fold-color-alert-border),
+    inset -1px 0 0 var(--fold-color-alert-border);
+}
+
+/* La production du jour, plan arrêté : ce qui part au four. */
+.pv-cell[data-tone='current'] {
+  background: var(--fold-color-primary-surface);
+  box-shadow:
+    inset 1px 0 0 var(--fold-color-primary-border),
+    inset -1px 0 0 var(--fold-color-primary-border);
+}
+
+/* Le passé : atténué, toujours lisible — c'est un fait, pas un sujet. */
+.pv-cell[data-tone='past'] {
+  opacity: 0.6;
+}
+
+/* Le fournil fermé : rayé plutôt qu'estompé, pour ne pas se confondre avec le
+   passé — ce n'est pas une journée finie, c'est une journée qui n'existe pas. */
+.pv-cell[data-tone='closedDay'] {
+  background: repeating-linear-gradient(
+    135deg,
+    transparent 0 var(--fold-space-xs),
+    var(--fold-color-border-subtle) var(--fold-space-xs) var(--fold-space-sm)
+  );
+  color: var(--fold-color-text-muted);
+}
+
+.pv-day-state {
+  font-family: var(--fold-font-mono);
+  font-size: var(--fold-text-2xs);
+  font-weight: var(--fold-weight-bold);
+  letter-spacing: var(--fold-tracking-caps);
+  text-transform: uppercase;
+  color: var(--fold-color-text-muted);
+}
+
+.pv-day[data-tone='overdue'] .pv-day-state {
+  color: var(--fold-color-alert-text);
+}
+
+.pv-day[data-tone='current'] .pv-day-state {
+  color: var(--fold-color-primary-text);
+}

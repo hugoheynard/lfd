@@ -10,9 +10,12 @@ export class RunAutoCloseRoundCommand {}
  * déclenchement machine :
  * - `nothing` : rien à faire (avant l'heure, jour fermé, déjà arrêté, déjà tenté) ;
  * - `alerted` : mode manuel, alerte envoyée (une fois par journée) ;
- * - `closed` | `empty` | `failed` : l'issue de la tentative automatique.
+ * - `closed` | `empty` | `failed` : l'issue de la tentative automatique ;
+ * - `stalled` : une tentative restée `pending` plus de quinze minutes — alerte
+ *   envoyée (une fois par journée), pas de retentative (Q8).
  */
-export type AutoCloseRoundTomorrow = "nothing" | "alerted" | "closed" | "empty" | "failed";
+export type AutoCloseRoundTomorrow =
+  "nothing" | "alerted" | "closed" | "empty" | "failed" | "stalled";
 
 export interface AutoCloseRoundReport {
   /** Le lendemain visé, `AAAA-MM-JJ`. */

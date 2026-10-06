@@ -535,6 +535,7 @@ export type { LocalMoment } from "./paris-time.js";
 export { productionForecastQuerySchema } from "./production-forecast.js";
 export type {
   ProductionForecastDay,
+  ProductionForecastDayState,
   ProductionForecastLine,
   ProductionForecastQuery,
   ProductionForecastView,

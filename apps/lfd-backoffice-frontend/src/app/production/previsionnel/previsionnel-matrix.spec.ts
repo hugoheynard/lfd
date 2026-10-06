@@ -10,7 +10,13 @@ function view(
   peakDate: string | null = null,
 ): ProductionForecastView {
   return {
-    days: DAYS.map((date) => ({ date, totalUnits: 0, orderCount: 0, closed: false })),
+    days: DAYS.map((date) => ({
+      date,
+      totalUnits: 0,
+      orderCount: 0,
+      closed: false,
+      state: 'open',
+    })),
     lines: lines.map((line) => ({
       ...line,
       totalUnits: line.quantities.reduce((sum, quantity) => sum + quantity, 0),

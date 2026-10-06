@@ -17,17 +17,26 @@ const AUDIENCE: StaffPermission = "production_count_stop:write";
 /** Où l'on arrête le plan : la bande du prévisionnel. */
 const FORECAST_LINK = "/production/previsionnel";
 
-/** Les trois natures — une notification par nature ET par journée (S8). */
+/**
+ * Les quatre natures — une notification par nature ET par journée (S8).
+ *
+ * `autoCloseStalled` (Q8) a sa nature propre plutôt que de réutiliser
+ * `notArrested` : la clé de celle-ci peut être déjà prise pour la journée (une
+ * alerte manuelle partie avant un passage en automatique), et l'idempotence
+ * avalerait alors l'alerte qui compte ; et le geste diffère — ici, on ne sait
+ * pas jusqu'où la tentative morte est allée.
+ */
 export const PLAN_ARREST_NOTICES = {
   nothingToArrest: "production.plan_nothing_to_arrest",
   notArrested: "production.plan_not_arrested",
   todayNotArrested: "production.plan_today_not_arrested",
+  autoCloseStalled: "production.plan_auto_close_stalled",
 } as const;
 
 type PlanArrestKind = (typeof PLAN_ARREST_NOTICES)[keyof typeof PLAN_ARREST_NOTICES];
 
 /**
- * **La cloche de l'arrêt du plan** — les trois annonces du tour automatique,
+ * **La cloche de l'arrêt du plan** — les annonces du tour automatique,
  * dites en un seul endroit (plan `plan-arret-du-plan.md`, §3, §4, S4, S8,
  * lot A2).
  *
@@ -61,6 +70,15 @@ export class PlanArrestBell {
     await this.ring(PLAN_ARREST_NOTICES.notArrested, day, at, {
       subject: `Le plan du ${label} n'est pas arrêté`,
       body,
+    });
+  }
+
+  /** L'arrêt automatique est resté en suspens plus de quinze minutes (Q8). */
+  async autoCloseStalled(day: ServiceDay, at: Date): Promise<void> {
+    const label = frenchDayLabel(day.value);
+    await this.ring(PLAN_ARREST_NOTICES.autoCloseStalled, day, at, {
+      subject: `L'arrêt automatique du plan du ${label} n'a pas abouti`,
+      body: `L'arrêt automatique a commencé mais ne s'est pas terminé. Le plan du ${label} n'est peut-être pas arrêté : vérifiez-le et arrêtez-le à la main depuis le prévisionnel.`,
     });
   }
 

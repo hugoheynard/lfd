@@ -11,8 +11,8 @@ function view(days: ProductionForecastView['days']): ProductionForecastView {
 describe('tomorrowOrders', () => {
   it('extrait la journée demandée', () => {
     const forecast = view([
-      { date: '2026-09-12', totalUnits: 100, orderCount: 4, closed: true },
-      { date: '2026-09-13', totalUnits: 320, orderCount: 11, closed: false },
+      { date: '2026-09-12', totalUnits: 100, orderCount: 4, closed: true, state: 'closed' },
+      { date: '2026-09-13', totalUnits: 320, orderCount: 11, closed: false, state: 'open' },
     ]);
 
     expect(tomorrowOrders(forecast, '2026-09-13')).toEqual({
@@ -30,12 +30,16 @@ describe('tomorrowOrders', () => {
   });
 
   it("rend null quand le serveur n'a pas rendu ce jour-là", () => {
-    const forecast = view([{ date: '2026-09-12', totalUnits: 1, orderCount: 1, closed: false }]);
+    const forecast = view([
+      { date: '2026-09-12', totalUnits: 1, orderCount: 1, closed: false, state: 'open' },
+    ]);
     expect(tomorrowOrders(forecast, '2026-09-13')).toBeNull();
   });
 
   it('reporte une journée arrêtée telle quelle', () => {
-    const forecast = view([{ date: '2026-09-13', totalUnits: 80, orderCount: 3, closed: true }]);
+    const forecast = view([
+      { date: '2026-09-13', totalUnits: 80, orderCount: 3, closed: true, state: 'closed' },
+    ]);
     expect(tomorrowOrders(forecast, '2026-09-13')?.closed).toBe(true);
   });
 });
