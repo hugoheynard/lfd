@@ -3,7 +3,7 @@ import type { ServiceDay } from "../value-objects/service-day.value-object.js";
 
 /**
  * **Un jour où le fournil ne produit pas** (plan
- * `documentation/production/plan-arret-du-plan.md`, Q6).
+ * `documentation/production/arret-du-plan.md`, Q6).
  *
  * Sa seule règle : il ne se pose pas sur une date passée — un jour déjà
  * écoulé n'a plus de plan à épargner. Aujourd'hui est admis : un jour fermé

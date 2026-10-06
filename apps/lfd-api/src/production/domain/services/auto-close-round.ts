@@ -5,7 +5,7 @@ import type { AutoCloseOutcome } from "../ports/auto-close-attempts.js";
 
 /**
  * **Le tour de l'arrêt du plan** — ce que le passage du cron (toutes les cinq minutes) décide pour
- * le lendemain (plan `documentation/production/plan-arret-du-plan.md`, §3, §4,
+ * le lendemain (plan `documentation/production/arret-du-plan.md`, §3, §4,
  * B2, S4, lot A2).
  *
  * Pur : l'heure de la maison et l'état des journées arrivent lus. Le tour ne

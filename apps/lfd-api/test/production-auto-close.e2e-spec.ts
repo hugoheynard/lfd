@@ -1,6 +1,6 @@
 /**
  * E2E du **tour de l'arrêt du plan** (plan
- * `documentation/production/plan-arret-du-plan.md`, §3, §4, B2, S4, S7, S8,
+ * `documentation/production/arret-du-plan.md`, §3, §4, B2, S4, S7, S8,
  * lot A2) — la route machine que le cron du Worker appelle toutes les cinq
  * minutes.
  *

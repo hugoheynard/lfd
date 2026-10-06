@@ -154,7 +154,9 @@
                     day.orderCount +
                     ' commande(s), ' +
                     day.totalUnits +
-                    ' pièce(s) ? Son compte à produire sera figé.'
+                    ' pièce(s)' +
+                    (autoCloseAt() ? ', maintenant (avant ' + autoCloseAt() + ')' : '') +
+                    ' ? Son compte à produire sera figé.'
                   "
                   (confirmed)="arrest(day.date)"
                   (cancelled)="arrestingDay.set(null)"
@@ -171,6 +173,9 @@
                   (click)="arrestingDay.set(day.date)"
                 >
                   Arrêter le plan du {{ day.weekday }} {{ day.dayMonth }}
+                  @if (autoCloseAt(); as closeAt) {
+                    maintenant (avant {{ closeAt }})
+                  }
                 </button>
               }
             } @else {

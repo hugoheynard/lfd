@@ -541,7 +541,7 @@ model ProductionDayChange {
 }
 
 /// **L'arrêt du plan, automatique ou manuel** — le réglage unique du fournil
-/// (plan `documentation/production/plan-arret-du-plan.md`, §2, lot A1).
+/// (plan `documentation/production/arret-du-plan.md`, §2, lot A1).
 ///
 /// Une ligne au plus, d'identifiant `house` (contrainte en base). Son ABSENCE
 /// est le réglage de départ — manuel, alerte à 20:00 (Q1) —, dit une seule fois
@@ -579,7 +579,7 @@ model ProductionClosedDay {
 }
 
 /// **Une tentative d'arrêt automatique du plan** — une par journée visée
-/// (plan `documentation/production/plan-arret-du-plan.md`, B2, lot A2).
+/// (plan `documentation/production/arret-du-plan.md`, B2, lot A2).
 ///
 /// La clé primaire EST l'unicité : deux instances qui passent ensemble
 /// s'insèrent avec `ON CONFLICT DO NOTHING`, et seule celle dont la ligne est

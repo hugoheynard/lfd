@@ -603,7 +603,7 @@ export const routes: Routes = [
           import('./production/previsionnel/previsionnel-page').then((m) => m.PrevisionnelPage),
       },
       {
-        // L'arrêt du plan et les jours fermés (plan-arret-du-plan.md, lot A1) :
+        // L'arrêt du plan et les jours fermés (arret-du-plan.md, lot A1) :
         // lecture sous `production_settings:read`, la page se fige sans `:write`.
         path: 'reglages',
         canActivate: [permissionGuard('production_settings:read')],

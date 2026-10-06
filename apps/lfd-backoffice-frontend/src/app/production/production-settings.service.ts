@@ -9,7 +9,7 @@ const SETTINGS = `${B2B_API_BASE}/admin/production/settings`;
 
 /**
  * **Les réglages du fournil** — l'arrêt du plan et les jours fermés (plan
- * `documentation/production/plan-arret-du-plan.md`, lot A1), sous
+ * `documentation/production/arret-du-plan.md`, lot A1), sous
  * `production_settings`.
  *
  * Aucun état : l'écran relit après chaque écriture. Les refus remontent tels

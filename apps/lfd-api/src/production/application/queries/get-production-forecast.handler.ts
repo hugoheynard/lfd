@@ -32,7 +32,7 @@ import { GetProductionForecastQuery } from "./get-production-forecast.query.js";
  * au commerce, c'est la matrice qui écarte ce qu'elle ne doit pas empiler. Les
  * enchaîner doublerait la latence d'un écran qu'on ouvre en levant les yeux.
  *
- * L'état de chaque colonne (plan `plan-arret-du-plan.md`, §5, lot A3) se dit
+ * L'état de chaque colonne (plan `arret-du-plan.md`, §5, lot A3) se dit
  * ici, à l'heure du `Clock`, avec le réglage, les jours fermés et les
  * tentatives automatiques lus en même temps que le reste.
  *

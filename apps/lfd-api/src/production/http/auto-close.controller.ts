@@ -10,7 +10,7 @@ import {
 
 /**
  * Endpoint **machine** du tour de l'arrêt du plan (plan
- * `documentation/production/plan-arret-du-plan.md`, §3, lot A2). Même porte
+ * `documentation/production/arret-du-plan.md`, §3, lot A2). Même porte
  * que `admin/production/quality/sweep` et `admin/outbox/sweep` : le
  * `RecomputeGuard` et son jeton, présentés par le Worker sur le cron de
  * rafraîchissement, toutes les cinq minutes (`container/worker.ts`). Pas de droit staff.

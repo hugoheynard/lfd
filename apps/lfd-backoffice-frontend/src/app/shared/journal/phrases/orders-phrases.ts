@@ -189,7 +189,7 @@ function serviceDay(fact: PhraseFact): Segment[] {
 /**
  * « Le plan du 7 octobre 2026 a été arrêté automatiquement : 3 commandes
  * inscrites » — l'arrêt du tour automatique (`automatic: true`, plan
- * `production/plan-arret-du-plan.md`, S7). L'auteur est le système, sans nom :
+ * `production/arret-du-plan.md`, S7). L'auteur est le système, sans nom :
  * la phrase dit le geste, pas « Le système a arrêté ».
  */
 const productionDayClosed: Phrase = (fact) => {

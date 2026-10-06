@@ -6,7 +6,7 @@ import {
 
 /**
  * Les refus des **réglages du fournil** — l'arrêt du plan et les jours fermés
- * (plan `documentation/production/plan-arret-du-plan.md`, §2, Q5, Q6, S4).
+ * (plan `documentation/production/arret-du-plan.md`, §2, Q5, Q6, S4).
  *
  * Lus par qui règle l'écran, sans le code sous les yeux : chacun nomme le cas
  * et ce qu'il faut faire.

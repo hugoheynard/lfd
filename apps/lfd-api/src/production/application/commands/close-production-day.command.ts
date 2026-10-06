@@ -10,7 +10,7 @@ export class CloseProductionDayCommand {
     readonly serviceDay: string,
     /**
      * Qui déclenche : un geste du staff, ou le tour automatique (plan
-     * `plan-arret-du-plan.md`, §3, S7, lot A2). Seul le journal le lit — il
+     * `arret-du-plan.md`, §3, S7, lot A2). Seul le journal le lit — il
      * écrit « automatiquement » plutôt qu'un nom. La clôture est la même.
      */
     readonly trigger: CloseTrigger = "manual",

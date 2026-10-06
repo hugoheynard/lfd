@@ -2,7 +2,7 @@ import type { CloseMode } from "../../domain/entities/production-close-settings.
 
 /**
  * **Régler l'arrêt du plan** — automatique à une heure, ou manuel avec une
- * heure d'alerte (plan `documentation/production/plan-arret-du-plan.md`, §2).
+ * heure d'alerte (plan `documentation/production/arret-du-plan.md`, §2).
  *
  * Les heures arrivent brutes : c'est l'agrégat qui les juge.
  */

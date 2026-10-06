@@ -178,7 +178,7 @@ export class ProductionDayController {
    *
    * Sous **`production_count_stop:write`** depuis le 2026-10-06, et non sous
    * `production_plan:write` : arrêter le compte n'est pas le même geste que
-   * lire le plan (plan `documentation/production/plan-arret-du-plan.md`, §6).
+   * lire le plan (plan `documentation/production/arret-du-plan.md`, §6).
    */
   @Post("batch/:date/close")
   @RequirePermission("production_count_stop:write")

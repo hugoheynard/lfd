@@ -8,7 +8,7 @@ import { OrderCutoffRepository } from "../domain/order-cutoff.repository.js";
 
 /**
  * **Les heures limites, rendues au fournil** — ce que l'arrêt automatique du
- * plan ne doit pas précéder (`documentation/production/plan-arret-du-plan.md`,
+ * plan ne doit pas précéder (`documentation/production/arret-du-plan.md`,
  * Q5).
  *
  * Le commerce implémente le port que la production déclare : elle ne lit pas

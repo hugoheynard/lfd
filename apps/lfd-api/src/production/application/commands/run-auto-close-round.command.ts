@@ -1,6 +1,6 @@
 /**
  * **Un tour de l'arrêt du plan** — le passage du cron du Worker (plan
- * `documentation/production/plan-arret-du-plan.md`, §3, §4, lot A2). Sans
+ * `documentation/production/arret-du-plan.md`, §3, §4, lot A2). Sans
  * argument : l'heure est celle du `Clock`, le réglage celui de la maison.
  */
 export class RunAutoCloseRoundCommand {}

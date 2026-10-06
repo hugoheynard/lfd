@@ -122,7 +122,7 @@ import { PrismaProductionReturnRequests } from "./infrastructure/prisma-producti
   ],
   providers: [
     CloseProductionDayHandler,
-    // Le tour de l'arrêt automatique (plan `plan-arret-du-plan.md`, lot A2) :
+    // Le tour de l'arrêt automatique (plan `arret-du-plan.md`, lot A2) :
     // la vraie clôture par le bus, sous l'acteur système, et la cloche du staff.
     RunAutoCloseRoundHandler,
     PlanArrestBell,

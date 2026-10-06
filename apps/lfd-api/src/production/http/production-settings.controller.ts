@@ -21,7 +21,7 @@ const NO_CONTENT = 204;
 
 /**
  * **Production › Réglages** — l'arrêt du plan et les jours fermés (plan
- * `documentation/production/plan-arret-du-plan.md`, §2, Q5, Q6, lot A1).
+ * `documentation/production/arret-du-plan.md`, §2, Q5, Q6, lot A1).
  *
  * Sous `production_settings` : lire en `GET`, régler sinon. Le contrôleur ne
  * juge que la FORME ; les heures, leurs bornes, l'heure limite et la date d'un

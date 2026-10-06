@@ -355,7 +355,7 @@ async function triggerOutboxSweep(env: Env): Promise<void> {
  * Réveille le container et passe le tour de l'arrêt du plan : en mode
  * automatique, arrêter le plan du lendemain passé l'heure réglée ; en manuel,
  * alerter passé l'heure d'alerte ; et prévenir si celui d'aujourd'hui n'est pas
- * arrêté (plan `documentation/production/plan-arret-du-plan.md`, §3, lot A2).
+ * arrêté (plan `documentation/production/arret-du-plan.md`, §3, lot A2).
  *
  * Sur le cron de RAFRAÎCHISSEMENT : au plus cinq minutes de retard sur l'heure
  * réglée. Même porte et même jeton que le recompute ; idempotent — une seule

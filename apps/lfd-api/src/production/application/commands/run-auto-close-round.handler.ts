@@ -23,7 +23,7 @@ import {
 } from "./run-auto-close-round.command.js";
 
 /**
- * **Le tour de l'arrêt du plan** (plan `plan-arret-du-plan.md`, §3, §4, B2,
+ * **Le tour de l'arrêt du plan** (plan `arret-du-plan.md`, §3, §4, B2,
  * S4, S7, S8, lot A2), à l'heure de la maison.
  *
  * Pour le LENDEMAIN : rien un jour fermé ; en automatique, passé `close_at`,

@@ -45,7 +45,7 @@ export type ProductionForecastQuery = z.infer<typeof productionForecastQuerySche
 
 /**
  * **L'état d'une colonne**, calculé par le serveur à l'heure de Paris (plan
- * `documentation/production/plan-arret-du-plan.md`, §5, lot A3) — l'écran ne
+ * `documentation/production/arret-du-plan.md`, §5, lot A3) — l'écran ne
  * refait pas le calcul d'heure :
  *
  * - `past` : journée avant aujourd'hui ;

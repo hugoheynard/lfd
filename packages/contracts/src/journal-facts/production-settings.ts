@@ -3,7 +3,7 @@ import { z } from "zod";
 import { clockTime, day, fact, payload, subjectLabel } from "./fact.js";
 
 /**
- * **Les réglages du fournil** (plan `documentation/production/plan-arret-du-plan.md`,
+ * **Les réglages du fournil** (plan `documentation/production/arret-du-plan.md`,
  * lot A1, 2026-10-06) — l'arrêt du plan automatique ou manuel, et les jours
  * fermés.
  *

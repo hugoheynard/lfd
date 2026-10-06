@@ -5,7 +5,7 @@ import { byActor, inUnit, subject, text, valueIn, type Phrase, type Segment } fr
 import { PRODUCTION_CLOSE_MODE } from '../values/orders-values';
 
 /**
- * **Les réglages du fournil** (plan `documentation/production/plan-arret-du-plan.md`,
+ * **Les réglages du fournil** (plan `documentation/production/arret-du-plan.md`,
  * lot A1) — le miroir de `PRODUCTION_SETTINGS_FACTS` dans `@lfd/contracts`.
  *
  * Le réglage d'arrêt se dit en entier, avant et après : un mode et l'heure qui

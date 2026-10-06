@@ -32,7 +32,7 @@ export interface HouseMoment {
 }
 
 /**
- * **L'état d'une journée du prévisionnel** (plan `plan-arret-du-plan.md`, §5,
+ * **L'état d'une journée du prévisionnel** (plan `arret-du-plan.md`, §5,
  * lot A3), dans cet ordre de priorité :
  *
  * 1. `past` — avant aujourd'hui ;

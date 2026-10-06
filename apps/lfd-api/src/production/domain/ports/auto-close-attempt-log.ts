@@ -9,7 +9,7 @@ export interface DatedAttemptTrace extends AttemptTrace {
 
 /**
  * **Les tentatives d'arrêt automatique d'une plage**, pour l'état des
- * journées du prévisionnel (plan `plan-arret-du-plan.md`, §5, lot A3).
+ * journées du prévisionnel (plan `arret-du-plan.md`, §5, lot A3).
  *
  * Un port à part de `AutoCloseRoundReader` (ISP) : le tour pose deux questions
  * sur UNE journée, le prévisionnel en lit une plage. Une journée absente du

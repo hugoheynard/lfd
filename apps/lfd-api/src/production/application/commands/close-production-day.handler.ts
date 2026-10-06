@@ -26,7 +26,7 @@ import { CloseProductionDayCommand } from "./close-production-day.command.js";
  *
  * Il verrouille la journée, la RECHARGE sous le verrou, lui demande de se
  * clore, l'écrit, et **publie** — tout dans une unité de travail (lot A0 du
- * plan `production/plan-arret-du-plan.md`, B1, 2026-10-06 : jusque-là le
+ * plan `production/arret-du-plan.md`, B1, 2026-10-06 : jusque-là le
  * chargement se faisait hors verrou, et deux clôtures concurrentes fermaient
  * toutes les deux). Le balayage et la lecture des commandes du commerce
  * restent AVANT le verrou : pas d'appel d'un autre bloc sous un verrou tenu. Il

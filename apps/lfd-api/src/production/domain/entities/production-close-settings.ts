@@ -49,7 +49,7 @@ const INITIAL_ALERT = "20:00";
 
 /**
  * **L'arrêt du plan, automatique ou manuel** — le réglage unique du fournil
- * (plan `documentation/production/plan-arret-du-plan.md`, §2, Q5, S4).
+ * (plan `documentation/production/arret-du-plan.md`, §2, Q5, S4).
  *
  * Un agrégat et pas un CRUD : des règles REFUSENT l'écriture — le mode sans
  * son heure, une heure mal formée, une heure d'arrêt hors de `12:00`–`23:55`

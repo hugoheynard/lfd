@@ -11,7 +11,7 @@ export type AutoCloseOutcome = "pending" | "closed" | "empty" | "failed";
 
 /**
  * **La trace des tentatives d'arrêt automatique** — une par journée visée,
- * jamais deux (plan `plan-arret-du-plan.md`, B2, lot A2).
+ * jamais deux (plan `arret-du-plan.md`, B2, lot A2).
  *
  * Sans elle, une journée vide serait re-tentée toutes les cinq minutes, et
  * chaque tentative balaierait les règlements chez Stripe. Avec elle, c'est la

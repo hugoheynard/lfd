@@ -2,7 +2,7 @@ import { z } from "zod";
 
 /**
  * **Les réglages du fournil** — l'arrêt du plan et les jours fermés (plan
- * `documentation/production/plan-arret-du-plan.md`, §2, Q5, Q6 ; lot A1).
+ * `documentation/production/arret-du-plan.md`, §2, Q5, Q6 ; lot A1).
  *
  * Un seul réglage pour la maison : la clôture est par journée, tous lieux
  * confondus. Les heures sont des heures de pendule d'Europe/Paris, `HH:MM`.

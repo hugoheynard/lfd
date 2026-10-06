@@ -9,7 +9,7 @@ import { frenchDayLabel } from "../../domain/services/auto-close-round.js";
 import type { ServiceDay } from "../../domain/value-objects/service-day.value-object.js";
 
 /**
- * Qui reçoit : ceux qui peuvent arrêter le plan (plan `plan-arret-du-plan.md`,
+ * Qui reçoit : ceux qui peuvent arrêter le plan (plan `arret-du-plan.md`,
  * §4, §6, S8). Résolu à la lecture et à l'envoi par la cloche, jamais figé.
  */
 const AUDIENCE: StaffPermission = "production_count_stop:write";
@@ -37,7 +37,7 @@ type PlanArrestKind = (typeof PLAN_ARREST_NOTICES)[keyof typeof PLAN_ARREST_NOTI
 
 /**
  * **La cloche de l'arrêt du plan** — les annonces du tour automatique,
- * dites en un seul endroit (plan `plan-arret-du-plan.md`, §3, §4, S4, S8,
+ * dites en un seul endroit (plan `arret-du-plan.md`, §3, §4, S4, S8,
  * lot A2).
  *
  * La clé d'idempotence est `(nature, journée)` : `staff_notification` la tient

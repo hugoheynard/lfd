@@ -1,6 +1,6 @@
 /**
  * E2E des **réglages du fournil** — l'arrêt du plan et les jours fermés (plan
- * `documentation/production/plan-arret-du-plan.md`, §2, §6, Q5, Q6, lot A1),
+ * `documentation/production/arret-du-plan.md`, §2, §6, Q5, Q6, lot A1),
  * et le droit neuf de l'arrêt (`production_count_stop`).
  *
  * Tout passe par les vraies routes, la vraie base et ses contraintes. Les

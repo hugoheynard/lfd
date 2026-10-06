@@ -2,7 +2,7 @@ import type { OrderCutoffRule } from "../../domain/services/latest-order-cutoff.
 
 /**
  * **Les heures limites de commande**, telles que le commerce les tient (plan
- * `documentation/production/plan-arret-du-plan.md`, Q5).
+ * `documentation/production/arret-du-plan.md`, Q5).
  *
  * L'arrêt automatique ne peut pas précéder la limite la plus tardive : le
  * fournil a besoin de la connaître, elle vit au commerce. Il DÉCLARE donc ce

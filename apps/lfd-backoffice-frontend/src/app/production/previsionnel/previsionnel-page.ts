@@ -24,9 +24,11 @@ import {
   FoldSurfaceDirective,
 } from 'fold-ng';
 
+import { PermissionsStore } from '../../auth/permissions.store';
 import { AdminCatalogService } from '../../commandes/catalog.service';
 import { refreshWhileVisible } from '../../shared/periodic-refresh';
 import { ProductionService } from '../production.service';
+import { ProductionSettingsService } from '../production-settings.service';
 import { DossierDuJour } from './dossier-du-jour/dossier-du-jour';
 import { ForecastTable } from './forecast-table/forecast-table';
 import { forecastRayons, totalOfRayons } from './previsionnel-matrix';
@@ -121,6 +123,17 @@ export class PrevisionnelPage {
   private readonly catalog = inject(AdminCatalogService);
   private readonly router = inject(Router);
   private readonly route = inject(ActivatedRoute);
+  private readonly settings = inject(ProductionSettingsService);
+  private readonly permissions = inject(PermissionsStore);
+
+  /**
+   * L'heure d'arrêt automatique quand le fournil est en mode `auto`, sinon
+   * `null`. En auto, le bouton du soir est un arrêt ANTICIPÉ — le serveur
+   * arrêterait seul à cette heure (plan d'arrêt, Q4, Hugo 2026-10-06). Sans le
+   * droit de lire les réglages, ou si la lecture échoue, on reste au libellé
+   * manuel : rien d'affiché pour ça.
+   */
+  protected readonly autoCloseAt = signal<string | null>(null);
 
   protected readonly state = signal<LoadState>('loading');
 
@@ -296,13 +309,15 @@ export class PrevisionnelPage {
     const seq = ++this.readSeq;
     const from = this.from();
     try {
-      const [forecast, ahead] = await Promise.all([
+      const [forecast, ahead, closeAt] = await Promise.all([
         this.production.forecast(from, windowEnd(from)),
         this.readAhead(from),
+        this.readAutoCloseAt(),
       ]);
       if (seq === this.readSeq) {
         this.forecast.set(forecast);
         this.aheadRead.set(ahead);
+        this.autoCloseAt.set(closeAt);
       }
     } catch {
       // Silencieux par construction : la lecture précédente reste juste à
@@ -404,16 +419,18 @@ export class PrevisionnelPage {
       // — mais elle ne doit pas se taire non plus, d'où le `null` plutôt qu'un
       // tableau vide : les deux se lisent pareil à l'affichage, et un seul des
       // deux est une panne.
-      const [forecast, catalogue, ahead] = await Promise.all([
+      const [forecast, catalogue, ahead, closeAt] = await Promise.all([
         this.production.forecast(from, windowEnd(from)),
         this.catalog.list().catch(() => null),
         this.readAhead(from),
+        this.readAutoCloseAt(),
       ]);
       if (seq !== this.readSeq) {
         return;
       }
       this.forecast.set(forecast);
       this.aheadRead.set(ahead);
+      this.autoCloseAt.set(closeAt);
       this.shelvesLost.set(catalogue === null);
       this.catalogue.set(catalogue ?? []);
       this.state.set('ready');
@@ -421,6 +438,19 @@ export class PrevisionnelPage {
       if (seq === this.readSeq) {
         this.state.set('error');
       }
+    }
+  }
+
+  /** L'heure d'arrêt automatique, ou `null` — ne lève jamais. */
+  private async readAutoCloseAt(): Promise<string | null> {
+    if (!this.permissions.can('production_settings:read')) {
+      return null;
+    }
+    try {
+      const { close } = await this.settings.settings();
+      return close.mode === 'auto' ? close.closeAt : null;
+    } catch {
+      return null;
     }
   }
 }

@@ -44,7 +44,7 @@ function dayPayload(serviceDay: string, absorbed: number): Record<string, unknow
  * Fait : **la journée est arrêtée** — `absorbed` commandes inscrites au plan.
  *
  * `automatic: true` quand c'est le tour de l'arrêt automatique qui l'a arrêtée
- * (plan `plan-arret-du-plan.md`, S7, lot A2) : l'acteur est alors le système
+ * (plan `arret-du-plan.md`, S7, lot A2) : l'acteur est alors le système
  * (`auto-close`), qui n'a pas de nom, et le journal dit « automatiquement ».
  * Absente pour un geste du staff — les lignes d'avant restent valides.
  */

@@ -65,7 +65,7 @@ export function cutoffLabel(cutoff: ProductionLatestOrderCutoffView): string {
 }
 
 /**
- * **Production › Réglages** (plan `documentation/production/plan-arret-du-plan.md`,
+ * **Production › Réglages** (plan `documentation/production/arret-du-plan.md`,
  * §2, Q5, Q6 ; lot A1) — comment le plan du lendemain s'arrête, et les jours
  * où le fournil ne produit pas.
  *

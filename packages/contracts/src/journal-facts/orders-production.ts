@@ -418,7 +418,7 @@ export const ORDERS_PRODUCTION_FACTS = {
    */
   /**
    * `automatic` : posé (à `true`) seulement quand le tour de l'arrêt
-   * automatique a arrêté le plan (plan `production/plan-arret-du-plan.md`, S7,
+   * automatique a arrêté le plan (plan `production/arret-du-plan.md`, S7,
    * lot A2). L'auteur est alors le système, sans nom.
    */
   "production_day.closed": fact(dayFact().extend({ automatic: z.literal(true).optional() }), [

@@ -95,7 +95,7 @@ describe('grantGroups', () => {
    * `delivery_decisions` (sorti de `b2b_companies`) et `delivery_proofs`
    * (sorti de `b2b_orders`), lot « correctifs de droits ». Puis à 46 le
    * 2026-10-06 : `production_count_stop` (l'arrêt du plan) et
-   * `production_settings` (ses réglages), plan-arret-du-plan.md, lot A1.
+   * `production_settings` (ses réglages), arret-du-plan.md, lot A1.
    */
   it('compte les domaines du catalogue', () => {
     expect(RESOURCE_COUNT).toBe(46);

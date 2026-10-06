@@ -2,7 +2,7 @@ import { describe, expect, it } from 'vitest';
 
 import { renderFact, type FactInput } from '../render-fact';
 
-/** **Les phrases des réglages du fournil** (plan `plan-arret-du-plan.md`, lot A1). */
+/** **Les phrases des réglages du fournil** (plan `arret-du-plan.md`, lot A1). */
 
 function fact(type: FactInput['type'], payload: Record<string, unknown>): FactInput {
   return {
