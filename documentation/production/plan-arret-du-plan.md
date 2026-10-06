@@ -203,3 +203,17 @@ commande du lendemain ? **Q6** — jours sans production : (a) ne prévenir « r
 à arrêter » que si le lendemain est un jour où l'on prend commande (d'après
 les heures limites/jours de livraison existants), ou (b) un calendrier des
 jours fermés du fournil dans Réglages ?
+
+### Décisions de Hugo sur la contradiction (2026-10-06)
+
+- **Q5** — oui : l'agrégat refuse une heure d'arrêt automatique antérieure à
+  l'heure limite de commande du lendemain ; la page Réglages la montre.
+- **Q6** — (b) : un calendrier des jours fermés du fournil dans Réglages ; la
+  veille d'un jour fermé ne prévient pas « rien à arrêter ».
+- **Q7** — un arrêt cliqué par erreur doit pouvoir repartir. Le retirage
+  (`retake-production-day.handler.ts`) absorbe déjà les commandes arrivées
+  après l'arrêt. En plus : « Rouvrir le plan », seulement tant que rien n'a
+  commencé en aval (aucune fournée cochée, rien au colisage, aucune tournée
+  partie ou retouchée), sous `production_count_stop` ; fait durable
+  « plan rouvert » que commerce, livraison et colisage défont. Dernier lot (A4),
+  à concevoir en détail avant d'être bâti.
