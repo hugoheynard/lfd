@@ -42,6 +42,7 @@ documents sont déplacés tels quels, et leurs renvois repointés.
 | [`todo-calculateur.md`](todo-calculateur.md)                                         | 🔴                             | Le calculateur (lot 7) : la page de confidentialité publiée à mettre à jour **avant** d'activer le géocodage, et la purge du cache.                                         |
 | [`conception-retrait-en-livraison.md`](conception-retrait-en-livraison.md)           | 📐 v1 contredite par `vitruve` | Le retrait (le geste) chez le client : le code qui n'atteint pas la personne qui réceptionne, la réconciliation au chargement, la tentative ratée. Huit questions ouvertes. |
 | [`architecture-road-livraison-tournees.md`](architecture-road-livraison-tournees.md) | 📐 réécrit le 2026-09-29       | Les tournées : un bloc de `lfd-api` et l'écran `/livraison`, plus une app séparée. Composer, charger, rouler, consigner un échec.                                           |
+| [`plan-livreur-par-lien.md`](plan-livreur-par-lien.md)                               | 📐 plan, rien de bâti          | Le livreur sans compte (6 b) : un lien par tournée envoyé par e-mail, un code dit de vive voix, l'appareil lié, le même écran que « Ma tournée ». `vitruve` avant Hugo.     |
 
 ## Ailleurs, et laissé où il est
 
