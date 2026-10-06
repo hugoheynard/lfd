@@ -15,7 +15,7 @@ export type DossierDispatchOutcome =
   | { readonly kind: "failed"; readonly failure: string };
 
 /**
- * **La trace d'envoi du dossier du jour** (plan `plan-envoi-du-dossier.md`,
+ * **La trace d'envoi du dossier du jour** (plan `dossier-prod-du-jour.md`,
  * lot E3) — l'idempotence d'un fait livré au moins une fois.
  *
  * Deux écritures ciblées, et c'est voulu : une trace n'a pas d'invariant à

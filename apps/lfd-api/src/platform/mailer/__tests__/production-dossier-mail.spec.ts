@@ -5,7 +5,7 @@ import {
   type ProductionDossierMailData,
 } from "../production-dossier-mail.js";
 
-/** **Le courriel du dossier du jour** (plan `plan-envoi-du-dossier.md`, E3). */
+/** **Le courriel du dossier du jour** (plan `dossier-prod-du-jour.md`, E3). */
 
 const DATA: ProductionDossierMailData = {
   firstName: "Paul",

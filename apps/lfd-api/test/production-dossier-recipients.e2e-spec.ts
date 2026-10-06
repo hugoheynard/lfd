@@ -1,6 +1,6 @@
 /**
  * E2E des **destinataires du dossier du jour** (plan
- * `documentation/production/plan-envoi-du-dossier.md`, décisions 3-4, lot E2).
+ * `documentation/production/dossier-prod-du-jour.md`, décisions 3-4, lot E2).
  *
  * Tout passe par les vraies routes, la vraie base et ses contraintes. Les
  * fiches du personnel sont lues dans l'annuaire par son port ; les droits se

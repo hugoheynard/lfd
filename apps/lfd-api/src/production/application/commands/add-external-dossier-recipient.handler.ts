@@ -11,7 +11,7 @@ import { AddExternalDossierRecipientCommand } from "./add-external-dossier-recip
 
 /**
  * **Inscrire une autre personne** aux destinataires du dossier (plan
- * `plan-envoi-du-dossier.md`, décision 4, lot E2).
+ * `dossier-prod-du-jour.md`, décision 4, lot E2).
  *
  * L'adresse et le nom sont jugés par la factory ; le doublon — avec un autre
  * externe ou avec l'adresse d'une fiche déjà inscrite — par la liste. Rend

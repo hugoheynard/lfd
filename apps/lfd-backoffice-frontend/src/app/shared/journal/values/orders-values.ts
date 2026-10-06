@@ -118,7 +118,7 @@ export const PRODUCTION_CLOSE_MODE = domain('mode d’arrêt du plan', {
   manual: 'Manuel',
 });
 
-/** La forme d'un destinataire du dossier du jour (plan `plan-envoi-du-dossier.md`, E2). */
+/** La forme d'un destinataire du dossier du jour (plan `dossier-prod-du-jour.md`, E2). */
 export const DOSSIER_RECIPIENT_KIND = domain('sorte de destinataire', {
   staff: 'Personnel',
   external: 'Autre personne',

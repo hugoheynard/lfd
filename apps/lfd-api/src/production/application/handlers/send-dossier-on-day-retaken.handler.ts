@@ -18,7 +18,7 @@ export const SEND_DOSSIER_ON_DAY_RETAKEN = "production.send-dossier-on-retake";
 
 /**
  * **Le tirage est repris : le dossier complété repart** (plan
- * `documentation/production/plan-envoi-du-dossier.md`, décision 2, E3),
+ * `documentation/production/dossier-prod-du-jour.md`, décision 2, E3),
  * objet « — complété ».
  *
  * Un retirage dépassé depuis par un autre (la journée garde un `retaken.at`

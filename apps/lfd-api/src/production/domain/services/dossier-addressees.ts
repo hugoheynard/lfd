@@ -4,7 +4,7 @@ import type { StoredDossierRecipient } from "../ports/dossier-recipients.reader.
 
 /**
  * **À qui le dossier part, ce jour-là** (plan
- * `documentation/production/plan-envoi-du-dossier.md`, décision 4, lot E3).
+ * `documentation/production/dossier-prod-du-jour.md`, décision 4, lot E3).
  *
  * Une fiche du personnel se relit à l'envoi : son adresse d'aujourd'hui, son
  * nom d'aujourd'hui. Suspendue, disparue ou sans adresse, elle est écartée —

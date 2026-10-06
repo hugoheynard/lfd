@@ -42,7 +42,7 @@ export class ProductionSettingsService {
     await firstValueFrom(this.http.delete(`${SETTINGS}/closed-days/${encodeURIComponent(date)}`));
   }
 
-  /** Les destinataires du dossier du jour (plan `plan-envoi-du-dossier.md`, lot E2). */
+  /** Les destinataires du dossier du jour (plan `dossier-prod-du-jour.md`, lot E2). */
   dossierRecipients(): Promise<DossierRecipientView[]> {
     return firstValueFrom(this.http.get<DossierRecipientView[]>(RECIPIENTS));
   }

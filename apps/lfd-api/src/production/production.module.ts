@@ -228,7 +228,7 @@ import { PrismaProductionReturnRequests } from "./infrastructure/prisma-producti
     },
     { provide: ProductionClosedDayRepository, useClass: PrismaProductionClosedDayRepository },
     { provide: ProductionSettingsReader, useClass: PrismaProductionSettingsReader },
-    // Les destinataires du dossier du jour (`plan-envoi-du-dossier.md`, E2) :
+    // Les destinataires du dossier du jour (`dossier-prod-du-jour.md`, E2) :
     // schéma `production` ; les fiches du personnel se relisent par les ports
     // de lecture de l'annuaire (`StaffContacts`, `ReachableStaff`), globaux.
     AddStaffDossierRecipientHandler,

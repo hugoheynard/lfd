@@ -6,7 +6,7 @@ import { ListDossierStaffCandidatesQuery } from "./list-dossier-staff-candidates
 
 /**
  * **Le personnel joignable**, pour la liste de choix de Production › Réglages
- * (plan `plan-envoi-du-dossier.md`, décision 4).
+ * (plan `dossier-prod-du-jour.md`, décision 4).
  *
  * Une route à elle, sous `production_settings:read` : la liste de l'équipe
  * (`/admin/staff-users`) est sous `staff_access`, que qui règle le fournil n'a

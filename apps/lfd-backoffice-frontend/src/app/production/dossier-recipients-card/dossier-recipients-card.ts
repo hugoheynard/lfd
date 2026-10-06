@@ -47,7 +47,7 @@ export function recipientName(recipient: {
 
 /**
  * **Le dossier du jour par e-mail** (plan
- * `documentation/production/plan-envoi-du-dossier.md`, lot E2) — qui reçoit
+ * `documentation/production/dossier-prod-du-jour.md`, lot E2) — qui reçoit
  * le PDF à chaque arrêt du plan.
  *
  * La carte se charge seule : un échec de lecture des destinataires ne doit pas

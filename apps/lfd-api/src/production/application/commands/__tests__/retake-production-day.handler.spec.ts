@@ -239,7 +239,7 @@ describe("RetakeProductionDayHandler — la liste à coliser (colisage, K1, §11
   });
 });
 
-describe("RetakeProductionDayHandler — le fait du retirage (plan-envoi-du-dossier.md, E3)", () => {
+describe("RetakeProductionDayHandler — le fait du retirage (dossier-prod-du-jour.md, E3)", () => {
   it("publie `production.day_retaken` une fois, daté du retirage, avec le nombre absorbé", async () => {
     const durable = new RecordingDurable();
     const handler = subject(

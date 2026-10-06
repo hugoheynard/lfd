@@ -13,7 +13,7 @@ import { ListDossierRecipientsQuery } from "./list-dossier-recipients.query.js";
 
 /**
  * **La liste des destinataires**, telle que l'envoi la verrait aujourd'hui
- * (plan `plan-envoi-du-dossier.md`, E2) : une fiche du personnel se lit avec
+ * (plan `dossier-prod-du-jour.md`, E2) : une fiche du personnel se lit avec
  * son nom et son adresse du jour. Suspendue ou disparue, elle reste dans la
  * liste et le dit (`inactive`) — c'est à qui règle de la retirer.
  */

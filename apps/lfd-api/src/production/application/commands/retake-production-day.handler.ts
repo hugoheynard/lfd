@@ -33,7 +33,7 @@ import { RetakeProductionDayCommand } from "./retake-production-day.command.js";
  * par commande ABSORBÉE, dans la même unité de travail — sans quoi elles
  * n'arriveraient jamais à la liste à coliser.
  *
- * Et AU FOURNIL lui-même (2026-10-06, plan `production/plan-envoi-du-dossier.md`,
+ * Et AU FOURNIL lui-même (2026-10-06, plan `production/dossier-prod-du-jour.md`,
  * E3) : `production.day_retaken`, durable, dans la même unité de travail —
  * c'est lui qui fait repartir le dossier complété. Seulement quand des
  * commandes sont absorbées, comme tout le reste.

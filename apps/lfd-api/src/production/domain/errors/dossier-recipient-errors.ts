@@ -7,7 +7,7 @@ import {
 
 /**
  * Les refus des **destinataires du dossier du jour** (plan
- * `documentation/production/plan-envoi-du-dossier.md`, décisions 3-4, lot E2).
+ * `documentation/production/dossier-prod-du-jour.md`, décisions 3-4, lot E2).
  *
  * Lus dans Production › Réglages par qui règle la liste : chacun nomme le cas
  * et ce qu'il faut faire.

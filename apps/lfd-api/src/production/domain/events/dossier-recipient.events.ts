@@ -5,7 +5,7 @@ import type { DossierRecipient } from "../entities/dossier-recipient.js";
 
 /**
  * **Les faits des destinataires du dossier du jour** (plan
- * `plan-envoi-du-dossier.md`, E2). La ligne archivée garde qui l'a retirée ;
+ * `dossier-prod-du-jour.md`, E2). La ligne archivée garde qui l'a retirée ;
  * le journal garde aussi le nom et l'adresse du moment, qu'une fiche du
  * personnel ne recopie pas — pas son adresse : le journal n'écrit aucun e-mail.
  */

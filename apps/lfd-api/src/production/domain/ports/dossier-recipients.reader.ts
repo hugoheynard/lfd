@@ -1,6 +1,6 @@
 /**
  * **La liste des destinataires du dossier**, côté lecture (plan
- * `plan-envoi-du-dossier.md`, E2) — un port à part du dépôt (ISP) : l'écran
+ * `dossier-prod-du-jour.md`, E2) — un port à part du dépôt (ISP) : l'écran
  * lit des lignes, il ne garde aucun invariant.
  */
 export abstract class DossierRecipientsReader {

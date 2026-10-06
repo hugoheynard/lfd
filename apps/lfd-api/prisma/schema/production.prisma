@@ -621,7 +621,7 @@ model ProductionAutoCloseAttempt {
 }
 
 /// **Un destinataire du dossier du jour** (plan
-/// `documentation/production/plan-envoi-du-dossier.md`, décisions 3-4, lot E2).
+/// `documentation/production/dossier-prod-du-jour.md`, décisions 3-4, lot E2).
 ///
 /// Deux formes, et une seule par ligne (`production_dossier_recipient_kind_check`) :
 /// - `staff` : une RÉFÉRENCE à une fiche de l'annuaire (`staff_user_id`, sans
@@ -654,7 +654,7 @@ model ProductionDossierRecipient {
 }
 
 /// **Une trace d'envoi du dossier du jour** — une par destinataire et par
-/// envoi (plan `documentation/production/plan-envoi-du-dossier.md`, lot E3).
+/// envoi (plan `documentation/production/dossier-prod-du-jour.md`, lot E3).
 ///
 /// Un envoi est désigné par sa journée et son instant d'origine : la clôture,
 /// ou un retirage (`occasion_at`). La clé primaire EST l'idempotence : le fait

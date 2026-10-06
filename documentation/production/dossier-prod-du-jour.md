@@ -1,8 +1,9 @@
 # Le dossier de production du jour
 
-**État au 2026-10-06** (lots E1 et E1b de
-[`plan-envoi-du-dossier.md`](plan-envoi-du-dossier.md)). Ce que contient le
-papier qui part au fournil, et **d'où vient chaque information**.
+**État au 2026-10-06.** Ce que contient le papier qui part au fournil, **d'où
+vient chaque information**, et comment il part par e-mail. Remplace le plan de
+l'envoi du dossier (lots E1, E1b, E2, E3, bâtis le 2026-10-06, retiré ce
+jour-là — il vit dans l'historique git).
 
 ## Ce que c'est
 
@@ -65,6 +66,38 @@ veille).
 
 Aucun prix ni total en euros : le fournil fabrique, il ne facture pas.
 
+## L'envoi par e-mail
+
+**Production › Réglages › Dossier du jour par e-mail** tient la liste des
+destinataires (`production_settings`) :
+
+- **le personnel**, choisi dans l'annuaire : son nom et son e-mail sont relus
+  à chaque envoi — un changement d'adresse suit, une fiche suspendue ou sans
+  adresse est sautée ;
+- **une autre personne** : e-mail, prénom, nom, poste (facultatif).
+
+Une même adresse n'est inscrite qu'une fois (sans tenir compte de la casse,
+personnel et externes confondus). Un retrait archive la ligne. Le journal
+nomme la personne, jamais son adresse.
+
+**Quand ça part** : à chaque arrêt du plan, manuel ou automatique, et de
+nouveau après un retirage qui ajoute des commandes (« — complété » dans
+l'objet). Une réannonce, une clôture déjà dépassée par un retirage ou un
+retirage déjà dépassé n'envoient rien : le dernier tirage envoie le sien.
+
+**Ce qui part** : un e-mail par destinataire, objet « Dossier du mercredi 7
+octobre — N commandes, P pièces », le PDF joint (`dossier-du-jour-<jour>.pdf`).
+
+**Une seule fois** : l'envoi est déclenché par un fait livré « au moins une
+fois » ; une trace par (journée, instant de l'arrêt ou du retirage,
+destinataire) est prise avant d'envoyer (`production.production_dossier_dispatch`),
+et la même clé part chez Resend. ⚠️ Si la transaction est annulée après un
+envoi, seule la clé Resend (environ 24 h) évite le doublon.
+
+**En cas d'échec** : un destinataire refusé n'empêche pas les autres, et n'est
+pas retenté ; une alerte (cloche + push, `production_count_stop`) nomme qui ne
+l'a pas reçu. Journal : « Le dossier du … a été envoyé à N destinataires ».
+
 ## Où vit le code
 
 - Contenu : `apps/lfd-api/src/production/domain/services/day-dossier.ts`
@@ -76,4 +109,11 @@ Aucun prix ni total en euros : le fournil fabrique, il ne facture pas.
   (`sheetDetails`), implémenté par
   `apps/lfd-api/src/b2b/orders/infrastructure/prisma-day-orders.reader.ts`,
   rangé par `production/infrastructure/production-order-sheet.columns.ts`.
-- Écran : `apps/lfd-backoffice-frontend/src/app/production/previsionnel/dossier-du-jour/`.
+- Envoi : `application/services/dossier-dispatch.service.ts`, abonnés
+  `application/handlers/send-dossier-on-day-closed.handler.ts` et
+  `send-dossier-on-day-retaken.handler.ts`, gabarit
+  `apps/lfd-api/src/platform/mailer/production-dossier-mail.ts`.
+- Destinataires : `domain/entities/dossier-recipients.ts`, routes
+  `http/production-dossier-recipients.controller.ts`.
+- Écrans : `apps/lfd-backoffice-frontend/src/app/production/previsionnel/dossier-du-jour/`,
+  `…/production/dossier-recipients-card/`.

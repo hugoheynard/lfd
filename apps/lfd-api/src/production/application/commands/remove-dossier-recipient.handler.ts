@@ -8,7 +8,7 @@ import { DossierRecipientsRepository } from "../../domain/ports/dossier-recipien
 import { RemoveDossierRecipientCommand } from "./remove-dossier-recipient.command.js";
 
 /**
- * **Retirer un destinataire** du dossier (plan `plan-envoi-du-dossier.md`, E2).
+ * **Retirer un destinataire** du dossier (plan `dossier-prod-du-jour.md`, E2).
  *
  * 404 sur un id absent de la liste — déjà retiré compris : un retrait vise une
  * ligne précise, et l'écran doit savoir qu'il était périmé. La ligne

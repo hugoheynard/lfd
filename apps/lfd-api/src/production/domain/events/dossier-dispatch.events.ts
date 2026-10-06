@@ -1,7 +1,7 @@
 import type { JournalFact, JournaledEvent } from "../../../platform/journal/journal-fact.js";
 
 /**
- * **Le dossier du jour est parti** (plan `plan-envoi-du-dossier.md`, E3) —
+ * **Le dossier du jour est parti** (plan `dossier-prod-du-jour.md`, E3) —
  * un fait de journal par envoi qui a réellement écrit à quelqu'un. Une
  * redélivrance qui ne sert personne n'en écrit pas.
  *

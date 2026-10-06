@@ -12,7 +12,7 @@ import { AddStaffDossierRecipientCommand } from "./add-staff-dossier-recipient.c
 
 /**
  * **Inscrire une personne du personnel** aux destinataires du dossier (plan
- * `plan-envoi-du-dossier.md`, décision 4, lot E2).
+ * `dossier-prod-du-jour.md`, décision 4, lot E2).
  *
  * La fiche est lue dans l'annuaire par son port de lecture : inconnue ou
  * suspendue, la factory la refuse ; son adresse déjà inscrite, la liste la

@@ -2,7 +2,7 @@ import { sanitiseSubject, type LayoutInput, type RenderedMail } from "@lfd/maile
 
 /**
  * Les données du courriel **« Dossier du jour »** (plan
- * `documentation/production/plan-envoi-du-dossier.md`, décisions 1-2, lot E3).
+ * `documentation/production/dossier-prod-du-jour.md`, décisions 1-2, lot E3).
  * Destinataire : une personne de la liste réglée dans Production › Réglages,
  * du personnel ou non.
  *

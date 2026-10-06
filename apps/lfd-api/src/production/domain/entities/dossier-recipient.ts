@@ -52,7 +52,7 @@ export interface RecipientAuthorship {
 
 /**
  * **Un destinataire du dossier du jour** (plan
- * `documentation/production/plan-envoi-du-dossier.md`, décision 4, lot E2).
+ * `documentation/production/dossier-prod-du-jour.md`, décision 4, lot E2).
  *
  * Ses factories refusent ce qui ne pourrait pas recevoir le dossier : une
  * fiche inconnue ou suspendue, un externe sans nom, une adresse fausse. Le

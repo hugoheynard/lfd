@@ -41,7 +41,7 @@ export interface SheetContact {
 /**
  * **Ce que le bon de commande imprime, au-delà de l'étiquette** — figé à
  * l'arrêt pour que le dossier envoyé soit le même papier que l'impression de
- * l'écran (plan `documentation/production/plan-envoi-du-dossier.md`, E1b,
+ * l'écran (plan `documentation/production/dossier-prod-du-jour.md`, E1b,
  * décision de Hugo du 2026-10-06 : « fige les champs à l'arrêt »).
  *
  * Tout est déjà RÉSOLU par le commerce : l'enseigne contre la raison sociale,

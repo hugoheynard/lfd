@@ -1,6 +1,6 @@
 /**
  * E2E de **l'envoi du dossier du jour** (plan
- * `documentation/production/plan-envoi-du-dossier.md`, décision 2, lot E3).
+ * `documentation/production/dossier-prod-du-jour.md`, décision 2, lot E3).
  *
  * Ce que seul l'e2e prouve : le câblage des deux abonnés durables par la
  * boîte d'envoi réelle, la trace d'envoi dans le schéma `production`, et le

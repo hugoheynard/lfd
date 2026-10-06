@@ -26,7 +26,7 @@ import { SendDossierOnDayClosed } from "../send-dossier-on-day-closed.handler.js
 import { SendDossierOnDayRetaken } from "../send-dossier-on-day-retaken.handler.js";
 
 /**
- * **L'envoi du dossier du jour** (plan `plan-envoi-du-dossier.md`, E3), par
+ * **L'envoi du dossier du jour** (plan `dossier-prod-du-jour.md`, E3), par
  * ses deux abonnés durables. Le jour est dérivé de maintenant ; les instants
  * de clôture et de retirage ne sont que recopiés, jamais comparés à l'horloge.
  */

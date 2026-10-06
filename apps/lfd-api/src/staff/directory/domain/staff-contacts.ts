@@ -1,7 +1,7 @@
 /**
  * **Comment joindre une personne de l'annuaire** — un port de LECTURE, pour
  * les blocs qui écrivent à du personnel sans posséder l'annuaire (le dossier
- * du jour du fournil, plan `documentation/production/plan-envoi-du-dossier.md`,
+ * du jour du fournil, plan `documentation/production/dossier-prod-du-jour.md`,
  * E2).
  *
  * Un port à part de {@link StaffAuthorDirectory} (ISP) : nommer l'auteur d'un

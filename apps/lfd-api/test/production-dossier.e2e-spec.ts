@@ -1,6 +1,6 @@
 /**
  * E2E du **dossier du jour en PDF** (plan
- * `documentation/production/plan-envoi-du-dossier.md`, E1) : la route sert le
+ * `documentation/production/dossier-prod-du-jour.md`, E1) : la route sert le
  * papier d'une journée arrêtée, et refuse celui d'une journée ouverte — il se
  * lit dans ce que la journée a figé, et une journée ouverte n'a rien figé.
  */

@@ -94,7 +94,7 @@ export class PlanArrestBell {
 
   /**
    * Le dossier du jour n'a pas pu partir à certains destinataires (plan
-   * `plan-envoi-du-dossier.md`, décision 5, E3). Une alerte par ENVOI, pas
+   * `dossier-prod-du-jour.md`, décision 5, E3). Une alerte par ENVOI, pas
    * par journée : la clé porte l'instant de la clôture ou du retirage, sans
    * quoi l'échec d'un dossier complété serait avalé par celui de l'arrêt.
    */

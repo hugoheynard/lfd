@@ -22,7 +22,7 @@ const NO_CONTENT = 204;
 
 /**
  * **Production › Réglages › Destinataires du dossier du jour** (plan
- * `documentation/production/plan-envoi-du-dossier.md`, décisions 3-4, lot E2).
+ * `documentation/production/dossier-prod-du-jour.md`, décisions 3-4, lot E2).
  *
  * Sous `production_settings` : lire en `GET`, régler sinon (décision 3). Le
  * contrôleur ne juge que la FORME ; l'adresse, le nom, le doublon et la fiche

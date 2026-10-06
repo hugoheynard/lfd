@@ -35,7 +35,7 @@ interface DispatchTally {
 
 /**
  * **Envoyer le dossier du jour à sa liste** (plan
- * `documentation/production/plan-envoi-du-dossier.md`, décisions 2 et 5, E3).
+ * `documentation/production/dossier-prod-du-jour.md`, décisions 2 et 5, E3).
  *
  * Un e-mail par destinataire, PDF joint (`ProductionPapers.dossierOf` : le
  * même papier que le téléchargement, archivé par tirage).

@@ -31,7 +31,7 @@ import { PrismaStaffPermissionHolders } from "./infrastructure/prisma-staff-perm
  *
  * Depuis le 2026-10-06, deux de plus : {@link StaffContacts} et
  * {@link ReachableStaff}, l'adresse d'une personne et le personnel joignable —
- * les destinataires du dossier du jour (plan `plan-envoi-du-dossier.md`, E2).
+ * les destinataires du dossier du jour (plan `dossier-prod-du-jour.md`, E2).
  */
 @Global()
 @Module({

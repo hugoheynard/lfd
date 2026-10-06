@@ -20,7 +20,7 @@ const closeSettings = () =>
 const closedDay = () => payload({ subjectLabel: subjectLabel(), serviceDay: day() });
 
 /**
- * Un destinataire du dossier du jour (plan `plan-envoi-du-dossier.md`, E2),
+ * Un destinataire du dossier du jour (plan `dossier-prod-du-jour.md`, E2),
  * nommé « Prénom Nom » au moment du geste. Son adresse n'y est PAS : le
  * journal n'écrit aucun e-mail (`closure.spec.ts`). `staffUserId` dit si
  * c'était une fiche du personnel.
@@ -46,7 +46,7 @@ export const PRODUCTION_SETTINGS_FACTS = {
   /** Elle ne le recevra plus. */
   "production_dossier_recipient.removed": fact(dossierRecipient()),
   /**
-   * Le dossier du jour est parti (plan `plan-envoi-du-dossier.md`, E3) : à la
+   * Le dossier du jour est parti (plan `dossier-prod-du-jour.md`, E3) : à la
    * clôture, ou complété après un retirage. Des comptes seulement — aucune
    * adresse ni aucun nom de destinataire : les échecs se nomment dans la
    * cloche, pas au journal. L'auteur est le système.

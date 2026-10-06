@@ -14,7 +14,7 @@ export interface DossierRecipientRemoval {
 
 /**
  * **La liste des destinataires du dossier du jour** (plan
- * `documentation/production/plan-envoi-du-dossier.md`, décisions 3-4, lot E2).
+ * `documentation/production/dossier-prod-du-jour.md`, décisions 3-4, lot E2).
  *
  * Son invariant : **une adresse ne figure qu'une fois**, quelle que soit la
  * forme sous laquelle elle est entrée — deux externes, une fiche deux fois, ou

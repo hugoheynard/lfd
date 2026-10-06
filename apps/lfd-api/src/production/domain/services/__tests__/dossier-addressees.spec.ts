@@ -2,7 +2,7 @@ import type { DossierStaffCard } from "../../entities/dossier-recipient.js";
 import type { StoredDossierRecipient } from "../../ports/dossier-recipients.reader.js";
 import { dossierAddresseesOf, dossierCountsOf } from "../dossier-addressees.js";
 
-/** **À qui part le dossier** (plan `plan-envoi-du-dossier.md`, E3). */
+/** **À qui part le dossier** (plan `dossier-prod-du-jour.md`, E3). */
 
 function card(overrides: Partial<DossierStaffCard> = {}): DossierStaffCard {
   return {

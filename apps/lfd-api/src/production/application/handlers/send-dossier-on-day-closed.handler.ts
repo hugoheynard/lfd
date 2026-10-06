@@ -18,7 +18,7 @@ export const SEND_DOSSIER_ON_DAY_CLOSED = "production.send-dossier-on-close";
 
 /**
  * **Le plan est arrêté : le dossier du jour part** (plan
- * `documentation/production/plan-envoi-du-dossier.md`, décision 2, E3) — à
+ * `documentation/production/dossier-prod-du-jour.md`, décision 2, E3) — à
  * chaque arrêt, manuel ou automatique, les deux publiant `production.day_closed`.
  *
  * Abonné DURABLE dans le bloc qui publie : `lint:durable-cross-block` ne vise

@@ -51,7 +51,7 @@ const closedDay =
 
 /**
  * « a ajouté Jeanne Martin aux destinataires du dossier du jour » (plan
- * `plan-envoi-du-dossier.md`, E2). Le fait ne porte pas l'adresse : le journal
+ * `dossier-prod-du-jour.md`, E2). Le fait ne porte pas l'adresse : le journal
  * n'écrit aucun e-mail.
  */
 const dossierRecipient =
@@ -65,7 +65,7 @@ const dossierRecipient =
 
 /**
  * « Le dossier du 7 octobre 2026 a été envoyé à 2 destinataires (1 échec) »
- * (plan `plan-envoi-du-dossier.md`, E3). L'auteur est le système : la phrase
+ * (plan `dossier-prod-du-jour.md`, E3). L'auteur est le système : la phrase
  * dit le geste, sans nom. Ni adresse ni nom de destinataire — la cloche
  * nomme les échecs.
  */

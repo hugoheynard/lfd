@@ -26,7 +26,7 @@ import {
 /**
  * **Le dossier du jour, en PDF** — le récapitulatif, puis un bon par commande,
  * en UN fichier : c'est le paquet qui part au fournil (plan
- * `documentation/production/plan-envoi-du-dossier.md`, E1).
+ * `documentation/production/dossier-prod-du-jour.md`, E1).
  *
  * Même mise en page que la feuille d'atelier et le compte à produire, dont il
  * partage la trousse (`paper-pdf-kit.ts`). Comme l'écran : le lot est
