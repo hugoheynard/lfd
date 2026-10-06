@@ -47,6 +47,7 @@ function order(orderId: string): ProducibleOrder {
     fulfillmentMethod: "pickup",
     destination: "Le Labo",
     dueAt: null,
+    sheetDetails: null,
     lines: [{ sku: "VIE-001", productName: "Croissant", quantity: 4 }],
   };
 }

@@ -38,6 +38,7 @@ const ORDER: ProducibleOrder = {
   fulfillmentMethod: "pickup",
   destination: "Le Labo",
   dueAt: null,
+  sheetDetails: null,
   lines: [{ sku: SKU, productName: "Pain de seigle", quantity: 30 }],
 };
 

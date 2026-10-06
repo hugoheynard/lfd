@@ -1,3 +1,4 @@
+import type { OrderSheetDetails } from "../../channels/commerce/day-orders.reader.js";
 import type { PackingOwner } from "../value-objects/packing-owner.js";
 
 /**
@@ -58,6 +59,11 @@ export interface ProductionOrderSnapshot {
    */
   readonly dueAt: string | null;
   readonly lines: readonly ProductionLineSnapshot[];
+  /**
+   * Le reste du bon, figé à l'arrêt (E1b, 2026-10-06). `null` = commande
+   * figée avant le lot : le dossier omet alors ces lignes.
+   */
+  readonly sheetDetails: OrderSheetDetails | null;
 }
 
 /**

@@ -11,6 +11,7 @@ import {
   WIDTH,
   drawQr,
   longDate,
+  parisDate,
   methodLabel,
   put,
   putCaps,
@@ -106,15 +107,9 @@ export function renderAtelierSheetPdf(
       put(doc, order.reference, LEFT + size + 6 * MM, y + 20 * MM, { size: 10 });
     }
 
-    put(
-      doc,
-      `Journée arrêtée le ${longDate(closedAt.toISOString())}`,
-      LEFT,
-      PAGE_HEIGHT - MARGIN_Y,
-      {
-        size: 9,
-      },
-    );
+    put(doc, `Journée arrêtée le ${parisDate(closedAt)}`, LEFT, PAGE_HEIGHT - MARGIN_Y, {
+      size: 9,
+    });
     putRight(doc, "La Folie Coffee — fournil", RIGHT, PAGE_HEIGHT - MARGIN_Y, 9);
   });
 }
@@ -156,7 +151,7 @@ export function renderProductionCountPdf(
 
     put(
       doc,
-      `Arrêté le ${longDate(closedAt.toISOString())} — il ne se recalcule pas.`,
+      `Arrêté le ${parisDate(closedAt)} — il ne se recalcule pas.`,
       LEFT,
       PAGE_HEIGHT - MARGIN_Y,
       {

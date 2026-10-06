@@ -22,11 +22,74 @@ function order(reference: string, quantity: number): ProductionOrderSnapshot {
     fulfillmentMethod: "delivery",
     destination: "3 rue du Four",
     dueAt: "07:30",
+    sheetDetails: null,
     lines: [{ sku: "VIE-001", productName: "Croissant", quantity }],
   };
 }
 
 const DOSSIER = dayDossierOf([order("LFC-0002", 4), order("LFC-0001", 6)], new Map());
+
+const STAMP = { serviceDay: DAY, closedAt: CLOSED, retakenAt: null };
+
+describe("renderDayDossierPdf — le bon figé à l'arrêt (E1b)", () => {
+  it("imprime l'enseigne, la raison sociale, l'adresse, la fenêtre, le contact, la signature, l'origine et la note", async () => {
+    const frozen: ProductionOrderSnapshot = {
+      ...order("LFC-0001", 6),
+      sheetDetails: {
+        tradeName: "Hôtel des Trois Ponts",
+        legalName: "SAS Trois Ponts",
+        pickupLabel: null,
+        address: { line1: "3 rue du Four", line2: "", postalCode: "73150", city: "Val d'Isère" },
+        window: { start: "07:00", end: "08:30" },
+        contact: { source: "order", name: "Léa Martin", phone: "0600000000" },
+        signatureRequired: true,
+        note: "Sonner deux fois",
+        recurring: true,
+      },
+    };
+    const pages = pdfPages(
+      await renderDayDossierPdf(dayDossierOf([frozen], new Map()), STAMP, () => ""),
+    );
+    const sheet = pages[1] ?? "";
+    for (const text of [
+      "Hôtel des Trois Ponts",
+      "SAS Trois Ponts",
+      "3 rue du Four",
+      "73150 Val d'Isère",
+      // Le tiret de la fenêtre n'est pas relu par `pdf-text` (hors ASCII, comme
+      // celui du pied) : les deux bornes suffisent.
+      "7 h 00",
+      "8 h 30",
+      "Léa Martin · 0600000000",
+      "Signature exigée à la remise",
+      "Panier récurrent",
+      "NOTE DU CLIENT",
+      "Sonner deux fois",
+    ]) {
+      expect(sheet).toContain(text);
+    }
+  });
+
+  it("une journée arrêtée avant le lot garde le rendu d'avant, sans « undefined » ni « null »", async () => {
+    const pages = pdfPages(await renderDayDossierPdf(DOSSIER, STAMP, () => ""));
+    expect(pages[1]).toContain("Client LFC-0001");
+    expect(pages[1]).toContain("3 rue du Four");
+    expect(pages[1]).not.toContain("NOTE DU CLIENT");
+    expect(pages.join("")).not.toMatch(/undefined|null/);
+  });
+
+  /**
+   * Régression : le pied formatait la clôture en UTC — un arrêt à 0 h 30 heure
+   * de Paris imprimait « Arrêté le » de la veille (2026-10-06).
+   */
+  it("date le pied à l'heure de Paris, pas en UTC", async () => {
+    const lateNight = new Date("2026-10-07T22:30:00.000Z");
+    const pages = pdfPages(
+      await renderDayDossierPdf(DOSSIER, { ...STAMP, closedAt: lateNight }, () => ""),
+    );
+    expect(pages[0]).toContain("Arrêté le 8 octobre 2026 à 00:30");
+  });
+});
 
 describe("renderDayDossierPdf", () => {
   it("sort le récapitulatif d'abord, puis un bon par commande, numérotés dans l'ordre", async () => {
@@ -86,11 +149,18 @@ describe("renderDayDossierPdf", () => {
   });
 });
 
+describe("dayDossierPdfKey — la version de mise en page", () => {
+  it("n'est plus la clé d'avant E1b : un dossier archivé à l'ancien papier n'est jamais resservi", () => {
+    expect(dayDossierPdfKey(DAY, null)).not.toBe(`${DAY}/dossier-du-jour.pdf`);
+    expect(dayDossierPdfKey(DAY, RETAKEN)).toContain("-v2-retirage-");
+  });
+});
+
 describe("dayDossierPdfKey", () => {
   it("une clé pour la clôture, une autre par retirage : le complément n'écrase pas l'original", () => {
     const original = dayDossierPdfKey(DAY, null);
     const completed = dayDossierPdfKey(DAY, RETAKEN);
-    expect(original).toBe(`${DAY}/dossier-du-jour.pdf`);
+    expect(original).toBe(`${DAY}/dossier-du-jour-v2.pdf`);
     expect(completed).not.toBe(original);
     expect(completed.startsWith(`${DAY}/`)).toBe(true);
   });

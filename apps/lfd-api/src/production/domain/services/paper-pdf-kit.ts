@@ -1,5 +1,6 @@
 import { Buffer } from "node:buffer";
 
+import { instantToLocal } from "@lfd/contracts";
 import PDFDocument from "pdfkit";
 import QRCode from "qrcode-generator";
 
@@ -52,6 +53,24 @@ export function longDate(iso: string): string {
     return iso.slice(0, 10);
   }
   return `${String(Number(day))} ${name} ${year}`;
+}
+
+/**
+ * Un INSTANT → « 6 octobre 2026 », **à l'heure de Paris**.
+ *
+ * Régression (2026-10-06) : les pieds « Arrêté le … » passaient
+ * `closedAt.toISOString()` à `longDate`, c'est-à-dire le jour UTC — une
+ * clôture faite après 22 h (été) ou 23 h (hiver) heure de Paris imprimait la
+ * veille. `longDate` ne prend qu'un JOUR ; un instant passe par ici.
+ */
+export function parisDate(instant: Date): string {
+  return longDate(instantToLocal(instant).day);
+}
+
+/** Un instant → « 6 octobre 2026 à 23:15 », à l'heure de Paris. */
+export function parisDateTime(instant: Date): string {
+  const local = instantToLocal(instant);
+  return `${longDate(local.day)} à ${local.time}`;
 }
 
 export function put(

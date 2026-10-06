@@ -2,7 +2,10 @@ import {
   ProductionDayAlreadyClosedError,
   ProductionDayEmptyError,
 } from "../../errors/production-errors.js";
-import type { ProducibleOrder } from "../../../channels/commerce/day-orders.reader.js";
+import type {
+  OrderSheetDetails,
+  ProducibleOrder,
+} from "../../../channels/commerce/day-orders.reader.js";
 import { ServiceDay } from "../../value-objects/service-day.value-object.js";
 import { ProductionDay } from "../production-day.js";
 
@@ -22,10 +25,23 @@ function order(overrides: Partial<ProducibleOrder> = {}): ProducibleOrder {
     fulfillmentMethod: "pickup",
     destination: "Le Labo",
     dueAt: null,
+    sheetDetails: null,
     lines: [{ sku: "VIE-001", productName: "Croissant", quantity: 40 }],
     ...overrides,
   };
 }
+
+const DETAILS: OrderSheetDetails = {
+  tradeName: "Hôtel des Trois Ponts",
+  legalName: "SAS Trois Ponts",
+  pickupLabel: null,
+  address: { line1: "3 rue du Four", line2: "", postalCode: "73150", city: "Val d'Isère" },
+  window: { start: "07:00", end: "08:00" },
+  contact: { source: "order", name: "Léa Martin", phone: "0600000000" },
+  signatureRequired: true,
+  note: "Sonner deux fois",
+  recurring: true,
+};
 
 function opened(): ProductionDay {
   return ProductionDay.open(ServiceDay.of("2026-09-08"));
@@ -188,6 +204,27 @@ describe("la journée et le colisage (plan colisage, K1)", () => {
     day.retake([order(), order({ orderId: "ord_2", dueAt: "09:00" })], LATER, "staff-1");
 
     expect(day.orders.map((sheet) => sheet.dueAt)).toEqual([null, "09:00"]);
+  });
+
+  it("la clôture fige le reste du bon, tel que le commerce l'a résolu (E1b)", () => {
+    const day = opened();
+
+    day.close([order({ sheetDetails: DETAILS })], AT);
+
+    expect(day.orders[0]?.sheetDetails).toEqual(DETAILS);
+  });
+
+  it("le retirage fige le bon des commandes qu'il absorbe, et laisse celui des autres", () => {
+    const day = opened();
+    day.close([order()], AT);
+
+    day.retake(
+      [order({ sheetDetails: DETAILS }), order({ orderId: "ord_2", sheetDetails: DETAILS })],
+      LATER,
+      "staff-1",
+    );
+
+    expect(day.orders.map((sheet) => sheet.sheetDetails)).toEqual([null, DETAILS]);
   });
 
   it("le propriétaire survit à l'aller-retour par l'instantané", () => {

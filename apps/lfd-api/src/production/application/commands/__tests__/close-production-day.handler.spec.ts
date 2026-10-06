@@ -32,6 +32,7 @@ function order(overrides: Partial<ProducibleOrder> = {}): ProducibleOrder {
     fulfillmentMethod: "pickup",
     destination: "Le Labo",
     dueAt: null,
+    sheetDetails: null,
     lines: [{ sku: "VIE-001", productName: "Croissant", quantity: 40 }],
     ...overrides,
   };

@@ -5,6 +5,7 @@ import { ProductionDay } from "../domain/entities/production-day.js";
 import { ProductionDayRepository } from "../domain/ports/production-day.repository.js";
 import type { ServiceDay } from "../domain/value-objects/service-day.value-object.js";
 import { BATCH_COLUMNS, batchOf, returnsByBatch } from "./prisma-production-batch.repository.js";
+import { SHEET_COLUMNS, sheetDetailsOf, sheetRowOf } from "./production-order-sheet.columns.js";
 
 /**
  * L'adaptateur Prisma de la journée de production.
@@ -46,6 +47,7 @@ export class PrismaProductionDayRepository extends ProductionDayRepository {
             fulfillmentMethod: true,
             destination: true,
             dueAt: true,
+            ...SHEET_COLUMNS,
             lines: { select: { sku: true, productName: true, quantity: true } },
           },
         },
@@ -99,6 +101,7 @@ export class PrismaProductionDayRepository extends ProductionDayRepository {
           productName: line.productName,
           quantity: line.quantity,
         })),
+        sheetDetails: sheetDetailsOf(order),
       })),
       counts: row.counts.map((count) => ({
         sku: count.sku,
@@ -181,6 +184,7 @@ export class PrismaProductionDayRepository extends ProductionDayRepository {
             fulfillmentMethod: order.fulfillmentMethod,
             destination: order.destination,
             dueAt: order.dueAt,
+            ...sheetRowOf(order.sheetDetails),
             ...carried.orders.get(order.orderId),
             lines: {
               create: order.lines.map((line) => ({

@@ -15,7 +15,15 @@
  * nom, ce qui rendait la frontière illisible : le commerce importait « la
  * production » pour parler au retrait.
  */
-export { DayOrdersReader, type ProducibleLine, type ProducibleOrder } from "./day-orders.reader.js";
+export {
+  DayOrdersReader,
+  type OrderSheetDetails,
+  type ProducibleLine,
+  type ProducibleOrder,
+  type SheetAddress,
+  type SheetContact,
+  type SheetWindow,
+} from "./day-orders.reader.js";
 export { ServiceDay } from "../../domain/value-objects/service-day.value-object.js";
 export { ServiceRange } from "../../domain/value-objects/service-range.value-object.js";
 export {

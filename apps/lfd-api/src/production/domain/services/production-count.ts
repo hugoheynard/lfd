@@ -35,6 +35,7 @@ export function freezeOrder(order: ProducibleOrder): ProductionOrderSnapshot {
       productName: line.productName,
       quantity: line.quantity,
     })),
+    sheetDetails: order.sheetDetails,
   };
 }
 
@@ -131,6 +132,7 @@ export function absorbArrivals(
         destination: order.destination,
         dueAt: order.dueAt,
         lines: order.lines,
+        sheetDetails: order.sheetDetails,
       })),
     ),
     count: arrivals.length,

@@ -92,6 +92,29 @@ model ProductionOrder {
   /// alors en DERNIER dans l'attribution du colisable.
   dueAt String? @map("due_at") @db.VarChar(5)
 
+  /// **Le reste du bon, figé à l'arrêt** (plan `production/plan-envoi-du-
+  /// dossier.md`, E1b, 2026-10-06) : ce que le dossier du jour imprime au-delà
+  /// de l'étiquette. Résolu par le commerce, recopié tel quel.
+  ///
+  /// Tout nullable : une commande figée avant le lot ne les porte pas.
+  /// `legal_name` fait foi — non nul, le bloc est présent.
+  tradeName         String?  @map("trade_name")
+  legalName         String?  @map("legal_name")
+  pickupLabel       String?  @map("pickup_label")
+  addressLine1      String?  @map("address_line1")
+  addressLine2      String?  @map("address_line2")
+  addressPostalCode String?  @map("address_postal_code")
+  addressCity       String?  @map("address_city")
+  windowStart       String?  @map("window_start") @db.VarChar(5)
+  windowEnd         String?  @map("window_end") @db.VarChar(5)
+  /// `order` (convenu sur la commande) ou `holder` (détenteur du compte).
+  contactSource     String?  @map("contact_source")
+  contactName       String?  @map("contact_name")
+  contactPhone      String?  @map("contact_phone")
+  signatureRequired Boolean? @map("signature_required")
+  note              String?
+  recurring         Boolean?
+
   /// Le COLISAGE, tel que le fournil le constate. `null` = pas encore fermé.
   ///
   /// C'est le fait de la PRODUCTION : le bac est fait. Le commerce en tire le

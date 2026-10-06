@@ -25,6 +25,7 @@ function sheet(orderId: string): ProductionOrderSnapshot {
     fulfillmentMethod: "pickup",
     destination: "Le Labo",
     dueAt: null,
+    sheetDetails: null,
     lines: [],
   };
 }

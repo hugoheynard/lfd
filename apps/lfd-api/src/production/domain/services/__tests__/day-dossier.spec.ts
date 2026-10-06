@@ -26,6 +26,7 @@ function order(
     fulfillmentMethod: "pickup",
     destination: "Boutique",
     dueAt: null,
+    sheetDetails: null,
     lines: lines.map(([sku, productName, quantity]) => ({ sku, productName, quantity })),
   };
 }

@@ -14,6 +14,62 @@ export interface ProducibleLine {
   readonly quantity: number;
 }
 
+/** L'adresse d'acheminement, en champs postaux — de quoi l'écrire en lignes. */
+export interface SheetAddress {
+  readonly line1: string;
+  readonly line2: string;
+  readonly postalCode: string;
+  readonly city: string;
+}
+
+/** La fenêtre convenue, `HH:mm`. `start: null` = « avant `end` ». */
+export interface SheetWindow {
+  readonly start: string | null;
+  readonly end: string;
+}
+
+/**
+ * Qui appeler en livrant. `holder` = le détenteur du compte, repli quand rien
+ * n'a été convenu sur la commande ; `phone` peut être vide.
+ */
+export interface SheetContact {
+  readonly source: "order" | "holder";
+  readonly name: string;
+  readonly phone: string;
+}
+
+/**
+ * **Ce que le bon de commande imprime, au-delà de l'étiquette** — figé à
+ * l'arrêt pour que le dossier envoyé soit le même papier que l'impression de
+ * l'écran (plan `documentation/production/plan-envoi-du-dossier.md`, E1b,
+ * décision de Hugo du 2026-10-06 : « fige les champs à l'arrêt »).
+ *
+ * Tout est déjà RÉSOLU par le commerce : l'enseigne contre la raison sociale,
+ * le contact contre le détenteur, le point nommé. Le fournil met en page, il
+ * ne choisit rien. Aucun montant, comme le reste du port.
+ *
+ * Le numéro de révision n'y est pas : le commerce le vaut `0` sur toute
+ * commande, le mécanisme d'avenant n'existe pas (vérifié le 2026-10-06 dans
+ * `order-sheet.ts`, `REVISION_WITHOUT_AMENDMENTS`).
+ */
+export interface OrderSheetDetails {
+  /** L'enseigne, `""` sans enseigne. */
+  readonly tradeName: string;
+  /** La raison sociale — ou la personne, sur une commande sans société. */
+  readonly legalName: string;
+  /** Le point de retrait NOMMÉ, quand c'en est un. */
+  readonly pickupLabel: string | null;
+  /** L'adresse qui correspond au mode, `null` si la commande n'en a figé aucune. */
+  readonly address: SheetAddress | null;
+  readonly window: SheetWindow | null;
+  readonly contact: SheetContact | null;
+  readonly signatureRequired: boolean;
+  /** La note du client, `""` sans note. */
+  readonly note: string;
+  /** Passée par un abonnement — la seule origine qui apprend quelque chose au fournil. */
+  readonly recurring: boolean;
+}
+
 /**
  * Une commande d'une journée, vue de la production.
  *
@@ -44,6 +100,11 @@ export interface ProducibleOrder {
    */
   readonly dueAt: string | null;
   readonly lines: readonly ProducibleLine[];
+  /**
+   * Le reste du bon (E1b). Toujours rempli par le commerce ; `null` ne se
+   * rencontre que sur une commande figée avant le lot, relue de la base.
+   */
+  readonly sheetDetails: OrderSheetDetails | null;
 }
 
 /**

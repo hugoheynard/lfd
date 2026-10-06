@@ -42,6 +42,7 @@ const ORDER: ProducibleOrder = {
   fulfillmentMethod: "pickup",
   destination: "Le Labo",
   dueAt: null,
+  sheetDetails: null,
   lines: [{ sku: SKU, productName: "Croissant", quantity: 30 }],
 };
 

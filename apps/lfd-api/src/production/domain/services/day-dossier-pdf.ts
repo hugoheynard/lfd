@@ -2,6 +2,7 @@ import type { Buffer } from "node:buffer";
 
 import type { ProductionOrderSnapshot } from "../entities/production-day.js";
 import type { DayDossier, DossierRecapGroup } from "./day-dossier.js";
+import { dossierSheetHeadOf, type DossierSheetHead } from "./dossier-sheet-head.js";
 import {
   LEFT,
   MARGIN_Y,
@@ -13,6 +14,7 @@ import {
   drawQr,
   longDate,
   methodLabel,
+  parisDateTime,
   put,
   putCaps,
   putRight,
@@ -76,12 +78,21 @@ export function renderDayDossierPdf(
  * La clé d'archive. **Une par tirage arrêté** : la clôture, puis chaque
  * retirage, dont l'instant entre dans le nom — le dossier complété ne
  * remplace pas celui qui est parti avant lui, il s'y ajoute.
+ *
+ * `v2` (E1b, 2026-10-06) : le bon porte désormais ce que la journée a figé
+ * au-delà de l'étiquette, et le pied l'heure de Paris. Un dossier archivé sous
+ * l'ancienne clé dirait encore le papier d'avant ; changer la clé le laisse en
+ * place, sans jamais le resservir. Toute mise en page qui change ce qu'un
+ * dossier déjà archivé dirait monte cette version.
  */
+export const DOSSIER_LAYOUT_VERSION = "v2";
+
 export function dayDossierPdfKey(serviceDay: string, retakenAt: Date | null): string {
+  const base = `${serviceDay}/dossier-du-jour-${DOSSIER_LAYOUT_VERSION}`;
   if (retakenAt === null) {
-    return `${serviceDay}/dossier-du-jour.pdf`;
+    return `${base}.pdf`;
   }
-  return `${serviceDay}/dossier-du-jour-retirage-${retakenAt.toISOString().replace(/[:.]/g, "-")}.pdf`;
+  return `${base}-retirage-${retakenAt.toISOString().replace(/[:.]/g, "-")}.pdf`;
 }
 
 function plural(count: number, word: string): string {
@@ -143,15 +154,8 @@ function drawSheet(
     LEFT,
     y,
   );
-  y += 5 * MM;
-  put(doc, order.customerLabel, LEFT, y, { size: 16, bold: true, width: WIDTH - 40 * MM });
-  putRight(doc, methodLabel(order.fulfillmentMethod).toUpperCase(), RIGHT, y + 1, 12, true);
-  y += 8 * MM;
-  put(doc, order.reference, LEFT, y, { size: 12, bold: true });
-  putRight(doc, order.dueAt === null ? "Sans heure convenue" : `Pour ${order.dueAt}`, RIGHT, y, 11);
-  y += 5.5 * MM;
-  put(doc, order.destination, LEFT, y, { size: 11, width: WIDTH });
-  y += 8 * MM;
+  const head = dossierSheetHeadOf(order);
+  y = drawHead(doc, order, head, y + 5 * MM);
   rule(doc, y, 2);
   const pieces = order.lines.reduce((sum, line) => sum + line.quantity, 0);
   y += 5 * MM;
@@ -174,7 +178,53 @@ function drawSheet(
     rule(doc, y, 0.6, ROW_GRAY);
     y += 3 * MM;
   }
-  return y + 4 * MM;
+  return drawNote(doc, head.note, y + 4 * MM, stamp);
+}
+
+/** Qui, la référence et l'heure, puis les mentions ; rend le `y` du trait. */
+function drawHead(
+  doc: Doc,
+  order: ProductionOrderSnapshot,
+  head: DossierSheetHead,
+  top: number,
+): number {
+  let y = top;
+  put(doc, head.title, LEFT, y, { size: 16, bold: true, width: WIDTH - 40 * MM });
+  putRight(doc, methodLabel(order.fulfillmentMethod).toUpperCase(), RIGHT, y + 1, 12, true);
+  y += 8 * MM;
+  if (head.subtitle !== null) {
+    // La raison sociale sous l'enseigne : elle lève l'ambiguïté entre deux
+    // devantures voisines.
+    put(doc, head.subtitle, LEFT, y - 1.5 * MM, { size: 11 });
+    y += 5 * MM;
+  }
+  put(doc, order.reference, LEFT, y, { size: 12, bold: true });
+  putRight(doc, head.when, RIGHT, y, 11);
+  return drawMentions(doc, head, y + 5.5 * MM) + 2.5 * MM;
+}
+
+/** Où, puis ce que le livreur doit savoir avant de sonner — une ligne par mention. */
+function drawMentions(doc: Doc, head: DossierSheetHead, top: number): number {
+  let y = top;
+  const mentions = [...head.where, head.contact, head.signature, head.origin];
+  for (const mention of mentions) {
+    if (mention !== null) {
+      put(doc, mention, LEFT, y, { size: 11, width: WIDTH });
+      y += 5 * MM;
+    }
+  }
+  return y;
+}
+
+/** La note du client, sous les lignes — comme sur la fiche de l'écran. */
+function drawNote(doc: Doc, note: string | null, top: number, stamp: DossierStamp): number {
+  if (note === null) {
+    return top;
+  }
+  const y = room(doc, top, 16 * MM, stamp);
+  putCaps(doc, "NOTE DU CLIENT", LEFT, y);
+  put(doc, note, LEFT, y + 5 * MM, { size: 11, width: WIDTH });
+  return y + 5 * MM + doc.heightOfString(note, { width: WIDTH }) + 4 * MM;
 }
 
 /** Le QR de colisage, en bas du bon — il encode un NOM, déjà écrit en clair. */
@@ -199,11 +249,11 @@ function room(doc: Doc, y: number, needed: number, stamp: DossierStamp): number 
 
 /** Le pied : quand le tirage a été arrêté — et complété, après un retirage. */
 function footer(doc: Doc, stamp: DossierStamp): void {
-  const arrested = `Arrêté le ${longDate(stamp.closedAt.toISOString())}`;
+  const arrested = `Arrêté le ${parisDateTime(stamp.closedAt)}`;
   const text =
     stamp.retakenAt === null
       ? arrested
-      : `${arrested} — complété le ${longDate(stamp.retakenAt.toISOString())}`;
+      : `${arrested} — complété le ${parisDateTime(stamp.retakenAt)}`;
   put(doc, text, LEFT, PAGE_HEIGHT - MARGIN_Y, { size: 9 });
   putRight(doc, "La Folie Coffee — fournil", RIGHT, PAGE_HEIGHT - MARGIN_Y, 9);
 }
