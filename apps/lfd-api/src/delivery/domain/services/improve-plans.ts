@@ -1,4 +1,5 @@
 import { type CapacityGuard, NO_CAPACITY_LIMIT } from "./capacity-guard.js";
+import { bestCase, type CostFloor, costFloorOf } from "./cost-floor.js";
 import type { PlanningContext } from "./proposal.js";
 import { type MoveScope, nearnessOf } from "./move-scope.js";
 import { intraRouteMoves, type Move, relocations, swaps, tailExchanges } from "./route-moves.js";
@@ -19,32 +20,18 @@ import {
  */
 const MAX_MOVES = 400;
 
-type ScoreFn = (routes: Routes, start: VehicleStart) => VehicleScore;
-
 /**
  * Le score d'un véhicule ne dépend que de son départ et de la suite de ses
- * arrêts (`ctx` est fixe pendant tout le calcul). Les mêmes configurations
- * reviennent d'un tour à l'autre — chaque tour rouvre les paires dont un
- * véhicule a changé, et réessaie les mêmes gestes sur l'autre — : les noter
- * une fois. Mesuré le 2026-10-04 : depuis le départ à rebours (CA2),
- * `scoreVehicle` faisait 90 % du temps du calcul, et la CI passait la borne
- * de L7b-C2.
+ * arrêts (`ctx` est fixe pendant tout le calcul).
+ *
+ * Il n'est plus mis en mémoire (composition-automatique.md §5, 2026-10-06) :
+ * la clé — les identifiants de tous les arrêts du véhicule, mis bout à bout —
+ * coûtait plus cher à fabriquer que le score qu'elle épargnait. Mesuré sur la
+ * graine 9 du banc à 200 clients : 43 % de réussites, et 6,6 s → 5,7 s sans
+ * la mémoire. Le minorant (`costFloorOf`) écarte d'abord ce qui ne peut pas
+ * améliorer, sans chronométrer.
  */
-function memoizedScore(ctx: PlanningContext): ScoreFn {
-  const known = new Map<string, VehicleScore>();
-  return (routes, start) => {
-    const key = `${start.availableFrom}/${start.passagesBefore}/${routes
-      .map(({ stops }) => stops.map((stop) => stop.id).join(","))
-      .join("|")}`;
-    const cached = known.get(key);
-    if (cached !== undefined) {
-      return cached;
-    }
-    const scored = scoreVehicle(ctx, routes, start);
-    known.set(key, scored);
-    return scored;
-  };
-}
+type ScoreFn = (routes: Routes, start: VehicleStart) => VehicleScore;
 
 /** Les voisinages, du moins cher au plus large. */
 const NEIGHBOURHOODS = [intraRouteMoves, relocations, swaps, tailExchanges] as const;
@@ -76,7 +63,8 @@ export function improvePlans(
   guard: CapacityGuard = NO_CAPACITY_LIMIT,
 ): readonly VehiclePlan[] {
   const current = [...plans];
-  const score = memoizedScore(ctx);
+  const score: ScoreFn = (routes, start) => scoreVehicle(ctx, routes, start);
+  const floor = costFloorOf(ctx);
   const scores = current.map((plan) => score(plan.routes, plan));
   const clean = new WeakMap<Routes, WeakSet<Routes>>();
   const near = nearnessOf(ctx, current);
@@ -93,7 +81,7 @@ export function improvePlans(
       const members = a === b ? [a] : [a, b];
       const scope = { pinned, crossOnly: a !== b, near };
       const found = firstImprovement(
-        { score, guard, free: freeStart(ctx) },
+        { score, floor, guard, free: freeStart(ctx) },
         members,
         current,
         scores,
@@ -130,13 +118,14 @@ interface Found {
 /** Ce que la recherche d'un geste lit, fixe pendant tout le calcul. */
 interface Search {
   readonly score: ScoreFn;
+  readonly floor: CostFloor;
   readonly guard: CapacityGuard;
   readonly free: VehicleStart;
 }
 
 /** Le premier geste qui améliore ET tient dans les caisses, parmi les véhicules `members`. */
 function firstImprovement(
-  { score, guard, free }: Search,
+  { score, floor, guard, free }: Search,
   members: readonly number[],
   plans: readonly VehiclePlan[],
   scores: readonly VehicleScore[],
@@ -146,10 +135,18 @@ function firstImprovement(
   const subScores = members.flatMap((index) => scores[index] ?? []);
   for (const neighbourhood of NEIGHBOURHOODS) {
     for (const move of neighbourhood(sub, scope)) {
+      const before = totalOf(move.map(({ vehicle }) => subScores[vehicle]));
+      // Écarté sans chronométrer : même son meilleur cas n'améliore pas (`bestCase`).
+      const lowest = move.reduce(
+        (total, { vehicle, routes }) => total + floor(routes, sub[vehicle] ?? free),
+        0,
+      );
+      if (!isBetterScore(bestCase(lowest), before)) {
+        continue;
+      }
       const after = move.map(({ vehicle, routes }) => score(routes, sub[vehicle] ?? free));
-      const before = move.map(({ vehicle }) => subScores[vehicle]);
       if (
-        improves(before, after) &&
+        isBetterScore(totalOf(after), before) &&
         move.every(({ vehicle, routes }) => {
           const plan = sub[vehicle];
           return plan === undefined || guard.fits(plan.vehicle.id, routes);
@@ -180,15 +177,9 @@ function apply(
   });
 }
 
-function improves(
-  before: readonly (VehicleScore | undefined)[],
-  after: readonly VehicleScore[],
-): boolean {
-  const sum = (list: readonly (VehicleScore | undefined)[], key: keyof VehicleScore): number =>
+/** La somme des scores d'un geste, dans l'ordre de ses véhicules. */
+function totalOf(list: readonly (VehicleScore | undefined)[]): VehicleScore {
+  const sum = (key: keyof VehicleScore): number =>
     list.reduce((total, score) => total + (score?.[key] ?? 0), 0);
-  const total = (list: readonly (VehicleScore | undefined)[]) => ({
-    lateSeconds: sum(list, "lateSeconds"),
-    cost: sum(list, "cost"),
-  });
-  return isBetterScore(total(after), total(before));
+  return { lateSeconds: sum("lateSeconds"), cost: sum("cost") };
 }

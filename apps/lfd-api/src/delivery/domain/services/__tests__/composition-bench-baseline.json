@@ -1,0 +1,282 @@
+[
+  {
+    "complete": {
+      "late": 0,
+      "cost": 210285,
+      "unplaced": 6,
+      "print": "0aac30f8fdf6"
+    },
+    "insert": {
+      "late": 0,
+      "cost": 114634,
+      "unplaced": 6,
+      "print": "495a19ca4b32"
+    }
+  },
+  {
+    "complete": {
+      "late": 0,
+      "cost": 213538,
+      "unplaced": 1,
+      "print": "b96701cadc9c"
+    },
+    "insert": {
+      "late": 0,
+      "cost": 128538,
+      "unplaced": 1,
+      "print": "62db436933c1"
+    }
+  },
+  {
+    "complete": {
+      "late": 0,
+      "cost": 221425,
+      "unplaced": 0,
+      "print": "5ecb4ba29c70"
+    },
+    "insert": {
+      "late": 0,
+      "cost": 221273,
+      "unplaced": 0,
+      "print": "4e42b902673d"
+    }
+  },
+  {
+    "complete": {
+      "late": 0,
+      "cost": 205591,
+      "unplaced": 22,
+      "print": "c0cfeb00c7a2"
+    },
+    "insert": {
+      "late": 0,
+      "cost": 0,
+      "unplaced": 20,
+      "print": "afbc3cd10405"
+    }
+  },
+  {
+    "complete": {
+      "late": 0,
+      "cost": 214032,
+      "unplaced": 0,
+      "print": "58d0536ee4c8"
+    },
+    "insert": {
+      "late": 0,
+      "cost": 214470,
+      "unplaced": 0,
+      "print": "1592c238585a"
+    }
+  },
+  {
+    "complete": {
+      "late": 0,
+      "cost": 213478,
+      "unplaced": 6,
+      "print": "bcab8da87ac8"
+    },
+    "insert": {
+      "late": 0,
+      "cost": 168416,
+      "unplaced": 5,
+      "print": "1a19050d28d5"
+    }
+  },
+  {
+    "complete": {
+      "late": 0,
+      "cost": 215024,
+      "unplaced": 4,
+      "print": "8d477127f8ad"
+    },
+    "insert": {
+      "late": 0,
+      "cost": 135205,
+      "unplaced": 4,
+      "print": "8ff5fc266a06"
+    }
+  },
+  {
+    "complete": {
+      "late": 0,
+      "cost": 210032,
+      "unplaced": 2,
+      "print": "8d14b36233fa"
+    },
+    "insert": {
+      "late": 0,
+      "cost": 211318,
+      "unplaced": 2,
+      "print": "e722bc0f7134"
+    }
+  },
+  {
+    "complete": {
+      "late": 0,
+      "cost": 206205,
+      "unplaced": 12,
+      "print": "e9f90fbcd515"
+    },
+    "insert": {
+      "late": 0,
+      "cost": 135992,
+      "unplaced": 12,
+      "print": "ac65e8d741d7"
+    }
+  },
+  {
+    "complete": {
+      "late": 0,
+      "cost": 198173,
+      "unplaced": 0,
+      "print": "0403e2f03ab2"
+    },
+    "insert": {
+      "late": 0,
+      "cost": 199835,
+      "unplaced": 0,
+      "print": "36d84f74e73f"
+    }
+  },
+  {
+    "complete": {
+      "late": 0,
+      "cost": 207786,
+      "unplaced": 0,
+      "print": "a251562a9fda"
+    },
+    "insert": {
+      "late": 0,
+      "cost": 109016,
+      "unplaced": 1,
+      "print": "8d8e5b7fc247"
+    }
+  },
+  {
+    "complete": {
+      "late": 0,
+      "cost": 221239,
+      "unplaced": 0,
+      "print": "f8e579abcb7c"
+    },
+    "insert": {
+      "late": 0,
+      "cost": 221564,
+      "unplaced": 0,
+      "print": "35a4cf8ef264"
+    }
+  },
+  {
+    "complete": {
+      "late": 0,
+      "cost": 207954,
+      "unplaced": 0,
+      "print": "3756b4970ffc"
+    },
+    "insert": {
+      "late": 0,
+      "cost": 208064,
+      "unplaced": 0,
+      "print": "8219b447995c"
+    }
+  },
+  {
+    "complete": {
+      "late": 0,
+      "cost": 210234,
+      "unplaced": 0,
+      "print": "0f3d7f5697a8"
+    },
+    "insert": {
+      "late": 0,
+      "cost": 176559,
+      "unplaced": 0,
+      "print": "e627efbf74d5"
+    }
+  },
+  {
+    "complete": {
+      "late": 0,
+      "cost": 210927,
+      "unplaced": 0,
+      "print": "2d843cf7ae3e"
+    },
+    "insert": {
+      "late": 0,
+      "cost": 183070,
+      "unplaced": 0,
+      "print": "8f097bd5e281"
+    }
+  },
+  {
+    "complete": {
+      "late": 0,
+      "cost": 207855,
+      "unplaced": 8,
+      "print": "869f8ccd2217"
+    },
+    "insert": {
+      "late": 0,
+      "cost": 106298,
+      "unplaced": 8,
+      "print": "18a30086227a"
+    }
+  },
+  {
+    "complete": {
+      "late": 0,
+      "cost": 206193,
+      "unplaced": 5,
+      "print": "b56a3f0b3b35"
+    },
+    "insert": {
+      "late": 0,
+      "cost": 152414,
+      "unplaced": 5,
+      "print": "142cc50909b3"
+    }
+  },
+  {
+    "complete": {
+      "late": 0,
+      "cost": 213346,
+      "unplaced": 0,
+      "print": "fbea5c858121"
+    },
+    "insert": {
+      "late": 0,
+      "cost": 179056,
+      "unplaced": 0,
+      "print": "745c37c8b5cd"
+    }
+  },
+  {
+    "complete": {
+      "late": 0,
+      "cost": 213924,
+      "unplaced": 7,
+      "print": "b809fb078df8"
+    },
+    "insert": {
+      "late": 0,
+      "cost": 154990,
+      "unplaced": 5,
+      "print": "c982a2203ef9"
+    }
+  },
+  {
+    "complete": {
+      "late": 0,
+      "cost": 207121,
+      "unplaced": 4,
+      "print": "07c73e79cbe8"
+    },
+    "insert": {
+      "late": 0,
+      "cost": 208999,
+      "unplaced": 1,
+      "print": "b6dd170ed648"
+    }
+  }
+]

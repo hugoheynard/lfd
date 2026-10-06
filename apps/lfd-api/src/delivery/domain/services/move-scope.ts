@@ -37,20 +37,18 @@ export function nearnessOf(
     .flatMap((plan) => plan.routes.flatMap((route) => route.stops.map((stop) => stop.id)))
     .sort(compareIds);
   const both = (a: string, b: string): number => ctx.cost.seconds(a, b) + ctx.cost.seconds(b, a);
-  const neighbours = new Map(
-    ids.map((id) => [
-      id,
-      new Set(
-        ids
-          .filter((other) => other !== id)
-          .sort((x, y) => both(id, x) - both(id, y) || compareIds(x, y))
-          .slice(0, NEIGHBOUR_COUNT),
-      ),
-    ]),
-  );
-  return (a, b) =>
-    a === null ||
-    b === null ||
-    neighbours.get(a)?.has(b) === true ||
-    neighbours.get(b)?.has(a) === true;
+  // La relation est symétrique : chaque arrêt porte ses voisins ET ceux qui
+  // le comptent parmi les leurs — une seule lecture par question.
+  const neighbours = new Map(ids.map((id) => [id, new Set<string>()]));
+  for (const id of ids) {
+    const closest = ids
+      .filter((other) => other !== id)
+      .sort((x, y) => both(id, x) - both(id, y) || compareIds(x, y))
+      .slice(0, NEIGHBOUR_COUNT);
+    for (const other of closest) {
+      neighbours.get(id)?.add(other);
+      neighbours.get(other)?.add(id);
+    }
+  }
+  return (a, b) => a === null || b === null || neighbours.get(a)?.has(b) === true;
 }

@@ -20,15 +20,15 @@
 
 ## Dette
 
-- **Le banc à 200 clients manque son seuil en mode complet** (2026-10-06,
-  `pnpm --filter lfd-api bench:composition`) : p95 6,6 s pour 5 s visés, sur
-  un M1 Pro ; Insérer tient (p95 143 ms). 93 % du temps est dans
-  `improvePlans` (`firstImprovement` → `scoreVehicle`, garde de capacité et
-  `planLoading` à chaque coup essayé). Pistes, à concevoir : ne rejouer
-  `planLoading` que sur les deux véhicules touchés et mémoïser par contenu,
-  borner le voisinage de `firstImprovement`, arrêter l'amélioration au temps.
-  Mesurer aussi dans le conteneur, seul chiffre qui compte. Détail :
-  `composition-automatique.md` §5 point 3.
+- **Le banc à 200 clients n'a pas été mesuré dans le conteneur.** Sur un M1
+  Pro, le seuil est tenu depuis le 2026-10-06 (complet p95 4,1 s, max 5,3 s,
+  pour 5 s visés ; propositions identiques sur les 20 graines,
+  `bench:composition:quality`). La marge est de 20 % : si le conteneur est
+  plus lent d'autant, le seuil retombe. Prochaines pistes, exactes elles
+  aussi : lire la matrice par index plutôt que par `Map` (~1,4 s sur la
+  graine 9, mais c'est le port `CostFn` et son adaptateur qu'il faut
+  changer), et ne lire chaque arête qu'une fois dans `scoreVehicle` (les deux
+  passes relisent les mêmes). Détail : `composition-automatique.md` §5 point 3.
 
 - **La purge du cache de géocodage à 365 jours n'est pas bâtie.** Une entrée
   périmée n'est plus lue, mais sa ligne reste en base (`delivery_geocode`). Un
@@ -120,19 +120,22 @@ au profileur le 2026-10-04 :
   **chaque geste essayé** par `improvePlans` — des milliers par proposition ;
   `latestDeparture` seul pèse près de la moitié du temps ;
 - la mémoïsation par configuration (`memoizedScore`, 2026-10-04) n'a gagné
-  que 20 % : les configurations se répètent peu.
+  que 20 % : les configurations se répètent peu. **Retirée le 2026-10-06** :
+  à 200 arrêts, sa clé coûtait plus que ce qu'elle épargnait.
 
 À faire, du plus rentable au plus lourd :
 
 1. **Score incrémental** : un geste ne touche qu'une ou deux tournées ; garder
    par tournée ses horaires (départ au plus tard, arrivées) et ne recalculer
    que la tournée changée et la chaîne qui la suit dans le véhicule.
-2. **Élaguer avant de scorer** : pour un geste dans une tournée (Or-opt,
-   2-opt), calculer d'abord la variation de trajet ; ne scorer que s'il peut
-   améliorer (moins de trajet, ou une tournée en retard).
+2. ~~**Élaguer avant de scorer**~~ — fait le 2026-10-06 (non commité), pour
+   tous les gestes et pas seulement dans une tournée : un minorant du coût
+   (`apps/lfd-api/src/delivery/domain/services/cost-floor.ts`) écarte sans `scoreVehicle` ce qui ne peut pas améliorer,
+   sans changer aucun résultat. La borne de CI à 60 arrêts n'a pas été
+   remesurée.
 3. **Fusionner les deux passes** de `scoreVehicle` quand aucune fenêtre ne
    contraint la tournée.
 4. **Mesurer sur le conteneur** au banc à 200 clients (p95 < 5 s) : c'est le
    seul temps qui compte, et il n'a jamais été mesuré.
 
-Revenir à 2 s en CI une fois 1 et 2 faits.
+Revenir à 2 s en CI une fois 1 fait, et la CI remesurée.

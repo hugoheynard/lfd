@@ -154,7 +154,7 @@ flowchart TD
 | §14.2    | Mode par défaut : échéance (migration `20261004090000_echeance_par_defaut`)                                                                                       | ✅ bâti     | `d4972386a`                                                    |
 | Horaire  | Une tournée garde son départ, son retour et ses km prévus, et le PDF les imprime                                                                                  | ✅ bâti     | `3e9da566c`, aperçu `a9fb52c04`                                |
 | **CA4**  | La capacité entre dans la composition : demande en bacs par commande (déclarés, sinon estimés, sinon inconnue), `planLoading` à chaque insertion                  | ✅ bâti     | non commité (2026-10-06)                                       |
-| **Banc** | 200 clients, calcul pur, p95 < 5 s — bâti (`bench:composition`) ; complet p95 6,6 s, Insérer p95 0,14 s (§5 point 3)                                              | 🟡 partiel  | non commité (2026-10-06)                                       |
+| **Banc** | 200 clients, calcul pur, p95 < 5 s (`bench:composition`, qualité `bench:composition:quality`) ; complet p95 4,1 s, Insérer p95 0,15 s, sur un poste (§5 point 3)  | ✅ bâti     | non commité (2026-10-06) ; conteneur non mesuré                |
 | **CA5**  | Le prévisionnel avec des contraintes humaines stockées (épinglage), une version par jour, et l'alerte rouge                                                       | 🟡 partiel  | le calcul à la lecture existe ; contraintes et alerte absentes |
 | **CA6a** | Abonné à `production.day_closed`, table `delivery.delivery_day_readiness` (migration `20261007110000_le_plan_arrete_pour_la_livraison`), cloche, query et bandeau | ✅ bâti     | `4b79a8e06`                                                    |
 | **CA6b** | `production.day_retaken` passe dans le canal avec `orderIds` ; un abonné ajoute les absorbées et sonne                                                            | ✅ bâti     | `d5900081e`                                                    |
@@ -286,7 +286,36 @@ flowchart TD
    0,9 s. Les graines lentes sont celles où la place manque (à répartir non
    vide). Pas de garde à 200 arrêts dans la suite unitaire (2026-10-06) :
    sous Jest, le calcul est ~7 fois plus lent qu'en Node nu, et la garde
-   coûtait ~40 s de CI ; le test à 60 arrêts reste la garde. Le travail d'algorithme est un lot à part (`todo-calculateur.md`).
+   coûtait ~40 s de CI ; le test à 60 arrêts reste la garde.
+   **Seuil tenu sur le poste le 2026-10-06, propositions inchangées**
+   (non commité). Trois gestes, tous EXACTS (aucun ne change ce que
+   `improvePlans` retient, seulement ce qu'il évite de calculer) :
+   - un **minorant** du coût (`apps/lfd-api/src/delivery/domain/services/cost-floor.ts`) : route + livraisons +
+     ouvertures, noté une fois par tournée neuve. `isBetterScore` est
+     monotone ; si le meilleur cas (zéro retard, le minorant) n'améliore pas,
+     le geste s'écarte sans `scoreVehicle`. Graine 9 : 40 % des gestes ;
+   - la **mémoïsation par configuration retirée** : sa clé (tous les
+     identifiants du véhicule mis bout à bout) coûtait plus que les 43 % de
+     scores qu'elle épargnait ;
+   - la **liste granulaire symétrisée d'avance** (`nearnessOf`) : une lecture
+     par question au lieu de deux.
+
+   | Mode    | Avant (méd. · p95 · max) | Après (méd. · p95 · max) |
+   | ------- | ------------------------ | ------------------------ |
+   | complet | 3,38 · 6,65 · 6,89 s     | 2,18 · 4,06 · 5,29 s     |
+   | Insérer | 85 · 142 · 172 ms        | 75 · 146 · 155 ms        |
+
+   Qualité : `pnpm --filter lfd-api bench:composition:quality` compare chaque
+   graine (complet et Insérer) à la référence
+   `apps/lfd-api/src/delivery/domain/services/__tests__/composition-bench-baseline.json`, enregistrée avant ces gestes,
+   par empreinte du contenu puis par score ; il sort en échec sur un « PIRE ».
+   Les 40 cas sont **identiques**. Ce qui pèse encore (graine 9, profil) : la
+   lecture de la matrice (~1,4 s, deux `Map.get` par case, comme
+   l'adaptateur OSRM) et `scoreVehicle` (~1 s), puis `planLoading` (~0,8 s).
+   `improvePlans` atteint sa borne de 400 gestes sur les graines lentes :
+   le résultat y est déjà fixé par la borne, en gestes, pas en temps.
+   Reste : mesurer dans le conteneur (`todo-calculateur.md`).
+
 4. **CA5.** Stocker les contraintes humaines (épinglage) dans une table neuve,
    par migration additive, avec une version de l'ensemble par jour : si deux
    personnes glissent en même temps, la seconde relit. Ajouter l'alerte rouge
@@ -314,6 +343,7 @@ flowchart TD
 - La liste des commandes arrivées a deux sources : `publishArrivals` pour le
   colisage et `day_retaken` pour la livraison. C'est assumé, chaque source sert
   son canal.
-- Le calcul de « Proposer » dépasse la promesse de 2 s sur la CI (2,06 s CPU).
+- Le calcul de « Proposer » dépasse la promesse de 2 s sur la CI (2,06 s CPU,
+  mesuré avant les gestes du banc du 2026-10-06 — non remesuré depuis).
   Le travail d'algorithme est décrit dans
   [`todo-calculateur.md`](todo-calculateur.md).
