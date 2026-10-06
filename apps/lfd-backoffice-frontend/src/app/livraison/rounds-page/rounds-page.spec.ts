@@ -102,6 +102,7 @@ function composition(day: string): DeliveryRoundsDayView {
 function sheet(day: string): DeliveryRunSheetView {
   return {
     day,
+    roundCount: 0,
     stops: [
       stopOf({ orderId: 'o-1', reference: 'CMD-1', tradeName: 'Le Comptoir' }),
       stopOf({ orderId: 'o-3', reference: 'CMD-3' }),

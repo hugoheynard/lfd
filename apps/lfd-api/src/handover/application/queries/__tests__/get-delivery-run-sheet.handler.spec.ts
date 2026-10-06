@@ -1,135 +1,11 @@
-import {
-  DeliveryRunSheetReader,
-  type DeliveryRunSheetEntry,
-} from "../../../channels/commerce/index.js";
-import {
-  HandoverAttestationsReader,
-  type AttestedHandover,
-} from "../../../domain/ports/handover-attestations.reader.js";
-import { AtelierSheetsReader } from "../../../../production/channels/handover/index.js";
-import { GetDeliveryRunSheetHandler } from "../get-delivery-run-sheet.handler.js";
 import { GetDeliveryRunSheetQuery } from "../get-delivery-run-sheet.query.js";
+import { DAY, FixedRoundPlacements, PLACED_AT, entry, handlerOf } from "./run-sheet-doubles.js";
 
 /**
  * La feuille de route : la rencontre des trois lectures, l'état partagé avec
  * la file du comptoir, et « trois questions, jamais N + 1 ». Les doublés
  * héritent du port abstrait et enregistrent leurs appels.
  */
-
-// Intention relative : ces dates ne sont comparées à aucune horloge.
-const PLACED_AT = new Date(Date.now() - 2 * 24 * 60 * 60 * 1000);
-const DAY = "2026-09-30";
-
-function entry(overrides: Partial<DeliveryRunSheetEntry> = {}): DeliveryRunSheetEntry {
-  return {
-    orderId: "ord_1",
-    reference: "ORD-ABCD-1234",
-    customerLabel: "Les Halles",
-    tradeName: null,
-    clientele: "pro",
-    address: {
-      label: "",
-      ligne1: "12 rue du Test",
-      ligne2: "",
-      codePostal: "73150",
-      ville: "Val d'Isère",
-      pays: "France",
-    },
-    window: { start: "08:00", end: "09:00", source: "override" },
-    contact: { prenom: "Léa", nom: "Martin", telephone: "0600000000" },
-    signatureRequired: true,
-    orderNote: "par la cour",
-    addressBook: {
-      companyId: "cmp_1",
-      addressId: "addr_1",
-      note: "sonner deux fois",
-      gps: { lat: 45.44, lng: 6.98 },
-      stopMinutes: 25,
-      procedure: [
-        {
-          id: "step_1",
-          title: "Portail",
-          body: "code 1234",
-          hasPhoto: true,
-          photoRevision: "01JREV",
-        },
-      ],
-    },
-    totalUnits: 3,
-    status: "confirmed",
-    readyAt: null,
-    placedAt: PLACED_AT,
-    ...overrides,
-  };
-}
-
-class FixedRunSheet extends DeliveryRunSheetReader {
-  readonly calls: string[] = [];
-  readonly amongCalls: (readonly string[])[] = [];
-
-  constructor(
-    private readonly entries: readonly DeliveryRunSheetEntry[],
-    /** Les livraisons d'autres jours, trouvables par identifiant. */
-    private readonly elsewhere: readonly DeliveryRunSheetEntry[] = [],
-  ) {
-    super();
-  }
-
-  deliveriesOn(day: string): Promise<readonly DeliveryRunSheetEntry[]> {
-    this.calls.push(day);
-    return Promise.resolve(this.entries);
-  }
-
-  deliveriesAmong(orderIds: readonly string[]): Promise<readonly DeliveryRunSheetEntry[]> {
-    this.amongCalls.push(orderIds);
-    return Promise.resolve(
-      [...this.entries, ...this.elsewhere].filter((row) => orderIds.includes(row.orderId)),
-    );
-  }
-}
-
-class RecordingAttestations extends HandoverAttestationsReader {
-  readonly calls: (readonly string[])[] = [];
-
-  constructor(private readonly attested: ReadonlyMap<string, AttestedHandover> = new Map()) {
-    super();
-  }
-
-  forOrders(orderIds: readonly string[]): Promise<ReadonlyMap<string, AttestedHandover>> {
-    this.calls.push(orderIds);
-    return Promise.resolve(this.attested);
-  }
-}
-
-class FixedAtelierSheets extends AtelierSheetsReader {
-  readonly calls: { readonly day: string; readonly orderIds: readonly string[] }[] = [];
-
-  constructor(private readonly without: ReadonlySet<string> = new Set()) {
-    super();
-  }
-
-  withoutSheet(serviceDay: string, orderIds: readonly string[]): Promise<ReadonlySet<string>> {
-    this.calls.push({ day: serviceDay, orderIds });
-    return Promise.resolve(this.without);
-  }
-}
-
-function handlerOf(
-  entries: readonly DeliveryRunSheetEntry[],
-  attested: ReadonlyMap<string, AttestedHandover> = new Map(),
-  without: ReadonlySet<string> = new Set(),
-  elsewhere: readonly DeliveryRunSheetEntry[] = [],
-) {
-  const sheet = new FixedRunSheet(entries, elsewhere);
-  const attestations = new RecordingAttestations(attested);
-  const sheets = new FixedAtelierSheets(without);
-  return {
-    handler: new GetDeliveryRunSheetHandler(sheet, attestations, sheets),
-    sheet,
-    attestations,
-    sheets,
-  };
-}
 
 describe("GetDeliveryRunSheetHandler", () => {
   it("rend chaque arrêt avec ses consignes, sa procédure et ses dates en ISO", async () => {
@@ -284,6 +160,42 @@ describe("GetDeliveryRunSheetHandler", () => {
       expect(view.stops.map((stop) => stop.orderId)).toEqual(["a", "back"]);
       expect(attestations.calls).toEqual([["a", "back"]]);
       expect(sheets.calls).toEqual([{ day: DAY, orderIds: ["a"] }]);
+    });
+  });
+
+  describe("la tournée et le rang de chaque arrêt (2026-10-06)", () => {
+    it("dit la tournée et le rang d'une placée, `null` pour une non placée, et le compte du jour", async () => {
+      const rounds = new FixedRoundPlacements(
+        new Map([["a", { roundId: "rnd_1", label: "Kangoo blanc · passage 2", position: 2 }]]),
+        3,
+      );
+      const { handler } = handlerOf(
+        [entry({ orderId: "a" }), entry({ orderId: "b" })],
+        new Map(),
+        new Set(),
+        [],
+        rounds,
+      );
+
+      const view = await handler.execute(new GetDeliveryRunSheetQuery(DAY, true));
+
+      expect(view.roundCount).toBe(3);
+      expect(view.stops[0]?.round).toEqual({
+        roundId: "rnd_1",
+        label: "Kangoo blanc · passage 2",
+        position: 2,
+      });
+      expect(view.stops[1]?.round).toBeNull();
+    });
+
+    it("demande les places une fois pour tout le lot, rapportées comprises", async () => {
+      const { handler, rounds } = handlerOf([entry({ orderId: "a" })], new Map(), new Set(), [
+        entry({ orderId: "back" }),
+      ]);
+
+      await handler.execute(new GetDeliveryRunSheetQuery(DAY, true, ["back"]));
+
+      expect(rounds.calls).toEqual([{ day: DAY, orderIds: ["a", "back"] }]);
     });
   });
 });

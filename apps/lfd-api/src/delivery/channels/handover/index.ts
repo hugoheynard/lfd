@@ -8,6 +8,7 @@
  * | `DepartedOrdersAnnouncer` | « elles sont parties », après la validation |
  * | `DoorstepHandoverAttestor`| « atteste cette remise », à la porte (B1)   |
  * | `BroughtBackOrdersAnnouncer` | « elles sont revenues », rapportées (B3) |
+ * | `RoundPlacementsReader`   | « quelle tournée, quel rang ? » — implémenté par la livraison elle-même (2026-10-06) |
  *
  * `lint:context-boundaries` n'autorise `handover → delivery` que par ce
  * chemin ; `delivery → handover` reste interdit.
@@ -23,3 +24,8 @@ export {
   type HandoverPublication,
   type StagedHandoverProofs,
 } from "./doorstep-handover.attestor.js";
+export {
+  RoundPlacementsReader,
+  type RoundPlacement,
+  type RoundPlacements,
+} from "./round-placements.reader.js";

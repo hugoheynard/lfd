@@ -105,6 +105,7 @@ describe('summaryOf', () => {
   it('compte les livraisons, les colisées et les sans-feuille, annulées exclues', () => {
     const summary = summaryOf({
       day: '2026-09-30',
+      roundCount: 0,
       stops: [
         stopOf({ state: 'expected', withoutAtelierSheet: true }),
         stopOf({ state: 'ready' }),

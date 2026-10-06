@@ -15,6 +15,10 @@ import {
   type AttestedHandover,
 } from "../../domain/ports/handover-attestations.reader.js";
 import { queueStateOf } from "../../domain/services/queue-state.js";
+import {
+  RoundPlacementsReader,
+  type RoundPlacement,
+} from "../../../delivery/channels/handover/index.js";
 import { AtelierSheetsReader } from "../../../production/channels/handover/index.js";
 import { GetDeliveryRunSheetQuery } from "./get-delivery-run-sheet.query.js";
 
@@ -40,6 +44,12 @@ import { GetDeliveryRunSheetQuery } from "./get-delivery-run-sheet.query.js";
  * feuille d'aucun jour composé : l'écran la nomme (`alsoOrderIds`), et elle
  * suit, après celles du jour, avec la même procédure sous le même droit.
  *
+ * ## La tournée et le rang, chez la livraison
+ *
+ * Lus en même temps que les attestations, pour le lot entier
+ * (`RoundPlacementsReader`, 2026-10-06) : une livraison sans tournée part à
+ * `null`, et le compte des tournées est celui du jour demandé.
+ *
  * ## La procédure, sous son propre droit
  *
  * Masquée ici, dans la lecture, quand la query le dit (DG-D8) — pas à l'écran.
@@ -53,6 +63,7 @@ export class GetDeliveryRunSheetHandler implements IQueryHandler<
     private readonly deliveries: DeliveryRunSheetReader,
     private readonly attestations: HandoverAttestationsReader,
     private readonly sheets: AtelierSheetsReader,
+    private readonly rounds: RoundPlacementsReader,
   ) {}
 
   async execute(query: GetDeliveryRunSheetQuery): Promise<DeliveryRunSheetView> {
@@ -64,7 +75,7 @@ export class GetDeliveryRunSheetHandler implements IQueryHandler<
     const others = among.filter((entry) => !known.has(entry.orderId));
     const entries = [...ofDay, ...others];
     const orderIds = entries.map((entry) => entry.orderId);
-    const [attested, withoutSheet] = await Promise.all([
+    const [attested, withoutSheet, placements] = await Promise.all([
       this.attestations.forOrders(orderIds),
       // Le plan d'atelier est celui du JOUR : une commande d'un autre jour
       // n'y figure pas, et ce n'est pas un manque — elle a été faite le sien.
@@ -72,6 +83,7 @@ export class GetDeliveryRunSheetHandler implements IQueryHandler<
         query.day,
         ofDay.map((entry) => entry.orderId),
       ),
+      this.rounds.placementsOf(query.day, orderIds),
     ]);
     return {
       day: query.day,
@@ -81,8 +93,10 @@ export class GetDeliveryRunSheetHandler implements IQueryHandler<
           attested.get(entry.orderId),
           withoutSheet.has(entry.orderId),
           query.withProcedures,
+          placements.byOrder.get(entry.orderId),
         ),
       ),
+      roundCount: placements.roundCount,
     };
   }
 }
@@ -93,6 +107,7 @@ function toStopView(
   attestation: AttestedHandover | undefined,
   withoutAtelierSheet: boolean,
   withProcedures: boolean,
+  placement: RoundPlacement | undefined,
 ): DeliveryRunSheetStopView {
   return {
     orderId: entry.orderId,
@@ -112,6 +127,10 @@ function toStopView(
     readyAt: entry.readyAt === null ? null : entry.readyAt.toISOString(),
     withoutAtelierSheet,
     placedAt: entry.placedAt.toISOString(),
+    round:
+      placement === undefined
+        ? null
+        : { roundId: placement.roundId, label: placement.label, position: placement.position },
   };
 }
 

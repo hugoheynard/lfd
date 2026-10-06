@@ -19,6 +19,8 @@ export interface DeliveryRunSheetView {
   readonly day: string;
   /** Les livraisons du jour, dans l'ordre de la base — l'écran trie. */
   readonly stops: readonly DeliveryRunSheetStopView[];
+  /** Tournées composées ce jour-là (2026-10-06). */
+  readonly roundCount: number;
 }
 
 /** Un arrêt : une commande livrée ce jour-là. */
@@ -60,6 +62,19 @@ export interface DeliveryRunSheetStopView {
    */
   readonly withoutAtelierSheet: boolean;
   readonly placedAt: string;
+  /**
+   * Sa tournée et son rang (2026-10-06). `null` : livraison placée dans aucune
+   * tournée. `label` suit la règle de l'écran et du papier (« Kangoo blanc ·
+   * passage 2 ») ; `position` part de 1.
+   */
+  readonly round: DeliveryRunSheetRoundView | null;
+}
+
+/** La tournée d'un arrêt, et sa place dedans. */
+export interface DeliveryRunSheetRoundView {
+  readonly roundId: string;
+  readonly label: string;
+  readonly position: number;
 }
 
 /** Les consignes vivantes de l'adresse livrée. */

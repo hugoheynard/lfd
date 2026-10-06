@@ -113,6 +113,7 @@ describe('composeDay (C16)', () => {
       },
       {
         day: '2026-10-01',
+        roundCount: 0,
         stops: [
           stopOf({ orderId: 'o-late', reference: 'CMD-L', window: w('11:00', '12:00') }),
           stopOf({ orderId: 'o-early', reference: 'CMD-E', window: w('07:00', '08:00') }),

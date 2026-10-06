@@ -31,6 +31,7 @@ import { HandoverFeedModule } from "./handover-feed.module.js";
 import { DeliveryModule } from "../delivery/delivery.module.js";
 import { DeliveryFeedModule } from "./delivery-feed.module.js";
 import { DeliveryHandoverFeedModule } from "./delivery-handover-feed.module.js";
+import { DeliveryRoundPlacementsModule } from "./delivery-round-placements.module.js";
 import { DebtorMandateModule } from "./debtor-mandate.module.js";
 import { LoyaltyVoucherModule } from "./loyalty-voucher.module.js";
 import { IssuedMandatesModule } from "./issued-mandates.module.js";
@@ -160,6 +161,7 @@ import { FeatureAccessGuard } from "../b2b/feature-access/http/feature-access.gu
     DeliveryModule,
     DeliveryFeedModule,
     DeliveryHandoverFeedModule,
+    DeliveryRoundPlacementsModule,
     DebtorMandateModule,
     LoyaltyVoucherModule,
     IssuedMandatesModule,

@@ -68,12 +68,12 @@ afterEach(() => {
 
 describe('DeliveryPage', () => {
   it('lit demain par défaut : la tournée se prépare la veille', async () => {
-    const { asked } = await mount((day) => Promise.resolve({ day, stops: [] }));
+    const { asked } = await mount((day) => Promise.resolve({ day, roundCount: 0, stops: [] }));
     expect(asked).toEqual([shiftDay(parisDayOf(new Date()), 1)]);
   });
 
   it('dit un jour sans livraison par l’état vide', async () => {
-    const { element } = await mount((day) => Promise.resolve({ day, stops: [] }));
+    const { element } = await mount((day) => Promise.resolve({ day, roundCount: 0, stops: [] }));
     expect(element.querySelector('fold-empty-state')?.textContent).toContain(
       'Aucune livraison ce jour-là',
     );
@@ -88,6 +88,7 @@ describe('DeliveryPage', () => {
     const { element } = await mount((day) =>
       Promise.resolve({
         day,
+        roundCount: 0,
         stops: [
           stopOf({ orderId: 'b', reference: 'CMD-B', window: null, withoutAtelierSheet: true }),
           stopOf({
@@ -115,6 +116,7 @@ describe('DeliveryPage', () => {
   it('ne tente pas la photo d’une étape sans le droit de lire les comptes', async () => {
     const view = (day: string): DeliveryRunSheetView => ({
       day,
+      roundCount: 0,
       stops: [
         stopOf({
           addressBook: {
@@ -143,7 +145,7 @@ describe('DeliveryPage', () => {
   });
 
   it('rouvre le jour de l’URL, et retombe sur demain si le paramètre est mal formé', async () => {
-    const empty = (day: string) => Promise.resolve({ day, stops: [] });
+    const empty = (day: string) => Promise.resolve({ day, roundCount: 0, stops: [] });
     expect((await mount(empty, false, { jour: '2026-10-24' })).asked).toEqual(['2026-10-24']);
     expect((await mount(empty, false, { jour: 'hier' })).asked).toEqual([
       shiftDay(parisDayOf(new Date()), 1),
@@ -151,7 +153,9 @@ describe('DeliveryPage', () => {
   });
 
   it('écrit le jour choisi dans l’URL sans empiler l’historique', async () => {
-    const { fixture, asked } = await mount((day) => Promise.resolve({ day, stops: [] }));
+    const { fixture, asked } = await mount((day) =>
+      Promise.resolve({ day, roundCount: 0, stops: [] }),
+    );
     const navigate = vi.spyOn(TestBed.inject(Router), 'navigate').mockResolvedValue(true);
     fixture.debugElement
       .query(By.css('fold-date'))
@@ -175,7 +179,7 @@ describe('DeliveryPage', () => {
         ],
         incidents: [],
       });
-    const empty = (day: string) => Promise.resolve({ day, stops: [] });
+    const empty = (day: string) => Promise.resolve({ day, roundCount: 0, stops: [] });
     const { also, roundsAsked } = await mount(empty, false, { jour: '2026-10-24' }, composition);
 
     await vi.waitFor(() => expect(also).toHaveLength(1));
@@ -184,7 +188,9 @@ describe('DeliveryPage', () => {
   });
 
   it('sans le droit des tournées, ne lit pas la composition : la feuille du jour seule', async () => {
-    const { also, roundsAsked } = await mount((day) => Promise.resolve({ day, stops: [] }));
+    const { also, roundsAsked } = await mount((day) =>
+      Promise.resolve({ day, roundCount: 0, stops: [] }),
+    );
 
     expect(roundsAsked).toEqual([]);
     expect(also).toEqual([[]]);
@@ -192,7 +198,7 @@ describe('DeliveryPage', () => {
 
   it('une composition illisible ne prive pas la page de sa feuille', async () => {
     const { also, element, fixture } = await mount(
-      (day) => Promise.resolve({ day, stops: [] }),
+      (day) => Promise.resolve({ day, roundCount: 0, stops: [] }),
       false,
       {},
       () => Promise.reject(new Error('500')),
@@ -208,6 +214,7 @@ describe('DeliveryPage', () => {
       (day) =>
         Promise.resolve({
           day,
+          roundCount: 0,
           stops: [
             stopOf({ orderId: 'a', state: 'ready' }),
             stopOf({ orderId: 'b', state: 'expected', withoutAtelierSheet: true }),
@@ -228,7 +235,9 @@ describe('DeliveryPage', () => {
   });
 
   it('tait l’avertissement sans feuille d’atelier quand il n’y en a aucune', async () => {
-    const { element } = await mount((day) => Promise.resolve({ day, stops: [stopOf({})] }));
+    const { element } = await mount((day) =>
+      Promise.resolve({ day, roundCount: 0, stops: [stopOf({})] }),
+    );
     expect(element.querySelector('[data-summary-no-sheet]')).toBeNull();
   });
 
@@ -236,7 +245,7 @@ describe('DeliveryPage', () => {
     const composition = (day: string): Promise<DeliveryRoundsDayView> =>
       Promise.resolve({ day, rounds: [], unassigned: [], incidents: [] });
     const { element } = await mount(
-      (day) => Promise.resolve({ day, stops: [] }),
+      (day) => Promise.resolve({ day, roundCount: 0, stops: [] }),
       false,
       { jour: '2026-10-07' },
       composition,
@@ -251,7 +260,7 @@ describe('DeliveryPage', () => {
   });
 
   it('sans le droit des tournées, nomme l’écran sans lien', async () => {
-    const { element } = await mount((day) => Promise.resolve({ day, stops: [] }));
+    const { element } = await mount((day) => Promise.resolve({ day, roundCount: 0, stops: [] }));
     expect(element.querySelector('[data-rounds-link]')).toBeNull();
     expect(element.querySelector('[data-explain]')?.textContent).toContain('Tournées');
   });

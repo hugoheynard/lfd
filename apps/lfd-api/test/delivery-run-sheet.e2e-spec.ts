@@ -29,6 +29,7 @@ import {
   type E2eContext,
 } from "./e2e-harness.js";
 import { pngOf } from "./delivery-procedure-scene.js";
+import { addVehicle, assign, openRound } from "./delivery-rounds-scene.js";
 import { attachTo, createCompany, createUser } from "./factories.js";
 
 const OWNER = "auth0|run-sheet-owner";
@@ -307,6 +308,31 @@ describe("la feuille de route du jour", () => {
  * `delivery_procedures:read`. Le masquage est AU SERVEUR : la réponse elle-même
  * ne les porte pas.
  */
+describe("la tournée et le rang de chaque arrêt (2026-10-06)", () => {
+  it("dit la tournée et le rang d'une placée, `null` pour une non placée, et compte les tournées du jour", async () => {
+    const { addressId } = await seedCompany(OWNER, "Boulangerie du Col");
+    const first = await place(OWNER, "delivery", addressId);
+    const second = await place(OWNER, "delivery", addressId);
+    const loose = await place(OWNER, "delivery", addressId);
+    const roundId = await openRound(ctx, DAY, await addVehicle(ctx, "Kangoo blanc"));
+    await openRound(ctx, DAY, await addVehicle(ctx, "Trafic"));
+    await assign(ctx, DAY, roundId, first);
+    await assign(ctx, DAY, roundId, second);
+
+    const sheet = await runSheet();
+    const byId = new Map(sheet.stops.map((stop) => [stop.orderId, stop]));
+
+    expect(sheet.roundCount).toBe(2);
+    expect(byId.get(second)?.round).toEqual({ roundId, label: "Kangoo blanc", position: 2 });
+    expect(byId.get(first)?.round).toMatchObject({ roundId, position: 1 });
+    expect(byId.get(loose)?.round).toBeNull();
+  });
+
+  it("compte zéro tournée un jour sans composition", async () => {
+    expect((await runSheet()).roundCount).toBe(0);
+  });
+});
+
 describe("la procédure, sous `delivery_procedures`", () => {
   /** Une fiche du rôle donné ; `withoutProcedures` lui retire la lecture des procédures. */
   async function staffAs(
