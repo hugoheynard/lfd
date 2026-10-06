@@ -24,8 +24,6 @@ import {
 
 import { PermissionsStore } from '../../auth/permissions.store';
 import { narrowViewport } from '../../shared/viewport/narrow-viewport';
-import { provideWorkspaceRail } from '../../shared/workspace-rail/workspace-rail.store';
-import { WorkspaceCatalogue } from '../../shared/workspace-rail/workspaces';
 import { dataOf } from '../column-state';
 import { handoverBoard } from '../handover-slots';
 import { HandoverBand } from '../handover-band/handover-band';
@@ -230,9 +228,6 @@ export class SupervisionPage {
   protected readonly handoverShop = signal(ALL_POINTS);
 
   constructor() {
-    // Une section de l'Exploitation (2026-10-06) : la page publie le rail de
-    // l'espace, comme les coquilles de la Production et de la Livraison.
-    provideWorkspaceRail(inject(WorkspaceCatalogue).rail('exploitation'));
     void this.reads.load();
     watchSupervisionDay(this.date, (columns) => this.reads.refresh(columns));
     this.followHits();

@@ -169,8 +169,8 @@ export class App {
   protected readonly canSeeAnalytics = computed(() => this.permissions.can('b2b_growth:read'));
 
   /**
-   * L'Exploitation (2026-10-06) réunit la Production, la Supervision et la
-   * Livraison en trois sections. L'entrée paraît dès qu'UNE vue est ouverte —
+   * L'Exploitation (2026-10-06) réunit la Production et la Livraison en deux
+   * sections (la Supervision en est ressortie le même jour, au premier niveau). L'entrée paraît dès qu'UNE vue est ouverte —
    * lu sur la table des vues, pas sur une liste de droits recopiée : la règle
    * de chaque section est celle de ses vues.
    */
@@ -178,6 +178,14 @@ export class App {
   /** Où mène l'entrée : la première vue ouverte, dans l'ordre des sections. */
   protected readonly exploitationLink = computed(
     () => this.exploitationViews()[0]?.link ?? '/production',
+  );
+
+  /**
+   * La Supervision a son droit à elle : elle montre le nom des clients du jour
+   * sans ouvrir les commandes, et ne suit donc pas `b2b_orders:read`.
+   */
+  protected readonly canSeeSupervision = computed(() =>
+    this.permissions.can('b2b_supervision:read'),
   );
 
   /** Le Fournil — la fournée du jour, poste à part (2026-10-06), sous son seul droit. */
@@ -339,8 +347,8 @@ export class App {
   );
 
   /**
-   * L'entrée Exploitation est allumée sur ses TROIS racines d'adresse
-   * (`/production`, `/supervision`, `/livraison`) : `routerLinkActive` ne
+   * L'entrée Exploitation est allumée sur ses DEUX racines d'adresse
+   * (`/production`, `/livraison`) : `routerLinkActive` ne
    * compare qu'au lien de l'entrée.
    */
   protected readonly exploitationActive = toSignal(

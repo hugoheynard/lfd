@@ -211,13 +211,9 @@ export const LIVRAISON_VIEWS: readonly WorkspaceView[] = [
     icon: 'shopping-cart',
     needs: 'delivery_rounds:read',
   },
-  {
-    key: 'chargement',
-    label: 'Chargement',
-    link: '/livraison/chargement',
-    icon: 'package',
-    needs: 'delivery_loading:read',
-  },
+  // « Chargement » (`/livraison/chargement`) n'est plus au menu (Hugo,
+  // 2026-10-06) : la route et l'écran restent servis — liens profonds, QR
+  // d'un bac, et le livreur charge depuis « Ma tournée » (Coursier).
   {
     key: 'vehicules',
     label: 'Véhicules',
@@ -248,40 +244,24 @@ export const LIVRAISON_VIEWS: readonly WorkspaceView[] = [
   },
 ];
 
-/**
- * La vue de la **Supervision du jour** — celui qui regarde l'ensemble, pas
- * celui qui fait. Une seule vue, sous son droit propre (elle montre le nom des
- * clients du jour sans ouvrir les commandes).
- */
-export const SUPERVISION_VIEWS: readonly WorkspaceView[] = [
-  {
-    key: 'supervision',
-    label: 'Supervision du jour',
-    link: '/supervision',
-    icon: 'eye',
-    needs: 'b2b_supervision:read',
-  },
-];
-
 /** Range une table de vues sous un titre de section du rail. */
 function underSection(section: string, views: readonly WorkspaceView[]): WorkspaceView[] {
   return views.map((view) => ({ ...view, section }));
 }
 
 /**
- * Les vues de l'**Exploitation** (décision Hugo, 2026-10-06) : la Production,
- * la Supervision et la Livraison n'ont plus chacune leur entrée au menu
- * principal — elles sont trois SECTIONS d'un même espace. Les adresses ne
- * bougent pas (`/production/…`, `/supervision`, `/livraison/…`) : seul le menu
- * change.
+ * Les vues de l'**Exploitation** (décision Hugo, 2026-10-06) : la Production
+ * et la Livraison n'ont plus chacune leur entrée au menu principal — elles sont
+ * deux SECTIONS d'un même espace. Les adresses ne bougent pas
+ * (`/production/…`, `/livraison/…`) : seul le menu change. La Supervision en
+ * est ressortie le même jour : elle a retrouvé son entrée au premier niveau.
  *
- * Les trois tables restent séparées et gardent chacune leurs droits : une
+ * Les deux tables restent séparées et gardent chacune leurs droits : une
  * section dont aucune vue n'est ouverte disparaît d'elle-même, puisque
  * `groupRailItems` ne fabrique un groupe qu'à partir d'une vue présente.
  */
 export const EXPLOITATION_VIEWS: readonly WorkspaceView[] = [
   ...underSection('Production', PRODUCTION_VIEWS),
-  ...underSection('Supervision', SUPERVISION_VIEWS),
   ...underSection('Livraison', LIVRAISON_VIEWS),
 ];
 
@@ -301,7 +281,7 @@ function rootSegmentOf(url: string): string {
 /**
  * L'adresse est-elle dans l'Exploitation ? C'est ce qui allume l'entrée du
  * menu principal : `routerLinkActive` ne compare qu'à UN lien, et l'espace en
- * couvre trois racines.
+ * couvre deux racines.
  */
 export function isExploitationUrl(url: string): boolean {
   return EXPLOITATION_ROOTS.has(rootSegmentOf(url));

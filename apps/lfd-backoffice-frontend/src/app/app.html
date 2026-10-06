@@ -44,10 +44,26 @@
         ></a>
       }
 
+      @if (canSeeSupervision()) {
+        <!-- LA SUPERVISION DU JOUR — une vue, à part des espaces de travail :
+             celui qui regarde l'ensemble, pas celui qui fait. Revenue au premier
+             niveau le 2026-10-06, avant l'Exploitation qu'elle surplombe. -->
+        <a
+          fold-menu-item
+          icon="eye"
+          label="Supervision"
+          routerLink="/supervision"
+          routerLinkActive
+          #supervisionRla="routerLinkActive"
+          [active]="supervisionRla.isActive"
+          (click)="mobileNavOpen.set(false)"
+        ></a>
+      }
+
       @if (canSeeExploitation()) {
-        <!-- L'EXPLOITATION (2026-10-06) : la Production, la Supervision et la
-             Livraison, trois sections d'un même espace au rail secondaire. Les
-             adresses n'ont pas bougé ; l'entrée s'allume sur les trois. -->
+        <!-- L'EXPLOITATION (2026-10-06) : la Production et la Livraison, deux
+             sections d'un même espace au rail secondaire. Les adresses n'ont pas
+             bougé ; l'entrée s'allume sur les deux. -->
         <a
           fold-menu-item
           icon="production"
@@ -509,6 +525,19 @@
             ></a>
           }
         </fold-nav-group>
+      }
+      @if (canSeeSupervision()) {
+        <!-- La MÊME entrée qu'au rail : les deux arbres ne partagent pas leur modèle. -->
+        <a
+          fold-nav-tile
+          icon="eye"
+          label="Supervision"
+          routerLink="/supervision"
+          routerLinkActive
+          #supervisionTile="routerLinkActive"
+          [active]="supervisionTile.isActive"
+          (click)="mobileNavOpen.set(false)"
+        ></a>
       }
       @if (canSeeExploitation()) {
         <!-- L'Exploitation, lue dans le MÊME catalogue que le rail secondaire.
