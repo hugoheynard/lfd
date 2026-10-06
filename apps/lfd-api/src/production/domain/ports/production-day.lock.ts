@@ -7,8 +7,9 @@ import type { ServiceDay } from "../value-objects/service-day.value-object.js";
  * Trois écrivains le touchent : mettre au bac (ou ressortir), annuler une
  * fournée, et `save` de la journée (clôture, retirage), qui réécrit les lignes
  * de colisage. Un verrou par ligne du compte ne tiendrait pas — `save` la
- * détruit. Il porte donc sur la ligne `production_day`, que personne ne
- * supprime, et chacun des trois le prend PUIS relit la journée sous lui.
+ * détruit. Il porte donc sur la journée elle-même — y compris une journée
+ * sans ligne, que la clôture doit sérialiser aussi (lot A0, 2026-10-06) — et
+ * chacun le prend PUIS relit la journée sous lui.
  *
  * 🔴 Il n'a de sens que DANS une unité de travail : pris hors transaction, il
  * serait relâché à la fin de sa propre requête. L'adaptateur le refuse.

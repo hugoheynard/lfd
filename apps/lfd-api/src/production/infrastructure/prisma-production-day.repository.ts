@@ -127,7 +127,11 @@ export class PrismaProductionDayRepository extends ProductionDayRepository {
    *
    * 🔴 Elle prend d'abord le verrou de la journée (D4 des fournées) — la même
    * requête que `PrismaProductionDayLock`, écrite ici parce qu'elle doit viser
-   * `tx`. L'appelant a chargé l'agrégat sous ce verrou.
+   * `tx`. Ce verrou-ci ne protège QUE l'écriture : il ne rend pas juste un
+   * agrégat chargé avant lui. Les appelants qui décident sur la journée
+   * (clôture, retirage) prennent `ProductionDayLock` dans leur unité de
+   * travail PUIS la rechargent (vérifié le 2026-10-06 ; la clôture ne le
+   * faisait pas avant le lot A0).
    *
    * 🔴 **Le colisage de l'ancien poste est RECOPIÉ, jamais interprété.** Les
    * colonnes `packed_*` et `container_count` ne sont plus ni lues par le

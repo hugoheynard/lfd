@@ -16,6 +16,7 @@ import { ProductionDayClosedJournalEvent } from "../../../domain/events/producti
 import { ProductionDayEmptyError } from "../../../domain/errors/production-errors.js";
 import { ProductionDayRepository } from "../../../domain/ports/production-day.repository.js";
 import { ServiceDay } from "../../../domain/value-objects/service-day.value-object.js";
+import { RecordingDayLock } from "../../__tests__/batch-doubles.js";
 import { CloseProductionDayCommand } from "../close-production-day.command.js";
 import { CloseProductionDayHandler } from "../close-production-day.handler.js";
 
@@ -192,6 +193,7 @@ function subject(day: ProductionDay, rows: readonly ProducibleOrder[]) {
       new FixedClock(NOW),
       uow,
       durable,
+      new RecordingDayLock(),
     ),
   };
 }

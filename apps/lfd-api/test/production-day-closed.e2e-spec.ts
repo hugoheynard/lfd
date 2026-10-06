@@ -259,4 +259,32 @@ describe("la clôture de journée passe par la boîte d'envoi", () => {
 
     expect((await orderOf(late)).status).toBe("confirmed");
   });
+
+  it("deux clôtures concurrentes ne ferment qu'UNE fois", async () => {
+    // Régression (constatée le 2026-10-06, lot A0) : la journée était chargée
+    // hors verrou, et deux clics simultanés fermaient tous les deux.
+    await place();
+
+    const responses = await Promise.all([
+      ctx.asSub(STAFF).post(`/admin/production/batch/${SERVICE_DAY}/close`).expect(201),
+      ctx.asSub(STAFF).post(`/admin/production/batch/${SERVICE_DAY}/close`).expect(201),
+    ]);
+    await ctx.drain();
+
+    const flags = responses
+      .map((response) => jsonBody<{ readonly alreadyClosed: boolean }>(response).alreadyClosed)
+      .sort();
+    expect(flags).toEqual([false, true]);
+    expect(await ctx.prisma.activityEvent.count({ where: { type: "production_day.closed" } })).toBe(
+      1,
+    );
+    const keys = (
+      await ctx.prisma.outboxMessage.findMany({
+        where: { type: "production.day_closed" },
+        select: { key: true },
+      })
+    ).map((message) => message.key);
+    expect(keys).toHaveLength(2);
+    expect(keys.filter((key) => !key.includes(":reannounced:"))).toHaveLength(1);
+  });
 });

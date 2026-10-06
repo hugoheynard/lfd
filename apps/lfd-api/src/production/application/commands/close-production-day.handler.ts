@@ -5,11 +5,15 @@ import { UnitOfWork } from "../../../platform/database/unit-of-work.js";
 import { DomainEventPublisher } from "../../../platform/events/domain-event-publisher.js";
 import { DurablePublisher } from "../../../platform/outbox/durable-publisher.js";
 import { Clock } from "../../../platform/time/clock.js";
-import { DayOrdersReader } from "../../channels/commerce/day-orders.reader.js";
+import {
+  DayOrdersReader,
+  type ProducibleOrder,
+} from "../../channels/commerce/day-orders.reader.js";
 import { PendingSettlementSweeper } from "../../channels/commerce/pending-settlement.sweeper.js";
 import { ProductionDayClosedEvent } from "../../channels/commerce/production-day-closed.event.js";
 import type { ProductionDay } from "../../domain/entities/production-day.js";
 import { ProductionDayClosedJournalEvent } from "../../domain/events/production-day.events.js";
+import { ProductionDayLock } from "../../domain/ports/production-day.lock.js";
 import { ProductionDayRepository } from "../../domain/ports/production-day.repository.js";
 import { ServiceDay } from "../../domain/value-objects/service-day.value-object.js";
 import { packingListFactsOf } from "../services/packing-list-facts.js";
@@ -20,7 +24,12 @@ import { CloseProductionDayCommand } from "./close-production-day.command.js";
  *
  * ## Ce que ce handler fait, et ce qu'il ne fait PAS
  *
- * Il charge l'agrégat, lui demande de se clore, l'écrit, et **publie**. Il
+ * Il verrouille la journée, la RECHARGE sous le verrou, lui demande de se
+ * clore, l'écrit, et **publie** — tout dans une unité de travail (lot A0 du
+ * plan `production/plan-arret-du-plan.md`, B1, 2026-10-06 : jusque-là le
+ * chargement se faisait hors verrou, et deux clôtures concurrentes fermaient
+ * toutes les deux). Le balayage et la lecture des commandes du commerce
+ * restent AVANT le verrou : pas d'appel d'un autre bloc sous un verrou tenu. Il
  * n'écrit rien chez le commerce : `confirmed` est un fait du commerce, tiré du
  * nôtre par un abonné qui vit chez lui. Chaque contexte n'écrit que ses tables.
  *
@@ -69,10 +78,10 @@ import { CloseProductionDayCommand } from "./close-production-day.command.js";
  * ## Le journal et la boîte d'envoi, dans la MÊME transaction
  *
  * La clôture écrit `production_day.closed` au journal et `production.day_closed`
- * dans la boîte d'envoi, dans la transaction de `save` : les trois, ou aucun.
- * La réannonce n'écrit AUCUN fait au journal — un second « arrêtée » mentirait
- * sur l'heure et l'auteur — mais ouvre sa propre unité de travail pour la boîte
- * d'envoi, qui refuse d'écrire hors transaction.
+ * dans la boîte d'envoi, dans l'unité de travail qui tient le verrou et où
+ * `save` écrit : les trois, ou aucun. La réannonce n'écrit AUCUN fait au
+ * journal — un second « arrêtée » mentirait sur l'heure et l'auteur — mais
+ * publie dans une unité de travail, sous le même verrou.
  *
  * L'abonné du commerce ne tourne plus dans le contexte de cette transaction :
  * le relais le livre après la validation, dans SA propre unité de travail.
@@ -104,51 +113,78 @@ export class CloseProductionDayHandler implements ICommandHandler<
     private readonly clock: Clock,
     private readonly uow: UnitOfWork,
     private readonly durable: DurablePublisher,
+    private readonly lock: ProductionDayLock,
   ) {}
 
   async execute(command: CloseProductionDayCommand): Promise<ProductionPlanClosure> {
     const day = ServiceDay.of(command.serviceDay);
     // AVANT le chargement et avant la branche de réannonce : le balayage vaut
     // pour chaque appel, et une journée déjà close n'en est pas dispensée (S4).
+    // Hors du verrou : c'est un appel au commerce, qui écrit chez lui.
     await this.settlements.sweep(day);
-    const current = await this.days.load(day);
 
-    if (current.isClosed) {
-      return this.reannounce(day, current);
+    // Lecture HORS verrou, qui ne sert qu'à épargner la question au commerce
+    // quand la journée est déjà close. Elle ne décide jamais d'une clôture :
+    // la décision se reprend sous le verrou, sur la journée relue.
+    if ((await this.days.load(day)).isClosed) {
+      return this.reannounce(day);
     }
-
-    // Les commandes sont lues APRÈS le chargement de la journée : si elle est
-    // déjà close, on ne les demande pas du tout — une requête de moins, et
-    // surtout aucun risque de croire qu'on a lu ce qu'on va écrire.
+    // Les commandes du commerce sont lues AVANT le verrou, comme au retirage :
+    // pas de lecture d'un autre bloc sous un verrou tenu.
     const producible = await this.orders.producibleFor(day);
-    const now = this.clock.now();
-    current.close(producible, now);
-    await this.uow.run(async () => {
+    return this.closeUnderLock(day, producible);
+  }
+
+  /**
+   * Verrouille, RECHARGE, puis décide (lot A0, 2026-10-06). Chargée hors
+   * verrou, deux clôtures concurrentes fermaient toutes les deux : deux
+   * instantanés, deux `production_day.closed`, deux faits « frais ». La
+   * seconde trouve désormais la journée close et réannonce.
+   */
+  private async closeUnderLock(
+    day: ServiceDay,
+    producible: readonly ProducibleOrder[],
+  ): Promise<ProductionPlanClosure> {
+    return this.uow.run(async () => {
+      await this.lock.lock(day);
+      const current = await this.days.load(day);
+      if (current.isClosed) {
+        return this.republish(day, current);
+      }
+      const now = this.clock.now();
+      current.close(producible, now);
       await this.days.save(current);
       await this.events.publishTraced(
         new ProductionDayClosedJournalEvent(day.value, current.orders.length),
       );
       await this.durable.publish(this.factOf(day, current, now, null).durableFact());
       await this.publishPackingList(day, current, now);
+      return this.report(day, now, current.orders.length, false);
     });
-
-    return this.report(day, now, current.orders.length, false);
   }
 
-  /** Republie le fait sur une journée déjà close, sans rien recalculer. */
-  private async reannounce(
-    day: ServiceDay,
-    current: ProductionDay,
-  ): Promise<ProductionPlanClosure> {
+  /**
+   * Republie le fait sur une journée déjà close, sans rien recalculer. Sous le
+   * verrou, sur la journée relue : un retirage concurrent ne fait pas
+   * republier un instantané d'avant lui. Une journée close ne se rouvre pas —
+   * aucune méthode de l'agrégat n'efface `closedAt` (vérifié le 2026-10-06).
+   */
+  private async reannounce(day: ServiceDay): Promise<ProductionPlanClosure> {
+    return this.uow.run(async () => {
+      await this.lock.lock(day);
+      return this.republish(day, await this.days.load(day));
+    });
+  }
+
+  /** À appeler DANS l'unité de travail : la boîte d'envoi refuse d'écrire hors d'elle. */
+  private async republish(day: ServiceDay, current: ProductionDay): Promise<ProductionPlanClosure> {
     // `closedAt` ne peut pas être nul ici — l'agrégat l'était déjà. On le traite
     // quand même plutôt que de l'affirmer : un `!` dirait au compilateur de se
     // taire sur la seule chose qu'il sait.
     const now = this.clock.now();
     const at = current.closedAt ?? now;
-    await this.uow.run(async () => {
-      await this.durable.publish(this.factOf(day, current, at, now).durableFact());
-      await this.publishPackingList(day, current, at);
-    });
+    await this.durable.publish(this.factOf(day, current, at, now).durableFact());
+    await this.publishPackingList(day, current, at);
     return this.report(day, at, current.orders.length, true);
   }
 
