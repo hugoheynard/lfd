@@ -1,4 +1,4 @@
-import { Router } from '@angular/router';
+import { provideRouter, Router } from '@angular/router';
 import { HttpErrorResponse } from '@angular/common/http';
 import { type ComponentFixture, TestBed } from '@angular/core/testing';
 import type {
@@ -13,6 +13,7 @@ import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 
 import { PermissionsStore } from '../../auth/permissions.store';
 import { type DayWatch, DayVersionWatcher } from '../../shared/day-version/day-version-watcher';
+import { DriverNoticeGate } from '../driver-notice-gate';
 import { MyDeliveryLoadingService } from '../my-delivery-loading.service';
 import { type IncidentReport, MyDeliveryRoundService } from '../my-delivery-round.service';
 import { myRoundOf, mySheetLineOf, myStopOf } from '../my-round.fixture';
@@ -33,6 +34,8 @@ interface Wire {
   /** Ce que rend la tournée APRÈS un geste à la porte réussi. */
   afterGesture: MyDeliveryRoundView | null;
   granted: readonly StaffPermission[];
+  /** Le texte d'information au départ : lu, remis à plus tard, ou illisible. */
+  notice: 'cleared' | 'later' | 'fails';
   readonly calls: string[];
 }
 
@@ -68,6 +71,7 @@ async function boot(
     refuse: null,
     afterGesture: null,
     granted: ['delivery_driving:write', 'delivery_doorstep:write'],
+    notice: 'cleared',
     calls: [],
     ...partial,
   };
@@ -85,6 +89,8 @@ async function boot(
   TestBed.resetTestingModule();
   TestBed.configureTestingModule({
     providers: [
+      // « Mes données » est un `routerLink` : il lui faut un routeur.
+      provideRouter([]),
       {
         provide: DayVersionWatcher,
         useValue: {
@@ -142,6 +148,17 @@ async function boot(
             return Promise.resolve(new Blob(['x']));
           },
         } satisfies Partial<Record<keyof MyDeliveryRoundService, unknown>>,
+      },
+      {
+        provide: DriverNoticeGate,
+        useValue: {
+          clear: (): Promise<boolean> => {
+            wire.calls.push('notice');
+            return wire.notice === 'fails'
+              ? Promise.reject(new HttpErrorResponse({ status: 503 }))
+              : Promise.resolve(wire.notice === 'cleared');
+          },
+        } satisfies Pick<DriverNoticeGate, 'clear'>,
       },
       {
         provide: PermissionsStore,
@@ -231,6 +248,40 @@ describe('MyRoundPage — au dépôt', () => {
     expect(element.querySelector('[data-refusal]')?.textContent?.trim()).toBe(message);
     expect(wire.calls.at(-1)).toBe('round r-1');
     expect(element.querySelector('[data-depart]')).not.toBeNull();
+  });
+  it('présente le texte d’information AVANT de partir', async () => {
+    const { fixture, element } = await boot();
+
+    click(element, '[data-depart]');
+    await settle(fixture);
+    expect(wire.calls.slice(-3)).toEqual(['notice', 'depart r-1 {"version":3}', 'round r-1']);
+  });
+
+  it('« Plus tard » : la tournée ne démarre pas', async () => {
+    const { fixture, element } = await boot({ notice: 'later' });
+
+    click(element, '[data-depart]');
+    await settle(fixture);
+    expect(wire.calls.at(-1)).toBe('notice');
+    expect(wire.calls.some((call) => call.startsWith('depart'))).toBe(false);
+    expect(element.querySelector('[data-depart]')).not.toBeNull();
+    expect(element.querySelector('[data-refusal]')).toBeNull();
+  });
+
+  it('texte illisible : le dit, et ne démarre pas', async () => {
+    const { fixture, element } = await boot({ notice: 'fails' });
+
+    click(element, '[data-depart]');
+    await settle(fixture);
+    expect(wire.calls.some((call) => call.startsWith('depart'))).toBe(false);
+    expect(element.querySelector('[data-refusal]')).not.toBeNull();
+  });
+
+  it('« Mes données » est toujours à portée', async () => {
+    const { element } = await boot();
+    expect(element.querySelector('a[data-my-data]')?.getAttribute('href')).toBe(
+      '/coursier/mes-donnees',
+    );
   });
 });
 

@@ -1,4 +1,15 @@
 <fold-page-layout icon="truck" title="Ma tournée">
+  <a
+    pageActions
+    foldButton
+    emphasis="outline"
+    intent="neutral"
+    icon="shield"
+    routerLink="/coursier/mes-donnees"
+    data-my-data
+  >
+    Mes données
+  </a>
   <div class="page">
     @switch (list().status) {
       @case ('loading') {

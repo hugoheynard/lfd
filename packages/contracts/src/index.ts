@@ -924,6 +924,13 @@ export type {
   MyDeliveryStopPacking,
   MyDeliverySheetLineView,
 } from "./delivery-my-round.js";
+export { acknowledgeDriverNoticePayloadSchema } from "./delivery-driver-notice.js";
+export type {
+  AcknowledgeDriverNoticePayload,
+  DriverNoticeSectionView,
+  DriverNoticeView,
+  MyDriverNoticeView,
+} from "./delivery-driver-notice.js";
 export {
   DELIVERY_INCIDENT_FAMILIES,
   DELIVERY_INCIDENT_REASONS,

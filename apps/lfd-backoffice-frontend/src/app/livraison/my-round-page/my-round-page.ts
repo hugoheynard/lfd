@@ -1,4 +1,4 @@
-import { Router } from '@angular/router';
+import { Router, RouterLink } from '@angular/router';
 import { ChangeDetectionStrategy, Component, computed, inject, signal } from '@angular/core';
 import type {
   DeliveryIncidentFamily,
@@ -43,6 +43,7 @@ import {
   routeLegs,
   writeNavigationApp,
 } from '../my-round-navigation';
+import { DriverNoticeGate } from '../driver-notice-gate';
 import { MyDeliveryRoundService } from '../my-delivery-round.service';
 import { allStopsReady, readyStopsLabel } from '../my-round-packing';
 import { MyRoundStop } from '../my-round-stop/my-round-stop';
@@ -89,6 +90,10 @@ function deviceStorage(): Storage | null {
  *
  * **Charger** (PL1) : au dépôt, « Charger » ouvre le chargement de SA tournée
  * dans la page — le même écran que celui du dépôt, par la porte du livreur.
+ *
+ * **Ses données** (`rgpd-livreur.md`, §7 point 2) : « Commencer ma tournée »
+ * présente d'abord le texte d'information tant que sa version courante n'est
+ * pas accusée (`DriverNoticeGate`) ; « Mes données » le relit à tout moment.
  */
 @Component({
   selector: 'app-my-round-page',
@@ -108,6 +113,7 @@ function deviceStorage(): Storage | null {
     IncidentList,
     IncidentReportForm,
     MyRoundStop,
+    RouterLink,
   ],
   templateUrl: './my-round-page.html',
   styleUrl: './my-round-page.scss',
@@ -116,6 +122,7 @@ export class MyRoundPage {
   private readonly service = inject(MyDeliveryRoundService);
   private readonly permissions = inject(PermissionsStore);
   private readonly router = inject(Router);
+  private readonly notice = inject(DriverNoticeGate);
   private readonly storage = deviceStorage();
 
   private readonly today = parisDayOf(new Date());
@@ -257,6 +264,10 @@ export class MyRoundPage {
     }
     this.busy.set(true);
     this.refusal.set(null);
+    if (!(await this.noticeCleared())) {
+      this.busy.set(false);
+      return;
+    }
     try {
       await this.service.depart(round.id, { version: round.version });
     } catch (error) {
@@ -266,6 +277,23 @@ export class MyRoundPage {
     // version a peut-être changé au dépôt.
     await this.loadRound(round.id);
     this.busy.set(false);
+  }
+
+  /**
+   * Le texte d'information est-il lu ? Sinon le dialogue s'ouvre ; « Plus
+   * tard » rend `false` et la tournée ne démarre pas. Une lecture impossible
+   * se dit, et ne démarre pas non plus : partir sans l'information serait
+   * le défaut silencieux.
+   */
+  private async noticeCleared(): Promise<boolean> {
+    try {
+      return await this.notice.clear();
+    } catch (error) {
+      this.refusal.set(
+        httpErrorMessage(error, '« Vos données de livreur » n’a pas pu être lu. Réessayez.'),
+      );
+      return false;
+    }
   }
 
   /** « Je suis arrivé » sur l'arrêt suivant. */

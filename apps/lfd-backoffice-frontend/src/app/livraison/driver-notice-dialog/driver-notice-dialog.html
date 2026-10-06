@@ -1,0 +1,29 @@
+<fold-panel-header
+  icon="shield"
+  [title]="data().notice.title"
+  subtitle="À lire avant votre tournée"
+  closeLabel="Plus tard"
+/>
+
+<fold-panel-body>
+  <app-driver-notice-text [notice]="data().notice" />
+  @if (refusal(); as message) {
+    <fold-callout variant="alert" announce data-refusal>{{ message }}</fold-callout>
+  }
+</fold-panel-body>
+
+<fold-panel-footer align="end">
+  <button foldButton emphasis="outline" intent="neutral" type="button" (click)="later()" data-later>
+    Plus tard
+  </button>
+  <button
+    foldButton
+    intent="primary"
+    type="button"
+    [loading]="saving()"
+    (click)="understood()"
+    data-understood
+  >
+    J’ai compris
+  </button>
+</fold-panel-footer>

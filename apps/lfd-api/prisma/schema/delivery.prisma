@@ -783,3 +783,25 @@ model DeliveryDayReadiness {
   @@map("delivery_day_readiness")
   @@schema("delivery")
 }
+
+/// **L'accusé de lecture du texte d'information du livreur**
+/// (`documentation/legal/rgpd-livreur.md`, §7 point 2) — une ligne par fiche
+/// et par VERSION du texte : une nouvelle version n'a pas d'accusé, et le
+/// dialogue se rouvre une fois au départ.
+///
+/// Un fait, pas un consentement : il ne se retire ni ne se corrige. Écrivain :
+/// la livraison seule (`delivery/`), par « J'ai compris ». `staff_id` est une
+/// fiche staff OPAQUE, sans clé étrangère vers `public` (CLAUDE.md §1). Aucune
+/// colonne de journée : un accusé n'a pas de jour. Donnée du livreur, déclarée
+/// dans `documentation/legal/rgpd-registre.json`.
+model DeliveryDriverNoticeAcknowledgement {
+  staffId        String   @map("staff_id")
+  /// La version du texte lue (`CURRENT_DRIVER_NOTICE.version`).
+  version        Int
+  /// L'horloge du serveur au premier « J'ai compris » ; un rejeu ne la réécrit pas.
+  acknowledgedAt DateTime @map("acknowledged_at") @db.Timestamptz(6)
+
+  @@id([staffId, version])
+  @@map("delivery_driver_notice_ack")
+  @@schema("delivery")
+}

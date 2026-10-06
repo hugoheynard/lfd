@@ -266,6 +266,8 @@ const NON_PUBLIC_SCHEMA_OF_MODEL: Readonly<Record<string, string>> = {
   // Le calculateur de tournée (lot 7) : un réglage, et le cache du géocodage.
   DeliveryRoutingSettings: "delivery",
   DeliveryGeocode: "delivery",
+  // L'accusé du texte d'information du livreur (rgpd-livreur.md §7) : une ligne par version lue.
+  DeliveryDriverNoticeAcknowledgement: "delivery",
   // Les scénarios du simulateur (L9-C7) : réglage, sans journée ni client.
   DeliverySimulationScenario: "delivery",
   // Les bacs et leurs contenances (lot 4 bis, tranche A) : un réglage, une case à la fois.

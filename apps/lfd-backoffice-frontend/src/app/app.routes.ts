@@ -305,6 +305,15 @@ export const routes: Routes = [
     loadComponent: () =>
       import('./livraison/my-round-page/my-round-page').then((m) => m.MyRoundPage),
   },
+  // « MES DONNÉES » (2026-10-06, `documentation/legal/rgpd-livreur.md` §7) : le
+  // texte d'information du livreur, à relire — sous le même droit que la page.
+  {
+    path: 'coursier/mes-donnees',
+    canActivate: [permissionGuard('delivery_driving:read')],
+    title: 'Mes données — LFC B2B admin',
+    loadComponent: () =>
+      import('./livraison/driver-notice-page/driver-notice-page').then((m) => m.DriverNoticePage),
+  },
   // LE COLISAGE (2026-10-04, `documentation/colisage/colisage.md`,
   // P0) : un poste de PREMIER niveau, comme le Coursier — ses données restent
   // au fournil, mais le geste n'en est pas une vue. Le même composant que

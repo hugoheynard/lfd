@@ -1,6 +1,7 @@
 # Données personnelles du livreur — l'état et ce qui manque
 
-> **État au 2026-10-06 : 🟠 inventaire.** Ce document rassemble ce que
+> **État au 2026-10-06 : 🟠 inventaire — l'information du livreur est donnée
+> (texte version 1, §7 point 2 et §8).** Ce document rassemble ce que
 > l'application traite **sur le livreur** et **sur les personnes que le livreur
 > photographie ou fait signer** à la porte. Chaque fait sur le code porte la
 > date à laquelle il a été ouvert ; ce qui n'a pas pu être vérifié est dit
@@ -34,19 +35,20 @@
 
 Vérifié le 2026-10-06 dans `apps/lfd-api/prisma/schema/` et le code cité.
 
-| Donnée                                                                         | Où                                                                                                                       | Pourquoi (finalité)                           | Qui la voit                                                      | Conservation                                                                                                         | État                  |
-| ------------------------------------------------------------------------------ | ------------------------------------------------------------------------------------------------------------------------ | --------------------------------------------- | ---------------------------------------------------------------- | -------------------------------------------------------------------------------------------------------------------- | --------------------- |
-| Prénom, nom, e-mail, téléphone, intitulé de poste                              | `public.staff_users` (`first_name`, `last_name`, `email`, `phone`, `job_title`)                                          | annuaire, invitation, auteur des gestes       | droit `staff` de l'annuaire                                      | **aucune** : la fiche n'a pas de fin                                                                                 | bâti                  |
-| Identifiant Auth0                                                              | `staff_users.auth0_id`                                                                                                   | relier la connexion à la fiche                | aucun écran ; liste admise de lecteurs (`lint:auth0-id-readers`) | **aucune**                                                                                                           | bâti                  |
-| Statut, rôle, dérogations de droits                                            | `staff_users.status`, `role_key`, tables de permissions                                                                  | autoriser chaque geste                        | écran des rôles                                                  | **aucune**                                                                                                           | bâti                  |
-| Abonnement Web Push de l'appareil (URL du service de push, clés du navigateur) | `public.staff_push_subscriptions` (`endpoint`, `p256dh`, `auth`, `staff_user_id`, `last_sent_at`, `failing_since`)       | prévenir l'appareil (cloche du back-office)   | aucun écran trouvé                                               | oublié après une semaine de refus 403 (commentaire du schéma, non rejoué) ; sinon **aucune**                         | bâti                  |
-| Affectation à une tournée                                                      | `delivery.delivery_round.driver_staff_id`                                                                                | dire à qui est la tournée ; le mur du livreur | Tournées (`delivery`)                                            | **aucune**                                                                                                           | bâti                  |
-| Départ, retour, auteur et nom du retour                                        | `delivery_round.departed_at`, `returned_at`, `returned_by`, `returned_by_name`                                           | mesure du temps de tournée, garde des bacs    | Tournées                                                         | **aucune**                                                                                                           | bâti                  |
-| « Je suis arrivé »                                                             | `delivery_stop_execution.arrived_at`                                                                                     | instant de la porte                           | Tournées                                                         | **aucune**                                                                                                           | bâti                  |
-| Chargement d'un bac (qui)                                                      | `delivery_bin_load.loaded_by`                                                                                            | garde des bacs                                | Tournées                                                         | **aucune**                                                                                                           | bâti                  |
-| Problème signalé : famille, motif, note ≤ 500 car., photo, auteur et nom figé  | `delivery.delivery_incident` (`reported_by`, `reported_by_name`, `photo_key`) ; photo dans le stockage R2 « production » | prévenir le commercial, trancher              | Tournées, commerciaux notifiés                                   | **aucune** — un fait qui « ne se supprime pas » (commentaire du schéma)                                              | bâti                  |
-| Auteur d'une pièce de remise                                                   | `production.order_handover_proof.recorded_by`                                                                            | qui a remis                                   | droit `delivery_proofs` (lecture)                                | **aucune** ; purge câblée non planifiée (§7)                                                                         | bâti                  |
-| **Position du téléphone au geste**                                             | —                                                                                                                        | écart au point du carnet, litige              | —                                                                | proposé : 60 jours ([`../livraisons/plan-y-aller-et-position.md`](../livraisons/plan-y-aller-et-position.md), YA-Q3) | **proposé, non bâti** |
+| Donnée                                                                         | Où                                                                                                                       | Pourquoi (finalité)                            | Qui la voit                                                      | Conservation                                                                                                         | État                  |
+| ------------------------------------------------------------------------------ | ------------------------------------------------------------------------------------------------------------------------ | ---------------------------------------------- | ---------------------------------------------------------------- | -------------------------------------------------------------------------------------------------------------------- | --------------------- |
+| Prénom, nom, e-mail, téléphone, intitulé de poste                              | `public.staff_users` (`first_name`, `last_name`, `email`, `phone`, `job_title`)                                          | annuaire, invitation, auteur des gestes        | droit `staff` de l'annuaire                                      | **aucune** : la fiche n'a pas de fin                                                                                 | bâti                  |
+| Identifiant Auth0                                                              | `staff_users.auth0_id`                                                                                                   | relier la connexion à la fiche                 | aucun écran ; liste admise de lecteurs (`lint:auth0-id-readers`) | **aucune**                                                                                                           | bâti                  |
+| Statut, rôle, dérogations de droits                                            | `staff_users.status`, `role_key`, tables de permissions                                                                  | autoriser chaque geste                         | écran des rôles                                                  | **aucune**                                                                                                           | bâti                  |
+| Abonnement Web Push de l'appareil (URL du service de push, clés du navigateur) | `public.staff_push_subscriptions` (`endpoint`, `p256dh`, `auth`, `staff_user_id`, `last_sent_at`, `failing_since`)       | prévenir l'appareil (cloche du back-office)    | aucun écran trouvé                                               | oublié après une semaine de refus 403 (commentaire du schéma, non rejoué) ; sinon **aucune**                         | bâti                  |
+| Affectation à une tournée                                                      | `delivery.delivery_round.driver_staff_id`                                                                                | dire à qui est la tournée ; le mur du livreur  | Tournées (`delivery`)                                            | **aucune**                                                                                                           | bâti                  |
+| Départ, retour, auteur et nom du retour                                        | `delivery_round.departed_at`, `returned_at`, `returned_by`, `returned_by_name`                                           | mesure du temps de tournée, garde des bacs     | Tournées                                                         | **aucune**                                                                                                           | bâti                  |
+| « Je suis arrivé »                                                             | `delivery_stop_execution.arrived_at`                                                                                     | instant de la porte                            | Tournées                                                         | **aucune**                                                                                                           | bâti                  |
+| Chargement d'un bac (qui)                                                      | `delivery_bin_load.loaded_by`                                                                                            | garde des bacs                                 | Tournées                                                         | **aucune**                                                                                                           | bâti                  |
+| Problème signalé : famille, motif, note ≤ 500 car., photo, auteur et nom figé  | `delivery.delivery_incident` (`reported_by`, `reported_by_name`, `photo_key`) ; photo dans le stockage R2 « production » | prévenir le commercial, trancher               | Tournées, commerciaux notifiés                                   | **aucune** — un fait qui « ne se supprime pas » (commentaire du schéma)                                              | bâti                  |
+| Auteur d'une pièce de remise                                                   | `production.order_handover_proof.recorded_by`                                                                            | qui a remis                                    | droit `delivery_proofs` (lecture)                                | **aucune** ; purge câblée non planifiée (§7)                                                                         | bâti                  |
+| Lecture du texte d'information (fiche, version, instant)                       | `delivery.delivery_driver_notice_ack` (`staff_id`, `version`, `acknowledged_at`)                                         | prouver que l'information a précédé la tournée | aucun écran ; le livreur relit le texte dans « Mes données »     | **aucune**                                                                                                           | bâti                  |
+| **Position du téléphone au geste**                                             | —                                                                                                                        | écart au point du carnet, litige               | —                                                                | proposé : 60 jours ([`../livraisons/plan-y-aller-et-position.md`](../livraisons/plan-y-aller-et-position.md), YA-Q3) | **proposé, non bâti** |
 
 ⚠️ **Les colonnes `gps_lat` / `gps_lng` de `delivery_stop_execution` ne sont
 PAS la position du livreur** (vérifié le 2026-10-06, schéma et migration
@@ -107,7 +109,9 @@ les pauses ou le trajet du livreur.
 Ce que la CNIL attend d'une géolocalisation de salariés, **à vérifier sur ses
 textes** (non ouverts ici) et à faire valider :
 
-- [ ] **information préalable** du livreur, écrite, avant la mise en service ;
+- [ ] **information préalable** du livreur, écrite, avant la mise en service
+      — le texte existe (§7 point 2), mais il dit aujourd'hui que la position
+      n'est PAS relevée : la version 2 l'annoncera ;
 - [ ] **finalité déterminée** et compatible — à confronter à la phrase
       ci-dessus ;
 - [ ] **proportionnalité** : un point au geste plutôt qu'un suivi — à faire
@@ -153,9 +157,25 @@ Vérifié le 2026-10-06.
    2026-10-06), **chaque commande livrée est géocodée à la passation** dès que
    `BAN_GEOCODER_URL` est posée : c'est **bloquant avant la prochaine promotion
    vers `main`**, ou bien vérifier que la variable est vide en production.
-2. 🔴 **Informer les livreurs** par écrit avant toute tournée réelle : ce qui
-   est enregistré (§2), pourquoi, combien de temps, qui le voit. Obligatoire
-   avant la position au geste.
+2. ✅ **Informer les livreurs** — fait le 2026-10-06 (non commité à
+   l'écriture de cette ligne). Le texte, version 1, vit à une seule source :
+   `apps/lfd-api/src/delivery/domain/value-objects/driver-information-notice.ts`.
+   Au premier appui sur « Commencer ma tournée », un dialogue le présente en
+   entier — « J'ai compris » enregistre l'accusé
+   (`delivery.delivery_driver_notice_ack`) puis démarre, « Plus tard » ne
+   démarre pas. Une nouvelle version le réaffiche une fois. « Mes données »
+   (`/coursier/mes-donnees`) le relit à tout moment. Une **information**, pas
+   un consentement : l'accusé prouve que le texte a été montré, il n'autorise
+   rien. Ce qui reste :
+   - 🔴 **le contact** pour exercer ses droits : le texte affiche
+     « [À COMPLÉTER : contact] », faute d'adresse dans les documents légaux ;
+   - **la position au geste** (lot 5) : le texte dit aujourd'hui que
+     l'application « ne relève pas la position » — la bâtir exige une
+     version 2 du texte, et la porte l'impose (§8) ;
+   - **les durées** : le texte dit « en cours de définition » ; les fixer
+     demande une nouvelle version.
+   - le serveur ne refuse PAS un départ sans accusé : le dialogue est côté
+     écran, et la porte du chargeur (`tournees/:roundId/depart`) n'en a pas.
 3. 🟠 **Informer le réceptionnaire** à la porte (une ligne à l'écran de
    signature, qui renvoie à la politique) — aujourd'hui rien.
 4. 🟠 **Tenir le registre des traitements** — brouillon de la ligne en
@@ -199,13 +219,22 @@ confronte au schéma Prisma à chaque exécution de `lint:gates`.
   l'adresse (`delivery_stop_execution.gps_lat/lng`), `company_terminations.initiated_by`
   (un rôle, pas une personne), les photos des notes et des procédures d'accès
   d'un client (données du client).
-- **Le texte d'information** : `texteInformation.version` est `null` tant que
-  le dialogue d'information du livreur n'existe pas. Dès qu'il a une version,
-  l'empreinte des entrées `livreur` (colonne et catégorie) doit être celle que
-  le texte a vue : ajouter ou recatégoriser une donnée du livreur exige une
-  nouvelle version du texte.
+- **Le texte d'information** : `texteInformation` vaut `{ version: 1,
+empreinte }` depuis le 2026-10-06. L'empreinte des entrées `livreur`
+  (colonne et catégorie) doit être celle que le texte a vue : ajouter ou
+  recatégoriser une donnée du livreur fait échouer la porte tant qu'on n'a pas
+  écrit une nouvelle version (vérifié à la main le 2026-10-06 : une entrée
+  passée en `livreur` sans changer de version échoue). Un test
+  (`apps/lfd-api/src/delivery/domain/value-objects/__tests__/driver-notice-registry.spec.ts`) tient l'égalité entre la version du
+  registre et celle du texte servi. Les entrées `livreur` et `receptionnaire`
+  sont toutes en `information: true` ; trois horodatages que le texte annonce
+  y sont entrés ce jour-là (`delivery_round_stop.closed_at`,
+  `delivery_bin_load.loaded_at`, `delivery_incident.reported_at`), avec les
+  deux colonnes de l'accusé.
 - **Dette affichée, sans échec** : le nombre d'entrées en `a-decider`, en
-  `aucune-limite-decidee` et en `information: false`.
+  `aucune-limite-decidee` et en `information: false` — cette dernière est
+  passée de 130 à 114 le 2026-10-06 : il n'y reste que le staff hors
+  livraison, que le texte du livreur ne couvre pas.
 
 Ce qu'elle ne tient pas : une donnée personnelle dans une colonne au nom neutre
 (`note`, `contact` du snapshot de départ), ni le contenu des `jsonb`. Le

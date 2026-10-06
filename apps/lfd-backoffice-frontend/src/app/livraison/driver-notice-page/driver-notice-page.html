@@ -1,0 +1,34 @@
+<fold-page-layout icon="shield" title="Mes données">
+  <fold-back-link pageEyebrow icon="arrow-back" label="Ma tournée" routerLink="/coursier" />
+  <div class="page">
+    @switch (state().status) {
+      @case ('loading') {
+        <fold-loading message="Lecture du texte…" />
+      }
+      @case ('error') {
+        <fold-empty-state
+          tone="alert"
+          title="Le texte est illisible"
+          subtitle="Le serveur n’a pas répondu. Réessayez dans un instant."
+          data-notice-error
+        >
+          <button foldButton emphasis="outline" (click)="retry()">Réessayer</button>
+        </fold-empty-state>
+      }
+      @case ('ready') {
+        @if (mine(); as mine) {
+          @if (mine.acknowledgedAt; as at) {
+            <fold-callout variant="success" data-read-on>{{ readOn(at) }}</fold-callout>
+          } @else {
+            <fold-callout variant="info" data-not-read>
+              Ce texte vous sera présenté au démarrage de votre prochaine tournée.
+            </fold-callout>
+          }
+          <fold-card>
+            <app-driver-notice-text [notice]="mine.notice" />
+          </fold-card>
+        }
+      }
+    }
+  </div>
+</fold-page-layout>

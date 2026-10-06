@@ -1,0 +1,18 @@
+.notice,
+.section {
+  display: flex;
+  flex-direction: column;
+  gap: var(--fold-space-sm);
+}
+
+.notice {
+  gap: var(--fold-space-md);
+}
+
+.lines {
+  display: flex;
+  flex-direction: column;
+  gap: var(--fold-space-xs);
+  margin: 0;
+  padding-inline-start: var(--fold-space-lg);
+}

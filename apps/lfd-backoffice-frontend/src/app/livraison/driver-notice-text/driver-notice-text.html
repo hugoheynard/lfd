@@ -1,0 +1,13 @@
+<div class="notice" data-notice-text>
+  <p>{{ notice().intro }}</p>
+  @for (section of notice().sections; track section.heading) {
+    <section class="section" data-notice-section>
+      <fold-element-title variant="caps" [title]="section.heading" />
+      <ul class="lines">
+        @for (line of section.lines; track line) {
+          <li>{{ line }}</li>
+        }
+      </ul>
+    </section>
+  }
+</div>
