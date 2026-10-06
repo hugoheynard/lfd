@@ -55,7 +55,6 @@
         <fold-input
           [label]="'Quantité du palier ' + ($index + 1)"
           hideLabel
-          inputmode="numeric"
           placeholder="50"
           [value]="tier.minQuantity === null ? '' : tier.minQuantity.toString()"
           (valueChange)="setQuantity($index, $event)"
@@ -63,7 +62,6 @@
         <fold-input
           [label]="'Remise du palier ' + ($index + 1)"
           hideLabel
-          inputmode="decimal"
           [placeholder]="unit() === 'percent' ? '5' : '0,20'"
           [value]="tier.value === null ? '' : tier.value.toString()"
           (valueChange)="setValue($index, $event)"

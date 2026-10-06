@@ -3,9 +3,9 @@
     <fold-loading message="Préparation du règlement…" />
   }
   @case ('settled') {
-    <fold-callout variant="success" title="Rien à régler">
-      Cette commande est déjà réglée, ou elle est portée au compte de votre société et sera
-      facturée. Vous n'avez rien à faire.
+    <fold-callout variant="success">
+      <strong>Rien à régler.</strong> Cette commande est déjà réglée, ou elle est portée au compte
+      de votre société et sera facturée. Vous n'avez rien à faire.
     </fold-callout>
     <a foldButton [routerLink]="['/commandes', id()]">Voir la commande</a>
   }

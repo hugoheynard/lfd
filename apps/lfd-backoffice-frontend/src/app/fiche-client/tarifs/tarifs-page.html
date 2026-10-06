@@ -271,10 +271,11 @@
         </section>
 
         @if (blocking().length > 0) {
-          <fold-callout tone="warning" title="Ce compte a déjà une mercuriale">
-            Poser sur une période qui <strong>chevauche</strong> la sienne sera refusé : il faut
-            d'abord clore celle qui tourne. Ses règles seront <strong>archivées</strong>, jamais
-            supprimées — ce qu'elle a facturé reste.
+          <fold-callout variant="warning">
+            <strong>Ce compte a déjà une mercuriale.</strong> Poser sur une période qui
+            <strong>chevauche</strong> la sienne sera refusé : il faut d'abord clore celle qui
+            tourne. Ses règles seront <strong>archivées</strong>, jamais supprimées — ce qu'elle a
+            facturé reste.
           </fold-callout>
         }
 

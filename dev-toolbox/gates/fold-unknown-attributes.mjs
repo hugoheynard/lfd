@@ -87,9 +87,6 @@ const DEBT = new Map([
     "apps/lfd-backoffice-frontend/src/app/commandes/nouvelle-commande/panier-commande/panier-commande.html",
     1,
   ],
-  ["apps/lfd-backoffice-frontend/src/app/fiche-client/commandes/commandes-page.html", 1],
-  ["apps/lfd-backoffice-frontend/src/app/fiche-client/tarifs/tarifs-page.html", 2],
-  ["apps/lfc-ecommerce-frontend/src/app/legacy/commandes/reglement-page/reglement-page.html", 1],
 
   // `fold-input` ne déclare pas `inputmode` : l'indication de clavier mobile
   // reste sur l'élément hôte et n'atteint jamais le champ. C'est une limite de
@@ -97,13 +94,12 @@ const DEBT = new Map([
   // un aveu écrit. `readonly`, en revanche, est une faute de casse : `readOnly`.
   // (`floor-panel.html` en est sorti le 2026-09-27 : sa ligne, qui avait perdu son
   // chemin et s’était réduite à `[1]`, faisait afficher « NaN » au compte.)
-  ["apps/lfd-backoffice-frontend/src/app/b2b/tarification/ladder-panel/ladder-panel.html", 2],
-  ["apps/lfd-backoffice-frontend/src/app/b2b/tarification/rule-panel/rule-panel.html", 1],
-  ["apps/lfd-backoffice-frontend/src/app/b2b/tarification/simulateur/simulateur-page.html", 3],
   // ⚠️ La dette a DÉMÉNAGÉ, elle n'a pas été payée. `address-dialog.html` a été
   // supprimé le 2026-09-21 avec `/nouvelle-commande`, et le dialogue d'adresse
   // qui le remplace a repris son `inputmode` sans que cette liste suive — la
   // porte l'a vu le jour même. Un code postal reste la seule saisie du dépôt
+  // (Les trois écrans de tarification en sont sortis le 2026-10-06 en RETIRANT
+  // leur `inputmode` : inerte, il ne promettait rien que le rendu tenait.)
   // qui gagne vraiment à un pavé numérique sur mobile.
   [
     "apps/lfc-ecommerce-frontend/src/app/client/shop/delivery-address-dialog/delivery-address-dialog.html",
@@ -124,7 +120,6 @@ const DEBT = new Map([
     "apps/lfd-backoffice-frontend/src/app/commercial/cockpit/pinned-accounts/pinned-accounts.html",
     1,
   ],
-  ["apps/lfd-backoffice-frontend/src/app/commercial/cockpit/play-queue/play-queue.html", 1],
 
   // `fold-element-title` : c'est `variant="eyebrow"`.
   [
