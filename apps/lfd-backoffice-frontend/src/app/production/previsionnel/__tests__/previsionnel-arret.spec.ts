@@ -235,4 +235,60 @@ describe('le prévisionnel — arrêter le plan', () => {
     expect(page['arrestingDay']()).toBeNull();
     expect(page['arresting']()).toBe(false);
   });
+
+  describe('le rattrapage du plan du jour', () => {
+    /**
+     * Régression : un plan du jour oublié la veille n'était plus proposé — la
+     * bande sautait à demain et rien ne disait l'oubli (vu le 2026-10-06).
+     */
+    it('un plan du jour oublié la veille n’était plus proposé', async () => {
+      const el = await render(forecast([day(dayIn(0)), day(dayIn(1))]));
+
+      const texte = el.textContent ?? '';
+      expect(texte).toContain('n’a pas été arrêté hier soir');
+      const bouton = [...el.querySelectorAll('button')].find((b) =>
+        b.textContent?.includes('maintenant'),
+      );
+      expect(bouton?.textContent).toContain(dayMonthOf(0));
+    });
+
+    it('ne propose pas le rattrapage quand aujourd’hui est déjà arrêté', async () => {
+      const { page } = await mount(forecast([day(dayIn(0), { closed: true }), day(dayIn(1))]));
+
+      expect(page['dayToCatchUp']()).toBeUndefined();
+    });
+
+    it('ne propose pas le rattrapage d’une journée du jour sans commande', async () => {
+      const { page } = await mount(forecast([day(dayIn(0), { orderCount: 0 })]));
+
+      expect(page['dayToCatchUp']()).toBeUndefined();
+    });
+
+    it('ne propose jamais une journée passée restée ouverte', async () => {
+      const { page } = await mount(forecast([day(dayIn(-1)), day(dayIn(1))]));
+
+      expect(page['dayToCatchUp']()).toBeUndefined();
+      expect(page['dayToArrest']()?.date).toBe(dayIn(1));
+    });
+
+    it('montre le rattrapage AU-DESSUS de la bande du soir', async () => {
+      const el = await render(forecast([day(dayIn(0)), day(dayIn(1))]));
+
+      const boutons = [...el.querySelectorAll('button')]
+        .map((b) => b.textContent?.trim() ?? '')
+        .filter((t) => t.startsWith('Arrêter le plan du'));
+      expect(boutons).toHaveLength(2);
+      expect(boutons[0]).toContain(dayMonthOf(0));
+      expect(boutons[0]).toContain('maintenant');
+      expect(boutons[1]).toContain(dayMonthOf(1));
+    });
+
+    it('arrête le rattrapage avec la date du jour', async () => {
+      const { page, closeDay } = await mount(forecast([day(dayIn(0)), day(dayIn(1))]));
+
+      await page['arrest'](page['dayToCatchUp']()?.date ?? '');
+
+      expect(closeDay).toHaveBeenCalledWith(dayIn(0));
+    });
+  });
 });

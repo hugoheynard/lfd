@@ -73,6 +73,41 @@
       que la clôture refuserait).
     -->
     @if (view() === 'mur' && state() === 'ready') {
+      <!--
+        **Le rattrapage** (2026-10-06). Le plan d'aujourd'hui n'a pas été arrêté
+        hier soir : il passe EN PREMIER et en alerte, parce que tant qu'il ne
+        l'est pas, rien ne part en fournée. La bande du soir reste dessous.
+      -->
+      @if (dayToCatchUp(); as day) {
+        <fold-callout variant="alert">
+          Le plan d’aujourd’hui, {{ day.weekday }} {{ day.dayMonth }}, n’a pas été arrêté hier soir.
+          Tant qu’il ne l’est pas, rien ne part en fournée.
+          @if (arrestingDay() === day.date) {
+            <fold-inline-confirm
+              actions
+              [open]="true"
+              [loading]="arresting()"
+              keepOpenOnConfirm
+              intent="neutral"
+              [message]="
+                'Arrêter maintenant le plan du ' +
+                day.weekday +
+                ' ' +
+                day.dayMonth +
+                ' ? Les commandes reçues après ne rentreront plus dans cette fournée.'
+              "
+              (confirmed)="arrest(day.date)"
+              (cancelled)="arrestingDay.set(null)"
+            >
+              <span hidden></span>
+            </fold-inline-confirm>
+          } @else {
+            <button foldButton actions size="sm" (click)="arrestingDay.set(day.date)">
+              Arrêter le plan du {{ day.weekday }} {{ day.dayMonth }} maintenant
+            </button>
+          }
+        </fold-callout>
+      }
       @if (dayToArrest(); as day) {
         <div class="pv-arrest">
           <p class="pv-arrest-said">

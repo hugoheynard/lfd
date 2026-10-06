@@ -155,7 +155,7 @@ export class PrevisionnelPage {
   protected readonly pieces = computed(() => totalOfRayons(this.rayons()));
 
   /**
-   * **La journée qu'on peut arrêter maintenant** : la plus proche **à venir**,
+   * **La journée qu'on peut arrêter ce soir** : la plus proche **à venir**,
    * encore ouverte, et qui porte au moins une commande.
    *
    * 🔴 **Aujourd'hui est écarté**, et ce n'est pas un détail de confort
@@ -164,6 +164,11 @@ export class PrevisionnelPage {
    * d'une fournée déjà au four, et une commande arrivée dans l'après-midi n'y
    * entrerait plus — alors qu'elle est encore servable. La bande proposait
    * « le plan du dimanche 13 » un dimanche 13.
+   *
+   * ⚠️ Aujourd'hui revient depuis le 2026-10-06, mais en **rattrapage
+   * seulement**, et par `dayToCatchUp` — pas par ici : le plan de mardi n'avait
+   * pas été arrêté lundi soir, la bande proposait mercredi, et rien ne disait
+   * l'oubli. Ce `computed` reste le geste du soir.
    *
    * La plus proche, parce que le geste du soir vise le service suivant. Et
    * jamais une journée vide : `close` refuse d'arrêter le néant
@@ -176,6 +181,23 @@ export class PrevisionnelPage {
   protected readonly dayToArrest = computed(() =>
     this.headers().find(
       (header) => header.date > this.today && !header.closed && header.orderCount > 0,
+    ),
+  );
+
+  /**
+   * **Le plan d'aujourd'hui, oublié la veille** (décidé le 2026-10-06) : la
+   * journée du jour, si elle est dans la fenêtre, encore ouverte et porteuse de
+   * commandes.
+   *
+   * Séparé de `dayToArrest` parce que ce n'est pas le même geste : celui-ci
+   * répare un oubli, et il se dit en alerte — tant que le plan du jour n'est
+   * pas arrêté, rien ne part en fournée. Les jours PASSÉS jamais clos ne sont
+   * pas proposés : leur fournée est faite, l'arrêter maintenant n'en tirerait
+   * plus rien.
+   */
+  protected readonly dayToCatchUp = computed(() =>
+    this.headers().find(
+      (header) => header.date === this.today && !header.closed && header.orderCount > 0,
     ),
   );
 
