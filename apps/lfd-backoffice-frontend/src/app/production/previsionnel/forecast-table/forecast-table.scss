@@ -310,6 +310,20 @@
   color: var(--fold-color-text-muted);
 }
 
+/* 🔴 Une cellule de quantité occupe TOUTE la hauteur de sa ligne (2026-10-06).
+   La ligne centre ses cellules (`align-items: center`) : une case vide — un
+   zéro ne s'écrit pas — n'était haute que de son padding, et le fond d'une
+   colonne teintée y devenait un trait au lieu d'une colonne. Le pic ne le
+   montrait pas, ses cases sont presque toujours pleines ; le plan non arrêté,
+   si. Le contenu reste centré, à l'intérieur. */
+.pv-qty {
+  align-self: stretch;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+}
+
 .pv-qty-value {
   display: block;
   font-family: var(--fold-font-mono);
@@ -358,20 +372,17 @@
    Calculé par le serveur, posé sur TOUTES les cellules de la colonne, de la tête
    au pied — même règle que le pic : un repère qui s'arrête en route n'en est pas
    un. Écrit APRÈS le pic : le plan oublié l'emporte sur le jour chargé, parce
-   que c'est lui qui empêche la fournée de partir. */
+   que c'est lui qui empêche la fournée de partir.
+   🔴 Un FOND, comme le pic, et rien d'autre (Hugo, 2026-10-06) : des bords
+   latéraux sur chaque cellule dessinaient des traits rouges sur les lignes
+   sans chiffre, au lieu d'une colonne teintée. */
 .pv-cell[data-tone='overdue'] {
   background: var(--fold-color-alert-surface);
-  box-shadow:
-    inset 1px 0 0 var(--fold-color-alert-border),
-    inset -1px 0 0 var(--fold-color-alert-border);
 }
 
 /* La production du jour, plan arrêté : ce qui part au four. */
 .pv-cell[data-tone='current'] {
   background: var(--fold-color-primary-surface);
-  box-shadow:
-    inset 1px 0 0 var(--fold-color-primary-border),
-    inset -1px 0 0 var(--fold-color-primary-border);
 }
 
 /* Le passé : atténué, toujours lisible — c'est un fait, pas un sujet. */
