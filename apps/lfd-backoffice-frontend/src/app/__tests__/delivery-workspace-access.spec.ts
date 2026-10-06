@@ -86,9 +86,13 @@ async function opens(role: StaffRole | typeof LIVREUR, path: string): Promise<bo
 
 function deliveryViewKeys(role: StaffRole | typeof LIVREUR): string[] {
   configure(role);
-  return TestBed.inject(WorkspaceCatalogue)
-    .views('livraison')()
-    .map((view) => view.key);
+  return (
+    TestBed.inject(WorkspaceCatalogue)
+      .views('exploitation')()
+      // La Livraison est une section de l'Exploitation depuis le 2026-10-06.
+      .filter((view) => view.section === 'Livraison')
+      .map((view) => view.key)
+  );
 }
 
 describe("l'espace Livraison", () => {

@@ -323,6 +323,10 @@ export interface PlanSummary {
   readonly vans: number;
   readonly late: number;
   readonly notReady: number;
+  /** La distance totale des tournées chronométrées, en mètres. */
+  readonly meters: number;
+  /** Les tournées non vides — un véhicule peut en faire plusieurs. */
+  readonly rounds: number;
 }
 
 export function planSummary(rounds: readonly PlannedRound[]): PlanSummary {
@@ -334,6 +338,8 @@ export function planSummary(rounds: readonly PlannedRound[]): PlanSummary {
     ).size,
     late: stops.filter((stop) => stop.windowMissed).length,
     notReady: stops.filter((stop) => stop.sheet?.state === 'expected').length,
+    meters: rounds.reduce((sum, round) => sum + (round.timing?.meters ?? 0), 0),
+    rounds: rounds.filter((round) => round.stops.length > 0).length,
   };
 }
 

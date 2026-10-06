@@ -25,6 +25,7 @@ import {
   type BoardStop,
   cardMetaOf,
   cardTitleOf,
+  roundTimingLabel,
   stopAriaOf,
   stopEdgeOf,
   stopTagsOf,
@@ -123,6 +124,12 @@ export class RoundColumn {
   });
 
   protected readonly ariaLabel = computed(() => `${this.title()}, ${this.round().vehicleName}`);
+
+  /** Départ, retour, distance — seulement quand le calcul les a rendus. */
+  protected readonly timingLabel = computed(() => {
+    const timing = this.round().timing;
+    return timing === null ? null : roundTimingLabel(timing);
+  });
 
   protected readonly stopCountLabel = stopCountLabel;
   protected readonly incidentCountLabel = incidentCountLabel;

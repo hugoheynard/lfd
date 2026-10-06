@@ -57,6 +57,16 @@
   font-size: var(--fold-text-xs);
 }
 
+.timing {
+  font-size: var(--fold-text-xs);
+  font-variant-numeric: tabular-nums;
+  color: var(--fold-color-text-muted);
+}
+
+.over {
+  color: var(--fold-color-warning-text);
+}
+
 .count {
   font-size: var(--fold-text-xs);
   color: var(--fold-color-text-muted);

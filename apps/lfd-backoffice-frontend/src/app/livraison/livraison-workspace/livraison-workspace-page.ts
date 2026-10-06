@@ -22,6 +22,6 @@ import { WorkspaceCatalogue } from '../../shared/workspace-rail/workspaces';
 })
 export class LivraisonWorkspacePage {
   constructor() {
-    provideWorkspaceRail(inject(WorkspaceCatalogue).rail('livraison'));
+    provideWorkspaceRail(inject(WorkspaceCatalogue).rail('exploitation'));
   }
 }

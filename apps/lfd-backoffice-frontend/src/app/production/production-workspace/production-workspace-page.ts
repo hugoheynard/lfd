@@ -48,6 +48,6 @@ import { WorkspaceCatalogue } from '../../shared/workspace-rail/workspaces';
 })
 export class ProductionWorkspacePage {
   constructor() {
-    provideWorkspaceRail(inject(WorkspaceCatalogue).rail('production'));
+    provideWorkspaceRail(inject(WorkspaceCatalogue).rail('exploitation'));
   }
 }

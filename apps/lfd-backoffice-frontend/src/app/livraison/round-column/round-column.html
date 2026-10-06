@@ -44,6 +44,22 @@
       />
     }
 
+    @if (timingLabel(); as label) {
+      <div class="line sub">
+        <span class="timing" [class.over]="round().timing?.overDuration" data-round-timing>{{
+          label
+        }}</span>
+        @if (round().timing?.overDuration) {
+          <fold-badge
+            radius="square"
+            variant="warning"
+            content="Dépasse la durée max."
+            data-over-duration
+          />
+        }
+      </div>
+    }
+
     <div class="count" data-stop-count>{{ stopCountLabel(round().stops.length) }}</div>
 
     @if (canSort()) {

@@ -34,6 +34,7 @@ function round(overrides: Partial<BoardRound> = {}): BoardRound {
     vehicleRetired: false,
     driver: null,
     geometry: null,
+    timing: null,
     stops: [stop('1'), stop('2')],
     ...overrides,
   };
@@ -148,5 +149,47 @@ describe('RoundColumn', () => {
     const empty = element.querySelector('[data-empty-round]');
     expect(empty?.textContent).toContain('Tournée vide');
     expect(empty?.textContent).toContain('Glissez une commande ici.');
+  });
+
+  it('une tournée proposée montre son départ, son retour et sa distance', () => {
+    const proposed = round({
+      roundId: null,
+      timing: {
+        departureTime: '05:40',
+        returnTime: '08:15',
+        meters: 41_600,
+        minutes: 155,
+        overDuration: false,
+      },
+    });
+    const { element } = mount(proposed);
+    expect(element.querySelector('[data-round-timing]')?.textContent?.trim()).toBe(
+      'Départ 5 h 40 · Retour 8 h 15 · 42 km',
+    );
+    expect(element.querySelector('[data-over-duration]')).toBeNull();
+  });
+
+  it('une tournée qui dépasse la durée max. le dit', () => {
+    const over = round({
+      timing: {
+        departureTime: '05:40',
+        returnTime: '11:30',
+        meters: 600,
+        minutes: 350,
+        overDuration: true,
+      },
+    });
+    const { element } = mount(over);
+    const line = element.querySelector('[data-round-timing]');
+    expect(line?.textContent).toContain('< 1 km');
+    expect(line?.classList).toContain('over');
+    expect(element.querySelector('[data-over-duration]')?.textContent).toContain(
+      'Dépasse la durée max.',
+    );
+  });
+
+  it('une tournée sans chronométrage ne montre ni heures ni distance', () => {
+    const { element } = mount(round());
+    expect(element.querySelector('[data-round-timing]')).toBeNull();
   });
 });

@@ -43,7 +43,7 @@ import { StaffLoginPage } from './auth/staff-login/staff-login';
 import { PushNotificationsService } from './shared/push/push-notifications.service';
 import { NotificationBell } from './shared/notifications/notification-bell/notification-bell';
 import { groupRailItems, WorkspaceRailStore } from './shared/workspace-rail/workspace-rail.store';
-import { WorkspaceCatalogue } from './shared/workspace-rail/workspaces';
+import { WorkspaceCatalogue, isExploitationUrl } from './shared/workspace-rail/workspaces';
 
 /**
  * Racine de l'app **B2B admin** (staff) : un rail de navigation + le contenu
@@ -126,9 +126,8 @@ export class App {
    */
   private readonly catalogue = inject(WorkspaceCatalogue);
   protected readonly commercialViews = this.catalogue.views('commercial');
-  protected readonly productionViews = this.catalogue.views('production');
+  protected readonly exploitationViews = this.catalogue.views('exploitation');
   protected readonly comptoirViews = this.catalogue.views('comptoir');
-  protected readonly livraisonViews = this.catalogue.views('livraison');
   protected readonly pimViews = this.catalogue.views('pim');
   protected readonly b2bViews = this.catalogue.views('b2b');
   protected readonly adminViews = this.catalogue.views('admin');
@@ -170,20 +169,15 @@ export class App {
   protected readonly canSeeAnalytics = computed(() => this.permissions.can('b2b_growth:read'));
 
   /**
-   * La Production s'ouvre à qui tient L'UN des gestes du fournil — le plan du
-   * soir, la fiche d'atelier (2026-10-01,
-   * `documentation/livraisons/plan-droits-par-geste.md`, DG-D1) — ou ses
-   * réglages (2026-10-06) : qui ne tient que `production_settings:read` a
-   * `/production/reglages` ouvert, l'entrée doit le mener. Le colisage
-   * n'en est plus depuis le 2026-10-04 : c'est son propre espace,
-   * {@link canSeePacking}. La fiche d'atelier non plus depuis le 2026-10-06 :
-   * c'est le Fournil, {@link canSeeBakehouse} — qui ne tient qu'elle ne voit
-   * plus une Production vide.
+   * L'Exploitation (2026-10-06) réunit la Production, la Supervision et la
+   * Livraison en trois sections. L'entrée paraît dès qu'UNE vue est ouverte —
+   * lu sur la table des vues, pas sur une liste de droits recopiée : la règle
+   * de chaque section est celle de ses vues.
    */
-  protected readonly canSeeProduction = computed(
-    () =>
-      this.permissions.can('production_plan:read') ||
-      this.permissions.can('production_settings:read'),
+  protected readonly canSeeExploitation = computed(() => this.exploitationViews().length > 0);
+  /** Où mène l'entrée : la première vue ouverte, dans l'ordre des sections. */
+  protected readonly exploitationLink = computed(
+    () => this.exploitationViews()[0]?.link ?? '/production',
   );
 
   /** Le Fournil — la fournée du jour, poste à part (2026-10-06), sous son seul droit. */
@@ -204,33 +198,9 @@ export class App {
       this.permissions.can('handover_counter:read') ||
       (this.permissions.can('b2b_counter:read') && this.permissions.can('b2b_place_order:write')),
   );
-  /**
-   * La Livraison s'ouvre à qui lit la feuille de route, les tournées, le
-   * chargement ou ses réglages : ses vues relèvent de plusieurs droits, et en
-   * exiger un fermerait l'espace à qui ne tient qu'un autre
-   * (plan-preparation-de-tournee.md, lots 2-4). Conduire sa tournée n'en est
-   * plus (2026-10-03) : c'est l'espace « Coursier », {@link canSeeCourier}.
-   */
-  protected readonly canSeeDelivery = computed(
-    () =>
-      this.permissions.can('delivery_run_sheet:read') ||
-      this.permissions.can('delivery_rounds:read') ||
-      this.permissions.can('delivery_loading:read') ||
-      this.permissions.can('delivery_settings:read') ||
-      // « À décider » (plan-a-la-porte.md, B3) : qui décide à la porte y répond.
-      this.permissions.can('delivery_decisions:write'),
-  );
 
   /** Le Coursier — la page du livreur, sous son seul droit. */
   protected readonly canSeeCourier = computed(() => this.permissions.can('delivery_driving:read'));
-
-  /**
-   * La Supervision a son droit à elle : elle montre le nom des clients du jour
-   * sans ouvrir les commandes, et ne suit donc pas `b2b_orders:read`.
-   */
-  protected readonly canSeeSupervision = computed(() =>
-    this.permissions.can('b2b_supervision:read'),
-  );
 
   /**
    * **L'outillage de développement** — une liste, pas un droit.
@@ -366,6 +336,19 @@ export class App {
       map(() => pageNameOf(deepest(this.router.routerState.snapshot.root).title)),
     ),
     { initialValue: null },
+  );
+
+  /**
+   * L'entrée Exploitation est allumée sur ses TROIS racines d'adresse
+   * (`/production`, `/supervision`, `/livraison`) : `routerLinkActive` ne
+   * compare qu'au lien de l'entrée.
+   */
+  protected readonly exploitationActive = toSignal(
+    this.router.events.pipe(
+      filter((event): event is NavigationEnd => event instanceof NavigationEnd),
+      map((event) => isExploitationUrl(event.urlAfterRedirects)),
+    ),
+    { initialValue: isExploitationUrl(this.router.url) },
   );
 
   /**

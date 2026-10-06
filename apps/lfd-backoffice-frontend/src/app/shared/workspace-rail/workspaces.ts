@@ -249,6 +249,65 @@ export const LIVRAISON_VIEWS: readonly WorkspaceView[] = [
 ];
 
 /**
+ * La vue de la **Supervision du jour** — celui qui regarde l'ensemble, pas
+ * celui qui fait. Une seule vue, sous son droit propre (elle montre le nom des
+ * clients du jour sans ouvrir les commandes).
+ */
+export const SUPERVISION_VIEWS: readonly WorkspaceView[] = [
+  {
+    key: 'supervision',
+    label: 'Supervision du jour',
+    link: '/supervision',
+    icon: 'eye',
+    needs: 'b2b_supervision:read',
+  },
+];
+
+/** Range une table de vues sous un titre de section du rail. */
+function underSection(section: string, views: readonly WorkspaceView[]): WorkspaceView[] {
+  return views.map((view) => ({ ...view, section }));
+}
+
+/**
+ * Les vues de l'**Exploitation** (décision Hugo, 2026-10-06) : la Production,
+ * la Supervision et la Livraison n'ont plus chacune leur entrée au menu
+ * principal — elles sont trois SECTIONS d'un même espace. Les adresses ne
+ * bougent pas (`/production/…`, `/supervision`, `/livraison/…`) : seul le menu
+ * change.
+ *
+ * Les trois tables restent séparées et gardent chacune leurs droits : une
+ * section dont aucune vue n'est ouverte disparaît d'elle-même, puisque
+ * `groupRailItems` ne fabrique un groupe qu'à partir d'une vue présente.
+ */
+export const EXPLOITATION_VIEWS: readonly WorkspaceView[] = [
+  ...underSection('Production', PRODUCTION_VIEWS),
+  ...underSection('Supervision', SUPERVISION_VIEWS),
+  ...underSection('Livraison', LIVRAISON_VIEWS),
+];
+
+/**
+ * Les premiers segments d'adresse qui appartiennent à l'Exploitation — dérivés
+ * de ses vues, pas recopiés : une section ajoutée allume l'entrée principale
+ * sans qu'on y pense.
+ */
+const EXPLOITATION_ROOTS: ReadonlySet<string> = new Set(
+  EXPLOITATION_VIEWS.map((view) => rootSegmentOf(view.link)),
+);
+
+function rootSegmentOf(url: string): string {
+  return url.split(/[/?#]/).find((segment) => segment !== '') ?? '';
+}
+
+/**
+ * L'adresse est-elle dans l'Exploitation ? C'est ce qui allume l'entrée du
+ * menu principal : `routerLinkActive` ne compare qu'à UN lien, et l'espace en
+ * couvre trois racines.
+ */
+export function isExploitationUrl(url: string): boolean {
+  return EXPLOITATION_ROOTS.has(rootSegmentOf(url));
+}
+
+/**
  * Les vues du **Comptoir** — ce qui se passe quand un client est DEVANT nous.
  *
  * Deux gestes, et c'est ce qui les réunit : rendre une commande déjà faite, et
@@ -756,23 +815,17 @@ export const DOCUMENTATION_VIEWS: readonly WorkspaceView[] = [
 /** Le catalogue, par clé. */
 export const WORKSPACES = {
   commercial: { key: 'commercial', title: 'Commercial', icon: 'calendar', views: COMMERCIAL_VIEWS },
-  production: {
-    key: 'production',
-    title: 'Production',
+  exploitation: {
+    key: 'exploitation',
+    title: 'Exploitation',
     icon: 'production',
-    views: PRODUCTION_VIEWS,
+    views: EXPLOITATION_VIEWS,
   },
   comptoir: {
     key: 'comptoir',
     title: 'Comptoir',
     icon: 'package-check',
     views: COMPTOIR_VIEWS,
-  },
-  livraison: {
-    key: 'livraison',
-    title: 'Livraison',
-    icon: 'truck',
-    views: LIVRAISON_VIEWS,
   },
   pim: { key: 'pim', title: 'PIM', icon: 'catalog', views: PIM_VIEWS },
   // « E-commerce LFC » : le libellé seul. La clé et les adresses `/b2b/…`

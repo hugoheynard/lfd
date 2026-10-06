@@ -44,35 +44,16 @@
         ></a>
       }
 
-      @if (canSeeSupervision()) {
-        <!-- LA SUPERVISION DU JOUR — une vue, à part des espaces de travail :
-             celui qui regarde l'ensemble, pas celui qui fait. Avant la
-             production parce qu'elle la surplombe. -->
-        <a
-          fold-menu-item
-          icon="eye"
-          label="Supervision"
-          routerLink="/supervision"
-          routerLinkActive
-          #supervisionRla="routerLinkActive"
-          [active]="supervisionRla.isActive"
-          (click)="mobileNavOpen.set(false)"
-        ></a>
-      }
-
-      @if (canSeeProduction()) {
-        <!-- La production : ce que le labo doit fabriquer aujourd'hui et demain.
-             Après le commercial parce qu'on y va une ou deux fois par jour, à la
-             clôture — pas vingt. -->
+      @if (canSeeExploitation()) {
+        <!-- L'EXPLOITATION (2026-10-06) : la Production, la Supervision et la
+             Livraison, trois sections d'un même espace au rail secondaire. Les
+             adresses n'ont pas bougé ; l'entrée s'allume sur les trois. -->
         <a
           fold-menu-item
           icon="production"
-          label="Production"
-          badge="app"
-          routerLink="/production"
-          routerLinkActive
-          #prodRla="routerLinkActive"
-          [active]="prodRla.isActive"
+          label="Exploitation"
+          [routerLink]="exploitationLink()"
+          [active]="exploitationActive()"
           (click)="mobileNavOpen.set(false)"
         ></a>
       }
@@ -122,22 +103,6 @@
           routerLinkActive
           #comptoirRla="routerLinkActive"
           [active]="comptoirRla.isActive"
-          (click)="mobileNavOpen.set(false)"
-        ></a>
-      }
-
-      @if (canSeeDelivery()) {
-        <!-- LIVRAISON — un espace : la feuille de route, la flotte, le point de
-             départ. Ouvert à qui lit l'une OU les autres, qui relèvent de deux
-             droits distincts. -->
-        <a
-          fold-menu-item
-          icon="truck"
-          label="Livraison"
-          routerLink="/livraison"
-          routerLinkActive
-          #livraisonRla="routerLinkActive"
-          [active]="livraisonRla.isActive"
           (click)="mobileNavOpen.set(false)"
         ></a>
       }
@@ -545,40 +510,20 @@
           }
         </fold-nav-group>
       }
-      @if (canSeeSupervision()) {
-        <!-- La MÊME entrée qu'au rail : les deux arbres ne partagent pas leur modèle. -->
-        <a
-          fold-nav-tile
-          icon="eye"
-          label="Supervision"
-          routerLink="/supervision"
-          routerLinkActive
-          #supervisionTile="routerLinkActive"
-          [active]="supervisionTile.isActive"
-          (click)="mobileNavOpen.set(false)"
-        ></a>
-      }
-      @if (canSeeProduction()) {
-        <!-- La production est un ESPACE depuis qu'elle a deux vues : une tuile
-             qui contient des tuiles, comme le Commercial. Ses vues viennent du
-             MÊME catalogue que le rail secondaire — le lanceur les montre
-             toutes, le rail seulement celles de l'espace ouvert, mais aucune ne
-             se déclare deux fois. -->
-        <fold-nav-group
-          icon="production"
-          label="Production"
-          badge="app"
-          [entryCountLabel]="entriesLabel"
-        >
-          @for (view of productionViews(); track view.key) {
+      @if (canSeeExploitation()) {
+        <!-- L'Exploitation, lue dans le MÊME catalogue que le rail secondaire.
+             ⚠️ Le lanceur de fold ne sait pas titrer des sections dans un
+             groupe : les vues y suivent l'ordre des sections, à plat. -->
+        <fold-nav-group icon="production" label="Exploitation" [entryCountLabel]="entriesLabel">
+          @for (view of exploitationViews(); track view.key) {
             <a
               fold-nav-tile
               [icon]="view.icon"
               [label]="view.label"
               [routerLink]="view.link"
               routerLinkActive
-              #prodRla="routerLinkActive"
-              [active]="prodRla.isActive"
+              #exploitationTile="routerLinkActive"
+              [active]="exploitationTile.isActive"
               (click)="mobileNavOpen.set(false)"
             ></a>
           }
@@ -637,26 +582,8 @@
           }
         </fold-nav-group>
       }
-      @if (canSeeDelivery()) {
-        <!-- La MÊME table que le rail secondaire : une vue ajoutée à
-             `LIVRAISON_VIEWS` paraît des deux côtés. -->
-        <fold-nav-group icon="truck" label="Livraison" [entryCountLabel]="entriesLabel">
-          @for (view of livraisonViews(); track view.key) {
-            <a
-              fold-nav-tile
-              [icon]="view.icon"
-              [label]="view.label"
-              [routerLink]="view.link"
-              routerLinkActive
-              #livraisonTile="routerLinkActive"
-              [active]="livraisonTile.isActive"
-              (click)="mobileNavOpen.set(false)"
-            ></a>
-          }
-        </fold-nav-group>
-      }
       @if (canSeeCourier()) {
-        <!-- La MÊME entrée qu'au rail. Une tuile simple, comme la Supervision :
+        <!-- La MÊME entrée qu'au rail. Une tuile simple, comme le Fournil :
              l'espace n'a qu'une vue, un groupe d'une tuile la déclarerait deux fois. -->
         <a
           fold-nav-tile
