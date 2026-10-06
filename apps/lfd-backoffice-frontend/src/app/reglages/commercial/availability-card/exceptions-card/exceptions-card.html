@@ -24,14 +24,12 @@
           <span class="ex-time sec-muted">toute la journée</span>
         }
         <span class="ex-reason sec-muted">{{ row.exception.reason }}</span>
-        <button
-          type="button"
-          class="sec-remove"
-          (click)="remove(row.index)"
-          aria-label="Retirer l'exception"
-        >
-          ×
-        </button>
+        <fold-button-icon
+          icon="close"
+          size="sm"
+          [tooltip]="'Retirer l’exception du ' + row.exception.day"
+          (clicked)="remove(row.index)"
+        />
       </li>
     } @empty {
       <li class="sec-empty">Aucune fermeture à venir.</li>

@@ -9,6 +9,7 @@ import {
 } from '@angular/core';
 import {
   FoldButtonComponent,
+  FoldButtonIconComponent,
   FoldCardComponent,
   FoldChoiceRowComponent,
   FoldDateComponent,
@@ -24,11 +25,11 @@ import type {
 
 import { AvailabilityService } from '../../../../commercial/availability/availability.service';
 import { NotifyService } from '../../../../notify.service';
+import { parisToday } from '../../../../shared/paris-today';
 
 import { addException, removeException, type AvailabilityDraft } from '../availability-draft';
 import {
   boundsFor,
-  parisToday,
   sameExceptions,
   upcomingExceptions,
   type ExceptionPeriod,
@@ -70,12 +71,14 @@ const PERIODS: readonly FoldChoiceOption[] = [
   selector: 'app-exceptions-card',
   changeDetection: ChangeDetectionStrategy.OnPush,
   imports: [
+    FoldButtonIconComponent,
     FoldCardComponent,
     FoldElementTitleComponent,
     FoldDateComponent,
     FoldChoiceRowComponent,
     FoldInputComponent,
     FoldButtonComponent,
+    FoldButtonIconComponent,
   ],
   templateUrl: './exceptions-card.html',
   styleUrl: './exceptions-card.scss',

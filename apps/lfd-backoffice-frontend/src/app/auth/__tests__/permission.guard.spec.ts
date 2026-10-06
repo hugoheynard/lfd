@@ -66,6 +66,7 @@ describe('permissionGuard — redirige plutôt que de bloquer', () => {
   it.each([
     ['production_worksheet:read', '/production/journee'],
     ['production_plan:read', '/production/previsionnel'],
+    ['production_settings:read', '/production/reglages'],
     ['production_packing:read', '/colisage'],
     ['handover_counter:read', '/comptoir/retrait'],
   ] as const)('renvoie qui ne tient que %s vers %s', async (permission, path) => {

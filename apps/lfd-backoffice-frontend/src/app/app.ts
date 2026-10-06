@@ -172,14 +172,17 @@ export class App {
   /**
    * La Production s'ouvre à qui tient L'UN des gestes du fournil — le plan du
    * soir, la fiche d'atelier (2026-10-01,
-   * `documentation/livraisons/plan-droits-par-geste.md`, DG-D1). Le colisage
+   * `documentation/livraisons/plan-droits-par-geste.md`, DG-D1) — ou ses
+   * réglages (2026-10-06) : qui ne tient que `production_settings:read` a
+   * `/production/reglages` ouvert, l'entrée doit le mener. Le colisage
    * n'en est plus depuis le 2026-10-04 : c'est son propre espace,
    * {@link canSeePacking}.
    */
   protected readonly canSeeProduction = computed(
     () =>
       this.permissions.can('production_plan:read') ||
-      this.permissions.can('production_worksheet:read'),
+      this.permissions.can('production_worksheet:read') ||
+      this.permissions.can('production_settings:read'),
   );
 
   /** Le Colisage — un poste à part (2026-10-04), sous son seul droit. */

@@ -23,6 +23,9 @@ const LANDINGS: readonly { readonly permission: StaffPermission; readonly path: 
   // serait laissé passer de 403 en 403, comme le livreur avant sa ligne.
   { permission: 'production_worksheet:read', path: '/production/journee' },
   { permission: 'production_plan:read', path: '/production/previsionnel' },
+  // `/production` redirige vers `journee` : sans cette ligne, qui ne tient que
+  // les réglages du fournil serait laissé sur un 403 (2026-10-06).
+  { permission: 'production_settings:read', path: '/production/reglages' },
   { permission: 'production_packing:read', path: '/colisage' },
   { permission: 'handover_counter:read', path: '/comptoir/retrait' },
   { permission: 'b2b_settings:read', path: '/reglages' },

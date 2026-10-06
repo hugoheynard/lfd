@@ -23,7 +23,7 @@ import {
 
 import { PermissionsStore } from '../../auth/permissions.store';
 import { NotifyService } from '../../notify.service';
-import { parisToday } from '../../reglages/commercial/availability-card/exceptions-card/exceptions-model';
+import { parisToday } from '../../shared/paris-today';
 import { DossierRecipientsCard } from '../dossier-recipients-card/dossier-recipients-card';
 import { ProductionSettingsService } from '../production-settings.service';
 import { dayLabelOf } from '../worksheet-day';
