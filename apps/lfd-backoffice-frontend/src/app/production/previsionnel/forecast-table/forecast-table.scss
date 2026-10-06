@@ -146,6 +146,12 @@
   display: flex;
   flex-direction: column;
   gap: 2px;
+  /* Toute la hauteur de l'en-tête, contenu poussé vers la barre (2026-10-06) :
+     un en-tête plus haut que ses voisins (« Plan non arrêté ») laissait les
+     autres centrés, leur barre flottant au-dessus du premier rayon et le fond
+     du pic s'arrêtant avant le haut de la case. */
+  align-self: stretch;
+  justify-content: flex-end;
 
   /* 🔴 **La barre de la légende, sous le chiffre.** C'est le même vocabulaire
      que les trois clés du bandeau, et c'est ce qui les rend utiles : une
