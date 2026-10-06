@@ -274,12 +274,10 @@ Poser les variables puis le secret est une séquence de déploiement ordinaire ;
 elle ne doit pas coûter une panne totale. Le refus est donc une **donnée** :
 l'usage s'éteint, le bulletin de démarrage nomme ce qui manque, le reste sert.
 
-⚠️ Le bulletin de démarrage ne rapporte que **trois** usages — `kbis`, `media`,
-`customers`. L'exclusion de `production` était juste quand rien ne l'écrivait ;
-elle ne l'est plus depuis `985d21bf` (les deux papiers du fournil sont archivés).
-Aujourd'hui, un `R2_PRODUCTION_*` mal posé se découvre au premier tirage, pas au
-démarrage. C'est noté dans
-[`livraisons/todo-etrangetes-procedure-de-livraison.md`](../livraisons/todo-etrangetes-procedure-de-livraison.md).
+Le bulletin de démarrage rapporte les **quatre** usages — `kbis`, `media`,
+`customers` et `production` (vérifié le 2026-10-06 dans
+`apps/lfd-api/src/platform/startup/startup-report.service.ts`) : un
+`R2_PRODUCTION_*` mal posé se voit au démarrage, pas au premier tirage.
 
 ---
 

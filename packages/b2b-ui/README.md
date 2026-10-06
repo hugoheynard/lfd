@@ -11,13 +11,16 @@ apparence vit ici, une seule fois.
 
 - reçoit tout par `input()` — un **view-model neutre** + des drapeaux de
   **capacité** — et communique par `output()` (des **intentions**) ;
-- n'`inject`e **aucun** service, ne `fetch` rien, ne **mute** rien, n'ouvre
-  aucun panneau, ne connaît **aucun** modèle d'app (`Company`, `AdminCompany`…)
+- n'`inject`e **aucun** service, ne `fetch` rien, ne **mute** rien, ne connaît **aucun** modèle d'app (`Company`, `AdminCompany`…)
   ni endpoint ;
 - ne branche **jamais** sur _qui_ l'affiche. Pas de `isAdmin`. Une différence
   client/admin s'exprime en **valeurs d'input** (view-model, capacités, texte,
   slots), jamais en conditionnel d'identité — sinon un 3ᵉ consommateur (support,
   aperçu prospect…) casse le composant.
+
+⚠️ **Une exception, `photo-cards`** (vérifié le 2026-10-06) : son éditeur ouvre
+la vue en grand d'une photo par `FoldPanelHostService`, et écrit par le port de
+passerelle qu'on lui passe. Il n'est plus de pure présentation.
 
 Test d'appartenance d'un nouvel input : s'il nomme un **comportement** ou une
 **donnée** (`canManage`, `density`, `kbisEmptyHint`) → oui. S'il nomme un
@@ -68,8 +71,8 @@ valeur enregistrée.
 
 ## Structure
 
-Un dossier par domaine, exporté en subpath (liste vérifiée le 2026-09-14) :
-`address`, `appointment`, `cart`, `catalog`, `company`, `flags`, `hours`,
+Un dossier par domaine, exporté en subpath (liste vérifiée le 2026-10-06) :
+`address`, `appointment`, `cart`, `catalog`, `company`, `hours`,
 `order`, `panel`, `payment`, `photo-cards`, `pricing`, `subscription`.
 
 `photo-cards` est le socle d'une liste ordonnée de cartes photo (titre, texte,

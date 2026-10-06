@@ -172,10 +172,9 @@ export interface R2StorageState {
  * premier tirage. Cette page a dit « aucun écrivain » jusque-là, et le disait
  * encore le jour où le débit est arrivé.
  *
- * Il ne figure toujours PAS dans le bulletin de démarrage, et ce n'est plus
- * justifié : un `R2_PRODUCTION_*` à moitié posé se découvre désormais au premier
- * tirage, devant un four, et non au démarrage. Noté dans
- * `documentation/livraisons/todo-etrangetes-procedure-de-livraison.md`, point 25.
+ * Le bulletin de démarrage le rapporte (`hasProductionStorage`, vérifié le
+ * 2026-10-06) : un `R2_PRODUCTION_*` à moitié posé se voit au démarrage, et non
+ * au premier tirage devant un four.
  *
  * Ce qui protège un client d'un autre n'est jamais le bucket : c'est le préfixe
  * de clé, dérivé d'identifiants vérifiés, et le mur de la société côté API.
