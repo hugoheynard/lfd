@@ -86,8 +86,8 @@ const TYPES: BinTypeView[] = [
   {
     id: 't-m',
     name: 'Bac M',
-    outer: { lengthCm: 60, widthCm: 40, heightCm: 22 },
-    inner: { lengthCm: 56, widthCm: 36, heightCm: 20 },
+    outer: { lengthMm: 600, widthMm: 400, heightMm: 220 },
+    inner: { lengthMm: 560, widthMm: 360, heightMm: 200 },
     innerVolumeLiters: 40,
     isotherm: false,
     maxStack: 6,

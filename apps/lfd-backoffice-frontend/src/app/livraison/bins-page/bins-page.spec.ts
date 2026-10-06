@@ -14,8 +14,8 @@ function bin(id: string, name: string, archivedAt: string | null = null): BinTyp
   return {
     id,
     name,
-    outer: { lengthCm: 60, widthCm: 40, heightCm: 30 },
-    inner: { lengthCm: 56, widthCm: 36, heightCm: 27 },
+    outer: { lengthMm: 600, widthMm: 400, heightMm: 300 },
+    inner: { lengthMm: 560, widthMm: 360, heightMm: 270 },
     innerVolumeLiters: 54,
     isotherm: false,
     maxStack: 5,
@@ -140,6 +140,19 @@ describe('BinsPage', () => {
     expect(all(fixture, '[data-archived-bin]')[0]?.textContent).toContain(
       'archivé le 1 février 2026',
     );
+  });
+
+  it('écrit les dimensions au millimètre en centimètres à la virgule', async () => {
+    const manne: BinTypeView = {
+      ...bin('4', 'Manne à pain'),
+      outer: { lengthMm: 665, widthMm: 460, heightMm: 715 },
+      inner: { lengthMm: 645, widthMm: 440, heightMm: 695 },
+      innerVolumeLiters: 197,
+    };
+    const fixture = await boot([manne]);
+
+    expect(all(fixture, '[data-outer]')[0]?.textContent).toContain('66,5 × 46 × 71,5 cm');
+    expect(all(fixture, '[data-inner]')[0]?.textContent).toContain('64,5 × 44 × 69,5 cm · 197 L');
   });
 
   it('dit le catalogue vide, et l’échec de lecture avec un geste pour relire', async () => {

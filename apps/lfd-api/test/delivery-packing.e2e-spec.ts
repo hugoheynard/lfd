@@ -80,8 +80,8 @@ async function isothermType(): Promise<string> {
     .post(`${LOADING}/bacs`)
     .send({
       name: "Bac S isotherme e2e",
-      outer: { lengthCm: 40, widthCm: 30, heightCm: 20 },
-      inner: { lengthCm: 36, widthCm: 26, heightCm: 16 },
+      outer: { lengthMm: 400, widthMm: 300, heightMm: 200 },
+      inner: { lengthMm: 360, widthMm: 260, heightMm: 160 },
       isotherm: true,
       maxStack: 5,
       divisible: false,

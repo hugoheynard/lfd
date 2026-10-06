@@ -1,9 +1,15 @@
-import type { PurchaseAssistantFormatView, PurchaseAssistantView } from "@lfd/contracts";
+import type {
+  PurchaseAssistantFormatView,
+  PurchaseAssistantRowView,
+  PurchaseAssistantView,
+} from "@lfd/contracts";
 import { type IQueryHandler, QueryHandler } from "@nestjs/cqrs";
 
-import { maximizeFormat } from "../../domain/services/floor/maximize-format.js";
+import { geometryOfFormat } from "../../domain/services/floor/format-geometry.js";
+import { type FloorRow, maximizeFormat } from "../../domain/services/floor/maximize-format.js";
 import { BinFormat } from "../../domain/value-objects/bin-format.js";
 import { binGapCm } from "../../domain/value-objects/bin-gap.js";
+import { MM_PER_CM } from "../../domain/value-objects/bin-type-dimensions.js";
 import { CargoFloor } from "../../domain/value-objects/cargo-floor.js";
 import { AssistBinPurchaseQuery } from "./assist-bin-purchase.query.js";
 
@@ -31,10 +37,18 @@ export class AssistBinPurchaseHandler implements IQueryHandler<
     }));
     return Promise.resolve({
       vehicleVolumeLiters: floor.volumeLiters,
-      formats: formats.map(({ name, format }): PurchaseAssistantFormatView => ({
-        name,
-        ...maximizeFormat(floor, format, gap),
-      })),
+      formats: formats.map(({ name, format }): PurchaseAssistantFormatView => {
+        const { rows, ...layout } = maximizeFormat(floor, geometryOfFormat(format), gap);
+        return { name, ...layout, rows: rows.map(rowInCm) };
+      }),
     });
   }
+}
+
+/**
+ * Le calcul rend des millimètres ; l'assistant se saisit en centimètres
+ * entiers, donc ses rangées retombent sur des centimètres entiers.
+ */
+function rowInCm({ fromMm, depthMm, ...row }: FloorRow): PurchaseAssistantRowView {
+  return { ...row, fromCm: fromMm / MM_PER_CM, depthCm: depthMm / MM_PER_CM };
 }

@@ -13,9 +13,9 @@ const BIN_M: PlanBinType = {
   id: "bin_m",
   name: "Bac bin_m",
   isotherm: false,
-  outerLengthCm: 60,
-  outerWidthCm: 40,
-  outerHeightCm: 25,
+  outerLengthMm: 600,
+  outerWidthMm: 400,
+  outerHeightMm: 250,
   maxStack: 5,
 };
 

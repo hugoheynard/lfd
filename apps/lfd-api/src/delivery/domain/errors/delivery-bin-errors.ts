@@ -19,22 +19,24 @@ export class InvalidBinTypeNameError extends DomainError {
   }
 }
 
-/** Une dimension hors bornes ou non entière. */
+/**
+ * Une dimension hors bornes ou trop précise. `rule` dit l'unité et les
+ * bornes de qui refuse : un type de bac se mesure au millimètre, un format
+ * de l'assistant d'achat au centimètre entier.
+ */
 export class InvalidBinDimensionsError extends DomainError {
-  constructor(side: string, detail: string, min: number, max: number) {
-    super(
-      "delivery.bin_dimensions_invalid",
-      `Dimensions ${side} du bac : ${detail}. Chaque dimension est un nombre entier de centimètres, de ${min} à ${max}.`,
-    );
+  constructor(side: string, detail: string, rule: string) {
+    super("delivery.bin_dimensions_invalid", `Dimensions ${side} du bac : ${detail}. ${rule}`);
   }
 }
 
 /** L'intérieur dépasse l'extérieur dans une dimension. */
 export class BinInnerExceedsOuterError extends DomainError {
-  constructor(dimension: string, inner: number, outer: number) {
+  /** `inner` et `outer` arrivent écrits avec leur unité (« 66,5 cm »). */
+  constructor(dimension: string, inner: string, outer: string) {
     super(
       "delivery.bin_inner_exceeds_outer",
-      `${dimension} intérieure (${inner} cm) dépasse ${dimension.toLowerCase()} extérieure (${outer} cm) : corrigez l'une des deux — l'intérieur tient dans l'extérieur.`,
+      `${dimension} intérieure (${inner}) dépasse ${dimension.toLowerCase()} extérieure (${outer}) : corrigez l'une des deux — l'intérieur tient dans l'extérieur.`,
     );
   }
 }

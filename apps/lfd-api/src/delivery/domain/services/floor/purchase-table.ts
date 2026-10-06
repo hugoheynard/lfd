@@ -1,5 +1,5 @@
-import type { BinFormat } from "../../value-objects/bin-format.js";
 import type { CargoFloor } from "../../value-objects/cargo-floor.js";
+import type { FormatGeometry } from "./format-geometry.js";
 import { type FormatLayout, maximizeFormat } from "./maximize-format.js";
 import { type PurchaseCost, purchaseCost } from "./purchase-cost.js";
 
@@ -9,9 +9,9 @@ export interface PurchaseTableVehicle {
   readonly priceCents: number | null;
 }
 
-/** Un format en colonne : sa géométrie et son prix unitaire HT (`null` = inconnu). */
+/** Un format en colonne : sa géométrie (mm) et son prix unitaire HT (`null` = inconnu). */
 export interface PurchaseTableFormat {
-  readonly format: BinFormat;
+  readonly format: FormatGeometry;
   readonly unitPriceCents: number | null;
 }
 

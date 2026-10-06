@@ -89,8 +89,15 @@ const binCandidate = (
   unitPriceCentsExclVat,
 });
 
-const binType = (id: string, name: string, archivedAt: string | null = null): BinTypeView => ({
+/** Le même format, en type de bac : au millimètre. */
+const GRAND_TYPE = {
   ...GRAND,
+  outer: { lengthMm: 600, widthMm: 400, heightMm: 200 },
+  inner: { lengthMm: 500, widthMm: 300, heightMm: 200 },
+};
+
+const binType = (id: string, name: string, archivedAt: string | null = null): BinTypeView => ({
+  ...GRAND_TYPE,
   id,
   name,
   divisible: false,

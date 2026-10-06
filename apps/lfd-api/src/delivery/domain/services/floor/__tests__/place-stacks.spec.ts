@@ -8,15 +8,15 @@ const RECTANGLE = CargoFloor.of({ lengthCm: 200, widthCm: 100, heightCm: 100, wh
 const m = (stackIndex: number): StackToPlace => ({
   stackIndex,
   isotherm: false,
-  outerLengthCm: 60,
-  outerWidthCm: 40,
+  outerLengthMm: 600,
+  outerWidthMm: 400,
 });
 /** 40 × 30 : 41 × 31 avec le jeu. */
 const s = (stackIndex: number, isotherm = false): StackToPlace => ({
   stackIndex,
   isotherm,
-  outerLengthCm: 40,
-  outerWidthCm: 30,
+  outerLengthMm: 400,
+  outerWidthMm: 300,
 });
 
 describe("placeStacks — stratégie B (G-D4)", () => {
@@ -26,23 +26,23 @@ describe("placeStacks — stratégie B (G-D4)", () => {
     expect(placed.get(1)).toEqual({
       kind: "floor",
       row: 1,
-      xCm: 0,
-      yCm: 0,
-      depthCm: 60,
-      widthCm: 40,
+      xMm: 0,
+      yMm: 0,
+      depthMm: 600,
+      widthMm: 400,
       orientation: "length",
     });
-    expect(placed.get(2)).toMatchObject({ row: 1, xCm: 0, yCm: 41 });
+    expect(placed.get(2)).toMatchObject({ row: 1, xMm: 0, yMm: 410 });
     // 41 + 41 + 41 > 100, et tournée elle ne tient pas mieux : rangée neuve.
-    expect(placed.get(3)).toMatchObject({ row: 2, xCm: 61, yCm: 0 });
+    expect(placed.get(3)).toMatchObject({ row: 2, xMm: 610, yMm: 0 });
   });
 
   it("une rangée prend la profondeur de sa pile la plus profonde", () => {
     const placed = placeStacks(RECTANGLE, [s(1), m(2), m(3)], GAP, false);
 
-    expect(placed.get(1)).toMatchObject({ row: 1, xCm: 0, yCm: 0 });
-    expect(placed.get(2)).toMatchObject({ row: 1, xCm: 0, yCm: 31 });
-    expect(placed.get(3)).toMatchObject({ row: 2, xCm: 61 });
+    expect(placed.get(1)).toMatchObject({ row: 1, xMm: 0, yMm: 0 });
+    expect(placed.get(2)).toMatchObject({ row: 1, xMm: 0, yMm: 310 });
+    expect(placed.get(3)).toMatchObject({ row: 2, xMm: 610 });
   });
 
   it("tourne une pile quand seul l'autre sens tient", () => {
@@ -50,8 +50,8 @@ describe("placeStacks — stratégie B (G-D4)", () => {
     const large: StackToPlace = {
       stackIndex: 2,
       isotherm: false,
-      outerLengthCm: 80,
-      outerWidthCm: 60,
+      outerLengthMm: 800,
+      outerWidthMm: 600,
     };
 
     const placed = placeStacks(shallow, [m(1), large], GAP, false);
@@ -59,10 +59,10 @@ describe("placeStacks — stratégie B (G-D4)", () => {
     expect(placed.get(2)).toEqual({
       kind: "floor",
       row: 1,
-      xCm: 0,
-      yCm: 41,
-      depthCm: 60,
-      widthCm: 80,
+      xMm: 0,
+      yMm: 410,
+      depthMm: 600,
+      widthMm: 800,
       orientation: "turned",
     });
   });
@@ -78,8 +78,8 @@ describe("placeStacks — stratégie B (G-D4)", () => {
     const placed = placeStacks(arched, [m(1), m(2), m(3), m(4)], GAP, false);
 
     // Rangée 2 sur [61, 122) : 80 cm libres, une seule pile, à 10 cm du flanc.
-    expect(placed.get(3)).toMatchObject({ row: 2, xCm: 61, yCm: 10 });
-    expect(placed.get(4)).toMatchObject({ row: 3, xCm: 122, yCm: 0 });
+    expect(placed.get(3)).toMatchObject({ row: 2, xMm: 610, yMm: 100 });
+    expect(placed.get(4)).toMatchObject({ row: 3, xMm: 1220, yMm: 0 });
   });
 
   it("une pile qui ne tient pas sort du plancher, et toutes les suivantes avec elle", () => {
@@ -101,7 +101,7 @@ describe("placeStacks — stratégie B (G-D4)", () => {
     });
     expect(placeStacks(RECTANGLE, [s(1, true), m(2)], GAP, true).get(2)).toMatchObject({
       row: 1,
-      yCm: 0,
+      yMm: 0,
     });
     expect(placeStacks(RECTANGLE, [s(1, true)], GAP, false).get(1)).toMatchObject({
       kind: "floor",

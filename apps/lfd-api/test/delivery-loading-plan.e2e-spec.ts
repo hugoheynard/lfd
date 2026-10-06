@@ -182,6 +182,68 @@ describe("le plan de chargement d'une tournée composée", () => {
     ]);
   });
 
+  /**
+   * 2026-10-07 : un type de bac se mesure au millimètre, un véhicule au
+   * centimètre. Une manne de 665 mm (+ 1 cm de jeu = 675 mm) tient dans 68 cm,
+   * pas dans 67 — un écart d'unité, ou un arrondi au centimètre, se verrait ici.
+   */
+  it.each([
+    [68, "floor"],
+    [67, "off_floor"],
+  ])(
+    "une manne de 66,5 cm dans un plancher de %i cm : %s, au millimètre près",
+    async (lengthCm, kind) => {
+      const vehicle = await admin(ctx)
+        .post(VEHICLES)
+        .send({
+          name: "Plancher juste",
+          plate: "PL-789-AN",
+          cargo: { lengthCm, widthCm: 48, heightCm: 100 },
+        })
+        .expect(201);
+      const manne = await admin(ctx)
+        .post(`${LOADING}/bacs`)
+        .send({
+          name: "Manne à pain",
+          outer: { lengthMm: 665, widthMm: 460, heightMm: 715 },
+          inner: { lengthMm: 645, widthMm: 440, heightMm: 695 },
+          isotherm: false,
+          maxStack: 1,
+          divisible: false,
+        })
+        .expect(201);
+      const roundId = await openRound(ctx, DAY, jsonBody<CreatedIdResponse>(vehicle).id);
+      const order = await seedDelivery(ctx, DAY);
+      await assign(ctx, DAY, roundId, order.id);
+      await declareTypedBins(ctx, {
+        orderId: order.id,
+        binTypeId: jsonBody<CreatedIdResponse>(manne).id,
+        whole: 1,
+        half: false,
+        innerBags: 0,
+      });
+
+      const plan = jsonBody<DeliveryLoadingPlanView>(await planOf(roundId).expect(200));
+
+      expect(plan.stacks[0]?.binTypeHeightCm).toBe(71.5);
+      expect(plan.stacks[0]?.placement).toEqual(
+        kind === "floor"
+          ? {
+              kind: "floor",
+              row: 1,
+              xCm: 0,
+              yCm: 0,
+              depthCm: 66.5,
+              widthCm: 46,
+              orientation: "length",
+            }
+          : { kind: "off_floor" },
+      );
+      // 665 × 460 × 715 mm = 218 718 500 mm³ → 219 L, arrondis au-dessus.
+      expect(plan.volume.dryLiters).toBe(219);
+    },
+  );
+
   it("une tournée inconnue répond 404", async () => {
     await planOf("round_inconnue").expect(404);
   });

@@ -35,6 +35,22 @@ describe('les bacs (delivery_bin_type.*, delivery_bin_capacity.set)', () => {
     );
   });
 
+  it('dit une fiche tracée en mm (depuis le 2026-10-07) en centimètres à la virgule', () => {
+    const manne = {
+      ...BAC_M,
+      name: 'Manne à pain',
+      outer: { lengthMm: 665, widthMm: 460, heightMm: 715 },
+      inner: { lengthMm: 645, widthMm: 440, heightMm: 695 },
+      maxStack: 1,
+      divisible: false,
+    };
+    expect(
+      sentence(fact('delivery_bin_type.added', { subjectLabel: 'Manne à pain', bin: manne })),
+    ).toBe(
+      'Colette Martin a ajouté le type de bac « Manne à pain » (extérieur 66,5 × 46 × 71,5 cm, intérieur 64,5 × 44 × 69,5 cm, sec, pile de 1 au plus, sans cloison)',
+    );
+  });
+
   it('ne dit d’une correction que ce qui a changé', () => {
     expect(
       sentence(

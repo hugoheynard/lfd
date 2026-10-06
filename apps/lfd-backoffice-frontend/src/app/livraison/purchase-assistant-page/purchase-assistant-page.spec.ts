@@ -67,8 +67,8 @@ const BINS: BinTypesView = {
     {
       id: 'b-m',
       name: 'Bac M',
-      outer: { lengthCm: 60, widthCm: 40, heightCm: 22 },
-      inner: { lengthCm: 57, widthCm: 37, heightCm: 20 },
+      outer: { lengthMm: 600, widthMm: 400, heightMm: 220 },
+      inner: { lengthMm: 570, widthMm: 370, heightMm: 200 },
       innerVolumeLiters: 42,
       isotherm: false,
       maxStack: 7,
@@ -78,8 +78,8 @@ const BINS: BinTypesView = {
     {
       id: 'b-vieux',
       name: 'Bac archivé',
-      outer: { lengthCm: 30, widthCm: 20, heightCm: 10 },
-      inner: { lengthCm: 28, widthCm: 18, heightCm: 9 },
+      outer: { lengthMm: 300, widthMm: 200, heightMm: 100 },
+      inner: { lengthMm: 280, widthMm: 180, heightMm: 90 },
       innerVolumeLiters: 4,
       isotherm: false,
       maxStack: 5,

@@ -1,18 +1,18 @@
 import type { BinTypeView } from "@lfd/contracts";
 
 import type { BinTypeState } from "../domain/entities/bin-type.js";
-import { BinDimensions } from "../domain/value-objects/bin-dimensions.js";
+import { BinTypeDimensions } from "../domain/value-objects/bin-type-dimensions.js";
 
 /** Une ligne `delivery.delivery_bin_type`, telle que l'adaptateur la lit. */
 export interface BinTypeRow {
   readonly id: string;
   readonly name: string;
-  readonly outerLengthCm: number;
-  readonly outerWidthCm: number;
-  readonly outerHeightCm: number;
-  readonly innerLengthCm: number;
-  readonly innerWidthCm: number;
-  readonly innerHeightCm: number;
+  readonly outerLengthMm: number;
+  readonly outerWidthMm: number;
+  readonly outerHeightMm: number;
+  readonly innerLengthMm: number;
+  readonly innerWidthMm: number;
+  readonly innerHeightMm: number;
   readonly isotherm: boolean;
   readonly maxStack: number;
   readonly divisible: boolean;
@@ -26,8 +26,8 @@ export function binTypeStateOf(row: BinTypeRow): BinTypeState {
   return {
     id: row.id,
     name: row.name,
-    outer: { lengthCm: row.outerLengthCm, widthCm: row.outerWidthCm, heightCm: row.outerHeightCm },
-    inner: { lengthCm: row.innerLengthCm, widthCm: row.innerWidthCm, heightCm: row.innerHeightCm },
+    outer: { lengthMm: row.outerLengthMm, widthMm: row.outerWidthMm, heightMm: row.outerHeightMm },
+    inner: { lengthMm: row.innerLengthMm, widthMm: row.innerWidthMm, heightMm: row.innerHeightMm },
     isotherm: row.isotherm,
     maxStack: row.maxStack,
     divisible: row.divisible,
@@ -42,12 +42,12 @@ export function binTypeRowOf(state: BinTypeState): BinTypeRow {
   return {
     id: state.id,
     name: state.name,
-    outerLengthCm: state.outer.lengthCm,
-    outerWidthCm: state.outer.widthCm,
-    outerHeightCm: state.outer.heightCm,
-    innerLengthCm: state.inner.lengthCm,
-    innerWidthCm: state.inner.widthCm,
-    innerHeightCm: state.inner.heightCm,
+    outerLengthMm: state.outer.lengthMm,
+    outerWidthMm: state.outer.widthMm,
+    outerHeightMm: state.outer.heightMm,
+    innerLengthMm: state.inner.lengthMm,
+    innerWidthMm: state.inner.widthMm,
+    innerHeightMm: state.inner.heightMm,
     isotherm: state.isotherm,
     maxStack: state.maxStack,
     divisible: state.divisible,
@@ -65,7 +65,7 @@ export function binTypeViewOf(row: BinTypeRow): BinTypeView {
     name: row.name,
     outer: state.outer,
     inner: state.inner,
-    innerVolumeLiters: BinDimensions.of("intérieures", state.inner).volumeLiters,
+    innerVolumeLiters: BinTypeDimensions.of("intérieures", state.inner).volumeLiters,
     isotherm: row.isotherm,
     maxStack: row.maxStack,
     divisible: row.divisible,

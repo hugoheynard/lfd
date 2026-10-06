@@ -1,10 +1,10 @@
 import {
-  BIN_DIMENSION_MAX_CM,
-  BIN_DIMENSION_MIN_CM,
   BIN_MAX_STACK_MAX,
   BIN_MAX_STACK_MIN,
+  BIN_TYPE_DIMENSION_MAX_MM,
+  BIN_TYPE_DIMENSION_MIN_MM,
   BIN_TYPE_NAME_MAX_LENGTH,
-  type BinDimensions,
+  type BinTypeDimensions,
   type BinTypePayload,
   type BinTypeView,
 } from '@lfd/contracts';
@@ -16,9 +16,20 @@ import {
  *
  * Les bornes sont celles du contrat : le domaine les tient et refuse de toute
  * façon, l'écran ne fait que les dire AVANT l'envoi, avec des mots qu'on lit.
+ *
+ * **Le contrat parle en millimètres, l'écran en centimètres à une décimale**
+ * (2026-10-07 : une manne à pain mesure 66,5 cm). La saisie reste en cm — c'est
+ * ce qu'on mesure au mètre ruban — et se convertit en mm à l'envoi.
  */
 
-/** Trois dimensions en saisie : `null` tant que le champ est vide. */
+/** Millimètres dans un centimètre. */
+const MM_PER_CM = 10;
+
+/** Les bornes du contrat, dites en centimètres. */
+export const BIN_TYPE_DIMENSION_MIN_CM = BIN_TYPE_DIMENSION_MIN_MM / MM_PER_CM;
+export const BIN_TYPE_DIMENSION_MAX_CM = BIN_TYPE_DIMENSION_MAX_MM / MM_PER_CM;
+
+/** Trois dimensions en saisie, en CENTIMÈTRES (une décimale) : `null` tant que le champ est vide. */
 export interface DimensionsDraft {
   readonly lengthCm: number | null;
   readonly widthCm: number | null;
@@ -42,10 +53,33 @@ export type BinTypeReading =
 const EMPTY_DIMENSIONS: DimensionsDraft = { lengthCm: null, widthCm: null, heightCm: null };
 
 const AXES = [
-  { key: 'lengthCm', word: 'longueur' },
-  { key: 'widthCm', word: 'largeur' },
-  { key: 'heightCm', word: 'hauteur' },
+  { key: 'lengthCm', mm: 'lengthMm', word: 'longueur' },
+  { key: 'widthCm', mm: 'widthMm', word: 'largeur' },
+  { key: 'heightCm', mm: 'heightMm', word: 'hauteur' },
 ] as const;
+
+/**
+ * Des centimètres saisis en millimètres entiers, ou `null` s'ils portent plus
+ * d'une décimale. `66.5 × 10` vaut `665` à l'arrondi flottant près : on
+ * arrondit, puis on vérifie qu'on n'a rien jeté.
+ */
+export function cmToMm(cm: number): number | null {
+  const mm = Math.round(cm * MM_PER_CM);
+  return Math.abs(mm - cm * MM_PER_CM) < 1e-6 ? mm : null;
+}
+
+/** Des millimètres en centimètres pour la saisie : `665` → `66.5`. */
+export function mmToCm(mm: number): number {
+  return mm / MM_PER_CM;
+}
+
+function draftOfMm(dimensions: BinTypeDimensions): DimensionsDraft {
+  return {
+    lengthCm: mmToCm(dimensions.lengthMm),
+    widthCm: mmToCm(dimensions.widthMm),
+    heightCm: mmToCm(dimensions.heightMm),
+  };
+}
 
 /** Le formulaire prérempli par un type existant, ou vide. */
 export function binDraftOf(bin: BinTypeView | undefined): BinTypeDraft {
@@ -61,8 +95,8 @@ export function binDraftOf(bin: BinTypeView | undefined): BinTypeDraft {
   }
   return {
     name: bin.name,
-    outer: { ...bin.outer },
-    inner: { ...bin.inner },
+    outer: draftOfMm(bin.outer),
+    inner: draftOfMm(bin.inner),
     isotherm: bin.isotherm,
     maxStack: bin.maxStack,
     divisible: bin.divisible,
@@ -73,40 +107,46 @@ function wholeWithin(value: number, min: number, max: number): boolean {
   return Number.isInteger(value) && value >= min && value <= max;
 }
 
-/** Lit trois dimensions, ou dit laquelle manque ou déborde. */
+/** Une dimension saisie, en mm — ou la phrase qui dit pourquoi elle ne part pas. */
+function readDimension(
+  value: number | null,
+  word: string,
+  side: string,
+): { readonly ok: true; readonly mm: number } | { readonly ok: false; readonly issue: string } {
+  if (value === null) {
+    return { ok: false, issue: `Saisissez la ${word} ${side}.` };
+  }
+  const mm = cmToMm(value);
+  if (mm === null || !wholeWithin(mm, BIN_TYPE_DIMENSION_MIN_MM, BIN_TYPE_DIMENSION_MAX_MM)) {
+    return {
+      ok: false,
+      issue: `La ${word} ${side} va de ${centimetres(BIN_TYPE_DIMENSION_MIN_MM)} à ${centimetres(BIN_TYPE_DIMENSION_MAX_MM)} cm, au millimètre près (une décimale).`,
+    };
+  }
+  return { ok: true, mm };
+}
+
+/** Lit trois dimensions en mm, ou dit laquelle manque ou déborde. */
 function readDimensions(
   draft: DimensionsDraft,
   side: string,
 ):
-  | { readonly ok: true; readonly value: BinDimensions }
+  | { readonly ok: true; readonly value: BinTypeDimensions }
   | { readonly ok: false; readonly issue: string } {
+  const value = { lengthMm: 0, widthMm: 0, heightMm: 0 };
   for (const axis of AXES) {
-    const value = draft[axis.key];
-    if (value === null) {
-      return { ok: false, issue: `Saisissez la ${axis.word} ${side}.` };
-    }
-    if (!wholeWithin(value, BIN_DIMENSION_MIN_CM, BIN_DIMENSION_MAX_CM)) {
-      return {
-        ok: false,
-        issue: `La ${axis.word} ${side} va de ${String(BIN_DIMENSION_MIN_CM)} à ${String(BIN_DIMENSION_MAX_CM)} cm, en centimètres entiers.`,
-      };
-    }
+    const read = readDimension(draft[axis.key], axis.word, side);
+    if (!read.ok) return read;
+    value[axis.mm] = read.mm;
   }
-  return {
-    ok: true,
-    value: {
-      lengthCm: draft.lengthCm ?? 0,
-      widthCm: draft.widthCm ?? 0,
-      heightCm: draft.heightCm ?? 0,
-    },
-  };
+  return { ok: true, value };
 }
 
 /** L'intérieur tient dans l'extérieur, dimension par dimension — ou la phrase qui le dit. */
-function innerFitsIssue(outer: BinDimensions, inner: BinDimensions): string | null {
+function innerFitsIssue(outer: BinTypeDimensions, inner: BinTypeDimensions): string | null {
   for (const axis of AXES) {
-    if (inner[axis.key] > outer[axis.key]) {
-      return `La ${axis.word} intérieure (${String(inner[axis.key])} cm) dépasse la ${axis.word} extérieure (${String(outer[axis.key])} cm).`;
+    if (inner[axis.mm] > outer[axis.mm]) {
+      return `La ${axis.word} intérieure (${centimetres(inner[axis.mm])} cm) dépasse la ${axis.word} extérieure (${centimetres(outer[axis.mm])} cm).`;
     }
   }
   return null;
@@ -155,8 +195,8 @@ export function readBinDraft(draft: BinTypeDraft): BinTypeReading {
 
 /** La correction n'écrirait rien : la charge est celle du type. */
 export function sameBinPayload(bin: BinTypeView, payload: BinTypePayload): boolean {
-  const same = (a: BinDimensions, b: BinDimensions): boolean =>
-    a.lengthCm === b.lengthCm && a.widthCm === b.widthCm && a.heightCm === b.heightCm;
+  const same = (a: BinTypeDimensions, b: BinTypeDimensions): boolean =>
+    a.lengthMm === b.lengthMm && a.widthMm === b.widthMm && a.heightMm === b.heightMm;
   return (
     bin.name === payload.name &&
     same(bin.outer, payload.outer) &&
@@ -167,24 +207,33 @@ export function sameBinPayload(bin: BinTypeView, payload: BinTypePayload): boole
   );
 }
 
-const CUBIC_CM_PER_LITER = 1_000;
+const CUBIC_MM_PER_LITER = 1_000_000;
 
 /**
  * Le volume intérieur en litres, arrondi à l'inférieur — la règle du serveur
- * (`BinTypeView.innerVolumeLiters`), montrée en direct pendant la saisie ;
- * `null` tant qu'une dimension manque.
+ * (`BinTypeView.innerVolumeLiters`, en mm³), montrée en direct pendant la
+ * saisie ; `null` tant qu'une dimension manque ou ne se lit pas au millimètre.
  */
 export function draftInnerVolumeLiters(inner: DimensionsDraft): number | null {
   const { lengthCm, widthCm, heightCm } = inner;
   if (lengthCm === null || widthCm === null || heightCm === null) {
     return null;
   }
-  return Math.floor((lengthCm * widthCm * heightCm) / CUBIC_CM_PER_LITER);
+  const [length, width, height] = [cmToMm(lengthCm), cmToMm(widthCm), cmToMm(heightCm)];
+  if (length === null || width === null || height === null) {
+    return null;
+  }
+  return Math.floor((length * width * height) / CUBIC_MM_PER_LITER);
 }
 
-/** « 60 × 40 × 30 cm ». */
-export function dimensionsLabel(dimensions: BinDimensions): string {
-  return `${String(dimensions.lengthCm)} × ${String(dimensions.widthCm)} × ${String(dimensions.heightCm)} cm`;
+/** Des millimètres en centimètres à la française : `665` → « 66,5 », `460` → « 46 ». */
+export function centimetres(mm: number): string {
+  return mmToCm(mm).toLocaleString('fr-FR', { maximumFractionDigits: 1, useGrouping: false });
+}
+
+/** « 66,5 × 46 × 71,5 cm » — la décimale seulement si elle n'est pas nulle. */
+export function dimensionsLabel(dimensions: BinTypeDimensions): string {
+  return `${centimetres(dimensions.lengthMm)} × ${centimetres(dimensions.widthMm)} × ${centimetres(dimensions.heightMm)} cm`;
 }
 
 /** « 54 L ». */

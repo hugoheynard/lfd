@@ -1,8 +1,8 @@
 import type { BinHalf } from "../value-objects/bin-declaration.js";
 import type { CargoFloor } from "../value-objects/cargo-floor.js";
 
-/** Centimètres cubes dans un litre. */
-const CM3_PER_LITER = 1000;
+/** Millimètres cubes dans un litre : un type de bac se mesure au millimètre. */
+const MM3_PER_LITER = 1_000_000;
 
 /** Ce que le plan sait du véhicule — les capacités DÉRIVÉES de sa charge (lot 2 bis). */
 export interface PlanVehicle {
@@ -19,9 +19,9 @@ export interface PlanVehicle {
 export interface PlanUnit {
   readonly binType: {
     readonly isotherm: boolean;
-    readonly outerLengthCm: number;
-    readonly outerWidthCm: number;
-    readonly outerHeightCm: number;
+    readonly outerLengthMm: number;
+    readonly outerWidthMm: number;
+    readonly outerHeightMm: number;
   };
   readonly bins: {
     readonly code: string;
@@ -53,20 +53,20 @@ export interface LoadingVolume {
  */
 export function loadingVolumeOf(units: readonly PlanUnit[], vehicle: PlanVehicle): LoadingVolume {
   const cold = vehicle.refrigeratedLiters !== null;
-  let dryCm3 = 0;
-  let coldCm3 = 0;
+  let dryMm3 = 0;
+  let coldMm3 = 0;
   let coldBinsWithoutRefrigeration = 0;
   for (const unit of units) {
-    const cm3 = unit.binType.outerLengthCm * unit.binType.outerWidthCm * unit.binType.outerHeightCm;
+    const mm3 = unit.binType.outerLengthMm * unit.binType.outerWidthMm * unit.binType.outerHeightMm;
     if (unit.binType.isotherm && cold) {
-      coldCm3 += cm3;
+      coldMm3 += mm3;
     } else {
-      dryCm3 += cm3;
+      dryMm3 += mm3;
       coldBinsWithoutRefrigeration += unit.binType.isotherm ? 1 : 0;
     }
   }
-  const dryLiters = Math.ceil(dryCm3 / CM3_PER_LITER);
-  const coldLiters = Math.ceil(coldCm3 / CM3_PER_LITER);
+  const dryLiters = Math.ceil(dryMm3 / MM3_PER_LITER);
+  const coldLiters = Math.ceil(coldMm3 / MM3_PER_LITER);
   const dryCapacityLiters =
     vehicle.cargoLiters === null ? null : vehicle.cargoLiters - (vehicle.refrigeratedLiters ?? 0);
   const coldCapacityLiters = vehicle.refrigeratedLiters;

@@ -86,7 +86,7 @@ describe("AddBinTypeHandler", () => {
     const handler = new AddBinTypeHandler(types, new FixedIdGenerator(), clock, events, uow);
 
     await expect(
-      handler.execute(new AddBinTypeCommand({ ...SPEC, inner: { ...SPEC.inner, widthCm: 41 } })),
+      handler.execute(new AddBinTypeCommand({ ...SPEC, inner: { ...SPEC.inner, widthMm: 410 } })),
     ).rejects.toThrow(BinInnerExceedsOuterError);
   });
 });

@@ -1,6 +1,9 @@
 import { InvalidBinDimensionsError } from "../errors/delivery-bin-errors.js";
 
-/** Bornes d'une dimension de bac, en centimètres (L4b-C1) — celles du contrat. */
+/**
+ * Bornes d'une dimension de bac CANDIDAT ou de format essayé, en centimètres
+ * (L4b-C1). Un TYPE de bac se mesure au millimètre (`bin-type-dimensions.ts`).
+ */
 export const BIN_DIMENSION_MIN_CM = 1;
 export const BIN_DIMENSION_MAX_CM = 300;
 
@@ -15,7 +18,8 @@ export interface BinDimensionsInput {
 }
 
 /**
- * **Trois dimensions d'un bac**, en centimètres entiers. Le volume en litres
+ * **Trois dimensions d'un bac candidat ou d'un format de l'assistant d'achat**,
+ * en centimètres entiers. Le volume en litres
  * en est DÉRIVÉ, jamais saisi ni stocké.
  */
 export class BinDimensions implements BinDimensionsInput {
@@ -52,8 +56,7 @@ function dimension(side: string, label: string, value: number): number {
     throw new InvalidBinDimensionsError(
       side,
       `${label} vaut ${value} cm`,
-      BIN_DIMENSION_MIN_CM,
-      BIN_DIMENSION_MAX_CM,
+      `Chaque dimension est un nombre entier de centimètres, de ${BIN_DIMENSION_MIN_CM} à ${BIN_DIMENSION_MAX_CM}.`,
     );
   }
   return value;

@@ -6,7 +6,11 @@ import {
   InvalidBinMaxStackError,
   InvalidBinTypeNameError,
 } from "../errors/delivery-bin-errors.js";
-import { BinDimensions, type BinDimensionsInput } from "../value-objects/bin-dimensions.js";
+import {
+  BinTypeDimensions,
+  type BinTypeDimensionsInput,
+  centimetresLabel,
+} from "../value-objects/bin-type-dimensions.js";
 
 /** Le nom tient sur une étiquette de grille : la borne du contrat, reprise ici. */
 export const BIN_TYPE_NAME_MAX_LENGTH = 60;
@@ -17,8 +21,9 @@ export const BIN_MAX_STACK_MAX = 20;
 /** Ce qu'une création ou une correction dit d'un type de bac — la fiche COMPLÈTE. */
 export interface BinTypeSpec {
   readonly name: string;
-  readonly outer: BinDimensionsInput;
-  readonly inner: BinDimensionsInput;
+  /** En millimètres entiers. */
+  readonly outer: BinTypeDimensionsInput;
+  readonly inner: BinTypeDimensionsInput;
   readonly isotherm: boolean;
   readonly maxStack: number;
   readonly divisible: boolean;
@@ -35,8 +40,8 @@ export interface BinTypeState extends BinTypeSpec {
 /** La fiche validée. */
 interface ValidSpec {
   readonly name: string;
-  readonly outer: BinDimensions;
-  readonly inner: BinDimensions;
+  readonly outer: BinTypeDimensions;
+  readonly inner: BinTypeDimensions;
   readonly isotherm: boolean;
   readonly maxStack: number;
   readonly divisible: boolean;
@@ -84,11 +89,11 @@ export class BinType {
     return this.spec.name;
   }
 
-  get outer(): BinDimensions {
+  get outer(): BinTypeDimensions {
     return this.spec.outer;
   }
 
-  get inner(): BinDimensions {
+  get inner(): BinTypeDimensions {
     return this.spec.inner;
   }
 
@@ -188,39 +193,60 @@ function validSpecOf(input: BinTypeSpec): ValidSpec {
   if (name.length === 0 || name.length > BIN_TYPE_NAME_MAX_LENGTH) {
     throw new InvalidBinTypeNameError(BIN_TYPE_NAME_MAX_LENGTH);
   }
-  const outer = BinDimensions.of("extérieures", input.outer);
-  const inner = BinDimensions.of("intérieures", input.inner);
-  ensureInnerFits(inner, outer);
-  if (
-    !Number.isInteger(input.maxStack) ||
-    input.maxStack < BIN_MAX_STACK_MIN ||
-    input.maxStack > BIN_MAX_STACK_MAX
-  ) {
-    throw new InvalidBinMaxStackError(input.maxStack, BIN_MAX_STACK_MIN, BIN_MAX_STACK_MAX);
-  }
+  const outer = BinTypeDimensions.of("extérieures", input.outer);
+  const inner = BinTypeDimensions.of("intérieures", input.inner);
+  ensureInnerFits(sidesOfMm(inner), sidesOfMm(outer), centimetresLabel);
   return {
     name,
     outer,
     inner,
     isotherm: input.isotherm,
-    maxStack: input.maxStack,
+    maxStack: ensureMaxStack(input.maxStack),
     divisible: input.divisible,
   };
 }
 
 /**
- * @throws {BinInnerExceedsOuterError} la première dimension qui déborde.
- * Exportée pour le format de l'assistant d'achat (G-D3) : la règle n'a qu'un endroit.
+ * @throws {InvalidBinMaxStackError} une pile non entière ou hors 1–20.
+ * Exportée pour le format de l'assistant d'achat : la règle n'a qu'un endroit.
  */
-export function ensureInnerFits(inner: BinDimensions, outer: BinDimensions): void {
+export function ensureMaxStack(value: number): number {
+  if (!Number.isInteger(value) || value < BIN_MAX_STACK_MIN || value > BIN_MAX_STACK_MAX) {
+    throw new InvalidBinMaxStackError(value, BIN_MAX_STACK_MIN, BIN_MAX_STACK_MAX);
+  }
+  return value;
+}
+
+/** Trois côtés, dans l'unité de qui les compare. */
+export interface BoxSides {
+  readonly length: number;
+  readonly width: number;
+  readonly height: number;
+}
+
+function sidesOfMm(dimensions: BinTypeDimensions): BoxSides {
+  return { length: dimensions.lengthMm, width: dimensions.widthMm, height: dimensions.heightMm };
+}
+
+/**
+ * @param label écrit une mesure avec son unité, pour le refus.
+ * @throws {BinInnerExceedsOuterError} la première dimension qui déborde.
+ * Exportée pour le format de l'assistant d'achat (G-D3) : la règle n'a qu'un
+ * endroit, quelle que soit l'unité.
+ */
+export function ensureInnerFits(
+  inner: BoxSides,
+  outer: BoxSides,
+  label: (value: number) => string,
+): void {
   const pairs: readonly (readonly [string, number, number])[] = [
-    ["La longueur", inner.lengthCm, outer.lengthCm],
-    ["La largeur", inner.widthCm, outer.widthCm],
-    ["La hauteur", inner.heightCm, outer.heightCm],
+    ["La longueur", inner.length, outer.length],
+    ["La largeur", inner.width, outer.width],
+    ["La hauteur", inner.height, outer.height],
   ];
-  for (const [label, innerCm, outerCm] of pairs) {
-    if (innerCm > outerCm) {
-      throw new BinInnerExceedsOuterError(label, innerCm, outerCm);
+  for (const [name, innerSide, outerSide] of pairs) {
+    if (innerSide > outerSide) {
+      throw new BinInnerExceedsOuterError(name, label(innerSide), label(outerSide));
     }
   }
 }

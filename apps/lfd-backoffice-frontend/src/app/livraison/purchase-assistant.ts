@@ -7,6 +7,8 @@ import {
   type VehicleView,
 } from '@lfd/contracts';
 
+import { mmToCm } from './delivery-bins';
+
 /**
  * Les dérivations pures de **l'assistant d'achat**
  * (`documentation/livraisons/plan-geometrie-du-plancher.md`, G-D3, lot G3) :
@@ -120,16 +122,27 @@ function archesOfVehicle(
   };
 }
 
-/** Les types de bacs EN SERVICE, dans l'ordre du catalogue, dix au plus. */
+/**
+ * Les types de bacs EN SERVICE, dans l'ordre du catalogue, dix au plus.
+ *
+ * Un type se mesure au millimètre, l'assistant se saisit en centimètres
+ * entiers : un type à 66,5 cm arrive à 66,5, et le serveur le refuse plutôt
+ * que l'écran ne l'arrondisse en silence (2026-10-07).
+ */
 export function formatsOfBinTypes(types: readonly BinTypeView[]): readonly FormatDraft[] {
+  const cm = (side: BinTypeView['outer']): DimensionsDraft => ({
+    lengthCm: mmToCm(side.lengthMm),
+    widthCm: mmToCm(side.widthMm),
+    heightCm: mmToCm(side.heightMm),
+  });
   return types
     .filter((type) => type.archivedAt === null)
     .slice(0, PURCHASE_ASSISTANT_MAX_FORMATS)
     .map((type, index) => ({
       key: index + 1,
       name: type.name,
-      outer: { ...type.outer },
-      inner: { ...type.inner },
+      outer: cm(type.outer),
+      inner: cm(type.inner),
       maxStack: type.maxStack,
     }));
 }

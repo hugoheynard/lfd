@@ -44,9 +44,9 @@ export class PrismaLoadingPlanReader extends LoadingPlanReader {
         id: true,
         name: true,
         isotherm: true,
-        outerLengthCm: true,
-        outerWidthCm: true,
-        outerHeightCm: true,
+        outerLengthMm: true,
+        outerWidthMm: true,
+        outerHeightMm: true,
         maxStack: true,
       },
     });

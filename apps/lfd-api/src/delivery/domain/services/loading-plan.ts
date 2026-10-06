@@ -15,14 +15,14 @@ import {
   loadingWarningsOf,
 } from "./loading-warnings.js";
 
-/** Un type de bac, tel que le plan le lit : sa forme EXTÉRIEURE et sa pile. */
+/** Un type de bac, tel que le plan le lit : sa forme EXTÉRIEURE (en mm) et sa pile. */
 export interface PlanBinType {
   readonly id: string;
   readonly name: string;
   readonly isotherm: boolean;
-  readonly outerLengthCm: number;
-  readonly outerWidthCm: number;
-  readonly outerHeightCm: number;
+  readonly outerLengthMm: number;
+  readonly outerWidthMm: number;
+  readonly outerHeightMm: number;
   readonly maxStack: number;
 }
 

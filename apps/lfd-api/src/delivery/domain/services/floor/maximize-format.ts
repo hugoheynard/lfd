@@ -1,7 +1,8 @@
 import { FloorLayoutIndexError } from "../../errors/delivery-floor-errors.js";
-import type { BinFormat } from "../../value-objects/bin-format.js";
+import { MM_PER_CM } from "../../value-objects/bin-type-dimensions.js";
 import type { CargoFloor } from "../../value-objects/cargo-floor.js";
-import { freeWidthCm, stackLevels } from "./floor-geometry.js";
+import { type FloorMm, floorInMm, freeWidthMm, stackLevels } from "./floor-geometry.js";
+import type { FormatGeometry } from "./format-geometry.js";
 
 /** Le bac debout, sa longueur dans celle du véhicule (`length`) ou tourné (`turned`). */
 export type RowOrientation = "length" | "turned";
@@ -9,12 +10,12 @@ export type RowOrientation = "length" | "turned";
 /** Ce qui arrête la pile : `maxStack` (`stack`) ou le plafond (`ceiling`). */
 export type HeightLimit = "stack" | "ceiling";
 
-/** Une rangée transversale, pour dessiner le plancher. */
+/** Une rangée transversale, pour dessiner le plancher — en millimètres. */
 export interface FloorRow {
   /** Début de la rangée, depuis le fond. */
-  readonly fromCm: number;
+  readonly fromMm: number;
   /** Profondeur occupée, jeu compris. */
-  readonly depthCm: number;
+  readonly depthMm: number;
   /** Bacs en travers AU SOL (la largeur réduite si la rangée touche un passage). */
   readonly count: number;
   readonly orientation: RowOrientation;
@@ -52,16 +53,16 @@ export interface FormatLayout {
   readonly rows: readonly FloorRow[];
 }
 
-const CM3_PER_LITER = 1000;
+const MM3_PER_LITER = 1_000_000;
 const PERCENT = 100;
 
 interface Footprint {
   readonly orientation: RowOrientation;
-  readonly depthCm: number;
-  readonly widthCm: number;
+  readonly depthMm: number;
+  readonly widthMm: number;
 }
 
-/** Ce que f(x) retient : ses deux valeurs, et la rangée posée en x (ou `null` = 1 cm vide). */
+/** Ce que f(x) retient : ses deux valeurs, et la rangée posée en x (ou `null` = 1 mm vide). */
 interface Step {
   /** Bacs tous étages depuis x — ce que la dynamique maximise d'abord. */
   readonly total: number;
@@ -81,7 +82,8 @@ interface Stacking {
  * **Stratégie A — maximiser un format** (G-D3) : le plus de bacs identiques,
  * par rangées transversales, chacune dans son meilleur sens.
  *
- * `f(x)` = bacs au sol posables depuis `x` (cm entiers, depuis le fond) ;
+ * `f(x)` = bacs au sol posables depuis `x` (mm entiers, depuis le fond —
+ * un type de bac se mesure au millimètre, le plancher se convertit ×10) ;
  * `f(L) = 0` ; `f(x) = max(f(x + 1), ⌊freeWidth(x, d) ÷ w⌋ + f(x + d))` pour
  * chaque sens. Le jeu s'ajoute à l'empreinte, en long comme en large — pas à
  * la hauteur.
@@ -96,51 +98,56 @@ interface Stacking {
  *
  * Exact **parmi les rangements par rangées**, pas parmi tous : un rangement
  * « en moulinet » peut battre une rangée sur certains planchers. À égalité,
- * poser une rangée l'emporte sur laisser un centimètre, et le sens `length`
+ * poser une rangée l'emporte sur laisser un millimètre, et le sens `length`
  * sur `turned` — le rendu est déterministe.
  */
-export function maximizeFormat(floor: CargoFloor, format: BinFormat, gapCm: number): FormatLayout {
-  const levels = stackLevels(floor, format.outer.heightCm, format.maxStack);
-  const stacking = { levels, archFromLevel: archFromLevel(floor, format.outer.heightCm) };
-  const rows = bestRows(floor, footprintsOf(format, gapCm), stacking);
+export function maximizeFormat(
+  cargoFloor: CargoFloor,
+  format: FormatGeometry,
+  gapCm: number,
+): FormatLayout {
+  const floor = floorInMm(cargoFloor);
+  const levels = stackLevels(floor, format.outer.heightMm, format.maxStack);
+  const stacking = { levels, archFromLevel: archFromLevel(floor, format.outer.heightMm) };
+  const rows = bestRows(floor, footprintsOf(format, gapCm * MM_PER_CM), stacking);
   const floorCount = rows.reduce((sum, row) => sum + row.count, 0);
   const total = rows.reduce((sum, row) => sum + row.total, 0);
-  const ceilingLevels = Math.floor(floor.heightCm / format.outer.heightCm);
-  const innerCm3 = total * format.inner.lengthCm * format.inner.widthCm * format.inner.heightCm;
-  const vehicleCm3 = floor.lengthCm * floor.widthCm * floor.heightCm;
+  const ceilingLevels = Math.floor(floor.heightMm / format.outer.heightMm);
+  const innerMm3 = total * format.inner.lengthMm * format.inner.widthMm * format.inner.heightMm;
+  const vehicleMm3 = floor.lengthMm * floor.widthMm * floor.heightMm;
   return {
     floorCount,
     levels,
     total,
-    usefulLiters: Math.floor(innerCm3 / CM3_PER_LITER),
-    vehiclePercent: Math.floor((innerCm3 * PERCENT) / vehicleCm3),
+    usefulLiters: Math.floor(innerMm3 / MM3_PER_LITER),
+    vehiclePercent: Math.floor((innerMm3 * PERCENT) / vehicleMm3),
     heightLimit: format.maxStack <= ceilingLevels ? "stack" : "ceiling",
     rows,
   };
 }
 
-function footprintsOf(format: BinFormat, gapCm: number): readonly Footprint[] {
-  const long = format.outer.lengthCm + gapCm;
-  const wide = format.outer.widthCm + gapCm;
+function footprintsOf(format: FormatGeometry, gapMm: number): readonly Footprint[] {
+  const long = format.outer.lengthMm + gapMm;
+  const wide = format.outer.widthMm + gapMm;
   return [
-    { orientation: "length", depthCm: long, widthCm: wide },
-    { orientation: "turned", depthCm: wide, widthCm: long },
+    { orientation: "length", depthMm: long, widthMm: wide },
+    { orientation: "turned", depthMm: wide, widthMm: long },
   ];
 }
 
 /** `k₀ = ⌈hauteur du passage ÷ hauteur extérieure⌉`, ou `null` sans hauteur mesurée. */
-function archFromLevel(floor: CargoFloor, binOuterHeightCm: number): number | null {
-  const archHeightCm = floor.wheelArches?.heightCm ?? null;
-  return archHeightCm === null ? null : Math.ceil(archHeightCm / binOuterHeightCm);
+function archFromLevel(floor: FloorMm, binOuterHeightMm: number): number | null {
+  const archHeightMm = floor.wheelArches?.heightMm ?? null;
+  return archHeightMm === null ? null : Math.ceil(archHeightMm / binOuterHeightMm);
 }
 
 /** Remonte f depuis les portes, puis relit les rangées choisies depuis le fond. */
 function bestRows(
-  floor: CargoFloor,
+  floor: FloorMm,
   footprints: readonly Footprint[],
   stacking: Stacking,
 ): readonly FloorRow[] {
-  const length = floor.lengthCm;
+  const length = floor.lengthMm;
   const steps: Step[] = new Array<Step>(length + 1);
   steps[length] = { total: 0, floor: 0, row: null };
   for (let x = length - 1; x >= 0; x -= 1) {
@@ -154,14 +161,14 @@ function bestRows(
       x += 1;
     } else {
       rows.push(row);
-      x += row.depthCm;
+      x += row.depthMm;
     }
   }
   return rows;
 }
 
 function stepAt(
-  floor: CargoFloor,
+  floor: FloorMm,
   footprints: readonly Footprint[],
   stacking: Stacking,
   steps: readonly Step[],
@@ -170,11 +177,11 @@ function stepAt(
   const skip = stepOf(steps, x + 1);
   let best: Step = { total: skip.total, floor: skip.floor, row: null };
   for (const print of footprints) {
-    if (x + print.depthCm > floor.lengthCm) {
+    if (x + print.depthMm > floor.lengthMm) {
       continue;
     }
     const row = rowAt(floor, print, stacking, x);
-    const next = stepOf(steps, x + print.depthCm);
+    const next = stepOf(steps, x + print.depthMm);
     const candidate = { total: row.total + next.total, floor: row.count + next.floor, row };
     if (row.count > 0 && beats(candidate, best)) {
       best = candidate;
@@ -183,7 +190,7 @@ function stepAt(
   return best;
 }
 
-/** À égalité, poser l'emporte sur laisser 1 cm ; le premier sens sur le second. */
+/** À égalité, poser l'emporte sur laisser 1 mm ; le premier sens sur le second. */
 function beats(candidate: Step, best: Step): boolean {
   if (candidate.total !== best.total) {
     return candidate.total > best.total;
@@ -195,15 +202,15 @@ function beats(candidate: Step, best: Step): boolean {
 }
 
 /** La rangée posée en x dans ce sens : au sol, puis au-dessus des passages. */
-function rowAt(floor: CargoFloor, print: Footprint, stacking: Stacking, x: number): FloorRow {
-  const count = Math.floor(freeWidthCm(floor, x, print.depthCm) / print.widthCm);
-  const fullCount = Math.floor(floor.widthCm / print.widthCm);
+function rowAt(floor: FloorMm, print: Footprint, stacking: Stacking, x: number): FloorRow {
+  const count = Math.floor(freeWidthMm(floor, x, print.depthMm) / print.widthMm);
+  const fullCount = Math.floor(floor.widthMm / print.widthMm);
   const k0 = stacking.archFromLevel;
   const upperLevels = k0 === null ? 0 : Math.max(0, stacking.levels - k0);
   const overArchCount = upperLevels > 0 && count > 0 ? fullCount - count : 0;
   return {
-    fromCm: x,
-    depthCm: print.depthCm,
+    fromMm: x,
+    depthMm: print.depthMm,
     count,
     orientation: print.orientation,
     overArchCount,

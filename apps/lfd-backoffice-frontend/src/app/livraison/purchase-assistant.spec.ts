@@ -7,6 +7,7 @@ import {
   EMPTY_FLOOR,
   emptyFormat,
   formatLiters,
+  formatsOfBinTypes,
   overArchBands,
   overArchFirstLevel,
   placeBins,
@@ -138,5 +139,25 @@ describe('l’assistant d’achat — le rendu', () => {
       { x: 61.5, y: 22.5, depth: 40, across: 60, turned: true },
       { x: 61.5, y: 83.5, depth: 40, across: 60, turned: true },
     ]);
+  });
+});
+
+describe('formatsOfBinTypes', () => {
+  it('reprend un type au millimètre en centimètres, sans arrondir', () => {
+    const [manne] = formatsOfBinTypes([
+      {
+        id: 'manne',
+        name: 'Manne à pain',
+        outer: { lengthMm: 665, widthMm: 460, heightMm: 715 },
+        inner: { lengthMm: 645, widthMm: 440, heightMm: 695 },
+        innerVolumeLiters: 197,
+        isotherm: false,
+        maxStack: 1,
+        divisible: false,
+        archivedAt: null,
+      },
+    ]);
+    expect(manne?.outer).toEqual({ lengthCm: 66.5, widthCm: 46, heightCm: 71.5 });
+    expect(manne?.inner).toEqual({ lengthCm: 64.5, widthCm: 44, heightCm: 69.5 });
   });
 });

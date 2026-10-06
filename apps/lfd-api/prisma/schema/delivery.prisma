@@ -566,14 +566,25 @@ model DeliveryBinType {
   /// « Bac M » — ce qu'on dit au labo.
   name String
 
-  /// Dimensions EXTÉRIEURES, en cm — celles du chargement.
-  outerLengthCm Int @map("outer_length_cm")
-  outerWidthCm  Int @map("outer_width_cm")
-  outerHeightCm Int @map("outer_height_cm")
-  /// Dimensions INTÉRIEURES, en cm — informatives ; le volume en est dérivé.
-  innerLengthCm Int @map("inner_length_cm")
-  innerWidthCm  Int @map("inner_width_cm")
-  innerHeightCm Int @map("inner_height_cm")
+  /// Dimensions EXTÉRIEURES, en MILLIMÈTRES entiers — celles du chargement
+  /// (migration `20261007100000_les_bacs_au_millimetre` : une manne à pain
+  /// mesure 66,5 cm). Le CHECK `delivery_bin_type_dimensions` les tient.
+  outerLengthMm Int @map("outer_length_mm")
+  outerWidthMm  Int @map("outer_width_mm")
+  outerHeightMm Int @map("outer_height_mm")
+  /// Dimensions INTÉRIEURES, en mm — informatives ; le volume en est dérivé.
+  innerLengthMm Int @map("inner_length_mm")
+  innerWidthMm  Int @map("inner_width_mm")
+  innerHeightMm Int @map("inner_height_mm")
+
+  /// MORTES depuis le 2026-10-07 : les anciennes dimensions en cm entiers,
+  /// gardées en base, plus jamais écrites ni lues.
+  outerLengthCm Int? @map("outer_length_cm")
+  outerWidthCm  Int? @map("outer_width_cm")
+  outerHeightCm Int? @map("outer_height_cm")
+  innerLengthCm Int? @map("inner_length_cm")
+  innerWidthCm  Int? @map("inner_width_cm")
+  innerHeightCm Int? @map("inner_height_cm")
 
   isotherm  Boolean
   /// Le nombre maximal de bacs de ce type dans une pile.

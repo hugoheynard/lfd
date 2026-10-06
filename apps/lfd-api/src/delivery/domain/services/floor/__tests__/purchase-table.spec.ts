@@ -1,5 +1,6 @@
 import { BinFormat } from "../../../value-objects/bin-format.js";
 import { CargoFloor } from "../../../value-objects/cargo-floor.js";
+import { geometryOfFormat } from "../format-geometry.js";
 import { crossPurchaseTable, type PurchaseTableFormat } from "../purchase-table.js";
 
 const FLOOR = CargoFloor.of({ lengthCm: 100, widthCm: 100, heightCm: 50, wheelArches: null });
@@ -10,11 +11,13 @@ const formatOf = (
   maxStack: number,
   unitPriceCents: number | null,
 ): PurchaseTableFormat => ({
-  format: BinFormat.of({
-    outer: { lengthCm: outer[0], widthCm: outer[1], heightCm: outer[2] },
-    inner: { lengthCm: inner[0], widthCm: inner[1], heightCm: inner[2] },
-    maxStack,
-  }),
+  format: geometryOfFormat(
+    BinFormat.of({
+      outer: { lengthCm: outer[0], widthCm: outer[1], heightCm: outer[2] },
+      inner: { lengthCm: inner[0], widthCm: inner[1], heightCm: inner[2] },
+      maxStack,
+    }),
+  ),
   unitPriceCents,
 });
 

@@ -1,5 +1,4 @@
-import { BIN_MAX_STACK_MAX, BIN_MAX_STACK_MIN, ensureInnerFits } from "../entities/bin-type.js";
-import { InvalidBinMaxStackError } from "../errors/delivery-bin-errors.js";
+import { type BoxSides, ensureInnerFits, ensureMaxStack } from "../entities/bin-type.js";
 import { BinDimensions, type BinDimensionsInput } from "./bin-dimensions.js";
 
 /** Ce que la saisie dit d'un format de bac essayé dans l'assistant. */
@@ -29,14 +28,11 @@ export class BinFormat {
   static of(input: BinFormatInput): BinFormat {
     const outer = BinDimensions.of("extérieures", input.outer);
     const inner = BinDimensions.of("intérieures", input.inner);
-    ensureInnerFits(inner, outer);
-    if (
-      !Number.isInteger(input.maxStack) ||
-      input.maxStack < BIN_MAX_STACK_MIN ||
-      input.maxStack > BIN_MAX_STACK_MAX
-    ) {
-      throw new InvalidBinMaxStackError(input.maxStack, BIN_MAX_STACK_MIN, BIN_MAX_STACK_MAX);
-    }
-    return new BinFormat(outer, inner, input.maxStack);
+    ensureInnerFits(sidesOfCm(inner), sidesOfCm(outer), (cm) => `${cm} cm`);
+    return new BinFormat(outer, inner, ensureMaxStack(input.maxStack));
   }
+}
+
+function sidesOfCm(dimensions: BinDimensions): BoxSides {
+  return { length: dimensions.lengthCm, width: dimensions.widthCm, height: dimensions.heightCm };
 }

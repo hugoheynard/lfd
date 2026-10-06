@@ -17,12 +17,12 @@ import type { ShareChoice } from "../domain/services/share-candidate.js";
 /** Le remplissage se lit au centième : au-delà, c'est du bruit de fractions. */
 const FILL_PRECISION = 100;
 
-/** Un type EN SERVICE tel que le colisage le compare : volume intérieur, en cm³. */
+/** Un type EN SERVICE tel que le colisage le compare : volume intérieur, en mm³. */
 export function packingTypeOf(type: BinTypeView): PackingBinType {
-  const { lengthCm, widthCm, heightCm } = type.inner;
+  const { lengthMm, widthMm, heightMm } = type.inner;
   return {
     id: type.id,
-    volume: lengthCm * widthCm * heightCm,
+    volume: lengthMm * widthMm * heightMm,
     isotherm: type.isotherm,
     divisible: type.divisible,
   };

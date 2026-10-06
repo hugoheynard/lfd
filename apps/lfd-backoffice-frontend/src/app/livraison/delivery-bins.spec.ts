@@ -5,6 +5,8 @@ import {
   archivedOnLabel,
   binDraftOf,
   binTraitsLabel,
+  cmToMm,
+  dimensionsLabel,
   draftInnerVolumeLiters,
   readBinDraft,
   sameBinPayload,
@@ -16,8 +18,8 @@ function bin(id: string, archivedAt: string | null = null): BinTypeView {
   return {
     id,
     name: `Bac ${id}`,
-    outer: { lengthCm: 60, widthCm: 40, heightCm: 30 },
-    inner: { lengthCm: 56, widthCm: 36, heightCm: 27 },
+    outer: { lengthMm: 600, widthMm: 400, heightMm: 300 },
+    inner: { lengthMm: 560, widthMm: 360, heightMm: 270 },
     innerVolumeLiters: 54,
     isotherm: false,
     maxStack: 5,
@@ -34,8 +36,8 @@ describe('readBinDraft', () => {
       ok: true,
       payload: {
         name: 'Bac M',
-        outer: { lengthCm: 60, widthCm: 40, heightCm: 30 },
-        inner: { lengthCm: 56, widthCm: 36, heightCm: 27 },
+        outer: { lengthMm: 600, widthMm: 400, heightMm: 300 },
+        inner: { lengthMm: 560, widthMm: 360, heightMm: 270 },
         isotherm: false,
         maxStack: 5,
         divisible: true,
@@ -57,8 +59,8 @@ describe('readBinDraft', () => {
     });
   });
 
-  it('refuse une dimension hors bornes ou non entière', () => {
-    for (const heightCm of [0, 301, 12.5]) {
+  it('refuse une dimension hors bornes ou plus fine que le millimètre', () => {
+    for (const heightCm of [0, 0.9, 300.1, 12.55]) {
       const reading = readBinDraft({ ...FILLED, outer: { ...FILLED.outer, heightCm } });
       expect(reading.ok).toBe(false);
     }
@@ -68,6 +70,44 @@ describe('readBinDraft', () => {
     expect(readBinDraft({ ...FILLED, inner: { ...FILLED.inner, heightCm: 31 } })).toEqual({
       ok: false,
       issue: 'La hauteur intérieure (31 cm) dépasse la hauteur extérieure (30 cm).',
+    });
+  });
+
+  it('lit une décimale en centimètres et l’envoie en millimètres : la manne à pain', () => {
+    const reading = readBinDraft({
+      ...FILLED,
+      name: 'Manne à pain',
+      outer: { lengthCm: 66.5, widthCm: 46, heightCm: 71.5 },
+      inner: { lengthCm: 64.5, widthCm: 44, heightCm: 69.5 },
+    });
+    expect(reading.ok && reading.payload.outer).toEqual({
+      lengthMm: 665,
+      widthMm: 460,
+      heightMm: 715,
+    });
+    expect(reading.ok && reading.payload.inner).toEqual({
+      lengthMm: 645,
+      widthMm: 440,
+      heightMm: 695,
+    });
+  });
+
+  it('admet les bornes de 1 et 300 cm', () => {
+    const outer = { lengthCm: 300, widthCm: 1, heightCm: 1 };
+    expect(readBinDraft({ ...FILLED, outer, inner: outer }).ok).toBe(true);
+  });
+
+  it('dit la borne au millimètre près', () => {
+    expect(readBinDraft({ ...FILLED, outer: { ...FILLED.outer, heightCm: 12.55 } })).toEqual({
+      ok: false,
+      issue: 'La hauteur extérieure va de 1 à 300 cm, au millimètre près (une décimale).',
+    });
+  });
+
+  it('dit un demi-centimètre de trop à la virgule', () => {
+    expect(readBinDraft({ ...FILLED, inner: { ...FILLED.inner, heightCm: 30.5 } })).toEqual({
+      ok: false,
+      issue: 'La hauteur intérieure (30,5 cm) dépasse la hauteur extérieure (30 cm).',
     });
   });
 
@@ -103,13 +143,43 @@ describe('sameBinPayload', () => {
   });
 });
 
+describe('binDraftOf', () => {
+  it('rouvre un type au millimètre en centimètres à une décimale', () => {
+    const manne = {
+      ...bin('Manne'),
+      outer: { lengthMm: 665, widthMm: 460, heightMm: 715 },
+    };
+    expect(binDraftOf(manne).outer).toEqual({ lengthCm: 66.5, widthCm: 46, heightCm: 71.5 });
+  });
+});
+
 describe('draftInnerVolumeLiters', () => {
   it('arrondit à l’inférieur, comme le serveur', () => {
     expect(draftInnerVolumeLiters({ lengthCm: 56, widthCm: 36, heightCm: 27 })).toBe(54);
+    // 645 × 440 × 695 mm = 197 241 000 mm³.
+    expect(draftInnerVolumeLiters({ lengthCm: 64.5, widthCm: 44, heightCm: 69.5 })).toBe(197);
   });
 
   it('ne dit rien tant qu’une dimension manque', () => {
     expect(draftInnerVolumeLiters({ lengthCm: 56, widthCm: null, heightCm: 27 })).toBeNull();
+  });
+});
+
+describe('dimensionsLabel', () => {
+  it('écrit les centimètres à la virgule, la décimale seulement si elle compte', () => {
+    expect(dimensionsLabel({ lengthMm: 665, widthMm: 460, heightMm: 715 })).toBe(
+      '66,5 × 46 × 71,5 cm',
+    );
+    expect(dimensionsLabel({ lengthMm: 600, widthMm: 400, heightMm: 300 })).toBe('60 × 40 × 30 cm');
+    expect(dimensionsLabel({ lengthMm: 3000, widthMm: 10, heightMm: 5 })).toBe('300 × 1 × 0,5 cm');
+  });
+});
+
+describe('cmToMm', () => {
+  it('convertit sans dériver du flottant, et refuse une deuxième décimale', () => {
+    expect(cmToMm(66.5)).toBe(665);
+    expect(cmToMm(0.1 + 0.2)).toBe(3);
+    expect(cmToMm(12.55)).toBeNull();
   });
 });
 

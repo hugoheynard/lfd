@@ -858,11 +858,14 @@ export type {
 } from "./delivery-settings.js";
 export {
   binDimensionsSchema,
+  binTypeDimensionsSchema,
   binTypePayloadSchema,
   setBinCapacityPayloadSchema,
   BIN_TYPE_NAME_MAX_LENGTH,
   BIN_DIMENSION_MIN_CM,
   BIN_DIMENSION_MAX_CM,
+  BIN_TYPE_DIMENSION_MIN_MM,
+  BIN_TYPE_DIMENSION_MAX_MM,
   BIN_MAX_STACK_MIN,
   BIN_MAX_STACK_MAX,
   BIN_CAPACITY_MIN_UNITS,
@@ -870,6 +873,7 @@ export {
 } from "./delivery-bins.js";
 export type {
   BinDimensions,
+  BinTypeDimensions,
   BinTypePayload,
   BinTypeView,
   BinTypesView,

@@ -1,13 +1,18 @@
+import { MM_PER_CM } from "../../value-objects/bin-type-dimensions.js";
 import type { CargoFloor } from "../../value-objects/cargo-floor.js";
-import { freeWidthCm } from "./floor-geometry.js";
+import { type FloorMm, floorInMm, freeWidthMm } from "./floor-geometry.js";
 import type { RowOrientation } from "./maximize-format.js";
 
-/** Une pile telle que la stratégie B la lit : son empreinte extérieure, son froid. */
+/**
+ * Une pile telle que la stratégie B la lit : son empreinte extérieure, son
+ * froid. **Tout est en millimètres** (2026-10-07) : un type de bac se mesure
+ * au millimètre, et c'est le plancher du véhicule (en cm) qu'on convertit.
+ */
 export interface StackToPlace {
   readonly stackIndex: number;
   readonly isotherm: boolean;
-  readonly outerLengthCm: number;
-  readonly outerWidthCm: number;
+  readonly outerLengthMm: number;
+  readonly outerWidthMm: number;
 }
 
 /** La pile est posée au sol : sa rangée, son coin côté fond-gauche, son empreinte. */
@@ -16,13 +21,13 @@ export interface FloorPlacement {
   /** 1..n, depuis le fond. */
   readonly row: number;
   /** Distance depuis le fond (la cloison). */
-  readonly xCm: number;
+  readonly xMm: number;
   /** Distance depuis le flanc gauche, vu depuis les portes arrière. */
-  readonly yCm: number;
+  readonly yMm: number;
   /** Empreinte EXTÉRIEURE le long du véhicule, sans le jeu. */
-  readonly depthCm: number;
+  readonly depthMm: number;
   /** Empreinte EXTÉRIEURE en travers, sans le jeu. */
-  readonly widthCm: number;
+  readonly widthMm: number;
   readonly orientation: RowOrientation;
 }
 
@@ -36,16 +41,16 @@ export type StackPlacement =
 interface Print {
   readonly orientation: RowOrientation;
   /** Jeu compris. */
-  readonly depthCm: number;
-  readonly widthCm: number;
+  readonly depthMm: number;
+  readonly widthMm: number;
   readonly stack: StackToPlace;
 }
 
 interface OpenRow {
   readonly row: number;
-  readonly fromCm: number;
-  depthCm: number;
-  usedWidthCm: number;
+  readonly fromMm: number;
+  depthMm: number;
+  usedWidthMm: number;
   readonly prints: Print[];
 }
 
@@ -59,7 +64,7 @@ interface OpenRow {
  * - Une rangée a la profondeur de sa pile la plus profonde ; chaque pile prend
  *   le sens qui laisse le plus de largeur (à égalité, dans la longueur), puis
  *   l'autre s'il est le seul à tenir.
- * - Au sol, aucune pile sur un passage de roue (`freeWidthCm`) ; une rangée
+ * - Au sol, aucune pile sur un passage de roue (`freeWidthMm`) ; une rangée
  *   qui touche les passages se centre entre eux.
  * - Dès qu'une pile sort, les suivantes sortent aussi : elles se chargent
  *   après elle, donc devant elle (décision par défaut du 2026-10-02).
@@ -90,12 +95,18 @@ export class FloorPlacer {
   private readonly rowOf = new Map<number, number>();
   private readonly elsewhere = new Map<number, StackPlacement>();
   private blocked = false;
+  private readonly floor: FloorMm;
+  private readonly gapMm: number;
 
+  /** Le plancher et le jeu arrivent en cm (le véhicule) ; convertis ×10, sans perte. */
   constructor(
-    private readonly floor: CargoFloor,
-    private readonly gapCm: number,
+    floor: CargoFloor,
+    gapCm: number,
     private readonly refrigerated: boolean,
-  ) {}
+  ) {
+    this.floor = floorInMm(floor);
+    this.gapMm = gapCm * MM_PER_CM;
+  }
 
   /** Pose une pile neuve : dans la caisse froide, au sol, ou hors plancher. */
   place(stack: StackToPlace): void {
@@ -103,7 +114,7 @@ export class FloorPlacer {
       this.elsewhere.set(stack.stackIndex, { kind: "refrigerated" });
       return;
     }
-    this.blocked = this.blocked || !put(this.floor, this.rows, printsOf(stack, this.gapCm));
+    this.blocked = this.blocked || !put(this.floor, this.rows, printsOf(stack, this.gapMm));
     if (this.blocked) {
       this.elsewhere.set(stack.stackIndex, { kind: "off_floor" });
       return;
@@ -134,36 +145,36 @@ export class FloorPlacer {
 }
 
 /** Le sens qui laisse le plus de largeur d'abord ; à égalité, dans la longueur. */
-function printsOf(stack: StackToPlace, gapCm: number): readonly Print[] {
-  const long = stack.outerLengthCm + gapCm;
-  const wide = stack.outerWidthCm + gapCm;
-  const length: Print = { orientation: "length", depthCm: long, widthCm: wide, stack };
-  const turned: Print = { orientation: "turned", depthCm: wide, widthCm: long, stack };
-  return turned.widthCm < length.widthCm ? [turned, length] : [length, turned];
+function printsOf(stack: StackToPlace, gapMm: number): readonly Print[] {
+  const long = stack.outerLengthMm + gapMm;
+  const wide = stack.outerWidthMm + gapMm;
+  const length: Print = { orientation: "length", depthMm: long, widthMm: wide, stack };
+  const turned: Print = { orientation: "turned", depthMm: wide, widthMm: long, stack };
+  return turned.widthMm < length.widthMm ? [turned, length] : [length, turned];
 }
 
 /** Dans la rangée ouverte, sinon dans une rangée neuve ; `false` = hors plancher. */
-function put(floor: CargoFloor, rows: OpenRow[], prints: readonly Print[]): boolean {
+function put(floor: FloorMm, rows: OpenRow[], prints: readonly Print[]): boolean {
   const open = rows[rows.length - 1];
   if (open !== undefined) {
     for (const print of prints) {
-      const depthCm = Math.max(open.depthCm, print.depthCm);
-      if (fits(floor, open.fromCm, depthCm, open.usedWidthCm + print.widthCm)) {
-        open.depthCm = depthCm;
-        open.usedWidthCm += print.widthCm;
+      const depthMm = Math.max(open.depthMm, print.depthMm);
+      if (fits(floor, open.fromMm, depthMm, open.usedWidthMm + print.widthMm)) {
+        open.depthMm = depthMm;
+        open.usedWidthMm += print.widthMm;
         open.prints.push(print);
         return true;
       }
     }
   }
-  const fromCm = open === undefined ? 0 : open.fromCm + open.depthCm;
+  const fromMm = open === undefined ? 0 : open.fromMm + open.depthMm;
   for (const print of prints) {
-    if (fits(floor, fromCm, print.depthCm, print.widthCm)) {
+    if (fits(floor, fromMm, print.depthMm, print.widthMm)) {
       rows.push({
         row: rows.length + 1,
-        fromCm,
-        depthCm: print.depthCm,
-        usedWidthCm: print.widthCm,
+        fromMm,
+        depthMm: print.depthMm,
+        usedWidthMm: print.widthMm,
         prints: [print],
       });
       return true;
@@ -172,27 +183,27 @@ function put(floor: CargoFloor, rows: OpenRow[], prints: readonly Print[]): bool
   return false;
 }
 
-function fits(floor: CargoFloor, fromCm: number, depthCm: number, widthCm: number): boolean {
-  return fromCm + depthCm <= floor.lengthCm && widthCm <= freeWidthCm(floor, fromCm, depthCm);
+function fits(floor: FloorMm, fromMm: number, depthMm: number, widthMm: number): boolean {
+  return fromMm + depthMm <= floor.lengthMm && widthMm <= freeWidthMm(floor, fromMm, depthMm);
 }
 
 /** Les coordonnées, une fois la profondeur de la rangée connue : elle décide du passage. */
-function finalize(floor: CargoFloor, row: OpenRow): ReadonlyMap<number, FloorPlacement> {
-  const offsetCm = (floor.widthCm - freeWidthCm(floor, row.fromCm, row.depthCm)) / 2;
+function finalize(floor: FloorMm, row: OpenRow): ReadonlyMap<number, FloorPlacement> {
+  const offsetMm = (floor.widthMm - freeWidthMm(floor, row.fromMm, row.depthMm)) / 2;
   const placements = new Map<number, FloorPlacement>();
-  let yCm = offsetCm;
+  let yMm = offsetMm;
   for (const print of row.prints) {
     const turned = print.orientation === "turned";
     placements.set(print.stack.stackIndex, {
       kind: "floor",
       row: row.row,
-      xCm: row.fromCm,
-      yCm,
-      depthCm: turned ? print.stack.outerWidthCm : print.stack.outerLengthCm,
-      widthCm: turned ? print.stack.outerLengthCm : print.stack.outerWidthCm,
+      xMm: row.fromMm,
+      yMm,
+      depthMm: turned ? print.stack.outerWidthMm : print.stack.outerLengthMm,
+      widthMm: turned ? print.stack.outerLengthMm : print.stack.outerWidthMm,
       orientation: print.orientation,
     });
-    yCm += print.widthCm;
+    yMm += print.widthMm;
   }
   return placements;
 }

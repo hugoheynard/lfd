@@ -66,7 +66,8 @@ export interface DeliveryLoadingPlanStackView {
   readonly binTypeName: string;
   /**
    * Hauteur EXTÉRIEURE d'un bac de la pile, en cm : l'écran dessine les bacs
-   * à proportion, pour qu'un Bac L se lise plus haut qu'un Bac M.
+   * à proportion, pour qu'un Bac L se lise plus haut qu'un Bac M. Un type de
+   * bac se mesure au millimètre (2026-10-07) : une décimale possible (71,5).
    */
   readonly binTypeHeightCm: number;
   /** Nombre de bacs physiques (un bac partagé compte pour un). */
@@ -84,6 +85,8 @@ export interface DeliveryLoadingPlanStackView {
 /**
  * La pile posée au sol. Repère : `x` depuis le FOND (la cloison), `y` depuis
  * le flanc gauche vu des portes arrière ; empreinte EXTÉRIEURE, sans le jeu.
+ * En cm, le repère du plancher — calculées au millimètre, elles peuvent
+ * porter une décimale (66,5) depuis le 2026-10-07.
  */
 export interface DeliveryLoadingPlanFloorPlacementView {
   readonly kind: "floor";

@@ -1,6 +1,32 @@
 import { BinFormat } from "../../../value-objects/bin-format.js";
 import { CargoFloor, type CargoFloorInput } from "../../../value-objects/cargo-floor.js";
-import { maximizeFormat } from "../maximize-format.js";
+import { geometryOfFormat } from "../format-geometry.js";
+import { type FormatLayout, maximizeFormat } from "../maximize-format.js";
+
+type RowCm = Omit<FormatLayout["rows"][number], "fromMm" | "depthMm"> & {
+  readonly fromCm: number;
+  readonly depthCm: number;
+};
+
+/**
+ * Le calcul rend des millimètres ; ces cas sont écrits en centimètres
+ * entiers (un format de l'assistant), relus ici en cm.
+ */
+const maximize = (
+  floor: CargoFloor,
+  binFormat: BinFormat,
+  gapCm: number,
+): Omit<FormatLayout, "rows"> & { readonly rows: readonly RowCm[] } => {
+  const layout = maximizeFormat(floor, geometryOfFormat(binFormat), gapCm);
+  return {
+    ...layout,
+    rows: layout.rows.map(({ fromMm, depthMm, ...row }) => ({
+      ...row,
+      fromCm: fromMm / 10,
+      depthCm: depthMm / 10,
+    })),
+  };
+};
 
 const floorOf = (input: CargoFloorInput): CargoFloor => CargoFloor.of(input);
 const format = (
@@ -35,7 +61,7 @@ describe("maximizeFormat — calculs faits à la main", () => {
     // Tout en long : une rangée de 60 cm, ⌊100 ÷ 40⌋ = 2 ; 40 cm restent vides → 2.
     // Tout tourné : deux rangées de 40 cm, ⌊100 ÷ 60⌋ = 1 chacune → 2.
     // En long puis tourné : 2 sur [0, 60) + 1 sur [60, 100) → 3.
-    const layout = maximizeFormat(
+    const layout = maximize(
       floorOf({ lengthCm: 100, widthCm: 100, heightCm: 50, wheelArches: null }),
       format([60, 40, 30], 1),
       0,
@@ -58,14 +84,14 @@ describe("maximizeFormat — calculs faits à la main", () => {
       heightCm: 50,
       wheelArches: { lengthCm: 20, protrusionCm: 30, fromBackCm: 40 },
     });
-    expect(maximizeFormat(rectangle, format([50, 50, 30], 1), 0).floorCount).toBe(4);
-    const layout = maximizeFormat(arched, format([50, 50, 30], 1), 0);
+    expect(maximize(rectangle, format([50, 50, 30], 1), 0).floorCount).toBe(4);
+    const layout = maximize(arched, format([50, 50, 30], 1), 0);
     expect(layout.floorCount).toBe(2);
     expect(layout.rows).toEqual([{ ...plain(60, 50, 2, "length"), total: 2 }]);
   });
 
   it("rien ne tient : un bac plus long que le plancher dans les deux sens", () => {
-    const layout = maximizeFormat(
+    const layout = maximize(
       floorOf({ lengthCm: 100, widthCm: 100, heightCm: 100, wheelArches: null }),
       format([120, 110, 30], 3),
       1,
@@ -74,7 +100,7 @@ describe("maximizeFormat — calculs faits à la main", () => {
   });
 
   it("rien ne tient : un bac plus haut que le plafond n'a aucun étage", () => {
-    const layout = maximizeFormat(
+    const layout = maximize(
       floorOf({ lengthCm: 100, widthCm: 100, heightCm: 30, wheelArches: null }),
       format([40, 30, 31], 3),
       1,
@@ -88,8 +114,8 @@ describe("maximizeFormat — calculs faits à la main", () => {
     // Jeu 1 : empreinte 61 × 41 → une rangée de ⌊80 ÷ 41⌋ = 1, et 59 cm ne prennent
     // ni 61 ni un tourné (⌊80 ÷ 61⌋ = 1 sur 41 cm) : 1 + 1 = 2.
     const floor = floorOf({ lengthCm: 120, widthCm: 80, heightCm: 50, wheelArches: null });
-    expect(maximizeFormat(floor, format([60, 40, 30], 1), 0).floorCount).toBe(4);
-    expect(maximizeFormat(floor, format([60, 40, 30], 1), 1).floorCount).toBe(2);
+    expect(maximize(floor, format([60, 40, 30], 1), 0).floorCount).toBe(4);
+    expect(maximize(floor, format([60, 40, 30], 1), 1).floorCount).toBe(2);
   });
 
   it("la camionnette 290 × 166 × 139, passages 90/20/60, bacs 60 × 40 × 32 pile 5", () => {
@@ -106,7 +132,7 @@ describe("maximizeFormat — calculs faits à la main", () => {
     // Étages : ⌊139 ÷ 32⌋ = 4 < 5 → le plafond limite. Total 16 × 4 = 64.
     // Intérieur 56 × 36 × 30 = 60 480 cm³ ; 64 × 60 480 = 3 870 720 cm³ → 3 870 L.
     // Véhicule 290 × 166 × 139 = 6 691 460 cm³ → ⌊57,84 %⌋ = 57 %.
-    const layout = maximizeFormat(
+    const layout = maximize(
       floorOf({
         lengthCm: 290,
         widthCm: 166,
@@ -137,7 +163,7 @@ describe("maximizeFormat — calculs faits à la main", () => {
   });
 
   it("la pile limite quand le plafond laisse plus d'étages", () => {
-    const layout = maximizeFormat(
+    const layout = maximize(
       floorOf({ lengthCm: 290, widthCm: 166, heightCm: 139, wheelArches: null }),
       format([60, 40, 32], 3),
       1,
@@ -169,7 +195,7 @@ describe("maximizeFormat — par-dessus les passages de roue (G-D2 bis)", () => 
     // Trois en long + deux tournés : au plus 16 + 16 + 15 + 8 + 8 = 63. Moins.
     // Au sol : 2 + 3 + 3 + 4 + 4 = 16, comme avant — seul le total monte.
     // Intérieur 70 × 60 480 = 4 233 600 cm³ → 4 233 L ; ÷ 6 691 460 → ⌊63,27 %⌋ = 63 %.
-    const layout = maximizeFormat(van(30), binL, 1);
+    const layout = maximize(van(30), binL, 1);
     expect(layout).toMatchObject({
       floorCount: 16,
       levels: 4,
@@ -201,7 +227,7 @@ describe("maximizeFormat — par-dessus les passages de roue (G-D2 bis)", () => 
   it("un passage haut d'exactement deux bacs : le latéral commence au troisième étage", () => {
     // k₀ = ⌈64 ÷ 32⌉ = 2 : le bac latéral pose sur le passage à 64 cm pile.
     // 3 × 4 + 1 × (4 − 2) = 14. À 65 cm, k₀ = 3 → 3 × 4 + 1 × 1 = 13.
-    const exact = maximizeFormat(strip(64), binL, 1);
+    const exact = maximize(strip(64), binL, 1);
     expect(exact.total).toBe(14);
     expect(exact.rows).toEqual([
       {
@@ -214,19 +240,19 @@ describe("maximizeFormat — par-dessus les passages de roue (G-D2 bis)", () => 
         total: 14,
       },
     ]);
-    expect(maximizeFormat(strip(65), binL, 1).total).toBe(13);
+    expect(maximize(strip(65), binL, 1).total).toBe(13);
   });
 
   it("un passage trop haut : aucun latéral ne commence", () => {
     // k₀ = ⌈128 ÷ 32⌉ = 4 = étages → max(0, 4 − 4) = 0 : 3 × 4 = 12, rien au-dessus.
-    const layout = maximizeFormat(strip(128), binL, 1);
+    const layout = maximize(strip(128), binL, 1);
     expect(layout).toMatchObject({ floorCount: 3, levels: 4, total: 12 });
     expect(layout.rows[0]).toMatchObject({ overArchCount: 0, overArchFromLevel: null, total: 12 });
   });
 
   /** Régression : sans hauteur mesurée, rien ne doit monter au-dessus du passage. */
   it("sans hauteur de passage, le résultat d'avant : 16 × 4 = 64, aucun latéral", () => {
-    const layout = maximizeFormat(van(null), binL, 1);
+    const layout = maximize(van(null), binL, 1);
     expect(layout).toMatchObject({ floorCount: 16, levels: 4, total: 64, usefulLiters: 3870 });
     expect(
       layout.rows.map(({ fromCm, count, orientation }) => ({ fromCm, count, orientation })),

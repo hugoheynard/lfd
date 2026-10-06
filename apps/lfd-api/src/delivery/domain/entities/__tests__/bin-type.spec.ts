@@ -14,11 +14,11 @@ import { BinType, type BinTypeSpec } from "../bin-type.js";
 const AT = new Date(0);
 const LATER = new Date(60_000);
 
-/** Un bac Euronorm 60 × 40 × 22, intérieur 56 × 36 × 20. */
+/** Un bac Euronorm 60 × 40 × 22, intérieur 56 × 36 × 20 — en millimètres. */
 const SPEC: BinTypeSpec = {
   name: "Bac M",
-  outer: { lengthCm: 60, widthCm: 40, heightCm: 22 },
-  inner: { lengthCm: 56, widthCm: 36, heightCm: 20 },
+  outer: { lengthMm: 600, widthMm: 400, heightMm: 220 },
+  inner: { lengthMm: 560, widthMm: 360, heightMm: 200 },
   isotherm: false,
   maxStack: 6,
   divisible: true,
@@ -34,7 +34,7 @@ describe("BinType", () => {
 
     expect(bin.name).toBe("Bac M");
     expect(bin.inService).toBe(true);
-    expect(bin.inner.volumeLiters).toBe(40); // 56 × 36 × 20 = 40 320 cm³
+    expect(bin.inner.volumeLiters).toBe(40); // 560 × 360 × 200 = 40 320 000 mm³
     expect(bin.toState()).toMatchObject({ ...SPEC, archivedAt: null, createdAt: AT });
   });
 
@@ -45,21 +45,44 @@ describe("BinType", () => {
     expect(() => declared({ name })).toThrow(InvalidBinTypeNameError);
   });
 
-  it.each([0, 301, 12.5])("refuse une dimension de %s cm, en nommant le côté", (lengthCm) => {
-    expect(() => declared({ outer: { ...SPEC.outer, lengthCm } })).toThrow(
-      /Dimensions extérieures du bac : la longueur vaut/,
+  it.each([0, 9, 3001, 665.5])("refuse une dimension de %s mm, en nommant le côté", (lengthMm) => {
+    expect(() => declared({ outer: { ...SPEC.outer, lengthMm } })).toThrow(
+      /Dimensions extérieures du bac : la longueur vaut .* mm\. Chaque dimension se mesure au millimètre près, de 1 cm à 300 cm\./,
     );
-    expect(() => declared({ outer: { ...SPEC.outer, lengthCm } })).toThrow(
+    expect(() => declared({ outer: { ...SPEC.outer, lengthMm } })).toThrow(
       InvalidBinDimensionsError,
     );
   });
 
+  it.each([10, 3000])("admet les bornes : %s mm", (lengthMm) => {
+    const inner = { ...SPEC.inner, lengthMm: 10 };
+    expect(declared({ outer: { ...SPEC.outer, lengthMm }, inner }).outer.lengthMm).toBe(lengthMm);
+  });
+
+  it("garde le demi-centimètre : une manne à pain de 66,5 × 46 × 71,5 cm", () => {
+    const manne = declared({
+      name: "Manne à pain",
+      outer: { lengthMm: 665, widthMm: 460, heightMm: 715 },
+      inner: { lengthMm: 645, widthMm: 440, heightMm: 695 },
+    });
+
+    expect(manne.outer.toInput()).toEqual({ lengthMm: 665, widthMm: 460, heightMm: 715 });
+    // 645 × 440 × 695 = 197 241 000 mm³ → 197 L, arrondi à l'inférieur.
+    expect(manne.inner.volumeLiters).toBe(197);
+  });
+
   it("refuse un intérieur plus haut que l'extérieur, en nommant la dimension", () => {
-    expect(() => declared({ inner: { ...SPEC.inner, heightCm: 23 } })).toThrow(
+    expect(() => declared({ inner: { ...SPEC.inner, heightMm: 230 } })).toThrow(
       BinInnerExceedsOuterError,
     );
-    expect(() => declared({ inner: { ...SPEC.inner, heightCm: 23 } })).toThrow(
+    expect(() => declared({ inner: { ...SPEC.inner, heightMm: 230 } })).toThrow(
       "La hauteur intérieure (23 cm) dépasse la hauteur extérieure (22 cm)",
+    );
+  });
+
+  it("un demi-centimètre de trop suffit, et le refus l'écrit à la virgule", () => {
+    expect(() => declared({ inner: { ...SPEC.inner, heightMm: 225 } })).toThrow(
+      "La hauteur intérieure (22,5 cm) dépasse la hauteur extérieure (22 cm)",
     );
   });
 

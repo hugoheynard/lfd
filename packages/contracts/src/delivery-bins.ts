@@ -24,7 +24,8 @@ import { z } from "zod";
  *
  * Sujet `delivery_bin_type` (identifiant du type), `subjectLabel` = son nom au
  * moment du geste. `BinTypeSpec` = `{ name, outer, inner, isotherm, maxStack,
- * divisible }` (dimensions `{ lengthCm, widthCm, heightCm }`) :
+ * divisible }` (dimensions `{ lengthMm, widthMm, heightMm }` depuis le
+ * 2026-10-07 ; les faits d'avant portent `{ lengthCm, widthCm, heightCm }`) :
  *
  * - `delivery_bin_type.added` — `{ subjectLabel, bin: BinTypeSpec }` ;
  * - `delivery_bin_type.corrected` — `{ subjectLabel, before: BinTypeSpec, after: BinTypeSpec }` ;
@@ -37,9 +38,18 @@ import { z } from "zod";
 
 /** Le nom tient sur une étiquette de grille. */
 export const BIN_TYPE_NAME_MAX_LENGTH = 60;
-/** Une dimension de bac, en centimètres entiers. */
+/**
+ * Une dimension de bac CANDIDAT ou d'un format de l'assistant d'achat, en
+ * centimètres entiers. Un TYPE de bac se mesure au millimètre, ci-dessous.
+ */
 export const BIN_DIMENSION_MIN_CM = 1;
 export const BIN_DIMENSION_MAX_CM = 300;
+/**
+ * Une dimension de TYPE de bac, en millimètres entiers (2026-10-07 : une manne
+ * à pain mesure 66,5 cm) — les mêmes bornes que 1–300 cm.
+ */
+export const BIN_TYPE_DIMENSION_MIN_MM = 10;
+export const BIN_TYPE_DIMENSION_MAX_MM = 3000;
 /** Le nombre de bacs dans une pile. */
 export const BIN_MAX_STACK_MIN = 1;
 export const BIN_MAX_STACK_MAX = 20;
@@ -55,6 +65,14 @@ export const binDimensionsSchema = z.object({
 });
 export type BinDimensions = z.infer<typeof binDimensionsSchema>;
 
+/** Trois dimensions d'un TYPE de bac, en millimètres entiers (bornes au domaine). */
+export const binTypeDimensionsSchema = z.object({
+  lengthMm: z.number().int(),
+  widthMm: z.number().int(),
+  heightMm: z.number().int(),
+});
+export type BinTypeDimensions = z.infer<typeof binTypeDimensionsSchema>;
+
 /**
  * Charge d'un type de bac, à la création comme à la correction — la fiche
  * COMPLÈTE. `outer` sert au chargement ; `inner` est informatif et ne dépasse
@@ -66,8 +84,8 @@ export const binTypePayloadSchema = z.object({
     .trim()
     .min(1, "nom du type de bac requis")
     .max(BIN_TYPE_NAME_MAX_LENGTH, "nom trop long (60 caractères au plus)"),
-  outer: binDimensionsSchema,
-  inner: binDimensionsSchema,
+  outer: binTypeDimensionsSchema,
+  inner: binTypeDimensionsSchema,
   isotherm: z.boolean(),
   maxStack: z.number().int(),
   divisible: z.boolean(),
@@ -78,9 +96,10 @@ export type BinTypePayload = z.infer<typeof binTypePayloadSchema>;
 export interface BinTypeView {
   readonly id: string;
   readonly name: string;
-  readonly outer: BinDimensions;
-  readonly inner: BinDimensions;
-  /** DÉRIVÉ de `inner` (L × l × h / 1 000, arrondi à l'inférieur) : jamais saisi ni stocké. */
+  /** En millimètres entiers. */
+  readonly outer: BinTypeDimensions;
+  readonly inner: BinTypeDimensions;
+  /** DÉRIVÉ de `inner` (L × l × h en mm³ / 1 000 000, arrondi à l'inférieur) : jamais saisi ni stocké. */
   readonly innerVolumeLiters: number;
   readonly isotherm: boolean;
   readonly maxStack: number;

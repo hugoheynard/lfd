@@ -23,11 +23,11 @@ const stubAdminVerifier = {
 const BINS = "/admin/livraison/bacs";
 const CAPACITIES = "/admin/livraison/contenances";
 
-/** Un bac Euronorm 60 × 40 × 22, intérieur 56 × 36 × 20 = 40 L. */
+/** Un bac Euronorm 60 × 40 × 22, intérieur 56 × 36 × 20 = 40 L — en millimètres. */
 const BAC_M = {
   name: "Bac M",
-  outer: { lengthCm: 60, widthCm: 40, heightCm: 22 },
-  inner: { lengthCm: 56, widthCm: 36, heightCm: 20 },
+  outer: { lengthMm: 600, widthMm: 400, heightMm: 220 },
+  inner: { lengthMm: 560, widthMm: 360, heightMm: 200 },
   isotherm: false,
   maxStack: 6,
   divisible: true,
@@ -109,7 +109,7 @@ describe("le catalogue des bacs", () => {
     expect(code(await admin().post(BINS).send(BAC_M).expect(409))).toBe(
       "delivery.bin_type_name_taken",
     );
-    const tooWide = { ...BAC_M, name: "Bac X", inner: { ...BAC_M.inner, widthCm: 41 } };
+    const tooWide = { ...BAC_M, name: "Bac X", inner: { ...BAC_M.inner, widthMm: 410 } };
     expect(code(await admin().post(BINS).send(tooWide).expect(400))).toBe(
       "delivery.bin_inner_exceeds_outer",
     );
@@ -217,13 +217,62 @@ describe("la grille des contenances", () => {
   });
 });
 
+describe("les bacs au millimètre (2026-10-07)", () => {
+  /** Hugo : une manne à pain mesure 66,5 × 46 × 71,5 cm. */
+  const MANNE = {
+    name: "Manne à pain",
+    outer: { lengthMm: 665, widthMm: 460, heightMm: 715 },
+    inner: { lengthMm: 645, widthMm: 440, heightMm: 695 },
+    isotherm: false,
+    maxStack: 1,
+    divisible: false,
+  };
+
+  it("garde le demi-centimètre de bout en bout, et n'écrit plus les colonnes en cm", async () => {
+    const id = await addBin(MANNE);
+
+    // 645 × 440 × 695 mm = 197 241 000 mm³ → 197 L.
+    expect((await catalog()).types).toEqual([
+      { id, ...MANNE, innerVolumeLiters: 197, archivedAt: null },
+    ]);
+    const row = await ctx.prisma.deliveryBinType.findUniqueOrThrow({ where: { id } });
+    expect(row).toMatchObject({ outerLengthMm: 665, innerHeightMm: 695 });
+    expect([row.outerLengthCm, row.outerWidthCm, row.innerHeightCm]).toEqual([null, null, null]);
+  });
+
+  it("refuse une dimension non entière en mm, en le disant au centimètre", async () => {
+    const refused = await admin()
+      .post(BINS)
+      .send({ ...MANNE, outer: { ...MANNE.outer, lengthMm: 3001 } })
+      .expect(400);
+    expect(code(refused)).toBe("delivery.bin_dimensions_invalid");
+    expect(jsonBody<{ readonly message: string }>(refused).message).toContain("de 1 cm à 300 cm");
+  });
+
+  it("trace la fiche au journal en millimètres", async () => {
+    await addBin(MANNE);
+    const fact = await ctx.prisma.activityEvent.findFirstOrThrow({
+      where: { type: "delivery_bin_type.added" },
+      select: { type: true, payload: true },
+    });
+    expect(fact.payload).toMatchObject({ bin: { outer: MANNE.outer, inner: MANNE.inner } });
+    expect(checkJournalFact(fact.type, fact.payload)).toBeNull();
+  });
+});
+
 describe("les bacs — les CHECK en base", () => {
   it("refusent un intérieur plus grand que l'extérieur, une pile nulle, une contenance nulle", async () => {
     const id = await addBin();
 
     await expect(
       ctx.prisma.$executeRawUnsafe(
-        `UPDATE "delivery"."delivery_bin_type" SET "inner_height_cm" = 23 WHERE "id" = $1`,
+        `UPDATE "delivery"."delivery_bin_type" SET "inner_height_mm" = 221 WHERE "id" = $1`,
+        id,
+      ),
+    ).rejects.toThrow(/delivery_bin_type_dimensions/u);
+    await expect(
+      ctx.prisma.$executeRawUnsafe(
+        `UPDATE "delivery"."delivery_bin_type" SET "inner_length_mm" = 0 WHERE "id" = $1`,
         id,
       ),
     ).rejects.toThrow(/delivery_bin_type_dimensions/u);

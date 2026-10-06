@@ -7,9 +7,9 @@ const BAC_M: PlanBinType = {
   id: "bin_m",
   name: "Bac M",
   isotherm: false,
-  outerLengthCm: 60,
-  outerWidthCm: 40,
-  outerHeightCm: 25,
+  outerLengthMm: 600,
+  outerWidthMm: 400,
+  outerHeightMm: 250,
   maxStack: 3,
 };
 /** 40 × 30 × 25 cm = 30 L extérieurs. */
@@ -17,9 +17,9 @@ const BAC_FROID: PlanBinType = {
   id: "bin_cold",
   name: "Bac S isotherme",
   isotherm: true,
-  outerLengthCm: 40,
-  outerWidthCm: 30,
-  outerHeightCm: 25,
+  outerLengthMm: 400,
+  outerWidthMm: 300,
+  outerHeightMm: 250,
   maxStack: 4,
 };
 
@@ -245,9 +245,9 @@ describe("le plan de chargement — les piles au sol (G5, G-D4)", () => {
     const plan = planLoading(fullStops(3), measured(130));
 
     expect(plan.stacks.map((stack) => [stack.stopPositions, stack.placement])).toEqual([
-      [[3], expect.objectContaining({ kind: "floor", row: 1, xCm: 0, yCm: 0 })],
-      [[2], expect.objectContaining({ kind: "floor", row: 1, xCm: 0, yCm: 41 })],
-      [[1], expect.objectContaining({ kind: "floor", row: 2, xCm: 61, yCm: 0 })],
+      [[3], expect.objectContaining({ kind: "floor", row: 1, xMm: 0, yMm: 0 })],
+      [[2], expect.objectContaining({ kind: "floor", row: 1, xMm: 0, yMm: 410 })],
+      [[1], expect.objectContaining({ kind: "floor", row: 2, xMm: 610, yMm: 0 })],
     ]);
     expect(plan.floor?.lengthCm).toBe(130);
     expect(plan.warnings).toEqual([]);
@@ -328,9 +328,9 @@ describe("le plan de chargement — les piles au sol (G5, G-D4)", () => {
       id,
       name: id,
       isotherm: false,
-      outerLengthCm: 60,
-      outerWidthCm: widthCm,
-      outerHeightCm: 25,
+      outerLengthMm: 600,
+      outerWidthMm: widthCm * 10,
+      outerHeightMm: 250,
       maxStack: 3,
     });
     const x = type("bin_x", 60);
@@ -395,5 +395,50 @@ describe("le plan de chargement — les piles au sol (G5, G-D4)", () => {
     expect(plan.floor).toBeNull();
     expect(plan.stacks.map((stack) => stack.placement)).toEqual([null, null]);
     expect(plan.warnings).toEqual([]);
+  });
+});
+
+/**
+ * 2026-10-07 : un type de bac se mesure au millimètre, un véhicule au
+ * centimètre. Le plancher se convertit ×10 ; le bac, jamais divisé.
+ */
+describe("le plan de chargement — au millimètre (bac en mm, véhicule en cm)", () => {
+  const MANNE: PlanBinType = {
+    id: "bin_manne",
+    name: "Manne à pain",
+    isotherm: false,
+    outerLengthMm: 665,
+    outerWidthMm: 460,
+    outerHeightMm: 715,
+    maxStack: 1,
+  };
+  const vehicleOf = (lengthCm: number, widthCm: number): PlanVehicle => {
+    const floor = CargoFloor.of({ lengthCm, widthCm, heightCm: 100, wheelArches: null });
+    return { name: "Juste", cargoLiters: floor.volumeLiters, refrigeratedLiters: null, floor };
+  };
+  const manneStop = (): readonly PlanStop[] => [stop("o1", 1, [bin("manne", { binType: MANNE })])];
+
+  it("une manne de 665 mm (+ 10 mm de jeu) tient dans 68 cm, à sa cote exacte", () => {
+    const plan = planLoading(manneStop(), vehicleOf(68, 48));
+
+    expect(plan.stacks[0]?.placement).toEqual({
+      kind: "floor",
+      row: 1,
+      xMm: 0,
+      yMm: 0,
+      depthMm: 665,
+      widthMm: 460,
+      orientation: "length",
+    });
+  });
+
+  it("et ne tient pas dans 67 cm : un arrondi au centimètre l'y aurait fait entrer", () => {
+    const plan = planLoading(manneStop(), vehicleOf(67, 48));
+
+    expect(plan.stacks[0]?.placement).toEqual({ kind: "off_floor" });
+  });
+
+  it("compte son volume en mm³ : 218 718 500 mm³ → 219 L au-dessus", () => {
+    expect(planLoading(manneStop(), vehicleOf(68, 48)).volume.dryLiters).toBe(219);
   });
 });

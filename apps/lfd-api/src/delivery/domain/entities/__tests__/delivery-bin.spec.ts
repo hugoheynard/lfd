@@ -28,8 +28,8 @@ function binType(options: { readonly divisible?: boolean; readonly archived?: bo
   const subject = BinType.declare({
     id: "t_m",
     name: "Bac M",
-    outer: { lengthCm: 60, widthCm: 40, heightCm: 22 },
-    inner: { lengthCm: 57, widthCm: 37, heightCm: 20 },
+    outer: { lengthMm: 600, widthMm: 400, heightMm: 220 },
+    inner: { lengthMm: 570, widthMm: 370, heightMm: 200 },
     isotherm: false,
     maxStack: 5,
     divisible: options.divisible ?? true,

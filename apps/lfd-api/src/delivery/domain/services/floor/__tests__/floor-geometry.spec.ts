@@ -1,11 +1,15 @@
 import { CargoFloor } from "../../../value-objects/cargo-floor.js";
-import { freeWidthCm, stackLevels } from "../floor-geometry.js";
+import { floorInMm, freeWidthMm, stackLevels } from "../floor-geometry.js";
+
+/** Le plancher se mesure en cm, la géométrie en mm : ces cas restent écrits en cm. */
+const freeWidthCm = (floor: CargoFloor, fromCm: number, depthCm: number): number =>
+  freeWidthMm(floorInMm(floor), fromCm * 10, depthCm * 10) / 10;
 
 const VAN = { lengthCm: 290, widthCm: 166, heightCm: 139 };
 const withArches = (fromBackCm: number, protrusionCm = 20): CargoFloor =>
   CargoFloor.of({ ...VAN, wheelArches: { lengthCm: 90, protrusionCm, fromBackCm } });
 
-describe("freeWidthCm", () => {
+describe("freeWidthMm", () => {
   it("rend toute la largeur d'un rectangle", () => {
     expect(freeWidthCm(CargoFloor.of({ ...VAN, wheelArches: null }), 0, 290)).toBe(166);
   });
@@ -48,18 +52,40 @@ describe("stackLevels", () => {
   const floor = CargoFloor.of({ ...VAN, wheelArches: null });
 
   it("est limité par le plafond : ⌊139 ÷ 32⌋ = 4 < 5", () => {
-    expect(stackLevels(floor, 32, 5)).toBe(4);
+    expect(stackLevels(floorInMm(floor), 320, 5)).toBe(4);
   });
 
   it("est limité par la pile quand le plafond laisse plus", () => {
-    expect(stackLevels(floor, 32, 3)).toBe(3);
+    expect(stackLevels(floorInMm(floor), 320, 3)).toBe(3);
   });
 
   it("un bac qui touche pile le plafond compte un étage", () => {
-    expect(stackLevels(floor, 139, 5)).toBe(1);
+    expect(stackLevels(floorInMm(floor), 1390, 5)).toBe(1);
   });
 
   it("vaut zéro pour un bac plus haut que le plafond", () => {
-    expect(stackLevels(floor, 140, 5)).toBe(0);
+    expect(stackLevels(floorInMm(floor), 1400, 5)).toBe(0);
+  });
+});
+
+describe("floorInMm", () => {
+  it("convertit le plancher ×10, passages compris — sans perte", () => {
+    const floor = CargoFloor.of({
+      ...VAN,
+      wheelArches: { lengthCm: 90, protrusionCm: 20, fromBackCm: 60, heightCm: 30 },
+    });
+    expect(floorInMm(floor)).toEqual({
+      lengthMm: 2900,
+      widthMm: 1660,
+      heightMm: 1390,
+      wheelArches: { fromBackMm: 600, endMm: 1500, protrusionMm: 200, heightMm: 300 },
+    });
+  });
+
+  it("un bac de 665 mm se pose contre un passage qui commence à 66,5 cm sans le toucher", () => {
+    // Le plancher reste en cm : c'est le bac au millimètre qui décide.
+    const floor = floorInMm(withArches(67));
+    expect(freeWidthMm(floor, 0, 665)).toBe(1660);
+    expect(freeWidthMm(floor, 0, 671)).toBe(1260);
   });
 });

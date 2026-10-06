@@ -1,7 +1,13 @@
-import type { DeliveryLoadingPlanFloorView, DeliveryLoadingPlanView } from "@lfd/contracts";
+import type {
+  DeliveryLoadingPlanFloorView,
+  DeliveryLoadingPlanPlacementView,
+  DeliveryLoadingPlanView,
+} from "@lfd/contracts";
 
 import type { LoadingRoundRow } from "../domain/ports/delivery-loading.reader.js";
+import type { StackPlacement } from "../domain/services/floor/place-stacks.js";
 import type { LoadingPlan, PlanBinType, PlanStop } from "../domain/services/loading-plan.js";
+import { MM_PER_CM } from "../domain/value-objects/bin-type-dimensions.js";
 import { TechnicalError } from "../../platform/shared/errors/app-error.js";
 import { type BinContext, binToRedo, orderNamesOf } from "./delivery-loading-view.js";
 
@@ -83,11 +89,11 @@ export function loadingPlanView(
     stacks: plan.stacks.map((stack) => ({
       stackIndex: stack.stackIndex,
       binTypeName: stack.binType.name,
-      binTypeHeightCm: stack.binType.outerHeightCm,
+      binTypeHeightCm: stack.binType.outerHeightMm / MM_PER_CM,
       height: stack.height,
       maxStack: stack.binType.maxStack,
       stopPositions: stack.stopPositions,
-      placement: stack.placement === null ? null : { ...stack.placement },
+      placement: placementView(stack.placement),
     })),
     floor: floorView(plan),
     volume: {
@@ -99,6 +105,28 @@ export function loadingPlanView(
       coldOver: volume.coldOver,
     },
     warnings: plan.warnings.map((warning) => ({ ...warning })),
+  };
+}
+
+/**
+ * Le plan pose en millimètres (un type de bac s'y mesure) ; la vue dessine
+ * dans le repère du plancher, en centimètres — une décimale au plus.
+ */
+function placementView(placement: StackPlacement | null): DeliveryLoadingPlanPlacementView | null {
+  if (placement === null) {
+    return null;
+  }
+  if (placement.kind !== "floor") {
+    return { kind: placement.kind };
+  }
+  return {
+    kind: "floor",
+    row: placement.row,
+    xCm: placement.xMm / MM_PER_CM,
+    yCm: placement.yMm / MM_PER_CM,
+    depthCm: placement.depthMm / MM_PER_CM,
+    widthCm: placement.widthMm / MM_PER_CM,
+    orientation: placement.orientation,
   };
 }
 

@@ -31,9 +31,25 @@ function theBin(fact: PhraseFact): Segment[] {
     : [text('le type de bac « '), subject(fact, label), text(' »')];
 }
 
-/** « 60 × 40 × 30 cm », ou « — » sur une charge incomplète. */
+/** Millimètres dans un centimètre. */
+const MM_PER_CM = 10;
+
+/** `665` mm → « 66,5 », `460` → « 46 ». */
+function centimetresOfMm(mm: number): string {
+  return (mm / MM_PER_CM).toLocaleString('fr-FR', { maximumFractionDigits: 1, useGrouping: false });
+}
+
+/**
+ * « 66,5 × 46 × 71,5 cm », ou « — » sur une charge incomplète. Une fiche se
+ * trace en mm depuis le 2026-10-07 ; les faits d'avant portent des cm entiers,
+ * et se lisent toujours.
+ */
 function dimensions(raw: unknown): string {
   const d = recordOf(raw);
+  const mm = [d?.['lengthMm'], d?.['widthMm'], d?.['heightMm']].map(count);
+  if (mm.every((side) => side !== null)) {
+    return `${mm.map((side) => centimetresOfMm(side ?? 0)).join(' × ')} cm`;
+  }
   const sides = [d?.['lengthCm'], d?.['widthCm'], d?.['heightCm']].map(count);
   return sides.some((side) => side === null)
     ? '—'

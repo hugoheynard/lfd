@@ -19,8 +19,8 @@ let wire: Wire;
 const BAC_M: BinTypeView = {
   id: 'bin_m',
   name: 'Bac M',
-  outer: { lengthCm: 60, widthCm: 40, heightCm: 30 },
-  inner: { lengthCm: 56, widthCm: 36, heightCm: 27 },
+  outer: { lengthMm: 600, widthMm: 400, heightMm: 300 },
+  inner: { lengthMm: 560, widthMm: 360, heightMm: 270 },
   innerVolumeLiters: 54,
   isotherm: false,
   maxStack: 5,
@@ -119,14 +119,33 @@ describe('BinTypeDialog', () => {
     expect(wire.adds).toEqual([
       {
         name: 'Bac froid',
-        outer: { lengthCm: 60, widthCm: 40, heightCm: 30 },
-        inner: { lengthCm: 56, widthCm: 36, heightCm: 27 },
+        outer: { lengthMm: 600, widthMm: 400, heightMm: 300 },
+        inner: { lengthMm: 560, widthMm: 360, heightMm: 270 },
         isotherm: true,
         maxStack: 4,
         divisible: false,
       },
     ]);
     expect(wire.closes).toEqual([true]);
+  });
+
+  it('saisit des centimètres à une décimale et envoie des millimètres : la manne à pain', async () => {
+    const fixture = await boot({});
+    typeName(fixture, 'Manne à pain');
+    fill(fixture, ['66.5', '46', '71.5', '64.5', '44', '69.5', '1']);
+    expect(host(fixture).querySelector('[data-volume]')?.textContent).toContain('197 L');
+
+    await submit(fixture);
+    expect(wire.adds).toEqual([
+      {
+        name: 'Manne à pain',
+        outer: { lengthMm: 665, widthMm: 460, heightMm: 715 },
+        inner: { lengthMm: 645, widthMm: 440, heightMm: 695 },
+        isotherm: false,
+        maxStack: 1,
+        divisible: false,
+      },
+    ]);
   });
 
   it('🔴 dit qu’un intérieur dépasse l’extérieur, et n’envoie rien', async () => {

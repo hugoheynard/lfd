@@ -8,13 +8,7 @@ import {
   signal,
   untracked,
 } from '@angular/core';
-import {
-  BIN_DIMENSION_MAX_CM,
-  BIN_DIMENSION_MIN_CM,
-  BIN_MAX_STACK_MAX,
-  BIN_MAX_STACK_MIN,
-  type BinTypeView,
-} from '@lfd/contracts';
+import { BIN_MAX_STACK_MAX, BIN_MAX_STACK_MIN, type BinTypeView } from '@lfd/contracts';
 import { httpErrorMessage } from '@lfd/endpoints';
 import {
   FoldBadgeComponent,
@@ -33,6 +27,8 @@ import {
 } from 'fold-ng';
 
 import {
+  BIN_TYPE_DIMENSION_MAX_CM,
+  BIN_TYPE_DIMENSION_MIN_CM,
   binDraftOf,
   draftInnerVolumeLiters,
   litersLabel,
@@ -98,7 +94,7 @@ export class BinTypeDialog implements FoldPanelContent<BinTypeDialogData> {
     {
       key: 'outer',
       legend: 'Dimensions extérieures (cm)',
-      hint: 'Celles qui comptent au chargement du véhicule.',
+      hint: 'Celles qui comptent au chargement du véhicule. Au millimètre : 66,5.',
     },
     {
       key: 'inner',
@@ -108,8 +104,8 @@ export class BinTypeDialog implements FoldPanelContent<BinTypeDialogData> {
   ];
 
   protected readonly bounds = {
-    cmMin: BIN_DIMENSION_MIN_CM,
-    cmMax: BIN_DIMENSION_MAX_CM,
+    cmMin: BIN_TYPE_DIMENSION_MIN_CM,
+    cmMax: BIN_TYPE_DIMENSION_MAX_CM,
     stackMin: BIN_MAX_STACK_MIN,
     stackMax: BIN_MAX_STACK_MAX,
   } as const;

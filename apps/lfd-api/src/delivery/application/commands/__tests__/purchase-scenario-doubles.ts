@@ -192,12 +192,19 @@ export const binCandidateView = (
   unitPriceCentsExclVat: null,
 });
 
+/** Le même format, en type de bac : au millimètre. */
+const TYPE_FORMAT = {
+  ...FORMAT,
+  outer: { lengthMm: 600, widthMm: 400, heightMm: 200 },
+  inner: { lengthMm: 500, widthMm: 300, heightMm: 200 },
+};
+
 export const binTypeView = (
   id: string,
   name: string,
   archivedAt: string | null = null,
 ): BinTypeView => ({
-  ...FORMAT,
+  ...TYPE_FORMAT,
   id,
   name,
   divisible: false,

@@ -2,8 +2,15 @@ import { z } from "zod";
 
 import { fact, payload, subjectLabel } from "./fact.js";
 
+/**
+ * Les dimensions d'une fiche au journal : en mm depuis le 2026-10-07, en cm
+ * entiers avant. Un fait écrit ne se réécrit pas — les deux se lisent.
+ */
 const dims = (): z.ZodType =>
-  z.object({ lengthCm: z.number().int(), widthCm: z.number().int(), heightCm: z.number().int() });
+  z.union([
+    z.object({ lengthMm: z.number().int(), widthMm: z.number().int(), heightMm: z.number().int() }),
+    z.object({ lengthCm: z.number().int(), widthCm: z.number().int(), heightCm: z.number().int() }),
+  ]);
 const spec = (): z.ZodType =>
   z.object({
     name: z.string().min(1),

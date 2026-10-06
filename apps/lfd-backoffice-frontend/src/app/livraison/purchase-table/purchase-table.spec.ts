@@ -87,8 +87,8 @@ const BIN_CANDIDATE: PurchaseBinCandidateView = {
 const BIN_TYPE: BinTypeView = {
   id: 'bt1',
   name: 'Bac maison',
-  outer: { lengthCm: 60, widthCm: 40, heightCm: 30 },
-  inner: { lengthCm: 56, widthCm: 36, heightCm: 28 },
+  outer: { lengthMm: 600, widthMm: 400, heightMm: 300 },
+  inner: { lengthMm: 560, widthMm: 360, heightMm: 280 },
   innerVolumeLiters: 56,
   isotherm: false,
   maxStack: 5,

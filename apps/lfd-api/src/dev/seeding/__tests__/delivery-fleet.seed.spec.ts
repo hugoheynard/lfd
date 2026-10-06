@@ -61,8 +61,8 @@ describe("FLEET", () => {
     const stacks = Array.from({ length: 8 }, (_, stackIndex) => ({
       stackIndex,
       isotherm: false,
-      outerLengthCm: 60,
-      outerWidthCm: 40,
+      outerLengthMm: 600,
+      outerWidthMm: 400,
     }));
 
     const placements = placeStacks(floor, stacks, BIN_GAP_MAX_CM, false);
