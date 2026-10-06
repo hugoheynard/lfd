@@ -172,3 +172,24 @@ export function summaryOf(view: DeliveryRunSheetView): RunSheetSummary {
     withoutAtelierSheet: live.filter((stop) => stop.withoutAtelierSheet).length,
   };
 }
+
+/** « mercredi 7 octobre » — le jour de service tel qu'on le dit. */
+export function longDayOf(isoDay: string): string {
+  const [year, month, day] = isoDay.split('-').map(Number);
+  return new Intl.DateTimeFormat('fr-FR', {
+    timeZone: 'UTC',
+    weekday: 'long',
+    day: 'numeric',
+    month: 'long',
+  }).format(new Date(Date.UTC(year ?? 0, (month ?? 1) - 1, day ?? 1)));
+}
+
+/**
+ * Le titre-chiffre de la bande : « 14 adresses · 9 colisées ». La partie
+ * tournées attend que la vue porte la composition (2026-10-06).
+ */
+export function headlineOf(summary: RunSheetSummary): string {
+  const addresses = `${String(summary.deliveries)} adresse${summary.deliveries > 1 ? 's' : ''}`;
+  const packed = `${String(summary.packed)} colisée${summary.packed > 1 ? 's' : ''}`;
+  return `${addresses} · ${packed}`;
+}

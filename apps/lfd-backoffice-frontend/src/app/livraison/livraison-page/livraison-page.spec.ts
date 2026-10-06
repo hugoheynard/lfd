@@ -202,4 +202,57 @@ describe('DeliveryPage', () => {
     fixture.detectChanges();
     expect(element.querySelector('[data-sheet-error]')).toBeNull();
   });
+
+  it('se nomme « Feuille de route » et dit le jour et ses chiffres dans la bande', async () => {
+    const { element } = await mount(
+      (day) =>
+        Promise.resolve({
+          day,
+          stops: [
+            stopOf({ orderId: 'a', state: 'ready' }),
+            stopOf({ orderId: 'b', state: 'expected', withoutAtelierSheet: true }),
+          ],
+        }),
+      false,
+      { jour: '2026-10-07' },
+    );
+
+    expect(element.querySelector('fold-page-layout')?.textContent).toContain('Feuille de route');
+    expect(element.querySelector('[data-eyebrow]')?.textContent).toContain(
+      'Livraisons du mercredi 7 octobre',
+    );
+    expect(element.querySelector('[data-headline]')?.textContent).toContain(
+      '2 adresses · 1 colisée',
+    );
+    expect(element.querySelector('[data-summary-no-sheet]')).not.toBeNull();
+  });
+
+  it('tait l’avertissement sans feuille d’atelier quand il n’y en a aucune', async () => {
+    const { element } = await mount((day) => Promise.resolve({ day, stops: [stopOf({})] }));
+    expect(element.querySelector('[data-summary-no-sheet]')).toBeNull();
+  });
+
+  it('explique la page et renvoie aux tournées du même jour pour qui peut les lire', async () => {
+    const composition = (day: string): Promise<DeliveryRoundsDayView> =>
+      Promise.resolve({ day, rounds: [], unassigned: [], incidents: [] });
+    const { element } = await mount(
+      (day) => Promise.resolve({ day, stops: [] }),
+      false,
+      { jour: '2026-10-07' },
+      composition,
+    );
+
+    expect(element.querySelector('[data-explain]')?.textContent).toContain(
+      'Toutes les livraisons du jour, adresse par adresse',
+    );
+    expect(element.querySelector('[data-rounds-link]')?.getAttribute('href')).toBe(
+      '/livraison/tournees?jour=2026-10-07',
+    );
+  });
+
+  it('sans le droit des tournées, nomme l’écran sans lien', async () => {
+    const { element } = await mount((day) => Promise.resolve({ day, stops: [] }));
+    expect(element.querySelector('[data-rounds-link]')).toBeNull();
+    expect(element.querySelector('[data-explain]')?.textContent).toContain('Tournées');
+  });
 });

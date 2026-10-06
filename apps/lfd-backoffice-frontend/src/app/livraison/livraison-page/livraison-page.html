@@ -1,21 +1,49 @@
-<fold-page-layout icon="truck" title="Livraison">
-  <p description>
-    La feuille de route : ce qui part en livraison, et comment livrer chaque adresse. Les montants
-    n’y figurent pas.
+<fold-page-layout icon="truck" title="Feuille de route">
+  <p description data-explain>
+    Toutes les livraisons du jour, adresse par adresse, et comment livrer chacune. Pour les répartir
+    entre véhicules&nbsp;:
+    @if (canSeeRounds()) {
+      <a routerLink="/livraison/tournees" [queryParams]="{ jour: day() }" data-rounds-link
+        >Tournées</a
+      >.
+    } @else {
+      Tournées.
+    }
   </p>
 
-  <div class="sheet">
-    <div class="day-bar no-print" data-day-bar>
-      <fold-view-toggle
-        ariaLabel="Jour de livraison"
-        [options]="dayOptions"
-        [value]="dayChoice()"
-        (valueChange)="pickChoice($event)"
-      />
-      <fold-date label="Date" [value]="day()" (valueChange)="pickDate($event)" />
-      <button foldButton emphasis="outline" icon="print" (click)="print()">Imprimer</button>
+  <!--
+    **La bande de tête**, sur le modèle du Prévisionnel (Hugo, 2026-10-06) : le
+    jour, ce qu'il pèse, et de quoi le changer — sur une ligne.
+  -->
+  <fold-page-section bleed class="rs-masthead" foldSurface="chrome">
+    <div class="rs-masthead-bar">
+      <div class="rs-said">
+        <p class="rs-eyebrow" data-eyebrow>Livraisons du {{ longDay() }}</p>
+        @if (summary(); as summary) {
+          <h2 class="rs-title" data-headline>{{ headline() }}</h2>
+          @if (summary.withoutAtelierSheet > 0) {
+            <fold-badge
+              variant="alert"
+              data-summary-no-sheet
+              [content]="summary.withoutAtelierSheet + ' sans feuille d’atelier'"
+            />
+          }
+        }
+      </div>
+      <div class="rs-nav no-print" data-day-bar>
+        <fold-view-toggle
+          ariaLabel="Jour de livraison"
+          [options]="dayOptions"
+          [value]="dayChoice()"
+          (valueChange)="pickChoice($event)"
+        />
+        <fold-date label="Date" [value]="day()" (valueChange)="pickDate($event)" />
+        <button foldButton emphasis="outline" icon="print" (click)="print()">Imprimer</button>
+      </div>
     </div>
+  </fold-page-section>
 
+  <div class="sheet">
     @switch (state().status) {
       @case ('loading') {
         <fold-loading message="Lecture de la feuille de route…" />
@@ -31,16 +59,6 @@
         </fold-empty-state>
       }
       @case ('ready') {
-        @if (summary(); as summary) {
-          <fold-field-list data-summary>
-            <fold-field label="Livraisons">{{ summary.deliveries }}</fold-field>
-            <fold-field label="Colisées">{{ summary.packed }}</fold-field>
-            <fold-field label="Sans feuille d’atelier">{{
-              summary.withoutAtelierSheet
-            }}</fold-field>
-          </fold-field-list>
-        }
-
         @for (stop of stops(); track stop.orderId) {
           <app-run-sheet-stop data-stop [stop]="stop" [canSeePhotos]="canSeePhotos()" />
         } @empty {

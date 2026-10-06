@@ -10,6 +10,8 @@ import {
   sortStops,
   stateLabelOf,
   stopTitleOf,
+  headlineOf,
+  longDayOf,
   summaryOf,
   telHrefOf,
   windowLabel,
@@ -142,5 +144,20 @@ describe('jours', () => {
     ]) {
       expect(dayOfQuery(raw)).toBeNull();
     }
+  });
+});
+
+describe('longDayOf / headlineOf', () => {
+  it('dit le jour en toutes lettres', () => {
+    expect(longDayOf('2026-10-07')).toBe('mercredi 7 octobre');
+  });
+
+  it('accorde les pluriels', () => {
+    expect(headlineOf({ deliveries: 14, packed: 9, withoutAtelierSheet: 0 })).toBe(
+      '14 adresses · 9 colisées',
+    );
+    expect(headlineOf({ deliveries: 1, packed: 0, withoutAtelierSheet: 0 })).toBe(
+      '1 adresse · 0 colisée',
+    );
   });
 });

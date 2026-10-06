@@ -4,7 +4,48 @@
   gap: var(--fold-space-md);
 }
 
-.day-bar {
+/* La bande de tête, de la famille du Prévisionnel : le fond du rail
+   secondaire, `foldSurface="chrome"` repointe la polarité du sous-arbre. */
+.rs-masthead {
+  padding-block: var(--fold-space-lg);
+  padding-inline: var(--fold-page-gutter);
+  background: var(--fold-color-bg-rail-secondary);
+}
+
+.rs-masthead-bar {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: flex-end;
+  justify-content: space-between;
+  gap: var(--fold-space-md);
+}
+
+.rs-said {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: var(--fold-space-xs);
+}
+
+.rs-eyebrow {
+  margin: 0;
+  font-family: var(--fold-font-mono);
+  font-size: var(--fold-text-2xs);
+  font-weight: var(--fold-weight-bold);
+  letter-spacing: var(--fold-tracking-caps);
+  text-transform: uppercase;
+  color: var(--fold-color-text-muted);
+}
+
+.rs-title {
+  margin: 0;
+  font-size: var(--fold-text-xl);
+  font-weight: var(--fold-weight-bold);
+  letter-spacing: var(--fold-tracking-tighter);
+  color: var(--fold-color-text);
+}
+
+.rs-nav {
   display: flex;
   flex-wrap: wrap;
   align-items: flex-end;

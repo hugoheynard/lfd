@@ -7,17 +7,18 @@ import {
   signal,
   untracked,
 } from '@angular/core';
-import { ActivatedRoute, Router } from '@angular/router';
+import { ActivatedRoute, Router, RouterLink } from '@angular/router';
 import type { DeliveryRunSheetView } from '@lfd/contracts';
 import type { FoldViewToggleOption } from 'fold-ng';
 import {
+  FoldBadgeComponent,
   FoldButtonComponent,
   FoldDateComponent,
   FoldEmptyStateComponent,
-  FoldFieldComponent,
-  FoldFieldListComponent,
   FoldLoadingStateComponent,
   FoldPageLayoutComponent,
+  FoldPageSectionComponent,
+  FoldSurfaceDirective,
   FoldViewToggleComponent,
 } from 'fold-ng';
 
@@ -27,7 +28,9 @@ import { DeliveryRoundsService } from '../delivery-rounds.service';
 import {
   DAY_QUERY_PARAM,
   dayOfQuery,
+  headlineOf,
   isServiceDay,
+  longDayOf,
   parisDayOf,
   shiftDay,
   sortStops,
@@ -66,14 +69,16 @@ const TOMORROW = '1';
   selector: 'app-livraison-page',
   changeDetection: ChangeDetectionStrategy.OnPush,
   imports: [
+    FoldBadgeComponent,
     FoldButtonComponent,
     FoldDateComponent,
     FoldEmptyStateComponent,
-    FoldFieldComponent,
-    FoldFieldListComponent,
     FoldLoadingStateComponent,
     FoldPageLayoutComponent,
+    FoldPageSectionComponent,
+    FoldSurfaceDirective,
     FoldViewToggleComponent,
+    RouterLink,
     RunSheetStop,
   ],
   templateUrl: './livraison-page.html',
@@ -119,6 +124,13 @@ export class DeliveryPage {
     const view = this.view();
     return view === null ? null : summaryOf(view);
   });
+  protected readonly longDay = computed(() => longDayOf(this.day()));
+  protected readonly headline = computed(() => {
+    const summary = this.summary();
+    return summary === null ? '' : headlineOf(summary);
+  });
+  /** Le lien « Tournées » ne s'offre qu'à qui peut les ouvrir. */
+  protected readonly canSeeRounds = computed(() => this.permissions.can('delivery_rounds:read'));
   protected readonly canSeePhotos = computed(() =>
     this.permissions.can('delivery_procedures:read'),
   );
