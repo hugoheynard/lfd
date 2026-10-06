@@ -1,3 +1,5 @@
+import type { PlannedTiming } from "../value-objects/planned-timing.js";
+
 /** Un arrêt vivant, pour la vue. */
 export interface RoundStopRow {
   readonly stopId: string;
@@ -20,6 +22,8 @@ export interface RoundRow {
   readonly driverStaffId: string | null;
   /** Rentrée le (« Tournée terminée », PL2), ou `null`. */
   readonly returnedAt: Date | null;
+  /** L'horaire prévu (I10), ou `null` : jamais calculé, ou effacé par un geste à la main. */
+  readonly planned: PlannedTiming | null;
   /** Arrêts vivants (ni retirés, ni clos), dans l'ordre de passage. */
   readonly stops: readonly RoundStopRow[];
 }

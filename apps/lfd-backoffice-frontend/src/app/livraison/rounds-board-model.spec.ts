@@ -27,6 +27,7 @@ function round(overrides: Partial<DeliveryRoundView>): DeliveryRoundView {
     passage: 1,
     version: 1,
     vehicleRetired: false,
+    planned: null,
     departedAt: null,
     returnedAt: null,
     driver: null,

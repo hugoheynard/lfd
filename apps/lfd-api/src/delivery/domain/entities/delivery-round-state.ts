@@ -4,6 +4,8 @@
  * l'agrégat sous sa taille ; il y est ré-exporté.
  */
 
+import type { PlannedTiming } from "../value-objects/planned-timing.js";
+
 /**
  * Un arrêt tel que la tournée le connaît. `closedAt` non nul = clos (livré ou
  * raté, lot 6) : il n'est plus vivant, garde sa position figée, et se
@@ -49,6 +51,11 @@ export interface DeliveryRoundState {
    * dépôt Prisma le passe toujours, et `toSnapshot` le rend toujours.
    */
   readonly returned?: RoundReturn | null;
+  /**
+   * L'horaire prévu (I10), ou `null`. Facultatif à la RÉHYDRATATION seulement,
+   * comme `returned` — absent vaut `null`.
+   */
+  readonly plannedTiming?: PlannedTiming | null;
   readonly createdAt: Date;
   readonly updatedAt: Date;
   readonly stops: readonly DeliveryStopState[];

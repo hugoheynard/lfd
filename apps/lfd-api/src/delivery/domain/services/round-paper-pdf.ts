@@ -19,7 +19,12 @@ import {
   WIDTH,
 } from "../../../platform/pdf/paper-pdf-kit.js";
 import { fillBox } from "../../../platform/pdf/paper-pdf-shapes.js";
-import { type RoundPaper, roundPaperTitle, stopCountPaperLabel } from "./round-paper.js";
+import {
+  plannedPaperLabel,
+  type RoundPaper,
+  roundPaperTitle,
+  stopCountPaperLabel,
+} from "./round-paper.js";
 import { type Cursor, placeBlock, SOFT } from "./round-paper-pdf-layout.js";
 import { absentStopBlock, sheetStopBlock } from "./round-paper-pdf-stop.js";
 
@@ -80,6 +85,11 @@ function header(doc: Doc, cursor: Cursor, paper: RoundPaper): void {
     paper.driverName === null ? "Aucun livreur affecté" : `Livreur : ${paper.driverName}`;
   putRight(doc, driver, RIGHT, cursor.y, 13);
   cursor.y += 8 * MM;
+  const planned = plannedPaperLabel(paper.planned);
+  if (planned !== null) {
+    put(doc, planned, LEFT, cursor.y, { size: 12, bold: true });
+    cursor.y += 7 * MM;
+  }
   recap(doc, cursor, paper);
   rule(doc, cursor.y, 1.2);
   cursor.y += 5 * MM;

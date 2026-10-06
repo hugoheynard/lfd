@@ -2,6 +2,7 @@ import { Injectable } from "@nestjs/common";
 
 import { PrismaService } from "../../platform/database/prisma.service.js";
 import { DeliveryRoundsReader, type RoundRow } from "../domain/ports/delivery-rounds.reader.js";
+import { PlannedTiming } from "../domain/value-objects/planned-timing.js";
 
 /** Un arrêt vivant : ni retiré, ni clos (C12). */
 const LIVE_STOP = { removedAt: null, closedAt: null } as const;
@@ -32,6 +33,11 @@ export class PrismaDeliveryRoundsReader extends DeliveryRoundsReader {
       departedAt: row.departedAt,
       driverStaffId: row.driverStaffId,
       returnedAt: row.returnedAt,
+      planned: PlannedTiming.restore({
+        departureAt: row.plannedDepartureAt,
+        returnAt: row.plannedReturnAt,
+        meters: row.plannedMeters,
+      }),
       stops: row.stops.map((stop) => ({
         stopId: stop.id,
         orderId: stop.orderId,

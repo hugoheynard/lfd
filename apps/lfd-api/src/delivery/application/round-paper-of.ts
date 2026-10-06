@@ -28,6 +28,7 @@ export function roundPaperOf(inputs: RoundPaperInputs): RoundPaper {
     passage: round.passage,
     serviceDay: round.serviceDay,
     driverName: inputs.driverName,
+    planned: round.planned,
     stops: round.stops.map((stop) => stopOf(stop, inputs)),
     printedAt: inputs.printedAt,
   };

@@ -23,6 +23,7 @@ import {
   openingsOf,
 } from "../delivery-apply-support.js";
 import { ensureRoundVehicleActive, referencesOf } from "../delivery-round-support.js";
+import { RoundTimingEstimator } from "../round-timing-estimator.js";
 import { ApplyDeliveryProposalCommand } from "./apply-delivery-proposal.command.js";
 
 /**
@@ -30,6 +31,10 @@ import { ApplyDeliveryProposalCommand } from "./apply-delivery-proposal.command.
  * manquantes, affecter, déplacer, réordonner, en UNE transaction, sous les
  * versions lues avec la proposition. Un seul refus annule tout ; un fait au
  * journal, `delivery_round.proposal_applied`.
+ *
+ * Chaque tournée proposée garde l'horaire PRÉVU (I10) que le serveur
+ * rechronomètre lui-même, AVANT la transaction : un appel routier ne tient
+ * pas de verrou. Sans route, elle s'enregistre sans horaire — jamais refusée.
  *
  * Tout est d'abord vérifié sans verrou, pour que le refus NOMME ce qui a
  * changé ; l'adaptateur revérifie sous verrou ce qu'une course aurait pu
@@ -58,11 +63,13 @@ export class ApplyDeliveryProposalHandler implements ICommandHandler<
     private readonly clock: Clock,
     private readonly events: DomainEventPublisher,
     private readonly uow: UnitOfWork,
+    private readonly timing: RoundTimingEstimator,
   ) {}
 
   async execute(command: ApplyDeliveryProposalCommand): Promise<void> {
     const { payload } = command;
     const at = this.clock.now();
+    const timings = await this.timing.timingsOf(payload.day, payload.rounds);
     await this.uow.run(async () => {
       const touched = await loadTouchedRounds(this.rounds, this.reader, payload);
       const held = new Set([...touched.values()].flatMap((round) => round.orderIds));
@@ -92,6 +99,7 @@ export class ApplyDeliveryProposalHandler implements ICommandHandler<
           });
         },
         newStopId: () => this.ids.next(),
+        timings,
         at,
       });
       await this.ensureMovable(applied.movedStops);

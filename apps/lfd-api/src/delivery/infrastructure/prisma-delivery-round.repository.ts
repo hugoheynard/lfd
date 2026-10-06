@@ -8,6 +8,7 @@ import {
   type LiveStopHolder,
 } from "../domain/errors/delivery-round-errors.js";
 import { DeliveryRoundRepository } from "../domain/ports/delivery-round.repository.js";
+import { PlannedTiming } from "../domain/value-objects/planned-timing.js";
 import { LIVE_STOP, type Tx, writeRound, writeStops } from "./delivery-round.writes.js";
 
 /**
@@ -21,8 +22,8 @@ import { LIVE_STOP, type Tx, writeRound, writeStops } from "./delivery-round.wri
  * `created_at` à la création. Aucune ligne n'est supprimée.
  *
  * Sur `delivery_round`, il écrit aussi `departed_at` (lot 4, « Partir ») et
- * `driver_staff_id` (plan « Ma tournée », MT-D2) et `returned_*` (« Tournée
- * terminée », PL2) — écrivain : la tournée. Il LIT et VERROUILLE `delivery_bin_load` (`saveMove`),
+ * `driver_staff_id` (plan « Ma tournée », MT-D2), `returned_*` (« Tournée
+ * terminée », PL2) et `planned_*` (l'horaire prévu, I10) — écrivain : la tournée. Il LIT et VERROUILLE `delivery_bin_load` (`saveMove`),
  * sans jamais l'écrire : l'écrivain en est l'exécution.
  *
  * `closed_at` — écrivain : la tournée, par `closeStop`. Depuis le 2026-10-01
@@ -60,6 +61,11 @@ export class PrismaDeliveryRoundRepository extends DeliveryRoundRepository {
               byStaffId: row.returnedBy ?? "",
               byName: row.returnedByName ?? "",
             },
+      plannedTiming: PlannedTiming.restore({
+        departureAt: row.plannedDepartureAt,
+        returnAt: row.plannedReturnAt,
+        meters: row.plannedMeters,
+      }),
       stops: row.stops.map((stop) => ({
         id: stop.id,
         orderId: stop.orderId,

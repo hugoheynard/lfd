@@ -1,5 +1,11 @@
 import type { ApplyDeliveryProposalPayload } from "@lfd/contracts";
 
+import type { DeliveryStopPoint } from "../../../channels/commerce/index.js";
+import { StraightLineDistanceMatrix } from "../../../domain/ports/__tests__/road-routing-doubles.js";
+import type { DistanceMatrix } from "../../../domain/ports/distance-matrix.js";
+import { DisabledDistanceMatrix } from "../../../infrastructure/disabled-road-routing.js";
+import { RoundTimingEstimator } from "../../round-timing-estimator.js";
+
 import { DirectUnitOfWork } from "../../../../platform/database/__tests__/direct-unit-of-work.js";
 import { RecordingPublisher } from "../../../../platform/events/__tests__/recording-publisher.js";
 import { FixedIdGenerator } from "../../../../platform/id/fixed-id-generator.js";
@@ -16,24 +22,52 @@ import { InMemoryVehicles, vehicle } from "./fleet-doubles.js";
 import { FixedBroughtBackOrders } from "./brought-back-doubles.js";
 import {
   deliveryOn,
-  FixedDeliveryOrders,
   FixedLoadedStops,
   InMemoryDeliveryRounds,
+  LocatedDeliveryOrders,
   roundWith,
 } from "./round-doubles.js";
-import { InMemoryProposals, RoundsReaderOver } from "./routing-doubles.js";
+import {
+  FixedDeparture,
+  FixedFleet,
+  InMemoryGeocodeCache,
+  InMemoryProposals,
+  InMemoryRoutingSettings,
+  RoundsReaderOver,
+  vehicleView,
+} from "./routing-doubles.js";
 
 // Des jours comparés entre eux — jamais à l'horloge.
 const DAY = "2030-03-12";
 const OTHER_DAY = "2030-03-13";
 
-function scene(loaded: readonly string[] = []) {
+const LABO = { lat: 45.5646, lng: 5.9178 };
+
+/** o1, o2, o3 situés ; o9 ne l'est pas. */
+const POINTS: readonly DeliveryStopPoint[] = [
+  ["o1", 45.6, 5.9],
+  ["o2", 45.61, 5.91],
+  ["o3", 45.5, 6.0],
+].map(([orderId, lat, lng]) => ({
+  orderId: String(orderId),
+  reference: `CMD-${String(orderId)}`,
+  gps: { lat: Number(lat), lng: Number(lng) },
+  address: null,
+  window: null,
+  stopMinutes: null,
+}));
+
+function scene(
+  loaded: readonly string[] = [],
+  matrix: DistanceMatrix = new StraightLineDistanceMatrix(),
+) {
   const rounds = new InMemoryDeliveryRounds(
     roundWith("r1", DAY, "v1", ["o1", "o2"]),
     roundWith("r_other", OTHER_DAY, "v1", ["o9"]),
   );
   const proposals = new InMemoryProposals(rounds);
   const events = new RecordingPublisher();
+  const orders = ordersOf();
   const handler = new ApplyDeliveryProposalHandler(
     rounds,
     new RoundsReaderOver(rounds),
@@ -43,15 +77,7 @@ function scene(loaded: readonly string[] = []) {
       vehicle("v2", "Trafic", "EF-456-GH"),
     ),
     new FixedLoadedStops(loaded),
-    new FixedDeliveryOrders([
-      deliveryOn("o1", DAY),
-      deliveryOn("o2", DAY),
-      deliveryOn("o3", DAY),
-      deliveryOn("o4", DAY, { status: "cancelled" }),
-      deliveryOn("o9", DAY),
-      deliveryOn("o5", OTHER_DAY),
-      deliveryOn("o6", OTHER_DAY),
-    ]),
+    orders,
     new FixedBroughtBackOrders([
       { orderId: "o5", broughtBackAt: new Date("2030-03-11T15:00:00.000Z") },
     ]),
@@ -59,8 +85,33 @@ function scene(loaded: readonly string[] = []) {
     new FixedClock(new Date(0)),
     events,
     new DirectUnitOfWork(),
+    new RoundTimingEstimator(
+      new InMemoryRoutingSettings(null),
+      new FixedDeparture(null).reader,
+      new FixedDeparture(LABO),
+      new FixedFleet([vehicleView("v1", "Kangoo"), vehicleView("v2", "Trafic")]),
+      orders,
+      new InMemoryGeocodeCache(),
+      matrix,
+      new FixedClock(new Date(0)),
+    ),
   );
   return { handler, rounds, proposals, events };
+}
+
+function ordersOf(): LocatedDeliveryOrders {
+  return new LocatedDeliveryOrders(
+    [
+      deliveryOn("o1", DAY),
+      deliveryOn("o2", DAY),
+      deliveryOn("o3", DAY),
+      deliveryOn("o4", DAY, { status: "cancelled" }),
+      deliveryOn("o9", DAY),
+      deliveryOn("o5", OTHER_DAY),
+      deliveryOn("o6", OTHER_DAY),
+    ],
+    POINTS,
+  );
 }
 
 const PROPOSAL: ApplyDeliveryProposalPayload = {
@@ -210,5 +261,33 @@ describe("ApplyDeliveryProposalHandler — « Appliquer » (L7-C6, L7-C11, L7-C1
     expect(passages).toEqual([1, 2]);
     // r1 n'est que source : il garde ce que la proposition ne lui prend pas.
     expect(rounds.stored("r1")?.orderIds).toEqual(["o1"]);
+  });
+
+  describe("l'horaire prévu (I10)", () => {
+    it("le serveur rechronomètre chaque tournée appliquée et le pose", async () => {
+      const { handler, rounds } = scene();
+
+      await handler.execute(new ApplyDeliveryProposalCommand(PROPOSAL));
+
+      const opened = rounds.all().find((round) => round.vehicleId === "v2");
+      const kept = rounds.stored("r1");
+      for (const round of [opened, kept]) {
+        const timing = round?.plannedTiming ?? null;
+        expect(timing).not.toBeNull();
+        expect(timing?.meters).toBeGreaterThan(0);
+        expect(timing?.returnAt.getTime()).toBeGreaterThan(timing?.departureAt.getTime() ?? 0);
+      }
+      // Deux arrêts, plus loin, contre un : la distance est bien celle de CES arrêts.
+      expect(opened?.plannedTiming?.meters).toBeGreaterThan(kept?.plannedTiming?.meters ?? 0);
+    });
+
+    it("sans calcul routier, « Appliquer » passe quand même — sans horaire", async () => {
+      const { handler, rounds } = scene([], new DisabledDistanceMatrix());
+
+      await handler.execute(new ApplyDeliveryProposalCommand(PROPOSAL));
+
+      expect(rounds.stored("r1")?.orderIds).toEqual(["o1"]);
+      expect(rounds.all().every((round) => round.plannedTiming === null)).toBe(true);
+    });
   });
 });

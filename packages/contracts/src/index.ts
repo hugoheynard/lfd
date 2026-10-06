@@ -899,6 +899,7 @@ export type {
   ReorderDeliveryRoundPayload,
   RemoveDeliveryStopPayload,
   DeliveryRoundDriverView,
+  DeliveryRoundPlannedView,
   DeliveryDriversView,
   DeliveryDriverView,
   AssignDeliveryDriverPayload,

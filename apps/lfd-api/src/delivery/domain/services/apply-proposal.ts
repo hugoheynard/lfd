@@ -1,6 +1,7 @@
 import type { DeliveryRound, DetachedStop } from "../entities/delivery-round.js";
 import { InvalidProposalError } from "../errors/delivery-routing-errors.js";
 import type { MovedStop } from "../ports/delivery-proposal.repository.js";
+import type { PlannedTiming } from "../value-objects/planned-timing.js";
 
 /** Une tournée de la proposition, telle que l'écran la renvoie. */
 export interface ProposedComposition {
@@ -18,6 +19,11 @@ export interface ApplyProposalInput {
   /** Ouvre une tournée neuve pour ce véhicule (passage tiré par l'appelant). */
   readonly open: (vehicleId: string) => DeliveryRound;
   readonly newStopId: () => string;
+  /**
+   * L'horaire prévu de chaque tournée de `proposal`, au même rang (I10) ;
+   * `null` (ou absent) : le calcul routier ne l'a pas prévu.
+   */
+  readonly timings: readonly (PlannedTiming | null)[];
   readonly at: Date;
 }
 
@@ -49,6 +55,10 @@ interface Target {
  * Trois temps, pour qu'une tournée à la fois source et destination ne se
  * contredise pas : détacher tout ce qui change de tournée, rattacher et
  * affecter, puis réordonner chaque tournée dans l'ordre proposé.
+ *
+ * Chaque tournée proposée reçoit ensuite son horaire prévu, APRÈS la
+ * dernière retouche de ses arrêts — qui l'aurait effacé (I10). Une tournée
+ * qui ne fait que perdre des arrêts perd le sien.
  *
  * 🔴 Une tournée de la proposition dont un arrêt vivant n'est placé NULLE PART
  * est refusée : appliquer ne retire jamais un arrêt en silence — retirer est
@@ -95,6 +105,9 @@ export function applyProposal(input: ApplyProposalInput): AppliedProposal {
       input.at,
     );
   }
+  targets.forEach(({ round }, index) => {
+    round.planTiming(input.timings[index] ?? null, input.at);
+  });
   return {
     rounds: appliedRounds(input.rounds, targets, before),
     movedStops,

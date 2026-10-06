@@ -2,6 +2,7 @@ import { Injectable } from "@nestjs/common";
 
 import { PrismaService } from "../../platform/database/prisma.service.js";
 import { RoundPaperReader, type RoundPaperRow } from "../domain/ports/round-paper.reader.js";
+import { PlannedTiming } from "../domain/value-objects/planned-timing.js";
 import { departedStopOf, EXECUTION_SELECT } from "./departed-stop.mapper.js";
 
 /** Un arrêt vivant : ni retiré, ni clos — ceux que l'écran imprimait. */
@@ -27,6 +28,9 @@ export class PrismaRoundPaperReader extends RoundPaperReader {
         vehicleName: true,
         passage: true,
         driverStaffId: true,
+        plannedDepartureAt: true,
+        plannedReturnAt: true,
+        plannedMeters: true,
         stops: {
           where: LIVE_STOP,
           orderBy: { position: "asc" },
@@ -44,6 +48,11 @@ export class PrismaRoundPaperReader extends RoundPaperReader {
       vehicleName: row.vehicleName,
       passage: row.passage,
       driverStaffId: row.driverStaffId,
+      planned: PlannedTiming.restore({
+        departureAt: row.plannedDepartureAt,
+        returnAt: row.plannedReturnAt,
+        meters: row.plannedMeters,
+      }),
       stops: row.stops.map((stop) => ({
         stopId: stop.id,
         orderId: stop.orderId,

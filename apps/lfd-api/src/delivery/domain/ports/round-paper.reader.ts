@@ -1,3 +1,4 @@
+import type { PlannedTiming } from "../value-objects/planned-timing.js";
 import type { DepartedStopRow } from "./driver-rounds.reader.js";
 
 /** Un arrêt vivant de la tournée à imprimer. */
@@ -17,6 +18,8 @@ export interface RoundPaperRow {
   readonly vehicleName: string;
   readonly passage: number;
   readonly driverStaffId: string | null;
+  /** L'horaire prévu (I10), ou `null`. */
+  readonly planned: PlannedTiming | null;
   /** Arrêts vivants (ni retirés, ni clos), dans l'ordre de composition — celui de l'écran. */
   readonly stops: readonly RoundPaperStopRow[];
 }

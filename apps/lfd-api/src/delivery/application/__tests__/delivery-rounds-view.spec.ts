@@ -1,4 +1,5 @@
 import { deliveryRoundsDayView, type DeliveryRoundsDayInputs } from "../delivery-rounds-view.js";
+import { PlannedTiming } from "../../domain/value-objects/planned-timing.js";
 
 // Des jours comparés entre eux et à un retrait écrit ici — jamais à l'horloge.
 const DAY = "2030-03-12";
@@ -28,10 +29,33 @@ const round = {
   departedAt: null,
   driverStaffId: null,
   returnedAt: null,
+  planned: null,
   stops: [{ stopId: "s_1", orderId: "o_1", position: 1 }],
 };
 
 describe("deliveryRoundsDayView", () => {
+  it("expose l'horaire prévu en instants ISO, et `null` sans horaire (I10)", () => {
+    const planned = PlannedTiming.of({
+      departureAt: new Date(3_600_000),
+      returnAt: new Date(7_200_000),
+      meters: 42_000,
+    });
+    const view = deliveryRoundsDayView(
+      inputs({
+        rounds: [
+          { ...round, planned },
+          { ...round, id: "r_2" },
+        ],
+      }),
+    );
+    expect(view.rounds[0]?.planned).toEqual({
+      departureAt: new Date(3_600_000).toISOString(),
+      returnAt: new Date(7_200_000).toISOString(),
+      meters: 42_000,
+    });
+    expect(view.rounds[1]?.planned).toBeNull();
+  });
+
   it("« à répartir » exclut les annulées et les commandes composées, même ailleurs", () => {
     const view = deliveryRoundsDayView(
       inputs({

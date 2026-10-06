@@ -18,6 +18,7 @@ import { PrismaBinCatalogReader } from "./infrastructure/prisma-bin-catalog.read
 import { PrismaBinTypeRepository } from "./infrastructure/prisma-bin-type.repository.js";
 import { AppConfig } from "../platform/config/app-config.js";
 import { ApplyDeliveryProposalHandler } from "./application/commands/apply-delivery-proposal.handler.js";
+import { RoundTimingEstimator } from "./application/round-timing-estimator.js";
 import { LocateDeliveryStopsHandler } from "./application/commands/locate-delivery-stops.handler.js";
 import { SetRoutingSettingsHandler } from "./application/commands/set-routing-settings.handler.js";
 import { SetDoorstepSettingsHandler } from "./application/commands/set-doorstep-settings.handler.js";
@@ -231,6 +232,8 @@ import {
     LocateDeliveryStopsHandler,
     GetDeliveryRoundProposalHandler,
     ApplyDeliveryProposalHandler,
+    // L'horaire prévu d'une tournée appliquée (I10), rechronométré par le serveur.
+    RoundTimingEstimator,
     SimulateDeliveryRoundsHandler,
     AssistBinPurchaseHandler,
     RecordSimulationScenarioHandler,

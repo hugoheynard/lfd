@@ -1,5 +1,12 @@
 import { pdfPages } from "../../../../platform/pdf/__tests__/pdf-text.js";
-import { type RoundPaper, type RoundPaperSheetStop, windowPaperLabel } from "../round-paper.js";
+import { PlannedTiming } from "../../value-objects/planned-timing.js";
+import {
+  kmPaperLabel,
+  plannedPaperLabel,
+  type RoundPaper,
+  type RoundPaperSheetStop,
+  windowPaperLabel,
+} from "../round-paper.js";
 import { renderRoundPaperPdf, roundPaperFileName } from "../round-paper-pdf.js";
 
 /**
@@ -38,11 +45,46 @@ function paper(overrides: Partial<RoundPaper> = {}): RoundPaper {
     passage: 1,
     serviceDay: DAY,
     driverName: "Paul Durand",
+    planned: null,
     stops: [stop("LFC-0001"), stop("LFC-0002")],
     printedAt: PRINTED,
     ...overrides,
   };
 }
+
+// Le 7 octobre est à l'heure d'été : UTC+2. Recopiés, jamais comparés à l'horloge.
+const PLANNED = PlannedTiming.of({
+  departureAt: new Date("2026-10-07T04:30:00.000Z"),
+  returnAt: new Date("2026-10-07T07:45:00.000Z"),
+  meters: 41_600,
+});
+
+describe("l'horaire prévu sur le papier", () => {
+  it("dit départ et retour à l'heure de Paris, et les kilomètres à l'entier", () => {
+    expect(plannedPaperLabel(PLANNED)).toBe("Départ 6 h 30 · retour 9 h 45 · 42 km");
+  });
+
+  it("ne dit rien sans horaire prévu", () => {
+    expect(plannedPaperLabel(null)).toBeNull();
+  });
+
+  it("arrondit comme le back-office : « < 1 km » sous le kilomètre", () => {
+    expect(kmPaperLabel(999)).toBe("< 1 km");
+    expect(kmPaperLabel(1_000)).toBe("1 km");
+    expect(kmPaperLabel(41_499)).toBe("41 km");
+  });
+
+  it("l'imprime dans l'en-tête quand la tournée en a un", async () => {
+    const [first = ""] = pdfPages(await renderRoundPaperPdf(paper({ planned: PLANNED })));
+    expect(first).toContain("Départ 6 h 30 · retour 9 h 45 · 42 km");
+  });
+
+  it("n'imprime aucune ligne d'horaire sans horaire prévu", async () => {
+    const [first = ""] = pdfPages(await renderRoundPaperPdf(paper()));
+    expect(first).not.toContain("Départ");
+    expect(first).not.toContain(" km");
+  });
+});
 
 describe("renderRoundPaperPdf — la feuille de tournée", () => {
   it("imprime l'en-tête : tournée, jour long, nombre d'arrêts, livreur", async () => {

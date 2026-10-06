@@ -54,12 +54,26 @@ export interface DeliveryRoundView {
    */
   readonly returnedAt: string | null;
   /**
+   * L'horaire PRÉVU par le calcul routier quand la proposition a été
+   * appliquée (décision Hugo 2026-10-06), ou `null` : jamais calculé, ou
+   * effacé parce que ses arrêts ont changé à la main depuis — un chiffre
+   * périmé est pire qu'aucun. Une prévision, pas une mesure.
+   */
+  readonly planned: DeliveryRoundPlannedView | null;
+  /**
    * Le livreur affecté (plan « Ma tournée », MT-D2 v2), ou `null`. Le nom est
    * LU dans l'annuaire, jamais copié.
    */
   readonly driver: DeliveryRoundDriverView | null;
   /** Les arrêts vivants, dans l'ordre de passage. */
   readonly stops: readonly DeliveryRoundStopView[];
+}
+
+/** Départ et retour prévus (instants ISO), distance prévue en mètres entiers. */
+export interface DeliveryRoundPlannedView {
+  readonly departureAt: string;
+  readonly returnAt: string;
+  readonly meters: number;
 }
 
 /** Le livreur affecté à une tournée. */

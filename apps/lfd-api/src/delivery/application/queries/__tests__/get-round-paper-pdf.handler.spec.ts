@@ -93,6 +93,7 @@ const ROUND: RoundPaperRow = {
   vehicleName: "Kangoo blanc",
   passage: 1,
   driverStaffId: "staff_paul",
+  planned: null,
   stops: [
     stopRow("o2", { binCodes: ["K7Q2"] }),
     stopRow("o1", { departed: FROZEN }),

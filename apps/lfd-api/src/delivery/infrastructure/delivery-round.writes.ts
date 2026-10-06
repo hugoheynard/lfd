@@ -9,6 +9,7 @@ import {
   DeliveryRoundStaleError,
   OrderAlreadyInRoundError,
 } from "../domain/errors/delivery-round-errors.js";
+import type { PlannedTiming } from "../domain/value-objects/planned-timing.js";
 
 /**
  * **Les écritures d'une tournée**, partagées par les deux adaptateurs qui
@@ -57,6 +58,7 @@ export async function writeRound(
             departedAt: snapshot.departedAt,
             driverStaffId: snapshot.driverStaffId,
             ...returnColumns(snapshot.returned ?? null),
+            ...plannedColumns(snapshot.plannedTiming ?? null),
             createdAt: snapshot.createdAt,
             updatedAt: snapshot.updatedAt,
           },
@@ -71,6 +73,7 @@ export async function writeRound(
       departedAt: snapshot.departedAt,
       driverStaffId: snapshot.driverStaffId,
       ...returnColumns(snapshot.returned ?? null),
+      ...plannedColumns(snapshot.plannedTiming ?? null),
       updatedAt: snapshot.updatedAt,
     },
   });
@@ -89,6 +92,19 @@ function returnColumns(returned: RoundReturn | null): {
     returnedAt: returned?.at ?? null,
     returnedBy: returned?.byStaffId ?? null,
     returnedByName: returned?.byName ?? null,
+  };
+}
+
+/** L'horaire prévu (I10) — trois colonnes, toutes nulles ou toutes posées (CHECK). */
+function plannedColumns(timing: PlannedTiming | null): {
+  readonly plannedDepartureAt: Date | null;
+  readonly plannedReturnAt: Date | null;
+  readonly plannedMeters: number | null;
+} {
+  return {
+    plannedDepartureAt: timing?.departureAt ?? null,
+    plannedReturnAt: timing?.returnAt ?? null,
+    plannedMeters: timing?.meters ?? null,
   };
 }
 

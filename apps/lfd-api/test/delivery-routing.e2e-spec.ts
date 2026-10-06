@@ -6,7 +6,7 @@
  * RÉSEAU à partir des points GPS du carnet, « Appliquer ». Le harnais ne
  * double qu'Auth0 : sans `BAN_GEOCODER_URL`, le géocodeur est éteint.
  */
-import type { DeliveryRoutingSettingsView } from "@lfd/contracts";
+import { type DeliveryRoutingSettingsView, instantToLocal } from "@lfd/contracts";
 
 import { bootstrapE2e, jsonBody, serviceDay, type E2eContext } from "./e2e-harness.js";
 import {
@@ -195,6 +195,38 @@ describe("proposer, puis appliquer (L7-C3 à C6)", () => {
     expect(
       await ctx.prisma.activityEvent.count({ where: { type: "delivery_round.proposal_applied" } }),
     ).toBe(1);
+  });
+
+  it("appliquer garde l'horaire prévu par le serveur ; réordonner à la main l'efface (I10)", async () => {
+    await scene();
+    const view = await propose(ctx, `jour=${DAY}`);
+    const proposed = view.rounds[0];
+
+    await apply(ctx, payloadOf(view)).expect(204);
+
+    const [round] = (await dayView(ctx, DAY)).rounds;
+    const planned = round?.planned ?? null;
+    expect(planned).not.toBeNull();
+    // Le serveur rechronomètre la même composition : il retombe sur l'aperçu.
+    expect(planned?.meters).toBe(proposed?.meters);
+    expect(instantToLocal(new Date(planned?.departureAt ?? "")).time).toBe(proposed?.departureTime);
+    expect(instantToLocal(new Date(planned?.returnAt ?? "")).time).toBe(proposed?.returnTime);
+
+    const stopIds = (round?.stops ?? []).map((stop) => stop.stopId);
+    await admin(ctx)
+      .put(`${ROUNDS}/${round?.id ?? ""}/ordre`)
+      .send({ stopIds: [...stopIds].reverse(), version: round?.version })
+      .expect(204);
+
+    expect((await roundOf(ctx, DAY, round?.id ?? "")).planned).toBeNull();
+    const row = await ctx.prisma.deliveryRound.findUniqueOrThrow({
+      where: { id: round?.id ?? "" },
+    });
+    expect([row.plannedDepartureAt, row.plannedReturnAt, row.plannedMeters]).toEqual([
+      null,
+      null,
+      null,
+    ]);
   });
 
   it("n'utilise que les véhicules cochés", async () => {

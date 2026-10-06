@@ -89,6 +89,14 @@ function roundView(round: RoundRow, inputs: DeliveryRoundsDayInputs): DeliveryRo
     vehicleRetired: !activeOnDay(round.vehicleRetiredAt, inputs.day),
     departedAt: round.departedAt?.toISOString() ?? null,
     returnedAt: round.returnedAt?.toISOString() ?? null,
+    planned:
+      round.planned === null
+        ? null
+        : {
+            departureAt: round.planned.departureAt.toISOString(),
+            returnAt: round.planned.returnAt.toISOString(),
+            meters: round.planned.meters,
+          },
     driver: driverView(round.driverStaffId, inputs),
     stops: round.stops.map((stop) => stopView(stop, inputs)),
   };

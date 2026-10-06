@@ -21,6 +21,7 @@ import {
   RoundNotDepartedForReturnError,
   RoundStopsWithoutOutcomeError,
 } from "../errors/delivery-doorstep-errors.js";
+import type { PlannedTiming } from "../value-objects/planned-timing.js";
 import { isCalendarDay } from "../value-objects/service-day.js";
 import { SharedBinToRedoError } from "../errors/delivery-bin-declaration-errors.js";
 import { sharedBinsToRedo, type StopReadiness, unreadyStops } from "./departure-readiness.js";
@@ -60,7 +61,10 @@ export type {
  *   rentre que d'une tournée partie, une fois ; rentrée, elle n'accepte plus
  *   aucun geste de la porte (`closeStop` compris) ;
  * - **I9** — le LIVREUR ne termine que si chaque arrêt a un sort (`finish`,
- *   `plan-a-la-porte.md` § 10 B4) ; la rentrée par le staff reste permise.
+ *   `plan-a-la-porte.md` § 10 B4) ; la rentrée par le staff reste permise ;
+ * - **I10** — l'horaire prévu (décision Hugo 2026-10-06) ne survit à aucun
+ *   changement de ses arrêts : affecter, déplacer, retirer, réordonner
+ *   l'effacent. Seul `planTiming`, à l'application d'une proposition, le pose.
  *
  * **I3** (une commande dans au plus une tournée vivante, tous jours
  * confondus) concerne toutes les tournées : c'est la base qui la tient, par un
@@ -75,11 +79,18 @@ export class DeliveryRound {
   private currentVersion: number;
   private currentDepartedAt: Date | null;
   private currentReturn: RoundReturn | null = null;
+  private currentPlannedTiming: PlannedTiming | null = null;
 
   private constructor(
     private readonly state: Omit<
       DeliveryRoundState,
-      "stops" | "version" | "updatedAt" | "departedAt" | "driverStaffId" | "returned"
+      | "stops"
+      | "version"
+      | "updatedAt"
+      | "departedAt"
+      | "driverStaffId"
+      | "returned"
+      | "plannedTiming"
     >,
     /** `null` : la tournée vient d'être ouverte, rien n'est encore en base. */
     readonly loadedVersion: number | null,
@@ -155,6 +166,7 @@ export class DeliveryRound {
       state.driverStaffId,
     );
     round.currentReturn = state.returned ?? null;
+    round.currentPlannedTiming = state.plannedTiming ?? null;
     return round;
   }
 
@@ -195,6 +207,30 @@ export class DeliveryRound {
   /** Rentrée le (PL2), ou `null`. */
   get returnedAt(): Date | null {
     return this.currentReturn?.at ?? null;
+  }
+
+  /** L'horaire prévu (I10), ou `null` : jamais calculé, ou effacé par un geste à la main. */
+  get plannedTiming(): PlannedTiming | null {
+    return this.currentPlannedTiming;
+  }
+
+  /**
+   * Pose l'horaire que le calcul routier a prévu pour CES arrêts (I10) —
+   * `null` : il n'a pas pu le prévoir. Appelé après la dernière retouche des
+   * arrêts, sans quoi elle l'effacerait aussitôt. Rien ne change, rien ne s'écrit.
+   * @throws {DeliveryRoundDepartedError}
+   */
+  planTiming(timing: PlannedTiming | null, at: Date): void {
+    this.ensureAtDepot();
+    const same =
+      timing === null
+        ? this.currentPlannedTiming === null
+        : timing.equals(this.currentPlannedTiming);
+    if (same) {
+      return;
+    }
+    this.currentPlannedTiming = timing;
+    this.touch(at);
   }
 
   /** Les arrêts vivants, dans l'ordre de passage. */
@@ -246,7 +282,7 @@ export class DeliveryRound {
       });
     }
     this.open = [...this.open, stop];
-    this.touch(at);
+    this.recompose(at);
   }
 
   /**
@@ -257,7 +293,7 @@ export class DeliveryRound {
     this.ensureAtDepot();
     const { index, stop } = this.findOpen(stopId);
     this.open = this.open.filter((_, position) => position !== index);
-    this.touch(at);
+    this.recompose(at);
     return stop;
   }
 
@@ -297,7 +333,7 @@ export class DeliveryRound {
       return false;
     }
     this.open = next.filter((stop): stop is DetachedStop => stop !== undefined);
-    this.touch(at);
+    this.recompose(at);
     return true;
   }
 
@@ -476,6 +512,7 @@ export class DeliveryRound {
       departedAt: this.currentDepartedAt,
       driverStaffId: this.currentDriverStaffId,
       returned: this.currentReturn,
+      plannedTiming: this.currentPlannedTiming,
       updatedAt: this.currentUpdatedAt,
       stops: [
         ...this.open.map((stop, index) => ({ ...stop, position: index + 1, closedAt: null })),
@@ -496,6 +533,12 @@ export class DeliveryRound {
       throw new DeliveryStopClosedError(stopId);
     }
     throw new DeliveryStopNotFoundError(stopId);
+  }
+
+  /** Les arrêts ont changé : l'horaire prévu ne vaut plus (I10). */
+  private recompose(at: Date): void {
+    this.currentPlannedTiming = null;
+    this.touch(at);
   }
 
   /** Le premier changement d'une écriture avance la version ; les suivants non. */

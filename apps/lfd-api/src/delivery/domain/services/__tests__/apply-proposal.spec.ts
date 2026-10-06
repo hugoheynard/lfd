@@ -2,6 +2,7 @@ import { DeliveryRound } from "../../entities/delivery-round.js";
 import { Vehicle } from "../../entities/vehicle.js";
 import { DeliveryRoundDepartedError } from "../../errors/delivery-loading-errors.js";
 import { InvalidProposalError } from "../../errors/delivery-routing-errors.js";
+import { PlannedTiming } from "../../value-objects/planned-timing.js";
 import { type ApplyProposalInput, applyProposal } from "../apply-proposal.js";
 
 const AT = new Date(0);
@@ -39,9 +40,11 @@ let sequence = 0;
 function inputOf(
   rounds: readonly DeliveryRound[],
   proposal: ApplyProposalInput["proposal"],
+  timings: ApplyProposalInput["timings"] = [],
 ): ApplyProposalInput {
   return {
     proposal,
+    timings,
     rounds: new Map(rounds.map((r) => [r.id, r])),
     open: (vehicleId) =>
       DeliveryRound.open({
@@ -156,5 +159,45 @@ describe("appliquer une proposition (L7-C6, L7-C11)", () => {
     applyProposal(inputOf([r1], [{ roundId: "r1", vehicleId: "v1", orderIds: ["o1", "o2"] }]));
 
     expect(r1.version).toBe(3);
+  });
+
+  describe("l'horaire prévu (I10)", () => {
+    const TIMING = PlannedTiming.of({
+      departureAt: new Date(3_600_000),
+      returnAt: new Date(7_200_000),
+      meters: 42_000,
+    });
+
+    it("le pose sur chaque tournée proposée, APRÈS la retouche de ses arrêts", () => {
+      const r1 = round("r1", "v1", ["o1", "o2"]);
+      const applied = applyProposal(
+        inputOf(
+          [r1],
+          [
+            { roundId: "r1", vehicleId: "v1", orderIds: ["o2", "o1"] },
+            { roundId: null, vehicleId: "v2", orderIds: ["o3"] },
+          ],
+          [TIMING, null],
+        ),
+      );
+      const byId = new Map(applied.rounds.map(({ round: r }) => [r.id, r]));
+      expect(byId.get("r1")?.plannedTiming).toBe(TIMING);
+      expect(byId.get("new_v2")?.plannedTiming).toBeNull();
+    });
+
+    it("l'efface sur une tournée qui ne fait que perdre des arrêts", () => {
+      const source = round("r1", "v1", ["o1", "o2"]);
+      source.planTiming(TIMING, AT);
+      applyProposal(
+        inputOf(
+          [source],
+          [
+            { roundId: "r1", vehicleId: "v1", orderIds: ["o1"] },
+            { roundId: null, vehicleId: "v2", orderIds: ["o2"] },
+          ],
+        ),
+      );
+      expect(source.plannedTiming).toBeNull();
+    });
   });
 });

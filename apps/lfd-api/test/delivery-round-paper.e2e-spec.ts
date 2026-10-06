@@ -83,7 +83,10 @@ describe("GET /admin/livraison/tournees/:roundId/tournee.pdf", () => {
     }
     const text = pdfPages(Buffer.from(body)).join("\n");
     expect(text).toContain("Kangoo blanc");
-    const positions = ["ARRÊT 1/2", second.reference, "ARRÊT 2/2", first.reference].map((part) =>
+    // Depuis la refonte (6d2872044), le rang est une pastille : l'ordre se lit
+    // à celui des références.
+    expect(text).toContain("2 arrêts");
+    const positions = [`Commande ${second.reference}`, `Commande ${first.reference}`].map((part) =>
       text.indexOf(part),
     );
     expect(positions.every((at) => at >= 0)).toBe(true);

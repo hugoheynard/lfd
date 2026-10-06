@@ -186,3 +186,17 @@ export class InvalidServiceDayError extends DomainError {
     );
   }
 }
+
+/**
+ * L'horaire prévu d'une tournée ne tient pas debout — un retour avant le
+ * départ, une distance négative ou fractionnaire. C'est le calcul routier qui
+ * le produit : un défaut, pas un geste à refaire.
+ */
+export class InvalidPlannedTimingError extends TechnicalError {
+  constructor(reason: string) {
+    super(
+      "delivery.planned_timing_invalid",
+      `L'horaire prévu de la tournée est incohérent (${reason}) : la tournée est enregistrée sans horaire ; signalez-le à l'équipe technique.`,
+    );
+  }
+}

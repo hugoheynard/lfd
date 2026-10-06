@@ -1,6 +1,7 @@
-import type { DeliveryContact } from "@lfd/contracts";
+import { type DeliveryContact, instantToLocal } from "@lfd/contracts";
 
 import type { DepartureWindow } from "../entities/departure-sheet.js";
+import type { PlannedTiming } from "../value-objects/planned-timing.js";
 
 /** Une étape de la procédure de livraison, en texte : les photos ne s'impriment pas. */
 export interface RoundPaperStep {
@@ -50,6 +51,8 @@ export interface RoundPaper {
   readonly serviceDay: string;
   /** Le nom du livreur affecté ; `null` sans livreur, ou fiche sans nom. */
   readonly driverName: string | null;
+  /** L'horaire prévu à l'application de la proposition ; `null` : rien ne s'imprime. */
+  readonly planned: PlannedTiming | null;
   /** Dans l'ordre de passage. */
   readonly stops: readonly RoundPaperStop[];
   /** Quand le papier est tiré — le pied l'imprime, les métadonnées le figent. */
@@ -84,6 +87,31 @@ export function windowPaperLabel(window: DepartureWindow | null): string {
       ? `avant ${timeLabel(window.end)}`
       : `${timeLabel(window.start)} – ${timeLabel(window.end)}`;
   return window.source === "default" ? `${bounds} (horaire par défaut)` : bounds;
+}
+
+const METERS_PER_KM = 1000;
+
+/**
+ * « 42 km » — à l'entier ; sous le kilomètre, « < 1 km » plutôt qu'un « 0 km »
+ * qui ment. Le `roundKmLabel` du back-office (`livraison/rounds-board-model.ts`),
+ * recopié pour la même raison que `windowPaperLabel`.
+ */
+export function kmPaperLabel(meters: number): string {
+  const km = Math.round(meters / METERS_PER_KM);
+  return meters < METERS_PER_KM || km < 1 ? "< 1 km" : `${km.toLocaleString("fr-FR")} km`;
+}
+
+/**
+ * « Départ 6 h 30 · retour 9 h 45 · 42 km », à l'heure de Paris ; `null` sans
+ * horaire prévu — le papier ne l'invente pas.
+ */
+export function plannedPaperLabel(planned: PlannedTiming | null): string | null {
+  if (planned === null) {
+    return null;
+  }
+  const departure = timeLabel(instantToLocal(planned.departureAt).time);
+  const back = timeLabel(instantToLocal(planned.returnAt).time);
+  return `Départ ${departure} · retour ${back} · ${kmPaperLabel(planned.meters)}`;
 }
 
 /** « aucun arrêt », « 1 arrêt », « 4 arrêts ». */

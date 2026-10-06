@@ -124,32 +124,39 @@ model DeliveryDeparture {
 /// migration `20260929140200_les_tournees`.
 model DeliveryRound {
   /// Assigné par la commande (`IdGenerator`).
-  id            String    @id
-  serviceDay    String    @map("service_day") @db.VarChar(10)
-  vehicleId     String    @map("vehicle_id")
+  id                 String    @id
+  serviceDay         String    @map("service_day") @db.VarChar(10)
+  vehicleId          String    @map("vehicle_id")
   /// Le nom du véhicule RECOPIÉ à l'ouverture : un renommage ne réécrit pas l'historique.
-  vehicleName   String    @map("vehicle_name")
-  passage       Int
+  vehicleName        String    @map("vehicle_name")
+  passage            Int
   /// Avance d'une unité par écriture de la composition ; une écriture qui ne
   /// présente pas la version lue est refusée.
-  version       Int
+  version            Int
   /// Partie le (lot 4, L4-C4) — écrivain : la tournée, par `depart`. Nulle tant
   /// qu'elle est au dépôt ; posée, plus rien ne se compose ni ne se charge (I6).
-  departedAt    DateTime? @map("departed_at")
+  departedAt         DateTime? @map("departed_at")
   /// Le livreur affecté (plan « Ma tournée », MT-D2 v2) — l'id d'une fiche de
   /// l'annuaire staff, OPAQUE : aucune clé étrangère, la tournée vit dans
   /// `delivery` et l'annuaire dans `public`. Écrivain : la tournée, par
   /// `assignDriver` / `unassignDriver`. Le mur du livreur (MT-D3) le lit.
-  driverStaffId String?   @map("driver_staff_id")
+  driverStaffId      String?   @map("driver_staff_id")
   /// **Rentrée** le — « Tournée terminée » (`documentation/livraisons/parcours-du-livreur.md`,
   /// lot PL2) : les bacs vides sont rentrés, et la mesure du temps de tournée
   /// se ferme. Écrivain : la tournée, par `returnToDepot`, une fois, seulement
   /// partie. Nulle tant qu'elle roule. Les arrêts restés ouverts le restent.
-  returnedAt     DateTime? @map("returned_at")
+  returnedAt         DateTime? @map("returned_at")
   /// Qui l'a déclarée rentrée — fiche staff OPAQUE (le livreur, ou l'admin
   /// depuis Tournées), et son nom FIGÉ au geste ; nuls avec `returned_at`.
-  returnedBy     String?   @map("returned_by")
-  returnedByName String?   @map("returned_by_name")
+  returnedBy         String?   @map("returned_by")
+  returnedByName     String?   @map("returned_by_name")
+  /// **L'horaire prévu** (décision Hugo 2026-10-06) — départ, retour et
+  /// distance que le calcul routier a prévus quand la proposition a été
+  /// appliquée. Écrivain : la tournée, par `planTiming` ; EFFACÉS dès qu'un
+  /// geste à la main change ses arrêts. Tous nuls ou tous posés (CHECK).
+  plannedDepartureAt DateTime? @map("planned_departure_at")
+  plannedReturnAt    DateTime? @map("planned_return_at")
+  plannedMeters      Int?      @map("planned_meters")
 
   createdAt DateTime @map("created_at")
   updatedAt DateTime @map("updated_at")
