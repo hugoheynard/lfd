@@ -495,3 +495,144 @@ sans abonné.
 
 **À faire avant de bâtir CA6** : contredire ce §15 par `vitruve` (frontière),
 et trancher l'abonnement au fait du retirage.
+
+## 16. CA6 v2 — après la contradiction du §15 (2026-10-06)
+
+> Hugo, 2026-10-06 : « l'arrêt du compte de production devrait publier un
+> message et livraison devrait proposer automatiquement le plan de tournée ».
+> `vitruve` a contredit le §15 le même jour : deux BLOQUANTS (rien ne peut
+> porter « prêt à appliquer » ; le fait du retirage existe déjà, hors canal,
+> sans `orderIds`). Ce paragraphe REMPLACE le §15 là où ils divergent. Rien
+> n'est bâti.
+
+### 16.1 Ce qui existe (relu le 2026-10-06)
+
+- La clôture, manuelle **et** automatique, passe par `CloseProductionDayCommand`
+  (`bus-automatic-day-closer.ts`) et publie `production.day_closed` avec ses
+  `orderIds` — retrait **et** livraison mêlés (`prisma-day-orders.reader.ts`).
+  Chaque réannonce est un fait distinct (clé `…:reannounced:<instant>`).
+- `production/channels/delivery/index.ts` n'exporte que ce fait ; aucun
+  abonné côté livraison.
+- Le retirage publie `production.day_retaken`
+  (`retake-production-day.handler.ts`), charge `{ serviceDay, retakenAt,
+absorbed }` : un **compte**, pas la liste. Le fait vit dans
+  `production/domain/events/`, hors canal : la livraison ne peut pas le lire.
+- La proposition de tournées se **calcule à la lecture**
+  (`get-delivery-round-proposal.handler.ts`) ; `DeliveryProposalRepository`
+  ne sait que l'appliquer. Aucune table de proposition ni de jour.
+- L'abonné du commerce (`on-production-day-closed.handler.ts`) fait passer les
+  commandes en `confirmed` ; aucun ordre n'existe entre lui et un abonné de la
+  livraison.
+- Le jour de production d'une commande EST son jour de livraison
+  (`requestedDeliveryDate = serviceDay`, `prisma-day-orders.reader.ts`) — la
+  question du §10 est close.
+
+### 16.2 La proposition
+
+**L'abonné ne fige aucune proposition. Il range un ÉTAT et sonne.**
+
+1. **Une table `delivery.delivery_day_readiness`**, clé
+   **(`service_day`, `closed_at`)** : une ligne par clôture, pour qu'une
+   clôture future après réouverture (Q7) ait sa place sans écraser ni être
+   refusée. Colonnes : `state` (`ready` | `not_proposable`), `reason`
+   (texte lisible, nul si `ready`), `order_count` (livraisons du fait),
+   `absorbed_order_ids` (retirages reçus depuis), `created_at`, `updated_at`.
+   Migration **additive**. Le §10 (« CA6 : migration non ») est faux, corrigé
+   ici.
+2. **La proposition reste calculée à la lecture** (§7) : l'écran des tournées
+   la recalcule quand on l'ouvre. Elle n'est jamais périmée, et elle ne gêne
+   jamais le bureau, qui a peut-être déjà composé à la main : le mode
+   « Insérer » ne place que ce qui ne l'est pas. Ranger ne sert qu'à SAVOIR
+   que le jour est prêt et à le DIRE. « Appliquer » reste au bureau (§9).
+3. **À la clôture**, l'abonné (`@DurableHandler`, livré au moins une fois) :
+   - borne le jeu aux `orderIds` **du fait**, jamais au statut `confirmed`
+     (l'abonné du commerce peut ne pas être passé) ;
+   - n'en garde que les **livraisons** (lu au commerce par le canal existant
+     `delivery/channels/commerce/`) ;
+   - essaie le calcul à blanc. S'il refuse pour une raison métier (pas de
+     véhicule ou de bac paramétré — CA-D3 —, route indisponible, départ non
+     situé), il range `not_proposable` avec la phrase du refus. **Il ne lève
+     jamais sur un cas métier** : une `DomainError` dans un abonné durable
+     serait reprise puis deviendrait un message mort, rejoué pour une
+     situation normale. Même règle que « Appliquer » depuis `3e9da566c`.
+   - sonne la cloche du bureau : « Le plan du mercredi 7 octobre est arrêté :
+     12 livraisons à mettre en tournées » ou « … : impossible de proposer les
+     tournées — <raison> ».
+4. **Idempotence et ordre** : l'unité est (`service_day`, `closed_at`). Un fait
+   déjà rangé ne fait rien (pas de seconde cloche). Une réannonce porte le
+   même `closedAt` que sa clôture : elle met à jour la ligne sans sonner de
+   nouveau. Un fait dont le `closedAt` est plus ancien que la dernière ligne du
+   jour est ignoré.
+5. **Au retirage** :
+   - `production.day_retaken` **passe dans le canal**
+     `production/channels/delivery/` (comme le prévoit son JSDoc) ;
+   - sa charge gagne `orderIds` (les commandes absorbées) ; la relecture
+     tolère les faits déjà écrits sans ce champ (comme E3 l'a fait pour
+     `reannouncedAt`) : sans liste, l'abonné range le compte et sonne sans
+     détail ;
+   - l'abonné ajoute les livraisons absorbées à la dernière ligne du jour et
+     sonne « 2 nouvelles livraisons à placer ».
+6. **L'écran des tournées** lit l'état du jour : un bandeau « Plan arrêté —
+   prêt à appliquer » avec le bouton « Proposer » mis en avant, ou la raison
+   du refus.
+
+### 16.3 Ce qui reste à vérifier avant de bâtir
+
+- La matrice dit `delivery → staff : ✓ (autorisation)`. La cloche vit dans
+  `staff/notifications/` ; le commerce l'importe directement. Que la
+  livraison y ait droit n'est **pas vérifié** dans `lint:context-boundaries` ;
+  sinon, un port `delivery` que `appBootstrap` relie.
+- L'ordre de livraison des faits par la boîte d'envoi entre deux clés n'est
+  pas établi (`outbox-relay.ts` non lu) ; la règle 4 ne suppose aucun ordre.
+- Ce que « Insérer » fait des commandes absorbées après la clôture
+  (`insert-into-rounds.ts`, non relu).
+
+### 16.4 Lots
+
+| Lot      | Contenu                                                                             | Migration |
+| -------- | ----------------------------------------------------------------------------------- | --------- |
+| **CA6a** | la table, l'abonné à la clôture, la cloche, l'état lu par l'écran (route + bandeau) | oui       |
+| **CA6b** | `day_retaken` dans le canal avec `orderIds`, l'abonné du retirage                   | non       |
+
+### 16.5 Contradiction de `vitruve` (2026-10-06) et corrections
+
+Deux BLOQUANTS, cinq SÉRIEUX. Ce qui suit corrige 16.2 ; là où ils divergent,
+16.5 fait foi.
+
+- **B1 — pas de calcul dans l'abonné.** Un abonné durable tourne dans une
+  transaction (`platform/outbox/durable-delivery-guard.ts`) ; le calcul de
+  proposition appelle OSRM (`DistanceMatrix`). L'abonné **ne calcule rien** :
+  il range l'ensemble des livraisons et sonne. La seule vérification qu'il
+  fait est en base, sans réseau : CA-D3 (au moins un véhicule et un type de
+  bac paramétrés) — sinon la cloche le dit. Une route indisponible n'est
+  jamais rangée : l'écran la constate à l'ouverture, comme aujourd'hui.
+  L'état `not_proposable` disparaît.
+- **S1 — la clé est le jour.** Une journée close ne se rouvre pas
+  (`close-production-day.handler.ts`, vérifié le 2026-10-06) : une ligne par
+  `service_day`. Si Q7 (« rouvrir le plan ») est décidée un jour, elle
+  apportera sa migration.
+- **B2, S2, S3 — un ENSEMBLE, pas des compteurs, et aucun ordre supposé.**
+  La ligne porte `delivery_order_ids` (ensemble) et `closed_at` (nullable).
+  Chaque fait — clôture, réannonce, retirage — fait l'**union** de ses
+  livraisons dans l'ensemble ; un fait rejoué, ou une réannonce qui recouvre
+  des absorbées, n'ajoute rien. Un retirage qui arrive avant sa clôture crée
+  la ligne avec `closed_at` nul ; la clôture le pose ensuite. La cloche ne
+  sonne que si l'ensemble **grandit**, et dit de combien : « Le plan du
+  mercredi 7 octobre est arrêté : 12 livraisons à mettre en tournées », puis
+  « 2 nouvelles livraisons à placer ».
+- **S4 — tolérance des anciens retirages.** `ProductionDayRetakenEvent.fromPayload`
+  accepte un fait sans `orderIds` (test dédié) ; l'abonné le reconnaît et ne
+  fait rien, sans lever. Deux sources de la liste des arrivées existeront
+  (`publishArrivals` pour le colisage, `day_retaken` pour la livraison) :
+  assumé, chacune sert son canal.
+- **S5 — l'écran.** Nouvelle query + route sous `delivery_rounds` en lecture.
+  Trois états : pas de ligne (plan non arrêté : rien), arrêté (bandeau
+  « Plan arrêté — N livraisons, dont P hors tournée », « Proposer » mis en
+  avant), arrêté sans flotte ni bac (bandeau d'alerte CA-D3).
+- 16.3 : la livraison importe `staff/notifications` sans canal
+  (`dev-toolbox/gates/context-boundaries.mjs`), et « Insérer » prend les
+  absorbées comme non placées (`insert-into-rounds.ts`) — réglés.
+
+Table finale, `delivery.delivery_day_readiness` : `service_day` (clé),
+`closed_at` (nullable), `delivery_order_ids` (`text[]`), `created_at`,
+`updated_at`. Lots inchangés (CA6a avec migration, CA6b sans).
