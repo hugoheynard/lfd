@@ -18,23 +18,24 @@ faut fabriquer, puis un bon par commande. Il se lit à deux endroits :
 Depuis le 2026-10-06, on n'imprime plus depuis le navigateur : l'impression était l'écran, menu compris.
 
 Le PDF serveur ne bouge plus une fois tiré : il est archivé
-(`<jour>/dossier-du-jour-v2.pdf`). Après un retirage qui ajoute des commandes,
+(`<jour>/dossier-du-jour-v3.pdf`). Après un retirage qui ajoute des commandes,
 un second dossier « complété » est archivé à côté
-(`<jour>/dossier-du-jour-v2-retirage-<instant>.pdf`) ; l'original reste.
+(`<jour>/dossier-du-jour-v3-retirage-<instant>.pdf`) ; l'original reste.
 
 ## Page 1 — le récapitulatif
 
-| Ce qu'on lit                                                                               | D'où ça vient                                                                                                                    |
-| ------------------------------------------------------------------------------------------ | -------------------------------------------------------------------------------------------------------------------------------- |
-| « Lot du <jour> », N commandes, P pièces                                                   | les commandes figées à l'arrêt (fournil, `production_order`)                                                                     |
-| Les rayons, dans l'ordre du catalogue                                                      | le **catalogue d'aujourd'hui**, lu au commerce au premier tirage (`WorkshopShelvesReader`), puis figé dans l'archive             |
-| Par rayon, chaque produit : quantité, nom, SKU, nombre de commandes ; le plus gros d'abord | les lignes figées des commandes (quantité, nom et SKU copiés à l'arrêt)                                                          |
-| « Hors catalogue »                                                                         | un SKU qui n'a plus de rayon                                                                                                     |
-| « Rayon inconnu »                                                                          | la lecture des rayons a échoué : le dossier est servi quand même, **mais pas archivé**, pour qu'un tirage suivant ait les rayons |
+| Ce qu'on lit                                                                                  | D'où ça vient                                                                                                                    |
+| --------------------------------------------------------------------------------------------- | -------------------------------------------------------------------------------------------------------------------------------- |
+| « Lot pour le mercredi 7 octobre 2026 » (le jour de retrait/livraison), N commandes, P pièces | les commandes figées à l'arrêt (fournil, `production_order`)                                                                     |
+| Les rayons, dans l'ordre du catalogue                                                         | le **catalogue d'aujourd'hui**, lu au commerce au premier tirage (`WorkshopShelvesReader`), puis figé dans l'archive             |
+| Par rayon, chaque produit : quantité, nom, SKU, nombre de commandes ; le plus gros d'abord    | les lignes figées des commandes (quantité, nom et SKU copiés à l'arrêt)                                                          |
+| « Hors catalogue »                                                                            | un SKU qui n'a plus de rayon                                                                                                     |
+| « Rayon inconnu »                                                                             | la lecture des rayons a échoué : le dossier est servi quand même, **mais pas archivé**, pour qu'un tirage suivant ait les rayons |
 
 ## Pages suivantes — un bon par commande
 
-Triés par référence, numérotés « BON i/N ».
+Triés par référence, sous le bandeau « LOT POUR LE MER. 7 OCT. · BON i/N » —
+le jour où la marchandise est attendue, pas celui où on la fabrique.
 
 | Ce qu'on lit                                                                    | D'où ça vient                                                                                              |
 | ------------------------------------------------------------------------------- | ---------------------------------------------------------------------------------------------------------- |
@@ -58,8 +59,11 @@ encore d'avenant, il vaudrait toujours 0.
 
 ## Le pied de chaque page
 
-« Arrêté le 7 octobre 2026 à 00:30 », puis « — complété le … » après un
-retirage. L'heure est **celle de Paris** (jusqu'au 2026-10-06, les papiers du
+« Arrêté le mercredi 7 octobre 2026 à 00:30 », puis « — complété le … » après un
+retirage, puis le folio « x/N » (« 3/12 ») : toutes les pages du fichier sont
+comptées, pages « SUITE » comprises — une feuille manquante se voit. Le jour de
+la semaine est aussi dans les pieds de la feuille d'atelier et du compte à
+produire (même formatteur). Depuis le 2026-10-06, la clé d'archive est `v3`. L'heure est **celle de Paris** (jusqu'au 2026-10-06, les papiers du
 fournil l'écrivaient en UTC : un arrêt fait après 22 h ou 23 h s'imprimait à la
 veille).
 

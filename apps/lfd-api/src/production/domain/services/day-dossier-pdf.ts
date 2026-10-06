@@ -12,7 +12,6 @@ import {
   ROW_GRAY,
   WIDTH,
   drawQr,
-  longDate,
   methodLabel,
   parisDateTime,
   put,
@@ -20,6 +19,8 @@ import {
   putRight,
   render,
   rule,
+  weekdayLongDate,
+  weekdayShortDate,
   type Doc,
 } from "./paper-pdf-kit.js";
 
@@ -59,19 +60,24 @@ export function renderDayDossierPdf(
   stamp: DossierStamp,
   colisageUrlOf: (reference: string) => string,
 ): Promise<Buffer> {
-  return render(stamp.retakenAt ?? stamp.closedAt, `Dossier du jour ${stamp.serviceDay}`, (doc) => {
-    drawRecap(doc, dossier, stamp);
-    dossier.sheets.forEach((order, index) => {
-      doc.addPage();
-      footer(doc, stamp);
-      const rank = `bon ${String(index + 1)}/${String(dossier.sheets.length)}`;
-      const end = drawSheet(doc, order, rank, stamp);
-      const url = colisageUrlOf(order.reference);
-      if (url !== "") {
-        drawScan(doc, url, order.reference, room(doc, end, SCAN_SIZE + 4 * MM, stamp));
-      }
-    });
-  });
+  return render(
+    stamp.retakenAt ?? stamp.closedAt,
+    `Dossier du jour ${stamp.serviceDay}`,
+    (doc) => {
+      drawRecap(doc, dossier, stamp);
+      dossier.sheets.forEach((order, index) => {
+        doc.addPage();
+        const rank = `bon ${String(index + 1)}/${String(dossier.sheets.length)}`;
+        const end = drawSheet(doc, order, rank, stamp);
+        const url = colisageUrlOf(order.reference);
+        if (url !== "") {
+          drawScan(doc, url, order.reference, room(doc, end, SCAN_SIZE + 4 * MM, stamp));
+        }
+      });
+      footers(doc, stamp);
+    },
+    true,
+  );
 }
 
 /**
@@ -84,8 +90,11 @@ export function renderDayDossierPdf(
  * l'ancienne clé dirait encore le papier d'avant ; changer la clé le laisse en
  * place, sans jamais le resservir. Toute mise en page qui change ce qu'un
  * dossier déjà archivé dirait monte cette version.
+ *
+ * `v3` (2026-10-06) : le lot dit le jour de service en toutes lettres
+ * (« Lot pour le mercredi 7 octobre 2026 ») et chaque pied porte « x/N ».
  */
-export const DOSSIER_LAYOUT_VERSION = "v2";
+export const DOSSIER_LAYOUT_VERSION = "v3";
 
 export function dayDossierPdfKey(serviceDay: string, retakenAt: Date | null): string {
   const base = `${serviceDay}/dossier-du-jour-${DOSSIER_LAYOUT_VERSION}`;
@@ -107,7 +116,7 @@ function lotCount(dossier: DayDossier): string {
 function drawRecap(doc: Doc, dossier: DayDossier, stamp: DossierStamp): void {
   let y = MARGIN_Y;
   put(doc, "À FABRIQUER", LEFT, y, { size: 16, bold: true });
-  putRight(doc, `Lot du ${longDate(stamp.serviceDay)}`, RIGHT, y + 3, 12, true);
+  putRight(doc, `Lot pour le ${weekdayLongDate(stamp.serviceDay)}`, RIGHT, y + 3, 12, true);
   y += 6 * MM;
   rule(doc, y, 2);
   y += 5 * MM;
@@ -116,7 +125,6 @@ function drawRecap(doc: Doc, dossier: DayDossier, stamp: DossierStamp): void {
   for (const group of dossier.recap) {
     y = drawGroup(doc, group, y, stamp);
   }
-  footer(doc, stamp);
 }
 
 function drawGroup(doc: Doc, group: DossierRecapGroup, top: number, stamp: DossierStamp): number {
@@ -148,12 +156,7 @@ function drawSheet(
   stamp: DossierStamp,
 ): number {
   let y = MARGIN_Y;
-  putCaps(
-    doc,
-    `LOT DU ${longDate(stamp.serviceDay).toUpperCase()} · ${rank.toUpperCase()}`,
-    LEFT,
-    y,
-  );
+  putCaps(doc, `${lotBanner(stamp)} · ${rank.toUpperCase()}`, LEFT, y);
   const head = dossierSheetHeadOf(order);
   y = drawHead(doc, order, head, y + 5 * MM);
   rule(doc, y, 2);
@@ -242,18 +245,37 @@ function room(doc: Doc, y: number, needed: number, stamp: DossierStamp): number 
     return y;
   }
   doc.addPage();
-  footer(doc, stamp);
-  putCaps(doc, `LOT DU ${longDate(stamp.serviceDay).toUpperCase()} — SUITE`, LEFT, MARGIN_Y);
+  putCaps(doc, `${lotBanner(stamp)} — SUITE`, LEFT, MARGIN_Y);
   return MARGIN_Y + 8 * MM;
 }
 
-/** Le pied : quand le tirage a été arrêté — et complété, après un retirage. */
-function footer(doc: Doc, stamp: DossierStamp): void {
+/**
+ * « LOT POUR LE MER. 7 OCT. » — le jour où la marchandise est attendue
+ * (retrait ou livraison), pas celui où on la fabrique.
+ */
+function lotBanner(stamp: DossierStamp): string {
+  return `LOT POUR LE ${weekdayShortDate(stamp.serviceDay).toUpperCase()}`;
+}
+
+/**
+ * Les pieds, posés à la fin : le total des pages n'est connu qu'une fois tout
+ * dessiné, pages « SUITE » comprises.
+ */
+function footers(doc: Doc, stamp: DossierStamp): void {
+  const range = doc.bufferedPageRange();
+  for (let index = 0; index < range.count; index++) {
+    doc.switchToPage(range.start + index);
+    footer(doc, stamp, `${String(index + 1)}/${String(range.count)}`);
+  }
+}
+
+/** Le pied : quand le tirage a été arrêté — et complété —, puis « x/N ». */
+function footer(doc: Doc, stamp: DossierStamp, folio: string): void {
   const arrested = `Arrêté le ${parisDateTime(stamp.closedAt)}`;
   const text =
     stamp.retakenAt === null
       ? arrested
       : `${arrested} — complété le ${parisDateTime(stamp.retakenAt)}`;
-  put(doc, text, LEFT, PAGE_HEIGHT - MARGIN_Y, { size: 9 });
+  put(doc, `${text} · ${folio}`, LEFT, PAGE_HEIGHT - MARGIN_Y, { size: 9 });
   putRight(doc, "La Folie Coffee — fournil", RIGHT, PAGE_HEIGHT - MARGIN_Y, 9);
 }

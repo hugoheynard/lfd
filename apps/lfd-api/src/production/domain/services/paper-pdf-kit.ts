@@ -55,6 +55,61 @@ export function longDate(iso: string): string {
   return `${String(Number(day))} ${name} ${year}`;
 }
 
+const WEEKDAYS = ["dimanche", "lundi", "mardi", "mercredi", "jeudi", "vendredi", "samedi"] as const;
+
+/** Le décalage de chaque mois pour l'algorithme de Sakamoto (0 = dimanche). */
+const SAKAMOTO = [0, 3, 2, 5, 0, 3, 5, 1, 4, 6, 2, 4] as const;
+
+/**
+ * Le jour de la semaine d'un JOUR calendaire, sans `Date` : un jour n'a pas de
+ * fuseau, et l'arithmétique ne dépend ni de l'hôte ni de l'horloge.
+ */
+function weekdayOf(year: number, month: number, day: number): string | undefined {
+  const y = month < 3 ? year - 1 : year;
+  const offset = SAKAMOTO[month - 1];
+  if (offset === undefined) {
+    return undefined;
+  }
+  const index =
+    (y + Math.floor(y / 4) - Math.floor(y / 100) + Math.floor(y / 400) + offset + day) % 7;
+  return WEEKDAYS[index];
+}
+
+/** `2026-10-07` → « mercredi 7 octobre 2026 » — le jour se lit avant la date. */
+export function weekdayLongDate(iso: string): string {
+  const [year, month, day] = iso.slice(0, 10).split("-").map(Number);
+  const weekday =
+    year === undefined || month === undefined || day === undefined
+      ? undefined
+      : weekdayOf(year, month, day);
+  return weekday === undefined ? longDate(iso) : `${weekday} ${longDate(iso)}`;
+}
+
+const SHORT_MONTHS = [
+  "janv.",
+  "févr.",
+  "mars",
+  "avr.",
+  "mai",
+  "juin",
+  "juil.",
+  "août",
+  "sept.",
+  "oct.",
+  "nov.",
+  "déc.",
+] as const;
+
+/** `2026-10-07` → « mer. 7 oct. » — pour un bandeau en capitales. */
+export function weekdayShortDate(iso: string): string {
+  const [weekday, day] = weekdayLongDate(iso).split(" ");
+  const month = SHORT_MONTHS[Number(iso.slice(5, 7)) - 1];
+  if (weekday === undefined || day === undefined || month === undefined) {
+    return iso.slice(0, 10);
+  }
+  return `${weekday.slice(0, 3)}. ${day} ${month}`;
+}
+
 /**
  * Un INSTANT → « 6 octobre 2026 », **à l'heure de Paris**.
  *
@@ -64,13 +119,13 @@ export function longDate(iso: string): string {
  * veille. `longDate` ne prend qu'un JOUR ; un instant passe par ici.
  */
 export function parisDate(instant: Date): string {
-  return longDate(instantToLocal(instant).day);
+  return weekdayLongDate(instantToLocal(instant).day);
 }
 
 /** Un instant → « 6 octobre 2026 à 23:15 », à l'heure de Paris. */
 export function parisDateTime(instant: Date): string {
   const local = instantToLocal(instant);
-  return `${longDate(local.day)} à ${local.time}`;
+  return `${weekdayLongDate(local.day)} à ${local.time}`;
 }
 
 export function put(
@@ -147,8 +202,16 @@ export function drawQr(doc: Doc, value: string, x: number, y: number, size: numb
 }
 
 /** Les octets d'un document, rendus déterministes par ses dates figées. */
-export async function render(at: Date, title: string, draw: (doc: Doc) => void): Promise<Buffer> {
+export async function render(
+  at: Date,
+  title: string,
+  draw: (doc: Doc) => void,
+  bufferPages = false,
+): Promise<Buffer> {
   const doc = new PDFDocument({
+    // `bufferPages` garde les pages ouvertes jusqu'à la fin, pour qu'un pied
+    // puisse dire « 3/12 » une fois le total connu.
+    bufferPages,
     size: "A4",
     margin: 0,
     info: {

@@ -87,7 +87,7 @@ describe("renderDayDossierPdf — le bon figé à l'arrêt (E1b)", () => {
     const pages = pdfPages(
       await renderDayDossierPdf(DOSSIER, { ...STAMP, closedAt: lateNight }, () => ""),
     );
-    expect(pages[0]).toContain("Arrêté le 8 octobre 2026 à 00:30");
+    expect(pages[0]).toContain("Arrêté le jeudi 8 octobre 2026 à 00:30");
   });
 });
 
@@ -109,7 +109,7 @@ describe("renderDayDossierPdf", () => {
     expect(pages[1]).toContain("Pour 07:30");
     expect(pages[2]).toContain("BON 2/2");
     expect(pages[2]).toContain("LFC-0002");
-    expect(pages.every((page) => page.includes("Arrêté le 7 octobre 2026"))).toBe(true);
+    expect(pages.every((page) => page.includes("Arrêté le mercredi 7 octobre 2026"))).toBe(true);
   });
 
   it("dit le complément après un retirage", async () => {
@@ -120,7 +120,7 @@ describe("renderDayDossierPdf", () => {
         () => "",
       ),
     );
-    expect(pages[0]).toContain("complété le 7 octobre 2026");
+    expect(pages[0]).toContain("complété le mercredi 7 octobre 2026");
   });
 
   it("rend les mêmes octets pour les mêmes entrées — le tirage est reproductible", async () => {
@@ -146,13 +146,31 @@ describe("renderDayDossierPdf", () => {
     );
     expect(pages.length).toBeGreaterThan(2);
     expect(pages[1]).toContain("SUITE");
+    // La page SUITE entre dans le compte : le pied de la dernière dit N/N.
+    const total = String(pages.length);
+    expect(pages[1]).toContain(`2/${total}`);
+    expect(pages[pages.length - 1]).toContain(`${total}/${total}`);
+  });
+
+  it("dit le jour où la marchandise est attendue, en toutes lettres", async () => {
+    const pages = pdfPages(await renderDayDossierPdf(DOSSIER, STAMP, () => ""));
+    expect(pages[0]).toContain("Lot pour le jeudi 8 octobre 2026");
+    expect(pages[1]).toContain("LOT POUR LE JEU. 8 OCT. · BON 1/2");
+  });
+
+  it("numérote chaque page « x/N » dans le pied", async () => {
+    const pages = pdfPages(await renderDayDossierPdf(DOSSIER, STAMP, () => ""));
+    expect(pages).toHaveLength(3);
+    expect(pages[0]).toContain("1/3");
+    expect(pages[1]).toContain("2/3");
+    expect(pages[2]).toContain("3/3");
   });
 });
 
 describe("dayDossierPdfKey — la version de mise en page", () => {
   it("n'est plus la clé d'avant E1b : un dossier archivé à l'ancien papier n'est jamais resservi", () => {
     expect(dayDossierPdfKey(DAY, null)).not.toBe(`${DAY}/dossier-du-jour.pdf`);
-    expect(dayDossierPdfKey(DAY, RETAKEN)).toContain("-v2-retirage-");
+    expect(dayDossierPdfKey(DAY, RETAKEN)).toContain("-v3-retirage-");
   });
 });
 
@@ -160,7 +178,7 @@ describe("dayDossierPdfKey", () => {
   it("une clé pour la clôture, une autre par retirage : le complément n'écrase pas l'original", () => {
     const original = dayDossierPdfKey(DAY, null);
     const completed = dayDossierPdfKey(DAY, RETAKEN);
-    expect(original).toBe(`${DAY}/dossier-du-jour-v2.pdf`);
+    expect(original).toBe(`${DAY}/dossier-du-jour-v3.pdf`);
     expect(completed).not.toBe(original);
     expect(completed.startsWith(`${DAY}/`)).toBe(true);
   });

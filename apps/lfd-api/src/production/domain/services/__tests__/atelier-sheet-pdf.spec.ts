@@ -16,6 +16,6 @@ describe("renderProductionCountPdf", () => {
         closedAt,
       ),
     );
-    expect(pages[0]).toContain("Arrêté le 7 octobre 2026");
+    expect(pages[0]).toContain("Arrêté le mercredi 7 octobre 2026");
   });
 });
