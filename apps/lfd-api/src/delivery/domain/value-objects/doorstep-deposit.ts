@@ -2,7 +2,7 @@ import { DepositPhotoMissingError } from "../errors/delivery-doorstep-errors.js"
 import { type ReceiptPicture, receiptPicture } from "./doorstep-receipt.js";
 
 /**
- * **La pièce d'un dépôt** (`plan-a-la-porte.md`, B2, § 9) : la photo, et elle
+ * **La pièce d'un dépôt** (`a-la-porte.md`, B2, § 9) : la photo, et elle
  * seule. Personne n'a réceptionné — il n'y a ni nom ni signature à prendre,
  * et une commande dont la signature est exigée ne se dépose jamais (AP-Q6,
  * tenu par `DoorstepStop.ensureDepositPermitted`).

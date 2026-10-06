@@ -2,7 +2,7 @@ import { z } from "zod";
 
 /**
  * **À la porte** — ce que le livreur déclare sur un arrêt de SA tournée, et ce
- * que l'admin en relit (`documentation/livraisons/plan-a-la-porte.md`, § 3,
+ * que l'admin en relit (`documentation/livraisons/a-la-porte.md`, § 3,
  * AP-D2, AP-D6, AP-D7, AP-D9).
  *
  * Routes du livreur (`admin/livraison/ma-tournee/:roundId…`, sous
@@ -90,12 +90,12 @@ export const closeStopWithoutHandoverPayloadSchema = z.object({
 });
 export type CloseStopWithoutHandoverPayload = z.infer<typeof closeStopWithoutHandoverPayloadSchema>;
 
-/** Le nom tapé de qui réceptionne : au moins, au plus (`plan-a-la-porte.md`, Mineurs). */
+/** Le nom tapé de qui réceptionne : au moins, au plus (`a-la-porte.md`, Mineurs). */
 export const HANDOVER_RECEIVER_NAME_MIN = 2;
 export const HANDOVER_RECEIVER_NAME_MAX = 80;
 
 /**
- * **« Remis au client »** (`plan-a-la-porte.md`, B1, § 9) — les champs du
+ * **« Remis au client »** (`a-la-porte.md`, B1, § 9) — les champs du
  * multipart ; la photo (champ `photo`, toujours) et la signature au doigt
  * (champ `signature`, une image, quand l'arrêt l'exige au départ) sont des
  * fichiers. La FORME seulement : la longueur du nom, la photo et la signature
@@ -109,7 +109,7 @@ export const handOverStopFieldsSchema = z.object({
 export type HandOverStopFields = z.infer<typeof handOverStopFieldsSchema>;
 
 /**
- * **« Déposé avec preuve »** (`plan-a-la-porte.md`, B2) — les champs du
+ * **« Déposé avec preuve »** (`a-la-porte.md`, B2) — les champs du
  * multipart ; la photo (champ `photo`, toujours) est un fichier. Ni nom ni
  * signature : personne n'a réceptionné. La permission du dépôt et la photo
  * exigée, c'est le domaine qui les refuse, avec ses mots.

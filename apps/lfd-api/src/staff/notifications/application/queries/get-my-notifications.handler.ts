@@ -9,7 +9,7 @@ import { GetMyNotificationsQuery } from "./get-my-notifications.query.js";
 const RECENT_LIMIT = 30;
 
 /**
- * **Mes notifications** (`plan-a-la-porte.md`, B5) — le compteur et les
+ * **Mes notifications** (`a-la-porte.md`, B5) — le compteur et les
  * dernières, sous le mur de mes droits. Le contrat est celui de la cloche
  * partagée (`StaffNotificationsSummary`) : une notice d'audience se lit en
  * commun par son audience, `readByName` y garde son sens.

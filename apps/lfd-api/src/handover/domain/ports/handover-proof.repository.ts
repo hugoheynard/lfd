@@ -1,7 +1,7 @@
 import type { HandoverProof } from "../entities/handover-proof.js";
 
 /**
- * **Les pièces des remises à la porte** (`plan-a-la-porte.md`, B1, L6-C9) —
+ * **Les pièces des remises à la porte** (`a-la-porte.md`, B1, L6-C9) —
  * les graver avec l'attestation, et les retrouver au rejeu du livreur.
  *
  * Comme l'attestation : rien à mettre à jour, rien à supprimer par ce port —

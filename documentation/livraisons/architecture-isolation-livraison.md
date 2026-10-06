@@ -161,7 +161,7 @@ vers la plateforme (`pim/channels/b2b-platform/`), le commerce le relaie par
 
 ### 4.1 bis Ce que la livraison demande au retrait — `delivery/channels/handover/`
 
-Ouvert le 2026-10-01 (`plan-a-la-porte.md`, § 10 ter, BQ — **la garde passe
+Ouvert le 2026-10-01 (`a-la-porte.md`, § 10 ter, BQ — **la garde passe
 au livreur au départ**). Deux classes abstraites, déclarées **par la
 livraison**, implémentées **par le retrait** (`handover/application/services/`),
 reliées dans `appBootstrap/delivery-handover-feed.module.ts` :

@@ -62,7 +62,7 @@ export type {
  *   rentre que d'une tournée partie, une fois ; rentrée, elle n'accepte plus
  *   aucun geste de la porte (`closeStop` compris) ;
  * - **I9** — le LIVREUR ne termine que si chaque arrêt a un sort (`finish`,
- *   `plan-a-la-porte.md` § 10 B4) ; la rentrée par le staff reste permise ;
+ *   `a-la-porte.md` § 10 B4) ; la rentrée par le staff reste permise ;
  * - **I10** — l'horaire prévu (décision Hugo 2026-10-06) ne survit à aucun
  *   changement de ses arrêts : affecter, déplacer, retirer, réordonner
  *   l'effacent. Seul `planTiming`, à l'application d'une proposition, le pose.
@@ -420,7 +420,7 @@ export class DeliveryRound {
   }
 
   /**
-   * **Clore un arrêt** (L6-C11, `plan-a-la-porte.md`, AP-D2) — l'exception
+   * **Clore un arrêt** (L6-C11, `a-la-porte.md`, AP-D2) — l'exception
    * écrite à I6 : permis APRÈS le départ seulement. L'arrêt garde la position
    * qu'il avait, les arrêts vivants restants se resserrent en 1..n (I2) ; la
    * numérotation du livreur, figée au départ, ne bouge pas.
@@ -462,7 +462,7 @@ export class DeliveryRound {
   }
 
   /**
-   * **« Tournée terminée » par le LIVREUR** (`plan-a-la-porte.md`, § 10 B4,
+   * **« Tournée terminée » par le LIVREUR** (`a-la-porte.md`, § 10 B4,
    * I9) : refusée tant qu'un arrêt est vivant. Tout sort — remis, déposé,
    * clos sans remise, rapporté par un commercial ou par réglage — passe par
    * `closeStop` ; un arrêt seulement signalé, ou qui attend la décision du

@@ -72,7 +72,7 @@ export const DELIVERY_ROUTING_FACTS = {
   ),
   /**
    * La décision réglée d'avance sur un problème à la porte a changé — le
-   * réglage GLOBAL (`plan-a-la-porte.md`, B3 bis, LB-Q6). `before` est `null`
+   * réglage GLOBAL (`a-la-porte.md`, B3 bis, LB-Q6). `before` est `null`
    * quand personne n'avait réglé : c'était « Me demander », par défaut. Né le
    * 2026-10-01 : aucune forme d'avant.
    */

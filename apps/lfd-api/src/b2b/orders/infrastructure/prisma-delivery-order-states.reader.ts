@@ -9,7 +9,7 @@ import { PrismaService } from "../../../platform/database/prisma.service.js";
 
 /**
  * **Où en est la commande d'un arrêt**, rendu par le commerce à la porte
- * (`plan-a-la-porte.md`, AP-D2). Lu par identifiant — la livraison ne connaît
+ * (`a-la-porte.md`, AP-D2). Lu par identifiant — la livraison ne connaît
  * une commande que par lui — sans montant ni adresse.
  *
  * `handed_over` : le retrait recopié par le commerce (`handed_over_at`, posé

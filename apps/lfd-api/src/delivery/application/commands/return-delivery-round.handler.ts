@@ -14,7 +14,7 @@ import { ReturnDeliveryRoundCommand } from "./return-delivery-round.command.js";
  * livreur qui a oublié, une tournée sans livreur partie par le chargeur. La
  * tournée est verrouillée comme au départ ; idempotente.
  *
- * **Elle n'exige PAS un sort pour chaque arrêt** (`plan-a-la-porte.md`,
+ * **Elle n'exige PAS un sort pour chaque arrêt** (`a-la-porte.md`,
  * § 10 B4, § 10 bis SÉRIEUX 4) : c'est la sortie de secours quand le livreur
  * est bloqué. Ses arrêts sans sort restent ouverts et paraissent dans
  * « Non remis » (AP-D7).

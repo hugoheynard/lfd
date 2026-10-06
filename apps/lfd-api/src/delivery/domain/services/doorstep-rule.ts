@@ -1,7 +1,7 @@
 import { DEFAULT_DOORSTEP_RULE, type DoorstepRule, type StopDecisionOutcome } from "@lfd/contracts";
 
 /**
- * **La règle d'un arrêt** (`documentation/livraisons/plan-a-la-porte.md`,
+ * **La règle d'un arrêt** (`documentation/livraisons/a-la-porte.md`,
  * B3 bis, LB-Q6 : « global, overridable », « par adresse ») : l'adresse si
  * elle la redéfinit, sinon le réglage global, sinon « Me demander ». Deux
  * niveaux, pas de société. Résolue UNE fois, au départ, et figée.

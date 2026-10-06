@@ -18,7 +18,7 @@ export interface DeliveryIncidentRow {
 }
 
 /**
- * Port de **lecture** des signalements (`plan-a-la-porte.md`, § 3, AP-D7).
+ * Port de **lecture** des signalements (`a-la-porte.md`, § 3, AP-D7).
  * Tous rendus du plus ancien au plus récent.
  */
 export abstract class DeliveryIncidentsReader {

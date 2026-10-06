@@ -59,7 +59,7 @@ export class PrismaStopDecisionsReader extends StopDecisionsReader {
 }
 
 /**
- * **« À décider »** (`plan-a-la-porte.md`, B3) — deux lectures des tables de
+ * **« À décider »** (`a-la-porte.md`, B3) — deux lectures des tables de
  * la livraison, sans jointure (aucune clé étrangère ne relie la décision à
  * l'arrêt) : les décisions non « rapportées », puis leurs arrêts encore
  * OUVERTS d'une tournée partie et non rentrée. Une décision dont l'arrêt est

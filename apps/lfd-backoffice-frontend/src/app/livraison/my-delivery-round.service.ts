@@ -22,7 +22,7 @@ function stopUrl(roundId: string, stopId: string): string {
   return `${roundUrl(roundId)}/arrets/${encodeURIComponent(stopId)}`;
 }
 
-/** Un signalement, tel que l'écran le compose (`plan-a-la-porte.md`, § 3). */
+/** Un signalement, tel que l'écran le compose (`a-la-porte.md`, § 3). */
 export interface IncidentReport {
   readonly family: DeliveryIncidentFamily;
   readonly reason: string;
@@ -33,7 +33,7 @@ export interface IncidentReport {
   readonly photo: Blob | null;
 }
 
-/** Une remise au client, telle que l'écran la compose (`plan-a-la-porte.md`, B1). */
+/** Une remise au client, telle que l'écran la compose (`a-la-porte.md`, B1). */
 export interface DoorstepHandover {
   /** La version de la tournée lue par l'écran. */
   readonly version: number;
@@ -44,7 +44,7 @@ export interface DoorstepHandover {
   readonly signature: Blob | null;
 }
 
-/** Un dépôt avec preuve, tel que l'écran le compose (`plan-a-la-porte.md`, B2). */
+/** Un dépôt avec preuve, tel que l'écran le compose (`a-la-porte.md`, B2). */
 export interface DoorstepDeposit {
   /** La version de la tournée lue par l'écran. */
   readonly version: number;
@@ -96,7 +96,7 @@ export class MyDeliveryRoundService {
     );
   }
 
-  // ── À la porte (`plan-a-la-porte.md`, lot A), sous `delivery_doorstep` ──
+  // ── À la porte (`a-la-porte.md`, lot A), sous `delivery_doorstep` ──
 
   /** « Je suis arrivé » — rejouée, la route répond pareil. */
   async arrive(roundId: string, stopId: string): Promise<void> {

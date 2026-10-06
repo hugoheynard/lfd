@@ -8,7 +8,7 @@ import { stopDecisionView } from "../stop-decision-view.js";
 import { GetPendingStopDecisionsQuery } from "./get-pending-stop-decisions.query.js";
 
 /**
- * **« À décider »** (`documentation/livraisons/plan-a-la-porte.md`, B3) — les
+ * **« À décider »** (`documentation/livraisons/a-la-porte.md`, B3) — les
  * arrêts signalés dont la décision attend, ou qu'un commercial a autorisés
  * (on peut encore rapporter tant que le livreur n'a pas déposé), sur une
  * tournée partie et non rentrée ; avec les signalements de L'ARRÊT. Une

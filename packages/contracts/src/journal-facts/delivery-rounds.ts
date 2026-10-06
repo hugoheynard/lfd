@@ -69,7 +69,7 @@ export const DELIVERY_ROUND_FACTS = {
    */
   "delivery_round.returned": fact(payload({ ...roundKey(), openStops: count() })),
   /**
-   * « Je suis arrivé » sur un arrêt (`plan-a-la-porte.md`, AP-D6) : l'auteur
+   * « Je suis arrivé » sur un arrêt (`a-la-porte.md`, AP-D6) : l'auteur
    * est le livreur, sur la ligne. Une seconde arrivée n'écrit rien.
    */
   "delivery_round.stop_arrived": fact(payload({ ...roundKey(), order: namedOrBare("order") })),
@@ -99,7 +99,7 @@ export const DELIVERY_ROUND_FACTS = {
     }),
   ),
   /**
-   * « Remis au client » (`plan-a-la-porte.md`, B1) : la remise est attestée au
+   * « Remis au client » (`a-la-porte.md`, B1) : la remise est attestée au
    * retrait et l'arrêt clos, dans la même transaction. `signed` : une
    * signature au doigt est jointe. Le nom de qui a réceptionné n'est PAS ici :
    * un texte libre reste sur sa pièce, au retrait.
@@ -108,13 +108,13 @@ export const DELIVERY_ROUND_FACTS = {
     payload({ ...roundKey(), order: namedOrBare("order"), signed: z.boolean() }),
   ),
   /**
-   * « Déposé avec preuve » (`plan-a-la-porte.md`, B2) : le dépôt sans
+   * « Déposé avec preuve » (`a-la-porte.md`, B2) : le dépôt sans
    * personne est attesté au retrait (`deposit`) et l'arrêt clos, dans la même
    * transaction. Une photo, toujours ; ni nom ni signature.
    */
   "delivery_round.stop_deposited": fact(payload({ ...roundKey(), order: namedOrBare("order") })),
   /**
-   * « Autoriser le dépôt cette fois » (`plan-a-la-porte.md`, B3, LB-Q5) : la
+   * « Autoriser le dépôt cette fois » (`a-la-porte.md`, B3, LB-Q5) : la
    * décision d'un commercial sur un arrêt signalé — la carte du livreur
    * propose « Déposé avec preuve », même signature exigée. `source` : un
    * commercial (`staff`), ou un réglage décidé d'avance (`setting`, B3 bis).

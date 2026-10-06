@@ -27,7 +27,7 @@ export interface CurrentStopRef {
 }
 
 /**
- * **Déclarer un problème** (`documentation/livraisons/plan-a-la-porte.md`, § 3) —
+ * **Déclarer un problème** (`documentation/livraisons/a-la-porte.md`, § 3) —
  * une famille, un motif de la liste du contrat, une note bornée, une photo
  * facultative prise par l'appareil.
  *

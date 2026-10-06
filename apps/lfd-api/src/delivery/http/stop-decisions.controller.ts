@@ -22,7 +22,7 @@ import { GetPendingStopDecisionsQuery } from "../application/queries/get-pending
 import { serveStepPhoto } from "./step-photo-http.js";
 
 /**
- * **Le commercial décide** (`documentation/livraisons/plan-a-la-porte.md`,
+ * **Le commercial décide** (`documentation/livraisons/a-la-porte.md`,
  * B3, § 10 bis, LB-Q2, LB-Q5).
  *
  * Sous `delivery_decisions` depuis le 2026-10-02 (lot « correctifs de

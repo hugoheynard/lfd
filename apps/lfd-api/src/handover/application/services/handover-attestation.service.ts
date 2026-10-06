@@ -98,7 +98,7 @@ export class HandoverAttestation {
   }
 
   /**
-   * **Atteste dans l'unité de travail de l'appelant** (`plan-a-la-porte.md`, B1,
+   * **Atteste dans l'unité de travail de l'appelant** (`a-la-porte.md`, B1,
    * AP-D1) — la remise à la porte, dans celle du livreur : la même règle, le
    * même arbitrage de course, et le fait écrit dans la même transaction que la
    * clôture de l'arrêt. Une clôture qui échoue n'écrit donc ni attestation, ni

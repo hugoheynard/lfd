@@ -48,7 +48,7 @@ import { PrismaBroughtBackOrdersReader } from "./infrastructure/prisma-brought-b
 import { PrismaUndeliveredStopsReader } from "./infrastructure/prisma-undelivered-stops.reader.js";
 
 /**
- * **À la porte** (`documentation/livraisons/plan-a-la-porte.md`, lot A), rangé
+ * **À la porte** (`documentation/livraisons/a-la-porte.md`, lot A), rangé
  * à part pour que `delivery.module.ts` reste lisible : les gestes du livreur
  * sous `delivery_doorstep` (arriver, signaler, clore sans remise, « Tournée
  * terminée »), et leur lecture par l'admin sous `delivery_rounds`

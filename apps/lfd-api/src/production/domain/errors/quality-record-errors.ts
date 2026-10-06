@@ -97,7 +97,7 @@ export class QualityOrderNotPackedError extends BusinessError {
 
 /**
  * La commande est partie en livraison : le produit n'est plus là
- * (`plan-a-la-porte.md`, BQ — LB-Q1).
+ * (`a-la-porte.md`, BQ — LB-Q1).
  */
 export class QualityOrderDepartedError extends BusinessError {
   constructor(reference: string) {

@@ -16,7 +16,7 @@ import { UnsubscribeStaffPushCommand } from "../application/commands/unsubscribe
 import { GetPushCapabilityQuery } from "../application/queries/get-push-capability.query.js";
 
 /**
- * **Abonner MON appareil** (`plan-a-la-porte.md`, B5 ; `plan-tournee-prete.md`,
+ * **Abonner MON appareil** (`a-la-porte.md`, B5 ; `plan-tournee-prete.md`,
  * PL5-D2) — par l'authentification staff seule : l'ancienne route
  * (`admin/notifications/push`, qui reste) exige la cloche partagée, et
  * refuserait qui ne reçoit que des notices adressées par droit.

@@ -15,7 +15,7 @@ export interface UndeliveredStopRow {
 }
 
 /**
- * Port de **lecture** de « Non remis » (`plan-a-la-porte.md`, AP-D7 ;
+ * Port de **lecture** de « Non remis » (`a-la-porte.md`, AP-D7 ;
  * `parcours-du-livreur.md`, PL2) : les arrêts non retirés et non clos des
  * tournées RENTRÉES — quel que soit leur jour —, et ceux des tournées PARTIES
  * d'une journée antérieure à `today`, jamais rentrées. Par jour, puis

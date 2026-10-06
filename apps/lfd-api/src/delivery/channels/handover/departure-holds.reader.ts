@@ -1,7 +1,7 @@
 /**
  * **« Lesquelles de ces commandes sont retenues ? »** — ce que la livraison
  * demande au retrait au moment de partir
- * (`documentation/livraisons/plan-a-la-porte.md`, § 10 ter, BQ).
+ * (`documentation/livraisons/a-la-porte.md`, § 10 ter, BQ).
  *
  * LB-Q1, tranché par Hugo le 2026-10-01 : on ne contrôle plus une commande
  * dont la tournée est partie — le produit n'est plus là. Une retenue posée

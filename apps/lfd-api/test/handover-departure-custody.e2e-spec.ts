@@ -1,7 +1,7 @@
 import { randomUUID } from "node:crypto";
 /**
  * E2E : **la garde passe au livreur au départ**
- * (`documentation/livraisons/plan-a-la-porte.md`, § 10 ter, BQ — LB-Q1 :
+ * (`documentation/livraisons/a-la-porte.md`, § 10 ter, BQ — LB-Q1 :
  * « on ne peut pas faire de contrôle qualité sur les commandes d'une tournée
  * partie, car nous ne sommes plus en présence du produit »).
  *

@@ -381,7 +381,7 @@ export const staffResourceSchema = z.enum([
   /**
    * **Les gestes à la porte** — « Je suis arrivé », déclarer un problème,
    * clore un arrêt sans remise quand la commande a déjà été retirée ou
-   * annulée (`documentation/livraisons/plan-a-la-porte.md`, AP-D9, L6-C10).
+   * annulée (`documentation/livraisons/a-la-porte.md`, AP-D9, L6-C10).
    *
    * À part de `delivery_driving` : conduire sa tournée et attester ce qui se
    * passe à la porte sont deux gestes. Ces routes portent le MÊME mur que

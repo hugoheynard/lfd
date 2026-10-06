@@ -5,7 +5,7 @@ import { HandoverProofErasure } from "../services/handover-proof-erasure.js";
 import { EraseHandoverProofsCommand } from "./erase-handover-proofs.command.js";
 
 /**
- * **L'effacement à la demande** (`documentation/livraisons/todo-la-porte.md`,
+ * **L'effacement à la demande** (`documentation/livraisons/a-la-porte.md`,
  * « Les pièces de remise : conservées sans limite, purgeables »).
  *
  * Idempotent : une commande sans pièce — jamais remise à la porte, ou déjà

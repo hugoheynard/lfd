@@ -534,14 +534,14 @@ model Address {
   deliverySpecs Json? @map("delivery_specs")
 
   // « Dépôt autorisé » — le client permet au livreur de DÉPOSER sans personne
-  // pour réceptionner (`documentation/livraisons/plan-a-la-porte.md`, AP-Q1,
+  // pour réceptionner (`documentation/livraisons/a-la-porte.md`, AP-Q1,
   // AP-D5). Une COLONNE et non une clé de `delivery_specs` : ce `jsonb` se
   // réécrit d'un bloc, et un front qui ne connaît pas la clé la remettrait à
   // `false` en silence. Écrite par le carnet (`DeliveryAddressBook`) seul.
   depositAllowed Boolean @default(false) @map("deposit_allowed")
 
   // La décision réglée d'avance sur un problème à la porte, redéfinie PAR
-  // ADRESSE (`plan-a-la-porte.md`, B3 bis, LB-Q6) : `ask`, `deposit` ou
+  // ADRESSE (`a-la-porte.md`, B3 bis, LB-Q6) : `ask`, `deposit` ou
   // `bring_back` — tenu en base par un CHECK. Nulle : l'adresse hérite du
   // réglage global de la livraison. Une COLONNE, pour la même raison que
   // `depositAllowed`. Écrite par le carnet seul, sous la route du commercial.

@@ -53,7 +53,7 @@ export interface DepartureSheet {
   readonly addressNote: string | null;
   /**
    * « Dépôt autorisé » de l'adresse du carnet reliée, lu sous le même mur que
-   * la note ; `false` sans adresse reliée (`plan-a-la-porte.md`, AP-D5).
+   * la note ; `false` sans adresse reliée (`a-la-porte.md`, AP-D5).
    */
   readonly depositAllowed: boolean;
   /**
@@ -139,7 +139,7 @@ export function departedStopsOf(
 
 /**
  * Refuse le départ si un arrêt vivant porte une commande retenue au contrôle
- * qualité (`plan-a-la-porte.md`, § 10 ter, BQ — LB-Q1 : une tournée partie ne
+ * qualité (`a-la-porte.md`, § 10 ter, BQ — LB-Q1 : une tournée partie ne
  * se contrôle plus). L'arrêt est nommé par sa référence et son client, ce que
  * le dépôt et le livreur lisent l'un et l'autre.
  *

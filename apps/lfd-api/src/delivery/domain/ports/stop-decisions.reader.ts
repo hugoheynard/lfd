@@ -13,7 +13,7 @@ export interface StopDecisionRow {
 }
 
 /**
- * Port de **lecture** des décisions d'une tournée (`plan-a-la-porte.md`, B3) —
+ * Port de **lecture** des décisions d'une tournée (`a-la-porte.md`, B3) —
  * pour la carte du livreur, qui les lit APRÈS avoir lu sa tournée sous son
  * mur : un identifiant de tournée qui n'est pas la sienne n'arrive jamais ici.
  */

@@ -7,7 +7,7 @@ import type { DeliveryAddressRef, NamedRef } from "./journal-names.js";
 
 /**
  * **La décision réglée d'avance à la porte, redéfinie sur une adresse**
- * (`documentation/livraisons/plan-a-la-porte.md`, B3 bis, LB-Q6) — ou rendue
+ * (`documentation/livraisons/a-la-porte.md`, B3 bis, LB-Q6) — ou rendue
  * au réglage global (`rule: null`). Il ne part que si la valeur a changé.
  * L'adresse est citée par son id et son lieu, jamais par son libellé.
  */

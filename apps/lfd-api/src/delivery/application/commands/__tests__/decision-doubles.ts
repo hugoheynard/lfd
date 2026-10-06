@@ -11,7 +11,7 @@ import { DoorstepSettingsReader } from "../../../domain/ports/doorstep-settings.
 import { StopDecisionRepository } from "../../../domain/ports/stop-decision.repository.js";
 
 /**
- * Les doubles de la décision du commercial (`plan-a-la-porte.md`, B3, B5) —
+ * Les doubles de la décision du commercial (`a-la-porte.md`, B3, B5) —
  * chacun hérite de son port abstrait.
  */
 

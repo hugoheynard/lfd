@@ -1,6 +1,6 @@
 /**
  * E2E du **« dépôt autorisé »** sur une adresse de livraison
- * (`documentation/livraisons/plan-a-la-porte.md`, AP-Q1, AP-D5) — une colonne
+ * (`documentation/livraisons/a-la-porte.md`, AP-Q1, AP-D5) — une colonne
  * du carnet, réglée par le client sur sa route d'édition et par le staff sur
  * une route à part, sous `delivery_procedures`.
  *

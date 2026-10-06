@@ -1,6 +1,6 @@
 /**
  * E2E **la purge et l'effacement des pièces de remise**
- * (`documentation/livraisons/todo-la-porte.md`, « Les pièces de remise :
+ * (`documentation/livraisons/a-la-porte.md`, « Les pièces de remise :
  * conservées sans limite, purgeables », 2026-10-01).
  *
  * Ce que seule cette suite prouve : la coupure se compare au VRAI

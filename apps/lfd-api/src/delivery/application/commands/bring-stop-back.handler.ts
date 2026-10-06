@@ -14,7 +14,7 @@ import { BringStopBackCommand } from "./bring-stop-back.command.js";
 const ANNOUNCED = "stop-brought-back-announced";
 
 /**
- * **« Rapporter »** (`documentation/livraisons/plan-a-la-porte.md`, B3,
+ * **« Rapporter »** (`documentation/livraisons/a-la-porte.md`, B3,
  * § 10 bis, LB-Q2 tranché par Hugo le 2026-10-01).
  *
  * Dans UNE unité de travail :

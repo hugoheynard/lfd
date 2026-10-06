@@ -40,7 +40,7 @@ export function incidentPhotoContentType(bytes: Buffer): IncidentPhotoContentTyp
 }
 
 /**
- * **La photo d'un problème signalé** (`plan-a-la-porte.md`, § 3) — facultative,
+ * **La photo d'un problème signalé** (`a-la-porte.md`, § 3) — facultative,
  * prise sur le trottoir. Ni taille minimale ni ratio : une photo floue reste
  * plus utile que pas de photo. Ce qui reste refusé coûterait au lecteur (le
  * poids) ou ne s'afficherait pas (un format inconnu). Les mêmes formats que la

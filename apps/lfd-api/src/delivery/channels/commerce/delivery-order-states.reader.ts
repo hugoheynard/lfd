@@ -14,7 +14,7 @@ export interface DeliveryOrderState {
 }
 
 /**
- * **Où en est la commande d'un arrêt** (`documentation/livraisons/plan-a-la-porte.md`,
+ * **Où en est la commande d'un arrêt** (`documentation/livraisons/a-la-porte.md`,
  * AP-D2, L6-C11) — ce que la livraison DÉCLARE et que le commerce implémente
  * (`b2b/orders/infrastructure/`), relié dans `appBootstrap/delivery-feed.module.ts`.
  *

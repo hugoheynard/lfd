@@ -26,7 +26,7 @@ import { RenderQualityCheckCommand } from "../render-quality-check.command.js";
 import { RenderQualityCheckHandler } from "../render-quality-check.handler.js";
 
 /**
- * On ne juge que ce qu'on a sous les yeux (`plan-a-la-porte.md`, § 10 ter,
+ * On ne juge que ce qu'on a sous les yeux (`a-la-porte.md`, § 10 ter,
  * BQ — LB-Q1) : un verdict sur une commande partie ou déjà retirée est refusé.
  * La journée de service n'est jamais comparée à l'horloge ici.
  */

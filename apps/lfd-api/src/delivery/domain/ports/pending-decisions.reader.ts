@@ -16,7 +16,7 @@ export interface PendingDecisionRow {
 }
 
 /**
- * Port de **lecture** de la liste « À décider » (`plan-a-la-porte.md`, B3) :
+ * Port de **lecture** de la liste « À décider » (`a-la-porte.md`, B3) :
  * les décisions ouvertes ou autorisées dont l'arrêt est encore OUVERT (ni
  * clos, ni retiré) dans une tournée PARTIE et NON RENTRÉE — quel que soit son
  * jour. Par jour, puis tournée et position.

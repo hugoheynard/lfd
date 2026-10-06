@@ -1,7 +1,7 @@
 import type { StopDecision } from "../entities/stop-decision.js";
 
 /**
- * Port d'**écriture** de la décision du commercial (`plan-a-la-porte.md`,
+ * Port d'**écriture** de la décision du commercial (`a-la-porte.md`,
  * § 10 bis) : on la charge, elle se mute par ses méthodes, on la rend.
  */
 export abstract class StopDecisionRepository {

@@ -9,7 +9,7 @@ import { GetMyNotificationsQuery } from "../application/queries/get-my-notificat
 
 /**
  * **Mes notifications** — celles adressées à un droit que je tiens
- * (`plan-a-la-porte.md`, B5 ; mécanique de `plan-tournee-prete.md`, PL5-D1).
+ * (`a-la-porte.md`, B5 ; mécanique de `plan-tournee-prete.md`, PL5-D1).
  *
  * Surface RÉFLEXIVE (authentification staff seule) : un livreur sans la
  * cloche partagée doit pouvoir lire ce qui lui est adressé. Le mur n'est pas

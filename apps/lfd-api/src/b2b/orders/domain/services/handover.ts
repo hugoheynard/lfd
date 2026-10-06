@@ -51,7 +51,7 @@ export function issuesHandoverToken(): boolean {
  *
  * `scan` — les deux parties étaient là. `manual` — le scan était impossible et
  * l'équipe a saisi. `deposit` — le livreur a déposé sans personne, à une
- * adresse qui l'autorise (`plan-a-la-porte.md`, AP-D8 : connu des lecteurs
+ * adresse qui l'autorise (`a-la-porte.md`, AP-D8 : connu des lecteurs
  * avant d'être écrit ; il a les effets d'un retrait, AP-Q5). Une attestation
  * faible et honnête vaut mieux qu'une attestation forte et fausse ; encore faut-il pouvoir les distinguer, et c'est
  * pour ça que le fait publié par le fournil porte ce mot jusqu'ici.

@@ -30,7 +30,7 @@ const DECISIONS_LINK = "/livraison/a-decider";
 
 /**
  * **Un signalement ouvre une décision, et prévient qui peut décider**
- * (`plan-a-la-porte.md`, § 9, § 10 B3, B5, LB-Q3).
+ * (`a-la-porte.md`, § 9, § 10 B3, B5, LB-Q3).
  *
  * DANS l'unité de travail du signalement : si son motif en ouvre une
  * (`opensDecision`) et qu'aucune n'existe sur l'arrêt, la décision s'ouvre —

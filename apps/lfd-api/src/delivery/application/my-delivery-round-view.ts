@@ -80,7 +80,7 @@ const UNKNOWN_DOOR: DoorFacts = {
  *   la feuille vivante du commerce au dépôt ;
  * - **point GPS** : figé au départ ; sinon celui du carnet ;
  * - **procédure** : toujours vivante ; **bacs** : les tables de la livraison ;
- * - **à la porte** (`plan-a-la-porte.md`) : l'arrivée et le dépôt autorisé
+ * - **à la porte** (`a-la-porte.md`) : l'arrivée et le dépôt autorisé
  *   figés à l'exécution, `canDeposit` calculé ICI par la règle du domaine
  *   (AP-Q6 ; l'autorisation d'un commercial l'emporte, LB-Q5), la décision
  *   du commercial (B3), l'état de la commande lu vivant, les signalements ;

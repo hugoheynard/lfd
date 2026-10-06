@@ -4,7 +4,7 @@ import { CompanyAddressNotFoundError } from "../../errors/account-errors.js";
 import { DeliveryAddressBook } from "../delivery-address-book.js";
 
 /**
- * **« Dépôt autorisé »** sur le carnet (`plan-a-la-porte.md`, AP-D5).
+ * **« Dépôt autorisé »** sur le carnet (`a-la-porte.md`, AP-D5).
  *
  * Les dates sont absolues légitimement : le carnet ne les compare qu'entre
  * elles, jamais à l'horloge (`CLAUDE.md` §5).

@@ -1,6 +1,6 @@
 /**
  * **Le canal que la livraison publie POUR le retrait** (2026-10-01,
- * `plan-a-la-porte.md`, BQ) : des classes abstraites qu'il implémente.
+ * `a-la-porte.md`, BQ) : des classes abstraites qu'il implémente.
  *
  * | Pièce                     | La question / l'annonce                     |
  * | ------------------------- | ------------------------------------------- |

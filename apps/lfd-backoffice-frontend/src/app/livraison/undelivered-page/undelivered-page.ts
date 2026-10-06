@@ -25,7 +25,7 @@ type UndeliveredState =
   | { readonly status: 'ready'; readonly stops: readonly UndeliveredStopView[] };
 
 /**
- * **« Non remis »** (`documentation/livraisons/plan-a-la-porte.md`, AP-D7 ;
+ * **« Non remis »** (`documentation/livraisons/a-la-porte.md`, AP-D7 ;
  * `parcours-du-livreur.md`, PL2) — les arrêts restés ouverts des tournées
  * rentrées, et ceux des tournées parties un jour passé sans jamais rentrer.
  *

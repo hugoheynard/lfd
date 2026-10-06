@@ -11,7 +11,7 @@ import { B2B_API_BASE } from '../api/api-config';
 
 /**
  * **La décision réglée d'avance à la porte d'une adresse**
- * (`documentation/livraisons/plan-a-la-porte.md`, B3 bis) — la route du
+ * (`documentation/livraisons/a-la-porte.md`, B3 bis) — la route du
  * commercial, sous `delivery_procedures`, comme « dépôt autorisé ». `null` :
  * l'adresse hérite du réglage global.
  */

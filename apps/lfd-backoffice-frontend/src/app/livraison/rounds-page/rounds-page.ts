@@ -93,7 +93,7 @@ type ComposeState =
       readonly status: 'ready';
       readonly day: string;
       readonly composed: ComposedDay;
-      /** Les signalements du jour (`plan-a-la-porte.md`, § 3), posés par tournée et par arrêt. */
+      /** Les signalements du jour (`a-la-porte.md`, § 3), posés par tournée et par arrêt. */
       readonly incidents: readonly DeliveryIncidentView[];
     };
 

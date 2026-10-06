@@ -11,7 +11,7 @@
 > 2026-10-02 : la décision réglée d'avance à la porte, réglage **global**
 > (`admin/livraison/a-la-porte`), passe de `delivery_settings` à
 > `delivery_procedures` — une condition de livraison, réglée par le
-> commercial (`plan-a-la-porte.md`, B3 bis).
+> commercial (`a-la-porte.md`, B3 bis).
 >
 > 2026-10-02 : **`delivery_decisions`** (« Décider à la porte ») — « À
 > décider » (liste et photo du signalement en lecture, autoriser / rapporter

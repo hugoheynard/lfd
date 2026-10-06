@@ -52,7 +52,7 @@ const SHARED_FEED: StaffPermission = "staff_notifications:read";
  *    parce qu'un téléphone est éteint, serait absurde ; la faire attendre par
  *    un commercial au téléphone le serait presque autant.
  * 3. **La poussée suit le mur de la lecture, dans les deux sens**
- *    (`plan-a-la-porte.md`, B5 ; `plan-tournee-prete.md`, PL5-D2). Une notice
+ *    (`a-la-porte.md`, B5 ; `plan-tournee-prete.md`, PL5-D2). Une notice
  *    partagée ne part qu'aux installations de qui tient ENCORE
  *    `staff_notifications:read` ; une notice adressée par droit, qu'à celles
  *    de qui tient ce droit. Les deux se résolvent À L'ENVOI par le port

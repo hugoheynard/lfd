@@ -12,7 +12,7 @@ const DOORSTEP_SETTINGS_LABEL = "Décision à la porte";
 
 /**
  * **La décision réglée d'avance à la porte a changé** — le réglage GLOBAL
- * (`plan-a-la-porte.md`, B3 bis, LB-Q6). `before` est `null` quand personne
+ * (`a-la-porte.md`, B3 bis, LB-Q6). `before` est `null` quand personne
  * n'avait réglé : c'était « Me demander », par défaut, et le dire autrement
  * ferait croire qu'on l'avait choisi.
  */

@@ -20,7 +20,7 @@ import { DeliveryRoundDepartedEvent } from "../../domain/events/delivery-loading
  * Le fait est publié DANS l'unité de travail des deux portes du départ (le
  * journal l'exige, `publishTraced`), et le bus appelle cet abonné de façon
  * synchrone. L'annonce est donc inscrite pour APRÈS la validation
- * (`AfterCommit`, plan-a-la-porte.md B0) : un départ dont la transaction
+ * (`AfterCommit`, a-la-porte.md B0) : un départ dont la transaction
  * échoue n'écrit à personne, et les lectures du commerce partent hors de la
  * transaction close.
  *

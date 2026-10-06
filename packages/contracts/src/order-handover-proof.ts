@@ -1,6 +1,6 @@
 /**
  * **La preuve d'une remise à la porte, vue du staff** — ce qu'on montre pour
- * répondre à une contestation (`documentation/livraisons/plan-a-la-porte.md`,
+ * répondre à une contestation (`documentation/livraisons/a-la-porte.md`,
  * § 10, lot « voir les preuves »).
  *
  * Aucune clé de stockage ne traverse : les images se demandent par la

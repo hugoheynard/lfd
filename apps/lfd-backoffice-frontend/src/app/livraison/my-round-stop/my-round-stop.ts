@@ -44,7 +44,7 @@ import { decisionBadgeOf } from '../stop-decisions';
  * Les photos de procédure se lisent par la route de « ma tournée », murée à
  * ses arrêts : celle de la fiche client lui est fermée.
  *
- * **À la porte** (`plan-a-la-porte.md`, lot A) : « Je suis arrivé » sur
+ * **À la porte** (`a-la-porte.md`, lot A) : « Je suis arrivé » sur
  * l'arrêt suivant, « Déclarer un problème », et « Clore sans remise » quand le
  * commerce dit la commande déjà retirée ou annulée. **« Remis au client »**
  * (lot B, B1) : sur un arrêt ouvert dont la commande reste à remettre — la

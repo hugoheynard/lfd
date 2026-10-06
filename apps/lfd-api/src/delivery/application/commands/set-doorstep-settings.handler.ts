@@ -12,7 +12,7 @@ import { SetDoorstepSettingsCommand } from "./set-doorstep-settings.command.js";
 
 /**
  * Pose la décision réglée d'avance à la porte, pour toutes les adresses qui
- * ne la redéfinissent pas (`plan-a-la-porte.md`, B3 bis, LB-Q6). Le fait dit
+ * ne la redéfinissent pas (`a-la-porte.md`, B3 bis, LB-Q6). Le fait dit
  * l'avant et l'après ; une règle déjà en vigueur n'écrit rien. Une tournée
  * déjà partie garde la règle qu'elle a figée.
  */

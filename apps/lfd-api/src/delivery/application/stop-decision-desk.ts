@@ -27,7 +27,7 @@ export interface DecisionAtDesk {
 }
 
 /**
- * **Le bureau du commercial** (`plan-a-la-porte.md`, B3, § 10 bis) — la
+ * **Le bureau du commercial** (`a-la-porte.md`, B3, § 10 bis) — la
  * lecture commune à « Autoriser le dépôt » et « Rapporter », DANS l'unité de
  * travail du handler :
  *

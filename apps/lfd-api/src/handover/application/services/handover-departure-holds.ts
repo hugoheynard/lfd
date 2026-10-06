@@ -6,7 +6,7 @@ import { HandoverSubjectReader } from "../../channels/commerce/handover-subject.
 
 /**
  * **« Lesquelles sont retenues ? »**, demandé par la livraison au départ
- * (`plan-a-la-porte.md`, § 10 ter, BQ) — répondu comme au comptoir
+ * (`a-la-porte.md`, § 10 ter, BQ) — répondu comme au comptoir
  * (`isHeldForQuality`) : la retenue se lit au jour demandé de la commande, sur
  * le port que la production publie.
  *

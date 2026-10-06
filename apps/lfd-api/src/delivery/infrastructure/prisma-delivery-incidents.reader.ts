@@ -38,7 +38,7 @@ interface IncidentRecord {
 }
 
 /**
- * **Adaptateur Prisma de lecture des signalements** (`plan-a-la-porte.md`,
+ * **Adaptateur Prisma de lecture des signalements** (`a-la-porte.md`,
  * § 3, AP-D7). Il ne lit que les tables de la livraison : le signalement, et
  * le numéro de commande que le départ a figé sur l'arrêt.
  */

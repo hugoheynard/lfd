@@ -5,7 +5,7 @@ import type { DeliveryIncident } from "../domain/entities/delivery-incident.js";
 import { DeliveryIncidentRepository } from "../domain/ports/delivery-incident.repository.js";
 
 /**
- * **Adaptateur Prisma des signalements** (`plan-a-la-porte.md`, § 3). SEUL
+ * **Adaptateur Prisma des signalements** (`a-la-porte.md`, § 3). SEUL
  * écrivain de `delivery_incident`, qui n'a qu'un geste : ajouter. Aucune
  * ligne n'est réécrite ni supprimée.
  */

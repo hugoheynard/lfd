@@ -1,6 +1,6 @@
 /**
  * Autorise — ou retire — le **dépôt sans personne** sur une adresse de
- * livraison, **à la place du client** (`documentation/livraisons/plan-a-la-porte.md`,
+ * livraison, **à la place du client** (`documentation/livraisons/a-la-porte.md`,
  * AP-Q1, AP-D5).
  *
  * Une commande à part, et une route à part sous `delivery_procedures` (le

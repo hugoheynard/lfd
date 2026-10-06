@@ -32,7 +32,7 @@ export interface DoorstepStopState {
   readonly closedAt: Date | null;
   readonly arrivedAt: Date | null;
   /**
-   * La signature exigée, FIGÉE au départ (`plan-a-la-porte.md`, AP-D4) ;
+   * La signature exigée, FIGÉE au départ (`a-la-porte.md`, AP-D4) ;
    * `false` au dépôt — aucune exécution n'existe encore.
    */
   readonly signatureRequired: boolean;
@@ -49,7 +49,7 @@ export interface DoorstepStopState {
 }
 
 /**
- * **Un arrêt, à la porte** (`documentation/livraisons/plan-a-la-porte.md`,
+ * **Un arrêt, à la porte** (`documentation/livraisons/a-la-porte.md`,
  * AP-D6) — l'EXÉCUTION de l'arrêt, pas la tournée : `arrived_at` vit dans
  * `delivery_stop_execution`, que la tournée n'écrit jamais.
  *
@@ -129,7 +129,7 @@ export class DoorstepStop {
   }
 
   /**
-   * **« Déposé avec preuve » est-il permis ICI ?** (`plan-a-la-porte.md`, B2,
+   * **« Déposé avec preuve » est-il permis ICI ?** (`a-la-porte.md`, B2,
    * B3, AP-D4, AP-D5, AP-Q6, LB-Q5) — la règle de `depositPermitted` : les
    * valeurs figées au départ, OU la décision vivante d'un commercial qui
    * autorise le dépôt — elle l'emporte sur la signature (LB-Q5). L'écran lit

@@ -15,7 +15,7 @@ import { HANDOVER_PROOF_ERASURE_CAUSE } from '../values/orders-values';
 
 /**
  * **Les pièces d'une remise à la porte, effacées** (2026-10-01,
- * `documentation/livraisons/todo-la-porte.md`) — le miroir de
+ * `documentation/livraisons/a-la-porte.md`) — le miroir de
  * `HANDOVER_PROOF_FACTS` dans `@lfd/contracts`.
  *
  * La charge ne porte rien de personnel : la phrase dit la commande, quand la

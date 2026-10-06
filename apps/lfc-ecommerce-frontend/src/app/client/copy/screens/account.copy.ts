@@ -288,7 +288,7 @@ export interface AccountCopy {
   /** Sous le titre du dialogue d'une livraison : le lieu, et comment on y livre. */
   readonly deliveryDialogSubtitle: string;
   /**
-   * « Dépôt autorisé » (`plan-a-la-porte.md`, AP-Q1) : le libellé de la case,
+   * « Dépôt autorisé » (`a-la-porte.md`, AP-Q1) : le libellé de la case,
    * puis la phrase qui dit ce qu'on autorise. Proposé en correction seulement :
    * la route de création ne porte pas le champ.
    */

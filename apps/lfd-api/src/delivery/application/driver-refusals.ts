@@ -78,7 +78,7 @@ async function customersOf(
 
 /**
  * Commande → « Client (CMD-1) », pour nommer les arrêts d'un refus du livreur
- * (« Tournée terminée », `plan-a-la-porte.md` § 10 B4). Rien à lire quand il
+ * (« Tournée terminée », `a-la-porte.md` § 10 B4). Rien à lire quand il
  * n'y a aucune commande.
  */
 export async function customerLabelsOf(

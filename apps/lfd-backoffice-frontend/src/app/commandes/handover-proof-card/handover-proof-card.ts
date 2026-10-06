@@ -40,7 +40,7 @@ const NO_IMAGES: ProofImages = { photo: null, signature: null, failed: false };
 
 /**
  * **« Preuve de livraison »** sur la fiche d'une commande — pour répondre à
- * une contestation (`plan-a-la-porte.md`, § 10, lot « voir les preuves »).
+ * une contestation (`a-la-porte.md`, § 10, lot « voir les preuves »).
  *
  * Rien n'est rendu quand la commande n'a pas été remise à la porte : la
  * carte n'existe que si elle a quelque chose à dire. Les images sont lues en

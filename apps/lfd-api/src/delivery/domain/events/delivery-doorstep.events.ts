@@ -8,7 +8,7 @@ import type { DoorstepRoundKey, DoorstepStop } from "../entities/doorstep-stop.j
 import type { CitedOrder } from "./delivery-round.events.js";
 
 /**
- * **Les faits de la porte** (`documentation/livraisons/plan-a-la-porte.md`,
+ * **Les faits de la porte** (`documentation/livraisons/a-la-porte.md`,
  * lot A). Sujet : la tournée, comme les faits de la composition — le préfixe
  * `delivery_round.` les range au même endroit du journal. L'acteur, le
  * livreur, est sur la ligne : l'adaptateur du journal le lit dans le contexte.

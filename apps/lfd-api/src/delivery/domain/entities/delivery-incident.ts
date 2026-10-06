@@ -60,7 +60,7 @@ export interface DeliveryIncidentState {
 }
 
 /**
- * **Un problème signalé par le livreur** (`documentation/livraisons/plan-a-la-porte.md`,
+ * **Un problème signalé par le livreur** (`documentation/livraisons/a-la-porte.md`,
  * § 3, AP-Q4) — un FAIT daté. Il ne clôt rien et ne touche pas la commande ;
  * il ne se corrige ni ne se supprime, donc il n'a pas de méthode : sa seule
  * règle est de naître juste.

@@ -20,7 +20,7 @@ import { FixedDoorstepSettings } from "./decision-doubles.js";
 
 /*
  * « Partir » du dépôt refuse une commande retenue au contrôle qualité
- * (plan-a-la-porte.md, § 10 ter, BQ — LB-Q1 : une tournée partie ne se
+ * (a-la-porte.md, § 10 ter, BQ — LB-Q1 : une tournée partie ne se
  * contrôle plus). La porte du livreur est éprouvée dans
  * `depart-my-round.handler.spec.ts`.
  */

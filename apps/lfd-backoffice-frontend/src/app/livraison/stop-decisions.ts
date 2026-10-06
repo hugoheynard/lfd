@@ -4,7 +4,7 @@ import type { StopDecisionView } from '@lfd/contracts';
 import { parisTimeOf } from './delivery-loading';
 
 /**
- * **La décision du commercial, en mots** (`documentation/livraisons/plan-a-la-porte.md`,
+ * **La décision du commercial, en mots** (`documentation/livraisons/a-la-porte.md`,
  * B3) — pour la carte du livreur et pour la liste « À décider ».
  */
 

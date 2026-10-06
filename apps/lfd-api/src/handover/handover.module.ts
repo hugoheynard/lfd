@@ -49,7 +49,7 @@ import { PrismaOrderHandoverRepository } from "./infrastructure/prisma-order-han
  *
  * La purge et l'effacement des pièces de remise (2026-10-01) sont câblés au
  * bus, SANS route ni minuterie : rien ne les déclenche encore
- * (`documentation/livraisons/todo-la-porte.md`).
+ * (`documentation/livraisons/a-la-porte.md`).
  */
 @Module({
   controllers: [HandoverController, HandoverSupervisionController, DeliveryRunSheetController],

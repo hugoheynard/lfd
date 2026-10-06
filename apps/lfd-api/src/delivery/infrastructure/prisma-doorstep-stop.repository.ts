@@ -6,7 +6,7 @@ import { DoorstepStopRepository } from "../domain/ports/doorstep-stop.repository
 import { outcomeOf } from "./stop-decision.mapper.js";
 
 /**
- * **Adaptateur Prisma de l'arrêt à la porte** (`plan-a-la-porte.md`, AP-D6).
+ * **Adaptateur Prisma de l'arrêt à la porte** (`a-la-porte.md`, AP-D6).
  *
  * Il LIT l'arrêt, sa tournée, son exécution et la décision vivante du
  * commercial (B3) ; il n'ÉCRIT que `arrived_at`

@@ -6,7 +6,7 @@ import { firstValueFrom } from 'rxjs';
 import { B2B_API_BASE } from '../api/api-config';
 
 /**
- * **« Dépôt autorisé » réglé par le staff** (`documentation/livraisons/plan-a-la-porte.md`,
+ * **« Dépôt autorisé » réglé par le staff** (`documentation/livraisons/a-la-porte.md`,
  * AP-D5) — une route à part, sous `delivery_procedures:write` : la route
  * d'édition de l'adresse (sous `b2b_companies`) ne le touche pas.
  */

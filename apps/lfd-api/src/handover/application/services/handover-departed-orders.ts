@@ -8,7 +8,7 @@ import { OrderDepartureRepository } from "../../domain/ports/order-departure.rep
 
 /**
  * **« Elles sont parties »** — le retrait prend acte que la garde est passée
- * au livreur (`plan-a-la-porte.md`, § 10 ter, BQ). Il le garde par commande,
+ * au livreur (`a-la-porte.md`, § 10 ter, BQ). Il le garde par commande,
  * et le dit au fournil (`OrderCustodyReader`) : plus de verdict qualité sur
  * une commande partie.
  *

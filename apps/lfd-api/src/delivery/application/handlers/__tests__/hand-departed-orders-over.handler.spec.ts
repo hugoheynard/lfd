@@ -6,7 +6,7 @@ import { DeliveryRoundDepartedEvent } from "../../../domain/events/delivery-load
 import { HandDepartedOrdersOver } from "../hand-departed-orders-over.handler.js";
 
 /*
- * La garde passe au livreur (plan-a-la-porte.md, BQ) : ce que le départ
+ * La garde passe au livreur (a-la-porte.md, BQ) : ce que le départ
  * annonce au retrait, et seulement après sa validation.
  */
 

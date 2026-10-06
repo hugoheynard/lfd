@@ -29,7 +29,7 @@ import { DAY, DEPARTED, NOW, PAUL, roundState } from "./doorstep-handover-scene.
 import { InMemoryDeliveryRounds } from "./round-doubles.js";
 
 /**
- * **La décision réglée d'avance** (`plan-a-la-porte.md`, B3 bis, LB-Q6) : la
+ * **La décision réglée d'avance** (`a-la-porte.md`, B3 bis, LB-Q6) : la
  * règle FIGÉE au départ répond au signalement, dans sa transaction, sans
  * prévenir personne ; « Me demander » laisse la main au commercial (B3).
  */

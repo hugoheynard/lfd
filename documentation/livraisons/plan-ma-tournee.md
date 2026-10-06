@@ -18,9 +18,10 @@
 > bouton qui ouvre Google Maps avec les étapes ».
 >
 > C'est le **premier morceau du lot 6** (« la porte »,
-> [`todo-la-porte.md`](todo-la-porte.md)) : la vue livreur (L6-C2), le rôle
+> [`a-la-porte.md`](a-la-porte.md)) : la vue livreur (L6-C2), le rôle
 > `livreur` (L6-C4) et l'affectation (L6-Q7) — **sans les gestes à la porte**
-> (remis, déposé, raté), qui restent en dette. Et les lots YA1-YA2 de
+> (remis, déposé, raté), qui restaient en dette — bâtis depuis, sauf « raté »
+> (état au 2026-10-06 dans `a-la-porte.md`). Et les lots YA1-YA2 de
 > [`plan-y-aller-et-position.md`](plan-y-aller-et-position.md).
 >
 > ⚠️ Frontière de sécurité neuve (un rôle, un mur par livreur) : **`vitruve`

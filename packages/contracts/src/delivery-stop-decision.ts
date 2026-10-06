@@ -2,7 +2,7 @@ import type { DeliveryIncidentView } from "./delivery-doorstep.js";
 import type { StaffPermission } from "./staff-access.js";
 
 /**
- * **Le commercial décide** (`documentation/livraisons/plan-a-la-porte.md`,
+ * **Le commercial décide** (`documentation/livraisons/a-la-porte.md`,
  * § 9, § 10 B3, § 10 bis « La décision a un propriétaire », LB-Q2, LB-Q5).
  *
  * Un signalement « à la remise » qui dit que le client ne respecte pas les

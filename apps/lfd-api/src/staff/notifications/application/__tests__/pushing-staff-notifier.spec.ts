@@ -258,7 +258,7 @@ describe("la cloche qui pousse", () => {
 });
 
 /**
- * Le mur de la poussée, dans les deux sens (`plan-a-la-porte.md`, B5 ;
+ * Le mur de la poussée, dans les deux sens (`a-la-porte.md`, B5 ;
  * `plan-tournee-prete.md`, PL5-D2). Régression : la poussée partait à TOUS
  * les abonnements (`all()`) — un livreur qui abonnait son téléphone aurait
  * reçu toutes les alertes partagées.

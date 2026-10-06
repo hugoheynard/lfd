@@ -1,6 +1,6 @@
 /**
  * La scène des gestes qui remettent à la porte — « Remis au client » (B1) et
- * « Déposé avec preuve » (B2), `documentation/livraisons/plan-a-la-porte.md`.
+ * « Déposé avec preuve » (B2), `documentation/livraisons/a-la-porte.md`.
  * Une tournée d'un arrêt chargé, affectée à un livreur, partie par lui ; le
  * rôle qui porte `delivery_doorstep`.
  *

@@ -1,7 +1,7 @@
 /**
  * **« Atteste cette remise à la porte »** — ce que la livraison demande au
  * retrait quand le livreur appuie sur « Remis au client » ou « Déposé avec
- * preuve » (`documentation/livraisons/plan-a-la-porte.md`, B1, B2, § 10 bis,
+ * preuve » (`documentation/livraisons/a-la-porte.md`, B1, B2, § 10 bis,
  * AP-D1, L6-C7).
  *
  * Déclaré par la livraison, implémenté par le retrait, qui garde la remise et

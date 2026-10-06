@@ -53,7 +53,7 @@ interface WalledStop {
 }
 
 /**
- * **Remettre à la porte — le geste commun** (`plan-a-la-porte.md`, B1, B2,
+ * **Remettre à la porte — le geste commun** (`a-la-porte.md`, B1, B2,
  * § 10 bis, AP-D1, AP-D6, AP-Q5, L6-C7). Un dépôt a les effets d'une remise
  * (AP-Q5) : la même attestation au retrait, la même clôture, la même
  * publication différée. Seuls diffèrent les pièces, la règle de l'arrêt et le

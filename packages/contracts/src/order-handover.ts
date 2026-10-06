@@ -26,7 +26,7 @@ import type { FulfillmentMethod, FulfillmentSource } from "./order.js";
  *
  * `deposit` — **déposé** par le livreur, sans personne pour réceptionner, à
  * une adresse dont le client a autorisé le dépôt, photo à l'appui
- * (`documentation/livraisons/plan-a-la-porte.md`, AP-D8). Il a les effets
+ * (`documentation/livraisons/a-la-porte.md`, AP-D8). Il a les effets
  * d'un retrait (AP-Q5). Connu des LECTEURS d'abord : aucun chemin ne l'écrit
  * encore au 2026-10-01 — l'écrivain part dans un déploiement suivant, et
  * le premier dépôt écrit rend cette valeur irréversible.

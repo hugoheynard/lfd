@@ -81,13 +81,13 @@ export const ACCOUNT_FACTS = {
   defaultDeliverySet: "company.default_delivery_set",
   /**
    * « Dépôt autorisé » réglé sur une adresse — par le client ou par le staff
-   * (`plan-a-la-porte.md`, AP-D5). Il décide si un livreur peut laisser la
+   * (`a-la-porte.md`, AP-D5). Il décide si un livreur peut laisser la
    * commande sans personne : « qui l'a autorisé » doit avoir une réponse.
    */
   deliveryDepositSet: "company.delivery_deposit_set",
   /**
    * La décision réglée d'avance à la porte, redéfinie sur une adresse par le
-   * commercial (`plan-a-la-porte.md`, B3 bis) : elle peut faire déposer ou
+   * commercial (`a-la-porte.md`, B3 bis) : elle peut faire déposer ou
    * rapporter sans qu'on demande à personne — « qui l'a réglé » doit répondre.
    */
   deliveryDoorstepRuleSet: "company.delivery_doorstep_rule_set",

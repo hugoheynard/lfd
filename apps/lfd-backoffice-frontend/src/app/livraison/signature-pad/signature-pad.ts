@@ -67,7 +67,7 @@ export function paintProof(
 }
 
 /**
- * **La signature au doigt** (`plan-a-la-porte.md`, B1, AP-D4) — un cadre où la
+ * **La signature au doigt** (`a-la-porte.md`, B1, AP-D4) — un cadre où la
  * personne signe, au doigt ou au stylet, et un bouton pour recommencer.
  *
  * Le tracé est rendu en PNG à chaque trait levé (`signed`) ; « Effacer » rend

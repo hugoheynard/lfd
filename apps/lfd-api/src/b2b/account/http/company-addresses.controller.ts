@@ -91,7 +91,7 @@ export class CompanyAddressesController {
   /**
    * Remplace une adresse de livraison (gestionnaire). `depositAllowed`,
    * facultatif, règle le dépôt sans personne ; absent, il reste inchangé
-   * (`plan-a-la-porte.md`, AP-D5).
+   * (`a-la-porte.md`, AP-D5).
    */
   @Patch(":companyId/delivery-addresses/:addressId")
   @HttpCode(HttpStatus.NO_CONTENT)

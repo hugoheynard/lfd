@@ -2,7 +2,7 @@ import { describe, expect, it } from 'vitest';
 
 import { renderFact, type FactInput } from '../render-fact';
 
-/** **Les pièces de remise effacées** (`todo-la-porte.md`, 2026-10-01). */
+/** **Les pièces de remise effacées** (`a-la-porte.md`, 2026-10-01). */
 
 function fact(
   payload: Record<string, unknown>,

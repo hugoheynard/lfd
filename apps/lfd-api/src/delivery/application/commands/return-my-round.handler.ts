@@ -18,7 +18,7 @@ import { ReturnMyRoundCommand } from "./return-my-round.command.js";
  * rien. Idempotente : déjà rentrée, 204 sans rien écrire.
  *
  * Refusée tant qu'un arrêt n'a pas de sort (`DeliveryRound.finish`, I9 —
- * `plan-a-la-porte.md` § 10 B4) ; le refus nomme les arrêts par leur client
+ * `a-la-porte.md` § 10 B4) ; le refus nomme les arrêts par leur client
  * et leur numéro. Une tournée partie sous l'ancien code n'est pas rattrapée :
  * la règle s'applique à son prochain « Tournée terminée ».
  *

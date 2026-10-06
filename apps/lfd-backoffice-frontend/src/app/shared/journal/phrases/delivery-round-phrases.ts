@@ -73,7 +73,7 @@ export function orderList(raw: unknown): Segment[] {
   });
 }
 
-/** La famille d'un problème signalé, dans la phrase (`plan-a-la-porte.md`, § 3). */
+/** La famille d'un problème signalé, dans la phrase (`a-la-porte.md`, § 3). */
 const INCIDENT_FAMILY: Readonly<Record<string, string>> = {
   doorstep: 'un problème à la remise',
   technical: 'un problème technique',

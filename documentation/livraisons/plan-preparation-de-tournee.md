@@ -2595,8 +2595,8 @@ suivants.
 ### Plus tard, et seulement sur décision
 
 - **Lot 6 — La porte** — ⏸ **en dette** (Hugo, 2026-09-29 : « met le 6 en dette
-  et avance ») ; ce qui est tranché et ce qui bloque :
-  [`todo-la-porte.md`](todo-la-porte.md). La conception suit : la vue livreur, qui ne montre que **sa** tournée, et
+  et avance ») ; le 6 a est bâti depuis, son état et ce qui reste :
+  [`a-la-porte.md`](a-la-porte.md). La conception suit : la vue livreur, qui ne montre que **sa** tournée, et
   les gestes qu'on y écrit, sous un droit à eux, `delivery_doorstep` (Hugo,
   2026-09-29 : la feuille de route est en lecture seule, les gestes du
   livreur n'y passent pas) :

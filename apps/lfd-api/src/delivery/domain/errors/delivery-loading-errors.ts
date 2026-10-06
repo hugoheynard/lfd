@@ -167,7 +167,7 @@ export class DepartureOrderCancelledError extends BusinessError {
 
 /**
  * Une commande retenue au contrôle qualité ne part pas
- * (`plan-a-la-porte.md`, § 10 ter, BQ) : une fois la tournée partie, on ne
+ * (`a-la-porte.md`, § 10 ter, BQ) : une fois la tournée partie, on ne
  * contrôle plus — le produit n'est plus là (LB-Q1). Le refus nomme l'arrêt.
  */
 export class DepartureOrderHeldError extends BusinessError {

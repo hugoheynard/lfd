@@ -8,7 +8,7 @@ import { outcomeOf, sourceOf } from "./stop-decision.mapper.js";
 
 /**
  * **Adaptateur Prisma de la décision du commercial** (`delivery.stop_decision`,
- * `plan-a-la-porte.md`, § 10 bis).
+ * `a-la-porte.md`, § 10 bis).
  *
  * L'ouverture est un `createMany … skipDuplicates` : deux signalements
  * simultanés sur le même arrêt ouvrent UNE décision, la première. Une

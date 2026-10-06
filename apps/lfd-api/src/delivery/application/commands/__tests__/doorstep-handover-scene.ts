@@ -9,7 +9,7 @@ import { InMemoryDoorstepStops, ScriptedDoorstepAttestor } from "./doorstep-doub
 import { InMemoryDeliveryRounds } from "./round-doubles.js";
 
 /**
- * La scène des gestes qui remettent à la porte (`plan-a-la-porte.md`, B1, B2) :
+ * La scène des gestes qui remettent à la porte (`a-la-porte.md`, B1, B2) :
  * une tournée partie de Paul, deux arrêts, le retrait doublé, la publication
  * retenue jusqu'à la validation. Partagée par « Remis » et « Déposé ».
  */

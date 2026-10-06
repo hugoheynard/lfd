@@ -10,7 +10,7 @@ import {
 } from "../domain/ports/staff-notifier.js";
 
 /**
- * 🔴 **Le mur du fil partagé** (`plan-a-la-porte.md`, B5) — dans CHAQUE
+ * 🔴 **Le mur du fil partagé** (`a-la-porte.md`, B5) — dans CHAQUE
  * `where` de {@link PrismaStaffNotificationReader}, marquage par id compris :
  * une notice adressée par droit n'existe pas pour le fil.
  */

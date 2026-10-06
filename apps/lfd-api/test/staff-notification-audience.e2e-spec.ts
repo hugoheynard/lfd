@@ -1,5 +1,5 @@
 /**
- * E2E **les notifications adressées par droit** (`documentation/livraisons/plan-a-la-porte.md`,
+ * E2E **les notifications adressées par droit** (`documentation/livraisons/a-la-porte.md`,
  * B5, LB-Q3 ; mécanique de `plan-tournee-prete.md`, PL5-D1/D2).
  *
  * Le fait réel : un signalement « personne » prévient qui peut décider

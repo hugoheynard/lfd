@@ -14,7 +14,7 @@ import { MyDeliveryRoundService } from '../my-delivery-round.service';
 import { ProofPhoto } from '../proof-photo/proof-photo';
 
 /**
- * **« Déposé avec preuve »** (`documentation/livraisons/plan-a-la-porte.md`,
+ * **« Déposé avec preuve »** (`documentation/livraisons/a-la-porte.md`,
  * B2, § 9, AP-Q6) — personne pour réceptionner : la photo, et elle seule.
  *
  * La carte ne l'ouvre que si l'arrêt le permet (`canDeposit`), mais c'est le

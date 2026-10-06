@@ -18,7 +18,7 @@ const POLL_MS = 60_000;
  * gardaient chacun le leur, ouvrir le panneau ne ferait pas retomber la
  * pastille — et le compteur mentirait exactement au moment où on le consulte.
  *
- * **Deux fils, une liste** (`plan-a-la-porte.md`, B5, 2026-10-01) :
+ * **Deux fils, une liste** (`a-la-porte.md`, B5, 2026-10-01) :
  * - « mes notifications », adressées à un droit que je tiens — lues par TOUT
  *   staff connecté, le serveur filtre ;
  * - le fil PARTAGÉ de l'équipe, lu SEULEMENT avec `staff_notifications:read` :

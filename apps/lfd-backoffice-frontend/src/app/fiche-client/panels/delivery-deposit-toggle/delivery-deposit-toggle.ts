@@ -16,7 +16,7 @@ import { PermissionsStore } from '../../../auth/permissions.store';
 import { AdminDeliveryDepositService } from '../../../comptes-clients/admin-delivery-deposit.service';
 
 /**
- * **« Dépôt autorisé sans personne »**, côté staff (`plan-a-la-porte.md`,
+ * **« Dépôt autorisé sans personne »**, côté staff (`a-la-porte.md`,
  * AP-Q1, AP-D5) — la case du commercial, à côté de la procédure de l'adresse.
  *
  * Écrite dès qu'on la coche, par sa route à part, sous

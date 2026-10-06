@@ -39,7 +39,7 @@ import { WebPushSender } from "./infrastructure/web-push-sender.js";
  * qui écrit et ce qui fait vibrer sont deux responsabilités, et les émetteurs
  * n'ont à connaître ni l'une ni l'autre.
  *
- * Depuis le 2026-10-01 (`plan-a-la-porte.md`, B5), deux fils : le PARTAGÉ
+ * Depuis le 2026-10-01 (`a-la-porte.md`, B5), deux fils : le PARTAGÉ
  * (`admin/notifications`, sous `staff_notifications`) et « mes
  * notifications » (`admin/me/notifications`, l'authentification seule), où
  * vivent les notices adressées par droit. Chacun porte son mur dans ses

@@ -8,7 +8,7 @@ import { HandoverDepartedOrders } from "../handover-departed-orders.js";
 import { HandoverDepartureHolds } from "../handover-departure-holds.js";
 
 /*
- * Le retrait répond à la livraison (plan-a-la-porte.md, § 10 ter, BQ) :
+ * Le retrait répond à la livraison (a-la-porte.md, § 10 ter, BQ) :
  * « lesquelles sont retenues ? » au départ, « elles sont parties » après.
  */
 

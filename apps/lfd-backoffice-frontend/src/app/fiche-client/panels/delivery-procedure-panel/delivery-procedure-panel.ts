@@ -28,7 +28,7 @@ export interface AdminDeliveryProcedurePanelData {
  * La **procédure de livraison** d'une adresse, côté staff : l'éditeur partagé
  * dans un panneau. Le commercial la règle au téléphone, comme le reste de
  * l'adresse — d'où l'écriture ouverte. « Dépôt autorisé » y vit aussi
- * (`plan-a-la-porte.md`, AP-D5) : même droit, même interlocuteur, même moment.
+ * (`a-la-porte.md`, AP-D5) : même droit, même interlocuteur, même moment.
  * Et la décision réglée d'avance à la porte de l'adresse (B3 bis), pour la
  * même raison.
  *

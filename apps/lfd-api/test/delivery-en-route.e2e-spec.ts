@@ -6,7 +6,7 @@
  * Ce que seul l'e2e prouve : le câblage du port à travers la racine de
  * composition, et que l'abonné lit les commandes HORS de la transaction du
  * départ — sans quoi ses lectures viseraient un client de transaction clos —
- * et APRÈS sa validation (plan-a-la-porte.md, B0) : un départ annulé au
+ * et APRÈS sa validation (a-la-porte.md, B0) : un départ annulé au
  * moment de valider n'écrit à personne.
  */
 import { bootstrapE2e, serviceDay, type E2eContext } from "./e2e-harness.js";

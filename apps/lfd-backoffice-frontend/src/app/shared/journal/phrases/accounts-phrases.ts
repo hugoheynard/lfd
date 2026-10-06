@@ -405,7 +405,7 @@ const deliveryProcedureEdited: Phrase = (fact) =>
 /**
  * « … a réglé la décision à la porte sur « rapporter » à l'adresse à Paris
  * (75011) du client « X » » — ou l'a rendue au réglage de livraison
- * (`plan-a-la-porte.md`, B3 bis).
+ * (`a-la-porte.md`, B3 bis).
  */
 const deliveryDoorstepRuleSet: Phrase = (fact) => {
   const rule = fact.payload['rule'];
@@ -429,7 +429,7 @@ const deliveryDoorstepRuleSet: Phrase = (fact) => {
 
 /**
  * « … a autorisé le dépôt sans personne à l'adresse à Paris (75011) du client
- * « X » » — ou l'a retiré (`plan-a-la-porte.md`, AP-D5). Le client sur son
+ * « X » » — ou l'a retiré (`a-la-porte.md`, AP-D5). Le client sur son
  * carnet ou le staff : l'auteur de la ligne les distingue.
  */
 const deliveryDepositSet: Phrase = (fact) =>

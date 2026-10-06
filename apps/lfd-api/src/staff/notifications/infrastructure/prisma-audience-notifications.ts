@@ -9,7 +9,7 @@ import {
 import { toView } from "./prisma-staff-notifications.js";
 
 /**
- * 🔴 **Le mur de « mes notifications »** (`plan-a-la-porte.md`, B5) — dans
+ * 🔴 **Le mur de « mes notifications »** (`a-la-porte.md`, B5) — dans
  * CHAQUE `where` : `audience IN (mes droits)`. Une liste vide ne lit rien et
  * ne marque rien — `IN ()` le dit déjà, la garde explicite évite la requête.
  * Une notice du fil partagé (`audience` nulle) n'y entre jamais : `IN` ne

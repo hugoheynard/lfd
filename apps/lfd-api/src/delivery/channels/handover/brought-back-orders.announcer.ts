@@ -1,6 +1,6 @@
 /**
  * **« Ces commandes sont revenues »** — la garde rentre au dépôt
- * (`documentation/livraisons/plan-a-la-porte.md`, B3, LB-Q2, et la note du
+ * (`documentation/livraisons/a-la-porte.md`, B3, LB-Q2, et la note du
  * § 10 ter : « une commande rapportée qui repartira un autre jour reste
  * “partie” entre-temps : B3 devra le dire au retrait »).
  *

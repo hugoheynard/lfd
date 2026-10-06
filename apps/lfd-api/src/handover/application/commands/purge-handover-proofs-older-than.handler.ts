@@ -8,7 +8,7 @@ import { HandoverProofErasure } from "../services/handover-proof-erasure.js";
 import { PurgeHandoverProofsOlderThanCommand } from "./purge-handover-proofs-older-than.command.js";
 
 /**
- * **La purge des pièces de remise** (`documentation/livraisons/todo-la-porte.md`,
+ * **La purge des pièces de remise** (`documentation/livraisons/a-la-porte.md`,
  * « Les pièces de remise : conservées sans limite, purgeables »). Câblée, non
  * planifiée : aucune minuterie ne l'appelle, et la durée reste à décider.
  *

@@ -63,7 +63,7 @@ interface AddressSpecs {
   readonly note: string;
   readonly gps: { readonly lat: number; readonly lng: number } | null;
   readonly stopMinutes: number | null;
-  /** « Dépôt autorisé » (`plan-a-la-porte.md`, AP-D5) — une colonne, pas une consigne. */
+  /** « Dépôt autorisé » (`a-la-porte.md`, AP-D5) — une colonne, pas une consigne. */
   readonly depositAllowed: boolean;
   /** La décision réglée d'avance de l'adresse (B3 bis) ; `null` : elle hérite. */
   readonly doorstepRule: DoorstepRule | null;

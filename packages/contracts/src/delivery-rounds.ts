@@ -23,7 +23,7 @@ export interface DeliveryRoundsDayView {
   /**
    * Les problèmes signalés par les livreurs ce jour-là, toutes tournées
    * confondues — l'écran les pose sur la tournée et l'arrêt par `roundId` et
-   * `stopId` (`plan-a-la-porte.md`, § 3).
+   * `stopId` (`a-la-porte.md`, § 3).
    */
   readonly incidents: readonly DeliveryIncidentView[];
 }

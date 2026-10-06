@@ -22,7 +22,7 @@ import { deliveryAddressOf } from "../../domain/events/journal-names.js";
  * `documentation/journalisation/plan-journal-d-activite.md` §3, décision 1) —
  * sous le nom du geste staff jumeau, sans coordonnée.
  *
- * « Dépôt autorisé » (`plan-a-la-porte.md`, AP-D5) : réglé seulement quand la
+ * « Dépôt autorisé » (`a-la-porte.md`, AP-D5) : réglé seulement quand la
  * charge le porte, et journalisé à part quand il change. Absent, il reste ce
  * qu'il était — le carnet le relit et le réécrit tel quel.
  */

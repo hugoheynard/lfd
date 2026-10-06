@@ -25,7 +25,7 @@ import {
 } from "../../../domain/ports/driver-rounds.reader.js";
 
 /**
- * Les doubles de la porte (`plan-a-la-porte.md`, lot A) — chacun hérite de son
+ * Les doubles de la porte (`a-la-porte.md`, lot A) — chacun hérite de son
  * port abstrait, et joue le mur du livreur en mémoire.
  */
 

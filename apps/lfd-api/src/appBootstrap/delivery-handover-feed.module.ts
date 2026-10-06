@@ -12,7 +12,7 @@ import { HandoverDoorstepAttestor } from "../handover/application/services/hando
 import { HandoverModule } from "../handover/handover.module.js";
 
 /**
- * **Le fil de la garde, relié** (2026-10-01, `plan-a-la-porte.md`, BQ) — la
+ * **Le fil de la garde, relié** (2026-10-01, `a-la-porte.md`, BQ) — la
  * livraison déclare, le retrait implémente :
  *
  * - `DepartureHoldsReader` — au départ, « lesquelles sont retenues ? » ;

@@ -41,7 +41,7 @@ let firstDeparted: string | null = null;
 let firstDriver: DeliveryRoundDriverView | null = null;
 /** Le retour de la première tournée (PL2) — `null` sauf dans les tests qui la rentrent. */
 let firstReturned: string | null = null;
-/** Les signalements du jour (`plan-a-la-porte.md`, § 3). */
+/** Les signalements du jour (`a-la-porte.md`, § 3). */
 let dayIncidents: readonly DeliveryIncidentView[] = [];
 
 // Un instant affiché, jamais comparé à l'horloge : le badge le dit tel quel.

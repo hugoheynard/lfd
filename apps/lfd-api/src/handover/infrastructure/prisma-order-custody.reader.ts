@@ -8,7 +8,7 @@ import {
 
 /**
  * **Ce que le retrait répond au fournil** : lesquelles de ces commandes ne sont
- * plus là (`plan-a-la-porte.md`, BQ). Un adaptateur à part des dépôts
+ * plus là (`a-la-porte.md`, BQ). Un adaptateur à part des dépôts
  * d'écriture, pour la raison de `PrismaAttestedHandoversReader` (ISP).
  *
  * Retirée l'emporte sur partie : c'est le dernier état, et la phrase la plus

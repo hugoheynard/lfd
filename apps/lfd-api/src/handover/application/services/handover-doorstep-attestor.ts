@@ -42,7 +42,7 @@ function proofKey(stagingId: string, piece: "photo" | "signature"): string {
 
 /**
  * **« Atteste cette remise à la porte »** — la réponse du retrait au canal de
- * la livraison (`plan-a-la-porte.md`, B1, § 10 bis, AP-D1, L6-C7 à C9).
+ * la livraison (`a-la-porte.md`, B1, § 10 bis, AP-D1, L6-C7 à C9).
  *
  * La règle est CELLE du comptoir (`HandoverAttestation`) : commande annulée,
  * pas passée, déjà retirée, retenue — refusées avec la même phrase, la course

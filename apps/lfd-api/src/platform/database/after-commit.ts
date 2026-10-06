@@ -3,7 +3,7 @@ import { Injectable } from "@nestjs/common";
 import { type AfterCommitCallback, deferUntilCommit } from "./transaction.store.js";
 
 /**
- * **Exécuter après la validation** (`documentation/livraisons/plan-a-la-porte.md`,
+ * **Exécuter après la validation** (`documentation/livraisons/a-la-porte.md`,
  * B0) : réagir à un fait seulement une fois qu'il est écrit pour de bon.
  *
  * Un abonné d'événement est appelé par le bus DANS la transaction qui publie ;

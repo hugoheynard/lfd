@@ -28,7 +28,7 @@ export abstract class DeliveryRoundRepository {
 
   /**
    * Le même verrou sous le même mur, pour un geste de la porte sur une tournée
-   * PARTIE (`plan-a-la-porte.md`, AP-D2 : clore un arrêt sans remise). Distinct
+   * PARTIE (`a-la-porte.md`, AP-D2 : clore un arrêt sans remise). Distinct
    * du départ par son intention, pas par son SQL : un appelant qui lit
    * « départ » n'a pas à se demander s'il est au bon endroit.
    */
@@ -36,7 +36,7 @@ export abstract class DeliveryRoundRepository {
 
   /**
    * Le verrou du départ, SANS mur de livreur, pour la décision d'un commercial
-   * sur un arrêt (`plan-a-la-porte.md`, B3, § 10 bis) : le commercial décide
+   * sur un arrêt (`a-la-porte.md`, B3, § 10 bis) : le commercial décide
    * pour toutes les tournées. Le dépôt du livreur prend le même verrou —
    * décider et déposer ne se croisent pas. Distinct du départ par son
    * intention, pas par son SQL.

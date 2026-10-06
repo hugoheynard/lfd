@@ -20,7 +20,7 @@ type DateQuery = z.infer<typeof dateQuerySchema>;
 
 /**
  * **Les signalements et « Non remis », côté admin**
- * (`documentation/livraisons/plan-a-la-porte.md`, § 3, AP-D7).
+ * (`documentation/livraisons/a-la-porte.md`, § 3, AP-D7).
  *
  * Sous `delivery_rounds` (lecture seule) : c'est l'écran Tournées qui les
  * montre. « Non remis » est une vue, il ne débloque rien. Il n'injecte que le

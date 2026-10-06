@@ -4,7 +4,7 @@ import { transactionalPrisma } from "../transactional-prisma.js";
 import { PrismaUnitOfWork } from "../unit-of-work.js";
 
 /*
- * « Exécuter après la validation » (plan-a-la-porte.md, B0 et § 10 bis) : la
+ * « Exécuter après la validation » (a-la-porte.md, B0 et § 10 bis) : la
  * file vit dans le store de transaction, appartient à l'unité la plus externe,
  * et ne part qu'une fois `$transaction` résolu — hors de son contexte.
  */

@@ -5,7 +5,7 @@ import {
 } from "../../../platform/shared/errors/app-error.js";
 
 /**
- * Les refus **à la porte** (`documentation/livraisons/plan-a-la-porte.md`,
+ * Les refus **à la porte** (`documentation/livraisons/a-la-porte.md`,
  * lot A) — arriver, signaler, clore sans remise.
  *
  * Même règle que les refus du livreur (`delivery-driver-errors.ts`) : il est
@@ -60,7 +60,7 @@ export class RoundNotDepartedForReturnError extends BusinessError {
 }
 
 /**
- * **« Tournée terminée » avec des arrêts sans sort** (`plan-a-la-porte.md`,
+ * **« Tournée terminée » avec des arrêts sans sort** (`a-la-porte.md`,
  * § 10 B4 ; `parcours-du-livreur.md`, « Tournée terminée exige un sort pour
  * chaque arrêt ») — refusé au LIVREUR tant qu'un arrêt n'est ni livré (remis,
  * déposé), ni clos par une décision (clos sans remise, rapporté). Un arrêt
@@ -167,7 +167,7 @@ export class IncidentPhotoNotFoundError extends ResourceNotFoundError {
   }
 }
 
-// ── « Remis au client » (`plan-a-la-porte.md`, B1, § 9) ──
+// ── « Remis au client » (`a-la-porte.md`, B1, § 9) ──
 
 /** Une remise sans photo n'existe pas (§ 9, Hugo : « même le happy path signé »). */
 export class HandoverPhotoMissingError extends DomainError {
@@ -224,7 +224,7 @@ export class StopClosedWithoutHandoverError extends BusinessError {
   }
 }
 
-// ── « Déposé avec preuve » (`plan-a-la-porte.md`, B2, AP-D4, AP-Q6) ──
+// ── « Déposé avec preuve » (`a-la-porte.md`, B2, AP-D4, AP-Q6) ──
 
 /** Un dépôt sans photo n'existe pas (§ 9) : la photo est la seule preuve qu'il porte. */
 export class DepositPhotoMissingError extends DomainError {

@@ -17,7 +17,7 @@ import { GetDeliveryRoundsDayQuery } from "./get-delivery-rounds-day.query.js";
 /**
  * La composition d'un jour : les tournées, leurs arrêts signalés, leur
  * livreur (et s'il peut encore conduire), ce qui reste à répartir, et les
- * problèmes signalés par les livreurs (`plan-a-la-porte.md`, § 3), et les
+ * problèmes signalés par les livreurs (`a-la-porte.md`, § 3), et les
  * commandes rapportées à replacer, quel que soit le jour (lot RL1), et les
  * arrêts posés hors des zones de leur véhicule (2026-10-06). Une
  * lecture : elle n'écrit rien.

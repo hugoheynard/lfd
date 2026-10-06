@@ -13,7 +13,7 @@ export interface StaffNotice {
   readonly idempotencyKey: string;
   readonly occurredAt: Date;
   /**
-   * **Adressée par droit** (`plan-a-la-porte.md`, B5) : visible et poussée
+   * **Adressée par droit** (`a-la-porte.md`, B5) : visible et poussée
    * seulement à qui tient ce droit — résolu à la lecture et à l'envoi, jamais
    * figé. Absente : le fil PARTAGÉ, sous `staff_notifications:read`. Une
    * notice d'audience n'entre jamais dans le fil partagé, même pour qui a les
@@ -73,7 +73,7 @@ export abstract class StaffNotificationReader {
 
 /**
  * La lecture de **mes notifications** — celles adressées à un droit que je
- * tiens (`plan-a-la-porte.md`, B5). Un port à part du fil partagé (ISP) : ni
+ * tiens (`a-la-porte.md`, B5). Un port à part du fil partagé (ISP) : ni
  * le même mur, ni le même lecteur.
  *
  * 🔴 `audiences` est l'effectif de la personne qui appelle, résolu par le

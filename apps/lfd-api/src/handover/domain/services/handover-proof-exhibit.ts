@@ -43,7 +43,7 @@ export interface HandoverProofRecord {
  *
  * ⚠️ Le second cas suppose qu'une commande partie ne se retire pas au
  * comptoir sans être d'abord rapportée — vrai tant que le 6 c (relivrer,
- * retirer au comptoir) n'existe pas (`todo-la-porte.md`, vérifié le
+ * retirer au comptoir) n'existe pas (`a-la-porte.md`, vérifié le
  * 2026-10-02).
  */
 export function handoverProofExhibit(record: HandoverProofRecord): HandoverProofExhibit | null {

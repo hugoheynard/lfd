@@ -161,7 +161,7 @@ export interface MyDeliveryStopView {
    */
   readonly canDeposit: boolean;
   /**
-   * La décision du commercial sur cet arrêt (`plan-a-la-porte.md`, B3), ou
+   * La décision du commercial sur cet arrêt (`a-la-porte.md`, B3), ou
    * `null` : aucun signalement n'en a ouvert. « Autorisé : déposer » ouvre
    * {@link canDeposit} même signature exigée (LB-Q5) ; « Rapporté » clôt
    * l'arrêt.

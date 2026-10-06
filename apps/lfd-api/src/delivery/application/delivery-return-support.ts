@@ -30,7 +30,7 @@ export interface ReturnDeps {
  * (`gesture` qui lève) n'écrit rien non plus : un refus n'est pas un fait.
  *
  * `gesture` est OBLIGATOIRE : chaque porte dit si elle exige un sort par
- * arrêt (`plan-a-la-porte.md` § 10 B4) — l'absence d'un argument ne doit
+ * arrêt (`a-la-porte.md` § 10 B4) — l'absence d'un argument ne doit
  * jamais vouloir dire « sans la règle ».
  */
 export async function returnAndRecord(

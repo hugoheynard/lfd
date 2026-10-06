@@ -4,7 +4,7 @@ import { FileFieldsInterceptor, FileInterceptor } from "@nestjs/platform-express
 import { INCIDENT_PHOTO_MAX_BYTES } from "../domain/value-objects/incident-photo.js";
 
 /**
- * Le transport de la photo d'un signalement (`plan-a-la-porte.md`, § 3) :
+ * Le transport de la photo d'un signalement (`a-la-porte.md`, § 3) :
  * lire un multipart. La servir reprend `serveStepPhoto` — mêmes en-têtes, et
  * une photo de signalement ne change jamais sous sa clé.
  *
@@ -30,7 +30,7 @@ export function incidentPhotoUpload(): Type<NestInterceptor> {
   return FileInterceptor(PHOTO_FIELD, { limits: { fileSize: INCIDENT_UPLOAD_HARD_LIMIT } });
 }
 
-/** Les deux images d'une remise (`plan-a-la-porte.md`, B1) : la photo, la signature. */
+/** Les deux images d'une remise (`a-la-porte.md`, B1) : la photo, la signature. */
 const HANDOVER_PHOTO_FIELD = "photo";
 const HANDOVER_SIGNATURE_FIELD = "signature";
 

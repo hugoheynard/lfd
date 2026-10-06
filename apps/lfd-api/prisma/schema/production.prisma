@@ -203,7 +203,7 @@ model OrderHandover {
 }
 
 /// La GARDE d'une commande passée au livreur : sa tournée est partie
-/// (`documentation/livraisons/plan-a-la-porte.md`, BQ).
+/// (`documentation/livraisons/a-la-porte.md`, BQ).
 ///
 /// Annoncée par la livraison APRÈS la validation du départ, tenue par le
 /// retrait (sa clé est la commande), lue par le fournil : un verdict qualité
@@ -224,7 +224,7 @@ model OrderDeparture {
   @@schema("production")
 }
 
-/// Les **pièces d'une remise à la porte** (`documentation/livraisons/plan-a-la-porte.md`,
+/// Les **pièces d'une remise à la porte** (`documentation/livraisons/a-la-porte.md`,
 /// B1, § 9, L6-C9) : la photo (toujours), la signature au doigt (quand
 /// l'arrêt l'exigeait au départ), le nom tapé de qui a réceptionné.
 ///

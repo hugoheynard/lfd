@@ -8,7 +8,7 @@ import { B2B_API_BASE } from '../api/api-config';
 const DECIDE = `${B2B_API_BASE}/admin/livraison/a-decider`;
 
 /**
- * **« À décider »** (`documentation/livraisons/plan-a-la-porte.md`, B3) —
+ * **« À décider »** (`documentation/livraisons/a-la-porte.md`, B3) —
  * transport pur, sous `delivery_decisions` (lecture pour la liste, écriture pour répondre).
  */
 @Injectable({ providedIn: 'root' })

@@ -1,7 +1,7 @@
 import type { DoorstepStop } from "../entities/doorstep-stop.js";
 
 /**
- * Port d'**écriture** de l'arrêt à la porte (`plan-a-la-porte.md`, AP-D6) —
+ * Port d'**écriture** de l'arrêt à la porte (`a-la-porte.md`, AP-D6) —
  * l'exécution, jamais la tournée.
  */
 export abstract class DoorstepStopRepository {

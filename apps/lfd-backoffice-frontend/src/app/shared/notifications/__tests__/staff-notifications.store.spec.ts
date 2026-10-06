@@ -91,7 +91,7 @@ function notice(id: string, occurredAt: string): StaffNotificationView {
 }
 
 /**
- * Les deux fils de la cloche (`plan-a-la-porte.md`, B5) : « mes
+ * Les deux fils de la cloche (`a-la-porte.md`, B5) : « mes
  * notifications » pour tout staff, le fil partagé seulement avec son droit.
  */
 describe('la cloche, deux fils', () => {

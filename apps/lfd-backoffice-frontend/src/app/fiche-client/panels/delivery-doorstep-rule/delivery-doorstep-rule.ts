@@ -27,7 +27,7 @@ type RuleState =
 
 /**
  * **La décision réglée d'avance à la porte, pour CETTE adresse**
- * (`plan-a-la-porte.md`, B3 bis, LB-Q6) — à côté de « dépôt autorisé », sous
+ * (`a-la-porte.md`, B3 bis, LB-Q6) — à côté de « dépôt autorisé », sous
  * le même droit (`delivery_procedures`) : le commercial la redéfinit, ou la
  * laisse au réglage de livraison. Le client ne la règle pas.
  *

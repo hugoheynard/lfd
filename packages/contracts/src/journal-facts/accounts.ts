@@ -271,7 +271,7 @@ export const ACCOUNTS_AND_CARTS_FACTS = {
   "company.default_delivery_set": addressCited({}),
   /**
    * « Dépôt autorisé » réglé sur une adresse de livraison
-   * (`documentation/livraisons/plan-a-la-porte.md`, AP-D5) — par le client
+   * (`documentation/livraisons/a-la-porte.md`, AP-D5) — par le client
    * sur son carnet, ou par le staff sur sa route à part. Né le 2026-10-01 :
    * aucune forme d'avant.
    */
@@ -285,7 +285,7 @@ export const ACCOUNTS_AND_CARTS_FACTS = {
   /**
    * La décision réglée d'avance sur un problème à la porte, redéfinie — ou
    * rendue au réglage global (`rule: null`) — sur une adresse de livraison,
-   * par le commercial (`plan-a-la-porte.md`, B3 bis, LB-Q6). Né le
+   * par le commercial (`a-la-porte.md`, B3 bis, LB-Q6). Né le
    * 2026-10-01 : aucune forme d'avant.
    */
   "company.delivery_doorstep_rule_set": fact(

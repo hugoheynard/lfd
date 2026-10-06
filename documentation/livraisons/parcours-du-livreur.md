@@ -305,7 +305,7 @@ affichée en roulant ou à l'arrivée (9), changer l'ordre (10).
 
 ## Note — « Tournée terminée » exige un sort pour chaque arrêt (Hugo, 2026-10-01)
 
-> 🔨 **Bâti le 2026-10-01** (`plan-a-la-porte.md`, § 10 B4) : le livreur est
+> 🔨 **Bâti le 2026-10-01** (`a-la-porte.md`, § 10 B4) : le livreur est
 > refusé (409 nommé) ; la rentrée staff reste permise, et ses arrêts sans sort
 > passent dans « Non remis ».
 >

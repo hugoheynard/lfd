@@ -77,7 +77,7 @@ function deviceStorage(): Storage | null {
  * navigation. Un refus du serveur s'affiche tel quel — il est écrit pour le
  * livreur (MT-D3 v2) — et la tournée est relue.
  *
- * **À la porte** (`plan-a-la-porte.md`, lot A ; `parcours-du-livreur.md`,
+ * **À la porte** (`a-la-porte.md`, lot A ; `parcours-du-livreur.md`,
  * PL2) : partie et non rentrée, sous `delivery_doorstep:write`, la tournée
  * offre « Je suis arrivé », « Déclarer un problème », « Clore sans remise » et
  * « Tournée terminée ». Rentrée, elle le dit et n'offre plus aucun geste.
@@ -159,7 +159,7 @@ export class MyRoundPage {
   protected readonly legs = computed(() => routeLegs(this.remaining()));
   /**
    * Les arrêts sans sort, nommés — « Tournée terminée » les refusera
-   * (`plan-a-la-porte.md`, § 10 B4) : le dire avant le clic. Tout sort ferme
+   * (`a-la-porte.md`, § 10 B4) : le dire avant le clic. Tout sort ferme
    * l'arrêt, donc ce sont les arrêts encore ouverts. `null` : aucun.
    */
   protected readonly withoutOutcome = computed(() => {

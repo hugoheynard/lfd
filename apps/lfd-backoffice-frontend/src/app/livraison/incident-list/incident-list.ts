@@ -7,7 +7,7 @@ import { IncidentPhoto, type IncidentPhotoLoader } from '../incident-photo/incid
 
 /**
  * **Des signalements, l'un sous l'autre** — famille et motif, quand et par
- * qui, la note, la photo à la demande (`plan-a-la-porte.md`, § 3). Le même
+ * qui, la note, la photo à la demande (`a-la-porte.md`, § 3). Le même
  * rendu pour le livreur et pour l'admin ; seule la route de la photo change.
  */
 @Component({

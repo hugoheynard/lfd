@@ -1,7 +1,7 @@
 import type { DepositStopFields } from "@lfd/contracts";
 
 /**
- * **« Déposé avec preuve »** (`plan-a-la-porte.md`, B2) — le dépôt sans
+ * **« Déposé avec preuve »** (`a-la-porte.md`, B2) — le dépôt sans
  * personne, sa photo, et la clôture de l'arrêt. `staffUserId` est le mur.
  */
 export class DepositStopCommand {

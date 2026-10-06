@@ -1,6 +1,6 @@
 /**
  * **La garde passée au livreur**, par commande
- * (`documentation/livraisons/plan-a-la-porte.md`, § 10 ter, BQ).
+ * (`documentation/livraisons/a-la-porte.md`, § 10 ter, BQ).
  *
  * Une écriture nue, et c'est voulu : c'est la PROJECTION d'un fait déjà
  * validé ailleurs (le départ de la tournée, annoncé après sa validation). Il

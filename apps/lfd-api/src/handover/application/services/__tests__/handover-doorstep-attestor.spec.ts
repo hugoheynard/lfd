@@ -25,7 +25,7 @@ import { HandoverAttestation } from "../handover-attestation.service.js";
 import { HandoverDoorstepAttestor } from "../handover-doorstep-attestor.js";
 
 /*
- * Le retrait atteste une remise à la porte (plan-a-la-porte.md, B1, AP-D1) :
+ * Le retrait atteste une remise à la porte (a-la-porte.md, B1, AP-D1) :
  * la règle du comptoir, et le fait durable écrit dans l'unité de travail du
  * livreur (lot E2) : il part avec sa validation, ou pas du tout.
  */

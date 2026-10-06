@@ -28,7 +28,7 @@ export interface ReceiptInput {
 const BYTES_PER_MEGABYTE = 1024 * 1024;
 
 /**
- * **Les pièces d'une remise au client** (`plan-a-la-porte.md`, B1, § 9,
+ * **Les pièces d'une remise au client** (`a-la-porte.md`, B1, § 9,
  * AP-Q2, AP-D4) : la photo, toujours ; le nom de qui réceptionne, toujours,
  * de 2 à 80 caractères ; la signature au doigt quand l'arrêt l'exige.
  *

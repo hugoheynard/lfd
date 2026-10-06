@@ -12,7 +12,7 @@ export interface HandoverProofState {
 }
 
 /**
- * **Les pièces d'une remise à la porte** (`plan-a-la-porte.md`, B1, § 9,
+ * **Les pièces d'une remise à la porte** (`a-la-porte.md`, B1, § 9,
  * L6-C9) — elles appartiennent au retrait, comme l'attestation qu'elles
  * prouvent.
  *

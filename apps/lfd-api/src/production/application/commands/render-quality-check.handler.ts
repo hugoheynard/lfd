@@ -47,7 +47,7 @@ import { RenderQualityCheckCommand } from "./render-quality-check.command.js";
  * ## Puis la journée, la garde, les photos, et une transaction
  *
  * Une commande partie en livraison ou déjà retirée ne se juge plus
- * (`plan-a-la-porte.md`, BQ) : le retrait le dit, avant tout dépôt de photo.
+ * (`a-la-porte.md`, BQ) : le retrait le dit, avant tout dépôt de photo.
  * Lu hors verrou commun — un départ validé dans l'intervalle laisse passer le
  * verdict, la même course que celle de la retenue au comptoir (D4).
  *

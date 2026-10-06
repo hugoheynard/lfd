@@ -20,7 +20,7 @@ type CardState =
   | { readonly status: 'ready'; readonly view: DoorstepSettingsView };
 
 /**
- * **La décision réglée d'avance à la porte** (`plan-a-la-porte.md`, B3 bis,
+ * **La décision réglée d'avance à la porte** (`a-la-porte.md`, B3 bis,
  * LB-Q6) — une carte de l'écran « Point de départ », le réglage GLOBAL.
  *
  * Quand le livreur signale « personne », « refus » ou « accès impossible »,

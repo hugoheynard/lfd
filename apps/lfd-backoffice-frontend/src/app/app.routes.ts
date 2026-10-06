@@ -375,7 +375,7 @@ export const routes: Routes = [
         loadComponent: () =>
           import('./livraison/rounds-page/rounds-page').then((m) => m.RoundsPage),
       },
-      // « NON REMIS » (plan-a-la-porte.md, AP-D7) : une LECTURE, sous le droit
+      // « NON REMIS » (a-la-porte.md, AP-D7) : une LECTURE, sous le droit
       // des tournées — c'est leur suite, et elle ne débloque rien.
       {
         path: 'non-remis',
@@ -384,7 +384,7 @@ export const routes: Routes = [
         loadComponent: () =>
           import('./livraison/undelivered-page/undelivered-page').then((m) => m.UndeliveredPage),
       },
-      // « À DÉCIDER » (plan-a-la-porte.md, B3) : la réponse du COMMERCIAL à un
+      // « À DÉCIDER » (a-la-porte.md, B3) : la réponse du COMMERCIAL à un
       // problème à la porte, sous son droit (`delivery_decisions:write`, lecture
       // comprise ; `b2b_companies:write` jusqu'au 2026-10-02) — la cible du lien de la notification « arrêt à décider ».
       {

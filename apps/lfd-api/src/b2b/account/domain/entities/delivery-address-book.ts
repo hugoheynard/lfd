@@ -26,13 +26,13 @@ export interface DeliveryAddress {
   readonly specs: DeliverySpecs;
   /**
    * Le client autorise le livreur à déposer sans personne
-   * (`plan-a-la-porte.md`, AP-D5). Hors de `specs` : la charge d'édition
+   * (`a-la-porte.md`, AP-D5). Hors de `specs` : la charge d'édition
    * réécrit les consignes d'un bloc, et ne doit jamais le remettre à `false`.
    */
   readonly depositAllowed: boolean;
   /**
    * La décision réglée d'avance à la porte, redéfinie ici par le commercial
-   * (`plan-a-la-porte.md`, B3 bis) ; `null` : hérite du réglage global.
+   * (`a-la-porte.md`, B3 bis) ; `null` : hérite du réglage global.
    */
   readonly doorstepRule: DoorstepRule | null;
   readonly createdAt: Date;

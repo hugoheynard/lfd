@@ -16,7 +16,7 @@ export const WEEKDAY = domain(
 
 /**
  * Comment le retrait d'une commande a été validé : le QR du client, une saisie
- * au comptoir, ou un dépôt du livreur sans personne (`plan-a-la-porte.md`,
+ * au comptoir, ou un dépôt du livreur sans personne (`a-la-porte.md`,
  * AP-D8 — lu avant que personne ne l'écrive).
  */
 export const HANDOVER_VIA = domain('manière de remettre une commande', {
@@ -40,7 +40,7 @@ export const CLOSED_WITHOUT_HANDOVER_CAUSE = domain('raison d’une clôture san
 
 /**
  * D'où vient la décision sur un arrêt signalé (`delivery_round.stop_deposit_authorized`,
- * `delivery_round.stop_brought_back` — `plan-a-la-porte.md`, B3, B3 bis).
+ * `delivery_round.stop_brought_back` — `a-la-porte.md`, B3, B3 bis).
  */
 export const STOP_DECISION_SOURCE = domain('origine d’une décision sur un arrêt', {
   staff: 'Un commercial',
@@ -49,7 +49,7 @@ export const STOP_DECISION_SOURCE = domain('origine d’une décision sur un arr
 
 /**
  * La décision réglée d'avance à la porte (`delivery_doorstep.settings_updated`,
- * `company.delivery_doorstep_rule_set` — `plan-a-la-porte.md`, B3 bis).
+ * `company.delivery_doorstep_rule_set` — `a-la-porte.md`, B3 bis).
  */
 export const DOORSTEP_RULE = domain('décision réglée d’avance à la porte', {
   ask: 'Me demander',

@@ -6,7 +6,7 @@ import { DepartedOrdersAnnouncer } from "../../channels/handover/index.js";
 import { DeliveryRoundDepartedEvent } from "../../domain/events/delivery-loading.events.js";
 
 /**
- * **La garde passe au livreur** (`documentation/livraisons/plan-a-la-porte.md`,
+ * **La garde passe au livreur** (`documentation/livraisons/a-la-porte.md`,
  * § 10 ter, BQ) : annoncer au retrait les commandes qui viennent de partir,
  * pour que le fournil cesse de les contrôler (LB-Q1).
  *

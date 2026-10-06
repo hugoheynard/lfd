@@ -7,7 +7,7 @@ import type { HandoverVia } from "../domain/services/handover.js";
  * écrite à la main hors du domaine ne doit pas devenir un `via` inventé en
  * traversant le mapper. Les trois valeurs connues se relisent TELLES QUELLES —
  * `deposit` compris, connu des lecteurs avant que personne ne l'écrive
- * (`plan-a-la-porte.md`, AP-D8). Tout le reste retombe sur `manual`,
+ * (`a-la-porte.md`, AP-D8). Tout le reste retombe sur `manual`,
  * l'attestation la plus FAIBLE ; jamais sur `scan` : se tromper vers le bas est
  * honnête.
  *

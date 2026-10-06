@@ -38,7 +38,7 @@ export interface DepartureDeps {
  *    la décision réglée d'avance à la porte, résolue avec le réglage global
  *    (B3 bis) : une tournée partie ne change plus de règle ;
  * 4. une commande retenue au contrôle qualité arrête tout, en nommant l'arrêt
- *    (`plan-a-la-porte.md`, BQ) — lue au retrait, dans la transaction.
+ *    (`a-la-porte.md`, BQ) — lue au retrait, dans la transaction.
  *
  * À appeler DANS l'unité de travail, la tournée déjà chargée et verrouillée.
  * Rend le fait du départ : c'est au handler de le publier, dans sa

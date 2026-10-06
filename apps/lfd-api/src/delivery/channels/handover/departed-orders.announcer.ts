@@ -1,6 +1,6 @@
 /**
  * **« Ces commandes sont parties »** — la garde passe au livreur
- * (`documentation/livraisons/plan-a-la-porte.md`, § 10 ter, BQ).
+ * (`documentation/livraisons/a-la-porte.md`, § 10 ter, BQ).
  *
  * Déclarée par la livraison, implémentée par le retrait, qui garde « partie en
  * livraison » par commande (sa clé) et l'offre au fournil : un verdict

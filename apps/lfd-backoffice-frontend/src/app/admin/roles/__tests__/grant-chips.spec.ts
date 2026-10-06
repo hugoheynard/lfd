@@ -91,7 +91,7 @@ describe('grantGroups', () => {
    * la fiche, le colisage, le retrait) et les procédures de livraison
    * (plan-droits-par-geste.md, DG-D1). Puis à 42 le même jour :
    * `delivery_doorstep`, les gestes à la porte ne sont pas conduire
-   * (plan-a-la-porte.md, AP-D9). Puis à 44 le 2026-10-02 :
+   * (a-la-porte.md, AP-D9). Puis à 44 le 2026-10-02 :
    * `delivery_decisions` (sorti de `b2b_companies`) et `delivery_proofs`
    * (sorti de `b2b_orders`), lot « correctifs de droits ». Puis à 46 le
    * 2026-10-06 : `production_count_stop` (l'arrêt du plan) et

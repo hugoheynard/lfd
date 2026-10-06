@@ -1,5 +1,5 @@
 /**
- * E2E **à la porte** (`documentation/livraisons/plan-a-la-porte.md`, lot A) —
+ * E2E **à la porte** (`documentation/livraisons/a-la-porte.md`, lot A) —
  * « Je suis arrivé », « Déclarer un problème », clore sans remise, le dépôt
  * autorisé figé et la règle de la signature, « Non remis ».
  *

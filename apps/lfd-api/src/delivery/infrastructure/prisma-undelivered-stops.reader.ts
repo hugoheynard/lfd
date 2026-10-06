@@ -7,7 +7,7 @@ import {
 } from "../domain/ports/undelivered-stops.reader.js";
 
 /**
- * **Adaptateur Prisma de « Non remis »** (`plan-a-la-porte.md`, AP-D7). Il ne
+ * **Adaptateur Prisma de « Non remis »** (`a-la-porte.md`, AP-D7). Il ne
  * lit que les tables de la livraison : l'arrêt, sa tournée, et ce que le
  * départ a figé (numéro, client, arrivée). Aucune lecture du commerce.
  *

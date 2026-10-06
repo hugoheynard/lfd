@@ -1,6 +1,6 @@
 /**
  * E2E **une commande rapportée repart** (`documentation/livraisons/decisions-par-defaut-2026-10-02.md`,
- * § 4, lot RL1 ; `plan-a-la-porte.md`, B3, LB-Q2).
+ * § 4, lot RL1 ; `a-la-porte.md`, B3, LB-Q2).
  *
  * Ce que seule cette suite prouve, sur la vraie base :
  * - « Rapporter » rend la commande « à répartir » sur la composition d'un

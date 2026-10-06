@@ -1,5 +1,5 @@
 /**
- * E2E **le commercial décide** (`documentation/livraisons/plan-a-la-porte.md`,
+ * E2E **le commercial décide** (`documentation/livraisons/a-la-porte.md`,
  * § 10 B3, § 10 bis, LB-Q2, LB-Q5).
  *
  * Ce que seule cette suite prouve, sur la vraie base :

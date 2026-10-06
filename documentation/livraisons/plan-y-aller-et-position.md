@@ -25,7 +25,7 @@
 | Point GPS d'un arrêt           | carnet d'adresses (`deliverySpecs.gps`), lu par la feuille de route                  | ✅ seulement si la commande est reliée au carnet                              |
 | Ordre des arrêts d'une tournée | `delivery_round_stop.position`                                                       | ✅                                                                            |
 | **Arrêt livré**                | `delivery_round_stop.closed_at`                                                      | 🔴 **la colonne existe, rien ne l'écrit** : « posé au lot 6 par `closeStop` » |
-| Lot 6 — la porte               | [`todo-la-porte.md`](todo-la-porte.md)                                               | ⏸ **en dette** depuis le 2026-09-29, conception tranchée                      |
+| Lot 6 — la porte               | [`a-la-porte.md`](a-la-porte.md)                                                     | ✅ lot 6 a bâti ; reste à faire au § 10 (2026-10-06)                          |
 | Position du téléphone          | —                                                                                    | ❌ aucun code ne la lit                                                       |
 | Rôle livreur                   | —                                                                                    | ❌ pas de rôle `livreur` (tranché au lot 6)                                   |
 

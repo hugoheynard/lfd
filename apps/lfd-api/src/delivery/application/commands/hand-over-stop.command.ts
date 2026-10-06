@@ -1,7 +1,7 @@
 import type { HandOverStopFields } from "@lfd/contracts";
 
 /**
- * **« Remis au client »** (`plan-a-la-porte.md`, B1) — la remise à la porte,
+ * **« Remis au client »** (`a-la-porte.md`, B1) — la remise à la porte,
  * ses pièces, et la clôture de l'arrêt. `staffUserId` est le mur.
  */
 export class HandOverStopCommand {

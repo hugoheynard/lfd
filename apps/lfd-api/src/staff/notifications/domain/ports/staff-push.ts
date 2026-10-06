@@ -20,7 +20,7 @@ export abstract class StaffPushSubscriptions {
    * pour lui : assumé, `plan-tournee-prete.md` PL5-D2).
    *
    * `staffUserId` est une **clé de routage** depuis le 2026-10-01
-   * (`plan-a-la-porte.md`, B5) : une notification ne part qu'aux
+   * (`a-la-porte.md`, B5) : une notification ne part qu'aux
    * installations des personnes qui tiennent, AU MOMENT DE L'ENVOI, le droit
    * qu'elle vise. Ce n'était qu'une trace auparavant (plan de l'auteur, D9) —
    * et quelqu'un qui perdait la cloche continuait de vibrer.

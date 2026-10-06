@@ -20,7 +20,7 @@ import {
 } from "./handover-proof-doubles.js";
 
 /*
- * La purge et l'effacement des pièces de remise (todo-la-porte.md, 2026-10-01) :
+ * La purge et l'effacement des pièces de remise (a-la-porte.md, 2026-10-01) :
  * les images d'abord, la ligne et son fait ensuite ; une image que le stockage
  * refuse garde la pièce entière.
  */

@@ -188,7 +188,7 @@ export const LIVRAISON_VIEWS: readonly WorkspaceView[] = [
     needs: 'delivery_rounds:read',
   },
   {
-    // Qui DÉCIDE à la porte y répond (plan-a-la-porte.md, B3) : son droit
+    // Qui DÉCIDE à la porte y répond (a-la-porte.md, B3) : son droit
     // (`delivery_decisions`, sorti de `b2b_companies` le 2026-10-02), pas
     // celui des tournées.
     key: 'a-decider',

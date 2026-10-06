@@ -143,7 +143,7 @@ const ALLOWED = {
   media: new Set(["staff", "platform", "pim"]),
   b2b: new Set(["staff", "pim", "platform", "production", "handover", "delivery"]),
   production: new Set(["staff", "platform"]),
-  // `delivery` depuis le 2026-10-01 (plan-a-la-porte.md, BQ) : le retrait
+  // `delivery` depuis le 2026-10-01 (a-la-porte.md, BQ) : le retrait
   // implémente ce que la livraison déclare — par son canal SEULEMENT, cf.
   // `PORT_SURFACE`.
   handover: new Set(["staff", "platform", "production", "delivery"]),
@@ -226,7 +226,7 @@ const PORT_SURFACE = {
   // voit ni la flotte, ni ses tables, ni ses règles.
   "b2b→delivery": "delivery/channels/commerce/",
   // Le RETRAIT implémente ce que la livraison déclare (2026-10-01,
-  // `plan-a-la-porte.md`, BQ) : « lesquelles sont retenues ? » au départ, et
+  // `a-la-porte.md`, BQ) : « lesquelles sont retenues ? » au départ, et
   // « elles sont parties » après lui. La garde passe au livreur au départ, et
   // c'est le retrait qui tient la garde — sa clé est la commande.
   //

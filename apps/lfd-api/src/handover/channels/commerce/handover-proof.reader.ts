@@ -4,7 +4,7 @@ import type { HandoverProofPiece } from "../../domain/value-objects/handover-pro
 
 /**
  * **Les preuves de remise à la porte, en lecture, pour le commerce**
- * (`plan-a-la-porte.md`, § 10, lot « voir les preuves ») — pour répondre à
+ * (`a-la-porte.md`, § 10, lot « voir les preuves ») — pour répondre à
  * une contestation depuis la fiche d'une commande.
  *
  * Le sens est l'INVERSE des trois lecteurs voisins : ici le retrait publie

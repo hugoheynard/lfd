@@ -66,7 +66,7 @@ const DOORSTEP_RULE = ":companyId/delivery-addresses/:addressId/doorstep-rule";
  * journal, dans sa transaction.
  *
  * Depuis le 2026-10-01, il règle aussi **« dépôt autorisé »** sur l'adresse
- * (`plan-a-la-porte.md`, AP-D5) : le commercial le règle comme la procédure,
+ * (`a-la-porte.md`, AP-D5) : le commercial le règle comme la procédure,
  * et la route d'édition de l'adresse — sous `b2b_companies` — ne le touche pas.
  * Et, du même jour, la **décision réglée d'avance à la porte** de l'adresse
  * (B3 bis, LB-Q6) : le commercial seul, le client ne la règle ni ne la lit.
