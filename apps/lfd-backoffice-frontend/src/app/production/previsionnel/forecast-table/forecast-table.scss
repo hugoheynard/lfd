@@ -153,11 +153,12 @@
   align-self: stretch;
   justify-content: flex-end;
 
-  /* 🔴 **La barre de la légende, sous le chiffre.** C'est le même vocabulaire
-     que les trois clés du bandeau, et c'est ce qui les rend utiles : une
-     légende dont les couleurs n'apparaissent nulle part n'explique rien. Trois
-     états, trois couleurs — arrêtée, encore ouverte, le pic — et elles se
-     répètent sous le total du pied, en haut comme en bas de la colonne. */
+  /* 🔴 **La barre d'état, sous le chiffre.** Trois états, trois couleurs —
+     arrêtée, encore ouverte, le pic — répétées sous le total du pied, en haut
+     comme en bas de la colonne. La couleur ne les dit pas seule : l'en-tête
+     les écrit en toutes lettres (« Arrêté », « Plan non arrêté », « pic »),
+     et c'est ce qui a permis de retirer la légende de la bande de tête
+     (2026-10-06). */
   border-bottom: var(--pv-bar) solid var(--fold-color-primary);
 }
 
@@ -204,12 +205,12 @@
 }
 
 /* Une journée encore ouverte porte son chiffre en encre atténuée ET une barre
-   éteinte : il bougera. Le mot reste dans la légende — la couleur ne dit rien
-   toute seule. */
+   éteinte : il bougera. Le mot est dans l'en-tête (« Plan non arrêté ») — la
+   couleur ne dit rien toute seule (2026-10-06). */
 /* 🔴 La barre d'une journée encore ouverte doit **se voir**. Elle lisait
    `--fold-color-border`, qui vaut 10 % d'opacité sur un fond de chrome : un
-   fantôme. Une légende à trois clés dont l'une est invisible ne dit pas « c'est
-   ténu », elle dit « il n'y a rien » — et l'état qu'elle décrit, une journée
+   fantôme. Une barre invisible ne dit pas « c'est ténu », elle dit « il n'y a
+   rien » — et l'état qu'elle décrit, une journée
    que le commerce peut encore charger, est justement celui qu'on surveille. */
 .pv-day.is-open {
   border-bottom-color: var(--fold-color-text-muted);

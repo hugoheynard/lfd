@@ -119,41 +119,6 @@
   gap: var(--fold-space-xs);
 }
 
-/* La légende dit d'où vient un chiffre — un fait arrêté, ou une prévision qui
-   bougera. La couleur ne porte jamais l'information seule : chaque clé est
-   suivie de son mot. */
-.pv-legend {
-  display: flex;
-  flex-wrap: wrap;
-  align-items: center;
-  gap: var(--fold-space-xs);
-  /* Le seul écart de la bande, et il sépare deux choses qui se lisent : le
-     verdict, puis ce qui explique d'où viennent ses chiffres. */
-  margin: var(--fold-space-sm) 0 0;
-  font-size: var(--fold-text-xs);
-  color: var(--fold-color-text-muted);
-}
-
-.pv-key {
-  display: inline-block;
-  width: 12px;
-  height: 3px;
-  border-radius: var(--fold-radius-xs);
-  background: var(--fold-color-primary);
-}
-
-/* La MÊME encre que la barre qu'elle explique. Elle lisait `--fold-color-border`
-   — 10 % d'opacité sur un fond de chrome, donc une clé invisible dans une
-   légende à trois : elle ne disait pas « c'est ténu », elle disait « il n'y a
-   rien ». */
-.pv-key--open {
-  background: var(--fold-color-text-muted);
-}
-
-.pv-key--peak {
-  background: var(--fold-color-warning);
-}
-
 /* ── LA PLACE DE LA TABLE ───────────────────────────────────────────────────
    Le layout porte la bande et s'arrête là : `flex: 0 0 auto`, il prend ce que
    son contenu mesure. Tout le reste de la hauteur est à la table.

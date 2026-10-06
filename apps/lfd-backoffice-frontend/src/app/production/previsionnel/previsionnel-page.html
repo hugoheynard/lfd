@@ -1,5 +1,5 @@
 <!--
-  **Le mur qui arrive.** Sept colonnes égales, une matrice `produits × jours`.
+  **Le prévisionnel.** Sept colonnes égales, une matrice `produits × jours`.
 
   Pas de `title` sur le layout : la page porte sa phrase dans la bande, et deux
   titres de premier niveau sur un écran n'en font aucun.
@@ -11,75 +11,16 @@
     ligne prise par de la prose est une référence de moins visible sans faire
     défiler.
   -->
-  <fold-page-section bleed class="pv-masthead" foldSurface="chrome">
-    <div class="pv-masthead-bar">
-      <div class="pv-said">
-        @if (view() === 'mur') {
-          <p class="pv-eyebrow">Semaine {{ windowLabel() }}</p>
-          @if (state() === 'ready') {
-            <h1 class="pv-title">
-              {{ pieces() }} pièce{{ pieces() > 1 ? 's' : '' }} à produire sur
-              {{ headers().length }} jours.
-            </h1>
-          }
-        } @else {
-          <p class="pv-eyebrow">Le tirage du soir</p>
-          <h1 class="pv-title">Le dossier qui part au fournil.</h1>
-        }
-      </div>
-
-      <div class="pv-nav">
-        <!--
-          Les deux lectures du soir. La navigation de FENÊTRE ne s'affiche qu'avec
-          la matrice : le dossier a sa propre journée, et deux sélecteurs de temps
-          côte à côte feraient croire qu'ils se commandent.
-        -->
-        <fold-view-toggle
-          size="sm"
-          ariaLabel="Lecture du prévisionnel"
-          [options]="views"
-          [value]="view()"
-          (valueChange)="view.set($event)"
-        />
-        @if (view() === 'mur') {
-          @if (!atToday) {
-            <button foldButton emphasis="outline" size="sm" (click)="backToToday()">
-              Aujourd’hui
-            </button>
-          }
-          <button foldButton emphasis="outline" size="sm" icon="chevron-left" (click)="shift(-1)">
-            Semaine précédente
-          </button>
-          <button foldButton emphasis="outline" size="sm" icon="chevron-right" (click)="shift(1)">
-            Semaine suivante
-          </button>
-        }
-      </div>
-    </div>
-
-    <!--
-      La légende dit d'où vient un chiffre. Une journée ARRÊTÉE porte le compte
-      à produire figé à la clôture — un fait ; une journée ouverte porte ce que
-      le commerce a reçu à cette heure-ci, et qui bougera encore.
-    -->
-    <!--
-      **Arrêter le plan.** Une bande, pas un bouton par colonne : le geste se
-      fait une fois par soir, sur la journée qu'on vient de finir de prendre —
-      et la nommer en toutes lettres vaut mieux que six boutons dont on
-      choisirait le mauvais.
-
-      Elle ne s'affiche que s'il y a quelque chose à arrêter dans la fenêtre
-      (`dayToArrest` écarte les journées déjà closes et les journées vides,
-      que la clôture refuserait).
-    -->
-    @if (view() === 'mur' && state() === 'ready') {
-      <!--
-        **Le rattrapage** (2026-10-06). Le plan d'aujourd'hui n'a pas été arrêté
-        hier soir : il passe EN PREMIER et en alerte, parce que tant qu'il ne
-        l'est pas, rien ne part en fournée. La bande du soir reste dessous.
-      -->
-      @if (dayToCatchUp(); as day) {
-        <fold-callout variant="alert">
+  <!--
+    **Le rattrapage** (2026-10-06). Le plan d'aujourd'hui n'a pas été arrêté
+    hier soir : il passe AVANT tout le reste, en bande pleine largeur sous
+    l'en-tête de l'application — `appearance="flat"`, la bande que fold prévoit pour ça —, parce que tant qu'il ne l'est pas, rien ne
+    part en fournée. La bande du soir, elle, reste sous le titre.
+  -->
+  @if (view() === 'matrix' && state() === 'ready') {
+    @if (dayToCatchUp(); as day) {
+      <fold-page-section bleed class="pv-catch-up">
+        <fold-callout variant="alert" appearance="flat">
           Le plan d’aujourd’hui, {{ day.weekday }} {{ day.dayMonth }}, n’a pas été arrêté hier soir.
           Tant qu’il ne l’est pas, rien ne part en fournée.
           @if (arrestingDay() === day.date) {
@@ -107,7 +48,89 @@
             </button>
           }
         </fold-callout>
-      }
+      </fold-page-section>
+    }
+  }
+
+  <!--
+    **La bande de tête.** Ce qu'on vient y chercher en levant les yeux : la
+    période, ce qu'elle pèse, et de quoi la déplacer. Rien d'autre — chaque
+    ligne prise par de la prose est une référence de moins visible sans faire
+    défiler.
+  -->
+  <fold-page-section bleed class="pv-masthead" foldSurface="chrome">
+    <div class="pv-masthead-bar">
+      <div class="pv-said">
+        @if (view() === 'matrix') {
+          <p class="pv-eyebrow">Semaine {{ windowLabel() }}</p>
+          @if (state() === 'ready') {
+            <h1 class="pv-title">
+              {{ pieces() }} pièce{{ pieces() > 1 ? 's' : '' }} à produire sur
+              {{ headers().length }} jours.
+            </h1>
+          }
+        } @else {
+          <p class="pv-eyebrow">Le tirage du soir</p>
+          <h1 class="pv-title">Le dossier qui part au fournil.</h1>
+        }
+      </div>
+
+      <div class="pv-nav">
+        <!--
+          La matrice ouvre l'écran ; le dossier est un détour qu'on prend le
+          soir, d'où un bouton et non un onglet (2026-10-06). La navigation de
+          FENÊTRE ne s'affiche qu'avec la matrice : le dossier a sa propre
+          journée, et deux sélecteurs de temps côte à côte feraient croire
+          qu'ils se commandent.
+        -->
+        @if (view() === 'matrix') {
+          @if (!atToday) {
+            <button foldButton emphasis="outline" size="sm" (click)="backToToday()">
+              Aujourd’hui
+            </button>
+          }
+          <button foldButton emphasis="outline" size="sm" icon="chevron-left" (click)="shift(-1)">
+            Semaine précédente
+          </button>
+          <button foldButton emphasis="outline" size="sm" icon="chevron-right" (click)="shift(1)">
+            Semaine suivante
+          </button>
+          <button
+            foldButton
+            emphasis="outline"
+            size="sm"
+            icon="print"
+            class="pv-open-dossier"
+            (click)="view.set('dossier')"
+          >
+            Dossier du jour
+          </button>
+        } @else {
+          <button
+            foldButton
+            emphasis="outline"
+            size="sm"
+            icon="chevron-left"
+            class="pv-back"
+            (click)="view.set('matrix')"
+          >
+            Retour au prévisionnel
+          </button>
+        }
+      </div>
+    </div>
+
+    <!--
+      **Arrêter le plan.** Une bande, pas un bouton par colonne : le geste se
+      fait une fois par soir, sur la journée qu'on vient de finir de prendre —
+      et la nommer en toutes lettres vaut mieux que six boutons dont on
+      choisirait le mauvais.
+
+      Elle ne s'affiche que s'il y a quelque chose à arrêter dans la fenêtre
+      (`dayToArrest` écarte les journées déjà closes et les journées vides,
+      que la clôture refuserait).
+    -->
+    @if (view() === 'matrix' && state() === 'ready') {
       @if (dayToArrest(); as day) {
         <div class="pv-arrest">
           <p class="pv-arrest-said">
@@ -162,14 +185,6 @@
         Réessayez.
       </fold-callout>
     }
-
-    @if (view() === 'mur' && state() === 'ready' && pieces() > 0) {
-      <p class="pv-legend">
-        <span class="pv-key pv-key--closed"></span> journée arrêtée
-        <span class="pv-key pv-key--open"></span> encore ouverte
-        <span class="pv-key pv-key--peak"></span> le pic
-      </p>
-    }
   </fold-page-section>
 </fold-page-layout>
 
@@ -193,7 +208,7 @@
   n'y porte ni `flex: 1` ni `min-height: 0`, et `scroll="own"` ne change que
   l'hôte.)
 -->
-@if (view() === 'mur') {
+@if (view() === 'matrix') {
   @switch (state()) {
     @case ('loading') {
       <fold-loading message="Lecture du prévisionnel…" />

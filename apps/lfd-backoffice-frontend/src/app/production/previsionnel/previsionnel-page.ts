@@ -17,8 +17,6 @@ import {
   FoldPageLayoutComponent,
   FoldPageSectionComponent,
   FoldSurfaceDirective,
-  FoldViewToggleComponent,
-  type FoldViewToggleOption,
 } from 'fold-ng';
 
 import { AdminCatalogService } from '../../commandes/catalog.service';
@@ -42,12 +40,11 @@ const FORECAST_REFRESH_MS = 60_000;
 /**
  * Les deux lectures du soir, et l'ordre est celui du geste : on regarde ce qui
  * arrive, on arrête le plan de la journée qu'on vient de finir de prendre, puis
- * on tire son dossier. La matrice ouvre donc l'écran.
+ * on tire son dossier. La matrice ouvre donc l'écran ; le dossier s'ouvre par
+ * un bouton et se referme par « Retour au prévisionnel » (2026-10-06 — il y
+ * avait un onglet, dont l'un des deux libellés ne disait rien à l'équipe).
  */
-const VIEWS: readonly FoldViewToggleOption[] = [
-  { value: 'mur', label: 'Le mur qui arrive', icon: 'stats' },
-  { value: 'dossier', label: 'Dossier du jour', icon: 'print' },
-];
+type ForecastView = 'matrix' | 'dossier';
 
 /**
  * **Le prévisionnel** — la matrice `produits × jours` du fournil.
@@ -55,7 +52,7 @@ const VIEWS: readonly FoldViewToggleOption[] = [
  * ## La question de l'écran
  *
  * Celui qui l'ouvre ne cherche pas ce qu'il doit faire maintenant — c'est sur la
- * fiche d'atelier, et c'est déjà au four. Il cherche **le mur qui arrive** : le
+ * fiche d'atelier, et c'est déjà au four. Il cherche **ce qui arrive** : le
  * samedi à 3 800 pièces, le week-end à couvrir, la commande qui double une
  * ligne. D'où sept colonnes ÉGALES — le jour courant est marqué, pas privilégié
  * —, des quantités qui dominent le nom du produit, et **une seule colonne
@@ -97,7 +94,7 @@ const VIEWS: readonly FoldViewToggleOption[] = [
   // 🔴 La classe suit la vue ouverte, et ELLE SEULE contraint la hauteur — cf.
   // le commentaire de `:host(.is-wall)` dans la feuille. Le dossier du jour,
   // qui part à l'imprimante tous les jours, reste en flux.
-  host: { '[class.is-wall]': "view() === 'mur'" },
+  host: { '[class.is-wall]': "view() === 'matrix'" },
   imports: [
     DossierDuJour,
     ForecastTable,
@@ -109,7 +106,6 @@ const VIEWS: readonly FoldViewToggleOption[] = [
     FoldPageLayoutComponent,
     FoldPageSectionComponent,
     FoldSurfaceDirective,
-    FoldViewToggleComponent,
   ],
   templateUrl: './previsionnel-page.html',
   styleUrl: './previsionnel-page.scss',
@@ -124,12 +120,11 @@ export class PrevisionnelPage {
 
   /**
    * La lecture affichée. **Pas dans l'URL**, contrairement à la plage : celle-ci
-   * se partage (« regarde la semaine du 3 »), alors qu'un onglet est une posture
+   * se partage (« regarde la semaine du 3 »), alors qu'une lecture est une posture
    * de lecture, et un lien qui ouvrirait le dossier d'un jour que son propre
    * sélecteur choisit dirait deux journées à la fois.
    */
-  protected readonly view = signal<string>('mur');
-  protected readonly views = VIEWS;
+  protected readonly view = signal<ForecastView>('matrix');
 
   /** Le jour du poste, lu une fois : un écran de planning ne vit pas la nuit. */
   private readonly today = isoDay(new Date());
@@ -137,7 +132,7 @@ export class PrevisionnelPage {
   /** La borne basse de la fenêtre — de l'URL si elle en porte une, sinon aujourd'hui. */
   protected readonly from = signal(this.route.snapshot.queryParamMap.get('from') ?? this.today);
 
-  /** La matrice lue. Nommée `forecast` et non `view` : `view` est l'onglet. */
+  /** La matrice lue. Nommée `forecast` et non `view` : `view` est la lecture ouverte. */
   private readonly forecast = signal<ProductionForecastView | null>(null);
   private readonly catalogue = signal<readonly CatalogItemView[]>([]);
 
