@@ -54,7 +54,10 @@
 >   qui écoute un fait d'un autre bloc vit sur le bus en mémoire, et un
 >   redémarrage laisse les deux blocs en désaccord sans que personne le sache ;
 >   entre deux blocs, l'abonné est un `@DurableHandler`, et les abonnés qui
->   restent à basculer sont une dette comptée qui ne peut que décroître. Et
+>   restent à basculer sont une dette comptée qui ne peut que décroître
+>   (élargie le 2026-10-06 : un abonné qui écoute SON bloc mais appelle un
+>   port de canal qu'un autre bloc implémente — liaison lue dans les modules —
+>   traverse aussi, et compte dans la même dette). Et
 >   **42** depuis le 2026-10-06 avec `lint:rgpd-staff` : chaque colonne qui
 >   porte une donnée personnelle d'un membre du staff ou d'un réceptionnaire
 >   est au registre `documentation/legal/rgpd-registre.json`, que le texte

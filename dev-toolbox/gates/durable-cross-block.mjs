@@ -19,6 +19,23 @@
  * commerce/`) appartient au bloc qui le déclare : un fait publié pour un autre
  * bloc est exactement le cas visé.
  *
+ * Depuis le 2026-10-06, **le second chemin** : un `@EventsHandler` qui écoute
+ * un fait de SON bloc mais dont le constructeur injecte un **port de canal
+ * qu'un autre bloc implémente**. Il appelle l'autre bloc après la validation —
+ * en direct, par `AfterCommit.defer` ou `BackgroundWork.track` — et un
+ * redémarrage entre les deux perd l'appel sans reprise. Le chemin du fait est
+ * différent, la panne est la même.
+ *
+ * Qui implémente ? Le nom du canal ne le dit PAS : un dossier de canal porte
+ * les deux sens (`delivery/channels/commerce/` contient
+ * `DeliveryDepartureAnnouncer`, implémenté par le commerce, et
+ * `DeliveryOrderPlacedListener`, que la livraison implémente elle-même ;
+ * vérifié le 2026-10-06). La porte lit donc la LIAISON réelle : dans tout
+ * `*.module.ts` de `src/`, `{ provide: Port, useExisting|useClass: Impl }`, et
+ * le bloc de `Impl` est celui de son chemin d'import. Un port de canal sans
+ * liaison lisible est compté comme traversant — refuser en doute, puisque
+ * l'erreur inverse est silencieuse.
+ *
  * Ce qu'il ne voit pas : un abonné du même bloc dont la perte coûte quand même
  * (un courriel, des points). C'est la question de l'inventaire, pas d'une porte.
  *
@@ -45,6 +62,19 @@ const SRC = join(ROOT, "apps/lfd-api/src");
  */
 const DEBT = new Map([
   ["apps/lfd-api/src/b2b/catalog/application/handlers/on-product-media-changed.handler.ts", "E5"],
+  // Relevés le 2026-10-06, à l'élargissement au second chemin (port appelé).
+  [
+    "apps/lfd-api/src/delivery/application/handlers/hand-departed-orders-over.handler.ts",
+    "départ → retrait par DepartedOrdersAnnouncer, en différé ; à basculer en fait durable",
+  ],
+  [
+    "apps/lfd-api/src/delivery/application/handlers/announce-delivery-departure.handler.ts",
+    "départ → commerce par DeliveryDepartureAnnouncer, en différé ; à basculer en fait durable",
+  ],
+  [
+    "apps/lfd-api/src/b2b/orders/application/handlers/tell-delivery-order-placed.handler.ts",
+    "commande passée → livraison par DeliveryOrderPlacedListener ; à basculer en fait durable",
+  ],
 ]);
 
 const SKIP_DIRS = new Set(["node_modules", "__tests__", "client"]);
@@ -113,10 +143,52 @@ function crossingsIn(file) {
   return crossings;
 }
 
+/** `Port → bloc qui l'implémente`, lu dans les liaisons des modules. */
+function implementers(files) {
+  const map = new Map();
+  for (const file of files.filter((f) => f.endsWith(".module.ts"))) {
+    const source = withoutComments(readFileSync(file, "utf8"));
+    const imports = importedFrom(source, file);
+    const bindings = source.matchAll(/provide:\s*(\w+)\s*,\s*(?:useExisting|useClass):\s*(\w+)/g);
+    for (const [, port, impl] of bindings) {
+      const origin = imports.get(impl) ?? file;
+      map.set(port, blockOf(origin));
+    }
+  }
+  return map;
+}
+
+/** Les ports de canal injectés qu'un autre bloc implémente. */
+function crossingPortsIn(file, implementedBy) {
+  const source = withoutComments(readFileSync(file, "utf8"));
+  if (!/@EventsHandler\(/.test(source)) {
+    return [];
+  }
+  const imports = importedFrom(source, file);
+  const ctor = source.match(/constructor\s*\(([\s\S]*?)\)\s*\{/);
+  if (!ctor) {
+    return [];
+  }
+  const crossings = [];
+  for (const [, type] of ctor[1].matchAll(/:\s*(\w+)/g)) {
+    const origin = imports.get(type);
+    if (origin === undefined || !/[\\/]channels[\\/]/.test(origin)) {
+      continue;
+    }
+    const impl = implementedBy.get(type) ?? "liaison introuvable";
+    if (impl !== blockOf(file)) {
+      crossings.push(`port ${type} (implémenté par ${impl})`);
+    }
+  }
+  return crossings;
+}
+
 const stale = [...DEBT.keys()].filter((path) => !existsSync(join(ROOT, path)));
 const found = new Map();
-for (const file of typescriptFiles(SRC)) {
-  const crossings = crossingsIn(file);
+const sources = typescriptFiles(SRC);
+const implementedBy = implementers(sources);
+for (const file of sources) {
+  const crossings = [...crossingsIn(file), ...crossingPortsIn(file, implementedBy)];
   if (crossings.length > 0) {
     found.set(relative(ROOT, file), crossings);
   }
@@ -126,8 +198,9 @@ const failures = [];
 for (const [file, crossings] of found) {
   if (!DEBT.has(file)) {
     failures.push(
-      `  ${file}  écoute ${crossings.join(", ")} en mémoire — ` +
-        `un fait qui traverse un bloc se livre par la boîte d'envoi (@DurableHandler)`,
+      `  ${file}  ${crossings.join(", ")} — un abonné en mémoire qui écoute un autre bloc ` +
+        `ou appelle le port d'un autre bloc traverse la frontière : publie un fait durable ` +
+        `dans ton canal et abonne l'autre bloc en @DurableHandler.`,
     );
   }
 }
@@ -153,5 +226,5 @@ console.log(
     `  Dette restante : ${DEBT.size} abonné(s) — compté, pas ignoré.`,
 );
 for (const [file, lot] of DEBT) {
-  console.log(`    ${file}  (${found.get(file)?.join(", ")}, lot ${lot})`);
+  console.log(`    ${file}  (${found.get(file)?.join(", ")} — ${lot})`);
 }
