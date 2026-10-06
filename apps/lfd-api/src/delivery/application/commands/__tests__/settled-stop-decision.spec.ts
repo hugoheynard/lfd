@@ -14,6 +14,7 @@ import type {
   DepartedStopRow,
   DriverRoundRow,
 } from "../../../domain/ports/driver-rounds.reader.js";
+import { DELIVERY_ORDERS_BROUGHT_BACK } from "../../../channels/handover/index.js";
 import { StopDecisionBySetting } from "../../stop-decision-by-setting.js";
 import { StopDecisionOpening } from "../../stop-decision-opening.js";
 import { ReportDeliveryIncidentCommand } from "../report-delivery-incident.command.js";
@@ -21,7 +22,7 @@ import { ReportDeliveryIncidentHandler } from "../report-delivery-incident.handl
 import {
   InMemoryStopDecisions,
   openDecision,
-  RecordingBroughtBack,
+  RecordingDurable,
   RecordingStaffNotifier,
 } from "./decision-doubles.js";
 import { FixedDriverRounds, InMemoryDocuments, InMemoryIncidents } from "./doorstep-doubles.js";
@@ -79,7 +80,7 @@ function driverRound(rule: DoorstepRule): DriverRoundRow {
 function reporting(rule: DoorstepRule, decisions = new InMemoryStopDecisions()) {
   const rounds = new InMemoryDeliveryRounds(roundState());
   const notifier = new RecordingStaffNotifier();
-  const announcer = new RecordingBroughtBack();
+  const durable = new RecordingDurable();
   const afterCommit = new HeldAfterCommit();
   const events = new RecordingPublisher();
   const handler = new ReportDeliveryIncidentHandler(
@@ -98,18 +99,17 @@ function reporting(rule: DoorstepRule, decisions = new InMemoryStopDecisions()) 
       notifier,
       afterCommit,
       new BackgroundWork(),
-      new StopDecisionBySetting(rounds, decisions, announcer, afterCommit, new BackgroundWork()),
+      new StopDecisionBySetting(rounds, decisions, durable),
     ),
   );
-  return { handler, rounds, decisions, notifier, announcer, afterCommit, events };
+  return { handler, rounds, decisions, notifier, durable, afterCommit, events };
 }
 
 const NOBODY = { family: "doorstep", reason: "nobody_present", note: "", stopId: "s_1" } as const;
 
 describe("ReportDeliveryIncidentHandler — la décision réglée d'avance (B3 bis)", () => {
   it("🔴 « Rapporter » clôt l'arrêt aussitôt, tracé par le réglage, sans prévenir personne", async () => {
-    const { handler, rounds, decisions, notifier, announcer, afterCommit, events } =
-      reporting("bring_back");
+    const { handler, rounds, decisions, notifier, durable, events } = reporting("bring_back");
 
     await handler.execute(new ReportDeliveryIncidentCommand(PAUL, "r_1", NOBODY, null));
 
@@ -130,11 +130,10 @@ describe("ReportDeliveryIncidentHandler — la décision réglée d'avance (B3 b
       order: { id: "o_1", name: "CMD-1" },
       source: "setting",
     });
-    expect(announcer.announced).toEqual([]);
-
-    await afterCommit.commit();
-
-    expect(announcer.announced).toEqual([{ orderIds: ["o_1"], at: NOW }]);
+    // Le retour au retrait part en fait durable, dans la transaction du signalement (DD1).
+    expect(durable.payloadsOf(DELIVERY_ORDERS_BROUGHT_BACK)).toEqual([
+      { roundId: "r_1", orderIds: ["o_1"], broughtBackAt: NOW.toISOString() },
+    ]);
     expect(notifier.notified).toEqual([]);
   });
 

@@ -4,18 +4,16 @@ import type { MailReceipt, SendMailArgs } from "@lfd/mailer";
 import type { B2bMails } from "../../../../../platform/mailer/mail-templates.js";
 import { OrderMailOrigins } from "../../../domain/ports/order-mail-origins.js";
 import { OrderReader, type OwnedOrder } from "../../../domain/ports/order.reader.js";
-import { DeliveryEnRouteMailFailedError } from "../../../domain/errors/delivery-en-route-errors.js";
-import {
-  OneRecipientReader,
-  orderView,
-  RecordingMailer,
-} from "../../handlers/__tests__/payment-failure-doubles.js";
-import { CommerceDeliveryDepartureAnnouncer } from "../commerce-delivery-departure-announcer.js";
-import { DeliveryEnRouteMail } from "../delivery-en-route-mail.service.js";
+import { DeliveryRoundDepartedFact } from "../../../../../delivery/channels/commerce/index.js";
+import type { DurableDelivery } from "../../../../../platform/outbox/durable-event.js";
+import { DeliveryEnRouteMail } from "../../services/delivery-en-route-mail.service.js";
+import { MAIL_DELIVERY_EN_ROUTE, MailDeliveryEnRoute } from "../mail-delivery-en-route.handler.js";
+import { OneRecipientReader, orderView, RecordingMailer } from "./payment-failure-doubles.js";
 
 /*
- * Le commerce entend le départ (plan-en-route.md, PL3-D1, D3) : un courriel
- * par commande encore en route, à l'auteur, avec une clé par commande.
+ * Le commerce entend le départ, fait durable (en-route.md ; plan-depart-durable.md,
+ * DD1) : un courriel par commande encore en route, à l'auteur, avec une clé
+ * par commande ET par tournée ; un échec journalisé, jamais relancé.
  */
 
 const DEPARTED = new Date(60_000);
@@ -111,7 +109,7 @@ class FailingFor extends RecordingMailer {
   }
 }
 
-function announcer(
+function subscriber(
   views: readonly OrderView[],
   mailer: RecordingMailer = new RecordingMailer(),
   email: string | null = "camille@halles.test",
@@ -122,22 +120,29 @@ function announcer(
     new FixedOrigins(),
     mailer,
   );
-  return { subject: new CommerceDeliveryDepartureAnnouncer(mail), mailer };
+  return { subject: new MailDeliveryEnRoute(mail), mailer };
 }
 
-describe("CommerceDeliveryDepartureAnnouncer", () => {
-  it("écrit une fois par commande, à l'auteur, avec une clé par commande", async () => {
-    const { subject, mailer } = announcer([delivered("o_1"), delivered("o_2")]);
+/** Le fait tel que le relais le livre : relu de sa charge, comme en production. */
+function departed(roundId: string, orderIds: readonly string[]): DurableDelivery {
+  const fact = new DeliveryRoundDepartedFact(roundId, "2030-03-12", DEPARTED, orderIds);
+  const { type, payload } = fact.durableFact();
+  return { eventId: `evt_${roundId}`, type, payload };
+}
 
-    await subject.announceDeparture({
-      roundId: "r_1",
-      departedAt: DEPARTED,
-      orderIds: ["o_1", "o_2"],
-    });
+describe("MailDeliveryEnRoute — abonné durable « en route »", () => {
+  it("porte un nom d'abonné stable", () => {
+    expect(MAIL_DELIVERY_EN_ROUTE).toBe("b2b.mail-delivery-en-route");
+  });
+
+  it("écrit une fois par commande, à l'auteur, avec une clé par commande et par tournée", async () => {
+    const { subject, mailer } = subscriber([delivered("o_1"), delivered("o_2")]);
+
+    await subject.handle(departed("r_1", ["o_1", "o_2"]));
 
     expect(mailer.sent.map((sent) => sent.idempotencyKey)).toEqual([
-      "delivery.en_route:o_1",
-      "delivery.en_route:o_2",
+      "delivery.en_route:o_1:r_1",
+      "delivery.en_route:o_2:r_1",
     ]);
     expect(mailer.sent[0]).toMatchObject({
       to: "camille@halles.test",
@@ -151,47 +156,56 @@ describe("CommerceDeliveryDepartureAnnouncer", () => {
     });
   });
 
+  it("rejoué, il redemande la même clé : Resend absorbe, pas de second courriel", async () => {
+    const { subject, mailer } = subscriber([delivered("o_1")]);
+
+    await subject.handle(departed("r_1", ["o_1"]));
+    await subject.handle(departed("r_1", ["o_1"]));
+
+    expect(new Set(mailer.sent.map((sent) => sent.idempotencyKey))).toEqual(
+      new Set(["delivery.en_route:o_1:r_1"]),
+    );
+  });
+
+  it("un second passage (une autre tournée) a son propre courriel", async () => {
+    const { subject, mailer } = subscriber([delivered("o_1")]);
+
+    await subject.handle(departed("r_1", ["o_1"]));
+    await subject.handle(departed("r_2", ["o_1"]));
+
+    expect(mailer.sent.map((sent) => sent.idempotencyKey)).toEqual([
+      "delivery.en_route:o_1:r_1",
+      "delivery.en_route:o_1:r_2",
+    ]);
+  });
+
   it("se tait pour une commande annulée ou déjà retirée", async () => {
-    const { subject, mailer } = announcer([
+    const { subject, mailer } = subscriber([
       delivered("o_1", { status: "cancelled" }),
       delivered("o_2", { status: "fulfilled" }),
       delivered("o_3", { handedOverAt: new Date(0).toISOString() }),
       delivered("o_4"),
     ]);
 
-    await subject.announceDeparture({
-      roundId: "r_1",
-      departedAt: DEPARTED,
-      orderIds: ["o_1", "o_2", "o_3", "o_4"],
-    });
+    await subject.handle(departed("r_1", ["o_1", "o_2", "o_3", "o_4"]));
 
-    expect(mailer.sent.map((sent) => sent.idempotencyKey)).toEqual(["delivery.en_route:o_4"]);
+    expect(mailer.sent.map((sent) => sent.idempotencyKey)).toEqual(["delivery.en_route:o_4:r_1"]);
   });
 
   it("se tait pour une commande disparue ou un client sans adresse", async () => {
-    const { subject, mailer } = announcer([delivered("o_1")], new RecordingMailer(), null);
+    const { subject, mailer } = subscriber([delivered("o_1")], new RecordingMailer(), null);
 
-    await subject.announceDeparture({
-      roundId: "r_1",
-      departedAt: DEPARTED,
-      orderIds: ["o_1", "o_inconnue"],
-    });
+    await subject.handle(departed("r_1", ["o_1", "o_inconnue"]));
 
     expect(mailer.sent).toEqual([]);
   });
 
-  it("un envoi raté ne prive pas les suivants, et l'échec est levé à la fin en le nommant", async () => {
+  it("🔴 un envoi raté ne prive pas les suivants, et n'est PAS relancé : l'abonné ne lève pas", async () => {
     const mailer = new FailingFor("ORD-o_1");
-    const { subject } = announcer([delivered("o_1"), delivered("o_2")], mailer);
+    const { subject } = subscriber([delivered("o_1"), delivered("o_2")], mailer);
 
-    const run = subject.announceDeparture({
-      roundId: "r_1",
-      departedAt: DEPARTED,
-      orderIds: ["o_1", "o_2"],
-    });
+    await expect(subject.handle(departed("r_1", ["o_1", "o_2"]))).resolves.toBeUndefined();
 
-    await expect(run).rejects.toThrow(DeliveryEnRouteMailFailedError);
-    await expect(run).rejects.toThrow(/Tournée r_1.*1 commande\(s\) : o_1/u);
-    expect(mailer.sent.map((sent) => sent.idempotencyKey)).toEqual(["delivery.en_route:o_2"]);
+    expect(mailer.sent.map((sent) => sent.idempotencyKey)).toEqual(["delivery.en_route:o_2:r_1"]);
   });
 });

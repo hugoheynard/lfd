@@ -27,8 +27,9 @@
  * différent, la panne est la même.
  *
  * Qui implémente ? Le nom du canal ne le dit PAS : un dossier de canal porte
- * les deux sens (`delivery/channels/commerce/` contient
- * `DeliveryDepartureAnnouncer`, implémenté par le commerce, et
+ * les deux sens (`delivery/channels/commerce/` contenait
+ * `DeliveryDepartureAnnouncer`, implémenté par le commerce — retiré au profit
+ * d'un fait durable le 2026-10-06, DD1 —, et contient
  * `DeliveryOrderPlacedListener`, que la livraison implémente elle-même ;
  * vérifié le 2026-10-06). La porte lit donc la LIAISON réelle : dans tout
  * `*.module.ts` de `src/`, `{ provide: Port, useExisting|useClass: Impl }`, et
@@ -63,14 +64,8 @@ const SRC = join(ROOT, "apps/lfd-api/src");
 const DEBT = new Map([
   ["apps/lfd-api/src/b2b/catalog/application/handlers/on-product-media-changed.handler.ts", "E5"],
   // Relevés le 2026-10-06, à l'élargissement au second chemin (port appelé).
-  [
-    "apps/lfd-api/src/delivery/application/handlers/hand-departed-orders-over.handler.ts",
-    "départ → retrait par DepartedOrdersAnnouncer, en différé ; à basculer en fait durable",
-  ],
-  [
-    "apps/lfd-api/src/delivery/application/handlers/announce-delivery-departure.handler.ts",
-    "départ → commerce par DeliveryDepartureAnnouncer, en différé ; à basculer en fait durable",
-  ],
+  // Les deux abonnés du départ (vers le retrait, vers le commerce) ont basculé
+  // en faits durables le 2026-10-06 (plan-depart-durable.md, DD1).
   [
     "apps/lfd-api/src/b2b/orders/application/handlers/tell-delivery-order-placed.handler.ts",
     "commande passée → livraison par DeliveryOrderPlacedListener ; à basculer en fait durable",

@@ -61,6 +61,7 @@
   "test/delivery-composition-prerequisites.e2e-spec.ts": 5549,
   "test/delivery-day-readiness.e2e-spec.ts": 7913,
   "test/delivery-day-version.e2e-spec.ts": 5922,
+  "test/delivery-departure-durable.e2e-spec.ts": 6823,
   "test/delivery-deposit-doorstep.e2e-spec.ts": 5253,
   "test/delivery-deposit.e2e-spec.ts": 3317,
   "test/delivery-doorstep-rule.e2e-spec.ts": 6065,

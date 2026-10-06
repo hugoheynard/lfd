@@ -9,10 +9,12 @@ import { GetHandoverByOrderHandler } from "./application/queries/get-handover-by
 import { GetHandoverQueueHandler } from "./application/queries/get-handover-queue.handler.js";
 import { GetHandoverHandler } from "./application/queries/get-handover.handler.js";
 import { HandoverAttestation } from "./application/services/handover-attestation.service.js";
-import { HandoverDepartedOrders } from "./application/services/handover-departed-orders.js";
+import { RecordOrdersBroughtBack } from "./application/handlers/record-orders-brought-back.handler.js";
+import { RecordRoundDeparted } from "./application/handlers/record-round-departed.handler.js";
 import { HandoverDepartureHolds } from "./application/services/handover-departure-holds.js";
 import { HandoverDoorstepAttestor } from "./application/services/handover-doorstep-attestor.js";
 import { HandoverProofErasure } from "./application/services/handover-proof-erasure.js";
+import { HandedOverOrdersReader } from "./domain/ports/handed-over-orders.reader.js";
 import { HandoverAttestationsReader } from "./domain/ports/handover-attestations.reader.js";
 import { HandoverProofEraser } from "./domain/ports/handover-proof.eraser.js";
 import { HandoverProofRepository } from "./domain/ports/handover-proof.repository.js";
@@ -21,6 +23,7 @@ import { OrderHandoverRepository } from "./domain/ports/order-handover.repositor
 import { DeliveryRunSheetController } from "./http/delivery-run-sheet.controller.js";
 import { HandoverController } from "./http/handover.controller.js";
 import { HandoverSupervisionController } from "./http/handover-supervision.controller.js";
+import { PrismaHandedOverOrdersReader } from "./infrastructure/prisma-handed-over-orders.reader.js";
 import { PrismaHandoverAttestationsReader } from "./infrastructure/prisma-handover-attestations.reader.js";
 import { PrismaHandoverProofEraser } from "./infrastructure/prisma-handover-proof.eraser.js";
 import { PrismaHandoverProofRepository } from "./infrastructure/prisma-handover-proof.repository.js";
@@ -41,11 +44,16 @@ import { PrismaOrderHandoverRepository } from "./infrastructure/prisma-order-han
  * composition qui relie les deux — un contexte ne s'enregistre pas lui-même
  * comme implémentation du port d'un autre.
  *
- * `HandoverDepartureHolds` et `HandoverDepartedOrders` (2026-10-01, BQ), puis
+ * `HandoverDepartureHolds` (2026-10-01, BQ), puis
  * `HandoverDoorstepAttestor` (B1, la remise à la porte), sont
  * fournis ET exportés ici, sous leur propre classe : ce sont les réponses du
  * retrait au canal de la livraison. C'est `appBootstrap` qui les branche sur
  * les jetons de la livraison (`useExisting`) — pas ce module.
+ *
+ * Le départ et le retour d'une tournée arrivent en faits DURABLES
+ * (`RecordRoundDeparted`, `RecordOrdersBroughtBack` — `plan-depart-durable.md`,
+ * DD1, 2026-10-06) : des `@DurableHandler` du retrait, plus aucun port
+ * d'annonce que la livraison appellerait en mémoire.
  *
  * La purge et l'effacement des pièces de remise (2026-10-01) sont câblés au
  * bus, SANS route ni minuterie : rien ne les déclenche encore
@@ -67,12 +75,14 @@ import { PrismaOrderHandoverRepository } from "./infrastructure/prisma-order-han
     { provide: OrderHandoverRepository, useClass: PrismaOrderHandoverRepository },
     { provide: HandoverAttestationsReader, useClass: PrismaHandoverAttestationsReader },
     { provide: OrderDepartureRepository, useClass: PrismaOrderDepartureRepository },
+    { provide: HandedOverOrdersReader, useClass: PrismaHandedOverOrdersReader },
     { provide: HandoverProofRepository, useClass: PrismaHandoverProofRepository },
     { provide: HandoverProofEraser, useClass: PrismaHandoverProofEraser },
     HandoverDepartureHolds,
-    HandoverDepartedOrders,
     HandoverDoorstepAttestor,
+    RecordRoundDeparted,
+    RecordOrdersBroughtBack,
   ],
-  exports: [HandoverDepartureHolds, HandoverDepartedOrders, HandoverDoorstepAttestor],
+  exports: [HandoverDepartureHolds, HandoverDoorstepAttestor],
 })
 export class HandoverModule {}

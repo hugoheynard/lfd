@@ -1,6 +1,7 @@
 import type { DoorstepRule } from "@lfd/contracts";
 
-import { BroughtBackOrdersAnnouncer } from "../../../channels/handover/index.js";
+import type { DurableFact } from "../../../../platform/outbox/durable-event.js";
+import { DurablePublisher } from "../../../../platform/outbox/durable-publisher.js";
 import {
   type StaffNotice,
   StaffNotifier,
@@ -66,13 +67,23 @@ export class RecordingStaffNotifier extends StaffNotifier {
   }
 }
 
-/** Le retrait, enregistré : les commandes annoncées revenues. */
-export class RecordingBroughtBack extends BroughtBackOrdersAnnouncer {
-  readonly announced: { readonly orderIds: readonly string[]; readonly at: Date }[] = [];
+/**
+ * La boîte d'envoi, enregistrée : chaque fait durable écrit, une clé déjà vue
+ * absorbée comme la vraie (`plan-depart-durable.md`, DD1).
+ */
+export class RecordingDurable extends DurablePublisher {
+  readonly facts: DurableFact[] = [];
 
-  ordersBroughtBack(orderIds: readonly string[], at: Date): Promise<void> {
-    this.announced.push({ orderIds, at });
+  publish(fact: DurableFact): Promise<void> {
+    if (!this.facts.some((known) => known.key === fact.key)) {
+      this.facts.push(fact);
+    }
     return Promise.resolve();
+  }
+
+  /** Les charges des faits d'un type, dans l'ordre d'écriture. */
+  payloadsOf(type: string): readonly Readonly<Record<string, unknown>>[] {
+    return this.facts.filter((fact) => fact.type === type).map((fact) => fact.payload);
   }
 }
 

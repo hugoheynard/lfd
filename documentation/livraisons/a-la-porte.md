@@ -115,8 +115,9 @@ arrêt, conditionnée par sa `version`, tracée (qui, quand, `source` = `staff` 
 (`GET` la liste et la photo du signalement en lecture ; `POST
 :stopId/autoriser-depot` et `:stopId/rapporter` en écriture), écran
 `/livraison/a-decider`. « Autoriser » n'écrit pas la tournée ; « Rapporter »
-**clôt** l'arrêt (LB-Q2) et annonce au retrait, après validation, le retour
-(`order_departure.returned_at`). Le premier qui répond l'emporte ; la carte du
+**clôt** l'arrêt (LB-Q2) et écrit, dans sa transaction, le fait durable
+`delivery.orders_brought_back` : le retrait en tire le retour
+(`order_departure.returned_at`) — § 5. Le premier qui répond l'emporte ; la carte du
 livreur porte la décision, et le livreur n'attend pas.
 
 **La décision réglée d'avance (B3 bis, LB-Q6)** — `ask` | `deposit` |
@@ -143,8 +144,32 @@ ouvre une décision, après validation, adressée par droit
 
 Au départ, `delivery` demande au retrait par `delivery/channels/handover/` :
 `DepartureHoldsReader` — le départ **refuse** une commande retenue au contrôle
-qualité, en nommant l'arrêt ; puis, après validation, `DepartedOrdersAnnouncer`
-— le retrait écrit `production.order_departure`. Le fournil lit « partie » par
+qualité, en nommant l'arrêt.
+
+**La garde passe par la boîte d'envoi** (depuis le 2026-10-06, lot DD1,
+[`plan-depart-durable.md`](plan-depart-durable.md)). Le départ écrit, dans sa
+transaction et depuis `departAndFreeze` (le chemin commun du poste de
+chargement et du livreur), le fait durable `delivery.round_departed` ; une
+décision « Rapporter » — du commercial ou réglée d'avance — écrit
+`delivery.orders_brought_back`. Les deux faits sont déclarés dans
+`delivery/channels/handover/` ; le retrait s'y abonne en `@DurableHandler` :
+
+| Abonné                                | Ce qu'il fait                                                                           |
+| ------------------------------------- | --------------------------------------------------------------------------------------- |
+| `handover.record-round-departed`      | lit `order_handover` — une commande **déjà remise** est ignorée —, puis écrit le départ |
+| `handover.record-orders-brought-back` | écrit le retour                                                                         |
+
+`production.order_departure` est **monotone par instant**, pas par ordre
+d'arrivée : la boîte d'envoi peut livrer un fait des heures après l'autre.
+Un départ n'écrit que si le départ connu est nul ou `<=` son instant **et**
+le retour nul ou `<` ; un retour, que si le départ connu est nul ou `<=` et
+le retour nul ou `<`. Un retour livré avant son départ s'écrit seul
+(`departed_at` nul, migration `20261007180000`) ; le départ, plus ancien,
+ne l'efface pas. Un fait plus ancien que l'état ne fait rien.
+
+Les annonces en mémoire d'avant (`DepartedOrdersAnnouncer`,
+`BroughtBackOrdersAnnouncer`, appelées après validation par `AfterCommit`)
+perdaient la garde à un redémarrage : retirées. Le fournil lit « partie » par
 `production/channels/handover/` (`OrderCustodyReader`) : un verdict qualité sur
 une **commande** partie est refusé (« La commande est partie : le produit
 n'est plus là. ») ; un verdict de **ligne** reste permis (LB-Q1). Une commande

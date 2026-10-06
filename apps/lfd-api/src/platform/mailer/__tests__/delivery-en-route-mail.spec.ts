@@ -1,7 +1,7 @@
 import { b2bMailTemplates } from "../mail-templates.js";
 
 /*
- * Le gabarit « votre livraison est en route » (plan-en-route.md, PL3-D4) :
+ * Le gabarit « votre livraison est en route » (en-route.md, PL3-D4) :
  * ce qu'il dit, et surtout ce qu'il ne promet pas.
  */
 

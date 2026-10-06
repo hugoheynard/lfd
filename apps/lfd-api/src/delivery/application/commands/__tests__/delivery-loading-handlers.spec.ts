@@ -31,7 +31,7 @@ import {
   InMemoryDeliveryRounds,
   roundWith,
 } from "./round-doubles.js";
-import { FixedDoorstepSettings } from "./decision-doubles.js";
+import { FixedDoorstepSettings, RecordingDurable } from "./decision-doubles.js";
 
 // Des jours comparés entre eux seulement, jamais à l'horloge.
 const DAY = "2030-03-12";
@@ -173,6 +173,7 @@ describe("DepartDeliveryRoundHandler — L4-C4, Q14", () => {
     const { clock, events, uow } = tools();
     const rounds = new InMemoryDeliveryRounds(roundWith("r_1", DAY, "v_1", ["o_1"]));
     const departed = new RecordingDepartedStops();
+    const durable = new RecordingDurable();
     const handler = new DepartDeliveryRoundHandler(
       rounds,
       loadings,
@@ -183,18 +184,20 @@ describe("DepartDeliveryRoundHandler — L4-C4, Q14", () => {
       clock,
       events,
       uow,
+      durable,
     );
-    return { handler, rounds, departed, events };
+    return { handler, rounds, departed, events, durable };
   }
 
   it("refuse un arrêt partiel, sans rien figer", async () => {
-    const { handler, rounds, departed } = depart(new InMemoryStopLoadings(stopOf("o_1")));
+    const { handler, rounds, departed, durable } = depart(new InMemoryStopLoadings(stopOf("o_1")));
 
     await expect(
       handler.execute(new DepartDeliveryRoundCommand("r_1", { version: 1 })),
     ).rejects.toThrow(DeliveryRoundNotReadyError);
     expect(rounds.stored("r_1")?.departedAt).toBeNull();
     expect(departed.recorded).toEqual([]);
+    expect(durable.facts).toEqual([]);
   });
 
   it("refuse un arrêt sans bac (L4-C17)", async () => {
@@ -309,6 +312,7 @@ describe("DepartDeliveryRoundHandler — L4-C4, Q14", () => {
       clock,
       events,
       uow,
+      new RecordingDurable(),
     );
 
     await expect(

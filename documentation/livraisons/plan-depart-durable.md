@@ -1,6 +1,10 @@
 # Le départ d'une tournée devient un fait durable
 
-> 📐 **Plan** (2026-10-06) — **rien n'est bâti.** ⚠️ Contredit par `vitruve` le même jour : le §5 fait foi. Hugo : « pourquoi on a encore
+> ✅ **DD1 bâti le 2026-10-06** (non commité au moment d'écrire) — écarts et
+> décisions au §6. Le courriel « en route » est décrit dans sa doc d'état,
+> [`en-route.md`](en-route.md) ; la garde, dans [`a-la-porte.md`](a-la-porte.md) § 5.
+>
+> 📐 **Plan** (2026-10-06). ⚠️ Contredit par `vitruve` le même jour : le §5 fait foi. Hugo : « pourquoi on a encore
 > des messages en bus mémoire plutôt qu'en durables ? » puis « lance ».
 >
 > 🔴 Il touche une **frontière entre trois blocs** (livraison, retrait,
@@ -19,7 +23,7 @@
     passe au livreur** (BQ, `a-la-porte.md` § 5) ;
   - `AnnounceDeliveryDeparture` → `DeliveryDepartureAnnouncer`
     (`delivery/channels/commerce/`), implémenté par le commerce : le
-    courriel « en route » (`plan-en-route.md`, PL3).
+    courriel « en route » (`en-route.md`, PL3).
 - **Le défaut** : si le processus s'arrête entre la validation du départ et
   ces appels, ils sont perdus, sans reprise. La tournée est partie, mais le
   retrait croit encore les commandes au fournil, et aucun courriel ne part.
@@ -147,3 +151,33 @@ handlers) — ce lot les retire, la question ne se pose plus.
 | Lot     | Contenu                                                                                                                                                                                                                  |
 | ------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
 | **DD1** | `order_departure` monotone ; faits durables départ et retour (publiés dans `departAndFreeze` et au retour) ; trois abonnés durables ; retrait des abonnés en mémoire et des ports d'annonce ; e2e de reprise et de rejeu |
+
+## 6. Bâti le 2026-10-06 — décisions prises en bâtissant, et écarts
+
+Carte blanche d'Hugo le 2026-10-06 (« fais tout sans interruption, si un
+problème arrive corrige »). Ce que le §5 laissait ouvert, tranché :
+
+- **Migration additive `20261007180000_le_retour_avant_le_depart`** :
+  `order_departure.departed_at` accepte NUL. La règle de B1 (« `departedAt`
+  nul ou `<= at` ») n'avait de sens qu'avec une colonne nullable, et sans
+  elle un retour livré AVANT son départ (abonné du départ en reprise) se
+  perdait — `recordReturned` ne touchait que les lignes existantes —, puis le
+  départ en retard remettait la commande « partie ». `recordReturned` crée
+  donc la ligne (`departed_at` nul) et devient monotone lui aussi (`returned_at`
+  nul ou `< at`). Aucun lecteur ne lit `departed_at` pour décider (la garde et
+  la pièce de remise lisent `returned_at IS NULL`).
+- **Monotonie en Prisma, sans SQL écrit** : `createMany({ skipDuplicates })`
+  puis `updateMany` gardé dans le `where`, dans un `$transaction`.
+- **Noms** : `DeliveryRoundDepartedFact`, `DeliveryOrdersBroughtBackFact`
+  (suffixe `Fact`, pour ne pas confondre avec `DeliveryRoundDepartedEvent`,
+  le fait de journal qui reste). Déclarés dans `delivery/channels/handover/`,
+  le départ réexporté par `delivery/channels/commerce/`.
+- **Clé du retour** : `delivery.orders_brought_back:<roundId>:<orderIds>`
+  (un arrêt rapporté est clos et ne se rapporte plus). Charge `roundId`,
+  `orderIds`, `broughtBackAt`.
+- **B3** : nouveau port de lecture `HandedOverOrdersReader` au retrait (ISP :
+  l'abonné ne grave rien), une requête sur `order_handover`.
+- **Courriel** : l'abonné construit `DeliveryEnRouteMailFailedError` et la
+  journalise (`Logger`), sans lever.
+- **Délai mesuré** (e2e, trois passages) : courriel envoyé 15 à 23 ms après la
+  réponse HTTP du départ, au premier réveil du relais, sans balayage.

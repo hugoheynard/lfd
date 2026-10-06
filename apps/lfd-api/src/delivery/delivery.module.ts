@@ -77,8 +77,6 @@ import { DeliveryBinDesk } from "./application/delivery-bin-desk.js";
 import { DeliveryBinOffice } from "./application/delivery-bin-office.js";
 import { ShareDeliveryBinHandler } from "./application/commands/share-delivery-bin.handler.js";
 import { DepartDeliveryRoundHandler } from "./application/commands/depart-delivery-round.handler.js";
-import { AnnounceDeliveryDeparture } from "./application/handlers/announce-delivery-departure.handler.js";
-import { HandDepartedOrdersOver } from "./application/handlers/hand-departed-orders-over.handler.js";
 import { LoadDeliveryBinHandler } from "./application/commands/load-delivery-bin.handler.js";
 import { UnloadDeliveryBinHandler } from "./application/commands/unload-delivery-bin.handler.js";
 import { VoidDeliveryBinHandler } from "./application/commands/void-delivery-bin.handler.js";
@@ -228,10 +226,6 @@ import {
     LoadDeliveryBinHandler,
     UnloadDeliveryBinHandler,
     DepartDeliveryRoundHandler,
-    // « Votre livraison est en route » : la livraison annonce, le commerce
-    // écrit (plan-en-route.md, PL3).
-    AnnounceDeliveryDeparture,
-    HandDepartedOrdersOver,
     GetDeliveryOrderBinsHandler,
     GetDeliveryBinFreeHalvesHandler,
     GetDeliveryPackingProposalHandler,

@@ -147,7 +147,7 @@ describe("Une commande rapportée repart (RL1)", () => {
     expect(mine.stops[0]?.gps).not.toBeNull();
     const departure = await ctx.prisma.orderDeparture.findUniqueOrThrow({ where: { orderId } });
     expect(departure.returnedAt).toBeNull();
-    expect(departure.departedAt.getTime()).toBeGreaterThan(new Date(broughtBackAt ?? 0).getTime());
+    expect(departure.departedAt?.getTime()).toBeGreaterThan(new Date(broughtBackAt ?? 0).getTime());
 
     // Remise au client, au nouvel arrêt.
     const stop = await ctx.prisma.deliveryRoundStop.findFirstOrThrow({

@@ -2,6 +2,7 @@ import { CommandHandler, type ICommandHandler } from "@nestjs/cqrs";
 
 import { UnitOfWork } from "../../../platform/database/unit-of-work.js";
 import { DomainEventPublisher } from "../../../platform/events/domain-event-publisher.js";
+import { DurablePublisher } from "../../../platform/outbox/durable-publisher.js";
 import { Clock } from "../../../platform/time/clock.js";
 import { DeliveryOrdersReader } from "../../channels/commerce/index.js";
 import { DepartureHoldsReader } from "../../channels/handover/index.js";
@@ -44,6 +45,7 @@ export class DepartMyRoundHandler implements ICommandHandler<DepartMyRoundComman
     private readonly clock: Clock,
     private readonly events: DomainEventPublisher,
     private readonly uow: UnitOfWork,
+    private readonly durable: DurablePublisher,
   ) {}
 
   async execute(command: DepartMyRoundCommand): Promise<void> {
@@ -71,6 +73,7 @@ export class DepartMyRoundHandler implements ICommandHandler<DepartMyRoundComman
         holds: this.holds,
         doorstepSettings: this.doorstepSettings,
         clock: this.clock,
+        durable: this.durable,
       });
     } catch (error) {
       throw await asDriverRefusal(error, this.orders, round.orderIds);

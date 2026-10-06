@@ -2,6 +2,7 @@ import { CommandHandler, type ICommandHandler } from "@nestjs/cqrs";
 
 import { UnitOfWork } from "../../../platform/database/unit-of-work.js";
 import { DomainEventPublisher } from "../../../platform/events/domain-event-publisher.js";
+import { DurablePublisher } from "../../../platform/outbox/durable-publisher.js";
 import { Clock } from "../../../platform/time/clock.js";
 import { DeliveryOrdersReader } from "../../channels/commerce/index.js";
 import { DepartureHoldsReader } from "../../channels/handover/index.js";
@@ -54,6 +55,7 @@ export class DepartDeliveryRoundHandler implements ICommandHandler<
     private readonly clock: Clock,
     private readonly events: DomainEventPublisher,
     private readonly uow: UnitOfWork,
+    private readonly durable: DurablePublisher,
   ) {}
 
   async execute(command: DepartDeliveryRoundCommand): Promise<void> {
@@ -71,6 +73,7 @@ export class DepartDeliveryRoundHandler implements ICommandHandler<
         holds: this.holds,
         doorstepSettings: this.doorstepSettings,
         clock: this.clock,
+        durable: this.durable,
       });
       await this.events.publishTraced(departed);
     });

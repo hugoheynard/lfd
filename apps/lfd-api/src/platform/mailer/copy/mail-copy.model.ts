@@ -163,7 +163,7 @@ export interface PaymentExpiredCopy {
 
 /**
  * Ce que dit le courriel de **départ en livraison** — celui qui part quand la
- * tournée quitte le dépôt (`documentation/livraisons/plan-en-route.md`, PL3-D4).
+ * tournée quitte le dépôt (`documentation/livraisons/en-route.md`, PL3-D4).
  *
  * 🔴 **Aucune heure.** On n'a pas d'estimation fiable par arrêt : une heure
  * fausse coûte plus qu'aucune heure. Ni nom ni téléphone du livreur.

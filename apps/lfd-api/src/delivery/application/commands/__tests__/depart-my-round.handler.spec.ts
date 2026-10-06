@@ -23,7 +23,8 @@ import {
   LocatedDeliveryOrders,
   roundWith,
 } from "./round-doubles.js";
-import { FixedDoorstepSettings } from "./decision-doubles.js";
+import { DELIVERY_ROUND_DEPARTED } from "../../../channels/handover/index.js";
+import { FixedDoorstepSettings, RecordingDurable } from "./decision-doubles.js";
 
 // Des jours comparés entre eux seulement, jamais à l'horloge.
 const DAY = "2030-03-12";
@@ -75,6 +76,7 @@ function departMine(
   const rounds = new InMemoryDeliveryRounds(round);
   const departed = new RecordingDepartedStops();
   const events = new RecordingPublisher();
+  const durable = new RecordingDurable();
   const handler = new DepartMyRoundHandler(
     rounds,
     loadings,
@@ -85,13 +87,14 @@ function departMine(
     new FixedClock(NOW),
     events,
     new DirectUnitOfWork(),
+    durable,
   );
-  return { handler, rounds, departed, events };
+  return { handler, rounds, departed, events, durable };
 }
 
 describe("DepartMyRoundHandler — « Commencer ma tournée » (MT-D3 v2)", () => {
   it("le livreur affecté fait partir SA tournée : même départ, rang et point figés, tracé", async () => {
-    const { handler, rounds, departed, events } = departMine(roundOf("staff_paul"));
+    const { handler, rounds, departed, events, durable } = departMine(roundOf("staff_paul"));
 
     await handler.execute(new DepartMyRoundCommand("staff_paul", "r_1", { version: 1 }));
 
@@ -100,6 +103,19 @@ describe("DepartMyRoundHandler — « Commencer ma tournée » (MT-D3 v2)", () =
       ["r_1_s1", 1, POINT],
     ]);
     expect(events.traced[0]?.journalFact().type).toBe("delivery_round.departed");
+    // Le fait DURABLE s'ajoute au journal, par le chemin commun (DD1).
+    expect(durable.facts).toEqual([
+      {
+        type: DELIVERY_ROUND_DEPARTED,
+        key: `${DELIVERY_ROUND_DEPARTED}:r_1`,
+        payload: {
+          roundId: "r_1",
+          serviceDay: DAY,
+          departedAt: NOW.toISOString(),
+          orderIds: ["o_1"],
+        },
+      },
+    ]);
   });
 
   it("fige la règle d'avance à la porte résolue au départ : le réglage global à défaut d'adresse (B3 bis)", async () => {
@@ -174,7 +190,7 @@ describe("DepartMyRoundHandler — « Commencer ma tournée » (MT-D3 v2)", () =
   });
 
   it("une commande retenue au contrôle qualité : le livreur ne part pas, l'arrêt est nommé (BQ)", async () => {
-    const { handler, rounds, departed, events } = departMine(
+    const { handler, rounds, departed, events, durable } = departMine(
       roundOf("staff_paul"),
       new InMemoryStopLoadings(LOADED()),
       new FixedDepartureHolds(["o_1"]),
@@ -189,5 +205,6 @@ describe("DepartMyRoundHandler — « Commencer ma tournée » (MT-D3 v2)", () =
     expect(rounds.stored("r_1")?.departedAt).toBeNull();
     expect(departed.recorded).toEqual([]);
     expect(events.traced).toEqual([]);
+    expect(durable.facts).toEqual([]);
   });
 });

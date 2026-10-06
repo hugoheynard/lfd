@@ -1,8 +1,12 @@
 import type { GpsPoint } from "@lfd/contracts";
 
+import type { DurablePublisher } from "../../platform/outbox/durable-publisher.js";
 import type { Clock } from "../../platform/time/clock.js";
 import type { DeliveryOrdersReader } from "../channels/commerce/index.js";
-import type { DepartureHoldsReader } from "../channels/handover/index.js";
+import {
+  type DepartureHoldsReader,
+  DeliveryRoundDepartedFact,
+} from "../channels/handover/index.js";
 import type { DeliveryRound } from "../domain/entities/delivery-round.js";
 import type { StopReadiness } from "../domain/entities/departure-readiness.js";
 import { departedStopsOf, refuseHeldOrders } from "../domain/entities/departure-sheet.js";
@@ -22,6 +26,7 @@ export interface DepartureDeps {
   readonly holds: DepartureHoldsReader;
   readonly doorstepSettings: DoorstepSettingsReader;
   readonly clock: Clock;
+  readonly durable: DurablePublisher;
 }
 
 /**
@@ -38,10 +43,14 @@ export interface DepartureDeps {
  *    la décision réglée d'avance à la porte, résolue avec le réglage global
  *    (B3 bis) : une tournée partie ne change plus de règle ;
  * 4. une commande retenue au contrôle qualité arrête tout, en nommant l'arrêt
- *    (`a-la-porte.md`, BQ) — lue au retrait, dans la transaction.
+ *    (`a-la-porte.md`, BQ) — lue au retrait, dans la transaction ;
+ * 5. le fait DURABLE `delivery.round_departed` est écrit dans la boîte
+ *    d'envoi, dans la même transaction (`plan-depart-durable.md`, DD1) : ici
+ *    et pas dans les handlers, pour qu'aucune des deux portes ne l'oublie. Le
+ *    retrait (la garde) et le commerce (le courriel) s'y abonnent.
  *
  * À appeler DANS l'unité de travail, la tournée déjà chargée et verrouillée.
- * Rend le fait du départ : c'est au handler de le publier, dans sa
+ * Rend le fait de JOURNAL du départ : c'est au handler de le publier, dans sa
  * transaction (`lint:journal-tracked` lit l'appel dans le handler).
  */
 export async function departAndFreeze(
@@ -63,6 +72,9 @@ export async function departAndFreeze(
   refuseHeldOrders(round, sheets, held);
   await deps.rounds.save(round);
   await deps.departedStops.record(departed);
+  await deps.durable.publish(
+    new DeliveryRoundDepartedFact(round.id, round.serviceDay, at, round.orderIds).durableFact(),
+  );
   return new DeliveryRoundDepartedEvent(round, liveBinCount(loadings));
 }
 

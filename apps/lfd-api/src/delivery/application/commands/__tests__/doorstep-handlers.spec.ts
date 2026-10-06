@@ -44,7 +44,7 @@ import {
 import {
   InMemoryStopDecisions,
   openDecision,
-  RecordingBroughtBack,
+  RecordingDurable,
   RecordingStaffNotifier,
 } from "./decision-doubles.js";
 import { deliveryOn, FixedDeliveryOrders, InMemoryDeliveryRounds } from "./round-doubles.js";
@@ -287,13 +287,7 @@ describe("ReportDeliveryIncidentHandler — « Déclarer un problème » (§ 3)"
         notifier,
         afterCommit,
         new BackgroundWork(),
-        new StopDecisionBySetting(
-          new InMemoryDeliveryRounds(),
-          decisions,
-          new RecordingBroughtBack(),
-          afterCommit,
-          new BackgroundWork(),
-        ),
+        new StopDecisionBySetting(new InMemoryDeliveryRounds(), decisions, new RecordingDurable()),
       ),
     );
     return { handler, incidents, store, events, decisions, notifier, afterCommit };

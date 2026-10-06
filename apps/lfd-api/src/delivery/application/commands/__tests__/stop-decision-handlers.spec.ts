@@ -1,6 +1,7 @@
-import { DirectUnitOfWork } from "../../../../platform/database/__tests__/direct-unit-of-work.js";
-import { HeldAfterCommit } from "../../../../platform/database/__tests__/held-after-commit.js";
-import { BackgroundWork } from "../../../../platform/events/background-work.js";
+import {
+  TransactionalDurablePublisher,
+  TransactionalUnitOfWork,
+} from "../../../../platform/outbox/__tests__/transactional-durable.js";
 import { RecordingPublisher } from "../../../../platform/events/__tests__/recording-publisher.js";
 import { FixedClock } from "../../../../platform/time/fixed-clock.js";
 import {
@@ -17,7 +18,8 @@ import { AuthorizeStopDepositCommand } from "../authorize-stop-deposit.command.j
 import { AuthorizeStopDepositHandler } from "../authorize-stop-deposit.handler.js";
 import { BringStopBackCommand } from "../bring-stop-back.command.js";
 import { BringStopBackHandler } from "../bring-stop-back.handler.js";
-import { InMemoryStopDecisions, openDecision, RecordingBroughtBack } from "./decision-doubles.js";
+import { DELIVERY_ORDERS_BROUGHT_BACK } from "../../../channels/handover/index.js";
+import { InMemoryStopDecisions, openDecision } from "./decision-doubles.js";
 import { DAY, FailingRounds, NOW, roundState } from "./doorstep-handover-scene.js";
 import { deliveryOn, FixedDeliveryOrders, InMemoryDeliveryRounds } from "./round-doubles.js";
 
@@ -37,24 +39,21 @@ function scene(
     ),
   );
   const events = new RecordingPublisher();
-  const afterCommit = new HeldAfterCommit();
-  const announcer = new RecordingBroughtBack();
   const clock = new FixedClock(NOW);
-  const uow = new DirectUnitOfWork();
+  // La vraie sémantique de la transaction : un fait durable écrit dans une
+  // unité qui échoue n'est jamais validé (DD1).
+  const uow = new TransactionalUnitOfWork();
   return {
     rounds,
     decisions,
     events,
-    afterCommit,
-    announcer,
+    uow,
     authorize: new AuthorizeStopDepositHandler(desk, clock, events, uow),
     bringBack: new BringStopBackHandler(
       desk,
       rounds,
-      announcer,
+      new TransactionalDurablePublisher(uow),
       clock,
-      afterCommit,
-      new BackgroundWork(),
       events,
       uow,
     ),
@@ -126,8 +125,8 @@ describe("AuthorizeStopDepositHandler — « Autoriser le dépôt cette fois » 
 });
 
 describe("BringStopBackHandler — « Rapporter » (B3, LB-Q2)", () => {
-  it("🔴 clôt l'arrêt par la tournée, pose la décision, journalise ; annonce le retour APRÈS la validation", async () => {
-    const { bringBack, decisions, rounds, events, afterCommit, announcer } = scene();
+  it("🔴 clôt l'arrêt par la tournée, pose la décision, journalise ; le retour part en fait durable avec la transaction", async () => {
+    const { bringBack, decisions, rounds, events, uow } = scene();
 
     await bringBack.execute(new BringStopBackCommand(LEA, "s_1"));
 
@@ -135,11 +134,13 @@ describe("BringStopBackHandler — « Rapporter » (B3, LB-Q2)", () => {
     expect(rounds.stored("r_1")?.orderIds).toEqual(["o_2"]);
     expect(decisions.stored("s_1")).toMatchObject({ outcome: "bring_back", decidedBy: LEA });
     expect(events.factTypes()).toEqual(["delivery_round.stop_brought_back"]);
-    expect(announcer.announced).toEqual([]);
-
-    await afterCommit.commit();
-
-    expect(announcer.announced).toEqual([{ orderIds: ["o_1"], at: NOW }]);
+    expect(uow.of(DELIVERY_ORDERS_BROUGHT_BACK)).toEqual([
+      {
+        type: DELIVERY_ORDERS_BROUGHT_BACK,
+        key: `${DELIVERY_ORDERS_BROUGHT_BACK}:r_1:o_1`,
+        payload: { roundId: "r_1", orderIds: ["o_1"], broughtBackAt: NOW.toISOString() },
+      },
+    ]);
   });
 
   it("🔴 « Autoriser » puis « Rapporter » : permis tant que le livreur n'a pas déposé, la dernière l'emporte", async () => {
@@ -160,28 +161,26 @@ describe("BringStopBackHandler — « Rapporter » (B3, LB-Q2)", () => {
     );
   });
 
-  it("🔴 l'écriture de la tournée échoue : rien n'est annoncé au retrait", async () => {
-    const { bringBack, afterCommit, announcer } = scene({
+  it("🔴 l'écriture de la tournée échoue : aucun fait de retour n'est validé", async () => {
+    const { bringBack, uow } = scene({
       rounds: new FailingRounds(roundState()),
     });
 
     await expect(bringBack.execute(new BringStopBackCommand(LEA, "s_1"))).rejects.toThrow(
       "écriture de la tournée refusée",
     );
-    afterCommit.discard();
-    await afterCommit.commit();
 
-    expect(announcer.announced).toEqual([]);
+    expect(uow.of(DELIVERY_ORDERS_BROUGHT_BACK)).toEqual([]);
   });
 
   it("🔴 refusée sur un arrêt déjà déposé par le livreur", async () => {
     const round = roundState();
     round.closeStop("s_1", NOW);
-    const { bringBack, announcer } = scene({ rounds: new InMemoryDeliveryRounds(round) });
+    const { bringBack, uow } = scene({ rounds: new InMemoryDeliveryRounds(round) });
 
     await expect(bringBack.execute(new BringStopBackCommand(LEA, "s_1"))).rejects.toThrow(
       StopDecisionOnClosedStopError,
     );
-    expect(announcer.announced).toEqual([]);
+    expect(uow.of(DELIVERY_ORDERS_BROUGHT_BACK)).toEqual([]);
   });
 });

@@ -7,13 +7,15 @@ import { randomUUID } from "node:crypto";
  *
  * Ce que seule cette suite prouve : les deux canaux (`delivery/channels/
  * handover/`, `production/channels/handover/`) sont reliés par la racine de
- * composition, le départ lit la vraie retenue, l'annonce part APRÈS la
- * validation, et le fournil lit la vraie garde.
+ * composition, le départ lit la vraie retenue, la garde passe par la boîte
+ * d'envoi (fait durable `delivery.round_departed`, DD1) — rien si le départ
+ * est annulé —, et le fournil lit la vraie garde.
  */
 import type request from "supertest";
 
 import { PaymentGateway } from "../src/b2b/payments/domain/payment-gateway.js";
-import { BroughtBackOrdersAnnouncer } from "../src/delivery/channels/handover/index.js";
+import { DeliveryOrdersBroughtBackFact } from "../src/delivery/channels/handover/index.js";
+import { DurablePublisher } from "../src/platform/outbox/durable-publisher.js";
 import { PrismaService } from "../src/platform/database/prisma.service.js";
 import { currentTransaction } from "../src/platform/database/transaction.store.js";
 import { PrismaUnitOfWork, UnitOfWork } from "../src/platform/database/unit-of-work.js";
@@ -253,10 +255,10 @@ describe("la garde passe au livreur au départ (BQ)", () => {
     expect((await depart(ctx, roundId)).status).toBe(204);
     await ctx.drain();
 
-    // L'annonce que « Rapporter » fait après sa validation, par le canal relié.
-    await ctx.app
-      .get(BroughtBackOrdersAnnouncer)
-      .ordersBroughtBack([orderId], new Date(daysAgo(0)));
+    // Le fait durable que « Rapporter » écrit dans sa transaction (DD1).
+    const fact = new DeliveryOrdersBroughtBackFact(roundId, [orderId], new Date(daysAgo(0)));
+    await unitOfWork.run(() => ctx.app.get(DurablePublisher).publish(fact.durableFact()));
+    await ctx.drain();
 
     await judge(orderId, "ok").expect(201);
   });

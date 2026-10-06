@@ -1,10 +1,9 @@
 import type { StopDecisionOutcome } from "@lfd/contracts";
 import { Injectable } from "@nestjs/common";
 
-import { AfterCommit } from "../../platform/database/after-commit.js";
-import { BackgroundWork } from "../../platform/events/background-work.js";
 import type { JournaledEvent } from "../../platform/journal/journal-fact.js";
-import { BroughtBackOrdersAnnouncer } from "../channels/handover/index.js";
+import { DurablePublisher } from "../../platform/outbox/durable-publisher.js";
+import { DeliveryOrdersBroughtBackFact } from "../channels/handover/index.js";
 import type { DeliveryRound } from "../domain/entities/delivery-round.js";
 import { StopDecision } from "../domain/entities/stop-decision.js";
 import {
@@ -16,8 +15,6 @@ import {
 import { DeliveryRoundRepository } from "../domain/ports/delivery-round.repository.js";
 import type { DriverStopRow } from "../domain/ports/driver-rounds.reader.js";
 import { StopDecisionRepository } from "../domain/ports/stop-decision.repository.js";
-
-const ANNOUNCED = "stop-settled-back-announced";
 
 /** Le signalement qu'une règle figée tranche d'avance. */
 export interface SettledReport {
@@ -38,7 +35,8 @@ export interface SettledReport {
  * - « Déposer » ouvre « Déposé avec preuve » sur la carte, même signature
  *   exigée (LB-Q5) — la tournée n'est pas écrite ;
  * - « Rapporter » CLÔT l'arrêt par la tournée, comme le commercial (LB-Q2),
- *   et annonce le retour au retrait APRÈS la validation.
+ *   et écrit le fait durable du retour (`delivery.orders_brought_back`,
+ *   `plan-depart-durable.md`, DD1) dans la même transaction.
  *
  * Aucune notification : la décision est prise, personne n'a à répondre.
  *
@@ -51,9 +49,7 @@ export class StopDecisionBySetting {
   constructor(
     private readonly rounds: DeliveryRoundRepository,
     private readonly decisions: StopDecisionRepository,
-    private readonly announcer: BroughtBackOrdersAnnouncer,
-    private readonly afterCommit: AfterCommit,
-    private readonly work: BackgroundWork,
+    private readonly durable: DurablePublisher,
   ) {}
 
   async settle(report: SettledReport): Promise<JournaledEvent | null> {
@@ -85,14 +81,11 @@ export class StopDecisionBySetting {
     return new DeliveryStopBroughtBackEvent(roundKeyOf(round), order, "setting");
   }
 
-  /** Clôt l'arrêt « rapporté », et le retrait l'apprendra après la validation. */
+  /** Clôt l'arrêt « rapporté » ; le retrait l'apprend par la boîte d'envoi. */
   private async bringBack(round: DeliveryRound, report: SettledReport): Promise<void> {
     round.closeStop(report.stop.stopId, report.at);
     await this.rounds.save(round);
-    const orderId = report.stop.orderId;
-    this.afterCommit.defer(
-      () => this.work.track(this.announcer.ordersBroughtBack([orderId], report.at), ANNOUNCED),
-      ANNOUNCED,
-    );
+    const fact = new DeliveryOrdersBroughtBackFact(round.id, [report.stop.orderId], report.at);
+    await this.durable.publish(fact.durableFact());
   }
 }

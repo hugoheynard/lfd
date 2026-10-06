@@ -1,13 +1,13 @@
 /**
  * E2E de **« Votre livraison est en route »**
- * (`documentation/livraisons/plan-en-route.md`, PL3) : le départ d'une
- * tournée, annoncé par la livraison, écrit par le commerce.
+ * (`documentation/livraisons/en-route.md`) : le départ d'une tournée,
+ * fait durable de la livraison (`delivery.round_departed`, DD1), écrit par
+ * l'abonné du commerce.
  *
- * Ce que seul l'e2e prouve : le câblage du port à travers la racine de
- * composition, et que l'abonné lit les commandes HORS de la transaction du
- * départ — sans quoi ses lectures viseraient un client de transaction clos —
- * et APRÈS sa validation (a-la-porte.md, B0) : un départ annulé au
- * moment de valider n'écrit à personne.
+ * Ce que seul l'e2e prouve : le fait passe par la boîte d'envoi, l'abonné
+ * durable le reçoit après la validation dans SA propre unité de travail, et
+ * un départ annulé au moment de valider n'a pas de fait — personne n'est
+ * écrit.
  */
 import { bootstrapE2e, serviceDay, type E2eContext } from "./e2e-harness.js";
 import {
@@ -122,7 +122,7 @@ describe("votre livraison est en route (PL3)", () => {
       enRoute()
         .map((mail) => mail.idempotencyKey)
         .sort(),
-    ).toEqual(orderIds.map((id) => `delivery.en_route:${id}`).sort());
+    ).toEqual(orderIds.map((id) => `delivery.en_route:${id}:${roundId}`).sort());
     expect(enRoute().every((mail) => mail.to === "r@col.fr")).toBe(true);
   });
 
@@ -148,7 +148,7 @@ describe("votre livraison est en route (PL3)", () => {
     await ctx.drain();
 
     expect(enRoute().map((mail) => mail.idempotencyKey)).toEqual([
-      `delivery.en_route:${orderIds[1]}`,
+      `delivery.en_route:${orderIds[1]}:${roundId}`,
     ]);
   });
 

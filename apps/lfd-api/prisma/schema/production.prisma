@@ -214,10 +214,13 @@ model OrderHandover {
 model OrderDeparture {
   /// L'identifiant de la commande côté COMMERCE, opaque.
   orderId    String    @id @map("order_id")
-  departedAt DateTime  @map("departed_at")
+  /// Nul : un retour est connu, son départ pas encore livré (la boîte
+  /// d'envoi ne garantit aucun ordre — `plan-depart-durable.md`, B1).
+  departedAt DateTime? @map("departed_at")
   /// « Rapportée » (plan « À la porte », B3, LB-Q2) : l'arrêt est clos sans
   /// livraison, la commande est revenue — elle redevient contrôlable. Nul :
-  /// partie, et pas revenue. Posé seulement sur un départ antérieur ou égal.
+  /// partie, et pas revenue. Monotone par instant avec `departedAt` : une
+  /// écriture plus ancienne que l'état ne fait rien (DD1).
   returnedAt DateTime? @map("returned_at")
 
   @@map("order_departure")

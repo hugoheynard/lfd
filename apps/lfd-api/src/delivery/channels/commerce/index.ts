@@ -27,10 +27,14 @@ export {
   type DeliveryOrderState,
 } from "./delivery-order-states.reader.js";
 export { CommerceDayVersionReader } from "./commerce-day-version.reader.js";
+// Le départ, fait durable (2026-10-06, DD1) : déclaré dans le canal du
+// retrait, la MÊME classe réexportée ici — le commerce n'a que ce dossier
+// comme surface vers la livraison. Remplace `DeliveryDepartureAnnouncer`.
 export {
-  DeliveryDepartureAnnouncer,
-  type DeliveryDeparture,
-} from "./delivery-departure.announcer.js";
+  DELIVERY_ROUND_DEPARTED,
+  DeliveryRoundDepartedFact,
+  DeliveryRoundDepartedPayloadError,
+} from "../handover/delivery-round-departed.fact.js";
 export type { DepartureSheet, DepartureWindow } from "../../domain/entities/departure-sheet.js";
 export { DeliveryOrderPlacedListener } from "./delivery-order-placed.listener.js";
 export {

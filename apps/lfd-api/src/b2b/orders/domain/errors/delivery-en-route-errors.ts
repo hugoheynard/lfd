@@ -1,11 +1,12 @@
 import { TechnicalError } from "../../../../platform/shared/errors/app-error.js";
 
 /**
- * Des courriels « votre livraison est en route » ne sont pas partis (plan
- * `documentation/livraisons/plan-en-route.md`, PL3-D2). Levée APRÈS avoir
- * tenté toutes les commandes de la tournée : un envoi raté ne prive pas les
- * autres clients du leur. Lue dans le journal du travail de fond, jamais par un
- * client — la tournée, elle, est partie.
+ * Des courriels « votre livraison est en route » ne sont pas partis
+ * (`documentation/livraisons/en-route.md`). Construite APRÈS avoir tenté
+ * toutes les commandes de la tournée : un envoi raté ne prive pas les autres
+ * clients du leur. JOURNALISÉE par l'abonné durable, jamais levée : le fait
+ * n'est pas relancé (`plan-depart-durable.md`, §5). Lue dans les journaux,
+ * jamais par un client — la tournée, elle, est partie.
  */
 export class DeliveryEnRouteMailFailedError extends TechnicalError {
   constructor(roundId: string, failedOrderIds: readonly string[], cause: unknown) {

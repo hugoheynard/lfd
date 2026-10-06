@@ -16,7 +16,6 @@ import { SendGuestOrderNotice } from "./application/handlers/send-guest-order-no
 import { SendOrderPlacedMail } from "./application/handlers/send-order-placed-mail.handler.js";
 import { TellDeliveryOrderPlaced } from "./application/handlers/tell-delivery-order-placed.handler.js";
 import { SendOrderReadyMail } from "./application/handlers/send-order-ready-mail.handler.js";
-import { CommerceDeliveryDepartureAnnouncer } from "./application/services/commerce-delivery-departure-announcer.js";
 import { DeliveryEnRouteMail } from "./application/services/delivery-en-route-mail.service.js";
 import { SendOrderSettledMail } from "./application/handlers/send-order-settled-mail.handler.js";
 import { RingFailedProSettlement } from "./application/handlers/ring-failed-pro-settlement.handler.js";
@@ -85,6 +84,7 @@ import { GetOrderSheetHandler } from "./application/queries/get-order-sheet.hand
 import { GetAdminOrderSheetPdfHandler } from "./application/queries/get-admin-order-sheet-pdf.handler.js";
 import { GetOrderSheetPdfHandler } from "./application/queries/get-order-sheet-pdf.handler.js";
 import { OrderSheetArchive } from "./application/services/order-sheet-archive.service.js";
+import { MailDeliveryEnRoute } from "./application/handlers/mail-delivery-en-route.handler.js";
 import { OnProductionDayClosed } from "./application/handlers/on-production-day-closed.handler.js";
 import { OnOrderHandedOver } from "./application/handlers/on-order-handed-over.handler.js";
 import { OnPackingOrderPacked } from "./application/handlers/on-packing-order-packed.handler.js";
@@ -277,10 +277,10 @@ import { AdminSupervisionController } from "./http/admin-supervision.controller.
     // Le composeur du courriel de retrait, partagé par le colisage (qui
     // l'annonce) et par le rappel du comptoir (qui le renvoie).
     OrderReadyMail,
-    // « Votre livraison est en route » (plan-en-route.md, PL3) : la livraison
-    // annonce le départ par son port, relié dans `DeliveryFeedModule`.
+    // « Votre livraison est en route » (en-route.md) : l'abonné durable du
+    // départ d'une tournée (`delivery.round_departed`, DD1).
     DeliveryEnRouteMail,
-    CommerceDeliveryDepartureAnnouncer,
+    MailDeliveryEnRoute,
     SendHandoverReminderHandler,
     { provide: OrderPaymentLinkReader, useClass: PrismaOrderPaymentLinkReader },
     ListOrdersAwaitingPaymentHandler,
@@ -379,9 +379,6 @@ import { AdminSupervisionController } from "./http/admin-supervision.controller.
     // Les numéros des commandes qui ont rapporté des points, que l'historique
     // du client montre (plan des points, E1.1).
     OrderNumberReader,
-    // L'annonce du départ d'une tournée, que la livraison déclare : sortie
-    // pour être RELIÉE dans `DeliveryFeedModule`, sous le jeton de la livraison.
-    CommerceDeliveryDepartureAnnouncer,
   ],
 })
 export class OrdersModule {}

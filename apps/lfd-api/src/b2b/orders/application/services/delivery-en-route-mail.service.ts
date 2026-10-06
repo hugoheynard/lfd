@@ -10,12 +10,13 @@ import { clientSheetOf } from "../../domain/services/order-sheet.js";
 
 /**
  * **« Votre livraison est en route »** pour UNE commande
- * (`documentation/livraisons/plan-en-route.md`, PL3-D3, PL3-D4).
+ * (`documentation/livraisons/en-route.md`).
  *
  * Destinataire : le compte qui a commandé — le contact de livraison n'a pas
- * d'e-mail (L6-C13). La clé d'idempotence est déterministe par commande
- * (`delivery.en_route:<orderId>`) : un départ rejoué ne fait pas partir de
- * second message.
+ * d'e-mail (L6-C13). La clé d'idempotence est déterministe par commande ET
+ * par tournée (`delivery.en_route:<orderId>:<roundId>`, `plan-depart-durable.md`,
+ * §5) : un fait relivré ne fait pas partir de second message, et une commande
+ * rapportée qui repart dans une autre tournée a le sien.
  */
 @Injectable()
 export class DeliveryEnRouteMail {
@@ -34,7 +35,7 @@ export class DeliveryEnRouteMail {
    *
    * @returns `true` si le message a été remis au mailer.
    */
-  async send(orderId: string): Promise<boolean> {
+  async send(orderId: string, roundId: string): Promise<boolean> {
     const owned = await this.orders.findById(orderId);
     if (owned === null || !stillOnItsWay(owned.view)) {
       return false;
@@ -58,7 +59,7 @@ export class DeliveryEnRouteMail {
         orderUrl: client === null ? "" : `${client}/mes-commandes`,
         locale: DEFAULT_MAIL_LOCALE,
       },
-      idempotencyKey: `delivery.en_route:${orderId}`,
+      idempotencyKey: `delivery.en_route:${orderId}:${roundId}`,
     });
     return true;
   }

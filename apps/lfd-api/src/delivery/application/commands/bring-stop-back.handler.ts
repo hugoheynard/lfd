@@ -1,17 +1,14 @@
 import { CommandHandler, type ICommandHandler } from "@nestjs/cqrs";
 
-import { AfterCommit } from "../../../platform/database/after-commit.js";
 import { UnitOfWork } from "../../../platform/database/unit-of-work.js";
-import { BackgroundWork } from "../../../platform/events/background-work.js";
 import { DomainEventPublisher } from "../../../platform/events/domain-event-publisher.js";
+import { DurablePublisher } from "../../../platform/outbox/durable-publisher.js";
 import { Clock } from "../../../platform/time/clock.js";
-import { BroughtBackOrdersAnnouncer } from "../../channels/handover/index.js";
+import { DeliveryOrdersBroughtBackFact } from "../../channels/handover/index.js";
 import { DeliveryStopBroughtBackEvent } from "../../domain/events/delivery-doorstep.events.js";
 import { DeliveryRoundRepository } from "../../domain/ports/delivery-round.repository.js";
 import { StopDecisionDesk } from "../stop-decision-desk.js";
 import { BringStopBackCommand } from "./bring-stop-back.command.js";
-
-const ANNOUNCED = "stop-brought-back-announced";
 
 /**
  * **« Rapporter »** (`documentation/livraisons/a-la-porte.md`, B3,
@@ -24,11 +21,12 @@ const ANNOUNCED = "stop-brought-back-announced";
  * 3. l'arrêt CLOS par la tournée (`closeStop`, l'exception écrite à I6) : la
  *    commande sort de l'index des arrêts vivants et peut repartir dans une
  *    autre tournée ; elle n'est NI remise NI `fulfilled` — rien n'est attesté ;
- * 4. la décision, la tournée, le fait.
- *
- * Puis, APRÈS la validation (`AfterCommit`, B0), le retrait apprend que la
- * commande est revenue (`BroughtBackOrdersAnnouncer`) : le fournil peut de
- * nouveau la contrôler. Une décision annulée n'annonce rien.
+ * 4. la décision, la tournée, le fait du journal ;
+ * 5. le fait DURABLE `delivery.orders_brought_back`, dans la boîte d'envoi
+ *    (`plan-depart-durable.md`, DD1, B2) : le retrait apprend que la commande
+ *    est revenue — le fournil peut de nouveau la contrôler. Une décision
+ *    annulée n'a pas de fait ; une décision validée est livrée au moins une
+ *    fois, même à travers un redémarrage.
  *
  * ⚠️ Clore l'arrêt avance la version de la tournée (c'est la tournée qui
  * clôt) : un geste du livreur présenté sur l'ancienne version est refusé, et
@@ -42,10 +40,8 @@ export class BringStopBackHandler implements ICommandHandler<BringStopBackComman
   constructor(
     private readonly desk: StopDecisionDesk,
     private readonly rounds: DeliveryRoundRepository,
-    private readonly announcer: BroughtBackOrdersAnnouncer,
+    private readonly durable: DurablePublisher,
     private readonly clock: Clock,
-    private readonly afterCommit: AfterCommit,
-    private readonly work: BackgroundWork,
     private readonly events: DomainEventPublisher,
     private readonly uow: UnitOfWork,
   ) {}
@@ -63,11 +59,8 @@ export class BringStopBackHandler implements ICommandHandler<BringStopBackComman
       await this.events.publishTraced(
         new DeliveryStopBroughtBackEvent(at.roundKey, at.order, "staff"),
       );
-      const orderId = at.decision.orderId;
-      this.afterCommit.defer(
-        () => this.work.track(this.announcer.ordersBroughtBack([orderId], now), ANNOUNCED),
-        ANNOUNCED,
-      );
+      const fact = new DeliveryOrdersBroughtBackFact(at.round.id, [at.decision.orderId], now);
+      await this.durable.publish(fact.durableFact());
     });
   }
 }

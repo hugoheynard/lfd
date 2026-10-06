@@ -1,0 +1,15 @@
+-- LE RETOUR PEUT ARRIVER AVANT LE DÉPART —
+-- `documentation/livraisons/plan-depart-durable.md` (§5, B1, lot DD1).
+--
+-- Départ et retour d'une tournée arrivent désormais au retrait par la boîte
+-- d'envoi, qui peut livrer l'un des heures après l'autre. La ligne
+-- `order_departure` devient MONOTONE PAR INSTANT : chaque écriture est gardée
+-- par l'instant qu'elle porte. Un retour livré AVANT son départ doit donc
+-- pouvoir s'écrire seul — sans quoi il se perd, et le départ livré ensuite
+-- remet la commande « partie ».
+--
+-- Purement ADDITIVE : `departed_at` accepte NUL (« retour connu, départ pas
+-- encore livré »). Aucune ligne existante ne change ; aucun lecteur ne lit
+-- `departed_at` pour décider (relu le 2026-10-06 : la garde et la pièce de
+-- remise lisent `returned_at IS NULL`).
+ALTER TABLE "production"."order_departure" ALTER COLUMN "departed_at" DROP NOT NULL;

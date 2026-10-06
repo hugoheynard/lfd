@@ -5,7 +5,6 @@ import { CommerceDeliveryAddressPointCorrector } from "../b2b/account/applicatio
 import { CatalogModule } from "../b2b/catalog/catalog.module.js";
 import { CatalogDeliveryProductsReader } from "../b2b/catalog/infrastructure/catalog-delivery-products.reader.js";
 import { OrdersModule } from "../b2b/orders/orders.module.js";
-import { CommerceDeliveryDepartureAnnouncer } from "../b2b/orders/application/services/commerce-delivery-departure-announcer.js";
 import { PrismaCommerceDayVersionReader } from "../b2b/orders/infrastructure/prisma-commerce-day-version.reader.js";
 import { PrismaDeliveryOrderStatesReader } from "../b2b/orders/infrastructure/prisma-delivery-order-states.reader.js";
 import { PrismaDeliveryOrderLinesReader } from "../b2b/orders/infrastructure/prisma-delivery-order-lines.reader.js";
@@ -19,7 +18,6 @@ import {
   CommerceDayVersionReader,
   DeliveryAddressPointCorrector,
   DeliveryAddressPointsReader,
-  DeliveryDepartureAnnouncer,
   DeliveryOrderLinesReader,
   DeliveryOrdersReader,
   DeliveryOrderStatesReader,
@@ -50,10 +48,6 @@ import {
  *   qui exporte `DeliveryStepPhotoLocator` ;
  * - `CommerceDayVersionReader` — la version de journée du commerce, pour la
  *   version de « ma tournée » (`parcours-du-livreur.md`, PL4) ;
- * - `DeliveryDepartureAnnouncer` — le départ d'une tournée, annoncé au
- *   commerce qui écrit « votre livraison est en route » (`plan-en-route.md`,
- *   PL3). Seule ANNONCE du fil ; son adaptateur vit dans `OrdersModule`, qui
- *   a les ports du courriel : d'où l'import, et `useExisting` ;
  * - `DeliveryAddressPointsReader` — l'adresse du carnet derrière une commande
  *   livrée, et ses deux points, pour les suggestions de correction
  *   (`gps-y-aller-et-position.md`, §6) ;
@@ -77,7 +71,6 @@ import {
     { provide: DeliveryStepPhotosReader, useClass: PrismaDeliveryStepPhotosReader },
     { provide: DeliveryOrderStatesReader, useClass: PrismaDeliveryOrderStatesReader },
     { provide: CommerceDayVersionReader, useClass: PrismaCommerceDayVersionReader },
-    { provide: DeliveryDepartureAnnouncer, useExisting: CommerceDeliveryDepartureAnnouncer },
     { provide: DeliveryAddressPointsReader, useClass: PrismaDeliveryAddressPointsReader },
     {
       provide: DeliveryAddressPointCorrector,
@@ -93,7 +86,6 @@ import {
     DeliveryStepPhotosReader,
     DeliveryOrderStatesReader,
     CommerceDayVersionReader,
-    DeliveryDepartureAnnouncer,
     DeliveryAddressPointsReader,
     DeliveryAddressPointCorrector,
   ],

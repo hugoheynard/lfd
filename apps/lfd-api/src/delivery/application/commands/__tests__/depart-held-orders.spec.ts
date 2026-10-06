@@ -16,7 +16,7 @@ import {
   InMemoryDeliveryRounds,
   roundWith,
 } from "./round-doubles.js";
-import { FixedDoorstepSettings } from "./decision-doubles.js";
+import { FixedDoorstepSettings, RecordingDurable } from "./decision-doubles.js";
 
 /*
  * « Partir » du dépôt refuse une commande retenue au contrôle qualité
@@ -49,6 +49,7 @@ function depart(holds: FixedDepartureHolds) {
   const rounds = new InMemoryDeliveryRounds(roundWith("r_1", DAY, "v_1", ["o_1", "o_2"]));
   const departed = new RecordingDepartedStops();
   const events = new RecordingPublisher();
+  const durable = new RecordingDurable();
   const handler = new DepartDeliveryRoundHandler(
     rounds,
     new InMemoryStopLoadings(loaded("o_1", "r_1_s1", "AAAAAA"), loaded("o_2", "r_1_s2", "BBBBBB")),
@@ -59,14 +60,15 @@ function depart(holds: FixedDepartureHolds) {
     new FixedClock(NOW),
     events,
     new DirectUnitOfWork(),
+    durable,
   );
-  return { handler, rounds, departed, events };
+  return { handler, rounds, departed, events, durable };
 }
 
 describe("DepartDeliveryRoundHandler — une commande retenue ne part pas (BQ)", () => {
   it("refuse en nommant l'arrêt retenu, sans rien figer ni tracer", async () => {
     const holds = new FixedDepartureHolds(["o_2"]);
-    const { handler, rounds, departed, events } = depart(holds);
+    const { handler, rounds, departed, events, durable } = depart(holds);
 
     const refused = handler.execute(new DepartDeliveryRoundCommand("r_1", { version: 1 }));
 
@@ -77,6 +79,7 @@ describe("DepartDeliveryRoundHandler — une commande retenue ne part pas (BQ)",
     expect(rounds.stored("r_1")?.departedAt).toBeNull();
     expect(departed.recorded).toEqual([]);
     expect(events.traced).toEqual([]);
+    expect(durable.facts).toEqual([]);
   });
 
   it("demande au retrait les commandes de la tournée, et part quand aucune n'est retenue", async () => {
