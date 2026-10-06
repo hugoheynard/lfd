@@ -138,6 +138,7 @@ import { PrismaVehicleRoundsReader } from "./infrastructure/prisma-vehicle-round
 import { PrismaVehicleRepository } from "./infrastructure/prisma-vehicle.repository.js";
 import { COMPOSITION_PREREQUISITES_PROVIDERS } from "./composition-prerequisites.providers.js";
 import { DAY_JOURNAL_CONTROLLERS, DAY_JOURNAL_PROVIDERS } from "./day-journal.providers.js";
+import { DeliveryStopsLocating } from "./application/delivery-stops-locating.js";
 import { DAY_READINESS_CONTROLLERS, DAY_READINESS_PROVIDERS } from "./day-readiness.providers.js";
 import { DOORSTEP_CONTROLLERS, DOORSTEP_PROVIDERS } from "./doorstep.providers.js";
 import { DRIVER_CONTROLLERS, DRIVER_PROVIDERS } from "./driver.providers.js";
@@ -316,6 +317,6 @@ import {
       },
     },
   ],
-  exports: [DeliveryBinDesk],
+  exports: [DeliveryBinDesk, DeliveryStopsLocating],
 })
 export class DeliveryModule {}

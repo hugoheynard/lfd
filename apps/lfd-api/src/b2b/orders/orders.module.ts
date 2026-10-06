@@ -14,6 +14,7 @@ import { MarkOrderFulfilledHandler } from "./application/commands/mark-order-ful
 import { MarkOrderReadyHandler } from "./application/commands/mark-order-ready.handler.js";
 import { SendGuestOrderNotice } from "./application/handlers/send-guest-order-notice.handler.js";
 import { SendOrderPlacedMail } from "./application/handlers/send-order-placed-mail.handler.js";
+import { TellDeliveryOrderPlaced } from "./application/handlers/tell-delivery-order-placed.handler.js";
 import { SendOrderReadyMail } from "./application/handlers/send-order-ready-mail.handler.js";
 import { CommerceDeliveryDepartureAnnouncer } from "./application/services/commerce-delivery-departure-announcer.js";
 import { DeliveryEnRouteMail } from "./application/services/delivery-en-route-mail.service.js";
@@ -242,6 +243,8 @@ import { AdminSupervisionController } from "./http/admin-supervision.controller.
     // encore en vol (2026-09-17) : une commande carte n'est pas payée quand elle
     // est écrite, et lui annoncer la fournée de demain serait un message faux.
     SendOrderPlacedMail,
+    // CA0 : la livraison situe l'adresse dès la commande, en fond.
+    TellDeliveryOrderPlaced,
     // Le même accusé, quand la carte a répondu OUI. Deux gestes, un seul
     // composeur — et la même clé d'idempotence, donc jamais deux accusés.
     SendOrderSettledMail,

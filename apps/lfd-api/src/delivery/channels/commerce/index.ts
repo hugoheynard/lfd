@@ -32,3 +32,4 @@ export {
   type DeliveryDeparture,
 } from "./delivery-departure.announcer.js";
 export type { DepartureSheet, DepartureWindow } from "../../domain/entities/departure-sheet.js";
+export { DeliveryOrderPlacedListener } from "./delivery-order-placed.listener.js";

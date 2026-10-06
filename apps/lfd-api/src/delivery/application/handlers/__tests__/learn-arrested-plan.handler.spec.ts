@@ -10,6 +10,7 @@ import {
   FixedDeliveryOrders,
   FixedMeasuredVehicles,
   InMemoryDayReadiness,
+  RecordingDayStopsLocator,
   orderFact,
 } from "./day-readiness-doubles.js";
 
@@ -38,14 +39,15 @@ function setup(options: { vehicles?: readonly string[]; bins?: readonly string[]
     afterCommit,
     work,
   );
-  const handler = new LearnArrestedPlan(orders, days, bell, new FixedClock(NOW));
+  const locator = new RecordingDayStopsLocator();
+  const handler = new LearnArrestedPlan(orders, days, bell, new FixedClock(NOW), locator);
   async function receive(orderIds: readonly string[], reannouncedAt: Date | null = null) {
     const fact = new ProductionDayClosedEvent(DAY, CLOSED, orderIds, reannouncedAt).durableFact();
     await handler.handle({ eventId: "e", type: fact.type, payload: fact.payload });
     await afterCommit.commit();
     await work.whenIdle();
   }
-  return { orders, days, notifier, afterCommit, receive };
+  return { orders, days, notifier, afterCommit, locator, receive };
 }
 
 describe("LearnArrestedPlan — la livraison apprend que le plan est arrêté", () => {
@@ -66,6 +68,14 @@ describe("LearnArrestedPlan — la livraison apprend que le plan est arrêté", 
       link: `/livraison/tournees?jour=${DAY}`,
       audience: "delivery_rounds:write",
     });
+  });
+
+  it("demande à situer les arrêts du jour, le rattrapage avant le jour J (CA0)", async () => {
+    const { locator, receive } = setup();
+
+    await receive(["d1"]);
+
+    expect(locator.days).toEqual([DAY]);
   });
 
   it("borne la lecture aux commandes DU FAIT", async () => {
@@ -138,6 +148,7 @@ describe("LearnArrestedPlan — la livraison apprend que le plan est arrêté", 
         new BackgroundWork(),
       ),
       new FixedClock(NOW),
+      new RecordingDayStopsLocator(),
     );
     const fact = new ProductionDayClosedEvent(DAY, CLOSED, ["d1"]).durableFact();
 

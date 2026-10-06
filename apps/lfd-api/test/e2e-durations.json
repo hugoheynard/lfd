@@ -236,5 +236,6 @@
   "test/subscriptions-journal.e2e-spec.ts": 4485,
   "test/subscriptions.e2e-spec.ts": 3933,
   "test/supervision-routes.e2e-spec.ts": 6374,
-  "test/support-requests.e2e-spec.ts": 6282
+  "test/support-requests.e2e-spec.ts": 6282,
+  "test/delivery-locate-on-order.e2e-spec.ts": 3600
 }

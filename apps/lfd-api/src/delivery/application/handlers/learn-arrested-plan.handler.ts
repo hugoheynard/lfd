@@ -13,6 +13,7 @@ import {
 import { DeliveryOrdersReader } from "../../channels/commerce/index.js";
 import { DeliveryDayReadiness } from "../../domain/entities/delivery-day-readiness.js";
 import { DeliveryDayReadinessRepository } from "../../domain/ports/delivery-day-readiness.repository.js";
+import { DayStopsLocator } from "../day-stops-locator.js";
 import { PlanArrestedBell } from "../plan-arrested-bell.js";
 import { activeDeliveriesAmong } from "./arrested-plan-deliveries.js";
 
@@ -46,6 +47,7 @@ export class LearnArrestedPlan implements DurableSubscriber {
     private readonly days: DeliveryDayReadinessRepository,
     private readonly bell: PlanArrestedBell,
     private readonly clock: Clock,
+    private readonly locating: DayStopsLocator,
   ) {}
 
   async handle(delivery: DurableDelivery): Promise<void> {
@@ -56,6 +58,9 @@ export class LearnArrestedPlan implements DurableSubscriber {
       (await this.days.load(event.serviceDay)) ?? DeliveryDayReadiness.start(event.serviceDay, now);
     const announced = day.learnClosure(event.closedAt, deliveryIds, now);
     await this.days.save(day);
+    // CA0 : le rattrapage avant le jour J — ce qu'une commande n'a pas pu
+    // situer à sa passation l'est ici, après la validation, hors transaction.
+    this.locating.locateDaySoon(day.serviceDay);
     if (announced > 0) {
       await this.bell.ring({
         serviceDay: day.serviceDay,

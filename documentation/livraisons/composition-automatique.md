@@ -144,7 +144,7 @@ flowchart TD
 
 | Lot      | Contenu                                                                                                                                                           | État        | Commit                                                         |
 | -------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------- | ----------- | -------------------------------------------------------------- |
-| **CA0**  | Situer l'adresse (géocodage) dès la commande, pour que le prévisionnel ait un point                                                                               | ❌ pas bâti | aucun `geocod` dans `src/b2b`                                  |
+| **CA0**  | Situer l'adresse (géocodage) dès la commande, en fond après validation ; rattrapage à la commande suivante du jour, à l'arrêt du plan et au retirage              | ✅ bâti     | non commité (2026-10-06)                                       |
 | **CA1**  | Sans véhicule actif mesuré ni type de bac en service, « Proposer » refuse avec la phrase ; on ne peut pas retirer le dernier                                      | ✅ bâti     | `57ed88723`                                                    |
 | **CA1b** | Pas de livraison sans échéance ni créneau à la passation                                                                                                          | ✅ bâti     | `8089a262c`                                                    |
 | **CA2**  | Départ à rebours dès minuit, marge visée ; `maxRoundMinutes` devient un simple signal, sans pénalité de durée                                                     | ✅ bâti     | `0cf2aaf30` (points validés `dc4bd9779`)                       |
@@ -226,9 +226,18 @@ flowchart TD
 
 **Lots non bâtis, dans l'ordre**
 
-1. **CA0.** Géocoder l'adresse dès la commande, à partir du cache
-   `delivery_geocode`. Une adresse non située reste signalée et n'est jamais
-   placée au hasard.
+1. ~~**CA0.**~~ Bâti le 2026-10-06, non commité. Sur `order.placed`, le
+   commerce appelle `DeliveryOrderPlacedListener` (déclaré et implémenté par
+   la livraison, `delivery/channels/commerce/`). La livraison relit la
+   commande, puis, après la validation et en fond (`AfterCommit` +
+   `BackgroundWork`), lance « Situer les arrêts » du jour : seul ce qui manque
+   au carnet et au cache part au géocodeur. Les abonnés de l'arrêt du plan et
+   du retirage relancent le même passage : c'est le rattrapage avant le jour
+   J, idempotent. La passation n'attend jamais le géocodeur et n'échoue pas
+   s'il est en panne. Une adresse non située reste dans `unlocated` et n'est
+   jamais placée (règle déjà en place, `locateFromCache`). Reste hors CA0 : un
+   changement de date ou d'adresse après la passation n'est rattrapé qu'à
+   l'arrêt du plan ou par le geste « Situer ».
 2. **CA4.** Faire entrer la capacité dans la composition, en partant de la
    demande en bacs de chaque commande : les bacs déclarés, sinon une estimation
    par les contenances, sinon « inconnue », et dans ce dernier cas la commande

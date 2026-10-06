@@ -13,6 +13,7 @@ import {
   ActiveBinTypesReader,
   MeasuredVehiclesReader,
 } from "../../../domain/ports/composition-prerequisites.readers.js";
+import { DayStopsLocator } from "../../day-stops-locator.js";
 import { DeliveryDayReadinessRepository } from "../../../domain/ports/delivery-day-readiness.repository.js";
 
 /** Le commerce, tel que la composition le lit : seul `byIds` sert ici. */
@@ -89,5 +90,13 @@ export class FixedActiveBinTypes extends ActiveBinTypesReader {
   }
   activeIds(): Promise<readonly string[]> {
     return Promise.resolve(this.ids);
+  }
+}
+
+/** « Situer les arrêts du jour, plus tard », noté : le géocodage a sa propre suite (CA0). */
+export class RecordingDayStopsLocator extends DayStopsLocator {
+  readonly days: string[] = [];
+  locateDaySoon(day: string): void {
+    this.days.push(day);
   }
 }

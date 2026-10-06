@@ -14,6 +14,7 @@ import {
   FixedDeliveryOrders,
   FixedMeasuredVehicles,
   InMemoryDayReadiness,
+  RecordingDayStopsLocator,
   orderFact,
 } from "./day-readiness-doubles.js";
 
@@ -45,8 +46,9 @@ function setup() {
     work,
   );
   const clock = new FixedClock(NOW);
-  const closures = new LearnArrestedPlan(orders, days, bell, clock);
-  const retakes = new LearnRetakenPlan(orders, days, bell, clock);
+  const locator = new RecordingDayStopsLocator();
+  const closures = new LearnArrestedPlan(orders, days, bell, clock, locator);
+  const retakes = new LearnRetakenPlan(orders, days, bell, clock, locator);
   async function deliver(
     handler: LearnArrestedPlan | LearnRetakenPlan,
     fact: { readonly type: string; readonly payload: Readonly<Record<string, unknown>> },
@@ -56,6 +58,7 @@ function setup() {
     await work.whenIdle();
   }
   return {
+    locator,
     orders,
     days,
     notifier,
@@ -89,6 +92,15 @@ describe("LearnRetakenPlan — un retirage complète le plan arrêté", () => {
       "Le plan du mercredi 7 octobre est complété : 2 nouvelles livraisons à placer",
     ]);
     expect(new Set(notifier.notified.map((n) => n.idempotencyKey)).size).toBe(2);
+  });
+
+  it("demande à situer les arrêts du jour à chaque retirage (CA0)", async () => {
+    const { locator, close, retake } = setup();
+
+    await close(["d1"]);
+    await retake(["r1"]);
+
+    expect(locator.days).toEqual([DAY, DAY]);
   });
 
   it("borne la lecture aux commandes absorbées DU FAIT", async () => {
