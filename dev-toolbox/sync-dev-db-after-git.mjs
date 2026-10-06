@@ -125,13 +125,13 @@ async function main() {
       timeout: 120_000,
       maxBuffer: 8 * 1024 * 1024,
     });
-    const applied = `${deploy.stdout}\n${deploy.stderr}`
-      .split("\n")
-      .filter((l) => l.includes("Applying migration"));
+    // Prisma 7 n'écrit plus « Applying migration » : il dit seulement qu'il
+    // n'y avait rien à faire, ou liste ce qu'il a appliqué (vu le 2026-10-06).
+    const said = `${deploy.stdout}\n${deploy.stderr}`;
     console.log(
-      applied.length === 0
+      said.includes("No pending migrations")
         ? "✓ prisma : base de dev à jour, client régénéré."
-        : `✓ prisma : ${applied.length} migration(s) appliquée(s) à la base de dev, client régénéré — l'API redémarre seule.`,
+        : "✓ prisma : migrations appliquées à la base de dev, client régénéré — l'API redémarre seule.",
     );
   } catch (error) {
     const said = String(error?.stderr || error?.message || error)
