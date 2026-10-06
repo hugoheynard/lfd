@@ -29,7 +29,7 @@
               [open]="true"
               [loading]="arresting()"
               keepOpenOnConfirm
-              intent="neutral"
+              intent="danger"
               [message]="
                 'Arrêter maintenant le plan du ' +
                 day.weekday +
@@ -43,7 +43,15 @@
               <span hidden></span>
             </fold-inline-confirm>
           } @else {
-            <button foldButton actions size="sm" (click)="arrestingDay.set(day.date)">
+            <!-- `danger` : fold n'a pas d'intention `alert` pour un bouton ; c'est la
+                 même famille rouge que le callout (Hugo, 2026-10-06). -->
+            <button
+              foldButton
+              actions
+              size="sm"
+              intent="danger"
+              (click)="arrestingDay.set(day.date)"
+            >
               Arrêter le plan du {{ day.weekday }} {{ day.dayMonth }} maintenant
             </button>
           }
