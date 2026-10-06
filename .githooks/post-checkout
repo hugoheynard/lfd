@@ -1,0 +1,6 @@
+#!/bin/sh
+# La base de dev suit le dépôt : si ce geste git a fait entrer une migration
+# ou un schéma Prisma, on les applique à la base de dev locale et on régénère
+# le client — l'API en watch redémarre seule. Cf. dev-toolbox/sync-dev-db-after-git.mjs.
+# Ne bloque jamais git : le script sort toujours en 0.
+node dev-toolbox/sync-dev-db-after-git.mjs checkout "$@" || true
