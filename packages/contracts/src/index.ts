@@ -1062,6 +1062,13 @@ export type {
   DeliveryTimedRoundView,
   DeliveryTimedStopView,
 } from "./delivery-routing.js";
+export type {
+  DeliveryNoPlacementReason,
+  DeliverySuggestedPlacementView,
+  DeliveryNoPlacementView,
+  DeliveryPlacementSuggestionView,
+  DeliveryPlacementSuggestionsView,
+} from "./delivery-placement-suggestion.js";
 export {
   SIMULATION_MAX_STOPS,
   SIMULATION_MAX_VEHICLES,

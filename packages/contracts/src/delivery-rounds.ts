@@ -163,10 +163,15 @@ export const openDeliveryRoundPayloadSchema = z.object({
 });
 export type OpenDeliveryRoundPayload = z.infer<typeof openDeliveryRoundPayloadSchema>;
 
-/** Affecter une commande à une tournée : elle s'ajoute en dernier. */
+/**
+ * Affecter une commande à une tournée : elle s'ajoute en dernier, ou après
+ * les `after` premiers arrêts — « Placer ici », la place suggérée (CA7).
+ * Absent : en dernier, comme avant.
+ */
 export const assignDeliveryStopPayloadSchema = z.object({
   orderId: idField("commande"),
   version: versionField,
+  after: z.number().int("rang entier attendu").nonnegative("rang positif attendu").optional(),
 });
 export type AssignDeliveryStopPayload = z.infer<typeof assignDeliveryStopPayloadSchema>;
 

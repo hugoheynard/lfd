@@ -11,6 +11,7 @@ import {
   InvalidPassageError,
   InvalidServiceDayError,
   InvalidStopOrderError,
+  InvalidStopPositionError,
   OrderAlreadyInRoundError,
   VehicleInactiveOnDayError,
 } from "../errors/delivery-round-errors.js";
@@ -264,15 +265,24 @@ export class DeliveryRound {
   }
 
   /**
-   * Affecte une commande : elle s'ajoute en dernier.
+   * Affecte une commande : elle s'ajoute en dernier, ou après les `after`
+   * premiers arrêts vivants — la place suggérée (CA7), posée en un geste.
    * @throws {OrderAlreadyInRoundError} déjà dans cette tournée.
+   * @throws {InvalidStopPositionError} la tournée n'a pas ce rang.
    */
-  assign(stopId: string, orderId: string, at: Date): void {
-    this.attach({ id: stopId, orderId }, at);
+  assign(stopId: string, orderId: string, at: Date, after?: number): void {
+    if (after !== undefined && (after < 0 || after > this.open.length)) {
+      throw new InvalidStopPositionError(after, this.open.length);
+    }
+    this.attachAt({ id: stopId, orderId }, at, after ?? this.open.length);
   }
 
   /** Reçoit un arrêt déplacé (I7), en dernier. @throws {OrderAlreadyInRoundError} */
   attach(stop: DetachedStop, at: Date): void {
+    this.attachAt(stop, at, this.open.length);
+  }
+
+  private attachAt(stop: DetachedStop, at: Date, after: number): void {
     this.ensureAtDepot();
     if (this.open.some((existing) => existing.orderId === stop.orderId)) {
       throw new OrderAlreadyInRoundError(null, {
@@ -281,7 +291,7 @@ export class DeliveryRound {
         passage: this.state.passage,
       });
     }
-    this.open = [...this.open, stop];
+    this.open = [...this.open.slice(0, after), stop, ...this.open.slice(after)];
     this.recompose(at);
   }
 

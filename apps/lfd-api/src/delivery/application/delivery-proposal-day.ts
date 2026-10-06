@@ -5,8 +5,10 @@ import type {
 } from "../channels/commerce/index.js";
 import type { BroughtBackOrdersReader } from "../domain/ports/brought-back-orders.reader.js";
 import type { DeliveryRoundsReader, RoundRow } from "../domain/ports/delivery-rounds.reader.js";
+import type { GeocodeCacheReader } from "../domain/ports/geocode-cache.reader.js";
 import type { LoadedStopsReader } from "../domain/ports/loaded-stops.reader.js";
 import { ordersToReplace } from "./brought-back-support.js";
+import { locateFromCache, type LocatedStop } from "./delivery-routing-support.js";
 
 /** Ce que la proposition a lu du jour. */
 export interface ProposalDayReading {
@@ -69,4 +71,20 @@ export async function readProposalDay(
     facts: new Map(facts.map((order) => [order.orderId, order])),
     broughtBack: new Set(broughtBack.keys()),
   };
+}
+
+/**
+ * Situe les commandes à répartir et celles des tournées du jour lu — carnet,
+ * puis cache, jamais le réseau. Partagé par « Proposer » et la place
+ * suggérée (CA7) : les deux lisent les mêmes points.
+ */
+export async function locateProposalDay(
+  ports: { readonly orders: DeliveryOrdersReader; readonly cache: GeocodeCacheReader },
+  day: ProposalDayReading,
+  now: Date,
+): Promise<ReadonlyMap<string, LocatedStop>> {
+  const composedIds = day.rounds.flatMap((round) => round.stops.map((stop) => stop.orderId));
+  const points = await ports.orders.stopPointsOf([...day.unassigned, ...composedIds]);
+  const located = await locateFromCache(points, ports.cache, now);
+  return new Map(located.map((stop) => [stop.orderId, stop]));
 }

@@ -13,6 +13,7 @@ import { ActivatedRoute, Router } from '@angular/router';
 import type {
   DeliveryDriverView,
   DeliveryIncidentView,
+  DeliveryPlacementSuggestionView,
   DeliveryRoundsDayView,
   VehicleView,
 } from '@lfd/contracts';
@@ -236,6 +237,14 @@ export class RoundsPage {
   );
   /** Les tracés et les alertes rouges (CA5) de la composition enregistrée, chronométrée à la lecture. */
   private readonly timing = signal<ComposedTiming>(NO_TIMING);
+  /** La place suggérée de chaque commande à répartir (CA7), lue avec la composition. */
+  private readonly suggestions = signal<ReadonlyMap<string, DeliveryPlacementSuggestionView>>(
+    new Map(),
+  );
+  /** En aperçu, « À répartir » est celui de la proposition : aucune suggestion n'y vaut. */
+  protected readonly shownSuggestions = computed(() =>
+    this.preview.active() ? new Map<string, DeliveryPlacementSuggestionView>() : this.suggestions(),
+  );
   /** Le geste en vol, montré avant que le serveur ne l'ait confirmé. */
   private readonly optimistic = signal<OrderLists | null>(null);
 
@@ -651,6 +660,27 @@ export class RoundsPage {
     );
   }
 
+  /**
+   * « Placer ici » (CA7) : l'affectation existante, au rang suggéré, sous la
+   * version LUE AVEC la suggestion — une tournée qui a bougé depuis refuse
+   * (409), et la composition est relue avec ses nouvelles suggestions.
+   */
+  protected placeSuggested(orderId: string): Promise<boolean> {
+    const suggestion = this.suggestions().get(orderId);
+    if (suggestion?.status !== 'suggested') {
+      return Promise.resolve(false);
+    }
+    return this.write(
+      () =>
+        this.rounds.assign(suggestion.roundId, {
+          orderId,
+          version: suggestion.roundVersion,
+          after: suggestion.after,
+        }),
+      'La commande n’a pas pu être placée.',
+    );
+  }
+
   // ─── La tournée elle-même ──────────────────────────────────────────────
 
   protected openRound(vehicleId: string): Promise<boolean> {
@@ -820,6 +850,7 @@ export class RoundsPage {
           incidents: rounds.incidents,
         });
         void this.loadTiming(rounds, request);
+        void this.loadSuggestions(rounds, request);
       }
     } catch {
       if (request === this.request) {
@@ -856,6 +887,29 @@ export class RoundsPage {
     } catch {
       if (request === this.request) {
         this.timing.set(NO_TIMING);
+      }
+    }
+  }
+
+  /**
+   * Les places suggérées (CA7) : seulement quand le jour a des tournées et
+   * des commandes à répartir — sinon le serveur n'aurait rien à dire. Une
+   * LECTURE ; un échec n'affiche rien, comme le chronométrage : la carte
+   * « À répartir » reste celle d'avant CA7.
+   */
+  private async loadSuggestions(rounds: DeliveryRoundsDayView, request: number): Promise<void> {
+    if (rounds.rounds.length === 0 || rounds.unassigned.length === 0) {
+      this.suggestions.set(new Map());
+      return;
+    }
+    try {
+      const view = await this.routing.suggestions(rounds.day);
+      if (request === this.request) {
+        this.suggestions.set(new Map(view.suggestions.map((line) => [line.orderId, line])));
+      }
+    } catch {
+      if (request === this.request) {
+        this.suggestions.set(new Map());
       }
     }
   }

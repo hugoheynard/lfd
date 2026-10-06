@@ -23,6 +23,7 @@ import { LocateDeliveryStopsHandler } from "./application/commands/locate-delive
 import { SetRoutingSettingsHandler } from "./application/commands/set-routing-settings.handler.js";
 import { SetDoorstepSettingsHandler } from "./application/commands/set-doorstep-settings.handler.js";
 import { GetDeliveryRoundProposalHandler } from "./application/queries/get-delivery-round-proposal.handler.js";
+import { GetDeliveryPlacementSuggestionsHandler } from "./application/queries/get-delivery-placement-suggestions.handler.js";
 import { TimeDeliveryRoundsHandler } from "./application/queries/time-delivery-rounds.handler.js";
 import { SimulateDeliveryRoundsHandler } from "./application/queries/simulate-delivery-rounds.handler.js";
 import { ArchiveSimulationScenarioHandler } from "./application/commands/archive-simulation-scenario.handler.js";
@@ -234,6 +235,7 @@ import {
     SetDoorstepSettingsHandler,
     LocateDeliveryStopsHandler,
     GetDeliveryRoundProposalHandler,
+    GetDeliveryPlacementSuggestionsHandler,
     ApplyDeliveryProposalHandler,
     // L'horaire prévu d'une tournée appliquée (I10), rechronométré par le serveur.
     RoundTimingEstimator,

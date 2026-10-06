@@ -1,6 +1,7 @@
 import {
   type ApplyDeliveryProposalPayload,
   applyDeliveryProposalPayloadSchema,
+  type DeliveryPlacementSuggestionsView,
   type DeliveryRoundProposalView,
   type DeliveryRoundTimingView,
   deliveryProposalModeSchema,
@@ -15,6 +16,7 @@ import { AdminSurface, RequirePermission } from "../../platform/auth/admin-surfa
 import { ZodBody, ZodQuery } from "../../platform/shared/http/zod-body.pipe.js";
 import { ApplyDeliveryProposalCommand } from "../application/commands/apply-delivery-proposal.command.js";
 import { LocateDeliveryStopsCommand } from "../application/commands/locate-delivery-stops.command.js";
+import { GetDeliveryPlacementSuggestionsQuery } from "../application/queries/get-delivery-placement-suggestions.query.js";
 import { GetDeliveryRoundProposalQuery } from "../application/queries/get-delivery-round-proposal.query.js";
 import { TimeDeliveryRoundsQuery } from "../application/queries/time-delivery-rounds.query.js";
 
@@ -86,6 +88,21 @@ export class DeliveryProposalController {
         query.mode,
       ),
     );
+  }
+
+  /**
+   * **Les places suggérées** (CA7) : une par commande à répartir d'un jour
+   * qui a des tournées enregistrées. Une lecture ; « Placer ici » est
+   * l'affectation `POST :roundId/arrets` avec son rang.
+   */
+  @Get("places-suggerees")
+  suggestions(
+    @Query(new ZodQuery(dayQuerySchema)) query: DayQuery,
+  ): Promise<DeliveryPlacementSuggestionsView> {
+    return this.queries.execute<
+      GetDeliveryPlacementSuggestionsQuery,
+      DeliveryPlacementSuggestionsView
+    >(new GetDeliveryPlacementSuggestionsQuery(query.jour));
   }
 
   /**

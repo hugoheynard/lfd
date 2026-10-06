@@ -8,6 +8,7 @@ import {
   InvalidPassageError,
   InvalidServiceDayError,
   InvalidStopOrderError,
+  InvalidStopPositionError,
   OrderAlreadyInRoundError,
   VehicleInactiveOnDayError,
 } from "../../errors/delivery-round-errors.js";
@@ -150,6 +151,33 @@ describe("assign / remove", () => {
 
     expect(round.orderIds).toEqual(["o_1", "o_2", "o_3", "o_4"]);
     expect(round.positionOf("s_4")).toBe(4);
+  });
+
+  it("à un rang donné (CA7) : après les N premiers arrêts, la version avance une fois", () => {
+    const round = loaded();
+    round.assign("s_4", "o_4", LATER, 1);
+
+    expect(round.orderIds).toEqual(["o_1", "o_4", "o_2", "o_3"]);
+    expect(round.positionOf("s_4")).toBe(2);
+    expect(round.toSnapshot().version).toBe(5);
+  });
+
+  it("en tête (0) et en dernier (le nombre d'arrêts) sont des rangs", () => {
+    const first = loaded();
+    first.assign("s_4", "o_4", LATER, 0);
+    const last = loaded();
+    last.assign("s_4", "o_4", LATER, 3);
+
+    expect(first.orderIds[0]).toBe("o_4");
+    expect(last.orderIds[3]).toBe("o_4");
+  });
+
+  it("refuse un rang que la tournée n'a pas, sans rien changer", () => {
+    const round = loaded();
+
+    expect(() => round.assign("s_4", "o_4", LATER, 4)).toThrow(InvalidStopPositionError);
+    expect(() => round.assign("s_4", "o_4", LATER, -1)).toThrow(InvalidStopPositionError);
+    expect(round.orderIds).toEqual(["o_1", "o_2", "o_3"]);
   });
 
   it("refuse une commande déjà dans la tournée", () => {

@@ -1,0 +1,8 @@
+<div class="suggestion" data-suggestion>
+  <span class="words" [class.none]="!suggested()" data-suggestion-words>{{ words() }}</span>
+  @if (suggested() && canPlace()) {
+    <button foldButton size="sm" emphasis="soft" (click)="place.emit()" data-place-here>
+      Placer ici
+    </button>
+  }
+</div>

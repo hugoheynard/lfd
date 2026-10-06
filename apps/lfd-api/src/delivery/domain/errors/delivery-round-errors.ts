@@ -123,6 +123,19 @@ export class InvalidStopOrderError extends DomainError {
   }
 }
 
+/**
+ * Affecter à un rang que la tournée n'a pas (CA7) : la composition affichée
+ * est plus vieille que la tournée, ou le rang a été mal lu.
+ */
+export class InvalidStopPositionError extends DomainError {
+  constructor(position: number, stopCount: number) {
+    super(
+      "delivery.stop_position_invalid",
+      `La tournée compte ${String(stopCount)} arrêt(s) : on ne peut pas y placer une commande après le ${String(position)}e. Rechargez la composition, puis placez-la de nouveau.`,
+    );
+  }
+}
+
 /** Déplacer un arrêt vers la tournée où il est déjà. */
 export class SameRoundMoveError extends DomainError {
   constructor() {

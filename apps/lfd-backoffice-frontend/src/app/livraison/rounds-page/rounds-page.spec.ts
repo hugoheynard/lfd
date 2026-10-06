@@ -6,6 +6,7 @@ import { FoldDropdownItemComponent } from 'fold-ng';
 import type {
   DeliveryDayArrestView,
   DeliveryIncidentView,
+  DeliveryPlacementSuggestionsView,
   DeliveryRoundDriverView,
   DeliveryRoundProposalView,
   DeliveryRoundsDayView,
@@ -212,6 +213,9 @@ function timingOf(payload: {
   });
 }
 
+/** Les places suggérées (CA7) ; nul par défaut : la lecture échoue, rien ne s'affiche. */
+let placements: DeliveryPlacementSuggestionsView | null = null;
+
 /** Ce que la livraison a appris de la clôture (CA6a) ; nul par défaut : plan non arrêté. */
 let arrested: DeliveryDayArrestView | null = null;
 
@@ -314,6 +318,8 @@ async function boot(
         useValue: {
           // Sans calcul routier : la carte garde ses repères, l'aperçu ses heures d'origine.
           time: timingOf,
+          suggestions: () =>
+            placements === null ? Promise.reject(new Error('non lu')) : Promise.resolve(placements),
           settings: () => Promise.reject(new Error('non lu')),
           apply: (payload: unknown) => outcome(`apply ${JSON.stringify(payload)}`),
         } satisfies Partial<Record<keyof DeliveryRoutingService, unknown>>,
@@ -365,6 +371,7 @@ function chooseDriver(fixture: ComponentFixture<RoundsPage>, index: number): voi
 afterEach(() => {
   vi.restoreAllMocks();
   placementLate = null;
+  placements = null;
   firstReturned = null;
   dayIncidents = [];
 });
@@ -594,6 +601,70 @@ describe('RoundsPage', () => {
     expect(wire.calls).toEqual(['assign r-2 {"orderId":"o-3","version":7}']);
     expect(wire.reads.rounds.length).toBeGreaterThan(1);
     expect(wire.reads.sheets.length).toBe(wire.reads.rounds.length);
+  });
+
+  it('place suggérée (CA7) : « Placer ici » affecte au rang suggéré, avec la version LUE avec elle', async () => {
+    placements = {
+      day: '2026-10-02',
+      suggestions: [
+        {
+          orderId: 'o-3',
+          reference: 'CMD-3',
+          status: 'suggested',
+          roundId: 'r-1',
+          roundVersion: 4,
+          vehicleId: 'v-1',
+          vehicleName: 'Kangoo',
+          passage: 1,
+          after: 1,
+          stopCount: 2,
+          extraMinutes: 6,
+        },
+        { orderId: 'o-4', reference: 'CMD-4', status: 'none', reason: 'capacity' },
+      ],
+    };
+    const { fixture, element } = await boot();
+    const [suggested, refused] = Array.from(
+      element.querySelectorAll('[data-unassigned] [data-order]'),
+    );
+    expect(suggested?.querySelector('[data-suggestion-words]')?.textContent).toContain(
+      'Kangoo, entre l’arrêt 1 et 2 (+6 min, échéance tenue)',
+    );
+    expect(refused?.textContent).toContain('aucune tournée n’a la place dans sa caisse');
+    expect(refused?.querySelector('[data-place-here]')).toBeNull();
+
+    button(suggested, '[data-place-here]').click();
+    await settle(fixture);
+
+    expect(wire.calls).toEqual(['assign r-1 {"orderId":"o-3","version":4,"after":1}']);
+    expect(wire.reads.rounds.length).toBeGreaterThan(1);
+  });
+
+  it('place suggérée en lecture seule : la place se lit, sans « Placer ici »', async () => {
+    placements = {
+      day: '2026-10-02',
+      suggestions: [
+        {
+          orderId: 'o-3',
+          reference: 'CMD-3',
+          status: 'suggested',
+          roundId: 'r-1',
+          roundVersion: 4,
+          vehicleId: 'v-1',
+          vehicleName: 'Kangoo',
+          passage: 1,
+          after: 2,
+          stopCount: 2,
+          extraMinutes: 3,
+        },
+      ],
+    };
+    const { element } = await boot(['delivery_rounds:read']);
+
+    expect(element.querySelector('[data-suggestion-words]')?.textContent).toContain(
+      'après l’arrêt 2',
+    );
+    expect(element.querySelector('[data-place-here]')).toBeNull();
   });
 
   it('glisse un arrêt vers l’autre tournée avec les versions des DEUX tournées, puis relit', async () => {

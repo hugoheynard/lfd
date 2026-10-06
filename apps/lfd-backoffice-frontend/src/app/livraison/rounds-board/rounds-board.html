@@ -67,6 +67,13 @@
               }
             </div>
           }
+          @if (suggestions().get(order.orderId); as suggestion) {
+            <app-placement-suggestion
+              [suggestion]="suggestion"
+              [canPlace]="canWrite() && !busy()"
+              (place)="placed.emit(order.orderId)"
+            />
+          }
           @if (needsGps(order) && canOpenCarnet(order)) {
             <fold-link (clicked)="openCarnet(order)" data-company-link>
               Compléter le GPS dans le carnet

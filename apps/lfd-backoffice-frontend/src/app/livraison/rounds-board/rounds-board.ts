@@ -15,7 +15,7 @@ import {
   signal,
 } from '@angular/core';
 import { Router } from '@angular/router';
-import type { DeliveryIncidentView } from '@lfd/contracts';
+import type { DeliveryIncidentView, DeliveryPlacementSuggestionView } from '@lfd/contracts';
 import type { FoldSelectOption, FoldViewToggleOption } from 'fold-ng';
 import {
   FoldBadgeComponent,
@@ -38,6 +38,7 @@ import {
 } from '../delivery-rounds';
 import type { IncidentPhotoLoader } from '../incident-photo/incident-photo';
 import { OrderCard } from '../order-card/order-card';
+import { PlacementSuggestion } from '../placement-suggestion/placement-suggestion';
 import { RoundColumn, type StopShift } from '../round-column/round-column';
 import {
   alertCountOf,
@@ -99,6 +100,7 @@ const SCOPE_ALL = 'all';
     FoldViewToggleComponent,
     DeliveryMap,
     OrderCard,
+    PlacementSuggestion,
     RoundColumn,
   ],
   templateUrl: './rounds-board.html',
@@ -123,6 +125,8 @@ export class RoundsBoard {
   readonly departure = input<MapDeparture | null>(null);
   /** Ouvrir le carnet d'adresses d'un client. */
   readonly canOpenClients = input(false);
+  /** La place suggérée de chaque commande à répartir (CA7), par commande ; vide en aperçu. */
+  readonly suggestions = input<ReadonlyMap<string, DeliveryPlacementSuggestionView>>(new Map());
 
   readonly dropped = output<BoardDrop>();
   readonly shifted = output<RoundGesture<StopShift>>();
@@ -133,6 +137,8 @@ export class RoundsBoard {
   readonly returned = output<string>();
   readonly printed = output<string>();
   readonly retry = output();
+  /** « Placer ici » : la commande à poser à sa place suggérée (CA7). */
+  readonly placed = output<string>();
   /** Un dépôt sur l'onglet d'un véhicule qui n'a aucune tournée en préparation. */
   readonly noTarget = output<string>();
 

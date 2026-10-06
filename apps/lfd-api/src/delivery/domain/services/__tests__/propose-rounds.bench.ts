@@ -1,6 +1,7 @@
 import { insertIntoRounds } from "../insert-into-rounds.js";
 import type { Proposal } from "../proposal.js";
 import { proposeRounds } from "../propose-rounds.js";
+import { suggestPlacements } from "../suggest-placements.js";
 import { benchDay, INSERTED_COUNT } from "./composition-bench-day.js";
 import { outOfZoneStops } from "./zone-check.js";
 
@@ -19,6 +20,10 @@ import { outOfZoneStops } from "./zone-check.js";
  * `--zones` (`bench:composition:zones`, 2026-10-06) : la même scène, chaque
  * Kangoo restreint à une moitié du disque. Le banc échoue si un arrêt finit
  * dans un véhicule non autorisé sur sa zone.
+ *
+ * « Suggérer » (CA7, 2026-10-06) : la place suggérée de chacune des mêmes
+ * commandes, prise seule, dans la journée composée — sans ouvrir ni
+ * améliorer. Mesuré à part : c'est une autre lecture que « Insérer ».
  */
 const ZONED = process.argv.includes("--zones");
 const STOP_COUNT = 200;
@@ -30,6 +35,7 @@ const THRESHOLD_MS = 5000;
 interface Measure {
   readonly completeMs: number;
   readonly insertMs: number;
+  readonly suggestMs: number;
   readonly composed: Proposal;
   readonly inserted: Proposal;
 }
@@ -46,6 +52,7 @@ function measure(seed: number): Measure {
   const [composed, completeMs] = cpuMilliseconds(() => proposeRounds(day.complete));
   const input = day.insertion(composed);
   const [inserted, insertMs] = cpuMilliseconds(() => insertIntoRounds(input));
+  const [, suggestMs] = cpuMilliseconds(() => suggestPlacements(input));
   const strays = [
     ...outOfZoneStops(composed, day.complete.zones),
     ...outOfZoneStops(inserted, input.zones),
@@ -54,7 +61,7 @@ function measure(seed: number): Measure {
     process.stderr.write(`graine ${String(seed)} : hors zone ${strays.join(", ")}\n`);
     process.exitCode = 1;
   }
-  return { completeMs, insertMs, composed, inserted };
+  return { completeMs, insertMs, suggestMs, composed, inserted };
 }
 
 function unplacedOf(proposal: Proposal): number {
@@ -72,6 +79,7 @@ const ms = (value: number): string => `${value.toFixed(0).padStart(6)} ms`;
 function report(measures: readonly Measure[]): string {
   const complete = measures.map((m) => m.completeMs);
   const insert = measures.map((m) => m.insertMs);
+  const suggest = measures.map((m) => m.suggestMs);
   const rows = measures.map(
     (m, index) =>
       `  graine ${String(index + 1).padStart(2)} | complet ${ms(m.completeMs)} | insérer ${ms(m.insertMs)}` +
@@ -85,6 +93,7 @@ function report(measures: readonly Measure[]): string {
     ...rows,
     `  complet : médiane ${ms(quantile(complete, 0.5))} · p95 ${ms(quantile(complete, P95))} · max ${ms(Math.max(...complete))}`,
     `  insérer : médiane ${ms(quantile(insert, 0.5))} · p95 ${ms(quantile(insert, P95))} · max ${ms(Math.max(...insert))}`,
+    `  suggérer : médiane ${ms(quantile(suggest, 0.5))} · p95 ${ms(quantile(suggest, P95))} · max ${ms(Math.max(...suggest))}`,
     `  seuil p95 < ${String(THRESHOLD_MS)} ms`,
   ].join("\n");
 }

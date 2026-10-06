@@ -2,6 +2,7 @@ import { HttpClient, HttpParams } from '@angular/common/http';
 import { inject, Injectable } from '@angular/core';
 import type {
   ApplyDeliveryProposalPayload,
+  DeliveryPlacementSuggestionsView,
   DeliveryProposalMode,
   DeliveryRoundProposalView,
   DeliveryRoutingSettingsPayload,
@@ -57,6 +58,19 @@ export class DeliveryRoutingService {
     }
     return firstValueFrom(
       this.http.get<DeliveryRoundProposalView>(`${ROUNDS}/proposition`, { params }),
+    );
+  }
+
+  /**
+   * Les places suggérées du jour (CA7) : une par commande à répartir, quand
+   * le jour a des tournées enregistrées. Une lecture, sous
+   * `delivery_rounds:read` ; « Placer ici » est l'affectation, avec son rang.
+   */
+  suggestions(day: string): Promise<DeliveryPlacementSuggestionsView> {
+    return firstValueFrom(
+      this.http.get<DeliveryPlacementSuggestionsView>(`${ROUNDS}/places-suggerees`, {
+        params: new HttpParams().set('jour', day),
+      }),
     );
   }
 

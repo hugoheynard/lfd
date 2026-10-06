@@ -4,6 +4,7 @@ import { FixedIdGenerator } from "../../../../platform/id/fixed-id-generator.js"
 import { FixedClock } from "../../../../platform/time/fixed-clock.js";
 import {
   DeliveryRoundStaleError,
+  InvalidStopPositionError,
   OrderAlreadyInRoundError,
   OrderNotAssignableError,
   VehicleInactiveOnDayError,
@@ -114,6 +115,30 @@ describe("AssignDeliveryStopHandler", () => {
       order: { id: "o_2", name: "CMD-o_2" },
       position: 2,
     });
+  });
+
+  it("« Placer ici » (CA7) : pose la commande au rang suggéré, et le fait le cite", async () => {
+    const rounds = new InMemoryDeliveryRounds(roundWith("r_1", DAY, "v_1", ["o_1", "o_3"]));
+    const { handler, events } = assign(rounds, new FixedDeliveryOrders([deliveryOn("o_2", DAY)]));
+
+    await handler.execute(
+      new AssignDeliveryStopCommand("r_1", { orderId: "o_2", version: 1, after: 1 }),
+    );
+
+    expect(rounds.stored("r_1")?.orderIds).toEqual(["o_1", "o_2", "o_3"]);
+    expect(events.traced[0]?.journalFact().payload).toMatchObject({ position: 2 });
+  });
+
+  it("refuse un rang que la tournée n'a pas, sans rien écrire", async () => {
+    const rounds = new InMemoryDeliveryRounds(roundWith("r_1", DAY, "v_1", ["o_1"]));
+    const { handler } = assign(rounds, new FixedDeliveryOrders([deliveryOn("o_2", DAY)]));
+
+    await expect(
+      handler.execute(
+        new AssignDeliveryStopCommand("r_1", { orderId: "o_2", version: 1, after: 2 }),
+      ),
+    ).rejects.toThrow(InvalidStopPositionError);
+    expect(rounds.saved).toEqual([]);
   });
 
   it("refuse une version périmée, sans rien écrire", async () => {

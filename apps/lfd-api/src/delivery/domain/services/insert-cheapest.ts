@@ -9,7 +9,7 @@ import { NO_ZONE_RULE, type ZoneRule } from "./zone-rule.js";
 export type NewRoutePlacement = "anywhere" | "after_existing";
 
 /** Le meilleur endroit trouvé pour un arrêt : quel véhicule, et ses tournées une fois l'arrêt posé. */
-interface Placement {
+export interface Placement {
   readonly vehicle: number;
   readonly routes: Routes;
   /** Le surcoût : retard ajouté d'abord, puis le reste (L7t-C1). */
@@ -101,15 +101,20 @@ export function byPriority(stops: readonly RoutingStop[]): readonly RoutingStop[
 }
 
 /** Ce que la recherche d'une place lit, fixe pendant toute l'insertion. */
-interface PlacementSearch {
+export interface PlacementSearch {
   readonly ctx: PlanningContext;
   readonly newRoutes: NewRoutePlacement;
   readonly guard: CapacityGuard;
   readonly zones: ZoneRule;
 }
 
-/** `zoneBlocked` : au moins un véhicule écarté pour la zone, et aucun autorisé. */
-function cheapestPlacement(
+/**
+ * La place la moins chère d'UN arrêt parmi ces véhicules, sans rien poser —
+ * la brique de `insertCheapest`, et celle de la place suggérée (CA7).
+ * `refused` : une place meilleure débordait la caisse ; `zoneBlocked` : au
+ * moins un véhicule écarté pour la zone, et aucun autorisé.
+ */
+export function cheapestPlacement(
   { ctx, newRoutes, guard, zones }: PlacementSearch,
   plans: readonly VehiclePlan[],
   stop: RoutingStop,

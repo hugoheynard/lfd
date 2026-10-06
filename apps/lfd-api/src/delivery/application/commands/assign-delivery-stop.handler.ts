@@ -19,7 +19,9 @@ import { ensureRoundVehicleActive, loadRoundAt } from "../delivery-round-support
 import { AssignDeliveryStopCommand } from "./assign-delivery-stop.command.js";
 
 /**
- * Affecte une commande à une tournée : elle s'ajoute en dernier.
+ * Affecte une commande à une tournée : elle s'ajoute en dernier, ou après les
+ * `after` premiers arrêts — « Placer ici », la place suggérée (CA7), sous la
+ * version lue avec la suggestion.
  *
  * La commande doit être une livraison attendue CE jour-là, non annulée — lue
  * par le canal du commerce, au moment du geste. Une commande RAPPORTÉE (B3,
@@ -31,7 +33,7 @@ import { AssignDeliveryStopCommand } from "./assign-delivery-stop.command.js";
  *
  * @throws {DeliveryRoundNotFoundError} @throws {DeliveryRoundStaleError}
  * @throws {VehicleInactiveOnDayError} @throws {OrderNotAssignableError}
- * @throws {OrderAlreadyInRoundError}
+ * @throws {OrderAlreadyInRoundError} @throws {InvalidStopPositionError}
  */
 @CommandHandler(AssignDeliveryStopCommand)
 export class AssignDeliveryStopHandler implements ICommandHandler<
@@ -50,13 +52,13 @@ export class AssignDeliveryStopHandler implements ICommandHandler<
   ) {}
 
   async execute(command: AssignDeliveryStopCommand): Promise<string> {
-    const { orderId, version } = command.payload;
+    const { orderId, version, after } = command.payload;
     return this.uow.run(async () => {
       const round = await loadRoundAt(this.rounds, command.roundId, version);
       await ensureRoundVehicleActive(this.vehicles, round);
       const reference = await this.assignableReference(round, orderId);
       const stopId = this.ids.next();
-      round.assign(stopId, orderId, this.clock.now());
+      round.assign(stopId, orderId, this.clock.now(), after);
       await this.rounds.save(round);
       await this.events.publishTraced(
         new DeliveryStopAssignedEvent(

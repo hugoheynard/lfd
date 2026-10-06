@@ -36,14 +36,17 @@ import {
   type KeptRound,
   passageLimitsOf,
 } from "../delivery-proposal-support.js";
-import { type ProposalDayReading, readProposalDay } from "../delivery-proposal-day.js";
+import {
+  locateProposalDay,
+  type ProposalDayReading,
+  readProposalDay,
+} from "../delivery-proposal-day.js";
 import { proposalViewOf } from "../delivery-proposal-view.js";
 import { routeLinesOf } from "../delivery-route-lines.js";
 import { fleetOccupationOf } from "../delivery-vehicle-availability.js";
 import {
   type LocatedDeparture,
   locatedDeparture,
-  locateFromCache,
   type LocatedStop,
   routingSettingsOf,
   routingStopFor,
@@ -149,7 +152,11 @@ export class GetDeliveryRoundProposalHandler implements IQueryHandler<
       },
       query.day,
     );
-    const stops = await this.locate(day);
+    const stops = await locateProposalDay(
+      { orders: this.orders, cache: this.cache },
+      day,
+      this.clock.now(),
+    );
     const considered = [
       ...day.unassigned,
       ...day.rounds.flatMap((round) => round.stops.map((stop) => stop.orderId)),
@@ -260,14 +267,6 @@ export class GetDeliveryRoundProposalHandler implements IQueryHandler<
 
   private costOf(ctx: PlanInputs, orderIds: readonly string[]): Promise<CostFn> {
     return this.matrix.build(pointsOf(ctx.departure.point, orderIds, ctx.stops));
-  }
-
-  /** Situe les commandes à répartir et celles des tournées — carnet, puis cache. */
-  private async locate(day: ProposalDayReading): Promise<ReadonlyMap<string, LocatedStop>> {
-    const composedIds = day.rounds.flatMap((round) => round.stops.map((stop) => stop.orderId));
-    const points = await this.orders.stopPointsOf([...day.unassigned, ...composedIds]);
-    const located = await locateFromCache(points, this.cache, this.clock.now());
-    return new Map(located.map((stop) => [stop.orderId, stop]));
   }
 }
 
