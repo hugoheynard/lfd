@@ -6,6 +6,21 @@
     </span>
   </header>
 
+  @if (pdfFailed()) {
+    <fold-callout variant="alert" data-pdf-failed>
+      La feuille de la tournée n’a pas pu être téléchargée. Vérifiez la connexion et réessayez.
+    </fold-callout>
+  }
+
+  @if (blockedPdfUrl(); as url) {
+    <fold-callout variant="info" data-pdf-blocked>
+      Le navigateur a bloqué l’ouverture d’un nouvel onglet.
+      <a foldButton emphasis="outline" size="sm" [href]="url" download="tournee.pdf">
+        Télécharger la feuille
+      </a>
+    </fold-callout>
+  }
+
   <div class="page">
     <div class="no-print screen">
       <div class="toolbar" data-day-bar>
@@ -207,29 +222,6 @@
         (noTarget)="noTarget($event)"
       />
     </div>
-
-    @if (printedRound(); as printed) {
-      <section class="print-only page" data-print-sheet>
-        <fold-element-title
-          variant="title"
-          [title]="roundLabel(printed.round)"
-          [subtitle]="dayLabel() + ' · ' + stopCountLabel(printed.stops.length)"
-        />
-        @for (line of printed.stops; track line.stop.stopId) {
-          @if (line.sheet; as sheet) {
-            <app-run-sheet-stop [stop]="sheet" [canSeePhotos]="canSeePhotos()" />
-          } @else {
-            <fold-card>
-              <fold-element-title
-                variant="title"
-                [title]="line.stop.reference"
-                subtitle="Absente de la feuille de route du jour"
-              />
-            </fold-card>
-          }
-        }
-      </section>
-    }
   </div>
 
   @if (toast(); as toast) {

@@ -196,6 +196,8 @@ async function boot(
             return Promise.resolve(composition(day));
           },
           open: (payload: unknown) => outcome(`open ${JSON.stringify(payload)}`),
+          roundPdf: (roundId: string) =>
+            outcome(`pdf ${roundId}`).then(() => new Blob(['%PDF'], { type: 'application/pdf' })),
           assign: (roundId: string, payload: unknown) =>
             outcome(`assign ${roundId} ${JSON.stringify(payload)}`),
           move: (roundId: string, stopId: string, payload: unknown) =>
@@ -481,20 +483,34 @@ describe('RoundsPage', () => {
     expect(element.querySelector('[data-map-panel]')).not.toBeNull();
   });
 
-  it('imprime UNE tournée, avec les consignes de la feuille de route', async () => {
-    const print = vi.spyOn(window, 'print').mockImplementation(() => undefined);
+  it('« Imprimer » ouvre le PDF serveur de LA tournée dans un nouvel onglet', async () => {
+    const open = vi.spyOn(window, 'open').mockImplementation(() => null);
+    vi.spyOn(URL, 'createObjectURL').mockReturnValue('blob:tournee');
+    vi.spyOn(URL, 'revokeObjectURL').mockImplementation(() => undefined);
     const { fixture, element } = await boot();
-    let printed: Element | null = null;
-    print.mockImplementation(() => {
-      printed = element.querySelector('[data-print-sheet]');
-    });
     element.querySelector<HTMLButtonElement>('[data-round] [data-print] button')?.click();
-    fixture.detectChanges();
     await settle(fixture);
 
-    expect(print).toHaveBeenCalledTimes(1);
-    expect(printed).not.toBeNull();
-    expect(element.querySelector('[data-print-sheet]')).toBeNull();
+    expect(wire.calls).toEqual(['pdf r-1']);
+    expect(open).toHaveBeenCalledWith('blob:tournee', '_blank');
+    expect(element.querySelector('[data-pdf-blocked] a')?.getAttribute('href')).toBe(
+      'blob:tournee',
+    );
+    expect(element.querySelector('[data-pdf-failed]')).toBeNull();
+    vi.restoreAllMocks();
+  });
+
+  it('un PDF refusé s’affiche en callout, sans ouvrir d’onglet', async () => {
+    const open = vi.spyOn(window, 'open').mockImplementation(() => null);
+    const { fixture, element } = await boot();
+    wire.refuse = new HttpErrorResponse({ status: 500 });
+    element.querySelector<HTMLButtonElement>('[data-round] [data-print] button')?.click();
+    await settle(fixture);
+
+    expect(wire.calls).toEqual(['pdf r-1']);
+    expect(open).not.toHaveBeenCalled();
+    expect(element.querySelector('fold-callout[data-pdf-failed]')).not.toBeNull();
+    vi.restoreAllMocks();
   });
 
   it('« Mettre dans » affecte la commande à la tournée choisie, avec SA version, puis relit', async () => {

@@ -1,12 +1,11 @@
 import { HttpErrorResponse } from '@angular/common/http';
 import {
-  afterNextRender,
   ChangeDetectionStrategy,
   Component,
   computed,
   effect,
   inject,
-  Injector,
+  DestroyRef,
   signal,
   untracked,
 } from '@angular/core';
@@ -27,7 +26,6 @@ import {
   FoldDateComponent,
   FoldDropdownComponent,
   FoldDropdownItemComponent,
-  FoldElementTitleComponent,
   FoldPageLayoutComponent,
   FoldPopoverTriggerDirective,
   FoldToastComponent,
@@ -82,7 +80,6 @@ import { type RoundGesture, RoundsBoard } from '../rounds-board/rounds-board';
 import { RoundsPreview } from '../rounds-preview';
 import { DAY_QUERY_PARAM, dayOfQuery, isServiceDay, parisDayOf, shiftDay } from '../run-sheet';
 import { RunSheetService } from '../run-sheet.service';
-import { RunSheetStop } from '../run-sheet-stop/run-sheet-stop';
 import { vehicleBadgeLabel } from '../vehicle-load';
 
 type ComposeState =
@@ -146,14 +143,12 @@ const CONFLICT = 409;
     FoldDateComponent,
     FoldDropdownComponent,
     FoldDropdownItemComponent,
-    FoldElementTitleComponent,
     FoldPageLayoutComponent,
     FoldPopoverTriggerDirective,
     FoldToastComponent,
     FoldViewToggleComponent,
     PlannerPopover,
     RoundsBoard,
-    RunSheetStop,
   ],
   templateUrl: './rounds-page.html',
   styleUrl: './rounds-page.scss',
@@ -166,7 +161,7 @@ export class RoundsPage {
   private readonly routing = inject(DeliveryRoutingService);
   private readonly permissions = inject(PermissionsStore);
   private readonly notify = inject(NotifyService);
-  private readonly injector = inject(Injector);
+  private readonly destroyRef = inject(DestroyRef);
   protected readonly preview = inject(RoundsPreview);
 
   private readonly today = parisDayOf(new Date());
@@ -238,8 +233,19 @@ export class RoundsPage {
   /** Le geste en vol, montré avant que le serveur ne l'ait confirmé. */
   private readonly optimistic = signal<OrderLists | null>(null);
 
-  /** La tournée qu'on imprime : seule elle est rendue sur papier. */
-  protected readonly printing = signal<string | null>(null);
+  /** Le dernier PDF de tournée n'a pas pu être téléchargé. */
+  protected readonly pdfFailed = signal(false);
+  /**
+   * L'URL objet du dernier PDF, quand le navigateur a bloqué l'onglet : on
+   * propose alors de le télécharger. `null` sinon.
+   */
+  protected readonly blockedPdfUrl = signal<string | null>(null);
+  /**
+   * L'URL objet vivante. Révoquée au PDF suivant et à la destruction de
+   * l'écran — pas après un délai, qui couperait un onglet encore en train de
+   * charger.
+   */
+  private objectUrl: string | null = null;
 
   protected readonly incidents = computed(() => {
     const state = this.state();
@@ -356,14 +362,7 @@ export class RoundsPage {
       (this.preview.applyPayload()?.rounds.length ?? 0) > 0,
   );
 
-  protected readonly printedRound = computed(() => {
-    const id = this.printing();
-    return this.composed()?.rounds.find(({ round }) => round.id === id) ?? null;
-  });
-
   protected readonly dayLabel = computed(() => serviceDayLabel(this.day()));
-  protected readonly roundLabel = roundLabel;
-  protected readonly stopCountLabel = stopCountLabel;
   protected readonly kmLabel = roundKmLabel;
   protected readonly undoMs = UNDO_MS;
 
@@ -371,6 +370,7 @@ export class RoundsPage {
   private request = 0;
 
   constructor() {
+    this.destroyRef.onDestroy(() => this.revokePdf());
     effect(() => {
       const day = this.day();
       this.reload();
@@ -686,15 +686,33 @@ export class RoundsPage {
     );
   }
 
-  protected print(roundId: string): void {
-    this.printing.set(roundId);
-    afterNextRender(
-      () => {
-        window.print();
-        this.printing.set(null);
-      },
-      { injector: this.injector },
-    );
+  /**
+   * Télécharge la feuille PDF de la tournée, rendue par le serveur, et l'ouvre
+   * dans un nouvel onglet — le geste du dossier du Prévisionnel. Si le
+   * navigateur bloque l'onglet (`window.open` rend `null`), on garde l'URL et
+   * on propose un lien de téléchargement à la place.
+   */
+  protected async print(roundId: string): Promise<void> {
+    this.pdfFailed.set(false);
+    this.blockedPdfUrl.set(null);
+    try {
+      const blob = await this.rounds.roundPdf(roundId);
+      this.revokePdf();
+      const url = URL.createObjectURL(blob);
+      this.objectUrl = url;
+      if (window.open(url, '_blank') === null) {
+        this.blockedPdfUrl.set(url);
+      }
+    } catch {
+      this.pdfFailed.set(true);
+    }
+  }
+
+  private revokePdf(): void {
+    if (this.objectUrl !== null) {
+      URL.revokeObjectURL(this.objectUrl);
+      this.objectUrl = null;
+    }
   }
 
   // ─── L'aperçu d'une proposition ────────────────────────────────────────

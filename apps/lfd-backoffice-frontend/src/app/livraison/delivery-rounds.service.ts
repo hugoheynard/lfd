@@ -32,6 +32,20 @@ function stopUrl(roundId: string, stopId: string): string {
 export class DeliveryRoundsService {
   private readonly http = inject(HttpClient);
 
+  /**
+   * **La feuille d'une tournée en PDF**, rendue par le serveur.
+   *
+   * En `Blob` par `HttpClient` et non par un lien : la route exige le jeton, et
+   * un `<a href>` partirait sans lui.
+   */
+  roundPdf(roundId: string): Promise<Blob> {
+    return firstValueFrom(
+      this.http.get(`${ROUNDS}/${encodeURIComponent(roundId)}/tournee.pdf`, {
+        responseType: 'blob',
+      }),
+    );
+  }
+
   day(day: string): Promise<DeliveryRoundsDayView> {
     return firstValueFrom(
       this.http.get<DeliveryRoundsDayView>(`${ROUNDS}?jour=${encodeURIComponent(day)}`),
