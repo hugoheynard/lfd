@@ -74,59 +74,10 @@ const FOLD_HOST = "apps/lfd-backoffice-frontend/package.json";
  * La valeur est le NOMBRE d'attributs inconnus attendus dans le fichier. Un de
  * plus ou un de moins, et la porte le dit.
  */
-const DEBT = new Map([
-  // `fold-callout` ne déclare que variant/appearance/icon/announce. `title`
-  // rend donc une INFOBULLE native au lieu d'un titre, et `tone` n'existe pas
-  // (c'est `variant`). Le titre devient du contenu projeté : une décision par
-  // site, pas une substitution.
-  [
-    "apps/lfd-backoffice-frontend/src/app/commandes/nouvelle-commande/nouvelle-commande-page.html",
-    3,
-  ],
-  [
-    "apps/lfd-backoffice-frontend/src/app/commandes/nouvelle-commande/panier-commande/panier-commande.html",
-    1,
-  ],
-
-  // `fold-input` ne déclare pas `inputmode` : l'indication de clavier mobile
-  // reste sur l'élément hôte et n'atteint jamais le champ. C'est une limite de
-  // fold, pas une faute de frappe — la sortie demande une entrée chez fold, ou
-  // un aveu écrit. `readonly`, en revanche, est une faute de casse : `readOnly`.
-  // (`floor-panel.html` en est sorti le 2026-09-27 : sa ligne, qui avait perdu son
-  // chemin et s’était réduite à `[1]`, faisait afficher « NaN » au compte.)
-  // ⚠️ La dette a DÉMÉNAGÉ, elle n'a pas été payée. `address-dialog.html` a été
-  // supprimé le 2026-09-21 avec `/nouvelle-commande`, et le dialogue d'adresse
-  // qui le remplace a repris son `inputmode` sans que cette liste suive — la
-  // porte l'a vu le jour même. Un code postal reste la seule saisie du dépôt
-  // (Les trois écrans de tarification en sont sortis le 2026-10-06 en RETIRANT
-  // leur `inputmode` : inerte, il ne promettait rien que le rendu tenait.)
-  // qui gagne vraiment à un pavé numérique sur mobile.
-  [
-    "apps/lfc-ecommerce-frontend/src/app/client/shop/delivery-address-dialog/delivery-address-dialog.html",
-    1,
-  ],
-
-  // `fold-inline-confirm` : c'est `labels` (un objet partiel) et `intent`.
-  [
-    "apps/lfd-backoffice-frontend/src/app/commercial/calendrier/customer-sheet/customer-sheet.html",
-    5,
-  ],
-  // (`cutoffs-section.html` est sorti de cette liste le 2026-09-16 : son
-  // `confirmLabel` muet est devenu `[labels]`, et la porte refuse — à juste
-  // titre — qu'une dette payée reste inscrite.)
-
-  // `fold-badge` ne déclare que content/radius/variant.
-  [
-    "apps/lfd-backoffice-frontend/src/app/commercial/cockpit/pinned-accounts/pinned-accounts.html",
-    1,
-  ],
-
-  // `fold-element-title` : c'est `variant="eyebrow"`.
-  [
-    "apps/lfd-backoffice-frontend/src/app/commercial/calendrier/rendez-vous/rendez-vous-page.html",
-    1,
-  ],
-]);
+// Liste vidée le 2026-10-06 : les six derniers fichiers sont payés (callouts
+// titrés en <strong> projeté, `fold-inline-confirm` en `[labels]` + déclencheur
+// projeté, `eyebrow`/`size`/`inputmode` inertes retirés). Elle ne regrandit pas.
+const DEBT = new Map();
 
 /** Ce que tout élément HTML porte légitimement, fold ou non. */
 const GLOBAL_ATTRIBUTES = new Set([

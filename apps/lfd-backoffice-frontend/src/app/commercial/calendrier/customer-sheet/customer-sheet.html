@@ -99,18 +99,22 @@
       }
       @if (canSuspend()) {
         <fold-inline-confirm
-          label="Mettre en pause"
-          confirmLabel="Confirmer la pause"
+          [labels]="{ confirm: 'Confirmer la pause' }"
           (confirmed)="changeStatus('suspend', 'Suspendu depuis la fiche commerciale')"
-        />
+        >
+          <button foldButton emphasis="outline" [disabled]="busy()">Mettre en pause</button>
+        </fold-inline-confirm>
       }
       @if (canTerminate()) {
         <fold-inline-confirm
-          label="Résilier le compte"
-          confirmLabel="Confirmer la résiliation"
-          tone="danger"
+          intent="danger"
+          [labels]="{ confirm: 'Confirmer la résiliation' }"
           (confirmed)="changeStatus('terminate', 'Résilié depuis la fiche commerciale')"
-        />
+        >
+          <button foldButton emphasis="outline" intent="danger" [disabled]="busy()">
+            Résilier le compte
+          </button>
+        </fold-inline-confirm>
       }
     </div>
   </fold-card>

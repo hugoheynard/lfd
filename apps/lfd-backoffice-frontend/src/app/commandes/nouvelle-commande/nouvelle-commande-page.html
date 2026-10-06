@@ -31,8 +31,9 @@
     </header>
 
     @if (resumedAt(); as at) {
-      <fold-callout variant="accent" title="Brouillon repris">
-        Saisie mise de côté le {{ at }}. Les prix ont été rafraîchis au catalogue du jour.
+      <fold-callout variant="accent">
+        <strong>Brouillon repris.</strong> Saisie mise de côté le {{ at }}. Les prix ont été
+        rafraîchis au catalogue du jour.
         <button foldButton emphasis="outline" intent="neutral" (click)="onDropDraft()">
           Repartir de zéro
         </button>
@@ -42,9 +43,9 @@
     @if (buyers().length === 0) {
       <!-- Sans personne à qui porter la commande, l'écran ne mène nulle part :
            on le dit avant que le commercial ne remplisse un panier pour rien. -->
-      <fold-callout variant="warning" title="Aucun accès ouvert sur ce compte">
-        Une commande est portée au nom d'une personne du compte. Ouvrez un accès depuis la fiche
-        avant de saisir.
+      <fold-callout variant="warning">
+        <strong>Aucun accès ouvert sur ce compte.</strong> Une commande est portée au nom d'une
+        personne du compte. Ouvrez un accès depuis la fiche avant de saisir.
       </fold-callout>
     }
 
@@ -52,7 +53,8 @@
       <!-- Le refus arrive au moment le plus coûteux : le client est en ligne. On
            garde la saisie et on propose le geste ici, plutôt qu'un toast qui
            laisse deviner ce qui reste possible. -->
-      <fold-callout variant="warning" title="Heure limite passée — encore rattrapable">
+      <fold-callout variant="warning">
+        <p><strong>Heure limite passée — encore rattrapable.</strong></p>
         <p>
           Cette commande arrive après l'heure limite du
           <strong>{{ late.requestedDeliveryDate }}</strong
