@@ -59,6 +59,8 @@ async function boot(canWrite = true): Promise<ComponentFixture<ProductionSetting
             wire.removed.push(date);
             return gate();
           },
+          dossierRecipients: () => Promise.resolve([]),
+          dossierStaffCandidates: () => Promise.resolve([]),
         } satisfies Partial<Record<keyof ProductionSettingsService, unknown>>,
       },
       { provide: NotifyService, useValue: { success: () => undefined } },

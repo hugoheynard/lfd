@@ -1,0 +1,138 @@
+<fold-card data-dossier-recipients>
+  <div class="stack">
+    <fold-element-title
+      variant="title"
+      title="Dossier du jour par e-mail"
+      subtitle="À chaque arrêt du plan, le dossier du jour part en PDF à ces adresses, et de nouveau, complété, après un retirage."
+    />
+
+    @switch (state().status) {
+      @case ('loading') {
+        <fold-loading message="Lecture des destinataires…" />
+      }
+      @case ('error') {
+        <fold-empty-state tone="alert" title="Les destinataires n’ont pas pu être lus.">
+          <button foldButton emphasis="outline" (click)="retry()" data-recipients-retry>
+            Réessayer
+          </button>
+        </fold-empty-state>
+      }
+      @case ('ready') {
+        @if (refusal(); as message) {
+          <fold-callout variant="alert" announce data-recipient-refusal>{{ message }}</fold-callout>
+        }
+
+        @if (recipients().length === 0) {
+          <fold-empty-state title="Personne ne reçoit le dossier par e-mail.">
+            <fold-icon empty-icon name="mail" />
+          </fold-empty-state>
+        } @else {
+          <ul class="recipients">
+            @for (recipient of recipients(); track recipient.id) {
+              <li class="recipient" data-recipient>
+                <div class="who">
+                  <span class="name">{{ recipient.name }}</span>
+                  @if (recipient.email) {
+                    <span class="detail">{{ recipient.email }}</span>
+                  }
+                  @if (recipient.jobTitle) {
+                    <span class="detail">{{ recipient.jobTitle }}</span>
+                  }
+                </div>
+                <div class="tags">
+                  @if (recipient.inactive) {
+                    <fold-badge content="Fiche suspendue" variant="warning" data-inactive />
+                  }
+                  <fold-badge
+                    [content]="recipient.kind === 'staff' ? 'Personnel' : 'Externe'"
+                    [variant]="recipient.kind === 'staff' ? 'info' : 'neutral'"
+                  />
+                  @if (canWrite()) {
+                    <fold-button-icon
+                      icon="close"
+                      size="sm"
+                      [tooltip]="'Retirer ' + recipient.name"
+                      [disabled]="busy()"
+                      (clicked)="remove(recipient.id)"
+                      data-remove-recipient
+                    />
+                  }
+                </div>
+              </li>
+            }
+          </ul>
+        }
+
+        @if (canWrite()) {
+          <div class="add">
+            <fold-listbox
+              label="Ajouter du personnel"
+              placeholder="Choisir une personne"
+              [options]="staffOptions()"
+              [value]="staffId()"
+              (selectionChange)="staffId.set($event)"
+              data-staff-pick
+            />
+            <button
+              foldButton
+              emphasis="outline"
+              icon="plus"
+              [loading]="busy()"
+              [disabled]="!canAddStaff()"
+              (click)="addStaff()"
+              data-add-staff
+            >
+              Ajouter
+            </button>
+          </div>
+
+          <div class="stack">
+            <span class="legend">Ajouter une autre personne</span>
+            <div class="add">
+              <fold-input
+                label="E-mail"
+                type="email"
+                required
+                [value]="email()"
+                (valueChange)="email.set($event)"
+                data-external-email
+              />
+              <fold-input
+                label="Prénom"
+                required
+                [value]="firstName()"
+                (valueChange)="firstName.set($event)"
+                data-external-first-name
+              />
+              <fold-input
+                label="Nom"
+                required
+                [value]="lastName()"
+                (valueChange)="lastName.set($event)"
+                data-external-last-name
+              />
+              <fold-input
+                label="Poste"
+                optional
+                [value]="jobTitle()"
+                (valueChange)="jobTitle.set($event)"
+                data-external-job-title
+              />
+              <button
+                foldButton
+                emphasis="outline"
+                icon="plus"
+                [loading]="busy()"
+                [disabled]="!canAddExternal()"
+                (click)="addExternal()"
+                data-add-external
+              >
+                Ajouter
+              </button>
+            </div>
+          </div>
+        }
+      }
+    }
+  </div>
+</fold-card>

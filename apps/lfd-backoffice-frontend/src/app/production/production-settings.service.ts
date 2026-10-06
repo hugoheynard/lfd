@@ -1,11 +1,18 @@
 import { HttpClient } from '@angular/common/http';
 import { inject, Injectable } from '@angular/core';
-import type { ProductionCloseSettingsPayload, ProductionSettingsView } from '@lfd/contracts';
+import type {
+  DossierRecipientPayload,
+  DossierRecipientView,
+  DossierStaffCandidateView,
+  ProductionCloseSettingsPayload,
+  ProductionSettingsView,
+} from '@lfd/contracts';
 import { firstValueFrom } from 'rxjs';
 
 import { B2B_API_BASE } from '../api/api-config';
 
 const SETTINGS = `${B2B_API_BASE}/admin/production/settings`;
+const RECIPIENTS = `${SETTINGS}/dossier-recipients`;
 
 /**
  * **Les réglages du fournil** — l'arrêt du plan et les jours fermés (plan
@@ -33,5 +40,24 @@ export class ProductionSettingsService {
 
   async removeClosedDay(date: string): Promise<void> {
     await firstValueFrom(this.http.delete(`${SETTINGS}/closed-days/${encodeURIComponent(date)}`));
+  }
+
+  /** Les destinataires du dossier du jour (plan `plan-envoi-du-dossier.md`, lot E2). */
+  dossierRecipients(): Promise<DossierRecipientView[]> {
+    return firstValueFrom(this.http.get<DossierRecipientView[]>(RECIPIENTS));
+  }
+
+  dossierStaffCandidates(): Promise<DossierStaffCandidateView[]> {
+    return firstValueFrom(
+      this.http.get<DossierStaffCandidateView[]>(`${RECIPIENTS}/staff-candidates`),
+    );
+  }
+
+  async addDossierRecipient(payload: DossierRecipientPayload): Promise<void> {
+    await firstValueFrom(this.http.post(RECIPIENTS, payload));
+  }
+
+  async removeDossierRecipient(id: string): Promise<void> {
+    await firstValueFrom(this.http.delete(`${RECIPIENTS}/${encodeURIComponent(id)}`));
   }
 }
