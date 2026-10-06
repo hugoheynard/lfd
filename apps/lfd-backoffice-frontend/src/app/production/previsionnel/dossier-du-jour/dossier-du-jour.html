@@ -1,5 +1,4 @@
-<!-- La barre ne s'imprime pas : elle sert à choisir le jour, la lecture et le
-     tirage. Elle n'a rien à faire au fournil. -->
+<!-- La barre choisit le jour, la lecture et le tirage. -->
 <header class="pr-bar">
   <div class="pr-when">
     <label class="pr-label" for="pr-date">Journée de service</label>
@@ -25,32 +24,55 @@
         pieces() > 1 ? 's' : ''
       }}
     </p>
-    <!-- Le tirage sort le dossier entier, pas l'onglet affiché : le fournil
-         reçoit un paquet, pas une capture d'écran. -->
-    <button foldButton icon="print" (click)="print()">Imprimer le dossier</button>
+    <!-- Le tirage est le PDF figé du serveur, pas l'onglet affiché : le
+         fournil reçoit le paquet entier (2026-10-06). -->
+    <button
+      foldButton
+      icon="print"
+      class="pr-print"
+      [disabled]="notArrested()"
+      [loading]="fetching()"
+      (click)="openPdf()"
+    >
+      @if (notArrested()) {
+        Arrêtez d’abord le plan du {{ dayLabel() }} pour tirer le dossier
+      } @else {
+        Imprimer le dossier
+      }
+    </button>
   }
 </header>
+
+@if (pdfFailed()) {
+  <fold-callout variant="alert" class="pr-pdf-failed">
+    Le dossier n’a pas pu être téléchargé. Vérifiez la connexion et réessayez.
+  </fold-callout>
+}
+
+@if (blockedPdfUrl(); as url) {
+  <fold-callout variant="info" class="pr-pdf-blocked">
+    Le navigateur a bloqué l’ouverture d’un nouvel onglet.
+    <a foldButton emphasis="outline" size="sm" [href]="url" [download]="fileName()">
+      Télécharger le dossier
+    </a>
+  </fold-callout>
+}
 
 <!--
   🔴 Le catalogue n'a pas répondu. Le lot reste juste — les commandes et leurs
   quantités viennent du serveur de production, pas de lui — mais ses rayons sont
   perdus, et un groupe « Hors catalogue » dirait alors que tout est retiré de la
   vente. Un échec partiel laisse le contenu à l'écran et se DIT.
-
-  `pr-no-print` : le papier part au fournil, et un encadré qui commente une
-  panne d'écran n'a rien à y faire. Le récapitulatif imprimé, lui, porte
-  « Rayon inconnu » — il dit donc la même chose, dans la langue du papier.
 -->
 @if (shelvesLost() && state() === 'ready') {
-  <fold-callout variant="warning" class="pr-no-print">
+  <fold-callout variant="warning">
     Les rayons n'ont pas pu être lus — le lot est juste, mais ses produits ne sont pas rangés.
     Rechargez pour les retrouver.
   </fold-callout>
 }
 
-<!-- Le compte à rebours de la même journée (V0, lecture seule). Il ne
-     s'imprime pas : le dossier papier reste ce qu'il était. -->
-<app-due-thresholds-section class="pr-no-print" [date]="date()" />
+<!-- Le compte à rebours de la même journée (V0, lecture seule). -->
+<app-due-thresholds-section [date]="date()" />
 
 @switch (state()) {
   @case ('loading') {
@@ -72,8 +94,8 @@
         subtitle="Aucune commande n'est à retirer ni à livrer à cette date."
       />
     } @else {
-      <!-- Les deux vues restent dans le DOM, masquées et non détruites : une vue
-           détruite ne s'imprimerait pas, et le tirage doit contenir les deux. -->
+      <!-- Les deux vues sont un aperçu à l'écran ; le papier est le PDF du
+           serveur (2026-10-06). -->
       <section class="pr-view" [class.is-hidden]="view() !== 'recap'" aria-label="Récapitulatif">
         <article class="pr-sheet pr-recap">
           <header class="pr-recap-head">

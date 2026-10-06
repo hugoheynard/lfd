@@ -42,8 +42,8 @@
    propre code s'en sert pour faire flotter un panneau au-dessus du défilement.
 
    ⚠️ **Seulement sur le MUR.** Le dossier du jour reste en flux, donc il défile
-   avec la coquille et s'imprime comme avant. Le sortir du flux aurait mis en jeu
-   le seul document de cet écran qui part au fournil sur papier. */
+   avec la coquille. Depuis le 2026-10-06, son papier est le PDF du serveur, et
+   plus rien de cet écran ne passe par l'impression navigateur. */
 :host(.is-wall) {
   position: absolute;
   inset: 0;
@@ -152,16 +152,4 @@ app-forecast-table {
    bon doit pouvoir dépasser le bas de la fenêtre. */
 app-dossier-du-jour {
   flex: 0 0 auto;
-}
-
-/* ── À l'impression ─────────────────────────────────────────────────────────
-   🔴 La bande de tête ne part PAS au fournil. Elle n'a rien à y faire — et sans
-   cette règle, le déménagement du dossier lui aurait silencieusement ajouté une
-   première page portant le titre du prévisionnel et ses boutons de semaine.
-   L'ancienne page cachait `.pr-bar` pour la même raison ; le layout a pris sa
-   place, il hérite donc de sa règle. */
-@media print {
-  fold-page-layout {
-    display: none;
-  }
 }

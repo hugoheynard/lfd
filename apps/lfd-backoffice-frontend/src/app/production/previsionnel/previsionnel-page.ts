@@ -29,12 +29,19 @@ import { AdminCatalogService } from '../../commandes/catalog.service';
 import { refreshWhileVisible } from '../../shared/periodic-refresh';
 import { ProductionService } from '../production.service';
 import { ProductionSettingsService } from '../production-settings.service';
-import { DossierDuJour } from './dossier-du-jour/dossier-du-jour';
+import { DossierDuJour, defaultDossierDate } from './dossier-du-jour/dossier-du-jour';
 import { ForecastTable } from './forecast-table/forecast-table';
 import { forecastRayons, totalOfRayons } from './previsionnel-matrix';
 import { FORECAST_DAYS, forecastHeaders, isoDay, shiftDay, windowEnd } from './previsionnel-range';
 
 type LoadState = 'loading' | 'ready' | 'error';
+
+/** « mercredi 7 octobre » — la journée du dossier, dite dans le titre. */
+const DOSSIER_DAY_LABEL = new Intl.DateTimeFormat('fr-FR', {
+  weekday: 'long',
+  day: 'numeric',
+  month: 'long',
+});
 
 /**
  * Tous les combien le prévisionnel se relit tant que l'onglet est visible.
@@ -99,8 +106,8 @@ type ForecastView = 'matrix' | 'dossier';
   selector: 'app-previsionnel-page',
   changeDetection: ChangeDetectionStrategy.OnPush,
   // 🔴 La classe suit la vue ouverte, et ELLE SEULE contraint la hauteur — cf.
-  // le commentaire de `:host(.is-wall)` dans la feuille. Le dossier du jour,
-  // qui part à l'imprimante tous les jours, reste en flux.
+  // le commentaire de `:host(.is-wall)` dans la feuille. Le dossier du jour
+  // reste en flux.
   host: { '[class.is-wall]': "view() === 'matrix'" },
   imports: [
     DossierDuJour,
@@ -144,6 +151,30 @@ export class PrevisionnelPage {
    * sélecteur choisit dirait deux journées à la fois.
    */
   protected readonly view = signal<ForecastView>('matrix');
+
+  /**
+   * La journée du dossier — tenue par `DossierDuJour` (son `model`), liée ici en
+   * `[(date)]` : un seul signal, que le titre lit. Le défaut est le sien.
+   */
+  protected readonly dossierDate = signal(defaultDossierDate());
+
+  /** « Le tirage du mercredi 7 octobre ». */
+  protected readonly dossierTitle = computed(
+    () => `Le tirage du ${DOSSIER_DAY_LABEL.format(new Date(`${this.dossierDate()}T00:00:00`))}`,
+  );
+
+  /**
+   * Le plan de la journée du dossier est-il arrêté, d'après ce que la page a
+   * lu (fenêtre affichée et fenêtre d'aujourd'hui) ? `null` hors de ces deux
+   * lectures : le dossier s'en remet alors au refus du serveur.
+   */
+  protected readonly dossierClosed = computed<boolean | null>(() => {
+    const date = this.dossierDate();
+    const day = [...(this.forecast()?.days ?? []), ...this.aheadDays()].find(
+      (candidate) => candidate.date === date,
+    );
+    return day === undefined ? null : day.closed;
+  });
 
   /** Le jour du poste, lu une fois : un écran de planning ne vit pas la nuit. */
   private readonly today = isoDay(new Date());

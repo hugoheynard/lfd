@@ -80,8 +80,7 @@
             </h1>
           }
         } @else {
-          <p class="pv-eyebrow">Le tirage du soir</p>
-          <h1 class="pv-title">Le dossier qui part au fournil.</h1>
+          <h1 class="pv-title">{{ dossierTitle() }}</h1>
         }
       </div>
 
@@ -289,5 +288,5 @@
     fenêtre de sept jours du prévisionnel ne le commande pas, et c'est
     délibéré — on tire UN service, on ne tire pas une semaine.
   -->
-  <app-dossier-du-jour />
+  <app-dossier-du-jour [(date)]="dossierDate" [closed]="dossierClosed()" />
 }

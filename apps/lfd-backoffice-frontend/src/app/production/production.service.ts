@@ -60,6 +60,23 @@ export class ProductionService {
     );
   }
 
+  /**
+   * **Le dossier du jour en PDF** (`AAAA-MM-JJ`) — le papier figé à l'arrêt du
+   * plan et archivé par le serveur : récapitulatif, puis un bon par commande.
+   *
+   * En `Blob` par `HttpClient` et non par un lien : la route exige le jeton, et
+   * un `<a href>` partirait sans lui. Refusée en 409 tant que la journée n'est
+   * pas arrêtée — il n'y a encore rien de figé à rendre.
+   */
+  async dossierPdf(date: string): Promise<Blob> {
+    return firstValueFrom(
+      this.http.get(
+        `${B2B_API_BASE}/admin/production/batch/${encodeURIComponent(date)}/dossier.pdf`,
+        { responseType: 'blob' },
+      ),
+    );
+  }
+
   /** Le lot d'une journée de service (`AAAA-MM-JJ`). */
   async batch(date: string): Promise<ProductionBatchView> {
     return firstValueFrom(

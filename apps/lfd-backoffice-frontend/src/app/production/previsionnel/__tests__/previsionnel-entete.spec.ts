@@ -93,4 +93,30 @@ describe('l’en-tête du prévisionnel', () => {
     expect(el.querySelector('app-dossier-du-jour')).toBeNull();
     expect(buttonNamed(el, 'Dossier du jour')).toBeDefined();
   });
+
+  it('titre le dossier par SA journée, et suit quand on la change', async () => {
+    const fixture = await render();
+    const el = fixture.nativeElement as HTMLElement;
+    const label = (date: string): string =>
+      new Intl.DateTimeFormat('fr-FR', { weekday: 'long', day: 'numeric', month: 'long' }).format(
+        new Date(`${date}T00:00:00`),
+      );
+
+    buttonNamed(el, 'Dossier du jour')?.click();
+    fixture.detectChanges();
+    expect(el.querySelector('.pv-title')?.textContent?.trim()).toBe(
+      `Le tirage du ${label(dayIn(1))}`,
+    );
+
+    const input = el.querySelector<HTMLInputElement>('#pr-date');
+    if (input === null) {
+      throw new Error('sélecteur de journée absent');
+    }
+    input.value = dayIn(3);
+    input.dispatchEvent(new Event('change'));
+    fixture.detectChanges();
+    expect(el.querySelector('.pv-title')?.textContent?.trim()).toBe(
+      `Le tirage du ${label(dayIn(3))}`,
+    );
+  });
 });
