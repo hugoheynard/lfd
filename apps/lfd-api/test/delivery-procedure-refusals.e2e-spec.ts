@@ -2,8 +2,8 @@
  * E2E des **refus de la procédure de livraison, mot pour mot** — et des
  * en-têtes de sa photo.
  *
- * Le 2026-10-06, cinq comportements figés ici ont été corrigés (TODO
- * `documentation/livraisons/todo-etrangetes-procedure-de-livraison.md`) : les
+ * Le 2026-10-06, cinq comportements figés ici ont été corrigés (TODO des
+ * étrangetés de la procédure, soldé et supprimé le même jour) : les
  * tests qui les tenaient sont réécrits vers le nouveau comportement et nommés
  * d'après le symptôme corrigé.
  *

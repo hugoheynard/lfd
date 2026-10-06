@@ -64,6 +64,9 @@ export const CLIENT_NOTE_FORM_LABELS: PhotoCardFormLabels = {
   removePhoto: 'Retirer la photo',
   photoPreviewAlt: 'Aperçu de la photo de la note',
   photoReducing: 'Allègement de la photo…',
+  photoLoading: 'Chargement de la photo enregistrée…',
+  photoUnavailable:
+    'La photo enregistrée n’a pas pu être affichée. Elle est conservée tant que vous ne la remplacez ni ne la retirez.',
   photoTooHeavy: `Cette photo reste trop lourde, même allégée (${CLIENT_NOTE_PHOTO_MAX_BYTES / KILOBYTE} Ko au plus). Recadrez-la sur la note, ou reprenez-la de plus près.`,
   photoUnreadable: 'Ce fichier n’est pas une image lisible. Choisissez une photo JPEG ou PNG.',
   titleRequired: 'Le titre est requis.',

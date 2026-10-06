@@ -66,6 +66,9 @@ export const DELIVERY_STEP_FORM_LABELS_FR: DeliveryStepFormLabels = {
   removePhoto: 'Retirer la photo',
   photoPreviewAlt: 'Aperçu de la photo de l’étape',
   photoReducing: 'Allègement de la photo…',
+  photoLoading: 'Chargement de la photo enregistrée…',
+  photoUnavailable:
+    'La photo enregistrée n’a pas pu être affichée. Elle est conservée tant que vous ne la remplacez ni ne la retirez.',
   photoTooHeavy:
     'Cette photo reste trop lourde, même allégée. Choisissez-en une autre, ou recadrez-la.',
   photoUnreadable: 'Ce fichier n’est pas une image lisible. Choisissez une photo JPEG ou PNG.',

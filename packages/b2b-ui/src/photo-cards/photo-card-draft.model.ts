@@ -69,6 +69,27 @@ export function photoCardIssueOf(draft: PhotoCardDraft, limits: PhotoCardLimits)
   return '';
 }
 
+/** Ce que chaque champ reproche au brouillon — tous à la fois, chacun sous le sien. */
+export interface PhotoCardFieldIssues {
+  readonly title: '' | 'title-required' | 'title-too-long';
+  readonly body: '' | 'body-too-long';
+}
+
+/**
+ * Les reproches du brouillon, champ par champ : un titre ET un texte trop
+ * longs se signalent ensemble, plutôt que le second après correction du premier.
+ */
+export function photoCardFieldIssuesOf(
+  draft: PhotoCardDraft,
+  limits: PhotoCardLimits,
+): PhotoCardFieldIssues {
+  const title = draft.title.trim();
+  return {
+    title: title === '' ? 'title-required' : title.length > limits.titleMax ? 'title-too-long' : '',
+    body: draft.body.trim().length > limits.bodyMax ? 'body-too-long' : '',
+  };
+}
+
 /** Les champs texte envoyés. */
 export function toPhotoCardFields(draft: PhotoCardDraft): PhotoCardFields {
   return { title: draft.title.trim(), body: draft.body.trim() };

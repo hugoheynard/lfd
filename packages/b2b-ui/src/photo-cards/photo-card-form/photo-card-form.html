@@ -2,7 +2,10 @@
   <fold-input
     required
     [label]="labels().title"
-    [hint]="titleHint()"
+    [hint]="labels().titleHint"
+    [errors]="titleErrors()"
+    [touched]="titleErrorShown()"
+    (touchedChange)="titleTouched.set($event)"
     [value]="value().title"
     (valueChange)="setTitle($event)"
   />
@@ -11,7 +14,9 @@
     optional
     [optionalLabel]="labels().optional"
     [label]="labels().body"
-    [hint]="bodyHint()"
+    [hint]="labels().bodyHint"
+    [errors]="bodyErrors()"
+    [touched]="true"
     [rows]="4"
     [value]="value().body"
     (valueChange)="setBody($event)"
@@ -31,6 +36,12 @@
     <div class="photo">
       @if (previewUrl(); as url) {
         <img class="preview" [src]="url" [alt]="labels().photoPreviewAlt" />
+      } @else if (keptWithoutPreview()) {
+        @if (currentPhotoUnavailable()) {
+          <fold-callout variant="warning">{{ labels().photoUnavailable }}</fold-callout>
+        } @else {
+          <fold-loading size="sm" [message]="labels().photoLoading" />
+        }
       }
       @if (reducing()) {
         <fold-loading size="sm" [message]="labels().photoReducing" />

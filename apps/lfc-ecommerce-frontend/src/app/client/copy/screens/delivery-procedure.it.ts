@@ -55,6 +55,9 @@ export const DELIVERY_PROCEDURE_IT: DeliveryProcedureCopy = {
       removePhoto: 'Rimuovi la foto',
       photoPreviewAlt: 'Anteprima della foto del passaggio',
       photoReducing: 'Alleggerimento della foto…',
+      photoLoading: 'Caricamento della foto salvata…',
+      photoUnavailable:
+        'Non è stato possibile mostrare la foto salvata. Resta conservata finché non la sostituisci o la rimuovi.',
       photoTooHeavy:
         'Questa foto resta troppo pesante, anche alleggerita. Sceglietene un’altra o ritagliatela.',
       photoUnreadable: 'Questo file non è un’immagine leggibile. Scegliete una foto JPEG o PNG.',

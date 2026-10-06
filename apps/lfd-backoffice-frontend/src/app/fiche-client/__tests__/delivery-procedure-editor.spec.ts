@@ -696,22 +696,42 @@ describe('DeliveryProcedureEditor — libellés', () => {
   });
 });
 
-describe('DeliveryProcedureEditor — existant figé', () => {
-  /** Existant figé, pas une règle voulue : sans vignette téléchargée, Remplacer et Retirer s'offrent sans aperçu. */
-  it('refaire une étape dont la vignette a échoué propose Remplacer et Retirer sans aperçu', async () => {
+describe('DeliveryProcedureEditor — vignettes et formulaire', () => {
+  /** Régression : sans vignette téléchargée, Remplacer et Retirer s'offraient sans aperçu ni explication. */
+  it('refaire une étape dont la vignette a échoué retente, puis dit la photo indisponible', async () => {
     gateway.steps = [step('a', 1, { title: 'Portail', photoRevision: 'rev1' })];
     gateway.photoImpl = () => Promise.reject(new Error('réseau'));
     const fixture = await render({ canEdit: true });
+    expect(gateway.photoCalls).toHaveLength(1);
 
     await click(fixture, L.revise);
 
+    expect(gateway.photoCalls).toHaveLength(2);
+    expect(text(fixture)).toContain(F.photoUnavailable);
     expect(buttons(fixture, F.replacePhoto)).toHaveLength(1);
-    expect(buttons(fixture, F.removePhoto)).toHaveLength(1);
     expect(root(fixture).querySelector('lfd-delivery-step-form img')).toBeNull();
   });
 
-  /** Existant figé, pas une règle voulue : une vignette arrivée après un rechargement qui l'a écartée reste retenue jusqu'à la destruction. */
-  it('une vignette arrivée après le rechargement qui a retiré son étape n’est révoquée qu’à la destruction', async () => {
+  it('refaire une étape dont la vignette est en route dit qu’elle charge, puis la montre', async () => {
+    const late = deferred<Blob>();
+    gateway.steps = [step('a', 1, { title: 'Portail', photoRevision: 'rev1' })];
+    gateway.photoImpl = () => late.promise;
+    const fixture = await render({ canEdit: true });
+
+    await click(fixture, L.revise);
+    expect(text(fixture)).toContain(F.photoLoading);
+
+    late.resolve(new Blob(['jpeg'], { type: 'image/jpeg' }));
+    await settle(fixture);
+
+    expect(text(fixture)).not.toContain(F.photoLoading);
+    expect(one<HTMLImageElement>(fixture, 'lfd-delivery-step-form img').getAttribute('src')).toBe(
+      'blob:1',
+    );
+  });
+
+  /** Régression : une vignette arrivée après le rechargement qui avait retiré son étape restait retenue jusqu'à la destruction. */
+  it('une vignette arrivée après le rechargement qui a retiré son étape n’est jamais retenue', async () => {
     const late = deferred<Blob>();
     gateway.steps = [step('a', 1, { title: 'Portail', photoRevision: 'rev1' })];
     gateway.photoImpl = () => late.promise;
@@ -725,11 +745,6 @@ describe('DeliveryProcedureEditor — existant figé', () => {
     late.resolve(new Blob(['jpeg'], { type: 'image/jpeg' }));
     await settle(fixture);
 
-    expect(URL.createObjectURL).toHaveBeenCalledTimes(1);
-    expect(URL.revokeObjectURL).not.toHaveBeenCalled();
-
-    fixture.destroy();
-
-    expect(URL.revokeObjectURL).toHaveBeenCalledWith('blob:1');
+    expect(URL.createObjectURL).not.toHaveBeenCalled();
   });
 });

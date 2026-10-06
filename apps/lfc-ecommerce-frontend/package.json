@@ -10,6 +10,8 @@
     "watch": "pnpm config:auth && ng build --watch --configuration development",
     "test": "ng test",
     "test:watch": "ng test --watch",
+    "lint": "eslint src --fix",
+    "lint:ci": "eslint src",
     "dev": "pnpm config:auth && node ../../dev-toolbox/ng-serve-quiet.mjs",
     "postinstall": "pnpm config:auth",
     "build:capacitor": "pnpm config:auth && ng build --configuration capacitor",
@@ -53,10 +55,15 @@
     "@angular/cli": "catalog:",
     "@angular/compiler-cli": "catalog:",
     "@capacitor/cli": "catalog:",
+    "@eslint/js": "catalog:",
     "@types/node": "catalog:",
+    "eslint": "catalog:",
+    "eslint-plugin-prettier": "catalog:",
+    "globals": "catalog:",
     "jsdom": "catalog:",
     "prettier": "catalog:",
     "typescript": "catalog:",
+    "typescript-eslint": "catalog:",
     "vitest": "catalog:"
   }
 }

@@ -29,11 +29,13 @@ export {
   newThumbnailOf,
   photoCardChangeOf,
   photoCardDraftFrom,
+  photoCardFieldIssuesOf,
   photoCardIssueOf,
   toPhotoCardFields,
 } from './photo-card-draft.model';
 export type {
   PhotoCardDraft,
+  PhotoCardFieldIssues,
   PhotoCardIssue,
   PhotoCardLimits,
   PhotoDraft,

@@ -18,7 +18,7 @@ import {
 } from 'fold-ng';
 
 import {
-  photoCardIssueOf,
+  photoCardFieldIssuesOf,
   type PhotoCardDraft,
   type PhotoCardLimits,
 } from '../photo-card-draft.model';
@@ -61,6 +61,11 @@ export class PhotoCardForm {
   readonly photoPolicy = input.required<PhotoReductionPolicy>();
   /** L'image de la photo déjà enregistrée, quand le brouillon la garde. */
   readonly currentPhotoUrl = input<string | null>(null);
+  /**
+   * L'image de la photo enregistrée n'a pas pu être lue : le formulaire le dit
+   * au lieu de proposer « Remplacer » à côté d'un cadre vide.
+   */
+  readonly currentPhotoUnavailable = input(false);
 
   protected readonly reducing = signal(false);
   protected readonly refusal = signal<PhotoRefusal>('');
@@ -77,16 +82,35 @@ export class PhotoCardForm {
 
   protected readonly hasPhoto = computed(() => this.value().photo.kind !== 'none');
 
-  private readonly issue = computed(() => photoCardIssueOf(this.value(), this.limits()));
+  private readonly issues = computed(() => photoCardFieldIssuesOf(this.value(), this.limits()));
 
-  protected readonly titleHint = computed(() =>
-    this.value().title.trim().length > 0 && this.issue() === 'title-too-long'
-      ? this.labels().titleTooLong
-      : this.labels().titleHint,
+  /** Le titre a-t-il été quitté une fois ? Un titre vide ne se reproche qu'à partir de là. */
+  protected readonly titleTouched = signal(false);
+
+  /**
+   * Un titre trop long se dit tout de suite, pendant la frappe ; un titre
+   * vide, seulement une fois le champ quitté — l'ouverture d'un formulaire
+   * neuf ne commence pas par un reproche.
+   */
+  protected readonly titleErrorShown = computed(
+    () => this.issues().title === 'title-too-long' || this.titleTouched(),
   );
 
-  protected readonly bodyHint = computed(() =>
-    this.issue() === 'body-too-long' ? this.labels().bodyTooLong : this.labels().bodyHint,
+  protected readonly titleErrors = computed(() => {
+    const issue = this.issues().title;
+    if (issue === 'title-required') {
+      return [fieldError(this.labels().titleRequired)];
+    }
+    return issue === 'title-too-long' ? [fieldError(this.labels().titleTooLong)] : NO_ERRORS;
+  });
+
+  protected readonly bodyErrors = computed(() =>
+    this.issues().body === 'body-too-long' ? [fieldError(this.labels().bodyTooLong)] : NO_ERRORS,
+  );
+
+  /** La photo enregistrée est gardée, mais son image n'est pas (encore) là. */
+  protected readonly keptWithoutPreview = computed(
+    () => this.value().photo.kind === 'kept' && this.currentPhotoUrl() === null,
   );
 
   protected readonly refusalMessage = computed(() => {
@@ -154,4 +178,17 @@ export class PhotoCardForm {
       this.pickedUrl.set(null);
     }
   }
+}
+
+/** La forme qu'attend `[errors]` de `fold-input` / `fold-textarea`, réduite à ce qu'on lui donne. */
+interface FieldError {
+  readonly kind: string;
+  readonly message: string;
+}
+
+const NO_ERRORS: readonly FieldError[] = [];
+
+/** Une erreur de saisie, dite sous son champ. */
+function fieldError(message: string): FieldError {
+  return { kind: 'client', message };
 }

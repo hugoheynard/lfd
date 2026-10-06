@@ -7,6 +7,7 @@ import {
   newThumbnailOf,
   photoCardChangeOf,
   photoCardDraftFrom,
+  photoCardFieldIssuesOf,
   photoCardIssueOf,
   toPhotoCardFields,
   type PhotoCardLimits,
@@ -56,6 +57,23 @@ describe('le brouillon d’une carte photo', () => {
       const draft = { ...EMPTY_PHOTO_CARD_DRAFT, title: 'Note' };
       expect(photoCardIssueOf({ ...draft, body: ` ${'a'.repeat(12)} ` }, LIMITS)).toBe('');
       expect(photoCardIssueOf({ ...draft, body: 'a'.repeat(13) }, LIMITS)).toBe('body-too-long');
+    });
+
+    // Régression : titre ET texte trop longs, seul le titre était signalé.
+    it('signale chaque champ fautif à la fois, chacun pour le sien', () => {
+      expect(
+        photoCardFieldIssuesOf(
+          { ...EMPTY_PHOTO_CARD_DRAFT, title: 'abcdef', body: 'a'.repeat(13) },
+          LIMITS,
+        ),
+      ).toEqual({ title: 'title-too-long', body: 'body-too-long' });
+      expect(
+        photoCardFieldIssuesOf({ ...EMPTY_PHOTO_CARD_DRAFT, body: 'a'.repeat(13) }, LIMITS),
+      ).toEqual({ title: 'title-required', body: 'body-too-long' });
+      expect(photoCardFieldIssuesOf({ ...EMPTY_PHOTO_CARD_DRAFT, title: 'Note' }, LIMITS)).toEqual({
+        title: '',
+        body: '',
+      });
     });
 
     it('une autre borne change le verdict sur le même brouillon', () => {

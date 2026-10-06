@@ -19,6 +19,10 @@ export interface PhotoCardFormLabels {
   readonly removePhoto: string;
   readonly photoPreviewAlt: string;
   readonly photoReducing: string;
+  /** La photo enregistrée est gardée, son image est en route. */
+  readonly photoLoading: string;
+  /** La photo enregistrée est gardée, mais son image n'a pas pu être lue. */
+  readonly photoUnavailable: string;
   readonly photoTooHeavy: string;
   readonly photoUnreadable: string;
   readonly titleRequired: string;

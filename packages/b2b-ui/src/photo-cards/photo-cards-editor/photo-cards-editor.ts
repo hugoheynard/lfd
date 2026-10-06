@@ -151,6 +151,8 @@ export class PhotoCardsEditor<C extends PhotoCardView = PhotoCardView> {
   private readonly seen = new Set<string>();
   /** Les vignettes en route, par clé — une carte qui repasse n'en relance pas une. */
   private readonly fetching = new Set<string>();
+  /** Les vignettes dont la lecture a échoué, par clé — le formulaire le dit plutôt qu'un cadre vide. */
+  private readonly failedThumbs = signal<ReadonlySet<string>>(new Set());
   private readonly panels = inject(FoldPanelHostService);
   private initialDraft: PhotoCardDraft = EMPTY_PHOTO_CARD_DRAFT;
   private knownCount: number | null = null;
@@ -186,8 +188,20 @@ export class PhotoCardsEditor<C extends PhotoCardView = PhotoCardView> {
     return card === null ? null : this.thumbOf(card);
   });
 
+  /** L'image de la photo enregistrée de la carte refaite n'a pas pu être lue. */
+  protected readonly currentPhotoUnavailable = computed(() => {
+    const card = this.revising();
+    return (
+      card?.photoRevision != null && this.failedThumbs().has(thumbKey(card.id, card.photoRevision))
+    );
+  });
+
   protected readonly formContext: PhotoCardFormContext = {
-    $implicit: { draft: this.draft, currentPhotoUrl: this.currentPhotoUrl },
+    $implicit: {
+      draft: this.draft,
+      currentPhotoUrl: this.currentPhotoUrl,
+      currentPhotoUnavailable: this.currentPhotoUnavailable,
+    },
   };
 
   constructor() {
@@ -249,6 +263,12 @@ export class PhotoCardsEditor<C extends PhotoCardView = PhotoCardView> {
 
   protected openRevise(card: C): void {
     this.openForm({ kind: 'revise', card }, photoCardDraftFrom(card));
+    // Une vignette en échec retente sa chance : c'est l'image que le formulaire montre.
+    if (card.photoRevision !== null) {
+      const key = thumbKey(card.id, card.photoRevision);
+      this.forgetFailure(key);
+      this.requestThumb(key, card);
+    }
   }
 
   protected cancel(): void {
@@ -371,6 +391,7 @@ export class PhotoCardsEditor<C extends PhotoCardView = PhotoCardView> {
       }
     });
     this.thumbs.set(kept);
+    this.failedThumbs.update((failed) => new Set([...failed].filter((key) => wanted.has(key))));
     const lazy = this.photoDisplay().kind === 'thumbnail';
     wanted.forEach((card, key) => {
       // En vignette, seules les cartes déjà vues se rechargent ici ; les autres attendent leur passage.
@@ -401,13 +422,36 @@ export class PhotoCardsEditor<C extends PhotoCardView = PhotoCardView> {
           : await gateway.photo(card.id, card.photoRevision);
     } catch {
       // Sans vignette, la carte se lit encore : titre et texte portent l'essentiel.
+      if (!this.destroyed && this.isShown(key)) {
+        this.failedThumbs.update((failed) => new Set(failed).add(key));
+      }
       return;
     }
-    if (this.destroyed || this.thumbs().has(key)) {
+    // Une vignette arrivée après la relecture qui a retiré sa carte (ou remplacé
+    // sa photo) n'a plus de place : on ne crée pas d'URL d'objet qu'aucune
+    // relecture ne révoquerait avant la destruction de l'éditeur.
+    if (this.destroyed || this.thumbs().has(key) || !this.isShown(key)) {
       return;
     }
     const url = URL.createObjectURL(blob);
     this.thumbs.update((thumbs) => new Map(thumbs).set(key, url));
+  }
+
+  /** La carte et la révision de cette clé sont-elles encore dans la liste ? */
+  private isShown(key: string): boolean {
+    return this.cards().some(
+      (card) => card.photoRevision !== null && thumbKey(card.id, card.photoRevision) === key,
+    );
+  }
+
+  private forgetFailure(key: string): void {
+    if (this.failedThumbs().has(key)) {
+      this.failedThumbs.update((failed) => {
+        const next = new Set(failed);
+        next.delete(key);
+        return next;
+      });
+    }
   }
 }
 

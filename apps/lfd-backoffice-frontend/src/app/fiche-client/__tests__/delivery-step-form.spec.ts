@@ -273,26 +273,33 @@ describe('DeliveryStepForm — texte', () => {
     expect(text(fixture)).not.toContain(F.bodyHint);
   });
 
-  /** Existant figé, pas une règle voulue : le libellé `titleRequired` n'est affiché nulle part. */
-  it('un titre vide ne montre aucun message « titre requis »', async () => {
-    const fixture = await render({ ...EMPTY, body: 'Code 4512' });
-
-    await type(fixture, 'fold-input input', '   ');
+  it('un formulaire neuf ne commence pas par reprocher le titre vide', async () => {
+    const fixture = await render(EMPTY);
 
     expect(text(fixture)).not.toContain(F.titleRequired);
     expect(text(fixture)).toContain(F.titleHint);
   });
 
-  /** Existant figé, pas une règle voulue : seul le premier refus du brouillon est signalé. */
-  it('titre et texte trop longs à la fois : seul le titre est signalé', async () => {
+  /** Régression : le libellé `titleRequired` n'était affiché nulle part, un titre vide grisait seulement Enregistrer. */
+  it('un titre vide, une fois le champ quitté, dit que le titre est requis', async () => {
+    const fixture = await render({ ...EMPTY, body: 'Code 4512' });
+
+    await type(fixture, 'fold-input input', '   ');
+    one<HTMLInputElement>(fixture, 'fold-input input').dispatchEvent(new Event('blur'));
+    await settle(fixture);
+
+    expect(text(fixture)).toContain(F.titleRequired);
+  });
+
+  /** Régression : titre ET texte trop longs, seul le titre était signalé. */
+  it('titre et texte trop longs à la fois : chacun est signalé sous son champ', async () => {
     const fixture = await render(EMPTY);
 
     await type(fixture, 'fold-input input', 'a'.repeat(DELIVERY_STEP_TITLE_MAX + 1));
     await type(fixture, 'fold-textarea textarea', 'a'.repeat(DELIVERY_STEP_BODY_MAX + 1));
 
-    expect(text(fixture)).toContain(F.titleTooLong);
-    expect(text(fixture)).not.toContain(F.bodyTooLong);
-    expect(text(fixture)).toContain(F.bodyHint);
+    expect(one(fixture, 'fold-input').textContent).toContain(F.titleTooLong);
+    expect(one(fixture, 'fold-textarea').textContent).toContain(F.bodyTooLong);
   });
 });
 
@@ -484,13 +491,26 @@ describe('DeliveryStepForm — photo', () => {
     expect(URL.revokeObjectURL).toHaveBeenCalledWith('blob:1');
   });
 
-  /** Existant figé, pas une règle voulue : une photo gardée sans URL fournie n'a pas d'aperçu, mais Remplacer et Retirer s'affichent. */
-  it('une photo gardée sans URL fournie propose Remplacer et Retirer sans aperçu', async () => {
+  /** Régression : une photo gardée sans image offrait Remplacer et Retirer à côté d'un cadre vide, sans rien dire. */
+  it('une photo gardée dont l’image est en route dit qu’elle charge', async () => {
     const fixture = await render(KEPT, null);
 
     expect(preview(fixture)).toBeNull();
+    expect(text(fixture)).toContain(F.photoLoading);
+    expect(text(fixture)).not.toContain(F.photoUnavailable);
     expect(buttons(fixture, F.replacePhoto)).toHaveLength(1);
     expect(buttons(fixture, F.removePhoto)).toHaveLength(1);
+  });
+
+  it('une photo gardée dont l’image n’a pas pu être lue le dit', async () => {
+    TestBed.configureTestingModule({ imports: [DeliveryStepForm] });
+    const fixture = TestBed.createComponent(DeliveryStepForm);
+    fixture.componentRef.setInput('value', KEPT);
+    fixture.componentRef.setInput('currentPhotoUnavailable', true);
+    await settle(fixture);
+
+    expect(text(fixture)).toContain(F.photoUnavailable);
+    expect(text(fixture)).not.toContain(F.photoLoading);
   });
 });
 

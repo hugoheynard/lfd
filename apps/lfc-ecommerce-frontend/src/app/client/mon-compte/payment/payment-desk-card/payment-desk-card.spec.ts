@@ -102,7 +102,7 @@ describe('PaymentDeskCard', () => {
         fixture.detectChanges();
         const text = (fixture.nativeElement as HTMLElement).textContent ?? '';
         expect(text).not.toMatch(/\d{2}\/\d{2}\/\d{4}/);
-        expect(text).not.toMatch(/€|2[\s  ,.]?000/);
+        expect(text).not.toMatch(/€|2[\s\u00a0\u202f,.]?000/);
         expect(text).not.toMatch(/plafond|limit|massimale/i);
       }
     }

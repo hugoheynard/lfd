@@ -54,6 +54,9 @@ export const DELIVERY_PROCEDURE_EN: DeliveryProcedureCopy = {
       removePhoto: 'Remove the photo',
       photoPreviewAlt: 'Preview of the step photo',
       photoReducing: 'Making the photo lighter…',
+      photoLoading: 'Loading the saved photo…',
+      photoUnavailable:
+        'The saved photo could not be displayed. It is kept unless you replace or remove it.',
       photoTooHeavy: 'This photo is still too heavy, even made lighter. Choose another or crop it.',
       photoUnreadable: 'This file is not a readable image. Choose a JPEG or PNG photo.',
       titleRequired: 'The title is required.',

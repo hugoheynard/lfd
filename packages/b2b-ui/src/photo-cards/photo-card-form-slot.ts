@@ -8,6 +8,8 @@ export interface PhotoCardFormState {
   readonly draft: WritableSignal<PhotoCardDraft>;
   /** L'image de la photo enregistrée de la carte refaite, ou `null`. */
   readonly currentPhotoUrl: Signal<string | null>;
+  /** L'image de la photo enregistrée n'a pas pu être lue. */
+  readonly currentPhotoUnavailable: Signal<boolean>;
 }
 
 export interface PhotoCardFormContext {

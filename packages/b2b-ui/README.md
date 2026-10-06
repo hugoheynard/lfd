@@ -97,3 +97,11 @@ compilent via un `paths` tsconfig pointant vers `src`. Ajouter dans l'app :
 ```
 
 et `"@lfd/b2b-ui": "workspace:*"` dans ses dépendances.
+
+## Tests
+
+Le Jest du paquet tourne sous Node, sans jsdom ni `@angular/core` : il n'éprouve
+que les **fonctions pures** (`*.model.ts`, réduction de photo…). Les
+**composants** sont éprouvés dans les apps qui les montent — par exemple
+`apps/lfd-backoffice-frontend/src/app/fiche-client/__tests__/` pour l'éditeur et
+le formulaire des cartes photo.

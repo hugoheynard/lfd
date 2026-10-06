@@ -24,6 +24,8 @@ export class DeliveryStepForm {
   readonly labels = input<DeliveryStepFormLabels>(DELIVERY_STEP_FORM_LABELS_FR);
   /** L'image de la photo déjà enregistrée, quand le brouillon la garde. */
   readonly currentPhotoUrl = input<string | null>(null);
+  /** L'image de la photo enregistrée n'a pas pu être lue. */
+  readonly currentPhotoUnavailable = input(false);
 
   protected readonly limits = DELIVERY_STEP_LIMITS;
   protected readonly photoPolicy = DELIVERY_STEP_PHOTO_POLICY;

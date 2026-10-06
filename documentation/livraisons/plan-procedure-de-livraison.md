@@ -145,6 +145,14 @@ d'adresse gagne `procedureStepCount` (lecteurs client et staff).
   client traduit en fr/en/it).
   - Liste des étapes : numéro, titre, texte, vignette (blob → object URL,
     révoquée à la destruction).
+    ⚠️ **Reste à faire (relevé le 2026-10-06)** : cette « vignette » est la
+    photo **pleine taille** (jusqu'à 1 Mo, requête authentifiée par étape),
+    lourd pour une liste. Les notes du commercial ont une vraie vignette
+    (D7 bis, `photoDisplay: thumbnail`, deux objets stockés) ; la procédure
+    n'en a pas côté API — ni objet réduit stocké, ni route qui le sert. Le
+    brancher est un lot **API** d'abord (stocker une vignette au dépôt, la
+    servir), puis passer l'éditeur en `photoDisplay` vignette — la réduction
+    côté écran (`PhotoReductionPolicy.thumbnail`) existe déjà.
   - Par étape : **monter / descendre** (boutons, désactivés aux bornes — pas de
     glisser-déposer : il n'existe nulle part dans le dépôt, et deux boutons
     marchent au doigt comme au clavier), **Refaire** (formulaire prérempli),
