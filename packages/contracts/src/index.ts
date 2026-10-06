@@ -1033,12 +1033,15 @@ export type {
 } from "./delivery-packing.js";
 export {
   deliveryRoutingSettingsPayloadSchema,
+  deliveryDefaultContainerSchema,
   deliveryProposalModeSchema,
   applyDeliveryProposalPayloadSchema,
   timeDeliveryRoundsPayloadSchema,
 } from "./delivery-routing.js";
 export type {
   DeliveryRoutingSettingsPayload,
+  DeliveryDefaultContainer,
+  DeliveryDefaultDemandView,
   DeliveryProposalMode,
   DeliveryRoutingSettingsView,
   DeliveryProposalWindow,

@@ -14,6 +14,7 @@ describe("les réglages du calcul (L7-C13, L7-C15)", () => {
       defaultMode: "new_rounds",
       multiplePassages: true,
       safetyMarginMinutes: 20,
+      defaultContainer: null,
     });
     expect(settings.earliestDepartureMinute).toBe(360);
   });
@@ -61,6 +62,7 @@ describe("les réglages du calcul (L7-C13, L7-C15)", () => {
       defaultMode: "insert",
       multiplePassages: false,
       safetyMarginMinutes: 90,
+      defaultContainer: { binTypeId: "manne", count: 50 },
     });
 
     expect(settings.earliestDepartureMinute).toBe(0);
@@ -68,5 +70,31 @@ describe("les réglages du calcul (L7-C13, L7-C15)", () => {
       RoutingSettings.define({ ...RoutingSettings.DEFAULTS, safetyMarginMinutes: 0 })
         .safetyMarginMinutes,
     ).toBe(0);
+  });
+
+  describe("le contenant par défaut d'une commande (2026-10-06)", () => {
+    const withContainer = (binTypeId: string, count: number) =>
+      RoutingSettings.define({
+        ...RoutingSettings.DEFAULTS,
+        defaultContainer: { binTypeId, count },
+      });
+
+    it("vaut « pas de réglage » d'usine", () => {
+      expect(RoutingSettings.defaults().defaultContainer).toBeNull();
+    });
+
+    it("refuse un nombre hors de 1 à 50 ou non entier, et un type vide", () => {
+      for (const count of [0, -1, 51, 1.5]) {
+        expect(() => withContainer("manne", count)).toThrow(InvalidRoutingSettingError);
+      }
+      expect(() => withContainer("  ", 1)).toThrow("type de bac");
+    });
+
+    it("se relit tel quel", () => {
+      expect(withContainer("manne", 3).values().defaultContainer).toEqual({
+        binTypeId: "manne",
+        count: 3,
+      });
+    });
   });
 });

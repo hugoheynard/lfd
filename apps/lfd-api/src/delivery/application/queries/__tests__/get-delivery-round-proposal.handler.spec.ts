@@ -40,7 +40,12 @@ import {
 } from "../../commands/__tests__/routing-doubles.js";
 import { GetDeliveryRoundProposalHandler } from "../get-delivery-round-proposal.handler.js";
 import { type DeliveryOrderLinesReader } from "../../../channels/commerce/index.js";
-import { BreadForEveryOrder, measuredVehicleView, proposalCapacity } from "./capacity-doubles.js";
+import {
+  BIN_M,
+  BreadForEveryOrder,
+  measuredVehicleView,
+  proposalCapacity,
+} from "./capacity-doubles.js";
 import { GetDeliveryRoundProposalQuery } from "../get-delivery-round-proposal.query.js";
 
 // Un jour comparé aux jours des commandes écrites ici — jamais à l'horloge.
@@ -488,5 +493,69 @@ describe("GetDeliveryRoundProposalHandler — la place (CA4)", () => {
     const open = view.rounds.find((round) => round.roundId === "r_open");
     expect(open?.stops.map((stop) => stop.orderId)).toEqual(expect.arrayContaining(["o10", "o1"]));
     expect(view.unknownDemand.map((order) => order.orderId)).toEqual(["o10"]);
+  });
+
+  describe("le contenant par défaut des réglages (2026-10-06)", () => {
+    const withDefault = (count: number) =>
+      RoutingSettings.define({
+        ...RoutingSettings.DEFAULTS,
+        defaultContainer: { binTypeId: BIN_M, count },
+      });
+
+    it("une commande sans ligne compte pour le défaut, nommée « par défaut » et plus « non vérifiée »", async () => {
+      const { handler } = scene({
+        settings: withDefault(1),
+        lines: new BreadForEveryOrder(new Map(), new Set(["o1", "o5"])),
+      });
+
+      const view = await handler.execute(new GetDeliveryRoundProposalQuery(DAY, null, false));
+
+      expect(placed(view)).toContain("o1");
+      expect(view.unknownDemand).toEqual([]);
+      expect(view.defaultDemand).toEqual([
+        {
+          orderId: "o1",
+          reference: "CMD-o1",
+          binTypeName: "Bac bin_m",
+          count: 1,
+          withEstimate: false,
+        },
+        {
+          orderId: "o5",
+          reference: "CMD-o5",
+          binTypeName: "Bac bin_m",
+          count: 1,
+          withEstimate: false,
+        },
+      ]);
+    });
+
+    it("la place se contrôle sur le défaut : trop de bacs par défaut, et la commande reste à répartir", async () => {
+      // Une seule pile de Bacs M au sol (70 × 50 cm, piles de six) : sept bacs ne tiennent pas.
+      const small = { lengthCm: 70, widthCm: 50, heightCm: 140 };
+      const fleet = new FixedFleet([
+        measuredVehicleView("v1", "Vélo 1", small),
+        measuredVehicleView("v2", "Vélo 2", small),
+      ]);
+      const { handler } = scene({
+        fleet,
+        settings: withDefault(7),
+        lines: new BreadForEveryOrder(new Map(), new Set(["o1"])),
+      });
+
+      const view = await handler.execute(new GetDeliveryRoundProposalQuery(DAY, null, false));
+
+      expect(placed(view)).not.toContain("o1");
+      expect(view.unfit).toEqual([{ orderId: "o1", reference: "CMD-o1", reason: "capacity" }]);
+      expect(view.unknownDemand).toEqual([]);
+    });
+
+    it("le défaut ne remplace jamais une estimation complète", async () => {
+      const { handler } = scene({ settings: withDefault(1) });
+
+      const view = await handler.execute(new GetDeliveryRoundProposalQuery(DAY, null, false));
+
+      expect(view.defaultDemand).toEqual([]);
+    });
   });
 });

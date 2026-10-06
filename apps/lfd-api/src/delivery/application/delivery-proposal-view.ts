@@ -14,6 +14,7 @@ import type { TimeWindow } from "../domain/services/route-timing.js";
 import { clockTimeOf } from "../domain/value-objects/clock-time.js";
 import type { KeptRound } from "./delivery-proposal-support.js";
 import type { LocatedDeparture, LocatedStop } from "./delivery-routing-support.js";
+import type { DefaultedDemand } from "./proposal-capacity.js";
 
 const SECONDS_PER_MINUTE = 60;
 
@@ -32,6 +33,8 @@ export interface ProposalViewInputs {
   readonly unlocated: readonly LocatedStop[];
   /** Les commandes considérées dont on ne connaît pas les bacs (2026-10-06). */
   readonly unknownDemand: readonly string[];
+  /** Les commandes comptées au contenant par défaut, et ce qu'elles occupent (2026-10-06). */
+  readonly defaultDemand: readonly (DefaultedDemand & { readonly orderId: string })[];
   /** Le tracé de chaque tournée de `proposal.tours`, dans le même ordre (L10b-C4). */
   readonly lines: readonly (RouteLine | null)[];
 }
@@ -79,6 +82,13 @@ export function proposalViewOf(inputs: ProposalViewInputs): DeliveryRoundProposa
     unknownDemand: inputs.unknownDemand.map((orderId) => ({
       orderId,
       reference: reference(orderId),
+    })),
+    defaultDemand: inputs.defaultDemand.map((demand) => ({
+      orderId: demand.orderId,
+      reference: reference(demand.orderId),
+      binTypeName: demand.binTypeName,
+      count: demand.count,
+      withEstimate: demand.withEstimate,
     })),
     kept: inputs.kept.map(({ round, reason }) => ({
       roundId: round.id,

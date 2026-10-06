@@ -9,7 +9,8 @@ import type { CompositionCapacity } from "../domain/services/capacity-guard.js";
 import type { PlanBin, PlanBinType } from "../domain/services/loading-plan.js";
 import type { PlanVehicle } from "../domain/services/loading-volume.js";
 import { proposePacking } from "../domain/services/propose-packing.js";
-import { stopDemandOf } from "../domain/services/stop-demand.js";
+import { type DefaultStopBins, stopDemandOf } from "../domain/services/stop-demand.js";
+import type { DefaultContainer } from "../domain/value-objects/routing-settings.js";
 import { CargoFloor } from "../domain/value-objects/cargo-floor.js";
 import { packingTypeOf } from "./delivery-packing-view.js";
 import { packingLinesOf } from "./packing-lines.js";
@@ -19,13 +20,25 @@ export interface ProposalCapacityReading {
   readonly capacity: CompositionCapacity;
   /** Ni bac déclaré, ni estimation possible : placées sans contrôle, leur tournée dite « place non vérifiée ». */
   readonly unknown: ReadonlySet<string>;
+  /** Comptées au contenant par défaut des réglages (2026-10-06) : l'écran le dit « par défaut ». */
+  readonly defaulted: ReadonlyMap<string, DefaultedDemand>;
+}
+
+/** Ce qu'une commande comptée au défaut occupe, pour l'écran. */
+export interface DefaultedDemand {
+  readonly binTypeId: string;
+  readonly binTypeName: string;
+  readonly count: number;
+  /** Une part estimée par les contenances s'y ajoute. */
+  readonly withEstimate: boolean;
 }
 
 /**
  * **Ce que « Proposer » sait de la place** (CA4) : la charge de chaque
  * véhicule de la flotte, et la demande en bacs de chaque commande — les bacs
  * déclarés, sinon l'estimation du colisage (la MÊME `proposePacking` que le
- * poste, types en service et contenances), sinon inconnue.
+ * poste, types en service et contenances), sinon le contenant par défaut des
+ * réglages (2026-10-06), sinon inconnue.
  *
  * Les lignes ne sont lues que pour les commandes sans bac déclaré, par le
  * port du commerce, une commande à la fois (le port n'a pas de lecture
@@ -41,7 +54,10 @@ export class ProposalCapacity {
     private readonly products: DeliveryProductsReader,
   ) {}
 
-  async of(orderIds: readonly string[]): Promise<ProposalCapacityReading> {
+  async of(
+    orderIds: readonly string[],
+    defaultContainer: DefaultContainer | null,
+  ): Promise<ProposalCapacityReading> {
     const unique = [...new Set(orderIds)];
     const [vehicles, types, capacities, declared] = await Promise.all([
       this.fleet.list(),
@@ -60,8 +76,10 @@ export class ProposalCapacity {
     );
     const inService = types.filter((type) => type.archivedAt === null).map(packingTypeOf);
     const binTypes = new Map(types.map((type) => [type.id, planBinTypeOf(type)]));
+    const defaultBins = defaultBinsOf(defaultContainer, binTypes);
     const bins = new Map<string, readonly PlanBin[]>();
     const unknown = new Set<string>();
+    const defaulted = new Map<string, DefaultedDemand>();
     for (const orderId of unique) {
       const lines = linesOf.get(orderId) ?? [];
       const demand = stopDemandOf({
@@ -69,15 +87,37 @@ export class ProposalCapacity {
         declared: byOrder.get(orderId) ?? [],
         estimate: lines.length === 0 ? null : proposePacking(lines, inService, capacities),
         binTypes,
+        defaultBins,
       });
       if (demand.kind === "unknown") {
         unknown.add(orderId);
-      } else {
-        bins.set(orderId, demand.bins);
+        continue;
+      }
+      bins.set(orderId, demand.bins);
+      if (demand.kind === "defaulted" && defaultBins !== null) {
+        defaulted.set(orderId, {
+          binTypeId: defaultBins.binType.id,
+          binTypeName: defaultBins.binType.name,
+          count: defaultBins.count,
+          withEstimate: demand.withEstimate,
+        });
       }
     }
-    return { capacity: { vehicles: vehiclesOf(vehicles), bins }, unknown };
+    return { capacity: { vehicles: vehiclesOf(vehicles), bins }, unknown, defaulted };
   }
+}
+
+/**
+ * Le contenant par défaut, son type résolu au catalogue. Un type absent du
+ * catalogue (la clé étrangère l'interdit) vaut « pas de réglage » plutôt
+ * qu'un bac inventé.
+ */
+function defaultBinsOf(
+  container: DefaultContainer | null,
+  binTypes: ReadonlyMap<string, PlanBinType>,
+): DefaultStopBins | null {
+  const binType = container === null ? undefined : binTypes.get(container.binTypeId);
+  return container === null || binType === undefined ? null : { binType, count: container.count };
 }
 
 function groupByOrder(rows: readonly DeclaredBinRow[]): ReadonlyMap<string, DeclaredBinRow[]> {

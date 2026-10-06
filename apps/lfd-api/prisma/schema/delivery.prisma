@@ -465,6 +465,16 @@ model DeliveryRoutingSettings {
   /// L7t-C1) : une arrivée dans ces minutes-là coûte au calcul. 20 par défaut,
   /// valeur de Hugo — la ligne déjà posée la reçoit à la migration.
   safetyMarginMinutes Int     @default(20) @map("safety_margin_minutes")
+  /// **Le contenant par défaut d'une commande** (2026-10-06, Hugo : « un
+  /// réglage de base le temps d'avoir le compte précis du coliseur ») : un
+  /// type de bac et un nombre, la demande d'une commande dont ni les bacs ni
+  /// les contenances ne disent rien. Les deux nuls ensemble = pas de réglage
+  /// (« place non vérifiée ») ; le CHECK `delivery_routing_default_container`
+  /// tient « les deux ou aucun » et le nombre ≥ 1. Archiver ce type est refusé.
+  defaultBinTypeId    String? @map("default_bin_type_id")
+  defaultBinCount     Int?    @map("default_bin_count")
+
+  defaultBinType DeliveryBinType? @relation(fields: [defaultBinTypeId], references: [id], onDelete: Restrict)
 
   updatedAt        DateTime @map("updated_at")
   updatedByStaffId String   @map("updated_by_staff_id")
@@ -597,8 +607,10 @@ model DeliveryBinType {
   updatedAt  DateTime  @map("updated_at")
   archivedAt DateTime? @map("archived_at")
 
-  capacities DeliveryBinCapacity[]
-  bins       DeliveryBin[]
+  capacities      DeliveryBinCapacity[]
+  bins            DeliveryBin[]
+  /// Le réglage qui le prend pour contenant par défaut d'une commande.
+  routingDefaults DeliveryRoutingSettings[]
 
   @@map("delivery_bin_type")
   @@schema("delivery")

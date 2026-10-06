@@ -10,6 +10,7 @@ import type { RoutingStop, TimeWindow } from "../domain/services/route-timing.js
 import { minutesOfDay } from "../domain/value-objects/clock-time.js";
 import { type GeoPoint, geoPoint } from "../domain/value-objects/geo-point.js";
 import {
+  type DefaultContainer,
   RoutingSettings,
   type RoutingSettingsValues,
 } from "../domain/value-objects/routing-settings.js";
@@ -41,27 +42,31 @@ export async function routingSettingsOf(
 }
 
 /**
- * Les réglages saisis, complétés des deux champs dépréciés (L10b-C5) :
- * détour et vitesse ne sont plus lus par le calcul, l'écran ne les envoie
- * plus ; absents, ils gardent la valeur de `base` — les colonnes restent en
- * base jusqu'au resserrement.
+ * Les réglages saisis, complétés des champs qu'un écran peut ne pas envoyer :
+ * détour et vitesse (dépréciés, L10b-C5 — plus lus par le calcul, les
+ * colonnes restent en base jusqu'au resserrement), la marge, et le contenant
+ * par défaut (2026-10-06). Absents, ils gardent la valeur de `base` ; le
+ * contenant par défaut à `null` est un réglage VIDÉ, pas une absence.
  */
 export function withDeprecatedFields(
   typed: Omit<
     RoutingSettingsValues,
-    "detourPercent" | "averageSpeedKmh" | "safetyMarginMinutes"
+    "detourPercent" | "averageSpeedKmh" | "safetyMarginMinutes" | "defaultContainer"
   > & {
     readonly detourPercent?: number | undefined;
     readonly averageSpeedKmh?: number | undefined;
     readonly safetyMarginMinutes?: number | undefined;
+    readonly defaultContainer?: DefaultContainer | null | undefined;
   },
   base: RoutingSettingsValues,
 ): RoutingSettingsValues {
+  const { defaultContainer, ...rest } = typed;
   return {
-    ...typed,
+    ...rest,
     detourPercent: typed.detourPercent ?? base.detourPercent,
     averageSpeedKmh: typed.averageSpeedKmh ?? base.averageSpeedKmh,
     safetyMarginMinutes: typed.safetyMarginMinutes ?? base.safetyMarginMinutes,
+    defaultContainer: defaultContainer === undefined ? base.defaultContainer : defaultContainer,
   };
 }
 

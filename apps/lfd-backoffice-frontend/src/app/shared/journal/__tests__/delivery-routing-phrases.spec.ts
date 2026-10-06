@@ -82,6 +82,19 @@ describe('le calculateur de tournée (delivery_routing.*, delivery_round.proposa
     ).toContain('5 min par arrêt ; c’étaient');
   });
 
+  it('dit le contenant par défaut d’une commande, et son absence (2026-10-06)', () => {
+    const container = { binType: { id: 'manne', name: 'Manne' }, count: 2 };
+    const said = sentence(
+      fact('delivery_routing.settings_updated', 'delivery_routing', {
+        before: { ...SETTINGS, defaultContainer: null },
+        after: { ...SETTINGS, defaultContainer: container },
+      }),
+    );
+
+    expect(said).toContain('un seul passage par véhicule, contenant par défaut : 2 × « Manne » ;');
+    expect(said).toContain('un seul passage par véhicule, sans contenant par défaut');
+  });
+
   it('dit chaque tournée touchée, ouverte ou recomposée, avant et après', () => {
     expect(
       sentence(

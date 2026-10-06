@@ -20,7 +20,7 @@ import {
   withTimings,
 } from './delivery-planning';
 import { type ComposedDay, movedOrder } from './delivery-rounds';
-import { boardOfPlan, unverifiedPlaceLabel } from './rounds-board-model';
+import { boardOfPlan, stopTagsOf, unverifiedPlaceLabel } from './rounds-board-model';
 import { stopOf } from './run-sheet.fixture';
 
 const SETTINGS: DeliveryRoutingSettingsView = {
@@ -32,6 +32,7 @@ const SETTINGS: DeliveryRoutingSettingsView = {
   safetyMarginMinutes: 20,
   defaultMode: 'insert',
   multiplePassages: true,
+  defaultContainer: null,
   source: 'default',
 };
 
@@ -79,6 +80,7 @@ const PROPOSAL: DeliveryRoundProposalView = {
   overflow: [],
   unfit: [],
   unknownDemand: [],
+  defaultDemand: [],
   kept: [{ roundId: 'r-9', vehicleName: 'Camionnette 3', passage: 1, reason: 'loaded' }],
   versions: [
     { roundId: 'r-1', version: 4 },
@@ -364,5 +366,25 @@ describe('vehicleColors', () => {
     expect(colors.size).toBe(2);
     expect(colors.get('v-1')).toBe(roundColor(0, 2));
     expect(colors.get('v-2')).toBe(roundColor(1, 2));
+  });
+});
+
+describe('le contenant par défaut (2026-10-06)', () => {
+  it('dit « par défaut » sur l’arrêt compté au défaut, et ne le compte pas « non vérifié »', () => {
+    const proposal = {
+      ...PROPOSAL,
+      defaultDemand: [
+        { orderId: 'o-2', reference: 'CMD-2', binTypeName: 'Manne', count: 1, withEstimate: false },
+      ],
+    };
+    const board = boardOfPlan(planOf(proposal, null), [], null, proposal);
+    const stop = board.rounds.flatMap((round) => round.stops).find((s) => s.orderId === 'o-2');
+
+    expect(stop?.defaultDemand).toBe('1 × Manne (par défaut)');
+    expect(stop === undefined ? [] : stopTagsOf(stop)).toContainEqual({
+      label: '1 × Manne (par défaut)',
+      variant: 'neutral',
+    });
+    expect(board.rounds.map(unverifiedPlaceLabel)).toEqual([null, null, null]);
   });
 });

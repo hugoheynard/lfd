@@ -29,17 +29,27 @@ export class PrismaRoutingSettingsReader extends RoutingSettingsReader {
         defaultMode: true,
         multiplePassages: true,
         safetyMarginMinutes: true,
+        defaultBinTypeId: true,
+        defaultBinCount: true,
       },
     });
     if (row === null) {
       return null;
     }
-    const { defaultMode } = row;
+    const { defaultMode, defaultBinTypeId, defaultBinCount, ...values } = row;
     if (!isProposalMode(defaultMode)) {
       throw new InvalidRoutingSettingError(
         `mode de proposition inconnu en base (« ${defaultMode} »).`,
       );
     }
-    return RoutingSettings.define({ ...row, defaultMode });
+    return RoutingSettings.define({
+      ...values,
+      defaultMode,
+      // Le CHECK `delivery_routing_default_container` tient « les deux ou aucun ».
+      defaultContainer:
+        defaultBinTypeId === null || defaultBinCount === null
+          ? null
+          : { binTypeId: defaultBinTypeId, count: defaultBinCount },
+    });
   }
 }

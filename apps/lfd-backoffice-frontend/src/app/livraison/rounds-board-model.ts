@@ -23,6 +23,7 @@ import {
   windowShortLabel,
 } from './delivery-rounds';
 import type { OrderCardEdge, OrderCardTag } from './order-card/order-card';
+import { defaultDemandLabel } from './delivery-routing';
 import { timeLabel } from '../shared/window-label';
 
 /**
@@ -78,6 +79,11 @@ export interface BoardStop {
    * geste du bureau l'emporte : le calcul ne la déplace pas, il la nomme.
    */
   readonly placementLate: boolean;
+  /**
+   * Aperçu seulement : la demande de la commande vient du contenant par défaut
+   * des réglages (2026-10-06) — « 1 × Manne (par défaut) ». `null` sinon.
+   */
+  readonly defaultDemand: string | null;
 }
 
 /** Une tournée du tableau — enregistrée, ou à ouvrir dans l'aperçu. */
@@ -186,6 +192,7 @@ function roundOfComposed(composed: ComposedRound, timing: ComposedTiming): Board
       proposed: false,
       windowMissed: false,
       placementLate: timing.placementLate.has(stop.orderId),
+      defaultDemand: null,
     })),
   };
 }
@@ -227,6 +234,7 @@ function stopOfOrder(order: BoardOrder): BoardStop {
     proposed: false,
     windowMissed: false,
     placementLate: false,
+    defaultDemand: null,
   };
 }
 
@@ -299,11 +307,19 @@ export function boardOfPlan(
     known.rounds.flatMap((round) => round.stops.map((stop) => [stop.orderId, stop] as const)),
   );
   const unknownDemand = new Set(proposal.unknownDemand.map((order) => order.orderId));
+  const defaulted = new Map(
+    proposal.defaultDemand.map((demand) => [demand.orderId, defaultDemandLabel(demand)] as const),
+  );
   const rounds = plan.map((planned): BoardRound => {
     const current = planned.roundId === null ? undefined : live.get(planned.roundId);
     const before = new Set(current?.stops.map(({ stop }) => stop.orderId) ?? []);
     const stops = planned.stops.map((stop) =>
-      plannedStopOnBoard(stop, knownStops.get(stop.orderId), !before.has(stop.orderId)),
+      plannedStopOnBoard(
+        stop,
+        knownStops.get(stop.orderId),
+        !before.has(stop.orderId),
+        defaulted.get(stop.orderId) ?? null,
+      ),
     );
     return {
       key: planned.key,
@@ -329,6 +345,7 @@ function plannedStopOnBoard(
   stop: PlannedStop,
   known: BoardStop | undefined,
   proposed: boolean,
+  defaultDemand: string | null,
 ): BoardStop {
   return {
     orderId: stop.orderId,
@@ -343,6 +360,7 @@ function plannedStopOnBoard(
     windowMissed: stop.windowMissed,
     // L'aperçu dit son propre retard (`windowMissed`) ; le rouge est celui du geste enregistré.
     placementLate: false,
+    defaultDemand,
   };
 }
 
@@ -580,6 +598,9 @@ export function stopTagsOf(stop: BoardStop): readonly OrderCardTag[] {
   }
   if (stop.sheet?.state === 'expected') {
     tags.push({ label: 'Pas encore prête', variant: 'warning' });
+  }
+  if (stop.defaultDemand !== null) {
+    tags.push({ label: stop.defaultDemand, variant: 'neutral' });
   }
   return tags;
 }

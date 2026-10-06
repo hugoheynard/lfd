@@ -34,6 +34,17 @@ const routingSettings = () =>
     multiplePassages: z.boolean(),
     /** Lot 7 ter (L7t-C1) : absente des faits écrits avant son arrivée. */
     safetyMarginMinutes: minutes().optional(),
+    /**
+     * Le contenant par défaut d'une commande (2026-10-06) : `null` sans
+     * réglage, absent des faits écrits avant son arrivée. Le type est
+     * toujours nommé : une clé étrangère le garde au catalogue.
+     */
+    defaultContainer: payload({
+      binType: named("delivery_bin_type"),
+      count: count(),
+    })
+      .nullable()
+      .optional(),
   });
 
 /** Une tournée touchée par une proposition appliquée : ses arrêts AVANT et APRÈS. */

@@ -20,6 +20,17 @@ export const BAC_M: PlanBinType = {
   maxStack: 5,
 };
 
+/** Une manne à pain, 66,5 × 46 × 30 cm, piles de 6 — le contenant par défaut des tests. */
+export const MANNE: PlanBinType = {
+  id: "manne",
+  name: "Manne",
+  isotherm: false,
+  outerLengthMm: 665,
+  outerWidthMm: 460,
+  outerHeightMm: 300,
+  maxStack: 6,
+};
+
 /** Un véhicule mesuré : plancher rectangulaire, sans caisse froide. */
 export function measured(name: string, lengthCm: number, widthCm: number, heightCm: number) {
   const floor = CargoFloor.of({ lengthCm, widthCm, heightCm, wheelArches: null });

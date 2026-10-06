@@ -22,6 +22,7 @@ function stop(orderId: string): BoardStop {
     proposed: false,
     windowMissed: false,
     placementLate: false,
+    defaultDemand: null,
   };
 }
 

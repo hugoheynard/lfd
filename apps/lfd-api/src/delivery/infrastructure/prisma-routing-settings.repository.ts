@@ -14,8 +14,11 @@ export class PrismaRoutingSettingsRepository extends RoutingSettingsRepository {
   }
 
   async put(settings: RoutingSettings, at: Date, author: DeliveryAuthor): Promise<void> {
+    const { defaultContainer, ...values } = settings.values();
     const row = {
-      ...settings.values(),
+      ...values,
+      defaultBinTypeId: defaultContainer?.binTypeId ?? null,
+      defaultBinCount: defaultContainer?.count ?? null,
       updatedAt: at,
       updatedByStaffId: author.staffUserId,
       updatedByName: author.name,

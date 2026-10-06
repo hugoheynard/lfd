@@ -28,6 +28,7 @@ const SETTINGS: DeliveryRoutingSettingsView = {
   safetyMarginMinutes: 20,
   defaultMode: 'insert',
   multiplePassages: false,
+  defaultContainer: null,
   source: 'explicit',
 };
 

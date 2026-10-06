@@ -1,4 +1,7 @@
 import type {
+  BinTypeView,
+  DeliveryDefaultContainer,
+  DeliveryDefaultDemandView,
   DeliveryProposalMode,
   DeliveryProposalWindow,
   DeliveryRoundProposalView,
@@ -84,8 +87,43 @@ export function sameSettings(
     a.stopMinutes === b.stopMinutes &&
     a.safetyMarginMinutes === b.safetyMarginMinutes &&
     a.defaultMode === b.defaultMode &&
-    a.multiplePassages === b.multiplePassages
+    a.multiplePassages === b.multiplePassages &&
+    sameContainer(a.defaultContainer ?? null, b.defaultContainer ?? null)
   );
+}
+
+function sameContainer(
+  a: DeliveryDefaultContainer | null,
+  b: DeliveryDefaultContainer | null,
+): boolean {
+  return a === null || b === null ? a === b : a.binTypeId === b.binTypeId && a.count === b.count;
+}
+
+/** La valeur de « Aucun » dans la liste des contenants par défaut — jamais un identifiant de bac. */
+export const NO_DEFAULT_CONTAINER = '';
+
+/**
+ * Les choix du contenant par défaut (2026-10-06) : « Aucun », puis les types
+ * en service. Le type déjà réglé reste dans la liste même s'il ne l'était plus
+ * — le serveur refuse de l'archiver, mais on ne masque pas ce qui est réglé.
+ */
+export function defaultContainerOptions(
+  types: readonly BinTypeView[],
+  current: DeliveryDefaultContainer | null,
+): readonly { readonly value: string; readonly label: string }[] {
+  const shown = types.filter((type) => type.archivedAt === null || type.id === current?.binTypeId);
+  return [
+    { value: NO_DEFAULT_CONTAINER, label: 'Aucun — place non vérifiée' },
+    ...shown.map((type) => ({ value: type.id, label: type.name })),
+  ];
+}
+
+/** « 1 × Manne (par défaut) », « Estimée + 1 × Manne (par défaut) » : ce que l’aperçu dit sur l’arrêt. */
+export function defaultDemandLabel(
+  demand: Pick<DeliveryDefaultDemandView, 'binTypeName' | 'count' | 'withEstimate'>,
+): string {
+  const container = `${String(demand.count)} × ${demand.binTypeName} (par défaut)`;
+  return demand.withEstimate ? `Estimée + ${container}` : container;
 }
 
 const UNLOCATED: Readonly<Record<DeliveryUnlocatedReason, string>> = {

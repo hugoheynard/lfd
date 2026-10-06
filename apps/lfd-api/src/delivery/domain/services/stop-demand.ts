@@ -15,17 +15,34 @@ export interface DeclaredStopBin {
  *
  * 1. `declared` : les bacs déclarés au colisage font foi ;
  * 2. `estimated` : sinon, la proposition de colisage (lignes × contenances)
- *    dit combien il en faudra ;
- * 3. `unknown` : sinon on ne sait pas — et on ne l'invente pas. La commande
+ *    dit combien il en faudra, pour TOUTES ses lignes ;
+ * 3. `defaulted` : sinon, le contenant par défaut des réglages (2026-10-06).
+ *    Une commande en partie estimable porte sa part estimée PLUS le défaut,
+ *    qui tient lieu de ce qu'on ne sait pas (`withEstimate`) : jamais moins
+ *    que la part connue, jamais moins que le défaut ;
+ * 4. `unknown` : sinon on ne sait pas — et on ne l'invente pas. La commande
  *    est placée SANS contrôle de place (décision du 2026-10-06 : sans
  *    contenances réglées, le refus laissait presque tout à répartir avant le
  *    colisage), et sa tournée est dite « place non vérifiée ». Une demande
- *    inventée, elle, la ferait passer pour vérifiée.
+ *    inventée, elle, la ferait passer pour vérifiée — le défaut n'en est pas
+ *    une : il est RÉGLÉ par le bureau, et l'écran le dit « par défaut ».
  */
 export type StopDemand =
   | { readonly kind: "declared"; readonly bins: readonly PlanBin[] }
   | { readonly kind: "estimated"; readonly bins: readonly PlanBin[] }
+  | {
+      readonly kind: "defaulted";
+      readonly bins: readonly PlanBin[];
+      /** Une part a été estimée par les contenances ; le défaut couvre le reste. */
+      readonly withEstimate: boolean;
+    }
   | { readonly kind: "unknown" };
+
+/** Le contenant par défaut, son type résolu : `count` bacs entiers de `binType`. */
+export interface DefaultStopBins {
+  readonly binType: PlanBinType;
+  readonly count: number;
+}
 
 /** Ce qu'il faut pour juger la demande d'une commande. Pur. */
 export interface StopDemandInput {
@@ -35,6 +52,8 @@ export interface StopDemandInput {
   readonly estimate: PackingProposal | null;
   /** Les types du catalogue, archivés compris (un bac déclaré garde le sien). */
   readonly binTypes: ReadonlyMap<string, PlanBinType>;
+  /** Le contenant par défaut des réglages, ou `null` : pas de réglage. */
+  readonly defaultBins: DefaultStopBins | null;
 }
 
 const UNKNOWN: StopDemand = { kind: "unknown" };
@@ -43,21 +62,39 @@ const UNKNOWN: StopDemand = { kind: "unknown" };
  * La demande en bacs d'une commande (CA4). Une estimation porte une moitié
  * comme un bac ENTIER : on ne sait pas avec qui elle serait partagée, et on
  * ne promet pas une place qu'on n'a pas (même règle que `loadingVolumeOf`).
- * Un type introuvable rend la demande inconnue plutôt que de l'ignorer.
+ * Un type introuvable rend l'estimation inutilisable plutôt que de l'ignorer.
  */
 export function stopDemandOf(input: StopDemandInput): StopDemand {
   if (input.declared.length > 0) {
     return declaredDemand(input);
   }
-  const estimate = input.estimate;
-  if (estimate === null || estimate.unplaced.length > 0) {
+  const estimated = estimatedBins(input);
+  const complete = input.estimate !== null && input.estimate.unplaced.length === 0;
+  if (estimated !== null && estimated.length > 0 && complete) {
+    return { kind: "estimated", bins: estimated };
+  }
+  if (input.defaultBins === null) {
     return UNKNOWN;
   }
+  const known = estimated ?? [];
+  const bins = [...known];
+  for (let index = 0; index < input.defaultBins.count; index += 1) {
+    const id = `${input.orderId}:default:${String(index + 1)}`;
+    bins.push(planBinOf(id, input.defaultBins.binType, null, null));
+  }
+  return { kind: "defaulted", bins, withEstimate: known.length > 0 };
+}
+
+/** Les bacs que l'estimation propose, ou `null` : pas d'estimation, ou un type introuvable. */
+function estimatedBins(input: StopDemandInput): PlanBin[] | null {
+  if (input.estimate === null) {
+    return null;
+  }
   const bins: PlanBin[] = [];
-  for (const entry of estimate.bins) {
+  for (const entry of input.estimate.bins) {
     const binType = input.binTypes.get(entry.binTypeId);
     if (binType === undefined) {
-      return UNKNOWN;
+      return null;
     }
     const count = entry.whole + (entry.half ? 1 : 0);
     for (let index = 0; index < count; index += 1) {
@@ -65,7 +102,7 @@ export function stopDemandOf(input: StopDemandInput): StopDemand {
       bins.push(planBinOf(id, binType, null, null));
     }
   }
-  return bins.length === 0 ? UNKNOWN : { kind: "estimated", bins };
+  return bins;
 }
 
 function declaredDemand(input: StopDemandInput): StopDemand {

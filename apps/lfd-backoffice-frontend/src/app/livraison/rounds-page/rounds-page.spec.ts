@@ -129,6 +129,7 @@ const PROPOSAL: DeliveryRoundProposalView = {
     safetyMarginMinutes: 20,
     defaultMode: 'insert',
     multiplePassages: true,
+    defaultContainer: null,
     source: 'default',
   },
   rounds: [
@@ -152,6 +153,7 @@ const PROPOSAL: DeliveryRoundProposalView = {
   overflow: [{ orderId: 'o-4', reference: 'CMD-4' }],
   unfit: [],
   unknownDemand: [],
+  defaultDemand: [],
   kept: [{ roundId: 'r-1', vehicleName: 'Kangoo', passage: 1, reason: 'not_requested' }],
   versions: [
     { roundId: 'r-1', version: 4 },

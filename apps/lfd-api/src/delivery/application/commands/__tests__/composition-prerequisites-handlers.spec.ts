@@ -12,6 +12,9 @@ import { CorrectVehicleCommand } from "../correct-vehicle.command.js";
 import { CorrectVehicleHandler } from "../correct-vehicle.handler.js";
 import { RetireVehicleCommand } from "../retire-vehicle.command.js";
 import { RetireVehicleHandler } from "../retire-vehicle.handler.js";
+import { DefaultContainerBinTypeArchiveError } from "../../../domain/errors/delivery-composition-errors.js";
+import { RoutingSettings } from "../../../domain/value-objects/routing-settings.js";
+import { InMemoryRoutingSettings } from "./routing-doubles.js";
 import { ActiveBinTypesOver, binType, InMemoryBinTypes } from "./bin-doubles.js";
 import {
   CREATED,
@@ -141,10 +144,15 @@ describe("CorrectVehicleHandler — les cotes du dernier véhicule mesuré", () 
 });
 
 describe("ArchiveBinTypeHandler — le dernier type en service", () => {
-  function archive(types: InMemoryBinTypes, id: string): Promise<void> {
+  function archive(
+    types: InMemoryBinTypes,
+    id: string,
+    settings = new InMemoryRoutingSettings(),
+  ): Promise<void> {
     return new ArchiveBinTypeHandler(
       types,
       new ActiveBinTypesOver(types),
+      settings,
       new FixedClock(NOW),
       new RecordingPublisher(),
       new DirectUnitOfWork(),
@@ -170,5 +178,23 @@ describe("ArchiveBinTypeHandler — le dernier type en service", () => {
     await expect(archive(new InMemoryBinTypes(old), "bin_a")).rejects.toThrow(
       BinTypeAlreadyArchivedError,
     );
+  });
+
+  it("🔴 refuse d'archiver le contenant par défaut d'une commande, en le nommant (2026-10-06)", async () => {
+    const types = new InMemoryBinTypes(binType("bin_a", "Manne"), binType("bin_b", "Bac L"));
+    const settings = new InMemoryRoutingSettings(
+      RoutingSettings.define({
+        ...RoutingSettings.DEFAULTS,
+        defaultContainer: { binTypeId: "bin_a", count: 1 },
+      }),
+    );
+
+    const archiving = archive(types, "bin_a", settings);
+
+    await expect(archiving).rejects.toThrow(DefaultContainerBinTypeArchiveError);
+    await expect(archiving).rejects.toThrow(/« Manne » est le contenant par défaut/u);
+    expect(types.saved).toEqual([]);
+    await archive(types, "bin_b", settings);
+    expect(types.saved.map((saved) => saved.id)).toEqual(["bin_b"]);
   });
 });

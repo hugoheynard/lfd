@@ -2,7 +2,12 @@ import type { JournalFactType } from "@lfd/contracts/journal-facts";
 
 import type { JournalFact, JournaledEvent } from "../../../platform/journal/journal-fact.js";
 import type { AppliedRound } from "../services/apply-proposal.js";
-import type { RoutingSettings, RoutingSettingsValues } from "../value-objects/routing-settings.js";
+import type {
+  DefaultContainer,
+  RoutingSettings,
+  RoutingSettingsValues,
+} from "../value-objects/routing-settings.js";
+import { DefaultContainerBinTypeUnknownError } from "../errors/delivery-composition-errors.js";
 import { citeOrder } from "./delivery-round.events.js";
 
 /**
@@ -22,12 +27,16 @@ const ROUTING_SETTINGS_LABEL = "Calcul des tournées";
 /**
  * **Les réglages du calcul ont changé.** `before` est `null` quand personne
  * n'avait réglé : le calcul tournait sur ses défauts, et le dire autrement
- * ferait croire qu'on les avait choisis.
+ * ferait croire qu'on les avait choisis. Le contenant par défaut cite son
+ * type de bac avec le nom du moment (`binTypeNames`, archivés compris) ; une
+ * clé étrangère le garde au catalogue, et un nom manquant lève plutôt que
+ * d'écrire un fait anonyme.
  */
 export class RoutingSettingsUpdatedEvent implements JournaledEvent {
   constructor(
     readonly settings: RoutingSettings,
     readonly before: RoutingSettingsValues | null,
+    readonly binTypeNames: ReadonlyMap<string, string>,
   ) {}
 
   journalFact(): JournalFact {
@@ -37,10 +46,25 @@ export class RoutingSettingsUpdatedEvent implements JournaledEvent {
       subjectId: ROUTING_SETTINGS_SUBJECT,
       payload: {
         subjectLabel: ROUTING_SETTINGS_LABEL,
-        before: this.before === null ? null : { ...this.before },
-        after: this.settings.values(),
+        before: this.before === null ? null : this.settingsPayload(this.before),
+        after: this.settingsPayload(this.settings.values()),
       },
     };
+  }
+
+  private settingsPayload(values: RoutingSettingsValues): Record<string, unknown> {
+    return { ...values, defaultContainer: this.containerPayload(values.defaultContainer) };
+  }
+
+  private containerPayload(container: DefaultContainer | null): Record<string, unknown> | null {
+    if (container === null) {
+      return null;
+    }
+    const name = this.binTypeNames.get(container.binTypeId);
+    if (name === undefined) {
+      throw new DefaultContainerBinTypeUnknownError(container.binTypeId);
+    }
+    return { binType: { id: container.binTypeId, name }, count: container.count };
   }
 }
 

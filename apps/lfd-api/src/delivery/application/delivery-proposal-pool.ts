@@ -1,3 +1,4 @@
+import type { DefaultedDemand } from "./proposal-capacity.js";
 import type { RoundRow } from "../domain/ports/delivery-rounds.reader.js";
 import type { PlannableStop } from "../domain/services/propose-rounds.js";
 import type { GeoPoint } from "../domain/value-objects/geo-point.js";
@@ -39,6 +40,21 @@ export function unknownDemandAmong(
   unknownDemand: ReadonlySet<string>,
 ): readonly string[] {
   return [...new Set(orderIds)].filter((orderId) => unknownDemand.has(orderId));
+}
+
+/**
+ * Les commandes considérées comptées au contenant par défaut (2026-10-06),
+ * dans l'ordre lu et sans doublon, avec ce qu'elles occupent : l'écran le
+ * dit « par défaut ».
+ */
+export function defaultDemandAmong(
+  orderIds: readonly string[],
+  defaulted: ReadonlyMap<string, DefaultedDemand>,
+): readonly (DefaultedDemand & { readonly orderId: string })[] {
+  return [...new Set(orderIds)].flatMap((orderId) => {
+    const demand = defaulted.get(orderId);
+    return demand === undefined ? [] : [{ ...demand, orderId }];
+  });
 }
 
 /** Les points de la matrice : le départ, puis chaque commande située. */

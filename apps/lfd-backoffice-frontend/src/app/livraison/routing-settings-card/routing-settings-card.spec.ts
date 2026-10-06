@@ -1,11 +1,16 @@
 import { HttpErrorResponse } from '@angular/common/http';
 import { type ComponentFixture, TestBed } from '@angular/core/testing';
 import { By } from '@angular/platform-browser';
-import type { DeliveryRoutingSettingsPayload, DeliveryRoutingSettingsView } from '@lfd/contracts';
-import { FoldNumberInputComponent } from 'fold-ng';
+import type {
+  BinTypesView,
+  DeliveryRoutingSettingsPayload,
+  DeliveryRoutingSettingsView,
+} from '@lfd/contracts';
+import { FoldListboxComponent, FoldNumberInputComponent } from 'fold-ng';
 import { describe, expect, it } from 'vitest';
 
 import { NotifyService } from '../../notify.service';
+import { DeliveryBinsService } from '../delivery-bins.service';
 import { DeliveryRoutingService } from '../delivery-routing.service';
 import { RoutingSettingsCard } from './routing-settings-card';
 
@@ -18,7 +23,23 @@ const FACTORY: DeliveryRoutingSettingsView = {
   safetyMarginMinutes: 20,
   defaultMode: 'insert',
   multiplePassages: true,
+  defaultContainer: null,
   source: 'default',
+};
+
+const BIN_TYPE = {
+  outer: { lengthMm: 665, widthMm: 460, heightMm: 300 },
+  inner: { lengthMm: 640, widthMm: 430, heightMm: 280 },
+  innerVolumeLiters: 77,
+  isotherm: false,
+  maxStack: 6,
+  divisible: false,
+};
+const TYPES: BinTypesView = {
+  types: [
+    { ...BIN_TYPE, id: 'manne', name: 'Manne', archivedAt: null },
+    { ...BIN_TYPE, id: 'old', name: 'Vieux bac', archivedAt: '2026-01-01T00:00:00.000Z' },
+  ],
 };
 
 interface Wire {
@@ -55,11 +76,21 @@ async function boot(canWrite = true): Promise<ComponentFixture<RoutingSettingsCa
               detourPercent: payload.detourPercent ?? wire.view.detourPercent,
               averageSpeedKmh: payload.averageSpeedKmh ?? wire.view.averageSpeedKmh,
               safetyMarginMinutes: payload.safetyMarginMinutes ?? wire.view.safetyMarginMinutes,
+              defaultContainer:
+                payload.defaultContainer === undefined
+                  ? wire.view.defaultContainer
+                  : payload.defaultContainer,
               source: 'explicit',
             };
             return Promise.resolve();
           },
         } satisfies Partial<Record<keyof DeliveryRoutingService, unknown>>,
+      },
+      {
+        provide: DeliveryBinsService,
+        useValue: {
+          binTypes: () => Promise.resolve(TYPES),
+        } satisfies Partial<Record<keyof DeliveryBinsService, unknown>>,
       },
       { provide: NotifyService, useValue: { success: () => undefined } },
     ],
@@ -128,6 +159,7 @@ describe('RoutingSettingsCard', () => {
         safetyMarginMinutes: 20,
         defaultMode: 'insert',
         multiplePassages: true,
+        defaultContainer: null,
       },
     ]);
     expect(wire.reads).toBe(2);
@@ -191,5 +223,66 @@ describe('RoutingSettingsCard', () => {
     const maxRound = numberInput(fixture, '[data-max-round]')
       .componentInstance as FoldNumberInputComponent;
     expect(maxRound.readOnly()).toBe(true);
+  });
+
+  describe('le contenant par défaut d’une commande (2026-10-06)', () => {
+    function listbox(fixture: ComponentFixture<RoutingSettingsCard>) {
+      const found = fixture.debugElement.query(By.css('[data-default-bin-type]'));
+      expect(found.componentInstance).toBeInstanceOf(FoldListboxComponent);
+      return found;
+    }
+
+    it('propose « Aucun » et les seuls types en service ; sans type, pas de nombre', async () => {
+      const fixture = await boot();
+      const options = (
+        listbox(fixture).componentInstance as FoldListboxComponent<string>
+      ).options();
+
+      expect(options?.map((option) => ('label' in option ? option.label : ''))).toEqual([
+        'Aucun — place non vérifiée',
+        'Manne',
+      ]);
+      expect(host(fixture).querySelector('[data-default-bin-count]')).toBeNull();
+    });
+
+    it('choisit un type et un nombre, et les envoie', async () => {
+      const fixture = await boot();
+      listbox(fixture).triggerEventHandler('selectionChange', 'manne');
+      await settle(fixture);
+      numberInput(fixture, '[data-default-bin-count]').triggerEventHandler('valueChange', 2);
+      await settle(fixture);
+      saveButton(fixture)?.click();
+      await settle(fixture);
+
+      expect(wire.writes[0]?.defaultContainer).toEqual({ binTypeId: 'manne', count: 2 });
+      expect(wire.view.defaultContainer).toEqual({ binTypeId: 'manne', count: 2 });
+    });
+
+    it('n’enregistre pas un type sans nombre', async () => {
+      const fixture = await boot();
+      listbox(fixture).triggerEventHandler('selectionChange', 'manne');
+      await settle(fixture);
+      numberInput(fixture, '[data-default-bin-count]').triggerEventHandler('valueChange', null);
+      await settle(fixture);
+
+      expect(saveButton(fixture)?.disabled).toBe(true);
+    });
+
+    it('« Aucun » vide un réglage posé', async () => {
+      const fixture = await boot();
+      listbox(fixture).triggerEventHandler('selectionChange', 'manne');
+      await settle(fixture);
+      saveButton(fixture)?.click();
+      await settle(fixture);
+      listbox(fixture).triggerEventHandler('selectionChange', '');
+      await settle(fixture);
+      saveButton(fixture)?.click();
+      await settle(fixture);
+
+      expect(wire.writes.map((write) => write.defaultContainer)).toEqual([
+        { binTypeId: 'manne', count: 1 },
+        null,
+      ]);
+    });
   });
 });

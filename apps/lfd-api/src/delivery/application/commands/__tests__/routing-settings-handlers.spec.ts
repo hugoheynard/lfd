@@ -10,6 +10,9 @@ import { RoutingSettings } from "../../../domain/value-objects/routing-settings.
 import { GetRoutingSettingsHandler } from "../../queries/get-routing-settings.handler.js";
 import { SetRoutingSettingsCommand } from "../set-routing-settings.command.js";
 import { SetRoutingSettingsHandler } from "../set-routing-settings.handler.js";
+import { DefaultContainerBinTypeUnavailableError } from "../../../domain/errors/delivery-composition-errors.js";
+import { binTypeView } from "../../queries/__tests__/packing-doubles.js";
+import { FixedBinCatalog } from "./bin-doubles.js";
 import { InMemoryRoutingSettings } from "./routing-doubles.js";
 
 const NOW = new Date(0);
@@ -22,12 +25,16 @@ const PAYLOAD = {
   defaultMode: "insert" as const,
   multiplePassages: false,
   safetyMarginMinutes: 25,
+  defaultContainer: null,
 };
+const MANNE = binTypeView("manne");
+const OLD = binTypeView("old", { archived: true });
 
 function setter(settings: InMemoryRoutingSettings, events: RecordingPublisher) {
   return new SetRoutingSettingsHandler(
     settings,
     settings.writer,
+    new FixedBinCatalog([MANNE, OLD], []),
     new FixedStaffAuthorDirectory(
       authorsKnownAs(
         { firstName: "Hugo", lastName: "H", staffUserId: "staff_1", role: "admin" },
@@ -134,6 +141,73 @@ describe("les réglages du calcul de tournée", () => {
     expect(await new GetRoutingSettingsHandler(settings).execute()).toMatchObject({
       detourPercent: RoutingSettings.DEFAULTS.detourPercent,
       averageSpeedKmh: RoutingSettings.DEFAULTS.averageSpeedKmh,
+    });
+  });
+
+  describe("le contenant par défaut d'une commande (2026-10-06)", () => {
+    const WITH_MANNE = { ...PAYLOAD, defaultContainer: { binTypeId: "manne", count: 2 } };
+
+    it("se pose, se relit, et le fait cite le type avec son nom", async () => {
+      const settings = new InMemoryRoutingSettings();
+      const events = new RecordingPublisher();
+
+      await setter(settings, events).execute(new SetRoutingSettingsCommand(WITH_MANNE, "staff_1"));
+
+      expect(await new GetRoutingSettingsHandler(settings).execute()).toMatchObject({
+        defaultContainer: { binTypeId: "manne", count: 2 },
+      });
+      expect(events.traced[0]?.journalFact().payload).toMatchObject({
+        after: { defaultContainer: { binType: { id: "manne", name: "Bac manne" }, count: 2 } },
+      });
+    });
+
+    it("absent (écran d'avant), garde le contenant posé ; `null` le vide", async () => {
+      const settings = new InMemoryRoutingSettings(RoutingSettings.define(WITH_MANNE));
+      const { defaultContainer: _container, ...withoutContainer } = PAYLOAD;
+
+      await setter(settings, new RecordingPublisher()).execute(
+        new SetRoutingSettingsCommand({ ...withoutContainer, stopMinutes: 9 }, "staff_1"),
+      );
+      expect((await settings.current())?.defaultContainer).toEqual({
+        binTypeId: "manne",
+        count: 2,
+      });
+
+      await setter(settings, new RecordingPublisher()).execute(
+        new SetRoutingSettingsCommand(PAYLOAD, "staff_1"),
+      );
+      expect((await settings.current())?.defaultContainer).toBeNull();
+    });
+
+    it("refuse un type archivé ou inconnu, sans rien écrire ni tracer", async () => {
+      for (const binTypeId of ["old", "nope"]) {
+        const settings = new InMemoryRoutingSettings();
+        const events = new RecordingPublisher();
+
+        await expect(
+          setter(settings, events).execute(
+            new SetRoutingSettingsCommand(
+              { ...PAYLOAD, defaultContainer: { binTypeId, count: 1 } },
+              "staff_1",
+            ),
+          ),
+        ).rejects.toThrow(DefaultContainerBinTypeUnavailableError);
+        expect(settings.written).toEqual([]);
+        expect(events.traced).toEqual([]);
+      }
+    });
+
+    it("refuse un nombre hors de 1 à 50", async () => {
+      for (const count of [0, 51, 1.5]) {
+        await expect(
+          setter(new InMemoryRoutingSettings(), new RecordingPublisher()).execute(
+            new SetRoutingSettingsCommand(
+              { ...PAYLOAD, defaultContainer: { binTypeId: "manne", count } },
+              "staff_1",
+            ),
+          ),
+        ).rejects.toThrow(InvalidRoutingSettingError);
+      }
     });
   });
 });

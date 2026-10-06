@@ -1,5 +1,6 @@
 import { ChangeDetectionStrategy, Component, computed, inject, input, signal } from '@angular/core';
 import type {
+  BinTypeView,
   DeliveryProposalMode,
   DeliveryRoutingSettingsPayload,
   DeliveryRoutingSettingsView,
@@ -18,13 +19,23 @@ import {
 } from 'fold-ng';
 
 import { NotifyService } from '../../notify.service';
-import { MODE_OPTIONS, sameSettings } from '../delivery-routing';
+import { DeliveryBinsService } from '../delivery-bins.service';
+import {
+  defaultContainerOptions,
+  MODE_OPTIONS,
+  NO_DEFAULT_CONTAINER,
+  sameSettings,
+} from '../delivery-routing';
 import { DeliveryRoutingService } from '../delivery-routing.service';
 
 type SettingsState =
   | { readonly status: 'loading' }
   | { readonly status: 'error' }
-  | { readonly status: 'ready'; readonly view: DeliveryRoutingSettingsView };
+  | {
+      readonly status: 'ready';
+      readonly view: DeliveryRoutingSettingsView;
+      readonly binTypes: readonly BinTypeView[];
+    };
 
 /**
  * **Les réglages du calcul de tournée** (`plan-preparation-de-tournee.md`,
@@ -33,7 +44,9 @@ type SettingsState =
  * Le détour et la vitesse moyenne ne se règlent plus : le vol d'oiseau a
  * disparu (lot 10 bis, L10b-C5). Le contrat les accepte encore, dépréciés ;
  * la carte renvoie les valeurs lues, inchangées. Tant que personne n'a réglé,
- * ce sont les valeurs d'usine, et la carte le dit. Sans
+ * ce sont les valeurs d'usine, et la carte le dit. Le contenant par défaut
+ * d'une commande (2026-10-06) se choisit parmi les types de bac en service ;
+ * « Aucun » le vide. Sans
  * `delivery_settings:write`, tout est en lecture seule.
  */
 @Component({
@@ -55,6 +68,7 @@ type SettingsState =
 })
 export class RoutingSettingsCard {
   private readonly api = inject(DeliveryRoutingService);
+  private readonly bins = inject(DeliveryBinsService);
   private readonly notify = inject(NotifyService);
 
   readonly canWrite = input(false);
@@ -69,6 +83,20 @@ export class RoutingSettingsCard {
   protected readonly safetyMargin = signal<number | null>(null);
   protected readonly mode = signal<DeliveryProposalMode | null>(null);
   protected readonly multiplePassages = signal(false);
+  /** Le type choisi, ou `NO_DEFAULT_CONTAINER` : pas de contenant par défaut. */
+  protected readonly defaultBinType = signal<string>(NO_DEFAULT_CONTAINER);
+  protected readonly defaultBinCount = signal<number | null>(1);
+
+  protected readonly hasDefaultContainer = computed(
+    () => this.defaultBinType() !== NO_DEFAULT_CONTAINER,
+  );
+
+  protected readonly binTypeOptions = computed(() => {
+    const state = this.state();
+    return state.status === 'ready'
+      ? defaultContainerOptions(state.binTypes, state.view.defaultContainer)
+      : [];
+  });
 
   protected readonly modeOptions = MODE_OPTIONS;
 
@@ -93,7 +121,10 @@ export class RoutingSettingsCard {
     const safetyMargin = this.safetyMargin();
     const mode = this.mode();
     const earliest = this.earliest();
+    const binType = this.defaultBinType();
+    const count = this.defaultBinCount();
     if (
+      (binType !== NO_DEFAULT_CONTAINER && count === null) ||
       state.status !== 'ready' ||
       maxRound === null ||
       stop === null ||
@@ -113,6 +144,8 @@ export class RoutingSettingsCard {
       safetyMarginMinutes: safetyMargin,
       defaultMode: mode,
       multiplePassages: this.multiplePassages(),
+      defaultContainer:
+        binType === NO_DEFAULT_CONTAINER || count === null ? null : { binTypeId: binType, count },
     };
   });
 
@@ -160,14 +193,16 @@ export class RoutingSettingsCard {
       this.state.set({ status: 'loading' });
     }
     try {
-      const view = await this.api.settings();
-      this.state.set({ status: 'ready', view });
+      const [view, { types }] = await Promise.all([this.api.settings(), this.bins.binTypes()]);
+      this.state.set({ status: 'ready', view, binTypes: types });
       this.earliest.set(view.earliestDeparture);
       this.maxRound.set(view.maxRoundMinutes);
       this.stop.set(view.stopMinutes);
       this.safetyMargin.set(view.safetyMarginMinutes);
       this.mode.set(view.defaultMode);
       this.multiplePassages.set(view.multiplePassages);
+      this.defaultBinType.set(view.defaultContainer?.binTypeId ?? NO_DEFAULT_CONTAINER);
+      this.defaultBinCount.set(view.defaultContainer?.count ?? 1);
     } catch {
       this.state.set({ status: 'error' });
     }

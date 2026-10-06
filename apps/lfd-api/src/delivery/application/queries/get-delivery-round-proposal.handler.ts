@@ -47,7 +47,13 @@ import {
   routingSettingsOf,
   routingStopFor,
 } from "../delivery-routing-support.js";
-import { DEPOT_ID, pointsOf, poolOf, unknownDemandAmong } from "../delivery-proposal-pool.js";
+import {
+  defaultDemandAmong,
+  DEPOT_ID,
+  pointsOf,
+  poolOf,
+  unknownDemandAmong,
+} from "../delivery-proposal-pool.js";
 import { ProposalCapacity, type ProposalCapacityReading } from "../proposal-capacity.js";
 import { GetDeliveryRoundProposalQuery } from "./get-delivery-round-proposal.query.js";
 
@@ -85,7 +91,9 @@ interface Planned {
  * placée SANS contrôle (2026-10-06) : elle n'occupe rien au calcul, la part
  * connue de sa tournée reste contrôlée — un minorant de la charge réelle,
  * donc un refus sûr — et la vue la nomme (`unknownDemand`) pour que l'écran
- * dise « place non vérifiée ».
+ * dise « place non vérifiée ». Le contenant par défaut des réglages
+ * (2026-10-06) passe avant l'inconnu : la commande occupe alors ce défaut,
+ * contrôlé comme le reste, et la vue la nomme (`defaultDemand`).
  *
  * **Refusée sans socle** (CA-D3) : aucun véhicule en service avec ses cotes,
  * ou aucun type de bac en service — c'est le premier contrôle.
@@ -139,7 +147,7 @@ export class GetDeliveryRoundProposalHandler implements IQueryHandler<
       ...day.unassigned,
       ...day.rounds.flatMap((round) => round.stops.map((stop) => stop.orderId)),
     ];
-    const capacity = await this.place.of(considered);
+    const capacity = await this.place.of(considered, settings.defaultContainer);
     const mode = query.recomposeAll ? "new_rounds" : (query.mode ?? settings.defaultMode);
     const inputs = { day, stops, vehicles, departure, settings, capacity };
     const planned =
@@ -160,6 +168,7 @@ export class GetDeliveryRoundProposalHandler implements IQueryHandler<
       ...{ day: query.day, mode, departure, settings: { ...settings.values(), source } },
       ...{ proposal: planned.proposal, rounds: day.rounds, kept: planned.kept, stops, unlocated },
       unknownDemand: unknownDemandAmong(considered, capacity.unknown),
+      defaultDemand: defaultDemandAmong(considered, capacity.defaulted),
       lines,
     });
   }

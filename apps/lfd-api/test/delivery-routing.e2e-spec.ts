@@ -20,6 +20,7 @@ import {
   roundOf,
   ROUNDS,
 } from "./delivery-rounds-scene.js";
+import { binTypeId } from "./delivery-loading-scene.js";
 import {
   apply,
   forgetRoutingScene,
@@ -37,6 +38,7 @@ import {
 
 const DAY = serviceDay();
 const SETTINGS = "/admin/livraison/calcul";
+const BINS = "/admin/livraison/bacs";
 
 let ctx: E2eContext;
 
@@ -69,6 +71,7 @@ describe("les réglages du calcul (L7-C13, L7-C15)", () => {
       defaultMode: "new_rounds",
       multiplePassages: true,
       safetyMarginMinutes: 20,
+      defaultContainer: null,
       source: "default",
     });
 
@@ -311,6 +314,98 @@ describe("la place des véhicules dans « Proposer » (CA4)", () => {
     expect(view.unfit.every((order) => order.reference.startsWith("TRN-"))).toBe(true);
     expect(view.unknownDemand.map((order) => order.orderId)).toEqual([unknown]);
     expect(view.overflow).toEqual([]);
+  });
+});
+
+describe("le contenant par défaut d'une commande (2026-10-06)", () => {
+  const ONE_STACK = { lengthCm: 70, widthCm: 50, heightCm: 120 } as const;
+
+  async function settingsWith(
+    defaultContainer: { readonly binTypeId: string; readonly count: number } | null,
+  ): Promise<void> {
+    const current = jsonBody<DeliveryRoutingSettingsView>(
+      await admin(ctx).get(SETTINGS).expect(200),
+    );
+    const { source: _source, ...payload } = current;
+    await admin(ctx)
+      .put(SETTINGS)
+      .send({ ...payload, defaultContainer })
+      .expect(204);
+  }
+
+  /** Une commande de trois Bacs M estimés, et une sans ligne, sur un vélo à une pile. */
+  async function scene(): Promise<{ readonly known: string; readonly bare: string }> {
+    await seedDeparture(ctx);
+    await addVehicle(ctx, "Vélo-cargo", ONE_STACK);
+    const known = await seedLocatedDelivery(ctx, DAY, { lat: 45.69, lng: 5.91 });
+    await withBread(ctx, known, 30);
+    const bare = await seedLocatedDelivery(ctx, DAY, { lat: 45.7, lng: 5.92 });
+    return { known, bare };
+  }
+
+  it("réglé : la commande sans ligne compte pour 1 manne, et le petit véhicule déborde", async () => {
+    const manne = await binTypeId(ctx, "Manne");
+    await settingsWith({ binTypeId: manne, count: 1 });
+    const { known, bare } = await scene();
+
+    const view = await propose(ctx, `jour=${DAY}`);
+
+    // Une pile de Bacs M, une pile de mannes : deux piles pour un plancher qui n'en tient qu'une.
+    expect(view.rounds.map((round) => round.stops.map((stop) => stop.orderId)).sort()).toEqual(
+      [[known], [bare]].sort(),
+    );
+    expect(view.unknownDemand).toEqual([]);
+    expect(view.defaultDemand).toEqual([
+      expect.objectContaining({
+        orderId: bare,
+        binTypeName: "Manne",
+        count: 1,
+        withEstimate: false,
+      }),
+    ]);
+  });
+
+  it("vide : la commande sans ligne est placée sans contrôle, « place non vérifiée »", async () => {
+    const { known, bare } = await scene();
+
+    const view = await propose(ctx, `jour=${DAY}`);
+
+    expect(view.rounds.map((round) => round.stops.map((stop) => stop.orderId).sort())).toEqual([
+      [known, bare].sort(),
+    ]);
+    expect(view.unknownDemand.map((order) => order.orderId)).toEqual([bare]);
+    expect(view.defaultDemand).toEqual([]);
+  });
+
+  it("archiver le type choisi est refusé (409) ; vidé, le réglage le laisse archiver", async () => {
+    const manne = await binTypeId(ctx, "Manne");
+    await settingsWith({ binTypeId: manne, count: 2 });
+
+    const refused = await admin(ctx).post(`${BINS}/${manne}/archiver`).expect(409);
+    const body = jsonBody<{ code: string; message: string }>(refused);
+    expect(body.code).toBe("delivery.default_container_bin_type_archive");
+    expect(body.message).toContain("« Manne » est le contenant par défaut");
+
+    await settingsWith(null);
+    await admin(ctx).post(`${BINS}/${manne}/archiver`).expect(204);
+  });
+
+  it("refuse un type archivé comme contenant par défaut (409), sans rien écrire", async () => {
+    const manne = await binTypeId(ctx, "Manne");
+    await admin(ctx).post(`${BINS}/${manne}/archiver`).expect(204);
+
+    const current = jsonBody<DeliveryRoutingSettingsView>(
+      await admin(ctx).get(SETTINGS).expect(200),
+    );
+    const { source: _source, ...payload } = current;
+    await admin(ctx)
+      .put(SETTINGS)
+      .send({ ...payload, defaultContainer: { binTypeId: manne, count: 1 } })
+      .expect(409);
+    expect(
+      jsonBody<DeliveryRoutingSettingsView>(await admin(ctx).get(SETTINGS).expect(200))
+        .defaultContainer,
+    ).toBeNull();
   });
 });
 

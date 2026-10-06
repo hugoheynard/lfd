@@ -80,6 +80,26 @@
             (selectionChange)="mode.set($event)"
             data-default-mode
           />
+          <fold-listbox
+            label="Contenant par défaut d’une commande"
+            hint="Ce qu’occupe une commande dont ni les bacs ni les contenances ne disent rien. « Aucun » : elle est placée sans contrôle, et sa tournée dite « place non vérifiée »."
+            [options]="binTypeOptions()"
+            [value]="defaultBinType()"
+            [disabled]="!canWrite()"
+            (selectionChange)="defaultBinType.set($event)"
+            data-default-bin-type
+          />
+          @if (hasDefaultContainer()) {
+            <fold-number-input
+              label="Nombre de bacs par défaut"
+              integer
+              [value]="defaultBinCount()"
+              [min]="1"
+              [readOnly]="!canWrite()"
+              (valueChange)="defaultBinCount.set($event)"
+              data-default-bin-count
+            />
+          }
         </div>
         <fold-checkbox
           label="Plusieurs passages par véhicule"

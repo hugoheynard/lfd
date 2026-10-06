@@ -54,6 +54,28 @@ function passagesTerms(raw: unknown): Segment[] {
   return [text(raw ? ', plusieurs passages par véhicule' : ', un seul passage par véhicule')];
 }
 
+/**
+ * Le contenant par défaut d'une commande (2026-10-06) : « , contenant par
+ * défaut : 2 × « Manne » », « , sans contenant par défaut » ; rien sur une
+ * charge d'avant le réglage.
+ */
+function containerTerms(raw: unknown): Segment[] {
+  if (raw === null) {
+    return [text(', sans contenant par défaut')];
+  }
+  const container = recordOf(raw);
+  const bins = count(container?.['count']);
+  if (container === null || bins === null) {
+    return [];
+  }
+  return [
+    text(', contenant par défaut : '),
+    value(String(bins)),
+    text(' × '),
+    ...cite({ the: '', a: 'un type de bac' }, container['binType']),
+  ];
+}
+
 /** « détour ×1,4, 35 km/h, départ au plus tôt 07:00, 240 min au plus par tournée, 5 min par arrêt ». */
 function settingsTerms(raw: unknown): Segment[] {
   const settings = recordOf(raw);
@@ -75,6 +97,7 @@ function settingsTerms(raw: unknown): Segment[] {
     text(' par arrêt'),
     ...modeTerms(settings['defaultMode']),
     ...passagesTerms(settings['multiplePassages']),
+    ...containerTerms(settings['defaultContainer']),
   ];
 }
 

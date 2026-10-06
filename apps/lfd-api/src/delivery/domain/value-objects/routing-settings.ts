@@ -32,7 +32,23 @@ export interface RoutingSettingsValues {
    * L7t-C1) : une arrivée dans ces minutes-là coûte au calcul.
    */
   readonly safetyMarginMinutes: number;
+  /**
+   * Le contenant par défaut d'une commande (2026-10-06) : la demande en bacs
+   * d'une commande dont ni les bacs déclarés ni les contenances ne disent
+   * rien. `null` : pas de réglage — la commande est placée sans contrôle, sa
+   * tournée dite « place non vérifiée ».
+   */
+  readonly defaultContainer: DefaultContainer | null;
 }
+
+/** Un type de bac et un nombre : ce qu'occupe une commande dont on ne sait rien d'autre. */
+export interface DefaultContainer {
+  readonly binTypeId: string;
+  readonly count: number;
+}
+
+/** Au-delà, ce n'est plus un défaut « de base » mais une commande à colisage réel. */
+export const MAX_DEFAULT_BIN_COUNT = 50;
 
 /** Une borne entière, avec la phrase qui la dit. */
 interface IntegerBound {
@@ -93,6 +109,7 @@ export class RoutingSettings implements RoutingSettingsValues {
     defaultMode: "new_rounds",
     multiplePassages: true,
     safetyMarginMinutes: 20,
+    defaultContainer: null,
   };
 
   private constructor(
@@ -104,6 +121,7 @@ export class RoutingSettings implements RoutingSettingsValues {
     readonly defaultMode: ProposalMode,
     readonly multiplePassages: boolean,
     readonly safetyMarginMinutes: number,
+    readonly defaultContainer: DefaultContainer | null,
     /** Minutes depuis minuit de l'heure au plus tôt. */
     readonly earliestDepartureMinute: number,
   ) {}
@@ -133,6 +151,7 @@ export class RoutingSettings implements RoutingSettingsValues {
         `le mode de proposition vaut « insert » ou « new_rounds » (saisi : « ${String(values.defaultMode)} »).`,
       );
     }
+    const defaultContainer = defaultContainerOf(values.defaultContainer);
     return new RoutingSettings(
       values.detourPercent,
       values.averageSpeedKmh,
@@ -142,6 +161,7 @@ export class RoutingSettings implements RoutingSettingsValues {
       values.defaultMode,
       values.multiplePassages,
       values.safetyMarginMinutes,
+      defaultContainer,
       earliest,
     );
   }
@@ -157,6 +177,31 @@ export class RoutingSettings implements RoutingSettingsValues {
       defaultMode: this.defaultMode,
       multiplePassages: this.multiplePassages,
       safetyMarginMinutes: this.safetyMarginMinutes,
+      defaultContainer: this.defaultContainer,
     };
   }
+}
+
+/**
+ * Le contenant par défaut, refusé s'il est mal formé. Que le type existe et
+ * soit en service ne se voit pas d'ici : `ensureDefaultContainerInService`.
+ *
+ * @throws {InvalidRoutingSettingError}
+ */
+function defaultContainerOf(container: DefaultContainer | null): DefaultContainer | null {
+  if (container === null) {
+    return null;
+  }
+  if (container.binTypeId.trim() === "") {
+    throw new InvalidRoutingSettingError(
+      "le contenant par défaut d'une commande nomme un type de bac : choisissez-en un, ou videz le réglage.",
+    );
+  }
+  const { count } = container;
+  if (!Number.isInteger(count) || count < 1 || count > MAX_DEFAULT_BIN_COUNT) {
+    throw new InvalidRoutingSettingError(
+      `le nombre de bacs par défaut d'une commande tient entre 1 et ${String(MAX_DEFAULT_BIN_COUNT)} (saisi : ${String(count)}).`,
+    );
+  }
+  return { binTypeId: container.binTypeId, count };
 }

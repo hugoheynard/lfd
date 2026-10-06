@@ -27,6 +27,7 @@ import {
   InMemoryBinTypes,
   SPEC,
 } from "./bin-doubles.js";
+import { InMemoryRoutingSettings } from "./routing-doubles.js";
 
 const NOW = new Date(CREATED.getTime() + 3_600_000);
 
@@ -148,6 +149,7 @@ describe("ArchiveBinTypeHandler / ReactivateBinTypeHandler", () => {
     await new ArchiveBinTypeHandler(
       types,
       new ActiveBinTypesOver(types),
+      new InMemoryRoutingSettings(),
       clock,
       events,
       uow,

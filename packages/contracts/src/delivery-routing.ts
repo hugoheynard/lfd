@@ -32,6 +32,13 @@ export const deliveryProposalModeSchema = z.enum(["insert", "new_rounds"], {
 });
 export type DeliveryProposalMode = z.infer<typeof deliveryProposalModeSchema>;
 
+/** Un type de bac et un nombre de bacs — la FORME seulement. */
+export const deliveryDefaultContainerSchema = z.object({
+  binTypeId: z.string().trim().min(1, "type de bac requis"),
+  count: z.number().int(),
+});
+export type DeliveryDefaultContainer = z.infer<typeof deliveryDefaultContainerSchema>;
+
 /**
  * Les réglages, validés dans leur FORME : des entiers et une heure. Les bornes
  * (un détour sous ×1, une vitesse de 400 km/h) sont refusées par le domaine,
@@ -65,14 +72,25 @@ export const deliveryRoutingSettingsPayloadSchema = z.object({
    * place est gardée. Bornes (0 à 90) au domaine.
    */
   safetyMarginMinutes: z.number().int().optional(),
+  /**
+   * Le contenant par défaut d'une commande (2026-10-06) : un type de bac en
+   * service et un nombre de bacs. C'est la demande d'une commande dont ni les
+   * bacs déclarés ni les contenances ne disent rien. `null` vide le réglage
+   * (« place non vérifiée ») ; absent, la valeur en place est gardée (un
+   * écran en ligne ne l'envoie pas encore). Bornes et type en service : au
+   * domaine.
+   */
+  defaultContainer: deliveryDefaultContainerSchema.nullable().optional(),
 });
 export type DeliveryRoutingSettingsPayload = z.infer<typeof deliveryRoutingSettingsPayloadSchema>;
 
 /** Les réglages tels qu'ils valent maintenant. */
 export interface DeliveryRoutingSettingsView extends Omit<
   DeliveryRoutingSettingsPayload,
-  "detourPercent" | "averageSpeedKmh" | "safetyMarginMinutes"
+  "detourPercent" | "averageSpeedKmh" | "safetyMarginMinutes" | "defaultContainer"
 > {
+  /** Le contenant par défaut d'une commande (2026-10-06) ; `null` : pas de réglage. */
+  readonly defaultContainer: DeliveryDefaultContainer | null;
   /** La marge avant la fin d'un créneau (L7t-C1) — toujours rendue, 20 par défaut. */
   readonly safetyMarginMinutes: number;
   /** @deprecated rendu tant qu'un écran en ligne le lit ; le calcul ne s'en sert plus (L10b-C5). */
@@ -186,6 +204,14 @@ export interface DeliveryRoundVersionRef {
  */
 export type DeliveryCostEstimate = "road" | "crow_flies";
 
+/** Une commande comptée au contenant par défaut : « 1 × Manne (par défaut) ». */
+export interface DeliveryDefaultDemandView extends DeliveryRoundOrderRef {
+  readonly binTypeName: string;
+  readonly count: number;
+  /** Une part de ses lignes a été estimée par les contenances ; le défaut s'y ajoute. */
+  readonly withEstimate: boolean;
+}
+
 /** **La proposition** : un aperçu calculé, jamais écrit. */
 export interface DeliveryRoundProposalView {
   readonly day: string;
@@ -221,6 +247,12 @@ export interface DeliveryRoundProposalView {
    * vérifiée, ce que l'écran dit colonne par colonne.
    */
   readonly unknownDemand: readonly DeliveryRoundOrderRef[];
+  /**
+   * Les commandes du jour comptées au contenant par défaut des réglages
+   * (2026-10-06) : leur place est contrôlée sur ce défaut, et l'écran le dit
+   * « par défaut ». Elles ne sont pas dans `unknownDemand`.
+   */
+  readonly defaultDemand: readonly DeliveryDefaultDemandView[];
   /** Les tournées du jour que la proposition ne touche pas, et pourquoi. */
   readonly kept: readonly DeliveryKeptRoundView[];
   /** Les versions de TOUTES les tournées du jour lues. */
