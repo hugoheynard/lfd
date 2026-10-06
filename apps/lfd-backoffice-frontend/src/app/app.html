@@ -77,6 +77,22 @@
         ></a>
       }
 
+      @if (canSeeBakehouse()) {
+        <!-- FOURNIL — la fournée du jour, sortie de la production (2026-10-06)
+             comme le colisage : un poste, pas une vue d'espace. -->
+        <a
+          fold-menu-item
+          icon="croissant"
+          label="Fournil"
+          badge="app"
+          routerLink="/fournil"
+          routerLinkActive
+          #bakehouseRla="routerLinkActive"
+          [active]="bakehouseRla.isActive"
+          (click)="mobileNavOpen.set(false)"
+        ></a>
+      }
+
       @if (canSeePacking()) {
         <!-- COLISAGE — un poste à part de la production (2026-10-04) : ses
              données restent au fournil, son geste a son entrée. -->
@@ -567,6 +583,20 @@
             ></a>
           }
         </fold-nav-group>
+      }
+      @if (canSeeBakehouse()) {
+        <!-- La MÊME entrée qu'au rail, en tuile simple comme le Colisage. -->
+        <a
+          fold-nav-tile
+          icon="croissant"
+          label="Fournil"
+          badge="app"
+          routerLink="/fournil"
+          routerLinkActive
+          #bakehouseTile="routerLinkActive"
+          [active]="bakehouseTile.isActive"
+          (click)="mobileNavOpen.set(false)"
+        ></a>
       }
       @if (canSeePacking()) {
         <!-- La MÊME entrée qu'au rail, en tuile simple comme le Coursier. -->

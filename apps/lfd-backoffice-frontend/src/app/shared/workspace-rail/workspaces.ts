@@ -127,10 +127,10 @@ export const COMMERCIAL_VIEWS: readonly CommercialView[] = [
  * regarde la semaine avant de lancer la journée, et la fournée du jour se
  * prend dans le fournil, sur un téléphone, pas depuis le rail.
  *
- * ⚠️ **L'adresse par défaut de `/production` n'a PAS suivi** : elle mène
- * toujours à la fournée. C'est le favori d'un poste de labo, et le premier
- * item d'un menu n'est pas la même question que la page qu'ouvre un raccourci
- * posé sur un écran de fournil.
+ * ⚠️ **La fournée du jour en est sortie le 2026-10-06** : c'est le poste
+ * **Fournil** (`/fournil`), entrée de premier niveau comme le Colisage.
+ * `/production/journee` y redirige, et `/production` ouvre le prévisionnel.
+ * Les paragraphes ci-dessus parlent d'elle au passé de ce jour.
  *
  * Chaque vue porte son `needs` depuis le 2026-10-01 (`documentation/livraisons/plan-droits-par-geste.md`,
  * DG-D1) : le prévisionnel est le plan du soir, la fournée la fiche d'atelier. La coquille n'est plus gardée — comme la Livraison —,
@@ -143,16 +143,6 @@ export const PRODUCTION_VIEWS: readonly WorkspaceView[] = [
     link: '/production/previsionnel',
     icon: 'calendar',
     needs: 'production_plan:read',
-  },
-  {
-    // L'adresse reste `journee`, alors que le libellé dit « Fournée du jour ».
-    // Renommer le chemin casserait les favoris des postes de labo pour gagner
-    // une cohérence que personne ne lit : une URL n'est pas un libellé.
-    key: 'journee',
-    label: 'Fournée du jour',
-    link: '/production/journee',
-    icon: 'production',
-    needs: 'production_worksheet:read',
   },
   {
     // Lot A1 du plan d'arrêt (2026-10-06) : l'arrêt du plan et les jours fermés.
@@ -786,7 +776,7 @@ export const WORKSPACES = {
   },
   pim: { key: 'pim', title: 'PIM', icon: 'catalog', views: PIM_VIEWS },
   // « E-commerce LFC » : le libellé seul. La clé et les adresses `/b2b/…`
-  // restent — elles vivent dans des favoris (précédent `journee`).
+  // restent — elles vivent dans des favoris (précédent `journee`, redirigé vers `/fournil` le 2026-10-06).
   b2b: { key: 'b2b', title: 'E-commerce LFC', icon: 'store', views: B2B_VIEWS },
   comptabilite: {
     key: 'comptabilite',

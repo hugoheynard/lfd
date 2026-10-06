@@ -64,7 +64,7 @@ export const DEV_SCENARIO_STEPS: readonly DevScenarioStepText[] = [
     explanation: 'Toutes les fournées sont sorties du four et remises au colisage.',
     meaning: 'la production est terminée',
     loading: 'Déclaration des fournées sorties du four…',
-    links: [{ label: 'Fournée du jour', route: '/production/journee' }],
+    links: [{ label: 'Fournée du jour', route: '/fournil' }],
   },
   {
     step: 4,

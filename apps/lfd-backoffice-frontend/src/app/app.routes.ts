@@ -317,6 +317,17 @@ export const routes: Routes = [
     title: 'Colisage — LFC B2B admin',
     loadComponent: () => import('./production/colisage/colisage').then((m) => m.Colisage),
   },
+  // LE FOURNIL (2026-10-06) : la fournée du jour sort de la Production pour
+  // devenir un poste de premier niveau, comme le Colisage — la fiche d'atelier
+  // se prend dans le fournil, sur un téléphone, pas depuis un rail d'espace.
+  // Le titre d'écran reste « Fournée du jour » : c'est ce qu'il montre.
+  {
+    path: 'fournil',
+    canActivate: [permissionGuard('production_worksheet:read')],
+    title: 'Fournée du jour — LFC B2B admin',
+    loadComponent: () =>
+      import('./production/fiche-atelier/fiche-atelier').then((m) => m.FicheAtelier),
+  },
   // CHARGER MA TOURNÉE : le chargement du livreur a sa propre adresse, sous
   // le même droit — un rechargement le rouvre.
   {
@@ -584,17 +595,14 @@ export const routes: Routes = [
         (m) => m.ProductionWorkspacePage,
       ),
     children: [
-      // `/production` reste une adresse valide — c'est un favori de poste de
-      // labo, et une section ne casse pas les liens de ceux qui l'ouvraient
-      // avant qu'elle existe.
-      { path: '', pathMatch: 'full', redirectTo: 'journee' },
-      {
-        path: 'journee',
-        canActivate: [permissionGuard('production_worksheet:read')],
-        title: 'Fournée du jour — LFC B2B admin',
-        loadComponent: () =>
-          import('./production/fiche-atelier/fiche-atelier').then((m) => m.FicheAtelier),
-      },
+      // `/production` reste une adresse valide. Elle menait à la fournée ; la
+      // fournée est partie au Fournil (2026-10-06), et l'entrée Production
+      // ouvre désormais sa première vue. Qui ne tient que la fiche d'atelier
+      // est renvoyé par le garde vers son atterrissage, `/fournil`.
+      { path: '', pathMatch: 'full', redirectTo: 'previsionnel' },
+      // La fournée est un poste à part depuis le 2026-10-06, comme le
+      // colisage : l'ancienne adresse est le favori des postes de labo.
+      { path: 'journee', pathMatch: 'full', redirectTo: '/fournil' },
       {
         path: 'previsionnel',
         canActivate: [permissionGuard('production_plan:read')],

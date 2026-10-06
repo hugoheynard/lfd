@@ -176,13 +176,19 @@ export class App {
    * réglages (2026-10-06) : qui ne tient que `production_settings:read` a
    * `/production/reglages` ouvert, l'entrée doit le mener. Le colisage
    * n'en est plus depuis le 2026-10-04 : c'est son propre espace,
-   * {@link canSeePacking}.
+   * {@link canSeePacking}. La fiche d'atelier non plus depuis le 2026-10-06 :
+   * c'est le Fournil, {@link canSeeBakehouse} — qui ne tient qu'elle ne voit
+   * plus une Production vide.
    */
   protected readonly canSeeProduction = computed(
     () =>
       this.permissions.can('production_plan:read') ||
-      this.permissions.can('production_worksheet:read') ||
       this.permissions.can('production_settings:read'),
+  );
+
+  /** Le Fournil — la fournée du jour, poste à part (2026-10-06), sous son seul droit. */
+  protected readonly canSeeBakehouse = computed(() =>
+    this.permissions.can('production_worksheet:read'),
   );
 
   /** Le Colisage — un poste à part (2026-10-04), sous son seul droit. */

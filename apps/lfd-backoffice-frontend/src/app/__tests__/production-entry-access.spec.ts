@@ -15,7 +15,7 @@ import { PushNotificationsService } from '../shared/push/push-notifications.serv
  * (2026-10-06). `/production/reglages` lui était ouverte, mais le rail ne
  * proposait pas l'entrée : la page n'était joignable que par une URL tapée.
  */
-function productionLinks(granted: readonly StaffPermission[]): number {
+function renderMenu(granted: readonly StaffPermission[]): HTMLElement {
   TestBed.resetTestingModule();
   TestBed.configureTestingModule({
     imports: [App],
@@ -54,16 +54,42 @@ function productionLinks(granted: readonly StaffPermission[]): number {
   });
   const fixture = TestBed.createComponent(App);
   fixture.detectChanges();
-  const host = fixture.nativeElement as HTMLElement;
-  return host.querySelectorAll('a[fold-menu-item][routerLink="/production"]').length;
+  return fixture.nativeElement as HTMLElement;
+}
+
+function menuLinks(granted: readonly StaffPermission[], link: string): number {
+  return renderMenu(granted).querySelectorAll(`a[fold-menu-item][routerLink="${link}"]`).length;
 }
 
 describe("App — l'entrée Production", () => {
   it('paraît pour qui ne tient que production_settings:read', () => {
-    expect(productionLinks(['production_settings:read'])).toBeGreaterThan(0);
+    expect(menuLinks(['production_settings:read'], '/production')).toBeGreaterThan(0);
   });
 
   it('reste fermée sans aucun droit du fournil', () => {
-    expect(productionLinks(['b2b_growth:read'])).toBe(0);
+    expect(menuLinks(['b2b_growth:read'], '/production')).toBe(0);
+  });
+
+  // La fournée est sortie au Fournil (2026-10-06) : qui ne tient qu'elle ne
+  // doit plus voir une Production sans aucune vue.
+  it('reste fermée pour qui ne tient que production_worksheet:read', () => {
+    expect(menuLinks(['production_worksheet:read'], '/production')).toBe(0);
+  });
+});
+
+describe("App — l'entrée Fournil", () => {
+  it('paraît pour qui tient production_worksheet:read', () => {
+    expect(menuLinks(['production_worksheet:read'], '/fournil')).toBe(1);
+  });
+
+  it('porte l’icône du croissant', () => {
+    const entry = renderMenu(['production_worksheet:read']).querySelector(
+      'a[fold-menu-item][routerLink="/fournil"]',
+    );
+    expect(entry?.getAttribute('icon')).toBe('croissant');
+  });
+
+  it('reste fermée sans la fiche d’atelier', () => {
+    expect(menuLinks(['production_plan:read'], '/fournil')).toBe(0);
   });
 });

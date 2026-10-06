@@ -216,7 +216,8 @@ const SCREENS: Readonly<Record<string, ScreenAccess>> = {
   // 2026-10-01 (plan-droits-par-geste.md, DG-D1) : le plan du soir, la fiche
   // d'atelier et le colisage sont trois droits, et chaque vue porte le sien.
   production: OPEN,
-  'production/journee': 'production_worksheet:read',
+  // LE FOURNIL, sorti de la Production le 2026-10-06, sous la fiche d'atelier.
+  fournil: 'production_worksheet:read',
   'production/previsionnel': 'production_plan:read',
   'production/reglages': 'production_settings:read',
   // LE COMPTOIR non plus : la file de retrait (`handover_counter`) et la
@@ -426,6 +427,19 @@ describe("l'arbre de routes du back-office", () => {
     const contenu = b2b?.children?.find((child) => child.path === 'contenu');
     const vitrine = contenu?.children?.find((child) => child.path === 'vitrine');
     expect(vitrine?.redirectTo).toBe('/vitrine');
+  });
+
+  it('renvoie l’ancienne fournée vers le Fournil, et /production vers sa première vue', () => {
+    // `/production/journee` est le favori des postes de labo (2026-10-06).
+    const production = routes.find((route) => route.path === 'production');
+    const moved = (production?.children ?? [])
+      .filter((child) => typeof child.redirectTo === 'string')
+      .map((child) => [child.path, child.redirectTo]);
+    expect(moved).toEqual([
+      ['', 'previsionnel'],
+      ['journee', '/fournil'],
+      ['colisage', '/colisage'],
+    ]);
   });
 
   it('renvoie l’ancienne file de retrait vers la vue du comptoir', () => {

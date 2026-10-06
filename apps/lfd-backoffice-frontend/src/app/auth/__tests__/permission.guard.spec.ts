@@ -64,7 +64,7 @@ describe('permissionGuard — redirige plutôt que de bloquer', () => {
    * fournil ou du retrait atterrit sur SA vue, au lieu de passer de 403 en 403.
    */
   it.each([
-    ['production_worksheet:read', '/production/journee'],
+    ['production_worksheet:read', '/fournil'],
     ['production_plan:read', '/production/previsionnel'],
     ['production_settings:read', '/production/reglages'],
     ['production_packing:read', '/colisage'],

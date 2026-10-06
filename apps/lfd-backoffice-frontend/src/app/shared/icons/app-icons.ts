@@ -26,6 +26,17 @@ import { provideFoldIcons } from 'fold-ng';
 
 // Déconnexion : porte + flèche sortante. ÉCRASE le `logout` de fold — même nom,
 // notre dessin. Un override ne se déclare pas : le nom est déjà connu.
+/**
+ * Le Fournil — un croissant : une lune épaisse en trois bourrelets, pointes
+ * vers le bas. Dessiné ici (2026-10-06) : ni fold ni ce catalogue n'avaient
+ * de viennoiserie. Lisible à 16–20 px parce qu'il n'a que deux plis.
+ */
+const CROISSANT_ICON =
+  '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" ' +
+  'stroke-width="2" stroke-linecap="round" stroke-linejoin="round">' +
+  '<path d="M3 17C3 10 7 5 12 5s9 5 9 12l-3-1c-1-4-3-6.5-6-6.5S7 12 6 16z"/>' +
+  '<path d="M8.5 6.3 9.6 10"/><path d="M15.5 6.3 14.4 10"/></svg>';
+
 const LOGOUT_ICON =
   '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" ' +
   'stroke-width="2" stroke-linecap="round" stroke-linejoin="round">' +
@@ -537,6 +548,7 @@ export const APP_ICONS = {
   print: PRINT_ICON,
   product: PRODUCT_ICON,
   production: PRODUCTION_ICON,
+  croissant: CROISSANT_ICON,
   publish: PUBLISH_ICON,
   tax: TAX_ICON,
   today: TODAY_ICON,
