@@ -319,17 +319,28 @@ async function triggerQualityUploadSweep(env: Env): Promise<void> {
   if (!token) {
     return;
   }
+  // Chaque balayage est indépendant : un appel qui échoue (réseau, container
+  // lent au réveil, 5xx) ne doit pas sauter ceux qui suivent pour la nuit —
+  // la purge du géocodage tient une promesse faite aux clients (2026-10-06).
+  // L'échec est écrit dans les logs du Worker, puis rattrapé la nuit suivante.
   for (const path of [
     "admin/production/quality/sweep",
     "admin/livraison/journal/sweep",
     "admin/livraison/geocodage/sweep",
   ]) {
-    await backend(env).fetch(
-      new Request(`https://internal/${path}`, {
-        method: "POST",
-        headers: { "x-lfc-recompute-token": token },
-      }),
-    );
+    try {
+      const response = await backend(env).fetch(
+        new Request(`https://internal/${path}`, {
+          method: "POST",
+          headers: { "x-lfc-recompute-token": token },
+        }),
+      );
+      if (!response.ok) {
+        console.error(`balayage nocturne ${path} : HTTP ${String(response.status)}`);
+      }
+    } catch (error) {
+      console.error(`balayage nocturne ${path} : ${String(error)}`);
+    }
   }
 }
 
