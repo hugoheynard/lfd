@@ -71,8 +71,20 @@ const actorChannel = () => z.enum(["staff", "customer"]);
 /** Un RIB se reconnaît à ses quatre derniers caractères et son titulaire — jamais l'IBAN. */
 const bankAccountTrace = () => payload({ last4: z.string(), holder: z.string() });
 
-/** Le geste fait sur une procédure de livraison — pas ce qui a été écrit. */
-const procedureAction = () => z.enum(["step_added", "step_revised", "step_removed", "reordered"]);
+/**
+ * Le geste fait sur une procédure de livraison — pas ce qui a été écrit. Un
+ * changement de photo a son geste depuis le 2026-10-06 (il s'écrivait
+ * `step_revised`).
+ */
+const procedureAction = () =>
+  z.enum([
+    "step_added",
+    "step_revised",
+    "step_photo_replaced",
+    "step_photo_removed",
+    "step_removed",
+    "reordered",
+  ]);
 
 /**
  * Une adresse de livraison **citée** : son id, sa ville et son code postal —

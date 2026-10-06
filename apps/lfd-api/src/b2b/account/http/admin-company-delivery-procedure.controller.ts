@@ -34,12 +34,10 @@ import type { Response } from "express";
 
 import { AdminSurface } from "../../../platform/auth/admin-surface.decorator.js";
 import { ZodBody } from "../../../platform/shared/http/zod-body.pipe.js";
-import {
-  AddDeliveryStepByStaffCommand,
-  RemoveDeliveryStepByStaffCommand,
-  ReorderDeliveryStepsByStaffCommand,
-  ReviseDeliveryStepByStaffCommand,
-} from "../application/commands/admin-delivery-procedure-commands.js";
+import { AddDeliveryStepByStaffCommand } from "../application/commands/add-delivery-step-by-staff.command.js";
+import { RemoveDeliveryStepByStaffCommand } from "../application/commands/remove-delivery-step-by-staff.command.js";
+import { ReorderDeliveryStepsByStaffCommand } from "../application/commands/reorder-delivery-steps-by-staff.command.js";
+import { ReviseDeliveryStepByStaffCommand } from "../application/commands/revise-delivery-step-by-staff.command.js";
 import type { DeliveryStepPhotoDownload } from "../application/queries/delivery-procedure-reading.js";
 import { SetDeliveryDepositByStaffCommand } from "../application/commands/set-delivery-deposit-by-staff.command.js";
 import { SetDeliveryDoorstepRuleByStaffCommand } from "../application/commands/set-delivery-doorstep-rule-by-staff.command.js";
@@ -48,11 +46,10 @@ import { GetDeliveryProcedureForStaffQuery } from "../application/queries/get-de
 import { GetDeliveryStepPhotoForStaffQuery } from "../application/queries/get-delivery-step-photo-for-staff.query.js";
 import {
   photoBytesOf,
-  photoUpload,
   servePhoto,
   type UploadedPhotoPart,
 } from "../../shared/photo-cards/http/photo-card-http.js";
-import { DELIVERY_STEP_UPLOAD_HARD_LIMIT } from "./delivery-procedure-http.js";
+import { deliveryStepPhotoUpload } from "./delivery-procedure-http.js";
 
 const PROCEDURE = ":companyId/delivery-addresses/:addressId/procedure";
 const DEPOSIT = ":companyId/delivery-addresses/:addressId/deposit";
@@ -128,7 +125,7 @@ export class AdminCompanyDeliveryProcedureController {
 
   @Post(`${PROCEDURE}/steps`)
   @HttpCode(HttpStatus.CREATED)
-  @UseInterceptors(photoUpload(DELIVERY_STEP_UPLOAD_HARD_LIMIT))
+  @UseInterceptors(deliveryStepPhotoUpload())
   async addStep(
     @Param("companyId") companyId: string,
     @Param("addressId") addressId: string,
@@ -143,7 +140,7 @@ export class AdminCompanyDeliveryProcedureController {
 
   @Patch(`${PROCEDURE}/steps/:stepId`)
   @HttpCode(HttpStatus.NO_CONTENT)
-  @UseInterceptors(photoUpload(DELIVERY_STEP_UPLOAD_HARD_LIMIT))
+  @UseInterceptors(deliveryStepPhotoUpload())
   async reviseStep(
     @Param("companyId") companyId: string,
     @Param("addressId") addressId: string,

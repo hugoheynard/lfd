@@ -1,6 +1,16 @@
-import { StreamableFile, type Type, type NestInterceptor } from "@nestjs/common";
+import {
+  type CallHandler,
+  type ExecutionContext,
+  Injectable,
+  type NestInterceptor,
+  PayloadTooLargeException,
+  StreamableFile,
+  type Type,
+} from "@nestjs/common";
 import { FileInterceptor } from "@nestjs/platform-express";
+import type { Observable } from "rxjs";
 
+import type { AppError } from "../../../../platform/shared/errors/app-error.js";
 import type { StoredDocument } from "../../../../platform/storage/document-store.js";
 
 /**
@@ -21,12 +31,35 @@ export interface UploadedPhotoPart {
  * L'intercepteur multipart du champ `photo`, coupé à `hardLimitBytes`.
  *
  * C'est un **backstop DoS**, pas la borne métier : Multer coupe au-delà sans
- * lire le reste (413 « File too large ») ; en deçà, c'est le value object de
- * l'usage qui refuse, avec un message qui dit quoi faire. L'usage choisit donc
- * une limite AU-DESSUS de sa borne métier.
+ * lire le reste ; en deçà, c'est le value object de l'usage qui refuse, avec
+ * un message qui dit quoi faire. L'usage choisit donc une limite AU-DESSUS de
+ * sa borne métier.
+ *
+ * La coupure de Multer sortait en `413 { message: "File too large" }` — ni
+ * code, ni geste de sortie — jusqu'au 2026-10-06. Elle est désormais traduite
+ * en `tooLarge()`, le refus de l'usage, dans ses mots. Multer n'ayant pas lu
+ * le reste, le poids réel n'est pas connu : le refus dit « plus de », jamais
+ * un chiffre inventé.
  */
-export function photoUpload(hardLimitBytes: number): Type<NestInterceptor> {
-  return FileInterceptor(PHOTO_FIELD, { limits: { fileSize: hardLimitBytes } });
+export function photoUpload(
+  hardLimitBytes: number,
+  tooLarge: () => AppError,
+): Type<NestInterceptor> {
+  const Multipart = FileInterceptor(PHOTO_FIELD, { limits: { fileSize: hardLimitBytes } });
+
+  @Injectable()
+  class PhotoUploadInterceptor implements NestInterceptor {
+    private readonly multipart = new Multipart();
+
+    async intercept(context: ExecutionContext, next: CallHandler): Promise<Observable<unknown>> {
+      try {
+        return await this.multipart.intercept(context, next);
+      } catch (error) {
+        throw error instanceof PayloadTooLargeException ? tooLarge() : error;
+      }
+    }
+  }
+  return PhotoUploadInterceptor;
 }
 
 /** Les octets de la photo jointe, ou `null` sans fichier. */

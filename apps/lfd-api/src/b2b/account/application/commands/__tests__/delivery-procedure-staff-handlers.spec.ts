@@ -14,12 +14,10 @@ import {
   pngOf,
 } from "../../__tests__/delivery-procedure-doubles.js";
 import { AddDeliveryStepByStaffHandler } from "../add-delivery-step-by-staff.handler.js";
-import {
-  AddDeliveryStepByStaffCommand,
-  RemoveDeliveryStepByStaffCommand,
-  ReorderDeliveryStepsByStaffCommand,
-  ReviseDeliveryStepByStaffCommand,
-} from "../admin-delivery-procedure-commands.js";
+import { AddDeliveryStepByStaffCommand } from "../add-delivery-step-by-staff.command.js";
+import { RemoveDeliveryStepByStaffCommand } from "../remove-delivery-step-by-staff.command.js";
+import { ReorderDeliveryStepsByStaffCommand } from "../reorder-delivery-steps-by-staff.command.js";
+import { ReviseDeliveryStepByStaffCommand } from "../revise-delivery-step-by-staff.command.js";
 import { RemoveDeliveryStepByStaffHandler } from "../remove-delivery-step-by-staff.handler.js";
 import { ReorderDeliveryStepsByStaffHandler } from "../reorder-delivery-steps-by-staff.handler.js";
 import { ReviseDeliveryStepByStaffHandler } from "../revise-delivery-step-by-staff.handler.js";
@@ -95,6 +93,27 @@ describe("les gestes staff sur la procédure", () => {
     );
     expect(facts[0]).toMatchObject({ subjectType: "company", subjectId: COMPANY });
     expect(current.events.insideTransaction).toEqual([true, true, true, true, true]);
+  });
+
+  /**
+   * Régression : remplacer ou retirer la photo d'une étape s'écrivait
+   * `step_revised`, et le journal ne distinguait pas ce geste (fix 2026-10-06).
+   */
+  it("nomme le remplacement et le retrait de la photo, distincts d'une révision", async () => {
+    const current = scene();
+    const stepId = await current.add.execute(addCommand(pngOf(8, 8)));
+    const revise = (removePhoto: boolean, photo: Buffer | null): ReviseDeliveryStepByStaffCommand =>
+      new ReviseDeliveryStepByStaffCommand(COMPANY, ADDRESS, stepId, FIELDS, removePhoto, photo);
+    await current.revise.execute(revise(false, pngOf(9, 9)));
+    await current.revise.execute(revise(true, null));
+    await current.revise.execute(revise(false, null));
+
+    expect(current.events.traced.map((event) => event.journalFact().payload["action"])).toEqual([
+      "step_added",
+      "step_photo_replaced",
+      "step_photo_removed",
+      "step_revised",
+    ]);
   });
 
   it("n'inscrit rien quand l'écriture échoue", async () => {

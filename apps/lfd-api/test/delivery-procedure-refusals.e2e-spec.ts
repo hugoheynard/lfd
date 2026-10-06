@@ -2,6 +2,11 @@
  * E2E des **refus de la procédure de livraison, mot pour mot** — et des
  * en-têtes de sa photo.
  *
+ * Le 2026-10-06, cinq comportements figés ici ont été corrigés (TODO
+ * `documentation/livraisons/todo-etrangetes-procedure-de-livraison.md`) : les
+ * tests qui les tenaient sont réécrits vers le nouveau comportement et nommés
+ * d'après le symptôme corrigé.
+ *
  * Un filet de caractérisation (`documentation/b2b/comptes-client/notes-du-commercial.md`) : il fige ce que le code EN PRODUCTION renvoie, avant que la procédure ne
  * délègue à un socle partagé. Les messages sont affichés tels quels à l'écran,
  * client comme staff : un message qui change est un changement observable, même
@@ -87,7 +92,12 @@ function postPhoto(side: Side, photo: Buffer): request.Test {
 }
 
 describe.each(SIDES)("les refus, mot pour mot — porte %s", (side) => {
-  it("le contenu mal formé est refusé par la forme, avant le domaine (400)", async () => {
+  /**
+   * Régression : le schéma du contrat refusait avant le value object, en
+   * message Zod anglais (« Too big: expected string to have <=80 characters »)
+   * — fix 2026-10-06, le contrat ne valide plus que la forme.
+   */
+  it("le contenu refusé l'est par le domaine, en français et avec le geste de sortie (400)", async () => {
     const agent = agentOf(side);
     const post = (title: string, body: string): request.Test =>
       agent
@@ -96,12 +106,17 @@ describe.each(SIDES)("les refus, mot pour mot — porte %s", (side) => {
         .field("body", body)
         .expect(400);
 
-    expect(refusalOf(await post("  ", ""))).toEqual(REFUSED.payload("title : titre requis"));
+    expect(refusalOf(await post("  ", ""))).toEqual(
+      REFUSED.step("le titre est vide. Donnez un titre à l'étape."),
+    );
     expect(refusalOf(await post("x".repeat(81), ""))).toEqual(
-      REFUSED.payload("title : Too big: expected string to have <=80 characters"),
+      REFUSED.step(
+        "le titre fait 81 caractères, 80 au plus. " +
+          "Raccourcissez-le et mettez le détail dans le texte.",
+      ),
     );
     expect(refusalOf(await post("Portail", "x".repeat(1001)))).toEqual(
-      REFUSED.payload("body : Too big: expected string to have <=1000 characters"),
+      REFUSED.step("le texte fait 1001 caractères, 1000 au plus. Découpez-le en deux étapes."),
     );
 
     const stepId = await addStep(side, "Portail");
@@ -109,7 +124,10 @@ describe.each(SIDES)("les refus, mot pour mot — porte %s", (side) => {
       .patch(`${procedure(side)}/steps/${stepId}`)
       .field("title", "")
       .expect(400);
-    expect(refusalOf(patched)).toEqual(REFUSED.payload("title : titre requis"));
+    expect(refusalOf(patched)).toEqual(
+      REFUSED.step("le titre est vide. Donnez un titre à l'étape."),
+    );
+    expect(await storageKeys()).toEqual([]);
   });
 
   it("la photo refusée dit pourquoi et quoi faire (400), sans rien laisser au stockage", async () => {
@@ -129,10 +147,11 @@ describe.each(SIDES)("les refus, mot pour mot — porte %s", (side) => {
   });
 
   /**
-   * Au-delà de 2 Mo, c'est Multer qui coupe, pas le domaine : le corps n'est
-   * pas une `AppError`, et il est figé tel quel.
+   * Régression : au-delà de 2 Mo, Multer coupait en `413 { message: "File too
+   * large" }`, sans code ni geste de sortie (fix 2026-10-06). Multer n'a pas lu
+   * le reste : le refus dit « plus de 2 Mo », jamais un poids inventé.
    */
-  it("une photo au-delà du backstop multipart est coupée, en ajout comme en révision", async () => {
+  it("une photo au-delà du backstop multipart est refusée dans les mots de la photo, en ajout comme en révision", async () => {
     const stepId = await addStep("client", "Portail");
     // L'ajout de mise en place écrit son fait depuis le 2026-09-19 (le client
     // est journalisé aussi) : ce qu'on vérifie, c'est que les REFUS n'en
@@ -141,19 +160,20 @@ describe.each(SIDES)("les refus, mot pour mot — porte %s", (side) => {
     await ctx.drain();
     const before = await ctx.prisma.activityEvent.count({ where: facts });
     const refusals = [
-      await postPhoto(side, OVER_UPLOAD_LIMIT).expect(413),
+      await postPhoto(side, OVER_UPLOAD_LIMIT).expect(400),
       await agentOf(side)
         .patch(`${procedure(side)}/steps/${stepId}`)
         .field("title", "Portail")
         .attach("photo", OVER_UPLOAD_LIMIT, "porte.png")
-        .expect(413),
+        .expect(400),
     ];
     expect(refusals.map(bodyWithoutRequestId)).toEqual(
-      refusals.map(() => ({
-        message: "File too large",
-        error: "Payload Too Large",
-        statusCode: 413,
-      })),
+      refusals.map(() =>
+        REFUSED.photo(
+          "elle pèse plus de 2,0 Mo, la limite est de 1,0 Mo. " +
+            "Reprenez-la depuis l'écran de la procédure, qui la réduit avant l'envoi.",
+        ),
+      ),
     );
     expect(await storageKeys()).toEqual([]);
     await ctx.drain();
@@ -183,7 +203,12 @@ describe.each(SIDES)("les refus, mot pour mot — porte %s", (side) => {
     expect(refusalOf(withoutPhoto)).toEqual(REFUSED.noPhoto);
   });
 
-  it("un ordre qui n'est pas une permutation exacte est périmé (409)", async () => {
+  /**
+   * Régression : un ordre vide sortait en 400 Zod anglais (« Too small:
+   * expected array to have >=1 items ») — fix 2026-10-06 : ce n'est pas une
+   * permutation des étapes, il est périmé comme les autres.
+   */
+  it("un ordre qui n'est pas une permutation exacte est périmé (409), vide compris", async () => {
     const agent = agentOf(side);
     const order = (stepIds: readonly string[]): request.Test =>
       agent.put(`${procedure(side)}/order`).send({ stepIds });
@@ -196,12 +221,10 @@ describe.each(SIDES)("les refus, mot pour mot — porte %s", (side) => {
       [first, first],
       [first, second, GHOST_STEP],
       [first, GHOST_STEP],
+      [],
     ]) {
       expect(refusalOf(await order(stepIds).expect(409))).toEqual(REFUSED.stale);
     }
-    expect(refusalOf(await order([]).expect(400))).toEqual(
-      REFUSED.payload("stepIds : Too small: expected array to have >=1 items"),
-    );
   });
 
   it("une adresse inconnue ou archivée est introuvable, en lecture comme en écriture (404)", async () => {
@@ -272,7 +295,11 @@ describe("les refus qui se posent une fois pour les deux portes", () => {
 });
 
 describe("le journal des gestes staff", () => {
-  it("un changement de photo est un `step_revised`, et un refus ne laisse aucun fait", async () => {
+  /**
+   * Régression : remplacer ou retirer la photo s'écrivait `step_revised`, et le
+   * journal ne distinguait pas le geste sur la photo (fix 2026-10-06).
+   */
+  it("un changement de photo se nomme pour lui-même, et un refus ne laisse aucun fait", async () => {
     const stepId = await addStep("staff", "Portail", pngOf(40, 30));
     const step = `${procedure("staff")}/steps/${stepId}`;
     const staff = agentOf("staff");
@@ -299,7 +326,7 @@ describe("le journal des gestes staff", () => {
       select: { payload: true },
     });
     expect(journal.map((entry) => entry.payload)).toEqual(
-      ["step_added", "step_revised", "step_revised"].map((action) => ({
+      ["step_added", "step_photo_replaced", "step_photo_removed"].map((action) => ({
         // La société est le sujet (nommée) ; l'adresse, citée par son id et son
         // lieu — jamais son libellé (lot B du plan des phrases).
         subjectLabel: "Boulangerie du Marais SAS",

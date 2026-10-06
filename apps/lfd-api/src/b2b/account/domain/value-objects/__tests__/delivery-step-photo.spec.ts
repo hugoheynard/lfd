@@ -71,7 +71,7 @@ describe("DeliveryStepPhoto", () => {
     expect(exact.length).toBe(DELIVERY_STEP_PHOTO_MAX_BYTES);
     expect(DeliveryStepPhoto.create(exact).contentType).toBe("image/jpeg");
     const over = Buffer.concat([exact, Buffer.alloc(1)]);
-    expect(() => DeliveryStepPhoto.create(over)).toThrow(/1\.0 Mo/);
+    expect(() => DeliveryStepPhoto.create(over)).toThrow(/1,0 Mo/);
   });
 
   it("refuse ce qui n'est ni JPEG ni PNG, quel que soit le nom annoncé", () => {

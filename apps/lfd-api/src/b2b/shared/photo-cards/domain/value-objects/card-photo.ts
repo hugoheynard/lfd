@@ -94,9 +94,12 @@ export function cardPhotoContentType(bytes: Buffer): CardPhotoContentType | null
   return ACCEPTED_FORMATS.find((candidate) => candidate.matches(bytes))?.contentType ?? null;
 }
 
-/** Une taille en Mo, à une décimale — la forme sous laquelle les refus l'énoncent. */
+/**
+ * Une taille en Mo, à une décimale et à la française (« 1,5 ») — la forme sous
+ * laquelle les refus l'énoncent. Écrivait « 1.5 » jusqu'au 2026-10-06.
+ */
 export function megabytes(bytes: number): string {
-  return (bytes / BYTES_PER_MEGABYTE).toFixed(1);
+  return (bytes / BYTES_PER_MEGABYTE).toFixed(1).replace(".", ",");
 }
 
 function startsWith(bytes: Buffer, magic: Buffer): boolean {

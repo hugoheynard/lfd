@@ -109,6 +109,10 @@ export const REFUSED = {
     code: "account.company.admin_required",
     message: "Seul le gestionnaire de l'entreprise peut effectuer cette action.",
   },
+  step: (reason: string) => ({
+    code: "account.delivery_step.invalid",
+    message: `Étape de livraison : ${reason}`,
+  }),
   photo: (reason: string) => ({
     code: "account.delivery_step_photo.invalid",
     message: `Photo de l'étape : ${reason}`,
@@ -144,7 +148,8 @@ function paddedPng(bytes: number): Buffer {
 
 /**
  * **Un octet au-dessus du backstop Multer** (`DELIVERY_STEP_UPLOAD_HARD_LIMIT`,
- * 2 Mo) : le fichier est coupé AVANT d'atteindre le value object.
+ * 2 Mo) : le fichier est coupé AVANT d'atteindre le value object, et le refus
+ * est traduit dans les mots de la photo d'étape (depuis le 2026-10-06).
  */
 export const OVER_UPLOAD_LIMIT = paddedPng(2 * 1024 * 1024 + 1);
 
@@ -152,7 +157,7 @@ export const OVER_UPLOAD_LIMIT = paddedPng(2 * 1024 * 1024 + 1);
 export const REFUSED_PHOTOS: readonly (readonly [Buffer, string])[] = [
   [
     paddedPng(Math.round(1.5 * 1024 * 1024)),
-    "elle pèse 1.5 Mo, la limite est de 1.0 Mo. " +
+    "elle pèse 1,5 Mo, la limite est de 1,0 Mo. " +
       "Reprenez-la depuis l'écran de la procédure, qui la réduit avant l'envoi.",
   ],
   [

@@ -56,10 +56,15 @@ export interface DeliveryProcedureView {
 /**
  * Les champs texte d'une étape, envoyés en **multipart** avec la photo
  * (champ fichier `photo`, facultatif).
+ *
+ * La **forme** seulement, depuis le 2026-10-06 : titre requis et longueurs sont
+ * refusés par le value object `DeliveryStepContent`, dans ses mots. Les bornes
+ * posées ici sortaient en message Zod, en anglais, et le refus français du
+ * domaine n'était jamais atteint.
  */
 export const deliveryStepFieldsSchema = z.object({
-  title: z.string().trim().min(1, "titre requis").max(DELIVERY_STEP_TITLE_MAX),
-  body: z.string().trim().max(DELIVERY_STEP_BODY_MAX).default(""),
+  title: z.string(),
+  body: z.string().default(""),
 });
 export type DeliveryStepFields = z.infer<typeof deliveryStepFieldsSchema>;
 
@@ -81,7 +86,10 @@ export type DeliveryStepRevisionFields = z.infer<typeof deliveryStepRevisionFiel
  * supprimée entre-temps par quelqu'un d'autre) est refusée plutôt que devinée.
  */
 export const deliveryProcedureOrderPayloadSchema = z.object({
-  stepIds: z.array(z.string().min(1)).min(1).max(DELIVERY_PROCEDURE_MAX_STEPS),
+  // La forme seulement (2026-10-06) : une liste vide, trop longue ou qui porte
+  // un id inconnu n'est pas une permutation des étapes, et l'agrégat la refuse
+  // comme périmée — en français, là où `.min(1)` sortait en anglais.
+  stepIds: z.array(z.string()),
 });
 export type DeliveryProcedureOrderPayload = z.infer<typeof deliveryProcedureOrderPayloadSchema>;
 

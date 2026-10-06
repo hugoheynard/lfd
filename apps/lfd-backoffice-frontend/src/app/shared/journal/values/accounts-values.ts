@@ -59,6 +59,8 @@ export const SUBSCRIPTION_STATUS = domain('état d’un panier récurrent', {
 export const PROCEDURE_ACTION = domain('geste sur une procédure de livraison', {
   step_added: 'Étape ajoutée',
   step_revised: 'Étape modifiée',
+  step_photo_replaced: 'Photo d’une étape remplacée',
+  step_photo_removed: 'Photo d’une étape retirée',
   step_removed: 'Étape supprimée',
   reordered: 'Étapes réordonnées',
 });

@@ -8,7 +8,7 @@ import { DeliveryProcedureEditedByStaffEvent } from "../../domain/events/staff-a
 import { CompanyAddressRepository } from "../../domain/ports/company-address.repository.js";
 import { DeliveryProcedureLock } from "../../domain/ports/delivery-procedure.lock.js";
 import { DeliveryProcedureRepository } from "../../domain/ports/delivery-procedure.repository.js";
-import { ReviseDeliveryStepByStaffCommand } from "./admin-delivery-procedure-commands.js";
+import { ReviseDeliveryStepByStaffCommand } from "./revise-delivery-step-by-staff.command.js";
 import { reviseDeliveryStep, type ProcedureEditingPorts } from "./delivery-procedure-editing.js";
 import { AccountJournalNames } from "../services/account-journal-names.service.js";
 
@@ -45,14 +45,14 @@ export class ReviseDeliveryStepByStaffHandler implements ICommandHandler<
         removePhoto: command.removePhoto,
         photo: command.photo,
       },
-      async () =>
+      async (action) =>
         this.events.publishTraced(
           new DeliveryProcedureEditedByStaffEvent(
             // Lus DANS la transaction, après la vérification de l'adresse :
             // un contenu refusé ne coûte toujours pas une lecture.
             await this.names.company(command.companyId),
             await this.names.deliveryAddress(command.companyId, command.addressId),
-            "step_revised",
+            action,
           ),
         ),
     );

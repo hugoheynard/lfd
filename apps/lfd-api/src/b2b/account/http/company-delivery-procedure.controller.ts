@@ -41,11 +41,10 @@ import { GetDeliveryProcedureQuery } from "../application/queries/get-delivery-p
 import { GetDeliveryStepPhotoQuery } from "../application/queries/get-delivery-step-photo.query.js";
 import {
   photoBytesOf,
-  photoUpload,
   servePhoto,
   type UploadedPhotoPart,
 } from "../../shared/photo-cards/http/photo-card-http.js";
-import { DELIVERY_STEP_UPLOAD_HARD_LIMIT } from "./delivery-procedure-http.js";
+import { deliveryStepPhotoUpload } from "./delivery-procedure-http.js";
 
 const PROCEDURE = ":companyId/delivery-addresses/:addressId/procedure";
 
@@ -79,7 +78,7 @@ export class CompanyDeliveryProcedureController {
   /** Ajoute une étape en fin de procédure (gestionnaire). */
   @Post(`${PROCEDURE}/steps`)
   @HttpCode(HttpStatus.CREATED)
-  @UseInterceptors(photoUpload(DELIVERY_STEP_UPLOAD_HARD_LIMIT))
+  @UseInterceptors(deliveryStepPhotoUpload())
   async addStep(
     @CurrentUser() user: Principal,
     @Param("companyId") companyId: string,
@@ -96,7 +95,7 @@ export class CompanyDeliveryProcedureController {
   /** Refait une étape : titre, texte, photo remplacée ou retirée (gestionnaire). */
   @Patch(`${PROCEDURE}/steps/:stepId`)
   @HttpCode(HttpStatus.NO_CONTENT)
-  @UseInterceptors(photoUpload(DELIVERY_STEP_UPLOAD_HARD_LIMIT))
+  @UseInterceptors(deliveryStepPhotoUpload())
   async reviseStep(
     @CurrentUser() user: Principal,
     @Param("companyId") companyId: string,

@@ -319,6 +319,25 @@ describe("le verrou de procédure", () => {
  * code de portail.
  */
 describe("le journal des gestes du gestionnaire", () => {
+  /**
+   * Régression : remplacer ou retirer la photo d'une étape s'écrivait
+   * `step_revised` — même règle que chez l'agent (fix 2026-10-06).
+   */
+  it("nomme le remplacement et le retrait de la photo, distincts d'une révision", async () => {
+    const current = scene();
+    const stepId = await current.add.execute(addCommand());
+    await current.revise.execute(reviseCommand(stepId, false, pngOf(10, 10)));
+    await current.revise.execute(reviseCommand(stepId, true, null));
+    await current.revise.execute(reviseCommand(stepId, false, null));
+
+    expect(current.events.traced.map((event) => event.journalFact().payload["action"])).toEqual([
+      "step_added",
+      "step_photo_replaced",
+      "step_photo_removed",
+      "step_revised",
+    ]);
+  });
+
   it("un fait par geste, sans le contenu de l'étape", async () => {
     const current = scene();
     const first = await current.add.execute(addCommand(null, "Portail"));

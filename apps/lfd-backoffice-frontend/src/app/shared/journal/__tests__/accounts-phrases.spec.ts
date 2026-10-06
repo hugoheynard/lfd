@@ -299,6 +299,22 @@ describe('les adresses d’un client', () => {
     expect(renderFact(retired).detail).toEqual([]);
   });
 
+  it('nomme le geste sur la photo d’une étape, distinct d’une étape modifiée', () => {
+    const photo = (action: string) =>
+      company('company.delivery_procedure_edited', {
+        subjectLabel: CAFE,
+        address: { id: 'adr_1', ville: 'Paris', codePostal: '75011' },
+        action,
+      });
+
+    expect(sentence(photo('step_photo_replaced'))).toBe(
+      'Colette Martin a modifié la procédure de livraison de l’adresse à Paris (75011) du client « Café des Halles » : photo d’une étape remplacée',
+    );
+    expect(sentence(photo('step_photo_removed'))).toBe(
+      'Colette Martin a modifié la procédure de livraison de l’adresse à Paris (75011) du client « Café des Halles » : photo d’une étape retirée',
+    );
+  });
+
   it('dit le mode d’acheminement préféré, le lieu et la signature', () => {
     const delivery = company('company.fulfillment_preference_set', {
       subjectLabel: CAFE,

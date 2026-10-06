@@ -93,8 +93,8 @@ describe("CardPhoto", () => {
 
 describe("megabytes", () => {
   it("énonce une taille en Mo à une décimale", () => {
-    expect(megabytes(1024 * 1024)).toBe("1.0");
-    expect(megabytes(600 * 1024)).toBe("0.6");
+    expect(megabytes(1024 * 1024)).toBe("1,0");
+    expect(megabytes(600 * 1024)).toBe("0,6");
   });
 });
 

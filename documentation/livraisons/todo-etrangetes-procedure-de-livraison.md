@@ -9,24 +9,13 @@
 > l'historique git de ce fichier. Les deux README faux de `@lfd/b2b-ui` ont été
 > corrigés le même jour.
 >
-> Chaque comportement d'API est figé par un test nommé d'après lui
-> (`apps/lfd-api/test/delivery-procedure-refusals.e2e-spec.ts`) : le corriger
-> fera rougir ce test, et c'est voulu.
-
-## Côté API
-
-1. **Les refus de contenu sortent en message Zod, en anglais pour les
-   longueurs** : `title : Too big: expected string to have <=80 characters`.
-   Le schéma du contrat refuse avant le value object, dont les messages
-   français ne sortent jamais en HTTP.
-2. **Un ordre vide rend un 400 Zod en anglais** : `stepIds : Too small:
-expected array to have >=1 items`.
-3. **Au-delà de 2 Mo, Multer rend `413 { message: "File too large" }`** : ni
-   `code`, ni phrase qui dise quoi faire. Ce n'est pas une `AppError`.
-4. **Un remplacement ou un retrait de photo côté staff publie `step_revised`** :
-   le journal ne distingue pas le geste sur la photo.
-5. **`admin-delivery-procedure-commands.ts` regroupe quatre commandes dans un
-   seul fichier**, là où le B2B sépare commande et handler.
+> Les cinq points « Côté API » ont été corrigés le 2026-10-06 : messages de
+> contenu et d'ordre rendus par le domaine (en français), refus au-delà du
+> backstop multipart traduit en refus de la photo d'étape, gestes
+> `step_photo_replaced` / `step_photo_removed` au journal, commandes staff en
+> un fichier chacune. Les tests qui figeaient l'ancien comportement
+> (`apps/lfd-api/test/delivery-procedure-refusals.e2e-spec.ts`) sont réécrits
+> vers le nouveau, nommés d'après le symptôme corrigé.
 
 ## Côté écran (`@lfd/b2b-ui`, éditeur `photo-cards`)
 

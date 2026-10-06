@@ -8,7 +8,7 @@ import { DeliveryProcedureEditedByStaffEvent } from "../../domain/events/staff-a
 import { CompanyAddressRepository } from "../../domain/ports/company-address.repository.js";
 import { DeliveryProcedureLock } from "../../domain/ports/delivery-procedure.lock.js";
 import { DeliveryProcedureRepository } from "../../domain/ports/delivery-procedure.repository.js";
-import { ReorderDeliveryStepsByStaffCommand } from "./admin-delivery-procedure-commands.js";
+import { ReorderDeliveryStepsByStaffCommand } from "./reorder-delivery-steps-by-staff.command.js";
 import { reorderDeliverySteps, type ProcedureEditingPorts } from "./delivery-procedure-editing.js";
 import { AccountJournalNames } from "../services/account-journal-names.service.js";
 

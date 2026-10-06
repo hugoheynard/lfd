@@ -51,14 +51,14 @@ export class ReviseDeliveryStepHandler implements ICommandHandler<ReviseDelivery
         removePhoto: command.removePhoto,
         photo: command.photo,
       },
-      async () =>
+      async (action) =>
         this.events.publishTraced(
           new DeliveryProcedureEditedByMemberEvent(
             // Lus DANS la transaction, après la vérification de l'adresse :
             // un contenu refusé ne coûte toujours pas une lecture.
             await this.names.company(command.companyId),
             await this.names.deliveryAddress(command.companyId, command.addressId),
-            "step_revised",
+            action,
           ),
         ),
     );

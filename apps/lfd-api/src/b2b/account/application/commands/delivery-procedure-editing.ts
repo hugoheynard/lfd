@@ -15,6 +15,7 @@ import type {
   OrphanPhotoReason,
   PhotoCardUsage,
 } from "../../../shared/photo-cards/application/photo-card-usage.js";
+import type { PhotoChange } from "../../../shared/photo-cards/domain/value-objects/photo-change.js";
 import { DeliveryProcedure } from "../../domain/entities/delivery-procedure.js";
 import {
   DeliveryProcedureOrderStaleError,
@@ -22,6 +23,7 @@ import {
 } from "../../domain/errors/delivery-procedure-errors.js";
 import type { CompanyAddressRepository } from "../../domain/ports/company-address.repository.js";
 import type { DeliveryProcedureLock } from "../../domain/ports/delivery-procedure.lock.js";
+import type { DeliveryProcedureStaffAction } from "../../domain/events/staff-address-acts.event.js";
 import type { DeliveryProcedureRepository } from "../../domain/ports/delivery-procedure.repository.js";
 import { DeliveryStepContent } from "../../domain/value-objects/delivery-step-content.js";
 import { deliveryStepPhotoChange } from "../../domain/value-objects/delivery-step-photo-change.js";
@@ -72,6 +74,28 @@ export interface StepRevision {
   readonly photo: Buffer | null;
 }
 
+/** Ce qu'une révision a fait, tel que le journal le nomme. */
+export type StepRevisionAction = Extract<
+  DeliveryProcedureStaffAction,
+  "step_revised" | "step_photo_replaced" | "step_photo_removed"
+>;
+
+/**
+ * Le geste d'une révision, lu dans ce qu'elle fait de la photo. Un changement
+ * de photo se nomme pour lui-même depuis le 2026-10-06 — il s'écrivait
+ * `step_revised`, et le journal ne distinguait pas un titre corrigé d'une
+ * photo de porte retirée. Le texte revu dans la même révision ne se dit pas :
+ * la photo est le geste qui envoie un livreur à la mauvaise porte.
+ */
+const REVISION_ACTION: Readonly<Record<PhotoChange<unknown>["kind"], StepRevisionAction>> = {
+  keep: "step_revised",
+  replace: "step_photo_replaced",
+  remove: "step_photo_removed",
+};
+
+/** Ce qui s'écrit dans la transaction d'une révision, qui reçoit son geste. */
+export type InTransactionForRevision = (action: StepRevisionAction) => Promise<void>;
+
 const logger = new Logger("DeliveryProcedureEditing");
 
 /** Les mots du journal applicatif, inchangés depuis la procédure d'origine. */
@@ -100,11 +124,14 @@ export async function reviseDeliveryStep(
   target: ProcedureTarget,
   stepId: string,
   revision: StepRevision,
-  inTransaction: InTransaction,
+  inTransaction: InTransactionForRevision,
 ): Promise<void> {
   const content = DeliveryStepContent.create(revision.fields);
   const change = deliveryStepPhotoChange(revision.removePhoto, revision.photo);
-  await revisePhotoCard(ports, usageOf(ports), target, stepId, { content, change }, inTransaction);
+  const action = REVISION_ACTION[change.kind];
+  await revisePhotoCard(ports, usageOf(ports), target, stepId, { content, change }, () =>
+    inTransaction(action),
+  );
 }
 
 /** Supprime définitivement une étape, puis sa photo du stockage. */

@@ -129,9 +129,18 @@ export class FulfillmentPreferenceSetByStaffEvent extends CompanyStaffAct {
   }
 }
 
-/** Ce que l'agent a fait à la procédure de livraison. */
+/**
+ * Ce que l'agent — ou le gestionnaire — a fait à la procédure de livraison.
+ * `step_photo_replaced` / `step_photo_removed` depuis le 2026-10-06 : une
+ * révision qui touche la photo s'écrivait `step_revised`.
+ */
 export type DeliveryProcedureStaffAction =
-  "step_added" | "step_revised" | "step_removed" | "reordered";
+  | "step_added"
+  | "step_revised"
+  | "step_photo_replaced"
+  | "step_photo_removed"
+  | "step_removed"
+  | "reordered";
 
 /**
  * Un agent a modifié la procédure de livraison d'une adresse.
