@@ -431,3 +431,19 @@
 .pv-day[data-tone='current'] .pv-day-state {
   color: var(--fold-color-primary-text);
 }
+
+/* ── LA BARRE D'ÉTAT, EN TÊTE ET AU PIED (Hugo, 2026-10-06) ────────────────
+   Écrites EN DERNIER, parce que l'ordre des règles est la priorité : la barre
+   du pied d'une journée encore ouverte (`.is-open`, plus haut) effaçait le
+   jaune du pic — la tête disait « pic », le pied « ouverte ». Le plan non
+   arrêté l'emporte sur le pic, comme son fond : c'est lui qui bloque la
+   fournée. */
+.pv-day.is-peak,
+.pv-foot-total.is-peak {
+  border-bottom-color: var(--fold-color-warning);
+}
+
+.pv-day[data-tone='overdue'],
+.pv-foot-total[data-tone='overdue'] {
+  border-bottom-color: var(--fold-color-alert);
+}
