@@ -104,7 +104,7 @@ export function renderDayDossierPdf(
  * … », « Arrêté automatiquement le … ») et qui a complété ; le récapitulatif
  * sépare les commandes en retrait et en livraison.
  */
-export const DOSSIER_LAYOUT_VERSION = "v4";
+export const DOSSIER_LAYOUT_VERSION = "v5";
 
 export function dayDossierPdfKey(serviceDay: string, retakenAt: Date | null): string {
   const base = `${serviceDay}/dossier-du-jour-${DOSSIER_LAYOUT_VERSION}`;
@@ -294,5 +294,5 @@ function footer(doc: Doc, stamp: DossierStamp, folio: string): void {
       ? arrested
       : `${arrested} — ${signedVerb("complété", completer)} ${parisDateTime(stamp.retakenAt)}`;
   put(doc, `${text} · ${folio}`, LEFT, PAGE_HEIGHT - MARGIN_Y, { size: 9 });
-  putRight(doc, "La Folie Coffee — fournil", RIGHT, PAGE_HEIGHT - MARGIN_Y, 9);
+  putRight(doc, "La Folie Coffee — Fournil", RIGHT, PAGE_HEIGHT - MARGIN_Y, 9);
 }

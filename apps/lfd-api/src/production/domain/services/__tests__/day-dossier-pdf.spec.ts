@@ -218,7 +218,7 @@ describe("renderDayDossierPdf", () => {
 describe("dayDossierPdfKey — la version de mise en page", () => {
   it("n'est plus la clé d'avant E1b : un dossier archivé à l'ancien papier n'est jamais resservi", () => {
     expect(dayDossierPdfKey(DAY, null)).not.toBe(`${DAY}/dossier-du-jour.pdf`);
-    expect(dayDossierPdfKey(DAY, RETAKEN)).toContain("-v4-retirage-");
+    expect(dayDossierPdfKey(DAY, RETAKEN)).toContain("-v5-retirage-");
   });
 });
 
@@ -226,7 +226,7 @@ describe("dayDossierPdfKey", () => {
   it("une clé pour la clôture, une autre par retirage : le complément n'écrase pas l'original", () => {
     const original = dayDossierPdfKey(DAY, null);
     const completed = dayDossierPdfKey(DAY, RETAKEN);
-    expect(original).toBe(`${DAY}/dossier-du-jour-v4.pdf`);
+    expect(original).toBe(`${DAY}/dossier-du-jour-v5.pdf`);
     expect(completed).not.toBe(original);
     expect(completed.startsWith(`${DAY}/`)).toBe(true);
   });

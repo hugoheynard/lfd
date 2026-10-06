@@ -110,7 +110,7 @@ export function renderAtelierSheetPdf(
     put(doc, `Journée arrêtée le ${parisDate(closedAt)}`, LEFT, PAGE_HEIGHT - MARGIN_Y, {
       size: 9,
     });
-    putRight(doc, "La Folie Coffee — fournil", RIGHT, PAGE_HEIGHT - MARGIN_Y, 9);
+    putRight(doc, "La Folie Coffee — Fournil", RIGHT, PAGE_HEIGHT - MARGIN_Y, 9);
   });
 }
 
@@ -158,7 +158,7 @@ export function renderProductionCountPdf(
         size: 9,
       },
     );
-    putRight(doc, "La Folie Coffee — fournil", RIGHT, PAGE_HEIGHT - MARGIN_Y, 9);
+    putRight(doc, "La Folie Coffee — Fournil", RIGHT, PAGE_HEIGHT - MARGIN_Y, 9);
   });
 }
 

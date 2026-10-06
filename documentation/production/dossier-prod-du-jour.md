@@ -18,9 +18,9 @@ faut fabriquer, puis un bon par commande. Il se lit à deux endroits :
 Depuis le 2026-10-06, on n'imprime plus depuis le navigateur : l'impression était l'écran, menu compris.
 
 Le PDF serveur ne bouge plus une fois tiré : il est archivé
-(`<jour>/dossier-du-jour-v4.pdf`). Après un retirage qui ajoute des commandes,
+(`<jour>/dossier-du-jour-v5.pdf`). Après un retirage qui ajoute des commandes,
 un second dossier « complété » est archivé à côté
-(`<jour>/dossier-du-jour-v4-retirage-<instant>.pdf`) ; l'original reste.
+(`<jour>/dossier-du-jour-v5-retirage-<instant>.pdf`) ; l'original reste.
 
 ## Page 1 — le récapitulatif
 
@@ -119,7 +119,7 @@ retirage déjà dépassé n'envoient rien : le dernier tirage envoie le sien.
   >
   > En chiffres : 3 commandes — 2 en retrait, 1 en livraison — et 40 pièces.
   >
-  > La Folie Douce — fournil
+  > La Folie Coffee — Fournil
 
   Après un retirage, la deuxième phrase devient « Le plan du … a été complété
   par … le … : de nouvelles commandes ont été ajoutées à la fournée. », et

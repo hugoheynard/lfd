@@ -89,7 +89,7 @@ describe("le courriel du dossier de production", () => {
   });
 
   it("signe au nom du fournil", () => {
-    expect(productionDossierBody(DATA).endsWith("La Folie Douce — fournil")).toBe(true);
+    expect(productionDossierBody(DATA).endsWith("La Folie Coffee — Fournil")).toBe(true);
   });
 
   it("met le pied de désinscription et joint le PDF sous son nom", () => {

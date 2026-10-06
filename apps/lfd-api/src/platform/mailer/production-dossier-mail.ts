@@ -36,7 +36,7 @@ export interface ProductionDossierMailData {
 /** La coquille de l'équipe, prêtée par le registre : la maison y est déjà posée. */
 export type StaffShell = (input: Omit<LayoutInput, "brand" | "supportEmail">) => string;
 
-const SIGNATURE = "La Folie Douce — fournil";
+const SIGNATURE = "La Folie Coffee — Fournil";
 
 const FOOTER =
   "Cet e-mail part automatiquement à chaque arrêt du plan. Pour ne plus le recevoir, " +
