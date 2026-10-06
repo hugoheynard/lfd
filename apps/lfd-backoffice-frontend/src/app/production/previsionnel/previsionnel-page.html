@@ -94,17 +94,29 @@
           qu'ils se commandent.
         -->
         @if (view() === 'matrix') {
-          @if (!atToday) {
-            <button foldButton emphasis="outline" size="sm" (click)="backToToday()">
-              Aujourd’hui
-            </button>
-          }
-          <button foldButton emphasis="outline" size="sm" icon="chevron-left" (click)="shift(-1)">
-            Semaine précédente
+          <!-- Toujours là, désactivé sur la semaine en cours : la ligne de gestes
+               ne bouge pas d'une semaine à l'autre (Hugo, 2026-10-06). -->
+          <button
+            foldButton
+            emphasis="outline"
+            size="sm"
+            [disabled]="atToday"
+            (click)="backToToday()"
+          >
+            Aujourd’hui
           </button>
-          <button foldButton emphasis="outline" size="sm" icon="chevron-right" (click)="shift(1)">
-            Semaine suivante
-          </button>
+          <fold-button-icon
+            icon="chevron-left"
+            size="sm"
+            tooltip="Semaine précédente"
+            (clicked)="shift(-1)"
+          />
+          <fold-button-icon
+            icon="chevron-right"
+            size="sm"
+            tooltip="Semaine suivante"
+            (clicked)="shift(1)"
+          />
           <button
             foldButton
             emphasis="outline"
@@ -121,7 +133,9 @@
             pas un par colonne — `dayToArrest` choisit la journée (la plus proche
             après aujourd'hui, ni close ni vide). 🔴 Il NOMME sa journée : on le
             presse en regardant une semaine entière, et il agit presque toujours
-            sur DEMAIN, pas sur la colonne qu'on a sous les yeux.
+            sur DEMAIN, pas sur la colonne qu'on a sous les yeux. Toujours présent
+            (2026-10-06) : désactivé quand rien n'est à arrêter, pour que la ligne
+            ne bouge pas d'une fenêtre à l'autre.
           -->
           @if (state() === 'ready') {
             @if (dayToArrest(); as day) {
@@ -159,6 +173,17 @@
                   Arrêter le plan du {{ day.weekday }} {{ day.dayMonth }}
                 </button>
               }
+            } @else {
+              <button
+                foldButton
+                emphasis="solid"
+                intent="primary"
+                size="sm"
+                class="pv-arrest"
+                disabled
+              >
+                {{ nothingToArrestLabel() }}
+              </button>
             }
           }
         } @else {

@@ -14,6 +14,7 @@ import type {
 } from '@lfd/contracts';
 import {
   FoldButtonComponent,
+  FoldButtonIconComponent,
   FoldCalloutComponent,
   FoldEmptyStateComponent,
   FoldInlineConfirmComponent,
@@ -103,6 +104,7 @@ type ForecastView = 'matrix' | 'dossier';
     DossierDuJour,
     ForecastTable,
     FoldButtonComponent,
+    FoldButtonIconComponent,
     FoldCalloutComponent,
     FoldEmptyStateComponent,
     FoldInlineConfirmComponent,
@@ -187,37 +189,48 @@ export class PrevisionnelPage {
    * `undefined` = rien à arrêter dans cette fenêtre, et la bande disparaît.
    */
   protected readonly dayToArrest = computed(() =>
-    this.headers().find(
+    this.aheadHeaders().find(
       (header) => header.date > this.today && !header.closed && header.orderCount > 0,
     ),
   );
 
   /**
-   * **La journée d'aujourd'hui, lue à part** quand la fenêtre affichée ne la
-   * contient pas (2026-10-06) : le rattrapage est une alerte de PAGE, pas de
-   * fenêtre — naviguer vers la semaine suivante ne répare pas l'oubli.
-   *
-   * `null` tant que rien n'est lu, ou quand la lecture a échoué : la bande se
-   * tait alors, et la relecture suivante réessaie.
+   * Le libellé du bouton **désactivé** quand rien n'est à arrêter (2026-10-06) :
+   * le bouton reste à sa place sur toutes les fenêtres, pour que la ligne des
+   * gestes ne bouge pas d'une page à l'autre. Si demain est déjà arrêté, il le
+   * dit — c'est la réponse à la question qu'on se pose le soir.
    */
-  private readonly todayRead = signal<ProductionForecastDay | null>(null);
+  protected readonly nothingToArrestLabel = computed(() => {
+    const tomorrow = this.aheadHeaders().find((header) => header.date > this.today);
+    return tomorrow?.closed === true
+      ? `Plan du ${tomorrow.weekday} ${tomorrow.dayMonth} arrêté`
+      : 'Rien à arrêter';
+  });
 
   /**
-   * **Le plan d'aujourd'hui, oublié la veille** (décidé le 2026-10-06) : la
-   * journée du jour, encore ouverte et porteuse de commandes — **quelle que
-   * soit la fenêtre affichée**. Lue dans la matrice quand elle la contient,
-   * sinon dans `todayRead`.
+   * **La fenêtre qui commence aujourd'hui, lue à part** quand la fenêtre
+   * affichée n'est pas elle (2026-10-06) : le rattrapage ET l'arrêt du soir
+   * sont des gestes de PAGE, pas de fenêtre — naviguer vers une autre semaine
+   * ne doit ni taire l'oubli, ni déplacer le bouton.
    *
-   * Séparé de `dayToArrest` parce que ce n'est pas le même geste : celui-ci
-   * répare un oubli, et il se dit en alerte — tant que le plan du jour n'est
-   * pas arrêté, rien ne part en fournée. Les jours PASSÉS jamais clos ne sont
-   * pas proposés : leur fournée est faite, l'arrêter maintenant n'en tirerait
-   * plus rien.
+   * `null` quand la fenêtre affichée est celle-là (la matrice la porte), tant
+   * que rien n'est lu, ou quand la lecture a échoué : la relecture suivante
+   * réessaie.
    */
+  private readonly aheadRead = signal<readonly ProductionForecastDay[] | null>(null);
+
+  /** Les journées d'aujourd'hui à aujourd'hui+6, quelle que soit la fenêtre affichée. */
+  private readonly aheadDays = computed<readonly ProductionForecastDay[]>(() =>
+    this.from() === this.today ? (this.forecast()?.days ?? []) : (this.aheadRead() ?? []),
+  );
+
+  private readonly aheadHeaders = computed(() =>
+    forecastHeaders([...this.aheadDays()], null, this.today),
+  );
+
   protected readonly dayToCatchUp = computed(() => {
-    const inWindow = this.forecast()?.days.find((day) => day.date === this.today);
-    const day = inWindow ?? this.todayRead();
-    if (day === null || day.date !== this.today || day.closed || day.orderCount === 0) {
+    const day = this.aheadDays().find((candidate) => candidate.date === this.today);
+    if (day === undefined || day.date !== this.today || day.closed || day.orderCount === 0) {
       return undefined;
     }
     return forecastHeaders([day], null, this.today)[0];
@@ -283,13 +296,13 @@ export class PrevisionnelPage {
     const seq = ++this.readSeq;
     const from = this.from();
     try {
-      const [forecast, today] = await Promise.all([
+      const [forecast, ahead] = await Promise.all([
         this.production.forecast(from, windowEnd(from)),
-        this.readToday(from),
+        this.readAhead(from),
       ]);
       if (seq === this.readSeq) {
         this.forecast.set(forecast);
-        this.todayRead.set(today);
+        this.aheadRead.set(ahead);
       }
     } catch {
       // Silencieux par construction : la lecture précédente reste juste à
@@ -366,18 +379,17 @@ export class PrevisionnelPage {
   }
 
   /**
-   * La journée d'aujourd'hui, **seulement si la fenêtre ne la contient pas** :
-   * sinon la matrice la porte déjà, et `dayToCatchUp` la lit là — une seconde
-   * requête relirait la même ligne. Une fenêtre d'un jour (`from = to`), que
-   * `ServiceRange` admet. Un échec rend `null` : la bande se tait, l'écran reste.
+   * La fenêtre qui commence aujourd'hui, **seulement si ce n'est pas celle
+   * affichée** : sinon la matrice la porte déjà, et une seconde requête
+   * relirait les mêmes lignes. Un échec rend `null` : la bande se tait, le
+   * bouton se désactive, l'écran reste.
    */
-  private async readToday(from: string): Promise<ProductionForecastDay | null> {
-    if (from <= this.today && this.today <= windowEnd(from)) {
+  private async readAhead(from: string): Promise<readonly ProductionForecastDay[] | null> {
+    if (from === this.today) {
       return null;
     }
     try {
-      const read = await this.production.forecast(this.today, this.today);
-      return read.days.find((day) => day.date === this.today) ?? null;
+      return (await this.production.forecast(this.today, windowEnd(this.today))).days;
     } catch {
       return null;
     }
@@ -392,16 +404,16 @@ export class PrevisionnelPage {
       // — mais elle ne doit pas se taire non plus, d'où le `null` plutôt qu'un
       // tableau vide : les deux se lisent pareil à l'affichage, et un seul des
       // deux est une panne.
-      const [forecast, catalogue, today] = await Promise.all([
+      const [forecast, catalogue, ahead] = await Promise.all([
         this.production.forecast(from, windowEnd(from)),
         this.catalog.list().catch(() => null),
-        this.readToday(from),
+        this.readAhead(from),
       ]);
       if (seq !== this.readSeq) {
         return;
       }
       this.forecast.set(forecast);
-      this.todayRead.set(today);
+      this.aheadRead.set(ahead);
       this.shelvesLost.set(catalogue === null);
       this.catalogue.set(catalogue ?? []);
       this.state.set('ready');

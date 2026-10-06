@@ -59,6 +59,23 @@
   position: sticky;
   top: 0;
   z-index: 2;
+  /* 🔴 Sur iPad (Safari), pendant le défilement à l'inertie, l'en-tête collé est
+     repeint un cran après les lignes : une fine bande s'ouvrait au-dessus de
+     « PRODUIT », et le contenu passait dedans (Hugo, 2026-10-06 — invisible en
+     Chromium une fois le défilement arrêté). Une couche à lui le recolle au
+     compositeur, et un rebord de sa propre couleur, au-dessus de lui, couvre
+     ce qui resterait de l'écart ; le `overflow` de la grille le coupe au
+     bord, il ne déborde jamais sur la bande de tête. */
+  will-change: transform;
+}
+
+.pv-row--head::before {
+  content: '';
+  position: absolute;
+  inset-inline: 0;
+  bottom: 100%;
+  height: var(--fold-space-sm);
+  background: var(--fold-color-bg-header);
 }
 
 .pv-foot {

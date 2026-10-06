@@ -301,11 +301,13 @@ describe('le prévisionnel — arrêter le plan', () => {
     async function mountAway(
       offset: number,
       todayClosed: boolean,
+      tomorrow: { readonly closed?: boolean; readonly orderCount?: number } = {},
     ): Promise<{ page: PrevisionnelPage; closeDay: ReturnType<typeof vi.fn>; el: HTMLElement }> {
       let closed = todayClosed;
       const forecastCall = vi.fn(async (from: string, to: string) =>
-        from === dayIn(0) && to === dayIn(0)
-          ? forecast([day(dayIn(0), { closed })])
+        // La fenêtre qui commence aujourd'hui, lue à part de la fenêtre affichée.
+        from === dayIn(0) && to === dayIn(6)
+          ? forecast([day(dayIn(0), { closed }), day(dayIn(1), tomorrow)])
           : forecast([day(dayIn(offset)), day(dayIn(offset + 1))]),
       );
       const closeDay = vi.fn(async (date: string) => {
@@ -352,6 +354,80 @@ describe('le prévisionnel — arrêter le plan', () => {
       await page['arrest'](page['dayToCatchUp']()?.date ?? '');
       expect(closeDay).toHaveBeenCalledWith(dayIn(0));
       expect(page['dayToCatchUp']()).toBeUndefined();
+    });
+  });
+
+  /**
+   * Le bouton du soir est un geste de PAGE (Hugo, 2026-10-06) : il garde sa
+   * place sur toutes les fenêtres, actif s'il y a une journée à arrêter dans
+   * celle qui commence aujourd'hui, désactivé sinon.
+   */
+  describe('le bouton du soir sur toutes les fenêtres', () => {
+    function arrestButton(el: HTMLElement): HTMLButtonElement | undefined {
+      return [...el.querySelectorAll<HTMLButtonElement>('button.pv-arrest')][0];
+    }
+
+    async function mountOn(
+      offset: number,
+      tomorrow: { readonly closed?: boolean; readonly orderCount?: number },
+    ): Promise<{ page: PrevisionnelPage; closeDay: ReturnType<typeof vi.fn>; el: HTMLElement }> {
+      const forecastCall = vi.fn(async (from: string, to: string) =>
+        from === dayIn(0) && to === dayIn(6)
+          ? forecast([day(dayIn(0), { closed: true }), day(dayIn(1), tomorrow)])
+          : forecast([day(dayIn(offset), { orderCount: 0 })]),
+      );
+      const closeDay = vi.fn(async (date: string) => ({
+        date,
+        absorbed: 5,
+        alreadyClosed: false,
+        closedAt: new Date().toISOString(),
+      }));
+      TestBed.configureTestingModule({
+        providers: [
+          provideRouter([]),
+          { provide: ProductionService, useValue: { forecast: forecastCall, closeDay } },
+          { provide: AdminCatalogService, useValue: { list: async () => [] } },
+        ],
+      });
+      const fixture = TestBed.createComponent(PrevisionnelPage);
+      const page = fixture.componentInstance;
+      page['from'].set(dayIn(offset));
+      fixture.detectChanges();
+      await TestBed.runInInjectionContext(() => page['load']());
+      fixture.detectChanges();
+      return { page, closeDay, el: fixture.nativeElement as HTMLElement };
+    }
+
+    it.each([7, -7])(
+      'actif sur la fenêtre décalée de %i jours quand demain est ouvert',
+      async (offset) => {
+        const { el } = await mountOn(offset, {});
+        const bouton = arrestButton(el);
+        expect(bouton?.disabled).toBe(false);
+        expect(bouton?.textContent).toContain('Arrêter le plan du');
+        expect(bouton?.textContent).toContain(dayMonthOf(1));
+      },
+    );
+
+    it('désactivé, « Rien à arrêter », quand aucune journée n’a de commande', async () => {
+      const { el } = await mountOn(7, { orderCount: 0 });
+      const bouton = arrestButton(el);
+      expect(bouton?.disabled).toBe(true);
+      expect(bouton?.textContent?.trim()).toBe('Rien à arrêter');
+    });
+
+    it('désactivé, nomme le plan de demain quand il est déjà arrêté', async () => {
+      const { el } = await mountOn(7, { closed: true });
+      const bouton = arrestButton(el);
+      expect(bouton?.disabled).toBe(true);
+      expect(bouton?.textContent).toContain('arrêté');
+      expect(bouton?.textContent).toContain(dayMonthOf(1));
+    });
+
+    it('l’arrêt depuis une autre semaine clôt demain', async () => {
+      const { page, closeDay } = await mountOn(7, {});
+      await page['arrest'](page['dayToArrest']()?.date ?? '');
+      expect(closeDay).toHaveBeenCalledWith(dayIn(1));
     });
   });
 
