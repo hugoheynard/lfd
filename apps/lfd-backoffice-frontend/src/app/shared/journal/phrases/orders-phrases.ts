@@ -186,6 +186,31 @@ function serviceDay(fact: PhraseFact): Segment[] {
   return formatted === null ? [text('d’une journée')] : [text('du '), subject(fact, formatted)];
 }
 
+/**
+ * « Le plan du 7 octobre 2026 a été arrêté automatiquement : 3 commandes
+ * inscrites » — l'arrêt du tour automatique (`automatic: true`, plan
+ * `production/plan-arret-du-plan.md`, S7). L'auteur est le système, sans nom :
+ * la phrase dit le geste, pas « Le système a arrêté ».
+ */
+const productionDayClosed: Phrase = (fact) => {
+  if (fact.payload['automatic'] !== true) {
+    return productionDay('a arrêté', 'commande inscrite', 'commandes inscrites')(fact);
+  }
+  const absorbed = countOf(fact.payload['absorbed'], 'commande inscrite', 'commandes inscrites');
+  return {
+    ...said(
+      [
+        text('Le plan '),
+        ...serviceDay(fact),
+        text(' a été arrêté automatiquement'),
+        ...(absorbed === null ? [] : [text(' : '), absorbed]),
+      ],
+      ['subjectLabel', 'serviceDay', 'absorbed', 'automatic'],
+    ),
+    namesActor: true,
+  };
+};
+
 function productionDay(verb: string, singular: string, plural: string): Phrase {
   return (fact) => {
     const absorbed = countOf(fact.payload['absorbed'], singular, plural);
@@ -362,7 +387,7 @@ export const ORDERS_PHRASES = {
     );
   },
 
-  'production_day.closed': productionDay('a arrêté', 'commande inscrite', 'commandes inscrites'),
+  'production_day.closed': productionDayClosed,
   'production_day.retaken': productionDay('a repris', 'commande ajoutée', 'commandes ajoutées'),
 
   'production_container.set': (fact) => {

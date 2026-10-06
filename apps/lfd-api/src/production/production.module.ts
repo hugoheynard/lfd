@@ -1,5 +1,16 @@
 import { Module } from "@nestjs/common";
 
+import { RunAutoCloseRoundHandler } from "./application/commands/run-auto-close-round.handler.js";
+import { BusAutomaticDayCloser } from "./application/services/bus-automatic-day-closer.js";
+import { PlanArrestBell } from "./application/services/plan-arrest-bell.js";
+import { AutoCloseAttempts } from "./domain/ports/auto-close-attempts.js";
+import { AutoCloseRoundReader } from "./domain/ports/auto-close-round.reader.js";
+import { AutomaticDayCloser } from "./domain/ports/automatic-day-closer.js";
+import { AutoCloseController } from "./http/auto-close.controller.js";
+import {
+  PrismaAutoCloseAttempts,
+  PrismaAutoCloseRoundReader,
+} from "./infrastructure/prisma-auto-close-round.js";
 import { AddProductionClosedDayHandler } from "./application/commands/add-production-closed-day.handler.js";
 import { ChangeProductionCloseSettingsHandler } from "./application/commands/change-production-close-settings.handler.js";
 import { RemoveProductionClosedDayHandler } from "./application/commands/remove-production-closed-day.handler.js";
@@ -105,9 +116,17 @@ import { PrismaProductionReturnRequests } from "./infrastructure/prisma-producti
     QualityUploadSweepController,
     ProductionDayVersionController,
     ProductionSettingsController,
+    AutoCloseController,
   ],
   providers: [
     CloseProductionDayHandler,
+    // Le tour de l'arrêt automatique (plan `plan-arret-du-plan.md`, lot A2) :
+    // la vraie clôture par le bus, sous l'acteur système, et la cloche du staff.
+    RunAutoCloseRoundHandler,
+    PlanArrestBell,
+    { provide: AutomaticDayCloser, useClass: BusAutomaticDayCloser },
+    { provide: AutoCloseRoundReader, useClass: PrismaAutoCloseRoundReader },
+    { provide: AutoCloseAttempts, useClass: PrismaAutoCloseAttempts },
     MarkWorksheetLineHandler,
     UnmarkWorksheetLineHandler,
     RecordBatchHandler,

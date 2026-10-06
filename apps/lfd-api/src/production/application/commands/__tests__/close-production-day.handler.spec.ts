@@ -240,6 +240,16 @@ describe("clore une journée", () => {
     });
   });
 
+  it("dit au journal un arrêt AUTOMATIQUE — `automatic: true` (lot A2, S7)", async () => {
+    const { handler, events } = subject(ProductionDay.open(ServiceDay.of(DAY)), [order()]);
+
+    await handler.execute(new CloseProductionDayCommand(DAY, "automatic"));
+
+    expect(events.traced.map((event) => event.journalFact().payload)).toEqual([
+      { subjectLabel: DAY, serviceDay: DAY, absorbed: 1, automatic: true },
+    ]);
+  });
+
   it("JOURNALISE la clôture — la date de service et le nombre inscrit", async () => {
     const { handler, events } = subject(ProductionDay.open(ServiceDay.of(DAY)), [
       order(),

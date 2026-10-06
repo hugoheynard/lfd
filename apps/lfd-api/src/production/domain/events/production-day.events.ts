@@ -40,20 +40,29 @@ function dayPayload(serviceDay: string, absorbed: number): Record<string, unknow
   return { subjectLabel: serviceDay, serviceDay, absorbed };
 }
 
-/** Fait : **la journée est arrêtée** — `absorbed` commandes inscrites au plan. */
+/**
+ * Fait : **la journée est arrêtée** — `absorbed` commandes inscrites au plan.
+ *
+ * `automatic: true` quand c'est le tour de l'arrêt automatique qui l'a arrêtée
+ * (plan `plan-arret-du-plan.md`, S7, lot A2) : l'acteur est alors le système
+ * (`auto-close`), qui n'a pas de nom, et le journal dit « automatiquement ».
+ * Absente pour un geste du staff — les lignes d'avant restent valides.
+ */
 export class ProductionDayClosedJournalEvent implements JournaledEvent {
   constructor(
     /** `AAAA-MM-JJ`. */
     readonly serviceDay: string,
     readonly absorbed: number,
+    readonly automatic = false,
   ) {}
 
   journalFact(): JournalFact {
+    const payload = dayPayload(this.serviceDay, this.absorbed);
     return {
       type: PRODUCTION_DAY_FACTS.closed,
       subjectType: SUBJECT_TYPE,
       subjectId: this.serviceDay,
-      payload: dayPayload(this.serviceDay, this.absorbed),
+      payload: this.automatic ? { ...payload, automatic: true } : payload,
     };
   }
 }

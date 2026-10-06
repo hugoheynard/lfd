@@ -182,6 +182,7 @@
   "test/pricer.e2e-spec.ts": 7270,
   "test/pricing-budget.e2e-spec.ts": 5036,
   "test/pricing-journal-pages.e2e-spec.ts": 10080,
+  "test/production-auto-close.e2e-spec.ts": 8662,
   "test/production-batch.e2e-spec.ts": 55895,
   "test/production-batches-transition.e2e-spec.ts": 4217,
   "test/production-batches.e2e-spec.ts": 9143,

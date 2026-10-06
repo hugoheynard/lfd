@@ -272,6 +272,25 @@ describe('la journée de production', () => {
     expect(renderFact(closed).detail).toEqual([]);
   });
 
+  it('dit un arrêt automatique sans auteur : « automatiquement », jamais « Le système »', () => {
+    const closed = fact({
+      type: 'production_day.closed',
+      subjectId: '2026-09-19',
+      payload: {
+        subjectLabel: '2026-09-19',
+        serviceDay: '2026-09-19',
+        absorbed: 3,
+        automatic: true,
+      },
+    });
+
+    expect(sentence(closed)).toBe(
+      'Le plan du 19 septembre 2026 a été arrêté automatiquement : 3 commandes inscrites',
+    );
+    expect(renderFact(closed).detail).toEqual([]);
+    expect(renderFact(closed).namesActor).toBe(true);
+  });
+
   it('dit une reprise, au singulier quand il le faut, sur une ligne d’avant le lot B', () => {
     const retaken = fact({
       type: 'production_day.retaken',

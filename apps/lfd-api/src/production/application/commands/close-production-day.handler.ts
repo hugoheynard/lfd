@@ -132,7 +132,7 @@ export class CloseProductionDayHandler implements ICommandHandler<
     // Les commandes du commerce sont lues AVANT le verrou, comme au retirage :
     // pas de lecture d'un autre bloc sous un verrou tenu.
     const producible = await this.orders.producibleFor(day);
-    return this.closeUnderLock(day, producible);
+    return this.closeUnderLock(day, producible, command.trigger === "automatic");
   }
 
   /**
@@ -144,6 +144,7 @@ export class CloseProductionDayHandler implements ICommandHandler<
   private async closeUnderLock(
     day: ServiceDay,
     producible: readonly ProducibleOrder[],
+    automatic: boolean,
   ): Promise<ProductionPlanClosure> {
     return this.uow.run(async () => {
       await this.lock.lock(day);
@@ -155,7 +156,7 @@ export class CloseProductionDayHandler implements ICommandHandler<
       current.close(producible, now);
       await this.days.save(current);
       await this.events.publishTraced(
-        new ProductionDayClosedJournalEvent(day.value, current.orders.length),
+        new ProductionDayClosedJournalEvent(day.value, current.orders.length, automatic),
       );
       await this.durable.publish(this.factOf(day, current, now, null).durableFact());
       await this.publishPackingList(day, current, now);

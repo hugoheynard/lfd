@@ -352,6 +352,40 @@ async function triggerOutboxSweep(env: Env): Promise<void> {
 }
 
 /**
+ * Réveille le container et passe le tour de l'arrêt du plan : en mode
+ * automatique, arrêter le plan du lendemain passé l'heure réglée ; en manuel,
+ * alerter passé l'heure d'alerte ; et prévenir si celui d'aujourd'hui n'est pas
+ * arrêté (plan `documentation/production/plan-arret-du-plan.md`, §3, lot A2).
+ *
+ * Sur le cron de RAFRAÎCHISSEMENT : au plus cinq minutes de retard sur l'heure
+ * réglée. Même porte et même jeton que le recompute ; idempotent — une seule
+ * tentative et une seule notification par journée, tenues en base.
+ */
+async function triggerAutoClose(env: Env): Promise<void> {
+  const token = env.RECOMPUTE_TOKEN;
+  if (!token) {
+    return;
+  }
+  await backend(env).fetch(
+    new Request("https://internal/admin/production/auto-close", {
+      method: "POST",
+      headers: { "x-lfc-recompute-token": token },
+    }),
+  );
+}
+
+/**
+ * Les balayages du cron de rafraîchissement, chacun pour soi : un échec de
+ * l'un (container qui répond mal, réseau) ne prive pas les suivants de leur
+ * tour. Le prochain passage est dans cinq minutes, et un cron en échec n'a
+ * aucun lecteur — l'échec est donc avalé ici, comme celui de `keepWarm`.
+ */
+async function refreshSweeps(env: Env): Promise<void> {
+  await keepWarm(env);
+  await Promise.allSettled([triggerOutboxSweep(env), triggerAutoClose(env)]);
+}
+
+/**
  * L'expression exacte du cron de rafraîchissement, telle qu'écrite dans
  * `wrangler.jsonc`. Cloudflare ne transmet que cette chaîne pour distinguer les
  * déclenchements : elle doit rester **identique des deux côtés**, sinon le ping
@@ -415,7 +449,7 @@ async function keepWarm(env: Env): Promise<void> {
 function dispatchCron(cron: string, env: Env): Promise<void> {
   switch (cron) {
     case KEEP_WARM_CRON:
-      return keepWarm(env).then(() => triggerOutboxSweep(env));
+      return refreshSweeps(env);
     case MEDIA_SWEEP_CRON:
       return triggerMediaSweep(env);
     case LOYALTY_SWEEP_CRON:

@@ -134,3 +134,24 @@ describe("le retrait déposé — `deposit`, connu des lecteurs avant d'être é
     expect(checkJournalFact("order.handed_over", handedOver("presume"))).not.toBeNull();
   });
 });
+
+describe("l'arrêt automatique du plan — `automatic` (plan-arret-du-plan, S7, lot A2)", () => {
+  const closed = { subjectLabel: "2026-10-07", serviceDay: "2026-10-07", absorbed: 3 };
+
+  it("écrit un arrêt du staff sans la clé, et un arrêt automatique avec `true`", () => {
+    expect(checkJournalFact("production_day.closed", closed)).toBeNull();
+    expect(checkJournalFact("production_day.closed", { ...closed, automatic: true })).toBeNull();
+  });
+
+  it("refuse `automatic: false` : l'absence dit déjà « un geste du staff »", () => {
+    expect(
+      checkJournalFact("production_day.closed", { ...closed, automatic: false }),
+    ).toMatchObject({ kind: "invalid_payload" });
+  });
+
+  it("ne l'ouvre pas à la reprise du tirage", () => {
+    expect(
+      checkJournalFact("production_day.retaken", { ...closed, automatic: true }),
+    ).toMatchObject({ kind: "invalid_payload" });
+  });
+});

@@ -1,6 +1,6 @@
 # Plan — l'arrêt du plan de production, automatique ou manuel
 
-**Ouvert le 2026-10-06** (Hugo, après un mardi dont le plan n'avait pas été
+**Ouvert le 2026-10-06** · bâtis : A0 (`55b334f74`), A1 (`05b10dce6`), A2 (2026-10-06, commit suivant). (Hugo, après un mardi dont le plan n'avait pas été
 arrêté la veille). Doc-first : rien de ce qui suit n'est bâti, sauf le
 rattrapage (§1), en cours le même jour.
 
@@ -20,7 +20,7 @@ rattrapage (§1), en cours le même jour.
 - **L'écran** : la bande « Arrêter le plan » du prévisionnel ne propose que
   la première journée **après aujourd'hui** (`dayToArrest`), d'où le mardi
   oublié.
-- **Aucune tâche planifiée dans l'API.** Le seul réveil est le Worker
+- **Aucune tâche planifiée dans l'API** (vrai au 2026-10-06 avant A2 ; depuis A2, `admin/production/auto-close` est appelée par le cron `*/5`). Le seul réveil est le Worker
   (`apps/lfd-api/container/worker.ts`) : un cron `*/5` qui appelle des routes
   machine (`admin/outbox/sweep`, `admin/production/quality/sweep`…) sous
   `RecomputeGuard` et son jeton.
@@ -222,3 +222,15 @@ jours fermés du fournil dans Réglages ?
   décrit « N'ajoute rien ». Incohérence assumée : il reste proposé à l'écran
   des rôles sans rien garder. Le modèle des ressources en lecture seule est en
   TODO : [`droits-et-permissions/todo-ressources-en-lecture-seule.md`](../droits-et-permissions/todo-ressources-en-lecture-seule.md).
+
+## A2 — bâti le 2026-10-06
+
+Tour pur `domain/services/auto-close-round.ts`, route machine
+`admin/production/auto-close` appelée par le Worker, trace
+`production.production_auto_close_attempt` (prise par `ON CONFLICT DO
+NOTHING`), acteur `system/auto-close`, notifications
+`production.plan_nothing_to_arrest` / `plan_not_arrested` /
+`plan_today_not_arrested` (clé `notification:<type>:<jour>`). **Aucune
+retentative** après un échec : l'alerte part avec la raison. **Ouvert** : une
+tentative restée `pending` (processus mort entre la prise et l'issue) ne
+déclenche ni retentative ni alerte (Q8).

@@ -416,7 +416,14 @@ export const ORDERS_PRODUCTION_FACTS = {
    * libellé est la date de service, `AAAA-MM-JJ` — une journée n'a pas d'autre
    * nom, et c'est l'écran qui la dit en français.
    */
-  "production_day.closed": fact(dayFact(), [dayFactBeforeLabel()]),
+  /**
+   * `automatic` : posé (à `true`) seulement quand le tour de l'arrêt
+   * automatique a arrêté le plan (plan `production/plan-arret-du-plan.md`, S7,
+   * lot A2). L'auteur est alors le système, sans nom.
+   */
+  "production_day.closed": fact(dayFact().extend({ automatic: z.literal(true).optional() }), [
+    dayFactBeforeLabel(),
+  ]),
   "production_day.retaken": fact(dayFact(), [dayFactBeforeLabel()]),
   /**
    * Le libellé est le SKU : la production ne lit pas le référentiel, et aucun

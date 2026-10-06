@@ -577,3 +577,22 @@ model ProductionClosedDay {
   @@map("production_closed_day")
   @@schema("production")
 }
+
+/// **Une tentative d'arrêt automatique du plan** — une par journée visée
+/// (plan `documentation/production/plan-arret-du-plan.md`, B2, lot A2).
+///
+/// La clé primaire EST l'unicité : deux instances qui passent ensemble
+/// s'insèrent avec `ON CONFLICT DO NOTHING`, et seule celle dont la ligne est
+/// entrée tente. `outcome` : `pending` (prise) puis `closed` | `empty` |
+/// `failed`. Une trace, pas un agrégat : aucune règle ne refuse son écriture.
+model ProductionAutoCloseAttempt {
+  serviceDay  String    @id @map("service_day") @db.VarChar(10)
+  attemptedAt DateTime  @map("attempted_at") @db.Timestamptz(6)
+  outcome     String
+  /// Le message du refus, seulement en `failed`.
+  failure     String?
+  settledAt   DateTime? @map("settled_at") @db.Timestamptz(6)
+
+  @@map("production_auto_close_attempt")
+  @@schema("production")
+}
