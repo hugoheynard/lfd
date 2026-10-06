@@ -126,12 +126,12 @@ describe("GetRoundPaperPdfHandler — la feuille de tournée tirée au moment", 
     const { handler } = subject();
     const file = await handler.execute(new GetRoundPaperPdfQuery("round_1", true));
     const text = textOf(file);
-    const positions = ["CMD-o2 · Maison o2", "FIGEE-1 · Maison figée", "Commande o_unknown"].map(
-      (part) => text.indexOf(part),
+    const positions = ["Commande CMD-o2", "Commande FIGEE-1", "Commande o_unknown"].map((part) =>
+      text.indexOf(part),
     );
     expect(positions.every((at) => at >= 0)).toBe(true);
     expect([...positions].sort((a, b) => a - b)).toEqual(positions);
-    expect(text).toContain("Bacs : K7Q2");
+    expect(text).toContain("K7Q2");
     expect(text).toContain("1 place figée");
     expect(text).toContain("Livreur : Paul Durand");
     expect(text).toContain("Tiré le mercredi 7 octobre 2026 à 06:15");

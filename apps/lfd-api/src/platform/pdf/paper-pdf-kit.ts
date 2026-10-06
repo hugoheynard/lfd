@@ -136,18 +136,19 @@ export function put(
   text: string,
   x: number,
   y: number,
-  options: { size: number; bold?: boolean; width?: number },
+  options: { size: number; bold?: boolean; width?: number; color?: string },
 ): void {
   doc
     .font(options.bold === true ? BOLD : REGULAR)
     .fontSize(options.size)
-    .fillColor(BLACK)
+    .fillColor(options.color ?? BLACK)
     .text(
       text,
       x,
       y,
       options.width === undefined ? { lineBreak: false } : { width: options.width },
     );
+  doc.fillColor(BLACK);
 }
 
 export function putRight(
