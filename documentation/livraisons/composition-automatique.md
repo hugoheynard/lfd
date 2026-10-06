@@ -154,7 +154,7 @@ flowchart TD
 | §14.2    | Mode par défaut : échéance (migration `20261004090000_echeance_par_defaut`)                                                                                       | ✅ bâti     | `d4972386a`                                                    |
 | Horaire  | Une tournée garde son départ, son retour et ses km prévus, et le PDF les imprime                                                                                  | ✅ bâti     | `3e9da566c`, aperçu `a9fb52c04`                                |
 | **CA4**  | La capacité entre dans la composition : demande en bacs par commande (déclarés, sinon estimés, sinon inconnue), `planLoading` à chaque insertion                  | ✅ bâti     | non commité (2026-10-06)                                       |
-| **Banc** | 200 clients, calcul pur, p95 < 5 s                                                                                                                                | ❌ pas bâti | seul existe le test à 60 arrêts (< 3 s CPU en CI)              |
+| **Banc** | 200 clients, calcul pur, p95 < 5 s — bâti (`bench:composition`) ; complet p95 6,6 s, Insérer p95 0,14 s (§5 point 3)                                              | 🟡 partiel  | non commité (2026-10-06)                                       |
 | **CA5**  | Le prévisionnel avec des contraintes humaines stockées (épinglage), une version par jour, et l'alerte rouge                                                       | 🟡 partiel  | le calcul à la lecture existe ; contraintes et alerte absentes |
 | **CA6a** | Abonné à `production.day_closed`, table `delivery.delivery_day_readiness` (migration `20261007110000_le_plan_arrete_pour_la_livraison`), cloche, query et bandeau | ✅ bâti     | `4b79a8e06`                                                    |
 | **CA6b** | `production.day_retaken` passe dans le canal avec `orderIds` ; un abonné ajoute les absorbées et sonne                                                            | ✅ bâti     | `d5900081e`                                                    |
@@ -268,6 +268,25 @@ flowchart TD
    graine fixe. Seuil : p95 < 5 s, mesuré dans le conteneur. Les seuils restent
    à valider par Hugo. Le test actuel s'arrête à 60 arrêts, avec une borne
    relâchée à 3 s.
+   **Bâti le 2026-10-06 (non commité).** Script `tsx`
+   `apps/lfd-api/src/delivery/domain/services/__tests__/propose-rounds.bench.ts`,
+   scène
+   `apps/lfd-api/src/delivery/domain/services/__tests__/composition-bench-day.ts` (mulberry32, graines 1..20, matrice plane
+   tabulée d'avance) : 200 arrêts dans 25 min de rayon, 2 Trafic
+   (250 × 160 cm) + 2 Kangoo (130 × 125 cm), 2 passages chacun, 5 échéances
+   serrées (7 h–9 h) + 5 créneaux à début (9 h–11 h), les autres « avant
+   12 h » ; demande 1/2/3/5 bacs M à 50/30/15/5 %. « Insérer » : la journée
+   composée moins ses 20 dernières commandes, réinsérées. Mesure du
+   2026-10-06, Apple M1 Pro, Node 22.23, temps processeur, Node nu :
+   **complet médiane 3,3 s · p95 6,6 s · max 6,6 s ; Insérer médiane 80 ms ·
+   p95 143 ms.** Le seuil n'est pas tenu en mode complet, sur un poste — le
+   conteneur n'a pas été mesuré. Profil (graine 9, 5,8 s) : `improvePlans`
+   93 % (dont `scoreVehicle` 1,9 s et le garde de capacité 1,1 s, lui-même
+   `planLoading` 0,8 s), insertion 0,3 s, lecture de la matrice synthétique
+   0,9 s. Les graines lentes sont celles où la place manque (à répartir non
+   vide). Pas de garde à 200 arrêts dans la suite unitaire (2026-10-06) :
+   sous Jest, le calcul est ~7 fois plus lent qu'en Node nu, et la garde
+   coûtait ~40 s de CI ; le test à 60 arrêts reste la garde. Le travail d'algorithme est un lot à part (`todo-calculateur.md`).
 4. **CA5.** Stocker les contraintes humaines (épinglage) dans une table neuve,
    par migration additive, avec une version de l'ensemble par jour : si deux
    personnes glissent en même temps, la seconde relit. Ajouter l'alerte rouge

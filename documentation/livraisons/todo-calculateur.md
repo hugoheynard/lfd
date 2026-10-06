@@ -20,6 +20,16 @@
 
 ## Dette
 
+- **Le banc à 200 clients manque son seuil en mode complet** (2026-10-06,
+  `pnpm --filter lfd-api bench:composition`) : p95 6,6 s pour 5 s visés, sur
+  un M1 Pro ; Insérer tient (p95 143 ms). 93 % du temps est dans
+  `improvePlans` (`firstImprovement` → `scoreVehicle`, garde de capacité et
+  `planLoading` à chaque coup essayé). Pistes, à concevoir : ne rejouer
+  `planLoading` que sur les deux véhicules touchés et mémoïser par contenu,
+  borner le voisinage de `firstImprovement`, arrêter l'amélioration au temps.
+  Mesurer aussi dans le conteneur, seul chiffre qui compte. Détail :
+  `composition-automatique.md` §5 point 3.
+
 - **La purge du cache de géocodage à 365 jours n'est pas bâtie.** Une entrée
   périmée n'est plus lue, mais sa ligne reste en base (`delivery_geocode`). Un
   balayage quotidien, comme celui des traces de journée, suffira. La ligne de
