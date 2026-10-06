@@ -243,6 +243,8 @@ const SCREENS: Readonly<Record<string, ScreenAccess>> = {
   coursier: 'delivery_driving:read',
   colisage: 'production_packing:read',
   'coursier/:roundId/chargement': 'delivery_driving:read',
+  // Le texte d'information du livreur (rgpd-livreur.md §7) : le droit de la page.
+  'coursier/mes-donnees': 'delivery_driving:read',
   livraison: OPEN,
   'livraison/feuille-de-route': 'delivery_run_sheet:read',
   'livraison/tournees': 'delivery_rounds:read',
@@ -250,6 +252,8 @@ const SCREENS: Readonly<Record<string, ScreenAccess>> = {
   // « À décider » (a-la-porte.md, B3) : le droit de décider, pas celui des
   // tournées ni des comptes (2026-10-02).
   'livraison/a-decider': 'delivery_decisions:write',
+  // Tiré des positions des livreurs : l'écriture des tournées, lecture comprise.
+  'livraison/carnet-a-corriger': 'delivery_rounds:write',
   'livraison/simulateur': 'delivery_rounds:read',
   'livraison/assistant-achat': 'delivery_rounds:read',
   // Le chargement (lot 4) : ouvrir un bac, une tournée, des étiquettes est une
