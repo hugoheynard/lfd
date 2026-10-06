@@ -8,13 +8,14 @@ jour-là — il vit dans l'historique git).
 ## Ce que c'est
 
 Le paquet que le fournil reçoit pour une journée : un récapitulatif de ce qu'il
-faut fabriquer, puis un bon par commande. Il existe sous deux formes, qui
-disent la même chose :
+faut fabriquer, puis un bon par commande. Il se lit à deux endroits :
 
-| Forme                     | Où                                                                          | Quand                                                                   |
-| ------------------------- | --------------------------------------------------------------------------- | ----------------------------------------------------------------------- |
-| **Impression de l'écran** | Prévisionnel › Dossier du jour › Imprimer                                   | à tout moment, depuis les commandes **en direct**                       |
-| **PDF serveur**           | `GET /admin/production/batch/:date/dossier.pdf`, et l'envoi par e-mail (E3) | seulement une fois le plan **arrêté**, depuis ce que l'arrêt a **figé** |
+| Où                                                                                                                                                | Ce que c'est                                    | Quand                                                                                         |
+| ------------------------------------------------------------------------------------------------------------------------------------------------- | ----------------------------------------------- | --------------------------------------------------------------------------------------------- |
+| **Aperçu à l'écran** — Prévisionnel › Dossier du jour (onglets Récapitulatif / Bons)                                                              | une lecture, depuis les commandes **en direct** | à tout moment                                                                                 |
+| **Le PDF** — bouton « Imprimer le dossier » (ouvre le PDF dans un onglet), `GET /admin/production/batch/:date/dossier.pdf`, et l'envoi par e-mail | **le papier**, depuis ce que l'arrêt a **figé** | seulement une fois le plan **arrêté** ; avant, le bouton dit « Arrêtez d'abord le plan du … » |
+
+Depuis le 2026-10-06, on n'imprime plus depuis le navigateur : l'impression était l'écran, menu compris.
 
 Le PDF serveur ne bouge plus une fois tiré : il est archivé
 (`<jour>/dossier-du-jour-v2.pdf`). Après un retirage qui ajoute des commandes,

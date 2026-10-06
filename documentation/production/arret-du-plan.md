@@ -109,8 +109,9 @@ l'arrêt automatique (`domain/services/forecast-day-state.ts`) :
   désactivé : « Rien à arrêter » ou « Plan du … arrêté ».
 - La page se relit toutes les 60 secondes : le retard vient de l'heure, pas
   d'un changement de données.
-- Le **dossier du jour** s'ouvre par un bouton, et s'imprime à tout moment —
-  y compris avant l'arrêt (voir « Reste à faire »).
+- Le **dossier du jour** s'ouvre par un bouton ; « Imprimer le dossier » ouvre
+  le PDF figé à l'arrêt, et n'existe donc qu'**après** l'arrêt (voir
+  [`dossier-prod-du-jour.md`](dossier-prod-du-jour.md)).
 
 ## Les droits
 
@@ -172,8 +173,3 @@ arrêtaient le plan.
    par un fait « plan rouvert » que commerce, livraison et colisage savent
    défaire. À concevoir avant d'être bâti ; en attendant, le retirage couvre
    un arrêt trop tôt.
-3. **Le dossier du jour imprimé avant l'arrêt** : bloquer, imprimer en
-   « provisoire », ou laisser — décision de Hugo en attente.
-4. **Une personne qui n'a que `production_settings:read`** ne voit pas
-   l'entrée Production du menu (elle n'apparaît qu'avec la lecture du plan ou
-   de la fiche d'atelier).
