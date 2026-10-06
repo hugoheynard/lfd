@@ -1,0 +1,270 @@
+# Composer les tournées automatiquement
+
+> 🟡 **Partiel. État vérifié le 2026-10-06** dans `git log` et le code.
+> Ce document remplace le plan de composition automatique (renommé le
+> 2026-10-06, ancien nom « plan-composition-automatique »). Les versions successives du plan (v1 à v4), et les contradictions
+> de `vitruve` qui les ont corrigées, ne sont pas recopiées ici. Elles restent
+> dans l'historique git :
+> `git log --follow -p -- documentation/livraisons/composition-automatique.md` (le `--follow` traverse le renommage).
+
+## 1. Le concept
+
+**Le problème.** Avec le volume de commandes visé (environ 200 clients livrés par
+jour), le bureau ne peut plus construire les tournées à la main. Le calcul doit
+composer, et l'humain doit se contenter de **corriger**. Hugo l'a dit le
+2026-10-03 : « déplacer une livraison ok, mais pas tout ».
+
+**Règle n°1 : tout le monde est servi avant son échéance.** Rien ne passe
+avant cette règle. Une tournée part aussi tôt qu'il le faut, même à 2 h du
+matin, mais jamais avant minuit du jour de livraison. Les contraintes du
+travail (heures du livreur, repos, durée d'une tournée) ne relèvent pas de
+l'outil. Une durée longue est **signalée**, jamais refusée. Si une composition
+ne peut pas tenir une échéance, c'est un **échec signalé arrêt par arrêt**. Un
+retard n'est jamais accepté en silence.
+
+**Créneau ou échéance.**
+
+- Une **échéance** est une heure limite : « avant 6 h 00 ». La fenêtre n'a pas
+  de début (`start: null`). C'est le réglage par défaut.
+- Un **créneau** a un début et une fin : « entre 7 h et 8 h ». On le garde pour
+  les adresses qui ne peuvent rien recevoir avant une certaine heure.
+- Le mode se règle une fois pour tout le commerce et peut être changé adresse
+  par adresse. Une adresse peut porter **plusieurs** échéances ou créneaux (par
+  exemple 6 h pour le pain et 11 h pour le déjeuner). Une **commande**, elle,
+  n'en porte toujours qu'**un seul**. Deux commandes donnent donc deux arrêts.
+- Le commerce refuse toute commande livrée qui n'a ni échéance ni créneau.
+
+**Qui décide quoi.** Le calcul **propose**, le bureau **applique**. Rien
+n'écrit tout seul dans les tournées réelles. Le geste « Appliquer » est
+toujours un clic humain. Quand un humain fait un geste, ce geste l'emporte sur
+le calcul, même s'il rend une commande intenable. Dans ce cas la commande passe
+en alerte, mais le calcul ne défait rien.
+
+**Le prévisionnel est calculé à la lecture.** Aucune proposition n'est
+stockée. Chaque fois qu'on ouvre l'écran des tournées, « Proposer » recalcule
+à partir de l'état du moment. Le résultat n'est donc jamais périmé. Le mode
+« Insérer » ne place que les commandes qui ne sont pas encore placées : il ne
+gêne pas un bureau qui a déjà composé à la main.
+
+**L'arrêt du plan fige la liste et prévient.** Quand le fournil clôt sa
+journée de production (« arrêt du plan », à la main ou automatiquement), la
+liste des commandes du jour est figée. Le jour de fabrication d'une commande
+**est** son jour de livraison (`serviceDay = requestedDeliveryDate`). À ce
+moment, la livraison retient les livraisons du jour et sonne la cloche du
+bureau. Si le fournil reprend ensuite sa journée (« retirage »), il annonce les
+commandes absorbées. La livraison les ajoute et sonne une seconde fois.
+
+## 2. Schémas
+
+### 2.1 La journée
+
+```mermaid
+sequenceDiagram
+    autonumber
+    participant C as Commerce (commandes)
+    participant B as Bureau (écran Tournées)
+    participant P as Fournil (production)
+    participant D as Livraison (abonnés durables)
+    participant N as Cloche (staff/notifications)
+
+    C->>C: commandes passées, échéance obligatoire
+    B->>B: ouvre Tournées → prévisionnel recalculé à la lecture
+    P->>P: arrêt du plan (CloseProductionDayCommand)
+    P-->>D: production.day_closed { serviceDay, closedAt, orderIds }
+    D->>C: lit les commandes du fait (delivery/channels/commerce/)
+    D->>D: union des livraisons non annulées dans delivery_day_readiness
+    D->>N: « Le plan du mercredi 7 octobre est arrêté : 12 livraisons à mettre en tournées »
+    B->>B: bandeau « Plan arrêté » → « Proposer » → « Appliquer » (clic humain)
+    P->>P: retirage (reprise de la journée)
+    P-->>D: production.day_retaken { serviceDay, retakenAt, absorbed, orderIds }
+    D->>D: union des absorbées, l'ensemble grandit-il ?
+    D->>N: « 2 nouvelles livraisons à placer »
+    B->>B: « Insérer » place les absorbées dans les tournées
+```
+
+### 2.2 Les blocs et le canal
+
+```mermaid
+flowchart LR
+    subgraph production["production/ (le fournil)"]
+        close["CloseProductionDayCommand<br/>RetakeProductionDay"]
+        chan["channels/delivery/<br/>production.day_closed<br/>production.day_retaken"]
+        close -->|publie, boîte d'envoi| chan
+    end
+    subgraph delivery["delivery/ (la livraison)"]
+        h1["LearnArrestedPlan<br/>@DurableHandler"]
+        h2["LearnRetakenPlan<br/>@DurableHandler"]
+        t[("delivery.delivery_day_readiness")]
+        q["GetDeliveryDayReadiness<br/>→ bandeau de l'écran"]
+        cc["channels/commerce/<br/>DeliveryOrdersReader"]
+        h1 --> t
+        h2 --> t
+        t --> q
+    end
+    subgraph b2b["b2b/ (le commerce)"]
+        impl["implémente DeliveryOrdersReader"]
+    end
+    staff["staff/notifications<br/>(la cloche)"]
+
+    chan -. "abonnement, sens unique" .-> h1
+    chan -. "abonnement, sens unique" .-> h2
+    h1 --> cc
+    h2 --> cc
+    impl -. "relié par appBootstrap" .-> cc
+    h1 --> staff
+    h2 --> staff
+```
+
+L'arête est à **sens unique**. `delivery → production` est permis, mais
+seulement par `production/channels/delivery/`, et seulement pour le fait (rien
+de l'agrégat). `production → delivery` reste interdit : le fournil publie sans
+savoir qui écoute. Le commerce ne relaie pas les faits des autres. La règle
+vient de CLAUDE.md §3 et est tenue par `lint:context-boundaries`.
+
+### 2.3 Une proposition (CA2)
+
+```mermaid
+flowchart TD
+    A[livraisons du jour<br/>fenêtre : échéance ou créneau] --> B{CA-D3 : un véhicule mesuré<br/>et un type de bac en service ?}
+    B -- non --> R[refus, avec la phrase<br/>qui dit quoi régler]
+    B -- oui --> C[composition par véhicule<br/>passages enchaînés]
+    C --> D[départ à rebours :<br/>le plus tard qui tient chaque échéance<br/>en visant la marge de sécurité]
+    D --> E{départ ≥ minuit du jour ?}
+    E -- non --> F[arrêt signalé : échéance intenable]
+    E -- oui --> G{une échéance presse ?}
+    G -- non --> H[départ à l'heure « quand rien ne presse »]
+    G -- oui --> I[départ calculé]
+    H --> J[durée longue = signal seulement]
+    I --> J
+    J --> K[aperçu : départ, retour, km par tournée]
+    K -.->|non bâti : CA4| L[capacité : bacs vs véhicule]
+```
+
+## 3. État réel, lot par lot (vérifié le 2026-10-06)
+
+| Lot      | Contenu                                                                                                                                                           | État        | Commit                                                         |
+| -------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------- | ----------- | -------------------------------------------------------------- |
+| **CA0**  | Situer l'adresse (géocodage) dès la commande, pour que le prévisionnel ait un point                                                                               | ❌ pas bâti | aucun `geocod` dans `src/b2b`                                  |
+| **CA1**  | Sans véhicule actif mesuré ni type de bac en service, « Proposer » refuse avec la phrase ; on ne peut pas retirer le dernier                                      | ✅ bâti     | `57ed88723`                                                    |
+| **CA1b** | Pas de livraison sans échéance ni créneau à la passation                                                                                                          | ✅ bâti     | `8089a262c`                                                    |
+| **CA2**  | Départ à rebours dès minuit, marge visée ; `maxRoundMinutes` devient un simple signal, sans pénalité de durée                                                     | ✅ bâti     | `0cf2aaf30` (points validés `dc4bd9779`)                       |
+| **CA3**  | Réglage créneau / échéance (global, puis par adresse), affichage « avant HH:MM »                                                                                  | ✅ bâti     | `8089a262c`, écrans `6f245b864`                                |
+| **CA3b** | Plusieurs créneaux ou échéances par adresse (`slotList`, l'ancien `slots` dérivé)                                                                                 | ✅ bâti     | `d4972386a`, écrans `b7ee1c883`                                |
+| §14.2    | Mode par défaut : échéance (migration `20261004090000_echeance_par_defaut`)                                                                                       | ✅ bâti     | `d4972386a`                                                    |
+| Horaire  | Une tournée garde son départ, son retour et ses km prévus, et le PDF les imprime                                                                                  | ✅ bâti     | `3e9da566c`, aperçu `a9fb52c04`                                |
+| **CA4**  | La capacité entre dans la composition : demande en bacs par commande, `planLoading` à l'insertion                                                                 | ❌ pas bâti | voir `todo-calculateur.md`                                     |
+| **Banc** | 200 clients, calcul pur, p95 < 5 s                                                                                                                                | ❌ pas bâti | seul existe le test à 60 arrêts (< 3 s CPU en CI)              |
+| **CA5**  | Le prévisionnel avec des contraintes humaines stockées (épinglage), une version par jour, et l'alerte rouge                                                       | 🟡 partiel  | le calcul à la lecture existe ; contraintes et alerte absentes |
+| **CA6a** | Abonné à `production.day_closed`, table `delivery.delivery_day_readiness` (migration `20261007110000_le_plan_arrete_pour_la_livraison`), cloche, query et bandeau | ✅ bâti     | `4b79a8e06`                                                    |
+| **CA6b** | `production.day_retaken` passe dans le canal avec `orderIds` ; un abonné ajoute les absorbées et sonne                                                            | ✅ bâti     | `d5900081e`                                                    |
+| **CA7**  | Place suggérée pour une commande arrivée sur un jour déjà appliqué (dérogation, retirage)                                                                         | ❌ pas bâti | aujourd'hui, « Insérer » les prend comme non placées           |
+
+## 4. Les décisions d'Hugo en vigueur
+
+**La composition**
+
+- **CA-D1 (2026-10-03).** Règle n°1 : tout le monde est servi avant son
+  échéance. Le départ se calcule à rebours, et l'heure la plus basse possible
+  est **minuit du jour de livraison** (Q1). Rien ne part la veille. La durée
+  maximale d'une tournée **cède** devant la règle (Q2) : elle reste un signal
+  et ne refuse jamais une place. Une échéance intenable est un échec signalé
+  par arrêt.
+- **CA2 (2026-10-03).** La passe arrière vise la marge de sécurité quand elle
+  peut la tenir. Le retard se mesure sur la vraie fin de la fenêtre. L'heure
+  « au plus tôt » des réglages devient l'heure de départ d'une tournée qu'aucune
+  échéance ne presse. Aucune pénalité sur la durée : une seule tournée longue
+  est acceptée plutôt que trois.
+- **CA-D3 = la règle de « Proposer ».** Il faut au moins un véhicule actif
+  **avec ses cotes** et un type de bac actif. Les cotes suffisent, c'est-à-dire
+  le volume utile et le plancher ; passages de roue et caisse froide sont
+  facultatifs (Q5). Sans eux, « Proposer » refuse, et on ne peut pas archiver
+  le dernier véhicule ni le dernier bac.
+- **Une tournée chargée n'est jamais touchée.** Un seul bac chargé suffit à la
+  figer (`classifyRounds`).
+- **§9.** « Appliquer » est un clic du bureau, jamais automatique. Le geste
+  humain l'emporte. Une commande qu'il rend intenable passe en **alerte
+  rouge** (tableau, résumé « à régler », carte), sans que le calcul défasse le
+  geste.
+- **Volume (Q3).** Environ 200 clients livrés par jour. Toute nouvelle commande
+  doit pouvoir être jugée dans le prévisionnel de son jour.
+
+**Créneau ou échéance**
+
+- **CA-D2 / §13.** Le mode se règle globalement et peut être changé adresse
+  par adresse. Une commande porte une seule fenêtre. Une commande livrée sans
+  fenêtre est refusée. Les commandes déjà passées sans fenêtre sont
+  signalées, jamais réécrites.
+- **§14 / CA3b.** Une adresse porte une **liste** de créneaux (la même tous les
+  jours, ou une par jour), triée et sans chevauchement. À la passation, on en
+  choisit un.
+- **§14.2.** Le mode par défaut est l'**échéance**. Toute la démo est en
+  échéance.
+- **Q4.** L'adresse doit être **située dès la commande**. Le prévisionnel ne
+  place que ce qui a un point (c'est le lot CA0).
+
+**L'arrêt du plan (§15, §16.5, validations du 2026-10-06)**
+
+- La livraison **s'abonne** au fait de clôture du fournil (option B,
+  2026-10-04). Elle ne le lit pas par l'intermédiaire du commerce.
+- Les abonnés **ne calculent rien**. Ils tournent dans une transaction, et le
+  calcul appelle OSRM. La seule vérification qu'ils font est CA-D3, en base.
+  Une route indisponible n'est jamais rangée : c'est l'écran qui la constate.
+- La clé est le **jour** : une ligne par `service_day`. Une journée close ne se
+  rouvre pas.
+- La ligne porte un **ensemble** (`delivery_order_ids`), pas un compteur.
+  Chaque fait y ajoute ses livraisons par union. Le jeu est borné aux
+  `orderIds` **du fait**, jamais au statut `confirmed`.
+- Les **commandes annulées sont exclues** (`activeDeliveriesAmong`).
+- **La cloche n'est jamais rejouée.** Elle ne sonne que si l'ensemble grandit,
+  et dit de combien. Un fait rejoué ou une réannonce n'ajoute rien.
+- **Un retirage reçu avant la clôture ne sonne pas.** Il range la ligne avec
+  `closed_at` nul, et c'est la clôture qui annonce ensuite le total.
+- Un ancien fait de retirage sans `orderIds` est accepté par la relecture, et
+  l'abonné ne fait rien.
+
+## 5. Ce qui manque
+
+**Lots non bâtis, dans l'ordre**
+
+1. **CA0.** Géocoder l'adresse dès la commande, à partir du cache
+   `delivery_geocode`. Une adresse non située reste signalée et n'est jamais
+   placée au hasard.
+2. **CA4.** Faire entrer la capacité dans la composition, en partant de la
+   demande en bacs de chaque commande : les bacs déclarés, sinon une estimation
+   par les contenances, sinon « inconnue », et dans ce dernier cas la commande
+   reste à répartir. `planLoading` doit tenir à chaque insertion.
+3. **Banc à 200 clients.** Mesurer le calcul pur (matrice à part) : 200 arrêts,
+   4 véhicules, 2 passages, 10 contraintes, médiane et p95 sur 20 tirages, une
+   graine fixe. Seuil : p95 < 5 s, mesuré dans le conteneur. Les seuils restent
+   à valider par Hugo. Le test actuel s'arrête à 60 arrêts, avec une borne
+   relâchée à 3 s.
+4. **CA5.** Stocker les contraintes humaines (épinglage) dans une table neuve,
+   par migration additive, avec une version de l'ensemble par jour : si deux
+   personnes glissent en même temps, la seconde relit. Ajouter l'alerte rouge
+   (§9). Pas de cache tant que le banc ne l'exige pas.
+5. **CA7.** Calculer la place suggérée d'une commande arrivée sur un jour déjà
+   appliqué (par dérogation ou par retirage), en aperçu, applicable en un clic.
+
+**Questions ouvertes**
+
+- **Q7, « rouvrir le plan ».** Ce geste n'existe pas : une journée close ne se
+  rouvre pas. S'il est décidé un jour, il demandera sa propre migration (la clé
+  `service_day` ne suffira plus).
+- **Une alerte avant le jour J.** L'écran devait prévenir quand un jour
+  approche sans que le plan ait été appliqué. Ce n'est pas bâti, et aucun seuil
+  n'est fixé.
+- **Q-CA3b-1 à 4** (§14.3 de l'ancien plan), à confirmer avec Hugo :
+  l'écrasement silencieux par un onglet resté sur l'ancien front, la saisie
+  début/fin quand le carnet est vide, le message d'erreur résiduel, et la
+  possibilité de saisir « un autre créneau » quand l'adresse en a plusieurs.
+
+**Dette notée**
+
+- Le champ `slots` est conservé à côté de `slotList`. Son retrait se fera en
+  trois temps, sans date fixée.
+- La liste des commandes arrivées a deux sources : `publishArrivals` pour le
+  colisage et `day_retaken` pour la livraison. C'est assumé, chaque source sert
+  son canal.
+- Le calcul de « Proposer » dépasse la promesse de 2 s sur la CI (2,06 s CPU).
+  Le travail d'algorithme est décrit dans
+  [`todo-calculateur.md`](todo-calculateur.md).

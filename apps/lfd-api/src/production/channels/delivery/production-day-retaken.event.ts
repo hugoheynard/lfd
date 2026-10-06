@@ -15,7 +15,7 @@ export const PRODUCTION_DAY_RETAKEN = "production.day_retaken";
  * change ni la journée ni `retaken`, il n'y a donc rien de neuf à annoncer.
  *
  * Il vit dans le canal de la LIVRAISON depuis le 2026-10-06 (plan
- * `livraisons/plan-composition-automatique.md`, §16.5, CA6b) : la livraison
+ * `livraisons/composition-automatique.md`, §4, CA6b) : la livraison
  * l'écoute pour apprendre les livraisons ajoutées au plan arrêté. Le fournil
  * reste abonné lui-même (l'envoi du dossier complété).
  *

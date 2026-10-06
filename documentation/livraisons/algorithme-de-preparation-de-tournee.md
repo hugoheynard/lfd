@@ -34,7 +34,7 @@ le client ») :
 | 3    | **Le moins de tournées**                     | ouvrir une tournée coûte 1 h ; un second passage du même véhicule coûte en plus la durée maximale d'une tournée (4 h par défaut)                  |
 
 **La règle 1 prime** (CA-D1, lot CA2 du
-[plan de composition automatique](plan-composition-automatique.md), 2026-10-03) :
+[composition automatique](composition-automatique.md), 2026-10-03) :
 tout le monde est servi avant son échéance. Le départ se calcule **à rebours**
 (§5.3), aussi tôt qu'il le faut — dès **minuit du jour de livraison** (Q1).
 

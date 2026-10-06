@@ -1,6 +1,6 @@
 /**
- * E2E **créneau ou échéance** (plan `livraisons/plan-composition-automatique.md`,
- * CA-D2, §13) et **livraison sans fenêtre refusée** (CA1b), sur la vraie base.
+ * E2E **créneau ou échéance** (plan `livraisons/composition-automatique.md`,
+ * CA-D2, §4) et **livraison sans fenêtre refusée** (CA1b), sur la vraie base.
  *
  * Ce que seule cette suite prouve : le réglage global posé par le staff et la
  * surcharge rangée dans le JSON de l'adresse arrivent bien jusqu'à la passation,

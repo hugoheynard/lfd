@@ -11,8 +11,8 @@ export interface DeliveryDayReadinessState {
 }
 
 /**
- * **Le plan arrêté, vu par la livraison** (plan de composition automatique,
- * §16.5, CA6a) : par journée, l'ENSEMBLE des livraisons que les faits du
+ * **Le plan arrêté, vu par la livraison** (`documentation/livraisons/composition-automatique.md`,
+ * §4, CA6a) : par journée, l'ENSEMBLE des livraisons que les faits du
  * fournil lui ont apprises.
  *
  * L'invariant est structurel : l'ensemble ne fait que grandir. Chaque fait

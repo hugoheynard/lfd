@@ -1,6 +1,6 @@
 /**
  * **Le canal que la production publie POUR la livraison** (2026-10-04, Hugo,
- * option B — `documentation/livraisons/plan-composition-automatique.md`, §15).
+ * option B — `documentation/livraisons/composition-automatique.md`, §2.2).
  *
  * Deux faits : la clôture d'une journée, qui fige les commandes à livrer, et
  * son retirage (§16.5, CA6b), qui en ajoute. La livraison s'y abonne ; le

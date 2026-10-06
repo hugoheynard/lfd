@@ -22,7 +22,7 @@ const KIND = "delivery.plan_arrested";
 const RUNG = "delivery-plan-arrested-bell";
 
 /**
- * **La cloche du plan arrêté** (plan de composition automatique, §16.5, CA6a).
+ * **La cloche du plan arrêté** (`documentation/livraisons/composition-automatique.md`, §4, CA6a).
  *
  * Elle vérifie le socle en BASE seulement (CA-D3, sans réseau : l'abonné
  * tourne dans une transaction), et sonne APRÈS la validation (`AfterCommit`) :

@@ -38,7 +38,7 @@ import { RetakeProductionDayCommand } from "./retake-production-day.command.js";
  * E3) : `production.day_retaken`, durable, dans la même unité de travail —
  * c'est lui qui fait repartir le dossier complété. Seulement quand des
  * commandes sont absorbées, comme tout le reste. Depuis CA6b (2026-10-06,
- * `livraisons/plan-composition-automatique.md`, §16.5), il porte leurs
+ * `livraisons/composition-automatique.md`, §4), il porte leurs
  * `orderIds`, et la livraison l'écoute par `production/channels/delivery/`.
  *
  * Il ne publie rien AU COMMERCE. Un retirage n'inscrit aucune commande NOUVELLE

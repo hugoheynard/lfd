@@ -341,8 +341,8 @@ retenues ? », « elles sont parties ») : la garde passe au livreur, et c'est l
 retrait qui tient la garde (`documentation/livraisons/plan-a-la-porte.md`, BQ).
 
 🔴 **`delivery` écoute la clôture du fournil par un canal** (2026-10-04,
-Hugo, option B — `documentation/livraisons/plan-composition-automatique.md`,
-§15). La matrice interdisait `production ↔ delivery` dans les deux sens, au
+Hugo, option B — `documentation/livraisons/composition-automatique.md`,
+§2.2). La matrice interdisait `production ↔ delivery` dans les deux sens, au
 temps où les domaines s'appelaient en direct. Une arête **à sens unique, sur un
 fait**, ne couple pas de la même façon : la livraison s'abonne à
 `production.day_closed` par `production/channels/delivery/`, et lit le détail

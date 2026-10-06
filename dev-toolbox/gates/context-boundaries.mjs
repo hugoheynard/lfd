@@ -238,7 +238,7 @@ const PORT_SURFACE = {
   // d'une fournée, la demande de retour. Contrats et faits, rien de l'agrégat.
   "packing→production": "production/channels/packing/",
   // La LIVRAISON écoute la clôture du fournil (2026-10-04, Hugo, option B,
-  // `plan-composition-automatique.md` §15) : le fait seul, rien de l'agrégat.
+  // `composition-automatique.md` §2.2) : le fait seul, rien de l'agrégat.
   // Le détail des commandes, elle le lit au commerce.
   "delivery→production": "production/channels/delivery/",
   // La LIVRAISON implémente ce que le COLISAGE déclare (2026-10-04, K2b,
