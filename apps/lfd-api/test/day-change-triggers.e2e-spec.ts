@@ -74,6 +74,8 @@ const UNWATCHED: Readonly<Record<string, string>> = {
   // de réglage. Ce qui portera un jour — le bac déclaré, son chargement — vit
   // ailleurs et aura ses déclencheurs.
   "delivery.delivery_bin_type": "le catalogue des types de bacs, un réglage sans journée",
+  "delivery.delivery_day_readiness":
+    "ce que la livraison sait de l'arrêt du plan (CA6a, 2026-10-06) : écrite par un abonné au fait de clôture, elle ne fait bouger aucune tournée ; la cloche prévient le bureau, et l'écran la relit à l'ouverture",
   "delivery.delivery_bin_capacity":
     "la grille des contenances bacs × produits, un réglage sans journée",
   // La bibliothèque d'achat (lot B1, 2026-09-30) : des véhicules et des bacs
