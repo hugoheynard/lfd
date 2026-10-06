@@ -48,6 +48,22 @@ describe('readVehicleDraft', () => {
 });
 
 describe('readBinDraft', () => {
+  it('saisit en cm à une décimale, envoie en mm ; relit en cm sans arrondi', () => {
+    const draft = {
+      ...binDraftOf(undefined),
+      name: 'Manne',
+      outer: { lengthCm: 66.5, widthCm: 46, heightCm: 71.5 },
+      inner: { lengthCm: 64.5, widthCm: 44, heightCm: 69.5 },
+      maxStack: 1,
+    };
+    const read = readBinDraft(draft);
+    expect(read.ok && read.payload.outer).toEqual({ lengthMm: 665, widthMm: 460, heightMm: 715 });
+    expect(readBinDraft({ ...draft, inner: { ...draft.inner, widthCm: 44.25 } })).toEqual({
+      ok: false,
+      issue: 'Les cotes intérieures se saisissent au millimètre près (une décimale).',
+    });
+  });
+
   it('exige les cotes et la pile, garde le fournisseur', () => {
     const draft = {
       ...binDraftOf(undefined),
@@ -62,8 +78,8 @@ describe('readBinDraft', () => {
       ok: true,
       payload: {
         name: 'Caisse 50',
-        outer: { lengthCm: 60, widthCm: 40, heightCm: 30 },
-        inner: { lengthCm: 56, widthCm: 36, heightCm: 28 },
+        outer: { lengthMm: 600, widthMm: 400, heightMm: 300 },
+        inner: { lengthMm: 560, widthMm: 360, heightMm: 280 },
         isotherm: false,
         maxStack: 5,
         supplier: 'Dupont',

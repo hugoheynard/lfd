@@ -15,6 +15,7 @@ import {
 
 import {
   formatLiters,
+  freeAboveLabel,
   overArchBands,
   overArchFirstLevel,
   placeBins,
@@ -68,12 +69,12 @@ export class PurchaseAssistantResult {
   });
   protected readonly heightLimit = computed(() => {
     const view = this.format();
-    const free = this.floor().heightCm - view.levels * this.sent().outer.heightCm;
+    const free = freeAboveLabel(this.floor().heightCm, view.levels, this.sent().outer.heightMm);
     const cause =
       view.heightLimit === 'stack'
         ? `Limité par la pile (${this.sent().maxStack} au plus)`
         : 'Limité par le plafond';
-    return `${cause} — ${free} cm libres au-dessus`;
+    return `${cause} — ${free}`;
   });
   protected readonly viewBox = computed(() => {
     const floor = this.floor();

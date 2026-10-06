@@ -34,8 +34,8 @@ const KANGOO = {
 
 const CAISSE = {
   name: "Caisse Dupont 50",
-  outer: { lengthCm: 60, widthCm: 40, heightCm: 30 },
-  inner: { lengthCm: 56, widthCm: 36, heightCm: 27 },
+  outer: { lengthMm: 600, widthMm: 400, heightMm: 300 },
+  inner: { lengthMm: 560, widthMm: 360, heightMm: 270 },
   isotherm: false,
   maxStack: 5,
   supplier: "Dupont",
@@ -188,7 +188,7 @@ describe("les formats de bacs candidats", () => {
   it("refuse un intérieur trop grand, un prix non entier, un doublon", async () => {
     await declare(LIBRARY_BINS, CAISSE);
 
-    const tooWide = { ...CAISSE, name: "X", inner: { ...CAISSE.inner, widthCm: 41 } };
+    const tooWide = { ...CAISSE, name: "X", inner: { ...CAISSE.inner, widthMm: 410 } };
     expect(code(await admin(ctx).post(LIBRARY_BINS).send(tooWide).expect(400))).toBe(
       "delivery.bin_inner_exceeds_outer",
     );
@@ -203,6 +203,56 @@ describe("les formats de bacs candidats", () => {
     expect(code(await admin(ctx).post(LIBRARY_BINS).send(CAISSE).expect(409))).toBe(
       "delivery.purchase_bin_candidate_name_taken",
     );
+  });
+});
+
+describe("les formats de bacs candidats — au millimètre (2026-10-07)", () => {
+  const MANNE = {
+    ...CAISSE,
+    name: "Manne à pain",
+    outer: { lengthMm: 665, widthMm: 460, heightMm: 715 },
+    inner: { lengthMm: 645, widthMm: 440, heightMm: 695 },
+    maxStack: 1,
+  };
+
+  it("garde le demi-centimètre de bout en bout, et n'écrit plus les colonnes en cm", async () => {
+    const id = await declare(LIBRARY_BINS, MANNE);
+
+    // 645 × 440 × 695 mm = 197 241 000 mm³ → 197 L.
+    expect((await bins()).candidates).toMatchObject([
+      { id, outer: MANNE.outer, inner: MANNE.inner, innerVolumeLiters: 197 },
+    ]);
+    const row = await ctx.prisma.deliveryPurchaseBinCandidate.findUniqueOrThrow({ where: { id } });
+    expect(row).toMatchObject({ outerLengthMm: 665, innerHeightMm: 695 });
+    expect([row.outerLengthCm, row.outerWidthCm, row.innerHeightCm]).toEqual([null, null, null]);
+  });
+
+  it("refuse une dimension non entière en mm (400)", async () => {
+    await admin(ctx)
+      .post(LIBRARY_BINS)
+      .send({ ...MANNE, outer: { ...MANNE.outer, lengthMm: 665.5 } })
+      .expect(400);
+  });
+
+  it("trace la fiche au journal en millimètres, et relit un ancien fait en centimètres", async () => {
+    await declare(LIBRARY_BINS, MANNE);
+    const fact = await ctx.prisma.activityEvent.findFirstOrThrow({
+      where: { type: "delivery_purchase_bin_candidate.declared" },
+      select: { type: true, payload: true },
+    });
+    expect(fact.payload).toMatchObject({ candidate: { outer: MANNE.outer, inner: MANNE.inner } });
+    expect(checkJournalFact(fact.type, fact.payload)).toBeNull();
+
+    // Un fait écrit avant le 2026-10-07 porte des cm entiers : il se lit encore.
+    const before = {
+      subjectLabel: "Caisse Dupont 50",
+      candidate: {
+        ...CAISSE,
+        outer: { lengthCm: 60, widthCm: 40, heightCm: 30 },
+        inner: { lengthCm: 56, widthCm: 36, heightCm: 27 },
+      },
+    };
+    expect(checkJournalFact("delivery_purchase_bin_candidate.declared", before)).toBeNull();
   });
 });
 
@@ -237,6 +287,25 @@ describe("la base tient ce que le domaine refuse", () => {
         data: { priceCentsExclVat: -1 },
       }),
     ).rejects.toThrow(/delivery_purchase_vehicle_candidate_price/u);
+  });
+});
+
+describe("la base tient les dimensions en millimètres", () => {
+  it("le CHECK reporté sur les colonnes en mm refuse un intérieur plus grand ou nul", async () => {
+    const id = await declare(LIBRARY_BINS, CAISSE);
+
+    await expect(
+      ctx.prisma.$executeRawUnsafe(
+        `UPDATE "delivery"."delivery_purchase_bin_candidate" SET "inner_height_mm" = 301 WHERE "id" = $1`,
+        id,
+      ),
+    ).rejects.toThrow(/delivery_purchase_bin_candidate_dimensions/u);
+    await expect(
+      ctx.prisma.$executeRawUnsafe(
+        `UPDATE "delivery"."delivery_purchase_bin_candidate" SET "inner_length_mm" = 0 WHERE "id" = $1`,
+        id,
+      ),
+    ).rejects.toThrow(/delivery_purchase_bin_candidate_dimensions/u);
   });
 });
 

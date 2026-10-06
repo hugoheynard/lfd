@@ -42,9 +42,10 @@ function centimetresOfMm(mm: number): string {
 /**
  * « 66,5 × 46 × 71,5 cm », ou « — » sur une charge incomplète. Une fiche se
  * trace en mm depuis le 2026-10-07 ; les faits d'avant portent des cm entiers,
- * et se lisent toujours.
+ * et se lisent toujours. Les bacs candidats de la bibliothèque d'achat suivent
+ * la même règle, et la même lecture.
  */
-function dimensions(raw: unknown): string {
+export function binDimensionsPhrase(raw: unknown): string {
   const d = recordOf(raw);
   const mm = [d?.['lengthMm'], d?.['widthMm'], d?.['heightMm']].map(count);
   if (mm.every((side) => side !== null)) {
@@ -62,8 +63,8 @@ const TRAITS: readonly {
   readonly say: (raw: unknown) => string;
 }[] = [
   { key: 'name', say: (raw) => `« ${optional(raw) ?? '—'} »` },
-  { key: 'outer', say: (raw) => `extérieur ${dimensions(raw)}` },
-  { key: 'inner', say: (raw) => `intérieur ${dimensions(raw)}` },
+  { key: 'outer', say: (raw) => `extérieur ${binDimensionsPhrase(raw)}` },
+  { key: 'inner', say: (raw) => `intérieur ${binDimensionsPhrase(raw)}` },
   { key: 'isotherm', say: (raw) => (raw === true ? 'isotherme' : 'sec') },
   {
     key: 'maxStack',

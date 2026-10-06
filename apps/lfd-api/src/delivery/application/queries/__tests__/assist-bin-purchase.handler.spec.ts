@@ -15,14 +15,14 @@ const SCENARIO: PurchaseAssistantPayload = {
   formats: [
     {
       name: "Grand",
-      outer: { lengthCm: 60, widthCm: 40, heightCm: 20 },
-      inner: { lengthCm: 50, widthCm: 30, heightCm: 20 },
+      outer: { lengthMm: 600, widthMm: 400, heightMm: 200 },
+      inner: { lengthMm: 500, widthMm: 300, heightMm: 200 },
       maxStack: 5,
     },
     {
       name: "Petit",
-      outer: { lengthCm: 50, widthCm: 50, heightCm: 20 },
-      inner: { lengthCm: 50, widthCm: 50, heightCm: 20 },
+      outer: { lengthMm: 500, widthMm: 500, heightMm: 200 },
+      inner: { lengthMm: 500, widthMm: 500, heightMm: 200 },
       maxStack: 1,
     },
   ],

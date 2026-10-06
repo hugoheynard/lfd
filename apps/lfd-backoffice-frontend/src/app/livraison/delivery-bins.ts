@@ -23,7 +23,7 @@ import {
  */
 
 /** Millimètres dans un centimètre. */
-const MM_PER_CM = 10;
+export const MM_PER_CM = 10;
 
 /** Les bornes du contrat, dites en centimètres. */
 export const BIN_TYPE_DIMENSION_MIN_CM = BIN_TYPE_DIMENSION_MIN_MM / MM_PER_CM;

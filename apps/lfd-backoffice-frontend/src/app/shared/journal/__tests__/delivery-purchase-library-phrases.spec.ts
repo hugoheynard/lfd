@@ -55,6 +55,31 @@ describe('la bibliothèque d’achat (delivery_purchase_*_candidate.*)', () => {
     expect(said).toContain('25');
   });
 
+  it('dit un format au millimètre en cm à une décimale, et relit un ancien fait en cm', () => {
+    const manne = {
+      ...CAISSE,
+      outer: { lengthMm: 665, widthMm: 460, heightMm: 715 },
+      inner: { lengthMm: 645, widthMm: 440, heightMm: 695 },
+    };
+    const said = sentence(
+      fact('delivery_purchase_bin_candidate.declared', 'delivery_purchase_bin_candidate', {
+        subjectLabel: 'Manne',
+        candidate: manne,
+      }),
+    );
+    expect(said).toContain('extérieur 66,5 × 46 × 71,5 cm');
+    expect(said).toContain('intérieur 64,5 × 44 × 69,5 cm');
+
+    // CAISSE porte des cm entiers : un fait d'avant le 2026-10-07.
+    const before = sentence(
+      fact('delivery_purchase_bin_candidate.declared', 'delivery_purchase_bin_candidate', {
+        subjectLabel: 'Caisse',
+        candidate: CAISSE,
+      }),
+    );
+    expect(before).toContain('extérieur 60 × 40 × 30 cm');
+  });
+
   it('dit un prix absent « inconnu », jamais zéro', () => {
     const said = sentence(
       fact('delivery_purchase_bin_candidate.declared', 'delivery_purchase_bin_candidate', {

@@ -14,6 +14,7 @@ import {
   type Segment,
 } from '../phrase';
 import { formatUnit } from '../units';
+import { binDimensionsPhrase } from './delivery-bin-phrases';
 
 /**
  * **La bibliothèque d'achat** (`plan-bibliotheque-d-achat.md`, lot B1) — le
@@ -72,8 +73,8 @@ const VEHICLE_TRAITS: readonly Trait[] = [
 
 const BIN_TRAITS: readonly Trait[] = [
   { key: 'name', say: (raw) => `« ${optional(raw) ?? '—'} »` },
-  { key: 'outer', say: (raw) => `extérieur ${dimensions(raw, BOX)}` },
-  { key: 'inner', say: (raw) => `intérieur ${dimensions(raw, BOX)}` },
+  { key: 'outer', say: (raw) => `extérieur ${binDimensionsPhrase(raw)}` },
+  { key: 'inner', say: (raw) => `intérieur ${binDimensionsPhrase(raw)}` },
   { key: 'isotherm', say: (raw) => (raw === true ? 'isotherme' : 'sec') },
   {
     key: 'maxStack',

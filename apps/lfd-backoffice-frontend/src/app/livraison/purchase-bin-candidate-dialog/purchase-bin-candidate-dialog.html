@@ -19,7 +19,8 @@
         <fold-number-input
           label="Longueur"
           spinner="none"
-          integer
+          [decimals]="1"
+          [step]="0.1"
           [value]="draft().outer.lengthCm"
           (valueChange)="setOuter({ lengthCm: $event })"
           data-outer-length
@@ -27,7 +28,8 @@
         <fold-number-input
           label="Largeur"
           spinner="none"
-          integer
+          [decimals]="1"
+          [step]="0.1"
           [value]="draft().outer.widthCm"
           (valueChange)="setOuter({ widthCm: $event })"
           data-outer-width
@@ -35,7 +37,8 @@
         <fold-number-input
           label="Hauteur"
           spinner="none"
-          integer
+          [decimals]="1"
+          [step]="0.1"
           [value]="draft().outer.heightCm"
           (valueChange)="setOuter({ heightCm: $event })"
           data-outer-height
@@ -48,7 +51,8 @@
         <fold-number-input
           label="Longueur"
           spinner="none"
-          integer
+          [decimals]="1"
+          [step]="0.1"
           [value]="draft().inner.lengthCm"
           (valueChange)="setInner({ lengthCm: $event })"
           data-inner-length
@@ -56,7 +60,8 @@
         <fold-number-input
           label="Largeur"
           spinner="none"
-          integer
+          [decimals]="1"
+          [step]="0.1"
           [value]="draft().inner.widthCm"
           (valueChange)="setInner({ widthCm: $event })"
           data-inner-width
@@ -64,7 +69,8 @@
         <fold-number-input
           label="Hauteur"
           spinner="none"
-          integer
+          [decimals]="1"
+          [step]="0.1"
           [value]="draft().inner.heightCm"
           (valueChange)="setInner({ heightCm: $event })"
           data-inner-height

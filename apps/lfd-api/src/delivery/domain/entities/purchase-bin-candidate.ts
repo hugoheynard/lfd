@@ -1,6 +1,6 @@
 import { InvalidPurchaseCandidateNameError } from "../errors/delivery-purchase-errors.js";
 import { BinFormat } from "../value-objects/bin-format.js";
-import type { BinDimensionsInput } from "../value-objects/bin-dimensions.js";
+import type { BinTypeDimensionsInput } from "../value-objects/bin-type-dimensions.js";
 import {
   PurchaseListing,
   type PurchaseListingState,
@@ -20,8 +20,8 @@ import { PURCHASE_CANDIDATE_NAME_MAX_LENGTH } from "./purchase-vehicle-candidate
  */
 export interface PurchaseBinCandidateSpec {
   readonly name: string;
-  readonly outer: BinDimensionsInput;
-  readonly inner: BinDimensionsInput;
+  readonly outer: BinTypeDimensionsInput;
+  readonly inner: BinTypeDimensionsInput;
   readonly isotherm: boolean;
   readonly maxStack: number;
   readonly supplier?: string | null | undefined;
@@ -33,8 +33,8 @@ export interface PurchaseBinCandidateSpec {
 /** La fiche telle qu'elle se range et se journalise : tout est explicite. */
 export interface PurchaseBinCandidateSheet {
   readonly name: string;
-  readonly outer: BinDimensionsInput;
-  readonly inner: BinDimensionsInput;
+  readonly outer: BinTypeDimensionsInput;
+  readonly inner: BinTypeDimensionsInput;
   readonly isotherm: boolean;
   readonly maxStack: number;
   readonly supplier: string | null;
@@ -63,7 +63,8 @@ interface ValidSheet {
  * un bac qu'on envisage d'acheter. Ce n'est PAS un `BinType` — il n'a ni
  * contenance ni colisage, et vit dans sa propre table. Sa géométrie obéit
  * pourtant aux règles d'un type de bac, par `BinFormat` : bornes, intérieur
- * dans l'extérieur, pile.
+ * dans l'extérieur, pile — et ses dimensions se mesurent au millimètre, comme
+ * lui (2026-10-07).
  */
 export class PurchaseBinCandidate {
   private constructor(

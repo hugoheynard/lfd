@@ -2,8 +2,18 @@ import { z } from "zod";
 
 import { cents, count, fact, payload, subjectLabel } from "./fact.js";
 
-const dims = (): z.ZodType =>
+/** Le plancher d'un véhicule candidat : en cm, toujours. */
+const cargoDims = (): z.ZodType =>
   z.object({ lengthCm: z.number().int(), widthCm: z.number().int(), heightCm: z.number().int() });
+/**
+ * Les dimensions d'un bac candidat : en mm depuis le 2026-10-07, en cm entiers
+ * avant. Un fait écrit ne se réécrit pas — les deux se lisent.
+ */
+const binDims = (): z.ZodType =>
+  z.union([
+    z.object({ lengthMm: z.number().int(), widthMm: z.number().int(), heightMm: z.number().int() }),
+    cargoDims(),
+  ]);
 const arches = (): z.ZodType =>
   z.object({
     lengthCm: z.number().int(),
@@ -16,7 +26,7 @@ const text = (): z.ZodType => z.string().min(1).nullable();
 const vehicle = (): z.ZodType =>
   z.object({
     name: z.string().min(1),
-    cargo: dims(),
+    cargo: cargoDims(),
     wheelArches: arches().nullable(),
     reference: text(),
     purchaseUrl: text(),
@@ -25,8 +35,8 @@ const vehicle = (): z.ZodType =>
 const bin = (): z.ZodType =>
   z.object({
     name: z.string().min(1),
-    outer: dims(),
-    inner: dims(),
+    outer: binDims(),
+    inner: binDims(),
     isotherm: z.boolean(),
     maxStack: z.number().int(),
     supplier: text(),

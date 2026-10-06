@@ -39,14 +39,9 @@ import { z } from "zod";
 /** Le nom tient sur une étiquette de grille. */
 export const BIN_TYPE_NAME_MAX_LENGTH = 60;
 /**
- * Une dimension de bac CANDIDAT ou d'un format de l'assistant d'achat, en
- * centimètres entiers. Un TYPE de bac se mesure au millimètre, ci-dessous.
- */
-export const BIN_DIMENSION_MIN_CM = 1;
-export const BIN_DIMENSION_MAX_CM = 300;
-/**
- * Une dimension de TYPE de bac, en millimètres entiers (2026-10-07 : une manne
- * à pain mesure 66,5 cm) — les mêmes bornes que 1–300 cm.
+ * Une dimension de bac — type, candidat de la bibliothèque d'achat ou format
+ * de l'assistant —, en millimètres entiers (2026-10-07 : une manne à pain
+ * mesure 66,5 cm) — les mêmes bornes que 1–300 cm.
  */
 export const BIN_TYPE_DIMENSION_MIN_MM = 10;
 export const BIN_TYPE_DIMENSION_MAX_MM = 3000;
@@ -57,21 +52,20 @@ export const BIN_MAX_STACK_MAX = 20;
 export const BIN_CAPACITY_MIN_UNITS = 1;
 export const BIN_CAPACITY_MAX_UNITS = 10_000;
 
-/** Trois dimensions en centimètres entiers (bornes au domaine). */
+/**
+ * Trois dimensions d'un bac, en millimètres entiers (bornes au domaine) — une
+ * seule unité côté bacs depuis le 2026-10-07 : type, candidat, format essayé.
+ */
 export const binDimensionsSchema = z.object({
-  lengthCm: z.number().int(),
-  widthCm: z.number().int(),
-  heightCm: z.number().int(),
-});
-export type BinDimensions = z.infer<typeof binDimensionsSchema>;
-
-/** Trois dimensions d'un TYPE de bac, en millimètres entiers (bornes au domaine). */
-export const binTypeDimensionsSchema = z.object({
   lengthMm: z.number().int(),
   widthMm: z.number().int(),
   heightMm: z.number().int(),
 });
-export type BinTypeDimensions = z.infer<typeof binTypeDimensionsSchema>;
+export type BinDimensions = z.infer<typeof binDimensionsSchema>;
+
+/** Le même schéma, sous le nom que lui donnent les types de bacs. */
+export const binTypeDimensionsSchema = binDimensionsSchema;
+export type BinTypeDimensions = BinDimensions;
 
 /**
  * Charge d'un type de bac, à la création comme à la correction — la fiche

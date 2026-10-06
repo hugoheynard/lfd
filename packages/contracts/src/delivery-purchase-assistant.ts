@@ -11,7 +11,7 @@ import { vehicleCargoPayloadSchema, vehicleWheelArchesPayloadSchema } from "./de
  * Une LECTURE : `POST admin/livraison/assistant-achat` parce que le scénario
  * est un corps. Ni table, ni journal. Le schéma ne tient que la FORME ; les
  * bornes des dimensions, du jeu et de la pile sont celles du domaine
- * (`CargoSpace`, `BinDimensions`, `BinType`), qui refuse avec la phrase à lire.
+ * (`CargoSpace`, `BinTypeDimensions`, `BinType`), qui refuse avec la phrase à lire.
  */
 
 /** Au plus dix formats comparés côte à côte. */
@@ -33,7 +33,7 @@ export const cargoFloorPayloadSchema = vehicleCargoPayloadSchema.extend({
 });
 export type CargoFloorPayload = z.infer<typeof cargoFloorPayloadSchema>;
 
-/** Un format de bac essayé : la géométrie d'un type de bac, sans identité. */
+/** Un format de bac essayé : la géométrie d'un type de bac, sans identité — en mm, comme lui. */
 export const purchaseAssistantFormatSchema = z.object({
   name: z
     .string()

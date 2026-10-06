@@ -20,7 +20,8 @@ import {
   PurchaseBinCandidateDialog,
   type PurchaseBinCandidateDialogData,
 } from '../purchase-bin-candidate-dialog/purchase-bin-candidate-dialog';
-import { archivedOnLabel, cmLabel } from '../purchase-library';
+import { dimensionsLabel } from '../delivery-bins';
+import { archivedOnLabel } from '../purchase-library';
 import { PurchaseLibraryService } from '../purchase-library.service';
 import { priceLabel } from '../purchase-price';
 import {
@@ -87,7 +88,8 @@ export class PurchaseLibrary {
 
   protected readonly price = priceLabel;
   protected readonly archivedOn = archivedOnLabel;
-  protected readonly cm = cmLabel;
+  /** « 66,5 × 46 × 71,5 cm » — un candidat se mesure au millimètre. */
+  protected readonly cm = dimensionsLabel;
   protected readonly cargo = cargoLabel;
   protected readonly arches = wheelArchesLabel;
 

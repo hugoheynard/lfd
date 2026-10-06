@@ -160,42 +160,48 @@
                         <div class="dims">
                           <fold-number-input
                             label="Ext. longueur"
-                            integer
+                            [decimals]="1"
+                            [step]="0.1"
                             [value]="format.outer.lengthCm"
                             (valueChange)="updateOuter(format, { lengthCm: $event })"
                             data-outer-length
                           />
                           <fold-number-input
                             label="Ext. largeur"
-                            integer
+                            [decimals]="1"
+                            [step]="0.1"
                             [value]="format.outer.widthCm"
                             (valueChange)="updateOuter(format, { widthCm: $event })"
                             data-outer-width
                           />
                           <fold-number-input
                             label="Ext. hauteur"
-                            integer
+                            [decimals]="1"
+                            [step]="0.1"
                             [value]="format.outer.heightCm"
                             (valueChange)="updateOuter(format, { heightCm: $event })"
                             data-outer-height
                           />
                           <fold-number-input
                             label="Int. longueur"
-                            integer
+                            [decimals]="1"
+                            [step]="0.1"
                             [value]="format.inner.lengthCm"
                             (valueChange)="updateInner(format, { lengthCm: $event })"
                             data-inner-length
                           />
                           <fold-number-input
                             label="Int. largeur"
-                            integer
+                            [decimals]="1"
+                            [step]="0.1"
                             [value]="format.inner.widthCm"
                             (valueChange)="updateInner(format, { widthCm: $event })"
                             data-inner-width
                           />
                           <fold-number-input
                             label="Int. hauteur"
-                            integer
+                            [decimals]="1"
+                            [step]="0.1"
                             [value]="format.inner.heightCm"
                             (valueChange)="updateInner(format, { heightCm: $event })"
                             data-inner-height

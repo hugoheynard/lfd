@@ -1,4 +1,5 @@
 import {
+  type BinDimensions,
   PURCHASE_CANDIDATE_NAME_MAX_LENGTH,
   type PurchaseBinCandidatePayload,
   type PurchaseBinCandidateView,
@@ -6,6 +7,7 @@ import {
   type PurchaseVehicleCandidateView,
 } from '@lfd/contracts';
 
+import { cmToMm, mmToCm } from './delivery-bins';
 import { centsToEurosInput, parseEurosToCents } from './purchase-price';
 
 /**
@@ -81,11 +83,20 @@ export function vehicleDraftOf(
   };
 }
 
+/** Des millimètres relus, en centimètres à saisir : `665` → `66.5`. */
+function cmDraftOfMm(dims: BinDimensions): CmDraft {
+  return {
+    lengthCm: mmToCm(dims.lengthMm),
+    widthCm: mmToCm(dims.widthMm),
+    heightCm: mmToCm(dims.heightMm),
+  };
+}
+
 export function binDraftOf(view: PurchaseBinCandidateView | undefined): BinCandidateDraft {
   return {
     name: view?.name ?? '',
-    outer: view?.outer ?? EMPTY_CM,
-    inner: view?.inner ?? EMPTY_CM,
+    outer: view === undefined ? EMPTY_CM : cmDraftOfMm(view.outer),
+    inner: view === undefined ? EMPTY_CM : cmDraftOfMm(view.inner),
     maxStack: view?.maxStack ?? null,
     isotherm: view?.isotherm ?? false,
     supplier: view?.supplier ?? '',
@@ -117,6 +128,33 @@ function readCm(draft: CmDraft): { lengthCm: number; widthCm: number; heightCm: 
   return lengthCm === null || widthCm === null || heightCm === null
     ? null
     : { lengthCm, widthCm, heightCm };
+}
+
+/**
+ * Trois cotes saisies en cm à une décimale, envoyées en mm entiers (2026-10-07) :
+ * `null` si l'une manque, `'fraction'` si l'une porte plus d'une décimale.
+ */
+function readMm(draft: CmDraft): BinDimensions | null | 'fraction' {
+  const cm = readCm(draft);
+  if (cm === null) return null;
+  const [lengthMm, widthMm, heightMm] = [
+    cmToMm(cm.lengthCm),
+    cmToMm(cm.widthCm),
+    cmToMm(cm.heightCm),
+  ];
+  return lengthMm === null || widthMm === null || heightMm === null
+    ? 'fraction'
+    : { lengthMm, widthMm, heightMm };
+}
+
+/** Une face du bac lue en mm, ou la phrase qui dit pourquoi elle ne part pas. */
+function readSide(draft: CmDraft, side: string): BinDimensions | { readonly issue: string } {
+  const read = readMm(draft);
+  if (read === null) return { issue: `Saisissez les trois cotes ${side}.` };
+  if (read === 'fraction') {
+    return { issue: `Les cotes ${side} se saisissent au millimètre près (une décimale).` };
+  }
+  return read;
 }
 
 type ArchesReading =
@@ -179,10 +217,10 @@ export function readVehicleDraft(
 export function readBinDraft(draft: BinCandidateDraft): Reading<PurchaseBinCandidatePayload> {
   const name = readName(draft.name, 'le format');
   if (typeof name !== 'string') return { ok: false, issue: name.issue };
-  const outer = readCm(draft.outer);
-  if (outer === null) return { ok: false, issue: 'Saisissez les trois cotes extérieures.' };
-  const inner = readCm(draft.inner);
-  if (inner === null) return { ok: false, issue: 'Saisissez les trois cotes intérieures.' };
+  const outer = readSide(draft.outer, 'extérieures');
+  if ('issue' in outer) return { ok: false, issue: outer.issue };
+  const inner = readSide(draft.inner, 'intérieures');
+  if ('issue' in inner) return { ok: false, issue: inner.issue };
   if (draft.maxStack === null) return { ok: false, issue: 'Saisissez la pile maximale.' };
   const price = parseEurosToCents(draft.price);
   if (!price.ok) return price;
@@ -210,9 +248,4 @@ const ARCHIVED_DAY = new Intl.DateTimeFormat('fr-FR', {
 /** « archivé le 12 septembre 2026 » — le jour à Paris, pas en UTC. */
 export function archivedOnLabel(archivedAt: string): string {
   return `archivé le ${ARCHIVED_DAY.format(new Date(archivedAt))}`;
-}
-
-/** « 60 × 40 × 30 cm » */
-export function cmLabel(dims: { lengthCm: number; widthCm: number; heightCm: number }): string {
-  return `${String(dims.lengthCm)} × ${String(dims.widthCm)} × ${String(dims.heightCm)} cm`;
 }

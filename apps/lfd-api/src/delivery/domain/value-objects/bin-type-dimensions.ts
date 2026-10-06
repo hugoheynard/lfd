@@ -1,14 +1,18 @@
 import { InvalidBinDimensionsError } from "../errors/delivery-bin-errors.js";
 
 /**
- * Bornes d'une dimension de TYPE de bac, en millimètres (2026-10-07) — les
- * 1–300 cm d'avant, convertis : un bac d'un centimètre reste absurde mais
- * admis, comme avant, et rien ne dépasse trois mètres.
+ * Bornes d'une dimension de bac, en millimètres (2026-10-07) — les 1–300 cm
+ * d'avant, convertis : un bac d'un centimètre reste absurde mais admis, comme
+ * avant, et rien ne dépasse trois mètres.
  */
 export const BIN_TYPE_DIMENSION_MIN_MM = 10;
 export const BIN_TYPE_DIMENSION_MAX_MM = 3000;
 
-/** Millimètres dans un centimètre : la seule conversion de ce bloc, exacte dans ce sens. */
+/**
+ * Millimètres dans un centimètre : la seule conversion côté bacs, exacte dans
+ * ce sens — elle ne sert plus qu'où un bac rencontre un plancher de véhicule,
+ * mesuré en cm.
+ */
 export const MM_PER_CM = 10;
 
 /** Millimètres cubes dans un litre. */
@@ -22,9 +26,15 @@ export interface BinTypeDimensionsInput {
 }
 
 /**
- * **Trois dimensions d'un type de bac**, en millimètres entiers — une manne à
- * pain mesure 66,5 cm, et le centimètre entier ne savait pas l'écrire. Le
- * volume en litres en est DÉRIVÉ, jamais saisi ni stocké.
+ * **Trois dimensions d'un bac**, en millimètres entiers — une manne à pain
+ * mesure 66,5 cm, et le centimètre entier ne savait pas l'écrire. Le volume en
+ * litres en est DÉRIVÉ, jamais saisi ni stocké.
+ *
+ * La SEULE mesure de bac du bloc (2026-10-07) : un type de bac, un candidat de
+ * la bibliothèque d'achat et un format de l'assistant la partagent. Le nom
+ * garde « Type » parce que les règles sont celles du type de bac ; les
+ * dimensions en cm entiers (`BinDimensions`) qui servaient aux deux derniers
+ * sont retirées.
  */
 export class BinTypeDimensions implements BinTypeDimensionsInput {
   private constructor(

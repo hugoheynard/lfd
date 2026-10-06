@@ -7,7 +7,7 @@ import {
   type VehicleView,
 } from '@lfd/contracts';
 
-import { mmToCm } from './delivery-bins';
+import { centimetres, cmToMm, MM_PER_CM, mmToCm } from './delivery-bins';
 
 /**
  * Les dérivations pures de **l'assistant d'achat**
@@ -125,9 +125,9 @@ function archesOfVehicle(
 /**
  * Les types de bacs EN SERVICE, dans l'ordre du catalogue, dix au plus.
  *
- * Un type se mesure au millimètre, l'assistant se saisit en centimètres
- * entiers : un type à 66,5 cm arrive à 66,5, et le serveur le refuse plutôt
- * que l'écran ne l'arrondisse en silence (2026-10-07).
+ * Un type et un format se mesurent tous deux au millimètre ; la saisie est en
+ * cm à une décimale. Un type à 665 mm arrive à 66,5 et repart à 665 : aucun
+ * arrondi (2026-10-07).
  */
 export function formatsOfBinTypes(types: readonly BinTypeView[]): readonly FormatDraft[] {
   const cm = (side: BinTypeView['outer']): DimensionsDraft => ({
@@ -223,7 +223,10 @@ export function formatLiters(liters: number): string {
   return `${(liters / LITERS_PER_CUBIC_METER).toFixed(2).replace('.', ',')} m³`;
 }
 
-/** Un bac dessiné sur le plancher vu de dessus, en cm, jeu retiré. */
+/**
+ * Un bac dessiné sur le plancher vu de dessus, en cm (le plancher en est), jeu
+ * retiré. Les cotes du format arrivent en mm et ne sont converties qu'ici.
+ */
 export interface PlacedBin {
   readonly x: number;
   readonly y: number;
@@ -239,13 +242,13 @@ export interface PlacedBin {
  */
 export function placeBins(
   rows: readonly PurchaseAssistantRowView[],
-  outer: { readonly lengthCm: number; readonly widthCm: number },
+  outer: { readonly lengthMm: number; readonly widthMm: number },
   floorWidthCm: number,
   gapCm: number,
 ): readonly PlacedBin[] {
   return rows.flatMap((row) => {
     const turned = row.orientation === 'turned';
-    const across = (turned ? outer.lengthCm : outer.widthCm) + gapCm;
+    const across = mmToCm(turned ? outer.lengthMm : outer.widthMm) + gapCm;
     const top = (floorWidthCm - row.count * across) / 2;
     return Array.from({ length: row.count }, (_, index) => ({
       x: row.fromCm + gapCm / 2,
@@ -273,14 +276,14 @@ export interface OverArchBand {
  */
 export function overArchBands(
   rows: readonly PurchaseAssistantRowView[],
-  outer: { readonly lengthCm: number; readonly widthCm: number },
+  outer: { readonly lengthMm: number; readonly widthMm: number },
   floorWidthCm: number,
   gapCm: number,
 ): readonly OverArchBand[] {
   return rows
     .filter((row) => row.overArchCount > 0)
     .flatMap((row) => {
-      const across = (row.orientation === 'turned' ? outer.lengthCm : outer.widthCm) + gapCm;
+      const across = mmToCm(row.orientation === 'turned' ? outer.lengthMm : outer.widthMm) + gapCm;
       const side = Math.max(0, (floorWidthCm - row.count * across) / 2);
       return [
         { x: row.fromCm, y: 0, depth: row.depthCm, across: side },
@@ -296,6 +299,14 @@ export function overArchFirstLevel(rows: readonly PurchaseAssistantRowView[]): n
     .map((row) => row.overArchFromLevel)
     .filter((level): level is number => level !== null);
   return levels.length === 0 ? null : Math.min(...levels);
+}
+
+/**
+ * « 12,5 cm libres au-dessus » : le plafond moins les étages — le bac mesuré
+ * en mm, le plancher en cm.
+ */
+export function freeAboveLabel(floorHeightCm: number, levels: number, binHeightMm: number): string {
+  return `${centimetres(floorHeightCm * MM_PER_CM - levels * binHeightMm)} cm libres au-dessus`;
 }
 
 /**
@@ -325,12 +336,27 @@ function dimensions(
   draft: DimensionsDraft,
   name: string,
   missing: string[],
-): { lengthCm: number; widthCm: number; heightCm: number } {
+): { lengthMm: number; widthMm: number; heightMm: number } {
   const before = missing.length;
-  const lengthCm = need(draft.lengthCm, name, missing);
-  const widthCm = need(draft.widthCm, name, missing);
-  const heightCm = need(draft.heightCm, name, missing);
+  const lengthMm = needMm(draft.lengthCm, name, missing);
+  const widthMm = needMm(draft.widthCm, name, missing);
+  const heightMm = needMm(draft.heightCm, name, missing);
   // Une seule mention par cote incomplète : « Bac M, extérieur » suffit.
   missing.splice(before + 1);
-  return { lengthCm, widthCm, heightCm };
+  return { lengthMm, widthMm, heightMm };
+}
+
+/**
+ * Une cote saisie en cm, envoyée en mm entiers. Plus d'une décimale ne se
+ * mesure pas au millimètre : on le dit plutôt que d'arrondir en silence.
+ */
+function needMm(cm: number | null, name: string, missing: string[]): number {
+  const value = need(cm, name, missing);
+  if (cm === null) return 0;
+  const mm = cmToMm(value);
+  if (mm === null) {
+    missing.push(`${name} au millimètre près (une décimale)`);
+    return 0;
+  }
+  return mm;
 }

@@ -35,8 +35,8 @@ const KANGOO = {
 
 const caisse = (name: string): object => ({
   name,
-  outer: { lengthCm: 60, widthCm: 40, heightCm: 30 },
-  inner: { lengthCm: 56, widthCm: 36, heightCm: 27 },
+  outer: { lengthMm: 600, widthMm: 400, heightMm: 300 },
+  inner: { lengthMm: 560, widthMm: 360, heightMm: 270 },
   isotherm: false,
   maxStack: 5,
   supplier: null,

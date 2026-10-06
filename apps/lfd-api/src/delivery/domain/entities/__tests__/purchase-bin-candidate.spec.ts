@@ -20,8 +20,8 @@ const ANNE: DeliveryAuthor = { staffUserId: "staff_1", name: "Anne B", role: "ad
 
 const SPEC: PurchaseBinCandidateSpec = {
   name: "Caisse Dupont 50",
-  outer: { lengthCm: 60, widthCm: 40, heightCm: 30 },
-  inner: { lengthCm: 56, widthCm: 36, heightCm: 27 },
+  outer: { lengthMm: 600, widthMm: 400, heightMm: 300 },
+  inner: { lengthMm: 560, widthMm: 360, heightMm: 270 },
   isotherm: true,
   maxStack: 5,
   supplier: "Dupont",
@@ -66,16 +66,35 @@ describe("PurchaseBinCandidate", () => {
     });
   });
 
+  it("se mesure au millimètre : la manne à pain (66,5 × 46 × 71,5 cm) se déclare telle quelle", () => {
+    const manne = {
+      ...SPEC,
+      outer: { lengthMm: 665, widthMm: 460, heightMm: 715 },
+      inner: { lengthMm: 645, widthMm: 440, heightMm: 695 },
+    };
+
+    expect(declared(manne).specification).toMatchObject({
+      outer: manne.outer,
+      inner: manne.inner,
+    });
+  });
+
+  it("refuse une dimension qui n'est pas un nombre entier de millimètres", () => {
+    expect(() => declared({ ...SPEC, outer: { ...SPEC.outer, lengthMm: 665.5 } })).toThrow(
+      InvalidBinDimensionsError,
+    );
+  });
+
   it.each([
     ["un nom vide", { ...SPEC, name: "" }, InvalidPurchaseCandidateNameError],
     [
       "une dimension hors bornes",
-      { ...SPEC, outer: { ...SPEC.outer, lengthCm: 301 } },
+      { ...SPEC, outer: { ...SPEC.outer, lengthMm: 3001 } },
       InvalidBinDimensionsError,
     ],
     [
       "un intérieur plus grand que l'extérieur",
-      { ...SPEC, inner: { ...SPEC.inner, widthCm: 41 } },
+      { ...SPEC, inner: { ...SPEC.inner, widthMm: 410 } },
       BinInnerExceedsOuterError,
     ],
     ["une pile nulle", { ...SPEC, maxStack: 0 }, InvalidBinMaxStackError],

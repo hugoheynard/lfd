@@ -13,8 +13,8 @@ const formatOf = (
 ): PurchaseTableFormat => ({
   format: geometryOfFormat(
     BinFormat.of({
-      outer: { lengthCm: outer[0], widthCm: outer[1], heightCm: outer[2] },
-      inner: { lengthCm: inner[0], widthCm: inner[1], heightCm: inner[2] },
+      outer: { lengthMm: outer[0] * 10, widthMm: outer[1] * 10, heightMm: outer[2] * 10 },
+      inner: { lengthMm: inner[0] * 10, widthMm: inner[1] * 10, heightMm: inner[2] * 10 },
       maxStack,
     }),
   ),

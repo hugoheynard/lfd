@@ -20,12 +20,7 @@ import type {
   PurchaseTableFormat,
   PurchaseTableVehicle,
 } from "../domain/services/floor/purchase-table.js";
-import {
-  type FormatGeometry,
-  geometryOfBinType,
-  geometryOfFormat,
-} from "../domain/services/floor/format-geometry.js";
-import { BinFormat } from "../domain/value-objects/bin-format.js";
+import { type FormatGeometry, geometryOf } from "../domain/services/floor/format-geometry.js";
 import { CargoFloor } from "../domain/value-objects/cargo-floor.js";
 
 /** Tout ce que le tableau peut citer, relu une fois par requête. */
@@ -78,13 +73,12 @@ export function resolveFormat(
   if (ref.source === "candidate") {
     const found = find(sources.binCandidates, ref.id, "bin_candidate");
     ensureCurrent(found.archivedAt, "bin_candidate", found.name);
-    // Un candidat se mesure en centimètres entiers : converti ×10, sans perte.
-    return formatOf(ref, found, geometryOfFormat(BinFormat.of(found)), found.unitPriceCentsExclVat);
+    return formatOf(ref, found, geometryOf(found), found.unitPriceCentsExclVat);
   }
   const found = find(sources.binTypes, ref.id, "bin_type");
   ensureCurrent(found.archivedAt, "bin_type", found.name);
   // Un type de bac réel n'a pas de prix : l'équipement reste inconnu.
-  return formatOf(ref, found, geometryOfBinType(found), null);
+  return formatOf(ref, found, geometryOf(found), null);
 }
 
 function formatOf(

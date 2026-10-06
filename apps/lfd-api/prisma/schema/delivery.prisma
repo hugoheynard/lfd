@@ -679,14 +679,27 @@ model DeliveryPurchaseBinCandidate {
   id   String @id
   name String
 
-  outerLengthCm Int     @map("outer_length_cm")
-  outerWidthCm  Int     @map("outer_width_cm")
-  outerHeightCm Int     @map("outer_height_cm")
-  innerLengthCm Int     @map("inner_length_cm")
-  innerWidthCm  Int     @map("inner_width_cm")
-  innerHeightCm Int     @map("inner_height_cm")
-  isotherm      Boolean
-  maxStack      Int     @map("max_stack")
+  /// Dimensions en MILLIMÈTRES entiers, comme un type de bac (migration
+  /// `20261007120000_les_bacs_candidats_au_millimetre`). Le CHECK
+  /// `delivery_purchase_bin_candidate_dimensions` les tient.
+  outerLengthMm Int @map("outer_length_mm")
+  outerWidthMm  Int @map("outer_width_mm")
+  outerHeightMm Int @map("outer_height_mm")
+  innerLengthMm Int @map("inner_length_mm")
+  innerWidthMm  Int @map("inner_width_mm")
+  innerHeightMm Int @map("inner_height_mm")
+
+  /// MORTES depuis le 2026-10-07 : les anciennes dimensions en cm entiers,
+  /// gardées en base, plus jamais écrites ni lues.
+  outerLengthCm Int? @map("outer_length_cm")
+  outerWidthCm  Int? @map("outer_width_cm")
+  outerHeightCm Int? @map("outer_height_cm")
+  innerLengthCm Int? @map("inner_length_cm")
+  innerWidthCm  Int? @map("inner_width_cm")
+  innerHeightCm Int? @map("inner_height_cm")
+
+  isotherm Boolean
+  maxStack Int     @map("max_stack")
 
   supplier              String?
   reference             String?

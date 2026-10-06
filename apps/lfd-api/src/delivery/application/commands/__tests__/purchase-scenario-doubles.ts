@@ -171,8 +171,8 @@ export const vehicleCandidateView = (
 });
 
 const FORMAT = {
-  outer: { lengthCm: 60, widthCm: 40, heightCm: 20 },
-  inner: { lengthCm: 50, widthCm: 30, heightCm: 20 },
+  outer: { lengthMm: 600, widthMm: 400, heightMm: 200 },
+  inner: { lengthMm: 500, widthMm: 300, heightMm: 200 },
   innerVolumeLiters: 30,
   isotherm: false,
   maxStack: 5,

@@ -254,8 +254,8 @@ describe('PurchaseAssistantPage', () => {
       formats: [
         {
           name: 'Bac M',
-          outer: { lengthCm: 60, widthCm: 40, heightCm: 22 },
-          inner: { lengthCm: 57, widthCm: 37, heightCm: 20 },
+          outer: { lengthMm: 600, widthMm: 400, heightMm: 220 },
+          inner: { lengthMm: 570, widthMm: 370, heightMm: 200 },
           maxStack: 7,
         },
       ],
@@ -285,6 +285,14 @@ describe('PurchaseAssistantPage', () => {
     expect(host(fixture).querySelector('[data-vehicle-choice]')?.textContent).toContain(
       'Saisie libre',
     );
+  });
+
+  it('saisit une cote de format au demi-centimètre et l’envoie en millimètres', async () => {
+    const fixture = await boot();
+    typeIn(fixture, '[data-outer-length]', '66.5');
+    await settle(fixture);
+
+    expect(wire.sent.at(-1)?.formats[0]?.outer.lengthMm).toBe(665);
   });
 
   it('envoie les passages de roue saisis', async () => {

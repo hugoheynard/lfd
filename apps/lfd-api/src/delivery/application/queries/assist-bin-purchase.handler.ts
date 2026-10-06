@@ -46,8 +46,9 @@ export class AssistBinPurchaseHandler implements IQueryHandler<
 }
 
 /**
- * Le calcul rend des millimètres ; l'assistant se saisit en centimètres
- * entiers, donc ses rangées retombent sur des centimètres entiers.
+ * Le calcul rend des millimètres ; la vue garde ses rangées en centimètres,
+ * comme le plan de chargement — à une décimale près depuis que les formats se
+ * mesurent au millimètre (une manne à pain : 66,5 cm).
  */
 function rowInCm({ fromMm, depthMm, ...row }: FloorRow): PurchaseAssistantRowView {
   return { ...row, fromCm: fromMm / MM_PER_CM, depthCm: depthMm / MM_PER_CM };

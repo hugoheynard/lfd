@@ -30,8 +30,8 @@ const KANGOO = {
 
 const CAISSE = {
   name: "Caisse Dupont 50",
-  outer: { lengthCm: 60, widthCm: 40, heightCm: 30 },
-  inner: { lengthCm: 56, widthCm: 36, heightCm: 27 },
+  outer: { lengthMm: 600, widthMm: 400, heightMm: 300 },
+  inner: { lengthMm: 560, widthMm: 360, heightMm: 270 },
   isotherm: false,
   maxStack: 5,
   unitPriceCentsExclVat: 1_290,
@@ -150,8 +150,8 @@ describe("POST admin/livraison/assistant-achat/tableau (B-D4)", () => {
         id: await create(LIBRARY_BINS, {
           ...CAISSE,
           name: `Caisse ${i}`,
-          outer: { lengthCm: 30 + 3 * i, widthCm: 20 + 2 * i, heightCm: 20 },
-          inner: { lengthCm: 28 + 3 * i, widthCm: 18 + 2 * i, heightCm: 18 },
+          outer: { lengthMm: (30 + 3 * i) * 10, widthMm: (20 + 2 * i) * 10, heightMm: 200 },
+          inner: { lengthMm: (28 + 3 * i) * 10, widthMm: (18 + 2 * i) * 10, heightMm: 180 },
         }),
       });
     }

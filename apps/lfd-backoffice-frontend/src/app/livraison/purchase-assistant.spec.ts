@@ -8,6 +8,7 @@ import {
   emptyFormat,
   formatLiters,
   formatsOfBinTypes,
+  freeAboveLabel,
   overArchBands,
   overArchFirstLevel,
   placeBins,
@@ -49,6 +50,38 @@ describe('l’assistant d’achat — la saisie', () => {
       'Format 2, extérieur',
       'Format 2, intérieur',
       'Format 2, pile maximale',
+    ]);
+  });
+
+  it('envoie en millimètres une cote saisie en cm à une décimale', () => {
+    const built = buildPayload({
+      ...DRAFT,
+      formats: [
+        {
+          key: 1,
+          name: 'Manne',
+          outer: { lengthCm: 66.5, widthCm: 46, heightCm: 71.5 },
+          inner: { lengthCm: 64.5, widthCm: 44, heightCm: 69.5 },
+          maxStack: 1,
+        },
+      ],
+    });
+    expect(built.ok && built.payload.formats[0]).toEqual({
+      name: 'Manne',
+      outer: { lengthMm: 665, widthMm: 460, heightMm: 715 },
+      inner: { lengthMm: 645, widthMm: 440, heightMm: 695 },
+      maxStack: 1,
+    });
+  });
+
+  it('dit qu’une cote à deux décimales ne se mesure pas au millimètre', () => {
+    const [format] = DRAFT.formats;
+    const built = buildPayload({
+      ...DRAFT,
+      formats: format ? [{ ...format, outer: { ...format.outer, lengthCm: 66.55 } }] : [],
+    });
+    expect(built.ok ? [] : built.missing).toEqual([
+      'Bac M, extérieur au millimètre près (une décimale)',
     ]);
   });
 
@@ -105,7 +138,7 @@ describe('l’assistant d’achat — le rendu', () => {
       overArchFromLevel: 2,
       total: 14,
     };
-    expect(overArchBands([row], { lengthCm: 60, widthCm: 40 }, 166, 1)).toEqual([
+    expect(overArchBands([row], { lengthMm: 600, widthMm: 400 }, 166, 1)).toEqual([
       { x: 80, y: 0, depth: 61, across: 42 },
       { x: 80, y: 124, depth: 61, across: 42 },
     ]);
@@ -131,7 +164,7 @@ describe('l’assistant d’achat — le rendu', () => {
           total: 2,
         },
       ],
-      { lengthCm: 60, widthCm: 40 },
+      { lengthMm: 600, widthMm: 400 },
       166,
       1,
     );
@@ -159,5 +192,38 @@ describe('formatsOfBinTypes', () => {
     ]);
     expect(manne?.outer).toEqual({ lengthCm: 66.5, widthCm: 46, heightCm: 71.5 });
     expect(manne?.inner).toEqual({ lengthCm: 64.5, widthCm: 44, heightCm: 69.5 });
+  });
+
+  /**
+   * Régression : la manne pré-remplie partait à 66,5 dans un champ en cm
+   * entiers, et le serveur répondait 400 « entier attendu » (2026-10-06).
+   */
+  it('repart au serveur au millimètre exact, sans arrondi', () => {
+    const formats = formatsOfBinTypes([
+      {
+        id: 'manne',
+        name: 'Manne à pain',
+        outer: { lengthMm: 665, widthMm: 460, heightMm: 715 },
+        inner: { lengthMm: 645, widthMm: 440, heightMm: 695 },
+        innerVolumeLiters: 197,
+        isotherm: false,
+        maxStack: 1,
+        divisible: false,
+        archivedAt: null,
+      },
+    ]);
+    const built = buildPayload({ ...DRAFT, formats });
+    expect(built.ok && built.payload.formats[0]?.outer).toEqual({
+      lengthMm: 665,
+      widthMm: 460,
+      heightMm: 715,
+    });
+  });
+});
+
+describe('freeAboveLabel', () => {
+  it('soustrait des étages en mm d’un plafond en cm, à une décimale', () => {
+    expect(freeAboveLabel(139, 1, 715)).toBe('67,5 cm libres au-dessus');
+    expect(freeAboveLabel(139, 6, 220)).toBe('7 cm libres au-dessus');
   });
 });

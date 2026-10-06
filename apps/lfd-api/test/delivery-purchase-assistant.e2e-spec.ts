@@ -36,8 +36,8 @@ const SCENARIO: PurchaseAssistantPayload = {
   formats: [
     {
       name: "Bac 600",
-      outer: { lengthCm: 60, widthCm: 40, heightCm: 32 },
-      inner: { lengthCm: 56, widthCm: 36, heightCm: 30 },
+      outer: { lengthMm: 600, widthMm: 400, heightMm: 320 },
+      inner: { lengthMm: 560, widthMm: 360, heightMm: 300 },
       maxStack: 5,
     },
   ],
@@ -70,6 +70,30 @@ describe("POST admin/livraison/assistant-achat (G-D3)", () => {
       heightLimit: "ceiling",
     });
     expect(await counts()).toEqual(before);
+  });
+
+  /**
+   * Régression : l'assistant se mesurait en cm entiers ; pré-remplir un format
+   * depuis la manne à pain (66,5 cm) rendait 400 « entier attendu » (2026-10-06).
+   */
+  it("accepte la manne à pain au millimètre, pré-remplie d'un type de bac (200)", async () => {
+    const manne = {
+      name: "Manne à pain",
+      outer: { lengthMm: 665, widthMm: 460, heightMm: 715 },
+      inner: { lengthMm: 645, widthMm: 440, heightMm: 695 },
+      maxStack: 1,
+    };
+
+    const response = await admin(ctx)
+      .post(ASSISTANT)
+      .send({ ...SCENARIO, formats: [manne] })
+      .expect(200);
+
+    const [format] = jsonBody<PurchaseAssistantView>(response).formats;
+    expect(format?.name).toBe("Manne à pain");
+    expect(format?.total).toBeGreaterThan(0);
+    // Les rangées restent en cm, à une décimale : 665 mm + 1 cm de jeu.
+    expect(format?.rows.some((row) => row.depthCm === 67.5 || row.depthCm === 47)).toBe(true);
   });
 
   it("empile par-dessus des passages hauts de 30 cm : 70 bacs, 16 au sol (G-D2 bis)", async () => {

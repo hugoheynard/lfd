@@ -31,8 +31,8 @@ const NOW = new Date(3_600_000);
 
 const CAISSE: PurchaseBinCandidatePayload = {
   name: "Caisse Dupont 50",
-  outer: { lengthCm: 60, widthCm: 40, heightCm: 30 },
-  inner: { lengthCm: 56, widthCm: 36, heightCm: 27 },
+  outer: { lengthMm: 600, widthMm: 400, heightMm: 300 },
+  inner: { lengthMm: 560, widthMm: 360, heightMm: 270 },
   isotherm: false,
   maxStack: 5,
   supplier: "Dupont",
@@ -95,7 +95,7 @@ describe("les formats de bacs candidats (bibliothèque d'achat, B1)", () => {
 
   it("refuse la géométrie d'un type de bac impossible, et un prix négatif", async () => {
     const w = world();
-    const tooWide = { ...CAISSE, inner: { ...CAISSE.inner, widthCm: 41 } };
+    const tooWide = { ...CAISSE, inner: { ...CAISSE.inner, widthMm: 410 } };
 
     await expect(
       w.declare.execute(new DeclarePurchaseBinCandidateCommand(tooWide, "staff_2")),
