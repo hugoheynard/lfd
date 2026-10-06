@@ -911,6 +911,7 @@ export type {
   DeliveryDayReadinessView,
   DeliveryDayArrestView,
   DeliveryCompositionGap,
+  DeliveryDayDue,
 } from "./delivery-day-readiness.js";
 export type {
   MyDeliveryRoundsView,

@@ -11,6 +11,7 @@ const ARREST: DeliveryDayArrestView = {
   deliveryCount: 12,
   unplacedCount: 3,
   compositionGap: null,
+  due: null,
 };
 
 interface Mounted {
@@ -91,6 +92,28 @@ describe('DayReadinessBanner — le plan arrêté sur l’écran des tournées',
     expect(gap?.textContent).toContain('impossible de proposer les tournées');
     expect(gap?.textContent).toContain('Livraison → Véhicules');
     expect(element.querySelector('[data-readiness-propose]')).toBeNull();
+  });
+
+  it('demain, des livraisons hors tournée : l’alerte avant le jour J (§5)', async () => {
+    const { element, proposed } = await mount(arrested({ ...ARREST, due: 'tomorrow' }));
+
+    const callout = element.querySelector('[data-readiness-imminent]');
+    expect(callout?.textContent).toContain('Demain : 3 livraisons hors tournée');
+    expect(callout?.textContent).toContain('12 livraisons');
+    expect(element.querySelector('[data-readiness-arrested]')).toBeNull();
+    element.querySelector<HTMLButtonElement>('[data-readiness-propose]')?.click();
+    expect(proposed).toHaveLength(1);
+  });
+
+  it('aujourd’hui, au singulier ; tout placé : retour au succès', async () => {
+    const today = await mount(arrested({ ...ARREST, due: 'today', unplacedCount: 1 }));
+    expect(today.element.querySelector('[data-readiness-imminent]')?.textContent).toContain(
+      'Aujourd’hui : 1 livraison hors tournée',
+    );
+
+    const placed = await mount(arrested({ ...ARREST, due: 'today', unplacedCount: 0 }));
+    expect(placed.element.querySelector('[data-readiness-imminent]')).toBeNull();
+    expect(placed.element.querySelector('[data-readiness-arrested]')).not.toBeNull();
   });
 
   it('une lecture en échec ne laisse pas croire que le plan est ouvert', async () => {

@@ -9,6 +9,23 @@
       <strong>Plan arrêté — {{ countLabel() }}</strong
       >, mais impossible de proposer les tournées : {{ gap }}.
     </fold-callout>
+  } @else if (imminentWords(); as imminent) {
+    <fold-callout variant="warning" data-readiness-imminent>
+      <strong>{{ imminent }}</strong> — le plan est arrêté ({{ countLabel() }}). Composez ou
+      placez-les avant le départ.
+      @if (canWrite()) {
+        <button
+          actions
+          foldButton
+          size="sm"
+          icon="edit"
+          (click)="propose.emit()"
+          data-readiness-propose
+        >
+          Proposer les tournées
+        </button>
+      }
+    </fold-callout>
   } @else {
     <fold-callout variant="success" data-readiness-arrested>
       <strong>Plan arrêté</strong> — {{ countLabel() }}, dont {{ arrest.unplacedCount }} hors

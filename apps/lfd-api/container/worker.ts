@@ -375,6 +375,27 @@ async function triggerAutoClose(env: Env): Promise<void> {
 }
 
 /**
+ * Réveille le container et passe la cloche « hors tournée » de la livraison :
+ * le jour de livraison est aujourd'hui, ou demain passé 16 h, le plan est
+ * arrêté, et des livraisons ne sont dans aucune tournée (composition
+ * automatique, §5). Sur le cron de RAFRAÎCHISSEMENT, comme le tour de l'arrêt
+ * du plan : une route à part, parce que le fournil ne connaît pas la
+ * livraison. Idempotent — une cloche par jour et par compte hors tournée.
+ */
+async function triggerRoundsGapBell(env: Env): Promise<void> {
+  const token = env.RECOMPUTE_TOKEN;
+  if (!token) {
+    return;
+  }
+  await backend(env).fetch(
+    new Request("https://internal/admin/livraison/hors-tournee/sweep", {
+      method: "POST",
+      headers: { "x-lfc-recompute-token": token },
+    }),
+  );
+}
+
+/**
  * Les balayages du cron de rafraîchissement, chacun pour soi : un échec de
  * l'un (container qui répond mal, réseau) ne prive pas les suivants de leur
  * tour. Le prochain passage est dans cinq minutes, et un cron en échec n'a
@@ -382,7 +403,11 @@ async function triggerAutoClose(env: Env): Promise<void> {
  */
 async function refreshSweeps(env: Env): Promise<void> {
   await keepWarm(env);
-  await Promise.allSettled([triggerOutboxSweep(env), triggerAutoClose(env)]);
+  await Promise.allSettled([
+    triggerOutboxSweep(env),
+    triggerAutoClose(env),
+    triggerRoundsGapBell(env),
+  ]);
 }
 
 /**

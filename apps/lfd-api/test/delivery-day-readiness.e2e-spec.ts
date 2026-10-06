@@ -11,7 +11,7 @@
  * CA6b : un vrai retirage publie `production.day_retaken` avec les commandes
  * absorbées ; l'abonné du retirage les ajoute et sonne le seul delta.
  */
-import type { DeliveryDayReadinessView } from "@lfd/contracts";
+import { instantToLocal, type DeliveryDayReadinessView } from "@lfd/contracts";
 
 import { LEARN_ARRESTED_PLAN } from "../src/delivery/application/handlers/learn-arrested-plan.handler.js";
 import { LEARN_RETAKEN_PLAN } from "../src/delivery/application/handlers/learn-retaken-plan.handler.js";
@@ -154,6 +154,8 @@ describe("la livraison apprend la clôture du fournil", () => {
         deliveryCount: 2,
         unplacedCount: 1,
         compositionGap: null,
+        // Dans une semaine : ni aujourd'hui, ni demain (§5).
+        due: null,
       },
     });
   });
@@ -198,5 +200,74 @@ describe("la livraison apprend le retirage du fournil (CA6b)", () => {
     await ctx.drain();
 
     expect(await bells()).toHaveLength(2);
+  });
+});
+
+/**
+ * L'alerte avant le jour J (composition automatique, §5) : le jour de
+ * livraison est AUJOURD'HUI à Paris — la cloche le regarde à toute heure, ce
+ * qui rend la suite indépendante de l'heure à laquelle elle tourne.
+ */
+describe("l'alerte « hors tournée » avant le jour J", () => {
+  const TODAY = instantToLocal(new Date(Date.now())).day;
+  const GAP = "delivery.rounds_gap";
+
+  function sweep() {
+    return ctx
+      .http()
+      .post("/admin/livraison/hors-tournee/sweep")
+      .set("x-lfc-recompute-token", TEST_RECOMPUTE_TOKEN)
+      .expect(200);
+  }
+
+  function gapBells() {
+    return ctx.prisma.staffNotification.findMany({
+      where: { kind: GAP },
+      select: { subject: true, audience: true, link: true },
+    });
+  }
+
+  async function closeToday(): Promise<void> {
+    await admin(ctx).post(`/admin/production/batch/${TODAY}/close`).expect(201);
+    await ctx.drain();
+  }
+
+  it("plan arrêté, aucune tournée : l'écran dit « aujourd'hui », la cloche sonne une fois", async () => {
+    await seedDelivery(ctx, TODAY);
+    await seedDelivery(ctx, TODAY);
+    await closeToday();
+
+    const view = jsonBody<DeliveryDayReadinessView>(
+      await admin(ctx).get(`${ROUNDS}/plan-arrete?jour=${TODAY}`).expect(200),
+    );
+    expect(view.arrested).toMatchObject({ due: "today", unplacedCount: 2 });
+
+    expect(jsonBody<{ readonly alerted: readonly string[] }>(await sweep())).toEqual({
+      alerted: [TODAY],
+    });
+    await sweep();
+
+    const bells = await gapBells();
+    expect(bells).toHaveLength(1);
+    expect(bells[0]?.subject).toMatch(/^Aujourd'hui, .* : 2 livraisons hors tournée$/u);
+    expect(bells[0]?.audience).toBe("delivery_rounds:write");
+    expect(bells[0]?.link).toBe(`/livraison/tournees?jour=${TODAY}`);
+  });
+
+  it("tout en tournée : pas de cloche", async () => {
+    const vehicleId = await addVehicle(ctx, "Kangoo", MEASURED);
+    const order = await seedDelivery(ctx, TODAY);
+    await closeToday();
+    const roundId = await openRound(ctx, TODAY, vehicleId);
+    await assign(ctx, TODAY, roundId, order.id);
+
+    expect(jsonBody<{ readonly alerted: readonly string[] }>(await sweep())).toEqual({
+      alerted: [],
+    });
+    expect(await gapBells()).toEqual([]);
+  });
+
+  it("sans jeton machine, la route refuse", async () => {
+    await ctx.http().post("/admin/livraison/hors-tournee/sweep").expect(401);
   });
 });

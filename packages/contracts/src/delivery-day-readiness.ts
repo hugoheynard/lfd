@@ -23,7 +23,16 @@ export interface DeliveryDayArrestView {
   readonly unplacedCount: number;
   /** Ce qui manque pour proposer (CA-D3), ou `null`. */
   readonly compositionGap: DeliveryCompositionGap | null;
+  /**
+   * Le jour est-il imminent, à l'heure de Paris : `today`, `tomorrow`, ou
+   * `null` plus loin. Avec `unplacedCount > 0`, l'écran passe en alerte
+   * (« Demain : N livraisons hors tournée », composition automatique §5).
+   */
+  readonly due: DeliveryDayDue | null;
 }
+
+/** Le jour de livraison est aujourd'hui, ou demain. */
+export type DeliveryDayDue = "today" | "tomorrow";
 
 /** Aucun véhicule en service n'a ses cotes ; aucun type de bac n'est en service. */
 export type DeliveryCompositionGap = "no_measured_vehicle" | "no_active_bin_type";

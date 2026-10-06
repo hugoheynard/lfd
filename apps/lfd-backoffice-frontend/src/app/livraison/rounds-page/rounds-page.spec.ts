@@ -977,6 +977,7 @@ describe('RoundsPage — le plan arrêté (CA6a)', () => {
       deliveryCount: 12,
       unplacedCount: 3,
       compositionGap: null,
+      due: null,
     };
     const { fixture, element } = await boot();
 

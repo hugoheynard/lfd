@@ -9,7 +9,7 @@ import {
   signal,
   untracked,
 } from '@angular/core';
-import type { DeliveryCompositionGap, DeliveryDayArrestView } from '@lfd/contracts';
+import type { DeliveryCompositionGap, DeliveryDayArrestView, DeliveryDayDue } from '@lfd/contracts';
 import { FoldButtonComponent, FoldCalloutComponent } from 'fold-ng';
 
 import { DeliveryRoundsService } from '../delivery-rounds.service';
@@ -26,6 +26,12 @@ const GAP_WORDS: Readonly<Record<DeliveryCompositionGap, string>> = {
   no_active_bin_type: 'aucun type de bac n’est en service. Ajoutez-en un dans Livraison → Bacs',
 };
 
+/** Le jour imminent, comme l'équipe le dit. */
+const DUE_WORDS: Readonly<Record<DeliveryDayDue, string>> = {
+  today: 'Aujourd’hui',
+  tomorrow: 'Demain',
+};
+
 function deliveries(count: number): string {
   return count > 1 ? `${count} livraisons` : `${count} livraison`;
 }
@@ -38,6 +44,11 @@ function deliveries(count: number): string {
  * livraisons, dont P hors tournée », et « Proposer les tournées » mis en
  * avant tant qu'il en reste à placer) ; arrêté sans socle de composition
  * (CA-D3 : l'alerte dit quoi régler). « Appliquer » reste au bureau (§9).
+ *
+ * Quatrième état, l'alerte avant le jour J (composition automatique, §5) :
+ * le jour est aujourd'hui ou demain (`due`, dit par le serveur à l'heure de
+ * Paris) et des livraisons sont encore hors tournée — « Demain : 3
+ * livraisons hors tournée », en avertissement plutôt qu'en succès.
  *
  * Il relit à chaque changement de `refresh` : la page lui passe sa
  * composition, pour que « hors tournée » suive les gestes du tableau.
@@ -67,6 +78,14 @@ export class DayReadinessBanner {
     return state.status === 'ready' ? state.arrest : null;
   });
   protected readonly countLabel = computed(() => deliveries(this.arrest()?.deliveryCount ?? 0));
+  /** « Demain : 3 livraisons hors tournée » — ou `null` si rien ne presse. */
+  protected readonly imminentWords = computed(() => {
+    const arrest = this.arrest();
+    if (arrest?.due == null || arrest.unplacedCount === 0) {
+      return null;
+    }
+    return `${DUE_WORDS[arrest.due]} : ${deliveries(arrest.unplacedCount)} hors tournée`;
+  });
   protected readonly gapWords = computed(() => {
     const gap = this.arrest()?.compositionGap ?? null;
     return gap === null ? null : GAP_WORDS[gap];

@@ -1,3 +1,4 @@
+import { FixedClock } from "../../../../platform/time/fixed-clock.js";
 import { InvalidServiceDayError } from "../../../domain/errors/delivery-round-errors.js";
 import {
   DeliveryDayReadinessReader,
@@ -12,6 +13,8 @@ import { GetDeliveryDayReadinessQuery } from "../get-delivery-day-readiness.quer
 
 const DAY = "2026-10-07";
 const CLOSED = new Date("2026-10-06T16:00:00.000Z");
+// Le jour se compare à l'horloge FIXÉE : la veille de DAY, 18 h à Paris.
+const EVE = new Date("2026-10-06T16:00:00.000Z");
 
 class FixedReadiness extends DeliveryDayReadinessReader {
   constructor(private readonly row: DeliveryDayReadinessRow | null) {
@@ -24,12 +27,13 @@ class FixedReadiness extends DeliveryDayReadinessReader {
 
 function handler(
   row: DeliveryDayReadinessRow | null,
-  base: { vehicles?: readonly string[]; bins?: readonly string[] } = {},
+  base: { vehicles?: readonly string[]; bins?: readonly string[]; at?: Date } = {},
 ) {
   return new GetDeliveryDayReadinessHandler(
     new FixedReadiness(row),
     new FixedMeasuredVehicles(base.vehicles ?? ["v1"]),
     new FixedActiveBinTypes(base.bins ?? ["b1"]),
+    new FixedClock(base.at ?? EVE),
   );
 }
 
@@ -59,7 +63,21 @@ describe("GetDeliveryDayReadinessHandler — les trois états de l'écran", () =
       deliveryCount: 12,
       unplacedCount: 3,
       compositionGap: null,
+      due: "tomorrow",
     });
+  });
+
+  it("le jour imminent : aujourd'hui le jour même, rien une semaine avant (§5)", async () => {
+    const row = { closedAt: CLOSED, deliveryCount: 2, unplacedCount: 2 };
+    const sameDay = await handler(row, { at: new Date("2026-10-07T06:00:00.000Z") }).execute(
+      new GetDeliveryDayReadinessQuery(DAY),
+    );
+    const weekBefore = await handler(row, { at: new Date("2026-09-30T06:00:00.000Z") }).execute(
+      new GetDeliveryDayReadinessQuery(DAY),
+    );
+
+    expect(sameDay.arrested?.due).toBe("today");
+    expect(weekBefore.arrested?.due).toBeNull();
   });
 
   it("arrêté sans socle : ce qui manque (CA-D3)", async () => {
