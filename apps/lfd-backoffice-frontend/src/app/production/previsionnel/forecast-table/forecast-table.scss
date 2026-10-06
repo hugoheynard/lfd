@@ -315,8 +315,13 @@
    zéro ne s'écrit pas — n'était haute que de son padding, et le fond d'une
    colonne teintée y devenait un trait au lieu d'une colonne. Le pic ne le
    montrait pas, ses cases sont presque toujours pleines ; le plan non arrêté,
-   si. Le contenu reste centré, à l'intérieur. */
-.pv-qty {
+   si. Le contenu reste centré, à l'intérieur. Même règle au pied et aux
+   sommes de rayon : un total vide était plus bas que son voisin, et sa barre
+   d'état remontait (Hugo, 2026-10-06). */
+.pv-qty,
+.pv-rayon-sum,
+.pv-foot-total,
+.pv-foot-orders {
   align-self: stretch;
   display: flex;
   flex-direction: column;
