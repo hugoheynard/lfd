@@ -63,6 +63,7 @@ function entry(id: string, createdAt: Date, archivedAt: Date | null = null): Del
     specs: payload(false).specs,
     depositAllowed: false,
     doorstepRule: null,
+    parking: null,
     createdAt,
     archivedAt,
   };

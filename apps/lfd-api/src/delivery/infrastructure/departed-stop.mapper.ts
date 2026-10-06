@@ -21,6 +21,8 @@ export const EXECUTION_SELECT = {
   departureRank: true,
   gpsLat: true,
   gpsLng: true,
+  parkingLat: true,
+  parkingLng: true,
   depositAllowed: true,
   doorstepRule: true,
   arrivedAt: true,
@@ -39,6 +41,8 @@ export interface ExecutionRecord {
   readonly departureRank: number | null;
   readonly gpsLat: number | null;
   readonly gpsLng: number | null;
+  readonly parkingLat: number | null;
+  readonly parkingLng: number | null;
   readonly depositAllowed: boolean;
   readonly doorstepRule: string;
   readonly arrivedAt: Date | null;
@@ -74,6 +78,10 @@ export function departedStopOf(record: ExecutionRecord): DepartedStopRow {
       record.gpsLat === null || record.gpsLng === null
         ? null
         : { lat: record.gpsLat, lng: record.gpsLng },
+    parking:
+      record.parkingLat === null || record.parkingLng === null
+        ? null
+        : { lat: record.parkingLat, lng: record.parkingLng },
     depositAllowed: record.depositAllowed,
     // Un CHECK tient la valeur en base : une autre lève plutôt que d'être devinée.
     doorstepRule: doorstepRuleSchema.parse(record.doorstepRule),

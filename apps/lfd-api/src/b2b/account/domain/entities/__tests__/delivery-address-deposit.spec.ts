@@ -48,6 +48,7 @@ function bookWith(depositAllowed: boolean): DeliveryAddressBook {
         specs: payload().specs,
         depositAllowed,
         doorstepRule: null,
+        parking: null,
         createdAt: CREATED,
         archivedAt: null,
       },

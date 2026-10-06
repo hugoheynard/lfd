@@ -14,4 +14,10 @@ export abstract class GesturePositionPruner {
 
   /** Même chose pour la position de « Je suis arrivé », comptée sur l'heure d'arrivée. */
   abstract clearBatchArrivedBefore(instant: Date, limit: number): Promise<number>;
+
+  /**
+   * Même chose pour le point d'une suggestion de correction du carnet décidée
+   * avant cet instant (§6) : tiré des positions, il part avec elles.
+   */
+  abstract clearBatchDecidedBefore(instant: Date, limit: number): Promise<number>;
 }

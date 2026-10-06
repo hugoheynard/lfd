@@ -48,6 +48,8 @@ export class PrismaDepartedStopRepository extends DepartedStopRepository {
         departureRank: stop.departureRank,
         gpsLat: stop.gps?.lat ?? null,
         gpsLng: stop.gps?.lng ?? null,
+        parkingLat: sheet.parking?.lat ?? null,
+        parkingLng: sheet.parking?.lng ?? null,
       })),
     });
   }

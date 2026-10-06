@@ -1,4 +1,4 @@
-import type { DoorstepRule } from "@lfd/contracts";
+import type { DoorstepRule, GpsPoint } from "@lfd/contracts";
 import {
   type DeliveryOrderFacts,
   type DeliveryOrderRef,
@@ -115,6 +115,8 @@ function copy(round: DeliveryRound): DeliveryRound {
 export class FixedDeliveryOrders extends DeliveryOrdersReader {
   /** La règle d'avance que l'adresse de la commande redéfinit (B3 bis) ; absente : elle hérite. */
   readonly doorstepRules = new Map<string, DoorstepRule>();
+  /** Le stationnement du carnet par commande (§6) ; absente : aucun. */
+  readonly parkings = new Map<string, GpsPoint>();
 
   constructor(private readonly orders: readonly DeliveryOrderFacts[] = []) {
     super();
@@ -166,6 +168,7 @@ export class FixedDeliveryOrders extends DeliveryOrdersReader {
           addressNote: null,
           depositAllowed: false,
           doorstepRule: this.doorstepRules.get(order.orderId) ?? null,
+          parking: this.parkings.get(order.orderId) ?? null,
           status: order.status,
         })),
     );

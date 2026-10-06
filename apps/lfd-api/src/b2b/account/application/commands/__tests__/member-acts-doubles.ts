@@ -124,6 +124,7 @@ export class InMemoryAddresses extends CompanyAddressRepository {
         specs: DELIVERY.specs,
         depositAllowed: false,
         doorstepRule: null,
+        parking: null,
         createdAt: new Date("2026-01-01T08:00:00Z"),
         archivedAt: null,
       },

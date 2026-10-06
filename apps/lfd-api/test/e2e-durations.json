@@ -53,6 +53,7 @@
   "test/day-supervision.e2e-spec.ts": 3937,
   "test/day-version.e2e-spec.ts": 11867,
   "test/deferred-payment-block-roles-migration.e2e-spec.ts": 2346,
+  "test/delivery-address-suggestions.e2e-spec.ts": 14000,
   "test/delivery-availability.e2e-spec.ts": 4979,
   "test/delivery-bins-sharing.e2e-spec.ts": 5125,
   "test/delivery-bins.e2e-spec.ts": 5354,

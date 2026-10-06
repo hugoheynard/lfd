@@ -1,0 +1,101 @@
+<fold-page-layout icon="map-pin" title="Carnet à corriger">
+  <p description>
+    Là où plusieurs livraisons concordantes situent la porte ou le stationnement loin du point du
+    carnet. Rien n’est corrigé tout seul : appliquée, la correction atteint le livreur à sa
+    prochaine tournée.
+  </p>
+
+  <div class="page">
+    @switch (state().status) {
+      @case ('loading') {
+        <fold-loading message="Lecture des suggestions…" />
+      }
+      @case ('error') {
+        <fold-empty-state
+          tone="alert"
+          title="« Carnet à corriger » illisible"
+          subtitle="Le serveur n’a pas répondu. Réessayez dans un instant."
+          data-error
+        >
+          <button foldButton emphasis="outline" (click)="retry()">Réessayer</button>
+        </fold-empty-state>
+      }
+      @case ('ready') {
+        @for (suggestion of suggestions(); track keyOf(suggestion)) {
+          <fold-card data-suggestion>
+            <div class="stack">
+              <fold-element-title
+                variant="title"
+                [title]="suggestion.customerLabel + ' · ' + suggestion.addressLabel"
+                [subtitle]="suggestion.addressText"
+              >
+                <fold-badge titleAction variant="info" [content]="kindOf(suggestion)" />
+              </fold-element-title>
+
+              <span data-suggestion-sentence>{{ sentenceOf(suggestion) }}</span>
+
+              <fold-field-list>
+                <fold-field label="Point suggéré">
+                  {{ coordinatesOf(suggestion.suggested) }}
+                </fold-field>
+                <fold-field
+                  label="Point enregistré"
+                  placeholder="Aucun"
+                  [empty]="suggestion.recorded === null"
+                >
+                  @if (suggestion.recorded; as recorded) {
+                    {{ coordinatesOf(recorded) }}
+                  }
+                </fold-field>
+              </fold-field-list>
+
+              <fold-link
+                icon="map-pin"
+                [href]="mapOf(suggestion)"
+                target="_blank"
+                rel="noopener"
+                data-suggestion-map
+              >
+                Voir sur la carte
+              </fold-link>
+
+              @if (refusalOf(suggestion); as message) {
+                <fold-callout variant="alert" data-suggestion-refusal>{{ message }}</fold-callout>
+              }
+
+              <div class="actions">
+                <button
+                  foldButton
+                  icon="check"
+                  [loading]="busy() === keyOf(suggestion)"
+                  [disabled]="busy() !== null"
+                  (click)="apply(suggestion)"
+                  data-apply
+                >
+                  Appliquer
+                </button>
+                <button
+                  foldButton
+                  emphasis="outline"
+                  [disabled]="busy() !== null"
+                  (click)="ignore(suggestion)"
+                  data-ignore
+                >
+                  Ignorer
+                </button>
+              </div>
+            </div>
+          </fold-card>
+        } @empty {
+          <fold-empty-state
+            title="Le carnet tient"
+            subtitle="Aucune adresse où les livraisons s’écartent du point enregistré."
+            data-empty
+          >
+            <fold-icon empty-icon name="check-circle" />
+          </fold-empty-state>
+        }
+      }
+    }
+  </div>
+</fold-page-layout>

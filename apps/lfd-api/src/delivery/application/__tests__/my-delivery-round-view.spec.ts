@@ -43,6 +43,7 @@ function frozen(rank: number | null, overrides: Partial<DepartedStopRow> = {}): 
     gps: rank === null ? null : FROZEN,
     depositAllowed: false,
     doorstepRule: "ask",
+    parking: null,
     arrivedAt: null,
     ...overrides,
   };
@@ -61,6 +62,7 @@ function sheet(orderId: string): DepartureSheet {
     addressNote: null,
     depositAllowed: false,
     doorstepRule: null,
+    parking: null,
     status: "active",
   };
 }
@@ -138,6 +140,26 @@ describe("myDeliveryRoundView — la vue du livreur (MT-D5 v2)", () => {
     ]);
   });
 
+  it("le stationnement (§6) : figé au départ, la feuille vivante au dépôt", () => {
+    const PARKED = { lat: 45.2, lng: 6.2 };
+    const LIVE_PARKING = { lat: 45.3, lng: 6.3 };
+    const departed = myDeliveryRoundView(
+      inputs({
+        round: round([stop("a", 1, { departed: frozen(1, { parking: PARKED }) })], AT),
+        sheets: new Map([["o_a", { ...sheet("o_a"), parking: LIVE_PARKING }]]),
+      }),
+    );
+    const atDepot = myDeliveryRoundView(
+      inputs({
+        round: round([stop("a", 1)], null),
+        sheets: new Map([["o_a", { ...sheet("o_a"), parking: LIVE_PARKING }]]),
+      }),
+    );
+
+    expect(departed.stops[0]?.parking).toEqual(PARKED);
+    expect(atDepot.stops[0]?.parking).toEqual(LIVE_PARKING);
+  });
+
   it("partie avant la migration : position et carnet, et la vue le dit (« non figés »)", () => {
     const view = myDeliveryRoundView(
       inputs({
@@ -186,6 +208,8 @@ describe("myDeliveryRoundView — la vue du livreur (MT-D5 v2)", () => {
         "orderNote",
         "orderState",
         "packing",
+        // Le stationnement de l'adresse (`gps-y-aller-et-position.md`, §6).
+        "parking",
         "procedure",
         "rank",
         "reference",

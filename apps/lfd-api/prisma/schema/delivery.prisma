@@ -346,6 +346,11 @@ model DeliveryStopExecution {
   /// migration (`departure_rank` nul le distingue).
   gpsLat            Float?    @map("gps_lat")
   gpsLng            Float?    @map("gps_lng")
+  /// Le point de STATIONNEMENT du carnet, figé au départ comme le point GPS
+  /// (`gps-y-aller-et-position.md`, §6) ; nuls sans stationnement au
+  /// carnet, ou pour un arrêt parti avant la migration. Les deux ou aucun (CHECK).
+  parkingLat        Float?    @map("parking_lat")
+  parkingLng        Float?    @map("parking_lng")
   /// « Dépôt autorisé » de l'adresse du carnet, FIGÉ au départ (plan « À la
   /// porte », AP-D5) : ce que le client permettait quand la tournée est partie.
   /// `false` sans adresse reliée — et pour un arrêt parti avant la migration.
@@ -818,5 +823,38 @@ model DeliveryDriverNoticeAcknowledgement {
 
   @@id([staffId, version])
   @@map("delivery_driver_notice_ack")
+  @@schema("delivery")
+}
+
+/// **Ce que le bureau a décidé d'une suggestion de correction du carnet**
+/// (`documentation/livraisons/gps-y-aller-et-position.md`, §6) — une ligne
+/// par geste, `ignored` ou `applied`, jamais réécrite ni supprimée.
+///
+/// Une suggestion ignorée n'est pas reproposée tant que les livraisons
+/// concluent au même point (à `CLUSTER_RADIUS_M` près). Appliquée, le carnet
+/// porte le point : la suggestion s'éteint d'elle-même, la ligne est la trace.
+///
+/// `point_lat`/`point_lng` : le point suggéré — le centre de plusieurs gestes
+/// concordants, sans livreur ni heure. Effacés par la purge des positions à
+/// 60 jours (`PurgeStalePositionsHandler`) ; la ligne reste.
+///
+/// `address_id` est OPAQUE : aucune clé étrangère vers `public.addresses`.
+/// ⚠️ Tenu en base : `kind` ∈ {`door`, `parking`}, `outcome` ∈ {`ignored`,
+/// `applied`}, le point entier ou nul.
+model DeliveryAddressSuggestionDecision {
+  /// Assigné par la commande (`IdGenerator`).
+  id            String   @id
+  addressId     String   @map("address_id")
+  kind          String   @db.VarChar(8)
+  outcome       String   @db.VarChar(8)
+  pointLat      Float?   @map("point_lat")
+  pointLng      Float?   @map("point_lng")
+  decidedAt     DateTime @map("decided_at")
+  /// La fiche staff de qui a décidé — opaque, sans clé étrangère —, et son nom FIGÉ.
+  decidedBy     String   @map("decided_by")
+  decidedByName String   @map("decided_by_name")
+
+  @@index([addressId])
+  @@map("delivery_address_suggestion_decision")
   @@schema("delivery")
 }

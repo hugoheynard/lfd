@@ -6,6 +6,24 @@
   },
   "entrees": [
     {
+      "colonne": "delivery.delivery_address_suggestion_decision.decided_by",
+      "personne": "staff",
+      "categorie": "auteur-geste",
+      "finalite": "Tracer quel membre du staff a appliqué ou ignoré une correction du carnet suggérée par les livraisons (`gps-y-aller-et-position.md` §6).",
+      "conservation": "aucune-limite-decidee",
+      "purge": null,
+      "information": false
+    },
+    {
+      "colonne": "delivery.delivery_address_suggestion_decision.decided_by_name",
+      "personne": "staff",
+      "categorie": "identite",
+      "finalite": "Nom figé de l'auteur d'une décision sur une suggestion du carnet, lisible même si la fiche staff change.",
+      "conservation": "aucune-limite-decidee",
+      "purge": null,
+      "information": false
+    },
+    {
       "colonne": "delivery.delivery_bin_load.loaded_at",
       "personne": "livreur",
       "categorie": "horodatage-geste",
@@ -1289,12 +1307,28 @@
   ],
   "exclusions": [
     {
+      "colonne": "delivery.delivery_address_suggestion_decision.point_lat",
+      "raison": "Point SUGGÉRÉ pour une adresse du carnet : le centre d'au moins trois gestes concordants, sans livreur, sans tournée ni heure de geste — une donnée d'ADRESSE client, pas la position d'une personne (rgpd-livreur.md §2 bis). Tiré des positions, il s'efface avec elles à 60 jours (`PurgeStalePositionsHandler`, `clearBatchDecidedBefore`)."
+    },
+    {
+      "colonne": "delivery.delivery_address_suggestion_decision.point_lng",
+      "raison": "Voir `point_lat` : centre d'un groupe de gestes, donnée d'adresse, effacé à 60 jours avec les positions."
+    },
+    {
       "colonne": "delivery.delivery_stop_execution.gps_lat",
       "raison": "Point GPS de l'ADRESSE du carnet, figé au départ pour la navigation — pas la position du livreur (rgpd-livreur.md §2, migration 20261001120300_le_depart_fige_le_rang_et_le_point). Donnée du client, hors périmètre de ce registre."
     },
     {
       "colonne": "delivery.delivery_stop_execution.gps_lng",
       "raison": "Point GPS de l'ADRESSE du carnet, figé au départ pour la navigation — pas la position du livreur (rgpd-livreur.md §2). Donnée du client, hors périmètre de ce registre."
+    },
+    {
+      "colonne": "delivery.delivery_stop_execution.parking_lat",
+      "raison": "Point de STATIONNEMENT de l'adresse du carnet, figé au départ comme `gps_lat` — pas la position du livreur (rgpd-livreur.md §2 bis, migration 20261007170000_les_corrections_du_carnet). Donnée du client, hors périmètre de ce registre."
+    },
+    {
+      "colonne": "delivery.delivery_stop_execution.parking_lng",
+      "raison": "Point de STATIONNEMENT de l'adresse du carnet, figé au départ — donnée du client (rgpd-livreur.md §2 bis)."
     },
     {
       "colonne": "growth.company_terminations.initiated_by",

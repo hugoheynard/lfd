@@ -30,12 +30,16 @@ export class PurgeStalePositionsHandler implements ICommandHandler<
     private readonly clock: Clock,
   ) {}
 
-  /** Rend le nombre de positions effacées — clôtures et arrivées confondues. */
+  /**
+   * Rend le nombre de positions effacées — clôtures, arrivées et points des
+   * suggestions décidées (§6) confondus.
+   */
   async execute(): Promise<number> {
     const before = positionKeptSince(this.clock.now());
     const closed = await drain((limit) => this.pruner.clearBatchClosedBefore(before, limit));
     const arrived = await drain((limit) => this.pruner.clearBatchArrivedBefore(before, limit));
-    return closed + arrived;
+    const decided = await drain((limit) => this.pruner.clearBatchDecidedBefore(before, limit));
+    return closed + arrived + decided;
   }
 }
 

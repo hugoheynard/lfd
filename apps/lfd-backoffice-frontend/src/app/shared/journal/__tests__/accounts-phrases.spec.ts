@@ -698,3 +698,34 @@ describe('la décision réglée d’avance à la porte, par adresse (B3 bis)', (
     ).toContain('a rendu au réglage de livraison la décision à la porte');
   });
 });
+
+describe('un point d’adresse corrigé d’après les livraisons (§6)', () => {
+  const ADDRESS = { id: 'adr_1', ville: 'Chambéry', codePostal: '73000' };
+
+  it('dit la porte déplacée, l’adresse par son lieu, et le client — sans coordonnées', () => {
+    const said = sentence(
+      company('company.delivery_address_point_corrected', {
+        subjectLabel: CAFE,
+        address: ADDRESS,
+        point: 'door',
+      }),
+    );
+
+    expect(said).toContain('Colette Martin a déplacé la porte de livraison');
+    expect(said).toContain('Chambéry');
+    expect(said).toContain(CAFE);
+    expect(said).toContain('d’après les livraisons');
+  });
+
+  it('dit le stationnement posé', () => {
+    expect(
+      sentence(
+        company('company.delivery_address_point_corrected', {
+          subjectLabel: CAFE,
+          address: ADDRESS,
+          point: 'parking',
+        }),
+      ),
+    ).toContain('a posé le stationnement');
+  });
+});

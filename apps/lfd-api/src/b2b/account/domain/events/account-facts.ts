@@ -92,6 +92,12 @@ export const ACCOUNT_FACTS = {
    */
   deliveryDoorstepRuleSet: "company.delivery_doorstep_rule_set",
   /**
+   * La porte ou le stationnement d'une adresse, corrigé par le bureau depuis
+   * une suggestion des livraisons (`gps-y-aller-et-position.md`, §6).
+   * Le livreur suivant ira à ce point : « qui l'a déplacé » doit répondre.
+   */
+  deliveryAddressPointCorrected: "company.delivery_address_point_corrected",
+  /**
    * La procédure de livraison d'une adresse a été modifiée — ajouté,
    * refait, supprimé ou réordonné une étape. Un livreur envoyé à la mauvaise
    * porte se remonte à qui a écrit la consigne. Préfixé `company.` comme les

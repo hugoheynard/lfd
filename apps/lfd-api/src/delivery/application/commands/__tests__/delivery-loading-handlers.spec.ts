@@ -241,6 +241,8 @@ describe("DepartDeliveryRoundHandler — L4-C4, Q14", () => {
           depositAllowed: false,
           // L'adresse ne redéfinit rien (B3 bis).
           doorstepRule: null,
+          // Aucun stationnement au carnet : rien de figé (§6).
+          parking: null,
           status: "active",
         },
         // Le rang de passage et le point du carnet, figés au départ (MT-D5 v2).

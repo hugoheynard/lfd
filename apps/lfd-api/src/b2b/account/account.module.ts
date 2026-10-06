@@ -104,6 +104,7 @@ import {
   GrantAccountAccess,
 } from "./application/services/grant-account-access.service.js";
 import { AccountJournalNames } from "./application/services/account-journal-names.service.js";
+import { CommerceDeliveryAddressPointCorrector } from "./application/services/commerce-delivery-address-point-corrector.js";
 import { CompanyContactBook } from "./application/services/company-contact-book.service.js";
 import { ListCompanyMembersHandler } from "./application/queries/list-company-members.handler.js";
 import { InviteCompanyMemberHandler } from "./application/commands/invite-company-member.handler.js";
@@ -257,6 +258,7 @@ import { CustomerPrincipalResolver } from "./infrastructure/customer-principal.r
     CompanyContactBook,
     // Les noms qu'un fait fige au moment du geste (lot B du plan des phrases).
     AccountJournalNames,
+    CommerceDeliveryAddressPointCorrector,
     { provide: CompanyMemberReader, useClass: PrismaCompanyMemberReader },
     { provide: CompanyMemberRepository, useClass: PrismaCompanyMemberRepository },
     GetMyAccountHandler,
@@ -405,6 +407,12 @@ import { CustomerPrincipalResolver } from "./infrastructure/customer-principal.r
   ],
   // `StaffDirectory` : l'accès aux fonctionnalités fige l'auteur d'un écart par
   // le même port que la certification d'un KBIS (2026-09-14).
-  exports: [ImpersonationSubjects, PrincipalResolver, StaffDirectory, DeliveryStepPhotoLocator],
+  exports: [
+    ImpersonationSubjects,
+    PrincipalResolver,
+    StaffDirectory,
+    DeliveryStepPhotoLocator,
+    CommerceDeliveryAddressPointCorrector,
+  ],
 })
 export class AccountModule {}

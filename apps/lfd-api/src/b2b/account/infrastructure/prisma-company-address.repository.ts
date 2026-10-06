@@ -45,6 +45,8 @@ interface DeliveryRow {
   readonly deliverySpecs: unknown;
   readonly depositAllowed: boolean;
   readonly doorstepRule: string | null;
+  readonly parkingLat: number | null;
+  readonly parkingLng: number | null;
   readonly isDefault: boolean;
   readonly archivedAt: Date | null;
   readonly createdAt: Date;
@@ -75,6 +77,11 @@ function toDomain(row: DeliveryRow): DeliveryAddress {
     depositAllowed: row.depositAllowed,
     // Un CHECK tient la valeur en base : une autre lève plutôt que d'être devinée.
     doorstepRule: row.doorstepRule === null ? null : doorstepRuleSchema.parse(row.doorstepRule),
+    // Un CHECK tient les deux ensemble : l'un sans l'autre n'existe pas en base.
+    parking:
+      row.parkingLat === null || row.parkingLng === null
+        ? null
+        : { lat: row.parkingLat, lng: row.parkingLng },
     createdAt: row.createdAt,
     archivedAt: row.archivedAt,
   };
@@ -142,6 +149,8 @@ export class PrismaCompanyAddressRepository extends CompanyAddressRepository {
         deliverySpecs: true,
         depositAllowed: true,
         doorstepRule: true,
+        parkingLat: true,
+        parkingLng: true,
         isDefault: true,
         archivedAt: true,
         createdAt: true,
@@ -166,6 +175,9 @@ export class PrismaCompanyAddressRepository extends CompanyAddressRepository {
           depositAllowed: entry.depositAllowed,
           // De même : seul `setDoorstepRule` le change (B3 bis).
           doorstepRule: entry.doorstepRule,
+          // De même : seul `correctPoint` le change (§6).
+          parkingLat: entry.parking?.lat ?? null,
+          parkingLng: entry.parking?.lng ?? null,
           // L'unique source du défaut : le carnet, jamais la ligne.
           isDefault: entry.id === state.defaultId,
           archivedAt: entry.archivedAt,

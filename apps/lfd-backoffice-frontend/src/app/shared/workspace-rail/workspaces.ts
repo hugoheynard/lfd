@@ -198,6 +198,15 @@ export const LIVRAISON_VIEWS: readonly WorkspaceView[] = [
     needs: 'delivery_decisions:write',
   },
   {
+    // Tiré des positions des livreurs (gps-y-aller-et-position.md, §6) :
+    // l'écriture des tournées, comme la route — `delivery_rounds:read` ne le voit pas.
+    key: 'carnet-a-corriger',
+    label: 'Carnet à corriger',
+    link: '/livraison/carnet-a-corriger',
+    icon: 'map-pin',
+    needs: 'delivery_rounds:write',
+  },
+  {
     key: 'simulateur',
     label: 'Simulateur',
     link: '/livraison/simulateur',

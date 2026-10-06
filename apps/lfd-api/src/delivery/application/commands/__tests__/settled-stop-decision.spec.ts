@@ -48,6 +48,7 @@ function departed(rule: DoorstepRule): DepartedStopRow {
     gps: null,
     depositAllowed: false,
     doorstepRule: rule,
+    parking: null,
     arrivedAt: null,
   };
 }

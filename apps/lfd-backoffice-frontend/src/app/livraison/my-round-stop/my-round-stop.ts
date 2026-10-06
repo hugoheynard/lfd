@@ -23,6 +23,7 @@ import {
   packingBadgeOf,
   sheetSummaryOf,
 } from '../my-round-packing';
+import { walkToDoorHref } from '../my-round-navigation';
 import { MyRoundStepPhoto } from '../my-round-step-photo/my-round-step-photo';
 import { contactNameOf, telHrefOf, windowLabel } from '../run-sheet';
 import { decisionBadgeOf } from '../stop-decisions';
@@ -147,6 +148,17 @@ export class MyRoundStop {
     this.reporting.set(false);
     this.reported.emit();
   }
+
+  /**
+   * Le stationnement de l'adresse (§6), en coordonnées, ou `null`. « Y
+   * aller » y conduit ; la porte se rejoint à pied ({@link walkToDoor}).
+   */
+  protected readonly parkingLabel = computed(() => {
+    const parking = this.stop().parking;
+    return parking === null ? null : `${parking.lat.toFixed(5)}, ${parking.lng.toFixed(5)}`;
+  });
+  /** « À pied jusqu'à la porte » : du stationnement au point de la porte. */
+  protected readonly walkToDoor = computed(() => walkToDoorHref(this.stop()));
 
   protected readonly contactNameOf = contactNameOf;
   protected readonly telHrefOf = telHrefOf;

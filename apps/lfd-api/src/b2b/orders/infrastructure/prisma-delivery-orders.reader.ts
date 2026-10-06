@@ -67,6 +67,8 @@ interface AddressSpecs {
   readonly depositAllowed: boolean;
   /** La décision réglée d'avance de l'adresse (B3 bis) ; `null` : elle hérite. */
   readonly doorstepRule: DoorstepRule | null;
+  /** Le stationnement de l'adresse (§6) — une colonne, pas une consigne. */
+  readonly parking: { readonly lat: number; readonly lng: number } | null;
 }
 
 interface DeliveryOrderRow {
@@ -152,6 +154,8 @@ export class PrismaDeliveryOrdersReader extends DeliveryOrdersReader {
         depositAllowed: note?.depositAllowed ?? false,
         // Sans adresse reliée, rien n'est redéfini : la livraison applique son réglage.
         doorstepRule: note?.doorstepRule ?? null,
+        // Sans adresse reliée, aucun stationnement connu (§6).
+        parking: note?.parking ?? null,
         status: row.status === "cancelled" ? "cancelled" : "active",
       };
     });
@@ -207,6 +211,8 @@ export class PrismaDeliveryOrdersReader extends DeliveryOrdersReader {
         deliverySpecs: true,
         depositAllowed: true,
         doorstepRule: true,
+        parkingLat: true,
+        parkingLng: true,
       },
     });
     return new Map(
@@ -222,6 +228,10 @@ export class PrismaDeliveryOrdersReader extends DeliveryOrdersReader {
             depositAllowed: row.depositAllowed,
             doorstepRule:
               row.doorstepRule === null ? null : doorstepRuleSchema.parse(row.doorstepRule),
+            parking:
+              row.parkingLat === null || row.parkingLng === null
+                ? null
+                : { lat: row.parkingLat, lng: row.parkingLng },
           },
         ];
       }),

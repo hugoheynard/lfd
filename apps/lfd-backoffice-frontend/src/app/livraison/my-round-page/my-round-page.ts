@@ -34,6 +34,7 @@ import {
 } from '../incident-report-form/incident-report-form';
 import { roundLabel, stopCountLabel } from '../delivery-rounds';
 import {
+  driveTargetOf,
   goToHref,
   NAVIGATION_APPS,
   type NavigationApp,
@@ -197,7 +198,7 @@ export class MyRoundPage {
   });
   /** Ce qui reste et ne peut entrer dans aucun lien : ni point ni adresse. */
   protected readonly unplaced = computed(
-    () => this.remaining().filter((stop) => placeOf(stop) === null).length,
+    () => this.remaining().filter((stop) => placeOf(driveTargetOf(stop)) === null).length,
   );
   /** « Rentrer » : partie, plus rien à faire, et un point de départ connu. */
   protected readonly homeHref = computed(() => {
@@ -230,7 +231,8 @@ export class MyRoundPage {
   }
 
   protected goToOf(stop: MyDeliveryRoundView['stops'][number]): string | null {
-    return this.rolling() ? goToHref(this.app(), stop) : null;
+    // Le stationnement d'abord, s'il est connu (§6) : on conduit là où l'on se gare.
+    return this.rolling() ? goToHref(this.app(), driveTargetOf(stop)) : null;
   }
 
   protected pickApp(value: string): void {

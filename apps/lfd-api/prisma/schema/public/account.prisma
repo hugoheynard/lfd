@@ -547,6 +547,15 @@ model Address {
   // `depositAllowed`. Écrite par le carnet seul, sous la route du commercial.
   doorstepRule String? @map("doorstep_rule") @db.VarChar(16)
 
+  // Le POINT DE STATIONNEMENT de l'adresse — où le livreur se gare
+  // (`gps-y-aller-et-position.md`, §6), posé quand le bureau applique une
+  // suggestion tirée des arrivées. Les deux ensemble ou aucun (CHECK
+  // `addresses_parking_point_check`). Une COLONNE, pour la raison de
+  // `depositAllowed`. Écrite par le carnet seul (`correctPoint`). La porte,
+  // elle, est le point GPS des consignes (`delivery_specs.gps`).
+  parkingLat Float? @map("parking_lat")
+  parkingLng Float? @map("parking_lng")
+
   // Pas de DELETE physique : on archive.
   archivedAt DateTime? @map("archived_at")
 

@@ -1,6 +1,7 @@
 import { describe, expect, it } from 'vitest';
 
 import {
+  driveTargetOf,
   goToHref,
   MAX_URL_LENGTH,
   NAVIGATION_APP_KEY,
@@ -8,6 +9,7 @@ import {
   readNavigationApp,
   remainingStops,
   routeLegs,
+  walkToDoorHref,
   writeNavigationApp,
 } from './my-round-navigation';
 import { myStopOf } from './my-round.fixture';
@@ -171,5 +173,31 @@ describe('le choix d’application, sur l’appareil', () => {
     expect(() => {
       writeNavigationApp({ setItem: refused }, 'apple');
     }).not.toThrow();
+  });
+});
+
+describe('le stationnement (`gps-y-aller-et-position.md`, §6)', () => {
+  const DOOR = { lat: 45.5651, lng: 5.9182 };
+  const PARKING = { lat: 45.5641, lng: 5.9182 };
+
+  it('« Y aller » conduit au stationnement quand il est connu, sinon à la porte', () => {
+    expect(driveTargetOf(myStopOf({ gps: DOOR, parking: PARKING })).gps).toEqual(PARKING);
+    expect(driveTargetOf(myStopOf({ gps: DOOR, parking: null })).gps).toEqual(DOOR);
+    expect(goToHref('google', driveTargetOf(myStopOf({ gps: DOOR, parking: PARKING })))).toContain(
+      'destination=45.5641,5.9182',
+    );
+  });
+
+  it('« Toute la tournée » passe aussi par les stationnements', () => {
+    const [leg] = routeLegs([myStopOf({ rank: 1, gps: DOOR, parking: PARKING })]);
+    expect(leg?.href).toContain('destination=45.5641,5.9182');
+  });
+
+  it('la fin à pied : du stationnement à la porte, seulement si les deux sont connus', () => {
+    expect(walkToDoorHref(myStopOf({ gps: DOOR, parking: PARKING }))).toBe(
+      'https://www.google.com/maps/dir/?api=1&origin=45.5641,5.9182&destination=45.5651,5.9182&travelmode=walking',
+    );
+    expect(walkToDoorHref(myStopOf({ gps: DOOR, parking: null }))).toBeNull();
+    expect(walkToDoorHref(myStopOf({ gps: null, parking: PARKING }))).toBeNull();
   });
 });

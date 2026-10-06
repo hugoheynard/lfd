@@ -26,6 +26,7 @@ export function myStopOf(overrides: Partial<MyDeliveryStopView> = {}): MyDeliver
     orderNote: '',
     addressNote: null,
     gps: { lat: 45.4, lng: 6.9 + rank / 100 },
+    parking: null,
     procedure: [],
     bins: 1,
     coldBins: 0,

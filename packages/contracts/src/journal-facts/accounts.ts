@@ -3,6 +3,7 @@ import { z } from "zod";
 import { deferredTermSchema } from "../company.js";
 import { COLLECTION_FORMS, companyFollowAspectSchema } from "../sub-accounts.js";
 import { DOORSTEP_RULES } from "../delivery-doorstep-rule.js";
+import { ADDRESS_POINT_KINDS } from "../delivery-address-suggestions.js";
 import { companyMemberRoleSchema } from "../company-member.js";
 import { fulfillmentMethodSchema } from "../order.js";
 import { recurrenceSchema, subscriptionStatusSchema } from "../subscription.js";
@@ -293,6 +294,20 @@ export const ACCOUNTS_AND_CARTS_FACTS = {
       subjectLabel: subjectLabel(),
       address: deliveryAddress(),
       rule: z.enum(DOORSTEP_RULES).nullable(),
+    }),
+  ),
+  /**
+   * Le bureau a APPLIQUÉ une correction suggérée par les livraisons
+   * (`gps-y-aller-et-position.md`, §6) : la porte (`door`, le point GPS de
+   * l'adresse) ou le stationnement (`parking`). La charge dit lequel, jamais
+   * les coordonnées — un fait cite une adresse par son lieu, pas par un point.
+   * Né le 2026-10-06 : aucune forme d'avant.
+   */
+  "company.delivery_address_point_corrected": fact(
+    payload({
+      subjectLabel: subjectLabel(),
+      address: deliveryAddress(),
+      point: z.enum(ADDRESS_POINT_KINDS),
     }),
   ),
   /** La société est le sujet : la forme d'avant la répétait en `companyId`. */

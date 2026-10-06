@@ -33,3 +33,11 @@ export {
 } from "./delivery-departure.announcer.js";
 export type { DepartureSheet, DepartureWindow } from "../../domain/entities/departure-sheet.js";
 export { DeliveryOrderPlacedListener } from "./delivery-order-placed.listener.js";
+export {
+  DeliveryAddressPointsReader,
+  type DeliveryOrderAddress,
+} from "./delivery-address-points.reader.js";
+export {
+  DeliveryAddressPointCorrector,
+  type DeliveryAddressPointCorrection,
+} from "./delivery-address-point.corrector.js";

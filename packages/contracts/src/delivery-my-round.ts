@@ -138,6 +138,12 @@ export interface MyDeliveryStopView {
   readonly addressNote: string | null;
   /** Le point où aller ; `null` : naviguer par l'adresse en texte. */
   readonly gps: GpsPoint | null;
+  /**
+   * Le point de stationnement de l'adresse du carnet — figé au départ, lu au
+   * carnet tant que la tournée est au dépôt ; `null` : aucun. Le livreur s'y
+   * gare, puis va à pied à {@link gps} (`gps-y-aller-et-position.md`, §6).
+   */
+  readonly parking: GpsPoint | null;
   /** La procédure de l'adresse, lue VIVANTE (une consigne corrigée atteint le livreur). */
   readonly procedure: readonly MyDeliveryStepView[];
   /** Les bacs non annulés de la commande. */

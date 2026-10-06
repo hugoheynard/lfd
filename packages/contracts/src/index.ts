@@ -1776,3 +1776,16 @@ export type {
   DetachedUnpaidOrderView,
   DetachedUnpaidOrdersView,
 } from "./sub-accounts.js";
+export {
+  ADDRESS_POINT_KINDS,
+  ADDRESS_POINT_REFERENCES,
+  addressPointKindSchema,
+  addressPointDecisionPayloadSchema,
+} from "./delivery-address-suggestions.js";
+export type {
+  AddressPointKind,
+  AddressPointReference,
+  AddressPointSuggestionView,
+  AddressPointSuggestionsView,
+  AddressPointDecisionPayload,
+} from "./delivery-address-suggestions.js";

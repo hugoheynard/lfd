@@ -80,6 +80,31 @@ export function placeOf(target: NavigationTarget): string | null {
   return text === '' ? null : encodeURIComponent(text);
 }
 
+/**
+ * **Où conduire** pour un arrêt (`gps-y-aller-et-position.md`, §6) : le
+ * point de STATIONNEMENT quand le carnet en a un, sinon la porte (le point
+ * GPS), sinon l'adresse. Une application de navigation est un guidage en
+ * voiture : la viser sur une porte au fond d'une cour piétonne fait tourner
+ * autour du pâté ; viser l'endroit où l'on se gare, puis finir à pied
+ * ({@link walkToDoorHref}), est ce que le livreur fait de toute façon.
+ */
+export function driveTargetOf(stop: MyDeliveryStopView): NavigationTarget {
+  return { gps: stop.parking ?? stop.gps, address: stop.address };
+}
+
+/**
+ * Le dernier tronçon, à pied, du stationnement à la porte — `null` quand l'un
+ * des deux manque : « Y aller » vise alors déjà la porte.
+ */
+export function walkToDoorHref(stop: MyDeliveryStopView): string | null {
+  if (stop.parking === null || stop.gps === null) {
+    return null;
+  }
+  const origin = `${String(stop.parking.lat)},${String(stop.parking.lng)}`;
+  const door = `${String(stop.gps.lat)},${String(stop.gps.lng)}`;
+  return `${GOOGLE_DIR}&origin=${origin}&destination=${door}&travelmode=walking`;
+}
+
 /** Un tronçon de « Toute la tournée ». */
 export interface NavigationLeg {
   readonly href: string;
@@ -122,7 +147,7 @@ function legHref(origin: string | null, waypoints: readonly string[], destinatio
  */
 export function routeLegs(stops: readonly MyDeliveryStopView[]): readonly NavigationLeg[] {
   const places = stops.flatMap((stop) => {
-    const place = placeOf(stop);
+    const place = placeOf(driveTargetOf(stop));
     return place === null ? [] : [{ rank: stop.rank, place }];
   });
   const legs: NavigationLeg[] = [];

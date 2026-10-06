@@ -77,6 +77,7 @@ export function addressBook(
     },
     depositAllowed: false,
     doorstepRule: null,
+    parking: null,
     createdAt: new Date(0),
     archivedAt,
   });

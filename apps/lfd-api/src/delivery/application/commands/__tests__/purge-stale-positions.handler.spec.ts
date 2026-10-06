@@ -14,6 +14,7 @@ class InMemoryPruner extends GesturePositionPruner {
   constructor(
     public closed: Date[],
     public arrived: Date[] = [],
+    public decided: Date[] = [],
   ) {
     super();
   }
@@ -26,6 +27,11 @@ class InMemoryPruner extends GesturePositionPruner {
   clearBatchArrivedBefore(instant: Date, limit: number): Promise<number> {
     const [kept, count] = clear(this.arrived, instant, limit);
     this.arrived = kept;
+    return Promise.resolve(count);
+  }
+  clearBatchDecidedBefore(instant: Date, limit: number): Promise<number> {
+    const [kept, count] = clear(this.decided, instant, limit);
+    this.decided = kept;
     return Promise.resolve(count);
   }
 }
@@ -47,6 +53,15 @@ describe("PurgeStalePositionsHandler — 60 jours, colonnes effacées", () => {
 
     expect(pruner.closed).toEqual([kept]);
     expect(pruner.arrived).toEqual([kept]);
+  });
+
+  it("efface aussi le point des suggestions décidées il y a plus de 60 jours (§6)", async () => {
+    const kept = daysAgo(10);
+    const pruner = new InMemoryPruner([], [], [daysAgo(61), kept]);
+
+    await expect(new PurgeStalePositionsHandler(pruner, clock).execute()).resolves.toBe(1);
+
+    expect(pruner.decided).toEqual([kept]);
   });
 
   it("garde un relevé exactement à la frontière", async () => {

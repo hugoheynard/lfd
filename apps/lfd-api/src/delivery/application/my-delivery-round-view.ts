@@ -53,6 +53,7 @@ interface DoorFacts {
   readonly depositAllowed: boolean;
   readonly orderNote: string;
   readonly addressNote: string | null;
+  readonly parking: MyDeliveryStopView["parking"];
 }
 
 /** Une commande que le commerce ne connaît plus : on n'invente ni adresse ni contact. */
@@ -66,6 +67,7 @@ const UNKNOWN_DOOR: DoorFacts = {
   depositAllowed: false,
   orderNote: "",
   addressNote: null,
+  parking: null,
 };
 
 /**
@@ -78,7 +80,9 @@ const UNKNOWN_DOOR: DoorFacts = {
  *   `freeze` le dit ;
  * - **adresse, contact, fenêtre, signature, notes** : l'instantané du départ,
  *   la feuille vivante du commerce au dépôt ;
- * - **point GPS** : figé au départ ; sinon celui du carnet ;
+ * - **point GPS** : figé au départ ; sinon celui du carnet ; le
+ *   **stationnement** suit l'adresse : figé au départ, la feuille vivante au
+ *   dépôt (§6) ;
  * - **procédure** : toujours vivante ; **bacs** : les tables de la livraison ;
  * - **à la porte** (`a-la-porte.md`) : l'arrivée et le dépôt autorisé
  *   figés à l'exécution, `canDeposit` calculé ICI par la règle du domaine
@@ -183,6 +187,7 @@ function doorFactsOf(stop: DriverStopRow, live: DepartureSheet | undefined): Doo
       depositAllowed: frozen.depositAllowed,
       orderNote: frozen.note,
       addressNote: frozen.addressNote,
+      parking: frozen.parking,
     };
   }
   if (live === undefined) {
@@ -198,6 +203,7 @@ function doorFactsOf(stop: DriverStopRow, live: DepartureSheet | undefined): Doo
     depositAllowed: live.depositAllowed,
     orderNote: live.note,
     addressNote: live.addressNote,
+    parking: live.parking,
   };
 }
 

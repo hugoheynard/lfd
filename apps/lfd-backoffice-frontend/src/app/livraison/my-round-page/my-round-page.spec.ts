@@ -312,6 +312,31 @@ describe('MyRoundPage — partie', () => {
     );
   });
 
+  it('§6 : un stationnement au carnet — « Y aller » y conduit, la carte le marque « P » et finit à pied', async () => {
+    const stop = myStopOf({
+      rank: 1,
+      gps: { lat: 45.5651, lng: 5.9182 },
+      parking: { lat: 45.5641, lng: 5.9182 },
+    });
+    const { element } = await boot({ round: myRoundOf({ departedAt, stops: [stop] }) });
+
+    expect(element.querySelector('[data-go-to]')?.getAttribute('href')).toBe(
+      'https://www.google.com/maps/dir/?api=1&destination=45.5641,5.9182&travelmode=driving',
+    );
+    expect(element.querySelector('[data-parking]')?.textContent).toContain('P');
+    expect(element.querySelector('[data-parking]')?.textContent).toContain('45.56410, 5.91820');
+    expect(element.querySelector('[data-walk-to-door] a')?.getAttribute('href')).toContain(
+      'origin=45.5641,5.9182&destination=45.5651,5.9182&travelmode=walking',
+    );
+  });
+
+  it('sans stationnement : ni « P », ni fin à pied', async () => {
+    const { element } = await boot({ round: myRoundOf({ departedAt, stops: [myStopOf()] }) });
+
+    expect(element.querySelector('[data-parking]')).toBeNull();
+    expect(element.querySelector('[data-walk-to-door]')).toBeNull();
+  });
+
   it('mémorise l’application choisie pour « Y aller »', async () => {
     localStorage.setItem(NAVIGATION_APP_KEY, 'waze');
     const { element } = await boot({ round: myRoundOf({ departedAt }) });

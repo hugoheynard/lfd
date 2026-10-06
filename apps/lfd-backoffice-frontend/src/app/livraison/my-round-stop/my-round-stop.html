@@ -69,6 +69,25 @@
       @if (item.addressNote; as note) {
         <fold-field label="Note de l’adresse">{{ note }}</fold-field>
       }
+      @if (parkingLabel(); as parking) {
+        <fold-field label="Stationnement" data-parking>
+          <span class="parking">
+            <fold-badge variant="info" content="P" />
+            {{ parking }}
+          </span>
+          @if (walkToDoor(); as href) {
+            <fold-link
+              icon="map-pin"
+              [href]="href"
+              target="_blank"
+              rel="noopener"
+              data-walk-to-door
+            >
+              À pied jusqu’à la porte
+            </fold-link>
+          }
+        </fold-field>
+      }
     </fold-field-list>
 
     @if (item.procedure.length > 0) {

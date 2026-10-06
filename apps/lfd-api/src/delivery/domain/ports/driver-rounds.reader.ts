@@ -29,6 +29,8 @@ export interface DepartedStopRow {
   /** `null` : parti avant que le départ ne fige le rang (MT-D5 v2). */
   readonly departureRank: number | null;
   readonly gps: GpsPoint | null;
+  /** Le stationnement du carnet figé au départ (§6) ; `null` : aucun, ou parti avant. */
+  readonly parking: GpsPoint | null;
   /** « Dépôt autorisé », figé au départ (AP-D5) ; `false` avant la migration qui l'a ajouté. */
   readonly depositAllowed: boolean;
   /** La décision réglée d'avance, résolue et figée au départ (B3 bis) ; `ask` avant la migration. */

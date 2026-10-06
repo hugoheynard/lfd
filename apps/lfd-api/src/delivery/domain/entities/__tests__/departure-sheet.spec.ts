@@ -35,6 +35,7 @@ function sheet(overrides: Partial<DepartureSheet> = {}): DepartureSheet {
     addressNote: "sonner deux fois",
     depositAllowed: false,
     doorstepRule: null,
+    parking: null,
     status: "active",
     ...overrides,
   };

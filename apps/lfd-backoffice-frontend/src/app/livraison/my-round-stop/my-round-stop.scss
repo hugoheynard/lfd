@@ -26,7 +26,8 @@
   padding-inline-start: var(--fold-space-lg);
 }
 
-.quantity {
+.quantity,
+.parking {
   display: inline-flex;
   align-items: center;
   gap: var(--fold-space-xs);

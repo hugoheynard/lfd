@@ -3,15 +3,21 @@
 > ✅ **Doc technique, état au 2026-10-06.** Ce document décrit ce qui est bâti.
 > C'était le plan « Y aller et la position » (2026-09-30) ; son historique se
 > lit par `git log --follow documentation/livraisons/gps-y-aller-et-position.md`.
-> Ce qui n'est pas bâti est dans **Reste à faire**, à la fin.
+> Ce qui n'est pas bâti est dans **Reste à faire**, à la fin. Les corrections
+> du carnet suggérées au bureau (§6) sont bâties depuis le 2026-10-06.
 
-Deux choses, sur l'écran « Ma tournée » du livreur (`/coursier`) :
+Trois choses — deux sur l'écran « Ma tournée » du livreur (`/coursier`), une
+au bureau :
 
 1. **« Y aller »** : ouvrir l'application de navigation vers l'arrêt suivant, ou
    vers toute la tournée découpée en tronçons, **sans les arrêts déjà clos**.
 2. **La position au geste** : la position du téléphone relevée une fois, au
    moment d'un geste à la porte, jamais en continu, et effacée au bout de
    60 jours.
+3. **Les corrections du carnet suggérées au bureau** (§6) : quand plusieurs
+   gestes concordent loin du point du carnet, le bureau reçoit une suggestion
+   de porte ou de stationnement, qu'il applique ou ignore — jamais
+   automatique.
 
 ---
 
@@ -66,9 +72,13 @@ pas en base.
 (`routeLegs`, `my-round-page.html`, relus le 2026-10-06) l'affiche toujours, en
 liens Google, quel que soit le choix.
 
-Chaque étape est donnée par son **point GPS** quand le carnet en a un (figé au
-départ : `delivery_stop_execution.gps_lat/gps_lng`), sinon par l'adresse en
-texte. Un arrêt sans l'un ni l'autre n'entre dans aucun lien, et l'écran le
+Chaque étape est donnée par son **point de stationnement** quand le carnet en
+a un, sinon par son **point GPS** (la porte), sinon par l'adresse en texte —
+les deux points figés au départ (`delivery_stop_execution.parking_*`,
+`gps_*`). Le stationnement passe devant (§6, `driveTargetOf`) : une
+application de navigation guide une voiture, et la viser sur une porte au fond
+d'une cour fait tourner autour du pâté ; la carte d'arrêt offre ensuite
+« À pied jusqu'à la porte ». Un arrêt sans l'un ni l'autre n'entre dans aucun lien, et l'écran le
 compte.
 
 ### La découpe en tronçons (YA-D2)
@@ -217,12 +227,13 @@ erreur dans ses logs).
 
 ## 3. Ce que voit qui
 
-| Qui                                                  | Ce qu'il voit                                                                                 |
-| ---------------------------------------------------- | --------------------------------------------------------------------------------------------- |
-| Le livreur (`delivery_driving`, `delivery_doorstep`) | ses tournées, ses liens, la mention « position indisponible » — jamais une coordonnée relevée |
-| Le bureau (`delivery_rounds:read`)                   | **aucune position** au 2026-10-06 (voir Reste à faire)                                        |
-| Google, Apple, Waze                                  | ce que contient le lien que le livreur ouvre ; rien n'est envoyé par le serveur               |
-| La base                                              | les six colonnes, 60 jours au plus                                                            |
+| Qui                                                  | Ce qu'il voit                                                                                      |
+| ---------------------------------------------------- | -------------------------------------------------------------------------------------------------- |
+| Le livreur (`delivery_driving`, `delivery_doorstep`) | ses tournées, ses liens, la mention « position indisponible » — jamais une coordonnée relevée      |
+| Le bureau (`delivery_rounds:read`)                   | **aucune position**                                                                                |
+| Qui organise les tournées (`delivery_rounds:write`)  | « Carnet à corriger » (§6) : des CENTRES de gestes concordants, jamais un geste, un nom, une heure |
+| Google, Apple, Waze                                  | ce que contient le lien que le livreur ouvre ; rien n'est envoyé par le serveur                    |
+| La base                                              | les six colonnes, 60 jours au plus                                                                 |
 
 ---
 
@@ -237,7 +248,9 @@ erreur dans ses logs).
   `PositionPurgeSweepController`, `POSITION_PURGE_PROVIDERS`) ;
   `container/worker.ts` appelle la route chaque nuit.
 - **`packages/contracts`** : `delivery-doorstep.ts` — les champs de position
-  sur les trois gestes de clôture et `declareStopArrivalPayloadSchema`.
+  sur les trois gestes de clôture et `declareStopArrivalPayloadSchema` ;
+  `packages/contracts/src/delivery-address-suggestions.ts` (§6) ; `MyDeliveryStopView.parking` ; le
+  fait `company.delivery_address_point_corrected`.
 - **`apps/lfd-backoffice-frontend`** : `apps/lfd-backoffice-frontend/src/app/livraison/gesture-position.ts`
   (`GesturePositionReader`, `appendPosition`), branché dans `my-round-page`,
   `handover-form`, `deposit-form` et `my-delivery-round.service.ts` ;
@@ -258,17 +271,124 @@ erreur dans ses logs).
 | YA-Q3      | 60 jours (`POSITION_RETENTION_DAYS`), à faire valider.                                                                              |
 | 2026-10-06 | On prévient, on ne demande pas : le texte énonce un fait.                                                                           |
 | 2026-10-06 | Finalité : faciliter les tournées suivantes, puis prouver la livraison ; jamais suivre les déplacements.                            |
+| CC-D1      | Suggestion : ≥ 3 gestes à moins de 30 m les uns des autres, centre à plus de 50 m du point de comparaison. Jamais appliquée seule.  |
+| CC-D2      | La livraison calcule, le commerce écrit : `DeliveryAddressPointCorrector` déclaré par la livraison, implémenté par le carnet.       |
+| CC-D3      | Le stationnement est une colonne du carnet ; la porte reste le point GPS des consignes.                                             |
+| CC-D4      | « Y aller » conduit au stationnement s'il existe ; la porte se rejoint à pied.                                                      |
+| CC-D5      | La liste se lit sous `delivery_rounds:write`, lecture comprise.                                                                     |
 
 ---
 
-## 6. Reste à faire
+## 6. Les corrections du carnet suggérées au bureau
 
-- **Afficher l'écart au bureau** : arrivée ↔ adresse prévue, remise ↔ adresse
-  prévue (Hugo, 2026-10-06), et le geste « corriger le carnet ? ». Aucune vue
-  du bureau ne montre aujourd'hui un arrêt clos (« Planifier » ne lit que les
-  arrêts vivants, la feuille de route ne connaît pas la clôture — vérifié le
-  2026-10-06) : c'est un écran à concevoir, et **le droit qui voit les
-  positions** est à trancher avec lui.
+Règle validée par Hugo le 2026-10-06 ; bâti le même jour. Écran
+`/livraison/carnet-a-corriger` (« Carnet à corriger »), route
+`admin/livraison/carnet-a-corriger`.
+
+### La règle (CC-D1)
+
+`apps/lfd-api/src/delivery/domain/services/address-point-suggestions.ts`, pur :
+
+- **Deux genres.** `door` (la porte) part des positions de **clôture**
+  (`closed_*` : remise, dépôt, clôture sans remise — la base ne distingue pas
+  les trois, et le livreur est à la porte dans les trois) ; `parking` (le
+  stationnement) part des positions d'**arrivée** (`arrived_*`).
+- **Rattachées à l'adresse du carnet** de la commande, par le commerce
+  (`DeliveryAddressPointsReader`, sous le mur `(adresse, société)`, adresses
+  archivées exclues). Une commande sans adresse reliée ne compte pas.
+- **Une position annoncée à plus de 50 m près est écartée** (`MAX_ACCURACY_M`).
+- **Le groupe le plus dense** : pour chaque position, celles à moins de
+  `CLUSTER_RADIUS_M` (30 m) ; au moins `MIN_CONCORDANT` (3) — deux peuvent être
+  un hasard. Son centre est la moyenne.
+- **Le point de comparaison** : pour la porte, le point du carnet, sinon le
+  géocodage de l'adresse (le cache que la tournée lit), sinon rien ; pour le
+  stationnement, celui du carnet, sinon la porte — un livreur qui se gare
+  devant la porte n'a pas besoin de stationnement.
+- **Une suggestion naît** quand le centre est à plus de `MIN_GAP_M` (50 m) de
+  ce point, ou quand il n'y a aucun point (distance inconnue).
+- **Ignorée, elle ne revient pas** tant que le centre reste à 30 m du point
+  ignoré ; un groupe ailleurs, né de nouvelles livraisons, la repropose.
+  **Appliquée, elle s'éteint d'elle-même** : le carnet porte le point.
+
+### Le chemin à travers la frontière (CC-D2)
+
+```mermaid
+sequenceDiagram
+  participant B as Bureau (delivery_rounds:write)
+  participant L as Livraison
+  participant C as Commerce (carnet)
+  B->>L: GET carnet-a-corriger
+  L->>L: positions gardées (≤ 60 j)
+  L->>C: DeliveryAddressPointsReader — adresse de chaque commande
+  L-->>B: centres, écarts, comptes — aucune position de livreur
+  B->>L: POST :addressId/appliquer { kind, point vu }
+  L->>L: recalcul — 409 si la suggestion a bougé de plus de 10 m
+  L->>C: DeliveryAddressPointCorrector.correct (même transaction)
+  C->>C: DeliveryAddressBook.correctPoint → save → company.delivery_address_point_corrected
+  L->>L: décision « applied » inscrite
+```
+
+`delivery → b2b` est interdit : un port déclaré par le commerce et implémenté
+par la livraison n'est pas exprimable. La livraison DÉCLARE donc les deux ports
+dans `delivery/channels/commerce/` — une lecture et une **demande** de
+correction — et le commerce les implémente
+(`apps/lfd-api/src/b2b/orders/infrastructure/prisma-delivery-address-points.reader.ts`,
+`apps/lfd-api/src/b2b/account/application/services/commerce-delivery-address-point-corrector.ts`),
+relié dans `appBootstrap/delivery-feed.module.ts`. C'est le carnet qui décide,
+écrit et journalise ; la livraison n'importe rien du commerce.
+
+### Ce qui est écrit (CC-D3)
+
+- **La porte** → `DeliverySpecs.gps` (le point GPS des consignes, qui passe
+  déjà avant le géocodage : `locateFromCache`, `departAndFreeze`).
+- **Le stationnement** → `public.addresses.parking_lat/parking_lng`, une
+  COLONNE pour la raison de `deposit_allowed` : le `jsonb` des consignes se
+  réécrit d'un bloc. Seul `correctPoint` l'écrit ; une modification de
+  l'adresse ne l'efface pas.
+- **Le départ fige les deux** : `delivery_stop_execution.gps_*` (déjà) et
+  `parking_*` (lu dans la feuille, `DepartureSheet.parking`). « Ma tournée »
+  sert `parking` : figé après le départ, lu au carnet au dépôt.
+- **La décision** → `delivery.delivery_address_suggestion_decision` (une ligne
+  par geste, `ignored` ou `applied`, signée et datée). Son point s'efface à
+  60 jours avec les positions (`clearBatchDecidedBefore`).
+- **Le journal** : `company.delivery_address_point_corrected` (`point`:
+  `door`/`parking`, l'adresse par son lieu, jamais de coordonnées) — un fait
+  du commerce, rangé avec les comptes par son préfixe. Ignorer ne journalise
+  pas (`@sans-journal`) : rien ne change, la ligne de décision est la trace.
+
+Migration `20261007170000_les_corrections_du_carnet` (additive, aucun droit).
+
+### Qui le voit (CC-D5)
+
+`delivery_rounds:write`, **lecture comprise** (`@RequirePermission`) : la
+liste est tirée des positions des livreurs, et seul qui organise les tournées
+la voit. Le livreur, et qui ne fait que lire les tournées, reçoivent 403
+(prouvé : `apps/lfd-api/test/delivery-address-suggestions.e2e-spec.ts`). Rien d'individuel n'en
+sort : un centre de trois gestes au moins, ni auteur, ni tournée, ni heure.
+
+### Le livreur (CC-D4)
+
+À la tournée suivante, la carte d'arrêt porte l'épingle corrigée et un « P »
+de stationnement ; « Y aller » et « Toute la tournée » visent le stationnement
+(`driveTargetOf`), puis « À pied jusqu'à la porte » (`walkToDoorHref`) finit
+le trajet.
+
+---
+
+## 7. Reste à faire
+
+- **L'écart arrêt par arrêt** (arrivée ↔ adresse prévue, remise ↔ adresse
+  prévue, sur la tournée du jour) : non bâti. Le bureau voit les corrections
+  CONCLUES (§6), pas chaque geste — et c'est voulu tant que personne n'a dit
+  qu'il en avait besoin.
+- **Une vraie carte** dans « Carnet à corriger » : l'écran donne les
+  coordonnées et un lien Google Maps (itinéraire à pied du point enregistré au
+  point suggéré) ; le fond de carte de la Livraison (`delivery-map`) n'y est
+  pas branché.
+- **Le stationnement au carnet côté commercial** : il n'est ni affiché ni
+  modifiable sur la fiche client ; seul « Appliquer » le pose.
+- **Les seuils** (3 gestes, 30 m, 50 m, précision 50 m) viennent de la règle
+  dite par Hugo, pas d'une mesure sur le terrain.
 - **« Livré à 9 h 42 », le prochain arrêt, l'heure estimée des suivants** sur
   « Planifier » : non bâti, même raison.
 - **Faire valider** par un juriste ou un DPO : finalité, proportionnalité,

@@ -403,6 +403,18 @@ export const routes: Routes = [
         loadComponent: () =>
           import('./livraison/decisions-page/decisions-page').then((m) => m.DecisionsPage),
       },
+      // « CARNET À CORRIGER » (gps-y-aller-et-position.md, §6) : sous
+      // `delivery_rounds:write`, LECTURE COMPRISE — la liste est tirée des
+      // positions des livreurs, et seul qui organise les tournées la voit.
+      {
+        path: 'carnet-a-corriger',
+        canActivate: [permissionGuard('delivery_rounds:write')],
+        title: 'Carnet à corriger — LFC B2B admin',
+        loadComponent: () =>
+          import('./livraison/address-suggestions-page/address-suggestions-page').then(
+            (m) => m.AddressSuggestionsPage,
+          ),
+      },
       // LE SIMULATEUR (lot 9, L9-C1) : une LECTURE, sous le même droit que
       // « Proposer » au lot 7 — rien n'est écrit.
       {

@@ -62,6 +62,12 @@ export interface DepartureSheet {
    * la livraison — et toujours `null` sans adresse reliée. Le départ résout.
    */
   readonly doorstepRule: DoorstepRule | null;
+  /**
+   * Le point de stationnement de l'adresse du carnet reliée, lu sous le même
+   * mur (`gps-y-aller-et-position.md`, §6) ; `null` sans adresse reliée ou
+   * sans stationnement. Figé au départ avec le reste de la feuille.
+   */
+  readonly parking: GpsPoint | null;
   /** Lu, jamais figé : une commande annulée ne part pas. */
   readonly status: "active" | "cancelled";
 }

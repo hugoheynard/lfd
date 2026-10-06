@@ -144,6 +144,10 @@ import {
   POSITION_PURGE_CONTROLLERS,
   POSITION_PURGE_PROVIDERS,
 } from "./position-purge.providers.js";
+import {
+  ADDRESS_SUGGESTIONS_CONTROLLERS,
+  ADDRESS_SUGGESTIONS_PROVIDERS,
+} from "./address-suggestions.providers.js";
 import { DeliveryStopsLocating } from "./application/delivery-stops-locating.js";
 import { DAY_READINESS_CONTROLLERS, DAY_READINESS_PROVIDERS } from "./day-readiness.providers.js";
 import { DOORSTEP_CONTROLLERS, DOORSTEP_PROVIDERS } from "./doorstep.providers.js";
@@ -194,6 +198,7 @@ import {
     ...DAY_JOURNAL_CONTROLLERS,
     ...GEOCODE_PURGE_CONTROLLERS,
     ...POSITION_PURGE_CONTROLLERS,
+    ...ADDRESS_SUGGESTIONS_CONTROLLERS,
     ...DAY_READINESS_CONTROLLERS,
     ...DRIVER_CONTROLLERS,
     ...ROUND_PAPER_CONTROLLERS,
@@ -269,6 +274,7 @@ import {
     ...DAY_JOURNAL_PROVIDERS,
     ...GEOCODE_PURGE_PROVIDERS,
     ...POSITION_PURGE_PROVIDERS,
+    ...ADDRESS_SUGGESTIONS_PROVIDERS,
     ...DAY_READINESS_PROVIDERS,
     ...COMPOSITION_PREREQUISITES_PROVIDERS,
     ...DRIVER_PROVIDERS,

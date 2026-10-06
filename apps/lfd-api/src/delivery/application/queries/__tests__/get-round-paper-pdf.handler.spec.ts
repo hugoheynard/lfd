@@ -78,6 +78,7 @@ const FROZEN: DepartedStopRow = {
   addressNote: null,
   departureRank: 1,
   gps: null,
+  parking: null,
   depositAllowed: false,
   doorstepRule: "ask",
   arrivedAt: null,

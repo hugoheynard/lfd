@@ -57,6 +57,15 @@ export const DOORSTEP_RULE = domain('décision réglée d’avance à la porte',
   bring_back: 'Rapporter',
 });
 
+/**
+ * Le point d'adresse corrigé d'après les livraisons
+ * (`company.delivery_address_point_corrected` — `gps-y-aller-et-position.md` §6).
+ */
+export const ADDRESS_POINT_KIND = domain('point d’une adresse de livraison', {
+  door: 'Porte de livraison',
+  parking: 'Stationnement',
+});
+
 /** Comment un bac a été chargé (`delivery_bin.loaded`) : son QR lu, ou son code court tapé. */
 export const BIN_LOAD_VIA = domain('manière de charger un bac', {
   scan: 'QR scanné',
@@ -132,6 +141,7 @@ export const ORDERS_VALUES: ValueFamily = {
     CLOSED_WITHOUT_HANDOVER_CAUSE,
     STOP_DECISION_SOURCE,
     DOORSTEP_RULE,
+    ADDRESS_POINT_KIND,
     BIN_LOAD_VIA,
     BIN_HALF,
     PROPOSAL_MODE,
