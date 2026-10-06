@@ -308,7 +308,8 @@ async function triggerSettlementReminders(env: Env): Promise<void> {
  * déposées et jamais rattachées (plan `documentation/production/plan-controle-qualite.md`, D8),
  * qui balaie aussi le journal des journées du fournil — puis celui de la
  * livraison (`documentation/livraisons/plan-schema-delivery.md`, SD-D3), par sa
- * propre route : le fournil ne connaît pas la livraison.
+ * propre route : le fournil ne connaît pas la livraison — et enfin la purge du
+ * cache du géocodage à 365 jours (`documentation/legal/rgpd-purge-du-geocodage.md`).
  *
  * Même porte et même jeton que le recompute. Idempotent : un tour manqué est
  * rattrapé au suivant, et une photo abandonnée ne coûte qu'une nuit de stockage.
@@ -318,7 +319,11 @@ async function triggerQualityUploadSweep(env: Env): Promise<void> {
   if (!token) {
     return;
   }
-  for (const path of ["admin/production/quality/sweep", "admin/livraison/journal/sweep"]) {
+  for (const path of [
+    "admin/production/quality/sweep",
+    "admin/livraison/journal/sweep",
+    "admin/livraison/geocodage/sweep",
+  ]) {
     await backend(env).fetch(
       new Request(`https://internal/${path}`, {
         method: "POST",

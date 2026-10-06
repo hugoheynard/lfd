@@ -23,8 +23,9 @@ import {
 } from "../src/delivery/domain/ports/geocoder.js";
 import { geoPoint } from "../src/delivery/domain/value-objects/geo-point.js";
 import { CustomerRole } from "../src/platform/database/client/client.js";
-import { bootstrapE2e, jsonBody, serviceDay, type E2eContext } from "./e2e-harness.js";
+import { bootstrapE2e, daysAgo, jsonBody, serviceDay, type E2eContext } from "./e2e-harness.js";
 import { attachTo, createCompany, createUser } from "./factories.js";
+import { TEST_RECOMPUTE_TOKEN } from "./setup-env.js";
 
 const OWNER = "auth0|owner";
 const SERVICE_DAY = serviceDay();
@@ -180,6 +181,55 @@ describe("situer l'adresse dès la commande (CA0)", () => {
     geocoder.down = false;
     await placeDelivery(addressId);
     await ctx.drain();
+
+    expect(await ctx.prisma.deliveryGeocode.count()).toBe(1);
+  });
+});
+
+/**
+ * La purge du cache à 365 jours (`documentation/legal/rgpd-purge-du-geocodage.md`) :
+ * la route machine efface ce que la lecture ne croit plus, garde le reste, et
+ * refuse sans jeton.
+ */
+const PURGE_ROUTE = "/admin/livraison/geocodage/sweep";
+const OLD_FINGERPRINT = "a".repeat(64);
+const RECENT_FINGERPRINT = "b".repeat(64);
+
+async function seedGeocode(fingerprint: string, geocodedAt: string): Promise<void> {
+  await ctx.prisma.deliveryGeocode.create({
+    data: { fingerprint, lat: 45.56, lng: 5.92, score: 0.9, geocodedAt: new Date(geocodedAt) },
+  });
+}
+
+describe("la purge du cache du géocodage", () => {
+  it("efface l'entrée de plus de 365 jours, garde la récente, et rend le compte", async () => {
+    await seedGeocode(OLD_FINGERPRINT, daysAgo(366));
+    await seedGeocode(RECENT_FINGERPRINT, daysAgo(364));
+
+    const response = await ctx
+      .http()
+      .post(PURGE_ROUTE)
+      .set("x-lfc-recompute-token", TEST_RECOMPUTE_TOKEN)
+      .expect(200);
+
+    expect(response.body).toEqual({ purged: 1 });
+    const left = await ctx.prisma.deliveryGeocode.findMany({ select: { fingerprint: true } });
+    expect(left).toEqual([{ fingerprint: RECENT_FINGERPRINT }]);
+  });
+
+  it("est idempotent : un second passage n'efface plus rien", async () => {
+    await seedGeocode(OLD_FINGERPRINT, daysAgo(400));
+    const post = () =>
+      ctx.http().post(PURGE_ROUTE).set("x-lfc-recompute-token", TEST_RECOMPUTE_TOKEN).expect(200);
+
+    await post();
+    expect((await post()).body).toEqual({ purged: 0 });
+  });
+
+  it("refuse sans le jeton machine", async () => {
+    await seedGeocode(OLD_FINGERPRINT, daysAgo(400));
+
+    await ctx.http().post(PURGE_ROUTE).expect(401);
 
     expect(await ctx.prisma.deliveryGeocode.count()).toBe(1);
   });

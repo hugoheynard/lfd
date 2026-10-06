@@ -30,10 +30,9 @@
   changer), et ne lire chaque arête qu'une fois dans `scoreVehicle` (les deux
   passes relisent les mêmes). Détail : `composition-automatique.md` §5 point 3.
 
-- **La purge du cache de géocodage à 365 jours n'est pas bâtie.** Une entrée
-  périmée n'est plus lue, mais sa ligne reste en base (`delivery_geocode`). Un
-  balayage quotidien, comme celui des traces de journée, suffira. La ligne de
-  conservation du texte légal est marquée « À VÉRIFIER » en attendant.
+- ~~**La purge du cache de géocodage à 365 jours n'est pas bâtie.**~~ Bâtie le
+  2026-10-06 (non commitée à l'écriture) : voir
+  [`../legal/rgpd-purge-du-geocodage.md`](../legal/rgpd-purge-du-geocodage.md).
 - **Les adresses de type « place »** répondent souvent sous le seuil de score
   (0,489 pour une place de Chambéry, seuil 0,5) : elles restent « non
   situées ». Le remède est le point GPS saisi dans le carnet, pas un seuil

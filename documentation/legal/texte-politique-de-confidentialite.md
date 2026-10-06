@@ -27,10 +27,10 @@
 >   `privacy`), il faut l'y reporter au back-office. Une empreinte SHA-256
 >   d'une adresse se retrouve en essayant des adresses : c'est une
 >   pseudonymisation, pas une anonymisation — le texte ne dit pas
->   « irréversible » pour cette raison. ⚠️ **Les 365 jours ne sont pas une
->   purge** : passé ce délai, une position n'est plus LUE et se rejoue au
->   prochain « Situer », mais la ligne reste en base tant que personne ne la
->   rejoue. Soit on bâtit la purge, soit on écrit la durée réellement tenue ;
+>   « irréversible » pour cette raison. Les 365 jours sont **tenus par
+>   une purge nocturne** depuis le 2026-10-06
+>   ([`rgpd-purge-du-geocodage.md`](rgpd-purge-du-geocodage.md)) — à
+>   condition que le Worker et son jeton soient déployés ;
 > - faire **relire par un juriste** : l'application traite des paiements et des
 >   coordonnées bancaires. Ce texte n'est pas un avis juridique.
 
@@ -155,7 +155,7 @@ Nous conservons vos données le temps nécessaire aux finalités décrites ci-de
 - Coordonnées bancaires et mandat de prélèvement : pendant la durée du mandat, puis 13 mois après le dernier prélèvement pour permettre les contestations prévues par la réglementation bancaire.
 - Données de prospection des professionnels : 3 ans après le dernier contact de votre part.
 - Journaux techniques et de sécurité : [À VÉRIFIER : 12 mois].
-- Position géographique d'une adresse de livraison obtenue par géocodage : [À VÉRIFIER : 365 jours — voir l'avertissement en tête], puis elle est redemandée. Nous ne la conservons pas avec l'adresse en clair : seul un condensé de l'adresse (une empreinte calculée, qui ne se relit pas comme une adresse) lui est associé.
+- Position géographique d'une adresse de livraison obtenue par géocodage : 365 jours, puis elle est effacée et redemandée si besoin. Nous ne la conservons pas avec l'adresse en clair : seul un condensé de l'adresse (une empreinte calculée, qui ne se relit pas comme une adresse) lui est associé.
 - Données nécessaires à la gestion d'une demande d'exercice de vos droits : le temps de la traiter, puis la durée de prescription applicable.
 
 ## Vos droits
