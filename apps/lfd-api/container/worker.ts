@@ -235,12 +235,7 @@ async function triggerRecompute(env: Env): Promise<void> {
   if (!token) {
     return;
   }
-  await backend(env).fetch(
-    new Request("https://internal/admin/recompute", {
-      method: "POST",
-      headers: { "x-lfc-recompute-token": token },
-    }),
-  );
+  await postSweep(env, token, "admin/recompute");
 }
 
 /**
@@ -255,12 +250,7 @@ async function triggerMediaSweep(env: Env): Promise<void> {
   if (!token) {
     return;
   }
-  await backend(env).fetch(
-    new Request("https://internal/admin/media/sweep", {
-      method: "POST",
-      headers: { "x-lfc-recompute-token": token },
-    }),
-  );
+  await postSweep(env, token, "admin/media/sweep");
 }
 
 /**
@@ -275,12 +265,7 @@ async function triggerLoyaltySweep(env: Env): Promise<void> {
   if (!token) {
     return;
   }
-  await backend(env).fetch(
-    new Request("https://internal/admin/loyalty/sweep", {
-      method: "POST",
-      headers: { "x-lfc-recompute-token": token },
-    }),
-  );
+  await postSweep(env, token, "admin/loyalty/sweep");
 }
 
 /**
@@ -295,12 +280,7 @@ async function triggerSettlementReminders(env: Env): Promise<void> {
   if (!token) {
     return;
   }
-  await backend(env).fetch(
-    new Request("https://internal/admin/orders/settlement-reminders", {
-      method: "POST",
-      headers: { "x-lfc-recompute-token": token },
-    }),
-  );
+  await postSweep(env, token, "admin/orders/settlement-reminders");
 }
 
 /**
