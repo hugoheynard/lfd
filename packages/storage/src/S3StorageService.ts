@@ -6,10 +6,8 @@ import {
   GetObjectCommand,
   ListObjectsV2Command,
 } from "@aws-sdk/client-s3";
-import { getSignedUrl } from "@aws-sdk/s3-request-presigner";
 import type { Readable } from "stream";
-import type { IStorageService, SignedDownloadOptions } from "./IStorageService.js";
-import { contentDispositionAttachment } from "./content-disposition.js";
+import type { IStorageService } from "./IStorageService.js";
 import {
   kindFromMime,
   type IStorageMetrics,
@@ -172,19 +170,5 @@ export class S3StorageService implements IStorageService {
       },
       (buf) => ({ bytes: buf.length }),
     );
-  }
-
-  async getSignedDownloadUrl(key: string, options: SignedDownloadOptions = {}): Promise<string> {
-    // The download handlers pass the stored mime → kind when present, else `other`.
-    return this.track("sign", kindFromMime(options.contentType), () => {
-      const command = new GetObjectCommand({
-        Bucket: this.bucket,
-        Key: key,
-        // Always force download — a hostile object must never render inline.
-        ResponseContentDisposition: contentDispositionAttachment(options.downloadFilename),
-        ...(options.contentType !== undefined ? { ResponseContentType: options.contentType } : {}),
-      });
-      return getSignedUrl(this.client, command, { expiresIn: options.expiresInSeconds ?? 3600 });
-    });
   }
 }

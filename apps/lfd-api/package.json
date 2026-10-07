@@ -15,7 +15,7 @@
     "dev": "pnpm run free-port && nest start --watch",
     "dev:typecheck": "tsc --noEmit --watch --preserveWatchOutput -p tsconfig.test.json",
     "typecheck:tests": "tsc --noEmit -p tsconfig.test.json",
-    "lint": "eslint \"{src,apps,libs,test}/**/*.ts\" \"container/__tests__/**/*.ts\" --fix",
+    "lint": "NODE_OPTIONS=--max-old-space-size=8192 eslint \"{src,apps,libs,test}/**/*.ts\" \"container/__tests__/**/*.ts\" --fix",
     "lint:ci": "eslint \"{src,apps,libs,test}/**/*.ts\" \"container/__tests__/**/*.ts\"",
     "test": "pnpm run test:unit && pnpm run test:e2e",
     "bench:composition": "tsx src/delivery/domain/services/__tests__/propose-rounds.bench.ts",
@@ -50,7 +50,6 @@
   },
   "dependencies": {
     "@aws-sdk/client-s3": "catalog:",
-    "@aws-sdk/s3-request-presigner": "catalog:",
     "@lfd/catalog-sync": "workspace:*",
     "@lfd/contracts": "workspace:*",
     "@lfd/endpoints": "workspace:*",

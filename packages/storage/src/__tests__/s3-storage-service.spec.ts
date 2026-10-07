@@ -1,4 +1,4 @@
-import { describe, it, expect, beforeEach, jest } from "@jest/globals";
+import { describe, it, expect, beforeEach } from "@jest/globals";
 import {
   S3Client,
   PutObjectCommand,
@@ -6,23 +6,10 @@ import {
   DeleteObjectsCommand,
   GetObjectCommand,
   ListObjectsV2Command,
-  type GetObjectCommandInput,
 } from "@aws-sdk/client-s3";
 import { mockClient } from "aws-sdk-client-mock";
 
 import type { IStorageMetrics, StorageOpRecord } from "../storage-metrics.js";
-
-// Capture the presign call (getSignedUrl bypasses client.send). The suite runs
-// as ESM, so `jest.mock` — which relies on CommonJS hoisting — does nothing:
-// the module registry is primed with `unstable_mockModule`, and the subject is
-// imported dynamically AFTER, so it binds to the double.
-const getSignedUrlMock = jest.fn<
-  (client: unknown, command: unknown, options?: { expiresIn?: number }) => Promise<string>
->(async () => "https://signed.example/url");
-
-jest.unstable_mockModule("@aws-sdk/s3-request-presigner", () => ({
-  getSignedUrl: getSignedUrlMock,
-}));
 
 const { S3StorageService } = await import("../S3StorageService.js");
 type S3StorageService = InstanceType<typeof S3StorageService>;
@@ -49,55 +36,8 @@ function svc(metrics?: IStorageMetrics): S3StorageService {
   );
 }
 
-/** Latest GetObjectCommand handed to getSignedUrl. */
-function lastSignedInput(): GetObjectCommandInput {
-  const call = getSignedUrlMock.mock.calls.at(-1);
-  if (!call) {
-    throw new Error("getSignedUrl was not called");
-  }
-  const command = call[1];
-  if (!(command instanceof GetObjectCommand)) {
-    throw new Error("getSignedUrl was not handed a GetObjectCommand");
-  }
-  return command.input;
-}
-
 beforeEach(() => {
   s3Mock.reset();
-  getSignedUrlMock.mockClear();
-});
-
-describe("S3StorageService.getSignedDownloadUrl", () => {
-  it("ALWAYS forces attachment, even with no filename", async () => {
-    await svc().getSignedDownloadUrl("owner/u/x.bin");
-    expect(lastSignedInput().ResponseContentDisposition).toBe("attachment");
-  });
-
-  it("encodes the download filename (RFC 5987) into the disposition", async () => {
-    await svc().getSignedDownloadUrl("k", { downloadFilename: "résumé.pdf" });
-    const disp = String(lastSignedInput().ResponseContentDisposition);
-    expect(disp.startsWith("attachment;")).toBe(true);
-    expect(disp).toContain("filename*=UTF-8''r%C3%A9sum%C3%A9.pdf");
-  });
-
-  it("sets ResponseContentType only when a content type is given", async () => {
-    await svc().getSignedDownloadUrl("k", { contentType: "application/pdf" });
-    expect(lastSignedInput().ResponseContentType).toBe("application/pdf");
-    await svc().getSignedDownloadUrl("k");
-    expect(lastSignedInput().ResponseContentType).toBeUndefined();
-  });
-
-  it("defaults the expiry to 3600s and honours an override", async () => {
-    await svc().getSignedDownloadUrl("k");
-    expect(getSignedUrlMock.mock.calls.at(-1)?.[2]).toEqual({ expiresIn: 3600 });
-    await svc().getSignedDownloadUrl("k", { expiresInSeconds: 300 });
-    expect(getSignedUrlMock.mock.calls.at(-1)?.[2]).toEqual({ expiresIn: 300 });
-  });
-
-  it("targets the configured bucket + key", async () => {
-    await svc().getSignedDownloadUrl("owner/u/song.mp3");
-    expect(lastSignedInput()).toMatchObject({ Bucket: "sh3-test", Key: "owner/u/song.mp3" });
-  });
 });
 
 describe("S3StorageService.upload / delete", () => {
@@ -214,21 +154,6 @@ describe("S3StorageService — metrics port", () => {
     expect(m.records).toEqual([
       { op: "put", result: "ok", kind: "audio", durationMs: expect.any(Number), bytes: 5 },
     ]);
-  });
-
-  it("records sign with kind from the passed content type (not the key)", async () => {
-    const m = new FakeMetrics();
-    await svc(m).getSignedDownloadUrl("company/c1/contracts/c/documents/d/x.pdf", {
-      contentType: "application/pdf",
-    });
-    expect(m.records[0]).toMatchObject({ op: "sign", result: "ok", kind: "document" });
-    expect(m.records[0]?.bytes).toBeUndefined();
-  });
-
-  it("sign with no content type → kind=other", async () => {
-    const m = new FakeMetrics();
-    await svc(m).getSignedDownloadUrl("company/c1/contracts/c/documents/d/x.pdf");
-    expect(m.records[0]).toMatchObject({ op: "sign", kind: "other" });
   });
 
   it("records delete_prefix with the deleted count", async () => {

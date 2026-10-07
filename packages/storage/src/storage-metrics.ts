@@ -5,7 +5,7 @@
  * Optional: when absent, the adapter is a no-op (unit tests, the no-S3 dev mode).
  */
 
-export type StorageOp = "put" | "delete" | "delete_prefix" | "sign" | "download";
+export type StorageOp = "put" | "delete" | "delete_prefix" | "download";
 
 /** Coarse, **bounded** content class for the Prometheus label — derived from the
  * (server-verified) MIME, not the key path. Bounded on purpose: never the tenant

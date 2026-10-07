@@ -1,9 +1,4 @@
-export type {
-  IStorageService,
-  IStorageReader,
-  IStorageWriter,
-  SignedDownloadOptions,
-} from "./IStorageService.js";
+export type { IStorageService, IStorageReader, IStorageWriter } from "./IStorageService.js";
 export { S3StorageService } from "./S3StorageService.js";
 export { contentDispositionAttachment, contentDispositionInline } from "./content-disposition.js";
 export { sniffContentType } from "./content-type.js";
