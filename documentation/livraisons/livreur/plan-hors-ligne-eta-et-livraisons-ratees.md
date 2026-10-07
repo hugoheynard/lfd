@@ -35,7 +35,7 @@
   `delivery.prisma:320-378`) ; un veilleur la relit toutes les 15 s, et un filet
   toutes les 5 min, **onglet visible seulement**
   (`shared/day-version/day-version-watcher.ts:84-88`). Une requête qui échoue
-  met l'écran en `error` (`livraison/my-round-page/my-round-page.ts:424`), elle
+  met l'écran en `error` (`livraison/my-round-reader.ts:116`), elle
   ne garde pas le dernier état. La route est sous `permissionGuard`, qui
   appelle `GET /admin/me` et vaut `denied` sur un échec réseau
   (`auth/permissions.store.ts:76-90`) : **après un redémarrage sans réseau, la

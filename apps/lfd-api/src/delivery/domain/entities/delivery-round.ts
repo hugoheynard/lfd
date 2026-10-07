@@ -1,40 +1,19 @@
 import {
-  DeliveryRoundDepartedError,
-  DeliveryRoundNotReadyError,
-  EmptyDeliveryRoundError,
-} from "../errors/delivery-loading-errors.js";
-import {
   DeliveryRoundCorruptedError,
-  DeliveryRoundStaleError,
-  DeliveryStopClosedError,
-  DeliveryStopNotFoundError,
   InvalidPassageError,
   InvalidServiceDayError,
   InvalidStopOrderError,
   InvalidStopPositionError,
   OrderAlreadyInRoundError,
+  DeliveryStopClosedError,
   VehicleInactiveOnDayError,
 } from "../errors/delivery-round-errors.js";
-import {
-  DeliveryRoundReturnedError,
-  DoorstepRoundNotDepartedError,
-  RoundNotDepartedForReturnError,
-  RoundStopsWithoutOutcomeError,
-} from "../errors/delivery-doorstep-errors.js";
 import type { DriverAccess } from "../value-objects/driver-access.js";
-import type { GesturePosition } from "../value-objects/gesture-position.js";
 import type { PlannedTiming } from "../value-objects/planned-timing.js";
 import { isCalendarDay } from "../value-objects/service-day.js";
-import { SharedBinToRedoError } from "../errors/delivery-bin-declaration-errors.js";
-import { sharedBinsToRedo, type StopReadiness, unreadyStops } from "./departure-readiness.js";
-import type {
-  DeliveryRoundSnapshot,
-  DeliveryRoundState,
-  DeliveryStopState,
-  DetachedStop,
-  RemovedStopState,
-  RoundReturn,
-} from "./delivery-round-state.js";
+import type { DeliveryRoundIdentity } from "./delivery-round-base.js";
+import { DeliveryRoundOnTheRoad } from "./delivery-round-on-the-road.js";
+import type { DeliveryRoundState, DetachedStop } from "./delivery-round-state.js";
 import type { Vehicle } from "./vehicle.js";
 
 export type {
@@ -75,35 +54,23 @@ export type {
  *
  * La `version` avance d'une unité au premier changement d'une écriture ;
  * `loadedVersion` est celle qu'on a lue, que l'adaptateur exige encore en base.
+ *
+ * L'état, les lectures et les gardes partagées vivent dans
+ * `DeliveryRoundBase` ; partir, clore un arrêt et rentrer dans
+ * `DeliveryRoundOnTheRoad`. Les trois font UN agrégat : seule cette classe se
+ * construit, et les fabriques sont ici.
  */
-export class DeliveryRound {
-  private readonly removed: RemovedStopState[] = [];
-  private currentVersion: number;
-  private currentDepartedAt: Date | null;
-  private currentReturn: RoundReturn | null = null;
-  private currentPlannedTiming: PlannedTiming | null = null;
-
+export class DeliveryRound extends DeliveryRoundOnTheRoad {
   private constructor(
-    private readonly state: Omit<
-      DeliveryRoundState,
-      | "stops"
-      | "version"
-      | "updatedAt"
-      | "departedAt"
-      | "driverStaffId"
-      | "returned"
-      | "plannedTiming"
-    >,
-    /** `null` : la tournée vient d'être ouverte, rien n'est encore en base. */
-    readonly loadedVersion: number | null,
-    private open: DetachedStop[],
-    private closed: readonly DeliveryStopState[],
-    private currentUpdatedAt: Date,
+    state: DeliveryRoundIdentity,
+    loadedVersion: number | null,
+    open: DetachedStop[],
+    closed: DeliveryRoundState["stops"],
+    updatedAt: Date,
     departedAt: Date | null,
-    private currentDriverStaffId: string | null,
+    driverStaffId: string | null,
   ) {
-    this.currentVersion = loadedVersion ?? 1;
-    this.currentDepartedAt = departedAt;
+    super(state, loadedVersion, open, closed, updatedAt, departedAt, driverStaffId);
   }
 
   /**
@@ -172,50 +139,6 @@ export class DeliveryRound {
     return round;
   }
 
-  get id(): string {
-    return this.state.id;
-  }
-
-  get serviceDay(): string {
-    return this.state.serviceDay;
-  }
-
-  get vehicleId(): string {
-    return this.state.vehicleId;
-  }
-
-  get vehicleName(): string {
-    return this.state.vehicleName;
-  }
-
-  get passage(): number {
-    return this.state.passage;
-  }
-
-  get version(): number {
-    return this.currentVersion;
-  }
-
-  /** Partie le, ou `null` : au dépôt. */
-  get departedAt(): Date | null {
-    return this.currentDepartedAt;
-  }
-
-  /** Le livreur affecté (MT-D2), l'id d'une fiche staff ; `null` : aucun. */
-  get driverStaffId(): string | null {
-    return this.currentDriverStaffId;
-  }
-
-  /** Rentrée le (PL2), ou `null`. */
-  get returnedAt(): Date | null {
-    return this.currentReturn?.at ?? null;
-  }
-
-  /** L'horaire prévu (I10), ou `null` : jamais calculé, ou effacé par un geste à la main. */
-  get plannedTiming(): PlannedTiming | null {
-    return this.currentPlannedTiming;
-  }
-
   /**
    * Pose l'horaire que le calcul routier a prévu pour CES arrêts (I10) —
    * `null` : il n'a pas pu le prévoir. Appelé après la dernière retouche des
@@ -233,36 +156,6 @@ export class DeliveryRound {
     }
     this.currentPlannedTiming = timing;
     this.touch(at);
-  }
-
-  /** Les arrêts vivants, dans l'ordre de passage. */
-  get liveStops(): readonly DetachedStop[] {
-    return [...this.open];
-  }
-
-  /** Les identifiants des commandes des arrêts vivants, dans l'ordre de passage. */
-  get orderIds(): readonly string[] {
-    return this.open.map((stop) => stop.orderId);
-  }
-
-  /**
-   * La version présentée par l'écran est-elle celle qu'on a lue ?
-   * @throws {DeliveryRoundStaleError}
-   */
-  ensureVersion(expected: number): void {
-    if (expected !== this.loadedVersion) {
-      throw new DeliveryRoundStaleError(this.state.vehicleName);
-    }
-  }
-
-  /** La commande d'un arrêt vivant. @throws {DeliveryStopNotFoundError} @throws {DeliveryStopClosedError} */
-  orderOf(stopId: string): string {
-    return this.findOpen(stopId).stop.orderId;
-  }
-
-  /** Position 1..n de l'arrêt vivant. @throws {DeliveryStopNotFoundError} */
-  positionOf(stopId: string): number {
-    return this.findOpen(stopId).index + 1;
   }
 
   /**
@@ -349,40 +242,6 @@ export class DeliveryRound {
   }
 
   /**
-   * **Partir** (L4-C4, Q14) : la tournée quitte le dépôt, et plus rien ne s'y
-   * compose (I6). Refusé tant qu'un arrêt vivant n'est pas chargé — un arrêt
-   * sans bac (« non étiqueté », L4-C17) comme un arrêt dont un bac manque. On
-   * ne part pas avec un bac non chargé : on retire d'abord l'arrêt, et le
-   * geste se voit.
-   *
-   * `readiness` dit l'état de chargement de chaque arrêt ; un arrêt vivant
-   * qu'il ne cite pas est tenu pour non étiqueté — jamais pour chargé.
-   *
-   * @throws {DeliveryRoundDepartedError} déjà partie.
-   * @throws {EmptyDeliveryRoundError} aucun arrêt vivant : une tournée vide ne part pas.
-   * @throws {DeliveryRoundNotReadyError} un arrêt n'est pas chargé ; le refus
-   *   liste les références.
-   * @throws {SharedBinToRedoError} un bac partagé n'est plus entre deux arrêts
-   *   consécutifs (lot 4 bis, v2-4).
-   */
-  depart(at: Date, readiness: readonly StopReadiness[]): void {
-    this.ensureAtDepot();
-    if (this.open.length === 0) {
-      throw new EmptyDeliveryRoundError(this.state.vehicleName);
-    }
-    const { unlabelled, partial } = unreadyStops(this.open, readiness);
-    if (unlabelled.length > 0 || partial.length > 0) {
-      throw new DeliveryRoundNotReadyError(this.state.vehicleName, unlabelled, partial);
-    }
-    const toRedo = sharedBinsToRedo(this.open, readiness);
-    if (toRedo.length > 0) {
-      throw new SharedBinToRedoError(this.state.vehicleName, toRedo);
-    }
-    this.currentDepartedAt = at;
-    this.touch(at);
-  }
-
-  /**
    * **Affecter un livreur** (plan « Ma tournée », MT-D2 v2). Composer, donc
    * refusé une fois partie (I6). Et refusé à qui ne peut pas livrer : le droit
    * EFFECTIF de conduire ET celui des gestes à la porte (rôle et dérogations ;
@@ -418,157 +277,5 @@ export class DeliveryRound {
     this.currentDriverStaffId = null;
     this.touch(at);
     return previous;
-  }
-
-  /**
-   * **Clore un arrêt** (L6-C11, `a-la-porte.md`, AP-D2) — l'exception
-   * écrite à I6 : permis APRÈS le départ seulement. L'arrêt garde la position
-   * qu'il avait, les arrêts vivants restants se resserrent en 1..n (I2) ; la
-   * numérotation du livreur, figée au départ, ne bouge pas.
-   *
-   * `position` : celle du téléphone au geste (YA-D4), ou `null` — refus du
-   * navigateur, pas de signal, ou clôture décidée au bureau. Jamais exigée.
-   *
-   * @throws {DoorstepRoundNotDepartedError} la tournée est au dépôt.
-   * @throws {DeliveryRoundReturnedError} elle est déjà rentrée (I8).
-   * @throws {DeliveryStopNotFoundError} @throws {DeliveryStopClosedError}
-   */
-  closeStop(stopId: string, at: Date, position: GesturePosition | null = null): void {
-    if (this.currentDepartedAt === null) {
-      throw new DoorstepRoundNotDepartedError();
-    }
-    this.ensureOnTheRoad();
-    const { index, stop } = this.findOpen(stopId);
-    this.open = this.open.filter((_, position) => position !== index);
-    this.closed = [
-      ...this.closed,
-      {
-        ...stop,
-        position: index + 1,
-        closedAt: at,
-        // Sans relevé, rien à écrire : les colonnes d'un arrêt ouvert sont nulles.
-        ...(position === null ? {} : { closedPosition: position }),
-      },
-    ];
-    this.touch(at);
-  }
-
-  /**
-   * **« Tournée terminée »** (`parcours-du-livreur.md`, PL2, I8) : les bacs
-   * vides sont rentrés. Seulement partie ; une fois — un second appel rend
-   * `false` et n'écrit rien, le premier retour fait foi. Les arrêts encore
-   * ouverts le restent : rien ne se clôt tout seul. Appelé seul, c'est la
-   * rentrée du STAFF ; le livreur passe par `finish` (I9).
-   *
-   * @throws {RoundNotDepartedForReturnError} la tournée n'est pas partie.
-   */
-  returnToDepot(at: Date, by: { readonly staffUserId: string; readonly name: string }): boolean {
-    if (this.currentDepartedAt === null) {
-      throw new RoundNotDepartedForReturnError(this.state.vehicleName);
-    }
-    if (this.currentReturn !== null) {
-      return false;
-    }
-    this.currentReturn = { at, byStaffId: by.staffUserId, byName: by.name };
-    this.touch(at);
-    return true;
-  }
-
-  /**
-   * **« Tournée terminée » par le LIVREUR** (`a-la-porte.md`, § 10 B4,
-   * I9) : refusée tant qu'un arrêt est vivant. Tout sort — remis, déposé,
-   * clos sans remise, rapporté par un commercial ou par réglage — passe par
-   * `closeStop` ; un arrêt seulement signalé, ou qui attend la décision du
-   * commercial, est encore vivant. Le refus nomme les arrêts par `labels`
-   * (commande → « Client (CMD-1) »).
-   *
-   * Une tournée déjà rentrée rend `false` sans rien vérifier : le premier
-   * retour fait foi, même celui du staff avec des arrêts ouverts. La rentrée
-   * staff (`returnToDepot` seul) n'est pas soumise à cette règle : c'est la
-   * sortie de secours d'un livreur bloqué, et ses arrêts sans sort passent
-   * dans « Non remis » (AP-D7).
-   *
-   * @throws {RoundNotDepartedForReturnError} @throws {RoundStopsWithoutOutcomeError}
-   */
-  finish(
-    at: Date,
-    by: { readonly staffUserId: string; readonly name: string },
-    labels: ReadonlyMap<string, string>,
-  ): boolean {
-    if (this.currentDepartedAt !== null && this.currentReturn === null && this.open.length > 0) {
-      throw new RoundStopsWithoutOutcomeError(
-        this.open.map((stop) => labels.get(stop.orderId) ?? stop.orderId),
-      );
-    }
-    return this.returnToDepot(at, by);
-  }
-
-  /**
-   * Une tournée rentrée n'accepte plus aucun geste de la porte (I8).
-   * @throws {DeliveryRoundReturnedError}
-   */
-  ensureOnTheRoad(): void {
-    if (this.currentReturn !== null) {
-      throw new DeliveryRoundReturnedError();
-    }
-  }
-
-  /** L'arrêt est-il clos ? Un nouvel essai après une perte de réseau le demande. */
-  hasClosed(stopId: string): boolean {
-    return this.closed.some((stop) => stop.id === stopId);
-  }
-
-  /**
-   * Une tournée partie ne se compose plus (I6).
-   * @throws {DeliveryRoundDepartedError}
-   */
-  ensureAtDepot(): void {
-    if (this.currentDepartedAt !== null) {
-      throw new DeliveryRoundDepartedError(this.state.vehicleName, this.state.serviceDay);
-    }
-  }
-
-  toSnapshot(): DeliveryRoundSnapshot {
-    return {
-      ...this.state,
-      version: this.currentVersion,
-      departedAt: this.currentDepartedAt,
-      driverStaffId: this.currentDriverStaffId,
-      returned: this.currentReturn,
-      plannedTiming: this.currentPlannedTiming,
-      updatedAt: this.currentUpdatedAt,
-      stops: [
-        ...this.open.map((stop, index) => ({ ...stop, position: index + 1, closedAt: null })),
-        ...this.closed,
-      ],
-      removedStops: [...this.removed],
-    };
-  }
-
-  /** @throws {DeliveryStopNotFoundError} @throws {DeliveryStopClosedError} */
-  private findOpen(stopId: string): { readonly index: number; readonly stop: DetachedStop } {
-    const index = this.open.findIndex((stop) => stop.id === stopId);
-    const stop = this.open[index];
-    if (stop !== undefined) {
-      return { index, stop };
-    }
-    if (this.closed.some((stop) => stop.id === stopId)) {
-      throw new DeliveryStopClosedError(stopId);
-    }
-    throw new DeliveryStopNotFoundError(stopId);
-  }
-
-  /** Les arrêts ont changé : l'horaire prévu ne vaut plus (I10). */
-  private recompose(at: Date): void {
-    this.currentPlannedTiming = null;
-    this.touch(at);
-  }
-
-  /** Le premier changement d'une écriture avance la version ; les suivants non. */
-  private touch(at: Date): void {
-    if (this.loadedVersion !== null && this.currentVersion === this.loadedVersion) {
-      this.currentVersion = this.loadedVersion + 1;
-    }
-    this.currentUpdatedAt = at;
   }
 }

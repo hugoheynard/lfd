@@ -2,18 +2,16 @@ import type { BinHalf } from "../value-objects/bin-declaration.js";
 import { BIN_GAP_DEFAULT_CM } from "../value-objects/bin-gap.js";
 import type { CargoFloor } from "../value-objects/cargo-floor.js";
 import { FloorPlacer, type StackPlacement } from "./floor/place-stacks.js";
-import {
-  type LoadingVolume,
-  loadingVolumeOf,
-  type PlanUnit,
-  type PlanVehicle,
-} from "./loading-volume.js";
+import { physicalKey, Stacker, type StackingMode } from "./loading-stacker.js";
+import { type LoadingVolume, loadingVolumeOf, type PlanVehicle } from "./loading-volume.js";
 import {
   compactedWarning,
   floorOverWarning,
   type LoadingWarning,
   loadingWarningsOf,
 } from "./loading-warnings.js";
+
+export { physicalKey } from "./loading-stacker.js";
 
 /** Un type de bac, tel que le plan le lit : sa forme EXTÉRIEURE (en mm) et sa pile. */
 export interface PlanBinType {
@@ -155,13 +153,6 @@ function offFloorBins(plan: LoadingPlan): number {
   return plan.steps.flatMap((step) => step.bins).filter((p) => outside.has(p.stackIndex)).length;
 }
 
-/**
- * `coherent` : une pile ne monte plus quand sa rangée est fermée (G-D4 ter).
- * `compact` : elle monte aussi haut que la pile le permet — `maxStack`, borné
- * par le plafond depuis le 2026-10-06 —, quitte à poser des bacs derrière.
- */
-type StackingMode = "coherent" | "compact";
-
 function buildPlan(
   stops: readonly PlanStop[],
   vehicle: PlanVehicle,
@@ -233,96 +224,4 @@ function orderWithinStep(placed: readonly Placed[]): readonly Placed[] {
     .filter((entry) => entry.shared)
     .sort((a, b) => physicalKey(a.bin).localeCompare(physicalKey(b.bin)));
   return [...own, ...shared];
-}
-
-/** Le bac PHYSIQUE : celui d'une moitié, ou le bac entier lui-même. */
-export function physicalKey(bin: PlanBin): string {
-  return bin.physicalBinId ?? bin.id;
-}
-
-interface OpenStack {
-  readonly stackIndex: number;
-  readonly binType: PlanBinType;
-  height: number;
-  readonly stopPositions: number[];
-}
-
-/** Pose les bacs physiques en piles, dans l'ordre où on les charge. */
-class Stacker {
-  private readonly all: OpenStack[] = [];
-
-  /** `null` : un véhicule sans cotes n'a pas de rangées, aucune pile ne ferme. */
-  constructor(
-    private readonly placer: FloorPlacer | null,
-    private readonly mode: StackingMode,
-  ) {}
-
-  private readonly lastOfType = new Map<string, OpenStack>();
-  private readonly placed = new Map<
-    string,
-    { stack: OpenStack; behind: boolean; unit: PlanUnit }
-  >();
-
-  /**
-   * Rend la pile du bac, et s'il y est posé derrière ; une seconde moitié
-   * rejoint celle de la première, au même titre.
-   */
-  put(
-    bin: PlanBin,
-    stopPosition: number,
-  ): { readonly stackIndex: number; readonly behind: boolean } {
-    const key = physicalKey(bin);
-    const known = this.placed.get(key);
-    if (known !== undefined) {
-      known.unit.bins.push(bin);
-      return { stackIndex: known.stack.stackIndex, behind: known.behind };
-    }
-    const stack = this.stackFor(bin.binType);
-    const behind = stack.height > 0 && !(this.placer?.canGrow(stack.stackIndex) ?? true);
-    stack.height += 1;
-    if (!stack.stopPositions.includes(stopPosition)) {
-      stack.stopPositions.push(stopPosition);
-    }
-    this.placed.set(key, { stack, behind, unit: { binType: bin.binType, bins: [bin] } });
-    return { stackIndex: stack.stackIndex, behind };
-  }
-
-  private stackFor(binType: PlanBinType): OpenStack {
-    const last = this.lastOfType.get(binType.id);
-    const levels = this.placer?.levelsOf(binType) ?? binType.maxStack;
-    if (
-      last !== undefined &&
-      last.height < levels &&
-      (this.mode === "compact" || (this.placer?.canGrow(last.stackIndex) ?? true))
-    ) {
-      return last;
-    }
-    const stack: OpenStack = {
-      stackIndex: this.all.length + 1,
-      binType,
-      height: 0,
-      stopPositions: [],
-    };
-    this.all.push(stack);
-    this.lastOfType.set(binType.id, stack);
-    if (levels === 0) {
-      this.placer?.refuseTooTall(stack.stackIndex);
-    } else {
-      this.placer?.place({ stackIndex: stack.stackIndex, ...binType });
-    }
-    return stack;
-  }
-
-  stacks(): readonly Omit<LoadingStack, "placement">[] {
-    return this.all.map((stack) => ({
-      stackIndex: stack.stackIndex,
-      binType: stack.binType,
-      height: stack.height,
-      stopPositions: [...stack.stopPositions],
-    }));
-  }
-
-  units(): readonly PlanUnit[] {
-    return [...this.placed.values()].map((entry) => entry.unit);
-  }
 }

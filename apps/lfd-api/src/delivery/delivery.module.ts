@@ -1,22 +1,5 @@
 import { Module } from "@nestjs/common";
 
-import { AddBinTypeHandler } from "./application/commands/add-bin-type.handler.js";
-import { ArchiveBinTypeHandler } from "./application/commands/archive-bin-type.handler.js";
-import { CorrectBinTypeHandler } from "./application/commands/correct-bin-type.handler.js";
-import { ReactivateBinTypeHandler } from "./application/commands/reactivate-bin-type.handler.js";
-import { SetBinCapacityHandler } from "./application/commands/set-bin-capacity.handler.js";
-import { GetBinCapacitiesHandler } from "./application/queries/get-bin-capacities.handler.js";
-import { ListBinTypesHandler } from "./application/queries/list-bin-types.handler.js";
-import { BinCapacityRepository } from "./domain/ports/bin-capacity.repository.js";
-import { BinCatalogReader } from "./domain/ports/bin-catalog.reader.js";
-import { BinTypeLookup } from "./domain/ports/bin-type-lookup.js";
-import { BinTypeRepository } from "./domain/ports/bin-type.repository.js";
-import { BinCapacitiesController } from "./http/bin-capacities.controller.js";
-import { BinTypesController } from "./http/bin-types.controller.js";
-import { PrismaBinCapacityRepository } from "./infrastructure/prisma-bin-capacity.repository.js";
-import { PrismaBinCatalogReader } from "./infrastructure/prisma-bin-catalog.reader.js";
-import { PrismaBinTypeRepository } from "./infrastructure/prisma-bin-type.repository.js";
-import { AppConfig } from "../platform/config/app-config.js";
 import { ApplyDeliveryProposalHandler } from "./application/commands/apply-delivery-proposal.handler.js";
 import { RoundTimingEstimator } from "./application/round-timing-estimator.js";
 import { LocateDeliveryStopsHandler } from "./application/commands/locate-delivery-stops.handler.js";
@@ -26,44 +9,21 @@ import { GetDeliveryRoundProposalHandler } from "./application/queries/get-deliv
 import { GetDeliveryPlacementSuggestionsHandler } from "./application/queries/get-delivery-placement-suggestions.handler.js";
 import { TimeDeliveryRoundsHandler } from "./application/queries/time-delivery-rounds.handler.js";
 import { SimulateDeliveryRoundsHandler } from "./application/queries/simulate-delivery-rounds.handler.js";
-import { ArchiveSimulationScenarioHandler } from "./application/commands/archive-simulation-scenario.handler.js";
-import { DuplicateSimulationScenarioHandler } from "./application/commands/duplicate-simulation-scenario.handler.js";
-import { RecordSimulationScenarioHandler } from "./application/commands/record-simulation-scenario.handler.js";
-import { ReplaceSimulationScenarioHandler } from "./application/commands/replace-simulation-scenario.handler.js";
-import { GetSimulationFromDayHandler } from "./application/queries/get-simulation-from-day.handler.js";
-import { GetSimulationScenarioHandler } from "./application/queries/get-simulation-scenario.handler.js";
-import { ListSimulationScenariosHandler } from "./application/queries/list-simulation-scenarios.handler.js";
-import { SimulationScenarioReader } from "./domain/ports/simulation-scenario.reader.js";
-import { SimulationScenarioRepository } from "./domain/ports/simulation-scenario.repository.js";
-import { DeliverySimulationScenariosController } from "./http/delivery-simulation-scenarios.controller.js";
-import { PrismaSimulationScenarioReader } from "./infrastructure/prisma-simulation-scenario.reader.js";
-import { PrismaSimulationScenarioRepository } from "./infrastructure/prisma-simulation-scenario.repository.js";
 import { GetRoutingSettingsHandler } from "./application/queries/get-routing-settings.handler.js";
 import { GetDoorstepSettingsHandler } from "./application/queries/get-doorstep-settings.handler.js";
 import { DeliveryProposalRepository } from "./domain/ports/delivery-proposal.repository.js";
-import { DistanceMatrix } from "./domain/ports/distance-matrix.js";
 import { GeocodeCacheReader } from "./domain/ports/geocode-cache.reader.js";
 import { GeocodeCacheRepository } from "./domain/ports/geocode-cache.repository.js";
-import { Geocoder } from "./domain/ports/geocoder.js";
 import { RoutingSettingsReader } from "./domain/ports/routing-settings.reader.js";
 import { RoutingSettingsRepository } from "./domain/ports/routing-settings.repository.js";
 import { DoorstepSettingsReader } from "./domain/ports/doorstep-settings.reader.js";
 import { DoorstepSettingsRepository } from "./domain/ports/doorstep-settings.repository.js";
-import { RouteGeometry } from "./domain/ports/route-geometry.js";
 import { DeliveryProposalController } from "./http/delivery-proposal.controller.js";
 import { DeliverySimulatorController } from "./http/delivery-simulator.controller.js";
 import { DeliveryPurchaseAssistantController } from "./http/delivery-purchase-assistant.controller.js";
 import { AssistBinPurchaseHandler } from "./application/queries/assist-bin-purchase.handler.js";
 import { RoutingSettingsController } from "./http/routing-settings.controller.js";
 import { DoorstepSettingsController } from "./http/doorstep-settings.controller.js";
-import { BanGeocoder } from "./infrastructure/ban-geocoder.js";
-import { DisabledGeocoder } from "./infrastructure/disabled-geocoder.js";
-import {
-  DisabledDistanceMatrix,
-  DisabledRouteGeometry,
-} from "./infrastructure/disabled-road-routing.js";
-import { OsrmDistanceMatrix } from "./infrastructure/osrm-distance-matrix.js";
-import { OsrmRouteGeometry } from "./infrastructure/osrm-route-geometry.js";
 import { PrismaDeliveryProposalRepository } from "./infrastructure/prisma-delivery-proposal.repository.js";
 import { PrismaGeocodeCacheReader } from "./infrastructure/prisma-geocode-cache.reader.js";
 import { PrismaGeocodeCacheRepository } from "./infrastructure/prisma-geocode-cache.repository.js";
@@ -150,6 +110,12 @@ import { DayAutoComposition } from "./application/day-auto-composition.js";
 import { DayComposer } from "./application/day-composer.js";
 import { DeliveryStopsLocating } from "./application/delivery-stops-locating.js";
 import { DAY_READINESS_CONTROLLERS, DAY_READINESS_PROVIDERS } from "./day-readiness.providers.js";
+import { BIN_CATALOGUE_CONTROLLERS, BIN_CATALOGUE_PROVIDERS } from "./bin-catalogue.providers.js";
+import { ROAD_ROUTING_PROVIDERS } from "./road-routing.providers.js";
+import {
+  SIMULATION_SCENARIOS_CONTROLLERS,
+  SIMULATION_SCENARIOS_PROVIDERS,
+} from "./simulation-scenarios.providers.js";
 import { DOORSTEP_CONTROLLERS, DOORSTEP_PROVIDERS } from "./doorstep.providers.js";
 import { DRIVER_CONTROLLERS, DRIVER_PROVIDERS } from "./driver.providers.js";
 import { ROUND_PAPER_CONTROLLERS, ROUND_PAPER_PROVIDERS } from "./round-paper.providers.js";
@@ -191,9 +157,8 @@ import {
     DeliveryProposalController,
     DeliverySimulatorController,
     DeliveryPurchaseAssistantController,
-    DeliverySimulationScenariosController,
-    BinTypesController,
-    BinCapacitiesController,
+    ...SIMULATION_SCENARIOS_CONTROLLERS,
+    ...BIN_CATALOGUE_CONTROLLERS,
     ...PURCHASE_LIBRARY_CONTROLLERS,
     ...DAY_JOURNAL_CONTROLLERS,
     ...GEOCODE_PURGE_CONTROLLERS,
@@ -251,23 +216,9 @@ import {
     RoundTimingEstimator,
     SimulateDeliveryRoundsHandler,
     AssistBinPurchaseHandler,
-    RecordSimulationScenarioHandler,
-    ReplaceSimulationScenarioHandler,
-    DuplicateSimulationScenarioHandler,
-    ArchiveSimulationScenarioHandler,
-    ListSimulationScenariosHandler,
-    GetSimulationScenarioHandler,
-    GetSimulationFromDayHandler,
-    { provide: SimulationScenarioRepository, useClass: PrismaSimulationScenarioRepository },
-    { provide: SimulationScenarioReader, useClass: PrismaSimulationScenarioReader },
+    ...SIMULATION_SCENARIOS_PROVIDERS,
     TimeDeliveryRoundsHandler,
-    AddBinTypeHandler,
-    CorrectBinTypeHandler,
-    ArchiveBinTypeHandler,
-    ReactivateBinTypeHandler,
-    SetBinCapacityHandler,
-    ListBinTypesHandler,
-    GetBinCapacitiesHandler,
+    ...BIN_CATALOGUE_PROVIDERS,
     ...PURCHASE_LIBRARY_PROVIDERS,
     ...DAY_JOURNAL_PROVIDERS,
     ...GEOCODE_PURGE_PROVIDERS,
@@ -278,10 +229,6 @@ import {
     ...DRIVER_PROVIDERS,
     ...ROUND_PAPER_PROVIDERS,
     ...DOORSTEP_PROVIDERS,
-    { provide: BinTypeRepository, useClass: PrismaBinTypeRepository },
-    { provide: BinTypeLookup, useExisting: BinTypeRepository },
-    { provide: BinCapacityRepository, useClass: PrismaBinCapacityRepository },
-    { provide: BinCatalogReader, useClass: PrismaBinCatalogReader },
     { provide: VehicleRepository, useClass: PrismaVehicleRepository },
     { provide: FleetReader, useClass: PrismaFleetReader },
     { provide: DepartureRepository, useClass: PrismaDepartureRepository },
@@ -303,34 +250,7 @@ import {
     { provide: GeocodeCacheReader, useClass: PrismaGeocodeCacheReader },
     { provide: GeocodeCacheRepository, useClass: PrismaGeocodeCacheRepository },
     { provide: DeliveryProposalRepository, useClass: PrismaDeliveryProposalRepository },
-    // Sans adresse (ou, en production, sans jeton ni https — L8b-C4), le calcul
-    // routier REFUSE (L10b-C5) : plus de vol d'oiseau.
-    {
-      provide: DistanceMatrix,
-      inject: [AppConfig],
-      useFactory: (config: AppConfig): DistanceMatrix => {
-        const endpoint = config.routePlannerEndpoint();
-        return endpoint === null ? new DisabledDistanceMatrix() : new OsrmDistanceMatrix(endpoint);
-      },
-    },
-    // Sans URL, pas de tracé : la carte montre les repères seuls (L10b-C4).
-    {
-      provide: RouteGeometry,
-      inject: [AppConfig],
-      useFactory: (config: AppConfig): RouteGeometry => {
-        const endpoint = config.routePlannerEndpoint();
-        return endpoint === null ? new DisabledRouteGeometry() : new OsrmRouteGeometry(endpoint);
-      },
-    },
-    // Sans URL, le géocodage est DÉSACTIVÉ (L7-C9) : les e2e ne sortent pas sur le réseau.
-    {
-      provide: Geocoder,
-      inject: [AppConfig],
-      useFactory: (config: AppConfig): Geocoder => {
-        const url = config.geocoderUrl();
-        return url === null ? new DisabledGeocoder() : new BanGeocoder(url);
-      },
-    },
+    ...ROAD_ROUTING_PROVIDERS,
   ],
   exports: [DeliveryBinDesk, DeliveryStopsLocating],
 })

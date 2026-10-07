@@ -52,8 +52,8 @@
 ## 2. Relevé du code le 2026-10-01
 
 - **Partir** : `DeliveryRound.depart(at, readiness)`
-  (`delivery/domain/entities/delivery-round.ts:368`, ligne recalée le
-  2026-10-07), route
+  (`delivery/domain/entities/delivery-round-on-the-road.ts:39`, fichier et
+  ligne recalés le 2026-10-07), route
   `POST admin/livraison/tournees/:roundId/depart` sous **`delivery_loading`**.
   Refus nommés : tournée vide, arrêt non chargé, bac partagé « à refaire », déjà
   partie.
