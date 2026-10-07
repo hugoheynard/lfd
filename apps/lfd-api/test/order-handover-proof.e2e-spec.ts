@@ -1,5 +1,5 @@
 /**
- * E2E **voir les preuves de livraison** (`documentation/livraisons/a-la-porte.md`,
+ * E2E **voir les preuves de livraison** (`documentation/livraisons/livreur/a-la-porte.md`,
  * § 10, lot « voir les preuves ») — la carte de la fiche commande, et ses images.
  *
  * Ce que seule cette suite prouve : le commerce lit les pièces par le canal

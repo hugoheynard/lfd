@@ -1,7 +1,7 @@
 /**
  * **Ce que la production répond au retrait** : lesquelles de ces commandes
  * n'ont PAS de feuille d'atelier ce jour-là — la retardataire, passée après la
- * clôture (`documentation/livraisons/plan-preparation-de-tournee.md`, lot 1).
+ * clôture (`documentation/livraisons/tournees/plan-preparation-de-tournee.md`, lot 1).
  *
  * Même figure que `QualityHoldsReader`, rangé à côté : la production PUBLIE et
  * implémente, le retrait lit. La feuille d'atelier est un fait de la

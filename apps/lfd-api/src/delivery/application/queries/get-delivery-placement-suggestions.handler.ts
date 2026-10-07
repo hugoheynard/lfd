@@ -156,7 +156,7 @@ export class GetDeliveryPlacementSuggestionsHandler implements IQueryHandler<
  * Les tournées où une place peut être suggérée : celles d'« Insérer » (au
  * dépôt, chaque arrêt situé), **chargées comprises** — une tournée reçoit
  * jusqu'à son départ, et c'est la place du véhicule qui limite (Hugo,
- * 2026-10-07, `documentation/livraisons/inserer-avant-le-depart.md`).
+ * 2026-10-07, `documentation/livraisons/tournees/inserer-avant-le-depart.md`).
  * L'arrêt posé n'a pas de bac : « Partir » le refusera tant qu'il n'est pas
  * chargé.
  */

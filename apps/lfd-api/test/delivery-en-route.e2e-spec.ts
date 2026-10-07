@@ -1,6 +1,6 @@
 /**
  * E2E de **« Votre livraison est en route »**
- * (`documentation/livraisons/en-route.md`) : le départ d'une tournée,
+ * (`documentation/livraisons/livreur/en-route.md`) : le départ d'une tournée,
  * fait durable de la livraison (`delivery.round_departed`, DD1), écrit par
  * l'abonné du commerce.
  *

@@ -10,7 +10,7 @@ import { clientSheetOf } from "../../domain/services/order-sheet.js";
 
 /**
  * **« Votre livraison est en route »** pour UNE commande
- * (`documentation/livraisons/en-route.md`).
+ * (`documentation/livraisons/livreur/en-route.md`).
  *
  * Destinataire : le compte qui a commandé — le contact de livraison n'a pas
  * d'e-mail (L6-C13). La clé d'idempotence est déterministe par commande ET

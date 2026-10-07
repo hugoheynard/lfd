@@ -5,7 +5,7 @@ import {
 } from "../../../platform/shared/errors/app-error.js";
 
 /**
- * Les refus **à la porte** (`documentation/livraisons/a-la-porte.md`,
+ * Les refus **à la porte** (`documentation/livraisons/livreur/a-la-porte.md`,
  * lot A) — arriver, signaler, clore sans remise.
  *
  * Même règle que les refus du livreur (`delivery-driver-errors.ts`) : il est

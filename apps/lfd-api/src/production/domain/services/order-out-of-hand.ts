@@ -12,7 +12,7 @@ export type OrderOutOfHand = "departed" | "handed_over";
 
 /**
  * **On ne juge que ce qu'on a sous les yeux**
- * (`documentation/livraisons/a-la-porte.md`, § 10 ter, BQ — LB-Q1,
+ * (`documentation/livraisons/livreur/a-la-porte.md`, § 10 ter, BQ — LB-Q1,
  * tranché par Hugo le 2026-10-01) : un verdict sur une commande partie ou
  * déjà retirée est refusé.
  *

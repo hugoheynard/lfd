@@ -35,7 +35,7 @@ export interface AddressSuggestionDecisionInput {
 
 /**
  * **Ce que le bureau a décidé d'une suggestion de correction du carnet**
- * (`documentation/livraisons/gps-y-aller-et-position.md`, §6) — un FAIT
+ * (`documentation/livraisons/livreur/gps-y-aller-et-position.md`, §6) — un FAIT
  * daté, jamais réécrit. Le point est celui que le bureau a VU : une
  * suggestion ignorée n'est plus reproposée tant que les livraisons concluent
  * au même endroit.

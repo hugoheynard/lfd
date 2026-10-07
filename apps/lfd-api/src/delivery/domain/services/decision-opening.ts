@@ -2,7 +2,7 @@ import type { DeliveryIncidentFamily } from "@lfd/contracts";
 
 /**
  * **Les motifs qui ouvrent une décision du commercial**
- * (`documentation/livraisons/a-la-porte.md`, § 9, § 10 B3) : le client ne
+ * (`documentation/livraisons/livreur/a-la-porte.md`, § 9, § 10 B3) : le client ne
  * respecte pas les conditions convenues — personne pour réceptionner, refus,
  * accès impossible. Ce n'est pas au livreur de trancher (Hugo, 2026-10-01).
  *

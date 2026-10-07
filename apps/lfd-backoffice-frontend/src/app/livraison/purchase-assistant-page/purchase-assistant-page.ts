@@ -80,7 +80,7 @@ export interface Computed {
 }
 
 /**
- * **L'assistant d'achat** (`documentation/livraisons/plan-geometrie-du-plancher.md`,
+ * **L'assistant d'achat** (`documentation/livraisons/chargement/plan-geometrie-du-plancher.md`,
  * G-D3, lot G3) : combien de bacs de tel format tiennent dans tel plancher.
  *
  * Le calcul est au serveur (`POST admin/livraison/assistant-achat`), reposé à

@@ -6,7 +6,7 @@ import type { DeliveryAddressRef, NamedRef } from "./journal-names.js";
 
 /**
  * **« Dépôt autorisé » réglé sur une adresse de livraison**
- * (`documentation/livraisons/a-la-porte.md`, AP-D5).
+ * (`documentation/livraisons/livreur/a-la-porte.md`, AP-D5).
  *
  * UN fait, quel que soit l'auteur — le client sur son carnet, le staff sur sa
  * route à part : un geste, un nom, l'auteur est sur la ligne. Il ne part que

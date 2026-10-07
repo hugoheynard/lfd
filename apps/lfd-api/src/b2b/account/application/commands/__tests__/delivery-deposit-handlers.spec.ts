@@ -15,7 +15,7 @@ import {
 } from "./member-acts-doubles.js";
 
 /**
- * **« Dépôt autorisé »** (`documentation/livraisons/a-la-porte.md`, AP-D5) :
+ * **« Dépôt autorisé »** (`documentation/livraisons/livreur/a-la-porte.md`, AP-D5) :
  * réglé par le client sur la route d'édition de son adresse, ou par le staff
  * sur sa route à part. Absent de la charge du client, il reste INCHANGÉ.
  */

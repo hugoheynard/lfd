@@ -41,7 +41,7 @@ const dateQuerySchema = z.object({
 type DateQuery = z.infer<typeof dateQuerySchema>;
 
 /**
- * **« Ma tournée » — la page du livreur** (`documentation/livraisons/plan-ma-tournee.md`,
+ * **« Ma tournée » — la page du livreur** (`documentation/livraisons/livreur/plan-ma-tournee.md`,
  * MT-D4).
  *
  * Sous `delivery_driving` : lire SA tournée et la commencer. Le livreur n'est

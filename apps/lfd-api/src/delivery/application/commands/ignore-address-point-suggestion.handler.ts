@@ -18,7 +18,7 @@ import { deliveryAuthorOf } from "../delivery-author.js";
 import { IgnoreAddressPointSuggestionCommand } from "./ignore-address-point-suggestion.command.js";
 
 /**
- * **« Ignorer »** (`documentation/livraisons/gps-y-aller-et-position.md`,
+ * **« Ignorer »** (`documentation/livraisons/livreur/gps-y-aller-et-position.md`,
  * §6) — le carnet ne change pas, et la suggestion n'est plus reproposée
  * tant que les livraisons concluent au même point (à `CLUSTER_RADIUS_M`
  * près). Un groupe ailleurs, né de nouvelles livraisons, reproposera.

@@ -1,5 +1,5 @@
 /**
- * E2E de **l'assistant d'achat** (`documentation/livraisons/plan-geometrie-du-plancher.md`,
+ * E2E de **l'assistant d'achat** (`documentation/livraisons/chargement/plan-geometrie-du-plancher.md`,
  * G-D3) : une LECTURE sous `delivery_rounds:read`, sur un plancher et des
  * formats saisis. Ni table, ni journal.
  */

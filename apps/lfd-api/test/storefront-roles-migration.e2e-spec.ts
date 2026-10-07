@@ -36,7 +36,7 @@ import { bootstrapE2e, type E2eContext } from "./e2e-harness.js";
 
 /**
  * Ce que la migration accordait, FIGÉ ici le 2026-10-01
- * (`documentation/livraisons/plan-droits-par-geste.md`, 5.6) : `ROLE_GRANTS`
+ * (`documentation/livraisons/droits/plan-droits-par-geste.md`, 5.6) : `ROLE_GRANTS`
  * n'est plus qu'une graine, que l'on doit pouvoir faire évoluer sans rouvrir
  * une migration appliquée. La comparer à la migration gèlerait la graine.
  */

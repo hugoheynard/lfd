@@ -6,7 +6,7 @@ import { PositionPurgeSweepController } from "./http/position-purge-sweep.contro
 import { PrismaGesturePositionPruner } from "./infrastructure/prisma-gesture-position.pruner.js";
 
 /**
- * **La purge des positions au geste** (`documentation/livraisons/gps-y-aller-et-position.md`),
+ * **La purge des positions au geste** (`documentation/livraisons/livreur/gps-y-aller-et-position.md`),
  * rangée à part comme celle du géocodage : une route machine, un handler, un
  * port et son adaptateur.
  */

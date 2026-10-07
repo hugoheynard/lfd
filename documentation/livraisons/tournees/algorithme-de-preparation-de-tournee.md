@@ -9,7 +9,7 @@
 > 7 bis, 7 ter, 8, 10 bis) ; la conception d'architecture du 2026-09-29 qui
 > les précédait est supprimée depuis le 2026-10-07.
 > Le chargement d'une tournée, une fois composée, a son propre document :
-> [`algorithme-de-chargement.md`](algorithme-de-chargement.md).
+> [`algorithme-de-chargement.md`](../chargement/algorithme-de-chargement.md).
 
 ## 1. La question
 

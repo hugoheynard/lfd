@@ -1,7 +1,7 @@
 import { randomUUID } from "node:crypto";
 /**
  * E2E de **la feuille de route du jour** (`GET admin/livraison/feuille-de-route`,
- * plan `documentation/livraisons/plan-preparation-de-tournee.md`, lot 1), sur
+ * plan `documentation/livraisons/tournees/plan-preparation-de-tournee.md`, lot 1), sur
  * le vrai Postgres jetable.
  *
  * Ce que seule cette suite prouve : le lien d'adresse est écrit à la passation

@@ -33,7 +33,7 @@ import { reglagesRoutes } from './reglages/reglages.routes';
 /**
  * Les gardes de la commande pro au comptoir : LIRE les clients du comptoir
  * (`b2b_counter:read`) ET passer une commande (`b2b_place_order:write`, sortie
- * de `b2b_orders` le 2026-10-01 — `documentation/livraisons/plan-droits-par-geste.md`, 5.1 bis). L'un sans
+ * de `b2b_orders` le 2026-10-01 — `documentation/livraisons/droits/plan-droits-par-geste.md`, 5.1 bis). L'un sans
  * l'autre ouvrirait un écran dont la moitié des appels répondrait 403
  * (`documentation/order/plan-commande-au-comptoir.md`, Front). Deux gardes
  * plutôt qu'un garde composé : chacun porte sa permission, que la table des
@@ -606,7 +606,7 @@ export const routes: Routes = [
     // prévisionnel dit quand ça tombe. La coquille ne dessine rien ; elle
     // publie le rail secondaire, et chaque vue garde son propre sommet.
     //
-    // La coquille n'est PAS gardée depuis le 2026-10-01 (`documentation/livraisons/plan-droits-par-geste.md`,
+    // La coquille n'est PAS gardée depuis le 2026-10-01 (`documentation/livraisons/droits/plan-droits-par-geste.md`,
     // DG-D1), comme la Livraison : le plan du soir, la fiche d'atelier et le
     // colisage sont trois droits, et un garde commun fermerait une vue à qui
     // ne tient que l'autre. Chaque vue porte le sien — une URL tapée ou un

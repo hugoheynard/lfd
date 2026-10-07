@@ -7,7 +7,7 @@ export const DELIVERY_ROUND_DEPARTED = "delivery.round_departed";
 
 /**
  * **Une tournée vient de partir** — fait DURABLE depuis le 2026-10-06 (plan
- * `documentation/livraisons/plan-depart-durable.md`, §5, DD1).
+ * `documentation/livraisons/livreur/plan-depart-durable.md`, §5, DD1).
  *
  * Écrit dans la boîte d'envoi par `departAndFreeze`, le seul chemin commun aux
  * deux portes du départ (chargeur, livreur), dans la transaction du départ : un

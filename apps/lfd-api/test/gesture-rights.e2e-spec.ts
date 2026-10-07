@@ -1,6 +1,6 @@
 /**
  * E2E des **droits par geste** — `b2b_orders` découpé
- * (`documentation/livraisons/plan-droits-par-geste.md`, DG-D1, 5.1, 5.1 bis,
+ * (`documentation/livraisons/droits/plan-droits-par-geste.md`, DG-D1, 5.1, 5.1 bis,
  * 5.3), éprouvé route par route, en vrai HTTP.
  *
  * `b2b_orders` ouvrait cinq métiers : coliser emportait le droit de passer une

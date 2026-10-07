@@ -11,7 +11,7 @@ import {
 
 /**
  * Les dérivations pures du **simulateur de tournée**
- * (`documentation/livraisons/plan-preparation-de-tournee.md`, lot 9, L9-C1 à
+ * (`documentation/livraisons/tournees/plan-preparation-de-tournee.md`, lot 9, L9-C1 à
  * L9-C6) : ce qu'on saisit à l'écran, ce qui part au serveur, ce qu'on
  * exporte et ce qu'on réimporte.
  *

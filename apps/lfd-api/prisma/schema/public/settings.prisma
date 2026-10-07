@@ -92,7 +92,7 @@ enum DeliveryWindowMode {
 /// Ligne absente = ouverte aux deux : c'est l'existant, et aucun semis n'est
 /// nécessaire pour le reproduire. Clé NATURELLE comme `PlatformContent` ; auteur
 /// figé comme `FeatureAccessOverride`. Propriétaire : `src/b2b/delivery-availability/`.
-/// Cf. `documentation/livraisons/plan-remise-et-livraison-par-clientele.md`, D4.
+/// Cf. `documentation/livraisons/clientele/plan-remise-et-livraison-par-clientele.md`, D4.
 model DeliveryAvailability {
   /// Toujours `delivery` : il n'y a qu'un réglage, et son nom est connu d'avance.
   key String @id

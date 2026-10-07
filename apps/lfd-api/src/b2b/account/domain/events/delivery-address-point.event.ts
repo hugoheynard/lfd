@@ -7,7 +7,7 @@ import type { DeliveryAddressRef, NamedRef } from "./journal-names.js";
 
 /**
  * **Un point d'adresse corrigé depuis une suggestion des livraisons**
- * (`documentation/livraisons/gps-y-aller-et-position.md`, §6) — la porte
+ * (`documentation/livraisons/livreur/gps-y-aller-et-position.md`, §6) — la porte
  * ou le stationnement. Il ne part que si le point a changé.
  *
  * La charge dit LEQUEL, jamais les coordonnées : l'adresse est citée par son

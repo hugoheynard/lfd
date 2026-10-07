@@ -1,6 +1,6 @@
 /**
  * **Le colisage proposé d'une commande livrée**, et les moitiés de bac libres
- * autour d'elle (`documentation/livraisons/plan-preparation-de-tournee.md`,
+ * autour d'elle (`documentation/livraisons/tournees/plan-preparation-de-tournee.md`,
  * lot 4 bis, L4b-C4, v2-3 et v2-4, tranche C).
  *
  * Une PROPOSITION, jamais imposée : le poste de colisage la montre (« 2 Bac M

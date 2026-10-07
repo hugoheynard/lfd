@@ -58,7 +58,7 @@ const TABLE_LABELS: Partial<FoldDataTableLabels> = {
 
 /**
  * **Les contenances** — combien d'unités de chaque produit tient un bac ENTIER
- * de chaque type (`documentation/livraisons/plan-preparation-de-tournee.md`,
+ * de chaque type (`documentation/livraisons/tournees/plan-preparation-de-tournee.md`,
  * lot 4 bis v2-2 et v2-3). Lignes : les produits vendus ; colonnes : les types
  * proposés (non archivés).
  *

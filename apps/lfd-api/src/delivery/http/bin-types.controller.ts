@@ -17,7 +17,7 @@ import { ListBinTypesQuery } from "../application/queries/list-bin-types.query.j
 
 /**
  * **Le catalogue des bacs** — Livraison → Bacs
- * (`documentation/livraisons/plan-preparation-de-tournee.md`, lot 4 bis, tranche A).
+ * (`documentation/livraisons/tournees/plan-preparation-de-tournee.md`, lot 4 bis, tranche A).
  *
  * Sous `delivery_settings`, comme la flotte : la lecture s'ouvre aussi à qui
  * lit les tournées, et à qui colise (ci-dessous) ; archiver et réactiver sont

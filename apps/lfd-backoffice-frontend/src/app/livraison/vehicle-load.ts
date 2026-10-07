@@ -12,7 +12,7 @@ import type {
 
 /**
  * **Le chargement d'un véhicule** — dimensions utiles et caisse réfrigérée
- * (`documentation/livraisons/plan-preparation-de-tournee.md`, lot 2 bis).
+ * (`documentation/livraisons/tournees/plan-preparation-de-tournee.md`, lot 2 bis).
  *
  * Les bornes sont celles du domaine (L2b-C1, L2b-C2), dites AVANT l'envoi pour
  * qu'on corrige sans aller-retour ; le serveur refuse de toute façon, et c'est

@@ -2,7 +2,7 @@ import type { BillingAddressPayload, GpsPoint, MyDeliveryStopView } from '@lfd/c
 
 /**
  * **Partir vers les arrêts** — les liens de navigation de « Ma tournée »
- * (`documentation/livraisons/plan-ma-tournee.md`, MT-D6 ;
+ * (`documentation/livraisons/livreur/plan-ma-tournee.md`, MT-D6 ;
  * `gps-y-aller-et-position.md`, YA-D1 à YA-D3).
  *
  * Tout est pur : aucune lecture du téléphone ni de l'horloge, sauf le choix

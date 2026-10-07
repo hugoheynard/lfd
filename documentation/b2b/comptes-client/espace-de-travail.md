@@ -117,7 +117,7 @@ appelée par `auth.guard.ts` avec les rattachements que
 (`b2b/orders/application/services/customer-audiences.service.ts`) rend B2C pour
 `null` et B2B pour une société **active** seulement. `CartAdjustments` en tire
 la remise d'un point de retrait et l'ouverture de la livraison
-(`documentation/livraisons/plan-remise-et-livraison-par-clientele.md`). Une
+(`documentation/livraisons/clientele/plan-remise-et-livraison-par-clientele.md`). Une
 société **suspendue** reste donc sélectionnable dans le menu — le rattachement
 existe —, mais elle est servie comme une clientèle B2C : ni remise réservée aux
 pros, ni livraison fermée au public.

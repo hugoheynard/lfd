@@ -2,7 +2,7 @@ import { BusinessError, ResourceNotFoundError } from "../../../platform/shared/e
 
 /**
  * Les refus du **livreur** et de son affectation (plan « Ma tournée »,
- * `documentation/livraisons/plan-ma-tournee.md`, MT-D2 v2 et MT-D3 v2).
+ * `documentation/livraisons/livreur/plan-ma-tournee.md`, MT-D2 v2 et MT-D3 v2).
  *
  * Les refus de la route du livreur ont LEURS phrases : il est au volant ou sur
  * le trottoir, il n'a ni l'écran de composition ni celui du chargement — le

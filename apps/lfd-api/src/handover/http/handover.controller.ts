@@ -55,7 +55,7 @@ const HANDOVER_ROUTES = ["admin/handover", "admin/production/handover"];
  * Sans elle, quiconque a vu un QR par-dessus une épaule pourrait attester son
  * propre retrait.
  *
- * `handover_counter` depuis le 2026-10-01 (`documentation/livraisons/plan-droits-par-geste.md`, 5.1) : il
+ * `handover_counter` depuis le 2026-10-01 (`documentation/livraisons/droits/plan-droits-par-geste.md`, 5.1) : il
  * était sous `b2b_orders`, qui ouvrait aussi la passation. La bascule l'a
  * donné, au même niveau, à chaque rôle qui tenait `b2b_orders` — le commercial
  * qui remet le sac le garde ; qui le perd se règle à l'écran.

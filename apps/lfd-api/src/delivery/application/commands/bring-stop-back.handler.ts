@@ -11,7 +11,7 @@ import { StopDecisionDesk } from "../stop-decision-desk.js";
 import { BringStopBackCommand } from "./bring-stop-back.command.js";
 
 /**
- * **« Rapporter »** (`documentation/livraisons/a-la-porte.md`, B3,
+ * **« Rapporter »** (`documentation/livraisons/livreur/a-la-porte.md`, B3,
  * § 10 bis, LB-Q2 tranché par Hugo le 2026-10-01).
  *
  * Dans UNE unité de travail :

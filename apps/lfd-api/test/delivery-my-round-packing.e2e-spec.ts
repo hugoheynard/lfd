@@ -1,6 +1,6 @@
 /**
  * E2E de **« Ma tournée » qui suit le colisage, et du chargement par le
- * livreur** (`documentation/livraisons/parcours-du-livreur.md`, PL4 et PL1).
+ * livreur** (`documentation/livraisons/livreur/parcours-du-livreur.md`, PL4 et PL1).
  *
  * - la fiche de chaque arrêt : les produits de la commande, SANS un champ
  *   d'argent alors que la base en porte ;

@@ -2,7 +2,7 @@ import { z } from "zod";
 
 /**
  * **Le tableau croisé de la bibliothèque d'achat**
- * (`documentation/livraisons/plan-bibliotheque-d-achat.md`, B-D4, lot B2) :
+ * (`documentation/livraisons/chargement/plan-bibliotheque-d-achat.md`, B-D4, lot B2) :
  * chaque véhicule choisi × chaque format choisi, par la stratégie « maximiser
  * un format » de l'assistant.
  *

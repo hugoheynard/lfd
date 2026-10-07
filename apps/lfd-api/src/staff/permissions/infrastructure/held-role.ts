@@ -36,7 +36,7 @@ export const HELD_ROLE_SELECT = {
  *
  * `roleKey` et sa définition ne sont jamais nuls depuis le 2026-10-01
  * (`staff_users.role_key NOT NULL`, clé étrangère vers la définition —
- * `documentation/livraisons/plan-droits-par-geste.md`, 5.2). `role`, l'ancien
+ * `documentation/livraisons/droits/plan-droits-par-geste.md`, 5.2). `role`, l'ancien
  * enum, n'est plus lu pour décider.
  */
 export interface HeldRoleRow {

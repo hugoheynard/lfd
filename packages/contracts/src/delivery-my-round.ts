@@ -5,7 +5,7 @@ import type { StopDecisionView } from "./delivery-stop-decision.js";
 import type { FulfillmentSource } from "./order.js";
 
 /**
- * **« Ma tournée » — ce que voit le livreur** (`documentation/livraisons/plan-ma-tournee.md`,
+ * **« Ma tournée » — ce que voit le livreur** (`documentation/livraisons/livreur/plan-ma-tournee.md`,
  * MT-D4, MT-D5 v2).
  *
  * Routes (`admin/livraison/ma-tournee…`, sous `delivery_driving`) :

@@ -13,7 +13,7 @@ import { PrismaIgnoredAddressPointsReader } from "./infrastructure/prisma-ignore
 
 /**
  * **Les corrections du carnet suggérées au bureau**
- * (`documentation/livraisons/gps-y-aller-et-position.md`, §6), rangées à
+ * (`documentation/livraisons/livreur/gps-y-aller-et-position.md`, §6), rangées à
  * part : une lecture, deux décisions, trois ports et leurs adaptateurs. Le
  * carnet lui-même est au commerce, joint par le canal
  * (`DeliveryAddressPointsReader`, `DeliveryAddressPointCorrector`).

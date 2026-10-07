@@ -33,7 +33,7 @@ type BinsState =
 
 /**
  * **Les bacs** — le catalogue des types de bacs dans lesquels tout part en
- * livraison (`documentation/livraisons/plan-preparation-de-tournee.md`, lot 4
+ * livraison (`documentation/livraisons/tournees/plan-preparation-de-tournee.md`, lot 4
  * bis v2, tranche A).
  *
  * Un type ne se supprime pas : il s'**archive** — il reste lisible sur les bacs

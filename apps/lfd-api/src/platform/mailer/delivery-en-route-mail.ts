@@ -5,7 +5,7 @@ import { mailCopyOf } from "./copy/mail-copy.js";
 
 /**
  * Les données du courriel **« Votre livraison est en route »**
- * (`documentation/livraisons/en-route.md`, PL3-D4). Destinataire : le
+ * (`documentation/livraisons/livreur/en-route.md`, PL3-D4). Destinataire : le
  * compte qui a commandé, tant que le contact de livraison n'a pas d'e-mail
  * (L6-C13).
  */

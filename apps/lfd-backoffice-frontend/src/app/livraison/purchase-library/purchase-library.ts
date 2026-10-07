@@ -42,7 +42,7 @@ interface Named {
 }
 
 /**
- * **La bibliothèque d'achat** (`documentation/livraisons/plan-bibliotheque-d-achat.md`,
+ * **La bibliothèque d'achat** (`documentation/livraisons/chargement/plan-bibliotheque-d-achat.md`,
  * B-D1, lot B4) : les véhicules et les formats de bacs qu'on envisage
  * d'acheter, SÉPARÉS de la flotte et des types de bacs réels.
  *

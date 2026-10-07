@@ -60,7 +60,7 @@ const DOORSTEP_RULE = ":companyId/delivery-addresses/:addressId/doorstep-rule";
  *
  * Mêmes chemins que la surface client sous `admin/companies`, même préfixe
  * que {@link AdminCompanyPiecesController} — mais plus sa ressource :
- * `delivery_procedures` depuis le 2026-10-01 (`documentation/livraisons/plan-droits-par-geste.md`, DG-D1).
+ * `delivery_procedures` depuis le 2026-10-01 (`documentation/livraisons/droits/plan-droits-par-geste.md`, DG-D1).
  * La bascule l'a donnée au même niveau à chaque rôle qui tenait
  * `b2b_companies`. Aucun mur membership ; chaque écriture inscrit son fait au
  * journal, dans sa transaction.

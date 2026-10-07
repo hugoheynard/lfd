@@ -19,7 +19,7 @@
 
 Suit « Ma tournée » ([`plan-ma-tournee.md`](plan-ma-tournee.md)) : la page du
 livreur, son mur « sa tournée ». La conception d'origine du lot 6 (L6-C1 à
-L6-C14) est dans [`plan-preparation-de-tournee.md`](plan-preparation-de-tournee.md),
+L6-C14) est dans [`plan-preparation-de-tournee.md`](../tournees/plan-preparation-de-tournee.md),
 « Plus tard » → Lot 6.
 
 ## 1. Les gestes, sur la carte d'un arrêt
@@ -217,7 +217,7 @@ perdaient la garde à un redémarrage : retirées. Le fournil lit « partie » p
 une **commande** partie est refusé (« La commande est partie : le produit
 n'est plus là. ») ; un verdict de **ligne** reste permis (LB-Q1). Une commande
 rapportée repart dans n'importe quelle tournée d'un autre jour, au même prix
-(RL1, [`decisions-par-defaut-2026-10-02.md`](decisions-par-defaut-2026-10-02.md), § 4).
+(RL1, [`decisions-par-defaut-2026-10-02.md`](../tournees/decisions-par-defaut-2026-10-02.md), § 4).
 
 ## 6. Les preuves
 
@@ -240,7 +240,7 @@ Une attestation sans pièce se lit « Preuve effacée ».
 | `delivery_proofs:read` | la preuve de livraison d'une commande                                               |
 
 Accordées à l'écran des rôles, jamais par migration :
-[`tableau-droits-livraison.md`](tableau-droits-livraison.md) (droits scindés,
+[`tableau-droits-livraison.md`](../droits/tableau-droits-livraison.md) (droits scindés,
 `e4e46b0f4`).
 
 ## 8. Décisions d'Hugo en vigueur
@@ -326,7 +326,7 @@ Repris de « TODO de la porte » (supprimé le 2026-10-06), relu ce jour-là.
 - 🔴 **Les livraisons ratées (6 c)** : relivrer, retrait au comptoir, annuler.
   Seul « Rapporter » existe (§ 4) ; aucun des trois gestes n'existe au
   commerce, et deux remboursent : ils supposent les **avenants**
-  ([`../order/architecture-commande-immuable-avenants.md`](../order/architecture-commande-immuable-avenants.md),
+  ([`../../order/architecture-commande-immuable-avenants.md`](../../order/architecture-commande-immuable-avenants.md),
   doc-first). Proposé et non tranché : un 6 c-1 « relivrer le jour X, sans
   nouveaux frais », les deux autres plus tard. En attendant, « Non remis »
   reste une vue (AP-D7).

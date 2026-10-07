@@ -89,7 +89,7 @@ range sa sélection et son affichage dans `content` ; le jeu entre bacs
 
 Tables dans le schéma `delivery` (corrigé le 2026-10-01 : ce texte disait
 `production`, d'avant le déménagement du 2026-09-30,
-[`architecture-isolation-livraison.md`](architecture-isolation-livraison.md)). Jamais supprimées : **archivées**, comme les types de bacs.
+[`architecture-isolation-livraison.md`](../architecture/architecture-isolation-livraison.md)). Jamais supprimées : **archivées**, comme les types de bacs.
 Les dimensions passent par les value objects déjà écrits : `CargoFloor`,
 `WheelArches` (en cm), `BinTypeDimensions` (en mm, la seule mesure de bac
 depuis le 2026-10-06 : le value object `BinDimensions`, au centimètre, est

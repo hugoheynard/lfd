@@ -3,7 +3,7 @@ import type { FoldSelectOption } from 'fold-ng';
 
 /**
  * **La décision réglée d'avance à la porte, en mots**
- * (`documentation/livraisons/a-la-porte.md`, B3 bis, LB-Q6) — pour la
+ * (`documentation/livraisons/livreur/a-la-porte.md`, B3 bis, LB-Q6) — pour la
  * carte du réglage global et pour l'adresse sur la fiche société.
  */
 

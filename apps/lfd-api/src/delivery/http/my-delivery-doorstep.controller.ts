@@ -48,7 +48,7 @@ import {
 import { serveStepPhoto } from "./step-photo-http.js";
 
 /**
- * **À la porte — les gestes du livreur** (`documentation/livraisons/a-la-porte.md`,
+ * **À la porte — les gestes du livreur** (`documentation/livraisons/livreur/a-la-porte.md`,
  * lot A).
  *
  * Sous `delivery_doorstep` (AP-D9) : conduire sa tournée et attester ce qui se

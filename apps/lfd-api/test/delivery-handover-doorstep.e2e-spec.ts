@@ -1,5 +1,5 @@
 /**
- * E2E **« Remis au client »** (`documentation/livraisons/a-la-porte.md`,
+ * E2E **« Remis au client »** (`documentation/livraisons/livreur/a-la-porte.md`,
  * B1, § 9, § 10 bis, AP-D1).
  *
  * Ce que seule cette suite prouve : le canal `delivery/channels/handover/` est

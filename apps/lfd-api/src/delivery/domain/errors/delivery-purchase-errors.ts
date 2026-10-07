@@ -6,7 +6,7 @@ import {
 
 /**
  * Les refus de la **bibliothèque d'achat**
- * (`documentation/livraisons/plan-bibliotheque-d-achat.md`, lot B1) — lus par
+ * (`documentation/livraisons/chargement/plan-bibliotheque-d-achat.md`, lot B1) — lus par
  * qui compare des catalogues de fournisseurs, sans le code sous les yeux :
  * chacun nomme le cas réel et le geste de sortie.
  *

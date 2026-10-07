@@ -4,7 +4,7 @@ export type { OrderOutOfHand };
 
 /**
  * **Ce que le fournil a besoin de savoir de la garde** : lesquelles de ces
- * commandes ne sont plus là (`documentation/livraisons/a-la-porte.md`,
+ * commandes ne sont plus là (`documentation/livraisons/livreur/a-la-porte.md`,
  * § 10 ter, BQ).
  *
  * LB-Q1, tranché par Hugo le 2026-10-01 : « on ne peut pas faire de contrôle

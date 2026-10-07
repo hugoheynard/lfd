@@ -7,7 +7,7 @@
 
 ## Le point de départ
 
-Le plan [`plan-remise-et-livraison-par-clientele.md`](./plan-remise-et-livraison-par-clientele.md)
+Le plan [`plan-remise-et-livraison-par-clientele.md`](plan-remise-et-livraison-par-clientele.md)
 range une société dans la clientèle **B2B seulement si elle est active** (Q3,
 tranchée par Hugo le 2026-09-15). Une société `pending`, `suspended` ou
 `terminated` est B2C : pas de remise pro au retrait, et la livraison suit les
@@ -53,7 +53,7 @@ le décide**, société par société, sans attendre l'activation.
 - **Ce qu'elle devient à l'activation** (sans objet) et à la suspension
   (retombe-t-elle ?).
 - **Qui peut la poser** : droit d'écriture du commercial, cf.
-  [`../droits-et-permissions/todo-droits-ecriture-backoffice.md`](../droits-et-permissions/todo-droits-ecriture-backoffice.md).
+  [`../../droits-et-permissions/todo-droits-ecriture-backoffice.md`](../../droits-et-permissions/todo-droits-ecriture-backoffice.md).
 
 ⚠️ Le sujet déplace une frontière d'accès et touche le tarif si la remise suit :
 le plan passe par `vitruve` avant d'être soumis (CLAUDE.md §9 bis).

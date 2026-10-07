@@ -2,7 +2,7 @@ import { DomainError, TechnicalError } from "../../../platform/shared/errors/app
 
 /**
  * Les refus de la **géométrie du plancher**
- * (`documentation/livraisons/plan-geometrie-du-plancher.md`, G-D2) — lus par
+ * (`documentation/livraisons/chargement/plan-geometrie-du-plancher.md`, G-D2) — lus par
  * qui mesure un véhicule, mètre en main : chacun nomme la cote fautive et le
  * geste de sortie.
  */

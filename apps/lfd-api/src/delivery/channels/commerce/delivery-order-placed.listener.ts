@@ -1,5 +1,5 @@
 /**
- * **« Une commande vient d'être passée »** (`documentation/livraisons/composition-automatique.md`,
+ * **« Une commande vient d'être passée »** (`documentation/livraisons/tournees/composition-automatique.md`,
  * Q4, lot CA0) — ce que la livraison DÉCLARE et IMPLÉMENTE elle-même
  * (`delivery/application/delivery-stops-locating.ts`), et que le commerce
  * APPELLE depuis son abonné à `order.placed`. Relié dans

@@ -8,7 +8,7 @@ import { B2B_API_BASE } from '../api/api-config';
 const SUGGESTIONS = `${B2B_API_BASE}/admin/livraison/carnet-a-corriger`;
 
 /**
- * **« Carnet à corriger »** (`documentation/livraisons/gps-y-aller-et-position.md`,
+ * **« Carnet à corriger »** (`documentation/livraisons/livreur/gps-y-aller-et-position.md`,
  * §6) — transport pur, sous `delivery_rounds:write`, lecture comprise.
  */
 @Injectable({ providedIn: 'root' })

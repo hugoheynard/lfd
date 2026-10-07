@@ -20,7 +20,7 @@ import { ensureFreshForDriver, gesturePositionOf } from "../doorstep-support.js"
 import { CloseStopWithoutHandoverCommand } from "./close-stop-without-handover.command.js";
 
 /**
- * **Clore un arrêt sans remise** (`documentation/livraisons/a-la-porte.md`,
+ * **Clore un arrêt sans remise** (`documentation/livraisons/livreur/a-la-porte.md`,
  * AP-D2, L6-C11) — la commande a été retirée au comptoir, ou annulée, pendant
  * la tournée. Sans ce geste, l'arrêt ne se fermerait jamais, et l'index des
  * arrêts vivants garderait la commande pour toujours.

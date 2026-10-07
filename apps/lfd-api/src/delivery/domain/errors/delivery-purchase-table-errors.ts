@@ -6,7 +6,7 @@ import {
 
 /**
  * Les refus du **tableau croisé** de la bibliothèque d'achat
- * (`documentation/livraisons/plan-bibliotheque-d-achat.md`, B-D4, lot B2) :
+ * (`documentation/livraisons/chargement/plan-bibliotheque-d-achat.md`, B-D4, lot B2) :
  * la sélection cite des identifiants, et chacun se relit aujourd'hui. Ce qui
  * n'est plus là, ou plus comparable, se NOMME — jamais un 500.
  */

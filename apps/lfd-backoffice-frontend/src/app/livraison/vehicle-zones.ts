@@ -2,7 +2,7 @@ import type { DeliveryZoneView } from '@lfd/contracts';
 
 /**
  * **Les zones autorisées d'un véhicule**, pour l'écran
- * (`documentation/livraisons/composition-automatique.md` §4, 2026-10-06).
+ * (`documentation/livraisons/tournees/composition-automatique.md` §4, 2026-10-06).
  * Vide = partout. Les zones sont celles du commerce (Réglages → Zones de
  * livraison) : la flotte n'en invente pas d'autres.
  */

@@ -4,7 +4,7 @@ import { gpsPointSchema, type GpsPoint } from "./address.js";
 
 /**
  * **Les corrections du carnet suggérées au bureau**
- * (`documentation/livraisons/gps-y-aller-et-position.md`, §6).
+ * (`documentation/livraisons/livreur/gps-y-aller-et-position.md`, §6).
  *
  * Deux points d'une adresse de livraison peuvent être suggérés :
  * - `door` — **la porte** : là où les remises concordent. Appliquée, elle

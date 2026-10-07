@@ -5,7 +5,7 @@ import { DeliveryStopsLocating } from "../delivery/application/delivery-stops-lo
 import { DeliveryModule } from "../delivery/delivery.module.js";
 
 /**
- * **Situer l'adresse dès la commande, relié** (`documentation/livraisons/composition-automatique.md`,
+ * **Situer l'adresse dès la commande, relié** (`documentation/livraisons/tournees/composition-automatique.md`,
  * lot CA0) — la livraison déclare ET implémente `DeliveryOrderPlacedListener`,
  * le commerce l'appelle sur `order.placed`.
  *

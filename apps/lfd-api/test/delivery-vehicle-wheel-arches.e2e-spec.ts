@@ -1,6 +1,6 @@
 /**
  * E2E des **passages de roue d'un véhicule**
- * (`documentation/livraisons/plan-geometrie-du-plancher.md`, G-D2, lot G4).
+ * (`documentation/livraisons/chargement/plan-geometrie-du-plancher.md`, G-D2, lot G4).
  *
  * Ce que seul l'e2e prouve : l'aller-retour par les quatre colonnes, la charge
  * du journal relue en base, le refus du domaine traduit en 400, et les deux

@@ -10,7 +10,7 @@ import {
 
 /**
  * Endpoint **machine** de la cloche « hors tournée »
- * (`documentation/livraisons/composition-automatique.md`, §5). Même porte que
+ * (`documentation/livraisons/tournees/composition-automatique.md`, §5). Même porte que
  * `admin/production/auto-close` : le `RecomputeGuard` et son jeton.
  *
  * Appelé par le cron de RAFRAÎCHISSEMENT (`*\/5`, `refreshSweeps` dans

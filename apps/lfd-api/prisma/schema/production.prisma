@@ -206,7 +206,7 @@ model OrderHandover {
 }
 
 /// La GARDE d'une commande passée au livreur : sa tournée est partie
-/// (`documentation/livraisons/a-la-porte.md`, BQ).
+/// (`documentation/livraisons/livreur/a-la-porte.md`, BQ).
 ///
 /// Annoncée par la livraison par un fait durable, `delivery.round_departed`,
 /// écrit dans la boîte d'envoi DANS la transaction du départ (DD1,
@@ -234,7 +234,7 @@ model OrderDeparture {
   @@schema("production")
 }
 
-/// Les **pièces d'une remise à la porte** (`documentation/livraisons/a-la-porte.md`,
+/// Les **pièces d'une remise à la porte** (`documentation/livraisons/livreur/a-la-porte.md`,
 /// B1, § 9, L6-C9) : la photo (toujours), la signature au doigt (quand
 /// l'arrêt l'exigeait au départ), le nom tapé de qui a réceptionné.
 ///

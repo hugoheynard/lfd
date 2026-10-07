@@ -49,7 +49,7 @@ const TOMORROW = '1';
 
 /**
  * **La feuille de route du jour** — ce qui part en livraison, et comment livrer
- * chaque adresse (`documentation/livraisons/plan-preparation-de-tournee.md`,
+ * chaque adresse (`documentation/livraisons/tournees/plan-preparation-de-tournee.md`,
  * lot 1).
  *
  * Lecture seule, **aucun montant** : un total ici se lirait comme une somme à

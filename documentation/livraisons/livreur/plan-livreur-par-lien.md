@@ -22,7 +22,7 @@
 > la voie principale et ne change pas. Conception tranchée en amont :
 > [`a-la-porte.md`](a-la-porte.md) § 10 (« un lien à jeton par tournée ; qui
 > compose affecte le livreur ; le snapshot du départ se garde 90 jours ») et
-> L6-C5 de [`plan-preparation-de-tournee.md`](plan-preparation-de-tournee.md).
+> L6-C5 de [`plan-preparation-de-tournee.md`](../tournees/plan-preparation-de-tournee.md).
 
 ## 0. Relevé de l'existant (vérifié dans le code le 2026-10-06)
 
@@ -236,7 +236,7 @@ bureau (la consigne : ne dire le code qu'au livreur affecté, au numéro connu).
   (`external_driver.*`, les `*_by` qui valent `ext:…`, l'accès) entrent dans
   `rgpd-registre.json`, et `rgpd-staff.mjs` gagne la valeur dans `PERSONS` et
   ses motifs dans le schéma `delivery`. Le texte d'information a son entrée
-  dans [`../legal/rgpd-livreur.md`](../legal/rgpd-livreur.md).
+  dans [`../../legal/rgpd-livreur.md`](../../legal/rgpd-livreur.md).
 - **Information au premier accès** : le **même** dialogue que le livreur staff
   (commité le 2026-10-06, `188858264`), avec un paragraphe sur l'e-mail
   et le cookie d'appareil. L'accusé se rattache à l'**accès**

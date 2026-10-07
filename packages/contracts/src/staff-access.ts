@@ -109,7 +109,7 @@ export const staffResourceSchema = z.enum([
    * 🔴 Elle ouvrait cinq métiers jusqu'au 2026-10-01 : les commandes, le plan
    * du soir, la fiche d'atelier, le colisage et le retrait au comptoir — si
    * bien que coliser emportait le droit de passer une commande. Chaque geste a
-   * désormais sa ressource (`documentation/livraisons/plan-droits-par-geste.md`).
+   * désormais sa ressource (`documentation/livraisons/droits/plan-droits-par-geste.md`).
    */
   "b2b_orders",
   /**
@@ -284,7 +284,7 @@ export const staffResourceSchema = z.enum([
 
   // ── `production.` — LE FOURNIL ──────────────────────────────────────────
   // Sortis de `b2b_orders` le 2026-10-01, un par geste
-  // (`documentation/livraisons/plan-droits-par-geste.md`, DG-D1 et 5.1). La
+  // (`documentation/livraisons/droits/plan-droits-par-geste.md`, DG-D1 et 5.1). La
   // version de journée du fournil s'ouvre à n'importe lequel des quatre.
   /**
    * **Le plan du soir** — l'état de la journée, le lot du jour, le prévisionnel.
@@ -323,7 +323,7 @@ export const staffResourceSchema = z.enum([
 
   // ── `delivery.` — LA LIVRAISON ──────────────────────────────────────────
   // Un droit par geste, créé quand son écran existe (Hugo, 2026-09-29 —
-  // `documentation/livraisons/plan-preparation-de-tournee.md`, Q7/Q8) : une
+  // `documentation/livraisons/tournees/plan-preparation-de-tournee.md`, Q7/Q8) : une
   // valeur de cette liste ne se retire pas, un droit créé pour un lot jamais
   // bâti resterait pour toujours.
   /**
@@ -392,7 +392,7 @@ export const staffResourceSchema = z.enum([
    * `my-delivery-doorstep.controller.ts` (relu le 2026-10-07) : « Je suis
    * arrivé », déclarer un problème, clore un arrêt sans remise quand la
    * commande a déjà été retirée ou annulée, remettre, déposer avec preuve,
-   * et « Tournée terminée » (`documentation/livraisons/a-la-porte.md`, AP-D9,
+   * et « Tournée terminée » (`documentation/livraisons/livreur/a-la-porte.md`, AP-D9,
    * L6-C10).
    *
    * À part de `delivery_driving` : conduire sa tournée et attester ce qui se
@@ -615,7 +615,7 @@ export type RoleGrants = Partial<Readonly<Record<StaffResource, StaffAction>>>;
  * resserre. Tout le reste est un élargissement ou une reconduction.
  *
  * 🔴 **Une GRAINE, plus une source ni un miroir** (2026-10-01,
- * `documentation/livraisons/plan-droits-par-geste.md`, DG-D5 et 5.2). Le
+ * `documentation/livraisons/droits/plan-droits-par-geste.md`, DG-D5 et 5.2). Le
  * runtime ne la lit plus : une fiche résout ses droits par la définition de
  * son rôle en base (`staff_users.role_key` est `NOT NULL`). Elle ne sert qu'à
  * semer une base vierge : celle des e2e à chaque remise à zéro, et une base de

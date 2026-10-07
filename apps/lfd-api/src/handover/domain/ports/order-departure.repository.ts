@@ -1,6 +1,6 @@
 /**
  * **La garde passée au livreur**, par commande
- * (`documentation/livraisons/a-la-porte.md`, § 10 ter, BQ).
+ * (`documentation/livraisons/livreur/a-la-porte.md`, § 10 ter, BQ).
  *
  * Une écriture nue, et c'est voulu : c'est la PROJECTION de faits déjà
  * validés ailleurs (`delivery.round_departed`, `delivery.orders_brought_back`,

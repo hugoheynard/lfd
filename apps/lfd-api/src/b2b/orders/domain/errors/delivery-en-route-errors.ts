@@ -2,7 +2,7 @@ import { TechnicalError } from "../../../../platform/shared/errors/app-error.js"
 
 /**
  * Des courriels « votre livraison est en route » ne sont pas partis
- * (`documentation/livraisons/en-route.md`). Construite APRÈS avoir tenté
+ * (`documentation/livraisons/livreur/en-route.md`). Construite APRÈS avoir tenté
  * toutes les commandes de la tournée : un envoi raté ne prive pas les autres
  * clients du leur. JOURNALISÉE par l'abonné durable, jamais levée : le fait
  * n'est pas relancé (`plan-depart-durable.md`, §5). Lue dans les journaux,

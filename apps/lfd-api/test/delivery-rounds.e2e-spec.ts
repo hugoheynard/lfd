@@ -1,6 +1,6 @@
 /**
  * E2E de la **composition des tournées** — le parcours
- * (`documentation/livraisons/plan-preparation-de-tournee.md`, lot 3).
+ * (`documentation/livraisons/tournees/plan-preparation-de-tournee.md`, lot 3).
  *
  * Ce que seul l'e2e prouve : l'unicité `(jour, véhicule, passage)`, l'index
  * unique PARTIEL sur la commande (écrit à la main, Prisma ne le connaît pas),

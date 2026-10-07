@@ -17,7 +17,7 @@ import { ProofPhoto } from '../proof-photo/proof-photo';
 import { SignaturePad } from '../signature-pad/signature-pad';
 
 /**
- * **« Remis au client »** (`documentation/livraisons/a-la-porte.md`, B1,
+ * **« Remis au client »** (`documentation/livraisons/livreur/a-la-porte.md`, B1,
  * § 9, AP-Q2, AP-D4) — la photo, toujours ; le nom de qui réceptionne,
  * toujours ; la signature au doigt quand l'arrêt l'exige (figée au départ).
  *

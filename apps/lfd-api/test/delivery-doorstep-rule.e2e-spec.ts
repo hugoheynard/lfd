@@ -1,5 +1,5 @@
 /**
- * E2E **la décision réglée d'avance à la porte** (`documentation/livraisons/a-la-porte.md`,
+ * E2E **la décision réglée d'avance à la porte** (`documentation/livraisons/livreur/a-la-porte.md`,
  * B3 bis, LB-Q6 tranché par Hugo le 2026-10-01 : « global, overridable »,
  * « par adresse »).
  *

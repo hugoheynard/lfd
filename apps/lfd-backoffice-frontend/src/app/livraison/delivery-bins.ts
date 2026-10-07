@@ -11,7 +11,7 @@ import {
 
 /**
  * **Les types de bacs** — la logique pure de l'écran « Bacs » et de son
- * dialogue (`documentation/livraisons/plan-preparation-de-tournee.md`, lot 4
+ * dialogue (`documentation/livraisons/tournees/plan-preparation-de-tournee.md`, lot 4
  * bis v2, tranche A).
  *
  * Les bornes sont celles du contrat : le domaine les tient et refuse de toute

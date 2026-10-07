@@ -1,7 +1,7 @@
 import { BusinessError, ResourceNotFoundError } from "../../../platform/shared/errors/app-error.js";
 
 /**
- * Les refus de **la décision du commercial** (`documentation/livraisons/a-la-porte.md`,
+ * Les refus de **la décision du commercial** (`documentation/livraisons/livreur/a-la-porte.md`,
  * § 10 B3, § 10 bis) — et celui que le livreur reçoit quand on a décidé de
  * rapporter. Le commercial décide depuis le bureau, sans voir la tournée : le
  * geste de sortie est de recharger la liste, ou de passer par « Non remis ».

@@ -11,7 +11,7 @@ import { GetProductionDayVersionQuery } from "../application/queries/get-product
  * (`documentation/caching-usage/plan-version-par-journee.md`, D3 et V2).
  *
  * Ouverte à **n'importe laquelle** des quatre ressources du fournil
- * (2026-10-01, `documentation/livraisons/plan-droits-par-geste.md`, DG-D1) : c'est un numéro technique
+ * (2026-10-01, `documentation/livraisons/droits/plan-droits-par-geste.md`, DG-D1) : c'est un numéro technique
  * dont tout poste a besoin, et exiger l'une fermerait les autres. Une
  * opération au lieu d'une relecture complète : le poste ne relit sa journée
  * que si ce numéro a changé.

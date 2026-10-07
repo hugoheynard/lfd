@@ -13,7 +13,7 @@ import { AccountJournalNames } from "./account-journal-names.service.js";
 
 /**
  * **Le carnet corrigé à la demande de la livraison**
- * (`documentation/livraisons/gps-y-aller-et-position.md`, §6) — le
+ * (`documentation/livraisons/livreur/gps-y-aller-et-position.md`, §6) — le
  * commerce implémente `DeliveryAddressPointCorrector`.
  *
  * Le cycle de tout geste du carnet : charger le carnet POUR cette société (une

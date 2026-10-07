@@ -3,7 +3,7 @@
 > **État : doc d'état, relue contre le code le 2026-10-07.** Les deux
 > décisions de Hugo du même jour sont bâties (§ 2) ; il reste un point
 > connu (§ 5). Née de la question Q1 de
-> l'[audit du 2026-10-07](audit-2026-10-07.md).
+> l'[audit du 2026-10-07](../audit-2026-10-07.md).
 
 ## 1. La règle
 

@@ -14,7 +14,7 @@ import { ListCounterCustomersQuery } from "../application/queries/list-counter-c
  * `b2b_counter`, pas `b2b_companies` : la fiche client — crédit, KBIS,
  * contacts, conditions — reste fermée à qui n'a que le Comptoir. La passation
  * ne passe pas ici : elle reste `POST /admin/orders`, sous `b2b_place_order:write`
- * (2026-10-01, `documentation/livraisons/plan-droits-par-geste.md`, 5.1 bis).
+ * (2026-10-01, `documentation/livraisons/droits/plan-droits-par-geste.md`, 5.1 bis).
  */
 @Controller("admin/counter/customers")
 @AdminSurface("b2b_counter")

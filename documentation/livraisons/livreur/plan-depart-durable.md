@@ -5,7 +5,7 @@
 > dans sa doc d'état, [`en-route.md`](en-route.md) ; la garde, dans
 > [`a-la-porte.md`](a-la-porte.md) § 5.
 >
-> 📜 **Relu contre le code le 2026-10-07** ([audit](audit-2026-10-07.md)). Ce
+> 📜 **Relu contre le code le 2026-10-07** ([audit](../audit-2026-10-07.md)). Ce
 > document est la **décision de conception**, pas l'état du code : il reste
 > parce que la migration `20261007180000_le_retour_avant_le_depart` et
 > vingt-quatre fichiers de code le citent par son nom, et qu'un

@@ -12,7 +12,7 @@ import { fulfillmentWindowLabel, timeLabel } from '../shared/window-label';
 
 /**
  * Les dérivations pures de la feuille de route du jour
- * (`documentation/livraisons/plan-preparation-de-tournee.md`, lot 1).
+ * (`documentation/livraisons/tournees/plan-preparation-de-tournee.md`, lot 1).
  *
  * Toutes type-only sur le contrat : une valeur importée de `@lfd/contracts`
  * tirerait zod dans le paquet de la page pour trois comparaisons.

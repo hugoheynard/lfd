@@ -5,7 +5,7 @@ import type { DeliveryOrderRoundPlaceView } from "./delivery-packing.js";
 /**
  * **Le chargement, véhicule par véhicule** — les bacs déclarés, leur
  * chargement, et le départ qui gèle une tournée
- * (`documentation/livraisons/plan-preparation-de-tournee.md`, lot 4, v4 :
+ * (`documentation/livraisons/tournees/plan-preparation-de-tournee.md`, lot 4, v4 :
  * L4-C11 à L4-C21 ; lot 4 bis, v2-4 et v2-6, tranche B).
  *
  * Tout part en BAC, et on scanne le bac (Hugo, 2026-09-29) : l'unité scannée

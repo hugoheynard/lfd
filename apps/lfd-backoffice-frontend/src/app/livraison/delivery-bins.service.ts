@@ -18,7 +18,7 @@ const PURCHASE_ASSISTANT = `${B2B_API_BASE}/admin/livraison/assistant-achat`;
 
 /**
  * **Les bacs de la livraison** — le catalogue des types et la grille des
- * contenances (`documentation/livraisons/plan-preparation-de-tournee.md`, lot
+ * contenances (`documentation/livraisons/tournees/plan-preparation-de-tournee.md`, lot
  * 4 bis v2, tranche A). Lecture sous `delivery_settings:read` ou
  * `delivery_rounds:read`, écriture sous `delivery_settings:write`. Le
  * catalogue des types (`binTypes`) se lit aussi sous `production_packing:write`

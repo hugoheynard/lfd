@@ -7,7 +7,7 @@ import {
 } from "./delivery-routing.js";
 
 /**
- * **Le simulateur de tournée** (`documentation/livraisons/plan-preparation-de-tournee.md`,
+ * **Le simulateur de tournée** (`documentation/livraisons/tournees/plan-preparation-de-tournee.md`,
  * lot 9, L9-C1 à L9-C6) : le calculateur du lot 7 sur des arrêts INVENTÉS.
  *
  * Une LECTURE : `POST admin/livraison/simulateur` parce que le scénario est un

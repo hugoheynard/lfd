@@ -5,7 +5,7 @@
  * (`delivery-my-round.e2e-spec.ts`).
  *
  * 🔴 Le rôle `livreur` NAÎT À L'ÉCRAN (2026-10-01,
- * `documentation/livraisons/plan-droits-par-geste.md`, DG-D6) : la migration
+ * `documentation/livraisons/droits/plan-droits-par-geste.md`, DG-D6) : la migration
  * qui le posait (`20261001120100_le_role_livreur`) a été retirée avant toute
  * mise en ligne — une migration ajoute une ressource, jamais un droit à un
  * rôle. On le crée donc ici par le geste même d'Hugo : `POST

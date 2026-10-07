@@ -35,7 +35,7 @@ const MIGRATION = join(
 
 /**
  * Ce que la migration accordait de `b2b_counter`, FIGÉ ici le 2026-10-01
- * (`documentation/livraisons/plan-droits-par-geste.md`, 5.6) : `ROLE_GRANTS`
+ * (`documentation/livraisons/droits/plan-droits-par-geste.md`, 5.6) : `ROLE_GRANTS`
  * n'est plus qu'une graine, que l'on peut faire évoluer sans rouvrir une
  * migration appliquée. Comparer la migration à la graine figerait la graine.
  */

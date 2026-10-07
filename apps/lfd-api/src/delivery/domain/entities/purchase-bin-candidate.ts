@@ -59,7 +59,7 @@ interface ValidSheet {
 
 /**
  * **Un format de bac candidat** de la bibliothèque d'achat
- * (`documentation/livraisons/plan-bibliotheque-d-achat.md`, B-D1, lot B1) :
+ * (`documentation/livraisons/chargement/plan-bibliotheque-d-achat.md`, B-D1, lot B1) :
  * un bac qu'on envisage d'acheter. Ce n'est PAS un `BinType` — il n'a ni
  * contenance ni colisage, et vit dans sa propre table. Sa géométrie obéit
  * pourtant aux règles d'un type de bac, par `BinFormat` : bornes, intérieur

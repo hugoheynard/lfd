@@ -71,7 +71,7 @@ function deviceStorage(): Storage | null {
 }
 
 /**
- * **Ma tournée** — la page du livreur (`documentation/livraisons/plan-ma-tournee.md`,
+ * **Ma tournée** — la page du livreur (`documentation/livraisons/livreur/plan-ma-tournee.md`,
  * MT-D7 ; navigation `gps-y-aller-et-position.md`, YA2). Pensée téléphone
  * d'abord : une colonne, de grands boutons.
  *

@@ -17,7 +17,7 @@ import { ListVehiclesQuery } from "../application/queries/list-vehicles.query.js
 
 /**
  * **La flotte** — Livraison → Véhicules
- * (`documentation/livraisons/plan-preparation-de-tournee.md`, lot 2a).
+ * (`documentation/livraisons/tournees/plan-preparation-de-tournee.md`, lot 2a).
  *
  * Sous `delivery_settings` : la lecture (`GET`) pour qui prépare les départs,
  * l'écriture pour qui règle la flotte. Retirer et réactiver sont des `POST`

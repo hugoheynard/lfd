@@ -9,7 +9,7 @@ const DELIVERY = `${B2B_API_BASE}/admin/livraison`;
 
 /**
  * **Les signalements et « Non remis », côté admin**
- * (`documentation/livraisons/a-la-porte.md`, § 3, AP-D7), sous
+ * (`documentation/livraisons/livreur/a-la-porte.md`, § 3, AP-D7), sous
  * `delivery_rounds:read`. Les signalements du jour arrivent avec la
  * composition des tournées ; ici, la vue « Non remis » et les photos.
  */

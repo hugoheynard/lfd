@@ -6,7 +6,7 @@ import { count, day, fact, named, namedOrBare, payload, subjectLabel } from "./f
 
 /**
  * **La composition des tournées** (2026-09-29,
- * `documentation/livraisons/plan-preparation-de-tournee.md`, lot 3, C7).
+ * `documentation/livraisons/tournees/plan-preparation-de-tournee.md`, lot 3, C7).
  *
  * Rangés dans la famille « commandes et production », comme la flotte : une
  * entrée à part de cette famille pour tenir `orders-production.ts` sous sa

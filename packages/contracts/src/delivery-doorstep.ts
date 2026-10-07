@@ -2,7 +2,7 @@ import { z } from "zod";
 
 /**
  * **À la porte** — ce que le livreur déclare sur un arrêt de SA tournée, et ce
- * que l'admin en relit (`documentation/livraisons/a-la-porte.md`, § 3,
+ * que l'admin en relit (`documentation/livraisons/livreur/a-la-porte.md`, § 3,
  * AP-D2, AP-D6, AP-D7, AP-D9).
  *
  * Routes du livreur (`admin/livraison/ma-tournee/:roundId…`, sous
@@ -85,7 +85,7 @@ export interface ReportedDeliveryIncidentResponse {
 }
 
 /**
- * **La position du téléphone au geste** (`documentation/livraisons/gps-y-aller-et-position.md`,
+ * **La position du téléphone au geste** (`documentation/livraisons/livreur/gps-y-aller-et-position.md`,
  * YA-D4) — facultative sur les trois gestes qui closent un arrêt : remise,
  * dépôt, clôture sans remise. Absente : refus du navigateur ou pas de signal,
  * et le geste s'enregistre quand même. Présente : les trois champs ensemble.

@@ -4,7 +4,7 @@ import { count, day, fact, instant, named, namedOrBare, payload, subjectLabel } 
 
 /**
  * **Le chargement, véhicule par véhicule** (2026-09-29,
- * `documentation/livraisons/plan-preparation-de-tournee.md`, lot 4, v4).
+ * `documentation/livraisons/tournees/plan-preparation-de-tournee.md`, lot 4, v4).
  *
  * Même famille que la composition (« commandes et production »), dans son
  * propre fichier pour tenir `orders-production.ts` sous sa taille.

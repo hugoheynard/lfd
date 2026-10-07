@@ -32,7 +32,7 @@ export type AfterCommitCallback = () => void | Promise<void>;
 
 /**
  * La **file des rappels d'après validation** d'une unité de travail
- * (`documentation/livraisons/a-la-porte.md`, B0 et § 10 bis).
+ * (`documentation/livraisons/livreur/a-la-porte.md`, B0 et § 10 bis).
  *
  * Elle appartient à l'unité la PLUS EXTERNE : une unité imbriquée rejoint la
  * transaction en cours, donc son « après validation » est celui de la

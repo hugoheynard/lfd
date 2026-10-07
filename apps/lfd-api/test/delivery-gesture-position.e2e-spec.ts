@@ -1,6 +1,6 @@
 /**
  * E2E **« Y aller » et la position au geste**
- * (`documentation/livraisons/gps-y-aller-et-position.md`, YA3, YA-D4).
+ * (`documentation/livraisons/livreur/gps-y-aller-et-position.md`, YA3, YA-D4).
  *
  * Ce que seul le vrai SQL prouve :
  * - YA3 : un geste qui clôt un arrêt pose `closed_at`, et « Ma tournée » le

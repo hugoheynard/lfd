@@ -46,7 +46,7 @@ function deliveries(count: number): string {
 }
 
 /**
- * **La cloche du plan arrêté** (`documentation/livraisons/composition-automatique.md`, §4) : elle
+ * **La cloche du plan arrêté** (`documentation/livraisons/tournees/composition-automatique.md`, §4) : elle
  * ne sonne que si l'ensemble a GRANDI, et dit de combien. La première fois,
  * c'est l'arrêt (tout l'ensemble est annoncé : `added === total`) ; ensuite,
  * un retirage ou une réannonce complète le plan de livraisons à placer.

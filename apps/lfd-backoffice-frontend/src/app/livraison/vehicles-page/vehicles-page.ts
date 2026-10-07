@@ -29,7 +29,7 @@ type FleetState =
 
 /**
  * **La flotte** — avec quoi on tient l'offre de livraison
- * (`documentation/livraisons/plan-preparation-de-tournee.md`, lot 2a).
+ * (`documentation/livraisons/tournees/plan-preparation-de-tournee.md`, lot 2a).
  *
  * Aucun nombre de véhicules saisi : le nombre EST la liste des actifs. Un
  * véhicule ne se supprime pas, il se **retire** — daté, parce que la

@@ -1,6 +1,6 @@
 /**
  * E2E des **bacs** — le catalogue des types et la grille des contenances
- * (`documentation/livraisons/plan-preparation-de-tournee.md`, lot 4 bis,
+ * (`documentation/livraisons/tournees/plan-preparation-de-tournee.md`, lot 4 bis,
  * tranche A).
  *
  * Ce que seul l'e2e prouve : l'aller-retour par les colonnes et le volume

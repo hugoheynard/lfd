@@ -1,12 +1,12 @@
 # Les bacs — coliser, charger, partir
 
 > **Référence, état du code au 2026-09-29** (lot 2 bis et lot 4 bis du
-> [plan de préparation de tournée](../livraisons/plan-preparation-de-tournee.md)). Chaque
+> [plan de préparation de tournée](../livraisons/tournees/plan-preparation-de-tournee.md)). Chaque
 > affirmation ci-dessous a été relue dans le code ce jour-là ; le plan garde
 > l'histoire et les décisions, ce document dit ce qui existe.
 >
 > **§ 5 mis à jour le 2026-10-02** : lots PC1, PC2 et PC3 de
-> [`../livraisons/decisions-par-defaut-2026-10-02.md`](../livraisons/decisions-par-defaut-2026-10-02.md)
+> [`../livraisons/tournees/decisions-par-defaut-2026-10-02.md`](../livraisons/tournees/decisions-par-defaut-2026-10-02.md)
 > (la rangée « + format », le poste rangé par tournée, l'étiquette qui porte
 > la tournée). Ces décisions sont **par défaut, à revoir avec Hugo**.
 >
@@ -461,13 +461,13 @@ serveur la traduit en refus lisible.
   le fond, passages de roue compris, et alerte `floor_over` quand une pile ne
   tient pas au sol ; la hauteur sous le plafond est tenue depuis `553422d02`
   (2026-10-06). Voir
-  [`../livraisons/algorithme-de-chargement.md`](../livraisons/algorithme-de-chargement.md),
+  [`../livraisons/chargement/algorithme-de-chargement.md`](../livraisons/chargement/algorithme-de-chargement.md),
   § 3.3.
 - ~~**Le calculateur de tournée n'utilise ni le volume ni le froid**~~ — depuis
   CA4 (`4010899a1`, 2026-10-06), « Proposer » et « Insérer » refusent une
   place dont le plan de chargement déborde : litres secs, litres de la caisse
   froide, plancher, ou véhicule sans cotes. Voir
-  [`../livraisons/composition-automatique.md`](../livraisons/composition-automatique.md),
+  [`../livraisons/tournees/composition-automatique.md`](../livraisons/tournees/composition-automatique.md),
   § 5, point 2. **Reste vrai** : un bac isotherme qui part dans un véhicule
   sans caisse réfrigérée n'est pas refusé — compté au sec, il n'est signalé
   qu'après coup (`cold_bins_without_refrigeration`) ; et une commande dont la

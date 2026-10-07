@@ -1,6 +1,6 @@
 /**
  * E2E du **calculateur de tournée** — le parcours
- * (`documentation/livraisons/plan-preparation-de-tournee.md`, lot 7).
+ * (`documentation/livraisons/tournees/plan-preparation-de-tournee.md`, lot 7).
  *
  * Réglages du calcul, « Situer » sans géocodeur configuré, « Proposer » SANS
  * RÉSEAU à partir des points GPS du carnet, « Appliquer ». Le harnais ne

@@ -5,7 +5,7 @@ import type { HandoverWindow } from "./handover-queue.reader.js";
 /**
  * **Ce qui part en livraison ce jour-là, et comment livrer chaque adresse** —
  * la feuille de route, telle que le commerce la connaît
- * (`documentation/livraisons/plan-preparation-de-tournee.md`, lot 1).
+ * (`documentation/livraisons/tournees/plan-preparation-de-tournee.md`, lot 1).
  *
  * ## Pourquoi ce n'est PAS un jumeau de `HandoverQueueReader`
  *

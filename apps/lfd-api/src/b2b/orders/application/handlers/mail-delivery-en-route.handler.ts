@@ -19,7 +19,7 @@ export const MAIL_DELIVERY_EN_ROUTE = "b2b.mail-delivery-en-route";
 
 /**
  * **« Votre livraison est en route »** — le commerce entend le départ d'une
- * tournée (`documentation/livraisons/en-route.md`) : un courriel par commande.
+ * tournée (`documentation/livraisons/livreur/en-route.md`) : un courriel par commande.
  *
  * Abonné DURABLE depuis le 2026-10-06 (DD1) : le relais le livre au premier
  * réveil après la validation du départ, et le balayage rattrape un réveil

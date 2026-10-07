@@ -1,6 +1,6 @@
 /**
  * E2E de la **bibliothèque d'achat** — véhicules et formats de bacs candidats
- * (`documentation/livraisons/plan-bibliotheque-d-achat.md`, lot B1).
+ * (`documentation/livraisons/chargement/plan-bibliotheque-d-achat.md`, lot B1).
  *
  * Ce que seul l'e2e prouve : l'aller-retour par les colonnes et le volume
  * dérivé, l'index partiel sur le nom, les CHECK de la migration, les faits

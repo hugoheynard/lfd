@@ -53,7 +53,7 @@ const SEED_DEFINITIONS = /^INSERT INTO "public"\."staff_role_definitions"[^;]*;/
 
 /**
  * Ce que la migration semait pour `dev`, FIGÉ ici le 2026-10-01
- * (`documentation/livraisons/plan-droits-par-geste.md`, 5.6) : la graine
+ * (`documentation/livraisons/droits/plan-droits-par-geste.md`, 5.6) : la graine
  * `ROLE_GRANTS` peut évoluer, une migration appliquée non. Les comparer
  * gèlerait la graine.
  */

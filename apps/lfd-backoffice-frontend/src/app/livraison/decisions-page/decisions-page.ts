@@ -34,7 +34,7 @@ interface Refusal {
 }
 
 /**
- * **« À décider »** (`documentation/livraisons/a-la-porte.md`, B3, B5) —
+ * **« À décider »** (`documentation/livraisons/livreur/a-la-porte.md`, B3, B5) —
  * les arrêts où le livreur a signalé que le client ne respecte pas les
  * conditions convenues : personne, refus, accès impossible. Le commercial
  * répond « Autoriser le dépôt cette fois » (même signature exigée, LB-Q5) ou

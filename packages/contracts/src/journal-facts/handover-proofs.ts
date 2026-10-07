@@ -4,7 +4,7 @@ import { fact, instant, payload, subjectLabel } from "./fact.js";
 
 /**
  * **Les pièces d'une remise à la porte, effacées** (2026-10-01,
- * `documentation/livraisons/a-la-porte.md`, « Les pièces de remise :
+ * `documentation/livraisons/livreur/a-la-porte.md`, « Les pièces de remise :
  * conservées sans limite, purgeables »).
  *
  * Même famille que la livraison (« commandes et production »). Le sujet est la

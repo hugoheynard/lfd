@@ -15,7 +15,7 @@ import { POSITION_RETENTION_DAYS } from "../services/position-retention.js";
  * réaffiche le dialogue une fois à chaque livreur.
  *
  * **Version 2** (2026-10-06) : la position du téléphone, relevée au geste
- * seulement (`documentation/livraisons/gps-y-aller-et-position.md`, YA-D4).
+ * seulement (`documentation/livraisons/livreur/gps-y-aller-et-position.md`, YA-D4).
  * Hugo, le même jour : on PRÉVIENT, on ne demande pas — le texte énonce un
  * fait, et ne propose aucun refus. Le geste n'est jamais bloqué par une
  * position indisponible : c'est un comportement, pas une option offerte.

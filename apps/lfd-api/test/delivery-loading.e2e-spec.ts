@@ -1,6 +1,6 @@
 /**
  * E2E du **chargement, véhicule par véhicule** — le parcours
- * (`documentation/livraisons/plan-preparation-de-tournee.md`, lot 4, v4).
+ * (`documentation/livraisons/tournees/plan-preparation-de-tournee.md`, lot 4, v4).
  *
  * Ce que seul l'e2e prouve : l'index unique des codes, la ligne de chargement
  * qui appartient à l'ARRÊT (un arrêt retiré emporte ses chargements), le gel

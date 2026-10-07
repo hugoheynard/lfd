@@ -29,7 +29,7 @@ type DayQuery = z.infer<typeof dayQuerySchema>;
 
 /**
  * **Le chargement, véhicule par véhicule** — charger, décharger, partir
- * (`documentation/livraisons/plan-preparation-de-tournee.md`, lot 4, L4-C2,
+ * (`documentation/livraisons/tournees/plan-preparation-de-tournee.md`, lot 4, L4-C2,
  * L4-C4, Q14).
  *
  * Sous `delivery_loading` (Q21) — y compris « Partir », rangé sous

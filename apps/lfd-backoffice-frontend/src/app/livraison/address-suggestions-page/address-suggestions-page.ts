@@ -37,7 +37,7 @@ interface Refusal {
 }
 
 /**
- * **« Carnet à corriger »** (`documentation/livraisons/gps-y-aller-et-position.md`,
+ * **« Carnet à corriger »** (`documentation/livraisons/livreur/gps-y-aller-et-position.md`,
  * §6) — les portes et les stationnements que plusieurs livraisons
  * concordantes situent loin du point du carnet. Rien n'est corrigé tout
  * seul : **Appliquer** écrit le carnet (le livreur le voit à la tournée

@@ -13,7 +13,7 @@ const ORDER_LABEL = "delivery.locate-placed-order";
 const DAY_LABEL = "delivery.locate-arrested-day";
 
 /**
- * **Situer l'adresse dès la commande** (`documentation/livraisons/composition-automatique.md`,
+ * **Situer l'adresse dès la commande** (`documentation/livraisons/tournees/composition-automatique.md`,
  * Q4, lot CA0) — sans jamais retenir ni faire échouer celui qui déclenche.
  *
  * Deux déclencheurs, une seule mécanique : « Situer les arrêts » du JOUR

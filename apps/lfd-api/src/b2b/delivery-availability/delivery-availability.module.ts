@@ -12,7 +12,7 @@ import { PrismaDeliveryAvailabilityRepository } from "./infrastructure/prisma-de
 
 /**
  * **À qui la livraison est proposée** — un réglage global.
- * Plan : `documentation/livraisons/plan-remise-et-livraison-par-clientele.md`, D4.
+ * Plan : `documentation/livraisons/clientele/plan-remise-et-livraison-par-clientele.md`, D4.
  *
  * Importe `AccountModule` pour le seul `StaffDirectory` (l'auteur figé du geste).
  * Exporte le port de LECTURE seul : `orders` refuse une livraison fermée, il ne

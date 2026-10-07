@@ -59,7 +59,7 @@ enum StaffResource {
   b2b_companies
   b2b_orders
   /// PASSER UNE COMMANDE pour un client pro — sortie de `b2b_orders` le
-  /// 2026-10-01 (`documentation/livraisons/plan-droits-par-geste.md`, 5.1 bis).
+  /// 2026-10-01 (`documentation/livraisons/droits/plan-droits-par-geste.md`, 5.1 bis).
   b2b_place_order
   /// Le COMPTOIR — la carte et le détail d'un client, taillés pour la prise de
   /// commande (2026-09-25, `plan-commande-au-comptoir.md`).
@@ -93,7 +93,7 @@ enum StaffResource {
   /// `plan-vitrine-enregistrement.md`, D7).
   b2b_storefront
   /// LE FOURNIL, un droit par geste — sortis de `b2b_orders` le 2026-10-01
-  /// (`documentation/livraisons/plan-droits-par-geste.md`, DG-D1) : le plan du
+  /// (`documentation/livraisons/droits/plan-droits-par-geste.md`, DG-D1) : le plan du
   /// soir, la fiche d'atelier, le colisage.
   production_plan
   production_worksheet
@@ -115,10 +115,10 @@ enum StaffResource {
   /// LE CHARGEMENT — déclarer les sacs, charger, partir (2026-09-29, lot 4, Q21).
   delivery_loading
   /// CONDUIRE SA TOURNÉE — lire la tournée qui vous est affectée, la commencer
-  /// (2026-10-01, `documentation/livraisons/plan-ma-tournee.md`, MT-D1 v2).
+  /// (2026-10-01, `documentation/livraisons/livreur/plan-ma-tournee.md`, MT-D1 v2).
   delivery_driving
   /// LES GESTES À LA PORTE — arriver, signaler un problème, clore sans remise
-  /// (2026-10-01, `documentation/livraisons/a-la-porte.md`, AP-D9).
+  /// (2026-10-01, `documentation/livraisons/livreur/a-la-porte.md`, AP-D9).
   delivery_doorstep
   /// LES PROCÉDURES DE LIVRAISON côté staff — sorties de `b2b_companies` le
   /// 2026-10-01 (même plan).

@@ -6,7 +6,7 @@ import { OrderPlacedEvent } from "../../domain/events/order-placed.event.js";
 
 /**
  * **Dire à la livraison qu'une commande est passée**
- * (`documentation/livraisons/composition-automatique.md`, Q4, lot CA0) : elle
+ * (`documentation/livraisons/tournees/composition-automatique.md`, Q4, lot CA0) : elle
  * situe l'adresse pour que le prévisionnel du jour ait un point.
  *
  * Le commerce ne trie rien ici (retrait ou livraison, jour) : la livraison

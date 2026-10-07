@@ -11,7 +11,7 @@ import { centimetres, cmToMm, MM_PER_CM, mmToCm } from './delivery-bins';
 
 /**
  * Les dérivations pures de **l'assistant d'achat**
- * (`documentation/livraisons/plan-geometrie-du-plancher.md`, G-D3, lot G3) :
+ * (`documentation/livraisons/chargement/plan-geometrie-du-plancher.md`, G-D3, lot G3) :
  * ce qu'on saisit à l'écran, et ce qui part au serveur.
  *
  * Le CALCUL n'est pas ici : il est côté serveur (`POST

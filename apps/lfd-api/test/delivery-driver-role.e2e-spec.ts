@@ -1,5 +1,5 @@
 /**
- * E2E du **rôle `livreur`** (`documentation/livraisons/plan-ma-tournee.md`,
+ * E2E du **rôle `livreur`** (`documentation/livraisons/livreur/plan-ma-tournee.md`,
  * MT1, MT-D1 v2) — le rôle est créé À L'ÉCRAN, par la vraie route des rôles
  * (sa migration a été retirée le 2026-10-01, `plan-droits-par-geste.md`,
  * DG-D6), et ce qu'il ouvre se lit sur les vraies routes.

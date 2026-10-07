@@ -13,7 +13,7 @@ import { B2B_API_BASE } from '../api/api-config';
 const SCENARIOS = `${B2B_API_BASE}/admin/livraison/assistant-achat/scenarios`;
 
 /**
- * **Les scénarios d'achat** (`documentation/livraisons/plan-bibliotheque-d-achat.md`,
+ * **Les scénarios d'achat** (`documentation/livraisons/chargement/plan-bibliotheque-d-achat.md`,
  * B-D5) : lire sous `delivery_rounds:read`, enregistrer, remplacer, archiver
  * et réactiver sous `delivery_rounds:write` (B-D6). Relancer le tableau n'est
  * pas ici : l'écran envoie la sélection relue à `PurchaseLibraryService.table`.

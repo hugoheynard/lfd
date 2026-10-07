@@ -19,7 +19,7 @@ export { ALL_DISCOUNT_AUDIENCES };
  * **À qui s'applique la remise d'un point** : les pros, les particuliers, ou les
  * deux. Sans réduction, ces cases ne sont pas lues. Une réduction qui ne vise
  * aucune clientèle est refusée par le serveur.
- * Cf. `documentation/livraisons/plan-remise-et-livraison-par-clientele.md`, D2.
+ * Cf. `documentation/livraisons/clientele/plan-remise-et-livraison-par-clientele.md`, D2.
  */
 export const pickupDiscountAudiencesSchema = z.object({
   b2b: z.boolean(),

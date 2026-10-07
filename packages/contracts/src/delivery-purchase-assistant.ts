@@ -4,7 +4,7 @@ import { BIN_TYPE_NAME_MAX_LENGTH, binDimensionsSchema } from "./delivery-bins.j
 import { vehicleCargoPayloadSchema, vehicleWheelArchesPayloadSchema } from "./delivery-settings.js";
 
 /**
- * **L'assistant d'achat** (`documentation/livraisons/plan-geometrie-du-plancher.md`,
+ * **L'assistant d'achat** (`documentation/livraisons/chargement/plan-geometrie-du-plancher.md`,
  * G-D3) : combien de bacs de tel format tiennent dans tel plancher, par
  * rangées transversales.
  *

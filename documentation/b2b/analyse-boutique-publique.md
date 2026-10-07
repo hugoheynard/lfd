@@ -249,7 +249,7 @@ projection Shopify applique. Remplacé ou conservé ? (D9)
 > **réglages** du back-office : la remise d'un point porte ses clientèles, et la
 > livraison s'ouvre par clientèle. Les défauts reproduisent l'existant (tout
 > ouvert) ; fermer au public est un geste de l'admin. Le serveur l'applique
-> depuis le lot A de [`plan-remise-et-livraison-par-clientele.md`](../livraisons/plan-remise-et-livraison-par-clientele.md), D8.
+> depuis le lot A de [`plan-remise-et-livraison-par-clientele.md`](../livraisons/clientele/plan-remise-et-livraison-par-clientele.md), D8.
 
 ## 7. Découpage proposé
 

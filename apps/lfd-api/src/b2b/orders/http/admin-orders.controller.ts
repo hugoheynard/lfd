@@ -73,7 +73,7 @@ import type { StoredDocument } from "../../../platform/storage/document-store.js
 @Controller("admin/orders")
 // `b2b_orders` pour lire les commandes, le bon, la traçabilité et le rappel ;
 // passer une commande et son devis exigent `b2b_place_order:write`
-// (2026-10-01, `documentation/livraisons/plan-droits-par-geste.md`, 5.1 bis).
+// (2026-10-01, `documentation/livraisons/droits/plan-droits-par-geste.md`, 5.1 bis).
 @AdminSurface("b2b_orders")
 export class AdminOrdersController {
   constructor(

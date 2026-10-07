@@ -1,6 +1,6 @@
 /**
  * E2E : **le départ d'une tournée est un fait durable**
- * (`documentation/livraisons/plan-depart-durable.md`, §5, DD1).
+ * (`documentation/livraisons/livreur/plan-depart-durable.md`, §5, DD1).
  *
  * Ce que seul le vrai Postgres prouve :
  * - le départ — au poste de chargement comme par le livreur — écrit

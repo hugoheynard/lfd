@@ -348,7 +348,7 @@ export type DeliveryAddressPayload = z.infer<typeof deliveryAddressPayloadSchema
 /**
  * La charge d'édition d'une adresse de livraison **par le client**
  * (`PATCH companies/:companyId/delivery-addresses/:addressId`) : la charge
- * commune, plus « dépôt autorisé » (`documentation/livraisons/a-la-porte.md`,
+ * commune, plus « dépôt autorisé » (`documentation/livraisons/livreur/a-la-porte.md`,
  * AP-Q1, AP-D5).
  *
  * 🔴 **Facultatif, et absent veut dire INCHANGÉ** — jamais `false`. Un front en

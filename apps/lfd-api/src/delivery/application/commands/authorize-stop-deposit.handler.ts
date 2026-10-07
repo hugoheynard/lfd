@@ -8,7 +8,7 @@ import { StopDecisionDesk } from "../stop-decision-desk.js";
 import { AuthorizeStopDepositCommand } from "./authorize-stop-deposit.command.js";
 
 /**
- * **« Autoriser le dépôt cette fois »** (`documentation/livraisons/a-la-porte.md`,
+ * **« Autoriser le dépôt cette fois »** (`documentation/livraisons/livreur/a-la-porte.md`,
  * B3, § 10 bis, LB-Q5).
  *
  * Dans UNE unité de travail : la décision relue sous le verrou de sa tournée

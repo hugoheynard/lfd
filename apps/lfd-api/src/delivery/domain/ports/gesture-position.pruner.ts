@@ -1,6 +1,6 @@
 /**
  * Port de **purge** des positions relevées au geste
- * (`documentation/livraisons/gps-y-aller-et-position.md`, YA-D4). Une interface
+ * (`documentation/livraisons/livreur/gps-y-aller-et-position.md`, YA-D4). Une interface
  * à part (ISP) : seul le balayage nocturne en dépend, et il n'efface que des
  * COLONNES — l'arrêt clos et l'arrivée restent, avec leur heure.
  */

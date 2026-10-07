@@ -21,7 +21,7 @@ import { deliveryAuthorOf } from "../delivery-author.js";
 import { ApplyAddressPointSuggestionCommand } from "./apply-address-point-suggestion.command.js";
 
 /**
- * **« Appliquer »** (`documentation/livraisons/gps-y-aller-et-position.md`,
+ * **« Appliquer »** (`documentation/livraisons/livreur/gps-y-aller-et-position.md`,
  * §6) — le point que le bureau a VU devient la porte (le point GPS de
  * l'adresse, qui passe avant le géocodage) ou le stationnement.
  *

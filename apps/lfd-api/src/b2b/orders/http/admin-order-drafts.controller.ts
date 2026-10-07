@@ -29,7 +29,7 @@ import { GetOrderDraftQuery } from "../application/queries/get-order-draft.query
  * Les **brouillons de commande** du back-office — une saisie interrompue,
  * reprise depuis n'importe quel poste.
  *
- * Ressource `b2b_place_order` depuis le 2026-10-01 (`documentation/livraisons/plan-droits-par-geste.md`,
+ * Ressource `b2b_place_order` depuis le 2026-10-01 (`documentation/livraisons/droits/plan-droits-par-geste.md`,
  * 5.1 bis) : le brouillon est la passation interrompue, il en prend le droit.
  * Une ressource à une action utile — la LECTURE du brouillon exige aussi
  * l'écriture : il n'y a rien à lire pour qui ne peut pas passer la commande.

@@ -101,7 +101,7 @@ comme avant.
   (PL4, bâti le 2026-10-01) — « n arrêts prêts sur m » en tête, l'avancement
   et les bacs déclarés sur chaque arrêt, la page se met à jour d'elle-même.
 - ⏸️ **Il est prévenu** (mis de côté le 2026-10-01) quand toute sa tournée est prête (Hugo, 2026-10-01) :
-  lot PL5, voir [`plan-tournee-prete.md`](plan-tournee-prete.md). Rien n'en
+  lot PL5, voir [`plan-tournee-prete.md`](../tournees/plan-tournee-prete.md). Rien n'en
   est bâti (relu le 2026-10-07).
 - ✅ **Où sont rangés les bacs** : par tournée, puis par arrêt (Hugo,
   2026-10-01) — « Ma tournée » suit le même rangement.
@@ -358,8 +358,8 @@ dépend (relu le 2026-10-07) :
 | **PL2 — « Tournée terminée »**                  | un état **rentrée** de la tournée (instant, auteur) ; « Non remis » le lit ; les bacs sont libérés    | ✅ bâti le 2026-10-01 (`5ebc47e6f`, écran `a93bb3a88`) ; un sort exigé par arrêt depuis le 2026-10-02 (B4, `2bd02b143`). Aucun état de bac ne change au retour |
 | **PL3 — « En route »**                          | le courriel au client au départ, envoyé par le commerce                                               | ✅ bâti le 2026-10-01 (`2932bb364`) ; fait durable depuis le 2026-10-06 (DD1, `375f82225`) — [`en-route.md`](en-route.md)                                      |
 | **PL4 — « Ma tournée » suit le colisage**       | une seule fiche, l'avancement du colisage, une version de « ma tournée » (§ « Étape 1 revue »)        | ✅ bâti le 2026-10-01 (`06522cdac`, `7a96fba28`)                                                                                                               |
-| **PL5 — Le livreur est prévenu**                | [`plan-tournee-prete.md`](plan-tournee-prete.md)                                                      | ⏸️ mis de côté le 2026-10-01 ; rien n'est bâti                                                                                                                 |
-| **G5 — La géométrie du plancher** (3)           | où poser chaque pile — [`plan-geometrie-du-plancher.md`](plan-geometrie-du-plancher.md)               | ✅ bâti le 2026-10-02 (`19fece6b1`)                                                                                                                            |
+| **PL5 — Le livreur est prévenu**                | [`plan-tournee-prete.md`](../tournees/plan-tournee-prete.md)                                          | ⏸️ mis de côté le 2026-10-01 ; rien n'est bâti                                                                                                                 |
+| **G5 — La géométrie du plancher** (3)           | où poser chaque pile — [`plan-geometrie-du-plancher.md`](../chargement/plan-geometrie-du-plancher.md) | ✅ bâti le 2026-10-02 (`19fece6b1`)                                                                                                                            |
 | **YA3 — Les arrêts clos sortent des liens** (6) | [`gps-y-aller-et-position.md`](gps-y-aller-et-position.md) § 1                                        | ✅ bâti, éprouvé de bout en bout le 2026-10-06 (`16d367e3a`)                                                                                                   |
 | **YA4 — La position au geste** (7, 9)           | [`gps-y-aller-et-position.md`](gps-y-aller-et-position.md) § 2                                        | ✅ bâti le 2026-10-06 (`16d367e3a`) ; reste l'écart arrêt par arrêt ([`gps-y-aller-et-position.md`](gps-y-aller-et-position.md) § 7)                           |
 

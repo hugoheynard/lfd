@@ -1,6 +1,6 @@
 /**
  * E2E des **bases paramétrables de la livraison** — la flotte et le point de
- * départ des tournées (`documentation/livraisons/plan-preparation-de-tournee.md`,
+ * départ des tournées (`documentation/livraisons/tournees/plan-preparation-de-tournee.md`,
  * lot 2), et les deux droits qui les murent.
  *
  * Ce que seul l'e2e prouve : l'index unique PARTIEL sur la plaque (écrit à la

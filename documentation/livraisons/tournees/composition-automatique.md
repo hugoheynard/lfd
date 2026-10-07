@@ -6,7 +6,7 @@
 > 2026-10-06, ancien nom « plan-composition-automatique »). Les versions successives du plan (v1 à v4), et les contradictions
 > de `vitruve` qui les ont corrigées, ne sont pas recopiées ici. Elles restent
 > dans l'historique git :
-> `git log --follow -p -- documentation/livraisons/composition-automatique.md` (le `--follow` traverse le renommage).
+> `git log --follow -p -- documentation/livraisons/tournees/composition-automatique.md` (le `--follow` traverse le renommage).
 
 ## 1. Le concept
 

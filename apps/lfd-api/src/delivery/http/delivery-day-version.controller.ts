@@ -8,7 +8,7 @@ import { GetDeliveryDayVersionQuery } from "../application/queries/get-delivery-
 
 /**
  * **La version d'une journée de la livraison**
- * (`documentation/livraisons/plan-schema-delivery.md`, SD-D3) — même contrat
+ * (`documentation/livraisons/architecture/plan-schema-delivery.md`, SD-D3) — même contrat
  * que `GET admin/production/version`.
  *
  * Lecture ouverte à `delivery_rounds` OU `delivery_loading` : les tournées la

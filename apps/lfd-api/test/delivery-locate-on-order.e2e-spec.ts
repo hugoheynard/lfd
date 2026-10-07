@@ -1,5 +1,5 @@
 /**
- * E2E **situer l'adresse dès la commande** (`documentation/livraisons/composition-automatique.md`,
+ * E2E **situer l'adresse dès la commande** (`documentation/livraisons/tournees/composition-automatique.md`,
  * Q4, lot CA0), sur la vraie base.
  *
  * Ce que seule cette suite prouve : la passation HTTP rend la main pendant

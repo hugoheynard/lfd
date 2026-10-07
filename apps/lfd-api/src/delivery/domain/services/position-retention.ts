@@ -1,6 +1,6 @@
 /**
  * **Combien de jours une position relevée au geste est gardée**
- * (`documentation/livraisons/gps-y-aller-et-position.md`, YA-D4, YA-Q3 ;
+ * (`documentation/livraisons/livreur/gps-y-aller-et-position.md`, YA-D4, YA-Q3 ;
  * `documentation/legal/rgpd-livreur.md`). Hugo, 2026-10-06 : 60 jours, à faire
  * valider. Source UNIQUE : la purge, le texte d'information du livreur et le
  * registre (`rgpd-registre.json`, `conservation.jours`) disent ce nombre.

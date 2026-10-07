@@ -51,7 +51,7 @@ export interface DecisionAuthor {
 }
 
 /**
- * **La décision du commercial sur un arrêt** (`documentation/livraisons/a-la-porte.md`,
+ * **La décision du commercial sur un arrêt** (`documentation/livraisons/livreur/a-la-porte.md`,
  * § 10 B3, § 10 bis « La décision a un propriétaire », LB-Q2, LB-Q5).
  *
  * Invariants tenus ici :

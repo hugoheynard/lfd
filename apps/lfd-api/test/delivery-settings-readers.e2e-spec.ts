@@ -1,6 +1,6 @@
 /**
  * E2E de la **lecture des réglages par qui lit les tournées**
- * (`documentation/livraisons/plan-preparation-de-tournee.md`, § 6, Q10 « A »).
+ * (`documentation/livraisons/tournees/plan-preparation-de-tournee.md`, § 6, Q10 « A »).
  *
  * La flotte, le point de départ et les réglages du calcul se lisent sous
  * `delivery_settings:read` OU `delivery_rounds:read` ; leur écriture reste sous

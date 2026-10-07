@@ -1,0 +1,26 @@
+# La livraison côté client
+
+> Sous-dossier de [`livraisons/`](../README.md), rangé le 2026-10-07 (Hugo).
+> Les états ci-dessous sont ceux que chaque document déclare en tête.
+
+À qui la livraison est proposée (pros, particuliers), la procédure de livraison d'une adresse, et la livraison accordée avant l'activation.
+
+| Doc                                                                                          | État et sujet                                                                                                                                                                                                                 |
+| -------------------------------------------------------------------------------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| [`plan-procedure-de-livraison.md`](plan-procedure-de-livraison.md)                           | ✅ bâti, reste la vignette — La procédure d'une adresse : étapes ordonnées avec titre, texte et photo légère, écrites par le client ou le staff ; droit `delivery_procedures` ; écritures murées sur la société (2026-10-07). |
+| [`plan-remise-et-livraison-par-clientele.md`](plan-remise-et-livraison-par-clientele.md)     | ✅ lots A, B, C bâtis — Qui a droit à la livraison (B2B / B2C), le réglage « Livraison », la clé `publicDelivery` fermée par défaut, l'application au devis et à la commande ; la boutique relit le réglage (2026-10-07).     |
+| [`todo-livraison-accordee-avant-activation.md`](todo-livraison-accordee-avant-activation.md) | 🟡 rien de bâti — Le commercial doit pouvoir accorder la livraison à une société encore en attente ; la dérogation devra aussi lever `publicDelivery`.                                                                        |
+
+## Ce qui fait foi
+
+- **À qui la livraison est proposée** : `plan-remise-et-livraison-par-clientele.md`,
+  lots A, B, C bâtis. Depuis le 2026-10-07, la clé `publicDelivery` ferme
+  aussi la livraison à un particulier connecté (`POST /orders`), et la
+  boutique efface son choix mémorisé.
+- **La procédure d'une adresse** : `plan-procedure-de-livraison.md`, bâtie ;
+  reste la vignette.
+- **Ce qui reste** : la livraison accordée avant l'activation d'un compte
+  (`todo-livraison-accordee-avant-activation.md`), rien de bâti.
+
+Les autres thèmes du dossier, et les documents qui touchent la livraison sans
+en être le sujet, sont listés dans l'[index du dossier](../README.md).

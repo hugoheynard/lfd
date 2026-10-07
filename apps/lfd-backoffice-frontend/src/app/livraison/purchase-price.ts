@@ -1,6 +1,6 @@
 /**
  * **Le prix d'un candidat de la bibliothèque d'achat**
- * (`documentation/livraisons/plan-bibliotheque-d-achat.md`, B-D3) : saisi en
+ * (`documentation/livraisons/chargement/plan-bibliotheque-d-achat.md`, B-D3) : saisi en
  * euros HT, envoyé en **centimes entiers**, affiché en euros.
  *
  * La saisie est lue comme du TEXTE, chiffre à chiffre : « 12,50 » devient

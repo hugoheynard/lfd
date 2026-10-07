@@ -14,7 +14,7 @@ import type { ComposedDay } from './delivery-rounds';
 
 /**
  * Les dérivations pures de l'écran « Planifier »
- * (`documentation/livraisons/plan-preparation-de-tournee.md`, lot 10 bis).
+ * (`documentation/livraisons/tournees/plan-preparation-de-tournee.md`, lot 10 bis).
  *
  * La proposition ne porte que des références (L10b-C3) : le nom, le lieu,
  * l'état et le point de chaque arrêt viennent de la feuille de route du jour,

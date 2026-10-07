@@ -20,7 +20,7 @@ export type SupervisionColumn = keyof typeof SUPERVISION_LINKS;
  * Le droit qui ouvre CHAQUE cible — la garde de sa vue. Un seul droit les
  * ouvrait toutes (`b2b_orders:read`, la garde des coquilles) jusqu'au
  * 2026-10-01 ; chaque geste a désormais le sien
- * (`documentation/livraisons/plan-droits-par-geste.md`, 5.1). Un test (`supervision-links.spec.ts`)
+ * (`documentation/livraisons/droits/plan-droits-par-geste.md`, 5.1). Un test (`supervision-links.spec.ts`)
  * confronte chaque renvoi à la garde EFFECTIVE de sa cible dans la table de
  * routes.
  */

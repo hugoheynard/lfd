@@ -1,6 +1,6 @@
 /**
  * Les tuiles de la carte des tournées, servies depuis R2 (plan de tournée,
- * lot 10 ter, L10t-C1 à C3 — documentation/livraisons/plan-preparation-de-tournee.md).
+ * lot 10 ter, L10t-C1 à C3 — documentation/livraisons/tournees/plan-preparation-de-tournee.md).
  *
  * Le bucket `lfd-map-tiles` porte chaque fabrication sous un préfixe DATÉ
  * (`AAAA-MM-JJ/rues.pmtiles`, `AAAA-MM-JJ/relief.pmtiles`) et un `current.json`

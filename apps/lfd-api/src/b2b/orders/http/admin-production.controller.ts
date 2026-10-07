@@ -20,7 +20,7 @@ import { GetProductionBatchQuery } from "../application/queries/get-production-b
  * ici on sert une journée de production entière, avec ses lignes, et sans un
  * seul montant. Deux publics, deux surfaces.
  *
- * Une garde PAR ROUTE depuis le 2026-10-01 (`documentation/livraisons/plan-droits-par-geste.md`, 5.1) :
+ * Une garde PAR ROUTE depuis le 2026-10-01 (`documentation/livraisons/droits/plan-droits-par-geste.md`, 5.1) :
  * le lot du jour est le plan du soir (`production_plan`), la fiche derrière le
  * QR est le colisage (`production_packing`). Elles étaient toutes deux sous
  * `b2b_orders`, qui ouvrait aussi la passation.

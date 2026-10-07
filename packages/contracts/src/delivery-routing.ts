@@ -6,7 +6,7 @@ import type { DeliveryRoundOrderRef } from "./delivery-rounds.js";
 /**
  * **Le calculateur de tournée** — ses réglages, « Situer les arrêts »,
  * « Proposer » et « Appliquer »
- * (`documentation/livraisons/plan-preparation-de-tournee.md`, lot 7, L7-C1 à
+ * (`documentation/livraisons/tournees/plan-preparation-de-tournee.md`, lot 7, L7-C1 à
  * L7-C15).
  *
  * Proposer est une LECTURE : elle n'écrit rien, et ne sort que vers la carte

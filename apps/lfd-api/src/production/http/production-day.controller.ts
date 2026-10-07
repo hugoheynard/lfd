@@ -42,7 +42,7 @@ import type { ProductionPaper } from "../application/services/production-paper.s
  * `production_plan` — l'état, le prévisionnel, le compte à produire —, sauf
  * l'arrêt, sous `production_count_stop` depuis le 2026-10-06, et sauf la
  * fiche d'atelier imprimable, qui sert un autre poste et porte sa garde (`production_worksheet`, 2026-10-01,
- * `documentation/livraisons/plan-droits-par-geste.md`, 5.1). « Prête » ne vit
+ * `documentation/livraisons/droits/plan-droits-par-geste.md`, 5.1). « Prête » ne vit
  * plus ici depuis K3c : elle se déclare au colisage
  * (`POST admin/packing/:date/orders/:orderId/close`).
  */

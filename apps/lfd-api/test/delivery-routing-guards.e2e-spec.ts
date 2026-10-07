@@ -1,6 +1,6 @@
 /**
  * E2E du **calculateur de tournée** — les gardes
- * (`documentation/livraisons/plan-preparation-de-tournee.md`, lot 7, L7-C5,
+ * (`documentation/livraisons/tournees/plan-preparation-de-tournee.md`, lot 7, L7-C5,
  * L7-C6, L7-C11).
  *
  * Une version périmée est refusée, une tournée partie n'est jamais touchée, un

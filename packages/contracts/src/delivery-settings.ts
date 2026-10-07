@@ -4,7 +4,7 @@ import type { BillingAddressPayload, GpsPoint } from "./address.js";
 
 /**
  * **Les bases paramétrables de la livraison** — les véhicules et le point de
- * départ des tournées (`documentation/livraisons/plan-preparation-de-tournee.md`,
+ * départ des tournées (`documentation/livraisons/tournees/plan-preparation-de-tournee.md`,
  * lot 2). Ce que la composition des tournées lira comme un réglage, jamais comme
  * une constante.
  */

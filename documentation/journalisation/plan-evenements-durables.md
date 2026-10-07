@@ -190,8 +190,8 @@ naît avec E1, la liste pleine.
 ## 7 bis. E3 bâti (2026-10-06) — le départ et le retour d'une tournée
 
 Bâti par la livraison en un seul lot, DD1 (`375f82225`) ; l'état est décrit
-dans [`../livraisons/en-route.md`](../livraisons/en-route.md) et
-[`../livraisons/a-la-porte.md`](../livraisons/a-la-porte.md) § 5.
+dans [`../livraisons/livreur/en-route.md`](../livraisons/livreur/en-route.md) et
+[`../livraisons/livreur/a-la-porte.md`](../livraisons/livreur/a-la-porte.md) § 5.
 
 - **Deux faits durables**, déclarés par la livraison dans son canal vers le
   retrait (`delivery/channels/handover/`) et écrits dans la transaction du

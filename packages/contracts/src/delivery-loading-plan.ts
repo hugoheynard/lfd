@@ -2,7 +2,7 @@ import type { DeliveryBinHalf } from "./delivery-loading.js";
 
 /**
  * **Le plan de chargement** — un plan d'ORDRE et de VOLUME, et depuis G5 la
- * place des piles au sol (`documentation/livraisons/plan-preparation-de-tournee.md`,
+ * place des piles au sol (`documentation/livraisons/tournees/plan-preparation-de-tournee.md`,
  * lot 4 bis, L4b-C7 et v2-5, tranche D ; `plan-geometrie-du-plancher.md`, G-D4).
  *
  * `GET admin/livraison/chargement/:roundId/plan` → {@link DeliveryLoadingPlanView},
@@ -29,7 +29,7 @@ export interface DeliveryLoadingPlanBinView {
   /**
    * Posé DERRIÈRE : sur une pile d'une rangée déjà fermée, des bacs chargés
    * après lui le cachent. Seulement quand le plan cohérent ne tenait pas au
-   * sol (`documentation/livraisons/algorithme-de-chargement.md`).
+   * sol (`documentation/livraisons/chargement/algorithme-de-chargement.md`).
    */
   readonly behind: boolean;
 }

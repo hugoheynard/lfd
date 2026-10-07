@@ -13,7 +13,7 @@ import { fulfillmentWindowLabel } from '../shared/window-label';
 
 /**
  * Les dérivations pures du calculateur de tournée
- * (`documentation/livraisons/plan-preparation-de-tournee.md`, lot 7).
+ * (`documentation/livraisons/tournees/plan-preparation-de-tournee.md`, lot 7).
  *
  * Type-only sur le contrat, comme `delivery-rounds.ts` : une valeur importée
  * de `@lfd/contracts` tirerait zod dans le paquet de la page.

@@ -534,7 +534,7 @@ model Address {
   deliverySpecs Json? @map("delivery_specs")
 
   // « Dépôt autorisé » — le client permet au livreur de DÉPOSER sans personne
-  // pour réceptionner (`documentation/livraisons/a-la-porte.md`, AP-Q1,
+  // pour réceptionner (`documentation/livraisons/livreur/a-la-porte.md`, AP-Q1,
   // AP-D5). Une COLONNE et non une clé de `delivery_specs` : ce `jsonb` se
   // réécrit d'un bloc, et un front qui ne connaît pas la clé la remettrait à
   // `false` en silence. Écrite par le carnet (`DeliveryAddressBook`) seul.
@@ -573,7 +573,7 @@ model Address {
 }
 
 // La procédure de livraison d'une adresse — plan
-// `documentation/livraisons/plan-procedure-de-livraison.md` §2.1.
+// `documentation/livraisons/clientele/plan-procedure-de-livraison.md` §2.1.
 //
 // Racine d'agrégat (`DeliveryProcedure`) : elle naît à la première étape et ne
 // se supprime jamais. Ses étapes, elles, se suppriment physiquement (§2.2).

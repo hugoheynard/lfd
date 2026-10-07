@@ -45,7 +45,7 @@ const COLUMNS: readonly FoldTableColumn[] = [
 
 /**
  * **Les scénarios d'achat enregistrés**
- * (`documentation/livraisons/plan-bibliotheque-d-achat.md`, B-D5) : visibles
+ * (`documentation/livraisons/chargement/plan-bibliotheque-d-achat.md`, B-D5) : visibles
  * de toute l'équipe qui lit les tournées ; archiver et réactiver demandent
  * `delivery_rounds:write` (`canWrite`, B-D6). Ouvrir est rendu au tableau,
  * qui remet la sélection dans ses cases. Les archivés se montrent sur demande.

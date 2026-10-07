@@ -4,7 +4,7 @@ import { purchaseTablePayloadSchema } from "./delivery-purchase-table.js";
 
 /**
  * **Les scénarios d'achat enregistrés**
- * (`documentation/livraisons/plan-bibliotheque-d-achat.md`, B-D5, lot B3) :
+ * (`documentation/livraisons/chargement/plan-bibliotheque-d-achat.md`, B-D5, lot B3) :
  * la SÉLECTION du tableau croisé, gardée sous un nom pour être relancée.
  *
  * Un scénario CITE des identifiants (`{source, id}`), il ne copie pas les

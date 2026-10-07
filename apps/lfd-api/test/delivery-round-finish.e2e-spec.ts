@@ -1,6 +1,6 @@
 /**
  * E2E **« Tournée terminée » exige un sort pour chaque arrêt**
- * (`documentation/livraisons/a-la-porte.md`, § 10 B4 ;
+ * (`documentation/livraisons/livreur/a-la-porte.md`, § 10 B4 ;
  * `parcours-du-livreur.md`, note du 2026-10-01).
  *
  * Ce que seule cette suite prouve, sur la vraie base :

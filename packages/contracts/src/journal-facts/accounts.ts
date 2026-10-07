@@ -272,7 +272,7 @@ export const ACCOUNTS_AND_CARTS_FACTS = {
   "company.default_delivery_set": addressCited({}),
   /**
    * « Dépôt autorisé » réglé sur une adresse de livraison
-   * (`documentation/livraisons/a-la-porte.md`, AP-D5) — par le client
+   * (`documentation/livraisons/livreur/a-la-porte.md`, AP-D5) — par le client
    * sur son carnet, ou par le staff sur sa route à part. Né le 2026-10-01 :
    * aucune forme d'avant.
    */

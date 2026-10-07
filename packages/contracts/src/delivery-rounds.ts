@@ -5,7 +5,7 @@ import type { DeliveryIncidentView } from "./delivery-doorstep.js";
 /**
  * **La composition des tournées d'un jour** — répartir les livraisons entre les
  * véhicules, puis ordonner chaque tournée
- * (`documentation/livraisons/plan-preparation-de-tournee.md`, lot 3, C1–C17).
+ * (`documentation/livraisons/tournees/plan-preparation-de-tournee.md`, lot 3, C1–C17).
  *
  * Ne porte que des RÉFÉRENCES : le détail d'un arrêt (adresse, fenêtre, contact,
  * procédure) est celui de la feuille de route, que l'écran relit au même moment

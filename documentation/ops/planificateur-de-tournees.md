@@ -8,7 +8,7 @@
 > adaptateurs `Osrm*` de l'API, le service de dev `lfd-dev-osrm`.
 
 > **État au 2026-10-07 : 🟢 bâti, et déployé depuis le 2026-09-30.** Lot 8
-> bis du [plan de tournée](../livraisons/plan-preparation-de-tournee.md)
+> bis du [plan de tournée](../livraisons/tournees/plan-preparation-de-tournee.md)
 > (L8b-C1 à C7) : l'API joint `lfd-route-planner` **par la passerelle**, en
 > HTTPS, avec un jeton que la passerelle vérifie. Cette forme remplace
 > l'interception `outboundByHost` du lot 8 (forme B-ter), **jamais déployée et

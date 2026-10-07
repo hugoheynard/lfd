@@ -11,7 +11,7 @@ export interface GesturePositionInput {
 
 /**
  * **La position du téléphone AU GESTE**
- * (`documentation/livraisons/gps-y-aller-et-position.md`, YA-D4) — arrivée,
+ * (`documentation/livraisons/livreur/gps-y-aller-et-position.md`, YA-D4) — arrivée,
  * remise, dépôt, clôture sans remise. Jamais en continu, jamais exigée.
  *
  * Sa finalité est écrite et bornée (Hugo, 2026-10-06) : d'abord faciliter les

@@ -17,23 +17,23 @@
 >   [`composition-automatique.md`](composition-automatique.md) et
 >   [`algorithme-de-preparation-de-tournee.md`](algorithme-de-preparation-de-tournee.md) ;
 > - **lots 4 et 4 bis** (bacs, colisage, chargement) :
->   [`colisage.md`](../colisage/colisage.md) et
->   [`algorithme-de-chargement.md`](algorithme-de-chargement.md) ;
+>   [`colisage.md`](../../colisage/colisage.md) et
+>   [`algorithme-de-chargement.md`](../chargement/algorithme-de-chargement.md) ;
 > - **lot 5** (la fenêtre obligatoire, bâtie sous la forme « créneau ou
 >   échéance ») : [`composition-automatique.md`](composition-automatique.md),
 >   CA1b et CA3b ;
-> - **lot 6** (la porte) : [`a-la-porte.md`](a-la-porte.md) ;
+> - **lot 6** (la porte) : [`a-la-porte.md`](../livreur/a-la-porte.md) ;
 > - **lots 8, 8 bis, 10 et 10 ter** (OSRM, tuiles, carte) :
->   [`planificateur-de-tournees.md`](../ops/planificateur-de-tournees.md) ;
+>   [`planificateur-de-tournees.md`](../../ops/planificateur-de-tournees.md) ;
 > - **lot 10 bis** (l'écran des tournées) : l'organisateur de
 >   `/livraison/tournees` — `livraison/rounds-page/`, `livraison/rounds-board/`
 >   et `livraison/round-column/` du back-office, au glisser-déposer
 >   `@angular/cdk` ;
 > - **Q10** (le schéma Postgres) :
->   [`plan-schema-delivery.md`](plan-schema-delivery.md) ;
+>   [`plan-schema-delivery.md`](../architecture/plan-schema-delivery.md) ;
 > - **les droits** (lot 1, L4-C21) :
->   [`plan-droits-par-geste.md`](plan-droits-par-geste.md) ;
-> - **lot 11** : [`gps-y-aller-et-position.md`](gps-y-aller-et-position.md) —
+>   [`plan-droits-par-geste.md`](../droits/plan-droits-par-geste.md) ;
+> - **lot 11** : [`gps-y-aller-et-position.md`](../livreur/gps-y-aller-et-position.md) —
 >   la position est relevée **au geste**, jamais en continu ; le suivi en
 >   direct n'est pas bâti.
 >
@@ -82,7 +82,7 @@ Le matin, avant que le véhicule parte, quatre gestes :
 ✅ **Trois véhicules, et on doit pouvoir en ajouter** (Hugo, 2026-09-29). Le
 geste 3 devient donc « **répartir** les commandes entre les véhicules, puis
 ordonner chaque tournée », et le geste 4 se fait **par véhicule**. La réserve de
-la [conception v1](conception-retrait-en-livraison.md) (§3 : « la tournée devient
+la [conception v1](../livreur/conception-retrait-en-livraison.md) (§3 : « la tournée devient
 nécessaire au deuxième véhicule ») est levée : la tournée est à bâtir.
 
 Ce qui vient toujours après : l'algorithme qui **propose** une répartition, et
@@ -407,7 +407,7 @@ tournée et une table du fournil — la limite qu'a déjà le retrait.
 > `20260930140000_la_livraison_a_son_schema` : quatorze tables déplacées par
 > `SET SCHEMA`, et un journal de journée à elle, `delivery.day_change`).
 > Partout où ce document range une table de la livraison dans `production`,
-> lire `delivery`. Voir [`plan-schema-delivery.md`](plan-schema-delivery.md).
+> lire `delivery`. Voir [`plan-schema-delivery.md`](../architecture/plan-schema-delivery.md).
 
 ### Lot 2 bis — Le chargement d'un véhicule : dimensions et froid
 
@@ -999,7 +999,7 @@ déclarent au comptoir ». Aucun droit n'est élargi.
 > K3c (2026-10-05), le colisage est sous `production_packing`, et les routes
 > des bacs (`delivery-bins.controller.ts`, `delivery-packing.controller.ts`)
 > acceptent `production_packing` **ou** `delivery_loading` : une porte élargie
-> ([`plan-droits-par-geste.md`](plan-droits-par-geste.md) § 5.3). « Aucun
+> ([`plan-droits-par-geste.md`](../droits/plan-droits-par-geste.md) § 5.3). « Aucun
 > droit n'est élargi » n'est donc plus vrai : dans la graine (`ROLE_GRANTS`),
 > `commercial` et `comptabilite` déclarent des bacs par
 > `production_packing:write` sans avoir `delivery_loading`. Qui a quel droit
@@ -1028,13 +1028,13 @@ profonde existe déjà (`staff-login.ts`, restauration de la cible dans
 
 ### Lot 4 bis — Les bacs : colisage typé, scan au bac, plan de chargement
 
-> 📘 **La référence est [`../colisage/chargement-les-bacs.md`](../colisage/chargement-les-bacs.md)** : ce qui existe et comment ça marche, relu dans le code le 2026-09-29. Ce qui suit garde l'histoire et les décisions.
+> 📘 **La référence est [`../../colisage/chargement-les-bacs.md`](../../colisage/chargement-les-bacs.md)** : ce qui existe et comment ça marche, relu dans le code le 2026-09-29. Ce qui suit garde l'histoire et les décisions.
 
 > **Ouvert le 2026-09-29.** Hugo : « des bacs fermés superposables de
 > différentes tailles, dans lesquels on saura combien on peut mettre de chaque
 > item […] optimiser colisage / rangement dans les véhicules en fonction de
 > l'ordre des tournées ». ✅ Bâti le 2026-09-29, tranches A à D (voir les blocs
-> « bâti » sous v2-7) — la référence est `../colisage/chargement-les-bacs.md`.
+> « bâti » sous v2-7) — la référence est `../../colisage/chargement-les-bacs.md`.
 
 **Réponses de Hugo (2026-09-29)** : Q1 — **tout part en bac**, et on scanne
 le bac ; un bac peut contenir des sacs (emballage intérieur, sans QR). Une
@@ -1150,7 +1150,7 @@ des bacs de `delivery` fait foi (une seule vérité par mode d'acheminement).
 > transaction de l'appelant ; et les anciennes routes des bacs de la livraison
 > lisent `ContainerManagedOrders`, que le colisage implémente, pour refuser une
 > commande qu'il tient. `DeclarePackingContainersCommand` est supprimée avec
-> l'ancien poste du fournil. Voir [`colisage.md`](../colisage/colisage.md) § 2.
+> l'ancien poste du fournil. Voir [`colisage.md`](../../colisage/colisage.md) § 2.
 
 **v2-2 — Q4 tranchée** : la **contenance** (bacs × produits) est une donnée de
 `delivery` (table à elle, SKU opaque). La liste des produits et leurs noms
@@ -1689,7 +1689,7 @@ chaque tournée touchée : son identifiant, son véhicule, la liste des arrêts
 > `OSRM_URL`, `OSRM_TOKEN` : c'est l'historique. Les noms en vigueur
 > (`apps/lfd-route-planner`, `/api/route-planner`, `ROUTE_PLANNER_URL`,
 > `ROUTE_PLANNER_TOKEN`, binding `ROUTE_PLANNER`) sont dans
-> [`planificateur-de-tournees.md`](../ops/planificateur-de-tournees.md).
+> [`planificateur-de-tournees.md`](../../ops/planificateur-de-tournees.md).
 
 > **Ouvert le 2026-09-29.** Hugo : « à un moment on avait parlé de faire OSRM
 > Savoie » — prévu par l'architecture (§7, « OSRM Savoie — mise en place »),
@@ -2069,7 +2069,7 @@ jour même par L10b-C5 — délai de 20 s, UN nouvel essai sur délai ou 503,
 `OSRM_URL` suit le chemin de
 `BAN_GEOCODER_URL` (variable GitHub → secret du Worker → conteneur) ; son
 absence est une capacité dégradée. **Rien n'est déployé** — ordre et retour
-arrière : [`planificateur-de-tournees.md`](../ops/planificateur-de-tournees.md).
+arrière : [`planificateur-de-tournees.md`](../../ops/planificateur-de-tournees.md).
 [corrigé le 2026-10-07 : ce pont, retiré au lot 8 bis, ne l'a jamais été ; le
 planificateur, lui, est déployé depuis le 2026-09-30.]
 
@@ -2813,7 +2813,7 @@ suivants.
 
 - **Lot 6 — La porte** — ⏸ **en dette** (Hugo, 2026-09-29 : « met le 6 en dette
   et avance ») ; le 6 a est bâti depuis, son état et ce qui reste :
-  [`a-la-porte.md`](a-la-porte.md). La conception suit : la vue livreur, qui ne montre que **sa** tournée, et
+  [`a-la-porte.md`](../livreur/a-la-porte.md). La conception suit : la vue livreur, qui ne montre que **sa** tournée, et
   les gestes qu'on y écrit, sous un droit à eux, `delivery_doorstep` (Hugo,
   2026-09-29 : la feuille de route est en lecture seule, les gestes du
   livreur n'y passent pas) :
@@ -2923,7 +2923,7 @@ suivants.
   🔴 **Un geste ne vaut que pour un arrêt de SA tournée** : le mur du livreur est
   dans la requête, comme `company_id` au B2B.
 
-  > _(2026-10-01 — **remplacé en partie** par [`plan-ma-tournee.md`](plan-ma-tournee.md) § 6 : le rôle `livreur` naît avec `delivery_driving` (lire et commencer **sa** tournée), sans cloche ni valeur d'enum de rôle ; `delivery_doorstep` s'y ajoutera avec les gestes à la porte.)_
+  > _(2026-10-01 — **remplacé en partie** par [`plan-ma-tournee.md`](../livreur/plan-ma-tournee.md) § 6 : le rôle `livreur` naît avec `delivery_driving` (lire et commencer **sa** tournée), sans cloche ni valeur d'enum de rôle ; `delivery_doorstep` s'y ajoutera avec les gestes à la porte.)_
 
   **L6-C4 — Le rôle `livreur`** (Q1, premier cas) : un rôle staff neuf, qui n'a
   que `delivery_doorstep` et la lecture de sa tournée. Migration de la

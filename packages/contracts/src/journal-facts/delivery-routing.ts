@@ -16,7 +16,7 @@ import {
 
 /**
  * **Le calculateur de tournée** (2026-09-29,
- * `documentation/livraisons/plan-preparation-de-tournee.md`, lot 7).
+ * `documentation/livraisons/tournees/plan-preparation-de-tournee.md`, lot 7).
  *
  * Même famille que la composition (« commandes et production »), dans son
  * propre fichier pour tenir `orders-production.ts` sous sa taille.

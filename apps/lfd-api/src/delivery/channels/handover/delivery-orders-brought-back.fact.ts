@@ -8,7 +8,7 @@ export const DELIVERY_ORDERS_BROUGHT_BACK = "delivery.orders_brought_back";
 /**
  * **Des commandes d'une tournée sont rapportées** — la garde rentre au dépôt
  * (`a-la-porte.md`, B3, LB-Q2). Fait DURABLE depuis le 2026-10-06 (plan
- * `documentation/livraisons/plan-depart-durable.md`, §5, B2).
+ * `documentation/livraisons/livreur/plan-depart-durable.md`, §5, B2).
  *
  * Écrit dans la transaction de la décision « Rapporter », qu'elle vienne du
  * commercial (`BringStopBackHandler`) ou du réglage à la porte

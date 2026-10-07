@@ -1,7 +1,7 @@
 import { DomainError } from "../../../platform/shared/errors/app-error.js";
 
 /**
- * La position relevée au geste (`documentation/livraisons/gps-y-aller-et-position.md`,
+ * La position relevée au geste (`documentation/livraisons/livreur/gps-y-aller-et-position.md`,
  * YA-D4) est incomplète ou impossible. Le téléphone ne l'envoie jamais ainsi :
  * c'est un écran mal fait ou un appel forgé. Le geste est refusé plutôt que
  * d'écrire un point faux — le livreur le refait, la position est facultative.

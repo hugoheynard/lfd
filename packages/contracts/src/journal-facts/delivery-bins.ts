@@ -23,7 +23,7 @@ const spec = (): z.ZodType =>
 
 /**
  * **Le catalogue des bacs et leurs contenances** (2026-09-29,
- * `documentation/livraisons/plan-preparation-de-tournee.md`, lot 4 bis, v2-1).
+ * `documentation/livraisons/tournees/plan-preparation-de-tournee.md`, lot 4 bis, v2-1).
  *
  * Même famille que la flotte (« commandes et production »). Le sujet est le
  * type de bac, son libellé son nom ; une contenance porte le SKU (opaque) et

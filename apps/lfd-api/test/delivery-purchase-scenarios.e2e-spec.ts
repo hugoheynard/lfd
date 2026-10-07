@@ -1,5 +1,5 @@
 /**
- * E2E des **scénarios d'achat** (`documentation/livraisons/plan-bibliotheque-d-achat.md`,
+ * E2E des **scénarios d'achat** (`documentation/livraisons/chargement/plan-bibliotheque-d-achat.md`,
  * B-D5, lot B3).
  *
  * Ce que seul l'e2e prouve : l'aller-retour du `jsonb` revalidé, l'index

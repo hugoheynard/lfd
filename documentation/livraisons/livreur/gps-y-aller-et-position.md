@@ -445,7 +445,7 @@ le trajet.
   « Planifier » : non bâti, même raison.
 - **Faire valider** par un juriste ou un DPO : finalité, proportionnalité,
   60 jours, information des représentants du personnel
-  ([`../legal/rgpd-livreur.md`](../legal/rgpd-livreur.md) §5).
+  ([`../../legal/rgpd-livreur.md`](../../legal/rgpd-livreur.md) §5).
 - **Annoncer la navigation tierce** dans la politique de confidentialité avant
   la mise en service (YA-Q4).
 - **Mesurer `MAX_WAYPOINTS`** sur l'iPhone du livreur (application Google Maps

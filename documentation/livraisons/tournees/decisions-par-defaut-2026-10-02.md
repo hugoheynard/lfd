@@ -21,7 +21,7 @@
 > retrait. Depuis K2b et K3, le poste ouvre des **contenants** (bacs en
 > livraison, sacs en retrait) et y répartit les lignes, ou applique
 > « Proposer » d'un coup ; un contenant s'annule, un autre s'ouvre. L'état du
-> poste est dans [`../colisage/colisage.md`](../colisage/colisage.md) (§ 4.2
+> poste est dans [`../../colisage/colisage.md`](../../colisage/colisage.md) (§ 4.2
 > les contenants, § 4.4 « Proposer », § 6 l'écran). Q3 reste vraie : une
 > moitié de bac voisin se partage au poste (« Partager une moitié »).
 >
@@ -48,7 +48,7 @@
 | Q3  | Le demi-bac partagé : au poste ?       | **Au poste**, inchangé.                                                                       | rien                                                                                                      |
 | Q4  | Changer M en L                         | **« − » puis « + »** : nouvelle étiquette ; pas de geste qui garde le QR.                     | lot PC1 — bâti 2026-10-02 (rien de neuf) ; depuis K3c : « Annuler » le contenant, puis « Nouveau bac »    |
 
-## 2. Le parcours du coliseur ([`../colisage/parcours-du-coliseur.md`](../colisage/parcours-du-coliseur.md))
+## 2. Le parcours du coliseur ([`../../colisage/parcours-du-coliseur.md`](../../colisage/parcours-du-coliseur.md))
 
 | #   | Question                                        | Décision par défaut                                                                                                                                        | Bâti                                                                                                                                                                                                                      |
 | --- | ----------------------------------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
@@ -61,7 +61,7 @@
 | 7   | Le coliseur voit-il l'avancement par tournée ?  | **Oui** : en tête de chaque tournée au poste, « n commandes prêtes sur m ».                                                                                | lot PC2 — bâti 2026-10-02                                                                                                                                                                                                 |
 | 8   | Prévenu d'un bac « à refaire » ?                | **Oui, au poste** : badge « À refaire » sur la commande, avec la sortie (annuler et recoliser). Pas de notification.                                       | lot PC2 — bâti 2026-10-02                                                                                                                                                                                                 |
 
-## 3. Le parcours du livreur ([`parcours-du-livreur.md`](parcours-du-livreur.md))
+## 3. Le parcours du livreur ([`parcours-du-livreur.md`](../livreur/parcours-du-livreur.md))
 
 | Étape | Question                   | Décision par défaut                                                                                              | Bâti |
 | ----- | -------------------------- | ---------------------------------------------------------------------------------------------------------------- | ---- |
@@ -84,7 +84,7 @@
 | **PC3** | Étiquette du bac : tournée et rang d'arrêt en gros — **bâti 2026-10-02** (`507564e72`), toujours en place                                                                                                                       |
 | **RL1** | Composer les tournées : une commande rapportée réapparaît, badge « Rapportée le … » — **bâti 2026-10-02** (`69e4c04f6`, suites `bf2f719e8` et `cb60810b0`)                                                                      |
 
-## 6. Les piles au sol — lot G5 ([`plan-geometrie-du-plancher.md`](plan-geometrie-du-plancher.md), G-D4)
+## 6. Les piles au sol — lot G5 ([`plan-geometrie-du-plancher.md`](../chargement/plan-geometrie-du-plancher.md), G-D4)
 
 | #   | Question                                                           | Décision par défaut                                                                                                                                                                                                                                                                                                                                                                                                                                                           | Bâti                     |
 | --- | ------------------------------------------------------------------ | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ------------------------ |

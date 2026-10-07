@@ -20,14 +20,14 @@ type DayQuery = z.infer<typeof dayQuerySchema>;
 
 /**
  * **Le colisage proposé** d'une commande livrée
- * (`documentation/livraisons/plan-preparation-de-tournee.md`, lot 4 bis,
+ * (`documentation/livraisons/tournees/plan-preparation-de-tournee.md`, lot 4 bis,
  * L4b-C4, tranche C) — `GET admin/livraison/colisage/proposition?commande=`.
  *
  * Sous `delivery_loading`, comme la déclaration qu'elle précède : qui peut
  * déclarer des bacs peut lire ce qu'on lui propose. Une LECTURE, jamais
  * imposée. Il n'injecte que le bus des requêtes.
  *
- * 🔴 La porte s'ouvre AUSSI au colisage (2026-10-01, `documentation/livraisons/plan-droits-par-geste.md`,
+ * 🔴 La porte s'ouvre AUSSI au colisage (2026-10-01, `documentation/livraisons/droits/plan-droits-par-geste.md`,
  * 5.3) : chaque route exige `production_packing:write` OU
  * `delivery_loading:write` — lectures comprises, comme le plan l'écrit : le
  * panneau est un geste d'écriture, et qui ne fait que lire le colisage

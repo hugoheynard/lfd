@@ -1,7 +1,7 @@
 /**
  * E2E de **la bascule des droits par geste** —
  * `20261001130200_la_bascule_des_droits_par_geste`, rejouée
- * (`documentation/livraisons/plan-droits-par-geste.md`, DG-D4 corrigé par
+ * (`documentation/livraisons/droits/plan-droits-par-geste.md`, DG-D4 corrigé par
  * 5.1 bis et 5.3).
  *
  * Ce qu'elle doit tenir, et que ce test éprouve sur le vrai Postgres :

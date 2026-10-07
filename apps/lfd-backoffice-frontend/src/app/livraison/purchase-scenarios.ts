@@ -7,7 +7,7 @@ import type {
 
 /**
  * Les dérivations pures des **scénarios d'achat**
- * (`documentation/livraisons/plan-bibliotheque-d-achat.md`, B-D5) : de quoi
+ * (`documentation/livraisons/chargement/plan-bibliotheque-d-achat.md`, B-D5) : de quoi
  * remettre une sélection enregistrée dans les cases du tableau.
  */
 

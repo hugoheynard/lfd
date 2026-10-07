@@ -1,5 +1,5 @@
 /**
- * E2E **une commande rapportée repart** (`documentation/livraisons/decisions-par-defaut-2026-10-02.md`,
+ * E2E **une commande rapportée repart** (`documentation/livraisons/tournees/decisions-par-defaut-2026-10-02.md`,
  * § 4, lot RL1 ; `a-la-porte.md`, B3, LB-Q2).
  *
  * Ce que seule cette suite prouve, sur la vraie base :

@@ -1,7 +1,7 @@
 /**
  * E2E du **chargement d'un véhicule** — dimensions utiles, caisse réfrigérée
  * et énergie
- * (`documentation/livraisons/plan-preparation-de-tournee.md`, lot 2 bis).
+ * (`documentation/livraisons/tournees/plan-preparation-de-tournee.md`, lot 2 bis).
  *
  * Ce que seul l'e2e prouve : l'aller-retour par les six colonnes, le volume
  * dérivé à la lecture, la charge du journal relue en base, et les quatre CHECK

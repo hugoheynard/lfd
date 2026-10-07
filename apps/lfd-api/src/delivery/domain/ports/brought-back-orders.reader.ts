@@ -6,7 +6,7 @@ export interface BroughtBackOrderRow {
 
 /**
  * Port de **lecture** des commandes RAPPORTÉES
- * (`documentation/livraisons/decisions-par-defaut-2026-10-02.md`, § 4, lot
+ * (`documentation/livraisons/tournees/decisions-par-defaut-2026-10-02.md`, § 4, lot
  * RL1) — un port à part de `DeliveryRoundsReader` (ISP) : la composition du
  * jour, l'affectation et le chronométrage le lisent, la feuille de route non.
  *

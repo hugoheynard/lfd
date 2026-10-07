@@ -346,10 +346,10 @@ clôture, là où la production est en forme de **jour**.
 Depuis le 2026-10-01, il implémente aussi `delivery/channels/handover/` — ce
 que la livraison lui demande au départ d'une tournée (« lesquelles sont
 retenues ? », « elles sont parties ») : la garde passe au livreur, et c'est le
-retrait qui tient la garde (`documentation/livraisons/a-la-porte.md`, BQ).
+retrait qui tient la garde (`documentation/livraisons/livreur/a-la-porte.md`, BQ).
 
 🔴 **`delivery` écoute la clôture du fournil par un canal** (2026-10-04,
-Hugo, option B — `documentation/livraisons/composition-automatique.md`,
+Hugo, option B — `documentation/livraisons/tournees/composition-automatique.md`,
 §2.2). La matrice interdisait `production ↔ delivery` dans les deux sens, au
 temps où les domaines s'appelaient en direct. Une arête **à sens unique, sur un
 fait**, ne couple pas de la même façon : la livraison s'abonne à
@@ -443,7 +443,7 @@ Règles non négociables :
   `ROLE_GRANTS` n'est qu'une graine (base vierge, dev, e2e), plus une source :
   le runtime ne la lit pas. Seule exception, datée : la bascule des droits par
   geste (`20261001130200`, plan
-  [`documentation/livraisons/plan-droits-par-geste.md`](documentation/livraisons/plan-droits-par-geste.md)).
+  [`documentation/livraisons/droits/plan-droits-par-geste.md`](documentation/livraisons/droits/plan-droits-par-geste.md)).
   `lint:no-role-grants-in-migrations` le tient.
 - **L'environnement se lit uniquement via `AppConfig`** (`src/platform/config/`) —
   interdiction ESLint de `process.env` partout ailleurs, allowlist explicite.

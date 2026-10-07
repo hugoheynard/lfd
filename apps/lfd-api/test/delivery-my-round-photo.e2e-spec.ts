@@ -1,6 +1,6 @@
 /**
  * E2E de la **photo d'une étape, ouverte par le livreur**
- * (`documentation/livraisons/plan-ma-tournee.md`, MT-D5 v2) — sur un vrai
+ * (`documentation/livraisons/livreur/plan-ma-tournee.md`, MT-D5 v2) — sur un vrai
  * Postgres et un vrai MinIO.
  *
  * Ce que seuls le vrai SQL et le vrai stockage prouvent : que la photo

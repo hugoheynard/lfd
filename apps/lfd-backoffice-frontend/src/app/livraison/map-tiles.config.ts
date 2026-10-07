@@ -5,7 +5,7 @@ import type { MapTilesConfig } from './map-tiles.model';
 
 /**
  * D'où la carte de l'écran « Planifier » lit ses tuiles
- * (`documentation/livraisons/plan-preparation-de-tournee.md`, L10b-C6,
+ * (`documentation/livraisons/tournees/plan-preparation-de-tournee.md`, L10b-C6,
  * L10t-C4) — version **PRODUCTION**.
  *
  * Remplacée en développement par `map-tiles.config.dev.ts` (`fileReplacements`

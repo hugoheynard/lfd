@@ -13,7 +13,7 @@ import {
 
 /**
  * **La décision réglée d'avance à la porte, par adresse**
- * (`documentation/livraisons/a-la-porte.md`, B3 bis, LB-Q6) — le
+ * (`documentation/livraisons/livreur/a-la-porte.md`, B3 bis, LB-Q6) — le
  * commercial la redéfinit, ou la rend au réglage global (`null`).
  */
 function build() {

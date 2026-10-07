@@ -2,7 +2,7 @@ name: deploy_lfd_route_planner
 
 # Déploie `lfd-route-planner` — le calcul d'itinéraires routiers de la Savoie — sur
 # Cloudflare Containers (plan de tournée, lot 8, forme B-ter :
-# documentation/livraisons/plan-preparation-de-tournee.md, L8-C10/C11).
+# documentation/livraisons/tournees/plan-preparation-de-tournee.md, L8-C10/C11).
 #
 # L'IMAGE EST LA CARTE. Chaque exécution télécharge l'extrait OpenStreetMap du
 # jour, découpe la Savoie, prépare le graphe, le vérifie, et le met dans

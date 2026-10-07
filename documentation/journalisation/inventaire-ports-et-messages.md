@@ -48,7 +48,7 @@ clôture, il fige son plan dans sa propre transaction.
 
 **Arête ouverte, sans abonné encore** : `production/channels/delivery/`
 publie `production.day_closed` pour la livraison (2026-10-04, option B ;
-CA6 révisé, `livraisons/composition-automatique.md` §2.2).
+CA6 révisé, `livraisons/tournees/composition-automatique.md` §2.2).
 
 ## 3. Les messages encore en mémoire
 

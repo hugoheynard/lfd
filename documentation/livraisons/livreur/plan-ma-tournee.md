@@ -12,7 +12,7 @@
 > `delivery_driving` ; `lint:no-role-grants-in-migrations`). Le rôle `livreur`
 > n'a pas de valeur `StaffRole` : il se crée **à l'écran** avec
 > `delivery_driving` (et `delivery_doorstep`), cf.
-> [`plan-droits-par-geste.md`](plan-droits-par-geste.md). Les sections 2, 4 et
+> [`plan-droits-par-geste.md`](../droits/plan-droits-par-geste.md). Les sections 2, 4 et
 > 6 restent le texte d'origine, annotées là où le code a changé.
 
 > 📜 **Relu contre le code le 2026-10-07** (audit du dossier `livraisons/` du

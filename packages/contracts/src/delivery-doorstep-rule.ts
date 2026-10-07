@@ -2,7 +2,7 @@ import { z } from "zod";
 
 /**
  * **La décision réglée d'avance** sur un problème à la porte
- * (`documentation/livraisons/a-la-porte.md`, § 10 ter, LB-Q6 tranché par
+ * (`documentation/livraisons/livreur/a-la-porte.md`, § 10 ter, LB-Q6 tranché par
  * Hugo le 2026-10-01 : « global, overridable », « par adresse »).
  *
  * Quand le livreur signale « personne », « refus » ou « accès impossible »,

@@ -1,6 +1,6 @@
 /**
  * E2E **les corrections du carnet suggérées au bureau**
- * (`documentation/livraisons/gps-y-aller-et-position.md`, §6).
+ * (`documentation/livraisons/livreur/gps-y-aller-et-position.md`, §6).
  *
  * Ce que seul le vrai SQL prouve :
  * - les positions relevées au geste, rattachées à leur adresse du carnet par

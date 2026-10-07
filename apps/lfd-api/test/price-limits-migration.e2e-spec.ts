@@ -29,7 +29,7 @@ const GRANTS_MIGRATION = join(
 
 /**
  * Ce que la migration accordait, FIGÉ ici le 2026-10-01
- * (`documentation/livraisons/plan-droits-par-geste.md`, 5.6) : `ROLE_GRANTS`
+ * (`documentation/livraisons/droits/plan-droits-par-geste.md`, 5.6) : `ROLE_GRANTS`
  * n'est plus qu'une graine, et comparer une migration appliquée à la graine
  * interdirait de faire évoluer celle-ci.
  */

@@ -4,7 +4,7 @@
 > borne les piles depuis le 2026-10-06). Ce document décrit ce que
 > fait `planLoading` aujourd'hui, ses arbitrages et ses limites. Les
 > décisions qui l'ont façonné vivent dans leurs plans :
-> [`plan-preparation-de-tournee.md`](plan-preparation-de-tournee.md) (ordre,
+> [`plan-preparation-de-tournee.md`](../tournees/plan-preparation-de-tournee.md) (ordre,
 > volume, v2-4 et v2-5) et
 > [`plan-geometrie-du-plancher.md`](plan-geometrie-du-plancher.md) (G5, G-D4,
 > G-D4 ter).
@@ -173,7 +173,7 @@ de piles, puisque les deux plans n'ont pas les mêmes piles.
 
 - **Il ne réordonne jamais** les piles pour mieux remplir une rangée.
 - **Il ne mélange jamais deux types de bac** dans une pile : à réfléchir,
-  noté dans [`todo-calculateur.md`](todo-calculateur.md).
+  noté dans [`todo-calculateur.md`](../tournees/todo-calculateur.md).
 - **Il n'optimise pas** : la pose est gloutonne, dans l'ordre. Une rangée peut
   garder un trou qu'une autre pile aurait comblé.
 - **Il ne pèse pas** la place gagnée contre les bacs à manipuler (cf. §2).

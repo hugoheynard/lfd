@@ -9,7 +9,7 @@ import { gesturePositionOf } from "../doorstep-support.js";
 import { DepositStopCommand } from "./deposit-stop.command.js";
 
 /**
- * **« Déposé avec preuve »** (`documentation/livraisons/a-la-porte.md`,
+ * **« Déposé avec preuve »** (`documentation/livraisons/livreur/a-la-porte.md`,
  * B2, AP-Q5, AP-Q6, AP-D5, AP-D8).
  *
  * Mêmes effets qu'une remise (AP-Q5, Hugo) : le retrait atteste `deposit`, la

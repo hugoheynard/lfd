@@ -13,7 +13,7 @@ const HOUR = 3600;
  * de processeur sur un poste et 2,06 s sur la machine de la CI (×3,7) : la
  * borne tombait au hasard du runner. La promesse reste 2 s ; le travail
  * d'algorithme qui la tiendra est noté dans
- * `documentation/livraisons/todo-calculateur.md`, et le banc à 200 clients
+ * `documentation/livraisons/tournees/todo-calculateur.md`, et le banc à 200 clients
  * mesurera le temps du conteneur, le seul qui compte.
  */
 const BUDGET_MS = 3000;

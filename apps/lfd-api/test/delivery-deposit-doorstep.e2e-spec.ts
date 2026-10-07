@@ -1,5 +1,5 @@
 /**
- * E2E **« Déposé avec preuve »** (`documentation/livraisons/a-la-porte.md`,
+ * E2E **« Déposé avec preuve »** (`documentation/livraisons/livreur/a-la-porte.md`,
  * B2, AP-Q5, AP-Q6, AP-D5, AP-D8).
  *
  * Ce que seule cette suite prouve : la permission se lit sur l'exécution FIGÉE

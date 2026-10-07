@@ -7,14 +7,14 @@
 
 ## 1. En production
 
-| Sujet                                                                                           | Lots                 | Plan                                            |
-| ----------------------------------------------------------------------------------------------- | -------------------- | ----------------------------------------------- |
-| Créneau ou échéance, plusieurs créneaux par adresse                                             | CA3, CA3b            | `livraisons/composition-automatique.md` §4      |
-| La boîte d'envoi                                                                                | BE1, BE2             | `journalisation/plan-boite-d-envoi.md`          |
-| Clôture, colisage, retrait en faits durables                                                    | E1, E2               | `journalisation/plan-evenements-durables.md`    |
-| Le colisage, son domaine — **bâti** (K3 commité le 2026-10-05, son déploiement non vérifié ici) | K1, K2, K2b, K3a–K3c | `colisage/colisage.md` (les plans sont retirés) |
-| Les marges et le compte à rebours                                                               | V0                   | `production/plan-production-par-vagues.md`      |
-| Le colisage au premier niveau du rail                                                           | P0                   | `colisage/colisage.md` §6                       |
+| Sujet                                                                                           | Lots                 | Plan                                                |
+| ----------------------------------------------------------------------------------------------- | -------------------- | --------------------------------------------------- |
+| Créneau ou échéance, plusieurs créneaux par adresse                                             | CA3, CA3b            | `livraisons/tournees/composition-automatique.md` §4 |
+| La boîte d'envoi                                                                                | BE1, BE2             | `journalisation/plan-boite-d-envoi.md`              |
+| Clôture, colisage, retrait en faits durables                                                    | E1, E2               | `journalisation/plan-evenements-durables.md`        |
+| Le colisage, son domaine — **bâti** (K3 commité le 2026-10-05, son déploiement non vérifié ici) | K1, K2, K2b, K3a–K3c | `colisage/colisage.md` (les plans sont retirés)     |
+| Les marges et le compte à rebours                                                               | V0                   | `production/plan-production-par-vagues.md`          |
+| Le colisage au premier niveau du rail                                                           | P0                   | `colisage/colisage.md` §6                           |
 
 ## 2. En cours
 
@@ -44,7 +44,7 @@ clôture ──► colisage (K1/K2 ✅) ──► bacs (K2b ✅, K3 ✅) ──�
 
 ## 4. Écrit ou décidé, en attente
 
-**Le prochain chantier** — plan [`livraisons/plan-hors-ligne-eta-et-livraisons-ratees.md`](livraisons/plan-hors-ligne-eta-et-livraisons-ratees.md) (2026-10-07, `vitruve` passé, Hugo à trancher) :
+**Le prochain chantier** — plan [`livraisons/livreur/plan-hors-ligne-eta-et-livraisons-ratees.md`](livraisons/livreur/plan-hors-ligne-eta-et-livraisons-ratees.md) (2026-10-07, `vitruve` passé, Hugo à trancher) :
 
 | Sujet                                                               | Lots                           | Ordre proposé |
 | ------------------------------------------------------------------- | ------------------------------ | ------------- |

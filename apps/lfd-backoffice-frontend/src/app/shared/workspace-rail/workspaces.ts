@@ -132,7 +132,7 @@ export const COMMERCIAL_VIEWS: readonly CommercialView[] = [
  * `/production/journee` y redirige, et `/production` ouvre le prévisionnel.
  * Les paragraphes ci-dessus parlent d'elle au passé de ce jour.
  *
- * Chaque vue porte son `needs` depuis le 2026-10-01 (`documentation/livraisons/plan-droits-par-geste.md`,
+ * Chaque vue porte son `needs` depuis le 2026-10-01 (`documentation/livraisons/droits/plan-droits-par-geste.md`,
  * DG-D1) : le prévisionnel est le plan du soir, la fournée la fiche d'atelier. La coquille n'est plus gardée — comme la Livraison —,
  * parce qu'un garde commun fermerait une vue à qui ne tient que l'autre.
  */
@@ -156,7 +156,7 @@ export const PRODUCTION_VIEWS: readonly WorkspaceView[] = [
 
 /**
  * Les vues de la **Livraison** — l'exploitation : ce qui part, avec quoi, et
- * d'où (`documentation/livraisons/plan-preparation-de-tournee.md`, lot 2).
+ * d'où (`documentation/livraisons/tournees/plan-preparation-de-tournee.md`, lot 2).
  *
  * Chaque vue porte son droit, et c'est ici obligatoire, pas une précaution :
  * la coquille n'est pas gardée, parce que la feuille de route, les tournées, le
@@ -306,7 +306,7 @@ export function isExploitationUrl(url: string): boolean {
  * même `comptes-clients/:id/nouvelle-commande` que le Commercial — deux saisies
  * divergeraient au premier changement de règle.
  *
- * Chaque vue porte son `needs` depuis le 2026-10-01 (`documentation/livraisons/plan-droits-par-geste.md`) :
+ * Chaque vue porte son `needs` depuis le 2026-10-01 (`documentation/livraisons/droits/plan-droits-par-geste.md`) :
  * la file de retrait demande `handover_counter:read` ; la commande pro exige
  * de lire les clients du comptoir ET de passer une commande
  * (`b2b_place_order:write`) — les deux gardes de sa route. Sans eux, un poste

@@ -164,7 +164,7 @@ import {
  * bacs, leur chargement et le départ (lot 4), puis le calculateur de tournée
  * (lot 7), par la route (lot 8), « Chronométrer » (lot 10 bis), et le
  * catalogue des bacs avec leurs contenances (lot 4 bis, tranche A)
- * (`documentation/livraisons/plan-preparation-de-tournee.md`). Code ici, tables
+ * (`documentation/livraisons/tournees/plan-preparation-de-tournee.md`). Code ici, tables
  * dans le schéma `delivery` depuis le 2026-09-30 (`plan-schema-delivery.md`,
  * qui revient sur Q10).
  *

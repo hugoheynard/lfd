@@ -1,6 +1,6 @@
 /**
  * E2E de **la version de journée de la livraison** —
- * `documentation/livraisons/plan-schema-delivery.md`, SD-D3, sur le vrai
+ * `documentation/livraisons/architecture/plan-schema-delivery.md`, SD-D3, sur le vrai
  * Postgres jetable.
  *
  * Ce que seule la base migrée peut dire : une tournée fait avancer le journal

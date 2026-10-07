@@ -47,7 +47,7 @@ const bin = (): z.ZodType =>
 
 /**
  * **La bibliothèque d'achat** (2026-09-30,
- * `documentation/livraisons/plan-bibliotheque-d-achat.md`, lot B1).
+ * `documentation/livraisons/chargement/plan-bibliotheque-d-achat.md`, lot B1).
  *
  * Même famille que la flotte et les bacs (« commandes et production »). Le
  * sujet est le candidat, son libellé son nom. Le prix HT y figure parce qu'il

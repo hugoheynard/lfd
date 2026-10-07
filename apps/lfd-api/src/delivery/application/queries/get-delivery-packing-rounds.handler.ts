@@ -9,7 +9,7 @@ import { GetDeliveryPackingRoundsQuery } from "./get-delivery-packing-rounds.que
 
 /**
  * **Où vont les commandes du poste de colisage**
- * (`documentation/livraisons/decisions-par-defaut-2026-10-02.md`, lot PC2) :
+ * (`documentation/livraisons/tournees/decisions-par-defaut-2026-10-02.md`, lot PC2) :
  * pour chaque tournée du jour, ses arrêts du dernier au premier, combien sont
  * prêts, et lesquels portent un bac partagé à refaire.
  *

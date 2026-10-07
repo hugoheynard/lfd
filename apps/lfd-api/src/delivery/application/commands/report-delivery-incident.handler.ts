@@ -26,7 +26,7 @@ import { ReportDeliveryIncidentCommand } from "./report-delivery-incident.comman
 const logger = new Logger("ReportDeliveryIncident");
 
 /**
- * **« Déclarer un problème »** (`documentation/livraisons/a-la-porte.md`,
+ * **« Déclarer un problème »** (`documentation/livraisons/livreur/a-la-porte.md`,
  * § 3, AP-Q4) — un fait daté, qui ne clôt rien et ne touche pas la commande.
  *
  * La tournée est lue SOUS LE MUR du livreur (le `roundOf` de sa page). Le

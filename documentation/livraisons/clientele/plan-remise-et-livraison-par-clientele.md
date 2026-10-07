@@ -29,9 +29,9 @@
 >
 > Le §1 est l'état d'**avant** le chantier, et n'est plus tenu à jour.
 >
-> Lu avant : [`espace-de-travail.md`](../b2b/comptes-client/espace-de-travail.md) (l'espace
+> Lu avant : [`espace-de-travail.md`](../../b2b/comptes-client/espace-de-travail.md) (l'espace
 > perso ou pro, bâti le même jour) et
-> [`analyse-boutique-publique.md`](../b2b/analyse-boutique-publique.md), dont ce plan
+> [`analyse-boutique-publique.md`](../../b2b/analyse-boutique-publique.md), dont ce plan
 > **remplace** deux propositions (§2, D8).
 
 ## 0. La demande
@@ -325,7 +325,7 @@ boutique » en trois langues.
 seulement** (Hugo, 2026-09-15). Un pro en cours de validation voit les règles B2C
 jusqu'à l'activation de son dossier. Une dérogation pour la livraison est
 demandée, non bâtie :
-[`todo-livraison-accordee-avant-activation.md`](./todo-livraison-accordee-avant-activation.md).
+[`todo-livraison-accordee-avant-activation.md`](todo-livraison-accordee-avant-activation.md).
 
 **Q4 — Tranchée et bâtie le 2026-10-07 (Hugo : « pas si la livraison publique
 est fermée »)** : `POST /orders` refuse la livraison d'un particulier connecté

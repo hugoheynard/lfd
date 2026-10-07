@@ -16,7 +16,7 @@ import { GetMyLoadingPlanQuery } from "../application/queries/get-my-loading-pla
 import { GetMyLoadingRoundQuery } from "../application/queries/get-my-loading-round.query.js";
 
 /**
- * **Charger depuis « Ma tournée »** (`documentation/livraisons/parcours-du-livreur.md`,
+ * **Charger depuis « Ma tournée »** (`documentation/livraisons/livreur/parcours-du-livreur.md`,
  * PL1) — le scan et le plan de chargement de SA tournée.
  *
  * Sous `delivery_driving` (lire : `read`, charger et décharger : `write`), le

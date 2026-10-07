@@ -1,5 +1,5 @@
 /**
- * E2E du **simulateur de tournée** (`documentation/livraisons/plan-preparation-de-tournee.md`,
+ * E2E du **simulateur de tournée** (`documentation/livraisons/tournees/plan-preparation-de-tournee.md`,
  * lot 9, L9-C1 à L9-C5) : une LECTURE sous `delivery_rounds:read`, sur des
  * arrêts inventés. Rien n'est écrit, rien n'est géocodé.
  */

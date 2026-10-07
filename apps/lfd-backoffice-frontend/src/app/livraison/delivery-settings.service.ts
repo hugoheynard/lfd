@@ -10,7 +10,7 @@ const DEPARTURE = `${B2B_API_BASE}/admin/livraison/depart`;
 
 /**
  * **Les bases paramétrables de la livraison** — la flotte et le point de
- * départ des tournées (`documentation/livraisons/plan-preparation-de-tournee.md`,
+ * départ des tournées (`documentation/livraisons/tournees/plan-preparation-de-tournee.md`,
  * lot 2), sous `delivery_settings`.
  *
  * Aucun état : chaque écran relit après une écriture. Les refus du serveur

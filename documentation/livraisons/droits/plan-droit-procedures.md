@@ -11,7 +11,7 @@
 >
 > Frontière de sécurité qui se déplace : **`vitruve` avant de bâtir**.
 > Se bâtit **après** la route photo du livreur
-> ([`plan-ma-tournee.md`](plan-ma-tournee.md)), qui touche le même chemin de
+> ([`plan-ma-tournee.md`](../livreur/plan-ma-tournee.md)), qui touche le même chemin de
 > lecture.
 
 ## 1. Aujourd'hui (relevé le 2026-10-01)

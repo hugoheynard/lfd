@@ -15,7 +15,7 @@ import { localNowOf } from "../rounds-gap-support.js";
 import { GetDeliveryDayReadinessQuery } from "./get-delivery-day-readiness.query.js";
 
 /**
- * **Le plan de ce jour est-il arrêté ?** (`documentation/livraisons/composition-automatique.md`,
+ * **Le plan de ce jour est-il arrêté ?** (`documentation/livraisons/tournees/composition-automatique.md`,
  * §4, S5) — ce que l'abonné à la clôture a rangé, et le socle de la
  * composition lu maintenant (CA-D3) : un véhicule mesuré depuis la cloche
  * ne laisse pas l'alerte à l'écran.

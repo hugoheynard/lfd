@@ -18,7 +18,7 @@ export interface RoundPlace {
 
 /**
  * **La place d'une tournée déjà composée** (2026-10-07,
- * `documentation/livraisons/inserer-avant-le-depart.md`) : la MÊME garde que
+ * `documentation/livraisons/tournees/inserer-avant-le-depart.md`) : la MÊME garde que
  * « Proposer » (CA4), appliquée à ce qui est enregistré. Elle sert à AVERTIR
  * après une affectation à la main, jamais à la refuser : un geste humain peut
  * savoir mieux que le calcul.

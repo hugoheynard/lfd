@@ -23,7 +23,7 @@ au cache part à la Base Adresse Nationale. Il suffit pour cela que la clé
 éteint (`DisabledGeocoder`, `delivery.module.ts:321-328`).
 
 - **Publier le paragraphe « géocodage » maintenant.** Le texte du dépôt
-  ([`../legal/texte-politique-de-confidentialite.md`](../legal/texte-politique-de-confidentialite.md))
+  ([`../../legal/texte-politique-de-confidentialite.md`](../../legal/texte-politique-de-confidentialite.md))
   le porte depuis le lot 7, encore à l'état de projet (un `[À VÉRIFIER]` sur
   l'opérateur du service). La page que lisent les clients **vit en base**
   (document légal `privacy`) et ne change que par le back-office : tant
@@ -61,7 +61,7 @@ au cache part à la Base Adresse Nationale. Il suffit pour cela que la clé
   `purge-stale-geocodes.handler.ts` et `prisma-geocode-cache.pruner.ts`. Le
   balayage ne part que si le Worker porte `RECOMPUTE_TOKEN`
   (`apps/lfd-api/container/worker.ts:299-303`). Détail :
-  [`../legal/rgpd-purge-du-geocodage.md`](../legal/rgpd-purge-du-geocodage.md).
+  [`../../legal/rgpd-purge-du-geocodage.md`](../../legal/rgpd-purge-du-geocodage.md).
 - **Les adresses de type « place »** répondent souvent sous le seuil de score
   (0,489 pour une place de Chambéry, seuil 0,5) : elles restent « non
   situées ». Le remède est le point GPS saisi dans le carnet, pas un seuil
@@ -141,7 +141,7 @@ commande aux bacs inconnus est placée sans contrôle et sa tournée dite
 
 Aujourd'hui une pile ne porte qu'**un seul type** de bac : un bac va sur la
 dernière pile ouverte de SON type (`Stacker.stackFor`, par `binType.id`),
-sinon il en ouvre une ([`algorithme-de-chargement.md`](algorithme-de-chargement.md), §3.2).
+sinon il en ouvre une ([`algorithme-de-chargement.md`](../chargement/algorithme-de-chargement.md), §3.2).
 Les raisons : deux bacs du même modèle s'emboîtent, ont la même empreinte, et
 `maxStack` est propre à chaque type.
 

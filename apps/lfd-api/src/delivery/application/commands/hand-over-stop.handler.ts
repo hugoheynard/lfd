@@ -9,7 +9,7 @@ import { gesturePositionOf } from "../doorstep-support.js";
 import { HandOverStopCommand } from "./hand-over-stop.command.js";
 
 /**
- * **« Remis au client »** (`documentation/livraisons/a-la-porte.md`, B1,
+ * **« Remis au client »** (`documentation/livraisons/livreur/a-la-porte.md`, B1,
  * § 9, § 10 bis, AP-D1, AP-D6, L6-C7).
  *
  * Ce qui est PROPRE à la remise : les pièces (photo, nom de 2 à 80, images

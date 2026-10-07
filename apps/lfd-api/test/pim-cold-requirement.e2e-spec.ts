@@ -3,7 +3,7 @@ import { bootstrapE2e, jsonBody, type E2eContext } from "./e2e-harness.js";
 
 /**
  * **La case « demande le froid » de la fiche** (lot 4 bis du plan
- * `documentation/livraisons/plan-preparation-de-tournee.md`, v2-2).
+ * `documentation/livraisons/tournees/plan-preparation-de-tournee.md`, v2-2).
  *
  * Ce que seul ce niveau prouve : la route écrit la vraie colonne, la trace part
  * dans la même écriture, la fiche la rend à l'écran — et le mur d'accès du

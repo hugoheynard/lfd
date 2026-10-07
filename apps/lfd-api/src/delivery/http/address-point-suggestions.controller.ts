@@ -14,7 +14,7 @@ import { IgnoreAddressPointSuggestionCommand } from "../application/commands/ign
 import { GetAddressPointSuggestionsQuery } from "../application/queries/get-address-point-suggestions.query.js";
 
 /**
- * **« Carnet à corriger »** (`documentation/livraisons/gps-y-aller-et-position.md`,
+ * **« Carnet à corriger »** (`documentation/livraisons/livreur/gps-y-aller-et-position.md`,
  * §6) — les portes et les stationnements que les livraisons suggèrent.
  *
  * Sous `delivery_rounds`, et **en écriture même pour lire** : ce qui sort est

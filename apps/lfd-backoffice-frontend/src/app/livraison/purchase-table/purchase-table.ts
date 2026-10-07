@@ -57,7 +57,7 @@ interface Choices {
 
 /**
  * **Le tableau croisé** de la bibliothèque d'achat
- * (`documentation/livraisons/plan-bibliotheque-d-achat.md`, B-D4, lot B5) :
+ * (`documentation/livraisons/chargement/plan-bibliotheque-d-achat.md`, B-D4, lot B5) :
  * des véhicules (candidats, ou de la flotte avec leur espace utile) × des
  * formats (candidats, ou types en service), dix de chaque au plus.
  *

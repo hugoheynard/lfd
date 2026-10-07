@@ -11,7 +11,7 @@
 > `planLoading` rend la place de chaque pile et l'alerte `floor_over`, le
 > contrat porte `floor` et `stacks[].placement`. Six points de G5 ont été
 > tranchés par défaut, **à revoir** :
-> [`decisions-par-defaut-2026-10-02.md` § 6](decisions-par-defaut-2026-10-02.md)
+> [`decisions-par-defaut-2026-10-02.md` § 6](../tournees/decisions-par-defaut-2026-10-02.md)
 > (jeu de 1 cm faute de réglage, pas de pile par-dessus un passage, les piles
 > suivantes sortent avec la première qui ne tient pas…). La hauteur au
 > plafond, laissée hors de G5 (G5e), est **vérifiée depuis le 2026-10-06**
@@ -39,7 +39,7 @@
 >
 > Maquette interactive (hors dépôt) :
 > <https://claude.ai/artifact/66XrmXV9cG42JeDBjgc2ti>. Référence de ce qui
-> existait : [`../colisage/chargement-les-bacs.md`](../colisage/chargement-les-bacs.md), qui listait
+> existait : [`../../colisage/chargement-les-bacs.md`](../../colisage/chargement-les-bacs.md), qui listait
 > alors en premier manque « pas de géométrie du plancher » (§ 9) — rayé depuis
 > G5.
 

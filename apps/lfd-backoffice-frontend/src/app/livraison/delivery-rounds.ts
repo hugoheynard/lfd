@@ -15,7 +15,7 @@ import { parisDayOf } from './run-sheet';
 
 /**
  * Les dérivations pures de la composition des tournées
- * (`documentation/livraisons/plan-preparation-de-tournee.md`, lot 3).
+ * (`documentation/livraisons/tournees/plan-preparation-de-tournee.md`, lot 3).
  *
  * Type-only sur le contrat, comme `run-sheet.ts` : une valeur importée de
  * `@lfd/contracts` tirerait zod dans le paquet de la page.

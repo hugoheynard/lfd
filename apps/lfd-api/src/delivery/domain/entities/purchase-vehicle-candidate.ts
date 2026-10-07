@@ -48,7 +48,7 @@ interface ValidSheet {
 
 /**
  * **Un véhicule candidat** de la bibliothèque d'achat
- * (`documentation/livraisons/plan-bibliotheque-d-achat.md`, B-D1, lot B1) :
+ * (`documentation/livraisons/chargement/plan-bibliotheque-d-achat.md`, B-D1, lot B1) :
  * une camionnette qu'on envisage d'acheter. Ce n'est PAS un `Vehicle` — il n'a
  * ni plaque ni tournée, et vit dans sa propre table, qu'aucune lecture de la
  * flotte ne voit.

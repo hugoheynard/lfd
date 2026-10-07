@@ -13,7 +13,7 @@ import {
 } from "./delivery-settings.js";
 
 /**
- * **La bibliothèque d'achat** (`documentation/livraisons/plan-bibliotheque-d-achat.md`,
+ * **La bibliothèque d'achat** (`documentation/livraisons/chargement/plan-bibliotheque-d-achat.md`,
  * B-D1, lot B1) : des véhicules et des formats de bacs qu'on envisage
  * d'acheter, SÉPARÉS de la flotte et du catalogue des bacs — aucun n'apparaît
  * dans « Planifier », les tournées, le chargement ni le colisage.

@@ -30,7 +30,7 @@ import { ListPurchaseVehicleCandidatesQuery } from "../application/queries/list-
 
 /**
  * **La bibliothèque d'achat, véhicules candidats** — Livraison → Assistant d'achat
- * (`documentation/livraisons/plan-bibliotheque-d-achat.md`, lot B1).
+ * (`documentation/livraisons/chargement/plan-bibliotheque-d-achat.md`, lot B1).
  *
  * Les droits du simulateur (B-D6) : lire sous `delivery_rounds:read`, écrire
  * sous `delivery_rounds:write` — le verbe HTTP dit l'action, et il ne ment sur

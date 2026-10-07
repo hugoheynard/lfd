@@ -58,7 +58,7 @@ interface AssignedStopResponse {
 
 /**
  * **Composer les tournées** — Livraison → Tournées
- * (`documentation/livraisons/plan-preparation-de-tournee.md`, lot 3).
+ * (`documentation/livraisons/tournees/plan-preparation-de-tournee.md`, lot 3).
  *
  * Sous `delivery_rounds` : lecture et écriture pour `admin` et `comptoir`
  * (Q12). Chaque geste est un verbe nommé et porte la version lue ; une

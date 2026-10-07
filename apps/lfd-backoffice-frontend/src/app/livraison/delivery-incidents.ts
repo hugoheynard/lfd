@@ -9,7 +9,7 @@ import type { FoldSelectOption } from 'fold-ng';
 import { parisTimeOf } from './delivery-loading';
 
 /**
- * **Les signalements à la porte, en mots** (`documentation/livraisons/a-la-porte.md`,
+ * **Les signalements à la porte, en mots** (`documentation/livraisons/livreur/a-la-porte.md`,
  * § 3). Les familles et les motifs viennent de la liste FERMÉE du contrat : un
  * motif ajouté au serveur sans libellé ici s'affiche sous son code plutôt que
  * de disparaître.

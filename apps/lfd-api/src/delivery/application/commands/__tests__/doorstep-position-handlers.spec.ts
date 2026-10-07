@@ -12,7 +12,7 @@ import { FixedOrderStates, InMemoryDoorstepStops } from "./doorstep-doubles.js";
 import { deliveryOn, FixedDeliveryOrders, InMemoryDeliveryRounds } from "./round-doubles.js";
 
 /**
- * **La position au geste** (`documentation/livraisons/gps-y-aller-et-position.md`,
+ * **La position au geste** (`documentation/livraisons/livreur/gps-y-aller-et-position.md`,
  * YA-D4) sur l'arrivée et la clôture sans remise — la remise et le dépôt sont
  * éprouvés dans leurs propres suites. Facultative, jamais bloquante ; refusée
  * seulement quand elle est impossible.

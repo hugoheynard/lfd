@@ -15,7 +15,7 @@ import { costLabel, costPerLiterLabel, priceLabel } from './purchase-price';
 
 /**
  * Les dérivations pures du **tableau croisé** de la bibliothèque d'achat
- * (`documentation/livraisons/plan-bibliotheque-d-achat.md`, B-D4, lot B5) :
+ * (`documentation/livraisons/chargement/plan-bibliotheque-d-achat.md`, B-D4, lot B5) :
  * ce qu'on peut choisir, ce qui part, et ce qu'on dessine de la réponse.
  *
  * Le CLASSEMENT n'est pas ici : la meilleure case de chaque ligne vient du

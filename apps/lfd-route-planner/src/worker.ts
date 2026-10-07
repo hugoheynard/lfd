@@ -1,6 +1,6 @@
 // Worker d'entrée de `lfd-route-planner` : le calcul d'itinéraires routiers de la
 // Savoie, dans son propre conteneur (plan de tournée, lot 8, forme B-ter —
-// documentation/livraisons/plan-preparation-de-tournee.md, L8-C10/C11).
+// documentation/livraisons/tournees/plan-preparation-de-tournee.md, L8-C10/C11).
 //
 // POURQUOI un Worker à part, et pas un second conteneur dans `lfd-api` : la
 // carte se refait chaque mois, et elle doit pouvoir le faire sans repasser par

@@ -1,6 +1,6 @@
 /**
  * E2E du **tableau croisé** de la bibliothèque d'achat
- * (`documentation/livraisons/plan-bibliotheque-d-achat.md`, B-D4, lot B2) :
+ * (`documentation/livraisons/chargement/plan-bibliotheque-d-achat.md`, B-D4, lot B2) :
  * une LECTURE sous `delivery_rounds:read`, qui relit candidats et réels par
  * identifiant. Ce que seul l'e2e prouve : la relecture par les vrais
  * adaptateurs, les refus nommés (404, 409) au lieu d'un 500, et qu'aucune

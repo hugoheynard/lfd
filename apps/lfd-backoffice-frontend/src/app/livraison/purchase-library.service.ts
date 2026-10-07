@@ -19,7 +19,7 @@ const TABLE = `${B2B_API_BASE}/admin/livraison/assistant-achat/tableau`;
 
 /**
  * **La bibliothèque d'achat et son tableau croisé**
- * (`documentation/livraisons/plan-bibliotheque-d-achat.md`, B-D1 et B-D4).
+ * (`documentation/livraisons/chargement/plan-bibliotheque-d-achat.md`, B-D1 et B-D4).
  * Lecture et tableau sous `delivery_rounds:read`, écriture sous
  * `delivery_rounds:write` (B-D6).
  *

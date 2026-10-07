@@ -1,6 +1,6 @@
 /**
  * E2E de la **composition des tournées** — les gardes
- * (`documentation/livraisons/plan-preparation-de-tournee.md`, lot 3).
+ * (`documentation/livraisons/tournees/plan-preparation-de-tournee.md`, lot 3).
  *
  * Les signaux d'arrêt (Q11), le retrait manuel qui libère la commande, le
  * refus de retirer un véhicule qui roule demain (C14), le droit

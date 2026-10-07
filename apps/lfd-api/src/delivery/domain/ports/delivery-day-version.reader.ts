@@ -1,6 +1,6 @@
 /**
  * **Lire la version d'une journée** dans le journal de la livraison
- * (`documentation/livraisons/plan-schema-delivery.md`, SD-D3).
+ * (`documentation/livraisons/architecture/plan-schema-delivery.md`, SD-D3).
  *
  * Le pendant de `ProductionDayVersionReader`, dans son propre bloc : depuis le
  * 2026-09-30, une tournée n'avance plus la version du fournil. Un port à part

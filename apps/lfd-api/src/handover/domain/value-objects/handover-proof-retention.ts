@@ -4,7 +4,7 @@ const MILLISECONDS_PER_DAY = 86_400_000;
 
 /**
  * **Combien de jours on garde les pièces d'une remise à la porte** —
- * `documentation/livraisons/a-la-porte.md` (Hugo, 2026-10-01 : « pour
+ * `documentation/livraisons/livreur/a-la-porte.md` (Hugo, 2026-10-01 : « pour
  * l'instant infini, mais câbler la possibilité d'une purge »).
  *
  * Une DURÉE, pas un instant de coupure, et c'est délibéré : la politique se dit

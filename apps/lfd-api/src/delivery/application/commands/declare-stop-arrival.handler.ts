@@ -10,7 +10,7 @@ import { gesturePositionOf } from "../doorstep-support.js";
 import { DeclareStopArrivalCommand } from "./declare-stop-arrival.command.js";
 
 /**
- * **« Je suis arrivé »** (`documentation/livraisons/a-la-porte.md`,
+ * **« Je suis arrivé »** (`documentation/livraisons/livreur/a-la-porte.md`,
  * AP-D6) — l'instant du `Clock`, écrit dans l'exécution de l'arrêt, jamais
  * dans la tournée : `closeStop` et sa version n'ont rien à voir ici.
  *

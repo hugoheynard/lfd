@@ -12,7 +12,7 @@ import { centsToEurosInput, parseEurosToCents } from './purchase-price';
 
 /**
  * Les saisies de **la bibliothèque d'achat**
- * (`documentation/livraisons/plan-bibliotheque-d-achat.md`, B-D1, lot B4) :
+ * (`documentation/livraisons/chargement/plan-bibliotheque-d-achat.md`, B-D1, lot B4) :
  * ce qu'on tape dans les dialogues, et la charge COMPLÈTE qui part — un champ
  * facultatif absent vaut `null` côté serveur, jamais « inchangé ».
  *

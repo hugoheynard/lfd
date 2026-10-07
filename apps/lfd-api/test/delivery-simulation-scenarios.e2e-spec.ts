@@ -1,6 +1,6 @@
 /**
  * E2E des **scénarios du simulateur** et de « partir d'une vraie journée »
- * (`documentation/livraisons/plan-preparation-de-tournee.md`, lot 9, L9-C7 et
+ * (`documentation/livraisons/tournees/plan-preparation-de-tournee.md`, lot 9, L9-C7 et
  * L9-C8) — sur le vrai SQL : l'index partiel du nom, la relecture du `jsonb`,
  * les droits, et la copie d'un jour sans identifiant de commande.
  */

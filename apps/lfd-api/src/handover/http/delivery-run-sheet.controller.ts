@@ -35,7 +35,7 @@ type RunSheetQuery = z.infer<typeof runSheetQuerySchema>;
 
 /**
  * **La feuille de route des livraisons** — lecture seule
- * (`documentation/livraisons/plan-preparation-de-tournee.md`, lot 1).
+ * (`documentation/livraisons/tournees/plan-preparation-de-tournee.md`, lot 1).
  *
  * Sous `delivery_run_sheet` depuis le 2026-09-29 (plan, Q7/Q8) : elle était
  * servie sous `b2b_orders`, qui ouvrait les adresses et contacts de TOUTES les

@@ -50,7 +50,7 @@ export interface DoorstepStopState {
 }
 
 /**
- * **Un arrêt, à la porte** (`documentation/livraisons/a-la-porte.md`,
+ * **Un arrêt, à la porte** (`documentation/livraisons/livreur/a-la-porte.md`,
  * AP-D6) — l'EXÉCUTION de l'arrêt, pas la tournée : `arrived_at` vit dans
  * `delivery_stop_execution`, que la tournée n'écrit jamais.
  *

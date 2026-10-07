@@ -1,6 +1,6 @@
 /**
  * E2E des **zones autorisées d'un véhicule**
- * (`documentation/livraisons/composition-automatique.md` §4, 2026-10-06).
+ * (`documentation/livraisons/tournees/composition-automatique.md` §4, 2026-10-06).
  *
  * Ce que seul l'e2e prouve : la colonne tableau aller-retour et sa charge au
  * journal relue en base ; la zone FIGÉE d'une commande (`delivery_zone_id`)

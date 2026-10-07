@@ -27,7 +27,7 @@ export interface SettledReport {
 
 /**
  * **La décision réglée d'avance s'applique au signalement**
- * (`documentation/livraisons/a-la-porte.md`, B3 bis, LB-Q6).
+ * (`documentation/livraisons/livreur/a-la-porte.md`, B3 bis, LB-Q6).
  *
  * DANS l'unité de travail du signalement, sous le verrou de la tournée
  * (`loadForDecision`, celui que prennent le commercial et le dépôt) :

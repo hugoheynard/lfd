@@ -5,7 +5,7 @@ export interface RoundsGapBellReport {
 }
 
 /**
- * **Le passage « hors tournée »** (`documentation/livraisons/composition-automatique.md`,
+ * **Le passage « hors tournée »** (`documentation/livraisons/tournees/composition-automatique.md`,
  * §5, l'alerte avant le jour J) : prévenir le bureau quand le jour de
  * livraison est aujourd'hui, ou demain à partir de 16 h, que le plan est
  * arrêté et que des livraisons ne sont dans aucune tournée enregistrée.

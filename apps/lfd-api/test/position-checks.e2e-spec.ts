@@ -1,7 +1,7 @@
 /**
  * E2E **les positions entières ou nulles** — les cinq CHECK « ensemble ou
  * aucune » des positions relevées au geste et des points du carnet
- * (`documentation/livraisons/gps-y-aller-et-position.md`).
+ * (`documentation/livraisons/livreur/gps-y-aller-et-position.md`).
  *
  * Régression (audit du 2026-10-07, B3 —
  * `documentation/livraisons/audit-2026-10-07.md`) : la branche « ensemble » de

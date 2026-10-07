@@ -1,6 +1,6 @@
 /**
  * E2E de **la graine des rôles** — ce qu'une base vierge reçoit
- * (`documentation/livraisons/plan-droits-par-geste.md`, DG-D5).
+ * (`documentation/livraisons/droits/plan-droits-par-geste.md`, DG-D5).
  *
  * Remplace la parité `staff-role-grants-parity` (retirée le 2026-10-01). Elle
  * rejouait toutes les migrations qui écrivent `staff_role_definitions` et

@@ -146,7 +146,7 @@ model DeliveryRound {
   /// `delivery` et l'annuaire dans `public`. Écrivain : la tournée, par
   /// `assignDriver` / `unassignDriver`. Le mur du livreur (MT-D3) le lit.
   driverStaffId      String?   @map("driver_staff_id")
-  /// **Rentrée** le — « Tournée terminée » (`documentation/livraisons/parcours-du-livreur.md`,
+  /// **Rentrée** le — « Tournée terminée » (`documentation/livraisons/livreur/parcours-du-livreur.md`,
   /// lot PL2) : les bacs vides sont rentrés, et la mesure du temps de tournée
   /// se ferme. Écrivain : la tournée, par `returnToDepot`, une fois, seulement
   /// partie. Nulle tant qu'elle roule. Les arrêts restés ouverts le restent.
@@ -660,7 +660,7 @@ model DeliveryBinCapacity {
 }
 
 /// **Un véhicule candidat** de la bibliothèque d'achat
-/// (`documentation/livraisons/plan-bibliotheque-d-achat.md`, B-D1, lot B1) :
+/// (`documentation/livraisons/chargement/plan-bibliotheque-d-achat.md`, B-D1, lot B1) :
 /// une camionnette qu'on envisage d'acheter. SÉPARÉ de `delivery_vehicle` —
 /// aucune lecture de la flotte ne le voit, c'est ce qui rend « proposer une
 /// tournée à un véhicule fictif » inexprimable. Aucun client, aucune journée.
@@ -827,7 +827,7 @@ model DeliveryDriverNoticeAcknowledgement {
 }
 
 /// **Ce que le bureau a décidé d'une suggestion de correction du carnet**
-/// (`documentation/livraisons/gps-y-aller-et-position.md`, §6) — une ligne
+/// (`documentation/livraisons/livreur/gps-y-aller-et-position.md`, §6) — une ligne
 /// par geste, `ignored` ou `applied`, jamais réécrite ni supprimée.
 ///
 /// Une suggestion ignorée n'est pas reproposée tant que les livraisons

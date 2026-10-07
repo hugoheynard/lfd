@@ -4,7 +4,7 @@ import { count, fact, named, payload, subjectLabel } from "./fact.js";
 
 /**
  * **Les scénarios du simulateur de tournée** (2026-09-29,
- * `documentation/livraisons/plan-preparation-de-tournee.md`, lot 9, L9-C7).
+ * `documentation/livraisons/tournees/plan-preparation-de-tournee.md`, lot 9, L9-C7).
  *
  * Même famille que la composition (« commandes et production »). Le sujet est
  * le scénario, son libellé son nom du moment ; la charge ne recopie pas le

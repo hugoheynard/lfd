@@ -8,7 +8,7 @@ import { B2B_API_BASE } from '../../api/api-config';
 
 /**
  * **Mes notifications** — celles adressées à un droit que je tiens
- * (`documentation/livraisons/a-la-porte.md`, B5) : « arrêt à décider »
+ * (`documentation/livraisons/livreur/a-la-porte.md`, B5) : « arrêt à décider »
  * pour les commerciaux. Transport pur, aucun état.
  *
  * Ouvert à tout staff connecté : le serveur filtre par mes droits dans chaque

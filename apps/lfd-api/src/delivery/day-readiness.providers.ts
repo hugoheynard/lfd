@@ -15,7 +15,7 @@ import { PrismaDeliveryDayReadinessReader } from "./infrastructure/prisma-delive
 import { PrismaDeliveryDayReadinessRepository } from "./infrastructure/prisma-delivery-day-readiness.repository.js";
 
 /**
- * **Le plan arrêté, vu par la livraison** (`documentation/livraisons/composition-automatique.md`,
+ * **Le plan arrêté, vu par la livraison** (`documentation/livraisons/tournees/composition-automatique.md`,
  * §4, CA6a) : les abonnés à la clôture et au retirage (CA6b), leur cloche, et la lecture de l'écran
  * des tournées, le géocodage de fond qui situe les adresses (CA0), et l'alerte « hors tournée » avant le jour J (§5). Rangé à part pour que `delivery.module.ts` reste lisible.
  */

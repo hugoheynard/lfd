@@ -28,7 +28,7 @@ type OrderQuery = z.infer<typeof orderQuerySchema>;
 
 /**
  * **Les bacs déclarés** — déclarer, partager, lire, annuler
- * (`documentation/livraisons/plan-preparation-de-tournee.md`, lot 4, L4-C16,
+ * (`documentation/livraisons/tournees/plan-preparation-de-tournee.md`, lot 4, L4-C16,
  * L4-C19, L4-C21 ; lot 4 bis, v2-4, tranche B).
  *
  * Sous `admin/livraison/colisage/bacs` : `admin/livraison/bacs` est le
@@ -40,7 +40,7 @@ type OrderQuery = z.infer<typeof orderQuerySchema>;
  * commande (tranche C). Lire un bac ou les bacs d'une commande — la page imprimable, le QR
  * ouvert — n'écrit rien. Il n'injecte que les bus.
  *
- * 🔴 La porte s'ouvre AUSSI au colisage (2026-10-01, `documentation/livraisons/plan-droits-par-geste.md`,
+ * 🔴 La porte s'ouvre AUSSI au colisage (2026-10-01, `documentation/livraisons/droits/plan-droits-par-geste.md`,
  * 5.3) : chaque route exige `production_packing:write` OU
  * `delivery_loading:write`, sauf la fiche d'un bac (ci-dessous). On élargit la porte, on ne déplace aucun droit —
  * aucune dérogation n'a donc à fusionner.

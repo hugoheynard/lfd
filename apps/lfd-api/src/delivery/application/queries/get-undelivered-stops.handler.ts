@@ -8,7 +8,7 @@ import { deliveryIncidentView } from "../delivery-incident-view.js";
 import { GetUndeliveredStopsQuery } from "./get-undelivered-stops.query.js";
 
 /**
- * **« Non remis »** (`documentation/livraisons/a-la-porte.md`, AP-D7 ;
+ * **« Non remis »** (`documentation/livraisons/livreur/a-la-porte.md`, AP-D7 ;
  * `parcours-du-livreur.md`, PL2) — les arrêts non clos des tournées
  * RENTRÉES, et ceux des tournées parties d'un jour antérieur à aujourd'hui
  * jamais rentrées (heure de Paris, `instantToLocal` : à 00 h 30 l'été, l'UTC

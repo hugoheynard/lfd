@@ -1,6 +1,6 @@
 /**
  * E2E du **chargement** — les gardes
- * (`documentation/livraisons/plan-preparation-de-tournee.md`, lot 4, v4).
+ * (`documentation/livraisons/tournees/plan-preparation-de-tournee.md`, lot 4, v4).
  *
  * Le bon bac dans la mauvaise camionnette (L4-C2), la commande à répartir
  * d'abord, l'annulation d'un bac chargé (L4-C19), le déplacement d'un arrêt

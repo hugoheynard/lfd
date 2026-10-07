@@ -1,5 +1,5 @@
 /**
- * E2E **sans calcul routier** (`documentation/livraisons/plan-preparation-de-tournee.md`,
+ * E2E **sans calcul routier** (`documentation/livraisons/tournees/plan-preparation-de-tournee.md`,
  * lot 10 bis, L10b-C5) : le vol d'oiseau a disparu. Sans OSRM, « Proposer »,
  * « Chronométrer » et le simulateur refusent en 409 avec la phrase à lire, et
  * n'écrivent rien.

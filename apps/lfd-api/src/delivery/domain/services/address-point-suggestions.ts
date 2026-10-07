@@ -4,7 +4,7 @@ import type { GeoPoint } from "../value-objects/geo-point.js";
 
 /**
  * **Les corrections du carnet suggérées par les livraisons**
- * (`documentation/livraisons/gps-y-aller-et-position.md`, §6, règle
+ * (`documentation/livraisons/livreur/gps-y-aller-et-position.md`, §6, règle
  * validée par Hugo le 2026-10-06). Pur : aucune lecture, aucune horloge.
  *
  * Quand assez de gestes à la MÊME adresse concordent — leurs positions

@@ -2,7 +2,7 @@ import { z } from "zod";
 
 /**
  * **Les bacs de la livraison** — le catalogue des types de bacs et leurs
- * contenances (`documentation/livraisons/plan-preparation-de-tournee.md`,
+ * contenances (`documentation/livraisons/tournees/plan-preparation-de-tournee.md`,
  * lot 4 bis, v2-1 et v2-2, tranche A). Ce sont des réglages du bloc
  * `delivery` : ni la fiche produit du référentiel, ni la table commerce
  * `delivery_settings`.

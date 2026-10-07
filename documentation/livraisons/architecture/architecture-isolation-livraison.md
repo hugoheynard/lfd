@@ -197,7 +197,7 @@ commerce depuis son abonné à `order.placed`
 (`b2b/orders/application/handlers/tell-delivery-order-placed.handler.ts`) ;
 elle est reliée dans `appBootstrap/delivery-stops-locating.module.ts`. La
 livraison y situe l'adresse dès la commande (CA0,
-[composition automatique](composition-automatique.md)). C'est le seul port du
+[composition automatique](../tournees/composition-automatique.md)). C'est le seul port du
 canal dans ce sens : la livraison ne peut pas écouter un fait du commerce, et
 `order.placed` n'est pas un fait durable.
 
@@ -205,7 +205,7 @@ Le fait durable est `DeliveryRoundDepartedFact` (`delivery.round_departed`,
 DD1, 2026-10-06) : déclaré dans le canal du retrait (§ 4.1 bis) et
 **réexporté** ici, parce que le commerce n'a que ce dossier comme surface vers
 la livraison. Son abonné `b2b.mail-delivery-en-route` envoie le courriel « en
-route » ([`en-route.md`](en-route.md)). Il remplace l'ancienne annonce du
+route » ([`en-route.md`](../livreur/en-route.md)). Il remplace l'ancienne annonce du
 départ en mémoire (`DeliveryDepartureAnnouncer`, retirée).
 
 **Le sens compte** : c'est la livraison qui déclare, le commerce qui
@@ -219,7 +219,7 @@ vers la plateforme (`pim/channels/b2b-platform/`), le commerce le relaie par
 
 ### 4.1 bis Ce que la livraison demande au retrait — `delivery/channels/handover/`
 
-Ouvert le 2026-10-01 ([`a-la-porte.md`](a-la-porte.md), § 5, BQ — **la garde
+Ouvert le 2026-10-01 ([`a-la-porte.md`](../livreur/a-la-porte.md), § 5, BQ — **la garde
 passe au livreur au départ**). Le canal publie **trois classes abstraites et
 deux faits durables** (relevés le 2026-10-07) :
 
@@ -255,7 +255,7 @@ essais) avant de finir en message mort, visible. Entre la validation et le
 passage de l'abonné, le fournil peut encore juger la commande. Les annonces en
 mémoire d'avant (`DepartedOrdersAnnouncer`, `BroughtBackOrdersAnnouncer`,
 appelées après la validation), qu'aucun rejeu ne réparait, sont retirées
-([`a-la-porte.md`](a-la-porte.md), § 5).
+([`a-la-porte.md`](../livreur/a-la-porte.md), § 5).
 
 ### 4.1 ter Ce que le fournil et le colisage publient pour elle
 
@@ -264,10 +264,10 @@ seule : `delivery → production` et `delivery → packing` sont permis par ces
 dossiers, l'autre sens reste interdit — le fournil et le colisage publient
 sans savoir qui écoute, ni qui les branche.
 
-| Canal                                                  | Ce qu'il porte                                                                                                                                                                                                                                                             | Ce qu'en fait la livraison                                                                                                                                                                                                                                                                       |
-| ------------------------------------------------------ | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
-| `production/channels/delivery/` (2026-10-04, option B) | deux faits durables : `production.day_closed` (l'arrêt du plan) et `production.day_retaken` (le retirage)                                                                                                                                                                  | deux abonnés `@DurableHandler`, `delivery.learn-arrested-plan` et `delivery.learn-retaken-plan`, rangent l'ensemble du jour dans `delivery_day_readiness` et sonnent le bureau ([composition automatique](composition-automatique.md), § 2.2) ; le détail des commandes, elle le lit au commerce |
-| `packing/channels/delivery/` (2026-10-04, K2b)         | `BinDesk` — déclarer, annuler, partager un bac, proposer, « ces bacs sont-ils vivants ? » —, que la livraison **implémente** (`delivery/application/delivery-bin-desk.ts`) dans la transaction du colisage ; `ContainerManagedOrders`, que le colisage implémente lui-même | `BinDesk` est injecté dans huit handlers du colisage (et dans le lecteur de son tableau) ; trois handlers de la livraison — déclarer, annuler, partager un bac — lisent `ContainerManagedOrders` et refusent une commande gérée au colisage                                                      |
+| Canal                                                  | Ce qu'il porte                                                                                                                                                                                                                                                             | Ce qu'en fait la livraison                                                                                                                                                                                                                                                                                   |
+| ------------------------------------------------------ | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
+| `production/channels/delivery/` (2026-10-04, option B) | deux faits durables : `production.day_closed` (l'arrêt du plan) et `production.day_retaken` (le retirage)                                                                                                                                                                  | deux abonnés `@DurableHandler`, `delivery.learn-arrested-plan` et `delivery.learn-retaken-plan`, rangent l'ensemble du jour dans `delivery_day_readiness` et sonnent le bureau ([composition automatique](../tournees/composition-automatique.md), § 2.2) ; le détail des commandes, elle le lit au commerce |
+| `packing/channels/delivery/` (2026-10-04, K2b)         | `BinDesk` — déclarer, annuler, partager un bac, proposer, « ces bacs sont-ils vivants ? » —, que la livraison **implémente** (`delivery/application/delivery-bin-desk.ts`) dans la transaction du colisage ; `ContainerManagedOrders`, que le colisage implémente lui-même | `BinDesk` est injecté dans huit handlers du colisage (et dans le lecteur de son tableau) ; trois handlers de la livraison — déclarer, annuler, partager un bac — lisent `ContainerManagedOrders` et refusent une commande gérée au colisage                                                                  |
 
 Le colisage est relié dans `appBootstrap/packing-delivery-feed.module.ts`. Les
 faits du fournil n'ont pas de port à relier : un abonné `@DurableHandler` est

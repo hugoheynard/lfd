@@ -1,5 +1,5 @@
 /**
- * **« Déposé avec preuve » est-il permis ?** (`documentation/livraisons/a-la-porte.md`,
+ * **« Déposé avec preuve » est-il permis ?** (`documentation/livraisons/livreur/a-la-porte.md`,
  * AP-Q1, AP-Q6, B3, LB-Q5, tranchés par Hugo le 2026-10-01).
  *
  * Deux chemins, et deux seulement :

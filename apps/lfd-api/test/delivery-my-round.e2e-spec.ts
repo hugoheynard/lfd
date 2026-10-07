@@ -1,5 +1,5 @@
 /**
- * E2E du **livreur et de sa tournée** (`documentation/livraisons/plan-ma-tournee.md`,
+ * E2E du **livreur et de sa tournée** (`documentation/livraisons/livreur/plan-ma-tournee.md`,
  * MT2 et MT3) — l'affectation fondée sur le droit effectif, le mur dans la
  * requête (404 en liste ET en détail ET au départ), le départ par le livreur
  * avec ses phrases, le rang et le point figés, et une vue sans argent.

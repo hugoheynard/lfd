@@ -8,7 +8,7 @@ import {
 
 /**
  * **La grille des contenances** — bacs × produits, la logique pure de l'écran
- * (`documentation/livraisons/plan-preparation-de-tournee.md`, lot 4 bis v2-2).
+ * (`documentation/livraisons/tournees/plan-preparation-de-tournee.md`, lot 4 bis v2-2).
  *
  * Une case dit combien d'unités d'un produit tient un bac ENTIER de ce type.
  * Vide, elle n'a pas de contenance : rien ne la devine, et le colisage le

@@ -21,7 +21,7 @@
 > « tournée prête », ni déclencheurs, ni sonnerie. D1, D2 et D6 sont à
 > reconcevoir au-dessus d'`audience`, qui adresse un droit, pas une personne.
 >
-> **Où lire l'état réel** : [`a-la-porte.md`](a-la-porte.md) § 4 (« Prévenir
+> **Où lire l'état réel** : [`a-la-porte.md`](../livreur/a-la-porte.md) § 4 (« Prévenir
 > (B5) ») pour la notice adressée par droit ;
 > [`composition-automatique.md`](composition-automatique.md) pour les cloches
 > du bureau ; les fichiers de la table ci-dessous, dont chaque cellule a été

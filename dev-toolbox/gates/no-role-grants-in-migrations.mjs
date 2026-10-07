@@ -2,7 +2,7 @@
 /**
  * Gate : **une migration ajoute une ressource, jamais un droit à un rôle.**
  *
- * Plan `documentation/livraisons/plan-droits-par-geste.md`, DG-D2 et 5.5. Seize
+ * Plan `documentation/livraisons/droits/plan-droits-par-geste.md`, DG-D2 et 5.5. Seize
  * migrations ont écrit dans `staff_role_definitions` entre le 2026-09-01 et le
  * 2026-10-01 : chaque ressource neuve arrivait avec « son attribution à des
  * rôles », si bien que qui avait quel droit se décidait dans le code, contre
@@ -82,7 +82,7 @@ if (failures.length > 0) {
     '\n  Une migration ajoute une ressource (`ALTER TYPE "StaffResource" ADD VALUE`), jamais\n' +
       "  un droit à un rôle : qui a quel droit se règle à l'écran (/admin/staff-roles). Une\n" +
       "  ressource neuve s'accorde à l'admin à l'écran tant que l'admin n'est pas calculé\n" +
-      "  (documentation/livraisons/plan-droits-par-geste.md, DG-D2 et 5.4).\n",
+      "  (documentation/livraisons/droits/plan-droits-par-geste.md, DG-D2 et 5.4).\n",
   );
   process.exit(1);
 }
