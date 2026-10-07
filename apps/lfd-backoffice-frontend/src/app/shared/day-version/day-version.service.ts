@@ -8,9 +8,10 @@ import { B2B_API_BASE } from '../../api/api-config';
 /**
  * Les journaux de journée qu'un écran peut suivre, et leur porte.
  *
- * Deux journaux côté API (un par schéma, D3 de
- * `documentation/caching-usage/plan-version-par-journee.md`), mais QUATRE
- * portes : chacun se lit sous deux familles de droits — celles des postes
+ * Trois journaux côté API (un par schéma à journal — `public`, `production`,
+ * `delivery` —, D3 de `documentation/caching-usage/plan-version-par-journee.md`),
+ * plus `my-round` qui en mêle deux ; SIX portes dans `JOURNAL_PATHS` (compté le
+ * 2026-10-07) : un journal se lit sous plusieurs familles de droits — celles des postes
  * (`orders` sous `b2b_orders` ou `handover_counter`, le poste de retrait,
  * depuis le 2026-10-07 — audit du dossier `livraisons/`, B6 ; `production`
  * sous l'un des quatre gestes du fournil et du retrait, depuis le

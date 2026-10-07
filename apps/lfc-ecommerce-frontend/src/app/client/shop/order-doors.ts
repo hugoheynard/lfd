@@ -1,6 +1,8 @@
 import { computed, inject, Injectable } from '@angular/core';
 import { instantToLocal } from '@lfd/contracts';
-// Valeurs par le sous-chemin sans zod : chargé au démarrage (budget `cloudflare`).
+// Par le sous-chemin `shop-values`, sans zod : la même règle que le serveur
+// applique au refus, et un sous-chemin qui reste léger si ce module (lazy
+// aujourd'hui) devenait un jour initial (budget `cloudflare`).
 import { deliveryOpenTo } from '@lfd/contracts/shop-values';
 import { FoldPanelHostService } from 'fold-ng';
 

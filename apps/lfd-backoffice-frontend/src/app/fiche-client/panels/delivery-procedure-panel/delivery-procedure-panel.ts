@@ -38,8 +38,11 @@ export interface AdminDeliveryProcedurePanelData {
  * `:write`. L'éditeur s'ouvrait en écriture sans test de droit, et un rôle sans
  * la ressource prenait 403 dès la première lecture (audit F2, 2026-10-07).
  *
- * ⚠️ Sans `:read`, le panneau ne monte AUCUN des trois blocs — chacun lit sa
- * route en paraissant — et dit pourquoi. Il s'ouvre quand même : l'entrée
+ * ⚠️ Sans `:read`, le panneau ne monte AUCUN des trois blocs et dit pourquoi :
+ * la décision à la porte et l'éditeur lisent leur route en paraissant (403 sans
+ * le droit) ; « Dépôt autorisé » ne lit rien, mais ne s'écrit que sous `:write`,
+ * et un panneau à un bloc sur trois dirait moins que l'état vide (vérifié le
+ * 2026-10-07). Il s'ouvre quand même : l'entrée
  * « Procédure de livraison » vit dans la carte d'adresses partagée, qui la
  * propose à tous, et un clic qui n'ouvrirait rien ne dirait pas ce qui manque.
  *

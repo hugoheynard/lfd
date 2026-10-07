@@ -26,7 +26,10 @@ export const SEND_DOSSIER_ON_DAY_CLOSED = "production.send-dossier-on-close";
  * Abonné DURABLE dans le bloc qui publie : `lint:durable-cross-block` ne vise
  * que les `@EventsHandler` qui traversent un bloc, et n'a donc pas d'avis
  * (vérifié le 2026-10-06). Durable quand même parce qu'un e-mail perdu entre
- * la clôture et l'envoi ne se verrait nulle part.
+ * la clôture et l'envoi ne se verrait nulle part. ⚠️ Contrepartie depuis B1 :
+ * un redémarrage entre le reçu validé et `deliver` laisse au mieux une ligne
+ * `pending` dans la trace du dossier, sans cloche — la fenêtre est courte, pas
+ * nulle.
  *
  * 🔴 **Le dossier part APRÈS la validation du reçu** (2026-10-07, audit B1).
  * La journée et les destinataires sont lus dans la transaction de la garde —

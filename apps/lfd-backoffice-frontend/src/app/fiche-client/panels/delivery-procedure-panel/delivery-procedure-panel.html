@@ -17,8 +17,9 @@
       (stepCountChange)="data().onStepCountChange($event)"
     />
   } @else {
-    <!-- Rien n'est monté, donc rien n'est lu : chaque bloc appelle sa route en
-         paraissant, et chacune rendrait 403. Le libellé est celui de l'écran
+    <!-- Rien n'est monté, donc rien n'est lu : deux des trois blocs appellent
+         leur route en paraissant et rendraient 403 ; le troisième n'écrit que
+         sous :write. Le libellé est celui de l'écran
          des rôles, pour qu'un administrateur trouve la ligne à cocher. -->
     <fold-empty-state
       icon="lock"

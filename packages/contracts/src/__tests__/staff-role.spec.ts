@@ -66,7 +66,7 @@ describe("un rôle défini", () => {
 });
 
 describe("les graines", () => {
-  it("recopient les cinq rôles du catalogue à l'identique", () => {
+  it("recopient tous les rôles du catalogue à l'identique", () => {
     // La migration les insère depuis CETTE fonction : si elle dérivait de
     // `ROLE_GRANTS`, la base semée ne dirait plus ce que le code dit.
     for (const seed of legacyRoleSeeds()) {

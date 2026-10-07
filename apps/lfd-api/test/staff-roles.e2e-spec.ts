@@ -1,5 +1,6 @@
 /**
- * E2E de **la matrice des rôles** : les cinq rôles, sur toutes les surfaces, en
+ * E2E de **la matrice des rôles** : tous les rôles du catalogue (sept au
+ * 2026-10-07), sur toutes les surfaces, en
  * vrai HTTP.
  *
  * La suite `staff-access` prouve que le mur existe ; celle-ci prouve qu'il est
@@ -201,7 +202,7 @@ describe("la matrice des rôles — l'écriture se déduit du verbe", () => {
 });
 
 describe("la matrice des rôles — la couverture est complète", () => {
-  it("éprouve les cinq rôles du catalogue", () => {
+  it("éprouve tous les rôles du catalogue", () => {
     // Un rôle ajouté au contrat sans surface éprouvée passerait inaperçu : ce
     // test échoue tant qu'il n'apparaît pas dans les cas ci-dessus.
     const covered = new Set(CASES.map((entry) => entry.role));
