@@ -7,15 +7,12 @@ import {
   boardOfComposed,
   composedTimingOf,
   dropTargetOf,
-  layoutOps,
-  listsOf,
   mapRowPrefixOf,
   orderTagsOf,
   OUT_OF_ZONE_LABEL,
   PLACEMENT_LATE_LABEL,
   plannedOfBoard,
   POOL_KEY,
-  relaidBoard,
   ZONE_REFUSED_LABEL,
   roundKmLabel,
   roundTimingLabel,
@@ -23,6 +20,7 @@ import {
   stopTagsOf,
   vehicleGroupsOf,
 } from './rounds-board-model';
+import { layoutOps, listsOf, relaidBoard } from './rounds-board-lists';
 import { stopOf } from './run-sheet.fixture';
 
 function round(overrides: Partial<DeliveryRoundView>): DeliveryRoundView {

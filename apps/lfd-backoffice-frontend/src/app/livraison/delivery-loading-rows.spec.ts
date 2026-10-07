@@ -12,9 +12,9 @@ import {
   locateBin,
   nextBin,
   outOfRowNotice,
-  placementLine,
   stackTiles,
 } from './delivery-loading-rows';
+import { placementLine } from './delivery-loading-placement';
 
 function bin(
   binId: string,

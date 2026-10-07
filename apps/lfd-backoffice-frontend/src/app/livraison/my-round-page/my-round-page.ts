@@ -2,11 +2,9 @@ import { Router, RouterLink } from '@angular/router';
 import { ChangeDetectionStrategy, Component, computed, inject, signal } from '@angular/core';
 import type {
   DeliveryIncidentFamily,
-  MyDeliveryRoundSummaryView,
   MyDeliveryRoundView,
   MyDeliveryStopView,
 } from '@lfd/contracts';
-import { httpErrorMessage } from '@lfd/endpoints';
 import type { FoldViewToggleOption } from 'fold-ng';
 import {
   FoldBadgeComponent,
@@ -44,22 +42,12 @@ import {
   routeLegs,
   writeNavigationApp,
 } from '../my-round-navigation';
-import { DriverNoticeGate } from '../driver-notice-gate';
 import { GesturePositionReader } from '../gesture-position';
 import { MyDeliveryRoundService } from '../my-delivery-round.service';
 import { allStopsReady, readyStopsLabel } from '../my-round-packing';
 import { MyRoundStop } from '../my-round-stop/my-round-stop';
-import { parisDayOf } from '../run-sheet';
-
-type ListState =
-  | { readonly status: 'loading' }
-  | { readonly status: 'error' }
-  | { readonly status: 'ready'; readonly rounds: readonly MyDeliveryRoundSummaryView[] };
-
-type RoundState =
-  | { readonly status: 'loading' }
-  | { readonly status: 'error' }
-  | { readonly status: 'ready'; readonly round: MyDeliveryRoundView };
+import { MyRoundGestures } from '../my-round-gestures';
+import { MyRoundReader } from '../my-round-reader';
 
 /** Le stockage de l'appareil, ou rien : un navigateur qui le refuse ne casse pas la page. */
 function deviceStorage(): Storage | null {
@@ -128,20 +116,22 @@ export class MyRoundPage {
   private readonly service = inject(MyDeliveryRoundService);
   private readonly permissions = inject(PermissionsStore);
   private readonly router = inject(Router);
-  private readonly notice = inject(DriverNoticeGate);
   /** La position au geste (YA-D4) : son absence se dit, elle ne bloque rien. */
   protected readonly positions = inject(GesturePositionReader);
   private readonly storage = deviceStorage();
 
-  private readonly today = parisDayOf(new Date());
-
-  protected readonly list = signal<ListState>({ status: 'loading' });
-  protected readonly selected = signal<string | null>(null);
-  protected readonly detail = signal<RoundState>({ status: 'loading' });
-
   /** Le dernier refus du serveur — la tournée reste à l'écran. */
   protected readonly refusal = signal<string | null>(null);
-  protected readonly busy = signal(false);
+  /** Les tournées du jour et celle qu'on a choisie ; leurs signaux gardent leurs noms au gabarit. */
+  private readonly reader = new MyRoundReader(this.refusal);
+  /** Les gestes à la porte, qui relisent par le même lecteur. */
+  private readonly doorstep = new MyRoundGestures(this.reader, this.refusal);
+  private readonly today = this.reader.today;
+
+  protected readonly list = this.reader.list;
+  protected readonly selected = this.reader.selected;
+  protected readonly detail = this.reader.detail;
+  protected readonly busy = this.doorstep.busy;
 
   protected readonly app = signal<NavigationApp>(readNavigationApp(this.storage));
   protected readonly appOptions: readonly FoldViewToggleOption[] = NAVIGATION_APPS;
@@ -154,10 +144,7 @@ export class MyRoundPage {
   /** Plusieurs tournées aujourd'hui : on peut revenir au choix. */
   protected readonly canGoBack = computed(() => this.rounds().length > 1);
 
-  protected readonly round = computed(() => {
-    const detail = this.detail();
-    return detail.status === 'ready' ? detail.round : null;
-  });
+  protected readonly round = this.reader.round;
   protected readonly departed = computed(() => (this.round()?.departedAt ?? null) !== null);
   /** Rentrée le (PL2) : plus aucun geste n'est accepté, l'écran n'en offre plus. */
   protected readonly returnedAt = computed(() => this.round()?.returnedAt ?? null);
@@ -219,14 +206,14 @@ export class MyRoundPage {
   protected readonly incidentCountLabel = incidentCountLabel;
 
   constructor() {
-    void this.loadList();
+    void this.reader.loadList();
     // Le coliseur déclare, le fournil marque prête : sans relecture, le
     // livreur partirait sur un « en préparation » périmé. On ne relit que si
     // la version de « ma tournée » a bougé (PL4).
     inject(DayVersionWatcher).watch({
       journals: ['my-round'],
       date: () => this.today,
-      reload: () => this.refresh(),
+      reload: () => this.reader.refresh(),
     });
   }
 
@@ -243,95 +230,17 @@ export class MyRoundPage {
     }
   }
 
-  protected open(roundId: string): void {
-    this.selected.set(roundId);
-    this.refusal.set(null);
-    void this.loadRound(roundId);
-  }
+  protected readonly open = (roundId: string): void => this.reader.open(roundId);
+  protected readonly back = (): void => this.reader.back();
+  protected readonly retryList = (): void => this.reader.retryList();
+  protected readonly retryRound = (): void => this.reader.retryRound();
 
-  protected back(): void {
-    this.selected.set(null);
-    this.refusal.set(null);
-  }
-
-  protected retryList(): void {
-    void this.loadList();
-  }
-
-  protected retryRound(): void {
-    const id = this.selected();
-    if (id !== null) {
-      void this.loadRound(id);
-    }
-  }
-
-  /** « Commencer ma tournée » — avec la version lue ; relue après, refusée ou non. */
-  protected async depart(): Promise<void> {
-    const round = this.round();
-    if (round === null || this.busy()) {
-      return;
-    }
-    this.busy.set(true);
-    this.refusal.set(null);
-    if (!(await this.noticeCleared())) {
-      this.busy.set(false);
-      return;
-    }
-    try {
-      await this.service.depart(round.id, { version: round.version });
-    } catch (error) {
-      this.refusal.set(httpErrorMessage(error, 'La tournée n’a pas pu commencer.'));
-    }
-    // Relire dans les deux cas : partie, elle montre ses liens ; refusée, sa
-    // version a peut-être changé au dépôt.
-    await this.loadRound(round.id);
-    this.busy.set(false);
-  }
-
-  /**
-   * Le texte d'information est-il lu ? Sinon le dialogue s'ouvre ; « Plus
-   * tard » rend `false` et la tournée ne démarre pas. Une lecture impossible
-   * se dit, et ne démarre pas non plus : partir sans l'information serait
-   * le défaut silencieux.
-   */
-  private async noticeCleared(): Promise<boolean> {
-    try {
-      return await this.notice.clear();
-    } catch (error) {
-      this.refusal.set(
-        httpErrorMessage(error, '« Vos données de livreur » n’a pas pu être lu. Réessayez.'),
-      );
-      return false;
-    }
-  }
-
-  /** « Je suis arrivé » sur l'arrêt suivant. */
-  protected arrive(stop: MyDeliveryStopView): Promise<void> {
-    return this.gesture(
-      async (round) => this.service.arrive(round.id, stop.stopId, await this.positions.read()),
-      'L’arrivée n’a pas pu être enregistrée.',
-    );
-  }
-
-  /** Clore sans remise, avec la version lue : une tournée changée entre-temps est refusée. */
-  protected closeWithoutHandover(stop: MyDeliveryStopView): Promise<void> {
-    return this.gesture(
-      async (round) =>
-        this.service.closeWithoutHandover(round.id, stop.stopId, {
-          version: round.version,
-          ...(await this.positions.read()),
-        }),
-      'L’arrêt n’a pas pu être clos.',
-    );
-  }
-
-  /** « Tournée terminée » (PL2) — confirmée dans la page, jamais par `confirm()`. */
-  protected returnToDepot(): Promise<void> {
-    return this.gesture(
-      (round) => this.service.returnToDepot(round.id),
-      'La tournée n’a pas pu être déclarée rentrée.',
-    );
-  }
+  protected readonly depart = (): Promise<void> => this.doorstep.depart();
+  protected readonly arrive = (stop: MyDeliveryStopView): Promise<void> =>
+    this.doorstep.arrive(stop);
+  protected readonly closeWithoutHandover = (stop: MyDeliveryStopView): Promise<void> =>
+    this.doorstep.closeWithoutHandover(stop);
+  protected readonly returnToDepot = (): Promise<void> => this.doorstep.returnToDepot();
 
   /**
    * « Charger » : le chargement a sa propre adresse, sous la tournée — un
@@ -345,84 +254,5 @@ export class MyRoundPage {
   protected onRoundReported(): void {
     this.reportingRound.set(false);
     this.retryRound();
-  }
-
-  /**
-   * Un geste à la porte : refusé, le message du serveur s'affiche tel quel ;
-   * dans les deux cas la tournée est relue.
-   */
-  private async gesture(
-    write: (round: MyDeliveryRoundView) => Promise<void>,
-    fallback: string,
-  ): Promise<void> {
-    const round = this.round();
-    if (round === null || this.busy()) {
-      return;
-    }
-    this.busy.set(true);
-    this.refusal.set(null);
-    try {
-      await write(round);
-    } catch (error) {
-      this.refusal.set(httpErrorMessage(error, fallback));
-    }
-    await this.loadRound(round.id);
-    this.busy.set(false);
-  }
-
-  /**
-   * La version a bougé : relire ce qui est à l'écran, sans repasser par
-   * « chargement » ni rouvrir d'office — le livreur garde sa place. Ne rejette
-   * pas : un échec garde l'écran d'avant, le tick suivant réessaiera.
-   */
-  private async refresh(): Promise<void> {
-    const id = this.selected();
-    if (id !== null) {
-      await this.loadRound(id);
-      return;
-    }
-    if (this.list().status !== 'ready') {
-      return;
-    }
-    try {
-      const { rounds } = await this.service.mine(this.today);
-      if (this.selected() === null) {
-        this.list.set({ status: 'ready', rounds });
-      }
-    } catch {
-      // L'écran d'avant reste : le tick suivant reposera la question.
-    }
-  }
-
-  private async loadList(): Promise<void> {
-    this.list.set({ status: 'loading' });
-    try {
-      const { rounds } = await this.service.mine(this.today);
-      this.list.set({ status: 'ready', rounds });
-      const [only] = rounds;
-      if (rounds.length === 1 && only !== undefined) {
-        this.open(only.id);
-      }
-    } catch {
-      this.list.set({ status: 'error' });
-    }
-  }
-
-  private async loadRound(roundId: string): Promise<void> {
-    // Une relecture de la même tournée la garde à l'écran.
-    const current = this.detail();
-    if (current.status !== 'ready' || current.round.id !== roundId) {
-      this.detail.set({ status: 'loading' });
-    }
-    try {
-      const round = await this.service.round(roundId);
-      if (this.selected() === roundId) {
-        this.detail.set({ status: 'ready', round });
-      }
-    } catch {
-      if (this.selected() === roundId) {
-        this.detail.set({ status: 'error' });
-      }
-    }
   }
 }

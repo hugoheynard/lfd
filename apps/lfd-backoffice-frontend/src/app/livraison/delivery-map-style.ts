@@ -1,4 +1,8 @@
-import type { ExpressionSpecification, LayerSpecification, StyleSpecification } from 'maplibre-gl';
+import type { LayerSpecification, StyleSpecification } from 'maplibre-gl';
+
+import { labelLayers } from './delivery-map-labels';
+
+export { GLYPHS_PATH, glyphsUrlOf } from './delivery-map-labels';
 
 /**
  * Le style de la carte « Planifier » (lot 10 bis, L10b-C1) : relief ombré,
@@ -83,34 +87,6 @@ export const OSM_ATTRIBUTION =
 export const RELIEF_ATTRIBUTION =
   '<a href="https://mapterhorn.com/attribution" target="_blank" rel="noopener">© Mapterhorn · IGN</a>';
 
-/**
- * Les glyphes servis par le back-office (`public/map-glyphs/`, Noto Sans,
- * OFL) : les seules plages que portent nos noms — 0-255, 256-511, 8192-8447,
- * mesuré sur `rues.pmtiles` le 2026-09-29. Tilemaker n'y écrit que
- * `name:latin`, jamais `name`.
- */
-export const GLYPHS_PATH = 'map-glyphs/';
-const GLYPHS_TEMPLATE = '{fontstack}/{range}.pbf';
-const FONT_REGULAR = 'Noto Sans Regular';
-const FONT_BOLD = 'Noto Sans Bold';
-const NAME: ExpressionSpecification = ['get', 'name:latin'];
-const LABEL_HALO_WIDTH = 1.4;
-const STREET_NAMES_MIN_ZOOM = 14;
-const PEAK_NAMES_MIN_ZOOM = 12;
-const HAMLET_NAMES_MIN_ZOOM = 12;
-const VILLAGE_NAMES_MIN_ZOOM = 10;
-/** Tailles en pixels : un cran par rang de lieu, les rues au plus petit. */
-const SMALL_TEXT = 10;
-const VILLAGE_TEXT = 11;
-const TOWN_TEXT = 12;
-const TOWN_LETTER_SPACING = 0.08;
-const PEAK_OFFSET: [number, number] = [0, 0.6];
-
-/** L'adresse des glyphes, absolue : MapLibre ne résout pas une URL relative. */
-export function glyphsUrlOf(baseUri: string): string {
-  return `${new URL(GLYPHS_PATH, baseUri).href}${GLYPHS_TEMPLATE}`;
-}
-
 /** Un tracé en GeoJSON — la seule forme que la carte pose. */
 export interface RouteFeature {
   readonly type: 'Feature';
@@ -138,82 +114,6 @@ export function routesGeoJson(routes: readonly MapRoute[]): RoutesCollection {
         },
       })),
   };
-}
-
-/**
- * Les noms dessinés par la carte, sous les tracés : les repères d'arrêts sont
- * des marqueurs HTML, donc toujours au-dessus de toute couche du canevas.
- */
-function labelLayers(palette: MapPalette): LayerSpecification[] {
-  const halo = { 'text-halo-color': palette.halo, 'text-halo-width': LABEL_HALO_WIDTH };
-  return [
-    {
-      id: 'street-names',
-      type: 'symbol',
-      source: STREETS,
-      'source-layer': 'transportation_name',
-      minzoom: STREET_NAMES_MIN_ZOOM,
-      filter: ['has', 'name:latin'],
-      layout: {
-        'symbol-placement': 'line',
-        'text-field': NAME,
-        'text-font': [FONT_REGULAR],
-        'text-size': SMALL_TEXT,
-      },
-      paint: { 'text-color': palette.labelMinor, ...halo },
-    },
-    {
-      id: 'peak-names',
-      type: 'symbol',
-      source: STREETS,
-      'source-layer': 'mountain_peak',
-      minzoom: PEAK_NAMES_MIN_ZOOM,
-      filter: ['has', 'name:latin'],
-      layout: {
-        'text-field': NAME,
-        'text-font': [FONT_REGULAR],
-        'text-size': SMALL_TEXT,
-        'text-offset': PEAK_OFFSET,
-        'text-anchor': 'top',
-      },
-      paint: { 'text-color': palette.labelMinor, ...halo },
-    },
-    {
-      id: 'hamlet-names',
-      type: 'symbol',
-      source: STREETS,
-      'source-layer': 'place',
-      minzoom: HAMLET_NAMES_MIN_ZOOM,
-      filter: ['==', ['get', 'class'], 'hamlet'],
-      layout: { 'text-field': NAME, 'text-font': [FONT_REGULAR], 'text-size': SMALL_TEXT },
-      paint: { 'text-color': palette.labelMinor, ...halo },
-    },
-    {
-      id: 'village-names',
-      type: 'symbol',
-      source: STREETS,
-      'source-layer': 'place',
-      minzoom: VILLAGE_NAMES_MIN_ZOOM,
-      filter: ['==', ['get', 'class'], 'village'],
-      layout: { 'text-field': NAME, 'text-font': [FONT_REGULAR], 'text-size': VILLAGE_TEXT },
-      paint: { 'text-color': palette.label, ...halo },
-    },
-    {
-      id: 'town-names',
-      type: 'symbol',
-      source: STREETS,
-      'source-layer': 'place',
-      filter: ['in', ['get', 'class'], ['literal', ['city', 'town']]],
-      layout: {
-        'text-field': NAME,
-        'text-font': [FONT_BOLD],
-        'text-size': TOWN_TEXT,
-        'text-transform': 'uppercase',
-        'text-letter-spacing': TOWN_LETTER_SPACING,
-      },
-      paint: { 'text-color': palette.label, ...halo },
-    },
-  ];
 }
 
 function road(
@@ -321,7 +221,7 @@ export function mapStyleOf(
       road('road-minor', ['minor', 'service', 'track'], 1.4, palette.road),
       road('road-secondary', ['tertiary', 'secondary'], 2.6, palette.road),
       road('road-primary', ['primary', 'trunk', 'motorway'], 3.6, palette.roadMajor),
-      ...labelLayers(palette),
+      ...labelLayers(palette, STREETS),
       {
         id: 'routes-muted',
         type: 'line',

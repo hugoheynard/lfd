@@ -16,7 +16,7 @@ import {
 } from '@angular/core';
 import { Router } from '@angular/router';
 import type { DeliveryIncidentView, DeliveryPlacementSuggestionView } from '@lfd/contracts';
-import type { FoldSelectOption, FoldViewToggleOption } from 'fold-ng';
+import type { FoldSelectOption } from 'fold-ng';
 import {
   FoldBadgeComponent,
   FoldButtonComponent,
@@ -29,34 +29,45 @@ import {
 } from 'fold-ng';
 
 import { DeliveryMap, type MapDeparture } from '../delivery-map/delivery-map';
-import { stopPointOf } from '../delivery-planning';
-import {
-  passageCountLabel,
-  roundCountLabel,
-  shortRoundLabel,
-  windowShortLabel,
-} from '../delivery-rounds';
+import { passageCountLabel, roundCountLabel, shortRoundLabel } from '../delivery-rounds';
 import type { IncidentPhotoLoader } from '../incident-photo/incident-photo';
 import { OrderCard } from '../order-card/order-card';
 import { PlacementSuggestion } from '../placement-suggestion/placement-suggestion';
 import { RoundColumn, type StopShift } from '../round-column/round-column';
 import {
-  alertCountOf,
   type Board,
   type BoardDrop,
   type BoardOrder,
   type BoardRound,
-  cardMetaOf,
   cardTitleOf,
   dropTargetOf,
-  mapRowPrefixOf,
   needsGps,
   orderAriaOf,
   orderTagsOf,
-  plannedOfBoard,
   POOL_KEY,
   vehicleGroupsOf,
 } from '../rounds-board-model';
+import {
+  alertTotalOf,
+  carnetUrlOf,
+  draggedTo,
+  mapDashedOf,
+  mapMutedOf,
+  MAP_SCOPE_OPTIONS,
+  mapNoteOf,
+  mapRoundsOf,
+  mapRowsOf,
+  mapSubtitleOf,
+  orderMetaOf,
+  orderWindowOf,
+  passageColumnTitle,
+  passageNoteOf,
+  poolSubtitleOf,
+  putDropOf,
+  SCOPE_ALL,
+  SCOPE_VEHICLE,
+  vehicleTabsOf,
+} from '../rounds-board-view';
 
 /** Ce que montre la colonne centrale : une lecture en cours, ratée, ou le tableau. */
 export type BoardStatus = 'loading' | 'error' | 'ready';
@@ -69,8 +80,6 @@ export interface RoundGesture<T> {
 
 const ALL = 'all';
 const TAB_PREFIX = 'tab:';
-const SCOPE_VEHICLE = 'vehicle';
-const SCOPE_ALL = 'all';
 
 /**
  * **L'organisateur de tournées** (`handoff-tournees/SPEC.md`) : trois
@@ -168,110 +177,43 @@ export class RoundsBoard {
     return vehicle === null ? this.groups() : [vehicle];
   });
 
-  protected readonly tabs = computed(() =>
-    this.groups().map((group) => ({
-      vehicleId: group.vehicleId,
-      label: group.vehicleName,
-      count: passageCountLabel(group.rounds.length),
-      alerts: group.rounds.reduce((total, round) => total + alertCountOf(round), 0),
-    })),
-  );
+  protected readonly tabs = computed(() => vehicleTabsOf(this.groups()));
   protected readonly allCount = computed(() => roundCountLabel(this.rounds().length));
-  protected readonly allAlerts = computed(() =>
-    this.rounds().reduce((total, round) => total + alertCountOf(round), 0),
-  );
+  protected readonly allAlerts = computed(() => alertTotalOf(this.rounds()));
 
   /** Les tournées où « Mettre dans » peut envoyer une commande. */
   protected readonly openRounds = computed(() => this.rounds().filter((round) => !round.frozen));
 
   /** Ce que la carte regarde : toutes les tournées, ou celles du véhicule ouvert. */
-  private readonly mains = computed(() => {
-    const vehicle = this.vehicleTab();
-    return vehicle === null ? this.rounds() : vehicle.rounds;
-  });
+  private readonly mains = computed(() => this.vehicleTab()?.rounds ?? this.rounds());
 
-  /** Deux segments toujours, comme la maquette ; sur « Toutes », « Ce véhicule » ne vise rien. */
-  protected readonly scopeOptions: readonly FoldViewToggleOption[] = [
-    { value: SCOPE_VEHICLE, label: 'Ce véhicule' },
-    { value: SCOPE_ALL, label: 'Toutes' },
-  ];
+  protected readonly scopeOptions = MAP_SCOPE_OPTIONS;
   protected readonly scope = computed(() =>
     this.vehicleTab() === null || this.mapAll() ? SCOPE_ALL : SCOPE_VEHICLE,
   );
 
-  protected readonly mapRounds = computed(() => {
-    const shown = this.scope() === SCOPE_ALL ? this.rounds() : this.mains();
-    return shown.filter((round) => round.stops.length > 0).map(plannedOfBoard);
-  });
+  protected readonly mapRounds = computed(() =>
+    mapRoundsOf(this.scope() === SCOPE_ALL ? this.rounds() : this.mains()),
+  );
   /** Les autres tournées, en pointillé à 40 %, quand un véhicule est ouvert sur « Toutes ». */
-  protected readonly mapMuted = computed(() => {
-    const vehicle = this.vehicleTab();
-    return new Set(
-      vehicle === null
-        ? []
-        : this.rounds()
-            .filter((round) => round.vehicleId !== vehicle.vehicleId)
-            .map((round) => round.key),
-    );
-  });
+  protected readonly mapMuted = computed(() => mapMutedOf(this.rounds(), this.vehicleTab()));
   /** Le second passage du véhicule ouvert, en tirets. */
-  protected readonly mapDashed = computed(() => {
-    const vehicle = this.vehicleTab();
-    return new Set(vehicle === null ? [] : vehicle.rounds.slice(1).map((round) => round.key));
-  });
+  protected readonly mapDashed = computed(() => mapDashedOf(this.vehicleTab()));
 
   protected readonly mapTitle = computed(
     () => this.vehicleTab()?.vehicleName ?? 'Toutes les tournées',
   );
-  protected readonly mapSubtitle = computed(() => {
-    const mains = this.mains();
-    const count = mains.reduce((total, round) => total + round.stops.length, 0);
-    const departure = this.departure();
-    const parts = [count === 1 ? '1 arrêt' : `${String(count)} arrêts`];
-    if (departure !== null) {
-      parts.push(`départ et retour ${departure.label}`);
-    }
-    if (this.vehicleTab() !== null && mains.length > 1) {
-      parts.push('passage 2 en tirets');
-    }
-    return parts.join(' · ');
-  });
-
-  protected readonly mapRows = computed(() => {
-    const mains = this.mains();
-    const inVehicle = this.vehicleTab() !== null;
-    return mains.flatMap((round) =>
-      round.stops.map((stop, index) => ({
-        orderId: stop.orderId,
-        number: index + 1,
-        color: this.colorOf(round.vehicleId),
-        title: `${mapRowPrefixOf(round, inVehicle, mains.length > 1)}${cardTitleOf(stop)}`,
-        window: windowShortLabel(stop.window),
-        clash: stop.windowClash !== null,
-      })),
-    );
-  });
-
-  protected readonly mapNote = computed(() => {
-    const stops = this.mains().flatMap((round) => round.stops);
-    const missing = stops.filter((stop) => stopPointOf({ sheet: stop.sheet }) === null).length;
-    const parts: string[] = [];
-    if (missing === 1) {
-      parts.push('1 arrêt non situé, absent de la carte.');
-    } else if (missing > 1) {
-      parts.push(`${String(missing)} arrêts non situés, absents de la carte.`);
-    }
-    if (stops.some((stop) => stop.windowClash !== null)) {
-      parts.push('Fenêtre intenable : l’ordre fait revenir en arrière.');
-    }
-    return parts.join(' ');
-  });
-
-  protected readonly poolSubtitle = computed(() =>
-    this.preview()
-      ? 'Ce que le calcul n’a pas placé, avec sa raison.'
-      : 'Dans aucune tournée : aucune ne doit partir oubliée.',
+  protected readonly mapSubtitle = computed(() =>
+    mapSubtitleOf(this.mains(), this.departure(), this.vehicleTab() !== null),
   );
+
+  protected readonly mapRows = computed(() =>
+    mapRowsOf(this.mains(), this.vehicleTab() !== null, (vehicleId) => this.colorOf(vehicleId)),
+  );
+
+  protected readonly mapNote = computed(() => mapNoteOf(this.mains()));
+
+  protected readonly poolSubtitle = computed(() => poolSubtitleOf(this.preview()));
 
   protected readonly titleOf = cardTitleOf;
   protected readonly tagsOf = orderTagsOf;
@@ -280,13 +222,8 @@ export class RoundsBoard {
   protected readonly passageCountLabel = passageCountLabel;
   protected readonly needsGps = needsGps;
 
-  protected metaOf(order: BoardOrder): string {
-    return cardMetaOf(order.reference, order.sheet);
-  }
-
-  protected windowOf(order: BoardOrder): string {
-    return windowShortLabel(order.sheet?.window ?? null);
-  }
+  protected readonly metaOf = orderMetaOf;
+  protected readonly windowOf = orderWindowOf;
 
   protected colorOf(vehicleId: string): string {
     return this.colors().get(vehicleId) ?? 'var(--fold-color-text-muted)';
@@ -296,23 +233,8 @@ export class RoundsBoard {
     return this.loadBadges().get(vehicleId) ?? null;
   }
 
-  /** « Passage 1 » / « Tournée unique ». */
-  protected columnTitle(rounds: readonly BoardRound[], index: number): string {
-    return rounds.length > 1
-      ? `Passage ${String(rounds[index]?.passage ?? index + 1)}`
-      : 'Tournée unique';
-  }
-
-  /** « part en premier » / « après le passage 1 ». */
-  protected passageNote(rounds: readonly BoardRound[], index: number): string | null {
-    if (rounds.length < 2) {
-      return null;
-    }
-    const previous = rounds[index - 1];
-    return previous === undefined
-      ? 'part en premier'
-      : `après le passage ${String(previous.passage)}`;
-  }
+  protected readonly columnTitle = passageColumnTitle;
+  protected readonly passageNote = passageNoteOf;
 
   protected pickTab(vehicleId: string): void {
     this.tab.set(vehicleId);
@@ -326,19 +248,13 @@ export class RoundsBoard {
 
   /** « Mettre dans » : l'équivalent clavier du glisser, en fin de tournée. */
   protected put(order: BoardOrder, index: number, round: BoardRound): void {
-    this.dropped.emit({
-      orderId: order.orderId,
-      from: { list: POOL_KEY, index },
-      to: { list: round.key, index: round.stops.length },
-    });
+    this.dropped.emit(putDropOf(order, index, round));
   }
 
   protected openCarnet(order: BoardOrder): void {
-    const company = order.sheet?.addressBook?.companyId;
-    if (company !== undefined) {
-      void this.router.navigateByUrl(
-        `/comptes-clients/${encodeURIComponent(company)}/informations`,
-      );
+    const url = carnetUrlOf(order);
+    if (url !== null) {
+      void this.router.navigateByUrl(url);
     }
   }
 
@@ -348,14 +264,9 @@ export class RoundsBoard {
 
   /** Lâcher sur « À répartir » : seul un arrêt de tournée y retourne — retirer. */
   protected dropOnPool(event: CdkDragDrop<string, string, string>): void {
-    if (event.previousContainer.data === POOL_KEY) {
-      return;
+    if (event.previousContainer.data !== POOL_KEY) {
+      this.dropped.emit(draggedTo(event, { list: POOL_KEY, index: event.currentIndex }));
     }
-    this.dropped.emit({
-      orderId: event.item.data,
-      from: { list: event.previousContainer.data, index: event.previousIndex },
-      to: { list: POOL_KEY, index: event.currentIndex },
-    });
   }
 
   /**
@@ -374,11 +285,7 @@ export class RoundsBoard {
       return;
     }
     if (target.key !== event.previousContainer.data) {
-      this.dropped.emit({
-        orderId: event.item.data,
-        from: { list: event.previousContainer.data, index: event.previousIndex },
-        to: { list: target.key, index: target.stops.length },
-      });
+      this.dropped.emit(draggedTo(event, { list: target.key, index: target.stops.length }));
     }
     this.pickTab(vehicleId);
     this.mapAll.set(false);

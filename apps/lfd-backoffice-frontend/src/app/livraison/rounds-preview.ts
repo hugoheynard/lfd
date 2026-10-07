@@ -15,7 +15,8 @@ import {
 } from './delivery-planning';
 import type { ComposedDay, OrderLists } from './delivery-rounds';
 import { DeliveryRoutingService } from './delivery-routing.service';
-import { type Board, boardOfPlan, POOL_KEY, previewPoolOf } from './rounds-board-model';
+import { type Board, POOL_KEY } from './rounds-board-model';
+import { boardOfPlan, previewPoolOf } from './rounds-board-preview';
 
 /** Ce qu'« Annuler » remet dans l'aperçu : la composition et « À répartir » d'avant. */
 export interface PreviewSnapshot {

@@ -4,7 +4,6 @@ import {
   BIN_CAPACITY_MAX_UNITS,
   BIN_CAPACITY_MIN_UNITS,
   type BinCapacitiesView,
-  type BinCapacityView,
   type BinProductView,
   type BinTypeView,
 } from '@lfd/contracts';
@@ -40,6 +39,7 @@ import {
   skusWithoutCapacity,
   visibleProducts,
 } from '../bin-capacities';
+import { withCapacity } from '../bin-capacities-update';
 import { DeliveryBinsService } from '../delivery-bins.service';
 
 type GridState =
@@ -283,12 +283,7 @@ export class BinCapacitiesPage {
     if (state.status !== 'ready') {
       return;
     }
-    const others = state.view.capacities.filter(
-      (cell) => cell.binTypeId !== binTypeId || cell.sku !== sku,
-    );
-    const capacities: readonly BinCapacityView[] =
-      units === null ? others : [...others, { binTypeId, sku, units }];
-    this.state.set({ status: 'ready', view: { ...state.view, capacities } });
+    this.state.set({ status: 'ready', view: withCapacity(state.view, binTypeId, sku, units) });
   }
 
   private async load(): Promise<void> {

@@ -17,7 +17,6 @@ import {
   ViewEncapsulation,
 } from '@angular/core';
 import type { GpsPoint } from '@lfd/contracts';
-import { firstValueFrom } from 'rxjs';
 import {
   FoldButtonComponent,
   FoldCalloutComponent,
@@ -27,11 +26,10 @@ import {
 } from 'fold-ng';
 import type * as MapLibreModule from 'maplibre-gl';
 import type { GeoJSONSource, Map as MapLibreMap, Marker } from 'maplibre-gl';
-import type * as PmTilesModule from 'pmtiles';
 
+import { mapLegend, untracedVehicles } from '../delivery-map-legend';
+import { markerElement, roundsBounds, stopPinClass } from '../delivery-map-markers';
 import {
-  MAP_PALETTE_TOKENS,
-  type MapPalette,
   type MapRoute,
   type MapRouteStyle,
   glyphsUrlOf,
@@ -40,12 +38,18 @@ import {
   routesGeoJson,
 } from '../delivery-map-style';
 import { type PlannedRound, roundColor, stopNameOf, stopPointOf } from '../delivery-planning';
+import { MapPaletteResolver } from '../map-palette-resolver';
+import {
+  ensureMaplibreStylesheet,
+  RELIEF_FILE,
+  registerPmTiles,
+  STREETS_FILE,
+} from '../map-tile-sources';
 import { MAP_TILES } from '../map-tiles.config';
 
 type MapState = 'absent' | 'loading' | 'ready' | 'error';
 
 type MapLibre = typeof MapLibreModule;
-type PmTiles = typeof PmTilesModule;
 
 /** Le départ de toutes les tournées : le point de retrait configuré. */
 export interface MapDeparture {
@@ -53,10 +57,6 @@ export interface MapDeparture {
   readonly gps: GpsPoint;
 }
 
-const STREETS_FILE = 'rues.pmtiles';
-const RELIEF_FILE = 'relief.pmtiles';
-/** Le CSS de MapLibre : un paquet de styles non injecté (`angular.json`), posé à la première carte. */
-const MAPLIBRE_CSS = 'maplibre-gl.css';
 const INITIAL_ZOOM = 10;
 const FIT_PADDING = 40;
 
@@ -92,8 +92,12 @@ const FIT_PADDING = 40;
 export class DeliveryMap {
   private readonly document = inject(DOCUMENT);
   private readonly http = inject(HttpClient);
-  private readonly host = inject<ElementRef<HTMLElement>>(ElementRef);
   private readonly tiles = inject(MAP_TILES);
+  /** Les tokens fold résolus en couleurs que MapLibre sait lire. */
+  private readonly paletteResolver = new MapPaletteResolver(
+    this.document,
+    inject<ElementRef<HTMLElement>>(ElementRef).nativeElement,
+  );
 
   readonly rounds = input.required<readonly PlannedRound[]>();
   readonly departure = input.required<MapDeparture>();
@@ -113,22 +117,10 @@ export class DeliveryMap {
   private readonly canvas = viewChild.required<ElementRef<HTMLElement>>('canvas');
 
   /** Les tournées qui ont des arrêts mais pas de tracé : la carte le dit (L10b-C4). */
-  protected readonly untraced = computed(() =>
-    this.rounds()
-      .filter((round) => round.stops.length > 0 && round.timing !== null && round.geometry === null)
-      .map((round) => round.vehicleName),
+  protected readonly untraced = computed(() => untracedVehicles(this.rounds()));
+  protected readonly legend = computed(() =>
+    mapLegend(this.rounds(), (round) => this.colorOf(round)),
   );
-  protected readonly legend = computed(() => {
-    const rounds = this.rounds();
-    const seen = new Set<string>();
-    return rounds.flatMap((round) => {
-      if (seen.has(round.vehicleName) || round.stops.length === 0) {
-        return [];
-      }
-      seen.add(round.vehicleName);
-      return [{ name: round.vehicleName, color: this.colorOf(round) }];
-    });
-  });
 
   private map: MapLibreMap | null = null;
   private library: MapLibre | null = null;
@@ -182,20 +174,22 @@ export class DeliveryMap {
     this.map?.remove();
     this.map = null;
     try {
-      this.ensureStylesheet();
+      ensureMaplibreStylesheet(this.document);
       const [library, pmtiles] = await Promise.all([import('maplibre-gl'), import('pmtiles')]);
       const protocol = new pmtiles.Protocol();
       library.addProtocol('pmtiles', protocol.tile);
       const streets = new URL(`${tiles.baseUrl}${STREETS_FILE}`, this.document.baseURI).href;
       const relief = new URL(`${tiles.baseUrl}${RELIEF_FILE}`, this.document.baseURI).href;
       await Promise.all(
-        [streets, relief].map((url) => this.register(pmtiles, protocol, url, tiles.wholeFile)),
+        [streets, relief].map((url) =>
+          registerPmTiles(this.http, pmtiles, protocol, url, tiles.wholeFile),
+        ),
       );
       const { gps } = this.departure();
       const map = new library.Map({
         container: this.canvas().nativeElement,
         style: mapStyleOf(
-          this.palette(),
+          this.paletteResolver.palette(),
           `pmtiles://${streets}`,
           `pmtiles://${relief}`,
           glyphsUrlOf(this.document.baseURI),
@@ -221,88 +215,6 @@ export class DeliveryMap {
     }
   }
 
-  /** En développement, le fichier entier en mémoire ; en production, des plages. */
-  private async register(
-    pmtiles: PmTiles,
-    protocol: PmTilesModule.Protocol,
-    url: string,
-    wholeFile: boolean,
-  ): Promise<void> {
-    if (!wholeFile) {
-      protocol.add(new pmtiles.PMTiles(url));
-      return;
-    }
-    // Un fichier binaire, pas une réponse d'API : aucun contrat à typer.
-    const buffer = await firstValueFrom(this.http.get(url, { responseType: 'arraybuffer' }));
-    protocol.add(
-      new pmtiles.PMTiles({
-        getKey: () => url,
-        getBytes: (offset: number, length: number) =>
-          Promise.resolve({ data: buffer.slice(offset, offset + length) }),
-      }),
-    );
-  }
-
-  private ensureStylesheet(): void {
-    if (this.document.head.querySelector('link[data-maplibre-css]') !== null) {
-      return;
-    }
-    const link = this.document.createElement('link');
-    link.rel = 'stylesheet';
-    link.href = MAPLIBRE_CSS;
-    link.dataset['maplibreCss'] = '';
-    this.document.head.append(link);
-  }
-
-  /** MapLibre ne lit pas `var()` : chaque token est résolu en couleur calculée. */
-  private resolve(token: string): string {
-    const probe = this.document.createElement('span');
-    probe.style.color = `var(${token})`;
-    this.host.nativeElement.append(probe);
-    const color = getComputedStyle(probe).color;
-    probe.remove();
-    return this.toRgba(color);
-  }
-
-  /**
-   * Les tokens fold sont souvent des `color-mix()`, que le navigateur rend en
-   * `color(srgb …)` : MapLibre refuse cette forme et le style entier avec, la
-   * carte restait sur « Chargement » sans rien dire (vu le 2026-09-29). Un
-   * pixel peint par le canevas 2D rend toujours des octets sRGB.
-   */
-  private toRgba(color: string): string {
-    const context = this.document.createElement('canvas').getContext('2d', {
-      willReadFrequently: true,
-    });
-    if (context === null) {
-      return color;
-    }
-    context.clearRect(0, 0, 1, 1);
-    context.fillStyle = color;
-    context.fillRect(0, 0, 1, 1);
-    const [red = 0, green = 0, blue = 0, alpha = 0] = context.getImageData(0, 0, 1, 1).data;
-    return `rgba(${String(red)}, ${String(green)}, ${String(blue)}, ${String(Math.round((alpha / 255) * 1000) / 1000)})`;
-  }
-
-  private palette(): MapPalette {
-    const color = (key: keyof MapPalette): string => this.resolve(MAP_PALETTE_TOKENS[key]);
-    return {
-      land: color('land'),
-      wood: color('wood'),
-      grass: color('grass'),
-      ice: color('ice'),
-      built: color('built'),
-      water: color('water'),
-      road: color('road'),
-      roadMajor: color('roadMajor'),
-      shade: color('shade'),
-      light: color('light'),
-      halo: color('halo'),
-      label: color('label'),
-      labelMinor: color('labelMinor'),
-    };
-  }
-
   private draw(rounds: readonly PlannedRound[]): void {
     const map = this.map;
     const library = this.library;
@@ -314,7 +226,7 @@ export class DeliveryMap {
         ? []
         : [
             {
-              color: this.toRgba(this.colorOf(round)),
+              color: this.paletteResolver.toRgba(this.colorOf(round)),
               coordinates: round.geometry,
               style: this.styleOf(round),
             },
@@ -332,7 +244,11 @@ export class DeliveryMap {
     this.markers = [];
 
     const departure = this.departure();
-    add(this.element('delivery-map__lab', 'L', `${departure.label} — départ`), departure.gps, null);
+    add(
+      markerElement(this.document, 'delivery-map__lab', 'L', `${departure.label} — départ`),
+      departure.gps,
+      null,
+    );
     for (const round of rounds) {
       const color = this.colorOf(round);
       const muted = this.muted().has(round.key);
@@ -341,14 +257,9 @@ export class DeliveryMap {
         if (point === null) {
           return;
         }
-        const pin = this.element(
-          [
-            'delivery-map__pin',
-            stop.windowMissed ? 'delivery-map__pin--late' : '',
-            muted ? 'delivery-map__pin--muted' : '',
-          ]
-            .filter((name) => name !== '')
-            .join(' '),
+        const pin = markerElement(
+          this.document,
+          stopPinClass(stop.windowMissed, muted),
           String(index + 1),
           stop.arrival === null ? stopNameOf(stop) : `${stopNameOf(stop)} — ${stop.arrival}`,
         );
@@ -366,16 +277,6 @@ export class DeliveryMap {
     }
   }
 
-  private element(className: string, text: string, title: string): HTMLElement {
-    const element = this.document.createElement('div');
-    element.className = className;
-    element.textContent = text;
-    if (title !== '') {
-      element.title = title;
-    }
-    return element;
-  }
-
   private highlight(orderId: string | null): void {
     for (const { orderId: id, marker } of this.markers) {
       if (id !== null) {
@@ -390,19 +291,7 @@ export class DeliveryMap {
     if (map === null || library === null) {
       return;
     }
-    const { gps } = this.departure();
-    const bounds = new library.LngLatBounds([gps.lng, gps.lat], [gps.lng, gps.lat]);
-    for (const round of rounds) {
-      for (const [lng, lat] of round.geometry ?? []) {
-        bounds.extend([lng, lat]);
-      }
-      for (const stop of round.stops) {
-        const point = stopPointOf(stop);
-        if (point !== null) {
-          bounds.extend([point.lng, point.lat]);
-        }
-      }
-    }
+    const bounds = roundsBounds(library, this.departure().gps, rounds);
     map.fitBounds(bounds, { padding: FIT_PADDING, duration: 0 });
   }
 }

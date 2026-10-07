@@ -3,20 +3,12 @@ import {
   ChangeDetectionStrategy,
   Component,
   computed,
-  effect,
   inject,
   input,
   output,
   signal,
-  untracked,
 } from '@angular/core';
-import type {
-  DeliveryLoadingPlanView,
-  DeliveryLoadingPlanWarningKind,
-  DeliveryLoadingRoundView,
-  LoadDeliveryBinPayload,
-} from '@lfd/contracts';
-import { httpErrorMessage } from '@lfd/endpoints';
+import type { DeliveryLoadingRoundView } from '@lfd/contracts';
 import {
   FoldButtonComponent,
   FoldCalloutComponent,
@@ -28,89 +20,29 @@ import {
   FoldMeterComponent,
 } from 'fold-ng';
 
-import {
-  binCountLabel,
-  binKindLabel,
-  hasBinToRedo,
-  parisTimeOf,
-  scannedBin,
-} from '../delivery-loading';
-import {
-  alreadyLoadedNotice,
-  loadedBinNotice,
-  type LoadingNotice,
-  planBinOf,
-  refusalNotice,
-} from '../delivery-loading-notice';
+import { hasBinToRedo, parisTimeOf, scannedBin } from '../delivery-loading';
+import { alreadyLoadedNotice, planBinOf } from '../delivery-loading-notice';
 import { loadedBinKeys } from '../delivery-loading-plan';
-import {
-  currentRow,
-  floorRows,
-  locateBin,
-  nextBin,
-  outOfRowNotice,
-  placementLine,
-  stackTiles,
-} from '../delivery-loading-rows';
-import {
-  missingByStop,
-  rowColumns,
-  rowTabs,
-  rowTitle,
-  stackColumns,
-  stackScales,
-} from '../delivery-loading-tiles';
+import { locateBin, outOfRowNotice } from '../delivery-loading-rows';
+import { missingByStop } from '../delivery-loading-tiles';
 import { roundLabel } from '../delivery-rounds';
 import { LoadingGateway } from '../loading-gateway';
 import { LoadingNextCard } from '../loading-next-card/loading-next-card';
 import { LoadingPlan } from '../loading-plan/loading-plan';
+import { loadingPlanLayout } from '../loading-plan-layout';
+import { loadingProgressSignals } from '../loading-progress';
+import { acceptedLoadNotice, NOT_A_BIN, warningVariant } from '../loading-round-notice';
+import { LoadingRoundSource } from '../loading-round-source';
 import { LoadingRowPicker } from '../loading-row-picker/loading-row-picker';
 import { LoadingRowView } from '../loading-row-view/loading-row-view';
-import { neighbourRow, swipeStep } from '../row-swipe';
-import { railTicks } from '../rail-ticks';
+import { LoadingWriteGate } from '../loading-write-gate';
+import { neighbourRow } from '../row-swipe';
+import { RowSwipeGesture } from '../row-swipe-gesture';
 
-type RoundState =
-  | { readonly status: 'loading' }
-  | { readonly status: 'error' }
-  | { readonly status: 'ready'; readonly view: DeliveryLoadingRoundView };
-
-type PlanState =
-  | { readonly status: 'loading' }
-  | { readonly status: 'error' }
-  | { readonly status: 'ready'; readonly plan: DeliveryLoadingPlanView };
+export { loadedNotice } from '../loading-round-notice';
 
 /** « Partir » depuis l'écran de chargement, avec la version lue — ou rien : pas offert ici. */
 export type LoadingDeparture = (roundId: string, version: number) => Promise<void>;
-
-/** Ce qu'on dit d'un code lu qui n'est pas un bac — il n'atteint jamais le réseau. */
-const NOT_A_BIN =
-  'Ce code ne désigne pas un bac : ni l’adresse d’un bac, ni un code court de six caractères.';
-
-/**
- * Les alertes du plan qui disent un dépassement : en rouge. Les autres —
- * dont `compacted`, des bacs posés derrière d'autres — en avertissement.
- */
-const ALERT_WARNINGS: ReadonlySet<DeliveryLoadingPlanWarningKind> = new Set([
-  'floor_over',
-  'dry_over',
-  'cold_over',
-]);
-
-/** Le bac qu'un chargement accepté désigne, relu dans la tournée : « CMD-12 · bac 2 ». */
-export function loadedNotice(
-  view: DeliveryLoadingRoundView,
-  payload: LoadDeliveryBinPayload,
-): string {
-  for (const stop of view.stops) {
-    const bin = stop.bins.find((candidate) =>
-      'binId' in payload ? candidate.binId === payload.binId : candidate.code === payload.code,
-    );
-    if (bin !== undefined) {
-      return `${stop.reference} · ${stop.customerLabel} — bac ${String(bin.index)} (${binKindLabel(bin)}) chargé (${binCountLabel(stop)}).`;
-    }
-  }
-  return 'Bac chargé.';
-}
 
 /**
  * **Charger UN véhicule** — le corps de l'écran « Charger » (lot 4, L4-C2 ;
@@ -168,14 +100,19 @@ export class LoadingRound {
   /** « Tout est chargé », et on s'en va. */
   readonly done = output();
 
-  protected readonly state = signal<RoundState>({ status: 'loading' });
-  private readonly reload = signal(0);
-  protected readonly planState = signal<PlanState>({ status: 'loading' });
-  private readonly planReload = signal(0);
+  /** La tournée et son plan, lus puis relus après chaque geste. */
+  private readonly source = new LoadingRoundSource(
+    () => this.roundId(),
+    (view) => this.viewChange.emit(view),
+  );
+  protected readonly state = this.source.state;
+  protected readonly planState = this.source.planState;
 
+  /** Les gestes, un à la fois, chacun suivi d'une relecture. */
+  private readonly gate = new LoadingWriteGate(() => this.source.read(this.roundId()));
   /** Le dernier avis : un bac chargé, un bac d'ailleurs, un refus. */
-  protected readonly notice = signal<LoadingNotice | null>(null);
-  protected readonly busy = signal(false);
+  protected readonly notice = this.gate.notice;
+  protected readonly busy = this.gate.busy;
   /** Le code court tapé, quand le QR est illisible. */
   protected readonly typed = signal('');
   /** Le bac désigné d'un toucher, jusqu'au prochain scan. */
@@ -183,19 +120,8 @@ export class LoadingRound {
   /** La rangée figée d'un toucher sur un onglet, jusqu'au prochain scan dans l'ordre. */
   protected readonly pinnedRow = signal<number | null>(null);
 
-  protected readonly view = computed(() => {
-    const state = this.state();
-    return state.status === 'ready' ? state.view : null;
-  });
-  protected readonly plan = computed(() => {
-    const state = this.planState();
-    return state.status === 'ready' ? state.plan : null;
-  });
-
-  private readonly planKey = computed(() => {
-    const view = this.view();
-    return view === null ? null : `${view.roundId}@${String(view.version)}`;
-  });
+  protected readonly view = this.source.view;
+  protected readonly plan = this.source.plan;
 
   protected readonly departed = computed(() => (this.view()?.departedAt ?? null) !== null);
   protected readonly canLoad = computed(
@@ -218,142 +144,47 @@ export class LoadingRound {
     return view === null ? new Set<string>() : loadedBinKeys(view);
   });
 
-  /** « 4 / 15 bacs chargés · 5 arrêts à finir ». */
-  protected readonly progress = computed(() => {
-    const stops = this.view()?.stops ?? [];
-    const bins = stops.flatMap((stop) => stop.bins);
-    return {
-      loaded: bins.filter((bin) => bin.loadedAt !== null).length,
-      total: bins.length,
-      stops: stops.length,
-      stopsLeft: stops.filter((stop) => stop.state !== 'loaded').length,
-    };
-  });
-  protected readonly stopsLeftLabel = computed(() => {
-    const left = this.progress().stopsLeft;
-    return left === 0 ? 'complet' : `${String(left)} arrêt${left > 1 ? 's' : ''} à finir`;
-  });
-  /**
-   * La barre en traits, un par bac, par paquets de dix ; `null` au-delà de
-   * `RAIL_TICKS_MAX`, où des traits trop fins redeviennent une barre.
-   */
-  protected readonly railGroups = computed(() => {
-    const { loaded, total } = this.progress();
-    return railTicks(loaded, total);
-  });
-  protected readonly progressPercent = computed(() => {
-    const { loaded, total } = this.progress();
-    return total === 0 ? 0 : (loaded / total) * 100;
-  });
+  /** L'avancement : bacs chargés, arrêts à finir, la barre et le mot de la fin. */
+  private readonly advance = loadingProgressSignals(this.view, this.plan);
+  protected readonly progress = this.advance.progress;
+  protected readonly stopsLeftLabel = this.advance.stopsLeftLabel;
+  protected readonly railGroups = this.advance.railGroups;
+  protected readonly progressPercent = this.advance.progressPercent;
+  protected readonly allLoaded = this.advance.allLoaded;
+  protected readonly doneSubtitle = this.advance.doneSubtitle;
   /** « Charger · Kangoo blanc » — l'en-tête du téléphone. */
   protected readonly title = computed(() => {
     const vehicle = this.view()?.vehicleName;
     return vehicle === undefined ? 'Charger' : `Charger · ${vehicle}`;
   });
-  protected readonly allLoaded = computed(() => {
-    const progress = this.progress();
-    return progress.total > 0 && progress.loaded === progress.total;
-  });
-  protected readonly doneSubtitle = computed(() => {
-    const { total, stops } = this.progress();
-    const cold = this.plan()?.stacks.some((stack) => stack.placement?.kind === 'refrigerated');
-    return `${String(total)} bacs · ${String(stops)} arrêts${cold === true ? ' · caisse froide comprise' : ''}`;
-  });
 
-  private readonly tiles = computed(() => {
-    const plan = this.plan();
-    return plan === null ? new Map() : stackTiles(plan.order, this.loaded());
+  /** Le plan mis en rangées, piles et onglets ; la rangée ouverte suit le prochain bac. */
+  private readonly planLayout = loadingPlanLayout({
+    plan: this.plan,
+    loaded: this.loaded,
+    picked: this.picked,
+    pinnedRow: this.pinnedRow,
   });
-  /** Les proportions des bacs, sur le type le plus haut du plan. */
-  private readonly scales = computed(() => stackScales(this.plan()?.stacks ?? []));
-  protected readonly rows = computed(() => {
-    const plan = this.plan();
-    return plan === null || plan.floor === null
-      ? []
-      : floorRows(plan.stacks, plan.order, this.loaded());
-  });
-  protected readonly next = computed(() => {
-    const plan = this.plan();
-    return plan === null ? null : nextBin(plan, this.loaded(), this.picked());
-  });
-  protected readonly nextKey = computed(() => this.next()?.key ?? null);
-  protected readonly placement = computed(() => {
-    const plan = this.plan();
-    const next = this.next();
-    return plan === null || next === null ? null : placementLine(plan, next.bin);
-  });
-
-  /** La rangée ouverte : figée d'un toucher, sinon celle du prochain bac. */
-  protected readonly openRow = computed(() => {
-    const rows = this.rows();
-    const pinned = this.pinnedRow();
-    if (pinned !== null && rows.some((row) => row.row === pinned)) {
-      return pinned;
-    }
-    const stackIndex = this.next()?.bin.stackIndex;
-    const own = rows.find((row) => row.stacks.some((stack) => stack.stackIndex === stackIndex));
-    return own?.row ?? currentRow(rows) ?? rows[0]?.row ?? null;
-  });
-  protected readonly openRowView = computed(() => {
-    const row = this.rows().find((entry) => entry.row === this.openRow());
-    return row === undefined
-      ? null
-      : {
-          title: rowTitle(row.row, this.rows().at(-1)?.row ?? row.row),
-          columns: rowColumns(row, this.tiles(), this.scales()),
-        };
-  });
-  protected readonly tabs = computed(() => rowTabs(this.rows(), this.tiles(), this.nextKey()));
-
-  /** Sans plancher : toutes les piles, dans l'ordre d'ouverture. */
-  protected readonly allColumns = computed(() =>
-    stackColumns(this.plan()?.stacks ?? [], this.tiles(), this.scales()),
-  );
-  protected readonly coldColumns = computed(() =>
-    stackColumns(
-      (this.plan()?.stacks ?? []).filter((stack) => stack.placement?.kind === 'refrigerated'),
-      this.tiles(),
-      this.scales(),
-    ),
-  );
-  protected readonly offFloorColumns = computed(() =>
-    stackColumns(
-      (this.plan()?.stacks ?? []).filter((stack) => stack.placement?.kind === 'off_floor'),
-      this.tiles(),
-      this.scales(),
-    ),
-  );
+  protected readonly rows = this.planLayout.rows;
+  protected readonly next = this.planLayout.next;
+  protected readonly nextKey = this.planLayout.nextKey;
+  protected readonly placement = this.planLayout.placement;
+  protected readonly openRow = this.planLayout.openRow;
+  protected readonly openRowView = this.planLayout.openRowView;
+  protected readonly tabs = this.planLayout.tabs;
+  protected readonly allColumns = this.planLayout.allColumns;
+  protected readonly coldColumns = this.planLayout.coldColumns;
+  protected readonly offFloorColumns = this.planLayout.offFloorColumns;
 
   protected readonly timeOf = parisTimeOf;
-
-  constructor() {
-    effect(() => {
-      const roundId = this.roundId();
-      this.reload();
-      untracked(() => void this.open(roundId));
-    });
-    // Le plan ne change pas quand on scanne : il se relit quand la tournée
-    // change de version (un arrêt ajouté, retiré, déplacé).
-    effect(() => {
-      const key = this.planKey();
-      this.planReload();
-      const roundId = untracked(() => this.view()?.roundId ?? null);
-      if (key !== null && roundId !== null) {
-        untracked(() => void this.readPlan(roundId));
-      }
-    });
-  }
+  protected readonly warningVariant = warningVariant;
 
   protected retry(): void {
-    this.reload.update((n) => n + 1);
+    this.source.retry();
   }
 
   protected retryPlan(): void {
-    this.planReload.update((n) => n + 1);
-  }
-
-  protected warningVariant(kind: DeliveryLoadingPlanWarningKind): 'alert' | 'warning' {
-    return ALERT_WARNINGS.has(kind) ? 'alert' : 'warning';
+    this.source.retryPlan();
   }
 
   /** Toucher un bac à charger le désigne ; la rangée suit. */
@@ -371,24 +202,18 @@ export class LoadingRound {
   /** La rangée qui entre glisse dans le sens du doigt : depuis la gauche vers les portes, depuis la droite vers le fond. */
   protected readonly slideBack = signal(false);
 
-  /** Où le doigt s'est posé sur la vue de rangée, le temps du geste. */
-  private swipeOrigin: { readonly x: number; readonly y: number } | null = null;
+  /** Le doigt posé sur la vue de rangée, le temps du geste. */
+  private readonly swipe = new RowSwipeGesture();
 
   protected swipeStart(event: PointerEvent): void {
-    this.swipeOrigin = { x: event.clientX, y: event.clientY };
+    this.swipe.start(event);
   }
 
   protected swipeEnd(event: PointerEvent): void {
-    const origin = this.swipeOrigin;
-    this.swipeOrigin = null;
-    if (origin === null) {
-      return;
-    }
-    const step = swipeStep(event.clientX - origin.x, event.clientY - origin.y);
     const row = neighbourRow(
       this.rows().map((entry) => entry.row),
       this.openRow(),
-      step,
+      this.swipe.end(event),
     );
     if (row !== null) {
       this.showRow(row);
@@ -396,7 +221,7 @@ export class LoadingRound {
   }
 
   protected swipeCancel(): void {
-    this.swipeOrigin = null;
+    this.swipe.cancel();
   }
 
   /** Un QR lu par la caméra, ou un code tapé : c'est le geste. */
@@ -415,7 +240,7 @@ export class LoadingRound {
     const openRow = this.openRow();
     const expected = this.nextKey();
     const roundId = this.roundId();
-    const accepted = await this.write(
+    const accepted = await this.gate.run(
       () => this.gateway.load(roundId, payload),
       'Le bac n’a pas pu être chargé.',
     );
@@ -432,27 +257,15 @@ export class LoadingRound {
     if (inOrder) {
       this.pinnedRow.set(null);
     }
-    const view = this.view();
     this.notice.set(
-      entry === null
-        ? {
-            variant: 'success',
-            title: null,
-            text: view === null ? 'Bac chargé.' : loadedNotice(view, payload),
-            showRow: null,
-          }
-        : loadedBinNotice(
-            entry,
-            elsewhere === null || location === null ? null : { text: elsewhere, location },
-            this.next(),
-          ),
+      acceptedLoadNotice(entry, this.view(), payload, elsewhere, location, this.next()),
     );
   }
 
   protected unload(binId: string): Promise<boolean> {
     this.picked.set(null);
     const roundId = this.roundId();
-    return this.write(
+    return this.gate.run(
       () => this.gateway.unload(roundId, binId),
       'Le bac n’a pas pu être déchargé.',
     );
@@ -470,60 +283,13 @@ export class LoadingRound {
       return;
     }
     if (
-      await this.write(() => departure(view.roundId, view.version), 'La tournée n’a pas pu partir.')
+      await this.gate.run(
+        () => departure(view.roundId, view.version),
+        'La tournée n’a pas pu partir.',
+      )
     ) {
       const text = `${roundLabel(view)} est parti.`;
       this.notice.set({ variant: 'success', title: null, text, showRow: null });
-    }
-  }
-
-  /** Une écriture, puis une relecture — acceptée ou non. Vrai si le serveur a accepté. */
-  private async write(gesture: () => Promise<void>, fallback: string): Promise<boolean> {
-    if (this.busy()) {
-      return false;
-    }
-    this.busy.set(true);
-    this.notice.set(null);
-    let accepted = false;
-    try {
-      await gesture();
-      accepted = true;
-    } catch (error) {
-      this.notice.set(refusalNotice(httpErrorMessage(error, fallback)));
-    } finally {
-      await this.read(this.roundId());
-      this.busy.set(false);
-    }
-    return accepted;
-  }
-
-  private async open(roundId: string): Promise<void> {
-    this.state.set({ status: 'loading' });
-    await this.read(roundId);
-  }
-
-  private async read(roundId: string): Promise<void> {
-    try {
-      const view = await this.gateway.round(roundId);
-      this.state.set({ status: 'ready', view });
-      this.viewChange.emit(view);
-    } catch {
-      if (this.state().status !== 'ready') {
-        this.state.set({ status: 'error' });
-      }
-    }
-  }
-
-  private async readPlan(roundId: string): Promise<void> {
-    if (this.planState().status !== 'ready') {
-      this.planState.set({ status: 'loading' });
-    }
-    try {
-      this.planState.set({ status: 'ready', plan: await this.gateway.plan(roundId) });
-    } catch {
-      if (this.planState().status !== 'ready') {
-        this.planState.set({ status: 'error' });
-      }
     }
   }
 }

@@ -6,7 +6,8 @@ import type {
 
 import { halfLabel, hasBinToRedo } from './delivery-loading';
 import { stopHue } from './delivery-loading-floor';
-import { type FloorRow, rowPlace, type StackTile, stackSide } from './delivery-loading-rows';
+import { rowPlace, stackSide } from './delivery-loading-placement';
+import type { FloorRow, StackTile } from './delivery-loading-rows';
 
 /**
  * **Les piles telles qu'on les dessine à l'écran « Charger »** — des colonnes

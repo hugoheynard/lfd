@@ -1,12 +1,5 @@
 import { ChangeDetectionStrategy, Component, computed, inject, signal } from '@angular/core';
-import type {
-  DeliveryRoutingSettingsPayload,
-  DeliverySimulationFromDayView,
-  DeliverySimulationView,
-  SaveDeliverySimulationScenarioPayload,
-  VehicleView,
-  VehiclesView,
-} from '@lfd/contracts';
+import type { DeliverySimulationFromDayView, VehicleView, VehiclesView } from '@lfd/contracts';
 import { httpErrorMessage } from '@lfd/endpoints';
 import {
   FoldBadgeComponent,
@@ -31,27 +24,16 @@ import {
 
 import { PermissionsStore } from '../../auth/permissions.store';
 import { canReadDeliverySettings } from '../delivery-settings-access';
-import { NotifyService } from '../../notify.service';
-import { saveBlob } from '../../shared/download/save-blob';
 import { DayImport } from '../day-import/day-import';
 import { DeliveryRoutingService } from '../delivery-routing.service';
 import { DeliverySettingsService } from '../delivery-settings.service';
-import { DeliverySimulationScenariosService } from '../delivery-simulation-scenarios.service';
 import {
   buildPayload,
-  copyNameOf,
-  draftKey,
   type DepartureChoice,
   EMPTY_SETTINGS,
   emptyStop,
   exampleScenario,
-  importScenario,
   parseGps,
-  SCENARIO_FILE_NAME,
-  scenarioFileContent,
-  type ScenarioDraft,
-  scenarioDraftOf,
-  scenarioNameError,
   type SettingsDraft,
   SIMULATION_MAX_STOP_MINUTES,
   SIMULATION_MAX_STOPS,
@@ -63,12 +45,7 @@ import {
 import { SimulationResult } from '../simulation-result/simulation-result';
 import { vehicleBadgeLabel } from '../vehicle-load';
 import { SimulationScenarios } from '../simulation-scenarios/simulation-scenarios';
-
-/** Le scénario enregistré d'où vient l'écran (L9-C7). */
-interface CurrentScenario {
-  readonly id: string;
-  readonly name: string;
-}
+import { SimulatorScenarioSession } from '../simulator-scenario-session';
 
 /** Ce que la flotte et les réglages ont pu donner au premier affichage. */
 interface Prefill {
@@ -76,11 +53,6 @@ interface Prefill {
   readonly settings: SettingsDraft;
   readonly fleetUnread: boolean;
   readonly settingsUnread: boolean;
-}
-
-interface Simulated {
-  readonly view: DeliverySimulationView;
-  readonly settings: DeliveryRoutingSettingsPayload;
 }
 
 const DEPARTURE_OPTIONS: readonly FoldViewToggleOption[] = [
@@ -136,29 +108,28 @@ export class SimulatorPage {
   private readonly routing = inject(DeliveryRoutingService);
   private readonly fleet = inject(DeliverySettingsService);
   private readonly permissions = inject(PermissionsStore);
-  private readonly notify = inject(NotifyService);
-  private readonly scenarios = inject(DeliverySimulationScenariosService);
+
+  /** Le scénario et son enregistrement ; ses signaux gardent leurs noms au gabarit. */
+  private readonly session = new SimulatorScenarioSession();
 
   protected readonly prefill = signal<Prefill | null>(null);
   /** La flotte active lue au chargement : de quoi badger un nom qui en vient. */
   private readonly fleetVehicles = signal<readonly VehicleView[]>([]);
-  protected readonly draft = signal<ScenarioDraft>(exampleScenario([], EMPTY_SETTINGS));
+  protected readonly draft = this.session.draft;
   protected readonly proposing = signal(false);
-  protected readonly errors = signal<readonly string[]>([]);
-  protected readonly refusal = signal<string | null>(null);
-  protected readonly importRefusal = signal<string | null>(null);
-  protected readonly result = signal<Simulated | null>(null);
+  protected readonly errors = this.session.errors;
+  protected readonly refusal = this.session.refusal;
+  protected readonly importRefusal = this.session.importRefusal;
+  protected readonly result = this.session.result;
 
   protected readonly canWrite = computed(() => this.permissions.can('delivery_rounds:write'));
-  protected readonly current = signal<CurrentScenario | null>(null);
-  /** L'empreinte du dernier état enregistré, ouvert ou chargé. */
-  private readonly baseline = signal('');
-  protected readonly modified = computed(() => draftKey(this.draft()) !== this.baseline());
-  protected readonly revision = signal(0);
-  protected readonly saveAsOpen = signal(false);
-  protected readonly saveName = signal('');
-  protected readonly saving = signal(false);
-  protected readonly saveRefusal = signal<string | null>(null);
+  protected readonly current = this.session.current;
+  protected readonly modified = this.session.modified;
+  protected readonly revision = this.session.revision;
+  protected readonly saveAsOpen = this.session.saveAsOpen;
+  protected readonly saveName = this.session.saveName;
+  protected readonly saving = this.session.saving;
+  protected readonly saveRefusal = this.session.saveRefusal;
   protected readonly minStopMinutes = SIMULATION_MIN_STOP_MINUTES;
   protected readonly maxStopMinutes = SIMULATION_MAX_STOP_MINUTES;
 
@@ -185,7 +156,7 @@ export class SimulatorPage {
   }
 
   protected updateStop(index: number, patch: Partial<StopDraft>): void {
-    this.patch({
+    this.session.patch({
       stops: this.draft().stops.map((stop, i) => (i === index ? { ...stop, ...patch } : stop)),
     });
   }
@@ -193,107 +164,67 @@ export class SimulatorPage {
   protected addStop(): void {
     if (this.canAddStop()) {
       const stops = this.draft().stops;
-      this.patch({ stops: [...stops, emptyStop(stops)] });
+      this.session.patch({ stops: [...stops, emptyStop(stops)] });
     }
   }
 
   protected removeStop(index: number): void {
-    this.patch({ stops: this.draft().stops.filter((_, i) => i !== index) });
+    this.session.patch({ stops: this.draft().stops.filter((_, i) => i !== index) });
   }
 
   protected updateVehicle(index: number, name: string): void {
-    this.patch({ vehicles: this.draft().vehicles.map((v, i) => (i === index ? name : v)) });
+    this.session.patch({ vehicles: this.draft().vehicles.map((v, i) => (i === index ? name : v)) });
   }
 
   protected addVehicle(): void {
     if (this.canAddVehicle()) {
-      this.patch({ vehicles: [...this.draft().vehicles, ''] });
+      this.session.patch({ vehicles: [...this.draft().vehicles, ''] });
     }
   }
 
   protected removeVehicle(index: number): void {
-    this.patch({ vehicles: this.draft().vehicles.filter((_, i) => i !== index) });
+    this.session.patch({ vehicles: this.draft().vehicles.filter((_, i) => i !== index) });
   }
 
   protected updateSettings(patch: Partial<SettingsDraft>): void {
-    this.patch({ settings: { ...this.draft().settings, ...patch } });
+    this.session.patch({ settings: { ...this.draft().settings, ...patch } });
   }
 
   protected pickDeparture(value: string): void {
     const departure: DepartureChoice = value === 'custom' ? 'custom' : 'configured';
-    this.patch({ departure });
+    this.session.patch({ departure });
   }
 
   protected setDepartureCoordinates(departureCoordinates: string): void {
-    this.patch({ departureCoordinates });
+    this.session.patch({ departureCoordinates });
   }
 
   /** Revenir au scénario d'exemple, pré-rempli comme au premier affichage. */
   protected reset(): void {
     const prefill = this.prefill();
-    this.replaceDraft(
+    this.session.replaceDraft(
       exampleScenario(prefill?.vehicles ?? [], prefill?.settings ?? EMPTY_SETTINGS),
       null,
     );
-    this.clearMessages();
+    this.session.clearMessages();
   }
 
-  /** « Enregistrer » : remplace le scénario ouvert ; sans lui, c'est « Enregistrer sous… ». */
-  protected async save(): Promise<void> {
-    const current = this.current();
-    if (current === null) {
-      this.openSaveAs();
-      return;
-    }
-    await this.write(current.name, (payload) =>
-      this.scenarios.replace(current.id, payload).then(() => current.id),
-    );
-  }
-
-  protected openSaveAs(): void {
-    this.saveName.set(copyNameOf(this.current()?.name ?? null));
-    this.saveRefusal.set(null);
-    this.saveAsOpen.set(true);
-  }
-
-  protected async saveAs(): Promise<void> {
-    const name = this.saveName().trim();
-    const fault = scenarioNameError(name);
-    if (fault !== null) {
-      this.saveRefusal.set(fault);
-      return;
-    }
-    await this.write(name, (payload) => this.scenarios.create(payload));
-  }
-
-  protected async openScenario(id: string): Promise<void> {
-    this.clearMessages();
-    try {
-      const view = await this.scenarios.open(id);
-      this.replaceDraft(scenarioDraftOf(view.scenario), { id: view.id, name: view.name });
-    } catch (error) {
-      this.refusal.set(httpErrorMessage(error, 'Ce scénario n’a pas pu être ouvert.'));
-    }
-  }
-
-  /** Archivé, le scénario ouvert n'existe plus pour l'équipe : l'écran l'oublie. */
-  protected forget(id: string): void {
-    if (this.current()?.id === id) {
-      this.current.set(null);
-    }
-  }
-
-  protected startFromDay(view: DeliverySimulationFromDayView): void {
-    this.clearMessages();
-    this.replaceDraft(scenarioDraftOf(view.scenario), null);
-    this.notify.success(`Journée du ${view.day} copiée dans le simulateur.`);
-  }
+  protected readonly save = (): Promise<void> => this.session.save();
+  protected readonly openSaveAs = (): void => this.session.openSaveAs();
+  protected readonly saveAs = (): Promise<void> => this.session.saveAs();
+  protected readonly openScenario = (id: string): Promise<void> => this.session.openScenario(id);
+  protected readonly forget = (id: string): void => this.session.forget(id);
+  protected readonly startFromDay = (view: DeliverySimulationFromDayView): void =>
+    this.session.startFromDay(view);
+  protected readonly exportScenario = (): void => this.session.exportScenario();
+  protected readonly importFiles = (files: readonly File[]): Promise<void> =>
+    this.session.importFiles(files);
 
   protected async propose(): Promise<void> {
     if (this.proposing()) {
       return;
     }
-    this.clearMessages();
+    this.session.clearMessages();
     const built = buildPayload(this.draft());
     if (!built.ok) {
       this.errors.set(built.errors);
@@ -311,78 +242,6 @@ export class SimulatorPage {
     }
   }
 
-  protected exportScenario(): void {
-    this.clearMessages();
-    const built = buildPayload(this.draft());
-    if (!built.ok) {
-      this.errors.set(built.errors);
-      return;
-    }
-    saveBlob(
-      new Blob([scenarioFileContent(built.payload)], { type: 'application/json' }),
-      SCENARIO_FILE_NAME,
-    );
-  }
-
-  protected async importFiles(files: readonly File[]): Promise<void> {
-    const file = files[0];
-    if (file === undefined) {
-      return;
-    }
-    this.clearMessages();
-    const imported = importScenario(await file.text());
-    if (!imported.ok) {
-      this.importRefusal.set(imported.message);
-      return;
-    }
-    this.replaceDraft(imported.draft, null);
-    this.notify.success(`Scénario « ${file.name} » importé.`);
-  }
-
-  /** Un scénario neuf à l'écran : il devient l'état de référence. */
-  private replaceDraft(draft: ScenarioDraft, current: CurrentScenario | null): void {
-    this.draft.set(draft);
-    this.baseline.set(draftKey(draft));
-    this.current.set(current);
-    this.result.set(null);
-    this.saveAsOpen.set(false);
-  }
-
-  private async write(
-    name: string,
-    send: (payload: SaveDeliverySimulationScenarioPayload) => Promise<string>,
-  ): Promise<void> {
-    if (this.saving()) {
-      return;
-    }
-    this.clearMessages();
-    this.saveRefusal.set(null);
-    const draft = this.draft();
-    const built = buildPayload(draft);
-    if (!built.ok) {
-      this.errors.set(built.errors);
-      return;
-    }
-    this.saving.set(true);
-    try {
-      const id = await send({ name, scenario: built.payload });
-      this.current.set({ id, name });
-      this.baseline.set(draftKey(draft));
-      this.saveAsOpen.set(false);
-      this.revision.update((n) => n + 1);
-      this.notify.success(`Scénario « ${name} » enregistré.`);
-    } catch (error) {
-      const message = httpErrorMessage(error, 'Le scénario n’a pas pu être enregistré.');
-      if (this.saveAsOpen()) {
-        this.saveRefusal.set(message);
-      } else {
-        this.refusal.set(message);
-      }
-    } finally {
-      this.saving.set(false);
-    }
-  }
-
   /**
    * Le chargement d'un véhicule du scénario, quand son nom est celui d'un
    * véhicule actif de la flotte — un nom inventé n'en a pas. Lecture seule :
@@ -391,16 +250,6 @@ export class SimulatorPage {
   protected loadBadge(name: string): string | null {
     const vehicle = this.fleetVehicles().find((v) => v.name === name.trim());
     return vehicle === undefined ? null : vehicleBadgeLabel(vehicle);
-  }
-
-  private patch(patch: Partial<ScenarioDraft>): void {
-    this.draft.set({ ...this.draft(), ...patch });
-  }
-
-  private clearMessages(): void {
-    this.errors.set([]);
-    this.refusal.set(null);
-    this.importRefusal.set(null);
   }
 
   private async load(): Promise<void> {
@@ -419,7 +268,7 @@ export class SimulatorPage {
       settingsUnread: settings.status === 'rejected',
     };
     this.prefill.set(prefill);
-    this.replaceDraft(exampleScenario(prefill.vehicles, prefill.settings), null);
+    this.session.replaceDraft(exampleScenario(prefill.vehicles, prefill.settings), null);
   }
 }
 

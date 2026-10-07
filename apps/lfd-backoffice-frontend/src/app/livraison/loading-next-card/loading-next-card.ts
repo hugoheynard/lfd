@@ -19,7 +19,8 @@ import {
 
 import { BinScanner } from '../bin-scanner/bin-scanner';
 import { stopHue } from '../delivery-loading-floor';
-import type { NextBin, PlacementLine } from '../delivery-loading-rows';
+import type { PlacementLine } from '../delivery-loading-placement';
+import type { NextBin } from '../delivery-loading-rows';
 import { nextBinBadge } from '../delivery-loading-tiles';
 
 /**

@@ -20,7 +20,8 @@ import {
   withTimings,
 } from './delivery-planning';
 import { type ComposedDay, movedOrder } from './delivery-rounds';
-import { boardOfPlan, stopTagsOf, unverifiedPlaceLabel } from './rounds-board-model';
+import { stopTagsOf, unverifiedPlaceLabel } from './rounds-board-model';
+import { boardOfPlan } from './rounds-board-preview';
 import { stopOf } from './run-sheet.fixture';
 
 const SETTINGS: DeliveryRoutingSettingsView = {
