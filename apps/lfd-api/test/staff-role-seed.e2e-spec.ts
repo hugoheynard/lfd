@@ -16,6 +16,7 @@
  */
 import { legacyRoleSeeds, roleGrantsSchema, type RoleGrant } from "@lfd/contracts";
 
+import { resetRolesToSeed } from "../src/dev/seeding/roles.seed.js";
 import { bootstrapE2e, type E2eContext } from "./e2e-harness.js";
 import { ADMIN_VERIFIER_OVERRIDE } from "./delivery-rounds-scene.js";
 
@@ -66,5 +67,42 @@ describe("une base semée", () => {
         grants: normalized(seed.grants),
       });
     }
+  });
+});
+
+/**
+ * `db:seed:roles` (audit livraisons Q4, 2026-10-07) : la commande qu'on lance
+ * à la main sur une base de dev après l'ajout d'une ressource. La même
+ * fonction que le harnais, sur une base qui a vécu.
+ */
+describe("la remise des rôles sur leur graine", () => {
+  it("réécrit un rôle du code réglé à l'écran, recrée celui qui manque, et laisse un rôle créé à l'écran", async () => {
+    const [first, second] = legacyRoleSeeds();
+    if (first === undefined || second === undefined) {
+      throw new Error("La graine porte au moins deux rôles.");
+    }
+    await ctx.prisma.staffRoleDefinition.update({
+      where: { key: first.key },
+      data: { label: "Réglé à l'écran", grants: [] },
+    });
+    await ctx.prisma.staffRoleDefinition.delete({ where: { key: second.key } });
+    await ctx.prisma.staffRoleDefinition.create({
+      data: { key: "verifier_maison", label: "Vérificateur", grants: [] },
+    });
+
+    const report = await resetRolesToSeed(ctx.prisma);
+
+    expect(report.created).toEqual([second.key]);
+    expect(report.rewritten).toContain(first.key);
+    expect(report.untouched).toEqual(["verifier_maison"]);
+    const rewritten = await ctx.prisma.staffRoleDefinition.findUniqueOrThrow({
+      where: { key: first.key },
+    });
+    expect(rewritten.label).toBe(first.label);
+    expect(normalized(roleGrantsSchema.parse(rewritten.grants))).toEqual(normalized(first.grants));
+    const custom = await ctx.prisma.staffRoleDefinition.findUnique({
+      where: { key: "verifier_maison" },
+    });
+    expect(custom?.label).toBe("Vérificateur");
   });
 });

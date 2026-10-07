@@ -28,7 +28,6 @@
  * quoi lancer.
  */
 
-import { legacyRoleSeeds } from "@lfd/contracts";
 import type { INestApplication, Type } from "@nestjs/common";
 import { Test } from "@nestjs/testing";
 import request from "supertest";
@@ -50,6 +49,7 @@ import { prismaSchemaSource } from "../src/platform/database/prisma-schema-sourc
 import { testDatabaseUrl } from "./setup-env.js";
 import { ensureTestBucket, resetStorage } from "./storage.js";
 import { seedE2eCatalog } from "./catalog-fixture.js";
+import { resetRolesToSeed } from "../src/dev/seeding/roles.seed.js";
 
 /**
  * Corps de réponse **typé**.
@@ -461,13 +461,8 @@ async function assertDatabaseReady(prisma: PrismaService): Promise<void> {
  * de la graine au premier droit qu'on y change.
  */
 async function ensureStaffRoleDefinitions(prisma: PrismaService): Promise<void> {
-  for (const seed of legacyRoleSeeds()) {
-    await prisma.staffRoleDefinition.upsert({
-      where: { key: seed.key },
-      create: { key: seed.key, label: seed.label, grants: [...seed.grants] },
-      update: { label: seed.label, grants: [...seed.grants] },
-    });
-  }
+  // La MÊME fonction que `db:seed:roles` (2026-10-07) : une seule graine fait foi.
+  await resetRolesToSeed(prisma);
 }
 
 async function ensureSalesContexts(prisma: PrismaService): Promise<void> {

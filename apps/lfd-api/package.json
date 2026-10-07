@@ -35,6 +35,7 @@
     "db:seed": "tsc -p tsconfig.seed.json && node --env-file=.env dist-seed/prisma/seed.js",
     "db:seed:reset": "tsx prisma/reset-to-seed.ts",
     "db:seed:fiche": "tsx prisma/seed-fiche.ts",
+    "db:seed:roles": "tsx prisma/seed-roles.ts",
     "db:test:setup": "tsx test/setup-test-database.ts",
     "db:dev:setup": "tsx prisma/setup-dev-database.ts",
     "db:dev:clone": "tsx prisma/clone-dev.ts",

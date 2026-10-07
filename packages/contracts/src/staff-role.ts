@@ -145,8 +145,10 @@ export function fromRoleGrants(grants: RoleGrants): readonly RoleGrant[] {
  * `ROLE_GRANTS` n'est plus qu'une graine : ces lignes s'éditent à l'écran
  * comme n'importe quel autre rôle, et le runtime ne lit plus le tableau du
  * code — le repli `ROLE_GRANTS[role]` est retiré depuis que `role_key` est
- * `NOT NULL` (2026-10-01, `plan-droits-par-geste.md`, 5.2). Elle sème une base
- * vierge (dev, e2e) ; elle ne dit pas ce que la production accorde.
+ * `NOT NULL` (2026-10-01, `plan-droits-par-geste.md`, 5.2). Elle sème la base
+ * des e2e à chaque remise à zéro, et une base de dev quand on lance
+ * `db:seed:roles` à la main (2026-10-07) ; elle ne dit pas ce que la production
+ * accorde.
  */
 export function legacyRoleSeeds(): readonly {
   readonly key: StaffRole;
