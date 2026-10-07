@@ -133,7 +133,7 @@ export class EmptyProposalError extends BusinessError {
   constructor(reference: string) {
     super(
       "packing.proposal.empty",
-      `Rien à proposer pour la commande ${reference} : aucun type de bac en service n'a de contenance pour ses produits. Remplissez l'écran « Contenances » de la livraison, ou créez les bacs à la main.`,
+      `Rien à proposer pour la commande ${reference} : aucun type de bac en service n'a de contenance pour ses produits. Créez les bacs à la main, ou demandez à un responsable de la livraison de remplir l'écran « Contenances ».`,
     );
   }
 }
