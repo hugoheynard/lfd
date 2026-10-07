@@ -28,6 +28,14 @@ export interface DossierOccasion {
   readonly completed: boolean;
 }
 
+/**
+ * Ce que la transaction de la garde a lu pour l'envoi : à qui écrire. Les
+ * abonnés le passent tel quel de `prepare` à `deliver`.
+ */
+export interface PreparedDossier {
+  readonly addressees: readonly DossierAddressee[];
+}
+
 /** Ce qu'un tour d'envoi a donné. */
 interface DispatchTally {
   sent: number;
@@ -41,23 +49,42 @@ interface DispatchTally {
  * Un e-mail par destinataire, PDF joint (`ProductionPapers.dossierOf` : le
  * même papier que le téléchargement, archivé par tirage).
  *
+ * ## Deux temps (2026-10-07, audit B1)
+ *
+ * Ses deux seuls appelants, `SendDossierOnDayClosed` et
+ * `SendDossierOnDayRetaken` (vérifié le 2026-10-07), tournent dans la
+ * transaction que la garde ouvre pour poser leur reçu :
+ *
+ * - `prepare` y lit les destinataires, en base seulement. Une liste ou un
+ *   annuaire illisibles lèvent : la livraison échoue et sera rejouée, comme
+ *   pour la journée que l'abonné lit juste avant ;
+ * - `deliver` part APRÈS la validation, hors transaction : le papier, qui lit
+ *   et range son archive dans le stockage objet, puis les envois chez Resend.
+ *   Aucun de ces allers-retours ne tient plus une connexion du pool — et rien
+ *   ici n'est rejoué, d'où la cloche ci-dessous.
+ *
  * ## Idempotence
  *
- * Le fait qui le déclenche est livré au moins une fois. Chaque destinataire
- * est d'abord PRIS dans la trace (`DossierDispatchLog.claim`, clé
- * `(journée, instant d'origine, ligne)`) : déjà pris, il est sauté. La clé est
- * aussi passée au fournisseur (`Idempotency-Key` chez Resend), qui couvre le
- * seul trou restant — un e-mail parti, puis une transaction annulée qui
- * efface sa trace et fait rejouer la livraison.
+ * Chaque destinataire est d'abord PRIS dans la trace
+ * (`DossierDispatchLog.claim`, clé `(journée, instant d'origine, ligne)`) :
+ * déjà pris, il est sauté. La clé est aussi passée au fournisseur
+ * (`Idempotency-Key` chez Resend), en seconde serrure : `claim`, l'envoi et
+ * `settle` sont validés chacun seul, si bien qu'aucune transaction annulée
+ * n'efface plus la trace d'un e-mail parti.
  *
  * ## Échec
  *
- * Un refus du fournisseur pour une personne n'arrête pas les autres : il est
- * noté dans la trace et n'est **pas retenté** — la ligne existe, une
- * redélivrance la saute. Le handler ne lève donc pas pour un refus d'envoi ;
- * l'outbox ne le rejoue que pour une panne qui précède tout envoi (journée
- * illisible, base), et alors rien n'est encore parti. À la fin, une alerte
- * nomme ceux qui n'ont rien reçu.
+ * - **Le papier ne se fabrique pas** : personne ne reçoit rien, et la cloche
+ *   (`dossierNotPrepared`) nomme tout le monde.
+ * - **Un refus du fournisseur** pour une personne n'arrête pas les autres : il
+ *   est noté dans la trace et n'est **pas retenté** — la ligne existe, une
+ *   redélivrance la saute. À la fin, la cloche (`dossierNotSent`) nomme ceux
+ *   qui n'ont rien reçu.
+ * - **La base tombe pendant le tour** (trace, journal, cloche) : le tour
+ *   s'arrête là et `deliver` lève, journalisé par l'appelant. La cloche ne
+ *   sonnerait pas davantage : elle écrit dans la même base. Un redémarrage
+ *   pendant le tour l'arrête de même, sans journal : une ligne déjà prise
+ *   reste `pending`.
  */
 @Injectable()
 export class DossierDispatch {
@@ -74,16 +101,79 @@ export class DossierDispatch {
     private readonly clock: Clock,
   ) {}
 
-  async dispatch(day: ProductionDay, occasion: DossierOccasion): Promise<void> {
-    const addressees = await this.addressees();
+  /**
+   * **Dans la transaction de la garde** : à qui écrire. La base seule, et une
+   * lecture qui échoue lève — la livraison sera rejouée.
+   */
+  async prepare(): Promise<PreparedDossier> {
+    const rows = await this.recipients.list();
+    if (rows.length === 0) {
+      return { addressees: [] };
+    }
+    const cards = await this.staff.contactsOf(
+      rows.flatMap((row) => (row.kind === "staff" ? [row.staffUserId] : [])),
+    );
+    return { addressees: dossierAddresseesOf(rows, cards) };
+  }
+
+  /**
+   * **Après la validation, hors transaction** : le papier, un envoi par
+   * destinataire, puis le journal et la cloche. Ne lève que pour une panne de
+   * base (trace, journal, cloche).
+   */
+  async deliver(
+    prepared: PreparedDossier,
+    day: ProductionDay,
+    occasion: DossierOccasion,
+  ): Promise<void> {
+    const { addressees } = prepared;
     if (addressees.length === 0) {
       return;
     }
-    const paper = await this.papers.dossierOf(day);
+    const paper = await this.paperOrBell(addressees, day, occasion);
+    if (paper === null) {
+      return;
+    }
     const tally: DispatchTally = { sent: 0, failedNames: [] };
     for (const addressee of addressees) {
       await this.sendTo(addressee, day, occasion, paper, tally);
     }
+    await this.report(tally, day, occasion);
+  }
+
+  /**
+   * Le papier, ou la cloche : sans lui personne ne reçoit rien, et rien ne
+   * rejouera l'envoi — la livraison est déjà validée. Ni adresse ni nom au
+   * log : la cloche nomme les personnes.
+   */
+  private async paperOrBell(
+    addressees: readonly DossierAddressee[],
+    day: ProductionDay,
+    occasion: DossierOccasion,
+  ): Promise<ProductionPaper | null> {
+    try {
+      return await this.papers.dossierOf(day);
+    } catch (error) {
+      this.logger.error(
+        `Dossier du ${day.day.value} non fabriqué : personne ne l'a reçu.`,
+        error instanceof Error ? error.stack : String(error),
+      );
+      await this.bell.dossierNotPrepared(
+        day.day,
+        occasion.at,
+        addressees.map((addressee) => addressee.name),
+        this.clock.now(),
+      );
+      return null;
+    }
+  }
+
+  /** Le journal du tour, et la cloche pour ceux qui n'ont rien reçu. */
+  private async report(
+    tally: DispatchTally,
+    day: ProductionDay,
+    occasion: DossierOccasion,
+  ): Promise<void> {
     const attempted = tally.sent + tally.failedNames.length;
     if (attempted === 0) {
       return;
@@ -100,17 +190,6 @@ export class DossierDispatch {
     if (tally.failedNames.length > 0) {
       await this.bell.dossierNotSent(serviceDay, occasion.at, tally.failedNames, this.clock.now());
     }
-  }
-
-  private async addressees(): Promise<readonly DossierAddressee[]> {
-    const rows = await this.recipients.list();
-    if (rows.length === 0) {
-      return [];
-    }
-    const cards = await this.staff.contactsOf(
-      rows.flatMap((row) => (row.kind === "staff" ? [row.staffUserId] : [])),
-    );
-    return dossierAddresseesOf(rows, cards);
   }
 
   /** Un destinataire : pris, envoyé, noté — ou sauté s'il était déjà pris. */

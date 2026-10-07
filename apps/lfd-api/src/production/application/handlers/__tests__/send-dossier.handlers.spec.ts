@@ -1,107 +1,26 @@
-import { instantToLocal } from "@lfd/contracts";
-
-import { RecordingPublisher } from "../../../../platform/events/__tests__/recording-publisher.js";
-import { FixedClock } from "../../../../platform/time/fixed-clock.js";
-import type { ProducibleOrder } from "../../../channels/commerce/day-orders.reader.js";
-import { ProductionDayClosedEvent } from "../../../channels/commerce/production-day-closed.event.js";
-import { ProductionDay } from "../../../domain/entities/production-day.js";
-import { ProductionDayRetakenEvent } from "../../../channels/delivery/index.js";
-import type { StoredDossierRecipient } from "../../../domain/ports/dossier-recipients.reader.js";
-import { AUTOMATIC_SIGNER, staffSigner } from "../../../domain/entities/plan-signer.js";
 import { parisDateTime, weekdayLongDate } from "../../../../platform/pdf/paper-pdf-kit.js";
+import { AUTOMATIC_SIGNER, staffSigner } from "../../../domain/entities/plan-signer.js";
+import { ProductionDay } from "../../../domain/entities/production-day.js";
 import { ServiceDay } from "../../../domain/value-objects/service-day.value-object.js";
-import { Directory, RecipientsRows, staffCard } from "../../__tests__/dossier-recipient-doubles.js";
 import {
-  Bell,
-  DispatchTable,
-  NoAdminOrigin,
-  OneDay,
-  RecordingMailer,
-  Shelves,
-} from "../../__tests__/dossier-dispatch-doubles.js";
-import { InMemoryProductionStore } from "../../__tests__/quality-doubles.js";
-import { DossierDispatch } from "../../services/dossier-dispatch.service.js";
-import { PlanArrestBell } from "../../services/plan-arrest-bell.js";
-import { ProductionPapers } from "../../services/production-paper.service.js";
-import { SendDossierOnDayClosed } from "../send-dossier-on-day-closed.handler.js";
-import { SendDossierOnDayRetaken } from "../send-dossier-on-day-retaken.handler.js";
+  CLOSED,
+  closedDay,
+  closure,
+  DAY,
+  JEANNE,
+  NOW,
+  order,
+  PAUL,
+  retake,
+  RETAKEN,
+  setup,
+} from "./send-dossier-scene.js";
 
 /**
  * **L'envoi du dossier du jour** (plan `dossier-prod-du-jour.md`, E3), par
- * ses deux abonnés durables. Le jour est dérivé de maintenant ; les instants
- * de clôture et de retirage ne sont que recopiés, jamais comparés à l'horloge.
+ * ses deux abonnés durables : ce qui part, et à qui. Le moment où ça part —
+ * après la validation du reçu — est éprouvé par `send-dossier-after-commit.spec.ts`.
  */
-const NOW = new Date();
-const DAY = instantToLocal(NOW).day;
-const CLOSED = new Date(NOW.getTime() - 2 * 60 * 60 * 1000);
-const RETAKEN = new Date(NOW.getTime() - 60 * 60 * 1000);
-
-const PAUL: StoredDossierRecipient = { id: "r-paul", kind: "staff", staffUserId: "s-paul" };
-const JEANNE: StoredDossierRecipient = {
-  id: "r-jeanne",
-  kind: "external",
-  email: "jeanne@imprimerie.fr",
-  firstName: "Jeanne",
-  lastName: "Roux",
-  jobTitle: null,
-};
-
-function order(orderId: string, quantity: number): ProducibleOrder {
-  return {
-    orderId,
-    reference: `CMD-${orderId}`,
-    customerLabel: "Trois Ponts",
-    fulfillmentMethod: "pickup",
-    destination: "Le Labo",
-    dueAt: null,
-    clientele: null,
-    sheetDetails: null,
-    lines: [{ sku: "VIE-001", productName: "Croissant", quantity }],
-  };
-}
-
-function closedDay(): ProductionDay {
-  const day = ProductionDay.open(ServiceDay.of(DAY));
-  day.close([order("ord_1", 12)], CLOSED, null);
-  return day;
-}
-
-function setup(rows: readonly StoredDossierRecipient[], day: ProductionDay = closedDay()) {
-  const mailer = new RecordingMailer();
-  const log = new DispatchTable();
-  const bell = new Bell();
-  const events = new RecordingPublisher();
-  const dispatch = new DossierDispatch(
-    new RecipientsRows(rows),
-    new Directory().put(staffCard()),
-    new ProductionPapers(new InMemoryProductionStore(), new NoAdminOrigin(), new Shelves()),
-    log,
-    mailer,
-    new PlanArrestBell(bell),
-    events,
-    new FixedClock(NOW),
-  );
-  const days = new OneDay(day);
-  return {
-    mailer,
-    log,
-    bell,
-    events,
-    day,
-    closed: new SendDossierOnDayClosed(days, dispatch),
-    retaken: new SendDossierOnDayRetaken(days, dispatch),
-  };
-}
-
-function closure(reannouncedAt: Date | null = null) {
-  const fact = new ProductionDayClosedEvent(DAY, CLOSED, ["ord_1"], reannouncedAt).durableFact();
-  return { eventId: "evt-1", type: fact.type, payload: fact.payload };
-}
-
-function retake(at: Date = RETAKEN) {
-  const fact = new ProductionDayRetakenEvent(DAY, at, 1, ["o1"]).durableFact();
-  return { eventId: "evt-2", type: fact.type, payload: fact.payload };
-}
 
 describe("l'envoi du dossier à l'arrêt", () => {
   it("n'envoie rien, ne journalise rien, quand la liste est vide", async () => {

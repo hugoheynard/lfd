@@ -46,6 +46,15 @@ export class MailerSendError extends MailerError {
 }
 
 /**
+ * Resend a refusé l'envoi pour **cadence** (429) jusqu'au dernier essai permis.
+ *
+ * Pour l'appelant, une `MailerSendError` comme une autre — même code, même
+ * message. Elle n'existe que pour le disjoncteur, qui ne la compte pas : un
+ * fournisseur qui demande de ralentir répond, il n'est pas en panne.
+ */
+export class MailerRateLimitedError extends MailerSendError {}
+
+/**
  * Le disjoncteur est ouvert : on considère le fournisseur en panne et on
  * échoue **vite**, sans l'appeler. Distinct de `MailerSendError` parce que rien
  * n'a été tenté — utile pour ne pas compter deux fois un incident.

@@ -1,4 +1,4 @@
-import { MailerCircuitOpenError } from "./errors.js";
+import { MailerCircuitOpenError, MailerRateLimitedError } from "./errors.js";
 import { silentLogger } from "./types.js";
 import type { Mailer, MailerLogger, MailReceipt, SendMailArgs, TemplateMap } from "./types.js";
 
@@ -27,6 +27,9 @@ export interface CircuitBreakerOptions {
  *
  * Rien n'est perdu — c'est à la relance de l'appelant de rejouer l'envoi. On
  * arrête seulement de frapper.
+ *
+ * Un refus de cadence (`MailerRateLimitedError`, 2026-10-07) ne compte pas
+ * comme un échec : le fournisseur répond, il demande seulement de ralentir.
  */
 export class CircuitBreakerMailer<M extends TemplateMap> implements Mailer<M> {
   private failures = 0;
@@ -59,7 +62,11 @@ export class CircuitBreakerMailer<M extends TemplateMap> implements Mailer<M> {
       this.failures = 0; // un succès — y compris l'essai de reprise — referme.
       return receipt;
     } catch (error) {
-      this.recordFailure();
+      // Un refus de cadence n'est pas une panne : Resend répond, il demande de
+      // ralentir. Le compter ouvrirait le disjoncteur sur une simple rafale.
+      if (!(error instanceof MailerRateLimitedError)) {
+        this.recordFailure();
+      }
       throw error;
     }
   }

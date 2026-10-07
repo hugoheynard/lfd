@@ -19,7 +19,12 @@
 export { CircuitBreakerMailer } from "./circuit-breaker.js";
 export type { CircuitBreakerOptions } from "./circuit-breaker.js";
 export { DryRunMailer } from "./dry-run-mailer.js";
-export { MailerCircuitOpenError, MailerError, MailerSendError } from "./errors.js";
+export {
+  MailerCircuitOpenError,
+  MailerError,
+  MailerRateLimitedError,
+  MailerSendError,
+} from "./errors.js";
 export type { MailerErrorCategory } from "./errors.js";
 export { htmlEscape, renderLayout, sanitiseSubject } from "./html.js";
 export type { LayoutImage, LayoutInput, LayoutRow, MailCta } from "./html.js";

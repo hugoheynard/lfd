@@ -32,6 +32,7 @@ export const PLAN_ARREST_NOTICES = {
   todayNotArrested: "production.plan_today_not_arrested",
   autoCloseStalled: "production.plan_auto_close_stalled",
   dossierNotSent: "production.dossier_not_sent",
+  dossierNotPrepared: "production.dossier_not_prepared",
 } as const;
 
 type PlanArrestKind = (typeof PLAN_ARREST_NOTICES)[keyof typeof PLAN_ARREST_NOTICES];
@@ -112,6 +113,31 @@ export class PlanArrestBell {
       {
         subject: `Le dossier du ${label} n'a pas pu être envoyé à ${names.join(", ")}`,
         body: `L'envoi a été refusé pour ${names.join(", ")}. Vérifiez leur adresse dans Production › Réglages, puis transmettez-leur le dossier téléchargé depuis le prévisionnel ; il ne repartira pas tout seul.`,
+      },
+      occasionAt.toISOString(),
+    );
+  }
+
+  /**
+   * Le papier du dossier n'a pas pu être fabriqué : personne ne l'a reçu
+   * (audit du 2026-10-07, B1). Une nature à elle plutôt que `dossierNotSent`,
+   * dont le texte accuse une adresse refusée — ici les adresses n'y sont pour
+   * rien. Même clé par ENVOI.
+   */
+  async dossierNotPrepared(
+    day: ServiceDay,
+    occasionAt: Date,
+    names: readonly string[],
+    at: Date,
+  ): Promise<void> {
+    const label = frenchDayLabel(day.value);
+    await this.ring(
+      PLAN_ARREST_NOTICES.dossierNotPrepared,
+      day,
+      at,
+      {
+        subject: `Le dossier du ${label} n'a pas pu être préparé : personne ne l'a reçu`,
+        body: `Le PDF du dossier n'a pas pu être fabriqué, et rien n'est parti à ${names.join(", ")}. Téléchargez le dossier depuis le prévisionnel et transmettez-le ; il ne repartira pas tout seul.`,
       },
       occasionAt.toISOString(),
     );

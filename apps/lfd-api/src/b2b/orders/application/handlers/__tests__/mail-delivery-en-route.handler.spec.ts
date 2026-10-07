@@ -4,8 +4,20 @@ import type { MailReceipt, SendMailArgs } from "@lfd/mailer";
 import type { B2bMails } from "../../../../../platform/mailer/mail-templates.js";
 import { OrderMailOrigins } from "../../../domain/ports/order-mail-origins.js";
 import { OrderReader, type OwnedOrder } from "../../../domain/ports/order.reader.js";
-import { DeliveryRoundDepartedFact } from "../../../../../delivery/channels/commerce/index.js";
+import {
+  DELIVERY_ROUND_DEPARTED,
+  DeliveryRoundDepartedFact,
+  DeliveryRoundDepartedPayloadError,
+} from "../../../../../delivery/channels/commerce/index.js";
+import { AmbientAfterCommit } from "../../../../../platform/database/after-commit.js";
+import {
+  CommitQueue,
+  currentTransaction,
+  runInTransaction,
+} from "../../../../../platform/database/transaction.store.js";
+import { BackgroundWork } from "../../../../../platform/events/background-work.js";
 import type { DurableDelivery } from "../../../../../platform/outbox/durable-event.js";
+import type { DurableSubscriber } from "../../../../../platform/outbox/durable-handler.js";
 import { DeliveryEnRouteMail } from "../../services/delivery-en-route-mail.service.js";
 import { MAIL_DELIVERY_EN_ROUTE, MailDeliveryEnRoute } from "../mail-delivery-en-route.handler.js";
 import { OneRecipientReader, orderView, RecordingMailer } from "./payment-failure-doubles.js";
@@ -17,6 +29,15 @@ import { OneRecipientReader, orderView, RecordingMailer } from "./payment-failur
  */
 
 const DEPARTED = new Date(60_000);
+
+/**
+ * Le client de la transaction de la garde. Jamais lu : seul compte qu'une
+ * transaction soit ambiante pendant `handle`, comme sous la garde.
+ */
+const GUARD_TX = {};
+
+/** Laisse partir ce qui aurait été lancé sans être attendu. */
+const settle = (): Promise<void> => new Promise((resolve) => setImmediate(resolve));
 
 function delivered(id: string, overrides: Partial<OrderView> = {}): OrderView {
   return {
@@ -94,6 +115,16 @@ class FixedOrigins extends OrderMailOrigins {
   }
 }
 
+/** Note, à chaque envoi, s'il part sous une transaction ambiante. */
+class TransactionWitnessMailer extends RecordingMailer {
+  readonly underTransaction: boolean[] = [];
+
+  override send<K extends keyof B2bMails>(args: SendMailArgs<B2bMails, K>): Promise<MailReceipt> {
+    this.underTransaction.push(currentTransaction() !== undefined);
+    return super.send(args);
+  }
+}
+
 /** Refuse l'envoi d'une commande choisie, transmet les autres. */
 class FailingFor extends RecordingMailer {
   constructor(private readonly reference: string) {
@@ -109,6 +140,22 @@ class FailingFor extends RecordingMailer {
   }
 }
 
+/**
+ * L'abonné tel que la garde le fait tourner : `handle` dans une transaction,
+ * puis la validation — la file d'après validation se vide —, puis le travail
+ * de fond qu'elle a lancé. Les cas métier se lisent ainsi sur le vrai chemin.
+ */
+function guarded(handler: DurableSubscriber, work: BackgroundWork): DurableSubscriber {
+  return {
+    handle: async (delivery) => {
+      const commits = new CommitQueue();
+      await runInTransaction(GUARD_TX, () => handler.handle(delivery), commits);
+      commits.flush();
+      await work.whenIdle();
+    },
+  };
+}
+
 function subscriber(
   views: readonly OrderView[],
   mailer: RecordingMailer = new RecordingMailer(),
@@ -120,7 +167,9 @@ function subscriber(
     new FixedOrigins(),
     mailer,
   );
-  return { subject: new MailDeliveryEnRoute(mail), mailer };
+  const work = new BackgroundWork();
+  const handler = new MailDeliveryEnRoute(mail, new AmbientAfterCommit(), work);
+  return { subject: guarded(handler, work), handler, mailer, work };
 }
 
 /** Le fait tel que le relais le livre : relu de sa charge, comme en production. */
@@ -207,5 +256,58 @@ describe("MailDeliveryEnRoute — abonné durable « en route »", () => {
     await expect(subject.handle(departed("r_1", ["o_1", "o_2"]))).resolves.toBeUndefined();
 
     expect(mailer.sent.map((sent) => sent.idempotencyKey)).toEqual(["delivery.en_route:o_2:r_1"]);
+  });
+
+  /**
+   * Régression (audit du 2026-10-07, B1) : l'abonné envoyait DANS la
+   * transaction que la garde ouvre pour poser le reçu — un appel à Resend par
+   * commande, une connexion du pool tenue, et passé le délai la transaction
+   * tombait avec le reçu : le fait était relivré, chaque envoi redemandé.
+   */
+  it("🔴 n'envoie pas dans la transaction de la garde : les courriels partent après la validation", async () => {
+    const mailer = new TransactionWitnessMailer();
+    const { handler, work } = subscriber([delivered("o_1"), delivered("o_2")], mailer);
+    const commits = new CommitQueue();
+
+    await runInTransaction(
+      GUARD_TX,
+      () => handler.handle(departed("r_1", ["o_1", "o_2"])),
+      commits,
+    );
+    await settle();
+    expect(mailer.sent).toEqual([]);
+
+    commits.flush();
+    await work.whenIdle();
+    expect(mailer.sent.map((sent) => sent.idempotencyKey)).toEqual([
+      "delivery.en_route:o_1:r_1",
+      "delivery.en_route:o_2:r_1",
+    ]);
+    expect(mailer.underTransaction).toEqual([false, false]);
+  });
+
+  it("une charge illisible lève dans la transaction : la livraison échoue, sera rejouée, et rien n'est inscrit", async () => {
+    const { handler, mailer, work } = subscriber([delivered("o_1")]);
+    const commits = new CommitQueue();
+    const unreadable: DurableDelivery = {
+      eventId: "evt_r_1",
+      type: DELIVERY_ROUND_DEPARTED,
+      payload: { roundId: "r_1", orderIds: ["o_1"] },
+    };
+
+    // Comme la garde : l'appel vit dans une fonction async, qui rend l'échec.
+    await expect(
+      runInTransaction(
+        GUARD_TX,
+        async () => {
+          await handler.handle(unreadable);
+        },
+        commits,
+      ),
+    ).rejects.toThrow(DeliveryRoundDepartedPayloadError);
+    commits.flush();
+    await work.whenIdle();
+
+    expect(mailer.sent).toEqual([]);
   });
 });
