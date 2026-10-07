@@ -1,24 +1,37 @@
 # La géométrie du plancher — l'assistant d'achat et le chargement
 
-> 🟢 **G5 bâti le 2026-10-02** (non commité) : `apps/lfd-api/src/delivery/domain/services/floor/place-stacks.ts`
-> (stratégie B), `planLoading` rend la place de chaque pile et l'alerte
-> `floor_over` ; le contrat gagne `floor` et `stacks[].placement` ; l'écran du
-> plan de chargement (dépôt et livreur) dessine le plancher vu de dessus — ce
-> qui avance une partie de **G6**. Six points tranchés par défaut, **à revoir** :
+> ✅ **G1 à G6 bâtis** (relu contre le code le 2026-10-07) : G1 et G2
+> `4318e1430`, G3 `57c88aabd`, G4 `4715142a7` (serveur) et `f62dbbf3b`
+> (écran), G2 bis `a18d3ad31` (ses bacs latéraux à l'écran dans `f62dbbf3b`),
+> tous du 2026-09-30 ; G5 `19fece6b1` et G6 `4bdee29e8`, du 2026-10-02. La
+> brique vit dans `delivery/domain/services/floor/` (`floor-geometry`,
+> `format-geometry`, `maximize-format`, `place-stacks`, `purchase-table`,
+> `purchase-cost`) et `cargo-floor.ts`. G5 y ajoute la stratégie B
+> (`apps/lfd-api/src/delivery/domain/services/floor/place-stacks.ts`) :
+> `planLoading` rend la place de chaque pile et l'alerte `floor_over`, le
+> contrat porte `floor` et `stacks[].placement`. Six points de G5 ont été
+> tranchés par défaut, **à revoir** :
 > [`decisions-par-defaut-2026-10-02.md` § 6](decisions-par-defaut-2026-10-02.md)
-> (jeu 1 cm faute de réglage, pas de pile par-dessus un passage, les piles
-> suivantes sortent avec la première qui ne tient pas, hauteur au plafond non
-> vérifiée).
+> (jeu de 1 cm faute de réglage, pas de pile par-dessus un passage, les piles
+> suivantes sortent avec la première qui ne tient pas…). La hauteur au
+> plafond, laissée hors de G5 (G5e), est **vérifiée depuis le 2026-10-06**
+> (`553422d02`) : `stackLevels` sert au chargement comme à l'assistant. Reste
+> hors des lots : le réglage du jeu entre bacs (G-D5, G-Q2), et les questions
+> du § 4.
 
-> 🟡 **État relevé le 2026-10-01** : la brique du plancher et l'assistant
-> d'achat sont **bâtis** (`delivery/domain/services/floor/` :
-> `floor-geometry`, `maximize-format`, `purchase-table`, `purchase-cost` ;
-> `cargo-floor.ts` ; migration des passages de roue `4715142a7`). **G5**, la
-> stratégie de chargement (positions des piles, alerte `floor_over`), n'est
-> **pas** bâtie : aucune occurrence de `floor_over` dans le code. G6 en
-> dépend. Le texte d'origine disait « rien n'est bâti ».
+> 📏 **Les bacs se mesurent au millimètre depuis le 2026-10-06** :
+> `0bcb955a6` pour les types de bacs, `1524cb8c5` pour l'assistant et ses bacs
+> candidats (migrations `20261007100000_les_bacs_au_millimetre` et
+> `20261007120000_les_bacs_candidats_au_millimetre`). Le véhicule, ses
+> passages de roue et le jeu entre bacs **restent en centimètres**. La règle
+> (`delivery/domain/services/floor/floor-geometry.ts:4-10`) : les calculs de
+> plancher se font dans la plus fine des deux unités, et c'est le
+> **plancher** qu'on convertit (`floorInMm`) — ×10 est exact, ÷10 ne l'est
+> pas (une manne à pain fait 66,5 cm). Ce plan, écrit au centimètre le
+> 2026-09-30, est corrigé là où il nomme une fonction, une formule ou une
+> borne.
 
-> 📐 **Plan** (2026-09-30) — _en partie bâti, voir le bandeau ci-dessous_. Hugo : « un assistant achat
+> 📐 **Plan** (2026-09-30) — _bâti, voir les deux bandeaux ci-dessus_. Hugo : « un assistant achat
 > logistique, qui permet de simuler une dimension utile et des dimensions de
 > boite », puis « est-ce que le même algo pourra servir à la résolution du
 > chargement ? » — et, sur la réponse : « écris le plan avec la géométrie
@@ -26,10 +39,17 @@
 >
 > Maquette interactive (hors dépôt) :
 > <https://claude.ai/artifact/66XrmXV9cG42JeDBjgc2ti>. Référence de ce qui
-> existe : [`../colisage/chargement-les-bacs.md`](../colisage/chargement-les-bacs.md), qui liste en
-> premier manque « pas de géométrie du plancher » (§ 9).
+> existait : [`../colisage/chargement-les-bacs.md`](../colisage/chargement-les-bacs.md), qui listait
+> alors en premier manque « pas de géométrie du plancher » (§ 9) — rayé depuis
+> G5.
 
 ## 1. Ce qui existe, relevé dans le code le 2026-09-30
+
+> 📸 **Instantané du 2026-09-30**, gardé tel quel : il dit d'où le plan est
+> parti. Depuis, `loading-plan.ts` fait 323 lignes et sait où poser une pile
+> (G5), les alertes sont sept (`floor_over` et `compacted` en plus), le
+> véhicule porte ses passages de roue (G4), et un type de bac se mesure au
+> millimètre. La caisse réfrigérée n'a toujours que des litres (G-Q3).
 
 | Élément                    | Où                                                           | Ce qu'il sait                                                                                                                | Ce qu'il ne sait pas                               |
 | -------------------------- | ------------------------------------------------------------ | ---------------------------------------------------------------------------------------------------------------------------- | -------------------------------------------------- |
@@ -89,13 +109,20 @@ Un value object, dans `delivery/domain/value-objects/` :
   saillie de chaque côté, distance depuis le fond. Une camionnette n'en a
   qu'une ; deux paires seraient une question le jour d'un porteur.
 
-Et deux fonctions pures, testées seules (`sonic-unit-tester`) :
+Et deux fonctions pures, testées seules (`sonic-unit-tester`). Depuis le
+2026-10-06, elles prennent le plancher **converti au millimètre** (`FloorMm`,
+par `floorInMm`), jamais le `CargoFloor` en centimètres :
 
-- `freeWidthCm(floor, fromCm, depthCm)` — la largeur posable sur la tranche
-  `[x, x + d)` : toute la largeur, ou `largeur − 2 × saillie` si la tranche
-  touche un passage de roue. Au **sol**, aucun bac n'est posé sur un passage
-  de roue.
-- `stackLevels(floor, binType)` — `min(maxStack, ⌊hauteur ÷ hauteur extérieure⌋)`.
+- `freeWidthMm(floor: FloorMm, fromMm, depthMm)`
+  (`delivery/domain/services/floor/floor-geometry.ts:53`, d'abord
+  `freeWidthCm`) — la largeur posable sur la tranche `[x, x + d)` : toute la
+  largeur, ou `largeur − 2 × saillie` si la tranche touche un passage de
+  roue. Au **sol**, aucun bac n'est posé sur un passage de roue.
+- `stackLevels(floor: FloorMm, binOuterHeightMm, maxStack)`
+  (`delivery/domain/services/floor/floor-geometry.ts:65`) —
+  `min(maxStack, ⌊hauteur ÷ hauteur extérieure⌋)`, zéro quand le bac est
+  plus haut que le plafond. Le plan de chargement s'en sert aussi depuis le
+  2026-10-06 (`553422d02`).
 
 ### G-D2 bis — Empiler par-dessus un passage de roue (2026-09-30)
 
@@ -127,7 +154,9 @@ entières (`nombre × étages` par rangée), plus des bacs au sol.
 ni le recouvrement minimal d'un bac latéral sur ses voisins, ni le poids. Un bac
 latéral pourrait n'avoir qu'une étroite portée sur la colonne centrale ; ce
 plan ne l'interdit pas. **Lot G2 bis** : porter ce calcul dans
-`maximize-format`, et le rendu (bacs latéraux dessinés au-dessus du passage).
+`maximize-format`, et le rendu (bacs latéraux dessinés au-dessus du passage)
+— **bâti le 2026-09-30** (`a18d3ad31` pour le calcul, `f62dbbf3b` pour le
+rendu).
 
 Le **jeu entre bacs** (défaut 1 cm) s'ajoute à l'empreinte, en longueur et en
 largeur : un bac serré contre son voisin ne se sort pas.
@@ -149,12 +178,20 @@ produit.
 Le calcul de la maquette, porté au domaine :
 
 ```
-f(x) = nombre de bacs au sol posables à partir de x (en cm, depuis le fond)
+f(x) = nombre de bacs au sol posables à partir de x (en mm, depuis le fond)
 f(L) = 0
-f(x) = max( f(x + 1),                                   — laisser 1 cm vide
-            pour chaque sens o :  ⌊freeWidth(x, d_o) ÷ w_o⌋ + f(x + d_o) )
+f(x) = max( f(x + 1),                                   — laisser 1 mm vide
+            pour chaque sens o :  ⌊freeWidthMm(x, d_o) ÷ w_o⌋ + f(x + d_o) )
 total = f(0) × stackLevels
 ```
+
+La dynamique avance au **millimètre** depuis le 2026-10-06
+(`delivery/domain/services/floor/maximize-format.ts:151-153`, « laisser
+1 mm » ligne 193) : `L`, `d_o` et `w_o` sont en mm, jeu entre bacs compris
+(converti depuis les cm). Depuis G2 bis, elle maximise le total **par
+rangée** (bacs latéraux compris), puis, à égalité, les bacs au sol :
+`total = f(0) × stackLevels` ne vaut plus dès qu'une rangée porte des bacs
+au-dessus d'un passage (`maximize-format.ts:44-45`).
 
 Exact **parmi les rangements par rangées** transversales, passages de roue
 compris ; pas parmi tous les rangements (un rangement « en moulinet » peut
@@ -168,7 +205,9 @@ les rangées (position, sens, nombre) pour dessiner le plancher.
 `POST admin/livraison/assistant-achat` parce que le scénario est un corps. Ni
 table, ni journal. Droit : `delivery_rounds:read`, celui du simulateur ; pas
 de droit neuf. Bornes : 10 formats, dimensions dans les bornes de
-`CargoSpace` et de `BinDimensions`.
+`CargoSpace` (1 à 1 000 cm) et de `BinTypeDimensions` (10 à 3 000 mm,
+`bin-type-dimensions.ts:8-9`) ; le value object `BinDimensions`, au
+centimètre, est retiré depuis le 2026-10-06 (`1524cb8c5`).
 
 ### G-D4 — Stratégie B, le chargement : remplir des rangées depuis le fond
 
@@ -215,14 +254,18 @@ alerte `compacted`), et n'est gardée que si elle fait tenir plus de bacs au
 sol : [`algorithme-de-chargement.md`](algorithme-de-chargement.md).
 
 **Le froid reste en litres** tant que la caisse réfrigérée n'a pas de
-dimensions (G-Q3). Les bacs isothermes n'entrent pas dans le plancher sec.
+dimensions (G-Q3) : avec une caisse, les bacs isothermes y vont, hors
+plancher (placement `refrigerated`) ; **sans caisse, ils sont posés au sol**
+comme les autres et comptés au sec, avec l'alerte
+`cold_bins_without_refrigeration` (G5d,
+`delivery/domain/services/floor/place-stacks.ts:114`).
 
 ### G-D5 — Les données : ce qu'il faut ajouter
 
-| Champ                                                                                                    | Table                                                                | Migration                                                                                                                                                                                          |
-| -------------------------------------------------------------------------------------------------------- | -------------------------------------------------------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| passages de roue : longueur, saillie, distance depuis le fond, **hauteur** (cm, tous nuls ou tous posés) | `delivery.delivery_vehicle` (schéma `delivery` depuis le 2026-09-30) | **additive**, quatre colonnes nullables + `CHECK` « tous ou aucun » + `CHECK` « jamais sans espace utile » — **bâti le 2026-09-30** (`4715142a7`, migration `20260930100000_les_passages_de_roue`) |
-| jeu entre bacs (cm)                                                                                      | `delivery.delivery_routing_settings`                                 | additive, défaut 1                                                                                                                                                                                 |
+| Champ                                                                                                    | Table                                                                | Migration                                                                                                                                                                                                                                                                           |
+| -------------------------------------------------------------------------------------------------------- | -------------------------------------------------------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| passages de roue : longueur, saillie, distance depuis le fond, **hauteur** (cm, tous nuls ou tous posés) | `delivery.delivery_vehicle` (schéma `delivery` depuis le 2026-09-30) | **additive**, quatre colonnes nullables + `CHECK` « tous ou aucun » + `CHECK` « jamais sans espace utile » — **bâti le 2026-09-30** (`4715142a7`, migration `20260930100000_les_passages_de_roue`)                                                                                  |
+| jeu entre bacs (cm)                                                                                      | `delivery.delivery_routing_settings`                                 | additive, défaut 1 — **non bâti, et aucun lot ne le porte** (relu le 2026-10-07) : la table n'a pas de colonne de jeu ; le chargement lit la constante `BIN_GAP_DEFAULT_CM = 1` (`delivery/domain/value-objects/bin-gap.ts:10`), l'assistant d'achat le jeu de sa requête (`gapCm`) |
 
 Aucune donnée existante n'est convertie. Un véhicule sans passages de roue se
 lit comme aujourd'hui : un rectangle. Le journal des véhicules déclare les
@@ -230,15 +273,15 @@ nouvelles clés (`onVehicle`, comme `cargo` le 2026-09-30).
 
 ## 3. Les lots
 
-| Lot        | Contenu                                                                                                                                                            | Qui                               |
-| ---------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------ | --------------------------------- |
-| **G1**     | `CargoFloor`, `WheelArches`, `freeWidthCm`, `stackLevels` — pur, tests aux bords (saillie ≥ demi-largeur, passage au ras du fond, tranche qui effleure le passage) | `batisseur` + `sonic-unit-tester` |
-| **G2**     | Stratégie A + `POST admin/livraison/assistant-achat` + contrat + e2e (200 sans écriture, 400 bornes, 403)                                                          | `batisseur`                       |
-| **G3**     | Onglet **« Assistant d'achat »** de l'espace Livraison : la maquette, reliée à l'API, pré-remplie par les véhicules et les types en service                        | `pablo`                           |
-| **G4**     | Passages de roue sur le véhicule : migration additive, écran Véhicules, journal                                                                                    | `batisseur` + `pablo`             |
-| **G2 bis** | Empiler par-dessus les passages de roue (G-D2 bis) : `maximize-format`, contrat, plancher de l'écran                                                               | `batisseur` + `pablo`             |
-| **G5**     | Stratégie B dans `planLoading` : positions des piles, alerte `floor_over` — **bâti 2026-10-02**, décisions par défaut G5a–G5f                                      | `batisseur`                       |
-| **G6**     | Le plancher vu de dessus sur l'écran du plan de chargement, couleur par arrêt                                                                                      | `pablo`                           |
+| Lot                                                 | Contenu                                                                                                                                                                                    | Qui                               |
+| --------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ | --------------------------------- |
+| **G1** ✅ 2026-09-30 (`4318e1430`)                  | `CargoFloor`, `WheelArches`, `freeWidthMm` (d'abord `freeWidthCm`), `stackLevels` — pur, tests aux bords (saillie ≥ demi-largeur, passage au ras du fond, tranche qui effleure le passage) | `batisseur` + `sonic-unit-tester` |
+| **G2** ✅ 2026-09-30 (`4318e1430`)                  | Stratégie A + `POST admin/livraison/assistant-achat` + contrat + e2e (200 sans écriture, 400 bornes, 403)                                                                                  | `batisseur`                       |
+| **G3** ✅ 2026-09-30 (`57c88aabd`)                  | Onglet **« Assistant d'achat »** de l'espace Livraison : la maquette, reliée à l'API, pré-remplie par les véhicules et les types en service                                                | `pablo`                           |
+| **G4** ✅ 2026-09-30 (`4715142a7`, `f62dbbf3b`)     | Passages de roue sur le véhicule : migration additive, écran Véhicules, journal                                                                                                            | `batisseur` + `pablo`             |
+| **G2 bis** ✅ 2026-09-30 (`a18d3ad31`, `f62dbbf3b`) | Empiler par-dessus les passages de roue (G-D2 bis) : `maximize-format`, contrat, plancher de l'écran                                                                                       | `batisseur` + `pablo`             |
+| **G5** ✅ 2026-10-02 (`19fece6b1`)                  | Stratégie B dans `planLoading` : positions des piles, alerte `floor_over` — décisions par défaut G5a–G5f ; le plafond (G5e) est vérifié depuis `553422d02`                                 | `batisseur`                       |
+| **G6** ✅ 2026-10-02 (`4bdee29e8`)                  | Le plancher vu de dessus sur l'écran du plan de chargement, couleur par arrêt                                                                                                              | `pablo`                           |
 
 G1 → G2 → G3 donnent l'assistant **sans migration**, sur des dimensions saisies.
 G4 est le seul lot qui touche au schéma. G5 attend G1, pas G4 : sans passages

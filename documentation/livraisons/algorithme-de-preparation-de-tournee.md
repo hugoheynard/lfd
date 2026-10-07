@@ -1,8 +1,10 @@
 # L'algorithme de « Proposer » — préparer les tournées
 
-> ✅ **Implémenté** — état du code relu le 2026-10-03. Ce document explique ce
-> que fait « Proposer » aujourd'hui, comment il décide, et ce qu'il ne regarde
-> pas. Les décisions qui l'ont façonné vivent dans
+> ✅ **Implémenté** — état du code relu le 2026-10-03, et corrigé le
+> 2026-10-07 sur les points que l'audit du dossier a relevés (la place et les
+> zones, ce que « Proposer » garde, « Appliquer », le budget de temps). Ce
+> document explique ce que fait « Proposer » aujourd'hui, comment il décide,
+> et ce qu'il ne regarde pas. Les décisions qui l'ont façonné vivent dans
 > [`plan-preparation-de-tournee.md`](plan-preparation-de-tournee.md) (lots 7,
 > 7 bis, 7 ter, 8, 10 bis) et
 > [`architecture-road-livraison-tournees.md`](architecture-road-livraison-tournees.md).
@@ -18,7 +20,8 @@ dans quel ordre, et à quelle heure on arrive chez chacun.
 
 Il **propose**, il n'écrit rien. L'écran montre la proposition (carte, heures
 d'arrivée, retards signalés) ; c'est « Appliquer » qui l'écrit, et seulement
-si personne n'a touché aux tournées entre-temps (versions vérifiées).
+si personne n'a touché entre-temps aux tournées qu'il touche (versions
+vérifiées, § 7).
 
 ## 2. Ce qu'il cherche, dans cet ordre
 
@@ -54,20 +57,29 @@ autre place.
 - **Les arrêts** : les commandes du jour à répartir, et les commandes
   **rapportées** d'un autre jour, en tête. Avec « tout recomposer », aussi les
   arrêts des tournées qu'on a le droit de défaire (§6).
-- **Le créneau de chaque arrêt** : celui demandé sur la commande, sinon celui
-  du carnet d'adresses ; un arrêt sans créneau peut être livré n'importe quand.
+- **Le créneau de chaque arrêt** : celui de la commande, et lui seul. Le
+  carnet d'adresses propose le sien **à la passation** ; au calcul, il ne
+  complète rien. Un arrêt sans fenêtre — une commande d'avant CA1b — peut
+  être livré n'importe quand.
 - **Le temps sur place** : celui de l'adresse s'il est renseigné, sinon le
   réglage global (5 min par défaut).
 - **Les véhicules** choisis, actifs ce jour-là. Un véhicule qui porte déjà une
-  tournée chargée ou partie n'est libre qu'à son **retour estimé**.
+  tournée gardée — partie, ou chargée en tournées neuves (§ 6) — n'est libre
+  qu'à son **retour estimé**.
+- **La place** (CA4) : la caisse de chaque véhicule — plancher, volume au
+  sec et au froid, passages de roue — et la demande en bacs de chaque
+  commande (§ 8) ; et les **zones autorisées** de chaque véhicule (vide =
+  partout).
 - **Les temps de trajet** : une matrice **par la route** (OSRM, sur le graphe de
   la Savoie), entre le départ et chaque arrêt situé. Pas de vol d'oiseau : il se
   trompait de trente minutes en montagne. Si le calcul routier ne répond pas,
   « Proposer » **refuse** au lieu d'estimer autrement.
 - **Les réglages** : heure de départ « au plus tôt » (06:00 — depuis CA2, le
   départ d'une tournée qu'aucune échéance ne presse, plus un plancher), durée
-  maximale (240 min, un signal), temps d'arrêt (5 min), marge de sécurité
-  (20 min), plusieurs passages permis ou non, mode par défaut.
+  maximale (240 min, un signal et le prix d'un second passage), temps d'arrêt
+  (5 min), marge de sécurité (20 min), plusieurs passages permis ou non, mode
+  par défaut, et le **contenant par défaut** d'une commande — un type de bac
+  et un nombre, facultatif (CA4b, `defaultContainer`).
 
 Un arrêt **non situé** (adresse sans point GPS) n'entre pas dans le calcul :
 il est listé à part, à situer.
@@ -100,14 +112,17 @@ flowchart TD
    étroit, puis celui qui ferme le plus tôt) ; les arrêts sans créneau en
    dernier. À égalité, l'identifiant : le calcul est déterministe.
 2. **Pour chaque arrêt**, on essaie **toutes** les places possibles, sur
-   **tous** les véhicules à la fois :
+   **tous** les véhicules autorisés sur sa zone, à la fois :
    - à chaque position de chaque tournée existante ;
    - dans une tournée neuve, si le véhicule a encore droit à un passage.
 3. On garde la place dont le **surcoût** est le plus petit, selon l'ordre du
    §2 : le moins de retard ajouté d'abord, puis le reste. La durée maximale
-   n'écarte plus aucune place (CA2, Q2).
-4. Si **aucune** place n'est possible (plus de passage permis), l'arrêt
-   **déborde**.
+   n'écarte plus aucune place (CA2, Q2). Une place qui ferait déborder la
+   caisse n'en est pas une (CA4) : la garde de capacité la refuse, et la
+   suivante est essayée.
+4. Si **aucune** place n'est possible, l'arrêt **déborde**, avec sa raison :
+   plus de passage permis, aucune caisse qui le tienne (`capacity`), aucun
+   véhicule autorisé sur sa zone (`zone`).
 
 Pourquoi ouvrir une tournée est rare : elle coûte une heure, et un second
 passage coûte en plus une durée maximale entière. Une tournée existante qui
@@ -127,11 +142,18 @@ prend :
 
 - On prend le **premier** geste qui améliore, dans un ordre fixe.
 - On travaille par **paires de véhicules** ; une paire où rien n'améliore n'est
-  rouverte que si l'un des deux a changé. C'est ce qui tient soixante arrêts
-  sous deux secondes.
+  rouverte que si l'un des deux a changé, et chaque arrêt ne se rapproche que
+  de ses dix plus proches voisins (`move-scope.ts`). C'est ce qui tient
+  soixante arrêts dans leur budget : la promesse est de deux secondes, la
+  garde du test est relâchée à **trois** depuis le 2026-10-05
+  (`propose-rounds-scale.spec.ts` : 0,56 s de processeur sur un poste,
+  2,06 s sur la CI).
 - **400 gestes au plus**, compté sans horloge, pour rester déterministe.
 - En mode Insérer, les arrêts placés à la main sont **épinglés** : aucun geste
   ne les déplace.
+- Un geste qui ferait déborder une caisse (CA4) n'est pas pris ; un geste qui
+  mettrait un arrêt dans un véhicule non autorisé sur sa zone n'est pas même
+  noté.
 
 ### 5.3 Rendre
 
@@ -162,15 +184,24 @@ prend :
 
 ## 6. Ce qu'il a le droit de toucher
 
-Une tournée est **gardée telle quelle** si elle est :
+En **tournées neuves** (`classifyRounds`), une tournée est **gardée telle
+quelle** si elle est partie, ou chargée — même d'un seul bac. Sans « tout
+recomposer », toutes les autres le sont aussi : aucune tournée existante
+n'est réordonnée. Avec lui, restent gardées celles qui portent un arrêt
+**signalé** (à retirer à la main) ou **non situé**. Un véhicule qui porte une
+tournée gardée chargée ou partie ne repart qu'à son retour estimé, et ses
+passages se numérotent après elle.
 
-- partie ;
-- chargée, même d'un seul bac ;
-- porteuse d'un arrêt **signalé** (à retirer à la main) ou **non situé**.
-
-Sans « tout recomposer », aucune tournée existante n'est réordonnée non plus.
-Un véhicule qui porte une tournée gardée chargée ou partie ne repart qu'à son
-retour estimé, et ses passages se numérotent après elle.
+En mode **Insérer** (`insertableRounds`), seules sont écartées les tournées
+parties, celles des véhicules non cochés, et celles qui ont un arrêt non
+situé. **Une tournée chargée reste éligible** (Hugo : « non parties »,
+2026-09-29) : on insère entre ses arrêts sans les réordonner, et l'arrêt
+ajouté n'a pas de bac — « Partir » refuse tant qu'un arrêt vivant n'est pas
+chargé. L'affectation à la main l'accepte aussi (`DeliveryRound.assign`
+exige une tournée au dépôt, pas une tournée sans bac) ; seule la place
+suggérée (CA7) l'écarte.
+⚠️ Q1 de l'audit du 2026-10-07 : si c'est le code qui doit changer, c'est à
+Hugo de le trancher.
 
 ## 7. Appliquer
 
@@ -183,19 +214,43 @@ ses règles :
 - une tournée dont un arrêt vivant n'est placé **nulle part** est refusée :
   appliquer ne retire jamais un arrêt en silence.
 
-Les versions des tournées lues par « Proposer » sont exigées : si quelqu'un a
-changé une tournée entre-temps, l'application est refusée, et il faut
-reproposer.
+« Appliquer » exige la version de chaque tournée qu'il **touche** — celles
+que la proposition nomme, et celles du jour qui portent une de ses commandes
+(`loadTouchedRounds`) : si quelqu'un a changé l'une d'elles entre-temps,
+l'application est refusée (409), et il faut reproposer. Une tournée du jour
+que la proposition ne touche pas peut avoir bougé sans refus.
 
-## 8. Ce qu'il ne regarde pas
+## 8. Ce qu'il regarde au-delà du temps, et ce qu'il ne regarde pas
 
-- 🔴 **La capacité du véhicule** : ni les litres, ni le plancher, ni les bacs.
-  « Proposer » peut composer une tournée qui ne tiendra pas dans la
-  camionnette ; seul le **plan de chargement** le dit, au dépôt, une fois les
-  tournées figées (`dry_over`, `floor_over`). L'architecture prévoyait une
-  contrainte de capacité (I5, en poids) : elle n'est pas bâtie. C'est le
-  prochain chantier proposé (un plan « capacité à la composition », à écrire).
-- **Le poids** des bacs : aucun bac n'en porte aujourd'hui.
+La **place** et les **zones** sont, depuis le 2026-10-06, des contraintes
+**dures** de la composition — jamais une pénalité : l'ordre du § 2 n'est pas
+touché.
+
+- **La capacité** (CA4, `4010899a1` ; contenant par défaut CA4b,
+  `fa1a28393`). Chaque commande a une demande en bacs (`stopDemandOf`) : ses
+  bacs déclarés, sinon l'estimation par contenances, sinon le contenant par
+  défaut des réglages, sinon inconnue. À chaque place essayée qui battrait la
+  meilleure, et à chaque geste d'amélioration retenu, la garde de capacité
+  (`capacityGuardOf`) vérifie que la tournée tient : deux majorants d'abord
+  (litres, surface des piles au sol), puis le plan de chargement lui-même
+  (`planLoading`, compactage permis). Refusent : `dry_over`, `cold_over` (les
+  litres au sec et au froid), `floor_over` (le plancher, plafond de la caisse
+  compris) et `unknown_cargo` (un véhicule sans cotes). Si rien ne tient, la
+  commande reste à répartir, raison `capacity`. Une commande à demande
+  inconnue est placée sans contrôle, et sa tournée est dite « place non
+  vérifiée ».
+- **Les zones** (`1d8ff822e`). Un arrêt n'est jamais essayé dans un véhicule
+  non autorisé sur sa zone ; si aucun ne l'est, raison `zone`. Une commande
+  sans zone connue va partout.
+
+Le détail, les décisions et les mesures :
+[composition automatique](composition-automatique.md), § 4 et § 5.
+
+Ce qu'il ne regarde **pas** :
+
+- **Le poids** : ni les bacs ni les véhicules n'en portent. L'architecture
+  prévoyait une contrainte de capacité en poids (I5) : c'est la seule part de
+  la capacité qui n'est pas bâtie.
 - **Le livreur** : la proposition affecte des véhicules, pas des personnes.
 - **Les contraintes du travail** (CA-D1) : ni heure d'embauche, ni repos, ni
   durée de tournée tenable. On part à 2 h du matin s'il le faut ; la durée
@@ -211,18 +266,22 @@ reproposer.
 
 Dans `apps/lfd-api/src/delivery/` :
 
-| Fichier                                                               | Rôle                                                                   |
-| --------------------------------------------------------------------- | ---------------------------------------------------------------------- |
-| `application/queries/get-delivery-round-proposal.handler.ts`          | lit le jour, situe, construit la matrice, choisit le mode              |
-| `application/delivery-proposal-support.ts`                            | ce qu'on a le droit de toucher (`classifyRounds`), les passages permis |
-| `domain/services/propose-rounds.ts`                                   | mode tournées neuves                                                   |
-| `domain/services/insert-into-rounds.ts`                               | mode Insérer, arrêts épinglés                                          |
-| `domain/services/insert-cheapest.ts`                                  | construire : l'insertion au moindre surcoût                            |
-| `domain/services/improve-plans.ts`, `route-moves.ts`, `move-scope.ts` | améliorer : les gestes locaux                                          |
-| `domain/services/vehicle-plan.ts`                                     | le score d'un véhicule et l'ordre des priorités                        |
-| `domain/services/route-timing.ts`                                     | le chronométrage d'une tournée                                         |
-| `domain/services/apply-proposal.ts`                                   | appliquer                                                              |
-| `domain/value-objects/routing-settings.ts`                            | les réglages et leurs bornes                                           |
-| `infrastructure/osrm-distance-matrix.ts`                              | la matrice par la route                                                |
+| Fichier                                                               | Rôle                                                                                       |
+| --------------------------------------------------------------------- | ------------------------------------------------------------------------------------------ |
+| `application/queries/get-delivery-round-proposal.handler.ts`          | lit le jour, situe, construit la matrice, choisit le mode                                  |
+| `application/delivery-proposal-support.ts`                            | ce qu'on a le droit de toucher (`classifyRounds`, `insertableRounds`), les passages permis |
+| `domain/services/propose-rounds.ts`                                   | mode tournées neuves                                                                       |
+| `domain/services/insert-into-rounds.ts`                               | mode Insérer, arrêts épinglés                                                              |
+| `domain/services/insert-cheapest.ts`                                  | construire : l'insertion au moindre surcoût                                                |
+| `domain/services/improve-plans.ts`, `route-moves.ts`, `move-scope.ts` | améliorer : les gestes locaux                                                              |
+| `domain/services/vehicle-plan.ts`                                     | le score d'un véhicule et l'ordre des priorités                                            |
+| `domain/services/route-timing.ts`                                     | le chronométrage d'une tournée                                                             |
+| `application/proposal-capacity.ts`                                    | la place : la flotte, les bacs déclarés, les contenances, le contenant par défaut          |
+| `domain/services/stop-demand.ts`                                      | la demande en bacs d'une commande (`stopDemandOf`)                                         |
+| `domain/services/capacity-guard.ts`                                   | la garde de capacité : deux majorants, puis `planLoading`                                  |
+| `application/proposal-zones.ts`, `domain/services/zone-rule.ts`       | les zones autorisées des véhicules restreints                                              |
+| `domain/services/apply-proposal.ts`                                   | appliquer                                                                                  |
+| `domain/value-objects/routing-settings.ts`                            | les réglages et leurs bornes                                                               |
+| `infrastructure/osrm-distance-matrix.ts`                              | la matrice par la route                                                                    |
 
 Tout le domaine est **pur et déterministe** : même entrée, même proposition.

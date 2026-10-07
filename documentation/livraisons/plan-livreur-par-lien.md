@@ -10,10 +10,16 @@
 > 🔴 **Frontière de sécurité neuve : `vitruve` avant Hugo** (CLAUDE.md § 9 bis).
 > Une clé d'accès qui ne passe pas par Auth0 ouvre des routes du back-office.
 >
+> 📜 **Relu contre le code le 2026-10-07** (audit du dossier `livraisons/` du
+> même jour) : toujours rien de bâti. Corrigés en place et datés : les routes
+> du livreur relèvent de **deux** droits, pas d'un (§ 0, § 9.1) ; le dialogue
+> d'information est commité ; l'adresse de la page et une ligne citée. Deux
+> exigences que la v2 décrivait comme acquises sont au **§ 9.4**.
+>
 > **Complément, pas remplacement.** Le livreur avec compte staff
-> (`delivery_driving`, page `/livraison/ma-tournee`,
-> [`plan-ma-tournee.md`](plan-ma-tournee.md)) reste la voie principale et ne
-> change pas. Conception tranchée en amont :
+> (`delivery_driving` pour conduire, `delivery_doorstep` pour les gestes à la
+> porte ; page `/coursier`, [`plan-ma-tournee.md`](plan-ma-tournee.md)) reste
+> la voie principale et ne change pas. Conception tranchée en amont :
 > [`a-la-porte.md`](a-la-porte.md) § 10 (« un lien à jeton par tournée ; qui
 > compose affecte le livreur ; le snapshot du départ se garde 90 jours ») et
 > L6-C5 de [`plan-preparation-de-tournee.md`](plan-preparation-de-tournee.md).
@@ -24,21 +30,31 @@
   contrôleurs : `my-delivery-round.controller.ts` (liste, version, détail,
   `depart`, photo d'étape), `my-delivery-loading.controller.ts` (chargement,
   plan, `bacs`, `dechargement`), `my-delivery-doorstep.controller.ts` (gestes à
-  la porte). Tous sont `@AdminSurface("delivery_driving")` et prennent le
-  livreur par `@StaffUserId()`. Il n'est jamais un paramètre d'URL.
+  la porte, « Tournée terminée », photo d'un signalement). Les deux premiers
+  sont `@AdminSurface("delivery_driving")` ; le troisième est
+  `@AdminSurface("delivery_doorstep")` (`my-delivery-doorstep.controller.ts:61`,
+  AP-D9). _Corrigé le 2026-10-07 : ce paragraphe les disait tous sous
+  `delivery_driving`._ S'y ajoute `admin/livraison/mes-donnees`
+  (`my-driver-notice.controller.ts`, sous `delivery_driving`). Chaque route
+  d'une tournée prend le livreur par `@StaffUserId()` — sauf `GET version`,
+  sans mur (voulu, `get-my-round-version.handler.ts`). Il n'est jamais un
+  paramètre d'URL.
 - **Le mur est dans la requête** : `round: { driverStaffId: staffUserId }`
   (`prisma-doorstep-stop.repository.ts:34`), et les commandes « à moi »
   (`LoadMyBinCommand`, `DepartMyRoundCommand`…) portent `staffUserId`. Une
   tournée d'un autre rend 404.
 - **L'affectation** : `AssignDeliveryDriverHandler` refuse quiconque n'est pas
-  détenteur de `delivery_driving` (`driversNow(this.holders)`).
+  détenteur de `delivery_driving` (`driversNow(this.holders)`) — de
+  `delivery_driving:write` **seulement** (`DRIVING_PERMISSION`,
+  `delivery-driver-support.ts:15`) : `delivery_doorstep` n'est pas vérifié
+  (relu le 2026-10-07, § 9.4).
   `delivery_round.driver_staff_id` est un `String?` sans clé étrangère
   (`prisma/schema/delivery.prisma:148`).
 - **L'identité staff** est résolue en base à chaque requête (`StaffAccess`,
   `platform/auth/staff-principal.ts`) depuis un jeton Auth0
   (`admin-auth.guard.ts`). Aucun autre chemin ne produit un `staffUserId`.
 - **Le chargement** écrit `delivery_bin_load.loaded_by` (`String?`,
-  `delivery.prisma:291`), qui reçoit aujourd'hui un `staffUserId`.
+  `delivery.prisma:299`), qui reçoit aujourd'hui un `staffUserId`.
 - **Aucun envoi SMS** dans le dépôt (aucune occurrence de
   sms/twilio/vonage/brevo dans `apps/lfd-api/src`, `packages/mailer`,
   `gateway`). Le mailer (`packages/mailer`) envoie par Resend, avec un mode
@@ -52,9 +68,11 @@
   `lint:rgpd-staff`, qui n'admet que `personne ∈ {livreur, staff,
 receptionnaire}` (`rgpd-staff.mjs:51`). Son point 4 lie l'empreinte des
   entrées `livreur` à la version du texte d'information.
-- **Le dialogue d'information du livreur** est **en cours, non commité** :
-  `my-driver-notice.controller.ts` (`admin/livraison/mes-donnees`, `GET` +
-  `POST accuse`), `DriverNoticeAcknowledgement`, migration
+- **Le dialogue d'information du livreur** est **commité** (`188858264`,
+  2026-10-06 ; _ce paragraphe le disait « en cours, non commité », corrigé le
+  2026-10-07_) : `my-driver-notice.controller.ts`
+  (`admin/livraison/mes-donnees`, `GET` + `POST accuse`),
+  `DriverNoticeAcknowledgement`, migration
   `20261007150000_l_accuse_du_texte_du_livreur`. L'accusé est rattaché à un
   `staffUserId`.
 
@@ -220,7 +238,7 @@ bureau (la consigne : ne dire le code qu'au livreur affecté, au numéro connu).
   ses motifs dans le schéma `delivery`. Le texte d'information a son entrée
   dans [`../legal/rgpd-livreur.md`](../legal/rgpd-livreur.md).
 - **Information au premier accès** : le **même** dialogue que le livreur staff
-  (lot en cours, non commité au 2026-10-06), avec un paragraphe sur l'e-mail
+  (commité le 2026-10-06, `188858264`), avec un paragraphe sur l'e-mail
   et le cookie d'appareil. L'accusé se rattache à l'**accès**
   (`driver_link_access.notice_*`), pas à un `staffUserId`. Le point 4 de la
   porte (empreinte liée à la version du texte) couvre les deux personnes.
@@ -299,8 +317,10 @@ la découpe qu'on change.
 
 - **Le livreur externe est une ligne de `staff_users`**, de nature
   `external` : prénom, nom, e-mail (obligatoire), **sans `auth0_id`**, avec
-  le rôle qui porte `delivery_driving` — accordé à l'écran des rôles, jamais
-  par migration. Son id est un id staff comme un autre.
+  un rôle qui porte `delivery_driving` **et** `delivery_doorstep` — accordés
+  à l'écran des rôles, jamais par migration. Son id est un id staff comme un
+  autre. _Corrigé le 2026-10-07 : la v2 ne citait que `delivery_driving`, qui
+  ne donne aucun geste à la porte (§ 9.4)._
 - **Tout le reste ne change pas** : `driver_staff_id` le désigne, le mur
   (`driverStaffId` dans chaque `where`) le tient tel quel, les colonnes
   `*_by` reçoivent un id staff, `StaffAuthorDirectory` et `deliveryAuthorOf`
@@ -311,11 +331,13 @@ la découpe qu'on change.
   `Principal` de cette fiche est résolu depuis la session ouverte par le lien
   et le code. Le reste du chemin (droits lus en base, statut, mur) est celui
   de tout staff. Une fiche `external` ne peut **jamais** se connecter par
-  Auth0, et une fiche Auth0 jamais par lien.
+  Auth0, et une fiche Auth0 jamais par lien. _Exigence à construire, pas un
+  état : aujourd'hui le résolveur d'accès lierait une telle fiche au premier
+  compte Auth0 qui présente son adresse (§ 9.4)._
 - **L'affectation** (`AssignDeliveryDriverHandler`, `driversNow`) les voit
   comme les autres détenteurs de `delivery_driving` : la question LL-Q6
   (« qui peut affecter un externe ») se ramène au droit d'affectation
-  existant.
+  existant. Elle ne vérifie que `delivery_driving:write` (§ 9.4).
 - **RGPD** : la porte `lint:rgpd-staff` n'a pas de nouvelle personne à
   apprendre pour l'identité (c'est une fiche staff) ; seule la table d'accès
   par lien entre au registre. Le départ d'un externe = la procédure de
@@ -339,8 +361,9 @@ la découpe qu'on change.
    à un appareil : c'est le geste « je lui renvoie un lien ».
 4. **Expiration.** `expires_at` se calcule sur le **jour de service** de la
    tournée (pas le jour d'affectation) : fin à J+1 06:00 Paris ; le retour
-   de la tournée (`returned_at`, écrit par « Rentrer ») révoque l'accès dans
-   la même transaction. Une affectation la veille pour un départ à 4 h tient
+   de la tournée (`returned_at`, écrit par « Tournée terminée » — _la v2
+   disait « Rentrer », qui n'est qu'un lien de navigation ; corrigé le
+   2026-10-07_) révoque l'accès dans la même transaction. Une affectation la veille pour un départ à 4 h tient
    donc jusqu'au lendemain du service.
 5. **Deux tournées pour un même externe** : un accès par **externe et jour
    de service**, qui ouvre toutes ses tournées du jour — son espace Coursier
@@ -358,9 +381,39 @@ la découpe qu'on change.
 
 ### 9.3 Effet sur les lots
 
-LL1 devient « la fiche staff `external` (sans Auth0) et son affectation » ;
-LL2 (« `DriverIdentity` sur les handlers ») **disparaît** ; LL3 « l'accès par
+LL1 devient « la fiche staff `external` (sans Auth0) et son affectation »,
+qui exige `delivery_driving` **et** `delivery_doorstep` (§ 9.4) ; LL2
+(« `DriverIdentity` sur les handlers ») **disparaît** ; LL3 « l'accès par
 lien : jeton, code, e-mail, régénération, expiration au jour de service,
-révocation au retour » ; LL4 « la résolution du `Principal` depuis la
-session du lien » ; LL5 le front ; LL6 la purge. La v2 est à recontredire
+révocation au retour », refusé à une fiche qui ne tient pas les deux
+droits ; LL4 « la résolution du `Principal` depuis la session du lien » ;
+LL5 le front ; LL6 la purge. La v2 est à recontredire
 par `vitruve` avant de bâtir.
+
+### 9.4 Relu contre le code le 2026-10-07 — deux exigences à construire
+
+Rien de ce plan n'est bâti (relu le 2026-10-07 : ni nature `external` dans
+`staff_users`, ni table d'accès par lien, ni garde du lien). Deux phrases de
+la v2 décrivaient pourtant comme acquis ce que le code ne tient pas.
+
+1. **Deux droits, pas un.** Conduire (`delivery_driving`) ne donne aucun geste
+   à la porte : « Je suis arrivé », remettre, déposer, signaler, clore sans
+   remise et « Tournée terminée » sont sous `delivery_doorstep`
+   (`my-delivery-doorstep.controller.ts:61`, AP-D9). Or l'affectation ne
+   vérifie que `delivery_driving:write` (`DRIVING_PERMISSION`,
+   `delivery-driver-support.ts:15` ; `assign-delivery-driver.handler.ts:44`) :
+   une fiche sans `delivery_doorstep` s'affecte et part, puis prend 403 à la
+   porte, et ne peut pas terminer sa tournée. **LL1** (l'affectation d'un
+   externe) et **LL3** (l'émission d'un accès) doivent exiger les deux. Le
+   même trou vaut aujourd'hui pour un livreur staff dont le rôle n'a que
+   `delivery_driving`.
+2. ❓ **« Jamais par Auth0 » est à construire — question pour Hugo.** Le
+   résolveur d'accès cherche une fiche par son `sub`, puis, faute de mieux,
+   par l'adresse e-mail **vérifiée** du jeton, et rend **toute** fiche dont
+   `auth0_id` est nul (`findStaff`, `prisma-staff-access.resolver.ts:156-172`) ;
+   il la lie ensuite à ce `sub` (`link`, mise à jour conditionnée à
+   `auth0_id` nul, lignes 218-219). Une fiche `external` — sans `auth0_id` par
+   construction — serait donc liée au premier compte Auth0 qui présente son
+   adresse vérifiée, et ouvrirait le back-office par Auth0 comme tout staff.
+   Rien ne l'interdit aujourd'hui. Quel refus écrit-on (le résolveur qui lit
+   la nature de la fiche, ou autre chose), et quel lot le porte ?

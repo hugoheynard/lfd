@@ -1,6 +1,6 @@
 # La bibliothèque d'achat — véhicules et bacs candidats, scénarios, tableau croisé
 
-> 🟡 **Plan, partiellement bâti** : B1 à B5 bâtis (2026-09-30 / 2026-10-01) ; reste B6 (« ajouter à la flotte », « mettre en service »). Suite de
+> 🟡 **Plan, partiellement bâti** : B1 à B5 bâtis (2026-09-30 / 2026-10-01) ; reste B6 (« ajouter à la flotte », « mettre en service »). Relu contre le code le 2026-10-07 : les bacs candidats se mesurent au millimètre depuis le 2026-10-06 (`1524cb8c5`), le véhicule candidat reste en centimètres. Suite de
 > [`plan-geometrie-du-plancher.md`](plan-geometrie-du-plancher.md) : l'assistant
 > d'achat (G1-G3) calcule, mais tout se ressaisit à chaque ouverture.
 >
@@ -26,7 +26,9 @@ de bacs (`delivery_bin_type`) :
 
 Un statut « fictif » sur les tables réelles obligerait **chaque** lecture de la
 flotte et des bacs à filtrer — cinq adaptateurs de `delivery/infrastructure/`
-les lisent aujourd'hui (compté le 2026-09-30). Le jour où
+les lisaient le 2026-09-30 ; six les interrogent directement au 2026-10-07
+(`prisma-composition-prerequisites.readers.ts` s'y est ajouté le
+2026-10-03). Le jour où
 une seule l'oublie, le calculateur propose une tournée à une camionnette qui
 n'existe pas. Des tables distinctes rendent l'erreur **inexprimable** plutôt
 qu'interdite.
@@ -36,34 +38,39 @@ erDiagram
   PURCHASE_VEHICLE_CANDIDATE {
     string id
     string name
-    int lengthCm
-    int widthCm
-    int heightCm
-    int archLengthCm "nullable"
-    int archProtrusionCm "nullable"
-    int archFromBackCm "nullable"
+    int cargoLengthCm
+    int cargoWidthCm
+    int cargoHeightCm
+    int wheelArchLengthCm "nullable"
+    int wheelArchProtrusionCm "nullable"
+    int wheelArchFromBackCm "nullable"
+    int wheelArchHeightCm "nullable"
     string reference "nullable"
-    string url "nullable, https"
+    string purchaseUrl "nullable, https"
     int priceCentsExclVat "nullable"
     datetime archivedAt "nullable"
   }
   PURCHASE_BIN_CANDIDATE {
     string id
     string name
-    int outerL_W_H
-    int innerL_W_H
+    int outerLengthMm
+    int outerWidthMm
+    int outerHeightMm
+    int innerLengthMm
+    int innerWidthMm
+    int innerHeightMm
     int maxStack
     bool isotherm
     string supplier "nullable"
     string reference "nullable"
-    string url "nullable, https"
+    string purchaseUrl "nullable, https"
     int unitPriceCentsExclVat "nullable"
     datetime archivedAt "nullable"
   }
   PURCHASE_SCENARIO {
     string id
     string name
-    json selection "ids + gapCm"
+    json content "selection (ids + gapCm) et affichage"
     datetime archivedAt "nullable"
   }
   PURCHASE_SCENARIO }o--o{ PURCHASE_VEHICLE_CANDIDATE : "cite"
@@ -72,11 +79,23 @@ erDiagram
   PURCHASE_SCENARIO }o--o{ DELIVERY_BIN_TYPE : "peut citer le réel"
 ```
 
+Le diagramme suit `apps/lfd-api/prisma/schema/delivery.prisma` (relu le
+2026-10-07). Les bacs candidats se mesurent en **millimètres** depuis
+`1524cb8c5` (migration `20261007120000_les_bacs_candidats_au_millimetre`) ;
+leurs six anciennes colonnes `*_cm` restent en base, nullables, ni écrites ni
+lues. Le véhicule candidat reste en centimètres, comme la flotte. Un scénario
+range sa sélection et son affichage dans `content` ; le jeu entre bacs
+(`gapCm`) y reste en centimètres.
+
 Tables dans le schéma `delivery` (corrigé le 2026-10-01 : ce texte disait
 `production`, d'avant le déménagement du 2026-09-30,
 [`architecture-isolation-livraison.md`](architecture-isolation-livraison.md)). Jamais supprimées : **archivées**, comme les types de bacs.
 Les dimensions passent par les value objects déjà écrits : `CargoFloor`,
-`WheelArches`, `BinDimensions`, `BinFormat`. Aucune règle n'est redoublée.
+`WheelArches` (en cm), `BinTypeDimensions` (en mm, la seule mesure de bac
+depuis le 2026-10-06 : le value object `BinDimensions`, au centimètre, est
+retiré par `1524cb8c5`), `BinFormat`. Aucune règle n'est redoublée. Le
+contrat garde le nom `BinDimensions` pour la même forme en millimètres
+(`packages/contracts/src/delivery-bins.ts`).
 
 ### B-D2 — Un candidat acheté devient réel en un geste
 
@@ -158,14 +177,14 @@ Ceux du simulateur (Q1), sans droit neuf :
 
 ## 2. Les lots
 
-| Lot                                | Contenu                                                                                                                                                                                                                                        | Qui                   |
-| ---------------------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | --------------------- |
-| **B1** ✅ 2026-09-30 (`19a1eb59e`) | Candidats : migration additive (2 tables), agrégats, CRUD + archivage, contrats, e2e (mur de droits, refus d'URL, prix négatif)                                                                                                                | `batisseur`           |
-| **B2** ✅ 2026-09-30               | Tableau croisé : query, bornes 10 × 10, coûts, e2e — coût par litre arrondi au centime le plus proche (moitié vers le haut), meilleures cases calculées au serveur, un véhicule retiré de la flotte refusé comme un archivé ; 10 × 10 en 35 ms | `batisseur`           |
-| **B3** ✅ 2026-10-01               | Scénarios : table `delivery.delivery_purchase_scenario`, enregistrer / relire (éléments invalides nommés, pas refusés) / remplacer / archiver, écran dans l'onglet Tableau, e2e                                                                | `batisseur`           |
-| **B4**                             | Écran « Bibliothèque » (onglet de l'assistant) : listes, fiches, lien d'achat, prix HT                                                                                                                                                         | `pablo`               |
-| **B5**                             | Écran « Tableau » : sélection, critère, mise en avant, coût par litre à la demande ; enregistrer un scénario                                                                                                                                   | `pablo`               |
-| **B6**                             | « Ajouter à la flotte », « Mettre en service »                                                                                                                                                                                                 | `batisseur` + `pablo` |
+| Lot                                | Contenu                                                                                                                                                                                                                                                                                                                                                                                               | Qui                   |
+| ---------------------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | --------------------- |
+| **B1** ✅ 2026-09-30 (`19a1eb59e`) | Candidats : migration additive (2 tables), agrégats, CRUD + archivage, contrats, e2e (mur de droits, refus d'URL, prix négatif)                                                                                                                                                                                                                                                                       | `batisseur`           |
+| **B2** ✅ 2026-09-30 (`27906ae72`) | Tableau croisé : query, bornes 10 × 10, coûts, e2e — coût par litre arrondi au centime le plus proche (moitié vers le haut), meilleures cases calculées au serveur, un véhicule retiré de la flotte refusé comme un archivé ; 10 × 10 en 35 ms au bâti (e2e, requête entière, au centimètre : d'avant la bascule au millimètre du 2026-10-06 ; l'audit du 2026-10-07 relève 14 à 22 ms en calcul pur) | `batisseur`           |
+| **B3** ✅ 2026-10-01 (`58050a1c6`) | Scénarios : table `delivery.delivery_purchase_scenario`, enregistrer / relire (éléments invalides nommés, pas refusés) / remplacer / archiver, écran dans l'onglet Tableau, e2e                                                                                                                                                                                                                       | `batisseur`           |
+| **B4** ✅ 2026-09-30 (`d74c7a8c3`) | Écran « Bibliothèque » (onglet de l'assistant) : listes, fiches, lien d'achat, prix HT                                                                                                                                                                                                                                                                                                                | `pablo`               |
+| **B5** ✅ 2026-09-30 (`d74c7a8c3`) | Écran « Tableau » : sélection, critère, mise en avant, coût par litre à la demande ; enregistrer un scénario (venu avec B3, `58050a1c6`)                                                                                                                                                                                                                                                              | `pablo`               |
+| **B6**                             | « Ajouter à la flotte », « Mettre en service »                                                                                                                                                                                                                                                                                                                                                        | `batisseur` + `pablo` |
 
 B1 → B2 → B5 donnent le tableau ; B3 et B6 viennent ensuite.
 
@@ -179,7 +198,12 @@ B1 → B2 → B5 donnent le tableau ; B3 et B6 viennent ensuite.
 
 ## 4. Ce que ce plan n'a pas vérifié
 
-- Le coût de 100 calculs par requête : la programmation dynamique de G2 est
-  en O(longueur en cm × 2) par case, soit ~600 pas pour une camionnette — à
-  mesurer en e2e, pas à supposer.
+- Le coût de 100 calculs par requête : la programmation dynamique de G2
+  avance au **millimètre** depuis le 2026-10-06
+  (`delivery/domain/services/floor/maximize-format.ts:151-153`), soit
+  O(longueur en mm × 2) par case — ~6 000 pas pour une camionnette de 3 m,
+  dix fois les ~600 du centimètre. Mesuré au bâti, au centimètre : 35 ms en
+  e2e pour 10 × 10 ; relevé par l'audit du 2026-10-07, au millimètre : 14 à
+  22 ms en calcul pur. L'e2e imprime sa mesure à chaque passage, bornée à
+  5 s (`apps/lfd-api/test/delivery-purchase-table.e2e-spec.ts:159-168`).
 - Le rendu du tableau 10 × 10 sur téléphone : à regarder à l'écran.

@@ -1,33 +1,62 @@
 # Tournées de livraison — un contexte du back-office, plus une application
 
-> 🔴 **Réécrit le 2026-09-29 : ROAD n'est plus une application séparée.**
+> 🗄️ **Conception du 2026-09-29, gardée pour l'histoire des décisions — ce
+> n'est plus un état du code** (bandeau du 2026-10-07, audit du dossier
+> `livraisons/` ; il remplace celui du 2026-09-29).
 >
-> La note du 2026-08-06 décrivait une app de plus dans une « suite » : un
-> backend NestJS à lui, sa base, son audience Auth0, son front en iframe dans un
-> shell, et un flux HTTP signé depuis le backend B2B. **Rien de ce décor
-> n'existe plus** (vérifié le 2026-09-29) :
+> **Ce qu'il est** : la logistique des tournées telle qu'on la concevait le
+> 2026-09-29 au matin (`ea8800a8b`), quand ce document a réécrit la note ROAD
+> du 2026-08-06 — une application séparée, abandonnée avec la fédération le
+> 2026-08-20 ([`../suite/architecture-topologie-apps.md`](../suite/architecture-topologie-apps.md))
+> — pour en faire un bloc de `lfd-api` sous `/livraison`, aligné sur la
+> [conception du retrait en livraison](conception-retrait-en-livraison.md)
+> (2026-09-11). Il garde les agrégats, les ports, l'algorithme et les options
+> d'hébergement envisagés ce jour-là ; le détail de la réécriture se lit dans
+> l'historique git de ce fichier.
 >
-> - la fédération est abandonnée et le shell retiré le 2026-08-20
->   ([`../suite/architecture-topologie-apps.md`](../suite/architecture-topologie-apps.md)) ;
-> - il n'y a qu'**un** backend, `apps/lfd-api`, découpé en **blocs**
->   (`CLAUDE.md` §3), et **une** base à plusieurs schémas Postgres ;
-> - il n'y a que trois apps : `lfd-api`, `lfd-backoffice-frontend`,
->   `lfc-ecommerce-frontend` ;
-> - le back-office réserve déjà la route `/livraison`, vide exprès
->   ([`livraison-page.ts`](../../apps/lfd-backoffice-frontend/src/app/livraison/livraison-page/livraison-page.ts)) ;
-> - le statut `ready` (« fabrication finie, en attente de retrait ») existe et
->   s'écrit au scan du QR de colisage.
+> **Ce qu'il n'est plus** : une description du code. « Toujours rien de
+> codé » est faux depuis le 2026-09-29 à 11 h 50 (`f957e9b45`) ; « il n'y a
+> que trois apps » aussi (il y en a quatre) ; la route `/livraison` n'est plus
+> vide. Ni les agrégats (§ 6), ni les ports et l'algorithme (§ 7) ne sont ceux
+> qui ont été bâtis.
 >
-> Et la [conception du retrait en livraison](conception-retrait-en-livraison.md)
-> (2026-09-11) a tranché deux points que cette note contredisait : **un humain
-> compose la tournée** (l'algorithme propose, il n'attribue pas), et **le geste
-> chez le client appartient au bloc `handover`**. Ce document ne couvre donc
-> plus que la **logistique** : composer, charger, rouler, consigner un échec.
->
-> **Réécrit** : §1, §2 (deux lignes), §3, §4, §5, §8, §9, §10, §11 (point 4),
-> §12, §13 (une hypothèse), §14, et `DeliveryJob` au §6. **Gardé tel quel** : les autres agrégats (§6), les ports et l'algorithme
-> (§7), la résolution du point (§8.1) — ils ne dépendaient pas de la
-> topologie. Toujours **rien de codé**.
+> **Où lire l'état réel** : [`composition-automatique.md`](composition-automatique.md)
+> et [`algorithme-de-preparation-de-tournee.md`](algorithme-de-preparation-de-tournee.md)
+> — composer ; [`algorithme-de-chargement.md`](algorithme-de-chargement.md) —
+> charger ; [`a-la-porte.md`](a-la-porte.md) — la porte et l'échec ;
+> [`architecture-isolation-livraison.md`](architecture-isolation-livraison.md)
+> — le bloc et ses canaux ; [`plan-droits-par-geste.md`](plan-droits-par-geste.md)
+> — les droits ; [`../ops/planificateur-de-tournees.md`](../ops/planificateur-de-tournees.md)
+> — OSRM. La table ci-dessous dit, élément par élément, ce qui existe ;
+> chaque cellule a été rouverte dans le code le 2026-10-07. Le corps n'est
+> pas réécrit : deux phrases devenues dangereuses (§ 8.1, § 10) portent une
+> note `⚠️ [2026-10-07]`.
+
+## Ce que chaque élément est devenu — relevé du 2026-10-07
+
+| #   | Ce que ce document décrit                                                                                            | Ce qui existe aujourd'hui                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                    | Verdict                                         |
+| --- | -------------------------------------------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ | ----------------------------------------------- |
+| 1   | **Le bloc** — « nom à trancher », schéma « à choisir » (§ 5 ; § 12, tranche 1)                                       | `src/delivery/`, déclaré dans `context-boundaries.mjs` ; schéma Postgres `delivery` depuis le 2026-09-30, 22 tables (`delivery.prisma`) ; `b2b → delivery` par `delivery/channels/commerce/` seulement ; `delivery → handover` interdit — le retrait implémente `delivery/channels/handover/`. → [`architecture-isolation-livraison.md`](architecture-isolation-livraison.md), [`plan-schema-delivery.md`](plan-schema-delivery.md)                                                                                                                                                                                                                                                                                                                          | bâti tel quel (nom et schéma tranchés)          |
+| 2   | **L'écran** `/livraison`, « composition + vue livreur » (§ 1, § 5) ; route du back-office ou front à part (§ 10)     | `/livraison` : 15 vues, chacune sous son droit (`lfd-backoffice-frontend/src/app/app.routes.ts`) — feuille de route, tournées, non remis, à décider, carnet à corriger, simulateur, assistant d'achat, chargement, réglages de flotte. La vue du livreur est un espace à part du back-office, `/coursier` (« Ma tournée », `my-round-page.ts`), pas un front séparé. → [`plan-ma-tournee.md`](plan-ma-tournee.md)                                                                                                                                                                                                                                                                                                                                            | bâti autrement                                  |
+| 3   | **Composer** — `DayPlan` propose, le responsable valide ou déplace (§ 1, § 3)                                        | « Proposer les tournées » recalcule à la lecture, rien n'est stocké ; « Appliquer » est toujours un clic humain ; mode « Insérer dans les tournées existantes » ; glisser-déposer sur l'écran des tournées ; une place qui rend une échéance intenable s'affiche en rouge (CA5, `placement-lateness.ts`). → [`composition-automatique.md`](composition-automatique.md)                                                                                                                                                                                                                                                                                                                                                                                       | bâti autrement                                  |
+| 4   | **Charger** — « scan des feuilles 1..N », retardataire compris (§ 1, § 4)                                            | Par **bacs** : QR du bac ou code court (`scannedBin`, `livraison/delivery-loading.ts`), une ligne `delivery.delivery_bin_load` par bac chargé ; « Partir » refusé tant qu'un arrêt vivant n'a pas tous ses bacs (`departure-readiness.ts`). → [`algorithme-de-chargement.md`](algorithme-de-chargement.md) pour le plan de chargement                                                                                                                                                                                                                                                                                                                                                                                                                        | bâti autrement                                  |
+| 5   | **Rouler** — la vue livreur, « sa liste du jour + carte », hors-ligne (§ 1, § 3 ; § 12, tranche 2)                   | « Ma tournée » (`/coursier`, sous `delivery_driving`) : sa tournée seulement (mur `driver_staff_id`, `driver-round-wall.ts`) ; « Partir » commun au livreur et au poste de chargement (`delivery-departure-support.ts`), qui écrit le fait durable `delivery.round_departed` ; courriel « en route » au client ; « Y aller » ouvre l'application de navigation ; « Tournée terminée ». Ni carte ni hors-ligne sur le téléphone. → [`plan-ma-tournee.md`](plan-ma-tournee.md), [`en-route.md`](en-route.md), [`gps-y-aller-et-position.md`](gps-y-aller-et-position.md)                                                                                                                                                                                       | bâti autrement                                  |
+| 6   | **L'échec** — `TourStop` `failed` + motif ; « ce que devient une livraison ratée reste ouvert » (§ 9)                | Un signalement (`delivery.delivery_incident`) ne clôt rien ; « À décider » (`delivery.stop_decision`) : autoriser le dépôt ou rapporter ; « Rapporter » clôt l'arrêt et écrit le fait durable `delivery.orders_brought_back` ; la commande rapportée réapparaît « à répartir » (RL1). Reste : relivrer, retrait au comptoir, annuler (6 c). → [`a-la-porte.md`](a-la-porte.md) § 3, § 4, § 10                                                                                                                                                                                                                                                                                                                                                                | bâti autrement ; 6 c **toujours ouvert**        |
+| 7   | **Les agrégats** — `DeliveryJob`, `Vehicle`, `Driver`, `DayPlan`, `Tour` / `TourStop`, invariants I1 à I7 (§ 6)      | Une racine, `DeliveryRound` (`delivery-round.ts`) : un jour, un véhicule, un passage, des arrêts ordonnés, une version par tournée. L'arrêt (`delivery_round_stop`) n'a pas de statut : `closed_at`, `removed_at`. Ce qui s'exécute vit dans `delivery_stop_execution`, figé au départ. Une flotte de K véhicules (`DeliveryVehicle`), plusieurs passages chacun. Pas d'agrégat `Driver` : le livreur est une fiche staff (`driverStaffId`). Ni `DeliveryJob`, ni `DayPlan`, ni `Tour`. Pas de poids (I5) : la capacité se compte en bacs et en plancher (CA4)                                                                                                                                                                                               | bâti autrement                                  |
+| 8   | **Les ports et l'algorithme** — quatre ports, k-medoids + ATSP, vol d'oiseau au MVP, fenêtres ignorées (§ 7)         | Deux ports de calcul routier, `DistanceMatrix` et `RouteGeometry` (`distance-matrix.ts`, `route-geometry.ts`) ; répartir et ordonner sont des services purs du domaine : insertion au moindre surcoût sur tous les véhicules à la fois (`insert-cheapest.ts`), puis gestes locaux — Or-opt, 2-opt, déplacer, permuter, 2-opt* (`improve-plans.ts`). Le k-medoids, écrit le 2026-09-29 (`f0cdae727`), a été remplacé le soir même (`3bc9e85af`). L'échéance ou le créneau est le critère de rang 1 (le moins de retard d'abord). Par la route ou rien : le vol d'oiseau est retiré (L10b-C5, `e9ff04fc4`). → [`algorithme-de-preparation-de-tournee.md`](algorithme-de-preparation-de-tournee.md), [`composition-automatique.md`](composition-automatique.md) | tranché autrement                               |
+| 9   | **OSRM** — hôte dédié toujours allumé, « comme Redis/BullMQ » ; service managé possible (§ 7, § 11)                  | `apps/lfd-route-planner` : extrait Geofabrik `rhone-alpes` découpé à la Savoie (`build-graph.sh`), `osrm-routed --algorithm mld --max-table-size 200` (`Dockerfile`), tables par blocs de 100 × 100 (`osrm-distance-matrix.ts`) ; conteneur Cloudflare `lite` qui s'endort après 10 minutes (`wrangler.jsonc`, `lfd-route-planner/src/worker.ts`). Ni Redis ni BullMQ ; aucun service managé (HERE, ORS) ni OR-Tools dans le code. Mise en service : non vérifiée par ce relevé. → [`../ops/planificateur-de-tournees.md`](../ops/planificateur-de-tournees.md)                                                                                                                                                                                              | bâti autrement                                  |
+| 10  | **La carte** — Leaflet + tuiles OSM, carte livreur (§ 2, § 3)                                                        | `maplibre-gl` et `pmtiles` (`delivery-map.ts`), sur l'écran des tournées du bureau (`rounds-board.html`). Le téléphone du livreur n'a pas de carte : « Y aller » ouvre l'application de navigation. Pas de Leaflet. → [`gps-y-aller-et-position.md`](gps-y-aller-et-position.md)                                                                                                                                                                                                                                                                                                                                                                                                                                                                             | bâti autrement                                  |
+| 11  | **Le rôle livreur** — « il n'existe pas de rôle livreur », cinq rôles (§ 10)                                         | Sept rôles dans le contrat (`staff-access.ts`), aucun n'est livreur : « Livreur » se crée à l'écran des rôles (`/admin/roles`) avec `delivery_driving` (sa tournée, `/coursier`) et `delivery_doorstep` (les gestes à la porte). Le mur « sa tournée » est dans la requête (`driver_staff_id`). → [`plan-droits-par-geste.md`](plan-droits-par-geste.md) (DG-D6), [`plan-ma-tournee.md`](plan-ma-tournee.md)                                                                                                                                                                                                                                                                                                                                                 | tranché autrement                               |
+| 12  | **Les applications** — « il n'y a que trois apps » (bandeau du 2026-09-29)                                           | Quatre : `lfd-api`, `lfd-backoffice-frontend`, `lfc-ecommerce-frontend`, et `lfd-route-planner` (le planificateur, OSRM), créé le 2026-09-29 (`53948e71c`, sous le nom `lfd-osrm`)                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                           | **faux** depuis le 2026-09-29                   |
+| 13  | **Lire le jour** — un canal que le commerce implémente, snapshot au départ, « étendre » le lecteur de file (§ 8)     | Le canal `delivery/channels/commerce/`, implémenté par le commerce, lu à la demande ; ce que le départ fige vit dans `delivery_stop_execution` (adresse, contact, fenêtre, signature exigée). Le lecteur est **à part** — `DeliveryOrdersReader` (`delivery-orders.reader.ts`) — et partage le filtre « attendue ce jour » de la file du comptoir (`expectedOnWhere`, `handover-order.query.ts`)                                                                                                                                                                                                                                                                                                                                                             | bâti autrement (lecteur à part, filtre partagé) |
+| 14  | **La résolution du point** — livreur > épingle client > géocodage ; « un point livreur écrase le géocodage » (§ 8.1) | Le point du carnet d'abord, puis le géocodage BAN mis en cache, sinon « non situé » (`delivery-routing-support.ts`, `ban-geocoder.ts`). Aucune épingle posée par le client. La position relevée aux gestes ne corrige jamais le carnet seule (AP-Q3) : elle suggère au bureau, qui applique ou ignore (`delivery-address-point.corrector.ts`). → [`gps-y-aller-et-position.md`](gps-y-aller-et-position.md) § 6                                                                                                                                                                                                                                                                                                                                              | tranché autrement                               |
+| 15  | **Rétention et données personnelles** — « à trancher » (§ 11, point 4)                                               | Tranché le 2026-09-29 : ce que le départ fige se garde 90 jours (L6-Q9). Aucune purge de ce snapshot n'existe ; seules les positions des gestes s'effacent (`prisma-gesture-position.pruner.ts`). → [`a-la-porte.md`](a-la-porte.md) § 10                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                    | tranché ; purge **toujours ouverte**            |
+| 16  | **Les non-buts** — signature et preuve, temps réel, heure d'arrivée, multi-dépôts (§ 13)                             | Preuve et signature sont bâties (`production.order_handover_proof` : photo, nom, signature au doigt). Pas de suivi continu : la position n'est relevée qu'au geste. Le courriel « en route » ne donne pas d'heure (`delivery-en-route-mail.ts`). Un seul point de départ (`delivery.delivery_departure`). → [`a-la-porte.md`](a-la-porte.md) § 6, [`en-route.md`](en-route.md)                                                                                                                                                                                                                                                                                                                                                                               | preuve et signature bâties ; le reste tel quel  |
+
+Le texte qui suit est celui du 2026-09-29, inchangé hors des deux notes
+`⚠️ [2026-10-07]` (§ 8.1, § 10).
+
+---
 
 ## 1. Intention
 
@@ -401,6 +430,15 @@ Garde-fous : point **plausible** (bbox Savoie) ; OSRM **snappe** à la route ; p
 (N12) : l'adresse fige au push ; une correction B2B tardive passe par `amended` avant
 départ, sinon elle ne s'applique qu'à la **prochaine** demande.
 
+> ⚠️ [2026-10-07] **Tranché autrement, et à ne pas bâtir tel quel.** La
+> position d'un livreur **ne corrige jamais le carnet seule** (AP-Q3,
+> [`a-la-porte.md`](a-la-porte.md) § 8) : ni « point d'or » enregistré à la
+> première livraison, ni point livreur qui écrase le géocodage. Les positions
+> relevées aux gestes **suggèrent** une correction au bureau, qui l'applique
+> ou l'ignore ([`gps-y-aller-et-position.md`](gps-y-aller-et-position.md)
+> § 6). Aucune épingle client n'existe ; la résolution bâtie est : point du
+> carnet, sinon géocodage BAN en cache, sinon « non situé ».
+
 ## 9. Retrait et échec
 
 - **Le retrait réussi** s'atteste par le chemin de `handover`, déjà commun au
@@ -432,6 +470,15 @@ départ, sinon elle ne s'applique qu'à la **prochaine** demande.
 - **Appareil** : la vue livreur tourne sur un téléphone, dehors. La règle de
   topologie découpe le front « par audience × appareil » : rester une route du
   back-office ou devenir un front à part est une question ouverte.
+
+> ⚠️ [2026-10-07] **Faux aujourd'hui, et dangereux à suivre** (« Donner le
+> scan à un coursier aujourd'hui revient à lui donner `commercial` »). Sept
+> rôles existent, et le livreur a ses propres droits : `delivery_driving` (sa
+> tournée) et `delivery_doorstep` (les gestes à la porte), portés par un rôle
+> « Livreur » créé à l'écran
+> ([`plan-droits-par-geste.md`](plan-droits-par-geste.md), DG-D6) ; le scan
+> du comptoir est sous `handover_counter` depuis le 2026-10-01. Un livreur ne
+> reçoit ni `commercial` ni `b2b_orders`.
 
 ## 11. Dépendances externes à trancher
 

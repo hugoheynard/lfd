@@ -1,8 +1,19 @@
 # Le départ d'une tournée devient un fait durable
 
-> ✅ **DD1 bâti le 2026-10-06** (non commité au moment d'écrire) — écarts et
-> décisions au §6. Le courriel « en route » est décrit dans sa doc d'état,
-> [`en-route.md`](en-route.md) ; la garde, dans [`a-la-porte.md`](a-la-porte.md) § 5.
+> ✅ **DD1 bâti le 2026-10-06** (`375f82225`), **déployé en production le
+> 2026-10-07** — écarts et décisions au §6. Le courriel « en route » est décrit
+> dans sa doc d'état, [`en-route.md`](en-route.md) ; la garde, dans
+> [`a-la-porte.md`](a-la-porte.md) § 5.
+>
+> 📜 **Relu contre le code le 2026-10-07** ([audit](audit-2026-10-07.md)). Ce
+> document est la **décision de conception**, pas l'état du code : il reste
+> parce que la migration `20261007180000_le_retour_avant_le_depart` et
+> vingt-quatre fichiers de code le citent par son nom, et qu'un
+> `migration.sql` appliqué ne se réécrit pas. Ce qui s'y lit au présent et
+> n'est plus vrai : le **§ 1** décrit l'avant-DD1 (les deux abonnés en mémoire
+> et les ports d'annonce **n'existent plus**, la dette de la porte est passée
+> de 4 à 2) ; le lot **DD2 du § 4 n'existe pas**, tout est dans DD1 (§ 5.1).
+> Le § 6 porte une correction du 2026-10-07 (B1).
 >
 > 📐 **Plan** (2026-10-06). ⚠️ Contredit par `vitruve` le même jour : le §5 fait foi. Hugo : « pourquoi on a encore
 > des messages en bus mémoire plutôt qu'en durables ? » puis « lance ».
@@ -10,7 +21,7 @@
 > 🔴 Il touche une **frontière entre trois blocs** (livraison, retrait,
 > commerce) : `vitruve` avant de bâtir.
 
-## 1. Ce qui existe (relu le 2026-10-06)
+## 1. Ce qui existait avant DD1 (relu le 2026-10-06 — périmé par le lot)
 
 - Au départ, la livraison publie `DeliveryRoundDepartedEvent`
   (`apps/lfd-api/src/delivery/domain/events/delivery-loading.events.ts`) sur
@@ -29,7 +40,8 @@
   retrait croit encore les commandes au fournil, et aucun courriel ne part.
 - La porte `lint:durable-cross-block` ne le voyait pas : l'abonné vit dans
   son bloc, c'est l'appel de port qui traverse (élargie le 2026-10-06 ; ces
-  deux abonnés y sont en dette comptée).
+  deux abonnés y **étaient** en dette comptée — depuis DD1, la dette ne tient
+  plus que `on-product-media-changed` et `tell-delivery-order-placed`).
 - Le modèle à suivre existe : `production.day_closed`
   (`apps/lfd-api/src/production/channels/commerce/production-day-closed.event.ts`),
   publié par la boîte d'envoi dans la transaction de l'arrêt, écouté en
@@ -67,8 +79,9 @@ sequenceDiagram
    implémentation au retrait (`order_departure`). Un départ **après un
    retour** (second passage, nouvelle tournée) doit rester un fait distinct.
 6. **Ordre** : aucun ordre n'est supposé entre ce fait et ceux du retrait
-   (`order.handed_over`) ; un abonné qui reçoit le départ d'une commande déjà
-   remise ne la « repart » pas.
+   (`handover.handed_over` — `order.handed_over` est un type d'événement de
+   croissance, pas le fait durable) ; un abonné qui reçoit le départ d'une
+   commande déjà remise ne la « repart » pas.
 
 ## 3. Questions
 
@@ -80,6 +93,9 @@ sequenceDiagram
   pas le doubler.
 
 ## 4. Lots
+
+> ⚠️ Découpage d'avant `vitruve`. Le lot unique du § 5.1 l'a remplacé : **DD2
+> n'a jamais existé**, son contenu est dans DD1.
 
 | Lot     | Contenu                                                                                    |
 | ------- | ------------------------------------------------------------------------------------------ |
@@ -95,8 +111,10 @@ là où ils divergent, le §5 fait foi.
 **B1 — un départ livré en retard efface un retour.**
 `recordDeparted` (`apps/lfd-api/src/handover/infrastructure/prisma-order-departure.repository.ts`)
 fait un `upsert` sans garde (`returnedAt: null`), alors que `recordReturned`
-est gardé par `departedAt <= at`. Sous reprise (jusqu'à 6 h de délai), un
-départ rejoué après un retour remet la commande « partie ».
+est gardé par `departedAt <= at`. Sous reprise (jusqu'à 2 h 08 de délai par
+rejeu automatique — dix essais, `retry-policy.ts` ; le plafond de 6 h n'est
+jamais atteint, et un rejeu manuel peut venir bien plus tard), un départ
+rejoué après un retour remet la commande « partie ».
 → **La ligne `order_departure` devient monotone par instant, pas par ordre
 d'arrivée** : `recordDeparted(at)` n'écrit que si `departedAt` est nul ou
 `<= at` **et** si `returnedAt` est nul ou `< at`. Un fait plus ancien que
@@ -179,5 +197,22 @@ problème arrive corrige »). Ce que le §5 laissait ouvert, tranché :
   l'abonné ne grave rien), une requête sur `order_handover`.
 - **Courriel** : l'abonné construit `DeliveryEnRouteMailFailedError` et la
   journalise (`Logger`), sans lever.
-- **Délai mesuré** (e2e, trois passages) : courriel envoyé 15 à 23 ms après la
-  réponse HTTP du départ, au premier réveil du relais, sans balayage.
+- **Délai mesuré** (e2e, trois passages, à la main) : courriel envoyé 15 à
+  23 ms après la réponse HTTP du départ, au premier réveil du relais, sans
+  balayage. ⚠️ Le e2e (`delivery-departure-durable.e2e-spec.ts`) n'asserte
+  que `< 2 000 ms`, et son mailer est un enregistreur sans réseau : ces
+  chiffres mesurent le réveil du relais, pas un envoi réel.
+
+### 6.1 Corrigé le 2026-10-07 (audit, B1)
+
+L'abonné du courriel tournait **dans la transaction** que la garde durable
+ouvre pour poser le reçu (`DurableDeliveryGuard.deliver` enveloppe
+`handle()` dans `unitOfWork.run`), ce que `unit-of-work.ts` interdit : délai
+Prisma de 5 s, une connexion du pool tenue le temps de N appels à Resend. Une
+tournée de vingt commandes dépassait le délai, la transaction tombait avec le
+reçu, et le fait était relivré. **Depuis le 2026-10-07, les envois partent
+après la validation** (`deferUntilCommit`) : le reçu est validé, les
+courriels partent hors transaction, un échec est journalisé sans relance. La
+fenêtre de perte à un redémarrage est entre la validation et l'envoi, quelques
+millisecondes — contre tout le trajet avant DD1. Même correction pour l'envoi
+du dossier de production (`send-dossier-on-day-closed`, `-retaken`).

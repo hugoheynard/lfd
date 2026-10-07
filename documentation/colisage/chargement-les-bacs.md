@@ -429,7 +429,9 @@ individuelle peut élargir ou retirer un droit à une personne.
 
 ## 8. Ce que la base tient d'elle-même
 
-Schéma `production` :
+Schéma `delivery` (depuis le 2026-09-30, migration
+`20260930140000_la_livraison_a_son_schema` ; corrigé le 2026-10-07, ce texte
+disait `production`) :
 
 | Règle                                                                                           | Où                                                                     |
 | ----------------------------------------------------------------------------------------------- | ---------------------------------------------------------------------- |
@@ -450,12 +452,22 @@ serveur la traduit en refus lisible.
 
 ## 9. Ce que ce n'est pas encore
 
-- **Pas de géométrie du plancher** : le plan dit un ordre, des piles et des
-  litres, jamais où poser une pile. Le volume est une somme, pas un rangement :
-  « ça tient en litres » ne garantit pas que ça tient en forme.
-- **Le calculateur de tournée n'utilise ni le volume ni le froid** : il répartit
-  sans savoir si les bacs tiennent dans le véhicule ni si un arrêt froid tombe
-  dans un véhicule sec. Le plan l'alerte après coup.
+- ~~**Pas de géométrie du plancher**~~ — bâtie : depuis G5 (`19fece6b1`,
+  2026-10-02), le plan pose chaque pile sur le plancher, par rangées depuis
+  le fond, passages de roue compris, et alerte `floor_over` quand une pile ne
+  tient pas au sol ; la hauteur sous le plafond est tenue depuis `553422d02`
+  (2026-10-06). Voir
+  [`../livraisons/algorithme-de-chargement.md`](../livraisons/algorithme-de-chargement.md),
+  § 3.3.
+- ~~**Le calculateur de tournée n'utilise ni le volume ni le froid**~~ — depuis
+  CA4 (`4010899a1`, 2026-10-06), « Proposer » et « Insérer » refusent une
+  place dont le plan de chargement déborde : litres secs, litres de la caisse
+  froide, plancher, ou véhicule sans cotes. Voir
+  [`../livraisons/composition-automatique.md`](../livraisons/composition-automatique.md),
+  § 5, point 2. **Reste vrai** : un bac isotherme qui part dans un véhicule
+  sans caisse réfrigérée n'est pas refusé — compté au sec, il n'est signalé
+  qu'après coup (`cold_bins_without_refrigeration`) ; et une commande dont la
+  demande en bacs est inconnue est placée sans contrôle.
 - **Pas de retour des bacs vides** : un bac est un objet de la commande, pas un
   inventaire. Rien ne compte les bacs physiques possédés, ni ceux qui reviennent.
 - **Pas de verrou sur l'ordre de scan** : le plan suggère, le scan accepte

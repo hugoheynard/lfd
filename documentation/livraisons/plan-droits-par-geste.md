@@ -4,6 +4,13 @@
 > tests des dérogations, existait déjà (`fb274494e`). Le texte ci-dessous est
 > le plan d'origine ; ce qui reste est le réglage des rôles **à l'écran**
 > (`tableau-droits-livraison.md`), jamais par migration.
+>
+> **Relu contre le code le 2026-10-07** (audit du dossier `livraisons/`) : ce
+> qui était devenu faux est corrigé en place et daté — l'arrêt du plan sous
+> `production_count_stop`, les routes du colisage retirées en K3c, l'écran
+> `/admin/roles`, le rail sans entrée Production, une graine qui ne sème que
+> les e2e, le préfixe d'une ressource. La fin du § 6 ajoute les écarts entre
+> l'écran et l'API relevés ce jour-là.
 
 > 📐 **Plan** (2026-10-01) — _bâti, voir le bandeau ci-dessus_. Hugo : « `b2b_orders` doit être
 > découpé en actions granulaires, et il faut que j'arrête de hardcoder des
@@ -26,7 +33,7 @@
 | **Les commandes** : lister, passer pour un client, devis, brouillons, traçabilité tarifaire, catalogue vendable, historique client, rappel de retrait | `admin/orders*`, `admin/order-drafts/*`, `admin/orders/:id/lines/:sku/rules`, `admin/catalog/*` | `b2b/orders`                  |
 | **Le plan du soir** : état de la journée, arrêter le plan, reprendre une journée, lot du jour                                                         | `admin/production/status`, `…/:date/close`, `…/batch/:date/retake`, `admin/production/batch`    | `production` (+ `b2b/orders`) |
 | **La fiche d'atelier** : lire, cocher, décocher                                                                                                       | `admin/production/worksheet*`                                                                   | `production`                  |
-| **Le colisage** : poste, lignes, containers, « prête », fiche derrière le QR                                                                          | `admin/production/packing*`, `…/sheets/:ref/packed`, `admin/production/packing/:ref`            | `production` (+ `b2b/orders`) |
+| **Le colisage** : poste, lignes, containers, « prête », fiche derrière le QR — _retirés en K3c (2026-10-05), sauf la fiche : voir 5.1_                | `admin/production/packing*`, `…/sheets/:ref/packed`, `admin/production/packing/:ref`            | `production` (+ `b2b/orders`) |
 | **Le retrait au comptoir** : file, remise manuelle, scan du QR                                                                                        | `admin/handover/*`                                                                              | `handover`                    |
 
 Plus `admin/production/version` (la version de journée, une lecture technique
@@ -34,7 +41,9 @@ des postes du fournil).
 
 Côté écran (`apps/lfd-backoffice-frontend`) : `app.routes.ts` l. 43, 123, 134,
 178, 188, 465, 515 ; l'entrée Production du rail (`app.ts:173`) ; les liens de
-supervision (`supervision/supervision-links.ts:26`).
+supervision (`supervision/supervision-links.ts:26`). _(Lignes du 2026-10-01 ;
+il n'y a plus d'entrée Production unique au rail depuis le 2026-10-06 — voir
+DG-D1.)_
 
 Rôles qui le tiennent : admin, commercial, comptoir et **comptabilité** en
 écriture, support en lecture. Conséquence : coliser emporte le droit de passer
@@ -51,10 +60,13 @@ une commande, et la comptabilité peut coliser.
   rejoue ces migrations.
 - « L'admin couvre tout » est tenu par **une ligne de migration à chaque
   ressource** et par un test du contrat (`__tests__/staff-access.spec.ts`).
-- **Ce qui existe déjà pour régler à l'écran** : `/admin/staff-roles` (créer,
-  modifier, archiver un rôle — `admin-staff-roles.controller.ts`,
-  `admin/roles/`). **Ce qui manque** : un écran des **dérogations** par
-  personne (elles ne se posent que par l'API).
+- **Ce qui existe déjà pour régler à l'écran** : l'écran `/admin/roles`
+  (créer, modifier, archiver un rôle — `admin/roles/` côté front), servi par
+  la route d'API `admin/staff-roles` (`admin-staff-roles.controller.ts`). Les
+  **dérogations** par personne ont aussi leur écran, que ce relevé n'avait pas
+  ouvert : la grille « Hérite / Autorisé / Refusé » de la fiche d'un membre,
+  sous `/admin/utilisateurs` (`overrides-grid.ts`, l. 22-24 ;
+  `PATCH /admin/staff-users/:id`). Constaté le 2026-10-01, voir DG-D9.
 - Le `superadmin` **n'est pas le rôle admin** : c'est la résolution de la
   **fiche racine** (de secours), calculée en code, sans ligne en base
   (`staff-access.policy.ts`, `staff-role-support.ts`). Le rôle `admin`, lui,
@@ -68,21 +80,47 @@ On garde le modèle (une ressource, `read` ou `write`, l'écriture emporte la
 lecture) : l'écran des rôles, les dérogations, les gardes et `@AdminSurface`
 ne changent pas de forme. On **ajoute des ressources**, une par geste :
 
-| Ressource              | Ouvre                                               | Remplace sur ces routes                            |
-| ---------------------- | --------------------------------------------------- | -------------------------------------------------- |
-| `b2b_orders` _(reste)_ | les commandes du commerce (tableau 1.1, ligne 1)    | —                                                  |
-| `production_plan`      | état de la journée, arrêter, reprendre, lot du jour | `b2b_orders`                                       |
-| `production_worksheet` | la fiche d'atelier                                  | `b2b_orders`                                       |
-| `production_packing`   | le poste de colisage **et** le panneau « Bacs »     | `b2b_orders` et, pour les bacs, `delivery_loading` |
-| `handover_counter`     | la file de retrait, la remise, le scan              | `b2b_orders`                                       |
-| `delivery_procedures`  | les procédures de livraison côté staff              | `b2b_companies`                                    |
+| Ressource              | Ouvre                                             | Remplace sur ces routes                            |
+| ---------------------- | ------------------------------------------------- | -------------------------------------------------- |
+| `b2b_orders` _(reste)_ | les commandes du commerce (tableau 1.1, ligne 1)  | —                                                  |
+| `production_plan`      | état de la journée, lot du jour — voir ci-dessous | `b2b_orders`                                       |
+| `production_worksheet` | la fiche d'atelier                                | `b2b_orders`                                       |
+| `production_packing`   | le poste de colisage **et** le panneau « Bacs »   | `b2b_orders` et, pour les bacs, `delivery_loading` |
+| `handover_counter`     | la file de retrait, la remise, le scan            | `b2b_orders`                                       |
+| `delivery_procedures`  | les procédures de livraison côté staff            | `b2b_companies`                                    |
+
+⚠️ **Arrêter et reprendre ne sont pas sous `production_plan`** (corrigé le
+2026-10-07 ; ce tableau les y mettait). Arrêter le plan
+(`POST batch/:date/close`) l'était au bâti, puis est passé sous
+`production_count_stop:write` le 2026-10-06
+(`production-day.controller.ts`, l. 205-206) : `production_plan:write`
+n'ouvre plus rien (`staff-resource-scopes.ts:161`, plan
+`documentation/production/arret-du-plan.md`). Reprendre une journée
+(`POST worksheet/:date/retake`) est sous `production_worksheet` depuis le
+bâti (5.1).
 
 `admin/production/version` s'ouvre à **n'importe laquelle** des ressources du
 fournil (`@RequireAnyPermission`) : c'est un numéro technique dont tout poste a
-besoin. L'entrée Production du rail suit la même règle.
+besoin. L'entrée Production du rail suivait la même règle ; **elle n'existe
+plus depuis le 2026-10-06**. Quatre entrées la remplacent, chacune sous son
+droit (`app.ts` du back-office, l. 177-208) : **Exploitation** (sections
+Production et Livraison, visible dès qu'une de ses vues l'est — le
+prévisionnel sous `production_plan:read`), **Fournil**
+(`production_worksheet:read`), **Colisage** (`production_packing:read`) et
+**Comptoir** (`handover_counter:read`, ou `b2b_counter:read` avec
+`b2b_place_order:write`).
 
-Le préfixe est celui du **bloc qui sert le geste** (convention existante :
-`pim_*`, `b2b_*`, `delivery_*`, `staff_*`).
+Le préfixe (`pim_*`, `b2b_*`, `delivery_*`, `staff_*`) nomme l'**outil** du
+geste — le contrat l'écrit « la ressource porte son OUTIL »
+(`staff-access.ts:34`) —, pas le bloc de `src/` qui sert la route, et les
+deux divergent : `b2b_supervision` garde des routes de `production/` et de
+`handover/` autant que de `b2b/orders/` ; `production_plan` et
+`production_packing` en gardent aussi dans `b2b/orders/`
+(`admin-production.controller.ts`) ; `delivery_procedures`, dans
+`b2b/account/`. _(Corrigé le 2026-10-07 : cette phrase disait « bloc ». La
+ligne suivante du contrat, « les outils sont les blocs de `src/` : `pim`,
+`b2b`, `staff`, `ops` », date du 2026-09-01 et ne nomme ni le fournil, ni le
+retrait, ni la livraison, ni le colisage.)_
 
 ### DG-D2 — Une migration ajoute une ressource, jamais un droit à un rôle
 
@@ -132,8 +170,16 @@ Ensuite, Hugo règle à l'écran (DG-D7).
 
 ### DG-D5 — `ROLE_GRANTS` devient une graine
 
-- `ROLE_GRANTS` ne sert plus qu'à **semer une base vierge** (dev, e2e,
-  `legacyRoleSeeds`) ; il n'est plus un miroir de la production.
+- `ROLE_GRANTS` ne sert plus qu'à **semer** ; il n'est plus un miroir de la
+  production. ⚠️ **Il ne sème que la base des e2e** (relevé le 2026-10-07) :
+  `legacyRoleSeeds()` n'a qu'un appelant, `test/e2e-harness.ts:456`. Ni
+  `prisma/seed*.ts`, ni `setup-dev-database.ts` (qui ne fait que
+  `prisma migrate deploy`), ni `src/dev/` n'écrivent de rôle : une base de
+  dev montée par `db:dev:setup` ne tient que ce que les anciennes migrations
+  de rôles et la bascule y ont écrit. Une ressource neuve n'y est accordée
+  à aucun rôle, sauf à l'écran — seule la fiche racine la résout. Ouvert
+  (audit du 2026-10-07, Q4) : semer le dev, ou écrire « e2e seulement »
+  partout où l'on dit « dev ».
 - le test de parité des rôles est **remplacé** par un test qui
   vérifie que la graine est **valide** (ressources connues, pas de doublon) et
   qu'une base semée a les rôles attendus.
@@ -153,7 +199,7 @@ Hugo crée « Livreur » à l'écran avec `delivery_driving`. L'e2e
 
 Le [`tableau-droits-livraison.md`](tableau-droits-livraison.md), mis à jour
 avec les ressources de DG-D1, devient la **feuille de réglage** : ce qu'Hugo
-applique à `/admin/staff-roles` (comptoir sans livraison, colisage au
+applique à l'écran `/admin/roles` (comptoir sans livraison, colisage au
 comptoir, procédures à l'admin et au commercial…). Rien de ce réglage n'est
 dans le code.
 
@@ -213,7 +259,7 @@ en ligne, le cache des droits peut encore refuser un geste.
 Trois `BLOQUANT`, sept `SÉRIEUX`. Là où cette section contredit ce qui
 précède, **elle l'emporte**.
 
-### 5.1 L'inventaire exhaustif (relevé au `grep` des six contrôleurs gardés `b2b_orders`, 2026-10-01)
+### 5.1 L'inventaire exhaustif (relevé au `grep` des dix contrôleurs gardés `b2b_orders`, 2026-10-01)
 
 | Contrôleur                                                            | Route                                                                                                                                                               | Ressource cible                                                                                |
 | --------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ---------------------------------------------------------------------------------------------- |
@@ -223,14 +269,23 @@ précède, **elle l'emporte**.
 | `b2b/orders/http/admin-catalog.controller.ts`                         | `GET sellable` · `GET companies/:companyId`                                                                                                                         | `b2b_orders`                                                                                   |
 | `b2b/orders/http/admin-production.controller.ts` (`admin/production`) | `GET batch`                                                                                                                                                         | `production_plan`                                                                              |
 | idem                                                                  | `GET packing/:reference` (la fiche derrière le QR)                                                                                                                  | `production_packing` — **garde par méthode**, la classe se scinde ou porte une garde par route |
-| `production/http/production-day.controller.ts`                        | `GET batch/:date/status` · `POST batch/:date/close` · `GET forecast` · `GET batch/:date/compte-a-produire.pdf`                                                      | `production_plan`                                                                              |
+| `production/http/production-day.controller.ts`                        | `GET batch/:date/status` · `GET forecast` · `GET batch/:date/compte-a-produire.pdf`                                                                                 | `production_plan`                                                                              |
+| idem                                                                  | `POST batch/:date/close` (arrêter le plan)                                                                                                                          | `production_plan` au bâti ; **`production_count_stop:write`** depuis le 2026-10-06             |
 | idem                                                                  | `GET batch/:date/sheets/:reference.pdf` (fiche d'atelier imprimable)                                                                                                | `production_worksheet`                                                                         |
-| idem                                                                  | `POST batch/:date/sheets/:reference/packed`                                                                                                                         | `production_packing`                                                                           |
+| idem                                                                  | `POST batch/:date/sheets/:reference/packed` — _retirée en K3c (2026-10-05)_                                                                                         | `production_packing`                                                                           |
 | `production/http/production-worksheet.controller.ts`                  | `GET worksheet` · `GET worksheet/current` · `PUT/DELETE …/lines/:sku/done` · `PUT …/batches/:batchId` · `DELETE …/batches/:batchId` · `POST worksheet/:date/retake` | `production_worksheet`                                                                         |
 | idem                                                                  | `GET/PUT/DELETE containers*` (contenants du four par SKU)                                                                                                           | `production_worksheet` (c'est du matériel de four, pas d'expédition — cf. `production.prisma`) |
-| production/http/production-packing.controller.ts (retiré en K3c)      | `GET packing` · `PUT …/lines/:sku` · `PUT …/containers` · `POST …/containers/:step` · `DELETE …/lines/:sku`                                                         | `production_packing`                                                                           |
+| production/http/production-packing.controller.ts (retiré en K3c)      | `GET packing` · `PUT …/lines/:sku` · `PUT …/containers` · `POST …/containers/:step` · `DELETE …/lines/:sku` — _le poste est `packing/http/*` depuis K3c_            | `production_packing`                                                                           |
 | `production/http/production-day-version.controller.ts`                | `GET version`                                                                                                                                                       | **n'importe laquelle** des quatre du fournil (`@RequireAnyPermission`)                         |
 | `handover/http/handover.controller.ts`                                | `GET file` · `POST manual/:reference` · `GET order/:id` · `GET :token` · `POST :token`                                                                              | `handover_counter`                                                                             |
+
+_Corrigé le 2026-10-07._ L'arrêt du plan a quitté `production_plan` le
+2026-10-06 (`production-day.controller.ts`, l. 205-206). K3c (`753f3e4f8`,
+2026-10-05) a retiré l'ancien poste de colisage du fournil : le poste est
+`packing/http/*` (`admin/packing/:date/…`), sous la même ressource
+`production_packing`, et des routes `admin/production/packing*` ne reste que
+la fiche derrière le QR, `GET admin/production/packing/:reference`
+(`admin-production.controller.ts:52`).
 
 Côté écran, en plus des lignes de § 1.1 : `auth/permission.guard.ts:20`
 (l'atterrissage `/commandes` choisi par `b2b_orders:read`),
@@ -305,7 +360,10 @@ dérogations contradictoires sans règle. **Retiré.**
   à fusionner.
 - Chaque ressource neuve a **une** source ; une dérogation se recopie donc
   **une pour une**, sans collision possible. Un e2e le prouve (un `deny` sur
-  `b2b_orders:write` donne un `deny` sur chacune des quatre).
+  `b2b_orders:write` donne un `deny` sur chacune des **cinq** —
+  `production_plan`, `production_worksheet`, `production_packing`,
+  `handover_counter` et `b2b_place_order` de 5.1 bis ;
+  `gesture-rights-switchover.e2e-spec.ts:211`).
 
 **Relevé par Hugo le 2026-10-01 : aucune dérogation** sur `b2b_orders`, `b2b_companies` ni `delivery_loading` en production. La recopie ne concerne personne aujourd'hui ; elle reste codée et testée, pour le cas où une dérogation serait posée d'ici le déploiement.
 
@@ -389,13 +447,55 @@ retirée. Suite racine verte, lancée seule.
 2. **La recopie des dérogations vers `b2b_place_order`** : tout `deny`, quelle
    que soit son action (refuser la lecture retirait déjà l'écriture), et un
    `allow` seulement sur l'écriture. Aucune dérogation concernée aujourd'hui.
-3. **Le panneau « Bacs »** demande l'écriture (`production_packing:write` ou
-   `delivery_loading:write`) même pour ses lectures.
+3. **Le panneau « Bacs »** demandait l'écriture (`production_packing:write` ou
+   `delivery_loading:write`) même pour ses lectures. **Plus vrai depuis le
+   2026-10-02** : la fiche d'un bac (`GET colisage/bacs/:binId`) se lit sous
+   `production_packing:read` ou `delivery_loading:read`
+   (`delivery-bins.controller.ts`, l. 121-122), comme les tournées vues du
+   poste (`GET colisage/tournees`, ouverte le même jour,
+   `delivery-packing.controller.ts`, l. 58-59). Les bacs d'une commande, les
+   moitiés libres et la proposition restent en écriture : ils sont le
+   panneau du geste.
 4. **`b2b_place_order` ouvre aussi le simulateur de tarification**
    (`POST admin/orders/quote`) : le retirer à la comptabilité lui ferme le
    simulateur.
 
-**Après la mise en ligne, à l'écran** (`/admin/staff-roles`) : créer le rôle
+**Après la mise en ligne, à l'écran** (`/admin/roles`) : créer le rôle
 « Livreur » avec `delivery_driving` ; accorder `delivery_driving` à l'admin
 (la migration retirée le faisait) ; appliquer la feuille de réglage
 [`tableau-droits-livraison.md`](tableau-droits-livraison.md).
+
+### Les écarts entre l'écran et l'API (relevés le 2026-10-07)
+
+L'audit du dossier `livraisons/` a confronté les gardes du back-office à
+celles des contrôleurs. Cinq écarts touchaient les droits de ce plan :
+l'écran montrait un geste que l'API refusait, ou cachait ce qu'elle ouvrait.
+
+- **« Arrêter le plan »** (`previsionnel-page.html`) n'était gardé par rien
+  côté écran, alors que la route exige `production_count_stop:write` : tout
+  lecteur du prévisionnel (`production_plan:read`) voyait le geste et prenait
+  un 403. ✅ Corrigé le 2026-10-07 : le bouton suit
+  `production_count_stop:write` (audit, F1).
+- **Le poste de retrait** relit sa file sur `GET admin/orders/day-version`,
+  qui n'acceptait que `b2b_orders:read` alors que l'écran n'exige que
+  `handover_counter:read` : un rôle « retrait seul » prenait un 403 avalé
+  toutes les 15 s, et sa file ne se relisait plus que par le journal du
+  fournil et le filet de 5 min. ✅ Corrigé le 2026-10-07 : la route accepte
+  aussi `handover_counter:read` (audit, B6).
+- **`delivery_decisions:read` n'affiche rien** : il ouvre
+  `GET admin/livraison/a-decider` (`stop-decisions.controller.ts`), et la
+  fiche des rôles dit « Voir À décider » (`staff-resource-scopes.ts:221`),
+  mais la route d'écran et le rail exigent l'écriture (`app.routes.ts` du
+  back-office, l. 401 ; `workspaces.ts:198`). ✋ À trancher (audit, Q5) :
+  ouvrir l'écran à la lecture, ou dire que ce niveau n'ouvre rien.
+- **Le panneau « Procédure »** de la fiche client
+  (`delivery-procedure-panel.html`) s'ouvrait en édition sans test de droit :
+  après le réglage de la feuille, comptabilité et support prenaient 403 au
+  premier chargement. ✅ Corrigé le 2026-10-07 : le panneau suit
+  `delivery_procedures` (audit, F2).
+- **« Nouvelle commande »** ne demande que `b2b_place_order:write`
+  (`app.routes.ts` du back-office, l. 139), mais le catalogue vendable et
+  l'historique qu'elle charge restent sous `b2b_orders:read` (écart 1
+  ci-dessus, `b2b/orders/http/admin-catalog.controller.ts`). Connu ; la
+  feuille de réglage le tient, puisque les trois rôles qui passent des
+  commandes — admin, commercial, comptoir — gardent `b2b_orders`.

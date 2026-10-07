@@ -7,18 +7,29 @@
 > nom : l'image `lfd-osrm`, `osrm-version.env`, `build-graph.sh`, les
 > adaptateurs `Osrm*` de l'API, le service de dev `lfd-dev-osrm`.
 
-> **État au 2026-09-29 : 🟡 bâti, jamais déployé.** Lot 8 bis du
-> [plan de tournée](../livraisons/plan-preparation-de-tournee.md) (L8b-C1 à
-> C7) : l'API joint `lfd-route-planner` **par la passerelle**, en HTTPS, avec un jeton
-> que la passerelle vérifie. Cette forme remplace l'interception
-> `outboundByHost` du lot 8 (forme B-ter), **jamais déployée et retirée du
-> code** le 2026-09-29. **Rien n'est déployé** : l'ordre de mise en service
-> est plus bas, et aucune de ses étapes n'a encore été jouée.
+> **État au 2026-10-07 : 🟢 bâti, et déployé depuis le 2026-09-30.** Lot 8
+> bis du [plan de tournée](../livraisons/plan-preparation-de-tournee.md)
+> (L8b-C1 à C7) : l'API joint `lfd-route-planner` **par la passerelle**, en
+> HTTPS, avec un jeton que la passerelle vérifie. Cette forme remplace
+> l'interception `outboundByHost` du lot 8 (forme B-ter), **jamais déployée et
+> retirée du code** le 2026-09-29. Ce que GitHub et le dépôt montrent du
+> déploiement : le workflow `deploy_lfd_route_planner` a tourné vert depuis
+> `dev` (2026-09-30, 04 h 47 UTC), puis sur `main` (04 h 53 UTC) ; la variable
+> GitHub `ROUTE_PLANNER_URL` a été posée à 05 h 00 et l'API redéployée dans la
+> minute ; la passerelle lie le Worker par le binding `ROUTE_PLANNER`
+> (`gateway/wrangler.toml:135`), et chacun de ses déploiements verts depuis
+> l'exige — `wrangler` refuse de publier un binding vers un Worker absent
+> (`gateway/wrangler.toml:131-133`). **Sa mise en service effective ne se lit
+> pas dans le dépôt** : qu'OSRM réponde et que le jeton soit accepté, seuls le
+> bulletin de démarrage de `lfd-api` (« Planificateur de tournées (calcul
+> routier) », `capability-audit.ts:249`) et un « Proposer » en production le
+> disent.
 >
-> 🔴 **Depuis le lot 10 bis (serveur bâti le 2026-09-29, non déployé) : plus
-> de vol d'oiseau** (L10b-C5). Sans OSRM, « Proposer », « Chronométrer » et le
-> simulateur **refusent** (409, « Le calcul routier ne répond pas : réessayez
-> dans une minute. Les tournées existantes ne sont pas touchées. »).
+> 🔴 **Depuis le lot 10 bis (serveur bâti le 2026-09-29, parti avec l'API le
+> 2026-09-30) : plus de vol d'oiseau** (L10b-C5). Sans OSRM, « Proposer »,
+> « Chronométrer » et le simulateur **refusent** (409, « Le calcul routier ne
+> répond pas : réessayez dans une minute. Les tournées existantes ne sont pas
+> touchées. »).
 > **Mettre OSRM en service — les trois étapes ci-dessous — AVANT de déployer le
 > lot 10 bis** : dans l'autre ordre, « Proposer » refuse en production dès le
 > déploiement (personne ne s'en sert encore, mais c'est le geste qu'on
@@ -378,7 +389,7 @@ CI part au registre.
 **affiche** un tracé sur une carte (`/route`) — à écrire le jour où un écran
 le fera.
 
-## Les tuiles de la carte des tournées (lot 10 ter) — ✅ bâties le 2026-09-29, pas encore déployées
+## Les tuiles de la carte des tournées (lot 10 ter) — ✅ bâties le 2026-09-29, déployées le 2026-09-30
 
 Même extrait, second usage : `apps/lfd-route-planner/scripts/build-tiles.sh`
 fabrique les deux fichiers PMTiles de la carte du back-office à partir du
@@ -393,8 +404,10 @@ apps/lfd-route-planner/scripts/build-tiles.sh <sortie-du-graphe>/savoie.osm.pbf 
 | `savoie.pmtiles`        | `AAAA-MM-JJ/rues.pmtiles`   | `/api/route-planner/tiles/rues.pmtiles`   | 36 Mo               |
 | `savoie-relief.pmtiles` | `AAAA-MM-JJ/relief.pmtiles` | `/api/route-planner/tiles/relief.pmtiles` | 60 Mo               |
 
-**État au 2026-09-29** : bâti, non commité à l'écriture, **rien n'est déployé
-et le bucket n'existe pas encore**.
+**État au 2026-10-07** : déployé. Le run `deploy_lfd_route_planner` de `main`
+du 2026-09-30 a créé le bucket, fabriqué et déposé les tuiles, basculé
+current.json et déployé le Worker — toutes ses étapes vertes (relu par
+`gh run view`). Aucune tuile n'a été lue d'ici.
 
 ### Le cycle
 

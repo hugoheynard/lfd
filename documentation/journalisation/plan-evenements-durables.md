@@ -2,8 +2,9 @@
 
 > Hugo, 2026-10-04 : « maintenant qu'on a la boîte d'envoi, est-ce que ça doit
 > changer la manière dont on journalise ? est-ce qu'il y a une refacto à
-> faire ? » État : **inventaire fait, E1 bâti (§6), E2 bâti (§7)**. Suite de
-> [`plan-boite-d-envoi.md`](plan-boite-d-envoi.md).
+> faire ? » État : **inventaire fait ; E1 bâti (§6), E2 bâti (§7), E3 bâti
+> le 2026-10-06 par le lot DD1 de la livraison (§7 bis)** ; E4 à E6 restent.
+> Suite de [`plan-boite-d-envoi.md`](plan-boite-d-envoi.md).
 
 ## 1. Ce qui ne change pas : le journal
 
@@ -45,8 +46,8 @@ a été rouverte (ligne 11).
 | 28  | `orders/on-order-handed-over`              | `handover.handed_over` (handover)         | ready → fulfilled                                | ✅ **durable** (E2, 2026-10-04)         |
 | 11  | `loyalty/credit-points-on-handover`        | `order.fulfilled`                         | **points de fidélité**                           | ✅ **durable** (E2, 2026-10-04)         |
 | 10  | `loyalty/credit-points-on-payment-settled` | `OrderPaymentSettledEvent`                | **points de fidélité**                           | points jamais crédités                  |
-| 1   | `delivery/hand-departed-orders-over`       | `DeliveryRoundDepartedEvent`              | la garde passe au livreur (port vers le retrait) | le retrait croit la commande au fournil |
-| 2   | `delivery/announce-delivery-departure`     | `DeliveryRoundDepartedEvent`              | « partie » au commerce (port)                    | le commerce ignore le départ            |
+| 1   | `delivery/hand-departed-orders-over`       | `DeliveryRoundDepartedEvent`              | la garde passe au livreur (port vers le retrait) | ✅ **durable** (E3 par DD1, 2026-10-06) |
+| 2   | `delivery/announce-delivery-departure`     | `DeliveryRoundDepartedEvent`              | « partie » au commerce (port)                    | ✅ **durable** (E3 par DD1, 2026-10-06) |
 | 25  | `orders/send-order-placed-mail`            | `OrderPlacedEvent`                        | courriel d'accusé                                | pas d'accusé                            |
 | 26  | `orders/send-guest-order-notice`           | `OrderPlacedEvent`                        | courriel au propriétaire probable                | pas d'alerte                            |
 | 27  | `orders/send-order-ready-mail`             | `OrderReadyEvent`                         | courriel « prête » + QR                          | le client ne sait pas                   |
@@ -93,7 +94,7 @@ pour deux faits ferait livrer l'un aux abonnés de l'autre.
 | --- | ------------------------------------------------------------ | ------------------------------------------------------------------------ |
 | E1  | `OrderPacked` → ready (#5)                                   | une perte bloque une commande, et le courriel « prête » (#27) suit       |
 | E2  | Retrait (#28, #11, #21)                                      | statut **et argent** ; relevé d'unicité des points d'abord               |
-| E3  | Départ d'une tournée (#1, #2)                                | la garde ; fait durable `delivery.round_departed`, les ports restent     |
+| E3  | Départ d'une tournée (#1, #2)                                | la garde ; **bâti par DD1 le 2026-10-06** (§7 bis), ports retirés        |
 | E4  | Paiement (#10, #24, #9, #4, #7, #6)                          | Stripe rejoue son webhook, mais pas le saut en mémoire qui suit l'accusé |
 | E5  | Courriels de passation (#25, #26), alerte (#13), image (#12) | effets, pertes moins graves                                              |
 | E6  | La croissance (B), en un lot                                 | le cockpit et le score des leads                                         |
@@ -186,6 +187,31 @@ naît avec E1, la liste pleine.
   le fait étant écrit dans l'unité du livreur. La retirer touche le canal de la
   livraison et ses appelants — laissé à une tranche à part.
 
+## 7 bis. E3 bâti (2026-10-06) — le départ et le retour d'une tournée
+
+Bâti par la livraison en un seul lot, DD1 (`375f82225`) ; l'état est décrit
+dans [`../livraisons/en-route.md`](../livraisons/en-route.md) et
+[`../livraisons/a-la-porte.md`](../livraisons/a-la-porte.md) § 5.
+
+- **Deux faits durables**, déclarés par la livraison dans son canal vers le
+  retrait (`delivery/channels/handover/`) et écrits dans la transaction du
+  geste : `delivery.round_departed` (`DeliveryRoundDepartedFact`) au départ,
+  `delivery.orders_brought_back` (`DeliveryOrdersBroughtBackFact`) au retour.
+- **Trois abonnés `@DurableHandler`** : `handover.record-round-departed` (la
+  garde passe au livreur), `handover.record-orders-brought-back` (la garde
+  rentre au dépôt) et `b2b.mail-delivery-en-route` (le courriel « en route »,
+  qu'envoyait l'annonce au commerce).
+- **Les ports ne restent pas**, contre ce que prévoyait le §4 : les abonnés en
+  mémoire #1 et #2 et les trois ports d'annonce (`DeliveryDepartureAnnouncer`,
+  `DepartedOrdersAnnouncer`, `BroughtBackOrdersAnnouncer`) sont supprimés.
+- `order_departure` devient monotone par instant : un départ rejoué après un
+  retour ne remet plus la commande « partie », et un retour livré avant son
+  départ est gardé (`departed_at` nullable, migration
+  `20261007180000_le_retour_avant_le_depart`).
+- **La porte** `lint:durable-cross-block` : la dette passe de quatre abonnés à
+  deux — `on-product-media-changed` (E5) et `tell-delivery-order-placed` (la
+  commande passée vers la livraison, à basculer).
+
 ## 8. Les ports entre blocs — inventaire (2026-10-04)
 
 > Hugo : « si on a commencé les messages, est-ce que ce n'est pas mieux que
@@ -200,7 +226,7 @@ Relevé par un agent `Explore`, puis rouvert à la main pour ce qui est marqué
 
 | Classe                                            | Compte | Ports                                                                                                                                                                                                                                                                                                                   | Suite                                                                               |
 | ------------------------------------------------- | ------ | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ----------------------------------------------------------------------------------- |
-| **Annonce** — l'appelant n'utilise pas la réponse | 3      | `DeliveryDepartureAnnouncer` ✔ (livraison → commerce), `DepartedOrdersAnnouncer`, `BroughtBackOrdersAnnouncer` (livraison → retrait), appelés après validation sous `BackgroundWork` : perdables                                                                                                                        | **E3** : faits durables (`delivery.round_departed`, `delivery.orders_brought_back`) |
+| **Annonce** — l'appelant n'utilise pas la réponse | 3      | `DeliveryDepartureAnnouncer` ✔ (livraison → commerce), `DepartedOrdersAnnouncer`, `BroughtBackOrdersAnnouncer` (livraison → retrait), appelés après validation sous `BackgroundWork` : perdables                                                                                                                        | **E3, fait le 2026-10-06** (§ 7 bis) : les trois ports sont **retirés**, pas gardés |
 | **Décision de transition**                        | 1      | `PackingStation` (K2 : le poste passe par le fournil puis par ce port)                                                                                                                                                                                                                                                  | **K3** : le poste appelle directement les routes du colisage                        |
 | **Décision légitime**                             | 4      | `PendingSettlementSweeper` ✔ (appelé par la clôture **avant** de charger la journée, l. 113 : la clôture a besoin que les règlements en vol soient tranchés), `DoorstepHandoverAttestor` (la porte attend la réponse), `B2bCatalogDriver` (envoi du catalogue, déjà asynchrone et journalisé), et un autre à identifier | rester des ports                                                                    |
 | **Lecture**                                       | 29     | dont 13 implémentés par le commerce (commandes, adresses, échéances, catalogue)                                                                                                                                                                                                                                         | rester des ports : l'état vif appartient au commerce                                |

@@ -5,12 +5,17 @@
 > décrit désormais ce que fait le code, et finit par ce qui **reste à faire**
 > (repris de l'ancien « TODO de la porte », supprimé le même jour). Les
 > affirmations sur le code ont été rouvertes le 2026-10-06. L'historique du
-> plan (versions, objections de `vitruve`, découpage) :
-> `git log --follow documentation/livraisons/a-la-porte.md`.
+> plan (versions, objections de `vitruve`, découpage — 23 commits, du
+> 2026-10-01 à sa suppression comprise) se lit par `git log --follow` sur
+> son **ancien chemin**, `plan-a-la-porte` dans ce même dossier, devenu ce
+> document le 2026-10-06 (`f303e378f`) ; sa dernière version est celle de
+> `f303e378f^`.
 >
-> Les repères du plan (**AP-D1…D10**, **AP-Q1…Q6**, **B0…B5**, **B3 bis**,
-> **BQ**, **LB-Q1…Q6**) sont cités par le code ; le § 9 dit où chacun vit
-> désormais.
+> Le code cite les repères du plan (**AP-D1…D10**, **AP-Q1…Q6**, **B0…B5**,
+> **B3 bis**, **BQ**, **LB-Q1…Q6**, **RL1** — tous, sauf AP-D3, AP-D10, AP-Q3
+> et LB-Q4, que seule la documentation nomme), et aussi les **numéros de
+> section** de l'ancien plan (« § 10 ter », « § 10 bis »…), qui ne sont pas
+> ceux de ce document. Le § 9 dit où chacun mène désormais.
 
 Suit « Ma tournée » ([`plan-ma-tournee.md`](plan-ma-tournee.md)) : la page du
 livreur, son mur « sa tournée ». La conception d'origine du lot 6 (L6-C1 à
@@ -56,19 +61,28 @@ stateDiagram-v2
 
 Commun à la remise et au dépôt (`delivery/application/doorstep-handover.ts`) :
 mur du livreur, version présentée, **rejeu idempotent** (un arrêt déjà remis
-republie l'attestation existante ; clos autrement, il est refusé en le
-nommant), attestation **sans publier** par le port
+à la porte réannonce l'attestation existante, par un fait neuf ; clos
+autrement, il est refusé en le nommant). L'attestation passe par le port
 `delivery/channels/handover/` (`DoorstepHandoverAttestor`, implémenté par
-`HandoverDoorstepAttestor` sur `HandoverAttestation.attestQuietly`), puis
-publication **après validation** (`AfterCommit`, B0) : un `closeStop` qui
-échoue ne laisse ni commande `fulfilled` ni point (AP-D1). Images rangées
-avant la ligne, retirées si la ligne échoue. Faits
+`HandoverDoorstepAttestor` sur `HandoverAttestation.attestQuietly`) et
+s'écrit **dans la transaction du livreur**, avec la ligne de ses pièces
+(`order_handover_proof`), le `closeStop` et son fait durable
+`handover.handed_over` dans la boîte d'envoi — depuis le lot E2 (2026-10-04,
+`6a5beab26`) : tout est validé ensemble, ou rien. Un
+`closeStop` qui échoue ne laisse donc ni attestation, ni fait, ni commande
+`fulfilled`, ni point (AP-D1) ; le commerce n'apprend la remise qu'après la
+validation, par son abonné durable `b2b.orders.mark-fulfilled`. Le port rend
+encore une « publication » que la livraison inscrit après la validation
+(`AfterCommit`, B0) : depuis E2, elle ne fait plus rien
+(`ALREADY_IN_OUTBOX`, `handover-doorstep-attestor.ts`). Images rangées avant
+la ligne, retirées si la ligne échoue. Faits
 `delivery_round.stop_handed_over` / `stop_deposited`.
 
 ## 2. Le temps qu'on accumule
 
-Par arrêt, dans `delivery_stop_execution` : `departed_at` (départ de la
-tournée), `arrived_at`, et la clôture. Rien n'est calculé à l'écriture : des
+Par arrêt : `departed_at` (départ de la tournée) et `arrived_at` dans
+`delivery_stop_execution`, la clôture dans `delivery_round_stop.closed_at`
+(écrite par la tournée, `closeStop`). Rien n'est calculé à l'écriture : des
 instants du `Clock`, les durées (trajet, sur place, écart à la fenêtre) se
 liront. **Aucun écran de statistiques n'existe** ; la position relevée aux
 gestes est bâtie depuis le 2026-10-06 (YA4, [`gps-y-aller-et-position.md`](gps-y-aller-et-position.md), AP-D10).
@@ -89,8 +103,10 @@ note (≤ 500) et une photo facultatives. Table `delivery.delivery_incident`.
   commande. Un problème technique ou routier **se signale seulement** : il
   n'arrête pas la tournée (AP-Q4).
 - Côté admin, sous `delivery_rounds` (lecture) : `GET admin/livraison/incidents`,
-  leur photo, et **« Non remis »** (`GET admin/livraison/non-remis`) — tournée
-  partie, arrêt non clos, jour passé. C'est une **vue** : elle ne débloque rien
+  leur photo, et **« Non remis »** (`GET admin/livraison/non-remis`) — les
+  arrêts encore ouverts d'une tournée partie qui est **rentrée**, ou, rentrée
+  ou non, d'un jour antérieur à aujourd'hui (heure de Paris ;
+  `PrismaUndeliveredStopsReader`). C'est une **vue** : elle ne débloque rien
   (AP-D7).
 - `nobody_present`, `refused` et `access_impossible` **ouvrent une décision du
   commercial** (`opensDecision`, `delivery/domain/services/decision-opening.ts`) ;
@@ -117,8 +133,22 @@ arrêt, conditionnée par sa `version`, tracée (qui, quand, `source` = `staff` 
 `/livraison/a-decider`. « Autoriser » n'écrit pas la tournée ; « Rapporter »
 **clôt** l'arrêt (LB-Q2) et écrit, dans sa transaction, le fait durable
 `delivery.orders_brought_back` : le retrait en tire le retour
-(`order_departure.returned_at`) — § 5. Le premier qui répond l'emporte ; la carte du
-livreur porte la décision, et le livreur n'attend pas.
+(`order_departure.returned_at`) — § 5. La carte du livreur porte la décision,
+et le livreur n'attend pas.
+
+**La dernière réponse l'emporte, pas la première** (`StopDecision`,
+`delivery/domain/entities/stop-decision.ts`). C'est une règle métier : tant
+que l'arrêt est ouvert, « Rapporter » peut remplacer « Autoriser », du même
+commercial ou d'un autre, et le dépôt est alors refusé au livreur, en le
+disant (`StopBroughtBackError` : « Un commercial a décidé de rapporter la
+commande … »). L'inverse ne se peut pas : « Rapporter » clôt l'arrêt, et
+toute réponse sur un arrêt clos — remis, déposé ou rapporté — ou sur une
+tournée rentrée est refusée (`StopDecisionOnClosedStopError`,
+`StopDecisionOnReturnedRoundError`). Répéter la réponse en vigueur ne change
+rien : son premier auteur la garde. Le commercial prend le verrou de la
+tournée, celui que prend le dépôt : une réponse et un dépôt ne se croisent
+pas. Éprouvé par `stop-decision.spec.ts`, `stop-decision-handlers.spec.ts`
+et `delivery-stop-decision.e2e-spec.ts`.
 
 **La décision réglée d'avance (B3 bis, LB-Q6)** — `ask` | `deposit` |
 `bring_back`. Un **global** (`delivery.delivery_doorstep_settings`,
@@ -146,26 +176,39 @@ Au départ, `delivery` demande au retrait par `delivery/channels/handover/` :
 `DepartureHoldsReader` — le départ **refuse** une commande retenue au contrôle
 qualité, en nommant l'arrêt.
 
-**La garde passe par la boîte d'envoi** (depuis le 2026-10-06, lot DD1,
-[`plan-depart-durable.md`](plan-depart-durable.md)). Le départ écrit, dans sa
-transaction et depuis `departAndFreeze` (le chemin commun du poste de
-chargement et du livreur), le fait durable `delivery.round_departed` ; une
-décision « Rapporter » — du commercial ou réglée d'avance — écrit
-`delivery.orders_brought_back`. Les deux faits sont déclarés dans
-`delivery/channels/handover/` ; le retrait s'y abonne en `@DurableHandler` :
+**La garde passe par la boîte d'envoi** depuis le 2026-10-06 (lot DD1,
+`375f82225` ; la conception et les objections de `vitruve` sont dans
+[`plan-depart-durable.md`](plan-depart-durable.md), gardé comme document de
+décision). Le départ écrit, dans sa transaction et depuis `departAndFreeze`
+(le chemin commun du poste de chargement et du livreur), le fait durable
+`delivery.round_departed` ; une décision « Rapporter » — du commercial ou
+réglée d'avance — écrit `delivery.orders_brought_back`. Les deux faits sont
+déclarés dans `delivery/channels/handover/` : `DeliveryRoundDepartedFact` et
+`DeliveryOrdersBroughtBackFact` — le suffixe `Fact` les distingue de
+`DeliveryRoundDepartedEvent`, le fait de journal, qui reste. Le retrait s'y
+abonne en `@DurableHandler` :
 
-| Abonné                                | Ce qu'il fait                                                                           |
-| ------------------------------------- | --------------------------------------------------------------------------------------- |
-| `handover.record-round-departed`      | lit `order_handover` — une commande **déjà remise** est ignorée —, puis écrit le départ |
-| `handover.record-orders-brought-back` | écrit le retour                                                                         |
+| Fait, sa clé, sa charge                                                                                                                                                      | Abonné du retrait                     | Ce qu'il fait                                                                                                      |
+| ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ------------------------------------- | ------------------------------------------------------------------------------------------------------------------ |
+| `delivery.round_departed`, clé `…:<roundId>` (une tournée ne part qu'une fois ; un second passage est une autre tournée) ; `roundId`, `serviceDay`, `departedAt`, `orderIds` | `handover.record-round-departed`      | lit `order_handover` (`HandedOverOrdersReader`) — une commande **déjà remise** est ignorée —, puis écrit le départ |
+| `delivery.orders_brought_back`, clé `…:<roundId>:<orderIds>` (un arrêt rapporté est clos, il ne se rapporte plus) ; `roundId`, `orderIds`, `broughtBackAt`                   | `handover.record-orders-brought-back` | écrit le retour                                                                                                    |
 
 `production.order_departure` est **monotone par instant**, pas par ordre
-d'arrivée : la boîte d'envoi peut livrer un fait des heures après l'autre.
-Un départ n'écrit que si le départ connu est nul ou `<=` son instant **et**
-le retour nul ou `<` ; un retour, que si le départ connu est nul ou `<=` et
-le retour nul ou `<`. Un retour livré avant son départ s'écrit seul
-(`departed_at` nul, migration `20261007180000`) ; le départ, plus ancien,
-ne l'efface pas. Un fait plus ancien que l'état ne fait rien.
+d'arrivée : la boîte d'envoi peut livrer un fait des heures après l'autre
+(`PrismaOrderDepartureRepository`). Chaque écriture fait naître la ligne si
+elle manque, puis ne l'avance que dans le `where` d'un `updateMany`, les deux
+dans une transaction : un départ n'écrit que si le départ connu est nul ou
+`<=` son instant **et** le retour nul ou `<` ; un retour, que si le départ
+connu est nul ou `<=` et le retour nul ou `<`. Un fait plus ancien que l'état
+ne fait rien.
+
+Un retour livré **avant** son départ crée donc la ligne seul, `departed_at`
+nul : la colonne l'accepte depuis la migration additive
+`20261007180000_le_retour_avant_le_depart`. Sans elle, ce retour se perdait,
+et le départ livré en retard remettait la commande « partie ». Le départ,
+plus ancien, ne l'efface pas. Aucun lecteur ne lit `departed_at` pour décider
+(vérifié le 2026-10-07) : le fournil, qui lit « partie » par
+`OrderCustodyReader`, et la preuve de livraison lisent `returned_at` nul.
 
 Les annonces en mémoire d'avant (`DepartedOrdersAnnouncer`,
 `BroughtBackOrdersAnnouncer`, appelées après validation par `AfterCommit`)
@@ -223,21 +266,39 @@ Accordées à l'écran des rôles, jamais par migration :
 
 ## 9. Où vivent les repères du plan
 
-| Repère                                      | Ici                 |
-| ------------------------------------------- | ------------------- |
-| AP-D1 (publier après validation), B0, B1    | § 1                 |
-| AP-D2 (clore sans remise)                   | § 1                 |
-| AP-D3, AP-Q5                                | § 8                 |
-| AP-D4, AP-D5, AP-Q1, AP-Q6, B2              | § 4                 |
-| AP-D6 (instants, rejeu)                     | § 1, § 2            |
-| AP-D7 (« Non remis »), § 3 du plan          | § 3                 |
-| AP-D8 (`deposit` dans `HandoverVia`)        | § 1 — déployé       |
-| AP-D9 (frontière, `delivery_doorstep`)      | § 7, `CLAUDE.md` §3 |
-| AP-D10 (position)                           | § 2                 |
-| B3, B3 bis, B5, LB-Q2/Q3/Q5/Q6, § 9 du plan | § 4                 |
-| B4                                          | § 1                 |
-| BQ, LB-Q1, RL1                              | § 5                 |
-| Voir les preuves                            | § 6                 |
+| Repère                                               | Ici                 |
+| ---------------------------------------------------- | ------------------- |
+| AP-D1 (le commerce prévenu après validation), B0, B1 | § 1                 |
+| AP-D2 (clore sans remise)                            | § 1                 |
+| AP-D3, AP-Q5                                         | § 8                 |
+| AP-D4, AP-D5, AP-Q1, AP-Q6, B2                       | § 4                 |
+| AP-D6 (instants, rejeu)                              | § 1, § 2            |
+| AP-D7 (« Non remis »)                                | § 3                 |
+| AP-D8 (`deposit` dans `HandoverVia`)                 | § 1 — déployé       |
+| AP-D9 (frontière, `delivery_doorstep`)               | § 7, `CLAUDE.md` §3 |
+| AP-D10 (position)                                    | § 2                 |
+| B3, B3 bis, B5, LB-Q2/Q3/Q5/Q6                       | § 4                 |
+| B4                                                   | § 1                 |
+| BQ, LB-Q1, RL1                                       | § 5                 |
+| Voir les preuves                                     | § 6                 |
+
+### Les numéros de section de l'ancien plan, cités par le code
+
+Trente-neuf fichiers hors de `documentation/` renvoient à
+« `a-la-porte.md`, § 10 ter » ou « § 10 bis » (compté le 2026-10-07) : ce
+sont les sections du plan d'avant le 2026-10-06, pas celles de ce document.
+Voici où elles mènent.
+
+| Cité par le code                   | Dans l'ancien plan                                                                                                                                                                                                                                    | Ici                                                     |
+| ---------------------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ------------------------------------------------------- |
+| « § 3 »                            | déclarer un problème                                                                                                                                                                                                                                  | § 3                                                     |
+| « § 9 »                            | les décisions d'Hugo du 2026-10-01 : toute remise porte une photo, « Clore sans remise » reste un filet invisible, le commercial décide — sa phrase « le premier qui répond décide » a été renversée par le § 10 bis                                  | § 1, § 4, § 8 (AP-Q2)                                   |
+| « § 10 », lot « voir les preuves » | la carte « Preuve de livraison »                                                                                                                                                                                                                      | § 6                                                     |
+| « § 10 B3 »                        | le commercial décide — sa phrase « le premier qui décide l'emporte » a été renversée par le § 10 bis                                                                                                                                                  | § 4                                                     |
+| « § 10 B4 »                        | « Tournée terminée » exige un sort pour chaque arrêt                                                                                                                                                                                                  | § 1                                                     |
+| « § 10 bis »                       | la v2 après `vitruve` : B0 (après validation), le rejeu qui réannonce, la publication qui ne traverse pas la frontière, la décision qui a un propriétaire, SÉRIEUX 4 (la rentrée staff reste permise) ; les questions LB-Q1 à LB-Q4 et leurs réponses | § 1 ; § 4 pour la décision et LB-Q2/Q3 ; § 5 pour LB-Q1 |
+| « § 10 ter »                       | BQ, la garde au départ (LB-Q1) ; LB-Q5 et LB-Q6, la décision réglée d'avance (B3 bis)                                                                                                                                                                 | § 5 ; § 4 pour LB-Q5/Q6                                 |
+| « lot A », « lot B »               | A : arriver, signaler, clore sans remise, rentrer, « Non remis », dépôt autorisé ; B : B0…B5 et BQ                                                                                                                                                    | § 1 à § 5                                               |
 
 ## 10. Reste à faire
 
@@ -250,9 +311,12 @@ Repris de « TODO de la porte » (supprimé le 2026-10-06), relu ce jour-là.
   signature** (sinon tracé au doigt et nom tapé, ce qui existe). Aujourd'hui
   `via = scan` n'est écrit que par le comptoir.
 - **Le livreur sans compte (6 b).** Un lien à jeton par tournée — frontière de
-  sécurité neuve (`vitruve` d'office). Aujourd'hui seul un membre staff avec
-  `delivery_doorstep` conduit. Qui compose affecte le livreur ; le snapshot du
-  départ se garde 90 jours.
+  sécurité neuve (`vitruve` d'office). Aujourd'hui seul un membre staff
+  conduit : `delivery_driving` pour voir sa tournée, la charger et partir,
+  `delivery_doorstep` pour les gestes à la porte et « Tournée terminée » — et
+  l'affectation exige **les deux** en écriture depuis le 2026-10-07 (audit,
+  B8 : `DriverAccess`). Qui compose affecte le livreur ; le snapshot du départ
+  se garde 90 jours.
 
 ### Bloquant
 

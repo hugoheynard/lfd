@@ -1,16 +1,20 @@
 # « Y aller » et la position au geste
 
 > ✅ **Doc technique, état au 2026-10-06.** Ce document décrit ce qui est bâti.
-> C'était le plan « Y aller et la position » (2026-09-30) ; son historique se
-> lit par `git log --follow documentation/livraisons/gps-y-aller-et-position.md`.
+> C'était le plan « Y aller et la position » (2026-09-30) ; son historique —
+> quatre commits, sa suppression comprise — se lit par `git log --follow` sur
+> son **ancien chemin**, `plan-y-aller-et-position` dans ce même dossier,
+> devenu ce document le 2026-10-06 (`16d367e3a`) ; sa dernière version est
+> celle de `16d367e3a^`.
 > Ce qui n'est pas bâti est dans **Reste à faire**, à la fin. Les corrections
 > du carnet suggérées au bureau (§6) sont bâties depuis le 2026-10-06.
 
 Trois choses — deux sur l'écran « Ma tournée » du livreur (`/coursier`), une
 au bureau :
 
-1. **« Y aller »** : ouvrir l'application de navigation vers l'arrêt suivant, ou
-   vers toute la tournée découpée en tronçons, **sans les arrêts déjà clos**.
+1. **« Y aller »** : ouvrir l'application de navigation vers un arrêt restant
+   — chaque carte d'arrêt a le sien —, ou vers toute la tournée découpée en
+   tronçons, **sans les arrêts déjà clos**.
 2. **La position au geste** : la position du téléphone relevée une fois, au
    moment d'un geste à la porte, jamais en continu, et effacée au bout de
    60 jours.
@@ -38,12 +42,16 @@ flowchart LR
   V --> F{"closedAt posé ?"}
   F -- oui --> X["retiré des liens"]
   F -- non --> K["arrêt restant"]
-  K --> N["« Y aller »<br/>le premier restant"]
+  K --> N["« Y aller »<br/>sur chaque arrêt restant"]
   K --> T["« Toute la tournée »<br/>tronçons de MAX_WAYPOINTS étapes"]
   T --> T1["tronçon 1 : position du téléphone → arrêts 1..N"]
   T --> T2["tronçon 2 : arrêt N → arrêts N+1..2N"]
   K -. "plus rien" .-> H["« Rentrer »<br/>vers le point de départ"]
 ```
+
+« Y aller » est sur la carte de **chaque** arrêt restant tant que la tournée
+est en route (`my-round-stop.html`) ; seul « Je suis arrivé » est réservé au
+suivant — le premier restant —, tant que son arrivée n'est pas déclarée.
 
 La chaîne est éprouvée de bout en bout (YA3, 2026-10-06) :
 
@@ -153,6 +161,19 @@ sequenceDiagram
   `delivery_stop_execution_arrived_position_check`). Une position impossible
   refuse le geste : le livreur le refait, l'écran envoie une position valide ou
   rien.
+- **La base ne le tient que depuis le 2026-10-07** (audit du 2026-10-07, B3).
+  Les CHECK d'origine — ces deux-là (`20261007160000_la_position_au_geste`)
+  et les trois points du carnet (`20261007170000_les_corrections_du_carnet`,
+  §6) — n'avaient que des bornes dans leur branche « ensemble », jamais
+  `IS NOT NULL`. Une comparaison avec NULL vaut NULL, un CHECK qui vaut NULL
+  laisse passer : une ligne `lat` posée, `lng` nulle entrait. Aucun chemin
+  applicatif n'en écrit — `GesturePosition` et `GeoPoint` portent leurs
+  champs ensemble —, mais la base ne l'aurait pas refusée. La migration
+  `20261007200000_les_positions_entieres_ou_nulles` repose les cinq sous le
+  même nom, avec `IS NOT NULL` sur chaque colonne de la branche « ensemble »
+  (la forme de `delivery_round_planned_all_or_none`), et revalide les lignes
+  existantes. L'e2e apps/lfd-api/test/position-checks.e2e-spec.ts éprouve
+  qu'une position partielle est refusée, en nommant la contrainte.
 - **Écrite une fois.** L'arrivée garde la première position (comme son heure).
   La clôture n'écrit la position que dans le `save` du geste qui clôt : un
   arrêt réhydraté ne la porte pas, donc aucun `save` plus tardif ne peut la
@@ -178,9 +199,20 @@ d'information
 (`apps/lfd-api/src/delivery/domain/value-objects/driver-information-notice.ts`)
 l'annonce ; le registre (`documentation/legal/rgpd-registre.json`) porte les six
 colonnes en catégorie `position`, conservation 60 jours, et l'empreinte que la
-v2 a vue — `pnpm lint:rgpd-staff` échoue si l'un bouge sans l'autre. Un livreur
-qui avait accusé la version 1 revoit le dialogue une fois, au prochain
-« Commencer ma tournée ».
+v2 a vue. Trois liens tiennent le texte, le registre et le code ensemble :
+
+- `pnpm lint:rgpd-staff` échoue si une colonne du livreur ou sa catégorie
+  change sans nouvelle version du texte : son empreinte porte
+  `colonne|catégorie`, **pas la durée** ;
+- `driver-notice-registry.spec.ts` lie la version du texte à celle du
+  registre ;
+- un test unitaire lie `POSITION_RETENTION_DAYS`, que lisent la purge et le
+  texte, au `conservation.jours` des entrées `position` du registre (audit du
+  2026-10-07, F3, bâti le jour même) : jusque-là, la durée du code et celle
+  du registre pouvaient diverger, porte verte.
+
+Un livreur qui avait accusé la version 1 revoit le dialogue une fois, au
+prochain « Commencer ma tournée ».
 
 ### La purge à 60 jours
 
@@ -219,6 +251,12 @@ SELECT count(*) AS arrivees_trop_vieilles
    AND arrived_at < now() - interval '60 days';
 ```
 
+Les deux requêtes, comme la purge (`clearBatchClosedBefore`,
+`clearBatchArrivedBefore`), ne choisissent que `*_lat IS NOT NULL`. C'est juste
+maintenant que la base refuse une ligne partielle (2026-10-07, ci-dessus) :
+avant, une ligne sans `lat` mais avec `lng` leur aurait échappé, et sa
+coordonnée ne se serait jamais effacée.
+
 Un résultat non nul d'un jour sur l'autre se lit en une nuit de retard au plus ;
 au-delà, la purge ne tourne pas (`RECOMPUTE_TOKEN` absent du Worker, ou route en
 erreur dans ses logs).
@@ -240,8 +278,10 @@ erreur dans ses logs).
 ## 4. Les trois applis du dépôt concernées
 
 - **`apps/lfd-api`** (bloc `delivery/`) : migration
-  `20261007160000_la_position_au_geste` (additive) ; `GesturePosition`,
-  `GesturePositionInvalidError`, `POSITION_RETENTION_DAYS` ; `closeStop(…, position)`,
+  `20261007160000_la_position_au_geste` (additive), ses CHECK reposés par
+  `20261007200000_les_positions_entieres_ou_nulles` (2026-10-07, §2) ;
+  `GesturePosition`, `GesturePositionInvalidError`, `POSITION_RETENTION_DAYS` ;
+  `closeStop(…, position)`,
   `DoorstepStop.arrive(…, position)` ; `gesturePositionOf` dans
   `doorstep-support.ts` ; la purge (`purge-stale-positions.*`,
   `GesturePositionPruner`, `PrismaGesturePositionPruner`,
@@ -260,22 +300,23 @@ erreur dans ses logs).
 
 ## 5. Décisions en vigueur
 
-| #          | Décision                                                                                                                            |
-| ---------- | ----------------------------------------------------------------------------------------------------------------------------------- |
-| YA-D1      | Deux boutons, un calcul : les arrêts restants, sans les clos, relus à chaque fois.                                                  |
-| YA-D2      | Tronçons de `MAX_WAYPOINTS` (3) étapes ; « Rentrer » à part.                                                                        |
-| YA-D3      | Application choisie par appareil pour « Y aller » ; « Toute la tournée » toujours en liens Google (le code, relu le 2026-10-06).    |
-| YA-D4      | Position au geste seulement — arrivée, remise, dépôt, clôture sans remise (arrivée ajoutée par Hugo le 2026-10-06) ; jamais exigée. |
-| YA-Q1      | Pas de « Je suis passé » sans preuve : un arrêt sort par un geste qui le clôt.                                                      |
-| YA-Q2      | Un arrêt raté puis rapporté est clos : il sort des liens.                                                                           |
-| YA-Q3      | 60 jours (`POSITION_RETENTION_DAYS`), à faire valider.                                                                              |
-| 2026-10-06 | On prévient, on ne demande pas : le texte énonce un fait.                                                                           |
-| 2026-10-06 | Finalité : faciliter les tournées suivantes, puis prouver la livraison ; jamais suivre les déplacements.                            |
-| CC-D1      | Suggestion : ≥ 3 gestes à moins de 30 m les uns des autres, centre à plus de 50 m du point de comparaison. Jamais appliquée seule.  |
-| CC-D2      | La livraison calcule, le commerce écrit : `DeliveryAddressPointCorrector` déclaré par la livraison, implémenté par le carnet.       |
-| CC-D3      | Le stationnement est une colonne du carnet ; la porte reste le point GPS des consignes.                                             |
-| CC-D4      | « Y aller » conduit au stationnement s'il existe ; la porte se rejoint à pied.                                                      |
-| CC-D5      | La liste se lit sous `delivery_rounds:write`, lecture comprise.                                                                     |
+| #          | Décision                                                                                                                                                                           |
+| ---------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| YA-D1      | Deux boutons, un calcul : les arrêts restants, sans les clos, relus à chaque fois.                                                                                                 |
+| YA-D2      | Tronçons de `MAX_WAYPOINTS` (3) étapes ; « Rentrer » à part.                                                                                                                       |
+| YA-D3      | Application choisie par appareil pour « Y aller » ; « Toute la tournée » toujours en liens Google (le code, relu le 2026-10-06).                                                   |
+| YA-D4      | Position au geste seulement — arrivée, remise, dépôt, clôture sans remise (arrivée ajoutée par Hugo le 2026-10-06) ; jamais exigée.                                                |
+| YA-Q1      | Pas de « Je suis passé » sans preuve : un arrêt sort par un geste qui le clôt.                                                                                                     |
+| YA-Q2      | Un arrêt raté puis rapporté est clos : il sort des liens.                                                                                                                          |
+| YA-Q3      | 60 jours (`POSITION_RETENTION_DAYS`), à faire valider.                                                                                                                             |
+| YA-Q4      | Proposé au plan (2026-09-30) : annoncer la navigation tierce et la position au geste avant la mise en service. La position l'est au livreur (§2) ; la navigation, pas encore (§7). |
+| 2026-10-06 | On prévient, on ne demande pas : le texte énonce un fait.                                                                                                                          |
+| 2026-10-06 | Finalité : faciliter les tournées suivantes, puis prouver la livraison ; jamais suivre les déplacements.                                                                           |
+| CC-D1      | Suggestion : ≥ 3 gestes à 30 m au plus d'un même geste (le groupe le plus dense, §6), centre à plus de 50 m du point de comparaison. Jamais appliquée seule.                       |
+| CC-D2      | La livraison calcule, le commerce écrit : `DeliveryAddressPointCorrector` déclaré par la livraison, implémenté par le carnet.                                                      |
+| CC-D3      | Le stationnement est une colonne du carnet ; la porte reste le point GPS des consignes.                                                                                            |
+| CC-D4      | « Y aller » conduit au stationnement s'il existe ; la porte se rejoint à pied.                                                                                                     |
+| CC-D5      | La liste se lit sous `delivery_rounds:write`, lecture comprise.                                                                                                                    |
 
 ---
 
@@ -291,15 +332,19 @@ Règle validée par Hugo le 2026-10-06 ; bâti le même jour. Écran
 
 - **Deux genres.** `door` (la porte) part des positions de **clôture**
   (`closed_*` : remise, dépôt, clôture sans remise — la base ne distingue pas
-  les trois, et le livreur est à la porte dans les trois) ; `parking` (le
-  stationnement) part des positions d'**arrivée** (`arrived_*`).
+  les trois, et la règle tient le livreur pour être à la porte dans les
+  trois ; rien ne le vérifie pour la clôture sans remise, question ouverte
+  au §7) ; `parking` (le stationnement) part des positions d'**arrivée**
+  (`arrived_*`).
 - **Rattachées à l'adresse du carnet** de la commande, par le commerce
   (`DeliveryAddressPointsReader`, sous le mur `(adresse, société)`, adresses
   archivées exclues). Une commande sans adresse reliée ne compte pas.
 - **Une position annoncée à plus de 50 m près est écartée** (`MAX_ACCURACY_M`).
-- **Le groupe le plus dense** : pour chaque position, celles à moins de
-  `CLUSTER_RADIUS_M` (30 m) ; au moins `MIN_CONCORDANT` (3) — deux peuvent être
-  un hasard. Son centre est la moyenne.
+- **Le groupe le plus dense** (`densestCluster`) : pour chaque position,
+  celles à `CLUSTER_RADIUS_M` (30 m) au plus d'elle — deux positions d'un même
+  groupe peuvent donc être à 60 m l'une de l'autre ; on garde le plus grand,
+  s'il en compte au moins `MIN_CONCORDANT` (3) — deux peuvent être un hasard.
+  Son centre est la moyenne.
 - **Le point de comparaison** : pour la porte, le point du carnet, sinon le
   géocodage de l'adresse (le cache que la tournée lit), sinon rien ; pour le
   stationnement, celui du carnet, sinon la porte — un livreur qui se gare
@@ -307,7 +352,9 @@ Règle validée par Hugo le 2026-10-06 ; bâti le même jour. Écran
 - **Une suggestion naît** quand le centre est à plus de `MIN_GAP_M` (50 m) de
   ce point, ou quand il n'y a aucun point (distance inconnue).
 - **Ignorée, elle ne revient pas** tant que le centre reste à 30 m du point
-  ignoré ; un groupe ailleurs, né de nouvelles livraisons, la repropose.
+  ignoré, et tant que ce point tient : il s'efface à 60 jours (question
+  ouverte au §7) ; un groupe ailleurs, né de nouvelles livraisons, la
+  repropose.
   **Appliquée, elle s'éteint d'elle-même** : le carnet porte le point.
 
 ### Le chemin à travers la frontière (CC-D2)
@@ -356,7 +403,9 @@ relié dans `appBootstrap/delivery-feed.module.ts`. C'est le carnet qui décide,
   du commerce, rangé avec les comptes par son préfixe. Ignorer ne journalise
   pas (`@sans-journal`) : rien ne change, la ligne de décision est la trace.
 
-Migration `20261007170000_les_corrections_du_carnet` (additive, aucun droit).
+Migration `20261007170000_les_corrections_du_carnet` (additive, aucun droit) ;
+ses trois CHECK de point sont reposés sous leur forme vraie le 2026-10-07
+(§2).
 
 ### Qui le voit (CC-D5)
 
@@ -401,3 +450,17 @@ le trajet.
   d'une mesure.
 - Le contact pour exercer ses droits manque toujours au texte d'information
   (« [À COMPLÉTER : contact] »).
+
+### Questions ouvertes, non tranchées (relevées le 2026-10-07)
+
+- **Une suggestion ignorée peut revenir.** Le point d'une décision
+  « ignorée » s'efface à 60 jours avec les positions
+  (`clearBatchDecidedBefore`), et seules les décisions dont le point tient
+  écartent une suggestion (`PrismaIgnoredAddressPointsReader`) : si les
+  livraisons des 60 derniers jours forment encore le même groupe, la
+  suggestion réapparaît. Voulu ou non : à trancher.
+- **« Clore sans remise » n'a aucune condition de lieu.** Le geste n'exige
+  que la réponse du commerce (commande retirée ou annulée), relève la
+  position où qu'elle soit, et la règle compte toute clôture comme un geste à
+  la porte (§6, « Deux genres ») : trois clôtures sans remise faites au dépôt
+  pour une même adresse y suggéreraient la porte. Voulu ou non : à trancher.

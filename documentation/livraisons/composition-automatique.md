@@ -1,6 +1,7 @@
 # Composer les tournées automatiquement
 
-> 🟡 **Partiel. État vérifié le 2026-10-06** dans `git log` et le code.
+> 🟡 **Partiel. État vérifié le 2026-10-06** dans `git log` et le code, et
+> corrigé le 2026-10-07 sur les points que l'audit du dossier a relevés.
 > Ce document remplace le plan de composition automatique (renommé le
 > 2026-10-06, ancien nom « plan-composition-automatique »). Les versions successives du plan (v1 à v4), et les contradictions
 > de `vitruve` qui les ont corrigées, ne sont pas recopiées ici. Elles restent
@@ -150,7 +151,7 @@ flowchart TD
 | **CA0**   | Situer l'adresse (géocodage) dès la commande, en fond après validation ; rattrapage à la commande suivante du jour, à l'arrêt du plan et au retirage                                                                                         | ✅ bâti | `0aa07eb63`                                                  |
 | **CA1**   | Sans véhicule actif mesuré ni type de bac en service, « Proposer » refuse avec la phrase ; on ne peut pas retirer le dernier                                                                                                                 | ✅ bâti | `57ed88723`                                                  |
 | **CA1b**  | Pas de livraison sans échéance ni créneau à la passation                                                                                                                                                                                     | ✅ bâti | `8089a262c`                                                  |
-| **CA2**   | Départ à rebours dès minuit, marge visée ; `maxRoundMinutes` devient un simple signal, sans pénalité de durée                                                                                                                                | ✅ bâti | `0cf2aaf30` (points validés `dc4bd9779`)                     |
+| **CA2**   | Départ à rebours dès minuit, marge visée ; `maxRoundMinutes` ne borne plus rien : un signal (« tournée longue »), sans pénalité sur la durée — il reste le prix d'un second passage (`passagePenaltyOf`)                                     | ✅ bâti | `0cf2aaf30` (points validés `dc4bd9779`)                     |
 | **CA3**   | Réglage créneau / échéance (global, puis par adresse), affichage « avant HH:MM »                                                                                                                                                             | ✅ bâti | `8089a262c`, écrans `6f245b864`                              |
 | **CA3b**  | Plusieurs créneaux ou échéances par adresse (`slotList`, l'ancien `slots` dérivé)                                                                                                                                                            | ✅ bâti | `d4972386a`, écrans `b7ee1c883`                              |
 | §14.2     | Mode par défaut : échéance (migration `20261004090000_echeance_par_defaut`)                                                                                                                                                                  | ✅ bâti | `d4972386a`                                                  |
@@ -172,9 +173,10 @@ flowchart TD
 - **CA-D1 (2026-10-03).** Règle n°1 : tout le monde est servi avant son
   échéance. Le départ se calcule à rebours, et l'heure la plus basse possible
   est **minuit du jour de livraison** (Q1). Rien ne part la veille. La durée
-  maximale d'une tournée **cède** devant la règle (Q2) : elle reste un signal
-  et ne refuse jamais une place. Une échéance intenable est un échec signalé
-  par arrêt.
+  maximale d'une tournée **cède** devant la règle (Q2) : elle reste un
+  signal, sert de prix à un second passage (`passagePenaltyOf`), et ne
+  refuse jamais une place. Une échéance intenable est un échec signalé par
+  arrêt.
 - **CA2 (2026-10-03).** La passe arrière vise la marge de sécurité quand elle
   peut la tenir. Le retard se mesure sur la vraie fin de la fenêtre. L'heure
   « au plus tôt » des réglages devient l'heure de départ d'une tournée qu'aucune
@@ -239,8 +241,17 @@ flowchart TD
   supprimée au commerce laisse un identifiant qui n'autorise plus rien ;
   l'écran du véhicule la nomme « Zone supprimée » pour qu'on la retire. Le
   champ entre au journal de la fiche (`allowedZoneIds`).
-- **Une tournée chargée n'est jamais touchée.** Un seul bac chargé suffit à la
-  figer (`classifyRounds`).
+- **Une tournée chargée n'est jamais recomposée, mais elle reçoit encore.**
+  En tournées neuves, un seul bac chargé suffit à la garder telle quelle
+  (`classifyRounds`, raison `loaded`), et son véhicule n'est libre qu'à son
+  retour estimé. « Insérer » et l'affectation à la main la gardent éligible
+  (`insertableRounds` : « non parties », Hugo, 2026-09-29 ;
+  `DeliveryRound.assign` exige une tournée au dépôt, pas une tournée sans
+  bac) : l'arrêt ajouté n'a pas de bac, et « Partir » refuse tant qu'un arrêt
+  vivant n'est pas chargé, en listant les références. La place suggérée
+  (CA7) l'écarte.
+  ⚠️ Q1 de l'audit du 2026-10-07 : si c'est le code qui doit changer, c'est
+  à Hugo de le trancher.
 - **§9.** « Appliquer » est un clic du bureau, jamais automatique. Le geste
   humain l'emporte. Une commande qu'il rend intenable passe en **alerte
   rouge** (tableau, résumé « à régler », carte), sans que le calcul défasse le
@@ -274,9 +285,19 @@ flowchart TD
 - La ligne porte un **ensemble** (`delivery_order_ids`), pas un compteur.
   Chaque fait y ajoute ses livraisons par union. Le jeu est borné aux
   `orderIds` **du fait**, jamais au statut `confirmed`.
-- Les **commandes annulées sont exclues** (`activeDeliveriesAmong`).
+- Les **commandes annulées sont exclues à la réception du fait**
+  (`activeDeliveriesAmong`), et là seulement : l'ensemble ne fait que
+  grandir, et rien n'en retire une commande annulée **après** l'arrêt du
+  plan. Elle reste comptée « hors tournée » (bandeau, cloche
+  `delivery.rounds_gap`) jusqu'à la fin du jour J, alors que « Proposer » ne
+  la placera jamais. ⚠️ Q2 de l'audit du 2026-10-07 : invariant voulu, ou
+  filtre de réception seulement — à trancher par Hugo.
 - **La cloche n'est jamais rejouée.** Elle ne sonne que si l'ensemble grandit,
-  et dit de combien. Un fait rejoué ou une réannonce n'ajoute rien.
+  et dit de combien. Un fait rejoué n'ajoute rien, ni une réannonce qui
+  recouvre ce qu'on sait. Une réannonce de la clôture **après un retirage**
+  porte les commandes absorbées : elle peut donc ajouter celles que le fait
+  du retirage n'a pas encore apprises (aucun ordre n'est supposé), et sonne
+  alors pour elles seules.
 - **Un retirage reçu avant la clôture ne sonne pas.** Il range la ligne avec
   `closed_at` nul, et c'est la clôture qui annonce ensuite le total.
 - Un ancien fait de retirage sans `orderIds` est accepté par la relecture, et
@@ -364,9 +385,13 @@ flowchart TD
    `delivery_bin_type`), saisi sur la carte « Calcul des tournées » de
    Livraison → Réglages → Point de départ. Le contrat accepte le champ
    absent (valeur gardée) ; `null` vide. Le banc de qualité reste 40/40
-   identique (ses demandes sont toutes connues). Seul « Proposer » lit la
-   demande en bacs (`ProposalCapacity`, vérifié le 2026-10-06) : le
-   chronométrage et le simulateur n'en dépendent pas.
+   identique (ses demandes sont toutes connues). La demande en bacs
+   (`ProposalCapacity`) est lue par « Proposer », dans ses deux modes, **et**
+   par la place suggérée (CA7) — donc à chaque lecture de l'écran des
+   tournées dont le jour a des tournées et des commandes à répartir. Les
+   lignes d'une commande sans bac déclaré s'y lisent une commande à la fois,
+   une requête par commande (le port n'a pas de lecture groupée ; vérifié le
+   2026-10-07). Le chronométrage et le simulateur n'en dépendent pas.
 3. **Banc à 200 clients.** Mesurer le calcul pur (matrice à part) : 200 arrêts,
    4 véhicules, 2 passages, 10 contraintes, médiane et p95 sur 20 tirages, une
    graine fixe. Seuil : p95 < 5 s, mesuré dans le conteneur. Les seuils restent
@@ -382,15 +407,18 @@ flowchart TD
    12 h » ; demande 1/2/3/5 bacs M à 50/30/15/5 %. « Insérer » : la journée
    composée moins ses 20 dernières commandes, réinsérées. Mesure du
    2026-10-06, Apple M1 Pro, Node 22.23, temps processeur, Node nu :
-   **complet médiane 3,3 s · p95 6,6 s · max 6,6 s ; Insérer médiane 80 ms ·
-   p95 143 ms.** Le seuil n'est pas tenu en mode complet, sur un poste — le
-   conteneur n'a pas été mesuré. Profil (graine 9, 5,8 s) : `improvePlans`
+   **complet médiane 3,3 s · p95 6,6 s ; Insérer médiane 80 ms · p95
+   143 ms** (`97d163fdd` ; la colonne « Avant » du tableau plus bas est une
+   seconde mesure, celle de `aca1ee895`). Le seuil n'est pas tenu en mode
+   complet, sur un poste — le conteneur n'a pas été mesuré. Profil
+   (graine 9, 5,8 s) : `improvePlans`
    93 % (dont `scoreVehicle` 1,9 s et le garde de capacité 1,1 s, lui-même
    `planLoading` 0,8 s), insertion 0,3 s, lecture de la matrice synthétique
    0,9 s. Les graines lentes sont celles où la place manque (à répartir non
    vide). Pas de garde à 200 arrêts dans la suite unitaire (2026-10-06) :
-   sous Jest, le calcul est ~7 fois plus lent qu'en Node nu, et la garde
-   coûtait ~40 s de CI ; le test à 60 arrêts reste la garde.
+   sous Jest, le calcul est environ cinq fois plus lent qu'en Node nu
+   (34,6 s contre 7,0 s pour la graine 9, `propose-rounds.bench.ts`), et la
+   garde coûtait ~40 s de CI ; le test à 60 arrêts reste la garde.
    **Seuil tenu sur le poste le 2026-10-06, propositions inchangées**
    (`aca1ee895`). Trois gestes, tous EXACTS (aucun ne change ce que
    `improvePlans` retient, seulement ce qu'il évite de calculer) :
@@ -440,8 +468,11 @@ flowchart TD
      « Appliquer » reste un clic.
    - **Pas de version par jour neuve.** Chaque geste porte déjà la version de
      sa tournée, écrite `WHERE version = lue` (409 sinon), et « Appliquer »
-     exige les versions de toutes les tournées lues : la seconde personne
-     relit déjà, tournée par tournée.
+     exige la version de chaque tournée qu'il **touche** — celles que la
+     proposition nomme, et celles du jour qui portent une de ses commandes
+     (`loadTouchedRounds`) : la seconde personne relit déjà, tournée par
+     tournée. Une tournée du jour que la proposition ne touche pas peut avoir
+     bougé sans refus.
    - **L'alerte rouge** (`placementLateOrders`, domaine de la livraison) : un arrêt
      en retard dans la composition enregistrée alors qu'une course pour lui
      seul, partie au plus tard dès minuit, tiendrait son échéance. C'est donc
@@ -470,9 +501,9 @@ flowchart TD
      `deadline`). Raisons : `capacity`, `zone`, `deadline`, `no_round`
      (aucune tournée au dépôt sans bac chargé), `unlocated`.
    - **Les tournées visées** sont celles d'« Insérer » MOINS les chargées :
-     une tournée chargée occupe sa camionnette jusqu'à son retour, comme dans
-     « Proposer ». (« Insérer » garde, lui, les tournées chargées éligibles,
-     décision du 2026-09-29.)
+     une tournée chargée occupe sa camionnette jusqu'à son retour, comme en
+     tournées neuves. « Insérer » et l'affectation à la main gardent, eux, les
+     tournées chargées éligibles (décision du 2026-09-29, § 4).
    - **La lecture** : une query à part, `GET
 /admin/livraison/tournees/places-suggerees?jour=`
      (`GetDeliveryPlacementSuggestionsQuery`). « Insérer » place les

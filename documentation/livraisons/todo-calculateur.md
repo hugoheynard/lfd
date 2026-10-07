@@ -3,20 +3,42 @@
 > **Ouvert le 2026-09-29.** Ce que le lot 7 laisse derrière lui et que personne
 > n'a encore pris. La conception est dans
 > [`plan-preparation-de-tournee.md`](plan-preparation-de-tournee.md), **Lot 7**.
+>
+> **Relu contre le code le 2026-10-07.** La purge du cache de géocodage et le
+> glisser-déposer sont bâtis, rayés ci-dessous. Le préalable de
+> confidentialité est dépassé : le géocodage est allumé en production depuis
+> le 2026-09-30, et automatique depuis le 2026-10-06 (section suivante).
 
-## 🔴 Avant d'activer le géocodage en production
+## 🔴 Le géocodage tourne en production : publier le paragraphe maintenant
 
-- **Reporter le paragraphe « géocodage » dans la page de confidentialité
-  publiée.** Le texte du dépôt
+Le préalable « publier avant le premier déploiement du lot 7 » est dépassé :
+ce déploiement a eu lieu. Le géocodeur (`f0cdae727`) est parti avec le run
+`deploy_lfd_api` de `main` du 2026-09-30, et depuis CA0 (`0aa07eb63`, déployé
+le 2026-10-06 à 23 h 26) **chaque commande livrée fait situer son adresse à
+la passation**, en fond (`DeliveryStopsLocating`) : ce qui manque au carnet et
+au cache part à la Base Adresse Nationale. Il suffit pour cela que la clé
+`BAN_GEOCODER_URL` soit sur le Worker `lfd-api` ; sans elle, le géocodeur est
+éteint (`DisabledGeocoder`, `delivery.module.ts:321-328`).
+
+- **Publier le paragraphe « géocodage » maintenant.** Le texte du dépôt
   ([`../legal/texte-politique-de-confidentialite.md`](../legal/texte-politique-de-confidentialite.md))
-  le porte depuis le lot 7 ; mais la page que lisent les clients **vit en base**
-  (document légal `privacy`), et ne change que par le back-office. Tant qu'elle
-  ne le dit pas, des adresses de clients partiraient à la Base Adresse
+  le porte depuis le lot 7, encore à l'état de projet (un `[À VÉRIFIER]` sur
+  l'opérateur du service). La page que lisent les clients **vit en base**
+  (document légal `privacy`) et ne change que par le back-office : tant
+  qu'elle ne le dit pas, des adresses de clients partent à la Base Adresse
   Nationale sans que la politique l'annonce. Geste de Hugo.
-- La variable GitHub `BAN_GEOCODER_URL` existe depuis le 2026-09-29
-  (`https://api-adresse.data.gouv.fr`) : le géocodage s'allumera au premier
-  déploiement de `lfd-api` qui contient le lot 7. **Le paragraphe doit être
-  publié avant ce déploiement.**
+- **Deux contrôles, hors dépôt, pour Hugo :**
+  1. **la clé `BAN_GEOCODER_URL`** — la variable GitHub est posée (relu le
+     2026-10-07 par `gh variable list` : mise à jour le 2026-09-29) ; que le
+     Worker la porte, le bulletin de démarrage de `lfd-api` le dit : sans
+     elle, « Géocodage des arrêts de livraison » y figure comme capacité
+     éteinte (`capability-audit.ts:240-247`) ;
+  2. **le document légal `privacy` en base** porte-t-il le paragraphe ?
+- **Éteindre en attendant la publication, si on le choisit : vider la
+  variable GitHub ne suffit pas.** Le déploiement ne pose une clé sur le
+  Worker que si sa valeur est non vide, et n'en retire jamais
+  (`deploy_lfd_api.yml:317-321`) : il faut retirer la clé du Worker `lfd-api`
+  lui-même.
 
 ## Dette
 
@@ -31,7 +53,12 @@
   passes relisent les mêmes). Détail : `composition-automatique.md` §5 point 3.
 
 - ~~**La purge du cache de géocodage à 365 jours n'est pas bâtie.**~~ Bâtie le
-  2026-10-06 (non commitée à l'écriture) : voir
+  2026-10-06 (`7b251c122`) : le cron de nuit `45 3 * * *` du Worker appelle
+  `admin/livraison/geocodage/sweep` (`apps/lfd-api/container/worker.ts:311`),
+  servi par `geocode-purge-sweep.controller.ts`, puis
+  `purge-stale-geocodes.handler.ts` et `prisma-geocode-cache.pruner.ts`. Le
+  balayage ne part que si le Worker porte `RECOMPUTE_TOKEN`
+  (`apps/lfd-api/container/worker.ts:299-303`). Détail :
   [`../legal/rgpd-purge-du-geocodage.md`](../legal/rgpd-purge-du-geocodage.md).
 - **Les adresses de type « place »** répondent souvent sous le seuil de score
   (0,489 pour une place de Chambéry, seuil 0,5) : elles restent « non
@@ -40,17 +67,30 @@
 
 ## À juger à l'usage (Hugo, 2026-09-29)
 
-- **Le prix de la marge de sécurité.** Sur la journée du jeu de données, avec
-  la marge à 20 min, protéger UN arrêt de plus dans la marge coûtait une
-  tournée, 44 km et 69 min de livreur de plus (lot 7 ter, tableau sous
-  L7t-C4). C'est l'ordre tranché (« d'abord le client ») ; le prix est fixé
-  par `MARGIN_WEIGHT` (`apps/lfd-api/src/delivery/domain/services/vehicle-plan.ts`).
-  À revoir quand l'équipe aura planifié de vraies journées : garder, rendre la
-  marge moins chère, ou baisser la marge par défaut.
-- **Le glisser-déposer au doigt et au clavier** (écran Planifier). Il est en
-  HTML5 natif : souris seulement. Remède : `@angular/cdk` (drag-drop), qui
-  n'est pas encore une dépendance du dépôt. Les listes de composition, sous le
-  planificateur, restent la voie clavier en attendant.
+- **Le prix de la marge de sécurité.** Sur la journée du jeu de données,
+  remesurée le 2026-10-03 après CA2 (`recorded-day.spec.ts`), la marge
+  d'usine ne coûte rien — elle fait même **mieux** que pas de marge : à
+  20 min, **une** tournée (258 km, 388 min de livreur, 17 min d'attente) et
+  aucun arrêt dans les vingt dernières minutes ; à 0, **deux** tournées
+  (266 km, 427 min, 27 min d'attente) et 4 arrêts dans la marge. Le spec le
+  dit lui-même : à marge 0, l'heuristique reste sur deux tournées alors
+  qu'une seule tiendrait — « un optimum local, pas une règle ». Le prix que
+  ce point citait (« une tournée, 44 km et 69 min de plus » pour un arrêt
+  protégé) lisait le tableau du lot 7 ter, d'avant CA2, dont la conclusion
+  s'est inversée ([`plan-preparation-de-tournee.md`](plan-preparation-de-tournee.md),
+  sous L7t-C4). Reste à juger à l'usage, sur de vraies journées : le poids
+  de la marge (`MARGIN_WEIGHT`,
+  `apps/lfd-api/src/delivery/domain/services/vehicle-plan.ts`) et sa durée
+  par défaut — garder, rendre la marge moins chère, ou la baisser.
+
+- ~~**Le glisser-déposer au doigt et au clavier** (écran Planifier).~~ Fait le
+  2026-10-03 (`fb52150f7`) : l'écran Planifier a disparu ; l'organisateur des
+  tournées (`rounds-board`, `round-column`) glisse avec `@angular/cdk`
+  (`262087491`, souris et toucher), et chaque geste a son équivalent clavier —
+  « Mettre dans » (en fin de tournée), ↑ ↓ (le rang), « Retirer de la
+  tournée ». Reste à juger à l'usage : au clavier, un arrêt passe d'une
+  tournée à une autre en deux gestes (« Retirer de la tournée », puis
+  « Mettre dans »).
 
 ## Le planificateur de tournées (lfd-route-planner) — à faire (Hugo, 2026-09-30)
 
@@ -74,7 +114,7 @@
 
 ## La capacité du véhicule à la composition — reste (Hugo, 2026-10-03)
 
-« Proposer » tient compte de la place depuis CA4 (2026-10-06, non commité) :
+« Proposer » tient compte de la place depuis CA4 (2026-10-06, `4010899a1`) :
 voir [`composition-automatique.md`](composition-automatique.md), §5. Une
 commande aux bacs inconnus est placée sans contrôle et sa tournée dite
 « place non vérifiée » (correction du 2026-10-06). Ce qui reste :
@@ -87,9 +127,13 @@ commande aux bacs inconnus est placée sans contrôle et sa tournée dite
   proposition : la composition enregistrée ne la porte pas (sa vue ne lit pas
   la demande en bacs) ;
 - le poids (I5) reste hors champ tant qu'aucun bac n'en porte ;
-- les lignes des commandes sont lues une commande à la fois par « Proposer »
-  (le port du commerce n'a pas de lecture groupée) : environ 200 requêtes à
-  200 clients. À grouper si le banc le montre.
+- les lignes des commandes sans bac déclaré sont lues une commande à la fois
+  (le port du commerce n'a pas de lecture groupée,
+  `proposal-capacity.ts:43-45`) : par « Proposer » et, depuis CA7
+  (`b1d90d8c5`), par les places suggérées que l'écran des tournées demande à
+  chaque lecture d'un jour qui a des tournées et des commandes à répartir
+  (`get-delivery-placement-suggestions.handler.ts:134-135`) — environ 200
+  requêtes à 200 clients, à chaque fois. À grouper si le banc le montre.
 
 ## Des piles mêlant plusieurs tailles de bac — à réfléchir (Hugo, 2026-10-03)
 
@@ -106,8 +150,11 @@ des tailles différentes :
 - autoriser le mélange entre types de **même empreinte** (Bac M et Bac L, tous
   deux 60 × 40) ;
 - le plus haut (ou le plus lourd) en bas ;
-- une hauteur maximale de pile **en cm** (contre le plafond, G5e) plutôt qu'en
-  nombre de bacs.
+- une hauteur maximale de pile mesurée (contre le plafond) plutôt qu'en
+  nombre de bacs. Pour une pile d'un seul type, le plafond est tenu depuis le
+  2026-10-06 (`553422d02`, G5e) par `stackLevels`, en étages ; une pile mêlée
+  devra additionner les hauteurs de ses bacs — au millimètre, comme eux
+  depuis la même date.
 
 À trancher d'abord avec le dépôt : empile-t-on des Bacs M sur des Bacs L ?
 
@@ -131,7 +178,7 @@ au profileur le 2026-10-04 :
 1. **Score incrémental** : un geste ne touche qu'une ou deux tournées ; garder
    par tournée ses horaires (départ au plus tard, arrivées) et ne recalculer
    que la tournée changée et la chaîne qui la suit dans le véhicule.
-2. ~~**Élaguer avant de scorer**~~ — fait le 2026-10-06 (non commité), pour
+2. ~~**Élaguer avant de scorer**~~ — fait le 2026-10-06 (`aca1ee895`), pour
    tous les gestes et pas seulement dans une tournée : un minorant du coût
    (`apps/lfd-api/src/delivery/domain/services/cost-floor.ts`) écarte sans `scoreVehicle` ce qui ne peut pas améliorer,
    sans changer aucun résultat. La borne de CI à 60 arrêts n'a pas été

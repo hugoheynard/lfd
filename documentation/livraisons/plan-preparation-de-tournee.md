@@ -1,5 +1,63 @@
 # Plan — préparer la tournée
 
+> ⚠️ **Relu contre le code le 2026-10-07** (audit du dossier `livraisons/`).
+> Ce document est l'**histoire** du chantier, écrite au présent de septembre
+> (du 2026-09-29 au 2026-10-01) : ses « ce qui existe », « rien n'est bâti »,
+> « rien n'est déployé » et ses mesures décrivent l'état d'alors. Il n'est pas
+> réécrit. Les phrases qu'un lecteur pressé prendrait pour vraies, et qui
+> feraient du dégât, sont corrigées en place et datées : « [corrigé le
+> 2026-10-07 : …] », ou une note ⚠️ juste dessous. Les écarts mineurs ne le
+> sont pas, et ce bandeau les couvre : comptes de tests, « sac » pour ce qui
+> est devenu le **bac**, `/livraison/ma-tournee` devenu `/coursier`, noms
+> d'avant le renommage du planificateur, « l'écran Planifier ».
+>
+> **L'état réel, lot par lot :**
+>
+> - **lots 2, 3, 7, 7 bis, 7 ter** (flotte, composition, « Proposer ») :
+>   [`composition-automatique.md`](composition-automatique.md) et
+>   [`algorithme-de-preparation-de-tournee.md`](algorithme-de-preparation-de-tournee.md) ;
+> - **lots 4 et 4 bis** (bacs, colisage, chargement) :
+>   [`colisage.md`](../colisage/colisage.md) et
+>   [`algorithme-de-chargement.md`](algorithme-de-chargement.md) ;
+> - **lot 5** (la fenêtre obligatoire, bâtie sous la forme « créneau ou
+>   échéance ») : [`composition-automatique.md`](composition-automatique.md),
+>   CA1b et CA3b ;
+> - **lot 6** (la porte) : [`a-la-porte.md`](a-la-porte.md) ;
+> - **lots 8, 8 bis, 10 et 10 ter** (OSRM, tuiles, carte) :
+>   [`planificateur-de-tournees.md`](../ops/planificateur-de-tournees.md) ;
+> - **lot 10 bis** (l'écran des tournées) : l'organisateur de
+>   `/livraison/tournees` — `livraison/rounds-page/`, `livraison/rounds-board/`
+>   et `livraison/round-column/` du back-office, au glisser-déposer
+>   `@angular/cdk` ;
+> - **Q10** (le schéma Postgres) :
+>   [`plan-schema-delivery.md`](plan-schema-delivery.md) ;
+> - **les droits** (lot 1, L4-C21) :
+>   [`plan-droits-par-geste.md`](plan-droits-par-geste.md) ;
+> - **lot 11** : [`gps-y-aller-et-position.md`](gps-y-aller-et-position.md) —
+>   la position est relevée **au geste**, jamais en continu ; le suivi en
+>   direct n'est pas bâti.
+>
+> **Cinq évolutions que ce texte ne connaît pas :**
+>
+> 1. **le schéma `delivery`** (2026-09-30, `1b84a90bf`) : les tables de la
+>    livraison ont quitté `production`, avec leur journal de journée,
+>    `delivery.day_change` ;
+> 2. **les droits par geste** (2026-10-01, `8b424bb2f`) : le retrait au
+>    comptoir sous `handover_counter`, le colisage sous `production_packing`,
+>    que les routes des bacs acceptent à côté de `delivery_loading`, les
+>    procédures sous `delivery_procedures` ; les droits se règlent à l'écran,
+>    et le runtime ne lit plus `ROLE_GRANTS` ;
+> 3. **K3c** (2026-10-05, `753f3e4f8`) : le colisage (bloc `packing`) est le
+>    seul poste ; l'ancien poste du fournil est retiré, et les bacs se déclarent
+>    par `BinDesk` ;
+> 4. **CA0 à CA4** (du 2026-10-03 au 2026-10-06) : plus de livraison sans
+>    créneau ni échéance (CA1b) ; départ calculé à rebours, dès minuit, et durée
+>    maximale réduite à un signal (CA2) ; adresse située dès la passation
+>    (CA0) ; la place dans les véhicules tenue par « Proposer » (CA4) ;
+> 5. **les bacs au millimètre** (2026-10-06, `0bcb955a6` ; migration
+>    `20261007100000_les_bacs_au_millimetre`) : les types de bacs se mesurent en
+>    mm, les véhicules restent en cm.
+
 > **Ouvert le 2026-09-29** à la demande de Hugo : « je ne sais pas comment
 > aborder cette partie pour la préparation de tournée, j'ai besoin d'un état des
 > lieux et d'un plan explicite ». 📐 _Plan d'origine ; voir le bandeau ci-dessous._ L'état des lieux a été
@@ -344,6 +402,13 @@ C'est le précédent de `order_handover` : code dans son bloc
 `lint:cross-schema-join` sur une jointure SQL écrite à la main entre une
 tournée et une table du fournil — la limite qu'a déjà le retrait.
 
+> ⚠️ **[corrigé le 2026-10-07] Revient sur Q10** : la livraison a son propre
+> schéma Postgres, `delivery`, depuis le 2026-09-30 (`1b84a90bf`, migration
+> `20260930140000_la_livraison_a_son_schema` : quatorze tables déplacées par
+> `SET SCHEMA`, et un journal de journée à elle, `delivery.day_change`).
+> Partout où ce document range une table de la livraison dans `production`,
+> lire `delivery`. Voir [`plan-schema-delivery.md`](plan-schema-delivery.md).
+
 ### Lot 2 bis — Le chargement d'un véhicule : dimensions et froid
 
 > **Tranché le 2026-09-29.** Hugo : « ajouter aux véhicules des dimensions de
@@ -374,6 +439,16 @@ n'entre donc dans aucune contrainte. Étape suivante, à décider : un volume
 par sac (déclaré au colisage) ou par produit (catalogue), et « froid requis »
 par produit — alors seulement « ça ne rentre pas » et « celle-ci doit partir
 dans la camionnette frigo » pourront être calculés.
+
+> ⚠️ **[corrigé le 2026-10-07]** Depuis CA4 (`4010899a1`, 2026-10-06), la
+> capacité **est** une contrainte dure de « Proposer » : une place qui ferait
+> déborder le volume sec, la caisse réfrigérée ou le plancher n'en est pas une
+> (`capacity-guard.ts` ; ce que rien ne peut porter sort en `capacityRefused`).
+> La demande vient des bacs déclarés, sinon estimés par les contenances, sinon
+> du contenant par défaut ; inconnue, la commande est placée quand même et la
+> tournée dite « place non vérifiée ». Reste vrai : aucun poids, et un bac
+> isotherme dans un véhicule sans caisse réfrigérée est une alerte du plan de
+> chargement, pas un refus.
 
 **L2b-C5 — Persistance** : colonnes nullables sur
 `production.delivery_vehicle` (migration additive), contrainte CHECK pour
@@ -506,7 +581,11 @@ signaler.
 `record_day_change_by_service_day`, telle quelle. Une variante par jointure
 perdrait le jour sur une suppression en cascade (avertissement écrit dans la
 migration `20260928140000_la_version_par_journee`). ⚠️ Ces déclencheurs
-avancent la version de journée **du fournil** (`production.day_change`) :
+avancent la version de journée **du fournil** (`production.day_change`)
+[corrigé le 2026-10-07 : de la **livraison**, `delivery.day_change`, depuis le
+2026-09-30, servie par `GET admin/livraison/version` ; l'organisateur des
+tournées ne la suit pas, le poste de colisage si (`colisage.ts`, vérifié le
+2026-10-07)] :
 l'écran de composition la suit ; la feuille de route, qui lit des commandes,
 suit `public.day_change`.
 
@@ -916,6 +995,16 @@ milliard de combinaisons, une nouvelle tirée en cas de collision.
 « Sacs » n'apparaît qu'avec ce droit ; sans lui, le colisage dit « les sacs se
 déclarent au comptoir ». Aucun droit n'est élargi.
 
+> ⚠️ **[corrigé le 2026-10-07]** Depuis les droits par geste (2026-10-01) et
+> K3c (2026-10-05), le colisage est sous `production_packing`, et les routes
+> des bacs (`delivery-bins.controller.ts`, `delivery-packing.controller.ts`)
+> acceptent `production_packing` **ou** `delivery_loading` : une porte élargie
+> ([`plan-droits-par-geste.md`](plan-droits-par-geste.md) § 5.3). « Aucun
+> droit n'est élargi » n'est donc plus vrai : dans la graine (`ROLE_GRANTS`),
+> `commercial` et `comptabilite` déclarent des bacs par
+> `production_packing:write` sans avoir `delivery_loading`. Qui a quel droit
+> se règle à l'écran.
+
 L4-C13 (l'URL du sac montre, un geste charge) tient. La connexion sur une URL
 profonde existe déjà (`staff-login.ts`, restauration de la cible dans
 `staff-auth.ts`) : à vérifier en navigateur, pas à concevoir.
@@ -959,7 +1048,9 @@ plus tard. Q6 — **oui** : bacs isothermes et produits qui demandent le froid.
 **Ce qui existe et que ce lot touche** (vérifié le 2026-09-29) :
 
 - au **fournil**, le colisage déclare un NOMBRE de « containers » par commande
-  (`DeclarePackingContainersCommand`, plafond 99) — un compte, sans type ;
+  (`DeclarePackingContainersCommand`, plafond 99) — un compte, sans type
+  [corrigé le 2026-10-07 : supprimée en K3c, le 2026-10-05 ; voir la note sous
+  v2-1] ;
 - en **livraison**, le lot 4 déclare des **sacs** (QR, code court) par
   commande, les charge par scan dans une tournée, et « Partir » refuse un
   arrêt dont un sac manque (`delivery_bag`, `delivery_bag_load`) ;
@@ -971,6 +1062,16 @@ bac a un nom (« Bac M »), ses dimensions **extérieures** (cm, pour le
 chargement) et **intérieures** (cm, informatives), `isotherm` (oui/non), le
 nombre maximal dans une pile, et `divisible` (accepte une cloison). Un type
 n'est jamais supprimé : archivé.
+
+> ⚠️ **[corrigé le 2026-10-07] Les dimensions d'un type de bac sont en
+> MILLIMÈTRES**, pas en centimètres, depuis le 2026-10-06 (`0bcb955a6`,
+> migration `20261007100000_les_bacs_au_millimetre` : une manne à pain mesure
+> 66,5 cm, et le centimètre entier ne savait pas l'écrire). Colonnes
+> `outer_*_mm` et `inner_*_mm`, bornes 10 à 3 000 mm
+> (`packages/contracts/src/delivery-bins.ts`) ; les colonnes `*_cm` restent en
+> base, mortes. **Un bac saisi en centimètres devient dix fois trop petit**, et
+> aucune borne ne le voit : 60 tapé pour 60 cm donne 60 mm, dans les bornes.
+> Les véhicules, eux, restent en centimètres (L2b-C1).
 
 **L4b-C2 — La contenance** : pour un type de bac et un produit (SKU, identifiant
 opaque, jamais une jointure vers le référentiel), le nombre d'unités qu'un bac
@@ -1017,7 +1118,10 @@ arrêt), et l'ordre de scan au chargement suit ce plan.
 
 **L4b-C8 — Plus tard** : le calculateur de tournée tient compte du volume et du
 froid (une tournée qui ne rentre pas, une commande froide dans une camionnette
-sèche) ; le retour des bacs vides (Q5) avec la vue livreur (lot 6).
+sèche) [corrigé le 2026-10-07 : bâti pour la place — volume sec, caisse
+réfrigérée, plancher — par CA4, le 2026-10-06 ; une commande froide dans une
+camionnette sèche reste une alerte du plan de chargement, pas un refus] ; le
+retour des bacs vides (Q5) avec la vue livreur (lot 6).
 
 **Découpage** : (a) catalogue des bacs + contenances + froid des produits
 (réglages) ; (b) colisage proposé + déclaration typée au fournil ; (c) le bac
@@ -1038,6 +1142,15 @@ c'est l'ÉCRAN qui compose les deux blocs, aucun serveur ne lit l'autre. Le
 compte `containers` du fournil (`DeclarePackingContainersCommand`) reste pour
 les retraits au comptoir et n'est plus lu pour une livraison ; la déclaration
 des bacs de `delivery` fait foi (une seule vérité par mode d'acheminement).
+
+> ⚠️ **[corrigé le 2026-10-07]** Depuis K3c (`753f3e4f8`, 2026-10-05), le poste
+> de colisage est le bloc `packing`, et « aucun serveur ne lit l'autre » n'est
+> plus vrai : le colisage déclare, annule et partage les bacs par `BinDesk`
+> (`packing/channels/delivery/`), que la livraison implémente dans la
+> transaction de l'appelant ; et les anciennes routes des bacs de la livraison
+> lisent `ContainerManagedOrders`, que le colisage implémente, pour refuser une
+> commande qu'il tient. `DeclarePackingContainersCommand` est supprimée avec
+> l'ancien poste du fournil. Voir [`colisage.md`](../colisage/colisage.md) § 2.
 
 **v2-2 — Q4 tranchée** : la **contenance** (bacs × produits) est une donnée de
 `delivery` (table à elle, SKU opaque). La liste des produits et leurs noms
@@ -1214,6 +1327,17 @@ Côté **commerce** et **boutique** : la tranche d'une heure devient une vraie
 promesse, choisie à la commande. Décidé le 2026-09-11 (conception v1, §7) ;
 rien n'est bâti.
 
+> ⚠️ **[corrigé le 2026-10-07] Bâti, sous une autre forme.** Depuis CA1b
+> (`8089a262c`, 2026-10-03), une livraison ne se passe plus sans fenêtre : un
+> **créneau ou une échéance** (« avant HH:MM »), réglé au commerce puis par
+> adresse (CA3, CA3b) — pas la tranche d'une heure. Le serveur refuse une
+> livraison sans fenêtre (`DeliveryWindowRequiredError`, `delivery-window.ts`),
+> la boutique envoie la sienne, et la saisie par l'équipe a son sélecteur.
+> Reste vrai : rien ne confronte la fenêtre aux créneaux de réception de
+> l'adresse (seul le retrait a `windowFitsPickup`), et la provenance reste
+> déduite par comparaison (L5-C3 n'est pas écrite). L'état :
+> [`composition-automatique.md`](composition-automatique.md), CA1b et CA3b.
+
 #### État des lieux, relevé le 2026-09-29
 
 - **La boutique n'envoie aucune heure de livraison.** `requestedWindow` ne part
@@ -1340,6 +1464,23 @@ n'est corrigé ; tout est à reprendre avec les deux sources de fenêtre.
 > §7, gardé tel quel à la réécriture du 2026-09-29 ; ce qui change est **où il
 > se branche** : sur la composition du lot 3, qui existe.
 
+> ⚠️ **[corrigé le 2026-10-07] L'en-tête « ✅ bâti » reste vrai ; l'algorithme
+> décrit dans ce lot ne l'est plus** (et « rien n'est bâti », juste au-dessus,
+> date d'avant le bâti). Le coût à vol d'oiseau (haversine × détour ÷ vitesse,
+> L7-C2) a été supprimé le 2026-09-29 par le lot 10 bis (`e9ff04fc4`), la
+> répartition par k-medoids et l'ordonnancement ATSP (L7-C3, L7-C12) le même
+> jour par le lot 7 bis (`3bc9e85af`). « Proposer » pose chaque arrêt là où il
+> coûte le moins, sur tous les véhicules à la fois, puis améliore par gestes
+> locaux (déplacer, permuter, Or-opt, 2-opt, 2-opt\*) : `propose-rounds.ts`.
+> Le calcul routier par OSRM est **obligatoire** : sans lui, « Proposer »
+> refuse (`RoadRoutingUnavailableError`), et le détour comme la vitesse
+> moyenne ne se règlent plus. Depuis CA2 (2026-10-03), le départ se calcule à
+> rebours, dès minuit s'il le faut, et la durée maximale d'une tournée n'est
+> plus qu'un signal : L7-C15, plus bas, n'est plus vrai sur ces deux points.
+> Depuis CA4 (2026-10-06), la place dans les véhicules est une contrainte
+> dure. L'état réel :
+> [`algorithme-de-preparation-de-tournee.md`](algorithme-de-preparation-de-tournee.md).
+
 **Ce que l'équipe obtient** : sur `/livraison/tournees`, un bouton
 **« Proposer »**. Le calculateur répartit les commandes du jour entre les
 véhicules choisis et ordonne chaque tournée ; la proposition s'affiche **en
@@ -1451,6 +1592,16 @@ Aucune adresse en clair, et une durée de vie (365 jours, puis rejoué). La page
 de confidentialité nomme le géocodage **dans ce lot** : c'est un préalable,
 pas une option (`documentation/legal/`).
 
+> ⚠️ **[corrigé le 2026-10-07] Géocoder n'est plus seulement un geste.** Depuis
+> CA0 (`0aa07eb63`, 2026-10-06), chaque commande livrée est située **en fond,
+> après sa passation**, sans jamais la retenir ni la faire échouer
+> (`delivery-stops-locating.ts`) ; une adresse ratée est rattrapée par la
+> commande suivante du même jour, l'arrêt du plan ou le retirage, et « Situer
+> les arrêts » reste. « Proposer » ne géocode toujours pas, mais il sort sur le
+> réseau : il appelle OSRM. Le préalable de L7-C10 — la page de
+> confidentialité qui nomme le géocodage — n'est attesté par rien dans le
+> dépôt : c'est une question laissée à Hugo par l'audit du 2026-10-07 (§ 3.1).
+
 **L7-C11 — Appliquer : N tournées, un ordre, tout revérifié.** Un port
 `applyProposal` : il verrouille **toutes** les tournées touchées, triées par
 identifiant, puis les chargements de **tous** les arrêts déplacés, dans
@@ -1543,6 +1694,15 @@ chaque tournée touchée : son identifiant, son véhicule, la liste des arrêts
 > Savoie » — prévu par l'architecture (§7, « OSRM Savoie — mise en place »),
 > renvoyé à « ensuite » par le lot 7. 📐 Rien n'est bâti. **La première étape
 > est une mesure, pas du code.**
+>
+> ⚠️ **[corrigé le 2026-10-07] Bâti, et déployé depuis le 2026-09-30** sous
+> son nom actuel : l'exécution de `deploy_lfd_route_planner` sur `main` est
+> verte, graphe, tuiles et Worker compris, et la passerelle porte la liaison
+> `ROUTE_PLANNER` (`gateway/wrangler.toml`) ; l'instance n'a pas été sondée.
+> Le job de CI du paquet existe (`route-planner`, `.github/workflows/ci.yml`).
+> « Proposer » ne retombe **jamais** sur le vol d'oiseau : L8-C3, et le repli
+> des étapes 2 et 3 plus bas, ont été remplacés le jour même par L10b-C5 —
+> sans OSRM, il refuse.
 
 #### Pourquoi, et pourquoi avant de se fier aux propositions
 
@@ -1881,8 +2041,12 @@ sert que `/table` et `/route`, sans adresse publique ni cron, et rend un refus
 net quand OSRM ne répond pas ; un workflow mensuel et manuel ; la page
 `documentation/ops/planificateur-de-tournees.md`. Essai local : carte en 2 min 30,
 image de 227 Mo, réveil 0,6 s, 63 Mo de mémoire. **Rien n'est déployé.**
+[corrigé le 2026-10-07 : déployé depuis le 2026-09-30, sous le nom
+`lfd-route-planner` ; voir l'en-tête du lot 8.]
 
-Reste : un job de CI générale pour le paquet (comme `gateway`), le point de
+Reste : un job de CI générale pour le paquet (comme `gateway`) [corrigé le
+2026-10-07 : il existe, job `route-planner` de `.github/workflows/ci.yml`], le
+point de
 départ de contrôle à fixer sur l'adresse exacte du labo, et ce que seul le
 premier déploiement dira (démarrage à froid, jeton, rétention des images).
 
@@ -1897,10 +2061,16 @@ allumé tous les changements du runtime de juin à novembre 2025 sur toute
 l'API. `OsrmDistanceMatrix` : un `/table` par proposition, délai 10 s, repli vol
 d'oiseau au-delà de 200 points comme sur tout échec (un refus nommé au départ,
 retiré le même jour : il faisait tomber « Proposer », § 6 question 1) ;
-`estimate` vaut `road` ou `crow_flies`. `OSRM_URL` suit le chemin de
+`estimate` vaut `road` ou `crow_flies`. [corrigé le 2026-10-07 : remplacé le
+jour même par L10b-C5 — délai de 20 s, UN nouvel essai sur délai ou 503,
+**aucun repli** : sans OSRM, « Proposer » refuse
+(`RoadRoutingUnavailableError`) ; `estimate` vaut toujours `road`, déprécié.]
+`OSRM_URL` suit le chemin de
 `BAN_GEOCODER_URL` (variable GitHub → secret du Worker → conteneur) ; son
 absence est une capacité dégradée. **Rien n'est déployé** — ordre et retour
 arrière : [`planificateur-de-tournees.md`](../ops/planificateur-de-tournees.md).
+[corrigé le 2026-10-07 : ce pont, retiré au lot 8 bis, ne l'a jamais été ; le
+planificateur, lui, est déployé depuis le 2026-09-30.]
 
 Reste : l'échec **à l'exécution** d'OSRM ne remonte qu'au journal et à
 l'écran, pas à la carte de santé `ops` (dont l'inventaire ne lit que la
@@ -1995,6 +2165,8 @@ l'afficher, lu sur l'entrée standard :
 (48 octets aléatoires). Aucune adresse à choisir : la passerelle existe.
 
 **Bâti le 2026-09-29** (non commité à l'écriture ; rien n'est déployé) :
+[corrigé le 2026-10-07 : commité et déployé — le planificateur le 2026-09-30,
+la passerelle à ses déploiements suivants ; l'instance n'a pas été sondée.]
 
 - **passerelle** — préfixe `/api/osrm` → binding `OSRM` (`lfd-osrm`) ; garde
   `gateway/src/route-planner-guard.ts` : limite de débit par IP (`OSRM_RATE_LIMITER`,
@@ -2167,10 +2339,14 @@ déjà ces noms). Enregistré, le scénario garde ces noms — assumé.
 > ✅ **Bâti** (relevé le 2026-10-01) : la carte MapLibre à relief
 > (`livraison/delivery-map/`, fichier `relief.pmtiles`) sert l'écran Planifier
 > et le simulateur. Le déploiement des tuiles en production (lot 10 ter) n'a
-> pas été relevé ici.
+> pas été relevé ici. [corrigé le 2026-10-07 : la carte (`app-delivery-map`)
+> ne vit que dans l'organisateur des tournées (`livraison/rounds-board/`) ; le
+> simulateur n'en a pas. Les tuiles ont été déposées en production le
+> 2026-09-30 par `deploy_lfd_route_planner`.]
 
 **Ce que l'équipe obtient** : sur l'écran des tournées (et dans le
-simulateur), une carte de la Savoie avec le **relief**, chaque tournée tracée
+simulateur [corrigé le 2026-10-07 : pas au simulateur, voir ci-dessus]), une
+carte de la Savoie avec le **relief**, chaque tournée tracée
 **par la route** dans sa couleur, les arrêts numérotés avec leur heure
 d'arrivée, le labo marqué ; clair et sombre.
 
@@ -2200,7 +2376,8 @@ héberger des tuiles ? ») :
 - MapLibre **chargé par le seul écran carte**, jamais au démarrage du
   back-office (dont le budget initial est déjà dépassé) ;
 - mention **« © OpenStreetMap »** à l'écran (ODbL), toujours ;
-- ✅ **mesuré le 2026-09-29** (`apps/lfd-osrm/scripts/build-tiles.sh`, outils
+- ✅ **mesuré le 2026-09-29** (`apps/lfd-route-planner/scripts/build-tiles.sh`
+  [chemin corrigé le 2026-10-07 : le paquet s'appelait alors lfd-osrm], outils
   épinglés par digest) : **rues 36 Mo** (tilemaker, schéma OpenMapTiles,
   z0–14, 11 s) et **relief 60 Mo** (Mapterhorn, terrarium webp, z0–12, 6 s —
   63 Mo transférés par requêtes partielles, jamais le fichier planétaire). Le
@@ -2244,7 +2421,16 @@ le bâti. Suppose le lot 8 déployé pour les tracés.
 >
 > ✅ **Bâti** (relevé le 2026-10-01, `e9ff04fc4`) : l'écran Planifier — carte,
 > feuilles de route, glisser-déposer entre camionnettes
-> (`livraison/route-planner/`), par la route seulement.
+> (livraison/route-planner/), par la route seulement.
+>
+> ⚠️ **[corrigé le 2026-10-07] Cet écran n'existe plus.** Le 2026-10-03
+> (`fb52150f7`), il a été remplacé par l'organisateur de `/livraison/tournees` :
+> `livraison/rounds-page/` (la page), `livraison/rounds-board/` (trois
+> colonnes : « À répartir », les tournées par onglet véhicule, la carte) et
+> `livraison/round-column/`, au glisser-déposer `@angular/cdk` ; le dossier
+> livraison/route-planner/ est supprimé. L10b-C1 à C3 décrivent l'écran
+> d'alors ; la route de chronométrage (L10b-C2) est toujours celle qu'appelle
+> l'organisateur.
 
 **Ce qui était faux dans l'écran du lot 7** : des numéros de commande sans nom
 de client ni lieu, une liste par tournée sans carte, et un bandeau technique
@@ -2390,6 +2576,21 @@ même matrice, juste avant sa suppression ; il reproduit l'écran observé.
 | Attente devant un créneau fermé     | 55 min                              | 0                                |
 | Arrêts hors créneau                 | 0                                   | 0                                |
 
+> ⚠️ **[corrigé le 2026-10-07] La colonne « Après » et le paragraphe qui la lit
+> sont périmés.** CA2 (2026-10-03) a changé le départ (à rebours, dès minuit) et
+> fait de la durée maximale un simple signal, et la journée a été remesurée.
+> `recorded-day.spec.ts` fige aujourd'hui, sur la même matrice et les mêmes
+> onze livraisons :
+>
+> - **marge 0** : 2 tournées, 266 km, 427 min, 27 min d'attente, aucun arrêt
+>   hors créneau, 4 arrêts servis dans la marge ;
+> - **marge d'usine (20 min)** : **une seule** tournée, 258 km, 388 min, 17 min
+>   d'attente, aucun arrêt hors créneau ni dans la marge — plus longue que la
+>   durée maximale, ce qui n'est plus qu'un signal.
+>
+> La colonne « Avant » reste la mesure de l'ancien algorithme (k-medoids), le
+> 2026-09-29.
+
 Après : une camionnette fait les sept livraisons du matin, créneaux entre
 6 h 30 et 9 h (Montvalezan, Bourg-Saint-Maurice, Séez ; 6 h 22 → 9 h 51) ;
 une autre part à 9 h 12 pour les trois de 10 h – 11 h 30 et celle sans
@@ -2503,6 +2704,19 @@ une tournée, 44 km et 69 minutes de livreur de plus — c'est l'ordre tranché
 lot 7 bis rendait, avec la camionnette chargée ignorée, une tournée de
 Camionnette 1 à 6 h 23 : le test de régression porte ce symptôme.
 
+> ⚠️ **[corrigé le 2026-10-07] Ce tableau et sa lecture sont périmés, et la
+> conclusion s'est inversée.** Remesuré le 2026-10-03 après CA2,
+> `recorded-day.spec.ts` fige : marge 0 → 2 tournées, 266 km, 427 min, 27 min
+> d'attente, 4 arrêts dans la marge ; marge d'usine (20 min) → **une seule**
+> tournée, 258 km, 388 min, 17 min d'attente, aucun arrêt dans la marge ; marge
+> d'usine et Camionnette 1 chargée jusqu'à 7 h 48 → la même tournée unique, sur
+> un autre véhicule. Avec la marge, on fait donc une tournée de **moins**, pas
+> de plus. Le test le dit lui-même : à marge 0, l'heuristique reste sur deux
+> tournées alors qu'une seule tiendrait — un optimum local, pas le prix de la
+> marge. « Le prix de la marge », laissé à juger à l'usage (§ 6, réponses du
+> soir, et [`todo-calculateur.md`](todo-calculateur.md)), partait de cette
+> lecture.
+
 ### Lot 10 ter — Les tuiles en production, servies par le planificateur
 
 > **Tranché le 2026-09-29** (§ 6 question 8). Hugo a ajouté « Workers R2
@@ -2543,7 +2757,9 @@ rend 200 avec `Accept-Ranges: bytes`, et une requête `Range: bytes=0-16383`
 rend 206.
 
 **Bâti le 2026-09-29** (non commité à l'écriture ; rien n'est déployé, aucun
-bucket créé) :
+bucket créé) : [corrigé le 2026-10-07 : déployé le 2026-09-30 — l'exécution de
+`deploy_lfd_route_planner` sur `main` a créé le bucket s'il manquait, déposé les
+tuiles, basculé current.json et déployé le Worker, toutes étapes vertes.]
 
 - **Worker** — `apps/lfd-route-planner/src/tiles.ts` (lecture de
   current.json, préfixe daté exigé, plages simples/ouvertes/suffixes → 206,
@@ -2603,7 +2819,9 @@ suivants.
   - le **retrait attesté** — il existe dans `handover`, mais sous
     `b2b_orders:write`, qui ouvrirait au livreur la prise de commande et les
     prix négociés. Question : le comptoir garde-t-il `b2b_orders` pour le
-    sien ?
+    sien ? [corrigé le 2026-10-07 : tranché par les droits par geste —
+    l'attestation au comptoir est sous `handover_counter` depuis le 2026-10-01
+    (`handover.controller.ts`), plus sous `b2b_orders:write`.]
   - la **signature** — l'exigence est figée sur la commande, rien ne la
     recueille, et sa valeur est juridique avant d'être technique (conception
     v1, question 5) ;
@@ -2777,8 +2995,9 @@ suivants.
 
   **L6-C10 — Le mur, et ce qu'il ne couvre pas.** Le rôle `livreur` n'a **que**
   `delivery_doorstep` — jamais `b2b_orders`. Le mur « sa tournée » tient pour
-  lui. ⚠️ Tout porteur de `b2b_orders` peut toujours attester n'importe quel
-  jeton au comptoir (`handover.controller.ts`) : c'est voulu, et ce n'est pas le
+  lui. ⚠️ Tout porteur de `b2b_orders` [corrigé le 2026-10-07 : de
+  `handover_counter`, depuis le 2026-10-01] peut toujours attester n'importe
+  quel jeton au comptoir (`handover.controller.ts`) : c'est voulu, et ce n'est pas le
   mur du livreur.
 
   **L6-C11 — Clore pendant la tournée.** `closeStop` est l'**exception écrite** à

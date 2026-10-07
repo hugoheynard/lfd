@@ -198,9 +198,14 @@ Vérifié le 2026-10-06.
    (texte prêt dans
    [`texte-politique-de-confidentialite.md`](texte-politique-de-confidentialite.md),
    à reporter au back-office, document `privacy`). Depuis CA0 (`0aa07eb63`,
-   2026-10-06), **chaque commande livrée est géocodée à la passation** dès que
-   `BAN_GEOCODER_URL` est posée : c'est **bloquant avant la prochaine promotion
-   vers `main`**, ou bien vérifier que la variable est vide en production.
+   sur `main` depuis le 2026-10-06 23:26), **chaque commande livrée est
+   géocodée à la passation**, et la variable GitHub `BAN_GEOCODER_URL` est
+   posée depuis le 2026-09-29 (relevé le 2026-10-07, audit du dossier
+   `livraisons/`) : la promotion a eu lieu, **le paragraphe doit être publié
+   maintenant**. ⚠️ Pour éteindre le géocodeur en attendant, vider la
+   variable GitHub ne suffit pas : `deploy_lfd_api.yml:317-321` ne pose une
+   clé sur le Worker que si elle est non vide et n'en retire jamais ; il faut
+   **retirer la clé du Worker `lfd-api`** dans Cloudflare.
 2. ✅ **Informer les livreurs** — fait le 2026-10-06 (non commité à
    l'écriture de cette ligne). Le texte, version 2 depuis la position au
    geste, vit à une seule source :

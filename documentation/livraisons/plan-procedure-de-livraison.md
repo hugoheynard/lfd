@@ -1,6 +1,21 @@
 # Plan — la procédure de livraison d'une adresse
 
-> **Ouvert le 2026-09-15** à la demande de Hugo. 🟡 En construction.
+> **Ouvert le 2026-09-15** à la demande de Hugo. **Statut : ✅ bâti — les trois
+> lots (API, UI, client, §3), relu contre le code le 2026-10-07. Reste à
+> faire : la vraie vignette** des photos d'étape (§2.6, relevé le 2026-10-06).
+>
+> Ce que la relecture du 2026-10-07 a corrigé dans ce plan :
+>
+> - **le mur n'était que dans les lectures** : les écritures de l'adaptateur
+>   Prisma passaient par l'`id` seul — murées le 2026-10-07 (B2), §2.1 ;
+> - le staff agit sous **`delivery_procedures`** depuis le 2026-10-01, plus sous
+>   `b2b_companies` — §2.4 ;
+> - le fait est `company.delivery_procedure_edited`, client et staff, à six
+>   actions — §2.4 ;
+> - **le livreur est servi** — §2.4 ;
+> - l'écran client vit dans la boutique, `apps/lfc-ecommerce-frontend` — §1, §3.
+>
+> Le §1 est l'état d'**avant** le chantier, et n'est plus tenu à jour.
 
 ## 0. La demande
 
@@ -16,6 +31,10 @@
 
 ## 1. Ce qui existe (vérifié le 2026-09-15)
 
+> ⚠️ **État d'avant le chantier (2026-09-15)**, gardé tel quel : la dernière
+> ligne (« aucun concept de procédure ») a cessé d'être vraie avec le lot API.
+> Seul un pointeur devenu faux a été repointé, le 2026-10-07.
+
 | Fait                                                                                                                                                | Où                                                                                                                       |
 | --------------------------------------------------------------------------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------ |
 | Une adresse de livraison est une ligne `addresses` (`kind`), archivée et jamais supprimée ; ses consignes (`deliverySpecs`) sont un JSON            | `prisma/schema/public/account.prisma` `model Address`                                                                    |
@@ -26,7 +45,7 @@
 | Validation d'image par les octets de tête (PNG/JPEG), `imageDimensions` de `@lfd/storage`                                                           | `accounting/domain/value-objects/entity-logo.ts`                                                                         |
 | Réduction d'une photo dans le navigateur (canvas, `toBlob` JPEG)                                                                                    | `packages/b2b-ui/src/company/kbis-capture-panel/capture-frame.ts`                                                        |
 | Admin : la carte `lfd-company-addresses-card` a un menu par adresse (défaut, modifier, supprimer)                                                   | `b2b-ui/company/company-addresses-card/`                                                                                 |
-| Client : `delivery-address-dialog` ouvert depuis Mon compte, `dialogSide()` centre/bas                                                              | `platform/client/mon-compte/addresses/`, `client/panel-side.ts`                                                          |
+| Client : `delivery-address-dialog` ouvert depuis Mon compte, `dialogSide()` centre/bas                                                              | `apps/lfc-ecommerce-frontend/src/app/client/mon-compte/addresses/`, `client/panel-side.ts`                               |
 | Aucun concept de procédure n'existe encore                                                                                                          | grep `procédure de livraison`, `DeliveryProcedure` : vide                                                                |
 
 ## 2. Décisions
@@ -57,6 +76,19 @@ model DeliveryProcedureStep {        // @@map("delivery_procedure_steps")
   @@index([procedureId, position])
 }
 ```
+
+> ⚠️ **« Le mur, dans chaque where » n'était vrai que des lectures** (relu le
+> 2026-10-07). `PrismaDeliveryProcedureRepository.save` écrivait la procédure
+> puis chaque étape par un `upsert` sur leur `id` seul, comme
+> `saveDeliveryBook` du carnet d'adresses
+> (`prisma-company-address.repository.ts`), que traversent aussi deux routes du
+> contrôleur staff de la procédure : « dépôt autorisé » et la règle de la
+> porte. Rien ne l'exploitait — les ids viennent de l'`IdGenerator` ou d'une
+> lecture murée, et l'agrégat refuse une étape inconnue —, mais un `where` sans
+> le mur est un bug de sécurité (`CLAUDE.md` § 3). **Muré le 2026-10-07 (B2)** :
+> ces écritures sont gardées par `companyId`, avec celle de l'adresse de
+> facturation du même adaptateur (`saveBilling`), et un e2e de non-régression
+> vérifie qu'un id d'une autre société ne touche rien.
 
 - Migration **additive** (deux tables neuves), aucune donnée déplacée.
 - **Pas d'index unique sur `(procedure_id, position)`** : un réordonnancement
@@ -112,12 +144,28 @@ immutable` (l'URL côté écran porte `?rev=`).
 - **Client** : lecture tout membre ; écriture gestionnaire (`ensureCompanyAdmin`),
   comme les adresses. L'adresse doit appartenir au carnet de la société et ne
   pas être archivée, sinon `CompanyAddressNotFoundError` (404).
-- **Staff** : `@AdminSurface("b2b_companies")`, mêmes gestes, sans mur de
-  membership. Chaque geste staff publie en transaction un fait
-  `company.delivery_procedure_edited_by_staff` `{ companyId, addressId, action }`
-  (`step_added` / `step_revised` / `step_removed` / `reordered`), comme les
-  autres gestes staff sur les adresses.
-- Le livreur n'est pas servi ici : pas de rôle livreur aujourd'hui.
+- **Staff** : `@AdminSurface("delivery_procedures")`, sa propre ressource
+  depuis le 2026-10-01 (`plan-droits-par-geste.md`, DG-D1 ;
+  `admin-company-delivery-procedure.controller.ts:75`) ; les routes de
+  l'adresse elle-même restent sous `b2b_companies`
+  (`admin-company-pieces.controller.ts`). Mêmes gestes, sans mur de
+  membership. Le même contrôleur règle aussi « dépôt autorisé » et la règle de
+  la porte d'une adresse (`a-la-porte.md`).
+- **Le journal** : chaque geste — du staff **et**, depuis le 2026-09-19, du
+  client — publie en transaction le fait `company.delivery_procedure_edited`
+  (`account-facts.ts:115` ; il s'écrivait `…_edited_by_staff` tant que seul le
+  staff était journalisé), charge `{ address, action }` : la société est le
+  sujet de la ligne. **Six** actions (`staff-address-acts.event.ts:137-143`) :
+  `step_added`, `step_revised`, `step_photo_replaced`, `step_photo_removed`
+  (ces deux-là depuis le 2026-10-06 ; une révision qui touchait la photo
+  s'écrivait `step_revised`), `step_removed`, `reordered`. La charge dit quel
+  geste, jamais ce qui a été écrit : un titre peut porter un code de portail.
+- **Le livreur est servi** — ce plan disait le contraire le 2026-09-15, avant
+  que le rôle existe. « Ma tournée », sous `delivery_driving`, le seul droit du
+  rôle `livreur`, lit la procédure de chaque arrêt **vivante** par le canal
+  `delivery/channels/commerce/delivery-procedures.reader.ts`, que le commerce
+  implémente sous le mur `(adresse, société)`, et sert la photo d'une étape
+  (`my-delivery-round.controller.ts:115`).
 
 ### 2.5 Routes
 
@@ -154,8 +202,10 @@ d'adresse gagne `procedureStepCount` (lecteurs client et staff).
     servir), puis passer l'éditeur en `photoDisplay` vignette — la réduction
     côté écran (`PhotoReductionPolicy.thumbnail`) existe déjà.
   - Par étape : **monter / descendre** (boutons, désactivés aux bornes — pas de
-    glisser-déposer : il n'existe nulle part dans le dépôt, et deux boutons
-    marchent au doigt comme au clavier), **Refaire** (formulaire prérempli),
+    glisser-déposer : il n'existait nulle part dans le dépôt le 2026-09-15 ; le
+    CDK l'a apporté depuis aux tournées et au colisage du back-office, pas à
+    cet éditeur (vérifié le 2026-10-07) ; et deux boutons marchent au doigt
+    comme au clavier), **Refaire** (formulaire prérempli),
     **Supprimer** avec confirmation qui dit « définitivement ».
   - **Ajouter une étape** en fin de liste ; bouton masqué à 20.
   - Formulaire d'étape : titre, texte, choix de photo (`accept="image/*"`),
@@ -174,4 +224,7 @@ d'adresse gagne `procedureStepCount` (lecteurs client et staff).
 | ------ | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | --------- |
 | API    | migration, agrégat + VO photo + erreurs, port/adaptateur Prisma, handlers client et staff, contrôleurs, `procedureStepCount` dans les lecteurs, tests trois niveaux, durées e2e | batisseur |
 | UI     | `b2b-ui` : port, réduction de photo, éditeur ; admin : passerelle, entrée dans la carte d'adresses                                                                              | pablo     |
-| Client | platform : passerelle, entrée dans Mon compte, dialogue, copies fr/en/it                                                                                                        | pablo     |
+| Client | boutique, `apps/lfc-ecommerce-frontend/src/app/client/mon-compte/addresses/` : passerelle, entrée dans Mon compte, dialogue, copies fr/en/it                                    | pablo     |
+
+Les trois lots sont bâtis (relu le 2026-10-07). Reste la vignette (§2.6) : un
+lot **API** d'abord, puis l'éditeur.

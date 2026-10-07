@@ -1,6 +1,7 @@
 # L'algorithme du plan de chargement
 
-> ✅ **Implémenté** — état du code au 2026-10-03. Ce document décrit ce que
+> ✅ **Implémenté** — état du code relu le 2026-10-07 (le plafond de la caisse
+> borne les piles depuis le 2026-10-06). Ce document décrit ce que
 > fait `planLoading` aujourd'hui, ses arbitrages et ses limites. Les
 > décisions qui l'ont façonné vivent dans leurs plans :
 > [`plan-preparation-de-tournee.md`](plan-preparation-de-tournee.md) (ordre,
@@ -42,8 +43,10 @@ Il applique une règle simple, dans cet ordre :
    moins de bacs hors du plancher**.
 3. **On le dit.** Un bac que le compactage pose derrière d'autres est marqué
    (`behind`), et l'alerte `compacted` le nomme avec ses arrêts.
-4. **Sinon, on alerte.** Si même compacté ça ne tient pas, le plan cohérent
-   reste, avec `floor_over`.
+4. **Sinon, on alerte.** Si compacter ne laisse pas moins de bacs hors du
+   plancher, le plan cohérent reste, avec `floor_over`. Un plan compacté qui
+   en laisse moins **sans tout faire tenir** est rendu quand même : `compacted`
+   et `floor_over` y coexistent.
 
 ```mermaid
 flowchart TD
@@ -52,7 +55,7 @@ flowchart TD
   Q1 -- oui --> R1["plan cohérent<br/>aucune alerte de place"]
   Q1 -- "non, ou véhicule sans cotes" --> Q0{"véhicule<br/>sans cotes ?"}
   Q0 -- oui --> R0["plan sans positions<br/>unknown_cargo"]
-  Q0 -- non --> K["plan COMPACTÉ<br/>une pile monte jusqu'à maxStack"]
+  Q0 -- non --> K["plan COMPACTÉ<br/>une pile monte jusqu'à ses étages"]
   K --> Q2{"moins de bacs<br/>hors plancher ?"}
   Q2 -- oui --> R2["plan compacté<br/>bacs « derrière » marqués<br/>alerte compacted (+ floor_over s'il en reste)"]
   Q2 -- non --> R3["plan cohérent<br/>alerte floor_over"]
@@ -83,10 +86,20 @@ arrêt.
 Chaque bac physique, dans l'ordre de chargement, va sur une pile de **son
 type** :
 
-- sur la **dernière pile ouverte** de ce type, si elle n'a pas atteint
-  `maxStack` **et** (en mode cohérent) si **sa rangée est encore la rangée
+- sur la **dernière pile ouverte** de ce type, si elle n'a pas atteint **ses
+  étages** **et** (en mode cohérent) si **sa rangée est encore la rangée
   ouverte** ;
 - sinon, il ouvre une pile neuve.
+
+**Les étages d'une pile** (depuis le 2026-10-06, `553422d02`) :
+`min(maxStack, ⌊hauteur utile de la caisse ÷ hauteur extérieure du bac⌋)` —
+`stackLevels` (`floor/floor-geometry.ts`), la règle de l'assistant d'achat,
+appliquée par `FloorPlacer.levelsOf`. Deux mannes de 715 mm ne s'empilent
+donc pas dans une caisse de 140 cm (1 430 mm), mais le font dans une de
+145 cm. Zéro étage : le bac est plus haut que la caisse, il ne tient pas
+debout (§ 3.3). Un isotherme qui part en caisse réfrigérée n'est borné que
+par `maxStack` : la hauteur de la caisse froide n'est pas mesurée. Sans cotes
+de véhicule, aucun plafond : `maxStack` seul.
 
 Une pile porte donc plusieurs arrêts : le bac chargé après, donc livré avant,
 est au-dessus.
@@ -112,7 +125,9 @@ règle ci-dessus de savoir si sa rangée est fermée.
 - Aucune pile sur un passage de roue. Une rangée qui touche les passages se
   centre entre eux.
 - Dès qu'une pile sort, toutes les suivantes sortent aussi : chargées après
-  elle, elles seraient devant elle.
+  elle, elles seraient devant elle. **Sauf** une pile dont le bac est plus
+  haut que la caisse : elle sort du plancher **sans bloquer** les suivantes —
+  elle n'y entre pas du tout (`refuseTooTall`).
 - Le jeu entre bacs (1 cm, `BIN_GAP_DEFAULT_CM`) s'ajoute à l'empreinte.
 - **Isothermes** : dans la caisse réfrigérée si le véhicule en a une (le froid
   reste compté en litres, sans position) ; sinon au sol, avec l'alerte
@@ -123,10 +138,10 @@ et l'alerte `unknown_cargo` le dit.
 
 ### 3.4 Le compactage
 
-Même calcul, une seule différence : une pile monte jusqu'à `maxStack` **même
-si sa rangée est fermée**. Chaque bac posé ainsi est marqué `behind` : des
-bacs chargés après lui sont entre lui et les portes. Il faudra en sortir pour
-l'atteindre à son arrêt.
+Même calcul, une seule différence : une pile monte jusqu'à ses étages
+(§ 3.2) **même si sa rangée est fermée**. Chaque bac posé ainsi est marqué
+`behind` : des bacs chargés après lui sont entre lui et les portes. Il faudra
+en sortir pour l'atteindre à son arrêt.
 
 On compare les deux plans au **nombre de bacs hors plancher**, pas au nombre
 de piles, puisque les deux plans n'ont pas les mêmes piles.
@@ -145,14 +160,14 @@ de piles, puisque les deux plans n'ont pas les mêmes piles.
 
 ### Les alertes
 
-| Genre                             | Quand                                                  | Ton à l'écran |
-| --------------------------------- | ------------------------------------------------------ | ------------- |
-| `floor_over`                      | des piles ne tiennent pas au sol, même compactées      | alerte        |
-| `compacted`                       | tout tient, mais des bacs sont posés derrière d'autres | avertissement |
-| `dry_over` / `cold_over`          | les litres dépassent le sec ou le froid                | alerte        |
-| `cold_bins_without_refrigeration` | des isothermes sans caisse froide                      | avertissement |
-| `unknown_cargo`                   | le véhicule n'a pas ses cotes                          | avertissement |
-| `bin_to_redo`                     | un bac partagé dont les arrêts ne sont plus voisins    | avertissement |
+| Genre                             | Quand                                                                                                                                                                              | Ton à l'écran |
+| --------------------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ------------- |
+| `floor_over`                      | des piles ne tiennent pas au sol — plan cohérent, ou compacté qui n'a pas tout fait tenir ; la phrase ajoute « dont N dont le bac est plus haut que la caisse » quand c'est le cas | alerte        |
+| `compacted`                       | le plan compacté est rendu : des bacs sont posés derrière d'autres ; s'il en reste hors du plancher, `floor_over` l'accompagne                                                     | avertissement |
+| `dry_over` / `cold_over`          | les litres dépassent le sec ou le froid                                                                                                                                            | alerte        |
+| `cold_bins_without_refrigeration` | des isothermes sans caisse froide                                                                                                                                                  | avertissement |
+| `unknown_cargo`                   | le véhicule n'a pas ses cotes                                                                                                                                                      | avertissement |
+| `bin_to_redo`                     | un bac partagé dont les arrêts ne sont plus voisins                                                                                                                                | avertissement |
 
 ## 5. Ce qu'il ne fait pas
 
@@ -162,8 +177,9 @@ de piles, puisque les deux plans n'ont pas les mêmes piles.
 - **Il n'optimise pas** : la pose est gloutonne, dans l'ordre. Une rangée peut
   garder un trou qu'une autre pile aurait comblé.
 - **Il ne pèse pas** la place gagnée contre les bacs à manipuler (cf. §2).
-- **Il ne vérifie pas la hauteur** d'une pile contre le plafond : `maxStack`
-  seul la borne (G5e).
+- **Il ne mesure pas la caisse froide** : un isotherme qui y part n'est borné
+  que par `maxStack` (le froid reste compté en litres). Au sol, le plafond
+  borne chaque pile (G5e, vérifié depuis le 2026-10-06, § 3.2).
 - **Il ne pose rien par-dessus un passage de roue** (G5b), contrairement à
   l'assistant d'achat.
 - **La feuille de route ne rappelle pas encore** les bacs « derrière » à leur
@@ -184,4 +200,10 @@ Les cas sont éprouvés dans
 `apps/lfd-api/src/delivery/domain/services/__tests__/loading-plan.spec.ts` :
 l'ordre inverse, le bac partagé, l'empilement, une rangée fermée qui ne
 grandit plus, le plan cohérent gardé quand il tient, le compactage quand il ne
-tient pas, et `floor_over` quand compacter ne sauve rien.
+tient pas, et `floor_over` quand compacter ne sauve rien. Le plafond a les
+siens dans `loading-plan-ceiling.spec.ts` : deux mannes dans une caisse de
+140 cm puis de 145 cm, une manne plus haute que la caisse, qui ne bloque pas
+les bacs suivants, l'isotherme en caisse réfrigérée, et la garde de capacité
+de la composition. Le cas où le plan compacté garde des bacs dehors
+(`compacted` et `floor_over` ensemble) n'a pas de test (relevé le
+2026-10-07).
