@@ -3,6 +3,8 @@ import { OrderCutoffWaiverGate } from "../../domain/ports/order-cutoff-waiver.ga
 import { CommandHandler, type ICommandHandler } from "@nestjs/cqrs";
 
 import { DomainEventPublisher } from "../../../../platform/events/domain-event-publisher.js";
+import { DurablePublisher } from "../../../../platform/outbox/durable-publisher.js";
+import { CommerceOrderPlacedFact } from "../../../../delivery/channels/commerce/index.js";
 import { UnitOfWork } from "../../../../platform/database/unit-of-work.js";
 import { PaymentGateway } from "../../../payments/domain/payment-gateway.js";
 import type { Order } from "../../domain/entities/order.js";
@@ -54,6 +56,7 @@ export class PlaceOrderHandler implements ICommandHandler<PlaceOrderCommand, Pla
     private readonly voucherQuotes: LoyaltyVoucherQuoteReader,
     private readonly vouchers: LoyaltyVoucherRedemption,
     private readonly publicDelivery: PublicDeliveryGate,
+    private readonly durable: DurablePublisher,
   ) {}
 
   /**
@@ -217,6 +220,8 @@ export class PlaceOrderHandler implements ICommandHandler<PlaceOrderCommand, Pla
         }
         const written = await this.orders.place(order);
         await this.keys.resolve(actorUserId, payload.idempotencyKey, written.id);
+        // La livraison situe l'adresse : un fait durable, écrit avec la commande (CA0).
+        await this.durable.publish(new CommerceOrderPlacedFact(written.id).durableFact());
         if (voucherId !== null && intent === null) {
           await this.vouchers.settleRemainder(
             {

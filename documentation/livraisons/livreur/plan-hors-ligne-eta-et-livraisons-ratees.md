@@ -243,8 +243,8 @@ sequenceDiagram
   le fait `delivery.round_departed` porte `roundId`, `serviceDay`,
   `departedAt`, `orderIds`. Le commerce ne lit rien de l'état d'une
   livraison : le seul port du canal dans le sens commerce → livraison est
-  `DeliveryOrderPlacedListener` (sa JSDoc le dit, `delivery-order-placed.listener.ts:8`,
-  à mettre à jour). `CustomerOrderView` n'a ni suivi ni heure ; le détail de
+  le fait durable `commerce.order_placed` (`CommerceOrderPlacedFact`, qui a
+  remplacé `DeliveryOrderPlacedListener` le 2026-10-07). `CustomerOrderView` n'a ni suivi ni heure ; le détail de
   commande de la boutique n'a pas de section suivi. La nature d'une remise
   (`handedOverVia`) est **au commerce** ; le nom du réceptionnaire et la photo
   sont **au retrait**, et `delivery → handover` est interdit.

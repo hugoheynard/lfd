@@ -366,9 +366,11 @@ flowchart TD
 
 **Lots non bâtis, dans l'ordre**
 
-1. ~~**CA0.**~~ Bâti le 2026-10-06. Sur `order.placed`, le
-   commerce appelle `DeliveryOrderPlacedListener` (déclaré et implémenté par
-   la livraison, `delivery/channels/commerce/`). La livraison relit la
+1. ~~**CA0.**~~ Bâti le 2026-10-06. À la passation, le
+   commerce écrit le fait durable `commerce.order_placed`
+   (`CommerceOrderPlacedFact`, déclaré dans `delivery/channels/commerce/`)
+   dans la transaction de la commande — un appel en mémoire jusqu'au
+   2026-10-07 —, et la livraison l'écoute (`LocateOnOrderPlaced`). La livraison relit la
    commande, puis, après la validation et en fond (`AfterCommit` +
    `BackgroundWork`), lance « Situer les arrêts » du jour : seul ce qui manque
    au carnet et au cache part au géocodeur. Les abonnés de l'arrêt du plan et

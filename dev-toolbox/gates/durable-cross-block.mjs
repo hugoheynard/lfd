@@ -29,9 +29,9 @@
  * Qui implémente ? Le nom du canal ne le dit PAS : un dossier de canal porte
  * les deux sens (`delivery/channels/commerce/` contenait
  * `DeliveryDepartureAnnouncer`, implémenté par le commerce — retiré au profit
- * d'un fait durable le 2026-10-06, DD1 —, et contient
- * `DeliveryOrderPlacedListener`, que la livraison implémente elle-même ;
- * vérifié le 2026-10-06). La porte lit donc la LIAISON réelle : dans tout
+ * d'un fait durable le 2026-10-06, DD1 —, et contenait
+ * `DeliveryOrderPlacedListener`, que la livraison implémentait elle-même —
+ * retiré le 2026-10-07 au profit du fait durable `commerce.order_placed`). La porte lit donc la LIAISON réelle : dans tout
  * `*.module.ts` de `src/`, `{ provide: Port, useExisting|useClass: Impl }`, et
  * le bloc de `Impl` est celui de son chemin d'import. Un port de canal sans
  * liaison lisible est compté comme traversant — refuser en doute, puisque
@@ -63,13 +63,9 @@ const SRC = join(ROOT, "apps/lfd-api/src");
  */
 const DEBT = new Map([
   ["apps/lfd-api/src/b2b/catalog/application/handlers/on-product-media-changed.handler.ts", "E5"],
-  // Relevés le 2026-10-06, à l'élargissement au second chemin (port appelé).
-  // Les deux abonnés du départ (vers le retrait, vers le commerce) ont basculé
-  // en faits durables le 2026-10-06 (plan-depart-durable.md, DD1).
-  [
-    "apps/lfd-api/src/b2b/orders/application/handlers/tell-delivery-order-placed.handler.ts",
-    "commande passée → livraison par DeliveryOrderPlacedListener ; à basculer en fait durable",
-  ],
+  // Relevés le 2026-10-06, à l'élargissement au second chemin (port appelé) :
+  // les deux abonnés du départ ont basculé le 2026-10-06 (DD1), la commande
+  // passée vers la livraison le 2026-10-07 (`commerce.order_placed`).
 ]);
 
 const SKIP_DIRS = new Set(["node_modules", "__tests__", "client"]);

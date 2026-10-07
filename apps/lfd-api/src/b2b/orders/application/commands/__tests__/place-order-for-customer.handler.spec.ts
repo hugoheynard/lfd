@@ -67,6 +67,8 @@ import { CanonicalPriceHistoryReader } from "../../../../catalog/domain/ports/ca
 import type { CatalogPricing } from "@lfd/contracts";
 import { VIENNOISERIES } from "../../../../catalog/domain/__tests__/families.fixture.js";
 import { ownPricingParties } from "../../../../pricing/application/__tests__/pricing-parties.doubles.js";
+import { CommerceOrderPlacedFact } from "../../../../../delivery/channels/commerce/index.js";
+import { RecordingDurable } from "./durable-doubles.js";
 
 /**
  * L'historique du tarif canonique — **jamais consulté ici** : ces cas ne posent
@@ -313,6 +315,7 @@ function handler(
     readonly clientBaseUrl?: string | null;
     readonly delivery?: DeliveryAvailabilityView;
     readonly payers?: FixedOrderPayers;
+    readonly durable?: RecordingDurable;
   } = {},
 ): PlaceOrderForCustomerHandler {
   // `in` et non `??` : `null` est une valeur que les tests passent EXPRÈS, et
@@ -360,6 +363,8 @@ function handler(
     new FakeConfig(clientBaseUrl),
     noWaivers,
     new FixedClock(PRICED_AT),
+    { run: <T>(work: () => Promise<T>): Promise<T> => work() },
+    options.durable ?? new RecordingDurable(),
   );
 }
 
@@ -458,6 +463,18 @@ describe("PlaceOrderForCustomerHandler — la trace", () => {
       placedByUserId: "buyer_1",
       placedByStaffId: "staff_1",
     });
+  });
+
+  /** 2026-10-07 : la livraison l'apprenait par un appel en mémoire, perdu à un redémarrage. */
+  it("écrit le fait durable « commande passée » pour la livraison", async () => {
+    const durable = new RecordingDurable();
+    const sink = { placed: null as OrderToPlace | null };
+
+    const placed = await handler(guard("orders"), sink, { durable }).execute(
+      new PlaceOrderForCustomerCommand("staff_1", payload()),
+    );
+
+    expect(durable.facts).toEqual([new CommerceOrderPlacedFact(placed.id).durableFact()]);
   });
 
   it("publie l'événement au nom de l'ACHETEUR — le journal compte des clients", async () => {
@@ -608,6 +625,8 @@ describe("PlaceOrderForCustomerHandler — le règlement", () => {
       new FakeConfig("https://boutique.lfc.fr"),
       noWaivers,
       new FixedClock(PRICED_AT),
+      { run: <T>(work: () => Promise<T>): Promise<T> => work() },
+      new RecordingDurable(),
     );
 
     const result = await free.execute(

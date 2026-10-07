@@ -154,11 +154,11 @@ flowchart LR
   subgraph packing["bloc packing (colisage)"]
     PK["channels/delivery/<br/>BinDesk, ContainerManagedOrders"]
   end
-  AB["appBootstrap/<br/>cinq modules relient port → adaptateur"]
+  AB["appBootstrap/<br/>ses modules relient port → adaptateur"]
   RP["lfd-route-planner<br/>(OSRM, par la passerelle)"]
   BAN["Base Adresse Nationale"]
   O -. implémente .-> CC
-  TP -- "appelle DeliveryOrderPlacedListener" --> CC
+  TP -- "écrit commerce.order_placed" --> CC
   H -. implémente .-> CH
   RSH -- "appelle RoundPlacementsReader" --> CH
   SUB -. "s'abonne" .-> PD
@@ -172,7 +172,7 @@ flowchart LR
 
 ### 4.1 Ce que la livraison demande au commerce — `delivery/channels/commerce/`
 
-Le canal publie **onze classes abstraites et un fait durable** (relevés dans
+Le canal publie **dix classes abstraites et deux faits durables** (relevés dans
 `delivery/channels/commerce/index.ts` le 2026-10-07). **Dix** classes sont
 déclarées **par la livraison**, implémentées **par le commerce**, et reliées
 dans `appBootstrap/delivery-feed.module.ts` :
@@ -190,16 +190,14 @@ dans `appBootstrap/delivery-feed.module.ts` :
 | `DeliveryAddressPointsReader`   | `addressesOfOrders(orderIds)`                                                  | `b2b/orders/…/prisma-delivery-address-points.reader.ts`        | l'adresse du carnet derrière une commande livrée, et ses deux points (suggestions de correction)    |
 | `DeliveryAddressPointCorrector` | `correct(correction)`                                                          | `b2b/account/…/commerce-delivery-address-point-corrector.ts`   | « corrige ce point du carnet » : le carnet décide et écrit, dans l'unité de travail de la livraison |
 
-La onzième va **dans l'autre sens** : `DeliveryOrderPlacedListener`
-(`orderPlaced(orderId)`) est déclarée **et implémentée** par la livraison
-(`delivery/application/delivery-stops-locating.ts`), et **appelée** par le
-commerce depuis son abonné à `order.placed`
-(`b2b/orders/application/handlers/tell-delivery-order-placed.handler.ts`) ;
-elle est reliée dans `appBootstrap/delivery-stops-locating.module.ts`. La
-livraison y situe l'adresse dès la commande (CA0,
-[composition automatique](../tournees/composition-automatique.md)). C'est le seul port du
-canal dans ce sens : la livraison ne peut pas écouter un fait du commerce, et
-`order.placed` n'est pas un fait durable.
+La onzième, qui allait **dans l'autre sens** (`DeliveryOrderPlacedListener`,
+appelée par un abonné en mémoire du commerce), est retirée le 2026-10-07 : la
+commande passée est désormais un **fait durable**, `CommerceOrderPlacedFact`
+(`commerce.order_placed`), déclaré dans ce canal, écrit par le commerce dans
+la transaction de la passation, et écouté par `LocateOnOrderPlaced`, qui fait
+situer l'adresse (CA0, [composition automatique](../tournees/composition-automatique.md)).
+La livraison ne peut pas écouter un fait du commerce : le fait vit donc chez
+elle, comme le départ vit dans le canal du retrait.
 
 Le fait durable est `DeliveryRoundDepartedFact` (`delivery.round_departed`,
 DD1, 2026-10-06) : déclaré dans le canal du retrait (§ 4.1 bis) et
@@ -297,9 +295,8 @@ repli « à vol d'oiseau » (retiré, faux en montagne).
   `delivery.orders_brought_back`, écrits dans la boîte d'envoi (§ 4.1 bis) ;
 - **sa version de journée** (§ 5).
 
-Trois blocs l'appellent en code, chacun par un port que la livraison
-implémente : le commerce (`DeliveryOrderPlacedListener`, à chaque commande
-passée), le retrait (`RoundPlacementsReader`, pour la feuille de route) et le
+Deux blocs l'appellent en code, chacun par un port que la livraison
+implémente : le retrait (`RoundPlacementsReader`, pour la feuille de route) et le
 colisage (`BinDesk`, pour chaque bac). Dans l'autre sens, le commerce et le
 retrait implémentent ce que la livraison leur demande (§ 4.1, § 4.1 bis).
 

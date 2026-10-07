@@ -103,6 +103,8 @@ export class RecordingDayStopsLocator extends DayStopsLocator {
   readonly days: string[] = [];
   /** Les jours seulement situés (retirage). */
   readonly located: string[] = [];
+  /** Les commandes passées dont le jour est à situer (CA0). */
+  readonly orders: string[] = [];
 
   prepareDaySoon(day: string): void {
     this.days.push(day);
@@ -110,5 +112,9 @@ export class RecordingDayStopsLocator extends DayStopsLocator {
 
   locateDaySoon(day: string): void {
     this.located.push(day);
+  }
+
+  locateOrderSoon(orderId: string): void {
+    this.orders.push(orderId);
   }
 }

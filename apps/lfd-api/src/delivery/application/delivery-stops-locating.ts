@@ -2,7 +2,7 @@ import { Injectable, Logger } from "@nestjs/common";
 
 import { AfterCommit } from "../../platform/database/after-commit.js";
 import { BackgroundWork } from "../../platform/events/background-work.js";
-import { DeliveryOrderPlacedListener, DeliveryOrdersReader } from "../channels/commerce/index.js";
+import { DeliveryOrdersReader } from "../channels/commerce/index.js";
 import { GeocoderDisabledError } from "../domain/errors/delivery-routing-errors.js";
 import { DayComposer } from "./day-composer.js";
 import type { DayStopsLocator } from "./day-stops-locator.js";
@@ -23,7 +23,8 @@ const DAY_LABEL = "delivery.locate-arrested-day";
  * même jour — la commande suivante, l'arrêt du plan, le retirage, ou le geste
  * « Situer » de l'écran.
  *
- * - `orderPlaced` — appelé par le commerce sur `order.placed` ;
+ * - `locateOrderSoon` — appelé par l'abonné durable à la commande passée
+ *   (`LocateOnOrderPlaced`, 2026-10-07) ;
  * - `prepareDaySoon` — appelé par les abonnés de l'arrêt du plan et du
  *   retirage, qui tournent DANS une transaction ; à l'arrêt du plan
  *   (`prepareDaySoon`), il compose ensuite les tournées du jour
@@ -35,7 +36,7 @@ const DAY_LABEL = "delivery.locate-arrested-day";
  * Un échec est journalisé par `BackgroundWork`, jamais remonté.
  */
 @Injectable()
-export class DeliveryStopsLocating extends DeliveryOrderPlacedListener implements DayStopsLocator {
+export class DeliveryStopsLocating implements DayStopsLocator {
   private readonly logger = new Logger(DeliveryStopsLocating.name);
 
   constructor(
@@ -44,11 +45,9 @@ export class DeliveryStopsLocating extends DeliveryOrderPlacedListener implement
     private readonly afterCommit: AfterCommit,
     private readonly work: BackgroundWork,
     private readonly composition: DayComposer,
-  ) {
-    super();
-  }
+  ) {}
 
-  orderPlaced(orderId: string): void {
+  locateOrderSoon(orderId: string): void {
     this.afterCommit.defer(
       () => this.work.track(this.locateOrder(orderId), ORDER_LABEL),
       ORDER_LABEL,

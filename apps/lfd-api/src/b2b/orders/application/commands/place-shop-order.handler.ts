@@ -2,6 +2,8 @@ import { CommandHandler, type ICommandHandler } from "@nestjs/cqrs";
 
 import { UnitOfWork } from "../../../../platform/database/unit-of-work.js";
 import { DomainEventPublisher } from "../../../../platform/events/domain-event-publisher.js";
+import { DurablePublisher } from "../../../../platform/outbox/durable-publisher.js";
+import { CommerceOrderPlacedFact } from "../../../../delivery/channels/commerce/index.js";
 import { Clock } from "../../../../platform/time/clock.js";
 import { PaymentGateway } from "../../../payments/domain/payment-gateway.js";
 import type { Order } from "../../domain/entities/order.js";
@@ -69,6 +71,7 @@ export class PlaceShopOrderHandler implements ICommandHandler<
     private readonly reader: OrderReader,
     private readonly unitOfWork: UnitOfWork,
     private readonly features: FeatureLevelResolver,
+    private readonly durable: DurablePublisher,
   ) {}
 
   /**
@@ -157,6 +160,8 @@ export class PlaceShopOrderHandler implements ICommandHandler<
     const placed = await this.unitOfWork.run(async () => {
       const written = await this.orders.place(order);
       await this.keys.resolve(payload.idempotencyKey, written.id);
+      // La livraison situe l'adresse : un fait durable, écrit avec la commande (CA0).
+      await this.durable.publish(new CommerceOrderPlacedFact(written.id).durableFact());
       return written;
     });
 

@@ -41,7 +41,8 @@
 - La porte `lint:durable-cross-block` ne le voyait pas : l'abonné vit dans
   son bloc, c'est l'appel de port qui traverse (élargie le 2026-10-06 ; ces
   deux abonnés y **étaient** en dette comptée — depuis DD1, la dette ne tient
-  plus que `on-product-media-changed` et `tell-delivery-order-placed`).
+  plus que `on-product-media-changed`, et celui de la commande passée, basculé
+  le 2026-10-07).
 - Le modèle à suivre existe : `production.day_closed`
   (`apps/lfd-api/src/production/channels/commerce/production-day-closed.event.ts`),
   publié par la boîte d'envoi dans la transaction de l'arrêt, écouté en

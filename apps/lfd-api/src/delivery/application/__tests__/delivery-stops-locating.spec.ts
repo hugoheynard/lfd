@@ -100,7 +100,7 @@ describe("DeliveryStopsLocating — situer l'adresse dès la commande (CA0)", ()
   it("ne sort sur le réseau qu'APRÈS la validation, et situe l'adresse de la livraison", async () => {
     const { locating, cache, geocoder, afterCommit, settle } = scene([deliveryOn("o1", DAY)]);
 
-    locating.orderPlaced("o1");
+    locating.locateOrderSoon("o1");
     expect(geocoder.asked).toHaveLength(0);
 
     await settle();
@@ -112,7 +112,7 @@ describe("DeliveryStopsLocating — situer l'adresse dès la commande (CA0)", ()
   it("une unité qui échoue ne géocode rien", async () => {
     const { locating, geocoder, afterCommit } = scene([deliveryOn("o1", DAY)]);
 
-    locating.orderPlaced("o1");
+    locating.locateOrderSoon("o1");
     afterCommit.discard();
     await afterCommit.commit();
 
@@ -127,7 +127,7 @@ describe("DeliveryStopsLocating — situer l'adresse dès la commande (CA0)", ()
     ]);
 
     for (const id of ["p1", "x1", "n1", "absente"]) {
-      locating.orderPlaced(id);
+      locating.locateOrderSoon(id);
     }
     await settle();
 
@@ -142,12 +142,12 @@ describe("DeliveryStopsLocating — situer l'adresse dès la commande (CA0)", ()
       geocoder,
     );
 
-    locating.orderPlaced("o1");
+    locating.locateOrderSoon("o1");
     await settle();
     expect(await located(cache, "o1")).toBe(false);
 
     geocoder.down = false;
-    locating.orderPlaced("o2");
+    locating.locateOrderSoon("o2");
     await settle();
 
     expect(await located(cache, "o1")).toBe(true);
@@ -161,7 +161,7 @@ describe("DeliveryStopsLocating — situer l'adresse dès la commande (CA0)", ()
       [deliveryOn("o1", DAY), deliveryOn("o2", DAY)],
       geocoder,
     );
-    locating.orderPlaced("o1");
+    locating.locateOrderSoon("o1");
     await settle();
     geocoder.down = false;
 
@@ -184,7 +184,7 @@ describe("DeliveryStopsLocating — situer l'adresse dès la commande (CA0)", ()
   it("prépare le jour : situe, puis compose — et jamais pour une commande seule", async () => {
     const { locating, geocoder, settle, composer } = scene([deliveryOn("o1", DAY)]);
 
-    locating.orderPlaced("o1");
+    locating.locateOrderSoon("o1");
     await settle();
     expect(composer.days).toEqual([]);
 
@@ -210,7 +210,7 @@ describe("DeliveryStopsLocating — situer l'adresse dès la commande (CA0)", ()
     const geocoder = new RecordingGeocoder(() => null, new GeocoderDisabledError());
     const { locating, cache, settle } = scene([deliveryOn("o1", DAY)], geocoder);
 
-    locating.orderPlaced("o1");
+    locating.locateOrderSoon("o1");
     await settle();
 
     expect(cache.size).toBe(0);

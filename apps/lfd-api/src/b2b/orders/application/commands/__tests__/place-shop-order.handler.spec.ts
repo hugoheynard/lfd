@@ -74,6 +74,8 @@ import { PlaceShopOrderCommand } from "../place-shop-order.command.js";
 import { PlaceShopOrderHandler } from "../place-shop-order.handler.js";
 import { PAINS } from "../../../../catalog/domain/__tests__/families.fixture.js";
 import { ownPricingParties } from "../../../../pricing/application/__tests__/pricing-parties.doubles.js";
+import { CommerceOrderPlacedFact } from "../../../../../delivery/channels/commerce/index.js";
+import { RecordingDurable } from "./durable-doubles.js";
 
 /**
  * **La commande sans compte**, éprouvée là où elle décide — plan
@@ -416,6 +418,7 @@ function scene(
   const keys = new FakeKeys(options.claim ?? { kind: "claimed" });
   const buyers = new FakeRegistrar();
   const published = new RecordingPublisher();
+  const durable = new RecordingDurable();
   const handler = new PlaceShopOrderHandler(
     buyers,
     drafting(),
@@ -427,11 +430,21 @@ function scene(
     noReader,
     new DirectUnitOfWork(),
     features(options.publicDelivery),
+    durable,
   );
-  return { handler, sink, paid, keys, buyers, published };
+  return { handler, sink, paid, keys, buyers, published, durable };
 }
 
 describe("PlaceShopOrderHandler — le porteur", () => {
+  /** 2026-10-07 : la livraison l'apprenait par un appel en mémoire, perdu à un redémarrage. */
+  it("écrit le fait durable « commande passée » pour la livraison", async () => {
+    const { handler, durable } = scene();
+
+    const placed = await handler.execute(new PlaceShopOrderCommand(payload()));
+
+    expect(durable.facts).toEqual([new CommerceOrderPlacedFact(placed.id).durableFact()]);
+  });
+
   it("INSCRIT un invité et porte la commande à son nom", async () => {
     // C'est la voie retenue par le plan (§2) : la commande reste un `Order`
     // ordinaire, et c'est le PORTEUR qui change de nature. Sans lui,

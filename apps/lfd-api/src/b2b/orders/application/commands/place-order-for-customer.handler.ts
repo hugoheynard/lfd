@@ -4,6 +4,9 @@ import { CommandHandler, type ICommandHandler } from "@nestjs/cqrs";
 
 import { AppConfig } from "../../../../platform/config/app-config.js";
 import { DomainEventPublisher } from "../../../../platform/events/domain-event-publisher.js";
+import { UnitOfWork } from "../../../../platform/database/unit-of-work.js";
+import { DurablePublisher } from "../../../../platform/outbox/durable-publisher.js";
+import { CommerceOrderPlacedFact } from "../../../../delivery/channels/commerce/index.js";
 import { PaymentGateway } from "../../../payments/domain/payment-gateway.js";
 import type { Order } from "../../domain/entities/order.js";
 import { AccountSettlementNotGrantedError } from "../../domain/errors/order-errors.js";
@@ -55,6 +58,8 @@ export class PlaceOrderForCustomerHandler implements ICommandHandler<
     private readonly config: AppConfig,
     private readonly waivers: OrderCutoffWaiverGate,
     private readonly clock: Clock,
+    private readonly unitOfWork: UnitOfWork,
+    private readonly durable: DurablePublisher,
   ) {}
 
   async execute(command: PlaceOrderForCustomerCommand): Promise<PlaceOrderForCustomerResult> {
@@ -75,7 +80,12 @@ export class PlaceOrderForCustomerHandler implements ICommandHandler<
     );
 
     const intent = await this.settle(order, payload.settlement, companyId);
-    const placed = await this.orders.place(order);
+    // La commande et le fait qui fait situer son adresse (CA0), ensemble.
+    const placed = await this.unitOfWork.run(async () => {
+      const written = await this.orders.place(order);
+      await this.durable.publish(new CommerceOrderPlacedFact(written.id).durableFact());
+      return written;
+    });
 
     // La dérogation se consomme APRÈS la persistance, et son échec ne s'absorbe
     // pas : restée ouverte, elle laisserait passer une seconde commande tardive

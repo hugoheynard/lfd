@@ -36,7 +36,13 @@ export {
   DeliveryRoundDepartedPayloadError,
 } from "../handover/delivery-round-departed.fact.js";
 export type { DepartureSheet, DepartureWindow } from "../../domain/entities/departure-sheet.js";
-export { DeliveryOrderPlacedListener } from "./delivery-order-placed.listener.js";
+// « Commande passée », fait durable (2026-10-07) : déclaré ici, écrit par le
+// commerce dans la transaction de la passation. Remplace `DeliveryOrderPlacedListener`.
+export {
+  COMMERCE_ORDER_PLACED,
+  CommerceOrderPlacedFact,
+  CommerceOrderPlacedPayloadError,
+} from "./commerce-order-placed.fact.js";
 export {
   DeliveryAddressPointsReader,
   type DeliveryOrderAddress,

@@ -209,8 +209,8 @@ dans [`../livraisons/livreur/en-route.md`](../livraisons/livreur/en-route.md) et
   départ est gardé (`departed_at` nullable, migration
   `20261007180000_le_retour_avant_le_depart`).
 - **La porte** `lint:durable-cross-block` : la dette passe de quatre abonnés à
-  deux — `on-product-media-changed` (E5) et `tell-delivery-order-placed` (la
-  commande passée vers la livraison, à basculer).
+  deux — `on-product-media-changed` (E5) et l'abonné de la commande passée vers
+  la livraison, basculé le 2026-10-07 en fait durable `commerce.order_placed`.
 
 ## 8. Les ports entre blocs — inventaire (2026-10-04)
 

@@ -2,6 +2,7 @@ import type { Provider, Type } from "@nestjs/common";
 
 import { LearnArrestedPlan } from "./application/handlers/learn-arrested-plan.handler.js";
 import { LearnRetakenPlan } from "./application/handlers/learn-retaken-plan.handler.js";
+import { LocateOnOrderPlaced } from "./application/handlers/locate-on-order-placed.handler.js";
 import { DayStopsLocator } from "./application/day-stops-locator.js";
 import { DeliveryStopsLocating } from "./application/delivery-stops-locating.js";
 import { PlanArrestedBell } from "./application/plan-arrested-bell.js";
@@ -30,6 +31,7 @@ export const DAY_READINESS_PROVIDERS: readonly Provider[] = [
   PlanArrestedBell,
   // CA0 : situer l'adresse dès la commande, et rattraper à l'arrêt du plan.
   DeliveryStopsLocating,
+  LocateOnOrderPlaced,
   { provide: DayStopsLocator, useExisting: DeliveryStopsLocating },
   GetDeliveryDayReadinessHandler,
   // L'alerte avant le jour J : la cloche « hors tournée », passée par la machine.
