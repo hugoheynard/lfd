@@ -21,6 +21,7 @@ import {
   serviceDay,
   type E2eContext,
 } from "./e2e-harness.js";
+import { openPublicDelivery } from "./public-delivery-scene.js";
 import { createUser } from "./factories.js";
 import { binTypeId } from "./delivery-loading-scene.js";
 import { coliseOrder } from "./production-day-fixture.js";
@@ -77,6 +78,7 @@ afterAll(async () => {
 
 beforeEach(async () => {
   await ctx.reset();
+  await openPublicDelivery(ctx);
   await createUser(ctx.prisma, { auth0Sub: MEMBER });
   await ctx.prisma.deliveryZone.create({
     data: { postalPrefixes: ["73150"], label: "Val d'Isère", feeMode: "amount", feeValue: 2000 },
