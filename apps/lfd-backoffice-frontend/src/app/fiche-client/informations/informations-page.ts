@@ -32,6 +32,7 @@ import {
 } from '@lfd/b2b-ui/company';
 
 import { AdminCompaniesService } from '../../comptes-clients/admin-companies.service';
+import { PermissionsStore } from '../../auth/permissions.store';
 import { ActivationAside } from '../activation-aside/activation-aside';
 import { HolderPicker, type HolderChoice } from '../holder-picker/holder-picker';
 import { PaiementSection } from '../paiement-section/paiement-section';
@@ -103,6 +104,15 @@ export class InformationsPage {
   protected readonly fiche = inject(FicheClientFacade);
   /** Lecture directe du fichier : ce n'est pas une mutation, elle ne passe pas par la façade. */
   private readonly companies = inject(AdminCompaniesService);
+  private readonly permissions = inject(PermissionsStore);
+
+  /**
+   * Les actions d'identité, d'interlocuteurs et d'adresses écrivent sous
+   * `b2b_companies:write` ; la fiche s'ouvre dès `:read` (comptabilité,
+   * support). Forcé à `true` jusqu'au 2026-10-07 : un lecteur voyait des
+   * boutons que le serveur refusait (audit livraisons, § 3.3).
+   */
+  protected readonly canManage = computed(() => this.permissions.can('b2b_companies:write'));
 
   /** Saisie d'ouverture — le strict nécessaire pour que la société existe. */
   protected readonly identityDraft = signal<CompanyIdentityDraft>(EMPTY_COMPANY_IDENTITY_DRAFT);

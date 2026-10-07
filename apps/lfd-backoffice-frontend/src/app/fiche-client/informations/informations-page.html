@@ -126,8 +126,8 @@
         } @else if (fiche.identity(); as id) {
           <lfd-company-identity-card
             [identity]="id"
-            [canManage]="true"
-            [canManageKbis]="true"
+            [canManage]="canManage()"
+            [canManageKbis]="canManage()"
             [canAccessKbis]="true"
             (edit)="fiche.editIdentity()"
             (kbisSelected)="onFile({ key: 'kbis', file: $event })"
@@ -187,7 +187,7 @@
                complète le dossier à la place du client, c'est la Porte B. -->
           <lfd-company-contacts-card
             [contacts]="fiche.contacts()"
-            [canManage]="true"
+            [canManage]="canManage()"
             (add)="fiche.addContact()"
             (editContact)="fiche.editContact($event)"
             (removeContact)="fiche.removeContact($event)"
@@ -223,7 +223,7 @@
               isSite() ? (fiche.company()?.hierarchy?.parent?.enseigne ?? null) : null
             "
             [deliveries]="fiche.deliveries()"
-            [canManage]="true"
+            [canManage]="canManage()"
             [signatureFloor]="fiche.company()?.fulfillmentPreference?.signatureRequired ?? false"
             (editBilling)="fiche.openStep('billing')"
             (addDelivery)="fiche.addDelivery()"

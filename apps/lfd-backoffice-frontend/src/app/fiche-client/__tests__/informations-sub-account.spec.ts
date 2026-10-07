@@ -98,7 +98,10 @@ function child(follows: CompanyHierarchyView['follows']): AdminCompanyDetail {
   };
 }
 
-async function boot(fiche: AdminCompanyDetail): Promise<ComponentFixture<InformationsPage>> {
+async function boot(
+  fiche: AdminCompanyDetail,
+  can: (permission: string) => boolean = () => true,
+): Promise<ComponentFixture<InformationsPage>> {
   TestBed.resetTestingModule();
   TestBed.configureTestingModule({
     providers: [
@@ -129,7 +132,7 @@ async function boot(fiche: AdminCompanyDetail): Promise<ComponentFixture<Informa
             }),
         },
       },
-      { provide: PermissionsStore, useValue: { can: () => true } },
+      { provide: PermissionsStore, useValue: { can } },
       {
         provide: NotifyService,
         useValue: { success: () => undefined, info: () => undefined, error: () => undefined },
@@ -179,5 +182,24 @@ describe('InformationsPage — une ENTITÉ (ne suit pas la facturation)', () => 
     const toggles = [...host.querySelectorAll('app-follow-parent-toggle')];
     expect(toggles).toHaveLength(1);
     expect(toggles[0]?.closest('lfd-company-contacts-card')).not.toBeNull();
+  });
+});
+
+/**
+ * Régression : la page passait `canManage` à `true` en dur ; un lecteur
+ * (`b2b_companies:read`, comptabilité, support) voyait des actions que le
+ * serveur refusait (audit livraisons, § 3.3, 2026-10-07).
+ */
+describe('InformationsPage — qui ne tient que la lecture', () => {
+  it('ne reçoit ni les actions d’identité, ni celles des interlocuteurs, ni celles des adresses', async () => {
+    const fixture = await boot(child([]), (permission) => permission !== 'b2b_companies:write');
+    const managed = (selector: string): unknown =>
+      fixture.debugElement
+        .query((node) => node.name === selector)
+        ?.componentInstance?.canManage?.();
+
+    expect(managed('lfd-company-identity-card')).toBe(false);
+    expect(managed('lfd-company-contacts-card')).toBe(false);
+    expect(managed('lfd-company-addresses-card')).toBe(false);
   });
 });
