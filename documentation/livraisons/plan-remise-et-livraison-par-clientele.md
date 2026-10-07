@@ -24,7 +24,8 @@
 > - **Les écrans ont bougé** : le point de retrait a sa page, la carte
 >   « Livraison » s'enregistre par un bouton, `/reglages` ouvre sur
 >   Facturation, `/livraison` est la feuille de route — D6.
-> - **Une question reste ouverte pour Hugo** : Q4 (§6).
+> - **Q4 (§6) tranchée et bâtie le 2026-10-07** : la clé vaut aussi pour un
+>   particulier connecté.
 >
 > Le §1 est l'état d'**avant** le chantier, et n'est plus tenu à jour.
 >
@@ -326,7 +327,11 @@ jusqu'à l'activation de son dossier. Une dérogation pour la livraison est
 demandée, non bâtie :
 [`todo-livraison-accordee-avant-activation.md`](./todo-livraison-accordee-avant-activation.md).
 
-**Q4 — Ouverte (2026-10-07) : la clé `publicDelivery` vaut-elle pour un
+**Q4 — Tranchée et bâtie le 2026-10-07 (Hugo : « pas si la livraison publique
+est fermée »)** : `POST /orders` refuse la livraison d'un particulier connecté
+quand la clé est fermée pour lui (`PublicDeliveryGate`, lue pour la personne,
+exemptions comprises), et la boutique efface son choix mémorisé. Question
+d'origine : **la clé `publicDelivery` vaut-elle pour un
 particulier connecté ?** Au serveur, elle n'est lue que par `POST /shop/orders`,
 la commande sans compte (`place-shop-order.handler.ts:94-99`). Un particulier
 connecté — en perso, ou dans une société non active — commande par

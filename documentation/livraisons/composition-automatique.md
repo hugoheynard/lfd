@@ -306,10 +306,11 @@ flowchart TD
 - Les **commandes annulées sont exclues à la réception du fait**
   (`activeDeliveriesAmong`), et là seulement : l'ensemble ne fait que
   grandir, et rien n'en retire une commande annulée **après** l'arrêt du
-  plan. Elle reste comptée « hors tournée » (bandeau, cloche
-  `delivery.rounds_gap`) jusqu'à la fin du jour J, alors que « Proposer » ne
-  la placera jamais. ⚠️ Q2 de l'audit du 2026-10-07 : invariant voulu, ou
-  filtre de réception seulement — à trancher par Hugo.
+  plan. **Ce cas ne se produit pas** (vérifié le 2026-10-07, audit Q2) :
+  les deux seules écritures de « annulée » (`markAbandoned`, `failAtClosing`)
+  exigent un règlement en attente ou refusé, et le plan n'absorbe que des
+  commandes payées ou sans paiement requis (`planWhere`). Le compte n'a rien
+  à filtrer.
 - **La cloche n'est jamais rejouée.** Elle ne sonne que si l'ensemble grandit,
   et dit de combien. Un fait rejoué n'ajoute rien, ni une réannonce qui
   recouvre ce qu'on sait. Une réannonce de la clôture **après un retirage**

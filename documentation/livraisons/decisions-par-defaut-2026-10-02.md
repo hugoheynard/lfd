@@ -32,7 +32,9 @@
 > (§ 5 pour les questions, § 2 pour les décisions). Le lien de ce titre
 > menait à `colisage.md` § 5, qui est devenu « Les routes HTTP ».
 >
-> 🔴 **Question ouverte pour Hugo** (Q3 de l'audit du 2026-10-07) : avec
+> ✅ **Tranché et bâti le 2026-10-07** (Q3 de l'audit) : avertir sans bloquer —
+> la fiche du poste porte `coldOutsideIsotherm` (`colisage/colisage.md`, § 6).
+> Le constat d'origine suit, pour mémoire : avec
 > `readyWarnings`, plus rien ne garde le froid au colisage. Une commande qui
 > porte du froid se déclare prête sans bac isotherme, sans avertissement ni
 > refus : la règle de « Prête » (`canDeclareReady`,

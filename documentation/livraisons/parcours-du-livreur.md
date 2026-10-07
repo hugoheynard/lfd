@@ -67,8 +67,10 @@ routes sont `admin/livraison/ma-tournee/*` (`my-delivery-round`,
 **Une exception au mur, voulue** : `GET ma-tournee/version` rend un numéro de
 journée, toutes tournées confondues, sans livreur ni tournée
 (`get-my-round-version.handler.ts`) ; la page relit ensuite sous son mur. Qu'un
-livreur lise ainsi le rythme d'activité de la journée est une question ouverte
-à Hugo (Q6 de l'audit du 2026-10-07).
+livreur lise ainsi le rythme d'activité de la journée est **accepté** (Hugo,
+2026-10-07) : le numéro ne dit ni client, ni adresse, ni tournée, et
+restreindre coûterait une lecture par interrogation. À rouvrir le jour où un
+livreur externe accède par un lien (`plan-livreur-par-lien.md`).
 
 Le rôle se crée **à l'écran des rôles** (`/admin/roles`) avec ces deux droits
 en écriture — une migration n'accorde jamais un droit à un rôle. Depuis le
