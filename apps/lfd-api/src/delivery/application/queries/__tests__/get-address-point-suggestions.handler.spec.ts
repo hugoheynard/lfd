@@ -24,6 +24,8 @@ function handlerOf(s: ReturnType<typeof suggestionScene>) {
     s.carnet,
     s.ignored,
     s.geocodes,
+    s.depot.reader,
+    s.depot,
     s.clock,
   );
 }
@@ -96,6 +98,8 @@ describe("GetAddressPointSuggestionsHandler", () => {
         s.carnet,
         s.ignored,
         geocoded,
+        s.depot.reader,
+        s.depot,
         s.clock,
       ).execute()
     ).suggestions;

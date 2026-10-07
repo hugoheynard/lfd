@@ -1,3 +1,7 @@
+import type { DepartureCandidatesReader } from "../channels/commerce/index.js";
+import type { DepartureReader } from "../domain/ports/departure.reader.js";
+import { type GeoPoint, geoPoint } from "../domain/value-objects/geo-point.js";
+import { departureViewOf } from "./departure-view.js";
 import {
   ADDRESS_POINT_KINDS,
   type AddressPointKind,
@@ -36,6 +40,9 @@ export interface SuggestionPorts {
   readonly addresses: DeliveryAddressPointsReader;
   readonly ignored: IgnoredAddressPointsReader;
   readonly geocodes: GeocodeCacheReader;
+  /** Le dépôt : une position relevée tout près ne situe la porte de personne. */
+  readonly departure: DepartureReader;
+  readonly candidates: DepartureCandidatesReader;
 }
 
 /** Une suggestion, avec l'adresse du carnet qui la porte. */
@@ -63,12 +70,13 @@ export async function currentSuggestions(
     const link = byOrder.get(row.orderId);
     return link === undefined ? [] : [{ addressId: link.addressId, ...row }];
   });
-  const [ignored, geocoded] = await Promise.all([
+  const [ignored, geocoded, depot] = await Promise.all([
     ports.ignored.ignored(),
     ports.geocodes.find(
       [...addresses.values()].filter((a) => a.door === null).map((a) => addressKeyOf(a.address)),
       geocodeFreshSince(now),
     ),
+    depotOf(ports),
   ]);
   return [...addresses.values()]
     .flatMap((address) =>
@@ -78,11 +86,28 @@ export async function currentSuggestions(
           address,
           geocoded.get(addressKeyOf(address.address)) ?? null,
         );
-        const found = suggestionFor(address.addressId, kind, observations, reference, ignored);
+        const found = suggestionFor(
+          address.addressId,
+          kind,
+          observations,
+          reference,
+          ignored,
+          depot,
+        );
         return found === null ? [] : [{ ...found, address }];
       }),
     )
     .sort((a, b) => b.concordant - a.concordant || (b.distanceM ?? 0) - (a.distanceM ?? 0));
+}
+
+/** Le point du dépôt choisi, ou `null` s'il n'est pas situé — sans lever. */
+async function depotOf(ports: SuggestionPorts): Promise<GeoPoint | null> {
+  const [chosenId, points] = await Promise.all([
+    ports.departure.chosenPickupAddressId(),
+    ports.candidates.list(),
+  ]);
+  const gps = departureViewOf(chosenId, points).point?.gps ?? null;
+  return gps === null ? null : geoPoint(gps.lat, gps.lng);
 }
 
 /**

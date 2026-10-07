@@ -24,6 +24,13 @@ export const MIN_GAP_M = 50;
  * téléphone qui dit « à 200 m près » ne situe pas une porte.
  */
 export const MAX_ACCURACY_M = 50;
+/**
+ * Une position relevée à ce rayon du DÉPÔT n'est pas un indice sur la porte
+ * d'un client (Hugo, 2026-10-07, audit livraisons § 3.3) : trois clôtures
+ * « sans remise » faites au retour, sur la même adresse, suggéreraient le
+ * dépôt comme porte.
+ */
+export const DEPOT_RADIUS_M = 200;
 
 const EARTH_RADIUS_M = 6_371_000;
 const DEGREES_TO_RADIANS = Math.PI / 180;
@@ -99,7 +106,8 @@ export function densestCluster(
 
 /**
  * La suggestion pour UNE adresse et UN genre, ou `null` :
- * - trop peu de positions précises, ou trop dispersées → rien ;
+ * - trop peu de positions précises, ou trop dispersées → rien ; une position
+ *   à `DEPOT_RADIUS_M` du dépôt ne compte pas (dépôt inconnu : toutes comptent) ;
  * - un centre à `MIN_GAP_M` ou moins du point de comparaison → rien, le
  *   carnet est juste ;
  * - un centre à `CLUSTER_RADIUS_M` d'une suggestion ignorée → rien : la
@@ -112,10 +120,12 @@ export function suggestionFor(
   observations: readonly PointObservation[],
   reference: ReferencePoint,
   ignored: readonly IgnoredPoint[],
+  depot: GeoPoint | null = null,
 ): AddressPointSuggestion | null {
   const points = observations
     .filter((seen) => seen.addressId === addressId && seen.kind === kind)
     .filter((seen) => seen.accuracyM <= MAX_ACCURACY_M)
+    .filter((seen) => depot === null || metersBetween(seen.point, depot) > DEPOT_RADIUS_M)
     .map((seen) => seen.point);
   const cluster = densestCluster(points);
   if (cluster === null) {

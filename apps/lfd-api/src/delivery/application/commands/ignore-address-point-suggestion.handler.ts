@@ -1,3 +1,5 @@
+import { DepartureCandidatesReader } from "../../channels/commerce/index.js";
+import { DepartureReader } from "../../domain/ports/departure.reader.js";
 import { CommandHandler, type ICommandHandler } from "@nestjs/cqrs";
 
 import { UnitOfWork } from "../../../platform/database/unit-of-work.js";
@@ -39,6 +41,8 @@ export class IgnoreAddressPointSuggestionHandler implements ICommandHandler<
     private readonly addresses: DeliveryAddressPointsReader,
     private readonly ignored: IgnoredAddressPointsReader,
     private readonly geocodes: GeocodeCacheReader,
+    private readonly departure: DepartureReader,
+    private readonly candidates: DepartureCandidatesReader,
     private readonly decisions: AddressSuggestionDecisionRepository,
     private readonly directory: StaffAuthorDirectory,
     private readonly ids: IdGenerator,
@@ -54,6 +58,8 @@ export class IgnoreAddressPointSuggestionHandler implements ICommandHandler<
         addresses: this.addresses,
         ignored: this.ignored,
         geocodes: this.geocodes,
+        departure: this.departure,
+        candidates: this.candidates,
       },
       now,
     );

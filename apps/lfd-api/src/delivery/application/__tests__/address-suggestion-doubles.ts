@@ -1,3 +1,4 @@
+import { FixedDeparture } from "../commands/__tests__/routing-doubles.js";
 import type { BillingAddressPayload, GpsPoint } from "@lfd/contracts";
 
 import { DirectUnitOfWork } from "../../../platform/database/__tests__/direct-unit-of-work.js";
@@ -155,7 +156,11 @@ export class OneDispatcher extends StaffAuthorDirectory {
 }
 
 /** Tout le bureau, branché sur un carnet et des positions. */
-export function suggestionScene(links: DeliveryOrderAddress[], rows: GesturePositionRow[]) {
+export function suggestionScene(
+  links: DeliveryOrderAddress[],
+  rows: GesturePositionRow[],
+  depotGps: GeoPoint | null = null,
+) {
   const carnet = new FixedAddressPoints(links);
   const decisions = new InMemoryDecisions();
   return {
@@ -165,6 +170,8 @@ export function suggestionScene(links: DeliveryOrderAddress[], rows: GesturePosi
     decisions,
     ignored: new DecisionsAsIgnored(decisions),
     geocodes: new FixedGeocodes(),
+    /** Le dépôt ; non situé par défaut : aucune position n'est écartée. */
+    depot: new FixedDeparture(depotGps),
     directory: new OneDispatcher(),
     ids: new FixedIdGenerator("decision"),
     clock: new FixedClock(new Date()),

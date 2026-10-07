@@ -185,3 +185,21 @@ describe("referenceFor — à quoi se compare une suggestion", () => {
     expect(referenceFor("parking", { door: CARNET, parking: null }, null)).toEqual(FROM_CARNET);
   });
 });
+
+/**
+ * Régression : trois clôtures « sans remise » faites au retour, sur la même
+ * adresse, suggéraient le DÉPÔT comme porte du client (audit livraisons,
+ * § 3.3 ; Hugo, 2026-10-07).
+ */
+describe("suggestionFor — les positions relevées au dépôt", () => {
+  const depotGestures = [seen(north(120)), seen(north(121)), seen(north(122))];
+
+  it("ne comptent pas : trois clôtures au dépôt ne suggèrent rien", () => {
+    expect(suggestionFor("a1", "door", depotGestures, FROM_CARNET, [], north(121))).toBeNull();
+  });
+
+  it("comptent dès qu'elles sont à plus de 200 m du dépôt, et quand le dépôt est inconnu", () => {
+    expect(suggestionFor("a1", "door", depotGestures, FROM_CARNET, [], north(400))).not.toBeNull();
+    expect(suggestionFor("a1", "door", depotGestures, FROM_CARNET, [], null)).not.toBeNull();
+  });
+});

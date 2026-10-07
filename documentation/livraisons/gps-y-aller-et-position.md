@@ -340,6 +340,9 @@ Règle validée par Hugo le 2026-10-06 ; bâti le même jour. Écran
   (`DeliveryAddressPointsReader`, sous le mur `(adresse, société)`, adresses
   archivées exclues). Une commande sans adresse reliée ne compte pas.
 - **Une position annoncée à plus de 50 m près est écartée** (`MAX_ACCURACY_M`).
+- **Une position relevée à moins de 200 m du dépôt est écartée** (`DEPOT_RADIUS_M`,
+  Hugo, 2026-10-07, audit § 3.3) : trois clôtures « sans remise » faites au
+  retour suggéraient le dépôt comme porte. Dépôt non situé : rien n'est écarté.
 - **Le groupe le plus dense** (`densestCluster`) : pour chaque position,
   celles à `CLUSTER_RADIUS_M` (30 m) au plus d'elle — deux positions d'un même
   groupe peuvent donc être à 60 m l'une de l'autre ; on garde le plus grand,

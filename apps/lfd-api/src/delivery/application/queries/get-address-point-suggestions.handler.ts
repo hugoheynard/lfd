@@ -1,3 +1,5 @@
+import { DepartureCandidatesReader } from "../../channels/commerce/index.js";
+import { DepartureReader } from "../../domain/ports/departure.reader.js";
 import type { AddressPointSuggestionsView } from "@lfd/contracts";
 import { type IQueryHandler, QueryHandler } from "@nestjs/cqrs";
 
@@ -28,6 +30,8 @@ export class GetAddressPointSuggestionsHandler implements IQueryHandler<
     private readonly addresses: DeliveryAddressPointsReader,
     private readonly ignored: IgnoredAddressPointsReader,
     private readonly geocodes: GeocodeCacheReader,
+    private readonly departure: DepartureReader,
+    private readonly candidates: DepartureCandidatesReader,
     private readonly clock: Clock,
   ) {}
 
@@ -38,6 +42,8 @@ export class GetAddressPointSuggestionsHandler implements IQueryHandler<
         addresses: this.addresses,
         ignored: this.ignored,
         geocodes: this.geocodes,
+        departure: this.departure,
+        candidates: this.candidates,
       },
       this.clock.now(),
     );
