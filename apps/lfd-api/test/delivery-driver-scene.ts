@@ -17,11 +17,18 @@ import { E2E_STAFF_SUB, type E2eContext } from "./e2e-harness.js";
 
 export const MY_ROUND = "/admin/livraison/ma-tournee";
 
-/** Le rôle tel qu'Hugo le crée à l'écran : le droit de conduire, et lui seul. */
+/**
+ * Le rôle tel qu'Hugo le crée à l'écran : conduire, ET les gestes à la porte
+ * (`tableau-droits-livraison.md`). Depuis l'audit 2026-10-07 (B8), un livreur
+ * n'est affectable qu'avec les deux : le premier seul ne passe plus.
+ */
 export const DRIVER_ROLE = {
   key: "livreur",
   label: "Livreur",
-  grants: [{ resource: "delivery_driving", action: "write" }],
+  grants: [
+    { resource: "delivery_driving", action: "write" },
+    { resource: "delivery_doorstep", action: "write" },
+  ],
 } as const;
 
 /** Crée le rôle `livreur` à l'écran — `ctx.reset()` ne sème que les rôles de la graine. */

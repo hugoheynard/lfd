@@ -15,13 +15,13 @@ import {
   OrderAlreadyInRoundError,
   VehicleInactiveOnDayError,
 } from "../errors/delivery-round-errors.js";
-import { DriverWithoutAccessError } from "../errors/delivery-driver-errors.js";
 import {
   DeliveryRoundReturnedError,
   DoorstepRoundNotDepartedError,
   RoundNotDepartedForReturnError,
   RoundStopsWithoutOutcomeError,
 } from "../errors/delivery-doorstep-errors.js";
+import type { DriverAccess } from "../value-objects/driver-access.js";
 import type { GesturePosition } from "../value-objects/gesture-position.js";
 import type { PlannedTiming } from "../value-objects/planned-timing.js";
 import { isCalendarDay } from "../value-objects/service-day.js";
@@ -384,18 +384,18 @@ export class DeliveryRound {
 
   /**
    * **Affecter un livreur** (plan « Ma tournée », MT-D2 v2). Composer, donc
-   * refusé une fois partie (I6). Et refusé à qui n'a pas le droit EFFECTIF de
-   * conduire (`delivery_driving:write`, rôle et dérogations) : `drivers` est
-   * la liste que l'annuaire rend au moment du geste — jamais la clé du rôle.
+   * refusé une fois partie (I6). Et refusé à qui ne peut pas livrer : le droit
+   * EFFECTIF de conduire ET celui des gestes à la porte (rôle et dérogations ;
+   * audit 2026-10-07, B8) — `access` est ce que l'annuaire rend au moment du
+   * geste, jamais la clé du rôle.
    *
    * Rend `false` quand c'est déjà lui : la version n'avance pas, rien ne s'écrit.
    * @throws {DeliveryRoundDepartedError} @throws {DriverWithoutAccessError}
+   * @throws {DriverWithoutDoorstepError}
    */
-  assignDriver(staffId: string, drivers: ReadonlySet<string>, at: Date): boolean {
+  assignDriver(staffId: string, access: DriverAccess, at: Date): boolean {
     this.ensureAtDepot();
-    if (!drivers.has(staffId)) {
-      throw new DriverWithoutAccessError(this.state.vehicleName);
-    }
+    access.ensureCanDeliver(staffId, this.state.vehicleName);
     if (this.currentDriverStaffId === staffId) {
       return false;
     }

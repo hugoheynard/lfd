@@ -7,7 +7,10 @@ import {
 } from "../../../../staff/directory/domain/__tests__/fixed-staff-author-directory.js";
 import { FixedStaffPermissionHolders } from "../../../../staff/directory/domain/__tests__/fixed-staff-permission-holders.js";
 import { DeliveryRound } from "../../../domain/entities/delivery-round.js";
-import { DriverWithoutAccessError } from "../../../domain/errors/delivery-driver-errors.js";
+import {
+  DriverWithoutAccessError,
+  DriverWithoutDoorstepError,
+} from "../../../domain/errors/delivery-driver-errors.js";
 import { DeliveryRoundDepartedError } from "../../../domain/errors/delivery-loading-errors.js";
 import { DeliveryRoundStaleError } from "../../../domain/errors/delivery-round-errors.js";
 import { AssignDeliveryDriverCommand } from "../assign-delivery-driver.command.js";
@@ -21,10 +24,16 @@ const DAY = "2030-03-12";
 const NOW = new Date(0);
 
 const PAUL = { staffUserId: "staff_paul", firstName: "Paul", lastName: "Roux" };
+const MARC = { staffUserId: "staff_marc", firstName: "Marc", lastName: "Blanc" };
 
-/** Paul tient le droit de conduire ; personne d'autre. */
+/** Paul tient les deux droits d'un livreur ; Marc ne fait que conduire ; personne d'autre. */
 const HOLDERS = () =>
-  new FixedStaffPermissionHolders(new Map([["delivery_driving:write", [PAUL]]]));
+  new FixedStaffPermissionHolders(
+    new Map([
+      ["delivery_driving:write", [PAUL, MARC]],
+      ["delivery_doorstep:write", [PAUL]],
+    ]),
+  );
 
 const DIRECTORY = () =>
   new FixedStaffAuthorDirectory(
@@ -57,7 +66,7 @@ describe("AssignDeliveryDriverHandler — MT-D2 v2", () => {
     return { handler, rounds, events, holders };
   }
 
-  it("affecte un livreur qui tient le droit effectif, et le trace par son nom", async () => {
+  it("affecte un livreur qui tient les deux droits effectifs, et le trace par son nom", async () => {
     const { handler, rounds, events, holders } = assign();
 
     await handler.execute(
@@ -65,7 +74,7 @@ describe("AssignDeliveryDriverHandler — MT-D2 v2", () => {
     );
 
     expect(rounds.stored("r_1")?.driverStaffId).toBe("staff_paul");
-    expect(holders.asked).toEqual(["delivery_driving:write"]);
+    expect(holders.asked).toEqual(["delivery_driving:write", "delivery_doorstep:write"]);
     expect(events.traced[0]?.journalFact()).toEqual({
       type: "delivery_round.driver_assigned",
       subjectType: "delivery_round",
@@ -103,6 +112,25 @@ describe("AssignDeliveryDriverHandler — MT-D2 v2", () => {
         new AssignDeliveryDriverCommand("r_1", { staffUserId: "staff_comptoir", version: 1 }),
       ),
     ).rejects.toThrow(DriverWithoutAccessError);
+    expect(rounds.saved).toEqual([]);
+    expect(events.traced).toEqual([]);
+  });
+
+  /**
+   * Régression (audit 2026-10-07, B8) : l'affectation ne lisait que
+   * `delivery_driving:write`. Un conducteur sans `delivery_doorstep` était
+   * affecté, chargeait, partait — puis prenait 403 à chaque geste à la porte,
+   * sans pouvoir terminer sa tournée, et rien ne l'avait dit.
+   */
+  it("🔴 refuse un conducteur sans les gestes à la porte, en nommant le droit, sans rien écrire", async () => {
+    const { handler, rounds, events } = assign();
+
+    const refused = handler.execute(
+      new AssignDeliveryDriverCommand("r_1", { staffUserId: "staff_marc", version: 1 }),
+    );
+
+    await expect(refused).rejects.toThrow(DriverWithoutDoorstepError);
+    await expect(refused).rejects.toThrow(/mais pas « Gestes à la porte »/u);
     expect(rounds.saved).toEqual([]);
     expect(events.traced).toEqual([]);
   });

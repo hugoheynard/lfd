@@ -205,7 +205,7 @@ export const STAFF_RESOURCE_SCOPES: Readonly<Record<StaffResource, StaffResource
   delivery_driving: {
     read: "Voir SA tournée — celle dont on est le livreur affecté, et aucune autre — avec ses arrêts et ses procédures.",
     write:
-      "Commencer sa tournée et charger ses propres sacs. C'est aussi ce droit qui fait apparaître la personne parmi les livreurs à affecter. Remettre et clore les arrêts demande Gestes à la porte.",
+      "Commencer sa tournée et charger ses propres sacs. Pour apparaître parmi les livreurs à affecter, il faut aussi Gestes à la porte : sans ce droit, on partirait sans pouvoir remettre ni clore un arrêt.",
   },
   delivery_doorstep: {
     read: "Voir les photos des incidents de sa tournée — rien d'utile sans l'écriture.",

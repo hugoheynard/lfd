@@ -82,17 +82,20 @@ export interface DeliveryRoundDriverView {
   /** « Prénom Nom », ou `null` : la fiche n'existe plus, ou n'a pas de nom. */
   readonly name: string | null;
   /**
-   * 🔴 `false` : il a PERDU le droit de conduire (`delivery_driving:write`,
-   * rôle et dérogations) ou sa fiche est suspendue. L'écran dit « livreur sans
-   * accès — réaffecter » ; sa route le refuse de toute façon (le guard).
+   * 🔴 `false` : il a PERDU l'un des deux droits d'un livreur
+   * (`delivery_driving:write` ou `delivery_doorstep:write`, rôle et
+   * dérogations ; audit 2026-10-07, B8) ou sa fiche est suspendue. L'écran dit
+   * « livreur sans accès — réaffecter » ; le guard refuse de toute façon les
+   * routes du droit qui lui manque.
    */
   readonly canDrive: boolean;
 }
 
 /**
  * Les membres du staff qu'on peut affecter à une tournée : ceux qui ont
- * EFFECTIVEMENT `delivery_driving:write` (rôle et dérogations), fiche non
- * suspendue — pas ceux qui portent la clé `livreur` (MT-D2 v2).
+ * EFFECTIVEMENT `delivery_driving:write` ET `delivery_doorstep:write` (rôle et
+ * dérogations ; audit 2026-10-07, B8), fiche non suspendue — pas ceux qui
+ * portent la clé `livreur` (MT-D2 v2).
  */
 export interface DeliveryDriversView {
   readonly drivers: readonly DeliveryDriverView[];

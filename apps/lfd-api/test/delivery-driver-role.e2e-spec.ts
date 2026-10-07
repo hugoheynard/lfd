@@ -4,15 +4,31 @@
  * (sa migration a été retirée le 2026-10-01, `plan-droits-par-geste.md`,
  * DG-D6), et ce qu'il ouvre se lit sur les vraies routes.
  *
- * 🔴 Le livreur n'a QUE `delivery_driving:write` : pas même la cloche, qui ne
- * filtre aucun destinataire — il y lirait les alertes de compte et les
- * demandes des clients, et les éteindrait pour tout le monde.
+ * 🔴 Le livreur n'a QUE `delivery_driving:write` et `delivery_doorstep:write` :
+ * pas même la cloche, qui ne filtre aucun destinataire — il y lirait les
+ * alertes de compte et les demandes des clients, et les éteindrait pour tout
+ * le monde. Les deux, et pas un seul : depuis l'audit 2026-10-07 (B8), qui
+ * conduit sans les gestes à la porte n'est ni proposé ni affecté.
  */
-import { roleGrantsSchema, type StaffMeView } from "@lfd/contracts";
+import { type DeliveryDriversView, roleGrantsSchema, type StaffMeView } from "@lfd/contracts";
 import type request from "supertest";
+import type { Response } from "supertest";
 
-import { bootstrapE2e, jsonBody, serviceDay, type E2eContext } from "./e2e-harness.js";
-import { ADMIN_VERIFIER_OVERRIDE, addVehicle, openRound } from "./delivery-rounds-scene.js";
+import {
+  bootstrapE2e,
+  E2E_STAFF_SUB,
+  jsonBody,
+  serviceDay,
+  type E2eContext,
+} from "./e2e-harness.js";
+import {
+  ADMIN_VERIFIER_OVERRIDE,
+  addVehicle,
+  admin,
+  openRound,
+  ROUNDS,
+  roundOf,
+} from "./delivery-rounds-scene.js";
 import { MY_ROUND, seedDriverRole, staffWithRole } from "./delivery-driver-scene.js";
 
 const DAY = serviceDay();
@@ -33,17 +49,23 @@ beforeEach(async () => {
 });
 
 describe("le rôle `livreur`, créé à l'écran", () => {
-  it("n'accorde que `delivery_driving:write` — ni cloche, ni commandes, ni chargement", async () => {
+  it("n'accorde que conduire et les gestes à la porte — ni cloche, ni commandes, ni chargement", async () => {
     const role = await ctx.prisma.staffRoleDefinition.findUniqueOrThrow({
       where: { key: "livreur" },
     });
     expect(roleGrantsSchema.parse(role.grants)).toEqual([
       { resource: "delivery_driving", action: "write" },
+      { resource: "delivery_doorstep", action: "write" },
     ]);
 
     const { agent } = await staffWithRole(ctx, "livreur-paul");
     const me = jsonBody<StaffMeView>(await agent.get("/admin/me").expect(200));
-    expect([...me.permissions].sort()).toEqual(["delivery_driving:read", "delivery_driving:write"]);
+    expect([...me.permissions].sort()).toEqual([
+      "delivery_doorstep:read",
+      "delivery_doorstep:write",
+      "delivery_driving:read",
+      "delivery_driving:write",
+    ]);
   });
 
   it("le comptoir de la graine n'a pas le droit de conduire", async () => {
@@ -107,5 +129,80 @@ describe("le mur de droits du livreur (MT1)", () => {
     }
 
     await agent.get(`${MY_ROUND}?date=${DAY}`).expect(200);
+  });
+});
+
+describe("un livreur affectable tient les deux droits (audit 2026-10-07, B8)", () => {
+  /** Un rôle qui conduit sans les gestes à la porte — créé à l'écran, comme le livreur. */
+  const DRIVE_ONLY_ROLE = {
+    key: "conducteur",
+    label: "Conducteur",
+    grants: [{ resource: "delivery_driving", action: "write" }],
+  } as const;
+
+  /** Les livreurs que l'écran Tournées propose. */
+  async function proposed(): Promise<readonly string[]> {
+    const { drivers } = jsonBody<DeliveryDriversView>(
+      await admin(ctx).get(`${ROUNDS}/livreurs`).expect(200),
+    );
+    return drivers.map((driver) => driver.staffUserId);
+  }
+
+  /** Affecte `staffUserId` à la version courante, par la route de la composition. */
+  async function assignDriver(roundId: string, staffUserId: string): Promise<Response> {
+    const { version } = await roundOf(ctx, DAY, roundId);
+    return admin(ctx).put(`${ROUNDS}/${roundId}/livreur`).send({ staffUserId, version });
+  }
+
+  /**
+   * Régression (audit 2026-10-07, B8) : l'affectation ne lisait que
+   * `delivery_driving:write`. Un conducteur sans `delivery_doorstep` était
+   * proposé, affecté, chargeait et partait — puis prenait 403 à chaque geste à
+   * la porte sans pouvoir terminer sa tournée, et rien ne l'avait dit.
+   */
+  it("🔴 conduire sans les gestes à la porte : absent de la liste, et l'affectation rend 409 en le disant", async () => {
+    await ctx.asSub(E2E_STAFF_SUB).post("/admin/staff-roles").send(DRIVE_ONLY_ROLE).expect(201);
+    const marc = await staffWithRole(ctx, "conducteur-marc", DRIVE_ONLY_ROLE.key);
+    const roundId = await openRound(ctx, DAY, await addVehicle(ctx, "Kangoo"));
+
+    expect(await proposed()).not.toContain(marc.id);
+    const refused = await assignDriver(roundId, marc.id);
+
+    expect(refused.status).toBe(409);
+    const body = jsonBody<{ code: string; message: string }>(refused);
+    expect(body.code).toBe("delivery.driver_without_doorstep");
+    expect(body.message).toContain("mais pas « Gestes à la porte »");
+    expect((await roundOf(ctx, DAY, roundId)).driver).toBeNull();
+  });
+
+  it("avec les deux droits : proposé, puis affecté", async () => {
+    const paul = await staffWithRole(ctx, "livreur-paul");
+    const roundId = await openRound(ctx, DAY, await addVehicle(ctx, "Kangoo"));
+
+    expect(await proposed()).toContain(paul.id);
+    expect((await assignDriver(roundId, paul.id)).status).toBe(204);
+
+    expect((await roundOf(ctx, DAY, roundId)).driver).toMatchObject({
+      staffUserId: paul.id,
+      canDrive: true,
+    });
+  });
+
+  it("affecté, puis privé des gestes à la porte : l'écran Tournées le dit « sans accès »", async () => {
+    const paul = await staffWithRole(ctx, "livreur-paul");
+    const roundId = await openRound(ctx, DAY, await addVehicle(ctx, "Kangoo"));
+    expect((await assignDriver(roundId, paul.id)).status).toBe(204);
+
+    await ctx.prisma.staffPermissionOverride.create({
+      data: {
+        staffUserId: paul.id,
+        resource: "delivery_doorstep",
+        action: "write",
+        effect: "deny",
+      },
+    });
+
+    expect((await roundOf(ctx, DAY, roundId)).driver?.canDrive).toBe(false);
+    expect(await proposed()).not.toContain(paul.id);
   });
 });

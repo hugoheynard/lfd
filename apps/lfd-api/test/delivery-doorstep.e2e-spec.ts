@@ -168,10 +168,26 @@ describe("« Je suis arrivé » (AP-D6)", () => {
     expect(execution.arrivedAt).toBeNull();
   });
 
+  /**
+   * Depuis l'audit 2026-10-07 (B8), un conducteur sans les gestes à la porte
+   * n'est plus affectable : le cas ne naît plus que d'un droit perdu en route.
+   * Paul part en livreur, puis l'administrateur le passe au rôle
+   * « conducteur » par la vraie route de sa fiche — celle qui oublie le cache
+   * d'accès.
+   */
   it("conduire ne suffit pas : sans `delivery_doorstep`, 403 (AP-D9)", async () => {
-    const paul = await staffWithRole(ctx, "conducteur-paul", "conducteur");
+    const paul = await staffWithRole(ctx, "conducteur-paul");
     const { roundId, orderIds } = await departedRound(paul, 1);
     const stopId = await stopIdOf(orderIds[0] ?? "");
+    await admin(ctx)
+      .patch(`/admin/staff-users/${paul.id}`)
+      .send({
+        firstName: "conducteur-paul",
+        lastName: "Test",
+        email: "conducteur-paul@lfc.test",
+        role: DRIVE_ONLY_ROLE.key,
+      })
+      .expect(204);
 
     await paul.agent.post(`${MY_ROUND}/${roundId}/arrets/${stopId}/arrivee`).expect(403);
   });

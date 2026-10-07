@@ -2,6 +2,7 @@ import { AssignDeliveryDriverCommand } from "../../../delivery/application/comma
 import {
   DriverRoundNotFoundError,
   DriverWithoutAccessError,
+  DriverWithoutDoorstepError,
 } from "../../../delivery/domain/errors/delivery-driver-errors.js";
 import { assignSeedDriver, type DriverSeedReader } from "../delivery-driver.seed.js";
 
@@ -61,6 +62,24 @@ describe("assignSeedDriver", () => {
 
   it("rend le refus de l'agrégat quand le requérant n'a pas le droit de conduire", async () => {
     const refusal = new DriverWithoutAccessError("Camionnette 1");
+    const bus = busAnswering(() => Promise.reject(refusal));
+
+    const result = await assignSeedDriver(
+      { commands: bus.commands, reader, requester: "staff-1" },
+      ROUND,
+    );
+
+    expect(result).toEqual({ status: "refused", reason: refusal.message });
+  });
+
+  /**
+   * Depuis l'audit 2026-10-07 (B8), l'agrégat refuse aussi qui conduit sans les
+   * gestes à la porte — le cas d'un admin de base existante à qui l'écran n'a
+   * accordé que la conduite. Ce refus-là ne doit pas faire échouer le
+   * rechargement plus que l'autre.
+   */
+  it("rend le refus de l'agrégat quand le requérant conduit sans les gestes à la porte", async () => {
+    const refusal = new DriverWithoutDoorstepError("Camionnette 1");
     const bus = busAnswering(() => Promise.reject(refusal));
 
     const result = await assignSeedDriver(

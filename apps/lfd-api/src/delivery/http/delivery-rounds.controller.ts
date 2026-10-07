@@ -83,7 +83,10 @@ export class DeliveryRoundsController {
     );
   }
 
-  /** Les livreurs qu'on peut affecter : le droit effectif de conduire, pas la clé du rôle. */
+  /**
+   * Les livreurs qu'on peut affecter : les droits effectifs de conduire ET des
+   * gestes à la porte (audit 2026-10-07, B8), pas la clé du rôle.
+   */
   @Get("livreurs")
   drivers(): Promise<DeliveryDriversView> {
     return this.queries.execute<ListDeliveryDriversQuery, DeliveryDriversView>(

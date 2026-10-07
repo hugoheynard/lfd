@@ -21,7 +21,11 @@ export interface DeliveryRoundsDayInputs {
   readonly composed: ReadonlyMap<string, DeliveryOrderFacts>;
   /** Parmi les attendues, celles qui sont dans une tournée vivante, de n'importe quel jour. */
   readonly assigned: ReadonlySet<string>;
-  /** Les fiches qui tiennent EFFECTIVEMENT le droit de conduire, maintenant (MT-D2 v2). */
+  /**
+   * Les fiches qui peuvent livrer, maintenant : elles tiennent EFFECTIVEMENT le
+   * droit de conduire ET celui des gestes à la porte (MT-D2 v2 ; audit
+   * 2026-10-07, B8).
+   */
   readonly drivers: ReadonlySet<string>;
   /** Le nom des livreurs affectés, lu dans l'annuaire ; absent : fiche inconnue. */
   readonly driverNames: ReadonlyMap<string, string | null>;
@@ -107,9 +111,9 @@ function roundView(round: RoundRow, inputs: DeliveryRoundsDayInputs): DeliveryRo
 }
 
 /**
- * Le livreur affecté, nom LU dans l'annuaire. `canDrive` faux : il a perdu le
- * droit ou sa fiche est suspendue — l'écran dit « livreur sans accès —
- * réaffecter » (MT-D2 v2).
+ * Le livreur affecté, nom LU dans l'annuaire. `canDrive` faux : il a perdu
+ * l'un des deux droits — conduire, ou les gestes à la porte — ou sa fiche est
+ * suspendue ; l'écran dit « livreur sans accès — réaffecter » (MT-D2 v2).
  */
 function driverView(
   staffUserId: string | null,

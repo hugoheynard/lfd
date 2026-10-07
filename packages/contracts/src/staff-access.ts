@@ -370,12 +370,18 @@ export const staffResourceSchema = z.enum([
    * **Conduire SA tournée** — lire la tournée qui vous est affectée et la
    * commencer (`/admin/livraison/ma-tournee`, plan « Ma tournée », MT-D1 v2).
    *
-   * Le seul droit du rôle `livreur`, qui n'a pas de valeur `StaffRole` : il
-   * vit par sa clé en base, créé à l'écran — sa migration a été retirée avant
-   * la mise en ligne (2026-10-01, `plan-droits-par-geste.md`, DG-D6). Pas
-   * `delivery_loading` : celui-là ouvre le scan et le plan de chargement, donc
-   * le dépôt. Pas `delivery_doorstep` non plus, que le lot 6 réserve aux gestes
-   * à la porte — ce sera une ressource DE PLUS sur le même rôle.
+   * Le rôle `livreur` n'a pas de valeur `StaffRole` : il vit par sa clé en
+   * base, créé à l'écran — sa migration a été retirée avant la mise en ligne
+   * (2026-10-01, `plan-droits-par-geste.md`, DG-D6). Le réglage visé lui
+   * donne ce droit ET `delivery_doorstep`, les gestes à la porte (AP-D9) :
+   * deux ressources sur le même rôle, accordées à l'écran
+   * (`tableau-droits-livraison.md`). Pas `delivery_loading` : celui-là ouvre
+   * le scan et le plan de chargement, donc le dépôt.
+   *
+   * 🔴 Depuis le 2026-10-07 (audit, B8), proposer ou affecter un livreur exige
+   * les DEUX, `delivery_driving:write` ET `delivery_doorstep:write`
+   * (`delivery-driver-support.ts`) : qui conduisait sans les gestes à la porte
+   * était affecté, chargeait et partait, puis prenait 403 à chaque arrêt.
    */
   "delivery_driving",
   /**
@@ -677,12 +683,13 @@ export const ROLE_GRANTS: Readonly<Record<StaffRole, RoleGrants>> = {
   commercial: {
     b2b_companies: "write",
     // `write` depuis la saisie assistée : le commercial prend les commandes au
-    // téléphone, c'est son métier. Ce droit couvre aussi l'attestation de remise
-    // au comptoir (`POST /admin/handover/:token`, déplacée au fournil le
-    // 2026-09-07 sans changer de ressource) — élargissement assumé : celui
-    // qui prend la commande est souvent celui qui remet le sac.
-    // Il ne couvre TOUJOURS PAS la modification d'une commande passée : aucune
-    // route ne l'expose, et ce sont les avenants qui la porteront.
+    // téléphone, c'est son métier. L'attestation de retrait au comptoir
+    // (`POST /admin/handover/:token`) n'est plus sous ce droit : elle est sous
+    // `handover_counter` depuis le 2026-10-01 (DG3, `HandoverController`,
+    // vérifié le 2026-10-07), que le commercial tient plus bas au même
+    // niveau — celui qui prend la commande est souvent celui qui remet le sac.
+    // Ce droit ne couvre TOUJOURS PAS la modification d'une commande passée :
+    // aucune route ne l'expose, et ce sont les avenants qui la porteront.
     b2b_orders: "write",
     // Les gestes sortis de `b2b_orders` le 2026-10-01, reçus par la bascule.
     b2b_place_order: "write",
@@ -825,7 +832,9 @@ export const ROLE_GRANTS: Readonly<Record<StaffRole, RoleGrants>> = {
    *
    * ⚠️ `b2b_orders:write` emporte `GET /admin/orders` pour toutes les sociétés,
    * le bon PDF et le rappel de retrait : c'est son métier, il sert la file de
-   * tous les clients, et c'est ce que `comptoir/retrait` lui ouvre déjà.
+   * tous les clients. Cette file (`comptoir/retrait`) ne lui est plus ouverte
+   * par ce droit, mais par `handover_counter`, qu'il tient aussi — l'écran et
+   * l'API, depuis le 2026-10-01 (DG3, vérifié le 2026-10-07).
    */
   comptoir: {
     b2b_counter: "read",
@@ -966,8 +975,9 @@ export function resolveStaffPermissions(
  *
  * C'est le pivot qui rend un rôle définissable en base : `ROLE_GRANTS` cesse
  * d'être la seule source possible de droits, sans que rien ne change pour les
- * cinq rôles du catalogue — {@link resolveStaffPermissions} y délègue, à
- * l'identique. Aucun appelant n'a bougé.
+ * rôles du catalogue (sept au 2026-10-07, `staffRoleSchema`) —
+ * {@link resolveStaffPermissions} y délègue, à l'identique. Aucun appelant
+ * n'a bougé.
  *
  * Elle reste **pure et déterministe** : ni base, ni réseau, ni horloge.
  *

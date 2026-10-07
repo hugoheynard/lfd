@@ -14,7 +14,22 @@ export class DriverWithoutAccessError extends BusinessError {
   constructor(vehicleName: string) {
     super(
       "delivery.driver_without_access",
-      `Cette personne ne peut pas conduire « ${vehicleName} » : elle n'a pas le droit « Conduire sa tournée », ou sa fiche est suspendue. Choisissez un livreur dans la liste, ou ouvrez-lui ce droit dans Admin › Équipe.`,
+      `Cette personne ne peut pas conduire « ${vehicleName} » : elle n'a pas le droit « Conduire sa tournée », ou sa fiche est suspendue. Choisissez un livreur dans la liste, accordez « Conduire sa tournée » à son rôle dans Admin › Rôles, ou réactivez sa fiche dans Admin › Utilisateurs.`,
+    );
+  }
+}
+
+/**
+ * Affecter quelqu'un qui conduit SANS les gestes à la porte (audit
+ * 2026-10-07, B8). Affecté, il chargeait et partait, puis prenait 403 à chaque
+ * arrêt — ni arrivée, ni remise, ni dépôt, ni clôture, ni retour : sa tournée
+ * ne pouvait plus se terminer, et rien ne l'avait dit avant le départ.
+ */
+export class DriverWithoutDoorstepError extends BusinessError {
+  constructor(vehicleName: string) {
+    super(
+      "delivery.driver_without_doorstep",
+      `Cette personne tient le droit « Conduire sa tournée » mais pas « Gestes à la porte » : affectée à « ${vehicleName} », elle partirait sans pouvoir remettre, déposer ni clore un seul arrêt. Accordez « Gestes à la porte » à son rôle dans Admin › Rôles, ou choisissez un livreur dans la liste.`,
     );
   }
 }

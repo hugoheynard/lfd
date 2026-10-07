@@ -138,8 +138,10 @@ export class MyDeliveryDoorstepController {
 
   /**
    * « Déposé avec preuve » (B2) — multipart : la version, la photo (toujours).
-   * Refusé si l'arrêt ne l'autorise pas (dépôt non autorisé au départ, ou
-   * signature exigée). 204, même rejoué.
+   * Refusé si l'arrêt ne l'autorise pas : dépôt non autorisé au départ, ou
+   * signature exigée — sauf quand un commercial l'a autorisé pour CET arrêt :
+   * sa décision l'emporte sur la signature exigée (LB-Q5, `depositPermitted`
+   * dans `deposit-rule.ts`, vérifié le 2026-10-07). 204, même rejoué.
    */
   @Post(":roundId/arrets/:stopId/depot")
   @HttpCode(HttpStatus.NO_CONTENT)

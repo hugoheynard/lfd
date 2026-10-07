@@ -150,7 +150,13 @@ export interface MyDeliveryStopView {
   readonly bins: number;
   /** Parmi eux, les bacs isothermes — « froid ». */
   readonly coldBins: number;
-  /** Clos le, ou `null` : à faire. Écrit, au lot A, par la seule clôture sans remise. */
+  /**
+   * Clos le (ISO), ou `null` : à faire. Quatre écrivains (vérifié le
+   * 2026-10-07) : la remise et le dépôt à la porte (`doorstep-handover.ts`), la
+   * clôture sans remise (`close-stop-without-handover.handler.ts`), et
+   * « Rapporter », décidé par un commercial (`bring-stop-back.handler.ts`) ou
+   * réglé d'avance (`stop-decision-by-setting.ts`).
+   */
   readonly closedAt: string | null;
   /** « Je suis arrivé » le (ISO), ou `null` : aucune arrivée déclarée. */
   readonly arrivedAt: string | null;

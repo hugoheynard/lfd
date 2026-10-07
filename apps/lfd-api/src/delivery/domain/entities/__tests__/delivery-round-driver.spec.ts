@@ -1,12 +1,20 @@
 import { DeliveryRoundDepartedError } from "../../errors/delivery-loading-errors.js";
-import { DriverWithoutAccessError } from "../../errors/delivery-driver-errors.js";
+import {
+  DriverWithoutAccessError,
+  DriverWithoutDoorstepError,
+} from "../../errors/delivery-driver-errors.js";
+import { DriverAccess } from "../../value-objects/driver-access.js";
 import { DeliveryRound } from "../delivery-round.js";
 
 // Des instants comparés entre eux seulement, jamais à l'horloge.
 const DAY = "2030-03-12";
 const AT = new Date(0);
 const LATER = new Date(60_000);
-const DRIVERS = new Set(["staff_paul", "staff_lea"]);
+/** Paul et Léa tiennent les deux droits ; Marc conduit sans les gestes à la porte. */
+const DRIVERS = DriverAccess.of(
+  ["staff_paul", "staff_lea", "staff_marc"],
+  ["staff_paul", "staff_lea"],
+);
 
 function round(
   overrides: { departedAt?: Date | null; driverStaffId?: string | null } = {},
@@ -67,6 +75,33 @@ describe("DeliveryRound — le livreur (plan « Ma tournée », MT-D2 v2)", () =
       /Conduire sa tournée/u,
     );
     expect(subject.driverStaffId).toBeNull();
+    expect(subject.version).toBe(3);
+  });
+
+  /**
+   * Régression (audit 2026-10-07, B8) : l'agrégat ne demandait que le droit de
+   * conduire. Marc était affecté, partait, puis prenait 403 à chaque geste à la
+   * porte sans pouvoir terminer sa tournée.
+   */
+  it("🔴 refuse un conducteur sans les gestes à la porte, en nommant le droit qui manque", () => {
+    const subject = round();
+
+    expect(() => subject.assignDriver("staff_marc", DRIVERS, LATER)).toThrow(
+      DriverWithoutDoorstepError,
+    );
+    expect(() => subject.assignDriver("staff_marc", DRIVERS, LATER)).toThrow(
+      /mais pas « Gestes à la porte » : affectée à « Kangoo blanc »/u,
+    );
+    expect(subject.driverStaffId).toBeNull();
+    expect(subject.version).toBe(3);
+  });
+
+  it("refuse de réaffecter le même livreur s'il a perdu les gestes à la porte", () => {
+    const subject = round({ driverStaffId: "staff_marc" });
+
+    expect(() => subject.assignDriver("staff_marc", DRIVERS, LATER)).toThrow(
+      DriverWithoutDoorstepError,
+    );
     expect(subject.version).toBe(3);
   });
 

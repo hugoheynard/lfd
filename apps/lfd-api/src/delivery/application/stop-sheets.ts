@@ -18,10 +18,13 @@ export interface StopSheet {
 /**
  * **La fiche de chaque arrêt de « Ma tournée »** (`parcours-du-livreur.md`,
  * PL4 — « une seule fiche ») : le contenu de la feuille d'atelier, lu par le
- * port du COMMERCE (`DeliveryOrderLinesReader`), jamais par le fournil
- * (`delivery → production` est fermé). Le froid vient du catalogue relayé par
- * le commerce, et le nombre de bacs attendus de la MÊME proposition que le
- * poste de colisage (`proposePacking`, types en service).
+ * port du COMMERCE (`DeliveryOrderLinesReader`), jamais par le fournil. La
+ * livraison ne parle au fournil que par `production/channels/delivery/`
+ * (depuis le 2026-10-04, `CLAUDE.md` § 3), qui ne porte que deux faits — la
+ * clôture et le retirage d'une journée —, et le contenu d'une commande
+ * appartient au commerce (vérifié le 2026-10-07). Le froid vient du catalogue
+ * relayé par le commerce, et le nombre de bacs attendus de la MÊME proposition
+ * que le poste de colisage (`proposePacking`, types en service).
  *
  * Une lecture ; aucune ligne ne porte de montant (le port n'en a pas).
  */
