@@ -26,6 +26,11 @@
 > global de la porte reste sous `delivery_procedures`. Admin et commercial en
 > **écriture** — voir « Au déploiement ».
 >
+> 2026-10-07 (audit Q5) : l'écran suit enfin le serveur. La page et l'entrée
+> du rail demandent `delivery_decisions:read` ; les deux réponses ne
+> s'affichent qu'avec `:write`, et la page dit à un lecteur ce qui lui manque.
+> Avant, l'écran exigeait l'écriture : un rôle en lecture seule ne voyait rien.
+>
 > 2026-10-02 : **`delivery_proofs`** (« Preuves de livraison ») — les trois
 > routes `GET admin/orders/:id/preuve-livraison(/photo|/signature)` et la
 > carte de la fiche commande quittent `b2b_orders:read`. Admin et commercial

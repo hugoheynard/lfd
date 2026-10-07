@@ -77,7 +77,7 @@ let doorstepReads = 0;
 
 async function boot(
   fake: FakeDecisions,
-  grants: readonly StaffPermission[] = [],
+  grants: readonly StaffPermission[] = ['delivery_decisions:write'],
 ): Promise<{ fixture: ComponentFixture<DecisionsPage>; element: HTMLElement }> {
   TestBed.resetTestingModule();
   TestBed.configureTestingModule({
@@ -206,6 +206,16 @@ describe('DecisionsPage — « À décider » (B3)', () => {
     await settle(fixture);
 
     expect(fake.calls).toContain('photo s-1 inc-1');
+  });
+
+  it('avec la seule lecture, montre les décisions sans proposer de réponse', async () => {
+    const { element } = await boot(new FakeDecisions(), ['delivery_decisions:read']);
+
+    expect(element.querySelector('[data-authorize]')).toBeNull();
+    expect(element.querySelector('[data-bring-back]')).toBeNull();
+    expect(element.querySelector('[data-read-only]')?.textContent).toContain(
+      'répondre demande le droit « Décider à la porte » en écriture',
+    );
   });
 
   describe('la décision réglée d’avance à la porte, en tête (B3 bis, 2026-10-02)', () => {

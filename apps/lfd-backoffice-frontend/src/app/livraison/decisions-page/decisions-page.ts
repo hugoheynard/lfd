@@ -81,6 +81,12 @@ export class DecisionsPage {
   protected readonly canWriteDoorstepRule = computed(() =>
     this.permissions.can('delivery_procedures:write'),
   );
+  /**
+   * Répondre demande l'écriture ; la page s'ouvre dès la lecture (audit
+   * livraisons Q5, 2026-10-07) — le serveur sert la liste et la photo sous
+   * `delivery_decisions:read`, comme la fiche des rôles le promet.
+   */
+  protected readonly canAnswer = computed(() => this.permissions.can('delivery_decisions:write'));
 
   protected readonly state = signal<DecisionsState>({ status: 'loading' });
   protected readonly decisions = computed(() => {

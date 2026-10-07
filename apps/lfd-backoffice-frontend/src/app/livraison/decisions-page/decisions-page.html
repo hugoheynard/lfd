@@ -60,37 +60,44 @@
                 <fold-callout variant="alert" data-decision-refusal>{{ message }}</fold-callout>
               }
 
-              <div class="actions">
-                @if (decision.decision.state !== 'authorize_deposit') {
-                  <button
-                    foldButton
-                    icon="package-check"
+              @if (!canAnswer()) {
+                <p class="read-only" data-read-only>
+                  Vous suivez cette décision : répondre demande le droit « Décider à la porte » en
+                  écriture.
+                </p>
+              } @else {
+                <div class="actions">
+                  @if (decision.decision.state !== 'authorize_deposit') {
+                    <button
+                      foldButton
+                      icon="package-check"
+                      [loading]="busy() === decision.stopId"
+                      [disabled]="busy() !== null"
+                      (click)="authorize(decision.stopId)"
+                      data-authorize
+                    >
+                      Autoriser le dépôt cette fois
+                    </button>
+                  }
+                  <fold-inline-confirm
+                    intent="primary"
+                    message="L’arrêt sera clos sans livraison : la commande revient au dépôt."
+                    [labels]="{ confirm: 'Rapporter' }"
                     [loading]="busy() === decision.stopId"
-                    [disabled]="busy() !== null"
-                    (click)="authorize(decision.stopId)"
-                    data-authorize
+                    (confirmed)="bringBack(decision.stopId)"
                   >
-                    Autoriser le dépôt cette fois
-                  </button>
-                }
-                <fold-inline-confirm
-                  intent="primary"
-                  message="L’arrêt sera clos sans livraison : la commande revient au dépôt."
-                  [labels]="{ confirm: 'Rapporter' }"
-                  [loading]="busy() === decision.stopId"
-                  (confirmed)="bringBack(decision.stopId)"
-                >
-                  <button
-                    foldButton
-                    emphasis="outline"
-                    icon="package-return"
-                    [disabled]="busy() !== null"
-                    data-bring-back
-                  >
-                    Rapporter
-                  </button>
-                </fold-inline-confirm>
-              </div>
+                    <button
+                      foldButton
+                      emphasis="outline"
+                      icon="package-return"
+                      [disabled]="busy() !== null"
+                      data-bring-back
+                    >
+                      Rapporter
+                    </button>
+                  </fold-inline-confirm>
+                </div>
+              }
             </div>
           </fold-card>
         } @empty {

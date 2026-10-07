@@ -250,8 +250,9 @@ const SCREENS: Readonly<Record<string, ScreenAccess>> = {
   'livraison/tournees': 'delivery_rounds:read',
   'livraison/non-remis': 'delivery_rounds:read',
   // « À décider » (a-la-porte.md, B3) : le droit de décider, pas celui des
-  // tournées ni des comptes (2026-10-02).
-  'livraison/a-decider': 'delivery_decisions:write',
+  // tournées ni des comptes (2026-10-02) ; la page s'ouvre en lecture, les
+  // réponses demandent l'écriture (2026-10-07, audit Q5).
+  'livraison/a-decider': 'delivery_decisions:read',
   // Tiré des positions des livreurs : l'écriture des tournées, lecture comprise.
   'livraison/carnet-a-corriger': 'delivery_rounds:write',
   'livraison/simulateur': 'delivery_rounds:read',

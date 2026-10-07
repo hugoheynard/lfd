@@ -195,7 +195,8 @@ export const LIVRAISON_VIEWS: readonly WorkspaceView[] = [
     label: 'À décider',
     link: '/livraison/a-decider',
     icon: 'help',
-    needs: 'delivery_decisions:write',
+    // La lecture suit, l'écriture répond (2026-10-07, audit Q5).
+    needs: 'delivery_decisions:read',
   },
   {
     // Tiré des positions des livreurs (gps-y-aller-et-position.md, §6) :

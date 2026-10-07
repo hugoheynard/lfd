@@ -394,11 +394,12 @@ export const routes: Routes = [
           import('./livraison/undelivered-page/undelivered-page').then((m) => m.UndeliveredPage),
       },
       // « À DÉCIDER » (a-la-porte.md, B3) : la réponse du COMMERCIAL à un
-      // problème à la porte, sous son droit (`delivery_decisions:write`, lecture
-      // comprise ; `b2b_companies:write` jusqu'au 2026-10-02) — la cible du lien de la notification « arrêt à décider ».
+      // problème à la porte, sous son droit : la page s'ouvre en lecture et
+      // n'offre les réponses qu'en écriture (2026-10-07, audit Q5 ;
+      // `b2b_companies:write` jusqu'au 2026-10-02) — la cible du lien de la notification « arrêt à décider ».
       {
         path: 'a-decider',
-        canActivate: [permissionGuard('delivery_decisions:write')],
+        canActivate: [permissionGuard('delivery_decisions:read')],
         title: 'À décider — LFC B2B admin',
         loadComponent: () =>
           import('./livraison/decisions-page/decisions-page').then((m) => m.DecisionsPage),
