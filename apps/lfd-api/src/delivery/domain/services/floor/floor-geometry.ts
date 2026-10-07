@@ -2,7 +2,7 @@ import type { CargoFloor } from "../../value-objects/cargo-floor.js";
 import { MM_PER_CM } from "../../value-objects/bin-type-dimensions.js";
 
 /**
- * **Le plancher en millimètres** (2026-10-07). Un véhicule se mesure au
+ * **Le plancher en millimètres** (2026-10-06, `0bcb955a6`). Un véhicule se mesure au
  * centimètre, un type de bac au millimètre : les calculs de plancher se font
  * dans la plus fine des deux, et c'est le PLANCHER qu'on convertit — ×10 est
  * exact, ÷10 ne l'est pas (66,5 cm).

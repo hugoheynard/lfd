@@ -184,6 +184,10 @@ seul l'écran les accorde.
 | **admin**      | écrit                | lit               |
 | **commercial** | écrit                | lit               |
 
+⚠️ La graine (`ROLE_GRANTS`) donne `delivery_proofs` en **écriture** à
+l'admin, ce tableau en lecture : sans effet, aucune route n'écrit sous cette
+ressource (relu le 2026-10-07, audit § 3.4). La lecture suffit.
+
 Sans ce geste, au déploiement, **le commercial perd « À décider »** (liste,
 réponses et notification) et la carte « Preuve de livraison » disparaît de
 la fiche commande pour lui. L'admin d'une base existante est dans le même

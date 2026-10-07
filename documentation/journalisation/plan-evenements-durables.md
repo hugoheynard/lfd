@@ -39,25 +39,25 @@ a été rouverte (ligne 11).
 
 **A — un effet (statut, argent, courriel) ou un autre bloc : à rendre durable**
 
-| #   | Abonné                                     | Écoute                                    | Effet                                            | Si perdu                                |
-| --- | ------------------------------------------ | ----------------------------------------- | ------------------------------------------------ | --------------------------------------- |
-| 30  | `orders/on-production-day-closed`          | `production.day_closed`                   | placed → confirmed                               | ✅ **durable** (BE3, 2026-10-04)        |
-| 5   | `orders/on-order-packed`                   | `production.order_packed`                 | placed → ready                                   | ✅ **durable** (E1, 2026-10-04)         |
-| 28  | `orders/on-order-handed-over`              | `handover.handed_over` (handover)         | ready → fulfilled                                | ✅ **durable** (E2, 2026-10-04)         |
-| 11  | `loyalty/credit-points-on-handover`        | `order.fulfilled`                         | **points de fidélité**                           | ✅ **durable** (E2, 2026-10-04)         |
-| 10  | `loyalty/credit-points-on-payment-settled` | `OrderPaymentSettledEvent`                | **points de fidélité**                           | points jamais crédités                  |
-| 1   | `delivery/hand-departed-orders-over`       | `DeliveryRoundDepartedEvent`              | la garde passe au livreur (port vers le retrait) | ✅ **durable** (E3 par DD1, 2026-10-06) |
-| 2   | `delivery/announce-delivery-departure`     | `DeliveryRoundDepartedEvent`              | « partie » au commerce (port)                    | ✅ **durable** (E3 par DD1, 2026-10-06) |
-| 25  | `orders/send-order-placed-mail`            | `OrderPlacedEvent`                        | courriel d'accusé                                | pas d'accusé                            |
-| 26  | `orders/send-guest-order-notice`           | `OrderPlacedEvent`                        | courriel au propriétaire probable                | pas d'alerte                            |
-| 27  | `orders/send-order-ready-mail`             | `OrderReadyEvent`                         | courriel « prête » + QR                          | le client ne sait pas                   |
-| 24  | `orders/send-order-settled-mail`           | `OrderPaymentSettledEvent`                | courriel d'accusé carte                          | pas d'accusé                            |
-| 9   | `orders/send-payment-failed-mail`          | `OrderPaymentFailedEvent` (refusée)       | courriel                                         | le client ignore le refus               |
-| 4   | `orders/send-payment-expired-mail`         | `OrderPaymentFailedEvent` (journée close) | courriel                                         | le client ignore l'annulation           |
-| 7   | `orders/ring-failed-pro-settlement`        | `OrderPaymentFailedEvent`                 | cloche staff                                     | le staff ignore un règlement tombé      |
-| 6   | `orders/ring-refund-due`                   | `OrderPaidAfterCancellationEvent`         | cloche staff                                     | remboursement oublié                    |
-| 13  | `account/send-login-method-linked-mail`    | `LoginMethodLinkedEvent`                  | alerte de sécurité                               | l'utilisateur n'est pas alerté          |
-| 12  | `catalog/on-product-media-changed`         | `ProductMediaChangedEvent` (pim)          | projette l'image dans le catalogue               | image obsolète jusqu'au prochain envoi  |
+| #   | Abonné                                           | Écoute                                                          | Effet                                            | Si perdu                                |
+| --- | ------------------------------------------------ | --------------------------------------------------------------- | ------------------------------------------------ | --------------------------------------- |
+| 30  | `orders/on-production-day-closed`                | `production.day_closed`                                         | placed → confirmed                               | ✅ **durable** (BE3, 2026-10-04)        |
+| 5   | `orders/on-packing-order-packed` (renommé à K3c) | `packing.order_packed` (`production.order_packed` retiré à K3c) | placed → ready                                   | ✅ **durable** (E1, 2026-10-04)         |
+| 28  | `orders/on-order-handed-over`                    | `handover.handed_over` (handover)                               | ready → fulfilled                                | ✅ **durable** (E2, 2026-10-04)         |
+| 11  | `loyalty/credit-points-on-handover`              | `order.fulfilled`                                               | **points de fidélité**                           | ✅ **durable** (E2, 2026-10-04)         |
+| 10  | `loyalty/credit-points-on-payment-settled`       | `OrderPaymentSettledEvent`                                      | **points de fidélité**                           | points jamais crédités                  |
+| 1   | `delivery/hand-departed-orders-over`             | `DeliveryRoundDepartedEvent`                                    | la garde passe au livreur (port vers le retrait) | ✅ **durable** (E3 par DD1, 2026-10-06) |
+| 2   | `delivery/announce-delivery-departure`           | `DeliveryRoundDepartedEvent`                                    | « partie » au commerce (port)                    | ✅ **durable** (E3 par DD1, 2026-10-06) |
+| 25  | `orders/send-order-placed-mail`                  | `OrderPlacedEvent`                                              | courriel d'accusé                                | pas d'accusé                            |
+| 26  | `orders/send-guest-order-notice`                 | `OrderPlacedEvent`                                              | courriel au propriétaire probable                | pas d'alerte                            |
+| 27  | `orders/send-order-ready-mail`                   | `OrderReadyEvent`                                               | courriel « prête » + QR                          | le client ne sait pas                   |
+| 24  | `orders/send-order-settled-mail`                 | `OrderPaymentSettledEvent`                                      | courriel d'accusé carte                          | pas d'accusé                            |
+| 9   | `orders/send-payment-failed-mail`                | `OrderPaymentFailedEvent` (refusée)                             | courriel                                         | le client ignore le refus               |
+| 4   | `orders/send-payment-expired-mail`               | `OrderPaymentFailedEvent` (journée close)                       | courriel                                         | le client ignore l'annulation           |
+| 7   | `orders/ring-failed-pro-settlement`              | `OrderPaymentFailedEvent`                                       | cloche staff                                     | le staff ignore un règlement tombé      |
+| 6   | `orders/ring-refund-due`                         | `OrderPaidAfterCancellationEvent`                               | cloche staff                                     | remboursement oublié                    |
+| 13  | `account/send-login-method-linked-mail`          | `LoginMethodLinkedEvent`                                        | alerte de sécurité                               | l'utilisateur n'est pas alerté          |
+| 12  | `catalog/on-product-media-changed`               | `ProductMediaChangedEvent` (pim)                                | projette l'image dans le catalogue               | image obsolète jusqu'au prochain envoi  |
 
 Idempotence : les courriels et les cloches portent une clé déterministe
 (`idempotencyKey`). Le crédit de points relit les gains déjà écrits pour la
@@ -221,13 +221,14 @@ dans [`../livraisons/en-route.md`](../livraisons/en-route.md) et
 > message déguisé.
 
 Relevé par un agent `Explore`, puis rouvert à la main pour ce qui est marqué
-✔ (le reste est à revérifier avant d'agir) : **37 ports** déclarés dans des
+✔ (le reste est à revérifier avant d'agir) : **37 ports** au 2026-10-04 (compte non
+refait depuis) déclarés dans des
 `*/channels/*/`.
 
 | Classe                                            | Compte | Ports                                                                                                                                                                                                                                                                                                                   | Suite                                                                               |
 | ------------------------------------------------- | ------ | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ----------------------------------------------------------------------------------- |
 | **Annonce** — l'appelant n'utilise pas la réponse | 3      | `DeliveryDepartureAnnouncer` ✔ (livraison → commerce), `DepartedOrdersAnnouncer`, `BroughtBackOrdersAnnouncer` (livraison → retrait), appelés après validation sous `BackgroundWork` : perdables                                                                                                                        | **E3, fait le 2026-10-06** (§ 7 bis) : les trois ports sont **retirés**, pas gardés |
-| **Décision de transition**                        | 1      | `PackingStation` (K2 : le poste passe par le fournil puis par ce port)                                                                                                                                                                                                                                                  | **K3** : le poste appelle directement les routes du colisage                        |
+| **Décision de transition**                        | 1      | `PackingStation` (K2 ; **retiré par K3c**, 2026-10-05)                                                                                                                                                                                                                                                                  | **K3** : le poste appelle directement les routes du colisage                        |
 | **Décision légitime**                             | 4      | `PendingSettlementSweeper` ✔ (appelé par la clôture **avant** de charger la journée, l. 113 : la clôture a besoin que les règlements en vol soient tranchés), `DoorstepHandoverAttestor` (la porte attend la réponse), `B2bCatalogDriver` (envoi du catalogue, déjà asynchrone et journalisé), et un autre à identifier | rester des ports                                                                    |
 | **Lecture**                                       | 29     | dont 13 implémentés par le commerce (commandes, adresses, échéances, catalogue)                                                                                                                                                                                                                                         | rester des ports : l'état vif appartient au commerce                                |
 

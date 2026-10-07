@@ -243,8 +243,9 @@ droit effectif résultant affiché. Lot à part, après la bascule.
 Avant la mise en ligne : relevé en production, par Hugo, des rôles et des
 dérogations (`SELECT key, grants FROM staff_role_definitions` ; les
 dérogations sur `b2b_orders`, `b2b_companies`, `delivery_loading`), pour que la
-bascule soit vérifiable ligne à ligne. Et prévenir : jusqu'à 30 s après la mise
-en ligne, le cache des droits peut encore refuser un geste.
+bascule soit vérifiable ligne à ligne. Et prévenir : l'écran garde ses droits
+jusqu'au rechargement de la page, et le cache serveur 30 s (§ 5.8, relu le
+2026-10-07).
 
 ## 4. Questions
 

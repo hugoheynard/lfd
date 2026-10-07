@@ -33,7 +33,10 @@ import type { StaffNavPreferences } from "./staff-user.js";
  *
  * ## 🔴 La ressource porte son OUTIL — `<outil>.<domaine>`
  *
- * Et les outils sont **les blocs de `src/`** : `pim`, `b2b`, `staff`, `ops`. Le
+ * Et les outils sont **les blocs de `src/`** : `pim`, `b2b`, `staff`, `ops`,
+ * puis `production`, `delivery`, `handover`, `media` (relu le 2026-10-07 ; la
+ * liste d'origine n'en nommait que quatre ; `lfc_` est un choix à part, voir
+ * `lfc_price_limits`). Le
  * préfixe n'est donc pas une convention de nommage, c'est la frontière
  * d'architecture rendue lisible dans la permission — la même qu'on voit en
  * ouvrant `src/`, et la même que `lint:context-boundaries` fait respecter.
@@ -385,9 +388,12 @@ export const staffResourceSchema = z.enum([
    */
   "delivery_driving",
   /**
-   * **Les gestes à la porte** — « Je suis arrivé », déclarer un problème,
-   * clore un arrêt sans remise quand la commande a déjà été retirée ou
-   * annulée (`documentation/livraisons/a-la-porte.md`, AP-D9, L6-C10).
+   * **Les gestes à la porte** — les six routes de
+   * `my-delivery-doorstep.controller.ts` (relu le 2026-10-07) : « Je suis
+   * arrivé », déclarer un problème, clore un arrêt sans remise quand la
+   * commande a déjà été retirée ou annulée, remettre, déposer avec preuve,
+   * et « Tournée terminée » (`documentation/livraisons/a-la-porte.md`, AP-D9,
+   * L6-C10).
    *
    * À part de `delivery_driving` : conduire sa tournée et attester ce qui se
    * passe à la porte sont deux gestes. Ces routes portent le MÊME mur que
@@ -612,7 +618,8 @@ export type RoleGrants = Partial<Readonly<Record<StaffResource, StaffAction>>>;
  * `documentation/livraisons/plan-droits-par-geste.md`, DG-D5 et 5.2). Le
  * runtime ne la lit plus : une fiche résout ses droits par la définition de
  * son rôle en base (`staff_users.role_key` est `NOT NULL`). Elle ne sert qu'à
- * semer une base vierge — dev, e2e (`legacyRoleSeeds`). Ce qu'un rôle de
+ * semer une base vierge : celle des e2e à chaque remise à zéro, et une base de
+ * dev quand on lance `db:seed:roles` à la main (`legacyRoleSeeds`, 2026-10-07). Ce qu'un rôle de
  * PRODUCTION accorde se règle à l'écran (`/admin/staff-roles`), et ce
  * tableau ne le dit pas.
  *

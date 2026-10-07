@@ -249,7 +249,8 @@ Accordées à l'écran des rôles, jamais par migration :
 - **AP-Q2** « Remis au client » exige toujours le nom ; et **toute remise
   porte une photo** (2026-10-01).
 - **AP-Q3** la position se relèvera (YA4) mais ne corrigera jamais le carnet
-  seule.
+  seule. _(Décision citée telle quelle ; YA4 est bâti depuis : la position se
+  relève, et le carnet ne bouge que par une suggestion que le bureau applique.)_
 - **AP-Q4** un problème technique ou routier se signale seulement.
 - **AP-Q5** un dépôt a les effets d'une remise (commande terminée, points,
   volume tarifaire, chiffre d'affaires).

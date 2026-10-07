@@ -1,7 +1,7 @@
 import { InvalidBinDimensionsError } from "../errors/delivery-bin-errors.js";
 
 /**
- * Bornes d'une dimension de bac, en millimètres (2026-10-07) — les 1–300 cm
+ * Bornes d'une dimension de bac, en millimètres (2026-10-06) — les 1–300 cm
  * d'avant, convertis : un bac d'un centimètre reste absurde mais admis, comme
  * avant, et rien ne dépasse trois mètres.
  */
@@ -30,7 +30,7 @@ export interface BinTypeDimensionsInput {
  * mesure 66,5 cm, et le centimètre entier ne savait pas l'écrire. Le volume en
  * litres en est DÉRIVÉ, jamais saisi ni stocké.
  *
- * La SEULE mesure de bac du bloc (2026-10-07) : un type de bac, un candidat de
+ * La SEULE mesure de bac du bloc (2026-10-06) : un type de bac, un candidat de
  * la bibliothèque d'achat et un format de l'assistant la partagent. Le nom
  * garde « Type » parce que les règles sont celles du type de bac ; les
  * dimensions en cm entiers (`BinDimensions`) qui servaient aux deux derniers

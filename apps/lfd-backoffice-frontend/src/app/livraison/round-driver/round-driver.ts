@@ -53,7 +53,11 @@ export class RoundDriver {
   readonly unassigned = output<void>();
 
   protected readonly label = computed(() => driverLabelOf(this.driver()));
-  /** Il a perdu le droit de conduire, ou sa fiche est suspendue : sa route le refuse. */
+  /**
+   * Il a perdu l'un des deux droits d'un livreur — conduire, ou les gestes à
+   * la porte (audit 2026-10-07, B8) —, ou sa fiche est suspendue : « Partir »
+   * le refuse.
+   */
   protected readonly withoutAccess = computed(() => this.driver()?.canDrive === false);
 
   protected pick(staffUserId: string): void {
