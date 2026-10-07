@@ -265,6 +265,10 @@ describe("la garde passe au livreur au départ (BQ)", () => {
 
   it("un départ dont la transaction échoue n'annonce rien : le verdict reste permis", async () => {
     const { orderId, roundId } = await loadedDelivery();
+    // Le relais peut livrer un fait durable par une unité de travail externe —
+    // celle que `failNextCommit` fait échouer : on le draine d'abord (course vue
+    // le 2026-10-07 sur la remise à la porte, après B1).
+    await ctx.drain();
     unitOfWork.failNextCommit = true;
 
     expect((await depart(ctx, roundId)).status).toBe(500);

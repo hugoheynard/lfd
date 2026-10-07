@@ -164,6 +164,10 @@ describe("votre livraison est en route (PL3)", () => {
 
   it("un départ dont la transaction échoue après publication n'envoie aucun courriel", async () => {
     const { roundId } = await loadedRoundOfTwo();
+    // Le relais peut livrer un fait durable par une unité de travail externe —
+    // celle que `failNextCommit` fait échouer : on le draine d'abord (course vue
+    // le 2026-10-07 sur la remise à la porte, après B1).
+    await ctx.drain();
     unitOfWork.failNextCommit = true;
 
     expect((await depart(ctx, roundId)).status).toBe(500);

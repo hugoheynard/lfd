@@ -138,6 +138,12 @@ describe("« Remis au client » (B1)", () => {
   it("🔴 AP-D1 : la validation échoue — ni attestation, ni commande `fulfilled`, ni point, ni pièce", async () => {
     const paul = await staffWithRole(ctx, "livreur-paul");
     const { roundId, orderId, stopId } = await departedStop(paul);
+    // Le départ vient d'écrire `delivery.round_departed` dans la boîte d'envoi,
+    // et le relais le livre à ses abonnés par une unité de travail EXTERNE —
+    // celle que `failNextCommit` fait échouer. Sans ce drain, la livraison du
+    // fait pouvait consommer l'échec à la place de la remise (204 au lieu de
+    // 500) : course vue le 2026-10-07, quand B1 a raccourci la garde durable.
+    await ctx.drain();
     unitOfWork.failNextCommit = true;
 
     expect((await handOver(paul.agent, roundId, stopId)).status).toBe(500);
