@@ -313,6 +313,28 @@ describe("les bacs — les droits", () => {
     return ctx.asSub(sub);
   }
 
+  /** Un rôle créé À L'ÉCRAN qui ne tient que l'écriture du colisage, et une fiche qui le porte. */
+  async function packingWriter(): Promise<ReturnType<E2eContext["asSub"]>> {
+    const key = "colisage-seul";
+    await admin()
+      .post("/admin/staff-roles")
+      .send({ key, label: key, grants: [{ resource: "production_packing", action: "write" }] })
+      .expect(201);
+    const sub = `staff-${key}`;
+    await ctx.prisma.staffUser.create({
+      data: {
+        firstName: "Test",
+        lastName: key,
+        email: `${key}@lfc.test`,
+        role: null,
+        roleKey: key,
+        status: "active",
+        auth0Id: sub,
+      },
+    });
+    return ctx.asSub(sub);
+  }
+
   it("qui lit les tournées lit le catalogue et la grille, sans rien écrire (403)", async () => {
     const id = await addBin();
     const reader = await supportStaff(true);
@@ -334,5 +356,28 @@ describe("les bacs — les droits", () => {
 
     await support.get(BINS).expect(403);
     await support.get(CAPACITIES).expect(403);
+  });
+
+  /**
+   * Régression (audit `documentation/livraisons/audit-2026-10-07.md`, B4) :
+   * « + Nouveau bac », au poste de colisage, lit ces formats, et un rôle qui
+   * colise sans droit de livraison prenait 403. La porte s'ouvre à l'ÉCRITURE
+   * du colisage — celle du panneau « Bacs » (`plan-droits-par-geste.md`, 5.3) —
+   * et pas à sa lecture : le support, qui la porte, reste dehors.
+   */
+  it("🔴 qui colise lit les formats de bac, sans la grille ni l'écriture — lire le colisage n'y suffit pas", async () => {
+    const id = await addBin();
+    const packer = await packingWriter();
+    const support = await supportStaff(false);
+
+    const view = jsonBody<BinTypesView>(await packer.get(BINS).expect(200));
+    expect(view.types.map((type) => type.id)).toEqual([id]);
+    await packer.get(CAPACITIES).expect(403);
+    await packer
+      .post(BINS)
+      .send({ ...BAC_M, name: "Bac L" })
+      .expect(403);
+    await support.get(BINS).expect(403);
+    expect(await ctx.prisma.deliveryBinType.count()).toBe(1);
   });
 });

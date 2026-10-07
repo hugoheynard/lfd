@@ -11,10 +11,12 @@ import { B2B_API_BASE } from '../../api/api-config';
  * Deux journaux côté API (un par schéma, D3 de
  * `documentation/caching-usage/plan-version-par-journee.md`), mais QUATRE
  * portes : chacun se lit sous deux familles de droits — celles des postes
- * (`orders` sous `b2b_orders` ; `production` sous l'un des quatre gestes du
- * fournil et du retrait, depuis le 2026-10-01), `b2b_supervision` pour la
- * Supervision (`commerce`, `supervision-production`). Le droit se choisit par
- * la porte, pas par le journal.
+ * (`orders` sous `b2b_orders` ou `handover_counter`, le poste de retrait,
+ * depuis le 2026-10-07 — audit du dossier `livraisons/`, B6 ; `production`
+ * sous l'un des quatre gestes du fournil et du retrait, depuis le
+ * 2026-10-01), `b2b_supervision` pour la Supervision (`commerce`,
+ * `supervision-production`). Le droit se choisit par la porte, pas par le
+ * journal.
  *
  * `my-round` n'est pas un journal de plus : c'est la version de « ma
  * tournée » (`parcours-du-livreur.md`, PL4), sous `delivery_driving`, qui

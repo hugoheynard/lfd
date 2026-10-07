@@ -63,6 +63,7 @@ const ROUTES = {
   quote: (agent) => agent.post("/admin/orders/quote").send({}),
   draft: (agent) => agent.get("/admin/order-drafts/societe-inconnue"),
   listOrders: (agent) => agent.get("/admin/orders"),
+  orderDayVersion: (agent) => agent.get(`/admin/orders/day-version?date=${DAY}`),
   batch: (agent) => agent.get(`/admin/production/batch?date=${DAY}`),
   dayStatus: (agent) => agent.get(`/admin/production/batch/${DAY}/status`),
   worksheet: (agent) => agent.get(`/admin/production/worksheet?date=${DAY}`),
@@ -153,6 +154,21 @@ describe("un geste, ses routes et elles seules", () => {
       ["handoverQueue", "version"],
       ["listOrders", "placeOrder", "packing", "worksheet"],
     );
+  });
+
+  /**
+   * Régression (audit `documentation/livraisons/audit-2026-10-07.md`, B6) : le
+   * poste de retrait relit sa file sur la version des commandes, que seul
+   * `b2b_orders:read` ouvrait — un rôle « retrait seul » prenait un 403 avalé
+   * toutes les 15 s. Une version de journée n'est pas une commande.
+   */
+  it("🔴 le retrait seul lit la version des commandes — pas les commandes", async () => {
+    const agent = await holderOf("retrait-version", [
+      { resource: "handover_counter", action: "read" },
+    ]);
+
+    expect(await statusOf(agent, "orderDayVersion")).toBe(200);
+    await expectGates(agent, [], ["listOrders"]);
   });
 
   it("🔴 lire les commandes n'ouvre plus aucun geste du fournil ni du retrait", async () => {

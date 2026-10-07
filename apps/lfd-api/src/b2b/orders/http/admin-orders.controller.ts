@@ -1,6 +1,10 @@
 import { QuoteOrderQuery } from "../application/queries/quote-order.handler.js";
 import { GetOrderDayVersionQuery } from "../application/queries/get-order-day-version.query.js";
-import { AdminSurface, RequirePermission } from "../../../platform/auth/admin-surface.decorator.js";
+import {
+  AdminSurface,
+  RequireAnyPermission,
+  RequirePermission,
+} from "../../../platform/auth/admin-surface.decorator.js";
 import {
   type AdminOrderRow,
   type AdminOrdersQuery,
@@ -170,12 +174,24 @@ export class AdminOrdersController {
   /**
    * **La version du jour dans le journal du commerce**, pour le comptoir
    * (`documentation/caching-usage/plan-version-par-journee.md`, D3/D6) : la même
-   * query que `GET admin/supervision/version`, sous `b2b_orders`.
+   * query que `GET admin/supervision/version`.
+   *
+   * 🔴 Sous `b2b_orders:read` OU `handover_counter:read` depuis le 2026-10-07
+   * (audit `documentation/livraisons/audit-2026-10-07.md`, B6). Le poste de
+   * retrait la relit toutes les 15 s (`handover-shop-page.ts`), alors que son
+   * écran n'exige que `handover_counter:read` : un rôle « retrait seul »
+   * prenait un 403 que le veilleur avale, et sa file ne se relisait plus que
+   * par le journal du fournil et le filet de 5 min. Une version de journée
+   * n'est pas une commande : elle rend `{ date, version }`, un compteur, sans
+   * rien de ce qui est commandé ni de qui commande. Le poste de retrait est le
+   * seul écran à suivre ce journal (vérifié le 2026-10-07,
+   * `get-order-day-version.handler.ts` et `DayVersionWatcher`).
    *
    * ⚠️ Déclarée AVANT `:id` : Nest route dans l'ordre des méthodes, et
    * `day-version` serait sinon lu comme un identifiant de commande.
    */
   @Get("day-version")
+  @RequireAnyPermission("b2b_orders:read", "handover_counter:read")
   dayVersion(
     @Query(new ZodQuery(dayVersionQuerySchema)) query: DayVersionQuery,
   ): Promise<DayVersionView> {

@@ -20,7 +20,10 @@ const PURCHASE_ASSISTANT = `${B2B_API_BASE}/admin/livraison/assistant-achat`;
  * **Les bacs de la livraison** — le catalogue des types et la grille des
  * contenances (`documentation/livraisons/plan-preparation-de-tournee.md`, lot
  * 4 bis v2, tranche A). Lecture sous `delivery_settings:read` ou
- * `delivery_rounds:read`, écriture sous `delivery_settings:write`.
+ * `delivery_rounds:read`, écriture sous `delivery_settings:write`. Le
+ * catalogue des types (`binTypes`) se lit aussi sous `production_packing:write`
+ * depuis le 2026-10-07 : « + Nouveau bac » au colisage (audit du dossier
+ * `livraisons/`, B4). La grille, elle, reste aux deux droits de livraison.
  *
  * Aucun état, et les refus du serveur remontent tels quels : c'est le domaine
  * qui tient les bornes, et sa phrase est celle que l'écran montre.

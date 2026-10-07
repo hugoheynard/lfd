@@ -88,6 +88,15 @@ const UNWATCHED: Readonly<Record<string, string>> = {
   // et de réels pour le tableau croisé — aucune journée, aucune tournée.
   "delivery.delivery_purchase_scenario":
     "les scénarios de la bibliothèque d'achat, des sélections nommées sans journée ni tournée",
+  // Deux tables du 2026-10-07 qui ne portent aucun jour : l'accusé du texte
+  // d'information (`rgpd-livreur.md` §7, migration `20261007150000`) et la
+  // décision du bureau sur une correction du carnet (`gps-y-aller-et-position.md`
+  // §6, migration `20261007170000`). Arrivées sans entrée ici, elles ont fait
+  // rougir cette garde (audit `documentation/livraisons/audit-2026-10-07.md`, B7).
+  "delivery.delivery_driver_notice_ack":
+    "l'accusé de lecture du texte d'information, par PERSONNE et par version (`staff_id`, `version`) : aucune journée, et aucun écran de journée ne le veille — « Mes données » le relit à l'ouverture, « Commencer ma tournée » à chaque départ",
+  "delivery.delivery_address_suggestion_decision":
+    "ce que le bureau a décidé d'une suggestion du carnet, par ADRESSE (`address_id`) : aucune journée — « Carnet à corriger » relit à l'ouverture et après chaque décision",
 };
 
 /** Les colonnes qui disent « cette ligne appartient à une journée », côté `public`. */

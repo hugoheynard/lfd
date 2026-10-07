@@ -20,8 +20,8 @@ import { ListBinTypesQuery } from "../application/queries/list-bin-types.query.j
  * (`documentation/livraisons/plan-preparation-de-tournee.md`, lot 4 bis, tranche A).
  *
  * Sous `delivery_settings`, comme la flotte : la lecture s'ouvre aussi à qui
- * lit les tournées ; archiver et réactiver sont des `POST` nommés. Il
- * n'injecte que les bus.
+ * lit les tournées, et à qui colise (ci-dessous) ; archiver et réactiver sont
+ * des `POST` nommés. Il n'injecte que les bus.
  */
 @Controller("admin/livraison/bacs")
 @AdminSurface("delivery_settings")
@@ -31,8 +31,27 @@ export class BinTypesController {
     private readonly queries: QueryBus,
   ) {}
 
+  /**
+   * Les formats de bac. 🔴 Se lisent AUSSI sous `production_packing:write`
+   * depuis le 2026-10-07 (audit `documentation/livraisons/audit-2026-10-07.md`,
+   * B4) : « + Nouveau bac », au poste de colisage, charge ces formats
+   * (`packing-container-board.ts`, `loadTypes`), et un rôle qui colise sans
+   * droit de livraison prenait 403 — « Les formats de bac n'ont pas pu être
+   * lus ».
+   *
+   * L'ÉCRITURE et pas la lecture du colisage : le poste ne lit les formats
+   * que pour déclarer un bac neuf, et ce bouton n'existe qu'avec
+   * `production_packing:write` (vérifié le 2026-10-07, `editable()`). C'est la
+   * porte du panneau « Bacs » (`plan-droits-par-geste.md`, 5.3), lectures
+   * comprises : qui ne fait que lire le colisage — le support — reste à 403.
+   * On élargit une lecture, on ne déplace aucun droit.
+   */
   @Get()
-  @RequireAnyPermission("delivery_settings:read", "delivery_rounds:read")
+  @RequireAnyPermission(
+    "delivery_settings:read",
+    "delivery_rounds:read",
+    "production_packing:write",
+  )
   list(): Promise<BinTypesView> {
     return this.queries.execute<ListBinTypesQuery, BinTypesView>(new ListBinTypesQuery());
   }
