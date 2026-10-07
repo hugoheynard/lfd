@@ -22,6 +22,7 @@ import { bootstrapE2e, jsonBody, type E2eContext } from "./e2e-harness.js";
 import { ADMIN_VERIFIER_OVERRIDE, admin } from "./delivery-rounds-scene.js";
 import { seedDriverRole } from "./delivery-driver-scene.js";
 import { PAYMENT_GATEWAY_OVERRIDE } from "./dev-scenario-scene.js";
+import { ROAD_ROUTING_OVERRIDES } from "./delivery-routing-scene.js";
 
 const SCENARIO = "/admin/dev/scenario";
 const RELOAD = "/admin/dev/seed/reload";
@@ -32,7 +33,11 @@ const TIMEOUT_MS = 240_000;
 let ctx: E2eContext;
 
 beforeAll(async () => {
-  ctx = await bootstrapE2e({ overrides: [ADMIN_VERIFIER_OVERRIDE, PAYMENT_GATEWAY_OVERRIDE] });
+  // La carte routière doublée : l'arrêt du plan compose les tournées
+  // (2026-10-07), et la CI n'a pas d'OSRM — vert en local, rouge en CI.
+  ctx = await bootstrapE2e({
+    overrides: [ADMIN_VERIFIER_OVERRIDE, PAYMENT_GATEWAY_OVERRIDE, ...ROAD_ROUTING_OVERRIDES],
+  });
 });
 
 afterAll(async () => {

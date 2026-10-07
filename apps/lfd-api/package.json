@@ -16,7 +16,7 @@
     "dev:typecheck": "tsc --noEmit --watch --preserveWatchOutput -p tsconfig.test.json",
     "typecheck:tests": "tsc --noEmit -p tsconfig.test.json",
     "lint": "NODE_OPTIONS=--max-old-space-size=8192 eslint \"{src,apps,libs,test}/**/*.ts\" \"container/__tests__/**/*.ts\" --fix",
-    "lint:ci": "eslint \"{src,apps,libs,test}/**/*.ts\" \"container/__tests__/**/*.ts\"",
+    "lint:ci": "NODE_OPTIONS=--max-old-space-size=6144 eslint \"{src,apps,libs,test}/**/*.ts\" \"container/__tests__/**/*.ts\"",
     "test": "pnpm run test:unit && pnpm run test:e2e",
     "bench:composition": "tsx src/delivery/domain/services/__tests__/propose-rounds.bench.ts",
     "bench:composition:zones": "tsx src/delivery/domain/services/__tests__/propose-rounds.bench.ts --zones",
