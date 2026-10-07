@@ -1,11 +1,13 @@
 import { provideHttpClient } from '@angular/common/http';
 import { provideHttpClientTesting } from '@angular/common/http/testing';
+import { signal } from '@angular/core';
 import { TestBed } from '@angular/core/testing';
 import { type CompanyView, PERSONAL_WORKSPACE } from '@lfd/contracts';
 import { beforeEach, describe, expect, it } from 'vitest';
 
 import { provideRecognised } from './client-orders.fixture';
 import { TOMMEUSES } from './mon-compte/account.fixture';
+import { ClientFeatureAccess } from './feature-access/client-feature-access.service';
 import { ServicePoints } from './shop/pickup-points.store';
 import {
   provideWorkspace,
@@ -25,9 +27,22 @@ const AU_LABO: ServiceChoice = {
   date: '2026-09-07',
 };
 
+/** L'accès aux fonctions, réduit à ce que le magasin lit ; lu et ouvert par défaut. */
+function accessDouble(
+  publicDelivery: 'open' | 'closed' = 'open',
+  state: 'ready' | 'loading' = 'ready',
+) {
+  return {
+    state: signal(state),
+    publicDelivery: signal(publicDelivery),
+    load: () => Promise.resolve(),
+  };
+}
+
 function boot(
   current: string | null,
   companies: readonly CompanyView[] = [],
+  access = accessDouble(),
 ): { store: OrderContextStore; workspace: WorkspaceDouble } {
   const workspace = workspaceDouble(current, companies);
   TestBed.resetTestingModule();
@@ -37,6 +52,7 @@ function boot(
       provideRecognised(),
       provideHttpClient(),
       provideHttpClientTesting(),
+      { provide: ClientFeatureAccess, useValue: access },
     ],
   });
   const store = TestBed.inject(OrderContextStore);
@@ -139,6 +155,36 @@ describe('OrderContextStore — la livraison et la clientèle', () => {
     TestBed.tick();
 
     expect(store.choice()?.mode).toBe('pickup');
+  });
+
+  /**
+   * Régression : un particulier gardait un choix de livraison alors que la
+   * livraison aux particuliers était fermée — le magasin ne lisait que le
+   * réglage par clientèle, et `POST /orders` refuse désormais (audit
+   * livraisons, § 3.4, 2026-10-07).
+   */
+  it('efface la livraison d’un particulier quand la livraison publique est fermée', () => {
+    const { store } = boot(PERSONAL_WORKSPACE, [], accessDouble('closed'));
+    TestBed.inject(ServicePoints).receive([], [], [], { openToB2b: true, openToB2c: true });
+    store.choice.set(LIVRE);
+    TestBed.tick();
+
+    expect(store.choice()).toBeNull();
+  });
+
+  it('garde celle d’un pro, et n’efface rien tant que l’accès n’est pas lu', () => {
+    const open = { openToB2b: true, openToB2c: true };
+    const pro = boot(ACTIVE.id, [ACTIVE], accessDouble('closed'));
+    TestBed.inject(ServicePoints).receive([], [], [], open);
+    pro.store.choice.set(LIVRE);
+    TestBed.tick();
+    expect(pro.store.choice()?.mode).toBe('delivery');
+
+    const unread = boot(PERSONAL_WORKSPACE, [], accessDouble('closed', 'loading'));
+    TestBed.inject(ServicePoints).receive([], [], [], open);
+    unread.store.choice.set(LIVRE);
+    TestBed.tick();
+    expect(unread.store.choice()?.mode).toBe('delivery');
   });
 
   /** Le défaut ouvert n'est pas une réponse : rien ne s'efface sur un réglage non lu. */
