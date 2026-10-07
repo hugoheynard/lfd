@@ -24,5 +24,10 @@ const base = require("./jest.base.cjs");
 module.exports = {
   ...base,
   displayName: "lfd-api:unit",
+  // Un worker Jest garde en mémoire chaque module qu'il a chargé, et grossit
+  // fichier après fichier : sur la CI (ubuntu-latest), les tests unitaires
+  // ont été coupés deux fois par GitHub vers la 12e minute, sans test rouge
+  // (2026-10-07). Au-delà de ce seuil, le worker est remplacé entre deux fichiers.
+  workerIdleMemoryLimit: "1536MB",
   testMatch: ["<rootDir>/**/?(*.)+(spec|test).ts"],
 };
