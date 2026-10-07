@@ -13,9 +13,16 @@ import { inflateSync } from "node:zlib";
 export function pdfPages(pdf: Buffer): readonly string[] {
   const raw = pdf.toString("latin1");
   const pages: string[] = [];
-  const stream = /stream\r?\n([\s\S]*?)\r?\nendstream/g;
+  // La LONGUEUR déclarée, pas la recherche de `endstream` : un flux compressé
+  // dont le dernier octet est un retour chariot était amputé par `\r?\n`
+  // avant `endstream`, et la page disparaissait. Ce dernier octet dépend du
+  // contenu — de l'heure imprimée sur le papier : un test vert le matin, rouge
+  // l'après-midi (constaté le 2026-10-07, `delivery-round-paper.e2e-spec.ts`).
+  const stream = /\/Length (\d+)[^>]*>>\s*stream\r?\n/g;
   for (let match = stream.exec(raw); match !== null; match = stream.exec(raw)) {
-    const content = inflate(match[1] ?? "");
+    const start = match.index + match[0].length;
+    const body = raw.slice(start, start + Number(match[1]));
+    const content = inflate(body);
     if (content !== null && content.includes("TJ")) {
       pages.push(textOf(content));
     }
