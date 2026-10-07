@@ -48,7 +48,7 @@ import { GetDeliveryPlacementSuggestionsQuery } from "./get-delivery-placement-s
 /**
  * **La place suggérée** (CA7, `composition-automatique.md` §5) — pour chaque
  * commande à répartir d'un jour qui a des tournées enregistrées, l'insertion
- * la moins chère dans une tournée au dépôt sans bac chargé
+ * la moins chère dans une tournée au dépôt, chargée ou non (2026-10-07)
  * (`suggestPlacements`), avec la capacité (CA4, contenant par défaut), les
  * zones et les échéances. Rien n'est réordonné ; « Placer ici » est le geste
  * d'affectation existant, au rang suggéré, sous la version rendue ici.
@@ -153,10 +153,12 @@ export class GetDeliveryPlacementSuggestionsHandler implements IQueryHandler<
 }
 
 /**
- * Les tournées où une place peut être suggérée : celles d'« Insérer »
- * (au dépôt, chaque arrêt situé), MOINS celles qui ont un bac chargé — CA7
- * ne vise que les tournées non chargées ; une tournée chargée occupe sa
- * camionnette jusqu'à son retour, comme pour « Proposer ».
+ * Les tournées où une place peut être suggérée : celles d'« Insérer » (au
+ * dépôt, chaque arrêt situé), **chargées comprises** — une tournée reçoit
+ * jusqu'à son départ, et c'est la place du véhicule qui limite (Hugo,
+ * 2026-10-07, `documentation/livraisons/inserer-avant-le-depart.md`).
+ * L'arrêt posé n'a pas de bac : « Partir » le refusera tant qu'il n'est pas
+ * chargé.
  */
 function openRoundsOf(
   day: ProposalDayReading,
@@ -171,13 +173,5 @@ function openRoundsOf(
     vehicleIds: new Set(vehicles.map((vehicle) => vehicle.id)),
     located: stops,
   });
-  const isLoaded = (round: RoundRow): boolean =>
-    round.stops.some((stop) => day.loadedStopIds.has(stop.stopId));
-  return {
-    open: insertable.filter((round) => !isLoaded(round)),
-    kept: [
-      ...kept,
-      ...insertable.filter(isLoaded).map((round) => ({ round, reason: "loaded" as const })),
-    ],
-  };
+  return { open: insertable, kept };
 }

@@ -58,7 +58,8 @@ class CountingMatrix extends StraightLineDistanceMatrix {
 }
 
 /**
- * Le Kangoo porte `r_open` (o10), le Trafic `r_loaded` (o9, un bac chargé) ;
+ * Le Kangoo porte `r_open` (o10), le Trafic `r_loaded` (o9, un bac chargé,
+ * la plus proche de o1) ;
  * o1 et o5 sont à répartir — o5 sans point.
  */
 function scene(rounds?: readonly DeliveryRound[]) {
@@ -96,7 +97,7 @@ function scene(rounds?: readonly DeliveryRound[]) {
 }
 
 describe("GetDeliveryPlacementSuggestionsHandler — la place suggérée (CA7)", () => {
-  it("suggère une tournée au dépôt sans bac chargé, avec sa version, et dit les non situées", async () => {
+  it("suggère la tournée au dépôt la moins chère, même chargée, avec sa version, et dit les non situées", async () => {
     const { run } = scene();
 
     const view = await run();
@@ -107,10 +108,10 @@ describe("GetDeliveryPlacementSuggestionsHandler — la place suggérée (CA7)",
         orderId: "o1",
         reference: "CMD-o1",
         status: "suggested",
-        roundId: "r_open",
+        roundId: "r_loaded",
         roundVersion: 1,
-        vehicleId: "v1",
-        vehicleName: "Véhicule v1",
+        vehicleId: "v2",
+        vehicleName: "Véhicule v2",
         passage: 1,
         stopCount: 1,
       }),
@@ -118,18 +119,20 @@ describe("GetDeliveryPlacementSuggestionsHandler — la place suggérée (CA7)",
     ]);
   });
 
-  it("🔴 ne vise jamais une tournée chargée, même la plus proche : seule, elle laisse « no_round »", async () => {
+  /**
+   * Régression de règle : la place suggérée écartait les tournées chargées,
+   * alors qu'« Insérer » et l'affectation les admettent (Hugo, 2026-10-07 :
+   * une tournée reçoit jusqu'à son départ, la place du véhicule limite).
+   */
+  it("vise aussi une tournée chargée : seule au dépôt, c'est elle qui reçoit", async () => {
     const { run, matrix } = scene([roundWith("r_loaded", DAY, "v2", ["o9"])]);
 
     const view = await run();
 
-    expect(view.suggestions[0]).toEqual({
-      orderId: "o1",
-      reference: "CMD-o1",
-      status: "none",
-      reason: "no_round",
-    });
-    expect(matrix.built).toBe(0);
+    expect(view.suggestions[0]).toEqual(
+      expect.objectContaining({ orderId: "o1", status: "suggested", roundId: "r_loaded" }),
+    );
+    expect(matrix.built).toBe(1);
   });
 
   it("sans tournée enregistrée, rend vide sans construire de matrice : c'est « Proposer » qui compose", async () => {
