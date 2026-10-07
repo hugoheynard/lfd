@@ -1,3 +1,4 @@
+import { StaffPermissionHolders } from "../../../staff/directory/domain/staff-permission-holders.js";
 import { CommandHandler, type ICommandHandler } from "@nestjs/cqrs";
 
 import { UnitOfWork } from "../../../platform/database/unit-of-work.js";
@@ -56,6 +57,7 @@ export class DepartDeliveryRoundHandler implements ICommandHandler<
     private readonly events: DomainEventPublisher,
     private readonly uow: UnitOfWork,
     private readonly durable: DurablePublisher,
+    private readonly holders: StaffPermissionHolders,
   ) {}
 
   async execute(command: DepartDeliveryRoundCommand): Promise<void> {
@@ -74,6 +76,7 @@ export class DepartDeliveryRoundHandler implements ICommandHandler<
         doorstepSettings: this.doorstepSettings,
         clock: this.clock,
         durable: this.durable,
+        holders: this.holders,
       });
       await this.events.publishTraced(departed);
     });

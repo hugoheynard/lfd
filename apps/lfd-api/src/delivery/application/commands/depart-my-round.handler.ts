@@ -1,3 +1,4 @@
+import { StaffPermissionHolders } from "../../../staff/directory/domain/staff-permission-holders.js";
 import { CommandHandler, type ICommandHandler } from "@nestjs/cqrs";
 
 import { UnitOfWork } from "../../../platform/database/unit-of-work.js";
@@ -46,6 +47,7 @@ export class DepartMyRoundHandler implements ICommandHandler<DepartMyRoundComman
     private readonly events: DomainEventPublisher,
     private readonly uow: UnitOfWork,
     private readonly durable: DurablePublisher,
+    private readonly holders: StaffPermissionHolders,
   ) {}
 
   async execute(command: DepartMyRoundCommand): Promise<void> {
@@ -74,6 +76,7 @@ export class DepartMyRoundHandler implements ICommandHandler<DepartMyRoundComman
         doorstepSettings: this.doorstepSettings,
         clock: this.clock,
         durable: this.durable,
+        holders: this.holders,
       });
     } catch (error) {
       throw await asDriverRefusal(error, this.orders, round.orderIds);

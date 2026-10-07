@@ -1,3 +1,4 @@
+import { FixedStaffPermissionHolders } from "../../../../staff/directory/domain/__tests__/fixed-staff-permission-holders.js";
 import { DirectUnitOfWork } from "../../../../platform/database/__tests__/direct-unit-of-work.js";
 import { RecordingPublisher } from "../../../../platform/events/__tests__/recording-publisher.js";
 import { FixedClock } from "../../../../platform/time/fixed-clock.js";
@@ -67,11 +68,22 @@ function roundOf(driverStaffId: string | null, departedAt: Date | null = null): 
   });
 }
 
+const PAUL = { staffUserId: "staff_paul", firstName: "Paul", lastName: "Roux" };
+
+/** Paul tient les deux droits d'un livreur. */
+const DELIVERER = new FixedStaffPermissionHolders(
+  new Map([
+    ["delivery_driving:write", [PAUL]],
+    ["delivery_doorstep:write", [PAUL]],
+  ]),
+);
+
 function departMine(
   round: DeliveryRound,
   loadings = new InMemoryStopLoadings(LOADED()),
   holds = new FixedDepartureHolds(),
   doorstepSettings = new FixedDoorstepSettings(),
+  holders = DELIVERER,
 ) {
   const rounds = new InMemoryDeliveryRounds(round);
   const departed = new RecordingDepartedStops();
@@ -88,11 +100,37 @@ function departMine(
     events,
     new DirectUnitOfWork(),
     durable,
+    holders,
   );
   return { handler, rounds, departed, events, durable };
 }
 
 describe("DepartMyRoundHandler — « Commencer ma tournée » (MT-D3 v2)", () => {
+  /**
+   * Régression : affecté avec les deux droits, puis privé des gestes à la
+   * porte, un livreur partait et prenait 403 au premier arrêt (audit
+   * livraisons, § 3.3 ; Hugo, 2026-10-07 : refuser le départ).
+   */
+  it("refuse le départ d'un livreur qui n'a plus les gestes à la porte, sans rien figer", async () => {
+    const drivingOnly = new FixedStaffPermissionHolders(
+      new Map([["delivery_driving:write", [PAUL]]]),
+    );
+    const { handler, rounds, departed, durable } = departMine(
+      roundOf("staff_paul"),
+      new InMemoryStopLoadings(LOADED()),
+      new FixedDepartureHolds(),
+      new FixedDoorstepSettings(),
+      drivingOnly,
+    );
+
+    await expect(
+      handler.execute(new DepartMyRoundCommand("staff_paul", "r_1", { version: 1 })),
+    ).rejects.toThrow(/Gestes à la porte/);
+    expect(rounds.stored("r_1")?.departedAt).toBeNull();
+    expect(departed.recorded).toEqual([]);
+    expect(durable.facts).toEqual([]);
+  });
+
   it("le livreur affecté fait partir SA tournée : même départ, rang et point figés, tracé", async () => {
     const { handler, rounds, departed, events, durable } = departMine(roundOf("staff_paul"));
 

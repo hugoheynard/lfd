@@ -76,9 +76,12 @@ en écriture — une migration n'accorde jamais un droit à un rôle. Depuis le
 `driverAccessNow` dans `delivery-driver-support.ts`) : une fiche qui conduit
 sans `delivery_doorstep` n'est pas proposée, et l'affecter est refusé par un
 409 qui nomme le droit manquant — avant, elle s'affectait, partait, puis ne
-pouvait ni remettre ni clore un seul arrêt. Reste : un livreur affecté qui
-PERD les gestes à la porte peut encore partir (la route de départ est sous
-`delivery_driving`) ; l'écran Tournées le dit « sans accès », rien ne bloque.
+pouvait ni remettre ni clore un seul arrêt. Et depuis le même jour (Hugo,
+audit § 3.3), **le départ relit les deux droits** du livreur affecté
+(`departAndFreeze`, `delivery-departure-support.ts`) : un livreur qui a perdu
+les gestes à la porte ne part plus, par le chargeur comme par sa propre
+porte, et le refus nomme le droit manquant. Une tournée sans livreur part
+comme avant.
 
 ## Les étapes
 

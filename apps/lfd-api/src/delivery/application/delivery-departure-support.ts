@@ -1,3 +1,5 @@
+import type { StaffPermissionHolders } from "../../staff/directory/domain/staff-permission-holders.js";
+import { driverAccessNow } from "./delivery-driver-support.js";
 import type { GpsPoint } from "@lfd/contracts";
 
 import type { DurablePublisher } from "../../platform/outbox/durable-publisher.js";
@@ -27,6 +29,8 @@ export interface DepartureDeps {
   readonly doorstepSettings: DoorstepSettingsReader;
   readonly clock: Clock;
   readonly durable: DurablePublisher;
+  /** Qui tient quoi, maintenant : le livreur affecté doit encore pouvoir livrer. */
+  readonly holders: StaffPermissionHolders;
 }
 
 /**
@@ -36,6 +40,10 @@ export interface DepartureDeps {
  * pas leur handler : chacune charge la tournée à sa façon — avec ou sans mur
  * — dans SA transaction, et vérifie la version.
  *
+ * 0. le livreur affecté doit ENCORE tenir les deux droits — conduire et les
+ *    gestes à la porte (Hugo, 2026-10-07, audit § 3.3) : affecté avec les
+ *    deux, puis privé de l'un, il partait et prenait 403 au premier arrêt.
+ *    Une tournée sans livreur part comme avant ;
  * 1. les lignes de chargement sont verrouillées APRÈS la tournée ;
  * 2. la tournée refuse ou part (`depart`) ;
  * 3. l'exécution fige, pour chaque arrêt, la feuille du commerce, son rang de
@@ -57,6 +65,9 @@ export async function departAndFreeze(
   round: DeliveryRound,
   deps: DepartureDeps,
 ): Promise<DeliveryRoundDepartedEvent> {
+  if (round.driverStaffId !== null) {
+    (await driverAccessNow(deps.holders)).ensureCanDeliver(round.driverStaffId, round.vehicleName);
+  }
   const loadings = await deps.loadings.forRound(round);
   const [sheets, points, held, globalRule] = await Promise.all([
     deps.orders.departureSheetsOf(round.orderIds),

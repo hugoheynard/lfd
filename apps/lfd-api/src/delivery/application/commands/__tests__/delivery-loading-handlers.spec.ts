@@ -1,3 +1,4 @@
+import { FixedStaffPermissionHolders } from "../../../../staff/directory/domain/__tests__/fixed-staff-permission-holders.js";
 import { DirectUnitOfWork } from "../../../../platform/database/__tests__/direct-unit-of-work.js";
 import { RecordingPublisher } from "../../../../platform/events/__tests__/recording-publisher.js";
 import { FixedIdGenerator } from "../../../../platform/id/fixed-id-generator.js";
@@ -185,6 +186,7 @@ describe("DepartDeliveryRoundHandler — L4-C4, Q14", () => {
       events,
       uow,
       durable,
+      new FixedStaffPermissionHolders(),
     );
     return { handler, rounds, departed, events, durable };
   }
@@ -313,6 +315,7 @@ describe("DepartDeliveryRoundHandler — L4-C4, Q14", () => {
       events,
       uow,
       new RecordingDurable(),
+      new FixedStaffPermissionHolders(),
     );
 
     await expect(

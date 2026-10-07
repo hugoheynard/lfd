@@ -1,3 +1,4 @@
+import { FixedStaffPermissionHolders } from "../../../../staff/directory/domain/__tests__/fixed-staff-permission-holders.js";
 import { DirectUnitOfWork } from "../../../../platform/database/__tests__/direct-unit-of-work.js";
 import { RecordingPublisher } from "../../../../platform/events/__tests__/recording-publisher.js";
 import { FixedClock } from "../../../../platform/time/fixed-clock.js";
@@ -61,6 +62,7 @@ function depart(holds: FixedDepartureHolds) {
     events,
     new DirectUnitOfWork(),
     durable,
+    new FixedStaffPermissionHolders(),
   );
   return { handler, rounds, departed, events, durable };
 }
