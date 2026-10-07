@@ -9,7 +9,9 @@
 > confidentialité est dépassé : le géocodage est allumé en production depuis
 > le 2026-09-30, et automatique depuis le 2026-10-06 (section suivante).
 
-## 🔴 Le géocodage tourne en production : publier le paragraphe maintenant
+## ✅ Le paragraphe géocodage est publié (2026-10-07)
+
+> Paragraphe publié en base (document `privacy`) par Hugo, déclaré le 2026-10-07. Ce qui suit est le constat qui l'a réclamé.
 
 Le préalable « publier avant le premier déploiement du lot 7 » est dépassé :
 ce déploiement a eu lieu. Le géocodeur (`f0cdae727`) est parti avec le run

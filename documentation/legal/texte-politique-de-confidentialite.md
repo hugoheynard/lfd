@@ -1,6 +1,7 @@
 # Texte — Politique de confidentialité (à saisir au back-office)
 
-> **État : ✍️ projet de texte, 2026-09-29.** Rédigé pour le document légal
+> **État : publié en base au moins pour le paragraphe géocodage** (Hugo, 2026-10-07 ;
+> le dépôt ne voit pas la base, le reste du texte n'est pas attesté). Projet d'origine du 2026-09-29. Rédigé pour le document légal
 > `privacy` (Contenu › Mentions légales › Confidentialité), à partir du modèle
 > collé par Hugo et de ce que l'application traite **réellement** (relu dans le
 > dépôt le même jour). Plan : [`plan-page-confidentialite.md`](plan-page-confidentialite.md).

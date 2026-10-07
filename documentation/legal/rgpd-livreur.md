@@ -194,7 +194,8 @@ Vérifié le 2026-10-06.
 
 ## 7. Ce qui manque, par urgence
 
-1. 🔴 **Publier le paragraphe géocodage** de la politique de confidentialité
+1. ✅ **Fait le 2026-10-07** — paragraphe géocodage publié en base (document `privacy`) par Hugo, déclaré le 2026-10-07.
+   Constat d'origine : **publier le paragraphe géocodage** de la politique de confidentialité
    (texte prêt dans
    [`texte-politique-de-confidentialite.md`](texte-politique-de-confidentialite.md),
    à reporter au back-office, document `privacy`). Depuis CA0 (`0aa07eb63`,
