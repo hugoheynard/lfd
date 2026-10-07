@@ -185,6 +185,7 @@
   "test/pim-vat-rates.e2e-spec.ts": 6846,
   "test/pim-wall.e2e-spec.ts": 5544,
   "test/platform-content.e2e-spec.ts": 4340,
+  "test/position-checks.e2e-spec.ts": 14852,
   "test/price-limits-migration.e2e-spec.ts": 4325,
   "test/price-limits.e2e-spec.ts": 8236,
   "test/price-rules.e2e-spec.ts": 18689,
