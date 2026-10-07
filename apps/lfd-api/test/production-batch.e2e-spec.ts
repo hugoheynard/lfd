@@ -124,7 +124,7 @@ async function seedSociete(): Promise<{ companyId: string; addressId: string }> 
       isDefault: true,
       deliverySpecs: {
         note: "",
-        slots: { mode: "everyday", slot: null },
+        slotList: { mode: "everyday", slots: [] },
         deliveryContact: CONTACT_DU_JOUR,
         gps: null,
         signatureRequired: true,
@@ -170,7 +170,7 @@ describe("la fiche de production lit ce qui a été convenu", () => {
       data: {
         deliverySpecs: {
           note: "",
-          slots: { mode: "everyday", slot: null },
+          slotList: { mode: "everyday", slots: [] },
           deliveryContact: CONTACT_D_APRES,
           gps: null,
           signatureRequired: false,
@@ -241,7 +241,7 @@ describe("la fiche de production lit ce qui a été convenu", () => {
         isDefault: true,
         deliverySpecs: {
           note: "",
-          slots: { mode: "everyday", slot: null },
+          slotList: { mode: "everyday", slots: [] },
           deliveryContact: CONTACT_D_APRES,
           gps: null,
           signatureRequired: true,
@@ -256,7 +256,7 @@ describe("la fiche de production lit ce qui a été convenu", () => {
       data: {
         deliverySpecs: {
           note: "",
-          slots: { mode: "everyday", slot: null },
+          slotList: { mode: "everyday", slots: [] },
           deliveryContact: null,
           gps: null,
           signatureRequired: false,

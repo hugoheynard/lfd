@@ -28,7 +28,7 @@ function payload(): DeliveryAddressPayload {
     isDefault: false,
     specs: {
       note: "Livraisons par la cour",
-      slots: { mode: "everyday", slot: null },
+      slotList: { mode: "everyday", slots: [] },
       deliveryContact: null,
       gps: null,
       signatureRequired: null,

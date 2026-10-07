@@ -248,7 +248,7 @@ describe("« Commencer ma tournée » (MT3)", () => {
       data: {
         deliverySpecs: {
           note: "",
-          slots: { mode: "everyday", slot: null },
+          slotList: { mode: "everyday", slots: [] },
           deliveryContact: null,
           gps: { lat: 1, lng: 1 },
           signatureRequired: null,

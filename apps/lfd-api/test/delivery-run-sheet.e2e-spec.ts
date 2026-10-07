@@ -47,7 +47,7 @@ const SITE = {
 
 const SPECS = {
   note: "Sonner à l'interphone B",
-  slots: { mode: "everyday", slot: null },
+  slotList: { mode: "everyday", slots: [] },
   deliveryContact: { prenom: "Camille", nom: "Rousseau", telephone: "0142710844" },
   gps: { lat: 45.448, lng: 6.98 },
   signatureRequired: true,

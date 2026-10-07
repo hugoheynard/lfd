@@ -43,9 +43,8 @@ export function deadlinesOfDay(
 
 /**
  * Les créneaux que le CARNET déclare pour ce jour — la même lecture que
- * `slotsFor` du contrat (CA3b, plan composition automatique §14.1) : la liste
- * `slotList` si l'adresse en porte une, sinon l'ancien `slots` lu comme une
- * liste d'un élément.
+ * `slotsFor` du contrat (CA3b, plan composition automatique §14.1). Ne lit
+ * que `slotList` depuis le retrait de l'ancien créneau unique (`plan-retrait-slots.md`).
  */
 export function bookSlotsOfDay(
   address: DeliveryAddressView | null,
@@ -55,15 +54,10 @@ export function bookSlotsOfDay(
     return [];
   }
   const list = address.specs.slotList;
-  if (list !== null && list !== undefined) {
-    if (list.mode === 'everyday') {
-      return list.slots;
-    }
-    return day === null ? [] : (list.byDay[day] ?? []);
+  if (list.mode === 'everyday') {
+    return list.slots;
   }
-  const slots = address.specs.slots;
-  const single = slots.mode === 'everyday' ? slots.slot : day === null ? null : slots.byDay[day];
-  return single === null ? [] : [single];
+  return day === null ? [] : (list.byDay[day] ?? []);
 }
 
 /** La clé d'un créneau dans une liste à choisir : `07:00-08:00`. */

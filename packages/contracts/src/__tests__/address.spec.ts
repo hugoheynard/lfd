@@ -1,7 +1,7 @@
 import {
   deliveryAddressPayloadSchema,
   deliverySlotSchema,
-  deliverySlotsSchema,
+  preferredSlotsSchema,
   gpsPointSchema,
 } from "../address.js";
 
@@ -21,12 +21,12 @@ describe("contrat des créneaux de livraison", () => {
   });
 
   it("discrimine everyday vs perDay sur `mode`", () => {
-    expect(deliverySlotsSchema.safeParse({ mode: "everyday", slot: null }).success).toBe(true);
+    expect(preferredSlotsSchema.safeParse({ mode: "everyday", slots: [] }).success).toBe(true);
     expect(
-      deliverySlotsSchema.safeParse({
+      preferredSlotsSchema.safeParse({
         mode: "perDay",
         byDay: {
-          mon: { start: "06:30", end: "08:00" },
+          mon: [{ start: "06:30", end: "08:00" }],
           tue: null,
           wed: null,
           thu: null,
@@ -37,7 +37,7 @@ describe("contrat des créneaux de livraison", () => {
       }).success,
     ).toBe(true);
     // `everyday` ne doit pas accepter la forme `perDay`.
-    expect(deliverySlotsSchema.safeParse({ mode: "everyday", byDay: {} }).success).toBe(false);
+    expect(preferredSlotsSchema.safeParse({ mode: "everyday", byDay: {} }).success).toBe(false);
   });
 });
 
@@ -59,7 +59,7 @@ describe("contrat d'une adresse de livraison", () => {
       codePostal: "75004",
       ville: "Paris",
       pays: "France",
-      specs: { slots: { mode: "everyday", slot: null }, deliveryContact: null, gps: null },
+      specs: { slotList: { mode: "everyday", slots: [] }, deliveryContact: null, gps: null },
     });
     expect(parsed.label).toBe("");
     expect(parsed.ligne2).toBe("");
@@ -75,7 +75,7 @@ describe("contrat d'une adresse de livraison", () => {
       ville: "Paris",
       pays: "France",
       specs: {
-        slots: { mode: "everyday", slot: null },
+        slotList: { mode: "everyday", slots: [] },
         deliveryContact: null,
         gps: null,
         signatureRequired: true,
@@ -92,11 +92,11 @@ describe("contrat d'une adresse de livraison", () => {
       ville: "Paris",
       pays: "France",
     };
-    const slots = { mode: "everyday", slot: null } as const;
+    const slotList = { mode: "everyday", slots: [] } as const;
     const withContact = deliveryAddressPayloadSchema.safeParse({
       ...base,
       specs: {
-        slots,
+        slotList,
         deliveryContact: { prenom: "Léa", nom: "Martin", telephone: "0600000000" },
         gps: null,
         signatureRequired: true,
@@ -104,11 +104,11 @@ describe("contrat d'une adresse de livraison", () => {
     });
     const noSignature = deliveryAddressPayloadSchema.safeParse({
       ...base,
-      specs: { slots, deliveryContact: null, gps: null, signatureRequired: false },
+      specs: { slotList, deliveryContact: null, gps: null, signatureRequired: false },
     });
     const inherited = deliveryAddressPayloadSchema.safeParse({
       ...base,
-      specs: { slots, deliveryContact: null, gps: null, signatureRequired: null },
+      specs: { slotList, deliveryContact: null, gps: null, signatureRequired: null },
     });
     expect([withContact.success, noSignature.success, inherited.success]).toEqual([
       true,
@@ -123,7 +123,7 @@ describe("contrat d'une adresse de livraison", () => {
       codePostal: "75004",
       ville: "Paris",
       pays: "France",
-      specs: { slots: { mode: "everyday", slot: null }, deliveryContact: null, gps: null },
+      specs: { slotList: { mode: "everyday", slots: [] }, deliveryContact: null, gps: null },
     });
     expect(result.success).toBe(false);
   });

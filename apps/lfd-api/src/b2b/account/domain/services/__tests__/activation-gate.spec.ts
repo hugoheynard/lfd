@@ -81,7 +81,7 @@ const COMPLETE: Partial<AdminCompanyDetailView> = {
       {
         specs: {
           note: "",
-          slots: { mode: "everyday", slot: null },
+          slotList: { mode: "everyday", slots: [] },
           deliveryContact: null,
           gps: null,
           signatureRequired: false,

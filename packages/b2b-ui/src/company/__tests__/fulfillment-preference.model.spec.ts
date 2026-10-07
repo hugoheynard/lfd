@@ -46,7 +46,7 @@ function delivery(id: string, label: string, isDefault: boolean): DeliveryAddres
     depositAllowed: false,
     specs: {
       note: '',
-      slots: { mode: 'everyday', slot: { start: '06:00', end: '08:00' } },
+      slotList: { mode: 'everyday', slots: [{ start: '06:00', end: '08:00' }] },
       deliveryContact: null,
       gps: null,
       signatureRequired: null,

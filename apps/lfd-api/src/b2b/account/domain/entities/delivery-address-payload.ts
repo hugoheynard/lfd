@@ -23,7 +23,7 @@ export interface PostalLines {
  * par le carnet (L7b-C4). Non saisi, il n'est pas écrit — le `jsonb` garde sa
  * forme d'avant pour toutes les adresses qui suivent le réglage. Les créneaux
  * suivent {@link withSlotList} : une liste rangée survit à une charge qui
- * l'ignore.
+ * l'ignore, et une adresse neuve sans liste reçoit la liste vide.
  */
 export function specsOf(
   payload: DeliveryAddressPayload,

@@ -2,6 +2,7 @@ import type { DeliveryAddressPayload } from "@lfd/contracts";
 
 import { CompanyAddressNotFoundError } from "../../errors/account-errors.js";
 import { DeliveryAddressBook } from "../delivery-address-book.js";
+import { withSlotList } from "../../services/delivery-slot-list.js";
 
 /**
  * **« Dépôt autorisé »** sur le carnet (`a-la-porte.md`, AP-D5).
@@ -23,7 +24,7 @@ function payload(): DeliveryAddressPayload {
     isDefault: false,
     specs: {
       note: "",
-      slots: { mode: "everyday", slot: null },
+      slotList: { mode: "everyday", slots: [] },
       deliveryContact: null,
       gps: null,
       signatureRequired: null,
@@ -45,7 +46,7 @@ function bookWith(depositAllowed: boolean): DeliveryAddressBook {
           ville: "Paris",
           pays: "France",
         },
-        specs: payload().specs,
+        specs: withSlotList(payload().specs, null),
         depositAllowed,
         doorstepRule: null,
         parking: null,

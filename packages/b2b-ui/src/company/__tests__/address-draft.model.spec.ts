@@ -39,7 +39,7 @@ const VIEW: DeliveryAddressView = {
   depositAllowed: false,
   specs: {
     note: 'Digicode 45A12, livrer au fournil',
-    slots: { mode: 'everyday', slot: { start: '06:00', end: '08:00' } },
+    slotList: { mode: 'everyday', slots: [{ start: '06:00', end: '08:00' }] },
     deliveryContact: { prenom: 'Léa', nom: 'Martin', telephone: '0600000000' },
     gps: { lat: 48.8566, lng: 2.3522 },
     signatureRequired: true,
@@ -100,8 +100,8 @@ describe('Le brouillon de livraison', () => {
     });
   });
 
-  /** CA3b (§14.1) : plusieurs créneaux par jour, et l'ancien `slots` dérivé du premier. */
-  it('écrit plusieurs créneaux par jour, et en dérive l’ancien créneau unique', () => {
+  /** CA3b (§14.1) : plusieurs créneaux par jour ; l'ancien `slots` n'est plus écrit (2026-10-07). */
+  it('écrit plusieurs créneaux par jour, sans l’ancien créneau unique', () => {
     const draft = {
       ...deliveryDraftFrom(VIEW),
       sameEveryDay: false,
@@ -115,7 +115,7 @@ describe('Le brouillon de livraison', () => {
     };
     const specs = toDeliveryPayload(draft).specs;
 
-    expect(specs.slotList).toEqual({
+    const slotList = {
       mode: 'perDay',
       byDay: {
         mon: draft.daySlots.mon,
@@ -126,10 +126,11 @@ describe('Le brouillon de livraison', () => {
         sat: null,
         sun: null,
       },
-    });
-    expect(specs.slots).toMatchObject({ mode: 'perDay', byDay: { mon: draft.daySlots.mon[0] } });
+    } as const;
+    expect(specs.slotList).toEqual(slotList);
+    expect(specs).not.toHaveProperty('slots');
     // Et l'aller-retour relit la liste, pas le seul premier créneau.
-    const back = deliveryDraftFrom({ ...VIEW, specs });
+    const back = deliveryDraftFrom({ ...VIEW, specs: { ...specs, slotList } });
     expect(back.daySlots.mon).toHaveLength(2);
   });
 

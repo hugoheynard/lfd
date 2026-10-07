@@ -15,7 +15,7 @@ import { CompanyAddressReader } from "../domain/ports/company-address.reader.js"
 /** Consignes vides — pour une livraison créée sans aucune préférence encore. */
 const EMPTY_SPECS: DeliverySpecs = {
   note: "",
-  slots: { mode: "everyday", slot: null },
+  slotList: { mode: "everyday", slots: [] },
   deliveryContact: null,
   gps: null,
   signatureRequired: false,

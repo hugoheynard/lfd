@@ -278,7 +278,7 @@ function siteSpecs(neighbour: NeighbourClient) {
   const site = neighbour.site ?? DEFAULT_SITE;
   return {
     note: site.note,
-    slots: { mode: "everyday" as const, slot: null },
+    slotList: { mode: "everyday" as const, slots: [] },
     deadlines:
       site.deadlines === null ? null : { mode: "everyday" as const, times: [...site.deadlines] },
     deliveryContact: site.contact,

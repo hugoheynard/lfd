@@ -57,7 +57,7 @@ interface DeliveryRow {
 /** Consignes vides — une livraison saisie avant que les consignes existent. */
 const NO_SPECS: DeliverySpecs = {
   note: "",
-  slots: { mode: "everyday", slot: null },
+  slotList: { mode: "everyday", slots: [] },
   deliveryContact: null,
   gps: null,
   signatureRequired: null,

@@ -64,7 +64,7 @@ const delivery = {
   ville: "Paris",
   pays: "France",
   isDefault: false,
-  specs: { note: "", slots: { mode: "everyday", slot: null }, deliveryContact: null, gps: null },
+  specs: { note: "", slotList: { mode: "everyday", slots: [] }, deliveryContact: null, gps: null },
 };
 
 describe("pièces d'activation staff (Porte B)", () => {

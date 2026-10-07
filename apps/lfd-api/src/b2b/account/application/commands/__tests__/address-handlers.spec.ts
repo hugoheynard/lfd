@@ -36,6 +36,7 @@ import { SaveBillingAddressHandler } from "../save-billing-address.handler.js";
 import { SetDefaultDeliveryAddressHandler } from "../set-default-delivery-address.handler.js";
 import { UpdateDeliveryAddressHandler } from "../update-delivery-address.handler.js";
 import { journalNames } from "./member-acts-doubles.js";
+import { withSlotList } from "../../../domain/services/delivery-slot-list.js";
 
 /** Publisher doublé : ignore (les étapes d'activation ne sont pas l'objet de ce spec). */
 /** Fabrique un publisher doublé frais. */
@@ -59,7 +60,7 @@ const DELIVERY: DeliveryAddressPayload = {
   specs: {
     signatureRequired: false,
     note: "",
-    slots: { mode: "everyday", slot: null },
+    slotList: { mode: "everyday", slots: [] },
     deliveryContact: null,
     gps: null,
   },
@@ -88,7 +89,7 @@ function addressesRecorder(recorder: Recorder): CompanyAddressRepository {
       {
         id: "a1",
         lines: { ...BILLING },
-        specs: DELIVERY.specs,
+        specs: withSlotList(DELIVERY.specs, null),
         depositAllowed: false,
         doorstepRule: null,
         parking: null,

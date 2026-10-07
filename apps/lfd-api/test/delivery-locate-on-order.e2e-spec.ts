@@ -121,7 +121,7 @@ async function bookAddress(): Promise<string> {
     specs: {
       signatureRequired: null,
       note: "",
-      slots: { mode: "everyday", slot: null },
+      slotList: { mode: "everyday", slots: [] },
       deliveryContact: null,
       gps: null,
       windowMode: "deadline",

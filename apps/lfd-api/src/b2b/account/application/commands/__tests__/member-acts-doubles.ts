@@ -19,6 +19,7 @@ import { AccountJournalNames } from "../../services/account-journal-names.servic
 import { MembershipReader } from "../../../domain/ports/membership.reader.js";
 import type { CompanyRole } from "../../../domain/value-objects/company-role.js";
 import { ContactDetails } from "../../../domain/value-objects/contact-details.js";
+import { withSlotList } from "../../../domain/services/delivery-slot-list.js";
 
 /**
  * Les doubles des gestes du client sur son compte — des classes qui héritent
@@ -47,7 +48,7 @@ export const DELIVERY: DeliveryAddressPayload = {
   specs: {
     signatureRequired: false,
     note: "",
-    slots: { mode: "everyday", slot: null },
+    slotList: { mode: "everyday", slots: [] },
     deliveryContact: null,
     gps: null,
   },
@@ -121,7 +122,7 @@ export class InMemoryAddresses extends CompanyAddressRepository {
       {
         id: "a1",
         lines: { ...BILLING },
-        specs: DELIVERY.specs,
+        specs: withSlotList(DELIVERY.specs, null),
         depositAllowed: false,
         doorstepRule: null,
         parking: null,
@@ -155,7 +156,7 @@ export class AddressReaderWithA1 extends CompanyAddressReader {
           id: "a1",
           ...BILLING,
           isDefault: true,
-          specs: DELIVERY.specs,
+          specs: withSlotList(DELIVERY.specs, null),
           procedureStepCount: 0,
           depositAllowed: false,
         },

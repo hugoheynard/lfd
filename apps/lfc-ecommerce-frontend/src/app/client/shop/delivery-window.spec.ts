@@ -53,13 +53,13 @@ describe('la fenêtre d’une livraison à la passation', () => {
     });
   });
 
-  it('lit la liste de créneaux du carnet, sinon l’ancien créneau unique', () => {
+  it('lit la liste de créneaux du carnet', () => {
     const view = (specs: Partial<DeliveryAddressView['specs']>): DeliveryAddressView =>
-      ({ specs: { slots: { mode: 'everyday', slot: null }, ...specs } }) as DeliveryAddressView;
+      ({ specs: { slotList: { mode: 'everyday', slots: [] }, ...specs } }) as DeliveryAddressView;
     const evening = { start: '18:00', end: '19:00' };
-    expect(bookSlotsOfDay(view({ slots: { mode: 'everyday', slot: evening } }), 'mon')).toEqual([
-      evening,
-    ]);
+    expect(
+      bookSlotsOfDay(view({ slotList: { mode: 'everyday', slots: [evening] } }), 'mon'),
+    ).toEqual([evening]);
     expect(
       bookSlotsOfDay(
         view({

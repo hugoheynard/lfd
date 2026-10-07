@@ -47,7 +47,7 @@ function delivery(over: Partial<DeliveryAddressPayload> = {}): DeliveryAddressPa
     specs: {
       signatureRequired: false,
       note: "",
-      slots: { mode: "everyday", slot: null },
+      slotList: { mode: "everyday", slots: [] },
       deliveryContact: null,
       gps: null,
     },
@@ -218,15 +218,15 @@ describe("livraison — défaut, tri, archivage", () => {
           specs: {
             signatureRequired: false,
             note: "Sonner « Boulangerie »",
-            slots: {
+            slotList: {
               mode: "perDay",
               byDay: {
-                mon: { start: "06:30", end: "08:00" },
+                mon: [{ start: "06:30", end: "08:00" }],
                 tue: null,
                 wed: null,
                 thu: null,
-                fri: null,
-                sat: { start: "07:30", end: "09:00" },
+                fri: [],
+                sat: [{ start: "07:30", end: "09:00" }],
                 sun: null,
               },
             },
@@ -241,15 +241,15 @@ describe("livraison — défaut, tri, archivage", () => {
     const view = await addressesOf(ADMIN);
     const stored = view.deliveries.find((d) => d.id === id);
     expect(stored?.specs.note).toBe("Sonner « Boulangerie »");
-    expect(stored?.specs.slots).toEqual({
+    expect(stored?.specs.slotList).toEqual({
       mode: "perDay",
       byDay: {
-        mon: { start: "06:30", end: "08:00" },
+        mon: [{ start: "06:30", end: "08:00" }],
         tue: null,
         wed: null,
         thu: null,
-        fri: null,
-        sat: { start: "07:30", end: "09:00" },
+        fri: [],
+        sat: [{ start: "07:30", end: "09:00" }],
         sun: null,
       },
     });
@@ -270,7 +270,7 @@ describe("livraison — défaut, tri, archivage", () => {
           specs: {
             signatureRequired: false,
             note: "",
-            slots: { mode: "everyday", slot: { start: "10:00", end: "08:00" } },
+            slotList: { mode: "everyday", slots: [{ start: "10:00", end: "08:00" }] },
             deliveryContact: null,
             gps: null,
           },

@@ -86,10 +86,9 @@ export function hasPreferredDeadline(deadlines: PreferredDeadlines | null | unde
  * par ligne, lus par `slotsFor`. Les jours sans créneau restent dans la liste :
  * « mardi, rien » est justement l'information.
  */
-export function slotRows(specs: Pick<DeliverySpecs, 'slots' | 'slotList'>): readonly WindowRow[] {
+export function slotRows(specs: Pick<DeliverySpecs, 'slotList'>): readonly WindowRow[] {
   const text = (slots: readonly DeliverySlot[]): string => slots.map(formatSlot).join(' · ');
-  const mode = specs.slotList?.mode ?? specs.slots.mode;
-  if (mode === 'everyday') {
+  if (specs.slotList.mode === 'everyday') {
     return [{ key: 'every', label: 'Tous les jours', text: text(slotsFor(specs, null)) }];
   }
   return WEEKDAYS.map((day) => ({
@@ -100,7 +99,7 @@ export function slotRows(specs: Pick<DeliverySpecs, 'slots' | 'slotList'>): read
 }
 
 /** Une adresse en mode créneau est commandable dès qu'elle en porte au moins un, un jour. */
-export function hasPreferredSlot(specs: Pick<DeliverySpecs, 'slots' | 'slotList'>): boolean {
+export function hasPreferredSlot(specs: Pick<DeliverySpecs, 'slotList'>): boolean {
   return slotRows(specs).some((row) => row.text !== '');
 }
 

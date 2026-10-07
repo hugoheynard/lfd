@@ -47,13 +47,12 @@ export {
   deadlinesByDaySchema,
   preferredDeadlinesSchema,
   deadlinesFor,
-  slotByDaySchema,
-  deliverySlotsSchema,
   slotListByDaySchema,
   preferredSlotsSchema,
   deliveryContactSchema,
   gpsPointSchema,
   deliverySpecsSchema,
+  deliverySpecsPayloadSchema,
   billingAddressPayloadSchema,
   deliveryAddressPayloadSchema,
   memberDeliveryAddressPayloadSchema,
@@ -65,11 +64,10 @@ export type {
   FulfillmentWindow,
   PreferredDeadlines,
   PreferredSlots,
-  SlotByDay,
-  DeliverySlots,
   DeliveryContact,
   GpsPoint,
   DeliverySpecs,
+  DeliverySpecsPayload,
   BillingAddressPayload,
   DeliveryAddressPayload,
   MemberDeliveryAddressPayload,
@@ -79,7 +77,7 @@ export type {
   CompanyAddressesView,
   CreatedAddressResponse,
 } from "./address.js";
-export { slotsFor, legacySlotsOf } from "./preferred-slots.js";
+export { slotsFor } from "./preferred-slots.js";
 export {
   createStaffRolePayloadSchema,
   fromRoleGrants,

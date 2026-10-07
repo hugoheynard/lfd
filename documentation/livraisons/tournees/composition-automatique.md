@@ -579,8 +579,12 @@ flowchart TD
 
 **Dette notée**
 
-- Le champ `slots` est conservé à côté de `slotList`. Son retrait se fera en
-  trois temps, sans date fixée.
+- ~~Le champ `slots` est conservé à côté de `slotList`.~~ **Fait le
+  2026-10-07** ([`plan-retrait-slots.md`](../clientele/plan-retrait-slots.md)) :
+  la migration `20261007210000_une_liste_de_creneaux_pour_chaque_adresse`
+  donne une liste à chaque adresse, et le code ne lit et n'écrit plus que
+  `slotList`. La clé `slots` dort encore dans les `jsonb` déjà écrits ; la
+  purger est un geste en production, sur ordre de Hugo.
 - La liste des commandes arrivées a deux sources : `publishArrivals` pour le
   colisage et `day_retaken` pour la livraison. C'est assumé, chaque source sert
   son canal.

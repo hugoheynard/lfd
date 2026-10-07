@@ -8,7 +8,7 @@ import { deliveryAvailabilityPatchSchema } from "../delivery-availability.js";
 
 const SPECS = {
   note: "",
-  slots: { mode: "everyday", slot: { start: "06:00", end: "08:00" } },
+  slotList: { mode: "everyday", slots: [{ start: "06:00", end: "08:00" }] },
   deliveryContact: null,
   gps: null,
 };

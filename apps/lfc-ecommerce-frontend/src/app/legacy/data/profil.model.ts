@@ -92,18 +92,20 @@ export interface DeliverySlot {
   readonly end: string;
 }
 
-/** Créneau (ou aucun, `null`) pour chacun des sept jours. */
-export type SlotByDay = Readonly<Record<Weekday, DeliverySlot | null>>;
+/** Une liste de créneaux (ou aucune, `null`) pour chacun des sept jours. */
+export type SlotListByDay = Readonly<Record<Weekday, readonly DeliverySlot[] | null>>;
 
 /**
- * Créneaux préférés de livraison. Deux régimes exclusifs :
- * - `everyday` — un créneau unique appliqué tous les jours (l'option « global » ),
- * - `perDay` — un créneau, optionnel, par jour ouvré.
- * `null` (créneau ou jour) = aucune préférence, le transporteur choisit.
+ * Créneaux préférés de livraison — la forme `slotList` du contrat, la seule
+ * depuis le retrait de l'ancien créneau unique (`plan-retrait-slots.md`,
+ * 2026-10-07). Deux régimes exclusifs :
+ * - `everyday` — la même liste tous les jours,
+ * - `perDay` — une liste par jour.
+ * Une liste vide (ou un jour `null`) = aucune préférence, le transporteur choisit.
  */
-export type DeliverySlots =
-  | { readonly mode: 'everyday'; readonly slot: DeliverySlot | null }
-  | { readonly mode: 'perDay'; readonly byDay: SlotByDay };
+export type PreferredSlots =
+  | { readonly mode: 'everyday'; readonly slots: readonly DeliverySlot[] }
+  | { readonly mode: 'perDay'; readonly byDay: SlotListByDay };
 
 /**
  * Contact sur place pour la livraison — la personne que le livreur appelle. Un
@@ -133,7 +135,7 @@ export interface GpsPoint {
 export interface DeliverySpecs {
   /** Consignes libres pour le livreur (code, étage, dépôt) — `''` si aucune. */
   readonly note: string;
-  readonly slots: DeliverySlots;
+  readonly slotList: PreferredSlots;
   /** Personne à contacter à la livraison, ou `null` (aucun contact dédié). */
   readonly deliveryContact: DeliveryContact | null;
   /** Point GPS pour un lieu difficile à localiser, ou `null`. */
@@ -144,7 +146,7 @@ export interface DeliverySpecs {
 export type DeliveryAddress = Address & DeliverySpecs;
 
 /** Aucun créneau, pour les sept jours. */
-export const EMPTY_SLOT_BY_DAY: SlotByDay = {
+export const EMPTY_SLOT_BY_DAY: SlotListByDay = {
   mon: null,
   tue: null,
   wed: null,
@@ -157,7 +159,7 @@ export const EMPTY_SLOT_BY_DAY: SlotByDay = {
 /** Consignes vierges (nouvelle adresse de livraison). */
 export const EMPTY_DELIVERY_SPECS: DeliverySpecs = {
   note: '',
-  slots: { mode: 'everyday', slot: null },
+  slotList: { mode: 'everyday', slots: [] },
   deliveryContact: null,
   gps: null,
 };
@@ -182,34 +184,35 @@ export function formatSlot(slot: DeliverySlot): string {
   return `${slot.start}–${slot.end}`;
 }
 
-/**
- * Une adresse est **commandable** dès qu'elle porte au moins un créneau : le
- * créneau global (régime `everyday`) ou un jour renseigné (régime `perDay`).
- * Sans créneau, on ne sait pas quand livrer — l'adresse est inutilisable.
- */
-export function hasDeliverySlot(slots: DeliverySlots): boolean {
-  if (slots.mode === 'everyday') {
-    return slots.slot !== null;
-  }
-  return WEEKDAYS.some((d) => slots.byDay[d.value] !== null);
+/** Les créneaux d'un jour ; un jour `null` = aucun. */
+function slotsOfDay(list: PreferredSlots, day: Weekday): readonly DeliverySlot[] {
+  return list.mode === 'everyday' ? list.slots : (list.byDay[day] ?? []);
 }
 
-/** Une ligne de la vue hebdomadaire : un jour et son créneau (ou aucun). */
+/**
+ * Une adresse est **commandable** dès qu'elle porte au moins un créneau, un
+ * jour. Sans créneau, on ne sait pas quand livrer — l'adresse est inutilisable.
+ */
+export function hasDeliverySlot(list: PreferredSlots): boolean {
+  return WEEKDAYS.some((d) => slotsOfDay(list, d.value).length > 0);
+}
+
+/** Une ligne de la vue hebdomadaire : un jour et ses créneaux (aucun = liste vide). */
 export interface WeeklySlotRow {
   readonly short: string;
   readonly label: string;
-  readonly slot: DeliverySlot | null;
+  readonly slots: readonly DeliverySlot[];
 }
 
 /**
  * Déplie les créneaux en sept lignes pour la **visualisation** d'une carte. En
- * régime `everyday`, chaque jour porte le même créneau ; en `perDay`, le sien.
+ * régime `everyday`, chaque jour porte la même liste ; en `perDay`, la sienne.
  */
-export function weeklySlots(slots: DeliverySlots): readonly WeeklySlotRow[] {
+export function weeklySlots(list: PreferredSlots): readonly WeeklySlotRow[] {
   return WEEKDAYS.map((d) => ({
     short: d.short,
     label: d.label,
-    slot: slots.mode === 'everyday' ? slots.slot : slots.byDay[d.value],
+    slots: slotsOfDay(list, d.value),
   }));
 }
 
@@ -217,13 +220,14 @@ export function weeklySlots(slots: DeliverySlots): readonly WeeklySlotRow[] {
  * Résumé court des créneaux pour l'affichage d'une carte. `''` si aucune
  * préférence n'est posée.
  */
-export function slotsSummary(slots: DeliverySlots): string {
-  if (slots.mode === 'everyday') {
-    return slots.slot ? `Tous les jours ${formatSlot(slots.slot)}` : '';
+export function slotsSummary(list: PreferredSlots): string {
+  const text = (slots: readonly DeliverySlot[]): string => slots.map(formatSlot).join(', ');
+  if (list.mode === 'everyday') {
+    return list.slots.length > 0 ? `Tous les jours ${text(list.slots)}` : '';
   }
   return WEEKDAYS.map((d) => {
-    const slot = slots.byDay[d.value];
-    return slot ? `${d.short} ${formatSlot(slot)}` : null;
+    const slots = slotsOfDay(list, d.value);
+    return slots.length > 0 ? `${d.short} ${text(slots)}` : null;
   })
     .filter((entry): entry is string => entry !== null)
     .join(' · ');

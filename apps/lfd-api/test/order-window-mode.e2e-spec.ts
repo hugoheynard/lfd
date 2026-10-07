@@ -99,7 +99,7 @@ async function bookAddress(specs: Partial<DeliveryAddressPayload["specs"]> = {})
     specs: {
       signatureRequired: null,
       note: "",
-      slots: { mode: "everyday", slot: null },
+      slotList: { mode: "everyday", slots: [] },
       deliveryContact: null,
       gps: null,
       ...specs,
@@ -231,11 +231,15 @@ describe("plusieurs créneaux par adresse (CA3b, §14.1)", () => {
     return found.specs;
   }
 
-  it("range la liste et en dérive l'ancien créneau ; une charge SANS liste ne l'efface pas", async () => {
+  /**
+   * Non-régression du retrait de `slots` (plan-retrait-slots, 2026-10-07) :
+   * la charge de l'ancien front porte encore `slots`, accepté et ignoré.
+   */
+  it("range la liste sans l'ancien créneau ; une charge SANS liste ne l'efface pas", async () => {
     const addressId = await bookAddress({
       slotList: { mode: "everyday", slots: [MORNING, EVENING] },
     });
-    expect((await storedSpecs(addressId)).slots).toEqual({ mode: "everyday", slot: MORNING });
+    expect(await storedSpecs(addressId)).not.toHaveProperty("slots");
 
     // L'onglet resté sur l'ancien front renvoie `slots` sans connaître `slotList`.
     await ctx
@@ -256,7 +260,7 @@ describe("plusieurs créneaux par adresse (CA3b, §14.1)", () => {
     const specs = await storedSpecs(addressId);
     expect(specs.note).toBe("sonner deux fois");
     expect(specs.slotList).toEqual({ mode: "everyday", slots: [MORNING, EVENING] });
-    expect(specs.slots).toEqual({ mode: "everyday", slot: MORNING });
+    expect(specs).not.toHaveProperty("slots");
   });
 
   it("refuse une liste qui se chevauche, et rien n'est écrit", async () => {
@@ -269,7 +273,6 @@ describe("plusieurs créneaux par adresse (CA3b, §14.1)", () => {
         specs: {
           signatureRequired: null,
           note: "",
-          slots: { mode: "everyday", slot: null },
           deliveryContact: null,
           gps: null,
           slotList: { mode: "everyday", slots: [MORNING, { start: "07:00", end: "09:00" }] },

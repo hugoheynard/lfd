@@ -269,7 +269,7 @@ test.describe('corriger une adresse de livraison', () => {
         isDefault: true,
         specs: {
           note: '',
-          slots: { mode: 'everyday', slot: { start: '08:00', end: '11:00' } },
+          slotList: { mode: 'everyday', slots: [{ start: '08:00', end: '11:00' }] },
           deliveryContact: { prenom: 'Léa', nom: 'Martin', telephone: '0600000000' },
           gps: null,
         },

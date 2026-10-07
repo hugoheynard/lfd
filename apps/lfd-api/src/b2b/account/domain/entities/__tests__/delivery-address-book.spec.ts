@@ -5,6 +5,7 @@ import {
   InvalidDeliveryStopMinutesError,
 } from "../../errors/account-errors.js";
 import { DeliveryAddressBook, type DeliveryAddress } from "../delivery-address-book.js";
+import { withSlotList } from "../../services/delivery-slot-list.js";
 
 /**
  * **Le carnet d'adresses de livraison.**
@@ -40,7 +41,7 @@ function payload(isDefault: boolean): DeliveryAddressPayload {
     isDefault,
     specs: {
       note: "",
-      slots: { mode: "everyday", slot: null },
+      slotList: { mode: "everyday", slots: [] },
       deliveryContact: null,
       gps: null,
       signatureRequired: null,
@@ -60,7 +61,7 @@ function entry(id: string, createdAt: Date, archivedAt: Date | null = null): Del
       ville: "Paris",
       pays: "France",
     },
-    specs: payload(false).specs,
+    specs: withSlotList(payload(false).specs, null),
     depositAllowed: false,
     doorstepRule: null,
     parking: null,

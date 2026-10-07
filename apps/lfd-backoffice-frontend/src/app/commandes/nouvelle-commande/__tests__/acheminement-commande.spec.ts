@@ -43,7 +43,7 @@ const ADRESSE: DeliveryAddressView = {
   specs: {
     note: '',
     // Un créneau au carnet : en mode créneau, c'est lui que le serveur lit.
-    slots: { mode: 'everyday', slot: { start: '07:00', end: '08:00' } },
+    slotList: { mode: 'everyday', slots: [{ start: '07:00', end: '08:00' }] },
     deliveryContact: null,
     gps: null,
     signatureRequired: false,
@@ -484,7 +484,7 @@ describe("le sélecteur d'acheminement de la saisie staff", () => {
     it('en créneau sans carnet, retient un créneau tapé complet', () => {
       const bare: DeliveryAddressView = {
         ...ADRESSE,
-        specs: { ...ADRESSE.specs, slots: { mode: 'everyday', slot: null } },
+        specs: { ...ADRESSE.specs, slotList: { mode: 'everyday', slots: [] } },
       };
       const fixture = courier([bare]);
       fixture.componentInstance['onTypedSlot']('start', '07:00');

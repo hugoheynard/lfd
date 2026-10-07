@@ -465,7 +465,7 @@ const DELIVERIES = [
       // Celui-ci s'accorde avec la note : avant l'ouverture des remontées.
       // La démo est en échéance (Hugo, 2026-10-04) : l'ancien créneau unique
       // reste vide, l'échéance préférée porte la contrainte.
-      slots: { mode: "everyday" as const, slot: null },
+      slotList: { mode: "everyday" as const, slots: [] },
       deadlines: { mode: "everyday" as const, times: ["07:30"] },
       deliveryContact: null,
       // Les points du scénario : Val d'Isère, Bourg-Saint-Maurice, Arc 1800, La
@@ -490,7 +490,7 @@ const DELIVERIES = [
       // qui les alignerait ne montrerait jamais que la fenêtre suit l'adresse.
       // La démo est en échéance (Hugo, 2026-10-04) : l'ancien créneau unique
       // reste vide, l'échéance préférée porte la contrainte.
-      slots: { mode: "everyday" as const, slot: null },
+      slotList: { mode: "everyday" as const, slots: [] },
       deadlines: { mode: "everyday" as const, times: ["09:00"] },
       deliveryContact: null,
       // La Rosière : la station la plus au nord du scénario (Hugo, 2026-09-29).

@@ -64,7 +64,7 @@ const DELIVERY = {
   specs: {
     signatureRequired: false,
     note: "",
-    slots: { mode: "everyday", slot: null },
+    slotList: { mode: "everyday", slots: [] },
     deliveryContact: null,
     gps: null,
   },

@@ -1,10 +1,22 @@
 # Retirer l'ancien champ `slots` des consignes de livraison
 
-> 📐 **Plan v2, validé par Hugo le 2026-10-07, en construction** (2026-10-07, demandé par Hugo : « fais les slots »).
-> Migration de données : contredit par `vitruve` le 2026-10-07 — trois
-> bloquants (une adresse non convertie illisible, des lecteurs qui perdent la
-> note et le GPS en silence, un contrat d'écriture qui refuserait l'ancien
-> front) et quatre sérieux, tous corrigés dans cette v2 (§ 5).
+> ✅ **Bâti le 2026-10-07 (S1 et S2), non commité au moment d'écrire.** Plan v2,
+> validé par Hugo le 2026-10-07 (demandé par Hugo : « fais les slots »).
+>
+> - **S1** : `20261007210000_une_liste_de_creneaux_pour_chaque_adresse`
+>   (l'`UPDATE` puis le garde `RAISE EXCEPTION`), appliquée en dev (44 adresses
+>   avec liste, 0 au contrôle du § 3) et sur la base de test.
+> - **S2** : `@lfd/contracts` sépare la lecture (`deliverySpecsSchema`,
+>   `slotList` obligatoire) de l'écriture (`deliverySpecsPayloadSchema`,
+>   `slotList` facultative, `slots` retiré à l'analyse) ; `slotsFor` ne lit que
+>   la liste ; `legacySlotsOf`, `deliverySlotsSchema` et `slotByDaySchema`
+>   retirés. `withSlotList` garde la liste rangée, ou pose la liste vide.
+>   Écrivains, constantes, semis, boutique, profil « legacy », formulaire du
+>   back-office et tests suivent.
+>   Migration de données : contredit par `vitruve` le 2026-10-07 — trois
+>   bloquants (une adresse non convertie illisible, des lecteurs qui perdent la
+>   note et le GPS en silence, un contrat d'écriture qui refuserait l'ancien
+>   front) et quatre sérieux, tous corrigés dans cette v2 (§ 5).
 
 ## 1. L'état (vérifié le 2026-10-07)
 

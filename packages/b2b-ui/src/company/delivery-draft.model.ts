@@ -1,4 +1,4 @@
-import { legacySlotsOf, slotsFor } from '@lfd/contracts';
+import { slotsFor } from '@lfd/contracts';
 import type {
   DeliveryAddressPayload,
   DeliveryAddressView,
@@ -178,14 +178,13 @@ function deadlinesDraft(
 
 /**
  * Les créneaux stockés vers le brouillon, lus par `slotsFor` — le seul point
- * de lecture (§14.1) : la liste `slotList` si l'adresse en porte une, sinon
- * l'ancien `slots` lu comme une liste d'un élément.
+ * de lecture (§14.1). Chaque adresse rangée porte sa liste depuis le
+ * 2026-10-07 (`plan-retrait-slots.md`).
  */
 function slotsDraft(
-  specs: Pick<DeliverySpecs, 'slots' | 'slotList'>,
+  specs: Pick<DeliverySpecs, 'slotList'>,
 ): Pick<DeliverySpecsDraft, 'sameEveryDay' | 'everySlots' | 'daySlots'> {
-  const mode = specs.slotList?.mode ?? specs.slots.mode;
-  if (mode === 'everyday') {
+  if (specs.slotList.mode === 'everyday') {
     return { sameEveryDay: true, everySlots: slotsFor(specs, null), daySlots: BLANK_DAY_SLOTS };
   }
   return {
@@ -303,9 +302,7 @@ export function toDeliveryPayload(draft: DeliveryDraft): DeliveryAddressPayload 
       note: draft.note.trim(),
       // La liste part TOUJOURS, vide comprise : absente, le serveur garde
       // celle qu'il a (§14.1, l'onglet resté sur l'ancien front), et retirer
-      // le dernier créneau n'effacerait rien. `slots` en est dérivé — le
-      // premier de chaque jour — pour qui ne lit que lui.
-      slots: legacySlotsOf(buildSlotList(draft)),
+      // le dernier créneau n'effacerait rien.
       slotList: buildSlotList(draft),
       deliveryContact: buildContact(draft),
       gps: buildGps(draft),

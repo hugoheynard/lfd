@@ -28,7 +28,7 @@ function address(over: Partial<DeliveryAddressView> & { id: string }): DeliveryA
     isDefault: false,
     specs: {
       note: '',
-      slots: { mode: 'everyday', slot: null },
+      slotList: { mode: 'everyday', slots: [] },
       deliveryContact: null,
       gps: null,
       signatureRequired: null,
@@ -40,7 +40,7 @@ function address(over: Partial<DeliveryAddressView> & { id: string }): DeliveryA
 /** Un carnet qui déclare un créneau tous les jours : le serveur le lira. */
 const SLOTTED: DeliverySpecs = {
   note: '',
-  slots: { mode: 'everyday', slot: { start: '09:00', end: '11:00' } },
+  slotList: { mode: 'everyday', slots: [{ start: '09:00', end: '11:00' }] },
   deliveryContact: null,
   gps: null,
   signatureRequired: null,
@@ -152,7 +152,7 @@ describe('DeliveryAddressDialog', () => {
         isDefault: true,
         specs: {
           note: '',
-          slots: { mode: 'everyday', slot: { start: '09:00', end: '11:00' } },
+          slotList: { mode: 'everyday', slots: [{ start: '09:00', end: '11:00' }] },
           deliveryContact: null,
           gps: null,
           signatureRequired: null,

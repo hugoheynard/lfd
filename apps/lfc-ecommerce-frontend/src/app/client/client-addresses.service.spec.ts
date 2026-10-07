@@ -104,7 +104,7 @@ describe('les écritures du carnet', () => {
     isDefault: false,
     specs: {
       note: '',
-      slots: { mode: 'everyday', slot: null },
+      slotList: { mode: 'everyday', slots: [] },
       deliveryContact: null,
       gps: null,
       signatureRequired: null,

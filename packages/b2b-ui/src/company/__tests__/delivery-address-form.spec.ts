@@ -33,7 +33,6 @@ const CHALET: DeliveryAddressView = {
   depositAllowed: false,
   specs: {
     note: 'Porte bleue',
-    slots: { mode: 'everyday', slot: { start: '06:00', end: '08:00' } },
     slotList: { mode: 'everyday', slots: [{ start: '06:00', end: '08:00' }] },
     deliveryContact: { prenom: 'Léa', nom: 'Martin', telephone: '06 11 22 33 44' },
     gps: { lat: 45.4486, lng: 6.9806 },

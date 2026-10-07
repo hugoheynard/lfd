@@ -160,7 +160,7 @@ export async function seedLocatedDelivery(
       isDefault: true,
       deliverySpecs: {
         note: "",
-        slots: { mode: "everyday", slot: null },
+        slotList: { mode: "everyday", slots: [] },
         deliveryContact: null,
         gps,
         signatureRequired: null,

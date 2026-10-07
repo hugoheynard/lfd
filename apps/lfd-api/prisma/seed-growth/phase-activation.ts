@@ -205,7 +205,12 @@ function deliveryPayload(who: ReturnType<typeof persona>): DeliveryAddressPayloa
     ville: who.ville,
     pays: "France",
     isDefault: true,
-    specs: { note: "", slots: { mode: "everyday", slot: null }, deliveryContact: null, gps: null },
+    specs: {
+      note: "",
+      slotList: { mode: "everyday", slots: [] },
+      deliveryContact: null,
+      gps: null,
+    },
   };
 }
 

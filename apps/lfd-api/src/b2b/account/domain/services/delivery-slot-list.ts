@@ -1,22 +1,24 @@
-import { type DeliverySpecs, legacySlotsOf } from "@lfd/contracts";
+import type { DeliverySpecs, DeliverySpecsPayload, PreferredSlots } from "@lfd/contracts";
+
+/** « Aucun créneau » — la liste vide, plus `null` (plan `plan-retrait-slots.md`, sérieux 6). */
+export const NO_SLOT_LIST: PreferredSlots = { mode: "everyday", slots: [] };
 
 /**
- * Les créneaux à écrire (CA3b, plan composition automatique §14.1, BLOQUANT 1).
+ * Les créneaux à écrire (CA3b ; plan `plan-retrait-slots.md`, S2).
  *
- * - Une charge SANS `slotList` vient d'un front qui ne connaît pas le champ :
- *   la liste déjà rangée est **conservée**, jamais effacée. Seul un `null`
- *   explicite la retire.
- * - Dès qu'une liste est retenue, l'ancien `slots` en est **dérivé** (le
- *   premier créneau de chaque jour) : un onglet resté sur l'ancien front lit
- *   encore un créneau juste. La liste fait foi, `slots` la suit.
+ * - Une charge SANS `slotList` vient d'un onglet resté sur l'ancien front :
+ *   la liste déjà rangée est **conservée**, jamais effacée.
+ * - Sans liste rangée non plus (adresse neuve), l'adresse reçoit la liste
+ *   vide : la lecture exige une liste, et une adresse écrite sans en porter
+ *   une mettrait le carnet de sa société en 500.
+ *
+ * L'ancien `slots` n'est plus dérivé : la charge l'a déjà ignoré, et le code
+ * ne le lit plus depuis le 2026-10-07.
  */
-export function withSlotList(incoming: DeliverySpecs, stored: DeliverySpecs | null): DeliverySpecs {
-  const slotList = incoming.slotList === undefined ? stored?.slotList : incoming.slotList;
-  if (slotList === undefined) {
-    return incoming;
-  }
-  if (slotList === null) {
-    return { ...incoming, slotList };
-  }
-  return { ...incoming, slotList, slots: legacySlotsOf(slotList) };
+export function withSlotList(
+  incoming: DeliverySpecsPayload,
+  stored: DeliverySpecs | null,
+): DeliverySpecs {
+  const slotList = incoming.slotList ?? stored?.slotList ?? NO_SLOT_LIST;
+  return { ...incoming, slotList };
 }

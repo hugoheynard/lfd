@@ -79,28 +79,6 @@ export function windowContains(outer: FulfillmentWindow, inner: FulfillmentWindo
   return innerStart >= outerStart && inner.end <= outer.end;
 }
 
-/** Un créneau (ou aucun, `null`) pour chacun des sept jours. */
-export const slotByDaySchema = z.object({
-  mon: deliverySlotSchema.nullable(),
-  tue: deliverySlotSchema.nullable(),
-  wed: deliverySlotSchema.nullable(),
-  thu: deliverySlotSchema.nullable(),
-  fri: deliverySlotSchema.nullable(),
-  sat: deliverySlotSchema.nullable(),
-  sun: deliverySlotSchema.nullable(),
-});
-export type SlotByDay = z.infer<typeof slotByDaySchema>;
-
-/**
- * Créneaux préférés. Union discriminée : `everyday` = un créneau global tous les
- * jours (ou aucun) ; `perDay` = un créneau optionnel par jour ouvré.
- */
-export const deliverySlotsSchema = z.discriminatedUnion("mode", [
-  z.object({ mode: z.literal("everyday"), slot: deliverySlotSchema.nullable() }),
-  z.object({ mode: z.literal("perDay"), byDay: slotByDaySchema }),
-]);
-export type DeliverySlots = z.infer<typeof deliverySlotsSchema>;
-
 /**
  * Une liste d'**échéances préférées** (`HH:mm`) : une ou plusieurs, sans
  * doublon, de la plus tôt à la plus tard. Plusieurs parce qu'une adresse peut
@@ -127,7 +105,7 @@ export const deadlinesByDaySchema = z.object({
 
 /**
  * Échéances préférées d'une adresse en mode échéance — même grain que
- * `deliverySlotsSchema` : les mêmes tous les jours, ou une liste par jour.
+ * `preferredSlotsSchema` : les mêmes tous les jours, ou une liste par jour.
  */
 export const preferredDeadlinesSchema = z.discriminatedUnion("mode", [
   z.object({ mode: z.literal("everyday"), times: deadlineListSchema }),
@@ -169,9 +147,9 @@ export const slotListByDaySchema = z.object({
  * adresse commande parfois le matin ET pour une soirée ; une commande, elle,
  * n'en porte toujours qu'un.
  *
- * Un champ AJOUTÉ à côté de `slots`, et non une nouvelle forme de `slots` : un
- * onglet resté sur l'ancien front renvoie `slots` sans connaître ce champ, et
- * ne doit rien effacer. L'ordre et l'absence de chevauchement ne sont refusés
+ * Elle a remplacé l'ancien créneau unique `slots`, retiré du code le
+ * 2026-10-07 (`plan-retrait-slots.md`) ; la clé dort encore dans les `jsonb`
+ * déjà écrits, et la lecture l'ignore. L'ordre et l'absence de chevauchement ne sont refusés
  * qu'à l'écriture (la charge), pas ici : les lectures réutilisent ce schéma.
  */
 export const preferredSlotsSchema = z.discriminatedUnion("mode", [
@@ -216,7 +194,6 @@ export type GpsPoint = z.infer<typeof gpsPointSchema>;
  */
 export const deliverySpecsSchema = z.object({
   note: z.string().default(""),
-  slots: deliverySlotsSchema,
   deliveryContact: deliveryContactSchema.nullable(),
   gps: gpsPointSchema.nullable(),
   /**
@@ -248,18 +225,34 @@ export const deliverySpecsSchema = z.object({
   windowMode: windowModeSchema.nullable().optional(),
   /**
    * Les **échéances préférées** de CETTE adresse, lues en mode échéance. Absent
-   * ou `null` : aucune. Le créneau `slots` reste celui du mode créneau.
+   * ou `null` : aucune. Les créneaux `slotList` restent ceux du mode créneau.
    */
   deadlines: preferredDeadlinesSchema.nullable().optional(),
   /**
    * Les **créneaux préférés** de CETTE adresse (CA3b), plusieurs par jour.
-   * Absent ou `null` : on lit l'ancien `slots` ({@link slotsFor}), que le
-   * serveur dérive de cette liste à chaque écriture — le premier créneau de
-   * chaque jour — pour qu'un onglet sur l'ancien front lise encore juste.
+   * **Obligatoire à la lecture** : la migration
+   * `20261007210000_une_liste_de_creneaux_pour_chaque_adresse` en a donné une à
+   * chaque adresse, et refuse de se terminer s'il en reste une sans. « Aucun
+   * créneau » s'écrit `{ mode: "everyday", slots: [] }`, plus `null`.
    */
-  slotList: preferredSlotsSchema.nullable().optional(),
+  slotList: preferredSlotsSchema,
 });
 export type DeliverySpecs = z.infer<typeof deliverySpecsSchema>;
+
+/**
+ * Les consignes telles qu'une **charge d'écriture** les porte — distinctes de
+ * la lecture (plan `plan-retrait-slots.md`, bloquant 3 de `vitruve`).
+ *
+ * `slotList` y est **facultative** : un onglet resté sur l'ancien front
+ * n'envoie que `slots`, et le serveur garde alors la liste rangée (ou la liste
+ * vide pour une adresse neuve) au lieu de refuser. `slots` n'est pas déclaré :
+ * un objet zod retire les clés inconnues, l'ancien champ est donc **accepté
+ * et ignoré**, jamais rangé.
+ */
+export const deliverySpecsPayloadSchema = deliverySpecsSchema.extend({
+  slotList: preferredSlotsSchema.optional(),
+});
+export type DeliverySpecsPayload = z.infer<typeof deliverySpecsPayloadSchema>;
 
 /** Champs postaux communs (facturation et livraison). */
 const postalFieldsSchema = z.object({
@@ -279,13 +272,13 @@ export type BillingAddressPayload = z.infer<typeof billingAddressPayloadSchema>;
 function deliveryAddressFieldsSchema() {
   return postalFieldsSchema.extend({
     isDefault: z.boolean().default(false),
-    specs: deliverySpecsSchema,
+    specs: deliverySpecsPayloadSchema,
   });
 }
 
 /** Le refus croisé de la charge : une signature suppose quelqu'un pour signer. */
 function refuseSignatureWithoutContact(
-  payload: { readonly specs: DeliverySpecs },
+  payload: { readonly specs: DeliverySpecsPayload },
   ctx: z.RefinementCtx,
 ): void {
   if (payload.specs.deliveryContact === null && payload.specs.signatureRequired === true) {
@@ -300,11 +293,11 @@ function refuseSignatureWithoutContact(
 
 /** Le refus de forme de la charge : des créneaux triés, sans chevauchement (§14.1). */
 function refuseUnorderedSlots(
-  payload: { readonly specs: DeliverySpecs },
+  payload: { readonly specs: DeliverySpecsPayload },
   ctx: z.RefinementCtx,
 ): void {
   const list = payload.specs.slotList;
-  if (list === null || list === undefined) {
+  if (list === undefined) {
     return;
   }
   for (const [slots, path] of slotListsOf(list)) {
@@ -321,7 +314,7 @@ function refuseUnorderedSlots(
 
 /** Les refus croisés d'une charge d'adresse de livraison. */
 function refuseDeliveryPayload(
-  payload: { readonly specs: DeliverySpecs },
+  payload: { readonly specs: DeliverySpecsPayload },
   ctx: z.RefinementCtx,
 ): void {
   refuseSignatureWithoutContact(payload, ctx);

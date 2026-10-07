@@ -33,7 +33,7 @@ const CHALET: DeliveryAddressView = {
   depositAllowed: false,
   specs: {
     note: '',
-    slots: { mode: 'everyday', slot: null },
+    slotList: { mode: 'everyday', slots: [] },
     deliveryContact: null,
     gps: null,
     signatureRequired: null,
@@ -271,7 +271,7 @@ describe('AddressesPanel', () => {
       specs: {
         ...CHALET.specs,
         note: 'Porte bleue',
-        slots: { mode: 'everyday', slot: { start: '06:00', end: '08:00' } },
+        slotList: { mode: 'everyday', slots: [{ start: '06:00', end: '08:00' }] },
       },
     };
     fixture = boot(DELIVERY, { billing: SIEGE, deliveries: [withSpecs] });

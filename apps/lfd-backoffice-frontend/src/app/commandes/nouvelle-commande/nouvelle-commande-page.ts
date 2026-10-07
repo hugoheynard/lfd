@@ -102,7 +102,7 @@ const EMPTY_SPECS: DeliverySpecs = {
   // Réglage du site, préremplissage d'une commande — pas une contrainte.
   signatureRequired: false,
   note: '',
-  slots: { mode: 'everyday', slot: null },
+  slotList: { mode: 'everyday', slots: [] },
   deliveryContact: null,
   gps: null,
 };

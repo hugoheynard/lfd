@@ -70,7 +70,7 @@ export function addressBook(
     },
     specs: {
       note: "",
-      slots: { mode: "everyday" as const, slot: null },
+      slotList: { mode: "everyday" as const, slots: [] },
       deliveryContact: null,
       gps: null,
       signatureRequired: null,

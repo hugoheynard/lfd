@@ -213,7 +213,7 @@ function deliveryAddressOf(chalet: Chalet): DeliveryAddressPayload {
     isDefault: true,
     specs: {
       note: "Livrer par l'entrée de service, côté garage.",
-      slots: { mode: "everyday", slot: null },
+      slotList: { mode: "everyday", slots: [] },
       deadlines: { mode: "everyday", times: [chalet.deadline] },
       deliveryContact: {
         prenom: housekeeper.firstName,
