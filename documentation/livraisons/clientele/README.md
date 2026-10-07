@@ -10,6 +10,7 @@
 | [`plan-procedure-de-livraison.md`](plan-procedure-de-livraison.md)                           | ✅ bâti, reste la vignette — La procédure d'une adresse : étapes ordonnées avec titre, texte et photo légère, écrites par le client ou le staff ; droit `delivery_procedures` ; écritures murées sur la société (2026-10-07). |
 | [`plan-remise-et-livraison-par-clientele.md`](plan-remise-et-livraison-par-clientele.md)     | ✅ lots A, B, C bâtis — Qui a droit à la livraison (B2B / B2C), le réglage « Livraison », la clé `publicDelivery` fermée par défaut, l'application au devis et à la commande ; la boutique relit le réglage (2026-10-07).     |
 | [`todo-livraison-accordee-avant-activation.md`](todo-livraison-accordee-avant-activation.md) | 🟡 rien de bâti — Le commercial doit pouvoir accorder la livraison à une société encore en attente ; la dérogation devra aussi lever `publicDelivery`.                                                                        |
+| [`plan-retrait-slots.md`](plan-retrait-slots.md)                                             | 📐 validé, en construction                                                                                                                                                                                                    | Retirer l'ancien champ `slots` des consignes : migration qui donne une liste de créneaux à chaque adresse (8 en production), puis le code ne lit plus que `slotList` ; contredit par `vitruve` (2026-10-07). |
 
 ## Ce qui fait foi
 
