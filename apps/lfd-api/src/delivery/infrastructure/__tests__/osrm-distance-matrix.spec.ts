@@ -124,6 +124,21 @@ describe("les coûts par la route — OSRM /table (lot 8)", () => {
     expect(new Headers(recorded.calls[0]?.init.headers).has("authorization")).toBe(false);
   });
 
+  /**
+   * Régression (2026-10-07) : un jour déjà composé à l'arrêt du plan ne laisse
+   * que le dépôt à router ; OSRM refuse une table d'un seul point (400), et
+   * « Proposer » disait « le calcul routier ne répond pas » à tort.
+   */
+  it("un seul point ne sort pas sur le réseau : rester sur place ne coûte rien", async () => {
+    const recorded = new RecordedFetch(json(OSRM_TABLE_SAVOIE));
+
+    const cost = await matrix(recorded).build(new Map([["depot", { lat: 45.4486, lng: 6.9797 }]]));
+
+    expect(recorded.calls).toHaveLength(0);
+    expect(cost.seconds("depot", "depot")).toBe(0);
+    expect(cost.meters("depot", "depot")).toBe(0);
+  });
+
   it("refuse un point qu'il ne connaît pas", async () => {
     const cost = await matrix(new RecordedFetch(json(OSRM_TABLE_SAVOIE))).build(POINTS);
 

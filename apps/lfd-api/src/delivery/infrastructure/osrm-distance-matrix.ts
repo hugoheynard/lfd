@@ -87,6 +87,14 @@ export class OsrmDistanceMatrix extends DistanceMatrix {
     const entries = [...points.entries()];
     const coordinates = entries.map(([, point]) => point);
     const all = entries.map((_, index) => index);
+    if (entries.length < 2) {
+      // OSRM refuse une table d'un seul point (400) ; rester au dépôt ne coûte rien.
+      const still = entries.map(() => [0]);
+      return roadCost(
+        entries.map(([id]) => id),
+        { meters: still, seconds: still },
+      );
+    }
     if (entries.length <= this.maxTablePoints) {
       const table = await this.block(coordinates, { sources: all, destinations: all }, false);
       return roadCost(
