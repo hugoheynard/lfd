@@ -90,6 +90,25 @@ export interface StepContext {
   readonly settle: () => Promise<void>;
 }
 
+/** Les tournées du jour, telles que l'étape 1 les efface après l'arrêt. */
+export interface AutoComposedRounds {
+  readonly deliveryRound: {
+    findMany(args: {
+      where: { serviceDay: string };
+      select: { id: true };
+    }): Promise<readonly { readonly id: string }[]>;
+    deleteMany(args: { where: { serviceDay: string } }): Promise<unknown>;
+  };
+  readonly activityEvent: {
+    deleteMany(args: {
+      where: { subjectType: string; subjectId: { in: string[] } };
+    }): Promise<unknown>;
+  };
+  readonly deliveryRoundStop: {
+    deleteMany(args: { where: { round: { serviceDay: string } } }): Promise<unknown>;
+  };
+}
+
 /** Le compte du jour, tel que l'étape 3 le lit. */
 export interface ProductionCountTable {
   readonly productionCount: {
@@ -144,14 +163,42 @@ export async function placeToday(
 /**
  * **Étape 1 — le plan du soir d'hier.** Sans lui, la fournée du jour refuse
  * chaque coche (« la journée n'est pas arrêtée ») : constaté le 2026-09-28, en
- * démonstration. La boîte d'envoi est attendue : la liste à coliser part à la
+ * démonstration. Les tournées que l'arrêt compose tout seul sont effacées : la
+ * démonstration compose les siennes à l'étape 2. La boîte d'envoi est attendue : la liste à coliser part à la
  * clôture, et l'étape suivante s'appuie dessus.
  */
-export async function closeTodayPlan(context: StepContext, day: ScenarioDay): Promise<void> {
+export async function closeTodayPlan(
+  context: StepContext & { readonly prisma: AutoComposedRounds },
+  day: ScenarioDay,
+): Promise<void> {
   await asStaff(atHour(day.orderedAt, EVENING_CLOSE_HOUR), () =>
     context.commands.execute(new CloseProductionDayCommand(day.forDay)),
   );
   await context.settle();
+  await clearAutoComposed(context.prisma, day.forDay);
+}
+
+/**
+ * Efface les tournées de CE jour que l'arrêt du plan vient de composer tout
+ * seul (`DayAutoComposition`, 2026-10-07). Le scénario lit son étape dans la
+ * base : avec elles, l'étape 1 se lirait comme la 2. Et l'étape 2 pose sa
+ * propre composition — Val d'Isère dans l'ordre de la vallée, la livraison du
+ * comptoir au rang 4 —, dont le colisage, le chargement et le livreur
+ * dépendent. Aucun bac n'existe à cette étape. Dev seulement : ses appelants
+ * refusent toute cible non locale.
+ */
+async function clearAutoComposed(prisma: AutoComposedRounds, forDay: string): Promise<void> {
+  const rounds = await prisma.deliveryRound.findMany({
+    where: { serviceDay: forDay },
+    select: { id: true },
+  });
+  // Leurs faits au journal d'activité AVANT elles : la purge du scénario les
+  // retrouve par identifiant de tournée, et ces identifiants vont disparaître.
+  await prisma.activityEvent.deleteMany({
+    where: { subjectType: "delivery_round", subjectId: { in: rounds.map((round) => round.id) } },
+  });
+  await prisma.deliveryRoundStop.deleteMany({ where: { round: { serviceDay: forDay } } });
+  await prisma.deliveryRound.deleteMany({ where: { serviceDay: forDay } });
 }
 
 /**

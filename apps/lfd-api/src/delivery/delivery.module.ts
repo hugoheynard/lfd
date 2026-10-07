@@ -146,6 +146,8 @@ import {
   ADDRESS_SUGGESTIONS_CONTROLLERS,
   ADDRESS_SUGGESTIONS_PROVIDERS,
 } from "./address-suggestions.providers.js";
+import { DayAutoComposition } from "./application/day-auto-composition.js";
+import { DayComposer } from "./application/day-composer.js";
 import { DeliveryStopsLocating } from "./application/delivery-stops-locating.js";
 import { DAY_READINESS_CONTROLLERS, DAY_READINESS_PROVIDERS } from "./day-readiness.providers.js";
 import { DOORSTEP_CONTROLLERS, DOORSTEP_PROVIDERS } from "./doorstep.providers.js";
@@ -243,6 +245,8 @@ import {
     GetDeliveryRoundProposalHandler,
     GetDeliveryPlacementSuggestionsHandler,
     ApplyDeliveryProposalHandler,
+    DayAutoComposition,
+    { provide: DayComposer, useExisting: DayAutoComposition },
     // L'horaire prévu d'une tournée appliquée (I10), rechronométré par le serveur.
     RoundTimingEstimator,
     SimulateDeliveryRoundsHandler,

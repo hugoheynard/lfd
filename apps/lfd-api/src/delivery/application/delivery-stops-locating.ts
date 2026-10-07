@@ -4,6 +4,7 @@ import { AfterCommit } from "../../platform/database/after-commit.js";
 import { BackgroundWork } from "../../platform/events/background-work.js";
 import { DeliveryOrderPlacedListener, DeliveryOrdersReader } from "../channels/commerce/index.js";
 import { GeocoderDisabledError } from "../domain/errors/delivery-routing-errors.js";
+import { DayComposer } from "./day-composer.js";
 import type { DayStopsLocator } from "./day-stops-locator.js";
 import { LocateDeliveryStopsCommand } from "./commands/locate-delivery-stops.command.js";
 import { LocateDeliveryStopsHandler } from "./commands/locate-delivery-stops.handler.js";
@@ -23,8 +24,11 @@ const DAY_LABEL = "delivery.locate-arrested-day";
  * « Situer » de l'écran.
  *
  * - `orderPlaced` — appelé par le commerce sur `order.placed` ;
- * - `locateDaySoon` — appelé par les abonnés de l'arrêt du plan et du
- *   retirage, qui tournent DANS une transaction.
+ * - `prepareDaySoon` — appelé par les abonnés de l'arrêt du plan et du
+ *   retirage, qui tournent DANS une transaction ; à l'arrêt du plan
+ *   (`prepareDaySoon`), il compose ensuite les tournées du jour
+ *   (`DayAutoComposition`, 2026-10-07) ; au retirage (`locateDaySoon`), il
+ *   ne fait que situer.
  *
  * Toujours APRÈS la validation (`AfterCommit`) et en fond (`BackgroundWork`) :
  * aucun appel réseau dans une transaction, aucune attente pour la passation.
@@ -39,6 +43,7 @@ export class DeliveryStopsLocating extends DeliveryOrderPlacedListener implement
     private readonly locate: LocateDeliveryStopsHandler,
     private readonly afterCommit: AfterCommit,
     private readonly work: BackgroundWork,
+    private readonly composition: DayComposer,
   ) {
     super();
   }
@@ -50,8 +55,21 @@ export class DeliveryStopsLocating extends DeliveryOrderPlacedListener implement
     );
   }
 
+  /**
+   * Situer, PUIS composer (2026-10-07) : dans cet ordre, dans la même tâche —
+   * composer d'abord laisserait à répartir tout ce qui n'est pas encore situé.
+   */
+  prepareDaySoon(day: string): void {
+    this.afterCommit.defer(() => this.work.track(this.prepareDay(day), DAY_LABEL), DAY_LABEL);
+  }
+
   locateDaySoon(day: string): void {
     this.afterCommit.defer(() => this.work.track(this.locateDay(day), DAY_LABEL), DAY_LABEL);
+  }
+
+  private async prepareDay(day: string): Promise<void> {
+    await this.locateDay(day);
+    await this.composition.composeDay(day);
   }
 
   /** Une livraison active, datée : son jour. Un retrait, une annulée, une sans jour : rien. */

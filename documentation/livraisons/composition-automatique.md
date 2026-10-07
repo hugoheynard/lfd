@@ -40,9 +40,16 @@ retard n'est jamais accepté en silence.
   n'en porte toujours qu'**un seul**. Deux commandes donnent donc deux arrêts.
 - Le commerce refuse toute commande livrée qui n'a ni échéance ni créneau.
 
-**Qui décide quoi.** Le calcul **propose**, le bureau **applique**. Rien
-n'écrit tout seul dans les tournées réelles. Le geste « Appliquer » est
-toujours un clic humain. Quand un humain fait un geste, ce geste l'emporte sur
+**Qui décide quoi.** Le calcul **propose**, le bureau **applique** — sauf
+à l'arrêt du plan : depuis le 2026-10-07 (Hugo : « proposer des tournées
+devrait être automatique à la clôture »), la livraison situe les arrêts du
+jour, puis compose ET enregistre les tournées toute seule
+(`DayAutoComposition`), exactement comme « Proposer » puis « Appliquer » du
+bureau, au mode réglé par défaut. Le bureau corrige ensuite. Un geste du
+bureau passé entre la proposition et l'application la fait refuser : rien
+n'est écrasé. Le retirage, lui, ne compose pas : ses commandes tardives
+passent par la cloche et la place suggérée (CA7), pour que le bureau voie où
+elles vont. Hors de l'arrêt du plan, « Appliquer » reste un clic humain. Quand un humain fait un geste, ce geste l'emporte sur
 le calcul, même s'il rend une commande intenable. Dans ce cas la commande passe
 en alerte, mais le calcul ne défait rien.
 
@@ -261,7 +268,9 @@ flowchart TD
   vivant n'est pas chargé, en listant les références. La place suggérée
   (CA7) la vise aussi depuis le 2026-10-07 : Hugo a tranché Q1 de l'audit,
   c'est la place du véhicule qui limite (`inserer-avant-le-depart.md`).
-- **§9.** « Appliquer » est un clic du bureau, jamais automatique. Le geste
+- **§9.** « Appliquer » est un clic du bureau, jamais automatique — **sauf à
+  l'arrêt du plan depuis le 2026-10-07** (voir « Qui décide quoi » ; le
+  retirage reste à la place suggérée). Le geste
   humain l'emporte. Une commande qu'il rend intenable passe en **alerte
   rouge** (tableau, résumé « à régler », carte), sans que le calcul défasse le
   geste.

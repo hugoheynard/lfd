@@ -1,7 +1,13 @@
 import { CloseProductionDayCommand } from "../../../production/application/commands/close-production-day.command.js";
 import { MarkWorksheetLineCommand } from "../../../production/application/commands/mark-worksheet-line.command.js";
 import { currentRequestContext } from "../../../platform/context/request-context.store.js";
-import { bakeToday, closeTodayPlan, scenarioDayOf, type StepContext } from "../today.seed.js";
+import {
+  type AutoComposedRounds,
+  bakeToday,
+  closeTodayPlan,
+  scenarioDayOf,
+  type StepContext,
+} from "../today.seed.js";
 
 /**
  * Les étapes courtes du scénario : chacune par le vrai geste, dans un contexte
@@ -17,7 +23,7 @@ const DAY = scenarioDayOf(NOW);
 function recorder() {
   const journal: string[] = [];
   const instants: Date[] = [];
-  const context: StepContext = {
+  const context: StepContext & { readonly prisma: AutoComposedRounds } = {
     commands: {
       execute: (command) => {
         journal.push(
@@ -35,6 +41,27 @@ function recorder() {
     settle: () => {
       journal.push("settle");
       return Promise.resolve();
+    },
+    prisma: {
+      deliveryRound: {
+        findMany: () => Promise.resolve([{ id: "r_auto" }]),
+        deleteMany: (args: { where: { serviceDay: string } }) => {
+          journal.push(`clear rounds ${args.where.serviceDay}`);
+          return Promise.resolve();
+        },
+      },
+      activityEvent: {
+        deleteMany: (args: { where: { subjectType: string; subjectId: { in: string[] } } }) => {
+          journal.push(`clear events ${args.where.subjectId.in.join(",")}`);
+          return Promise.resolve();
+        },
+      },
+      deliveryRoundStop: {
+        deleteMany: (args: { where: { round: { serviceDay: string } } }) => {
+          journal.push(`clear stops ${args.where.round.serviceDay}`);
+          return Promise.resolve();
+        },
+      },
     },
   };
   return { journal, instants, context };
@@ -55,7 +82,15 @@ describe("closeTodayPlan — étape 1", () => {
 
     await closeTodayPlan(context, DAY);
 
-    expect(journal).toEqual(["close 2026-10-05", "settle"]);
+    // Puis efface ce que l'arrêt a composé tout seul (2026-10-07) : le
+    // scénario lit son étape dans la base.
+    expect(journal).toEqual([
+      "close 2026-10-05",
+      "settle",
+      "clear events r_auto",
+      "clear stops 2026-10-05",
+      "clear rounds 2026-10-05",
+    ]);
     expect(instants[0]?.getDate()).toBe(4);
     expect(instants[0]?.getHours()).toBe(20);
   });
@@ -106,8 +141,13 @@ describe("les gestes envoyés", () => {
       settle: () => Promise.resolve(),
     };
     const prisma = { productionCount: { findMany: () => Promise.resolve([{ sku: "VIE-001" }]) } };
+    const rounds = {
+      deliveryRoundStop: { deleteMany: () => Promise.resolve() },
+      deliveryRound: { findMany: () => Promise.resolve([]), deleteMany: () => Promise.resolve() },
+      activityEvent: { deleteMany: () => Promise.resolve() },
+    };
 
-    await closeTodayPlan(context, DAY);
+    await closeTodayPlan({ ...context, prisma: rounds }, DAY);
     await bakeToday({ ...context, prisma }, DAY);
 
     expect(sent[0]).toBeInstanceOf(CloseProductionDayCommand);

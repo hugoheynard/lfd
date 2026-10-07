@@ -60,7 +60,7 @@ export class LearnArrestedPlan implements DurableSubscriber {
     await this.days.save(day);
     // CA0 : le rattrapage avant le jour J — ce qu'une commande n'a pas pu
     // situer à sa passation l'est ici, après la validation, hors transaction.
-    this.locating.locateDaySoon(day.serviceDay);
+    this.locating.prepareDaySoon(day.serviceDay);
     if (announced > 0) {
       await this.bell.ring({
         serviceDay: day.serviceDay,

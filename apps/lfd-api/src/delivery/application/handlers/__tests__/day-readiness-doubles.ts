@@ -94,10 +94,21 @@ export class FixedActiveBinTypes extends ActiveBinTypesReader {
   }
 }
 
-/** « Situer les arrêts du jour, plus tard », noté : le géocodage a sa propre suite (CA0). */
+/**
+ * « Préparer » (situer puis composer) et « situer » le jour, plus tard,
+ * notés à part : le géocodage et la composition ont leurs propres suites.
+ */
 export class RecordingDayStopsLocator extends DayStopsLocator {
+  /** Les jours préparés — situés PUIS composés (arrêt du plan). */
   readonly days: string[] = [];
-  locateDaySoon(day: string): void {
+  /** Les jours seulement situés (retirage). */
+  readonly located: string[] = [];
+
+  prepareDaySoon(day: string): void {
     this.days.push(day);
+  }
+
+  locateDaySoon(day: string): void {
+    this.located.push(day);
   }
 }

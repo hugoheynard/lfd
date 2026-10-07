@@ -1,3 +1,4 @@
+import { DayComposer } from "../day-composer.js";
 import { DirectUnitOfWork } from "../../../platform/database/__tests__/direct-unit-of-work.js";
 import { HeldAfterCommit } from "../../../platform/database/__tests__/held-after-commit.js";
 import { BackgroundWork } from "../../../platform/events/background-work.js";
@@ -53,6 +54,16 @@ class SwitchableGeocoder extends RecordingGeocoder {
   }
 }
 
+/** La composition du jour, enregistrée : quel jour, et après quoi. */
+class RecordingComposer extends DayComposer {
+  readonly days: string[] = [];
+
+  composeDay(day: string): Promise<number> {
+    this.days.push(day);
+    return Promise.resolve(0);
+  }
+}
+
 function scene(
   orders: readonly DeliveryOrderFacts[],
   geocoder: RecordingGeocoder = new SwitchableGeocoder(() => ({ lat: 45.6, lng: 5.9 })),
@@ -73,12 +84,13 @@ function scene(
     new FixedClock(new Date(0)),
     new DirectUnitOfWork(),
   );
-  const locating = new DeliveryStopsLocating(reader, locate, afterCommit, work);
+  const composer = new RecordingComposer();
+  const locating = new DeliveryStopsLocating(reader, locate, afterCommit, work, composer);
   async function settle(): Promise<void> {
     await afterCommit.commit();
     await work.whenIdle();
   }
-  return { locating, cache, geocoder, afterCommit, settle };
+  return { locating, cache, geocoder, afterCommit, settle, composer };
 }
 
 const located = (cache: InMemoryGeocodeCache, orderId: string) =>
@@ -153,14 +165,45 @@ describe("DeliveryStopsLocating — situer l'adresse dès la commande (CA0)", ()
     await settle();
     geocoder.down = false;
 
-    locating.locateDaySoon(DAY);
+    locating.prepareDaySoon(DAY);
     await settle();
-    locating.locateDaySoon(DAY);
+    locating.prepareDaySoon(DAY);
     await settle();
 
     expect(geocoder.asked.map((batch) => batch.length)).toEqual([2]);
     expect(await located(cache, "o1")).toBe(true);
     expect(await located(cache, "o2")).toBe(true);
+  });
+
+  /**
+   * 2026-10-07 (Hugo : « proposer devrait être automatique à la clôture ») :
+   * le jour se compose APRÈS la validation, et après que ses arrêts ont été
+   * situés — jamais avant, sans quoi tout resterait à répartir. Une
+   * commande placée ne compose rien.
+   */
+  it("prépare le jour : situe, puis compose — et jamais pour une commande seule", async () => {
+    const { locating, geocoder, settle, composer } = scene([deliveryOn("o1", DAY)]);
+
+    locating.orderPlaced("o1");
+    await settle();
+    expect(composer.days).toEqual([]);
+
+    locating.prepareDaySoon(DAY);
+    expect(composer.days).toEqual([]);
+    await settle();
+
+    expect(geocoder.asked).toHaveLength(1);
+    expect(composer.days).toEqual([DAY]);
+  });
+
+  it("géocodeur éteint : le jour se compose quand même, sur les points du carnet", async () => {
+    const geocoder = new RecordingGeocoder(() => null, new GeocoderDisabledError());
+    const { locating, settle, composer } = scene([deliveryOn("o1", DAY)], geocoder);
+
+    locating.prepareDaySoon(DAY);
+    await settle();
+
+    expect(composer.days).toEqual([DAY]);
   });
 
   it("géocodeur éteint (aucune URL) : rien ne remonte", async () => {

@@ -100,7 +100,10 @@ describe("LearnRetakenPlan — un retirage complète le plan arrêté", () => {
     await close(["d1"]);
     await retake(["r1"]);
 
-    expect(locator.days).toEqual([DAY, DAY]);
+    // L'arrêt prépare (situe PUIS compose) ; le retirage situe seulement :
+    // ses commandes tardives passent par la place suggérée (2026-10-07).
+    expect(locator.days).toEqual([DAY]);
+    expect(locator.located).toEqual([DAY]);
   });
 
   it("borne la lecture aux commandes absorbées DU FAIT", async () => {

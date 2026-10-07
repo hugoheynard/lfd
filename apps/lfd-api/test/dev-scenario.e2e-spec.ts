@@ -194,11 +194,13 @@ describe("le scénario du jour, étape par étape", () => {
       await admin(ctx).post(`/admin/production/batch/${day}/close`).expect(201);
       await ctx.drain();
 
+      // Depuis le 2026-10-07, l'arrêt du plan compose les tournées tout seul
+      // (`DayAutoComposition`) : arrêté à l'écran du fournil, le jour est
+      // déjà à l'étape 2, et la suivante part de là — le four.
       const view = await state();
-      expect(view.reached).toBe(1);
+      expect(view.reached).toBe(2);
       expect(view.steps[1]?.summary).toMatch(/plan arrêté/u);
-      // Et l'étape suivante part de là : les tournées.
-      expect(await next()).toEqual({ played: 2 });
+      expect(await next()).toEqual({ played: 3 });
     },
     TIMEOUT_MS,
   );

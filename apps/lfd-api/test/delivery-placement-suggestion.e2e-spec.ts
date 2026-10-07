@@ -20,11 +20,8 @@ import {
   ROUNDS,
 } from "./delivery-rounds-scene.js";
 import {
-  apply,
   forgetRoutingScene,
   MEASURED,
-  payloadOf,
-  propose,
   ROAD_ROUTING_OVERRIDES,
   seedBinCatalog,
   seedDeparture,
@@ -68,15 +65,15 @@ function suggested(
   return line;
 }
 
-/** Le plan arrêté, deux livraisons au nord appliquées dans une tournée. */
+/** Le plan arrêté, deux livraisons au nord composées par l'arrêt dans une tournée. */
 async function appliedDay(): Promise<string> {
   await seedDeparture(ctx);
   await addVehicle(ctx, "Kangoo", MEASURED);
   await seedPlannableDelivery(ctx, DAY, { lat: 45.69, lng: 5.91 });
   await seedPlannableDelivery(ctx, DAY, { lat: 45.7, lng: 5.92 });
   await admin(ctx).post(`/admin/production/batch/${DAY}/close`).expect(201);
+  // L'arrêt du plan compose et applique tout seul depuis le 2026-10-07.
   await ctx.drain();
-  await apply(ctx, payloadOf(await propose(ctx, `jour=${DAY}`))).expect(204);
   const [round] = await ctx.prisma.deliveryRound.findMany({ where: { serviceDay: DAY } });
   if (round === undefined) {
     throw new TypeError("aucune tournée appliquée");

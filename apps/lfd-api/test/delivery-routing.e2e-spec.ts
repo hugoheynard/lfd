@@ -179,6 +179,31 @@ describe("proposer, puis appliquer (L7-C3 à C6)", () => {
     expect(await ctx.prisma.deliveryRound.count()).toBe(0);
   });
 
+  /**
+   * 2026-10-07 (Hugo : « proposer des tournées devrait être automatique à la
+   * clôture ») : l'arrêt du plan compose et enregistre les tournées du jour,
+   * comme « Proposer » puis « Appliquer » du bureau. Le non situé reste à
+   * répartir ; un second arrêt (réannonce) ne recompose rien.
+   */
+  it("l'arrêt du plan compose les tournées tout seul, et le non situé reste à répartir", async () => {
+    const { north, south, lost } = await scene();
+
+    await admin(ctx).post(`/admin/production/batch/${DAY}/close`).expect(201);
+    await ctx.drain();
+
+    const stops = await ctx.prisma.deliveryRoundStop.findMany({
+      where: { removedAt: null, round: { serviceDay: DAY } },
+      select: { orderId: true },
+    });
+    expect(stops.map((stop) => stop.orderId).sort()).toEqual([...north, ...south].sort());
+    expect(stops.map((stop) => stop.orderId)).not.toContain(lost);
+    const rounds = await ctx.prisma.deliveryRound.count({ where: { serviceDay: DAY } });
+
+    await admin(ctx).post(`/admin/production/batch/${DAY}/close`).expect(201);
+    await ctx.drain();
+    expect(await ctx.prisma.deliveryRound.count({ where: { serviceDay: DAY } })).toBe(rounds);
+  });
+
   it("deux « Proposer » sur le même état rendent la même proposition (L7-C12)", async () => {
     await scene();
 

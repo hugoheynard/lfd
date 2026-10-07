@@ -18,7 +18,8 @@ const ORDER_MAIL_TEMPLATE_PREFIX = "customer.order-";
  * - une commande, par sa charge (`orderId`, ou `order.id` pour les faits de
  *   bac et d'arrêt) ou comme sujet (`delivery_bin.declared`, contenants) ;
  * - une tournée du scénario, comme sujet ;
- * - une journée du scénario (`production_day.closed`, par `serviceDay`) ;
+ * - une journée du scénario (`production_day.closed`, par `serviceDay`), et
+ *   sa composition automatique à l'arrêt du plan (`delivery_day`, 2026-10-07) ;
  * - les deux réglages que le scénario rejoue à chaque passage : le départ
  *   (`delivery_departure.chosen`, par le semis) et l'adresse de ses clients
  *   réalignée (`company.delivery_address_updated`, par leurs acheteurs).
@@ -43,6 +44,7 @@ export async function purgeJournals(
         OR (subject_type = 'order' AND subject_id = ANY(${orders}))
         OR (subject_type = 'delivery_round' AND subject_id = ANY(${rounds}))
         OR (subject_type = 'production_day' AND payload->>'serviceDay' = ANY(${days}))
+        OR (subject_type = 'delivery_day' AND subject_id = ANY(${days}))
         OR (type = 'delivery_departure.chosen' AND actor_id = ${SEED_STAFF_SUB})
         OR (type = 'company.delivery_address_updated'
             AND subject_id = ANY(${companies}) AND actor_id = ANY(${users}))`;
