@@ -1,6 +1,10 @@
-/// **Rôle** d'un utilisateur staff — un paquet nommé de permissions. Le contenu
-/// de chaque paquet vit dans le code (`@lfd/contracts`, `ROLE_GRANTS`), pas ici :
-/// la base ne stocke que l'affectation.
+/// **Rôle** d'un utilisateur staff, en valeur d'enum — l'ANCIEN rôle
+/// (`staff_users.role`). Le contenu de chaque paquet ne vit plus dans le code :
+/// il est en base, dans `staff_role_definitions`, que la fiche désigne par
+/// `role_key` et que le résolveur lit depuis la bascule des rôles lus en base
+/// (`fd87eca5f`, 2026-09-25) — sans repli sur `ROLE_GRANTS` depuis le
+/// 2026-10-01 (DG0) : `ROLE_GRANTS` (`@lfd/contracts`) n'est plus qu'une
+/// graine (vérifié le 2026-10-07).
 enum StaffRole {
   admin
   commercial
@@ -256,10 +260,12 @@ model StaffSubjectAlias {
 
 /// Un **rôle**, tel qu'il se définit désormais à l'écran.
 ///
-/// Les cinq rôles historiques (`admin`, `commercial`, `comptabilite`, `support`,
-/// `dev`) y sont **semés** par la migration, à l'identique de `ROLE_GRANTS` :
-/// après la bascule, ils s'éditent comme les autres et le tableau du code n'est
-/// plus l'autorité.
+/// Les cinq rôles de l'ouverture de la table (`admin`, `commercial`,
+/// `comptabilite`, `support`, `dev`) y ont été **semés** par la migration du
+/// 2026-09-01, à l'identique de `ROLE_GRANTS` ; `communication` (2026-09-23)
+/// et `comptoir` (2026-09-25) les ont rejoints — sept dans `staffRoleSchema`
+/// au 2026-10-07. Après la bascule, ils s'éditent comme les autres et le
+/// tableau du code n'est plus l'autorité.
 ///
 /// `superadmin` ne vit PAS ici. Il est court-circuité dans le contrat
 /// (`resolveRolePermissions`) : une ressource ajoutée demain lui est acquise le

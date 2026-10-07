@@ -39,8 +39,9 @@ export interface InsertionInput extends PlanningContext {
  * `insert`, décision de Hugo du 2026-09-29), avec la même construction et la
  * même amélioration que les tournées neuves (L7b-C1, C2) : chaque commande va
  * à la place qui coûte le moins sur TOUS les véhicules — route, attente,
- * retards pénalisés, tournée ouverte —, sans qu'une tournée dépasse la durée
- * maximale.
+ * retards pénalisés, tournée ouverte. La durée maximale n'est pas une borne
+ * (CA2, CA-D1) : une tournée qui la dépasse est signalée (`overDuration`),
+ * jamais refusée (`vehicle-plan.ts`, vérifié le 2026-10-07).
  *
  * 🔴 **L'ordre relatif des arrêts placés à la main ne change jamais** (L7b-C3) :
  * ils sont épinglés — on insère entre eux, on ne les réordonne pas, on ne les

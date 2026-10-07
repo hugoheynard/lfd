@@ -65,9 +65,16 @@ const BLOCK_OF = {
 
   // ▸ LA LIVRAISON — la flotte, le départ des tournées, puis les tournées
   //   elles-mêmes (2026-09-29, `plan-preparation-de-tournee.md`, lot 2). Ses
-  //   tables vivent dans le schéma `production` (Q10), son code ici. Elle
-  //   déclare `channels/commerce/` — les points de retrait que le commerce
-  //   lui sert — et n'atteint rien d'autre que le socle et la plateforme.
+  //   tables vivent dans SON schéma, `delivery`, depuis la migration
+  //   `20260930140000_la_livraison_a_son_schema` (Q10 révisée, vérifié le
+  //   2026-10-07) ; son code ici. Elle DÉCLARE `channels/commerce/` — ce que
+  //   le commerce lui sert : commandes, carnet d'adresses, points de départ… —
+  //   et `channels/handover/` — ce qu'elle demande au retrait, et les faits
+  //   qu'elle lui publie. Elle n'atteint que le socle, la plateforme et deux
+  //   canaux d'autrui : `production/channels/delivery/` (elle écoute la
+  //   clôture du fournil) et `packing/channels/delivery/` (elle implémente ce
+  //   que le colisage déclare) — `ALLOWED` et `PORT_SURFACE` ci-dessous,
+  //   vérifié le 2026-10-07.
   delivery: "delivery",
 
   // ▸ LE COLISAGE — le poste qui met les commandes au bac (2026-10-04,

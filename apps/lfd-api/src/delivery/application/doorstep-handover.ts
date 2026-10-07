@@ -58,9 +58,11 @@ interface WalledStop {
 /**
  * **Remettre à la porte — le geste commun** (`a-la-porte.md`, B1, B2,
  * § 10 bis, AP-D1, AP-D6, AP-Q5, L6-C7). Un dépôt a les effets d'une remise
- * (AP-Q5) : la même attestation au retrait, la même clôture, la même
- * publication différée. Seuls diffèrent les pièces, la règle de l'arrêt et le
- * fait — d'où un service partagé par deux handlers plutôt qu'une copie.
+ * (AP-Q5) : la même attestation au retrait — et avec elle le même fait vers le
+ * commerce, écrit dans la boîte d'envoi dans l'unité de travail (E2, point 3
+ * ci-dessous) —, la même clôture. Seuls diffèrent les pièces, la règle de
+ * l'arrêt et le fait au journal — d'où un service partagé par deux handlers
+ * plutôt qu'une copie.
  *
  * Le handler garde l'unité de travail et le fait au journal (`publishTraced`) :
  * c'est lui l'acte nommé, et `lint:journal-tracked` le lit dans son corps.
@@ -73,9 +75,13 @@ interface WalledStop {
  *    (« déjà fait ») — clos autrement, refus nommé ; puis la version
  *    présentée, la règle du geste (`admit`), l'attestation (sans publier),
  *    `closeStop` par l'agrégat.
- * 3. 🔴 La publication vers le commerce part APRÈS la validation
- *    (`AfterCommit`, B0) : une clôture qui échoue ne laisse ni commande
- *    `fulfilled`, ni point.
+ * 3. 🔴 Le fait vers le commerce (`handover.handed_over`) est écrit par le
+ *    retrait dans la boîte d'envoi, DANS cette unité de travail (lot E2,
+ *    2026-10-04) : il part avec la validation ou pas du tout — une clôture
+ *    qui échoue ne laisse ni commande `fulfilled`, ni point. La publication
+ *    que le port rend encore, et qu'`afterCommit.defer` inscrit ici, est vide
+ *    côté retrait (`ALREADY_IN_OUTBOX`, `handover-doorstep-attestor.ts`,
+ *    vérifié le 2026-10-07).
  */
 @Injectable()
 export class DoorstepHandover {

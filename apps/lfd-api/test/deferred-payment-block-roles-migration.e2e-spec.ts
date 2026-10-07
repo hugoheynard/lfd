@@ -9,10 +9,12 @@
  * l'écran des rôles, qui lit la table, montrerait en production une
  * comptabilité sans le geste que la route lui ouvre.
  *
- * Le guard résout depuis `ROLE_GRANTS`, pas depuis cette table (même constat
- * que `storefront-roles-migration.e2e-spec.ts`, 2026-09-24) : ce test garde
- * ce que la migration accordait, l'ouverture de la route est éprouvée par
- * `direct-debit-blocks.e2e-spec.ts`.
+ * Le guard résout depuis CETTE table — la définition du rôle en base, lue par
+ * `resolveHeldRole` (`src/staff/permissions/infrastructure/held-role.ts`) —
+ * depuis la bascule des rôles lus en base (`fd87eca5f`), sans repli sur
+ * `ROLE_GRANTS` depuis le 2026-10-01 (DG0 ; vérifié le 2026-10-07). Ce test
+ * garde ce que la migration accordait ; l'ouverture de la route est éprouvée
+ * par `direct-debit-blocks.e2e-spec.ts`, sur les rôles que le harnais sème.
  *
  * On REJOUE les ordres lus dans le fichier de migration plutôt que de lire la
  * table avant tout reset — même mécanique, même raison que la suite vitrine.

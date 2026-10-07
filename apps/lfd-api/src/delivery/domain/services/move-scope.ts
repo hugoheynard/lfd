@@ -4,7 +4,11 @@ import type { VehiclePlan } from "./vehicle-plan.js";
 
 /**
  * Chaque arrêt ne se rapproche que de ses DIX plus proches voisins (liste
- * granulaire) : c'est ce qui tient soixante arrêts sous deux secondes (L7b-C2).
+ * granulaire) : c'est ce qui tient soixante arrêts dans le budget du test de
+ * charge — 3 s de processeur, relâché de 2 s le 2026-10-05 sur décision de
+ * Hugo : la CI ne tenait plus 2 s depuis le départ à rebours (CA2), et 2 s
+ * reste la promesse de L7b-C2 (`__tests__/propose-rounds-scale.spec.ts`,
+ * vérifié le 2026-10-07).
  * Un geste qui colle deux arrêts éloignés n'améliore presque jamais une
  * tournée, et le chercher coûte le carré du nombre d'arrêts.
  */

@@ -80,7 +80,10 @@ interface Planned {
 
 /**
  * **Proposer** (L7-C3 à C6, C12, C15) — ne lit que le cache du géocodage et
- * le carnet, jamais le réseau ; n'écrit rien. Par défaut, elle ne place que
+ * le carnet, jamais le géocodeur, et ne sort que vers la carte routière
+ * (OSRM, notre service : la matrice des temps, `matrix.build`, puis les
+ * tracés, `routeLinesOf` — adaptateurs liés dans `delivery.module.ts`,
+ * vérifié le 2026-10-07) ; n'écrit rien. Par défaut, elle ne place que
  * les commandes à répartir — rapportées d'un autre jour comprises, en tête
  * (`decisions-par-defaut-2026-10-02.md`, § 4) ; « tout recomposer » y ajoute les tournées non
  * parties, sans bac chargé, sans arrêt signalé ni non situé. Elle rend les

@@ -445,12 +445,20 @@ async function assertDatabaseReady(prisma: PrismaService): Promise<void> {
  * qui recréait un B2B « vendu depuis un lieu ».
  */
 /**
- * Remet les rôles semés par la migration `20260901140000_roles_definis`.
+ * Remet les rôles que le `TRUNCATE` emporte — la table
+ * `staff_role_definitions`, ouverte par la migration
+ * `20260901140000_roles_definis`.
  *
- * La graine vient de `legacyRoleSeeds()` — **la même fonction que la
- * migration** — et non d'une liste recopiée ici. Un double dériverait au
- * premier rôle dont on change les droits, et les e2e passeraient au vert sur un
- * catalogue de permissions que la production ne connaît pas.
+ * Chaque graine de `legacyRoleSeeds()` (`@lfd/contracts`) — un rôle de
+ * `staffRoleSchema`, son libellé, ses droits de `ROLE_GRANTS` — est créée si
+ * elle manque, réécrite si elle existe. Ce n'est PAS ce qu'écrivent les
+ * migrations : du SQL figé, qui n'appelle aucune fonction (`20260901140000` a
+ * inséré cinq lignes générées depuis `ROLE_GRANTS` tel qu'il était le
+ * 2026-09-01). Les e2e tournent donc sur la graine — ce que
+ * `staff-role-seed.e2e-spec.ts` tient —, pas sur ce que la production
+ * accorde, qui se règle à l'écran (`ROLE_GRANTS` n'est qu'une graine depuis
+ * le 2026-10-01 ; vérifié le 2026-10-07). Une liste recopiée ici dériverait
+ * de la graine au premier droit qu'on y change.
  */
 async function ensureStaffRoleDefinitions(prisma: PrismaService): Promise<void> {
   for (const seed of legacyRoleSeeds()) {

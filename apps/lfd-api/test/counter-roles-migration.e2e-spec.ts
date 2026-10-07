@@ -9,10 +9,13 @@
  * COMPOSÉ, que ni le contrat ni la migration ne nomment, et sur des écarts
  * individuels — pas seulement sur les rôles connus.
  *
- * Le guard résout depuis `ROLE_GRANTS`, pas depuis cette table (vérifié le
- * 2026-09-24, `storefront-roles-migration.e2e-spec.ts`) : ce test garde
- * l'accord table ↔ contrat et les écarts jumeaux ; l'ouverture des routes est
- * éprouvée par `counter-customers.e2e-spec.ts`.
+ * Le guard résout depuis CETTE table — la définition du rôle en base, lue par
+ * `resolveHeldRole` (`src/staff/permissions/infrastructure/held-role.ts`) —
+ * depuis la bascule des rôles lus en base (`fd87eca5f`), sans repli sur
+ * `ROLE_GRANTS` depuis le 2026-10-01 (DG0 ; vérifié le 2026-10-07). Ce test
+ * garde ce que la migration accordait, comparé aux constantes figées
+ * ci-dessous, et les écarts jumeaux ; l'ouverture des routes est éprouvée par
+ * `counter-customers.e2e-spec.ts`, sur les rôles que le harnais sème.
  *
  * On REJOUE les ordres lus dans le fichier de migration, depuis l'état d'avant
  * — même mécanique, même raison que la suite vitrine.

@@ -8,11 +8,14 @@
  * l'écran des rôles, qui lit la table, montrerait en production une
  * communication sans vitrine.
  *
- * ⚠️ Le plan (D7) présente la table comme la source du GUARD. Elle ne l'est
- * pas : le guard résout depuis `ROLE_GRANTS` (`resolveStaffPermissions`,
- * `staff/permissions/prisma-staff-access.resolver.ts`, vérifié le 2026-09-24).
- * Ce test garde donc ce que la migration accordait, pas l'ouverture de la route —
- * que `storefront.e2e-spec.ts` éprouve par HTTP.
+ * ⚠️ Le plan (D7) présente la table comme la source du GUARD. Elle ne l'était
+ * pas le 2026-09-24 (le guard résolvait depuis `ROLE_GRANTS`) ; elle l'est
+ * depuis la bascule des rôles lus en base (`fd87eca5f`), et seule depuis le
+ * 2026-10-01, le repli sur `ROLE_GRANTS` retiré (DG0) :
+ * `staff/permissions/prisma-staff-access.resolver.ts` lit la définition du
+ * rôle par `resolveHeldRole` (vérifié le 2026-10-07). Ce test garde ce que la
+ * migration accordait, pas l'ouverture de la route — que
+ * `storefront.e2e-spec.ts` éprouve par HTTP, sur les rôles que le harnais sème.
  *
  * ⚠️ Pourquoi on REJOUE plutôt qu'on ne lit la table « avant tout reset » :
  * chaque worker e2e garde sa base d'une suite à l'autre, et la première suite

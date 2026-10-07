@@ -11,10 +11,13 @@
  *
  * 1. `stageProofs` range les images au stockage, HORS de la transaction (un
  *    envoi n'a pas à tenir le verrou de la tournée) ;
- * 2. `attest`, DANS l'unité de travail du livreur, écrit l'attestation et ses
- *    pièces **sans rien publier**, et rend la publication ; la livraison
- *    l'inscrit après la validation (`AfterCommit`, B0) — une clôture qui
- *    échoue ne laisse ni commande `fulfilled`, ni point ;
+ * 2. `attest`, DANS l'unité de travail du livreur, écrit l'attestation, ses
+ *    pièces et son fait `handover.handed_over` dans la boîte d'envoi (lot E2,
+ *    2026-10-04) : le fait part avec la validation ou pas du tout — une
+ *    clôture qui échoue ne laisse ni commande `fulfilled`, ni point. La
+ *    publication rendue, que la livraison inscrit encore après la validation
+ *    (`AfterCommit`, B0), est vide côté retrait (`ALREADY_IN_OUTBOX`,
+ *    `HandoverDoorstepAttestor`, vérifié le 2026-10-07) ;
  * 3. `discardProofs` retire les images d'une remise qui n'a pas eu lieu.
  *
  * 🔴 **L'événement ne traverse pas la frontière** (§ 10 bis) : la publication
@@ -26,8 +29,10 @@ export abstract class DoorstepHandoverAttestor {
   abstract stageProofs(proofs: DoorstepProofImages): Promise<StagedHandoverProofs>;
 
   /**
-   * Atteste la remise de `orderId` par `by`, et joint ses pièces. Ne publie
-   * rien : rend la publication, à appeler après la validation.
+   * Atteste la remise de `orderId` par `by`, joint ses pièces et écrit son
+   * fait dans la boîte d'envoi, dans l'unité de travail de l'appelant (E2).
+   * Rend une publication restée au contrat, vide côté retrait (vérifié le
+   * 2026-10-07).
    *
    * @throws le refus du retrait — commande annulée, déjà retirée, retenue —,
    *   avec sa phrase.
@@ -35,10 +40,11 @@ export abstract class DoorstepHandoverAttestor {
   abstract attest(request: DoorstepHandoverRequest): Promise<HandoverPublication>;
 
   /**
-   * La remise À LA PORTE déjà gravée pour cette commande (pièces jointes), à
-   * republier — c'est le rejeu qui répare un commerce resté en arrière
-   * (§ 10 bis). `null` : aucune remise à la porte — l'arrêt a été clos
-   * autrement.
+   * La remise À LA PORTE déjà gravée pour cette commande (pièces jointes),
+   * réannoncée par un fait NEUF écrit dans l'unité de travail de l'appelant
+   * (E2, vérifié le 2026-10-07) — c'est le rejeu qui répare un commerce resté
+   * en arrière (§ 10 bis). `null` : aucune remise à la porte — l'arrêt a été
+   * clos autrement.
    */
   abstract republication(orderId: string): Promise<HandoverPublication | null>;
 
@@ -76,5 +82,9 @@ export interface DoorstepHandoverRequest {
   readonly proofs: StagedHandoverProofs;
 }
 
-/** Annoncer la remise au commerce. À n'appeler qu'après la validation. */
+/**
+ * Ce que la livraison appelle après la validation. Vide depuis le lot E2
+ * (2026-10-04) : le fait part par la boîte d'envoi, écrit dans l'unité de
+ * travail (`ALREADY_IN_OUTBOX`, vérifié le 2026-10-07).
+ */
 export type HandoverPublication = () => void;

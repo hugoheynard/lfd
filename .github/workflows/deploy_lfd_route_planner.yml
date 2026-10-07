@@ -84,9 +84,12 @@ jobs:
 
       - run: pnpm install --frozen-lockfile
 
-      # La CI (`ci.yml`) ne connaît pas encore ce paquet (son périmètre est une
-      # liste nommée, `dev-toolbox/ci/affected.mjs`) : ses contrôles tournent
-      # donc ICI, avant tout geste vers Cloudflare.
+      # La CI (`ci.yml`) connaît ce paquet depuis le 2026-09-29 : job
+      # `route-planner`, périmètre `route_planner` dans
+      # `dev-toolbox/ci/affected.mjs` (vérifié le 2026-10-07). Ses contrôles
+      # tournent quand même ICI, avant tout geste vers Cloudflare : sur un push,
+      # ils doublent ceux de la CI, qu'on attend plus bas ; le mensuel et le
+      # manuel n'ont aucune CI à attendre.
       - name: Typecheck, lint et tests du Worker
         run: |
           pnpm --filter lfd-route-planner exec tsc --noEmit

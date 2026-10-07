@@ -195,7 +195,10 @@ model OrderHandover {
   handedOverAt  DateTime @map("handed_over_at")
   /// L'identité staff qui a constaté, figée. Une preuve sans auteur n'en est pas.
   handedOverBy  String   @map("handed_over_by")
-  /// `scan` (les deux parties étaient là) ou `manual` (l'équipe a saisi).
+  /// `scan` (les deux parties étaient là), `manual` (l'équipe a saisi) ou
+  /// `deposit` (déposé à la porte par le livreur, sans personne pour
+  /// réceptionner — AP-D8 ; écrit par `HandoverDoorstepAttestor` depuis
+  /// « Déposé avec preuve », B2, vérifié le 2026-10-07).
   handedOverVia String   @map("handed_over_via")
 
   @@map("order_handover")
@@ -205,9 +208,13 @@ model OrderHandover {
 /// La GARDE d'une commande passée au livreur : sa tournée est partie
 /// (`documentation/livraisons/a-la-porte.md`, BQ).
 ///
-/// Annoncée par la livraison APRÈS la validation du départ, tenue par le
-/// retrait (sa clé est la commande), lue par le fournil : un verdict qualité
-/// sur une commande partie est refusé — le produit n'est plus là.
+/// Annoncée par la livraison par un fait durable, `delivery.round_departed`,
+/// écrit dans la boîte d'envoi DANS la transaction du départ (DD1,
+/// 2026-10-06, `plan-depart-durable.md` § 5 : `departAndFreeze`,
+/// `delivery-departure-support.ts`, vérifié le 2026-10-07) ; tenue par le
+/// retrait, qui s'y abonne (`RecordRoundDeparted`, sa clé est la commande) ;
+/// lue par le fournil : un verdict qualité sur une commande partie est
+/// refusé — le produit n'est plus là.
 ///
 /// Une ligne par commande ; un second départ (une commande rapportée qui
 /// repart un autre jour) réécrit l'instant et efface le retour.

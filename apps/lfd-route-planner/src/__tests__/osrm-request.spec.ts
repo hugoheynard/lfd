@@ -49,11 +49,14 @@ describe("isContainerFailure", () => {
 });
 
 describe("unavailable", () => {
-  it("rend un 503 qui nomme la cause et le repli", async () => {
+  it("rend un 503 qui nomme la cause et le geste de sortie", async () => {
     const response = unavailable("le conteneur a rendu 500");
     expect(response.status).toBe(503);
     const body: unknown = await response.json();
     expect(body).toMatchObject({ code: "LfdOsrmRefused" });
-    expect(JSON.stringify(body)).toContain("vol d'oiseau");
+    expect(JSON.stringify(body)).toContain("le conteneur a rendu 500");
+    // Régression : le message renvoyait vers l'estimation à vol d'oiseau,
+    // supprimée par L10b-C5 (corrigé le 2026-10-07).
+    expect(JSON.stringify(body)).toContain("Réessayez");
   });
 });

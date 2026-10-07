@@ -25,8 +25,10 @@ import {
  * des écarts finit par rendre l'effectif illisible.
  *
  * Ce qui remplace la garantie perdue est **un sommet, un seul, et hors de
- * portée de l'écran** : `superadmin`. Les cinq rôles historiques deviennent des
- * lignes semées, modifiables comme les autres.
+ * portée de l'écran** : `superadmin`. Les rôles du code deviennent des lignes
+ * semées, modifiables comme les autres — cinq à l'ouverture de la table
+ * (2026-09-01), sept depuis `communication` (2026-09-23) et `comptoir`
+ * (2026-09-25) : `staffRoleSchema`, vérifié le 2026-10-07.
  */
 
 // ─────────────────────────────────────────────────────────────────────────────
@@ -137,7 +139,8 @@ export function fromRoleGrants(grants: RoleGrants): readonly RoleGrant[] {
 }
 
 /**
- * Les cinq rôles historiques, tels qu'ils doivent être **semés** en base.
+ * Les rôles du code, tels qu'ils doivent être **semés** en base — tous ceux
+ * de `staffRoleSchema`, sept au 2026-10-07.
  *
  * `ROLE_GRANTS` n'est plus qu'une graine : ces lignes s'éditent à l'écran
  * comme n'importe quel autre rôle, et le runtime ne lit plus le tableau du

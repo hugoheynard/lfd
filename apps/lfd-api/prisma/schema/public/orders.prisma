@@ -277,8 +277,12 @@ model Order {
   handedOverAt  DateTime? @map("handed_over_at")
   handedOverBy  String?   @map("handed_over_by")
 
-  /// COMMENT la remise a été constatée : `scan` (les deux parties étaient là) ou
-  /// `manual` (le scan était impossible, l'équipe a saisi). Les deux ne se
+  /// COMMENT le retrait a été constaté — la copie du `via` que le retrait
+  /// annonce (`HandoverVia`, `@lfd/contracts`) : `scan` (les deux parties
+  /// étaient là), `manual` (le scan était impossible, l'équipe a saisi) ou
+  /// `deposit` (déposé à la porte par le livreur, sans personne pour
+  /// réceptionner, photo à l'appui — AP-D8 ; écrit par
+  /// `HandoverDoorstepAttestor`, vérifié le 2026-10-07). Les trois ne se
   /// confondent pas — sans cette distinction, quelqu'un finirait par imprimer le
   /// code sur le colis « pour les livraisons difficiles », et un coursier
   /// scannerait son propre carton.

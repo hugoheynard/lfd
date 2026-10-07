@@ -44,7 +44,7 @@ export function admit(request: Request): Admission {
 export function unavailable(cause: string): Response {
   return refusal(
     503,
-    `Le calcul routier ne répond pas (${cause}). Retomber sur l'estimation à vol d'oiseau.`,
+    `Le calcul routier ne répond pas (${cause}) : les calculs de tournée sont refusés, il n'y a plus d'estimation de repli. Réessayez dans une minute ; si le refus dure, vérifiez le déploiement du planificateur de tournées.`,
   );
 }
 
