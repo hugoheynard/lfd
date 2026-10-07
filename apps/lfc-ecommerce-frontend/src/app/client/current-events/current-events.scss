@@ -1,0 +1,64 @@
+/* Le panneau des opérations datées. Ces règles vivaient dans
+   `accueil-public.scss`, groupées avec celles de l'accueil ; elles sont
+   reprises ici à l'identique. La bascule à 900 px est celle du dépôt, la même
+   que `event-card`. */
+:host {
+  display: block;
+}
+
+.events {
+  display: flex;
+  flex-direction: column;
+  gap: var(--fold-space-lg);
+  padding: var(--fold-space-xl);
+  border-radius: var(--lfc-radius-sheet);
+  background: var(--lfc-color-accent-surface);
+}
+
+.events-head {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: var(--fold-space-md);
+}
+
+.events-mark {
+  flex: none;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  inline-size: 2.125rem;
+  block-size: 2.125rem;
+  border-radius: var(--fold-radius-md);
+  background: var(--lfc-color-accent);
+  color: var(--lfc-color-on-accent);
+}
+
+.events-title {
+  margin: 0;
+  font-family: var(--fold-font-label);
+  font-weight: var(--lfc-weight-black);
+  font-size: var(--lfc-text-heading);
+  letter-spacing: var(--lfc-tracking-label);
+  text-transform: uppercase;
+}
+
+.events-lead {
+  margin: 0;
+  flex: 1 1 18rem;
+  min-width: 0;
+  color: var(--lfc-soot-700);
+  font-size: var(--fold-text-md);
+  line-height: var(--lfc-leading-note);
+}
+
+.events-grid {
+  display: grid;
+  gap: var(--fold-space-md);
+}
+
+@media (min-width: 900px) {
+  .events-grid {
+    grid-template-columns: repeat(auto-fit, minmax(26rem, 1fr));
+  }
+}

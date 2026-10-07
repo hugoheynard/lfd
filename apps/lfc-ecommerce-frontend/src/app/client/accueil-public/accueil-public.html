@@ -310,17 +310,13 @@
        bloc n'existe pas — pas de carte vide, pas de « bientôt ». L'or est
        réservé à ce bloc, et c'est le panneau lui-même qui le porte. -->
     @if (event(); as dated) {
-      <section class="events">
-        <div class="events-head">
-          <span class="events-mark" aria-hidden="true">★</span>
-          <h2 class="events-title">{{ c().events.title }}</h2>
-          <p class="events-lead">{{ c().events.lead }}</p>
-        </div>
-        <div class="events-grid">
-          <app-event-banner [event]="dated" [cta]="c().events.cta" />
-          <app-event-card (opened)="browse()" />
-        </div>
-      </section>
+      <app-current-events
+        [event]="dated"
+        [heading]="c().events.title"
+        [lead]="c().events.lead"
+        [cta]="c().events.cta"
+        (opened)="browse()"
+      />
     }
   </div>
 </div>

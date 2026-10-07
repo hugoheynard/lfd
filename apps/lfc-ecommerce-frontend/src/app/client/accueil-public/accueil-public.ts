@@ -18,8 +18,7 @@ import { ClientIdentity } from '../client-identity.service';
 import { ClientWorkspace } from '../client-workspace.service';
 import { AuthFacade } from '../../auth/auth.facade';
 import { ClientChrome } from '../client-chrome.service';
-import { EventCard } from '../event-card/event-card';
-import { EventBanner } from '../event-banner/event-banner';
+import { CurrentEvents } from '../current-events/current-events';
 import { ClientLocale } from '../client-locale.service';
 import { ClientCopyService, fill } from '../copy/client-copy.service';
 import {
@@ -100,8 +99,7 @@ interface House {
   changeDetection: ChangeDetectionStrategy.OnPush,
   imports: [
     ContactBand,
-    EventBanner,
-    EventCard,
+    CurrentEvents,
     FoldCalloutComponent,
     LiveOrdersWell,
     PublicSteps,

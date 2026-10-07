@@ -44,8 +44,7 @@ $fournil: url('https://boulangerie.antidotcom.com/images/yootheme/photo-15958011
 .house,
 .house-head,
 .house-tail,
-.empty,
-.events {
+.empty {
   flex-direction: column;
 }
 
@@ -123,8 +122,7 @@ $fournil: url('https://boulangerie.antidotcom.com/images/yootheme/photo-15958011
 .proof-value,
 .house-name,
 .empty-title,
-.browse-mark,
-.events-title {
+.browse-mark {
   font-family: var(--fold-font-label);
   font-weight: var(--lfc-weight-black);
 }
@@ -161,8 +159,7 @@ $fournil: url('https://boulangerie.antidotcom.com/images/yootheme/photo-15958011
 .house-state,
 .houses-note,
 .empty-title,
-.browse-cta,
-.events-title {
+.browse-cta {
   text-transform: uppercase;
 }
 
@@ -178,8 +175,7 @@ $fournil: url('https://boulangerie.antidotcom.com/images/yootheme/photo-15958011
 /* L'encart et le bouton secondaire. */
 .house-offer,
 .house-state,
-.browse-cta,
-.events-title {
+.browse-cta {
   letter-spacing: var(--lfc-tracking-label);
 }
 
@@ -204,8 +200,7 @@ $fournil: url('https://boulangerie.antidotcom.com/images/yootheme/photo-15958011
 
 /* Les jetons carrés à angle doux, tous centrés sur leur contenu. */
 .house-chevron,
-.browse-mark,
-.events-mark {
+.browse-mark {
   flex: none;
   display: inline-flex;
   align-items: center;
@@ -214,8 +209,7 @@ $fournil: url('https://boulangerie.antidotcom.com/images/yootheme/photo-15958011
 }
 
 /* Les grands blocs de la feuille. */
-.banner,
-.events {
+.banner {
   border-radius: var(--lfc-radius-sheet);
 }
 
@@ -752,50 +746,6 @@ $fournil: url('https://boulangerie.antidotcom.com/images/yootheme/photo-15958011
   color: var(--lfc-ink-800);
 }
 
-/* ── Les opérations datées ─────────────────────────────────────────────────
-   L'or est réservé à ce bloc, et c'est le PANNEAU qui le porte : sans lui, les
-   deux cartes flottaient sur la feuille sans rien qui les rassemble. `null` est
-   un état de première classe — hors période, la section n'existe pas. */
-.events {
-  display: flex;
-  gap: var(--fold-space-lg);
-  padding: var(--fold-space-xl);
-  background: var(--lfc-color-accent-surface);
-}
-
-.events-head {
-  display: flex;
-  flex-wrap: wrap;
-  align-items: center;
-  gap: var(--fold-space-md);
-}
-
-.events-mark {
-  inline-size: 2.125rem;
-  block-size: 2.125rem;
-  background: var(--lfc-color-accent);
-  color: var(--lfc-color-on-accent);
-}
-
-.events-title {
-  margin: 0;
-  font-size: var(--lfc-text-heading);
-}
-
-.events-lead {
-  margin: 0;
-  flex: 1 1 18rem;
-  min-width: 0;
-  color: var(--lfc-soot-700);
-  font-size: var(--fold-text-md);
-  line-height: var(--lfc-leading-note);
-}
-
-.events-grid {
-  display: grid;
-  gap: var(--fold-space-md);
-}
-
 /* ── Au-delà du pli ────────────────────────────────────────────────────────
    La bascule est celle du dépôt (900 px), la même que `event-card` : deux
    grammaires qui changeraient de gabarit à des largeurs différentes feraient un
@@ -832,10 +782,6 @@ $fournil: url('https://boulangerie.antidotcom.com/images/yootheme/photo-15958011
      Voir le commentaire de `.banner-inner`. */
   .banner-inner {
     padding: var(--fold-space-2xl) var(--fold-space-5xl);
-  }
-
-  .events-grid {
-    grid-template-columns: repeat(auto-fit, minmax(26rem, 1fr));
   }
 }
 

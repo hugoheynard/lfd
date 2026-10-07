@@ -60,9 +60,11 @@ composant à dessein : les deux disent « rien sous les yeux », et se distingue
 par le **ton** et le **texte**, pas par deux mises en page.
 
 ⚠️ **Lire la déclaration du composant avant d'utiliser une entrée.** Un attribut
-statique inconnu sur un composant Angular **ne lève rien** : `icon="clock"` et
-`description="…"` sur `fold-empty-state` compilaient et n'affichaient rien —
-l'icône passe par le slot `[empty-icon]`, le texte par `subtitle`. La source est
+statique inconnu sur un composant Angular **ne lève rien** : `description="…"`
+sur `fold-empty-state` compilait et n'affichait rien — le texte passe par
+`subtitle`. ⚠️ Cette phrase disait aussi que `icon` n'existait pas : vrai
+autrefois, faux depuis fold-ng 0.28 (relu le 2026-10-07) — `icon` et `iconSize`
+sont des entrées, et un slot `[empty-icon]` projeté l'emporte. La source est
 `node_modules/fold-ng/types/fold-ng.d.ts`.
 
 ### Zéro `<select>` natif (règle permanente)

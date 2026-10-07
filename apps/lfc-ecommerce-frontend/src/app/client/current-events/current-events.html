@@ -1,0 +1,11 @@
+<section class="events">
+  <div class="events-head">
+    <span class="events-mark" aria-hidden="true">★</span>
+    <h2 class="events-title">{{ heading() }}</h2>
+    <p class="events-lead">{{ lead() }}</p>
+  </div>
+  <div class="events-grid">
+    <app-event-banner [event]="event()" [cta]="cta()" />
+    <app-event-card (opened)="opened.emit()" />
+  </div>
+</section>
