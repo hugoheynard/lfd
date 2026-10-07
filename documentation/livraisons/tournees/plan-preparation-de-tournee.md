@@ -82,7 +82,8 @@ Le matin, avant que le véhicule parte, quatre gestes :
 ✅ **Trois véhicules, et on doit pouvoir en ajouter** (Hugo, 2026-09-29). Le
 geste 3 devient donc « **répartir** les commandes entre les véhicules, puis
 ordonner chaque tournée », et le geste 4 se fait **par véhicule**. La réserve de
-la [conception v1](../livreur/conception-retrait-en-livraison.md) (§3 : « la tournée devient
+la conception v1 du 2026-09-11 (supprimée le 2026-10-07, son reste ouvert est
+dans [`a-la-porte.md`](../livreur/a-la-porte.md) § 10 ; §3 : « la tournée devient
 nécessaire au deuxième véhicule ») est levée : la tournée est à bâtir.
 
 Ce qui vient toujours après : l'algorithme qui **propose** une répartition, et

@@ -16,8 +16,8 @@
 > découpé en actions granulaires, et il faut que j'arrête de hardcoder des
 > bouts de rôle dans la base, ça doit être du paramétrage admin ».
 >
-> **Remplace** le projet de [`plan-droit-procedures.md`](plan-droit-procedures.md)
-> (dont les objections de `vitruve` sont reprises ici) et fait du
+> **Remplace** le plan du seul droit des procédures (supprimé le 2026-10-07,
+> dans l'historique git ; dont les objections de `vitruve` sont reprises ici) et fait du
 > [`tableau-droits-livraison.md`](tableau-droits-livraison.md) une **feuille de
 > réglage**, plus un contenu de migration.
 >

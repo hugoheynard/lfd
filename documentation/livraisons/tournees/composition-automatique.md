@@ -87,10 +87,11 @@ sequenceDiagram
     D->>C: lit les commandes du fait (delivery/channels/commerce/)
     D->>D: union des livraisons non annulées dans delivery_day_readiness
     D->>N: « Le plan du mercredi 7 octobre est arrêté : 12 livraisons à mettre en tournées »
-    B->>B: bandeau « Plan arrêté » → « Proposer » → « Appliquer » (clic humain)
+    D->>D: situe les arrêts, puis compose ET enregistre les tournées (DayAutoComposition)
+    B->>B: bandeau « Plan arrêté » → corrige à la main, ou « Recomposer » → « Appliquer »
     P->>P: retirage (reprise de la journée)
     P-->>D: production.day_retaken { serviceDay, retakenAt, absorbed, orderIds }
-    D->>D: union des absorbées, l'ensemble grandit-il ?
+    D->>D: union des absorbées, l'ensemble grandit-il ? (situe, ne compose pas)
     D->>N: « 2 nouvelles livraisons à placer »
     B->>B: « À répartir » : place suggérée par commande → « Placer ici » (CA7), ou « Insérer »
 ```

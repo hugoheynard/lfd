@@ -84,8 +84,8 @@ colisage. Avant, cette ligne cassait le poste : 403 sur les formats, donc plus
 de bac neuf. Elle tient désormais telle quelle.
 
 **Cette feuille fait foi** pour la colonne Procédures.
-`plan-droit-procedures.md` (DP-D2) y donnait la lecture au comptoir ; ce plan
-est remplacé (voir son bandeau) par `plan-droits-par-geste.md`, dont la
+L'ancien plan du droit des procédures (DP-D2, supprimé le 2026-10-07) y
+donnait la lecture au comptoir ; il a été remplacé par `plan-droits-par-geste.md`, dont la
 feuille de réglage vise « procédures à l'admin et au commercial » (DG-D7) : le
 comptoir n'y a rien.
 

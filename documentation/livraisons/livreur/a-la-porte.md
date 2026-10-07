@@ -321,6 +321,11 @@ Repris de « TODO de la porte » (supprimé le 2026-10-06), relu ce jour-là.
 - **La purge du snapshot du départ** (relevé par l'audit du 2026-10-07,
   § 3.3) : les 90 jours sont tranchés, mais **rien ne purge**. Non bâti.
 
+- **Le double scan (question ouverte, reprise de la conception du
+  2026-09-11, q. 8).** Aucune décision écrite : la conception du lot 6
+  (L6-C3) ne prévoit qu'un scan, le code du client ; aucun scan n'existe à
+  la porte aujourd'hui (photo, nom, signature).
+
 ### Bloquant
 
 - 🔴 **Les livraisons ratées (6 c)** : relivrer, retrait au comptoir, annuler.
