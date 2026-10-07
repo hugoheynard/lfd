@@ -471,7 +471,7 @@ model CatalogItemOverride {
   /// ⚠️ Le nom ne dit pas « pro », et c'est un reste : la colonne a masqué des DEUX
   /// boutiques jusqu'au 2026-09-21, faute d'en avoir deux. La renommer coûterait un
   /// déploiement de plus pour un gain de lecture seule.
-  isHidden   Boolean @default(false) @map("is_hidden")
+  isHidden Boolean @default(false) @map("is_hidden")
 
   /// Retiré de la boutique **PUBLIQUE**, indépendamment de la précédente.
   ///
@@ -480,7 +480,7 @@ model CatalogItemOverride {
   /// backfill a recopié `is_hidden` pour que rien ne change au passage.
   isHiddenPublic Boolean @default(false) @map("is_hidden_public")
   /// Mis en avant dans la boutique.
-  isFeatured Boolean @default(false) @map("is_featured")
+  isFeatured     Boolean @default(false) @map("is_featured")
 
   /// Qui a décidé, et quand. La question posée six mois plus tard est toujours
   /// « qui a accordé ce prix ».

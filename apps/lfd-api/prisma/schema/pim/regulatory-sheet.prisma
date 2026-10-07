@@ -58,7 +58,7 @@ model VariantAllergens {
   variant   ProductVariant @relation(fields: [variantId], references: [id], onDelete: Cascade)
 
   /// Codes GS1 canoniques. `[]` = « aucun allergène », affirmation positive.
-  allergens Json
+  allergens  Json
   /// Les traces — « peut contenir ». Même référentiel, même garde de
   /// chevauchement : une trace EST un allergène, déclaré à un autre titre.
   /// Elle vit ici et non avec la nutrition, où elle serait résolue par le

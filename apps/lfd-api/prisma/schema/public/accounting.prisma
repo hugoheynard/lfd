@@ -446,13 +446,13 @@ model PaymentLink {
   url             String
 
   /// Instants lus du `Clock`, jamais de l'horloge de la base.
-  createdAt        DateTime  @map("created_at")
+  createdAt          DateTime  @map("created_at")
   /// L'id de fiche staff, pas une clé étrangère : un lien est une pièce
   /// comptable, il survit au départ de qui l'a créé.
-  createdByStaffId String    @map("created_by_staff_id")
-  paidAt           DateTime? @map("paid_at")
-  cancelledAt      DateTime? @map("cancelled_at")
-  cancelledByStaffId String? @map("cancelled_by_staff_id")
+  createdByStaffId   String    @map("created_by_staff_id")
+  paidAt             DateTime? @map("paid_at")
+  cancelledAt        DateTime? @map("cancelled_at")
+  cancelledByStaffId String?   @map("cancelled_by_staff_id")
 
   @@index([companyId])
   @@index([status, createdAt])

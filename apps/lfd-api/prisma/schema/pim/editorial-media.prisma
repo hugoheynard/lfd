@@ -58,7 +58,7 @@ model CatalogContent {
 }
 
 model ProductMedia {
-  productId String  @map("product_id")
+  productId String @map("product_id")
 
   /// L'image désignée par son **URL**, et par rien d'autre.
   ///
@@ -72,10 +72,10 @@ model ProductMedia {
   /// supprimer une image affichée. Cette règle vit désormais dans le code —
   /// `DiscardMediaHandler` compte les emplois et refuse, le ramassage
   /// interroge les porteurs et s'abstient si l'un d'eux se tait.
-  mediaUrl  String  @map("media_url")
-  product   Product @relation(fields: [productId], references: [id])
-  role      MediaRole
-  position  Int        @default(0)
+  mediaUrl String    @map("media_url")
+  product  Product   @relation(fields: [productId], references: [id])
+  role     MediaRole
+  position Int       @default(0)
 
   /// Quand ce rattachement a bougé. Il n'était pas daté, et c'était sans
   /// conséquence tant que personne ne demandait « la fiche a-t-elle changé
