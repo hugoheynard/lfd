@@ -283,6 +283,18 @@ export class PrevisionnelPage {
   });
 
   /**
+   * **Arrêter le plan est un droit à part** — `production_count_stop:write`,
+   * que la route de clôture exige depuis le 2026-10-06 (`arret-du-plan.md`,
+   * « Les droits »), et non `production_plan`, qui ouvre l'écran. Sans lui,
+   * aucun des deux boutons d'arrêt — ni celui du soir, ni celui du rattrapage —
+   * n'est offert : ils mèneraient à un 403. L'alerte du rattrapage, elle,
+   * reste : c'est un fait sur la journée, que tout lecteur du plan doit voir.
+   */
+  protected readonly canArrest = computed(() =>
+    this.permissions.can('production_count_stop:write'),
+  );
+
+  /**
    * La journée dont on a ouvert la confirmation — sa date, pas un booléen.
    *
    * Une date et non `true` : la fenêtre se déplace pendant qu'on hésite, et un

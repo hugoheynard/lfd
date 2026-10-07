@@ -180,6 +180,15 @@ export class PackingContainerBoard {
   protected readonly innerBags = signal<number | null>(0);
   /** Le lien de sortie d'une proposition vide : la grille des contenances. */
   protected readonly capacitiesLink = '/livraison/contenances';
+  /**
+   * La grille des contenances est un écran de la LIVRAISON, gardé par
+   * `delivery_settings:read` (`app.routes.ts`, route `contenances`). Sans ce
+   * droit, le lien menait à un refus : la proposition vide dit alors à qui
+   * s'adresser, sans lien (2026-10-07, relevé avec l'audit des droits).
+   */
+  protected readonly canSeeCapacities = computed(() =>
+    this.permissions.can('delivery_settings:read'),
+  );
   protected readonly emptyProposal = computed(
     () => this.gestures.refusal()?.code === EMPTY_PROPOSAL_CODE,
   );

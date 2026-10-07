@@ -4,6 +4,7 @@ import type {
   DeliveryProcedureStepView,
   DeliveryProcedureView,
   DeliveryStepFields,
+  StaffPermission,
 } from '@lfd/contracts';
 import { DELIVERY_PROCEDURE_MAX_STEPS } from '@lfd/contracts';
 import {
@@ -107,13 +108,22 @@ const ADDRESS: DeliveryAddressView = {
   },
 };
 
+/** Les droits de qui ouvre le panneau : tous par défaut, le sujet de la plupart des cas. */
+type Grants = Pick<PermissionsStore, 'can'>;
+const ALL: Grants = { can: () => true };
+function only(...granted: readonly StaffPermission[]): Grants {
+  return { can: (permission) => granted.includes(permission) };
+}
+
 describe('AdminDeliveryProcedurePanel', () => {
   let gateway: FakeGateway;
   let counts: number[];
+  let doorstepReads: number;
 
   beforeEach(() => {
     gateway = new FakeGateway();
     counts = [];
+    doorstepReads = 0;
     // jsdom ne fabrique pas d'URL d'objet : les vignettes n'en ont besoin que pour s'afficher.
     URL.createObjectURL = vi.fn(() => 'blob:vignette');
     URL.revokeObjectURL = vi.fn();
@@ -121,19 +131,25 @@ describe('AdminDeliveryProcedurePanel', () => {
 
   afterEach(() => TestBed.resetTestingModule());
 
-  async function render(): Promise<ComponentFixture<AdminDeliveryProcedurePanel>> {
+  async function render(
+    grants: Grants = ALL,
+  ): Promise<ComponentFixture<AdminDeliveryProcedurePanel>> {
     TestBed.configureTestingModule({
       imports: [AdminDeliveryProcedurePanel],
       providers: [
         { provide: DeliveryProcedureGateway, useValue: gateway },
         { provide: FoldPanelRef, useValue: new FoldPanelRef(1, () => undefined) },
-        { provide: PermissionsStore, useValue: { can: () => true } },
+        { provide: PermissionsStore, useValue: grants },
         { provide: AdminDeliveryDepositService, useValue: { set: () => Promise.resolve() } },
-        // La décision à la porte de l'adresse a sa propre spec (B3 bis).
+        // La décision à la porte de l'adresse a sa propre spec (B3 bis) ; ici,
+        // on ne compte que ses lectures.
         {
           provide: AdminDeliveryDoorstepRuleService,
           useValue: {
-            read: () => Promise.resolve({ rule: null }),
+            read: () => {
+              doorstepReads += 1;
+              return Promise.resolve({ rule: null });
+            },
             set: () => Promise.resolve(),
           },
         },
@@ -279,6 +295,28 @@ describe('AdminDeliveryProcedurePanel', () => {
     ]);
     expect(counts).toEqual([1]);
     expect(text(fixture)).toContain('Sonner à l’interphone');
+  });
+
+  /** Régression (audit F2, 2026-10-07) : l'éditeur s'ouvrait en écriture sans test de droit. */
+  it('sous delivery_procedures:read seul, montre les étapes sans rien proposer d’écrire', async () => {
+    gateway.steps = [step('a', 1, { title: 'Portail' })];
+    const fixture = await render(only('delivery_procedures:read'));
+
+    expect(text(fixture)).toContain('Portail');
+    expect(buttons(fixture, 'Ajouter une étape')).toHaveLength(0);
+    expect(buttons(fixture, 'Refaire')).toHaveLength(0);
+    expect(buttons(fixture, 'Descendre l’étape')).toHaveLength(0);
+  });
+
+  /** Régression (audit F2, 2026-10-07) : sans la ressource, la première lecture prenait 403. */
+  it('sans « Procédures de livraison », ne lit rien et dit pourquoi', async () => {
+    gateway.steps = [step('a', 1, { title: 'Portail' })];
+    const fixture = await render(only());
+
+    expect(gateway.loads).toBe(0);
+    expect(doorstepReads).toBe(0);
+    expect(text(fixture)).toContain('Procédure non accessible');
+    expect(text(fixture)).not.toContain('Portail');
   });
 
   it('la suppression dit « définitivement » avant de supprimer', async () => {

@@ -220,7 +220,11 @@
       @if (gestures.refusal(); as refusal) {
         <fold-callout variant="alert" data-container-refusal>
           {{ refusal.message }}
-          @if (emptyProposal()) {
+          <!-- Le lien suit `delivery_settings:read`, le droit de son écran. La
+               garde est À PLAT : un `@if` imbriqué ôterait au bloc sa racine
+               unique, et le lien quitterait le créneau `[actions]`. Sans le
+               droit, la phrase rejoint le message. -->
+          @if (emptyProposal() && canSeeCapacities()) {
             <a
               foldButton
               actions
@@ -231,6 +235,9 @@
             >
               Contenances
             </a>
+          } @else if (emptyProposal()) {
+            Les contenances se règlent dans la livraison : demandez à un responsable de les
+            compléter.
           }
         </fold-callout>
       }

@@ -1,7 +1,17 @@
 import { signal } from '@angular/core';
 import { type ComponentFixture, TestBed } from '@angular/core/testing';
 import { provideRouter } from '@angular/router';
-import type { CustomerOrderLineView, CustomerOrderView, PickupAddressView } from '@lfd/contracts';
+import type {
+  CompanyStatus,
+  CustomerOrderLineView,
+  CustomerOrderView,
+  PickupAddressView,
+} from '@lfd/contracts';
+import {
+  audienceOf,
+  DEFAULT_DELIVERY_AVAILABILITY,
+  type DeliveryAvailabilityView,
+} from '@lfd/contracts/shop-values';
 import { describe, expect, it } from 'vitest';
 
 import { AuthFacade } from '../../auth/auth.facade';
@@ -10,6 +20,7 @@ import { ClientIdentity } from '../client-identity.service';
 import { ClientWorkspace } from '../client-workspace.service';
 import { ClientFeatureAccess } from '../feature-access/client-feature-access.service';
 import { ClientCart } from '../cart/client-cart.service';
+import { ACCUEIL_PUBLIC_FR } from '../copy/screens/accueil-public.copy';
 import { ClientOrderHistory } from '../mes-commandes/client-order-history.service';
 import { LIVE_PICKUP } from '../mes-commandes/order-view.fixture';
 import { ServicePoints } from '../shop/pickup-points.store';
@@ -47,6 +58,12 @@ const DIX = { mode: 'percent', bp: 1000 } as const;
 
 class FakePoints {
   readonly pickups = signal<readonly PickupAddressView[]>([]);
+  /**
+   * Le réglage « Livraison » à son défaut, ouvert aux deux — ce que le vrai
+   * dépôt rend tant que rien n'est lu. La porte du coursier le lit depuis
+   * l'audit B5 (2026-10-07) ; ce qui la ferme s'éprouve dans `order-doors.spec.ts`.
+   */
+  readonly deliveryAvailability = signal(DEFAULT_DELIVERY_AVAILABILITY);
   hydrate(): Promise<void> {
     return Promise.resolve();
   }
@@ -63,8 +80,9 @@ class FakePoints {
  */
 type Regard = 'visiteur' | 'perso' | 'pro';
 
-function whoProviders(who: Regard): readonly unknown[] {
-  const company = who === 'pro' ? { raisonSociale: 'Tommeuses SAS' } : null;
+function whoProviders(who: Regard, status?: CompanyStatus): readonly unknown[] {
+  // Sans statut, la société n'en dit rien : les cas qui en dépendent le posent.
+  const company = who === 'pro' ? { raisonSociale: 'Tommeuses SAS', status } : null;
   // ⚠️ La doublure de l'espace porte TOUTE sa surface de lecture, pas seulement
   // ce que l'écran regarde : d'autres services du même arbre lisent `current`,
   // et une doublure partielle échoue à l'exécution, pas à la compilation.
@@ -467,5 +485,99 @@ describe('AccueilPublic — les trois états', () => {
 
     expect(band?.querySelector('.kicker')?.textContent?.trim()).toBe('On répond');
     expect(band?.querySelector('.who')?.textContent).toContain(fragment);
+  });
+});
+
+/**
+ * 🔴 LE PIED DE LA PORTE DU COURSIER NOMME LA VRAIE CAUSE (audit B5,
+ * 2026-10-07). « Votre commercial ouvre la livraison » ne vaut que pour une
+ * société en attente que la validation servirait ; partout ailleurs, personne
+ * ne valide rien — c'est un choix de la maison, et la porte le dit sans
+ * promettre qui l'ouvre. La carte, elle, reste grisée dans tous les cas.
+ */
+describe('AccueilPublic — ce que dit la porte du coursier quand elle attend', () => {
+  const DOSSIER = ACCUEIL_PUBLIC_FR.doors.courier.pending?.hint;
+  const PAS_PROPOSEE = ACCUEIL_PUBLIC_FR.doors.courierNotOffered.hint;
+  const MAISONS = [point({ id: 'a' }), point({ id: 'b', label: 'Le Village' })];
+
+  /**
+   * L'accueil d'un client dont la société a ce statut (`null` : un visiteur,
+   * sans société), devant ce réglage « Livraison » et cette clé publique. Sa
+   * clientèle suit `audienceOf`, comme le vrai `ClientAudience` : `b2b` pour
+   * une société ACTIVE seulement.
+   */
+  async function seenBy(
+    status: CompanyStatus | null,
+    availability: Partial<Pick<DeliveryAvailabilityView, 'openToB2b' | 'openToB2c'>> = {},
+    publicDelivery: 'closed' | 'open' = 'closed',
+  ): Promise<ComponentFixture<AccueilPublic>> {
+    const store = new FakePoints();
+    store.pickups.set(MAISONS);
+    store.deliveryAvailability.set({ ...DEFAULT_DELIVERY_AVAILABILITY, ...availability });
+    const boutique = new FakeShop([]);
+    TestBed.configureTestingModule({
+      imports: [AccueilPublic],
+      providers: [
+        provideRouter([]),
+        { provide: ServicePoints, useValue: store },
+        { provide: ClientAudience, useValue: { shown: signal(audienceOf(status)) } },
+        {
+          provide: ClientFeatureAccess,
+          useValue: { shop: signal('order' as const), publicDelivery: signal(publicDelivery) },
+        },
+        { provide: ClientOrderHistory, useValue: { orders: signal([]) } },
+        { provide: ShopCatalogue, useValue: boutique },
+        { provide: CartFulfillmentDays, useValue: {} },
+        { provide: ClientCart, useValue: boutique },
+        ...(status === null ? whoProviders('visiteur') : whoProviders('pro', status)),
+      ],
+    });
+    const fixture = TestBed.createComponent(AccueilPublic);
+    fixture.detectChanges();
+    await fixture.whenStable();
+    fixture.detectChanges();
+    return fixture;
+  }
+
+  function courier(fixture: ComponentFixture<AccueilPublic>): HTMLButtonElement | null {
+    return fixture.nativeElement.querySelector('.door-courier');
+  }
+
+  it('🔴 dit le dossier à une société EN ATTENTE quand la valider ouvrirait la livraison', async () => {
+    const porte = courier(await seenBy('pending'));
+
+    expect(porte?.disabled).toBe(true);
+    expect(porte?.querySelector('.door-wait')?.textContent?.trim()).toBe(DOSSIER);
+  });
+
+  /** Régression (audit B5, 2026-10-07) : un pro validé lisait « dossier en cours de validation ». */
+  it('🔴 dit « pas proposée » à un pro ACTIF quand le réglage ferme la livraison aux pros', async () => {
+    const porte = courier(await seenBy('active', { openToB2b: false }));
+
+    expect(porte?.disabled).toBe(true);
+    expect(porte?.querySelector('.door-wait')?.textContent?.trim()).toBe(PAS_PROPOSEE);
+    expect(porte?.querySelector('.door-tag')?.textContent?.trim()).toBe(
+      ACCUEIL_PUBLIC_FR.doors.courierNotOffered.tag,
+    );
+  });
+
+  /** Valider le dossier ne l'ouvrirait pas : le réglage la fermerait encore. */
+  it('ne promet pas le commercial à une société en attente quand le réglage ferme les pros', async () => {
+    const porte = courier(await seenBy('pending', { openToB2b: false }));
+
+    expect(porte?.querySelector('.door-wait')?.textContent?.trim()).toBe(PAS_PROPOSEE);
+  });
+
+  /**
+   * Un visiteur n'a pas de porte du coursier sur cet écran — un compte sans
+   * société garde le bandeau. La phrase est éprouvée quand même, sur ce que
+   * l'écran passerait à la porte : le jour où elle lui sera montrée, elle ne
+   * lui parlera pas d'un dossier qu'il n'a pas.
+   */
+  it('dit « pas proposée » à qui n’a pas de société, la clé publique fermée', async () => {
+    const fixture = await seenBy(null);
+
+    expect(courier(fixture)).toBeNull();
+    expect(fixture.componentInstance['courierDoor']().pending?.hint).toBe(PAS_PROPOSEE);
   });
 });

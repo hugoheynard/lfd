@@ -196,8 +196,9 @@ export class AccueilPublic {
    *
    * 🔴 Elle ne dépendait que de la clientèle — `b2b` ouvert, tout le reste en
    * attente. Elle lit maintenant {@link OrderDoors.deliveryOpen}, qui ajoute la
-   * clé d'admin `publicDelivery` : un pro livre par son CONTRAT et n'en dépend
-   * pas, un particulier ou un visiteur livre si la maison a ouvert la tournée.
+   * clé d'admin `publicDelivery` — un pro livre par son CONTRAT et n'en dépend
+   * pas, un particulier ou un visiteur livre si la maison a ouvert la tournée —
+   * et le réglage « Livraison », qui ferme une clientèle entière, pros compris.
    *
    * ⚠️ Cacher n'est pas fermer : `POST /shop/orders` refuse la même chose en
    * 409. Cet état-ci évite de montrer une porte qui mène à un refus.
@@ -205,6 +206,30 @@ export class AccueilPublic {
   protected readonly courierState = computed<'open' | 'pending'>(() =>
     this.doors.deliveryOpen() && this.canOrder() ? 'open' : 'pending',
   );
+
+  /**
+   * LA PORTE DU COURSIER, ET LA CAUSE QUE NOMME SON PIED QUAND ELLE ATTEND.
+   *
+   * 🔴 Une seule cause a un nom : le dossier d'une société EN ATTENTE, et
+   * seulement si le valider ouvrirait la livraison — le réglage « Livraison »
+   * doit la proposer aux pros. Partout ailleurs, personne ne valide rien : le
+   * réglage ferme la clientèle, la clé `publicDelivery` est fermée, la société
+   * est active ou suspendue. C'est un choix de la maison, et la porte le dit
+   * sans promettre qui l'ouvre. Régression (audit B5, 2026-10-07) : « votre
+   * commercial ouvre la livraison » se lisait aussi quand l'admin l'avait
+   * fermée.
+   *
+   * ⚠️ La carte reste grisée dans les deux cas (règle du 2026-09-20 : un pro a
+   * toujours ses deux portes) : seul son pied change.
+   */
+  protected readonly courierDoor = computed<DoorCopy>(() => {
+    const doors = this.c().doors;
+    const awaitingValidation =
+      this.workspace.company()?.status === 'pending' && this.doors.deliveryOfferedToPros();
+    return awaitingValidation
+      ? doors.courier
+      : { ...doors.courier, pending: doors.courierNotOffered };
+  });
 
   /** Le salut nomme, ou ne nomme pas — jamais le prénom de quelqu'un d'autre. */
   protected readonly heroTitle = computed(() => {

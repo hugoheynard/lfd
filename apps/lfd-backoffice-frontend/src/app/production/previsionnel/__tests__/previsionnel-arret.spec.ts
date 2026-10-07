@@ -4,6 +4,7 @@ import type {
   ProductionForecastView,
   ProductionPlanClosure,
   ProductionSettingsView,
+  StaffPermission,
 } from '@lfd/contracts';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 
@@ -64,6 +65,20 @@ function forecast(days: ProductionForecastView['days']): ProductionForecastView 
   return { days, lines: [], peakDate: days[0]?.date ?? null, totalUnits: 0 };
 }
 
+/** Le droit que la route de clôture exige depuis le 2026-10-06. */
+const ARREST: StaffPermission = 'production_count_stop:write';
+
+/**
+ * Les droits de qui regarde. Typée sur `PermissionsStore` : une permission mal
+ * écrite ne compile pas, au lieu d'éprouver en silence un droit qui n'existe pas.
+ *
+ * Les cas de ce fichier parlent du geste d'arrêt, donc leurs montages tiennent
+ * {@link ARREST} — sauf ceux qui éprouvent son absence.
+ */
+function grants(...granted: readonly StaffPermission[]): Pick<PermissionsStore, 'can'> {
+  return { can: (permission) => granted.includes(permission) };
+}
+
 interface Harness {
   readonly page: PrevisionnelPage;
   readonly closeDay: ReturnType<typeof vi.fn>;
@@ -74,8 +89,11 @@ interface Harness {
  * l'écran. Un libellé ne se vérifie nulle part ailleurs : ni `tsc`, ni le build
  * AOT, ni un test sur l'instance ne lisent le texte d'un bouton.
  */
-async function render(view: ProductionForecastView): Promise<HTMLElement> {
-  await mount(view);
+async function render(
+  view: ProductionForecastView,
+  granted: readonly StaffPermission[] = [ARREST],
+): Promise<HTMLElement> {
+  await mount(view, undefined, granted);
   const fixture = TestBed.createComponent(PrevisionnelPage);
   // L'effet du constructeur part à la première détection ET repose l'état sur
   // « lecture en cours » : on le laisse partir AVANT de rejouer le chargement,
@@ -102,6 +120,7 @@ async function mount(
     alreadyClosed: false,
     closedAt: new Date().toISOString(),
   },
+  granted: readonly StaffPermission[] = [ARREST],
 ): Promise<Harness> {
   const closeDay = vi.fn(async () => {
     if (closure instanceof Error) {
@@ -118,6 +137,7 @@ async function mount(
       },
       { provide: AdminCatalogService, useValue: { list: async () => [] } },
       { provide: NotifyService, useValue: toasts },
+      { provide: PermissionsStore, useValue: grants(...granted) },
     ],
   });
   const page = TestBed.runInInjectionContext(() => new PrevisionnelPage());
@@ -333,6 +353,7 @@ describe('le prévisionnel — arrêter le plan', () => {
           provideRouter([]),
           { provide: ProductionService, useValue: { forecast: forecastCall, closeDay } },
           { provide: AdminCatalogService, useValue: { list: async () => [] } },
+          { provide: PermissionsStore, useValue: grants(ARREST) },
         ],
       });
       const fixture = TestBed.createComponent(PrevisionnelPage);
@@ -401,6 +422,7 @@ describe('le prévisionnel — arrêter le plan', () => {
           provideRouter([]),
           { provide: ProductionService, useValue: { forecast: forecastCall, closeDay } },
           { provide: AdminCatalogService, useValue: { list: async () => [] } },
+          { provide: PermissionsStore, useValue: grants(ARREST) },
         ],
       });
       const fixture = TestBed.createComponent(PrevisionnelPage);
@@ -442,6 +464,44 @@ describe('le prévisionnel — arrêter le plan', () => {
       const { page, closeDay } = await mountOn(7, {});
       await page['arrest'](page['dayToArrest']()?.date ?? '');
       expect(closeDay).toHaveBeenCalledWith(dayIn(1));
+    });
+  });
+
+  /**
+   * Arrêter le plan est un droit à part depuis le 2026-10-06 :
+   * `production_count_stop:write`, et non `production_plan`, qui ouvre l'écran.
+   */
+  describe('le droit d’arrêter le plan', () => {
+    /** Les deux boutons d'arrêt de l'écran, d'après ce qui est écrit dessus. */
+    function arrestButtons(el: HTMLElement): readonly string[] {
+      return [...el.querySelectorAll('button')]
+        .map((b) => b.textContent?.trim() ?? '')
+        .filter((t) => t.startsWith('Arrêter le plan'));
+    }
+
+    it('montre les deux boutons d’arrêt à qui tient production_count_stop:write', async () => {
+      const el = await render(forecast([day(dayIn(0)), day(dayIn(1))]), [ARREST]);
+
+      expect(arrestButtons(el)).toHaveLength(2);
+    });
+
+    /** Régression (audit F1, 2026-10-07) : tout lecteur du plan voyait le geste, et la route rendait 403. */
+    it('ne montre aucun bouton d’arrêt à qui lit le plan sans le droit de l’arrêter', async () => {
+      const el = await render(forecast([day(dayIn(0)), day(dayIn(1))]), []);
+
+      expect(arrestButtons(el)).toEqual([]);
+      expect(el.querySelector('button.pv-arrest')).toBeNull();
+      // L'oubli reste dit : c'est un fait sur la journée, pas un geste.
+      expect(el.textContent).toContain('n’a pas été arrêté hier soir');
+    });
+
+    it('sans le droit, pas même le bouton du soir désactivé', async () => {
+      const el = await render(
+        forecast([day(dayIn(0), { closed: true }), day(dayIn(1), { closed: true })]),
+        [],
+      );
+
+      expect(el.querySelector('button.pv-arrest')).toBeNull();
     });
   });
 
@@ -497,7 +557,7 @@ describe('le prévisionnel — arrêter le plan', () => {
           { provide: ProductionSettingsService, useValue: { settings: settingsCall } },
           {
             provide: PermissionsStore,
-            useValue: { can: (p: string) => canRead && p === 'production_settings:read' },
+            useValue: canRead ? grants(ARREST, 'production_settings:read') : grants(ARREST),
           },
         ],
       });

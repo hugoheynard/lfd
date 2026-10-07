@@ -34,6 +34,10 @@ export interface DoorCopy {
    * ne se cache pas et ne se grise pas en silence : elle dit ce qu'on attend
    * et QUI l'ouvre, comme les créneaux hors contrat de la SPEC (§5). Un refus
    * muet renvoie chercher la raison ailleurs.
+   *
+   * ⚠️ Quand personne n'attend rien du client, l'écran y met
+   * `doors.courierNotOffered` à la place : promettre un « qui l'ouvre » qui
+   * n'existe pas serait le même refus muet, déguisé en attente.
    */
   readonly pending?: { readonly tag: string; readonly hint: string };
 }
@@ -115,6 +119,14 @@ export interface AccueilPublicCopy {
   readonly doors: {
     readonly pickup: DoorCopy;
     readonly courier: DoorCopy;
+    /**
+     * Le pied de la porte du coursier quand ce n'est PAS un dossier qui
+     * l'attend : le réglage « Livraison » ferme la clientèle, la clé publique
+     * est fermée, ou la société n'est pas en attente de validation. Ni
+     * commercial, ni délai — c'est un choix de la maison, et rien ne dit quand
+     * elle le défera (audit B5, 2026-10-07).
+     */
+    readonly courierNotOffered: { readonly tag: string; readonly hint: string };
     /**
      * `{value}` — la MEILLEURE remise de retrait réellement déclarée, calculée
      * par la même fonction que le rail des maisons et le panier.
@@ -309,6 +321,10 @@ export const ACCUEIL_PUBLIC_FR: AccueilPublicCopy = {
         hint: 'Votre dossier est en cours de validation — votre commercial ouvre la livraison dès qu’il est complet.',
       },
     },
+    courierNotOffered: {
+      tag: 'Indisponible',
+      hint: 'La livraison n’est pas proposée pour le moment.',
+    },
     pickupUpTo: 'Jusqu’à {value}',
   },
   hero: {
@@ -409,6 +425,10 @@ export const ACCUEIL_PUBLIC_EN: AccueilPublicCopy = {
         hint: 'Your file is being reviewed — your account manager opens delivery as soon as it is complete.',
       },
     },
+    courierNotOffered: {
+      tag: 'Unavailable',
+      hint: 'Delivery is not offered at the moment.',
+    },
     pickupUpTo: 'Up to {value}',
   },
   hero: {
@@ -508,6 +528,10 @@ export const ACCUEIL_PUBLIC_IT: AccueilPublicCopy = {
         tag: 'Presto',
         hint: 'Il suo fascicolo è in corso di validazione — il suo commerciale apre la consegna appena è completo.',
       },
+    },
+    courierNotOffered: {
+      tag: 'Non disponibile',
+      hint: 'La consegna non è proposta al momento.',
     },
     pickupUpTo: 'Fino a {value}',
   },

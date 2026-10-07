@@ -1,20 +1,31 @@
 <fold-panel-header title="Procédure de livraison" [subtitle]="subtitle()" />
 
 <fold-panel-body>
-  <app-delivery-deposit-toggle
-    [companyId]="data().companyId"
-    [addressId]="data().address.id"
-    [depositAllowed]="data().address.depositAllowed"
-    (changed)="data().onDepositChange($event)"
-  />
+  @if (canRead()) {
+    <app-delivery-deposit-toggle
+      [companyId]="data().companyId"
+      [addressId]="data().address.id"
+      [depositAllowed]="data().address.depositAllowed"
+      (changed)="data().onDepositChange($event)"
+    />
 
-  <app-delivery-doorstep-rule [companyId]="data().companyId" [addressId]="data().address.id" />
+    <app-delivery-doorstep-rule [companyId]="data().companyId" [addressId]="data().address.id" />
 
-  <lfd-delivery-procedure-editor
-    [addressId]="data().address.id"
-    [canEdit]="true"
-    (stepCountChange)="data().onStepCountChange($event)"
-  />
+    <lfd-delivery-procedure-editor
+      [addressId]="data().address.id"
+      [canEdit]="canEdit()"
+      (stepCountChange)="data().onStepCountChange($event)"
+    />
+  } @else {
+    <!-- Rien n'est monté, donc rien n'est lu : chaque bloc appelle sa route en
+         paraissant, et chacune rendrait 403. Le libellé est celui de l'écran
+         des rôles, pour qu'un administrateur trouve la ligne à cocher. -->
+    <fold-empty-state
+      icon="lock"
+      title="Procédure non accessible"
+      subtitle="Votre rôle ne comprend pas « Procédures de livraison » : un administrateur peut vous l’accorder."
+    />
+  }
 </fold-panel-body>
 
 <fold-panel-footer align="end">

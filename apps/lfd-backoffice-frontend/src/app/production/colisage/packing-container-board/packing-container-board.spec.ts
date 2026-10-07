@@ -7,6 +7,7 @@ import type {
   PackingContainerView,
   PackingLine,
   PackingSheet,
+  StaffPermission,
 } from '@lfd/contracts';
 import { provideRouter } from '@angular/router';
 import { By } from '@angular/platform-browser';
@@ -165,14 +166,22 @@ function dialog(): HTMLElement {
   return overlay.nativeElement as HTMLElement;
 }
 
+/** Les droits de qui colise : tous par défaut, le sujet de la plupart des cas. */
+type Grants = Pick<PermissionsStore, 'can'>;
+const ALL: Grants = { can: () => true };
+function only(...granted: readonly StaffPermission[]): Grants {
+  return { can: (permission) => granted.includes(permission) };
+}
+
 async function render(
   served: PackingSheet,
+  grants: Grants = ALL,
 ): Promise<{ fixture: ComponentFixture<PackingContainerBoard>; el: HTMLElement }> {
   TestBed.resetTestingModule();
   TestBed.configureTestingModule({
     providers: [
       provideRouter([]),
-      { provide: PermissionsStore, useValue: { can: () => true } },
+      { provide: PermissionsStore, useValue: grants },
       { provide: PackingContainersService, useValue: api },
       {
         provide: PackingDayReader,
@@ -404,6 +413,47 @@ describe('les contenants d’une commande `listed` (K2b)', () => {
     );
     expect(el.querySelector('[data-capacities-link]')?.getAttribute('href')).toBe(
       '/livraison/contenances',
+    );
+  });
+
+  /** Le refus d'une proposition vide, tel que le serveur le sert. */
+  const EMPTY_PROPOSAL = new HttpErrorResponse({
+    status: 409,
+    error: { code: 'packing.proposal.empty', message: 'La grille des contenances ne couvre rien.' },
+  });
+  /** Un coliseur : il colise, sans droit sur la livraison. */
+  const PACKER: readonly StaffPermission[] = [
+    'production_packing:read',
+    'production_packing:write',
+  ];
+
+  it('renvoie aux contenances qui tient delivery_settings:read', async () => {
+    api.proposalRefusal = EMPTY_PROPOSAL;
+    const { fixture, el } = await render(sheet({}), only(...PACKER, 'delivery_settings:read'));
+    click(el, '[data-propose]');
+    await settle(fixture);
+
+    expect(el.querySelector('[data-capacities-link]')?.getAttribute('href')).toBe(
+      '/livraison/contenances',
+    );
+    // Dans le créneau `[actions]` du callout (`.callout-actions`, gabarit de
+    // fold-ng 0.28) : la garde est à plat pour ça, un `@if` imbriqué l'aurait
+    // renvoyé dans le texte.
+    expect(el.querySelector('.callout-actions [data-capacities-link]')).not.toBeNull();
+  });
+
+  /** Régression (2026-10-07) : le lien s'offrait à tout coliseur, et l'écran des contenances le refusait. */
+  it('sans delivery_settings:read, dit à qui s’adresser au lieu du lien', async () => {
+    api.proposalRefusal = EMPTY_PROPOSAL;
+    const { fixture, el } = await render(sheet({}), only(...PACKER));
+    click(el, '[data-propose]');
+    await settle(fixture);
+
+    expect(el.querySelector('[data-capacities-link]')).toBeNull();
+    const refus = said(el.querySelector('[data-container-refusal]'));
+    expect(refus).toContain('La grille des contenances ne couvre rien.');
+    expect(said(el.querySelector('[data-container-refusal] .callout-body'))).toContain(
+      'demandez à un responsable',
     );
   });
 

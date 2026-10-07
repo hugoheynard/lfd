@@ -107,6 +107,9 @@ l'arrêt automatique (`domain/services/forecast-day-state.ts`) :
   « Arrêter le plan du <lendemain> » (en mode automatique : « … maintenant
   (avant <heure>) », un arrêt anticipé). Sans rien à arrêter, il reste,
   désactivé : « Rien à arrêter » ou « Plan du … arrêté ».
+- **Les deux boutons suivent `production_count_stop:write`** (2026-10-07) :
+  sans ce droit, le bandeau rouge reste — l'oubli est un fait sur la journée —
+  mais sans bouton, et le bouton du soir n'a pas de place.
 - La page se relit toutes les 60 secondes : le retard vient de l'heure, pas
   d'un changement de données.
 - Le **dossier du jour** s'ouvre par un bouton ; « Imprimer le dossier » ouvre

@@ -65,9 +65,11 @@
          maisons. Le pro, lui, doit choisir avant tout le reste, et c'est ce
          choix qui devient le premier objet de sa page.
 
-         ⚠️ LA CARTE COURSIER EST CONDITIONNÉE, pas décorative : elle n'a de
-         sens que là où la livraison est offerte. Un pro à qui on montrerait une
-         porte fermée découvrirait le refus après l'effort.
+         ⚠️ LA CARTE COURSIER EST TOUJOURS LÀ POUR UN PRO (Hugo, 2026-09-20),
+         ouverte ou grisée — et grisée, son pied dit POURQUOI (`courierDoor`).
+         Un pro à qui on ouvrirait une porte fermée découvrirait le refus après
+         l'effort ; un pro à qui on la cacherait ne saurait pas qu'il lui manque
+         quelque chose.
 
          ⚠️ ÉCART ASSUMÉ AVEC LA MAQUETTE : elle dessine une GALLERY de trois
          vues (les deux portes, puis Noël, puis Traiteur) avec puces et flèches.
@@ -78,7 +80,7 @@
     @if (pro()) {
       <app-service-doors
         [pickupCopy]="pickupDoor()"
-        [courierCopy]="c().doors.courier"
+        [courierCopy]="courierDoor()"
         [courierState]="courierState()"
         (pickupChosen)="openPickupDoor()"
         (courierChosen)="openCourierDoor()"

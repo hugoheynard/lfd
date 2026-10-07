@@ -25,7 +25,11 @@
         <fold-callout variant="alert" appearance="flat">
           Le plan d’aujourd’hui, {{ day.weekday }} {{ day.dayMonth }}, n’a pas été arrêté hier soir.
           Tant qu’il ne l’est pas, rien ne part en fournée.
-          @if (arrestingDay() === day.date) {
+          <!-- Le geste suit `production_count_stop:write` ; l'alerte, elle, se dit à
+               tout lecteur du plan. La garde est À PLAT, dans chaque branche : un
+               `@if` imbriqué ôterait au bloc sa racine unique, et le bouton
+               quitterait le créneau `[actions]` du callout pour son texte. -->
+          @if (canArrest() && arrestingDay() === day.date) {
             <fold-inline-confirm
               actions
               [open]="true"
@@ -44,7 +48,7 @@
             >
               <span hidden></span>
             </fold-inline-confirm>
-          } @else {
+          } @else if (canArrest()) {
             <!-- `danger` : fold n'a pas d'intention `alert` pour un bouton ; c'est la
                  même famille rouge que le callout (Hugo, 2026-10-06). -->
             <button
@@ -134,9 +138,11 @@
             presse en regardant une semaine entière, et il agit presque toujours
             sur DEMAIN, pas sur la colonne qu'on a sous les yeux. Toujours présent
             (2026-10-06) : désactivé quand rien n'est à arrêter, pour que la ligne
-            ne bouge pas d'une fenêtre à l'autre.
+            ne bouge pas d'une fenêtre à l'autre — pour qui tient
+            `production_count_stop:write`. Sans ce droit, ni le bouton ni sa
+            place : la route le refuserait en 403.
           -->
-          @if (state() === 'ready') {
+          @if (state() === 'ready' && canArrest()) {
             @if (dayToArrest(); as day) {
               @if (arrestingDay() === day.date) {
                 <fold-inline-confirm

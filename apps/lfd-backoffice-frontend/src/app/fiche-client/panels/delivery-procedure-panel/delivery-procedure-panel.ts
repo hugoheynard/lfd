@@ -2,6 +2,7 @@ import { ChangeDetectionStrategy, Component, computed, inject, input } from '@an
 import type { DeliveryAddressView } from '@lfd/contracts';
 import {
   FoldButtonComponent,
+  FoldEmptyStateComponent,
   FoldPanelBodyComponent,
   FoldPanelFooterComponent,
   FoldPanelHeaderComponent,
@@ -10,6 +11,7 @@ import {
 } from 'fold-ng';
 import { DeliveryProcedureEditor } from '@lfd/b2b-ui/company';
 
+import { PermissionsStore } from '../../../auth/permissions.store';
 import { DeliveryDepositToggle } from '../delivery-deposit-toggle/delivery-deposit-toggle';
 import { DeliveryDoorstepRule } from '../delivery-doorstep-rule/delivery-doorstep-rule';
 
@@ -27,10 +29,19 @@ export interface AdminDeliveryProcedurePanelData {
 /**
  * La **procédure de livraison** d'une adresse, côté staff : l'éditeur partagé
  * dans un panneau. Le commercial la règle au téléphone, comme le reste de
- * l'adresse — d'où l'écriture ouverte. « Dépôt autorisé » y vit aussi
- * (`a-la-porte.md`, AP-D5) : même droit, même interlocuteur, même moment.
- * Et la décision réglée d'avance à la porte de l'adresse (B3 bis), pour la
- * même raison.
+ * l'adresse. « Dépôt autorisé » y vit aussi (`a-la-porte.md`, AP-D5) : même
+ * droit, même interlocuteur, même moment. Et la décision réglée d'avance à la
+ * porte de l'adresse (B3 bis), pour la même raison.
+ *
+ * 🔴 **Les trois suivent `delivery_procedures`**, comme toutes leurs routes
+ * (`@AdminSurface("delivery_procedures")`) : lire sous `:read`, écrire sous
+ * `:write`. L'éditeur s'ouvrait en écriture sans test de droit, et un rôle sans
+ * la ressource prenait 403 dès la première lecture (audit F2, 2026-10-07).
+ *
+ * ⚠️ Sans `:read`, le panneau ne monte AUCUN des trois blocs — chacun lit sa
+ * route en paraissant — et dit pourquoi. Il s'ouvre quand même : l'entrée
+ * « Procédure de livraison » vit dans la carte d'adresses partagée, qui la
+ * propose à tous, et un clic qui n'ouvrirait rien ne dirait pas ce qui manque.
  *
  * La passerelle n'est pas injectée à la racine : elle arrive par les
  * `providers` de l'ouverture, liée à la société de la fiche.
@@ -43,6 +54,7 @@ export interface AdminDeliveryProcedurePanelData {
     FoldPanelBodyComponent,
     FoldPanelFooterComponent,
     FoldButtonComponent,
+    FoldEmptyStateComponent,
     DeliveryDepositToggle,
     DeliveryDoorstepRule,
     DeliveryProcedureEditor,
@@ -54,8 +66,13 @@ export class AdminDeliveryProcedurePanel {
   static readonly foldPanel: FoldPanelDefaults = { side: 'auto', width: 'lg' };
 
   private readonly ref = inject(FoldPanelRef);
+  private readonly permissions = inject(PermissionsStore);
 
   readonly data = input.required<AdminDeliveryProcedurePanelData>();
+
+  protected readonly canRead = computed(() => this.permissions.can('delivery_procedures:read'));
+  /** Le même droit que « dépôt autorisé » et la décision à la porte, ses deux voisins. */
+  protected readonly canEdit = computed(() => this.permissions.can('delivery_procedures:write'));
 
   protected readonly subtitle = computed(() => {
     const address = this.data().address;

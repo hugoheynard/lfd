@@ -1,5 +1,7 @@
 import { computed, inject, Injectable } from '@angular/core';
 import { instantToLocal } from '@lfd/contracts';
+// Valeurs par le sous-chemin sans zod : chargé au démarrage (budget `cloudflare`).
+import { deliveryOpenTo } from '@lfd/contracts/shop-values';
 import { FoldPanelHostService } from 'fold-ng';
 
 import { ClientAudience } from '../client-audience.service';
@@ -44,18 +46,47 @@ export class OrderDoors {
   /**
    * **La porte du coursier est-elle ouverte à qui regarde ?**
    *
-   * 🔴 Un PRO livre par son CONTRAT : sa porte ne lit pas la clé, et la fermer
-   * lui retirerait un service qu'il a négocié. Pour tout le monde d'autre, la
-   * livraison est une décision d'admin (`publicDelivery`), fermée par défaut —
-   * ouvrir une tournée à qui n'a pas de compte n'est pas un réglage d'écran.
+   * Deux décisions d'admin la ferment, et elles ne visent pas les mêmes clients :
    *
-   * ⚠️ **Cacher n'est pas fermer, et les deux existent.** `POST /shop/orders`
-   * refuse la même chose en 409 : sans ce refus, une requête recopiée depuis
-   * l'onglet réseau ferait livrer quand même. Ce signal-ci évite seulement de
-   * montrer une porte qui mène à un refus.
+   * - **le réglage « Livraison »** (`openToB2b` / `openToB2c`, servi par
+   *   `GET /delivery-availability`) ferme la livraison à une clientèle ENTIÈRE,
+   *   pros compris. C'est la règle `deliveryOpenTo` que le devis et la commande
+   *   appliquent au serveur.
+   * - **la clé `publicDelivery`** ne concerne pas les pros : un PRO livre par son
+   *   CONTRAT, et la fermer lui retirerait un service qu'il a négocié. Pour tout
+   *   le monde d'autre, elle est fermée par défaut — ouvrir une tournée à qui
+   *   n'a pas de compte n'est pas un réglage d'écran.
+   *
+   * 🔴 Régression du 2026-09-21 (`c71efb5b5`) : le `deliveryOffered` qui lisait
+   * ce réglage est parti avec l'ancien écran de commande, et cette porte-ci ne
+   * le lisait pas — elle restait ouverte à la clientèle qu'il fermait, et un
+   * clic menait au refus. Tant qu'il n'est pas lu, ou si sa lecture échoue, il
+   * vaut son défaut ouvert à tous ({@link ServicePoints.deliveryAvailability}) :
+   * la porte reste alors celle d'avant, et le serveur garde le refus.
+   *
+   * ⚠️ **Cacher n'est pas fermer, et les deux existent.** Le serveur refuse la
+   * même chose en 409 — la clé à `POST /shop/orders`, le réglage au devis et à
+   * la commande : sans ce refus, une requête recopiée depuis l'onglet réseau
+   * ferait livrer quand même. Ce signal-ci évite seulement de montrer une porte
+   * qui mène à un refus.
    */
   readonly deliveryOpen = computed(
-    () => this.audience() === 'b2b' || this.access.publicDelivery() === 'open',
+    () =>
+      deliveryOpenTo(this.points.deliveryAvailability(), this.audience()) &&
+      (this.audience() === 'b2b' || this.access.publicDelivery() === 'open'),
+  );
+
+  /**
+   * **La livraison est-elle proposée aux PROS ?** — le réglage seul, quelle que
+   * soit la clientèle de qui regarde.
+   *
+   * C'est ce que la validation d'un dossier ouvrirait : une société en attente
+   * reste `b2c` jusqu'à sa validation (`audienceOf`). L'accueil ne lui promet
+   * « votre commercial ouvre la livraison » que si c'est vrai une fois validée
+   * — sinon, le réglage la lui fermerait encore.
+   */
+  readonly deliveryOfferedToPros = computed(() =>
+    deliveryOpenTo(this.points.deliveryAvailability(), 'b2b'),
   );
 
   /**
