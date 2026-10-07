@@ -109,6 +109,7 @@ export function floorOverWarning(
 export function compactedWarning(
   behindBins: number,
   stopPositions: readonly number[],
+  allOnFloor = true,
 ): LoadingWarning | null {
   if (behindBins === 0) {
     return null;
@@ -117,7 +118,9 @@ export function compactedWarning(
   const bacs = behindBins === 1 ? "1 bac est posé" : `${behindBins} bacs sont posés`;
   return {
     kind: "compacted",
-    message: `Pour que tout tienne au sol, ${bacs} au fond, derrière d'autres${named} : il faudra sortir des bacs pour les atteindre.`,
+    // Avec `floor_over` à côté, « pour que tout tienne » contredirait l'alerte
+    // voisine (audit livraisons, § 3.4, 2026-10-07).
+    message: `${allOnFloor ? "Pour que tout tienne au sol" : "Pour en faire tenir davantage au sol"}, ${bacs} au fond, derrière d'autres${named} : il faudra sortir des bacs pour les atteindre.`,
   };
 }
 

@@ -382,6 +382,37 @@ describe("le plan de chargement — les piles au sol (G5, G-D4)", () => {
     ]);
   });
 
+  /**
+   * Régression : compacter sauvait des bacs sans tous les sauver, et l'alerte
+   * disait « pour que tout tienne au sol » à côté de `floor_over` (audit
+   * livraisons, § 3.4, 2026-10-07). Ce cas n'avait pas de test.
+   */
+  it("compacter en partie : l'alerte ne promet pas que tout tient, et `floor_over` reste", () => {
+    const wide: PlanBinType = { ...BAC_M, id: "bin_x", name: "bin_x", outerWidthMm: 600 };
+    const narrow: PlanBinType = { ...BAC_M, id: "bin_y", name: "bin_y", outerWidthMm: 430 };
+    const floor = CargoFloor.of({ lengthCm: 124, widthCm: 105, heightCm: 100, wheelArches: null });
+
+    const plan = planLoading(
+      [
+        stop(
+          "o1",
+          1,
+          ["f1", "f2", "f3"].map((id) => bin(id)),
+        ),
+        stop("o2", 2, [
+          ...["x1", "x2", "x3", "x4"].map((id) => bin(id, { binType: wide })),
+          bin("y1", { binType: narrow }),
+        ]),
+        stop("o3", 3, [bin("last")]),
+      ],
+      { name: "Trafic", cargoLiters: floor.volumeLiters, refrigeratedLiters: null, floor },
+    );
+
+    expect(plan.warnings.map((warning) => warning.kind)).toEqual(["floor_over", "compacted"]);
+    const compacted = plan.warnings.find((warning) => warning.kind === "compacted");
+    expect(compacted?.message.startsWith("Pour en faire tenir davantage au sol")).toBe(true);
+  });
+
   it("garde le cohérent et `floor_over` quand compacter ne sauve aucun bac", () => {
     const plan = planLoading(fullStops(4), measured(70));
 

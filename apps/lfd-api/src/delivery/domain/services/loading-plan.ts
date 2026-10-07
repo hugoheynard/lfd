@@ -131,7 +131,11 @@ export function planLoading(stops: readonly PlanStop[], vehicle: PlanVehicle): L
   const behind = compact.steps.flatMap((step) =>
     step.bins.filter((planned) => planned.behind).map(() => step.stop.position),
   );
-  const compacted = compactedWarning(behind.length, [...new Set(behind)]);
+  const compacted = compactedWarning(
+    behind.length,
+    [...new Set(behind)],
+    offFloorBins(compact) === 0,
+  );
   return {
     ...compact,
     warnings: compacted === null ? compact.warnings : [...compact.warnings, compacted],
@@ -153,7 +157,8 @@ function offFloorBins(plan: LoadingPlan): number {
 
 /**
  * `coherent` : une pile ne monte plus quand sa rangée est fermée (G-D4 ter).
- * `compact` : elle monte jusqu'à `maxStack`, quitte à poser des bacs derrière.
+ * `compact` : elle monte aussi haut que la pile le permet — `maxStack`, borné
+ * par le plafond depuis le 2026-10-06 —, quitte à poser des bacs derrière.
  */
 type StackingMode = "coherent" | "compact";
 
