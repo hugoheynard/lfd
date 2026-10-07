@@ -17,7 +17,13 @@ import { seedDriverRole } from "./delivery-driver-scene.js";
 
 const RELOAD = "/admin/dev/seed/reload";
 /** Cf. `dev-seed-driver.e2e-spec.ts` : un rechargement complet est long. */
-const FULL_RELOAD_TIMEOUT_MS = 120_000;
+/**
+ * Le même rechargement que `dev-scenario.e2e-spec.ts`, au même délai : 120 s
+ * tenaient seul (55 s), pas sous la charge de la suite racine, où
+ * l'arrêt du plan compose aussi les tournées depuis le 2026-10-07 (dépassé
+ * deux fois ce jour-là ; le scénario a pris 265 s pour cinq rechargements).
+ */
+const FULL_RELOAD_TIMEOUT_MS = 240_000;
 
 let intentCount = 0;
 const fakeGateway = {
