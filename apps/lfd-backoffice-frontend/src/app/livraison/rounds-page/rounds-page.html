@@ -74,6 +74,7 @@
               [canReadSettings]="canReadSettings()"
               [disabled]="busy() || state().status !== 'ready'"
               [previewing]="preview.active()"
+              [saved]="(composed()?.rounds.length ?? 0) > 0"
               [(open)]="plannerOpen"
               (proposed)="showProposal($event)"
               (located)="located()"

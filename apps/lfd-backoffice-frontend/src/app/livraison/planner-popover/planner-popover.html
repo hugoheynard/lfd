@@ -7,11 +7,17 @@
     [disabled]="disabled()"
     data-planner-open
   >
-    Proposer les tournées
+    {{ verb() }} les tournées
   </button>
-  <div foldPopoverPanel class="panel" role="dialog" aria-label="Proposer les tournées" data-planner>
+  <div
+    foldPopoverPanel
+    class="panel"
+    role="dialog"
+    [attr.aria-label]="verb() + ' les tournées'"
+    data-planner
+  >
     <div class="head">
-      <span class="heading">Proposer les tournées</span>
+      <span class="heading">{{ verb() }} les tournées</span>
       <span class="lede">
         Une proposition en aperçu, dans le tableau : rien n’est écrit tant qu’on n’a pas appliqué.
       </span>
@@ -83,7 +89,7 @@
         (click)="propose()"
         data-propose
       >
-        Proposer
+        {{ verb() }}
       </button>
     </div>
 

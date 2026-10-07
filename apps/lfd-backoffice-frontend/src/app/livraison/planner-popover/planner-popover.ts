@@ -95,6 +95,12 @@ export class PlannerPopover {
   readonly disabled = input(false);
   /** Un aperçu est à l'écran : le bouton s'efface devant « Appliquer ». */
   readonly previewing = input(false);
+  /**
+   * Le jour a déjà des tournées enregistrées — en général composées à l'arrêt
+   * du plan : le geste se dit alors « Recomposer » (Hugo, 2026-10-07).
+   */
+  readonly saved = input(false);
+  protected readonly verb = computed(() => (this.saved() ? 'Recomposer' : 'Proposer'));
 
   readonly proposed = output<PlannerResult>();
   /** Les arrêts viennent d'être situés : un aperçu affiché les ignorait. */
