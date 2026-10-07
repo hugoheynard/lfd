@@ -18,9 +18,12 @@
 
 ## 2. En cours
 
-Aucun lot. **K3 est bâti et commité** (K3a, K3b, K3c — `753f3e4f8`) : le
-colisage est le seul poste, l'ancien chemin est retiré. Ce qui reste du
-chantier est listé dans [`colisage/colisage.md`](colisage/colisage.md) §9.
+Aucun lot. **Relu le 2026-10-07** après l'audit du dossier `livraisons/`
+([`livraisons/audit-2026-10-07.md`](livraisons/audit-2026-10-07.md)) : E3 (le
+départ et le retour durables, DD1, `375f82225`), CA6 (`composition-automatique.md`),
+CA4, CA5, CA7, CA8, les zones par véhicule et le banc à 200 clients sont
+**bâtis et déployés** le 2026-10-06. Le § 3 ci-dessous est l'histoire ; le
+prochain chantier est au § 4, premier tableau.
 
 ## 3. L'ordre pour refermer la boucle colisage ↔ livraison
 
@@ -32,21 +35,31 @@ clôture ──► colisage (K1/K2 ✅) ──► bacs (K2b ✅, K3 ✅) ──�
 1. ~~**K2b** : finir, déployer~~ — déployé le 2026-10-05 (`84de845`).
    1 bis. ~~**K3** (Hugo, « plier le colisage d'une traite ») : K3a, K3b, K3c, un déploiement~~ — bâti et commité le 2026-10-05 (`753f3e4f8`).
 2. ~~**Observer une vraie journée**~~ — retiré le 2026-10-05 (Hugo : « je suis pré-exploitation, ça n'arrivera pas, il faut finir le plan »). Les répétitions en dev et les e2e en tiennent lieu.
-3. **E3** : le départ d'une tournée et les commandes rapportées deviennent des
-   faits durables (aujourd'hui trois annonces perdables).
-4. **CA6** : la livraison écoute la clôture (« prêt à appliquer ») ;
-   contredire d'abord le §15 du plan de composition par `vitruve`.
+3. ~~**E3** : le départ d'une tournée et les commandes rapportées deviennent des
+   faits durables~~ — bâti le 2026-10-06 (DD1, `375f82225`).
+4. ~~**CA6** : la livraison écoute la clôture (« prêt à appliquer »)~~ — bâti le 2026-10-06 (CA6a/CA6b).
 5. ~~**K3** : le poste parle directement au colisage ; l'ancien chemin `legacy`
    disparaît~~ — fait (2026-10-05) ; seules les colonnes mortes restent en
    base (`colisage/colisage.md` §8).
 
-## 4. Écrit ou décidé, en attente (pas avant la fin du §3)
+## 4. Écrit ou décidé, en attente
+
+**Le prochain chantier** — plan [`livraisons/plan-hors-ligne-eta-et-livraisons-ratees.md`](livraisons/plan-hors-ligne-eta-et-livraisons-ratees.md) (2026-10-07, `vitruve` passé, Hugo à trancher) :
+
+| Sujet                                                               | Lots                           | Ordre proposé |
+| ------------------------------------------------------------------- | ------------------------------ | ------------- |
+| L'heure prévue au client (fourchette, suivi dans « Mes commandes ») | ETA1–ETA3 (ETA4, ETA5 options) | 1             |
+| Les livraisons ratées (6 c) : prévenir, relivrer, comptoir          | C0, C1, C2a                    | 2             |
+| Le livreur sans réseau (rouvre L6-Q5)                               | HL1–HL5                        | 3             |
+| 6 c avec l'argent (avoir des frais, annuler)                        | C2b, C3 — après les avenants   | 4             |
+
+Le reste, dans l'ordre d'avant :
 
 | Sujet                                                                                                                        | Lots                                                                                                                                                                                                                                      | Bloqué par                                            |
 | ---------------------------------------------------------------------------------------------------------------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ----------------------------------------------------- |
 | Messages restants                                                                                                            | E4 (règlements), E5 (courriels, image), E6 (croissance)                                                                                                                                                                                   | E3                                                    |
 | Écran des messages morts (carte de santé)                                                                                    | —                                                                                                                                                                                                                                         | —                                                     |
-| Composition : capacité, banc à 200, prévisionnel, place suggérée                                                             | CA4, banc, CA5, CA7                                                                                                                                                                                                                       | CA6                                                   |
+| ~~Composition : capacité, banc à 200, prévisionnel, place suggérée~~ (bâtis le 2026-10-06)                                   | CA4, banc, CA5, CA7                                                                                                                                                                                                                       | CA6                                                   |
 | Production par vagues                                                                                                        | V1 (compte par échéance, migration), V2, V3, V4 (marge mesurée)                                                                                                                                                                           | relecture `vitruve` de la v2 avant V1                 |
 | Sous-comptes d'un compte pro (`b2b/comptes-client/plan-sous-comptes.md`, ledger `b2b/comptes-client/ledger-sous-comptes.md`) | S1 ✅, S2 ✅, S3 (tarif, en cours), puis A1 agrégation des commandes (`order/plan-agregation-des-commandes.md`), S4-0 lot figé (`comptabilite/plan-lot-de-prelevement-fige.md`), S4 (facturation), S5 (contacts), S6 (accès du principal) | lancé le 2026-10-05 (Hugo) ; aucun vrai site avant S4 |
 | Imprimantes thermiques                                                                                                       | IM0 (essai), IM1–IM4                                                                                                                                                                                                                      | achat d'une Zebra                                     |
