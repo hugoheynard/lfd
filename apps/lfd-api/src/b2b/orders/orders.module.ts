@@ -64,6 +64,7 @@ import { OrderNumberReader } from "./domain/ports/order-number.reader.js";
 import { PrismaOrderNumberReader } from "./infrastructure/prisma-order-number.reader.js";
 import { CartAdjustments } from "./application/services/cart-adjustments.service.js";
 import { CustomerAudiences } from "./application/services/customer-audiences.service.js";
+import { PublicDeliveryGate } from "./application/services/public-delivery-gate.js";
 import { CompanyStatusReader } from "./domain/ports/company-status.reader.js";
 import { ShopCartController } from "./http/shop-cart.controller.js";
 import { ShopQuoteController } from "./http/shop-quote.controller.js";
@@ -210,6 +211,7 @@ import { AdminSupervisionController } from "./http/admin-supervision.controller.
     OrderLinePricing,
     CartAdjustments,
     CustomerAudiences,
+    PublicDeliveryGate,
     PlaceOrderHandler,
     PlaceOrderForCustomerHandler,
     ConfirmOrderPaymentHandler,

@@ -249,9 +249,8 @@ flowchart TD
   `DeliveryRound.assign` exige une tournée au dépôt, pas une tournée sans
   bac) : l'arrêt ajouté n'a pas de bac, et « Partir » refuse tant qu'un arrêt
   vivant n'est pas chargé, en listant les références. La place suggérée
-  (CA7) l'écarte.
-  ⚠️ Q1 de l'audit du 2026-10-07 : si c'est le code qui doit changer, c'est
-  à Hugo de le trancher.
+  (CA7) la vise aussi depuis le 2026-10-07 : Hugo a tranché Q1 de l'audit,
+  c'est la place du véhicule qui limite (`inserer-avant-le-depart.md`).
 - **§9.** « Appliquer » est un clic du bureau, jamais automatique. Le geste
   humain l'emporte. Une commande qu'il rend intenable passe en **alerte
   rouge** (tableau, résumé « à régler », carte), sans que le calcul défasse le

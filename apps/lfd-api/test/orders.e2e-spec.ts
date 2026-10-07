@@ -20,6 +20,7 @@ import { CatalogVersion } from "../src/b2b/catalog/domain/entities/catalog-versi
 import { CatalogItemRepository } from "../src/b2b/catalog/domain/ports/catalog-item.repository.js";
 import { CatalogVersionRepository } from "../src/b2b/catalog/domain/ports/catalog-version.repository.js";
 import { bootstrapE2e, jsonBody, serviceDay, type E2eContext } from "./e2e-harness.js";
+import { openPublicDelivery } from "./public-delivery-scene.js";
 import { attachTo, createCompany, createUser } from "./factories.js";
 import { lineTotalCents } from "@lfd/money";
 
@@ -47,6 +48,7 @@ afterAll(async () => {
 
 beforeEach(async () => {
   await ctx.reset();
+  await openPublicDelivery(ctx);
   pickupId = NO_PICKUP;
 });
 

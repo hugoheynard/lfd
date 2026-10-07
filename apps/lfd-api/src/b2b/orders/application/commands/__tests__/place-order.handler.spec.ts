@@ -1,3 +1,7 @@
+import { FeatureLevelResolver } from "../../../../feature-access/application/feature-level.resolver.js";
+import { FeatureLevelLookup } from "../../../../feature-access/domain/ports/feature-level.lookup.js";
+import { PublicDeliveryClosedError } from "../../../../feature-access/domain/public-delivery-closed.error.js";
+import { PublicDeliveryGate } from "../../services/public-delivery-gate.js";
 import { RecordingPublisher } from "../../../../../platform/events/__tests__/recording-publisher.js";
 import { FixedOrderPayers, ownPayers } from "./payer-doubles.js";
 import {
@@ -391,6 +395,36 @@ function companiesAt(status: CompanyStatusOf | null): CompanyStatusReader {
   return { companyStatusOf: () => Promise.resolve(status) };
 }
 
+/** La clé `publicDelivery`, ouverte ou fermée, pour qui la lit. */
+class FixedPublicDelivery extends FeatureLevelLookup {
+  constructor(
+    private readonly level: "closed" | "open",
+    private readonly exempt = false,
+  ) {
+    super();
+  }
+
+  storedOverride(): Promise<string | null> {
+    return Promise.resolve(this.level);
+  }
+
+  isExempt(): Promise<boolean> {
+    return Promise.resolve(this.exempt);
+  }
+}
+
+/** La garde de la livraison aux particuliers ; ouverte par défaut. */
+function publicDeliveryOpen(
+  level: "closed" | "open" = "open",
+  status: CompanyStatusOf | null = "active",
+  exempt = false,
+): PublicDeliveryGate {
+  return new PublicDeliveryGate(
+    new CustomerAudiences(companiesAt(status)),
+    new FeatureLevelResolver(new FixedPublicDelivery(level, exempt)),
+  );
+}
+
 /** Le réglage de livraison ; par défaut, ligne absente = ouvert aux deux. */
 function deliveryAvailability(
   view: DeliveryAvailabilityView = DEFAULT_DELIVERY_AVAILABILITY,
@@ -555,6 +589,7 @@ describe("PlaceOrderHandler", () => {
       directWork,
       new FixedVoucherQuotes(),
       new RecordingRedemption(),
+      publicDeliveryOpen(),
     );
 
     await handler.execute(new PlaceOrderCommand("u1", payload(), null));
@@ -582,6 +617,7 @@ describe("PlaceOrderHandler", () => {
       directWork,
       new FixedVoucherQuotes(),
       new RecordingRedemption(),
+      publicDeliveryOpen(),
     );
 
     await handler.execute(new PlaceOrderCommand("u1", payload(), null));
@@ -605,6 +641,7 @@ describe("PlaceOrderHandler", () => {
       directWork,
       new FixedVoucherQuotes(),
       new RecordingRedemption(),
+      publicDeliveryOpen(),
     );
 
     await handler.execute(new PlaceOrderCommand("u1", payload(), null));
@@ -647,6 +684,7 @@ describe("PlaceOrderHandler", () => {
       directWork,
       new FixedVoucherQuotes(),
       new RecordingRedemption(),
+      publicDeliveryOpen(),
     );
 
     await expect(
@@ -671,6 +709,7 @@ describe("PlaceOrderHandler", () => {
       directWork,
       new FixedVoucherQuotes(),
       new RecordingRedemption(),
+      publicDeliveryOpen(),
     );
 
     const result = await handler.execute(new PlaceOrderCommand("u1", payload(), null));
@@ -697,6 +736,7 @@ describe("PlaceOrderHandler", () => {
       directWork,
       new FixedVoucherQuotes(),
       new RecordingRedemption(),
+      publicDeliveryOpen(),
     );
 
     await handler.execute(
@@ -761,6 +801,7 @@ describe("PlaceOrderHandler", () => {
       directWork,
       new FixedVoucherQuotes(),
       new RecordingRedemption(),
+      publicDeliveryOpen(),
     );
 
     await handler.execute(
@@ -799,6 +840,7 @@ describe("PlaceOrderHandler", () => {
       directWork,
       new FixedVoucherQuotes(),
       new RecordingRedemption(),
+      publicDeliveryOpen(),
     );
 
     await expect(
@@ -824,6 +866,7 @@ describe("PlaceOrderHandler", () => {
       directWork,
       new FixedVoucherQuotes(),
       new RecordingRedemption(),
+      publicDeliveryOpen(),
     );
 
     await handler.execute(new PlaceOrderCommand("u1", payload(), "c1"));
@@ -849,6 +892,7 @@ describe("PlaceOrderHandler", () => {
       directWork,
       new FixedVoucherQuotes(),
       new RecordingRedemption(),
+      publicDeliveryOpen(),
     );
 
     await expect(
@@ -873,6 +917,7 @@ describe("PlaceOrderHandler", () => {
       directWork,
       new FixedVoucherQuotes(),
       new RecordingRedemption(),
+      publicDeliveryOpen(),
     );
 
     // 2 × 200 = 400 ; remise 20 % = 80 ; total = 320.
@@ -909,6 +954,7 @@ describe("PlaceOrderHandler", () => {
       directWork,
       new FixedVoucherQuotes(),
       new RecordingRedemption(),
+      publicDeliveryOpen(),
     );
 
     await handler.execute(new PlaceOrderCommand("u1", payload(), "c1"));
@@ -935,6 +981,7 @@ describe("PlaceOrderHandler", () => {
       directWork,
       new FixedVoucherQuotes(),
       new RecordingRedemption(),
+      publicDeliveryOpen(),
     );
 
     await expect(
@@ -964,6 +1011,7 @@ describe("PlaceOrderHandler", () => {
       directWork,
       new FixedVoucherQuotes(),
       new RecordingRedemption(),
+      publicDeliveryOpen(),
     );
 
     // 2 × 200 = 400 HT (TVA 0 dans ce catalogue de test) ; frais 20 € = 2000 HT
@@ -1012,6 +1060,7 @@ describe("PlaceOrderHandler", () => {
         directWork,
         new FixedVoucherQuotes(),
         new RecordingRedemption(),
+        publicDeliveryOpen(),
       );
       await handler.execute(
         new PlaceOrderCommand(
@@ -1061,6 +1110,7 @@ describe("PlaceOrderHandler", () => {
       directWork,
       new FixedVoucherQuotes(),
       new RecordingRedemption(),
+      publicDeliveryOpen(),
     );
 
     await expect(
@@ -1094,6 +1144,7 @@ describe("PlaceOrderHandler", () => {
       directWork,
       new FixedVoucherQuotes(),
       new RecordingRedemption(),
+      publicDeliveryOpen(),
     );
 
     const result = await handler.execute(new PlaceOrderCommand("u1", payload(), "c1"));
@@ -1124,6 +1175,7 @@ describe("PlaceOrderHandler", () => {
       directWork,
       new FixedVoucherQuotes(),
       new RecordingRedemption(),
+      publicDeliveryOpen(),
     );
 
     const result = await handler.execute(new PlaceOrderCommand("u1", payload(), "c1"));
@@ -1150,6 +1202,7 @@ describe("PlaceOrderHandler", () => {
       directWork,
       new FixedVoucherQuotes(),
       new RecordingRedemption(),
+      publicDeliveryOpen(),
     );
 
     await handler.execute(new PlaceOrderCommand("u1", payload(), "c1"));
@@ -1202,6 +1255,7 @@ describe("PlaceOrderHandler — un article d'opération datée", () => {
       directWork,
       new FixedVoucherQuotes(),
       new RecordingRedemption(),
+      publicDeliveryOpen(),
     );
   }
 
@@ -1259,6 +1313,7 @@ describe("PlaceOrderHandler — un article d'opération datée", () => {
       directWork,
       new FixedVoucherQuotes(),
       new RecordingRedemption(),
+      publicDeliveryOpen(),
     );
 
     await handler.execute(
@@ -1293,6 +1348,7 @@ describe("PlaceOrderHandler — prélèvement bloqué", () => {
       directWork,
       new FixedVoucherQuotes(),
       new RecordingRedemption(),
+      publicDeliveryOpen(),
     );
   }
 
@@ -1395,6 +1451,7 @@ describe("PlaceOrderHandler — le bon de fidélité", () => {
       directWork,
       new FixedVoucherQuotes({ v150: 150, v500: 500 }),
       over.redemption,
+      publicDeliveryOpen(),
     );
   }
 
@@ -1498,6 +1555,7 @@ describe("PlaceOrderHandler — créneau ou échéance", () => {
       directWork,
       new FixedVoucherQuotes(),
       new RecordingRedemption(),
+      publicDeliveryOpen(),
     );
     await handler.execute(
       new PlaceOrderCommand(
@@ -1607,6 +1665,7 @@ describe("PlaceOrderHandler — un site facturé à son principal", () => {
       directWork,
       new FixedVoucherQuotes(),
       new RecordingRedemption(),
+      publicDeliveryOpen(),
     );
   }
 
@@ -1689,5 +1748,62 @@ describe("PlaceOrderHandler — un site facturé à son principal", () => {
 
     await expect(refusal).rejects.toBeInstanceOf(GroupAccountOrderRefusedError);
     expect(sink.placed).toBeNull();
+  });
+});
+
+/**
+ * Régression : un particulier CONNECTÉ commandait en livraison alors que
+ * l'admin l'avait fermée aux particuliers — seule la route sans compte lisait
+ * `publicDelivery` (audit livraisons, § 3.3 ; Hugo, 2026-10-07 : « pas si la
+ * livraison publique est fermée »).
+ */
+describe("PlaceOrderHandler — la livraison aux particuliers fermée", () => {
+  function placing(gate: PublicDeliveryGate) {
+    const sink = { placed: null as OrderToPlace | null };
+    const handler = new PlaceOrderHandler(
+      guard(null, null, "none"),
+      drafting(pickups(), zones(TARENTAISE)),
+      capturingRepo(sink),
+      payments(),
+      events(),
+      noWaivers,
+      new FixedClock(PRICED_AT),
+      freeKeys,
+      noReader,
+      directWork,
+      new FixedVoucherQuotes(),
+      new RecordingRedemption(),
+      gate,
+    );
+    const delivery = payload({ fulfillmentMethod: "delivery", deliveryAddress: COURIER_ADDR });
+    return { handler, sink, delivery };
+  }
+
+  it("refuse un particulier en livraison, sans rien écrire", async () => {
+    const { handler, sink, delivery } = placing(publicDeliveryOpen("closed", null));
+
+    await expect(
+      handler.execute(
+        new PlaceOrderCommand("u1", delivery, null, { email: "a@b.fr", emailProven: true }),
+      ),
+    ).rejects.toBeInstanceOf(PublicDeliveryClosedError);
+    expect(sink.placed).toBeNull();
+  });
+
+  it("laisse passer une adresse exemptée : c'est ainsi qu'on l'essaie avant de l'ouvrir", async () => {
+    const gate = publicDeliveryOpen("closed", null, true);
+
+    await expect(
+      gate.ensureOpen("delivery", null, { email: "a@b.fr", emailProven: true }),
+    ).resolves.toBeUndefined();
+  });
+
+  it("ne regarde ni le retrait, ni un pro : leur livraison tient à leur contrat", async () => {
+    await expect(
+      publicDeliveryOpen("closed", null).ensureOpen("pickup", null, null),
+    ).resolves.toBeUndefined();
+    await expect(
+      publicDeliveryOpen("closed", "active").ensureOpen("delivery", "c1", null),
+    ).resolves.toBeUndefined();
   });
 });

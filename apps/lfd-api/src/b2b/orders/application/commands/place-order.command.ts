@@ -1,3 +1,4 @@
+import type { FeatureSubject } from "../../../feature-access/domain/feature-level-resolution.js";
 import type { OrderPaymentIntent, PlaceOrderPayload } from "@lfd/contracts";
 
 /**
@@ -21,6 +22,11 @@ export class PlaceOrderCommand {
     readonly actorUserId: string,
     readonly payload: PlaceOrderPayload,
     readonly companyId: string | null,
+    /**
+     * Qui passe la commande, pour les clés exemptibles (`publicDelivery`) ;
+     * `null` hors requête (semis) : le niveau global s'applique.
+     */
+    readonly subject: FeatureSubject = null,
   ) {}
 }
 

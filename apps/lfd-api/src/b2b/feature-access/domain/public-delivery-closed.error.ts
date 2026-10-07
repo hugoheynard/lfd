@@ -14,14 +14,16 @@ import { BusinessError } from "../../../platform/shared/errors/app-error.js";
  * livraison croirait l'avoir fermée. C'est la distinction que le catalogue des
  * clés écrit noir sur blanc : `hidden` ne ferme rien, `closed` si.
  *
- * Les PROS ne passent pas par ici : `POST /shop/orders` est la route des
- * commandes SANS compte. Leur livraison tient à leur contrat, pas à ce réglage.
+ * Deux routes la lèvent : `POST /shop/orders` (sans compte) et, depuis le
+ * 2026-10-07, `POST /orders` pour un particulier connecté (audit livraisons,
+ * § 3.3 ; Hugo : « pas si la livraison publique est fermée »). Les PROS n'y
+ * passent jamais : leur livraison tient à leur contrat, pas à ce réglage.
  */
 export class PublicDeliveryClosedError extends BusinessError {
   constructor() {
     super(
       "feature_access.public_delivery_closed",
-      "La livraison n'est pas ouverte aux commandes sans compte.",
+      "La livraison n'est pas encore ouverte aux particuliers : choisissez le retrait.",
     );
   }
 }

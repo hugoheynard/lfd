@@ -33,6 +33,7 @@ import { ActingCompany } from "../../../platform/auth/acting-company.decorator.j
 import { CurrentUser } from "../../../platform/auth/current-user.decorator.js";
 import type { Principal } from "../../../platform/auth/principal.js";
 import { ZodBody } from "../../../platform/shared/http/zod-body.pipe.js";
+import { featureSubjectOf } from "../../feature-access/http/feature-subject.js";
 import { RequiresShop } from "../../feature-access/http/requires-shop.decorator.js";
 import { AbandonOrderCommand } from "../application/commands/abandon-order.command.js";
 import {
@@ -74,7 +75,7 @@ export class OrdersController {
     @ActingCompany() companyId: string | null,
   ): Promise<PlacedOrderResponse> {
     const placed = await this.commands.execute<PlaceOrderCommand, PlaceOrderResult>(
-      new PlaceOrderCommand(user.userId, payload, companyId),
+      new PlaceOrderCommand(user.userId, payload, companyId, featureSubjectOf(user)),
     );
     // `payment` n'est présent que si une carte est requise (pas d'entreprise, ou
     // entreprise non active / per_order) ; on ne l'ajoute que dans ce cas

@@ -23,6 +23,7 @@ import { settleCardPayments } from "./card-payments.js";
 import { binTypeId, loadBin } from "./delivery-loading-scene.js";
 import { addVehicle, assign, openRound } from "./delivery-rounds-scene.js";
 import { jsonBody, type E2eContext } from "./e2e-harness.js";
+import { openPublicDelivery } from "./public-delivery-scene.js";
 import { createUser } from "./factories.js";
 import {
   CROISSANT,
@@ -66,6 +67,7 @@ afterAll(async () => {
 beforeEach(async () => {
   relayGate.open = true;
   await ctx.reset();
+  await openPublicDelivery(ctx);
   await createUser(ctx.prisma, { auth0Sub: MEMBER });
 });
 

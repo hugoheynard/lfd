@@ -21,6 +21,7 @@ import { OrderRepository, type PlacedOrder } from "../../domain/ports/order.repo
 import { ensureOrderMember } from "../../domain/services/order-access.js";
 import { orderFingerprint } from "../../domain/services/order-fingerprint.js";
 import { OrderDrafting } from "../services/order-drafting.service.js";
+import { PublicDeliveryGate } from "../services/public-delivery-gate.js";
 import { settleOrder, type CreatedIntent } from "../services/order-settlement.js";
 import { PlaceOrderCommand, type PlaceOrderResult } from "./place-order.command.js";
 
@@ -52,6 +53,7 @@ export class PlaceOrderHandler implements ICommandHandler<PlaceOrderCommand, Pla
     private readonly unitOfWork: UnitOfWork,
     private readonly voucherQuotes: LoyaltyVoucherQuoteReader,
     private readonly vouchers: LoyaltyVoucherRedemption,
+    private readonly publicDelivery: PublicDeliveryGate,
   ) {}
 
   /**
@@ -70,6 +72,13 @@ export class PlaceOrderHandler implements ICommandHandler<PlaceOrderCommand, Pla
    */
   async execute(command: PlaceOrderCommand): Promise<PlaceOrderResult> {
     const { payload } = command;
+    // Le refus précède la clé, comme sur la route sans compte : il ne dépend
+    // d'aucune écriture, et une clé réclamée puis relâchée laisserait une trace.
+    await this.publicDelivery.ensureOpen(
+      payload.fulfillmentMethod,
+      command.companyId,
+      command.subject,
+    );
     const key = payload.idempotencyKey;
     const claim = await this.keys.claim(
       command.actorUserId,
