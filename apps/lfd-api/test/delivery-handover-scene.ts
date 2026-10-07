@@ -12,6 +12,7 @@ import type request from "supertest";
 import { declareBins, loadBin } from "./delivery-loading-scene.js";
 import { MY_ROUND } from "./delivery-driver-scene.js";
 import { addVehicle, admin, assign, openRound, ROUNDS, roundOf } from "./delivery-rounds-scene.js";
+import { DRIVER_ROLE } from "./delivery-driver-scene.js";
 import { seedLocatedDelivery } from "./delivery-routing-scene.js";
 import { jsonBody, serviceDay, type E2eContext } from "./e2e-harness.js";
 
@@ -20,14 +21,8 @@ const POINT = { lat: 45.6, lng: 6.1 };
 export const JPEG = Buffer.from([0xff, 0xd8, 0xff, 0xe0, 0x00, 0x10, 0x4a, 0x46, 0x49, 0x46]);
 export const PNG = Buffer.from([0x89, 0x50, 0x4e, 0x47, 0x0d, 0x0a, 0x1a, 0x0a, 0x00, 0x00]);
 
-export const DOOR_ROLE = {
-  key: "livreur",
-  label: "Livreur",
-  grants: [
-    { resource: "delivery_driving", action: "write" },
-    { resource: "delivery_doorstep", action: "write" },
-  ],
-} as const;
+/** Le rôle livreur des scènes — UNE définition, celle de `delivery-driver-scene.ts`. */
+export const DOOR_ROLE = DRIVER_ROLE;
 
 export interface DoorDriver {
   readonly id: string;

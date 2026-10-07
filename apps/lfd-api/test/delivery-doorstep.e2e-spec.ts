@@ -23,6 +23,7 @@ import {
   serviceDay,
   type E2eContext,
 } from "./e2e-harness.js";
+import { DRIVER_ROLE } from "./delivery-driver-scene.js";
 import {
   ADMIN_VERIFIER_OVERRIDE,
   addVehicle,
@@ -43,14 +44,7 @@ const POINT = { lat: 45.6, lng: 6.1 };
 const JPEG = Buffer.from([0xff, 0xd8, 0xff, 0xe0, 0x00, 0x10, 0x4a, 0x46, 0x49, 0x46]);
 
 /** Le livreur tel qu'Hugo le réglera : conduire, ET les gestes à la porte. */
-const DOOR_ROLE = {
-  key: "livreur",
-  label: "Livreur",
-  grants: [
-    { resource: "delivery_driving", action: "write" },
-    { resource: "delivery_doorstep", action: "write" },
-  ],
-} as const;
+const DOOR_ROLE = DRIVER_ROLE;
 
 /** Un rôle qui conduit sans les gestes de la porte (AP-D9 : deux droits). */
 const DRIVE_ONLY_ROLE = {
