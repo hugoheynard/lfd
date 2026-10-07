@@ -8,6 +8,19 @@
   gap: var(--fold-space-lg);
 }
 
+/* Les chiffres se lisent en colonne : numéro, montants, quantités, SKU, taux.
+   Déclaré UNE fois pour tous (2026-10-07) : répété sept fois, il faisait passer
+   cette feuille au-dessus du budget de style du back-office. */
+.od-number,
+.od-total-value,
+.od-col-qty,
+.od-col-num,
+.od-col-sku,
+.od-total-row dd,
+.od-total-hint {
+  font-variant-numeric: tabular-nums;
+}
+
 /* ── Bandeau ────────────────────────────────────────────────────────────── */
 
 /* Grille en deux colonnes : l'identité et l'état à gauche, le montant calé à
@@ -35,7 +48,6 @@
   margin: 0;
   font-size: var(--fold-text-xl);
   font-weight: 700;
-  font-variant-numeric: tabular-nums;
   letter-spacing: -0.01em;
 }
 
@@ -67,7 +79,6 @@
 .od-total-value {
   font-size: 1.75rem;
   font-weight: 700;
-  font-variant-numeric: tabular-nums;
   line-height: 1;
 }
 
@@ -191,13 +202,11 @@ fold-aside-layout {
 
 .od-col-qty {
   width: 3rem;
-  font-variant-numeric: tabular-nums;
   font-weight: 700;
 }
 
 .od-col-num {
   text-align: end;
-  font-variant-numeric: tabular-nums;
   white-space: nowrap;
 }
 
@@ -211,7 +220,6 @@ fold-aside-layout {
   width: 5.5rem;
   color: var(--fold-color-text-muted);
   font-size: var(--fold-text-xs);
-  font-variant-numeric: tabular-nums;
   white-space: nowrap;
 }
 
@@ -249,10 +257,6 @@ fold-aside-layout {
 .od-total-row dt,
 .od-total-row dd {
   margin: 0;
-}
-
-.od-total-row dd {
-  font-variant-numeric: tabular-nums;
   white-space: nowrap;
 }
 
@@ -262,7 +266,6 @@ fold-aside-layout {
   display: block;
   color: var(--fold-color-text-muted);
   font-size: var(--fold-text-xs);
-  font-variant-numeric: tabular-nums;
 }
 
 .od-total-row.is-strong {
