@@ -540,3 +540,19 @@ export class InvalidDeliveryStopMinutesError extends DomainError {
     );
   }
 }
+
+/**
+ * **Le carnet d'adresses a changé pendant le geste** (audit livraisons,
+ * § 3.3, 2026-10-07). Chaque geste relit le carnet entier puis le réécrit :
+ * sans ce refus, le second de deux gestes simultanés effaçait ce que le
+ * premier venait d'écrire, ou heurtait l'index « un seul défaut » (409 sans
+ * explication).
+ */
+export class DeliveryAddressBookStaleError extends BusinessError {
+  constructor() {
+    super(
+      "account.delivery_address_book.stale",
+      "Les adresses de livraison de ce client ont changé pendant votre geste : rien n'a été enregistré. Rechargez la page, puis recommencez.",
+    );
+  }
+}

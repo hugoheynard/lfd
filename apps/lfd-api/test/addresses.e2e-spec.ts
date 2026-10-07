@@ -10,8 +10,9 @@
  */
 import type { CompanyAddressesView, DeliveryAddressPayload } from "@lfd/contracts";
 
+import { DeliveryAddressBookStaleError } from "../src/b2b/account/domain/errors/account-errors.js";
 import { CompanyAddressRepository } from "../src/b2b/account/domain/ports/company-address.repository.js";
-import { CustomerRole } from "../src/platform/database/client/client.js";
+import { AddressKind, CustomerRole } from "../src/platform/database/client/client.js";
 import { IdGenerator } from "../src/platform/id/id-generator.js";
 import {
   DuplicateResourceError,
@@ -320,6 +321,45 @@ describe("livraison — défaut, tri, archivage", () => {
  * ou du carnet lu sous le mur) : l'adaptateur est appelé en direct, et le refus
  * attendu est le 409 que `mapPersistenceError` tire du `P2002`.
  */
+/**
+ * Régression : deux gestes sur le même carnet, en même temps. Chacun relit le
+ * carnet entier puis le réécrit ; le second effaçait le premier, ou heurtait
+ * l'index « un seul défaut » par un 409 sans explication — une adresse
+ * AJOUTÉE par défaut pendant qu'on en DÉSIGNE une autre (audit livraisons,
+ * § 3.3, 2026-10-07). Le second est désormais refusé en le disant, et rien
+ * de lui n'est écrit.
+ */
+describe("deux gestes simultanés sur le même carnet", () => {
+  it("le second est refusé (« rechargez »), et le premier reste entier", async () => {
+    const addresses = ctx.app.get(CompanyAddressRepository);
+    const ids = ctx.app.get(IdGenerator);
+    const seed = await addresses.loadDeliveryBook(companyId);
+    const existing = ids.next();
+    const other = ids.next();
+    seed.add(existing, delivery({ label: "Boutique" }), new Date(daysAgo(2)));
+    seed.add(other, delivery({ label: "Atelier" }), new Date(daysAgo(2)));
+    await addresses.saveDeliveryBook(seed);
+
+    const adding = await addresses.loadDeliveryBook(companyId);
+    const designating = await addresses.loadDeliveryBook(companyId);
+    const added = ids.next();
+    adding.add(added, delivery({ label: "Nouveau dépôt", isDefault: true }), new Date(daysAgo(0)));
+    designating.makeDefault(other);
+    await addresses.saveDeliveryBook(adding);
+    const refusal = await addresses.saveDeliveryBook(designating).then(
+      () => null,
+      (error: unknown) => error,
+    );
+
+    expect(refusal).toBeInstanceOf(DeliveryAddressBookStaleError);
+    const defaults = await ctx.prisma.address.findMany({
+      where: { companyId, kind: AddressKind.delivery, isDefault: true },
+      select: { id: true },
+    });
+    expect(defaults.map((row) => row.id)).toEqual([added]);
+  });
+});
+
 describe("le mur dans les écritures du carnet", () => {
   it("une adresse à l'id d'une adresse d'une autre société est refusée (409), et celle-ci reste intacte", async () => {
     const addresses = ctx.app.get(CompanyAddressRepository);

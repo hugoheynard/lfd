@@ -76,12 +76,14 @@ export interface DeliveryBookState {
  * - archiver la **dernière** laisse un carnet sans défaut, et c'est légitime :
  *   c'est le seul état où `defaultId` vaut `null`.
  *
- * ⚠️ **Pourquoi le cycle charger → muter → écrire est sûr ici**, alors qu'il ne
- * l'est pas pour `OrderRepository.markPaid` : deux gestionnaires qui désignent
- * chacun un défaut au même instant produisent, dans les deux ordres possibles,
- * un carnet à **un** défaut. Le dernier écrivain gagne, et l'invariant tient. Un
- * règlement Stripe, lui, doit refuser la seconde transition — d'où l'écriture
- * conditionnelle en base à cet endroit-là, et pas ici.
+ * ⚠️ **Deux gestes simultanés : le second est refusé.** Ce paragraphe disait
+ * que « le dernier écrivain gagne » et que l'invariant tenait. C'était vrai de
+ * deux DÉSIGNATIONS, faux d'une adresse AJOUTÉE par défaut pendant qu'on en
+ * désigne une autre : le second carnet ignorait la ligne neuve, et l'index
+ * « un seul défaut » refusait (409 sans explication). Et chaque geste réécrit
+ * le carnet entier : le second effaçait le premier. Depuis le 2026-10-07,
+ * l'adaptateur verrouille la société et refuse un carnet relu depuis
+ * (`DeliveryAddressBookStaleError`, « rechargez »).
  */
 export class DeliveryAddressBook {
   private constructor(

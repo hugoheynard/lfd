@@ -13,6 +13,7 @@ import {
   type DeliveryAddress,
   type DeliveryBookState,
 } from "../domain/entities/delivery-address-book.js";
+import { DeliveryAddressBookStaleError } from "../domain/errors/account-errors.js";
 import { CompanyAddressRepository } from "../domain/ports/company-address.repository.js";
 
 /** Colonnes postales communes, extraites d'une charge validée. */
@@ -101,6 +102,36 @@ function specsOf(value: unknown): DeliverySpecs {
   return value === null || value === undefined ? NO_SPECS : deliverySpecsSchema.parse(value);
 }
 
+/** Les colonnes d'une entrée du carnet : celles du chargement, et de la relecture avant écriture. */
+const BOOK_COLUMNS = {
+  id: true,
+  label: true,
+  ligne1: true,
+  ligne2: true,
+  codePostal: true,
+  ville: true,
+  pays: true,
+  deliverySpecs: true,
+  depositAllowed: true,
+  doorstepRule: true,
+  parkingLat: true,
+  parkingLng: true,
+  isDefault: true,
+  archivedAt: true,
+  createdAt: true,
+} as const;
+
+/**
+ * L'empreinte de ce qu'un carnet a lu : ses lignes, triées, sérialisées. Deux
+ * lectures égales n'ont rien manqué l'une de l'autre ; une ligne ajoutée,
+ * modifiée ou archivée entre-temps la change.
+ */
+function fingerprintOf(rows: readonly Readonly<Record<string, unknown>>[]): string {
+  return JSON.stringify(
+    [...rows].sort((left, right) => String(left["id"]).localeCompare(String(right["id"]))),
+  );
+}
+
 /**
  * Les entrées du carnet dans l'ordre où les écrire : l'adresse par défaut EN
  * DERNIER.
@@ -142,6 +173,13 @@ function defaultLast(state: DeliveryBookState): readonly DeliveryAddress[] {
  */
 @Injectable()
 export class PrismaCompanyAddressRepository extends CompanyAddressRepository {
+  /**
+   * Ce que chaque carnet chargé a lu, pour refuser de l'écrire si la base a
+   * bougé depuis (2026-10-07). Une carte faible : un carnet oublié ne retient
+   * rien. Un carnet qui n'a pas été chargé ici (neuf) n'est pas vérifié.
+   */
+  private readonly readAs = new WeakMap<DeliveryAddressBook, string>();
+
   constructor(private readonly prisma: PrismaService) {
     super();
   }
@@ -163,37 +201,33 @@ export class PrismaCompanyAddressRepository extends CompanyAddressRepository {
   async loadDeliveryBook(companyId: string): Promise<DeliveryAddressBook> {
     const rows = await this.prisma.address.findMany({
       where: { companyId, kind: AddressKind.delivery },
-      select: {
-        id: true,
-        label: true,
-        ligne1: true,
-        ligne2: true,
-        codePostal: true,
-        ville: true,
-        pays: true,
-        deliverySpecs: true,
-        depositAllowed: true,
-        doorstepRule: true,
-        parkingLat: true,
-        parkingLng: true,
-        isDefault: true,
-        archivedAt: true,
-        createdAt: true,
-      },
+      select: BOOK_COLUMNS,
     });
     const current = rows.find((row) => row.isDefault && row.archivedAt === null);
-    return DeliveryAddressBook.reconstitute({
+    const book = DeliveryAddressBook.reconstitute({
       companyId,
       entries: rows.map(toDomain),
       defaultId: current?.id ?? null,
     });
+    this.readAs.set(book, fingerprintOf(rows));
+    return book;
   }
 
   async saveDeliveryBook(book: DeliveryAddressBook): Promise<void> {
     const state = book.toPersistence();
     // Le carnet de CETTE société, tel que `loadDeliveryBook` le lit.
     const wall = { companyId: state.companyId, kind: AddressKind.delivery };
+    const read = this.readAs.get(book);
     await this.prisma.$transaction(async (tx) => {
+      // Deux gestes sur le même carnet passent l'un après l'autre : le verrou
+      // de la société les range, et le second relit ce que le premier a écrit.
+      await tx.$queryRaw`SELECT id FROM companies WHERE id = ${state.companyId} FOR UPDATE`;
+      if (read !== undefined) {
+        const now = await tx.address.findMany({ where: wall, select: BOOK_COLUMNS });
+        if (fingerprintOf(now) !== read) {
+          throw new DeliveryAddressBookStaleError();
+        }
+      }
       for (const entry of defaultLast(state)) {
         const columns = {
           ...entry.lines,
