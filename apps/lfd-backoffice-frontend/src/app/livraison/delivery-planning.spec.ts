@@ -96,6 +96,7 @@ const LOADED_ROUND: DeliveryRoundView = {
   version: 2,
   planned: null,
   vehicleRetired: false,
+  place: null,
   returnedAt: null,
   driver: null,
   departedAt: null,

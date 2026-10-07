@@ -90,6 +90,10 @@ describe("affecter", () => {
       }),
     ]);
     expect(view.rounds[0]?.version).toBe(2);
+    // La place est jugée à la lecture (2026-10-07) : sans bac déclaré, sans
+    // contenance ni contenant par défaut, la commande est inconnue — un
+    // avertissement, jamais un refus de l'affectation.
+    expect(view.rounds[0]?.place).toEqual({ status: "unverified", unknownOrders: 1 });
   });
 
   it("🔴 l'index refuse une commande dans deux tournées vivantes, même d'un AUTRE jour (I3)", async () => {

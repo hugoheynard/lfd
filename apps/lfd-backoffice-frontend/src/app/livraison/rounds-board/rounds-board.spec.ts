@@ -42,6 +42,7 @@ function round(key: string, vehicleId: string, overrides: Partial<BoardRound> = 
     geometry: null,
     timing: null,
     unknownDemand: 0,
+    place: null,
     stops: [],
     ...overrides,
   };

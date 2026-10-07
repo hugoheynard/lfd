@@ -1,3 +1,4 @@
+import type { RoundPlace } from "../domain/services/round-place.js";
 import type {
   DeliveryRoundDriverView,
   DeliveryRoundOrderRef,
@@ -14,6 +15,8 @@ import type { RoundRow, RoundStopRow } from "../domain/ports/delivery-rounds.rea
 /** Ce que la vue du jour assemble : trois lectures faites au même moment. */
 export interface DeliveryRoundsDayInputs {
   readonly day: string;
+  /** La place de chaque tournée au dépôt, par id ; une tournée partie n'y est pas. */
+  readonly places: ReadonlyMap<string, RoundPlace>;
   readonly rounds: readonly RoundRow[];
   /** Les livraisons attendues ce jour, annulées comprises. */
   readonly expected: readonly DeliveryOrderRef[];
@@ -107,6 +110,7 @@ function roundView(round: RoundRow, inputs: DeliveryRoundsDayInputs): DeliveryRo
           },
     driver: driverView(round.driverStaffId, inputs),
     stops: round.stops.map((stop) => stopView(stop, round.vehicleId, inputs)),
+    place: inputs.places.get(round.id) ?? null,
   };
 }
 

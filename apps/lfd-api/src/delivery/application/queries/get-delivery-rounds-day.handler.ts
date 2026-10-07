@@ -1,3 +1,8 @@
+import type { RoundRow } from "../../domain/ports/delivery-rounds.reader.js";
+import { RoutingSettingsReader } from "../../domain/ports/routing-settings.reader.js";
+import { type RoundPlace, roundPlaceOf } from "../../domain/services/round-place.js";
+import { routingSettingsOf } from "../delivery-routing-support.js";
+import { ProposalCapacity } from "../proposal-capacity.js";
 import type { DeliveryRoundsDayView } from "@lfd/contracts";
 import { type IQueryHandler, QueryHandler } from "@nestjs/cqrs";
 
@@ -37,6 +42,8 @@ export class GetDeliveryRoundsDayHandler implements IQueryHandler<
     private readonly broughtBack: BroughtBackOrdersReader,
     private readonly states: DeliveryOrderStatesReader,
     private readonly fleet: FleetReader,
+    private readonly settings: RoutingSettingsReader,
+    private readonly place: ProposalCapacity,
   ) {}
 
   async execute(query: GetDeliveryRoundsDayQuery): Promise<DeliveryRoundsDayView> {
@@ -50,16 +57,19 @@ export class GetDeliveryRoundsDayHandler implements IQueryHandler<
     const driverIds = rounds.flatMap((round) =>
       round.driverStaffId === null ? [] : [round.driverStaffId],
     );
-    const [composed, assigned, drivers, driverNames, broughtBack, fleet] = await Promise.all([
-      this.orders.byIds(composedIds),
-      this.rounds.composedAmong(expected.map((order) => order.orderId)),
-      driversNow(this.holders),
-      driverNamesOf(this.directory, driverIds),
-      this.broughtBack.lastAmong([...composedIds, ...awaiting.map((order) => order.orderId)]),
-      this.fleet.list(),
-    ]);
+    const [composed, assigned, drivers, driverNames, broughtBack, fleet, places] =
+      await Promise.all([
+        this.orders.byIds(composedIds),
+        this.rounds.composedAmong(expected.map((order) => order.orderId)),
+        driversNow(this.holders),
+        driverNamesOf(this.directory, driverIds),
+        this.broughtBack.lastAmong([...composedIds, ...awaiting.map((order) => order.orderId)]),
+        this.fleet.list(),
+        this.placesOf(rounds),
+      ]);
     const view = deliveryRoundsDayView({
       day: query.day,
+      places,
       rounds,
       expected,
       composed: new Map(composed.map((order) => [order.orderId, order])),
@@ -75,5 +85,31 @@ export class GetDeliveryRoundsDayHandler implements IQueryHandler<
       ),
     });
     return { ...view, incidents: incidents.map(deliveryIncidentView) };
+  }
+
+  /**
+   * La place des tournées au dépôt (2026-10-07) : la garde de « Proposer »,
+   * pour AVERTIR après une affectation à la main. Une tournée partie n'est
+   * plus composée : elle n'est pas jugée.
+   */
+  private async placesOf(rounds: readonly RoundRow[]): Promise<ReadonlyMap<string, RoundPlace>> {
+    const atDepot = rounds.filter((round) => round.departedAt === null && round.stops.length > 0);
+    if (atDepot.length === 0) {
+      return new Map();
+    }
+    const { settings } = await routingSettingsOf(this.settings);
+    const orderIds = atDepot.flatMap((round) => round.stops.map((stop) => stop.orderId));
+    const { capacity, unknown } = await this.place.of(orderIds, settings.defaultContainer);
+    return new Map(
+      atDepot.map((round) => [
+        round.id,
+        roundPlaceOf({
+          capacity,
+          unknown,
+          vehicleId: round.vehicleId,
+          orderIds: round.stops.map((stop) => stop.orderId),
+        }),
+      ]),
+    );
   }
 }

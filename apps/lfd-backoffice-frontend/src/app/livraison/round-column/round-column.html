@@ -60,6 +60,20 @@
       </div>
     }
 
+    @if (placeWarning(); as label) {
+      <div class="line sub" data-place-warning>
+        <fold-badge radius="square" variant="warning" [content]="label" />
+        <span class="note">
+          @if (round().place === 'over') {
+            Les bacs connus ne tiennent pas dans la caisse : retirez un arrêt, ou changez de
+            véhicule.
+          } @else {
+            Renseignez les cotes du véhicule pour que la place soit vérifiée.
+          }
+        </span>
+      </div>
+    }
+
     @if (unverifiedPlace(); as label) {
       <div class="line sub" data-unverified-place>
         <fold-badge radius="square" variant="neutral" [content]="label" />

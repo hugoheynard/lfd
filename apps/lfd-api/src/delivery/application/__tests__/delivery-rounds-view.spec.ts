@@ -7,6 +7,7 @@ const DAY = "2030-03-12";
 function inputs(overrides: Partial<DeliveryRoundsDayInputs> = {}): DeliveryRoundsDayInputs {
   return {
     day: DAY,
+    places: new Map(),
     rounds: [],
     expected: [],
     composed: new Map(),
@@ -35,6 +36,16 @@ const round = {
 };
 
 describe("deliveryRoundsDayView", () => {
+  it("rend la place d'une tournée au dépôt, et `null` pour une tournée non jugée", () => {
+    const over = { status: "over" as const, unknownOrders: 0 };
+
+    const view = deliveryRoundsDayView(
+      inputs({ rounds: [round, { ...round, id: "r_2" }], places: new Map([["r_1", over]]) }),
+    );
+
+    expect(view.rounds.map((each) => each.place)).toEqual([over, null]);
+  });
+
   it("expose l'horaire prévu en instants ISO, et `null` sans horaire (I10)", () => {
     const planned = PlannedTiming.of({
       departureAt: new Date(3_600_000),

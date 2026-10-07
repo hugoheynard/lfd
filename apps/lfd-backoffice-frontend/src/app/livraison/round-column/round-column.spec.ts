@@ -39,6 +39,7 @@ function round(overrides: Partial<BoardRound> = {}): BoardRound {
     geometry: null,
     timing: null,
     unknownDemand: 0,
+    place: null,
     stops: [stop('1'), stop('2')],
     ...overrides,
   };
@@ -208,5 +209,22 @@ describe('RoundColumn', () => {
   it('une tournée dont la place est vérifiée ne montre aucune mention', () => {
     const { element } = mount(round());
     expect(element.querySelector('[data-unverified-place]')).toBeNull();
+  });
+
+  it('une tournée dont la place est dépassée l’avertit, sans rien bloquer', () => {
+    const { element } = mount(round({ place: 'over' }));
+    const warning = element.querySelector('[data-place-warning]');
+    expect(warning?.textContent).toContain('Place dépassée');
+    expect(warning?.textContent).toContain('retirez un arrêt, ou changez de véhicule');
+  });
+
+  it('un véhicule sans cotes le dit, et une tournée qui tient ne dit rien', () => {
+    const unmeasured = mount(round({ place: 'unmeasured' })).element;
+    expect(unmeasured.querySelector('[data-place-warning]')?.textContent).toContain(
+      'Véhicule sans cotes',
+    );
+    expect(
+      mount(round({ place: 'fits' })).element.querySelector('[data-place-warning]'),
+    ).toBeNull();
   });
 });

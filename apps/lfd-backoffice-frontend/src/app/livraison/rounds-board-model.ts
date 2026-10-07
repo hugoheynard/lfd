@@ -1,5 +1,6 @@
 import type {
   DeliveryRoundDriverView,
+  DeliveryRoundPlaceStatus,
   DeliveryRoundProposalView,
   DeliveryRoundTimingView,
   DeliveryRunSheetStopView,
@@ -119,6 +120,12 @@ export interface BoardRound {
    * tournée n'a pas de place vérifiée tant que ce compte n'est pas nul.
    */
   readonly unknownDemand: number;
+  /**
+   * La place du véhicule pour une tournée ENREGISTRÉE au dépôt (2026-10-07),
+   * ou `null` : partie, ou aperçu (« Proposer » ne place que ce qui tient).
+   * Un avertissement, jamais un refus.
+   */
+  readonly place: DeliveryRoundPlaceStatus | null;
   readonly stops: readonly BoardStop[];
 }
 
@@ -186,7 +193,8 @@ function roundOfComposed(composed: ComposedRound, timing: ComposedTiming): Board
     driver: round.driver,
     geometry: timing.geometries.get(round.id) ?? null,
     timing: null,
-    unknownDemand: 0,
+    unknownDemand: round.place?.unknownOrders ?? 0,
+    place: round.place?.status ?? null,
     stops: composed.stops.map(({ stop, sheet, windowClash }) => ({
       orderId: stop.orderId,
       stopId: stop.stopId,
@@ -344,6 +352,7 @@ export function boardOfPlan(
       geometry: planned.geometry,
       timing: planned.timing,
       unknownDemand: stops.filter((stop) => unknownDemand.has(stop.orderId)).length,
+      place: null,
       stops: withClashes(stops),
     };
   });
@@ -588,6 +597,21 @@ export function unverifiedPlaceLabel(round: Pick<BoardRound, 'unknownDemand'>): 
   }
   const orders = count === 1 ? '1 commande' : `${String(count)} commandes`;
   return `Place non vérifiée — ${orders} sans bacs connus`;
+}
+
+/**
+ * L'avertissement de place d'une tournée enregistrée (2026-10-07), ou `null`.
+ * Une affectation à la main passe toujours ; l'écran dit seulement ce qui ne
+ * tiendra pas dans la caisse.
+ */
+export function placeWarningLabel(round: Pick<BoardRound, 'place'>): string | null {
+  if (round.place === 'over') {
+    return 'Place dépassée';
+  }
+  if (round.place === 'unmeasured') {
+    return 'Véhicule sans cotes';
+  }
+  return null;
 }
 
 /** La commande attend un point GPS : le lien vers le carnet se montre. */

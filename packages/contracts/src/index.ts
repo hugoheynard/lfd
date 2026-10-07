@@ -892,6 +892,8 @@ export {
 export type {
   DeliveryRoundsDayView,
   DeliveryRoundView,
+  DeliveryRoundPlaceView,
+  DeliveryRoundPlaceStatus,
   DeliveryRoundStopView,
   DeliveryRoundStopSignal,
   DeliveryRoundOrderRef,

@@ -29,6 +29,7 @@ import {
   stopAriaOf,
   stopEdgeOf,
   stopTagsOf,
+  placeWarningLabel,
   unverifiedPlaceLabel,
 } from '../rounds-board-model';
 
@@ -134,6 +135,7 @@ export class RoundColumn {
 
   /** La proposition y a placé des commandes aux bacs inconnus : la place n'est pas contrôlée. */
   protected readonly unverifiedPlace = computed(() => unverifiedPlaceLabel(this.round()));
+  protected readonly placeWarning = computed(() => placeWarningLabel(this.round()));
 
   protected readonly stopCountLabel = stopCountLabel;
   protected readonly incidentCountLabel = incidentCountLabel;

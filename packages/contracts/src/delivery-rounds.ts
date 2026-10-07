@@ -67,6 +67,25 @@ export interface DeliveryRoundView {
   readonly driver: DeliveryRoundDriverView | null;
   /** Les arrêts vivants, dans l'ordre de passage. */
   readonly stops: readonly DeliveryRoundStopView[];
+  /**
+   * La place du véhicule pour ce qui est composé (2026-10-07,
+   * `inserer-avant-le-depart.md`), ou `null` : la tournée est partie. Un
+   * AVERTISSEMENT, jamais un refus — une affectation à la main passe toujours.
+   */
+  readonly place: DeliveryRoundPlaceView | null;
+}
+
+/**
+ * `fits` : tient. `over` : la part connue déborde déjà. `unverified` : la part
+ * connue tient, mais des commandes n'ont ni bac ni estimation. `unmeasured` :
+ * le véhicule n'a pas de cotes et la tournée porte des bacs.
+ */
+export type DeliveryRoundPlaceStatus = "fits" | "over" | "unverified" | "unmeasured";
+
+export interface DeliveryRoundPlaceView {
+  readonly status: DeliveryRoundPlaceStatus;
+  /** Les commandes de la tournée dont la demande est inconnue. */
+  readonly unknownOrders: number;
 }
 
 /** Départ et retour prévus (instants ISO), distance prévue en mètres entiers. */
