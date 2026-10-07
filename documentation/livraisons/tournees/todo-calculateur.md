@@ -160,6 +160,27 @@ des tailles différentes :
 
 À trancher d'abord avec le dépôt : empile-t-on des Bacs M sur des Bacs L ?
 
+## Les secteurs doublent le temps de « Proposer » (2026-10-07)
+
+« Proposer » compose deux fois depuis le 2026-10-07 : une fois depuis
+l'insertion seule, une fois depuis des secteurs (un par véhicule, par temps
+de route, `sectors.ts`), et garde la meilleure (`bestComposition`,
+`propose-rounds.ts`). Banc à 200 clients, poste, temps processeur :
+
+| Version                            | complet médiane · p95 | coût moyen | à répartir en plus |
+| ---------------------------------- | --------------------- | ---------- | ------------------ |
+| avant (partir tard, sans secteurs) | 3,6 · 6,5 s           | référence  | —                  |
+| secteurs seuls (écarté)            | 4,1 · 5,8 s           | −11 %      | 3 jours sur 20     |
+| les deux, meilleure gardée         | 7,8 · 12,4 s          | −11,5 %    | jamais             |
+
+Les secteurs seuls ont été écartés : sur la journée enregistrée
+(`recorded-day.spec.ts`), ils ouvrent deux tournées là où une suffit (434 min
+contre 388). Le seuil de 5 s n'était déjà plus tenu avant (6,5 s, depuis
+`EARLY_WEIGHT`). Pistes : ne composer depuis les secteurs que les jours où
+plus d'un véhicule sert ; borner `improvePlans` sur la composition perdante ;
+ou un nombre de secteurs choisi par la demande plutôt qu'un par véhicule. Au
+volume actuel (une vingtaine d'arrêts), le calcul reste sous la seconde.
+
 ## La vitesse de « Proposer » (2026-10-05)
 
 La borne L7b-C2 (60 arrêts en 2 s de processeur) a été **relâchée à 3 s en

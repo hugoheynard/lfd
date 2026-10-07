@@ -78,10 +78,11 @@ describe("la journée enregistrée (L7b-C5)", () => {
 
     expect(proposal.overflow).toEqual([]);
     expect(measure(proposal.tours)).toEqual({
+      // Remesuré le 2026-10-07 (secteurs d'abord) — avant : 266 km, 427 min, 27 min d'attente.
       tours: 2,
-      km: 266,
-      minutes: 427,
-      waitMinutes: 27,
+      km: 262,
+      minutes: 411,
+      waitMinutes: 17,
       lateStops: 0,
       singleStopTours: 0,
       marginStops: 4,

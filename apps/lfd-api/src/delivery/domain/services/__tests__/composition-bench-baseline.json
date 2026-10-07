@@ -2,281 +2,281 @@
   {
     "complete": {
       "late": 0,
-      "cost": 210285,
+      "cost": 283181,
       "unplaced": 6,
-      "print": "0aac30f8fdf6"
+      "print": "4a998cc301b3"
     },
     "insert": {
       "late": 0,
-      "cost": 114634,
+      "cost": 192388,
       "unplaced": 6,
-      "print": "495a19ca4b32"
+      "print": "30c79a1ac0b2"
     }
   },
   {
     "complete": {
       "late": 0,
-      "cost": 213538,
+      "cost": 264414,
       "unplaced": 1,
-      "print": "b96701cadc9c"
+      "print": "25c859cc9b57"
     },
     "insert": {
       "late": 0,
-      "cost": 128538,
+      "cost": 283001,
       "unplaced": 1,
-      "print": "62db436933c1"
+      "print": "f75cf11462a4"
     }
   },
   {
     "complete": {
       "late": 0,
-      "cost": 221425,
+      "cost": 288342,
       "unplaced": 0,
-      "print": "5ecb4ba29c70"
+      "print": "1f7d21bb615b"
     },
     "insert": {
       "late": 0,
-      "cost": 221273,
+      "cost": 288157,
       "unplaced": 0,
-      "print": "4e42b902673d"
+      "print": "1344e414a807"
     }
   },
   {
     "complete": {
       "late": 0,
-      "cost": 205591,
-      "unplaced": 22,
-      "print": "c0cfeb00c7a2"
+      "cost": 252690,
+      "unplaced": 21,
+      "print": "965f7ee90d18"
     },
     "insert": {
       "late": 0,
-      "cost": 0,
-      "unplaced": 20,
-      "print": "afbc3cd10405"
+      "cost": 42097,
+      "unplaced": 14,
+      "print": "16cd22f20a81"
     }
   },
   {
     "complete": {
       "late": 0,
-      "cost": 214032,
+      "cost": 226221,
       "unplaced": 0,
-      "print": "58d0536ee4c8"
+      "print": "ecc5138ba777"
     },
     "insert": {
       "late": 0,
-      "cost": 214470,
+      "cost": 231582,
       "unplaced": 0,
-      "print": "1592c238585a"
+      "print": "a9170f065445"
     }
   },
   {
     "complete": {
       "late": 0,
-      "cost": 213478,
-      "unplaced": 6,
-      "print": "bcab8da87ac8"
+      "cost": 261991,
+      "unplaced": 3,
+      "print": "a6caac2ad472"
     },
     "insert": {
       "late": 0,
-      "cost": 168416,
+      "cost": 207031,
       "unplaced": 5,
-      "print": "1a19050d28d5"
+      "print": "92c4a359d188"
     }
   },
   {
     "complete": {
       "late": 0,
-      "cost": 215024,
+      "cost": 256449,
       "unplaced": 4,
-      "print": "8d477127f8ad"
+      "print": "5e6609797fdb"
     },
     "insert": {
       "late": 0,
-      "cost": 135205,
+      "cost": 227409,
       "unplaced": 4,
-      "print": "8ff5fc266a06"
+      "print": "1460658db71f"
     }
   },
   {
     "complete": {
       "late": 0,
-      "cost": 210032,
+      "cost": 248372,
       "unplaced": 2,
-      "print": "8d14b36233fa"
+      "print": "0c82c0d6f8cf"
     },
     "insert": {
       "late": 0,
-      "cost": 211318,
+      "cost": 259632,
       "unplaced": 2,
-      "print": "e722bc0f7134"
+      "print": "eeafc4028712"
     }
   },
   {
     "complete": {
       "late": 0,
-      "cost": 206205,
+      "cost": 266761,
       "unplaced": 12,
-      "print": "e9f90fbcd515"
+      "print": "ff8dee87458b"
     },
     "insert": {
       "late": 0,
-      "cost": 135992,
-      "unplaced": 12,
-      "print": "ac65e8d741d7"
+      "cost": 108497,
+      "unplaced": 11,
+      "print": "d1fe4c7261fd"
     }
   },
   {
     "complete": {
       "late": 0,
-      "cost": 198173,
+      "cost": 266493,
       "unplaced": 0,
-      "print": "0403e2f03ab2"
+      "print": "4bfacb112f3c"
     },
     "insert": {
       "late": 0,
-      "cost": 199835,
+      "cost": 210584,
       "unplaced": 0,
-      "print": "36d84f74e73f"
+      "print": "139f8c10c4a4"
     }
   },
   {
     "complete": {
       "late": 0,
-      "cost": 207786,
+      "cost": 295225,
       "unplaced": 0,
-      "print": "a251562a9fda"
+      "print": "d8d13aa80f06"
     },
     "insert": {
       "late": 0,
-      "cost": 109016,
-      "unplaced": 1,
-      "print": "8d8e5b7fc247"
+      "cost": 296307,
+      "unplaced": 0,
+      "print": "6108bc6602b0"
     }
   },
   {
     "complete": {
       "late": 0,
-      "cost": 221239,
+      "cost": 276944,
       "unplaced": 0,
-      "print": "f8e579abcb7c"
+      "print": "3a2721b83a7e"
     },
     "insert": {
       "late": 0,
-      "cost": 221564,
+      "cost": 243359,
       "unplaced": 0,
-      "print": "35a4cf8ef264"
+      "print": "619c68cb6a9d"
     }
   },
   {
     "complete": {
       "late": 0,
-      "cost": 207954,
+      "cost": 242517,
       "unplaced": 0,
-      "print": "3756b4970ffc"
+      "print": "ff79fdaaf035"
     },
     "insert": {
       "late": 0,
-      "cost": 208064,
+      "cost": 246757,
       "unplaced": 0,
-      "print": "8219b447995c"
+      "print": "0f7ca8596f1e"
     }
   },
   {
     "complete": {
       "late": 0,
-      "cost": 210234,
+      "cost": 247620,
       "unplaced": 0,
-      "print": "0f3d7f5697a8"
+      "print": "15cdfcae1f04"
     },
     "insert": {
       "late": 0,
-      "cost": 176559,
+      "cost": 247421,
       "unplaced": 0,
-      "print": "e627efbf74d5"
+      "print": "6cf93a690fd0"
     }
   },
   {
     "complete": {
       "late": 0,
-      "cost": 210927,
+      "cost": 245062,
       "unplaced": 0,
-      "print": "2d843cf7ae3e"
+      "print": "425bbd568229"
     },
     "insert": {
       "late": 0,
-      "cost": 183070,
+      "cost": 219198,
       "unplaced": 0,
-      "print": "8f097bd5e281"
+      "print": "fd22e59179a0"
     }
   },
   {
     "complete": {
       "late": 0,
-      "cost": 207855,
+      "cost": 256873,
+      "unplaced": 5,
+      "print": "fdfb08f3319a"
+    },
+    "insert": {
+      "late": 0,
+      "cost": 188210,
       "unplaced": 8,
-      "print": "869f8ccd2217"
-    },
-    "insert": {
-      "late": 0,
-      "cost": 106298,
-      "unplaced": 8,
-      "print": "18a30086227a"
+      "print": "f703a513958b"
     }
   },
   {
     "complete": {
       "late": 0,
-      "cost": 206193,
+      "cost": 232289,
       "unplaced": 5,
-      "print": "b56a3f0b3b35"
+      "print": "8fafd6cd748f"
     },
     "insert": {
       "late": 0,
-      "cost": 152414,
-      "unplaced": 5,
-      "print": "142cc50909b3"
-    }
-  },
-  {
-    "complete": {
-      "late": 0,
-      "cost": 213346,
-      "unplaced": 0,
-      "print": "fbea5c858121"
-    },
-    "insert": {
-      "late": 0,
-      "cost": 179056,
-      "unplaced": 0,
-      "print": "745c37c8b5cd"
-    }
-  },
-  {
-    "complete": {
-      "late": 0,
-      "cost": 213924,
-      "unplaced": 7,
-      "print": "b809fb078df8"
-    },
-    "insert": {
-      "late": 0,
-      "cost": 154990,
-      "unplaced": 5,
-      "print": "c982a2203ef9"
-    }
-  },
-  {
-    "complete": {
-      "late": 0,
-      "cost": 207121,
+      "cost": 220562,
       "unplaced": 4,
-      "print": "07c73e79cbe8"
+      "print": "99793607f834"
+    }
+  },
+  {
+    "complete": {
+      "late": 0,
+      "cost": 239843,
+      "unplaced": 0,
+      "print": "8b1d633d98df"
     },
     "insert": {
       "late": 0,
-      "cost": 208999,
-      "unplaced": 1,
-      "print": "b6dd170ed648"
+      "cost": 240896,
+      "unplaced": 0,
+      "print": "971a7b7a6619"
+    }
+  },
+  {
+    "complete": {
+      "late": 0,
+      "cost": 261094,
+      "unplaced": 6,
+      "print": "f363b8ce7427"
+    },
+    "insert": {
+      "late": 0,
+      "cost": 102911,
+      "unplaced": 5,
+      "print": "c600ba0033cb"
+    }
+  },
+  {
+    "complete": {
+      "late": 0,
+      "cost": 261510,
+      "unplaced": 3,
+      "print": "5564e824a1bb"
+    },
+    "insert": {
+      "late": 0,
+      "cost": 226798,
+      "unplaced": 4,
+      "print": "a131bb8612bf"
     }
   }
 ]

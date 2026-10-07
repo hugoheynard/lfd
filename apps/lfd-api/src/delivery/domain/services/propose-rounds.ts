@@ -1,5 +1,10 @@
 import type { CostFn } from "../ports/distance-matrix.js";
-import { capacityGuardOf, type CompositionCapacity, NO_CAPACITY_LIMIT } from "./capacity-guard.js";
+import {
+  type CapacityGuard,
+  capacityGuardOf,
+  type CompositionCapacity,
+  NO_CAPACITY_LIMIT,
+} from "./capacity-guard.js";
 import type { RoutingSettings } from "../value-objects/routing-settings.js";
 import { compareIds } from "./compare-ids.js";
 import { improvePlans } from "./improve-plans.js";
@@ -9,12 +14,16 @@ import { durationOf, type RoutingStop, type TimedRoute, timeRoute } from "./rout
 import {
   clockOf,
   freeStart,
+  isBetterScore,
   maxSecondsOf,
+  scoreVehicle,
   timeVehicle,
   type VehiclePlan,
+  type VehicleScore,
   type VehicleStart,
 } from "./vehicle-plan.js";
-import { type CompositionZones, zoneRuleOf } from "./zone-rule.js";
+import { sectorRuleOf, sectorsOf } from "./sectors.js";
+import { type CompositionZones, type ZoneRule, zoneRuleOf } from "./zone-rule.js";
 
 /** Un arrêt à placer : la commande (son id est celui de la matrice), sa fenêtre, sa tournée actuelle. */
 export interface PlannableStop extends RoutingStop {
@@ -101,8 +110,7 @@ export function proposeRounds(input: ProposalInput): Proposal {
   }));
   const guard = input.capacity === undefined ? NO_CAPACITY_LIMIT : capacityGuardOf(input.capacity);
   const zones = zoneRuleOf(input.zones);
-  const built = insertCheapest(input, initial, stops, "anywhere", guard, zones);
-  const plans = improvePlans(input, built.plans, new Set(), guard, zones);
+  const { built, plans } = bestComposition(input, initial, stops, guard, zones);
   const tours = plans.flatMap((plan) => toursOf(input, plan));
   const spilled = built.unplaced.flatMap(({ stop }) => byId.get(stop.id) ?? []);
   const idsOf = (reason: "capacity" | "zone"): readonly string[] =>
@@ -120,6 +128,88 @@ export function proposeRounds(input: ProposalInput): Proposal {
     capacityRefused: idsOf("capacity"),
     zoneRefused: idsOf("zone"),
   };
+}
+
+interface Composition {
+  readonly built: ReturnType<typeof insertCheapest>;
+  readonly plans: readonly VehiclePlan[];
+}
+
+/**
+ * **Deux départs, le meilleur gardé** (Hugo, 2026-10-07 : « une camionnette
+ * peut faire des tours dans un plus faible rayon »). L'amélioration pas à pas
+ * ne quitte pas la répartition de départ : partie de l'insertion seule, elle
+ * mêle loin et près dans chaque camionnette. Partie de SECTEURS
+ * (`sectorsOf`), elle rend des tournées plus serrées et moins chères sur le
+ * banc (coût −11 %, 2026-10-07).
+ *
+ * Les secteurs seuls ne suffisent pas : un secteur par véhicule ouvre deux
+ * tournées là où une seule suffit (journée enregistrée, 434 min contre 388),
+ * et un Kangoo plein dans son coin laisse une commande à répartir. On compose
+ * donc les deux, et l'on garde le moins de commandes à répartir, puis le
+ * moins de retard, puis le moindre coût : jamais pire qu'avant. Le prix est
+ * le temps — deux compositions au lieu d'une (`todo-calculateur.md`).
+ */
+function bestComposition(
+  input: ProposalInput,
+  initial: readonly VehiclePlan[],
+  stops: readonly PlannableStop[],
+  guard: CapacityGuard,
+  zones: ZoneRule,
+): Composition {
+  const plain = compose(input, initial, stops, guard, zones, zones);
+  const sectors = sectorsOf(
+    input,
+    stops,
+    initial.map((plan) => ({ id: plan.vehicle.id, passages: plan.maxRoutes })),
+    input.capacity,
+  );
+  if (sectors.size === 0) {
+    return plain;
+  }
+  const sectored = compose(input, initial, stops, guard, sectorRuleOf(sectors, zones), zones);
+  return isBetterComposition(input, sectored, plain) ? sectored : plain;
+}
+
+/** Placer d'abord sous `seed`, puis ce qui reste sous `zones`, puis améliorer sous `zones`. */
+function compose(
+  input: ProposalInput,
+  initial: readonly VehiclePlan[],
+  stops: readonly PlannableStop[],
+  guard: CapacityGuard,
+  seed: ZoneRule,
+  zones: ZoneRule,
+): Composition {
+  const first = insertCheapest(input, initial, stops, "anywhere", guard, seed);
+  const built =
+    seed === zones || first.unplaced.length === 0
+      ? first
+      : insertCheapest(
+          input,
+          first.plans,
+          first.unplaced.map(({ stop }) => stop),
+          "anywhere",
+          guard,
+          zones,
+        );
+  return { built, plans: improvePlans(input, built.plans, new Set(), guard, zones) };
+}
+
+function isBetterComposition(input: ProposalInput, a: Composition, b: Composition): boolean {
+  if (a.built.unplaced.length !== b.built.unplaced.length) {
+    return a.built.unplaced.length < b.built.unplaced.length;
+  }
+  return isBetterScore(totalScoreOf(input, a.plans), totalScoreOf(input, b.plans));
+}
+
+function totalScoreOf(input: ProposalInput, plans: readonly VehiclePlan[]): VehicleScore {
+  return plans.reduce(
+    (sum, plan) => {
+      const score = scoreVehicle(input, plan.routes, plan);
+      return { lateSeconds: sum.lateSeconds + score.lateSeconds, cost: sum.cost + score.cost };
+    },
+    { lateSeconds: 0, cost: 0 },
+  );
 }
 
 /** Les tournées d'un véhicule, chronométrées ; elles reprennent ses recomposables dans l'ordre. */

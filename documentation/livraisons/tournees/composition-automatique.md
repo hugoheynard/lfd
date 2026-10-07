@@ -199,6 +199,18 @@ flowchart TD
   sur la durée, mais **le départ avant l'heure « au plus tôt » coûte**
   (`EARLY_WEIGHT` = 2, `vehicle-plan.ts`). « Même à 2 h » ne vaut plus que
   faute de toute autre composition.
+- **Les secteurs d'abord (2026-10-07, Hugo : « une camionnette peut faire
+  des tours dans un plus faible rayon »).** L'amélioration pas à pas ne
+  quitte pas sa répartition de départ, et l'insertion seule mêlait loin et
+  près dans chaque camionnette. « Proposer » compose donc aussi depuis des
+  **secteurs** — un par véhicule, groupés par temps de route (la matrice, pas
+  la carte : un col sépare deux villages proches), de taille proportionnelle
+  à ce que le véhicule peut porter (litres × tournées permises) — puis garde
+  la meilleure des deux : le moins de commandes à répartir, puis le moins de
+  retard, puis le moindre coût. Le secteur n'est qu'un départ : l'amélioration
+  peut en sortir un arrêt. Banc : coût −11,5 %, jamais pire ; le prix est le
+  temps (p95 12,4 s à 200 clients, `todo-calculateur.md`). « Insérer » et la
+  place suggérée ne sont pas touchés.
 - **CA-D3 = la règle de « Proposer ».** Il faut au moins un véhicule actif
   **avec ses cotes** et un type de bac actif. Les cotes suffisent, c'est-à-dire
   le volume utile et le plancher ; passages de roue et caisse froide sont
