@@ -56,10 +56,9 @@ nous manque c'est la livraison ». Ce dossier regroupe ce qui était dispersé d
 
 ## Conceptions dépassées, gardées pour l'histoire des décisions
 
-| Doc                                                                                  | État                   | De quoi ça parle                                                                                                                                                               |
-| ------------------------------------------------------------------------------------ | ---------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
-| [`conception-retrait-en-livraison.md`](conception-retrait-en-livraison.md)           | 🗄️ conception du 09-11 | Le retrait chez le client, v1 : chaque mécanisme a sa ligne « → ce qui existe » (bâti dans `a-la-porte.md`, tranché, ou encore ouvert).                                        |
-| [`architecture-road-livraison-tournees.md`](architecture-road-livraison-tournees.md) | 🗄️ conception du 09-29 | Les tournées telles qu'on les concevait avant le bloc `delivery` : agrégats, ports, algorithme, OSRM, carte — avec la table « → ce qui existe » (le bloc est bâti, autrement). |
+| Doc                                                                        | État                   | De quoi ça parle                                                                                                                        |
+| -------------------------------------------------------------------------- | ---------------------- | --------------------------------------------------------------------------------------------------------------------------------------- |
+| [`conception-retrait-en-livraison.md`](conception-retrait-en-livraison.md) | 🗄️ conception du 09-11 | Le retrait chez le client, v1 : chaque mécanisme a sa ligne « → ce qui existe » (bâti dans `a-la-porte.md`, tranché, ou encore ouvert). |
 
 ## Ailleurs, et laissé où il est
 

@@ -156,5 +156,5 @@ flowchart TD
   ⚠️ Le **règlement d'une commande** (qui paie, quand, et quelles commandes
   entrent au compte de production) est décrit ici :
   [`architecture-reglement-et-compte-de-production.md`](architecture-reglement-et-compte-de-production.md).
-- **La livraison** — l'application de tournées :
-  [`livraisons/architecture-road-livraison-tournees.md`](../livraisons/architecture-road-livraison-tournees.md).
+- **La livraison** — le bloc `delivery` et ses écrans :
+  [`livraisons/README.md`](../livraisons/README.md).

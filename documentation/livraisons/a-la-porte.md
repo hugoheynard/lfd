@@ -317,6 +317,8 @@ Repris de « TODO de la porte » (supprimé le 2026-10-06), relu ce jour-là.
   l'affectation exige **les deux** en écriture depuis le 2026-10-07 (audit,
   B8 : `DriverAccess`). Qui compose affecte le livreur ; le snapshot du départ
   se garde 90 jours.
+- **La purge du snapshot du départ** (relevé par l'audit du 2026-10-07,
+  § 3.3) : les 90 jours sont tranchés, mais **rien ne purge**. Non bâti.
 
 ### Bloquant
 

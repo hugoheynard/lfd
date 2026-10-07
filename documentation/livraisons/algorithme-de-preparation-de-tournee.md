@@ -6,8 +6,8 @@
 > document explique ce que fait « Proposer » aujourd'hui, comment il décide,
 > et ce qu'il ne regarde pas. Les décisions qui l'ont façonné vivent dans
 > [`plan-preparation-de-tournee.md`](plan-preparation-de-tournee.md) (lots 7,
-> 7 bis, 7 ter, 8, 10 bis) et
-> [`architecture-road-livraison-tournees.md`](architecture-road-livraison-tournees.md).
+> 7 bis, 7 ter, 8, 10 bis) ; la conception d'architecture du 2026-09-29 qui
+> les précédait est supprimée depuis le 2026-10-07.
 > Le chargement d'une tournée, une fois composée, a son propre document :
 > [`algorithme-de-chargement.md`](algorithme-de-chargement.md).
 

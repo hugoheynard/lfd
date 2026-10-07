@@ -541,7 +541,7 @@ n'invalide jamais la composition, et inversement. C'est aussi ce qui rendra I6
 
 - **I2** positions contiguës et uniques : dans l'agrégat ;
 - **I3** une commande est dans **au plus une tournée vivante**, tous jours
-  confondus (`architecture-road-livraison-tournees.md` §6 dit « au plus un Tour
+  confondus (la conception d'architecture des tournées du 2026-09-29, supprimée le 2026-10-07, disait en §6 « au plus un Tour
   actif », pas « du jour » — la v1 l'avait réduit sans le dire). Tenu **en
   base** par un index unique partiel sur `order_id` des arrêts non retirés. Une
   commande dont la date a changé reste donc dans sa tournée d'origine, signalée,
@@ -1460,7 +1460,8 @@ n'est corrigé ; tout est à reprendre avec les deux sources de fenêtre.
 
 > **Ouvert le 2026-09-29.** Hugo : « je veux qu'on arrive au calculateur de
 > tournée ». 📐 Conception avant `vitruve` ; rien n'est bâti. L'algorithme est
-> celui de [`architecture-road-livraison-tournees.md`](architecture-road-livraison-tournees.md)
+> celui de la conception d'architecture des tournées du 2026-09-29 (supprimée
+> le 2026-10-07 ; l'algorithme est décrit dans `algorithme-de-preparation-de-tournee.md`)
 > §7, gardé tel quel à la réécriture du 2026-09-29 ; ce qui change est **où il
 > se branche** : sur la composition du lot 3, qui existe.
 
