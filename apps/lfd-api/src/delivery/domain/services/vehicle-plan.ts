@@ -35,6 +35,19 @@ const SECONDS_PER_MINUTE = 60;
 export const MARGIN_WEIGHT = 10;
 
 /**
+ * **Partir tôt coûte** (Hugo, 2026-10-07 : « le plus tard on part, plus on a
+ * de temps pour la prod et le colisage »). Chaque seconde de départ AVANT
+ * l'heure réglée « au plus tôt » (`earliestDeparture`) coûte ce poids-là, en
+ * secondes de livreur : deux camionnettes qui partent à 4 h 30 battent une
+ * seule qui part à 2 h pour tenir deux échéances dans deux vallées.
+ *
+ * Remplace CA-D1/CA2 (2026-10-03 : « même à 2 h », « aucune pénalité ») sur
+ * ce seul point : un retard domine toujours (`isBetterScore`), donc on part
+ * encore tôt quand c'est le seul moyen de tenir une échéance.
+ */
+export const EARLY_WEIGHT = 2;
+
+/**
  * Ouvrir une tournée coûte une heure (L7b-C2, C3) : c'est le prix qu'on met
  * sur un aller-retour de plus, un chargement de plus, un livreur de plus. Une
  * heure d'attente ou de détour coûte donc moins qu'une tournée ouverte pour un
@@ -168,7 +181,8 @@ export function timeVehicle(
  * **Le coût d'un véhicule** (L7b-C2, L7t-C1) : les secondes hors créneau à
  * part ; en `cost`, les secondes d'arrivée dans la marge de sécurité
  * (`MARGIN_WEIGHT` chacune), les minutes de route, d'attente et de livraison
- * (départ → retour), et chaque tournée ouverte — alourdie pour un second
+ * (départ → retour), chaque seconde de départ avant l'heure « au plus tôt »
+ * (`EARLY_WEIGHT`, 2026-10-07), et chaque tournée ouverte — alourdie pour un second
  * passage, y compris quand le premier est une tournée gardée (L7t-C2). Une
  * tournée vide ne coûte rien. La durée maximale ne refuse rien (CA2, Q2).
  *
@@ -225,6 +239,7 @@ export function scoreVehicle(
     cost +=
       duration +
       MARGIN_WEIGHT * inMargin +
+      EARLY_WEIGHT * Math.max(0, idleDepartureOf(ctx) - departure) +
       ROUND_OPENING_SECONDS +
       (opened > 0 ? passagePenaltyOf(ctx) : 0);
     opened += 1;

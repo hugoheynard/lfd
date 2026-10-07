@@ -16,8 +16,13 @@ composer, et l'humain doit se contenter de **corriger**. Hugo l'a dit le
 2026-10-03 : « déplacer une livraison ok, mais pas tout ».
 
 **Règle n°1 : tout le monde est servi avant son échéance.** Rien ne passe
-avant cette règle. Une tournée part aussi tôt qu'il le faut, même à 2 h du
-matin, mais jamais avant minuit du jour de livraison. Les contraintes du
+avant cette règle. Une tournée part aussi tôt qu'il le faut, jamais avant
+minuit du jour de livraison. **Règle n°2 (Hugo, 2026-10-07) : partir le plus
+tard possible**, « le plus tard on part, plus on a de temps pour la prod et le
+colisage ». Chaque minute de départ avant l'heure « au plus tôt » des réglages
+coûte deux minutes de livreur (`EARLY_WEIGHT`) : deux camionnettes qui partent
+tard battent une seule partie dans la nuit, et la nuit ne reste que si c'est
+le seul moyen de tenir une échéance. Les contraintes du
 travail (heures du livreur, repos, durée d'une tournée) ne relèvent pas de
 l'outil. Une durée longue est **signalée**, jamais refusée. Si une composition
 ne peut pas tenir une échéance, c'est un **échec signalé arrêt par arrêt**. Un
@@ -182,6 +187,11 @@ flowchart TD
   « au plus tôt » des réglages devient l'heure de départ d'une tournée qu'aucune
   échéance ne presse. Aucune pénalité sur la durée : une seule tournée longue
   est acceptée plutôt que trois.
+  ⚠️ **Amendé le 2026-10-07 (Hugo, sur une feuille du semis : une camionnette
+  à douze arrêts partie à 2 h 07, l'autre à deux).** Toujours aucune pénalité
+  sur la durée, mais **le départ avant l'heure « au plus tôt » coûte**
+  (`EARLY_WEIGHT` = 2, `vehicle-plan.ts`). « Même à 2 h » ne vaut plus que
+  faute de toute autre composition.
 - **CA-D3 = la règle de « Proposer ».** Il faut au moins un véhicule actif
   **avec ses cotes** et un type de bac actif. Les cotes suffisent, c'est-à-dire
   le volume utile et le plancher ; passages de roue et caisse froide sont

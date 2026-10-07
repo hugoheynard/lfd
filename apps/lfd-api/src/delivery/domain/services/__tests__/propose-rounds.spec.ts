@@ -91,6 +91,34 @@ describe("proposer (L7-C5, L7-C15, L7b-C1 à C3)", () => {
     expect(proposal.overflow).toEqual([]);
   });
 
+  /**
+   * Régression (Hugo, 2026-10-07, feuille de tournée du semis) : deux
+   * échéances de 6 h dans deux vallées, une seule camionnette les tenait en
+   * partant à 3 h — moins cher en heures de livreur, puisque partir tôt ne
+   * coûtait rien. « Le plus tard on part, plus on a de temps pour la prod et
+   * le colisage » : deux camionnettes, chacune partie à 5 h, l'emportent.
+   */
+  it("préfère deux camionnettes parties plus tard à une seule partie dans la nuit", () => {
+    const valleys = lineCost({ depot: 0, arc: 60, tignes: -60 });
+    const six = { start: null, end: SIX };
+    const proposal = proposeRounds(
+      input({
+        cost: valleys,
+        stops: [
+          { ...loose("arc"), window: six },
+          { ...loose("tignes"), window: six },
+        ],
+        vehicles: [
+          { id: "v1", name: "Camionnette 1" },
+          { id: "v2", name: "Camionnette 2" },
+        ],
+      }),
+    );
+
+    expect(proposal.tours).toHaveLength(2);
+    expect(proposal.tours.flatMap((tour) => tour.timed.missed)).not.toContain(true);
+  });
+
   it("est déterministe : même état, même proposition (L7-C12)", () => {
     const first = proposeRounds(input({ cost: twoSides, stops: sides }));
     const again = proposeRounds(input({ cost: twoSides, stops: [...sides].reverse() }));
