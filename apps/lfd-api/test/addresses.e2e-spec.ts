@@ -10,8 +10,14 @@
  */
 import type { CompanyAddressesView, DeliveryAddressPayload } from "@lfd/contracts";
 
+import { CompanyAddressRepository } from "../src/b2b/account/domain/ports/company-address.repository.js";
 import { CustomerRole } from "../src/platform/database/client/client.js";
-import { bootstrapE2e, jsonBody, type E2eContext } from "./e2e-harness.js";
+import { IdGenerator } from "../src/platform/id/id-generator.js";
+import {
+  DuplicateResourceError,
+  mapPersistenceError,
+} from "../src/platform/shared/errors/persistence-errors.js";
+import { bootstrapE2e, daysAgo, jsonBody, type E2eContext } from "./e2e-harness.js";
 import { attachTo, createCompany, createUser } from "./factories.js";
 
 const ADMIN = "auth0|admin";
@@ -173,6 +179,35 @@ describe("livraison — défaut, tri, archivage", () => {
     expect(view.deliveries[0]?.isDefault).toBe(true);
   });
 
+  /**
+   * Régression : rendre le défaut à une adresse écrite avant l'actuelle
+   * répondait 409 — le carnet écrivait le nouveau défaut avant de retirer
+   * l'ancien, et l'index unique partiel `addresses_one_default_delivery` le
+   * refusait à la ligne (constaté et corrigé le 2026-10-07).
+   */
+  it("rend le défaut à la première adresse après l'avoir donné à la seconde", async () => {
+    const add = async (label: string): Promise<string> =>
+      jsonBody<{ id: string }>(
+        await ctx
+          .asSub(ADMIN)
+          .post(`/companies/${companyId}/delivery-addresses`)
+          .send(delivery({ label }))
+          .expect(201),
+      ).id;
+    const makeDefault = (id: string) =>
+      ctx.asSub(ADMIN).patch(`/companies/${companyId}/delivery-addresses/${id}/default`);
+    const first = await add("A");
+    const second = await add("B");
+
+    await makeDefault(second).expect(204);
+    await makeDefault(first).expect(204);
+
+    const view = await addressesOf(ADMIN);
+    expect(view.deliveries.filter((entry) => entry.isDefault).map((entry) => entry.id)).toEqual([
+      first,
+    ]);
+  });
+
   it("round-trip des consignes JSON (créneaux par jour, contact, GPS)", async () => {
     const created = await ctx
       .asSub(ADMIN)
@@ -275,6 +310,57 @@ describe("livraison — défaut, tri, archivage", () => {
       .expect(404);
     const leaked = await ctx.prisma.address.count({ where: { companyId: other.id } });
     expect(leaked).toBe(0);
+  });
+});
+
+/**
+ * Régression : le carnet s'écrivait par `upsert` sur le seul `id`, sans le mur
+ * `company_id` — l'id d'une autre société réécrivait son adresse (audit
+ * 2026-10-07, B2). Aucun écran n'envoie un tel id (il vient de l'`IdGenerator`,
+ * ou du carnet lu sous le mur) : l'adaptateur est appelé en direct, et le refus
+ * attendu est le 409 que `mapPersistenceError` tire du `P2002`.
+ */
+describe("le mur dans les écritures du carnet", () => {
+  it("une adresse à l'id d'une adresse d'une autre société est refusée (409), et celle-ci reste intacte", async () => {
+    const addresses = ctx.app.get(CompanyAddressRepository);
+    const other = await createCompany(ctx.prisma, { siret: "99999999900017" });
+    const foreignId = ctx.app.get(IdGenerator).next();
+    const theirs = await addresses.loadDeliveryBook(other.id);
+    theirs.add(foreignId, delivery({ label: "Chez B" }), new Date(daysAgo(1)));
+    await addresses.saveDeliveryBook(theirs);
+    const addressRow = () => ctx.prisma.address.findUniqueOrThrow({ where: { id: foreignId } });
+    const before = await addressRow();
+
+    const mine = await addresses.loadDeliveryBook(companyId);
+    mine.add(foreignId, delivery({ label: "Intrus", ville: "Lyon" }), new Date(daysAgo(0)));
+    const refusal = await addresses.saveDeliveryBook(mine).then(
+      () => null,
+      (error: unknown) => error,
+    );
+
+    expect(mapPersistenceError(refusal)).toBeInstanceOf(DuplicateResourceError);
+    expect(await addressRow()).toEqual(before);
+    expect(await ctx.prisma.address.count({ where: { companyId } })).toBe(0);
+  });
+
+  it("son propre carnet s'écrit toujours : création, puis modification", async () => {
+    const created = await ctx
+      .asSub(ADMIN)
+      .post(`/companies/${companyId}/delivery-addresses`)
+      .send(delivery())
+      .expect(201);
+    const id = jsonBody<{ id: string }>(created).id;
+    await ctx
+      .asSub(ADMIN)
+      .patch(`/companies/${companyId}/delivery-addresses/${id}`)
+      .send(delivery({ label: "Atelier" }))
+      .expect(204);
+
+    const row = await ctx.prisma.address.findUniqueOrThrow({
+      where: { id },
+      select: { companyId: true, label: true, isDefault: true },
+    });
+    expect(row).toEqual({ companyId, label: "Atelier", isDefault: true });
   });
 });
 

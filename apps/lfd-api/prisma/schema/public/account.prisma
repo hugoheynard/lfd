@@ -580,7 +580,12 @@ model Address {
 model DeliveryProcedure {
   id String @id
 
-  // Le mur : chaque lecture et écriture le porte dans son `where`.
+  // Le mur : chaque lecture, mise à jour ou suppression le porte dans son
+  // `where` — les étapes par le filtre de relation `procedure.companyId` —, et
+  // une création le pose : un `id` déjà pris par une autre société s'y heurte à
+  // la clé primaire au lieu d'être réécrit. Vrai pour les ÉCRITURES depuis le
+  // 2026-10-07 seulement : la racine et ses étapes s'écrivaient par `upsert`
+  // sur le seul `id` (`documentation/livraisons/audit-2026-10-07.md`, B2).
   companyId String @map("company_id")
 
   addressId String  @unique @map("address_id")

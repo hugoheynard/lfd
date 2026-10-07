@@ -20,17 +20,27 @@ import type {
   PaymentLinkView,
 } from "@lfd/contracts";
 
+import { PaymentLink } from "../src/b2b/payments/domain/entities/payment-link.js";
 import { CheckoutGateway } from "../src/b2b/payments/domain/ports/checkout-gateway.js";
+import { PaymentLinkRepository } from "../src/b2b/payments/domain/ports/payment-link.repository.js";
 import {
   PaymentGateway,
   type PaymentWebhookEvent,
 } from "../src/b2b/payments/domain/payment-gateway.js";
+import { PaymentLinkTerms } from "../src/b2b/payments/domain/value-objects/payment-link-terms.js";
 import { OrderMailOrigins } from "../src/b2b/orders/domain/ports/order-mail-origins.js";
 import { AdminTokenVerifier } from "../src/platform/auth/admin-token.verifier.js";
 import { CompanyStatus, CustomerRole } from "../src/platform/database/client/client.js";
+import { IdGenerator } from "../src/platform/id/id-generator.js";
 import { MAILER } from "../src/platform/mailer/mailer.tokens.js";
 import {
+  DuplicateResourceError,
+  mapPersistenceError,
+} from "../src/platform/shared/errors/persistence-errors.js";
+import {
   bootstrapE2e,
+  daysAgo,
+  E2E_STAFF_ID,
   E2E_STAFF_SUB,
   jsonBody,
   serviceDay,
@@ -369,5 +379,70 @@ describe("2b — les liens libres", () => {
 
     const after = await ctx.prisma.paymentLink.findUniqueOrThrow({ where: { id: created.id } });
     expect(after.status).toBe("expired");
+  });
+});
+
+/**
+ * Régression : le lien s'écrivait par `upsert` sur le seul `id`, sans le mur
+ * `company_id` — l'id du lien d'une autre société réécrivait son statut (défaut
+ * B2 de l'audit 2026-10-07, retrouvé ici). Aucune route n'y mène : le seul id
+ * venu de la requête (`…/:id/cancel`, surface staff) est d'abord LU, et
+ * l'agrégat porte la société de sa ligne. L'adaptateur est appelé en direct, et
+ * le refus attendu est le 409 que `mapPersistenceError` tire du `P2002`.
+ */
+describe("le mur dans les écritures des liens", () => {
+  /** Un lien ouvert de `companyId`, tel que la fabrique du domaine le produit. */
+  function linkOf(id: string, companyId: string, sessionId: string): PaymentLink {
+    return PaymentLink.create({
+      id,
+      companyId,
+      terms: PaymentLinkTerms.create(4_200, "Acompte", null),
+      checkout: { sessionId, url: `https://checkout.stripe.test/${sessionId}` },
+      createdAt: new Date(daysAgo(0)),
+      createdByStaffId: E2E_STAFF_ID,
+    });
+  }
+
+  it("un lien à l'id du lien d'une autre société est refusé (409), et celui-ci reste intact", async () => {
+    const mine = await createCompany(ctx.prisma);
+    const other = await createCompany(ctx.prisma);
+    const theirs = jsonBody<CreatedPaymentLink>(
+      await staff()
+        .post(LINKS)
+        .send({ companyId: other.id, amountCents: 12_000, label: "Chez B" })
+        .expect(201),
+    );
+    const linkRow = () => ctx.prisma.paymentLink.findUniqueOrThrow({ where: { id: theirs.id } });
+    const before = await linkRow();
+    const intruder = linkOf(theirs.id, mine.id, "cs_e2e_intrus");
+    intruder.cancel(new Date(daysAgo(0)), E2E_STAFF_ID);
+
+    const refusal = await ctx.app
+      .get(PaymentLinkRepository)
+      .save(intruder)
+      .then(
+        () => null,
+        (error: unknown) => error,
+      );
+
+    expect(mapPersistenceError(refusal)).toBeInstanceOf(DuplicateResourceError);
+    expect(await linkRow()).toEqual(before);
+    expect(await ctx.prisma.paymentLink.count({ where: { companyId: mine.id } })).toBe(0);
+  });
+
+  it("le lien de sa propre société s'écrit toujours : création, puis annulation", async () => {
+    const mine = await createCompany(ctx.prisma);
+    const repository = ctx.app.get(PaymentLinkRepository);
+    const link = linkOf(ctx.app.get(IdGenerator).next(), mine.id, "cs_e2e_sien");
+
+    await repository.save(link);
+    link.cancel(new Date(daysAgo(0)), E2E_STAFF_ID);
+    await repository.save(link);
+
+    const row = await ctx.prisma.paymentLink.findUniqueOrThrow({
+      where: { id: link.id },
+      select: { companyId: true, status: true },
+    });
+    expect(row).toEqual({ companyId: mine.id, status: "cancelled" });
   });
 });

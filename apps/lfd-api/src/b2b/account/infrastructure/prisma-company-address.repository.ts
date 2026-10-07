@@ -11,6 +11,7 @@ import { PrismaService } from "../../../platform/database/prisma.service.js";
 import {
   DeliveryAddressBook,
   type DeliveryAddress,
+  type DeliveryBookState,
 } from "../domain/entities/delivery-address-book.js";
 import { CompanyAddressRepository } from "../domain/ports/company-address.repository.js";
 
@@ -101,10 +102,36 @@ function specsOf(value: unknown): DeliverySpecs {
 }
 
 /**
+ * Les entrées du carnet dans l'ordre où les écrire : l'adresse par défaut EN
+ * DERNIER.
+ *
+ * L'index unique partiel `addresses_one_default_delivery` (migration
+ * `20260903190000_un_seul_defaut_de_livraison`) est vérifié à chaque ligne
+ * écrite, pas en fin de transaction. Écrire le nouveau défaut avant que l'ancien
+ * ne l'ait perdu fait exister deux défauts le temps d'une ligne, et la base
+ * refuse (409). C'est ce qui arrivait en rendant le défaut à une adresse lue
+ * AVANT l'actuelle — le `findMany` rend l'ordre physique, que rien ne trie —,
+ * et aucun tri du chargement ne l'évite : l'ordre sûr dépend de qui gagne le
+ * défaut (constaté le 2026-10-07, e2e « rend le défaut à la première adresse
+ * après l'avoir donné à la seconde »).
+ */
+function defaultLast(state: DeliveryBookState): readonly DeliveryAddress[] {
+  const others = state.entries.filter((entry) => entry.id !== state.defaultId);
+  const current = state.entries.filter((entry) => entry.id === state.defaultId);
+  return [...others, ...current];
+}
+
+/**
  * Adaptateur Prisma des adresses.
  *
  * Le mur (appartenance + rôle) est vérifié en amont par les handlers ; ici,
- * chaque écriture reste filtrée sur `companyId` — défense en profondeur.
+ * chaque écriture reste filtrée sur `companyId` — défense en profondeur. Vrai
+ * depuis le 2026-10-07 seulement (`documentation/livraisons/audit-2026-10-07.md`,
+ * B2) : le carnet s'écrivait par `upsert` sur le seul `id`, la facturation par
+ * un `update` sur l'`id` d'une lecture murée. Toute écriture met désormais à
+ * jour SOUS le mur, et crée sinon : un `id` déjà pris par une autre société
+ * n'est jamais réécrit, sa création se heurte à la clé primaire (`P2002`, 409
+ * par `mapPersistenceError`) et la transaction du carnet tombe entière.
  *
  * Ce que cet adaptateur **ne fait plus** : arbitrer le défaut. Il ne démote plus
  * les autres lignes, ne promeut plus la plus ancienne à l'archivage, ne décide
@@ -122,17 +149,15 @@ export class PrismaCompanyAddressRepository extends CompanyAddressRepository {
   async saveBilling(companyId: string, payload: BillingAddressPayload): Promise<void> {
     // Une seule facturation par entreprise : on met à jour celle qui existe, on la
     // crée sinon. Pas d'`isDefault` sur une facturation (notion propre à la livraison).
-    const existing = await this.prisma.address.findFirst({
+    const { count } = await this.prisma.address.updateMany({
       where: { companyId, kind: AddressKind.billing, archivedAt: null },
-      select: { id: true },
+      data: postal(payload),
     });
-    if (existing !== null) {
-      await this.prisma.address.update({ where: { id: existing.id }, data: postal(payload) });
-      return;
+    if (count === 0) {
+      await this.prisma.address.create({
+        data: { companyId, kind: AddressKind.billing, isDefault: false, ...postal(payload) },
+      });
     }
-    await this.prisma.address.create({
-      data: { companyId, kind: AddressKind.billing, isDefault: false, ...postal(payload) },
-    });
   }
 
   async loadDeliveryBook(companyId: string): Promise<DeliveryAddressBook> {
@@ -166,8 +191,10 @@ export class PrismaCompanyAddressRepository extends CompanyAddressRepository {
 
   async saveDeliveryBook(book: DeliveryAddressBook): Promise<void> {
     const state = book.toPersistence();
+    // Le carnet de CETTE société, tel que `loadDeliveryBook` le lit.
+    const wall = { companyId: state.companyId, kind: AddressKind.delivery };
     await this.prisma.$transaction(async (tx) => {
-      for (const entry of state.entries) {
+      for (const entry of defaultLast(state)) {
         const columns = {
           ...entry.lines,
           deliverySpecs: entry.specs,
@@ -182,17 +209,15 @@ export class PrismaCompanyAddressRepository extends CompanyAddressRepository {
           isDefault: entry.id === state.defaultId,
           archivedAt: entry.archivedAt,
         };
-        await tx.address.upsert({
-          where: { id: entry.id },
-          create: {
-            id: entry.id,
-            companyId: state.companyId,
-            kind: AddressKind.delivery,
-            createdAt: entry.createdAt,
-            ...columns,
-          },
-          update: columns,
+        const { count } = await tx.address.updateMany({
+          where: { ...wall, id: entry.id },
+          data: columns,
         });
+        if (count === 0) {
+          await tx.address.create({
+            data: { id: entry.id, ...wall, createdAt: entry.createdAt, ...columns },
+          });
+        }
       }
     });
   }

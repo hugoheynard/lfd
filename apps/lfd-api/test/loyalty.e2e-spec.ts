@@ -21,12 +21,26 @@ import type {
 import { CommandBus } from "@nestjs/cqrs";
 
 import { ConvertLoyaltyPointsCommand } from "../src/b2b/loyalty/application/commands/convert-loyalty-points.command.js";
+import { LoyaltyVoucher } from "../src/b2b/loyalty/domain/entities/loyalty-voucher.js";
 import {
   InsufficientLoyaltyPointsError,
   LoyaltyProgramClosedError,
 } from "../src/b2b/loyalty/domain/errors/loyalty-errors.js";
+import { LoyaltyVoucherRepository } from "../src/b2b/loyalty/domain/ports/loyalty-voucher.repository.js";
+import { LoyaltyReason } from "../src/b2b/loyalty/domain/value-objects/loyalty-reason.js";
 import { AdminTokenVerifier } from "../src/platform/auth/admin-token.verifier.js";
-import { bootstrapE2e, E2E_STAFF_SUB, jsonBody, type E2eContext } from "./e2e-harness.js";
+import {
+  DuplicateResourceError,
+  mapPersistenceError,
+} from "../src/platform/shared/errors/persistence-errors.js";
+import {
+  bootstrapE2e,
+  daysAgo,
+  E2E_STAFF_ID,
+  E2E_STAFF_SUB,
+  jsonBody,
+  type E2eContext,
+} from "./e2e-harness.js";
 import { createUser } from "./factories.js";
 
 const BASE = "/admin/accounting/loyalty";
@@ -276,5 +290,58 @@ describe("les contraintes de la base", () => {
           ("id", "user_id", "kind", "points", "voucher_id", "occurred_at", "staff_user_id", "reason")
         VALUES ('doublon', ${userId}, 'adjusted', 1000, ${voucherId}, now(), 'staff', 'rejeu')`,
     ).rejects.toThrow(/loyalty_ledger_entries_adjusted_voucher_key/u);
+  });
+});
+
+/**
+ * Régression : le bon s'écrivait par `upsert` sur le seul `id`, sans le mur —
+ * l'id du bon d'un autre titulaire réécrivait son statut (défaut B2 de l'audit
+ * 2026-10-07, retrouvé ici). Le mur d'un bon est son TITULAIRE, société ou
+ * personne : deux particuliers montrent qu'un mur sur `company_id` seul ne
+ * tiendrait pas (`NULL` des deux côtés). Aucune route n'y mène — l'id venu
+ * d'une passation est relu et son titulaire vérifié (`loadOwnedVoucher`) :
+ * l'adaptateur est appelé en direct, et le refus attendu est le 409 que
+ * `mapPersistenceError` tire du `P2002`.
+ */
+describe("le mur dans les écritures des bons", () => {
+  const voucherRow = (id: string) => ctx.prisma.loyaltyVoucher.findUniqueOrThrow({ where: { id } });
+
+  it("un bon à l'id du bon d'un autre titulaire est refusé (409), et celui-ci reste intact", async () => {
+    await staff().put(`${BASE}/settings`).send(SETTINGS).expect(204);
+    const holder = await person();
+    const intruderHolder = await createUser(ctx.prisma, { auth0Sub: "auth0|autre-fidele" });
+    await credit(holder, 1_000);
+    const voucherId = await convert(holder, 1);
+    const before = await voucherRow(voucherId);
+    const intruder = LoyaltyVoucher.reconstitute({ ...before, userId: intruderHolder.id });
+    intruder.cancel(new Date(daysAgo(0)), E2E_STAFF_ID, LoyaltyReason.of("intrus"));
+
+    const refusal = await ctx.app
+      .get(LoyaltyVoucherRepository)
+      .save(intruder)
+      .then(
+        () => null,
+        (error: unknown) => error,
+      );
+
+    expect(mapPersistenceError(refusal)).toBeInstanceOf(DuplicateResourceError);
+    expect(await voucherRow(voucherId)).toEqual(before);
+  });
+
+  it("son propre bon s'écrit toujours : émission, puis annulation", async () => {
+    await staff().put(`${BASE}/settings`).send(SETTINGS).expect(204);
+    const holder = await person();
+    await credit(holder, 1_000);
+    const voucherId = await convert(holder, 1);
+    const own = LoyaltyVoucher.reconstitute(await voucherRow(voucherId));
+    own.cancel(new Date(daysAgo(0)), E2E_STAFF_ID, LoyaltyReason.of("erreur de saisie"));
+
+    await ctx.app.get(LoyaltyVoucherRepository).save(own);
+
+    expect(await voucherRow(voucherId)).toMatchObject({
+      userId: holder,
+      status: "cancelled",
+      cancellationReason: "erreur de saisie",
+    });
   });
 });

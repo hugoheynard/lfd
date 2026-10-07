@@ -20,6 +20,9 @@ export abstract class LoyaltyVoucherRepository {
     limit: number,
   ): Promise<readonly LoyaltyVoucher[]>;
 
-  /** Création ou mise à jour, selon que l'id existe. */
+  /**
+   * Création ou mise à jour, selon que l'id existe pour ce titulaire ; un id déjà
+   * pris par un autre est refusé, jamais réécrit (2026-10-07).
+   */
   abstract save(voucher: LoyaltyVoucher): Promise<void>;
 }

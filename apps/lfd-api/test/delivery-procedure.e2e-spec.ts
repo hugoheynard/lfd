@@ -18,8 +18,16 @@ import type {
 } from "@lfd/contracts";
 import type request from "supertest";
 
+import { DeliveryProcedure } from "../src/b2b/account/domain/entities/delivery-procedure.js";
+import { DeliveryProcedureRepository } from "../src/b2b/account/domain/ports/delivery-procedure.repository.js";
+import { DeliveryStepContent } from "../src/b2b/account/domain/value-objects/delivery-step-content.js";
 import { AdminTokenVerifier } from "../src/platform/auth/admin-token.verifier.js";
 import { CustomerRole } from "../src/platform/database/client/client.js";
+import { IdGenerator } from "../src/platform/id/id-generator.js";
+import {
+  DuplicateResourceError,
+  mapPersistenceError,
+} from "../src/platform/shared/errors/persistence-errors.js";
 import { bootstrapE2e, E2E_STAFF_ID, jsonBody, type E2eContext } from "./e2e-harness.js";
 import { DELIVERY, photoOf, pngOf } from "./delivery-procedure-scene.js";
 import { attachTo, createCompany, createUser } from "./factories.js";
@@ -282,6 +290,81 @@ describe("le mur", () => {
 
     await admin.get(procedure("client")).expect(404);
     await ctx.asSub(STAFF).get(procedure("staff")).expect(404);
+  });
+});
+
+/**
+ * Régression : l'adaptateur écrivait la racine et les étapes par `upsert` sur le
+ * seul `id`, sans le mur `company_id` — l'id d'une autre société réécrivait sa
+ * ligne (audit 2026-10-07, B2). Aucun écran n'envoie un tel id (l'agrégat refuse
+ * une étape qu'il n'a pas lue sous le mur) : l'adaptateur est appelé en direct,
+ * et le refus attendu est le 409 que `mapPersistenceError` tire du `P2002`.
+ */
+describe("le mur dans les écritures de l'adaptateur", () => {
+  const theirs = (): string => procedure("staff", otherCompanyId, otherAddressId);
+  const content = (title: string): DeliveryStepContent =>
+    DeliveryStepContent.create({ title, body: "" });
+
+  /** L'erreur d'une écriture refusée, `null` si elle a été acceptée. */
+  async function refusalOf(write: Promise<void>): Promise<unknown> {
+    return write.then(
+      () => null,
+      (error: unknown) => error,
+    );
+  }
+
+  it("une étape à l'id d'une étape d'une autre société est refusée (409), et celle-ci reste intacte", async () => {
+    const foreignStepId = await addStep(ctx.asSub(STAFF), theirs(), "Portail de B", null);
+    const stepRow = () =>
+      ctx.prisma.deliveryProcedureStep.findUniqueOrThrow({ where: { id: foreignStepId } });
+    const before = await stepRow();
+    const intruder = DeliveryProcedure.openFor({
+      id: ctx.app.get(IdGenerator).next(),
+      companyId,
+      addressId,
+    });
+    intruder.addStep(foreignStepId, content("Intrus"), null);
+
+    const refusal = await refusalOf(ctx.app.get(DeliveryProcedureRepository).save(intruder));
+
+    expect(mapPersistenceError(refusal)).toBeInstanceOf(DuplicateResourceError);
+    expect(await stepRow()).toEqual(before);
+    // La transaction est tombée entière : la racine ouverte pour A avec elle.
+    expect(await ctx.prisma.deliveryProcedure.count({ where: { companyId } })).toBe(0);
+  });
+
+  it("une procédure à l'id de celle d'une autre société est refusée (409), et rien n'y entre", async () => {
+    await addStep(ctx.asSub(STAFF), theirs(), "Portail de B", null);
+    const foreign = await ctx.prisma.deliveryProcedure.findFirstOrThrow({
+      where: { companyId: otherCompanyId },
+      select: { id: true },
+    });
+    const intruder = DeliveryProcedure.openFor({ id: foreign.id, companyId, addressId });
+    intruder.addStep(ctx.app.get(IdGenerator).next(), content("Intrus"), null);
+
+    const refusal = await refusalOf(ctx.app.get(DeliveryProcedureRepository).save(intruder));
+
+    expect(mapPersistenceError(refusal)).toBeInstanceOf(DuplicateResourceError);
+    const view = await read(ctx.asSub(STAFF), theirs());
+    expect(view.steps.map((step) => step.title)).toEqual(["Portail de B"]);
+  });
+
+  it("sa propre procédure s'écrit toujours : création, puis révision et ajout", async () => {
+    const ids = ctx.app.get(IdGenerator);
+    const repository = ctx.app.get(DeliveryProcedureRepository);
+    const mine = DeliveryProcedure.openFor({ id: ids.next(), companyId, addressId });
+    const portail = ids.next();
+    mine.addStep(portail, content("Portail"), null);
+    await repository.save(mine);
+    mine.reviseStep(portail, content("Portail vert"));
+    mine.addStep(ids.next(), content("Cour"), null);
+    await repository.save(mine);
+
+    const view = await read(ctx.asSub(ADMIN), procedure("client"));
+    expect(view.steps.map((step) => [step.number, step.title])).toEqual([
+      [1, "Portail vert"],
+      [2, "Cour"],
+    ]);
   });
 });
 

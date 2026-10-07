@@ -23,6 +23,13 @@ const LINK_SELECT = {
 /**
  * Adaptateur Prisma des liens libres : `load` → `reconstitute`, `save` ←
  * `toPersistence`. Aucune écriture de statut à partir de primitives.
+ *
+ * **Le mur est dans l'écriture** depuis le 2026-10-07 : `save` met à jour sous
+ * `{ id, companyId }` et ne crée qu'à défaut. Un `id` déjà pris par une autre
+ * société n'est jamais réécrit : sa création se heurte à la clé primaire
+ * (`P2002`, 409 par `mapPersistenceError`). C'était un `upsert` sur le seul
+ * `id` : le défaut B2 de `documentation/livraisons/audit-2026-10-07.md`,
+ * retrouvé ici en le corrigeant ailleurs.
  */
 @Injectable()
 export class PrismaPaymentLinkRepository extends PaymentLinkRepository {
@@ -45,17 +52,19 @@ export class PrismaPaymentLinkRepository extends PaymentLinkRepository {
 
   async save(link: PaymentLink): Promise<void> {
     const { id, ...columns } = link.toPersistence();
-    await this.prisma.paymentLink.upsert({
-      where: { id },
-      create: { id, ...columns },
+    const { count } = await this.prisma.paymentLink.updateMany({
+      where: { id, companyId: columns.companyId },
       // Seul ce qu'une transition change : les termes et la session d'un lien
       // sont figés à sa création.
-      update: {
+      data: {
         status: columns.status,
         paidAt: columns.paidAt,
         cancelledAt: columns.cancelledAt,
         cancelledByStaffId: columns.cancelledByStaffId,
       },
     });
+    if (count === 0) {
+      await this.prisma.paymentLink.create({ data: { id, ...columns } });
+    }
   }
 }
