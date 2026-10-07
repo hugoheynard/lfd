@@ -13,6 +13,40 @@ export interface SheetContext {
   readonly destinationOf: (orderId: string) => string;
   readonly authorName: (reference: string | null) => string | null;
   readonly heldOrders: ReadonlySet<string>;
+  /** Les SKU froids, et les bacs isothermes vivants de la journée. */
+  readonly cold: ColdPacking;
+}
+
+/** Ce que la livraison dit du froid — relu ici sans connaître le port. */
+export interface ColdPacking {
+  readonly coldSkus: ReadonlySet<string>;
+  readonly isothermBinIds: ReadonlySet<string>;
+}
+
+/**
+ * **Le froid hors bac isotherme** (2026-10-07, audit livraisons Q3) : sur une
+ * livraison rangée en contenants, les produits froids posés dans un sac ou
+ * dans un bac qui n'est pas isotherme, par nom, sans doublon. Un
+ * AVERTISSEMENT : « Déclarer prête » reste permis — rétabli après K3c, qui
+ * l'avait retiré avec l'ancien poste.
+ */
+export function coldOutsideIsotherm(order: BoardOrder, cold: ColdPacking): readonly string[] {
+  if (order.fulfillmentMethod !== "delivery" || order.containerMode !== "listed") {
+    return [];
+  }
+  const outside = new Set(
+    order.containerList
+      .filter((container) => !isIsotherm(container.bin?.binId ?? null, cold))
+      .flatMap((container) => container.lines.map((line) => line.sku))
+      .filter((sku) => cold.coldSkus.has(sku)),
+  );
+  return [
+    ...new Set(order.lines.filter((line) => outside.has(line.sku)).map((l) => l.productName)),
+  ];
+}
+
+function isIsotherm(binId: string | null, cold: ColdPacking): boolean {
+  return binId !== null && cold.isothermBinIds.has(binId);
 }
 
 /**
@@ -55,6 +89,7 @@ export function sheetOf(order: BoardOrder, context: SheetContext): PackingSheet 
     // comptent avant que leur ligne soit cochée (bug du 2026-10-05).
     packedPieces: order.lines.reduce((sum, line) => sum + allocatedOf(line), 0),
     canDeclareReady: canDeclareReady(order),
+    coldOutsideIsotherm: coldOutsideIsotherm(order, context.cold),
     packedAt: order.packed?.at.toISOString() ?? null,
     packedBy: order.packed?.by ?? null,
     packedByName: context.authorName(order.packed?.by ?? null),

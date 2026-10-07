@@ -29,6 +29,7 @@ function sheet(reference: string, awaited: readonly string[]): PackingSheet {
     pieces: skus.length,
     packedPieces: 0,
     canDeclareReady: false,
+    coldOutsideIsotherm: [],
     packedAt: null,
     packedBy: null,
     packedByName: null,

@@ -16,5 +16,6 @@ export {
   type BinShareRequest,
   type DeskBin,
   type DeskCapacity,
+  type DeskColdPacking,
 } from "./bin-desk.js";
 export { ContainerManagedOrders } from "./container-managed-orders.reader.js";

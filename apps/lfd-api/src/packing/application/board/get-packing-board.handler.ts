@@ -1,3 +1,4 @@
+import { BinDesk } from "../../channels/delivery/index.js";
 import type { ProductionPackingView } from "@lfd/contracts";
 import { QueryHandler, type IQueryHandler } from "@nestjs/cqrs";
 
@@ -22,7 +23,9 @@ import { GetPackingBoardQuery } from "./get-packing-board.query.js";
  * - les tables du colisage (`PackingBoardReader`) ;
  * - la retenue au contrôle, que le fournil publie (`QualityHeldOrdersReader`) ;
  * - la destination figée au plan, idem (`PlannedDestinationsReader`) ;
- * - les noms des auteurs, par l'annuaire du staff.
+ * - les noms des auteurs, par l'annuaire du staff ;
+ * - le froid des livraisons, par le guichet des bacs que la livraison tient
+ *   (2026-10-07).
  *
  * Le fournil n'est plus lu pour le rangement : il ne le tient plus.
  *
@@ -39,17 +42,22 @@ export class GetPackingBoardHandler implements IQueryHandler<
     private readonly destinations: PlannedDestinationsReader,
     private readonly staffAuthors: StaffAuthorDirectory,
     private readonly clock: Clock,
+    private readonly desk: BinDesk,
   ) {}
 
   async execute(query: GetPackingBoardQuery): Promise<ProductionPackingView> {
     const day = await this.board.dayOf(query.serviceDay);
     const orderIds = day.orders.map((order) => order.orderId);
-    const [heldOrders, destinations, authors] = await Promise.all([
+    const [heldOrders, destinations, authors, cold] = await Promise.all([
       this.held.heldOrders(query.serviceDay, orderIds),
       orderIds.length === 0
         ? new Map<string, string>()
         : this.destinations.destinationsOf(query.serviceDay),
       this.staffAuthors.identify(day.orders.map((order) => order.packed?.by ?? null)),
+      // Le froid ne se lit que pour les livraisons : un retrait n'a pas de bac.
+      this.desk.coldPacking(
+        day.orders.filter((order) => order.fulfillmentMethod === "delivery").map((o) => o.orderId),
+      ),
     ]);
     return packingBoardOf({
       date: query.serviceDay,
@@ -61,6 +69,7 @@ export class GetPackingBoardHandler implements IQueryHandler<
       destinationOf: (orderId) => destinations.get(orderId) ?? "",
       authorName: (reference) => authors.nameOf(reference),
       heldOrders,
+      cold,
     });
   }
 }

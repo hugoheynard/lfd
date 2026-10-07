@@ -62,6 +62,14 @@
             La commande reste prête au commerce : seul le rangement se rouvre.
           </p>
         } @else {
+          @if (order.coldOutsideIsotherm.length > 0) {
+            <!-- Un AVERTISSEMENT (2026-10-07, audit livraisons Q3) : le bouton
+               reste actif, la phrase dit quoi déplacer. -->
+            <fold-callout variant="warning" data-cold-warning>
+              Froid hors bac isotherme : {{ order.coldOutsideIsotherm.join(', ') }}. Mettez-le dans
+              un bac isotherme ; la commande peut quand même être déclarée prête.
+            </fold-callout>
+          }
           <!-- Le MODE est dans le libellé : « retrait » sur une commande livrée
              serait faux. 🔴 Actif selon `canDeclareReady`, la règle du SERVEUR,
              et désarmé pendant la déclaration en vol. -->

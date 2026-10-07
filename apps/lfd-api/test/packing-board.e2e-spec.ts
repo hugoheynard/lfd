@@ -189,6 +189,9 @@ describe("GET admin/packing/:date/board — le poste lu au colisage", () => {
       containers: 1,
       packedPieces: 20,
       canDeclareReady: true,
+      // Le froid traverse le guichet de la livraison (2026-10-07) : rien de
+      // froid ici, donc rien à dire — et la lecture n'a pas levé.
+      coldOutsideIsotherm: [],
     });
   });
 

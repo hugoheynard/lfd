@@ -51,6 +51,7 @@ function sources(day: PackingBoardDay, overrides: Partial<BoardSources> = {}): B
     destinationOf: (orderId) => `Adresse ${orderId}`,
     authorName: (reference) => (reference === "s1" ? "Marie Boulanger" : null),
     heldOrders: new Set(),
+    cold: { coldSkus: new Set(), isothermBinIds: new Set() },
     ...overrides,
   };
 }

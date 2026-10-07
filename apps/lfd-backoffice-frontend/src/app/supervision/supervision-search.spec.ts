@@ -45,6 +45,7 @@ function sheet(reference: string, customerLabel: string, skus: readonly string[]
     pieces: skus.length,
     packedPieces: 0,
     canDeclareReady: false,
+    coldOutsideIsotherm: [],
     packedAt: null,
     packedBy: null,
     packedByName: null,

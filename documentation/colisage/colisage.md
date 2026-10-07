@@ -272,7 +272,11 @@ Les écritures rendent peu ou rien : l'écran relit le `board`.
   pour la livraison / le retrait » actif selon `canDeclareReady` du serveur, et
   « Rouvrir le rangement des bacs » sur une commande fermée. Une commande
   `counted` s'affiche en lecture seule : « Commande colisée avec l'ancien
-  poste : elle ne se modifie plus ici. » Services :
+  poste : elle ne se modifie plus ici. » **Le froid hors bac isotherme**
+  (rétabli le 2026-10-07, audit livraisons Q3) : sur une livraison, la fiche
+  porte `coldOutsideIsotherm`, les produits froids posés dans un sac ou un bac
+  sec ; l'écran l'avertit au-dessus du bouton, qui reste actif. Le froid et
+  l'isotherme viennent de la livraison par `BinDesk.coldPacking`. Services :
   `production/packing.service.ts`, `production/packing-containers.service.ts`.
 - **La Supervision** (`/supervision`) — sa colonne colisage lit le même
   `board` (`supervision/supervision.service.ts`), sous `b2b_supervision:read`.

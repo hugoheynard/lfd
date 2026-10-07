@@ -20,7 +20,12 @@ import {
   ScriptedDrawer,
   stopOf,
 } from "./loading-doubles.js";
-import { FixedLoading, FixedOrderLines } from "../../queries/__tests__/packing-doubles.js";
+import { FixedDeclaredBins } from "../../queries/__tests__/capacity-doubles.js";
+import {
+  binTypeView,
+  FixedLoading,
+  FixedOrderLines,
+} from "../../queries/__tests__/packing-doubles.js";
 import { GetDeliveryBinFreeHalvesHandler } from "../../queries/get-delivery-bin-free-halves.handler.js";
 import { GetDeliveryPackingProposalHandler } from "../../queries/get-delivery-packing-proposal.handler.js";
 import { FixedBinCatalog, FixedDeliveryProducts } from "./bin-doubles.js";
@@ -130,10 +135,32 @@ describe("DeliveryBinDesk — la porte du colisage, aux règles de la livraison"
           new FixedLoading([]),
           new FixedDeliveryOrders([deliveryOn("o_listed", DAY)]),
         ),
-        new FixedBinCatalog([], [CAPACITY]),
+        new FixedBinCatalog(
+          [binTypeView("t_iso", { isotherm: true }), binTypeView("t_dry")],
+          [CAPACITY],
+        ),
+        new FixedDeclaredBins([
+          { orderId: "o_listed", id: "b_iso", binTypeId: "t_iso", half: null, physicalBinId: null },
+          { orderId: "o_listed", id: "b_dry", binTypeId: "t_dry", half: null, physicalBinId: null },
+          { orderId: "o_other", id: "b_far", binTypeId: "t_iso", half: null, physicalBinId: null },
+        ]),
+        new FixedDeliveryProducts([
+          { sku: "FLAN", name: "Flan", requiresCold: true },
+          { sku: "PAIN", name: "Pain", requiresCold: false },
+        ]),
       ),
     };
   }
+
+  it("dit le froid des commandes : les SKU froids, et leurs seuls bacs isothermes", async () => {
+    const { desk: guichet } = desk();
+
+    const cold = await guichet.coldPacking(["o_listed"]);
+
+    expect([...cold.coldSkus]).toEqual(["FLAN"]);
+    expect([...cold.isothermBinIds]).toEqual(["b_iso"]);
+    expect((await guichet.coldPacking([])).coldSkus.size).toBe(0);
+  });
 
   it("déclare un bac entier, et rend son id, son code et sa moitié", async () => {
     const { desk: target, events } = desk();

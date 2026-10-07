@@ -1,3 +1,4 @@
+import type { ColdPacking } from "./packing-board-sheet.js";
 import type { PackingResource, ProductionPackingView } from "@lfd/contracts";
 
 import type { PackingBoardDay } from "../ports/packing-board.reader.js";
@@ -39,6 +40,8 @@ export interface BoardSources {
   readonly destinationOf: (orderId: string) => string;
   readonly authorName: (reference: string | null) => string | null;
   readonly heldOrders: ReadonlySet<string>;
+  /** Le froid, lu à la livraison (2026-10-07). */
+  readonly cold: ColdPacking;
 }
 
 /** Assemble le poste — mêmes ordres que l'ancien : bacs par référence, articles par nom. */

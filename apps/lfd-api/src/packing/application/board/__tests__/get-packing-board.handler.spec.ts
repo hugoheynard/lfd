@@ -12,6 +12,7 @@ import {
   type BoardOrder,
   type PackingBoardDay,
 } from "../../../domain/ports/packing-board.reader.js";
+import { ScriptedBinDesk } from "../../__tests__/bin-desk-double.js";
 import { GetPackingBoardHandler } from "../get-packing-board.handler.js";
 import { GetPackingBoardQuery } from "../get-packing-board.query.js";
 
@@ -84,6 +85,7 @@ function setup(day: PackingBoardDay) {
     destinations,
     authors,
     new FixedClock(AT),
+    new ScriptedBinDesk(),
   );
   return { handler, held, destinations, authors };
 }

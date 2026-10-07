@@ -121,6 +121,7 @@ function packingView(closedAt: string | null = 'x'): ProductionPackingView {
               pieces: 12,
               packedPieces: 0,
               canDeclareReady: false,
+              coldOutsideIsotherm: [],
               packedAt: null,
               packedBy: null,
               packedByName: null,

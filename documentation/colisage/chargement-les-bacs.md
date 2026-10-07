@@ -185,6 +185,10 @@ quel. Changer un M en L, c'est « − » puis « + » : une nouvelle étiquette 
   bac isotherme ; un second appui (« Déclarer prête quand même ») déclare.
   Ce sont des avertissements d'écran : le serveur ne demande aucun bac pour
   déclarer prête, et « Partir » refuse déjà une tournée incomplète (§ 6.3).
+  ⚠️ **Retiré avec l'ancien poste en K3c, rétabli le 2026-10-07 autrement** :
+  le serveur calcule le froid hors bac isotherme et le poste l'affiche, sans
+  second appui (`colisage.md`, § 6). L'avertissement « aucun bac » n'est pas
+  revenu.
 - `production_orders.containers` n'est plus écrit pour une livraison ; la
   colonne reste (aucune migration).
 

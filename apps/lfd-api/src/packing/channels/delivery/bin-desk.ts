@@ -26,6 +26,14 @@ export interface DeskBin {
 }
 
 /** Une case de la grille des contenances : un bac ENTIER de ce type tient `units` pièces. */
+/** Ce que le froid demande au poste : les SKU froids, et les bacs isothermes vivants. */
+export interface DeskColdPacking {
+  /** Les SKU que la fiche produit déclare froids — `false` n'affirme rien. */
+  readonly coldSkus: ReadonlySet<string>;
+  /** Parmi les bacs NON annulés de ces commandes, ceux d'un type isotherme. */
+  readonly isothermBinIds: ReadonlySet<string>;
+}
+
 export interface DeskCapacity {
   readonly binTypeId: string;
   readonly sku: string;
@@ -95,4 +103,11 @@ export abstract class BinDesk {
    * bac est annulé, même si l'annulation lui avait échappé.
    */
   abstract liveBins(binIds: readonly string[]): Promise<ReadonlySet<string>>;
+
+  /**
+   * Le froid de ces commandes (2026-10-07, audit livraisons Q3) : quels SKU
+   * demandent le froid, et lesquels de leurs bacs sont isothermes. Une
+   * LECTURE, pour AVERTIR au poste — jamais refuser « Déclarer prête ».
+   */
+  abstract coldPacking(orderIds: readonly string[]): Promise<DeskColdPacking>;
 }

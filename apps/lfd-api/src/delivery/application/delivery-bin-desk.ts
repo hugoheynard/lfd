@@ -1,3 +1,5 @@
+import { DeliveryProductsReader } from "../channels/commerce/index.js";
+import { DeclaredBinsReader } from "../domain/ports/declared-bins.reader.js";
 import type { DeliveryBinFreeHalvesView, DeliveryPackingProposalView } from "@lfd/contracts";
 import { Injectable } from "@nestjs/common";
 
@@ -7,6 +9,7 @@ import {
   type BinShareRequest,
   type DeskBin,
   type DeskCapacity,
+  type DeskColdPacking,
 } from "../../packing/channels/delivery/index.js";
 import { TechnicalError } from "../../platform/shared/errors/app-error.js";
 import type { DeliveryBin } from "../domain/entities/delivery-bin.js";
@@ -59,6 +62,8 @@ export class DeliveryBinDesk extends BinDesk {
     private readonly proposals: GetDeliveryPackingProposalHandler,
     private readonly freeHalvesQuery: GetDeliveryBinFreeHalvesHandler,
     private readonly catalog: BinCatalogReader,
+    private readonly declared: DeclaredBinsReader,
+    private readonly products: DeliveryProductsReader,
   ) {
     super();
   }
@@ -104,5 +109,28 @@ export class DeliveryBinDesk extends BinDesk {
 
   async liveBins(binIds: readonly string[]): Promise<ReadonlySet<string>> {
     return this.office.liveAmong(binIds);
+  }
+
+  /**
+   * Le froid vient de la fiche produit (relayée par le commerce), l'isotherme
+   * du type de bac — deux faits que seule la livraison tient ensemble. Trois
+   * lectures groupées, quel que soit le nombre de commandes.
+   */
+  async coldPacking(orderIds: readonly string[]): Promise<DeskColdPacking> {
+    if (orderIds.length === 0) {
+      return { coldSkus: new Set(), isothermBinIds: new Set() };
+    }
+    const [sold, types, bins] = await Promise.all([
+      this.products.sold(),
+      this.catalog.listTypes(),
+      this.declared.liveAmong(orderIds),
+    ]);
+    const isotherm = new Set(types.filter((type) => type.isotherm).map((type) => type.id));
+    return {
+      coldSkus: new Set(sold.filter((product) => product.requiresCold).map((p) => p.sku)),
+      isothermBinIds: new Set(
+        bins.filter((bin) => isotherm.has(bin.binTypeId)).map((bin) => bin.id),
+      ),
+    };
   }
 }

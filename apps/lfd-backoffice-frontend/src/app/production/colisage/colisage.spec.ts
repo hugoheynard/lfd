@@ -94,6 +94,7 @@ function bac(over: Partial<PackingSheet> = {}): PackingSheet {
     pieces: 20,
     packedPieces: 0,
     canDeclareReady: false,
+    coldOutsideIsotherm: [],
     packedAt: null,
     packedBy: null,
     packedByName: null,
@@ -365,6 +366,7 @@ describe('le poste de colisage', () => {
           listed({
             lines: [line({ packed: true }), line({ sku: 'BAG', quantity: 8, packed: true })],
             canDeclareReady: false,
+            coldOutsideIsotherm: [],
           }),
         ],
       });

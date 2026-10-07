@@ -6,6 +6,7 @@ import {
   type BinShareRequest,
   type DeskBin,
   type DeskCapacity,
+  type DeskColdPacking,
 } from "../../channels/delivery/index.js";
 
 /**
@@ -53,6 +54,13 @@ export class ScriptedBinDesk extends BinDesk {
       unplaced: [],
       shareCandidate: null,
     });
+  }
+
+  /** Le froid servi au poste ; vide par défaut — rien de froid, aucun isotherme. */
+  cold: DeskColdPacking = { coldSkus: new Set(), isothermBinIds: new Set() };
+
+  coldPacking(): Promise<DeskColdPacking> {
+    return Promise.resolve(this.cold);
   }
 
   capacities(): Promise<readonly DeskCapacity[]> {

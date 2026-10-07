@@ -47,6 +47,7 @@ function sheet(over: Partial<PackingSheet> = {}): PackingSheet {
     pieces: 20,
     packedPieces: 0,
     canDeclareReady: false,
+    coldOutsideIsotherm: [],
     packedAt: null,
     packedBy: null,
     packedByName: null,
@@ -103,6 +104,23 @@ describe('la commande ouverte du colisage', () => {
 
     expect(host.querySelector<HTMLButtonElement>('[data-declare-ready]')?.disabled).toBe(false);
     expect(said(host.querySelector('.co-close'))).not.toContain('encore dehors');
+  });
+
+  it('avertit du froid hors bac isotherme sans désarmer « Déclarer prête »', () => {
+    const host: HTMLElement = render({
+      sheet: sheet({ canDeclareReady: true, coldOutsideIsotherm: ['Flan pâtissier'] }),
+    }).nativeElement;
+
+    expect(said(host.querySelector('[data-cold-warning]'))).toContain(
+      'Froid hors bac isotherme : Flan pâtissier',
+    );
+    expect(host.querySelector<HTMLButtonElement>('[data-declare-ready]')?.disabled).toBe(false);
+  });
+
+  it('ne dit rien du froid quand tout est à sa place', () => {
+    const host: HTMLElement = render({ sheet: sheet({ canDeclareReady: true }) }).nativeElement;
+
+    expect(host.querySelector('[data-cold-warning]')).toBeNull();
   });
 
   it('désarme « Déclarer prête » pendant la déclaration en vol', () => {

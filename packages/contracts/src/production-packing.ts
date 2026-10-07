@@ -142,6 +142,12 @@ export interface PackingSheet {
    * davantage — et l'écran n'aura rien à réapprendre.
    */
   readonly canDeclareReady: boolean;
+  /**
+   * Les produits froids posés hors d'un bac isotherme, par nom (2026-10-07) —
+   * livraison rangée en contenants seulement ; vide sinon. Un AVERTISSEMENT :
+   * « Déclarer prête » reste permis.
+   */
+  readonly coldOutsideIsotherm: readonly string[];
   /** `null` = le bac n'est pas fermé. */
   readonly packedAt: string | null;
   /**

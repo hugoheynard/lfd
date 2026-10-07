@@ -41,6 +41,7 @@ function sheet(over: Partial<PackingSheet> = {}): PackingSheet {
     pieces: 12,
     packedPieces: 0,
     canDeclareReady: false,
+    coldOutsideIsotherm: [],
     packedAt: null,
     packedBy: null,
     packedByName: null,
