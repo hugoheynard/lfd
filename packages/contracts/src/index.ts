@@ -179,6 +179,19 @@ export type {
   StatementCycleView,
   StatementCyclesView,
 } from "./cycle-statement.js";
+export type {
+  InvoiceDeliveryVatModeView,
+  InvoiceDossierGapsView,
+  InvoiceDossierInconsistentOrderView,
+  InvoiceDossierInvoiceView,
+  InvoiceDossierLineView,
+  InvoiceDossierOrderLineView,
+  InvoiceDossierOrderView,
+  InvoiceDossierVatCategoryView,
+  InvoiceDossierVatPartView,
+  InvoiceDossierVatView,
+  InvoiceDossierView,
+} from "./invoice-dossier.js";
 export {
   createPaymentLinkPayloadSchema,
   paymentLinkStatusSchema,

@@ -50,6 +50,8 @@ import { ExportCycleDraftHandler } from "./application/queries/export-cycle-draf
 import { GetCurrentBillingCycleHandler } from "./application/queries/get-current-billing-cycle.handler.js";
 import { ExportCycleStatementHandler } from "./application/queries/export-cycle-statement.handler.js";
 import { GetCycleStatementHandler } from "./application/queries/get-cycle-statement.handler.js";
+import { ExportInvoiceDossierHandler } from "./application/queries/export-invoice-dossier.handler.js";
+import { GetInvoiceDossierHandler } from "./application/queries/get-invoice-dossier.handler.js";
 import { ListStatementCyclesHandler } from "./application/queries/list-statement-cycles.handler.js";
 import { GetMandateSchemeUsageHandler } from "./application/queries/get-mandate-scheme-usage.handler.js";
 import { ExportSampleMandateHandler } from "./application/queries/export-sample-mandate.handler.js";
@@ -59,6 +61,7 @@ import { ListLegalEntitiesHandler } from "./application/queries/list-legal-entit
 import { BillableOrdersReader } from "./domain/ports/billable-orders.reader.js";
 import { CreditorReader } from "./domain/ports/creditor.reader.js";
 import { CycleOrdersReader } from "./domain/ports/cycle-orders.reader.js";
+import { InvoiceDossierReader } from "./domain/ports/invoice-dossier.reader.js";
 import { StatementBillingReader } from "./domain/ports/statement-billing.reader.js";
 import { FirstMandateLedger } from "./domain/ports/first-mandate-ledger.js";
 import { LegalEntityLogoReader } from "./domain/ports/legal-entity-logo.reader.js";
@@ -66,11 +69,13 @@ import { LegalEntityReader } from "./domain/ports/legal-entity.reader.js";
 import { LegalEntityRepository } from "./domain/ports/legal-entity.repository.js";
 import { AdminBillingCycleController } from "./http/admin-billing-cycle.controller.js";
 import { AdminCycleStatementsController } from "./http/admin-cycle-statements.controller.js";
+import { AdminInvoiceDossiersController } from "./http/admin-invoice-dossiers.controller.js";
 import { AdminLegalEntitiesController } from "./http/admin-legal-entities.controller.js";
 import { AdminLegalEntityBankingController } from "./http/admin-legal-entity-banking.controller.js";
 import { AdminLegalEntityDocumentsController } from "./http/admin-legal-entity-documents.controller.js";
 import { PrismaBillableOrdersReader } from "./infrastructure/prisma-billable-orders.reader.js";
 import { PrismaCycleOrdersReader } from "./infrastructure/prisma-cycle-orders.reader.js";
+import { PrismaInvoiceDossierReader } from "./infrastructure/prisma-invoice-dossier.reader.js";
 import { PrismaStatementBillingReader } from "./infrastructure/prisma-statement-billing.reader.js";
 import { PrismaCreditorReader } from "./infrastructure/prisma-creditor.reader.js";
 import { PrismaFirstMandateLedger } from "./infrastructure/prisma-first-mandate-ledger.js";
@@ -112,6 +117,7 @@ import { PrismaLegalEntityRepository } from "./infrastructure/prisma-legal-entit
     AdminLegalEntityDocumentsController,
     AdminBillingCycleController,
     AdminCycleStatementsController,
+    AdminInvoiceDossiersController,
     AdminCollectionBatchesController,
     AdminDetachedUnpaidController,
     CompanyDetachedUnpaidController,
@@ -122,6 +128,8 @@ import { PrismaLegalEntityRepository } from "./infrastructure/prisma-legal-entit
     { provide: CreditorReader, useClass: PrismaCreditorReader },
     { provide: BillableOrdersReader, useClass: PrismaBillableOrdersReader },
     { provide: CycleOrdersReader, useClass: PrismaCycleOrdersReader },
+    // Le dossier de facturation simulé (plan `plan-simulateur-dossier-de-facturation.md`).
+    { provide: InvoiceDossierReader, useClass: PrismaInvoiceDossierReader },
     { provide: StatementBillingReader, useClass: PrismaStatementBillingReader },
     { provide: LegalEntityLogoReader, useClass: PrismaLegalEntityLogoReader },
     { provide: FirstMandateLedger, useClass: PrismaFirstMandateLedger },
@@ -166,6 +174,8 @@ import { PrismaLegalEntityRepository } from "./infrastructure/prisma-legal-entit
     ListStatementCyclesHandler,
     GetCycleStatementHandler,
     ExportCycleStatementHandler,
+    GetInvoiceDossierHandler,
+    ExportInvoiceDossierHandler,
     GetLegalEntityLogoHandler,
   ],
   // `LegalEntityLogoReader` sort avec `CreditorReader`, et pas seul : le seul

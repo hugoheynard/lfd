@@ -2,7 +2,10 @@
 
 > 🟡 **DF1 bâti le 2026-10-08** : `invoiceVatBreakdown` (`packages/money/src/invoice-vat.ts`)
 > et `simulateInvoiceDossier` (`b2b/accounting/domain/services/invoice-dossier.ts`).
-> Choix faits en bâtissant, à relire (§ 3.5). DF2 à DF4 restent à faire.
+> Choix faits en bâtissant, à relire (§ 3.5).
+> 🟡 **DF2 bâti le 2026-10-08** : `GET admin/accounting/invoice-dossiers/companies/:companyId?month=`
+> et ses trois CSV, sur `InvoiceDossierReader` ; les bons incohérents sont
+> signalés (§ 3.6). DF3 et DF4 restent à faire.
 >
 > 📐 **Plan v3** (2026-10-08). Touche **l'argent** : contredit
 > deux fois par `vitruve` le 2026-10-08 (v1 : trois BLOQUANTS, v2 : quatre),
@@ -191,6 +194,37 @@ l'échelle de la facture). Les formules sont écrites à l'écran.
   total ne vérifie pas `Σ lignes − remises + port + surtaxe + TVA` (remise
   bornée à la passation) casserait l'invariant sans qu'aucune règle le dise.
 
+### 3.6 Ce que DF2 a tranché en bâtissant (2026-10-08)
+
+- **Le bon incohérent (décidé par Hugo)** : un bon dont `totalCents ≠ Σ
+lineTotalCents − discountCents − voucherDiscountCents + deliveryFeeCents +
+lateFeeCents + vatCents` (remise plafonnée à la passation, ou autre) est
+  listé dans `inconsistentOrders` (référence, total recomposé, total figé,
+  écart = recomposé − figé), et son écart devient un **quatrième terme
+  nommé** des écarts (`gaps.inconsistentOrdersCents`, « bon incohérent » au
+  CSV). La somme des termes reste donc exactement total facture − Σ
+  `totalCents`, et `threeGapInvariantHolds` passe à faux pour dire que les
+  trois écarts du § 3.4 ne suffisent plus. Préféré à un simple drapeau :
+  un écart non rangé laisserait le comptable avec une différence qu'aucune
+  ligne n'explique. `apps/lfd-api/src/b2b/accounting/domain/services/invoice-order-consistency.ts`.
+- **Le périmètre, au bon près celui du relevé** : la société, plus ses sites
+  qu'elle réglait à la date du bon (`billedPayerOf`, mêmes suivis
+  `followsTowards`). Comme au relevé, les bons de la société **elle-même**
+  y sont toujours, même ceux qu'un principal réglait (`paidBy`) — à trancher
+  avant la facture réelle, qui ne doit facturer qu'au payeur.
+- **La route** : `b2b_accounting:read` seule (déduite du verbe), sans
+  l'ouverture à `b2b_companies:read` qu'a le relevé : le dossier vit dans
+  l'espace Comptabilité.
+- **Les CSV** : trois routes sœurs, comme `export.csv` du relevé —
+  `invoice.csv`, `orders.csv`, `gaps.csv` —, cellules de `csv-cells.ts`
+  (euros à la virgule, point-virgule, BOM) ; le prix unitaire garde ses cinq
+  décimales.
+- **Le contrat** (`packages/contracts/src/invoice-dossier.ts`) n'a que des
+  interfaces, comme celui du relevé : le serveur ne lit à l'exécution que
+  `statementMonthSchema`, déjà publié.
+- **Non bâti** : le « lieu » du bon (§ 3.2, retrait ou adresse) n'est pas lu ;
+  il viendra avec l'historique (DF3) ou l'écran (DF4).
+
 ## 4. Les frontières
 
 - **Le calcul** est un service de domaine pur du contexte comptable
@@ -261,7 +295,7 @@ même temps que le prélèvement.
 | Lot                   | Contenu                                                                                                                                                                                                                                                                                                                                                                                                  |
 | --------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
 | **DF1** ✅ 2026-10-08 | `invoiceVatBreakdown` dans `@lfd/money` (plus forts restes, TVA sur base arrondie) ; le service de domaine : clé normalisée, lignes en une fois, remises par nature, frais par taux, les trois écarts. Tests chiffrés : un changement de tarif, un changement de taux, des bons sans `vatShares`, une surtaxe sans taux (échec), et **total facture − Σ `totalCents` = Σ des trois écarts**, au centime. |
-| **DF2**               | Lecture : `InvoiceDossierReader` (le critère du relevé, lignes figées, date demandée), la query, la route sous `b2b_accounting:read`, un CSV par sortie.                                                                                                                                                                                                                                                 |
+| **DF2** ✅ 2026-10-08 | Lecture : `InvoiceDossierReader` (le critère du relevé, lignes figées, date demandée), la query, la route sous `b2b_accounting:read`, un CSV par sortie.                                                                                                                                                                                                                                                 |
 | **DF3**               | L'historique : un lecteur déclaré et implémenté par `handover`, un par `delivery`, reliés dans `appBootstrap` ; le commentaire de la porte et le CLAUDE.md disent les deux sens de ces canaux.                                                                                                                                                                                                           |
 | **DF4**               | L'écran Comptabilité › Dossier de facturation.                                                                                                                                                                                                                                                                                                                                                           |
 

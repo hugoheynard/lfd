@@ -17,6 +17,7 @@ import type {
   VatRoundingGap,
 } from "./invoice-dossier.types.js";
 import { aggregateInvoiceLines, normalizedVatRate } from "./invoice-lines.js";
+import { inconsistentOrders } from "./invoice-order-consistency.js";
 
 /**
  * **Le simulateur de dossier de facturation** — pur, sans horloge ni base.
@@ -55,11 +56,15 @@ export function simulateInvoiceDossier(orders: readonly FrozenInvoiceOrder[]): I
   const unventilated = orders.filter((order) => !isVentilated(order));
   const unventilatedVat = unventilated.length === 0 ? null : buildInvoice(unventilated).vat;
   const ordersTotalCents = sum(orders.map((order) => order.totalCents));
+  const inconsistent = inconsistentOrders(orders);
+  const inconsistentCents = sum(inconsistent.map((order) => order.gapCents));
   return {
     invoice,
     ordersTotalCents,
     differenceCents: invoice.totalCents - ordersTotalCents,
-    gaps: gapsOf(invoice, orders, unventilatedVat),
+    gaps: gapsOf(invoice, orders, unventilatedVat, inconsistentCents),
+    inconsistentOrders: inconsistent,
+    threeGapInvariantHolds: inconsistent.length === 0,
   };
 }
 
@@ -172,6 +177,7 @@ function gapsOf(
   invoice: Invoice,
   orders: readonly FrozenInvoiceOrder[],
   unventilatedVat: InvoiceVatBreakdown | null,
+  inconsistentOrdersCents: number,
 ): InvoiceGaps {
   const lineRounding = invoice.lines.map((line) => ({
     sku: line.sku,
@@ -197,7 +203,9 @@ function gapsOf(
       ordersVatCents: unventilatedOrdersCents,
       gapCents: unventilatedGapCents,
     },
-    totalCents: lineRoundingCents + vatRoundingCents + unventilatedGapCents,
+    inconsistentOrdersCents,
+    totalCents:
+      lineRoundingCents + vatRoundingCents + unventilatedGapCents + inconsistentOrdersCents,
   };
 }
 

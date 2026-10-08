@@ -104,7 +104,23 @@ export interface VatRoundingGap {
   readonly gapCents: number;
 }
 
-/** Les trois écarts du §3.4 — leur somme est la différence au centime. */
+/**
+ * Un bon dont le total figé ne se recompose pas à partir de ses montants
+ * (remise plafonnée à la passation, ou autre) — signalé, jamais corrigé.
+ */
+export interface InconsistentOrder {
+  readonly reference: string;
+  /** `Σ lineTotalCents − remises + port + surtaxe + vatCents`. */
+  readonly recomposedTotalCents: number;
+  readonly totalCents: number;
+  /** Recomposé − figé. */
+  readonly gapCents: number;
+}
+
+/**
+ * Les trois écarts du §3.4, plus un quatrième quand un bon est incohérent —
+ * leur somme est la différence au centime.
+ */
 export interface InvoiceGaps {
   readonly lineRounding: readonly LineRoundingGap[];
   readonly lineRoundingCents: number;
@@ -115,6 +131,11 @@ export interface InvoiceGaps {
     readonly ordersVatCents: number;
     readonly gapCents: number;
   };
+  /**
+   * Le quatrième terme : Σ des écarts des bons incohérents. Zéro quand tous
+   * les bons se recomposent — les trois écarts du plan suffisent alors.
+   */
+  readonly inconsistentOrdersCents: number;
   readonly totalCents: number;
 }
 
@@ -125,4 +146,8 @@ export interface InvoiceDossier {
   /** Total facture − Σ `totalCents` des bons. */
   readonly differenceCents: number;
   readonly gaps: InvoiceGaps;
+  /** Les bons dont le total ne se recompose pas ; vide quand l'invariant du plan tient. */
+  readonly inconsistentOrders: readonly InconsistentOrder[];
+  /** Faux dès qu'un bon est incohérent : les trois écarts ne suffisent plus à expliquer la différence. */
+  readonly threeGapInvariantHolds: boolean;
 }

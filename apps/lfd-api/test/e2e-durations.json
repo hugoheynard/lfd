@@ -120,6 +120,7 @@
   "test/handover-durable.e2e-spec.ts": 3056,
   "test/handover-proof-purge.e2e-spec.ts": 2792,
   "test/handover-quality-hold.e2e-spec.ts": 4369,
+  "test/invoice-dossiers.e2e-spec.ts": 6300,
   "test/kbis.e2e-spec.ts": 4507,
   "test/late-fee-access.e2e-spec.ts": 3124,
   "test/leads.e2e-spec.ts": 7454,
