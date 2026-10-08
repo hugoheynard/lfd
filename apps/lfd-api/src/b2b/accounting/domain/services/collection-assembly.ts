@@ -45,7 +45,8 @@ import type { CollectionExclusionReason } from "../entities/order-collection.js"
  *   se juge AVEC elle — la facture entière, ou rien. Ses bons tous au même
  *   mandat → elle entre ; un bon ailleurs → elle attend ; un bon écarté →
  *   tous ses bons le sont, pour la même raison ; plusieurs mandats →
- *   `invoice_split`. Montant = Σ TTC des factures, rien n'est recalculé.
+ *   `invoice_split` (depuis E4b, seulement si les mandats ont changé après
+ *   l'émission : la facture du mois se fait par mandat). Montant = Σ TTC des factures, rien n'est recalculé.
  * - **Une ligne d'ARRÊTÉ**, l'ancien chemin, pour les seuls bons passés
  *   avant la mise en service de la facture du mois (`invoicingFloor`) : ils
  *   n'auront jamais de facture du mois. Montant = **total TTC de la facture
@@ -223,6 +224,11 @@ function collectInvoice(
   if (first === undefined) {
     return;
   }
+  // Depuis E4b (2026-10-08), la facture du mois se fait PAR MANDAT effectif :
+  // elle n'émet plus de facture à cheval, et ce motif n'est plus le cas
+  // normal. Il reste le seul filet quand les mandats ont CHANGÉ entre
+  // l'émission et le lot (mandat révoqué, forme de prélèvement du site
+  // changée) — à trancher, rapport du lot E4b. La valeur reste en base.
   if (new Set(debits.map((debit) => debit.mandate.mandateId)).size > 1) {
     acc.exclusions.push(...orders.map((order) => ({ order, reason: "invoice_split" as const })));
     return;

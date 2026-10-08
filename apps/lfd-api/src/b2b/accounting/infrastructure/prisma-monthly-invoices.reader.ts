@@ -33,7 +33,7 @@ export class PrismaMonthlyInvoicesReader extends MonthlyInvoicesReader {
       this.prisma.invoicingFloor.findUnique({ where: { id: true } }),
       this.prisma.invoiceMonthlyOutcome.findMany({
         where: { legalEntityId, month },
-        orderBy: { payerName: "asc" },
+        orderBy: [{ payerName: "asc" }, { mandateReference: "asc" }],
         include: {
           invoice: {
             select: {
@@ -79,6 +79,7 @@ export class PrismaMonthlyInvoicesReader extends MonthlyInvoicesReader {
         .map((row) => ({
           payerCompanyId: row.payerCompanyId,
           payerName: row.payerName,
+          mandateReference: row.mandateReference,
           message: row.message ?? "",
           unbillableOrders: row.unbillableOrders,
           recordedAt: row.recordedAt.toISOString(),

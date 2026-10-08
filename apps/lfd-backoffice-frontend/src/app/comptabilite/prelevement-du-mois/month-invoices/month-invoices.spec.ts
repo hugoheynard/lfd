@@ -14,7 +14,7 @@ import { MonthInvoices, autopilotSentence } from './month-invoices';
 
 const VIEW: MonthlyInvoicesView = {
   month: '2026-09',
-  issuableFrom: '2026-09-30T20:00:00.000Z',
+  issuableFrom: '2026-09-30T21:55:00.000Z',
   floorAt: '2026-09-01T00:00:00.000Z',
   open: true,
   invoices: [
@@ -85,7 +85,7 @@ describe('MonthInvoices', () => {
   it('rien d’émis ni de signalé : dit quand elles partent', async () => {
     const { host } = await render({ ...VIEW, invoices: [] });
 
-    expect(host.querySelector('[data-invoices-empty]')?.textContent).toContain('22h');
+    expect(host.querySelector('[data-invoices-empty]')?.textContent).toContain('23h55');
   });
 
   it('un payeur signalé se voit, avec le geste de sortie', async () => {
@@ -95,6 +95,7 @@ describe('MonthInvoices', () => {
         {
           payerCompanyId: 'c2',
           payerName: 'Chalet',
+          mandateReference: null,
           message: 'Le client « Chalet » n’a pas de SIREN.',
           unbillableOrders: [],
           recordedAt: '2026-09-30T20:05:00.000Z',
@@ -106,6 +107,30 @@ describe('MonthInvoices', () => {
       'Émettre les factures de septembre',
     );
     expect(host.querySelector('[data-signaled-table]')?.textContent).toContain('pas de SIREN');
+  });
+
+  it('un payeur signalé sur deux mandats a deux lignes, chacune avec sa RUM (E4b)', async () => {
+    const signal = {
+      payerCompanyId: 'c2',
+      payerName: 'Chalet',
+      message: 'Le client « Chalet » n’a pas de SIREN.',
+      unbillableOrders: [],
+      recordedAt: '2026-09-30T21:56:00.000Z',
+    };
+    const { host } = await render({
+      ...VIEW,
+      signaled: [
+        { ...signal, mandateReference: 'RUM-CHALET' },
+        { ...signal, mandateReference: 'RUM-PRINCIPAL' },
+      ],
+    });
+
+    const table = host.querySelector('[data-signaled-table]')?.textContent ?? '';
+    expect(table).toContain('RUM-CHALET');
+    expect(table).toContain('RUM-PRINCIPAL');
+    expect(host.querySelector('[data-invoices-signaled]')?.textContent).toContain(
+      '2 facture(s) signalée(s)',
+    );
   });
 
   it('une lecture en échec ne montre que son message', async () => {

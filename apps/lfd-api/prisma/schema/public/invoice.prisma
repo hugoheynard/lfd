@@ -129,7 +129,8 @@ model InvoiceNumberCounter {
 // `invoice_monthly_outcome_final`).
 // ─────────────────────────────────────────────────────────────────────────────
 
-/// L'issue de la facture du mois d'UN payeur légal : émise, ou signalée.
+/// L'issue d'UNE facture du mois — un payeur légal ET un mandat effectif
+/// (E4b) : émise, ou signalée.
 model InvoiceMonthlyOutcome {
   legalEntityId    String      @map("legal_entity_id")
   legalEntity      LegalEntity @relation(fields: [legalEntityId], references: [id], onDelete: Restrict)
@@ -138,6 +139,11 @@ model InvoiceMonthlyOutcome {
   /// Le payeur légal — opaque.
   payerCompanyId   String      @map("payer_company_id")
   payerName        String      @map("payer_name")
+  /// Le mandat effectif de la facture (E4b) ; `""` = aucun (clé primaire,
+  /// donc jamais NULL), et toute issue d'avant E4b.
+  mandateId        String      @default("") @map("mandate_id")
+  /// Sa RUM, figée pour l'écran ; NULL sans mandat.
+  mandateReference String?     @map("mandate_reference")
   /// `issued` | `blocked`.
   outcome          String
   invoiceId        String?     @unique @map("invoice_id")
@@ -148,7 +154,7 @@ model InvoiceMonthlyOutcome {
   unbillableOrders String[]    @default([]) @map("unbillable_orders")
   recordedAt       DateTime    @map("recorded_at") @db.Timestamptz(3)
 
-  @@id([legalEntityId, month, payerCompanyId])
+  @@id([legalEntityId, month, payerCompanyId, mandateId])
   @@map("invoice_monthly_outcome")
   @@schema("public")
 }

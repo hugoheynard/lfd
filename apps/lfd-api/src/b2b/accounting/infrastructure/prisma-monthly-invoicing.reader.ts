@@ -4,14 +4,14 @@ import { PrismaService } from "../../../platform/database/prisma.service.js";
 import { COMMERCIAL_INVOICE } from "../domain/entities/invoice.types.js";
 import { MonthlyInvoicingReader } from "../domain/ports/monthly-invoicing.reader.js";
 import type { BillingFollow } from "../domain/ports/statement-billing.reader.js";
-import type { InvoiceableOrder } from "../domain/services/monthly-invoicing.js";
+import { invoiceGroupKey, type InvoiceableOrder } from "../domain/services/monthly-invoicing.js";
 import type { CollectionFormName } from "../domain/value-objects/collection-form.js";
 import { billableOrderWhere } from "./billable-order-criterion.js";
 import {
   FROZEN_INVOICE_ORDER_SELECT,
   toFrozenInvoiceOrder,
 } from "./frozen-invoice-order.mapper.js";
-import { ISSUED_OUTCOME } from "./prisma-monthly-invoice-outcomes.js";
+import { ISSUED_OUTCOME, mandateIdOfColumn } from "./prisma-monthly-invoice-outcomes.js";
 
 /**
  * Ce que lit la facture du mois (E4). L'assiette est `billableOrderWhere`,
@@ -103,11 +103,13 @@ export class PrismaMonthlyInvoicingReader extends MonthlyInvoicingReader {
     return new Map(rows.map((row) => [row.id, row.raisonSociale]));
   }
 
-  async invoicedPayers(legalEntityId: string, month: string): Promise<ReadonlySet<string>> {
+  async invoicedGroups(legalEntityId: string, month: string): Promise<ReadonlySet<string>> {
     const rows = await this.prisma.invoiceMonthlyOutcome.findMany({
       where: { legalEntityId, month, outcome: ISSUED_OUTCOME },
-      select: { payerCompanyId: true },
+      select: { payerCompanyId: true, mandateId: true },
     });
-    return new Set(rows.map((row) => row.payerCompanyId));
+    return new Set(
+      rows.map((row) => invoiceGroupKey(row.payerCompanyId, mandateIdOfColumn(row.mandateId))),
+    );
   }
 }

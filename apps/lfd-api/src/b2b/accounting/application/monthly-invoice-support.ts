@@ -7,7 +7,7 @@ import type { MonthlyInvoicingReader } from "../domain/ports/monthly-invoicing.r
 import type { BillingFollow } from "../domain/ports/statement-billing.reader.js";
 import type { StatementBuyerReader } from "../domain/ports/statement-buyer.reader.js";
 import type { DossierStopFact } from "../domain/services/invoice-dossier-history.js";
-import { deliveredOnOf, type MonthlyInvoicePlan } from "../domain/services/monthly-invoicing.js";
+import { deliveredOnOf, type PayerOrders } from "../domain/services/monthly-invoicing.js";
 import type { CollectionFormName } from "../domain/value-objects/collection-form.js";
 
 /**
@@ -35,17 +35,21 @@ export interface MonthlyContext {
 }
 
 /**
+ * Lu AVANT le découpage par mandat (E4b) : c'est ce contexte qui le décide.
+ *
  * @param at l'instant de l'émission : la forme de prélèvement d'un site y
  *        est lue, comme le lot la lit à sa clôture.
  */
 export async function readMonthlyContext(
   readers: MonthlyContextReaders,
-  plan: MonthlyInvoicePlan,
+  payerOrders: readonly PayerOrders[],
   follows: readonly BillingFollow[],
   at: Date,
 ): Promise<MonthlyContext> {
-  const payers = plan.payers.map((payer) => payer.payerId);
-  const orders = plan.payers.flatMap((payer) => payer.billable);
+  const payers = payerOrders.map((payer) => payer.payerId);
+  // Tous les bons, non facturables compris : leur mandat range aussi les
+  // bons signalés dans la facture de leur mandat (E4b).
+  const orders = payerOrders.flatMap((payer) => payer.orders);
   const sites = unique(orders.map((order) => order.companyId));
   const companies = unique([...payers, ...sites]);
   const ids = orders.map((order) => order.orderId);

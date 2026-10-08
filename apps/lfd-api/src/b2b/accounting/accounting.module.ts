@@ -48,6 +48,7 @@ import { OrderNumbersReader } from "./domain/ports/order-numbers.reader.js";
 import { RecordedClosureReader } from "./domain/ports/recorded-closure.reader.js";
 import { AdminCollectionBatchesController } from "./http/admin-collection-batches.controller.js";
 import { CollectionAutopilotController } from "./http/collection-autopilot.controller.js";
+import { InvoiceAutopilotController } from "./http/invoice-autopilot.controller.js";
 import { RunCollectionAutopilotHandler } from "./application/commands/run-collection-autopilot.handler.js";
 import { BusAutomaticCollectionConstituter } from "./application/services/bus-automatic-collection-constituter.js";
 import { AutoCollectionEntitiesReader } from "./domain/ports/auto-collection-entities.reader.js";
@@ -160,7 +161,7 @@ import { PrismaLegalEntityRepository } from "./infrastructure/prisma-legal-entit
  *
  * Le cinquième, `FirstMandateLedger`, est le seul port d'ÉCRITURE qui sort, et
  * il ne pose qu'un fait : « un mandat a été frappé sous cet émetteur ». La frappe
- * l'appelle dans sa transaction (plan `plan-restes-du-mandat.md` §8, lot B) ;
+ * l'appelle dans sa transaction (plan `restes-du-mandat.md`, lot B) ;
  * elle ne reçoit pas pour autant le droit de charger l'entité.
  *
  * `DocumentStore` n'est pas déclaré ici : il vient de `ContextModule`, qui est
@@ -180,6 +181,7 @@ import { PrismaLegalEntityRepository } from "./infrastructure/prisma-legal-entit
     AdminInvoiceDossiersController,
     AdminCollectionBatchesController,
     CollectionAutopilotController,
+    InvoiceAutopilotController,
     AdminMonthlyInvoicesController,
     AdminBillingStatementsController,
     AdminDetachedUnpaidController,

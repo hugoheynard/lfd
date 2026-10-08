@@ -33,8 +33,8 @@
 
       @if (signaled().length > 0) {
         <fold-callout variant="warning" data-invoices-signaled>
-          {{ signaled().length }} payeur(s) signalé(s)&nbsp;: leur facture n’est pas partie, leurs
-          bons ne seront pas prélevés tant qu’elle ne l’est pas. Corriger la fiche, puis «
+          {{ signaled().length }} facture(s) signalée(s)&nbsp;: elles ne sont pas parties, leurs
+          bons ne seront pas prélevés tant qu’elles ne le sont pas. Corriger la fiche, puis «
           {{ issueLabel() }} ».
         </fold-callout>
         <fold-data-table
@@ -46,6 +46,7 @@
           data-signaled-table
         >
           <ng-template foldCell="payer" let-row>{{ row.payerName }}</ng-template>
+          <ng-template foldCell="mandate" let-row>{{ row.mandate }}</ng-template>
           <ng-template foldCell="message" let-row>{{ row.message }}</ng-template>
         </fold-data-table>
       }
@@ -80,7 +81,7 @@
       } @else if (signaled().length === 0) {
         <fold-empty-state
           title="Aucune facture émise pour ce mois"
-          subtitle="Elles partent le dernier jour du mois à 22h, ou par le bouton."
+          subtitle="Elles partent le dernier jour du mois à 23h55, ou par le bouton."
           data-invoices-empty
         >
           <fold-icon empty-icon name="receipt" />

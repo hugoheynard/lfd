@@ -26,10 +26,11 @@ export interface HourlyAccountingReport extends CollectionAutopilotReport {
  * (`COLLECTION_AUTOPILOT_CRON`, `container/worker.ts`) : un cron partagé avec
  * les relances aurait lié deux rythmes qui n'ont rien à voir (`vitruve`, § 8).
  *
- * Depuis E4 (plan `plan-emission-de-la-facture.md`), le MÊME passage émet
- * d'abord la facture du mois (le dernier jour à 22h15) : un second cron
- * aurait doublé la déclaration (`wrangler.jsonc`, `worker.ts`, leur test de
- * concordance) pour le même rythme horaire. La facture passe AVANT le lot :
+ * Depuis E4 (plan `plan-emission-de-la-facture.md`), le MÊME passage tente
+ * d'abord la facture du mois. Depuis E4b (2026-10-08), elle s'émet à 23h55
+ * par son cron propre (`invoice-autopilot.controller.ts`) : ici, elle ne
+ * part plus que pour RATTRAPER un 23h55 manqué — au plus tôt à 00h15 le 1er,
+ * jamais avant 23h55 (`monthToInvoice`). La facture passe AVANT le lot :
  * quand un passage manqué les rend dus ensemble, le lot trouve les factures.
  */
 @Controller("admin/accounting/collection/autopilot")

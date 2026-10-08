@@ -51,7 +51,7 @@ import { SettlePanel } from './settle-panel/settle-panel';
  * 2. le **mois en cours** : l'aperçu de ce qui sera prélevé, calculé comme le
  *    lot (une facture par payeur), et pourquoi il est vide ;
  * 3. les **factures du mois** (plan `plan-emission-de-la-facture.md`, E4) :
- *    émises le dernier jour à 22h, les payeurs signalés, le bouton qui émet ;
+ *    émises le dernier jour à 23h55, les factures signalées, le bouton qui émet ;
  * 4. le **lot à traiter** : préparé, pas encore déposé — ses lignes, ses
  *    signalements, ses gestes ; et le bouton qui prépare le lot du mois clos,
  *    nommé par ce mois ;
@@ -224,9 +224,9 @@ export class PrelevementDuMoisPage {
         this.notify.success(
           (late === undefined ? '' : `Émise(s) en retard, le ${day(late.issuedOn)} — `) +
             `${String(report.issued.length)} facture(s) émise(s), ` +
-            `${String(report.blocked.length)} payeur(s) signalé(s)` +
+            `${String(report.blocked.length)} facture(s) signalée(s)` +
             (report.alreadyInvoiced > 0
-              ? `, ${String(report.alreadyInvoiced)} déjà facturé(s) pour ce mois.`
+              ? `, ${String(report.alreadyInvoiced)} déjà émise(s) pour ce mois.`
               : '.'),
         );
       });

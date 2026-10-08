@@ -26,6 +26,7 @@ const INVOICE_COLUMNS: readonly FoldTableColumn[] = [
 
 const SIGNAL_COLUMNS: readonly FoldTableColumn[] = [
   { key: 'payer', label: 'Payeur' },
+  { key: 'mandate', label: 'Mandat (RUM)' },
   { key: 'message', label: 'Pourquoi la facture n’est pas partie' },
 ];
 
@@ -47,6 +48,8 @@ export interface MonthlyInvoiceRow {
 export interface MonthlySignalRow {
   readonly key: string;
   readonly payerName: string;
+  /** « — » pour la facture des bons sans mandat. */
+  readonly mandate: string;
   readonly message: string;
 }
 
@@ -78,8 +81,8 @@ export function autopilotSentence(run: MonthlyInvoiceAutopilotRunView): string {
 
 /**
  * **Les factures du mois** (plan `plan-emission-de-la-facture.md`, lot E4) :
- * émises le dernier jour à 22h, une par payeur légal ; les payeurs SIGNALÉS
- * (facture refusée, avec le geste de sortie) ; le bouton qui émet ou reprend.
+ * émises le dernier jour à 23h55, une par payeur légal et par mandat (E4b) ;
+ * les factures SIGNALÉES (refusées, avec le geste de sortie) ; le bouton qui émet ou reprend.
  * Le lot du 1er encaisse ces factures — il n'y a plus d'arrêté à figer.
  */
 @Component({
@@ -128,7 +131,7 @@ export class MonthInvoices {
       return '';
     }
     return (
-      `Une facture par payeur, émise le ${longDay(view.issuableFrom)} à 22h ; ` +
+      `Une facture par payeur et par mandat, émise le ${longDay(view.issuableFrom)} à 23h55 ; ` +
       'le lot du 1er les prélève.'
     );
   });
@@ -165,8 +168,10 @@ export class MonthInvoices {
 
   protected readonly signaled = computed((): readonly MonthlySignalRow[] =>
     (this.view()?.signaled ?? []).map((row) => ({
-      key: row.payerCompanyId,
+      // Un payeur a une issue PAR MANDAT (E4b) : la RUM complète la clé.
+      key: `${row.payerCompanyId}:${row.mandateReference ?? ''}`,
       payerName: row.payerName,
+      mandate: row.mandateReference ?? '—',
       message: row.message,
     })),
   );

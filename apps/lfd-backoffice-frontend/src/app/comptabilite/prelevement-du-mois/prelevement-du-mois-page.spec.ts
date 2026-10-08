@@ -136,6 +136,7 @@ const SEPTEMBER_INVOICES: MonthlyInvoicesView = {
     {
       payerCompanyId: 'c2',
       payerName: 'Chalet Sans SIREN',
+      mandateReference: null,
       message: 'Le client « Chalet Sans SIREN » n’a pas de SIREN : le renseigner sur sa fiche.',
       unbillableOrders: [],
       recordedAt: '2026-09-30T20:05:00.000Z',

@@ -34,6 +34,7 @@ import {
   invoicePaymentMeansOf,
   invoicingMomentOf,
   lastDayOf,
+  ordersByPayer,
   planMonthlyInvoices,
   type MonthlyInvoicePlan,
   type PayerInvoicePlan,
@@ -68,14 +69,17 @@ type PayerIssue =
  * **La facture du mois** (plan `plan-emission-de-la-facture.md`, § 3, lot E4).
  *
  * Pour chaque payeur légal (`billedPayerOf`) qui a des bons passés au compte
- * dans le mois et pas encore facturés : UNE facture 380, calculée par
+ * dans le mois et pas encore facturés : UNE facture 380 **par mandat
+ * effectif** de ses bons (E4b, option b — une seule s'il n'en a qu'un, ou
+ * aucun), calculée par
  * `simulateInvoiceDossier` puis `invoiceFromDossier`, numérotée et écrite
  * par `InvoiceIssuer` — **une transaction courte par payeur**, pour ne pas
  * tenir le compteur pendant tout le mois des autres.
  *
  * - émise le **dernier jour du mois** (jour local), échéance = la date de
  *   prélèvement du calendrier (`collectionDayOf`) ;
- * - moyen de paiement figé : le mandat effectif s'il est unique (BG-16) ;
+ * - moyen de paiement figé : le mandat effectif de la facture (BG-16), aucun
+ *   pour la facture des bons sans mandat ;
  * - un refus (manque nommé, numérotation, base) : la facture n'est pas
  *   émise, le payeur est **signalé** — rangé dans `invoice_monthly_outcome`,
  *   journalisé — et les autres continuent. Rien n'est avalé ;
@@ -116,10 +120,10 @@ export class IssueMonthlyInvoicesHandler implements ICommandHandler<
     }
     const { plan, invoiced, issuance } = await this.prepare(command.legalEntityId, month, at);
     const issues: PayerIssue[] = [];
-    for (const payer of plan.payers) {
-      issues.push(await this.issueFor(payer, issuance));
+    for (const invoice of plan.invoices) {
+      issues.push(await this.issueFor(invoice, issuance));
     }
-    return report(month, issues, invoiced.size, plan.payers);
+    return report(month, issues, invoiced.size, plan.invoices);
   }
 
   /** Tout ce qu'on lit avant la première facture — une fois pour tous les payeurs. */
@@ -141,8 +145,8 @@ export class IssueMonthlyInvoicesHandler implements ICommandHandler<
     const floor = await this.openFloor(month, closesAt);
     const orders = await this.reader.uninvoicedOrders(floor, closesAt);
     const follows = await this.reader.billingFollowsOf(unique(orders.map((o) => o.companyId)));
-    const invoiced = await this.reader.invoicedPayers(legalEntityId, month.toString());
-    const plan = planMonthlyInvoices(orders, follows, invoiced);
+    const invoiced = await this.reader.invoicedGroups(legalEntityId, month.toString());
+    const payers = ordersByPayer(orders, follows);
     const readers = {
       reader: this.reader,
       buyers: this.buyers,
@@ -150,7 +154,8 @@ export class IssueMonthlyInvoicesHandler implements ICommandHandler<
       handovers: this.handovers,
       deliveries: this.deliveries,
     };
-    const context = await readMonthlyContext(readers, plan, follows, at);
+    const context = await readMonthlyContext(readers, payers, follows, at);
+    const plan = planMonthlyInvoices(payers, { legalEntityId, ...context }, invoiced);
     const { preNotificationDays, collectionDaysAfterClosure } = creditor;
     // Jamais d'antidate : émise après le dernier jour, la facture porte le
     // jour réel (Paris) ; la période facturée reste le mois.
@@ -192,7 +197,7 @@ export class IssueMonthlyInvoicesHandler implements ICommandHandler<
     return floor;
   }
 
-  /** Un payeur : sa facture et son issue ensemble, ou son refus rangé. */
+  /** Une facture (payeur × mandat) : elle et son issue ensemble, ou son refus rangé. */
   private async issueFor(payer: PayerInvoicePlan, issuance: Issuance): Promise<PayerIssue> {
     const key = outcomeKey(payer, issuance);
     const { payerId } = payer;
@@ -245,12 +250,7 @@ function draftOf(
       reference: order.orderNumber,
       deliveredOn: context.deliveredOn.get(order.orderId) ?? null,
     })),
-    paymentMeans: invoicePaymentMeansOf(payer.billable, {
-      legalEntityId: issuance.legalEntityId,
-      follows: context.follows,
-      mandates: context.mandates,
-      collectionForms: context.collectionForms,
-    }),
+    paymentMeans: invoicePaymentMeansOf(payer.mandate),
     computed: simulateInvoiceDossier(payer.billable.map((order) => order.frozen)).invoice,
   });
 }
@@ -261,6 +261,8 @@ function outcomeKey(payer: PayerInvoicePlan, issuance: Issuance): MonthlyInvoice
     month: issuance.month.toString(),
     payerCompanyId: payer.payerId,
     payerName: issuance.context.names.get(payer.payerId) ?? payer.payerId,
+    mandateId: payer.mandate?.mandateId ?? null,
+    mandateReference: payer.mandate?.reference ?? null,
     unbillableOrders: payer.unbillable.map((order) => order.orderNumber),
     at: issuance.at,
   };
@@ -270,7 +272,7 @@ function report(
   month: StatementMonth,
   issues: readonly PayerIssue[],
   alreadyInvoiced: number,
-  payers: readonly PayerInvoicePlan[],
+  invoices: readonly PayerInvoicePlan[],
 ): MonthlyInvoiceReport {
   return {
     month: month.toString(),
@@ -285,7 +287,7 @@ function report(
         : [],
     ),
     alreadyInvoiced,
-    unbillableOrders: payers.reduce((sum, payer) => sum + payer.unbillable.length, 0),
+    unbillableOrders: invoices.reduce((sum, invoice) => sum + invoice.unbillable.length, 0),
   };
 }
 

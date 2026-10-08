@@ -12,10 +12,10 @@ import { FixedIssuers } from "./monthly-invoice-doubles.js";
 
 /**
  * Le passage automatique de la facture du mois (E4). L'horloge est fixe et
- * posée par rapport au mois : le 30 septembre 2026 à 22h15, heure de Paris.
+ * posée par rapport au mois : le 30 septembre 2026 à 23h55, heure de Paris (E4b).
  */
 
-const AT_MOMENT = new Date("2026-09-30T20:15:00.000Z");
+const AT_MOMENT = new Date("2026-09-30T21:55:00.000Z");
 const ENTITY = SELLER_FACTS.legalEntityId;
 
 class MemoryRuns extends InvoiceAutopilotRuns {
@@ -74,7 +74,7 @@ function harness(answer: () => MonthlyInvoiceReport, at = AT_MOMENT) {
 }
 
 describe("RunInvoiceAutopilot — une tentative par (entité, mois)", () => {
-  it("le dernier jour à 22h15 : émet le mois, range l'issue et les signalés", async () => {
+  it("le dernier jour à 23h55 : émet le mois, range l'issue et les signalés", async () => {
     const h = harness(() => ISSUED);
 
     const report = await h.handler.execute();
@@ -94,12 +94,35 @@ describe("RunInvoiceAutopilot — une tentative par (entité, mois)", () => {
     expect(h.invoicer.calls).toHaveLength(1);
   });
 
-  it("avant 22h, c'est le mois précédent qu'il regarde", async () => {
+  it("avant 23h55, c'est le mois précédent qu'il regarde", async () => {
     const h = harness(() => ISSUED, new Date("2026-09-30T19:00:00.000Z"));
 
     await h.handler.execute();
 
     expect(h.invoicer.calls).toEqual([`${ENTITY}:2026-08`]);
+  });
+
+  /**
+   * Régression E4b : le passage horaire `15 *` tombait à 23h15 le dernier
+   * jour, et à 22h15 il émettait ; depuis 23h55 il ne doit plus rien émettre
+   * du mois avant cette heure-là.
+   */
+  it("le passage horaire de 23h15 le dernier jour n'émet pas le mois courant", async () => {
+    const h = harness(() => ISSUED, new Date("2026-09-30T21:15:00.000Z"));
+
+    await h.handler.execute();
+
+    expect(h.invoicer.calls).toEqual([`${ENTITY}:2026-08`]);
+  });
+
+  it("le cron de 23h55 l'hiver (22h55 UTC) émet février ; son jumeau de 21h55 UTC (22h55 à Paris) regarde encore janvier", async () => {
+    const winter = harness(() => ISSUED, new Date("2027-02-28T22:55:00.000Z"));
+    await winter.handler.execute();
+    expect(winter.invoicer.calls).toEqual([`${ENTITY}:2027-02`]);
+
+    const early = harness(() => ISSUED, new Date("2027-02-28T21:55:00.000Z"));
+    await early.handler.execute();
+    expect(early.invoicer.calls).toEqual([`${ENTITY}:2027-01`]);
   });
 
   it("pas encore en service : `not_yet_open` ; autre refus : `failed` avec son message", async () => {

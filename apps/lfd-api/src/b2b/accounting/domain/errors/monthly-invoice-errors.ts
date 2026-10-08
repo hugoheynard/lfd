@@ -23,7 +23,7 @@ const LONG_DAY = new Intl.DateTimeFormat("fr-FR", {
   timeZone: "Europe/Paris",
 });
 
-/** Avant le dernier jour du mois à 22h : le mois court encore. */
+/** Avant le dernier jour du mois à 23h55 : le mois court encore. */
 export class MonthNotYetInvoiceableError extends BusinessError {
   constructor(
     readonly month: string,

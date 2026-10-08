@@ -5,13 +5,21 @@ export interface MonthlyInvoiceOutcomeKey {
   readonly month: string;
   readonly payerCompanyId: string;
   readonly payerName: string;
+  /**
+   * Le mandat effectif de la facture (E4b : une facture par payeur ET par
+   * mandat) ; `null` pour celle des bons sans mandat. Avec le payeur et le
+   * mois, la clé de l'issue.
+   */
+  readonly mandateId: string | null;
+  /** Sa RUM, pour que l'écran nomme le mandat d'un payeur signalé. */
+  readonly mandateReference: string | null;
   /** Les références des bons signalés non facturables. */
   readonly unbillableOrders: readonly string[];
   readonly at: Date;
 }
 
 /**
- * **L'issue de la facture du mois, par payeur** (lot E4) : émise ou
+ * **L'issue de la facture du mois, par payeur et par mandat** (lots E4, E4b) : émise ou
  * signalée. Rien n'est avalé — un refus est RANGÉ, l'écran le lit.
  *
  * La base tient qu'une issue émise ne redevient jamais signalée

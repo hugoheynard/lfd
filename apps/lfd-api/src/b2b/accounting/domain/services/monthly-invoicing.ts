@@ -2,6 +2,7 @@ import { addDays, instantToLocal, localToInstant } from "@lfd/contracts";
 
 import { SEPA_DIRECT_DEBIT, type InvoicePaymentMeans } from "../entities/invoice.types.js";
 import { BillingCycleBoundaryError } from "../errors/accounting-errors.js";
+import type { CollectionMandate } from "../ports/collection-mandates.reader.js";
 import type { BillingFollow } from "../ports/statement-billing.reader.js";
 import { StatementMonth } from "../value-objects/statement-month.js";
 import { billedPayerOf } from "./billed-payer.js";
@@ -19,8 +20,14 @@ import type { FrozenInvoiceOrder } from "./invoice-dossier.types.js";
  * Ni horloge, ni port : l'instant et les bons sont donnés.
  */
 
-/** L'heure de l'émission, le dernier jour du mois, à Paris (§ 4). */
-export const MONTHLY_INVOICE_TIME = "22:00";
+/**
+ * L'heure de l'émission, le dernier jour du mois, à Paris (§ 4) — 23h55
+ * depuis E4b (Hugo, 2026-10-08) : les bons du soir restent sur leur mois.
+ * Cinq minutes avant minuit, la plus petite fenêtre que le cron
+ * (`55 21,22 * * *`, UTC) tient en heure d'été comme d'hiver ; un bon passé
+ * entre 23h55 et minuit va à la facture du mois suivant (arbitré).
+ */
+export const MONTHLY_INVOICE_TIME = "23:55";
 
 /** Le dernier jour (local) d'un mois — la date d'émission de ses factures. */
 export function lastDayOf(month: StatementMonth): string {
@@ -29,7 +36,7 @@ export function lastDayOf(month: StatementMonth): string {
 
 /**
  * L'instant à partir duquel les factures d'un mois s'émettent : son dernier
- * jour à 22h, heure de Paris.
+ * jour à 23h55, heure de Paris.
  *
  * @throws {BillingCycleBoundaryError} l'heure n'existe pas ce jour-là (jamais à Paris).
  */
@@ -44,7 +51,7 @@ export function invoicingMomentOf(month: StatementMonth): Date {
 
 /**
  * Le mois dont on émet les factures à `now` : le dernier dont l'instant
- * d'émission est passé — le mois courant à partir de son dernier jour 22h,
+ * d'émission est passé — le mois courant à partir de son dernier jour 23h55,
  * le précédent avant. Ce qui fait du mois une clé stable pour « déjà tenté ».
  */
 export function monthToInvoice(now: Date): StatementMonth {
@@ -63,9 +70,20 @@ export interface InvoiceableOrder {
   readonly frozen: FrozenInvoiceOrder;
 }
 
-/** Ce que la facture du mois fera pour UN payeur légal. */
+/** Les bons du mois d'UN payeur légal, dans l'ordre reçu (date de passation). */
+export interface PayerOrders {
+  readonly payerId: string;
+  readonly orders: readonly InvoiceableOrder[];
+}
+
+/**
+ * **UNE facture du mois** : un payeur légal, un mandat effectif (ou aucun),
+ * et les bons qui tombent dessus (E4b, option b).
+ */
 export interface PayerInvoicePlan {
   readonly payerId: string;
+  /** Le mandat effectif de tous ses bons ; `null` : aucun mandat unique. */
+  readonly mandate: CollectionMandate | null;
   /** Les bons à facturer, dans l'ordre reçu (date de passation). */
   readonly billable: readonly InvoiceableOrder[];
   /** Les bons qu'on ne sait pas facturer : signalés, laissés hors de la facture. */
@@ -73,62 +91,107 @@ export interface PayerInvoicePlan {
 }
 
 export interface MonthlyInvoicePlan {
-  readonly payers: readonly PayerInvoicePlan[];
-  /** Les payeurs déjà facturés pour ce mois : rien de neuf pour eux. */
+  readonly invoices: readonly PayerInvoicePlan[];
+  /** Les factures (clés `invoiceGroupKey`) déjà émises pour ce mois : rien de neuf pour elles. */
   readonly alreadyInvoiced: readonly string[];
 }
 
+/** Ce qu'il faut pour trouver le mandat effectif d'un bon — la règle du lot. */
+export type MandateContext = Pick<
+  VerdictContext,
+  "legalEntityId" | "follows" | "mandates" | "collectionForms"
+>;
+
 /**
- * **Une facture par payeur légal** (Q3) : le principal pour un site qui suit
- * sa facturation — `billedPayerOf`, le même que le relevé et le lot.
- *
- * Un payeur déjà facturé pour ce mois ne l'est pas deux fois : ses bons
- * passés depuis (entre 22h et minuit) attendent la facture du mois suivant.
- * Les payeurs sortent dans l'ordre de leur premier bon.
+ * La clé d'une facture du mois dans son mois : le payeur ET le mandat
+ * effectif (`null` = aucun). C'est elle qui dit « déjà facturé ».
  */
-export function planMonthlyInvoices(
+export function invoiceGroupKey(payerId: string, mandateId: string | null): string {
+  return `${payerId}|${mandateId ?? ""}`;
+}
+
+/**
+ * Les bons par payeur légal (Q3) : le principal pour un site qui suit sa
+ * facturation — `billedPayerOf`, le même que le relevé et le lot. Les
+ * payeurs sortent dans l'ordre de leur premier bon.
+ */
+export function ordersByPayer(
   orders: readonly InvoiceableOrder[],
   follows: readonly BillingFollow[],
-  alreadyInvoiced: ReadonlySet<string>,
-): MonthlyInvoicePlan {
-  const byPayer = new Map<
-    string,
-    { billable: InvoiceableOrder[]; unbillable: InvoiceableOrder[] }
-  >();
-  const skipped = new Set<string>();
+): readonly PayerOrders[] {
+  const byPayer = new Map<string, InvoiceableOrder[]>();
   for (const order of orders) {
     const payerId = billedPayerOf(order, follows);
-    if (alreadyInvoiced.has(payerId)) {
-      skipped.add(payerId);
-      continue;
-    }
-    const entry = byPayer.get(payerId) ?? { billable: [], unbillable: [] };
-    (isBillable(order.frozen) ? entry.billable : entry.unbillable).push(order);
-    byPayer.set(payerId, entry);
+    byPayer.set(payerId, [...(byPayer.get(payerId) ?? []), order]);
   }
-  return {
-    payers: [...byPayer.entries()].map(([payerId, entry]) => ({ payerId, ...entry })),
-    alreadyInvoiced: [...skipped],
-  };
+  return [...byPayer.entries()].map(([payerId, payerOrders]) => ({
+    payerId,
+    orders: payerOrders,
+  }));
+}
+
+/**
+ * **Une facture par payeur légal ET par mandat effectif** (E4b, option b,
+ * Hugo 2026-10-08) : les bons d'un payeur qui tombent sur deux mandats
+ * (sites sur leur propre mandat, formes 2 et 3) font deux factures, chacune
+ * encaissée par la ligne de lot de son mandat. Les bons sans mandat
+ * effectif font la leur, sans moyen de paiement — comme avant E4b.
+ *
+ * Ordre déterministe, donc numérotation aussi : les payeurs dans l'ordre de
+ * leur premier bon, puis, chez un payeur, ses factures dans l'ordre du
+ * premier bon de chacune. Une facture déjà émise pour ce mois ne l'est pas
+ * deux fois : ses bons passés depuis (entre 23h55 et minuit) attendent la
+ * facture du mois suivant.
+ */
+export function planMonthlyInvoices(
+  payers: readonly PayerOrders[],
+  context: MandateContext,
+  alreadyInvoiced: ReadonlySet<string>,
+): MonthlyInvoicePlan {
+  const invoices: PayerInvoicePlan[] = [];
+  const skipped = new Set<string>();
+  for (const payer of payers) {
+    for (const group of byMandate(payer, context)) {
+      const key = invoiceGroupKey(group.payerId, group.mandate?.mandateId ?? null);
+      if (alreadyInvoiced.has(key)) {
+        skipped.add(key);
+      } else {
+        invoices.push(group);
+      }
+    }
+  }
+  return { invoices, alreadyInvoiced: [...skipped] };
+}
+
+/** Les bons d'un payeur rangés par mandat effectif, dans l'ordre du premier bon. */
+function byMandate(payer: PayerOrders, context: MandateContext): readonly PayerInvoicePlan[] {
+  const groups = new Map<
+    string,
+    {
+      mandate: CollectionMandate | null;
+      billable: InvoiceableOrder[];
+      unbillable: InvoiceableOrder[];
+    }
+  >();
+  for (const order of payer.orders) {
+    const mandate = effectiveMandateOf(order, context);
+    const key = mandate?.mandateId ?? "";
+    const group = groups.get(key) ?? { mandate, billable: [], unbillable: [] };
+    (isBillable(order.frozen) ? group.billable : group.unbillable).push(order);
+    groups.set(key, group);
+  }
+  return [...groups.values()].map((group) => ({ payerId: payer.payerId, ...group }));
 }
 
 /**
  * Le moyen de paiement que la facture fige (BG-16) : le prélèvement SEPA
- * quand TOUS ses bons tombent sur le même mandat effectif de cette entité —
- * celui que le lot prendra. Sinon `null` : aucun moyen n'est écrit plutôt
- * qu'un mandat choisi parmi plusieurs.
+ * sous le mandat effectif de ses bons — celui que le lot prendra. Sans
+ * mandat, `null` : aucun moyen n'est écrit.
  */
 export function invoicePaymentMeansOf(
-  orders: readonly InvoiceableOrder[],
-  context: Pick<VerdictContext, "legalEntityId" | "follows" | "mandates" | "collectionForms">,
+  mandate: Pick<CollectionMandate, "reference"> | null,
 ): InvoicePaymentMeans | null {
-  const mandates = orders.map((order) => effectiveMandateOf(order, context));
-  const [first] = mandates;
-  if (first === undefined || first === null) {
-    return null;
-  }
-  const single = mandates.every((mandate) => mandate?.mandateId === first.mandateId);
-  return single ? { code: SEPA_DIRECT_DEBIT, mandateReference: first.reference } : null;
+  return mandate === null ? null : { code: SEPA_DIRECT_DEBIT, mandateReference: mandate.reference };
 }
 
 /**

@@ -1,9 +1,9 @@
 /**
  * E2E de **la facture du mois, et du lot qui encaisse des factures** (plan
- * `documentation/comptabilite/facturation/plan-emission-de-la-facture.md`, lot E4).
+ * `documentation/comptabilite/facturation/plan-emission-de-la-facture.md`, lots E4, E4b).
  *
- * Ce que seul le vrai SQL prouve : le passage horaire émet, le dernier jour
- * à 22h, une facture numérotée par payeur ; le lot du 1er encaisse ces
+ * Ce que seul le vrai SQL prouve : le passage de 23h55 émet, le dernier jour,
+ * une facture numérotée par payeur et par mandat ; le lot du 1er encaisse ces
  * factures (table de liaison, montant = TTC des factures) sans arrêté ;
  * l'avis annonce ce montant et cite les numéros ; un rejeu ne double rien ;
  * le bouton reprend un payeur signalé ; un lot annulé rend sa facture.
@@ -106,8 +106,9 @@ beforeEach(async () => {
   month = StatementMonth.containing(new Date(daysAgo(0))).previous();
   issuableFrom = invoicingMomentOf(month);
   closesAt = month.cycle().closesAt;
-  // Le dernier jour du mois, 22h05 à Paris : l'heure de la facture du mois.
-  clock.set(new Date(issuableFrom.getTime() + 5 * 60 * 1000));
+  // Le dernier jour du mois, 23h57 à Paris : la facture du mois est due
+  // (23h55, E4b), la clôture de minuit n'est pas atteinte.
+  clock.set(new Date(issuableFrom.getTime() + 2 * 60 * 1000));
   const startsAt = month.cycle().startsAt;
   await ctx.prisma.collectionFloor.create({ data: { id: true, floorAt: startsAt } });
   await ctx.prisma.invoicingFloor.create({ data: { id: true, floorAt: startsAt } });
@@ -218,6 +219,17 @@ async function pass(): Promise<HourlyReport> {
   return jsonBody<HourlyReport>(response);
 }
 
+/** Le cron de 23h55 (E4b) : la facture du mois SEULE, jamais le lot. */
+async function invoicePass(): Promise<{ readonly runs: readonly unknown[] }> {
+  const response = await ctx
+    .http()
+    .post(`${MONTHLY}/autopilot`)
+    .set("x-lfc-recompute-token", TEST_RECOMPUTE_TOKEN)
+    .expect(200);
+  await ctx.drain();
+  return jsonBody<{ readonly runs: readonly unknown[] }>(response);
+}
+
 async function view(entityId: string): Promise<MonthlyInvoicesView> {
   return jsonBody<MonthlyInvoicesView>(
     await staff().get(`${MONTHLY}?legalEntityId=${entityId}`).expect(200),
@@ -234,15 +246,17 @@ async function issueByHand(entityId: string): Promise<MonthlyInvoiceReportView> 
 }
 
 describe("la facture du mois, puis le lot qui l'encaisse (E4)", () => {
-  it("un mois complet : la facture à 22h, le lot du 1er au montant des factures, l'avis qui les cite", async () => {
+  it("un mois complet : la facture à 23h55, le lot du 1er au montant des factures, l'avis qui les cite", async () => {
     const id = await entity();
     const company = await payer(id);
 
-    const evening = await pass();
+    const evening = await invoicePass();
 
-    expect(evening.invoiceRuns).toEqual([
+    expect(evening.runs).toEqual([
       { legalEntityId: id, month: month.toString(), outcome: "issued" },
     ]);
+    // Le passage de 23h55 ne prépare pas le lot : la clôture n'est pas atteinte.
+    expect(await ctx.prisma.collectionBatch.count()).toBe(0);
     const invoice = await ctx.prisma.invoice.findFirstOrThrow({
       where: { payerCompanyId: company.id },
     });
@@ -279,6 +293,16 @@ describe("la facture du mois, puis le lot qui l'encaisse (E4)", () => {
       await staff().get(`${COLLECTION}/cycle?legalEntityId=${id}`).expect(200),
     );
     expect(cycle.batches[0]?.lines[0]?.invoiceNumbers).toEqual([invoice.number]);
+  });
+
+  it("le passage horaire de 23h15 le dernier jour n'émet pas le mois (E4b)", async () => {
+    const id = await entity();
+    await payer(id);
+    clock.set(new Date(issuableFrom.getTime() - 40 * 60 * 1000));
+
+    await pass();
+
+    expect(await ctx.prisma.invoice.count()).toBe(0);
   });
 
   it("le cron rejoué ne refait rien : une tentative par mois, une facture par payeur", async () => {
@@ -374,7 +398,7 @@ describe("la facture du mois, puis le lot qui l'encaisse (E4)", () => {
     expect((await view(id)).invoices.map((i) => i.issuedOn)).toContain(lateDay);
   });
 
-  it("avant le dernier jour 22h : 409, aucune facture", async () => {
+  it("avant le dernier jour 23h55 : 409, aucune facture", async () => {
     const id = await entity();
     await payer(id);
     clock.set(new Date(issuableFrom.getTime() - HOUR_MS));
@@ -385,7 +409,7 @@ describe("la facture du mois, puis le lot qui l'encaisse (E4)", () => {
       .send({ legalEntityId: id, month: current.toString() })
       .expect(409);
 
-    expect(response.text).toContain("22:00");
+    expect(response.text).toContain("23:55");
     expect(await ctx.prisma.invoice.count()).toBe(0);
   });
 
@@ -406,4 +430,132 @@ describe("la facture du mois, puis le lot qui l'encaisse (E4)", () => {
     );
     expect(new Set(links.map((link) => link.invoiceId)).size).toBe(1);
   });
+  it("deux mandats chez un payeur : deux factures, deux lignes, chacune avec SES numéros (E4b)", async () => {
+    const id = await entity();
+    const principal = await payer(id);
+    const site = await siteOnOwnMandate(id, principal.id);
+
+    await invoicePass();
+
+    const invoices = await ctx.prisma.invoice.findMany({ orderBy: { rank: "asc" } });
+    expect(invoices.map((i) => [i.payerCompanyId, i.paymentMeans])).toEqual([
+      [principal.id, { code: "59", mandateReference: "RUM-E4-1" }],
+      [principal.id, { code: "59", mandateReference: site.reference }],
+    ]);
+    expect(await ctx.prisma.invoiceMonthlyOutcome.count({ where: { outcome: "issued" } })).toBe(2);
+
+    clock.set(new Date(closesAt.getTime() + 2 * HOUR_MS));
+    await pass();
+
+    const lines = await ctx.prisma.collectionBatchLine.findMany({ include: { invoices: true } });
+    expect(lines).toHaveLength(2);
+    expect(lines.flatMap((line) => line.invoices.map((link) => link.invoiceId)).sort()).toEqual(
+      invoices.map((invoice) => invoice.id).sort(),
+    );
+    for (const line of lines) {
+      const invoice = invoices.find((candidate) => candidate.id === line.invoices[0]?.invoiceId);
+      expect(line.invoices).toHaveLength(1);
+      expect(line.amountCents).toBe(invoice?.totalTtcCents);
+    }
+    const notices = await ctx.prisma.collectionNotice.findMany();
+    expect(notices.map((notice) => notice.invoiceNumbers.join()).sort()).toEqual(
+      invoices.map((invoice) => invoice.number).sort(),
+    );
+    expect(
+      await ctx.prisma.orderCollection.count({ where: { exclusionReason: "invoice_split" } }),
+    ).toBe(0);
+  });
+
+  it("rejouer le bouton après deux factures par mandat ne double rien", async () => {
+    const id = await entity();
+    const principal = await payer(id);
+    await siteOnOwnMandate(id, principal.id);
+    await issueByHand(id);
+
+    const replay = await issueByHand(id);
+
+    expect(replay).toMatchObject({ issued: [], blocked: [], alreadyInvoiced: 2 });
+    expect(await ctx.prisma.invoice.count()).toBe(2);
+  });
 });
+
+/**
+ * Un site qui suit la facturation du principal, prélevé sur SON mandat
+ * (forme 2) au nom du principal, avec un bon du mois au compte de celui-ci.
+ */
+async function siteOnOwnMandate(
+  entityId: string,
+  principalId: string,
+): Promise<{ readonly id: string; readonly reference: string }> {
+  seq += 1;
+  const site = await createCompany(ctx.prisma, {
+    raisonSociale: "",
+    enseigne: `Chalet ${String(seq)}`,
+  });
+  await ctx.prisma.company.update({
+    where: { id: site.id },
+    data: { parentCompanyId: principalId },
+  });
+  await ctx.prisma.companyFollow.create({
+    data: {
+      companyId: site.id,
+      parentId: principalId,
+      aspect: "billing",
+      validFrom: new Date(closesAt.getTime() - 30 * DAY_MS),
+    },
+  });
+  const account = await ctx.prisma.companyBankAccount.findUniqueOrThrow({
+    where: { companyId: principalId },
+    select: { id: true },
+  });
+  const reference = `RUM-E4-SITE-${String(seq)}`;
+  await ctx.prisma.paymentMandate.create({
+    data: {
+      companyId: site.id,
+      creditorId: entityId,
+      reference,
+      status: "active",
+      acceptedAt: new Date(closesAt.getTime() - 60 * DAY_MS),
+      scheme: "B2B",
+      paymentType: "recurrent",
+      bankAccountId: account.id,
+      debtorCompanyId: principalId,
+      debtorSiren: "552100554",
+      debtorName: "Boulangerie principale",
+      debtorLegalForm: "SAS",
+    },
+  });
+  await ctx.prisma.companyCollectionForm.create({
+    data: {
+      companyId: site.id,
+      form: "own_mandate_principal_iban",
+      validFrom: new Date(closesAt.getTime() - 10 * DAY_MS),
+    },
+  });
+  const user = await createUser(ctx.prisma, { auth0Sub: `e4b-site-${String(seq)}` });
+  await ctx.prisma.order.create({
+    data: {
+      orderNumber: `CMD-E4-${String(seq)}`,
+      companyId: site.id,
+      billedCompanyId: principalId,
+      placedByUserId: user.id,
+      subtotalCents: 10_000,
+      totalCents: 10_550,
+      vatCents: 550,
+      vatShares: [{ rate: 5.5, amountCents: 550 }],
+      paymentStatus: "not_required",
+      createdAt: new Date(closesAt.getTime() - DAY_MS),
+      lines: {
+        create: {
+          sku: "PAIN-E4",
+          productNameSnapshot: "Pain du site",
+          unitPriceMillicents: 10_000_000,
+          vatRate: 5.5,
+          quantity: 1,
+          lineTotalCents: 10_000,
+        },
+      },
+    },
+  });
+  return { id: site.id, reference };
+}

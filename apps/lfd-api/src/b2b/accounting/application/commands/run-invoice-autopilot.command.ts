@@ -15,8 +15,9 @@ export interface InvoiceAutopilotReport {
 
 /**
  * **Le passage automatique de la facture du mois** (plan
- * `plan-emission-de-la-facture.md`, lot E4) : sur le Cron Trigger horaire de
- * l'automatisme du prélèvement (`15 * * * *`), AVANT lui — le dernier jour du
- * mois à 22h15, puis à chaque heure s'il a été manqué. Sans charge utile.
+ * `plan-emission-de-la-facture.md`, lots E4 et E4b) : sur son cron propre,
+ * `55 21,22 * * *` (UTC) — le dernier jour du mois à 23h55, heure de Paris —,
+ * puis sur le passage horaire du prélèvement (`15 * * * *`), AVANT lui, s'il
+ * a été manqué. Sans charge utile.
  */
 export class RunInvoiceAutopilotCommand {}

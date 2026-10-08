@@ -11,7 +11,21 @@ export const ISSUED_OUTCOME = "issued";
 export const BLOCKED_OUTCOME = "blocked";
 
 /**
- * L'issue par payeur, dans `public.invoice_monthly_outcome`.
+ * `invoice_monthly_outcome.mandate_id` n'est jamais NULL (il est dans la clé
+ * primaire) : la chaîne vide dit « aucun mandat effectif » (E4b).
+ */
+export const NO_MANDATE_COLUMN = "";
+
+export function mandateColumnOf(mandateId: string | null): string {
+  return mandateId ?? NO_MANDATE_COLUMN;
+}
+
+export function mandateIdOfColumn(column: string): string | null {
+  return column === NO_MANDATE_COLUMN ? null : column;
+}
+
+/**
+ * L'issue par payeur et par mandat (E4b), dans `public.invoice_monthly_outcome`.
  *
  * 🔴 Le déclencheur `invoice_monthly_outcome_final` refuse de toucher une
  * issue `issued` : un refus n'écrase donc qu'un refus (`outcome = blocked`
@@ -27,7 +41,7 @@ export class PrismaMonthlyInvoiceOutcomes extends MonthlyInvoiceOutcomes {
   async recordIssued(key: MonthlyInvoiceOutcomeKey, invoiceId: string): Promise<void> {
     const columns = { ...this.columns(key), outcome: ISSUED_OUTCOME, invoiceId, message: null };
     await this.prisma.invoiceMonthlyOutcome.upsert({
-      where: { legalEntityId_month_payerCompanyId: this.id(key) },
+      where: { legalEntityId_month_payerCompanyId_mandateId: this.id(key) },
       create: columns,
       update: columns,
     });
@@ -52,6 +66,7 @@ export class PrismaMonthlyInvoiceOutcomes extends MonthlyInvoiceOutcomes {
       legalEntityId: key.legalEntityId,
       month: key.month,
       payerCompanyId: key.payerCompanyId,
+      mandateId: mandateColumnOf(key.mandateId),
     };
   }
 
@@ -59,6 +74,7 @@ export class PrismaMonthlyInvoiceOutcomes extends MonthlyInvoiceOutcomes {
     return {
       ...this.id(key),
       payerName: key.payerName,
+      mandateReference: key.mandateReference,
       unbillableOrders: [...key.unbillableOrders],
       recordedAt: key.at,
     };

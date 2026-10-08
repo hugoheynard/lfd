@@ -1,6 +1,6 @@
 # L'émission de la facture
 
-> 📐 **Plan v2 ; E0, E1, E2, E3a, E4 et E6 bâtis le 2026-10-08** (§ 8.1 à § 8.6). Touche **l'argent** et un
+> 📐 **Plan v2 ; E0, E1, E2, E3a, E4, E4b et E6 bâtis le 2026-10-08** (§ 8.1 à § 8.6). Touche **l'argent** et un
 > document légal : la v1 a été contredite par `vitruve` le même jour (trois
 > BLOQUANTS, huit SÉRIEUX), repris au § 9. Les règles du CGI et du Code de
 > commerce sont citées **de mémoire**, ni par l'agent ni par moi rouvertes en
@@ -49,7 +49,7 @@ facturerait un bon livré le mois suivant.
 
 ```mermaid
 flowchart LR
-  M["Le mois court"] --> F["Dernier jour du mois · 22h<br/>une facture par payeur légal<br/>sur les bons LIVRÉS du mois"]
+  M["Le mois court"] --> F["Dernier jour du mois · 23h55<br/>une facture par payeur légal et par mandat<br/>sur les bons LIVRÉS du mois"]
   F -->|"n° FA-…, figée"| L["Le 1er · lot préparé<br/>une ligne = des factures émises"]
   L --> A["Avis de prélèvement<br/>montant = factures"]
   A --> P["Prélèvement à l'échéance"]
@@ -69,7 +69,7 @@ flowchart LR
 
 | Régime            | Émise quand ?                                         | Sur quoi                |
 | ----------------- | ----------------------------------------------------- | ----------------------- |
-| **Pro au compte** | dernier jour du mois, 22h (heure de Paris)            | les bons livrés du mois |
+| **Pro au compte** | dernier jour du mois, 23h55 (heure de Paris, E4b)     | les bons livrés du mois |
 | **Pro par carte** | **à la livraison** (fait de retrait), pas au paiement | la commande seule       |
 | **Public**        | jamais                                                | —                       |
 
@@ -360,7 +360,7 @@ route `admin/accounting/monthly-invoices` (`b2b_accounting`) ; e2e
 
 ```mermaid
 flowchart LR
-  B["Bons au compte du mois<br/>(createdAt, Q2)"] --> F["Dernier jour · 22h<br/>une facture par payeur légal<br/>ou le payeur SIGNALÉ"]
+  B["Bons au compte du mois<br/>(createdAt, Q2)"] --> F["Dernier jour · 23h55 (E4b)<br/>une facture par payeur légal et par mandat<br/>ou la facture SIGNALÉE"]
   F --> L["Le 1er · lot<br/>une ligne = des factures émises<br/>montant = Σ TTC"]
   L --> A["Avis : montant des factures,<br/>numéros cités"]
   L -->|"lot annulé"| F2["les factures redeviennent à prélever"]
@@ -369,7 +369,7 @@ flowchart LR
 - **Périmètre** : les bons passés au compte (`billableOrderWhere`, le critère
   du relevé et du lot) créés entre la mise en service et la fin du mois, et
   qu'aucune facture 380 ne porte encore. Un payeur par `billedPayerOf` (Q3).
-- **Le moment** : le dernier jour du mois à 22h (Paris), par le **même**
+- **Le moment** _(E4 ; 23h55 et cron propre depuis E4b, voir plus bas)_ : le dernier jour du mois à 22h (Paris), par le **même**
   passage horaire que le lot (`15 * * * *`, `collection-autopilot.controller.ts`) —
   la facture d'abord, le lot ensuite. Un second cron aurait doublé la
   déclaration (`wrangler.jsonc`, `worker.ts`, leur test de concordance) pour
@@ -449,6 +449,54 @@ et l'écran les portent).
   bons du soir restent sur leur mois ;
 - (c) option **(b)** : une facture **par mandat** — chaque groupe de bons
   prélevé sur un même mandat a sa facture, et `invoice_split` disparaît.
+
+**E4b bâti (2026-10-08)** — migration `20261008210000_une_facture_par_mandat`
+(additive) ; endpoint machine `POST admin/accounting/monthly-invoices/autopilot`
+(`apps/lfd-api/src/b2b/accounting/http/invoice-autopilot.controller.ts`) ;
+cron `55 21,22 * * *` (`MONTHLY_INVOICE_CRON`, `apps/lfd-api/container/worker.ts`
+et `apps/lfd-api/wrangler.jsonc`). Ce qui a été tranché en bâtissant :
+
+- **23h55** (`MONTHLY_INVOICE_TIME`) ouvre l'émission ET le bouton
+  (`MonthNotYetInvoiceableError`). Le cron UTC tombe deux fois par jour :
+  21h55 UTC est 23h55 l'été, 22h55 UTC l'hiver ; l'autre passage tombe à
+  22h55 ou 00h55 (Paris) et regarde un mois déjà tenté. Le handler décide sur
+  l'heure de Paris (`monthToInvoice`).
+- **Un endpoint à lui**, pas le passage horaire : il ne passe QUE la facture,
+  donc un 23h55 ne prépare jamais de lot. Le passage `15 *` garde la facture
+  en tête, mais seulement en **rattrapage** : le dernier jour à 23h15 il
+  n'émet plus rien du mois (au plus tôt 00h15 le 1er si 23h55 a manqué —
+  la facture porte alors le jour réel, le 1er, comme tout retard).
+- **Une facture par (payeur légal, mandat effectif)** : `ordersByPayer` puis
+  `planMonthlyInvoices`, sur `effectiveMandateOf` (la règle du lot). Les bons
+  sans mandat effectif (aucun, plusieurs, ou d'une autre entité) font la leur,
+  sans BG-16 — comme avant. Un bon non facturable est rangé dans la facture
+  de SON mandat (cité sur son issue ; seul, il la signale). BG-16 est le
+  mandat du groupe (`invoicePaymentMeansOf(mandate)`).
+- **Ordre, donc numérotation** : payeurs dans l'ordre de leur premier bon
+  (lecture `createdAt`, puis numéro), puis, chez un payeur, ses factures dans
+  l'ordre du premier bon de chacune.
+- **Idempotence** : `invoice_monthly_outcome` prend `mandate_id`
+  (`''` = aucun mandat, et toute issue d'avant E4b) dans sa clé primaire, et
+  `mandate_reference` (la RUM, pour l'écran). « Déjà facturé » se lit par
+  (payeur, mandat) : une facture émise est sautée, l'autre mandat du même
+  payeur est repris au rejeu. Le rapport compte `alreadyInvoiced` en
+  **factures** déjà émises pour le mois, plus en payeurs.
+- **Écran** : les factures signalées ont une colonne « Mandat (RUM) » ; la
+  clé d'une ligne est payeur + RUM ; « payeur(s) signalé(s) » devient
+  « facture(s) signalée(s) ». Contrat : `MonthlyInvoiceSignalView.mandateReference`
+  (ajout).
+- **`invoice_split`** : la facture du mois ne produit plus de facture à
+  cheval. La branche du lot **reste** (commentaire daté dans
+  `collection-assembly.ts`) : elle est le seul filet quand les mandats ont
+  CHANGÉ entre l'émission et le lot — voir « Ouvert après E4b ».
+
+**Ouvert après E4b** : (e) une facture dont les mandats ont changé entre
+l'émission (23h55) et le lot (mandat révoqué, re-signé, forme de
+prélèvement du site changée) est encore écartée `invoice_split` ou
+`no_mandate`, alors que BG-16 nomme déjà un mandat — faut-il prélever sur le
+mandat figé ? (f) le passage `15 *` qui rattrape après minuit date la
+facture du 1er (« émise en retard ») — acceptable, ou rattraper en datant du
+dernier jour tant que le lot n'est pas fait ?
 
 ### 8.6 E6 — prévenir, « Mes factures », l'onglet de la fiche (2026-10-08)
 

@@ -44,7 +44,7 @@ export class AdminMonthlyInvoicesController {
     );
   }
 
-  /** « Émettre les factures de septembre ». Rejouable : un payeur facturé ne l'est pas deux fois. */
+  /** « Émettre les factures de septembre ». Rejouable : une facture émise (payeur × mandat) ne l'est pas deux fois. */
   @Post()
   @HttpCode(200)
   issue(

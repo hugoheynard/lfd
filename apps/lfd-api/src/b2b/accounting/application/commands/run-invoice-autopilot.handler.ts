@@ -26,7 +26,7 @@ interface Issue {
  * **Le passage automatique de la facture du mois** (lot E4).
  *
  * Pour chaque entité émettrice en service : le mois à facturer à cet instant
- * (le dernier dont le « dernier jour, 22h » est passé). S'il n'a jamais été
+ * (le dernier dont le « dernier jour, 23h55 » est passé). S'il n'a jamais été
  * tenté, UNE tentative — la même commande que le bouton, sous l'acteur
  * système. Son issue est rangée (`invoice_autopilot_run`).
  *

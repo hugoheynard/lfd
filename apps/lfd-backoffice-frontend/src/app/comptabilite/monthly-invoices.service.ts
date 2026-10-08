@@ -14,7 +14,7 @@ import { B2B_API_BASE } from '../api/api-config';
  * **La facture du mois** (plan `documentation/comptabilite/facturation/plan-emission-de-la-facture.md`,
  * lot E4) : ce que l'écran « Prélèvement du mois » en lit, et le bouton
  * « Émettre les factures de … » (`b2b_accounting:write`) — la même commande
- * que le passage automatique du dernier jour, 22h.
+ * que le passage automatique du dernier jour, 23h55.
  */
 @Injectable({ providedIn: 'root' })
 export class MonthlyInvoicesService {
@@ -27,7 +27,7 @@ export class MonthlyInvoicesService {
     );
   }
 
-  /** Rejouable : un payeur déjà facturé pour le mois ne l'est pas deux fois. */
+  /** Rejouable : une facture déjà émise pour le mois (payeur × mandat) ne l'est pas deux fois. */
   async issue(payload: IssueMonthlyInvoicesPayload): Promise<MonthlyInvoiceReportView> {
     return firstValueFrom(this.http.post<MonthlyInvoiceReportView>(this.base, payload));
   }

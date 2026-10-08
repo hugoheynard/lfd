@@ -17,7 +17,10 @@ import {
 import { MonthlyInvoicingReader } from "../../../domain/ports/monthly-invoicing.reader.js";
 import type { BillingFollow } from "../../../domain/ports/statement-billing.reader.js";
 import type { InvoiceSellerFacts } from "../../../domain/services/invoice-issuance-blockers.js";
-import type { InvoiceableOrder } from "../../../domain/services/monthly-invoicing.js";
+import {
+  invoiceGroupKey,
+  type InvoiceableOrder,
+} from "../../../domain/services/monthly-invoicing.js";
 import type { CollectionFormName } from "../../../domain/value-objects/collection-form.js";
 import { InvoiceNumber } from "../../../domain/value-objects/invoice-number.js";
 
@@ -81,7 +84,7 @@ export class FakeMonthlyReader extends MonthlyInvoicingReader {
   companyNames(ids: readonly string[]): Promise<ReadonlyMap<string, string>> {
     return Promise.resolve(new Map(ids.map((id) => [id, `Société ${id}`])));
   }
-  invoicedPayers(legalEntityId: string, month: string): Promise<ReadonlySet<string>> {
+  invoicedGroups(legalEntityId: string, month: string): Promise<ReadonlySet<string>> {
     return Promise.resolve(
       new Set(
         [...this.outcomes.rows.values()]
@@ -91,7 +94,7 @@ export class FakeMonthlyReader extends MonthlyInvoicingReader {
               row.key.month === month &&
               row.invoiceId !== null,
           )
-          .map((row) => row.key.payerCompanyId),
+          .map((row) => invoiceGroupKey(row.key.payerCompanyId, row.key.mandateId)),
       ),
     );
   }
@@ -106,11 +109,19 @@ export interface OutcomeRow {
 export class MemoryOutcomes extends MonthlyInvoiceOutcomes {
   readonly rows = new Map<string, OutcomeRow>();
   recordIssued(key: MonthlyInvoiceOutcomeKey, invoiceId: string): Promise<void> {
-    this.rows.set(key.payerCompanyId, { key, invoiceId, message: null });
+    this.rows.set(invoiceGroupKey(key.payerCompanyId, key.mandateId), {
+      key,
+      invoiceId,
+      message: null,
+    });
     return Promise.resolve();
   }
   recordBlocked(key: MonthlyInvoiceOutcomeKey, message: string): Promise<void> {
-    this.rows.set(key.payerCompanyId, { key, invoiceId: null, message });
+    this.rows.set(invoiceGroupKey(key.payerCompanyId, key.mandateId), {
+      key,
+      invoiceId: null,
+      message,
+    });
     return Promise.resolve();
   }
 }

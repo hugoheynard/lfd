@@ -29,6 +29,9 @@ export abstract class MonthlyInvoicingReader {
   /** La raison sociale de ces sociétés. */
   abstract companyNames(companyIds: readonly string[]): Promise<ReadonlyMap<string, string>>;
 
-  /** Les payeurs déjà facturés par l'entité pour ce mois (`AAAA-MM`). */
-  abstract invoicedPayers(legalEntityId: string, month: string): Promise<ReadonlySet<string>>;
+  /**
+   * Les factures déjà émises par l'entité pour ce mois (`AAAA-MM`), en clés
+   * `invoiceGroupKey` (payeur × mandat effectif, E4b).
+   */
+  abstract invoicedGroups(legalEntityId: string, month: string): Promise<ReadonlySet<string>>;
 }

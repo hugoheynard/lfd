@@ -46,4 +46,10 @@ describe("les crons du Worker et de wrangler.jsonc", () => {
     expect(workerCrons().get("COLLECTION_AUTOPILOT_CRON")).toBe("15 * * * *");
     expect(WORKER).toContain('"admin/accounting/collection/autopilot"');
   });
+
+  it("la facture du mois a son cron PROPRE, 23h55 à Paris été comme hiver (E4b)", () => {
+    // 21h55 UTC = 23h55 en heure d'été (UTC+2) ; 22h55 UTC = 23h55 en hiver (UTC+1).
+    expect(workerCrons().get("MONTHLY_INVOICE_CRON")).toBe("55 21,22 * * *");
+    expect(WORKER).toContain('"admin/accounting/monthly-invoices/autopilot"');
+  });
 });

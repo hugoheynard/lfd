@@ -169,6 +169,15 @@
   //    cron à lui, pas celui des rappels : deux rythmes sans rapport. Recopié
   //    dans `COLLECTION_AUTOPILOT_CRON` (worker.ts), à l'identique.
   //
+  // 8. `55 21,22` — LA FACTURE DU MOIS (POST
+  //    /admin/accounting/monthly-invoices/autopilot) : le dernier jour du mois
+  //    à 23h55, heure de Paris — 21h55 UTC l'été, 22h55 UTC l'hiver ; l'autre
+  //    passage tombe à 22h55 ou 00h55 et se tait (plan
+  //    `documentation/comptabilite/facturation/plan-emission-de-la-facture.md`,
+  //    E4b). Le backend décide sur l'heure de Paris ; il passe chaque jour et
+  //    ne fait rien hors du dernier. Le passage `15 *` rattrape un 23h55
+  //    manqué. Recopié dans `MONTHLY_INVOICE_CRON` (worker.ts), à l'identique.
+  //
   // ⚠️ Les crons Cloudflare sont en **UTC**. On vise ~04h/12h/20h Europe/Paris ;
   // avec le décalage saisonnier (UTC+1 hiver / UTC+2 été), 03/11/19 UTC tombe à
   // 04/12/20 en hiver et 05/13/21 en été — une dérive d'une heure sans importance
@@ -185,6 +194,7 @@
       "0 * * * *",
       "45 3 * * *",
       "15 * * * *",
+      "55 21,22 * * *",
     ],
   },
 

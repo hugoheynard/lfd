@@ -7,8 +7,9 @@
 > le plan avait été contredit par `vitruve`.
 
 > ⚠️ **2026-10-08, lot E4** ([`../facturation/plan-emission-de-la-facture.md`](../facturation/plan-emission-de-la-facture.md), § 8.5) :
-> **le lot encaisse des factures émises.** Le dernier jour du mois à 22h, le
-> même passage horaire émet une facture par payeur légal ; le lot du 1er
+> **le lot encaisse des factures émises.** Le dernier jour du mois à 23h55
+> (E4b ; 22h jusqu'au 2026-10-08), un cron propre émet une facture par payeur
+> légal et par mandat effectif ; le lot du 1er
 > regroupe, par mandat, les factures émises non encore prélevées (montant =
 > Σ TTC, aucun arrêté). L'arrêté ne vit plus que pour les bons passés avant
 > la mise en service (`invoicing_floor`, le 1er du mois qui suit le
@@ -22,7 +23,7 @@ contrôle du lot et le dépôt du fichier sur le portail de la banque.
 
 ```mermaid
 flowchart TB
-  A["Le mois court<br/>aperçu : la facture de chaque ligne"] --> F["Dernier jour · 22h<br/>facture du mois par payeur (E4)"]
+  A["Le mois court<br/>aperçu : la facture de chaque ligne"] --> F["Dernier jour · 23h55<br/>facture du mois par payeur et par mandat (E4, E4b)"]
   F --> B["Clôture · le 1er à 00h00"]
   B -->|"auto si activé, + délai, une fois par mois"| C["Lot préparé · lignes = factures émises<br/>avis de prélèvement en file"]
   C --> D{"Contrôle par la compta"}
@@ -115,10 +116,14 @@ carte « Prélèvement automatique » de la fiche de l'entité, sous
   concordent.
 - Fait `collection.autopilot_ran`. L'écran montre la dernière tentative
   (`lastAutopilotRun`) et « Préparé automatiquement le … ».
-- **Depuis E4, le même passage émet d'abord la facture du mois** (le dernier
-  jour à 22h15, `RunInvoiceAutopilotCommand`), une tentative par (entité,
-  mois) dans `invoice_autopilot_run`. Elle ne dépend pas de « préparer le lot
-  tout seul ». La réponse du passage porte `invoiceRuns` à côté de `runs`.
+- **La facture du mois a son cron propre depuis E4b** (`55 21,22 * * *`
+  UTC, soit 23h55 à Paris l'été comme l'hiver ; `POST
+admin/accounting/monthly-invoices/autopilot`, `RunInvoiceAutopilotCommand`
+  SEULE, jamais le lot), une tentative par (entité, mois) dans
+  `invoice_autopilot_run`. Elle ne dépend pas de « préparer le lot tout
+  seul ». Le passage horaire la tente encore AVANT le lot, en rattrapage
+  d'un 23h55 manqué (au plus tôt 00h15 le 1er) ; sa réponse porte
+  `invoiceRuns` à côté de `runs`.
 
 ## 6. L'écran « Prélèvement du mois »
 

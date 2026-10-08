@@ -15,7 +15,10 @@ import {
   frozenOrder,
   mandate,
 } from "../../../domain/services/__tests__/collection-fixtures.js";
-import type { InvoiceableOrder } from "../../../domain/services/monthly-invoicing.js";
+import {
+  invoiceGroupKey,
+  type InvoiceableOrder,
+} from "../../../domain/services/monthly-invoicing.js";
 import { InvoiceIssuer } from "../../services/invoice-issuer.js";
 import { RecordingDurable } from "./notice-doubles.js";
 import { IssueMonthlyInvoicesCommand } from "../issue-monthly-invoices.command.js";
@@ -38,9 +41,13 @@ import {
  */
 
 const MONTH = "2026-09";
-/** Le 30 septembre 2026 à 22h05, heure de Paris. */
-const AFTER_MOMENT = new Date("2026-09-30T20:05:00.000Z");
+/** Le 30 septembre 2026 à 23h56, heure de Paris (E4b : l'émission est à 23h55). */
+const AFTER_MOMENT = new Date("2026-09-30T21:56:00.000Z");
 const FLOOR = new Date("2026-08-31T22:00:00.000Z");
+
+/** Les clés d'issue (payeur × mandat effectif, E4b) des deux payeurs mandatés. */
+const PORT = invoiceGroupKey("c_port", "m_c_port");
+const PRINCIPAL = invoiceGroupKey("c_principal", "m_c_principal");
 
 let seq = 0;
 function bon(companyId: string, overrides: Partial<InvoiceableOrder> = {}): InvoiceableOrder {
@@ -101,7 +108,7 @@ function harness(options: { buyers?: StatementBuyerReader; at?: Date } = {}) {
     uow,
   );
   const run = () => handler.execute(new IssueMonthlyInvoicesCommand(ENTITY_ID, MONTH));
-  return { reader, invoices, outcomes, events, durable, run };
+  return { reader, invoices, outcomes, events, durable, mandates, run };
 }
 
 const CHALET_FOLLOWS_PRINCIPAL = {
@@ -143,7 +150,7 @@ describe("IssueMonthlyInvoices — la facture du mois (E4)", () => {
     // Clôture le 1er octobre + 14 jours de pré-notification : le jeudi 15.
     expect(state?.dueOn).toBe("2026-10-15");
     expect(state?.paymentMeans).toEqual({ code: "59", mandateReference: "RUM-c_port" });
-    expect(h.outcomes.rows.get("c_port")?.invoiceId).toBe(state?.id);
+    expect(h.outcomes.rows.get(PORT)?.invoiceId).toBe(state?.id);
   });
 
   it("un payeur refusé est SIGNALÉ, rangé, et les autres sont facturés", async () => {
@@ -154,7 +161,7 @@ describe("IssueMonthlyInvoices — la facture du mois (E4)", () => {
 
     expect(report.issued.map((issue) => issue.payerCompanyId)).toEqual(["c_port"]);
     expect(report.blocked.map((issue) => issue.payerCompanyId)).toEqual(["c_principal"]);
-    const signaled = h.outcomes.rows.get("c_principal");
+    const signaled = h.outcomes.rows.get(PRINCIPAL);
     expect(signaled?.invoiceId).toBeNull();
     expect(signaled?.message).toContain("SIREN");
   });
@@ -170,7 +177,7 @@ describe("IssueMonthlyInvoices — la facture du mois (E4)", () => {
     expect(h.invoices.inserted).toHaveLength(2);
   });
 
-  it("un bon passé après l'émission (22h-minuit) attend le mois suivant, pas une seconde facture", async () => {
+  it("un bon passé après l'émission (23h55-minuit) attend le mois suivant, pas une seconde facture", async () => {
     const h = harness();
     h.reader.orders = [bon("c_port")];
     await h.run();
@@ -194,7 +201,7 @@ describe("IssueMonthlyInvoices — la facture du mois (E4)", () => {
     first.outcomes.rows.forEach((row, key) => fixed.outcomes.rows.set(key, row));
 
     expect((await fixed.run()).issued.map((issue) => issue.payerCompanyId)).toEqual(["c_port"]);
-    expect(fixed.outcomes.rows.get("c_port")?.message).toBeNull();
+    expect(fixed.outcomes.rows.get(PORT)?.message).toBeNull();
   });
 
   it("un bon non facturable est signalé, hors de la facture ; seul, il signale le payeur", async () => {
@@ -212,8 +219,77 @@ describe("IssueMonthlyInvoices — la facture du mois (E4)", () => {
 
     expect(report.unbillableOrders).toBe(2);
     expect(h.invoices.inserted[0]?.toState().orders.map((o) => o.orderId)).toEqual([good.orderId]);
-    expect(h.outcomes.rows.get("c_port")?.key.unbillableOrders).toEqual([broken.orderNumber]);
-    expect(h.outcomes.rows.get("c_principal")?.message).toContain(lonely.orderNumber);
+    expect(h.outcomes.rows.get(PORT)?.key.unbillableOrders).toEqual([broken.orderNumber]);
+    expect(h.outcomes.rows.get(PRINCIPAL)?.message).toContain(lonely.orderNumber);
+  });
+
+  it("des bons sur deux mandats : une facture par mandat, chacune sous SA RUM (E4b)", async () => {
+    const h = harness();
+    h.reader.follows = [CHALET_FOLLOWS_PRINCIPAL];
+    h.reader.forms = new Map([["c_chalet", "own_mandate_principal_iban" as const]]);
+    h.mandates.mandates = [
+      mandate("c_principal"),
+      mandate("c_chalet", { debtorCompanyId: "c_principal", reference: "RUM-chalet" }),
+    ];
+    const chalet = bon("c_chalet");
+    const principal = bon("c_principal");
+    const chaletAgain = bon("c_chalet");
+    h.reader.orders = [chalet, principal, chaletAgain];
+
+    const report = await h.run();
+
+    const states = h.invoices.inserted.map((invoice) => invoice.toState());
+    // Le payeur légal est le même ; l'ordre est celui du premier bon de chaque facture.
+    expect(states.map((state) => state.buyer.companyId)).toEqual(["c_principal", "c_principal"]);
+    expect(states.map((state) => state.paymentMeans?.mandateReference)).toEqual([
+      "RUM-chalet",
+      "RUM-c_principal",
+    ]);
+    expect(states.map((state) => state.orders.map((order) => order.reference))).toEqual([
+      [chalet.orderNumber, chaletAgain.orderNumber],
+      [principal.orderNumber],
+    ]);
+    expect(report.issued.map((issue) => issue.number)).toEqual([
+      "FA-2026-000001",
+      "FA-2026-000002",
+    ]);
+    expect(h.outcomes.rows.get(invoiceGroupKey("c_principal", "m_c_chalet"))?.key).toMatchObject({
+      mandateReference: "RUM-chalet",
+    });
+    expect(h.outcomes.rows.get(PRINCIPAL)?.invoiceId).toBe(states[1]?.id);
+  });
+
+  it("les bons sans mandat effectif font leur facture, sans moyen de paiement", async () => {
+    const h = harness();
+    h.reader.orders = [bon("c_port"), bon("c_quai")];
+
+    await h.run();
+
+    expect(h.invoices.inserted.map((invoice) => invoice.toState().paymentMeans)).toEqual([
+      { code: "59", mandateReference: "RUM-c_port" },
+      null,
+    ]);
+    expect(h.outcomes.rows.get(invoiceGroupKey("c_quai", null))?.invoiceId).not.toBeNull();
+  });
+
+  it("au rejeu, une facture déjà émise est sautée et l'autre mandat est repris", async () => {
+    const h = harness();
+    h.reader.follows = [CHALET_FOLLOWS_PRINCIPAL];
+    h.reader.forms = new Map([["c_chalet", "own_mandate_principal_iban" as const]]);
+    h.reader.orders = [bon("c_principal")];
+    await h.run();
+    // Le mandat du site est signé ensuite ; son bon n'était pas encore là.
+    h.mandates.mandates = [
+      mandate("c_principal"),
+      mandate("c_chalet", { debtorCompanyId: "c_principal", reference: "RUM-chalet" }),
+    ];
+    h.reader.orders = [...h.reader.orders, bon("c_chalet"), bon("c_principal")];
+
+    const replay = await h.run();
+
+    expect(replay.alreadyInvoiced).toBe(1);
+    expect(replay.issued).toHaveLength(1);
+    expect(h.invoices.inserted.at(-1)?.toState().paymentMeans?.mandateReference).toBe("RUM-chalet");
   });
 
   it("émise après le mois (bouton le 2) : datée du jour réel, jamais antidatée", async () => {
@@ -232,8 +308,8 @@ describe("IssueMonthlyInvoices — la facture du mois (E4)", () => {
     expect(h.reader.asked).toEqual([{ from: FLOOR, to: new Date("2026-09-30T22:00:00.000Z") }]);
   });
 
-  it("avant le dernier jour 22h : refus, rien n'est lu", async () => {
-    const h = harness({ at: new Date("2026-09-30T19:59:00.000Z") });
+  it("avant le dernier jour 23h55 : refus, rien n'est lu — 22h ne suffit plus (E4b)", async () => {
+    const h = harness({ at: new Date("2026-09-30T21:54:00.000Z") });
 
     await expect(h.run()).rejects.toThrow(MonthNotYetInvoiceableError);
     expect(h.reader.asked).toEqual([]);
