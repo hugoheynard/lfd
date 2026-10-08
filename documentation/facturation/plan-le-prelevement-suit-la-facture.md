@@ -1,6 +1,6 @@
 # Le prélèvement suit la facture
 
-> 📐 **Plan v2 — F1 bâti** (2026-10-08), F2 à F4 à faire. Touche **l'argent** : la v1 a
+> 📐 **Plan v2 — F1 et F2 bâtis** (2026-10-08), F3 et F4 à faire. Touche **l'argent** : la v1 a
 > été contredite par `vitruve` le même jour (trois BLOQUANTS, six SÉRIEUX),
 > repris au § 7. Affirmations sur l'existant vérifiées dans le dépôt le
 > 2026-10-08.
@@ -104,7 +104,23 @@ du simulateur (`FrozenInvoiceOrder` : lignes figées, remises, port et son
 mode, surtaxe et son taux, `vatShares`, totaux), sans borne basse. Une seule
 lecture par constitution.
 
-### F2 — Une facture par ligne de débit ; un bon qu'on ne sait pas facturer est exclu
+### F2 — Une facture par ligne de débit ; un bon qu'on ne sait pas facturer est exclu ✅ (2026-10-08, non commité)
+
+> Bâti : `assembleCollection` prélève `simulateInvoiceDossier(bons de la
+ligne).invoice.totalCents` et garde `ordersTotalCents` ; migration
+> `20261008130000_le_prelevement_suit_la_facture` (valeur `unbillable`,
+> colonne `orders_total_cents` nullable) ; CSV « Σ bons » / « Écart » ;
+> libellé « Non facturable » dans `@lfd/contracts`. Tranché en bâtissant :
+>
+> - **Un bon est jugé SEUL** (`apps/lfd-api/src/b2b/accounting/domain/services/invoice-billability.ts`) :
+>   le simulateur calcule la facture de ce seul bon ; il refuse (surtaxe
+>   sans taux, taux illisible) ou le range incohérent → non facturable. Le
+>   critère reste celui du simulateur, sans recopie ; les trois refus portent
+>   chacun sur un bon, donc des bons facturables un à un le sont ensemble.
+> - **Jugé en dernier**, après le mandat et l'entité : un bon qui appartient
+>   au lot d'une autre entité n'est pas écarté par celle-ci.
+> - Une ligne d'avant F2 a `orders_total_cents` nul : le CSV laisse ses deux
+>   cellules vides, et leur total aussi (un total partiel se lirait exact).
 
 À la constitution, `simulateInvoiceDossier` calcule, pour chaque ligne, la
 facture de **exactement ses bons**. Le montant de la ligne devient le
@@ -204,12 +220,12 @@ reste un chantier à part.
 
 ## 7. Les lots
 
-| Lot    | Contenu                                                                                                                                                                              |
-| ------ | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
-| **F1** | ✅ 2026-10-08 — le lecteur de constitution rend les bons figés                                                                                                                       |
-| **F2** | la facture par ligne ; montant = total facturé ; `unbillable` ; `orders_total_cents` ; CSV ; e2e : Σ lignes = Σ arrêtés = `CtrlSum`, un bon incohérent exclu sans bloquer les autres |
-| **F3** | la table des arrêtés, écrite et annulée avec le lot ; journal                                                                                                                        |
-| **F4** | l'écran du lot et le dossier par ligne de lot                                                                                                                                        |
+| Lot    | Contenu                                                                                                                                                                                              |
+| ------ | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| **F1** | ✅ 2026-10-08 — le lecteur de constitution rend les bons figés                                                                                                                                       |
+| **F2** | ✅ 2026-10-08 — la facture par ligne ; montant = total facturé ; `unbillable` ; `orders_total_cents` ; CSV ; e2e : Σ lignes = Σ arrêtés = `CtrlSum`, un bon incohérent exclu sans bloquer les autres |
+| **F3** | la table des arrêtés, écrite et annulée avec le lot ; journal                                                                                                                                        |
+| **F4** | l'écran du lot et le dossier par ligne de lot                                                                                                                                                        |
 
 ## 8. Ce que `vitruve` a relevé (v1, 2026-10-08)
 

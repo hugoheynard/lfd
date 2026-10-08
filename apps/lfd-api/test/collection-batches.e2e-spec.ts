@@ -19,6 +19,7 @@ import type { CollectionCycleView, ConstitutedBatchesView } from "@lfd/contracts
 
 import { CollectionCandidatesReader } from "../src/b2b/accounting/domain/ports/collection-candidates.reader.js";
 import { cycleToConstitute } from "../src/b2b/accounting/domain/services/billing-cycle.js";
+import { simulateInvoiceDossier } from "../src/b2b/accounting/domain/services/invoice-dossier.js";
 import { AdminTokenVerifier } from "../src/platform/auth/admin-token.verifier.js";
 import { bootstrapE2e, daysAgo, jsonBody, type E2eContext } from "./e2e-harness.js";
 import { createCompany, createUser } from "./factories.js";
@@ -141,23 +142,62 @@ async function mandated(entityId: string, companyId: string): Promise<string> {
   return mandate.id;
 }
 
-/** Une commande passée au compte, `daysBefore` jours avant la clôture. */
+/** Ce qu'un bon fige : UNE ligne à 5,5 %, et sa TVA ventilée. `null` = aucune ligne. */
+interface BonSpec {
+  readonly unitPriceMillicents: number;
+  readonly lineTotalCents: number;
+  readonly vatCents: number;
+}
+
+/** 100 € HT, 5,50 € de TVA : un bon facturable, sans écart d'arrondi. */
+const PLAIN_BON: BonSpec = {
+  unitPriceMillicents: 10_000_000,
+  lineTotalCents: 10_000,
+  vatCents: 550,
+};
+/** 10,5 c HT : le bon arrondit à 11 c, la facture de deux bons à 21 c (F2). */
+const HALF_CENT_BON: BonSpec = { unitPriceMillicents: 10_500, lineTotalCents: 11, vatCents: 1 };
+
+/**
+ * Une commande passée au compte, `daysBefore` jours avant la clôture.
+ *
+ * Elle porte une ligne figée cohérente avec son total : depuis F2, un bon dont
+ * le total ne se recompose pas est écarté `unbillable` — un bon sans ligne en
+ * serait un (`null` le demande, pour la lecture brute de F1).
+ */
 async function orderOf(
   companyId: string,
   daysBefore = 2,
+  bon: BonSpec | null = PLAIN_BON,
 ): Promise<{ id: string; orderNumber: string }> {
   seq += 1;
   const user = await createUser(ctx.prisma, { auth0Sub: `lot-${String(seq)}` });
+  const spec = bon ?? PLAIN_BON;
   return ctx.prisma.order.create({
     data: {
       orderNumber: `CMD-LOT-${String(seq)}`,
       companyId,
       placedByUserId: user.id,
-      subtotalCents: 10_000,
-      totalCents: 10_550,
-      vatCents: 550,
+      subtotalCents: spec.lineTotalCents,
+      totalCents: spec.lineTotalCents + spec.vatCents,
+      vatCents: spec.vatCents,
       paymentStatus: "not_required",
       createdAt: new Date(closesAt.getTime() - daysBefore * DAY_MS),
+      ...(bon === null
+        ? {}
+        : {
+            vatShares: [{ rate: 5.5, amountCents: bon.vatCents }],
+            lines: {
+              create: {
+                sku: "PAIN-LOT",
+                productNameSnapshot: "Pain du lot",
+                unitPriceMillicents: bon.unitPriceMillicents,
+                vatRate: 5.5,
+                quantity: 1,
+                lineTotalCents: bon.lineTotalCents,
+              },
+            },
+          }),
     },
     select: { id: true, orderNumber: true },
   });
@@ -189,7 +229,7 @@ async function stateOf(orderId: string): Promise<string> {
 describe("les bons que la constitution lit (F1)", () => {
   it("portent leurs lignes figées et le taux de surtaxe, en une lecture", async () => {
     const companyId = await client("Boulangerie figée");
-    const placed = await orderOf(companyId);
+    const placed = await orderOf(companyId, 2, null);
     await ctx.prisma.order.update({
       where: { id: placed.id },
       data: {
@@ -391,5 +431,76 @@ describe("le lot figé", () => {
       .send({ note: "chèque" })
       .expect(204);
     expect(await stateOf(placed.id)).toBe("settled_otherwise");
+  });
+});
+
+describe("le prélèvement suit la facture (F2)", () => {
+  function ctrlSumOf(xml: string): string {
+    return /<CtrlSum>([^<]*)</u.exec(xml)?.[1] ?? "";
+  }
+
+  it("une ligne prélève le total de la facture de SES bons ; Σ lignes = CtrlSum ; Σ bons écrit", async () => {
+    const entity = await collectingEntity();
+    const port = await client("Boulangerie du Port");
+    const quai = await client("Café du Quai");
+    await mandated(entity, port);
+    await mandated(entity, quai);
+    await orderOf(port, 2, HALF_CENT_BON);
+    await orderOf(port, 3, HALF_CENT_BON);
+    await orderOf(quai);
+    const reader = ctx.app.get(CollectionCandidatesReader);
+    const read = await reader.collectableOrders((await reader.floor()) ?? closesAt, closesAt);
+    const expectedOf = (companyId: string): number =>
+      simulateInvoiceDossier(read.filter((o) => o.companyId === companyId).map((o) => o.frozen))
+        .invoice.totalCents;
+
+    const [batchId] = await constitute(entity);
+
+    const lines = await ctx.prisma.collectionBatchLine.findMany({
+      where: { batchId: batchId ?? "" },
+    });
+    const byDebtor = new Map(lines.map((line) => [line.debtorCompanyId, line]));
+    expect(byDebtor.get(port)).toMatchObject({
+      amountCents: expectedOf(port),
+      ordersTotalCents: 24,
+    });
+    expect(expectedOf(port)).toBe(22);
+    expect(byDebtor.get(quai)).toMatchObject({
+      amountCents: expectedOf(quai),
+      ordersTotalCents: 10_550,
+    });
+    const total = lines.reduce((sum, line) => sum + line.amountCents, 0);
+    const xml = await staff()
+      .get(`${BASE}/batches/${batchId ?? ""}/file.xml`)
+      .expect(200);
+    expect(ctrlSumOf(xml.text)).toBe((total / 100).toFixed(2));
+    const view = await cycle(entity);
+    expect(view.batches[0]?.totalCents).toBe(total);
+    const csv = await staff()
+      .get(`${BASE}/batches/${batchId ?? ""}/audit.csv`)
+      .expect(200);
+    expect(csv.text).toContain('"Σ bons (€)";"Écart (€)"');
+    expect(csv.text).toContain("0,22;0,24;-0,02");
+  });
+
+  it("un bon incohérent est écarté `unbillable`, les autres partent", async () => {
+    const entity = await collectingEntity();
+    const port = await client("Boulangerie du Port");
+    const quai = await client("Café du Quai");
+    await mandated(entity, port);
+    await mandated(entity, quai);
+    const sound = await orderOf(port);
+    const broken = await orderOf(port, 3);
+    await ctx.prisma.order.update({ where: { id: broken.id }, data: { totalCents: 10_549 } });
+    const other = await orderOf(quai);
+
+    await constitute(entity);
+
+    expect((await cycle(entity)).exclusions).toMatchObject([
+      { orderNumber: broken.orderNumber, reason: "unbillable" },
+    ]);
+    expect(await stateOf(broken.id)).toBe("excluded");
+    expect(await stateOf(sound.id)).toBe("batched");
+    expect(await stateOf(other.id)).toBe("batched");
   });
 });

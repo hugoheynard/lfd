@@ -15,7 +15,7 @@ export const COLLECTION_BATCH_STATUS_LABELS: Readonly<Record<CollectionBatchStat
 };
 
 export type CollectionExclusionReasonView =
-  "no_mandate" | "payer_detached" | "one_off_consumed" | "ambiguous_creditor";
+  "no_mandate" | "payer_detached" | "one_off_consumed" | "ambiguous_creditor" | "unbillable";
 
 /** Ce que l'écran dit d'une raison d'exclusion — et le geste de sortie. */
 export const COLLECTION_EXCLUSION_REASON_LABELS: Readonly<
@@ -25,6 +25,8 @@ export const COLLECTION_EXCLUSION_REASON_LABELS: Readonly<
   payer_detached: "Le site ne suit plus son payeur — le rattacher, ou régler autrement",
   one_off_consumed: "Mandat ponctuel déjà prélevé — un nouveau mandat est nécessaire",
   ambiguous_creditor: "Deux mandats actifs chez deux entités — en révoquer un",
+  unbillable:
+    "Non facturable — bon incohérent ou sans taux de TVA : le signaler à l'équipe technique, ou régler autrement",
 };
 
 /** L'état d'encaissement d'une commande — `due` quand aucun lot ne l'a vue. */

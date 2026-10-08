@@ -8,7 +8,10 @@ export interface BatchCsvLine {
   readonly debtorIbanLast4: string;
   readonly mandateReference: string;
   readonly sequence: string;
+  /** Ce que la banque prélève : le total TTC de la facture de la ligne. */
   readonly amountCents: number;
+  /** Σ des bons ; `null` pour une ligne d'un lot d'avant F2 (2026-10-08). */
+  readonly ordersTotalCents: number | null;
   readonly orderCount: number;
   readonly priorOrderCount: number;
   /** Les numéros des commandes prélevées par cette ligne. */
@@ -23,6 +26,8 @@ const HEADERS = [
   "Référence du mandat",
   "Séquence",
   "Montant (€)",
+  "Σ bons (€)",
+  "Écart (€)",
   "Commandes",
   "Dont reprises",
   "Numéros de commande",
@@ -37,9 +42,16 @@ const HEADERS = [
  * quelles commandes chaque ligne prélève, ce que le XML ne dit pas. La
  * cohérence du fichier stocké, elle, est tenue par son empreinte, vérifiée à
  * chaque téléchargement.
+ *
+ * Le montant est le total facturé ; « Σ bons » et « Écart » (facture − bons)
+ * le confrontent à la somme des bons (plan
+ * `plan-le-prelevement-suit-la-facture.md`, F2). Le TOTAL reste Σ montants =
+ * `CtrlSum`. Une ligne d'avant F2 n'a pas de Σ bons : cellules vides, et le
+ * total de ces deux colonnes aussi — un total partiel se lirait comme exact.
  */
 export function batchAuditCsv(lines: readonly BatchCsvLine[]): string {
   const total = lines.reduce((sum, line) => sum + line.amountCents, 0);
+  const ordersTotal = knownOrdersTotal(lines);
   const rows = [
     HEADERS.map(csvQuoted).join(CSV_SEPARATOR),
     ...lines.map((line) =>
@@ -51,6 +63,7 @@ export function batchAuditCsv(lines: readonly BatchCsvLine[]): string {
         csvQuoted(line.mandateReference),
         line.sequence,
         csvEuros(line.amountCents),
+        ...comparisonCells(line.amountCents, line.ordersTotalCents),
         String(line.orderCount),
         String(line.priorOrderCount),
         csvQuoted(line.orderNumbers.join(" ")),
@@ -64,10 +77,29 @@ export function batchAuditCsv(lines: readonly BatchCsvLine[]): string {
       "",
       "",
       csvEuros(total),
+      ...comparisonCells(total, ordersTotal),
       String(lines.reduce((sum, line) => sum + line.orderCount, 0)),
       "",
       "",
     ].join(CSV_SEPARATOR),
   ];
   return `${CSV_BOM}${rows.join("\r\n")}\r\n`;
+}
+
+/** « Σ bons » et « Écart » ; deux cellules vides quand la somme n'est pas connue. */
+function comparisonCells(amountCents: number, ordersTotalCents: number | null): readonly string[] {
+  return ordersTotalCents === null
+    ? ["", ""]
+    : [csvEuros(ordersTotalCents), csvEuros(amountCents - ordersTotalCents)];
+}
+
+function knownOrdersTotal(lines: readonly BatchCsvLine[]): number | null {
+  let total = 0;
+  for (const line of lines) {
+    if (line.ordersTotalCents === null) {
+      return null;
+    }
+    total += line.ordersTotalCents;
+  }
+  return total;
 }

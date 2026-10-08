@@ -58,6 +58,7 @@ export function renderBatchFile(input: BatchFileInput): BatchFile {
       debtorBic: debit.mandate.bic,
       sequence: sequenceTypeOf(debit.mandate.paymentType),
       amountCents: debit.amountCents,
+      ordersTotalCents: debit.ordersTotalCents,
       orderIds: debit.orders.map((order) => order.orderId),
       priorOrderCount: debit.priorOrderCount,
     };

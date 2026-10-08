@@ -132,6 +132,28 @@ describe('LotsDePrelevementPage', () => {
     expect(button(fixture, 'Marquer déposé')?.disabled).toBe(true);
   });
 
+  it('nomme un bon non facturable écarté du lot (F2), et son geste de sortie', async () => {
+    const api = new FakeApi();
+    api.view = {
+      batches: [batch()],
+      exclusions: [
+        {
+          orderId: 'o2',
+          orderNumber: 'CMD-10',
+          companyName: 'Boulangerie du Port',
+          placedAt: '2026-09-21T09:00:00.000Z',
+          amountCents: 1_000,
+          reason: 'unbillable',
+        },
+      ],
+    };
+
+    const body = text(await render(api));
+
+    expect(body).toContain('CMD-10');
+    expect(body).toContain('Non facturable');
+  });
+
   it('un lot déposé n’offre plus de geste', async () => {
     const api = new FakeApi();
     api.view = { batches: [batch({ status: 'deposited' })], exclusions: [] };

@@ -9,7 +9,12 @@ export type OrderCollectionStateName =
 
 /** Pourquoi une commande a été écartée. Des VALEURS : elles vivent en base. */
 export type CollectionExclusionReason =
-  "no_mandate" | "payer_detached" | "one_off_consumed" | "ambiguous_creditor";
+  | "no_mandate"
+  | "payer_detached"
+  | "one_off_consumed"
+  | "ambiguous_creditor"
+  /** Un bon qu'on ne sait pas facturer — plan-le-prelevement-suit-la-facture, F2. */
+  | "unbillable";
 
 export interface OrderCollectionState {
   readonly orderId: string;

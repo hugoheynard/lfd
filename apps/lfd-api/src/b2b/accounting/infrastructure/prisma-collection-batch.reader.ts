@@ -134,6 +134,7 @@ export class PrismaCollectionBatchReader extends CollectionBatchReader {
       mandateReference: line.mandateReference,
       sequence: line.sequence,
       amountCents: line.amountCents,
+      ordersTotalCents: line.ordersTotalCents,
       orderCount: line.orderCount,
       priorOrderCount: line.priorOrderCount,
       orderNumbers: line.orders

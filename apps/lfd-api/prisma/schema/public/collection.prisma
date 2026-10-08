@@ -43,6 +43,9 @@ enum CollectionExclusionReason {
   payer_detached
   one_off_consumed
   ambiguous_creditor
+  /// Un bon qu'on ne sait pas facturer (incohérent, surtaxe sans taux, taux
+  /// de ligne illisible) — plan `plan-le-prelevement-suit-la-facture.md`, F2.
+  unbillable
 
   @@schema("public")
 }
@@ -106,7 +109,13 @@ model CollectionBatchLine {
   debtorBic        String?  @map("debtor_bic")
   /// `RCUR` | `OOFF`.
   sequence         String
+  /// Le total TTC de la facture calculée en une fois sur les bons de la
+  /// ligne (F2) — ce que la banque prélève. Avant F2 : Σ des bons.
   amountCents      Int      @map("amount_cents")
+  /// Σ des totaux des bons de la ligne ; l'écart = `amount_cents` − ceci.
+  /// NULL pour les lignes des lots constitués avant F2 (2026-10-08) : jamais
+  /// calculé, et pas inventé.
+  ordersTotalCents Int?     @map("orders_total_cents")
   orderCount       Int      @map("order_count")
   /// Dont commandes de cycles antérieurs — reprises.
   priorOrderCount  Int      @map("prior_order_count")

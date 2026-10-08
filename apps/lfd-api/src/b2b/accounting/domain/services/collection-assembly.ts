@@ -9,6 +9,8 @@ import {
 } from "../value-objects/collection-form.js";
 import type { SepaScheme } from "../value-objects/sepa-scheme.js";
 import { billedPayerOf, billingFollowAt } from "./billed-payer.js";
+import { isBillable } from "./invoice-billability.js";
+import { simulateInvoiceDossier } from "./invoice-dossier.js";
 import { SEQUENCE_ORDER, sequenceTypeOf } from "./pain008-document.js";
 
 /**
@@ -33,7 +35,15 @@ import { SEQUENCE_ORDER, sequenceTypeOf } from "./pain008-document.js";
  *    au lot de cette entité-là ;
  * 5. un mandat ponctuel déjà prélevé → `one_off_consumed` ;
  * 6. un schéma dont le lot de cette clôture vit déjà laisse la commande
- *    intacte : elle attend le lot suivant (la course avec la passation, §3).
+ *    intacte : elle attend le lot suivant (la course avec la passation, §3) ;
+ * 7. un bon qu'on ne sait pas facturer → `unbillable` : écarté, nommé, il ne
+ *    bloque pas les autres (plan `plan-le-prelevement-suit-la-facture.md`, F2).
+ *    Jugé en dernier : un bon d'une autre entité n'est pas le nôtre à écarter.
+ *
+ * Le montant d'une ligne est le **total TTC de la facture** calculée en une
+ * fois sur exactement ses bons (`simulateInvoiceDossier`), pas leur somme ;
+ * la somme est gardée à côté (`ordersTotalCents`), l'écart appartient à la
+ * ligne, jamais à un bon.
  *
  * ⚠️ Un mandat actif SANS créancier (`creditor_id` nul, RUM reprise) ne
  * rattache à aucune entité : il compte comme absent. Choix conservateur — il
@@ -63,7 +73,10 @@ export interface DebitDraft {
   readonly debtorName: string;
   readonly mandate: CollectionMandate;
   readonly orders: readonly CollectableOrder[];
+  /** Le total TTC de la facture de ces bons, calculée en une fois. */
   readonly amountCents: number;
+  /** Σ des totaux des bons — l'écart est `amountCents − ordersTotalCents`. */
+  readonly ordersTotalCents: number;
   readonly priorOrderCount: number;
 }
 
@@ -152,6 +165,9 @@ function judge(order: CollectableOrder, input: AssemblyInput): Verdict {
   if (input.liveSchemes.includes(mandate.scheme)) {
     return { kind: "elsewhere" };
   }
+  if (!isBillable(order.frozen)) {
+    return { kind: "exclude", reason: "unbillable", payerId };
+  }
   return { kind: "debit", payerId, mandate };
 }
 
@@ -190,16 +206,20 @@ function groupByScheme(
   groups: readonly { payerId: string; mandate: CollectionMandate; orders: CollectableOrder[] }[],
   input: AssemblyInput,
 ): ReadonlyMap<SepaScheme, readonly DebitDraft[]> {
-  const drafts = groups.map((group): DebitDraft => ({
-    payerId: group.payerId,
-    debtorName: nameOf(group.payerId, input.companyNames),
-    mandate: group.mandate,
-    orders: [...group.orders].sort((left, right) =>
-      left.orderNumber.localeCompare(right.orderNumber),
-    ),
-    amountCents: group.orders.reduce((sum, order) => sum + order.totalCents, 0),
-    priorOrderCount: group.orders.filter((order) => order.placedAt < input.cycleStartsAt).length,
-  }));
+  const drafts = groups.map((group): DebitDraft => {
+    const dossier = simulateInvoiceDossier(group.orders.map((order) => order.frozen));
+    return {
+      payerId: group.payerId,
+      debtorName: nameOf(group.payerId, input.companyNames),
+      mandate: group.mandate,
+      orders: [...group.orders].sort((left, right) =>
+        left.orderNumber.localeCompare(right.orderNumber),
+      ),
+      amountCents: dossier.invoice.totalCents,
+      ordersTotalCents: dossier.ordersTotalCents,
+      priorOrderCount: group.orders.filter((order) => order.placedAt < input.cycleStartsAt).length,
+    };
+  });
   const result = new Map<SepaScheme, readonly DebitDraft[]>();
   for (const scheme of ["CORE", "B2B"] as const) {
     const ofScheme = drafts.filter((draft) => draft.mandate.scheme === scheme);

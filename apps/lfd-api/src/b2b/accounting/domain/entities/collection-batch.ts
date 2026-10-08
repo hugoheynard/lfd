@@ -30,7 +30,15 @@ export interface CollectionBatchLine {
   readonly debtorIban: string;
   readonly debtorBic: string | null;
   readonly sequence: SequenceType;
+  /** Le total TTC de la facture de ses bons, calculée en une fois (F2). */
   readonly amountCents: number;
+  /**
+   * Σ des totaux de ses bons — l'écart `amountCents − ordersTotalCents` est
+   * celui de la LIGNE, jamais d'un bon. `null` pour une ligne d'un lot
+   * constitué avant F2 (2026-10-08) : la colonne n'existait pas, et on
+   * n'invente pas sa valeur (plan `plan-le-prelevement-suit-la-facture.md`).
+   */
+  readonly ordersTotalCents: number | null;
   readonly orderIds: readonly string[];
   /** Dont commandes d'un cycle antérieur, reprises. */
   readonly priorOrderCount: number;

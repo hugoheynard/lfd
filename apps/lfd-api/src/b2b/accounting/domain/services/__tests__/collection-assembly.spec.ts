@@ -37,18 +37,22 @@ function follow(validTo: Date | null): BillingFollow {
 
 describe("assembleCollection — qui paie quoi, sous quel mandat", () => {
   it("groupe les commandes d'un payeur en UNE ligne, et compte les reprises", () => {
-    const old = order("c_port", {
-      placedAt: new Date("2026-08-20T08:00:00.000Z"),
-      totalCents: 500,
-    });
-    const recent = order("c_port", { totalCents: 700 });
+    // Deux bons de 1 000 c (948 HT à 5,5 %) : la facture recalculée tombe
+    // aussi à 2 000 c — l'écart est éprouvé dans `collection-assembly-invoice.spec.ts`.
+    const old = order("c_port", { placedAt: new Date("2026-08-20T08:00:00.000Z") });
+    const recent = order("c_port");
 
     const result = assembleCollection(
       input({ orders: [old, recent], mandates: [mandate("c_port")] }),
     );
 
     const [line] = result.debits.get("B2B") ?? [];
-    expect(line).toMatchObject({ payerId: "c_port", amountCents: 1_200, priorOrderCount: 1 });
+    expect(line).toMatchObject({
+      payerId: "c_port",
+      amountCents: 2_000,
+      ordersTotalCents: 2_000,
+      priorOrderCount: 1,
+    });
     expect(result.exclusions).toEqual([]);
   });
 

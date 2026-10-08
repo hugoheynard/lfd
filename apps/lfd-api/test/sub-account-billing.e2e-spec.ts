@@ -236,7 +236,12 @@ async function activeMandate(
   return mandate.id;
 }
 
-/** Une commande du site passée au compte du principal, deux jours avant la clôture. */
+/**
+ * Une commande du site passée au compte du principal, deux jours avant la
+ * clôture. Elle porte sa ligne figée : depuis le lot F2
+ * (`plan-le-prelevement-suit-la-facture.md`), un bon dont le total ne se
+ * recompose pas de ses lignes est écarté `unbillable` du lot.
+ */
 async function billedOrder(site: string, payer: string): Promise<string> {
   seq += 1;
   const user = await createUser(ctx.prisma, { auth0Sub: `s4-${String(seq)}` });
@@ -249,8 +254,19 @@ async function billedOrder(site: string, payer: string): Promise<string> {
       subtotalCents: 10_000,
       totalCents: 10_550,
       vatCents: 550,
+      vatShares: [{ rate: 5.5, amountCents: 550 }],
       paymentStatus: "not_required",
       createdAt: new Date(closesAt.getTime() - 2 * DAY_MS),
+      lines: {
+        create: {
+          sku: "PAIN-S4",
+          productNameSnapshot: "Pain du site",
+          unitPriceMillicents: 10_000_000,
+          vatRate: 5.5,
+          quantity: 1,
+          lineTotalCents: 10_000,
+        },
+      },
     },
     select: { id: true },
   });

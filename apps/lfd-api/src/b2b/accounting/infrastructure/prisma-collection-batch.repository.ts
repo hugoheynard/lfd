@@ -57,6 +57,7 @@ export class PrismaCollectionBatchRepository extends CollectionBatchRepository {
         debtorBic: line.debtorBic,
         sequence: sequenceOf(line.sequence),
         amountCents: line.amountCents,
+        ordersTotalCents: line.ordersTotalCents,
         orderIds: line.orders.map((order) => order.orderId),
         priorOrderCount: line.priorOrderCount,
       })),
@@ -117,6 +118,7 @@ export class PrismaCollectionBatchRepository extends CollectionBatchRepository {
       debtorBic: line.debtorBic,
       sequence: line.sequence,
       amountCents: line.amountCents,
+      ordersTotalCents: line.ordersTotalCents,
       orderCount: line.orderIds.length,
       priorOrderCount: line.priorOrderCount,
     };

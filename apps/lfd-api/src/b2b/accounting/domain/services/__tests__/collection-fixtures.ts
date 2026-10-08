@@ -66,7 +66,7 @@ export function frozenOrder(reference: string, createdAt: Date): FrozenInvoiceOr
       {
         sku: "PAIN-1",
         productNameSnapshot: "Pain",
-        unitPriceMillicents: 94_800,
+        unitPriceMillicents: 948_000,
         vatRate: "5.50",
         quantity: 1,
         lineTotalCents: 948,

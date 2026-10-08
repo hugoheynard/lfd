@@ -96,7 +96,7 @@ Après la facture émise et l'avis de prélèvement (§ 3).
   - fiche et PDF : `order-sheet.ts`, `order-sheet-pdf.ts`,
     `order-sheet-text.ts`, `order-documents.ts`, `order-pricing.ts` ;
   - espace client : `mes-commandes/order-detail/order-detail.html`,
-    `commande/confirmation-page.html` ;
+    `apps/lfc-ecommerce-frontend/src/app/client/commande/confirmation-page/confirmation-page.html` ;
   - panier et devis : `cart-total.ts`, `cart-summary.html`,
     `cart-product-line.ts`, `shop-quote.service.ts`,
     `client-cart.service.ts`, `quote-my-shop-cart.handler.ts`,
@@ -144,7 +144,14 @@ s'ils doivent l'être un jour, ils liront l'arrêté.
 | -------- | ------------------------------------------------------------------------------------------------ |
 | **F6-0** | tester le Schematron EN 16931 et le validateur retenu ; trancher Q1                              |
 | **F6**   | montant de ligne repris des bons, ou une ligne par ligne de bon ; simulateur ajusté              |
-| **F5-0** | le régime « au compte » nommé sur la commande et la fiche ; e-mails corrigés (« payé »)          |
+| **F5-0** | 🟡 2026-10-08 : régime nommé (`settlementRegimeOf`) ; fiche et e-mails en attente (contrat zod)  |
 | **F5**   | toutes les surfaces du § 5 en HT pour un client au compte — après facture et avis de prélèvement |
 
 F5-0 se bâtit tout de suite : il corrige un libellé faux aujourd'hui.
+
+**Constat F5-0 (2026-10-08)** : `not_required` n'est écrit qu'à la passation
+(`Order.deferPayment()`) ; aucune écriture postérieure n'en part (paiement,
+refus, abandon, échec à la clôture ne partent que de `pending`/`failed`) et le
+total n'est jamais réécrit. Le régime est donc figé à la passation. Seule
+exception : le semis de dev force `paid`. Un particulier n'est jamais au
+compte : la boutique ne diffère que sur un total nul.

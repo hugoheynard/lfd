@@ -37,6 +37,7 @@ function input(overrides: Partial<ConstituteBatchInput> = {}): ConstituteBatchIn
         debtorBic: null,
         sequence: "RCUR",
         amountCents: 1_000,
+        ordersTotalCents: 1_000,
         orderIds: ["o1"],
         priorOrderCount: 0,
       },
