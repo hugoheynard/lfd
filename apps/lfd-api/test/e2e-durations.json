@@ -34,6 +34,7 @@
   "test/client-notes.e2e-spec.ts": 8535,
   "test/cockpit.e2e-spec.ts": 3637,
   "test/collection-batches.e2e-spec.ts": 9204,
+  "test/collection-notices.e2e-spec.ts": 5000,
   "test/collection-schedule.e2e-spec.ts": 4000,
   "test/company-access-guards.e2e-spec.ts": 5565,
   "test/company-activation.e2e-spec.ts": 2435,

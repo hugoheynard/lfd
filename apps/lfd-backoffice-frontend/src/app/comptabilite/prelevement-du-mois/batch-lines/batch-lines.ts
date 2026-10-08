@@ -2,6 +2,7 @@ import { ChangeDetectionStrategy, Component, computed, input } from '@angular/co
 import { RouterLink } from '@angular/router';
 import type { CollectionBatchLineView, CollectionBatchView } from '@lfd/contracts';
 import {
+  FoldBadgeComponent,
   FoldButtonComponent,
   FoldCardComponent,
   FoldDataTableCellDirective,
@@ -11,6 +12,7 @@ import {
 } from 'fold-ng';
 
 import { batchMonthName, ofMonth } from '../../collection-month-wording';
+import { noticeBadge, type NoticeBadge } from '../../collection-notice-wording';
 import { euros, signedEuros } from '../../invoice-dossier-format';
 
 const COLUMNS: readonly FoldTableColumn[] = [
@@ -19,6 +21,7 @@ const COLUMNS: readonly FoldTableColumn[] = [
   { key: 'orders', label: 'Σ bons', numeric: true },
   { key: 'billed', label: 'Total facturé (prélevé)', numeric: true },
   { key: 'gap', label: 'Écart', numeric: true },
+  { key: 'notice', label: 'Avis de prélèvement' },
   { key: 'statement', label: 'Dossier' },
 ];
 
@@ -31,6 +34,8 @@ export interface BatchLineRow {
   readonly orders: string | null;
   readonly gap: string | null;
   readonly statementId: string | null;
+  /** L'état de l'avis (PA2) — envoyé, en attente, échec, non envoyable. */
+  readonly notice: NoticeBadge;
 }
 
 /**
@@ -43,6 +48,7 @@ export interface BatchLineRow {
   selector: 'app-batch-lines',
   changeDetection: ChangeDetectionStrategy.OnPush,
   imports: [
+    FoldBadgeComponent,
     FoldButtonComponent,
     FoldCardComponent,
     FoldDataTableCellDirective,
@@ -68,7 +74,12 @@ export class BatchLines {
 }
 
 export function toRow(line: CollectionBatchLineView): BatchLineRow {
-  const head = { rank: line.rank, debtorName: line.debtorName, billed: euros(line.amountCents) };
+  const head = {
+    rank: line.rank,
+    debtorName: line.debtorName,
+    billed: euros(line.amountCents),
+    notice: noticeBadge(line.notice),
+  };
   const ordersTotal = line.ordersTotalCents;
   if (ordersTotal === null || line.billingStatementId === null) {
     return { ...head, orders: null, gap: null, statementId: null };

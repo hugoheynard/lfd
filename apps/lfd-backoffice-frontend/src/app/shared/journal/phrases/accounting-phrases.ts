@@ -341,6 +341,67 @@ function onStatement(verb: string): Phrase {
   };
 }
 
+const NOTICE: Noun = { the: 'l’avis de prélèvement', a: 'un avis de prélèvement' };
+
+/** Ce que l'avis annonce, dit dans la phrase : « (rectificatif) » ; rien pour un premier avis. */
+const NOTICE_KIND: Readonly<Record<string, string>> = {
+  correction: ' (rectificatif)',
+  cancellation: ' (annulation)',
+  unchanged: ' (avis précédent maintenu)',
+};
+
+const NOTICE_KEYS = [
+  'subjectLabel',
+  'legalEntity',
+  'payer',
+  'kind',
+  'amountCents',
+  'collectionDay',
+  'previousAmountCents',
+  'previousCollectionDay',
+  'recipientSource',
+  'failure',
+];
+
+/**
+ * « … a mis en file l'avis de prélèvement « Avis X » (rectificatif) du
+ * client « X » chez l'entité « Y » — 105,50 €, le 16 oct. 2026 ». Le plan :
+ * `plan-prelevement-automatique.md`, PA2. Jamais l'adresse du destinataire.
+ */
+function onNotice(verb: string, after: (fact: PhraseFact) => Segment[] = nothing): Phrase {
+  return (fact) => {
+    const label = subjectLabelOf(fact);
+    const head =
+      label === null
+        ? [text(NOTICE.a)]
+        : [text(`${NOTICE.the} « `), subject(fact, label), text(' »')];
+    const kind = NOTICE_KIND[String(optional(fact.payload['kind']) ?? 'notice')] ?? '';
+    return byActor(
+      fact,
+      [
+        text(`${verb} `),
+        ...head,
+        text(`${kind} `),
+        ...cite(FOR_CLIENT, fact.payload['payer']),
+        text(' chez '),
+        ...cite(ENTITY[''], fact.payload['legalEntity']),
+        text(' — '),
+        inUnit('cents', fact.payload['amountCents']),
+        text(', le '),
+        inUnit('day', fact.payload['collectionDay']),
+        ...after(fact),
+      ],
+      NOTICE_KEYS,
+    );
+  };
+}
+
+const noticeFailure = (fact: PhraseFact): Segment[] => [
+  text(' : « '),
+  name(optional(fact.payload['failure']) ?? '—'),
+  text(' »'),
+];
+
 export const ACCOUNTING_PHRASES = {
   'legal_entity.declared': onEntity(
     'a déclaré',
@@ -455,6 +516,12 @@ export const ACCOUNTING_PHRASES = {
   'collection.batch_deposited': onBatch('a marqué déposé'),
   'billing_statement.issued': onStatement('a émis'),
   'billing_statement.cancelled': onStatement('a annulé'),
+  'collection.notice_queued': onNotice('a mis en file'),
+  'collection.notice_unsendable': onNotice('n’a pas pu adresser', () => [
+    text(' : ni contact de facturation, ni détenteur avec une adresse'),
+  ]),
+  'collection.notice_sent': onNotice('a envoyé'),
+  'collection.notice_failed': onNotice('n’a pas pu envoyer', noticeFailure),
   'collection.order_settled_otherwise': (fact) => {
     const number = subjectLabelOf(fact);
     return byActor(

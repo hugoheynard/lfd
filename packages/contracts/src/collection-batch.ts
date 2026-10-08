@@ -42,6 +42,34 @@ export const ORDER_COLLECTION_STATE_LABELS: Readonly<Record<OrderCollectionState
 };
 
 /**
+ * L'état de l'avis de prélèvement d'une ligne (plan
+ * `documentation/facturation/plan-prelevement-automatique.md`, PA2).
+ * `queued` = mis en file, PAS envoyé ; `unsendable` = ni contact de
+ * facturation ni détenteur avec une adresse — rien n'est parti.
+ */
+export type CollectionNoticeStatusView = "queued" | "sent" | "failed" | "unsendable";
+
+/**
+ * Ce que l'avis annonce : un premier avis, un rectificatif (montant, date ou
+ * RUM changés depuis un avis parti d'un lot annulé), une annulation (le payeur
+ * n'est plus prélevé), ou `unchanged` — l'avis parti tient toujours, rien n'est
+ * renvoyé.
+ */
+export type CollectionNoticeKindView = "notice" | "correction" | "cancellation" | "unchanged";
+
+/** L'avis d'une ligne de débit. */
+export interface CollectionLineNoticeView {
+  readonly kind: CollectionNoticeKindView;
+  readonly status: CollectionNoticeStatusView;
+  /** `null` quand l'avis n'est pas envoyable. */
+  readonly recipientEmail: string | null;
+  /** ISO — l'envoi accepté par le fournisseur ; `null` tant qu'il ne l'est pas. */
+  readonly sentAt: string | null;
+  /** Le refus du fournisseur, tel quel ; `null` hors échec. */
+  readonly failure: string | null;
+}
+
+/**
  * Une ligne de débit du lot, telle que l'écran la lit (plan
  * `documentation/facturation/plan-le-prelevement-suit-la-facture.md`, F3).
  */
@@ -57,6 +85,8 @@ export interface CollectionBatchLineView {
    * F3 — « lot d'avant l'arrêté de facturation », jamais zéro.
    */
   readonly billingStatementId: string | null;
+  /** `null` pour un lot constitué avant les avis (PA2, 2026-10-08) : il ne se dépose pas. */
+  readonly notice: CollectionLineNoticeView | null;
 }
 
 export interface CollectionBatchView {
@@ -83,6 +113,12 @@ export interface CollectionBatchView {
    * XML stocké fait foi.
    */
   readonly requestedCollectionDay: string | null;
+  /**
+   * L'échéance que le calendrier donnait (clôture + N, TARGET2) quand elle
+   * diffère de `requestedCollectionDay` : la constitution tardive l'a
+   * repoussée pour tenir le délai de pré-notification (D4). `null` sinon.
+   */
+  readonly postponedFromDay: string | null;
   /**
    * La date limite de dépôt de cette échéance, au cut-off ACTUEL de l'entité ;
    * `null` si l'échéance n'est pas figée ou si le cut-off est à renseigner.

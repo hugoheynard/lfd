@@ -89,3 +89,32 @@ export function depositDeadlineOf(
   }
   return { day: businessDaysBefore(collectionDay, cutoff.businessDaysBefore), time: cutoff.time };
 }
+
+/** L'échéance qu'un lot fige, et celle du calendrier quand elle a été repoussée. */
+export interface FrozenCollectionDay {
+  readonly day: string;
+  /** L'échéance du calendrier (clôture + N), si D4 l'a repoussée ; `null` sinon. */
+  readonly postponedFrom: string | null;
+}
+
+/**
+ * **L'échéance d'un lot constitué à `constitutedAt`** (D4, Hugo 2026-10-08) :
+ * une constitution tardive ne raccourcit jamais le préavis. Le plus tard de
+ * « clôture + N » et « jour (Paris) de la constitution + délai de
+ * pré-notification », puis le premier jour ouvré TARGET2.
+ *
+ * L'avis part le jour de la constitution : c'est de lui que le délai court.
+ */
+export function frozenCollectionDay(
+  closure: Date,
+  constitutedAt: Date,
+  preNotificationDays: number,
+  collectionDaysAfterClosure: number | null,
+): FrozenCollectionDay {
+  const calendarDay = collectionDayOf(closure, preNotificationDays, collectionDaysAfterClosure);
+  const earliest = addDays(instantToLocal(constitutedAt).day, preNotificationDays);
+  if (earliest <= calendarDay) {
+    return { day: calendarDay, postponedFrom: null };
+  }
+  return { day: onOrAfterBusinessDay(earliest), postponedFrom: calendarDay };
+}

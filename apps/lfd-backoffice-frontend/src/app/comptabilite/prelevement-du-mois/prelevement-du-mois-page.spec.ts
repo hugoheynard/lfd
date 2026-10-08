@@ -49,6 +49,7 @@ function batch(over: Partial<CollectionBatchView> = {}): CollectionBatchView {
     unmandatedCompanies: [],
     depositable: true,
     requestedCollectionDay: '2026-10-15',
+    postponedFromDay: null,
     depositDeadline: null,
     lines: [],
     ...over,
@@ -312,6 +313,64 @@ describe('PrelevementDuMoisPage', () => {
     await settle(fixture);
 
     expect(api.deposited).toEqual(['b1']);
+  });
+
+  /** PA2 : D4 a repoussé l'échéance — l'écran dit de quelle date, et pourquoi. */
+  it('une échéance repoussée dit de quelle date, et pourquoi', async () => {
+    const api = new FakeApi();
+    api.view = {
+      batches: [batch({ requestedCollectionDay: '2026-10-16', postponedFromDay: '2026-10-15' })],
+      exclusions: [],
+    };
+    const fixture = await render(api);
+
+    const postponed = host(fixture).querySelector('[data-postponed]')?.textContent ?? '';
+    expect(text(fixture)).toContain('16 oct. 2026');
+    expect(postponed).toContain('repoussée du 15 oct. 2026');
+    expect(postponed).toContain('le préavis court depuis sa');
+  });
+
+  /** PA2 : un avis pas parti se signale, et le refus du serveur s'affiche tel quel. */
+  it('les avis pas encore partis sont nommés, et le refus de dépôt s’affiche tel quel', async () => {
+    const api = new FakeApi();
+    api.view = {
+      batches: [
+        batch({
+          lines: [
+            {
+              rank: 1,
+              debtorName: 'Boulangerie du Port',
+              amountCents: 10_550,
+              ordersTotalCents: 10_550,
+              billingStatementId: 'st_1',
+              notice: {
+                kind: 'notice',
+                status: 'unsendable',
+                recipientEmail: null,
+                sentAt: null,
+                failure: null,
+              },
+            },
+          ],
+        }),
+      ],
+      exclusions: [],
+    };
+    const fixture = await render(api);
+
+    expect(host(fixture).querySelector('[data-unsent-notices]')?.textContent).toContain(
+      'Boulangerie du Port (non envoyable)',
+    );
+    expect(host(fixture).querySelector('[data-line-notice]')?.textContent).toContain(
+      'Non envoyable',
+    );
+    const refusal =
+      'Dépôt refusé — l’avis de prélèvement n’est pas parti pour : Boulangerie du Port (aucune adresse).';
+    api.refuse = { error: { message: refusal } };
+    button(fixture, 'Marquer déposé')?.click();
+    await settle(fixture);
+
+    expect(text(fixture)).toContain(refusal);
   });
 
   it('un lot déposé passe à l’historique, sans geste', async () => {

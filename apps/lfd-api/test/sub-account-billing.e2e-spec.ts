@@ -30,6 +30,7 @@ import type {
 
 import { cycleToConstitute } from "../src/b2b/accounting/domain/services/billing-cycle.js";
 import { PaymentGateway } from "../src/b2b/payments/domain/payment-gateway.js";
+import { MAILER } from "../src/platform/mailer/mailer.tokens.js";
 import { AdminTokenVerifier } from "../src/platform/auth/admin-token.verifier.js";
 import { CustomerRole } from "../src/platform/database/client/client.js";
 import { bootstrapE2e, daysAgo, jsonBody, serviceDay, type E2eContext } from "./e2e-harness.js";
@@ -66,12 +67,18 @@ let seq = 0;
 let closesAt: Date;
 /** Le point de retrait semé par le test courant. */
 let pickupId = "pickup_absent";
+/** Aucun courriel ne part d'un e2e : les avis (PA2) sont acceptés sans envoi. */
+const silentMailer = {
+  enabled: true,
+  send: (): Promise<{ providerId: null }> => Promise.resolve({ providerId: null }),
+};
 
 beforeAll(async () => {
   ctx = await bootstrapE2e({
     overrides: [
       { token: PaymentGateway, value: fakeGateway },
       { token: AdminTokenVerifier, value: stubAdminVerifier },
+      { token: MAILER, value: silentMailer },
     ],
   });
 });

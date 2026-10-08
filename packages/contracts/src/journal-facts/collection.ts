@@ -1,6 +1,6 @@
 import { z } from "zod";
 
-import { cents, count, fact, instant, named, payload, subjectLabel } from "./fact.js";
+import { cents, count, day, fact, instant, named, payload, subjectLabel } from "./fact.js";
 
 /**
  * **Le lot de prélèvement figé** (plan
@@ -34,6 +34,26 @@ const statement = {
   batch: named("collection_batch"),
   lineRank: count(),
   totalCents: cents(),
+};
+
+/**
+ * L'avis de prélèvement d'un payeur (plan
+ * `documentation/facturation/plan-prelevement-automatique.md`, PA2). Sujet :
+ * `collection_notice`, nommé « Avis <payeur> ». Jamais l'adresse du
+ * destinataire : on dit d'où elle vient (`recipientSource`), pas laquelle.
+ */
+const notice = {
+  subjectLabel: subjectLabel(),
+  legalEntity: named("legal_entity"),
+  payer: named("company"),
+  kind: z.enum(["notice", "correction", "cancellation", "unchanged"]),
+  /** Le montant annoncé — pour une annulation, celui qui ne sera pas prélevé. */
+  amountCents: cents(),
+  collectionDay: day(),
+  /** Ce que le dernier avis parti annonçait, pour un rectificatif. */
+  previousAmountCents: cents().nullable(),
+  previousCollectionDay: day().nullable(),
+  recipientSource: z.enum(["billing_contact", "owner"]).nullable(),
 };
 
 export const COLLECTION_FACTS = {
@@ -77,4 +97,12 @@ export const COLLECTION_FACTS = {
   ),
   /** Annulé avec son lot, avant dépôt : un nouvel arrêté naîtra à la reconstitution. */
   "billing_statement.cancelled": fact(payload(statement)),
+  /** L'avis est mis en file, dans la transaction du lot — pas encore envoyé. */
+  "collection.notice_queued": fact(payload(notice)),
+  /** Aucune adresse : ni contact de facturation, ni détenteur. Le lot ne se dépose pas. */
+  "collection.notice_unsendable": fact(payload(notice)),
+  /** Le fournisseur a accepté l'envoi. */
+  "collection.notice_sent": fact(payload(notice)),
+  /** Le fournisseur a refusé : `failure` dit pourquoi, le lot ne se dépose pas. */
+  "collection.notice_failed": fact(payload({ ...notice, failure: z.string() })),
 } as const;

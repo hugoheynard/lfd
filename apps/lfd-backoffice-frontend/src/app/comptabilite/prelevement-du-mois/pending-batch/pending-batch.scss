@@ -13,3 +13,7 @@
   flex-wrap: wrap;
   gap: var(--fold-space-xs);
 }
+
+.pb-postponed {
+  color: var(--fold-color-text-muted);
+}

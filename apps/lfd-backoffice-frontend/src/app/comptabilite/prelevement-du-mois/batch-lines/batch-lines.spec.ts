@@ -19,6 +19,13 @@ function line(over: Partial<CollectionBatchLineView> = {}): CollectionBatchLineV
     amountCents: 10_018,
     ordersTotalCents: 10_019,
     billingStatementId: 'st_1',
+    notice: {
+      kind: 'notice',
+      status: 'sent',
+      recipientEmail: 'compta@port.test',
+      sentAt: '2026-10-02T09:01:00.000Z',
+      failure: null,
+    },
     ...over,
   };
 }
@@ -39,6 +46,7 @@ function batchOf(lines: readonly CollectionBatchLineView[]): CollectionBatchView
     unmandatedCompanies: [],
     depositable: true,
     requestedCollectionDay: '2026-10-15',
+    postponedFromDay: null,
     depositDeadline: null,
     lines,
   };
@@ -87,5 +95,53 @@ describe('BatchLines', () => {
     );
     expect(host.querySelector('[data-line-gap]')).toBeNull();
     expect(host.querySelector('a[href]')).toBeNull();
+  });
+});
+
+describe('l’avis de prélèvement de la ligne (PA2)', () => {
+  const notice = (over: Partial<NonNullable<CollectionBatchLineView['notice']>> = {}) => ({
+    kind: 'notice' as const,
+    status: 'sent' as const,
+    recipientEmail: 'compta@port.test',
+    sentAt: null,
+    failure: null,
+    ...over,
+  });
+
+  it('envoyé, en attente, échec, non envoyable — mis en file ne se dit jamais « envoyé »', () => {
+    expect(toRow(line({ notice: notice() })).notice).toMatchObject({
+      label: 'Envoyé',
+      variant: 'success',
+      detail: 'compta@port.test',
+    });
+    expect(toRow(line({ notice: notice({ status: 'queued' }) })).notice.label).toBe('En attente');
+    expect(
+      toRow(line({ notice: notice({ status: 'failed', failure: 'rebond dur' }) })).notice,
+    ).toMatchObject({ label: 'Échec', detail: 'rebond dur' });
+    expect(
+      toRow(line({ notice: notice({ status: 'unsendable', recipientEmail: null }) })).notice.label,
+    ).toBe('Non envoyable');
+  });
+
+  it('un rectificatif et une reconduction se disent', () => {
+    expect(toRow(line({ notice: notice({ kind: 'correction' }) })).notice.detail).toBe(
+      'rectificatif · compta@port.test',
+    );
+    expect(toRow(line({ notice: notice({ kind: 'unchanged' }) })).notice.detail).toContain(
+      'avis précédent maintenu',
+    );
+  });
+
+  it('une ligne d’un lot d’avant les avis le dit', () => {
+    expect(toRow(line({ notice: null })).notice).toMatchObject({
+      label: 'Aucun avis',
+      variant: 'alert',
+    });
+  });
+
+  it('rend l’état de l’avis dans la colonne', async () => {
+    const host = await render([line({ notice: notice({ status: 'queued' }) })]);
+
+    expect(host.querySelector('[data-line-notice]')?.textContent).toContain('En attente');
   });
 });

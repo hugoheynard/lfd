@@ -86,8 +86,13 @@ model CollectionBatch {
   /// XML. NULL pour les lots d'avant le 2026-10-08 : leur XML fait foi.
   /// Changer l'échéance d'un lot = l'annuler et le reconstituer.
   requestedCollectionDay DateTime? @map("requested_collection_day") @db.Date
+  /// L'échéance que le calendrier donnait (clôture + N, TARGET2) quand une
+  /// constitution tardive l'a repoussée pour tenir le préavis (D4, PA2) ;
+  /// NULL sinon, et pour les lots d'avant.
+  postponedFromDay       DateTime? @map("postponed_from_day") @db.Date
 
-  lines CollectionBatchLine[]
+  lines   CollectionBatchLine[]
+  notices CollectionNotice[]
 
   @@index([legalEntityId, cycleClosesAt])
   @@map("collection_batch")
@@ -167,5 +172,79 @@ model CollectionFloor {
   floorAt DateTime @map("floor_at") @db.Timestamptz(3)
 
   @@map("collection_floor")
+  @@schema("public")
+}
+
+/// Ce que l'avis annonce au payeur. Une VALEUR : elle ne se renomme que par migration.
+enum CollectionNoticeKind {
+  notice
+  correction
+  cancellation
+  unchanged
+
+  @@schema("public")
+}
+
+/// Où en est l'avis. `queued` = mis en file, PAS envoyé.
+enum CollectionNoticeStatus {
+  queued
+  sent
+  failed
+  unsendable
+
+  @@schema("public")
+}
+
+/// L'avis de prélèvement d'un payeur (plan
+/// `documentation/facturation/plan-prelevement-automatique.md`, PA2), écrit
+/// dans la transaction du lot. Contraintes en SQL
+/// (`20261008160000_l_avis_de_prelevement`) : une annulation n'a ni lot ni
+/// ligne, les autres ont les deux ; un rectificatif porte l'avant ; un avis
+/// non envoyable n'a pas d'adresse, les autres en ont une ; montant > 0.
+model CollectionNotice {
+  /// ULID — sert de clé d'idempotence chez le fournisseur.
+  id String @id
+
+  legalEntityId String   @map("legal_entity_id")
+  /// La clôture du cycle annoncé — c'est elle qui relie les avis d'un lot
+  /// annulé à ceux de sa reconstitution.
+  cycleClosesAt DateTime @map("cycle_closes_at") @db.Timestamptz(3)
+
+  batchId  String?          @map("batch_id")
+  batch    CollectionBatch? @relation(fields: [batchId], references: [id], onDelete: Restrict)
+  lineRank Int?             @map("line_rank")
+
+  /// Le payeur — opaque, comme `collection_batch_line.debtor_company_id`.
+  debtorCompanyId String @map("debtor_company_id")
+  debtorName      String @map("debtor_name")
+
+  kind   CollectionNoticeKind
+  status CollectionNoticeStatus
+
+  recipientEmail  String? @map("recipient_email")
+  /// `billing_contact` | `owner`.
+  recipientSource String? @map("recipient_source")
+
+  amountCents           Int       @map("amount_cents")
+  collectionDay         DateTime  @map("collection_day") @db.Date
+  previousAmountCents   Int?      @map("previous_amount_cents")
+  previousCollectionDay DateTime? @map("previous_collection_day") @db.Date
+
+  mandateReference String  @map("mandate_reference")
+  /// L'arrêté de la ligne ; NULL pour une annulation.
+  statementId      String? @map("statement_id")
+  creditorName     String  @map("creditor_name")
+  creditorIcs      String  @map("creditor_ics")
+  /// L'avis parti que celui-ci rectifie, annule ou reconduit.
+  supersedesId     String? @map("supersedes_id")
+
+  createdAt DateTime  @map("created_at") @db.Timestamptz(3)
+  sentAt    DateTime? @map("sent_at") @db.Timestamptz(3)
+  failedAt  DateTime? @map("failed_at") @db.Timestamptz(3)
+  failure   String?
+
+  @@unique([batchId, lineRank])
+  @@index([legalEntityId, cycleClosesAt])
+  @@map("collection_notice")
   @@schema("public")
 }

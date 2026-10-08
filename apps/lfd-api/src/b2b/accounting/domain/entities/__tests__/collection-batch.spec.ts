@@ -6,6 +6,7 @@ import {
   DepositRecheckFailedError,
   FirstClosureNotOnFirstOfMonthError,
 } from "../../errors/collection-errors.js";
+import { CollectionNoticesNotSentError } from "../../errors/collection-notice-errors.js";
 import { CollectionBatch, type ConstituteBatchInput } from "../collection-batch.js";
 
 const SEPTEMBER = {
@@ -14,6 +15,8 @@ const SEPTEMBER = {
 };
 const AFTER_CLOSE = new Date("2026-10-02T09:00:00.000Z");
 const STAMP = { at: AFTER_CLOSE, staffId: "staff_1" };
+/** L'avis de l'unique ligne est parti — ce que le dépôt exige depuis PA2. */
+const SENT = new Map([[1, "sent" as const]]);
 
 function input(overrides: Partial<ConstituteBatchInput> = {}): ConstituteBatchInput {
   return {
@@ -25,6 +28,7 @@ function input(overrides: Partial<ConstituteBatchInput> = {}): ConstituteBatchIn
     constituted: STAMP,
     unmandatedCompanies: [],
     requestedCollectionDay: "2026-10-15",
+    postponedFromDay: null,
     lines: [
       {
         rank: 1,
@@ -82,24 +86,47 @@ describe("le lot de prélèvement", () => {
 
     expect(batch.status).toBe("cancelled");
     expect(() => batch.cancel(STAMP)).toThrow(BatchNotConstitutedError);
-    expect(() => batch.markDeposited(STAMP, [])).toThrow(BatchNotConstitutedError);
+    expect(() => batch.markDeposited(STAMP, [], SENT)).toThrow(BatchNotConstitutedError);
   });
 
   it("ne se dépose pas tant qu'il nomme une société sans mandat (Q2)", () => {
     const batch = CollectionBatch.constitute(input({ unmandatedCompanies: ["Chalet"] }));
 
     expect(batch.depositable).toBe(false);
-    expect(() => batch.markDeposited(STAMP, [])).toThrow(BatchHasUnmandatedCompaniesError);
+    expect(() => batch.markDeposited(STAMP, [], SENT)).toThrow(BatchHasUnmandatedCompaniesError);
   });
 
   it("refuse le dépôt quand la relecture a trouvé un écart, et le nomme", () => {
     const batch = CollectionBatch.constitute(input());
 
-    expect(() => batch.markDeposited(STAMP, ["le mandat RUM-1 de Port n'est plus actif"])).toThrow(
-      /RUM-1 de Port/u,
-    );
-    expect(() => batch.markDeposited(STAMP, ["x"])).toThrow(DepositRecheckFailedError);
-    batch.markDeposited(STAMP, []);
+    expect(() =>
+      batch.markDeposited(STAMP, ["le mandat RUM-1 de Port n'est plus actif"], SENT),
+    ).toThrow(/RUM-1 de Port/u);
+    expect(() => batch.markDeposited(STAMP, ["x"], SENT)).toThrow(DepositRecheckFailedError);
+    batch.markDeposited(STAMP, [], SENT);
     expect(batch.status).toBe("deposited");
+  });
+
+  /** PA2 : mis en file ne vaut pas envoyé — le refus nomme le payeur et la raison. */
+  it.each([
+    ["queued", "avis en file, pas encore envoyé"],
+    ["failed", "envoi de l'avis refusé"],
+    ["unsendable", "aucune adresse"],
+  ] as const)("refuse le dépôt quand l'avis est « %s », et nomme le payeur", (status, words) => {
+    const batch = CollectionBatch.constitute(input());
+
+    const refusal = () => batch.markDeposited(STAMP, [], new Map([[1, status]]));
+
+    expect(refusal).toThrow(CollectionNoticesNotSentError);
+    expect(refusal).toThrow(`Port (${words}`);
+    expect(batch.status).toBe("constituted");
+  });
+
+  it("refuse le dépôt d'une ligne sans avis (lot d'avant les avis)", () => {
+    const batch = CollectionBatch.constitute(input());
+
+    expect(() => batch.markDeposited(STAMP, [], new Map())).toThrow(
+      "Port (aucun avis (lot préparé avant les avis))",
+    );
   });
 });

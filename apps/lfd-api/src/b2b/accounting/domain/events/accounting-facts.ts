@@ -54,6 +54,10 @@ export const COLLECTION_FACT_TYPES = {
   batchCancelled: "collection.batch_cancelled",
   batchDeposited: "collection.batch_deposited",
   orderSettledOtherwise: "collection.order_settled_otherwise",
+  noticeQueued: "collection.notice_queued",
+  noticeUnsendable: "collection.notice_unsendable",
+  noticeSent: "collection.notice_sent",
+  noticeFailed: "collection.notice_failed",
 } as const satisfies Readonly<Record<string, JournalFactType>>;
 
 /**

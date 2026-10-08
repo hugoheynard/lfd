@@ -21,6 +21,7 @@ import type {
 } from "@lfd/contracts";
 
 import { cycleToConstitute } from "../src/b2b/accounting/domain/services/billing-cycle.js";
+import { MAILER } from "../src/platform/mailer/mailer.tokens.js";
 import { AdminTokenVerifier } from "../src/platform/auth/admin-token.verifier.js";
 import { bootstrapE2e, daysAgo, jsonBody, type E2eContext } from "./e2e-harness.js";
 import { createCompany, createUser } from "./factories.js";
@@ -43,13 +44,22 @@ const stubAdminVerifier = {
     Promise.resolve({ subject, scopes: [] }),
 };
 
+/** Aucun courriel ne part d'un e2e : les avis (PA2) sont acceptés sans envoi. */
+const silentMailer = {
+  enabled: true,
+  send: (): Promise<{ providerId: null }> => Promise.resolve({ providerId: null }),
+};
+
 let ctx: E2eContext;
 let seq = 0;
 let closesAt: Date;
 
 beforeAll(async () => {
   ctx = await bootstrapE2e({
-    overrides: [{ token: AdminTokenVerifier, value: stubAdminVerifier }],
+    overrides: [
+      { token: AdminTokenVerifier, value: stubAdminVerifier },
+      { token: MAILER, value: silentMailer },
+    ],
   });
 });
 
@@ -104,6 +114,16 @@ async function collectingEntity(): Promise<string> {
 async function mandatedClient(entityId: string, name: string): Promise<string> {
   seq += 1;
   const { id } = await createCompany(ctx.prisma, { raisonSociale: name });
+  // Un contact de facturation : l'avis de prélèvement part (PA2).
+  await ctx.prisma.companyContact.create({
+    data: {
+      companyId: id,
+      prenom: "Claire",
+      nom: "Compta",
+      email: `compta-${String(seq)}@client.test`,
+      role: "billing",
+    },
+  });
   await staff().put(`/admin/companies/${id}/bank-account`).send(DEBTOR_RIB).expect(204);
   await ctx.prisma.paymentMandate.create({
     data: {
@@ -161,6 +181,7 @@ async function constitute(entityId: string): Promise<string> {
     .post(`${BASE}/batches`)
     .send({ legalEntityId: entityId })
     .expect(201);
+  await ctx.drain();
   return jsonBody<ConstitutedBatchesView>(response).batchIds[0] ?? "";
 }
 

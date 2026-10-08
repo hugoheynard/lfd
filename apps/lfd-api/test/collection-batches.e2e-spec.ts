@@ -24,11 +24,12 @@ import type {
 import { CollectionCandidatesReader } from "../src/b2b/accounting/domain/ports/collection-candidates.reader.js";
 import { cycleAt, cycleToConstitute } from "../src/b2b/accounting/domain/services/billing-cycle.js";
 import {
-  collectionDayOf,
   depositDeadlineOf,
+  frozenCollectionDay,
 } from "../src/b2b/accounting/domain/services/collection-calendar.js";
 import { simulateInvoiceDossier } from "../src/b2b/accounting/domain/services/invoice-dossier.js";
 import { AdminTokenVerifier } from "../src/platform/auth/admin-token.verifier.js";
+import { MAILER } from "../src/platform/mailer/mailer.tokens.js";
 import { bootstrapE2e, daysAgo, jsonBody, type E2eContext } from "./e2e-harness.js";
 import { createCompany, createUser } from "./factories.js";
 
@@ -61,6 +62,15 @@ const stubAdminVerifier = {
     Promise.resolve({ subject: "staff-e2e", scopes: [] }),
 };
 
+/**
+ * Aucun courriel ne part d'un e2e : les avis de prélèvement (PA2) sont rendus
+ * à ce mailer, qui accepte sans rien envoyer.
+ */
+const silentMailer = {
+  enabled: true,
+  send: (): Promise<{ providerId: null }> => Promise.resolve({ providerId: null }),
+};
+
 let ctx: E2eContext;
 let seq = 0;
 /** La dernière clôture calendaire atteinte — le cycle qu'on constitue. */
@@ -68,7 +78,10 @@ let closesAt: Date;
 
 beforeAll(async () => {
   ctx = await bootstrapE2e({
-    overrides: [{ token: AdminTokenVerifier, value: stubAdminVerifier }],
+    overrides: [
+      { token: AdminTokenVerifier, value: stubAdminVerifier },
+      { token: MAILER, value: silentMailer },
+    ],
   });
 });
 
@@ -121,8 +134,22 @@ async function collectingEntity(): Promise<string> {
   return id;
 }
 
+/**
+ * Une société cliente, avec un contact de facturation : son avis de
+ * prélèvement part, et le dépôt n'est refusé que pour ce que le test éprouve.
+ */
 async function client(name: string, parentId?: string): Promise<string> {
   const company = await createCompany(ctx.prisma, { raisonSociale: name });
+  seq += 1;
+  await ctx.prisma.companyContact.create({
+    data: {
+      companyId: company.id,
+      prenom: "Claire",
+      nom: "Compta",
+      email: `compta-${String(seq)}@client.test`,
+      role: "billing",
+    },
+  });
   if (parentId !== undefined) {
     await ctx.prisma.company.update({
       where: { id: company.id },
@@ -211,11 +238,13 @@ async function orderOf(
   });
 }
 
+/** Constitue, puis attend que les avis en file soient partis (PA2). */
 async function constitute(entityId: string, expected = 201): Promise<readonly string[]> {
   const response = await staff()
     .post(`${BASE}/batches`)
     .send({ legalEntityId: entityId })
     .expect(expected);
+  await ctx.drain();
   return expected === 201 ? jsonBody<ConstitutedBatchesView>(response).batchIds : [];
 }
 
@@ -300,7 +329,8 @@ describe("le lot figé", () => {
     const port = await client("Boulangerie du Port");
     await mandated(entity, port);
     await orderOf(port);
-    const expectedDay = collectionDayOf(closesAt, 14, 20);
+    // D4 : jamais avant aujourd'hui + délai — calculé par le domaine.
+    const expectedDay = frozenCollectionDay(closesAt, new Date(daysAgo(0)), 14, 20).day;
 
     const [batchId] = await constitute(entity);
 
@@ -328,7 +358,9 @@ describe("le lot figé", () => {
       .expect(204);
 
     const [batch] = (await cycle(entity)).batches;
-    expect(batch?.requestedCollectionDay).toBe(collectionDayOf(closesAt, 14, null));
+    expect(batch?.requestedCollectionDay).toBe(
+      frozenCollectionDay(closesAt, new Date(daysAgo(0)), 14, null).day,
+    );
     expect(batch?.depositDeadline).toBeNull();
   });
 

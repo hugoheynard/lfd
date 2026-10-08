@@ -6,9 +6,14 @@ import {
   DepositRecheckFailedError,
   FirstClosureNotOnFirstOfMonthError,
 } from "../errors/collection-errors.js";
+import {
+  CollectionNoticesNotSentError,
+  type UnsentNotice,
+} from "../errors/collection-notice-errors.js";
 import { isCalendarClosure, type BillingCycle } from "../services/billing-cycle.js";
 import type { SequenceType } from "../services/pain008-document.js";
 import type { SepaScheme } from "../value-objects/sepa-scheme.js";
+import type { CollectionNoticeStatus } from "./collection-notice.js";
 
 export type CollectionBatchStatus = "constituted" | "deposited" | "cancelled";
 
@@ -72,6 +77,11 @@ export interface CollectionBatchState {
    * place (plan `plan-prelevement-automatique.md`, PA1).
    */
   readonly requestedCollectionDay: string | null;
+  /**
+   * L'échéance du calendrier (clôture + N) quand une constitution tardive l'a
+   * repoussée pour tenir le préavis (D4) ; `null` sinon, et avant PA2.
+   */
+  readonly postponedFromDay: string | null;
 }
 
 export interface ConstituteBatchInput {
@@ -88,6 +98,7 @@ export interface ConstituteBatchInput {
   readonly fileSha256: string;
   /** L'échéance que le XML porte, sortie du même calendrier. */
   readonly requestedCollectionDay: string;
+  readonly postponedFromDay: string | null;
 }
 
 /**
@@ -140,6 +151,7 @@ export class CollectionBatch {
       xml: input.xml,
       fileSha256: input.fileSha256,
       requestedCollectionDay: input.requestedCollectionDay,
+      postponedFromDay: input.postponedFromDay,
     });
   }
 
@@ -159,11 +171,28 @@ export class CollectionBatch {
    *
    * @param problems ce que la relecture a trouvé (mandat révoqué, IBAN changé,
    *        commande annulée) — vide si le monde n'a pas bougé.
+   * @param notices l'état de l'avis de chaque ligne, par rang (PA2) : toutes
+   *        `sent`, sinon refus en nommant les payeurs. Une ligne sans avis
+   *        (lot d'avant PA2) n'a pas été pré-notifiée : refus aussi.
    */
-  markDeposited(stamp: StaffStamp, problems: readonly string[]): void {
+  markDeposited(
+    stamp: StaffStamp,
+    problems: readonly string[],
+    notices: ReadonlyMap<number, CollectionNoticeStatus>,
+  ): void {
     this.assertConstituted();
     if (this.state.unmandatedCompanies.length > 0) {
       throw new BatchHasUnmandatedCompaniesError(this.state.unmandatedCompanies);
+    }
+    const unsent = this.state.lines.flatMap((line): UnsentNotice[] => {
+      const status = notices.get(line.rank);
+      if (status === "sent") {
+        return [];
+      }
+      return [{ debtorName: line.debtorName, reason: status ?? "missing" }];
+    });
+    if (unsent.length > 0) {
+      throw new CollectionNoticesNotSentError(unsent);
     }
     if (problems.length > 0) {
       throw new DepositRecheckFailedError(problems);

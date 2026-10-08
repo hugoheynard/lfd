@@ -8,6 +8,7 @@ import { CancelCollectionBatchCommand } from "../cancel-collection-batch.command
 import { ConstituteCollectionBatchesCommand } from "../constitute-collection-batches.command.js";
 import { DepositCollectionBatchCommand } from "../deposit-collection-batch.command.js";
 import { world } from "./collection-world.js";
+import { sendAllQueued } from "./notice-doubles.js";
 
 /**
  * L'arrêté de facturation, écrit et annulé avec son lot (plan
@@ -50,6 +51,8 @@ describe("l'arrêté de facturation", () => {
       "collection.batch_constituted",
       "billing_statement.issued",
       "billing_statement.issued",
+      "collection.notice_queued",
+      "collection.notice_queued",
     ]);
   });
 
@@ -89,6 +92,7 @@ describe("l'arrêté de facturation", () => {
     w.mandates.mandates = [mandate("c_port")];
     const batchId = await constituted(w);
     w.recheck.now = new Map([["m_c_port", { active: true, iban: mandate("c_port").iban }]]);
+    sendAllQueued(w.noticeStore, w.clock.now());
     await w.deposit.execute(new DepositCollectionBatchCommand(batchId, "staff_1"));
 
     await expect(

@@ -1,4 +1,8 @@
-import type { CollectionBatchView, CollectionExclusionView } from "@lfd/contracts";
+import type {
+  CollectionBatchView,
+  CollectionExclusionView,
+  CollectionLineNoticeView,
+} from "@lfd/contracts";
 import { Injectable } from "@nestjs/common";
 
 import { PrismaService } from "../../../platform/database/prisma.service.js";
@@ -31,6 +35,7 @@ export class PrismaCollectionBatchReader extends CollectionBatchReader {
         cancelledAt: true,
         unmandatedCompanies: true,
         requestedCollectionDay: true,
+        postponedFromDay: true,
         legalEntity: {
           select: { depositCutoffBusinessDays: true, depositCutoffTime: true },
         },
@@ -43,6 +48,16 @@ export class PrismaCollectionBatchReader extends CollectionBatchReader {
             ordersTotalCents: true,
             orderCount: true,
             statement: { select: { id: true } },
+          },
+        },
+        notices: {
+          select: {
+            lineRank: true,
+            kind: true,
+            status: true,
+            recipientEmail: true,
+            sentAt: true,
+            failure: true,
           },
         },
       },
@@ -62,6 +77,7 @@ export class PrismaCollectionBatchReader extends CollectionBatchReader {
       unmandatedCompanies: row.unmandatedCompanies,
       depositable: row.lines.length > 0 && row.unmandatedCompanies.length === 0,
       ...batchCalendar(row.requestedCollectionDay, row.legalEntity),
+      postponedFromDay: row.postponedFromDay?.toISOString().slice(0, 10) ?? null,
       // Un lot d'avant F3 n'a pas d'arrêté : `null`, jamais un identifiant inventé.
       lines: row.lines.map((line) => ({
         rank: line.rank,
@@ -69,6 +85,8 @@ export class PrismaCollectionBatchReader extends CollectionBatchReader {
         amountCents: line.amountCents,
         ordersTotalCents: line.ordersTotalCents,
         billingStatementId: line.statement?.id ?? null,
+        // Un lot d'avant PA2 n'a pas d'avis : `null`, et il ne se dépose pas.
+        notice: lineNotice(row.notices, line.rank),
       })),
     }));
   }
@@ -166,6 +184,31 @@ export class PrismaCollectionBatchReader extends CollectionBatchReader {
         .sort((left, right) => left.localeCompare(right)),
     }));
   }
+}
+
+/** L'avis d'une ligne, tel que l'écran le lit. */
+function lineNotice(
+  notices: readonly {
+    readonly lineRank: number | null;
+    readonly kind: CollectionLineNoticeView["kind"];
+    readonly status: CollectionLineNoticeView["status"];
+    readonly recipientEmail: string | null;
+    readonly sentAt: Date | null;
+    readonly failure: string | null;
+  }[],
+  rank: number,
+): CollectionLineNoticeView | null {
+  const notice = notices.find((candidate) => candidate.lineRank === rank);
+  if (notice === undefined) {
+    return null;
+  }
+  return {
+    kind: notice.kind,
+    status: notice.status,
+    recipientEmail: notice.recipientEmail,
+    sentAt: notice.sentAt?.toISOString() ?? null,
+    failure: notice.failure,
+  };
 }
 
 /**

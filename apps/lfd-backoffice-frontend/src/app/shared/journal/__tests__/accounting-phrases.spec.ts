@@ -340,3 +340,43 @@ describe('le lot de prélèvement figé', () => {
     expect(settled).toContain('« virement du 3 »');
   });
 });
+
+describe('l’avis de prélèvement (PA2)', () => {
+  const notice = {
+    subjectLabel: 'Avis Café des Halles',
+    legalEntity: { id: 'le_1', name: ENTITY },
+    payer: CAFE,
+    kind: 'notice',
+    amountCents: 10_550,
+    collectionDay: '2026-10-16',
+    previousAmountCents: null,
+    previousCollectionDay: null,
+    recipientSource: 'billing_contact',
+  };
+
+  function ofNotice(type: string, payload: Record<string, unknown>): FactInput {
+    return { ...entity(type, payload), subjectType: 'collection_notice', subjectId: 'n_1' };
+  }
+
+  it('dit la mise en file : payeur, entité, montant, date — jamais l’adresse', () => {
+    const queued = sentence(ofNotice('collection.notice_queued', notice));
+
+    expect(queued).toContain('a mis en file l’avis de prélèvement « Avis Café des Halles »');
+    expect(queued).toContain('Café des Halles');
+    expect(queued).toContain('La Folie Douce SAS');
+    expect(queued).toMatch(/105,50\s€/u);
+    expect(queued).not.toContain('@');
+  });
+
+  it('dit le rectificatif, l’envoi, l’échec et l’avis non envoyable', () => {
+    expect(
+      sentence(ofNotice('collection.notice_sent', { ...notice, kind: 'correction' })),
+    ).toContain('a envoyé l’avis de prélèvement « Avis Café des Halles » (rectificatif)');
+    expect(
+      sentence(ofNotice('collection.notice_failed', { ...notice, failure: 'rebond dur' })),
+    ).toContain('« rebond dur »');
+    expect(
+      sentence(ofNotice('collection.notice_unsendable', { ...notice, recipientSource: null })),
+    ).toContain('ni contact de facturation, ni détenteur');
+  });
+});

@@ -14,7 +14,7 @@ import { billedPayerOf } from "../domain/services/billed-payer.js";
 import { cycleAt, cycleToConstitute, type BillingCycle } from "../domain/services/billing-cycle.js";
 import { assembleCollection, type Assembly } from "../domain/services/collection-assembly.js";
 import { renderBatchFile } from "../domain/services/collection-batch-file.js";
-import { collectionDayOf } from "../domain/services/collection-calendar.js";
+import { frozenCollectionDay } from "../domain/services/collection-calendar.js";
 
 /**
  * Les deux moitiés de la constitution d'un lot, sorties du handler pour qu'il
@@ -108,10 +108,12 @@ export interface BuildInput {
 /** Un lot par schéma qui a des lignes, son fichier rendu et figé. */
 export function buildBatches(input: BuildInput): readonly CollectionBatch[] {
   const { read } = input;
-  // UNE échéance pour tous les lots du cycle, tirée du calendrier : le XML la
-  // porte et le lot la fige — les deux ne peuvent pas diverger.
-  const requestedCollectionDay = collectionDayOf(
+  // UNE échéance pour tous les lots du cycle, tirée du calendrier et jamais
+  // plus tôt que le préavis compté depuis aujourd'hui (D4) : le XML la porte,
+  // le lot la fige, l'avis l'annonce — les trois ne peuvent pas diverger.
+  const { day: requestedCollectionDay, postponedFrom } = frozenCollectionDay(
     read.cycle.closesAt,
+    input.at,
     input.creditor.preNotificationDays,
     input.creditor.collectionDaysAfterClosure,
   );
@@ -139,6 +141,7 @@ export function buildBatches(input: BuildInput): readonly CollectionBatch[] {
       xml: file.xml,
       fileSha256: file.sha256,
       requestedCollectionDay,
+      postponedFromDay: postponedFrom,
     });
   });
 }

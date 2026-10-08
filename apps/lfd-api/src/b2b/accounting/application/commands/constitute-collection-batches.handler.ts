@@ -3,12 +3,17 @@ import { CommandHandler, type ICommandHandler } from "@nestjs/cqrs";
 import { UnitOfWork } from "../../../../platform/database/unit-of-work.js";
 import { DomainEventPublisher } from "../../../../platform/events/domain-event-publisher.js";
 import { IdGenerator } from "../../../../platform/id/id-generator.js";
+import { DurablePublisher } from "../../../../platform/outbox/durable-publisher.js";
 import { Clock } from "../../../../platform/time/clock.js";
+import type { CreditorSnapshot } from "../../domain/creditor-snapshot.js";
 import type { CollectionBatch } from "../../domain/entities/collection-batch.js";
+import type { CollectionNotice } from "../../domain/entities/collection-notice.js";
 import type { OrderCollection } from "../../domain/entities/order-collection.js";
 import { LegalEntityNotFoundError } from "../../domain/errors/accounting-errors.js";
 import { NothingToCollectError } from "../../domain/errors/collection-errors.js";
 import { BillingStatementIssuedEvent } from "../../domain/events/billing-statement.events.js";
+import { CollectionNoticeQueuedFact } from "../../domain/events/collection-notice-queued.fact.js";
+import { CollectionNoticeEvent } from "../../domain/events/collection-notice.events.js";
 import {
   CollectionBatchConstitutedEvent,
   type BatchEntity,
@@ -18,11 +23,15 @@ import { CollectionBatchRepository } from "../../domain/ports/collection-batch.r
 import { CollectionCandidatesReader } from "../../domain/ports/collection-candidates.reader.js";
 import { CollectionLock } from "../../domain/ports/collection-lock.js";
 import { CollectionMandatesReader } from "../../domain/ports/collection-mandates.reader.js";
+import { CollectionNoticeRepository } from "../../domain/ports/collection-notice.repository.js";
 import { CreditorReader } from "../../domain/ports/creditor.reader.js";
+import { CycleNoticesReader } from "../../domain/ports/cycle-notices.reader.js";
 import { OrderCollectionRepository } from "../../domain/ports/order-collection.repository.js";
+import { PayerNoticeContactsReader } from "../../domain/ports/payer-notice-contacts.reader.js";
 import { StatementBuyerReader } from "../../domain/ports/statement-buyer.reader.js";
 import { buildStatements, type IssuedStatement } from "../billing-statement-support.js";
 import { buildBatches, orderStates, readAssembly } from "../collection-constitution-support.js";
+import { noticesOf } from "../collection-notice-support.js";
 import { ConstituteCollectionBatchesCommand } from "./constitute-collection-batches.command.js";
 
 /**
@@ -43,6 +52,13 @@ import { ConstituteCollectionBatchesCommand } from "./constitute-collection-batc
  * facture que `assembleCollection` a calculée pour la ligne, figée telle
  * quelle — son total EST le montant prélevé, jamais recalculé.
  *
+ * Chaque ligne reçoit aussi son **avis de prélèvement** (plan
+ * `plan-prelevement-automatique.md`, PA2), écrit avec le lot et mis dans la
+ * boîte d'envoi (`DurablePublisher`) dans CETTE transaction : un lot sans ses
+ * avis, ou un avis sans son lot, ne peut pas exister. L'envoi part après la
+ * validation (`SendCollectionNotice`). Une reconstitution rectifie, reconduit
+ * ou annule ce qu'un lot annulé avait annoncé.
+ *
  * ⚠️ L'entité est lue par `CreditorReader` AVANT la transaction : une entité qui
  * ne peut pas encaisser refuse (409) sans rien verrouiller.
  */
@@ -59,6 +75,10 @@ export class ConstituteCollectionBatchesHandler implements ICommandHandler<
     private readonly orders: OrderCollectionRepository,
     private readonly statements: BillingStatementRepository,
     private readonly buyers: StatementBuyerReader,
+    private readonly notices: CollectionNoticeRepository,
+    private readonly earlierNotices: CycleNoticesReader,
+    private readonly contacts: PayerNoticeContactsReader,
+    private readonly durable: DurablePublisher,
     private readonly lock: CollectionLock,
     private readonly ids: IdGenerator,
     private readonly clock: Clock,
@@ -100,9 +120,12 @@ export class ConstituteCollectionBatchesHandler implements ICommandHandler<
         at,
         nextId: () => this.ids.next(),
       });
+      const notices = await this.noticesFor(creditor, read.cycle.closesAt, batches, issued, at);
       await this.persist(batches, issued, states);
+      await this.notices.insertAll(notices);
       const entity = { id: legalEntityId, name: creditor.name };
       await this.publish(batches, issued, entity, at, read.assembly.exclusions.length);
+      await this.queue(notices, entity, at);
       return batches.map((batch) => batch.id);
     });
   }
@@ -120,6 +143,48 @@ export class ConstituteCollectionBatchesHandler implements ICommandHandler<
       await this.statements.insert(statement);
     }
     await this.orders.saveAll(states);
+  }
+
+  /** Les avis de cette constitution, décidés par le domaine (PA2). */
+  private noticesFor(
+    creditor: CreditorSnapshot,
+    cycleClosesAt: Date,
+    batches: readonly CollectionBatch[],
+    issued: readonly IssuedStatement[],
+    at: Date,
+  ): Promise<readonly CollectionNotice[]> {
+    return noticesOf(
+      { earlier: this.earlierNotices, contacts: this.contacts },
+      {
+        legalEntityId: creditor.legalEntityId,
+        creditor,
+        cycleClosesAt,
+        batches,
+        issued,
+        at,
+        nextId: () => this.ids.next(),
+      },
+    );
+  }
+
+  /**
+   * Chaque avis à envoyer part dans la boîte d'envoi. Le journal retient les
+   * avis en file et les non envoyables ; pas la reconduction, qui n'annonce
+   * rien de neuf — l'avis parti qu'elle suit y est déjà.
+   */
+  private async queue(
+    notices: readonly CollectionNotice[],
+    entity: BatchEntity,
+    at: Date,
+  ): Promise<void> {
+    for (const notice of notices) {
+      if (notice.needsSending) {
+        await this.durable.publish(new CollectionNoticeQueuedFact(notice.id).durableFact());
+      }
+      if (notice.kind !== "unchanged") {
+        await this.events.publishTraced(new CollectionNoticeEvent(notice, entity, at));
+      }
+    }
   }
 
   private async publish(

@@ -2,6 +2,16 @@ import { Module } from "@nestjs/common";
 
 import { CancelCollectionBatchHandler } from "./application/commands/cancel-collection-batch.handler.js";
 import { ConstituteCollectionBatchesHandler } from "./application/commands/constitute-collection-batches.handler.js";
+import { SendCollectionNotice } from "./application/handlers/send-collection-notice.handler.js";
+import { CollectionNoticeSender } from "./application/services/collection-notice-sender.js";
+import { BatchNoticeStatesReader } from "./domain/ports/batch-notice-states.reader.js";
+import { CollectionNoticeRepository } from "./domain/ports/collection-notice.repository.js";
+import { CycleNoticesReader } from "./domain/ports/cycle-notices.reader.js";
+import { PayerNoticeContactsReader } from "./domain/ports/payer-notice-contacts.reader.js";
+import { PrismaBatchNoticeStatesReader } from "./infrastructure/prisma-batch-notice-states.reader.js";
+import { PrismaCollectionNoticeRepository } from "./infrastructure/prisma-collection-notice.repository.js";
+import { PrismaCycleNoticesReader } from "./infrastructure/prisma-cycle-notices.reader.js";
+import { PrismaPayerNoticeContactsReader } from "./infrastructure/prisma-payer-notice-contacts.reader.js";
 import { DepositCollectionBatchHandler } from "./application/commands/deposit-collection-batch.handler.js";
 import { SettleOrderOtherwiseHandler } from "./application/commands/settle-order-otherwise.handler.js";
 import { ExportCollectionBatchAuditHandler } from "./application/queries/export-collection-batch-audit.handler.js";
@@ -158,6 +168,13 @@ import { PrismaLegalEntityRepository } from "./infrastructure/prisma-legal-entit
     { provide: BillingStatementReader, useClass: PrismaBillingStatementReader },
     { provide: CancelledOrdersReader, useClass: PrismaCancelledOrdersReader },
     { provide: OrderNumbersReader, useClass: PrismaOrderNumbersReader },
+    // L'avis de prélèvement (plan `plan-prelevement-automatique.md`, PA2).
+    { provide: CollectionNoticeRepository, useClass: PrismaCollectionNoticeRepository },
+    { provide: CycleNoticesReader, useClass: PrismaCycleNoticesReader },
+    { provide: BatchNoticeStatesReader, useClass: PrismaBatchNoticeStatesReader },
+    { provide: PayerNoticeContactsReader, useClass: PrismaPayerNoticeContactsReader },
+    CollectionNoticeSender,
+    SendCollectionNotice,
     // Les impayés d'un site détaché (plan-sous-comptes §2.1 quater).
     { provide: DetachedUnpaidReader, useClass: PrismaDetachedUnpaidReader },
     { provide: UnpaidAccessReader, useClass: PrismaUnpaidAccessReader },

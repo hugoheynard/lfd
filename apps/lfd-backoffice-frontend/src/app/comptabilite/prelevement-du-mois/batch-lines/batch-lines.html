@@ -30,6 +30,14 @@
         <span class="amount" data-line-gap>{{ row.gap }}</span>
       }
     </ng-template>
+    <ng-template foldCell="notice" let-row>
+      <span class="notice" data-line-notice>
+        <fold-badge [variant]="row.notice.variant" [content]="row.notice.label" />
+        @if (row.notice.detail !== '') {
+          <span class="muted">{{ row.notice.detail }}</span>
+        }
+      </span>
+    </ng-template>
     <ng-template foldCell="statement" let-row>
       @if (row.statementId !== null) {
         <a

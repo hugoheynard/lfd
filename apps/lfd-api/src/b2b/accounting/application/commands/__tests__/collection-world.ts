@@ -20,6 +20,14 @@ import {
   Steps,
   UlidSequence,
 } from "./collection-doubles.js";
+import {
+  FixedNoticeContacts,
+  MemoryBatchNoticeStates,
+  MemoryCycleNotices,
+  MemoryNotices,
+  NoticeStore,
+  RecordingDurable,
+} from "./notice-doubles.js";
 
 /**
  * Le monde des handlers du lot figé : les trois handlers branchés sur les
@@ -32,7 +40,11 @@ export const AFTER_CLOSE = new Date("2026-10-02T09:00:00.000Z");
 export function world() {
   const steps = new Steps();
   const batches = new MemoryBatches(steps);
+  const noticeStore = new NoticeStore();
   const w = {
+    noticeStore,
+    contacts: new FixedNoticeContacts(),
+    durable: new RecordingDurable(),
     steps,
     candidates: new FakeCandidates(steps),
     mandates: new FakeMandates(),
@@ -52,6 +64,10 @@ export function world() {
     w.orders,
     w.statements,
     new FixedBuyers(),
+    new MemoryNotices(noticeStore),
+    new MemoryCycleNotices(noticeStore, batches),
+    w.contacts,
+    w.durable,
     new RecordingLock(steps),
     new UlidSequence(),
     w.clock,
@@ -72,6 +88,7 @@ export function world() {
     w.orders,
     w.recheck,
     w.cancelled,
+    new MemoryBatchNoticeStates(noticeStore),
     new FixedEntities(),
     w.clock,
     w.events,

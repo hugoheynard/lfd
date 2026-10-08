@@ -64,6 +64,7 @@ export class PrismaCollectionBatchRepository extends CollectionBatchRepository {
       xml: row.xml,
       fileSha256: row.fileSha256,
       requestedCollectionDay: row.requestedCollectionDay?.toISOString().slice(0, 10) ?? null,
+      postponedFromDay: row.postponedFromDay?.toISOString().slice(0, 10) ?? null,
     });
   }
 
@@ -101,6 +102,10 @@ export class PrismaCollectionBatchRepository extends CollectionBatchRepository {
           state.requestedCollectionDay === null
             ? null
             : new Date(`${state.requestedCollectionDay}T00:00:00.000Z`),
+        postponedFromDay:
+          state.postponedFromDay === null
+            ? null
+            : new Date(`${state.postponedFromDay}T00:00:00.000Z`),
         ...mutable,
       },
     });

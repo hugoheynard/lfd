@@ -38,6 +38,20 @@ export const ORDER_COLLECTION_STATE = domain(
   },
 );
 
+/** Ce qu'annonce un avis de prélèvement (PA2, 2026-10-08). */
+export const COLLECTION_NOTICE_KIND = domain('nature d’un avis de prélèvement', {
+  notice: 'Avis',
+  correction: 'Rectificatif',
+  cancellation: 'Annulation',
+  unchanged: 'Avis précédent maintenu',
+});
+
+/** D'où vient l'adresse d'un avis de prélèvement — jamais l'adresse elle-même. */
+export const NOTICE_RECIPIENT_SOURCE = domain('destinataire d’un avis de prélèvement', {
+  billing_contact: 'Contact de facturation',
+  owner: 'Détenteur du compte',
+});
+
 export const ACCOUNTING_VALUES: ValueFamily = {
   enums: [
     SEPA_SCHEME,
@@ -45,5 +59,7 @@ export const ACCOUNTING_VALUES: ValueFamily = {
     DRAFT_VOIDING_CAUSE,
     PROOF_PURGE_CAUSE,
     ORDER_COLLECTION_STATE,
+    COLLECTION_NOTICE_KIND,
+    NOTICE_RECIPIENT_SOURCE,
   ],
 };

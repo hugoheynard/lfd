@@ -1,7 +1,7 @@
 # Le prélèvement automatique
 
-> 🟡 **Plan v2, PA1 et PA4 bâtis le 2026-10-08** (non commités à l'écriture
-> de cette ligne ; PA2, PA3 à faire). Touche **l'argent** et finira
+> 🟡 **Plan v2, PA1, PA4 et PA2 bâtis le 2026-10-08** (PA2 non commité à
+> l'écriture de cette ligne ; PA3 à faire). Touche **l'argent** et finira
 > dans un **runbook** : la v1 a été contredite par `vitruve` le même jour
 > (trois BLOQUANTS, neuf SÉRIEUX), repris au § 8. Affirmations sur
 > l'existant vérifiées dans le dépôt le 2026-10-08.
@@ -110,6 +110,51 @@ collection-calendar.ts`) sur `target2-calendar.ts` (Pâques par
 
 ### PA2 — L'avis de prélèvement, à la constitution
 
+> ✅ **Bâti le 2026-10-08.** Ce qui a été tranché en le bâtissant :
+>
+> - **La boîte d'envoi est transactionnelle** (vérifié le 2026-10-08 :
+>   `PrismaOutbox.append` refuse hors `UnitOfWork`). L'avis est une table à
+>   lui, `collection_notice` (migration `20261008160000_l_avis_de_prelevement`,
+>   additive), écrite avec le lot ; le fait `collection.notice_to_send`
+>   (`{ noticeId }`) part dans la boîte d'envoi par `DurablePublisher`, dans la
+>   même transaction. L'abonné durable `SendCollectionNotice` envoie APRÈS la
+>   validation (comme `MailDeliveryEnRoute`), clé d'idempotence Resend
+>   `collection.notice:<id>`, puis écrit l'issue sur l'avis par l'agrégat
+>   (`queued` → `sent` | `failed`). L'état se lit donc sur l'avis, pas dans
+>   `platform.outbox_delivery` (une jointure `public × platform` serait
+>   refusée par `lint:cross-schema-join`).
+> - **Destinataire** : le contact `company_contacts.role = billing` de la
+>   société payeuse (le plus ancien s'il y en a plusieurs), sinon le
+>   détenteur (`memberships.role = owner` → `users.email`). Ni l'un ni
+>   l'autre : l'avis naît `unsendable`. Un `membership.role = billing` n'est
+>   PAS lu (décision citée : « contact de facturation »).
+> - **Le dépôt** (`CollectionBatch.markDeposited`) exige l'avis de chaque
+>   ligne `sent` ; une ligne sans avis (lot d'avant PA2) est refusée aussi
+>   (`CollectionNoticesNotSentError`, 409, nomme payeur et raison). `depositable`
+>   de la vue reste la règle des mandats : le bouton reste actif, l'écran
+>   nomme les avis pas partis, le refus du serveur s'affiche tel quel.
+> - **Reconstitution** : la promesse d'un payeur est son DERNIER avis du
+>   cycle, s'il est `sent` et que son lot est annulé. Termes identiques
+>   (montant, jour, RUM) → `unchanged` (rien ne part, la ligne reprend
+>   `sent`) ; différents → `correction` (porte l'avant) ; payeur absent →
+>   `cancellation` (sans lot ni ligne). Un avis jamais parti ne promet rien :
+>   avis neuf. Un rectificatif ou une annulation va à l'adresse d'aujourd'hui,
+>   à défaut à celle qui a reçu l'avis corrigé.
+> - **D4** : `frozenCollectionDay` (`collection-calendar.ts`) — le plus tard
+>   de « clôture + N » et « jour (Paris) de constitution + délai », puis
+>   TARGET2. Le lot porte `postponed_from_day` (l'échéance du calendrier
+>   quand elle a été repoussée), l'écran dit « repoussée du … ».
+> - **Faits** : `collection.notice_queued`, `…_unsendable`, `…_sent`,
+>   `…_failed` (jamais l'adresse, seulement `recipientSource`). La
+>   reconduction n'est pas journalisée : elle n'annonce rien.
+> - **Pas de bouton « renvoyer »** : un avis en échec ou non envoyable se
+>   règle en annulant le lot et en le préparant de nouveau. Un redémarrage
+>   entre la validation et l'envoi laisse l'avis `queued` (le lot ne se
+>   dépose pas) ; même sortie.
+> - **Non réglé** : une reconstitution qui ne produit AUCUN lot (tout écarté)
+>   n'envoie pas les annulations — elles partent avec la prochaine qui
+>   prélève.
+
 - À **chaque** constitution (bouton ou automatisme), un avis par ligne de
   débit, dans la boîte d'envoi, dans la transaction du lot : montant **de
   l'arrêté**, échéance, RUM, ICS, raison sociale du créancier, référence de
@@ -167,7 +212,8 @@ collection-calendar.ts`) sur `target2-calendar.ts` (Pâques par
 >   clos existe (préparé ou déposé) ; ses refus s'affichent tels quels.
 > - **Pas de « dernière tentative »** de l'automatisme : PA3 n'existe pas,
 >   l'écran dit « activée, mais pas encore branchée ». À poser avec PA3.
-> - **Pas d'état des avis** : PA2 n'existe pas.
+> - **Pas d'état des avis** : PA2 n'existait pas — posé avec PA2 (colonne
+>   « Avis de prélèvement » des lignes, encadré des avis pas partis).
 > - **Les aperçus XML/CSV par schéma** ont quitté le tableau de bord pour la
 >   carte de l'aperçu. Le tableau de bord garde : émetteur prêt, prochaine
 >   date de prélèvement, montant de l'aperçu, lien. Sa carte « Facturation »
@@ -211,12 +257,12 @@ Import `pain.002` / `camt.054` ; un rejet remet les bons « à prélever ».
 
 ## 7. Les lots
 
-| Lot     | Contenu                                                                                       |
-| ------- | --------------------------------------------------------------------------------------------- |
-| **PA1** | ✅ 2026-10-08 — réglages, `collectionCalendar` (TARGET2), échéance figée sur le lot           |
-| **PA4** | ✅ 2026-10-08 — l'écran du mois, aperçu en facture, tableau de bord corrigé                   |
-| **PA2** | l'avis à la constitution, son état, rectificatif et annulation ; dépôt exige les avis envoyés |
-| **PA3** | l'automatisme une fois par cycle, cron propre, auteur `system`                                |
+| Lot     | Contenu                                                                                                            |
+| ------- | ------------------------------------------------------------------------------------------------------------------ |
+| **PA1** | ✅ 2026-10-08 — réglages, `collectionCalendar` (TARGET2), échéance figée sur le lot                                |
+| **PA4** | ✅ 2026-10-08 — l'écran du mois, aperçu en facture, tableau de bord corrigé                                        |
+| **PA2** | ✅ 2026-10-08 — l'avis à la constitution, son état, rectificatif et annulation ; dépôt exige les avis envoyés ; D4 |
+| **PA3** | l'automatisme une fois par cycle, cron propre, auteur `system`                                                     |
 
 PA1 se bâtit avec N = délai actuel, donc sans attendre Q1 : seul le report
 TARGET2 change le fichier.

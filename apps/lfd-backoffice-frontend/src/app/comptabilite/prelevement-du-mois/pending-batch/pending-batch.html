@@ -9,7 +9,15 @@
     </fold-element-title>
 
     <fold-field-list>
-      <fold-field label="Date du prélèvement">{{ collectionDay() }}</fold-field>
+      <fold-field label="Date du prélèvement">
+        {{ collectionDay() }}
+        @if (postponedFrom(); as from) {
+          <span class="pb-postponed" data-postponed>
+            — repoussée du {{ from }} : le lot a été préparé tard, le préavis court depuis sa
+            préparation
+          </span>
+        }
+      </fold-field>
       <fold-field label="Déposer à la banque">{{ depositDeadline() }}</fold-field>
       <fold-field label="Montant">
         <strong class="pb-amount">{{ total() }}</strong>
@@ -24,6 +32,16 @@
         <strong>Non déposable — sans mandat prélevable&nbsp;:</strong>
         {{ batch().unmandatedCompanies.join(', ') }}. Faire signer le mandat (ou régler autrement),
         puis annuler le lot et le préparer de nouveau.
+      </fold-callout>
+    }
+
+    @if (unsentNotices().length > 0) {
+      <fold-callout appearance="inset" variant="warning" data-unsent-notices>
+        <strong>Avis de prélèvement pas encore partis&nbsp;:</strong>
+        {{ unsentNotices().join(', ') }}. Le dépôt sera refusé tant qu’ils ne sont pas envoyés. Un
+        avis en attente part dans les instants qui suivent la préparation : recharger la page. Pour
+        un échec ou un avis non envoyable, renseigner un contact de facturation, puis annuler le lot
+        et le préparer de nouveau.
       </fold-callout>
     }
 

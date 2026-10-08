@@ -5,6 +5,7 @@ import { DomainEventPublisher } from "../../../../platform/events/domain-event-p
 import { Clock } from "../../../../platform/time/clock.js";
 import type { CollectionBatch } from "../../domain/entities/collection-batch.js";
 import { CollectionBatchDepositedEvent } from "../../domain/events/collection.events.js";
+import { BatchNoticeStatesReader } from "../../domain/ports/batch-notice-states.reader.js";
 import { CancelledOrdersReader } from "../../domain/ports/cancelled-orders.reader.js";
 import { CollectionBatchRepository } from "../../domain/ports/collection-batch.repository.js";
 import { LegalEntityReader } from "../../domain/ports/legal-entity.reader.js";
@@ -22,6 +23,9 @@ import { DepositCollectionBatchCommand } from "./deposit-collection-batch.comman
  * reconstitue. Un fichier déposé qui ne correspond plus à la réalité serait un
  * prélèvement sous un mandat révoqué, ou d'une commande qui n'a rien produit.
  *
+ * Et l'avis de prélèvement de chaque ligne doit être PARTI (PA2) : en file
+ * ne suffit pas, le refus nomme les payeurs en défaut.
+ *
  * Après : le lot est `deposited`, ses commandes `collected`.
  */
 @CommandHandler(DepositCollectionBatchCommand)
@@ -34,6 +38,7 @@ export class DepositCollectionBatchHandler implements ICommandHandler<
     private readonly orders: OrderCollectionRepository,
     private readonly mandates: MandateRecheckReader,
     private readonly cancelled: CancelledOrdersReader,
+    private readonly notices: BatchNoticeStatesReader,
     private readonly entities: LegalEntityReader,
     private readonly clock: Clock,
     private readonly events: DomainEventPublisher,
@@ -45,7 +50,8 @@ export class DepositCollectionBatchHandler implements ICommandHandler<
     await this.uow.run(async () => {
       const batch = await loadBatchOrFail(this.batches, command.batchId);
       const problems = await this.recheck(batch);
-      batch.markDeposited({ at, staffId: command.staffUserId }, problems);
+      const notices = await this.notices.ofBatch(batch.id);
+      batch.markDeposited({ at, staffId: command.staffUserId }, problems, notices);
       const collected = await this.orders.ofBatch(batch.id);
       for (const order of collected) {
         order.collect(at);

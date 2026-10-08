@@ -12,6 +12,7 @@ import {
 
 import { DEPOSIT_UNKNOWN } from '../../collection-schedule-wording';
 import { batchMonthName, ofMonth } from '../../collection-month-wording';
+import { unsentNoticePayers } from '../../collection-notice-wording';
 import { day, euros } from '../../invoice-dossier-format';
 import { BatchLines } from '../batch-lines/batch-lines';
 
@@ -23,7 +24,8 @@ export type PendingBatchGesture = 'xml' | 'csv' | 'deposit' | 'cancel';
  * signalements, ses lignes et ses gestes, dans l'ordre où on les fait.
  *
  * La date du prélèvement est celle FIGÉE sur le lot (PA1) : son fichier la
- * porte. La date limite de dépôt est calculée au réglage ACTUEL de l'entité ;
+ * porte, et l'avis aussi. Quand une préparation tardive l'a repoussée pour
+ * tenir le préavis (D4), l'écran dit de quelle date. La date limite de dépôt est calculée au réglage ACTUEL de l'entité ;
  * « à renseigner » tant que la banque ne l'a pas donnée.
  */
 @Component({
@@ -58,6 +60,15 @@ export class PendingBatch {
     const value = this.batch().requestedCollectionDay;
     return value === null ? 'celle du fichier (lot préparé avant le calendrier)' : day(value);
   });
+
+  /** « repoussée du 15 octobre » — `null` quand le calendrier a été tenu. */
+  protected readonly postponedFrom = computed(() => {
+    const from = this.batch().postponedFromDay;
+    return from === null ? null : day(from);
+  });
+
+  /** Les payeurs dont l'avis n'est pas parti : « Marquer déposé » sera refusé. */
+  protected readonly unsentNotices = computed(() => unsentNoticePayers(this.batch()));
 
   protected readonly depositDeadline = computed(() => {
     const deadline = this.batch().depositDeadline;

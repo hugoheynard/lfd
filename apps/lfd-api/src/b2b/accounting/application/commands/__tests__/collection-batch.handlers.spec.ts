@@ -13,6 +13,10 @@ import {
   order,
 } from "../../../domain/services/__tests__/collection-fixtures.js";
 import { world } from "./collection-world.js";
+import { sendAllQueued } from "./notice-doubles.js";
+
+/** Le 1er octobre 2026, 01h00 à Paris : la clôture du cycle constitué, plus une heure. */
+const SAME_DAY_AS_CLOSE = new Date("2026-09-30T23:00:00.000Z");
 
 describe("constituer, annuler, déposer un lot", () => {
   it("verrouille l'entité AVANT de lire, puis écrit le lot et ses commandes", async () => {
@@ -31,6 +35,7 @@ describe("constituer, annuler, déposer un lot", () => {
     expect(w.events.factTypes()).toEqual([
       "collection.batch_constituted",
       "billing_statement.issued",
+      "collection.notice_queued",
     ]);
     // Q2 : la société sans mandat rend le lot indéposable.
     expect(w.batches.saved.get(ids[0] ?? "")?.depositable).toBe(false);
@@ -38,10 +43,13 @@ describe("constituer, annuler, déposer un lot", () => {
 
   /**
    * PA1 : le lot FIGE l'échéance du calendrier, et son XML porte la même.
-   * Cycle clos le 1er octobre 2026, délai de 14 j → jeudi 15 octobre.
+   * Cycle clos le 1er octobre 2026, délai de 14 j → jeudi 15 octobre. Lot
+   * constitué le jour même de la clôture (1er octobre, 01h00 Paris) : D4 ne
+   * joue pas.
    */
   it("fige l'échéance du calendrier sur le lot, et le XML porte la même", async () => {
     const w = world();
+    w.clock.set(SAME_DAY_AS_CLOSE);
     w.candidates.orders = [order("c_port")];
     w.mandates.mandates = [mandate("c_port")];
 
@@ -83,6 +91,7 @@ describe("constituer, annuler, déposer un lot", () => {
       new ConstituteCollectionBatchesCommand(ENTITY_ID, "staff_1"),
     );
     w.recheck.now = new Map([["m_c_port", { active: false, iban: null }]]);
+    sendAllQueued(w.noticeStore, w.clock.now());
 
     await expect(
       w.deposit.execute(new DepositCollectionBatchCommand(id ?? "", "staff_1")),
@@ -98,6 +107,7 @@ describe("constituer, annuler, déposer un lot", () => {
       new ConstituteCollectionBatchesCommand(ENTITY_ID, "staff_1"),
     );
     w.recheck.now = new Map([["m_c_port", { active: true, iban: mandate("c_port").iban }]]);
+    sendAllQueued(w.noticeStore, w.clock.now());
 
     await w.deposit.execute(new DepositCollectionBatchCommand(id ?? "", "staff_1"));
 
@@ -105,6 +115,7 @@ describe("constituer, annuler, déposer un lot", () => {
     expect(w.events.factTypes()).toEqual([
       "collection.batch_constituted",
       "billing_statement.issued",
+      "collection.notice_queued",
       "collection.batch_deposited",
     ]);
   });
@@ -118,6 +129,7 @@ describe("constituer, annuler, déposer un lot", () => {
     );
     w.recheck.now = new Map([["m_c_port", { active: true, iban: mandate("c_port").iban }]]);
     w.cancelled.numbers = ["CMD-X"];
+    sendAllQueued(w.noticeStore, w.clock.now());
 
     await expect(
       w.deposit.execute(new DepositCollectionBatchCommand(id ?? "", "staff_1")),

@@ -11,6 +11,10 @@ import { SELF_SERVICE_PASSWORD_TICKET_TTL_SECONDS } from "../identity/auth0-iden
 import { fill, mailCopyOf } from "./copy/mail-copy.js";
 import type { OrderSettlementCopy } from "./copy/mail-copy.model.js";
 import {
+  renderCollectionNoticeMail,
+  type CollectionNoticeMailData,
+} from "./collection-notice-mail.js";
+import {
   renderDeliveryEnRouteMail,
   type DeliveryEnRouteMailData,
 } from "./delivery-en-route-mail.js";
@@ -61,6 +65,12 @@ export interface B2bMails {
     readonly handoverUrl: string;
     readonly locale: ContentLocale;
   };
+  /**
+   * **L'avis de prélèvement** (pré-notification SEPA) — premier avis,
+   * rectificatif ou annulation. Destinataire : la société payeuse. Cf.
+   * `collection-notice-mail.ts`.
+   */
+  "customer.collection-notice": CollectionNoticeMailData;
   /** **La tournée est partie.** Destinataire : le client. Cf. `delivery-en-route-mail.ts`. */
   "customer.delivery-en-route": DeliveryEnRouteMailData;
   /**
@@ -519,6 +529,7 @@ export function b2bMailTemplates(brand: MailBranding): TemplateRegistry<B2bMails
       };
     },
     "customer.delivery-en-route": (data) => renderDeliveryEnRouteMail(data, customerMail),
+    "customer.collection-notice": (data) => renderCollectionNoticeMail(data, customerMail),
     "customer.order-placed": (data) => {
       const copy = mailCopyOf(data.locale).orderPlaced;
       const settlement = settlementCopyKeyOf(data.sheet);

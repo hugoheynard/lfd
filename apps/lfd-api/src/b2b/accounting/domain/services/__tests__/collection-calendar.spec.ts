@@ -1,4 +1,8 @@
-import { collectionCalendar, collectionDayOf } from "../collection-calendar.js";
+import {
+  collectionCalendar,
+  collectionDayOf,
+  frozenCollectionDay,
+} from "../collection-calendar.js";
 
 /**
  * Le calendrier est pur : ses dates ne sont comparées qu'entre elles, jamais à
@@ -61,5 +65,65 @@ describe("collectionCalendar", () => {
 
     // Échéance lundi 16 → deux jours ouvrés avant : jeudi 12.
     expect(calendar.depositDeadline).toEqual({ day: "2026-11-12", time: "16:00" });
+  });
+});
+
+/**
+ * D4 (Hugo, 2026-10-08) : une constitution tardive ne raccourcit jamais le
+ * préavis. Les dates ne sont comparées qu'entre elles — la clôture, l'instant
+ * de constitution et l'échéance — jamais à l'horloge.
+ */
+describe("frozenCollectionDay — l'échéance figée sur le lot (D4)", () => {
+  /** Clôture du 1er octobre 2026, 00h00 à Paris. */
+  const CLOSURE = new Date("2026-09-30T22:00:00.000Z");
+
+  it("constitué le jour de la clôture : l'échéance du calendrier, pas de report", () => {
+    const constitutedAt = new Date("2026-09-30T23:00:00.000Z");
+
+    expect(frozenCollectionDay(CLOSURE, constitutedAt, 14, null)).toEqual({
+      day: "2026-10-15",
+      postponedFrom: null,
+    });
+  });
+
+  it("constitué le lendemain : le préavis compte depuis la constitution, et l'écart se dit", () => {
+    const constitutedAt = new Date("2026-10-02T09:00:00.000Z");
+
+    expect(frozenCollectionDay(CLOSURE, constitutedAt, 14, null)).toEqual({
+      day: "2026-10-16",
+      postponedFrom: "2026-10-15",
+    });
+  });
+
+  it("constitué très tard : le report tombe un samedi, il glisse au lundi TARGET2", () => {
+    // 3 octobre + 14 = samedi 17 octobre → lundi 19.
+    const constitutedAt = new Date("2026-10-03T08:00:00.000Z");
+
+    expect(frozenCollectionDay(CLOSURE, constitutedAt, 14, null)).toEqual({
+      day: "2026-10-19",
+      postponedFrom: "2026-10-15",
+    });
+  });
+
+  it("un N plus long que le préavis absorbe le retard : pas de report", () => {
+    // Clôture + 20 = 21 octobre ; constitution le 2 + 14 = 16 : on garde le 21.
+    const constitutedAt = new Date("2026-10-02T09:00:00.000Z");
+
+    expect(frozenCollectionDay(CLOSURE, constitutedAt, 14, 20)).toEqual({
+      day: "2026-10-21",
+      postponedFrom: null,
+    });
+  });
+
+  it("le report ne saute jamais un jour fermé : l'échéance du calendrier déjà reportée suffit", () => {
+    // Clôture du 1er décembre 2026 (Paris) + 23 = 24 décembre, jeudi ouvré.
+    // Constitution le 11 + 14 = 25 décembre, fermé TARGET2 (et le 26) → lundi 28.
+    const closure = new Date("2026-11-30T23:00:00.000Z");
+    const constitutedAt = new Date("2026-12-11T09:00:00.000Z");
+
+    expect(frozenCollectionDay(closure, constitutedAt, 14, 23)).toEqual({
+      day: "2026-12-28",
+      postponedFrom: "2026-12-24",
+    });
   });
 });
