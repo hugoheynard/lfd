@@ -6,6 +6,7 @@ import {
   inject,
   signal,
   untracked,
+  viewChild,
 } from '@angular/core';
 import { ActivatedRoute, Router } from '@angular/router';
 import {
@@ -146,9 +147,16 @@ export class InformationsPage {
   );
 
   /** Prêt = « on peut ouvrir » sur un brouillon, « rien ne bloque » ensuite. */
-  protected readonly checklistReady = computed(() =>
-    this.fiche.draft() ? this.canCreate() : this.fiche.ready(),
-  );
+  protected readonly checklistReady = computed(() => {
+    if (this.fiche.draft()) {
+      return this.canCreate();
+    }
+    // Sur un compte actif, « Le dossier est complet » au-dessus d'une ligne
+    // « RIB du client » se contredirait : rien ne bloque, mais il manque.
+    return this.fiche.status() === 'pending'
+      ? this.fiche.ready()
+      : this.fiche.ready() && this.fiche.libSteps().length === 0;
+  });
 
   /**
    * L'encart a-t-il quelque chose à dire ?
@@ -160,8 +168,30 @@ export class InformationsPage {
    * parle toujours : il y a un geste à obtenir.
    */
   protected readonly showChecklist = computed(
-    () => this.fiche.draft() || this.fiche.status() === 'pending' || !this.fiche.ready(),
+    () =>
+      this.fiche.draft() ||
+      this.fiche.status() === 'pending' ||
+      !this.fiche.ready() ||
+      // Une étape NON bloquante a aussi quelque chose à dire à un compte actif :
+      // un règlement différé accordé sans RIB ni mandat ne bloque rien, mais
+      // on ne prélèvera pas.
+      this.fiche.libSteps().length > 0,
   );
+
+  /** La section des moyens de paiement, où se règlent le RIB et le mandat. */
+  private readonly payment = viewChild(PaiementSection);
+
+  /**
+   * Le geste d'une ligne de l'encart. Le RIB et le mandat n'ont pas de panneau :
+   * ils vivent dans la section de paiement, qu'on amène sous les yeux.
+   */
+  protected onStepAction(key: string): void {
+    if (key === 'bank_account' || key === 'mandate') {
+      this.payment()?.reveal(key);
+      return;
+    }
+    this.fiche.openStep(key);
+  }
 
   /**
    * La phrase du « tout est bon », qui doit rester vraie dans les trois

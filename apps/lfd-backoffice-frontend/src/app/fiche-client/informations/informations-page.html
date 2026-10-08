@@ -39,7 +39,7 @@
             [steps]="checklistSteps()"
             [ready]="checklistReady()"
             [readyNote]="readyNote()"
-            (stepAction)="fiche.openStep($event)"
+            (stepAction)="onStepAction($event)"
             (fileSelected)="onFile($event)"
           >
             <p intro>
@@ -53,7 +53,7 @@
                    le dire lui ferait croire qu'il a perdu son accès. Cette
                    branche ne s'affiche que s'il manque vraiment quelque chose. -->
                 Ce dossier est incomplet. Le compte reste actif : complétez-le pour que sa
-                facturation et ses livraisons soient justes.
+                facturation, ses prélèvements et ses livraisons soient justes.
               }
             </p>
           </lfd-company-activation-checklist>
@@ -269,6 +269,7 @@
               [requestedTerm]="c.requestedTerm"
               (grantedTermsChange)="fiche.grantTerms($event)"
               (editIdentity)="fiche.editIdentity()"
+              (debitSetupChange)="fiche.reload()"
             />
           }
         }

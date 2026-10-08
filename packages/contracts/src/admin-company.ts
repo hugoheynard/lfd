@@ -131,6 +131,12 @@ export interface AdminCompanyDetailView extends AdminCompanyView {
    * manquante sans redémontrer la règle côté front.
    */
   readonly vatNumberRequired: boolean;
+  /**
+   * Un RIB est-il enregistré ? Une existence, pas le RIB : la fiche n'en a
+   * besoin que pour réclamer l'étape « RIB du client » avant le mandat, sans
+   * un second appel. Le RIB lui-même se lit par sa route dédiée.
+   */
+  readonly hasBankAccount: boolean;
   /** Facturation (ou `null`) + livraisons non archivées, la défaut en tête. */
   readonly addresses: CompanyAddressesView;
   /**

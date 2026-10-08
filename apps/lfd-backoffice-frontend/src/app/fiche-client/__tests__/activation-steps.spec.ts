@@ -25,6 +25,8 @@ function withGate(
 ): AdminCompanyDetail {
   return {
     kbis: null,
+    warnings: [],
+    hasBankAccount: false,
     hierarchy: {
       parent: null,
       subAccounts: [],
@@ -232,5 +234,47 @@ describe('Aucune étape ne justifie une exigence par une donnée absente', () =>
 
     expect(vat).toBeDefined();
     expect(vat?.detail).not.toMatch(/forme juridique/i);
+  });
+});
+
+/**
+ * Le RIB puis le mandat : réclamés seulement sous un règlement différé accordé
+ * sans mandat actif — l'avertissement serveur `mandat_absent`, pas un recalcul.
+ */
+describe('le prélèvement se prépare quand un règlement différé est accordé', () => {
+  const COMPLETE = { checklist: [] as readonly ActivationCheck[] };
+  const MANDATE_MISSING = {
+    grantedTerms: ['monthly'],
+    warnings: [{ kind: 'mandat_absent', since: null }],
+  } as Partial<AdminCompanyDetail>;
+
+  it('réclame le RIB seul tant qu’il manque', () => {
+    const steps = activationSteps(withGate(COMPLETE, MANDATE_MISSING));
+    expect(steps.map((step) => [step.key, step.title, step.blocking])).toEqual([
+      ['bank_account', 'RIB du client', false],
+    ]);
+  });
+
+  it('réclame le mandat une fois le RIB là', () => {
+    const steps = activationSteps(withGate(COMPLETE, { ...MANDATE_MISSING, hasBankAccount: true }));
+    expect(steps.map((step) => [step.key, step.title, step.blocking])).toEqual([
+      ['mandate', 'Mandat SEPA signé', false],
+    ]);
+  });
+
+  it('se tait sous un mandat actif', () => {
+    const steps = activationSteps(
+      withGate(COMPLETE, { grantedTerms: ['monthly'], hasBankAccount: true }),
+    );
+    expect(steps).toEqual([]);
+  });
+
+  it('se tait sans règlement différé, RIB ou pas', () => {
+    expect(activationSteps(withGate(COMPLETE))).toEqual([]);
+  });
+
+  it('se tait sur un site, qui règle par son principal', () => {
+    const steps = activationSteps(withGate(COMPLETE, { ...SITE, ...MANDATE_MISSING }));
+    expect(steps).toEqual([]);
   });
 });

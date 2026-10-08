@@ -44,6 +44,7 @@ function principal(hierarchy: Partial<CompanyHierarchyView> = {}): AdminCompanyD
     gate: { canActivate: false, blocking: [], checklist: [] },
     suspensionCause: null,
     vatNumberRequired: false,
+    hasBankAccount: false,
     addresses: { billing: null, deliveries: [] },
     contacts: [],
     fulfillmentPreference: {

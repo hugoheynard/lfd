@@ -155,6 +155,11 @@ export class PaiementSection {
   readonly grantedTermsChange = output<readonly DeferredTerm[]>();
   /** Une mention d'identité manque au mandat : la fiche ouvre le panneau d'identité. */
   readonly editIdentity = output<void>();
+  /**
+   * Le RIB a été écrit, ou un mandat signé ou révoqué : la fiche se relit, car
+   * ses étapes « RIB du client » et « Mandat SEPA signé » en dépendent.
+   */
+  readonly debitSetupChange = output<void>();
 
   protected readonly mandate = signal<PaymentMandateView | null>(null);
   /** Le schéma FIGÉ sur le mandat, pas celui de l'entité : c'est lui que le lot prélève. */
@@ -215,6 +220,7 @@ export class PaiementSection {
     const id = this.companyId();
     if (this.bankRead && id !== null) {
       void this.load(id);
+      this.debitSetupChange.emit();
     }
     this.bankRead = true;
   }
@@ -225,6 +231,16 @@ export class PaiementSection {
   }
 
   private readonly bankStep = viewChild('bankStep', { read: ElementRef<HTMLElement> });
+  private readonly mandateStep = viewChild('mandateStep', { read: ElementRef<HTMLElement> });
+
+  /**
+   * Amène sous les yeux l'étape qu'une ligne de l'encart d'activation réclame —
+   * le RIB ou le mandat. Pas de panneau : les deux se règlent ici, en place.
+   */
+  reveal(step: 'bank_account' | 'mandate'): void {
+    const target = step === 'bank_account' ? this.bankStep() : this.mandateStep();
+    target?.nativeElement.scrollIntoView({ behavior: 'smooth', block: 'start' });
+  }
 
   protected readonly rows = computed<readonly PaymentMeanRow[]>(() => {
     const granted = this.grantedTerms();
@@ -587,6 +603,7 @@ export class PaiementSection {
     );
     if (signed) {
       this.signedAt.set('');
+      this.debitSetupChange.emit();
     }
   }
 
@@ -595,7 +612,9 @@ export class PaiementSection {
     if (id === null) {
       return;
     }
-    await this.run(id, () => this.mandates.revoke(id), 'Mandat révoqué.');
+    if (await this.run(id, () => this.mandates.revoke(id), 'Mandat révoqué.')) {
+      this.debitSetupChange.emit();
+    }
   }
 
   /**

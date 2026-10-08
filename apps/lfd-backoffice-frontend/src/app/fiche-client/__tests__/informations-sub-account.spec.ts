@@ -47,6 +47,7 @@ function company(hierarchy: Partial<CompanyHierarchyView> = {}): AdminCompanyDet
     gate: { canActivate: false, blocking: [], checklist: [] },
     suspensionCause: null,
     vatNumberRequired: false,
+    hasBankAccount: false,
     addresses: { billing: null, deliveries: [] },
     contacts: [],
     fulfillmentPreference: {
@@ -201,5 +202,42 @@ describe('InformationsPage — qui ne tient que la lecture', () => {
     expect(managed('lfd-company-identity-card')).toBe(false);
     expect(managed('lfd-company-contacts-card')).toBe(false);
     expect(managed('lfd-company-addresses-card')).toBe(false);
+  });
+});
+
+/**
+ * Un compte ACTIF au règlement différé sans mandat : rien ne bloque, mais
+ * l'encart doit parler — sans annoncer un dossier complet au-dessus du manque.
+ */
+describe('InformationsPage — un compte actif au règlement différé sans mandat', () => {
+  const owed = (hasBankAccount: boolean): AdminCompanyDetail => ({
+    ...child([]),
+    grantedTerms: ['monthly'],
+    warnings: [{ kind: 'mandat_absent', since: null }],
+    gate: { canActivate: true, blocking: [], checklist: [] },
+    hasBankAccount,
+  });
+
+  it('réclame le RIB, et dit que le compte reste actif', async () => {
+    const host = (await boot(owed(false))).nativeElement as HTMLElement;
+    const checklist = host.querySelector('lfd-company-activation-checklist');
+
+    expect(checklist?.textContent).toContain('RIB du client');
+    expect(checklist?.textContent).not.toContain('Mandat SEPA signé');
+    expect(checklist?.textContent).toContain('Le compte reste actif');
+    expect(checklist?.textContent).not.toContain('Le dossier est complet');
+  });
+
+  it('réclame le mandat une fois le RIB enregistré', async () => {
+    const host = (await boot(owed(true))).nativeElement as HTMLElement;
+    const checklist = host.querySelector('lfd-company-activation-checklist');
+
+    expect(checklist?.textContent).toContain('Mandat SEPA signé');
+    expect(checklist?.textContent).not.toContain('RIB du client');
+  });
+
+  it('se tait quand le mandat est actif', async () => {
+    const host = (await boot({ ...owed(true), warnings: [] })).nativeElement as HTMLElement;
+    expect(host.querySelector('lfd-company-activation-checklist')).toBeNull();
   });
 });

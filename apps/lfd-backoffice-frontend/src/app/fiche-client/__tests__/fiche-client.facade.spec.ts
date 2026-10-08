@@ -42,6 +42,7 @@ const COMPANY: AdminCompanyDetail = {
   activatedAt: null,
   warnings: [],
   vatNumberRequired: true,
+  hasBankAccount: false,
   hierarchy: {
     parent: null,
     subAccounts: [],

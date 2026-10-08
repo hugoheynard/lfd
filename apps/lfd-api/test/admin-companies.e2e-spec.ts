@@ -260,6 +260,7 @@ interface AdminCompanyDetailBody {
   readonly id: string;
   readonly status: string;
   readonly vatNumberRequired: boolean;
+  readonly hasBankAccount: boolean;
   readonly addresses: { readonly billing: unknown; readonly deliveries: readonly unknown[] };
 }
 
@@ -275,6 +276,8 @@ describe("GET /admin/companies/:id", () => {
     expect(body.id).toBe(seed.id);
     expect(body.status).toBe(CompanyStatus.pending);
     expect(body.vatNumberRequired).toBe(true);
+    // Aucun RIB semé : la fiche réclamera « RIB du client » sous un différé.
+    expect(body.hasBankAccount).toBe(false);
     expect(body.addresses).toEqual({ billing: null, deliveries: [] });
   });
 

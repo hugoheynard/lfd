@@ -42,6 +42,7 @@ function company(over: Partial<AdminCompanyDetail> = {}): AdminCompanyDetail {
     // Le DÉTAIL : c'est lui que la fiche projette, et lui seul qui sait si la
     // forme juridique impose un numéro de TVA.
     vatNumberRequired: true,
+    hasBankAccount: false,
     hierarchy: {
       parent: null,
       subAccounts: [],

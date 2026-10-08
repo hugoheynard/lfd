@@ -50,6 +50,7 @@ const detail: AdminCompanyDetailView = {
   activatedAt: null,
   createdAt: "2026-07-30T10:00:00.000Z",
   vatNumberRequired: true,
+  hasBankAccount: false,
   addresses: emptyAddresses,
   activation: null,
   suspensionCause: null,

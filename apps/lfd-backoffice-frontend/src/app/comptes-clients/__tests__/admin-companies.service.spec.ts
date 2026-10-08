@@ -87,6 +87,7 @@ describe('AdminCompaniesService', () => {
       suspensionCause: null,
       ...company,
       vatNumberRequired: true,
+      hasBankAccount: false,
       hierarchy: {
         parent: null,
         subAccounts: [],

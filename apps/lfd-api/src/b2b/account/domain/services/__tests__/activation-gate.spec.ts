@@ -43,6 +43,7 @@ function detail(over: Partial<AdminCompanyDetailView> = {}): AdminCompanyDetailV
     activatedAt: null,
     createdAt: "2026-07-30T10:00:00.000Z",
     vatNumberRequired: true,
+    hasBankAccount: false,
     addresses: { billing: null, deliveries: [] },
     activation: null,
     suspensionCause: null,

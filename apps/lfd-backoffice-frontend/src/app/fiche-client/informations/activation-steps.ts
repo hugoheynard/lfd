@@ -26,7 +26,15 @@ export type StepKey =
    * n'est pas la formulation mais l'action — on ne redemande pas un fichier
    * qui est déjà là, on l'ouvre.
    */
-  | 'kbis_verify';
+  | 'kbis_verify'
+  /**
+   * Le **RIB** puis le **mandat SEPA**, réclamés seulement quand un règlement
+   * différé est accordé : c'est là qu'on prélèvera. Jamais bloquants — la
+   * porte d'activation ne les connaît pas (`activation-gate.ts`), et l'écran
+   * n'en fait pas une condition qu'elle n'est pas.
+   */
+  | 'bank_account'
+  | 'mandate';
 
 /** Une étape restante, telle que la fiche la présente. */
 export interface ActivationStep {
@@ -91,6 +99,18 @@ const STEP_TEXTS: Readonly<Record<StepKey, Omit<ActivationStep, 'key' | 'blockin
     detail:
       "L'extrait est déposé — ouvrez-le, comparez-le à l'identité enregistrée, puis confirmez.",
     cta: "J'ai vérifié cet extrait",
+  },
+  bank_account: {
+    title: 'RIB du client',
+    detail:
+      'Un règlement différé est accordé : il faut le compte à prélever, puis le mandat que le client signe.',
+    cta: 'Saisir le RIB',
+  },
+  mandate: {
+    title: 'Mandat SEPA signé',
+    detail:
+      "Le RIB est là, mais aucun mandat actif : sans lui, rien n'encaisse ce que le règlement différé laisse facturer.",
+    cta: 'Ouvrir le mandat',
   },
   billing: {
     title: 'Adresse de facturation',
@@ -199,7 +219,25 @@ export function activationSteps(company: AdminCompanyDetail | null): readonly Ac
   // la commande est le socle, offert à tous — et son bouton n'ouvrait rien. Une
   // ligne d'avertissement permanente, sur une exigence qui n'existe pas, avec un
   // geste qui ne fait rien : elle apprenait à ignorer l'encart entier.
-  return [...legal, ...holder, ...phone, ...pieces];
+  return [...legal, ...holder, ...phone, ...pieces, ...debitSteps(company)];
+}
+
+/**
+ * Le RIB, puis le mandat — **un geste à la fois**, comme détenteur puis
+ * téléphone : la frappe d'un mandat exige le RIB (`mint-blockers.ts`), le
+ * réclamer avant serait demander ce qu'on ne peut pas encore produire.
+ *
+ * La condition n'est pas recalculée : « règlement différé accordé, aucun mandat
+ * actif » est l'avertissement serveur `mandat_absent`. Un site, qui règle par
+ * son principal, n'a pas la section où se saisissent RIB et mandat.
+ */
+function debitSteps(company: AdminCompanyDetail): readonly ActivationStep[] {
+  const mandateMissing = company.warnings.some((warning) => warning.kind === 'mandat_absent');
+  if (!mandateMissing || followsBilling(company)) {
+    return [];
+  }
+  const key: StepKey = company.hasBankAccount ? 'mandate' : 'bank_account';
+  return [{ key, ...STEP_TEXTS[key], blocking: false }];
 }
 
 /** L'empêchement que lève chaque pièce bloquante — celui que le serveur omet quand il la lève. */
