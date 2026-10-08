@@ -12,6 +12,15 @@
 > (bandeau au § 1), le § 2 l'est pour ses lignes 2 et 3. G5e (§ 6) est
 > vérifiée depuis le 2026-10-06.
 
+> ✅ **§ 1 et § 2 validés par Hugo le 2026-10-08**, tels qu'en place
+> (Q1, Q3, Q4 ; parcours du coliseur 1, 4 à 8). Le point 4 du § 2 (une ligne
+> qui ne viendra jamais) reste hors application tant que les avenants
+> n'existent pas.
+>
+> ✅ **§ 3 et § 4 validés par Hugo le 2026-10-08** (l'ordre figé en route ;
+> les commandes rapportées, leur feuille de route, « Proposer » qui les
+> inclut).
+
 ## 1. Le « + » choisit un bac (plan retiré le 2026-10-05, § 5)
 
 > ⚠️ **Périmé par K3c (`753f3e4f8`, 2026-10-05).** Ce que PC1 avait bâti — la
