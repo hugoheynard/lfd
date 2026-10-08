@@ -351,7 +351,7 @@ export const ACCOUNT_FR: AccountCopy = {
   bankRegistered: 'RIB enregistré',
   bankLast4: '•••• {last4}',
   bankNotice:
-    'Le titulaire et l’adresse sont ceux que connaît votre banque : ils peuvent différer de votre raison sociale. Si un prélèvement est en place sur ce compte, le remplacer l’interrompt : nous revenons vers vous pour la suite.',
+    'Le titulaire et l’adresse sont ceux que connaît votre banque : ils peuvent différer de votre raison sociale. Si un prélèvement SEPA est en place, le RIB ne peut plus être remplacé ici : pour changer de banque, contactez-nous.',
   bankForm: {
     holder: 'Titulaire du compte',
     holderLegalForm: 'Civilité (M., Mme) ou forme juridique (SAS, SARL…)',

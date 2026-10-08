@@ -346,7 +346,7 @@ export const ACCOUNT_EN: AccountCopy = {
   bankRegistered: 'Bank details on file',
   bankLast4: '•••• {last4}',
   bankNotice:
-    'The account holder and address are the ones your bank knows: they may differ from your registered company name. If a direct debit runs on this account, replacing it stops the debit: we will get back to you on what comes next.',
+    'The account holder and address are the ones your bank knows: they may differ from your registered company name. If a SEPA direct debit is in place, the bank details can no longer be replaced here: to change banks, contact us.',
   bankForm: {
     holder: 'Account holder',
     holderLegalForm: 'Title (Mr, Ms) or legal form (SAS, SARL…)',

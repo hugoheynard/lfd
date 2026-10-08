@@ -350,7 +350,7 @@ export const ACCOUNT_IT: AccountCopy = {
   bankRegistered: 'Coordinate bancarie registrate',
   bankLast4: '•••• {last4}',
   bankNotice:
-    'Il titolare e l’indirizzo sono quelli noti alla vostra banca: possono differire dalla ragione sociale. Se su questo conto è attivo un addebito, sostituirlo lo interrompe: vi ricontatteremo per il seguito.',
+    'Il titolare e l’indirizzo sono quelli noti alla vostra banca: possono differire dalla ragione sociale. Se è attivo un addebito diretto SEPA, l’IBAN non può più essere sostituito qui: per cambiare banca, contattateci.',
   bankForm: {
     holder: 'Titolare del conto',
     holderLegalForm: 'Titolo (Sig., Sig.ra) o forma giuridica (SAS, SARL…)',

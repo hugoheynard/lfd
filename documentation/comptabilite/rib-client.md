@@ -89,14 +89,13 @@ côté client comme côté staff.
 toujours vide). Service : `client/client-bank-account.service.ts`. Copie
 fr / en / it dans `client/copy/screens/account.*.ts`.
 
-## 7. Écart connu (2026-10-08)
+## 7. La notice de l'écran
 
-⚠️ La notice de la section (`bankNotice`, `account.fr.ts:353`) dit :
-« Si un prélèvement est en place sur ce compte, le remplacer l'interrompt :
-nous revenons vers vous pour la suite. » C'est **faux** depuis la garde du
-§ 4 : avec un mandat actif, le remplacement est refusé. La phrase est à
-réécrire dans les trois langues (« un prélèvement est en place : pour changer
-de banque, contactez-nous »).
+La notice de la section (`bankNotice`, `client/copy/screens/account.*.ts`) dit,
+depuis le 2026-10-08 : « Si un prélèvement SEPA est en place, le RIB ne peut
+plus être remplacé ici : pour changer de banque, contactez-nous. » Elle
+disait auparavant que remplacer le RIB « interrompait » le prélèvement, ce
+que la garde du § 4 avait rendu faux.
 
 ## 8. Ce qui reste ouvert
 
