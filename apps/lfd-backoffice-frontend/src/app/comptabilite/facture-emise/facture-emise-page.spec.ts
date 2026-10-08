@@ -1,10 +1,11 @@
 import { HttpErrorResponse } from '@angular/common/http';
 import { type ComponentFixture, TestBed } from '@angular/core/testing';
 import { provideRouter } from '@angular/router';
-import { describe, expect, it } from 'vitest';
+import { describe, expect, it, vi } from 'vitest';
 
 import type { IssuedInvoiceView } from '@lfd/contracts';
 
+import { NotifyService } from '../../notify.service';
 import { IssuedInvoicesService } from '../issued-invoices.service';
 import { FactureEmisePage } from './facture-emise-page';
 
@@ -84,12 +85,34 @@ function issuedInvoice(over: Partial<IssuedInvoiceView> = {}): IssuedInvoiceView
   };
 }
 
+const pdfAsked: string[] = [];
+const failures: string[] = [];
+
 async function render(
   answer: () => Promise<IssuedInvoiceView>,
+  pdf: () => Promise<Blob> = () => Promise.resolve(new Blob(['%PDF-'])),
 ): Promise<ComponentFixture<FactureEmisePage>> {
+  pdfAsked.splice(0);
+  failures.splice(0);
   TestBed.configureTestingModule({
     imports: [FactureEmisePage],
-    providers: [provideRouter([]), { provide: IssuedInvoicesService, useValue: { one: answer } }],
+    providers: [
+      provideRouter([]),
+      {
+        provide: IssuedInvoicesService,
+        useValue: {
+          one: answer,
+          document: (invoiceId: string) => {
+            pdfAsked.push(invoiceId);
+            return pdf();
+          },
+        },
+      },
+      {
+        provide: NotifyService,
+        useValue: { error: (_: unknown, fallback: string) => failures.push(fallback) },
+      },
+    ],
   });
   const fixture = TestBed.createComponent(FactureEmisePage);
   fixture.componentRef.setInput('id', 'inv_1');
@@ -133,6 +156,48 @@ describe('FactureEmisePage', () => {
     expect(page.querySelector('[data-invoice-issued]')?.textContent).toContain(
       'corrige la facture FA-2026-000001',
     );
+  });
+
+  it('tant que le PDF n’est pas rendu, la pièce le dit et n’offre aucun téléchargement', async () => {
+    const page = host(await render(() => Promise.resolve(issuedInvoice())));
+
+    expect(page.querySelector('[data-invoice-issued]')?.textContent).toContain('pas encore rendu');
+    expect(page.querySelector('[data-invoice-pdf]')).toBeNull();
+  });
+
+  it('un PDF rendu se télécharge sous le numéro de la pièce ; un échec se notifie', async () => {
+    const saved: string[] = [];
+    vi.spyOn(URL, 'createObjectURL').mockReturnValue('blob:facture');
+    vi.spyOn(URL, 'revokeObjectURL').mockReturnValue(undefined);
+    vi.spyOn(HTMLAnchorElement.prototype, 'click').mockImplementation(function (
+      this: HTMLAnchorElement,
+    ) {
+      saved.push(this.download);
+    });
+    const ready = issuedInvoice({ documentAvailable: true });
+    const page = host(await render(() => Promise.resolve(ready)));
+
+    expect(page.querySelector('[data-invoice-issued]')?.textContent).not.toContain('pas encore');
+    (page.querySelector('[data-invoice-pdf]') as HTMLButtonElement).click();
+    await new Promise((resolve) => setTimeout(resolve, 0));
+
+    expect(pdfAsked).toEqual([ready.invoiceId]);
+    expect(saved).toEqual([`${ready.number}.pdf`]);
+    vi.restoreAllMocks();
+
+    TestBed.resetTestingModule();
+    const failing = host(
+      await render(
+        () => Promise.resolve(ready),
+        () => Promise.reject(new HttpErrorResponse({ status: 404 })),
+      ),
+    );
+    (failing.querySelector('[data-invoice-pdf]') as HTMLButtonElement).click();
+    await new Promise((resolve) => setTimeout(resolve, 0));
+
+    expect(failures).toEqual([
+      `Le PDF de la pièce ${ready.number} n’a pas pu être téléchargé. Réessayez dans un instant.`,
+    ]);
   });
 
   it('une pièce inconnue (404) se dit introuvable, pas en panne', async () => {

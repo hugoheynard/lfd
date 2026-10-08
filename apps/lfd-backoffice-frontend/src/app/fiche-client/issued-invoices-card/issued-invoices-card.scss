@@ -6,7 +6,7 @@
 
 .row {
   display: grid;
-  grid-template-columns: auto 1fr auto;
+  grid-template-columns: auto 1fr auto auto;
   align-items: baseline;
   gap: var(--fold-space-md);
   margin: 0;

@@ -79,6 +79,7 @@ describe("« Mes factures » côté client (E6)", () => {
       totalHtCents: 1_500,
       totalVatCents: 155,
       totalTtcCents: 1_655,
+      documentAvailable: false,
     });
   });
 

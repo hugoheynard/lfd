@@ -6,6 +6,7 @@ import { DurablePublisher } from "../../../../platform/outbox/durable-publisher.
 import { Clock } from "../../../../platform/time/clock.js";
 import type { Invoice } from "../../domain/entities/invoice.js";
 import { InvoiceAssemblyError } from "../../domain/errors/invoice-errors.js";
+import { CreditNoteIssuedFact } from "../../domain/events/credit-note-issued.fact.js";
 import { InvoiceIssuedFact } from "../../domain/events/invoice-issued.fact.js";
 import { CreditNoteIssuedEvent, InvoiceIssuedEvent } from "../../domain/events/invoice.events.js";
 import { InvoiceNumbering } from "../../domain/ports/invoice-numbering.js";
@@ -31,8 +32,10 @@ export interface InvoiceIssuance {
  * dans UNE transaction courte. Tout échec la défait entière — numéro compris.
  *
  * Une facture (380) écrit aussi son fait durable `invoice.issued` dans la
- * même transaction (E6) : c'est lui qui fait partir « Votre facture FA-… »,
- * et seulement si l'émission est validée. Un avoir n'en écrit pas.
+ * même transaction (E6) : c'est lui qui fait rendre le PDF puis partir
+ * « Votre facture FA-… », et seulement si l'émission est validée. Un avoir
+ * écrit le sien, `invoice.credit_note_issued` (E3b) : il n'est rendu qu'en
+ * PDF, personne n'est prévenu.
  *
  * Aucune décision métier ici : qui facturer, quand, sur quels bons, c'est la
  * facture du mois (E4) et la facture carte (E5) qui le diront en l'appelant.
@@ -61,6 +64,7 @@ export class InvoiceIssuer {
       await this.invoices.insert(invoice);
       if (invoice.isCreditNote) {
         await this.events.publishTraced(new CreditNoteIssuedEvent(invoice, at));
+        await this.durable.publish(new CreditNoteIssuedFact(invoice.id).durableFact());
       } else {
         await this.events.publishTraced(new InvoiceIssuedEvent(invoice, at));
         await this.durable.publish(new InvoiceIssuedFact(invoice.id).durableFact());

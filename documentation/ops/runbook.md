@@ -790,6 +790,39 @@ payer avec une carte de test (en mode test), puis relire la liste — le lien do
 dire que la session ne porte pas la métadonnée `paymentLinkId` : ce n'est pas
 une page ouverte par le back-office.
 
+## Verrouiller les PDF des factures pour dix ans
+
+> 📐 **À faire, pas fait** (2026-10-08, lot E3b de
+> [`plan-emission-de-la-facture.md`](../comptabilite/facturation/plan-emission-de-la-facture.md)).
+> Personne n'a encore posé la règle ; l'état du seau n'a pas été relu.
+
+Chaque facture et chaque avoir émis ont leur PDF/A-3 Factur-X rangé dans le
+seau **`customers`** (celui du port `CustomerDocumentStore`), sous
+`invoices/<id de l'entité émettrice>/<numéro>.pdf`. Le code ne sait pas
+supprimer dans ce seau (le verbe n'existe pas), ne réécrit jamais une clé, et
+compare l'empreinte SHA-256 figée sur la pièce avant de servir le fichier.
+**Ce qui manque est le verrou** : l'empreinte prouve qu'un fichier a changé,
+elle ne l'empêche pas. La conservation est de dix ans (Code de commerce, de
+mémoire — à confirmer par le cabinet).
+
+Le geste, dans le tableau de bord Cloudflare (R2 → le seau `customers` de
+production → Settings → **Bucket lock rules**) :
+
+| Champ     | Valeur                                       |
+| --------- | -------------------------------------------- |
+| Préfixe   | `invoices/`                                  |
+| Rétention | 10 ans (ou la durée que le cabinet confirme) |
+
+⚠️ **Irréversible dans les faits** : un objet sous verrou ne se supprime ni ne
+se remplace avant l'échéance, même par erreur, même par Hugo. C'est le but.
+Le préfixe est `invoices/`, et rien d'autre : les bons de commande du même
+seau (`orders/`) n'ont pas cette durée.
+
+**Vérifier** : émettre une facture sur un poste de recette, puis tenter un
+remplacement de l'objet par `wrangler r2 object put` sur la même clé — il doit
+être refusé. Relire le PDF depuis l'écran « Comptabilité → facture » : il se
+télécharge toujours.
+
 ## En dev : un `400` sur un corps pourtant valide
 
 Le symptôme : une requête que le front envoie correctement, refusée en `400`

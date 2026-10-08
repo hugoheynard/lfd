@@ -1,3 +1,5 @@
+import { Buffer } from "node:buffer";
+
 import type { MailReceipt, SendMailArgs } from "@lfd/mailer";
 
 import { DirectUnitOfWork } from "../../../../../platform/database/__tests__/direct-unit-of-work.js";
@@ -96,7 +98,7 @@ describe("« Votre facture » part à l'émission (E6, Q3)", () => {
   it("au payeur et aux sous-comptes, une clé par facture et par adresse, puis le journal", async () => {
     const h = setup({ sites: ["compta@chalet.test"] });
 
-    const recipients = await h.sender.send(MONTHLY.id);
+    const recipients = await h.sender.send(MONTHLY.id, null);
 
     expect(recipients?.map((r) => r.email)).toEqual(["compta@port.test", "compta@chalet.test"]);
     expect(h.sites.asked).toEqual([{ orderIds: ["o_1", "o_2"], payer: "c_port" }]);
@@ -133,10 +135,29 @@ describe("« Votre facture » part à l'émission (E6, Q3)", () => {
     ]);
   });
 
+  it("joint le PDF Factur-X rendu à chaque message, sous le nom de la pièce", async () => {
+    const h = setup();
+    const pdf = Buffer.from("%PDF-1.7 rendu");
+
+    await h.sender.send(MONTHLY.id, { fileName: "FA-2026-000001.pdf", bytes: pdf });
+
+    expect(h.mailer.sent[0]?.data).toMatchObject({
+      document: { fileName: "FA-2026-000001.pdf", pdfBase64: pdf.toString("base64") },
+    });
+  });
+
+  it("sans PDF (rendu en échec), l'e-mail part quand même, sans pièce", async () => {
+    const h = setup();
+
+    await h.sender.send(MONTHLY.id, null);
+
+    expect(h.mailer.sent[0]?.data).toMatchObject({ document: null });
+  });
+
   it("une adresse commune au payeur et à un sous-compte ne reçoit qu'un message", async () => {
     const h = setup({ sites: ["COMPTA@port.test"] });
 
-    await h.sender.send(MONTHLY.id);
+    await h.sender.send(MONTHLY.id, null);
 
     expect(h.mailer.sent.map((mail) => mail.to)).toEqual(["compta@port.test"]);
   });
@@ -144,8 +165,8 @@ describe("« Votre facture » part à l'émission (E6, Q3)", () => {
   it("rejoué, il renvoie les mêmes clés : le fournisseur dédoublonne, aucun second message", async () => {
     const h = setup();
 
-    await h.sender.send(MONTHLY.id);
-    await h.sender.send(MONTHLY.id);
+    await h.sender.send(MONTHLY.id, null);
+    await h.sender.send(MONTHLY.id, null);
 
     const keys = h.mailer.sent.map((mail) => mail.idempotencyKey);
     expect(new Set(keys).size).toBe(1);
@@ -154,7 +175,7 @@ describe("« Votre facture » part à l'émission (E6, Q3)", () => {
   it("personne à prévenir : rien ne part, et le journal le signale en nommant le geste", async () => {
     const h = setup({ payer: { billingContactEmails: [], ownerEmail: null } });
 
-    expect(await h.sender.send(MONTHLY.id)).toEqual([]);
+    expect(await h.sender.send(MONTHLY.id, null)).toEqual([]);
 
     expect(h.mailer.sent).toEqual([]);
     const [fact] = h.events.traced.map((event) => event.journalFact());
@@ -167,7 +188,7 @@ describe("« Votre facture » part à l'émission (E6, Q3)", () => {
     const h = setup({ sites: ["compta@chalet.test"] });
     h.mailer.refused.add("compta@port.test");
 
-    await h.sender.send(MONTHLY.id);
+    await h.sender.send(MONTHLY.id, null);
 
     expect(h.mailer.sent.map((mail) => mail.to)).toEqual(["compta@chalet.test"]);
     const [fact] = h.events.traced.map((event) => event.journalFact());
@@ -178,7 +199,7 @@ describe("« Votre facture » part à l'émission (E6, Q3)", () => {
   it("sans origine de boutique, le lien est vide (le gabarit omet le bouton)", async () => {
     const h = setup({ origin: null });
 
-    await h.sender.send(MONTHLY.id);
+    await h.sender.send(MONTHLY.id, null);
 
     expect(h.mailer.sent[0]?.data).toMatchObject({ invoicesUrl: "" });
   });
@@ -186,7 +207,7 @@ describe("« Votre facture » part à l'émission (E6, Q3)", () => {
   it("une facture introuvable : rien ne part, rien n'est journalisé", async () => {
     const h = setup();
 
-    expect(await h.sender.send("absente")).toBeNull();
+    expect(await h.sender.send("absente", null)).toBeNull();
     expect(h.mailer.sent).toEqual([]);
     expect(h.events.traced.map((event) => event.journalFact())).toEqual([]);
   });

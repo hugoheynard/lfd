@@ -68,6 +68,19 @@ export class ClientInvoices {
     );
   }
 
+  /**
+   * `GET …/invoices/:invoiceId/pdf` — le PDF/A-3 Factur-X rangé (E3b), en
+   * **blob** : la route est authentifiée, un `<a href>` partirait sans jeton.
+   */
+  async document(companyId: string, invoiceId: string): Promise<Blob> {
+    return firstValueFrom(
+      this.http.get(`${this.url(companyId)}/${encodeURIComponent(invoiceId)}/pdf`, {
+        headers: await this.headers(),
+        responseType: 'blob',
+      }),
+    );
+  }
+
   private url(companyId: string): string {
     return `${AUTH_CONFIG.apiBaseUrl}/companies/${companyId}/invoices`;
   }

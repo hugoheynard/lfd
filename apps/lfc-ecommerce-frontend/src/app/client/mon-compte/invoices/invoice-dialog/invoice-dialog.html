@@ -7,7 +7,26 @@
     }}</fold-callout>
   } @else if (invoice(); as bill) {
     <p class="meta" data-invoice-meta>{{ meta() }}</p>
-    <fold-callout variant="info">{{ copy().pdfPending }}</fold-callout>
+    @if (bill.documentAvailable) {
+      <div class="actions">
+        <button
+          foldButton
+          icon="download"
+          data-invoice-pdf
+          [loading]="downloading()"
+          (click)="download(bill)"
+        >
+          {{ copy().downloadPdf }}
+        </button>
+      </div>
+      @if (downloadFailed()) {
+        <fold-callout variant="alert" announce data-invoice-pdf-failed>{{
+          copy().downloadFailed
+        }}</fold-callout>
+      }
+    } @else {
+      <fold-callout variant="info" data-invoice-pdf-pending>{{ copy().pdfPending }}</fold-callout>
+    }
 
     <div class="parties">
       <section class="block">

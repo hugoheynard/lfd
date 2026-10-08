@@ -15,9 +15,16 @@
  * `monthly-invoices.e2e-spec.ts`. Aucune date absolue : le mois est le
  * PRÉCÉDENT du jour du test, l'horloge FIXE est posée relativement à lui.
  */
+import { Buffer } from "node:buffer";
+import { createHash } from "node:crypto";
+
 import type { IssuedInvoiceView, IssuedInvoicesView } from "@lfd/contracts";
+import { invoiceVatBreakdown } from "@lfd/money";
 import type { SendMailArgs } from "@lfd/mailer";
 
+import { InvoiceIssuer } from "../src/b2b/accounting/application/services/invoice-issuer.js";
+import { Invoice } from "../src/b2b/accounting/domain/entities/invoice.js";
+import { InvoiceReader } from "../src/b2b/accounting/domain/ports/invoice.reader.js";
 import { invoicingMomentOf } from "../src/b2b/accounting/domain/services/monthly-invoicing.js";
 import { noticeAmount } from "../src/b2b/accounting/domain/services/collection-notice-wording.js";
 import { StatementMonth } from "../src/b2b/accounting/domain/value-objects/statement-month.js";
@@ -269,14 +276,20 @@ describe("« Votre facture » à l'émission (E6, Q3)", () => {
       invoiceNumber: invoice.number,
       total: noticeAmount(invoice.totalTtcCents),
       paymentMeans: "Prélèvement SEPA — mandat RUM-E6-1",
+      // E3b : l'envoi attend le rendu, et part avec le PDF/A-3.
+      document: { fileName: `${invoice.number}.pdf` },
     });
     const journal = await ctx.prisma.activityEvent.findMany({
       where: { subjectId: invoice.id },
       orderBy: { id: "asc" },
       select: { type: true, payload: true },
     });
-    expect(journal.map((event) => event.type)).toEqual(["invoice.issued", "invoice.notice_sent"]);
-    expect(journal[1]?.payload).toMatchObject({ recipientCount: 2 });
+    expect(journal.map((event) => event.type)).toEqual([
+      "invoice.issued",
+      "invoice.document_rendered",
+      "invoice.notice_sent",
+    ]);
+    expect(journal[2]?.payload).toMatchObject({ recipientCount: 2 });
   });
 
   it("personne à prévenir : rien ne part, et le journal le signale", async () => {
@@ -332,6 +345,27 @@ describe("« Mes factures » — le mur client (E6)", () => {
     await ctx.asSub(commis).get(base).expect(403);
     await ctx.asSub(other.owner).get(base).expect(404);
     await ctx.asSub(port.owner).get(`${base}/${theirs.id}`).expect(404);
+
+    // Le PDF (E3b) : le même mur.
+    const pdf = `${base}/${mine?.invoiceId ?? ""}/pdf`;
+    const served = await ctx
+      .asSub(compta)
+      .get(pdf)
+      .buffer()
+      .parse((res, callback) => {
+        const chunks: Buffer[] = [];
+        res.on("data", (chunk: Buffer) => chunks.push(chunk));
+        res.on("end", () => callback(null, Buffer.concat(chunks)));
+      })
+      .expect(200);
+    expect(served.headers["content-type"]).toBe("application/pdf");
+    expect(served.headers["content-disposition"]).toContain(".pdf");
+    expect(Buffer.from(jsonBody<Uint8Array>(served)).subarray(0, 5).toString("latin1")).toBe(
+      "%PDF-",
+    );
+    await ctx.asSub(commis).get(pdf).expect(403);
+    await ctx.asSub(other.owner).get(pdf).expect(404);
+    await ctx.asSub(port.owner).get(`${base}/${theirs.id}/pdf`).expect(404);
   });
 });
 
@@ -352,6 +386,76 @@ describe("les factures depuis le back-office (E6)", () => {
         .expect(200),
     );
     expect(detail.payerCompanyId).toBe(company.id);
+    expect(list.invoices[0]?.documentAvailable).toBe(true);
     await staff().get("/admin/accounting/invoices/absente").expect(404);
+  });
+
+  it("le PDF/A-3 rendu après l'émission est rangé, attaché une fois, et servi tel quel (E3b)", async () => {
+    const id = await entity();
+    const { company, owner } = await payer(id, "patron@port.test");
+    await orderOf(company.id, owner);
+    await issue(id);
+    const invoice = await ctx.prisma.invoice.findFirstOrThrow({
+      where: { payerCompanyId: company.id },
+    });
+
+    expect(invoice.documentKey).toBe(`invoices/${id}/${invoice.number}.pdf`);
+    const served = await staff()
+      .get(`/admin/accounting/invoices/${invoice.id}/pdf`)
+      .buffer()
+      .parse((res, callback) => {
+        const chunks: Buffer[] = [];
+        res.on("data", (chunk: Buffer) => chunks.push(chunk));
+        res.on("end", () => callback(null, Buffer.concat(chunks)));
+      })
+      .expect(200);
+    const bytes = Buffer.from(jsonBody<Uint8Array>(served));
+    expect(createHash("sha256").update(bytes).digest("hex")).toBe(invoice.documentSha256);
+    expect(bytes.toString("latin1")).toContain("<pdfaid:part>3</pdfaid:part>");
+    await staff().get("/admin/accounting/invoices/absente/pdf").expect(404);
+  });
+
+  it("un avoir a aussi son PDF, rendu par son propre fait, sans e-mail (E3b)", async () => {
+    const id = await entity();
+    const { company, owner } = await payer(id, "patron@port.test");
+    await orderOf(company.id, owner);
+    await issue(id);
+    const corrected = await ctx.app
+      .get(InvoiceReader)
+      .byId(
+        (await ctx.prisma.invoice.findFirstOrThrow({ where: { payerCompanyId: company.id } })).id,
+      );
+    if (corrected === null) {
+      throw new Error("facture absente");
+    }
+    const [first] = corrected.toState().lines;
+    const lines = first === undefined ? [] : [{ ...first, amountCents: 100 }];
+    sentMails.splice(0);
+
+    const note = await ctx.app.get(InvoiceIssuer).issue({
+      legalEntityId: id,
+      issuedOn: corrected.toState().issuedOn,
+      draft: (number) =>
+        Invoice.creditNote({
+          id: "cn_e3b",
+          number,
+          issuedOn: corrected.toState().issuedOn,
+          corrected,
+          priorCreditNotes: [],
+          orders: [],
+          lines,
+          vat: invoiceVatBreakdown({
+            goods: lines.map((line) => ({ htCents: line.amountCents, vatRate: line.vatRate })),
+            allowances: [],
+            charges: [],
+          }),
+        }),
+    });
+    await ctx.drain();
+
+    const stored = await ctx.prisma.invoice.findUniqueOrThrow({ where: { id: note.id } });
+    expect(stored.documentKey).toBe(`invoices/${id}/${note.number}.pdf`);
+    expect(invoiceMails()).toEqual([]);
+    await staff().get(`/admin/accounting/invoices/${note.id}/pdf`).expect(200);
   });
 });

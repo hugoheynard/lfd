@@ -31,4 +31,17 @@ export class IssuedInvoicesService {
       ),
     );
   }
+
+  /**
+   * `GET admin/accounting/invoices/:id/pdf` — le PDF/A-3 Factur-X rangé
+   * (E3b). 404 tant que le rendu n'est pas fait.
+   */
+  async document(invoiceId: string): Promise<Blob> {
+    return firstValueFrom(
+      this.http.get(
+        `${B2B_API_BASE}/admin/accounting/invoices/${encodeURIComponent(invoiceId)}/pdf`,
+        { responseType: 'blob' },
+      ),
+    );
+  }
 }

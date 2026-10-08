@@ -60,6 +60,12 @@ export const AUTOPILOT_OUTCOME = domain('issue de la préparation automatique', 
   failed: 'Échec',
 });
 
+/** La sorte d'une pièce émise dont le PDF Factur-X est rendu ou en échec (E3b, 2026-10-08). */
+export const ISSUED_PIECE_KIND = domain('sorte de pièce émise', {
+  invoice: 'Facture',
+  credit_note: 'Avoir',
+});
+
 export const ACCOUNTING_VALUES: ValueFamily = {
   enums: [
     SEPA_SCHEME,
@@ -70,5 +76,6 @@ export const ACCOUNTING_VALUES: ValueFamily = {
     COLLECTION_NOTICE_KIND,
     NOTICE_RECIPIENT_SOURCE,
     AUTOPILOT_OUTCOME,
+    ISSUED_PIECE_KIND,
   ],
 };

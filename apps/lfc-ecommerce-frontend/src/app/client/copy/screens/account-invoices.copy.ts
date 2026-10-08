@@ -57,8 +57,12 @@ export interface AccountInvoicesCopy {
   /** `{date}`. */
   readonly delivered: string;
   readonly notDelivered: string;
-  /** Le PDF/A-3 n'existe pas encore (E3b) : la pièce se lit ici. */
+  /** Le PDF/A-3 n'est pas encore rendu (il suit l'émission, E3b) : la pièce se lit ici. */
   readonly pdfPending: string;
+  /** Le bouton qui télécharge le PDF/A-3 Factur-X rangé. */
+  readonly downloadPdf: string;
+  /** Le téléchargement a échoué : la pièce, elle, est intacte. */
+  readonly downloadFailed: string;
 }
 
 export const ACCOUNT_INVOICES_FR: AccountInvoicesCopy = {
@@ -103,7 +107,9 @@ export const ACCOUNT_INVOICES_FR: AccountInvoicesCopy = {
   delivered: 'livrée le {date}',
   notDelivered: 'livraison non constatée',
   pdfPending:
-    'Le document PDF de la facture n’est pas encore disponible : les informations ci-dessous sont celles de la facture émise.',
+    'Le PDF de la facture est en préparation : il sera téléchargeable ici dans quelques minutes. Les informations ci-dessous sont celles de la facture émise.',
+  downloadPdf: 'Télécharger le PDF',
+  downloadFailed: 'Le PDF n’a pas pu être téléchargé. Réessayez dans un instant.',
 };
 
 export const ACCOUNT_INVOICES_EN: AccountInvoicesCopy = {
@@ -148,7 +154,9 @@ export const ACCOUNT_INVOICES_EN: AccountInvoicesCopy = {
   delivered: 'delivered on {date}',
   notDelivered: 'delivery not recorded',
   pdfPending:
-    'The PDF of this invoice is not available yet: the details below are those of the issued invoice.',
+    'The PDF of this invoice is being prepared: it will be available here in a few minutes. The details below are those of the issued invoice.',
+  downloadPdf: 'Download the PDF',
+  downloadFailed: 'The PDF could not be downloaded. Please try again in a moment.',
 };
 
 export const ACCOUNT_INVOICES_IT: AccountInvoicesCopy = {
@@ -193,5 +201,7 @@ export const ACCOUNT_INVOICES_IT: AccountInvoicesCopy = {
   delivered: 'consegnato il {date}',
   notDelivered: 'consegna non registrata',
   pdfPending:
-    'Il PDF della fattura non è ancora disponibile: i dati qui sotto sono quelli della fattura emessa.',
+    'Il PDF della fattura è in preparazione: sarà scaricabile qui tra qualche minuto. I dati qui sotto sono quelli della fattura emessa.',
+  downloadPdf: 'Scarica il PDF',
+  downloadFailed: 'Impossibile scaricare il PDF. Riprova tra un istante.',
 };

@@ -1,6 +1,6 @@
 # L'émission de la facture
 
-> 📐 **Plan v2 ; E0, E1, E2, E3a, E4, E4b et E6 bâtis le 2026-10-08** (§ 8.1 à § 8.6). Touche **l'argent** et un
+> 📐 **Plan v2 ; E0, E1, E2, E3a, E3b, E4, E4b et E6 bâtis le 2026-10-08** (§ 8.1 à § 8.7). Touche **l'argent** et un
 > document légal : la v1 a été contredite par `vitruve` le même jour (trois
 > BLOQUANTS, huit SÉRIEUX), repris au § 9. Les règles du CGI et du Code de
 > commerce sont citées **de mémoire**, ni par l'agent ni par moi rouvertes en
@@ -173,15 +173,15 @@ document_key, sha256       ← posés UNE fois, après le rendu
 
 ## 8. Les lots
 
-| Lot    | Contenu                                                                                                                                            |
-| ------ | -------------------------------------------------------------------------------------------------------------------------------------------------- |
-| **E0** | ✅ **bâti le 2026-10-08** (non commité à l'écriture) — cf. § 8.1                                                                                   |
-| **E1** | ✅ **bâti le 2026-10-08** (non commité à l'écriture) — cf. § 8.2                                                                                   |
-| **E2** | ✅ **bâti le 2026-10-08** (non commité à l'écriture) — cf. § 8.3                                                                                   |
-| **E3** | **E3a ✅ bâti le 2026-10-08** (XML CII, non commité à l'écriture, § 8.4) ; E3b : essai PDF/A-3 borné, Schematron, veraPDF, seau en écriture unique |
-| **E4** | ✅ **bâti le 2026-10-08** (non commité à l'écriture) — la facture du mois, le lot qui encaisse des factures ; cf. § 8.5                            |
-| **E5** | la facture carte à la livraison — après le suivi des remboursements                                                                                |
-| **E6** | ✅ **bâti le 2026-10-08** (non commité à l'écriture) — l'e-mail, « Mes factures », l'onglet de la fiche ; cf. § 8.6. F5 reste à faire              |
+| Lot    | Contenu                                                                                                                                                                       |
+| ------ | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| **E0** | ✅ **bâti le 2026-10-08** (non commité à l'écriture) — cf. § 8.1                                                                                                              |
+| **E1** | ✅ **bâti le 2026-10-08** (non commité à l'écriture) — cf. § 8.2                                                                                                              |
+| **E2** | ✅ **bâti le 2026-10-08** (non commité à l'écriture) — cf. § 8.3                                                                                                              |
+| **E3** | **E3a ✅ bâti le 2026-10-08** (XML CII, § 8.4) ; **E3b ✅ bâti le 2026-10-08** (PDF/A-3b, non commité à l'écriture, § 8.7) ; restent Schematron, veraPDF et le verrou du seau |
+| **E4** | ✅ **bâti le 2026-10-08** (non commité à l'écriture) — la facture du mois, le lot qui encaisse des factures ; cf. § 8.5                                                       |
+| **E5** | la facture carte à la livraison — après le suivi des remboursements                                                                                                           |
+| **E6** | ✅ **bâti le 2026-10-08** (non commité à l'écriture) — l'e-mail, « Mes factures », l'onglet de la fiche ; cf. § 8.6. F5 reste à faire                                         |
 
 ### 8.1 E0 — ce qui a été bâti et tranché (2026-10-08)
 
@@ -531,7 +531,8 @@ routes `GET companies/:companyId/invoices[/:invoiceId]`,
   figé, sinon rien), lien `/mon-compte#compte-invoices` (absent si l'origine
   de la boutique n'est pas configurée). **Pas de PDF joint** : le point
   d'extension est l'envoi de `InvoiceNoticeSender`, le gabarit n'a rien à
-  changer.
+  changer. _(E3b, § 8.7 : le PDF part en pièce jointe ; le gabarit a pris un
+  champ `document`.)_
 - **Mur client** : détenteur et rôle facturation (le rôle se lit par
   `UnpaidAccessReader`) ; non-membre 404, autre rôle 403 ; une pièce adressée
   à une autre société, le même 404 qu'une pièce absente. La liste ne montre
@@ -560,6 +561,101 @@ l'e-mail (un échec reste au journal) ; (c) un e-mail n'est envoyé qu'en
 français (`DEFAULT_MAIL_LOCALE` des autres e-mails, mais ce gabarit n'a pas
 de copie traduite) ; (d) la page `/mes-factures` de la boutique (maquette,
 `mock-statement.ts`) dit encore qu'« aucune facture n'est émise ici ».
+
+### 8.7 E3b — le PDF/A-3 Factur-X (2026-10-08)
+
+Aucune migration (`document_key` et `document_sha256` existent depuis E2).
+Rendu pur `renderInvoicePdf` (`apps/lfd-api/src/b2b/accounting/domain/services/invoice-pdf.ts`,
+contenant `facturx-pdf-document.ts`, XMP `facturx-xmp.ts`, mise en page
+`invoice-pdf-header.ts`, `invoice-pdf-lines.ts`, `invoice-pdf-summary.ts`,
+`invoice-pdf-sheet.ts`,
+formats `invoice-pdf-wording.ts`) ; service `InvoiceDocumentRenderer`
+(`apps/lfd-api/src/b2b/accounting/application/services/invoice-document-renderer.ts`) ;
+polices `apps/lfd-api/fonts/` par le port `InvoiceFontSource` ; routes
+`GET companies/:companyId/invoices/:invoiceId/pdf` et
+`GET admin/accounting/invoices/:invoiceId/pdf` ; geste de verrou au
+[runbook](../../ops/runbook.md) (« Verrouiller les PDF des factures pour
+dix ans »).
+
+```mermaid
+flowchart LR
+  E["Émission (transaction du numéro)"] -->|"380"| F1["invoice.issued"]
+  E -->|"381"| F2["invoice.credit_note_issued"]
+  F1 --> S["SendInvoiceNotice<br/>rend le PDF, puis envoie avec la pièce"]
+  F2 --> R["RenderCreditNoteDocument<br/>rend le PDF"]
+  S --> D["InvoiceDocumentRenderer.ensure<br/>XML contrôlé → PDF/A-3b → seau customers<br/>→ attachDocument → journal"]
+  R --> D
+```
+
+Ce qui a été tranché en bâtissant :
+
+- **PDF/A-3b**, pas 3a : `pdfkit` 0.20.2 tient le niveau B (profil sRGB en
+  `OutputIntent`, `pdfaid` au XMP, polices embarquées) ; le niveau A exige un
+  document balisé en entier, qu'un balisage partiel aurait déclaré à tort.
+  Factur-X demande « au moins B ». PDF 1.7.
+- **Le XML joint est celui de `renderFacturXml`, octet pour octet**
+  (`factur-x.xml`, `text/xml`, `AFRelationship /Alternative`, dans `/AF` et
+  les fichiers incorporés), et le rendu refuse une pièce dont le XML viole
+  `facturXArithmeticViolations` (`InvoiceXmlInconsistentError`).
+- **XMP Factur-X** : schéma d'extension PDF/A déclaré, puis
+  `fx:DocumentType=INVOICE` (facture comme avoir), `DocumentFileName`,
+  `Version=1.0`, `ConformanceLevel=EN 16931` — de mémoire de la
+  spécification, non validés par veraPDF.
+- **Polices** : Source Sans 3 Regular et Bold (OFL), dans
+  `apps/lfd-api/fonts/` — **pas** dans `assets/`, qui n'est jamais lu à
+  l'exécution. Le dossier est lu à côté de `dist/`, dans l'app que `pnpm
+deploy` emporte entière. Aucune police standard dans le fichier (vérifié par
+  la spec).
+- **Déterministe** : toutes les dates du fichier sont le jour d'émission ;
+  deux rendus de la même pièce sont les mêmes octets (spec). C'est ce qui
+  permet de reprendre un rendu interrompu entre le dépôt et l'attache.
+- **Le seau** : `CustomerDocumentStore` (seau `customers`), et pas
+  `DocumentStore` (celui des KBIS et des logos) : c'est le port sans
+  `delete`, celui des pièces qu'un client peut nous opposer. Clé
+  `invoices/<entité>/<numéro>.pdf`, jamais réécrite : un objet déjà là avec
+  la même empreinte est repris, avec une autre, c'est un refus visible
+  (`InvoiceDocumentConflictError`, journalisé). Le verrou de dix ans est un
+  geste Cloudflare, écrit au runbook, **pas fait**.
+- **L'avoir** n'écrivait aucun fait durable : il écrit désormais
+  `invoice.credit_note_issued` (clé `invoice.credit_note_issued:<id>`) dans
+  la transaction du numéro, avec un seul abonné, `RenderCreditNoteDocument`.
+  Toujours aucun e-mail pour un avoir.
+- **L'ordre e-mail / rendu** : l'abonné `SendInvoiceNotice` de
+  `invoice.issued` rend d'abord (`ensure`, idempotent), puis envoie avec la
+  pièce jointe. Un seul abonné pour les deux, pour qu'ils ne se courent pas
+  après sur la même pièce. Un rendu en échec est journalisé et **l'e-mail
+  part sans pièce** : la facture ne dépend pas de son PDF pour être due.
+  Un PDF rendu plus tard (au rejeu) ne renvoie pas l'e-mail.
+- **Lecture** : les routes relisent l'objet rangé et **vérifient
+  l'empreinte** avant de servir (`InvoiceDocumentTamperedError`). Pas encore
+  rendu : 404 nommé (`accounting.invoice.document_not_rendered`). Toujours en
+  `attachment`. `documentAvailable` passe du détail au **résumé** (contrat
+  `IssuedInvoiceSummaryView`, ajout) : la carte de la fiche en a besoin par
+  ligne.
+- **Journal** : `invoice.document_rendered` (`kind`, `byteCount`, `sha256`,
+  jamais la clé) et `invoice.document_render_failed` (`kind`, `failure`).
+- **Mise en page** : vendeur sous son logo s'il existe (comme le mandat),
+  pièce à droite (« FACTURE » / « AVOIR », numéro, émission, échéance, « Avoir
+  sur la facture … »), acheteur (payeur légal) et adresse de livraison si
+  figée, lignes (désignation, référence, quantité en millièmes et unité,
+  prix unitaire HT à cinq décimales au plus, taux, montant HT) sur autant de
+  pages qu'il faut avec l'en-tête des colonnes rappelé, ventilation par taux,
+  totaux, règlement (RUM et ICS quand BG-16 est figé), mentions E0 — les
+  MÊMES phrases que le XML —, bons couverts et livraisons réelles, pied
+  « numéro — vendeur — SIREN — page n / N ». Primitives propres : le module
+  de dessin du mandat est en Helvetica et en géométrie de formulaire, le
+  réutiliser l'aurait couplé à PDF/A.
+- **Fronts** : bouton « Télécharger le PDF » dans le dialogue de la pièce
+  (boutique), dans l'en-tête de la pièce et sur chaque ligne de la carte
+  « Factures émises » (back-office), présent seulement quand le PDF est
+  rendu ; sinon la pièce dit qu'il est en préparation.
+
+**Pas fait dans E3b** : Schematron CEN et veraPDF (téléchargements à
+soumettre à Hugo, § 8.4) ; le verrou d'objet du seau (runbook) ; aucun geste
+de **re-rendu** d'une pièce dont le rendu a échoué (non vérifié : ce que fait
+un rejeu du message durable `invoice.issued` depuis la carte de santé — il
+repasserait aussi par l'e-mail) ; la page
+`/mes-factures` de la boutique (maquette) reste en l'état.
 
 ## 9. Ce que `vitruve` a relevé (v1, 2026-10-08)
 

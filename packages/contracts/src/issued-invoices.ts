@@ -29,6 +29,12 @@ export interface IssuedInvoiceSummaryView {
   readonly totalHtCents: number;
   readonly totalVatCents: number;
   readonly totalTtcCents: number;
+  /**
+   * Le PDF/A-3 Factur-X est-il rendu et rangé (E3b) ? Faux juste après
+   * l'émission, ou si le rendu a échoué (le journal de la pièce dit pourquoi).
+   * Vrai : `GET …/invoices/:invoiceId/pdf` le sert.
+   */
+  readonly documentAvailable: boolean;
 }
 
 /** `GET companies/:companyId/invoices` et `GET admin/companies/:companyId/invoices`. */
@@ -108,6 +114,4 @@ export interface IssuedInvoiceView extends IssuedInvoiceSummaryView {
   };
   /** La RUM figée du prélèvement ; `null` : aucun mandat unique à l'émission. */
   readonly mandateReference: string | null;
-  /** Le document Factur-X est-il rendu ? Faux tant que le PDF/A-3 (E3b) n'existe pas. */
-  readonly documentAvailable: boolean;
 }

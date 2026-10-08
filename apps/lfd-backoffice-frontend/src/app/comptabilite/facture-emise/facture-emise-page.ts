@@ -25,7 +25,9 @@ import {
   type FoldTableColumn,
 } from 'fold-ng';
 
+import { NotifyService } from '../../notify.service';
 import { day, euros, ratePercent, unitPrice } from '../invoice-dossier-format';
+import { downloadIssuedInvoicePdf } from '../issued-invoice-pdf';
 import { IssuedInvoicesService } from '../issued-invoices.service';
 import {
   basisPointsPercent,
@@ -44,7 +46,8 @@ type InvoiceState = 'loading' | 'ready' | 'not-found' | 'error';
  * Elle ne reprend pas `app-dossier-invoice` : celui-ci lit la facture
  * SIMULÉE, qui détaille remises et frais par nature ; une pièce émise ne
  * fige que leurs parts par taux. Les mises en forme, elles, sont les mêmes
- * (`invoice-dossier-format.ts`). Aucun PDF tant que le rendu (E3b) n'existe pas.
+ * (`invoice-dossier-format.ts`). Le PDF/A-3 Factur-X se télécharge d'ici une
+ * fois rendu (E3b) ; tant qu'il ne l'est pas, la pièce le dit.
  */
 @Component({
   selector: 'app-facture-emise-page',
@@ -68,12 +71,14 @@ type InvoiceState = 'loading' | 'ready' | 'not-found' | 'error';
 })
 export class FactureEmisePage {
   private readonly api = inject(IssuedInvoicesService);
+  private readonly notify = inject(NotifyService);
 
   /** Le segment `:id` de la route. */
   readonly id = input.required<string>();
 
   protected readonly state = signal<InvoiceState>('loading');
   protected readonly invoice = signal<IssuedInvoiceView | null>(null);
+  protected readonly downloading = signal(false);
 
   protected readonly title = computed(() => {
     const invoice = this.invoice();
@@ -103,6 +108,16 @@ export class FactureEmisePage {
     effect(() => {
       void this.load(this.id());
     });
+  }
+
+  protected async downloadCurrent(): Promise<void> {
+    const invoice = this.invoice();
+    if (invoice === null) {
+      return;
+    }
+    this.downloading.set(true);
+    await downloadIssuedInvoicePdf(this.api, this.notify, invoice);
+    this.downloading.set(false);
   }
 
   protected async load(id: string): Promise<void> {

@@ -493,3 +493,38 @@ describe('l’e-mail « votre facture » (E6)', () => {
     ).toContain('n’a pas pu prévenir de la facture « FA-2026-000007 »');
   });
 });
+
+describe('le PDF Factur-X de la pièce (E3b)', () => {
+  const document = { subjectLabel: 'FA-2026-000007', payer: CAFE, kind: 'invoice' };
+
+  function ofInvoice(type: string, payload: Record<string, unknown>): FactInput {
+    return { ...entity(type, payload), subjectType: 'invoice', subjectId: 'inv_1' };
+  }
+
+  it('dit le rendu par sa taille, jamais la clé de stockage', () => {
+    const rendered = sentence(
+      ofInvoice('invoice.document_rendered', {
+        ...document,
+        byteCount: 48213,
+        sha256: 'a'.repeat(64),
+      }),
+    );
+
+    expect(rendered).toContain('a rendu le PDF Factur-X de la facture « FA-2026-000007 »');
+    expect(rendered).toContain('48213 octets');
+    expect(rendered).not.toContain('invoices/');
+  });
+
+  it('un avoir se dit avoir ; l’échec dit sa raison', () => {
+    const failed = sentence(
+      ofInvoice('invoice.document_render_failed', {
+        ...document,
+        kind: 'credit_note',
+        failure: 'police illisible',
+      }),
+    );
+
+    expect(failed).toContain('n’a pas pu rendre le PDF Factur-X de l’avoir « FA-2026-000007 »');
+    expect(failed).toContain('police illisible');
+  });
+});

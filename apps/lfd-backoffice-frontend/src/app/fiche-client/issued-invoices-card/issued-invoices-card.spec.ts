@@ -1,9 +1,10 @@
 import { type ComponentFixture, TestBed } from '@angular/core/testing';
 import { provideRouter } from '@angular/router';
 import type { IssuedInvoiceSummaryView } from '@lfd/contracts';
-import { describe, expect, it } from 'vitest';
+import { describe, expect, it, vi } from 'vitest';
 
 import { IssuedInvoicesService } from '../../comptabilite/issued-invoices.service';
+import { NotifyService } from '../../notify.service';
 import { IssuedInvoicesCard } from './issued-invoices-card';
 
 /** Des dates seulement affichées : aucune n'est comparée à l'horloge. */
@@ -18,7 +19,10 @@ const INVOICE: IssuedInvoiceSummaryView = {
   totalHtCents: 10_000,
   totalVatCents: 550,
   totalTtcCents: 10_550,
+  documentAvailable: false,
 };
+
+const pdfAsked: string[] = [];
 
 async function boot(
   read: () => Promise<{ invoices: readonly IssuedInvoiceSummaryView[] }>,
@@ -27,7 +31,17 @@ async function boot(
   TestBed.configureTestingModule({
     providers: [
       provideRouter([]),
-      { provide: IssuedInvoicesService, useValue: { ofCompany: read } },
+      {
+        provide: IssuedInvoicesService,
+        useValue: {
+          ofCompany: read,
+          document: (invoiceId: string) => {
+            pdfAsked.push(invoiceId);
+            return Promise.resolve(new Blob(['%PDF-']));
+          },
+        },
+      },
+      { provide: NotifyService, useValue: { error: () => undefined } },
     ],
   });
   const fixture = TestBed.createComponent(IssuedInvoicesCard);
@@ -71,5 +85,35 @@ describe('IssuedInvoicesCard', () => {
       .nativeElement as HTMLElement;
     expect(host.querySelector('[data-issued-invoices-error]')).not.toBeNull();
     expect(host.querySelector('[data-issued-invoices]')).toBeNull();
+  });
+
+  it('un PDF rendu se télécharge depuis sa ligne, sous le numéro ; pas de bouton sinon', async () => {
+    pdfAsked.splice(0);
+    const saved: string[] = [];
+    vi.spyOn(URL, 'createObjectURL').mockReturnValue('blob:facture');
+    vi.spyOn(URL, 'revokeObjectURL').mockReturnValue(undefined);
+    vi.spyOn(HTMLAnchorElement.prototype, 'click').mockImplementation(function (
+      this: HTMLAnchorElement,
+    ) {
+      saved.push(this.download);
+    });
+    const pending = { ...INVOICE, invoiceId: 'inv_0', number: 'FA-2026-000006' };
+    const rendered = { ...INVOICE, documentAvailable: true };
+    const host = (await boot(() => Promise.resolve({ invoices: [rendered, pending] })))
+      .nativeElement as HTMLElement;
+
+    expect(
+      host.querySelector('[data-issued-invoice="inv_0"] [data-issued-invoice-pdf]'),
+    ).toBeNull();
+    (
+      host.querySelector(
+        '[data-issued-invoice="inv_1"] [data-issued-invoice-pdf]',
+      ) as HTMLButtonElement
+    ).click();
+    await new Promise((resolve) => setTimeout(resolve, 0));
+
+    expect(pdfAsked).toEqual(['inv_1']);
+    expect(saved).toEqual(['FA-2026-000007.pdf']);
+    vi.restoreAllMocks();
   });
 });

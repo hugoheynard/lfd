@@ -46,12 +46,14 @@ export function documentNotes(state: InvoiceState): string {
   ].join("");
 }
 
-function latePenaltiesText(state: InvoiceState): string {
+/** « Pénalités de retard : 10,15 % l'an. » — la même phrase sur le XML et le PDF. */
+export function latePenaltiesText(state: InvoiceState): string {
   const rate = basisPointsPercent(state.mentions.latePenaltyRateBasisPoints).replace(".", ",");
   return `Pénalités de retard : ${rate} % l'an.`;
 }
 
-function recoveryIndemnityText(state: InvoiceState): string {
+/** « Indemnité forfaitaire pour frais de recouvrement : 40,00 €. » */
+export function recoveryIndemnityText(state: InvoiceState): string {
   const amount = centsAmount(state.mentions.recoveryIndemnityCents).replace(".", ",");
   return `Indemnité forfaitaire pour frais de recouvrement : ${amount} €.`;
 }
@@ -60,7 +62,7 @@ function recoveryIndemnityText(state: InvoiceState): string {
  * La catégorie d'opération. L'option débits n'est jamais prise
  * (`vatOnDebits: false`) : rien ne l'annonce, faute de mention à porter.
  */
-function operationText(state: InvoiceState): string {
+export function operationText(state: InvoiceState): string {
   return `Catégorie d'opération : ${OPERATION_LABELS[state.mentions.operationCategory]}.`;
 }
 
@@ -83,7 +85,8 @@ function note(content: string, subject: string): string {
   return `<ram:IncludedNote>${textElement("ram:Content", content)}${textElement("ram:SubjectCode", subject)}</ram:IncludedNote>`;
 }
 
-function frenchDate(isoDate: string): string {
+/** `AAAA-MM-JJ` → `JJ/MM/AAAA`. */
+export function frenchDate(isoDate: string): string {
   const [year, month, day] = isoDate.split("-");
   return `${day ?? ""}/${month ?? ""}/${year ?? ""}`;
 }

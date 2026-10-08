@@ -1,3 +1,7 @@
+import { Buffer } from "node:buffer";
+
+import { CustomerDocumentStore } from "../../../../../platform/storage/customer-document-store.js";
+import type { StoredDocument } from "../../../../../platform/storage/document-store.js";
 import type { Invoice } from "../../../domain/entities/invoice.js";
 import { InvoicePeriodsReader } from "../../../domain/ports/invoice-periods.reader.js";
 import { InvoiceReader } from "../../../domain/ports/invoice.reader.js";
@@ -56,5 +60,28 @@ export class FixedRoles extends UnpaidAccessReader {
   }
   roleOf(userId: string, companyId: string): Promise<UnpaidAccessRole | null> {
     return Promise.resolve(this.roles.get(`${userId}:${companyId}`) ?? null);
+  }
+}
+
+/** Le seau des pièces gardées, en mémoire — sans `delete`, comme le port. */
+export class MemoryKeptStore extends CustomerDocumentStore {
+  readonly objects = new Map<string, StoredDocument>();
+  readonly saved: string[] = [];
+
+  save(key: string, document: StoredDocument): Promise<string> {
+    this.saved.push(key);
+    this.objects.set(key, document);
+    return Promise.resolve(key);
+  }
+
+  read(key: string): Promise<Buffer> {
+    const found = this.objects.get(key);
+    return found === undefined
+      ? Promise.reject(new Error(`objet absent : ${key}`))
+      : Promise.resolve(Buffer.from(found.bytes));
+  }
+
+  readIfPresent(key: string): Promise<Buffer | null> {
+    return Promise.resolve(this.objects.get(key)?.bytes ?? null);
   }
 }

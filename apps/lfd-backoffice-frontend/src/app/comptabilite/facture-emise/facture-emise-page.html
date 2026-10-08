@@ -9,6 +9,18 @@
   @if (invoice(); as bill) {
     <fold-badge titleBadge variant="success" radius="pill" content="Émise" />
   }
+  @if (invoice()?.documentAvailable) {
+    <button
+      pageActions
+      foldButton
+      icon="download"
+      data-invoice-pdf
+      [loading]="downloading()"
+      (click)="downloadCurrent()"
+    >
+      Télécharger le PDF
+    </button>
+  }
 
   @switch (state()) {
     @case ('loading') {
@@ -40,7 +52,11 @@
             @if (bill.correctedInvoiceNumber; as corrected) {
               — corrige la facture {{ corrected }}
             }
-            . Le document Factur-X n’est pas encore rendu&nbsp;: la pièce fait foi par ses données.
+            .
+            @if (!bill.documentAvailable) {
+              Le PDF Factur-X n’est pas encore rendu&nbsp;: il suit l’émission de quelques minutes,
+              et le journal de la pièce dit pourquoi s’il manque.
+            }
           </fold-callout>
 
           <div class="parties">

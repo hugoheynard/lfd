@@ -151,8 +151,12 @@ describe("InvoiceIssuer — numéroter, écrire, journaliser en une transaction"
         }),
     });
 
-    // Q3 ne prévient qu'à l'émission d'une facture : l'avoir n'écrit aucun fait durable.
-    expect(h.durable.facts.map((fact) => fact.key)).toEqual([`invoice.issued:${corrected.id}`]);
+    // Q3 ne prévient qu'à l'émission d'une facture : l'avoir n'écrit pas
+    // `invoice.issued`, mais le sien, qui fait rendre son PDF (E3b).
+    expect(h.durable.facts.map((fact) => fact.key)).toEqual([
+      `invoice.issued:${corrected.id}`,
+      "invoice.credit_note_issued:cn_1",
+    ]);
     expect(h.events.traced[1]?.journalFact()).toMatchObject({
       type: "invoice.credit_note_issued",
       subjectId: "cn_1",

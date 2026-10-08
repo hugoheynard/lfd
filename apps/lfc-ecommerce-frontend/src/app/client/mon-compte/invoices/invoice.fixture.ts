@@ -15,6 +15,7 @@ export const SEPTEMBER: IssuedInvoiceSummaryView = {
   totalHtCents: 10_000,
   totalVatCents: 550,
   totalTtcCents: 10_550,
+  documentAvailable: false,
 };
 
 export const CREDIT_NOTE: IssuedInvoiceSummaryView = {

@@ -79,11 +79,14 @@ export const BILLING_STATEMENT_FACT_TYPES = {
 /**
  * Les faits de la facture émise (plan `plan-emission-de-la-facture.md`, E2) :
  * une facture, un avoir. Aucun autre ne la change — une pièce émise ne
- * change plus ; « prévenu » et « non prévenu » (E6) disent l'e-mail parti.
+ * change plus ; « prévenu » et « non prévenu » (E6) disent l'e-mail parti,
+ * « rendu » et « rendu en échec » (E3b) son PDF/A-3.
  */
 export const INVOICE_FACT_TYPES = {
   issued: "invoice.issued",
   creditNoteIssued: "invoice.credit_note_issued",
   noticeSent: "invoice.notice_sent",
   noticeFailed: "invoice.notice_failed",
+  documentRendered: "invoice.document_rendered",
+  documentRenderFailed: "invoice.document_render_failed",
 } as const satisfies Readonly<Record<string, JournalFactType>>;

@@ -68,6 +68,7 @@ function summaryOf(invoice: Invoice, period: string | null): IssuedInvoiceSummar
     totalHtCents: state.vat.taxableBaseCents,
     totalVatCents: state.vat.vatCents,
     totalTtcCents: state.vat.totalCents,
+    documentAvailable: state.documentKey !== null,
   };
 }
 
@@ -121,6 +122,5 @@ function detailOf(invoice: Invoice, period: string | null): IssuedInvoiceView {
       earlyPaymentDiscount: mentions.earlyPaymentDiscount,
     },
     mandateReference: state.paymentMeans?.mandateReference ?? null,
-    documentAvailable: state.documentKey !== null,
   };
 }

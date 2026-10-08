@@ -10,6 +10,7 @@ import {
 } from '@angular/core';
 import type { IssuedInvoiceView } from '@lfd/contracts';
 import {
+  FoldButtonComponent,
   FoldCalloutComponent,
   FoldLoadingStateComponent,
   FoldPanelBodyComponent,
@@ -22,6 +23,7 @@ import { ClientInvoices } from '../../../client-invoices.service';
 import { ClientLocale } from '../../../client-locale.service';
 import { ClientCopyService, fill } from '../../../copy/client-copy.service';
 import { formatCents, formatRate } from '../../../format-money';
+import { downloadBlob } from '../../../mes-commandes/download-blob';
 import { dialogSide } from '../../../panel-side';
 import {
   basisPoints,
@@ -44,13 +46,14 @@ export interface InvoiceDialogData {
  * commandes facturées — tels que la pièce les a figés. Rien n'est recalculé.
  *
  * Un clic sur une facture ouvre ce dialogue directement (règle « Saisir » de
- * l'app : pas de panneau intermédiaire). Pas de PDF tant que le rendu (E3b)
- * n'existe pas, et le dialogue le dit.
+ * l'app : pas de panneau intermédiaire). Le PDF/A-3 Factur-X se télécharge
+ * d'ici une fois rendu (E3b) ; tant qu'il ne l'est pas, le dialogue le dit.
  */
 @Component({
   selector: 'app-invoice-dialog',
   changeDetection: ChangeDetectionStrategy.OnPush,
   imports: [
+    FoldButtonComponent,
     FoldCalloutComponent,
     FoldLoadingStateComponent,
     FoldPanelBodyComponent,
@@ -85,6 +88,8 @@ export class InvoiceDialog {
 
   protected readonly invoice = signal<IssuedInvoiceView | null>(null);
   protected readonly failed = signal(false);
+  protected readonly downloading = signal(false);
+  protected readonly downloadFailed = signal(false);
 
   protected readonly copy = computed(() => this.t().account.invoices);
   protected readonly title = computed(() => {
@@ -123,6 +128,20 @@ export class InvoiceDialog {
 
   protected means(reference: string | null): string {
     return reference === null ? '—' : fill(this.copy().directDebit, { rum: reference });
+  }
+
+  /** Télécharge le PDF rangé, nommé d'après le numéro de la pièce. */
+  protected async download(invoice: IssuedInvoiceView): Promise<void> {
+    this.downloading.set(true);
+    this.downloadFailed.set(false);
+    try {
+      const blob = await this.invoices.document(this.data().companyId, invoice.invoiceId);
+      downloadBlob(`${invoice.number}.pdf`, blob);
+    } catch {
+      this.downloadFailed.set(true);
+    } finally {
+      this.downloading.set(false);
+    }
   }
 
   private async load(companyId: string, invoiceId: string): Promise<void> {

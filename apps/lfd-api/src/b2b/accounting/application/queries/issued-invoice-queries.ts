@@ -29,3 +29,17 @@ export class ListCompanyInvoicesQuery {
 export class GetIssuedInvoiceQuery {
   constructor(readonly invoiceId: string) {}
 }
+
+/** Le PDF rangé d'une facture de « Mes factures », adressée à cette société (E3b). */
+export class GetMyCompanyInvoiceDocumentQuery {
+  constructor(
+    readonly actorUserId: string,
+    readonly companyId: string,
+    readonly invoiceId: string,
+  ) {}
+}
+
+/** Le PDF rangé d'une pièce, depuis la comptabilité du back-office (E3b). */
+export class GetIssuedInvoiceDocumentQuery {
+  constructor(readonly invoiceId: string) {}
+}

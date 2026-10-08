@@ -2,6 +2,7 @@ import { Inject, Injectable } from "@nestjs/common";
 
 import { UnitOfWork } from "../../../../platform/database/unit-of-work.js";
 import { DomainEventPublisher } from "../../../../platform/events/domain-event-publisher.js";
+import type { InvoiceIssuedMailData } from "../../../../platform/mailer/invoice-issued-mail.js";
 import { MAILER, type B2bMailer } from "../../../../platform/mailer/mailer.tokens.js";
 import { Clock } from "../../../../platform/time/clock.js";
 import type { Invoice } from "../../domain/entities/invoice.js";
@@ -15,10 +16,8 @@ import {
   invoiceNoticeRecipients,
   type InvoiceRecipient,
 } from "../../domain/services/invoice-notice-recipients.js";
-import {
-  invoiceNoticeContent,
-  type InvoiceNoticeContent,
-} from "../../domain/services/invoice-notice-wording.js";
+import { invoiceNoticeContent } from "../../domain/services/invoice-notice-wording.js";
+import type { InvoiceDocument } from "../invoice-document-support.js";
 
 /** Longueur gardée d'un refus du fournisseur : un témoin, pas une pile. */
 const MAX_FAILURE_LENGTH = 500;
@@ -42,9 +41,9 @@ const NO_RECIPIENT =
  * l'adresse : un second passage ne fait pas partir de second message chez
  * Resend, et ajouter un destinataire n'empêche pas les autres de partir.
  *
- * ⚠️ **Pas de PDF joint** tant que le rendu PDF/A-3 (E3b) n'existe pas. Le
- * point d'extension est `attachmentsOf` : il rendra le document Factur-X
- * déposé (`documentKey`), et le gabarit n'a rien à changer.
+ * Le PDF/A-3 Factur-X (E3b) est reçu de l'abonné, qui l'a fait rendre
+ * avant : il part en pièce jointe. `null` (rendu en échec, journalisé) :
+ * l'e-mail part sans.
  */
 @Injectable()
 export class InvoiceNoticeSender {
@@ -61,7 +60,10 @@ export class InvoiceNoticeSender {
   ) {}
 
   /** @returns les destinataires prévenus ; `null` si rien n'était à envoyer (avoir, facture absente). */
-  async send(invoiceId: string): Promise<readonly InvoiceRecipient[] | null> {
+  async send(
+    invoiceId: string,
+    document: InvoiceDocument | null,
+  ): Promise<readonly InvoiceRecipient[] | null> {
     const invoice = await this.invoices.byId(invoiceId);
     if (invoice === null) {
       return null;
@@ -78,8 +80,15 @@ export class InvoiceNoticeSender {
       return null;
     }
     const recipients = await this.recipientsOf(invoice);
+    const data: InvoiceIssuedMailData = {
+      ...content,
+      document:
+        document === null
+          ? null
+          : { fileName: document.fileName, pdfBase64: document.bytes.toString("base64") },
+    };
     const failure =
-      recipients.length === 0 ? NO_RECIPIENT : await this.deliver(invoice, content, recipients);
+      recipients.length === 0 ? NO_RECIPIENT : await this.deliver(invoice, data, recipients);
     await this.uow.run(() =>
       this.events.publishTraced(
         new InvoiceNoticeEvent(invoice, recipients.length, failure, this.clock.now()),
@@ -102,7 +111,7 @@ export class InvoiceNoticeSender {
   /** @returns `null` si le fournisseur a tout accepté, sinon ses refus. */
   private async deliver(
     invoice: Invoice,
-    content: InvoiceNoticeContent,
+    data: InvoiceIssuedMailData,
     recipients: readonly InvoiceRecipient[],
   ): Promise<string | null> {
     const refusals: string[] = [];
@@ -111,7 +120,7 @@ export class InvoiceNoticeSender {
         await this.mailer.send({
           to: recipient.email,
           template: "customer.invoice-issued",
-          data: content,
+          data,
           idempotencyKey: `invoice.notice:${invoice.id}:${recipient.email.toLowerCase()}`,
         });
       } catch (cause: unknown) {

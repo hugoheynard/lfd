@@ -11,7 +11,9 @@ export const INVOICE_ISSUED = "invoice.issued";
  * `invoice.issued:<invoiceId>`, une pièce ne s'émet qu'une fois.
  *
  * Un avoir n'en publie pas : Q3 ne demande de prévenir qu'à l'émission de la
- * facture. Le rendu Factur-X (E3b) écoutera le même fait.
+ * facture ; il a son propre fait (`CreditNoteIssuedFact`, E3b). Le rendu
+ * Factur-X de la facture se fait dans l'abonné de ce fait-ci, AVANT
+ * l'e-mail, pour que celui-ci parte avec sa pièce jointe.
  */
 export class InvoiceIssuedFact implements DurableEvent {
   constructor(readonly invoiceId: string) {}

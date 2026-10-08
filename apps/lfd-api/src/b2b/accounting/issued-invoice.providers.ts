@@ -1,22 +1,29 @@
 import type { Provider } from "@nestjs/common";
 
 import { AppConfig } from "../../platform/config/app-config.js";
+import { RenderCreditNoteDocument } from "./application/handlers/render-credit-note-document.handler.js";
 import { SendInvoiceNotice } from "./application/handlers/send-invoice-notice.handler.js";
+import { GetIssuedInvoiceDocumentHandler } from "./application/queries/get-issued-invoice-document.handler.js";
 import { GetIssuedInvoiceHandler } from "./application/queries/get-issued-invoice.handler.js";
+import { GetMyCompanyInvoiceDocumentHandler } from "./application/queries/get-my-company-invoice-document.handler.js";
 import { GetMyCompanyInvoiceHandler } from "./application/queries/get-my-company-invoice.handler.js";
 import { ListCompanyInvoicesHandler } from "./application/queries/list-company-invoices.handler.js";
 import { ListMyCompanyInvoicesHandler } from "./application/queries/list-my-company-invoices.handler.js";
+import { InvoiceDocumentRenderer } from "./application/services/invoice-document-renderer.js";
 import { InvoiceNoticeSender } from "./application/services/invoice-notice-sender.js";
+import { InvoiceFontSource } from "./domain/ports/invoice-font-source.js";
 import { InvoiceMailOrigins } from "./domain/ports/invoice-mail-origins.js";
 import { InvoicePeriodsReader } from "./domain/ports/invoice-periods.reader.js";
 import { InvoiceSiteContactsReader } from "./domain/ports/invoice-site-contacts.reader.js";
+import { DiskInvoiceFontSource } from "./infrastructure/disk-invoice-font-source.js";
 import { PrismaInvoicePeriodsReader } from "./infrastructure/prisma-invoice-periods.reader.js";
 import { PrismaInvoiceSiteContactsReader } from "./infrastructure/prisma-invoice-site-contacts.reader.js";
 
 /**
- * Les providers du lot E6 (plan `plan-emission-de-la-facture.md`) : prévenir
- * à l'émission, « Mes factures », l'onglet de la fiche. À part du module,
- * qui dépassait déjà la taille d'un fichier.
+ * Les providers des lots E6 et E3b (plan `plan-emission-de-la-facture.md`) :
+ * prévenir à l'émission, « Mes factures », l'onglet de la fiche, et le PDF/A-3
+ * Factur-X de chaque pièce. À part du module, qui dépassait déjà la taille
+ * d'un fichier.
  */
 export const ISSUED_INVOICE_PROVIDERS: readonly Provider[] = [
   { provide: InvoicePeriodsReader, useClass: PrismaInvoicePeriodsReader },
@@ -28,8 +35,13 @@ export const ISSUED_INVOICE_PROVIDERS: readonly Provider[] = [
       clientBaseUrl: () => config.clientBaseUrl(),
     }),
   },
+  { provide: InvoiceFontSource, useClass: DiskInvoiceFontSource },
+  InvoiceDocumentRenderer,
   InvoiceNoticeSender,
   SendInvoiceNotice,
+  RenderCreditNoteDocument,
+  GetIssuedInvoiceDocumentHandler,
+  GetMyCompanyInvoiceDocumentHandler,
   ListMyCompanyInvoicesHandler,
   GetMyCompanyInvoiceHandler,
   ListCompanyInvoicesHandler,

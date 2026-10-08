@@ -8,9 +8,9 @@ import { sanitiseSubject, type LayoutInput, type LayoutRow, type RenderedMail } 
  * figurent sur la facture. Tout est déjà mis en forme : le gabarit ne
  * calcule rien.
  *
- * ⚠️ **Aucune pièce jointe** tant que le PDF/A-3 (E3b) n'existe pas : la
- * facture se consulte dans « Mes factures ». Le jour où le rendu existe,
- * l'abonné ajoutera `attachments` à l'envoi — le gabarit n'a rien à changer.
+ * Le PDF/A-3 Factur-X (E3b) part en pièce jointe quand il est rendu : l'envoi
+ * attend le rendu. `document: null` — un rendu en échec, journalisé — laisse
+ * partir l'e-mail sans pièce, et la facture reste dans « Mes factures ».
  */
 export interface InvoiceIssuedMailData {
   readonly invoiceNumber: string;
@@ -29,6 +29,15 @@ export interface InvoiceIssuedMailData {
   readonly paymentMeans: string | null;
   /** Le lien vers « Mes factures » ; vide quand l'origine de la boutique n'est pas connue. */
   readonly invoicesUrl: string;
+  /** Le PDF/A-3 Factur-X de la facture, ou `null` : rendu en échec, l'e-mail part sans. */
+  readonly document: InvoiceMailDocument | null;
+}
+
+/** La pièce jointe : le nom remis au client et les octets du PDF rangé. */
+export interface InvoiceMailDocument {
+  /** `FA-2026-000001.pdf`. */
+  readonly fileName: string;
+  readonly pdfBase64: string;
 }
 
 /** La coquille client, prêtée par le registre. */
@@ -57,6 +66,17 @@ export function renderInvoiceIssuedMail(
         "Cette facture est consultable à tout moment dans votre espace client, rubrique « Mes factures ». " +
         "Pour toute question, répondez à ce message.",
     }),
+    ...(data.document === null
+      ? {}
+      : {
+          attachments: [
+            {
+              filename: data.document.fileName,
+              contentBase64: data.document.pdfBase64,
+              contentType: "application/pdf",
+            },
+          ],
+        }),
   };
 }
 
@@ -64,7 +84,10 @@ function bodyOf(data: InvoiceIssuedMailData): string {
   const period = data.period === null ? "" : ` pour les commandes de ${data.period}`;
   return (
     `Bonjour,\n\n${data.sellerName} a émis la facture ${data.invoiceNumber}` +
-    ` adressée à ${data.buyerName}${period}, d'un montant de ${data.total} TTC.`
+    ` adressée à ${data.buyerName}${period}, d'un montant de ${data.total} TTC.` +
+    (data.document === null
+      ? ""
+      : "\n\nElle est jointe à ce message au format PDF Factur-X : votre logiciel comptable peut en lire les données.")
   );
 }
 

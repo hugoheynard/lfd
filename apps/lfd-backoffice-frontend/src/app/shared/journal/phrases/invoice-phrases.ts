@@ -18,7 +18,7 @@ import {
 
 /**
  * **La facture émise et l'avoir** (plan
- * `documentation/comptabilite/facturation/plan-emission-de-la-facture.md`, E2) — famille
+ * `documentation/comptabilite/facturation/plan-emission-de-la-facture.md`, E2, E6, E3b) — famille
  * `accounting` du catalogue. À part de `accounting-phrases.ts`, qui dépasse
  * déjà la taille d'un fichier.
  */
@@ -122,9 +122,50 @@ const noticeFailed: Phrase = (fact) =>
     [...NOTICE_KEYS, 'failure'],
   );
 
+/** « la pièce « FA-… » » — une facture ou un avoir, selon `kind` (E3b). */
+function document(fact: PhraseFact): Segment[] {
+  return piece(fact, fact.payload['kind'] === 'credit_note' ? CREDIT_NOTE : INVOICE);
+}
+
+const DOCUMENT_KEYS = ['subjectLabel', 'payer', 'kind'];
+
+/** « … a rendu le PDF de la facture « FA-… » au client « X » (48 213 octets) ». */
+const documentRendered: Phrase = (fact) =>
+  byActor(
+    fact,
+    [
+      text('a rendu le PDF Factur-X de '),
+      ...document(fact),
+      text(' '),
+      ...cite(FOR_CLIENT, fact.payload['payer']),
+      text(' ('),
+      value(`${String(count(fact.payload['byteCount']) ?? '?')} octets`),
+      text(')'),
+    ],
+    [...DOCUMENT_KEYS, 'byteCount', 'sha256'],
+  );
+
+/** « … n'a pas pu rendre le PDF de la facture « FA-… » … : « raison » ». */
+const documentRenderFailed: Phrase = (fact) =>
+  byActor(
+    fact,
+    [
+      text('n’a pas pu rendre le PDF Factur-X de '),
+      ...document(fact),
+      text(' '),
+      ...cite(FOR_CLIENT, fact.payload['payer']),
+      text(' : « '),
+      name(optional(fact.payload['failure']) ?? '—'),
+      text(' »'),
+    ],
+    [...DOCUMENT_KEYS, 'failure'],
+  );
+
 export const INVOICE_PHRASES = {
   'invoice.issued': invoiceIssued,
   'invoice.credit_note_issued': creditNoteIssued,
   'invoice.notice_sent': noticeSent,
   'invoice.notice_failed': noticeFailed,
+  'invoice.document_rendered': documentRendered,
+  'invoice.document_render_failed': documentRenderFailed,
 } as const satisfies Partial<Record<JournalFactType, Phrase>>;

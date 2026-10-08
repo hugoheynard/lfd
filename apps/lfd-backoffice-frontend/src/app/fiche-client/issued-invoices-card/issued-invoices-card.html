@@ -29,6 +29,20 @@
             }
           </span>
           <strong class="amount">{{ euros(invoice.totalTtcCents) }}</strong>
+          @if (invoice.documentAvailable) {
+            <button
+              foldButton
+              size="sm"
+              emphasis="soft"
+              icon="download"
+              data-issued-invoice-pdf
+              [attr.aria-label]="'Télécharger le PDF de ' + invoice.number"
+              [loading]="downloading() === invoice.invoiceId"
+              (click)="download(invoice)"
+            >
+              PDF
+            </button>
+          }
         </p>
       } @empty {
         <p class="empty" data-issued-invoices-empty>

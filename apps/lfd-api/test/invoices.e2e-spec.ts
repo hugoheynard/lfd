@@ -12,6 +12,11 @@
  * contenu d'une facture est le sujet d'E1, ici on éprouve sa persistance. Les
  * dates d'émission ne sont comparées qu'entre elles, jamais à l'horloge.
  */
+import { InvoiceFontsUnavailableError } from "../src/b2b/accounting/domain/errors/invoice-document-errors.js";
+import {
+  InvoiceFontSource,
+  type InvoicePdfFonts,
+} from "../src/b2b/accounting/domain/ports/invoice-font-source.js";
 import { Invoice } from "../src/b2b/accounting/domain/entities/invoice.js";
 import {
   breakdownOf,
@@ -41,12 +46,28 @@ const stubAdminVerifier = {
     Promise.resolve({ subject: "staff-e2e", scopes: [] }),
 };
 
+/**
+ * Le rendu PDF (E3b) suit chaque émission en tâche de fond et pose
+ * `document_key` : il courrait ici contre les specs qui posent le document
+ * à la main pour éprouver la base. Cette suite éprouve la PIÈCE ; le rendu
+ * l'est dans `issued-invoices.e2e-spec.ts`. Des polices refusées le font
+ * échouer, journalisé, sans rien attacher.
+ */
+class NoFonts extends InvoiceFontSource {
+  load(): Promise<InvoicePdfFonts> {
+    return Promise.reject(new InvoiceFontsUnavailableError("fonts (suite invoices.e2e)", null));
+  }
+}
+
 let ctx: E2eContext;
 let seq = 0;
 
 beforeAll(async () => {
   ctx = await bootstrapE2e({
-    overrides: [{ token: AdminTokenVerifier, value: stubAdminVerifier }],
+    overrides: [
+      { token: AdminTokenVerifier, value: stubAdminVerifier },
+      { token: InvoiceFontSource, value: new NoFonts() },
+    ],
   });
 });
 

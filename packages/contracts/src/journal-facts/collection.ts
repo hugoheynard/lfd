@@ -57,6 +57,17 @@ const invoiceNotice = {
 };
 
 /**
+ * Le PDF/A-3 Factur-X d'une pièce (plan `plan-emission-de-la-facture.md`,
+ * E3b). Sujet : `invoice`. Jamais la clé de stockage : sa taille, son
+ * empreinte, et s'il s'agit d'une facture ou d'un avoir.
+ */
+const invoiceDocument = {
+  subjectLabel: subjectLabel(),
+  payer: named("company"),
+  kind: z.enum(["invoice", "credit_note"]),
+};
+
+/**
  * L'avis de prélèvement d'un payeur (plan
  * `documentation/comptabilite/prelevement/prelevement-automatique.md`, PA2). Sujet :
  * `collection_notice`, nommé « Avis <payeur> ». Jamais l'adresse du
@@ -150,6 +161,12 @@ export const COLLECTION_FACTS = {
    * (`recipientCount` 0), ou un refus du fournisseur. `failure` dit lequel.
    */
   "invoice.notice_failed": fact(payload({ ...invoiceNotice, failure: z.string() })),
+  /** Le PDF/A-3 est rendu, rangé et attaché à la pièce — une seule fois. */
+  "invoice.document_rendered": fact(
+    payload({ ...invoiceDocument, byteCount: count(), sha256: z.string() }),
+  ),
+  /** Le rendu a échoué : la pièce reste sans PDF, `failure` dit pourquoi. */
+  "invoice.document_render_failed": fact(payload({ ...invoiceDocument, failure: z.string() })),
   /** L'avis est mis en file, dans la transaction du lot — pas encore envoyé. */
   "collection.notice_queued": fact(payload(notice)),
   /** Aucune adresse : ni contact de facturation, ni détenteur. Le lot ne se dépose pas. */

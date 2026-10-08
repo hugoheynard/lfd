@@ -18,12 +18,15 @@ import {
 
 import { day, euros } from '../../comptabilite/invoice-dossier-format';
 import { kindLabel, periodLabel } from '../../comptabilite/issued-invoice-format';
+import { downloadIssuedInvoicePdf } from '../../comptabilite/issued-invoice-pdf';
 import { IssuedInvoicesService } from '../../comptabilite/issued-invoices.service';
+import { NotifyService } from '../../notify.service';
 
 /**
  * **Les factures émises** de la société — factures et avoirs adressés à ce
  * payeur légal (plan `plan-emission-de-la-facture.md`, E6), les plus
- * récentes d'abord ; chacune mène à sa pièce dans la comptabilité.
+ * récentes d'abord ; chacune mène à sa pièce dans la comptabilité, et son
+ * PDF/A-3 Factur-X se télécharge d'ici une fois rendu (E3b).
  *
  * Un site qui suit la facturation de son principal n'a pas de factures à
  * lui : elles sont adressées au principal, et la carte le dit plutôt que de
@@ -46,9 +49,12 @@ export class IssuedInvoicesCard {
   readonly companyId = input.required<string>();
 
   private readonly service = inject(IssuedInvoicesService);
+  private readonly notify = inject(NotifyService);
 
   protected readonly invoices = signal<readonly IssuedInvoiceSummaryView[] | null>(null);
   protected readonly loadError = signal(false);
+  /** La pièce dont le PDF est en cours de téléchargement. */
+  protected readonly downloading = signal<string | null>(null);
 
   protected readonly euros = euros;
   protected readonly day = day;
@@ -60,6 +66,12 @@ export class IssuedInvoicesCard {
       const id = this.companyId();
       untracked(() => void this.load(id));
     });
+  }
+
+  protected async download(invoice: IssuedInvoiceSummaryView): Promise<void> {
+    this.downloading.set(invoice.invoiceId);
+    await downloadIssuedInvoicePdf(this.service, this.notify, invoice);
+    this.downloading.set(null);
   }
 
   protected retry(): void {
