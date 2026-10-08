@@ -25,6 +25,8 @@
 | A15 | Export des mandats | Valeurs des colonnes F/G/H du modèle de la banque, non confirmées ?                          | `JJ/MM/AAAA`, `RCUR`/`OOFF`, `CORE`/`B2B`, dans **un seul module** de traduction.                                                                                                    | Les conventions françaises les plus courantes ; la banque répondra (question-banque).                                                                    | Une ligne par valeur.                                                    |
 | A16 | Sécurité           | Le XML du lot (IBAN en clair) se télécharge avec la seule **lecture** comptable. Resserrer ? | **Pas touché** : l'export des mandats exige l'écriture ; le XML du lot reste tel quel.                                                                                               | Changer un droit servi en ton absence pourrait bloquer la comptabilité ; c'est ta décision.                                                              | `@RequirePermission("b2b_accounting:write")` sur `file.xml` (une ligne). |
 | A17 | Export des mandats | Les mandats repris d'un autre créancier (ICS d'origine) ?                                    | **Écartés et nommés** à l'écran.                                                                                                                                                     | Les mettre sous notre ICS serait faux ; les colonnes « mandat migré » demandent la banque.                                                               | Remplir L/M quand la banque aura dit comment.                            |
+| A18 | R1                 | Un remboursement refusé (devise, plafond, montant changé) : quelle réponse au webhook ?      | **200**, refus au journal et à la cloche.                                                                                                                                            | Un 4xx ferait réessayer Stripe trois jours pour la même réponse.                                                                                         | —                                                                        |
+| A19 | R1                 | Le remboursement d'une commande annulée puis encaissée (cas `RingRefundDue`) ?               | **Noté**, le statut de règlement ne bouge pas (seul `paid` ↔ `refunded` bascule).                                                                                                    | C'est le cas réel le plus fréquent ; son statut n'est pas `paid`.                                                                                        | Une bascule dédiée.                                                      |
 
 ## La file des chantiers (ordre de passage)
 
@@ -40,3 +42,14 @@ Un lot à la fois, chacun vérifié puis commité avant le suivant.
 8. **PA5** — les retours bancaires (`pain.002`, `camt.054`), sur la norme.
 9. **Fidélité** — ce qui ne dépend pas du cabinet.
 10. **Docs** — les plans bâtis deviennent des docs d'état (blocage et liens de paiement, mentions du mandat, restes du mandat, simulateur, le prélèvement suit la facture, bons et facture).
+
+## À vérifier avant le push (lecteur-de-migrations, 2026-10-08)
+
+- `20261008170000` pose un `CHECK` sur `collection_batch` (`staff` ⇒ fiche) :
+  vérifier que les lots déjà en production le respectent.
+- `20261008180000` pose trois `CHECK` sur `legal_entities` : vérifier les
+  valeurs en production.
+- `20261008220000` prend un court verrou d'écriture sur `orders`
+  (`lock_timeout` 5 s) : pousser hors du pic de commandes.
+- Abonner le webhook Stripe de production à `refund.created`, `refund.updated`,
+  `refund.failed` (runbook).

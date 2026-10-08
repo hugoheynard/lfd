@@ -78,4 +78,5 @@ export const LIVE_PICKUP: CustomerOrderView = {
   confirmedAt: null,
   readyAt: null,
   handedOverAt: null,
+  refundedCents: 0,
 };

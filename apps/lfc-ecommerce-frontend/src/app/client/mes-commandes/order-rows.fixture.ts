@@ -22,6 +22,7 @@ export const ROWS: readonly HistoryOrder[] = [
     status: 'done',
     // Portée au compte : c'est la facture du mois qui la règle.
     payment: 'account',
+    refund: { kind: 'none' },
     origin: '',
     org: "La Folie Douce Val d'Isère",
   },
@@ -38,6 +39,8 @@ export const ROWS: readonly HistoryOrder[] = [
     status: 'delivered',
     payment: 'card',
     // Saisie par l'équipe : la seule ligne que le client n'a pas posée lui-même.
+    // Remboursée en partie : la ligne « Remboursement » paraît.
+    refund: { kind: 'partial', refundedCents: 1_250 },
     origin: 'phone',
     org: "La Folie Douce Val d'Isère",
   },
@@ -52,6 +55,7 @@ export const ROWS: readonly HistoryOrder[] = [
     voucherDiscountCents: 0,
     status: 'done',
     payment: 'account',
+    refund: { kind: 'none' },
     origin: 'recurring',
     org: "La Folie Douce Val d'Isère",
   },

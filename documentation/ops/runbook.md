@@ -790,6 +790,42 @@ payer avec une carte de test (en mode test), puis relire la liste — le lien do
 dire que la session ne porte pas la métadonnée `paymentLinkId` : ce n'est pas
 une page ouverte par le back-office.
 
+## Abonner le webhook Stripe aux remboursements
+
+> 📐 **À faire, pas fait** (2026-10-08, lot R1 de
+> [`plan-facture-carte-et-remboursements.md`](../comptabilite/facturation/plan-facture-carte-et-remboursements.md)).
+> Le code est prêt ; l'abonnement de l'endpoint de production n'a pas été posé.
+
+Un remboursement se fait **dans le tableau de bord Stripe** ; le backend le
+**constate** (table `order_refund`, règlement `refunded` au total, journal).
+Comme pour les liens libres, un événement non abonné ne produit **aucune
+erreur** : la commande reste « payée » alors que l'argent est rendu.
+
+Le geste, dans le tableau de bord Stripe (Développeurs → Webhooks), sur
+l'endpoint **déjà branché** sur `POST /payments/webhook` — jamais un second
+(il aurait son propre secret, et chacun de ses appels serait refusé en `400`).
+
+Ajouter ces **trois** événements à ceux déjà cochés :
+
+| Événement        | Ce qu'il fait chez nous                                                  |
+| ---------------- | ------------------------------------------------------------------------ |
+| `refund.created` | note le remboursement (souvent `pending`, parfois déjà réussi)           |
+| `refund.updated` | change son statut : réussi, annulé, action requise                       |
+| `refund.failed`  | un remboursement échoue — s'il était réussi, la commande redevient payée |
+
+⚠️ **Ne pas compter sur `charge.refunded`** : depuis l'API Stripe 2022-11-15,
+il ne porte plus la liste des remboursements, et le backend l'ignore.
+
+**Vérifier** (mode test) : payer une commande par carte de test, la
+rembourser en partie depuis Stripe, puis ouvrir sa fiche au back-office — la
+carte « Remboursements » montre le montant, « Remboursé ». Rembourser le reste :
+le règlement passe « Remboursée ». Dans Stripe, l'onglet de l'endpoint montre
+les livraisons en `200`. **Un `200` répond aussi à un refus** (devise autre que
+l'euro, cumul au-delà du total) : il se lit alors à la cloche du back-office et
+au journal (« … n'a pas été noté »), jamais en erreur chez Stripe — un réessai
+ne le rendrait pas plus vrai. Un remboursement sur un paiement qu'aucune
+commande ne porte (un lien libre) sonne aussi la cloche, sans rien écrire.
+
 ## Verrouiller les PDF des factures pour dix ans
 
 > 📐 **À faire, pas fait** (2026-10-08, lot E3b de

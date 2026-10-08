@@ -62,6 +62,8 @@ export function orderView(
     confirmedAt: null,
     readyAt: null,
     handedOverAt: null,
+    refunds: [],
+    refundedCents: 0,
   };
 }
 

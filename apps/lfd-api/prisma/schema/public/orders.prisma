@@ -295,7 +295,8 @@ model Order {
   createdAt DateTime @default(now()) @map("created_at") // = passée le
   updatedAt DateTime @updatedAt @map("updated_at")
 
-  lines OrderLine[]
+  lines   OrderLine[]
+  refunds OrderRefund[]
 
   @@index([companyId])
   @@index([billedCompanyId])

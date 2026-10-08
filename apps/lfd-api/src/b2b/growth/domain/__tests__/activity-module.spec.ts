@@ -155,15 +155,17 @@ describe("moduleOf — la comptabilité", () => {
     ["loyalty_settings.set", "comptabilite"],
     ["loyalty.voucher_issued", "comptabilite"],
     ["loyalty.points_adjusted", "comptabilite"],
+    ["payment_refund.unmatched", "comptabilite"],
   ])("%s se range sous %s", (type, module) => {
     expect(moduleOf(type)).toBe(module);
   });
 
-  it("le filtre du module ne ramène que ses neuf préfixes", () => {
+  it("le filtre du module ne ramène que ses dix préfixes", () => {
     expect(prefixesOf("comptabilite")).toEqual([
       "legal_entity.",
       "payment_mandate.",
       "payment_link.",
+      "payment_refund.",
       "accounting_settings.",
       "loyalty_settings.",
       "loyalty.",

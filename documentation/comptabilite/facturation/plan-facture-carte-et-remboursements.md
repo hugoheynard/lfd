@@ -170,9 +170,69 @@ prorata de l'avoir (5). **MINEUR** : un remboursement total laisse le régime
 
 ## 9. Lots
 
-| Lot     | Contenu                                                                                          |
-| ------- | ------------------------------------------------------------------------------------------------ |
-| **R1**  | `order_refund`, webhook `charge.refunded` / `refund.updated`, statut `refunded`, journal         |
-| **E5a** | facture carte acquittée (BT-113, code 48) au retrait ET paiement, issues signalées, rejouables   |
-| **E5b** | avoir de remboursement (ventilé au prorata), et facture puis avoir pour un remboursement d'avant |
-| **E5c** | écrans : fiche commande, « Mes factures » avec les avoirs                                        |
+| Lot     | Contenu                                                                                             |
+| ------- | --------------------------------------------------------------------------------------------------- |
+| **R1**  | ✅ bâti le 2026-10-08, non commité (§ 10) — `order_refund`, webhook `refund.*`, `refunded`, journal |
+| **E5a** | facture carte acquittée (BT-113, code 48) au retrait ET paiement, issues signalées, rejouables      |
+| **E5b** | avoir de remboursement (ventilé au prorata), et facture puis avoir pour un remboursement d'avant    |
+| **E5c** | écrans : fiche commande, « Mes factures » avec les avoirs                                           |
+
+## 10. R1 bâti (2026-10-08, non commité)
+
+Ce qui existe, et ce qui a été tranché en le bâtissant — en l'absence d'Hugo,
+à relire avec la liste d'arbitrages.
+
+- **Table** `public.order_refund` (migration
+  `20261008220000_les_remboursements_constates`, additive) et énumération
+  `OrderRefundStatus` (`pending`, `requires_action`, `succeeded`, `failed`,
+  `canceled`). `credit_note_id` est un texte nullable **sans clé étrangère** :
+  E5b choisira sa forme. Modèle dans `prisma/schema/public/order-refund.prisma`.
+- **Webhook** : `refund.created`, `refund.updated`, `refund.failed` → `{ kind:
+"refund", … }` (`stripe-payment-gateway.ts`). `charge.refunded` reste
+  `ignored`. Un remboursement **sans intention** (`payment_intent: null`) ou
+  sous un statut inconnu est `ignored` lui aussi.
+- **Commande retrouvée par son intention** : une commande n'a qu'une intention
+  (`orders.stripe_payment_intent_id`, `@unique`), écrite à la passation ; un
+  second essai de carte passe sur **la même** intention (`markPaid`, vérifié le
+  2026-10-08). Il n'y a donc pas de « tentatives » à départager : l'intention
+  du remboursement est celle de la commande, ou d'aucune.
+- **L'agrégat** `OrderRefundLedger` (`b2b/orders/domain/entities/`) tient les
+  règles ; `RecordOrderRefundHandler` charge **sous verrou de la ligne de
+  commande** (`SELECT … FOR UPDATE`), applique, sauve et journalise dans une
+  seule unité de travail.
+- **Statuts** : depuis une attente, tout s'applique ; depuis `succeeded`, seul
+  `failed` s'applique (Stripe le permet : `refund.failed` sur un remboursement
+  réussi) et rend la commande `paid` si elle était `refunded` ; `succeeded` →
+  `canceled` est **refusé** (Stripe n'annule qu'en attente) ; un statut plus
+  ancien arrivé en retard est **ignoré**, pas refusé (les webhooks n'arrivent
+  pas dans l'ordre). `failed` et `canceled` sont terminaux.
+- **Plafond** : Σ `succeeded` ≤ `orders.total_cents` (l'intention est
+  dimensionnée sur lui). Le règlement ne bascule qu'entre `paid` et
+  `refunded` : une commande annulée encaissée après coup reste `failed`
+  (`markPaid` ne la rouvre jamais) et son remboursement est noté sans la
+  toucher.
+- **Refus** (devise, plafond, montant changé, réussi puis annulé) : rien n'est
+  écrit sur la commande, `order.refund_rejected` va au journal, la cloche
+  sonne (`order.refund_rejected`, une clé par remboursement et motif). Le
+  webhook répond **200** : un 4xx ferait réessayer Stripe trois jours pour la
+  même réponse.
+- **Hors commande** (A11) : `RefundWithoutOrderEvent` → `OnRefundWithoutOrder`
+  (`b2b/payments`) : `payment_refund.unmatched` au journal, cloche vers
+  « Liens libres ». Le lien n'est pas retrouvé : la table des liens ne garde
+  que la session `cs_…`, et le remboursement ne porte que l'intention.
+- **Journal** : `order.refund_recorded`, `order.fully_refunded`,
+  `order.refund_rejected` (sujet `order`, libellé = numéro, **aucun**
+  identifiant Stripe — le journal n'en portait aucun, pas même le `pi_…`) ;
+  `payment_refund.unmatched` (sujet `payment_refund`, id = `re_…`, seul nom de
+  ce paiement chez nous — exemption écrite au test de clôture).
+- **Lecture** : `OrderView.refunds` (montant, statut, instant Stripe) et
+  `refundedCents` (cumul réussi) ; `CustomerOrderView.refundedCents` seulement.
+  `refundedCents` est aussi dans la vue staff parce que les composants
+  partagés reçoivent l'une ou l'autre (sous-ensemble structurel). Back-office :
+  carte « Remboursements » sur la fiche commande. Client : ligne
+  « Remboursée » / « Remboursée en partie (x €) » (fr/en/it), lue sur
+  `paymentStatus` et le cumul, jamais sur le régime.
+- **Runbook** : section « Abonner le webhook Stripe aux remboursements ».
+
+Reste hors de R1 : la facture carte (E5a), l'avoir (E5b), l'avoir à l'écran
+(E5c).

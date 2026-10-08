@@ -66,6 +66,21 @@ export class OrderDetail {
     return cents > 0 ? formatCents(cents) : null;
   });
 
+  /**
+   * « Remboursée » ou « Remboursée en partie (12,50 €) » — `null` sans
+   * remboursement : la ligne n'existe que si elle a quelque chose à dire.
+   */
+  protected readonly refundLabel = computed(() => {
+    const copy = this.t().orders;
+    const refund = this.order().refund;
+    if (refund.kind === 'none') {
+      return null;
+    }
+    return refund.kind === 'full'
+      ? copy.refundedFull
+      : copy.refundedPartial.replace('{amount}', formatCents(refund.refundedCents));
+  });
+
   protected readonly paymentNote = computed(() => {
     const copy = this.t().orders;
     const notes = {

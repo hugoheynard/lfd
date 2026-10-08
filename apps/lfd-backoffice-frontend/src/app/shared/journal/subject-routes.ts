@@ -16,6 +16,7 @@ const ROUTES: Readonly<Record<string, (id: string) => string | null>> = {
   company: (id) => `/comptes-clients/${encodeURIComponent(id)}`,
   pickup_address: (id) => `/b2b/reglages/points-de-retrait/${encodeURIComponent(id)}`,
   staff_role: (id) => `/admin/roles/${encodeURIComponent(id)}`,
+  order: (id) => `/commandes/${encodeURIComponent(id)}`,
   legal_entity: (id) => `/comptabilite/entites-juridiques/${encodeURIComponent(id)}`,
 };
 

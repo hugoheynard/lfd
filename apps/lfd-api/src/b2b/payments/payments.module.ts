@@ -59,6 +59,7 @@ import { CreatePaymentLinkHandler } from "./application/commands/create-payment-
 import { ExpirePaymentLinkHandler } from "./application/commands/expire-payment-link.handler.js";
 import { SetAccountingSettingsHandler } from "./application/commands/set-accounting-settings.handler.js";
 import { SettlePaymentLinkHandler } from "./application/commands/settle-payment-link.handler.js";
+import { OnRefundWithoutOrder } from "./application/handlers/on-refund-without-order.handler.js";
 import { GetAccountingSettingsHandler } from "./application/queries/get-accounting-settings.handler.js";
 import { ListPaymentLinksHandler } from "./application/queries/list-payment-links.handler.js";
 import { PrismaAccountingSettingsStore } from "./infrastructure/prisma-accounting-settings.store.js";
@@ -126,6 +127,8 @@ import { StripeCheckoutGateway } from "./infrastructure/stripe-checkout-gateway.
     CreatePaymentLinkHandler,
     CancelPaymentLinkHandler,
     SettlePaymentLinkHandler,
+    // Un remboursement Stripe qu'aucune commande ne porte (lot R1, A11).
+    OnRefundWithoutOrder,
     ExpirePaymentLinkHandler,
     ListPaymentLinksHandler,
     SetAccountingSettingsHandler,

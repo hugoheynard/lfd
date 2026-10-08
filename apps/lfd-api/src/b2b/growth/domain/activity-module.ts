@@ -170,6 +170,9 @@ const PREFIXES: Readonly<Record<ActivityModule, readonly string[]>> = {
     // Les liens de paiement libres, créés et annulés sous `b2b_accounting`
     // (plan liens de paiement §2b, 2026-09-25).
     "payment_link.",
+    // Un remboursement Stripe qu'aucune commande ne porte — un lien libre, le
+    // plus souvent (lot R1, arbitrage A11, 2026-10-08).
+    "payment_refund.",
     // Le réglage de la comptabilité — aujourd'hui le plafond de ces liens.
     "accounting_settings.",
     // La fidélité, sous `b2b_accounting` : le ratio, les bons et les

@@ -112,6 +112,17 @@ export type OrderOrigin = '' | 'recurring' | 'phone';
  */
 export type OrderPayment = 'account' | 'card';
 
+/**
+ * Ce que Stripe a rendu sur la commande (lot R1 du plan
+ * `plan-facture-carte-et-remboursements.md`). Lu sur `paymentStatus` et le
+ * cumul RÉUSSI, jamais sur le régime : une commande remboursée reste « réglée
+ * par carte ».
+ */
+export type OrderRefund =
+  | { readonly kind: 'none' }
+  | { readonly kind: 'full' }
+  | { readonly kind: 'partial'; readonly refundedCents: number };
+
 /** Une commande PASSÉE, telle que le tableau la compare. */
 export interface HistoryOrder {
   /**
@@ -131,6 +142,7 @@ export interface HistoryOrder {
   readonly voucherDiscountCents: number;
   readonly status: OrderRowStatus;
   readonly payment: OrderPayment;
+  readonly refund: OrderRefund;
   readonly origin: OrderOrigin;
   /** La maison de l'espace courant — elle situe la personne, pas la ligne. */
   readonly org: string;
@@ -256,9 +268,20 @@ export function historyRowOf(order: CustomerOrderView, org: string, copy: RowCop
     // `not_required` = portée au compte, facturée en fin de mois. Tout le reste
     // est passé par la carte au moment de commander.
     payment: order.paymentStatus === 'not_required' ? 'account' : 'card',
+    refund: refundOf(order),
     origin: originOf(order),
     org,
   };
+}
+
+/** `refunded` fait foi pour « en totalité » ; un cumul positif sans lui est partiel. */
+function refundOf(order: CustomerOrderView): OrderRefund {
+  if (order.paymentStatus === 'refunded') {
+    return { kind: 'full' };
+  }
+  return order.refundedCents > 0
+    ? { kind: 'partial', refundedCents: order.refundedCents }
+    : { kind: 'none' };
 }
 
 /**

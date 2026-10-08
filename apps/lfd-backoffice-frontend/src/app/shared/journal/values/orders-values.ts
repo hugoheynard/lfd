@@ -90,6 +90,23 @@ export const ABANDON_OUTCOME = domain('issue d’un abandon de règlement', {
   failed: 'Commande à régler',
 });
 
+/** Le statut d'un remboursement chez Stripe (`order.refund_*`, `payment_refund.unmatched`). */
+export const REFUND_STATUS = domain('statut d’un remboursement', {
+  pending: 'En cours',
+  requires_action: 'Action requise chez Stripe',
+  succeeded: 'Remboursé',
+  failed: 'Échoué',
+  canceled: 'Annulé',
+});
+
+/** Pourquoi un remboursement Stripe n'a pas été noté sur la commande (`order.refund_rejected`). */
+export const REFUND_REJECTION = domain('motif de refus d’un remboursement', {
+  currency: 'Pas en euros',
+  exceeds_charge: 'Au-delà du total encaissé',
+  amount_changed: 'Montant changé',
+  reversed_after_success: 'Réussi puis annulé',
+});
+
 /** Le verdict d'un contrôle qualité ; `warning` se dit « Réserve » à l'écran. */
 export const QUALITY_VERDICT = domain('verdict d’un contrôle qualité', {
   ok: 'OK',
@@ -155,6 +172,8 @@ export const ORDERS_VALUES: ValueFamily = {
     BIN_HALF,
     PROPOSAL_MODE,
     ABANDON_OUTCOME,
+    REFUND_STATUS,
+    REFUND_REJECTION,
     QUALITY_VERDICT,
     QUALITY_LIFTING_VERDICT,
     HANDOVER_PROOF_ERASURE_CAUSE,

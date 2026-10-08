@@ -20,6 +20,8 @@ import {
   floorDecisionSchema,
   type OrderStatus,
   type OrderView,
+  type OrderRefundStatus,
+  refundedCentsOf,
   type PaymentStatus,
   type SheetCustomer,
   type AtelierSheet,
@@ -105,6 +107,11 @@ interface OrderRow {
   readonly handedOverAt: Date | null;
   readonly createdAt: Date;
   readonly lines: readonly OrderLineRow[];
+  readonly refunds: readonly {
+    readonly amountCents: number;
+    readonly status: OrderRefundStatus;
+    readonly refundedAt: Date;
+  }[];
 }
 
 /** Colonnes d'une commande à lire (partagées entreprise / personnel). */
@@ -165,6 +172,11 @@ const ORDER_SELECT = {
       pricingRejected: true,
       allergens: true,
     },
+  },
+  // Les remboursements Stripe constatés (lot R1), dans l'ordre du constat.
+  refunds: {
+    select: { amountCents: true, status: true, refundedAt: true },
+    orderBy: { recordedAt: "asc" },
   },
 } as const;
 
@@ -605,7 +617,18 @@ function toOrderView(row: OrderRow): OrderView {
     confirmedAt: row.confirmedAt === null ? null : row.confirmedAt.toISOString(),
     readyAt: row.readyAt === null ? null : row.readyAt.toISOString(),
     handedOverAt: row.handedOverAt === null ? null : row.handedOverAt.toISOString(),
+    ...refundsOf(row.refunds),
   };
+}
+
+/** Les remboursements constatés, et leur cumul réussi (lot R1). */
+function refundsOf(rows: OrderRow["refunds"]): Pick<OrderView, "refunds" | "refundedCents"> {
+  const refunds = rows.map((refund) => ({
+    amountCents: refund.amountCents,
+    status: refund.status,
+    refundedAt: refund.refundedAt.toISOString(),
+  }));
+  return { refunds, refundedCents: refundedCentsOf(refunds) };
 }
 
 /**

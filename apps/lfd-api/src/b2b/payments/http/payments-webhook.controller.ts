@@ -11,6 +11,7 @@ import { CommandBus } from "@nestjs/cqrs";
 import type { Request } from "express";
 
 import { ConfirmOrderPaymentCommand } from "../../orders/application/commands/confirm-order-payment.command.js";
+import { RecordOrderRefundCommand } from "../../orders/application/commands/record-order-refund.command.js";
 import { Public } from "../../../platform/auth/public.decorator.js";
 import { InvalidWebhookSignatureError } from "../domain/errors/payment-errors.js";
 import { PaymentGateway, type PaymentWebhookEvent } from "../domain/payment-gateway.js";
@@ -72,6 +73,14 @@ const COMMANDS: {
   failed: (event) => new ConfirmOrderPaymentCommand(event.paymentIntentId, "failed"),
   link_paid: (event) => new SettlePaymentLinkCommand(event.sessionId),
   link_expired: (event) => new ExpirePaymentLinkCommand(event.sessionId),
+  refund: (event) =>
+    new RecordOrderRefundCommand(event.paymentIntentId, {
+      stripeRefundId: event.refundId,
+      amountCents: event.amountCents,
+      currency: event.currency,
+      status: event.status,
+      refundedAt: event.createdAt,
+    }),
   ignored: () => null,
 };
 

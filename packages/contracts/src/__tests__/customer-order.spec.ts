@@ -97,6 +97,11 @@ const STAFF_ORDER: OrderView = {
   confirmedAt: "2026-03-01T09:00:00.000Z",
   readyAt: null,
   handedOverAt: null,
+  refunds: [
+    { amountCents: 500, status: "succeeded", refundedAt: "2026-03-02T09:00:00.000Z" },
+    { amountCents: 300, status: "pending", refundedAt: "2026-03-03T09:00:00.000Z" },
+  ],
+  refundedCents: 500,
 };
 
 describe("toCustomerOrder", () => {
@@ -153,7 +158,12 @@ describe("toCustomerOrder", () => {
     // demain au mapper le fait rougir, ce qui est tout ce qu'on lui demande.
     const order = toCustomerOrder(STAFF_ORDER);
 
-    expect(Object.keys(order).sort()).toEqual(Object.keys(STAFF_ORDER).sort());
+    // `refunds` est le SEUL champ du premier niveau que le client ne reçoit
+    // pas (lot R1) : le détail des remboursements — en attente, échoués — ne
+    // lui dit rien d'utile ; il lit le cumul réussi.
+    const staffKeys = Object.keys(STAFF_ORDER).filter((key) => key !== "refunds");
+    expect(Object.keys(order).sort()).toEqual(staffKeys.sort());
+    expect(order.refundedCents).toBe(500);
     expect(order.totalCents).toBe(2_278);
     expect(order.lines[0]?.lineTotalCents).toBe(2_160);
   });

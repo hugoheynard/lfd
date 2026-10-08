@@ -255,5 +255,6 @@
   "test/support-requests.e2e-spec.ts": 6282,
   "test/delivery-locate-on-order.e2e-spec.ts": 3600,
   "test/delivery-driver-notice.e2e-spec.ts": 4000,
-  "test/issued-invoices.e2e-spec.ts": 9000
+  "test/issued-invoices.e2e-spec.ts": 9000,
+  "test/order-refunds.e2e-spec.ts": 7540
 }

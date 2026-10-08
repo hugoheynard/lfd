@@ -1,0 +1,54 @@
+/// Le **statut d'un remboursement chez Stripe**, recopié tel quel
+/// (`Refund.status`). Seul `succeeded` compte dans le cumul remboursé ; les
+/// autres sont notés, jamais supprimés. Propriétaire : `src/b2b/orders/`.
+enum OrderRefundStatus {
+  pending
+  requires_action
+  succeeded
+  failed
+  canceled
+
+  @@schema("public")
+}
+
+/// **Un remboursement Stripe constaté sur une commande** — une ligne par
+/// `re_…` (plan `documentation/comptabilite/facturation/plan-facture-carte-et-remboursements.md`,
+/// lot R1). On le CONSTATE, on ne l'initie pas : le geste reste dans le tableau
+/// de bord Stripe.
+///
+/// Écrite par l'agrégat `OrderRefundLedger` (`src/b2b/orders/`), qui tient
+/// les règles : idempotence par `stripe_refund_id`, statut qui ne régresse
+/// pas, cumul des `succeeded` plafonné au total encaissé. Rien ne se supprime :
+/// un remboursement en échec ou annulé garde sa ligne, sous son statut.
+model OrderRefund {
+  /// ULID, fabriqué par `IdGenerator`.
+  id String @id
+
+  orderId String @map("order_id")
+  order   Order  @relation(fields: [orderId], references: [id], onDelete: Restrict)
+
+  /// `re_…` — la clé d'idempotence du webhook.
+  stripeRefundId String @unique @map("stripe_refund_id")
+
+  /// Centimes, entier > 0 (tenu par l'agrégat ET par la contrainte `CHECK`).
+  amountCents Int    @map("amount_cents")
+  /// Code ISO minuscule, tel que Stripe l'écrit. Seul `eur` est admis.
+  currency    String
+
+  status OrderRefundStatus
+
+  /// L'instant Stripe (`Refund.created`), pas le nôtre.
+  refundedAt DateTime @map("refunded_at")
+  /// Quand on l'a constaté — lu du `Clock`.
+  recordedAt DateTime @map("recorded_at")
+  /// Le dernier changement constaté — lu du `Clock`.
+  updatedAt  DateTime @map("updated_at")
+
+  /// L'avoir qui l'a constaté — rempli par le lot E5b. Pas de clé étrangère
+  /// tant que ce lot n'a pas tranché sa forme.
+  creditNoteId String? @map("credit_note_id")
+
+  @@index([orderId])
+  @@map("order_refund")
+  @@schema("public")
+}

@@ -22,6 +22,13 @@
            lien explicite avec le relevé. -->
       <dd>{{ paymentLabel() }} · {{ paymentNote() }}</dd>
     </div>
+    <!-- Ce que Stripe a rendu : lu sur le règlement, jamais sur le régime. -->
+    @if (refundLabel(); as refund) {
+      <div class="fact">
+        <dt>{{ t().orders.detailRefund }}</dt>
+        <dd data-refund>{{ refund }}</dd>
+      </div>
+    }
     <!-- La part HT du bon, figée à la commande : les totaux disent déjà le TTC
          payé (plan des points, E2.3). -->
     @if (voucherAmount(); as amount) {

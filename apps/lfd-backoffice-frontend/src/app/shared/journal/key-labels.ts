@@ -77,6 +77,7 @@ export const KEY_LABELS: Readonly<Record<string, string>> = {
   context: 'Contexte de vente',
   contexts: 'Contextes de vente',
   contractNumber: 'Numéro de contrat',
+  currency: 'Devise',
   date: 'Jour',
   days: 'Jours',
   daysBefore: 'Jours avant',

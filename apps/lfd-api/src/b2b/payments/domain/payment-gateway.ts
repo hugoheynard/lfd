@@ -55,6 +55,39 @@ export type IntentCancellation =
   | { readonly kind: "unavailable"; readonly reason: string };
 
 /**
+ * Les statuts d'un remboursement chez Stripe (`Refund.status`). Un statut que
+ * cette liste ignore — Stripe en ajouterait un — rend l'événement `ignored`
+ * plutôt que de le faire passer pour un autre.
+ */
+export const PAYMENT_REFUND_STATUSES = [
+  "pending",
+  "requires_action",
+  "succeeded",
+  "failed",
+  "canceled",
+] as const;
+export type PaymentRefundStatus = (typeof PAYMENT_REFUND_STATUSES)[number];
+
+/**
+ * Un **remboursement** annoncé par Stripe (`refund.created`, `refund.updated`,
+ * `refund.failed`) — plan `plan-facture-carte-et-remboursements.md`, § 2 bis-3.
+ *
+ * `charge.refunded` n'en est PAS la source : depuis l'API 2022-11-15, son
+ * objet ne porte plus la liste des remboursements. Montant en centimes ;
+ * `currency` telle que Stripe l'écrit (minuscule) — la refuser est l'affaire
+ * du domaine, pas de la passerelle ; `createdAt` est l'instant Stripe.
+ */
+export interface RefundWebhookEvent {
+  readonly kind: "refund";
+  readonly refundId: string;
+  readonly paymentIntentId: string;
+  readonly amountCents: number;
+  readonly currency: string;
+  readonly status: PaymentRefundStatus;
+  readonly createdAt: Date;
+}
+
+/**
  * Événement de webhook **déjà vérifié** et réduit à ce dont le domaine a besoin.
  * On ne propage pas l'objet Stripe brut : seulement l'issue et l'id d'intention à
  * rapprocher. `ignored` = un type d'événement qui ne nous concerne pas (on répond
@@ -72,6 +105,7 @@ export type PaymentWebhookEvent =
   | { readonly kind: "link_paid"; readonly sessionId: string }
   /** La session d'un lien libre a expiré sans règlement (`checkout.session.expired`). */
   | { readonly kind: "link_expired"; readonly sessionId: string }
+  | RefundWebhookEvent
   | { readonly kind: "ignored" };
 
 /**

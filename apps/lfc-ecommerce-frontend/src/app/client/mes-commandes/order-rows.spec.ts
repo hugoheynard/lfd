@@ -38,6 +38,7 @@ const ORDER = {
   confirmedAt: null,
   readyAt: null,
   handedOverAt: null,
+  refundedCents: 0,
 } as unknown as CustomerOrderView;
 
 /**
@@ -59,6 +60,22 @@ describe('les lignes de l’écran des commandes', () => {
     expect(
       historyRowOf({ ...ORDER, paymentStatus: 'paid' } as CustomerOrderView, '', COPY).payment,
     ).toBe('card');
+  });
+
+  /** Lu sur `paymentStatus` et le cumul réussi, jamais sur le régime (lot R1). */
+  it('dit « remboursée » en totalité, en partie, ou rien', () => {
+    const card = { ...ORDER, paymentStatus: 'paid' } as CustomerOrderView;
+    expect(historyRowOf(card, '', COPY).refund).toEqual({ kind: 'none' });
+    expect(historyRowOf({ ...card, refundedCents: 1_250 }, '', COPY).refund).toEqual({
+      kind: 'partial',
+      refundedCents: 1_250,
+    });
+    const refunded = { ...card, paymentStatus: 'refunded', refundedCents: 9_640 } as const;
+    expect(historyRowOf(refunded, '', COPY)).toMatchObject({
+      refund: { kind: 'full' },
+      // Le régime ne bouge pas : elle a été réglée par carte, puis rendue.
+      payment: 'card',
+    });
   });
 
   /**

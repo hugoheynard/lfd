@@ -743,6 +743,46 @@ export interface OrderView {
   readonly readyAt: string | null;
   /** ISO du retrait en main propre, ou `null` — la commande attend encore. */
   readonly handedOverAt: string | null;
+  /**
+   * Les **remboursements Stripe constatés**, dans l'ordre de leur constat
+   * (lot R1 du plan `plan-facture-carte-et-remboursements.md`) — vide pour
+   * l'immense majorité des commandes. Seuls les `succeeded` comptent dans le
+   * cumul ; les autres disent ce qui est en cours, ou ce qui a échoué.
+   */
+  readonly refunds: readonly OrderRefundView[];
+  /**
+   * Le cumul des remboursements RÉUSSIS, en centimes (`0` sans remboursement)
+   * — {@link refundedCentsOf} de `refunds`, calculé au serveur. Il est dans la
+   * vue staff aussi parce que la vue client en est un sous-ensemble
+   * STRUCTUREL : les composants partagés reçoivent l'une ou l'autre.
+   */
+  readonly refundedCents: number;
+}
+
+/** Le statut d'un remboursement chez Stripe (`Refund.status`), recopié tel quel. */
+export const orderRefundStatusSchema = z.enum([
+  "pending",
+  "requires_action",
+  "succeeded",
+  "failed",
+  "canceled",
+]);
+export type OrderRefundStatus = z.infer<typeof orderRefundStatusSchema>;
+
+/** Un remboursement Stripe constaté sur une commande. Aucun identifiant Stripe. */
+export interface OrderRefundView {
+  /** Centimes, > 0. */
+  readonly amountCents: number;
+  readonly status: OrderRefundStatus;
+  /** ISO — l'instant Stripe du remboursement, pas celui de notre constat. */
+  readonly refundedAt: string;
+}
+
+/** Le cumul des remboursements RÉUSSIS, en centimes. */
+export function refundedCentsOf(refunds: readonly OrderRefundView[]): number {
+  return refunds
+    .filter((refund) => refund.status === "succeeded")
+    .reduce((sum, refund) => sum + refund.amountCents, 0);
 }
 
 // ─── La commande telle qu'un CLIENT la reçoit ────────────────────────────────
@@ -867,6 +907,13 @@ export interface CustomerOrderView {
   readonly confirmedAt: string | null;
   readonly readyAt: string | null;
   readonly handedOverAt: string | null;
+  /**
+   * Le cumul des remboursements réussis, en centimes (`0` sans remboursement).
+   * Le client lit « remboursée en partie (x €) » quand il est positif et que
+   * `paymentStatus` n'est pas `refunded` — pas le détail : un remboursement en
+   * attente ou en échec ne lui dit rien d'utile.
+   */
+  readonly refundedCents: number;
 }
 
 /**
@@ -935,6 +982,7 @@ export function toCustomerOrder(view: OrderView): CustomerOrderView {
     confirmedAt: view.confirmedAt,
     readyAt: view.readyAt,
     handedOverAt: view.handedOverAt,
+    refundedCents: view.refundedCents,
   };
 }
 

@@ -30,6 +30,10 @@ import { SettlementRemindersController } from "./http/admin-settlement-reminders
 import { CancelledOrderPaymentReader } from "./domain/ports/cancelled-order-payment.reader.js";
 import { PrismaCancelledOrderPaymentReader } from "./infrastructure/prisma-cancelled-order-payment.reader.js";
 import { RingRefundDue } from "./application/handlers/ring-refund-due.handler.js";
+import { RecordOrderRefundHandler } from "./application/commands/record-order-refund.handler.js";
+import { RingRefundRejected } from "./application/handlers/ring-refund-rejected.handler.js";
+import { OrderRefundRepository } from "./domain/ports/order-refund.repository.js";
+import { PrismaOrderRefundRepository } from "./infrastructure/prisma-order-refund.repository.js";
 import { PendingSettlementSweep } from "./application/services/pending-settlement-sweep.service.js";
 import { SendPaymentFailedMail } from "./application/handlers/send-payment-failed-mail.handler.js";
 import { OrderPlacedMail } from "./application/services/order-placed-mail.service.js";
@@ -266,6 +270,10 @@ import { AdminSupervisionController } from "./http/admin-supervision.controller.
     // annulée. La base ne la rouvre pas ; la cloche dit « à rembourser » (6 bis).
     RingRefundDue,
     { provide: CancelledOrderPaymentReader, useClass: PrismaCancelledOrderPaymentReader },
+    // Les remboursements Stripe, CONSTATÉS (plan facture carte, lot R1).
+    RecordOrderRefundHandler,
+    RingRefundRejected,
+    { provide: OrderRefundRepository, useClass: PrismaOrderRefundRepository },
     // Le composeur de l'accusé, partagé par les deux chemins ci-dessus.
     OrderPlacedMail,
     // Prévient le propriétaire d'une adresse qu'une commande sans compte l'a

@@ -8,6 +8,7 @@ import { DELIVERY_PURCHASE_LIBRARY_FACTS } from "./delivery-purchase-library.js"
 import { DELIVERY_ROUND_FACTS } from "./delivery-rounds.js";
 import { DELIVERY_ROUTING_FACTS } from "./delivery-routing.js";
 import { HANDOVER_PROOF_FACTS } from "./handover-proofs.js";
+import { ORDER_REFUND_FACTS } from "./order-refunds.js";
 import { PACKING_CONTAINER_FACTS } from "./packing-containers.js";
 import { PRODUCTION_SETTINGS_FACTS } from "./production-settings.js";
 import { DELIVERY_SIMULATION_FACTS } from "./delivery-simulation.js";
@@ -420,6 +421,8 @@ export const ORDERS_PRODUCTION_FACTS = {
   ...DELIVERY_PURCHASE_LIBRARY_FACTS,
   /** **Les pièces de remise effacées** (purge câblée, non planifiée) — même famille. */
   ...HANDOVER_PROOF_FACTS,
+  /** **Les remboursements Stripe constatés** (lot R1) — même famille. */
+  ...ORDER_REFUND_FACTS,
   ...PACKING_CONTAINER_FACTS,
   /** **Les réglages du fournil** (arrêt du plan, jours fermés) — même famille. */
   ...PRODUCTION_SETTINGS_FACTS,

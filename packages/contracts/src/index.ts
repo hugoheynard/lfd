@@ -819,6 +819,8 @@ export {
   MAX_ORDER_LINES,
   toCustomerQuote,
   toCustomerOrder,
+  orderRefundStatusSchema,
+  refundedCentsOf,
 } from "./order.js";
 export type {
   OrderStatus,
@@ -848,6 +850,8 @@ export type {
   CustomerOrderView,
   OrderLineAllergens,
   OrderLineAllergenLabel,
+  OrderRefundStatus,
+  OrderRefundView,
 } from "./order.js";
 export type { CatalogPricing } from "./catalog-pricing.js";
 export type { CatalogFamilyView, CatalogItemView } from "./catalog.js";

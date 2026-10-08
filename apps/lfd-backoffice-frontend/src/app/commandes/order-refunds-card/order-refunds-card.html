@@ -1,0 +1,14 @@
+@if (rows().length > 0) {
+  <fold-card data-refunds-card>
+    <fold-element-title variant="title" icon="undo" title="Remboursements" />
+    <fold-field-list>
+      @for (row of rows(); track $index) {
+        <fold-field [label]="(row.refundedAt | date: 'dd/MM/yyyy à HH:mm') ?? ''" data-refund>
+          {{ row.amount }}
+          <fold-badge [variant]="row.variant" [content]="row.status" />
+        </fold-field>
+      }
+      <fold-field label="Remboursé au total" data-refunds-total>{{ total() }}</fold-field>
+    </fold-field-list>
+  </fold-card>
+}

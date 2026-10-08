@@ -85,6 +85,8 @@ function view(overrides: Partial<OrderView> = {}): OrderView {
     confirmedAt: null,
     readyAt: null,
     handedOverAt: null,
+    refunds: [],
+    refundedCents: 0,
     ...overrides,
   };
 }

@@ -7,11 +7,13 @@ import {
   PaymentGatewayUnavailableError,
 } from "../domain/errors/payment-errors.js";
 import {
+  PAYMENT_REFUND_STATUSES,
   PaymentGateway,
   type CreateIntentParams,
   type CreatedIntent,
   type IntentCancellation,
   type PaymentWebhookEvent,
+  type RefundWebhookEvent,
   type RetrievedIntent,
 } from "../domain/payment-gateway.js";
 import {
@@ -134,6 +136,9 @@ export class StripePaymentGateway extends PaymentGateway {
   }
 }
 
+/** Stripe date ses objets en secondes Unix. */
+const MS_PER_SECOND = 1000;
+
 /** Réduit un événement Stripe à la forme domaine ; tout le reste est `ignored`. */
 function reduceEvent(event: Stripe.Event): PaymentWebhookEvent {
   if (event.type === "payment_intent.succeeded") {
@@ -142,7 +147,40 @@ function reduceEvent(event: Stripe.Event): PaymentWebhookEvent {
   if (event.type === "payment_intent.payment_failed") {
     return { kind: "failed", paymentIntentId: event.data.object.id };
   }
+  if (
+    event.type === "refund.created" ||
+    event.type === "refund.updated" ||
+    event.type === "refund.failed"
+  ) {
+    return reduceRefund(event.data.object) ?? { kind: "ignored" };
+  }
+  // `charge.refunded` tombe ici, dans `ignored`, et c'est voulu : son objet ne
+  // porte plus la liste des remboursements depuis l'API 2022-11-15.
   return reduceCheckoutEvent(event);
+}
+
+/**
+ * Un remboursement réduit à la forme domaine, ou `null` quand il ne nous
+ * concerne pas : sans intention de paiement (un remboursement d'une charge
+ * ancienne, sans `PaymentIntent`), ou sous un statut que le port ne connaît
+ * pas — le faire passer pour un autre serait pire que l'ignorer.
+ */
+function reduceRefund(refund: Stripe.Refund): RefundWebhookEvent | null {
+  const intent = refund.payment_intent;
+  const paymentIntentId = typeof intent === "string" ? intent : (intent?.id ?? null);
+  const status = PAYMENT_REFUND_STATUSES.find((known) => known === refund.status);
+  if (paymentIntentId === null || status === undefined) {
+    return null;
+  }
+  return {
+    kind: "refund",
+    refundId: refund.id,
+    paymentIntentId,
+    amountCents: refund.amount,
+    currency: refund.currency,
+    status,
+    createdAt: new Date(refund.created * MS_PER_SECOND),
+  };
 }
 
 /**

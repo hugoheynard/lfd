@@ -92,6 +92,12 @@ export interface OrdersCopy {
   /** Le règlement dit aussi OÙ : « portée à la facture de mars ». */
   readonly payAccountNote: string;
   readonly payCardNote: string;
+  /** L'intitulé de la ligne « Remboursement » — absente sans remboursement. */
+  readonly detailRefund: string;
+  /** Le cumul des remboursements réussis atteint le total. */
+  readonly refundedFull: string;
+  /** `{amount}` est remplacé par le cumul remboursé : « 12,50 € ». */
+  readonly refundedPartial: string;
   readonly detailHead: string;
   readonly detailSlot: string;
   readonly detailPayment: string;
@@ -185,6 +191,9 @@ export const ORDERS_FR: OrdersCopy = {
   payCard: 'Réglée · CB',
   payAccountNote: 'portée à la facture de mars',
   payCardNote: 'réglée à la commande',
+  detailRefund: 'Remboursement',
+  refundedFull: 'Remboursée',
+  refundedPartial: 'Remboursée en partie ({amount})',
   detailHead: 'Le détail',
   detailSlot: 'Créneau',
   detailPayment: 'Règlement',
@@ -272,6 +281,9 @@ export const ORDERS_EN: OrdersCopy = {
   payCard: 'Paid · card',
   payAccountNote: 'carried to the March invoice',
   payCardNote: 'paid at checkout',
+  detailRefund: 'Refund',
+  refundedFull: 'Refunded',
+  refundedPartial: 'Partly refunded ({amount})',
   detailHead: 'The detail',
   detailSlot: 'Slot',
   detailPayment: 'Settlement',
@@ -359,6 +371,9 @@ export const ORDERS_IT: OrdersCopy = {
   payCard: 'Pagato · carta',
   payAccountNote: 'riportato sulla fattura di marzo',
   payCardNote: 'pagato all’ordine',
+  detailRefund: 'Rimborso',
+  refundedFull: 'Rimborsato',
+  refundedPartial: 'Rimborsato in parte ({amount})',
   detailHead: 'Il dettaglio',
   detailSlot: 'Fascia oraria',
   detailPayment: 'Pagamento',

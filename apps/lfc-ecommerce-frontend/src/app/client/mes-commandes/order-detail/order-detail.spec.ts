@@ -22,6 +22,19 @@ describe('OrderDetail', () => {
     expect(el().textContent).toContain(FR.orders.payAccountNote);
   });
 
+  it('ne parle de remboursement que lorsqu’il y en a un', () => {
+    expect(el().querySelector('[data-refund]')).toBeNull();
+
+    fixture.componentRef.setInput('order', ROWS[1]);
+    fixture.detectChanges();
+    expect(el().querySelector('[data-refund]')?.textContent).toContain('Remboursée en partie');
+    expect(el().querySelector('[data-refund]')?.textContent).toContain('12,50');
+
+    fixture.componentRef.setInput('order', { ...ROWS[0], refund: { kind: 'full' } });
+    fixture.detectChanges();
+    expect(el().querySelector('[data-refund]')?.textContent?.trim()).toBe(FR.orders.refundedFull);
+  });
+
   it('n’annonce l’origine que lorsqu’il y en a une', () => {
     expect(el().textContent).not.toContain(FR.orders.detailOrigin);
 
