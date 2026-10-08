@@ -1,9 +1,10 @@
 import type { InvoiceVatCategory, InvoiceVatPart } from "@lfd/money";
 
-import type { InvoiceState } from "../entities/invoice.types.js";
+import { mandateReferenceOf, type InvoiceState } from "../entities/invoice.types.js";
 import {
   latePenaltiesText,
   operationText,
+  settledText,
   ordersText,
   recoveryIndemnityText,
 } from "./facturx-mentions.js";
@@ -97,15 +98,20 @@ function paragraph(sheet: InvoiceSheet, title: string, sentences: readonly strin
 }
 
 /**
- * Le règlement (BG-16 figé : prélèvement, RUM, ICS ; sinon l'échéance seule),
+ * Le règlement (BG-16 figé : prélèvement, RUM, ICS ; la carte : acquittée ;
+ * sinon l'échéance seule),
  * les mentions de retard, la catégorie d'opération, les bons couverts.
  */
 export function drawMentions(sheet: InvoiceSheet, state: InvoiceState): void {
-  if (state.paymentMeans !== null) {
+  const reference = mandateReferenceOf(state.paymentMeans);
+  if (reference !== null) {
     paragraph(sheet, "Règlement", [
-      `Prélèvement SEPA à l'échéance — mandat (RUM) ${state.paymentMeans.mandateReference}, ` +
+      `Prélèvement SEPA à l'échéance — mandat (RUM) ${reference}, ` +
         `créancier (ICS) ${state.seller.ics}.`,
     ]);
+  }
+  if (state.prepayment !== null) {
+    paragraph(sheet, "Règlement", [settledText(state), "Reste à payer : 0,00 €."]);
   }
   paragraph(sheet, "Conditions de paiement", [
     latePenaltiesText(state),

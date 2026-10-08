@@ -173,9 +173,9 @@ prorata de l'avoir (5). **MINEUR** : un remboursement total laisse le régime
 | Lot     | Contenu                                                                                             |
 | ------- | --------------------------------------------------------------------------------------------------- |
 | **R1**  | ✅ bâti le 2026-10-08, non commité (§ 10) — `order_refund`, webhook `refund.*`, `refunded`, journal |
-| **E5a** | facture carte acquittée (BT-113, code 48) au retrait ET paiement, issues signalées, rejouables      |
-| **E5b** | avoir de remboursement (ventilé au prorata), et facture puis avoir pour un remboursement d'avant    |
-| **E5c** | écrans : fiche commande, « Mes factures » avec les avoirs                                           |
+| **E5a** | ✅ bâti le 2026-10-08, non commité (§ 11) — facture carte acquittée, issues signalées, rejouables   |
+| **E5b** | ✅ bâti le 2026-10-08, non commité (§ 11) — avoir de remboursement au prorata, reste exact au solde |
+| **E5c** | ✅ bâti le 2026-10-08, non commité (§ 11) — fiche commande, factures carte signalées, « acquittée » |
 
 ## 10. R1 bâti (2026-10-08, non commité)
 
@@ -236,3 +236,99 @@ Ce qui existe, et ce qui a été tranché en le bâtissant — en l'absence d'Hu
 
 Reste hors de R1 : la facture carte (E5a), l'avoir (E5b), l'avoir à l'écran
 (E5c).
+
+## 11. E5 bâti (2026-10-08, non commité)
+
+Migration `20261009000000_la_facture_carte` (additive) ; ce qui a été tranché
+en bâtissant, en l'absence d'Hugo — à relire avec la liste d'arbitrages
+(A20 à A26).
+
+```mermaid
+flowchart LR
+  R["order.fulfilled<br/>(retrait, durable)"] --> I["IssueCardInvoice(orderId)<br/>sous verrou de la commande"]
+  P["order.paid<br/>(encaissement, durable — NEUF)"] --> I
+  B["« Réessayer »<br/>(b2b_accounting:write)"] --> I
+  I -->|"pro · payée · retirée · pas facturée"| F["380 acquittée<br/>BT-113 = TTC · code 48"]
+  I -->|"refus jugé AVANT le numéro"| S["card_invoice_outcome = blocked<br/>+ journal"]
+  F --> C["ReconcileRefunds"]
+  X["order.refund_succeeded<br/>(durable — NEUF)"] --> C
+  C -->|"facture carte"| A["381 au prorata<br/>reste exact au solde"]
+  C -->|"facture du mois / dépassement"| N["journal + cloche<br/>aucun avoir"]
+```
+
+- **Deux faits durables neufs côté commandes**, tous deux dans la transaction
+  de leur écriture : `order.paid` (clé `order.paid:<orderId>`, écrit par
+  `ConfirmOrderPaymentHandler` au seul franchissement de `markPaid`, qui passe
+  pour cela sous `UnitOfWork`) et `order.refund_succeeded` (clé par ligne
+  `order_refund`, écrit par `RecordOrderRefundHandler` quand un remboursement
+  PASSE à `succeeded`). Le paiement réussi n'avait jusque-là qu'un fait en
+  mémoire (`OrderPaymentSettledEvent`, gardé pour l'accusé de réception) :
+  le perdre aurait laissé une vente sans facture. Abonnés dans `b2b/accounting`,
+  même bloc : `lint:durable-cross-block` vert sans dette.
+- **Le retrait écouté est `order.fulfilled`** (un par commande), jamais
+  `handover.handed_over`.
+- **Tout refus se juge AVANT le numéro** (`prepareCardInvoice`) : l'abonné
+  tourne dans la transaction de son reçu, et un refus levé après
+  `InvoiceNumbering.next` laisserait un rang consommé dans une transaction
+  validée. D'où un brouillon construit **à blanc** sous un numéro factice ; ce
+  qui lève encore ensuite est une panne (base, assemblage), réessayée et
+  montrée par la boîte d'envoi.
+- **Refus signalés** : manques d'E0 (`invoiceIssuanceBlockers`, aucun ou
+  plusieurs émetteurs), bon non facturable, entité qui ne peut pas encaisser
+  (le vendeur figé est celui de l'arrêté : il exige ICS et IBAN), et **TTC
+  recalculé ≠ encaissé** — une facture acquittée qui ne tomberait pas juste.
+- **Échéance** : le jour du paiement demandé (§ 2 bis-4) contredit
+  « échéance ≥ émission » (agrégat ET contrainte en base) dès que la commande
+  est payée avant d'être retirée. Tranché : **le plus tard** du jour du
+  paiement et du jour d'émission (`cardInvoiceDueOn`), comme la facture du
+  mois (`later`). Le jour du paiement est porté par `paid_on` (« acquittée
+  le … »).
+- **Moyen de paiement** : `InvoicePaymentMeans` devient une union (59 + RUM,
+  ou 48 seul) ; `mandateReferenceOf` lit la RUM. La carte et le déjà payé
+  vont ensemble (agrégat) ; le déjà payé ne dépasse pas le TTC, n'est jamais
+  sur un avoir, est payé au plus tard le jour d'émission (agrégat ET base).
+  Aucune donnée de carte (BG-18) : Stripe les garde.
+- **XML** : `TotalPrepaidAmount` (BT-113) quand la pièce est acquittée,
+  `DuePayableAmount` = TTC − déjà payé ; `facturXArithmeticViolations` lit
+  BR-CO-16 avec BT-113. **BT-72** (`ActualDeliverySupplyChainEvent`) quand la
+  pièce ne couvre qu'UN bon livré — la facture du mois d'un seul bon livré le
+  porte donc aussi. Ni ICS ni RUM sans prélèvement. Ordre des éléments écrit
+  de mémoire du XSD, non vérifié (comme E3a).
+- **PDF et e-mail** : « Facture acquittée le … par carte. Reste à payer :
+  0,00 €. » ; l'e-mail « Votre facture » dit « Payée par carte le … — rien à
+  régler ». Les mentions de pénalités restent.
+- **Avoir** : prorata du TTC **restant** par taux (plus forts restes), coupé
+  en base et TVA au taux (BR-S-09 tenu), ramené dans ce que le taux porte
+  encore ; le remboursement égal au reste prend le reste exact. Une ligne
+  « Remboursement » (référence `REMBOURSEMENT`, une pièce) par taux. Daté du
+  jour (`Clock`). Le lien `order_refund.credit_note_id` est posé une fois
+  (clé étrangère, unique, déclencheur `order_refund_credit_note_once`) — la
+  seule écriture de la comptabilité dans cette table.
+- **Pas d'avoir automatique, signalé** (`order.refund_not_credited`, cloche
+  « Remboursement sans avoir ») : commande sur une facture du mois
+  (`account_invoice`), ou montant au-delà de ce que la facture porte encore
+  — un avoir manuel passé avant (`exceeds_invoice`). Le cas « au compte » est
+  **inatteignable aujourd'hui** : une commande au compte n'a pas d'intention
+  Stripe, un remboursement ne la trouve pas (il va à « Liens libres », A11).
+- **Avoir et e-mail** : aucun, comme tout avoir (E3b : le seul abonné de
+  `invoice.credit_note_issued` rend le PDF). Le client le voit dans « Mes
+  factures » (il est adressé au payeur de la facture).
+- **Facture du mois** : son critère (`payment_status = not_required`) n'attrape
+  jamais une commande carte — éprouvé en e2e contre le vrai SQL.
+- **Écrans** : carte « Facture et avoirs » sur la fiche commande
+  (`GET admin/accounting/orders/:id/invoices`, sous `b2b_accounting:read`,
+  rien sans pièce ni sans droit) ; carte « Factures carte signalées » sur
+  « Prélèvement du mois », sous les factures du mois, avec « Réessayer »
+  (`POST admin/accounting/card-invoices/:orderId/retry`) ; la pièce et « Mes
+  factures » disent « Acquittée par carte le … » (`IssuedInvoiceView.paidOn`,
+  ajout au contrat). Phrases du journal pour les deux faits neufs.
+
+**Pas fait, ou ouvert** : (a) un remboursement réussi qui ÉCHOUE ensuite chez
+Stripe (`refund.failed` après `succeeded`, R1 le note) garde son avoir — aucun
+avoir inverse (une facture rectificative) n'est émis ; (b) une commande
+remboursée en totalité avant retrait puis dont un remboursement échoue
+redevient facturable, mais aucun déclencheur ne la rejoue (le retrait est
+passé) : « Réessayer » le peut seulement si elle a été signalée ; (c) la
+question au cabinet sur le prorata (A9) reste ouverte ; (d) le moyen de
+paiement du lien libre qui solde une facture du mois (A11) reste un geste
+humain.

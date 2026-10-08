@@ -1,6 +1,9 @@
 import { CommandHandler, type ICommandHandler } from "@nestjs/cqrs";
 
+import { UnitOfWork } from "../../../../platform/database/unit-of-work.js";
 import { DomainEventPublisher } from "../../../../platform/events/domain-event-publisher.js";
+import { DurablePublisher } from "../../../../platform/outbox/durable-publisher.js";
+import { OrderPaidFact } from "../../domain/events/order-paid.fact.js";
 import { OrderPaidAfterCancellationEvent } from "../../domain/events/order-paid-after-cancellation.event.js";
 import { OrderPaymentFailedEvent } from "../../domain/events/order-payment-failed.event.js";
 import { OrderPaymentSettledEvent } from "../../domain/events/order-payment-settled.event.js";
@@ -40,6 +43,13 @@ import { ConfirmOrderPaymentCommand } from "./confirm-order-payment.command.js";
  * C'est le prix assumé d'une clôture que Stripe ne bloque pas (plan
  * `documentation/order/plan-abandon-du-reglement.md`, B1).
  *
+ * ## Et un fait DURABLE, depuis le lot E5a (2026-10-08)
+ *
+ * `order.paid` part dans la même unité de travail que `markPaid` : la facture
+ * carte d'une commande déjà retirée ne naît que de lui, et un fait en mémoire
+ * perdu sur un redémarrage laisserait une vente sans facture (plan
+ * `plan-facture-carte-et-remboursements.md`, § 2 bis-1).
+ *
  * ⚠️ `publish` et non `publishTraced` : ce sont des projections d'un événement
  * externe, pas des actes dont un humain doit répondre. Le journal des actes
  * porte les gestes de l'équipe ; celui-ci appartient à Stripe.
@@ -53,11 +63,19 @@ export class ConfirmOrderPaymentHandler implements ICommandHandler<
     private readonly orders: OrderRepository,
     private readonly cancelled: CancelledOrderPaymentReader,
     private readonly events: DomainEventPublisher,
+    private readonly uow: UnitOfWork,
+    private readonly durable: DurablePublisher,
   ) {}
 
   async execute(command: ConfirmOrderPaymentCommand): Promise<void> {
     if (command.outcome === "succeeded") {
-      const settled = await this.orders.markPaid(command.paymentIntentId);
+      const settled = await this.uow.run(async () => {
+        const orderId = await this.orders.markPaid(command.paymentIntentId);
+        if (orderId !== null) {
+          await this.durable.publish(new OrderPaidFact(orderId).durableFact());
+        }
+        return orderId;
+      });
       if (settled !== null) {
         this.events.publish(new OrderPaymentSettledEvent(settled));
         return;

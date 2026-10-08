@@ -124,11 +124,21 @@ function headerAgreement(state: InvoiceState): string {
   ].join("");
 }
 
-/** BG-13 — le lieu de livraison s'il diffère ; l'élément reste exigé par le schéma. */
+/**
+ * BG-13 — le lieu de livraison s'il diffère ; l'élément reste exigé par le
+ * schéma. BT-72, la date de livraison réelle, quand la pièce ne couvre
+ * qu'UN bon livré (la facture carte, E5a) : plusieurs bons ont plusieurs
+ * dates, qui restent en note.
+ */
 function headerDelivery(state: InvoiceState): string {
+  const [single, ...others] = state.orders;
+  const deliveredOn = others.length === 0 ? (single?.deliveredOn ?? null) : null;
   return [
     "<ram:ApplicableHeaderTradeDelivery>",
     shipToParty(state.buyer.name, state.deliveryAddressLines),
+    deliveredOn === null
+      ? ""
+      : `<ram:ActualDeliverySupplyChainEvent>${dateElement("ram:OccurrenceDateTime", deliveredOn, "udt")}</ram:ActualDeliverySupplyChainEvent>`,
     "</ram:ApplicableHeaderTradeDelivery>",
   ].join("");
 }

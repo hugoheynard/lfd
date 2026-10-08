@@ -65,4 +65,32 @@ describe('les remboursements constatés', () => {
       'Un remboursement Stripe de 5,00 € n’a pas été noté sur la commande CMD-142 : pas en euros',
     );
   });
+
+  it('dit le remboursement resté sans avoir, la facture et le motif (E5b)', () => {
+    expect(
+      sentence(
+        refundFact('order.refund_not_credited', {
+          subjectLabel: 'CMD-142',
+          amountCents: 500,
+          invoice: { id: 'inv_1', name: 'FA-2026-000004' },
+          reason: 'account_invoice',
+        }),
+      ),
+    ).toBe(
+      'Un remboursement Stripe de 5,00 € sur la commande CMD-142 reste sans avoir automatique sur la facture « FA-2026-000004 » : la commande est sur une facture du mois — avoir à émettre à la main',
+    );
+  });
+
+  it('dit la facture carte signalée, et pourquoi (E5a)', () => {
+    expect(
+      sentence(
+        refundFact('order.card_invoice_blocked', {
+          subjectLabel: 'CMD-142',
+          message: 'La facture ne peut pas être émise : SIREN manquant.',
+        }),
+      ),
+    ).toBe(
+      'La facture carte de la commande CMD-142 n’a pas pu être émise : La facture ne peut pas être émise : SIREN manquant.',
+    );
+  });
 });

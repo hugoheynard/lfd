@@ -295,8 +295,10 @@ model Order {
   createdAt DateTime @default(now()) @map("created_at") // = passée le
   updatedAt DateTime @updatedAt @map("updated_at")
 
-  lines   OrderLine[]
-  refunds OrderRefund[]
+  lines              OrderLine[]
+  refunds            OrderRefund[]
+  /// L'issue de sa facture carte (E5a), s'il y en a une.
+  cardInvoiceOutcome CardInvoiceOutcome?
 
   @@index([companyId])
   @@index([billedCompanyId])

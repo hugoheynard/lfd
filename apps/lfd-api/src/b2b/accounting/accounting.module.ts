@@ -1,5 +1,6 @@
 import { AdminIssuedInvoicesController } from "./http/admin-issued-invoices.controller.js";
 import { CompanyInvoicesController } from "./http/company-invoices.controller.js";
+import { CARD_INVOICE_PROVIDERS } from "./card-invoice.providers.js";
 import { ISSUED_INVOICE_PROVIDERS } from "./issued-invoice.providers.js";
 import { Module } from "@nestjs/common";
 
@@ -69,6 +70,7 @@ import { InvoiceAutopilotRuns } from "./domain/ports/invoice-autopilot-runs.js";
 import { MonthlyInvoiceOutcomes } from "./domain/ports/monthly-invoice-outcomes.js";
 import { MonthlyInvoicesReader } from "./domain/ports/monthly-invoices.reader.js";
 import { MonthlyInvoicingReader } from "./domain/ports/monthly-invoicing.reader.js";
+import { AdminCardInvoicesController } from "./http/admin-card-invoices.controller.js";
 import { AdminMonthlyInvoicesController } from "./http/admin-monthly-invoices.controller.js";
 import { PrismaInvoiceAutopilotRuns } from "./infrastructure/prisma-invoice-autopilot-runs.js";
 import { PrismaMonthlyInvoiceOutcomes } from "./infrastructure/prisma-monthly-invoice-outcomes.js";
@@ -183,6 +185,7 @@ import { PrismaLegalEntityRepository } from "./infrastructure/prisma-legal-entit
     CollectionAutopilotController,
     InvoiceAutopilotController,
     AdminMonthlyInvoicesController,
+    AdminCardInvoicesController,
     AdminBillingStatementsController,
     AdminDetachedUnpaidController,
     CompanyDetachedUnpaidController,
@@ -236,6 +239,7 @@ import { PrismaLegalEntityRepository } from "./infrastructure/prisma-legal-entit
     CollectionNoticeSender,
     SendCollectionNotice,
     ...ISSUED_INVOICE_PROVIDERS,
+    ...CARD_INVOICE_PROVIDERS,
     // La constitution automatique (PA3).
     { provide: CollectionAutopilotRuns, useClass: PrismaCollectionAutopilotRuns },
     { provide: LastAutopilotRunReader, useClass: PrismaLastAutopilotRunReader },

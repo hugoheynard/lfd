@@ -80,6 +80,7 @@ function issuedInvoice(over: Partial<IssuedInvoiceView> = {}): IssuedInvoiceView
       earlyPaymentDiscount: 'néant',
     },
     mandateReference: 'RUM-PORT-1',
+    paidOn: null,
     documentAvailable: false,
     ...over,
   };
@@ -138,6 +139,18 @@ describe('FactureEmisePage', () => {
     expect(page.textContent).toContain('Pain du mois');
     expect(page.textContent).toContain('livraison non constatée');
     expect(page.querySelector('a[href="/comptes-clients/co_1/facturation"]')).not.toBeNull();
+  });
+
+  it('une facture carte se dit acquittée, au jour du paiement (E5a)', async () => {
+    const page = host(
+      await render(() =>
+        Promise.resolve(issuedInvoice({ mandateReference: null, paidOn: '2026-09-28' })),
+      ),
+    );
+
+    expect(page.querySelector('[data-invoice-means]')?.textContent).toMatch(
+      /Acquittée par carte le 28 sept\. 2026/u,
+    );
   });
 
   it('un avoir cite la facture qu’il corrige', async () => {

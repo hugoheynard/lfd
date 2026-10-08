@@ -55,6 +55,8 @@ function rowOf(invoice: Invoice, correctsNumber: string | null = null): InvoiceR
     documentKey: data.documentKey ?? null,
     documentSha256: data.documentSha256 ?? null,
     paymentMeans: data.paymentMeans === undefined ? null : stored(data.paymentMeans),
+    prepaidCents: data.prepaidCents ?? null,
+    paidOn: dateOf(data.paidOn),
     createdAt: new Date(0),
     orders: orders
       .map((order) => ({

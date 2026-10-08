@@ -65,20 +65,53 @@ export interface InvoiceOrderReference {
   readonly deliveredOn: string | null;
 }
 
-/** UNTDID 4461 — le prélèvement SEPA, seul moyen que la facture du mois porte. */
+/** UNTDID 4461 — le prélèvement SEPA, le moyen de la facture du mois. */
 export const SEPA_DIRECT_DEBIT = "59";
 
 /**
- * Le moyen de paiement figé à l'émission (BG-16, lot E4) : le prélèvement
- * SEPA sous le mandat EFFECTIF du payeur au jour de l'émission. L'ICS
- * (BT-90) se relit sur le vendeur figé ; la RUM (BT-89) est la seule chose
- * que le mandat ajoute. Un lot préparé plus tard sous un autre mandat ne
- * réécrit pas la facture.
+ * UNTDID 4461 — la carte bancaire : le moyen d'une facture carte (lot E5a),
+ * déjà réglée à l'émission.
  */
-export interface InvoicePaymentMeans {
+export const BANK_CARD = "48";
+
+/**
+ * Le prélèvement SEPA sous le mandat EFFECTIF du payeur au jour de
+ * l'émission (BG-16, lot E4). L'ICS (BT-90) se relit sur le vendeur figé ;
+ * la RUM (BT-89) est la seule chose que le mandat ajoute. Un lot préparé
+ * plus tard sous un autre mandat ne réécrit pas la facture.
+ */
+export interface SepaDirectDebitMeans {
   readonly code: typeof SEPA_DIRECT_DEBIT;
   /** BT-89 — la RUM du mandat. */
   readonly mandateReference: string;
+}
+
+/**
+ * La carte (lot E5a) : rien d'autre que le code. Ni le numéro masqué ni le
+ * réseau (BG-18) ne sont connus ici — Stripe les garde, et une valeur
+ * devinée serait pire qu'une absence.
+ */
+export interface BankCardMeans {
+  readonly code: typeof BANK_CARD;
+}
+
+/** Le moyen de paiement figé à l'émission (BG-16). */
+export type InvoicePaymentMeans = SepaDirectDebitMeans | BankCardMeans;
+
+/** La RUM d'un prélèvement ; `null` pour tout autre moyen, ou aucun. */
+export function mandateReferenceOf(means: InvoicePaymentMeans | null): string | null {
+  return means?.code === SEPA_DIRECT_DEBIT ? means.mandateReference : null;
+}
+
+/**
+ * **Ce qui a déjà été payé** à l'émission (BT-113, lot E5a) : une facture
+ * carte est ACQUITTÉE — le montant encaissé et le jour (local) de
+ * l'encaissement. Le reste dû (BT-115) en découle : TTC − déjà payé.
+ */
+export interface InvoicePrepayment {
+  readonly amountCents: number;
+  /** `AAAA-MM-JJ` — le jour local de l'encaissement. */
+  readonly paidOn: string;
 }
 
 /** Tout ce que la facture fige — la forme persistée et relue (E2). */
@@ -104,6 +137,8 @@ export interface InvoiceState {
   readonly mentions: InvoiceMentions;
   /** `null` : aucun mandat unique à l'émission, ou un avoir. */
   readonly paymentMeans: InvoicePaymentMeans | null;
+  /** `null` : rien n'était payé à l'émission (facture du mois), ou un avoir. */
+  readonly prepayment: InvoicePrepayment | null;
   readonly documentKey: string | null;
   readonly documentSha256: string | null;
 }

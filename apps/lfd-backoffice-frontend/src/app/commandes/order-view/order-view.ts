@@ -19,6 +19,7 @@ import {
 
 import { NotifyService } from '../../notify.service';
 import { HandoverProofCard } from '../handover-proof-card/handover-proof-card';
+import { OrderInvoicesCard } from '../order-invoices-card/order-invoices-card';
 import { OrderRefundsCard } from '../order-refunds-card/order-refunds-card';
 import { isOrderSheet } from '../commande-page/order-sheet-key';
 import { AdminOrdersService } from '../orders.service';
@@ -51,6 +52,7 @@ type LoadState = 'loading' | 'ready' | 'error';
     FoldEmptyStateComponent,
     HandoverProofCard,
     OrderDetail,
+    OrderInvoicesCard,
     OrderRefundsCard,
     PriceExplain,
   ],

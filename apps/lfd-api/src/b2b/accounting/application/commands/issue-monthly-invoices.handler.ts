@@ -251,6 +251,8 @@ function draftOf(
       deliveredOn: context.deliveredOn.get(order.orderId) ?? null,
     })),
     paymentMeans: invoicePaymentMeansOf(payer.mandate),
+    // Rien n'est payé d'avance sur un bon au compte : il sera prélevé.
+    prepayment: null,
     computed: simulateInvoiceDossier(payer.billable.map((order) => order.frozen)).invoice,
   });
 }

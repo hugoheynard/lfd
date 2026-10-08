@@ -1,21 +1,20 @@
 import type { InvoiceVatBreakdown } from "@lfd/money";
 
 import {
-  InvalidCreditNoteError,
   InvalidInvoiceError,
-  InvoiceAssemblyError,
   InvoiceDocumentAlreadyAttachedError,
 } from "../errors/invoice-errors.js";
 import type { InvoiceSellerFacts } from "../services/invoice-issuance-blockers.js";
 import { InvoiceNumber } from "../value-objects/invoice-number.js";
 import {
-  assertCalendarDate,
   assertLines,
   assertPaymentMeans,
+  assertPrepayment,
   assertSha256,
   assertTotals,
   assertWithinCorrected,
 } from "./invoice-invariants.js";
+import { assertCorrectable, assertDates, assertOrders } from "./invoice-shape.js";
 import { distinctDeliveryAddress, issuableParties } from "./invoice-parties.js";
 import {
   COMMERCIAL_INVOICE,
@@ -24,6 +23,7 @@ import {
   type InvoiceLineInput,
   type InvoiceOrderReference,
   type InvoicePaymentMeans,
+  type InvoicePrepayment,
   type InvoiceSeller,
   type InvoiceState,
 } from "./invoice.types.js";
@@ -46,6 +46,11 @@ export interface IssueInvoiceInput {
   readonly vat: InvoiceVatBreakdown;
   /** Le mandat effectif du payeur (BG-16) ; `null` s'il n'y en a pas un seul. */
   readonly paymentMeans: InvoicePaymentMeans | null;
+  /**
+   * Ce qui est déjà payé (BT-113) — la facture carte, acquittée (E5a) ;
+   * `null` pour la facture du mois. Exige le moyen « carte », et lui seul.
+   */
+  readonly prepayment: InvoicePrepayment | null;
 }
 
 /** Ce que l'émission d'un avoir (381) reçoit. */
@@ -108,6 +113,7 @@ export class Invoice {
     assertLines(input.lines);
     assertTotals(number, input.lines, input.vat);
     assertPaymentMeans(input.paymentMeans);
+    assertPrepayment(number, input.issuedOn, input.paymentMeans, input.prepayment, input.vat);
     return new Invoice(
       {
         id: input.id,
@@ -124,6 +130,7 @@ export class Invoice {
         lines: [...input.lines],
         vat: input.vat,
         paymentMeans: input.paymentMeans,
+        prepayment: input.prepayment,
         documentKey: null,
         documentSha256: null,
       },
@@ -143,7 +150,12 @@ export class Invoice {
   static creditNote(input: IssueCreditNoteInput): Invoice {
     const corrected = input.corrected.state;
     const number = input.number.value;
-    assertCorrectable(input);
+    assertCorrectable(corrected, {
+      number: input.number,
+      issuedOn: input.issuedOn,
+      priorCorrectedIds: input.priorCreditNotes.map((note) => note.state.correctedInvoiceId),
+      orders: input.orders,
+    });
     assertDates(input.number, input.issuedOn, null);
     assertOrders(input.orders);
     assertLines(input.lines);
@@ -160,8 +172,10 @@ export class Invoice {
         correctedInvoiceNumber: corrected.number,
         issuedOn: input.issuedOn,
         dueOn: null,
-        // Un avoir n'appelle aucun paiement : il n'en dit pas le moyen.
+        // Un avoir n'appelle aucun paiement : il n'en dit pas le moyen, ni
+        // ce qui aurait été payé.
         paymentMeans: null,
+        prepayment: null,
         orders: [...input.orders],
         lines: [...input.lines],
         vat: input.vat,
@@ -184,6 +198,7 @@ export class Invoice {
     assertLines(state.lines);
     assertTotals(state.number, state.lines, state.vat);
     assertPaymentMeans(state.paymentMeans);
+    assertPrepayment(state.number, state.issuedOn, state.paymentMeans, state.prepayment, state.vat);
     if (state.documentSha256 !== null) {
       assertSha256(state.documentSha256);
     }
@@ -233,6 +248,11 @@ export class Invoice {
     return this.state.vat.totalCents;
   }
 
+  /** Acquittée à l'émission (E5a) : une facture carte. */
+  get isPrepaid(): boolean {
+    return this.state.prepayment !== null;
+  }
+
   /** La forme persistée — l'adaptateur (E2) et le rendu Factur-X (E3a) la lisent, rien d'autre. */
   toState(): InvoiceState {
     return {
@@ -240,63 +260,5 @@ export class Invoice {
       documentKey: this.documentKeyValue,
       documentSha256: this.documentSha256Value,
     };
-  }
-}
-
-/** Numéro de l'année d'émission ; échéance au plus tôt le jour d'émission. */
-function assertDates(number: InvoiceNumber, issuedOn: string, dueOn: string | null): void {
-  assertCalendarDate("date d'émission", issuedOn);
-  if (issuedOn.slice(0, 4) !== String(number.year)) {
-    throw new InvoiceAssemblyError(
-      number.value,
-      `numéro d'une autre année que l'émission (${issuedOn})`,
-    );
-  }
-  if (dueOn !== null) {
-    assertCalendarDate("date d'échéance", dueOn);
-    if (dueOn < issuedOn) {
-      throw new InvalidInvoiceError(
-        "date d'échéance",
-        `le ${dueOn} précède l'émission du ${issuedOn}`,
-      );
-    }
-  }
-}
-
-function assertOrders(orders: readonly InvoiceOrderReference[]): void {
-  const ids = new Set(orders.map((order) => order.orderId));
-  if (ids.size !== orders.length) {
-    throw new InvalidInvoiceError("bons", "un bon cité deux fois");
-  }
-  for (const order of orders) {
-    if (order.reference.trim() === "") {
-      throw new InvalidInvoiceError("bons", "un bon sans référence ne se cite pas (BT-13)");
-    }
-    if (order.deliveredOn !== null) {
-      assertCalendarDate(`livraison du bon ${order.reference}`, order.deliveredOn);
-    }
-  }
-}
-
-function assertCorrectable(input: IssueCreditNoteInput): void {
-  const corrected = input.corrected.toState();
-  const fail = (reason: string): never => {
-    throw new InvalidCreditNoteError(corrected.number, reason);
-  };
-  if (corrected.type !== COMMERCIAL_INVOICE) {
-    fail("un avoir corrige une facture, pas un avoir");
-  }
-  if (input.issuedOn < corrected.issuedOn) {
-    fail(`l'avoir du ${input.issuedOn} précède la facture du ${corrected.issuedOn}`);
-  }
-  if (input.number.value === corrected.number) {
-    fail("l'avoir reprend le numéro de la facture");
-  }
-  if (input.priorCreditNotes.some((note) => note.toState().correctedInvoiceId !== corrected.id)) {
-    fail("un avoir antérieur cité corrige une autre facture");
-  }
-  const invoicedIds = new Set(corrected.orders.map((order) => order.orderId));
-  if (input.orders.some((order) => !invoicedIds.has(order.orderId))) {
-    fail("un bon cité n'est pas sur la facture");
   }
 }

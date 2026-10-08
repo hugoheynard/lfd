@@ -2,13 +2,16 @@ import type {
   IssuedInvoiceSummaryView,
   IssuedInvoiceView,
   IssuedInvoicesView,
+  OrderInvoicesView,
 } from "@lfd/contracts";
 import type { InvoiceVatPart } from "@lfd/money";
 
 import type { Invoice } from "../domain/entities/invoice.js";
+import { mandateReferenceOf } from "../domain/entities/invoice.types.js";
 import { InvoiceNotFoundError } from "../domain/errors/invoice-access-errors.js";
 import type { InvoicePeriodsReader } from "../domain/ports/invoice-periods.reader.js";
 import type { InvoiceReader } from "../domain/ports/invoice.reader.js";
+import type { OrderInvoicesReader } from "../domain/ports/order-invoices.reader.js";
 
 /** Les deux ports qu'une lecture de facture appelle. */
 export interface IssuedInvoiceReaders {
@@ -53,6 +56,21 @@ export async function issuedInvoiceOf(
   }
   const period = (await readers.periods.periodsOf([invoice.id])).get(invoice.id) ?? null;
   return detailOf(invoice, period);
+}
+
+/**
+ * **La facture et les avoirs d'une commande** (lot E5c), dans l'ordre des
+ * numéros — pour la fiche commande du back-office.
+ */
+export async function orderInvoicesOf(
+  readers: { readonly invoices: OrderInvoicesReader; readonly periods: InvoicePeriodsReader },
+  orderId: string,
+): Promise<OrderInvoicesView> {
+  const invoices = await readers.invoices.ofOrder(orderId);
+  const periods = await readers.periods.periodsOf(invoices.map((invoice) => invoice.id));
+  return {
+    invoices: invoices.map((invoice) => summaryOf(invoice, periods.get(invoice.id) ?? null)),
+  };
 }
 
 function summaryOf(invoice: Invoice, period: string | null): IssuedInvoiceSummaryView {
@@ -121,6 +139,7 @@ function detailOf(invoice: Invoice, period: string | null): IssuedInvoiceView {
       recoveryIndemnityCents: mentions.recoveryIndemnityCents,
       earlyPaymentDiscount: mentions.earlyPaymentDiscount,
     },
-    mandateReference: state.paymentMeans?.mandateReference ?? null,
+    mandateReference: mandateReferenceOf(state.paymentMeans),
+    paidOn: state.prepayment?.paidOn ?? null,
   };
 }

@@ -1,6 +1,6 @@
-import type { InvoiceVatBreakdown, InvoiceVatCategory } from "@lfd/money";
+import type { InvoiceVatCategory } from "@lfd/money";
 
-import type { InvoiceState } from "../entities/invoice.types.js";
+import { mandateReferenceOf, type InvoiceState } from "../entities/invoice.types.js";
 import { centsAmount, dateElement, ratePercent, textElement } from "./facturx-format.js";
 import { paymentTermsDescription } from "./facturx-mentions.js";
 import {
@@ -18,8 +18,9 @@ import {
  * BT-89, totaux BG-22, facture corrigée BT-25.
  *
  * Le prélèvement (E4, question E3a b) : quand la facture a figé un mandat,
- * le code 59 (UNTDID 4461), l'ICS du vendeur figé et la RUM. Sans mandat
- * figé, aucun moyen n'est écrit plutôt qu'un moyen deviné. Ordre des
+ * le code 59 (UNTDID 4461), l'ICS du vendeur figé et la RUM. La carte (E5a) :
+ * le code 48 seul, et le déjà payé (BT-113). Sans moyen figé, aucun n'est
+ * écrit plutôt qu'un moyen deviné. Ordre des
  * éléments écrit de mémoire du XSD D16B, non vérifié contre lui.
  *
  * Tout est repris de la ventilation figée par l'émission ; rien n'est
@@ -58,19 +59,21 @@ export function lineTradeTax(rate: number): string {
 export function headerSettlement(state: InvoiceState): string {
   return [
     "<ram:ApplicableHeaderTradeSettlement>",
-    state.paymentMeans === null ? "" : textElement("ram:CreditorReferenceID", state.seller.ics),
+    mandateReferenceOf(state.paymentMeans) === null
+      ? ""
+      : textElement("ram:CreditorReferenceID", state.seller.ics),
     textElement("ram:InvoiceCurrencyCode", CURRENCY),
     paymentMeans(state),
     ...state.vat.categories.map(headerTradeTax),
     ...state.vat.categories.flatMap(allowanceCharges),
     paymentTerms(state),
-    monetarySummation(state.vat),
+    monetarySummation(state),
     correctedInvoice(state.correctedInvoiceNumber),
     "</ram:ApplicableHeaderTradeSettlement>",
   ].join("");
 }
 
-/** BG-16 — BT-81, le code du moyen ; rien sans mandat figé. */
+/** BG-16 — BT-81, le code du moyen (59 prélèvement, 48 carte) ; rien sans moyen figé. */
 function paymentMeans(state: InvoiceState): string {
   if (state.paymentMeans === null) {
     return "";
@@ -135,19 +138,23 @@ function paymentTerms(state: InvoiceState): string {
     "<ram:SpecifiedTradePaymentTerms>",
     textElement("ram:Description", paymentTermsDescription(state)),
     state.dueOn === null ? "" : dateElement("ram:DueDateDateTime", state.dueOn, "udt"),
-    state.paymentMeans === null
-      ? ""
-      : textElement("ram:DirectDebitMandateID", state.paymentMeans.mandateReference),
+    directDebitMandate(mandateReferenceOf(state.paymentMeans)),
     "</ram:SpecifiedTradePaymentTerms>",
   ].join("");
 }
 
+function directDebitMandate(reference: string | null): string {
+  return reference === null ? "" : textElement("ram:DirectDebitMandateID", reference);
+}
+
 /**
  * BG-22 — BT-106 Σ lignes, BT-108 frais, BT-107 remises, BT-109 HT, BT-110
- * TVA, BT-112 TTC, BT-115 à payer. Aucun acompte ni arrondi (BT-113,
- * BT-114) : à payer = TTC.
+ * TVA, BT-112 TTC, BT-113 déjà payé (facture carte, E5a), BT-115 à payer =
+ * TTC − déjà payé. Aucun arrondi (BT-114).
  */
-function monetarySummation(vat: InvoiceVatBreakdown): string {
+function monetarySummation(state: InvoiceState): string {
+  const { vat, prepayment } = state;
+  const prepaid = prepayment?.amountCents ?? 0;
   return [
     "<ram:SpecifiedTradeSettlementHeaderMonetarySummation>",
     textElement("ram:LineTotalAmount", centsAmount(vat.goodsHtCents)),
@@ -156,7 +163,8 @@ function monetarySummation(vat: InvoiceVatBreakdown): string {
     textElement("ram:TaxBasisTotalAmount", centsAmount(vat.taxableBaseCents)),
     textElement("ram:TaxTotalAmount", centsAmount(vat.vatCents), ` currencyID="${CURRENCY}"`),
     textElement("ram:GrandTotalAmount", centsAmount(vat.totalCents)),
-    textElement("ram:DuePayableAmount", centsAmount(vat.totalCents)),
+    prepayment === null ? "" : textElement("ram:TotalPrepaidAmount", centsAmount(prepaid)),
+    textElement("ram:DuePayableAmount", centsAmount(vat.totalCents - prepaid)),
     "</ram:SpecifiedTradeSettlementHeaderMonetarySummation>",
   ].join("");
 }

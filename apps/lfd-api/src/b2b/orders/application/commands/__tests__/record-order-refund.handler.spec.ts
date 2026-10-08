@@ -13,6 +13,7 @@ import { RefundWithoutOrderEvent } from "../../../domain/events/refund-without-o
 import { OrderRefundRepository } from "../../../domain/ports/order-refund.repository.js";
 import { RecordOrderRefundCommand } from "../record-order-refund.command.js";
 import { RecordOrderRefundHandler } from "../record-order-refund.handler.js";
+import { RecordingDurable } from "./durable-doubles.js";
 
 /** Le dépôt en mémoire : une commande au plus, rechargée depuis ce qui a été sauvé. */
 class InMemoryRefunds extends OrderRefundRepository {
@@ -74,6 +75,7 @@ function build(paymentStatus: LedgerPaymentStatus | null = "paid") {
   const refunds = new InMemoryRefunds("pi_1", paymentStatus);
   const journal = new RecordingJournal();
   const events = new RecordingPublisher();
+  const durable = new RecordingDurable();
   const handler = new RecordOrderRefundHandler(
     refunds,
     new DirectUnitOfWork(),
@@ -81,9 +83,10 @@ function build(paymentStatus: LedgerPaymentStatus | null = "paid") {
     new FixedIdGenerator("ref"),
     new FixedClock(new Date(STRIPE_AT.getTime() + 5_000)),
     events,
+    durable,
   );
   const send = (r: RefundReport) => handler.execute(new RecordOrderRefundCommand("pi_1", r));
-  return { refunds, journal, events, send };
+  return { refunds, journal, events, durable, send };
 }
 
 describe("RecordOrderRefundHandler", () => {
@@ -174,11 +177,38 @@ describe("RecordOrderRefundHandler", () => {
       new FixedIdGenerator("ref"),
       new FixedClock(STRIPE_AT),
       events,
+      new RecordingDurable(),
     );
 
     await expect(
       handler.execute(new RecordOrderRefundCommand("pi_1", report(500))),
     ).rejects.toThrow("journal indisponible");
     expect(events.published).toEqual([]);
+  });
+});
+
+/** Lot E5b : l'avoir naît du fait durable d'un remboursement réussi, une fois. */
+describe("RecordOrderRefundHandler — le fait durable d'un remboursement réussi", () => {
+  it("écrit `order.refund_succeeded` pour le remboursement noté réussi, pas au rejeu", async () => {
+    const { durable, send } = build();
+
+    await send(report(500, "re_1"));
+    await send(report(500, "re_1"));
+
+    expect(durable.facts).toEqual([
+      {
+        type: "order.refund_succeeded",
+        key: "order.refund_succeeded:ref_000001",
+        payload: { orderId: "ord_1", refundId: "ref_000001" },
+      },
+    ]);
+  });
+
+  it("n'écrit rien pour un remboursement en attente", async () => {
+    const { durable, send } = build();
+
+    await send({ ...report(500, "re_1"), status: "pending" });
+
+    expect(durable.facts).toEqual([]);
   });
 });

@@ -106,7 +106,7 @@
       <h3 class="sub">{{ copy().mentions }}</h3>
       <dl class="calc">
         <dt>{{ copy().payment }}</dt>
-        <dd data-invoice-means>{{ means(bill.mandateReference) }}</dd>
+        <dd data-invoice-means>{{ means(bill) }}</dd>
         <dt>{{ copy().latePenalty }}</dt>
         <dd>{{ percent(bill.mentions.latePenaltyRateBasisPoints) }}</dd>
         <dt>{{ copy().recoveryIndemnity }}</dt>

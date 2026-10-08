@@ -1,8 +1,9 @@
 import type { Prisma } from "../../../platform/database/client/client.js";
-import type {
-  InvoiceLineInput,
-  InvoiceMentions,
-  InvoicePaymentMeans,
+import {
+  SEPA_DIRECT_DEBIT,
+  type InvoiceLineInput,
+  type InvoiceMentions,
+  type InvoicePaymentMeans,
 } from "../domain/entities/invoice.types.js";
 
 /*
@@ -44,5 +45,7 @@ export function addressLinesJson(lines: readonly string[]): Prisma.InputJsonValu
 
 /** BG-16 (E4) — colonne à part, nullable : son absence ne change pas `body_version`. */
 export function paymentMeansJson(means: InvoicePaymentMeans): Prisma.InputJsonValue {
-  return { code: means.code, mandateReference: means.mandateReference };
+  return means.code === SEPA_DIRECT_DEBIT
+    ? { code: means.code, mandateReference: means.mandateReference }
+    : { code: means.code };
 }

@@ -10,6 +10,7 @@ import {
   MonthlyInvoicesReader,
   type MonthlyInvoicesRead,
 } from "../domain/ports/monthly-invoices.reader.js";
+import { mandateReferenceOf } from "../domain/entities/invoice.types.js";
 import { invoicePaymentMeansSchema } from "./invoice-json.schema.js";
 import { BLOCKED_OUTCOME, ISSUED_OUTCOME } from "./prisma-monthly-invoice-outcomes.js";
 
@@ -67,9 +68,9 @@ export class PrismaMonthlyInvoicesReader extends MonthlyInvoicesReader {
                 dueOn: row.invoice.dueOn === null ? null : dayOf(row.invoice.dueOn),
                 totalCents: row.invoice.totalTtcCents,
                 orderCount: row.invoice._count.orders,
-                mandateReference:
-                  invoicePaymentMeansSchema.safeParse(row.invoice.paymentMeans).data
-                    ?.mandateReference ?? null,
+                mandateReference: mandateReferenceOf(
+                  invoicePaymentMeansSchema.safeParse(row.invoice.paymentMeans).data ?? null,
+                ),
                 unbillableOrders: row.unbillableOrders,
               },
             ],

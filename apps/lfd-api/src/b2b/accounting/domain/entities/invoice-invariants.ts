@@ -6,7 +6,13 @@ import {
   InvoiceTotalsMismatchError,
 } from "../errors/invoice-errors.js";
 import { InvoiceQuantity } from "../value-objects/invoice-quantity.js";
-import type { InvoiceLineInput, InvoicePaymentMeans } from "./invoice.types.js";
+import {
+  BANK_CARD,
+  SEPA_DIRECT_DEBIT,
+  type InvoiceLineInput,
+  type InvoicePaymentMeans,
+  type InvoicePrepayment,
+} from "./invoice.types.js";
 
 /**
  * Les invariants de la facture, purs — appelés par les factories de
@@ -181,7 +187,7 @@ function sum(values: readonly number[]): number {
 const MANDATE_REFERENCE_MAX = 35;
 
 export function assertPaymentMeans(means: InvoicePaymentMeans | null): void {
-  if (means === null) {
+  if (means === null || means.code !== SEPA_DIRECT_DEBIT) {
     return;
   }
   const reference = means.mandateReference;
@@ -189,6 +195,46 @@ export function assertPaymentMeans(means: InvoicePaymentMeans | null): void {
     throw new InvalidInvoiceError(
       "moyen de paiement",
       `RUM « ${reference} » vide ou plus longue que ${String(MANDATE_REFERENCE_MAX)} caractères`,
+    );
+  }
+}
+
+/**
+ * **La facture acquittée** (BT-113, lot E5a) : la carte et le « déjà payé »
+ * vont ensemble — une carte sans encaissement, ou un encaissement sans la
+ * carte, n'existe pas ici. Le déjà payé est un entier positif qui ne
+ * dépasse pas le TTC, payé au plus tard le jour de l'émission.
+ *
+ * @throws {InvalidInvoiceError}
+ */
+export function assertPrepayment(
+  number: string,
+  issuedOn: string,
+  means: InvoicePaymentMeans | null,
+  prepayment: InvoicePrepayment | null,
+  vat: InvoiceVatBreakdown,
+): void {
+  const field = `déjà payé de ${number}`;
+  if ((means?.code === BANK_CARD) !== (prepayment !== null)) {
+    throw new InvalidInvoiceError(field, "la carte et le montant déjà payé vont ensemble");
+  }
+  if (prepayment === null) {
+    return;
+  }
+  if (!Number.isSafeInteger(prepayment.amountCents) || prepayment.amountCents <= 0) {
+    throw new InvalidInvoiceError(field, "un montant entier positif est attendu");
+  }
+  if (prepayment.amountCents > vat.totalCents) {
+    throw new InvalidInvoiceError(
+      field,
+      `${String(prepayment.amountCents)} c dépassent le TTC de ${String(vat.totalCents)} c`,
+    );
+  }
+  assertCalendarDate("date du paiement", prepayment.paidOn);
+  if (prepayment.paidOn > issuedOn) {
+    throw new InvalidInvoiceError(
+      field,
+      `payée le ${prepayment.paidOn}, après l'émission du ${issuedOn}`,
     );
   }
 }

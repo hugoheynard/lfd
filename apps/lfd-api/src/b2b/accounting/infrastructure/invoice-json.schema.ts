@@ -53,7 +53,7 @@ export const addressLinesSchema = z.array(z.string());
 
 export const invoiceTypeSchema = z.enum(["380", "381"]);
 
-export const invoicePaymentMeansSchema = z.object({
-  code: z.literal("59"),
-  mandateReference: z.string(),
-});
+export const invoicePaymentMeansSchema = z.discriminatedUnion("code", [
+  z.object({ code: z.literal("59"), mandateReference: z.string() }),
+  z.object({ code: z.literal("48") }),
+]);

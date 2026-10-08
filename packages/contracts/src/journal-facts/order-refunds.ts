@@ -1,6 +1,6 @@
 import { z } from "zod";
 
-import { cents, fact, instant, payload, subjectLabel } from "./fact.js";
+import { cents, fact, instant, named, payload, subjectLabel } from "./fact.js";
 
 /**
  * **Les remboursements Stripe constatés** (plan
@@ -45,6 +45,30 @@ export const ORDER_REFUND_FACTS = {
       status: refundStatus(),
       reason: z.enum(["currency", "exceeds_charge", "amount_changed", "reversed_after_success"]),
     }),
+  ),
+  /**
+   * Un remboursement réussi reste SANS avoir automatique (lot E5b) : la
+   * facture qui porte la commande est celle du mois (`account_invoice` — le
+   * remboursement d'un bon au compte dit autre chose que la vente, A11), ou
+   * il dépasse ce que la facture porte encore (`exceeds_invoice`). L'avoir
+   * est alors un geste humain ; la cloche sonne avec lui.
+   */
+  "order.refund_not_credited": fact(
+    payload({
+      subjectLabel: subjectLabel(),
+      amountCents: cents(),
+      invoice: named("invoice"),
+      reason: z.enum(["account_invoice", "exceeds_invoice"]),
+    }),
+  ),
+  /**
+   * La facture carte de la commande n'a pas pu être émise (lot E5a) :
+   * acheteur sans SIREN ou sans TVA, pas d'émetteur, bon incohérent…
+   * `message` dit le refus en clair ; l'écran Comptabilité la montre et
+   * « Réessayer » la rejoue.
+   */
+  "order.card_invoice_blocked": fact(
+    payload({ subjectLabel: subjectLabel(), message: z.string().min(1) }),
   ),
 } as const;
 

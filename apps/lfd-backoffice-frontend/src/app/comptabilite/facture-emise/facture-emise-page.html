@@ -159,11 +159,13 @@
               <dd>{{ bill.mentions.earlyPaymentDiscount }}</dd>
               <dt>Règlement</dt>
               <dd data-invoice-means>
-                {{
-                  bill.mandateReference === null
-                    ? '—'
-                    : 'Prélèvement SEPA, mandat ' + bill.mandateReference
-                }}
+                @if (bill.mandateReference !== null) {
+                  Prélèvement SEPA, mandat {{ bill.mandateReference }}
+                } @else if (bill.paidOn !== null) {
+                  Acquittée par carte le {{ day(bill.paidOn) }}
+                } @else {
+                  —
+                }
               </dd>
             </dl>
           </fold-card>

@@ -28,6 +28,7 @@ const OPERATION_LABELS: Readonly<Record<InvoiceMentions["operationCategory"], st
 /** BT-20 — l'échéance et les trois mentions de retard, en une phrase par sujet. */
 export function paymentTermsDescription(state: InvoiceState): string {
   return [
+    ...(state.prepayment === null ? [] : [settledText(state)]),
     state.dueOn === null ? "Avoir : sans échéance." : `Échéance : ${frenchDate(state.dueOn)}.`,
     latePenaltiesText(state),
     recoveryIndemnityText(state),
@@ -44,6 +45,16 @@ export function documentNotes(state: InvoiceState): string {
     note(operationText(state), SUBJECT_GENERAL),
     note(ordersText(state.orders), SUBJECT_GENERAL),
   ].join("");
+}
+
+/**
+ * « Facture acquittée le 12/10/2026 par carte. » — la facture carte (E5a) ;
+ * la même phrase sur le XML et le PDF.
+ */
+export function settledText(state: InvoiceState): string {
+  return state.prepayment === null
+    ? ""
+    : `Facture acquittée le ${frenchDate(state.prepayment.paidOn)} par carte.`;
 }
 
 /** « Pénalités de retard : 10,15 % l'an. » — la même phrase sur le XML et le PDF. */

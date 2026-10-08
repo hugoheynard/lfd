@@ -1,21 +1,24 @@
 import type { JournalFactType } from '@lfd/contracts/journal-facts';
 
 import {
+  cite,
   inUnit,
   said,
   subject,
   subjectLabelOf,
   text,
   valueIn,
+  type Noun,
   type Phrase,
   type PhraseFact,
   type Segment,
 } from '../phrase';
-import { REFUND_REJECTION, REFUND_STATUS } from '../values/orders-values';
+import { REFUND_NOT_CREDITED, REFUND_REJECTION, REFUND_STATUS } from '../values/orders-values';
 
 /**
  * **Les remboursements Stripe constatés** (plan
- * `plan-facture-carte-et-remboursements.md`, lot R1) — familles
+ * `plan-facture-carte-et-remboursements.md`, lot R1), et ce que la facture
+ * carte en fait (lots E5a, E5b : facture signalée, remboursement sans avoir) — familles
  * `ordersAndProduction` (`order.refund_*`) et `accounting`
  * (`payment_refund.unmatched`). À part de `orders-phrases.ts`, qui dépasse
  * déjà la taille d'un fichier.
@@ -85,9 +88,39 @@ const refundUnmatched: Phrase = (fact) =>
     ['amountCents', 'refundedAt', 'status'],
   );
 
+const ON_INVOICE: Noun = { the: 'sur la facture', a: 'sur une facture' };
+
+const refundNotCredited: Phrase = (fact) =>
+  said(
+    [
+      text('Un remboursement Stripe de '),
+      inUnit('cents', fact.payload['amountCents']),
+      text(' sur '),
+      ...order(fact),
+      text(' reste sans avoir automatique '),
+      ...cite(ON_INVOICE, fact.payload['invoice']),
+      text(' : '),
+      valueIn(REFUND_NOT_CREDITED, fact.payload['reason'], { inSentence: true }),
+    ],
+    ['subjectLabel', 'amountCents', 'invoice', 'reason'],
+  );
+
+const cardInvoiceBlocked: Phrase = (fact) =>
+  said(
+    [
+      text('La facture carte de '),
+      ...order(fact),
+      text(' n’a pas pu être émise : '),
+      text(typeof fact.payload['message'] === 'string' ? fact.payload['message'] : '—'),
+    ],
+    ['subjectLabel', 'message'],
+  );
+
 export const REFUND_PHRASES = {
   'order.refund_recorded': refundRecorded,
   'order.fully_refunded': fullyRefunded,
   'order.refund_rejected': refundRejected,
   'payment_refund.unmatched': refundUnmatched,
+  'order.refund_not_credited': refundNotCredited,
+  'order.card_invoice_blocked': cardInvoiceBlocked,
 } as const satisfies Partial<Record<JournalFactType, Phrase>>;

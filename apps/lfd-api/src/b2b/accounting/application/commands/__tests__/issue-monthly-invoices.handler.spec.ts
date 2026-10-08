@@ -1,4 +1,5 @@
 import { DirectUnitOfWork } from "../../../../../platform/database/__tests__/direct-unit-of-work.js";
+import { mandateReferenceOf } from "../../../domain/entities/invoice.types.js";
 import { RecordingPublisher } from "../../../../../platform/events/__tests__/recording-publisher.js";
 import { FixedClock } from "../../../../../platform/time/fixed-clock.js";
 import type { StatementBuyer } from "../../../domain/entities/billing-statement.js";
@@ -241,7 +242,7 @@ describe("IssueMonthlyInvoices — la facture du mois (E4)", () => {
     const states = h.invoices.inserted.map((invoice) => invoice.toState());
     // Le payeur légal est le même ; l'ordre est celui du premier bon de chaque facture.
     expect(states.map((state) => state.buyer.companyId)).toEqual(["c_principal", "c_principal"]);
-    expect(states.map((state) => state.paymentMeans?.mandateReference)).toEqual([
+    expect(states.map((state) => mandateReferenceOf(state.paymentMeans))).toEqual([
       "RUM-chalet",
       "RUM-c_principal",
     ]);
@@ -289,7 +290,9 @@ describe("IssueMonthlyInvoices — la facture du mois (E4)", () => {
 
     expect(replay.alreadyInvoiced).toBe(1);
     expect(replay.issued).toHaveLength(1);
-    expect(h.invoices.inserted.at(-1)?.toState().paymentMeans?.mandateReference).toBe("RUM-chalet");
+    expect(mandateReferenceOf(h.invoices.inserted.at(-1)?.toState().paymentMeans ?? null)).toBe(
+      "RUM-chalet",
+    );
   });
 
   it("émise après le mois (bouton le 2) : datée du jour réel, jamais antidatée", async () => {

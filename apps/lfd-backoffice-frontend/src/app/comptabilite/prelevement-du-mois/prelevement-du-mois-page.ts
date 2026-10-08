@@ -36,6 +36,7 @@ import { day } from '../invoice-dossier-format';
 import { MonthlyInvoicesService } from '../monthly-invoices.service';
 import { BatchHistory, type HistoryDownload } from './batch-history/batch-history';
 import { ExcludedOrders } from './excluded-orders/excluded-orders';
+import { CardInvoiceSignals } from './card-invoice-signals/card-invoice-signals';
 import { MonthInvoices } from './month-invoices/month-invoices';
 import { MonthPreview } from './month-preview/month-preview';
 import { MonthSchedule } from './month-schedule/month-schedule';
@@ -82,6 +83,7 @@ import { SettlePanel } from './settle-panel/settle-panel';
     FoldPageLayoutComponent,
     FoldPageSectionComponent,
     MonthInvoices,
+    CardInvoiceSignals,
     MonthPreview,
     MonthSchedule,
     PendingBatch,

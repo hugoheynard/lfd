@@ -66,6 +66,13 @@ model Invoice {
   /// effectif ; NULL = aucun mandat unique à l'émission (E4).
   paymentMeans Json? @map("payment_means")
 
+  /// Ce qu'une facture carte a déjà encaissé (BT-113, lot E5a), en centimes ;
+  /// avec `paidOn`, ou aucun des deux. Jamais sur un avoir, jamais au-delà du
+  /// TTC (contraintes de `20261009000000_la_facture_carte`).
+  prepaidCents Int?      @map("prepaid_cents")
+  /// Le jour local de l'encaissement par carte — « acquittée le … ».
+  paidOn       DateTime? @map("paid_on") @db.Date
+
   bodyVersion Int @map("body_version")
 
   /// Le document rendu (Factur-X), posé une fois après l'émission.
@@ -76,7 +83,10 @@ model Invoice {
 
   orders          InvoiceOrder[]
   monthlyOutcome  InvoiceMonthlyOutcome?
+  cardOutcome     CardInvoiceOutcome?
   collectionLines CollectionBatchLineInvoice[]
+  /// Les remboursements que cet avoir constate (E5b) — un au plus.
+  refunds         OrderRefund[]
 
   @@unique([legalEntityId, year, rank])
   @@unique([id, type])
@@ -180,5 +190,37 @@ model InvoicingFloor {
   floorAt DateTime @map("floor_at") @db.Timestamptz(3)
 
   @@map("invoicing_floor")
+  @@schema("public")
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
+// La facture carte — lot E5a. Contraintes en SQL
+// (`20261009000000_la_facture_carte`) : émise ⇔ sa facture et son entité,
+// signalée ⇔ son refus ; une issue `issued` ne se défait pas (déclencheur
+// `card_invoice_outcome_final`).
+// ─────────────────────────────────────────────────────────────────────────────
+
+/// **L'issue de la facture carte d'une commande** : émise, ou signalée — une
+/// facture impossible (acheteur sans SIREN, pas d'émetteur…) est RANGÉE ici,
+/// l'écran la montre et le bouton « Réessayer » la rejoue. Propriétaire :
+/// `src/b2b/accounting/`.
+model CardInvoiceOutcome {
+  orderId        String       @id @map("order_id")
+  order          Order        @relation(fields: [orderId], references: [id], onDelete: Restrict)
+  orderNumber    String       @map("order_number")
+  /// Nulle quand aucune entité ne pouvait émettre.
+  legalEntityId  String?      @map("legal_entity_id")
+  legalEntity    LegalEntity? @relation(fields: [legalEntityId], references: [id], onDelete: Restrict)
+  payerCompanyId String       @map("payer_company_id")
+  payerName      String       @map("payer_name")
+  /// `issued` | `blocked` (CHECK en base).
+  outcome        String
+  invoiceId      String?      @unique @map("invoice_id")
+  invoice        Invoice?     @relation(fields: [invoiceId], references: [id], onDelete: Restrict)
+  message        String?
+  recordedAt     DateTime     @map("recorded_at") @db.Timestamptz(3)
+
+  @@index([outcome])
+  @@map("card_invoice_outcome")
   @@schema("public")
 }

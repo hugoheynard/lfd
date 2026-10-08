@@ -15,6 +15,7 @@ import type {
 
 import { PermissionsStore } from '../../auth/permissions.store';
 import { NotifyService } from '../../notify.service';
+import { CardInvoicesService } from '../card-invoices.service';
 import { CollectionBatchesService } from '../collection-batches.service';
 import { LegalEntitiesService } from '../legal-entities.service';
 import { MonthlyInvoicesService } from '../monthly-invoices.service';
@@ -192,6 +193,13 @@ async function render(
       provideRouter([]),
       { provide: CollectionBatchesService, useValue: api },
       { provide: MonthlyInvoicesService, useValue: invoicesApi },
+      // Les factures carte signalées (E5a) se lisent à part ; aucune ici.
+      {
+        provide: CardInvoicesService,
+        useValue: {
+          signals: () => Promise.resolve({ signaled: [] }),
+        } satisfies Pick<CardInvoicesService, 'signals'>,
+      },
       {
         provide: LegalEntitiesService,
         useValue: {

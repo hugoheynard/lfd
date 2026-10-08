@@ -1,4 +1,4 @@
-import type { InvoiceState } from "../entities/invoice.types.js";
+import { mandateReferenceOf, type InvoiceState } from "../entities/invoice.types.js";
 import { noticeAmount, noticeDay } from "./collection-notice-wording.js";
 
 const MONTH = new Intl.DateTimeFormat("fr-FR", {
@@ -49,10 +49,18 @@ export function invoiceNoticeContent(
     period: period === null ? null : invoicePeriodLabel(period),
     total: noticeAmount(state.vat.totalCents),
     dueOn: noticeDay(state.dueOn),
-    paymentMeans:
-      state.paymentMeans === null
-        ? null
-        : `Prélèvement SEPA — mandat ${state.paymentMeans.mandateReference}`,
+    paymentMeans: paymentMeansText(state),
     invoicesUrl,
   };
+}
+
+/** Le règlement, s'il est figé sur la pièce : le prélèvement et sa RUM, ou la carte (E5a). */
+function paymentMeansText(state: InvoiceState): string | null {
+  const reference = mandateReferenceOf(state.paymentMeans);
+  if (reference !== null) {
+    return `Prélèvement SEPA — mandat ${reference}`;
+  }
+  return state.prepayment === null
+    ? null
+    : `Payée par carte le ${noticeDay(state.prepayment.paidOn)} — rien à régler`;
 }

@@ -107,6 +107,12 @@ export const REFUND_REJECTION = domain('motif de refus d’un remboursement', {
   reversed_after_success: 'Réussi puis annulé',
 });
 
+/** Pourquoi un remboursement réussi reste sans avoir automatique (`order.refund_not_credited`, E5b). */
+export const REFUND_NOT_CREDITED = domain('motif d’un remboursement sans avoir', {
+  account_invoice: 'La commande est sur une facture du mois — avoir à émettre à la main',
+  exceeds_invoice: 'Au-delà de ce que la facture porte encore',
+});
+
 /** Le verdict d'un contrôle qualité ; `warning` se dit « Réserve » à l'écran. */
 export const QUALITY_VERDICT = domain('verdict d’un contrôle qualité', {
   ok: 'OK',
@@ -174,6 +180,7 @@ export const ORDERS_VALUES: ValueFamily = {
     ABANDON_OUTCOME,
     REFUND_STATUS,
     REFUND_REJECTION,
+    REFUND_NOT_CREDITED,
     QUALITY_VERDICT,
     QUALITY_LIFTING_VERDICT,
     HANDOVER_PROOF_ERASURE_CAUSE,

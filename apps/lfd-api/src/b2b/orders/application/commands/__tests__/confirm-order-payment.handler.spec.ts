@@ -1,3 +1,4 @@
+import { DirectUnitOfWork } from "../../../../../platform/database/__tests__/direct-unit-of-work.js";
 import { DomainEventPublisher } from "../../../../../platform/events/domain-event-publisher.js";
 import { OrderPaidAfterCancellationEvent } from "../../../domain/events/order-paid-after-cancellation.event.js";
 import { OrderPaymentFailedEvent } from "../../../domain/events/order-payment-failed.event.js";
@@ -6,6 +7,7 @@ import { CancelledOrderPaymentReader } from "../../../domain/ports/cancelled-ord
 import { OrderRepository } from "../../../domain/ports/order.repository.js";
 import { ConfirmOrderPaymentCommand } from "../confirm-order-payment.command.js";
 import { ConfirmOrderPaymentHandler } from "../confirm-order-payment.handler.js";
+import { RecordingDurable } from "./durable-doubles.js";
 
 /** Ce que les doublés ont vu passer : les marquages, et les faits publiés. */
 interface Sink {
@@ -70,11 +72,14 @@ const handlerWith = (
   sink: Sink,
   franchit: string | null,
   cancelled: CancelledOrders = new CancelledOrders(null),
+  durable: RecordingDurable = new RecordingDurable(),
 ): ConfirmOrderPaymentHandler =>
   new ConfirmOrderPaymentHandler(
     recordingRepo(sink, franchit),
     cancelled,
     recordingPublisher(sink),
+    new DirectUnitOfWork(),
+    durable,
   );
 
 describe("ConfirmOrderPaymentHandler", () => {
@@ -186,5 +191,38 @@ describe("ConfirmOrderPaymentHandler — un encaissement sur une commande annul�
 
     expect(cancelled.asked).toEqual([]);
     expect(sink.published).toEqual([]);
+  });
+});
+
+/**
+ * Lot E5a : la facture carte d'une commande déjà retirée ne naît que de
+ * l'encaissement — il doit survivre à un redémarrage, donc partir DURABLE,
+ * et une seule fois.
+ */
+describe("ConfirmOrderPaymentHandler — le fait durable de l'encaissement", () => {
+  it("écrit `order.paid` au franchissement, avec la commande", async () => {
+    const durable = new RecordingDurable();
+    await handlerWith(emptySink(), "ord_1", undefined, durable).execute(
+      new ConfirmOrderPaymentCommand("pi_1", "succeeded"),
+    );
+    expect(durable.facts).toEqual([
+      { type: "order.paid", key: "order.paid:ord_1", payload: { orderId: "ord_1" } },
+    ]);
+  });
+
+  it("n'écrit rien quand rien n'a franchi (webhook rejoué)", async () => {
+    const durable = new RecordingDurable();
+    await handlerWith(emptySink(), null, undefined, durable).execute(
+      new ConfirmOrderPaymentCommand("pi_1", "succeeded"),
+    );
+    expect(durable.facts).toEqual([]);
+  });
+
+  it("n'écrit rien sur un refus de carte", async () => {
+    const durable = new RecordingDurable();
+    await handlerWith(emptySink(), "ord_1", undefined, durable).execute(
+      new ConfirmOrderPaymentCommand("pi_1", "failed"),
+    );
+    expect(durable.facts).toEqual([]);
   });
 });

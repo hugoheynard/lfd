@@ -126,8 +126,14 @@ export class InvoiceDialog {
       : fill(this.copy().delivered, { date: invoiceDay(day, this.locale()) });
   }
 
-  protected means(reference: string | null): string {
-    return reference === null ? '—' : fill(this.copy().directDebit, { rum: reference });
+  /** Le règlement figé : le prélèvement et sa RUM, ou la carte qui l'a acquittée (E5a). */
+  protected means(bill: IssuedInvoiceView): string {
+    if (bill.mandateReference !== null) {
+      return fill(this.copy().directDebit, { rum: bill.mandateReference });
+    }
+    return bill.paidOn === null
+      ? '—'
+      : fill(this.copy().paidByCard, { date: invoiceDay(bill.paidOn, this.locale()) });
   }
 
   /** Télécharge le PDF rangé, nommé d'après le numéro de la pièce. */

@@ -59,6 +59,16 @@ describe('InvoiceDialog', () => {
     expect(el.querySelector('[data-invoice-pdf]')).toBeNull();
   });
 
+  it('une facture carte se dit acquittée, au jour du paiement (E5a)', async () => {
+    const el = await render(() =>
+      Promise.resolve({ ...SEPTEMBER_DETAIL, mandateReference: null, paidOn: '2026-09-28' }),
+    );
+
+    expect(el.querySelector('[data-invoice-means]')?.textContent).toContain(
+      'Acquittée par carte le 28 sept. 2026',
+    );
+  });
+
   it('un PDF rendu se télécharge, nommé d’après le numéro de la pièce', async () => {
     pdf = () => Promise.resolve(new Blob(['%PDF-'], { type: 'application/pdf' }));
     const created = vi.spyOn(URL, 'createObjectURL').mockReturnValue('blob:facture');

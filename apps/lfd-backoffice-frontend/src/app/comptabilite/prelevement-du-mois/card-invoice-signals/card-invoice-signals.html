@@ -1,0 +1,45 @@
+@if (error(); as message) {
+  <fold-callout variant="alert" data-card-signals-error>{{ message }}</fold-callout>
+} @else if (signaled().length > 0) {
+  <fold-card data-card-signals>
+    <fold-element-title
+      variant="title"
+      icon="receipt"
+      title="Factures carte signalées"
+      subtitle="Payées par carte et retirées, leur facture acquittée n’est pas partie."
+    />
+    <fold-callout variant="warning">
+      {{ signaled().length }} facture(s) carte signalée(s)&nbsp;: corriger la fiche du payeur, puis
+      « Réessayer ».
+    </fold-callout>
+    <fold-data-table
+      caption="Factures carte signalées"
+      narrowLayout="cards"
+      [columns]="columns"
+      [rows]="signaled()"
+      [rowKey]="rowKey"
+      data-card-signals-table
+    >
+      <ng-template foldCell="order" let-row>
+        <a [routerLink]="['/commandes', row.orderId]">{{ row.orderNumber }}</a>
+      </ng-template>
+      <ng-template foldCell="payer" let-row>{{ row.payerName }}</ng-template>
+      <ng-template foldCell="message" let-row>{{ row.message }}</ng-template>
+      <ng-template foldCell="at" let-row>{{ at(row.recordedAt) }}</ng-template>
+      <ng-template foldCell="retry" let-row>
+        @if (canWrite()) {
+          <button
+            foldButton
+            size="sm"
+            emphasis="soft"
+            [loading]="retrying() === row.orderId"
+            (click)="retry(row)"
+            [attr.data-card-retry]="row.orderId"
+          >
+            Réessayer
+          </button>
+        }
+      </ng-template>
+    </fold-data-table>
+  </fold-card>
+}

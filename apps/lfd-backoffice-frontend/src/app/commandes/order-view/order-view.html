@@ -35,6 +35,9 @@
       <!-- Les remboursements Stripe constatés : rien quand il n'y en a pas. -->
       <app-order-refunds-card [refunds]="o.refunds" />
 
+      <!-- La facture et les avoirs de la commande (E5c) : rien quand il n'y en a pas. -->
+      <app-order-invoices-card [orderId]="o.id" />
+
       <!-- La preuve de livraison : rien quand la commande n'a pas été remise à la porte. -->
       <app-handover-proof-card [orderId]="o.id" />
 

@@ -4,9 +4,11 @@ import { UnitOfWork } from "../../../../platform/database/unit-of-work.js";
 import { DomainEventPublisher } from "../../../../platform/events/domain-event-publisher.js";
 import { IdGenerator } from "../../../../platform/id/id-generator.js";
 import { Journal } from "../../../../platform/journal/journal.js";
+import { DurablePublisher } from "../../../../platform/outbox/durable-publisher.js";
 import { Clock } from "../../../../platform/time/clock.js";
 import type { OrderRefundLedger } from "../../domain/entities/order-refund-ledger.js";
 import { RefundRejectedError } from "../../domain/errors/order-refund-errors.js";
+import { OrderRefundSucceededFact } from "../../domain/events/order-refund-succeeded.fact.js";
 import { OrderRefundRejectedEvent } from "../../domain/events/order-refund-rejected.event.js";
 import { RefundWithoutOrderEvent } from "../../domain/events/refund-without-order.event.js";
 import { OrderRefundRepository } from "../../domain/ports/order-refund.repository.js";
@@ -32,6 +34,10 @@ type Outcome =
  * Trois issues, et AUCUNE ne lève vers Stripe (un 4xx/5xx le ferait réessayer
  * trois jours sans que la réponse change) :
  *
+ * Un remboursement qui PASSE à `succeeded` écrit aussi le fait durable
+ * `order.refund_succeeded`, dans la même transaction : la comptabilité en tire
+ * l'avoir (lot E5b).
+ *
  * - constaté, ou périmé (webhook rejoué, ou arrivé dans le désordre) ;
  * - **refusé** : rien n'est écrit sur la commande, le refus va au journal, et
  *   `OrderRefundRejectedEvent` fait sonner la cloche — jamais une écriture
@@ -53,6 +59,7 @@ export class RecordOrderRefundHandler implements ICommandHandler<RecordOrderRefu
     private readonly ids: IdGenerator,
     private readonly clock: Clock,
     private readonly events: DomainEventPublisher,
+    private readonly durable: DurablePublisher,
   ) {}
 
   async execute(command: RecordOrderRefundCommand): Promise<void> {
@@ -76,6 +83,12 @@ export class RecordOrderRefundHandler implements ICommandHandler<RecordOrderRefu
         await this.refunds.save(ledger);
         for (const fact of recordedFacts(ledger, recorded)) {
           await this.journal.append(fact);
+        }
+        if (recorded.refund.status === "succeeded") {
+          // L'avoir (E5b) : la comptabilité l'émet sur ce fait, s'il y a
+          // une facture carte à corriger.
+          const fact = new OrderRefundSucceededFact(ledger.orderId, recorded.refund.id);
+          await this.durable.publish(fact.durableFact());
         }
       }
       return { kind: "done" };

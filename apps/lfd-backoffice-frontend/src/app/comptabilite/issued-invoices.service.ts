@@ -2,7 +2,7 @@ import { HttpClient } from '@angular/common/http';
 import { inject, Injectable } from '@angular/core';
 import { firstValueFrom } from 'rxjs';
 
-import type { IssuedInvoiceView, IssuedInvoicesView } from '@lfd/contracts';
+import type { IssuedInvoiceView, IssuedInvoicesView, OrderInvoicesView } from '@lfd/contracts';
 
 import { B2B_API_BASE } from '../api/api-config';
 
@@ -20,6 +20,18 @@ export class IssuedInvoicesService {
     return firstValueFrom(
       this.http.get<IssuedInvoicesView>(
         `${B2B_API_BASE}/admin/companies/${encodeURIComponent(companyId)}/invoices`,
+      ),
+    );
+  }
+
+  /**
+   * `GET admin/accounting/orders/:id/invoices` — la facture et les avoirs qui
+   * portent une commande (lot E5c), pour sa fiche.
+   */
+  async ofOrder(orderId: string): Promise<OrderInvoicesView> {
+    return firstValueFrom(
+      this.http.get<OrderInvoicesView>(
+        `${B2B_API_BASE}/admin/accounting/orders/${encodeURIComponent(orderId)}/invoices`,
       ),
     );
   }

@@ -4,7 +4,7 @@
  * balises, suffisante pour CE rendu (aucun élément lu ici ne s'imbrique dans
  * lui-même), PAS pour un XML venu d'ailleurs.
  *
- * Ce qui est rejoué : BR-CO-10 à BR-CO-16, BR-S-08 et BR-S-09 (arrondi au
+ * Ce qui est rejoué : BR-CO-10 à BR-CO-16 (BT-114, l'arrondi, jamais écrit), BR-S-08 et BR-S-09 (arrondi au
  * centime près, quel que soit le sens d'arrondi). Ce qui ne l'est PAS
  * (2026-10-08) : tout le reste du Schematron CEN — présence et cardinalité
  * des éléments, listes de codes, identifiants, cohérence des catégories de
@@ -41,6 +41,11 @@ export function facturXArithmeticViolations(xml: string): readonly string[] {
     taxBasis: read.cents(totals, "ram:TaxBasisTotalAmount"),
     tax: read.cents(totals, "ram:TaxTotalAmount"),
     grand: read.cents(totals, "ram:GrandTotalAmount"),
+    // BT-113 est facultatif : absent, rien n'a été payé d'avance.
+    prepaid:
+      valueOf(totals, "ram:TotalPrepaidAmount") === null
+        ? 0
+        : read.cents(totals, "ram:TotalPrepaidAmount"),
     due: read.cents(totals, "ram:DuePayableAmount"),
   };
   return [
@@ -57,6 +62,7 @@ interface Summation {
   readonly taxBasis: number;
   readonly tax: number;
   readonly grand: number;
+  readonly prepaid: number;
   readonly due: number;
 }
 
@@ -97,7 +103,7 @@ function documentRules(
     ],
     ["BR-CO-14 Σ BT-117 = BT-110", total(taxes.map((t) => t.vat)), sums.tax],
     ["BR-CO-15 BT-112 = BT-109 + BT-110", sums.taxBasis + sums.tax, sums.grand],
-    ["BR-CO-16 BT-115 = BT-112 (ni acompte ni arrondi)", sums.grand, sums.due],
+    ["BR-CO-16 BT-115 = BT-112 − BT-113 (sans arrondi)", sums.grand - sums.prepaid, sums.due],
   ];
   return rules
     .filter(([, expected, written]) => expected !== written)

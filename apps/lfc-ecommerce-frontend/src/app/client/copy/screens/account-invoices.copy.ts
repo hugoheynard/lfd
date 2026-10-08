@@ -53,6 +53,8 @@ export interface AccountInvoicesCopy {
   readonly payment: string;
   /** `{rum}` : la référence du mandat figée sur la facture. */
   readonly directDebit: string;
+  /** La facture carte, acquittée (lot E5a) : `{date}` = le jour du paiement. */
+  readonly paidByCard: string;
   readonly orders: string;
   /** `{date}`. */
   readonly delivered: string;
@@ -103,6 +105,7 @@ export const ACCOUNT_INVOICES_FR: AccountInvoicesCopy = {
   earlyDiscount: 'Escompte pour paiement anticipé',
   payment: 'Règlement',
   directDebit: 'Prélèvement SEPA, mandat {rum}',
+  paidByCard: 'Acquittée par carte le {date}',
   orders: 'Commandes facturées',
   delivered: 'livrée le {date}',
   notDelivered: 'livraison non constatée',
@@ -150,6 +153,7 @@ export const ACCOUNT_INVOICES_EN: AccountInvoicesCopy = {
   earlyDiscount: 'Early payment discount',
   payment: 'Payment',
   directDebit: 'SEPA direct debit, mandate {rum}',
+  paidByCard: 'Paid by card on {date}',
   orders: 'Invoiced orders',
   delivered: 'delivered on {date}',
   notDelivered: 'delivery not recorded',
@@ -197,6 +201,7 @@ export const ACCOUNT_INVOICES_IT: AccountInvoicesCopy = {
   earlyDiscount: 'Sconto per pagamento anticipato',
   payment: 'Pagamento',
   directDebit: 'Addebito diretto SEPA, mandato {rum}',
+  paidByCard: 'Pagata con carta il {date}',
   orders: 'Ordini fatturati',
   delivered: 'consegnato il {date}',
   notDelivered: 'consegna non registrata',

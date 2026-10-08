@@ -44,9 +44,11 @@ model OrderRefund {
   /// Le dernier changement constaté — lu du `Clock`.
   updatedAt  DateTime @map("updated_at")
 
-  /// L'avoir qui l'a constaté — rempli par le lot E5b. Pas de clé étrangère
-  /// tant que ce lot n'a pas tranché sa forme.
-  creditNoteId String? @map("credit_note_id")
+  /// L'avoir qui l'a constaté (lot E5b) — posé une fois, par la
+  /// comptabilité, dans la transaction de l'avoir ; unique (déclencheur
+  /// `order_refund_credit_note_once`, migration `20261009000000_la_facture_carte`).
+  creditNoteId String?  @unique @map("credit_note_id")
+  creditNote   Invoice? @relation(fields: [creditNoteId], references: [id], onDelete: Restrict)
 
   @@index([orderId])
   @@map("order_refund")

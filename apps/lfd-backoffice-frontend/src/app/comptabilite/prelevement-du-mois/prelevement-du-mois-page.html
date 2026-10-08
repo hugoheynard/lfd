@@ -40,6 +40,9 @@
         (issue)="issueInvoices($event)"
       />
 
+      <!-- 3 bis. Les factures carte qui ne sont pas parties (E5a) : rien quand il n'y en a pas. -->
+      <app-card-invoice-signals [canWrite]="canWrite()" />
+
       <!-- 4. Le lot à traiter. -->
       <fold-page-section title="Le lot à traiter" stack>
         @if (canWrite() && !alreadyPrepared()) {

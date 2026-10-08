@@ -217,6 +217,7 @@ model LegalEntity {
   invoiceCounter         InvoiceNumberCounter[]
   // La facture du mois (E4) : l'issue par payeur, et la tentative automatique.
   monthlyInvoiceOutcomes InvoiceMonthlyOutcome[]
+  cardInvoiceOutcomes    CardInvoiceOutcome[]
   invoiceAutopilotRuns   InvoiceAutopilotRun[]
 
   createdAt DateTime @default(now()) @map("created_at")

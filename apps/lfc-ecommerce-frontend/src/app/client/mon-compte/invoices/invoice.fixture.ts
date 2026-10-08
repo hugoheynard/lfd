@@ -84,5 +84,6 @@ export const SEPTEMBER_DETAIL: IssuedInvoiceView = {
     earlyPaymentDiscount: 'néant',
   },
   mandateReference: 'RUM-PORT-1',
+  paidOn: null,
   documentAvailable: false,
 };

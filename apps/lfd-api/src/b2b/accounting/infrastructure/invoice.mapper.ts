@@ -68,6 +68,8 @@ export function toInvoiceCreate(invoice: Invoice): Prisma.InvoiceUncheckedCreate
       ? {}
       : { deliveryAddress: addressLinesJson(state.deliveryAddressLines) }),
     ...(state.paymentMeans === null ? {} : { paymentMeans: paymentMeansJson(state.paymentMeans) }),
+    prepaidCents: state.prepayment?.amountCents ?? null,
+    paidOn: state.prepayment === null ? null : dayColumn(state.prepayment.paidOn),
     bodyVersion: INVOICE_BODY_VERSION,
     documentKey: state.documentKey,
     documentSha256: state.documentSha256,
@@ -129,6 +131,10 @@ function toInvoiceState(row: InvoiceRow): InvoiceState {
       row.paymentMeans === null
         ? null
         : read(invoicePaymentMeansSchema, row.paymentMeans, "payment_means"),
+    prepayment:
+      row.prepaidCents === null || row.paidOn === null
+        ? null
+        : { amountCents: row.prepaidCents, paidOn: dayOf(row.paidOn) },
     documentKey: row.documentKey,
     documentSha256: row.documentSha256,
   };
