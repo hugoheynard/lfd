@@ -82,7 +82,7 @@ const SURFACES: readonly { readonly resource: StaffResource; readonly path: stri
   { resource: "b2b_supervision", path: "/admin/supervision/handover?jour=2026-01-01" },
   /**
    * Les LIMITES DE PRIX (2026-09-26) — détachées de `b2b_pricing` : la
-   * comptabilité les lit, le commercial non (plan-limites-de-prix.md §5).
+   * comptabilité les lit, le commercial non (limites-de-prix.md).
    */
   { resource: "lfc_price_limits", path: "/admin/pricing/floors?clientele=pro" },
   /**

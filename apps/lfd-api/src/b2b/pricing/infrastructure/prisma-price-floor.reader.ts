@@ -9,7 +9,7 @@ import type { PricingScopes } from "../domain/pricing-scopes.js";
 import type { ScopedPriceFloor } from "../domain/price-rule.js";
 
 /**
- * 🔴 **La résolution ne lit que les limites PRO** (`plan-limites-de-prix.md`
+ * 🔴 **La résolution ne lit que les limites PRO** (`limites-de-prix.md`
  * §4). C'est le seul lecteur de la résolution — la commande y passe par le
  * chargeur — donc le seul endroit où une limite publique pourrait relever un
  * prix pro. Le futur moteur de promotions publiques lira `public` par la même

@@ -1,6 +1,6 @@
 /**
  * **La clientèle d'une limite, à travers les trois gestes** — poser, confirmer,
- * archiver (`documentation/comptabilite/plan-limites-de-prix.md` §4).
+ * archiver (`documentation/comptabilite/limites-de-prix.md`).
  *
  * Ce que cette suite tient : chaque handler cherche la limite par **portée +
  * clientèle**, et journalise sous la clé qui la sépare de l'autre clientèle.

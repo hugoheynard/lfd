@@ -54,7 +54,7 @@ export class PrismaPricingDecisionsReader extends PricingDecisionsReader {
       // 🔴 **Les limites PRO seules** : ce lecteur sert trois écrans pro (le
       // tableau, le tarif d'un client, les prix affichés) qui trouvent LA
       // limite d'une portée par un `find`. Une publique y serait la première
-      // venue une fois sur deux (`plan-limites-de-prix.md` §4).
+      // venue une fois sur deux (`limites-de-prix.md`).
       this.prisma.priceFloor.findMany({
         where: {
           AND: [

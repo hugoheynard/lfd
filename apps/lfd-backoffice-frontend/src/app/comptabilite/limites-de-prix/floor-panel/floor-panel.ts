@@ -50,7 +50,7 @@ const DAYS_PER_MONTH = 30;
  * rien n'est posé, et modifie sinon.
  *
  * Né dans la Tarification B2B, il vit dans la Comptabilité depuis que les
- * limites relèvent de `lfc_price_limits` (`plan-limites-de-prix.md` §6). Il y a
+ * limites relèvent de `lfc_price_limits` (`limites-de-prix.md`). Il y a
  * gagné la clientèle, qu'il envoie à chaque geste, et le choix de la portée.
  *
  * Deux choses que cet écran doit dire, parce qu'elles surprennent :

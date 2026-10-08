@@ -723,7 +723,7 @@ export const COMPTABILITE_VIEWS: readonly WorkspaceView[] = [
   },
   {
     // Son propre droit : les limites relèvent de `lfc_price_limits`, pas de la
-    // comptabilité (plan `plan-limites-de-prix.md` §5).
+    // comptabilité (plan `limites-de-prix.md`).
     key: 'limites-de-prix',
     label: 'Limites de prix',
     link: '/comptabilite/limites-de-prix',

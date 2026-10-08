@@ -200,7 +200,7 @@ export const staffResourceSchema = z.enum([
   /**
    * **Les limites de prix** — poser, confirmer, retirer une limite, porte
    * dynamique comprise, pour la clientèle pro comme pour le public
-   * (`documentation/comptabilite/plan-limites-de-prix.md` §5).
+   * (`documentation/comptabilite/limites-de-prix.md`).
    *
    * Détachée de `b2b_pricing` le 2026-09-26 (Hugo) : qui négocie un prix ne
    * pose plus lui-même la limite sous laquelle il ne descend pas. Accordée à

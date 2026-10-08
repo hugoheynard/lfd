@@ -355,7 +355,7 @@ describe('la ligne dont on regarde le chemin du prix', () => {
 
 /**
  * **Les limites se lisent ici, elles se règlent en Comptabilité**
- * (`plan-limites-de-prix.md` §6). La page ne porte plus aucun geste de limite,
+ * (`limites-de-prix.md`). La page ne porte plus aucun geste de limite,
  * et le lien vers la Comptabilité suit `lfc_price_limits:read` : le commercial,
  * qui voit la limite, n'a rien à faire dans le bloc comptable.
  */

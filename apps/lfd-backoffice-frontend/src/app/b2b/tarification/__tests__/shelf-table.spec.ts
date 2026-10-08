@@ -274,7 +274,7 @@ describe('l’en-tête de rayon', () => {
 });
 
 /**
- * **La ligne « Limite », en lecture seule** (`plan-limites-de-prix.md` §6). La
+ * **La ligne « Limite », en lecture seule** (`limites-de-prix.md`). La
  * colonne éditable a disparu : la limite se lit sous la référence et le tarif,
  * avec la même étiquette, et aucun bouton ne la pose ni ne la modifie.
  */

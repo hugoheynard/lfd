@@ -5,7 +5,7 @@ import type { FloorClientele } from "../../domain/entities/pricing-floor.js";
 
 /**
  * **Port de lecture des limites d'une clientèle**, pour la vue Comptabilité ›
- * Limites de prix (`plan-limites-de-prix.md` §5).
+ * Limites de prix (`limites-de-prix.md`).
  *
  * Séparé de `PricingDecisionsReader`, qui ne lit que le **pro** et sert trois
  * écrans pro : lui faire rendre aussi le public aurait remis la limite

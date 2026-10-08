@@ -1,6 +1,6 @@
 /**
  * E2E des **deux migrations des limites de prix**, sur le vrai Postgres
- * (`documentation/comptabilite/plan-limites-de-prix.md` §3, §5, §7).
+ * (`documentation/comptabilite/limites-de-prix.md`).
  *
  * - `20260926130000_les_limites_ont_une_clientele` : une limite écrite sans
  *   clientèle — toutes celles d'avant — est `pro`, et deux pro qui se

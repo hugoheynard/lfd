@@ -79,7 +79,7 @@ enum StaffResource {
   /// `plan-blocage-prelevement-et-liens-de-paiement.md` §1).
   b2b_deferred_payment_block
   /// Les LIMITES DE PRIX — poser, confirmer, retirer une limite, pro ou
-  /// publique (2026-09-26, `documentation/comptabilite/plan-limites-de-prix.md` §5).
+  /// publique (2026-09-26, `documentation/comptabilite/limites-de-prix.md`).
   lfc_price_limits
   /// La SURTAXE DE RETARD — son montant et son taux, sortis de `b2b_settings`
   /// (2026-09-29, Hugo : « c'est très spécifique ça »).

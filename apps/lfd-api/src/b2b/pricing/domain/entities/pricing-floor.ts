@@ -72,7 +72,7 @@ const PUBLIC_SUBJECT_PREFIX = "public:";
 /**
  * **Le sujet d'une limite dans le journal tarifaire.**
  *
- * 🔴 Irréversible dès le premier fait publié (`plan-limites-de-prix.md` §4) :
+ * 🔴 Irréversible dès le premier fait publié (`limites-de-prix.md`) :
  * la clé d'une limite **pro** ne change pas — son historique, écrit quand il
  * n'y avait qu'une clientèle, reste continu. Celle d'une limite **publique**
  * est préfixée, pour que l'histoire d'une portée pro ne montre aucun fait

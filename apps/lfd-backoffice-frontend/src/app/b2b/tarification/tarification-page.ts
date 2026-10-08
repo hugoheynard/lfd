@@ -107,7 +107,7 @@ export class TarificationPage {
   /**
    * **Gérer les limites** mène à la Comptabilité, et seulement pour qui peut y
    * lire les limites : le commercial les voit ici, il ne va pas là-bas
-   * (`plan-limites-de-prix.md` §5).
+   * (`limites-de-prix.md`).
    */
   protected readonly canManageLimits = computed(() =>
     this.permissions.can('lfc_price_limits:read'),

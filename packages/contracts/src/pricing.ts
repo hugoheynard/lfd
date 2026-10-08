@@ -251,7 +251,7 @@ export type DynamicFloorPayload = z.infer<typeof dynamicFloorSchema>;
  * `OrderClientele`, et le même enum Postgres en base.
  *
  * `pro` par défaut partout où elle entre : le front en ligne n'envoie rien, et
- * doit continuer de viser la limite pro (`plan-limites-de-prix.md` §5).
+ * doit continuer de viser la limite pro (`limites-de-prix.md`).
  */
 export const floorClienteleSchema = z.enum(["pro", "public"]);
 export type FloorClientele = z.infer<typeof floorClienteleSchema>;

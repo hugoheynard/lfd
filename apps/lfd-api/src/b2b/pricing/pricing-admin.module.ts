@@ -185,7 +185,7 @@ import { PrismaCompanyMercurialeRepository } from "./infrastructure/prisma-compa
     // côté, avec deux clauses `where` — et elles avaient déjà divergé (R21).
     { provide: PricingDecisionsReader, useClass: PrismaPricingDecisionsReader },
     // Les limites d'UNE clientèle, pro ou publique — la vue Comptabilité. À
-    // part du lecteur ci-dessus, qui ne lit que le pro (plan-limites-de-prix §4).
+    // part du lecteur ci-dessus, qui ne lit que le pro (limites-de-prix).
     { provide: PriceLimitsReader, useClass: PrismaPriceLimitsReader },
     { provide: PricedCompanyReader, useClass: PrismaPricedCompanyReader },
     { provide: PricedCompanyNamer, useClass: PrismaPricedCompanyNamer },

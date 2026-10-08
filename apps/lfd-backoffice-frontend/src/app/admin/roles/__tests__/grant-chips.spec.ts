@@ -70,7 +70,7 @@ describe('grantGroups', () => {
    * journée entière n'est pas lire les commandes (plan-supervision-du-jour.md).
    *
    * `lfc_price_limits` l'a fait passer à 29 le 2026-09-26 : poser une limite de
-   * prix n'est pas négocier un prix (plan-limites-de-prix.md §5).
+   * prix n'est pas négocier un prix (limites-de-prix.md).
    *
    * `b2b_late_fee` l'a fait passer à 30 le 2026-09-29 : régler la surtaxe de
    * retard n'est pas régler la plateforme.

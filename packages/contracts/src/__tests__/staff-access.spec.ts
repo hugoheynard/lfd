@@ -319,7 +319,7 @@ describe("le comptoir", () => {
 
 describe("les limites de prix", () => {
   /**
-   * `documentation/comptabilite/plan-limites-de-prix.md` §5, corrigé par Hugo
+   * `documentation/comptabilite/limites-de-prix.md`, corrigé par Hugo
    * le 2026-09-25 : les commerciaux n'ont PAS accès au bloc Comptabilité. Qui
    * price voit la limite pro par le tableau de la Tarification, sous
    * `b2b_pricing:read` — pas par ce droit.

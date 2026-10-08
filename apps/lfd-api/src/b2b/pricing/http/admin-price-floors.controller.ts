@@ -47,7 +47,7 @@ import type { PriceFloor, PriceScope } from "../domain/price-rule.js";
  * elle n'est pas dite — le front en ligne n'envoie rien, et vise le pro.
  *
  * 🔴 **Sa propre surface, `lfc_price_limits`, et plus `b2b_pricing`**
- * (`plan-limites-de-prix.md` §5) : les routes changent de garde, pas
+ * (`limites-de-prix.md`) : les routes changent de garde, pas
  * d'adresse. Une surface par contrôleur plutôt qu'un `@RequirePermission` par
  * route : ce dernier aurait marché, mais une route ajoutée plus tard ici
  * retomberait sur la ressource de surface — donc sur `b2b_pricing`.

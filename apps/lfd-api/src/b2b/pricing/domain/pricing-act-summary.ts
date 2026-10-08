@@ -138,7 +138,7 @@ const CLIENTELE_WORDS: Readonly<Record<FloorClientele, string>> = {
 
 /**
  * La phrase du journal pour un geste sur une limite : sa **clientèle**, puis sa
- * politique (`plan-limites-de-prix.md` §4). Relire « mur à 60 % » sans savoir
+ * politique (`limites-de-prix.md`). Relire « mur à 60 % » sans savoir
  * qui il protège laisserait croire qu'une limite publique a borné un prix pro.
  */
 export function describeFloor(clientele: FloorClientele, policy: PriceFloorPolicy): string {

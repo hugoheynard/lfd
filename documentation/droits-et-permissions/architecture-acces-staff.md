@@ -295,7 +295,7 @@ Les choix qui ne se devinent pas :
 - **`commercial` écrit `b2b_catalog` et `b2b_pricing`** : négocier un prix et
   valider ce qui entre en vente sont ses deux gestes.
 - **`lfc_price_limits` n'est qu'à `admin` et `comptabilite`, en écriture**
-  (2026-09-26, `documentation/comptabilite/plan-limites-de-prix.md` §5). Les
+  (2026-09-26, `documentation/comptabilite/limites-de-prix.md`). Les
   sept routes des limites — mêmes chemins qu'avant — sont passées de
   `b2b_pricing` à ce droit : le commercial ne pose plus la limite sous laquelle
   il négocie. Il n'a pas non plus accès au bloc Comptabilité (Hugo,
