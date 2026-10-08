@@ -1,0 +1,178 @@
+<fold-page-layout [title]="title()" separator>
+  <fold-back-link
+    pageEyebrow
+    icon="arrow-back"
+    label="Prélèvement du mois"
+    routerLink="/comptabilite/prelevement-du-mois"
+  />
+
+  @if (invoice(); as bill) {
+    <fold-badge titleBadge variant="success" radius="pill" content="Émise" />
+  }
+
+  @switch (state()) {
+    @case ('loading') {
+      <fold-loading message="Lecture de la facture…" />
+    }
+    @case ('not-found') {
+      <fold-empty-state
+        tone="alert"
+        title="Facture introuvable"
+        subtitle="Aucune pièce ne porte cet identifiant. Rouvrez-la depuis la fiche du client."
+      />
+    }
+    @case ('error') {
+      <fold-empty-state tone="alert" title="Impossible de lire la facture">
+        <button foldButton (click)="load(id())">Réessayer</button>
+      </fold-empty-state>
+    }
+    @case ('ready') {
+      @if (invoice(); as bill) {
+        <div class="stack">
+          <fold-callout appearance="inset" variant="info" data-invoice-issued>
+            <strong>Émise le {{ day(bill.issuedOn) }}</strong>
+            @if (bill.period; as month) {
+              pour les commandes de {{ period(month) }}
+            }
+            @if (bill.dueOn; as due) {
+              — échéance le {{ day(due) }}
+            }
+            @if (bill.correctedInvoiceNumber; as corrected) {
+              — corrige la facture {{ corrected }}
+            }
+            . Le document Factur-X n’est pas encore rendu&nbsp;: la pièce fait foi par ses données.
+          </fold-callout>
+
+          <div class="parties">
+            <fold-card>
+              <fold-element-title variant="title" title="Vendeur" [subtitle]="bill.seller.name" />
+              <p class="lines">
+                <span>{{ bill.seller.legalForm }} · SIREN {{ bill.seller.siren }}</span>
+                <span>TVA {{ bill.seller.vatNumber || '—' }} · {{ bill.seller.rcs }}</span>
+                @for (line of bill.seller.addressLines; track $index) {
+                  <span>{{ line }}</span>
+                }
+              </p>
+            </fold-card>
+            <fold-card>
+              <fold-element-title variant="title" title="Acheteur" [subtitle]="bill.buyer.name" />
+              <p class="lines">
+                <span>{{ bill.buyer.legalForm }} · SIREN {{ bill.buyer.siren }}</span>
+                <span>TVA {{ bill.buyer.vatNumber || '—' }}</span>
+                @for (line of bill.buyer.billingAddressLines; track $index) {
+                  <span>{{ line }}</span>
+                }
+              </p>
+              <a
+                class="client-link"
+                [routerLink]="['/comptes-clients', bill.payerCompanyId, 'facturation']"
+                >Fiche du client</a
+              >
+            </fold-card>
+          </div>
+
+          <fold-card>
+            <fold-element-title variant="title" title="Les lignes" />
+            <fold-data-table
+              caption="Lignes de la facture"
+              narrowLayout="cards"
+              zebra
+              [columns]="columns"
+              [rows]="bill.lines"
+              [rowKey]="rowKey"
+              data-invoice-lines
+            >
+              <ng-template foldCell="label" let-row>
+                <span class="label">
+                  <span>{{ row.label }}</span>
+                  <span class="muted">{{ row.sku }}</span>
+                </span>
+              </ng-template>
+              <ng-template foldCell="rate" let-row>{{ rate(row.vatRate) }}</ng-template>
+              <ng-template foldCell="quantity" let-row>{{ quantity(row) }}</ng-template>
+              <ng-template foldCell="unit" let-row>{{
+                unitPrice(row.unitPriceMillicents)
+              }}</ng-template>
+              <ng-template foldCell="amount" let-row>{{ euros(row.amountCents) }}</ng-template>
+            </fold-data-table>
+          </fold-card>
+
+          <div class="parties">
+            @for (category of bill.vat.categories; track category.rate) {
+              <fold-card>
+                <fold-element-title variant="title" [title]="'TVA ' + rate(category.rate)" />
+                <dl class="calc">
+                  <dt>Marchandises HT</dt>
+                  <dd>{{ euros(category.goodsHtCents) }}</dd>
+                  @if (category.allowancesCents > 0) {
+                    <dt>− Remises</dt>
+                    <dd>{{ euros(category.allowancesCents) }}</dd>
+                  }
+                  @if (category.chargesCents > 0) {
+                    <dt>+ Frais</dt>
+                    <dd>{{ euros(category.chargesCents) }}</dd>
+                  }
+                  <dt>Base imposable</dt>
+                  <dd>{{ euros(category.taxableBaseCents) }}</dd>
+                  <dt>TVA</dt>
+                  <dd>{{ euros(category.vatCents) }}</dd>
+                </dl>
+              </fold-card>
+            }
+            <fold-card>
+              <fold-element-title variant="title" title="Totaux" />
+              <dl class="calc">
+                <dt>Total HT</dt>
+                <dd>{{ euros(bill.totalHtCents) }}</dd>
+                <dt>Total TVA</dt>
+                <dd>{{ euros(bill.totalVatCents) }}</dd>
+                <dt>Total TTC</dt>
+                <dd data-invoice-total>{{ euros(bill.totalTtcCents) }}</dd>
+              </dl>
+            </fold-card>
+          </div>
+
+          <fold-card>
+            <fold-element-title variant="title" title="Mentions et règlement" />
+            <dl class="calc">
+              <dt>Pénalités de retard</dt>
+              <dd>{{ percent(bill.mentions.latePenaltyRateBasisPoints) }}</dd>
+              <dt>Indemnité forfaitaire de recouvrement</dt>
+              <dd>{{ euros(bill.mentions.recoveryIndemnityCents) }}</dd>
+              <dt>Escompte</dt>
+              <dd>{{ bill.mentions.earlyPaymentDiscount }}</dd>
+              <dt>Règlement</dt>
+              <dd data-invoice-means>
+                {{
+                  bill.mandateReference === null
+                    ? '—'
+                    : 'Prélèvement SEPA, mandat ' + bill.mandateReference
+                }}
+              </dd>
+            </dl>
+          </fold-card>
+
+          <fold-card>
+            <fold-element-title
+              variant="title"
+              title="Les bons couverts"
+              [subtitle]="bill.orders.length + ' bon(s)'"
+            />
+            <ul class="orders">
+              @for (order of bill.orders; track order.reference) {
+                <li>
+                  {{ order.reference }} —
+                  {{
+                    order.deliveredOn === null
+                      ? 'livraison non constatée'
+                      : 'livré le ' + day(order.deliveredOn)
+                  }}
+                </li>
+              }
+            </ul>
+          </fold-card>
+        </div>
+      }
+    }
+  }
+</fold-page-layout>

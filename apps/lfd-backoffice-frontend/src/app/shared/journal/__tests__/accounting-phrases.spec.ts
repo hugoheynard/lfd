@@ -445,3 +445,51 @@ describe('la préparation automatique (PA3)', () => {
     ).toMatch(/: lot préparé$/u);
   });
 });
+
+/**
+ * Régression : la phrase lisait `orderCount` par `optional()`, qui ne lit que
+ * du texte, et disait « ? bon(s) » pour toute facture (fix 2026-10-08).
+ */
+it('la facture émise dit son nombre de bons', () => {
+  const issued = sentence({
+    ...entity('invoice.issued', {
+      subjectLabel: 'FA-2026-000007',
+      payer: CAFE,
+      orderCount: 3,
+      totalCents: 1200,
+    }),
+    subjectType: 'invoice',
+    subjectId: 'inv_1',
+  });
+
+  expect(issued).toContain('3 bon(s)');
+});
+
+describe('l’e-mail « votre facture » (E6)', () => {
+  const notice = { subjectLabel: 'FA-2026-000007', payer: CAFE, recipientCount: 2 };
+
+  function ofInvoice(type: string, payload: Record<string, unknown>): FactInput {
+    return { ...entity(type, payload), subjectType: 'invoice', subjectId: 'inv_1' };
+  }
+
+  it('dit l’envoi par le nombre de destinataires, jamais leur adresse', () => {
+    const sent = sentence(ofInvoice('invoice.notice_sent', notice));
+
+    expect(sent).toContain('a prévenu de la facture « FA-2026-000007 »');
+    expect(sent).toContain('Café des Halles');
+    expect(sent).toContain('2 destinataire(s)');
+    expect(sent).not.toContain('@');
+  });
+
+  it('dit l’échec et sa raison', () => {
+    expect(
+      sentence(
+        ofInvoice('invoice.notice_failed', {
+          ...notice,
+          recipientCount: 0,
+          failure: 'personne à prévenir',
+        }),
+      ),
+    ).toContain('n’a pas pu prévenir de la facture « FA-2026-000007 »');
+  });
+});

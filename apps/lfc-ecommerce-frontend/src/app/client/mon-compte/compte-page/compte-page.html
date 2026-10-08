@@ -209,6 +209,16 @@
               </section>
             }
 
+            <!-- « Mes factures » (plan-emission-de-la-facture.md, E6) : les pièces
+                 adressées à la société, aux mêmes rôles que le RIB — l'API
+                 tient le même mur. -->
+            @if (showsBank()) {
+              <section class="card invoices" id="compte-invoices">
+                <app-invoices-desk-card class="desk" />
+                <app-invoices-mobile-card class="mobile" />
+              </section>
+            }
+
             <!-- Règlement et habitudes de service n'ont de sens qu'au niveau où l'on
            commande (plan §4) : le sommaire se renumérote sur ce qui reste. -->
             @if (access.atLeast('order')) {

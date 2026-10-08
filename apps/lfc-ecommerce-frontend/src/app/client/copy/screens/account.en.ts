@@ -1,5 +1,6 @@
 import type { AddressFormLabels } from '@lfd/b2b-ui/address';
 import type { AccountCopy } from './account.copy';
+import { ACCOUNT_INVOICES_EN } from './account-invoices.copy';
 
 const ADDRESS_FORM: AddressFormLabels = {
   label: 'Address name',
@@ -71,6 +72,7 @@ export const ACCOUNT_EN: AccountCopy = {
     payment: 'Payment',
     preferences: 'Preferences',
     data: 'My data',
+    invoices: 'My invoices',
   },
   identityBrand: 'Trading name',
   identityCompany: 'Registered name',
@@ -477,4 +479,5 @@ export const ACCOUNT_EN: AccountCopy = {
   supportTitle: 'Contact our sales team',
   supportPanelTitle: 'Sales team',
   supportBody: 'A question about your account, an order or an invoice: we will get back to you.',
+  invoices: ACCOUNT_INVOICES_EN,
 };

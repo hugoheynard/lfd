@@ -72,6 +72,7 @@ const SCREENS: Readonly<Record<string, ScreenAccess>> = {
   'comptabilite/liens-de-paiement': null,
   'comptabilite/prelevement-du-mois': null,
   'comptabilite/arretes-de-facturation/:id': null,
+  'comptabilite/factures/:id': null,
   'comptabilite/fidelite': null,
   'comptabilite/limites-de-prix': 'lfc_price_limits:read',
   // Son propre droit, venu des Réglages le 2026-09-29 : ni `b2b_settings`, que

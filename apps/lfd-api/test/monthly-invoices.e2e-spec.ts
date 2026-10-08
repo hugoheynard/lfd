@@ -63,11 +63,15 @@ const stubAdminVerifier = {
     Promise.resolve({ subject: "staff-e2e", scopes: [] }),
 };
 
+/** `<gabarit> → <destinataire>` : depuis E6, la facture prévient aussi. */
 const sentMails: string[] = [];
 const recordingMailer = {
   enabled: true,
-  send: (args: { readonly to: string }): Promise<{ providerId: null }> => {
-    sentMails.push(args.to);
+  send: (args: {
+    readonly to: string;
+    readonly template: string;
+  }): Promise<{ providerId: null }> => {
+    sentMails.push(`${args.template} → ${args.to}`);
     return Promise.resolve({ providerId: null });
   },
 };
@@ -266,7 +270,11 @@ describe("la facture du mois, puis le lot qui l'encaisse (E4)", () => {
       statementId: null,
       status: "sent",
     });
-    expect(sentMails).toEqual(["patron1@port.test"]);
+    // La facture prévient le soir (E6), l'avis de prélèvement part le matin.
+    expect(sentMails).toEqual([
+      "customer.invoice-issued → patron1@port.test",
+      "customer.collection-notice → patron1@port.test",
+    ]);
     const cycle = jsonBody<{ batches: { lines: { invoiceNumbers: string[] }[] }[] }>(
       await staff().get(`${COLLECTION}/cycle?legalEntityId=${id}`).expect(200),
     );

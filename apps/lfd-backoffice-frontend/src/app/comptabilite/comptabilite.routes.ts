@@ -67,6 +67,14 @@ export const comptabiliteRoutes: Routes = [
       // L'ancienne adresse vit dans des favoris : remplacée le 2026-10-08 (PA4).
       { path: 'lots-de-prelevement', redirectTo: 'prelevement-du-mois' },
       {
+        // UNE facture émise, figée (plan-emission-de-la-facture.md, E6),
+        // ouverte depuis l'onglet « Facturation » de la fiche client.
+        path: 'factures/:id',
+        title: 'Facture — LFC B2B admin',
+        loadComponent: () =>
+          import('./facture-emise/facture-emise-page').then((m) => m.FactureEmisePage),
+      },
+      {
         // Le dossier d'UNE ligne de prélèvement : son arrêté figé, ouvert
         // depuis le lot. Sous `b2b_accounting`, comme la coquille ; la route
         // serveur n'admet que ce droit, en lecture.
@@ -101,7 +109,7 @@ export const comptabiliteRoutes: Routes = [
         // `lfc_price_limits`, PAS de `b2b_accounting` : la vue porte donc son
         // propre garde, comme l'annonce l'en-tête de ce fichier. Les gestes
         // demandent `lfc_price_limits:write` ; l'écran les masque sans lui.
-        // Plan : documentation/comptabilite/plan-limites-de-prix.md §6.
+        // Plan : documentation/comptabilite/limites-de-prix.md.
         path: 'limites-de-prix',
         canActivate: [permissionGuard('lfc_price_limits:read')],
         title: 'Limites de prix — LFC B2B admin',

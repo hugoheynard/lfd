@@ -2,6 +2,8 @@ import type { AddressFormLabels } from '@lfd/b2b-ui/address';
 import type { ContactFieldsLabels, DeliveryAddressFormLabels } from '@lfd/b2b-ui/company';
 import type { BankAccountFormLabels, MandateOptionsFormLabels } from '@lfd/b2b-ui/payment';
 import type { MintBlocker, SepaScheme } from '@lfd/contracts';
+
+import type { AccountInvoicesCopy } from './account-invoices.copy';
 /**
  * Ce que dit `/mon-compte`, dans les trois langues.
  *
@@ -76,6 +78,7 @@ export interface AccountCopy {
     readonly payment: string;
     readonly preferences: string;
     readonly data: string;
+    readonly invoices: string;
   };
   readonly identityBrand: string;
   readonly identityCompany: string;
@@ -471,6 +474,8 @@ export interface AccountCopy {
   readonly mandateOptionsSaveFailed: string;
   /** Ce qui manque au dossier — la synthèse du haut et les encarts des cartes. */
   readonly completion: CompletionCopy;
+  /** La section « Mes factures » (plan d'émission de la facture, E6). */
+  readonly invoices: AccountInvoicesCopy;
   /** La carte sous les cartes : le numéro et l'adresse viennent de l'identité publiée, pas d'ici. */
   readonly supportTitle: string;
   /** Le titre du panneau que la carte ouvre. */

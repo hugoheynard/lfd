@@ -1,0 +1,46 @@
+<h2 class="title">{{ t().account.sections.invoices }}</h2>
+@switch (invoices.status()) {
+  @case ('loading') {
+    <fold-loading [message]="t().account.invoices.loading" />
+  }
+  @case ('failed') {
+    <fold-empty-state
+      tone="alert"
+      [title]="t().account.invoices.loadFailedTitle"
+      [subtitle]="t().account.invoices.loadFailedBody"
+    >
+      <button foldButton emphasis="solid" intent="primary" type="button" (click)="retry()">
+        {{ t().account.loadRetry }}
+      </button>
+    </fold-empty-state>
+  }
+  @default {
+    @if (invoices.invoices().length === 0) {
+      <p class="line" data-invoices-none>{{ t().account.invoices.none }}</p>
+    } @else {
+      <p class="line">{{ count() }}</p>
+      <ul class="list">
+        @for (invoice of invoices.invoices(); track invoice.invoiceId) {
+          <li class="item" [attr.data-invoice]="invoice.invoiceId">
+            <span class="head">
+              <span class="number">{{ kind(invoice) }} {{ invoice.number }}</span>
+              <strong class="amount">{{ euros(invoice.totalTtcCents) }}</strong>
+            </span>
+            <span class="meta">{{ meta(invoice) }}</span>
+            <button
+              foldButton
+              class="action"
+              size="sm"
+              emphasis="soft"
+              intent="primary"
+              type="button"
+              (click)="open(invoice)"
+            >
+              {{ t().account.invoices.open }}
+            </button>
+          </li>
+        }
+      </ul>
+    }
+  }
+}

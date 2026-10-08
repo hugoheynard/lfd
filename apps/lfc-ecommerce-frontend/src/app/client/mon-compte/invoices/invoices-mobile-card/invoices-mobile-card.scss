@@ -1,0 +1,23 @@
+@use '../../account-card' as card;
+
+:host {
+  @include card.mobile-host;
+}
+
+.title {
+  @include card.title;
+}
+
+.line {
+  @include card.line;
+}
+
+.latest {
+  display: flex;
+  justify-content: space-between;
+  gap: var(--fold-space-sm);
+}
+
+.amount {
+  font-variant-numeric: tabular-nums;
+}

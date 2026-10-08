@@ -49,11 +49,14 @@
       </article>
     </section>
 
-    <!-- Ce que l'écran EST, dit d'emblée : un relevé de ce qui devra être
-         facturé, pas des factures. Aucune n'existe dans le système. -->
+    <!-- Les factures émises (plan-emission-de-la-facture.md, E6) : les pièces
+         figées, adressées à ce payeur. Le registre plus bas reste un relevé
+         des commandes, pas des factures. -->
+    <app-issued-invoices-card [companyId]="id()" />
+
     <fold-callout appearance="inset" variant="neutral">
-      Aucune facture n'est émise par la plateforme. Cet écran rassemble les commandes telles
-      qu'elles se reportent en comptabilité.
+      Le registre ci-dessous rassemble les commandes telles qu'elles se reportent en comptabilité ;
+      les factures émises, elles, sont listées au-dessus.
     </fold-callout>
 
     @if (debitSuspended()) {

@@ -59,3 +59,33 @@ export class CreditNoteIssuedEvent implements JournaledEvent {
     };
   }
 }
+
+/**
+ * L'e-mail « Votre facture » (E6) : parti à tous ses destinataires, ou non —
+ * personne à prévenir (`recipientCount` 0), ou un refus du fournisseur.
+ * Jamais les adresses, seulement leur nombre.
+ */
+export class InvoiceNoticeEvent implements JournaledEvent {
+  constructor(
+    readonly invoice: Invoice,
+    readonly recipientCount: number,
+    readonly failure: string | null,
+    readonly at: Date,
+  ) {}
+
+  journalFact(): JournalFact {
+    const state = this.invoice.toState();
+    const payload = {
+      subjectLabel: state.number,
+      payer: { id: state.buyer.companyId, name: state.buyer.name },
+      recipientCount: this.recipientCount,
+    };
+    return {
+      type: this.failure === null ? INVOICE_FACT_TYPES.noticeSent : INVOICE_FACT_TYPES.noticeFailed,
+      subjectType: INVOICE_SUBJECT,
+      subjectId: state.id,
+      occurredAt: this.at,
+      payload: this.failure === null ? payload : { ...payload, failure: this.failure },
+    };
+  }
+}

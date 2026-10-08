@@ -1,0 +1,41 @@
+@if (loadError()) {
+  <fold-callout variant="alert" data-issued-invoices-error>
+    Impossible de lire les factures émises de ce compte.
+    <button foldButton size="sm" emphasis="soft" (click)="retry()">Réessayer</button>
+  </fold-callout>
+} @else if (invoices(); as list) {
+  <fold-card data-issued-invoices>
+    <fold-element-title
+      cardHeader
+      variant="title"
+      icon="receipt"
+      title="Factures émises"
+      [subtitle]="list.length + ' pièce' + (list.length > 1 ? 's' : '')"
+    />
+    <div class="body">
+      @for (invoice of list; track invoice.invoiceId) {
+        <p class="row" [attr.data-issued-invoice]="invoice.invoiceId">
+          <a [routerLink]="['/comptabilite/factures', invoice.invoiceId]">{{ invoice.number }}</a>
+          <span class="meta">
+            {{ kind(invoice.kind) }} du {{ day(invoice.issuedOn) }}
+            @if (invoice.period; as month) {
+              · {{ period(month) }}
+            }
+            @if (invoice.dueOn; as due) {
+              · échéance le {{ day(due) }}
+            }
+            @if (invoice.correctedInvoiceNumber; as corrected) {
+              · corrige {{ corrected }}
+            }
+          </span>
+          <strong class="amount">{{ euros(invoice.totalTtcCents) }}</strong>
+        </p>
+      } @empty {
+        <p class="empty" data-issued-invoices-empty>
+          Aucune facture adressée à ce compte. Un site qui suit la facturation de son principal est
+          facturé sur la facture du principal.
+        </p>
+      }
+    </div>
+  </fold-card>
+}

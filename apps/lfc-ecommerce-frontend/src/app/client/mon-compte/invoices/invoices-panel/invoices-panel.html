@@ -1,0 +1,26 @@
+<fold-panel-header [title]="t().account.sections.invoices" [closeLabel]="t().dialog.close" />
+
+<fold-panel-body>
+  <ul class="list">
+    @for (invoice of invoices.invoices(); track invoice.invoiceId) {
+      <li class="item" [attr.data-invoice]="invoice.invoiceId">
+        <span class="head">
+          <span>{{ kind(invoice) }} {{ invoice.number }}</span>
+          <strong class="amount">{{ euros(invoice.totalTtcCents) }}</strong>
+        </span>
+        <span class="meta">{{ meta(invoice) }}</span>
+        <button
+          foldButton
+          class="action"
+          size="sm"
+          emphasis="soft"
+          intent="primary"
+          type="button"
+          (click)="open(invoice)"
+        >
+          {{ t().account.invoices.open }}
+        </button>
+      </li>
+    }
+  </ul>
+</fold-panel-body>

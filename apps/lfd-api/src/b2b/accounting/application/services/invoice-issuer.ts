@@ -2,9 +2,11 @@ import { Injectable } from "@nestjs/common";
 
 import { UnitOfWork } from "../../../../platform/database/unit-of-work.js";
 import { DomainEventPublisher } from "../../../../platform/events/domain-event-publisher.js";
+import { DurablePublisher } from "../../../../platform/outbox/durable-publisher.js";
 import { Clock } from "../../../../platform/time/clock.js";
 import type { Invoice } from "../../domain/entities/invoice.js";
 import { InvoiceAssemblyError } from "../../domain/errors/invoice-errors.js";
+import { InvoiceIssuedFact } from "../../domain/events/invoice-issued.fact.js";
 import { CreditNoteIssuedEvent, InvoiceIssuedEvent } from "../../domain/events/invoice.events.js";
 import { InvoiceNumbering } from "../../domain/ports/invoice-numbering.js";
 import { InvoiceRepository } from "../../domain/ports/invoice.repository.js";
@@ -28,6 +30,10 @@ export interface InvoiceIssuance {
  * lot E2) : réserve le numéro, construit la pièce, l'écrit et la journalise,
  * dans UNE transaction courte. Tout échec la défait entière — numéro compris.
  *
+ * Une facture (380) écrit aussi son fait durable `invoice.issued` dans la
+ * même transaction (E6) : c'est lui qui fait partir « Votre facture FA-… »,
+ * et seulement si l'émission est validée. Un avoir n'en écrit pas.
+ *
  * Aucune décision métier ici : qui facturer, quand, sur quels bons, c'est la
  * facture du mois (E4) et la facture carte (E5) qui le diront en l'appelant.
  */
@@ -39,6 +45,7 @@ export class InvoiceIssuer {
     private readonly clock: Clock,
     private readonly events: DomainEventPublisher,
     private readonly uow: UnitOfWork,
+    private readonly durable: DurablePublisher,
   ) {}
 
   /**
@@ -52,11 +59,12 @@ export class InvoiceIssuer {
       const invoice = request.draft(number);
       assertMatches(invoice, request);
       await this.invoices.insert(invoice);
-      await this.events.publishTraced(
-        invoice.isCreditNote
-          ? new CreditNoteIssuedEvent(invoice, at)
-          : new InvoiceIssuedEvent(invoice, at),
-      );
+      if (invoice.isCreditNote) {
+        await this.events.publishTraced(new CreditNoteIssuedEvent(invoice, at));
+      } else {
+        await this.events.publishTraced(new InvoiceIssuedEvent(invoice, at));
+        await this.durable.publish(new InvoiceIssuedFact(invoice.id).durableFact());
+      }
       return invoice;
     });
   }

@@ -1,6 +1,6 @@
 # L'émission de la facture
 
-> 📐 **Plan v2 ; E0, E1, E2, E3a et E4 bâtis le 2026-10-08** (§ 8.1 à § 8.5). Touche **l'argent** et un
+> 📐 **Plan v2 ; E0, E1, E2, E3a, E4 et E6 bâtis le 2026-10-08** (§ 8.1 à § 8.6). Touche **l'argent** et un
 > document légal : la v1 a été contredite par `vitruve` le même jour (trois
 > BLOQUANTS, huit SÉRIEUX), repris au § 9. Les règles du CGI et du Code de
 > commerce sont citées **de mémoire**, ni par l'agent ni par moi rouvertes en
@@ -181,7 +181,7 @@ document_key, sha256       ← posés UNE fois, après le rendu
 | **E3** | **E3a ✅ bâti le 2026-10-08** (XML CII, non commité à l'écriture, § 8.4) ; E3b : essai PDF/A-3 borné, Schematron, veraPDF, seau en écriture unique |
 | **E4** | ✅ **bâti le 2026-10-08** (non commité à l'écriture) — la facture du mois, le lot qui encaisse des factures ; cf. § 8.5                            |
 | **E5** | la facture carte à la livraison — après le suivi des remboursements                                                                                |
-| **E6** | e-mail, « Mes factures », l'onglet facturation de la fiche ; puis F5                                                                               |
+| **E6** | ✅ **bâti le 2026-10-08** (non commité à l'écriture) — l'e-mail, « Mes factures », l'onglet de la fiche ; cf. § 8.6. F5 reste à faire              |
 
 ### 8.1 E0 — ce qui a été bâti et tranché (2026-10-08)
 
@@ -442,6 +442,76 @@ plusieurs adresses ; (c) une facture à cheval sur deux mandats (formes 2-3
 de sous-comptes) n'est ni prélevée ni découpée — à trancher ; (d) aucun fait
 de journal pour la tentative automatique ni pour un payeur signalé (la table
 et l'écran les portent).
+
+**Tranché par Hugo (2026-10-08), pas encore bâti (lot E4b)** :
+
+- (a) l'émission automatique passe à **23h55** (Paris) le dernier jour : les
+  bons du soir restent sur leur mois ;
+- (c) option **(b)** : une facture **par mandat** — chaque groupe de bons
+  prélevé sur un même mandat a sa facture, et `invoice_split` disparaît.
+
+### 8.6 E6 — prévenir, « Mes factures », l'onglet de la fiche (2026-10-08)
+
+Aucune migration. Fait durable `invoice.issued` (`apps/lfd-api/src/b2b/accounting/domain/events/invoice-issued.fact.ts`),
+abonné `SendInvoiceNotice` → `InvoiceNoticeSender`
+(`apps/lfd-api/src/b2b/accounting/application/services/invoice-notice-sender.ts`),
+gabarit `customer.invoice-issued` (`apps/lfd-api/src/platform/mailer/invoice-issued-mail.ts`),
+routes `GET companies/:companyId/invoices[/:invoiceId]`,
+`GET admin/companies/:companyId/invoices`, `GET admin/accounting/invoices/:invoiceId`
+(`b2b_accounting:read`), contrats `packages/contracts/src/issued-invoices.ts`
+(types seulement) ; e2e `apps/lfd-api/test/issued-invoices.e2e-spec.ts`.
+
+- **Le fait durable** est écrit par `InvoiceIssuer`, dans la transaction du
+  numéro, pour une **facture (380) seulement** : Q3 ne prévient qu'à
+  l'émission. Un avoir n'écrit rien. Le rendu E3b écoutera le même fait.
+- **Destinataires** (`invoiceNoticeRecipients`) : le payeur comme l'avis PA2
+  (son contact `billing` le plus ancien, sinon son détenteur) **et**, pour
+  chaque société qui a passé un bon de la facture sauf le payeur, ses
+  contacts `billing` (`company_contacts.role`) et ses membres `billing`
+  (`memberships.role`). Dédoublonnés sans la casse ; une adresse vide ou sans
+  arobase est écartée.
+- **Idempotence** : une clé par facture ET par adresse
+  (`invoice.notice:<id>:<adresse en minuscules>`). Comme PA2, l'envoi part
+  après la validation du reçu, hors transaction, sans relance.
+- **Issue au journal**, pas en table : `invoice.notice_sent` (nombre de
+  destinataires, jamais les adresses) ou `invoice.notice_failed` (personne à
+  prévenir, ou refus du fournisseur, avec la raison). Rien ne bloque : la
+  facture ne dépend pas de l'e-mail, le lot non plus.
+- **Contenu** : numéro, date, période (le mois de l'issue de la facture du
+  mois, `invoice_monthly_outcome.month` — la pièce ne le porte pas), payeur,
+  TTC, échéance, règlement (« Prélèvement SEPA — mandat … » si BG-16 est
+  figé, sinon rien), lien `/mon-compte#compte-invoices` (absent si l'origine
+  de la boutique n'est pas configurée). **Pas de PDF joint** : le point
+  d'extension est l'envoi de `InvoiceNoticeSender`, le gabarit n'a rien à
+  changer.
+- **Mur client** : détenteur et rôle facturation (le rôle se lit par
+  `UnpaidAccessReader`) ; non-membre 404, autre rôle 403 ; une pièce adressée
+  à une autre société, le même 404 qu'une pièce absente. La liste ne montre
+  que les pièces **dont la société est l'acheteur** (`payer_company_id`).
+- **Vues** : le vendeur sans IBAN ni BIC ; aucune donnée de paiement hormis
+  la RUM figée ; `documentAvailable` dit si le rendu existe (faux tant
+  qu'E3b manque).
+- **Boutique** : section « Mes factures » de `/mon-compte`, montrée aux mêmes
+  rôles que le RIB, après le mandat ; carte bureau (liste, un clic ouvre le
+  dialogue de la pièce), carte mobile (le nombre et la dernière ; le pied
+  ouvre le panneau de la liste), dialogue en lecture seule. Copie fr/en/it
+  (`apps/lfc-ecommerce-frontend/src/app/client/copy/screens/account-invoices.copy.ts`). Aucune valeur de
+  `@lfd/contracts` n'entre dans la boutique.
+- **Back-office** : carte « Factures émises » dans l'onglet « Facturation »
+  de la fiche (le bandeau « aucune facture n'est émise par la plateforme »
+  est réécrit), et la pièce dans Comptabilité, `/comptabilite/factures/:id`.
+  Elle ne reprend pas `app-dossier-invoice` : la pièce émise ne fige que les
+  parts de remises et de frais **par taux**, pas leur détail par nature ;
+  les mises en forme, elles, sont celles du dossier.
+
+**Ouvert après E6** : (a) **un sous-compte voit-il les factures de son
+principal qui portent ses bons ?** Q3 dit « prévenir », pas « montrer » :
+aujourd'hui seule la société acheteuse les voit, et l'e-mail envoie le
+gérant d'un site vers une liste vide ; (b) aucun geste de **renvoi** de
+l'e-mail (un échec reste au journal) ; (c) un e-mail n'est envoyé qu'en
+français (`DEFAULT_MAIL_LOCALE` des autres e-mails, mais ce gabarit n'a pas
+de copie traduite) ; (d) la page `/mes-factures` de la boutique (maquette,
+`mock-statement.ts`) dit encore qu'« aucune facture n'est émise ici ».
 
 ## 9. Ce que `vitruve` a relevé (v1, 2026-10-08)
 

@@ -1,0 +1,29 @@
+<h2 class="title">{{ t().account.sections.invoices }}</h2>
+@switch (invoices.status()) {
+  @case ('loading') {
+    <fold-loading [message]="t().account.invoices.loading" />
+  }
+  @case ('failed') {
+    <fold-empty-state
+      tone="alert"
+      [title]="t().account.invoices.loadFailedTitle"
+      [subtitle]="t().account.invoices.loadFailedBody"
+    >
+      <button foldButton emphasis="solid" intent="primary" type="button" (click)="retry()">
+        {{ t().account.loadRetry }}
+      </button>
+    </fold-empty-state>
+  }
+  @default {
+    @if (latest(); as invoice) {
+      <p class="line">{{ count() }}</p>
+      <p class="line latest" [attr.data-invoice]="invoice.invoiceId">
+        <span>{{ invoice.number }}</span>
+        <strong class="amount">{{ euros(invoice.totalTtcCents) }}</strong>
+      </p>
+      <app-card-foot [label]="t().account.details" (pressed)="open()" />
+    } @else {
+      <p class="line" data-invoices-none>{{ t().account.invoices.none }}</p>
+    }
+  }
+}

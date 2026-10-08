@@ -1,10 +1,11 @@
 import type { JournalFactType } from '@lfd/contracts/journal-facts';
 
-import { optional } from '../payload-read';
+import { count, optional } from '../payload-read';
 import {
   byActor,
   cite,
   inUnit,
+  name,
   subject,
   subjectLabelOf,
   text,
@@ -44,7 +45,7 @@ function details(fact: PhraseFact): Segment[] {
     text(' du '),
     inUnit('day', fact.payload['issuedOn']),
     text(', '),
-    value(`${String(optional(fact.payload['orderCount']) ?? '?')} bon(s)`),
+    value(`${String(count(fact.payload['orderCount']) ?? '?')} bon(s)`),
     text(', chez '),
     ...cite(ENTITY, fact.payload['legalEntity']),
     text(' — '),
@@ -80,7 +81,50 @@ const creditNoteIssued: Phrase = (fact) =>
     [...KEYS, 'correctedInvoice'],
   );
 
+/** « … à 2 destinataire(s) » — jamais les adresses, leur nombre (E6). */
+function recipients(fact: PhraseFact): Segment[] {
+  return [
+    text(' à '),
+    value(`${String(count(fact.payload['recipientCount']) ?? '?')} destinataire(s)`),
+  ];
+}
+
+const NOTICE_KEYS = ['subjectLabel', 'payer', 'recipientCount'];
+
+/** « … a prévenu de la facture « FA-… » au client « X » à 2 destinataire(s) ». */
+const noticeSent: Phrase = (fact) =>
+  byActor(
+    fact,
+    [
+      text('a prévenu de '),
+      ...piece(fact, INVOICE),
+      text(' '),
+      ...cite(FOR_CLIENT, fact.payload['payer']),
+      ...recipients(fact),
+    ],
+    NOTICE_KEYS,
+  );
+
+/** « … n'a pas pu prévenir de la facture « FA-… » … : « raison » ». */
+const noticeFailed: Phrase = (fact) =>
+  byActor(
+    fact,
+    [
+      text('n’a pas pu prévenir de '),
+      ...piece(fact, INVOICE),
+      text(' '),
+      ...cite(FOR_CLIENT, fact.payload['payer']),
+      ...recipients(fact),
+      text(' : « '),
+      name(optional(fact.payload['failure']) ?? '—'),
+      text(' »'),
+    ],
+    [...NOTICE_KEYS, 'failure'],
+  );
+
 export const INVOICE_PHRASES = {
   'invoice.issued': invoiceIssued,
   'invoice.credit_note_issued': creditNoteIssued,
+  'invoice.notice_sent': noticeSent,
+  'invoice.notice_failed': noticeFailed,
 } as const satisfies Partial<Record<JournalFactType, Phrase>>;

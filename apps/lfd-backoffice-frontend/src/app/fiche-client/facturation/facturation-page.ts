@@ -31,6 +31,7 @@ import { NotifyService } from '../../notify.service';
 import { periodCsv, periodFileName } from './billing-csv';
 import { CycleStatementCard } from './cycle-statement-card/cycle-statement-card';
 import { DetachedUnpaidCard } from '../detached-unpaid-card/detached-unpaid-card';
+import { IssuedInvoicesCard } from '../issued-invoices-card/issued-invoices-card';
 import {
   groupByYear,
   ledgerRows,
@@ -68,6 +69,7 @@ const ORDERS_WINDOW = 200;
   imports: [
     CycleStatementCard,
     DetachedUnpaidCard,
+    IssuedInvoicesCard,
     FoldBadgeComponent,
     FoldButtonComponent,
     FoldCalloutComponent,

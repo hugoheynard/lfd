@@ -1,0 +1,55 @@
+.stack {
+  display: flex;
+  flex-direction: column;
+  gap: var(--fold-space-md);
+}
+
+.parties {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(18rem, 1fr));
+  gap: var(--fold-space-md);
+}
+
+.calc {
+  display: grid;
+  grid-template-columns: 1fr auto;
+  column-gap: var(--fold-space-md);
+  row-gap: var(--fold-space-xs);
+  margin: 0;
+  font-variant-numeric: tabular-nums;
+
+  dt {
+    color: var(--fold-color-text-muted);
+  }
+
+  dd {
+    margin: 0;
+    text-align: right;
+  }
+}
+
+.lines,
+.label {
+  display: flex;
+  flex-direction: column;
+  margin: 0;
+}
+
+.muted {
+  font-size: var(--fold-text-sm);
+  color: var(--fold-color-text-muted);
+}
+
+.client-link {
+  font-size: var(--fold-text-sm);
+}
+
+.orders {
+  display: flex;
+  flex-direction: column;
+  gap: var(--fold-space-xs);
+  margin: 0;
+  padding: 0;
+  list-style: none;
+  font-variant-numeric: tabular-nums;
+}

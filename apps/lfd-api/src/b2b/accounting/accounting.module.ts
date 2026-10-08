@@ -1,3 +1,6 @@
+import { AdminIssuedInvoicesController } from "./http/admin-issued-invoices.controller.js";
+import { CompanyInvoicesController } from "./http/company-invoices.controller.js";
+import { ISSUED_INVOICE_PROVIDERS } from "./issued-invoice.providers.js";
 import { Module } from "@nestjs/common";
 
 import { CancelCollectionBatchHandler } from "./application/commands/cancel-collection-batch.handler.js";
@@ -181,6 +184,8 @@ import { PrismaLegalEntityRepository } from "./infrastructure/prisma-legal-entit
     AdminBillingStatementsController,
     AdminDetachedUnpaidController,
     CompanyDetachedUnpaidController,
+    AdminIssuedInvoicesController,
+    CompanyInvoicesController,
   ],
   providers: [
     { provide: LegalEntityRepository, useClass: PrismaLegalEntityRepository },
@@ -228,6 +233,7 @@ import { PrismaLegalEntityRepository } from "./infrastructure/prisma-legal-entit
     { provide: PayerNoticeContactsReader, useClass: PrismaPayerNoticeContactsReader },
     CollectionNoticeSender,
     SendCollectionNotice,
+    ...ISSUED_INVOICE_PROVIDERS,
     // La constitution automatique (PA3).
     { provide: CollectionAutopilotRuns, useClass: PrismaCollectionAutopilotRuns },
     { provide: LastAutopilotRunReader, useClass: PrismaLastAutopilotRunReader },

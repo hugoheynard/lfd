@@ -1,0 +1,35 @@
+@use '../../account-card' as card;
+
+.list {
+  display: flex;
+  flex-direction: column;
+  gap: var(--fold-space-sm);
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.item {
+  display: flex;
+  flex-direction: column;
+  gap: var(--fold-space-xs);
+}
+
+.head {
+  display: flex;
+  justify-content: space-between;
+  gap: var(--fold-space-sm);
+  font-size: var(--fold-text-sm);
+}
+
+.amount {
+  font-variant-numeric: tabular-nums;
+}
+
+.meta {
+  @include card.note;
+}
+
+.action {
+  align-self: flex-start;
+}

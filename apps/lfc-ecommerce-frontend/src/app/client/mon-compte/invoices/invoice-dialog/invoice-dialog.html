@@ -1,0 +1,111 @@
+<fold-panel-header [title]="title()" [closeLabel]="t().dialog.close" />
+
+<fold-panel-body>
+  @if (failed()) {
+    <fold-callout variant="alert" announce data-invoice-failed>{{
+      copy().detailFailed
+    }}</fold-callout>
+  } @else if (invoice(); as bill) {
+    <p class="meta" data-invoice-meta>{{ meta() }}</p>
+    <fold-callout variant="info">{{ copy().pdfPending }}</fold-callout>
+
+    <div class="parties">
+      <section class="block">
+        <h3 class="sub">{{ copy().seller }}</h3>
+        <p class="lines">
+          <span>{{ bill.seller.name }} · {{ bill.seller.legalForm }}</span>
+          <span>SIREN {{ bill.seller.siren }} · TVA {{ bill.seller.vatNumber || '—' }}</span>
+          <span>{{ bill.seller.rcs }}</span>
+          @for (line of bill.seller.addressLines; track $index) {
+            <span>{{ line }}</span>
+          }
+        </p>
+      </section>
+      <section class="block">
+        <h3 class="sub">{{ copy().buyer }}</h3>
+        <p class="lines">
+          <span>{{ bill.buyer.name }} · {{ bill.buyer.legalForm }}</span>
+          <span>SIREN {{ bill.buyer.siren }} · TVA {{ bill.buyer.vatNumber || '—' }}</span>
+          @for (line of bill.buyer.billingAddressLines; track $index) {
+            <span>{{ line }}</span>
+          }
+        </p>
+      </section>
+    </div>
+
+    <section class="block">
+      <h3 class="sub">{{ copy().lines }}</h3>
+      <ul class="rows" data-invoice-lines>
+        @for (line of bill.lines; track line.sku + line.unitPriceMillicents + line.vatRate) {
+          <li class="row">
+            <span class="label">{{ line.label }}</span>
+            <span class="muted">
+              {{ quantity(line) }} × {{ unitPrice(line.unitPriceMillicents) }} ·
+              {{ vatRate(line.vatRate) }}
+            </span>
+            <span class="amount">{{ euros(line.amountCents) }}</span>
+          </li>
+        }
+      </ul>
+    </section>
+
+    <div class="parties">
+      @for (category of bill.vat.categories; track category.rate) {
+        <section class="block">
+          <h3 class="sub">{{ vatRate(category.rate) }}</h3>
+          <dl class="calc">
+            <dt>{{ copy().goods }}</dt>
+            <dd>{{ euros(category.goodsHtCents) }}</dd>
+            @if (category.allowancesCents > 0) {
+              <dt>− {{ copy().allowances }}</dt>
+              <dd>{{ euros(category.allowancesCents) }}</dd>
+            }
+            @if (category.chargesCents > 0) {
+              <dt>+ {{ copy().charges }}</dt>
+              <dd>{{ euros(category.chargesCents) }}</dd>
+            }
+            <dt>{{ copy().taxableBase }}</dt>
+            <dd>{{ euros(category.taxableBaseCents) }}</dd>
+            <dt>{{ copy().vat }}</dt>
+            <dd>{{ euros(category.vatCents) }}</dd>
+          </dl>
+        </section>
+      }
+      <section class="block">
+        <dl class="calc">
+          <dt>{{ copy().totalHt }}</dt>
+          <dd>{{ euros(bill.totalHtCents) }}</dd>
+          <dt>{{ copy().totalVat }}</dt>
+          <dd>{{ euros(bill.totalVatCents) }}</dd>
+          <dt class="strong">{{ copy().totalTtc }}</dt>
+          <dd class="strong" data-invoice-total>{{ euros(bill.totalTtcCents) }}</dd>
+        </dl>
+      </section>
+    </div>
+
+    <section class="block">
+      <h3 class="sub">{{ copy().mentions }}</h3>
+      <dl class="calc">
+        <dt>{{ copy().payment }}</dt>
+        <dd data-invoice-means>{{ means(bill.mandateReference) }}</dd>
+        <dt>{{ copy().latePenalty }}</dt>
+        <dd>{{ percent(bill.mentions.latePenaltyRateBasisPoints) }}</dd>
+        <dt>{{ copy().recoveryIndemnity }}</dt>
+        <dd>{{ euros(bill.mentions.recoveryIndemnityCents) }}</dd>
+        <dt>{{ copy().earlyDiscount }}</dt>
+        <dd>{{ bill.mentions.earlyPaymentDiscount }}</dd>
+      </dl>
+    </section>
+
+    <section class="block">
+      <h3 class="sub">{{ copy().orders }}</h3>
+      <ul class="rows">
+        @for (order of bill.orders; track order.reference) {
+          <li class="order">{{ order.reference }} — {{ delivered(order.deliveredOn) }}</li>
+        }
+      </ul>
+    </section>
+  } @else {
+    <fold-loading [message]="copy().detailLoading" />
+  }
+</fold-panel-body>

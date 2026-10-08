@@ -14,6 +14,7 @@ import {
   renderCollectionNoticeMail,
   type CollectionNoticeMailData,
 } from "./collection-notice-mail.js";
+import { renderInvoiceIssuedMail, type InvoiceIssuedMailData } from "./invoice-issued-mail.js";
 import {
   renderDeliveryEnRouteMail,
   type DeliveryEnRouteMailData,
@@ -71,6 +72,11 @@ export interface B2bMails {
    * `collection-notice-mail.ts`.
    */
   "customer.collection-notice": CollectionNoticeMailData;
+  /**
+   * **« Votre facture FA-… »** — à l'émission (plan E6, Q3). Destinataires :
+   * la facturation du payeur et celle des sous-comptes. Cf. `invoice-issued-mail.ts`.
+   */
+  "customer.invoice-issued": InvoiceIssuedMailData;
   /** **La tournée est partie.** Destinataire : le client. Cf. `delivery-en-route-mail.ts`. */
   "customer.delivery-en-route": DeliveryEnRouteMailData;
   /**
@@ -530,6 +536,7 @@ export function b2bMailTemplates(brand: MailBranding): TemplateRegistry<B2bMails
     },
     "customer.delivery-en-route": (data) => renderDeliveryEnRouteMail(data, customerMail),
     "customer.collection-notice": (data) => renderCollectionNoticeMail(data, customerMail),
+    "customer.invoice-issued": (data) => renderInvoiceIssuedMail(data, customerMail),
     "customer.order-placed": (data) => {
       const copy = mailCopyOf(data.locale).orderPlaced;
       const settlement = settlementCopyKeyOf(data.sheet);

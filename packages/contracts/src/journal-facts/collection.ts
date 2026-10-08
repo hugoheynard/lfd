@@ -47,6 +47,16 @@ const issuedInvoice = {
 };
 
 /**
+ * L'e-mail « votre facture » (plan `plan-emission-de-la-facture.md`, E6).
+ * Sujet : `invoice`, nommé par son numéro. Jamais les adresses : leur nombre.
+ */
+const invoiceNotice = {
+  subjectLabel: subjectLabel(),
+  payer: named("company"),
+  recipientCount: count(),
+};
+
+/**
  * L'avis de prélèvement d'un payeur (plan
  * `documentation/facturation/prelevement-automatique.md`, PA2). Sujet :
  * `collection_notice`, nommé « Avis <payeur> ». Jamais l'adresse du
@@ -133,6 +143,13 @@ export const COLLECTION_FACTS = {
   "invoice.credit_note_issued": fact(
     payload({ ...issuedInvoice, correctedInvoice: named("invoice") }),
   ),
+  /** L'e-mail « votre facture » est accepté par le fournisseur pour chaque destinataire. */
+  "invoice.notice_sent": fact(payload(invoiceNotice)),
+  /**
+   * Personne n'a été prévenu, ou pas tout le monde : aucune adresse
+   * (`recipientCount` 0), ou un refus du fournisseur. `failure` dit lequel.
+   */
+  "invoice.notice_failed": fact(payload({ ...invoiceNotice, failure: z.string() })),
   /** L'avis est mis en file, dans la transaction du lot — pas encore envoyé. */
   "collection.notice_queued": fact(payload(notice)),
   /** Aucune adresse : ni contact de facturation, ni détenteur. Le lot ne se dépose pas. */

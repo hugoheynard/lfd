@@ -17,6 +17,7 @@ import {
 } from "../../../domain/services/__tests__/collection-fixtures.js";
 import type { InvoiceableOrder } from "../../../domain/services/monthly-invoicing.js";
 import { InvoiceIssuer } from "../../services/invoice-issuer.js";
+import { RecordingDurable } from "./notice-doubles.js";
 import { IssueMonthlyInvoicesCommand } from "../issue-monthly-invoices.command.js";
 import { IssueMonthlyInvoicesHandler } from "../issue-monthly-invoices.handler.js";
 import { FakeMandates, FixedBuyers, FixedCreditors, UlidSequence } from "./collection-doubles.js";
@@ -83,7 +84,8 @@ function harness(options: { buyers?: StatementBuyerReader; at?: Date } = {}) {
   const clock = new FixedClock(options.at ?? AFTER_MOMENT);
   const events = new RecordingPublisher();
   const uow = new DirectUnitOfWork();
-  const issuer = new InvoiceIssuer(new CountingNumbering(), invoices, clock, events, uow);
+  const durable = new RecordingDurable();
+  const issuer = new InvoiceIssuer(new CountingNumbering(), invoices, clock, events, uow, durable);
   const handler = new IssueMonthlyInvoicesHandler(
     reader,
     new FixedCreditors(CREDITOR),
@@ -99,7 +101,7 @@ function harness(options: { buyers?: StatementBuyerReader; at?: Date } = {}) {
     uow,
   );
   const run = () => handler.execute(new IssueMonthlyInvoicesCommand(ENTITY_ID, MONTH));
-  return { reader, invoices, outcomes, events, run };
+  return { reader, invoices, outcomes, events, durable, run };
 }
 
 const CHALET_FOLLOWS_PRINCIPAL = {
@@ -123,6 +125,10 @@ describe("IssueMonthlyInvoices — la facture du mois (E4)", () => {
     expect(principal?.buyer.companyId).toBe("c_principal");
     expect(principal?.orders.map((order) => order.reference)).toEqual(["CMD-001", "CMD-002"]);
     expect(h.events.factTypes()).toEqual(["invoice.issued", "invoice.issued"]);
+    // E6 : chaque facture émise écrit son fait durable, qui fera partir l'e-mail.
+    expect(h.durable.facts.map((fact) => fact.key)).toEqual(
+      h.invoices.inserted.map((invoice) => `invoice.issued:${invoice.id}`),
+    );
     expect(h.reader.asked).toEqual([{ from: FLOOR, to: new Date("2026-09-30T22:00:00.000Z") }]);
   });
 
@@ -259,6 +265,7 @@ describe("IssueMonthlyInvoices — la facture du mois (E4)", () => {
           new FixedClock(AFTER_MOMENT),
           h.events,
           new DirectUnitOfWork(),
+          new RecordingDurable(),
         ),
         h.outcomes,
         new UlidSequence(),

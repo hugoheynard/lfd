@@ -16,6 +16,7 @@ import { AuthFacade } from '../../../auth/auth.facade';
 import { ClientActivation } from '../../client-activation.service';
 import { ClientBankAccount } from '../../client-bank-account.service';
 import { ClientChrome } from '../../client-chrome.service';
+import { ClientInvoices } from '../../client-invoices.service';
 import { ClientMandate } from '../../client-mandate.service';
 import { FR } from '../../copy/fr';
 import { PRO_ACCOUNT_FR } from '../../copy/screens/pro-account.copy';
@@ -110,6 +111,16 @@ function boot(
           reload: (): Promise<void> => Promise.resolve(),
         },
       },
+      // Les cartes « Mes factures » ont leur propre suite : ici, aucune facture.
+      {
+        provide: ClientInvoices,
+        useValue: {
+          status: signal('ready'),
+          invoices: signal([]),
+          ensure: (): void => undefined,
+          reload: (): Promise<void> => Promise.resolve(),
+        },
+      },
       // Les cartes mandat ont leur propre suite : ici, aucun mandat en cours.
       {
         provide: ClientMandate,
@@ -144,13 +155,14 @@ function boot(
   return fixture;
 }
 
-/** Les huit sections, dans l'ordre du sommaire. */
+/** Les neuf sections, dans l'ordre du sommaire — « Mes factures » depuis E6. */
 const SECTIONS = [
   'identity',
   'users',
   'kbis',
   'addresses',
   'bank',
+  'invoices',
   'payment',
   'preferences',
   'data',
@@ -189,13 +201,13 @@ describe('ComptePage', () => {
     expect(chrome.bandNarrow()).toBe(true);
   });
 
-  it('donne huit sections, et un sommaire qui pointe LEURS ancres', () => {
+  it('donne neuf sections, et un sommaire qui pointe LEURS ancres', () => {
     // Le sommaire fait défiler, il ne change pas d'écran : une entrée qui
     // pointerait une ancre absente mènerait nulle part.
     const anchors = Array.from(el().querySelectorAll('.summary-link')).map((a) =>
       a.getAttribute('href')?.slice(1),
     );
-    expect(anchors.length).toBe(8);
+    expect(anchors.length).toBe(9);
     // « Mes informations » a quitté Mon compte pour l'en-tête (2026-09-14).
     expect(el().querySelector('#compte-profile')).toBeNull();
     for (const anchor of anchors) {
@@ -233,6 +245,7 @@ describe('ComptePage', () => {
       'compte-kbis',
       'compte-addresses',
       'compte-bank',
+      'compte-invoices',
       'compte-data',
     ]);
     expect(links.map((a) => a.querySelector('.summary-num')?.textContent)).toEqual([
@@ -242,6 +255,7 @@ describe('ComptePage', () => {
       '04',
       '05',
       '06',
+      '07',
     ]);
     for (const anchor of anchors) {
       expect(el().querySelector(`#${anchor}`)).not.toBeNull();
@@ -255,17 +269,20 @@ describe('ComptePage', () => {
    * rôle comptable. Aux autres, ni carte ni entrée de sommaire — et le sommaire
    * se renumérote sans trou.
    */
-  it('ne montre le RIB qu’aux rôles `owner` et `billing`', () => {
+  it('ne montre le RIB et « Mes factures » qu’aux rôles `owner` et `billing`', () => {
     for (const role of ['owner', 'billing'] as const) {
       fixture = boot([asRole(role)]);
       expect(el().querySelector('#compte-bank app-bank-desk-card')).not.toBeNull();
       expect(el().querySelector('#compte-bank app-bank-mobile-card')).not.toBeNull();
+      expect(el().querySelector('#compte-invoices app-invoices-desk-card')).not.toBeNull();
     }
     for (const role of ['orders', 'admin'] as const) {
       fixture = boot([asRole(role)]);
       const links = Array.from(el().querySelectorAll('.summary-link'));
       expect(el().querySelector('#compte-bank')).toBeNull();
+      expect(el().querySelector('#compte-invoices')).toBeNull();
       expect(links.map((a) => a.getAttribute('href'))).not.toContain('#compte-bank');
+      expect(links.map((a) => a.getAttribute('href'))).not.toContain('#compte-invoices');
       expect(links.length).toBe(7);
       expect(links.at(-1)?.querySelector('.summary-num')?.textContent).toBe('07');
     }
@@ -294,12 +311,12 @@ describe('ComptePage', () => {
         expect(el().querySelector('section#compte-bank')?.classList).toContain('paired');
 
         const shown = anchors();
-        expect(shown.length).toBe(9);
+        expect(shown.length).toBe(10);
         expect(shown.indexOf('compte-mandate')).toBe(shown.indexOf('compte-bank') + 1);
         expect(
           Array.from(el().querySelectorAll('.summary-num')).map((n) => n.textContent),
-        ).toContain('09');
-        expect(el().querySelector('.rail-foot .rail-count')?.textContent?.trim()).toBe('1/9');
+        ).toContain('10');
+        expect(el().querySelector('.rail-foot .rail-count')?.textContent?.trim()).toBe('1/10');
       }
     });
 
@@ -308,7 +325,7 @@ describe('ComptePage', () => {
 
       expect(el().querySelector('#compte-mandate')).toBeNull();
       expect(anchors()).not.toContain('compte-mandate');
-      expect(anchors().length).toBe(8);
+      expect(anchors().length).toBe(9);
       expect(el().querySelector('section#compte-bank')?.classList).not.toContain('paired');
     });
 
@@ -317,7 +334,7 @@ describe('ComptePage', () => {
 
       expect(el().querySelector('#compte-mandate')).toBeNull();
       expect(anchors()).toContain('compte-bank');
-      expect(anchors().length).toBe(8);
+      expect(anchors().length).toBe(9);
     });
 
     it('reste absent aux rôles qui ne voient pas le RIB, même drapeau ouvert et RIB lu', () => {

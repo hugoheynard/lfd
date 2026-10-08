@@ -201,6 +201,17 @@ export type {
   MonthlyInvoicesView,
 } from "./monthly-invoices.js";
 export type {
+  IssuedInvoiceBuyerView,
+  IssuedInvoiceKind,
+  IssuedInvoiceLineView,
+  IssuedInvoiceOrderView,
+  IssuedInvoiceSellerView,
+  IssuedInvoiceSummaryView,
+  IssuedInvoiceVatCategoryView,
+  IssuedInvoiceView,
+  IssuedInvoicesView,
+} from "./issued-invoices.js";
+export type {
   BillingStatementBuyerView,
   BillingStatementOrderView,
   BillingStatementSellerView,

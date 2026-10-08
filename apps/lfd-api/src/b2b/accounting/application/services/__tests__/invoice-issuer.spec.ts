@@ -1,3 +1,5 @@
+import type { DurableFact } from "../../../../../platform/outbox/durable-event.js";
+import { DurablePublisher } from "../../../../../platform/outbox/durable-publisher.js";
 import { FixedClock } from "../../../../../platform/time/fixed-clock.js";
 import { Invoice } from "../../../domain/entities/invoice.js";
 import {
@@ -58,18 +60,34 @@ class StepInvoices extends InvoiceRepository {
   }
 }
 
+class StepDurable extends DurablePublisher {
+  readonly facts: DurableFact[] = [];
+
+  constructor(private readonly steps: SettingSteps) {
+    super();
+  }
+
+  publish(fact: DurableFact): Promise<void> {
+    this.steps.log.push(`durable:${fact.key}`);
+    this.facts.push(fact);
+    return Promise.resolve();
+  }
+}
+
 function harness() {
   const steps = new SettingSteps();
   const invoices = new StepInvoices(steps);
   const events = new StepPublisher(steps);
+  const durable = new StepDurable(steps);
   const issuer = new InvoiceIssuer(
     new StepNumbering(steps),
     invoices,
     new FixedClock(NOW),
     events,
     new StepUnitOfWork(steps),
+    durable,
   );
-  return { steps, invoices, events, issuer };
+  return { steps, invoices, events, durable, issuer };
 }
 
 const draft = (number: InvoiceNumber): Invoice => Invoice.issue(issueInput({ number }));
@@ -86,7 +104,15 @@ describe("InvoiceIssuer — numéroter, écrire, journaliser en une transaction"
       `number:${ENTITY}:2026`,
       "insert:FA-2026-000001",
       "journal:invoice.issued",
+      `durable:invoice.issued:${invoice.id}`,
       "uow:end",
+    ]);
+    expect(h.durable.facts).toEqual([
+      {
+        type: "invoice.issued",
+        key: `invoice.issued:${invoice.id}`,
+        payload: { invoiceId: invoice.id },
+      },
     ]);
     expect(h.events.traced[0]?.journalFact()).toEqual({
       type: "invoice.issued",
@@ -125,6 +151,8 @@ describe("InvoiceIssuer — numéroter, écrire, journaliser en une transaction"
         }),
     });
 
+    // Q3 ne prévient qu'à l'émission d'une facture : l'avoir n'écrit aucun fait durable.
+    expect(h.durable.facts.map((fact) => fact.key)).toEqual([`invoice.issued:${corrected.id}`]);
     expect(h.events.traced[1]?.journalFact()).toMatchObject({
       type: "invoice.credit_note_issued",
       subjectId: "cn_1",
@@ -147,6 +175,7 @@ describe("InvoiceIssuer — numéroter, écrire, journaliser en une transaction"
     ).rejects.toBeInstanceOf(InvoiceIssuanceBlockedError);
     expect(h.invoices.inserted).toEqual([]);
     expect(h.events.traced).toEqual([]);
+    expect(h.durable.facts).toEqual([]);
   });
 
   /** Le numéro a été pris pour une séquence : une pièce d'une autre entité ne la consomme pas. */
