@@ -12,6 +12,7 @@ sont conformes.
 | Doc                                                                                      | État                                                                                                                                                                                                                                                       |
 | ---------------------------------------------------------------------------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
 | [`plan-simulateur-dossier-de-facturation.md`](plan-simulateur-dossier-de-facturation.md) | ✅ bâti le 2026-10-08 (DF1-DF4 : calcul, route et CSV, historique, écran Comptabilité › « Dossier de facturation ») — le dossier d'un payeur sur un cycle : facture simulée (une ligne par produit et par prix, datée), bons, historique, écarts d'arrondi |
+| [`plan-le-prelevement-suit-la-facture.md`](plan-le-prelevement-suit-la-facture.md)       | 📐 plan v2 — le prélèvement encaisse le total facturé, figé dans un arrêté par ligne de débit                                                                                                                                                              |
 
 ## Ce qui existe ailleurs, et qu'il ne faut pas réécrire
 
