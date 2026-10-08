@@ -35,6 +35,7 @@ function batch(over: Partial<CollectionBatchView> = {}): CollectionBatchView {
     totalCents: 123_400,
     unmandatedCompanies: [],
     depositable: true,
+    lines: [],
     ...over,
   };
 }

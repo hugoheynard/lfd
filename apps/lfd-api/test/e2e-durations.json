@@ -21,6 +21,7 @@
   "test/appointments.e2e-spec.ts": 11928,
   "test/b2b-legal-documents.e2e-spec.ts": 6637,
   "test/b2b-legal-sections.e2e-spec.ts": 5507,
+  "test/billing-statements.e2e-spec.ts": 6751,
   "test/catalog-delivery-review.e2e-spec.ts": 10343,
   "test/catalog-delivery.e2e-spec.ts": 3353,
   "test/catalog-ingest-facts.e2e-spec.ts": 5356,

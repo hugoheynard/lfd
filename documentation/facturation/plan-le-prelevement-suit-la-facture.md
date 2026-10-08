@@ -1,6 +1,6 @@
 # Le prélèvement suit la facture
 
-> 📐 **Plan v2 — F1 et F2 bâtis** (2026-10-08), F3 et F4 à faire. Touche **l'argent** : la v1 a
+> 📐 **Plan v2 — F1, F2 et F3 bâtis** (2026-10-08), F4 à faire. Touche **l'argent** : la v1 a
 > été contredite par `vitruve` le même jour (trois BLOQUANTS, six SÉRIEUX),
 > repris au § 7. Affirmations sur l'existant vérifiées dans le dépôt le
 > 2026-10-08.
@@ -143,7 +143,34 @@ facture de **exactement ses bons**. Le montant de la ligne devient le
 - Le CSV de contrôle gagne deux colonnes, **Σ bons** et **écart**, et son
   total reste Σ lignes = `CtrlSum`.
 
-### F3 — L'arrêté figé
+### F3 — L'arrêté figé ✅ (2026-10-08, non commité)
+
+> Bâti : tables `billing_statement` / `billing_statement_order`
+> (`apps/lfd-api/prisma/schema/public/billing-statement.prisma`, migration
+> `20261008140000_l_arrete_de_facturation`) ; agrégat
+> `apps/lfd-api/src/b2b/accounting/domain/entities/billing-statement.ts` ;
+> écrit par la constitution, annulé par l'annulation du lot ; faits
+> `billing_statement.issued` / `.cancelled` ; la vue du lot rend ses lignes,
+> chacune avec `billingStatementId` (`null` avant F3). Tranché en bâtissant :
+>
+> - **Une seule source de calcul** : `DebitDraft` garde la facture que
+>   `assembleCollection` calcule pour le montant ; l'arrêté la fige telle
+>   quelle (`body` = cette facture, `body_version` 1, `computed_with`
+>   `invoice-dossier/2026-10-08`). L'agrégat refuse un arrêté dont le total
+>   n'est pas le montant de la ligne.
+> - **L'acheteur n'est pas le `DebtorSnapshot`** : celui-ci porte l'IBAN en
+>   clair et « ne se range nulle part ». L'acheteur figé est la fiche de la
+>   société payeuse (raison sociale, forme, SIRET, SIREN, TVA) et son adresse
+>   de facturation par défaut non archivée — vide s'il n'y en a pas. Le
+>   vendeur est le `CreditorSnapshot` sans les réglages du mandat.
+> - **La période** est celle des dates de livraison demandées des bons ;
+>   colonnes NULL quand aucun bon n'en porte, jamais inventées.
+> - **Pas d'unité ni de code de catégorie TVA** dans `body` : aucun bon ne
+>   les fige aujourd'hui (le taux, lui, y est). À décider avant Factur-X.
+> - **Immuable en base** : déclencheur `billing_statement_immutable` (ni
+>   `DELETE`, ni modification hors `active → cancelled`, ni annulation d'un
+>   arrêté dont le lot n'est plus `constituted`) ; les bons d'un arrêté ne se
+>   retouchent pas. L'annulation passe avant l'écriture du lot annulé.
 
 Table `billing_statement`, une ligne par ligne de débit, écrite dans la
 transaction de la constitution :
@@ -224,7 +251,7 @@ reste un chantier à part.
 | ------ | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
 | **F1** | ✅ 2026-10-08 — le lecteur de constitution rend les bons figés                                                                                                                                       |
 | **F2** | ✅ 2026-10-08 — la facture par ligne ; montant = total facturé ; `unbillable` ; `orders_total_cents` ; CSV ; e2e : Σ lignes = Σ arrêtés = `CtrlSum`, un bon incohérent exclu sans bloquer les autres |
-| **F3** | la table des arrêtés, écrite et annulée avec le lot ; journal                                                                                                                                        |
+| **F3** | ✅ 2026-10-08 — la table des arrêtés, écrite et annulée avec le lot ; journal                                                                                                                        |
 | **F4** | l'écran du lot et le dossier par ligne de lot                                                                                                                                                        |
 
 ## 8. Ce que `vitruve` a relevé (v1, 2026-10-08)

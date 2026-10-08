@@ -29,7 +29,17 @@ export class PrismaCollectionBatchReader extends CollectionBatchReader {
         depositedAt: true,
         cancelledAt: true,
         unmandatedCompanies: true,
-        lines: { select: { amountCents: true, orderCount: true } },
+        lines: {
+          orderBy: { rank: "asc" },
+          select: {
+            rank: true,
+            debtorName: true,
+            amountCents: true,
+            ordersTotalCents: true,
+            orderCount: true,
+            statement: { select: { id: true } },
+          },
+        },
       },
     });
     return rows.map((row) => ({
@@ -46,6 +56,14 @@ export class PrismaCollectionBatchReader extends CollectionBatchReader {
       totalCents: row.lines.reduce((sum, line) => sum + line.amountCents, 0),
       unmandatedCompanies: row.unmandatedCompanies,
       depositable: row.lines.length > 0 && row.unmandatedCompanies.length === 0,
+      // Un lot d'avant F3 n'a pas d'arrêté : `null`, jamais un identifiant inventé.
+      lines: row.lines.map((line) => ({
+        rank: line.rank,
+        debtorName: line.debtorName,
+        amountCents: line.amountCents,
+        ordersTotalCents: line.ordersTotalCents,
+        billingStatementId: line.statement?.id ?? null,
+      })),
     }));
   }
 

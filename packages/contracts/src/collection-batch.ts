@@ -41,6 +41,24 @@ export const ORDER_COLLECTION_STATE_LABELS: Readonly<Record<OrderCollectionState
   settled_otherwise: "Réglée autrement",
 };
 
+/**
+ * Une ligne de débit du lot, telle que l'écran la lit (plan
+ * `documentation/facturation/plan-le-prelevement-suit-la-facture.md`, F3).
+ */
+export interface CollectionBatchLineView {
+  readonly rank: number;
+  readonly debtorName: string;
+  /** Ce que la ligne prélève — le total de son arrêté depuis F2. */
+  readonly amountCents: number;
+  /** Σ des bons ; `null` pour une ligne d'un lot constitué avant F2. */
+  readonly ordersTotalCents: number | null;
+  /**
+   * L'arrêté de facturation de la ligne ; `null` pour un lot constitué avant
+   * F3 — « lot d'avant l'arrêté de facturation », jamais zéro.
+   */
+  readonly billingStatementId: string | null;
+}
+
 export interface CollectionBatchView {
   readonly id: string;
   readonly scheme: "CORE" | "B2B";
@@ -58,6 +76,8 @@ export interface CollectionBatchView {
   /** Q2 : non vide = le lot ne se dépose pas, et l'écran les nomme en tête. */
   readonly unmandatedCompanies: readonly string[];
   readonly depositable: boolean;
+  /** Dans l'ordre des rangs. */
+  readonly lines: readonly CollectionBatchLineView[];
 }
 
 export interface CollectionExclusionView {

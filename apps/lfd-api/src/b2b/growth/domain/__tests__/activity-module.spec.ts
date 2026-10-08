@@ -144,6 +144,9 @@ describe("moduleOf — la comptabilité", () => {
     ["payment_link.cancelled", "comptabilite"],
     ["collection.batch_constituted", "comptabilite"],
     ["collection.order_settled_otherwise", "comptabilite"],
+    // L'arrêté de facturation (F3, 2026-10-08) : figé et annulé avec son lot.
+    ["billing_statement.issued", "comptabilite"],
+    ["billing_statement.cancelled", "comptabilite"],
     ["accounting_settings.payment_link_cap_set", "comptabilite"],
     // La fidélité (2026-09-26) : le ratio, les bons et les ajustements.
     ["loyalty_settings.set", "comptabilite"],
@@ -153,7 +156,7 @@ describe("moduleOf — la comptabilité", () => {
     expect(moduleOf(type)).toBe(module);
   });
 
-  it("le filtre du module ne ramène que ses sept préfixes", () => {
+  it("le filtre du module ne ramène que ses huit préfixes", () => {
     expect(prefixesOf("comptabilite")).toEqual([
       "legal_entity.",
       "payment_mandate.",
@@ -162,6 +165,7 @@ describe("moduleOf — la comptabilité", () => {
       "loyalty_settings.",
       "loyalty.",
       "collection.",
+      "billing_statement.",
     ]);
   });
 

@@ -3,8 +3,21 @@ import type { LegalEntityView } from "@lfd/contracts";
 
 import { IdGenerator } from "../../../../../platform/id/id-generator.js";
 import type { CreditorSnapshot } from "../../../domain/creditor-snapshot.js";
-import type { CollectionBatch } from "../../../domain/entities/collection-batch.js";
+import type {
+  BillingStatement,
+  StatementBuyer,
+} from "../../../domain/entities/billing-statement.js";
+import type {
+  CollectionBatch,
+  CollectionBatchStatus,
+} from "../../../domain/entities/collection-batch.js";
+import { BatchNotConstitutedError } from "../../../domain/errors/collection-errors.js";
 import type { OrderCollection } from "../../../domain/entities/order-collection.js";
+import {
+  BillingStatementRepository,
+  type CancelledStatement,
+} from "../../../domain/ports/billing-statement.repository.js";
+import { StatementBuyerReader } from "../../../domain/ports/statement-buyer.reader.js";
 import { CancelledOrdersReader } from "../../../domain/ports/cancelled-orders.reader.js";
 import { CollectionBatchRepository } from "../../../domain/ports/collection-batch.repository.js";
 import {
@@ -108,9 +121,12 @@ export class MemoryBatches extends CollectionBatchRepository {
   load(batchId: string): Promise<CollectionBatch | null> {
     return Promise.resolve(this.saved.get(batchId) ?? null);
   }
+  /** Le statut tel qu'ENREGISTRÉ — l'agrégat en mémoire peut l'avoir devancé. */
+  readonly storedStatus = new Map<string, CollectionBatchStatus>();
   save(batch: CollectionBatch): Promise<void> {
     this.steps.log.push(`save:batch:${batch.status}`);
     this.saved.set(batch.id, batch);
+    this.storedStatus.set(batch.id, batch.status);
     return Promise.resolve();
   }
 }
@@ -163,5 +179,64 @@ export class FixedEntities extends LegalEntityReader {
   }
   byId(): Promise<LegalEntityView | null> {
     return Promise.resolve(null);
+  }
+}
+
+/**
+ * Les arrêtés, en mémoire. L'annulation rejoue la garde de la base : elle
+ * lit le lot tel qu'ENREGISTRÉ (`batches`), et refuse s'il n'est plus
+ * `constituted` — comme le déclencheur `billing_statement_immutable`.
+ */
+export class MemoryStatements extends BillingStatementRepository {
+  readonly inserted: BillingStatement[] = [];
+  readonly cancelledIds = new Set<string>();
+  constructor(
+    private readonly steps: Steps,
+    private readonly batches: MemoryBatches,
+  ) {
+    super();
+  }
+  insert(statement: BillingStatement): Promise<void> {
+    this.steps.log.push(`insert:statement:${statement.toPersistence().batchId}`);
+    this.inserted.push(statement);
+    return Promise.resolve();
+  }
+  cancelForBatch(batchId: string): Promise<readonly CancelledStatement[]> {
+    const stored = this.batches.storedStatus.get(batchId);
+    const active = this.inserted
+      .map((statement) => statement.toPersistence())
+      .filter((state) => state.batchId === batchId && !this.cancelledIds.has(state.id));
+    if (active.length > 0 && stored !== undefined && stored !== "constituted") {
+      return Promise.reject(new BatchNotConstitutedError(batchId, stored));
+    }
+    this.steps.log.push(`cancel:statements:${batchId}`);
+    for (const state of active) {
+      this.cancelledIds.add(state.id);
+    }
+    return Promise.resolve(
+      active.map((state) => ({ statementId: state.id, lineRank: state.lineRank })),
+    );
+  }
+}
+
+/** Chaque payeur demandé a une fiche ; son nom est « Société <id> », comme `companyNames`. */
+export class FixedBuyers extends StatementBuyerReader {
+  buyersOf(companyIds: readonly string[]): Promise<ReadonlyMap<string, StatementBuyer>> {
+    return Promise.resolve(
+      new Map(
+        companyIds.map((companyId): [string, StatementBuyer] => [
+          companyId,
+          {
+            companyId,
+            name: `Société ${companyId}`,
+            legalForm: "SARL",
+            siret: "55210055400013",
+            siren: "552100554",
+            vatNumber: "FR89552100554",
+            billingAddressLines: ["1 rue du Port", "73000 Chambéry"],
+          },
+        ]),
+      ),
+    );
   }
 }

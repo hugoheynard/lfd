@@ -160,6 +160,7 @@ export {
 export type {
   CollectionBatchStatusView,
   ConstituteBatchesPayload,
+  CollectionBatchLineView,
   CollectionBatchView,
   CollectionCycleView,
   CollectionExclusionReasonView,

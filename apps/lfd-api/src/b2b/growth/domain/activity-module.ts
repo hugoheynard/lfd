@@ -180,6 +180,9 @@ const PREFIXES: Readonly<Record<ActivityModule, readonly string[]>> = {
     // Le lot de prélèvement figé — constitué, annulé, déposé, et la commande
     // réglée autrement (plan `plan-lot-de-prelevement-fige.md`, 2026-10-05).
     "collection.",
+    // L'arrêté de facturation, figé et annulé avec son lot (plan
+    // `plan-le-prelevement-suit-la-facture.md`, F3, 2026-10-08).
+    "billing_statement.",
   ],
 };
 

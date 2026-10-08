@@ -50,3 +50,13 @@ export const COLLECTION_FACT_TYPES = {
   batchDeposited: "collection.batch_deposited",
   orderSettledOtherwise: "collection.order_settled_otherwise",
 } as const satisfies Readonly<Record<string, JournalFactType>>;
+
+/**
+ * Les faits de l'arrêté de facturation (plan
+ * `plan-le-prelevement-suit-la-facture.md`, F3) : émis avec la constitution
+ * du lot, annulé avec lui.
+ */
+export const BILLING_STATEMENT_FACT_TYPES = {
+  issued: "billing_statement.issued",
+  cancelled: "billing_statement.cancelled",
+} as const satisfies Readonly<Record<string, JournalFactType>>;

@@ -25,6 +25,17 @@ const batch = {
   totalCents: cents(),
 };
 
+const statement = {
+  subjectLabel: subjectLabel(),
+  legalEntity: named("legal_entity"),
+  /** La société payeuse — celle que la ligne débite. */
+  payer: named("company"),
+  /** Le lot de la ligne, nommé « Lot <schéma> <cycle> ». */
+  batch: named("collection_batch"),
+  lineRank: count(),
+  totalCents: cents(),
+};
+
 export const COLLECTION_FACTS = {
   /**
    * Un lot est constitué. `unmandatedCompanies` le rend indéposable (Q2) ;
@@ -51,4 +62,19 @@ export const COLLECTION_FACTS = {
       note: z.string(),
     }),
   ),
+  /**
+   * L'arrêté de facturation d'une ligne de débit est figé avec la
+   * constitution du lot (plan `plan-le-prelevement-suit-la-facture.md`, F3).
+   * Sujet : `billing_statement`. `totalCents` est son total TTC — ce que la
+   * ligne prélève ; `ordersTotalCents` la somme de ses bons.
+   */
+  "billing_statement.issued": fact(
+    payload({
+      ...statement,
+      orderCount: count(),
+      ordersTotalCents: cents(),
+    }),
+  ),
+  /** Annulé avec son lot, avant dépôt : un nouvel arrêté naîtra à la reconstitution. */
+  "billing_statement.cancelled": fact(payload(statement)),
 } as const;

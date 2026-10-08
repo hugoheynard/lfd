@@ -1,0 +1,84 @@
+// ─────────────────────────────────────────────────────────────────────────────
+// L'arrêté de facturation figé — plan
+// `documentation/facturation/plan-le-prelevement-suit-la-facture.md` (F3).
+// ─────────────────────────────────────────────────────────────────────────────
+//
+// Propriétaire : `src/b2b/accounting/`. Un arrêté par ligne de débit, écrit
+// dans la transaction de la constitution du lot ; son total TTC EST le
+// montant de la ligne.
+//
+// 🔴 Contraintes INVISIBLES ici — elles vivent dans la migration
+// `20261008140000_l_arrete_de_facturation`, Prisma ne sait pas les exprimer :
+//   · un arrêté ne se supprime pas, et ne change que `active → cancelled`,
+//     tant que son lot est `constituted` (déclencheur
+//     `billing_statement_immutable`) ; ses bons ne se retouchent pas
+//     (`billing_statement_order_immutable`) ;
+//   · totaux cohérents : TTC = HT + TVA, TTC strictement positif ;
+//   · une période se lit dans l'ordre, ou n'existe pas.
+
+/// L'état d'un arrêté. Jamais de DELETE : l'annulation est un statut.
+enum BillingStatementStatus {
+  active
+  cancelled
+
+  @@schema("public")
+}
+
+/// Un arrêté : la facture d'UNE ligne de débit, calculée une fois et figée.
+model BillingStatement {
+  /// ULID.
+  id String @id
+
+  batchId  String              @map("batch_id")
+  lineRank Int                 @map("line_rank")
+  line     CollectionBatchLine @relation(fields: [batchId, lineRank], references: [batchId, rank], onDelete: Restrict)
+
+  status BillingStatementStatus
+
+  /// La société débitée — opaque, comme `collection_batch_line.debtor_company_id`.
+  payerCompanyId String @map("payer_company_id")
+  legalEntityId  String @map("legal_entity_id")
+
+  /// Identités figées au jour de la constitution (SIREN, TVA, adresse).
+  seller Json
+  buyer  Json
+
+  /// Le jour (Paris) de la constitution.
+  issuedOn       DateTime  @map("issued_on") @db.Date
+  /// Première et dernière date de livraison demandée des bons ; NULL quand
+  /// aucun bon n'en porte — jamais inventée.
+  periodStartsOn DateTime? @map("period_starts_on") @db.Date
+  periodEndsOn   DateTime? @map("period_ends_on") @db.Date
+
+  totalHtCents     Int @map("total_ht_cents")
+  totalVatCents    Int @map("total_vat_cents")
+  /// Ce que la ligne prélève.
+  totalTtcCents    Int @map("total_ttc_cents")
+  /// Σ des totaux des bons couverts.
+  ordersTotalCents Int @map("orders_total_cents")
+
+  /// Lignes, remises, frais, ventilation par taux — `body_version` en dit la forme.
+  body         Json
+  bodyVersion  Int    @map("body_version")
+  /// La version du calcul qui a produit `body` et les totaux.
+  computedWith String @map("computed_with")
+
+  orders BillingStatementOrder[]
+
+  @@unique([batchId, lineRank])
+  @@index([payerCompanyId])
+  @@map("billing_statement")
+  @@schema("public")
+}
+
+/// Les bons couverts par un arrêté. `order_id` est opaque.
+model BillingStatementOrder {
+  statementId String           @map("statement_id")
+  statement   BillingStatement @relation(fields: [statementId], references: [id], onDelete: Restrict)
+  orderId     String           @map("order_id")
+
+  @@id([statementId, orderId])
+  @@index([orderId])
+  @@map("billing_statement_order")
+  @@schema("public")
+}

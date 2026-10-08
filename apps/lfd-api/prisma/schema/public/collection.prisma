@@ -120,7 +120,9 @@ model CollectionBatchLine {
   /// Dont commandes de cycles antérieurs — reprises.
   priorOrderCount  Int      @map("prior_order_count")
 
-  orders OrderCollection[]
+  orders    OrderCollection[]
+  /// Son arrêté de facturation (F3) ; absent pour une ligne d'un lot d'avant.
+  statement BillingStatement?
 
   @@id([batchId, rank])
   @@index([mandateId])

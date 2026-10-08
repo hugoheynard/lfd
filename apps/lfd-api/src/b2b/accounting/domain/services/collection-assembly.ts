@@ -11,6 +11,7 @@ import type { SepaScheme } from "../value-objects/sepa-scheme.js";
 import { billedPayerOf, billingFollowAt } from "./billed-payer.js";
 import { isBillable } from "./invoice-billability.js";
 import { simulateInvoiceDossier } from "./invoice-dossier.js";
+import type { Invoice } from "./invoice-dossier.types.js";
 import { SEQUENCE_ORDER, sequenceTypeOf } from "./pain008-document.js";
 
 /**
@@ -73,7 +74,12 @@ export interface DebitDraft {
   readonly debtorName: string;
   readonly mandate: CollectionMandate;
   readonly orders: readonly CollectableOrder[];
-  /** Le total TTC de la facture de ces bons, calculée en une fois. */
+  /**
+   * La facture de ces bons, calculée en une fois — la SEULE fois : l'arrêté
+   * de facturation (F3) la fige telle quelle, sans la recalculer.
+   */
+  readonly invoice: Invoice;
+  /** Le total TTC de cette facture : `invoice.totalCents`. */
   readonly amountCents: number;
   /** Σ des totaux des bons — l'écart est `amountCents − ordersTotalCents`. */
   readonly ordersTotalCents: number;
@@ -215,6 +221,7 @@ function groupByScheme(
       orders: [...group.orders].sort((left, right) =>
         left.orderNumber.localeCompare(right.orderNumber),
       ),
+      invoice: dossier.invoice,
       amountCents: dossier.invoice.totalCents,
       ordersTotalCents: dossier.ordersTotalCents,
       priorOrderCount: group.orders.filter((order) => order.placedAt < input.cycleStartsAt).length,

@@ -278,6 +278,39 @@ function notDepositable(fact: PhraseFact): Segment[] {
     : [text(', non déposable — sans mandat : '), value(names.join(', '))];
 }
 
+// ─── L'arrêté de facturation (2026-10-08) ───────────────────────────────────
+
+const STATEMENT: Noun = { the: 'l’arrêté de facturation', a: 'un arrêté de facturation' };
+const FOR_CLIENT: Noun = { the: 'du client', a: 'd’un client' };
+
+/**
+ * « … a émis l'arrêté de facturation « Arrêté Lot B2B 202609 · ligne 1 » du
+ * client « X » — 12,34 € ». Le plan : `plan-le-prelevement-suit-la-facture.md`, F3.
+ */
+function onStatement(verb: string): Phrase {
+  return (fact) => {
+    const label = subjectLabelOf(fact);
+    const head =
+      label === null
+        ? [text(STATEMENT.a)]
+        : [text(`${STATEMENT.the} « `), subject(fact, label), text(' »')];
+    return byActor(
+      fact,
+      [
+        text(`${verb} `),
+        ...head,
+        text(' '),
+        ...cite(FOR_CLIENT, fact.payload['payer']),
+        text(' chez '),
+        ...cite(ENTITY[''], fact.payload['legalEntity']),
+        text(' — '),
+        inUnit('cents', fact.payload['totalCents']),
+      ],
+      ['subjectLabel', 'payer', 'legalEntity', 'totalCents'],
+    );
+  };
+}
+
 export const ACCOUNTING_PHRASES = {
   'legal_entity.declared': onEntity(
     'a déclaré',
@@ -372,6 +405,8 @@ export const ACCOUNTING_PHRASES = {
   'collection.batch_constituted': onBatch('a constitué', notDepositable),
   'collection.batch_cancelled': onBatch('a annulé'),
   'collection.batch_deposited': onBatch('a marqué déposé'),
+  'billing_statement.issued': onStatement('a émis'),
+  'billing_statement.cancelled': onStatement('a annulé'),
   'collection.order_settled_otherwise': (fact) => {
     const number = subjectLabelOf(fact);
     return byActor(

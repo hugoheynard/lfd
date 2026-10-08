@@ -7,6 +7,10 @@ import { SettleOrderOtherwiseHandler } from "./application/commands/settle-order
 import { ExportCollectionBatchAuditHandler } from "./application/queries/export-collection-batch-audit.handler.js";
 import { ExportCollectionBatchFileHandler } from "./application/queries/export-collection-batch-file.handler.js";
 import { GetCollectionCycleHandler } from "./application/queries/get-collection-cycle.handler.js";
+import { BillingStatementRepository } from "./domain/ports/billing-statement.repository.js";
+import { StatementBuyerReader } from "./domain/ports/statement-buyer.reader.js";
+import { PrismaBillingStatementRepository } from "./infrastructure/prisma-billing-statement.repository.js";
+import { PrismaStatementBuyerReader } from "./infrastructure/prisma-statement-buyer.reader.js";
 import { CancelledOrdersReader } from "./domain/ports/cancelled-orders.reader.js";
 import { CollectionBatchReader } from "./domain/ports/collection-batch.reader.js";
 import { CollectionBatchRepository } from "./domain/ports/collection-batch.repository.js";
@@ -140,6 +144,9 @@ import { PrismaLegalEntityRepository } from "./infrastructure/prisma-legal-entit
     { provide: OrderCollectionRepository, useClass: PrismaOrderCollectionRepository },
     { provide: CollectionBatchReader, useClass: PrismaCollectionBatchReader },
     { provide: CollectionLock, useClass: PrismaCollectionLock },
+    // L'arrêté de facturation figé (plan `plan-le-prelevement-suit-la-facture.md`, F3).
+    { provide: BillingStatementRepository, useClass: PrismaBillingStatementRepository },
+    { provide: StatementBuyerReader, useClass: PrismaStatementBuyerReader },
     { provide: CancelledOrdersReader, useClass: PrismaCancelledOrdersReader },
     { provide: OrderNumbersReader, useClass: PrismaOrderNumbersReader },
     // Les impayés d'un site détaché (plan-sous-comptes §2.1 quater).
