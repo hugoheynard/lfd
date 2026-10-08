@@ -91,7 +91,7 @@ describe("GetMandateMintBlockersHandler — ce que la fiche staff annonce", () =
 });
 
 /**
- * Régression prévenue (plan `plan-mentions-obligatoires-du-mandat.md` §8 #6) :
+ * Régression prévenue (plan `mentions-obligatoires-du-mandat.md` #6) :
  * deux calculs — un pour l'écran, un pour la frappe — auraient pu diverger, et
  * un bouton « Frapper » actif sur un refus serveur est le pire des deux écarts.
  */

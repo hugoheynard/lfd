@@ -1,5 +1,5 @@
 /**
- * E2E du **SIREN de la société** — plan `plan-mentions-obligatoires-du-mandat.md` §9.
+ * E2E du **SIREN de la société** — plan `mentions-obligatoires-du-mandat.md`
  *
  * Ce que seuls ces e2e éprouvent : que les trois écritures du dépôt
  * (`declareOwnedBy`, `declareUnowned`, `save`) portent la colonne, que la

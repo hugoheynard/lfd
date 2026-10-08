@@ -116,7 +116,7 @@ export function debtorBlock(doc: Doc, top: number, debtor: DebtorSnapshot | null
  * (`holderLegalForm`) — jamais celle de la société, qui serait fausse dès que
  * le titulaire en diffère. ⚠️ Elle restait vide jusqu'au 2026-09-15 (décision
  * Q4 du plan `mandat-deux-schemas.md`, périmée par
- * `plan-mentions-obligatoires-du-mandat.md` §9).
+ * `mentions-obligatoires-du-mandat.md`).
  */
 export function holderBlock(doc: Doc, top: number, debtor: DebtorSnapshot | null): number {
   let y = heading(doc, top, "Titulaire du compte bancaire (pouvant être différent du débiteur) *");

@@ -272,7 +272,7 @@ export class CompanyBankAccountNotFoundError extends ResourceNotFoundError {
  * ⚠️ `MandateWithoutBankAccountError` a vécu ici jusqu'au 2026-09-15. La frappe
  * refuse toujours sans RIB, mais par `MandateMentionsMissingError`
  * (`mint-blocker-errors.ts`), code `bank_account_missing` : le RIB y est une
- * mention parmi les autres (plan `plan-mentions-obligatoires-du-mandat.md` §9).
+ * mention parmi les autres (plan `mentions-obligatoires-du-mandat.md`).
  */
 
 /**

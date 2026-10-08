@@ -50,7 +50,7 @@ export interface RecordBankAccountDeps extends DraftVoidingDeps, MandateBellDeps
  *
  * Le RIB se réécrit en entier, sauf ce champ : **absent de la charge =
  * inchangé**. Un écran encore ouvert sur un bundle qui l'ignore l'effacerait
- * sinon à chaque enregistrement (plan `plan-mentions-obligatoires-du-mandat.md`
+ * sinon à chaque enregistrement (plan `mentions-obligatoires-du-mandat.md`
  * §8 #7). Une chaîne vide envoyée, elle, efface : c'est une saisie.
  *
  * ## 🔴 Ce que le booléen de `replaceWith` ne fait pas encore

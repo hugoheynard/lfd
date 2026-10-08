@@ -26,7 +26,7 @@ export interface MandateHolder {
    *
    * ⚠️ Il était tiré du SIRET jusqu'au 2026-09-15 (`sirenOfSiret`, supprimé) :
    * le préfixe d'un SIRET n'est pas toujours un SIREN valide, et le SIREN est
-   * désormais une colonne saisie (plan `plan-mentions-obligatoires-du-mandat.md`).
+   * désormais une colonne saisie (plan `mentions-obligatoires-du-mandat.md`).
    */
   readonly siren: string;
 }

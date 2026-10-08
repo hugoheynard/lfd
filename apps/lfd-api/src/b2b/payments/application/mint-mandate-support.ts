@@ -67,7 +67,7 @@ export type MintOutcome =
  * (`MandateWithoutBankAccountError`, puis `NoIssuerError`) : ils sont deux
  * mentions parmi celles de `mintBlockersOf`, toutes opposées ensemble par
  * `MandateMentionsMissingError`. Les dire une à une ferait recommencer autant de
- * fois qu'il en manque (plan `plan-mentions-obligatoires-du-mandat.md` §9).
+ * fois qu'il en manque (plan `mentions-obligatoires-du-mandat.md`).
  *
  * ## La course
  *

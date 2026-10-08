@@ -38,7 +38,7 @@ import { GetMyCompanyMandateOptionsQuery } from "./get-my-company-mandate-option
  *
  * `mintBlockers` vient de `readMintReadiness`, **la même lecture que la
  * frappe** : un bouton « Générer » actif ne peut pas buter sur un refus que
- * l'écran n'annonçait pas (plan `plan-mentions-obligatoires-du-mandat.md` §9).
+ * l'écran n'annonçait pas (plan `mentions-obligatoires-du-mandat.md`).
  */
 @QueryHandler(GetMyCompanyMandateOptionsQuery)
 export class GetMyCompanyMandateOptionsHandler implements IQueryHandler<

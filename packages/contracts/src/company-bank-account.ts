@@ -49,7 +49,7 @@ export const setCompanyBankAccountPayloadSchema = z.object({
    * 🔴 `.optional()` et **pas** `.default("")` : le RIB se réécrit en entier,
    * et un écran encore ouvert sur un bundle qui ignore ce champ l'effacerait à
    * chaque enregistrement. Absent = inchangé ; le serveur relit le RIB existant
-   * et fusionne (plan `plan-mentions-obligatoires-du-mandat.md` §8 #7).
+   * et fusionne (plan `mentions-obligatoires-du-mandat.md` #7).
    */
   holderLegalForm: z.string().trim().max(40).optional(),
 });

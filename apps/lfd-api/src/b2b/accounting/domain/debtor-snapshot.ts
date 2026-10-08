@@ -31,7 +31,7 @@ export interface DebtorSnapshot {
    * peuvent s'imprimer sans — le peigne reste alors à remplir à la main.
    *
    * ⚠️ Il était dérivé du SIRET jusqu'au 2026-09-15 (`sirenOfSiret`, supprimé) :
-   * plan `plan-mentions-obligatoires-du-mandat.md` §9.
+   * plan `mentions-obligatoires-du-mandat.md`
    */
   readonly siren: string;
   /** Le titulaire tel que sa banque le connaît. */

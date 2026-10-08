@@ -45,7 +45,7 @@ const COMMON_RULES: readonly MentionRule[] = [
 
 /**
  * Ce que chaque formulaire ajoute — relevé sur les astérisques des deux
- * gabarits imprimés (plan `plan-mentions-obligatoires-du-mandat.md` §2).
+ * gabarits imprimés (plan `mentions-obligatoires-du-mandat.md`).
  *
  * La forme juridique du titulaire n'est réclamée que sur un RIB **déposé** :
  * sans RIB, `bank_account_missing` envoie déjà vers le dialogue qui la saisit,

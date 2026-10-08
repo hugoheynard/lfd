@@ -19,7 +19,7 @@ import { GetMandateMintBlockersQuery } from "./get-mandate-mint-blockers.query.j
  *
  * `readMintReadiness` est la lecture de la frappe elle-même : ce que la fiche
  * annonce est ce que le serveur opposerait (plan
- * `plan-mentions-obligatoires-du-mandat.md` §9).
+ * `mentions-obligatoires-du-mandat.md`).
  *
  * @throws {CompanyNotFoundForMandateError} l'id ne désigne aucune société (404).
  */

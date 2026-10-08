@@ -99,7 +99,7 @@ model Company {
   // SIREN de l'ENTREPRISE (9 chiffres) — plusieurs établissements (SIRET) le
   // partagent, d'où l'index NON unique. Vide = inconnu. Quand le SIRET est
   // connu et que son préfixe est un SIREN valide, le SIREN EST ce préfixe :
-  // l'agrégat `Company` tient la règle (plan-mentions-obligatoires-du-mandat §9).
+  // l'agrégat `Company` tient la règle (mentions-obligatoires-du-mandat).
   siren          String @default("")
   vatNumber      String @default("") @map("tva_intracom")
 

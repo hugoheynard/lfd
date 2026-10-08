@@ -19,7 +19,7 @@ import { Siret } from "./siret.js";
  * couple et non un geste à répéter dans chaque écriture : les trois chemins
  * (déclaration, complétion, correction) passent par `consistent`.
  *
- * Plan : `documentation/comptabilite/mandat/plan-mentions-obligatoires-du-mandat.md` §9.1.
+ * Plan : `documentation/comptabilite/mandat/mentions-obligatoires-du-mandat.md`
  */
 export class LegalRegistration {
   private constructor(

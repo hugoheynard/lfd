@@ -38,17 +38,17 @@ plans, ses docs d'état et ses todos (les todos vivent **ici** et non dans
 
 ### Mandat et RIB
 
-| Doc                                                                                                | État                                                                                                    |
-| -------------------------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------- |
-| [`mandat/rum.md`](mandat/rum.md)                                                                   | la **référence unique de mandat** : contraintes, frappe, pourquoi ce n'est plus l'identifiant du mandat |
-| [`mandat/mandat-deux-schemas.md`](mandat/mandat-deux-schemas.md)                                   | ✅ doc d'état — CORE ou interentreprises au choix de l'entité, figé sur le mandat                       |
-| [`mandat/rib-client.md`](mandat/rib-client.md)                                                     | ✅ doc d'état — le client voit et saisit le RIB de sa société ; refusé si un mandat est actif           |
-| [`mandat/plan-mandat-client.md`](mandat/plan-mandat-client.md)                                     | ✅ en production — le mandat côté client, derrière le drapeau `customerMandate`                         |
-| [`mandat/plan-mentions-obligatoires-du-mandat.md`](mandat/plan-mentions-obligatoires-du-mandat.md) | 🟡 commité, pas déployé — SIREN, forme juridique du titulaire, frappe refusée sans ses mentions         |
-| [`mandat/plan-restes-du-mandat.md`](mandat/plan-restes-du-mandat.md)                               | 🟡 lots 1-3 construits — `DtOfSgntr`, verrou du créancier, purge ; amendement différé                   |
-| [`mandat/todo-mandat-restes-de-la-frappe.md`](mandat/todo-mandat-restes-de-la-frappe.md)           | 🟡 l'amendement d'un mandat actif, différé jusqu'à la réponse de la banque                              |
-| [`mandat/todo-mandat-core-contre-b2b.md`](mandat/todo-mandat-core-contre-b2b.md)                   | 🔴 libellé bancaire du mandat interentreprises, « 13 mois », second débit d'un ponctuel                 |
-| [`mandat/todo-rib-client-transmission.md`](mandat/todo-rib-client-transmission.md)                 | 🔴 sécurité de la transmission de l'IBAN saisi par le client                                            |
+| Doc                                                                                      | État                                                                                                    |
+| ---------------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------- |
+| [`mandat/rum.md`](mandat/rum.md)                                                         | la **référence unique de mandat** : contraintes, frappe, pourquoi ce n'est plus l'identifiant du mandat |
+| [`mandat/mandat-deux-schemas.md`](mandat/mandat-deux-schemas.md)                         | ✅ doc d'état — CORE ou interentreprises au choix de l'entité, figé sur le mandat                       |
+| [`mandat/rib-client.md`](mandat/rib-client.md)                                           | ✅ doc d'état — le client voit et saisit le RIB de sa société ; refusé si un mandat est actif           |
+| [`mandat/plan-mandat-client.md`](mandat/plan-mandat-client.md)                           | ✅ en production — le mandat côté client, derrière le drapeau `customerMandate`                         |
+| [`mandat/mentions-obligatoires-du-mandat.md`](mandat/mentions-obligatoires-du-mandat.md) | ✅ doc d'état, en production — SIREN, forme juridique du titulaire, frappe refusée sans ses mentions    |
+| [`mandat/plan-restes-du-mandat.md`](mandat/plan-restes-du-mandat.md)                     | 🟡 lots 1-3 construits — `DtOfSgntr`, verrou du créancier, purge ; amendement différé                   |
+| [`mandat/todo-mandat-restes-de-la-frappe.md`](mandat/todo-mandat-restes-de-la-frappe.md) | 🟡 l'amendement d'un mandat actif, différé jusqu'à la réponse de la banque                              |
+| [`mandat/todo-mandat-core-contre-b2b.md`](mandat/todo-mandat-core-contre-b2b.md)         | 🔴 libellé bancaire du mandat interentreprises, « 13 mois », second débit d'un ponctuel                 |
+| [`mandat/todo-rib-client-transmission.md`](mandat/todo-rib-client-transmission.md)       | 🔴 sécurité de la transmission de l'IBAN saisi par le client                                            |
 
 ### Fidélité et prix
 

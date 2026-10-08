@@ -162,7 +162,7 @@ function nextValidSiret(): string {
   // Le préfixe est lui-même un SIREN valide : la clé d'un SIRET ne garantit
   // pas celle de ses neuf premiers chiffres, et une société témoin sans SIREN
   // ne pourrait pas signer de mandat interentreprises (plan
-  // plan-mentions-obligatoires-du-mandat §8.1).
+  // mentions-obligatoires-du-mandat).
   const siren = withDomainKey(`1234${referenceSeq.toString().padStart(4, "0")}`, isSiren);
   return withDomainKey(`${siren}0001`, isSiret);
 }

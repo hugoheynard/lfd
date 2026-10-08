@@ -373,7 +373,7 @@ async function blockersOf(handler: MintMandateHandler): Promise<readonly MintBlo
 }
 
 /**
- * Plan `plan-mentions-obligatoires-du-mandat.md` §9 (2026-09-15) : le mandat
+ * Plan `mentions-obligatoires-du-mandat.md` (2026-09-15) : le mandat
  * interentreprises exige le SIREN, la raison sociale du débiteur et la forme
  * juridique du titulaire. Le CORE, rien de plus qu'avant.
  */

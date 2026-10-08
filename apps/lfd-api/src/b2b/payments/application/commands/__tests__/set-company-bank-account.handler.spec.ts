@@ -98,7 +98,7 @@ describe("SetCompanyBankAccountHandler", () => {
   });
 
   /**
-   * Régression prévenue (plan `plan-mentions-obligatoires-du-mandat.md` §8 #7) :
+   * Régression prévenue (plan `mentions-obligatoires-du-mandat.md` #7) :
    * le RIB se réécrit en entier, et un écran encore ouvert sur un bundle qui
    * ignore le champ l'aurait effacé à chaque enregistrement — rendant une frappe
    * interentreprises impossible sans que personne l'ait voulu.

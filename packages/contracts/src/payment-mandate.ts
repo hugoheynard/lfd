@@ -47,7 +47,7 @@ export const MANDATE_STATUS_LABELS: Readonly<Record<MandateStatus, string>> = {
  * - `holder_legal_form_missing` — la civilité ou forme juridique du titulaire
  *   du compte, exigée par le seul interentreprises : RIB.
  *
- * Plan `documentation/comptabilite/mandat/plan-mentions-obligatoires-du-mandat.md` §9.2.
+ * Plan `documentation/comptabilite/mandat/mentions-obligatoires-du-mandat.md`
  */
 export const mintBlockerSchema = z.enum([
   "bank_account_missing",
@@ -161,7 +161,7 @@ export interface MandateSectionView {
   /**
    * Ce qui empêche aujourd'hui de **frapper** un mandat pour cette société —
    * vide quand la frappe passerait. Champ ajouté le 2026-09-15 (plan
-   * `documentation/comptabilite/mandat/plan-mentions-obligatoires-du-mandat.md` §9).
+   * `documentation/comptabilite/mandat/mentions-obligatoires-du-mandat.md`).
    *
    * Calculé par la même fonction que la frappe : l'écran ne peut pas annoncer
    * « prêt » quand le serveur refuserait, ni l'inverse.

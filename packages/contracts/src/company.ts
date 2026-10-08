@@ -56,7 +56,7 @@ export type Settlement = z.infer<typeof settlementSchema>;
  * La même charge sert deux écritures, et le vide y veut dire la même chose —
  * « ne réécrit rien » : le client **complète** ce qui manque, le back-office
  * **corrige**. Un écran encore ouvert sur un bundle qui n'envoie pas `siren`
- * n'efface donc rien (plan-mentions-obligatoires-du-mandat §9).
+ * n'efface donc rien (mentions-obligatoires-du-mandat).
  */
 export const updateIdentityPayloadSchema = z.object({
   enseigne: z.string().default(""),
