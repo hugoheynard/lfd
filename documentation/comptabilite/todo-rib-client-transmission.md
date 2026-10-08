@@ -1,7 +1,7 @@
 # Revoir la sécurité de la transmission du RIB saisi par le client
 
 > Ouverte le 2026-09-14, à la demande de Hugo, en bâtissant
-> [`plan-rib-client.md`](plan-rib-client.md) **sans** passage par
+> [`rib-client.md`](rib-client.md) (alors un plan) **sans** passage par
 > `vitruve`. Rien de ce qui suit n'est décidé.
 
 ## Ce qui est en place
@@ -18,8 +18,8 @@
   Confirmation par e-mail, ou délai avant prise d'effet ?
 - **Mandat** : un changement de compte côté client casse le prélèvement en
   cours ; faut-il prévenir le staff, ou bloquer tant qu'un mandat est actif ?
-- **Trace** : aucun fait au journal pour un dépôt de RIB, ni côté staff ni côté
-  client.
+- ~~**Trace**~~ : fait — `company.bank_account_changed` est écrit côté staff
+  et côté client (vérifié le 2026-10-08, `record-company-bank-account.ts`).
 - Passage par `vitruve` avant d'ouvrir le geste à tous les clients.
 - **Le PDF du mandat rend l'IBAN à qui porte un jeton owner/billing**
   (ajouté le 2026-09-14, plan `plan-mandat-client.md` §6 #3). Assumé :

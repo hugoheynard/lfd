@@ -251,7 +251,7 @@ describe('ComptePage', () => {
   });
 
   /**
-   * Plan `plan-rib-client.md` §2 : le RIB n'appartient qu'au détenteur et au
+   * `rib-client.md` §1 : le RIB n'appartient qu'au détenteur et au
    * rôle comptable. Aux autres, ni carte ni entrée de sommaire — et le sommaire
    * se renumérote sans trou.
    */

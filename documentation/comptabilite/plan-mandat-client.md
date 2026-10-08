@@ -33,7 +33,7 @@ Faits porteurs :
   Aucun fait n'est écrit au journal.
 - `AdminMandatesController` affirme qu'il n'existe **pas** d'endpoint client
   jumeau, « la clientèle ne saisira jamais ses coordonnées bancaires ». Le
-  2026-09-14, le RIB client a été ouvert (`plan-rib-client.md`) : cette phrase
+  2026-09-14, le RIB client a été ouvert (`rib-client.md`) : cette phrase
   est désormais fausse et devra être corrigée dans le même lot.
 - 🔴 **Bloqueur connu** : `todo-mandat-core-contre-b2b.md` — le lot déclare
   `LclInstrm = B2B`, le formulaire imprimé est un **CORE** (remboursement à 8

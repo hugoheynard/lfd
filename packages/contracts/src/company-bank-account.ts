@@ -113,7 +113,7 @@ export interface CompanyBankAccountSectionView {
  * §10). La vue ne change pas : les zones ne s'y ajoutent pas, elles ont leur
  * route, pour la même raison que côté staff.
  *
- * Plan : `documentation/comptabilite/plan-rib-client.md`.
+ * Plan : `documentation/comptabilite/rib-client.md`.
  */
 export type CustomerBankAccountView = Omit<
   CompanyBankAccountView,

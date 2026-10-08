@@ -16,7 +16,7 @@ export type BankReadStatus = 'loading' | 'failed' | 'ready';
 
 /**
  * **Le RIB de la société**, tel que le client le voit et le dépose sur
- * `/mon-compte` (plan `documentation/comptabilite/plan-rib-client.md`, lot B).
+ * `/mon-compte` (`documentation/comptabilite/rib-client.md`, §6).
  *
  * Deux gestes, et pas un de plus : lire, écrire. Il garde **une** lecture,
  * parce que deux cartes la montrent en même temps — la carte bureau et la

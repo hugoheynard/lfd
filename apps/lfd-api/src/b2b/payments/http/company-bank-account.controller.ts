@@ -22,7 +22,7 @@ import { GetMyCompanyBilledToQuery } from "../application/queries/get-my-company
  * les handlers ; ce contrôleur ne fait que le transport. Aucune garde de
  * boutique : un RIB se dépose à tous les niveaux.
  *
- * Plan : `documentation/comptabilite/plan-rib-client.md`.
+ * Doc : `documentation/comptabilite/rib-client.md`.
  */
 @Controller("companies")
 export class CompanyBankAccountController {

@@ -97,7 +97,7 @@ const ORDER_ONLY_SECTIONS: ReadonlySet<(typeof SECTIONS)[number]> = new Set([
 ]);
 
 /**
- * Les rôles qui voient et déposent le RIB (plan `plan-rib-client.md` §2) : le
+ * Les rôles qui voient et déposent le RIB (`rib-client.md` §1) : le
  * détenteur et le rôle comptable. L'API refuse les autres ; l'écran ne leur
  * propose pas une carte qui ne ferait que dire non.
  */
