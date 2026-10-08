@@ -1,6 +1,6 @@
 # L'émission de la facture
 
-> 📐 **Plan v2 ; E0 bâti le 2026-10-08** (§ 8.1). Touche **l'argent** et un
+> 📐 **Plan v2 ; E0 et E1 bâtis le 2026-10-08** (§ 8.1, § 8.2). Touche **l'argent** et un
 > document légal : la v1 a été contredite par `vitruve` le même jour (trois
 > BLOQUANTS, huit SÉRIEUX), repris au § 9. Les règles du CGI et du Code de
 > commerce sont citées **de mémoire**, ni par l'agent ni par moi rouvertes en
@@ -176,7 +176,7 @@ document_key, sha256       ← posés UNE fois, après le rendu
 | Lot    | Contenu                                                                                           |
 | ------ | ------------------------------------------------------------------------------------------------- |
 | **E0** | ✅ **bâti le 2026-10-08** (non commité à l'écriture) — cf. § 8.1                                  |
-| **E1** | l'agrégat `Invoice` (domaine pur), facture et avoir                                               |
+| **E1** | ✅ **bâti le 2026-10-08** (non commité à l'écriture) — cf. § 8.2                                  |
 | **E2** | tables, numérotation, immuabilité en base                                                         |
 | **E3** | essai PDF/A-3 borné, puis le rendu Factur-X validé (Schematron, veraPDF), seau en écriture unique |
 | **E4** | la facture du mois (dernier jour, 22h) sur les livraisons ; le lot encaisse des factures          |
@@ -215,6 +215,42 @@ document_key, sha256       ← posés UNE fois, après le rendu
   l'écrivent pas et se relisent en `H87`. La quantité décimale reste à E1.
 - **Visible** : le dossier de facturation affiche les manques en tête des
   signalements ; la fiche de l'entité, ceux du vendeur (`missingToInvoice`).
+
+### 8.2 E1 — ce qui a été bâti et tranché (2026-10-08)
+
+Domaine pur, sans table ni route : `apps/lfd-api/src/b2b/accounting/domain/`
+`entities/invoice.ts` (+ `invoice.types.ts`, `invoice-invariants.ts`,
+`invoice-parties.ts`), `value-objects/invoice-number.ts`,
+`value-objects/invoice-quantity.ts`, `errors/invoice-errors.ts`,
+`services/invoice-from-dossier.ts`.
+
+- **Numéro** : `InvoiceNumber`, `FA-<année>-<6 chiffres>`, rang 1 à 999 999,
+  avoirs dans la **même** séquence (architecture § 4.2). L'année du numéro
+  doit être celle de `issued_on`. L'attribuer reste à E2.
+- **Parties** : vendeur et acheteur figés reprennent `StatementSeller` /
+  `StatementBuyer` de l'arrêté. `Invoice.issue` juge par
+  `invoiceIssuanceBlockers` **avant** tout le reste et refuse
+  (`InvoiceIssuanceBlockedError`, 409) en citant tous les manques ; les
+  mentions sont copiées de l'entité, catégorie `goods`, `vatOnDebits: false`.
+- **Quantité** : `InvoiceQuantity` en **millièmes entiers** (1,250 kg = 1250),
+  pas de flottant ; une pièce `H87` reste entière, `KGM` admet trois
+  décimales.
+- **Dates de livraison** : par **bon** (`orders[].deliveredOn`, BT-13), `null`
+  quand inconnue. Les dates demandées du dossier ne passent pas.
+- **Remises et frais** : pas de ligne à part ; ils vivent dans la ventilation
+  (`invoiceVatBreakdown`, parts par taux), reprise telle quelle.
+- **Invariants** (`InvoiceTotalsMismatchError`, 500) : marchandise par taux =
+  Σ lignes, base = marchandise − remises + frais, Σ bases = HT, Σ TVA = TVA,
+  TTC = HT + TVA ; échéance ≥ émission.
+- **Avoir** : `Invoice.creditNote` reprend parties et mentions de la facture
+  corrigée, sans échéance ; refuse de corriger un avoir, une date antérieure,
+  un bon absent de la facture ; plafond **par taux** (base et TVA) =
+  facture − avoirs déjà émis, que l'appelant passe (`priorCreditNotes`) ; un
+  avoir à zéro est refusé.
+- **Immuabilité** : aucune méthode de mutation sauf `attachDocument`, une
+  fois (une seconde pose, même identique, est refusée). `Invoice.restore`
+  revalide forme et totaux sans rejuger les parties.
+- **Pas de statut de paiement**.
 
 ## 9. Ce que `vitruve` a relevé (v1, 2026-10-08)
 
