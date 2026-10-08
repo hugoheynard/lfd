@@ -48,7 +48,7 @@ sequenceDiagram
 
 Après `ng build`, une étape écrit dans le dossier `browser` :
 
-- `version.json` : `{ "build": "<GITHUB_SHA>" }` ;
+- le fichier de version, servi à la racine du site : `{ "build": "<GITHUB_SHA>" }` ;
 - la même valeur dans `index.html`, en `<meta name="lfd-build" content="…">`.
 
 Les deux sortent **de la même étape**, donc du même SHA. Sans la balise (dev
@@ -56,7 +56,7 @@ local, `ng serve`), la veille ne démarre pas : rien à comparer.
 
 ### N2 — La veille (`packages/front-ops`, `provideNewVersionWatch()`)
 
-- Lit la balise au démarrage. Relit `version.json` (`cache: "no-store"`,
+- Lit la balise au démarrage. Relit le fichier de version (`cache: "no-store"`,
   paramètre anti-cache) au retour de l'onglet au premier plan
   (`visibilitychange`) et toutes les 5 min **onglet visible seulement**.
 - Un `build` différent de la balise → un signal `newVersion` passe à vrai.
