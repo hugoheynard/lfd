@@ -69,6 +69,13 @@ premier Factur-X émis**.
 
 ## 5. F5 — Le bon d'un client au compte n'affiche que le HT
 
+> **Périmètre (Hugo, 2026-10-08)** : « au compte » ne concerne que les
+> **pros** au compte. Le public voit du TTC et n'est jamais au compte ; le
+> pro voit **déjà** la boutique et le catalogue en HT. F5 ne touche donc
+> que ce qui montre encore un TTC à un pro au compte : le bon, son PDF, ses
+> e-mails, le récapitulatif et le total du panier. Le catalogue n'est pas
+> concerné.
+
 Après la facture émise et l'avis de prélèvement (§ 3).
 
 - **La donnée** : « au compte » est aujourd'hui une déduction,
@@ -111,8 +118,8 @@ s'ils doivent l'être un jour, ils liront l'arrêté.
 
 - **Q1** — Si la norme refuse le montant repris : revenir sur D2 avec une
   ligne de facture par ligne de bon ?
-- **Q2** — Pour un client au compte, panier **et catalogue** en HT seul ?
-  _Proposé : oui_, un TTC estimé est le chiffre qui diffèrera.
+- **Q2** — Le **total du panier** d'un pro au compte en HT seul ? _Proposé :
+  oui_ ; le catalogue pro est déjà en HT (Hugo, 2026-10-08).
 - **Q3** — Vos CGV promettent-elles un TTC par bon ?
 
 ## 8. Ce que `vitruve` a relevé (v1, 2026-10-08)
