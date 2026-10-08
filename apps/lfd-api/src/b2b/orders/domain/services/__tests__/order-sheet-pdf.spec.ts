@@ -311,3 +311,38 @@ describe("l'assiette du document", () => {
     expect(text).not.toContain("PU TTC");
   });
 });
+
+/**
+ * F5 (plan `bons-et-facture-concordants`) : la TVA d'un pro au compte se
+ * calcule une fois sur le mois. Le bon ne chiffre donc que le HT — un TTC par
+ * bon différerait de la facture de quelques centimes.
+ */
+describe("le bon d'un pro au compte (F5)", () => {
+  const rendu = async (settlement: ClientSheet["money"]["settlement"]): Promise<string> =>
+    pdfText(await renderOrderSheetPdf(sheet({ money: { ...sheet().money, settlement } })));
+
+  it("au compte : le total HT et la mention, AUCUN chiffre de TVA ni de TTC", async () => {
+    const text = await rendu("account");
+
+    expect(text).toContain("Total HT");
+    // 118,40 − 11,84 de remise = 106,56 € HT.
+    expect(text).toContain("106,56");
+    expect(text).toContain("TVA et TTC sur la facture du mois.");
+    expect(text).not.toContain("Total TTC");
+    expect(text).not.toContain("dont TVA");
+    expect(text).not.toContain("112,42");
+    expect(text).not.toContain("5,86");
+  });
+
+  it.each(["paid", "due", "free"] as const)(
+    "%s : le pied taxé reste tel quel, sans la mention",
+    async (settlement) => {
+      const text = await rendu(settlement);
+
+      expect(text).toContain("Total avant TVA");
+      expect(text).toContain("dont TVA 5,5 %");
+      expect(text).toContain("112,42");
+      expect(text).not.toContain("facture du mois");
+    },
+  );
+});

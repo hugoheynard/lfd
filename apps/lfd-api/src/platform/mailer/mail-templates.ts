@@ -419,12 +419,34 @@ function recapRows(
             value: `−${money(sheet.money.voucherDiscountCents, locale)}`,
           },
         ]),
-    { label: copy.recapVat, value: money(sheet.money.vatCents, locale) },
+    ...(sheet.money.settlement === "account"
+      ? pretaxTotalRows(sheet, locale)
+      : [
+          { label: copy.recapVat, value: money(sheet.money.vatCents, locale) },
+          {
+            label: copy.totalLabel[settlement],
+            value: money(sheet.money.totalCents, locale),
+            strong: true,
+          },
+        ]),
+  ];
+}
+
+/**
+ * **Le pied d'un pro au compte : le HT seul**, et où trouver le reste (F5,
+ * plan `bons-et-facture-concordants`). Le HT est le total moins la TVA figée —
+ * les deux sont sur la commande, rien n'est recalculé. Aucun chiffre de TVA ni
+ * de TTC : la facture du mois les calcule une fois, sur tous les bons.
+ */
+function pretaxTotalRows(sheet: ClientSheet, locale: ContentLocale): readonly LayoutRow[] {
+  const copy = mailCopyOf(locale).orderPlaced;
+  return [
     {
-      label: copy.totalLabel[settlement],
-      value: money(sheet.money.totalCents, locale),
+      label: copy.totalPretax,
+      value: money(sheet.money.totalCents - sheet.money.vatCents, locale),
       strong: true,
     },
+    { label: copy.recapTaxLater, value: copy.recapTaxLaterValue },
   ];
 }
 

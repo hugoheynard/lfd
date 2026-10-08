@@ -1,6 +1,6 @@
 # Des bons et une facture qui concordent
 
-> 📐 **Plan v2 — F5-0 et F6 bâtis** (2026-10-08). Suite de
+> 📐 **Plan v2 — F5-0 et F6 bâtis** (2026-10-08), **F5 bâti** (2026-10-09). Suite de
 > [`le-prelevement-suit-la-facture.md`](le-prelevement-suit-la-facture.md).
 > Touche **l'argent** : la v1 a été contredite par `vitruve` le même jour
 > (deux BLOQUANTS, six SÉRIEUX), repris au § 8.
@@ -158,12 +158,12 @@ s'ils doivent l'être un jour, ils liront l'arrêté.
 
 ## 9. Les lots
 
-| Lot      | Contenu                                                                                                                                                             |
-| -------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| **F6-0** | ✅ 2026-10-08 — le Schematron CEN ne vérifie pas BT-131, Peppol tolère 0,02 : montant repris admis                                                                  |
-| **F6**   | ✅ 2026-10-08 — montant de ligne = Σ `lineTotalCents` des bons (D2 gardé) ; écart « arrondi des lignes » retiré ; `computed_with` → `invoice-dossier/2026-10-08-f6` |
-| **F5-0** | ✅ 2026-10-08 : `settlementRegimeOf` (paid/due/account/free) porté par `money.settlement` de la fiche ; e-mails corrigés                                            |
-| **F5**   | toutes les surfaces du § 5 en HT pour un pro au compte — **après la facture émise** (Hugo, 2026-10-08 : l’avis de prélèvement seul ne suffit pas)                   |
+| Lot      | Contenu                                                                                                                                                               |
+| -------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| **F6-0** | ✅ 2026-10-08 — le Schematron CEN ne vérifie pas BT-131, Peppol tolère 0,02 : montant repris admis                                                                    |
+| **F6**   | ✅ 2026-10-08 — montant de ligne = Σ `lineTotalCents` des bons (D2 gardé) ; écart « arrondi des lignes » retiré ; `computed_with` → `invoice-dossier/2026-10-08-f6`   |
+| **F5-0** | ✅ 2026-10-08 : `settlementRegimeOf` (paid/due/account/free) porté par `money.settlement` de la fiche ; e-mails corrigés                                              |
+| **F5**   | ✅ 2026-10-09 — un pro au compte ne lit que le HT : fiche, PDF, texte, e-mail, espace client, confirmation, panier ; régime porté par la vue (`OrderView.settlement`) |
 
 F5-0 se bâtit tout de suite : il corrige un libellé faux aujourd'hui.
 
@@ -190,3 +190,42 @@ refus, abandon, échec à la clôture ne partent que de `pending`/`failed`) et l
 total n'est jamais réécrit. Le régime est donc figé à la passation. Seule
 exception : le semis de dev force `paid`. Un particulier n'est jamais au
 compte : la boutique ne diffère que sur un total nul.
+
+**F5 bâti (2026-10-09)** — en l'absence d'Hugo ; arbitrages pris par
+l'orchestrateur : **Q2 = oui** (le total du panier d'un pro au compte est en
+HT) ; **Q3 inconnue** — le bon au compte ne porte **aucun** chiffre de TVA ni
+de TTC, seulement le HT et la mention « TVA et TTC sur la facture du mois ».
+Le public et les pros par carte ne changent pas.
+
+- **Une seule valeur** : `settlementRegimeOf` est calculé une fois par le
+  lecteur (`prisma-order.reader.ts`) et porté par `OrderView.settlement` et
+  `CustomerOrderView.settlement` ; la fiche (`money.settlement`) le recopie au
+  lieu de le recalculer. `Order.settlementRegime` rend la même dérivation à la
+  passation, et `PlacedOrderResponse.settlement` (facultatif : absent sur la
+  route publique, qui ne place jamais au compte) le transmet à la
+  confirmation. Aucun écran ne recopie `not_required ∧ total > 0`.
+- **Le HT montré = total − TVA figés** : aucun montant n'est recalculé ni
+  écrit. Aucune migration.
+- **Surfaces au compte** : pavé de totaux du PDF (« Total HT » + mention, plus
+  de « Total avant TVA », « dont TVA », « Total TTC ») ; bon texte ; e-mail de
+  confirmation (« Porté à votre compte, HT » + « TVA et TTC — sur la facture
+  du mois », fr/en/it) ; détail de commande partagé (`@lfd/b2b-ui`, en-tête et
+  récapitulatif — donc aussi le back-office, qui montre au téléphone le même
+  papier que le client) ; document « Facture » (« Portée sur la facture du
+  mois ») ; espace client (historique, suivi : montant suivi de « HT » ;
+  tiroir : « portée à la facture du mois, avec la TVA et le TTC », qui
+  remplace un « facture de mars » écrit en dur) ; confirmation ; panier.
+- **Livraison** : HT ; en mode prorata, au compte, sans taux (ni dans le
+  récapitulatif, ni au panier) ; en mode standard, « TVA 20 % » reste.
+- **Le panier précède le régime** : avant la passation, c'est la condition de
+  la société (`settlesOnAccount`, le seul calcul du front) qui décide du HT.
+  Payer par carte reste ouvert au mensuel ; l'écran de règlement montre alors
+  le montant TTC débité.
+- **Inchangé, et vérifié** : les e-mails `payment-failed`, `payment-expired`
+  et le lien de paiement ne partent que pour un règlement carte dû — jamais au
+  compte. Les devis serveur (`quote-my-shop-cart`, `quote-order`) rendent
+  toujours HT et TTC : c'est l'affichage qui choisit. Le catalogue pro était
+  déjà en HT.
+- **Les PDF déjà archivés** (R2, clé par révision) gardent leur TTC : un papier
+  parti est un fait (`OrderSheetArchive`). Seuls les premiers tirages après F5
+  sont en HT.

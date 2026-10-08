@@ -478,6 +478,22 @@ describe("Order — règlement", () => {
     const order = Order.draft(draftInput());
     expect(() => order.toPersistence()).toThrow(InvalidOrderPaymentError);
   });
+
+  /** F5 : la réponse de passation porte le régime que la vue relira. */
+  it("nomme son régime : au compte, dû, gratuit — et refuse de le dire avant la décision", () => {
+    const account = Order.draft(draftInput());
+    expect(() => account.settlementRegime).toThrow(InvalidOrderPaymentError);
+    account.deferPayment();
+    expect(account.settlementRegime).toBe("account");
+
+    const card = Order.draft(draftInput());
+    card.payByCard("pi_123");
+    expect(card.settlementRegime).toBe("due");
+
+    const free = Order.draft(draftInput({ lines: [food(1, 0, 0)] }));
+    free.deferPayment();
+    expect(free.settlementRegime).toBe("free");
+  });
 });
 
 /**

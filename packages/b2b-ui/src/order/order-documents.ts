@@ -57,7 +57,13 @@ export function orderDocuments(order: CustomerOrderView): readonly OrderDocument
       key: ORDER_DOC_INVOICE,
       label: 'Facture',
       icon: 'receipt',
-      unavailable: 'Émise après facturation — pas encore disponible.',
+      // Au compte, la commande n'a pas de facture À ELLE : elle est portée sur
+      // celle du mois, qui chiffre la TVA et le TTC que son bon ne chiffre
+      // plus (F5). Le dire évite de chercher un document qui n'existera pas.
+      unavailable:
+        order.settlement === 'account'
+          ? 'Portée sur la facture du mois — la TVA et le TTC y figurent.'
+          : 'Émise après facturation — pas encore disponible.',
     },
   ];
 }

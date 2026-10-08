@@ -193,6 +193,51 @@ describe("le régime de règlement du courriel de confirmation", () => {
   });
 });
 
+/**
+ * F5 (plan `bons-et-facture-concordants`) : la TVA d'un pro au compte se
+ * calcule une fois sur la facture du mois. Le courriel ne chiffre que le HT.
+ */
+describe("le courriel d'un pro au compte (F5)", () => {
+  function withSettlement(settlement: ClientSheet["money"]["settlement"]): ClientSheet {
+    const base = sheet();
+    return { ...base, money: { ...base.money, settlement } };
+  }
+
+  it("au compte : le total HT et où trouver le reste, AUCUN chiffre de TVA ni de TTC", () => {
+    const html = render({ sheet: withSettlement("account") }).html;
+
+    // 13,67 € TTC − 0,71 € de TVA = 12,96 € HT.
+    expect(html).toContain("Porté à votre compte, HT");
+    expect(html).toContain("12,96");
+    expect(html).toContain("TVA et TTC");
+    expect(html).toContain("sur la facture du mois");
+    expect(html).not.toContain("13,67");
+    expect(html).not.toContain("0,71");
+    expect(html).not.toContain("dont TVA");
+  });
+
+  it.each([
+    ["en", "on the monthly invoice"],
+    ["it", "sulla fattura del mese"],
+  ] as const)("dit la même chose en %s", (locale, words) => {
+    const html = render({ sheet: withSettlement("account"), locale }).html;
+
+    expect(html).toContain(words);
+    expect(html).not.toContain(locale === "en" ? "13.67" : "13,67");
+  });
+
+  it.each(["paid", "due", "free"] as const)(
+    "%s : le total TTC et la TVA restent, sans la mention",
+    (settlement) => {
+      const html = render({ sheet: withSettlement(settlement) }).html;
+
+      expect(html).toContain("dont TVA");
+      expect(html).toContain("13,67");
+      expect(html).not.toContain("facture du mois");
+    },
+  );
+});
+
 describe("le courriel « votre commande est prête »", () => {
   const ready = REGISTRY["customer.order-ready"];
 

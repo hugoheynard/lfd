@@ -469,6 +469,14 @@ export interface ClientCopy {
     readonly vat: string;
     readonly total: string;
     /**
+     * Le total d'un pro **au compte**, hors taxe (F5, plan
+     * `bons-et-facture-concordants`) : la TVA se calcule une fois sur la
+     * facture du mois, un TTC par commande la contredirait.
+     */
+    readonly totalPretax: string;
+    /** Sous ce total : où sont la TVA et le TTC. */
+    readonly pretaxNote: string;
+    /**
      * `{n}` = les points que la commande rapporterait (plan des points, E1.2).
      * La ligne n'existe que si le serveur en annonce plus de zéro.
      */
@@ -650,6 +658,8 @@ export interface ClientCopy {
     readonly toSettle: string;
     /** La ligne de total quand la commande est portée au compte. */
     readonly onAccount: string;
+    /** La même, hors taxe : un pro au compte ne lit que le HT (F5). */
+    readonly onAccountPretax: string;
     /** Le bouton qui ramène à l'étape de règlement. */
     readonly settleAction: string;
     readonly qr: string;

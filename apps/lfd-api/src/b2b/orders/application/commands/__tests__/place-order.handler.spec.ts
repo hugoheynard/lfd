@@ -1243,6 +1243,7 @@ describe("PlaceOrderHandler", () => {
     expect(intentSink.intent).toEqual({ amountCents: 400, currency: "eur", companyId: "c1" });
     expect(sink.placed?.paymentStatus).toBe("pending");
     expect(sink.placed?.stripePaymentIntentId).toBe("pi_test_1");
+    expect(result.settlement).toBe("due");
     expect(result.payment).toEqual({
       clientSecret: "pi_test_1_secret",
       publishableKey: "pk_test_123",
@@ -1276,6 +1277,8 @@ describe("PlaceOrderHandler", () => {
     expect(sink.placed?.paymentStatus).toBe("not_required");
     expect(sink.placed?.stripePaymentIntentId).toBeNull();
     expect(result.payment).toBeUndefined();
+    // F5 : la confirmation lit ce régime pour ne montrer que le HT.
+    expect(result.settlement).toBe("account");
   });
 
   it("entreprise NON active (pending) : carte requise malgré un terme différé", async () => {
@@ -1578,6 +1581,8 @@ describe("PlaceOrderHandler — le bon de fidélité", () => {
     expect(sink.placed?.totalCents).toBe(0);
     expect(sink.placed?.paymentStatus).toBe("not_required");
     expect(result.payment).toBeUndefined();
+    // Un total nul n'est pas « au compte » : la confirmation garde son TTC.
+    expect(result.settlement).toBe("free");
     expect(redemption.calls).toEqual(["reserve:v500>u1", "settle:v500"]);
     expect(redemption.settlements[0]).toEqual({
       voucherId: "v500",

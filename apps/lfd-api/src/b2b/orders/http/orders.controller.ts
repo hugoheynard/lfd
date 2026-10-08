@@ -80,9 +80,10 @@ export class OrdersController {
     // `payment` n'est présent que si une carte est requise (pas d'entreprise, ou
     // entreprise non active / per_order) ; on ne l'ajoute que dans ce cas
     // (exactOptionalPropertyTypes).
+    const { id, orderNumber, settlement } = placed;
     return placed.payment === undefined
-      ? { id: placed.id, orderNumber: placed.orderNumber }
-      : { id: placed.id, orderNumber: placed.orderNumber, payment: placed.payment };
+      ? { id, orderNumber, settlement }
+      : { id, orderNumber, settlement, payment: placed.payment };
   }
 
   /**

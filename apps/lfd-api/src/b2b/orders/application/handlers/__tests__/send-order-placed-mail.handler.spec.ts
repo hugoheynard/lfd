@@ -28,6 +28,7 @@ function view(overrides: Partial<OrderView> = {}): OrderView {
     orderNumber: "ORD-4812",
     status: "placed",
     paymentStatus: "paid",
+    settlement: "paid",
     requestedDeliveryDate: "2026-09-08",
     fulfillmentMethod: "pickup",
     deliveryAddressId: null,

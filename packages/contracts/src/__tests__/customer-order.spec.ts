@@ -23,6 +23,7 @@ const STAFF_ORDER: OrderView = {
   orderNumber: "C-2026-0001",
   status: "confirmed",
   paymentStatus: "paid",
+  settlement: "paid",
   requestedDeliveryDate: "2026-03-02",
   fulfillmentMethod: "pickup",
   deliveryAddressId: null,

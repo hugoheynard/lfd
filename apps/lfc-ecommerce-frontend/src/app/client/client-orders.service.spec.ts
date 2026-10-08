@@ -302,6 +302,31 @@ describe('le règlement de la commande', () => {
   });
 
   /**
+   * F5 : la confirmation d'un pro au compte ne montre que le HT. Le drapeau se
+   * lit sur le régime que le serveur rend, pas sur l'absence d'intention — un
+   * total nul n'en a pas non plus.
+   */
+  it('lit « au compte » sur le régime rendu par le serveur, jamais sur l’absence d’intention', async () => {
+    boot();
+    TestBed.inject(OrderContextStore).choice.set(AU_LABO);
+    TestBed.inject(ClientCart).add('VIE-001');
+    const account = await placeOrderResponse({
+      id: 'ord_1',
+      orderNumber: 'CMD-0011',
+      settlement: 'account',
+    });
+    expect(account?.onAccount).toBe(true);
+
+    TestBed.inject(ClientCart).add('VIE-001');
+    const free = await placeOrderResponse({
+      id: 'ord_2',
+      orderNumber: 'CMD-0012',
+      settlement: 'free',
+    });
+    expect(free).toMatchObject({ settlement: 'not_required', onAccount: false });
+  });
+
+  /**
    * L'intention reçue à la passation sert l'écran suivant SANS aller-retour —
    * et surtout sans redemander à Stripe un secret qu'on vient de recevoir.
    */

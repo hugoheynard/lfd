@@ -223,3 +223,32 @@ describe('le nom de fichier', () => {
     expect(orderSheetFileName(client())).toBe('bon-de-commande-CMD-4812-client.txt');
   });
 });
+
+/**
+ * F5 (plan `bons-et-facture-concordants`) : la TVA d'un pro au compte se
+ * calcule une fois sur la facture du mois. Son bon ne chiffre que le HT.
+ */
+describe('le bon d’un pro au compte (F5)', () => {
+  const withSettlement = (settlement: 'paid' | 'due' | 'account' | 'free'): string =>
+    renderOrderSheetText(client({ money: { ...MONEY, settlement } }));
+
+  it('au compte : le total HT et la mention, AUCUN chiffre de TVA ni de TTC', () => {
+    const text = withSettlement('account');
+
+    // 9,50 € TTC − 0,50 € de TVA = 9,00 € HT.
+    expect(text).toContain('Total HT');
+    expect(text).toContain('9,00');
+    expect(text).toContain('TVA et TTC sur la facture du mois.');
+    expect(text).not.toContain('Total TTC');
+    expect(text).not.toContain('9,50');
+    expect(text).not.toContain('0,50');
+  });
+
+  it.each(['paid', 'due', 'free'] as const)('%s : TVA et total TTC inchangés', (settlement) => {
+    const text = withSettlement(settlement);
+
+    expect(text).toContain('Total TTC');
+    expect(text).toContain('9,50');
+    expect(text).not.toContain('facture du mois');
+  });
+});

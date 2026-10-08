@@ -12,6 +12,7 @@ import {
 } from '../../client-workspace.fixture';
 
 import { formatCents } from '../../format-money';
+import { TOMMEUSES } from '../../mon-compte/account.fixture';
 import {
   EMPTY_LOYALTY,
   loyaltyDouble,
@@ -418,5 +419,85 @@ describe('CartSummary — le bon de fidélité', () => {
 
     expect(el().querySelector('fold-listbox')).toBeNull();
     expect(el().textContent).not.toContain('Bon de fidélité');
+  });
+});
+
+/**
+ * F5 (plan `bons-et-facture-concordants`, Q2 oui) : un pro au compte ne lit que
+ * le HT ; la TVA et le TTC sont sur la facture du mois.
+ */
+describe('CartSummary — un pro au compte (F5)', () => {
+  beforeEach(() => {
+    vi.useFakeTimers();
+  });
+
+  afterEach(() => {
+    vi.useRealTimers();
+  });
+
+  /** 2,50 € HT + 0,14 € de TVA = 2,64 € TTC. */
+  const VIEW: MyShopQuoteView = {
+    lines: [],
+    subtotalHtCents: 250,
+    discountCents: 0,
+    discountAdjustment: null,
+    voucherDiscountCents: 0,
+    deliveryFeeCents: 1200,
+    deliveryVatMode: 'follows_goods',
+    vat: [{ rate: 5.5, amountCents: 14 }],
+    totalCents: 1464,
+    loyaltyPointsToEarn: null,
+    voucherTotalEffectCents: 0,
+  };
+
+  function quotedIn(space: WorkspaceDouble): HTMLElement {
+    localStorage.clear();
+    TestBed.resetTestingModule();
+    TestBed.configureTestingModule({
+      imports: [CartSummary],
+      providers: [
+        provideHttpClient(),
+        provideHttpClientTesting(),
+        provideWorkspace(space),
+        provideRecognised(),
+      ],
+    });
+    hydrateWith(TestBed.inject(ShopCatalogue), TEST_CATALOGUE);
+    TestBed.inject(ClientCart).add('VIE-001');
+    const fixture = TestBed.createComponent(CartSummary);
+    fixture.detectChanges();
+    TestBed.tick();
+    vi.advanceTimersByTime(400);
+    TestBed.tick();
+    TestBed.inject(HttpTestingController)
+      .expectOne((r) => r.url.includes('/shop/quote'))
+      .flush(VIEW);
+    fixture.detectChanges();
+    return fixture.nativeElement as HTMLElement;
+  }
+
+  const grand = (el: HTMLElement): string =>
+    el.querySelector('.row.grand')?.textContent?.replace(/\s+/gu, ' ').trim() ?? '';
+
+  it('au compte : le total HT et la mention, sans ligne de TVA ni taux du port', () => {
+    const el = quotedIn(workspaceDouble(TOMMEUSES.id, [TOMMEUSES]));
+
+    // 14,64 € TTC − 0,14 € de TVA = 14,50 € HT.
+    expect(grand(el)).toContain('Total HT');
+    expect(grand(el)).toContain(formatCents(1450));
+    expect(el.textContent).toContain('TVA et TTC sur la facture du mois');
+    expect(el.querySelectorAll('.row.vat')).toHaveLength(0);
+    expect(el.querySelector('.fee-vat')).toBeNull();
+    expect(el.textContent).not.toContain(formatCents(1464));
+  });
+
+  it('prélèvement suspendu : le TTC reste, comme pour tout règlement par carte', () => {
+    const blocked = { ...TOMMEUSES, directDebitBlocked: true };
+    const el = quotedIn(workspaceDouble(blocked.id, [blocked]));
+
+    expect(grand(el)).toContain('Total TTC');
+    expect(grand(el)).toContain(formatCents(1464));
+    expect(el.querySelectorAll('.row.vat')).toHaveLength(1);
+    expect(el.textContent).not.toContain('facture du mois');
   });
 });

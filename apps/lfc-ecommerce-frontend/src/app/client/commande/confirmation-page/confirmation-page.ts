@@ -126,8 +126,30 @@ export class ConfirmationPage {
     return fill(this.t().cart.discount, { at: order.service.at, value });
   });
 
+  /**
+   * **Au compte, le HT seul** (F5, plan `bons-et-facture-concordants`) : la
+   * TVA se calcule une fois sur la facture du mois, et un TTC par commande la
+   * contredirait de quelques centimes. Ni ligne de TVA ni total TTC alors.
+   */
+  protected readonly onAccount = computed(() => this.order()?.onAccount === true);
+
+  /** Le total montré : HT au compte (total moins TVA du décompte), TTC sinon. */
+  protected readonly shownTotalCents = computed(() => {
+    const totals = this.order()?.totals;
+    if (totals === undefined) {
+      return 0;
+    }
+    if (!this.onAccount()) {
+      return totals.totalCents;
+    }
+    return totals.totalCents - totals.vat.reduce((sum, share) => sum + share.amountCents, 0);
+  });
+
   protected readonly vatLines = computed(() => {
     const c = this.t().cart;
+    if (this.onAccount()) {
+      return [];
+    }
     return (this.order()?.totals.vat ?? []).map((share) => ({
       label: fill(c.vat, { rate: formatRate(share.rate) }),
       amount: formatCents(share.amountCents),

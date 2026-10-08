@@ -43,7 +43,12 @@ export class TrackCard {
 
   protected readonly t = inject(ClientCopyService).t;
 
-  protected readonly total = computed(() => formatEuro(this.order().total));
+  /** Au compte, le montant est HT et le dit (F5). */
+  protected readonly total = computed(() => {
+    const order = this.order();
+    const amount = formatEuro(order.total);
+    return order.pretax ? `${amount} ${this.t().orders.totalPretax}` : amount;
+  });
 
   /** L'avancement, dit pour ceux qui n'ont pas la barre sous les yeux. */
   protected readonly progressLabel = computed(() =>

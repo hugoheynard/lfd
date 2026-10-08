@@ -56,10 +56,14 @@
         </div>
       }
       <div class="row paid">
-        <dt>{{ totalLabel() }}</dt>
-        <dd>{{ money(done.totals.totalCents) }}</dd>
+        <dt>{{ onAccount() ? t().done.onAccountPretax : totalLabel() }}</dt>
+        <dd>{{ money(shownTotalCents()) }}</dd>
       </div>
     </dl>
+    <!-- Au compte, le HT seul : la mention dit où sont la TVA et le TTC (F5). -->
+    @if (onAccount()) {
+      <p class="pretax-note">{{ t().cart.pretaxNote }}</p>
+    }
 
     <div class="actions">
       @if (settlementDue()) {

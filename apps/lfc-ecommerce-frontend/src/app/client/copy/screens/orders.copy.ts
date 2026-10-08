@@ -89,8 +89,14 @@ export interface OrdersCopy {
   readonly statusDelivered: string;
   readonly payAccount: string;
   readonly payCard: string;
-  /** Le règlement dit aussi OÙ : « portée à la facture de mars ». */
+  /**
+   * Le règlement dit aussi OÙ, et ce que la facture du mois porte : la TVA et
+   * le TTC que la commande au compte ne chiffre plus (F5). Il disait « portée à
+   * la facture de mars » — un mois écrit en dur, faux onze mois sur douze.
+   */
   readonly payAccountNote: string;
+  /** Après le montant d'une commande au compte : il est hors taxe (F5). */
+  readonly totalPretax: string;
   readonly payCardNote: string;
   /** L'intitulé de la ligne « Remboursement » — absente sans remboursement. */
   readonly detailRefund: string;
@@ -189,7 +195,8 @@ export const ORDERS_FR: OrdersCopy = {
   statusDelivered: 'Livrée',
   payAccount: 'Au compte',
   payCard: 'Réglée · CB',
-  payAccountNote: 'portée à la facture de mars',
+  payAccountNote: 'portée à la facture du mois, avec la TVA et le TTC',
+  totalPretax: 'HT',
   payCardNote: 'réglée à la commande',
   detailRefund: 'Remboursement',
   refundedFull: 'Remboursée',
@@ -279,7 +286,8 @@ export const ORDERS_EN: OrdersCopy = {
   statusDelivered: 'Delivered',
   payAccount: 'On account',
   payCard: 'Paid · card',
-  payAccountNote: 'carried to the March invoice',
+  payAccountNote: 'carried to the monthly invoice, with VAT and the total incl. VAT',
+  totalPretax: 'excl. VAT',
   payCardNote: 'paid at checkout',
   detailRefund: 'Refund',
   refundedFull: 'Refunded',
@@ -369,7 +377,8 @@ export const ORDERS_IT: OrdersCopy = {
   statusDelivered: 'Consegnato',
   payAccount: 'Sul conto',
   payCard: 'Pagato · carta',
-  payAccountNote: 'riportato sulla fattura di marzo',
+  payAccountNote: 'riportato sulla fattura del mese, con IVA e totale IVA inclusa',
+  totalPretax: 'IVA escl.',
   payCardNote: 'pagato all’ordine',
   detailRefund: 'Rimborso',
   refundedFull: 'Rimborsato',

@@ -18,6 +18,7 @@ export const LIVE_PICKUP: CustomerOrderView = {
   orderNumber: 'CMD-0009',
   status: 'placed',
   paymentStatus: 'paid',
+  settlement: 'paid',
   requestedDeliveryDate: '2026-09-08',
   fulfillmentMethod: 'pickup',
   deliveryAddressId: null,

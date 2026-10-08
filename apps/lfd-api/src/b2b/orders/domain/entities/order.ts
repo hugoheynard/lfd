@@ -6,6 +6,7 @@ import type {
   DeliveryVatMode,
   LateFeeAdjustment,
   PaymentStatus,
+  SettlementRegime,
 } from "@lfd/contracts";
 
 import { EmptyOrderError, InvalidOrderPaymentError } from "../errors/order-errors.js";
@@ -20,6 +21,7 @@ import {
 } from "./order-amount-guards.js";
 import { clienteleOf, normalizeFulfillment } from "./order-fulfillment.js";
 import type { DraftOrderInput, OrderFulfillmentInput, OrderToPlace } from "./order-shapes.js";
+import { settlementRegimeOf } from "../services/settlement-regime.js";
 import { computeOrderTotals } from "../services/vat.js";
 import { OrderLine } from "../value-objects/order-line.js";
 
@@ -175,6 +177,18 @@ export class Order {
   /** Règlement **différé** (terme d'entreprise) ou gratuit : rien à encaisser. */
   deferPayment(): void {
     this.payment = { status: "not_required", intentId: null };
+  }
+
+  /**
+   * Le régime de règlement décidé — la même dérivation que le lecteur
+   * (`settlementRegimeOf`) : la réponse de passation et la vue relue disent le
+   * même régime (F5). Refuse, comme `toPersistence`, un règlement non décidé.
+   */
+  get settlementRegime(): SettlementRegime {
+    if (this.payment === null) {
+      throw new InvalidOrderPaymentError("Le règlement de la commande n'est pas décidé.");
+    }
+    return settlementRegimeOf(this.payment.status, this.totalCentsValue);
   }
 
   /** Sérialise pour l'adaptateur — refuse une commande au règlement non décidé. */

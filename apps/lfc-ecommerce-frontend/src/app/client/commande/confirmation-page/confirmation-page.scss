@@ -180,6 +180,15 @@
   }
 }
 
+/* Au compte : où trouver la TVA et le TTC que le récapitulatif ne chiffre pas. */
+.pretax-note {
+  margin: var(--fold-space-xs) 0 0;
+  text-align: right;
+  font-size: var(--fold-text-xs);
+  line-height: var(--lfc-leading-tight);
+  color: var(--lfc-color-text-subtle);
+}
+
 .actions {
   display: flex;
   flex-direction: column;

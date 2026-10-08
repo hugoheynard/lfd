@@ -173,12 +173,15 @@ export class PlaceOrderHandler implements ICommandHandler<PlaceOrderCommand, Pla
       ),
     );
 
+    // Décidé par `settleOrder` juste au-dessus, et persisté : l'agrégat le rend.
+    const settlement = order.settlementRegime;
     if (intent === null) {
-      return { id: placed.id, orderNumber: placed.orderNumber };
+      return { id: placed.id, orderNumber: placed.orderNumber, settlement };
     }
     return {
       id: placed.id,
       orderNumber: placed.orderNumber,
+      settlement,
       payment: {
         clientSecret: intent.clientSecret,
         publishableKey: this.payments.publishableKey(),
@@ -263,12 +266,13 @@ export class PlaceOrderHandler implements ICommandHandler<PlaceOrderCommand, Pla
     }
     const { view, stripePaymentIntentId } = found;
     if (view.paymentStatus !== "pending" || stripePaymentIntentId === null) {
-      return { id: view.id, orderNumber: view.orderNumber };
+      return { id: view.id, orderNumber: view.orderNumber, settlement: view.settlement };
     }
     const intent = await this.payments.retrieveIntent(stripePaymentIntentId);
     return {
       id: view.id,
       orderNumber: view.orderNumber,
+      settlement: view.settlement,
       payment: {
         clientSecret: intent.clientSecret,
         publishableKey: this.payments.publishableKey(),

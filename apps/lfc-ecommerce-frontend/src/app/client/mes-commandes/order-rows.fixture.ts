@@ -18,6 +18,8 @@ export const ROWS: readonly HistoryOrder[] = [
     slot: '07:00 – 08:00',
     pieces: 7,
     total: 96.4,
+    // Au compte : le montant est HT (F5), la TVA et le TTC sont sur la facture.
+    pretax: true,
     voucherDiscountCents: 0,
     status: 'done',
     // Portée au compte : c'est la facture du mois qui la règle.
@@ -34,6 +36,7 @@ export const ROWS: readonly HistoryOrder[] = [
     slot: '',
     pieces: 4,
     total: 38.2,
+    pretax: false,
     // Un bon de fidélité imputé : la ligne « Bon de fidélité (HT) » paraît.
     voucherDiscountCents: 500,
     status: 'delivered',
@@ -52,6 +55,7 @@ export const ROWS: readonly HistoryOrder[] = [
     slot: '07:00 – 08:00',
     pieces: 12,
     total: 142.9,
+    pretax: false,
     voucherDiscountCents: 0,
     status: 'done',
     payment: 'account',

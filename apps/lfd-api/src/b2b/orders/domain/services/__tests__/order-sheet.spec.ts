@@ -55,6 +55,7 @@ function order(overrides: Partial<OrderView> = {}): OrderView {
     orderNumber: "CMD-4812",
     status: "placed",
     paymentStatus: "paid",
+    settlement: "paid",
     requestedDeliveryDate: "2026-09-08",
     fulfillmentMethod: "pickup",
     deliveryAddressId: null,
@@ -132,14 +133,13 @@ describe("la feuille du client", () => {
     expect(sheet.money.subtotalCents).toBe(128_460);
   });
 
-  it("porte le régime de règlement, calculé de la commande", () => {
+  it("recopie le régime que la vue porte, sans le recalculer (F5)", () => {
     expect(clientSheetOf(order()).money.settlement).toBe("paid");
-    expect(clientSheetOf(order({ paymentStatus: "not_required" })).money.settlement).toBe(
-      "account",
+    // Le régime est calculé UNE fois par le lecteur ; la feuille le relit.
+    expect(clientSheetOf(order({ settlement: "account" })).money.settlement).toBe("account");
+    expect(clientSheetOf(order({ settlement: "free", totalCents: 0 })).money.settlement).toBe(
+      "free",
     );
-    expect(
-      clientSheetOf(order({ paymentStatus: "not_required", totalCents: 0 })).money.settlement,
-    ).toBe("free");
   });
 
   it("laisse sortir le SKU, mais NI le tarif d'entrée NI le nom de l'étage", () => {

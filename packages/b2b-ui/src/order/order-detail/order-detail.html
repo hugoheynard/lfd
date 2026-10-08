@@ -23,8 +23,8 @@
       </div>
 
       <p class="od-total">
-        <span class="od-total-value">{{ fmtCents(o.totalCents) }}</span>
-        <span class="od-total-label">TTC</span>
+        <span class="od-total-value">{{ fmtCents(headerTotal().cents) }}</span>
+        <span class="od-total-label">{{ headerTotal().basis }}</span>
       </p>
     </header>
 

@@ -9,6 +9,7 @@ import {
   type OrderRecipient,
 } from "../../../domain/ports/order-recipient.reader.js";
 import { OrderReader, type OwnedOrder } from "../../../domain/ports/order.reader.js";
+import { settlementRegimeOf } from "../../../domain/services/settlement-regime.js";
 
 /*
  * Les doublés que partagent les suites de l'abandon du règlement : l'abonné
@@ -26,6 +27,7 @@ export function orderView(
     orderNumber: "ORD-4812",
     status,
     paymentStatus,
+    settlement: settlementRegimeOf(paymentStatus, 1_519),
     requestedDeliveryDate: null,
     fulfillmentMethod: "pickup",
     deliveryAddressId: null,

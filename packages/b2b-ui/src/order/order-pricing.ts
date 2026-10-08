@@ -61,7 +61,7 @@ export interface TotalRow {
   readonly value: string;
   /** Second niveau sous le libellé — le taux d'une remise, par exemple. */
   readonly hint?: string;
-  /** Le total TTC — mis en avant, et lui seul. */
+  /** Le total — TTC, ou HT pour un pro au compte (F5) — mis en avant, et lui seul. */
   readonly strong: boolean;
 }
 
@@ -128,9 +128,7 @@ export function orderTotalRows(order: CustomerOrderView): readonly TotalRow[] {
       label: 'Livraison HT',
       value: formatCents(order.deliveryFeeCents),
       strong: false,
-      // Le mode figé à la passation ; `null` = commande d'avant le réglage,
-      // taxée au taux normal (plan-tva-des-frais-de-port.md, V5).
-      hint: order.deliveryVatMode === 'follows_goods' ? 'TVA au prorata des produits' : 'TVA 20 %',
+      ...deliveryVatHint(order),
     });
   }
   if (order.lateFeeCents > 0) {
@@ -147,12 +145,50 @@ export function orderTotalRows(order: CustomerOrderView): readonly TotalRow[] {
       strong: false,
     });
   }
-  rows.push({ key: 'vat', label: 'TVA', value: formatCents(order.vatCents), strong: false });
-  rows.push({
-    key: 'total',
-    label: 'Total TTC',
-    value: formatCents(order.totalCents),
-    strong: true,
-  });
-  return rows;
+  return [...rows, ...(order.settlement === 'account' ? pretaxTail(order) : taxedTail(order))];
+}
+
+/**
+ * Le taux de la livraison, dit sous son montant. Le mode est figé à la
+ * passation ; `null` = commande d'avant le réglage, taxée au taux normal
+ * (plan-tva-des-frais-de-port.md, V5).
+ *
+ * Au compte et au prorata, AUCUN taux : il n'y en a pas un seul, et le bon ne
+ * chiffre pas la TVA (F5) — la livraison s'y lit en HT, sans plus.
+ */
+function deliveryVatHint(order: CustomerOrderView): { readonly hint?: string } {
+  if (order.deliveryVatMode === 'follows_goods') {
+    return order.settlement === 'account' ? {} : { hint: 'TVA au prorata des produits' };
+  }
+  return { hint: 'TVA 20 %' };
+}
+
+/** La mention d'un bon au compte, sous son total HT (F5). */
+const PRETAX_ONLY_NOTE = 'TVA et TTC sur la facture du mois';
+
+/**
+ * **Le pied d'un pro au compte : le HT seul** (plan
+ * `bons-et-facture-concordants`, F5). La TVA se calcule une fois sur la
+ * facture du mois ; un TTC par bon la contredirait de quelques centimes, et un
+ * écart ressemble à une erreur. Le HT est le total moins la TVA figés — rien
+ * n'est recalculé, et aucun chiffre de TVA ni de TTC n'est rendu.
+ */
+function pretaxTail(order: CustomerOrderView): readonly TotalRow[] {
+  return [
+    {
+      key: 'total',
+      label: 'Total HT',
+      hint: PRETAX_ONLY_NOTE,
+      value: formatCents(order.totalCents - order.vatCents),
+      strong: true,
+    },
+  ];
+}
+
+/** Le pied d'une commande réglée à la commande (carte, gratuite) : inchangé. */
+function taxedTail(order: CustomerOrderView): readonly TotalRow[] {
+  return [
+    { key: 'vat', label: 'TVA', value: formatCents(order.vatCents), strong: false },
+    { key: 'total', label: 'Total TTC', value: formatCents(order.totalCents), strong: true },
+  ];
 }

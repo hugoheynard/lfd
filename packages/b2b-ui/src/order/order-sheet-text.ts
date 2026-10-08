@@ -126,6 +126,25 @@ function moneyLines(money: SheetMoney): readonly string[] {
     ...(money.lateFeeCents === 0
       ? []
       : [`  Surtaxe       ${amount(formatCents(money.lateFeeCents), 26)}`]),
+    ...(money.settlement === 'account' ? pretaxLines(money) : taxedLines(money)),
+  ];
+}
+
+/**
+ * Le pied d'un pro au compte : le HT seul, et où trouver le reste (F5, plan
+ * `bons-et-facture-concordants`). Total moins TVA figés — rien n'est
+ * recalculé, et aucun chiffre de TVA ni de TTC n'est écrit.
+ */
+function pretaxLines(money: SheetMoney): readonly string[] {
+  return [
+    `  Total HT      ${amount(formatCents(money.totalCents - money.vatCents), 26)}`,
+    '  TVA et TTC sur la facture du mois.',
+  ];
+}
+
+/** Le pied d'une commande réglée à la commande (carte, gratuite) : inchangé. */
+function taxedLines(money: SheetMoney): readonly string[] {
+  return [
     `  TVA           ${amount(formatCents(money.vatCents), 26)}`,
     `  Total TTC     ${amount(formatCents(money.totalCents), 26)}`,
   ];

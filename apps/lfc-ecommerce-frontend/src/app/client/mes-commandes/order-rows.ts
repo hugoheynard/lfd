@@ -67,6 +67,8 @@ export interface TrackedOrder {
   readonly title: string;
   readonly sub: string;
   readonly total: number;
+  /** `total` est HORS TAXE : un pro au compte (F5), cf. {@link amountOf}. */
+  readonly pretax: boolean;
   readonly pieces: number;
   /** L'avancement, de 0 à 100 — le statut, dessiné. */
   readonly percent: number;
@@ -138,6 +140,8 @@ export interface HistoryOrder {
   readonly slot: string;
   readonly pieces: number;
   readonly total: number;
+  /** `total` est HORS TAXE : un pro au compte (F5), cf. {@link amountOf}. */
+  readonly pretax: boolean;
   /** La part HT du bon de fidélité imputée, en centimes ; `0` sans bon. */
   readonly voucherDiscountCents: number;
   readonly status: OrderRowStatus;
@@ -240,7 +244,8 @@ export function trackedOf(order: CustomerOrderView, copy: RowCopy): TrackedOrder
     kind: `${modeLabel(order, copy)} · ${place}`,
     title: order.requestedDeliveryDate ?? '',
     sub: windowOf(order, copy.before) || copy.noWindow,
-    total: order.totalCents / 100,
+    total: amountOf(order) / 100,
+    pretax: order.settlement === 'account',
     pieces: piecesOf(order),
     // Le statut, DESSINÉ : quatre étapes, donc un quart par étape franchie.
     percent: Math.round(((at + 1) / 4) * 100),
@@ -262,16 +267,28 @@ export function historyRowOf(order: CustomerOrderView, org: string, copy: RowCop
     mode: modeLabel(order, copy),
     slot: windowOf(order, copy.before),
     pieces: piecesOf(order),
-    total: order.totalCents / 100,
+    total: amountOf(order) / 100,
+    pretax: order.settlement === 'account',
     voucherDiscountCents: order.voucherDiscountCents,
     status: statusOf(order),
-    // `not_required` = portée au compte, facturée en fin de mois. Tout le reste
-    // est passé par la carte au moment de commander.
-    payment: order.paymentStatus === 'not_required' ? 'account' : 'card',
+    // Le régime calculé au serveur, pas une recopie du critère (F5) : `account`
+    // = portée au compte, facturée en fin de mois ; `free` (total nul) gardait
+    // déjà ce libellé. Tout le reste est passé par la carte.
+    payment: order.settlement === 'account' || order.settlement === 'free' ? 'account' : 'card',
     refund: refundOf(order),
     origin: originOf(order),
     org,
   };
+}
+
+/**
+ * **Le montant que la commande montre** : le TTC, sauf pour un pro au compte,
+ * qui ne lit que le HT — total moins TVA figés, rien n'est recalculé. Sa TVA se
+ * calcule une fois sur la facture du mois, et un TTC par commande la
+ * contredirait de quelques centimes (plan `bons-et-facture-concordants`, F5).
+ */
+function amountOf(order: CustomerOrderView): number {
+  return order.settlement === 'account' ? order.totalCents - order.vatCents : order.totalCents;
 }
 
 /** `refunded` fait foi pour « en totalité » ; un cumul positif sans lui est partiel. */

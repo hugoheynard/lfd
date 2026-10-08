@@ -21,12 +21,14 @@ const ORDER = {
   orderNumber: 'CMD-0007',
   status: 'placed',
   paymentStatus: 'not_required',
+  settlement: 'account',
   requestedDeliveryDate: '2026-09-07',
   fulfillmentMethod: 'pickup',
   deliveryAddress: null,
   pickupAddress: { label: 'Le Labo', ligne1: '', ligne2: '', codePostal: '', ville: '', pays: '' },
   fulfillment: { window: { value: { start: '07:00', end: '08:00' }, source: 'request' } },
   subtotalCents: 9_000,
+  vatCents: 640,
   totalCents: 9_640,
   origin: 'self_service',
   placedAt: '2026-09-06T07:04:00.000Z',
@@ -54,17 +56,32 @@ describe('les lignes de l’écran des commandes', () => {
     expect(trackedOf(ORDER, COPY).kind).toBe('Retrait · Le Labo');
   });
 
-  /** `not_required` = portée au compte ; tout le reste est passé par la carte. */
-  it('déduit le régime de règlement de l’état du paiement', () => {
+  /** Le régime vient du serveur (`settlement`), plus d'une recopie du critère (F5). */
+  it('lit le régime de règlement calculé au serveur', () => {
     expect(historyRowOf(ORDER, '', COPY).payment).toBe('account');
+    expect(historyRowOf({ ...ORDER, settlement: 'free' }, '', COPY).payment).toBe('account');
     expect(
-      historyRowOf({ ...ORDER, paymentStatus: 'paid' } as CustomerOrderView, '', COPY).payment,
+      historyRowOf({ ...ORDER, paymentStatus: 'paid', settlement: 'paid' }, '', COPY).payment,
     ).toBe('card');
+  });
+
+  /**
+   * F5 (plan `bons-et-facture-concordants`) : un pro au compte ne lit que le
+   * HT — total moins TVA figés ; la TVA et le TTC sont sur la facture du mois.
+   */
+  it('montre le HT d’une commande au compte, et le TTC des autres', () => {
+    expect(historyRowOf(ORDER, '', COPY)).toMatchObject({ total: 90, pretax: true });
+    expect(trackedOf(ORDER, COPY)).toMatchObject({ total: 90, pretax: true });
+    for (const settlement of ['paid', 'due', 'free'] as const) {
+      const other = { ...ORDER, settlement };
+      expect(historyRowOf(other, '', COPY)).toMatchObject({ total: 96.4, pretax: false });
+      expect(trackedOf(other, COPY)).toMatchObject({ total: 96.4, pretax: false });
+    }
   });
 
   /** Lu sur `paymentStatus` et le cumul réussi, jamais sur le régime (lot R1). */
   it('dit « remboursée » en totalité, en partie, ou rien', () => {
-    const card = { ...ORDER, paymentStatus: 'paid' } as CustomerOrderView;
+    const card = { ...ORDER, paymentStatus: 'paid', settlement: 'paid' } as CustomerOrderView;
     expect(historyRowOf(card, '', COPY).refund).toEqual({ kind: 'none' });
     expect(historyRowOf({ ...card, refundedCents: 1_250 }, '', COPY).refund).toEqual({
       kind: 'partial',

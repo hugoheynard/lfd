@@ -47,7 +47,15 @@ describe('HistoryTable', () => {
     // Le drapeau porte les chiffres tabulaires et le bord droit d'un coup ; à
     // la main, on obtenait l'un sans l'autre une fois sur deux.
     const cell = el().querySelector('td.folddt-cell.is-numeric');
-    expect(cell?.textContent?.trim()).toBe('96,40 €');
+    // La première ligne est au compte : son montant est HT, et le dit (F5).
+    expect(cell?.textContent?.trim()).toBe(`96,40 € ${FR.orders.totalPretax}`);
+  });
+
+  it('ne dit « HT » que sur une commande au compte (F5)', () => {
+    const cells = Array.from(el().querySelectorAll('td.folddt-cell.is-numeric')).map((n) =>
+      n.textContent?.trim(),
+    );
+    expect(cells[1]).toBe('38,20 €');
   });
 
   it('n’annonce l’origine que lorsqu’elle n’est PAS l’app', () => {

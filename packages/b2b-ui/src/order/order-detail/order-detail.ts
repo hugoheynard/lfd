@@ -227,6 +227,18 @@ export class OrderDetail {
     return order.fulfillmentMethod === 'delivery' ? order.deliveryAddress : order.pickupAddress;
   });
 
+  /**
+   * Le total de l'en-tête et son assiette. Un pro au compte n'y lit que le HT
+   * — total moins TVA figés —, comme dans son récapitulatif (F5, plan
+   * `bons-et-facture-concordants`) : la TVA et le TTC sont sur la facture du mois.
+   */
+  protected readonly headerTotal = computed(() => {
+    const order = this.order();
+    return order.settlement === 'account'
+      ? { cents: order.totalCents - order.vatCents, basis: 'HT' }
+      : { cents: order.totalCents, basis: 'TTC' };
+  });
+
   /** Le récapitulatif des montants — assemblé par `orderTotalRows`, pas ici. */
   protected readonly totals = computed<readonly TotalRow[]>(() => orderTotalRows(this.order()));
 

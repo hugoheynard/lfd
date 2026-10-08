@@ -395,15 +395,22 @@ function articleRow(
   return bottom + 0.6;
 }
 
+/** Une ligne du pavé de totaux. */
+interface TotalRow {
+  readonly label: string;
+  readonly value: string;
+  readonly rule?: boolean;
+  readonly strong?: boolean;
+}
+
 /** Les lignes du pavé de totaux, dans l'ordre où la référence les pose. */
-function totalRows(
-  sheet: PricedSheet,
-): readonly { label: string; value: string; rule?: boolean; strong?: boolean }[] {
+function totalRows(sheet: PricedSheet): readonly TotalRow[] {
   const totals = sheet.money;
   const net = Math.max(
     0,
     totals.subtotalCents - totals.discountCents - totals.voucherDiscountCents,
   );
+  const pretax = net + totals.deliveryFeeCents + totals.lateFeeCents;
   return [
     // 🔴 **« HT » est écrit, il n'est plus sous-entendu.** La colonne des
     // articles peut désormais être en TTC ; un pied qui dirait « Sous-total »
@@ -426,9 +433,27 @@ function totalRows(
     ...(totals.lateFeeCents === 0
       ? []
       : [{ label: "Surtaxe de commande tardive", value: money(totals.lateFeeCents) }]),
+    ...(totals.settlement === "account" ? pretaxTail(pretax) : taxedTail(sheet, pretax)),
+  ];
+}
+
+/**
+ * **Le pied d'un pro au compte : le HT, et rien d'autre** (plan
+ * `bons-et-facture-concordants`, F5). La TVA se calcule une fois sur le mois :
+ * un TTC par bon différerait de quelques centimes de la facture, et une
+ * différence ressemble à une erreur. Aucun chiffre de TVA ni de TTC ici.
+ */
+function pretaxTail(pretaxCents: number): readonly TotalRow[] {
+  return [{ label: "Total HT", value: money(pretaxCents), rule: true, strong: true }];
+}
+
+/** Le pied d'une commande réglée à la commande (carte, gratuite) : inchangé. */
+function taxedTail(sheet: PricedSheet, pretaxCents: number): readonly TotalRow[] {
+  const totals = sheet.money;
+  return [
     {
       label: "Total avant TVA",
-      value: money(net + totals.deliveryFeeCents + totals.lateFeeCents),
+      value: money(pretaxCents),
       rule: true,
     },
     // Le détail par taux vient de la COMMANDE, qui l'a figé. `null` = commande
@@ -443,6 +468,12 @@ function totalRows(
     { label: "Total TTC", value: money(totals.totalCents), rule: true, strong: true },
   ];
 }
+
+/**
+ * La mention d'un bon au compte, sous son total HT : elle dit OÙ le client
+ * trouvera ce que le bon ne chiffre plus (F5).
+ */
+export const PRETAX_ONLY_NOTE = "TVA et TTC sur la facture du mois.";
 
 /** Le pavé de totaux, cadré à droite, et la mention qui l'accompagne. */
 function totals(doc: Doc, sheet: ClientSheet, top: number): number {
@@ -459,6 +490,10 @@ function totals(doc: Doc, sheet: ClientSheet, top: number): number {
     }
     put(doc, row.label, blockLeft, y, { size: 10.5, bold: row.strong === true });
     putRight(doc, row.value, CONTENT_RIGHT, y, 11, row.strong === true);
+    y += 5 * MM;
+  }
+  if (sheet.money.settlement === "account") {
+    put(doc, PRETAX_ONLY_NOTE, blockLeft, y, { size: 9 });
     y += 5 * MM;
   }
   return y;

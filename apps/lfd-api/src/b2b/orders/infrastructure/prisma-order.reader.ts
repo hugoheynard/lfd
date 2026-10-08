@@ -44,6 +44,7 @@ import {
 import { companyDisplayName, vatSharesSchema, type VatShareView } from "@lfd/contracts";
 
 import { orderOriginOf } from "../domain/services/order-origin.js";
+import { settlementRegimeOf } from "../domain/services/settlement-regime.js";
 
 /** Une ligne de commande telle que Prisma la sélectionne. */
 interface OrderLineRow {
@@ -583,6 +584,7 @@ function toOrderView(row: OrderRow): OrderView {
     orderNumber: row.orderNumber,
     status: row.status,
     paymentStatus: row.paymentStatus,
+    settlement: settlementRegimeOf(row.paymentStatus, row.totalCents),
     requestedDeliveryDate: toIsoDate(row.requestedDeliveryDate),
     fulfillmentMethod: row.fulfillmentMethod,
     deliveryAddressId: row.deliveryAddressId,

@@ -12,6 +12,8 @@ import { CartUpsell } from '../cart-upsell.service';
 import { ClientCart } from '../client-cart.service';
 import { ClientLocale } from '../../client-locale.service';
 import { ClientWorkspace } from '../../client-workspace.service';
+import { ClientCompany } from '../../client-company.service';
+import { settlesOnAccount } from '../../../account/settles-on-account';
 import { OrderContextStore } from '../../order-context.store';
 import { ClientCopyService, fill } from '../../copy/client-copy.service';
 import { VoucherChoice } from '../voucher-choice.service';
@@ -50,6 +52,20 @@ export class CartSummary {
   private readonly locale = inject(ClientLocale);
   private readonly workspace = inject(ClientWorkspace);
   protected readonly voucher = inject(VoucherChoice);
+
+  /**
+   * **Un pro au compte ne lit que le HT** (F5, plan
+   * `bons-et-facture-concordants`, Q2 tranchée oui en l'absence d'Hugo le
+   * 2026-10-09). La TVA se calcule une fois sur la facture du mois ; un TTC
+   * par panier la contredirait de quelques centimes. Avant la passation, le
+   * régime de la commande n'existe pas encore : c'est la condition de la
+   * société (`settlesOnAccount`, le seul calcul du front, celui même qui
+   * ouvre « Ajouter au compte » dans le dialogue du panier) qui décide. Le
+   * règlement par carte, toujours ouvert, montre son TTC à l'écran de
+   * règlement.
+   */
+  private readonly firm = inject(ClientCompany);
+  protected readonly onAccount = computed(() => settlesOnAccount(this.firm.company()));
 
   protected readonly totals = this.cart.totals;
 
@@ -135,11 +151,28 @@ export class CartSummary {
       return null;
     }
     const c = this.t().cart;
-    return totals.deliveryVatMode === 'follows_goods' ? c.feeVatProrata : c.feeVatStandard;
+    if (totals.deliveryVatMode !== 'follows_goods') {
+      return c.feeVatStandard;
+    }
+    // Au compte et au prorata, AUCUN taux : il n'y en a pas un seul, et le
+    // panier ne chiffre pas la TVA (F5) — la livraison s'y lit en HT, sans plus.
+    return this.onAccount() ? null : c.feeVatProrata;
+  });
+
+  /** Le total montré : HT au compte (total moins TVA du devis), TTC sinon. */
+  protected readonly shownTotalCents = computed(() => {
+    const totals = this.totals();
+    if (!this.onAccount()) {
+      return totals.totalCents;
+    }
+    return totals.totalCents - totals.vat.reduce((sum, share) => sum + share.amountCents, 0);
   });
 
   protected readonly vatLines = computed(() => {
     const c = this.t().cart;
+    if (this.onAccount()) {
+      return [];
+    }
     return this.totals().vat.map((share) => ({
       label: fill(c.vat, { rate: formatRate(share.rate) }),
       amount: formatCents(share.amountCents),

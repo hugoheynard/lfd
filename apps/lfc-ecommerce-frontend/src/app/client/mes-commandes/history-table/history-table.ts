@@ -83,7 +83,9 @@ export class HistoryTable {
         key: 'total',
         label: copy.colTotal,
         numeric: true,
-        value: (order) => formatEuro(order.total),
+        // Au compte, le montant est HT et le dit (F5).
+        value: (order) =>
+          order.pretax ? `${formatEuro(order.total)} ${copy.totalPretax}` : formatEuro(order.total),
       },
     ];
   });

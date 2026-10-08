@@ -13,6 +13,7 @@ import {
 import type { CartAdjustment } from "./cart-adjustment.js";
 import type { DeliveryVatMode } from "./order-delivery-vat.js";
 import type { LateFeeAdjustment } from "./order-late-fee.js";
+import type { SettlementRegime } from "./order-sheet.js";
 
 /**
  * Contrat de fil des **commandes** B2B.
@@ -582,6 +583,14 @@ export interface OrderView {
   readonly status: OrderStatus;
   /** État du règlement (découplé de `status`, l'avancement de production). */
   readonly paymentStatus: PaymentStatus;
+  /**
+   * **Le régime de règlement**, calculé une fois au serveur
+   * (`settlementRegimeOf`) — `account` = un pro au compte, dont le bon
+   * n'affiche que le HT : la TVA et le TTC sont sur la facture du mois (plan
+   * `bons-et-facture-concordants`, F5). Les écrans lisent CE champ, jamais une
+   * recopie du critère `not_required ∧ total > 0`.
+   */
+  readonly settlement: SettlementRegime;
   readonly requestedDeliveryDate: string | null;
   /** Mode d'acheminement de cette commande. */
   readonly fulfillmentMethod: FulfillmentMethod;
@@ -875,6 +884,8 @@ export interface CustomerOrderView {
   readonly orderNumber: string;
   readonly status: OrderStatus;
   readonly paymentStatus: PaymentStatus;
+  /** Cf. {@link OrderView.settlement}. */
+  readonly settlement: SettlementRegime;
   readonly requestedDeliveryDate: string | null;
   readonly fulfillmentMethod: FulfillmentMethod;
   readonly deliveryAddressId: string | null;
@@ -934,6 +945,7 @@ export function toCustomerOrder(view: OrderView): CustomerOrderView {
     orderNumber: view.orderNumber,
     status: view.status,
     paymentStatus: view.paymentStatus,
+    settlement: view.settlement,
     requestedDeliveryDate: view.requestedDeliveryDate,
     fulfillmentMethod: view.fulfillmentMethod,
     deliveryAddressId: view.deliveryAddressId,
@@ -1013,6 +1025,13 @@ export interface PlacedOrderResponse {
   readonly id: string;
   readonly orderNumber: string;
   readonly payment?: OrderPaymentIntent;
+  /**
+   * Le régime de la commande passée (F5) — c'est lui qui dit à la confirmation
+   * qu'un pro au compte ne lit que du HT. Absent sur la route publique, qui ne
+   * place jamais au compte (`PlaceShopOrderHandler.settle`, vérifié le
+   * 2026-10-09) : son absence se lit « pas au compte ».
+   */
+  readonly settlement?: SettlementRegime;
 }
 
 // ─── Surface ADMIN (staff) ───────────────────────────────────────────────────

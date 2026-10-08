@@ -63,6 +63,14 @@ export interface PlacedOrder {
   readonly pieces: number;
   readonly totals: ShopQuoteView;
   readonly settlement: Settlement;
+  /**
+   * **Au compte** : le serveur a rendu le régime `account` (F5, plan
+   * `bons-et-facture-concordants`). La confirmation ne montre alors que le HT —
+   * la TVA et le TTC sont sur la facture du mois. Lu sur le régime que le
+   * serveur rend, pas déduit de l'absence d'intention : un total nul n'en a pas
+   * non plus. Absent d'une commande gardée avant F5 : lu `false`.
+   */
+  readonly onAccount?: boolean;
 }
 
 /**
@@ -329,6 +337,7 @@ export class ClientOrders {
       // compte de la société, ou son total est nul. C'est le serveur qui en
       // décide, jamais l'écran.
       settlement: payment === null ? 'not_required' : 'due',
+      onAccount: placed.settlement === 'account',
     };
     this.intent.set(payment === null ? null : { orderId: placed.id, payment });
     // La tentative est close : la commande suivante en ouvrira une autre. Gardée

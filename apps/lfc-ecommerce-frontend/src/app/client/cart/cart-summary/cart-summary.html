@@ -95,10 +95,15 @@
     }
 
     <div class="row grand">
-      <dt>{{ t().cart.total }}</dt>
-      <dd>{{ money(totals().totalCents) }}</dd>
+      <dt>{{ onAccount() ? t().cart.totalPretax : t().cart.total }}</dt>
+      <dd>{{ money(shownTotalCents()) }}</dd>
     </div>
   </dl>
+
+  <!-- Au compte, le HT seul : la mention dit où sont la TVA et le TTC (F5). -->
+  @if (onAccount()) {
+    <p class="points">{{ t().cart.pretaxNote }}</p>
+  }
 
   <!-- Discrète, SOUS le total : ce n'est pas un montant, c'est une promesse. -->
   @if (voucherRemainder(); as label) {

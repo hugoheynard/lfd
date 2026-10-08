@@ -61,3 +61,15 @@ describe('orderDocuments', () => {
     expect(mute).toEqual([]);
   });
 });
+
+/** F5 : au compte, la commande est portée sur la facture du mois. */
+describe('la facture d’une commande au compte (F5)', () => {
+  it('dit où trouver la TVA et le TTC que le bon ne chiffre plus', () => {
+    expect(docOf(order({ settlement: 'account' }), ORDER_DOC_INVOICE)?.unavailable).toBe(
+      'Portée sur la facture du mois — la TVA et le TTC y figurent.',
+    );
+    expect(docOf(order({ settlement: 'paid' }), ORDER_DOC_INVOICE)?.unavailable).toBe(
+      'Émise après facturation — pas encore disponible.',
+    );
+  });
+});

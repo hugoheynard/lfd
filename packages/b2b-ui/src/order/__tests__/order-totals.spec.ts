@@ -14,6 +14,7 @@ function order(overrides: Partial<OrderView> = {}): OrderView {
     orderNumber: 'ORD-1',
     status: 'placed',
     paymentStatus: 'paid',
+    settlement: 'paid',
     requestedDeliveryDate: null,
     fulfillmentMethod: 'pickup',
     deliveryAddressId: null,
@@ -142,5 +143,41 @@ describe('formatLateFeeTerms', () => {
     };
 
     expect(formatLateFeeTerms(frozen)).toBe('10 % · TVA 20 %');
+  });
+});
+
+/**
+ * F5 (plan `bons-et-facture-concordants`) : un pro au compte ne lit que le HT ;
+ * la TVA et le TTC sont sur la facture du mois.
+ */
+describe('le récapitulatif d’un pro au compte (F5)', () => {
+  it('rend le total HT avec la mention, sans ligne de TVA', () => {
+    const view = order({ settlement: 'account' });
+
+    expect(keys(view)).toEqual(['subtotal', 'total']);
+    expect(row(view, 'total')).toMatchObject({
+      label: 'Total HT',
+      value: `100,00${EUR}`,
+      hint: 'TVA et TTC sur la facture du mois',
+      strong: true,
+    });
+  });
+
+  it('montre la livraison au prorata en HT, SANS taux', () => {
+    const view = order({
+      settlement: 'account',
+      deliveryFeeCents: 500,
+      deliveryVatMode: 'follows_goods',
+    });
+
+    expect(row(view, 'delivery')?.label).toBe('Livraison HT');
+    expect(row(view, 'delivery')?.hint).toBeUndefined();
+  });
+
+  it.each(['paid', 'due', 'free'] as const)('%s : TVA et total TTC inchangés', (settlement) => {
+    const view = order({ settlement });
+
+    expect(keys(view)).toEqual(['subtotal', 'vat', 'total']);
+    expect(row(view, 'total')?.label).toBe('Total TTC');
   });
 });

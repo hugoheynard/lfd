@@ -64,6 +64,15 @@ export interface OrderPlacedCopy {
   readonly recapVoucher: string;
   readonly recapVat: string;
   /**
+   * Le total d'un pro **au compte**, hors taxe (F5, plan
+   * `bons-et-facture-concordants`) : la TVA se calcule une fois sur le mois,
+   * et un TTC par bon contredirait la facture de quelques centimes.
+   */
+  readonly totalPretax: string;
+  /** La ligne qui dit où sont la TVA et le TTC : libellé, puis valeur. */
+  readonly recapTaxLater: string;
+  readonly recapTaxLaterValue: string;
+  /**
    * Le bloc du QR de retrait. Il est **dans le corps** et non en pièce jointe :
    * c'est la seule chose qu'on vient chercher debout devant un comptoir, et un
    * PDF à ouvrir sur un téléphone, la main sur la porte, ne se scanne pas.

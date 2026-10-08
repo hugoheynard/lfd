@@ -1,5 +1,5 @@
 import type { FeatureSubject } from "../../../feature-access/domain/feature-level-resolution.js";
-import type { OrderPaymentIntent, PlaceOrderPayload } from "@lfd/contracts";
+import type { OrderPaymentIntent, PlaceOrderPayload, SettlementRegime } from "@lfd/contracts";
 
 /**
  * Passe une commande pour le client `actorUserId`.
@@ -40,4 +40,6 @@ export interface PlaceOrderResult {
   readonly id: string;
   readonly orderNumber: string;
   readonly payment?: OrderPaymentIntent;
+  /** Le régime de la commande passée — la confirmation en dépend (F5). */
+  readonly settlement: SettlementRegime;
 }
