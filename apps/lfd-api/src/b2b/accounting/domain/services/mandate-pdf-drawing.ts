@@ -67,7 +67,7 @@ export interface MandateIssuance {
  * **La forme du mandat** : sous quel schéma, et pour quel type de paiement.
  *
  * 🔴 Distincte de l'émetteur, et c'est tout l'objet du type (objection 2 du
- * plan `plan-mandat-deux-schemas.md`) : un brouillon imprimé porte la forme
+ * plan `mandat-deux-schemas.md`) : un brouillon imprimé porte la forme
  * sous laquelle il a été FRAPPÉ, pas le réglage courant de l'entité. Lire
  * `creditor.mandateScheme` pour imprimer un brouillon ferait signer un papier
  * CORE pour un mandat que le lot prélèvera en interentreprises.

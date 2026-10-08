@@ -77,7 +77,7 @@ describe('dictionnaires de l’app cliente', () => {
   /**
    * 🔴 **Un mandat CORE ne se déclare pas à la banque.** Le texte d'avant les
    * deux schémas le demandait à tout le monde : sous CORE, c'est réclamer au
-   * client une démarche que sa banque ne connaît pas (plan-mandat-deux-schemas §3.5).
+   * client une démarche que sa banque ne connaît pas (mandat-deux-schemas).
    */
   it('en CORE, ni « interentreprises » ni déclaration à la banque, dans les trois langues', () => {
     const forbidden = {

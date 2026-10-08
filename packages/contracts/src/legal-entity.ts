@@ -338,7 +338,7 @@ export const MANDATE_PAYMENT_TYPE_LABELS: Readonly<Record<MandatePaymentType, st
 /**
  * Le **schéma SEPA** d'un mandat — `CORE` ou interentreprises (`B2B`).
  *
- * Plan `documentation/comptabilite/plan-mandat-deux-schemas.md`.
+ * Plan `documentation/comptabilite/mandat-deux-schemas.md`.
  */
 export const sepaSchemeSchema = z.enum(["CORE", "B2B"]);
 export type SepaScheme = z.infer<typeof sepaSchemeSchema>;

@@ -22,7 +22,7 @@
 /// Le schéma SEPA d'un mandat : `CORE` (tout débiteur, remboursement sous 8
 /// semaines) ou `B2B` (interentreprises, aucun remboursement d'un prélèvement
 /// autorisé, mandat déclaré à la banque du débiteur). Plan
-/// `documentation/comptabilite/plan-mandat-deux-schemas.md`.
+/// `documentation/comptabilite/mandat-deux-schemas.md`.
 enum SepaScheme {
   CORE
   B2B

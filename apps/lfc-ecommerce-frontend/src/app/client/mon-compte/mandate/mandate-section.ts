@@ -84,7 +84,7 @@ export function mandatePrintable(mandate: CustomerMandateView | null): boolean {
  * papier signé les porte déjà, et l'API refuse en 409.
  *
  * Et jamais sous un émetteur interentreprises : son mandat n'imprime ni la zone
- * 14 ni la 19 (plan-mandat-deux-schemas §10, Q2). Un schéma encore inconnu
+ * 14 ni la 19 (mandat-deux-schemas). Un schéma encore inconnu
  * (`null`) laisse le geste — le masquer ferait disparaître une fonction sur une
  * lecture lente ou manquée.
  */

@@ -6,7 +6,7 @@
  * Le serveur nomme ses fichiers d'après ce qu'ils contiennent — le cycle, le
  * schéma, l'avertissement `BROUILLON-`. Le reconstruire ici ferait une seconde
  * définition de ce nom, et c'est celle que l'utilisateur lit sur son bureau
- * qui dériverait (objection 9 de `plan-mandat-deux-schemas.md`).
+ * qui dériverait (objection 9 de `mandat-deux-schemas.md`).
  *
  * `filename*` (RFC 6266, encodé en RFC 5987) l'emporte sur `filename` quand les
  * deux sont là : c'est la forme qui porte les accents.

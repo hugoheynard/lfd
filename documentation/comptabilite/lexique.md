@@ -35,7 +35,7 @@ rembourser un prélèvement autorisé ; le mandat CORE accorde au contraire les
 8 semaines. ⚠️ **Depuis le 2026-09-15 (en construction), ce dépôt imprime les
 DEUX** : l'entité juridique choisit le schéma de ses frappes, chaque mandat fige
 le sien, le lot sort un fichier par schéma — voir
-[`plan-mandat-deux-schemas.md`](plan-mandat-deux-schemas.md). La
+[`mandat-deux-schemas.md`](mandat-deux-schemas.md). La
 constante unique `SEPA_SCHEME` du 2026-09-14 disparaît. Historique :
 [`todo-mandat-core-contre-b2b.md`](todo-mandat-core-contre-b2b.md).
 

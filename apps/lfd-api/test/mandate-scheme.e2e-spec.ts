@@ -1,7 +1,7 @@
 /**
  * E2E du **schéma de mandat de l'entité émettrice** — CORE ou interentreprises.
  *
- * Plan : `documentation/comptabilite/plan-mandat-deux-schemas.md` §10.4.
+ * Plan : `documentation/comptabilite/mandat-deux-schemas.md`
  *
  * Ce que seul le vrai SQL prouve : la colonne de l'entité bascule, le fait entre
  * au journal avec son acteur, les brouillons de TOUTES les sociétés émis par

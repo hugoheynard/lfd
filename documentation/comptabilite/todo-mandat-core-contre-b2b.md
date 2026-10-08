@@ -5,7 +5,7 @@
 > 🔄 **État au 2026-09-15 — ce qui est fermé :**
 >
 > - les deux schémas existent, choisis par l'entité et **figés sur chaque mandat**
->   avec son type de paiement ([`plan-mandat-deux-schemas.md`](plan-mandat-deux-schemas.md)) ;
+>   avec son type de paiement ([`mandat-deux-schemas.md`](mandat-deux-schemas.md)) ;
 > - un RIB ne se remplace plus sous un mandat actif, ni par le client ni par le
 >   staff (409) — l'amendement est suivi dans
 >   [`todo-mandat-restes-de-la-frappe.md`](todo-mandat-restes-de-la-frappe.md).

@@ -91,7 +91,7 @@ export class ComptabiliteDashboardService {
   /**
    * Le **brouillon** de fichier de prélèvement du cycle en cours, pour UN
    * schéma : un fichier par schéma, chacun avec son `LclInstrm`
-   * (`plan-mandat-deux-schemas.md` §10.2).
+   * (`mandat-deux-schemas.md`).
    *
    * `responseType: 'blob'` : c'est un fichier, pas un objet. Et il part avec son
    * avertissement dans son nom comme dans son corps — l'écran n'a pas à le

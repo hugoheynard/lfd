@@ -43,7 +43,7 @@ const NO_PRECONDITION: MandateOptionsPrecondition = () => Promise.resolve();
  *   révoqué dans la même unité de travail, et l'équipe prévenue ensuite, hors
  *   transaction (plan §9 #4).
  * - 🔴 **Sauf un brouillon interentreprises** (depuis le 2026-09-15, plan
- *   `documentation/comptabilite/plan-mandat-deux-schemas.md` §10, Q2) : son formulaire
+ *   `documentation/comptabilite/mandat-deux-schemas.md`) : son formulaire
  *   n'imprime pas ces zones, son papier ne change donc pas. Le schéma lu est
  *   celui **du brouillon**, figé à sa frappe — pas le réglage courant de
  *   l'entité. La réécriture reste journalisée.

@@ -124,7 +124,7 @@ export class LegalEntitiesService {
    *
    * Sa propre route, et pas un champ de `setMandateDefaults` : ce payload-là a
    * des défauts, et un écran ancien qui l'enverrait sans ce champ rebasculerait
-   * le schéma sans que personne l'ait décidé (plan `plan-mandat-deux-schemas.md`
+   * le schéma sans que personne l'ait décidé (plan `mandat-deux-schemas.md`
    * §3.3).
    */
   async setMandateScheme(id: string, payload: SetMandateSchemePayload): Promise<void> {

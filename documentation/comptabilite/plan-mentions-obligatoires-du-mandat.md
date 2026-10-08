@@ -140,7 +140,7 @@ code contre `MandateHolder.siren` annoncé.
 ## 7. Ce que ça périme
 
 - `debtor-snapshot.ts` (`sirenOfSiret`), `b2b-mandate-blocks.ts` (forme
-  juridique vide), `plan-mandat-deux-schemas.md` §7 Q3/Q4 et §10 (« SIRET vide →
+  juridique vide), `mandat-deux-schemas.md` Q3/Q4 et §10 (« SIRET vide →
   peigne vide », « forme juridique : vide »).
 
 ## 8. Contradiction (vitruve)

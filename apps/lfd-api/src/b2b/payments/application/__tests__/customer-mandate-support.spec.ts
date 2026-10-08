@@ -50,7 +50,7 @@ function harness(issuerScheme: "CORE" | "B2B") {
 
 describe("buildCustomerMandate — quelle forme est imprimée", () => {
   /**
-   * 🔴 Objection 2 du plan `plan-mandat-deux-schemas.md` : le brouillon est
+   * 🔴 Objection 2 du plan `mandat-deux-schemas.md` : le brouillon est
    * frappé en interentreprises, l'entité passe ensuite en CORE. C'est ce
    * brouillon-là que le staff activera et que le lot prélèvera en B2B — le
    * papier signé doit donc être interentreprises, pas le réglage du jour.

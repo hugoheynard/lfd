@@ -95,7 +95,7 @@ export async function buildCustomerMandate(
   const debtor = printableDebtor(printable, account.id) ?? resolved.debtor;
 
   // 🔴 La forme d'un brouillon est la SIENNE, figée à la frappe (objection 2 du
-  // plan `plan-mandat-deux-schemas.md`) : l'entité peut être passée à un autre
+  // plan `mandat-deux-schemas.md`) : l'entité peut être passée à un autre
   // schéma depuis, et c'est ce brouillon-là que le staff activera. Sans
   // brouillon, l'aperçu montre ce que l'entité frapperait aujourd'hui.
   const form: MandateForm =

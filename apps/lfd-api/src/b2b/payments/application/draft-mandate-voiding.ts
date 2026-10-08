@@ -93,7 +93,7 @@ export async function writeVoidingDraft(
 /**
  * Révoque **plusieurs** brouillons d'un coup — ceux d'une entité émettrice dont
  * un réglage imprimé vient de changer (plan
- * `documentation/comptabilite/plan-mandat-deux-schemas.md` §10.4).
+ * `documentation/comptabilite/mandat-deux-schemas.md`).
  *
  * Même séquence que {@link writeVoidingDraft}, sans écriture propre : l'appelant
  * est déjà dans l'unité de travail de son réglage, que celle-ci **rejoint**. Tous

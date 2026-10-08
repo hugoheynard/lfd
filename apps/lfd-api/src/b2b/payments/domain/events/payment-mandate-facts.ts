@@ -76,7 +76,7 @@ export type MandateActorChannel = "staff" | "customer";
  * Ce qui a changé sur le papier et rendu le brouillon caduc.
  *
  * Les deux dernières viennent d'un réglage de l'**entité émettrice** (plan
- * `documentation/comptabilite/plan-mandat-deux-schemas.md` §10.4) : elles révoquent tous
+ * `documentation/comptabilite/mandat-deux-schemas.md`) : elles révoquent tous
  * ses brouillons d'un coup, et non celui d'une société.
  */
 export type DraftVoidingCause =

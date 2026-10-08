@@ -56,7 +56,7 @@ export class ClientMandate {
   /**
    * Le schéma des mandats que l'émetteur frappe — `null` tant qu'il n'est pas
    * lu, ou sans émetteur. Rendu par l'enveloppe des options : c'est là que le
-   * serveur le sert (plan-mandat-deux-schemas §10.4).
+   * serveur le sert (mandat-deux-schemas).
    */
   readonly issuerScheme = this._issuerScheme.asReadonly();
 

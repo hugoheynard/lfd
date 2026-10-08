@@ -24,7 +24,7 @@ import {
  * ## UN FICHIER PAR SCHÉMA — 2026-09-15
  *
  * Le schéma n'est plus une constante : chaque mandat fige le sien à la frappe
- * (plan `documentation/comptabilite/plan-mandat-deux-schemas.md`, §10.2). Un cycle rend
+ * (plan `documentation/comptabilite/mandat-deux-schemas.md`, §10.2). Un cycle rend
  * donc un fichier `CORE` et un fichier `B2B`, et chacun ne porte QUE les lignes
  * dont le mandat a ce schéma. Mélanger les deux dans un message ferait rejeter
  * le tout par la banque du débiteur qui n'a rien déclaré.
