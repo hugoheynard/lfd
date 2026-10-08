@@ -5,6 +5,10 @@
 >
 > **Décision (Hugo, 2026-09-21) : l'admin doit pouvoir choisir** entre la
 > ventilation au prorata et le taux normal à 20 %.
+>
+> ➡️ **Pris en chantier le 2026-10-08** (réglage global) :
+> [`plan-tva-des-frais-de-port.md`](plan-tva-des-frais-de-port.md). La surtaxe
+> (§ 5) reste ouverte ici.
 
 ## 1. Le fait
 
