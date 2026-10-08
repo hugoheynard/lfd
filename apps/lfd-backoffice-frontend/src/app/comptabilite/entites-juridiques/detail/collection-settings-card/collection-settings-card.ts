@@ -19,14 +19,20 @@ import {
 } from '@lfd/contracts';
 import {
   FoldButtonComponent,
-  FoldFieldComponent,
-  FoldFieldListComponent,
+  FoldCalloutComponent,
   FoldInputComponent,
   FoldNumberInputComponent,
   FoldPageSectionComponent,
+  FoldTimelineComponent,
 } from 'fold-ng';
 
-import { day, instant } from '../../../invoice-dossier-format';
+import {
+  collectionSteps,
+  daysExample,
+  daysTooShort,
+  delayExample,
+  depositExample,
+} from '../../../collection-schedule-wording';
 import { LegalEntitiesService } from '../../../legal-entities.service';
 
 /**
@@ -50,14 +56,21 @@ import { LegalEntitiesService } from '../../../legal-entities.service';
  *
  * Activer fera partir des lots et des avis sans clic (PA3) : c'est un fait
  * de journal à part, jamais un champ glissé sous « Enregistrer ».
+ *
+ * ## L'automatisme n'est pas encore branché, et la carte le dit
+ *
+ * La constitution automatique (PA3) n'existe pas côté serveur : aucun cron ni
+ * table `collection_autopilot_run` dans `apps/lfd-api` (vérifié le
+ * 2026-10-08). Le choix s'enregistre, rien ne part seul — l'écran ne doit
+ * pas laisser croire le contraire. Retirer l'encadré quand PA3 est bâti.
  */
 @Component({
   selector: 'app-collection-settings-card',
   changeDetection: ChangeDetectionStrategy.OnPush,
   imports: [
     FoldPageSectionComponent,
-    FoldFieldListComponent,
-    FoldFieldComponent,
+    FoldTimelineComponent,
+    FoldCalloutComponent,
     FoldButtonComponent,
     FoldNumberInputComponent,
     FoldInputComponent,
@@ -91,18 +104,19 @@ export class CollectionSettingsCard {
     () => (this.cutoffDaysDraft() === null) !== (this.cutoffTimeDraft().trim() === ''),
   );
 
-  protected readonly calendar = computed(() => {
-    const next = this.entity().nextCollection;
-    return {
-      closesAt: instant(next.closesAt),
-      plannedConstitutionAt: instant(next.plannedConstitutionAt),
-      collectionDay: day(next.collectionDay),
-      depositDeadline:
-        next.depositDeadline === null
-          ? null
-          : `${day(next.depositDeadline.day)} à ${next.depositDeadline.time}`,
-    };
-  });
+  /** La frise du mois, datée par le serveur (cf. `collection-schedule-wording.ts`). */
+  protected readonly steps = computed(() => collectionSteps(this.entity().nextCollection));
+
+  protected readonly delayHint = computed(() => delayExample(this.delayDraft()));
+  protected readonly daysHint = computed(() =>
+    daysExample(this.daysDraft(), this.entity().preNotificationDays),
+  );
+  protected readonly daysTooShort = computed(() =>
+    daysTooShort(this.daysDraft(), this.entity().preNotificationDays),
+  );
+  protected readonly depositHint = computed(() =>
+    depositExample(this.cutoffDaysDraft(), this.cutoffTimeDraft()),
+  );
 
   constructor() {
     effect(() => {

@@ -1,17 +1,32 @@
+/* Les blocs de la carte se séparent par le gap, jamais par une marge. */
+.cs-stack,
+.cs-block {
+  display: flex;
+  flex-direction: column;
+  gap: var(--fold-space-md);
+}
+
+.cs-block {
+  gap: var(--fold-space-sm);
+}
+
+.cs-heading {
+  margin: 0;
+  font-size: var(--fold-text-md);
+}
+
 .cs-said {
-  margin: 0 0 var(--fold-space-md);
+  margin: 0;
   color: var(--fold-color-text-muted);
   font-size: var(--fold-text-sm);
   max-width: 65ch;
 }
 
-/* L'état de l'automatisme et son geste, sur une ligne : le bouton dit ce
-   qu'il fera, la phrase ce qui est. */
+/* L'état de l'automatisme et son geste, sur une ligne. */
 .cs-auto {
   display: flex;
   align-items: center;
   gap: var(--fold-space-sm);
-  margin: var(--fold-space-md) 0;
 }
 
 .cs-row {
@@ -29,7 +44,6 @@
 .cs-actions {
   display: flex;
   justify-content: flex-end;
-  margin-top: var(--fold-space-sm);
 }
 
 .cs-state {

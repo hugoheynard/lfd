@@ -139,20 +139,36 @@ function button(
   return found;
 }
 
-const DAYS = 'Échéance après la clôture (jours)';
-const CUTOFF_DAYS = "Dépôt au plus tard (jours ouvrés avant l'échéance)";
+const DAYS = 'Jours entre la clôture du mois et le prélèvement';
+const CUTOFF_DAYS = 'Jours ouvrés bancaires avant le prélèvement';
 
 describe('CollectionSettingsCard — le prélèvement automatique', () => {
   beforeEach(() => {
     TestBed.resetTestingModule();
   });
 
-  it('affiche le calendrier calculé par le serveur, et « À renseigner » sans cut-off', () => {
+  it('affiche la frise du mois calculée par le serveur, et « à renseigner » sans limite de dépôt', () => {
     const fixture = boot();
 
+    expect(text(fixture)).toContain('Le mois se clôt');
+    expect(text(fixture)).toContain('Vos clients sont prélevés');
     expect(text(fixture)).toContain('16 nov. 2026');
-    expect(text(fixture)).toContain('À renseigner');
-    expect(text(fixture)).toContain('Automatisme désactivé');
+    expect(text(fixture)).toContain('à renseigner');
+  });
+
+  it('dit honnêtement que la préparation automatique n’est pas encore branchée', () => {
+    const fixture = boot({ autoCollectionEnabled: true });
+
+    expect(text(fixture)).toContain('la préparation automatique sera branchée prochainement');
+  });
+
+  it('calcule l’exemple en direct depuis la saisie, et le délai d’avis quand c’est vide', () => {
+    const fixture = boot();
+    expect(text(fixture)).toContain('Laissé vide : 14 jours');
+
+    type(fixture, DAYS, 9);
+    expect(text(fixture)).toContain('clôture le 1er + 9 jours → prélèvement le 10');
+    expect(text(fixture)).toContain("l'enregistrement sera refusé");
   });
 
   it('affiche la date limite de dépôt quand elle est renseignée', () => {
@@ -166,7 +182,7 @@ describe('CollectionSettingsCard — le prélèvement automatique', () => {
       },
     });
 
-    expect(text(fixture)).toContain('12 nov. 2026 à 16:00');
+    expect(text(fixture)).toContain('avant le 12 nov. 2026 à 16:00');
   });
 
   it('enregistre le calendrier saisi, cut-off compris', async () => {
@@ -195,7 +211,7 @@ describe('CollectionSettingsCard — le prélèvement automatique', () => {
     type(fixture, CUTOFF_DAYS, 2);
 
     expect(button(fixture, 'Enregistrer').disabled).toBe(true);
-    expect(text(fixture)).toContain('se renseignent ensemble');
+    expect(text(fixture)).toContain('Renseignez le nombre de jours ET l’heure');
   });
 
   it('le bouton de l’automatisme dit ce qu’il fera, et l’écrit par sa propre route', async () => {
