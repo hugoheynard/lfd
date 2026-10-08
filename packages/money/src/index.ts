@@ -35,3 +35,12 @@ export type { VatExtra, VatLine, VatShare, VatVentilation, VatVentilationInput }
  * `@lfd/pim-contracts` le 2026-09-21, quand un second site en a eu besoin.
  */
 export { htFromTtc, htMillicentsOf } from "./tax.js";
+export { invoiceVatBreakdown } from "./invoice-vat.js";
+export type {
+  InvoiceAllowance,
+  InvoiceCharge,
+  InvoiceVatBreakdown,
+  InvoiceVatCategory,
+  InvoiceVatInput,
+  InvoiceVatPart,
+} from "./invoice-vat.js";

@@ -1,0 +1,128 @@
+import type { InvoiceVatBreakdown } from "@lfd/money";
+
+/**
+ * Les types du **simulateur de dossier de facturation** (plan
+ * `documentation/facturation/plan-simulateur-dossier-de-facturation.md`) :
+ * ce qu'il reçoit — les bons tels que figés — et ce qu'il rend — la facture
+ * calculée en une fois, et les trois écarts qui la séparent de la somme des bons.
+ */
+
+/** Le mode de TVA du port figé sur le bon ; `null` = bon d'avant le réglage, taxé au taux normal. */
+export type FrozenDeliveryVatMode = "standard" | "follows_goods";
+
+/** Une ligne de bon, telle que figée à la passation. */
+export interface FrozenInvoiceLine {
+  readonly sku: string;
+  readonly productNameSnapshot: string;
+  readonly unitPriceMillicents: number;
+  /** Le `Decimal(5,2)` lu tel quel (« 5.50 ») : normalisé par le calcul, jamais par l'appelant. */
+  readonly vatRate: string;
+  readonly quantity: number;
+  readonly lineTotalCents: number;
+}
+
+/** Une part de TVA figée sur un bon. */
+export interface FrozenOrderVatShare {
+  readonly rate: number;
+  readonly amountCents: number;
+}
+
+/** Un bon du dossier, montants lus tels quels. */
+export interface FrozenInvoiceOrder {
+  readonly reference: string;
+  readonly createdAt: Date;
+  /** `AAAA-MM-JJ`, ou `null` : le bon n'a aucune date demandée. */
+  readonly requestedDeliveryDate: string | null;
+  readonly lines: readonly FrozenInvoiceLine[];
+  readonly discountCents: number;
+  readonly voucherDiscountCents: number;
+  readonly deliveryFeeCents: number;
+  readonly deliveryVatMode: FrozenDeliveryVatMode | null;
+  readonly lateFeeCents: number;
+  /** Lu dans `lateFeeAdjustment` ; `null` quand le bon ne l'a pas figé. */
+  readonly lateFeeVatRate: number | null;
+  /** `null` = bon d'avant le 2026-09-07, TVA non ventilée. */
+  readonly vatShares: readonly FrozenOrderVatShare[] | null;
+  readonly vatCents: number;
+  readonly totalCents: number;
+}
+
+/** Une ligne de facture : un produit, à un prix, à un taux. */
+export interface InvoiceLine {
+  readonly sku: string;
+  readonly unitPriceMillicents: number;
+  readonly vatRate: number;
+  /** Le nom du bon le plus récent de la clé. */
+  readonly label: string;
+  /** Les autres noms portés par les bons de la clé — « vendu aussi sous… ». */
+  readonly otherLabels: readonly string[];
+  readonly quantity: number;
+  /** `arrondi(Σ quantité × prix ÷ 1000)`, une fois. */
+  readonly amountCents: number;
+  /** Ce que les bons annonçaient pour la clé : Σ `lineTotalCents`. */
+  readonly ordersLineTotalCents: number;
+  /** Première et dernière date demandée ; `null` si aucun bon de la clé n'en porte. */
+  readonly firstDeliveryDate: string | null;
+  readonly lastDeliveryDate: string | null;
+}
+
+/** Une ligne de livraison de la facture — une par mode présent dans le cycle. */
+export interface InvoiceDeliveryLine {
+  readonly mode: FrozenDeliveryVatMode;
+  readonly amountCents: number;
+}
+
+/** La facture, calculée en une fois sur l'agrégat (plan, D4). */
+export interface Invoice {
+  readonly lines: readonly InvoiceLine[];
+  /** Σ `discountCents` des bons — la remise société. */
+  readonly companyDiscountCents: number;
+  /** Σ `voucherDiscountCents` des bons — le bon de fidélité. */
+  readonly voucherDiscountCents: number;
+  /** Σ `lateFeeCents` des bons. */
+  readonly lateFeeCents: number;
+  readonly deliveries: readonly InvoiceDeliveryLine[];
+  readonly vat: InvoiceVatBreakdown;
+  readonly totalCents: number;
+}
+
+/** L'arrondi d'une ligne : la facture contre la somme des bons. */
+export interface LineRoundingGap {
+  readonly sku: string;
+  readonly unitPriceMillicents: number;
+  readonly vatRate: number;
+  readonly gapCents: number;
+}
+
+/** L'arrondi de la TVA d'un taux, bons ventilés seulement. */
+export interface VatRoundingGap {
+  readonly rate: number;
+  /** La TVA du taux dans la facture, moins celle qui revient aux bons non ventilés. */
+  readonly invoiceVatCents: number;
+  /** Σ des parts `vatShares` du taux. */
+  readonly ordersVatCents: number;
+  readonly gapCents: number;
+}
+
+/** Les trois écarts du §3.4 — leur somme est la différence au centime. */
+export interface InvoiceGaps {
+  readonly lineRounding: readonly LineRoundingGap[];
+  readonly lineRoundingCents: number;
+  readonly vatRounding: readonly VatRoundingGap[];
+  readonly vatRoundingCents: number;
+  readonly unventilatedVat: {
+    readonly invoiceVatCents: number;
+    readonly ordersVatCents: number;
+    readonly gapCents: number;
+  };
+  readonly totalCents: number;
+}
+
+/** Le dossier : la facture, et de combien elle s'écarte de ses bons. */
+export interface InvoiceDossier {
+  readonly invoice: Invoice;
+  readonly ordersTotalCents: number;
+  /** Total facture − Σ `totalCents` des bons. */
+  readonly differenceCents: number;
+  readonly gaps: InvoiceGaps;
+}

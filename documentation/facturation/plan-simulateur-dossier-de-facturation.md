@@ -1,6 +1,10 @@
 # Le simulateur de dossier de facturation
 
-> 📐 **Plan v3, rien de bâti** (2026-10-08). Touche **l'argent** : contredit
+> 🟡 **DF1 bâti le 2026-10-08** : `invoiceVatBreakdown` (`packages/money/src/invoice-vat.ts`)
+> et `simulateInvoiceDossier` (`b2b/accounting/domain/services/invoice-dossier.ts`).
+> Choix faits en bâtissant, à relire (§ 3.5). DF2 à DF4 restent à faire.
+>
+> 📐 **Plan v3** (2026-10-08). Touche **l'argent** : contredit
 > deux fois par `vitruve` le 2026-10-08 (v1 : trois BLOQUANTS, v2 : quatre),
 > objections reprises au § 8. Les versions précédentes se relisent dans
 > l'historique git.
@@ -172,6 +176,21 @@ de moins que la somme de ses bons, au centime — c'est l'invariant que DF1
 teste sur la facture entière (pas bon par bon : l'écart n'existe qu'à
 l'échelle de la facture). Les formules sont écrites à l'écran.
 
+### 3.5 Ce que DF1 a tranché en bâtissant (2026-10-08)
+
+- **Le partage entre « arrondi de la TVA » et « TVA non ventilée »** : la TVA
+  non ventilée est celle d'une facture calculée sur les seuls bons non
+  ventilés ; l'arrondi de la TVA prend le reste, taux par taux. Leur somme ne
+  dépend pas de ce choix, leur partage si.
+- **Des parts figées dont la somme ne fait pas `vatCents`** : le bon est traité
+  comme non ventilé, comme au relevé (`cycle-statement.ts`).
+- **Les bases du port au prorata** : les `lineTotalCents` figés des bons de ce
+  mode qui portent un port ; bases nulles → 20 %, comme `ventilateVat`.
+- **Non tranché** : une remise sans marchandise est refusée (`RangeError`) ;
+  une remise agrégée supérieure aux bases n'est pas bornée ; un bon dont le
+  total ne vérifie pas `Σ lignes − remises + port + surtaxe + TVA` (remise
+  bornée à la passation) casserait l'invariant sans qu'aucune règle le dise.
+
 ## 4. Les frontières
 
 - **Le calcul** est un service de domaine pur du contexte comptable
@@ -239,12 +258,12 @@ même temps que le prélèvement.
 
 ## 7. Les lots
 
-| Lot     | Contenu                                                                                                                                                                                                                                                                                                                                                                                                  |
-| ------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| **DF1** | `invoiceVatBreakdown` dans `@lfd/money` (plus forts restes, TVA sur base arrondie) ; le service de domaine : clé normalisée, lignes en une fois, remises par nature, frais par taux, les trois écarts. Tests chiffrés : un changement de tarif, un changement de taux, des bons sans `vatShares`, une surtaxe sans taux (échec), et **total facture − Σ `totalCents` = Σ des trois écarts**, au centime. |
-| **DF2** | Lecture : `InvoiceDossierReader` (le critère du relevé, lignes figées, date demandée), la query, la route sous `b2b_accounting:read`, un CSV par sortie.                                                                                                                                                                                                                                                 |
-| **DF3** | L'historique : un lecteur déclaré et implémenté par `handover`, un par `delivery`, reliés dans `appBootstrap` ; le commentaire de la porte et le CLAUDE.md disent les deux sens de ces canaux.                                                                                                                                                                                                           |
-| **DF4** | L'écran Comptabilité › Dossier de facturation.                                                                                                                                                                                                                                                                                                                                                           |
+| Lot                   | Contenu                                                                                                                                                                                                                                                                                                                                                                                                  |
+| --------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| **DF1** ✅ 2026-10-08 | `invoiceVatBreakdown` dans `@lfd/money` (plus forts restes, TVA sur base arrondie) ; le service de domaine : clé normalisée, lignes en une fois, remises par nature, frais par taux, les trois écarts. Tests chiffrés : un changement de tarif, un changement de taux, des bons sans `vatShares`, une surtaxe sans taux (échec), et **total facture − Σ `totalCents` = Σ des trois écarts**, au centime. |
+| **DF2**               | Lecture : `InvoiceDossierReader` (le critère du relevé, lignes figées, date demandée), la query, la route sous `b2b_accounting:read`, un CSV par sortie.                                                                                                                                                                                                                                                 |
+| **DF3**               | L'historique : un lecteur déclaré et implémenté par `handover`, un par `delivery`, reliés dans `appBootstrap` ; le commentaire de la porte et le CLAUDE.md disent les deux sens de ces canaux.                                                                                                                                                                                                           |
+| **DF4**               | L'écran Comptabilité › Dossier de facturation.                                                                                                                                                                                                                                                                                                                                                           |
 
 ## 8. Ce que `vitruve` a relevé (v1 et v2, 2026-10-08)
 
