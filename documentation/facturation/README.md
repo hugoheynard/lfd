@@ -15,6 +15,7 @@ sont conformes.
 | [`plan-le-prelevement-suit-la-facture.md`](plan-le-prelevement-suit-la-facture.md)       | 📐 plan v2 — le prélèvement encaisse le total facturé, figé dans un arrêté par ligne de débit                                                                                                                                                              |
 | [`prelevement-automatique.md`](prelevement-automatique.md)                               | ✅ doc d'état — le mois de prélèvement : réglages de l'entité, calendrier TARGET2, avis de prélèvement, préparation automatique une fois par mois, écran « Prélèvement du mois » (PA1-PA4, 2026-10-08)                                                     |
 | [`plan-bons-et-facture-concordants.md`](plan-bons-et-facture-concordants.md)             | 📐 plan v2 — des bons et une facture qui ne se contredisent pas : HT repris des bons (F6), bon HT pour les pros au compte (F5) ; F5-0 bâti                                                                                                                 |
+| [`plan-emission-de-la-facture.md`](plan-emission-de-la-facture.md)                       | 📐 plan v2 — la facture Factur-X EN 16931 : émise le dernier jour du mois sur les livraisons, numérotée par entité, le lot ne fait que l'encaisser ; carte à la livraison                                                                                  |
 
 ## Ce qui existe ailleurs, et qu'il ne faut pas réécrire
 
