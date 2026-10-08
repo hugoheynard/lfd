@@ -120,6 +120,7 @@ function sheet(overrides: Partial<ClientSheet> = {}): ClientSheet {
       vatShares: [{ rate: 5.5, amountCents: 586 }],
       totalCents: 11_242,
       currency: "EUR",
+      settlement: "paid",
     },
     ...overrides,
   };

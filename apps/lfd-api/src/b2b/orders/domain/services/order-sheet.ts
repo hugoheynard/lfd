@@ -12,6 +12,8 @@ import type {
   StaffSheetLine,
 } from "@lfd/contracts";
 
+import { settlementRegimeOf } from "./settlement-regime.js";
+
 /**
  * **La projection d'une commande en bon de commande**, par audience.
  *
@@ -101,6 +103,7 @@ function moneyOf(order: OrderView): SheetMoney {
     vatShares: order.vatShares,
     totalCents: order.totalCents,
     currency: order.currency,
+    settlement: settlementRegimeOf(order.paymentStatus, order.totalCents),
   };
 }
 

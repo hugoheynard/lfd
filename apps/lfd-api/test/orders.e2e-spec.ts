@@ -729,10 +729,22 @@ describe("le bon de commande", () => {
     const orderId = await place(companyId, MEMBER);
 
     const response = await ctx.asSub(MEMBER).get(`/orders/${orderId}/bon`).expect(200);
-    const sheet = jsonBody<{ audience: string; money: { totalCents: number } }>(response);
+    const sheet = jsonBody<{
+      audience: string;
+      money: { totalCents: number; settlement: string };
+    }>(response);
 
     expect(sheet.audience).toBe("client");
     expect(sheet.money.totalCents).toBe(633);
+    // Le régime voyage avec la feuille : les courriels le lisent au lieu de le
+    // deviner du total (lot F5-0, 2026-10-08).
+    const stored = await ctx.prisma.order.findUniqueOrThrow({
+      where: { id: orderId },
+      select: { paymentStatus: true },
+    });
+    // Société sans terme : la carte est requise, la commande attend son règlement.
+    expect(stored.paymentStatus).toBe("pending");
+    expect(sheet.money.settlement).toBe("due");
     // 🔴 Ce cas exigeait l'ABSENCE du SKU jusqu'au 2026-09-07 : le bon de
     // commande dessiné lui donne une colonne, et c'est le dessin qui fait foi.
     //

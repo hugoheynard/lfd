@@ -55,6 +55,7 @@ const MONEY = {
   vatShares: [{ rate: 5.5, amountCents: 6_360 }],
   totalCents: 121_974,
   currency: "EUR",
+  settlement: "account",
 };
 
 describe("la feuille d'atelier", () => {

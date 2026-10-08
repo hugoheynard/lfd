@@ -143,6 +143,16 @@ export interface SheetFulfillment {
  * conserve pas le détail, et l'inventer sur une feuille serait affirmer un
  * découpage que personne n'a écrit.
  */
+/**
+ * **Le régime de règlement**, calculé une fois côté API
+ * (`settlementRegimeOf`) et lu par chaque rendu au lieu d'être deviné :
+ * `account` — un pro au compte, prélevé en fin de cycle ; `due` — un
+ * règlement par carte attendu ou à reprendre ; `paid` — encaissé ; `free` —
+ * total nul. Un particulier n'est jamais `account`.
+ */
+export const settlementRegimeSchema = z.enum(["paid", "due", "account", "free"]);
+export type SettlementRegime = z.infer<typeof settlementRegimeSchema>;
+
 export const sheetMoneySchema = z.object({
   subtotalCents: z.number().int(),
   discountCents: z.number().int(),
@@ -156,6 +166,7 @@ export const sheetMoneySchema = z.object({
   vatShares: vatSharesSchema.nullable(),
   totalCents: z.number().int(),
   currency: z.string().min(1),
+  settlement: settlementRegimeSchema,
 });
 export interface SheetMoney {
   readonly subtotalCents: number;
@@ -185,6 +196,8 @@ export interface SheetMoney {
   readonly vatShares: readonly VatShareView[] | null;
   readonly totalCents: number;
   readonly currency: string;
+  /** Le régime de règlement — figé à la passation, cf. `settlementRegimeSchema`. */
+  readonly settlement: SettlementRegime;
 }
 
 /**

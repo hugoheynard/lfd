@@ -41,6 +41,7 @@ const MONEY = {
   vatCents: 50,
   totalCents: 950,
   currency: 'EUR',
+  settlement: 'paid' as const,
 };
 
 function atelier(overrides: Partial<AtelierSheet> = {}): AtelierSheet {

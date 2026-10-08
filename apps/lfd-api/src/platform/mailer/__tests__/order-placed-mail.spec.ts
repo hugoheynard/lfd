@@ -64,6 +64,7 @@ function sheet(overrides: Partial<ClientSheet> = {}): ClientSheet {
       vatShares: [{ rate: 5.5, amountCents: 71 }],
       totalCents: 1_367,
       currency: "EUR",
+      settlement: "paid",
     },
     ...overrides,
   };
@@ -152,6 +153,43 @@ describe("le courriel de confirmation", () => {
 
     expect(html).not.toContain("mercuriale");
     expect(html).not.toContain("PAIN-TRAD");
+  });
+});
+
+describe("le régime de règlement du courriel de confirmation", () => {
+  function withSettlement(settlement: ClientSheet["money"]["settlement"]): ClientSheet {
+    const base = sheet();
+    return { ...base, money: { ...base.money, settlement } };
+  }
+
+  /**
+   * Régression : le régime était DEVINÉ du seul total (`settlementOf`), et toute
+   * commande non nulle se lisait « réglée » — un pro au compte recevait « C'est
+   * réglé. » et « Réglé en ligne » pour une commande prélevée en fin de mois
+   * (corrigé le 2026-10-08, lot F5-0).
+   */
+  it("une commande au compte ne part pas avec le libellé payé", () => {
+    const html = render({ sheet: withSettlement("account") }).html;
+
+    expect(html).not.toContain("Réglé en ligne");
+    expect(html).not.toContain("C&#39;est réglé.");
+    expect(html).not.toContain("C'est réglé.");
+    expect(html).toContain("Porté à votre compte");
+  });
+
+  it("une commande payée par carte se dit réglée", () => {
+    expect(render({ sheet: withSettlement("paid") }).html).toContain("Réglé en ligne");
+  });
+
+  it("un règlement attendu se dit à régler", () => {
+    expect(render({ sheet: withSettlement("due") }).html).toContain("Reste à régler");
+  });
+
+  it("un total nul garde le libellé du compte", () => {
+    const html = render({ sheet: withSettlement("free") }).html;
+
+    expect(html).toContain("Porté à votre compte");
+    expect(html).not.toContain("Réglé en ligne");
   });
 });
 

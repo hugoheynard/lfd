@@ -1544,6 +1544,7 @@ export {
   sheetCustomerSchema,
   sheetFulfillmentSchema,
   sheetMoneySchema,
+  settlementRegimeSchema,
   atelierSheetLineSchema,
   clientSheetLineSchema,
   staffSheetLineSchema,
@@ -1553,6 +1554,7 @@ export {
   orderSheetSchema,
 } from "./order-sheet.js";
 export type {
+  SettlementRegime,
   SheetAudience,
   SheetContact,
   SheetCustomer,

@@ -9,6 +9,7 @@ import {
 
 import { SELF_SERVICE_PASSWORD_TICKET_TTL_SECONDS } from "../identity/auth0-identity.gateway.js";
 import { fill, mailCopyOf } from "./copy/mail-copy.js";
+import type { OrderSettlementCopy } from "./copy/mail-copy.model.js";
 import {
   renderDeliveryEnRouteMail,
   type DeliveryEnRouteMailData,
@@ -381,7 +382,7 @@ function money(cents: number, locale: ContentLocale): string {
 function recapRows(
   sheet: ClientSheet,
   locale: ContentLocale,
-  settlement: "paid" | "due" | "account",
+  settlement: keyof OrderSettlementCopy,
 ): readonly LayoutRow[] {
   const copy = mailCopyOf(locale).orderPlaced;
   const pieces = sheet.lines.reduce((sum, line) => sum + line.quantity, 0);
@@ -412,15 +413,14 @@ function recapRows(
 }
 
 /**
- * Le régime de règlement, **déduit de la feuille** et non passé en paramètre.
+ * Le régime de la feuille, ramené aux trois libellés du courriel.
  *
- * ⚠️ Déduction volontairement grossière tant que la feuille ne porte pas le
- * `paymentStatus` : un total nul ou une commande à terme se lisent pareil. Le
- * jour où la feuille le portera, cette fonction disparaîtra — elle est ici pour
- * qu'on la trouve, pas pour durer.
+ * `free` (total nul) garde le libellé qu'il avait avant que la feuille porte
+ * le régime : celui du compte (décision du 2026-10-08, lot F5-0). Le régime,
+ * lui, n'est plus deviné — la feuille le porte, calculé une fois côté commande.
  */
-function settlementOf(sheet: ClientSheet): "paid" | "due" | "account" {
-  return sheet.money.totalCents === 0 ? "account" : "paid";
+function settlementCopyKeyOf(sheet: ClientSheet): keyof OrderSettlementCopy {
+  return sheet.money.settlement === "free" ? "account" : sheet.money.settlement;
 }
 
 /**
@@ -521,7 +521,7 @@ export function b2bMailTemplates(brand: MailBranding): TemplateRegistry<B2bMails
     "customer.delivery-en-route": (data) => renderDeliveryEnRouteMail(data, customerMail),
     "customer.order-placed": (data) => {
       const copy = mailCopyOf(data.locale).orderPlaced;
-      const settlement = settlementOf(data.sheet);
+      const settlement = settlementCopyKeyOf(data.sheet);
       const showQr = data.handoverToken !== null && data.handoverUrl !== "";
       return {
         subject: sanitiseSubject(fill(copy.subject, { ref: data.sheet.reference })),

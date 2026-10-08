@@ -23,6 +23,10 @@ import type { Prisma } from "../../../platform/database/client/client.js";
  * seulement si** la commande a été passée au compte. `company_id IS NOT NULL`
  * en découle — le compte se refuse à qui n'a pas de société.
  *
+ * Les deux premiers critères sont la traduction SQL du régime `account` de
+ * `settlementRegimeOf` (`b2b/orders/domain/services/settlement-regime.ts`),
+ * que la fiche de commande et les courriels lisent. Les deux changent ensemble.
+ *
  * ⚠️ Le terme mensuel de la société n'est **délibérément pas** consulté. Ce qui
  * rend une commande prélevable est la décision prise à SA passation, que la
  * commande porte déjà. Évaluer le crédit de la société à la clôture ferait

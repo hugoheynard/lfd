@@ -140,12 +140,12 @@ s'ils doivent l'être un jour, ils liront l'arrêté.
 
 ## 9. Les lots
 
-| Lot      | Contenu                                                                                          |
-| -------- | ------------------------------------------------------------------------------------------------ |
-| **F6-0** | tester le Schematron EN 16931 et le validateur retenu ; trancher Q1                              |
-| **F6**   | montant de ligne repris des bons, ou une ligne par ligne de bon ; simulateur ajusté              |
-| **F5-0** | 🟡 2026-10-08 : régime nommé (`settlementRegimeOf`) ; fiche et e-mails en attente (contrat zod)  |
-| **F5**   | toutes les surfaces du § 5 en HT pour un client au compte — après facture et avis de prélèvement |
+| Lot      | Contenu                                                                                                                  |
+| -------- | ------------------------------------------------------------------------------------------------------------------------ |
+| **F6-0** | tester le Schematron EN 16931 et le validateur retenu ; trancher Q1                                                      |
+| **F6**   | montant de ligne repris des bons, ou une ligne par ligne de bon ; simulateur ajusté                                      |
+| **F5-0** | ✅ 2026-10-08 : `settlementRegimeOf` (paid/due/account/free) porté par `money.settlement` de la fiche ; e-mails corrigés |
+| **F5**   | toutes les surfaces du § 5 en HT pour un client au compte — après facture et avis de prélèvement                         |
 
 F5-0 se bâtit tout de suite : il corrige un libellé faux aujourd'hui.
 

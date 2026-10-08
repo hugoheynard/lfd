@@ -130,6 +130,16 @@ describe("la feuille du client", () => {
     expect(sheet.money.subtotalCents).toBe(128_460);
   });
 
+  it("porte le régime de règlement, calculé de la commande", () => {
+    expect(clientSheetOf(order()).money.settlement).toBe("paid");
+    expect(clientSheetOf(order({ paymentStatus: "not_required" })).money.settlement).toBe(
+      "account",
+    );
+    expect(
+      clientSheetOf(order({ paymentStatus: "not_required", totalCents: 0 })).money.settlement,
+    ).toBe("free");
+  });
+
   it("laisse sortir le SKU, mais NI le tarif d'entrée NI le nom de l'étage", () => {
     // 🔴 Ce cas refusait AUSSI le SKU jusqu'au 2026-09-07. Le bon de commande
     // dessiné lui donne une colonne, sur décision explicite.
