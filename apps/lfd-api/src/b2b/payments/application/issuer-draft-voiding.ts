@@ -82,7 +82,7 @@ export class IssuerDraftVoiding extends IssuedDraftMandates {
 
   /**
    * Purge la pièce d'un brouillon révoqué, **relu après la transaction** du
-   * réglage (plan `documentation/comptabilite/mandat/plan-restes-du-mandat.md` §7 #10).
+   * réglage (plan `documentation/comptabilite/mandat/restes-du-mandat.md` #10).
    *
    * Relu plutôt que transporté par `VoidedDraftMandate` : ce type appartient à
    * la comptabilité, et y faire passer une clé de stockage lui apprendrait un

@@ -166,7 +166,7 @@ describe("S3DocumentStore — l'ABSENCE n'est pas une panne", () => {
 
 /**
  * La suppression sert la purge des scans jamais valides (plan
- * `plan-restes-du-mandat.md` §4) : elle part APRÈS une transaction validée, et
+ * `restes-du-mandat.md`) : elle part APRÈS une transaction validée, et
  * doit pouvoir se rejouer sans lever sur un travail déjà fait.
  */
 describe("S3DocumentStore — la suppression est idempotente", () => {

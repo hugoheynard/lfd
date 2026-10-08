@@ -84,7 +84,7 @@ export interface LegalEntitySnapshot {
    * ⚠️ **L'agrégat le LIT, il ne l'écrit jamais** : aucune méthode ne le pose, et
    * `save` ne réécrit pas la colonne. Une entité chargée avant une frappe et
    * sauvée après ne peut donc pas effacer le verrou (plan
-   * `plan-restes-du-mandat.md` §7 #6).
+   * `restes-du-mandat.md` #6).
    */
   readonly firstMandateIssuedAt: Date | null;
   readonly preNotificationDays: number;

@@ -1,6 +1,6 @@
 /**
  * E2E du **verrou du créancier imprimé** — plan
- * `documentation/comptabilite/mandat/plan-restes-du-mandat.md` §3, §7 #6 et §8 (lot B).
+ * `documentation/comptabilite/mandat/restes-du-mandat.md` #6 et §8 (lot B).
  *
  * Ce que ces e2e éprouvent et qu'aucun test unitaire ne peut prouver :
  *
@@ -165,7 +165,7 @@ describe("Le verrou du créancier imprimé", () => {
   });
 
   /**
-   * 🔴 Régression prévenue (plan `plan-restes-du-mandat.md` §7 #6) : `save`
+   * 🔴 Régression prévenue (plan `restes-du-mandat.md` #6) : `save`
    * réécrivait toutes les colonnes. Un geste staff qui avait chargé l'entité
    * AVANT une frappe concurrente la sauvait APRÈS, et remettait le verrou à
    * `null` — le créancier imprimé redevenait corrigeable sous un mandat frappé.

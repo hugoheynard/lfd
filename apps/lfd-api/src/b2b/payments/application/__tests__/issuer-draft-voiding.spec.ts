@@ -154,7 +154,7 @@ describe("IssuerDraftVoiding — les brouillons d'un émetteur deviennent caducs
     ).resolves.toBeUndefined();
   });
 
-  /** Plan `plan-restes-du-mandat.md` §7 #10 : la purge part de l'annonce, après la transaction. */
+  /** Plan `restes-du-mandat.md` #10 : la purge part de l'annonce, après la transaction. */
   it("ne supprime aucune pièce DANS la transaction du réglage", async () => {
     const draft = mandate({ id: "mdt_1", proofStorageKey: PROOF_KEY, proofFileName: "scan.pdf" });
     const h = harness([draft]);

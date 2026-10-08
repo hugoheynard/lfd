@@ -10,7 +10,7 @@ import { BusinessError } from "../../../../platform/shared/errors/app-error.js";
  *
  * Refuser plutôt qu'écraser : le cas qui a motivé la condition est un redépôt
  * concurrent d'une signature, qui aurait fait purger la pièce du mandat qu'on
- * venait d'activer (plan `documentation/comptabilite/mandat/plan-restes-du-mandat.md`
+ * venait d'activer (plan `documentation/comptabilite/mandat/restes-du-mandat.md`
  * §7 #3).
  */
 export class MandateProofChangedError extends BusinessError {

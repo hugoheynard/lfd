@@ -8,7 +8,7 @@ const REVISION_LENGTH = 16;
  * stockage, vide quand aucune pièce n'est déposée.
  *
  * Elle existe pour que la signature dise **quelle pièce a été relue** (plan
- * `documentation/comptabilite/mandat/plan-restes-du-mandat.md` §7 #9) : un scan remplacé
+ * `documentation/comptabilite/mandat/restes-du-mandat.md` #9) : un scan remplacé
  * entre l'ouverture de la fiche et la déclaration de signature activerait sinon
  * un mandat sur un papier que personne n'a regardé.
  *

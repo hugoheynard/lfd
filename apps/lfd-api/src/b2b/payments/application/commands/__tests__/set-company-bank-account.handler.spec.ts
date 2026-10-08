@@ -274,7 +274,7 @@ describe("SetCompanyBankAccountHandler", () => {
   });
 
   /**
-   * Décidé par Hugo le 2026-09-15 (plan `plan-restes-du-mandat.md` §8) : le staff
+   * Décidé par Hugo le 2026-09-15 (plan `restes-du-mandat.md`) : le staff
    * est refusé comme le client sous un mandat actif, tant que l'amendement
    * attend la banque. ⚠️ Ce cas affirmait l'inverse — « ne touche PAS au mandat
    * actif » en laissant passer l'écriture — quand il n'avait aucun mécanisme.

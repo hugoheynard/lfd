@@ -105,7 +105,7 @@ describe("attachProofToDraft — le scan remplacé d'un brouillon est purgé", (
 
 describe("attachProofToDraft — l'écriture de la pièce est conditionnelle", () => {
   /**
-   * Régression (plan `plan-restes-du-mandat.md` §7 #3) : `save` écrivait la
+   * Régression (plan `restes-du-mandat.md` #3) : `save` écrivait la
    * pièce sans condition. Un client qui redéposait pendant que le staff
    * signait réécrivait le brouillon, puis la purge de l'ancienne clé détruisait
    * le scan du mandat qu'on venait d'activer.

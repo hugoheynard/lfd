@@ -395,7 +395,7 @@ describe('section Moyens de paiement — le mandat', () => {
     });
 
     /**
-     * Plan `plan-restes-du-mandat.md` §7 #9 : sans ce refus, le staff activait un
+     * Plan `restes-du-mandat.md` #9 : sans ce refus, le staff activait un
      * mandat sur un scan remplacé entre-temps, qu'il n'avait jamais regardé.
      */
     it('sur une pièce remplacée entre-temps, le dit clairement et relit la section', async () => {

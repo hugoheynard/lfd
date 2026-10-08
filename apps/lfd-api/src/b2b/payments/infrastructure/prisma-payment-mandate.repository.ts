@@ -164,7 +164,7 @@ export class PrismaPaymentMandateRepository extends PaymentMandateRepository {
    * Écrite sans condition, elle laissait une signature concurrente d'un redépôt
    * réécrire l'ancienne clé par-dessus la nouvelle — et la purge de l'ancienne,
    * qui suit le dépôt, détruisait alors la preuve du mandat activé (plan
-   * `documentation/comptabilite/mandat/plan-restes-du-mandat.md` §7 #3). Le `WHERE`
+   * `documentation/comptabilite/mandat/restes-du-mandat.md` #3). Le `WHERE`
    * sur la clé chargée fait échouer l'un des deux gestes, jamais les deux à
    * moitié : Postgres réévalue la condition après le verrou de ligne.
    *

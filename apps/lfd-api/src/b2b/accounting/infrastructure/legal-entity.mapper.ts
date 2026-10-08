@@ -166,7 +166,7 @@ function toSnapshot(row: LegalEntityRow, cipher: FieldCipher): LegalEntitySnapsh
  * puisque la lecture prend le scellé d'abord, et supprimée au palier 3.
  *
  * 🔴 **N'écrit pas `first_mandate_issued_at`** (depuis le 2026-09-15, plan
- * `plan-restes-du-mandat.md` §7 #6). Le verrou n'a qu'un auteur,
+ * `restes-du-mandat.md` #6). Le verrou n'a qu'un auteur,
  * `FirstMandateLedger`, qui l'écrit sous condition dans la transaction de la
  * frappe. S'il figurait ici, un geste staff qui a chargé l'entité AVANT une
  * frappe concurrente le remettrait à `null` en sauvant — et le créancier

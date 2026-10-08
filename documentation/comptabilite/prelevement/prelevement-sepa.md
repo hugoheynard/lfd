@@ -361,17 +361,17 @@ résument dans `RmtInf/Ustrd`, borné à 140 caractères — donc « Commandes d
 
 ### Ce qu'on sait remplir — au 2026-09-12 au soir
 
-| Champ XML                                          | Source                                                                                                                       | État |
-| -------------------------------------------------- | ---------------------------------------------------------------------------------------------------------------------------- | ---- |
-| `Cdtr/Nm`, `CdtrAcct/Id/IBAN`, `CdtrSchmeId` (ICS) | `LegalEntity`                                                                                                                | ✅   |
-| `CdtrAgt/FinInstnId/BIC`                           | `LegalEntity.creditorBic`                                                                                                    | ✅   |
-| `Dbtr/Nm`                                          | `Company`                                                                                                                    | ✅   |
-| `DbtrAcct/Id/IBAN`                                 | `CompanyBankAccount`, descellé à la lecture                                                                                  | ✅   |
-| `MndtRltdInf/MndtId`                               | `PaymentMandate.reference` (la RUM)                                                                                          | ✅   |
-| `MndtRltdInf/DtOfSgntr`                            | `PaymentMandate.acceptedAt` (date du papier), jour local de Paris — depuis le 2026-09-15                                     | ✅   |
-| `MndtRltdInf/AmdmntInd`                            | `false` en dur — amendement non écrit, **différé jusqu'à la réponse de la banque** (`../mandat/plan-restes-du-mandat.md` §8) | ⚠️   |
-| `ReqdColltnDt`, `InstdAmt`, `CtrlSum`, `NbOfTxs`   | le cycle, la somme du mois                                                                                                   | ✅   |
-| `EndToEndId`                                       | cycle + rang dans le lot                                                                                                     | ✅   |
+| Champ XML                                          | Source                                                                                                               | État |
+| -------------------------------------------------- | -------------------------------------------------------------------------------------------------------------------- | ---- |
+| `Cdtr/Nm`, `CdtrAcct/Id/IBAN`, `CdtrSchmeId` (ICS) | `LegalEntity`                                                                                                        | ✅   |
+| `CdtrAgt/FinInstnId/BIC`                           | `LegalEntity.creditorBic`                                                                                            | ✅   |
+| `Dbtr/Nm`                                          | `Company`                                                                                                            | ✅   |
+| `DbtrAcct/Id/IBAN`                                 | `CompanyBankAccount`, descellé à la lecture                                                                          | ✅   |
+| `MndtRltdInf/MndtId`                               | `PaymentMandate.reference` (la RUM)                                                                                  | ✅   |
+| `MndtRltdInf/DtOfSgntr`                            | `PaymentMandate.acceptedAt` (date du papier), jour local de Paris — depuis le 2026-09-15                             | ✅   |
+| `MndtRltdInf/AmdmntInd`                            | `false` en dur — amendement non écrit, **différé jusqu'à la réponse de la banque** (`../mandat/restes-du-mandat.md`) | ⚠️   |
+| `ReqdColltnDt`, `InstdAmt`, `CtrlSum`, `NbOfTxs`   | le cycle, la somme du mois                                                                                           | ✅   |
+| `EndToEndId`                                       | cycle + rang dans le lot                                                                                             | ✅   |
 
 Les deux tables du débiteur appartiennent à `payments` : le lot les lit par le
 port `DebtorMandateReader`, déclaré par la comptabilité et implémenté côté
@@ -416,7 +416,7 @@ déguiserait en compte.
 la frappe, avec un `PmtInf` par séquence présente. `FRST` n'est jamais écrit.
 Le CFONB impose `FRST` et `OrgnlDbtrAgt = SMNDA` après un changement de banque
 du débiteur : ni l'un ni l'autre n'est écrit, l'amendement est **différé jusqu'à
-la réponse de la banque** (`../mandat/plan-restes-du-mandat.md` §8), et l'historique des
+la réponse de la banque** (`../mandat/restes-du-mandat.md`), et l'historique des
 changements de compte que la norme exige n'est pas conservé.
 
 ### Les pièges qui font rejeter un fichier

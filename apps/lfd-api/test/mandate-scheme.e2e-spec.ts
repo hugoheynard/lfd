@@ -227,7 +227,7 @@ describe("PUT mandate-scheme — la bascule", () => {
   });
 
   /**
-   * Plan `documentation/comptabilite/mandat/plan-restes-du-mandat.md` §4 et §7 #10 : la
+   * Plan `documentation/comptabilite/mandat/restes-du-mandat.md` et §7 #10 : la
    * pièce d'un brouillon rendu caduc par l'émetteur est purgée APRÈS la
    * transaction du réglage ; celle d'un mandat signé reste.
    */

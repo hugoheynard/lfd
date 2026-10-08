@@ -54,7 +54,7 @@ describe("legalEntityColumns", () => {
     // faire passer.
     //
     // `firstMandateIssuedAt` sort aussi, et c'est une EXCLUSION voulue, pas un
-    // oubli (plan `plan-restes-du-mandat.md` §7 #6, 2026-09-15) : le verrou n'a
+    // oubli (plan `restes-du-mandat.md` #6, 2026-09-15) : le verrou n'a
     // qu'un auteur, `FirstMandateLedger`, qui l'écrit sous condition dans la
     // transaction de la frappe. Réécrit par `save`, il serait remis à `null` par
     // tout geste staff ayant chargé l'entité avant une frappe concurrente.
@@ -102,7 +102,7 @@ describe("legalEntityColumns", () => {
   });
 
   /**
-   * 🔴 Régression prévenue (plan `plan-restes-du-mandat.md` §7 #6) : `save`
+   * 🔴 Régression prévenue (plan `restes-du-mandat.md` #6) : `save`
    * réécrivait toute la ligne, verrou compris. Une entité chargée avant la
    * frappe et sauvée après effaçait `first_mandate_issued_at`.
    */

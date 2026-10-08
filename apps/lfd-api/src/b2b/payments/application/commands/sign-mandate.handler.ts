@@ -43,7 +43,7 @@ import { mandateCompanyOf } from "../mandate-journal-names.js";
  * ## La pièce relue (depuis le 2026-09-15)
  *
  * La commande porte la `proofRevision` que l'écran a lue, et l'agrégat refuse
- * si la pièce a changé depuis (plan `plan-restes-du-mandat.md` §7 #9). La
+ * si la pièce a changé depuis (plan `restes-du-mandat.md` #9). La
  * fenêtre entre ce contrôle et l'écriture est fermée en base : `save` est
  * conditionné à la pièce chargée, un dépôt concurrent fait donc échouer la
  * signature plutôt que de passer dessous.

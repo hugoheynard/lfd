@@ -2,7 +2,7 @@
 
 > Ouvert le 2026-09-15. Les trois autres restes de la frappe — `DtOfSgntr`, le
 > verrou du créancier imprimé, la purge des pièces jamais signées — sont
-> construits : [`plan-restes-du-mandat.md`](plan-restes-du-mandat.md).
+> construits : [`restes-du-mandat.md`](restes-du-mandat.md).
 
 ## Ce qui manque
 

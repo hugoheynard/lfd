@@ -63,7 +63,7 @@ export interface RecordBankAccountDeps extends DraftVoidingDeps, MandateBellDeps
  * Ce cas n'atteint pas cette fonction : les deux appelants refusent sous un
  * mandat actif (`BankAccountBoundToActiveMandateError`, le staff depuis le
  * 2026-09-15). L'amendement est différé jusqu'à la réponse de la banque (plan
- * `documentation/comptabilite/mandat/plan-restes-du-mandat.md` §8).
+ * `documentation/comptabilite/mandat/restes-du-mandat.md`).
  */
 export async function recordCompanyBankAccount(
   companyId: string,

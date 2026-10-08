@@ -142,7 +142,7 @@ function build(
 
 describe("MintMandateHandler — frapper sans signer", () => {
   /**
-   * Plan `plan-restes-du-mandat.md` §3 et §8 (lot B) : le verrou du créancier
+   * Plan `restes-du-mandat.md` et §8 (lot B) : le verrou du créancier
    * imprimé et le mandat s'écrivent ensemble, ou pas du tout. Hors de la
    * transaction, un brouillon pourrait exister sous un créancier encore
    * corrigeable.

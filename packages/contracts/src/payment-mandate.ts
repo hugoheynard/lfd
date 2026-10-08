@@ -109,7 +109,7 @@ export interface PaymentMandateView {
   readonly proofFileName: string;
   /**
    * La **révision** de la pièce déposée : une empreinte opaque, vide sans pièce.
-   * Ajoutée le 2026-09-15 (plan `documentation/comptabilite/mandat/plan-restes-du-mandat.md`
+   * Ajoutée le 2026-09-15 (plan `documentation/comptabilite/mandat/restes-du-mandat.md`
    * §7 #9).
    *
    * L'écran la renvoie telle quelle en déclarant le mandat signé : le serveur

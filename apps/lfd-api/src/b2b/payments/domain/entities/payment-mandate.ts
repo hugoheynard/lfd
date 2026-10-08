@@ -266,7 +266,7 @@ export class PaymentMandate {
       throw new MandateUnprovenError();
     }
     // Depuis le 2026-09-15 : on active sur la pièce RELUE, pas sur celle que la
-    // base porte au moment du clic (plan `plan-restes-du-mandat.md` §7 #9).
+    // base porte au moment du clic (plan `restes-du-mandat.md` #9).
     if (proofRevision !== proofRevisionOf(this.proofValue.storageKey)) {
       throw new MandateProofRevisionStaleError();
     }
@@ -344,7 +344,7 @@ export class PaymentMandate {
   /**
    * La clé de la pièce **qu'on a le droit de détruire**, ou `null`.
    *
-   * Décidé par Hugo le 2026-09-15 (plan `plan-restes-du-mandat.md` §4 et §7
+   * Décidé par Hugo le 2026-09-15 (plan `restes-du-mandat.md` et §7
    * #8) : seul un scan qui n'a **jamais** prouvé un consentement se supprime —
    * celui d'un brouillon qu'on remplace, ou d'un brouillon devenu caduc. Un
    * mandat qui a été signé, même révoqué depuis, garde sa pièce : c'est elle

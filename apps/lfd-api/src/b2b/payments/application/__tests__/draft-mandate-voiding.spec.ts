@@ -86,7 +86,7 @@ describe("writeVoidingDraft — la pièce du brouillon devenu caduc", () => {
 });
 
 describe("voidDrafts — la transaction n'est pas la sienne", () => {
-  /** Plan `plan-restes-du-mandat.md` §7 #10 : la purge part de l'annonce, jamais d'ici. */
+  /** Plan `restes-du-mandat.md` #10 : la purge part de l'annonce, jamais d'ici. */
   it("rend les brouillons révoqués sans rien supprimer", async () => {
     const h = harness();
     const draft = mandate({ proofStorageKey: PROOF_KEY, proofFileName: "scan.pdf" });

@@ -98,7 +98,7 @@ export abstract class PaymentMandateRepository {
    * 🔴 Conditionnée à la pièce CHARGÉE (depuis le 2026-09-15) : si un dépôt est
    * passé entre la lecture et l'écriture, rien n'est écrit. Sans cette
    * condition, une signature concurrente d'un redépôt activait le mandat sur
-   * un scan que personne n'avait relu (plan `plan-restes-du-mandat.md` §7 #3, #9).
+   * un scan que personne n'avait relu (plan `restes-du-mandat.md` #3, #9).
    *
    * @throws {MandateProofChangedError} la pièce a changé depuis la lecture.
    */
@@ -114,7 +114,7 @@ export abstract class PaymentMandateRepository {
    * ce qui manque est de le tenir **au moment de l'écriture**. Un
    * `load`→`save` ne le peut pas : entre les deux, une signature peut passer,
    * et la purge de l'ancienne clé détruirait alors la preuve du mandat activé
-   * (plan `plan-restes-du-mandat.md` §7 #3).
+   * (plan `restes-du-mandat.md` #3).
    *
    * @throws {MandateProofChangedError} zéro ligne écrite : la pièce a changé,
    *   ou le mandat n'est plus un brouillon.

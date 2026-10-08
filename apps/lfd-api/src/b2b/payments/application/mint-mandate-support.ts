@@ -133,7 +133,7 @@ async function mintPreconditions(deps: MintMandateDeps, companyId: string): Prom
  * tout dans la même transaction.
  *
  * 🔴 Le verrou part avec le mandat, ou pas du tout (plan
- * `plan-restes-du-mandat.md` §3) : un brouillon écrit sans lui laisserait
+ * `restes-du-mandat.md`) : un brouillon écrit sans lui laisserait
  * corriger le nom du créancier sous un papier déjà imprimable. Le port est
  * idempotent, donc la seconde frappe ne déplace pas le moment du gel. Un seul
  * instant pour la RUM et le verrou : les deux disent la même frappe.

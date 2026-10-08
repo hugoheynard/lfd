@@ -203,7 +203,7 @@ describe("SignMandateHandler", () => {
   });
 
   /**
-   * Plan `plan-restes-du-mandat.md` §7 #9 : le scan a été remplacé entre
+   * Plan `restes-du-mandat.md` #9 : le scan a été remplacé entre
    * l'ouverture de la fiche et la déclaration de signature. Activer sur une
    * pièce que personne n'a relue est refusé, et rien ne s'écrit.
    */

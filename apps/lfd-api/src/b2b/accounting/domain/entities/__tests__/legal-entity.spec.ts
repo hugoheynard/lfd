@@ -411,7 +411,7 @@ describe("LegalEntity — le créancier imprimé gèle au premier mandat", () =>
   /**
    * L'entité telle que la relit la base après une frappe. L'agrégat ne pose plus
    * le verrou lui-même : `FirstMandateLedger` l'écrit en base, sous condition,
-   * dans la transaction de la frappe (plan `plan-restes-du-mandat.md` §7 #6).
+   * dans la transaction de la frappe (plan `restes-du-mandat.md` #6).
    * Son idempotence s'éprouve donc en e2e, là où elle vit.
    */
   function frozen(entity: LegalEntity): LegalEntity {

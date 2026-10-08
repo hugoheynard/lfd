@@ -56,7 +56,7 @@ import { BankAccountService } from '../bank-account/bank-account.service';
  *
  * Le serveur refuse au staff, comme au client, de remplacer le RIB d'une
  * société dont le mandat est actif (`BankAccountBoundToActiveMandateError`,
- * plan `documentation/comptabilite/mandat/plan-restes-du-mandat.md` §8) : le papier
+ * plan `documentation/comptabilite/mandat/restes-du-mandat.md`) : le papier
  * signé nomme l'ancien compte, et l'amendement sous la même RUM attend la
  * réponse de la banque. Le formulaire se désarme donc, et dit le seul geste de
  * sortie — révoquer, puis frapper un mandat neuf sur le nouveau RIB.

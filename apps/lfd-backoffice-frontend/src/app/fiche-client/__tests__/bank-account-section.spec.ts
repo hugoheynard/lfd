@@ -261,7 +261,7 @@ describe('RIB du client — ce que la fiche montre', () => {
   });
 
   /**
-   * Plan `plan-restes-du-mandat.md` §8 : le staff est refusé comme le client
+   * Plan `restes-du-mandat.md` : le staff est refusé comme le client
    * quand il remplace le RIB sous un mandat actif. L'écran le dit avant le geste.
    */
   describe('sous un mandat actif', () => {

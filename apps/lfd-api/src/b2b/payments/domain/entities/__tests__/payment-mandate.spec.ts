@@ -368,7 +368,7 @@ describe("PaymentMandate — la révision de la pièce relue", () => {
 });
 
 /**
- * Décision de Hugo du 2026-09-15 (plan `plan-restes-du-mandat.md` §4) : seul un
+ * Décision de Hugo du 2026-09-15 (plan `restes-du-mandat.md`) : seul un
  * scan qui n'a jamais prouvé de consentement se détruit.
  */
 describe("PaymentMandate — la pièce qu'on a le droit de purger", () => {

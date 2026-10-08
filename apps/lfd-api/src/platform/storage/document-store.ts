@@ -70,7 +70,7 @@ export abstract class DocumentStore {
    * Idempotente parce que ses appelants la lancent APRÈS une transaction
    * validée, sans pouvoir la rejouer dans la même unité : une absence n'y dit
    * rien d'anormal, elle dit que le travail est fait. Une panne, elle, lève —
-   * l'appelant décide s'il la tolère (plan `documentation/comptabilite/mandat/plan-restes-du-mandat.md` §4).
+   * l'appelant décide s'il la tolère (plan `documentation/comptabilite/mandat/restes-du-mandat.md`).
    *
    * @throws {DocumentStorageUnavailableError} stockage non configuré ou en échec.
    */

@@ -45,7 +45,7 @@ plans, ses docs d'état et ses todos (les todos vivent **ici** et non dans
 | [`mandat/rib-client.md`](mandat/rib-client.md)                                           | ✅ doc d'état — le client voit et saisit le RIB de sa société ; refusé si un mandat est actif           |
 | [`mandat/plan-mandat-client.md`](mandat/plan-mandat-client.md)                           | ✅ en production — le mandat côté client, derrière le drapeau `customerMandate`                         |
 | [`mandat/mentions-obligatoires-du-mandat.md`](mandat/mentions-obligatoires-du-mandat.md) | ✅ doc d'état, en production — SIREN, forme juridique du titulaire, frappe refusée sans ses mentions    |
-| [`mandat/plan-restes-du-mandat.md`](mandat/plan-restes-du-mandat.md)                     | 🟡 lots 1-3 construits — `DtOfSgntr`, verrou du créancier, purge ; amendement différé                   |
+| [`mandat/restes-du-mandat.md`](mandat/restes-du-mandat.md)                               | ✅ doc d'état — `DtOfSgntr`, verrou du créancier, purge ; amendement différé                            |
 | [`mandat/todo-mandat-restes-de-la-frappe.md`](mandat/todo-mandat-restes-de-la-frappe.md) | 🟡 l'amendement d'un mandat actif, différé jusqu'à la réponse de la banque                              |
 | [`mandat/todo-mandat-core-contre-b2b.md`](mandat/todo-mandat-core-contre-b2b.md)         | 🔴 libellé bancaire du mandat interentreprises, « 13 mois », second débit d'un ponctuel                 |
 | [`mandat/todo-rib-client-transmission.md`](mandat/todo-rib-client-transmission.md)       | 🔴 sécurité de la transmission de l'IBAN saisi par le client                                            |

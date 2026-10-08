@@ -261,7 +261,7 @@ const RIB = {
   countryCode: "FR",
 };
 
-/** Plan `documentation/comptabilite/mandat/plan-restes-du-mandat.md` §4 et §7 #3, #9. */
+/** Plan `documentation/comptabilite/mandat/restes-du-mandat.md` et §7 #3, #9. */
 describe("Mandat — la purge des pièces jamais valides", () => {
   it("purge le scan remplacé d'un brouillon, et l'écrit au journal", async () => {
     await seedMandate("draft");

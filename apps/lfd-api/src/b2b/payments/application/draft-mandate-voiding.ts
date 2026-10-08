@@ -59,7 +59,7 @@ export interface DraftVoidingTrigger {
  *
  * Après la validation, jamais dedans : un objet supprimé ne revient pas si la
  * transaction tombe. La purge ne lève pas — le RIB est écrit, le dire refusé
- * serait faux (plan `documentation/comptabilite/mandat/plan-restes-du-mandat.md` §4).
+ * serait faux (plan `documentation/comptabilite/mandat/restes-du-mandat.md`).
  * ⚠️ Elle suppose que cette fonction ouvre la transaction la plus externe ;
  * ses deux appelants sont des handlers sans unité de travail propre (vérifié
  * le 2026-09-15 : `recordCompanyBankAccount`, `recordMandateOptions`).
@@ -103,7 +103,7 @@ export async function writeVoidingDraft(
  * 🔴 **Ne purge rien**, et c'est la différence avec {@link writeVoidingDraft} :
  * la transaction n'est pas la sienne, elle n'est pas validée quand cette
  * fonction rend. La purge part de l'annonce qui suit la transaction de
- * l'appelant (plan `plan-restes-du-mandat.md` §7 #10).
+ * l'appelant (plan `restes-du-mandat.md` #10).
  *
  * @returns les brouillons révoqués, dont l'appelant purgera les pièces une
  *   fois sa transaction validée.

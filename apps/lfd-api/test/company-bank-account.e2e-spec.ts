@@ -150,7 +150,7 @@ describe("PUT /admin/companies/:id/bank-account", () => {
 /**
  * Sème un mandat en base, faute de porte d'entrée stable pour un ACTIF : la
  * signature réclame une pièce, et son contrat bouge avec la purge (plan
- * `plan-restes-du-mandat.md` §8, lot C). Ce qui est éprouvé ici est en AVAL —
+ * `restes-du-mandat.md`, lot C). Ce qui est éprouvé ici est en AVAL —
  * le refus du RIB —, donc la dette de `factories.ts` est acceptable.
  */
 async function seedMandate(status: "active" | "draft"): Promise<void> {
@@ -168,7 +168,7 @@ async function seedMandate(status: "active" | "draft"): Promise<void> {
 }
 
 /**
- * Décidé par Hugo le 2026-09-15 (plan `plan-restes-du-mandat.md` §8) : le staff
+ * Décidé par Hugo le 2026-09-15 (plan `restes-du-mandat.md`) : le staff
  * est refusé comme le client quand un mandat actif désigne le compte, tant que
  * l'amendement attend la réponse de la banque.
  */

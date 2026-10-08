@@ -53,7 +53,7 @@ export const PAYMENT_MANDATE_FACTS = {
   /**
    * Le scan d'un mandat **jamais signé** est détruit du stockage — remplacé sur
    * le brouillon, ou brouillon devenu caduc (plan
-   * `documentation/comptabilite/mandat/plan-restes-du-mandat.md` §4).
+   * `documentation/comptabilite/mandat/restes-du-mandat.md`).
    *
    * 🔴 Écrit **seulement après une suppression réussie**, et hors transaction :
    * la suppression ne se restaure pas, elle part donc après la validation. Un
