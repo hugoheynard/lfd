@@ -1,6 +1,6 @@
 # Un onglet apprend qu'une nouvelle version est en ligne
 
-> 📐 **Plan, rien de bâti** (2026-10-08, Hugo : « pour tous mes fronts, je ne
+> 📐 **Plan validé par Hugo le 2026-10-08, rien de bâti** (2026-10-08, Hugo : « pour tous mes fronts, je ne
 > devrais pas avoir un auto refresh quand je pousse une nouvelle version ? »).
 > Hors des quatre cas de `vitruve` (ni argent, ni migration, ni sécurité, ni
 > runbook) : affirmations vérifiées dans le dépôt le 2026-10-08.
@@ -99,10 +99,10 @@ ligne — Recharger » (bouton = `location.reload()`).
 - Taille : rien de `@lfd/contracts` au démarrage de la boutique (budget
   1,30 Mo).
 
-## 4. Questions à Hugo
+## 4. Décisions d'Hugo (2026-10-08)
 
-- **Q1.** Le bandeau sur « Ma tournée » seulement, ou aussi sur d'autres
-  écrans de saisie longue (colisage, chargement du véhicule) ? Proposé :
-  « Ma tournée » et le chargement, qui sont des écrans de terrain.
-- **Q2.** La boutique recharge à la navigation comme le back-office (le panier
-  vit côté serveur) ? Proposé : oui.
+- **Q1 — oui** : le bandeau sur « Ma tournée » et le chargement du véhicule
+  (`/coursier/**`), les deux écrans de terrain ; le colisage recharge à la
+  navigation comme le reste.
+- **Q2 — oui** : la boutique recharge à la navigation, le panier vit côté
+  serveur.

@@ -1,6 +1,6 @@
 # Décisions par défaut — livraison, à revoir avec Hugo
 
-> 🟠 **Prises par l'assistant le 2026-10-02**, à la demande d'Hugo : « transforme
+> ✅ **Revu entièrement par Hugo le 2026-10-08.** Prises par l'assistant le 2026-10-02, à la demande d'Hugo : « transforme
 > les points en affirmatives pour revoir ensemble ensuite ». **Aucune n'est
 > validée.** Chacune dit ce qui est bâti à partir d'elle, pour qu'un refus
 > sache quoi défaire. Le critère de choix : le geste le plus réversible, qui
@@ -20,6 +20,11 @@
 > ✅ **§ 3 et § 4 validés par Hugo le 2026-10-08** (l'ordre figé en route ;
 > les commandes rapportées, leur feuille de route, « Proposer » qui les
 > inclut).
+>
+> 🔁 **§ 6 revu par Hugo le 2026-10-08** : G5d et G5f gardés ; **G5a, G5b et
+> G5c changent** — le jeu devient un réglage, une pile peut monter sur un
+> passage de roue, une pile qui ne tient pas ne bloque plus les suivantes.
+> Plan : [`../chargement/plan-piles-au-sol-revues.md`](../chargement/plan-piles-au-sol-revues.md).
 
 ## 1. Le « + » choisit un bac (plan retiré le 2026-10-05, § 5)
 
