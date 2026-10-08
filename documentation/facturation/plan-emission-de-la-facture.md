@@ -148,7 +148,11 @@ document_key, sha256       ← posés UNE fois, après le rendu
   pièce (`H87`) partout tant qu'aucun produit ne se vend **au poids
   variable**. Un produit pesé à la vente demanderait une unité portée par
   la déclinaison et une quantité décimale — un chantier du catalogue, pas
-  de la facture.
+  de la facture. **Hugo : il y en aura, « mais pas tout de suite ».** La
+  facture porte donc dès E1 un code d'unité PAR LIGNE (`H87` aujourd'hui) et
+  une quantité qui admettra des décimales, pour qu'une ligne `KGM` n'impose
+  pas de changer la forme d'une pièce déjà émise ; la vente au poids reste
+  un chantier à part.
 
 ## 7. Questions à Hugo (et au cabinet)
 
