@@ -1,7 +1,9 @@
 # Les points de fidélité
 
-> État : **partiellement implémenté** au 2026-09-26. Le programme se **gagne**
-> et se **règle**, mais ne se **convertit** ni ne s'**utilise** encore (§8).
+> État : **implémenté pour les particuliers** (gain, conversion, usage — lots
+> A à E2, relus au § 8 le 2026-10-09) ; **fermé aux pros** (lot F, § 8). Ce
+> bandeau disait jusqu'au 2026-10-09 que le programme « ne se convertit ni ne
+> s'utilise encore » : périmé depuis le 2026-09-27.
 > Écrit à l'affirmative le 2026-09-26, chaque phrase confrontée au code ce
 > jour-là. Commits : `1057ecfa3` (grand livre, bons, réglage),
 > `b862ee9fb` (écran), `9f1ebf2c8` (crédit), `2fe402b2e` (passage de nuit).
