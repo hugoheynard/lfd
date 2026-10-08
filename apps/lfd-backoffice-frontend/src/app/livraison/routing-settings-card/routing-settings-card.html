@@ -72,6 +72,17 @@
             (valueChange)="safetyMargin.set($event)"
             data-safety-margin
           />
+          <fold-number-input
+            label="Jeu entre bacs (cm)"
+            hint="L’écart laissé entre deux piles au plan de chargement, pour sortir un bac de sa rangée."
+            integer
+            [value]="binGap()"
+            [min]="0"
+            [max]="10"
+            [readOnly]="!canWrite()"
+            (valueChange)="binGap.set($event)"
+            data-bin-gap
+          />
           <fold-listbox
             label="Proposer par défaut en"
             [options]="modeOptions"

@@ -86,6 +86,7 @@ export function sameSettings(
     a.maxRoundMinutes === b.maxRoundMinutes &&
     a.stopMinutes === b.stopMinutes &&
     a.safetyMarginMinutes === b.safetyMarginMinutes &&
+    a.binGapCm === b.binGapCm &&
     a.defaultMode === b.defaultMode &&
     a.multiplePassages === b.multiplePassages &&
     sameContainer(a.defaultContainer ?? null, b.defaultContainer ?? null)

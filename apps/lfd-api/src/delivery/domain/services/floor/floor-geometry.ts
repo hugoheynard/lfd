@@ -65,3 +65,34 @@ export function freeWidthMm(floor: FloorMm, fromMm: number, depthMm: number): nu
 export function stackLevels(floor: FloorMm, binOuterHeightMm: number, maxStack: number): number {
   return Math.min(maxStack, Math.floor(floor.heightMm / binOuterHeightMm));
 }
+
+/** Ce qu'une pile posée au-dessus d'un passage de roue peut monter (G-D2 bis). */
+export interface OverArchLevels {
+  /** `k₀ = ⌈hauteur du passage ÷ hauteur extérieure du bac⌉` : l'étage où elle commence, 0 = le sol. */
+  readonly fromLevel: number;
+  /** `étages − k₀` : ses bacs, au plus. */
+  readonly levels: number;
+}
+
+/**
+ * **La règle du dessus d'un passage**, UNE pour l'assistant d'achat
+ * (`maximizeFormat`) et le plan de chargement (`FloorPlacer`, G5b) : un bac
+ * qui monte au-dessus d'un passage commence à l'étage `k₀`, et sa pile en
+ * compte au plus `étages − k₀`. `null` quand rien n'y monte : pas de passage,
+ * hauteur non mesurée — on ne devine pas une hauteur —, ou aucun étage libre
+ * au-dessus.
+ *
+ * @param levels les étages d'une pile de ce bac (`stackLevels`).
+ */
+export function overArchLevels(
+  floor: FloorMm,
+  binOuterHeightMm: number,
+  levels: number,
+): OverArchLevels | null {
+  const archHeightMm = floor.wheelArches?.heightMm ?? null;
+  if (archHeightMm === null) {
+    return null;
+  }
+  const fromLevel = Math.ceil(archHeightMm / binOuterHeightMm);
+  return levels - fromLevel > 0 ? { fromLevel, levels: levels - fromLevel } : null;
+}

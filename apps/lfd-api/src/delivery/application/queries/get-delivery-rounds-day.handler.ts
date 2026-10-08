@@ -99,7 +99,7 @@ export class GetDeliveryRoundsDayHandler implements IQueryHandler<
     }
     const { settings } = await routingSettingsOf(this.settings);
     const orderIds = atDepot.flatMap((round) => round.stops.map((stop) => stop.orderId));
-    const { capacity, unknown } = await this.place.of(orderIds, settings.defaultContainer);
+    const { capacity, unknown } = await this.place.of(orderIds, settings);
     return new Map(
       atDepot.map((round) => [
         round.id,

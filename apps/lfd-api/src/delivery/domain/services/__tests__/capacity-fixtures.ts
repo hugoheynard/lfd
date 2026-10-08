@@ -1,3 +1,4 @@
+import { BIN_GAP_DEFAULT_CM } from "../../value-objects/bin-gap.js";
 import { CargoFloor } from "../../value-objects/cargo-floor.js";
 import type { CompositionCapacity } from "../capacity-guard.js";
 import type { PlanBin, PlanBinType } from "../loading-plan.js";
@@ -65,6 +66,7 @@ export function capacityOf(
     bins: new Map(
       Object.entries(bins).map(([orderId, count]) => [orderId, binsOf(orderId, count)]),
     ),
+    binGapCm: BIN_GAP_DEFAULT_CM,
   };
 }
 

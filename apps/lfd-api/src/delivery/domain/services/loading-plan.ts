@@ -1,5 +1,4 @@
 import type { BinHalf } from "../value-objects/bin-declaration.js";
-import { BIN_GAP_DEFAULT_CM } from "../value-objects/bin-gap.js";
 import type { CargoFloor } from "../value-objects/cargo-floor.js";
 import { FloorPlacer, type StackPlacement } from "./floor/place-stacks.js";
 import { physicalKey, Stacker, type StackingMode } from "./loading-stacker.js";
@@ -114,15 +113,26 @@ interface Placed {
  *   l'une sur l'autre dans une caisse de 140 cm. Un bac plus haut que la
  *   caisse ouvre une pile hors plancher (`floor_over`). Sans plancher connu,
  *   aucun plafond : `unknown_cargo` le dit déjà, et la garde le refuse.
+ * - Une pile posée au-dessus d'un passage de roue (G5b, 2026-10-08) ne monte
+ *   que de `étages − k₀` (`FloorPlacer.levelsOf` avec son index).
+ * - Une pile qui ne tient pas au sol sort seule (G5c, 2026-10-08) : les
+ *   suivantes se posent encore, et `floor_over` ne nomme que les arrêts des
+ *   piles sorties.
  *
  * @param stops les arrêts vivants dans l'ordre de passage, leurs bacs non annulés.
+ * @param gapCm le jeu entre bacs, lu des réglages du calcul (G5a, 2026-10-08) :
+ *   l'écran de chargement et la garde de « Proposer » posent avec le même.
  */
-export function planLoading(stops: readonly PlanStop[], vehicle: PlanVehicle): LoadingPlan {
-  const coherent = buildPlan(stops, vehicle, "coherent");
+export function planLoading(
+  stops: readonly PlanStop[],
+  vehicle: PlanVehicle,
+  gapCm: number,
+): LoadingPlan {
+  const coherent = buildPlan(stops, vehicle, gapCm, "coherent");
   if (vehicle.floor === null || offFloorBins(coherent) === 0) {
     return coherent;
   }
-  const compact = buildPlan(stops, vehicle, "compact");
+  const compact = buildPlan(stops, vehicle, gapCm, "compact");
   if (offFloorBins(compact) >= offFloorBins(coherent)) {
     return coherent;
   }
@@ -156,13 +166,14 @@ function offFloorBins(plan: LoadingPlan): number {
 function buildPlan(
   stops: readonly PlanStop[],
   vehicle: PlanVehicle,
+  gapCm: number,
   mode: StackingMode,
 ): LoadingPlan {
   const buckets = placeBins(stops);
   const placer =
     vehicle.floor === null
       ? null
-      : new FloorPlacer(vehicle.floor, BIN_GAP_DEFAULT_CM, vehicle.refrigeratedLiters !== null);
+      : new FloorPlacer(vehicle.floor, gapCm, vehicle.refrigeratedLiters !== null);
   const stacker = new Stacker(placer, mode);
   const steps: LoadingStep[] = [];
   for (let rank = stops.length - 1; rank >= 0; rank -= 1) {

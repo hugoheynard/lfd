@@ -1,4 +1,5 @@
 import { InvalidRoutingSettingError } from "../errors/delivery-routing-errors.js";
+import { BIN_GAP_DEFAULT_CM, BIN_GAP_MAX_CM, BIN_GAP_MIN_CM } from "./bin-gap.js";
 import { minutesOfDay } from "./clock-time.js";
 
 /**
@@ -39,6 +40,12 @@ export interface RoutingSettingsValues {
    * tournée dite « place non vérifiée ».
    */
   readonly defaultContainer: DefaultContainer | null;
+  /**
+   * Le jeu entre bacs du plan de chargement, en cm (G5a, Hugo 2026-10-08 :
+   * « ça doit être une donnée »). Il s'ajoute à l'empreinte de chaque pile ;
+   * bornes de `bin-gap.ts`, celles de l'assistant d'achat.
+   */
+  readonly binGapCm: number;
 }
 
 /** Un type de bac et un nombre : ce qu'occupe une commande dont on ne sait rien d'autre. */
@@ -110,6 +117,7 @@ export class RoutingSettings implements RoutingSettingsValues {
     multiplePassages: true,
     safetyMarginMinutes: 20,
     defaultContainer: null,
+    binGapCm: BIN_GAP_DEFAULT_CM,
   };
 
   private constructor(
@@ -122,6 +130,7 @@ export class RoutingSettings implements RoutingSettingsValues {
     readonly multiplePassages: boolean,
     readonly safetyMarginMinutes: number,
     readonly defaultContainer: DefaultContainer | null,
+    readonly binGapCm: number,
     /** Minutes depuis minuit de l'heure au plus tôt. */
     readonly earliestDepartureMinute: number,
   ) {}
@@ -152,6 +161,7 @@ export class RoutingSettings implements RoutingSettingsValues {
       );
     }
     const defaultContainer = defaultContainerOf(values.defaultContainer);
+    const gap = gapOf(values.binGapCm);
     return new RoutingSettings(
       values.detourPercent,
       values.averageSpeedKmh,
@@ -162,6 +172,7 @@ export class RoutingSettings implements RoutingSettingsValues {
       values.multiplePassages,
       values.safetyMarginMinutes,
       defaultContainer,
+      gap,
       earliest,
     );
   }
@@ -178,6 +189,7 @@ export class RoutingSettings implements RoutingSettingsValues {
       multiplePassages: this.multiplePassages,
       safetyMarginMinutes: this.safetyMarginMinutes,
       defaultContainer: this.defaultContainer,
+      binGapCm: this.binGapCm,
     };
   }
 }
@@ -204,4 +216,19 @@ function defaultContainerOf(container: DefaultContainer | null): DefaultContaine
     );
   }
   return { binTypeId: container.binTypeId, count };
+}
+
+/**
+ * Le jeu entre bacs, refusé hors de 0 à 10 cm avec la phrase des autres
+ * réglages (`binGapCm` lève une `InvalidBinGapError`, faite pour l'assistant).
+ *
+ * @throws {InvalidRoutingSettingError}
+ */
+function gapOf(value: number): number {
+  if (!Number.isInteger(value) || value < BIN_GAP_MIN_CM || value > BIN_GAP_MAX_CM) {
+    throw new InvalidRoutingSettingError(
+      `le jeu entre bacs tient entre ${String(BIN_GAP_MIN_CM)} et ${String(BIN_GAP_MAX_CM)} cm (saisi : ${String(value)}).`,
+    );
+  }
+  return value;
 }

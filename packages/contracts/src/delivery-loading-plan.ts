@@ -97,6 +97,20 @@ export interface DeliveryLoadingPlanFloorPlacementView {
   readonly depthCm: number;
   readonly widthCm: number;
   readonly orientation: "length" | "turned";
+  /**
+   * La pile est posée AU-DESSUS d'un passage de roue, pas au sol (G5b,
+   * 2026-10-08) : contre la paroi de ce flanc, à partir de l'étage
+   * `fromLevel` (0 = le sol), `levels` bacs au plus. Absent : au sol —
+   * facultatif pour qu'un écran d'avant G5b continue de lire le plan.
+   */
+  readonly overArch?: DeliveryLoadingPlanOverArchView;
+}
+
+/** Au-dessus de quel passage, et à partir de quel étage. */
+export interface DeliveryLoadingPlanOverArchView {
+  readonly side: "left" | "right";
+  readonly fromLevel: number;
+  readonly levels: number;
 }
 
 /**

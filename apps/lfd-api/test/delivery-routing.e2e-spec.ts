@@ -72,6 +72,7 @@ describe("les réglages du calcul (L7-C13, L7-C15)", () => {
       multiplePassages: true,
       safetyMarginMinutes: 20,
       defaultContainer: null,
+      binGapCm: 1,
       source: "default",
     });
 
@@ -80,6 +81,7 @@ describe("les réglages du calcul (L7-C13, L7-C15)", () => {
       averageSpeedKmh: 40,
       earliestDeparture: "05:30",
       safetyMarginMinutes: 30,
+      binGapCm: 4,
     };
     const { source: _source, ...payload } = posed;
     await admin(ctx).put(SETTINGS).send(payload).expect(204);
@@ -122,7 +124,35 @@ describe("les réglages du calcul (L7-C13, L7-C15)", () => {
     expect(jsonBody<{ message: string }>(margin).message).toContain(
       "la marge de sécurité avant la fin d'un créneau tient entre 0 et 90 minutes",
     );
+    const gap = await admin(ctx)
+      .put(SETTINGS)
+      .send({ ...valid, binGapCm: 11 })
+      .expect(400);
+    expect(jsonBody<{ message: string }>(gap).message).toContain(
+      "le jeu entre bacs tient entre 0 et 10 cm",
+    );
     expect(await ctx.prisma.deliveryRoutingSettings.count()).toBe(0);
+  });
+
+  it("le jeu entre bacs (G5a) : absent, la valeur posée est gardée", async () => {
+    const valid = {
+      earliestDeparture: "06:00",
+      maxRoundMinutes: 240,
+      stopMinutes: 5,
+      defaultMode: "insert",
+      multiplePassages: false,
+    };
+    await admin(ctx)
+      .put(SETTINGS)
+      .send({ ...valid, binGapCm: 0 })
+      .expect(204);
+    await admin(ctx)
+      .put(SETTINGS)
+      .send({ ...valid, stopMinutes: 6 })
+      .expect(204);
+
+    const view = jsonBody<DeliveryRoutingSettingsView>(await admin(ctx).get(SETTINGS).expect(200));
+    expect(view).toMatchObject({ binGapCm: 0, stopMinutes: 6 });
   });
 });
 

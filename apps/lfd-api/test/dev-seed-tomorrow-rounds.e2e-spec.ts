@@ -10,6 +10,7 @@
  */
 import type { DeliveryRoundProposalView, DevSeedReport } from "@lfd/contracts";
 
+import { BIN_GAP_DEFAULT_CM } from "../src/delivery/domain/value-objects/bin-gap.js";
 import { planLoading, type PlanStop } from "../src/delivery/domain/services/loading-plan.js";
 import { CargoFloor } from "../src/delivery/domain/value-objects/cargo-floor.js";
 import { FLEET } from "../src/dev/seeding/delivery-fleet.seed.js";
@@ -79,9 +80,13 @@ function mannesOnFloor(vehicleName: string): number {
         },
       ],
     }));
-    const plan = planLoading(stops, {
-      ...{ name: vehicleName, cargoLiters: floor.volumeLiters, refrigeratedLiters: null, floor },
-    });
+    const plan = planLoading(
+      stops,
+      {
+        ...{ name: vehicleName, cargoLiters: floor.volumeLiters, refrigeratedLiters: null, floor },
+      },
+      BIN_GAP_DEFAULT_CM,
+    );
     if (plan.warnings.some((warning) => warning.kind === "floor_over")) break;
     fits = count;
   }
@@ -139,9 +144,13 @@ describe("les tournées de demain du semis", () => {
    * Régression (2026-10-06) : le plan de chargement ignorait la hauteur de la
    * caisse et comptait dix-huit mannes à chaque camionnette. Deux mannes font
    * 1430 mm : seule la caisse de 145 cm les empile.
+   *
+   * G5b (2026-10-08) : dans cette caisse, une manne monte aussi au-dessus de
+   * chaque passage de roue (30 cm mesurés : k₀ = 1, 2 − 1 = 1 étage) — 18 + 2.
+   * Les caisses de 140 cm n'ont qu'un étage : rien au-dessus, 9 et 9.
    */
-  it("chaque camionnette porte ses mannes plafond compris : 18, 9 et 9", () => {
-    expect(FLEET.slice(0, 3).map((vehicle) => mannesOnFloor(vehicle.name))).toEqual([18, 9, 9]);
+  it("chaque camionnette porte ses mannes plafond compris : 20, 9 et 9", () => {
+    expect(FLEET.slice(0, 3).map((vehicle) => mannesOnFloor(vehicle.name))).toEqual([20, 9, 9]);
   });
 
   it(

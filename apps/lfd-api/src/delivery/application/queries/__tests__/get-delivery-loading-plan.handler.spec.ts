@@ -4,6 +4,8 @@ import {
   type RoundVehicleLoadRow,
 } from "../../../domain/ports/loading-plan.reader.js";
 import type { PlanBinType } from "../../../domain/services/loading-plan.js";
+import { RoutingSettings } from "../../../domain/value-objects/routing-settings.js";
+import { InMemoryRoutingSettings } from "../../commands/__tests__/routing-doubles.js";
 import { FixedDeliveryOrders } from "../../commands/__tests__/round-doubles.js";
 import { GetDeliveryLoadingPlanHandler } from "../get-delivery-loading-plan.handler.js";
 import { GetDeliveryLoadingPlanQuery } from "../get-delivery-loading-plan.query.js";
@@ -42,7 +44,10 @@ const VAN: RoundVehicleLoadRow = {
   wheelArches: null,
 };
 
-function handler(load: RoundVehicleLoadRow | null = VAN): GetDeliveryLoadingPlanHandler {
+function handler(
+  load: RoundVehicleLoadRow | null = VAN,
+  settings: RoutingSettings | null = null,
+): GetDeliveryLoadingPlanHandler {
   const round = roundRow("r1", [
     {
       orderId: "o1",
@@ -57,8 +62,16 @@ function handler(load: RoundVehicleLoadRow | null = VAN): GetDeliveryLoadingPlan
     new FixedLoading([round]),
     ORDERS,
     new FixedPlanReader(load),
+    new InMemoryRoutingSettings(settings),
   );
 }
+
+/** Un plancher taillé au bac `bin_m` et à 1 cm de jeu : 61 × 41 cm. */
+const SNUG: RoundVehicleLoadRow = {
+  cargo: { lengthCm: 61, widthCm: 41, heightCm: 100 },
+  refrigeratedLiters: null,
+  wheelArches: null,
+};
 
 describe("GetDeliveryLoadingPlanHandler", () => {
   it("rend le plan : ordre inverse, bacs annulés exclus, sec dérivé du véhicule", async () => {
@@ -77,6 +90,17 @@ describe("GetDeliveryLoadingPlanHandler", () => {
       coldOver: false,
     });
     expect(plan.warnings).toEqual([]);
+  });
+
+  it("pose les piles avec le jeu des réglages, pas une constante (G5a)", async () => {
+    const kinds = async (settings: RoutingSettings | null) =>
+      (await handler(SNUG, settings).execute(new GetDeliveryLoadingPlanQuery("r1"))).warnings.map(
+        (warning) => warning.kind,
+      );
+
+    expect(await kinds(null)).not.toContain("floor_over");
+    const wider = RoutingSettings.define({ ...RoutingSettings.DEFAULTS, binGapCm: 2 });
+    expect(await kinds(wider)).toContain("floor_over");
   });
 
   it("refuse une tournée inconnue (404)", async () => {

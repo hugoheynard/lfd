@@ -31,6 +31,7 @@ export class PrismaRoutingSettingsReader extends RoutingSettingsReader {
         safetyMarginMinutes: true,
         defaultBinTypeId: true,
         defaultBinCount: true,
+        binGapCm: true,
       },
     });
     if (row === null) {

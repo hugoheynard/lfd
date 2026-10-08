@@ -122,13 +122,21 @@ règle ci-dessus de savoir si sa rangée est fermée.
 - Une rangée a la profondeur de sa pile la plus profonde. Chaque pile prend le
   sens qui laisse le plus de largeur (à égalité, dans la longueur), sinon
   l'autre s'il est le seul à tenir.
-- Aucune pile sur un passage de roue. Une rangée qui touche les passages se
-  centre entre eux.
-- Dès qu'une pile sort, toutes les suivantes sortent aussi : chargées après
-  elle, elles seraient devant elle. **Sauf** une pile dont le bac est plus
-  haut que la caisse : elle sort du plancher **sans bloquer** les suivantes —
-  elle n'y entre pas du tout (`refuseTooTall`).
-- Le jeu entre bacs (1 cm, `BIN_GAP_DEFAULT_CM`) s'ajoute à l'empreinte.
+- Au sol, aucune pile sur un passage de roue : une rangée qui touche les
+  passages commence au bord du passage gauche.
+- **Au-dessus d'un passage** (G5b, 2026-10-08) : une pile qui ne tient plus
+  au sol de la rangée ouverte peut monter sur un passage dont la hauteur est
+  mesurée, contre la paroi, à partir de l'étage `k₀ = ⌈hauteur du passage ÷
+hauteur du bac⌉`, et `étages − k₀` bacs au plus — la règle de l'assistant
+  d'achat (`overArchLevels`). Son placement le dit (`overArch` : flanc, étage
+  de départ, étages). Sans hauteur mesurée, rien n'y monte.
+- **Une pile qui ne tient pas sort seule** (G5c, 2026-10-08) : les suivantes
+  essaient encore la rangée ouverte, puis une rangée neuve ; l'alerte
+  `floor_over` ne nomme que les piles sorties. Jusque-là, toutes les
+  suivantes sortaient avec elle.
+- Le jeu entre bacs s'ajoute à l'empreinte : c'est un réglage depuis le
+  2026-10-08 (`bin_gap_cm`, 0 à 10 cm, 1 par défaut), lu par l'écran de
+  chargement et par la garde de « Proposer ».
 - **Isothermes** : dans la caisse réfrigérée si le véhicule en a une (le froid
   reste compté en litres, sans position) ; sinon au sol, avec l'alerte
   `cold_bins_without_refrigeration`.

@@ -139,6 +139,7 @@ export function benchDay(seed: number, stopCount: number, zoned = false): BenchD
       ["v4", kangoo],
     ]),
     bins,
+    binGapCm: RoutingSettings.defaults().binGapCm,
   };
   const cost = tabulated(planeCost(positions), Object.keys(positions));
   const settings = RoutingSettings.defaults();

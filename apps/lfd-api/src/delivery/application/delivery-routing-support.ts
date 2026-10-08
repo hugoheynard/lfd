@@ -44,19 +44,21 @@ export async function routingSettingsOf(
 /**
  * Les réglages saisis, complétés des champs qu'un écran peut ne pas envoyer :
  * détour et vitesse (dépréciés, L10b-C5 — plus lus par le calcul, les
- * colonnes restent en base jusqu'au resserrement), la marge, et le contenant
- * par défaut (2026-10-06). Absents, ils gardent la valeur de `base` ; le
- * contenant par défaut à `null` est un réglage VIDÉ, pas une absence.
+ * colonnes restent en base jusqu'au resserrement), la marge, le contenant
+ * par défaut (2026-10-06) et le jeu entre bacs (G5a, 2026-10-08). Absents,
+ * ils gardent la valeur de `base` ; le contenant par défaut à `null` est un
+ * réglage VIDÉ, pas une absence.
  */
 export function withDeprecatedFields(
   typed: Omit<
     RoutingSettingsValues,
-    "detourPercent" | "averageSpeedKmh" | "safetyMarginMinutes" | "defaultContainer"
+    "detourPercent" | "averageSpeedKmh" | "safetyMarginMinutes" | "defaultContainer" | "binGapCm"
   > & {
     readonly detourPercent?: number | undefined;
     readonly averageSpeedKmh?: number | undefined;
     readonly safetyMarginMinutes?: number | undefined;
     readonly defaultContainer?: DefaultContainer | null | undefined;
+    readonly binGapCm?: number | undefined;
   },
   base: RoutingSettingsValues,
 ): RoutingSettingsValues {
@@ -67,6 +69,7 @@ export function withDeprecatedFields(
     averageSpeedKmh: typed.averageSpeedKmh ?? base.averageSpeedKmh,
     safetyMarginMinutes: typed.safetyMarginMinutes ?? base.safetyMarginMinutes,
     defaultContainer: defaultContainer === undefined ? base.defaultContainer : defaultContainer,
+    binGapCm: typed.binGapCm ?? base.binGapCm,
   };
 }
 

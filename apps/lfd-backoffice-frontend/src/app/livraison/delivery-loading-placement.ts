@@ -1,4 +1,8 @@
-import type { DeliveryLoadingPlanBinView, DeliveryLoadingPlanView } from '@lfd/contracts';
+import type {
+  DeliveryLoadingPlanBinView,
+  DeliveryLoadingPlanOverArchView,
+  DeliveryLoadingPlanView,
+} from '@lfd/contracts';
 
 import { planBinKey } from './delivery-loading-plan';
 import { floorRows, type StackTile, stackTiles } from './delivery-loading-rows';
@@ -23,6 +27,17 @@ export function stackSide(index: number, count: number): string {
     return 'à gauche';
   }
   return index >= count - 1 ? 'à droite' : 'au milieu';
+}
+
+/**
+ * « au-dessus du passage de roue gauche, à partir de l'étage 2, 3 bacs au
+ * plus » — une pile posée sur un passage de roue (G5b) : sans ça, le livreur
+ * la poserait au sol, là où elle ne tient pas.
+ */
+export function overArchClause(overArch: DeliveryLoadingPlanOverArchView): string {
+  const side = overArch.side === 'left' ? 'gauche' : 'droit';
+  const bins = overArch.levels > 1 ? 'bacs' : 'bac';
+  return `au-dessus du passage de roue ${side}, à partir de l’étage ${String(overArch.fromLevel)}, ${String(overArch.levels)} ${bins} au plus`;
 }
 
 /** La consigne de pose, en deux lignes : où, puis sur quoi. */
@@ -73,7 +88,10 @@ export function placementLine(
       const place = rowPlace(placement.row, rows.at(-1)?.row ?? placement.row);
       return {
         lead: `Rangée ${String(placement.row)} (${place}) · pile ${String(stack.stackIndex)}`,
-        detail: `${stackSide(index, row?.stacks.length ?? 1)}, ${below}`,
+        detail:
+          placement.overArch === undefined
+            ? `${stackSide(index, row?.stacks.length ?? 1)}, ${below}`
+            : `${overArchClause(placement.overArch)}, ${below}`,
       };
     }
     case undefined:

@@ -5,16 +5,19 @@ import { DeliveryOrdersReader } from "../../channels/commerce/index.js";
 import { DeliveryRoundNotFoundError } from "../../domain/errors/delivery-round-errors.js";
 import { DeliveryLoadingReader } from "../../domain/ports/delivery-loading.reader.js";
 import { LoadingPlanReader } from "../../domain/ports/loading-plan.reader.js";
+import { RoutingSettingsReader } from "../../domain/ports/routing-settings.reader.js";
 import { planLoading } from "../../domain/services/loading-plan.js";
 import { CargoFloor } from "../../domain/value-objects/cargo-floor.js";
 import { binContextOf } from "../bin-context.js";
 import { loadingPlanView, planStopsOf } from "../delivery-loading-plan-view.js";
+import { routingSettingsOf } from "../delivery-routing-support.js";
 import { GetDeliveryLoadingPlanQuery } from "./get-delivery-loading-plan.query.js";
 
 /**
  * **Le plan de chargement d'une tournée** (lot 4 bis, L4b-C7, v2-5) : l'ordre
  * de chargement, les piles et leur place au sol (G5), le volume sec / froid
- * face au véhicule, et les alertes. Une lecture ; le plan SUGGÈRE l'ordre de scan, il ne l'impose pas.
+ * face au véhicule, et les alertes. Le jeu entre bacs
+ * est celui des réglages du calcul (G5a), comme pour la garde de « Proposer ». Une lecture ; le plan SUGGÈRE l'ordre de scan, il ne l'impose pas.
  *
  * Une tournée n'existe que composée : sans arrêt ni bac, le plan est vide.
  *
@@ -29,6 +32,7 @@ export class GetDeliveryLoadingPlanHandler implements IQueryHandler<
     private readonly loading: DeliveryLoadingReader,
     private readonly orders: DeliveryOrdersReader,
     private readonly plans: LoadingPlanReader,
+    private readonly settings: RoutingSettingsReader,
   ) {}
 
   async execute(query: GetDeliveryLoadingPlanQuery): Promise<DeliveryLoadingPlanView> {
@@ -40,7 +44,7 @@ export class GetDeliveryLoadingPlanHandler implements IQueryHandler<
       throw new DeliveryRoundNotFoundError(query.roundId);
     }
     const bins = round.stops.flatMap((stop) => stop.bins);
-    const [context, binTypes] = await Promise.all([
+    const [context, binTypes, { settings }] = await Promise.all([
       binContextOf(
         this.loading,
         this.orders,
@@ -48,16 +52,21 @@ export class GetDeliveryLoadingPlanHandler implements IQueryHandler<
         round.stops.map((stop) => stop.orderId),
       ),
       this.plans.binTypes([...new Set(bins.map((bin) => bin.binType.id))]),
+      routingSettingsOf(this.settings),
     ]);
     // Le volume et le plancher se dérivent par le value object : une seule formule.
     const floor =
       load.cargo === null ? null : CargoFloor.of({ ...load.cargo, wheelArches: load.wheelArches });
-    const plan = planLoading(planStopsOf(round, context, binTypes), {
-      name: round.vehicleName,
-      cargoLiters: floor?.volumeLiters ?? null,
-      refrigeratedLiters: load.refrigeratedLiters,
-      floor,
-    });
+    const plan = planLoading(
+      planStopsOf(round, context, binTypes),
+      {
+        name: round.vehicleName,
+        cargoLiters: floor?.volumeLiters ?? null,
+        refrigeratedLiters: load.refrigeratedLiters,
+        floor,
+      },
+      settings.binGapCm,
+    );
     return loadingPlanView(round, plan);
   }
 }

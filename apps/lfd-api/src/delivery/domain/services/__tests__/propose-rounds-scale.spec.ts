@@ -111,6 +111,7 @@ describe("proposer à l'échelle (L7b-C2)", () => {
     const capacity: CompositionCapacity = {
       vehicles: new Map(vehicleIds.map((id) => [id, small])),
       bins: new Map(stops.map((stop, index) => [stop.id, binsOf(stop.id, 1 + (index % 3))])),
+      binGapCm: RoutingSettings.defaults().binGapCm,
     };
     let proposal: ReturnType<typeof proposeRounds> = {
       tours: [],

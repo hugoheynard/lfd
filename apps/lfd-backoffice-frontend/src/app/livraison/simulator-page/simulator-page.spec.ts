@@ -29,6 +29,7 @@ const SETTINGS: DeliveryRoutingSettingsView = {
   defaultMode: 'insert',
   multiplePassages: false,
   defaultContainer: null,
+  binGapCm: 1,
   source: 'explicit',
 };
 

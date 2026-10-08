@@ -1,3 +1,4 @@
+import { BIN_GAP_DEFAULT_CM } from "../../value-objects/bin-gap.js";
 import { type PlanBin, type PlanBinType, type PlanStop, planLoading } from "../loading-plan.js";
 import { CargoFloor } from "../../value-objects/cargo-floor.js";
 import type { PlanVehicle } from "../loading-volume.js";
@@ -69,6 +70,7 @@ describe("le plan de chargement v1 — ordre et volume (lot 4 bis, v2-5)", () =>
     const plan = planLoading(
       [stop("o1", 1, [bin("a")]), stop("o2", 2, [bin("b")]), stop("o3", 3, [])],
       ROOMY,
+      BIN_GAP_DEFAULT_CM,
     );
 
     expect(plan.steps.map((step) => [step.step, step.stop.position])).toEqual([
@@ -85,6 +87,7 @@ describe("le plan de chargement v1 — ordre et volume (lot 4 bis, v2-5)", () =>
     const plan = planLoading(
       [stop("o1", 1, [left, bin("a1"), bin("a2")]), stop("o2", 2, [right, bin("b1")])],
       ROOMY,
+      BIN_GAP_DEFAULT_CM,
     );
 
     const [second, first] = plan.steps;
@@ -110,6 +113,7 @@ describe("le plan de chargement v1 — ordre et volume (lot 4 bis, v2-5)", () =>
         stop("o2", 2, [bin("b1"), bin("b2")]),
       ],
       ROOMY,
+      BIN_GAP_DEFAULT_CM,
     );
 
     expect(
@@ -118,7 +122,11 @@ describe("le plan de chargement v1 — ordre et volume (lot 4 bis, v2-5)", () =>
       ["bin_m", 3, [2, 1]],
       ["bin_cold", 1, [1]],
     ]);
-    const four = planLoading([stop("o1", 1, [bin("a"), bin("b"), bin("c"), bin("d")])], ROOMY);
+    const four = planLoading(
+      [stop("o1", 1, [bin("a"), bin("b"), bin("c"), bin("d")])],
+      ROOMY,
+      BIN_GAP_DEFAULT_CM,
+    );
     expect(four.stacks.map((stack) => stack.height)).toEqual([3, 1]);
     expect(four.steps[0]?.bins.map((entry) => entry.stackIndex)).toEqual([1, 1, 1, 2]);
   });
@@ -135,6 +143,7 @@ describe("le plan de chargement v1 — ordre et volume (lot 4 bis, v2-5)", () =>
     const plan = planLoading(
       [stop("o1", 1, [left, bin("a"), bin("b")]), stop("o2", 2, [right])],
       small,
+      BIN_GAP_DEFAULT_CM,
     );
 
     expect(plan.volume).toMatchObject({
@@ -158,6 +167,7 @@ describe("le plan de chargement v1 — ordre et volume (lot 4 bis, v2-5)", () =>
     const plan = planLoading(
       [stop("o1", 1, [bin("c1", { binType: BAC_FROID }), bin("c2", { binType: BAC_FROID })])],
       tight,
+      BIN_GAP_DEFAULT_CM,
     );
 
     expect(plan.volume).toMatchObject({ dryLiters: 0, coldLiters: 60, coldOver: true });
@@ -172,7 +182,11 @@ describe("le plan de chargement v1 — ordre et volume (lot 4 bis, v2-5)", () =>
       floor: null,
     };
 
-    const plan = planLoading([stop("o1", 1, [bin("c1", { binType: BAC_FROID })])], dry);
+    const plan = planLoading(
+      [stop("o1", 1, [bin("c1", { binType: BAC_FROID })])],
+      dry,
+      BIN_GAP_DEFAULT_CM,
+    );
 
     expect(plan.volume).toMatchObject({
       dryLiters: 30,
@@ -194,20 +208,24 @@ describe("le plan de chargement v1 — ordre et volume (lot 4 bis, v2-5)", () =>
     };
     const many = Array.from({ length: 40 }, (_, index) => bin(`b${String(index)}`));
 
-    const plan = planLoading([stop("o1", 1, many)], unknown);
+    const plan = planLoading([stop("o1", 1, many)], unknown, BIN_GAP_DEFAULT_CM);
 
     expect(plan.volume).toMatchObject({ dryLiters: 2400, dryCapacityLiters: null, dryOver: false });
     expect(plan.warnings.map((warning) => warning.kind)).toEqual(["unknown_cargo"]);
-    expect(planLoading([], unknown).warnings.map((warning) => warning.kind)).toEqual([
-      "unknown_cargo",
-    ]);
+    expect(
+      planLoading([], unknown, BIN_GAP_DEFAULT_CM).warnings.map((warning) => warning.kind),
+    ).toEqual(["unknown_cargo"]);
   });
 
   it("signale UNE fois un bac partagé à refaire, et le charge chez son propre arrêt si l'autre est ailleurs", () => {
     const partner = { orderId: "elsewhere", reference: "R-elsewhere" };
     const redo = bin("h1", { half: "left", physicalBinId: "phys_9", partner, toRedo: true });
 
-    const plan = planLoading([stop("o1", 1, [bin("a")]), stop("o2", 2, [redo])], ROOMY);
+    const plan = planLoading(
+      [stop("o1", 1, [bin("a")]), stop("o2", 2, [redo])],
+      ROOMY,
+      BIN_GAP_DEFAULT_CM,
+    );
 
     expect(plan.steps[0]?.bins.map((entry) => entry.bin.id)).toEqual(["h1"]);
     expect(plan.warnings.map((warning) => warning.kind)).toEqual(["bin_to_redo"]);
@@ -215,7 +233,7 @@ describe("le plan de chargement v1 — ordre et volume (lot 4 bis, v2-5)", () =>
   });
 
   it("une tournée sans bac rend un plan vide, lisible", () => {
-    const plan = planLoading([stop("o1", 1, [])], ROOMY);
+    const plan = planLoading([stop("o1", 1, [])], ROOMY, BIN_GAP_DEFAULT_CM);
 
     expect(plan.stacks).toEqual([]);
     expect(plan.volume).toMatchObject({ dryLiters: 0, coldLiters: 0, dryCapacityLiters: 2500 });
@@ -242,7 +260,7 @@ function fullStops(count: number): readonly PlanStop[] {
 
 describe("le plan de chargement — les piles au sol (G5, G-D4)", () => {
   it("pose le DERNIER arrêt au fond, le premier près des portes", () => {
-    const plan = planLoading(fullStops(3), measured(130));
+    const plan = planLoading(fullStops(3), measured(130), BIN_GAP_DEFAULT_CM);
 
     expect(plan.stacks.map((stack) => [stack.stopPositions, stack.placement])).toEqual([
       [[3], expect.objectContaining({ kind: "floor", row: 1, xMm: 0, yMm: 0 })],
@@ -254,7 +272,7 @@ describe("le plan de chargement — les piles au sol (G5, G-D4)", () => {
   });
 
   it("dit `floor_over` en nommant les arrêts, en PLUS de `dry_over`", () => {
-    const plan = planLoading(fullStops(4), measured(70));
+    const plan = planLoading(fullStops(4), measured(70), BIN_GAP_DEFAULT_CM);
 
     expect(plan.stacks.map((stack) => stack.placement?.kind)).toEqual([
       "floor",
@@ -283,7 +301,7 @@ describe("le plan de chargement — les piles au sol (G5, G-D4)", () => {
       floor,
     };
 
-    const plan = planLoading(fullStops(1), vehicle);
+    const plan = planLoading(fullStops(1), vehicle, BIN_GAP_DEFAULT_CM);
 
     expect(plan.warnings.map((warning) => warning.kind)).toEqual(["floor_over"]);
     expect(plan.warnings[0]?.message).toContain("1 pile ne tient pas au sol de « Vélo » (arrêt 1)");
@@ -304,6 +322,7 @@ describe("le plan de chargement — les piles au sol (G5, G-D4)", () => {
         stop("o3", 3, [bin("last_m")]),
       ],
       measured(200),
+      BIN_GAP_DEFAULT_CM,
     );
 
     const rowOf = (code: string): number | undefined => {
@@ -346,6 +365,7 @@ describe("le plan de chargement — les piles au sol (G5, G-D4)", () => {
         stop("o3", 3, [bin("last_m")]),
       ],
       { name: "Trafic", cargoLiters: floor.volumeLiters, refrigeratedLiters: null, floor },
+      BIN_GAP_DEFAULT_CM,
     );
   }
 
@@ -406,6 +426,7 @@ describe("le plan de chargement — les piles au sol (G5, G-D4)", () => {
         stop("o3", 3, [bin("last")]),
       ],
       { name: "Trafic", cargoLiters: floor.volumeLiters, refrigeratedLiters: null, floor },
+      BIN_GAP_DEFAULT_CM,
     );
 
     expect(plan.warnings.map((warning) => warning.kind)).toEqual(["floor_over", "compacted"]);
@@ -414,14 +435,14 @@ describe("le plan de chargement — les piles au sol (G5, G-D4)", () => {
   });
 
   it("garde le cohérent et `floor_over` quand compacter ne sauve aucun bac", () => {
-    const plan = planLoading(fullStops(4), measured(70));
+    const plan = planLoading(fullStops(4), measured(70), BIN_GAP_DEFAULT_CM);
 
     expect(plan.steps.flatMap((step) => step.bins).some((planned) => planned.behind)).toBe(false);
     expect(plan.warnings.map((warning) => warning.kind)).toEqual(["dry_over", "floor_over"]);
   });
 
   it("sans plancher connu, aucune position ni `floor_over`", () => {
-    const plan = planLoading(fullStops(2), ROOMY);
+    const plan = planLoading(fullStops(2), ROOMY, BIN_GAP_DEFAULT_CM);
 
     expect(plan.floor).toBeNull();
     expect(plan.stacks.map((stack) => stack.placement)).toEqual([null, null]);
@@ -450,7 +471,7 @@ describe("le plan de chargement — au millimètre (bac en mm, véhicule en cm)"
   const manneStop = (): readonly PlanStop[] => [stop("o1", 1, [bin("manne", { binType: MANNE })])];
 
   it("une manne de 665 mm (+ 10 mm de jeu) tient dans 68 cm, à sa cote exacte", () => {
-    const plan = planLoading(manneStop(), vehicleOf(68, 48));
+    const plan = planLoading(manneStop(), vehicleOf(68, 48), BIN_GAP_DEFAULT_CM);
 
     expect(plan.stacks[0]?.placement).toEqual({
       kind: "floor",
@@ -460,16 +481,19 @@ describe("le plan de chargement — au millimètre (bac en mm, véhicule en cm)"
       depthMm: 665,
       widthMm: 460,
       orientation: "length",
+      overArch: null,
     });
   });
 
   it("et ne tient pas dans 67 cm : un arrondi au centimètre l'y aurait fait entrer", () => {
-    const plan = planLoading(manneStop(), vehicleOf(67, 48));
+    const plan = planLoading(manneStop(), vehicleOf(67, 48), BIN_GAP_DEFAULT_CM);
 
     expect(plan.stacks[0]?.placement).toEqual({ kind: "off_floor" });
   });
 
   it("compte son volume en mm³ : 218 718 500 mm³ → 219 L au-dessus", () => {
-    expect(planLoading(manneStop(), vehicleOf(68, 48)).volume.dryLiters).toBe(219);
+    expect(planLoading(manneStop(), vehicleOf(68, 48), BIN_GAP_DEFAULT_CM).volume.dryLiters).toBe(
+      219,
+    );
   });
 });

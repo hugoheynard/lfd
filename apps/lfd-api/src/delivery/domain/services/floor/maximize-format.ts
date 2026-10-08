@@ -1,7 +1,14 @@
 import { FloorLayoutIndexError } from "../../errors/delivery-floor-errors.js";
 import { MM_PER_CM } from "../../value-objects/bin-type-dimensions.js";
 import type { CargoFloor } from "../../value-objects/cargo-floor.js";
-import { type FloorMm, floorInMm, freeWidthMm, stackLevels } from "./floor-geometry.js";
+import {
+  type FloorMm,
+  floorInMm,
+  freeWidthMm,
+  type OverArchLevels,
+  overArchLevels,
+  stackLevels,
+} from "./floor-geometry.js";
 import type { FormatGeometry } from "./format-geometry.js";
 
 /** Le bac debout, sa longueur dans celle du véhicule (`length`) ou tourné (`turned`). */
@@ -74,8 +81,8 @@ interface Step {
 /** Ce qui ne change pas d'une rangée à l'autre. */
 interface Stacking {
   readonly levels: number;
-  /** `k₀`, ou `null` si la hauteur du passage n'est pas connue. */
-  readonly archFromLevel: number | null;
+  /** `k₀` et `étages − k₀`, ou `null` : rien ne monte au-dessus des passages. */
+  readonly overArch: OverArchLevels | null;
 }
 
 /**
@@ -108,7 +115,7 @@ export function maximizeFormat(
 ): FormatLayout {
   const floor = floorInMm(cargoFloor);
   const levels = stackLevels(floor, format.outer.heightMm, format.maxStack);
-  const stacking = { levels, archFromLevel: archFromLevel(floor, format.outer.heightMm) };
+  const stacking = { levels, overArch: overArchLevels(floor, format.outer.heightMm, levels) };
   const rows = bestRows(floor, footprintsOf(format, gapCm * MM_PER_CM), stacking);
   const floorCount = rows.reduce((sum, row) => sum + row.count, 0);
   const total = rows.reduce((sum, row) => sum + row.total, 0);
@@ -133,12 +140,6 @@ function footprintsOf(format: FormatGeometry, gapMm: number): readonly Footprint
     { orientation: "length", depthMm: long, widthMm: wide },
     { orientation: "turned", depthMm: wide, widthMm: long },
   ];
-}
-
-/** `k₀ = ⌈hauteur du passage ÷ hauteur extérieure⌉`, ou `null` sans hauteur mesurée. */
-function archFromLevel(floor: FloorMm, binOuterHeightMm: number): number | null {
-  const archHeightMm = floor.wheelArches?.heightMm ?? null;
-  return archHeightMm === null ? null : Math.ceil(archHeightMm / binOuterHeightMm);
 }
 
 /** Remonte f depuis les portes, puis relit les rangées choisies depuis le fond. */
@@ -205,8 +206,7 @@ function beats(candidate: Step, best: Step): boolean {
 function rowAt(floor: FloorMm, print: Footprint, stacking: Stacking, x: number): FloorRow {
   const count = Math.floor(freeWidthMm(floor, x, print.depthMm) / print.widthMm);
   const fullCount = Math.floor(floor.widthMm / print.widthMm);
-  const k0 = stacking.archFromLevel;
-  const upperLevels = k0 === null ? 0 : Math.max(0, stacking.levels - k0);
+  const upperLevels = stacking.overArch?.levels ?? 0;
   const overArchCount = upperLevels > 0 && count > 0 ? fullCount - count : 0;
   return {
     fromMm: x,
@@ -214,7 +214,7 @@ function rowAt(floor: FloorMm, print: Footprint, stacking: Stacking, x: number):
     count,
     orientation: print.orientation,
     overArchCount,
-    overArchFromLevel: overArchCount > 0 ? k0 : null,
+    overArchFromLevel: overArchCount > 0 ? (stacking.overArch?.fromLevel ?? null) : null,
     total: count * stacking.levels + overArchCount * upperLevels,
   };
 }

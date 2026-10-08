@@ -24,6 +24,7 @@ const FACTORY: DeliveryRoutingSettingsView = {
   defaultMode: 'insert',
   multiplePassages: true,
   defaultContainer: null,
+  binGapCm: 1,
   source: 'default',
 };
 
@@ -76,6 +77,7 @@ async function boot(canWrite = true): Promise<ComponentFixture<RoutingSettingsCa
               detourPercent: payload.detourPercent ?? wire.view.detourPercent,
               averageSpeedKmh: payload.averageSpeedKmh ?? wire.view.averageSpeedKmh,
               safetyMarginMinutes: payload.safetyMarginMinutes ?? wire.view.safetyMarginMinutes,
+              binGapCm: payload.binGapCm ?? wire.view.binGapCm,
               defaultContainer:
                 payload.defaultContainer === undefined
                   ? wire.view.defaultContainer
@@ -160,6 +162,7 @@ describe('RoutingSettingsCard', () => {
         defaultMode: 'insert',
         multiplePassages: true,
         defaultContainer: null,
+        binGapCm: 1,
       },
     ]);
     expect(wire.reads).toBe(2);
@@ -185,6 +188,27 @@ describe('RoutingSettingsCard', () => {
     await settle(fixture);
 
     expect(wire.writes[0]?.safetyMarginMinutes).toBe(30);
+  });
+
+  /** G5a (2026-10-08) : le jeu entre bacs se lit du réglage et s'envoie. */
+  it('règle le jeu entre bacs', async () => {
+    const fixture = await boot();
+    expect(host(fixture).textContent).toContain('Jeu entre bacs (cm)');
+    expect(numberInput(fixture, '[data-bin-gap]').componentInstance.value()).toBe(1);
+    numberInput(fixture, '[data-bin-gap]').triggerEventHandler('valueChange', 3);
+    await settle(fixture);
+    saveButton(fixture)?.click();
+    await settle(fixture);
+
+    expect(wire.writes[0]?.binGapCm).toBe(3);
+  });
+
+  it('n’enregistre pas un jeu vidé', async () => {
+    const fixture = await boot();
+    numberInput(fixture, '[data-bin-gap]').triggerEventHandler('valueChange', null);
+    await settle(fixture);
+
+    expect(saveButton(fixture)?.disabled).toBe(true);
   });
 
   it('n’enregistre pas une marge vidée', async () => {

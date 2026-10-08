@@ -81,6 +81,7 @@ export class RoutingSettingsCard {
   protected readonly maxRound = signal<number | null>(null);
   protected readonly stop = signal<number | null>(null);
   protected readonly safetyMargin = signal<number | null>(null);
+  protected readonly binGap = signal<number | null>(null);
   protected readonly mode = signal<DeliveryProposalMode | null>(null);
   protected readonly multiplePassages = signal(false);
   /** Le type choisi, ou `NO_DEFAULT_CONTAINER` : pas de contenant par défaut. */
@@ -119,6 +120,7 @@ export class RoutingSettingsCard {
     const maxRound = this.maxRound();
     const stop = this.stop();
     const safetyMargin = this.safetyMargin();
+    const binGap = this.binGap();
     const mode = this.mode();
     const earliest = this.earliest();
     const binType = this.defaultBinType();
@@ -129,6 +131,7 @@ export class RoutingSettingsCard {
       maxRound === null ||
       stop === null ||
       safetyMargin === null ||
+      binGap === null ||
       mode === null ||
       earliest === ''
     ) {
@@ -142,6 +145,7 @@ export class RoutingSettingsCard {
       maxRoundMinutes: maxRound,
       stopMinutes: stop,
       safetyMarginMinutes: safetyMargin,
+      binGapCm: binGap,
       defaultMode: mode,
       multiplePassages: this.multiplePassages(),
       defaultContainer:
@@ -199,6 +203,7 @@ export class RoutingSettingsCard {
       this.maxRound.set(view.maxRoundMinutes);
       this.stop.set(view.stopMinutes);
       this.safetyMargin.set(view.safetyMarginMinutes);
+      this.binGap.set(view.binGapCm);
       this.mode.set(view.defaultMode);
       this.multiplePassages.set(view.multiplePassages);
       this.defaultBinType.set(view.defaultContainer?.binTypeId ?? NO_DEFAULT_CONTAINER);

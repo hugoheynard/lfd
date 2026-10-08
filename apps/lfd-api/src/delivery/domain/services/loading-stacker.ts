@@ -67,10 +67,14 @@ export class Stacker {
 
   private stackFor(binType: PlanBinType): OpenStack {
     const last = this.lastOfType.get(binType.id);
-    const levels = this.placer?.levelsOf(binType) ?? binType.maxStack;
+    // Les étages de CETTE pile : au-dessus d'un passage, `étages − k₀` (G5b).
+    const lastLevels =
+      last === undefined
+        ? 0
+        : (this.placer?.levelsOf(binType, last.stackIndex) ?? binType.maxStack);
     if (
       last !== undefined &&
-      last.height < levels &&
+      last.height < lastLevels &&
       (this.mode === "compact" || (this.placer?.canGrow(last.stackIndex) ?? true))
     ) {
       return last;
@@ -83,7 +87,7 @@ export class Stacker {
     };
     this.all.push(stack);
     this.lastOfType.set(binType.id, stack);
-    if (levels === 0) {
+    if ((this.placer?.levelsOf(binType) ?? binType.maxStack) === 0) {
       this.placer?.refuseTooTall(stack.stackIndex);
     } else {
       this.placer?.place({ stackIndex: stack.stackIndex, ...binType });

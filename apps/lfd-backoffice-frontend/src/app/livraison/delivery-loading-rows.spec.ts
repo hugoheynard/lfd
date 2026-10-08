@@ -14,7 +14,7 @@ import {
   outOfRowNotice,
   stackTiles,
 } from './delivery-loading-rows';
-import { placementLine } from './delivery-loading-placement';
+import { overArchClause, placementLine } from './delivery-loading-placement';
 
 function bin(
   binId: string,
@@ -250,6 +250,30 @@ describe('placementLine', () => {
       'à gauche, sur le bac de l’arrêt 3',
     );
     expect(placementLine(shared, { binId: 'd1', half: null })?.detail).toBe('à droite, en bas');
+  });
+
+  it('au-dessus d’un passage de roue : le flanc, l’étage de départ et la hauteur bornée', () => {
+    const arched = {
+      order: ORDER,
+      stacks: STACKS.map((stack) =>
+        stack.stackIndex === 1 && stack.placement?.kind === 'floor'
+          ? {
+              ...stack,
+              placement: {
+                ...stack.placement,
+                overArch: { side: 'right' as const, fromLevel: 2, levels: 3 },
+              },
+            }
+          : stack,
+      ),
+    };
+    expect(placementLine(arched, { binId: 'a2', half: null })).toEqual({
+      lead: 'Rangée 1 (le fond) · pile 1',
+      detail: 'au-dessus du passage de roue droit, à partir de l’étage 2, 3 bacs au plus, en bas',
+    });
+    expect(overArchClause({ side: 'left', fromLevel: 1, levels: 1 })).toBe(
+      'au-dessus du passage de roue gauche, à partir de l’étage 1, 1 bac au plus',
+    );
   });
 
   it('sans plancher : la pile et son type', () => {

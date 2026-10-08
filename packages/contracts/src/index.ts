@@ -1021,6 +1021,7 @@ export type {
   DeliveryLoadingPlanStepView,
   DeliveryLoadingPlanStackView,
   DeliveryLoadingPlanFloorPlacementView,
+  DeliveryLoadingPlanOverArchView,
   DeliveryLoadingPlanPlacementView,
   DeliveryLoadingPlanFloorView,
   DeliveryLoadingPlanVolumeView,

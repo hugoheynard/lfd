@@ -133,6 +133,7 @@ const PROPOSAL: DeliveryRoundProposalView = {
     defaultMode: 'insert',
     multiplePassages: true,
     defaultContainer: null,
+    binGapCm: 1,
     source: 'default',
   },
   rounds: [

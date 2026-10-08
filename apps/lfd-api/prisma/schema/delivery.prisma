@@ -498,6 +498,10 @@ model DeliveryRoutingSettings {
   /// tient « les deux ou aucun » et le nombre ≥ 1. Archiver ce type est refusé.
   defaultBinTypeId    String? @map("default_bin_type_id")
   defaultBinCount     Int?    @map("default_bin_count")
+  /// **Le jeu entre bacs** du plan de chargement, en cm (G5a, 2026-10-08) :
+  /// 1 par défaut — la constante que le plan lisait avant —, CHECK
+  /// `delivery_routing_bin_gap_cm` 0 à 10, la borne de l'assistant d'achat.
+  binGapCm            Int     @default(1) @map("bin_gap_cm")
 
   defaultBinType DeliveryBinType? @relation(fields: [defaultBinTypeId], references: [id], onDelete: Restrict)
 

@@ -45,6 +45,8 @@ const routingSettings = () =>
     })
       .nullable()
       .optional(),
+    /** Le jeu entre bacs en cm (G5a, 2026-10-08) : absent des faits écrits avant son arrivée. */
+    binGapCm: count().optional(),
   });
 
 /** Une tournée touchée par une proposition appliquée : ses arrêts AVANT et APRÈS. */

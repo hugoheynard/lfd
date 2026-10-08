@@ -211,6 +211,11 @@ centimètre, est retiré depuis le 2026-10-06 (`1524cb8c5`).
 
 ### G-D4 — Stratégie B, le chargement : remplir des rangées depuis le fond
 
+> 🔁 **Revu le 2026-10-08** ([`plan-piles-au-sol-revues.md`](plan-piles-au-sol-revues.md)) :
+> une pile peut monter au-dessus d'un passage (G5b), une pile qui ne tient pas
+> sort seule sans bloquer les suivantes (G5c), le jeu est un réglage (G5a).
+> L'état bâti est décrit dans [`algorithme-de-chargement.md`](algorithme-de-chargement.md).
+
 Elle part de ce que `planLoading` rend **déjà** — les piles, dans l'ordre où
 on les charge (dernier arrêt d'abord) — et leur donne une **place** :
 

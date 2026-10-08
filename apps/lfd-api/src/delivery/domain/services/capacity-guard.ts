@@ -21,6 +21,8 @@ const MM2_PER_CM2 = 100;
 export interface CompositionCapacity {
   readonly vehicles: ReadonlyMap<string, PlanVehicle>;
   readonly bins: ReadonlyMap<string, readonly PlanBin[]>;
+  /** Le jeu entre bacs des réglages (G5a) : celui de l'écran de chargement. */
+  readonly binGapCm: number;
 }
 
 /** Les tournées d'un véhicule tiennent-elles toutes dans sa caisse ? */
@@ -92,7 +94,9 @@ function stopsFit(
   if (vehicle === undefined || vehicle.floor === null || !withinBounds(bins, vehicle)) {
     return false;
   }
-  return !planLoading(planStops, vehicle).warnings.some((warning) => REFUSING.has(warning.kind));
+  return !planLoading(planStops, vehicle, capacity.binGapCm).warnings.some((warning) =>
+    REFUSING.has(warning.kind),
+  );
 }
 
 function uniquePhysical(bins: readonly PlanBin[]): readonly PlanBin[] {

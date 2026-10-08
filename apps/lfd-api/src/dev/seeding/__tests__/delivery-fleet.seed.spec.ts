@@ -63,6 +63,8 @@ describe("FLEET", () => {
       isotherm: false,
       outerLengthMm: 600,
       outerWidthMm: 400,
+      outerHeightMm: 300,
+      maxStack: 3,
     }));
 
     const placements = placeStacks(floor, stacks, BIN_GAP_MAX_CM, false);

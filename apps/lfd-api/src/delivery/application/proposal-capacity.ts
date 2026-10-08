@@ -10,7 +10,10 @@ import type { PlanBin, PlanBinType } from "../domain/services/loading-plan.js";
 import type { PlanVehicle } from "../domain/services/loading-volume.js";
 import { proposePacking } from "../domain/services/propose-packing.js";
 import { type DefaultStopBins, stopDemandOf } from "../domain/services/stop-demand.js";
-import type { DefaultContainer } from "../domain/value-objects/routing-settings.js";
+import type {
+  DefaultContainer,
+  RoutingSettingsValues,
+} from "../domain/value-objects/routing-settings.js";
 import { CargoFloor } from "../domain/value-objects/cargo-floor.js";
 import { packingTypeOf } from "./delivery-packing-view.js";
 import { packingLinesOf } from "./packing-lines.js";
@@ -38,7 +41,8 @@ export interface DefaultedDemand {
  * véhicule de la flotte, et la demande en bacs de chaque commande — les bacs
  * déclarés, sinon l'estimation du colisage (la MÊME `proposePacking` que le
  * poste, types en service et contenances), sinon le contenant par défaut des
- * réglages (2026-10-06), sinon inconnue.
+ * réglages (2026-10-06), sinon inconnue. Le jeu entre bacs vient des mêmes
+ * réglages (G5a) : la garde pose les piles comme l'écran de chargement.
  *
  * Les lignes ne sont lues que pour les commandes sans bac déclaré, par le
  * port du commerce, une commande à la fois (le port n'a pas de lecture
@@ -56,8 +60,9 @@ export class ProposalCapacity {
 
   async of(
     orderIds: readonly string[],
-    defaultContainer: DefaultContainer | null,
+    settings: Pick<RoutingSettingsValues, "defaultContainer" | "binGapCm">,
   ): Promise<ProposalCapacityReading> {
+    const { defaultContainer, binGapCm } = settings;
     const unique = [...new Set(orderIds)];
     const [vehicles, types, capacities, declared] = await Promise.all([
       this.fleet.list(),
@@ -103,7 +108,7 @@ export class ProposalCapacity {
         });
       }
     }
-    return { capacity: { vehicles: vehiclesOf(vehicles), bins }, unknown, defaulted };
+    return { capacity: { vehicles: vehiclesOf(vehicles), bins, binGapCm }, unknown, defaulted };
   }
 }
 

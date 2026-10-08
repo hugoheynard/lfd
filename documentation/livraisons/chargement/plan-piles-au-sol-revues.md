@@ -1,6 +1,15 @@
 # Les piles au sol, revues par Hugo (G5a, G5b, G5c)
 
-> 📐 **Plan, rien de bâti** (2026-10-08). Hugo a revu trois des décisions
+> ✅ **Bâti le 2026-10-08** (P1 à P3, API, contrat et écran) ; l'état vit
+> dans [`algorithme-de-chargement.md`](algorithme-de-chargement.md). Choix
+> faits en bâtissant, à relire : une pile au-dessus d'un passage se pose
+> contre la paroi de son flanc ; l'ordre des essais est sol de la rangée
+> ouverte → dessus d'un passage de cette rangée → rangée neuve ; la
+> Camionnette 1 du semis (passage de 30 cm) porte 20 mannes au lieu de 18.
+> L'étage s'affiche compté depuis 0 au sol (« à partir de l'étage 2 » = deux
+> bacs dessous). Les tuiles et le dessin du plancher ne marquent pas encore
+> une pile au-dessus d'un passage : seule la consigne de pose le dit.
+> Plan d'origine (2026-10-08) ci-dessous. Hugo a revu trois des décisions
 > par défaut du lot G5 ([`../tournees/decisions-par-defaut-2026-10-02.md`](../tournees/decisions-par-defaut-2026-10-02.md),
 > § 6) :
 >

@@ -164,7 +164,7 @@ export class GetDeliveryRoundProposalHandler implements IQueryHandler<
       ...day.unassigned,
       ...day.rounds.flatMap((round) => round.stops.map((stop) => stop.orderId)),
     ];
-    const capacity = await this.place.of(considered, settings.defaultContainer);
+    const capacity = await this.place.of(considered, settings);
     const mode = query.recomposeAll ? "new_rounds" : (query.mode ?? settings.defaultMode);
     const inputs = { day, stops, vehicles, departure, settings, capacity };
     const planned =

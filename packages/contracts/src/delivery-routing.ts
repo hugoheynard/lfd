@@ -81,14 +81,23 @@ export const deliveryRoutingSettingsPayloadSchema = z.object({
    * domaine.
    */
   defaultContainer: deliveryDefaultContainerSchema.nullable().optional(),
+  /**
+   * Le jeu entre bacs du plan de chargement, en centimètres (G5a, 2026-10-08) :
+   * l'écart qu'on laisse pour sortir un bac de sa rangée. Absent, la valeur en
+   * place est gardée (un écran en ligne ne l'envoie pas encore). Bornes (0 à
+   * 10) au domaine.
+   */
+  binGapCm: z.number().int().optional(),
 });
 export type DeliveryRoutingSettingsPayload = z.infer<typeof deliveryRoutingSettingsPayloadSchema>;
 
 /** Les réglages tels qu'ils valent maintenant. */
 export interface DeliveryRoutingSettingsView extends Omit<
   DeliveryRoutingSettingsPayload,
-  "detourPercent" | "averageSpeedKmh" | "safetyMarginMinutes" | "defaultContainer"
+  "detourPercent" | "averageSpeedKmh" | "safetyMarginMinutes" | "defaultContainer" | "binGapCm"
 > {
+  /** Le jeu entre bacs, en cm (G5a) — toujours rendu, 1 par défaut. */
+  readonly binGapCm: number;
   /** Le contenant par défaut d'une commande (2026-10-06) ; `null` : pas de réglage. */
   readonly defaultContainer: DeliveryDefaultContainer | null;
   /** La marge avant la fin d'un créneau (L7t-C1) — toujours rendue, 20 par défaut. */

@@ -132,7 +132,7 @@ export class GetDeliveryPlacementSuggestionsHandler implements IQueryHandler<
     ];
     const considered = [...day.unassigned, ...roundStops];
     const [capacity, cost] = await Promise.all([
-      this.place.of(considered, settings.defaultContainer),
+      this.place.of(considered, settings),
       this.matrix.build(
         pointsOf(departure.point, [...pool.map((stop) => stop.id), ...roundStops], stops),
       ),

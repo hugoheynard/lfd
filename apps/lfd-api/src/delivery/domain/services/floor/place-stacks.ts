@@ -1,7 +1,21 @@
 import { MM_PER_CM } from "../../value-objects/bin-type-dimensions.js";
 import type { CargoFloor } from "../../value-objects/cargo-floor.js";
-import { type FloorMm, floorInMm, freeWidthMm, stackLevels } from "./floor-geometry.js";
-import type { RowOrientation } from "./maximize-format.js";
+import { type FloorMm, floorInMm, overArchLevels, stackLevels } from "./floor-geometry.js";
+import {
+  type ArchSide,
+  finalize,
+  floorOffsetMm,
+  type OpenRow,
+  type Print,
+  printsOf,
+  putInNewRow,
+  putOnFloor,
+  type StackPlacement,
+  touchesArches,
+  widthsOf,
+} from "./open-row.js";
+
+export type { FloorPlacement, OverArchPlacement, StackPlacement } from "./open-row.js";
 
 /**
  * Une pile telle que la stratégie B la lit : son empreinte extérieure, son
@@ -13,45 +27,9 @@ export interface StackToPlace {
   readonly isotherm: boolean;
   readonly outerLengthMm: number;
   readonly outerWidthMm: number;
-}
-
-/** La pile est posée au sol : sa rangée, son coin côté fond-gauche, son empreinte. */
-export interface FloorPlacement {
-  readonly kind: "floor";
-  /** 1..n, depuis le fond. */
-  readonly row: number;
-  /** Distance depuis le fond (la cloison). */
-  readonly xMm: number;
-  /** Distance depuis le flanc gauche, vu depuis les portes arrière. */
-  readonly yMm: number;
-  /** Empreinte EXTÉRIEURE le long du véhicule, sans le jeu. */
-  readonly depthMm: number;
-  /** Empreinte EXTÉRIEURE en travers, sans le jeu. */
-  readonly widthMm: number;
-  readonly orientation: RowOrientation;
-}
-
-/**
- * Où va une pile : au sol, dans la caisse réfrigérée (le froid reste en
- * litres, G-Q3), ou hors plancher — l'alerte `floor_over`.
- */
-export type StackPlacement =
-  FloorPlacement | { readonly kind: "refrigerated" } | { readonly kind: "off_floor" };
-
-interface Print {
-  readonly orientation: RowOrientation;
-  /** Jeu compris. */
-  readonly depthMm: number;
-  readonly widthMm: number;
-  readonly stack: StackToPlace;
-}
-
-interface OpenRow {
-  readonly row: number;
-  readonly fromMm: number;
-  depthMm: number;
-  usedWidthMm: number;
-  readonly prints: Print[];
+  /** La hauteur et la pile du bac : elles disent si la pile monte au-dessus d'un passage (G5b). */
+  readonly outerHeightMm: number;
+  readonly maxStack: number;
 }
 
 /**
@@ -65,9 +43,17 @@ interface OpenRow {
  *   le sens qui laisse le plus de largeur (à égalité, dans la longueur), puis
  *   l'autre s'il est le seul à tenir.
  * - Au sol, aucune pile sur un passage de roue (`freeWidthMm`) ; une rangée
- *   qui touche les passages se centre entre eux.
- * - Dès qu'une pile sort, les suivantes sortent aussi : elles se chargent
- *   après elle, donc devant elle (décision par défaut du 2026-10-02).
+ *   qui touche les passages commence au bord du passage gauche.
+ * - Une pile qui ne tient plus au sol de la rangée ouverte peut monter
+ *   AU-DESSUS d'un passage, si la rangée le touche, que sa hauteur est
+ *   mesurée et qu'une pile au sol y est déjà (G5b, 2026-10-08, Hugo :
+ *   « pourtant le simulateur arrive à les placer ») : à partir de l'étage
+ *   `k₀`, `étages − k₀` bacs au plus — la règle de l'assistant d'achat,
+ *   `overArchLevels`. Sans hauteur mesurée, rien n'y monte.
+ * - Une pile qui ne tient pas sort SEULE (G5c, 2026-10-08, Hugo : « livrer
+ *   emporte sur léger désordre ») : les suivantes essaient encore la rangée
+ *   ouverte, puis une rangée neuve. Jusque-là, elles sortaient toutes avec
+ *   elle (décision par défaut du 2026-10-02).
  * - Le jeu s'ajoute à l'empreinte, comme dans la stratégie A.
  *
  * @param refrigerated le véhicule a une caisse réfrigérée : les isothermes y vont.
@@ -94,7 +80,7 @@ export class FloorPlacer {
   private readonly rows: OpenRow[] = [];
   private readonly rowOf = new Map<number, number>();
   private readonly elsewhere = new Map<number, StackPlacement>();
-  private blocked = false;
+  private readonly overLevels = new Map<number, number>();
   private readonly tooTall = new Set<number>();
   private readonly floor: FloorMm;
   private readonly gapMm: number;
@@ -115,12 +101,52 @@ export class FloorPlacer {
       this.elsewhere.set(stack.stackIndex, { kind: "refrigerated" });
       return;
     }
-    this.blocked = this.blocked || !put(this.floor, this.rows, printsOf(stack, this.gapMm));
-    if (this.blocked) {
+    const prints = printsOf(stack, this.gapMm);
+    const placed =
+      putOnFloor(this.floor, this.rows.at(-1), prints) ||
+      this.putOverArch(stack, prints) ||
+      putInNewRow(this.floor, this.rows, prints);
+    if (!placed) {
       this.elsewhere.set(stack.stackIndex, { kind: "off_floor" });
       return;
     }
     this.rowOf.set(stack.stackIndex, this.rows.length);
+  }
+
+  /** Au-dessus d'un passage de la rangée ouverte, le flanc le moins chargé d'abord. */
+  private putOverArch(stack: StackToPlace, prints: readonly Print[]): boolean {
+    const open = this.rows.at(-1);
+    const levels = overArchLevels(
+      this.floor,
+      stack.outerHeightMm,
+      stackLevels(this.floor, stack.outerHeightMm, stack.maxStack),
+    );
+    if (open === undefined || levels === null) {
+      return false;
+    }
+    const widths = widthsOf(open);
+    const sides: readonly ArchSide[] =
+      widths.rightMm < widths.leftMm ? ["right", "left"] : ["left", "right"];
+    for (const side of sides) {
+      for (const print of prints) {
+        const depthMm = Math.max(open.depthMm, print.depthMm);
+        const grown = {
+          ...widths,
+          leftMm: widths.leftMm + (side === "left" ? print.widthMm : 0),
+          rightMm: widths.rightMm + (side === "right" ? print.widthMm : 0),
+        };
+        if (
+          touchesArches(this.floor, open.fromMm, depthMm) &&
+          floorOffsetMm(this.floor, open.fromMm, depthMm, grown) !== null
+        ) {
+          open.depthMm = depthMm;
+          open.over.push({ print, side, levels });
+          this.overLevels.set(stack.stackIndex, levels.levels);
+          return true;
+        }
+      }
+    }
+    return false;
   }
 
   /**
@@ -129,12 +155,22 @@ export class FloorPlacer {
    * qui part en caisse réfrigérée n'est borné que par sa pile : la hauteur
    * de la caisse froide n'est pas mesurée (le froid reste en litres, G-Q3).
    * Zéro : le bac est plus haut que la caisse, il ne tient pas debout.
+   *
+   * Avec `stackIndex`, les étages de CETTE pile : posée au-dessus d'un
+   * passage, elle n'en a que `étages − k₀` (G5b) — on n'y monte pas au-delà.
    */
-  levelsOf(binType: {
-    readonly isotherm: boolean;
-    readonly outerHeightMm: number;
-    readonly maxStack: number;
-  }): number {
+  levelsOf(
+    binType: {
+      readonly isotherm: boolean;
+      readonly outerHeightMm: number;
+      readonly maxStack: number;
+    },
+    stackIndex?: number,
+  ): number {
+    const overArch = stackIndex === undefined ? undefined : this.overLevels.get(stackIndex);
+    if (overArch !== undefined) {
+      return overArch;
+    }
     if (binType.isotherm && this.refrigerated) {
       return binType.maxStack;
     }
@@ -157,10 +193,12 @@ export class FloorPlacer {
   }
 
   /**
-   * Une pile peut-elle encore monter ? Au sol, seulement tant que sa rangée
-   * est la rangée ouverte : une rangée fermée a une pile chargée APRÈS elle
-   * devant elle, et un bac posé dessus serait livré avant ce qui le cache.
-   * La caisse froide et le hors-plancher ne ferment pas.
+   * Une pile peut-elle encore monter ? Au sol comme au-dessus d'un passage,
+   * seulement tant que sa rangée est la rangée ouverte : une rangée fermée a
+   * une pile chargée APRÈS elle devant elle, et un bac posé dessus serait
+   * livré avant ce qui le cache. La caisse froide et le hors-plancher ne
+   * ferment pas. Le plafond d'une pile au-dessus d'un passage, lui, est dans
+   * `levelsOf(binType, stackIndex)`.
    */
   canGrow(stackIndex: number): boolean {
     const row = this.rowOf.get(stackIndex);
@@ -176,68 +214,4 @@ export class FloorPlacer {
     }
     return placements;
   }
-}
-
-/** Le sens qui laisse le plus de largeur d'abord ; à égalité, dans la longueur. */
-function printsOf(stack: StackToPlace, gapMm: number): readonly Print[] {
-  const long = stack.outerLengthMm + gapMm;
-  const wide = stack.outerWidthMm + gapMm;
-  const length: Print = { orientation: "length", depthMm: long, widthMm: wide, stack };
-  const turned: Print = { orientation: "turned", depthMm: wide, widthMm: long, stack };
-  return turned.widthMm < length.widthMm ? [turned, length] : [length, turned];
-}
-
-/** Dans la rangée ouverte, sinon dans une rangée neuve ; `false` = hors plancher. */
-function put(floor: FloorMm, rows: OpenRow[], prints: readonly Print[]): boolean {
-  const open = rows[rows.length - 1];
-  if (open !== undefined) {
-    for (const print of prints) {
-      const depthMm = Math.max(open.depthMm, print.depthMm);
-      if (fits(floor, open.fromMm, depthMm, open.usedWidthMm + print.widthMm)) {
-        open.depthMm = depthMm;
-        open.usedWidthMm += print.widthMm;
-        open.prints.push(print);
-        return true;
-      }
-    }
-  }
-  const fromMm = open === undefined ? 0 : open.fromMm + open.depthMm;
-  for (const print of prints) {
-    if (fits(floor, fromMm, print.depthMm, print.widthMm)) {
-      rows.push({
-        row: rows.length + 1,
-        fromMm,
-        depthMm: print.depthMm,
-        usedWidthMm: print.widthMm,
-        prints: [print],
-      });
-      return true;
-    }
-  }
-  return false;
-}
-
-function fits(floor: FloorMm, fromMm: number, depthMm: number, widthMm: number): boolean {
-  return fromMm + depthMm <= floor.lengthMm && widthMm <= freeWidthMm(floor, fromMm, depthMm);
-}
-
-/** Les coordonnées, une fois la profondeur de la rangée connue : elle décide du passage. */
-function finalize(floor: FloorMm, row: OpenRow): ReadonlyMap<number, FloorPlacement> {
-  const offsetMm = (floor.widthMm - freeWidthMm(floor, row.fromMm, row.depthMm)) / 2;
-  const placements = new Map<number, FloorPlacement>();
-  let yMm = offsetMm;
-  for (const print of row.prints) {
-    const turned = print.orientation === "turned";
-    placements.set(print.stack.stackIndex, {
-      kind: "floor",
-      row: row.row,
-      xMm: row.fromMm,
-      yMm,
-      depthMm: turned ? print.stack.outerWidthMm : print.stack.outerLengthMm,
-      widthMm: turned ? print.stack.outerLengthMm : print.stack.outerWidthMm,
-      orientation: print.orientation,
-    });
-    yMm += print.widthMm;
-  }
-  return placements;
 }

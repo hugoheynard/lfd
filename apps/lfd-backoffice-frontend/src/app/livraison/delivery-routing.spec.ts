@@ -27,6 +27,7 @@ const SETTINGS = {
   defaultMode: 'insert' as const,
   multiplePassages: true,
   defaultContainer: null,
+  binGapCm: 1,
 };
 
 describe('le calculateur de tournée — dérivations pures', () => {

@@ -1,3 +1,4 @@
+import { BIN_GAP_DEFAULT_CM } from "../../value-objects/bin-gap.js";
 import { CargoFloor } from "../../value-objects/cargo-floor.js";
 import { capacityGuardOf } from "../capacity-guard.js";
 import { type PlanBin, type PlanBinType, type PlanStop, planLoading } from "../loading-plan.js";
@@ -39,7 +40,7 @@ function mannes(count: number, binType: PlanBinType = MANNE): readonly PlanStop[
 
 describe("le plan de chargement — le plafond de la caisse (2026-10-06)", () => {
   it("deux mannes ne s'empilent pas dans une caisse de 140 cm", () => {
-    const plan = planLoading(mannes(2), van(140));
+    const plan = planLoading(mannes(2), van(140), BIN_GAP_DEFAULT_CM);
 
     expect(plan.stacks.map((stack) => stack.height)).toEqual([1, 1]);
     // Une seule place au sol (70 × 50) : la seconde manne sort.
@@ -48,14 +49,14 @@ describe("le plan de chargement — le plafond de la caisse (2026-10-06)", () =>
   });
 
   it("deux mannes s'empilent dans une caisse de 145 cm : 1430 mm sous 1450", () => {
-    const plan = planLoading(mannes(2), van(145));
+    const plan = planLoading(mannes(2), van(145), BIN_GAP_DEFAULT_CM);
 
     expect(plan.stacks.map((stack) => stack.height)).toEqual([2]);
     expect(plan.warnings).toEqual([]);
   });
 
   it("une manne plus haute que la caisse ne tient pas, et l'alerte dit pourquoi", () => {
-    const plan = planLoading(mannes(1), van(70));
+    const plan = planLoading(mannes(1), van(70), BIN_GAP_DEFAULT_CM);
 
     expect(plan.stacks[0]?.placement).toEqual({ kind: "off_floor" });
     expect(plan.warnings.find((warning) => warning.kind === "floor_over")?.message).toBe(
@@ -70,14 +71,14 @@ describe("le plan de chargement — le plafond de la caisse (2026-10-06)", () =>
       ...mannes(1).map((stop) => ({ ...stop, position: 2, orderId: "o2", reference: "R-o2" })),
     ];
     // Chargée d'abord (dernier arrêt), la manne trop haute sort ; le bac bas se pose quand même.
-    const plan = planLoading(stops, van(70));
+    const plan = planLoading(stops, van(70), BIN_GAP_DEFAULT_CM);
 
     expect(plan.stacks.map((stack) => stack.placement?.kind)).toEqual(["off_floor", "floor"]);
   });
 
   it("un isotherme en caisse réfrigérée n'est borné que par sa pile", () => {
     const cold: PlanBinType = { ...MANNE, id: "cold", isotherm: true };
-    const plan = planLoading(mannes(2, cold), van(140, 100));
+    const plan = planLoading(mannes(2, cold), van(140, 100), BIN_GAP_DEFAULT_CM);
 
     expect(plan.stacks.map((stack) => [stack.height, stack.placement?.kind])).toEqual([
       [2, "refrigerated"],
@@ -89,6 +90,7 @@ describe("la garde de capacité — le plafond de la caisse (2026-10-06)", () =>
   const capacity = (vehicle: PlanVehicle, count: number) => ({
     vehicles: new Map([["van", vehicle]]),
     bins: new Map([["o1", mannes(count)[0]?.bins ?? []]]),
+    binGapCm: BIN_GAP_DEFAULT_CM,
   });
   const route = { roundId: null, stops: [{ id: "o1", window: null }] };
 

@@ -15,6 +15,7 @@ describe("les réglages du calcul (L7-C13, L7-C15)", () => {
       multiplePassages: true,
       safetyMarginMinutes: 20,
       defaultContainer: null,
+      binGapCm: 1,
     });
     expect(settings.earliestDepartureMinute).toBe(360);
   });
@@ -63,6 +64,7 @@ describe("les réglages du calcul (L7-C13, L7-C15)", () => {
       multiplePassages: false,
       safetyMarginMinutes: 90,
       defaultContainer: { binTypeId: "manne", count: 50 },
+      binGapCm: 10,
     });
 
     expect(settings.earliestDepartureMinute).toBe(0);
@@ -70,6 +72,21 @@ describe("les réglages du calcul (L7-C13, L7-C15)", () => {
       RoutingSettings.define({ ...RoutingSettings.DEFAULTS, safetyMarginMinutes: 0 })
         .safetyMarginMinutes,
     ).toBe(0);
+  });
+
+  describe("le jeu entre bacs (G5a, 2026-10-08)", () => {
+    it("vaut 1 cm d'usine, la constante que le plan lisait", () => {
+      expect(RoutingSettings.defaults().binGapCm).toBe(1);
+    });
+
+    it("refuse un jeu hors de 0 à 10 cm ou non entier ; 0 est permis", () => {
+      for (const binGapCm of [-1, 11, 1.5]) {
+        expect(() => RoutingSettings.define({ ...RoutingSettings.DEFAULTS, binGapCm })).toThrow(
+          InvalidRoutingSettingError,
+        );
+      }
+      expect(RoutingSettings.define({ ...RoutingSettings.DEFAULTS, binGapCm: 0 }).binGapCm).toBe(0);
+    });
   });
 
   describe("le contenant par défaut d'une commande (2026-10-06)", () => {

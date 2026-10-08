@@ -26,6 +26,7 @@ const PAYLOAD = {
   multiplePassages: false,
   safetyMarginMinutes: 25,
   defaultContainer: null,
+  binGapCm: 3,
 };
 const MANNE = binTypeView("manne");
 const OLD = binTypeView("old", { archived: true });
@@ -141,6 +142,47 @@ describe("les réglages du calcul de tournée", () => {
     expect(await new GetRoutingSettingsHandler(settings).execute()).toMatchObject({
       detourPercent: RoutingSettings.DEFAULTS.detourPercent,
       averageSpeedKmh: RoutingSettings.DEFAULTS.averageSpeedKmh,
+    });
+  });
+
+  describe("le jeu entre bacs (G5a, 2026-10-08)", () => {
+    it("se pose, se relit, et le fait le dit avant et après", async () => {
+      const settings = new InMemoryRoutingSettings(RoutingSettings.defaults());
+      const events = new RecordingPublisher();
+
+      await setter(settings, events).execute(
+        new SetRoutingSettingsCommand({ ...PAYLOAD, binGapCm: 0 }, "staff_1"),
+      );
+
+      expect(await new GetRoutingSettingsHandler(settings).execute()).toMatchObject({
+        binGapCm: 0,
+      });
+      expect(events.traced[0]?.journalFact().payload).toMatchObject({
+        before: { binGapCm: 1 },
+        after: { binGapCm: 0 },
+      });
+    });
+
+    it("absent (écran d'avant), garde le jeu posé", async () => {
+      const settings = new InMemoryRoutingSettings(RoutingSettings.define(PAYLOAD));
+      const { binGapCm: _gap, ...withoutGap } = PAYLOAD;
+
+      await setter(settings, new RecordingPublisher()).execute(
+        new SetRoutingSettingsCommand({ ...withoutGap, stopMinutes: 9 }, "staff_1"),
+      );
+
+      expect((await settings.current())?.binGapCm).toBe(3);
+    });
+
+    it("refuse un jeu hors de 0 à 10 cm, sans rien écrire", async () => {
+      const settings = new InMemoryRoutingSettings();
+
+      await expect(
+        setter(settings, new RecordingPublisher()).execute(
+          new SetRoutingSettingsCommand({ ...PAYLOAD, binGapCm: 11 }, "staff_1"),
+        ),
+      ).rejects.toThrow("jeu entre bacs");
+      expect(settings.written).toEqual([]);
     });
   });
 

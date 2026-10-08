@@ -127,6 +127,8 @@ function placementView(placement: StackPlacement | null): DeliveryLoadingPlanPla
     depthCm: placement.depthMm / MM_PER_CM,
     widthCm: placement.widthMm / MM_PER_CM,
     orientation: placement.orientation,
+    // Absent au sol : le contrat le garde facultatif pour les écrans d'avant G5b.
+    ...(placement.overArch === null ? {} : { overArch: placement.overArch }),
   };
 }
 
