@@ -58,7 +58,7 @@ Un lot à la fois, chacun vérifié puis commité avant le suivant.
 4. ✅ **PA2, le trou** (bâti le 2026-10-09, non commité) — envoyer les annulations même quand la préparation ne produit aucun lot.
 5. ✅ **Suites d'E6** (bâties le 2026-10-09, non commité) — « Mes factures » d'un site, renvoi de l'e-mail, e-mail en/it, page maquette `mes-factures/`.
 6. ✅ **E5** — la facture d'une commande payée par carte, après un plan des remboursements (contredit par `vitruve`).
-7. **Export CSV des mandats** pour le portail de la banque (colonnes A–H).
+7. ✅ **Export CSV des mandats** pour le portail de la banque (colonnes A–H).
 8. **PA5** — les retours bancaires (`pain.002`, `camt.054`), sur la norme.
 9. **Fidélité** — ce qui ne dépend pas du cabinet.
 10. **Docs** — les plans bâtis deviennent des docs d'état (blocage et liens de paiement, mentions du mandat, restes du mandat, simulateur, le prélèvement suit la facture, bons et facture).

@@ -103,6 +103,17 @@ const autopilotRun = {
   message: z.string().nullable(),
 };
 
+/**
+ * L'export des mandats pour le portail de la banque (plan
+ * `plan-export-des-mandats-pour-la-banque.md`, § 2 bis). Sujet :
+ * `legal_entity`, nommé par sa raison sociale. Jamais un IBAN ni une RUM :
+ * le nombre de mandats, et l'auteur de la ligne.
+ */
+const mandateBankExport = {
+  subjectLabel: subjectLabel(),
+  mandateCount: count(),
+};
+
 export const COLLECTION_FACTS = {
   /**
    * Un lot est constitué. `unmandatedCompanies` le rend indéposable (Q2) ;
@@ -183,4 +194,8 @@ export const COLLECTION_FACTS = {
   "collection.notice_failed": fact(payload({ ...notice, failure: z.string() })),
   /** L'automatisme a tenté le cycle : son issue, rangée et visible, jamais avalée. */
   "collection.autopilot_ran": fact(payload(autopilotRun)),
+  /** Un export des mandats est préparé : son fichier se télécharge, rien n'est importé. */
+  "mandate_bank_export.created": fact(payload(mandateBankExport)),
+  /** Le staff a dit que la banque a importé l'export : ses mandats ne ressortiront plus. */
+  "mandate_bank_export.imported": fact(payload(mandateBankExport)),
 } as const;

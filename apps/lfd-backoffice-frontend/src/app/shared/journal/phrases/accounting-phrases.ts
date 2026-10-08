@@ -4,6 +4,7 @@ import { optional } from '../payload-read';
 import {
   byActor,
   cite,
+  countOf,
   fromTo,
   inUnit,
   name,
@@ -438,6 +439,16 @@ function autopilotIssue(fact: PhraseFact): Segment[] {
   ];
 }
 
+/**
+ * « : 3 mandats » — le nombre de mandats d'un export pour la banque (plan
+ * `plan-export-des-mandats-pour-la-banque.md`). Jamais une RUM ni un IBAN : la
+ * charge ne les porte pas.
+ */
+function mandateCount(fact: PhraseFact): Segment[] {
+  const count = countOf(fact.payload['mandateCount'], 'mandat', 'mandats');
+  return count === null ? [] : [text(' : '), count];
+}
+
 export const ACCOUNTING_PHRASES = {
   'legal_entity.declared': onEntity(
     'a déclaré',
@@ -569,6 +580,18 @@ export const ACCOUNTING_PHRASES = {
     'de',
     autopilotIssue,
     ['cycleClosesAt', 'outcome', 'batchCount', 'message'],
+  ),
+  'mandate_bank_export.created': onEntity(
+    'a préparé l’export des mandats pour la banque',
+    'de',
+    mandateCount,
+    ['mandateCount'],
+  ),
+  'mandate_bank_export.imported': onEntity(
+    'a marqué importé à la banque l’export des mandats',
+    'de',
+    mandateCount,
+    ['mandateCount'],
   ),
   'collection.order_settled_otherwise': (fact) => {
     const number = subjectLabelOf(fact);

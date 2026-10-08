@@ -3,11 +3,13 @@ import { Global, Module } from "@nestjs/common";
 import { DebtorMandateReader } from "../b2b/accounting/domain/ports/debtor-mandate.reader.js";
 import { CollectionMandatesReader } from "../b2b/accounting/domain/ports/collection-mandates.reader.js";
 import { MandateRecheckReader } from "../b2b/accounting/domain/ports/mandate-recheck.reader.js";
+import { MandatesForBankExportReader } from "../b2b/accounting/domain/ports/mandates-for-bank-export.reader.js";
 import {
   PrismaCollectionMandatesReader,
   PrismaMandateRecheckReader,
 } from "../b2b/payments/infrastructure/prisma-collection-mandates.reader.js";
 import { PrismaDebtorMandateReader } from "../b2b/payments/infrastructure/prisma-debtor-mandate.reader.js";
+import { PrismaMandatesForBankExportReader } from "../b2b/payments/infrastructure/prisma-mandates-for-bank-export.reader.js";
 
 /**
  * Le fil qui relie **le lot de prélèvement aux mandats**.
@@ -31,6 +33,11 @@ import { PrismaDebtorMandateReader } from "../b2b/payments/infrastructure/prisma
  * Depuis le 2026-10-05, deux fils de plus pour le lot figé
  * (`plan-lot-de-prelevement-fige.md`) : les mandats actifs avec leur créancier
  * (constitution) et la relecture des mandats d'un lot (dépôt).
+ *
+ * Depuis le 2026-10-09, un fil de plus — le second qui fait sortir des IBAN en
+ * clair, pour la même raison : le fichier d'import des mandats de la banque
+ * (`plan-export-des-mandats-pour-la-banque.md`) les porte par construction. Il
+ * n'est servi que sous l'écriture comptable, et n'est rangé nulle part.
  */
 @Global()
 @Module({
@@ -38,7 +45,13 @@ import { PrismaDebtorMandateReader } from "../b2b/payments/infrastructure/prisma
     { provide: DebtorMandateReader, useClass: PrismaDebtorMandateReader },
     { provide: CollectionMandatesReader, useClass: PrismaCollectionMandatesReader },
     { provide: MandateRecheckReader, useClass: PrismaMandateRecheckReader },
+    { provide: MandatesForBankExportReader, useClass: PrismaMandatesForBankExportReader },
   ],
-  exports: [DebtorMandateReader, CollectionMandatesReader, MandateRecheckReader],
+  exports: [
+    DebtorMandateReader,
+    CollectionMandatesReader,
+    MandateRecheckReader,
+    MandatesForBankExportReader,
+  ],
 })
 export class DebtorMandateModule {}

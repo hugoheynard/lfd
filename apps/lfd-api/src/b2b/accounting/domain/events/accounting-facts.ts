@@ -67,6 +67,16 @@ export const COLLECTION_FACT_TYPES = {
 } as const satisfies Readonly<Record<string, JournalFactType>>;
 
 /**
+ * Les faits de l'export des mandats pour la banque (plan
+ * `plan-export-des-mandats-pour-la-banque.md`, § 2 bis). Sujet : l'entité
+ * émettrice ; charge : le nombre de mandats. JAMAIS un IBAN ni une RUM.
+ */
+export const MANDATE_BANK_EXPORT_FACT_TYPES = {
+  created: "mandate_bank_export.created",
+  imported: "mandate_bank_export.imported",
+} as const satisfies Readonly<Record<string, JournalFactType>>;
+
+/**
  * Les faits de l'arrêté de facturation (plan
  * `le-prelevement-suit-la-facture.md`) : émis avec la constitution
  * du lot, annulé avec lui.

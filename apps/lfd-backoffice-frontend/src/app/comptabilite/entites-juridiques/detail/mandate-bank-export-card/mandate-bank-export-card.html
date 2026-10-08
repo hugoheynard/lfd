@@ -1,0 +1,113 @@
+<fold-page-section
+  title="Mandats à la banque"
+  description="Le fichier que le portail de la banque importe avant le premier dépôt d'un lot : un mandat qu'elle ne connaît pas ne se prélève pas."
+  separator
+>
+  <div class="mb-stack">
+    <!-- L'ordre de la banque, dit avant le bouton : ses RIB destinataires
+         s'importent AVANT les mandats (modèle reçu le 2026-10-08). -->
+    <fold-callout appearance="inset" variant="info">
+      Importer d'abord les RIB destinataires (modèle attendu de la banque), puis ce fichier.
+    </fold-callout>
+
+    @if (actionError(); as message) {
+      <fold-callout appearance="inset" variant="alert" announce>{{ message }}</fold-callout>
+    }
+
+    @if (loadError(); as message) {
+      <fold-empty-state tone="alert" title="Mandats illisibles" [subtitle]="message">
+        <button foldButton (click)="load()">Réessayer</button>
+      </fold-empty-state>
+    } @else if (view(); as view) {
+      <fold-field-list>
+        <fold-field label="À exporter">{{ mandates(view.toExportCount) }}</fold-field>
+        <fold-field label="Déjà importés">{{ mandates(view.importedCount) }}</fold-field>
+      </fold-field-list>
+
+      <!-- Nommés, pas comptés : chacun a sa sortie, et elle n'est pas la
+           même pour tous. -->
+      @if (view.excluded.length > 0) {
+        <fold-callout appearance="inset" variant="warning">
+          <strong>{{ mandates(view.excluded.length) }} hors du fichier&nbsp;:</strong>
+          <ul class="mb-list">
+            @for (excluded of view.excluded; track excluded.reference) {
+              <li>
+                {{ excluded.reference }} — {{ excluded.debtorName }}&nbsp;:
+                {{ reasonLabels[excluded.reason] }}
+              </li>
+            }
+          </ul>
+        </fold-callout>
+      }
+
+      @if (entity().ics === '') {
+        <p class="mb-said">
+          Attribuer d'abord l'identifiant créancier (ICS)&nbsp;: la banque l'exige pour chaque
+          mandat.
+        </p>
+      }
+
+      <div class="mb-row">
+        <fold-checkbox
+          label="Tous les mandats actifs, y compris ceux déjà importés"
+          [checked]="all()"
+          (checkedChange)="all.set($event)"
+        />
+        <button
+          foldButton
+          icon="download"
+          [disabled]="busy() || entity().ics === '' || (!all() && view.toExportCount === 0)"
+          [loading]="busy()"
+          (click)="prepare()"
+        >
+          Préparer l'export
+        </button>
+      </div>
+
+      <p class="mb-said">
+        Télécharger ne vaut pas import&nbsp;: un mandat reste «&nbsp;à exporter&nbsp;» tant que
+        l'export qui le porte n'est pas marqué importé. Un mandat révoqué après import n'est pas
+        signalé à la banque&nbsp;: il n'entre plus dans aucun lot, elle ne le débitera donc pas.
+      </p>
+
+      @if (view.exports.length > 0) {
+        <ul class="mb-exports">
+          @for (item of view.exports; track item.id) {
+            <li class="mb-export">
+              <span>
+                Préparé le {{ day(item.createdAt) }} — {{ mandates(item.mandateCount) }} —
+                {{
+                  item.importedAt === null
+                    ? 'pas encore importé'
+                    : 'importé le ' + day(item.importedAt)
+                }}
+              </span>
+              <span class="mb-actions">
+                <button
+                  foldButton
+                  emphasis="outline"
+                  icon="download"
+                  [disabled]="busy()"
+                  (click)="downloadFile(item)"
+                >
+                  Télécharger
+                </button>
+                @if (item.importedAt === null) {
+                  <fold-inline-confirm
+                    intent="primary"
+                    [labels]="{ confirm: 'La banque l’a importé' }"
+                    (confirmed)="markImported(item)"
+                  >
+                    <button foldButton emphasis="outline" [disabled]="busy()">
+                      Marquer importé
+                    </button>
+                  </fold-inline-confirm>
+                }
+              </span>
+            </li>
+          }
+        </ul>
+      }
+    }
+  </div>
+</fold-page-section>

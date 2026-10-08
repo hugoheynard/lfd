@@ -121,3 +121,62 @@ clair (arbitrage A16).
 | Lot    | Contenu                                                                                                                                |
 | ------ | -------------------------------------------------------------------------------------------------------------------------------------- |
 | **M1** | module de traduction, tables d'export (migration), lecture par créancier, commandes Exporter et Marquer importé, fichier, faits, écran |
+
+## 8. M1 bâti (2026-10-09, non commité à l'écriture de ces lignes)
+
+Bâti selon le § 2 bis. Ce qui existe :
+
+- **Migration** `20261009100000_l_export_des_mandats_pour_la_banque` (additive) :
+  `mandate_bank_export` (entité, auteur, instant, nombre, « importé » par qui et
+  quand) et `mandate_bank_export_line` (mandat, RUM, empreinte). Contraintes :
+  export non vide, « importé » = instant ET auteur, empreinte = 64 hex. Aucun
+  IBAN ni BIC en base, ni droit accordé.
+- **Lecture par créancier** : port `MandatesForBankExportReader`, déclaré par
+  la comptabilité (`accounting/domain/ports/`), implémenté par `payments`
+  (`PrismaMandatesForBankExportReader`, même `FieldCipher` et même
+  `debitedAccounts` que le lot), relié dans `appBootstrap/debtor-mandate.module.ts`.
+- **Module de traduction** F/G/H : `mandate-bank-export-values.ts` (seul
+  endroit où `JJ/MM/AAAA`, `RCUR`/`OOFF`, `CORE`/`B2B` s'écrivent) ; F par
+  `localDay`, la fonction de `DtOfSgntr`, désormais exportée.
+- **Fichier** : `mandate-bank-export-csv.ts` — `sepa()` puis retrait de
+  `+ - = @` (et des espaces qui les séparent) en tête de chaque cellule, nom
+  coupé à 70, 17 cellules terminées par `;`, CRLF, sans en-tête.
+- **Agrégat** `MandateBankExport` (`export`, `markImported`), commandes
+  `ExportMandatesForBank` et `MarkMandateBankExportImported`, requêtes du
+  fichier et de la carte ; routes `…/legal-entities/:id/mandate-exports`
+  (`GET` lecture, `POST` écriture, `GET …/:exportId/file.csv` sous
+  `b2b_accounting:write` + `no-store` + `attachment`, `POST …/imported`).
+- **Faits** `mandate_bank_export.created` / `.imported` (sujet : l'entité ;
+  charge : `mandateCount`), phrases du journal.
+- **Écran** : carte « Mandats à la banque » sur la fiche de l'entité.
+- **À côté** : les deux colonnes d'auteur au registre RGPD
+  (`documentation/legal/rgpd-registre.json`), le préfixe
+  `mandate_bank_export.` sous le module « comptabilité » du journal, la durée
+  de la suite e2e mesurée (6,3 s, pas de `e2e:rebalance`).
+
+Tranché en bâtissant (à relire par Hugo) :
+
+1. Le port est **déclaré par la comptabilité** et implémenté par `payments`,
+   comme `CollectionMandatesReader` — et non « déclaré dans `payments` » à la
+   lettre du § 2 bis-2 : la comptabilité n'importe rien de `payments`
+   aujourd'hui, et le sens inverse est celui du lot.
+2. Le lecteur rend les faits du mandat ; l'**ICS** vient de l'entité
+   (`LegalEntityReader`) et le **nom du débiteur** de
+   `CollectionCandidatesReader.companyNames` + `nameOf` — la source du
+   `Dbtr/Nm` du `pain.008` (raison sociale du débiteur figé, l'id à défaut).
+3. Les mandats **repris** (`creditor_id` nul) sont écartés et nommés sur la
+   carte de **chaque** entité : ils ne sont à aucune.
+4. Le fichier refuse (409) aussi un mandat **devenu inexportable** (révoqué,
+   RIB retiré, BIC vidé) depuis l'export, pas seulement un compte changé.
+5. Une entité **sans ICS** ne peut pas préparer d'export (409) : la colonne B
+   est obligatoire.
+6. Le fichier est servi en `text/csv; charset=us-ascii`, nommé
+   `mandats-banque-<SIREN>-<id>.csv`.
+7. Le fait ne porte pas l'id de l'export (le catalogue refuse un id nu) :
+   l'entité, le nombre, l'auteur.
+8. Les libellés des raisons d'écart vivent dans le back-office, pas dans
+   `@lfd/contracts` : la carte n'importe que des types du paquet (un export de
+   valeur neuf casse le serveur de dev tant que son pré-bundle n'est pas purgé).
+
+Reste hors M1 : les RIB destinataires (§ 5), les colonnes L/M des mandats
+repris (A17), la confirmation de F/G/H par la banque (A15).

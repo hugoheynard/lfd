@@ -1,0 +1,62 @@
+// ─────────────────────────────────────────────────────────────────────────────
+// L'export des mandats pour le portail de la banque — plan
+// `documentation/comptabilite/mandat/plan-export-des-mandats-pour-la-banque.md`
+// (§ 2 bis, lot M1).
+// ─────────────────────────────────────────────────────────────────────────────
+//
+// Propriétaire : `src/b2b/accounting/`. Un export est une ÉCRITURE : il fige
+// quels mandats sont partis, sous quel compte, et par qui. Le fichier CSV,
+// lui, n'est PAS stocké — il porte des IBAN en clair, et se recalcule à chaque
+// téléchargement depuis les mandats de l'export.
+//
+// 🔴 Aucun IBAN ni BIC ici, ni scellé ni en clair : une ligne garde
+// l'EMPREINTE SHA-256 (hex) de l'IBAN normalisé exporté. Elle sert à dire
+// « déjà importé » (un compte changé fait ressortir le mandat) et à refuser un
+// fichier dont un compte ne correspond plus.
+//
+// Contraintes INVISIBLES ici — dans la migration
+// `20261009100000_l_export_des_mandats_pour_la_banque` : un export compte au
+// moins un mandat ; « importé » porte son instant ET son auteur, ou aucun des
+// deux ; l'empreinte est 64 caractères hexadécimaux.
+
+/// Un export : les mandats d'une entité émettrice, figés à l'instant du geste.
+model MandateBankExport {
+  /// ULID.
+  id String @id
+
+  legalEntityId String      @map("legal_entity_id")
+  legalEntity   LegalEntity @relation(fields: [legalEntityId], references: [id], onDelete: Restrict)
+
+  createdAt        DateTime @map("created_at") @db.Timestamptz(3)
+  /// Identifiant staff LOCAL — jamais un `sub`.
+  createdByStaffId String   @map("created_by_staff_id")
+  mandateCount     Int      @map("mandate_count")
+
+  /// Posé par « Marquer importé », une seule fois. NULL = pas encore importé.
+  importedAt        DateTime? @map("imported_at") @db.Timestamptz(3)
+  importedByStaffId String?   @map("imported_by_staff_id")
+
+  lines MandateBankExportLine[]
+
+  @@index([legalEntityId, createdAt])
+  @@map("mandate_bank_export")
+  @@schema("public")
+}
+
+/// Un mandat de l'export, et l'empreinte du compte sous lequel il est parti.
+model MandateBankExportLine {
+  exportId String            @map("export_id")
+  export   MandateBankExport @relation(fields: [exportId], references: [id], onDelete: Restrict)
+
+  /// Opaque, comme `collection_batch_line.mandate_id` : pas de clé étrangère.
+  mandateId          String @map("mandate_id")
+  /// La RUM telle qu'exportée.
+  rum                String
+  /// SHA-256 hex de l'IBAN normalisé — jamais l'IBAN.
+  accountFingerprint String @map("account_fingerprint")
+
+  @@id([exportId, mandateId])
+  @@index([mandateId])
+  @@map("mandate_bank_export_line")
+  @@schema("public")
+}

@@ -189,6 +189,10 @@ const PREFIXES: Readonly<Record<ActivityModule, readonly string[]>> = {
     // La facture émise et l'avoir (plan `plan-emission-de-la-facture.md`,
     // E2, 2026-10-08).
     "invoice.",
+    // L'export des mandats pour le portail de la banque, préparé et marqué
+    // importé sous `b2b_accounting` (plan `plan-export-des-mandats-pour-la-banque.md`,
+    // M1, 2026-10-09).
+    "mandate_bank_export.",
   ],
 };
 

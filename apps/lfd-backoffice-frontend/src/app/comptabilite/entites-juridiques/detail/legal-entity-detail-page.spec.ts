@@ -7,6 +7,7 @@ import { afterEach, describe, expect, it, vi } from 'vitest';
 import type { DeclareLegalEntityPayload, LegalEntityView } from '@lfd/contracts';
 
 import { LegalEntitiesService } from '../../legal-entities.service';
+import { MandateBankExportsService } from '../../mandate-bank-exports.service';
 import { LegalEntityDetailPage } from './legal-entity-detail-page';
 import { MandatePanel, type MandatePanelData } from './mandate-panel/mandate-panel';
 
@@ -171,6 +172,21 @@ async function render(
     providers: [
       { provide: LegalEntitiesService, useValue: api },
       { provide: FoldPanelHostService, useValue: panels },
+      // La carte « Mandats à la banque » lit elle-même : rien à exporter ici,
+      // ce n'est pas le sujet de cette suite (elle a la sienne).
+      {
+        provide: MandateBankExportsService,
+        useValue: {
+          of: () =>
+            Promise.resolve({
+              exportableCount: 0,
+              toExportCount: 0,
+              importedCount: 0,
+              excluded: [],
+              exports: [],
+            }),
+        },
+      },
       provideRouter([]),
     ],
   });

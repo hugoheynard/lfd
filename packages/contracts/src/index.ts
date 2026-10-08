@@ -164,6 +164,15 @@ export {
   EARLY_PAYMENT_DISCOUNT_MAX_LENGTH,
 } from "./legal-entity.js";
 export type { BillingCycleView } from "./billing-cycle.js";
+export { exportMandatesForBankPayloadSchema } from "./mandate-bank-export.js";
+export type {
+  ExportMandatesForBankPayload,
+  MandateBankExcludedView,
+  MandateBankExclusionReasonView,
+  MandateBankExportCreatedView,
+  MandateBankExportSummaryView,
+  MandateBankExportsView,
+} from "./mandate-bank-export.js";
 export {
   COLLECTION_BATCH_STATUS_LABELS,
   COLLECTION_EXCLUSION_REASON_LABELS,

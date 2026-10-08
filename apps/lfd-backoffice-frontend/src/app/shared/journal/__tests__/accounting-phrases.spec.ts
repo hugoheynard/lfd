@@ -537,3 +537,19 @@ describe('le PDF Factur-X de la pièce (E3b)', () => {
     expect(failed).toContain('police illisible');
   });
 });
+
+describe('l’export des mandats pour la banque', () => {
+  const exported = { subjectLabel: ENTITY, mandateCount: 3 };
+
+  it('dit l’entité et le nombre de mandats, jamais un compte', () => {
+    expect(sentence(entity('mandate_bank_export.created', exported))).toContain(
+      'a préparé l’export des mandats pour la banque de l’entité émettrice « La Folie Douce SAS » : 3 mandats',
+    );
+    expect(
+      sentence(entity('mandate_bank_export.imported', { ...exported, mandateCount: 1 })),
+    ).toContain('a marqué importé à la banque l’export des mandats de l’entité émettrice');
+    expect(
+      sentence(entity('mandate_bank_export.imported', { ...exported, mandateCount: 1 })),
+    ).toMatch(/: 1 mandat$/u);
+  });
+});

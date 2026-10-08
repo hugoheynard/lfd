@@ -226,7 +226,12 @@ function sumOf(debits: readonly DocumentDebit[]): number {
   return debits.reduce((sum, debit) => sum + debit.amountCents, 0);
 }
 
-function localDay(instant: Date): string {
+/**
+ * Le jour de Paris d'un instant (`AAAA-MM-JJ`) — celui de `DtOfSgntr`.
+ * Exporté pour l'export des mandats, qui doit dater la signature du MÊME jour
+ * que le `pain.008` : la banque rapproche ses deux fichiers.
+ */
+export function localDay(instant: Date): string {
   return instantToLocal(instant).day;
 }
 

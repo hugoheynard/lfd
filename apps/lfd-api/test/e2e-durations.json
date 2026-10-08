@@ -136,6 +136,7 @@
   "test/loyalty-me.e2e-spec.ts": 8841,
   "test/loyalty-voucher-order.e2e-spec.ts": 9574,
   "test/loyalty.e2e-spec.ts": 6124,
+  "test/mandate-bank-exports.e2e-spec.ts": 6253,
   "test/mandate-mentions.e2e-spec.ts": 5144,
   "test/mandate-scheme.e2e-spec.ts": 7755,
   "test/mandate.e2e-spec.ts": 6766,

@@ -156,11 +156,14 @@ describe("moduleOf — la comptabilité", () => {
     ["loyalty.voucher_issued", "comptabilite"],
     ["loyalty.points_adjusted", "comptabilite"],
     ["payment_refund.unmatched", "comptabilite"],
+    // L'export des mandats pour la banque (M1, 2026-10-09).
+    ["mandate_bank_export.created", "comptabilite"],
+    ["mandate_bank_export.imported", "comptabilite"],
   ])("%s se range sous %s", (type, module) => {
     expect(moduleOf(type)).toBe(module);
   });
 
-  it("le filtre du module ne ramène que ses dix préfixes", () => {
+  it("le filtre du module ne ramène que ses onze préfixes", () => {
     expect(prefixesOf("comptabilite")).toEqual([
       "legal_entity.",
       "payment_mandate.",
@@ -172,6 +175,7 @@ describe("moduleOf — la comptabilité", () => {
       "collection.",
       "billing_statement.",
       "invoice.",
+      "mandate_bank_export.",
     ]);
   });
 

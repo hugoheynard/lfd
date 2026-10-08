@@ -1,6 +1,7 @@
 import { AdminIssuedInvoicesController } from "./http/admin-issued-invoices.controller.js";
 import { CompanyInvoicesController } from "./http/company-invoices.controller.js";
 import { CARD_INVOICE_PROVIDERS } from "./card-invoice.providers.js";
+import { MANDATE_BANK_EXPORT_PROVIDERS } from "./mandate-bank-export.providers.js";
 import { ISSUED_INVOICE_PROVIDERS } from "./issued-invoice.providers.js";
 import { Module } from "@nestjs/common";
 
@@ -48,6 +49,7 @@ import { OrderCollectionRepository } from "./domain/ports/order-collection.repos
 import { OrderNumbersReader } from "./domain/ports/order-numbers.reader.js";
 import { RecordedClosureReader } from "./domain/ports/recorded-closure.reader.js";
 import { AdminCollectionBatchesController } from "./http/admin-collection-batches.controller.js";
+import { AdminMandateBankExportsController } from "./http/admin-mandate-bank-exports.controller.js";
 import { CollectionAutopilotController } from "./http/collection-autopilot.controller.js";
 import { InvoiceAutopilotController } from "./http/invoice-autopilot.controller.js";
 import { RunCollectionAutopilotHandler } from "./application/commands/run-collection-autopilot.handler.js";
@@ -182,6 +184,7 @@ import { PrismaLegalEntityRepository } from "./infrastructure/prisma-legal-entit
     AdminCycleStatementsController,
     AdminInvoiceDossiersController,
     AdminCollectionBatchesController,
+    AdminMandateBankExportsController,
     CollectionAutopilotController,
     InvoiceAutopilotController,
     AdminMonthlyInvoicesController,
@@ -240,6 +243,7 @@ import { PrismaLegalEntityRepository } from "./infrastructure/prisma-legal-entit
     SendCollectionNotice,
     ...ISSUED_INVOICE_PROVIDERS,
     ...CARD_INVOICE_PROVIDERS,
+    ...MANDATE_BANK_EXPORT_PROVIDERS,
     // La constitution automatique (PA3).
     { provide: CollectionAutopilotRuns, useClass: PrismaCollectionAutopilotRuns },
     { provide: LastAutopilotRunReader, useClass: PrismaLastAutopilotRunReader },
