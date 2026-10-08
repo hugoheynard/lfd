@@ -61,6 +61,40 @@ export class ClosureNotAfterPreviousError extends BusinessError {
   }
 }
 
+/**
+ * Le cycle qu'on constituerait se clôt AVANT la mise en service du
+ * prélèvement (le plancher) : aucune commande ne peut être à la fois après le
+ * plancher et avant la clôture. Sans ce refus, la constitution répondait
+ * « aucune commande à prélever », qui fait chercher une commande manquante.
+ */
+export class CollectionNotYetOpenError extends BusinessError {
+  constructor(
+    readonly floorAt: Date,
+    readonly firstClosure: Date,
+  ) {
+    super(
+      "accounting.collection.not_yet_open",
+      `Le premier cycle prélevable se clôt le ${parisLongDay(firstClosure)} : les commandes passées avant le ${parisLongDay(floorAt)} (mise en service du prélèvement) n'entrent dans aucun lot.`,
+    );
+  }
+}
+
+const LONG_DAY = new Intl.DateTimeFormat("fr-FR", {
+  day: "numeric",
+  month: "long",
+  year: "numeric",
+  timeZone: "Europe/Paris",
+});
+
+/** Le jour civil à Paris, en toutes lettres : « 1er novembre 2026 ». */
+function parisLongDay(date: Date): string {
+  const parts = LONG_DAY.formatToParts(date);
+  const part = (type: Intl.DateTimeFormatPartTypes): string =>
+    parts.find((entry) => entry.type === type)?.value ?? "";
+  const dayOfMonth = part("day");
+  return `${dayOfMonth === "1" ? "1er" : dayOfMonth} ${part("month")} ${part("year")}`;
+}
+
 /** Rien à constituer : aucun schéma n'a de ligne, ou chacun a déjà son lot. */
 export class NothingToCollectError extends BusinessError {
   constructor(readonly excludedCount: number) {

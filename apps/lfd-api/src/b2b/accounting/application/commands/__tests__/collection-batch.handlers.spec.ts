@@ -3,6 +3,7 @@ import { ConstituteCollectionBatchesCommand } from "../constitute-collection-bat
 import { DepositCollectionBatchCommand } from "../deposit-collection-batch.command.js";
 import {
   CollectionFloorMissingError,
+  CollectionNotYetOpenError,
   DepositRecheckFailedError,
   NothingToCollectError,
 } from "../../../domain/errors/collection-errors.js";
@@ -114,5 +115,41 @@ describe("constituer, annuler, déposer un lot", () => {
     await expect(
       w.constitute.execute(new ConstituteCollectionBatchesCommand(ENTITY_ID, "staff_1")),
     ).rejects.toThrow(CollectionFloorMissingError);
+  });
+
+  /**
+   * Régression (2026-10-08) : le plancher posé le jour de la mise en service
+   * tombait APRÈS la clôture du cycle constitué, et « Constituer » répondait
+   * « aucune commande à prélever » au lieu de dire que le premier cycle
+   * prélevable n'était pas encore clos.
+   */
+  it("plancher après la clôture : dit quand se clôt le premier cycle prélevable", async () => {
+    const w = world();
+    w.candidates.orders = [order("c_port")];
+    w.mandates.mandates = [mandate("c_port")];
+    // 5 octobre, Paris — après la clôture du 1er octobre que constitue AFTER_CLOSE.
+    w.candidates.floorAt = new Date("2026-10-05T08:00:00.000Z");
+
+    const refusal = w.constitute.execute(
+      new ConstituteCollectionBatchesCommand(ENTITY_ID, "staff_1"),
+    );
+
+    await expect(refusal).rejects.toThrow(CollectionNotYetOpenError);
+    await expect(refusal).rejects.toThrow(
+      "Le premier cycle prélevable se clôt le 1er novembre 2026 : les commandes passées avant le 5 octobre 2026 (mise en service du prélèvement) n'entrent dans aucun lot.",
+    );
+    expect(w.batches.saved.size).toBe(0);
+  });
+
+  it("plancher avant la clôture : la constitution est inchangée", async () => {
+    const w = world();
+    w.candidates.orders = [order("c_port")];
+    w.mandates.mandates = [mandate("c_port")];
+
+    const ids = await w.constitute.execute(
+      new ConstituteCollectionBatchesCommand(ENTITY_ID, "staff_1"),
+    );
+
+    expect(ids).toHaveLength(1);
   });
 });

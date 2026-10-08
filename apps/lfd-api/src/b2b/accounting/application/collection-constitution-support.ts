@@ -1,14 +1,17 @@
 import type { CreditorSnapshot } from "../domain/creditor-snapshot.js";
 import { CollectionBatch } from "../domain/entities/collection-batch.js";
 import { OrderCollection } from "../domain/entities/order-collection.js";
-import { CollectionFloorMissingError } from "../domain/errors/collection-errors.js";
+import {
+  CollectionFloorMissingError,
+  CollectionNotYetOpenError,
+} from "../domain/errors/collection-errors.js";
 import type {
   CollectableOrder,
   CollectionCandidatesReader,
 } from "../domain/ports/collection-candidates.reader.js";
 import type { CollectionMandatesReader } from "../domain/ports/collection-mandates.reader.js";
 import { billedPayerOf } from "../domain/services/billed-payer.js";
-import { cycleToConstitute, type BillingCycle } from "../domain/services/billing-cycle.js";
+import { cycleAt, cycleToConstitute, type BillingCycle } from "../domain/services/billing-cycle.js";
 import { assembleCollection, type Assembly } from "../domain/services/collection-assembly.js";
 import { renderBatchFile } from "../domain/services/collection-batch-file.js";
 
@@ -26,10 +29,15 @@ export interface ConstitutionReaders {
 export interface ReadAssembly {
   readonly cycle: BillingCycle;
   readonly previousClosure: Date | null;
+  /** La mise en service du prélèvement : aucune commande antérieure n'entre. */
+  readonly floor: Date;
   readonly assembly: Assembly;
 }
 
-/** @throws {CollectionFloorMissingError} le plancher n'est pas posé. */
+/**
+ * @throws {CollectionFloorMissingError} le plancher n'est pas posé.
+ * @throws {CollectionNotYetOpenError} le cycle se clôt avant le plancher.
+ */
 export async function readAssembly(
   readers: ConstitutionReaders,
   legalEntityId: string,
@@ -43,6 +51,11 @@ export async function readAssembly(
   const target = cycleToConstitute(at, null).closesAt;
   const previousClosure = await candidates.previousClosure(legalEntityId, target);
   const cycle = cycleToConstitute(at, previousClosure);
+  // Rien ne peut être après le plancher ET avant la clôture : le dire tel
+  // quel, plutôt que « aucune commande à prélever ».
+  if (floor >= cycle.closesAt) {
+    throw new CollectionNotYetOpenError(floor, cycleAt(floor, null).closesAt);
+  }
   const orders = await candidates.collectableOrders(floor, cycle.closesAt);
   const follows = await candidates.billingFollowsOf(unique(orders.map((order) => order.companyId)));
   const payers = unique(orders.map((order) => billedPayerOf(order, follows)));
@@ -68,7 +81,7 @@ export async function readAssembly(
     companyNames: await candidates.companyNames(unique([...payers, ...sites])),
     liveSchemes: await candidates.liveSchemes(legalEntityId, cycle.closesAt),
   });
-  return { cycle, previousClosure, assembly };
+  return { cycle, previousClosure, floor, assembly };
 }
 
 export interface BuildInput {

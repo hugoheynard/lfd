@@ -503,4 +503,21 @@ describe("le prélèvement suit la facture (F2)", () => {
     expect(await stateOf(sound.id)).toBe("batched");
     expect(await stateOf(other.id)).toBe("batched");
   });
+
+  /**
+   * Régression (2026-10-08) : un plancher posé APRÈS la clôture du cycle
+   * constitué faisait répondre « aucune commande à prélever ».
+   */
+  it("plancher après la clôture : 409 `not_yet_open`, pas « aucune commande »", async () => {
+    const entity = await collectingEntity();
+    await ctx.prisma.collectionFloor.update({
+      where: { id: true },
+      data: { floorAt: new Date(closesAt.getTime() + DAY_MS) },
+    });
+    const response = await staff()
+      .post(`${BASE}/batches`)
+      .send({ legalEntityId: entity })
+      .expect(409);
+    expect(JSON.stringify(response.body)).toContain("accounting.collection.not_yet_open");
+  });
 });
