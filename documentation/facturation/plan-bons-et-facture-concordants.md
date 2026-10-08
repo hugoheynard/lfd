@@ -49,6 +49,24 @@ Aujourd'hui (`invoice-lines.ts`), une ligne « produit × prix » recalcule
 son montant : `arrondi(Σ quantité × prix ÷ 1000)` ; il peut différer d'un
 centime de Σ des `lineTotalCents` des bons (`packages/money/src/millicents.ts:73-78`).
 
+> ✅ **F6-0 fait le 2026-10-08** (lu sur les sources, pas exécuté) :
+>
+> - **Schematron CEN EN 16931, syntaxe CII** (celle de Factur-X,
+>   `ConnectingEurope/eInvoicing-EN16931`, `cii/schematron/abstract/EN16931-CII-model.sch`) :
+>   **aucune règle ne vérifie BT-131 = BT-129 × BT-146 ÷ BT-149.** Sur la
+>   ligne, seulement la présence (BR-22, BR-24, BR-26), le signe du prix
+>   (BR-27) et deux décimales au plus (BR-DEC-23). Les sommes, elles, sont
+>   vérifiées : BR-CO-10 (Σ BT-131 = BT-106), BR-S-08 (base par catégorie),
+>   BR-S-09 (TVA = base × taux).
+> - **Peppol BIS 3.0, PEPPOL-EN16931-R120** : la vérifie, avec une
+>   tolérance de **0,02** (`u:slack(…, 0.02)`) ; un écart d'un centime passe.
+> - **Non vérifié** : les règles propres à la plateforme de réception
+>   française (CIUS FR, règles BR-FR) ; les écarts de BR-S-09 sur notre
+>   arrondi.
+> - **Conséquence** : le montant repris des bons est admis ; on garde D2 (une
+>   ligne par produit et par prix). La branche « une ligne par ligne de bon »
+>   n'est plus nécessaire, Q1 tombe.
+
 **D'abord vérifier, sur le Schematron EN 16931 et le validateur de la
 plateforme de réception retenue** : BT-131 = BT-146 × BT-129 ÷ BT-149 est-il
 contrôlé, et avec quelle tolérance ; combien de décimales BT-146 admet
@@ -142,7 +160,7 @@ s'ils doivent l'être un jour, ils liront l'arrêté.
 
 | Lot      | Contenu                                                                                                                  |
 | -------- | ------------------------------------------------------------------------------------------------------------------------ |
-| **F6-0** | tester le Schematron EN 16931 et le validateur retenu ; trancher Q1                                                      |
+| **F6-0** | ✅ 2026-10-08 — le Schematron CEN ne vérifie pas BT-131, Peppol tolère 0,02 : montant repris admis                       |
 | **F6**   | montant de ligne repris des bons, ou une ligne par ligne de bon ; simulateur ajusté                                      |
 | **F5-0** | ✅ 2026-10-08 : `settlementRegimeOf` (paid/due/account/free) porté par `money.settlement` de la fiche ; e-mails corrigés |
 | **F5**   | toutes les surfaces du § 5 en HT pour un client au compte — après facture et avis de prélèvement                         |
