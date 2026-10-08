@@ -19,6 +19,11 @@
 - **D3.** Si un lot reconstitué change le montant d'un payeur, un **avis
   rectificatif** part (proposé, accepté).
 
+- **D4 (Hugo, 2026-10-08)** — une constitution tardive ne raccourcit jamais
+  le préavis : l'échéance est le plus tard de « clôture + N » et « jour de
+  constitution + délai de pré-notification », puis TARGET2. À bâtir avec
+  PA2 ; l'écran dit la date repoussée.
+
 ## 2. Le mois, tel qu'il se déroulera
 
 ```mermaid
