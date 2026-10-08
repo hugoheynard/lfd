@@ -809,9 +809,16 @@ Deux artefacts qui peuvent diverger — et deux façons de diverger :
 2. **Le redémarrage tombait trop tôt.** Le programme tsc du backend inclut les
    SOURCES des paquets (vérifiable : `tsc --listFiles | grep packages/`). Une
    modification de paquet faisait donc redémarrer Nest **avant** que le `dist`
-   du paquet ne soit reconstruit — puis plus rien ne redémarrait. Corrigé par
-   `dev-toolbox/restart-api-on-package-build.mjs`, qui surveille les `dist` et
-   touche `apps/lfd-api/src/main.ts` une fois le build posé.
+   du paquet ne soit reconstruit — puis plus rien ne redémarrait. Corrigé
+   d'abord par un compagnon qui touchait `src/main.ts` ; depuis le 2026-10-08,
+   par `dev-toolbox/api-dev.mjs` (le `dev` de `lfd-api`), qui remplace
+   `nest start --watch` : `tsc --watch` émet même en erreur de type, et Node est
+   relancé 400 ms après le dernier `.js` écrit dans `apps/lfd-api/dist` ou un
+   `packages/*/dist`. Le compagnon avait un trou : un paquet vu à moitié écrit
+   faisait échouer la compilation de Nest, qui ne relance plus après une erreur
+   — l'API restait morte sans rien dire. Le lanceur relance aussi une API
+   morte seule (2 s, 5 s, 15 s, puis 30 s) et une API muette sur `/health`
+   depuis 60 s ; chaque relance s'écrit en une ligne `[api-dev]`.
 
 **Si ça se reproduit malgré tout** : redémarrer le backend suffit. Et pour
 confirmer que c'est bien ça plutôt qu'un vrai refus de validation, comparer la

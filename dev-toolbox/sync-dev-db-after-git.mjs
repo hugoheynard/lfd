@@ -8,7 +8,8 @@
  * geste git a fait entrer quelque chose sous `apps/lfd-api/prisma/`, il applique
  * les migrations en attente à la base de DEV puis régénère le client Prisma.
  * Le client est généré dans `apps/lfd-api/src/platform/database/client` :
- * `nest start --watch` le voit changer et redémarre l'API tout seul.
+ * le `tsc --watch` de `dev-toolbox/api-dev.mjs` le voit changer, réémet, et
+ * l'API redémarre toute seule (avant le 2026-10-08 : `nest start --watch`).
  *
  * Pourquoi au commit, et pas en surveillant le dossier des migrations : une
  * migration en cours d'écriture (un agent la retouche avant de la commiter)

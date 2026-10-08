@@ -12,7 +12,7 @@
     "start:dev": "pnpm run free-port && nest start --watch",
     "start:debug": "pnpm run free-port && nest start --debug --watch",
     "start:prod": "node dist/main",
-    "dev": "pnpm run free-port && nest start --watch",
+    "dev": "node ../../dev-toolbox/api-dev.mjs",
     "dev:typecheck": "tsc --noEmit --watch --preserveWatchOutput -p tsconfig.test.json",
     "typecheck:tests": "tsc --noEmit -p tsconfig.test.json",
     "lint": "NODE_OPTIONS=--max-old-space-size=8192 eslint \"{src,apps,libs,test}/**/*.ts\" \"container/__tests__/**/*.ts\" --fix",

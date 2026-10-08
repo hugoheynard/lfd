@@ -13,7 +13,7 @@
     "dev:typecheck": {
       // **Le typecheck des SPECS, en continu.**
       //
-      // `nest start --watch` compile `tsconfig.build.json` — donc `src`, jamais
+      // `api-dev.mjs` (ex-`nest start --watch`) compile `tsconfig.build.json` — donc `src`, jamais
       // `test`. Les fronts, eux, compilent `tsconfig.app.json` par `ng serve`.
       // Personne ne regardait les specs avant le pre-push, et vingt-trois
       // erreurs s'y étaient accumulées sur soixante-quatre commits : ts-jest

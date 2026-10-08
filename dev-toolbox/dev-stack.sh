@@ -31,12 +31,18 @@
 # même raison : deux piles de dev ne coexistent pas, elles se disputeraient les
 # mêmes ports.
 #
+# ⚠️ Depuis le 2026-10-08, le compagnon `restart-api-on-package-build.mjs` n'existe
+# plus : `apps/lfd-api` `dev` lance `dev-toolbox/api-dev.mjs`, qui surveille
+# lui-même les `dist` des paquets et relève l'API quand elle tombe. Il est
+# l'enfant de turbo, pas de ce shell ; le balayage ci-dessous retire seulement
+# ceux qu'une session précédente aurait laissés.
+#
 # Usage : bash dev-toolbox/dev-stack.sh --filter=… --filter=…
 #   SUITE_URL  l'adresse que la bannière « prête » annonce (défaut : back-office)
 set -euo pipefail
 
 ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
-COMPANION="dev-toolbox/restart-api-on-package-build.mjs"
+API_RUNNER="dev-toolbox/api-dev.mjs"
 
 # Les PID des compagnons de CETTE session. Vide tant que rien n'est lancé —
 # d'où le `${…:-}` du nettoyage, sans quoi `set -u` ferait échouer le trap
@@ -64,9 +70,11 @@ trap 'cleanup; exit 143' TERM
 # Ciblé par le CHEMIN du script, et restreint à ce dépôt : `pgrep -f` sur un
 # nom court attraperait un homonyme chez quelqu'un d'autre. `|| true` partout —
 # n'avoir rien à balayer est le cas normal, pas une erreur.
-leaked="$(pgrep -f "$COMPANION" 2>/dev/null || true)"
+# `api-dev.mjs` tue tsc et Node en partant ; un `kill` simple (SIGTERM) le
+# laisse donc faire son propre ménage.
+leaked="$(pgrep -f "$API_RUNNER" 2>/dev/null || true)"
 if [ -n "$leaked" ]; then
-  echo "› $(echo "$leaked" | wc -l | tr -d ' ') compagnon(s) d'une session précédente retiré(s)"
+  echo "› $(echo "$leaked" | wc -l | tr -d ' ') lanceur(s) d'API d'une session précédente retiré(s)"
   echo "$leaked" | xargs -r kill 2>/dev/null || true
 fi
 
@@ -82,9 +90,6 @@ pnpm db:dev:sync
 # fuité. Il est suivi quand même — c'est le suivi qui doit être la règle, pas
 # l'exception accordée à celui dont on a constaté le défaut.
 node dev-toolbox/suite-ready.mjs &
-helpers+=("$!")
-
-node "$COMPANION" &
 helpers+=("$!")
 
 # ─── Et turbo, au premier plan ───────────────────────────────────────────────
