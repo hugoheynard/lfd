@@ -190,7 +190,10 @@ const PLAIN_BON: BonSpec = {
   lineTotalCents: 10_000,
   vatCents: 550,
 };
-/** 10,5 c HT : le bon arrondit à 11 c, la facture de deux bons à 21 c (F2). */
+/**
+ * 10,5 c HT : le bon arrondit à 11 c et porte 1 c de TVA. La facture de deux
+ * bons reprend 22 c de HT (F6) et taxe 22 c une fois : 1 c — 23 c contre 24.
+ */
 const HALF_CENT_BON: BonSpec = { unitPriceMillicents: 10_500, lineTotalCents: 11, vatCents: 1 };
 
 /**
@@ -569,7 +572,7 @@ describe("le prélèvement suit la facture (F2)", () => {
       amountCents: expectedOf(port),
       ordersTotalCents: 24,
     });
-    expect(expectedOf(port)).toBe(22);
+    expect(expectedOf(port)).toBe(23);
     expect(byDebtor.get(quai)).toMatchObject({
       amountCents: expectedOf(quai),
       ordersTotalCents: 10_550,
@@ -585,7 +588,7 @@ describe("le prélèvement suit la facture (F2)", () => {
       .get(`${BASE}/batches/${batchId ?? ""}/audit.csv`)
       .expect(200);
     expect(csv.text).toContain('"Σ bons (€)";"Écart (€)"');
-    expect(csv.text).toContain("0,22;0,24;-0,02");
+    expect(csv.text).toContain("0,23;0,24;-0,01");
   });
 
   it("un bon incohérent est écarté `unbillable`, les autres partent", async () => {
@@ -672,8 +675,8 @@ describe("l'aperçu du mois (PA4)", () => {
     const amounts = new Map(lines.map((line) => [line.debtorCompanyId, line.amountCents]));
     const previewed = new Map(view.lines.map((line) => [line.payerCompanyId, line.amountCents]));
     expect(previewed).toEqual(amounts);
-    expect(previewed.get(port)).toBe(22);
-    expect(view.totalCents).toBe(22 + 10_550);
+    expect(previewed.get(port)).toBe(23);
+    expect(view.totalCents).toBe(23 + 10_550);
     expect(view.ordersTotalCents).toBe(24 + 10_550);
   });
 

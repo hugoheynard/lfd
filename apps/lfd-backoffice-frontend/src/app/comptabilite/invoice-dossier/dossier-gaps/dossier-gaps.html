@@ -10,21 +10,6 @@
 
   <div class="body" data-dossier-gaps>
     <section class="term">
-      <h3 class="term-title">Arrondi des lignes</h3>
-      <p class="formula">
-        Montant HT de la ligne de facture − Σ des montants de cette ligne sur les bons.
-      </p>
-      <dl class="calc">
-        @for (gap of lineGaps(); track $index) {
-          <dt>{{ lineLabel(gap) }}</dt>
-          <dd>{{ signed(gap.gapCents) }}</dd>
-        }
-        <dt class="total">Arrondi des lignes</dt>
-        <dd class="total">{{ signed(gaps.lineRoundingCents) }}</dd>
-      </dl>
-    </section>
-
-    <section class="term">
       <h3 class="term-title">Arrondi de la TVA</h3>
       <p class="formula">
         TVA du taux sur la facture (port ventilé compris, bons ventilés seulement) − Σ des parts de

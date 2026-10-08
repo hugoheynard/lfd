@@ -6,7 +6,6 @@ import {
   historyLabel,
   historyNodes,
   legacyDeliveryOrders,
-  lineGapLabel,
   linePeriod,
   nonZero,
   partLabel,
@@ -117,14 +116,7 @@ describe('la mise en mots du dossier de facturation', () => {
     expect(hasAlerts(dossier({ threeGapInvariantHolds: false }))).toBe(true);
   });
 
-  it('nomme un écart d’arrondi par sa ligne, et par son SKU quand la ligne manque', () => {
-    const view = dossier();
-    const [known, unknown] = view.gaps.lineRounding;
-    expect(plain(lineGapLabel(view, known!))).toBe('Pain de campagne à 1,23450 €');
-    expect(plain(lineGapLabel(view, unknown!))).toBe('PAIN-2 à 1,00000 €');
-  });
-
   it('écarte les écarts nuls, qui n’expliquent rien', () => {
-    expect(nonZero(dossier().gaps.lineRounding).map((gap) => gap.sku)).toEqual(['PAIN-1']);
+    expect(nonZero(dossier().gaps.vatRounding).map((gap) => gap.rate)).toEqual([5.5]);
   });
 });

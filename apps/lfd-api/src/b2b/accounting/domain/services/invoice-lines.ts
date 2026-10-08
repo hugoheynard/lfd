@@ -1,13 +1,23 @@
-import { lineTotalCents } from "@lfd/money";
-
 import { InvoiceDossierUnreadableVatRateError } from "../errors/invoice-dossier-errors.js";
 import type { FrozenInvoiceOrder, InvoiceLine } from "./invoice-dossier.types.js";
 
 /**
  * **Les lignes de la facture** : une par `(sku, prix, taux normalisé)` (plan
  * simulateur, D2 et §3.1). Un changement de tarif ou de taux dans le cycle
- * fait donc deux lignes du même produit, et le montant de chacune est arrondi
- * une seule fois, sur la quantité totale.
+ * fait donc deux lignes du même produit.
+ *
+ * ## Le montant d'une ligne est REPRIS des bons (F6, 2026-10-08)
+ *
+ * Il vaut Σ des `lineTotalCents` figés des bons qu'elle regroupe, et non
+ * `arrondi(Σ quantité × prix)` : un client qui rapproche ses bons et sa
+ * facture doit retrouver le HT au centime (Hugo, 2026-10-08,
+ * `plan-bons-et-facture-concordants.md` §4). L'arrondi unique pouvait en
+ * différer d'un centime par ligne.
+ *
+ * La norme l'admet (F6-0, lu sur les sources le 2026-10-08) : le Schematron
+ * CEN EN 16931 (CII) n'a aucune règle sur BT-131 = BT-129 × BT-146 ÷ BT-149 ;
+ * Peppol PEPPOL-EN16931-R120 la vérifie avec une tolérance de 0,02. Les règles
+ * de la plateforme de réception française n'ont pas été vérifiées.
  */
 
 /**
@@ -104,7 +114,7 @@ function closeAccumulator(acc: LineAccumulator): InvoiceLine {
     label: acc.label,
     otherLabels: [...acc.labels].filter((name) => name !== acc.label).sort(),
     quantity: acc.quantity,
-    amountCents: lineTotalCents(acc.unitPriceMillicents, acc.quantity),
+    amountCents: acc.ordersLineTotalCents,
     ordersLineTotalCents: acc.ordersLineTotalCents,
     firstDeliveryDate: acc.firstDeliveryDate,
     lastDeliveryDate: acc.lastDeliveryDate,

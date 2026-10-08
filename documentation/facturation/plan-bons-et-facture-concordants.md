@@ -1,6 +1,6 @@
 # Des bons et une facture qui concordent
 
-> 📐 **Plan v2, rien de bâti** (2026-10-08). Suite de
+> 📐 **Plan v2 — F5-0 et F6 bâtis** (2026-10-08). Suite de
 > [`plan-le-prelevement-suit-la-facture.md`](plan-le-prelevement-suit-la-facture.md).
 > Touche **l'argent** : la v1 a été contredite par `vitruve` le même jour
 > (deux BLOQUANTS, six SÉRIEUX), repris au § 8.
@@ -158,14 +158,31 @@ s'ils doivent l'être un jour, ils liront l'arrêté.
 
 ## 9. Les lots
 
-| Lot      | Contenu                                                                                                                  |
-| -------- | ------------------------------------------------------------------------------------------------------------------------ |
-| **F6-0** | ✅ 2026-10-08 — le Schematron CEN ne vérifie pas BT-131, Peppol tolère 0,02 : montant repris admis                       |
-| **F6**   | montant de ligne repris des bons, ou une ligne par ligne de bon ; simulateur ajusté                                      |
-| **F5-0** | ✅ 2026-10-08 : `settlementRegimeOf` (paid/due/account/free) porté par `money.settlement` de la fiche ; e-mails corrigés |
-| **F5**   | toutes les surfaces du § 5 en HT pour un client au compte — après facture et avis de prélèvement                         |
+| Lot      | Contenu                                                                                                                                                             |
+| -------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| **F6-0** | ✅ 2026-10-08 — le Schematron CEN ne vérifie pas BT-131, Peppol tolère 0,02 : montant repris admis                                                                  |
+| **F6**   | ✅ 2026-10-08 — montant de ligne = Σ `lineTotalCents` des bons (D2 gardé) ; écart « arrondi des lignes » retiré ; `computed_with` → `invoice-dossier/2026-10-08-f6` |
+| **F5-0** | ✅ 2026-10-08 : `settlementRegimeOf` (paid/due/account/free) porté par `money.settlement` de la fiche ; e-mails corrigés                                            |
+| **F5**   | toutes les surfaces du § 5 en HT pour un pro au compte — **après la facture émise** (Hugo, 2026-10-08 : l’avis de prélèvement seul ne suffit pas)                   |
 
 F5-0 se bâtit tout de suite : il corrige un libellé faux aujourd'hui.
+
+**Tranché en bâtissant F6 (2026-10-08)** :
+
+- `invoice-lines.ts` reprend Σ `lineTotalCents` ; quantité, prix unitaire,
+  période et libellé inchangés. La ventilation par taux ne change pas : elle
+  taxe désormais la somme des HT des bons.
+- L'écart « arrondi des lignes » sort du simulateur, du contrat
+  `InvoiceDossierGapsView`, du CSV des écarts et de l'écran ; l'invariant
+  devient total facture − Σ bons = arrondi de la TVA + TVA non ventilée + bons
+  incohérents. Le champ `ordersLineTotalCents` de la ligne reste (égal à
+  `amountCents`) : le corps JSON des arrêtés le porte.
+- Le montant d'une ligne de prélèvement (F2) suit le total de la facture : il
+  bouge avec elle (exemple des tests : deux bons à 10,5 c HT, 22 → 23 c, contre
+  24 c de bons). Un lot déjà constitué garde son montant.
+- Arrêtés (F3) : **`computed_with`** passe à `invoice-dossier/2026-10-08-f6`
+  (le calcul change) ; **`body_version` reste 1** (la forme du JSON ne bouge
+  pas), et le lecteur lit les arrêtés figés avant F6 tels quels.
 
 **Constat F5-0 (2026-10-08)** : `not_required` n'est écrit qu'à la passation
 (`Order.deferPayment()`) ; aucune écriture postérieure n'en part (paiement,

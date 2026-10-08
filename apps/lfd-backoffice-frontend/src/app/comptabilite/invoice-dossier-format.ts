@@ -181,21 +181,6 @@ export function countOrders(count: number): string {
   return `${count} bon${count > 1 ? 's' : ''}`;
 }
 
-/** Le libellé de la ligne de facture qu'un écart d'arrondi désigne — à défaut, son SKU. */
-export function lineGapLabel(
-  dossier: InvoiceDossierView,
-  gap: InvoiceDossierView['gaps']['lineRounding'][number],
-): string {
-  const line = dossier.invoice.lines.find(
-    (candidate) =>
-      candidate.sku === gap.sku &&
-      candidate.unitPriceMillicents === gap.unitPriceMillicents &&
-      candidate.vatRate === gap.vatRate,
-  );
-  const name = line?.label ?? gap.sku;
-  return `${name} à ${unitPrice(gap.unitPriceMillicents)}`;
-}
-
 /** Les lignes d'un écart qui portent quelque chose : un écart nul n'explique rien. */
 export function nonZero<T extends { readonly gapCents: number }>(rows: readonly T[]): readonly T[] {
   return rows.filter((row) => row.gapCents !== 0);

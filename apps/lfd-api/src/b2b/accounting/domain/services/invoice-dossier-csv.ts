@@ -125,17 +125,6 @@ export function gapsCsv(dossier: InvoiceDossier, heading: InvoiceDossierCsvHeadi
   const { gaps } = dossier;
   const rows = [
     row(["Écart", "Détail", "Facture (€)", "Bons (€)", "Écart (€)"]),
-    ...gaps.lineRounding.map((gap) =>
-      [
-        csvQuoted("Arrondi des lignes"),
-        csvQuoted(
-          `${gap.sku} à ${millicentsAsEuros(gap.unitPriceMillicents)} €, ${rateLabel(gap.vatRate)}`,
-        ),
-        "",
-        "",
-        csvEuros(gap.gapCents),
-      ].join(CSV_SEPARATOR),
-    ),
     ...gaps.vatRounding.map((gap) =>
       [
         csvQuoted("Arrondi de la TVA"),

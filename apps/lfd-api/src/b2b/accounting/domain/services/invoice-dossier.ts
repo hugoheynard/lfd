@@ -24,12 +24,13 @@ import { inconsistentOrders } from "./invoice-order-consistency.js";
  *
  * ## 🔴 La facture est calculée en une fois ; les bons restent des bons
  *
- * La norme des factures structurées calcule une ligne comme `quantité × prix`
- * et la TVA d'un taux sur la facture entière. Nos bons arrondissent bon par
- * bon. Rien n'est donc « repris » des bons : la facture se recalcule sur
- * l'agrégat, et ce qui la sépare de la somme des bons se range en trois
- * écarts dont la somme est la différence, au centime (plan
- * `plan-simulateur-dossier-de-facturation.md`, D4, §3.1, §3.4).
+ * La norme des factures structurées calcule la TVA d'un taux sur la facture
+ * entière ; nos bons l'arrondissent bon par bon. Le HT des lignes, lui, est
+ * repris des bons (F6, 2026-10-08, `invoice-lines.ts`) ; la TVA se recalcule
+ * sur l'agrégat, et ce qui sépare la facture de la somme des bons se range en
+ * écarts — arrondi de la TVA, TVA non ventilée, bon incohérent — dont la
+ * somme est la différence, au centime (plan
+ * `plan-simulateur-dossier-de-facturation.md`, D4, §3.4).
  *
  * ## La part de TVA des bons non ventilés
  *
@@ -179,23 +180,14 @@ function gapsOf(
   unventilatedVat: InvoiceVatBreakdown | null,
   inconsistentOrdersCents: number,
 ): InvoiceGaps {
-  const lineRounding = invoice.lines.map((line) => ({
-    sku: line.sku,
-    unitPriceMillicents: line.unitPriceMillicents,
-    vatRate: line.vatRate,
-    gapCents: line.amountCents - line.ordersLineTotalCents,
-  }));
   const vatRounding = vatRoundingGaps(invoice.vat, orders, unventilatedVat);
   const unventilatedInvoiceCents = unventilatedVat?.vatCents ?? 0;
   const unventilatedOrdersCents = sum(
     orders.filter((o) => !isVentilated(o)).map((o) => o.vatCents),
   );
-  const lineRoundingCents = sum(lineRounding.map((gap) => gap.gapCents));
   const vatRoundingCents = sum(vatRounding.map((gap) => gap.gapCents));
   const unventilatedGapCents = unventilatedInvoiceCents - unventilatedOrdersCents;
   return {
-    lineRounding,
-    lineRoundingCents,
     vatRounding,
     vatRoundingCents,
     unventilatedVat: {
@@ -204,8 +196,7 @@ function gapsOf(
       gapCents: unventilatedGapCents,
     },
     inconsistentOrdersCents,
-    totalCents:
-      lineRoundingCents + vatRoundingCents + unventilatedGapCents + inconsistentOrdersCents,
+    totalCents: vatRoundingCents + unventilatedGapCents + inconsistentOrdersCents,
   };
 }
 

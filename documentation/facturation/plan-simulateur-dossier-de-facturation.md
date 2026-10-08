@@ -100,13 +100,18 @@ facture, les bons, l'historique, les deux écarts, et le total des écarts.
 
 ### 3.1 La facture (calculée en une fois)
 
-**Tout se calcule une fois, sur l'agrégat** — rien n'est « repris » des bons,
-parce qu'aucune répartition par taux n'y est figée.
+**La TVA se calcule une fois, sur l'agrégat**, parce qu'aucune répartition
+par taux n'est figée sur les bons. **Le HT des lignes, lui, est repris des
+bons depuis F6** (2026-10-08, [`plan-bons-et-facture-concordants.md`](plan-bons-et-facture-concordants.md) §4) :
+un client qui rapproche ses bons et sa facture doit retrouver le HT au centime.
 
 **Lignes de produit** — clé `(sku, unitPriceMillicents, taux normalisé)` :
 
 - quantité = Σ `quantity` ; prix unitaire = `unitPriceMillicents` (10⁻⁵ €) ;
-- **montant HT = arrondi(Σ quantité × prix ÷ 1000)**, au centime, une fois ;
+- **montant HT = Σ `lineTotalCents` des bons de la clé** (F6, 2026-10-08 ;
+  jusque-là `arrondi(Σ quantité × prix ÷ 1000)`, une fois, qui pouvait en
+  différer d'un centime). Admis par la norme : le Schematron CEN ne vérifie
+  pas BT-131 = quantité × prix, Peppol R120 tolère 0,02 (F6-0) ;
 - date = première → dernière `requestedDeliveryDate` des bons de la clé ;
 - libellé = le `productNameSnapshot` le plus récent ; un autre nom sur un bon
   est dit (« vendu aussi sous… ») ;
@@ -169,17 +174,24 @@ demandée ne bouge pas.
 
 ### 3.4 Les écarts — chacun séparé, et leur somme exacte
 
-Total facture − Σ `totalCents` des bons = la somme de trois écarts, affichés
-séparément, par ligne et par taux :
+> ⚠️ **Depuis F6 (2026-10-08), l'arrondi des lignes n'est plus un écart** :
+> le montant d'une ligne est repris des bons, l'écart est nul par
+> construction. Il est sorti du simulateur, du CSV et de l'écran plutôt que
+> d'y rester comme une tautologie. Restent l'arrondi de la TVA, la TVA non
+> ventilée et, s'il y en a, les bons incohérents (§ 3.6). La table ci-dessous
+> garde sa ligne barrée pour l'histoire.
+
+Total facture − Σ `totalCents` des bons = la somme des écarts, affichés
+séparément, par taux :
 
 | Écart                  | Facture (§ 3.1)                                                    | Ce que les bons annonçaient     |
 | ---------------------- | ------------------------------------------------------------------ | ------------------------------- |
-| **Arrondi des lignes** | montant HT de chaque ligne agrégée                                 | Σ `lineTotalCents` de la clé    |
+| ~~Arrondi des lignes~~ | ~~montant HT de chaque ligne agrégée~~ (retiré par F6)             | Σ `lineTotalCents` de la clé    |
 | **Arrondi de la TVA**  | TVA de chaque taux (port ventilé compris), bons ventilés seulement | Σ des parts `vatShares` du taux |
 | **TVA non ventilée**   | TVA des bons d'avant le 2026-09-07 dans la facture                 | leur `vatCents`, sans taux      |
 
 Les remises et les frais ne font pas d'écart : leurs totaux sont des sommes
-exactes. La somme des trois écarts **est** ce que le client paiera de plus ou
+exactes. La somme des écarts **est** ce que le client paiera de plus ou
 de moins que la somme de ses bons, au centime — c'est l'invariant que DF1
 teste sur la facture entière (pas bon par bon : l'écart n'existe qu'à
 l'échelle de la facture). Les formules sont écrites à l'écran.

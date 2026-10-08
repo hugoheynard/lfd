@@ -13,10 +13,16 @@ export const STATEMENT_BODY_VERSION = 1;
 
 /**
  * Le calcul qui a produit `body` et les totaux : le simulateur du dossier de
- * facturation (`simulateInvoiceDossier`), tel qu'au lot F3. Une VALEUR : un
- * arrêté écrit sous un calcul le garde, même quand le calcul évolue.
+ * facturation (`simulateInvoiceDossier`). Une VALEUR : un arrêté écrit sous un
+ * calcul le garde, même quand le calcul évolue.
+ *
+ * - `invoice-dossier/2026-10-08` — lot F3 : montant de ligne
+ *   `arrondi(Σ quantité × prix)`, une fois ;
+ * - `invoice-dossier/2026-10-08-f6` — lot F6 : montant de ligne repris des
+ *   bons (Σ `lineTotalCents`). La forme du JSON n'a pas bougé, `body_version`
+ *   non plus (`plan-bons-et-facture-concordants.md` §4).
  */
-export const STATEMENT_COMPUTED_WITH = "invoice-dossier/2026-10-08";
+export const STATEMENT_COMPUTED_WITH = "invoice-dossier/2026-10-08-f6";
 
 /**
  * Le vendeur, **figé** : ce qu'une facture imprime de l'émetteur. Une copie

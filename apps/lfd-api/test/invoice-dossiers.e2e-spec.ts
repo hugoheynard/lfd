@@ -336,7 +336,8 @@ describe("les CSV du dossier", () => {
 
     const gaps = await staff().get(`${BASE}/companies/${port.companyId}/gaps.csv`).expect(200);
     expect(gaps.headers["content-disposition"]).toContain("DOSSIER-ECARTS");
-    expect(gaps.text).toContain('"Arrondi des lignes"');
+    expect(gaps.text).toContain('"TVA non ventilée"');
+    expect(gaps.text).not.toContain('"Arrondi des lignes"');
   });
 });
 

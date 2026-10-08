@@ -14,7 +14,10 @@ import { ENTITY_ID, SEPTEMBER, frozenOrder, mandate, order } from "./collection-
  */
 
 const AT = new Date("2026-10-02T09:00:00.000Z");
-/** 10,5 c HT : chaque bon arrondit à 11 c, la facture de deux bons à 21 c. */
+/**
+ * 10,5 c HT : chaque bon arrondit à 11 c et porte 1 c de TVA. La facture de
+ * deux bons reprend 22 c de HT (F6, 2026-10-08) et taxe 22 c une fois : 1 c.
+ */
 const HALF_CENT_PRICE = 10_500;
 
 function input(orders: readonly CollectableOrder[]): AssemblyInput {
@@ -35,7 +38,7 @@ function input(orders: readonly CollectableOrder[]): AssemblyInput {
   };
 }
 
-/** Un bon cohérent dont l'arrondi par bon diffère de l'arrondi sur l'agrégat. */
+/** Un bon cohérent dont la TVA arrondie par bon diffère de celle de l'agrégat. */
 function halfCentOrder(companyId: string): CollectableOrder {
   const base = order(companyId);
   const goods = lineTotalCents(HALF_CENT_PRICE, 1);
@@ -81,9 +84,11 @@ describe("assembleCollection — le montant d'une ligne est le total de sa factu
     const dossier = simulateInvoiceDossier(orders.map((o) => o.frozen));
     expect(line?.amountCents).toBe(dossier.invoice.totalCents);
     expect(line?.ordersTotalCents).toBe(24);
-    // 21 c HT + 1 c de TVA : la facture compte deux centimes de moins que les bons.
-    expect(line?.amountCents).toBe(22);
-    expect((line?.amountCents ?? 0) - (line?.ordersTotalCents ?? 0)).toBe(-2);
+    // 22 c HT repris des bons + 1 c de TVA calculée une fois, contre 2 c sur
+    // les bons : la facture compte un centime de moins (avant F6 : deux, le
+    // HT recalculé arrondissait 21 c).
+    expect(line?.amountCents).toBe(23);
+    expect((line?.amountCents ?? 0) - (line?.ordersTotalCents ?? 0)).toBe(-1);
   });
 
   it("calcule la facture de CHAQUE ligne sur ses seuls bons", () => {
@@ -93,7 +98,7 @@ describe("assembleCollection — le montant d'une ligne est le total de sa factu
     const lines = debitsOf(assembleCollection(input([...port, ...quai])));
 
     const byPayer = new Map(lines.map((line) => [line.payerId, line]));
-    expect(byPayer.get("c_port")?.amountCents).toBe(22);
+    expect(byPayer.get("c_port")?.amountCents).toBe(23);
     expect(byPayer.get("c_quai")?.amountCents).toBe(12);
   });
 

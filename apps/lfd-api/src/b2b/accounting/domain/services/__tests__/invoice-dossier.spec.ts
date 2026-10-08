@@ -83,12 +83,13 @@ function bon(spec: BonSpec): FrozenInvoiceOrder {
   };
 }
 
-/** L'invariant du §3.4 : la différence est la somme des trois écarts, au centime. */
+/**
+ * L'invariant du §3.4 : la différence est la somme des écarts, au centime —
+ * arrondi de la TVA et TVA non ventilée (plus d'arrondi des lignes depuis F6).
+ */
 function expectGapsExplainDifference(dossier: InvoiceDossier): void {
   const { gaps } = dossier;
-  expect(gaps.lineRoundingCents + gaps.vatRoundingCents + gaps.unventilatedVat.gapCents).toBe(
-    gaps.totalCents,
-  );
+  expect(gaps.vatRoundingCents + gaps.unventilatedVat.gapCents).toBe(gaps.totalCents);
   expect(dossier.invoice.totalCents - dossier.ordersTotalCents).toBe(gaps.totalCents);
   expect(dossier.differenceCents).toBe(gaps.totalCents);
 }
@@ -224,24 +225,20 @@ describe("simulateInvoiceDossier — remises, frais, livraison", () => {
   });
 });
 
-describe("simulateInvoiceDossier — les trois écarts", () => {
+describe("simulateInvoiceDossier — les écarts", () => {
   /**
-   * 3 bons d'une ligne à 0,33333 € : chacun arrondit 33,333 → 33, la facture
-   * arrondit 99,999 → 100. Un centime d'écart d'arrondi de ligne.
+   * Régression F6 : 3 bons d'une ligne à 0,33333 € arrondissent chacun
+   * 33,333 → 33 ; la facture arrondissait 99,999 → 100, un centime d'écart
+   * d'arrondi de ligne. Elle reprend désormais 99, et le HT concorde.
    */
-  it("range l'arrondi des lignes par clé", () => {
+  it("reprend le HT des bons : la base de la facture est leur somme", () => {
     const line = { ...BAGUETTE, price: 33_333, qty: 1 };
-    const dossier = simulateInvoiceDossier([
-      bon({ lines: [line] }),
-      bon({ lines: [line] }),
-      bon({ lines: [line] }),
-    ]);
+    const orders = [bon({ lines: [line] }), bon({ lines: [line] }), bon({ lines: [line] })];
+    const dossier = simulateInvoiceDossier(orders);
 
-    expect(dossier.gaps.lineRounding).toEqual([
-      { sku: "BAG-001", unitPriceMillicents: 33_333, vatRate: 5.5, gapCents: 1 },
-    ]);
-    expect(dossier.gaps.lineRoundingCents).toBe(1);
-    expect(dossier.differenceCents).not.toBe(0);
+    expect(dossier.invoice.lines.map((l) => [l.quantity, l.amountCents])).toEqual([[3, 99]]);
+    expect(dossier.invoice.vat.goodsHtCents).toBe(99);
+    expect(dossier.gaps).not.toHaveProperty("lineRounding");
     expectGapsExplainDifference(dossier);
   });
 

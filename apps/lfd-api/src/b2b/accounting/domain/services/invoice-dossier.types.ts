@@ -57,9 +57,13 @@ export interface InvoiceLine {
   /** Les autres noms portés par les bons de la clé — « vendu aussi sous… ». */
   readonly otherLabels: readonly string[];
   readonly quantity: number;
-  /** `arrondi(Σ quantité × prix ÷ 1000)`, une fois. */
+  /** Σ `lineTotalCents` des bons de la clé — repris, pas recalculé (F6). */
   readonly amountCents: number;
-  /** Ce que les bons annonçaient pour la clé : Σ `lineTotalCents`. */
+  /**
+   * Ce que les bons annonçaient pour la clé : Σ `lineTotalCents`. Égal à
+   * `amountCents` depuis F6 ; gardé parce que le corps JSON des arrêtés le
+   * porte, et que ceux figés avant F6 en diffèrent.
+   */
   readonly ordersLineTotalCents: number;
   /** Première et dernière date demandée ; `null` si aucun bon de la clé n'en porte. */
   readonly firstDeliveryDate: string | null;
@@ -86,14 +90,6 @@ export interface Invoice {
   readonly totalCents: number;
 }
 
-/** L'arrondi d'une ligne : la facture contre la somme des bons. */
-export interface LineRoundingGap {
-  readonly sku: string;
-  readonly unitPriceMillicents: number;
-  readonly vatRate: number;
-  readonly gapCents: number;
-}
-
 /** L'arrondi de la TVA d'un taux, bons ventilés seulement. */
 export interface VatRoundingGap {
   readonly rate: number;
@@ -118,12 +114,12 @@ export interface InconsistentOrder {
 }
 
 /**
- * Les trois écarts du §3.4, plus un quatrième quand un bon est incohérent —
- * leur somme est la différence au centime.
+ * Les écarts du §3.4 — arrondi de la TVA, TVA non ventilée, plus un troisième
+ * quand un bon est incohérent — leur somme est la différence au centime.
+ * L'arrondi des lignes n'en est plus un depuis F6 (2026-10-08) : le montant
+ * d'une ligne est repris des bons, l'écart est nul par construction.
  */
 export interface InvoiceGaps {
-  readonly lineRounding: readonly LineRoundingGap[];
-  readonly lineRoundingCents: number;
   readonly vatRounding: readonly VatRoundingGap[];
   readonly vatRoundingCents: number;
   readonly unventilatedVat: {
@@ -132,8 +128,8 @@ export interface InvoiceGaps {
     readonly gapCents: number;
   };
   /**
-   * Le quatrième terme : Σ des écarts des bons incohérents. Zéro quand tous
-   * les bons se recomposent — les trois écarts du plan suffisent alors.
+   * Le dernier terme : Σ des écarts des bons incohérents. Zéro quand tous
+   * les bons se recomposent — les deux écarts de TVA suffisent alors.
    */
   readonly inconsistentOrdersCents: number;
   readonly totalCents: number;

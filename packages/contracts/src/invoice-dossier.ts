@@ -29,9 +29,9 @@ export interface InvoiceDossierLineView {
   /** « vendu aussi sous… ». */
   readonly otherLabels: readonly string[];
   readonly quantity: number;
-  /** `arrondi(Σ quantité × prix)`, une fois. */
+  /** Σ `lineTotalCents` des bons de la clé — repris, pas recalculé (F6, 2026-10-08). */
   readonly amountCents: number;
-  /** Σ `lineTotalCents` des bons de la clé. */
+  /** Σ `lineTotalCents` des bons de la clé — égal à `amountCents` depuis F6. */
   readonly ordersLineTotalCents: number;
   readonly firstDeliveryDate: string | null;
   readonly lastDeliveryDate: string | null;
@@ -154,15 +154,12 @@ export interface InvoiceDossierInconsistentOrderView {
   readonly gapCents: number;
 }
 
-/** Les écarts entre la facture et la somme des bons ; leur somme est la différence. */
+/**
+ * Les écarts entre la facture et la somme des bons ; leur somme est la
+ * différence. Plus d'arrondi des lignes depuis F6 (2026-10-08) : le montant
+ * d'une ligne est repris des bons.
+ */
 export interface InvoiceDossierGapsView {
-  readonly lineRounding: readonly {
-    readonly sku: string;
-    readonly unitPriceMillicents: number;
-    readonly vatRate: number;
-    readonly gapCents: number;
-  }[];
-  readonly lineRoundingCents: number;
   readonly vatRounding: readonly {
     readonly rate: number;
     readonly invoiceVatCents: number;

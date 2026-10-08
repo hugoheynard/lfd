@@ -67,10 +67,7 @@ describe("simulateInvoiceDossier — les bons incohérents", () => {
     expect(dossier.threeGapInvariantHolds).toBe(false);
     const { gaps } = dossier;
     expect(
-      gaps.lineRoundingCents +
-        gaps.vatRoundingCents +
-        gaps.unventilatedVat.gapCents +
-        gaps.inconsistentOrdersCents,
+      gaps.vatRoundingCents + gaps.unventilatedVat.gapCents + gaps.inconsistentOrdersCents,
     ).toBe(dossier.invoice.totalCents - dossier.ordersTotalCents);
     expect(gaps.totalCents).toBe(dossier.differenceCents);
   });
