@@ -1,0 +1,47 @@
+<fold-card>
+  <fold-element-title
+    variant="title"
+    [title]="title()"
+    subtitle="Chaque ligne prélève le total de sa facture, calculée une fois sur ses bons ; l’écart aux bons est écrit à côté."
+  />
+  <fold-data-table
+    [caption]="title()"
+    narrowLayout="cards"
+    zebra
+    [columns]="columns"
+    [rows]="rows()"
+    [rowKey]="rowKey"
+    data-batch-lines
+  >
+    <ng-template foldCell="rank" let-row>{{ row.rank }}</ng-template>
+    <ng-template foldCell="debtor" let-row>{{ row.debtorName }}</ng-template>
+    <ng-template foldCell="orders" let-row>
+      @if (row.orders === null) {
+        <span class="muted" data-before-statement>Lot d’avant l’arrêté de facturation</span>
+      } @else {
+        <span class="amount">{{ row.orders }}</span>
+      }
+    </ng-template>
+    <ng-template foldCell="billed" let-row>
+      <span class="amount">{{ row.billed }}</span>
+    </ng-template>
+    <ng-template foldCell="gap" let-row>
+      @if (row.gap !== null) {
+        <span class="amount" data-line-gap>{{ row.gap }}</span>
+      }
+    </ng-template>
+    <ng-template foldCell="statement" let-row>
+      @if (row.statementId !== null) {
+        <a
+          foldButton
+          size="sm"
+          emphasis="outline"
+          icon="receipt"
+          [routerLink]="['/comptabilite/arretes-de-facturation', row.statementId]"
+        >
+          Dossier de la ligne
+        </a>
+      }
+    </ng-template>
+  </fold-data-table>
+</fold-card>

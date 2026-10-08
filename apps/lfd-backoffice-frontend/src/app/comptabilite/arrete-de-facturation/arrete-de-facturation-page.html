@@ -1,0 +1,117 @@
+<fold-page-layout [title]="title()" separator>
+  <fold-back-link
+    pageEyebrow
+    icon="arrow-back"
+    label="Lots de prélèvement"
+    routerLink="/comptabilite/lots-de-prelevement"
+  />
+
+  @if (statement(); as statement) {
+    @if (statement.status === 'cancelled') {
+      <fold-badge titleBadge variant="neutral" radius="pill" content="Annulé" />
+    } @else {
+      <fold-badge titleBadge variant="success" radius="pill" content="Figé" />
+    }
+  }
+
+  @switch (state()) {
+    @case ('loading') {
+      <fold-loading message="Lecture de l’arrêté…" />
+    }
+    @case ('not-found') {
+      <fold-empty-state
+        tone="alert"
+        title="Arrêté introuvable"
+        subtitle="Un lot constitué avant l’arrêté de facturation n’en a pas. Rouvrez le lot de prélèvement."
+      />
+    }
+    @case ('error') {
+      <fold-empty-state tone="alert" title="Impossible de lire l’arrêté">
+        <button foldButton (click)="load(id())">Réessayer</button>
+      </fold-empty-state>
+    }
+    @case ('ready') {
+      @if (statement(); as statement) {
+        <div class="stack">
+          @if (statement.status === 'cancelled') {
+            <fold-callout appearance="inset" variant="alert" data-statement-cancelled>
+              <strong>Arrêté annulé avec son lot</strong> — il n’est pas prélevé. Le lot reconstitué
+              en fige un nouveau.
+            </fold-callout>
+          } @else {
+            <fold-callout appearance="inset" variant="info" data-statement-frozen>
+              <strong>Arrêté figé le {{ day(statement.issuedOn) }}</strong> — c’est ce montant qui
+              est prélevé&nbsp;: {{ euros(statement.totalTtcCents) }}.
+            </fold-callout>
+          }
+
+          <fold-card>
+            <fold-element-title
+              variant="title"
+              title="La ligne de prélèvement"
+              [subtitle]="'Ligne ' + statement.lineRank + ' du lot · ' + period(statement)"
+            />
+            <dl class="calc">
+              <dt>Σ des bons</dt>
+              <dd>{{ euros(statement.ordersTotalCents) }}</dd>
+              <dt>Total facturé (prélevé)</dt>
+              <dd data-statement-total>{{ euros(statement.totalTtcCents) }}</dd>
+              <dt>Écart</dt>
+              <dd data-statement-gap>{{ gap() }}</dd>
+            </dl>
+          </fold-card>
+
+          <div class="parties">
+            <fold-card>
+              <fold-element-title
+                variant="title"
+                title="Vendeur"
+                [subtitle]="statement.seller.name"
+              />
+              <p class="lines">
+                <span>{{ statement.seller.legalForm }} · SIREN {{ statement.seller.siren }}</span>
+                <span>TVA {{ statement.seller.vatNumber }} · {{ statement.seller.rcs }}</span>
+                @for (line of statement.seller.addressLines; track $index) {
+                  <span>{{ line }}</span>
+                }
+              </p>
+            </fold-card>
+            <fold-card>
+              <fold-element-title
+                variant="title"
+                title="Acheteur"
+                [subtitle]="statement.buyer.name"
+              />
+              <p class="lines">
+                <span
+                  >{{ statement.buyer.legalForm }} · SIRET {{ statement.buyer.siret || '—' }}</span
+                >
+                <span>TVA {{ statement.buyer.vatNumber || '—' }}</span>
+                @for (line of statement.buyer.billingAddressLines; track $index) {
+                  <span>{{ line }}</span>
+                } @empty {
+                  <span class="muted">Aucune adresse de facturation sur la fiche</span>
+                }
+              </p>
+            </fold-card>
+          </div>
+
+          <app-dossier-invoice [invoice]="statement.invoice" />
+
+          <fold-card>
+            <fold-element-title
+              variant="title"
+              title="Les bons couverts"
+              [subtitle]="statement.orders.length + ' bon(s) — exactement ceux de la ligne'"
+            />
+            <ul class="orders">
+              @for (order of statement.orders; track order.orderId) {
+                <li>{{ order.orderNumber ?? order.orderId }}</li>
+              }
+            </ul>
+          </fold-card>
+        </div>
+      }
+    }
+  }
+</fold-page-layout>

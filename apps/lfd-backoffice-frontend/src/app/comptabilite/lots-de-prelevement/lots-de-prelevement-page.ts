@@ -32,6 +32,7 @@ import { NotifyService } from '../../notify.service';
 import { saveBlob } from '../../shared/download/save-blob';
 import { CollectionBatchesService } from '../collection-batches.service';
 import { LegalEntitiesService } from '../legal-entities.service';
+import { BatchLines } from './batch-lines/batch-lines';
 import { SettlePanel } from './settle-panel/settle-panel';
 
 const BATCH_COLUMNS: readonly FoldTableColumn[] = [
@@ -60,12 +61,15 @@ const EXCLUSION_COLUMNS: readonly FoldTableColumn[] = [
  * téléchargements d'un lot, relus tels qu'ils ont été figés.
  *
  * 🔴 Les sociétés sans mandat sont nommées EN TÊTE : elles rendent le lot non
- * déposable (Q2), et c'est le premier geste à faire.
+ * déposable (Q2), et c'est le premier geste à faire. Les bons non facturables
+ * le sont aussi : écartés du lot, ils reviennent au suivant une fois corrigés
+ * (plan `plan-le-prelevement-suit-la-facture.md`, F4).
  */
 @Component({
   selector: 'app-lots-de-prelevement-page',
   changeDetection: ChangeDetectionStrategy.OnPush,
   imports: [
+    BatchLines,
     FoldBadgeComponent,
     FoldButtonComponent,
     FoldCalloutComponent,
@@ -114,6 +118,18 @@ export class LotsDePrelevementPage {
       .flatMap((batch) => batch.unmandatedCompanies);
     return [...new Set(names)];
   });
+
+  /** Les bons non facturables, écartés du lot — nommés en tête (F4). */
+  protected readonly unbillable = computed(() =>
+    (this.view()?.exclusions ?? [])
+      .filter((exclusion) => exclusion.reason === 'unbillable')
+      .map((exclusion) => `${exclusion.orderNumber} (${exclusion.companyName})`),
+  );
+
+  /** Les lots qui ont des lignes à détailler. */
+  protected readonly batchesWithLines = computed(() =>
+    (this.view()?.batches ?? []).filter((batch) => batch.lines.length > 0),
+  );
 
   constructor() {
     void this.load();

@@ -169,6 +169,13 @@ export type {
   OrderCollectionStateView,
   SettleOrderOtherwisePayload,
 } from "./collection-batch.js";
+export type {
+  BillingStatementBuyerView,
+  BillingStatementOrderView,
+  BillingStatementSellerView,
+  BillingStatementStatusView,
+  BillingStatementView,
+} from "./billing-statement.js";
 export { statementMonthSchema } from "./cycle-statement.js";
 export type {
   CycleStatementGroupView,

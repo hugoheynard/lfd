@@ -36,6 +36,14 @@
         </fold-callout>
       }
 
+      @if (unbillable().length > 0) {
+        <fold-callout appearance="inset" variant="warning" data-unbillable>
+          <strong>Non facturables — écartés du lot&nbsp;:</strong>
+          {{ unbillable().join(', ') }}. Ils reviennent au lot suivant une fois corrigés, ou se
+          règlent autrement ; les autres bons partent.
+        </fold-callout>
+      }
+
       @if (actionError(); as message) {
         <fold-callout appearance="inset" variant="alert" announce>{{ message }}</fold-callout>
       }
@@ -131,6 +139,10 @@
           </fold-data-table>
         }
       </fold-card>
+
+      @for (batch of batchesWithLines(); track batch.id) {
+        <app-batch-lines [batch]="batch" />
+      }
 
       <fold-card>
         <fold-element-title title="Commandes écartées" />

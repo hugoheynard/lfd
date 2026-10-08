@@ -14,7 +14,11 @@
  * Aucune date absolue : la clôture est le dernier 1er du mois atteint, calculé
  * par le domaine depuis l'instant présent.
  */
-import type { CollectionCycleView, ConstitutedBatchesView } from "@lfd/contracts";
+import type {
+  BillingStatementView,
+  CollectionCycleView,
+  ConstitutedBatchesView,
+} from "@lfd/contracts";
 
 import { cycleToConstitute } from "../src/b2b/accounting/domain/services/billing-cycle.js";
 import { AdminTokenVerifier } from "../src/platform/auth/admin-token.verifier.js";
@@ -35,8 +39,8 @@ const DEBTOR_RIB = {
 };
 
 const stubAdminVerifier = {
-  verify: (): Promise<{ subject: string; scopes: string[] }> =>
-    Promise.resolve({ subject: "staff-e2e", scopes: [] }),
+  verify: (subject: string): Promise<{ subject: string; scopes: string[] }> =>
+    Promise.resolve({ subject, scopes: [] }),
 };
 
 let ctx: E2eContext;
@@ -257,5 +261,49 @@ describe("l'arrêté de facturation (F3)", () => {
       ctx.prisma.billingStatement.update({ where: { id }, data: { status: "cancelled" } }),
     ).rejects.toThrow(/n'est plus constitué/u);
     expect((await statementsOf(batchId))[0]?.status).toBe("active");
+  });
+});
+
+describe("la relecture d'un arrêté (F4)", () => {
+  const READ = "/admin/accounting/billing-statements";
+
+  it("rend la facture figée, ses totaux et ses bons — et dit l'arrêté annulé avec son lot", async () => {
+    const entity = await collectingEntity();
+    const port = await mandatedClient(entity, "Boulangerie du Port");
+    await orderOf(port, 2, true);
+    await orderOf(port, 3, true);
+    const batchId = await constitute(entity);
+    const id = (await statementsOf(batchId))[0]?.id ?? "";
+
+    const view = jsonBody<BillingStatementView>(await staff().get(`${READ}/${id}`).expect(200));
+
+    expect(view).toMatchObject({ status: "active", batchStatus: "constituted", lineRank: 1 });
+    expect(view).toMatchObject({ totalTtcCents: 22, ordersTotalCents: 24 });
+    expect(view.invoice.totalCents).toBe(view.totalTtcCents);
+    expect(view.buyer.name).toBe("Boulangerie du Port");
+    expect(view.orders.map((order) => order.orderNumber)).toEqual([
+      expect.stringMatching(/^CMD-ARR-/u),
+      expect.stringMatching(/^CMD-ARR-/u),
+    ]);
+    await staff().post(`${BASE}/batches/${batchId}/cancel`).expect(204);
+    const cancelled = jsonBody<BillingStatementView>(
+      await staff().get(`${READ}/${id}`).expect(200),
+    );
+    expect(cancelled).toMatchObject({ status: "cancelled", batchStatus: "cancelled" });
+  });
+
+  it("un arrêté inconnu est un 404 ; sans la lecture comptable, un 403", async () => {
+    await staff().get(`${READ}/inconnu`).expect(404);
+    await ctx.prisma.staffUser.create({
+      data: {
+        firstName: "Test",
+        lastName: "support",
+        email: "support@lfc.test",
+        role: "support",
+        status: "active",
+        auth0Id: "staff-support",
+      },
+    });
+    await ctx.asSub("staff-support").get(`${READ}/inconnu`).expect(403);
   });
 });

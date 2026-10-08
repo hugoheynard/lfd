@@ -1,6 +1,6 @@
 # Le prélèvement suit la facture
 
-> 📐 **Plan v2 — F1, F2 et F3 bâtis** (2026-10-08), F4 à faire. Touche **l'argent** : la v1 a
+> 📐 **Plan v2 — F1 à F4 bâtis** (2026-10-08). Touche **l'argent** : la v1 a
 > été contredite par `vitruve` le même jour (trois BLOQUANTS, six SÉRIEUX),
 > repris au § 7. Affirmations sur l'existant vérifiées dans le dépôt le
 > 2026-10-08.
@@ -202,7 +202,19 @@ billing_statement_order ( statement_id, order_id )
 - Pas de numéro de facture : la numérotation sans trou appartient à la
   facture, qui viendra ensuite.
 
-### F4 — L'écran
+### F4 — L'écran ✅ (2026-10-08, non commité)
+
+> Bâti : `GET admin/accounting/billing-statements/:id` (`b2b_accounting:read`,
+> `GetBillingStatementHandler`, port `BillingStatementReader`) relit l'arrêté
+> sans recalcul — le `body` est revalidé par zod, une forme inconnue est un
+> refus technique plutôt qu'un montant deviné ; contrat
+> `packages/contracts/src/billing-statement.ts` (interfaces seules). Écran du
+> lot : `lots-de-prelevement/batch-lines/` (Σ bons, total facturé, écart
+> signé, lien « Dossier de la ligne ») et les bons non facturables en tête ;
+> page `comptabilite/arretes-de-facturation/:id`, qui réutilise
+> `dossier-invoice` (son entrée est devenue la seule facture). Tranché en
+> bâtissant : une ligne sans `orders_total_cents` OU sans arrêté se lit « lot
+> d'avant l'arrêté de facturation », sans écart ni dossier.
 
 - Le lot affiche, par ligne : Σ bons, total facturé, écart ; et les bons
   `unbillable` en tête.
@@ -252,7 +264,7 @@ reste un chantier à part.
 | **F1** | ✅ 2026-10-08 — le lecteur de constitution rend les bons figés                                                                                                                                       |
 | **F2** | ✅ 2026-10-08 — la facture par ligne ; montant = total facturé ; `unbillable` ; `orders_total_cents` ; CSV ; e2e : Σ lignes = Σ arrêtés = `CtrlSum`, un bon incohérent exclu sans bloquer les autres |
 | **F3** | ✅ 2026-10-08 — la table des arrêtés, écrite et annulée avec le lot ; journal                                                                                                                        |
-| **F4** | l'écran du lot et le dossier par ligne de lot                                                                                                                                                        |
+| **F4** | ✅ 2026-10-08 — l'écran du lot et le dossier par ligne de lot                                                                                                                                        |
 
 ## 8. Ce que `vitruve` a relevé (v1, 2026-10-08)
 

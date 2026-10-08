@@ -58,8 +58,9 @@
     <fold-empty-state
       title="Choisissez une société"
       subtitle="Le dossier se calcule pour un payeur et un cycle."
-      icon="search"
-    />
+    >
+      <fold-icon empty-icon name="search" />
+    </fold-empty-state>
   }
   @case ('loading') {
     <fold-loading message="Calcul du dossier…" />
@@ -101,7 +102,7 @@
         </fold-empty-state>
       } @else {
         <app-dossier-alerts [dossier]="dossier" />
-        <app-dossier-invoice [dossier]="dossier" />
+        <app-dossier-invoice [invoice]="dossier.invoice" />
         <app-dossier-gaps [dossier]="dossier" />
         <app-dossier-orders [dossier]="dossier" />
       }

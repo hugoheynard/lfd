@@ -1,4 +1,5 @@
 import { type ComponentFixture, TestBed } from '@angular/core/testing';
+import { provideRouter } from '@angular/router';
 import { describe, expect, it } from 'vitest';
 
 import type {
@@ -66,6 +67,7 @@ async function render(
   TestBed.configureTestingModule({
     imports: [LotsDePrelevementPage],
     providers: [
+      provideRouter([]),
       { provide: CollectionBatchesService, useValue: api },
       {
         provide: LegalEntitiesService,
@@ -153,6 +155,26 @@ describe('LotsDePrelevementPage', () => {
 
     expect(body).toContain('CMD-10');
     expect(body).toContain('Non facturable');
+  });
+
+  it('nomme en tête les bons non facturables, avant les lots (F4)', async () => {
+    const api = new FakeApi();
+    api.view = {
+      batches: [batch()],
+      exclusions: [
+        {
+          orderId: 'o3',
+          orderNumber: 'CMD-11',
+          companyName: 'Café du Quai',
+          placedAt: '2026-09-21T09:00:00.000Z',
+          amountCents: 1_000,
+          reason: 'unbillable',
+        },
+      ],
+    };
+    const host = (await render(api)).nativeElement as HTMLElement;
+
+    expect(host.querySelector('[data-unbillable]')?.textContent).toContain('CMD-11 (Café du Quai)');
   });
 
   it('un lot déposé n’offre plus de geste', async () => {

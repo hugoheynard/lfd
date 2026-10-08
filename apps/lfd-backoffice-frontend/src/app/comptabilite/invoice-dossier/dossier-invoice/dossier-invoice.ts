@@ -1,5 +1,5 @@
 import { ChangeDetectionStrategy, Component, input } from '@angular/core';
-import type { InvoiceDossierLineView, InvoiceDossierView } from '@lfd/contracts';
+import type { InvoiceDossierInvoiceView, InvoiceDossierLineView } from '@lfd/contracts';
 import {
   FoldCardComponent,
   FoldDataTableCellDirective,
@@ -22,6 +22,10 @@ import {
  * et par prix, les remises par nature, la livraison par mode, la surtaxe ;
  * puis la ventilation par taux écrite comme un calcul qu'on refait à la main —
  * TVA = base imposable × taux, sur la base arrondie.
+ *
+ * Elle ne lit que la facture : le dossier simulé d'un mois et l'arrêté figé
+ * d'une ligne de prélèvement la rendent tous deux (plan
+ * `plan-le-prelevement-suit-la-facture.md`, F4).
  */
 @Component({
   selector: 'app-dossier-invoice',
@@ -36,7 +40,7 @@ import {
   styleUrl: './dossier-invoice.scss',
 })
 export class DossierInvoice {
-  readonly dossier = input.required<InvoiceDossierView>();
+  readonly invoice = input.required<InvoiceDossierInvoiceView>();
 
   protected readonly columns: readonly FoldTableColumn[] = [
     { key: 'label', label: 'Produit' },
