@@ -45,11 +45,11 @@ import { inconsistentOrders } from "./invoice-order-consistency.js";
  * quoi l'invariant dépendrait de la santé de chaque JSON.
  */
 
-const COMPANY_DISCOUNT = "company_discount";
-const LOYALTY_VOUCHER = "loyalty_voucher";
-const DELIVERY_STANDARD = "delivery_standard";
-const DELIVERY_FOLLOWS_GOODS = "delivery_follows_goods";
-const LATE_FEE_PREFIX = "late_fee:";
+export const COMPANY_DISCOUNT = "company_discount";
+export const LOYALTY_VOUCHER = "loyalty_voucher";
+export const DELIVERY_STANDARD = "delivery_standard";
+export const DELIVERY_FOLLOWS_GOODS = "delivery_follows_goods";
+export const LATE_FEE_PREFIX = "late_fee:";
 
 /** Calcule le dossier d'un payeur sur un cycle, à partir de ses bons figés. */
 export function simulateInvoiceDossier(orders: readonly FrozenInvoiceOrder[]): InvoiceDossier {

@@ -224,7 +224,7 @@ export class Invoice {
     return this.state.vat.totalCents;
   }
 
-  /** La forme persistée — l'adaptateur (E2) la lit, rien d'autre. */
+  /** La forme persistée — l'adaptateur (E2) et le rendu Factur-X (E3a) la lisent, rien d'autre. */
   toState(): InvoiceState {
     return {
       ...this.state,

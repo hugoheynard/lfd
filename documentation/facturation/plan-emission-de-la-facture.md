@@ -173,15 +173,15 @@ document_key, sha256       ← posés UNE fois, après le rendu
 
 ## 8. Les lots
 
-| Lot    | Contenu                                                                                           |
-| ------ | ------------------------------------------------------------------------------------------------- |
-| **E0** | ✅ **bâti le 2026-10-08** (non commité à l'écriture) — cf. § 8.1                                  |
-| **E1** | ✅ **bâti le 2026-10-08** (non commité à l'écriture) — cf. § 8.2                                  |
-| **E2** | ✅ **bâti le 2026-10-08** (non commité à l'écriture) — cf. § 8.3                                  |
-| **E3** | essai PDF/A-3 borné, puis le rendu Factur-X validé (Schematron, veraPDF), seau en écriture unique |
-| **E4** | la facture du mois (dernier jour, 22h) sur les livraisons ; le lot encaisse des factures          |
-| **E5** | la facture carte à la livraison — après le suivi des remboursements                               |
-| **E6** | e-mail, « Mes factures », l'onglet facturation de la fiche ; puis F5                              |
+| Lot    | Contenu                                                                                                                                            |
+| ------ | -------------------------------------------------------------------------------------------------------------------------------------------------- |
+| **E0** | ✅ **bâti le 2026-10-08** (non commité à l'écriture) — cf. § 8.1                                                                                   |
+| **E1** | ✅ **bâti le 2026-10-08** (non commité à l'écriture) — cf. § 8.2                                                                                   |
+| **E2** | ✅ **bâti le 2026-10-08** (non commité à l'écriture) — cf. § 8.3                                                                                   |
+| **E3** | **E3a ✅ bâti le 2026-10-08** (XML CII, non commité à l'écriture, § 8.4) ; E3b : essai PDF/A-3 borné, Schematron, veraPDF, seau en écriture unique |
+| **E4** | la facture du mois (dernier jour, 22h) sur les livraisons ; le lot encaisse des factures                                                           |
+| **E5** | la facture carte à la livraison — après le suivi des remboursements                                                                                |
+| **E6** | e-mail, « Mes factures », l'onglet facturation de la fiche ; puis F5                                                                               |
 
 ### 8.1 E0 — ce qui a été bâti et tranché (2026-10-08)
 
@@ -301,6 +301,52 @@ CONFLICT DO UPDATE … WHERE last_issued_on <= jour RETURNING` dans la
   (unique par pièce).
 - **Aucune donnée personnelle** : l'acheteur est une société, le vendeur
   notre entité ; `lint:rgpd-staff` vert sans entrée nouvelle.
+
+### 8.4 E3a — le XML Factur-X (2026-10-08)
+
+Pur, sans bibliothèque : `renderFacturXml(invoice)`
+(`apps/lfd-api/src/b2b/accounting/domain/services/facturx-xml.ts`, + `facturx-format.ts`,
+`facturx-parties.ts`, `facturx-settlement.ts`, `facturx-mentions.ts`). Dans
+`domain/services/` comme le `pain.008` : fonction pure de la pièce, la
+donnée structurée fait foi ; le PDF, le dépôt et le seau seront des
+adaptateurs.
+
+- **Profil** `urn:cen.eu:en16931:2017` (BT-24), écrit de mémoire, à
+  vérifier contre la spec Factur-X 1.07.
+- **Montants** en arithmétique entière : centimes → `0.00`, prix en
+  millicentimes → 2 à 5 décimales, quantité en millièmes, taux en points de
+  base (`Math.round(rate × 100)`, comme `@lfd/money`).
+- **Remises et frais** (BG-20/21) : un élément par taux où la part est non
+  nulle, repris de la ventilation figée, libellé par la clé
+  (`invoice-dossier.ts` exporte désormais ses clés).
+- **Mentions** : BT-20 (échéance, pénalités, indemnité, escompte) et notes
+  BG-1 aux codes `PMD`/`PMT`/`AAB`/`AAI` (de mémoire, à vérifier).
+- **Les bons** : la liste entière et leurs dates de livraison réelles vivent
+  en **note** — BT-13 n'admet qu'une référence (0..1) ; cf. question ouverte
+  ci-dessous.
+- **Adresses** : les parties figées sont des lignes ; code postal, ville et
+  pays en sont relus quand la ligne les porte sans ambiguïté (code ISO, ou
+  « France »), sinon omis.
+- **Contrôle** : `facturXArithmeticViolations(xml)` rejoue sur la chaîne
+  BR-CO-10 à BR-CO-16, BR-S-08 et BR-S-09. **Non vérifié** : le schéma XSD,
+  le reste du Schematron CEN (cardinalités, listes de codes, BR-09/BR-11 pays
+  obligatoire, BR-S-02 TVA vendeur…).
+
+**Ouvert** : (a) BT-13 pour plusieurs bons — note seule, ou BT-13 quand il
+n'y en a qu'un, ou BT-14 (commande vendeur) ? (b) moyen de paiement BG-16
+(prélèvement `59`, ICS BT-90, RUM BT-89) : ni le mandat ni l'IBAN débiteur
+ne sont figés sur la facture ; (c) BT-26, date de la facture corrigée, non
+figée sur l'avoir ; (d) adresses structurées dans les snapshots, plutôt que
+relues dans des lignes.
+
+**E3b, reste** : PDF/A-3 (essai borné, § 6), validation Schematron et
+veraPDF en test, rendu après émission par un fait durable,
+`attachDocument`, seau en écriture unique. **Téléchargements à soumettre à
+Hugo** : le Schematron CEN EN 16931 CII (dépôt `ConnectingEurope/eInvoicing-EN16931`,
+version figée) et un processeur XSLT 2 pour l'exécuter (Saxon-HE, Java, ou
+`saxon-js`) ; les XSD CII D16B (fournis dans le paquet Factur-X 1.07 de
+FNFE-MPE) ; veraPDF (Java) ; une bibliothèque PDF Node candidate à l'essai
+PDF/A-3 (ex. `pdf-lib`, ou un rendu hors Node).
 
 ## 9. Ce que `vitruve` a relevé (v1, 2026-10-08)
 
