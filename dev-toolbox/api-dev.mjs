@@ -248,7 +248,10 @@ if (!existsSync(TSC)) {
   process.exit(1);
 }
 freePort();
-rmSync(API_DIST, { recursive: true, force: true });
+// `maxRetries` : un `tsc` d'une session précédente, tué juste avant par le
+// balayage de `dev-stack.sh`, peut encore écrire un fichier pendant la purge —
+// `rmdir` lève alors ENOTEMPTY et le lanceur mourait au démarrage (2026-10-08).
+rmSync(API_DIST, { recursive: true, force: true, maxRetries: 10, retryDelay: 200 });
 mkdirSync(API_DIST, { recursive: true });
 startTsc();
 scanPackageDists();
