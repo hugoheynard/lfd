@@ -49,10 +49,15 @@ voucherDiscountCents` ensemble, `b2b/orders/domain/services/vat.ts:126-129`)
   des lignes, calcule la TVA de chaque taux sur la base exacte (fraction non
   arrondie), et ne rend que la TVA par taux — **ni base ni part de remise par
   taux** n'est figée sur le bon (`vatShares` = `{ rate, amountCents }`).
-- **Le taux de la livraison** est toujours `DELIVERY_VAT_RATE` = 20 %
-  (`packages/money/src/vat.ts:41`) : aucun appelant ne passe `deliveryVatRate`
-  hors des tests (vérifié le 2026-10-08). Le taux de la surtaxe vit dans le
-  JSON `lateFeeAdjustment` (`orders.prisma:163`) ; absent, le calcul lève
+- **La TVA de la livraison** : Hugo a décidé le 2026-09-21 que l'admin
+  **choisit** entre le taux normal (20 %) et la **ventilation au prorata** des
+  marchandises (port accessoire de la vente) —
+  [`../order/todo-tva-des-frais-de-port.md`](../order/todo-tva-des-frais-de-port.md),
+  🔴 **pas bâti**. Aujourd'hui toute commande est taxée à `DELIVERY_VAT_RATE`
+  = 20 % (`packages/money/src/vat.ts:41`) : aucun appelant ne passe
+  `deliveryVatRate` hors des tests, et aucun mode n'est figé sur la commande
+  (vérifié le 2026-10-08). Le taux de la surtaxe vit dans le JSON
+  `lateFeeAdjustment` (`orders.prisma:163`) ; absent, le calcul lève
   `MissingLateFeeVatRateError`.
 - **La seule date d'un bon** est `requestedDeliveryDate`, **nullable**
   (`orders.prisma:137`), et elle ne change pas quand un bon rapporté est
@@ -94,9 +99,19 @@ parce qu'aucune répartition par taux n'y est figée.
 
 **Remises, par nature** : remise société = Σ `discountCents`, bon de fidélité
 = Σ `voucherDiscountCents` — sommes exactes des montants figés des bons, déjà
-bornés bon par bon. **Frais, par taux** : livraison = Σ `deliveryFeeCents` au
-taux de la livraison ; surtaxe = Σ `lateFeeCents`, au taux lu dans chaque
-`lateFeeAdjustment`. Un bon sans taux de surtaxe **arrête le dossier** avec
+bornés bon par bon. **Frais** : surtaxe = Σ `lateFeeCents`, au taux lu dans
+chaque `lateFeeAdjustment`. **Livraison, selon le mode figé sur chaque bon** :
+
+- **taux normal** : Σ `deliveryFeeCents` de ces bons, à 20 % ;
+- **au prorata** : Σ `deliveryFeeCents` de ces bons, répartie sur les taux au
+  prorata des bases marchandise **de ces mêmes bons** (le port suit la vente
+  qu'il accompagne), en centimes, aux plus forts restes (§ étape 2) ;
+- un cycle peut mêler les deux modes (le réglage a changé en cours de mois) :
+  deux lignes de livraison, une par mode.
+
+Tant que le mode n'est pas figé sur la commande, le dossier lit **taux
+normal** pour tout bon — c'est ce que le bon a réellement facturé — et le
+dit à l'écran. Un bon sans taux de surtaxe **arrête le dossier** avec
 sa référence : c'est un échec, pas une hypothèse.
 
 **La ventilation par taux** — une seule fonction neuve, dans `@lfd/money`,
@@ -196,6 +211,10 @@ même temps que le prélèvement.
   premier lot de la facture réelle doit poser ce verrou dans le code, pas
   seulement dans ce texte.
 - **Facturer au mois de livraison** (§ 5), en même temps que le prélèvement.
+- **Bâtir le choix de la TVA de la livraison** (`todo-tva-des-frais-de-port.md`) :
+  un réglage, **figé sur chaque commande** — sans quoi le dossier ne saurait
+  pas quel mode un bon ancien a appliqué. Le simulateur lit ce mode dès qu'il
+  existe.
 - **Prélever le total de la facture**, pas la somme des bons (D4) : le
   prélèvement (`plan-lot-de-prelevement-fige.md`) et le relevé devront lire
   la facture le jour où elle existera. Le simulateur ne prélève rien ; il
