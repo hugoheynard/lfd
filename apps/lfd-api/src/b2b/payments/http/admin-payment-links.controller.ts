@@ -16,7 +16,7 @@ import { ListPaymentLinksQuery } from "../application/queries/list-payment-links
 
 /**
  * Surface **comptabilité** des liens de paiement libres (plan
- * `plan-blocage-prelevement-et-liens-de-paiement.md` §2b). L'action se déduit
+ * `blocage-et-liens-de-paiement.md`). L'action se déduit
  * du verbe (`GET` → lecture, le reste → écriture).
  *
  * Les commandes à régler (§2a) vivent sous `…/payment-links/orders`, dans le

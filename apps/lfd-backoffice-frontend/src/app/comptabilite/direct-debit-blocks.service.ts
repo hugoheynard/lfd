@@ -11,7 +11,7 @@ import { B2B_API_BASE } from '../api/api-config';
  *
  * Transport pur : les refus (déjà bloqué, aucun crédit accordé, non bloqué)
  * sont rédigés par l'agrégat `Company`, et l'écran les affiche tels quels.
- * Plan : `documentation/comptabilite/prelevement/plan-blocage-prelevement-et-liens-de-paiement.md` §1.
+ * Plan : `documentation/comptabilite/prelevement/blocage-et-liens-de-paiement.md`
  */
 @Injectable({ providedIn: 'root' })
 export class DirectDebitBlocksService {

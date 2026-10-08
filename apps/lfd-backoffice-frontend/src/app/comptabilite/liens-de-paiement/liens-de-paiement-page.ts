@@ -25,7 +25,7 @@ const TABS: readonly FoldTabItem<PaymentLinksTab>[] = [
  * Les deux onglets ne partagent rien que leur geste final (un lien à copier) ;
  * chacun charge ce qu'il montre, à l'ouverture.
  *
- * Plan : `documentation/comptabilite/prelevement/plan-blocage-prelevement-et-liens-de-paiement.md` §2.
+ * Plan : `documentation/comptabilite/prelevement/blocage-et-liens-de-paiement.md`
  */
 @Component({
   selector: 'app-liens-de-paiement-page',

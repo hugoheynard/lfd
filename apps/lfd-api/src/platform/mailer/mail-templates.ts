@@ -111,7 +111,7 @@ export interface B2bMails {
   };
   /**
    * **Le lien de règlement d'une commande**, renvoyé par la comptabilité (plan
-   * `plan-blocage-prelevement-et-liens-de-paiement.md` §2a). Destinataire :
+   * `blocage-et-liens-de-paiement.md`). Destinataire :
    * l'acheteur.
    *
    * Le seul courriel qui porte le lien `/commandes/:id/regler` : l'accusé de

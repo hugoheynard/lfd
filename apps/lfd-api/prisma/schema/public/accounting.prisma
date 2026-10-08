@@ -457,7 +457,7 @@ enum PaymentLinkStatus {
 /// Ce n'est PAS une commande : il n'entre ni au chiffre d'affaires des
 /// commandes ni au cycle de prélèvement, et ne solde aucune commande — le
 /// rapprochement reste humain. Propriétaire : `src/b2b/payments/`. Plan
-/// `documentation/comptabilite/prelevement/plan-blocage-prelevement-et-liens-de-paiement.md` §2b.
+/// `documentation/comptabilite/prelevement/blocage-et-liens-de-paiement.md`
 ///
 /// Aucun DELETE : un lien se clôt par son statut.
 model PaymentLink {

@@ -763,7 +763,7 @@ le même profil que le webhook Resend : la chaîne ne se vérifie qu'en ligne.
 ## Abonner le webhook Stripe aux liens de paiement
 
 Les **liens de paiement libres** (plan
-[`plan-blocage-prelevement-et-liens-de-paiement.md`](../comptabilite/prelevement/plan-blocage-prelevement-et-liens-de-paiement.md)
+[`blocage-et-liens-de-paiement.md`](../comptabilite/prelevement/blocage-et-liens-de-paiement.md)
 §2b) sont des pages Stripe Checkout hébergées. Stripe ne prévient le backend
 que des événements auxquels l'endpoint est **abonné** — et un événement non
 abonné ne produit **aucune erreur** : le lien reste `open` pour toujours alors

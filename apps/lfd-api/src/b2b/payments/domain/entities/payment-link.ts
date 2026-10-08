@@ -48,7 +48,7 @@ export type PaymentLinkSettlement = "settled" | "settled_after_cancel" | "alread
 /**
  * **Un lien de paiement libre** — une somme demandée à un client hors de toute
  * commande, encaissée par Stripe Checkout hébergé (plan
- * `plan-blocage-prelevement-et-liens-de-paiement.md` §2b).
+ * `blocage-et-liens-de-paiement.md`).
  *
  * `open` est le seul état dont on sort par un geste ; les trois autres sont
  * terminaux, à une exception près, écrite dans {@link markPaid}.

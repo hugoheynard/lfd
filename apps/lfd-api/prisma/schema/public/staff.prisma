@@ -76,7 +76,7 @@ enum StaffResource {
   b2b_payments
   b2b_accounting
   /// Bloquer / débloquer le prélèvement d'une société (2026-09-25,
-  /// `plan-blocage-prelevement-et-liens-de-paiement.md` §1).
+  /// `blocage-et-liens-de-paiement.md`).
   b2b_deferred_payment_block
   /// Les LIMITES DE PRIX — poser, confirmer, retirer une limite, pro ou
   /// publique (2026-09-26, `documentation/comptabilite/prix/limites-de-prix.md`).
