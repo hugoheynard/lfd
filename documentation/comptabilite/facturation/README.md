@@ -16,6 +16,7 @@ sont conformes.
 | [`../prelevement/prelevement-automatique.md`](../prelevement/prelevement-automatique.md) | ✅ doc d'état — le mois de prélèvement : réglages de l'entité, calendrier TARGET2, avis de prélèvement, préparation automatique une fois par mois, écran « Prélèvement du mois » (PA1-PA4, 2026-10-08)                                                     |
 | [`plan-bons-et-facture-concordants.md`](plan-bons-et-facture-concordants.md)             | 📐 plan v2 — des bons et une facture qui ne se contredisent pas : HT repris des bons (F6), bon HT pour les pros au compte (F5) ; F5-0 bâti                                                                                                                 |
 | [`plan-emission-de-la-facture.md`](plan-emission-de-la-facture.md)                       | 📐 plan v2 — la facture Factur-X EN 16931 : émise le dernier jour du mois sur les livraisons, numérotée par entité, le lot ne fait que l'encaisser ; carte à la livraison                                                                                  |
+| [`plan-facture-carte-et-remboursements.md`](plan-facture-carte-et-remboursements.md)     | 📐 plan v2, contredit par `vitruve` — la facture acquittée d'une commande pro payée par carte, au retrait ; les remboursements Stripe suivis et leurs avoirs (E5)                                                                                          |
 
 ## Ce qui existe ailleurs, et qu'il ne faut pas réécrire
 
