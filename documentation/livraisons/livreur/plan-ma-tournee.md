@@ -1,5 +1,8 @@
 # « Ma tournée » — la page du livreur, son rôle, son départ, sa navigation
 
+> 🗄️ **2026-10-08 — Document de décision, gardé parce que des migrations le
+> citent ; l'état vit dans [`app-coursier-ma-tournee.md`](app-coursier-ma-tournee.md).**
+
 > ✅ **Bâti le 2026-10-01** (relevé dans le code le même jour) : MT1 à MT4 —
 > le droit `delivery_driving`, l'affectation du livreur (`assignDriver`), les
 > routes « ma tournée » (`my-delivery-round.controller.ts`) et la page « Ma

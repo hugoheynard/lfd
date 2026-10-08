@@ -17,7 +17,7 @@
 > section** de l'ancien plan (« § 10 ter », « § 10 bis »…), qui ne sont pas
 > ceux de ce document. Le § 9 dit où chacun mène désormais.
 
-Suit « Ma tournée » ([`plan-ma-tournee.md`](plan-ma-tournee.md)) : la page du
+Suit « Ma tournée » ([`app-coursier-ma-tournee.md`](app-coursier-ma-tournee.md)) : la page du
 livreur, son mur « sa tournée ». La conception d'origine du lot 6 (L6-C1 à
 L6-C14) est dans [`plan-preparation-de-tournee.md`](../tournees/plan-preparation-de-tournee.md),
 « Plus tard » → Lot 6.

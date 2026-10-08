@@ -18,7 +18,7 @@
 >
 > **Complément, pas remplacement.** Le livreur avec compte staff
 > (`delivery_driving` pour conduire, `delivery_doorstep` pour les gestes à la
-> porte ; page `/coursier`, [`plan-ma-tournee.md`](plan-ma-tournee.md)) reste
+> porte ; page `/coursier`, [`app-coursier-ma-tournee.md`](app-coursier-ma-tournee.md)) reste
 > la voie principale et ne change pas. Conception tranchée en amont :
 > [`a-la-porte.md`](a-la-porte.md) § 10 (« un lien à jeton par tournée ; qui
 > compose affecte le livreur ; le snapshot du départ se garde 90 jours ») et
