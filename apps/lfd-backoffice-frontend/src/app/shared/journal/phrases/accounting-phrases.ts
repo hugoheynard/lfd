@@ -73,6 +73,36 @@ function onEntity(
 
 const nothing = (): Segment[] => [];
 
+/**
+ * « : échéance à la clôture + 20 jours, constitution 2 h après la clôture,
+ * dépôt au plus tard 2 jours ouvrés avant à 16:00 ». Plan
+ * `plan-prelevement-automatique.md`, PA1. Une échéance nulle suit le préavis ;
+ * un cut-off nul est « à renseigner » — dit tel quel, jamais inventé.
+ */
+function collectionSchedule(fact: PhraseFact): Segment[] {
+  const days = fact.payload['daysAfterClosure'];
+  const hours = fact.payload['delayHours'];
+  const cutoffDays = fact.payload['depositCutoffBusinessDays'];
+  const cutoffTime = optional(fact.payload['depositCutoffTime']);
+  return [
+    text(' : échéance '),
+    ...(typeof days === 'number'
+      ? [text('à la clôture + '), inUnit('days', days)]
+      : [text('au terme du préavis')]),
+    text(', constitution '),
+    value(typeof hours === 'number' ? `${String(hours)} h` : '—'),
+    text(' après la clôture, dépôt '),
+    ...(typeof cutoffDays === 'number' && cutoffTime !== null
+      ? [
+          text('au plus tard '),
+          value(`${String(cutoffDays)} jours ouvrés`),
+          text(' avant, à '),
+          value(cutoffTime),
+        ]
+      : [text('limite à renseigner')]),
+  ];
+}
+
 // ─── Les mandats ────────────────────────────────────────────────────────────
 
 const MANDATE: Noun = { the: 'le mandat', a: 'un mandat' };
@@ -343,6 +373,24 @@ export const ACCOUNTING_PHRASES = {
     'de',
     (fact) => [text(' à '), inUnit('days', fact.payload['days'])],
     ['days'],
+  ),
+  'legal_entity.collection_schedule_changed': onEntity(
+    'a réglé le calendrier de prélèvement',
+    'de',
+    collectionSchedule,
+    ['delayHours', 'daysAfterClosure', 'depositCutoffBusinessDays', 'depositCutoffTime'],
+  ),
+  'legal_entity.auto_collection_enabled': onEntity(
+    'a activé le prélèvement automatique',
+    'de',
+    nothing,
+    [],
+  ),
+  'legal_entity.auto_collection_disabled': onEntity(
+    'a désactivé le prélèvement automatique',
+    'de',
+    nothing,
+    [],
   ),
   'legal_entity.mandate_scheme_changed': onEntity(
     'a passé les mandats à venir',

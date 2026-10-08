@@ -76,6 +76,18 @@ export interface CollectionBatchView {
   /** Q2 : non vide = le lot ne se dépose pas, et l'écran les nomme en tête. */
   readonly unmandatedCompanies: readonly string[];
   readonly depositable: boolean;
+  /**
+   * L'échéance FIGÉE à la constitution (`AAAA-MM-JJ`) — celle du fichier.
+   * `null` pour un lot constitué avant le 2026-10-08 (plan
+   * `plan-prelevement-automatique.md`, PA1) : on n'invente pas sa valeur, le
+   * XML stocké fait foi.
+   */
+  readonly requestedCollectionDay: string | null;
+  /**
+   * La date limite de dépôt de cette échéance, au cut-off ACTUEL de l'entité ;
+   * `null` si l'échéance n'est pas figée ou si le cut-off est à renseigner.
+   */
+  readonly depositDeadline: { readonly day: string; readonly time: string } | null;
   /** Dans l'ordre des rangs. */
   readonly lines: readonly CollectionBatchLineView[];
 }

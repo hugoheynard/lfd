@@ -1,0 +1,38 @@
+.cs-said {
+  margin: 0 0 var(--fold-space-md);
+  color: var(--fold-color-text-muted);
+  font-size: var(--fold-text-sm);
+  max-width: 65ch;
+}
+
+/* L'état de l'automatisme et son geste, sur une ligne : le bouton dit ce
+   qu'il fera, la phrase ce qui est. */
+.cs-auto {
+  display: flex;
+  align-items: center;
+  gap: var(--fold-space-sm);
+  margin: var(--fold-space-md) 0;
+}
+
+.cs-row {
+  display: flex;
+  align-items: flex-start;
+  gap: var(--fold-space-sm);
+  flex-wrap: wrap;
+}
+
+.cs-row fold-number-input,
+.cs-row fold-input {
+  flex: 1 1 18rem;
+}
+
+.cs-actions {
+  display: flex;
+  justify-content: flex-end;
+  margin-top: var(--fold-space-sm);
+}
+
+.cs-state {
+  margin: 0;
+  font-size: var(--fold-text-sm);
+}

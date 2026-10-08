@@ -2,6 +2,7 @@ import type { CreditorSnapshot } from "../creditor-snapshot.js";
 import type { SepaScheme } from "../value-objects/sepa-scheme.js";
 import type { DebtorMandate } from "../ports/debtor-mandate.reader.js";
 import type { BillableCompany } from "../ports/billable-orders.reader.js";
+import { collectionDayOf } from "./collection-calendar.js";
 import {
   SEQUENCE_ORDER,
   commentSafe,
@@ -141,7 +142,11 @@ export function renderPain008(input: Pain008Input): string {
     messageId,
     paymentInfoIdOf: (sequence) => `${messageId}-${sequence}`,
     createdAt: input.createdAt,
-    cycleEnd: input.cycleEnd,
+    requestedCollectionDay: collectionDayOf(
+      input.cycleEnd,
+      input.creditor.preNotificationDays,
+      input.creditor.collectionDaysAfterClosure,
+    ),
     banner: complete
       ? null
       : draftBanner(

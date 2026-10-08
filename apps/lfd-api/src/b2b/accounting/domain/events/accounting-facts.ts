@@ -32,6 +32,11 @@ export const ACCOUNTING_FACTS = {
   creditorAccountChanged: "legal_entity.creditor_account_changed",
   /** Le délai annoncé entre pré-notification et débit est renégocié. */
   preNotificationChanged: "legal_entity.pre_notification_changed",
+  /** Le calendrier de prélèvement : délai de constitution, échéance N, cut-off de dépôt. */
+  collectionScheduleChanged: "legal_entity.collection_schedule_changed",
+  /** La constitution automatique est activée — des lots partiront sans clic. */
+  autoCollectionEnabled: "legal_entity.auto_collection_enabled",
+  autoCollectionDisabled: "legal_entity.auto_collection_disabled",
   /**
    * Le schéma des mandats à venir bascule — CORE ↔ interentreprises. Les
    * brouillons de l'entité deviennent caducs dans la même transaction ; les

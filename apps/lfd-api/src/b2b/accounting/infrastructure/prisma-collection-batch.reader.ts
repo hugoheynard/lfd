@@ -7,6 +7,7 @@ import {
   type StoredBatchFile,
 } from "../domain/ports/collection-batch.reader.js";
 import type { BatchCsvLine } from "../domain/services/collection-batch-csv.js";
+import { depositDeadlineOf } from "../domain/services/collection-calendar.js";
 
 /** Lecture des lots — jamais le fichier dans la liste, il est lourd. */
 @Injectable()
@@ -29,6 +30,10 @@ export class PrismaCollectionBatchReader extends CollectionBatchReader {
         depositedAt: true,
         cancelledAt: true,
         unmandatedCompanies: true,
+        requestedCollectionDay: true,
+        legalEntity: {
+          select: { depositCutoffBusinessDays: true, depositCutoffTime: true },
+        },
         lines: {
           orderBy: { rank: "asc" },
           select: {
@@ -56,6 +61,7 @@ export class PrismaCollectionBatchReader extends CollectionBatchReader {
       totalCents: row.lines.reduce((sum, line) => sum + line.amountCents, 0),
       unmandatedCompanies: row.unmandatedCompanies,
       depositable: row.lines.length > 0 && row.unmandatedCompanies.length === 0,
+      ...batchCalendar(row.requestedCollectionDay, row.legalEntity),
       // Un lot d'avant F3 n'a pas d'arrêté : `null`, jamais un identifiant inventé.
       lines: row.lines.map((line) => ({
         rank: line.rank,
@@ -160,4 +166,30 @@ export class PrismaCollectionBatchReader extends CollectionBatchReader {
         .sort((left, right) => left.localeCompare(right)),
     }));
   }
+}
+
+/**
+ * L'échéance figée du lot, et la date limite de dépôt au cut-off ACTUEL de
+ * l'entité. Un lot d'avant le 2026-10-08 n'a pas d'échéance figée : `null`
+ * pour les deux, jamais une valeur recalculée (son XML fait foi).
+ */
+function batchCalendar(
+  column: Date | null,
+  cutoff: {
+    readonly depositCutoffBusinessDays: number | null;
+    readonly depositCutoffTime: string | null;
+  },
+): Pick<CollectionBatchView, "requestedCollectionDay" | "depositDeadline"> {
+  if (column === null) {
+    return { requestedCollectionDay: null, depositDeadline: null };
+  }
+  const day = column.toISOString().slice(0, 10);
+  const { depositCutoffBusinessDays: businessDaysBefore, depositCutoffTime: time } = cutoff;
+  return {
+    requestedCollectionDay: day,
+    depositDeadline:
+      businessDaysBefore === null || time === null
+        ? null
+        : depositDeadlineOf(day, { businessDaysBefore, time }),
+  };
 }

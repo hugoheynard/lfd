@@ -38,6 +38,8 @@ function batchOf(lines: readonly CollectionBatchLineView[]): CollectionBatchView
     totalCents: 10_018,
     unmandatedCompanies: [],
     depositable: true,
+    requestedCollectionDay: '2026-10-15',
+    depositDeadline: null,
     lines,
   };
 }

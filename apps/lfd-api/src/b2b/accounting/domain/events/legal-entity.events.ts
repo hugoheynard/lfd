@@ -182,3 +182,57 @@ export class LegalEntityArchivalChangedEvent implements JournaledEvent {
     };
   }
 }
+
+/**
+ * Le calendrier de prélèvement a changé : délai de constitution, échéance N,
+ * date limite de dépôt. L'APRÈS au payload — c'est ce qui date les lots
+ * constitués de part et d'autre, chacun ayant figé son échéance.
+ */
+export class CollectionScheduleChangedEvent implements JournaledEvent {
+  constructor(
+    readonly entity: LegalEntitySubject,
+    readonly at: Date,
+    readonly schedule: {
+      readonly delayHours: number;
+      readonly daysAfterClosure: number | null;
+      readonly depositCutoffBusinessDays: number | null;
+      readonly depositCutoffTime: string | null;
+    },
+  ) {}
+
+  journalFact(): JournalFact {
+    return {
+      type: ACCOUNTING_FACTS.collectionScheduleChanged,
+      subjectType: SUBJECT,
+      subjectId: this.entity.id,
+      occurredAt: this.at,
+      payload: { subjectLabel: this.entity.name, ...this.schedule },
+    };
+  }
+}
+
+/**
+ * La constitution automatique est activée, ou désactivée. Un fait DISTINCT du
+ * calendrier (plan `plan-prelevement-automatique.md`, § 3) : c'est le geste
+ * qui fait partir des lots et des avis sans qu'un humain clique, et la
+ * question « depuis quand ? » doit se lire sans fouiller les réglages.
+ */
+export class AutoCollectionChangedEvent implements JournaledEvent {
+  constructor(
+    readonly entity: LegalEntitySubject,
+    readonly at: Date,
+    readonly enabled: boolean,
+  ) {}
+
+  journalFact(): JournalFact {
+    return {
+      type: this.enabled
+        ? ACCOUNTING_FACTS.autoCollectionEnabled
+        : ACCOUNTING_FACTS.autoCollectionDisabled,
+      subjectType: SUBJECT,
+      subjectId: this.entity.id,
+      occurredAt: this.at,
+      payload: { subjectLabel: this.entity.name },
+    };
+  }
+}

@@ -4,6 +4,7 @@ import {
   EntityCannotCollectError,
   InvalidLegalEntityError,
 } from "../../errors/accounting-errors.js";
+import { CollectionBeforeNoticeError } from "../../errors/collection-schedule-errors.js";
 import { CreditorIdentifier } from "../../value-objects/creditor-identifier.js";
 import { Bic } from "../../value-objects/bic.js";
 import { CreditorAccount } from "../../value-objects/creditor-account.js";
@@ -167,6 +168,7 @@ describe("LegalEntity — encaisser demande tout", () => {
       accountAddressLines: ["Route de la Balme", "73150 Val d'Isère", "FR"],
       creditorIban: "FR1420041010050500013M02606",
       preNotificationDays: PRE_NOTIFICATION_DEFAULT_DAYS,
+      collectionDaysAfterClosure: null,
     });
   });
 
@@ -202,6 +204,73 @@ describe("LegalEntity — le délai de pré-notification", () => {
     expect(() => entity.setPreNotificationDays(PRE_NOTIFICATION_MAX_DAYS + 1)).toThrow(
       InvalidLegalEntityError,
     );
+  });
+});
+
+describe("LegalEntity — le calendrier de prélèvement (PA1)", () => {
+  const SCHEDULE = { delayHours: 1, daysAfterClosure: null, depositCutoff: null };
+
+  it("se déclare sans automatisme, N = délai, cut-off à renseigner : rien ne change", () => {
+    const written = collecting().toPersistence();
+    expect(written).toMatchObject({
+      autoCollectionEnabled: false,
+      autoCollectionDelayHours: 1,
+      collectionDaysAfterClosure: null,
+      depositCutoffBusinessDays: null,
+      depositCutoffTime: null,
+    });
+  });
+
+  it("refuse une échéance N plus courte que le délai de pré-notification", () => {
+    const entity = collecting();
+    expect(() => entity.setCollectionSchedule({ ...SCHEDULE, daysAfterClosure: 4 })).toThrow(
+      CollectionBeforeNoticeError,
+    );
+    expect(entity.collectionSchedule.daysAfterClosure).toBeNull();
+  });
+
+  it("refuse de porter le délai de pré-notification au-dessus d'un N réglé — l'autre sens", () => {
+    const entity = collecting();
+    entity.setPreNotificationDays(4);
+    entity.setCollectionSchedule({ ...SCHEDULE, daysAfterClosure: 4 });
+
+    expect(() => entity.setPreNotificationDays(5)).toThrow(/clôture \+ 4 jours.*5 jours/su);
+    expect(entity.creditorSnapshot().preNotificationDays).toBe(4);
+  });
+
+  it("laisse le délai monter librement quand N n'est pas réglé — il le suit", () => {
+    const entity = collecting();
+    entity.setPreNotificationDays(30);
+    expect(entity.creditorSnapshot()).toMatchObject({
+      preNotificationDays: 30,
+      collectionDaysAfterClosure: null,
+    });
+  });
+
+  it("dit si le calendrier a changé : une saisie rejouée n'est pas un fait", () => {
+    const entity = collecting();
+    const cutoff = { businessDaysBefore: 2, time: "16:00" };
+    expect(entity.setCollectionSchedule({ ...SCHEDULE, depositCutoff: cutoff })).toBe(true);
+    expect(entity.setCollectionSchedule({ ...SCHEDULE, depositCutoff: { ...cutoff } })).toBe(false);
+  });
+
+  it("active et désactive l'automatisme, et dit si l'état a changé", () => {
+    const entity = collecting();
+    expect(entity.setAutoCollection(false)).toBe(false);
+    expect(entity.setAutoCollection(true)).toBe(true);
+    expect(entity.autoCollectionEnabled).toBe(true);
+  });
+
+  it("relit ses réglages sans rien perdre", () => {
+    const entity = collecting();
+    entity.setAutoCollection(true);
+    entity.setCollectionSchedule({
+      delayHours: 3,
+      daysAfterClosure: 20,
+      depositCutoff: { businessDaysBefore: 2, time: "16:00" },
+    });
+    const written = entity.toPersistence();
+    expect(LegalEntity.reconstitute(written).toPersistence()).toEqual(written);
   });
 });
 

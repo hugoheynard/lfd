@@ -36,6 +36,24 @@ describe("constituer, annuler, déposer un lot", () => {
     expect(w.batches.saved.get(ids[0] ?? "")?.depositable).toBe(false);
   });
 
+  /**
+   * PA1 : le lot FIGE l'échéance du calendrier, et son XML porte la même.
+   * Cycle clos le 1er octobre 2026, délai de 14 j → jeudi 15 octobre.
+   */
+  it("fige l'échéance du calendrier sur le lot, et le XML porte la même", async () => {
+    const w = world();
+    w.candidates.orders = [order("c_port")];
+    w.mandates.mandates = [mandate("c_port")];
+
+    const [id] = await w.constitute.execute(
+      new ConstituteCollectionBatchesCommand(ENTITY_ID, "staff_1"),
+    );
+
+    const state = w.batches.saved.get(id ?? "")?.toPersistence();
+    expect(state?.requestedCollectionDay).toBe("2026-10-15");
+    expect(state?.xml).toContain("<ReqdColltnDt>2026-10-15</ReqdColltnDt>");
+  });
+
   it("annuler rend les commandes `due` ; reconstituer prend un AUTRE lot", async () => {
     const w = world();
     w.candidates.orders = [order("c_port")];

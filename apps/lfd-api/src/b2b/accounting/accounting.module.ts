@@ -53,6 +53,8 @@ import { SetLegalEntityLogoHandler } from "./application/commands/set-legal-enti
 import { SetMandateDefaultsHandler } from "./application/commands/set-mandate-defaults.handler.js";
 import { SetMandateSchemeHandler } from "./application/commands/set-mandate-scheme.handler.js";
 import { SetPreNotificationHandler } from "./application/commands/set-pre-notification.handler.js";
+import { SetCollectionScheduleHandler } from "./application/commands/set-collection-schedule.handler.js";
+import { SetAutoCollectionHandler } from "./application/commands/set-auto-collection.handler.js";
 import { ExportCycleAuditHandler } from "./application/queries/export-cycle-audit.handler.js";
 import { ExportCycleDraftHandler } from "./application/queries/export-cycle-draft.handler.js";
 import { GetCurrentBillingCycleHandler } from "./application/queries/get-current-billing-cycle.handler.js";
@@ -175,6 +177,8 @@ import { PrismaLegalEntityRepository } from "./infrastructure/prisma-legal-entit
     SetMandateDefaultsHandler,
     SetMandateSchemeHandler,
     SetPreNotificationHandler,
+    SetCollectionScheduleHandler,
+    SetAutoCollectionHandler,
     SetLegalEntityArchivedHandler,
     SetLegalEntityLogoHandler,
     RemoveLegalEntityLogoHandler,

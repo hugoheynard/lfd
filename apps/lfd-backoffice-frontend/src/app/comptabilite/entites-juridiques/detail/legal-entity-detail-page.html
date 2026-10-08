@@ -303,6 +303,12 @@
       </fold-page-section>
     </fold-card>
 
+    <!-- Juste après le délai de pré-notification : l'échéance ne peut pas le
+         précéder, et le refus du serveur le dit en nommant les deux. -->
+    <fold-card>
+      <app-collection-settings-card [entity]="entity" [busy]="busy()" (saved)="runSaved($event)" />
+    </fold-card>
+
     <!-- 🔴 La ZONE DE DANGER de cette fiche, et elle se voit AVANT le clic :
          `fold-danger-zone` pose un cadre d'alerte et son propre titre, ce qui
          distingue cette carte des quatre autres au premier coup d'œil. Le

@@ -24,6 +24,7 @@ function input(overrides: Partial<ConstituteBatchInput> = {}): ConstituteBatchIn
     previousClosure: null,
     constituted: STAMP,
     unmandatedCompanies: [],
+    requestedCollectionDay: "2026-10-15",
     lines: [
       {
         rank: 1,

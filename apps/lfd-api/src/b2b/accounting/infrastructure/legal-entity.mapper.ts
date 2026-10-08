@@ -1,4 +1,4 @@
-import type { LegalEntityView } from "@lfd/contracts";
+import type { LegalEntityRecord } from "../domain/ports/legal-entity.reader.js";
 
 import type { FieldCipher } from "../../../platform/crypto/field-cipher.js";
 import type { LegalEntity as LegalEntityRow } from "../../../platform/database/client/client.js";
@@ -36,7 +36,7 @@ function creditorIbanOf(row: LegalEntityRow, cipher: FieldCipher): string | null
 }
 
 /** Agrégat → vue d'écran. */
-export function toView(entity: LegalEntity, isLastActive: boolean): LegalEntityView {
+export function toView(entity: LegalEntity, isLastActive: boolean): LegalEntityRecord {
   const snapshot = entity.toPersistence();
   return {
     id: snapshot.id,
@@ -72,6 +72,10 @@ export function toView(entity: LegalEntity, isLastActive: boolean): LegalEntityV
     creditorAccountCountryCode: snapshot.creditorAccountCountryCode ?? "",
     creditorIdentityFrozen: entity.creditorIdentityFrozen,
     preNotificationDays: snapshot.preNotificationDays,
+    autoCollectionEnabled: snapshot.autoCollectionEnabled,
+    autoCollectionDelayHours: snapshot.autoCollectionDelayHours,
+    collectionDaysAfterClosure: snapshot.collectionDaysAfterClosure,
+    depositCutoff: entity.collectionSchedule.depositCutoff,
     mandateContractDescription: snapshot.mandateContractDescription,
     mandatePaymentType: snapshot.mandatePaymentType,
     mandateScheme: snapshot.mandateScheme,
@@ -120,6 +124,11 @@ function toSnapshot(row: LegalEntityRow, cipher: FieldCipher): LegalEntitySnapsh
     mandateScheme: row.mandateScheme,
     logoKey: row.logoKey,
     archivedAt: row.archivedAt,
+    autoCollectionEnabled: row.autoCollectionEnabled,
+    autoCollectionDelayHours: row.autoCollectionDelayHours,
+    collectionDaysAfterClosure: row.collectionDaysAfterClosure,
+    depositCutoffBusinessDays: row.depositCutoffBusinessDays,
+    depositCutoffTime: row.depositCutoffTime,
   };
 }
 
@@ -188,5 +197,10 @@ export function legalEntityColumns(
     mandateScheme: snapshot.mandateScheme,
     logoKey: snapshot.logoKey,
     archivedAt: snapshot.archivedAt,
+    autoCollectionEnabled: snapshot.autoCollectionEnabled,
+    autoCollectionDelayHours: snapshot.autoCollectionDelayHours,
+    collectionDaysAfterClosure: snapshot.collectionDaysAfterClosure,
+    depositCutoffBusinessDays: snapshot.depositCutoffBusinessDays,
+    depositCutoffTime: snapshot.depositCutoffTime,
   };
 }

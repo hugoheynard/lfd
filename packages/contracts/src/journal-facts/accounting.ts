@@ -4,6 +4,7 @@ import { mandateStatusSchema } from "../payment-mandate.js";
 import { COLLECTION_FACTS } from "./collection.js";
 import {
   cents,
+  clockTime,
   count,
   day,
   days,
@@ -74,6 +75,20 @@ export const ACCOUNTING_FACTS = {
   "legal_entity.creditor_identifier_assigned": labelled({ ics: z.string() }),
   "legal_entity.creditor_account_changed": labelled({ last4: z.string() }),
   "legal_entity.pre_notification_changed": labelled({ days: days() }),
+  /**
+   * Le calendrier de prélèvement APRÈS le changement (plan
+   * `plan-prelevement-automatique.md`, PA1). `daysAfterClosure` nul = le délai
+   * de pré-notification ; cut-off nul = « à renseigner ».
+   */
+  "legal_entity.collection_schedule_changed": labelled({
+    delayHours: count(),
+    daysAfterClosure: days().nullable(),
+    depositCutoffBusinessDays: count().nullable(),
+    depositCutoffTime: clockTime().nullable(),
+  }),
+  /** La constitution automatique — un fait distinct du calendrier. */
+  "legal_entity.auto_collection_enabled": labelled({}),
+  "legal_entity.auto_collection_disabled": labelled({}),
   "legal_entity.mandate_scheme_changed": labelled({ from: sepaScheme(), to: sepaScheme() }),
   "legal_entity.archived": labelled({}),
   "legal_entity.restored": labelled({}),

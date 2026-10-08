@@ -9,6 +9,8 @@ import type {
   DeclareLegalEntityPayload,
   LegalEntityView,
   MandateSchemeUsageView,
+  SetAutoCollectionPayload,
+  SetCollectionSchedulePayload,
   SetCreditorAccountPayload,
   SetMandateDefaultsPayload,
   SetMandateSchemePayload,
@@ -159,6 +161,20 @@ export class LegalEntitiesService {
 
   async setPreNotification(id: string, payload: SetPreNotificationPayload): Promise<void> {
     await firstValueFrom(this.http.put<void>(`${this.base}/${id}/pre-notification`, payload));
+  }
+
+  /**
+   * Le calendrier de prélèvement : délai de constitution, échéance N, date
+   * limite de dépôt. Le refus « N < délai de pré-notification » vient du
+   * serveur (409) et s'affiche tel quel.
+   */
+  async setCollectionSchedule(id: string, payload: SetCollectionSchedulePayload): Promise<void> {
+    await firstValueFrom(this.http.put<void>(`${this.base}/${id}/collection-schedule`, payload));
+  }
+
+  /** Activer ou désactiver la constitution automatique — un geste à part, journalisé. */
+  async setAutoCollection(id: string, payload: SetAutoCollectionPayload): Promise<void> {
+    await firstValueFrom(this.http.put<void>(`${this.base}/${id}/auto-collection`, payload));
   }
 
   async setArchived(id: string, archived: boolean): Promise<void> {

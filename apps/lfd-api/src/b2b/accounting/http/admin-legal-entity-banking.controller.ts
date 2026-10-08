@@ -9,6 +9,10 @@ import {
   type MandateSchemeUsageView,
   type SetMandateSchemePayload,
   setPreNotificationPayloadSchema,
+  setAutoCollectionPayloadSchema,
+  setCollectionSchedulePayloadSchema,
+  type SetAutoCollectionPayload,
+  type SetCollectionSchedulePayload,
   type AssignCreditorIdentifierPayload,
   type SetCreditorAccountPayload,
   type SetPreNotificationPayload,
@@ -19,6 +23,8 @@ import { ZodBody } from "../../../platform/shared/http/zod-body.pipe.js";
 import {
   AssignCreditorIdentifierCommand,
   SetMandateDefaultsCommand,
+  SetAutoCollectionCommand,
+  SetCollectionScheduleCommand,
   SetCreditorAccountCommand,
   SetPreNotificationCommand,
 } from "../application/commands/legal-entity-commands.js";
@@ -160,5 +166,35 @@ export class AdminLegalEntityBankingController {
     @Body(new ZodBody(setPreNotificationPayloadSchema)) payload: SetPreNotificationPayload,
   ): Promise<void> {
     await this.commands.execute(new SetPreNotificationCommand(id, payload.days));
+  }
+
+  /**
+   * Le calendrier de prélèvement : délai de constitution, échéance N jours
+   * après la clôture, date limite de dépôt. Répond **409** si N est plus court
+   * que le délai de pré-notification — le message nomme les deux valeurs et la
+   * clause contractuelle qui permettrait de réduire le délai (plan
+   * `plan-prelevement-automatique.md`, PA1).
+   */
+  @Put(":id/collection-schedule")
+  @HttpCode(HttpStatus.NO_CONTENT)
+  async setCollectionSchedule(
+    @Param("id") id: string,
+    @Body(new ZodBody(setCollectionSchedulePayloadSchema)) payload: SetCollectionSchedulePayload,
+  ): Promise<void> {
+    await this.commands.execute(new SetCollectionScheduleCommand(id, payload));
+  }
+
+  /**
+   * Active ou désactive la constitution automatique. Sa propre route, et pas
+   * un champ du calendrier : c'est le geste qui fera partir des lots et des
+   * avis sans clic, et il se journalise à part.
+   */
+  @Put(":id/auto-collection")
+  @HttpCode(HttpStatus.NO_CONTENT)
+  async setAutoCollection(
+    @Param("id") id: string,
+    @Body(new ZodBody(setAutoCollectionPayloadSchema)) payload: SetAutoCollectionPayload,
+  ): Promise<void> {
+    await this.commands.execute(new SetAutoCollectionCommand(id, payload.enabled));
   }
 }

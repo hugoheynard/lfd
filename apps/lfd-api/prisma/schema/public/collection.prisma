@@ -82,6 +82,11 @@ model CollectionBatch {
   xml        String
   fileSha256 String @map("file_sha256")
 
+  /// L'échéance (`ReqdColltnDt`), FIGÉE à la constitution — la même que le
+  /// XML. NULL pour les lots d'avant le 2026-10-08 : leur XML fait foi.
+  /// Changer l'échéance d'un lot = l'annuler et le reconstituer.
+  requestedCollectionDay DateTime? @map("requested_collection_day") @db.Date
+
   lines CollectionBatchLine[]
 
   @@index([legalEntityId, cycleClosesAt])

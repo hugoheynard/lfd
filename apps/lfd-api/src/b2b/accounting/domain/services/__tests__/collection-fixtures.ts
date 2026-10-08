@@ -29,6 +29,7 @@ export const CREDITOR: CreditorSnapshot = {
   creditorBic: "CEPAFRPP751",
   creditorIban: "FR7630006000011234567890189",
   preNotificationDays: 14,
+  collectionDaysAfterClosure: null,
   mandateContractDescription: "Pains",
   mandatePaymentType: "recurrent",
   mandateScheme: "B2B",

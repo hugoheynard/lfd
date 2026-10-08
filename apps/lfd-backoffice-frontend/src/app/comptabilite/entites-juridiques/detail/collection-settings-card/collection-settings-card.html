@@ -1,0 +1,83 @@
+<fold-page-section title="Prélèvement automatique" separator>
+  <p class="cs-said">
+    Le lot du mois se constitue après la clôture, et le débit tombe à l'échéance&nbsp;: la clôture
+    plus N jours, reportée au jour ouvré suivant si la banque est fermée. L'échéance ne peut pas
+    précéder la fin du délai de pré-notification.
+  </p>
+
+  <!-- Le calendrier du cycle EN COURS, calculé par le serveur : la même
+       fonction date le fichier du lot. -->
+  <fold-field-list>
+    <fold-field label="Clôture du cycle">{{ calendar().closesAt }}</fold-field>
+    <fold-field label="Constitution prévue">{{ calendar().plannedConstitutionAt }}</fold-field>
+    <fold-field label="Échéance">{{ calendar().collectionDay }}</fold-field>
+    <fold-field label="Date limite de dépôt">
+      {{ calendar().depositDeadline ?? 'À renseigner' }}
+    </fold-field>
+  </fold-field-list>
+
+  <div class="cs-auto">
+    <!-- Une phrase, pas une pastille : l'état de l'ENTITÉ est déjà la seule
+         pastille de la fiche, et en ajouter une ferait lire deux états. -->
+    <p class="cs-state">
+      {{ entity().autoCollectionEnabled ? 'Automatisme activé' : 'Automatisme désactivé' }}
+    </p>
+    <button foldButton emphasis="outline" [disabled]="busy()" (click)="toggleAuto()">
+      {{ entity().autoCollectionEnabled ? 'Désactiver' : 'Activer' }}
+    </button>
+  </div>
+
+  <div class="cs-row">
+    <fold-number-input
+      label="Constitution après la clôture (heures)"
+      hint="Laisse passer le traitement de minuit ; la constitution reste le jour de la clôture."
+      integer
+      [min]="minDelay"
+      [max]="maxDelay"
+      [value]="delayDraft()"
+      (valueChange)="delayDraft.set($event)"
+    />
+    <fold-number-input
+      label="Échéance après la clôture (jours)"
+      [hint]="'Vide : le délai de pré-notification (' + entity().preNotificationDays + ' jours).'"
+      integer
+      [min]="1"
+      [max]="maxDays"
+      [value]="daysDraft()"
+      (valueChange)="daysDraft.set($event)"
+    />
+  </div>
+
+  <div class="cs-row">
+    <fold-number-input
+      label="Dépôt au plus tard (jours ouvrés avant l'échéance)"
+      hint="Le cut-off du portail bancaire. Vide : à renseigner."
+      integer
+      [min]="minCutoff"
+      [max]="maxCutoff"
+      [value]="cutoffDaysDraft()"
+      (valueChange)="cutoffDaysDraft.set($event)"
+    />
+    <fold-input
+      label="Heure limite de dépôt"
+      hint="HH:MM, heure de Paris."
+      placeholder="16:00"
+      [value]="cutoffTimeDraft()"
+      (valueChange)="cutoffTimeDraft.set($event)"
+    />
+  </div>
+
+  @if (cutoffIncomplete()) {
+    <p class="cs-said">Le jour et l'heure de dépôt se renseignent ensemble, ou pas du tout.</p>
+  }
+
+  <div class="cs-actions">
+    <button
+      foldButton
+      [disabled]="busy() || cutoffIncomplete() || delayDraft() === null"
+      (click)="saveSchedule()"
+    >
+      Enregistrer
+    </button>
+  </div>
+</fold-page-section>

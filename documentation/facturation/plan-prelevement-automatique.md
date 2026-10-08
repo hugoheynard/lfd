@@ -1,6 +1,7 @@
 # Le prélèvement automatique
 
-> 📐 **Plan v2, rien de bâti** (2026-10-08). Touche **l'argent** et finira
+> 🟡 **Plan v2, PA1 bâti le 2026-10-08** (non commité à l'écriture de cette
+> ligne ; PA4, PA2, PA3 à faire). Touche **l'argent** et finira
 > dans un **runbook** : la v1 a été contredite par `vitruve` le même jour
 > (trois BLOQUANTS, neuf SÉRIEUX), repris au § 8. Affirmations sur
 > l'existant vérifiées dans le dépôt le 2026-10-08.
@@ -64,6 +65,32 @@ Sur l'**entité émettrice** (Comptabilité › Entités juridiques, à côté d
 ## 4. Ce qui change dans le code
 
 ### PA1 — Le calendrier, et l'échéance figée sur le lot
+
+> ✅ **Bâti le 2026-10-08.** Ce qui a été tranché en le bâtissant :
+>
+> - **Les réglages** vivent sur `legal_entities` (migration
+>   `20261008150000_le_calendrier_de_prelevement`, additive) :
+>   `auto_collection_enabled` (faux), `auto_collection_delay_hours` (1, borné
+>   **1 à 23** : la constitution reste le jour de la clôture, donc le préavis
+>   entier en jours de calendrier), `collection_days_after_closure` (N, NULL =
+>   le délai de pré-notification, borné 1 à 60), et le cut-off
+>   `deposit_cutoff_business_days` (1 à 10 jours ouvrés TARGET2 avant
+>   l'échéance) + `deposit_cutoff_time` (`HH:MM`, Paris) — les deux NULL =
+>   « à renseigner », un CHECK refuse l'un sans l'autre.
+> - **N ≥ délai** est tenu par `LegalEntity` (`CollectionBeforeNoticeError`, 409) dans les deux sens : régler N sous le délai, et porter le délai
+>   au-dessus d'un N réglé. Le message nomme les deux valeurs et la clause
+>   CGV / mandat.
+> - **Deux routes, deux faits** : `PUT …/collection-schedule`
+>   (`legal_entity.collection_schedule_changed`, l'après au payload) et
+>   `PUT …/auto-collection` (`legal_entity.auto_collection_enabled` /
+>   `…_disabled`). Une saisie qui ne change rien n'écrit rien.
+> - **Le calendrier** : `collectionCalendar` (`domain/services/
+collection-calendar.ts`) sur `target2-calendar.ts` (Pâques par
+>   Meeus/Jones/Butcher). La fiche de l'entité porte celui du cycle EN COURS
+>   (`nextCollection`) ; le lot porte son échéance figée
+>   (`requested_collection_day`, NULL avant) et la date limite de dépôt au
+>   cut-off ACTUEL de l'entité. L'aperçu (`pain008.ts`) passe par le même
+>   `collectionDayOf`.
 
 - `collectionCalendar(closure, settings)` (pur) : constitution prévue,
   échéance (clôture + N, TARGET2), date limite de dépôt si renseignée.
@@ -151,7 +178,7 @@ Import `pain.002` / `camt.054` ; un rejet remet les bons « à prélever ».
 
 | Lot     | Contenu                                                                                       |
 | ------- | --------------------------------------------------------------------------------------------- |
-| **PA1** | réglages, `collectionCalendar` (TARGET2), échéance figée sur le lot                           |
+| **PA1** | ✅ 2026-10-08 — réglages, `collectionCalendar` (TARGET2), échéance figée sur le lot           |
 | **PA4** | l'écran du mois, aperçu en facture, tableau de bord corrigé                                   |
 | **PA2** | l'avis à la constitution, son état, rectificatif et annulation ; dépôt exige les avis envoyés |
 | **PA3** | l'automatisme une fois par cycle, cron propre, auteur `system`                                |

@@ -26,6 +26,7 @@ const CREDITOR: CreditorSnapshot = {
   creditorBic: "CEPAFRPP751",
   creditorIban: "FR7630006000011234567890189",
   preNotificationDays: 14,
+  collectionDaysAfterClosure: null,
   // Zones 20 et 12 du mandat et schéma des frappes à venir. Le `pain.008` ne lit
   // que la zone 12, et seulement pour un fichier vide : le lot suit le MANDAT.
   mandateContractDescription: "Fourniture de pains et viennoiseries",
@@ -480,5 +481,36 @@ describe("renderPain008 — la date de signature du mandat", () => {
       const order = [...(block[1] ?? "").matchAll(/<([A-Za-z]+)>/gu)].map((m) => m[1]);
       expect(order).toEqual(["MndtId", "DtOfSgntr", "AmdmntInd"]);
     }
+  });
+});
+
+describe("renderPain008 — ReqdColltnDt suit le calendrier (PA1)", () => {
+  it("par défaut, l'échéance est la clôture + le délai de pré-notification (1er oct. + 14 = jeudi 15)", () => {
+    expect(values(render(LINES, ALL_MANDATES), "ReqdColltnDt")).toEqual(["2026-10-15"]);
+  });
+
+  it("une échéance N réglée remplace le délai", () => {
+    const xml = render(LINES, ALL_MANDATES, { ...CREDITOR, collectionDaysAfterClosure: 20 });
+
+    expect(values(xml, "ReqdColltnDt")).toEqual(["2026-10-21"]);
+  });
+
+  /**
+   * Avant PA1, l'échéance était la clôture + 14 jours CALENDAIRES : un cycle
+   * clos le 1er novembre 2026 partait au dimanche 15. TARGET2 est fermé.
+   */
+  it("reporte au jour ouvré TARGET2 suivant une échéance tombée un dimanche", () => {
+    const xml = renderPain008({
+      creditor: CREDITOR,
+      scheme: "B2B",
+      cycleStart: CYCLE_END,
+      // Le 1er novembre 2026 à 00h00 à Paris (heure d'hiver).
+      cycleEnd: new Date("2026-10-31T23:00:00.000Z"),
+      createdAt: new Date("2026-11-01T00:05:00.000Z"),
+      mandates: ALL_MANDATES,
+      lines: LINES,
+    });
+
+    expect(values(xml, "ReqdColltnDt")).toEqual(["2026-11-16"]);
   });
 });

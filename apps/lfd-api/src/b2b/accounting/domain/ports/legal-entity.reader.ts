@@ -1,6 +1,14 @@
 import type { LegalEntityView } from "@lfd/contracts";
 
 /**
+ * La vue SANS son calendrier : le calendrier du cycle en cours dépend de
+ * l'heure et de la dernière clôture, que l'application ajoute
+ * (`legal-entity-view-support.ts`) — un adaptateur de lecture ne lit pas
+ * l'horloge.
+ */
+export type LegalEntityRecord = Omit<LegalEntityView, "nextCollection">;
+
+/**
  * Port de **lecture pour l'écran** — ce que Comptabilité › Entités juridiques
  * affiche.
  *
@@ -18,8 +26,8 @@ import type { LegalEntityView } from "@lfd/contracts";
  */
 export abstract class LegalEntityReader {
   /** Toutes les entités, les vivantes d'abord, puis les archivées. */
-  abstract list(): Promise<readonly LegalEntityView[]>;
+  abstract list(): Promise<readonly LegalEntityRecord[]>;
 
   /** Une entité par son id, ou `null`. */
-  abstract byId(id: string): Promise<LegalEntityView | null>;
+  abstract byId(id: string): Promise<LegalEntityRecord | null>;
 }

@@ -65,6 +65,13 @@ export interface CollectionBatchState {
   /** Le fichier, rendu UNE fois. */
   readonly xml: string;
   readonly fileSha256: string;
+  /**
+   * L'échéance (`AAAA-MM-JJ`) figée à la constitution — celle du XML.
+   * `null` pour un lot d'avant le 2026-10-08 : son XML fait foi. Changer
+   * l'échéance d'un lot = l'annuler et le reconstituer, jamais un report en
+   * place (plan `plan-prelevement-automatique.md`, PA1).
+   */
+  readonly requestedCollectionDay: string | null;
 }
 
 export interface ConstituteBatchInput {
@@ -79,6 +86,8 @@ export interface ConstituteBatchInput {
   readonly lines: readonly CollectionBatchLine[];
   readonly xml: string;
   readonly fileSha256: string;
+  /** L'échéance que le XML porte, sortie du même calendrier. */
+  readonly requestedCollectionDay: string;
 }
 
 /**
@@ -130,6 +139,7 @@ export class CollectionBatch {
       lines: [...input.lines],
       xml: input.xml,
       fileSha256: input.fileSha256,
+      requestedCollectionDay: input.requestedCollectionDay,
     });
   }
 

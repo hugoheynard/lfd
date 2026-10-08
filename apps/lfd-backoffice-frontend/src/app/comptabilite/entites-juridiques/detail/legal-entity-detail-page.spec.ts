@@ -1,3 +1,4 @@
+import { HttpErrorResponse } from '@angular/common/http';
 import { type ComponentFixture, TestBed } from '@angular/core/testing';
 import { provideRouter } from '@angular/router';
 import { FoldPanelHostService, FoldPanelRef } from 'fold-ng';
@@ -53,6 +54,16 @@ function entity(over: Partial<LegalEntityView> = {}): LegalEntityView {
     creditorIdentityFrozen: false,
     creditorAccountLast4: '',
     preNotificationDays: 14,
+    autoCollectionEnabled: false,
+    autoCollectionDelayHours: 1,
+    collectionDaysAfterClosure: null,
+    depositCutoff: null,
+    nextCollection: {
+      closesAt: '2026-10-31T23:00:00.000Z',
+      plannedConstitutionAt: '2026-11-01T00:00:00.000Z',
+      collectionDay: '2026-11-16',
+      depositDeadline: null,
+    },
     mandateContractDescription: '',
     mandatePaymentType: 'recurrent',
     mandateScheme: 'B2B',
@@ -75,6 +86,10 @@ const COMPLETE: Partial<LegalEntityView> = {
   missingToCollect: [],
 };
 
+/** Le message de `CollectionBeforeNoticeError`, recopié : l'écran le montre TEL QUEL. */
+const COLLECTION_REFUSAL =
+  "L'échéance à la clôture + 4 jours tomberait avant la fin du délai de pré-notification de 14 jours.";
+
 class FakeLegalEntities {
   row: LegalEntityView = entity();
   /** Les options reçues par chaque appel au mandat, dans l'ordre. */
@@ -89,6 +104,13 @@ class FakeLegalEntities {
   declare(payload: DeclareLegalEntityPayload): Promise<LegalEntityView> {
     this.declared.push(payload);
     return Promise.resolve(this.row);
+  }
+
+  /** Le refus du serveur, tel qu'il arrive — le 409 de l'agrégat. */
+  setCollectionSchedule(): Promise<void> {
+    return Promise.reject(
+      new HttpErrorResponse({ status: 409, error: { message: COLLECTION_REFUSAL } }),
+    );
   }
 
   sampleMandate(_id: string, options: { readonly inline?: boolean } = {}): Promise<Blob> {
@@ -272,6 +294,9 @@ describe('LegalEntityDetailPage', () => {
       // du COMPTE », et ce n'est plus vrai. Ce que ce test tient reste le même —
       // aucun champ ICS une fois l'ICS posé.
       'Description du contrat',
+      // Et la carte du prélèvement automatique un autre depuis le 2026-10-08
+      // (plan-prelevement-automatique, PA1) : l'heure limite de dépôt.
+      'Heure limite de dépôt',
     ]);
     expect(text(fixture)).toContain('Il ne se remplace pas');
   });
@@ -421,5 +446,20 @@ describe('LegalEntityDetailPage', () => {
 
     expect(text(fixture)).toContain('Archivée');
     expect(text(fixture)).toContain('Remettre en service');
+  });
+
+  it('affiche tel quel le refus du serveur sur le calendrier de prélèvement', async () => {
+    const fixture = await render(new FakeLegalEntities());
+    const save = [
+      ...(fixture.nativeElement as HTMLElement).querySelectorAll<HTMLButtonElement>(
+        'app-collection-settings-card button',
+      ),
+    ].find((button) => (button.textContent ?? '').trim() === 'Enregistrer');
+
+    save?.click();
+    await fixture.whenStable();
+    fixture.detectChanges();
+
+    expect(text(fixture)).toContain(COLLECTION_REFUSAL);
   });
 });

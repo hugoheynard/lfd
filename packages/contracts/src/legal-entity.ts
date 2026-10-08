@@ -12,6 +12,49 @@ export const PRE_NOTIFICATION_MIN_DAYS = 1;
 export const PRE_NOTIFICATION_MAX_DAYS = 60;
 
 /**
+ * Les bornes du **calendrier de prélèvement**, recopiées du domaine
+ * (`CollectionSchedule`), qui reste l'autorité. Plan
+ * `documentation/facturation/plan-prelevement-automatique.md`, PA1.
+ */
+export const AUTO_COLLECTION_DELAY_MIN_HOURS = 1;
+/** Au plus 23 : la constitution reste le jour de la clôture, et le préavis entier. */
+export const AUTO_COLLECTION_DELAY_MAX_HOURS = 23;
+export const COLLECTION_DAYS_MAX = 60;
+export const DEPOSIT_CUTOFF_MIN_BUSINESS_DAYS = 1;
+export const DEPOSIT_CUTOFF_MAX_BUSINESS_DAYS = 10;
+
+/** Le cut-off du portail bancaire : k jours ouvrés TARGET2 avant l'échéance, à HH:MM. */
+export interface DepositCutoffView {
+  readonly businessDaysBefore: number;
+  /** `HH:MM`, heure de Paris. */
+  readonly time: string;
+}
+
+/** Une limite locale — un jour et une heure de Paris. */
+export interface LocalDeadlineView {
+  /** `AAAA-MM-JJ`. */
+  readonly day: string;
+  /** `HH:MM`. */
+  readonly time: string;
+}
+
+/**
+ * Le calendrier d'UN cycle, calculé par le serveur (`collectionCalendar`) :
+ * l'écran l'affiche, il ne le recalcule pas — un second calcul de TARGET2
+ * côté front dirait tôt ou tard une autre date que le fichier.
+ */
+export interface CollectionCalendarView {
+  /** ISO — la clôture du cycle (exclusive). */
+  readonly closesAt: string;
+  /** ISO — clôture + délai de l'automatisme, qu'il soit activé ou non. */
+  readonly plannedConstitutionAt: string;
+  /** `AAAA-MM-JJ` — l'échéance, jour ouvré TARGET2. */
+  readonly collectionDay: string;
+  /** `null` = cut-off « à renseigner ». */
+  readonly depositDeadline: LocalDeadlineView | null;
+}
+
+/**
  * Ce que le back-office montre d'une **entité juridique émettrice** — nous, pas
  * un client.
  *
@@ -72,6 +115,16 @@ export interface LegalEntityView {
    */
   readonly creditorIdentityFrozen: boolean;
   readonly preNotificationDays: number;
+  /** La constitution automatique — désactivée par défaut. */
+  readonly autoCollectionEnabled: boolean;
+  /** Heures entre la clôture et la constitution automatique. */
+  readonly autoCollectionDelayHours: number;
+  /** N — l'échéance en jours après la clôture ; `null` = le délai de pré-notification. */
+  readonly collectionDaysAfterClosure: number | null;
+  /** `null` = « à renseigner ». */
+  readonly depositCutoff: DepositCutoffView | null;
+  /** Le calendrier du cycle EN COURS, avec les réglages ci-dessus. */
+  readonly nextCollection: CollectionCalendarView;
   /** Zone 20 du mandat — ce que le contrat couvre, en une ligne. */
   readonly mandateContractDescription: string;
   /** Zone 12 du mandat — récurrent, ou ponctuel. */
@@ -306,3 +359,22 @@ export const setPreNotificationPayloadSchema = z.object({
   days: z.int().min(PRE_NOTIFICATION_MIN_DAYS).max(PRE_NOTIFICATION_MAX_DAYS),
 });
 export type SetPreNotificationPayload = z.infer<typeof setPreNotificationPayloadSchema>;
+
+/**
+ * Le calendrier de prélèvement de l'entité. La FORME seulement : les bornes et
+ * la règle « N ≥ délai de pré-notification » sont opposées par l'agrégat, dont
+ * le refus nomme les deux valeurs.
+ *
+ * Sans `.default()` : un écran ancien qui omettrait un champ ne doit pas
+ * remettre une échéance réglée à son défaut sans que personne l'ait décidé.
+ */
+export const setCollectionSchedulePayloadSchema = z.strictObject({
+  delayHours: z.int(),
+  daysAfterClosure: z.int().nullable(),
+  depositCutoff: z.strictObject({ businessDaysBefore: z.int(), time: z.string() }).nullable(),
+});
+export type SetCollectionSchedulePayload = z.infer<typeof setCollectionSchedulePayloadSchema>;
+
+/** Activer ou désactiver la constitution automatique — un geste à part. */
+export const setAutoCollectionPayloadSchema = z.strictObject({ enabled: z.boolean() });
+export type SetAutoCollectionPayload = z.infer<typeof setAutoCollectionPayloadSchema>;

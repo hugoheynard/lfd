@@ -17,6 +17,7 @@ const CREDITOR: CreditorSnapshot = {
   accountHolder: "CRAZEATIVITY",
   accountAddressLines: ["Route de la Balme", "73150 Val d'Isère", "FR"],
   preNotificationDays: 14,
+  collectionDaysAfterClosure: null,
   mandateContractDescription: "Fourniture de pains",
   mandatePaymentType: "recurrent",
   mandateScheme: "B2B",

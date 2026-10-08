@@ -148,6 +148,13 @@ export {
   LEGAL_ENTITY_LOGO_MIN_SIDE,
   PRE_NOTIFICATION_MAX_DAYS,
   PRE_NOTIFICATION_MIN_DAYS,
+  AUTO_COLLECTION_DELAY_MAX_HOURS,
+  AUTO_COLLECTION_DELAY_MIN_HOURS,
+  COLLECTION_DAYS_MAX,
+  DEPOSIT_CUTOFF_MAX_BUSINESS_DAYS,
+  DEPOSIT_CUTOFF_MIN_BUSINESS_DAYS,
+  setAutoCollectionPayloadSchema,
+  setCollectionSchedulePayloadSchema,
 } from "./legal-entity.js";
 export type { BillingCycleView } from "./billing-cycle.js";
 export {
@@ -256,6 +263,11 @@ export type {
   SetCreditorAccountPayload,
   SetMandateDefaultsPayload,
   SetPreNotificationPayload,
+  CollectionCalendarView,
+  DepositCutoffView,
+  LocalDeadlineView,
+  SetAutoCollectionPayload,
+  SetCollectionSchedulePayload,
 } from "./legal-entity.js";
 export {
   fulfillmentPreferencePayloadSchema,

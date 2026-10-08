@@ -36,6 +36,8 @@ function batch(over: Partial<CollectionBatchView> = {}): CollectionBatchView {
     totalCents: 123_400,
     unmandatedCompanies: [],
     depositable: true,
+    requestedCollectionDay: '2026-10-15',
+    depositDeadline: null,
     lines: [],
     ...over,
   };

@@ -19,6 +19,7 @@ const CREDITOR: CreditorSnapshot = {
   creditorBic: "CEPAFRPP751",
   creditorIban: "FR7630006000011234567890189",
   preNotificationDays: 14,
+  collectionDaysAfterClosure: null,
   // Zones 20 et 12 du mandat. Le `pain.008` ne les lit pas — elles vivent sur le
   // papier, pas dans le lot — mais elles appartiennent au snapshot de l'émetteur,
   // donc la fixture les porte plutôt que de mentir sur sa forme.

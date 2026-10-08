@@ -59,6 +59,46 @@ describe('l’entité émettrice', () => {
     );
   });
 
+  it('dit le calendrier de prélèvement, et le cut-off à renseigner tel quel', () => {
+    expect(
+      sentence(
+        entity('legal_entity.collection_schedule_changed', {
+          subjectLabel: ENTITY,
+          delayHours: 2,
+          daysAfterClosure: 20,
+          depositCutoffBusinessDays: 2,
+          depositCutoffTime: '16:00',
+        }),
+      ),
+    ).toBe(
+      'Colette Martin a réglé le calendrier de prélèvement de l’entité émettrice « La Folie Douce SAS » : échéance à la clôture + 20 jours, constitution 2 h après la clôture, dépôt au plus tard 2 jours ouvrés avant, à 16:00',
+    );
+    expect(
+      sentence(
+        entity('legal_entity.collection_schedule_changed', {
+          subjectLabel: ENTITY,
+          delayHours: 1,
+          daysAfterClosure: null,
+          depositCutoffBusinessDays: null,
+          depositCutoffTime: null,
+        }),
+      ),
+    ).toBe(
+      'Colette Martin a réglé le calendrier de prélèvement de l’entité émettrice « La Folie Douce SAS » : échéance au terme du préavis, constitution 1 h après la clôture, dépôt limite à renseigner',
+    );
+  });
+
+  it('dit l’activation et la désactivation du prélèvement automatique', () => {
+    expect(sentence(entity('legal_entity.auto_collection_enabled', { subjectLabel: ENTITY }))).toBe(
+      'Colette Martin a activé le prélèvement automatique de l’entité émettrice « La Folie Douce SAS »',
+    );
+    expect(
+      sentence(entity('legal_entity.auto_collection_disabled', { subjectLabel: ENTITY })),
+    ).toBe(
+      'Colette Martin a désactivé le prélèvement automatique de l’entité émettrice « La Folie Douce SAS »',
+    );
+  });
+
   it('dit l’ICS attribué, le compte créancier par sa fin, le préavis', () => {
     expect(
       sentence(

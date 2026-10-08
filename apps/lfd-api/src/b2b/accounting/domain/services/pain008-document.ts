@@ -1,4 +1,4 @@
-import { addDays, instantToLocal } from "@lfd/contracts";
+import { instantToLocal } from "@lfd/contracts";
 
 import type { CreditorSnapshot } from "../creditor-snapshot.js";
 import type { MandatePaymentType } from "../value-objects/mandate-defaults.js";
@@ -70,8 +70,12 @@ export interface Pain008Document {
   readonly paymentInfoIdOf: (sequence: SequenceType) => string;
   /** L'instant de fabrication du fichier — `CreDtTm`. */
   readonly createdAt: Date;
-  /** Clôture du cycle, exclusive : elle date `ReqdColltnDt`. */
-  readonly cycleEnd: Date;
+  /**
+   * `ReqdColltnDt` (`AAAA-MM-JJ`) — l'échéance du calendrier
+   * (`collectionCalendar`), jamais recalculée ici : le lot la fige, l'aperçu
+   * la tire du même calcul.
+   */
+  readonly requestedCollectionDay: string;
   /** Le commentaire de tête, ou `null` pour un fichier déposable. */
   readonly banner: string | null;
   /** Dans l'ordre des rangs — `RCUR` d'abord, puis `OOFF`. */
@@ -152,7 +156,7 @@ function paymentBlock(
     `        <LclInstrm><Cd>${scheme}</Cd></LclInstrm>`,
     `        <SeqTp>${sequence}</SeqTp>`,
     `      </PmtTpInf>`,
-    `      <ReqdColltnDt>${requestedCollectionDay(document.cycleEnd, creditor.preNotificationDays)}</ReqdColltnDt>`,
+    `      <ReqdColltnDt>${document.requestedCollectionDay}</ReqdColltnDt>`,
     `      <Cdtr><Nm>${sepa(creditor.name)}</Nm></Cdtr>`,
     `      <CdtrAcct><Id><IBAN>${creditor.creditorIban}</IBAN></Id></CdtrAcct>`,
     `      <CdtrAgt><FinInstnId><BIC>${creditorBic}</BIC></FinInstnId></CdtrAgt>`,
@@ -216,14 +220,6 @@ export function cycleTagOf(cycleEnd: Date): string {
 /** Un nom dans un commentaire XML : jeu SEPA, et jamais `--`, qui le fermerait. */
 export function commentSafe(raw: string): string {
   return sepa(raw).replace(/-{2,}/gu, "-");
-}
-
-/**
- * La clôture plus le délai de pré-notification. ⚠️ Sans jours ouvrés ni délai de
- * présentation de la banque (questions 3 et 8 de `prelevement-sepa.md`).
- */
-function requestedCollectionDay(cycleEnd: Date, preNotificationDays: number): string {
-  return addDays(localDay(cycleEnd), preNotificationDays);
 }
 
 function sumOf(debits: readonly DocumentDebit[]): number {

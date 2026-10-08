@@ -2,6 +2,7 @@ import type { SetMandateDefaultsPayload } from "@lfd/contracts";
 import type {
   CorrectLegalEntityPayload,
   DeclareLegalEntityPayload,
+  SetCollectionSchedulePayload,
   SetCreditorAccountPayload,
 } from "@lfd/contracts";
 
@@ -63,6 +64,25 @@ export class SetPreNotificationCommand {
   constructor(
     readonly legalEntityId: string,
     readonly days: number,
+  ) {}
+}
+
+/**
+ * Le calendrier de prélèvement : délai de constitution, échéance N, date
+ * limite de dépôt (plan `plan-prelevement-automatique.md`, PA1).
+ */
+export class SetCollectionScheduleCommand {
+  constructor(
+    readonly legalEntityId: string,
+    readonly payload: SetCollectionSchedulePayload,
+  ) {}
+}
+
+/** Activer ou désactiver la constitution automatique — un geste à part. */
+export class SetAutoCollectionCommand {
+  constructor(
+    readonly legalEntityId: string,
+    readonly enabled: boolean,
   ) {}
 }
 

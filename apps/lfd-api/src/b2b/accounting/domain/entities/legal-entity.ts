@@ -5,6 +5,11 @@ import {
   EntityCannotCollectError,
   InvalidLegalEntityError,
 } from "../errors/accounting-errors.js";
+import {
+  assertCollectionAfterNotice,
+  CollectionSchedule,
+  type CollectionScheduleInput,
+} from "../value-objects/collection-schedule.js";
 import { MandateDefaults, type MandatePaymentType } from "../value-objects/mandate-defaults.js";
 import type { SepaScheme } from "../value-objects/sepa-scheme.js";
 import { CreditorIdentifier } from "../value-objects/creditor-identifier.js";
@@ -88,6 +93,18 @@ export interface LegalEntitySnapshot {
    */
   readonly logoKey: string | null;
   readonly archivedAt: Date | null;
+  /**
+   * Le prélèvement automatique (plan `plan-prelevement-automatique.md`, PA1).
+   * Désactivé par défaut ; l'activer est un fait de journal, jamais une
+   * migration.
+   */
+  readonly autoCollectionEnabled: boolean;
+  readonly autoCollectionDelayHours: number;
+  /** N — l'échéance en jours après la clôture ; `null` = le délai de pré-notification. */
+  readonly collectionDaysAfterClosure: number | null;
+  /** Le cut-off du portail bancaire ; les deux nuls = « à renseigner ». */
+  readonly depositCutoffBusinessDays: number | null;
+  readonly depositCutoffTime: string | null;
 }
 
 /**
@@ -129,6 +146,8 @@ export class LegalEntity {
     private mandateSchemeValue: SepaScheme,
     private logoKeyValue: string | null,
     private archivedAtValue: Date | null,
+    private autoCollectionEnabledValue: boolean,
+    private collectionScheduleValue: CollectionSchedule,
   ) {}
 
   /**
@@ -159,6 +178,10 @@ export class LegalEntity {
       "B2B",
       null,
       null,
+      // Le prélèvement automatique est désactivé, et le calendrier vide : une
+      // entité déclarée se comporte comme avant le plan.
+      false,
+      CollectionSchedule.initial(),
     );
   }
 
@@ -187,6 +210,18 @@ export class LegalEntity {
       snapshot.mandateScheme,
       snapshot.logoKey,
       snapshot.archivedAt,
+      snapshot.autoCollectionEnabled,
+      CollectionSchedule.create({
+        delayHours: snapshot.autoCollectionDelayHours,
+        daysAfterClosure: snapshot.collectionDaysAfterClosure,
+        depositCutoff:
+          snapshot.depositCutoffBusinessDays === null || snapshot.depositCutoffTime === null
+            ? null
+            : {
+                businessDaysBefore: snapshot.depositCutoffBusinessDays,
+                time: snapshot.depositCutoffTime,
+              },
+      }),
     );
   }
 
@@ -323,7 +358,51 @@ export class LegalEntity {
         `entier entre ${PRE_NOTIFICATION_MIN_DAYS} et ${PRE_NOTIFICATION_MAX_DAYS} jours attendu`,
       );
     }
+    // Porter le délai au-dessus d'une échéance déjà réglée est le même refus
+    // que l'inverse : le débiteur serait prélevé avant le terme annoncé.
+    assertCollectionAfterNotice(this.collectionScheduleValue.daysAfterClosure, days);
     this.preNotificationDaysValue = days;
+  }
+
+  get collectionSchedule(): CollectionSchedule {
+    return this.collectionScheduleValue;
+  }
+
+  get autoCollectionEnabled(): boolean {
+    return this.autoCollectionEnabledValue;
+  }
+
+  /**
+   * Règle le calendrier de prélèvement : délai de constitution, échéance N,
+   * date limite de dépôt.
+   *
+   * @returns vrai si quelque chose a changé — une saisie rejouée n'est pas un fait.
+   * @throws {InvalidCollectionScheduleError} une valeur hors de ses bornes.
+   * @throws {CollectionBeforeNoticeError} N est plus court que le délai de pré-notification.
+   */
+  setCollectionSchedule(input: CollectionScheduleInput): boolean {
+    const schedule = CollectionSchedule.create(input);
+    assertCollectionAfterNotice(schedule.daysAfterClosure, this.preNotificationDaysValue);
+    if (schedule.equals(this.collectionScheduleValue)) {
+      return false;
+    }
+    this.collectionScheduleValue = schedule;
+    return true;
+  }
+
+  /**
+   * Active ou désactive la constitution automatique. Rien ne la refuse ici :
+   * l'automatisme ne prélève rien de plus que le bouton, il le presse à
+   * l'heure dite (PA3).
+   *
+   * @returns vrai si l'état a réellement changé.
+   */
+  setAutoCollection(enabled: boolean): boolean {
+    if (enabled === this.autoCollectionEnabledValue) {
+      return false;
+    }
+    this.autoCollectionEnabledValue = enabled;
+    return true;
   }
 
   get mandateDefaults(): MandateDefaults {
@@ -412,6 +491,7 @@ export class LegalEntity {
       accountHolder: this.creditorAccountValue?.holder ?? null,
       accountAddressLines: this.creditorAccountValue?.address.lines() ?? [],
       preNotificationDays: this.preNotificationDaysValue,
+      collectionDaysAfterClosure: this.collectionScheduleValue.daysAfterClosure,
       mandateContractDescription: this.mandateDefaultsValue.contractDescription,
       mandatePaymentType: this.mandateDefaultsValue.paymentType,
       mandateScheme: this.mandateSchemeValue,
@@ -449,6 +529,12 @@ export class LegalEntity {
       mandateScheme: this.mandateSchemeValue,
       logoKey: this.logoKeyValue,
       archivedAt: this.archivedAtValue,
+      autoCollectionEnabled: this.autoCollectionEnabledValue,
+      autoCollectionDelayHours: this.collectionScheduleValue.delayHours,
+      collectionDaysAfterClosure: this.collectionScheduleValue.daysAfterClosure,
+      depositCutoffBusinessDays:
+        this.collectionScheduleValue.depositCutoff?.businessDaysBefore ?? null,
+      depositCutoffTime: this.collectionScheduleValue.depositCutoff?.time ?? null,
     };
   }
 

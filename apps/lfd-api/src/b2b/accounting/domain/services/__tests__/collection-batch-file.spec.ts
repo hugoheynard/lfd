@@ -3,6 +3,8 @@ import { renderBatchFile, sha256Of } from "../collection-batch-file.js";
 import { BATCH_ID, CREDITOR, ENTITY_ID, SEPTEMBER, mandate, order } from "./collection-fixtures.js";
 
 const CONSTITUTED_AT = new Date("2026-10-02T09:15:00.000Z");
+/** L'échéance que le lot fige — le XML doit porter CELLE-CI, pas un recalcul. */
+const REQUESTED_DAY = "2026-10-16";
 
 function debits() {
   const result = assembleCollection({
@@ -29,6 +31,7 @@ function render(unmandated: readonly string[] = []) {
     constitutedAt: CONSTITUTED_AT,
     debits: debits(),
     unmandatedCompanies: unmandated,
+    requestedCollectionDay: REQUESTED_DAY,
   });
 }
 
@@ -41,6 +44,7 @@ describe("le fichier d'un lot", () => {
     expect(file.xml).toContain(`<EndToEndId>${BATCH_ID}-0001</EndToEndId>`);
     expect(file.xml).toContain("<CreDtTm>2026-10-02T11:15:00</CreDtTm>");
     expect(file.xml).toContain("dont 1 de cycles anterieurs");
+    expect(file.xml).toContain(`<ReqdColltnDt>${REQUESTED_DAY}</ReqdColltnDt>`);
     expect(file.xml).not.toContain("BROUILLON");
   });
 

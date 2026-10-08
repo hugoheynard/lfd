@@ -1,11 +1,12 @@
-import type { LegalEntityView } from "@lfd/contracts";
-
 import { LegalEntityNotFoundError } from "../../../domain/errors/accounting-errors.js";
 import {
   IssuedMandatesReader,
   type IssuedMandatesUsage,
 } from "../../../domain/ports/issued-mandates.reader.js";
-import { LegalEntityReader } from "../../../domain/ports/legal-entity.reader.js";
+import {
+  LegalEntityReader,
+  type LegalEntityRecord,
+} from "../../../domain/ports/legal-entity.reader.js";
 import { toView } from "../../../infrastructure/legal-entity.mapper.js";
 import { declaredEntity } from "../../commands/__tests__/mandate-setting-doubles.js";
 import { GetMandateSchemeUsageHandler } from "../get-mandate-scheme-usage.handler.js";
@@ -13,15 +14,15 @@ import { GetMandateSchemeUsageQuery } from "../get-mandate-scheme-usage.query.js
 
 /** La vue vient du VRAI mapper : un doublé écrit à la main dériverait de la vue servie. */
 class FixedEntities extends LegalEntityReader {
-  constructor(private readonly view: LegalEntityView | null) {
+  constructor(private readonly view: LegalEntityRecord | null) {
     super();
   }
 
-  list(): Promise<readonly LegalEntityView[]> {
+  list(): Promise<readonly LegalEntityRecord[]> {
     return Promise.resolve(this.view === null ? [] : [this.view]);
   }
 
-  byId(): Promise<LegalEntityView | null> {
+  byId(): Promise<LegalEntityRecord | null> {
     return Promise.resolve(this.view);
   }
 }

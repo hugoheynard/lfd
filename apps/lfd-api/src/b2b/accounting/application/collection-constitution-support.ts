@@ -14,6 +14,7 @@ import { billedPayerOf } from "../domain/services/billed-payer.js";
 import { cycleAt, cycleToConstitute, type BillingCycle } from "../domain/services/billing-cycle.js";
 import { assembleCollection, type Assembly } from "../domain/services/collection-assembly.js";
 import { renderBatchFile } from "../domain/services/collection-batch-file.js";
+import { collectionDayOf } from "../domain/services/collection-calendar.js";
 
 /**
  * Les deux moitiés de la constitution d'un lot, sorties du handler pour qu'il
@@ -96,6 +97,13 @@ export interface BuildInput {
 /** Un lot par schéma qui a des lignes, son fichier rendu et figé. */
 export function buildBatches(input: BuildInput): readonly CollectionBatch[] {
   const { read } = input;
+  // UNE échéance pour tous les lots du cycle, tirée du calendrier : le XML la
+  // porte et le lot la fige — les deux ne peuvent pas diverger.
+  const requestedCollectionDay = collectionDayOf(
+    read.cycle.closesAt,
+    input.creditor.preNotificationDays,
+    input.creditor.collectionDaysAfterClosure,
+  );
   return [...read.assembly.debits.entries()].map(([scheme, debits]) => {
     const id = input.nextId();
     const file = renderBatchFile({
@@ -106,6 +114,7 @@ export function buildBatches(input: BuildInput): readonly CollectionBatch[] {
       constitutedAt: input.at,
       debits,
       unmandatedCompanies: read.assembly.unmandatedCompanies,
+      requestedCollectionDay,
     });
     return CollectionBatch.constitute({
       id,
@@ -118,6 +127,7 @@ export function buildBatches(input: BuildInput): readonly CollectionBatch[] {
       lines: file.lines,
       xml: file.xml,
       fileSha256: file.sha256,
+      requestedCollectionDay,
     });
   });
 }

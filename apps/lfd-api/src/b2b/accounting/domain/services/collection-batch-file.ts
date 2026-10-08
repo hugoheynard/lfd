@@ -24,6 +24,8 @@ export interface BatchFileInput {
   /** Dans l'ordre des rangs (`assembleCollection` les rend ainsi). */
   readonly debits: readonly DebitDraft[];
   readonly unmandatedCompanies: readonly string[];
+  /** L'échéance du calendrier, que le lot fige et que le XML porte. */
+  readonly requestedCollectionDay: string;
 }
 
 export interface BatchFile {
@@ -77,7 +79,7 @@ export function renderBatchFile(input: BatchFileInput): BatchFile {
     messageId: ids.messageId,
     paymentInfoIdOf: ids.paymentInfoIdOf,
     createdAt: input.constitutedAt,
-    cycleEnd: input.cycle.closesAt,
+    requestedCollectionDay: input.requestedCollectionDay,
     banner: depositable ? null : draftBanner(input.unmandatedCompanies, lines.length === 0),
     debits: documentDebits,
   });

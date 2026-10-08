@@ -19,6 +19,10 @@ import type { CollectionCycleView, ConstitutedBatchesView } from "@lfd/contracts
 
 import { CollectionCandidatesReader } from "../src/b2b/accounting/domain/ports/collection-candidates.reader.js";
 import { cycleToConstitute } from "../src/b2b/accounting/domain/services/billing-cycle.js";
+import {
+  collectionDayOf,
+  depositDeadlineOf,
+} from "../src/b2b/accounting/domain/services/collection-calendar.js";
 import { simulateInvoiceDossier } from "../src/b2b/accounting/domain/services/invoice-dossier.js";
 import { AdminTokenVerifier } from "../src/platform/auth/admin-token.verifier.js";
 import { bootstrapE2e, daysAgo, jsonBody, type E2eContext } from "./e2e-harness.js";
@@ -274,6 +278,71 @@ describe("les bons que la constitution lit (F1)", () => {
 });
 
 describe("le lot figé", () => {
+  /**
+   * PA1 (plan `plan-prelevement-automatique.md`) : l'échéance du calendrier
+   * est FIGÉE sur le lot, et le fichier stocké porte la même. Attendue
+   * calculée par le domaine depuis la clôture courante — aucune date écrite.
+   */
+  it("fige l'échéance du calendrier (N réglé, report TARGET2) et le XML porte la même", async () => {
+    const entity = await collectingEntity();
+    await staff()
+      .put(`/admin/accounting/legal-entities/${entity}/collection-schedule`)
+      .send({
+        delayHours: 1,
+        daysAfterClosure: 20,
+        depositCutoff: { businessDaysBefore: 2, time: "16:00" },
+      })
+      .expect(204);
+    const port = await client("Boulangerie du Port");
+    await mandated(entity, port);
+    await orderOf(port);
+    const expectedDay = collectionDayOf(closesAt, 14, 20);
+
+    const [batchId] = await constitute(entity);
+
+    const [batch] = (await cycle(entity)).batches;
+    expect(batch?.requestedCollectionDay).toBe(expectedDay);
+    expect(batch?.depositDeadline).toEqual(
+      depositDeadlineOf(expectedDay, { businessDaysBefore: 2, time: "16:00" }),
+    );
+    const file = await staff()
+      .get(`${BASE}/batches/${batchId ?? ""}/file.xml`)
+      .expect(200);
+    expect(file.text).toContain(`<ReqdColltnDt>${expectedDay}</ReqdColltnDt>`);
+  });
+
+  it("un réglage changé APRÈS la constitution ne touche pas l'échéance du lot", async () => {
+    const entity = await collectingEntity();
+    const port = await client("Boulangerie du Port");
+    await mandated(entity, port);
+    await orderOf(port);
+    await constitute(entity);
+
+    await staff()
+      .put(`/admin/accounting/legal-entities/${entity}/collection-schedule`)
+      .send({ delayHours: 1, daysAfterClosure: 30, depositCutoff: null })
+      .expect(204);
+
+    const [batch] = (await cycle(entity)).batches;
+    expect(batch?.requestedCollectionDay).toBe(collectionDayOf(closesAt, 14, null));
+    expect(batch?.depositDeadline).toBeNull();
+  });
+
+  it("un lot d'avant le calendrier garde une échéance nulle — jamais inventée", async () => {
+    const entity = await collectingEntity();
+    const port = await client("Boulangerie du Port");
+    await mandated(entity, port);
+    await orderOf(port);
+    const [batchId] = await constitute(entity);
+    await ctx.prisma.collectionBatch.update({
+      where: { id: batchId ?? "" },
+      data: { requestedCollectionDay: null },
+    });
+
+    const [batch] = (await cycle(entity)).batches;
+    expect(batch?.requestedCollectionDay).toBeNull();
+  });
+
   it("rend deux fois les MÊMES octets, sous les identifiants du lot", async () => {
     const entity = await collectingEntity();
     const port = await client("Boulangerie du Port");

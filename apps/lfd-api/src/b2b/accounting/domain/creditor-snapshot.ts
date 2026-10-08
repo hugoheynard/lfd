@@ -50,6 +50,12 @@ export interface CreditorSnapshot {
   readonly accountAddressLines: readonly string[];
   /** Le délai annoncé entre la notification et le débit, en jours. */
   readonly preNotificationDays: number;
+  /**
+   * N — l'échéance en jours après la clôture ; `null` = `preNotificationDays`.
+   * Lu par le calendrier qui date `ReqdColltnDt` (plan
+   * `plan-prelevement-automatique.md`, PA1).
+   */
+  readonly collectionDaysAfterClosure: number | null;
 
   /**
    * **Zone 20** du mandat — ce que le contrat couvre, en une ligne.

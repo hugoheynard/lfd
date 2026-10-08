@@ -63,6 +63,7 @@ export class PrismaCollectionBatchRepository extends CollectionBatchRepository {
       })),
       xml: row.xml,
       fileSha256: row.fileSha256,
+      requestedCollectionDay: row.requestedCollectionDay?.toISOString().slice(0, 10) ?? null,
     });
   }
 
@@ -95,6 +96,11 @@ export class PrismaCollectionBatchRepository extends CollectionBatchRepository {
         unmandatedCompanies: [...state.unmandatedCompanies],
         xml: state.xml,
         fileSha256: state.fileSha256,
+        // Un jour local écrit à minuit UTC : la colonne est un DATE, sans fuseau.
+        requestedCollectionDay:
+          state.requestedCollectionDay === null
+            ? null
+            : new Date(`${state.requestedCollectionDay}T00:00:00.000Z`),
         ...mutable,
       },
     });
