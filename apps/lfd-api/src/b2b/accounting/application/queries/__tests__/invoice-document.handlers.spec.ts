@@ -15,6 +15,7 @@ import { InvoiceNumber } from "../../../domain/value-objects/invoice-number.js";
 import { sha256Hex } from "../../invoice-document-support.js";
 import {
   FixedRoles,
+  MemoryCompanyInvoices,
   MemoryInvoiceReader,
   MemoryKeptStore,
 } from "../../services/__tests__/issued-invoice-doubles.js";
@@ -61,7 +62,11 @@ function harness() {
   return {
     store,
     admin: new GetIssuedInvoiceDocumentHandler(invoices, store),
-    client: new GetMyCompanyInvoiceDocumentHandler(roles, invoices, store),
+    client: new GetMyCompanyInvoiceDocumentHandler(
+      roles,
+      new MemoryCompanyInvoices([rendered(), PENDING, OTHER_PAYER]),
+      store,
+    ),
   };
 }
 

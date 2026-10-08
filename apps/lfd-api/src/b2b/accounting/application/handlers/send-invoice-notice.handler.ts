@@ -33,7 +33,7 @@ export const SEND_INVOICE_NOTICE = "accounting.send-invoice-notice";
  *
  * ⚠️ Un redémarrage entre la validation du reçu et l'envoi ne laisse aucune
  * trace d'envoi au journal : la facture, elle, reste dans « Mes factures ».
- * Aucun geste de renvoi n'existe encore (cf. plan, E6).
+ * Le staff peut renvoyer l'e-mail (`ResendInvoiceNoticeCommand`, E6 (b)).
  */
 @Injectable()
 @DurableHandler({ type: INVOICE_ISSUED, subscriber: SEND_INVOICE_NOTICE })

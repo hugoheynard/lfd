@@ -59,6 +59,10 @@ import { ConstituteCollectionBatchesCommand } from "./constitute-collection-batc
  * validation (`SendCollectionNotice`). Une reconstitution rectifie, reconduit
  * ou annule ce qu'un lot annulé avait annoncé.
  *
+ * Une préparation qui ne constitue AUCUN lot envoie quand même les
+ * annulations des promesses d'un lot annulé (PA2, § 7 comblé le 2026-10-09) :
+ * elle rend `[]`, et ne refuse que si elle n'a strictement rien fait.
+ *
  * ⚠️ L'entité est lue par `CreditorReader` AVANT la transaction : une entité qui
  * ne peut pas encaisser refuse (409) sans rien verrouiller.
  */
@@ -109,9 +113,6 @@ export class ConstituteCollectionBatchesHandler implements ICommandHandler<
         nextId: () => this.ids.next(),
       });
       const states = orderStates(read, batches, at);
-      if (states.length === 0) {
-        throw new NothingToCollectError(0);
-      }
       const issued = buildStatements({
         batches,
         debits: read.assembly.debits,
@@ -121,6 +122,11 @@ export class ConstituteCollectionBatchesHandler implements ICommandHandler<
         nextId: () => this.ids.next(),
       });
       const notices = await this.noticesFor(creditor, read.cycle.closesAt, batches, issued, at);
+      // Le refus n'arrive que si rien n'a bougé : une annulation à envoyer
+      // est un effet, et un 409 la ferait disparaître avec la transaction.
+      if (states.length === 0 && notices.length === 0) {
+        throw new NothingToCollectError(0);
+      }
       await this.persist(batches, issued, states);
       await this.notices.insertAll(notices);
       const entity = { id: legalEntityId, name: creditor.name };

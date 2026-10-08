@@ -95,12 +95,11 @@ Ce qui reste vrai, et qui coûte :
   entre notre commande et la facture du client. Bloqué sur une question non
   technique (le format que son logiciel importe) :
   [`todo-export-des-commandes-pour-le-comptable.md`](todo-export-des-commandes-pour-le-comptable.md) ;
-- **« Mes factures » affiche toujours les factures de personne.**
-  [`factures-page.ts:10`](../../apps/lfc-ecommerce-frontend/src/app/client/mes-factures/factures-page/factures-page.ts)
-  importe `MOCK_LEDGER` et `MOCK_STATEMENT_SUM`, et la route est servie
-  (`app.routes.ts`, `mes-factures`). Des montants inventés, à côté de commandes
-  réelles. Tant que l'export n'existe pas, l'écran n'a rien de vrai à lire : le
-  retirer du menu coûte moins que le laisser mentir.
+- ~~**« Mes factures » affiche toujours les factures de personne.**~~ Réglé
+  le 2026-10-09 : la maquette (`MOCK_LEDGER`, `MOCK_STATEMENT_SUM`) est
+  retirée, et `/mes-factures` redirige vers « Mes factures » de
+  `/mon-compte`, qui lit les factures émises (plan
+  [`plan-emission-de-la-facture.md`](../comptabilite/facturation/plan-emission-de-la-facture.md), § 8.6 (d)).
 
 Une autre maquette reste branchée, sans argent : `mock-event.ts`
 (l'opération datée de l'accueil public et de l'espace). Les récits du rayon

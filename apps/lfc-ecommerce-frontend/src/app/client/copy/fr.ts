@@ -1,6 +1,5 @@
 import type { ClientCopy } from './client-copy.model';
 import { ACCOUNT_FR } from './screens/account.fr';
-import { INVOICES_FR } from './screens/invoices.copy';
 import { LOYALTY_FR } from './screens/loyalty.copy';
 import { ORDERS_FR } from './screens/orders.copy';
 
@@ -418,7 +417,6 @@ export const FR: ClientCopy = {
     cta: 'Remplir mon panier',
   },
   orders: ORDERS_FR,
-  invoices: INVOICES_FR,
   loyalty: LOYALTY_FR,
   account: ACCOUNT_FR,
   pro: {

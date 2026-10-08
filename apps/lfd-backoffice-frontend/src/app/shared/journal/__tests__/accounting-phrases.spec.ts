@@ -492,6 +492,15 @@ describe('l’e-mail « votre facture » (E6)', () => {
       ),
     ).toContain('n’a pas pu prévenir de la facture « FA-2026-000007 »');
   });
+
+  it('dit le renvoi par le staff, et son refus s’il y en a un (suite (b))', () => {
+    expect(sentence(ofInvoice('invoice.notice_resent', { ...notice, failure: null }))).toContain(
+      'a renvoyé l’e-mail de la facture « FA-2026-000007 »',
+    );
+    expect(
+      sentence(ofInvoice('invoice.notice_resent', { ...notice, failure: 'rebond dur' })),
+    ).toContain('n’a pas pu renvoyer l’e-mail de la facture « FA-2026-000007 » ');
+  });
 });
 
 describe('le PDF Factur-X de la pièce (E3b)', () => {

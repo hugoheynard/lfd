@@ -1,4 +1,8 @@
+import type { ContentLocale } from "@lfd/contracts";
 import { sanitiseSubject, type LayoutInput, type LayoutRow, type RenderedMail } from "@lfd/mailer";
+
+import type { InvoiceIssuedCopy } from "./copy/mail-copy.model.js";
+import { fill, mailCopyOf } from "./copy/mail-copy.js";
 
 /**
  * Les données de l'e-mail **« Votre facture FA-… »** (plan
@@ -31,6 +35,11 @@ export interface InvoiceIssuedMailData {
   readonly invoicesUrl: string;
   /** Le PDF/A-3 Factur-X de la facture, ou `null` : rendu en échec, l'e-mail part sans. */
   readonly document: InvoiceMailDocument | null;
+  /**
+   * La langue des mots du gabarit. ⚠️ Rien ne choisit encore la langue d'un
+   * client : l'appelant passe `DEFAULT_MAIL_LOCALE` (cf. `mail-copy.ts`).
+   */
+  readonly locale: ContentLocale;
 }
 
 /** La pièce jointe : le nom remis au client et les octets du PDF rangé. */
@@ -44,27 +53,24 @@ export interface InvoiceMailDocument {
 export type InvoiceShell = (input: Omit<LayoutInput, "brand" | "supportEmail">) => string;
 
 /**
- * Le rendu, à part de `mail-templates.ts`. Sobre, en français : le numéro,
- * les dates, le montant, comment il sera réglé — ce qu'un service comptable
- * reporte sans ouvrir autre chose.
+ * Le rendu, à part de `mail-templates.ts`. Sobre : le numéro, les dates, le
+ * montant, comment il sera réglé — ce qu'un service comptable reporte sans
+ * ouvrir autre chose. Les mots viennent du dictionnaire (`invoiceIssued`).
  */
 export function renderInvoiceIssuedMail(
   data: InvoiceIssuedMailData,
   shell: InvoiceShell,
 ): RenderedMail {
-  const title = `Votre facture ${data.invoiceNumber}`;
+  const copy = mailCopyOf(data.locale).invoiceIssued;
+  const title = fill(copy.title, { number: data.invoiceNumber });
   return {
-    subject: sanitiseSubject(`${title} — ${data.sellerName}`),
+    subject: sanitiseSubject(fill(copy.subject, { title, seller: data.sellerName })),
     html: shell({
       title,
-      body: bodyOf(data),
-      rows: rowsOf(data),
-      ...(data.invoicesUrl === ""
-        ? {}
-        : { cta: { label: "Voir mes factures", url: data.invoicesUrl } }),
-      footer:
-        "Cette facture est consultable à tout moment dans votre espace client, rubrique « Mes factures ». " +
-        "Pour toute question, répondez à ce message.",
+      body: bodyOf(data, copy),
+      rows: rowsOf(data, copy),
+      ...(data.invoicesUrl === "" ? {} : { cta: { label: copy.cta, url: data.invoicesUrl } }),
+      footer: copy.footer,
     }),
     ...(data.document === null
       ? {}
@@ -80,25 +86,28 @@ export function renderInvoiceIssuedMail(
   };
 }
 
-function bodyOf(data: InvoiceIssuedMailData): string {
-  const period = data.period === null ? "" : ` pour les commandes de ${data.period}`;
+function bodyOf(data: InvoiceIssuedMailData, copy: InvoiceIssuedCopy): string {
+  const period = data.period === null ? "" : fill(copy.periodClause, { period: data.period });
+  const intro = fill(copy.intro, {
+    seller: data.sellerName,
+    number: data.invoiceNumber,
+    buyer: data.buyerName,
+    period,
+    total: data.total,
+  });
   return (
-    `Bonjour,\n\n${data.sellerName} a émis la facture ${data.invoiceNumber}` +
-    ` adressée à ${data.buyerName}${period}, d'un montant de ${data.total} TTC.` +
-    (data.document === null
-      ? ""
-      : "\n\nElle est jointe à ce message au format PDF Factur-X : votre logiciel comptable peut en lire les données.")
+    `${copy.greeting}\n\n${intro}` + (data.document === null ? "" : `\n\n${copy.attachedNote}`)
   );
 }
 
-function rowsOf(data: InvoiceIssuedMailData): readonly LayoutRow[] {
+function rowsOf(data: InvoiceIssuedMailData, copy: InvoiceIssuedCopy): readonly LayoutRow[] {
   return [
-    { label: "Facture", value: data.invoiceNumber },
-    { label: "Date", value: data.issuedOn },
-    ...(data.period === null ? [] : [{ label: "Période", value: data.period }]),
-    { label: "Adressée à", value: data.buyerName },
-    { label: "Échéance", value: data.dueOn },
-    ...(data.paymentMeans === null ? [] : [{ label: "Règlement", value: data.paymentMeans }]),
-    { label: "Total TTC", value: data.total, strong: true },
+    { label: copy.invoiceLabel, value: data.invoiceNumber },
+    { label: copy.dateLabel, value: data.issuedOn },
+    ...(data.period === null ? [] : [{ label: copy.periodLabel, value: data.period }]),
+    { label: copy.addressedToLabel, value: data.buyerName },
+    { label: copy.dueLabel, value: data.dueOn },
+    ...(data.paymentMeans === null ? [] : [{ label: copy.paymentLabel, value: data.paymentMeans }]),
+    { label: copy.totalLabel, value: data.total, strong: true },
   ];
 }

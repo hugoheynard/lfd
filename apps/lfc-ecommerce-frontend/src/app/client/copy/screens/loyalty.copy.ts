@@ -6,7 +6,7 @@
  * (§9), et la baisse au paiement est un peu plus grande, TVA comprise —
  * `vatNote` le dit une fois, sous la conversion.
  *
- * Découpé du dictionnaire général pour la même raison que [[invoices.copy]].
+ * Découpé du dictionnaire général pour la même raison que [[orders.copy]].
  */
 export interface LoyaltyCopy {
   readonly title: string;

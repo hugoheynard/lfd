@@ -161,6 +161,12 @@ export const COLLECTION_FACTS = {
    * (`recipientCount` 0), ou un refus du fournisseur. `failure` dit lequel.
    */
   "invoice.notice_failed": fact(payload({ ...invoiceNotice, failure: z.string() })),
+  /**
+   * Le staff a renvoyé l'e-mail « votre facture » (E6, suite (b)), sous une
+   * clé d'idempotence neuve. `failure` : le refus du fournisseur, `null` si
+   * tout est accepté.
+   */
+  "invoice.notice_resent": fact(payload({ ...invoiceNotice, failure: z.string().nullable() })),
   /** Le PDF/A-3 est rendu, rangé et attaché à la pièce — une seule fois. */
   "invoice.document_rendered": fact(
     payload({ ...invoiceDocument, byteCount: count(), sha256: z.string() }),

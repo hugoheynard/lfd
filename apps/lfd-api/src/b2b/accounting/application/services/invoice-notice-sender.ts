@@ -2,6 +2,7 @@ import { Inject, Injectable } from "@nestjs/common";
 
 import { UnitOfWork } from "../../../../platform/database/unit-of-work.js";
 import { DomainEventPublisher } from "../../../../platform/events/domain-event-publisher.js";
+import { DEFAULT_MAIL_LOCALE } from "../../../../platform/mailer/copy/mail-copy.js";
 import type { InvoiceIssuedMailData } from "../../../../platform/mailer/invoice-issued-mail.js";
 import { MAILER, type B2bMailer } from "../../../../platform/mailer/mailer.tokens.js";
 import { Clock } from "../../../../platform/time/clock.js";
@@ -29,6 +30,12 @@ const NO_RECIPIENT =
   "personne à prévenir : le payeur n'a ni contact de facturation ni détenteur joignable, " +
   "et aucun sous-compte de la facture n'a de rôle facturation. Renseigner un contact de " +
   "facturation sur la fiche du payeur ; la facture reste consultable dans « Mes factures ».";
+
+/** L'issue d'un envoi : à qui, et le refus du fournisseur (`null` : tout accepté). */
+export interface InvoiceNoticeOutcome {
+  readonly recipients: readonly InvoiceRecipient[];
+  readonly failure: string | null;
+}
 
 /**
  * **Prévient de l'émission d'une facture** (plan
@@ -64,10 +71,70 @@ export class InvoiceNoticeSender {
     invoiceId: string,
     document: InvoiceDocument | null,
   ): Promise<readonly InvoiceRecipient[] | null> {
+    const outcome = await this.deliverNotice(invoiceId, document, null);
+    return outcome === null ? null : outcome.recipients;
+  }
+
+  /**
+   * **Le renvoi** demandé par le staff (E6, suite (b)) : les destinataires
+   * d'aujourd'hui, sous une clé d'idempotence propre au renvoi
+   * (`invoice.notice-resend:<renvoi>:<adresse>`) — celle de l'envoi
+   * d'origine ferait taire le fournisseur. Issue au journal
+   * `invoice.notice_resent`. Personne à prévenir : rien ne part, rien n'est
+   * journalisé, l'appelant refuse.
+   *
+   * @returns les destinataires et le refus du fournisseur ; `null` si rien n'était à envoyer.
+   */
+  resend(
+    invoiceId: string,
+    document: InvoiceDocument | null,
+    resendId: string,
+  ): Promise<InvoiceNoticeOutcome | null> {
+    return this.deliverNotice(invoiceId, document, resendId);
+  }
+
+  private async deliverNotice(
+    invoiceId: string,
+    document: InvoiceDocument | null,
+    resendId: string | null,
+  ): Promise<InvoiceNoticeOutcome | null> {
     const invoice = await this.invoices.byId(invoiceId);
     if (invoice === null) {
       return null;
     }
+    const data = await this.mailDataOf(invoice, document);
+    if (data === null) {
+      return null;
+    }
+    const recipients = await this.recipientsOf(invoice);
+    if (resendId !== null && recipients.length === 0) {
+      return { recipients, failure: NO_RECIPIENT };
+    }
+    const keyOf = (email: string): string =>
+      resendId === null
+        ? `invoice.notice:${invoice.id}:${email.toLowerCase()}`
+        : `invoice.notice-resend:${resendId}:${email.toLowerCase()}`;
+    const failure =
+      recipients.length === 0 ? NO_RECIPIENT : await this.deliver(data, recipients, keyOf);
+    await this.uow.run(() =>
+      this.events.publishTraced(
+        new InvoiceNoticeEvent(
+          invoice,
+          recipients.length,
+          failure,
+          this.clock.now(),
+          resendId !== null,
+        ),
+      ),
+    );
+    return { recipients, failure };
+  }
+
+  /** Le contenu de l'e-mail ; `null` pour un avoir (Q3 ne prévient qu'à la facture). */
+  private async mailDataOf(
+    invoice: Invoice,
+    document: InvoiceDocument | null,
+  ): Promise<InvoiceIssuedMailData | null> {
     const state = invoice.toState();
     const period = (await this.periods.periodsOf([state.id])).get(state.id) ?? null;
     const client = this.origins.clientBaseUrl();
@@ -79,22 +146,15 @@ export class InvoiceNoticeSender {
     if (content === null) {
       return null;
     }
-    const recipients = await this.recipientsOf(invoice);
-    const data: InvoiceIssuedMailData = {
+    return {
       ...content,
+      // Aucune langue de destinataire n'existe encore (cf. `mail-copy.ts`).
+      locale: DEFAULT_MAIL_LOCALE,
       document:
         document === null
           ? null
           : { fileName: document.fileName, pdfBase64: document.bytes.toString("base64") },
     };
-    const failure =
-      recipients.length === 0 ? NO_RECIPIENT : await this.deliver(invoice, data, recipients);
-    await this.uow.run(() =>
-      this.events.publishTraced(
-        new InvoiceNoticeEvent(invoice, recipients.length, failure, this.clock.now()),
-      ),
-    );
-    return recipients;
   }
 
   private async recipientsOf(invoice: Invoice): Promise<readonly InvoiceRecipient[]> {
@@ -110,9 +170,9 @@ export class InvoiceNoticeSender {
 
   /** @returns `null` si le fournisseur a tout accepté, sinon ses refus. */
   private async deliver(
-    invoice: Invoice,
     data: InvoiceIssuedMailData,
     recipients: readonly InvoiceRecipient[],
+    keyOf: (email: string) => string,
   ): Promise<string | null> {
     const refusals: string[] = [];
     for (const recipient of recipients) {
@@ -121,7 +181,7 @@ export class InvoiceNoticeSender {
           to: recipient.email,
           template: "customer.invoice-issued",
           data,
-          idempotencyKey: `invoice.notice:${invoice.id}:${recipient.email.toLowerCase()}`,
+          idempotencyKey: keyOf(recipient.email),
         });
       } catch (cause: unknown) {
         refusals.push(cause instanceof Error ? cause.message : String(cause));

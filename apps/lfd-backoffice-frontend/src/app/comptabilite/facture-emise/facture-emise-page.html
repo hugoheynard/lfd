@@ -21,6 +21,19 @@
       Télécharger le PDF
     </button>
   }
+  @if (canResend()) {
+    <button
+      pageActions
+      foldButton
+      emphasis="outline"
+      icon="mail"
+      data-invoice-resend
+      [loading]="resending()"
+      (click)="resendNotice()"
+    >
+      Renvoyer l’e-mail
+    </button>
+  }
 
   @switch (state()) {
     @case ('loading') {

@@ -84,4 +84,24 @@ export const MAIL_EN: MailCopy = {
     footer:
       "Unsure, or think this is a mistake? Call us — Le Labo · route de la Balme, Val d'Isère.",
   },
+  invoiceIssued: {
+    title: "Your invoice {number}",
+    subject: "{title} — {seller}",
+    greeting: "Hello,",
+    intro:
+      "{seller} has issued invoice {number} addressed to {buyer}{period}, for {total} including VAT.",
+    periodClause: " for the orders of {period}",
+    attachedNote:
+      "It is attached to this message as a Factur-X PDF: your accounting software can read its data.",
+    invoiceLabel: "Invoice",
+    dateLabel: "Date",
+    periodLabel: "Period",
+    addressedToLabel: "Addressed to",
+    dueLabel: "Due date",
+    paymentLabel: "Payment",
+    totalLabel: "Total incl. VAT",
+    cta: "See my invoices",
+    footer:
+      "This invoice is available at any time in your customer area, under “My invoices”. For any question, reply to this message.",
+  },
 };

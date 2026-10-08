@@ -2,7 +2,7 @@ import type { CreditorSnapshot } from "../domain/creditor-snapshot.js";
 import type { CollectionBatch } from "../domain/entities/collection-batch.js";
 import type { CollectionNotice } from "../domain/entities/collection-notice.js";
 import type { NoticeLine } from "../domain/services/collection-notice-plan.js";
-import { planNotices } from "../domain/services/collection-notice-plan.js";
+import { planCancellations, planNotices } from "../domain/services/collection-notice-plan.js";
 import type { CycleNoticesReader } from "../domain/ports/cycle-notices.reader.js";
 import type { PayerNoticeContactsReader } from "../domain/ports/payer-notice-contacts.reader.js";
 import type { IssuedStatement } from "./billing-statement-support.js";
@@ -25,7 +25,8 @@ export interface NoticeConstitution {
 /**
  * **Les avis d'une constitution** (PA2) : lit les avis déjà écrits pour ce
  * cycle et les adresses des payeurs, puis laisse le domaine décider —
- * premier avis, rectificatif, reconduction, annulation. Rien n'est écrit ici.
+ * premier avis, rectificatif, reconduction, annulation — y compris quand
+ * aucun lot ne naît (annulations seules). Rien n'est écrit ici.
  *
  * L'échéance annoncée est celle que les lots ont figée : tous les lots d'un
  * cycle portent la même (`buildBatches`).
@@ -42,11 +43,13 @@ export async function noticesOf(
       ...earlier.map((entry) => entry.notice.toPersistence().debtorCompanyId),
     ]),
   ];
+  const contacts = await readers.contacts.contactsOf(debtors);
   const collectionDay = input.batches[0]?.toPersistence().requestedCollectionDay ?? null;
   if (collectionDay === null) {
-    // Aucun lot (rien qu'écarté) : on n'annonce rien, et on n'annule rien —
-    // une annulation ne part qu'avec une reconstitution qui prélève.
-    return [];
+    // Aucun lot (tout écarté, ou plus rien à prélever) : rien à annoncer, mais
+    // les promesses d'un lot annulé s'annulent quand même (PA2, § 7 comblé
+    // le 2026-10-09) — elles n'attendent plus une préparation qui prélève.
+    return planCancellations({ earlier, contacts, at: input.at, nextId: input.nextId });
   }
   return planNotices({
     legalEntityId: input.legalEntityId,
@@ -55,7 +58,7 @@ export async function noticesOf(
     creditor: { name: input.creditor.name, ics: input.creditor.ics },
     lines,
     earlier,
-    contacts: await readers.contacts.contactsOf(debtors),
+    contacts,
     at: input.at,
     nextId: input.nextId,
   });

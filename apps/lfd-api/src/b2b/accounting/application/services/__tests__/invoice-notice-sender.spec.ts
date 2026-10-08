@@ -212,3 +212,44 @@ describe("« Votre facture » part à l'émission (E6, Q3)", () => {
     expect(h.events.traced.map((event) => event.journalFact())).toEqual([]);
   });
 });
+
+describe("le renvoi de « Votre facture » (E6, suite (b))", () => {
+  it("une clé propre au renvoi, jamais celle de l'envoi d'origine, et le fait `invoice.notice_resent`", async () => {
+    const h = setup();
+
+    const outcome = await h.sender.resend(MONTHLY.id, null, "rs_1");
+
+    expect(outcome).toEqual({
+      recipients: [expect.objectContaining({ email: "compta@port.test" })],
+      failure: null,
+    });
+    expect(h.mailer.sent.map((mail) => mail.idempotencyKey)).toEqual([
+      "invoice.notice-resend:rs_1:compta@port.test",
+    ]);
+    const facts = h.events.traced.map((event) => event.journalFact());
+    expect(facts.map((fact) => fact.type)).toEqual(["invoice.notice_resent"]);
+    expect(facts[0]?.payload).toMatchObject({ recipientCount: 1, failure: null });
+  });
+
+  it("un refus du fournisseur est rendu et journalisé sous le même fait", async () => {
+    const h = setup();
+    h.mailer.refused.add("compta@port.test");
+
+    const outcome = await h.sender.resend(MONTHLY.id, null, "rs_2");
+
+    expect(outcome?.failure).toMatch(/rebond dur/u);
+    expect(h.events.traced.map((event) => event.journalFact().type)).toEqual([
+      "invoice.notice_resent",
+    ]);
+  });
+
+  it("personne à prévenir : rien ne part, rien n'est journalisé", async () => {
+    const h = setup({ payer: { billingContactEmails: [], ownerEmail: null } });
+
+    const outcome = await h.sender.resend(MONTHLY.id, null, "rs_3");
+
+    expect(outcome?.recipients).toEqual([]);
+    expect(h.mailer.sent).toEqual([]);
+    expect(h.events.traced).toEqual([]);
+  });
+});

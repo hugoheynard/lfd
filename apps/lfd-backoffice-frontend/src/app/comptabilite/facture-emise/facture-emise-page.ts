@@ -25,6 +25,7 @@ import {
   type FoldTableColumn,
 } from 'fold-ng';
 
+import { PermissionsStore } from '../../auth/permissions.store';
 import { NotifyService } from '../../notify.service';
 import { day, euros, ratePercent, unitPrice } from '../invoice-dossier-format';
 import { downloadIssuedInvoicePdf } from '../issued-invoice-pdf';
@@ -47,7 +48,8 @@ type InvoiceState = 'loading' | 'ready' | 'not-found' | 'error';
  * SIMULÉE, qui détaille remises et frais par nature ; une pièce émise ne
  * fige que leurs parts par taux. Les mises en forme, elles, sont les mêmes
  * (`invoice-dossier-format.ts`). Le PDF/A-3 Factur-X se télécharge d'ici une
- * fois rendu (E3b) ; tant qu'il ne l'est pas, la pièce le dit.
+ * fois rendu (E3b) ; tant qu'il ne l'est pas, la pièce le dit. Une facture
+ * (pas un avoir) peut renvoyer son e-mail « Votre facture » (suite (b)).
  */
 @Component({
   selector: 'app-facture-emise-page',
@@ -72,6 +74,7 @@ type InvoiceState = 'loading' | 'ready' | 'not-found' | 'error';
 export class FactureEmisePage {
   private readonly api = inject(IssuedInvoicesService);
   private readonly notify = inject(NotifyService);
+  private readonly permissions = inject(PermissionsStore);
 
   /** Le segment `:id` de la route. */
   readonly id = input.required<string>();
@@ -79,6 +82,12 @@ export class FactureEmisePage {
   protected readonly state = signal<InvoiceState>('loading');
   protected readonly invoice = signal<IssuedInvoiceView | null>(null);
   protected readonly downloading = signal(false);
+  protected readonly resending = signal(false);
+
+  /** Le renvoi de « Votre facture » : une facture (pas un avoir), et le droit d'écrire. */
+  protected readonly canResend = computed(
+    () => this.invoice()?.kind === 'invoice' && this.permissions.can('b2b_accounting:write'),
+  );
 
   protected readonly title = computed(() => {
     const invoice = this.invoice();
@@ -118,6 +127,26 @@ export class FactureEmisePage {
     this.downloading.set(true);
     await downloadIssuedInvoicePdf(this.api, this.notify, invoice);
     this.downloading.set(false);
+  }
+
+  /** Renvoie l'e-mail « Votre facture » aux destinataires d'aujourd'hui (E6, suite (b)). */
+  protected async resendNotice(): Promise<void> {
+    const invoice = this.invoice();
+    if (invoice === null || this.resending()) {
+      return;
+    }
+    this.resending.set(true);
+    try {
+      await this.api.resendNotice(invoice.invoiceId);
+      this.notify.success(`L’e-mail de la facture ${invoice.number} est reparti.`);
+    } catch (error) {
+      this.notify.error(
+        error,
+        `L’e-mail de la facture ${invoice.number} n’a pas pu être renvoyé. Réessayez dans un instant.`,
+      );
+    } finally {
+      this.resending.set(false);
+    }
   }
 
   protected async load(id: string): Promise<void> {

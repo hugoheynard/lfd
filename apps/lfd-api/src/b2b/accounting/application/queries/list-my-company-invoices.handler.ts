@@ -1,16 +1,18 @@
 import type { IssuedInvoicesView } from "@lfd/contracts";
 import { type IQueryHandler, QueryHandler } from "@nestjs/cqrs";
 
+import { CompanyInvoicesReader } from "../../domain/ports/company-invoices.reader.js";
 import { InvoicePeriodsReader } from "../../domain/ports/invoice-periods.reader.js";
-import { InvoiceReader } from "../../domain/ports/invoice.reader.js";
 import { UnpaidAccessReader } from "../../domain/ports/unpaid-access.reader.js";
 import { ensureInvoiceAccess } from "../../domain/services/invoice-access.js";
-import { issuedInvoicesOf } from "../issued-invoice-view-support.js";
+import { invoicesViewOf } from "../issued-invoice-view-support.js";
 import { ListMyCompanyInvoicesQuery } from "./issued-invoice-queries.js";
 
 /**
- * « Mes factures » (E6) : les pièces adressées à la société déclarée, pour
- * son détenteur et son rôle facturation (non-membre 404, autre rôle 403).
+ * « Mes factures » (E6) : les pièces adressées à la société déclarée, et
+ * celles qui couvrent un de ses bons (un site voit la facture de sa maison
+ * mère, suite (a)), pour son détenteur et son rôle facturation (non-membre
+ * 404, autre rôle 403).
  */
 @QueryHandler(ListMyCompanyInvoicesQuery)
 export class ListMyCompanyInvoicesHandler implements IQueryHandler<
@@ -19,7 +21,7 @@ export class ListMyCompanyInvoicesHandler implements IQueryHandler<
 > {
   constructor(
     private readonly access: UnpaidAccessReader,
-    private readonly invoices: InvoiceReader,
+    private readonly invoices: CompanyInvoicesReader,
     private readonly periods: InvoicePeriodsReader,
   ) {}
 
@@ -28,6 +30,6 @@ export class ListMyCompanyInvoicesHandler implements IQueryHandler<
       await this.access.roleOf(query.actorUserId, query.companyId),
       query.companyId,
     );
-    return issuedInvoicesOf({ invoices: this.invoices, periods: this.periods }, query.companyId);
+    return invoicesViewOf(this.periods, await this.invoices.visibleTo(query.companyId));
   }
 }

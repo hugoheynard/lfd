@@ -64,6 +64,10 @@ export class CreditNoteIssuedEvent implements JournaledEvent {
  * L'e-mail « Votre facture » (E6) : parti à tous ses destinataires, ou non —
  * personne à prévenir (`recipientCount` 0), ou un refus du fournisseur.
  * Jamais les adresses, seulement leur nombre.
+ *
+ * `resent` : le renvoi demandé par le staff (suite (b)) — un fait à part,
+ * `invoice.notice_resent`, qui porte son refus éventuel (`failure`, `null`
+ * quand tout est accepté) ; l'envoi d'origine n'est pas réécrit.
  */
 export class InvoiceNoticeEvent implements JournaledEvent {
   constructor(
@@ -71,6 +75,7 @@ export class InvoiceNoticeEvent implements JournaledEvent {
     readonly recipientCount: number,
     readonly failure: string | null,
     readonly at: Date,
+    readonly resent = false,
   ) {}
 
   journalFact(): JournalFact {
@@ -80,11 +85,17 @@ export class InvoiceNoticeEvent implements JournaledEvent {
       payer: { id: state.buyer.companyId, name: state.buyer.name },
       recipientCount: this.recipientCount,
     };
+    const base = { subjectType: INVOICE_SUBJECT, subjectId: state.id, occurredAt: this.at };
+    if (this.resent) {
+      return {
+        ...base,
+        type: INVOICE_FACT_TYPES.noticeResent,
+        payload: { ...payload, failure: this.failure },
+      };
+    }
     return {
+      ...base,
       type: this.failure === null ? INVOICE_FACT_TYPES.noticeSent : INVOICE_FACT_TYPES.noticeFailed,
-      subjectType: INVOICE_SUBJECT,
-      subjectId: state.id,
-      occurredAt: this.at,
       payload: this.failure === null ? payload : { ...payload, failure: this.failure },
     };
   }

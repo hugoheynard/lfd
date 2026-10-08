@@ -11,7 +11,6 @@
  * répondent au doigt.
  */
 import type { AccountCopy } from './screens/account.copy';
-import type { InvoicesCopy } from './screens/invoices.copy';
 import type { LoyaltyCopy } from './screens/loyalty.copy';
 import type { OrdersCopy } from './screens/orders.copy';
 
@@ -762,7 +761,6 @@ export interface ClientCopy {
    * trois langues restent obligatoires, chacune sur son interface.
    */
   readonly orders: OrdersCopy;
-  readonly invoices: InvoicesCopy;
   readonly loyalty: LoyaltyCopy;
   readonly account: AccountCopy;
 

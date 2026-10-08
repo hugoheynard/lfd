@@ -52,7 +52,29 @@ export function planNotices(input: NoticePlanInput): readonly CollectionNotice[]
   const promises = pendingPromises(input.earlier);
   const announced = input.lines.map((line) => noticeForLine(input, line, promises));
   const lineDebtors = new Set(input.lines.map((line) => line.debtorCompanyId));
-  const cancellations = [...promises.values()]
+  return [...announced, ...cancellationsOf(input, promises, lineDebtors)];
+}
+
+/** Ce qu'il faut pour annuler les promesses d'un cycle qui ne prélève plus personne. */
+export type CancellationPlanInput = Pick<NoticePlanInput, "earlier" | "contacts" | "at" | "nextId">;
+
+/**
+ * **Une préparation qui ne constitue aucun lot** (tout écarté, ou plus rien
+ * à prélever) : chaque payeur à qui un lot annulé avait promis un
+ * prélèvement reçoit son annulation — elle n'a pas à attendre une
+ * préparation qui prélève. Sans ligne, il n'y a ni premier avis, ni
+ * rectificatif, ni échéance à annoncer.
+ */
+export function planCancellations(input: CancellationPlanInput): readonly CollectionNotice[] {
+  return cancellationsOf(input, pendingPromises(input.earlier), new Set());
+}
+
+function cancellationsOf(
+  input: CancellationPlanInput,
+  promises: ReadonlyMap<string, CollectionNotice>,
+  lineDebtors: ReadonlySet<string>,
+): readonly CollectionNotice[] {
+  return [...promises.values()]
     .filter((promise) => !lineDebtors.has(promise.toPersistence().debtorCompanyId))
     .map((promise) => {
       const debtorId = promise.toPersistence().debtorCompanyId;
@@ -62,7 +84,6 @@ export function planNotices(input: NoticePlanInput): readonly CollectionNotice[]
         at: input.at,
       });
     });
-  return [...announced, ...cancellations];
 }
 
 function noticeForLine(

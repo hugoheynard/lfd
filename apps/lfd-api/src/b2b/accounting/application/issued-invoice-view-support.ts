@@ -22,18 +22,38 @@ export interface IssuedInvoiceReaders {
 /**
  * **Les factures d'un payeur légal**, les plus récentes d'abord — numéro
  * décroissant, l'ordre chronologique de la séquence (E2). Le mur est
- * `payer_company_id` : un sous-compte ne voit pas celles de son principal
- * (E6, question ouverte au plan).
+ * `payer_company_id` — la fiche staff d'une société ; « Mes factures » d'un
+ * client passe par `invoicesViewOf`, qui voit aussi les pièces de ses bons.
  */
 export async function issuedInvoicesOf(
   readers: IssuedInvoiceReaders,
   payerCompanyId: string,
 ): Promise<IssuedInvoicesView> {
-  const invoices = [...(await readers.invoices.byPayer(payerCompanyId))].reverse();
-  const periods = await readers.periods.periodsOf(invoices.map((invoice) => invoice.id));
+  return invoicesViewOf(readers.periods, await readers.invoices.byPayer(payerCompanyId));
+}
+
+/**
+ * Des pièces déjà lues, les plus récentes d'abord, avec leur mois facturé —
+ * « Mes factures » les lit par `CompanyInvoicesReader` (E6 (a)).
+ */
+export async function invoicesViewOf(
+  periodsReader: InvoicePeriodsReader,
+  read: readonly Invoice[],
+): Promise<IssuedInvoicesView> {
+  const invoices = [...read].reverse();
+  const periods = await periodsReader.periodsOf(invoices.map((invoice) => invoice.id));
   return {
     invoices: invoices.map((invoice) => summaryOf(invoice, periods.get(invoice.id) ?? null)),
   };
+}
+
+/** Une pièce déjà lue (et déjà passée au mur), avec son mois facturé. */
+export async function invoiceViewOf(
+  periodsReader: InvoicePeriodsReader,
+  invoice: Invoice,
+): Promise<IssuedInvoiceView> {
+  const period = (await periodsReader.periodsOf([invoice.id])).get(invoice.id) ?? null;
+  return detailOf(invoice, period);
 }
 
 /**

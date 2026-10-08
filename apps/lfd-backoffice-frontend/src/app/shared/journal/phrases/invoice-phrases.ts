@@ -122,6 +122,23 @@ const noticeFailed: Phrase = (fact) =>
     [...NOTICE_KEYS, 'failure'],
   );
 
+/** « … a renvoyé l'e-mail de la facture « FA-… » … (2 destinataire(s)) », et le refus s'il y en a un. */
+const noticeResent: Phrase = (fact) => {
+  const failure = optional(fact.payload['failure']);
+  return byActor(
+    fact,
+    [
+      text(failure === null ? 'a renvoyé l’e-mail de ' : 'n’a pas pu renvoyer l’e-mail de '),
+      ...piece(fact, INVOICE),
+      text(' '),
+      ...cite(FOR_CLIENT, fact.payload['payer']),
+      ...recipients(fact),
+      ...(failure === null ? [] : [text(' : « '), name(failure), text(' »')]),
+    ],
+    [...NOTICE_KEYS, 'failure'],
+  );
+};
+
 /** « la pièce « FA-… » » — une facture ou un avoir, selon `kind` (E3b). */
 function document(fact: PhraseFact): Segment[] {
   return piece(fact, fact.payload['kind'] === 'credit_note' ? CREDIT_NOTE : INVOICE);
@@ -166,6 +183,7 @@ export const INVOICE_PHRASES = {
   'invoice.credit_note_issued': creditNoteIssued,
   'invoice.notice_sent': noticeSent,
   'invoice.notice_failed': noticeFailed,
+  'invoice.notice_resent': noticeResent,
   'invoice.document_rendered': documentRendered,
   'invoice.document_render_failed': documentRenderFailed,
 } as const satisfies Partial<Record<JournalFactType, Phrase>>;

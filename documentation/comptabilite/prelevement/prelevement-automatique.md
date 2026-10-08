@@ -91,7 +91,11 @@ carte « Prélèvement automatique » de la fiche de l'entité, sous
 - **Préparer de nouveau** un lot annulé, pour chaque payeur dont le
   dernier avis était `sent` : termes identiques → rien ne part ; montant,
   date ou RUM différents → **rectificatif** ; payeur plus prélevé →
-  **annulation**.
+  **annulation**. Une préparation qui ne constitue **aucun lot** (tout
+  écarté, ou plus rien à prélever) envoie quand même ces annulations
+  (2026-10-09) : l'avis d'annulation n'a pas de lot (`batch_id` NULL), elle
+  rend une liste de lots vide au lieu du 409, et ne refuse que si elle n'a
+  strictement rien fait (`planCancellations`).
 - **Le dépôt exige tous les avis `sent`** (`CollectionNoticesNotSentError`,
   409, nomme le payeur). Pas de bouton « renvoyer » : un avis en échec se
   règle en annulant le lot et en le préparant de nouveau.
@@ -138,9 +142,6 @@ datés) ; l'historique replié. Le tableau de bord n'en garde qu'un résumé.
 
 ## 7. Ce qui reste ouvert
 
-- **Une préparation qui ne produit aucun lot** (tout écarté) n'envoie pas
-  les annulations ; elles partent avec la prochaine qui prélève. Proposé à
-  Hugo le 2026-10-08 : les envoyer quand même.
 - **Activer l'automatisme en cours de mois** prépare le mois clos au passage
   suivant s'il n'a jamais été tenté.
 - **Préalables hors code** : la clause CGV et mandat pour prélever avant le

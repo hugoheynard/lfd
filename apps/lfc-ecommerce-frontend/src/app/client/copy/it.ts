@@ -1,6 +1,5 @@
 import type { ClientCopy } from './client-copy.model';
 import { ACCOUNT_IT } from './screens/account.it';
-import { INVOICES_IT } from './screens/invoices.copy';
 import { LOYALTY_IT } from './screens/loyalty.copy';
 import { ORDERS_IT } from './screens/orders.copy';
 
@@ -424,7 +423,6 @@ export const IT: ClientCopy = {
     cta: 'Riempire il carrello',
   },
   orders: ORDERS_IT,
-  invoices: INVOICES_IT,
   loyalty: LOYALTY_IT,
   account: ACCOUNT_IT,
   pro: {

@@ -553,14 +553,44 @@ routes `GET companies/:companyId/invoices[/:invoiceId]`,
   parts de remises et de frais **par taux**, pas leur détail par nature ;
   les mises en forme, elles, sont celles du dossier.
 
-**Ouvert après E6** : (a) **un sous-compte voit-il les factures de son
-principal qui portent ses bons ?** Q3 dit « prévenir », pas « montrer » :
-aujourd'hui seule la société acheteuse les voit, et l'e-mail envoie le
-gérant d'un site vers une liste vide ; (b) aucun geste de **renvoi** de
-l'e-mail (un échec reste au journal) ; (c) un e-mail n'est envoyé qu'en
-français (`DEFAULT_MAIL_LOCALE` des autres e-mails, mais ce gabarit n'a pas
-de copie traduite) ; (d) la page `/mes-factures` de la boutique (maquette,
-`mock-statement.ts`) dit encore qu'« aucune facture n'est émise ici ».
+**Ouvert après E6, bâti le 2026-10-09** (non commité à l'écriture) :
+
+- **(a) Un site voit les factures qui couvrent ses bons** — en lecture, PDF
+  compris, pour son détenteur et son rôle facturation (arbitrage A31). Port
+  de lecture `CompanyInvoicesReader`
+  (`apps/lfd-api/src/b2b/accounting/domain/ports/company-invoices.reader.ts`,
+  adaptateur
+  `apps/lfd-api/src/b2b/accounting/infrastructure/prisma-company-invoices.reader.ts`) : le mur est dans la
+  requête — `payer_company_id` = la société, **ou** un bon de la pièce
+  (`invoice_order` → `orders.company_id`) passé par elle. La liste, le détail
+  et la route PDF de « Mes factures » le lisent ; la fiche staff garde
+  `byPayer`. Un site voit donc la facture entière de sa maison mère,
+  bons des sites frères compris (c'est ce que l'e-mail lui joint déjà) ; un
+  site sans bon sur la pièce ne la voit pas (404). Un avoir qui cite un de
+  ses bons (E5b) lui est visible aussi.
+- **(b) Renvoyer l'e-mail** : `POST admin/accounting/invoices/:invoiceId/resend-notice`
+  (`b2b_accounting:write`, déduit du verbe), `ResendInvoiceNoticeCommand`
+  (`apps/lfd-api/src/b2b/accounting/application/commands/resend-invoice-notice.handler.ts`).
+  Synchrone : rend le PDF s'il manque (`ensure`), envoie aux destinataires
+  **d'aujourd'hui** sous une clé neuve par renvoi
+  (`invoice.notice-resend:<ULID>:<adresse>`), journalise
+  `invoice.notice_resent` (`recipientCount`, `failure` ou `null`). Refus
+  nommés (409) : un avoir, personne à prévenir (rien ne part, rien n'est
+  journalisé), un refus du fournisseur (journalisé). Bouton « Renvoyer
+  l'e-mail » sur `comptabilite/facture-emise/`, facture seulement, avec le
+  droit d'écrire.
+- **(c) La langue** : aucune langue de destinataire n'existe (`User` n'en
+  porte pas, cf. `DEFAULT_MAIL_LOCALE`). Le gabarit est rangé au dictionnaire
+  des e-mails (`invoiceIssued` dans `mail-copy.{fr,en,it}.ts`) et prend une
+  `locale`, comme les autres e-mails clients ; l'expéditeur passe le
+  français. ⚠️ Les **valeurs** (dates, période, montant, « Prélèvement SEPA —
+  mandat … ») restent mises en forme en français par
+  `invoice-notice-wording.ts` : le jour où une langue sera choisie, elles
+  seront à traduire aussi.
+- **(d) La maquette `/mes-factures`** est retirée (sa page, la maquette du
+  relevé et son dictionnaire `InvoicesCopy`) ; l'adresse redirige vers `/mon-compte#compte-invoices`
+  (`app.routes.ts`, spec `app.spec.ts`). Le menu garde son entrée vers
+  `/mes-factures`.
 
 ### 8.7 E3b — le PDF/A-3 Factur-X (2026-10-08)
 
@@ -654,8 +684,9 @@ deploy` emporte entière. Aucune police standard dans le fichier (vérifié par
 soumettre à Hugo, § 8.4) ; le verrou d'objet du seau (runbook) ; aucun geste
 de **re-rendu** d'une pièce dont le rendu a échoué (non vérifié : ce que fait
 un rejeu du message durable `invoice.issued` depuis la carte de santé — il
-repasserait aussi par l'e-mail) ; la page
-`/mes-factures` de la boutique (maquette) reste en l'état.
+repasserait aussi par l'e-mail) — depuis le 2026-10-09, le renvoi de l'e-mail
+(§ 8.6 (b)) rend le PDF manquant au passage ; la page `/mes-factures` de la
+boutique (maquette) est retirée (§ 8.6 (d)).
 
 ## 9. Ce que `vitruve` a relevé (v1, 2026-10-08)
 

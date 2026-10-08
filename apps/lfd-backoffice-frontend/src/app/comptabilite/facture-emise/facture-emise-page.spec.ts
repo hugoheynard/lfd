@@ -5,6 +5,7 @@ import { describe, expect, it, vi } from 'vitest';
 
 import type { IssuedInvoiceView } from '@lfd/contracts';
 
+import { PermissionsStore } from '../../auth/permissions.store';
 import { NotifyService } from '../../notify.service';
 import { IssuedInvoicesService } from '../issued-invoices.service';
 import { FactureEmisePage } from './facture-emise-page';
@@ -88,6 +89,10 @@ function issuedInvoice(over: Partial<IssuedInvoiceView> = {}): IssuedInvoiceView
 
 const pdfAsked: string[] = [];
 const failures: string[] = [];
+const successes: string[] = [];
+const resent: string[] = [];
+let canWrite = true;
+let resendAnswer: () => Promise<void> = () => Promise.resolve();
 
 async function render(
   answer: () => Promise<IssuedInvoiceView>,
@@ -95,6 +100,8 @@ async function render(
 ): Promise<ComponentFixture<FactureEmisePage>> {
   pdfAsked.splice(0);
   failures.splice(0);
+  successes.splice(0);
+  resent.splice(0);
   TestBed.configureTestingModule({
     imports: [FactureEmisePage],
     providers: [
@@ -107,11 +114,24 @@ async function render(
             pdfAsked.push(invoiceId);
             return pdf();
           },
+          resendNotice: (invoiceId: string) => {
+            resent.push(invoiceId);
+            return resendAnswer();
+          },
         },
       },
       {
         provide: NotifyService,
-        useValue: { error: (_: unknown, fallback: string) => failures.push(fallback) },
+        useValue: {
+          error: (_: unknown, fallback: string) => failures.push(fallback),
+          success: (message: string) => successes.push(message),
+        },
+      },
+      {
+        provide: PermissionsStore,
+        useValue: {
+          can: (permission: string) => canWrite && permission === 'b2b_accounting:write',
+        },
       },
     ],
   });
@@ -218,5 +238,42 @@ describe('FactureEmisePage', () => {
 
     expect(page.textContent).toContain('Facture introuvable');
     expect(page.textContent).not.toContain('Impossible de lire');
+  });
+
+  describe('renvoyer « Votre facture » (E6, suite (b))', () => {
+    it('renvoie et le dit ; un refus se notifie', async () => {
+      canWrite = true;
+      resendAnswer = () => Promise.resolve();
+      const page = host(await render(() => Promise.resolve(issuedInvoice())));
+
+      (page.querySelector('[data-invoice-resend]') as HTMLButtonElement).click();
+      await new Promise((resolve) => setTimeout(resolve, 0));
+
+      expect(resent).toEqual(['inv_1']);
+      expect(successes).toEqual(['L’e-mail de la facture FA-2026-000007 est reparti.']);
+
+      resendAnswer = () => Promise.reject(new HttpErrorResponse({ status: 409 }));
+      (page.querySelector('[data-invoice-resend]') as HTMLButtonElement).click();
+      await new Promise((resolve) => setTimeout(resolve, 0));
+      expect(failures).toHaveLength(1);
+    });
+
+    it('ni pour un avoir, ni sans le droit d’écrire', async () => {
+      canWrite = true;
+      const note = host(
+        await render(() =>
+          Promise.resolve(
+            issuedInvoice({ kind: 'credit_note', correctedInvoiceNumber: 'FA-1', dueOn: null }),
+          ),
+        ),
+      );
+      expect(note.querySelector('[data-invoice-resend]')).toBeNull();
+
+      TestBed.resetTestingModule();
+      canWrite = false;
+      const readOnly = host(await render(() => Promise.resolve(issuedInvoice())));
+      expect(readOnly.querySelector('[data-invoice-resend]')).toBeNull();
+      canWrite = true;
+    });
   });
 });

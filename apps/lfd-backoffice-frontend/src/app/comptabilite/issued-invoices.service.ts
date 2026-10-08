@@ -56,4 +56,18 @@ export class IssuedInvoicesService {
       ),
     );
   }
+
+  /**
+   * `POST admin/accounting/invoices/:id/resend-notice` — renvoie l'e-mail
+   * « Votre facture » (E6, suite (b)), `b2b_accounting:write`. 409 nommé si
+   * personne n'est joignable ou si le fournisseur refuse.
+   */
+  async resendNotice(invoiceId: string): Promise<void> {
+    await firstValueFrom(
+      this.http.post<void>(
+        `${B2B_API_BASE}/admin/accounting/invoices/${encodeURIComponent(invoiceId)}/resend-notice`,
+        {},
+      ),
+    );
+  }
 }

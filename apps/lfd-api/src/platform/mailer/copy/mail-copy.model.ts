@@ -188,6 +188,34 @@ export interface DeliveryEnRouteCopy {
   readonly footer: string;
 }
 
+/**
+ * **« Votre facture FA-… »** (plan `plan-emission-de-la-facture.md`, E6 ;
+ * rangé au dictionnaire le 2026-10-09, suite (c)). Les valeurs — dates,
+ * période, montant, moyen de paiement — arrivent déjà mises en forme par la
+ * comptabilité, en français : seuls les mots du gabarit se traduisent ici.
+ */
+export interface InvoiceIssuedCopy {
+  /** `{number}` — « Votre facture FA-2026-000001 ». */
+  readonly title: string;
+  /** `{title}`, `{seller}`. */
+  readonly subject: string;
+  readonly greeting: string;
+  /** `{seller}`, `{number}`, `{buyer}`, `{period}` (la clause, ou vide), `{total}`. */
+  readonly intro: string;
+  /** `{period}` — « pour les commandes de septembre 2026 », précédée d'une espace. */
+  readonly periodClause: string;
+  readonly attachedNote: string;
+  readonly invoiceLabel: string;
+  readonly dateLabel: string;
+  readonly periodLabel: string;
+  readonly addressedToLabel: string;
+  readonly dueLabel: string;
+  readonly paymentLabel: string;
+  readonly totalLabel: string;
+  readonly cta: string;
+  readonly footer: string;
+}
+
 /** Tout ce qu'un e-mail sait dire, dans une langue. */
 export interface MailCopy {
   readonly orderPlaced: OrderPlacedCopy;
@@ -195,6 +223,7 @@ export interface MailCopy {
   readonly deliveryEnRoute: DeliveryEnRouteCopy;
   readonly paymentFailed: PaymentFailedCopy;
   readonly paymentExpired: PaymentExpiredCopy;
+  readonly invoiceIssued: InvoiceIssuedCopy;
 }
 
 /**

@@ -1,5 +1,5 @@
 import { TestBed } from '@angular/core/testing';
-import { provideRouter, Router } from '@angular/router';
+import { convertToParamMap, provideRouter, Router, type Route, UrlTree } from '@angular/router';
 
 import { servedByClientShell } from './app';
 import { routes } from './app.routes';
@@ -111,6 +111,41 @@ describe('Le chrome de l’app', () => {
       expect(await at(ancienne), ancienne).toBe(true);
       expect(router.url, ancienne).toBe(cible);
     }
+  });
+
+  /**
+   * `/mes-factures` servait la maquette du relevé, retirée le 2026-10-09 :
+   * l'adresse (menu, favoris) mène désormais à « Mes factures » du compte.
+   * La cible est lue sur la redirection elle-même — y naviguer passerait par
+   * les gardes de société, que ce banc ne pose pas.
+   */
+  it('/mes-factures mène à la section « Mes factures » de /mon-compte', () => {
+    const all = (list: readonly Route[]): readonly Route[] =>
+      list.flatMap((route) => [route, ...all(route.children ?? [])]);
+    const redirect = all(routes).find((route) => route.path === 'mes-factures')?.redirectTo;
+    if (typeof redirect !== 'function') {
+      throw new Error('/mes-factures n’est plus une redirection calculée');
+    }
+
+    const target = TestBed.runInInjectionContext(() =>
+      redirect({
+        routeConfig: null,
+        url: [],
+        params: {},
+        paramMap: convertToParamMap({}),
+        queryParams: {},
+        queryParamMap: convertToParamMap({}),
+        fragment: null,
+        data: {},
+        outlet: 'primary',
+        title: undefined,
+      }),
+    );
+
+    if (!(target instanceof UrlTree)) {
+      throw new Error('la redirection de /mes-factures doit rendre un UrlTree');
+    }
+    expect(router.serializeUrl(target)).toBe('/mon-compte#compte-invoices');
   });
 
   it('une adresse inconnue retombe côté client, pas dans l’ancien chrome', async () => {

@@ -88,4 +88,24 @@ export const MAIL_FR: MailCopy = {
     footer:
       "Un doute ou une erreur ? Appelez le fournil — Le Labo · route de la Balme, Val d'Isère.",
   },
+  invoiceIssued: {
+    title: "Votre facture {number}",
+    subject: "{title} — {seller}",
+    greeting: "Bonjour,",
+    intro:
+      "{seller} a émis la facture {number} adressée à {buyer}{period}, d'un montant de {total} TTC.",
+    periodClause: " pour les commandes de {period}",
+    attachedNote:
+      "Elle est jointe à ce message au format PDF Factur-X : votre logiciel comptable peut en lire les données.",
+    invoiceLabel: "Facture",
+    dateLabel: "Date",
+    periodLabel: "Période",
+    addressedToLabel: "Adressée à",
+    dueLabel: "Échéance",
+    paymentLabel: "Règlement",
+    totalLabel: "Total TTC",
+    cta: "Voir mes factures",
+    footer:
+      "Cette facture est consultable à tout moment dans votre espace client, rubrique « Mes factures ». Pour toute question, répondez à ce message.",
+  },
 };

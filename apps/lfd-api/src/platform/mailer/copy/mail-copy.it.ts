@@ -83,4 +83,24 @@ export const MAIL_IT: MailCopy = {
     amountLabel: "Importo non addebitato",
     footer: "Un dubbio o un errore? Ci chiami — Le Labo · route de la Balme, Val d'Isère.",
   },
+  invoiceIssued: {
+    title: "La sua fattura {number}",
+    subject: "{title} — {seller}",
+    greeting: "Buongiorno,",
+    intro:
+      "{seller} ha emesso la fattura {number} intestata a {buyer}{period}, per un importo di {total} IVA inclusa.",
+    periodClause: " per gli ordini di {period}",
+    attachedNote:
+      "È allegata a questo messaggio in formato PDF Factur-X: il suo software di contabilità può leggerne i dati.",
+    invoiceLabel: "Fattura",
+    dateLabel: "Data",
+    periodLabel: "Periodo",
+    addressedToLabel: "Intestata a",
+    dueLabel: "Scadenza",
+    paymentLabel: "Pagamento",
+    totalLabel: "Totale IVA inclusa",
+    cta: "Vedi le mie fatture",
+    footer:
+      "Questa fattura è consultabile in qualsiasi momento nella sua area clienti, sezione «Le mie fatture». Per qualsiasi domanda, risponda a questo messaggio.",
+  },
 };

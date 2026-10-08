@@ -1,5 +1,10 @@
 import { CollectionNotice } from "../../entities/collection-notice.js";
-import { planNotices, type CycleNotice, type NoticeLine } from "../collection-notice-plan.js";
+import {
+  planCancellations,
+  planNotices,
+  type CycleNotice,
+  type NoticeLine,
+} from "../collection-notice-plan.js";
 import type { PayerNoticeContacts } from "../collection-notice-recipient.js";
 
 /** Les instants ne sont comparés qu'entre eux. */
@@ -175,5 +180,58 @@ describe("les avis d'une constitution (PA2)", () => {
     const notices = plan([line("c1", 10_018)], [earlier("c2", 5_000, { batchLive: true })]);
 
     expect(notices.map((notice) => notice.debtorCompanyId)).toEqual(["c1"]);
+  });
+});
+
+describe("une préparation qui ne constitue aucun lot (PA2, § 7)", () => {
+  function cancellations(
+    previous: readonly CycleNotice[],
+    contacts = new Map<string, PayerNoticeContacts>(),
+  ) {
+    let seq = 0;
+    return planCancellations({
+      earlier: previous,
+      contacts,
+      at: AT,
+      nextId: () => `n${String((seq += 1))}`,
+    }).map((notice) => notice.toPersistence());
+  }
+
+  it("chaque promesse d'un lot annulé reçoit son annulation, aux termes qu'elle annule", () => {
+    const notices = cancellations(
+      [earlier("c1", 10_018), earlier("c2", 5_000, { day: "2026-10-15" })],
+      new Map([["c1", BILLING("c1")]]),
+    );
+
+    expect(notices).toEqual([
+      expect.objectContaining({
+        kind: "cancellation",
+        status: "queued",
+        line: null,
+        debtorCompanyId: "c1",
+        supersedesId: "old_c1",
+        recipient: { email: "compta@c1.test", source: "billing_contact" },
+      }),
+      expect.objectContaining({
+        kind: "cancellation",
+        debtorCompanyId: "c2",
+        terms: { amountCents: 5_000, collectionDay: "2026-10-15" },
+        recipient: { email: "ancienne@c2.test", source: "owner" },
+      }),
+    ]);
+  });
+
+  it("rien de parti, une annulation déjà partie ou un lot vivant : aucune annulation", () => {
+    const first = earlier("c3", 5_000);
+    const done = CollectionNotice.cancel(first.notice, { id: "x", recipient: null, at: AT });
+
+    const notices = cancellations([
+      earlier("c1", 10_018, { sent: false }),
+      earlier("c2", 5_000, { batchLive: true }),
+      first,
+      { notice: done, batchLive: false },
+    ]);
+
+    expect(notices).toEqual([]);
   });
 });

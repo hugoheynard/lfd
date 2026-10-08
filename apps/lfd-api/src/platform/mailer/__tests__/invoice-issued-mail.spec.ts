@@ -24,6 +24,7 @@ function render(overrides: Partial<Parameters<typeof invoice>[0]> = {}) {
     paymentMeans: "Prélèvement SEPA — mandat RUM-PORT-1",
     invoicesUrl: "https://boutique.test/mon-compte#compte-invoices",
     document: null,
+    locale: "fr",
     ...overrides,
   });
 }
@@ -67,5 +68,16 @@ describe("le courriel « votre facture »", () => {
     expect(rendered.html).not.toContain("Voir mes factures");
     expect(rendered.html).not.toContain("Règlement");
     expect(rendered.html).not.toContain("Période");
+  });
+
+  it("dit ses mots dans la langue demandée — les valeurs restent celles reçues (suite (c))", () => {
+    const english = render({ locale: "en" });
+    const italian = render({ locale: "it" });
+
+    expect(english.subject).toBe("Your invoice FA-2026-000007 — La Folie Douce");
+    expect(english.html).toContain("See my invoices");
+    expect(english.html).toContain("Total incl. VAT");
+    expect(italian.subject).toBe("La sua fattura FA-2026-000007 — La Folie Douce");
+    expect(italian.html).toContain("Vedi le mie fatture");
   });
 });

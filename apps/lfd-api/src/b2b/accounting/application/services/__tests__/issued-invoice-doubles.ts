@@ -3,6 +3,7 @@ import { Buffer } from "node:buffer";
 import { CustomerDocumentStore } from "../../../../../platform/storage/customer-document-store.js";
 import type { StoredDocument } from "../../../../../platform/storage/document-store.js";
 import type { Invoice } from "../../../domain/entities/invoice.js";
+import { CompanyInvoicesReader } from "../../../domain/ports/company-invoices.reader.js";
 import { InvoicePeriodsReader } from "../../../domain/ports/invoice-periods.reader.js";
 import { InvoiceReader } from "../../../domain/ports/invoice.reader.js";
 import { PayerNoticeContactsReader } from "../../../domain/ports/payer-notice-contacts.reader.js";
@@ -28,6 +29,33 @@ export class MemoryInvoiceReader extends InvoiceReader {
   }
   byEntityAndYear(): Promise<readonly Invoice[]> {
     return Promise.resolve(this.invoices);
+  }
+}
+
+/**
+ * Le mur de « Mes factures » en mémoire : l'acheteur, ou la société qui a
+ * passé un des bons (`orderCompanies` : bon → société ; absent = le payeur).
+ */
+export class MemoryCompanyInvoices extends CompanyInvoicesReader {
+  constructor(
+    private readonly invoices: readonly Invoice[],
+    private readonly orderCompanies: ReadonlyMap<string, string> = new Map(),
+  ) {
+    super();
+  }
+  visibleTo(companyId: string): Promise<readonly Invoice[]> {
+    return Promise.resolve(this.invoices.filter((invoice) => this.sees(invoice, companyId)));
+  }
+  oneVisibleTo(invoiceId: string, companyId: string): Promise<Invoice | null> {
+    const invoice = this.invoices.find((candidate) => candidate.id === invoiceId);
+    return Promise.resolve(invoice !== undefined && this.sees(invoice, companyId) ? invoice : null);
+  }
+  private sees(invoice: Invoice, companyId: string): boolean {
+    const state = invoice.toState();
+    return (
+      state.buyer.companyId === companyId ||
+      state.orders.some((order) => this.orderCompanies.get(order.orderId) === companyId)
+    );
   }
 }
 

@@ -369,6 +369,82 @@ describe("« Mes factures » — le mur client (E6)", () => {
   });
 });
 
+describe("renvoyer « Votre facture » (E6, suite (b))", () => {
+  it("repart aux destinataires d'aujourd'hui sous une clé neuve à chaque renvoi, PDF joint, et le journal le dit", async () => {
+    const id = await entity();
+    const { company, owner } = await payer(id, "patron@groupe.test");
+    await orderOf(company.id, owner);
+    await issue(id);
+    const invoice = await ctx.prisma.invoice.findFirstOrThrow({
+      where: { payerCompanyId: company.id },
+    });
+    await billingContact(company.id, "compta@groupe.test");
+    sentMails.splice(0);
+    const route = `/admin/accounting/invoices/${invoice.id}/resend-notice`;
+
+    await staff().post(route).expect(204);
+    await staff().post(route).expect(204);
+
+    const keys = invoiceMails().map((mail) => mail.idempotencyKey ?? "");
+    expect(invoiceMails().map((mail) => mail.to)).toEqual([
+      "compta@groupe.test",
+      "compta@groupe.test",
+    ]);
+    expect(new Set(keys).size).toBe(2);
+    for (const key of keys) {
+      expect(key).toMatch(/^invoice\.notice-resend:/u);
+    }
+    expect(invoiceMails()[0]?.data).toMatchObject({
+      document: { fileName: `${invoice.number}.pdf` },
+    });
+    const resent = await ctx.prisma.activityEvent.findMany({
+      where: { subjectId: invoice.id, type: "invoice.notice_resent" },
+    });
+    expect(resent).toHaveLength(2);
+    expect(resent[0]?.payload).toMatchObject({ recipientCount: 1, failure: null });
+    await staff().post("/admin/accounting/invoices/absente/resend-notice").expect(404);
+  });
+});
+
+describe("« Mes factures » d'un site (E6, suite (a))", () => {
+  it("le site voit la facture de sa maison mère qui couvre son bon, PDF compris ; un site frère sans bon, rien ; le rôle commandes, 403", async () => {
+    const id = await entity();
+    const { company, owner } = await payer(id, "patron@groupe.test");
+    const chalet = await site(company.id);
+    const sibling = await site(company.id);
+    const chaletOrders = await member(chalet, CustomerRole.orders, "commis@chalet.test");
+    const chaletBilling = await member(chalet, CustomerRole.billing, "gerante@chalet.test");
+    const chaletOwner = await member(chalet, CustomerRole.owner, "patron@chalet.test");
+    const siblingBilling = await member(sibling, CustomerRole.billing, "gerante@frere.test");
+    await orderOf(company.id, owner);
+    await orderOf(chalet, chaletOrders);
+    await issue(id);
+    const invoice = await ctx.prisma.invoice.findFirstOrThrow({
+      where: { payerCompanyId: company.id },
+    });
+    const base = `/companies/${chalet}/invoices`;
+
+    for (const sub of [chaletBilling, chaletOwner]) {
+      const list = jsonBody<IssuedInvoicesView>(await ctx.asSub(sub).get(base).expect(200));
+      expect(list.invoices.map((one) => one.invoiceId)).toEqual([invoice.id]);
+    }
+    const detail = jsonBody<IssuedInvoiceView>(
+      await ctx.asSub(chaletBilling).get(`${base}/${invoice.id}`).expect(200),
+    );
+    expect(detail.payerCompanyId).toBe(company.id);
+    await ctx.asSub(chaletBilling).get(`${base}/${invoice.id}/pdf`).expect(200);
+    await ctx.asSub(chaletOrders).get(base).expect(403);
+
+    const siblingBase = `/companies/${sibling}/invoices`;
+    const siblingList = jsonBody<IssuedInvoicesView>(
+      await ctx.asSub(siblingBilling).get(siblingBase).expect(200),
+    );
+    expect(siblingList.invoices).toEqual([]);
+    await ctx.asSub(siblingBilling).get(`${siblingBase}/${invoice.id}`).expect(404);
+    await ctx.asSub(siblingBilling).get(`${siblingBase}/${invoice.id}/pdf`).expect(404);
+  });
+});
+
 describe("les factures depuis le back-office (E6)", () => {
   it("la fiche liste celles de la société ; la comptabilité ouvre une pièce, 404 sinon", async () => {
     const id = await entity();

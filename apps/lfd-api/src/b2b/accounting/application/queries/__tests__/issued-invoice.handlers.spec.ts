@@ -9,6 +9,7 @@ import { InvoiceNumber } from "../../../domain/value-objects/invoice-number.js";
 import {
   FixedInvoicePeriods,
   FixedRoles,
+  MemoryCompanyInvoices,
   MemoryInvoiceReader,
 } from "../../services/__tests__/issued-invoice-doubles.js";
 import { GetIssuedInvoiceHandler } from "../get-issued-invoice.handler.js";
@@ -48,12 +49,30 @@ const roles = new FixedRoles(
     ["u_owner:c_port", "owner"],
     ["u_compta:c_port", "billing"],
     ["u_orders:c_port", "orders"],
+    ["u_site:c_site", "billing"],
+    ["u_site_orders:c_site", "orders"],
   ] as const),
+);
+/** La facture de la maison mère `c_port` qui porte aussi le bon `o_site` du site `c_site`. */
+const MOTHER = Invoice.issue(
+  issueInput({
+    id: "inv_9",
+    number: InvoiceNumber.compose(2026, 9),
+    orders: [
+      { orderId: "o_port", reference: "CMD-008", deliveredOn: null },
+      { orderId: "o_site", reference: "CMD-009", deliveredOn: null },
+    ],
+  }),
+);
+const visible = new MemoryCompanyInvoices([SEPTEMBER, OCTOBER, OTHER_PAYER]);
+const siteVisible = new MemoryCompanyInvoices(
+  [SEPTEMBER, OCTOBER, OTHER_PAYER, MOTHER],
+  new Map([["o_site", "c_site"]]),
 );
 
 describe("« Mes factures » côté client (E6)", () => {
-  const list = new ListMyCompanyInvoicesHandler(roles, invoices, periods);
-  const read = new GetMyCompanyInvoiceHandler(roles, invoices, periods);
+  const list = new ListMyCompanyInvoicesHandler(roles, visible, periods);
+  const read = new GetMyCompanyInvoiceHandler(roles, visible, periods);
 
   it("le détenteur et le rôle facturation voient les pièces adressées à leur société, récentes d'abord", async () => {
     for (const user of ["u_owner", "u_compta"]) {
@@ -121,6 +140,28 @@ describe("« Mes factures » côté client (E6)", () => {
     await expect(
       read.execute(new GetMyCompanyInvoiceQuery("u_owner", "c_port", "absente")),
     ).rejects.toBeInstanceOf(InvoiceNotFoundError);
+  });
+});
+
+describe("« Mes factures » d'un site (E6, suite (a))", () => {
+  const list = new ListMyCompanyInvoicesHandler(roles, siteVisible, periods);
+  const read = new GetMyCompanyInvoiceHandler(roles, siteVisible, periods);
+
+  it("voit, en lecture, les pièces de sa maison mère qui couvrent un de ses bons", async () => {
+    const view = await list.execute(new ListMyCompanyInvoicesQuery("u_site", "c_site"));
+
+    expect(view.invoices.map((invoice) => invoice.number)).toEqual(["FA-2026-000009"]);
+    const one = await read.execute(new GetMyCompanyInvoiceQuery("u_site", "c_site", "inv_9"));
+    expect(one.payerCompanyId).toBe("c_port");
+  });
+
+  it("ne voit pas une pièce qui ne porte aucun de ses bons ; le rôle commandes : 403", async () => {
+    await expect(
+      read.execute(new GetMyCompanyInvoiceQuery("u_site", "c_site", "inv_1")),
+    ).rejects.toBeInstanceOf(InvoiceNotFoundError);
+    await expect(
+      list.execute(new ListMyCompanyInvoicesQuery("u_site_orders", "c_site")),
+    ).rejects.toBeInstanceOf(InvoiceRoleRequiredError);
   });
 });
 

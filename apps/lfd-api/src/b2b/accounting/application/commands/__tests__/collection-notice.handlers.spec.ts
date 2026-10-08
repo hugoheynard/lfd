@@ -1,3 +1,4 @@
+import { NothingToCollectError } from "../../../domain/errors/collection-errors.js";
 import { CollectionNoticesNotSentError } from "../../../domain/errors/collection-notice-errors.js";
 import {
   ENTITY_ID,
@@ -209,5 +210,50 @@ describe("annuler puis reconstituer : un avis parti se corrige", () => {
       status: "queued",
       line: null,
     });
+  });
+
+  it("plus aucun lot, tout écarté : l'annulation part quand même, sans 409", async () => {
+    const w = world();
+    w.candidates.orders = [order("c_port")];
+    w.mandates.mandates = [mandate("c_port")];
+    const first = await constitute(w);
+    sendAllQueued(w.noticeStore, w.clock.now());
+    await cancel(w, first);
+    w.mandates.mandates = [];
+    w.durable.facts.length = 0;
+
+    const batchIds = await w.constitute.execute(
+      new ConstituteCollectionBatchesCommand(ENTITY_ID, STAFF_AUTHOR),
+    );
+
+    expect(batchIds).toEqual([]);
+    expect(noticesOf(w)[1]).toMatchObject({
+      kind: "cancellation",
+      status: "queued",
+      line: null,
+      debtorCompanyId: "c_port",
+      supersedesId: noticesOf(w)[0]?.id,
+    });
+    expect(w.durable.facts).toHaveLength(1);
+  });
+
+  it("plus rien à prélever : l'annulation part, et la préparation suivante refuse", async () => {
+    const w = world();
+    w.candidates.orders = [order("c_port")];
+    w.mandates.mandates = [mandate("c_port")];
+    const first = await constitute(w);
+    sendAllQueued(w.noticeStore, w.clock.now());
+    await cancel(w, first);
+    w.candidates.orders = [];
+
+    await expect(
+      w.constitute.execute(new ConstituteCollectionBatchesCommand(ENTITY_ID, STAFF_AUTHOR)),
+    ).resolves.toEqual([]);
+    expect(noticesOf(w).map((notice) => notice.kind)).toEqual(["notice", "cancellation"]);
+    sendAllQueued(w.noticeStore, w.clock.now());
+
+    await expect(
+      w.constitute.execute(new ConstituteCollectionBatchesCommand(ENTITY_ID, STAFF_AUTHOR)),
+    ).rejects.toThrow(NothingToCollectError);
   });
 });
