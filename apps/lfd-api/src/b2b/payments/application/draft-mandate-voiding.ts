@@ -42,7 +42,7 @@ export interface DraftVoidingTrigger {
  * Écrit ce qui est imprimé sur le mandat — RIB ou zones 14/19 — et **révoque
  * le brouillon en cours dans la même unité de travail**.
  *
- * Plan `documentation/comptabilite/plan-mandat-client.md` §8 et §9 #4 (2026-09-14) :
+ * Plan `documentation/comptabilite/mandat/plan-mandat-client.md` §8 et §9 #4 (2026-09-14) :
  * **toute** écriture, même identique, tant qu'un brouillon existe. Le papier
  * imprime titulaire, adresse, IBAN, BIC et les deux zones ; un brouillon signé
  * après un changement nommerait un compte qui n'est plus le RIB. Comparer champ
@@ -59,7 +59,7 @@ export interface DraftVoidingTrigger {
  *
  * Après la validation, jamais dedans : un objet supprimé ne revient pas si la
  * transaction tombe. La purge ne lève pas — le RIB est écrit, le dire refusé
- * serait faux (plan `documentation/comptabilite/plan-restes-du-mandat.md` §4).
+ * serait faux (plan `documentation/comptabilite/mandat/plan-restes-du-mandat.md` §4).
  * ⚠️ Elle suppose que cette fonction ouvre la transaction la plus externe ;
  * ses deux appelants sont des handlers sans unité de travail propre (vérifié
  * le 2026-09-15 : `recordCompanyBankAccount`, `recordMandateOptions`).
@@ -93,7 +93,7 @@ export async function writeVoidingDraft(
 /**
  * Révoque **plusieurs** brouillons d'un coup — ceux d'une entité émettrice dont
  * un réglage imprimé vient de changer (plan
- * `documentation/comptabilite/mandat-deux-schemas.md`).
+ * `documentation/comptabilite/mandat/mandat-deux-schemas.md`).
  *
  * Même séquence que {@link writeVoidingDraft}, sans écriture propre : l'appelant
  * est déjà dans l'unité de travail de son réglage, que celle-ci **rejoint**. Tous

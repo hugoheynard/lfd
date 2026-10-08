@@ -42,7 +42,7 @@ import { SEPA_MANDATE_WORDING } from "./sepa-mandate-wording.js";
  * 1 à 20, phrase (A)/(B), cases de type de paiement, zones de contrat.
  *
  * C'était LE rendu jusqu'au 2026-09-15, quand le schéma est devenu un réglage
- * de l'entité (`documentation/comptabilite/mandat-deux-schemas.md`). Son texte est
+ * de l'entité (`documentation/comptabilite/mandat/mandat-deux-schemas.md`). Son texte est
  * celui de `SEPA_MANDATE_WORDING.CORE` — droit au remboursement, 8 semaines,
  * 13 mois —, restauré depuis `dfeca850^`. Le mandat interentreprises a sa propre
  * mise en page (`b2b-mandate-pdf.ts`), d'après le gabarit DGFiP.
@@ -124,7 +124,7 @@ function title(doc: Doc, issued: boolean): number {
 /**
  * La ligne d'en-tête : trois cellules, dont le peigne de la **RUM** — vide sur
  * un exemplaire, rempli sur un mandat émis. `comb` refuse au-delà de 26
- * caractères plutôt que de tronquer (`documentation/comptabilite/rum.md` §2).
+ * caractères plutôt que de tronquer (`documentation/comptabilite/mandat/rum.md` §2).
  */
 function header(doc: Doc, top: number, logo: Buffer | null, reference: string): number {
   const bottom = top + 19 * MM;

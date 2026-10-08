@@ -19,7 +19,7 @@ import {
 /**
  * **La fidélité** — le réglage du programme, le livre de points et les bons
  * de fidélité (famille `accounting` du catalogue des faits, plan
- * `documentation/comptabilite/plan-points-de-fidelite.md`, lot A, 2026-09-26).
+ * `documentation/comptabilite/fidelite/plan-points-de-fidelite.md`, lot A, 2026-09-26).
  * Guide : en tête de `phrase-registry.ts`.
  *
  * Le titulaire est le sujet du fait ; une personne sans nom au profil se dit

@@ -64,7 +64,7 @@ export interface IssueCreditNoteInput {
 
 /**
  * **La facture émise** — 380, ou l'avoir 381 qui en corrige une (plan
- * `documentation/facturation/plan-emission-de-la-facture.md`, § 5, lot E1).
+ * `documentation/comptabilite/facturation/plan-emission-de-la-facture.md`, § 5, lot E1).
  *
  * Une pièce, pas un dossier : AUCUNE méthode ne touche aux montants, aux
  * lignes ni aux parties. Une erreur se corrige par un avoir, jamais en

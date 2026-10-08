@@ -1,6 +1,6 @@
 /**
  * Ce que dit la carte « Ma fidélité », dans les trois langues (plan
- * `documentation/comptabilite/plan-points-de-fidelite.md`, §12, E1.3).
+ * `documentation/comptabilite/fidelite/plan-points-de-fidelite.md`, §12, E1.3).
  *
  * Un bon s'écrit **toujours avec sa mention HT** : c'est sa vraie valeur
  * (§9), et la baisse au paiement est un peu plus grande, TVA comprise —

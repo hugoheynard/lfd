@@ -13,7 +13,7 @@ import type { FrozenInvoiceOrder } from "./invoice-dossier.types.js";
 
 /**
  * **La facture du mois**, sa partie pure (plan
- * `documentation/facturation/plan-emission-de-la-facture.md`, § 3, lot E4) :
+ * `documentation/comptabilite/facturation/plan-emission-de-la-facture.md`, § 3, lot E4) :
  * quand elle s'émet, à quelle date, qui elle facture, sous quel moyen.
  *
  * Ni horloge, ni port : l'instant et les bons sont donnés.

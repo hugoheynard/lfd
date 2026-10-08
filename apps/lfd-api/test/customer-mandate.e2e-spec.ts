@@ -1,7 +1,7 @@
 /**
  * E2E du **mandat SEPA côté client** — la carte mandat de `/mon-compte`.
  *
- * Plan : `documentation/comptabilite/plan-mandat-client.md`, contrat en fin de §9.
+ * Plan : `documentation/comptabilite/mandat/plan-mandat-client.md`, contrat en fin de §9.
  *
  * Ce que seul le vrai SQL prouve, et que les unitaires ne peuvent pas :
  *

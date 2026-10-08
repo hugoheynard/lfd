@@ -1,7 +1,7 @@
 import { randomUUID } from "node:crypto";
 /**
  * E2E des **liens de paiement** (`/admin/accounting/payment-links`, plan
- * `documentation/comptabilite/plan-blocage-prelevement-et-liens-de-paiement.md` §2).
+ * `documentation/comptabilite/prelevement/plan-blocage-prelevement-et-liens-de-paiement.md` §2).
  *
  * Ce que seul le vrai SQL prouve :
  * - la lecture des commandes à régler filtre `pending | failed` hors annulées ;

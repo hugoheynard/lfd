@@ -39,7 +39,7 @@ const SHEETS: readonly { readonly sheet: InvoiceDossierSheet; readonly label: st
 
 /**
  * Vue **Dossier de facturation** de la Comptabilité (plan
- * `documentation/facturation/plan-simulateur-dossier-de-facturation.md`, DF4).
+ * `documentation/comptabilite/facturation/plan-simulateur-dossier-de-facturation.md`, DF4).
  *
  * Écrit pour qu'un expert-comptable refasse chaque chiffre à la main : les
  * signalements d'abord, puis la facture et sa ventilation, les écarts avec leurs

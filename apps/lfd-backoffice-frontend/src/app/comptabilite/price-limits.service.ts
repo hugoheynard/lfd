@@ -16,7 +16,7 @@ import { B2B_API_BASE } from '../api/api-config';
  * les pros comme pour le public.
  *
  * Sorti de `TarificationService` quand les limites ont quitté `b2b_pricing`
- * pour `lfc_price_limits` (plan `documentation/comptabilite/limites-de-prix.md`
+ * pour `lfc_price_limits` (plan `documentation/comptabilite/prix/limites-de-prix.md`
  * §5) : un service par droit, pour qu'un écran ne puisse pas appeler un geste
  * que son mur ne couvre pas. Les chemins n'ont pas bougé — seule la garde a
  * changé côté serveur.

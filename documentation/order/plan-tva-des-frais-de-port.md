@@ -113,7 +113,7 @@ vues (`prisma-order.reader.ts`) : le bon et l'écran de la commande disent
 
 ### V6 — Le dossier de facturation
 
-`documentation/facturation/plan-simulateur-dossier-de-facturation.md` lit le
+`documentation/comptabilite/facturation/plan-simulateur-dossier-de-facturation.md` lit le
 mode figé de chaque bon. La part HT du port par taux n'est figée nulle part
 (`vatShares` = `{ rate, amountCents }`) : le dossier la recalcule sur
 l'agrégat, et l'écart qui en résulte est rangé dans « arrondi de la TVA »,

@@ -317,7 +317,7 @@ async function triggerQualityUploadSweep(env: Env): Promise<void> {
 
 /**
  * Réveille le container et passe la constitution automatique du prélèvement
- * (plan `documentation/facturation/prelevement-automatique.md`, PA3) :
+ * (plan `documentation/comptabilite/prelevement/prelevement-automatique.md`, PA3) :
  * le lot du mois clos des entités qui l'ont activée, l'heure prévue passée.
  *
  * Même porte et même jeton que le recompute. Idempotent : une tentative par

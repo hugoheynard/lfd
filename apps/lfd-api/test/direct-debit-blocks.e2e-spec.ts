@@ -12,7 +12,7 @@ import { randomUUID } from "node:crypto";
  * - bloquer / débloquer exigent `b2b_deferred_payment_block:write`, que
  *   `b2b_accounting:write` ne donne pas (Hugo, 2026-09-25).
  *
- * Plan : `documentation/comptabilite/plan-blocage-prelevement-et-liens-de-paiement.md` §1.
+ * Plan : `documentation/comptabilite/prelevement/plan-blocage-prelevement-et-liens-de-paiement.md` §1.
  * Deux frontières doublées : la signature du jeton staff et la passerelle Stripe.
  */
 import type { AccountView, DirectDebitBlockView, StaffRole } from "@lfd/contracts";

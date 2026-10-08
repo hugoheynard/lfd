@@ -5,7 +5,7 @@ export type CollectionNoticeMailKind = "notice" | "correction" | "cancellation";
 
 /**
  * Les données de l'**avis de prélèvement** (pré-notification SEPA, plan
- * `documentation/facturation/prelevement-automatique.md`, PA2).
+ * `documentation/comptabilite/prelevement/prelevement-automatique.md`, PA2).
  * Destinataire : le contact de facturation de la société payeuse, ou son
  * détenteur. Tout est déjà mis en forme : le gabarit ne calcule rien.
  */

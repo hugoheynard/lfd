@@ -22,7 +22,7 @@ import { GetMyCompanyBilledToQuery } from "../application/queries/get-my-company
  * les handlers ; ce contrôleur ne fait que le transport. Aucune garde de
  * boutique : un RIB se dépose à tous les niveaux.
  *
- * Doc : `documentation/comptabilite/rib-client.md`.
+ * Doc : `documentation/comptabilite/mandat/rib-client.md`.
  */
 @Controller("companies")
 export class CompanyBankAccountController {
@@ -40,7 +40,7 @@ export class CompanyBankAccountController {
    * ⚠️ Amendé le 2026-09-14 : cette phrase disait « jamais », tout court. Le
    * PDF du mandat à signer (`GET :companyId/mandate/document.pdf`) rend l'IBAN
    * entier au même détenteur ou rôle facturation — assumé par Hugo, un mandat
-   * EPC porte l'IBAN du débiteur (plan `documentation/comptabilite/plan-mandat-client.md`
+   * EPC porte l'IBAN du débiteur (plan `documentation/comptabilite/mandat/plan-mandat-client.md`
    * §6 #3). Aucune réponse JSON ne le porte, toujours.
    */
   @Get(":companyId/bank-account")

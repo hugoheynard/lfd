@@ -50,7 +50,7 @@ export interface MandateProofUpload {
  *    ranger est retirée — personne ne la désignera jamais.
  * 4. **Purger l'ancienne pièce, après la validation seulement** — un scan de
  *    brouillon remplacé n'a jamais prouvé de consentement (plan
- *    `documentation/comptabilite/plan-restes-du-mandat.md` §4).
+ *    `documentation/comptabilite/mandat/plan-restes-du-mandat.md` §4).
  *
  * `@hors-transaction` pour le rangement et la purge, comme le KBIS : le stockage
  * objet n'a pas de transaction. Une transaction qui échoue pour une autre

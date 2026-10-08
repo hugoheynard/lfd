@@ -2,7 +2,7 @@ import { floorClienteleQuerySchema, setPriceFloorPayloadSchema } from "../pricin
 
 /**
  * **La clientèle entre dans le contrat avec `pro` par défaut**
- * (`documentation/comptabilite/limites-de-prix.md`) : le front en ligne,
+ * (`documentation/comptabilite/prix/limites-de-prix.md`) : le front en ligne,
  * qui n'envoie rien, doit continuer de viser la limite pro.
  */
 describe("la clientèle d'une limite, sur le fil", () => {

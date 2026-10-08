@@ -11,7 +11,7 @@ import type {
 import { B2B_API_BASE } from '../api/api-config';
 
 /**
- * **La facture du mois** (plan `documentation/facturation/plan-emission-de-la-facture.md`,
+ * **La facture du mois** (plan `documentation/comptabilite/facturation/plan-emission-de-la-facture.md`,
  * lot E4) : ce que l'écran « Prélèvement du mois » en lit, et le bouton
  * « Émettre les factures de … » (`b2b_accounting:write`) — la même commande
  * que le passage automatique du dernier jour, 22h.

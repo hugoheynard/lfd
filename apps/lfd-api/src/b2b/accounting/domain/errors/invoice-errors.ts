@@ -7,7 +7,7 @@ import type { InvoiceIssuanceBlocker } from "../services/invoice-issuance-blocke
 
 /**
  * Les refus de **la facture et de l'avoir** (plan
- * `documentation/facturation/plan-emission-de-la-facture.md`, § 5, lot E1).
+ * `documentation/comptabilite/facturation/plan-emission-de-la-facture.md`, § 5, lot E1).
  *
  * Trois familles : une donnée mal formée (400) ; un refus que le bureau peut
  * lever en complétant une fiche ou en corrigeant l'avoir (409) ; une facture

@@ -73,7 +73,7 @@ export interface NoticeDraft {
 
 /**
  * **L'avis de prélèvement d'un payeur** (pré-notification SEPA, plan
- * `documentation/facturation/prelevement-automatique.md`, PA2).
+ * `documentation/comptabilite/prelevement/prelevement-automatique.md`, PA2).
  *
  * Il garde deux règles, et rien d'autre ne les garde :
  *

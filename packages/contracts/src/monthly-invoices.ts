@@ -1,6 +1,6 @@
 /**
  * **La facture du mois**, telle que l'écran « Prélèvement du mois » la lit
- * (plan `documentation/facturation/plan-emission-de-la-facture.md`, lot E4).
+ * (plan `documentation/comptabilite/facturation/plan-emission-de-la-facture.md`, lot E4).
  * Types seulement : aucune valeur, rien n'entre dans le paquet exécuté.
  * Montants en centimes.
  */

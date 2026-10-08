@@ -49,7 +49,7 @@ const BASE_COLUMNS: readonly FoldTableColumn[] = [
  * « déjà bloqué », « aucun crédit » sont des refus de l'agrégat, affichés tels
  * que le serveur les rédige.
  *
- * Plan : `documentation/comptabilite/plan-blocage-prelevement-et-liens-de-paiement.md` §1.
+ * Plan : `documentation/comptabilite/prelevement/plan-blocage-prelevement-et-liens-de-paiement.md` §1.
  */
 @Component({
   selector: 'app-blocages-prelevement-page',

@@ -35,14 +35,14 @@ rembourser un prélèvement autorisé ; le mandat CORE accorde au contraire les
 8 semaines. ⚠️ **Depuis le 2026-09-15 (en construction), ce dépôt imprime les
 DEUX** : l'entité juridique choisit le schéma de ses frappes, chaque mandat fige
 le sien, le lot sort un fichier par schéma — voir
-[`mandat-deux-schemas.md`](mandat-deux-schemas.md). La
+[`mandat/mandat-deux-schemas.md`](mandat/mandat-deux-schemas.md). La
 constante unique `SEPA_SCHEME` du 2026-09-14 disparaît. Historique :
-[`todo-mandat-core-contre-b2b.md`](todo-mandat-core-contre-b2b.md).
+[`mandat/todo-mandat-core-contre-b2b.md`](mandat/todo-mandat-core-contre-b2b.md).
 
 🔴 **C'est le B2B qui rend le prélèvement sûr pour nous, et contraignant pour le
 client.** Il ne peut pas se faire rembourser sur simple demande — mais sa banque
 **refusera** le premier débit tant qu'il ne lui a pas déclaré notre ICS et la
-RUM. Voir [`prelevement-sepa.md`](prelevement-sepa.md).
+RUM. Voir [`prelevement/prelevement-sepa.md`](prelevement/prelevement-sepa.md).
 
 ⚠️ **« B2B » veut dire deux choses dans ce dépôt**, et elles n'ont aucun
 rapport : la plateforme de vente aux professionnels
@@ -138,7 +138,7 @@ change d'IBAN ». La FAQ du CFONB a tranché en trois lignes.
 | **QES**   | _Qualified Electronic Signature_               | **la seule** qui vaut une signature manuscrite |
 
 Le détail, et les trois branches encore ouvertes, sont au §12 de
-[`prelevement-sepa.md`](prelevement-sepa.md).
+[`prelevement/prelevement-sepa.md`](prelevement/prelevement-sepa.md).
 
 ---
 

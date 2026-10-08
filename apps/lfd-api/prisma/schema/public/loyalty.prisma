@@ -3,7 +3,7 @@
 // ─────────────────────────────────────────────────────────────────────────────
 //
 // Propriétaire : `src/b2b/loyalty/`. Plan
-// `documentation/comptabilite/plan-points-de-fidelite.md` (lot A).
+// `documentation/comptabilite/fidelite/plan-points-de-fidelite.md` (lot A).
 //
 // 🔴 Plusieurs contraintes vivent dans la migration `20260926160000_la_fidelite`
 // et sont INVISIBLES ici — Prisma ne sait pas les exprimer :

@@ -1,6 +1,6 @@
 /**
  * Ce que dit la section **« Mes factures »** de `/mon-compte`, dans les trois
- * langues (plan `documentation/facturation/plan-emission-de-la-facture.md`,
+ * langues (plan `documentation/comptabilite/facturation/plan-emission-de-la-facture.md`,
  * E6). À part de `account.copy.ts`, qui dépasse déjà la taille d'un fichier.
  *
  * Les montants, les numéros et les dates sont ceux de la pièce émise : le

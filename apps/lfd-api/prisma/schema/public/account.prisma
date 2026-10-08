@@ -174,7 +174,7 @@ model Company {
   // sont nulles ensemble (non bloqué) ou posées ensemble — contrainte CHECK
   // `companies_direct_debit_block_complete`. `blocked_by` est l'id de la FICHE
   // staff, comme les autres traces. Plan :
-  // documentation/comptabilite/plan-blocage-prelevement-et-liens-de-paiement.md §1.
+  // documentation/comptabilite/prelevement/plan-blocage-prelevement-et-liens-de-paiement.md §1.
   directDebitBlockedAt   DateTime? @map("direct_debit_blocked_at")
   directDebitBlockedBy   String?   @map("direct_debit_blocked_by")
   directDebitBlockReason String?   @map("direct_debit_block_reason")

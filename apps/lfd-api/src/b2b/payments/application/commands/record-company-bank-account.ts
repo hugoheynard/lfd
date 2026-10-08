@@ -35,7 +35,7 @@ export interface RecordBankAccountDeps extends DraftVoidingDeps, MandateBellDeps
  *
  * Tant qu'un brouillon existe, **toute** écriture du RIB le révoque, dans la
  * même unité de travail, fait au journal ; l'équipe est prévenue ensuite, hors
- * transaction (plan `documentation/comptabilite/plan-mandat-client.md` §9 #4).
+ * transaction (plan `documentation/comptabilite/mandat/plan-mandat-client.md` §9 #4).
  *
  * ## Le changement lui-même est au journal (depuis le 2026-09-19)
  *
@@ -63,7 +63,7 @@ export interface RecordBankAccountDeps extends DraftVoidingDeps, MandateBellDeps
  * Ce cas n'atteint pas cette fonction : les deux appelants refusent sous un
  * mandat actif (`BankAccountBoundToActiveMandateError`, le staff depuis le
  * 2026-09-15). L'amendement est différé jusqu'à la réponse de la banque (plan
- * `documentation/comptabilite/plan-restes-du-mandat.md` §8).
+ * `documentation/comptabilite/mandat/plan-restes-du-mandat.md` §8).
  */
 export async function recordCompanyBankAccount(
   companyId: string,

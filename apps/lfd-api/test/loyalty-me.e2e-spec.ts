@@ -1,6 +1,6 @@
 /**
  * E2E de **Ma fidélité** — l'espace du particulier (plan
- * `documentation/comptabilite/plan-points-de-fidelite.md`, lot E1, §12 E1.4).
+ * `documentation/comptabilite/fidelite/plan-points-de-fidelite.md`, lot E1, §12 E1.4).
  *
  * Ce que seul le vrai Postgres prouve :
  * - le mur : une personne ne lit ni ne convertit que SES points ; un espace

@@ -20,7 +20,7 @@
 | `DocumentStore` n'a que `save`, `read`, `readIfPresent` ; `S3StorageService` (`@lfd/storage`) a `delete`                                                                                                       | `platform/storage/document-store.ts`, `packages/storage/src/S3StorageService.ts`                              |
 | Le client ne peut pas remplacer son RIB sous un mandat actif (`BankAccountBoundToActiveMandateError`, 409) ; le staff le peut, et `CompanyBankAccount.replaceWith` rend si le compte a changé — valeur ignorée | `payments/domain/errors/mandate-errors.ts`, `record-company-bank-account.ts`                                  |
 | Aucun cycle de prélèvement n'est persisté ni marqué **déposé** : le lot est un XML brouillon téléchargé                                                                                                        | `accounting/http/admin-billing-cycle.controller.ts` — aucun modèle Prisma                                     |
-| `prelevement-sepa.md` décrit encore les marqueurs `IBAN-INCONNU`/`MANDAT-INCONNU` et « `RCUR` pour tout le lot », disparus avec le lot par schéma                                                              | `prelevement-sepa.md` §« le fichier »                                                                         |
+| `../prelevement/prelevement-sepa.md` décrit encore les marqueurs `IBAN-INCONNU`/`MANDAT-INCONNU` et « `RCUR` pour tout le lot », disparus avec le lot par schéma                                               | `../prelevement/prelevement-sepa.md` §« le fichier »                                                          |
 
 ## 2. Lot 1 — `DtOfSgntr`
 
@@ -68,7 +68,7 @@ non nul) est conservé : c'est la preuve opposable.
 
 ⚠️ **Règles de la norme, pas d'un guide bancaire en main.** La doc du dépôt
 atteste la règle CFONB « `FRST` et `OrgnlDbtrAgt = SMNDA` après un changement de
-banque » (`prelevement-sepa.md`) ; le reste — champs exacts, séquence après un
+banque » (`../prelevement/prelevement-sepa.md`) ; le reste — champs exacts, séquence après un
 changement de compte dans la même banque — **est à confirmer avec la Caisse
 d'Épargne** avant le premier dépôt réel.
 
@@ -116,8 +116,8 @@ un schéma :
 | 4       | amendement + dépôt du lot (API)                                                                           | batisseur |
 | 4-écran | bouton « lot déposé » et état au tableau de bord ; mention de l'amendement en attente sur la fiche client | pablo     |
 
-Doc : `prelevement-sepa.md` (marqueurs, séquence, `DtOfSgntr`, amendement), la
-todo fermée, `lexique.md` si un sigle entre.
+Doc : `../prelevement/prelevement-sepa.md` (marqueurs, séquence, `DtOfSgntr`, amendement), la
+todo fermée, `../lexique.md` si un sigle entre.
 
 ## 7. Contradiction (vitruve)
 
@@ -149,7 +149,7 @@ et le scan d'un brouillon devenu caduc. Le §7 prime sur les §2-§5, ce §8 sur
 
 | Lot                    | Agent     | Contenu                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                |
 | ---------------------- | --------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
-| A — `DtOfSgntr`        | batisseur | contrainte `payment_mandates_active_is_signed` (`CHECK (status <> 'active' OR accepted_at IS NOT NULL)`) ; `DebtorMandate.signedAt` ; `<DtOfSgntr>` entre `MndtId` et `AmdmntInd`, jour local `Europe/Paris` ; fixtures e2e ; test depuis la date `AAAA-MM-JJ` de la commande de signature ; `prelevement-sepa.md` (marqueurs, séquence, `DtOfSgntr`)                                                                                                                                                  |
+| A — `DtOfSgntr`        | batisseur | contrainte `payment_mandates_active_is_signed` (`CHECK (status <> 'active' OR accepted_at IS NOT NULL)`) ; `DebtorMandate.signedAt` ; `<DtOfSgntr>` entre `MndtId` et `AmdmntInd`, jour local `Europe/Paris` ; fixtures e2e ; test depuis la date `AAAA-MM-JJ` de la commande de signature ; `../prelevement/prelevement-sepa.md` (marqueurs, séquence, `DtOfSgntr`)                                                                                                                                   |
 | B — verrou + RIB staff | batisseur | port `FirstMandateLedger.note(creditorId, at)` déclaré et implémenté par `accounting`, écriture conditionnelle `WHERE first_mandate_issued_at IS NULL`, appelé dans l'unité de travail de la frappe ; `first_mandate_issued_at` retiré des colonnes réécrites par `save` ; pas de rattrapage ; remplacement staff du RIB refusé sous un mandat actif (`BankAccountBoundToActiveMandateError`)                                                                                                          |
 | C — purge              | batisseur | `DocumentStore.delete` (absent = succès) ; écriture de la pièce conditionnelle (`status = draft` et clé précédente inchangée, sinon 409) ; `PaymentMandate.purgeableProofKey()` (jamais signé) ; purge après validation, fait `payment_mandate.proof_purged` seulement si la suppression a réussi ; caducités qui rendent les clés à purger ; `PaymentMandateView.proofRevision` (empreinte opaque, jamais la clé) et `signMandatePayloadSchema.proofRevision`, signature refusée si la pièce a changé |
 | Écran                  | pablo     | admin : la signature envoie `proofRevision` ; la section RIB staff se désarme sous un mandat actif et dit le geste de sortie                                                                                                                                                                                                                                                                                                                                                                           |

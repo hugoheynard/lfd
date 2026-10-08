@@ -5,8 +5,8 @@ déclare à sa banque avec notre ICS, elle est imprimée sur le papier qu'il sig
 et chaque prélèvement la porte jusqu'à son relevé.
 
 Le contexte du prélèvement — schémas, lot, cycle — est dans
-[`prelevement-sepa.md`](prelevement-sepa.md) ; les sigles dans
-[`lexique.md`](lexique.md).
+[`../prelevement/prelevement-sepa.md`](../prelevement/prelevement-sepa.md) ; les sigles dans
+[`../lexique.md`](../lexique.md).
 
 ---
 
@@ -27,7 +27,7 @@ seul paramètre du rendu, donc impossibles à découpler.
 
 | Étape    | Où                                                                                                                                                  |
 | -------- | --------------------------------------------------------------------------------------------------------------------------------------------------- |
-| Frappe   | `Rum.mint` — [`rum.ts`](../../apps/lfd-api/src/b2b/payments/domain/value-objects/rum.ts), appelé par `mint-mandate-support.ts`                      |
+| Frappe   | `Rum.mint` — [`rum.ts`](../../../apps/lfd-api/src/b2b/payments/domain/value-objects/rum.ts), appelé par `mint-mandate-support.ts`                   |
 | Routes   | `POST /admin/companies/:companyId/mandate` (staff), `POST /companies/:companyId/mandate` (client)                                                   |
 | Stockage | `payment_mandates.reference`, sur un mandat à l'état `draft`                                                                                        |
 | Unicité  | une RUM par créancier (`payment_mandates_reference_unique_per_creditor`) ; un seul brouillon par société (`payment_mandates_one_draft_per_company`) |

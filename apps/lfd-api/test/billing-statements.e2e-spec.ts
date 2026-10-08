@@ -1,6 +1,6 @@
 /**
  * E2E de **l'arrêté de facturation figé** (plan
- * `documentation/facturation/plan-le-prelevement-suit-la-facture.md`, F3).
+ * `documentation/comptabilite/facturation/plan-le-prelevement-suit-la-facture.md`, F3).
  *
  * Ce que seul le vrai SQL prouve : l'arrêté s'écrit dans la transaction de la
  * constitution, cite sa ligne par clé étrangère, et la base le tient immuable

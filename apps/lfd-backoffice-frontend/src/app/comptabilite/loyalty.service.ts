@@ -19,7 +19,7 @@ import { B2B_API_BASE } from '../api/api-config';
  *
  * Transport pur : les refus (solde qui passerait sous zéro, bon qui n'est plus
  * disponible) sont rédigés par le serveur, et l'écran les affiche tels quels.
- * Plan : `documentation/comptabilite/plan-points-de-fidelite.md`, lot B.
+ * Plan : `documentation/comptabilite/fidelite/plan-points-de-fidelite.md`, lot B.
  */
 @Injectable({ providedIn: 'root' })
 export class LoyaltyService {

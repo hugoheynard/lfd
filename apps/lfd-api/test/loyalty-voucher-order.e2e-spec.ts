@@ -2,7 +2,7 @@ import { randomUUID } from "node:crypto";
 
 /**
  * E2E du **bon de fidélité sur la commande** (plan
- * `documentation/comptabilite/plan-points-de-fidelite.md`, lot C, §11 C8).
+ * `documentation/comptabilite/fidelite/plan-points-de-fidelite.md`, lot C, §11 C8).
  *
  * Ce que seul le vrai Postgres prouve :
  * - deux passations simultanées sur le même bon : le verrou du titulaire les

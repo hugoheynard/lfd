@@ -68,7 +68,7 @@ import { scopeChoices, targetOf } from './scope-choices';
  *
  * Une ligne ouvre le panneau de SA portée. Sans `lfc_price_limits:write`, il
  * s'ouvre en lecture, et ni création ni sélection ne s'affichent.
- * Plan : `documentation/comptabilite/limites-de-prix.md`.
+ * Plan : `documentation/comptabilite/prix/limites-de-prix.md`.
  */
 @Component({
   selector: 'app-limites-de-prix-page',

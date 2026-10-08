@@ -7,7 +7,7 @@ import {
 
 /**
  * Les refus du **lot de prélèvement figé** (plan
- * `documentation/comptabilite/plan-lot-de-prelevement-fige.md`).
+ * `documentation/comptabilite/prelevement/plan-lot-de-prelevement-fige.md`).
  *
  * Lus par la comptabilité, sans le code sous les yeux : chacun nomme le cas
  * réel et le geste de sortie. Aucun ne porte d'IBAN — un message part au client

@@ -2,7 +2,7 @@ import { httpErrorCode } from '@lfd/endpoints';
 
 /**
  * Les deux refus « la pièce n'est plus celle que vous regardiez » (409), depuis
- * le 2026-09-15 (plan `documentation/comptabilite/plan-restes-du-mandat.md` §8,
+ * le 2026-09-15 (plan `documentation/comptabilite/mandat/plan-restes-du-mandat.md` §8,
  * lot C) :
  *
  * - `proof_revision_stale` — la signature vise une révision de pièce qui n'est

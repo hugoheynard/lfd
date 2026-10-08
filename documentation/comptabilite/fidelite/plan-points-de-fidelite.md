@@ -674,7 +674,7 @@ d'`execute` ; « au retrait » est retiré de C5 — tout total nul est
 **Tranché par Hugo le 2026-09-27** (« ok pour les trois ») : C6 — l'assiette
 est le HT après remise **et** bon ; B2 — le reliquat échu s'éteint, journalisé ;
 S4 — TODO ouvert :
-[`../order/todo-commande-epargnee-a-la-cloture-puis-refusee.md`](../order/todo-commande-epargnee-a-la-cloture-puis-refusee.md).
+[`../../order/todo-commande-epargnee-a-la-cloture-puis-refusee.md`](../../order/todo-commande-epargnee-a-la-cloture-puis-refusee.md).
 Le lot C est lancé.
 
 ## 12. Conception du lot E1 (2026-09-27)

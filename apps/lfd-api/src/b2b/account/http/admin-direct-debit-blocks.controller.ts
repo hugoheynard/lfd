@@ -22,7 +22,7 @@ import { blockDirectDebitPayload, type BlockDirectDebitPayload } from "./payload
  * `b2b_deferred_payment_block:write` (Hugo, 2026-09-25). Ouvrir l'espace
  * comptable à quelqu'un — pour relancer un lien de paiement — ne lui donne
  * pas le pouvoir de suspendre le crédit d'un client. Plan :
- * `documentation/comptabilite/plan-blocage-prelevement-et-liens-de-paiement.md` §1.
+ * `documentation/comptabilite/prelevement/plan-blocage-prelevement-et-liens-de-paiement.md` §1.
  */
 @Controller("admin/accounting/direct-debit-blocks")
 @AdminSurface("b2b_accounting")

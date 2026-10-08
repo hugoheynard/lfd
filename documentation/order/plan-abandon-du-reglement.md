@@ -68,7 +68,7 @@ que Stripe permet, puisque l'intention est revenue à
 
 **Fait nouveau 3 — la fidélité en dépend.** Le lot C des points de fidélité
 réservera un bon à la passation, et seule l'annulation le libérera
-(`documentation/comptabilite/plan-points-de-fidelite.md`, D7). L'abandon
+(`documentation/comptabilite/fidelite/plan-points-de-fidelite.md`, D7). L'abandon
 public (`cancelled`, §5) doit donc **libérer le bon réservé**, dans sa propre
 transaction. Tant que le lot C n'est pas bâti, il n'y a rien à libérer : ce
 plan peut être bâti avant lui.

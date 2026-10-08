@@ -64,9 +64,9 @@ voucherDiscountCents` ensemble, `b2b/orders/domain/services/vat.ts:126-129`)
 - **La TVA de la livraison** : Hugo a décidé le 2026-09-21 que l'admin
   **choisit** entre le taux normal (20 %) et la **ventilation au prorata** des
   marchandises (port accessoire de la vente) —
-  [`../order/todo-tva-des-frais-de-port.md`](../order/todo-tva-des-frais-de-port.md).
+  [`../../order/todo-tva-des-frais-de-port.md`](../../order/todo-tva-des-frais-de-port.md).
   ✅ **Bâti côté serveur le 2026-10-08**
-  ([`../order/plan-tva-des-frais-de-port.md`](../order/plan-tva-des-frais-de-port.md),
+  ([`../../order/plan-tva-des-frais-de-port.md`](../../order/plan-tva-des-frais-de-port.md),
   V1 à V5) : réglage global `order_delivery_vat` (`standard` |
   `follows_goods`, repli `standard` sans ligne), et le mode **figé sur chaque
   commande** dans `orders.delivery_vat_mode` — `null` pour les bons passés
@@ -78,7 +78,7 @@ voucherDiscountCents` ensemble, `b2b/orders/domain/services/vat.ts:126-129`)
 - **La seule date d'un bon** est `requestedDeliveryDate`, **nullable**
   (`orders.prisma:137`), et elle ne change pas quand un bon rapporté est
   replacé un autre jour.
-- **Le relevé de cycle** ([`../order/plan-agregation-des-commandes.md`](../order/plan-agregation-des-commandes.md), A1-A2, bâti) :
+- **Le relevé de cycle** ([`../../order/plan-agregation-des-commandes.md`](../../order/plan-agregation-des-commandes.md), A1-A2, bâti) :
   `GET admin/accounting/statements/companies/:companyId?month=`
   (`admin-cycle-statements.controller.ts:53`), sur `CycleOrdersReader`, port
   **volontairement étroit**. Son périmètre (`billable-order-criterion.ts:41-45`)

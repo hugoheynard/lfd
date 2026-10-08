@@ -56,7 +56,7 @@ export const comptabiliteRoutes: Routes = [
         // LE MOIS DU PRÉLÈVEMENT, de haut en bas : son calendrier, l'aperçu de
         // ce qui sera prélevé, le lot à déposer, l'historique. Les gestes
         // demandent `b2b_accounting:write`.
-        // Plan : documentation/facturation/prelevement-automatique.md (PA4).
+        // Plan : documentation/comptabilite/prelevement/prelevement-automatique.md (PA4).
         path: 'prelevement-du-mois',
         title: 'Prélèvement du mois — LFC B2B admin',
         loadComponent: () =>
@@ -78,7 +78,7 @@ export const comptabiliteRoutes: Routes = [
         // Le dossier d'UNE ligne de prélèvement : son arrêté figé, ouvert
         // depuis le lot. Sous `b2b_accounting`, comme la coquille ; la route
         // serveur n'admet que ce droit, en lecture.
-        // Plan : documentation/facturation/plan-le-prelevement-suit-la-facture.md (F4).
+        // Plan : documentation/comptabilite/facturation/plan-le-prelevement-suit-la-facture.md (F4).
         path: 'arretes-de-facturation/:id',
         title: 'Arrêté de facturation — LFC B2B admin',
         loadComponent: () =>
@@ -99,7 +99,7 @@ export const comptabiliteRoutes: Routes = [
         // Le programme de fidélité : son réglage, les soldes, les bons. Les
         // gestes (régler, ajuster, annuler un bon) demandent
         // `b2b_accounting:write` ; l'écran les masque sans ce droit.
-        // Plan : documentation/comptabilite/plan-points-de-fidelite.md, lot B.
+        // Plan : documentation/comptabilite/fidelite/plan-points-de-fidelite.md, lot B.
         path: 'fidelite',
         title: 'Fidélité — LFC B2B admin',
         loadComponent: () => import('./fidelite/fidelite-page').then((m) => m.FidelitePage),
@@ -109,7 +109,7 @@ export const comptabiliteRoutes: Routes = [
         // `lfc_price_limits`, PAS de `b2b_accounting` : la vue porte donc son
         // propre garde, comme l'annonce l'en-tête de ce fichier. Les gestes
         // demandent `lfc_price_limits:write` ; l'écran les masque sans lui.
-        // Plan : documentation/comptabilite/limites-de-prix.md.
+        // Plan : documentation/comptabilite/prix/limites-de-prix.md.
         path: 'limites-de-prix',
         canActivate: [permissionGuard('lfc_price_limits:read')],
         title: 'Limites de prix — LFC B2B admin',
@@ -143,7 +143,7 @@ export const comptabiliteRoutes: Routes = [
         // Le dossier de facturation SIMULÉ d'un payeur pour un cycle : la
         // facture en une fois, les bons, les écarts. Sous `b2b_accounting`,
         // comme la coquille ; la route serveur n'admet que ce droit.
-        // Plan : documentation/facturation/plan-simulateur-dossier-de-facturation.md (DF4).
+        // Plan : documentation/comptabilite/facturation/plan-simulateur-dossier-de-facturation.md (DF4).
         path: 'dossier-de-facturation',
         title: 'Dossier de facturation — LFC B2B admin',
         loadComponent: () =>

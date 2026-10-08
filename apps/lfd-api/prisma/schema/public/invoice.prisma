@@ -1,6 +1,6 @@
 // ─────────────────────────────────────────────────────────────────────────────
 // La facture émise et l'avoir — plan
-// `documentation/facturation/plan-emission-de-la-facture.md` (E2).
+// `documentation/comptabilite/facturation/plan-emission-de-la-facture.md` (E2).
 // ─────────────────────────────────────────────────────────────────────────────
 //
 // Propriétaire : `src/b2b/accounting/`. Une pièce : écrite une fois, dans la

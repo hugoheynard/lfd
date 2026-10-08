@@ -28,7 +28,7 @@ import { SetCompanyBankAccountCommand } from "./set-company-bank-account.command
  * mandat en cours (2026-09-14).
  *
  * 🔴 **Refusé en 409 tant qu'un mandat est actif**, comme le client (décidé par
- * Hugo le 2026-09-15, plan `documentation/comptabilite/plan-restes-du-mandat.md`
+ * Hugo le 2026-09-15, plan `documentation/comptabilite/mandat/plan-restes-du-mandat.md`
  * §8). L'amendement d'un mandat actif attend la réponse de la banque ; d'ici là,
  * le seul chemin est de révoquer, recopier le RIB, et frapper un nouveau mandat.
  * Même garde que `SetMyCompanyBankAccountHandler`, message écrit pour le staff.

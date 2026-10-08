@@ -1,5 +1,5 @@
 /**
- * E2E du **crédit de points** (plan `documentation/comptabilite/plan-points-de-fidelite.md`,
+ * E2E du **crédit de points** (plan `documentation/comptabilite/fidelite/plan-points-de-fidelite.md`,
  * lot D) : une commande remise ET encaissée rapporte ses points, une fois.
  *
  * Ce que seul le vrai SQL et le vrai bus prouvent :

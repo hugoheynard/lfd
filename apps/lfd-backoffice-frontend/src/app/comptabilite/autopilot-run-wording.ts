@@ -5,7 +5,7 @@ import { instant } from './invoice-dossier-format';
 
 /**
  * Les mots de la **dernière tentative de la préparation automatique** (plan
- * `documentation/facturation/prelevement-automatique.md`, PA3), lus
+ * `documentation/comptabilite/prelevement/prelevement-automatique.md`, PA3), lus
  * par la fiche de l'entité et par l'écran du mois.
  *
  * Une tentative par mois, jamais deux : une issue qui n'a pas préparé de

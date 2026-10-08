@@ -1,7 +1,7 @@
 /**
  * Port d'**écriture** du verrou du créancier imprimé : le premier mandat frappé
  * sous une entité émettrice. Déclaré ET implémenté par la comptabilité, consommé
- * par la frappe (`payments`) — plan `documentation/comptabilite/plan-restes-du-mandat.md`
+ * par la frappe (`payments`) — plan `documentation/comptabilite/mandat/plan-restes-du-mandat.md`
  * §3, corrigé par le §7 #6.
  *
  * ## Pourquoi une écriture ciblée, et pas `load` → méthode → `save`

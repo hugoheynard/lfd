@@ -2,7 +2,7 @@ import { z } from "zod";
 
 /**
  * **Les lots de prélèvement figés**, tels que l'écran du cycle les lit (plan
- * `documentation/comptabilite/plan-lot-de-prelevement-fige.md`, §2, §4).
+ * `documentation/comptabilite/prelevement/plan-lot-de-prelevement-fige.md`, §2, §4).
  * Montants en centimes.
  */
 
@@ -50,7 +50,7 @@ export const ORDER_COLLECTION_STATE_LABELS: Readonly<Record<OrderCollectionState
 
 /**
  * L'état de l'avis de prélèvement d'une ligne (plan
- * `documentation/facturation/prelevement-automatique.md`, PA2).
+ * `documentation/comptabilite/prelevement/prelevement-automatique.md`, PA2).
  * `queued` = mis en file, PAS envoyé ; `unsendable` = ni contact de
  * facturation ni détenteur avec une adresse — rien n'est parti.
  */
@@ -78,7 +78,7 @@ export interface CollectionLineNoticeView {
 
 /**
  * Une ligne de débit du lot, telle que l'écran la lit (plan
- * `documentation/facturation/plan-le-prelevement-suit-la-facture.md`, F3).
+ * `documentation/comptabilite/facturation/plan-le-prelevement-suit-la-facture.md`, F3).
  */
 export interface CollectionBatchLineView {
   readonly rank: number;
@@ -184,7 +184,7 @@ export type ConstituteBatchesPayload = z.infer<typeof constituteBatchesPayloadSc
 /**
  * Une ligne de l'**aperçu du mois** : ce que la prochaine préparation du lot
  * débiterait à ce payeur, calculé comme le lot (plan
- * `documentation/facturation/prelevement-automatique.md`, PA4) — la
+ * `documentation/comptabilite/prelevement/prelevement-automatique.md`, PA4) — la
  * facture de ses bons en une fois, pas leur somme.
  */
 export interface CollectionPreviewLineView {

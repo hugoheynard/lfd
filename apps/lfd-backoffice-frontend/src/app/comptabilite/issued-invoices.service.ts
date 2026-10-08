@@ -7,7 +7,7 @@ import type { IssuedInvoiceView, IssuedInvoicesView } from '@lfd/contracts';
 import { B2B_API_BASE } from '../api/api-config';
 
 /**
- * Les **factures émises** (plan `documentation/facturation/plan-emission-de-la-facture.md`,
+ * Les **factures émises** (plan `documentation/comptabilite/facturation/plan-emission-de-la-facture.md`,
  * E6) : celles d'une société pour l'onglet « Facturation » de sa fiche, et
  * une pièce pour la comptabilité. Une relecture : une pièce émise ne change
  * plus.

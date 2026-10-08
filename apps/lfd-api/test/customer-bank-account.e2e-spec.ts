@@ -10,7 +10,7 @@
  *   réglages du mandat qui restent au staff ;
  * - que le client et le staff écrivent la **même** ligne.
  *
- * Doc : `documentation/comptabilite/rib-client.md`. Aucune frontière doublée : le
+ * Doc : `documentation/comptabilite/mandat/rib-client.md`. Aucune frontière doublée : le
  * jeton porteur EST le `sub`, et tout le reste se joue en base.
  */
 import type { CustomerBankAccountSectionView } from "@lfd/contracts";

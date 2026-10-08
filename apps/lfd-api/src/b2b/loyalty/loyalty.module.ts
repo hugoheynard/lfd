@@ -46,7 +46,7 @@ import { PrismaLoyaltyVoucherRepository } from "./infrastructure/prisma-loyalty-
 
 /**
  * Contexte **fidélité** : le grand livre de points, les bons de fidélité, le
- * réglage du ratio (plan `documentation/comptabilite/plan-points-de-fidelite.md`).
+ * réglage du ratio (plan `documentation/comptabilite/fidelite/plan-points-de-fidelite.md`).
  *
  * Programme livré FERMÉ : tant que la comptabilité n'a pas enregistré de
  * réglage, aucune conversion ne passe et aucune commande ne crédite. Le

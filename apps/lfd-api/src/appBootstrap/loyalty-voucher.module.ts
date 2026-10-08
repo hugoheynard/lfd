@@ -10,7 +10,7 @@ import { LoyaltyVoucherRedemption } from "../b2b/orders/domain/ports/loyalty-vou
 
 /**
  * Le fil qui relie **la commande au bon de fidélité** (plan
- * `documentation/comptabilite/plan-points-de-fidelite.md`, C3, §11 bis S8).
+ * `documentation/comptabilite/fidelite/plan-points-de-fidelite.md`, C3, §11 bis S8).
  *
  * La commande déclare ce dont elle a besoin — lire ce que vaut un bon, puis
  * l'engager, le rendre, solder son reliquat ; et depuis E1, prévoir ce qu'un

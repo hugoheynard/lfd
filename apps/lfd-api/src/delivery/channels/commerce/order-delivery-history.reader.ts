@@ -15,7 +15,7 @@ export interface OrderDeliveryStopFact {
 
 /**
  * **Les arrêts de ces commandes, pour le dossier de facturation** (plan
- * `documentation/facturation/plan-simulateur-dossier-de-facturation.md`, §3.3,
+ * `documentation/comptabilite/facturation/plan-simulateur-dossier-de-facturation.md`, §3.3,
  * DF3).
  *
  * La livraison DÉCLARE et IMPLÉMENTE ce port, le commerce le lit — l'inverse

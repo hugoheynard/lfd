@@ -1,5 +1,5 @@
 /**
- * E2E de la **fidélité** (plan `documentation/comptabilite/plan-points-de-fidelite.md`,
+ * E2E de la **fidélité** (plan `documentation/comptabilite/fidelite/plan-points-de-fidelite.md`,
  * lots A et B) — `/admin/accounting/loyalty`, et la conversion par le bus.
  *
  * Ce que seul le vrai SQL prouve :

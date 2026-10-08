@@ -1,7 +1,7 @@
 /**
  * Les commandes **définitives** : remises (`fulfilled`) ET encaissées
  * (`paymentStatus = paid`) — plan
- * `documentation/comptabilite/plan-points-de-fidelite.md`, D3.
+ * `documentation/comptabilite/fidelite/plan-points-de-fidelite.md`, D3.
  *
  * ## Pourquoi c'est `orders` qui l'expose
  *

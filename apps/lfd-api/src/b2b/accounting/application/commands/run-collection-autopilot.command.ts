@@ -18,7 +18,7 @@ export interface CollectionAutopilotReport {
 
 /**
  * **Le passage de la constitution automatique** (plan
- * `documentation/facturation/prelevement-automatique.md`, PA3).
+ * `documentation/comptabilite/prelevement/prelevement-automatique.md`, PA3).
  *
  * Sans charge utile : une passe horaire sur toutes les entités, déclenchée
  * par le Cron Trigger `15 * * * *`. Rejouable à volonté — un cycle n'est

@@ -1,7 +1,7 @@
 /**
  * E2E du **schéma de mandat de l'entité émettrice** — CORE ou interentreprises.
  *
- * Plan : `documentation/comptabilite/mandat-deux-schemas.md`
+ * Plan : `documentation/comptabilite/mandat/mandat-deux-schemas.md`
  *
  * Ce que seul le vrai SQL prouve : la colonne de l'entité bascule, le fait entre
  * au journal avec son acteur, les brouillons de TOUTES les sociétés émis par
@@ -227,7 +227,7 @@ describe("PUT mandate-scheme — la bascule", () => {
   });
 
   /**
-   * Plan `documentation/comptabilite/plan-restes-du-mandat.md` §4 et §7 #10 : la
+   * Plan `documentation/comptabilite/mandat/plan-restes-du-mandat.md` §4 et §7 #10 : la
    * pièce d'un brouillon rendu caduc par l'émetteur est purgée APRÈS la
    * transaction du réglage ; celle d'un mandat signé reste.
    */

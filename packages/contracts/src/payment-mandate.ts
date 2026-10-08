@@ -47,7 +47,7 @@ export const MANDATE_STATUS_LABELS: Readonly<Record<MandateStatus, string>> = {
  * - `holder_legal_form_missing` — la civilité ou forme juridique du titulaire
  *   du compte, exigée par le seul interentreprises : RIB.
  *
- * Plan `documentation/comptabilite/plan-mentions-obligatoires-du-mandat.md` §9.2.
+ * Plan `documentation/comptabilite/mandat/plan-mentions-obligatoires-du-mandat.md` §9.2.
  */
 export const mintBlockerSchema = z.enum([
   "bank_account_missing",
@@ -109,7 +109,7 @@ export interface PaymentMandateView {
   readonly proofFileName: string;
   /**
    * La **révision** de la pièce déposée : une empreinte opaque, vide sans pièce.
-   * Ajoutée le 2026-09-15 (plan `documentation/comptabilite/plan-restes-du-mandat.md`
+   * Ajoutée le 2026-09-15 (plan `documentation/comptabilite/mandat/plan-restes-du-mandat.md`
    * §7 #9).
    *
    * L'écran la renvoie telle quelle en déclarant le mandat signé : le serveur
@@ -123,7 +123,7 @@ export interface PaymentMandateView {
 /**
  * Ce que le **client** voit de son mandat — `GET /companies/:companyId/mandate`.
  *
- * Plan `documentation/comptabilite/plan-mandat-client.md`, fin du §9 (2026-09-14).
+ * Plan `documentation/comptabilite/mandat/plan-mandat-client.md`, fin du §9 (2026-09-14).
  *
  * Plus étroite que {@link PaymentMandateView}, et chaque absence est voulue :
  * ni `last4`, ni `bankCode`, ni `country` — le client a déjà sa carte RIB, et
@@ -161,7 +161,7 @@ export interface MandateSectionView {
   /**
    * Ce qui empêche aujourd'hui de **frapper** un mandat pour cette société —
    * vide quand la frappe passerait. Champ ajouté le 2026-09-15 (plan
-   * `documentation/comptabilite/plan-mentions-obligatoires-du-mandat.md` §9).
+   * `documentation/comptabilite/mandat/plan-mentions-obligatoires-du-mandat.md` §9).
    *
    * Calculé par la même fonction que la frappe : l'écran ne peut pas annoncer
    * « prêt » quand le serveur refuserait, ni l'inverse.

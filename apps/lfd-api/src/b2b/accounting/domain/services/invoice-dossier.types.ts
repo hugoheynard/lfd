@@ -4,7 +4,7 @@ import type { InvoiceUnitCode } from "../value-objects/invoice-unit.js";
 
 /**
  * Les types du **simulateur de dossier de facturation** (plan
- * `documentation/facturation/plan-simulateur-dossier-de-facturation.md`) :
+ * `documentation/comptabilite/facturation/plan-simulateur-dossier-de-facturation.md`) :
  * ce qu'il reçoit — les bons tels que figés — et ce qu'il rend — la facture
  * calculée en une fois, et les trois écarts qui la séparent de la somme des bons.
  */

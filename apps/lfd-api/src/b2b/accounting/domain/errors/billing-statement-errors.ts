@@ -5,7 +5,7 @@ import {
 
 /**
  * Les refus de **l'arrêté de facturation** (plan
- * `documentation/facturation/plan-le-prelevement-suit-la-facture.md`, F3).
+ * `documentation/comptabilite/facturation/plan-le-prelevement-suit-la-facture.md`, F3).
  *
  * Tous deux sont inatteignables par la constitution d'aujourd'hui : ils
  * refusent un arrêté que le code aurait mal assemblé, plutôt que de figer une

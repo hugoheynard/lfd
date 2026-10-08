@@ -14,7 +14,7 @@ export const MONTHLY: DeferredTerm = 'monthly';
 
 /**
  * **Cette société règle-t-elle au compte ?** — le SEUL calcul du front
- * (plan `comptabilite/plan-blocage-prelevement-et-liens-de-paiement.md`, §1).
+ * (plan `comptabilite/prelevement/plan-blocage-prelevement-et-liens-de-paiement.md`, §1).
  *
  * Le mensuel ACCORDÉ ne suffit plus : la comptabilité peut suspendre le
  * prélèvement sans retirer le crédit (`directDebitBlocked`). `grantedTerms`

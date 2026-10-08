@@ -1,7 +1,7 @@
 /**
  * E2E des **zones 14 et 19 réglées par le client** — `/mon-compte`.
  *
- * Plan : `documentation/comptabilite/plan-mandat-client.md` §10 (décidé le 2026-09-14).
+ * Plan : `documentation/comptabilite/mandat/plan-mandat-client.md` §10 (décidé le 2026-09-14).
  *
  * Voisin de `customer-mandate.e2e-spec.ts`, et pas une section de plus : ce
  * fichier-là dépasse déjà la taille d'un fichier. Même mécanique de semis.

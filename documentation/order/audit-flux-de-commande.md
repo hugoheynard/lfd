@@ -86,7 +86,7 @@ fournil ». C'est vrai, et ça le restera jusqu'à l'annulation.
 
 **La moitié du constat d'origine est tombée par décision, pas par construction.**
 Nous n'émettons pas de facture : le comptable importe nos commandes et sort la
-facture mensuelle (2026-09-10, [`../comptabilite/prelevement-sepa.md`](../comptabilite/prelevement-sepa.md)).
+facture mensuelle (2026-09-10, [`../comptabilite/prelevement/prelevement-sepa.md`](../comptabilite/prelevement/prelevement-sepa.md)).
 Il n'y aura donc pas d'agrégat facture dans `b2b/accounting`.
 
 Ce qui reste vrai, et qui coûte :

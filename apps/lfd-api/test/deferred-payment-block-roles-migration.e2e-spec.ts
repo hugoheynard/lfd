@@ -1,7 +1,7 @@
 /**
  * E2E des **droits migrés du blocage du prélèvement** —
  * `20260925160100_le_blocage_du_prelevement_est_accorde`, rejouée (plan
- * `documentation/comptabilite/plan-blocage-prelevement-et-liens-de-paiement.md` §1).
+ * `documentation/comptabilite/prelevement/plan-blocage-prelevement-et-liens-de-paiement.md` §1).
  *
  * 🔴 Pourquoi ce test existe : le harnais réécrit `staff_role_definitions`
  * depuis `ROLE_GRANTS` à chaque `reset()`. Aucune autre suite ne verrait donc

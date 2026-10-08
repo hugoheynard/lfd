@@ -353,7 +353,7 @@ Depuis le 2026-10-08, `handover/channels/commerce/` et
 lecteurs que le commerce implémente, et porte aussi un lecteur **déclaré et
 implémenté par le bloc lui-même**, que la comptabilité du commerce lit pour le
 dossier de facturation (`OrderHandoverHistoryReader`, `OrderDeliveryHistoryReader` —
-[`documentation/facturation/plan-simulateur-dossier-de-facturation.md`](documentation/facturation/plan-simulateur-dossier-de-facturation.md), DF3).
+[`documentation/comptabilite/facturation/plan-simulateur-dossier-de-facturation.md`](documentation/comptabilite/facturation/plan-simulateur-dossier-de-facturation.md), DF3).
 Lectures synchrones, par lot ; `handover → b2b` et `delivery → b2b` restent interdits.
 
 🔴 **`delivery` écoute la clôture du fournil par un canal** (2026-10-04,

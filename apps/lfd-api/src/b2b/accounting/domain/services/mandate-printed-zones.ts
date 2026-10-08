@@ -5,7 +5,7 @@ import type { SepaScheme } from "../value-objects/sepa-scheme.js";
  * Le formulaire imprime-t-il les zones facultatives — 14, 19 et 20 ?
  *
  * Seul le CORE les porte. Le mandat interentreprises suit le gabarit DGFiP, qui
- * n'en a pas (plan `documentation/comptabilite/mandat-deux-schemas.md`) :
+ * n'en a pas (plan `documentation/comptabilite/mandat/mandat-deux-schemas.md`) :
  * les réécrire ne change donc rien au papier d'un brouillon B2B.
  */
 export function printsOptionalZones(scheme: SepaScheme): boolean {

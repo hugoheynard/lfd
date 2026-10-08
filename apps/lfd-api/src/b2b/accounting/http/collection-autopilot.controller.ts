@@ -19,7 +19,7 @@ export interface HourlyAccountingReport extends CollectionAutopilotReport {
 
 /**
  * Endpoint **machine** de la constitution automatique (plan
- * `documentation/facturation/prelevement-automatique.md`, PA3).
+ * `documentation/comptabilite/prelevement/prelevement-automatique.md`, PA3).
  *
  * Même porte que `admin/orders/settlement-reminders` — le `RecomputeGuard`
  * et son jeton, présentés par le Worker sur un Cron Trigger horaire PROPRE

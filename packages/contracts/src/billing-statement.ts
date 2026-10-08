@@ -3,7 +3,7 @@ import type { InvoiceDossierInvoiceView } from "./invoice-dossier.js";
 
 /**
  * **L'arrêté de facturation figé**, tel que l'écran le relit (plan
- * `documentation/facturation/plan-le-prelevement-suit-la-facture.md`, F4).
+ * `documentation/comptabilite/facturation/plan-le-prelevement-suit-la-facture.md`, F4).
  *
  * Une relecture, jamais un recalcul : la facture est le `body` figé à la
  * constitution du lot, les totaux sont ceux de la ligne. C'est ce total TTC

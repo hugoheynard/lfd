@@ -5,7 +5,7 @@
 > BLOQUANTS, huit SÉRIEUX), repris au § 9. Les règles du CGI et du Code de
 > commerce sont citées **de mémoire**, ni par l'agent ni par moi rouvertes en
 > ligne : le cabinet tranche. Reprend
-> [`../b2b/architecture-facturation.md`](../b2b/architecture-facturation.md)
+> [`../../b2b/architecture-facturation.md`](../../b2b/architecture-facturation.md)
 > (2026-08-15) là où le code l'a dépassé.
 
 ## 1. Le besoin et les décisions d'Hugo

@@ -4,7 +4,7 @@ import { cents, count, day, fact, instant, named, payload, subjectLabel } from "
 
 /**
  * **Le lot de prélèvement figé** (plan
- * `documentation/comptabilite/plan-lot-de-prelevement-fige.md`, §2) — rangé
+ * `documentation/comptabilite/prelevement/plan-lot-de-prelevement-fige.md`, §2) — rangé
  * dans la famille `accounting`, où l'étale `accounting.ts`.
  *
  * Sujet d'un geste sur un lot : `collection_batch`, nommé « Lot <schéma>
@@ -58,7 +58,7 @@ const invoiceNotice = {
 
 /**
  * L'avis de prélèvement d'un payeur (plan
- * `documentation/facturation/prelevement-automatique.md`, PA2). Sujet :
+ * `documentation/comptabilite/prelevement/prelevement-automatique.md`, PA2). Sujet :
  * `collection_notice`, nommé « Avis <payeur> ». Jamais l'adresse du
  * destinataire : on dit d'où elle vient (`recipientSource`), pas laquelle.
  */

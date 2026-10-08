@@ -44,7 +44,7 @@ import { SettlePanel } from './settle-panel/settle-panel';
 
 /**
  * **Comptabilité › Prélèvement du mois** (plan
- * `documentation/facturation/prelevement-automatique.md`, PA4) — un seul
+ * `documentation/comptabilite/prelevement/prelevement-automatique.md`, PA4) — un seul
  * écran, qui se lit de haut en bas comme le mois :
  *
  * 1. le **calendrier** du mois et l'état de la préparation automatique ;

@@ -28,7 +28,7 @@ export interface ProofPurgeSubject {
 /**
  * Détruit le scan d'un mandat **jamais signé**, puis l'écrit au journal.
  *
- * Plan `documentation/comptabilite/plan-restes-du-mandat.md` §4 et §7 #11 :
+ * Plan `documentation/comptabilite/mandat/plan-restes-du-mandat.md` §4 et §7 #11 :
  *
  * - **À appeler APRÈS la validation** de l'unité de travail qui a rendu la pièce
  *   inutile. Un objet supprimé ne se restaure pas : supprimé avant un rollback,

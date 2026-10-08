@@ -1,6 +1,6 @@
 /**
  * **Émet les factures d'un mois** (plan
- * `documentation/facturation/plan-emission-de-la-facture.md`, lot E4) : une
+ * `documentation/comptabilite/facturation/plan-emission-de-la-facture.md`, lot E4) : une
  * facture 380 par payeur légal, sur ses bons passés au compte dans le mois
  * (Q2, `createdAt`), datée du dernier jour du mois.
  *

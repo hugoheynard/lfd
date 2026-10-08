@@ -1,6 +1,6 @@
 /**
  * E2E de la **constitution automatique** (plan
- * `documentation/facturation/prelevement-automatique.md`, PA3).
+ * `documentation/comptabilite/prelevement/prelevement-automatique.md`, PA3).
  *
  * Ce que seul le vrai SQL prouve : le passage constitue sous l'auteur
  * `system` (le CHECK tient « aucune fiche staff »), les avis partent comme

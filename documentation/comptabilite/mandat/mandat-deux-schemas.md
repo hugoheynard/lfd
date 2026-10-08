@@ -108,7 +108,7 @@ en B2B), `set-mandate-scheme.handler.spec.ts`,
 - **À relire par Hugo** : le texte B2B aligné sur le gabarit DGFiP et la
   mention RGPD ; le texte CORE du courriel (droit au remboursement).
 - **`DbtrAgt` sans BIC** s'écrit `Othr/Id = NOTPROVIDED` : emplacement non
-  confirmé par la Caisse d'Épargne ([`question-banque.md`](question-banque.md)).
+  confirmé par la Caisse d'Épargne ([`../prelevement/question-banque.md`](../prelevement/question-banque.md)).
 - **Émetteur incomplet ou en double** : `issuerScheme` vaut `null`, et l'écran
   client retombe sur le texte CORE en laissant le bouton des options.
 - **Course étroite** : une frappe qui lit l'ancien réglage pendant la bascule

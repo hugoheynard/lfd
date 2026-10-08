@@ -5,7 +5,7 @@ import type { VatShareView } from "./order.js";
  * **Le dossier de facturation simulé** — la facture calculée en une fois sur
  * les bons d'un payeur et d'un cycle, les bons tels que figés, et les écarts
  * qui séparent l'une des autres (plan
- * `documentation/facturation/plan-simulateur-dossier-de-facturation.md`).
+ * `documentation/comptabilite/facturation/plan-simulateur-dossier-de-facturation.md`).
  *
  * Ce n'est pas une facture émise : aucun numéro, aucune mention, rien n'est
  * prélevé sur sa base. Tous les montants en centimes.

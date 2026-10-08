@@ -6,7 +6,7 @@
 > le citent encore sous son ancien nom). Touche **l'argent** :
 > le plan avait été contredit par `vitruve`.
 
-> ⚠️ **2026-10-08, lot E4** ([`plan-emission-de-la-facture.md`](plan-emission-de-la-facture.md), § 8.5) :
+> ⚠️ **2026-10-08, lot E4** ([`../facturation/plan-emission-de-la-facture.md`](../facturation/plan-emission-de-la-facture.md), § 8.5) :
 > **le lot encaisse des factures émises.** Le dernier jour du mois à 22h, le
 > même passage horaire émet une facture par payeur légal ; le lot du 1er
 > regroupe, par mandat, les factures émises non encore prélevées (montant =
@@ -141,6 +141,6 @@ datés) ; l'historique replié. Le tableau de bord n'en garde qu'un résumé.
 - **Préalables hors code** : la clause CGV et mandat pour prélever avant le
   15 (délai de pré-notification réduit) ; le cut-off du portail de la Caisse
   d'Épargne ; FRST/RCUR et les mandats ponctuels
-  ([`../comptabilite/prelevement-sepa.md`](../comptabilite/prelevement-sepa.md),
+  ([`prelevement-sepa.md`](prelevement-sepa.md),
   questions 3 et 4).
 - **PA5, les retours bancaires** (`pain.002`, `camt.054`) : pas bâti.

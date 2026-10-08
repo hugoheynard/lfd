@@ -2,7 +2,7 @@
 
 > Rassemblées le 2026-10-08 (Hugo), à partir de
 > [`prelevement-sepa.md`](prelevement-sepa.md) § 12, du lot figé, du
-> prélèvement automatique ([`../facturation/prelevement-automatique.md`](../facturation/prelevement-automatique.md))
+> prélèvement automatique ([`prelevement-automatique.md`](prelevement-automatique.md))
 > et de la réponse du service EDI du 2026-10-08 sur l'import des mandats.
 > Une réponse reçue se reporte ici, datée, puis dans le document qu'elle
 > débloque.

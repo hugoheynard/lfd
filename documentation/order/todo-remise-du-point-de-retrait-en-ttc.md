@@ -48,5 +48,5 @@ Pour un pro, un montant HT est la bonne unité, puisqu'il lit ses prix en HT.
 
 ## Liens
 
-- [`../comptabilite/plan-points-de-fidelite.md`](../comptabilite/plan-points-de-fidelite.md),
+- [`../comptabilite/fidelite/plan-points-de-fidelite.md`](../comptabilite/fidelite/plan-points-de-fidelite.md),
   D6 : la conversion d'une cible TTC en remise HT.

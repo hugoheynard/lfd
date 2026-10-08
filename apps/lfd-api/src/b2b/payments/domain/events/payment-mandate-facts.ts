@@ -5,7 +5,7 @@ import type { JournalFactType } from "@lfd/contracts/journal-facts";
  * autorisation de débit.
  *
  * Tous partent par `publishTraced`, dans la transaction de l'écriture qu'ils
- * décrivent, **client comme staff** (plan `documentation/comptabilite/plan-mandat-client.md`
+ * décrivent, **client comme staff** (plan `documentation/comptabilite/mandat/plan-mandat-client.md`
  * §7 #7 et §9 #3). La raison est celle d'`ACCOUNTING_FACTS` : chacun de ces
  * gestes finit opposé en contestation, et « qui a frappé cette RUM, qui a
  * déposé ce scan, qui l'a activé » doit avoir une réponse.
@@ -53,7 +53,7 @@ export const PAYMENT_MANDATE_FACTS = {
   /**
    * Le scan d'un mandat **jamais signé** est détruit du stockage — remplacé sur
    * le brouillon, ou brouillon devenu caduc (plan
-   * `documentation/comptabilite/plan-restes-du-mandat.md` §4).
+   * `documentation/comptabilite/mandat/plan-restes-du-mandat.md` §4).
    *
    * 🔴 Écrit **seulement après une suppression réussie**, et hors transaction :
    * la suppression ne se restaure pas, elle part donc après la validation. Un
@@ -76,7 +76,7 @@ export type MandateActorChannel = "staff" | "customer";
  * Ce qui a changé sur le papier et rendu le brouillon caduc.
  *
  * Les deux dernières viennent d'un réglage de l'**entité émettrice** (plan
- * `documentation/comptabilite/mandat-deux-schemas.md`) : elles révoquent tous
+ * `documentation/comptabilite/mandat/mandat-deux-schemas.md`) : elles révoquent tous
  * ses brouillons d'un coup, et non celui d'une société.
  */
 export type DraftVoidingCause =

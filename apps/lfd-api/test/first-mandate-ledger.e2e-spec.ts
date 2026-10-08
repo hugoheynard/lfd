@@ -1,6 +1,6 @@
 /**
  * E2E du **verrou du créancier imprimé** — plan
- * `documentation/comptabilite/plan-restes-du-mandat.md` §3, §7 #6 et §8 (lot B).
+ * `documentation/comptabilite/mandat/plan-restes-du-mandat.md` §3, §7 #6 et §8 (lot B).
  *
  * Ce que ces e2e éprouvent et qu'aucun test unitaire ne peut prouver :
  *

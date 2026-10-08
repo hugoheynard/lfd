@@ -99,7 +99,7 @@ l'actif par (société, créancier), du brouillon par société, et de la RUM pa
 créancier _(vérifié en base)_.
 
 La forme de la RUM, ses deux bornes et la raison de chacune vivent dans
-[`rum.md`](rum.md), et **nulle part ailleurs**.
+[`../mandat/rum.md`](../mandat/rum.md), et **nulle part ailleurs**.
 
 ### Ce qui n'existe pas du tout
 
@@ -113,7 +113,7 @@ La forme de la RUM, ses deux bornes et la raison de chacune vivent dans
   pendant que le lot déclarait `B2B` _(constaté le 2026-09-13)_. Basculé le
   2026-09-14 : le formulaire est « interentreprises », sans remboursement, et
   lit la même constante que le lot. Voir le §4 et le TODO :
-  [`todo-mandat-core-contre-b2b.md`](todo-mandat-core-contre-b2b.md).
+  [`../mandat/todo-mandat-core-contre-b2b.md`](../mandat/todo-mandat-core-contre-b2b.md).
 
 ✅ **Le mandat imprimable est livré le 2026-09-13** : `renderSepaMandatePdf`
 prend une émission, la RUM s'imprime dans le peigne de 26, et le filigrane tombe
@@ -170,7 +170,7 @@ soit le format : un mandat Stripe ne porte que `last4`, `bankCode` et `country`
 > sa banque** avant le premier prélèvement.
 >
 > ⚠️ Deux points restent à confirmer avec la banque, écrits dans
-> [`todo-mandat-core-contre-b2b.md`](todo-mandat-core-contre-b2b.md) :
+> [`../mandat/todo-mandat-core-contre-b2b.md`](../mandat/todo-mandat-core-contre-b2b.md) :
 > le libellé exact du modèle B2B qu'elle attend, et le retrait de la mention
 > « 13 mois » (qui vise les opérations non autorisées, pas le remboursement).
 
@@ -361,17 +361,17 @@ résument dans `RmtInf/Ustrd`, borné à 140 caractères — donc « Commandes d
 
 ### Ce qu'on sait remplir — au 2026-09-12 au soir
 
-| Champ XML                                          | Source                                                                                                             | État |
-| -------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------ | ---- |
-| `Cdtr/Nm`, `CdtrAcct/Id/IBAN`, `CdtrSchmeId` (ICS) | `LegalEntity`                                                                                                      | ✅   |
-| `CdtrAgt/FinInstnId/BIC`                           | `LegalEntity.creditorBic`                                                                                          | ✅   |
-| `Dbtr/Nm`                                          | `Company`                                                                                                          | ✅   |
-| `DbtrAcct/Id/IBAN`                                 | `CompanyBankAccount`, descellé à la lecture                                                                        | ✅   |
-| `MndtRltdInf/MndtId`                               | `PaymentMandate.reference` (la RUM)                                                                                | ✅   |
-| `MndtRltdInf/DtOfSgntr`                            | `PaymentMandate.acceptedAt` (date du papier), jour local de Paris — depuis le 2026-09-15                           | ✅   |
-| `MndtRltdInf/AmdmntInd`                            | `false` en dur — amendement non écrit, **différé jusqu'à la réponse de la banque** (`plan-restes-du-mandat.md` §8) | ⚠️   |
-| `ReqdColltnDt`, `InstdAmt`, `CtrlSum`, `NbOfTxs`   | le cycle, la somme du mois                                                                                         | ✅   |
-| `EndToEndId`                                       | cycle + rang dans le lot                                                                                           | ✅   |
+| Champ XML                                          | Source                                                                                                                       | État |
+| -------------------------------------------------- | ---------------------------------------------------------------------------------------------------------------------------- | ---- |
+| `Cdtr/Nm`, `CdtrAcct/Id/IBAN`, `CdtrSchmeId` (ICS) | `LegalEntity`                                                                                                                | ✅   |
+| `CdtrAgt/FinInstnId/BIC`                           | `LegalEntity.creditorBic`                                                                                                    | ✅   |
+| `Dbtr/Nm`                                          | `Company`                                                                                                                    | ✅   |
+| `DbtrAcct/Id/IBAN`                                 | `CompanyBankAccount`, descellé à la lecture                                                                                  | ✅   |
+| `MndtRltdInf/MndtId`                               | `PaymentMandate.reference` (la RUM)                                                                                          | ✅   |
+| `MndtRltdInf/DtOfSgntr`                            | `PaymentMandate.acceptedAt` (date du papier), jour local de Paris — depuis le 2026-09-15                                     | ✅   |
+| `MndtRltdInf/AmdmntInd`                            | `false` en dur — amendement non écrit, **différé jusqu'à la réponse de la banque** (`../mandat/plan-restes-du-mandat.md` §8) | ⚠️   |
+| `ReqdColltnDt`, `InstdAmt`, `CtrlSum`, `NbOfTxs`   | le cycle, la somme du mois                                                                                                   | ✅   |
+| `EndToEndId`                                       | cycle + rang dans le lot                                                                                                     | ✅   |
 
 Les deux tables du débiteur appartiennent à `payments` : le lot les lit par le
 port `DebtorMandateReader`, déclaré par la comptabilité et implémenté côté
@@ -416,7 +416,7 @@ déguiserait en compte.
 la frappe, avec un `PmtInf` par séquence présente. `FRST` n'est jamais écrit.
 Le CFONB impose `FRST` et `OrgnlDbtrAgt = SMNDA` après un changement de banque
 du débiteur : ni l'un ni l'autre n'est écrit, l'amendement est **différé jusqu'à
-la réponse de la banque** (`plan-restes-du-mandat.md` §8), et l'historique des
+la réponse de la banque** (`../mandat/plan-restes-du-mandat.md` §8), et l'historique des
 changements de compte que la norme exige n'est pas conservé.
 
 ### Les pièges qui font rejeter un fichier

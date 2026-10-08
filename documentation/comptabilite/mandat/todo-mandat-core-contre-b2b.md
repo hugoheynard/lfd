@@ -96,7 +96,7 @@ question « quel schéma ? » n'ait plus qu'une réponse dans le dépôt.
 ⚠️ **Le schéma B2B s'ouvre sur contrat séparé avec la banque du créancier.**
 C'est la Caisse d'Épargne qui confirmera le formulaire qu'elle attend — et c'est
 une des questions déjà en attente (cf.
-[`prelevement-sepa.md`](prelevement-sepa.md)
+[`../prelevement/prelevement-sepa.md`](../prelevement/prelevement-sepa.md)
 §12). Basculer le formulaire avant sa réponse, c'est risquer de le refaire.
 
 **La question à lui poser**, en une phrase : _le contrat SDD B2B est-il ouvert
@@ -128,7 +128,7 @@ zone 12 selon ce même réglage. Ce que la bascule laisse ouvert :
   lot (`pain008.ts`, via `DebtorMandateReader.activeFor`) ne connaît aucun débit
   déjà présenté : il n'existe pas d'historique des prélèvements par mandat
   (vérifié le 2026-09-14 — `DebtorMandate` ne porte que la RUM et l'IBAN, et les
-  tentatives sont la tranche 9 de `prelevement-sepa.md`). Une entité réglée en
+  tentatives sont la tranche 9 de `../prelevement/prelevement-sepa.md`). Une entité réglée en
   ponctuel ferait donc repartir le même mandat `OOFF` à chaque cycle. À fermer
   avec l'historique des débits : un mandat ponctuel déjà présenté sort du lot
   (ou passe caduc).

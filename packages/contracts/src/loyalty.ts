@@ -3,7 +3,7 @@ import { z } from "zod";
 /**
  * **La fidélité** — ce que la comptabilité règle et consulte : le ratio de
  * conversion, les soldes par titulaire, les bons émis. Plan
- * `documentation/comptabilite/plan-points-de-fidelite.md` (lots A et B).
+ * `documentation/comptabilite/fidelite/plan-points-de-fidelite.md` (lots A et B).
  */
 
 /** Le motif d'un geste du staff : obligatoire, lisible, borné. */
@@ -105,7 +105,7 @@ export type CancelLoyaltyVoucherPayload = z.infer<typeof cancelLoyaltyVoucherPay
  *
  * Ce que la boutique montre à une personne connectée, dans son espace
  * personnel : son solde, ce que vaut un palier, ses bons, son historique.
- * Plan `documentation/comptabilite/plan-points-de-fidelite.md`, §12.
+ * Plan `documentation/comptabilite/fidelite/plan-points-de-fidelite.md`, §12.
  */
 
 /**

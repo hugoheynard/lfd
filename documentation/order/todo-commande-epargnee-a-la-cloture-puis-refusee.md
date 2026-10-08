@@ -33,4 +33,4 @@ la fidélité, ouvert à la demande de Hugo. Rien n'est pris.
 ## Liens
 
 - [`architecture-abandon-du-reglement.md`](architecture-abandon-du-reglement.md)
-- [`../comptabilite/plan-points-de-fidelite.md`](../comptabilite/plan-points-de-fidelite.md), §11 bis
+- [`../comptabilite/fidelite/plan-points-de-fidelite.md`](../comptabilite/fidelite/plan-points-de-fidelite.md), §11 bis

@@ -314,7 +314,7 @@ export class MandateDocumentNotFoundError extends ResourceNotFoundError {
  * autorisation qui ne le couvre pas.
  *
  * 🔴 **Le staff est refusé comme le client** depuis le 2026-09-15 (plan
- * `documentation/comptabilite/plan-restes-du-mandat.md` §8) : l'amendement d'un
+ * `documentation/comptabilite/mandat/plan-restes-du-mandat.md` §8) : l'amendement d'un
  * mandat actif attend la réponse de la banque, et rien d'autre ne sait encore
  * annoncer un changement de compte.
  *

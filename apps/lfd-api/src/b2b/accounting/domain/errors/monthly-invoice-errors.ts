@@ -2,7 +2,7 @@ import { BusinessError } from "../../../../platform/shared/errors/app-error.js";
 
 /**
  * Les refus de **la facture du mois** (plan
- * `documentation/facturation/plan-emission-de-la-facture.md`, lot E4). Tous
+ * `documentation/comptabilite/facturation/plan-emission-de-la-facture.md`, lot E4). Tous
  * 409 : l'état du calendrier ou de la fiche, que le bureau peut attendre ou
  * corriger — jamais une faute de saisie.
  */

@@ -1,6 +1,6 @@
 /**
  * E2E des **limites de prix par clientèle** — pro et public, par les ROUTES
- * (`documentation/comptabilite/limites-de-prix.md`).
+ * (`documentation/comptabilite/prix/limites-de-prix.md`).
  *
  * 🔴 Par l'application, pas en SQL : la contrainte d'exclusion ne voit aucun
  * chevauchement entre une limite pro et une publique. C'est l'application qui

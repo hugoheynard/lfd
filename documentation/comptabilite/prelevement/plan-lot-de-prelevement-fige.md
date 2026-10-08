@@ -11,9 +11,9 @@
 > [`../facturation/plan-le-prelevement-suit-la-facture.md`](../facturation/plan-le-prelevement-suit-la-facture.md).
 >
 > Plan d'origine (2026-10-05) : prérequis **S4-0** du chantier
-> sous-comptes ([`../b2b/comptes-client/plan-sous-comptes.md`](../b2b/comptes-client/plan-sous-comptes.md),
+> sous-comptes ([`../../b2b/comptes-client/plan-sous-comptes.md`](../../b2b/comptes-client/plan-sous-comptes.md),
 > §2.1 quater), mais il sert à **tous** les clients prélevés. Trouvaille T10 du
-> [ledger](../b2b/comptes-client/ledger-sous-comptes.md).
+> [ledger](../../b2b/comptes-client/ledger-sous-comptes.md).
 >
 > La v1 a été contredite par `vitruve` le même jour : quatre objections
 > BLOQUANTES et huit SÉRIEUSES. Le §8 dit où chacune est reprise.
@@ -187,7 +187,7 @@ le premier essai.
 ## 6 bis. Une contrainte héritée de l'agrégation des commandes
 
 La **première** clôture enregistrée tombe sur un 1er du mois. Le relevé de
-cycle (`../order/plan-agregation-des-commandes.md`) affiche des mois civils
+cycle (`../../order/plan-agregation-des-commandes.md`) affiche des mois civils
 avant S4-0 : une première clôture ailleurs ferait changer de relevé des
 commandes déjà montrées.
 

@@ -72,7 +72,7 @@ Ce que le schéma dit :
 
 ## 2. Ce qui existe (vérifié le 2026-10-08)
 
-- **Le lot figé est bâti** (`../comptabilite/plan-lot-de-prelevement-fige.md`) :
+- **Le lot figé est bâti** (`../prelevement/plan-lot-de-prelevement-fige.md`) :
   tables de `prisma/schema/public/collection.prisma`, commandes
   `constitute-` / `cancel-` / `deposit-collection-batch`. Le bandeau de ce
   plan dit encore « rien n'est bâti » : il est périmé.

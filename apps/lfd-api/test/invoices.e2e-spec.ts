@@ -1,6 +1,6 @@
 /**
  * E2E de **la facture émise** (plan
- * `documentation/facturation/plan-emission-de-la-facture.md`, lot E2).
+ * `documentation/comptabilite/facturation/plan-emission-de-la-facture.md`, lot E2).
  *
  * Ce que seul le vrai SQL prouve : le compteur rend des numéros consécutifs
  * par entité et par année, sans trou même quand l'émission échoue après

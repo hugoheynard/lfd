@@ -22,7 +22,7 @@
 /// Le schéma SEPA d'un mandat : `CORE` (tout débiteur, remboursement sous 8
 /// semaines) ou `B2B` (interentreprises, aucun remboursement d'un prélèvement
 /// autorisé, mandat déclaré à la banque du débiteur). Plan
-/// `documentation/comptabilite/mandat-deux-schemas.md`.
+/// `documentation/comptabilite/mandat/mandat-deux-schemas.md`.
 enum SepaScheme {
   CORE
   B2B
@@ -371,7 +371,7 @@ model PaymentMandate {
   // Colonnes MORTES depuis le 2026-09-19 : vestiges des mandats Stripe, qui
   // n'existent plus (aucun en production). Ni lues ni écrites ; leur
   // suppression est une migration à part
-  // (documentation/comptabilite/todo-mandat-restes-de-la-frappe.md).
+  // (documentation/comptabilite/mandat/todo-mandat-restes-de-la-frappe.md).
   stripeCustomerId String? @map("stripe_customer_id")
   paymentMethodId  String? @map("payment_method_id")
 
@@ -457,7 +457,7 @@ enum PaymentLinkStatus {
 /// Ce n'est PAS une commande : il n'entre ni au chiffre d'affaires des
 /// commandes ni au cycle de prélèvement, et ne solde aucune commande — le
 /// rapprochement reste humain. Propriétaire : `src/b2b/payments/`. Plan
-/// `documentation/comptabilite/plan-blocage-prelevement-et-liens-de-paiement.md` §2b.
+/// `documentation/comptabilite/prelevement/plan-blocage-prelevement-et-liens-de-paiement.md` §2b.
 ///
 /// Aucun DELETE : un lien se clôt par son statut.
 model PaymentLink {

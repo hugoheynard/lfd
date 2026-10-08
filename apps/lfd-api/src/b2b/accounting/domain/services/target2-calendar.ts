@@ -6,7 +6,7 @@ import { addDays, weekdayOf } from "@lfd/contracts";
  *
  * Fermé le samedi, le dimanche, le 1er janvier, le Vendredi saint, le lundi de
  * Pâques, le 1er mai, le 25 et le 26 décembre (plan
- * `documentation/facturation/prelevement-automatique.md`, § 3). Ce ne sont
+ * `documentation/comptabilite/prelevement/prelevement-automatique.md`, § 3). Ce ne sont
  * PAS les fériés français : le 14 juillet ou le 15 août sont des jours ouvrés
  * TARGET2, et une banque française y règle.
  *

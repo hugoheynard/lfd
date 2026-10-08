@@ -74,7 +74,7 @@ import { StripeCheckoutGateway } from "./infrastructure/stripe-checkout-gateway.
  * `PaymentGateway` encaisse une commande ponctuelle (intention + webhook) ; il
  * est **exporté** car `orders` le consomme à la passation. Le mandat, lui, ne
  * passe par aucun prestataire : il est frappé et rangé ici, et traité
- * directement avec la banque (`documentation/comptabilite/prelevement-sepa.md`).
+ * directement avec la banque (`documentation/comptabilite/prelevement/prelevement-sepa.md`).
  * Le port Stripe des mandats (`MandateGateway`) a été supprimé le 2026-09-19 :
  * aucun mandat Stripe en production (Hugo).
  *

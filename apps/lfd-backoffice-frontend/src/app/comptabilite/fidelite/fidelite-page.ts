@@ -27,7 +27,7 @@ const TABS: readonly FoldTabItem<LoyaltyTab>[] = [
  * Chaque onglet charge ce qu'il montre, à l'ouverture : un solde relu après
  * l'annulation d'un bon est donc à jour sans qu'un onglet prévienne l'autre.
  *
- * Plan : `documentation/comptabilite/plan-points-de-fidelite.md`, lot B.
+ * Plan : `documentation/comptabilite/fidelite/plan-points-de-fidelite.md`, lot B.
  */
 @Component({
   selector: 'app-fidelite-page',

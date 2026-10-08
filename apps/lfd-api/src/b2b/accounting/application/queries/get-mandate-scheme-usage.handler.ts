@@ -9,7 +9,7 @@ import { GetMandateSchemeUsageQuery } from "./get-mandate-scheme-usage.query.js"
 /**
  * Le schéma courant de l'entité, et ce qu'elle a émis — pour que le dialogue de
  * confirmation nomme la conséquence en chiffres (plan
- * `documentation/comptabilite/mandat-deux-schemas.md`).
+ * `documentation/comptabilite/mandat/mandat-deux-schemas.md`).
  *
  * Les comptes viennent de `payments` par un port : la comptabilité ne lit pas
  * `payment_mandates`, ni en Prisma ni en SQL.

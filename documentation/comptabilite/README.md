@@ -11,35 +11,53 @@ propre droit staff (`b2b_accounting`) et son propre espace dans le back-office.
 
 ## Par où entrer
 
-| Doc                                          | Quand l'ouvrir                                                                                                                                                             |
-| -------------------------------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| [`prelevement-sepa.md`](prelevement-sepa.md) | **Toujours.** C'est le document unique du sujet : l'objectif, l'état des lieux vérifié, le mandat, l'IBAN, le fichier `pain.008`, les objections ouvertes et le découpage. |
-| [`rum.md`](rum.md)                           | Quand on touche à la **référence unique de mandat** : ses contraintes, comment elle est frappée, et pourquoi ce n'est plus l'identifiant du mandat.                        |
-| [`lexique.md`](lexique.md)                   | Quand un sigle bloque la lecture : ICS, RUM, SDD, `pain.008`, séquences.                                                                                                   |
+Rangé par thème le 2026-10-08 (Hugo : « mets `facturation` en sous-dossier de
+`comptabilite`, et classe les docs par thème »). Chaque sous-dossier garde ses
+plans, ses docs d'état et ses todos (les todos vivent **ici** et non dans
+`../todos/`, décidé par Hugo le 2026-09-15).
 
-### Les plans du mandat et du RIB
+| Dossier                        | Ce qu'on y trouve                                                                                                               |
+| ------------------------------ | ------------------------------------------------------------------------------------------------------------------------------- |
+| [`facturation/`](facturation/) | la facture : simulateur de dossier, émission Factur-X, bons et facture concordants, le prélèvement qui suit la facture          |
+| [`prelevement/`](prelevement/) | le prélèvement SEPA : le document unique, le mois automatique, le lot figé, les blocages, les rejets, les questions à la banque |
+| [`mandat/`](mandat/)           | le mandat et le RIB : RUM, mandat côté client, deux schémas, mentions obligatoires, RIB client                                  |
+| [`fidelite/`](fidelite/)       | les points de fidélité et les questions au cabinet                                                                              |
+| [`prix/`](prix/)               | les limites de prix                                                                                                             |
+| [`lexique.md`](lexique.md)     | quand un sigle bloque la lecture : ICS, RUM, SDD, `pain.008`, séquences                                                         |
 
-| Doc                                                                                  | État                                                                                                                                                            |
-| ------------------------------------------------------------------------------------ | --------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| [`rib-client.md`](rib-client.md)                                                     | ✅ doc d'état — le client voit et saisit le RIB de sa société ; refusé si un mandat est actif ; tracé au journal                                                |
-| [`question-banque.md`](question-banque.md)                                           | ❓ les questions à la banque, rassemblées, prêtes à envoyer ; et ce que chaque réponse débloque                                                                 |
-| [`plan-mandat-client.md`](plan-mandat-client.md)                                     | ✅ en production — le mandat côté client, derrière le drapeau `customerMandate`                                                                                 |
-| [`mandat-deux-schemas.md`](mandat-deux-schemas.md)                                   | ✅ en production — CORE ou interentreprises au choix de l'entité, figé sur le mandat                                                                            |
-| [`plan-mentions-obligatoires-du-mandat.md`](plan-mentions-obligatoires-du-mandat.md) | 🟡 commité, pas déployé — SIREN, forme juridique du titulaire, frappe refusée sans ses mentions                                                                 |
-| [`plan-restes-du-mandat.md`](plan-restes-du-mandat.md)                               | 🟡 lots 1-3 construits — `DtOfSgntr`, verrou du créancier, purge ; amendement différé                                                                           |
-| [`plan-lot-de-prelevement-fige.md`](plan-lot-de-prelevement-fige.md)                 | 📐 plan v2, contredit par `vitruve` — figer le lot `pain.008`, un état d'encaissement par commande, identifiants SEPA par lot ; prérequis S4-0 des sous-comptes |
+### Prélèvement
 
-### Les todos du sujet
+| Doc                                                                                                                            | État                                                                                                                                                                 |
+| ------------------------------------------------------------------------------------------------------------------------------ | -------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| [`prelevement/prelevement-sepa.md`](prelevement/prelevement-sepa.md)                                                           | **Toujours.** Le document unique du sujet : l'objectif, l'état des lieux vérifié, le mandat, l'IBAN, le fichier `pain.008`, les objections ouvertes et le découpage. |
+| [`prelevement/prelevement-automatique.md`](prelevement/prelevement-automatique.md)                                             | ✅ doc d'état — le mois de prélèvement : réglages, calendrier TARGET2, avis, préparation automatique, écran « Prélèvement du mois »                                  |
+| [`prelevement/plan-lot-de-prelevement-fige.md`](prelevement/plan-lot-de-prelevement-fige.md)                                   | 📐 plan v2, contredit par `vitruve` — figer le lot `pain.008`, un état d'encaissement par commande, identifiants SEPA par lot                                        |
+| [`prelevement/plan-blocage-prelevement-et-liens-de-paiement.md`](prelevement/plan-blocage-prelevement-et-liens-de-paiement.md) | le blocage du prélèvement et les liens de paiement                                                                                                                   |
+| [`prelevement/question-banque.md`](prelevement/question-banque.md)                                                             | ❓ les questions à la banque, prêtes à envoyer ; et ce que chaque réponse débloque                                                                                   |
+| [`prelevement/todo-rejets-bancaires.md`](prelevement/todo-rejets-bancaires.md)                                                 | 🔴 les rejets et contestations d'un prélèvement déposé : rien ne revient aujourd'hui                                                                                 |
 
-Elles vivent **ici** et non dans `../todos/` (décidé par Hugo le 2026-09-15) :
-tout ce qui touche la RUM et le SEPA se lit au même endroit.
+### Mandat et RIB
 
-| Todo                                                                       | Ce qui reste                                                                                                                  |
-| -------------------------------------------------------------------------- | ----------------------------------------------------------------------------------------------------------------------------- |
-| [`todo-mandat-restes-de-la-frappe.md`](todo-mandat-restes-de-la-frappe.md) | 🟡 l'amendement d'un mandat actif, différé jusqu'à la réponse de la banque                                                    |
-| [`todo-mandat-core-contre-b2b.md`](todo-mandat-core-contre-b2b.md)         | 🔴 libellé bancaire du mandat interentreprises, « 13 mois », second débit d'un ponctuel, questions à la banque                |
-| [`todo-rib-client-transmission.md`](todo-rib-client-transmission.md)       | 🔴 sécurité de la transmission de l'IBAN saisi par le client                                                                  |
-| [`todo-rejets-bancaires.md`](todo-rejets-bancaires.md)                     | 🔴 les rejets et contestations d'un prélèvement déposé : rien ne revient aujourd'hui, une commande rejetée reste « prélevée » |
+| Doc                                                                                                | État                                                                                                    |
+| -------------------------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------- |
+| [`mandat/rum.md`](mandat/rum.md)                                                                   | la **référence unique de mandat** : contraintes, frappe, pourquoi ce n'est plus l'identifiant du mandat |
+| [`mandat/mandat-deux-schemas.md`](mandat/mandat-deux-schemas.md)                                   | ✅ doc d'état — CORE ou interentreprises au choix de l'entité, figé sur le mandat                       |
+| [`mandat/rib-client.md`](mandat/rib-client.md)                                                     | ✅ doc d'état — le client voit et saisit le RIB de sa société ; refusé si un mandat est actif           |
+| [`mandat/plan-mandat-client.md`](mandat/plan-mandat-client.md)                                     | ✅ en production — le mandat côté client, derrière le drapeau `customerMandate`                         |
+| [`mandat/plan-mentions-obligatoires-du-mandat.md`](mandat/plan-mentions-obligatoires-du-mandat.md) | 🟡 commité, pas déployé — SIREN, forme juridique du titulaire, frappe refusée sans ses mentions         |
+| [`mandat/plan-restes-du-mandat.md`](mandat/plan-restes-du-mandat.md)                               | 🟡 lots 1-3 construits — `DtOfSgntr`, verrou du créancier, purge ; amendement différé                   |
+| [`mandat/todo-mandat-restes-de-la-frappe.md`](mandat/todo-mandat-restes-de-la-frappe.md)           | 🟡 l'amendement d'un mandat actif, différé jusqu'à la réponse de la banque                              |
+| [`mandat/todo-mandat-core-contre-b2b.md`](mandat/todo-mandat-core-contre-b2b.md)                   | 🔴 libellé bancaire du mandat interentreprises, « 13 mois », second débit d'un ponctuel                 |
+| [`mandat/todo-rib-client-transmission.md`](mandat/todo-rib-client-transmission.md)                 | 🔴 sécurité de la transmission de l'IBAN saisi par le client                                            |
+
+### Fidélité et prix
+
+| Doc                                                                                                                  | État                                                                |
+| -------------------------------------------------------------------------------------------------------------------- | ------------------------------------------------------------------- |
+| [`fidelite/points-de-fidelite.md`](fidelite/points-de-fidelite.md)                                                   | les points de fidélité                                              |
+| [`fidelite/plan-points-de-fidelite.md`](fidelite/plan-points-de-fidelite.md)                                         | le plan des points de fidélité                                      |
+| [`fidelite/question-cabinet-fidelite-et-cartes-cadeaux.md`](fidelite/question-cabinet-fidelite-et-cartes-cadeaux.md) | ❓ les questions au cabinet                                         |
+| [`prix/limites-de-prix.md`](prix/limites-de-prix.md)                                                                 | ✅ doc d'état — la limite qui protège la marge des actions cumulées |
 
 > **Fusion du 2026-09-12.** Trois documents se partageaient le prélèvement — le
 > socle Stripe, la conception directe, et le format du fichier. Ils se
@@ -72,17 +90,17 @@ juridiques. Ouvert à l'écran le 2026-09-12, il fonctionne.
 
 ### Le mandat SEPA — trois choses portent ce nom
 
-| Ce qui existe                   | Où                                               | État                                                                                                                                                                                                       |
-| ------------------------------- | ------------------------------------------------ | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| Le mandat **Stripe**            | `src/b2b/payments/`                              | **supprimé** le 2026-09-19 — aucun mandat Stripe en production (Hugo) ; ses deux colonnes restent en base, ni lues ni écrites ([`todo-mandat-restes-de-la-frappe.md`](todo-mandat-restes-de-la-frappe.md)) |
-| Le **mandat imprimé**           | `accounting/domain/services/sepa-mandate-pdf.ts` | **livré** — CORE ou interentreprises selon le mandat ; marqué EXEMPLE sans RUM, signable avec                                                                                                              |
-| Le mandat **direct**, nominatif | `src/b2b/payments/`                              | **livré** — frappé, imprimé, envoyé, activé sur preuve ; restes dans [`todo-mandat-restes-de-la-frappe.md`](todo-mandat-restes-de-la-frappe.md)                                                            |
+| Ce qui existe                   | Où                                               | État                                                                                                                                                                                                                     |
+| ------------------------------- | ------------------------------------------------ | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
+| Le mandat **Stripe**            | `src/b2b/payments/`                              | **supprimé** le 2026-09-19 — aucun mandat Stripe en production (Hugo) ; ses deux colonnes restent en base, ni lues ni écrites ([`mandat/todo-mandat-restes-de-la-frappe.md`](mandat/todo-mandat-restes-de-la-frappe.md)) |
+| Le **mandat imprimé**           | `accounting/domain/services/sepa-mandate-pdf.ts` | **livré** — CORE ou interentreprises selon le mandat ; marqué EXEMPLE sans RUM, signable avec                                                                                                                            |
+| Le mandat **direct**, nominatif | `src/b2b/payments/`                              | **livré** — frappé, imprimé, envoyé, activé sur preuve ; restes dans [`mandat/todo-mandat-restes-de-la-frappe.md`](mandat/todo-mandat-restes-de-la-frappe.md)                                                            |
 
 ### La RUM
 
 Frappée à chaque mandat par `Rum.mint`
 (`src/b2b/payments/domain/value-objects/rum.ts`) — sa forme et ses bornes sont
-dans [`rum.md`](rum.md).
+dans [`mandat/rum.md`](mandat/rum.md).
 
 ## Ce qui n'est pas ici
 
