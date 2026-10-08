@@ -17,7 +17,7 @@ export interface InvoiceDossierOrder {
 
 /**
  * **Les bons d'un dossier de facturation, lignes comprises** (plan
- * `plan-simulateur-dossier-de-facturation.md`, §4).
+ * `simulateur-dossier-de-facturation.md`).
  *
  * Un port à part de `CycleOrdersReader`, qui reste étroit par choix : le relevé
  * n'a l'usage ni des lignes, ni de la date demandée, ni du mode de TVA du port

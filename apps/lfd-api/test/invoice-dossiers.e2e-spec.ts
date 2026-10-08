@@ -1,6 +1,6 @@
 /**
  * E2E du **dossier de facturation simulé** (plan
- * `documentation/comptabilite/facturation/plan-simulateur-dossier-de-facturation.md`, DF2).
+ * `documentation/comptabilite/facturation/simulateur-dossier-de-facturation.md`).
  *
  * Ce que seul le vrai SQL prouve :
  *

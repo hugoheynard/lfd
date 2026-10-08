@@ -10,7 +10,7 @@ import { DELIVERY_VAT_RATE, type VatLine } from "./vat.js";
  * `ventilateVat` calcule la TVA d'un taux sur la **fraction exacte** de la base,
  * et ne rend que la TVA : c'est la règle du bon, figée à la passation, et elle
  * ne bouge pas. La norme exige autre chose (plan
- * `documentation/comptabilite/facturation/plan-simulateur-dossier-de-facturation.md`, D4,
+ * `documentation/comptabilite/facturation/simulateur-dossier-de-facturation.md`, D4,
  * §3.1) : par taux, la base marchandise, le montant de chaque remise et de
  * chaque frais **en centimes**, la base imposable **arrondie**, puis la TVA =
  * `arrondi(base imposable × taux)` (BR-S-09). Les deux règles donnent des

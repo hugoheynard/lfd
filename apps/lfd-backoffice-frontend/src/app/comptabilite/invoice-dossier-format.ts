@@ -11,7 +11,7 @@ import type { FoldTimelineNode } from 'fold-ng';
 
 /**
  * **La mise en mots du dossier de facturation** (plan
- * `plan-simulateur-dossier-de-facturation.md`, DF4) — tout ce que l'écran dit,
+ * `simulateur-dossier-de-facturation.md`) — tout ce que l'écran dit,
  * sans un seul calcul d'argent : les montants viennent du serveur, cet écran
  * ne fait que les écrire pour qu'un expert-comptable les refasse à la main.
  */

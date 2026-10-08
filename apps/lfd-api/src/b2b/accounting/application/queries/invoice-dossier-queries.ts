@@ -1,6 +1,6 @@
 /**
  * Les lectures du **dossier de facturation simulé** (plan
- * `plan-simulateur-dossier-de-facturation.md`, DF2). Des lectures pures :
+ * `simulateur-dossier-de-facturation.md`). Des lectures pures :
  * rien n'est émis, rien n'est prélevé.
  */
 

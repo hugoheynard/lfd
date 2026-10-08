@@ -30,7 +30,7 @@ import { inconsistentOrders } from "./invoice-order-consistency.js";
  * sur l'agrégat, et ce qui sépare la facture de la somme des bons se range en
  * écarts — arrondi de la TVA, TVA non ventilée, bon incohérent — dont la
  * somme est la différence, au centime (plan
- * `plan-simulateur-dossier-de-facturation.md`, D4, §3.4).
+ * `simulateur-dossier-de-facturation.md`, D4, §3.4).
  *
  * ## La part de TVA des bons non ventilés
  *

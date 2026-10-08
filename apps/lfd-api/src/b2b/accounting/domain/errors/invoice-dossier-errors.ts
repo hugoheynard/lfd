@@ -7,7 +7,7 @@ import { BusinessError } from "../../../../platform/shared/errors/app-error.js";
  *
  * Tous deux sont des données figées sur un bon qui empêchent le calcul : la
  * demande est juste, l'état du bon ne permet pas d'y répondre — d'où le 409.
- * Le plan (`plan-simulateur-dossier-de-facturation.md`, §3.1) exige l'arrêt
+ * Le plan (`simulateur-dossier-de-facturation.md`) exige l'arrêt
  * plutôt qu'une hypothèse : une facture calculée sur un taux inventé serait
  * fausse sans que personne le sache.
  */

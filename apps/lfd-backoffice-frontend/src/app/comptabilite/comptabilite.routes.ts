@@ -143,7 +143,7 @@ export const comptabiliteRoutes: Routes = [
         // Le dossier de facturation SIMULÉ d'un payeur pour un cycle : la
         // facture en une fois, les bons, les écarts. Sous `b2b_accounting`,
         // comme la coquille ; la route serveur n'admet que ce droit.
-        // Plan : documentation/comptabilite/facturation/plan-simulateur-dossier-de-facturation.md (DF4).
+        // Plan : documentation/comptabilite/facturation/simulateur-dossier-de-facturation.md (DF4).
         path: 'dossier-de-facturation',
         title: 'Dossier de facturation — LFC B2B admin',
         loadComponent: () =>

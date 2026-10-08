@@ -12,7 +12,7 @@ export interface OrderHandoverHistoryFact {
 
 /**
  * **Le retrait de ces commandes, pour le dossier de facturation** (plan
- * `documentation/comptabilite/facturation/plan-simulateur-dossier-de-facturation.md`, §3.3,
+ * `documentation/comptabilite/facturation/simulateur-dossier-de-facturation.md`,
  * DF3).
  *
  * Le retrait DÉCLARE et IMPLÉMENTE ce port, le commerce le lit — même figure

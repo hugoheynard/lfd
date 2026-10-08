@@ -19,7 +19,7 @@
 > c'est nous, et surtout c'est nous qui ferons toujours le fichier de
 > prélèvement pour la banque. »
 
-Le simulateur ([`plan-simulateur-dossier-de-facturation.md`](plan-simulateur-dossier-de-facturation.md))
+Le simulateur ([`simulateur-dossier-de-facturation.md`](simulateur-dossier-de-facturation.md))
 montre que la facture calculée en une fois (D4) diffère de quelques
 centimes de la somme des bons. Le prélèvement doit encaisser **le total
 facturé**.

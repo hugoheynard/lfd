@@ -18,7 +18,7 @@ const monthQuerySchema = statementMonthSchema.optional();
 
 /**
  * Surface **staff** du dossier de facturation simulé (plan
- * `plan-simulateur-dossier-de-facturation.md`, DF2).
+ * `simulateur-dossier-de-facturation.md`).
  *
  * `b2b_accounting:read` seulement, déduit du verbe : le dossier vit dans
  * l'espace Comptabilité, et à la différence du relevé il n'est pas affiché dans

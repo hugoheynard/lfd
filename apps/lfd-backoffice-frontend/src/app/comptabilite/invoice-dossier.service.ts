@@ -15,7 +15,7 @@ const BASE = `${B2B_API_BASE}/admin/accounting/invoice-dossiers`;
 
 /**
  * Le **dossier de facturation simulé** d'un payeur pour un cycle (plan
- * `documentation/comptabilite/facturation/plan-simulateur-dossier-de-facturation.md`, DF4).
+ * `documentation/comptabilite/facturation/simulateur-dossier-de-facturation.md`).
  *
  * Tout est CALCULÉ PAR LE SERVEUR : la facture en une fois, la ventilation,
  * les écarts. L'écran ne refait aucune somme — un centime recalculé ici serait

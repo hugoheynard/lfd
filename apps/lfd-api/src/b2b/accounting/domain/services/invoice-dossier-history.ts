@@ -2,7 +2,7 @@ import type { DossierOrderPlace, FrozenInvoiceOrder } from "./invoice-dossier.ty
 
 /**
  * **L'historique retrait / livraison de chaque bon du dossier** (plan
- * `plan-simulateur-dossier-de-facturation.md`, §3.3, DF3).
+ * `simulateur-dossier-de-facturation.md`).
  *
  * Pur : il reçoit ce que le retrait et la livraison ont dit de ces commandes
  * (par leurs canaux), et rend une frise datée par bon, la date de livraison

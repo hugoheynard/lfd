@@ -195,7 +195,7 @@ import { PrismaLegalEntityRepository } from "./infrastructure/prisma-legal-entit
     { provide: CreditorReader, useClass: PrismaCreditorReader },
     { provide: BillableOrdersReader, useClass: PrismaBillableOrdersReader },
     { provide: CycleOrdersReader, useClass: PrismaCycleOrdersReader },
-    // Le dossier de facturation simulé (plan `plan-simulateur-dossier-de-facturation.md`).
+    // Le dossier de facturation simulé (plan `simulateur-dossier-de-facturation.md`).
     { provide: InvoiceDossierReader, useClass: PrismaInvoiceDossierReader },
     { provide: StatementBillingReader, useClass: PrismaStatementBillingReader },
     { provide: LegalEntityLogoReader, useClass: PrismaLegalEntityLogoReader },
