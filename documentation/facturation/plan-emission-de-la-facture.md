@@ -1,6 +1,6 @@
 # L'émission de la facture
 
-> 📐 **Plan v2, rien de bâti** (2026-10-08). Touche **l'argent** et un
+> 📐 **Plan v2 ; E0 bâti le 2026-10-08** (§ 8.1). Touche **l'argent** et un
 > document légal : la v1 a été contredite par `vitruve` le même jour (trois
 > BLOQUANTS, huit SÉRIEUX), repris au § 9. Les règles du CGI et du Code de
 > commerce sont citées **de mémoire**, ni par l'agent ni par moi rouvertes en
@@ -175,13 +175,46 @@ document_key, sha256       ← posés UNE fois, après le rendu
 
 | Lot    | Contenu                                                                                           |
 | ------ | ------------------------------------------------------------------------------------------------- |
-| **E0** | Q1 à Q5 tranchées ; mentions sur l'entité ; SIREN acheteur exigé ; unité ; refus d'émettre nommés |
+| **E0** | ✅ **bâti le 2026-10-08** (non commité à l'écriture) — cf. § 8.1                                  |
 | **E1** | l'agrégat `Invoice` (domaine pur), facture et avoir                                               |
 | **E2** | tables, numérotation, immuabilité en base                                                         |
 | **E3** | essai PDF/A-3 borné, puis le rendu Factur-X validé (Schematron, veraPDF), seau en écriture unique |
 | **E4** | la facture du mois (dernier jour, 22h) sur les livraisons ; le lot encaisse des factures          |
 | **E5** | la facture carte à la livraison — après le suivi des remboursements                               |
 | **E6** | e-mail, « Mes factures », l'onglet facturation de la fiche ; puis F5                              |
+
+### 8.1 E0 — ce qui a été bâti et tranché (2026-10-08)
+
+- **Mentions de paiement sur l'entité** (`InvoicePaymentTerms`, colonnes
+  `invoice_late_penalty_rate_bp`, `invoice_recovery_indemnity_cents`,
+  `invoice_early_payment_discount`, migration
+  `20261008180000_les_mentions_de_paiement_de_la_facture`) : toutes
+  **nullables** = « à renseigner ». Taux en **points de base** (1 % = 100,
+  1 à 10 000) : le taux BCE se publie au centième, un entier le porte sans
+  flottant. Indemnité en centimes, **4 000 à 100 000** : le plancher de 40 €
+  est le montant du texte (de mémoire) et attrape un « 40 » tapé en
+  centimes. Escompte en clair, 1 à 200 caractères ; un texte blanc redevient
+  `null`. Route `PUT /admin/accounting/legal-entities/:id/invoice-payment-terms`
+  (`b2b_accounting`), fait `legal_entity.invoice_payment_terms_changed` (l'après).
+- **Q4 à l'écran** : la carte « Mentions de la facture » fait saisir le taux
+  BCE (non enregistré) et propose BCE + 10 points sous un badge
+  « suggestion », repris sur un bouton. Aucun taux BCE dans le code.
+- **Refus d'émettre nommés** : `invoiceIssuanceBlockers(seller, buyer)`
+  (`apps/lfd-api/src/b2b/accounting/domain/services/invoice-issuance-blockers.ts`) rend les manques —
+  entité absente ou archivée, vendeur incomplet (RCS ; TVA si la forme est
+  assujettie), mentions absentes, acheteur absent, sans SIREN, assujetti sans
+  TVA (règle de `vatNumberRequired`, redite sans importer `account`). La
+  porte d'activation n'a **pas** changé : un compte actif sans SIREN reste
+  actif, et le dossier le signale.
+- **L'entité du dossier** : le plan ne la nommait pas. Tranché comme le
+  mandat (`soleIssuer`) : la seule entité en service ; plusieurs →
+  manque `several_issuers` plutôt qu'un choix. À revoir en E4 si une seconde
+  entité encaisse.
+- **Unité** : `InvoiceUnit` (`H87` pièce, `KGM` kilogramme) ; chaque ligne
+  agrégée porte `unitCode: "H87"`. Les arrêtés figés (corps v1) ne
+  l'écrivent pas et se relisent en `H87`. La quantité décimale reste à E1.
+- **Visible** : le dossier de facturation affiche les manques en tête des
+  signalements ; la fiche de l'entité, ceux du vendeur (`missingToInvoice`).
 
 ## 9. Ce que `vitruve` a relevé (v1, 2026-10-08)
 

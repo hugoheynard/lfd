@@ -24,6 +24,8 @@ import { AdminBillingStatementsController } from "./http/admin-billing-statement
 import { PrismaBillingStatementReader } from "./infrastructure/prisma-billing-statement.reader.js";
 import { BillingStatementRepository } from "./domain/ports/billing-statement.repository.js";
 import { StatementBuyerReader } from "./domain/ports/statement-buyer.reader.js";
+import { InvoiceIssuersReader } from "./domain/ports/invoice-issuers.reader.js";
+import { PrismaInvoiceIssuersReader } from "./infrastructure/prisma-invoice-issuers.reader.js";
 import { PrismaBillingStatementRepository } from "./infrastructure/prisma-billing-statement.repository.js";
 import { PrismaStatementBuyerReader } from "./infrastructure/prisma-statement-buyer.reader.js";
 import { CancelledOrdersReader } from "./domain/ports/cancelled-orders.reader.js";
@@ -78,6 +80,7 @@ import { SetMandateSchemeHandler } from "./application/commands/set-mandate-sche
 import { SetPreNotificationHandler } from "./application/commands/set-pre-notification.handler.js";
 import { SetCollectionScheduleHandler } from "./application/commands/set-collection-schedule.handler.js";
 import { SetAutoCollectionHandler } from "./application/commands/set-auto-collection.handler.js";
+import { SetInvoicePaymentTermsHandler } from "./application/commands/set-invoice-payment-terms.handler.js";
 import { ExportCycleAuditHandler } from "./application/queries/export-cycle-audit.handler.js";
 import { ExportCycleDraftHandler } from "./application/queries/export-cycle-draft.handler.js";
 import { GetCurrentBillingCycleHandler } from "./application/queries/get-current-billing-cycle.handler.js";
@@ -178,6 +181,7 @@ import { PrismaLegalEntityRepository } from "./infrastructure/prisma-legal-entit
     // L'arrêté de facturation figé (plan `plan-le-prelevement-suit-la-facture.md`, F3).
     { provide: BillingStatementRepository, useClass: PrismaBillingStatementRepository },
     { provide: StatementBuyerReader, useClass: PrismaStatementBuyerReader },
+    { provide: InvoiceIssuersReader, useClass: PrismaInvoiceIssuersReader },
     { provide: BillingStatementReader, useClass: PrismaBillingStatementReader },
     { provide: CancelledOrdersReader, useClass: PrismaCancelledOrdersReader },
     { provide: OrderNumbersReader, useClass: PrismaOrderNumbersReader },
@@ -217,6 +221,7 @@ import { PrismaLegalEntityRepository } from "./infrastructure/prisma-legal-entit
     SetPreNotificationHandler,
     SetCollectionScheduleHandler,
     SetAutoCollectionHandler,
+    SetInvoicePaymentTermsHandler,
     SetLegalEntityArchivedHandler,
     SetLegalEntityLogoHandler,
     RemoveLegalEntityLogoHandler,

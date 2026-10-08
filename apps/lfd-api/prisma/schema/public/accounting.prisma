@@ -178,6 +178,15 @@ model LegalEntity {
   depositCutoffBusinessDays  Int?    @map("deposit_cutoff_business_days")
   depositCutoffTime          String? @map("deposit_cutoff_time")
 
+  // Les MENTIONS DE PAIEMENT de la facture (plan `plan-emission-de-la-facture.md`,
+  // E0). Toutes NULL = « à renseigner » : aucune migration ne pose le taux
+  // légal, qui n'est qu'une suggestion d'écran (Q4). Taux en points de base
+  // (1 % = 100), indemnité en centimes (40 € = 4000). Bornes tenues par
+  // l'agrégat ET par un CHECK.
+  invoiceLatePenaltyRateBasisPoints Int?    @map("invoice_late_penalty_rate_bp")
+  invoiceRecoveryIndemnityCents     Int?    @map("invoice_recovery_indemnity_cents")
+  invoiceEarlyPaymentDiscount       String? @map("invoice_early_payment_discount")
+
   // La clé de l'objet qui porte le LOGO de l'entité, dans le stockage objet.
   // `null` = pas de logo, et c'est un état parfaitement vivable : le mandat sort
   // alors avec sa cellule vide. Le logo ne conditionne PAS l'encaissement.

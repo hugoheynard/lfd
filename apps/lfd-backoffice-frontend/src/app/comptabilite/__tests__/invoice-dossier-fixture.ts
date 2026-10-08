@@ -46,6 +46,7 @@ export function dossier(overrides: Partial<InvoiceDossierView> = {}): InvoiceDos
           vatRate: 5.5,
           label: 'Pain de campagne',
           otherLabels: [],
+          unitCode: 'H87',
           quantity: 3,
           amountCents: 371,
           ordersLineTotalCents: 371,
@@ -85,6 +86,7 @@ export function dossier(overrides: Partial<InvoiceDossierView> = {}): InvoiceDos
     threeGapInvariantHolds: true,
     otherMonthOrders: [],
     ordersWithoutDate: [],
+    issuanceBlockers: [],
     ...overrides,
   };
 }

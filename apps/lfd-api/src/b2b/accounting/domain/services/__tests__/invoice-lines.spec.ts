@@ -62,6 +62,7 @@ describe("aggregateInvoiceLines — le montant repris des bons (F6)", () => {
       unitPriceMillicents: PRICE,
       vatRate: 5.5,
       label: "Baguette",
+      unitCode: "H87",
       quantity: 3,
       amountCents: ordersSum,
       ordersLineTotalCents: ordersSum,

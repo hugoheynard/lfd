@@ -76,6 +76,12 @@ function entity(over: Partial<LegalEntityView> = {}): LegalEntityView {
     // cas qui en parle le pose explicitement.
     isLastActive: false,
     missingToCollect: ["l'identifiant créancier (ICS)", "le compte bancaire de l'entité"],
+    invoicePaymentTerms: {
+      latePenaltyRateBasisPoints: null,
+      recoveryIndemnityCents: null,
+      earlyPaymentDiscount: null,
+    },
+    missingToInvoice: [],
     ...over,
   };
 }
@@ -298,6 +304,12 @@ describe('LegalEntityDetailPage', () => {
       // Et la carte du prélèvement automatique un autre depuis le 2026-10-08
       // (prelevement-automatique.md, PA1) : l'heure limite de dépôt.
       'Heure limite (heure de Paris)',
+      // Et la carte des mentions de la facture quatre depuis le 2026-10-08
+      // (plan-emission-de-la-facture.md, E0) — aucun n'est un champ ICS.
+      'Taux BCE de référence (%)',
+      'Taux des pénalités de retard (%)',
+      'Indemnité forfaitaire de recouvrement (€)',
+      'Escompte pour paiement anticipé',
     ]);
     expect(text(fixture)).toContain('Il ne se remplace pas');
   });

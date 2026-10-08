@@ -162,6 +162,7 @@ export function hasAlerts(dossier: InvoiceDossierView): boolean {
     dossier.inconsistentOrders.length > 0 ||
     dossier.otherMonthOrders.length > 0 ||
     dossier.ordersWithoutDate.length > 0 ||
+    dossier.issuanceBlockers.length > 0 ||
     !dossier.threeGapInvariantHolds
   );
 }

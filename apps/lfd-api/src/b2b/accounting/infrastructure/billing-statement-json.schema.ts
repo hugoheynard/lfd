@@ -43,6 +43,10 @@ export const statementBodyV1Schema = z.object({
       sku: z.string(),
       label: z.string(),
       otherLabels: z.array(z.string()),
+      // Absent des arrêtés figés : la v1 ne l'écrit pas (`lineJson`). Toutes
+      // leurs lignes étaient des pièces — le catalogue ne vend rien d'autre
+      // (Q5, 2026-10-08) —, d'où une relecture en `H87`, jamais une invention.
+      unitCode: z.enum(["H87", "KGM"]).default("H87"),
       quantity: z.number(),
       unitPriceMillicents: z.number().int(),
       amountCents: cents,

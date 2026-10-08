@@ -21,6 +21,11 @@ import {
   type BillingFollow,
   type SelfPayingEntity,
 } from "../../../domain/ports/statement-billing.reader.js";
+import { InvoiceIssuersReader } from "../../../domain/ports/invoice-issuers.reader.js";
+import { StatementBuyerReader } from "../../../domain/ports/statement-buyer.reader.js";
+import type { StatementBuyer } from "../../../domain/entities/billing-statement.js";
+import type { InvoiceSellerFacts } from "../../../domain/services/invoice-issuance-blockers.js";
+import { InvoicePaymentTerms } from "../../../domain/value-objects/invoice-payment-terms.js";
 import type { BillingCycle } from "../../../domain/services/billing-cycle.js";
 import type { FrozenInvoiceOrder } from "../../../domain/services/invoice-dossier.types.js";
 import { ExportInvoiceDossierHandler } from "../export-invoice-dossier.handler.js";
@@ -112,6 +117,60 @@ class FixedStops extends OrderDeliveryHistoryReader {
   }
 }
 
+/** Les entités en service, telles quelles. */
+class FixedIssuers extends InvoiceIssuersReader {
+  constructor(private readonly issuers: readonly InvoiceSellerFacts[]) {
+    super();
+  }
+
+  activeIssuers(): Promise<readonly InvoiceSellerFacts[]> {
+    return Promise.resolve(this.issuers);
+  }
+}
+
+/** Les payeurs connus ; retient les sociétés demandées. */
+class FixedBuyers extends StatementBuyerReader {
+  readonly asked: (readonly string[])[] = [];
+
+  constructor(private readonly buyers: readonly StatementBuyer[]) {
+    super();
+  }
+
+  buyersOf(companyIds: readonly string[]): Promise<ReadonlyMap<string, StatementBuyer>> {
+    this.asked.push(companyIds);
+    return Promise.resolve(
+      new Map(
+        this.buyers.filter((b) => companyIds.includes(b.companyId)).map((b) => [b.companyId, b]),
+      ),
+    );
+  }
+}
+
+/** Une entité complète, mentions comprises : elle ne bloque rien. */
+const COMPLETE_SELLER: InvoiceSellerFacts = {
+  legalEntityId: "le1",
+  name: "La Folie Douce SAS",
+  legalForm: "SAS",
+  rcs: "Paris B 123 456 789",
+  vatNumber: "FR12123456789",
+  archived: false,
+  paymentTerms: InvoicePaymentTerms.create({
+    latePenaltyRateBasisPoints: 1_415,
+    recoveryIndemnityCents: 4_000,
+    earlyPaymentDiscount: "néant",
+  }),
+};
+
+const COMPLETE_BUYER: StatementBuyer = {
+  companyId: "c1",
+  name: "Maison mère",
+  legalForm: "SARL",
+  siret: "73282932000074",
+  siren: "732829320",
+  vatNumber: "FR44732829320",
+  billingAddressLines: ["1 rue du Four", "75001 Paris"],
+};
+
 /** Un bon d'une baguette à 1,00 € HT, 5,5 %, ventilé et cohérent. */
 function bon(
   reference: string,
@@ -172,8 +231,18 @@ function getHandler(
   billing = new FixedBilling(),
   handovers = new FixedHandovers(),
   stops = new FixedStops(),
+  issuers = new FixedIssuers([COMPLETE_SELLER]),
+  buyers = new FixedBuyers([COMPLETE_BUYER]),
 ) {
-  return new GetInvoiceDossierHandler(reader, billing, handovers, stops, new FixedClock(NOW));
+  return new GetInvoiceDossierHandler(
+    reader,
+    billing,
+    handovers,
+    stops,
+    new FixedClock(NOW),
+    issuers,
+    buyers,
+  );
 }
 
 describe("GetInvoiceDossierHandler", () => {
@@ -223,6 +292,54 @@ describe("GetInvoiceDossierHandler", () => {
       { reference: "CMD-2", requestedDeliveryDate: "2026-10-02" },
     ]);
     expect(view.ordersWithoutDate).toEqual(["CMD-3"]);
+  });
+
+  it("ne signale aucun manque quand le vendeur et le payeur sont complets", async () => {
+    const buyers = new FixedBuyers([COMPLETE_BUYER]);
+    const view = await getHandler(
+      new RecordingDossiers("Maison mère", []),
+      new FixedBilling(),
+      new FixedHandovers(),
+      new FixedStops(),
+      new FixedIssuers([COMPLETE_SELLER]),
+      buyers,
+    ).execute(new GetInvoiceDossierQuery("c1", "2026-09"));
+
+    expect(view.issuanceBlockers).toEqual([]);
+    expect(buyers.asked).toEqual([["c1"]]);
+  });
+
+  it("liste ce qui empêcherait d'émettre : mentions absentes, payeur sans SIREN ni TVA", async () => {
+    const view = await getHandler(
+      new RecordingDossiers("Maison mère", []),
+      new FixedBilling(),
+      new FixedHandovers(),
+      new FixedStops(),
+      new FixedIssuers([{ ...COMPLETE_SELLER, paymentTerms: InvoicePaymentTerms.empty() }]),
+      new FixedBuyers([{ ...COMPLETE_BUYER, siren: "", vatNumber: "" }]),
+    ).execute(new GetInvoiceDossierQuery("c1", "2026-09"));
+
+    expect(view.issuanceBlockers.map((blocker) => blocker.code)).toEqual([
+      "payment_terms_missing",
+      "buyer_siren_missing",
+      "buyer_vat_missing",
+    ]);
+  });
+
+  it("dit qu'aucune entité n'émet, et qu'un payeur absent de l'annuaire n'a pas d'acheteur", async () => {
+    const view = await getHandler(
+      new RecordingDossiers("Maison mère", []),
+      new FixedBilling(),
+      new FixedHandovers(),
+      new FixedStops(),
+      new FixedIssuers([]),
+      new FixedBuyers([]),
+    ).execute(new GetInvoiceDossierQuery("c1", "2026-09"));
+
+    expect(view.issuanceBlockers.map((blocker) => blocker.code)).toEqual([
+      "no_issuer",
+      "buyer_unknown",
+    ]);
   });
 
   it("refuse une société inconnue et un mois futur", async () => {

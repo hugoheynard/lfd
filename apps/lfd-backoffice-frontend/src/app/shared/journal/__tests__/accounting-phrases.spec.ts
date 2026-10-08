@@ -99,6 +99,33 @@ describe('l’entité émettrice', () => {
     );
   });
 
+  it('dit les mentions de paiement de la facture, et « à renseigner » tel quel', () => {
+    expect(
+      sentence(
+        entity('legal_entity.invoice_payment_terms_changed', {
+          subjectLabel: ENTITY,
+          latePenaltyRateBasisPoints: 1415,
+          recoveryIndemnityCents: 4000,
+          earlyPaymentDiscount: 'néant',
+        }),
+      ).replace(/[\u00a0\u202f]/gu, ' '),
+    ).toBe(
+      'Colette Martin a réglé les mentions de paiement de la facture de l’entité émettrice « La Folie Douce SAS » : pénalités de retard 14,15 %, indemnité de recouvrement 40,00 €, escompte « néant »',
+    );
+    expect(
+      sentence(
+        entity('legal_entity.invoice_payment_terms_changed', {
+          subjectLabel: ENTITY,
+          latePenaltyRateBasisPoints: null,
+          recoveryIndemnityCents: null,
+          earlyPaymentDiscount: null,
+        }),
+      ),
+    ).toBe(
+      'Colette Martin a réglé les mentions de paiement de la facture de l’entité émettrice « La Folie Douce SAS » : pénalités de retard à renseigner, indemnité de recouvrement à renseigner, escompte à renseigner',
+    );
+  });
+
   it('dit l’ICS attribué, le compte créancier par sa fin, le préavis', () => {
     expect(
       sentence(

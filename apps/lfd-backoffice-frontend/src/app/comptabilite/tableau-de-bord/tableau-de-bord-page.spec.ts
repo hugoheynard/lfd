@@ -76,6 +76,12 @@ function entity(over: Partial<LegalEntityView> = {}): LegalEntityView {
     lastAutopilotRun: null,
     isLastActive: false,
     missingToCollect: ["l'identifiant créancier (ICS)"],
+    invoicePaymentTerms: {
+      latePenaltyRateBasisPoints: null,
+      recoveryIndemnityCents: null,
+      earlyPaymentDiscount: null,
+    },
+    missingToInvoice: [],
     ...over,
   };
 }

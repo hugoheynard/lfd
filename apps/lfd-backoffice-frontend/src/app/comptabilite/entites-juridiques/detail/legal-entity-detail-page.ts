@@ -37,6 +37,7 @@ import { DeclarePanel } from '../declare-panel/declare-panel';
 import { LegalEntitiesService } from '../../legal-entities.service';
 import { MandateSettingsCard } from './mandate-settings-card/mandate-settings-card';
 import { CollectionSettingsCard } from './collection-settings-card/collection-settings-card';
+import { InvoiceTermsCard } from './invoice-terms-card/invoice-terms-card';
 import { legalEntityStateLabel, legalEntityStateVariant } from '../../legal-entity-state';
 import { MandatePanel, type MandatePanelData } from './mandate-panel/mandate-panel';
 
@@ -103,6 +104,7 @@ const MANDATE_FILE_NAME = 'mandat-sepa-exemple.pdf';
     FoldInputComponent,
     MandateSettingsCard,
     CollectionSettingsCard,
+    InvoiceTermsCard,
     FoldLoadingStateComponent,
     FoldNumberInputComponent,
     FoldPageLayoutComponent,

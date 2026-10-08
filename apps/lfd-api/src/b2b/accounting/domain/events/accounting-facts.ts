@@ -38,6 +38,11 @@ export const ACCOUNTING_FACTS = {
   autoCollectionEnabled: "legal_entity.auto_collection_enabled",
   autoCollectionDisabled: "legal_entity.auto_collection_disabled",
   /**
+   * Les mentions de paiement de la facture — pénalités de retard, indemnité de
+   * recouvrement, escompte (plan `plan-emission-de-la-facture.md`, E0).
+   */
+  invoicePaymentTermsChanged: "legal_entity.invoice_payment_terms_changed",
+  /**
    * Le schéma des mandats à venir bascule — CORE ↔ interentreprises. Les
    * brouillons de l'entité deviennent caducs dans la même transaction ; les
    * actifs gardent le leur.

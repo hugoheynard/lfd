@@ -7,6 +7,8 @@ import {
   type CreatedIdResponse,
   type DeclareLegalEntityPayload,
   type LegalEntityView,
+  setInvoicePaymentTermsPayloadSchema,
+  type SetInvoicePaymentTermsPayload,
 } from "@lfd/contracts";
 
 import { AdminSurface } from "../../../platform/auth/admin-surface.decorator.js";
@@ -14,6 +16,7 @@ import { ZodBody } from "../../../platform/shared/http/zod-body.pipe.js";
 import {
   CorrectLegalEntityCommand,
   DeclareLegalEntityCommand,
+  SetInvoicePaymentTermsCommand,
   SetLegalEntityArchivedCommand,
 } from "../application/commands/legal-entity-commands.js";
 import {
@@ -36,7 +39,8 @@ import {
  * unique tenait douze routes et trois raisons de changer :
  *
  * - **ici** — l'identité et le cycle de vie : ce qui se corrige, et ce qui
- *   cesse d'émettre ;
+ *   cesse d'émettre ; et, depuis le 2026-10-08, les mentions de paiement de la
+ *   facture — ce qui s'imprime à côté de l'identité, pas ce qui encaisse ;
  * - {@link AdminLegalEntityBankingController} — l'ICS, le compte créancier, le
  *   délai de pré-notification : ce qui décide de l'encaissement, et ce qu'on
  *   relit quand quelque chose a été détourné ;
@@ -101,6 +105,20 @@ export class AdminLegalEntitiesController {
     @Body(new ZodBody(correctLegalEntityPayloadSchema)) payload: CorrectLegalEntityPayload,
   ): Promise<void> {
     await this.commands.execute(new CorrectLegalEntityCommand(id, payload));
+  }
+
+  /**
+   * Les mentions de paiement de la facture : taux des pénalités de retard (points
+   * de base), indemnité de recouvrement (centimes), escompte. Chacune `null` =
+   * « à renseigner ». Répond 400 hors des bornes, en nommant le champ.
+   */
+  @Put(":id/invoice-payment-terms")
+  @HttpCode(HttpStatus.NO_CONTENT)
+  async setInvoicePaymentTerms(
+    @Param("id") id: string,
+    @Body(new ZodBody(setInvoicePaymentTermsPayloadSchema)) payload: SetInvoicePaymentTermsPayload,
+  ): Promise<void> {
+    await this.commands.execute(new SetInvoicePaymentTermsCommand(id, payload));
   }
 
   /**

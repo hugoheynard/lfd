@@ -3,6 +3,7 @@ import { z } from "zod";
 import { mandateStatusSchema } from "../payment-mandate.js";
 import { COLLECTION_FACTS } from "./collection.js";
 import {
+  basisPoints,
   cents,
   clockTime,
   count,
@@ -89,6 +90,15 @@ export const ACCOUNTING_FACTS = {
   /** La constitution automatique — un fait distinct du calendrier. */
   "legal_entity.auto_collection_enabled": labelled({}),
   "legal_entity.auto_collection_disabled": labelled({}),
+  /**
+   * Les mentions de paiement de la facture APRÈS le changement (plan
+   * `plan-emission-de-la-facture.md`, E0). Chacune nulle = « à renseigner ».
+   */
+  "legal_entity.invoice_payment_terms_changed": labelled({
+    latePenaltyRateBasisPoints: basisPoints().nullable(),
+    recoveryIndemnityCents: cents().nullable(),
+    earlyPaymentDiscount: z.string().nullable(),
+  }),
   "legal_entity.mandate_scheme_changed": labelled({ from: sepaScheme(), to: sepaScheme() }),
   "legal_entity.archived": labelled({}),
   "legal_entity.restored": labelled({}),

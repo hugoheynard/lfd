@@ -19,6 +19,24 @@ import type { VatShareView } from "./order.js";
 export type InvoiceDeliveryVatModeView = "standard" | "follows_goods";
 
 /** Une ligne de facture : un produit, à un prix, à un taux. */
+/** Les unités admises sur une ligne de facture (UN/ECE Rec 20). */
+export type InvoiceUnitCodeView = "H87" | "KGM";
+
+/** Pourquoi la facture de ce dossier ne pourrait pas être émise — un manque, nommé. */
+export interface InvoiceIssuanceBlockerView {
+  readonly code:
+    | "no_issuer"
+    | "several_issuers"
+    | "issuer_archived"
+    | "seller_incomplete"
+    | "payment_terms_missing"
+    | "buyer_unknown"
+    | "buyer_siren_missing"
+    | "buyer_vat_missing";
+  /** Rédigé par le domaine, pour du personnel : le manque et le geste. */
+  readonly message: string;
+}
+
 export interface InvoiceDossierLineView {
   readonly sku: string;
   /** Prix unitaire HT en millicentimes (10⁻⁵ €), figé sur les bons. */
@@ -28,6 +46,8 @@ export interface InvoiceDossierLineView {
   readonly label: string;
   /** « vendu aussi sous… ». */
   readonly otherLabels: readonly string[];
+  /** L'unité de la quantité (UN/ECE Rec 20) : `H87` (pièce) aujourd'hui, `KGM` plus tard. */
+  readonly unitCode: InvoiceUnitCodeView;
   readonly quantity: number;
   /** Σ `lineTotalCents` des bons de la clé — repris, pas recalculé (F6, 2026-10-08). */
   readonly amountCents: number;
@@ -202,4 +222,10 @@ export interface InvoiceDossierView {
   }[];
   /** Références des bons sans date demandée. */
   readonly ordersWithoutDate: readonly string[];
+  /**
+   * Ce qui empêcherait d'émettre la facture de ce payeur aujourd'hui (plan
+   * `plan-emission-de-la-facture.md`, E0) — vendeur, mentions, acheteur. Vide
+   * quand rien ne manque. Rien n'est émis ici : c'est un signalement.
+   */
+  readonly issuanceBlockers: readonly InvoiceIssuanceBlockerView[];
 }

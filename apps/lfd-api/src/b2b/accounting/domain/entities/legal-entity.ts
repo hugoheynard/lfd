@@ -18,6 +18,11 @@ import { CreditorAccount } from "../value-objects/creditor-account.js";
 import { Iban } from "../value-objects/iban.js";
 import { LegalAddress } from "../value-objects/legal-address.js";
 import { Siren } from "../value-objects/siren.js";
+import {
+  InvoicePaymentTerms,
+  type InvoicePaymentTermsInput,
+} from "../value-objects/invoice-payment-terms.js";
+import type { InvoiceSellerFacts } from "../services/invoice-issuance-blockers.js";
 
 /**
  * Le délai EPC par défaut entre la pré-notification et le débit. Il se réduit
@@ -105,6 +110,10 @@ export interface LegalEntitySnapshot {
   /** Le cut-off du portail bancaire ; les deux nuls = « à renseigner ». */
   readonly depositCutoffBusinessDays: number | null;
   readonly depositCutoffTime: string | null;
+  /** Les mentions de paiement de la facture (lot E0) ; chacune nulle = « à renseigner ». */
+  readonly invoiceLatePenaltyRateBasisPoints: number | null;
+  readonly invoiceRecoveryIndemnityCents: number | null;
+  readonly invoiceEarlyPaymentDiscount: string | null;
 }
 
 /**
@@ -148,6 +157,7 @@ export class LegalEntity {
     private archivedAtValue: Date | null,
     private autoCollectionEnabledValue: boolean,
     private collectionScheduleValue: CollectionSchedule,
+    private paymentTermsValue: InvoicePaymentTerms,
   ) {}
 
   /**
@@ -182,6 +192,9 @@ export class LegalEntity {
       // entité déclarée se comporte comme avant le plan.
       false,
       CollectionSchedule.initial(),
+      // Les mentions de paiement : à renseigner. Le taux légal n'est qu'une
+      // suggestion d'écran (Q4), jamais un défaut posé ici.
+      InvoicePaymentTerms.empty(),
     );
   }
 
@@ -221,6 +234,11 @@ export class LegalEntity {
                 businessDaysBefore: snapshot.depositCutoffBusinessDays,
                 time: snapshot.depositCutoffTime,
               },
+      }),
+      InvoicePaymentTerms.create({
+        latePenaltyRateBasisPoints: snapshot.invoiceLatePenaltyRateBasisPoints,
+        recoveryIndemnityCents: snapshot.invoiceRecoveryIndemnityCents,
+        earlyPaymentDiscount: snapshot.invoiceEarlyPaymentDiscount,
       }),
     );
   }
@@ -405,6 +423,40 @@ export class LegalEntity {
     return true;
   }
 
+  get paymentTerms(): InvoicePaymentTerms {
+    return this.paymentTermsValue;
+  }
+
+  /**
+   * Règle les mentions de paiement de la facture — pénalités de retard,
+   * indemnité de recouvrement, escompte. Aucun gel : une facture émise en
+   * prendra copie (E1), comme de l'identité.
+   *
+   * @returns vrai si quelque chose a changé — une saisie rejouée n'est pas un fait.
+   * @throws {InvalidInvoicePaymentTermsError} une valeur hors de ses bornes.
+   */
+  setInvoicePaymentTerms(input: InvoicePaymentTermsInput): boolean {
+    const terms = InvoicePaymentTerms.create(input);
+    if (terms.equals(this.paymentTermsValue)) {
+      return false;
+    }
+    this.paymentTermsValue = terms;
+    return true;
+  }
+
+  /** Le vendeur tel que `invoiceIssuanceBlockers` le juge — une copie à plat. */
+  invoiceSellerFacts(): InvoiceSellerFacts {
+    return {
+      legalEntityId: this.id,
+      name: this.nameValue,
+      legalForm: this.legalFormValue,
+      rcs: this.rcsValue,
+      vatNumber: this.vatNumberValue,
+      archived: this.archivedAtValue !== null,
+      paymentTerms: this.paymentTermsValue,
+    };
+  }
+
   get mandateDefaults(): MandateDefaults {
     return this.mandateDefaultsValue;
   }
@@ -535,6 +587,9 @@ export class LegalEntity {
       depositCutoffBusinessDays:
         this.collectionScheduleValue.depositCutoff?.businessDaysBefore ?? null,
       depositCutoffTime: this.collectionScheduleValue.depositCutoff?.time ?? null,
+      invoiceLatePenaltyRateBasisPoints: this.paymentTermsValue.latePenaltyRateBasisPoints,
+      invoiceRecoveryIndemnityCents: this.paymentTermsValue.recoveryIndemnityCents,
+      invoiceEarlyPaymentDiscount: this.paymentTermsValue.earlyPaymentDiscount,
     };
   }
 

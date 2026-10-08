@@ -1,0 +1,87 @@
+<fold-page-section
+  title="Mentions de la facture"
+  description="Ce que chaque facture de cette entité imprimera sur le paiement : les pénalités en cas de retard, l'indemnité de recouvrement et l'escompte."
+  separator
+>
+  <div class="it-stack">
+    <!-- Rédigé par le serveur (`missingToInvoice`) : la même règle que celle
+         qui refusera d'émettre. -->
+    @if (entity().missingToInvoice.length > 0) {
+      <fold-callout variant="warning" data-invoice-terms-missing>
+        <div class="it-block">
+          <strong>Une facture de cette entité ne pourrait pas être émise&nbsp;:</strong>
+          <ul class="it-list">
+            @for (missing of entity().missingToInvoice; track missing) {
+              <li>{{ missing }}</li>
+            }
+          </ul>
+        </div>
+      </fold-callout>
+    }
+
+    <section class="it-block" aria-labelledby="it-rate-title">
+      <h3 id="it-rate-title" class="it-heading">Pénalités de retard</h3>
+      <p class="it-said">{{ formula }}</p>
+      <div class="it-row">
+        <fold-input
+          label="Taux BCE de référence (%)"
+          hint="Le taux de refinancement publié par la Banque centrale européenne. Il sert seulement à calculer la suggestion ; il n'est pas enregistré."
+          placeholder="4,15"
+          [value]="ecbDraft()"
+          (valueChange)="ecbDraft.set($event)"
+        />
+      </div>
+      @if (suggestion(); as suggested) {
+        <div class="it-suggestion" data-invoice-terms-suggestion>
+          <fold-badge content="suggestion" variant="info" radius="pill" />
+          <span>{{ percent(suggested) }}&nbsp;% (taux BCE + 10 points)</span>
+          <button foldButton emphasis="outline" [disabled]="busy()" (click)="takeSuggestion()">
+            Reprendre la suggestion
+          </button>
+        </div>
+      } @else if (ecbDraft().trim() !== '') {
+        <p class="it-said">Taux BCE illisible : écrivez-le comme « 4,15 ».</p>
+      }
+      <div class="it-row">
+        <fold-input
+          label="Taux des pénalités de retard (%)"
+          hint="Laissé vide : à renseigner. Aucun taux n'est posé à votre place."
+          placeholder="14,15"
+          [value]="rateDraft()"
+          (valueChange)="rateDraft.set($event)"
+        />
+      </div>
+    </section>
+
+    <section class="it-block" aria-labelledby="it-other-title">
+      <h3 id="it-other-title" class="it-heading">Recouvrement et escompte</h3>
+      <div class="it-row">
+        <fold-input
+          label="Indemnité forfaitaire de recouvrement (€)"
+          hint="40 € : le montant fixé par le texte pour tout retard de paiement entre professionnels."
+          placeholder="40,00"
+          [value]="indemnityDraft()"
+          (valueChange)="indemnityDraft.set($event)"
+        />
+        <fold-input
+          label="Escompte pour paiement anticipé"
+          [hint]="'Écrivez « ' + noDiscount + ' » si vous n’en accordez pas.'"
+          [placeholder]="noDiscount"
+          [value]="discountDraft()"
+          (valueChange)="discountDraft.set($event)"
+        />
+      </div>
+    </section>
+
+    @if (unreadable()) {
+      <fold-callout variant="warning" data-invoice-terms-unreadable>
+        Un montant ou un taux est illisible&nbsp;: écrivez par exemple «&nbsp;14,15&nbsp;» pour le
+        taux et «&nbsp;40,00&nbsp;» pour l'indemnité.
+      </fold-callout>
+    }
+
+    <div class="it-actions">
+      <button foldButton [disabled]="busy() || unreadable()" (click)="save()">Enregistrer</button>
+    </div>
+  </div>
+</fold-page-section>

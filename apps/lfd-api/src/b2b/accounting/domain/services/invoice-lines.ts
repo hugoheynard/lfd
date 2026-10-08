@@ -1,4 +1,5 @@
 import { InvoiceDossierUnreadableVatRateError } from "../errors/invoice-dossier-errors.js";
+import { PIECE_UNIT } from "../value-objects/invoice-unit.js";
 import type { FrozenInvoiceOrder, InvoiceLine } from "./invoice-dossier.types.js";
 
 /**
@@ -113,6 +114,10 @@ function closeAccumulator(acc: LineAccumulator): InvoiceLine {
     vatRate: acc.vatRate,
     label: acc.label,
     otherLabels: [...acc.labels].filter((name) => name !== acc.label).sort(),
+    // Toutes à la pièce (Q5, Hugo, 2026-10-08) : un bon ne porte qu'une
+    // quantité entière d'unités du catalogue. La vente au poids changera la
+    // clé d'agrégation, pas cette ligne seule.
+    unitCode: PIECE_UNIT,
     quantity: acc.quantity,
     amountCents: acc.ordersLineTotalCents,
     ordersLineTotalCents: acc.ordersLineTotalCents,

@@ -1,0 +1,53 @@
+/* Les blocs de la carte se séparent par le gap, jamais par une marge. */
+.it-stack,
+.it-block {
+  display: flex;
+  flex-direction: column;
+  gap: var(--fold-space-md);
+}
+
+.it-block {
+  gap: var(--fold-space-sm);
+}
+
+.it-heading {
+  margin: 0;
+  font-size: var(--fold-text-md);
+}
+
+.it-said {
+  margin: 0;
+  color: var(--fold-color-text-muted);
+  font-size: var(--fold-text-sm);
+  max-width: 65ch;
+}
+
+.it-list {
+  margin: 0;
+  padding-inline-start: var(--fold-space-lg);
+}
+
+.it-row {
+  display: flex;
+  align-items: flex-start;
+  gap: var(--fold-space-sm);
+  flex-wrap: wrap;
+}
+
+.it-row fold-input {
+  flex: 1 1 18rem;
+}
+
+/* La suggestion, son chiffre et son geste, sur une ligne. */
+.it-suggestion {
+  display: flex;
+  align-items: center;
+  gap: var(--fold-space-sm);
+  flex-wrap: wrap;
+  font-size: var(--fold-text-sm);
+}
+
+.it-actions {
+  display: flex;
+  justify-content: flex-end;
+}

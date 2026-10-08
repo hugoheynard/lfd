@@ -12,6 +12,7 @@ import type {
   SetAutoCollectionPayload,
   SetCollectionSchedulePayload,
   SetCreditorAccountPayload,
+  SetInvoicePaymentTermsPayload,
   SetMandateDefaultsPayload,
   SetMandateSchemePayload,
   SetPreNotificationPayload,
@@ -175,6 +176,15 @@ export class LegalEntitiesService {
   /** Activer ou désactiver la constitution automatique — un geste à part, journalisé. */
   async setAutoCollection(id: string, payload: SetAutoCollectionPayload): Promise<void> {
     await firstValueFrom(this.http.put<void>(`${this.base}/${id}/auto-collection`, payload));
+  }
+
+  /**
+   * Les mentions de paiement de la facture — taux en points de base, indemnité
+   * en centimes, escompte en clair ; chacune `null` = « à renseigner ». Un
+   * refus de borne revient en 400, nommant le champ.
+   */
+  async setInvoicePaymentTerms(id: string, payload: SetInvoicePaymentTermsPayload): Promise<void> {
+    await firstValueFrom(this.http.put<void>(`${this.base}/${id}/invoice-payment-terms`, payload));
   }
 
   async setArchived(id: string, archived: boolean): Promise<void> {

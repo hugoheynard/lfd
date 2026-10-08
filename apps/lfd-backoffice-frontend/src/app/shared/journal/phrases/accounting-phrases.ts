@@ -104,6 +104,25 @@ function collectionSchedule(fact: PhraseFact): Segment[] {
   ];
 }
 
+/**
+ * « : pénalités de retard 14,15 %, indemnité de recouvrement 40,00 €, escompte
+ * « néant » ». Une mention nulle est « à renseigner » — dite telle quelle,
+ * jamais remplacée par le taux légal (plan `plan-emission-de-la-facture.md`, E0).
+ */
+function invoicePaymentTerms(fact: PhraseFact): Segment[] {
+  const rate = fact.payload['latePenaltyRateBasisPoints'];
+  const indemnity = fact.payload['recoveryIndemnityCents'];
+  const discount = optional(fact.payload['earlyPaymentDiscount']);
+  return [
+    text(' : pénalités de retard '),
+    typeof rate === 'number' ? inUnit('basisPoints', rate) : text('à renseigner'),
+    text(', indemnité de recouvrement '),
+    typeof indemnity === 'number' ? inUnit('cents', indemnity) : text('à renseigner'),
+    text(', escompte '),
+    ...(discount === null ? [text('à renseigner')] : [text('« '), value(discount), text(' »')]),
+  ];
+}
+
 // ─── Les mandats ────────────────────────────────────────────────────────────
 
 const MANDATE: Noun = { the: 'le mandat', a: 'un mandat' };
@@ -469,6 +488,12 @@ export const ACCOUNTING_PHRASES = {
     'de',
     nothing,
     [],
+  ),
+  'legal_entity.invoice_payment_terms_changed': onEntity(
+    'a réglé les mentions de paiement de la facture',
+    'de',
+    invoicePaymentTerms,
+    ['latePenaltyRateBasisPoints', 'recoveryIndemnityCents', 'earlyPaymentDiscount'],
   ),
   'legal_entity.mandate_scheme_changed': onEntity(
     'a passé les mandats à venir',

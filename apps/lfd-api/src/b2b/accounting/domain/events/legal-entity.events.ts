@@ -236,3 +236,31 @@ export class AutoCollectionChangedEvent implements JournaledEvent {
     };
   }
 }
+
+/**
+ * Les mentions de paiement de la facture ont changé. L'APRÈS au payload, nuls
+ * compris (« à renseigner ») : c'est ce qui dira quelles mentions portaient
+ * les factures émises de part et d'autre (plan `plan-emission-de-la-facture.md`,
+ * E0).
+ */
+export class InvoicePaymentTermsChangedEvent implements JournaledEvent {
+  constructor(
+    readonly entity: LegalEntitySubject,
+    readonly at: Date,
+    readonly terms: {
+      readonly latePenaltyRateBasisPoints: number | null;
+      readonly recoveryIndemnityCents: number | null;
+      readonly earlyPaymentDiscount: string | null;
+    },
+  ) {}
+
+  journalFact(): JournalFact {
+    return {
+      type: ACCOUNTING_FACTS.invoicePaymentTermsChanged,
+      subjectType: SUBJECT,
+      subjectId: this.entity.id,
+      occurredAt: this.at,
+      payload: { subjectLabel: this.entity.name, ...this.terms },
+    };
+  }
+}

@@ -114,6 +114,9 @@ describe('la mise en mots du dossier de facturation', () => {
     expect(hasAlerts(dossier({ neverHandedOver: ['A'] }))).toBe(true);
     expect(hasAlerts(dossier({ ordersWithoutDate: ['A'] }))).toBe(true);
     expect(hasAlerts(dossier({ threeGapInvariantHolds: false }))).toBe(true);
+    expect(
+      hasAlerts(dossier({ issuanceBlockers: [{ code: 'buyer_siren_missing', message: 'x' }] })),
+    ).toBe(true);
   });
 
   it('écarte les écarts nuls, qui n’expliquent rien', () => {

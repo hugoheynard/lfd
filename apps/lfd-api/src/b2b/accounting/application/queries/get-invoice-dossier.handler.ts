@@ -9,6 +9,12 @@ import { OrderDeliveryHistoryReader } from "../../../../delivery/channels/commer
 import { OrderHandoverHistoryReader } from "../../../../handover/channels/commerce/index.js";
 import { Clock } from "../../../../platform/time/clock.js";
 import { InvoiceDossierReader } from "../../domain/ports/invoice-dossier.reader.js";
+import { InvoiceIssuersReader } from "../../domain/ports/invoice-issuers.reader.js";
+import { StatementBuyerReader } from "../../domain/ports/statement-buyer.reader.js";
+import {
+  payerIssuanceBlockers,
+  type InvoiceIssuanceBlocker,
+} from "../../domain/services/invoice-issuance-blockers.js";
 import { StatementBillingReader } from "../../domain/ports/statement-billing.reader.js";
 import { STATEMENT_SCOPE } from "../../domain/services/cycle-statement-csv.js";
 import type {
@@ -33,6 +39,8 @@ export class GetInvoiceDossierHandler implements IQueryHandler<
     private readonly handovers: OrderHandoverHistoryReader,
     private readonly deliveries: OrderDeliveryHistoryReader,
     private readonly clock: Clock,
+    private readonly issuers: InvoiceIssuersReader,
+    private readonly buyers: StatementBuyerReader,
   ) {}
 
   async execute(query: GetInvoiceDossierQuery): Promise<InvoiceDossierView> {
@@ -47,11 +55,27 @@ export class GetInvoiceDossierHandler implements IQueryHandler<
       query.companyId,
       query.month,
     );
-    return toView(built);
+    return toView(built, await this.issuanceBlockers(built.companyId));
+  }
+
+  /**
+   * Ce qui empêcherait d'émettre la facture de ce payeur (E0) — sur la vue
+   * seule : les CSV disent les bons et la facture calculée, pas l'état des
+   * fiches au moment de l'export.
+   */
+  private async issuanceBlockers(payerId: string): Promise<readonly InvoiceIssuanceBlocker[]> {
+    const [issuers, buyers] = await Promise.all([
+      this.issuers.activeIssuers(),
+      this.buyers.buyersOf([payerId]),
+    ]);
+    return payerIssuanceBlockers(issuers, buyers.get(payerId) ?? null);
   }
 }
 
-function toView(built: BuiltInvoiceDossier): InvoiceDossierView {
+function toView(
+  built: BuiltInvoiceDossier,
+  issuanceBlockers: readonly InvoiceIssuanceBlocker[],
+): InvoiceDossierView {
   const { dossier } = built;
   return {
     companyId: built.companyId,
@@ -73,6 +97,7 @@ function toView(built: BuiltInvoiceDossier): InvoiceDossierView {
     threeGapInvariantHolds: dossier.threeGapInvariantHolds,
     otherMonthOrders: built.calendar.otherMonth,
     ordersWithoutDate: built.calendar.withoutDate,
+    issuanceBlockers,
   };
 }
 

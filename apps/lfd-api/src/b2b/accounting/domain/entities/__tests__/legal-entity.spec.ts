@@ -5,6 +5,7 @@ import {
   InvalidLegalEntityError,
 } from "../../errors/accounting-errors.js";
 import { CollectionBeforeNoticeError } from "../../errors/collection-schedule-errors.js";
+import { InvalidInvoicePaymentTermsError } from "../../errors/invoice-issuance-errors.js";
 import { CreditorIdentifier } from "../../value-objects/creditor-identifier.js";
 import { Bic } from "../../value-objects/bic.js";
 import { CreditorAccount } from "../../value-objects/creditor-account.js";
@@ -271,6 +272,52 @@ describe("LegalEntity — le calendrier de prélèvement (PA1)", () => {
     });
     const written = entity.toPersistence();
     expect(LegalEntity.reconstitute(written).toPersistence()).toEqual(written);
+  });
+});
+
+describe("LegalEntity — les mentions de paiement de la facture (E0)", () => {
+  const TERMS = {
+    latePenaltyRateBasisPoints: 1_415,
+    recoveryIndemnityCents: 4_000,
+    earlyPaymentDiscount: "néant",
+  };
+
+  it("déclarée, rien n'est posé d'office : tout est à renseigner", () => {
+    const entity = LegalEntity.declare(declaration());
+    expect(entity.paymentTerms.missing()).toHaveLength(3);
+    expect(entity.toPersistence()).toMatchObject({
+      invoiceLatePenaltyRateBasisPoints: null,
+      invoiceRecoveryIndemnityCents: null,
+      invoiceEarlyPaymentDiscount: null,
+    });
+  });
+
+  it("se règle, dit si quelque chose a changé, et fait l'aller-retour", () => {
+    const entity = collecting();
+    expect(entity.setInvoicePaymentTerms(TERMS)).toBe(true);
+    expect(entity.setInvoicePaymentTerms(TERMS)).toBe(false);
+    const written = entity.toPersistence();
+    expect(written.invoiceLatePenaltyRateBasisPoints).toBe(1_415);
+    expect(LegalEntity.reconstitute(written).paymentTerms.equals(entity.paymentTerms)).toBe(true);
+  });
+
+  it("refuse une valeur hors bornes sans toucher aux mentions en place", () => {
+    const entity = collecting();
+    entity.setInvoicePaymentTerms(TERMS);
+    expect(() =>
+      entity.setInvoicePaymentTerms({ ...TERMS, latePenaltyRateBasisPoints: 0 }),
+    ).toThrow(InvalidInvoicePaymentTermsError);
+    expect(entity.paymentTerms.latePenaltyRateBasisPoints).toBe(1_415);
+  });
+
+  it("rend ses faits vendeur à plat, archivage compris", () => {
+    const entity = collecting();
+    entity.archive(new Date("2026-09-01T10:00:00.000Z"));
+    expect(entity.invoiceSellerFacts()).toMatchObject({
+      legalEntityId: entity.id,
+      name: entity.name,
+      archived: true,
+    });
   });
 });
 

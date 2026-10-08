@@ -3,6 +3,7 @@ import type { LegalEntityRecord } from "../domain/ports/legal-entity.reader.js";
 import type { FieldCipher } from "../../../platform/crypto/field-cipher.js";
 import type { LegalEntity as LegalEntityRow } from "../../../platform/database/client/client.js";
 import { LegalEntity, type LegalEntitySnapshot } from "../domain/entities/legal-entity.js";
+import { sellerBlockers } from "../domain/services/invoice-issuance-blockers.js";
 
 /**
  * Ligne → agrégat. Les value objects **revalident** au passage : une ligne écrite
@@ -76,6 +77,13 @@ export function toView(entity: LegalEntity, isLastActive: boolean): LegalEntityR
     autoCollectionDelayHours: snapshot.autoCollectionDelayHours,
     collectionDaysAfterClosure: snapshot.collectionDaysAfterClosure,
     depositCutoff: entity.collectionSchedule.depositCutoff,
+    invoicePaymentTerms: {
+      latePenaltyRateBasisPoints: snapshot.invoiceLatePenaltyRateBasisPoints,
+      recoveryIndemnityCents: snapshot.invoiceRecoveryIndemnityCents,
+      earlyPaymentDiscount: snapshot.invoiceEarlyPaymentDiscount,
+    },
+    // Du domaine, comme `missingToCollect` : une seule définition de « peut facturer ».
+    missingToInvoice: sellerBlockers(entity.invoiceSellerFacts()).map((blocker) => blocker.message),
     mandateContractDescription: snapshot.mandateContractDescription,
     mandatePaymentType: snapshot.mandatePaymentType,
     mandateScheme: snapshot.mandateScheme,
@@ -129,6 +137,9 @@ function toSnapshot(row: LegalEntityRow, cipher: FieldCipher): LegalEntitySnapsh
     collectionDaysAfterClosure: row.collectionDaysAfterClosure,
     depositCutoffBusinessDays: row.depositCutoffBusinessDays,
     depositCutoffTime: row.depositCutoffTime,
+    invoiceLatePenaltyRateBasisPoints: row.invoiceLatePenaltyRateBasisPoints,
+    invoiceRecoveryIndemnityCents: row.invoiceRecoveryIndemnityCents,
+    invoiceEarlyPaymentDiscount: row.invoiceEarlyPaymentDiscount,
   };
 }
 
@@ -202,5 +213,8 @@ export function legalEntityColumns(
     collectionDaysAfterClosure: snapshot.collectionDaysAfterClosure,
     depositCutoffBusinessDays: snapshot.depositCutoffBusinessDays,
     depositCutoffTime: snapshot.depositCutoffTime,
+    invoiceLatePenaltyRateBasisPoints: snapshot.invoiceLatePenaltyRateBasisPoints,
+    invoiceRecoveryIndemnityCents: snapshot.invoiceRecoveryIndemnityCents,
+    invoiceEarlyPaymentDiscount: snapshot.invoiceEarlyPaymentDiscount,
   };
 }

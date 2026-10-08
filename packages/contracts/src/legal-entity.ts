@@ -150,6 +150,16 @@ export interface LegalEntityView {
    * vraie après qu'on l'a désactivée.
    */
   readonly lastAutopilotRun: CollectionAutopilotRunView | null;
+  /**
+   * Les mentions de paiement de la facture (plan `plan-emission-de-la-facture.md`,
+   * E0). Chacune `null` = « à renseigner » : aucune valeur n'est posée d'office.
+   */
+  readonly invoicePaymentTerms: InvoicePaymentTermsView;
+  /**
+   * Ce qui manque à CETTE entité pour émettre une facture, déjà rédigé par le
+   * domaine (`sellerBlockers`). Vide quand rien ne manque côté vendeur.
+   */
+  readonly missingToInvoice: readonly string[];
   /** Zone 20 du mandat — ce que le contrat couvre, en une ligne. */
   readonly mandateContractDescription: string;
   /** Zone 12 du mandat — récurrent, ou ponctuel. */
@@ -403,3 +413,40 @@ export type SetCollectionSchedulePayload = z.infer<typeof setCollectionScheduleP
 /** Activer ou désactiver la constitution automatique — un geste à part. */
 export const setAutoCollectionPayloadSchema = z.strictObject({ enabled: z.boolean() });
 export type SetAutoCollectionPayload = z.infer<typeof setAutoCollectionPayloadSchema>;
+
+/**
+ * Les bornes des **mentions de paiement de la facture**, recopiées du domaine
+ * (`InvoicePaymentTerms`), qui reste l'autorité.
+ */
+export const LATE_PENALTY_RATE_MIN_BASIS_POINTS = 1;
+export const LATE_PENALTY_RATE_MAX_BASIS_POINTS = 10_000;
+/**
+ * Les points ajoutés au taux BCE par le taux légal par défaut (L441-10, cité
+ * de mémoire). L'écran s'en sert pour une SUGGESTION (Q4, 2026-10-08) : le
+ * taux BCE varie, il le fait saisir — rien n'est posé d'office.
+ */
+export const LEGAL_PENALTY_MARGIN_BASIS_POINTS = 1_000;
+export const RECOVERY_INDEMNITY_MIN_CENTS = 4_000;
+export const RECOVERY_INDEMNITY_MAX_CENTS = 100_000;
+export const EARLY_PAYMENT_DISCOUNT_MAX_LENGTH = 200;
+
+/** Les mentions de paiement d'une entité — chacune `null` = « à renseigner ». */
+export interface InvoicePaymentTermsView {
+  /** Points de base : 1 % = 100. */
+  readonly latePenaltyRateBasisPoints: number | null;
+  /** Centimes : 40 € = 4000. */
+  readonly recoveryIndemnityCents: number | null;
+  readonly earlyPaymentDiscount: string | null;
+}
+
+/**
+ * Régler les mentions de paiement. La FORME seulement — les bornes sont
+ * opposées par l'agrégat. Sans `.default()` : un écran ancien qui omettrait un
+ * champ ne doit pas effacer une mention réglée.
+ */
+export const setInvoicePaymentTermsPayloadSchema = z.strictObject({
+  latePenaltyRateBasisPoints: z.int().nullable(),
+  recoveryIndemnityCents: z.int().nullable(),
+  earlyPaymentDiscount: z.string().nullable(),
+});
+export type SetInvoicePaymentTermsPayload = z.infer<typeof setInvoicePaymentTermsPayloadSchema>;

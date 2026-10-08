@@ -4,6 +4,7 @@ import type {
   DeclareLegalEntityPayload,
   SetCollectionSchedulePayload,
   SetCreditorAccountPayload,
+  SetInvoicePaymentTermsPayload,
 } from "@lfd/contracts";
 
 /**
@@ -83,6 +84,17 @@ export class SetAutoCollectionCommand {
   constructor(
     readonly legalEntityId: string,
     readonly enabled: boolean,
+  ) {}
+}
+
+/**
+ * Les mentions de paiement de la facture — pénalités de retard, indemnité de
+ * recouvrement, escompte (plan `plan-emission-de-la-facture.md`, E0).
+ */
+export class SetInvoicePaymentTermsCommand {
+  constructor(
+    readonly legalEntityId: string,
+    readonly payload: SetInvoicePaymentTermsPayload,
   ) {}
 }
 

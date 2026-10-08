@@ -1,5 +1,7 @@
 import type { InvoiceVatBreakdown } from "@lfd/money";
 
+import type { InvoiceUnitCode } from "../value-objects/invoice-unit.js";
+
 /**
  * Les types du **simulateur de dossier de facturation** (plan
  * `documentation/facturation/plan-simulateur-dossier-de-facturation.md`) :
@@ -56,6 +58,8 @@ export interface InvoiceLine {
   readonly label: string;
   /** Les autres noms portés par les bons de la clé — « vendu aussi sous… ». */
   readonly otherLabels: readonly string[];
+  /** L'unité de la quantité (UN/ECE Rec 20) — `H87`, la pièce, pour toute ligne d'aujourd'hui. */
+  readonly unitCode: InvoiceUnitCode;
   readonly quantity: number;
   /** Σ `lineTotalCents` des bons de la clé — repris, pas recalculé (F6). */
   readonly amountCents: number;

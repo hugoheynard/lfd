@@ -155,6 +155,13 @@ export {
   DEPOSIT_CUTOFF_MIN_BUSINESS_DAYS,
   setAutoCollectionPayloadSchema,
   setCollectionSchedulePayloadSchema,
+  setInvoicePaymentTermsPayloadSchema,
+  LATE_PENALTY_RATE_MIN_BASIS_POINTS,
+  LATE_PENALTY_RATE_MAX_BASIS_POINTS,
+  LEGAL_PENALTY_MARGIN_BASIS_POINTS,
+  RECOVERY_INDEMNITY_MIN_CENTS,
+  RECOVERY_INDEMNITY_MAX_CENTS,
+  EARLY_PAYMENT_DISCOUNT_MAX_LENGTH,
 } from "./legal-entity.js";
 export type { BillingCycleView } from "./billing-cycle.js";
 export {
@@ -216,6 +223,8 @@ export type {
   InvoiceDossierVatPartView,
   InvoiceDossierVatView,
   InvoiceDossierView,
+  InvoiceIssuanceBlockerView,
+  InvoiceUnitCodeView,
 } from "./invoice-dossier.js";
 export {
   createPaymentLinkPayloadSchema,
@@ -278,6 +287,8 @@ export type {
   LocalDeadlineView,
   SetAutoCollectionPayload,
   SetCollectionSchedulePayload,
+  InvoicePaymentTermsView,
+  SetInvoicePaymentTermsPayload,
 } from "./legal-entity.js";
 export {
   fulfillmentPreferencePayloadSchema,

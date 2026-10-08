@@ -55,6 +55,12 @@ function entity(over: Partial<LegalEntityView> = {}): LegalEntityView {
     lastAutopilotRun: null,
     isLastActive: false,
     missingToCollect: [],
+    invoicePaymentTerms: {
+      latePenaltyRateBasisPoints: null,
+      recoveryIndemnityCents: null,
+      earlyPaymentDiscount: null,
+    },
+    missingToInvoice: [],
     ...over,
   };
 }

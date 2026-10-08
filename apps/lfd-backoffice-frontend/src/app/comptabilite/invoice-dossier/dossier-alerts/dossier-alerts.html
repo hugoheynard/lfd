@@ -2,6 +2,22 @@
 <section class="alerts" aria-label="Signalements" data-dossier-alerts>
   <fold-callout variant="neutral" appearance="inset">{{ d.scope }}</fold-callout>
 
+  <!-- En tête des signalements : ce n'est pas un bon qui cloche, c'est la
+       facture entière qui ne partirait pas. Les phrases sont RÉDIGÉES PAR LE
+       SERVEUR (`invoiceIssuanceBlockers`), la même règle que l'émission. -->
+  @if (d.issuanceBlockers.length > 0) {
+    <fold-callout variant="alert" data-dossier-issuance-blockers>
+      <div class="block">
+        <strong>Cette facture ne pourrait pas être émise&nbsp;:</strong>
+        <ul class="list">
+          @for (blocker of d.issuanceBlockers; track blocker.code) {
+            <li>{{ blocker.message }}</li>
+          }
+        </ul>
+      </div>
+    </fold-callout>
+  }
+
   @if (!any()) {
     <fold-callout variant="success" data-dossier-all-clear>
       Rien à signaler&nbsp;: tous les bons ont été retirés, se recomposent, et sont livrés dans le
