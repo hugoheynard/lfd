@@ -106,18 +106,7 @@
           "builder": "@angular/build:dev-server",
           "options": {
             "port": 7316,
-            "host": "127.0.0.1",
-            "prebundle": {
-              "exclude": [
-                "@lfd/b2b-ui",
-                "@lfd/contracts",
-                "@lfd/endpoints",
-                "@lfd/front-ops",
-                "@lfd/money",
-                "@lfd/ops-contract",
-                "@lfd/storefront-layout"
-              ]
-            }
+            "host": "127.0.0.1"
           },
           "configurations": {
             "production": {

@@ -819,15 +819,6 @@ Deux artefacts qui peuvent diverger — et deux façons de diverger :
    — l'API restait morte sans rien dire. Le lanceur relance aussi une API
    morte seule (2 s, 5 s, 15 s, puis 30 s) et une API muette sur `/health`
    depuis 60 s ; chaque relance s'écrit en une ligne `[api-dev]`.
-3. **Les fronts gardaient une copie périmée des paquets.** Le serveur de dev
-   Angular (Vite) pré-empaquetait les paquets `@lfd/*` au démarrage, dans
-   `.angular/cache/…/vite/deps/`, et ne refaisait cette copie qu'à son
-   redémarrage : un export ajouté à `@lfd/contracts` donnait « does not
-   provide an export named … » dans le navigateur (2026-10-08). Corrigé : les
-   deux `angular.json` excluent les paquets du dépôt du pré-empaquetage
-   (`serve.options.prebundle.exclude`) ; ils sont recompilés avec
-   l'application quand leur `dist` change. Une dépendance `@lfd/*` ajoutée à
-   un front s'ajoute aussi à cette liste.
 
 **Si ça se reproduit malgré tout** : redémarrer le backend suffit. Et pour
 confirmer que c'est bien ça plutôt qu'un vrai refus de validation, comparer la
