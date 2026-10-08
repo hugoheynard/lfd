@@ -89,6 +89,9 @@ export interface CollectionBatchLineView {
   readonly notice: CollectionLineNoticeView | null;
 }
 
+/** L'auteur d'un lot — un genre, pas une personne. */
+export type CollectionBatchAuthorView = "staff" | "system";
+
 export interface CollectionBatchView {
   readonly id: string;
   readonly scheme: "CORE" | "B2B";
@@ -98,6 +101,12 @@ export interface CollectionBatchView {
   readonly cycleClosesAt: string;
   readonly status: CollectionBatchStatusView;
   readonly constitutedAt: string;
+  /**
+   * Qui l'a préparé : la comptabilité (`staff`), ou la constitution
+   * automatique (`system`, plan `plan-prelevement-automatique.md`, PA3).
+   * L'écran dit « préparé automatiquement » ; aucune fiche n'est nommée.
+   */
+  readonly constitutedBy: CollectionBatchAuthorView;
   readonly depositedAt: string | null;
   readonly cancelledAt: string | null;
   readonly lineCount: number;

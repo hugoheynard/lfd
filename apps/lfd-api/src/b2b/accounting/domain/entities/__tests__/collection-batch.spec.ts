@@ -15,6 +15,7 @@ const SEPTEMBER = {
 };
 const AFTER_CLOSE = new Date("2026-10-02T09:00:00.000Z");
 const STAMP = { at: AFTER_CLOSE, staffId: "staff_1" };
+const CONSTITUTED = { at: AFTER_CLOSE, by: { kind: "staff", staffId: "staff_1" } } as const;
 /** L'avis de l'unique ligne est parti — ce que le dépôt exige depuis PA2. */
 const SENT = new Map([[1, "sent" as const]]);
 
@@ -25,7 +26,7 @@ function input(overrides: Partial<ConstituteBatchInput> = {}): ConstituteBatchIn
     scheme: "B2B",
     cycle: SEPTEMBER,
     previousClosure: null,
-    constituted: STAMP,
+    constituted: CONSTITUTED,
     unmandatedCompanies: [],
     requestedCollectionDay: "2026-10-15",
     postponedFromDay: null,
@@ -57,7 +58,7 @@ describe("le lot de prélèvement", () => {
   it("ne se constitue qu'après la clôture", () => {
     expect(() =>
       CollectionBatch.constitute(
-        input({ constituted: { ...STAMP, at: new Date("2026-09-30T21:00:00.000Z") } }),
+        input({ constituted: { ...CONSTITUTED, at: new Date("2026-09-30T21:00:00.000Z") } }),
       ),
     ).toThrow(CycleNotClosedError);
   });

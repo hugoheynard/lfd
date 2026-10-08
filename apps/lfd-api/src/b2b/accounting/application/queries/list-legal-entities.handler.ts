@@ -2,6 +2,7 @@ import { QueryHandler, type IQueryHandler } from "@nestjs/cqrs";
 import type { LegalEntityView } from "@lfd/contracts";
 
 import { Clock } from "../../../../platform/time/clock.js";
+import { LastAutopilotRunReader } from "../../domain/ports/last-autopilot-run.reader.js";
 import { LegalEntityReader } from "../../domain/ports/legal-entity.reader.js";
 import { RecordedClosureReader } from "../../domain/ports/recorded-closure.reader.js";
 import { withNextCollection } from "../legal-entity-view-support.js";
@@ -24,12 +25,21 @@ export class ListLegalEntitiesHandler implements IQueryHandler<
   constructor(
     private readonly entities: LegalEntityReader,
     private readonly closures: RecordedClosureReader,
+    private readonly autopilotRuns: LastAutopilotRunReader,
     private readonly clock: Clock,
   ) {}
 
   async execute(): Promise<readonly LegalEntityView[]> {
     const now = this.clock.now();
     const records = await this.entities.list();
-    return Promise.all(records.map((record) => withNextCollection(record, this.closures, now)));
+    return Promise.all(
+      records.map((record) =>
+        withNextCollection(
+          record,
+          { closures: this.closures, autopilotRuns: this.autopilotRuns },
+          now,
+        ),
+      ),
+    );
   }
 }

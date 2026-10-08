@@ -55,13 +55,28 @@ export interface StaffStamp {
   readonly staffId: string;
 }
 
+/**
+ * Qui a préparé le lot : une fiche staff, ou l'automatisme (plan
+ * `plan-prelevement-automatique.md`, PA3). Deux formes, pas un identifiant
+ * nullable : un lot `system` n'a pas de fiche à joindre à l'annuaire, et un
+ * lot `staff` ne peut pas en manquer.
+ */
+export type ConstitutionAuthor =
+  { readonly kind: "staff"; readonly staffId: string } | { readonly kind: "system" };
+
+/** L'instant de la constitution et son auteur. */
+export interface ConstitutionStamp {
+  readonly at: Date;
+  readonly by: ConstitutionAuthor;
+}
+
 export interface CollectionBatchState {
   readonly id: string;
   readonly legalEntityId: string;
   readonly scheme: SepaScheme;
   readonly cycle: BillingCycle;
   readonly status: CollectionBatchStatus;
-  readonly constituted: StaffStamp;
+  readonly constituted: ConstitutionStamp;
   readonly deposited: StaffStamp | null;
   readonly cancelled: StaffStamp | null;
   /** Q2 : une société nommée ici rend le lot indéposable. */
@@ -91,7 +106,7 @@ export interface ConstituteBatchInput {
   readonly cycle: BillingCycle;
   /** La dernière clôture enregistrée avant celle-ci, `null` s'il n'y en a pas. */
   readonly previousClosure: Date | null;
-  readonly constituted: StaffStamp;
+  readonly constituted: ConstitutionStamp;
   readonly unmandatedCompanies: readonly string[];
   readonly lines: readonly CollectionBatchLine[];
   readonly xml: string;

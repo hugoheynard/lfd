@@ -55,6 +55,25 @@ export interface CollectionCalendarView {
 }
 
 /**
+ * L'issue d'une tentative de la constitution automatique (plan
+ * `plan-prelevement-automatique.md`, PA3). `pending` : prise, issue pas
+ * encore écrite — ou le passage s'est interrompu entre les deux.
+ */
+export type CollectionAutopilotOutcomeView =
+  "pending" | "constituted" | "nothing_to_collect" | "not_yet_open" | "failed";
+
+/** Une tentative de l'automatisme — une par cycle, jamais deux. */
+export interface CollectionAutopilotRunView {
+  /** ISO — la clôture du cycle tenté. */
+  readonly cycleClosesAt: string;
+  /** ISO — l'instant de la tentative. */
+  readonly ranAt: string;
+  readonly outcome: CollectionAutopilotOutcomeView;
+  /** Le refus tel quel en `failed`, l'explication sinon ; `null` si rien à dire. */
+  readonly message: string | null;
+}
+
+/**
  * Ce que le back-office montre d'une **entité juridique émettrice** — nous, pas
  * un client.
  *
@@ -125,6 +144,12 @@ export interface LegalEntityView {
   readonly depositCutoff: DepositCutoffView | null;
   /** Le calendrier du cycle EN COURS, avec les réglages ci-dessus. */
   readonly nextCollection: CollectionCalendarView;
+  /**
+   * La dernière tentative de la constitution automatique (PA3), ou `null`
+   * si elle n'a jamais tenté — activée ou non : une tentative passée reste
+   * vraie après qu'on l'a désactivée.
+   */
+  readonly lastAutopilotRun: CollectionAutopilotRunView | null;
   /** Zone 20 du mandat — ce que le contrat couvre, en une ligne. */
   readonly mandateContractDescription: string;
   /** Zone 12 du mandat — récurrent, ou ponctuel. */

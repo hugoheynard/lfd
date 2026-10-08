@@ -1,0 +1,8 @@
+@if (sentence(); as sentence) {
+  <fold-callout appearance="inset" [variant]="sentence.tone" data-autopilot-run>
+    {{ sentence.said }}
+    @if (sentence.detail; as detail) {
+      <br />« {{ detail }} »
+    }
+  </fold-callout>
+}

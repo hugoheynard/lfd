@@ -52,6 +52,7 @@ function entity(over: Partial<LegalEntityView> = {}): LegalEntityView {
     archivedAt: null,
     canCollect: false,
     hasLogo: false,
+    lastAutopilotRun: null,
     isLastActive: false,
     missingToCollect: [],
     ...over,
@@ -156,10 +157,26 @@ describe('CollectionSettingsCard — le prélèvement automatique', () => {
     expect(text(fixture)).toContain('à renseigner');
   });
 
-  it('dit honnêtement que la préparation automatique n’est pas encore branchée', () => {
+  it('ne dit plus « branchée prochainement », et montre la dernière tentative', () => {
+    const fixture = boot({
+      autoCollectionEnabled: true,
+      lastAutopilotRun: {
+        cycleClosesAt: '2026-09-30T22:00:00.000Z',
+        ranAt: '2026-09-30T23:15:00.000Z',
+        outcome: 'constituted',
+        message: null,
+      },
+    });
+
+    expect(text(fixture)).not.toContain('branchée');
+    expect(text(fixture)).toContain('Lot préparé automatiquement le');
+    expect(text(fixture)).toContain('lot de septembre');
+  });
+
+  it('jamais tentée : aucun encadré de tentative', () => {
     const fixture = boot({ autoCollectionEnabled: true });
 
-    expect(text(fixture)).toContain('la préparation automatique sera branchée prochainement');
+    expect((fixture.nativeElement as HTMLElement).querySelector('[data-autopilot-run]')).toBeNull();
   });
 
   it('calcule l’exemple en direct depuis la saisie, et le délai d’avis quand c’est vide', () => {

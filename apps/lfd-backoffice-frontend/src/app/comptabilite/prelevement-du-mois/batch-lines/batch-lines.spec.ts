@@ -38,6 +38,7 @@ function batchOf(lines: readonly CollectionBatchLineView[]): CollectionBatchView
     cycleClosesAt: '2026-09-30T22:00:00.000Z',
     status: 'constituted',
     constitutedAt: '2026-10-02T09:00:00.000Z',
+    constitutedBy: 'staff',
     depositedAt: null,
     cancelledAt: null,
     lineCount: lines.length,

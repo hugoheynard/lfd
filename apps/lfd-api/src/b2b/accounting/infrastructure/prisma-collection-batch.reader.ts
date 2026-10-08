@@ -31,6 +31,7 @@ export class PrismaCollectionBatchReader extends CollectionBatchReader {
         cycleClosesAt: true,
         status: true,
         constitutedAt: true,
+        constitutedBy: true,
         depositedAt: true,
         cancelledAt: true,
         unmandatedCompanies: true,
@@ -69,6 +70,9 @@ export class PrismaCollectionBatchReader extends CollectionBatchReader {
       cycleClosesAt: row.cycleClosesAt.toISOString(),
       status: row.status,
       constitutedAt: row.constitutedAt.toISOString(),
+      // Le genre de l'auteur, jamais sa fiche : « préparé automatiquement »
+      // ne se joint pas à l'annuaire (PA3).
+      constitutedBy: row.constitutedBy === "system" ? "system" : "staff",
       depositedAt: row.depositedAt?.toISOString() ?? null,
       cancelledAt: row.cancelledAt?.toISOString() ?? null,
       lineCount: row.lines.length,

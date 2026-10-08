@@ -1,12 +1,12 @@
 import type { LegalEntityView } from "@lfd/contracts";
 
 /**
- * La vue SANS son calendrier : le calendrier du cycle en cours dépend de
- * l'heure et de la dernière clôture, que l'application ajoute
- * (`legal-entity-view-support.ts`) — un adaptateur de lecture ne lit pas
- * l'horloge.
+ * La vue SANS son calendrier ni la dernière tentative de l'automatisme : le
+ * calendrier du cycle en cours dépend de l'heure et de la dernière clôture,
+ * que l'application ajoute (`legal-entity-view-support.ts`) — un adaptateur
+ * de lecture ne lit pas l'horloge — et la tentative a son propre port.
  */
-export type LegalEntityRecord = Omit<LegalEntityView, "nextCollection">;
+export type LegalEntityRecord = Omit<LegalEntityView, "nextCollection" | "lastAutopilotRun">;
 
 /**
  * Port de **lecture pour l'écran** — ce que Comptabilité › Entités juridiques

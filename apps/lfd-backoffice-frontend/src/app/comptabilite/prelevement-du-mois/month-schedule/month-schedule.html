@@ -22,15 +22,17 @@
     <app-collection-calendar [calendar]="entity().nextCollection" />
 
     @if (entity().autoCollectionEnabled) {
-      <fold-callout variant="info" data-auto-state>
-        <strong>Préparation automatique activée, mais pas encore branchée.</strong> Le lot ne se
-        prépare pas encore tout seul&nbsp;: d'ici là, préparez-le ici, après la fin du mois.
-      </fold-callout>
+      <p class="ms-said" data-auto-state>
+        Préparation automatique activée&nbsp;: le lot du mois clos se prépare tout seul à l'heure
+        prévue, une fois par mois. S'il est annulé, il ne se prépare pas de nouveau&nbsp;: c'est à
+        vous de le préparer, après correction.
+      </p>
     } @else {
       <p class="ms-said" data-auto-state>
         Préparation automatique désactivée&nbsp;: vous préparez le lot vous-même, après la fin du
         mois.
       </p>
     }
+    <app-autopilot-last-run [run]="entity().lastAutopilotRun" />
   </div>
 </fold-card>

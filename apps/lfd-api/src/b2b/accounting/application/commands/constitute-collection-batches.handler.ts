@@ -105,7 +105,7 @@ export class ConstituteCollectionBatchesHandler implements ICommandHandler<
         legalEntityId,
         creditor,
         at,
-        staffId: command.staffUserId,
+        author: command.author,
         nextId: () => this.ids.next(),
       });
       const states = orderStates(read, batches, at);

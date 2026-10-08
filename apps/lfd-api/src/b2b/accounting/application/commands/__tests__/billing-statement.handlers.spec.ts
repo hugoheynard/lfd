@@ -1,6 +1,7 @@
 import { BatchNotConstitutedError } from "../../../domain/errors/collection-errors.js";
 import {
   ENTITY_ID,
+  STAFF_AUTHOR,
   mandate,
   order,
 } from "../../../domain/services/__tests__/collection-fixtures.js";
@@ -17,7 +18,7 @@ import { sendAllQueued } from "./notice-doubles.js";
 
 async function constituted(w: ReturnType<typeof world>): Promise<string> {
   const [id] = await w.constitute.execute(
-    new ConstituteCollectionBatchesCommand(ENTITY_ID, "staff_1"),
+    new ConstituteCollectionBatchesCommand(ENTITY_ID, STAFF_AUTHOR),
   );
   return id ?? "";
 }

@@ -49,6 +49,7 @@ function entity(over: Partial<LegalEntityView> = {}): LegalEntityView {
     archivedAt: null,
     canCollect: false,
     hasLogo: false,
+    lastAutopilotRun: null,
     isLastActive: false,
     missingToCollect: [],
     ...over,

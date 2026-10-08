@@ -14,7 +14,12 @@
       [rowKey]="rowKey"
       data-history
     >
-      <ng-template foldCell="month" let-row>{{ monthOf(row) }}</ng-template>
+      <ng-template foldCell="month" let-row>
+        {{ monthOf(row) }}
+        @if (row.constitutedBy === 'system') {
+          <span class="bh-auto" data-batch-auto>· préparé automatiquement</span>
+        }
+      </ng-template>
       <ng-template foldCell="scheme" let-row>{{ row.scheme }}</ng-template>
       <ng-template foldCell="status" let-row>
         <fold-badge

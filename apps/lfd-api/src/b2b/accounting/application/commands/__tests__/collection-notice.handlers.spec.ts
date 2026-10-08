@@ -1,6 +1,7 @@
 import { CollectionNoticesNotSentError } from "../../../domain/errors/collection-notice-errors.js";
 import {
   ENTITY_ID,
+  STAFF_AUTHOR,
   mandate,
   order,
 } from "../../../domain/services/__tests__/collection-fixtures.js";
@@ -20,7 +21,7 @@ type World = ReturnType<typeof world>;
 
 async function constitute(w: World): Promise<string> {
   const [id] = await w.constitute.execute(
-    new ConstituteCollectionBatchesCommand(ENTITY_ID, "staff_1"),
+    new ConstituteCollectionBatchesCommand(ENTITY_ID, STAFF_AUTHOR),
   );
   return id ?? "";
 }

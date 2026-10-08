@@ -33,6 +33,7 @@
   "test/client-notes-wall.e2e-spec.ts": 4369,
   "test/client-notes.e2e-spec.ts": 8535,
   "test/cockpit.e2e-spec.ts": 3637,
+  "test/collection-autopilot.e2e-spec.ts": 8000,
   "test/collection-batches.e2e-spec.ts": 9204,
   "test/collection-notices.e2e-spec.ts": 5000,
   "test/collection-schedule.e2e-spec.ts": 4000,

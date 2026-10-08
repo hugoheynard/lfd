@@ -67,8 +67,12 @@ model CollectionBatch {
   status CollectionBatchStatus
 
   constitutedAt        DateTime  @map("constituted_at") @db.Timestamptz(3)
-  /// Identifiant staff LOCAL — jamais un `sub`.
-  constitutedByStaffId String    @map("constituted_by_staff_id")
+  /// `staff` | `system` (l'automatisme, PA3). Un CHECK
+  /// (`20261008170000_la_constitution_automatique`) tient : `staff` ⇒ fiche
+  /// présente, `system` ⇒ aucune — le système n'est jamais joint à l'annuaire.
+  constitutedBy        String    @default("staff") @map("constituted_by")
+  /// Identifiant staff LOCAL — jamais un `sub`. NULL pour un lot `system`.
+  constitutedByStaffId String?   @map("constituted_by_staff_id")
   depositedAt          DateTime? @map("deposited_at") @db.Timestamptz(3)
   depositedByStaffId   String?   @map("deposited_by_staff_id")
   cancelledAt          DateTime? @map("cancelled_at") @db.Timestamptz(3)
@@ -246,5 +250,27 @@ model CollectionNotice {
   @@unique([batchId, lineRank])
   @@index([legalEntityId, cycleClosesAt])
   @@map("collection_notice")
+  @@schema("public")
+}
+
+/// UNE tentative de la constitution automatique par (entité, clôture) — plan
+/// `documentation/facturation/plan-prelevement-automatique.md`, PA3. La clé
+/// départage deux passages et interdit de retenter : annuler un lot ne
+/// relance pas l'automatisme. Contraintes en SQL
+/// (`20261008170000_la_constitution_automatique`) : `outcome` ∈ `pending`,
+/// `constituted`, `nothing_to_collect`, `not_yet_open`, `failed` ; un échec
+/// porte son message.
+model CollectionAutopilotRun {
+  legalEntityId String      @map("legal_entity_id")
+  legalEntity   LegalEntity @relation(fields: [legalEntityId], references: [id], onDelete: Restrict)
+  /// La clôture du cycle tenté — exclusive.
+  cycleClosesAt DateTime    @map("cycle_closes_at") @db.Timestamptz(3)
+  ranAt         DateTime    @map("ran_at") @db.Timestamptz(3)
+  outcome       String
+  /// Le refus tel quel (`failed`), ou ce que l'issue doit dire en clair.
+  message       String?
+
+  @@id([legalEntityId, cycleClosesAt])
+  @@map("collection_autopilot_run")
   @@schema("public")
 }

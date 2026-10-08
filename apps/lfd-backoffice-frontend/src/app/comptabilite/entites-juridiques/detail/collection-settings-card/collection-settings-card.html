@@ -31,10 +31,10 @@
           {{ entity().autoCollectionEnabled ? 'Désactiver' : 'Activer' }}
         </button>
       </div>
-      <fold-callout variant="info">
-        Votre choix est enregistré&nbsp;; la préparation automatique sera branchée prochainement.
-        D'ici là, le lot se prépare à la main.
-      </fold-callout>
+      <p class="cs-said">
+        Une seule tentative par mois&nbsp;: un lot annulé ne se prépare pas de nouveau tout seul.
+      </p>
+      <app-autopilot-last-run [run]="entity().lastAutopilotRun" />
     </section>
 
     <section class="cs-block" aria-labelledby="cs-dates-title">

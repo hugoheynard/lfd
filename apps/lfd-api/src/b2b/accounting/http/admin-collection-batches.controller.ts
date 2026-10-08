@@ -80,7 +80,12 @@ export class AdminCollectionBatchesController {
     const batchIds = await this.commands.execute<
       ConstituteCollectionBatchesCommand,
       readonly string[]
-    >(new ConstituteCollectionBatchesCommand(payload.legalEntityId, staffUserId));
+    >(
+      new ConstituteCollectionBatchesCommand(payload.legalEntityId, {
+        kind: "staff",
+        staffId: staffUserId,
+      }),
+    );
     return { batchIds };
   }
 

@@ -58,6 +58,7 @@ export const COLLECTION_FACT_TYPES = {
   noticeUnsendable: "collection.notice_unsendable",
   noticeSent: "collection.notice_sent",
   noticeFailed: "collection.notice_failed",
+  autopilotRan: "collection.autopilot_ran",
 } as const satisfies Readonly<Record<string, JournalFactType>>;
 
 /**

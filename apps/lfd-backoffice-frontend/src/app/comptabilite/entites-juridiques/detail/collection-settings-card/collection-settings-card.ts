@@ -25,6 +25,7 @@ import {
   FoldPageSectionComponent,
 } from 'fold-ng';
 
+import { AutopilotLastRun } from '../../../autopilot-last-run/autopilot-last-run';
 import { CollectionCalendar } from '../../../collection-calendar/collection-calendar';
 import {
   daysExample,
@@ -56,17 +57,16 @@ import { LegalEntitiesService } from '../../../legal-entities.service';
  * Activer fera partir des lots et des avis sans clic (PA3) : c'est un fait
  * de journal à part, jamais un champ glissé sous « Enregistrer ».
  *
- * ## L'automatisme n'est pas encore branché, et la carte le dit
+ * ## Sa dernière tentative se lit ici
  *
- * La constitution automatique (PA3) n'existe pas côté serveur : aucun cron ni
- * table `collection_autopilot_run` dans `apps/lfd-api` (vérifié le
- * 2026-10-08). Le choix s'enregistre, rien ne part seul — l'écran ne doit
- * pas laisser croire le contraire. Retirer l'encadré quand PA3 est bâti.
+ * Quand, pour quel lot, avec quelle issue (PA3) — un échec ne se retente
+ * pas, la carte le dit et nomme le geste de sortie.
  */
 @Component({
   selector: 'app-collection-settings-card',
   changeDetection: ChangeDetectionStrategy.OnPush,
   imports: [
+    AutopilotLastRun,
     CollectionCalendar,
     FoldPageSectionComponent,
     FoldCalloutComponent,

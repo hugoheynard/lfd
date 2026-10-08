@@ -3,7 +3,11 @@ import { Injectable } from "@nestjs/common";
 import { FieldCipher } from "../../../platform/crypto/field-cipher.js";
 import { PrismaService } from "../../../platform/database/prisma.service.js";
 import { TechnicalError } from "../../../platform/shared/errors/app-error.js";
-import { CollectionBatch, type CollectionBatchLine } from "../domain/entities/collection-batch.js";
+import {
+  CollectionBatch,
+  type CollectionBatchLine,
+  type ConstitutionAuthor,
+} from "../domain/entities/collection-batch.js";
 import { CollectionBatchRepository } from "../domain/ports/collection-batch.repository.js";
 import type { SequenceType } from "../domain/services/pain008-document.js";
 
@@ -41,7 +45,10 @@ export class PrismaCollectionBatchRepository extends CollectionBatchRepository {
       scheme: row.scheme,
       cycle: { startsAt: row.cycleStartsAt, closesAt: row.cycleClosesAt },
       status: row.status,
-      constituted: { at: row.constitutedAt, staffId: row.constitutedByStaffId },
+      constituted: {
+        at: row.constitutedAt,
+        by: authorOf(row.constitutedBy, row.constitutedByStaffId),
+      },
       deposited: stamp(row.depositedAt, row.depositedByStaffId),
       cancelled: stamp(row.cancelledAt, row.cancelledByStaffId),
       unmandatedCompanies: row.unmandatedCompanies,
@@ -93,7 +100,9 @@ export class PrismaCollectionBatchRepository extends CollectionBatchRepository {
         cycleStartsAt: state.cycle.startsAt,
         cycleClosesAt: state.cycle.closesAt,
         constitutedAt: state.constituted.at,
-        constitutedByStaffId: state.constituted.staffId,
+        constitutedBy: state.constituted.by.kind,
+        constitutedByStaffId:
+          state.constituted.by.kind === "staff" ? state.constituted.by.staffId : null,
         unmandatedCompanies: [...state.unmandatedCompanies],
         xml: state.xml,
         fileSha256: state.fileSha256,
@@ -140,6 +149,17 @@ function stamp(at: Date | null, staffId: string | null): { at: Date; staffId: st
   return at === null || staffId === null ? null : { at, staffId };
 }
 
+/** `constituted_by` relu : le `CHECK` lie la fiche à `staff`, le domaine le revérifie. */
+function authorOf(kind: string, staffId: string | null): ConstitutionAuthor {
+  if (kind === "system" && staffId === null) {
+    return { kind: "system" };
+  }
+  if (kind === "staff" && staffId !== null) {
+    return { kind: "staff", staffId };
+  }
+  throw new CorruptBatchAuthorError(kind);
+}
+
 /** La base le tient par `CHECK` ; une autre valeur est une ligne corrompue. */
 function sequenceOf(raw: string): SequenceType {
   const found = SEQUENCES.find((sequence) => sequence === raw);
@@ -155,6 +175,16 @@ class CorruptBatchLineError extends TechnicalError {
     super(
       "accounting.collection.corrupt_line",
       `Une ligne de lot porte la séquence « ${raw} », ni RCUR ni OOFF : la contrainte collection_batch_line_sequence a été levée. Prévenir la technique.`,
+    );
+  }
+}
+
+/** Inatteignable tant que `collection_batch_constituted_by_author` existe. */
+class CorruptBatchAuthorError extends TechnicalError {
+  constructor(kind: string) {
+    super(
+      "accounting.collection.corrupt_author",
+      `Un lot porte l'auteur « ${kind} » sans la fiche qui va avec (ou l'inverse) : la contrainte collection_batch_constituted_by_author a été levée. Prévenir la technique.`,
     );
   }
 }

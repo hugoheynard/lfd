@@ -13,7 +13,8 @@ import {
 import { DEPOSIT_UNKNOWN } from '../../collection-schedule-wording';
 import { batchMonthName, ofMonth } from '../../collection-month-wording';
 import { unsentNoticePayers } from '../../collection-notice-wording';
-import { day, euros } from '../../invoice-dossier-format';
+import { batchAuthorLabel } from '../../autopilot-run-wording';
+import { day, euros, instant } from '../../invoice-dossier-format';
 import { BatchLines } from '../batch-lines/batch-lines';
 
 /** Un geste sur le lot, que la page exécute — elle tient l'attente et les refus. */
@@ -76,4 +77,10 @@ export class PendingBatch {
   });
 
   protected readonly total = computed(() => euros(this.batch().totalCents));
+
+  /** « Préparé automatiquement le … » — l'auteur est un genre, jamais un nom (PA3). */
+  protected readonly preparedBy = computed(() => {
+    const batch = this.batch();
+    return `${batchAuthorLabel(batch)} le ${instant(batch.constitutedAt)}`;
+  });
 }

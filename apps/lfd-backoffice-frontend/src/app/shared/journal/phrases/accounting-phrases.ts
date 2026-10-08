@@ -19,6 +19,7 @@ import {
   type Segment,
 } from '../phrase';
 import {
+  AUTOPILOT_OUTCOME,
   DRAFT_VOIDING_CAUSE,
   MANDATE_STATUS,
   PROOF_PURGE_CAUSE,
@@ -402,6 +403,22 @@ const noticeFailure = (fact: PhraseFact): Segment[] => [
   text(' »'),
 ];
 
+/**
+ * « … a tenté la préparation automatique du lot de l'entité émettrice « X »
+ * (clôture du 1 oct. 2026, 00:00) : échec — « message » ». Plan
+ * `plan-prelevement-automatique.md`, PA3. Une tentative par mois.
+ */
+function autopilotIssue(fact: PhraseFact): Segment[] {
+  const message = optional(fact.payload['message']);
+  return [
+    text(' (clôture du '),
+    inUnit('instant', fact.payload['cycleClosesAt']),
+    text(') : '),
+    valueIn(AUTOPILOT_OUTCOME, fact.payload['outcome'], { inSentence: true }),
+    ...(message === null ? [] : [text(' — « '), name(message), text(' »')]),
+  ];
+}
+
 export const ACCOUNTING_PHRASES = {
   'legal_entity.declared': onEntity(
     'a déclaré',
@@ -522,6 +539,12 @@ export const ACCOUNTING_PHRASES = {
   ]),
   'collection.notice_sent': onNotice('a envoyé'),
   'collection.notice_failed': onNotice('n’a pas pu envoyer', noticeFailure),
+  'collection.autopilot_ran': onEntity(
+    'a tenté la préparation automatique du lot',
+    'de',
+    autopilotIssue,
+    ['cycleClosesAt', 'outcome', 'batchCount', 'message'],
+  ),
   'collection.order_settled_otherwise': (fact) => {
     const number = subjectLabelOf(fact);
     return byActor(

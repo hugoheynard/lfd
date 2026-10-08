@@ -9,6 +9,7 @@
     </fold-element-title>
 
     <fold-field-list>
+      <fold-field label="Préparé" data-batch-author>{{ preparedBy() }}</fold-field>
       <fold-field label="Date du prélèvement">
         {{ collectionDay() }}
         @if (postponedFrom(); as from) {

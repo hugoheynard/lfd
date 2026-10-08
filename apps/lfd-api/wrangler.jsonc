@@ -161,6 +161,14 @@
   //    d'heure après le ramassage des visuels. Recopié dans
   //    `QUALITY_UPLOAD_SWEEP_CRON` (worker.ts), à l'identique.
   //
+  // 7. `15 *` — CONSTITUTION AUTOMATIQUE DU PRÉLÈVEMENT (POST
+  //    /admin/accounting/collection/autopilot) : toutes les heures, au quart,
+  //    prépare le lot du mois clos des entités qui l'ont activée, une fois
+  //    l'heure prévue passée — UNE tentative par cycle, tenue en base (plan
+  //    `documentation/facturation/plan-prelevement-automatique.md`, PA3). Un
+  //    cron à lui, pas celui des rappels : deux rythmes sans rapport. Recopié
+  //    dans `COLLECTION_AUTOPILOT_CRON` (worker.ts), à l'identique.
+  //
   // ⚠️ Les crons Cloudflare sont en **UTC**. On vise ~04h/12h/20h Europe/Paris ;
   // avec le décalage saisonnier (UTC+1 hiver / UTC+2 été), 03/11/19 UTC tombe à
   // 04/12/20 en hiver et 05/13/21 en été — une dérive d'une heure sans importance
@@ -176,6 +184,7 @@
       "0 2 * * *",
       "0 * * * *",
       "45 3 * * *",
+      "15 * * * *",
     ],
   },
 

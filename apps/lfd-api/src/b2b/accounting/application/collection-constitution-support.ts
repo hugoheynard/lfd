@@ -1,5 +1,5 @@
 import type { CreditorSnapshot } from "../domain/creditor-snapshot.js";
-import { CollectionBatch } from "../domain/entities/collection-batch.js";
+import { CollectionBatch, type ConstitutionAuthor } from "../domain/entities/collection-batch.js";
 import { OrderCollection } from "../domain/entities/order-collection.js";
 import {
   CollectionFloorMissingError,
@@ -101,7 +101,7 @@ export interface BuildInput {
   readonly legalEntityId: string;
   readonly creditor: CreditorSnapshot;
   readonly at: Date;
-  readonly staffId: string;
+  readonly author: ConstitutionAuthor;
   readonly nextId: () => string;
 }
 
@@ -135,7 +135,7 @@ export function buildBatches(input: BuildInput): readonly CollectionBatch[] {
       scheme,
       cycle: read.cycle,
       previousClosure: read.previousClosure,
-      constituted: { at: input.at, staffId: input.staffId },
+      constituted: { at: input.at, by: input.author },
       unmandatedCompanies: read.assembly.unmandatedCompanies,
       lines: file.lines,
       xml: file.xml,

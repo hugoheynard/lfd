@@ -9,6 +9,7 @@ import {
 } from "../../../domain/errors/collection-errors.js";
 import {
   ENTITY_ID,
+  STAFF_AUTHOR,
   mandate,
   order,
 } from "../../../domain/services/__tests__/collection-fixtures.js";
@@ -25,7 +26,7 @@ describe("constituer, annuler, déposer un lot", () => {
     w.mandates.mandates = [mandate("c_port")];
 
     const ids = await w.constitute.execute(
-      new ConstituteCollectionBatchesCommand(ENTITY_ID, "staff_1"),
+      new ConstituteCollectionBatchesCommand(ENTITY_ID, STAFF_AUTHOR),
     );
 
     expect(w.steps.log.slice(0, 2)).toEqual([`lock:${ENTITY_ID}`, "read:floor"]);
@@ -54,7 +55,7 @@ describe("constituer, annuler, déposer un lot", () => {
     w.mandates.mandates = [mandate("c_port")];
 
     const [id] = await w.constitute.execute(
-      new ConstituteCollectionBatchesCommand(ENTITY_ID, "staff_1"),
+      new ConstituteCollectionBatchesCommand(ENTITY_ID, STAFF_AUTHOR),
     );
 
     const state = w.batches.saved.get(id ?? "")?.toPersistence();
@@ -67,7 +68,7 @@ describe("constituer, annuler, déposer un lot", () => {
     w.candidates.orders = [order("c_port")];
     w.mandates.mandates = [mandate("c_port")];
     const [first] = await w.constitute.execute(
-      new ConstituteCollectionBatchesCommand(ENTITY_ID, "staff_1"),
+      new ConstituteCollectionBatchesCommand(ENTITY_ID, STAFF_AUTHOR),
     );
 
     await w.cancel.execute(new CancelCollectionBatchCommand(first ?? "", "staff_1"));
@@ -78,7 +79,7 @@ describe("constituer, annuler, déposer un lot", () => {
       collection: w.orders.saved.get(o.orderId)?.toPersistence() ?? null,
     }));
     const [second] = await w.constitute.execute(
-      new ConstituteCollectionBatchesCommand(ENTITY_ID, "staff_1"),
+      new ConstituteCollectionBatchesCommand(ENTITY_ID, STAFF_AUTHOR),
     );
     expect(second).not.toBe(first);
   });
@@ -88,7 +89,7 @@ describe("constituer, annuler, déposer un lot", () => {
     w.candidates.orders = [order("c_port")];
     w.mandates.mandates = [mandate("c_port")];
     const [id] = await w.constitute.execute(
-      new ConstituteCollectionBatchesCommand(ENTITY_ID, "staff_1"),
+      new ConstituteCollectionBatchesCommand(ENTITY_ID, STAFF_AUTHOR),
     );
     w.recheck.now = new Map([["m_c_port", { active: false, iban: null }]]);
     sendAllQueued(w.noticeStore, w.clock.now());
@@ -104,7 +105,7 @@ describe("constituer, annuler, déposer un lot", () => {
     w.candidates.orders = [placed];
     w.mandates.mandates = [mandate("c_port")];
     const [id] = await w.constitute.execute(
-      new ConstituteCollectionBatchesCommand(ENTITY_ID, "staff_1"),
+      new ConstituteCollectionBatchesCommand(ENTITY_ID, STAFF_AUTHOR),
     );
     w.recheck.now = new Map([["m_c_port", { active: true, iban: mandate("c_port").iban }]]);
     sendAllQueued(w.noticeStore, w.clock.now());
@@ -125,7 +126,7 @@ describe("constituer, annuler, déposer un lot", () => {
     w.candidates.orders = [order("c_port")];
     w.mandates.mandates = [mandate("c_port")];
     const [id] = await w.constitute.execute(
-      new ConstituteCollectionBatchesCommand(ENTITY_ID, "staff_1"),
+      new ConstituteCollectionBatchesCommand(ENTITY_ID, STAFF_AUTHOR),
     );
     w.recheck.now = new Map([["m_c_port", { active: true, iban: mandate("c_port").iban }]]);
     w.cancelled.numbers = ["CMD-X"];
@@ -139,11 +140,11 @@ describe("constituer, annuler, déposer un lot", () => {
   it("refuse sans plancher, et quand il n'y a rien à faire", async () => {
     const w = world();
     await expect(
-      w.constitute.execute(new ConstituteCollectionBatchesCommand(ENTITY_ID, "staff_1")),
+      w.constitute.execute(new ConstituteCollectionBatchesCommand(ENTITY_ID, STAFF_AUTHOR)),
     ).rejects.toThrow(NothingToCollectError);
     w.candidates.floorAt = null;
     await expect(
-      w.constitute.execute(new ConstituteCollectionBatchesCommand(ENTITY_ID, "staff_1")),
+      w.constitute.execute(new ConstituteCollectionBatchesCommand(ENTITY_ID, STAFF_AUTHOR)),
     ).rejects.toThrow(CollectionFloorMissingError);
   });
 
@@ -161,7 +162,7 @@ describe("constituer, annuler, déposer un lot", () => {
     w.candidates.floorAt = new Date("2026-10-05T08:00:00.000Z");
 
     const refusal = w.constitute.execute(
-      new ConstituteCollectionBatchesCommand(ENTITY_ID, "staff_1"),
+      new ConstituteCollectionBatchesCommand(ENTITY_ID, STAFF_AUTHOR),
     );
 
     await expect(refusal).rejects.toThrow(CollectionNotYetOpenError);
@@ -177,7 +178,7 @@ describe("constituer, annuler, déposer un lot", () => {
     w.mandates.mandates = [mandate("c_port")];
 
     const ids = await w.constitute.execute(
-      new ConstituteCollectionBatchesCommand(ENTITY_ID, "staff_1"),
+      new ConstituteCollectionBatchesCommand(ENTITY_ID, STAFF_AUTHOR),
     );
 
     expect(ids).toHaveLength(1);

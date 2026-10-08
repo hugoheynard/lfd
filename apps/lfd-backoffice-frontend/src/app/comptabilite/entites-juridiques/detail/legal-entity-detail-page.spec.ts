@@ -70,6 +70,7 @@ function entity(over: Partial<LegalEntityView> = {}): LegalEntityView {
     archivedAt: null,
     canCollect: false,
     hasLogo: false,
+    lastAutopilotRun: null,
     // FAUX par défaut : la plupart des cas ne parlent pas d'archivage, et une
     // entité « dernière en service » y désarmerait le bouton sans raison. Le
     // cas qui en parle le pose explicitement.

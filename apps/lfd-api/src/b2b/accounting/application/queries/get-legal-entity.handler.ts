@@ -3,6 +3,7 @@ import type { LegalEntityView } from "@lfd/contracts";
 
 import { Clock } from "../../../../platform/time/clock.js";
 import { LegalEntityNotFoundError } from "../../domain/errors/accounting-errors.js";
+import { LastAutopilotRunReader } from "../../domain/ports/last-autopilot-run.reader.js";
 import { LegalEntityReader } from "../../domain/ports/legal-entity.reader.js";
 import { RecordedClosureReader } from "../../domain/ports/recorded-closure.reader.js";
 import { withNextCollection } from "../legal-entity-view-support.js";
@@ -21,6 +22,7 @@ export class GetLegalEntityHandler implements IQueryHandler<GetLegalEntityQuery,
   constructor(
     private readonly entities: LegalEntityReader,
     private readonly closures: RecordedClosureReader,
+    private readonly autopilotRuns: LastAutopilotRunReader,
     private readonly clock: Clock,
   ) {}
 
@@ -29,6 +31,10 @@ export class GetLegalEntityHandler implements IQueryHandler<GetLegalEntityQuery,
     if (entity === null) {
       throw new LegalEntityNotFoundError(query.legalEntityId);
     }
-    return withNextCollection(entity, this.closures, this.clock.now());
+    return withNextCollection(
+      entity,
+      { closures: this.closures, autopilotRuns: this.autopilotRuns },
+      this.clock.now(),
+    );
   }
 }

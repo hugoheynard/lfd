@@ -1316,6 +1316,10 @@
   ],
   "exclusions": [
     {
+      "colonne": "public.collection_batch.constituted_by",
+      "raison": "Un GENRE d'auteur (`staff` | `system`), jamais une personne : la fiche du membre du staff est dans `constituted_by_staff_id`, déjà au registre, et un lot `system` n'en a pas (CHECK `collection_batch_constituted_by_author`, migration 20261008170000_la_constitution_automatique)."
+    },
+    {
       "colonne": "delivery.delivery_address_suggestion_decision.point_lat",
       "raison": "Point SUGGÉRÉ pour une adresse du carnet : le centre d'au moins trois gestes concordants, sans livreur, sans tournée ni heure de geste — une donnée d'ADRESSE client, pas la position d'une personne (rgpd-livreur.md §2 bis). Tiré des positions, il s'efface avec elles à 60 jours (`PurgeStalePositionsHandler`, `clearBatchDecidedBefore`)."
     },

@@ -380,3 +380,41 @@ describe('l’avis de prélèvement (PA2)', () => {
     ).toContain('ni contact de facturation, ni détenteur');
   });
 });
+
+describe('la préparation automatique (PA3)', () => {
+  const run = {
+    subjectLabel: ENTITY,
+    cycleClosesAt: '2026-09-30T22:00:00.000Z',
+    batchCount: 0,
+  };
+
+  it('dit l’issue et le refus tel quel, l’auteur étant le système', () => {
+    const said = sentence({
+      ...entity('collection.autopilot_ran', {
+        ...run,
+        outcome: 'failed',
+        message: 'L’entité n’a pas d’ICS.',
+      }),
+      actorName: null,
+      actorType: 'system',
+    });
+
+    expect(said).toContain(
+      'a tenté la préparation automatique du lot de l’entité émettrice « La Folie Douce SAS »',
+    );
+    expect(said).toContain(': échec — « L’entité n’a pas d’ICS. »');
+  });
+
+  it('un lot préparé : pas de message', () => {
+    expect(
+      sentence(
+        entity('collection.autopilot_ran', {
+          ...run,
+          outcome: 'constituted',
+          batchCount: 1,
+          message: null,
+        }),
+      ),
+    ).toMatch(/: lot préparé$/u);
+  });
+});

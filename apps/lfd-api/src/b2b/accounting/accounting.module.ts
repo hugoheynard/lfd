@@ -35,6 +35,18 @@ import { OrderCollectionRepository } from "./domain/ports/order-collection.repos
 import { OrderNumbersReader } from "./domain/ports/order-numbers.reader.js";
 import { RecordedClosureReader } from "./domain/ports/recorded-closure.reader.js";
 import { AdminCollectionBatchesController } from "./http/admin-collection-batches.controller.js";
+import { CollectionAutopilotController } from "./http/collection-autopilot.controller.js";
+import { RunCollectionAutopilotHandler } from "./application/commands/run-collection-autopilot.handler.js";
+import { BusAutomaticCollectionConstituter } from "./application/services/bus-automatic-collection-constituter.js";
+import { AutoCollectionEntitiesReader } from "./domain/ports/auto-collection-entities.reader.js";
+import { AutomaticCollectionConstituter } from "./domain/ports/automatic-collection-constituter.js";
+import { CollectionAutopilotRuns } from "./domain/ports/collection-autopilot-runs.js";
+import { LastAutopilotRunReader } from "./domain/ports/last-autopilot-run.reader.js";
+import { PrismaAutoCollectionEntitiesReader } from "./infrastructure/prisma-auto-collection-entities.reader.js";
+import {
+  PrismaCollectionAutopilotRuns,
+  PrismaLastAutopilotRunReader,
+} from "./infrastructure/prisma-collection-autopilot-runs.js";
 import { AdminDetachedUnpaidController } from "./http/admin-detached-unpaid.controller.js";
 import { CompanyDetachedUnpaidController } from "./http/company-detached-unpaid.controller.js";
 import { DetachedUnpaidReader } from "./domain/ports/detached-unpaid.reader.js";
@@ -140,6 +152,7 @@ import { PrismaLegalEntityRepository } from "./infrastructure/prisma-legal-entit
     AdminCycleStatementsController,
     AdminInvoiceDossiersController,
     AdminCollectionBatchesController,
+    CollectionAutopilotController,
     AdminBillingStatementsController,
     AdminDetachedUnpaidController,
     CompanyDetachedUnpaidController,
@@ -175,6 +188,12 @@ import { PrismaLegalEntityRepository } from "./infrastructure/prisma-legal-entit
     { provide: PayerNoticeContactsReader, useClass: PrismaPayerNoticeContactsReader },
     CollectionNoticeSender,
     SendCollectionNotice,
+    // La constitution automatique (PA3).
+    { provide: CollectionAutopilotRuns, useClass: PrismaCollectionAutopilotRuns },
+    { provide: LastAutopilotRunReader, useClass: PrismaLastAutopilotRunReader },
+    { provide: AutoCollectionEntitiesReader, useClass: PrismaAutoCollectionEntitiesReader },
+    { provide: AutomaticCollectionConstituter, useClass: BusAutomaticCollectionConstituter },
+    RunCollectionAutopilotHandler,
     // Les impayés d'un site détaché (plan-sous-comptes §2.1 quater).
     { provide: DetachedUnpaidReader, useClass: PrismaDetachedUnpaidReader },
     { provide: UnpaidAccessReader, useClass: PrismaUnpaidAccessReader },

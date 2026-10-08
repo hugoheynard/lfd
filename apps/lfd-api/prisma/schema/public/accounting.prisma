@@ -167,16 +167,16 @@ model LegalEntity {
   // Le PRÉLÈVEMENT AUTOMATIQUE (plan `plan-prelevement-automatique.md`, PA1).
   // Désactivé par défaut, et aucune migration ne l'active : c'est un fait de
   // journal. Le délai (1 à 23 h) garde la constitution le jour de la clôture.
-  autoCollectionEnabled    Boolean @default(false) @map("auto_collection_enabled")
-  autoCollectionDelayHours Int     @default(1) @map("auto_collection_delay_hours")
+  autoCollectionEnabled      Boolean @default(false) @map("auto_collection_enabled")
+  autoCollectionDelayHours   Int     @default(1) @map("auto_collection_delay_hours")
   // N : l'échéance en jours après la clôture. NULL = le délai de
   // pré-notification, d'où un défaut qui ne change rien. N ≥ ce délai est
   // tenu par l'agrégat (il lit les deux colonnes).
-  collectionDaysAfterClosure Int? @map("collection_days_after_closure")
+  collectionDaysAfterClosure Int?    @map("collection_days_after_closure")
   // Le cut-off du portail bancaire : k jours ouvrés TARGET2 avant l'échéance,
   // à HH:MM. Les deux NULL = « à renseigner » ; un CHECK refuse l'un sans l'autre.
-  depositCutoffBusinessDays Int?    @map("deposit_cutoff_business_days")
-  depositCutoffTime         String? @map("deposit_cutoff_time")
+  depositCutoffBusinessDays  Int?    @map("deposit_cutoff_business_days")
+  depositCutoffTime          String? @map("deposit_cutoff_time")
 
   // La clé de l'objet qui porte le LOGO de l'entité, dans le stockage objet.
   // `null` = pas de logo, et c'est un état parfaitement vivable : le mandat sort
@@ -199,6 +199,7 @@ model LegalEntity {
   // Les lots de prélèvement constitués sous cette entité (plan
   // `plan-lot-de-prelevement-fige.md`). Côté inverse obligatoire pour Prisma.
   collectionBatches CollectionBatch[]
+  autopilotRuns     CollectionAutopilotRun[]
 
   createdAt DateTime @default(now()) @map("created_at")
   updatedAt DateTime @updatedAt @map("updated_at")

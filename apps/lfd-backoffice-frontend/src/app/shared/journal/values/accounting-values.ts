@@ -52,6 +52,14 @@ export const NOTICE_RECIPIENT_SOURCE = domain('destinataire d’un avis de prél
   owner: 'Détenteur du compte',
 });
 
+/** L'issue d'une tentative de la préparation automatique (PA3, 2026-10-08). */
+export const AUTOPILOT_OUTCOME = domain('issue de la préparation automatique', {
+  constituted: 'Lot préparé',
+  nothing_to_collect: 'Rien à prélever',
+  not_yet_open: 'Mois pas encore prélevable',
+  failed: 'Échec',
+});
+
 export const ACCOUNTING_VALUES: ValueFamily = {
   enums: [
     SEPA_SCHEME,
@@ -61,5 +69,6 @@ export const ACCOUNTING_VALUES: ValueFamily = {
     ORDER_COLLECTION_STATE,
     COLLECTION_NOTICE_KIND,
     NOTICE_RECIPIENT_SOURCE,
+    AUTOPILOT_OUTCOME,
   ],
 };

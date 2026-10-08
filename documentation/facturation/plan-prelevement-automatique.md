@@ -1,7 +1,7 @@
 # Le prélèvement automatique
 
-> 🟡 **Plan v2, PA1, PA4 et PA2 bâtis le 2026-10-08** (PA2 non commité à
-> l'écriture de cette ligne ; PA3 à faire). Touche **l'argent** et finira
+> 🟢 **Plan v2, PA1, PA4, PA2 et PA3 bâtis le 2026-10-08** (PA3 non commité
+> à l'écriture de cette ligne ; PA5 plus tard). Touche **l'argent** et finira
 > dans un **runbook** : la v1 a été contredite par `vitruve` le même jour
 > (trois BLOQUANTS, neuf SÉRIEUX), repris au § 8. Affirmations sur
 > l'existant vérifiées dans le dépôt le 2026-10-08.
@@ -174,6 +174,52 @@ collection-calendar.ts`) sur `target2-calendar.ts` (Pâques par
 
 ### PA3 — La constitution automatique, une fois par cycle
 
+> ✅ **Bâti le 2026-10-08.** Ce qui a été tranché en le bâtissant :
+>
+> - **Migration** `20261008170000_la_constitution_automatique`, additive :
+>   `collection_batch.constituted_by` (`TEXT`, défaut `staff`, donc les lots
+>   existants sont `staff`), `constituted_by_staff_id` rendu nullable, CHECK
+>   `collection_batch_constituted_by_author` (`staff` ⇒ fiche, `system` ⇒
+>   aucune). Table `collection_autopilot_run`, clé primaire (`legal_entity_id`,
+>   `cycle_closes_at`), `ran_at`, `outcome`, `message` ; un `failed` porte
+>   son message (CHECK).
+> - **Un cinquième état, `pending`** : la tentative est PRISE par
+>   l'insertion (`INSERT … ON CONFLICT DO NOTHING`) avant d'agir, puis
+>   tranchée — comme l'arrêt automatique du plan
+>   (`production_auto_close_attempt`). Deux passages simultanés se
+>   départagent en base ; un processus mort entre les deux laisse `pending`,
+>   que l'écran dit « interrompue », et qui ne se retente pas.
+> - **L'auteur** est un type du domaine (`ConstitutionAuthor` :
+>   `{ kind: "staff", staffId }` | `{ kind: "system" }`), porté par
+>   `ConstituteCollectionBatchesCommand` : le bouton passe la fiche, le
+>   passage `system`. La vue du lot porte `constitutedBy` (`staff` |
+>   `system`), jamais une fiche ; aucune lecture ne joignait
+>   `constituted_by_staff_id` à l'annuaire (vérifié le 2026-10-08 : il n'était
+>   lu que par l'adaptateur d'écriture du lot).
+> - **Le passage** `RunCollectionAutopilot` (`POST
+admin/accounting/collection/autopilot`, `RecomputeGuard`) : entités
+>   activées et non archivées ; cycle = `cycleToConstitute(now).closesAt`,
+>   dû si clôture + délai ≤ maintenant ; lit la table, se tait si tenté ;
+>   sinon constitue par le bus sous l'acteur `system`/`collection-autopilot`
+>   (`BusAutomaticCollectionConstituter`). `NothingToCollectError` →
+>   `nothing_to_collect`, une constitution qui n'a fait qu'écarter aussi
+>   (message dédié) ; `CollectionNotYetOpenError` → `not_yet_open` ; tout
+>   autre refus → `failed` + message, et un log. Fait
+>   `collection.autopilot_ran` (sujet : l'entité) écrit avec l'issue.
+> - **Le cron** `15 * * * *`, propre, dans `wrangler.jsonc` et
+>   `COLLECTION_AUTOPILOT_CRON` (`container/worker.ts`) ; une suite
+>   (`apps/lfd-api/container/__tests__/cron-expressions.spec.ts`) vérifie désormais que
+>   chaque constante `*_CRON` du Worker est déclarée et routée.
+> - **L'écran** : la fiche et l'écran du mois lisent `lastAutopilotRun` sur
+>   la vue de l'entité (encadré partagé `autopilot-last-run/`) ; « pas encore
+>   branchée » est retiré. Le lot dit « Préparé automatiquement le … »,
+>   l'historique « · préparé automatiquement ».
+> - **Non réglé, assumé** : une entité qui ACTIVE l'automatisme en cours de
+>   mois voit le lot du mois clos préparé au passage suivant s'il n'a jamais
+>   été tenté (l'heure prévue est passée) — c'est la règle « heure prévue
+>   passée » telle qu'écrite. Si le lot existe déjà (préparé à la main), la
+>   tentative est rangée `nothing_to_collect`.
+
 - Table `collection_autopilot_run` (`legal_entity_id`, `cycle_closes_at`,
   `ran_at`, `outcome`) : l'automatisme ne tente **qu'une fois** par cycle.
   Annuler un lot ne le relance pas : reconstituer est un geste humain,
@@ -210,8 +256,8 @@ collection-calendar.ts`) sur `target2-calendar.ts` (Pâques par
 >   est un composant partagé avec la fiche de l'entité (`collection-calendar/`).
 >   Le bouton « Préparer le lot de septembre » disparaît quand le lot du mois
 >   clos existe (préparé ou déposé) ; ses refus s'affichent tels quels.
-> - **Pas de « dernière tentative »** de l'automatisme : PA3 n'existe pas,
->   l'écran dit « activée, mais pas encore branchée ». À poser avec PA3.
+> - **Pas de « dernière tentative »** de l'automatisme : PA3 n'existait pas,
+>   l'écran disait « activée, mais pas encore branchée ». Posée avec PA3.
 > - **Pas d'état des avis** : PA2 n'existait pas — posé avec PA2 (colonne
 >   « Avis de prélèvement » des lignes, encadré des avis pas partis).
 > - **Les aperçus XML/CSV par schéma** ont quitté le tableau de bord pour la
@@ -262,7 +308,7 @@ Import `pain.002` / `camt.054` ; un rejet remet les bons « à prélever ».
 | **PA1** | ✅ 2026-10-08 — réglages, `collectionCalendar` (TARGET2), échéance figée sur le lot                                |
 | **PA4** | ✅ 2026-10-08 — l'écran du mois, aperçu en facture, tableau de bord corrigé                                        |
 | **PA2** | ✅ 2026-10-08 — l'avis à la constitution, son état, rectificatif et annulation ; dépôt exige les avis envoyés ; D4 |
-| **PA3** | l'automatisme une fois par cycle, cron propre, auteur `system`                                                     |
+| **PA3** | ✅ 2026-10-08 — l'automatisme une fois par cycle, cron propre, auteur `system`                                     |
 
 PA1 se bâtit avec N = délai actuel, donc sans attendre Q1 : seul le report
 TARGET2 change le fichier.

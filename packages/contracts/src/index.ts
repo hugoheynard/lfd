@@ -165,6 +165,7 @@ export {
   settleOrderOtherwisePayloadSchema,
 } from "./collection-batch.js";
 export type {
+  CollectionBatchAuthorView,
   CollectionBatchStatusView,
   ConstituteBatchesPayload,
   CollectionBatchLineView,
@@ -270,6 +271,8 @@ export type {
   SetCreditorAccountPayload,
   SetMandateDefaultsPayload,
   SetPreNotificationPayload,
+  CollectionAutopilotOutcomeView,
+  CollectionAutopilotRunView,
   CollectionCalendarView,
   DepositCutoffView,
   LocalDeadlineView,

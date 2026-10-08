@@ -3,6 +3,7 @@ import type { CollectionPreviewOpenView } from "@lfd/contracts";
 import { CollectionFloorMissingError } from "../../../domain/errors/collection-errors.js";
 import {
   ENTITY_ID,
+  STAFF_AUTHOR,
   mandate,
   order,
 } from "../../../domain/services/__tests__/collection-fixtures.js";
@@ -38,7 +39,7 @@ describe("l'aperçu du mois", () => {
 
     const view = await openPreview(w);
     const [id] = await w.constitute.execute(
-      new ConstituteCollectionBatchesCommand(ENTITY_ID, "staff_1"),
+      new ConstituteCollectionBatchesCommand(ENTITY_ID, STAFF_AUTHOR),
     );
 
     const batch = w.batches.saved.get(id ?? "");

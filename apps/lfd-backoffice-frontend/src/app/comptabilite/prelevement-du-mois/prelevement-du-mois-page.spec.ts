@@ -41,6 +41,7 @@ function batch(over: Partial<CollectionBatchView> = {}): CollectionBatchView {
     cycleClosesAt: SEPTEMBER_CLOSURE,
     status: 'constituted',
     constitutedAt: '2026-10-02T09:00:00.000Z',
+    constitutedBy: 'staff',
     depositedAt: null,
     cancelledAt: null,
     lineCount: 2,
@@ -115,6 +116,7 @@ const ENTITY: Partial<LegalEntityView> = {
   siren: '552100554',
   archivedAt: null,
   autoCollectionEnabled: false,
+  lastAutopilotRun: null,
   nextCollection: {
     closesAt: NEXT_CLOSURE,
     plannedConstitutionAt: '2026-11-01T00:00:00.000Z',
@@ -194,14 +196,34 @@ describe('PrelevementDuMoisPage', () => {
     );
   });
 
-  it('automatisme activé : dit honnêtement qu’il n’est pas encore branché', async () => {
+  it('automatisme activé : dit qu’il prépare seul, une fois par mois, et sa dernière tentative', async () => {
     const fixture = await render(new FakeApi(), undefined, {
       ...ENTITY,
       autoCollectionEnabled: true,
+      lastAutopilotRun: {
+        cycleClosesAt: SEPTEMBER_CLOSURE,
+        ranAt: '2026-09-30T23:15:00.000Z',
+        outcome: 'failed',
+        message: 'L’entité n’a pas d’ICS.',
+      },
     });
 
-    expect(host(fixture).querySelector('[data-auto-state]')?.textContent).toContain(
-      'pas encore branchée',
+    const state = host(fixture).querySelector('[data-auto-state]')?.textContent ?? '';
+    expect(state).toContain('se prépare tout seul');
+    expect(state).not.toContain('branchée');
+    const run = host(fixture).querySelector('[data-autopilot-run]')?.textContent ?? '';
+    expect(run).toContain('a échoué');
+    expect(run).toContain('lot de septembre');
+    expect(run).toContain('« L’entité n’a pas d’ICS. »');
+  });
+
+  it('un lot préparé automatiquement le dit', async () => {
+    const api = new FakeApi();
+    api.view = { ...api.view, batches: [batch({ constitutedBy: 'system' })] };
+    const fixture = await render(api);
+
+    expect(host(fixture).querySelector('[data-batch-author]')?.textContent).toContain(
+      'Préparé automatiquement',
     );
   });
 

@@ -56,6 +56,22 @@ const notice = {
   recipientSource: z.enum(["billing_contact", "owner"]).nullable(),
 };
 
+/**
+ * Une tentative de la constitution automatique (plan
+ * `plan-prelevement-automatique.md`, PA3). Sujet : l'entité émettrice,
+ * nommée par sa raison sociale. Une par entité et par cycle, jamais deux.
+ */
+const autopilotRun = {
+  subjectLabel: subjectLabel(),
+  /** La clôture du cycle tenté — exclusive. */
+  cycleClosesAt: instant(),
+  outcome: z.enum(["constituted", "nothing_to_collect", "not_yet_open", "failed"]),
+  /** Les lots préparés — zéro hors `constituted`. */
+  batchCount: count(),
+  /** Le refus tel quel en `failed`, l'explication sinon. */
+  message: z.string().nullable(),
+};
+
 export const COLLECTION_FACTS = {
   /**
    * Un lot est constitué. `unmandatedCompanies` le rend indéposable (Q2) ;
@@ -105,4 +121,6 @@ export const COLLECTION_FACTS = {
   "collection.notice_sent": fact(payload(notice)),
   /** Le fournisseur a refusé : `failure` dit pourquoi, le lot ne se dépose pas. */
   "collection.notice_failed": fact(payload({ ...notice, failure: z.string() })),
+  /** L'automatisme a tenté le cycle : son issue, rangée et visible, jamais avalée. */
+  "collection.autopilot_ran": fact(payload(autopilotRun)),
 } as const;

@@ -1,4 +1,5 @@
 import type { CreditorSnapshot } from "../../creditor-snapshot.js";
+import type { ConstitutionAuthor } from "../../entities/collection-batch.js";
 import type { CollectableOrder } from "../../ports/collection-candidates.reader.js";
 import type { FrozenInvoiceOrder } from "../invoice-dossier.types.js";
 import type { CollectionMandate } from "../../ports/collection-mandates.reader.js";
@@ -8,6 +9,8 @@ import type { CollectionMandate } from "../../ports/collection-mandates.reader.j
  * elles et au cycle donné — jamais à l'horloge : elles peuvent rester absolues.
  */
 export const ENTITY_ID = "le_1";
+/** Le bouton de la comptabilité : une fiche staff locale. */
+export const STAFF_AUTHOR: ConstitutionAuthor = { kind: "staff", staffId: "staff_1" };
 export const BATCH_ID = "01JBQ7Z5K8M3QT9P2X4BZZZZZZ";
 export const SEPTEMBER = {
   startsAt: new Date("2026-08-31T22:00:00.000Z"),
