@@ -37,6 +37,7 @@ import {
 } from "../../../domain/ports/mandate-recheck.reader.js";
 import { OrderCollectionRepository } from "../../../domain/ports/order-collection.repository.js";
 import type { BillingFollow } from "../../../domain/ports/statement-billing.reader.js";
+import type { CollectableInvoice } from "../../../domain/services/collection-assembly.js";
 import type { SepaScheme } from "../../../domain/value-objects/sepa-scheme.js";
 
 /**
@@ -103,6 +104,22 @@ export class FakeCandidates extends CollectionCandidatesReader {
   }
   liveSchemes(): Promise<readonly SepaScheme[]> {
     return Promise.resolve(this.live);
+  }
+  /** `null` par défaut : les suites d'avant E4 gardent l'ancien chemin (l'arrêté). */
+  invoicingFloorAt: Date | null = null;
+  invoicingFloor(): Promise<Date | null> {
+    return Promise.resolve(this.invoicingFloorAt);
+  }
+  invoices: CollectableInvoice[] = [];
+  invoicesOf(orderIds: readonly string[]): Promise<ReadonlyMap<string, CollectableInvoice>> {
+    const asked = new Set(orderIds);
+    const byOrder = new Map<string, CollectableInvoice>();
+    for (const invoice of this.invoices) {
+      if (invoice.orderIds.some((id) => asked.has(id))) {
+        invoice.orderIds.forEach((id) => byOrder.set(id, invoice));
+      }
+    }
+    return Promise.resolve(byOrder);
   }
 }
 

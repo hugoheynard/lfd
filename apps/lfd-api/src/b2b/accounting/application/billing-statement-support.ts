@@ -29,8 +29,10 @@ export interface IssuedStatement {
 }
 
 /**
- * **Un arrêté par ligne de débit** (plan `plan-le-prelevement-suit-la-facture.md`,
- * F3), avec exactement les bons de la ligne.
+ * **Un arrêté par ligne de débit d'arrêté** (plan
+ * `plan-le-prelevement-suit-la-facture.md`, F3), avec exactement les bons de
+ * la ligne. Une ligne qui encaisse des factures émises n'en reçoit pas : sa
+ * pièce est la facture (plan `plan-emission-de-la-facture.md`, E4).
  *
  * Le rang d'une ligne EST l'indice de son brouillon + 1 (`renderBatchFile`) :
  * on relit donc les brouillons du schéma du lot, dans le même ordre. La
@@ -42,8 +44,11 @@ export function buildStatements(input: StatementsInput): readonly IssuedStatemen
   return input.batches.flatMap((batch) => {
     const state = batch.toPersistence();
     const drafts = input.debits.get(state.scheme) ?? [];
-    return state.lines.map((line): IssuedStatement => {
+    return state.lines.flatMap((line): IssuedStatement[] => {
       const draft = drafts[line.rank - 1];
+      if (draft?.settles.kind === "invoices") {
+        return [];
+      }
       const buyer = input.buyers.get(line.debtorCompanyId);
       if (draft === undefined || buyer === undefined) {
         throw new StatementBuyerMissingError(batch.id, line.rank, line.debtorCompanyId);
@@ -58,11 +63,11 @@ export function buildStatements(input: StatementsInput): readonly IssuedStatemen
         buyer,
         issuedOn,
         orders: draft.orders.map((order) => ({ orderId: order.orderId, frozen: order.frozen })),
-        invoice: draft.invoice,
+        invoice: draft.settles.invoice,
         ordersTotalCents: draft.ordersTotalCents,
         lineAmountCents: line.amountCents,
       });
-      return { batch, statement, debtorName: line.debtorName };
+      return [{ batch, statement, debtorName: line.debtorName }];
     });
   });
 }

@@ -1,18 +1,13 @@
-import type { CollectionExclusionReason } from "../entities/order-collection.js";
 import type { CollectableOrder } from "../ports/collection-candidates.reader.js";
 import type { CollectionMandate } from "../ports/collection-mandates.reader.js";
 import type { BillingFollow } from "../ports/statement-billing.reader.js";
-import {
-  collectsOnSiteMandate,
-  DEFAULT_COLLECTION_FORM,
-  type CollectionFormName,
-} from "../value-objects/collection-form.js";
+import type { CollectionFormName } from "../value-objects/collection-form.js";
 import type { SepaScheme } from "../value-objects/sepa-scheme.js";
-import { billedPayerOf, billingFollowAt } from "./billed-payer.js";
+import { judgeMandate, type Verdict } from "./collection-verdict.js";
+import { debitsByScheme, nameOf } from "./collection-debit-drafts.js";
 import { isBillable } from "./invoice-billability.js";
-import { simulateInvoiceDossier } from "./invoice-dossier.js";
 import type { Invoice } from "./invoice-dossier.types.js";
-import { SEQUENCE_ORDER, sequenceTypeOf } from "./pain008-document.js";
+import type { CollectionExclusionReason } from "../entities/order-collection.js";
 
 /**
  * **Qui paie quoi, sous quel mandat, chez quelle entité** — la partie pure de
@@ -41,10 +36,30 @@ import { SEQUENCE_ORDER, sequenceTypeOf } from "./pain008-document.js";
  *    bloque pas les autres (plan `plan-le-prelevement-suit-la-facture.md`, F2).
  *    Jugé en dernier : un bon d'une autre entité n'est pas le nôtre à écarter.
  *
- * Le montant d'une ligne est le **total TTC de la facture** calculée en une
- * fois sur exactement ses bons (`simulateInvoiceDossier`), pas leur somme ;
- * la somme est gardée à côté (`ordersTotalCents`), l'écart appartient à la
- * ligne, jamais à un bon.
+ * Les étapes 1 à 6 vivent dans `collection-verdict.ts` (`judgeMandate`).
+ *
+ * ## Deux sortes de lignes depuis E4
+ *
+ * - **Une ligne qui encaisse des FACTURES ÉMISES** (plan
+ *   `plan-emission-de-la-facture.md`, § 3) : un bon couvert par une facture
+ *   se juge AVEC elle — la facture entière, ou rien. Ses bons tous au même
+ *   mandat → elle entre ; un bon ailleurs → elle attend ; un bon écarté →
+ *   tous ses bons le sont, pour la même raison ; plusieurs mandats →
+ *   `invoice_split`. Montant = Σ TTC des factures, rien n'est recalculé.
+ * - **Une ligne d'ARRÊTÉ**, l'ancien chemin, pour les seuls bons passés
+ *   avant la mise en service de la facture du mois (`invoicingFloor`) : ils
+ *   n'auront jamais de facture du mois. Montant = **total TTC de la facture
+ *   calculée** en une fois sur ses bons (`simulateInvoiceDossier`), pas leur
+ *   somme ; l'arrêté la fige.
+ *
+ * Un bon passé APRÈS la mise en service et sans facture n'entre pas : il
+ * attend la sienne (la facture du mois l'a signalé, ou ne l'a pas encore
+ * vu). Il n'est ni arrêté — il serait alors facturé deux fois —, ni écarté.
+ * Sans plancher (`null`), seuls les bons facturés prennent le nouveau
+ * chemin : l'absence du plancher ne peut jamais faire arrêter un bon facturé.
+ *
+ * La somme des bons est gardée à côté (`ordersTotalCents`) ; l'écart
+ * appartient à la ligne, jamais à un bon.
  *
  * ⚠️ Un mandat actif SANS créancier (`creditor_id` nul, RUM reprise) ne
  * rattache à aucune entité : il compte comme absent. Choix conservateur — il
@@ -66,7 +81,37 @@ export interface AssemblyInput {
   readonly consumedMandates: ReadonlySet<string>;
   readonly companyNames: ReadonlyMap<string, string>;
   readonly liveSchemes: readonly SepaScheme[];
+  /** Les factures émises (380) qui couvrent ces bons, par bon (E4). */
+  readonly invoices: ReadonlyMap<string, CollectableInvoice>;
+  /**
+   * La mise en service de la facture du mois : un bon passé depuis, sans
+   * facture, attend la sienne. `null` = tous les bons sans facture suivent
+   * l'ancien chemin (l'aperçu, qui simule ; une base sans plancher).
+   */
+  readonly invoicingFloor: Date | null;
 }
+
+/** Une facture émise que le lot peut encaisser — sa pièce est figée ailleurs. */
+export interface CollectableInvoice {
+  readonly invoiceId: string;
+  readonly number: string;
+  /** Son total TTC — ce que la ligne prélève pour elle. */
+  readonly totalCents: number;
+  /** TOUS ses bons : elle ne se prélève qu'entière. */
+  readonly orderIds: readonly string[];
+}
+
+/**
+ * Ce que la ligne encaisse : l'arrêté d'une facture calculée (bons d'avant la
+ * facture du mois), ou des factures émises (E4).
+ */
+export type DebitSettlement =
+  | {
+      readonly kind: "statement";
+      /** Calculée une fois ; l'arrêté (F3) la fige telle quelle. */
+      readonly invoice: Invoice;
+    }
+  | { readonly kind: "invoices"; readonly invoices: readonly CollectableInvoice[] };
 
 /** Une ligne à venir : un payeur, son mandat, ses commandes. */
 export interface DebitDraft {
@@ -74,12 +119,8 @@ export interface DebitDraft {
   readonly debtorName: string;
   readonly mandate: CollectionMandate;
   readonly orders: readonly CollectableOrder[];
-  /**
-   * La facture de ces bons, calculée en une fois — la SEULE fois : l'arrêté
-   * de facturation (F3) la fige telle quelle, sans la recalculer.
-   */
-  readonly invoice: Invoice;
-  /** Le total TTC de cette facture : `invoice.totalCents`. */
+  readonly settles: DebitSettlement;
+  /** Ce que la ligne prélève : le TTC de l'arrêté, ou Σ TTC des factures. */
   readonly amountCents: number;
   /** Σ des totaux des bons — l'écart est `amountCents − ordersTotalCents`. */
   readonly ordersTotalCents: number;
@@ -99,157 +140,126 @@ export interface Assembly {
   readonly unmandatedCompanies: readonly string[];
 }
 
-type Verdict =
-  | { readonly kind: "debit"; readonly payerId: string; readonly mandate: CollectionMandate }
-  | {
-      readonly kind: "exclude";
-      readonly reason: CollectionExclusionReason;
-      readonly payerId: string;
-    }
-  | { readonly kind: "elsewhere" };
+/** Un mandat, ses bons, et ses factures (`null` : une ligne d'arrêté). */
+export interface DebitGroup {
+  readonly payerId: string;
+  readonly mandate: CollectionMandate;
+  readonly orders: CollectableOrder[];
+  /** `null` : une ligne d'arrêté. */
+  readonly invoices: CollectableInvoice[] | null;
+}
+
+/** Ce que l'assemblage accumule. */
+interface Accumulator {
+  readonly exclusions: Exclusion[];
+  readonly unmandated: Set<string>;
+  readonly groups: Map<string, DebitGroup>;
+}
 
 export function assembleCollection(input: AssemblyInput): Assembly {
-  const exclusions: Exclusion[] = [];
-  const unmandated = new Set<string>();
-  const byMandate = new Map<
-    string,
-    { payerId: string; mandate: CollectionMandate; orders: CollectableOrder[] }
-  >();
-
+  const acc: Accumulator = { exclusions: [], unmandated: new Set(), groups: new Map() };
+  const invoiced = new Map<string, { invoice: CollectableInvoice; orders: CollectableOrder[] }>();
   for (const order of input.orders) {
-    const verdict = judge(order, input);
-    if (verdict.kind === "elsewhere") {
-      continue;
+    const invoice = input.invoices.get(order.orderId);
+    if (invoice !== undefined) {
+      const entry = invoiced.get(invoice.invoiceId) ?? { invoice, orders: [] };
+      entry.orders.push(order);
+      invoiced.set(invoice.invoiceId, entry);
+    } else if (input.invoicingFloor === null || order.placedAt < input.invoicingFloor) {
+      collectStatementOrder(order, input, acc);
     }
-    if (verdict.kind === "exclude") {
-      exclusions.push({ order, reason: verdict.reason });
-      if (verdict.reason === "no_mandate") {
-        unmandated.add(nameOf(verdict.payerId, input.companyNames));
-      }
-      continue;
-    }
-    const group = byMandate.get(verdict.mandate.mandateId) ?? {
-      payerId: verdict.payerId,
-      mandate: verdict.mandate,
-      orders: [],
-    };
-    group.orders.push(order);
-    byMandate.set(verdict.mandate.mandateId, group);
   }
-
+  for (const { invoice, orders } of invoiced.values()) {
+    collectInvoice(invoice, orders, input, acc);
+  }
   return {
-    debits: groupByScheme([...byMandate.values()], input),
-    exclusions,
-    unmandatedCompanies: [...unmandated].sort((left, right) => left.localeCompare(right, "fr")),
+    debits: debitsByScheme([...acc.groups.values()], input),
+    exclusions: acc.exclusions,
+    unmandatedCompanies: [...acc.unmandated].sort((left, right) => left.localeCompare(right, "fr")),
   };
 }
 
-function judge(order: CollectableOrder, input: AssemblyInput): Verdict {
-  const payerId = billedPayerOf(order, input.follows);
-  if (payerId !== order.companyId) {
-    const now = billingFollowAt(order.companyId, input.at, input.follows);
-    if (now?.payerId !== payerId) {
-      return { kind: "exclude", reason: "payer_detached", payerId };
-    }
+/** L'ancien chemin : un bon jugé seul, facturable ou écarté. */
+function collectStatementOrder(order: CollectableOrder, input: AssemblyInput, acc: Accumulator) {
+  const verdict = judgeMandate(order, input);
+  if (verdict.kind === "debit" && !isBillable(order.frozen)) {
+    acc.exclusions.push({ order, reason: "unbillable" });
+    return;
   }
-  const { candidates, answerable } = effectiveMandates(order, payerId, input);
-  const creditors = new Set(candidates.map((mandate) => mandate.creditorId));
-  const mandate = candidates[0];
-  if (mandate === undefined) {
-    // `payerId` porte ici qui NOMMER : le site quand il a choisi son mandat.
-    return { kind: "exclude", reason: "no_mandate", payerId: answerable };
+  if (verdict.kind === "exclude") {
+    exclude([order], verdict, input, acc);
+    return;
   }
-  if (creditors.size > 1) {
-    return { kind: "exclude", reason: "ambiguous_creditor", payerId };
+  if (verdict.kind === "debit") {
+    groupOf(acc, `${verdict.mandate.mandateId}#statement`, verdict, null).orders.push(order);
   }
-  if (mandate.creditorId !== input.legalEntityId) {
-    return { kind: "elsewhere" };
-  }
-  if (mandate.paymentType === "one_off" && input.consumedMandates.has(mandate.mandateId)) {
-    return { kind: "exclude", reason: "one_off_consumed", payerId };
-  }
-  if (input.liveSchemes.includes(mandate.scheme)) {
-    return { kind: "elsewhere" };
-  }
-  if (!isBillable(order.frozen)) {
-    return { kind: "exclude", reason: "unbillable", payerId };
-  }
-  return { kind: "debit", payerId, mandate };
 }
 
 /**
- * Les mandats parmi lesquels la commande se prélève, et qui nommer s'il n'y en
- * a aucun. Forme 1 (ou payeur = société) : ceux du payeur. Formes 2 et 3 :
- * ceux du SITE qui nomment ce payeur, et eux seuls — le site a choisi son
- * mandat, débiter le principal en silence est le cas interdit (Hugo,
- * 2026-10-05) ; sans mandat de site, `no_mandate` nomme le site (Q2).
- * Un mandat sans créancier ne rattache à aucune entité : il compte comme absent.
+ * Une facture se juge entière : ses bons ouverts doivent être TOUS là (un bon
+ * déjà réglé autrement la laisse en attente — elle ne se prélève pas en
+ * morceaux), puis tous au même mandat.
  */
-function effectiveMandates(
-  order: CollectableOrder,
-  payerId: string,
+function collectInvoice(
+  invoice: CollectableInvoice,
+  orders: readonly CollectableOrder[],
   input: AssemblyInput,
-): { readonly candidates: readonly CollectionMandate[]; readonly answerable: string } {
-  const usable = input.mandates.filter((mandate) => mandate.creditorId !== null);
-  const form = input.collectionForms.get(order.companyId) ?? DEFAULT_COLLECTION_FORM;
-  if (payerId !== order.companyId && collectsOnSiteMandate(form)) {
-    return {
-      candidates: usable.filter(
-        (mandate) => mandate.companyId === order.companyId && mandate.debtorCompanyId === payerId,
-      ),
-      answerable: order.companyId,
-    };
+  acc: Accumulator,
+): void {
+  if (orders.length !== invoice.orderIds.length) {
+    return;
   }
-  return {
-    candidates: usable.filter(
-      (mandate) => mandate.companyId === payerId && mandate.debtorCompanyId === payerId,
-    ),
-    answerable: payerId,
+  const verdicts = orders.map((order) => judgeMandate(order, input));
+  if (verdicts.some((verdict) => verdict.kind === "elsewhere")) {
+    return;
+  }
+  const excluded = verdicts.find((verdict) => verdict.kind === "exclude");
+  if (excluded !== undefined) {
+    exclude(orders, excluded, input, acc);
+    return;
+  }
+  const debits = verdicts.flatMap((verdict) => (verdict.kind === "debit" ? [verdict] : []));
+  const [first] = debits;
+  if (first === undefined) {
+    return;
+  }
+  if (new Set(debits.map((debit) => debit.mandate.mandateId)).size > 1) {
+    acc.exclusions.push(...orders.map((order) => ({ order, reason: "invoice_split" as const })));
+    return;
+  }
+  const group = groupOf(acc, `${first.mandate.mandateId}#invoices`, first, []);
+  group.orders.push(...orders);
+  group.invoices?.push(invoice);
+}
+
+function exclude(
+  orders: readonly CollectableOrder[],
+  verdict: Extract<Verdict, { kind: "exclude" }>,
+  input: AssemblyInput,
+  acc: Accumulator,
+): void {
+  acc.exclusions.push(...orders.map((order) => ({ order, reason: verdict.reason })));
+  if (verdict.reason === "no_mandate") {
+    acc.unmandated.add(nameOf(verdict.payerId, input.companyNames));
+  }
+}
+
+function groupOf(
+  acc: Accumulator,
+  key: string,
+  verdict: Extract<Verdict, { kind: "debit" }>,
+  invoices: CollectableInvoice[] | null,
+): DebitGroup {
+  const existing = acc.groups.get(key);
+  if (existing !== undefined) {
+    return existing;
+  }
+  const group: DebitGroup = {
+    payerId: verdict.payerId,
+    mandate: verdict.mandate,
+    orders: [],
+    invoices,
   };
-}
-
-function groupByScheme(
-  groups: readonly { payerId: string; mandate: CollectionMandate; orders: CollectableOrder[] }[],
-  input: AssemblyInput,
-): ReadonlyMap<SepaScheme, readonly DebitDraft[]> {
-  const drafts = groups.map((group): DebitDraft => {
-    const dossier = simulateInvoiceDossier(group.orders.map((order) => order.frozen));
-    return {
-      payerId: group.payerId,
-      debtorName: nameOf(group.payerId, input.companyNames),
-      mandate: group.mandate,
-      orders: [...group.orders].sort((left, right) =>
-        left.orderNumber.localeCompare(right.orderNumber),
-      ),
-      invoice: dossier.invoice,
-      amountCents: dossier.invoice.totalCents,
-      ordersTotalCents: dossier.ordersTotalCents,
-      priorOrderCount: group.orders.filter((order) => order.placedAt < input.cycleStartsAt).length,
-    };
-  });
-  const result = new Map<SepaScheme, readonly DebitDraft[]>();
-  for (const scheme of ["CORE", "B2B"] as const) {
-    const ofScheme = drafts.filter((draft) => draft.mandate.scheme === scheme);
-    if (ofScheme.length > 0) {
-      result.set(scheme, inRankOrder(ofScheme));
-    }
-  }
-  return result;
-}
-
-/** RCUR puis OOFF (l'ordre des blocs du fichier), puis par nom, puis par id. */
-function inRankOrder(drafts: readonly DebitDraft[]): readonly DebitDraft[] {
-  const byName = [...drafts].sort(
-    (left, right) =>
-      left.debtorName.localeCompare(right.debtorName, "fr") ||
-      left.payerId.localeCompare(right.payerId),
-  );
-  return SEQUENCE_ORDER.flatMap((sequence) =>
-    byName.filter((draft) => sequenceTypeOf(draft.mandate.paymentType) === sequence),
-  );
-}
-
-/** Le nom du payeur ; son id si l'annuaire ne le connaît pas — jamais un nom inventé. */
-function nameOf(companyId: string, names: ReadonlyMap<string, string>): string {
-  return names.get(companyId) ?? companyId;
+  acc.groups.set(key, group);
+  return group;
 }

@@ -14,7 +14,9 @@ export type CollectionExclusionReason =
   | "one_off_consumed"
   | "ambiguous_creditor"
   /** Un bon qu'on ne sait pas facturer — plan-le-prelevement-suit-la-facture, F2. */
-  | "unbillable";
+  | "unbillable"
+  /** Un bon d'une facture émise qui tomberait sur plusieurs mandats (E4). */
+  | "invoice_split";
 
 export interface OrderCollectionState {
   readonly orderId: string;

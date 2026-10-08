@@ -19,6 +19,7 @@ function line(over: Partial<CollectionBatchLineView> = {}): CollectionBatchLineV
     amountCents: 10_018,
     ordersTotalCents: 10_019,
     billingStatementId: 'st_1',
+    invoiceNumbers: [],
     notice: {
       kind: 'notice',
       status: 'sent',
@@ -96,6 +97,29 @@ describe('BatchLines', () => {
     );
     expect(host.querySelector('[data-line-gap]')).toBeNull();
     expect(host.querySelector('a[href]')).toBeNull();
+  });
+});
+
+describe('une ligne qui encaisse des factures émises (E4)', () => {
+  const invoiced = (): CollectionBatchLineView =>
+    line({ billingStatementId: null, invoiceNumbers: ['FA-2026-000001', 'FA-2026-000002'] });
+
+  it('cite ses factures, garde Σ bons et l’écart, et n’ouvre aucun arrêté', () => {
+    expect(toRow(invoiced())).toMatchObject({
+      statementId: null,
+      invoiceNumbers: ['FA-2026-000001', 'FA-2026-000002'],
+      gap: expect.stringMatching(/^−0,01\s€$/u) as string,
+    });
+  });
+
+  it('rend les numéros dans la colonne « Pièce », sans lien d’arrêté', async () => {
+    const host = await render([invoiced()]);
+
+    expect(host.querySelector('[data-line-invoices]')?.textContent).toContain(
+      'Factures FA-2026-000001, FA-2026-000002',
+    );
+    expect(host.querySelector('a[href]')).toBeNull();
+    expect(host.querySelector('[data-before-statement]')).toBeNull();
   });
 });
 

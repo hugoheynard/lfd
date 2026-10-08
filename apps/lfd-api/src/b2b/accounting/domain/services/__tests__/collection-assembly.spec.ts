@@ -20,6 +20,8 @@ function input(overrides: Partial<AssemblyInput>): AssemblyInput {
       ["c_principal", "Club Principal"],
     ]),
     liveSchemes: [],
+    invoices: new Map(),
+    invoicingFloor: null,
     ...overrides,
   };
 }

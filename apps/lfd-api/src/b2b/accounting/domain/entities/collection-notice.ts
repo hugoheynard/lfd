@@ -24,8 +24,13 @@ export interface NoticeTerms {
 export interface NoticeLineRef {
   readonly batchId: string;
   readonly lineRank: number;
-  /** L'arrêté de la ligne : sa référence est imprimée sur l'avis. */
-  readonly statementId: string;
+  /**
+   * L'arrêté de la ligne : sa référence est imprimée sur l'avis. `null` pour
+   * une ligne qui encaisse des factures émises (E4).
+   */
+  readonly statementId: string | null;
+  /** Les factures que la ligne encaisse (E4) ; vide pour une ligne d'arrêté. */
+  readonly invoiceNumbers: readonly string[];
 }
 
 export interface CollectionNoticeState {

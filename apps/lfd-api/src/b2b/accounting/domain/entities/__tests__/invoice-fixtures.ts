@@ -95,6 +95,7 @@ export function issueInput(overrides: Partial<IssueInvoiceInput> = {}): IssueInv
     ],
     lines: LINES,
     vat: breakdownOf(LINES),
+    paymentMeans: null,
     ...overrides,
   };
 }

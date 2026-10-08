@@ -22,6 +22,7 @@ function render(overrides: Partial<Parameters<typeof notice>[0]> = {}) {
     collectionDay: "vendredi 16 octobre 2026",
     mandateReference: "RUM-PORT-1",
     statementReference: "01JBQ7Z5K8M3QT9P2X4B000002",
+    invoiceNumbers: [],
     previous: null,
     ...overrides,
   });

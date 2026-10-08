@@ -15,7 +15,12 @@ export const COLLECTION_BATCH_STATUS_LABELS: Readonly<Record<CollectionBatchStat
 };
 
 export type CollectionExclusionReasonView =
-  "no_mandate" | "payer_detached" | "one_off_consumed" | "ambiguous_creditor" | "unbillable";
+  | "no_mandate"
+  | "payer_detached"
+  | "one_off_consumed"
+  | "ambiguous_creditor"
+  | "unbillable"
+  | "invoice_split";
 
 /** Ce que l'écran dit d'une raison d'exclusion — et le geste de sortie. */
 export const COLLECTION_EXCLUSION_REASON_LABELS: Readonly<
@@ -27,6 +32,8 @@ export const COLLECTION_EXCLUSION_REASON_LABELS: Readonly<
   ambiguous_creditor: "Deux mandats actifs chez deux entités — en révoquer un",
   unbillable:
     "Non facturable — bon incohérent ou sans taux de TVA : le signaler à l'équipe technique, ou régler autrement",
+  invoice_split:
+    "Sa facture tomberait sur plusieurs mandats — une facture ne se prélève pas en morceaux : régler autrement, ou ne garder qu'un mandat",
 };
 
 /** L'état d'encaissement d'une commande — `due` quand aucun lot ne l'a vue. */
@@ -76,7 +83,7 @@ export interface CollectionLineNoticeView {
 export interface CollectionBatchLineView {
   readonly rank: number;
   readonly debtorName: string;
-  /** Ce que la ligne prélève — le total de son arrêté depuis F2. */
+  /** Ce que la ligne prélève — le total de son arrêté (F2), ou de ses factures (E4). */
   readonly amountCents: number;
   /** Σ des bons ; `null` pour une ligne d'un lot constitué avant F2. */
   readonly ordersTotalCents: number | null;
@@ -85,6 +92,12 @@ export interface CollectionBatchLineView {
    * F3 — « lot d'avant l'arrêté de facturation », jamais zéro.
    */
   readonly billingStatementId: string | null;
+  /**
+   * Les factures émises que la ligne encaisse, par numéro (plan
+   * `plan-emission-de-la-facture.md`, E4) — vide pour une ligne d'arrêté.
+   * Une ligne a l'un ou l'autre, jamais les deux.
+   */
+  readonly invoiceNumbers: readonly string[];
   /** `null` pour un lot constitué avant les avis (PA2, 2026-10-08) : il ne se dépose pas. */
   readonly notice: CollectionLineNoticeView | null;
 }

@@ -12,12 +12,14 @@ import {
   INVOICE_BODY_VERSION,
   invoiceLinesJson,
   mentionsJson,
+  paymentMeansJson,
 } from "./invoice-json.js";
 import {
   addressLinesSchema,
   invoiceBuyerSchema,
   invoiceLinesSchema,
   invoiceMentionsSchema,
+  invoicePaymentMeansSchema,
   invoiceSellerSchema,
   invoiceTypeSchema,
 } from "./invoice-json.schema.js";
@@ -65,6 +67,7 @@ export function toInvoiceCreate(invoice: Invoice): Prisma.InvoiceUncheckedCreate
     ...(state.deliveryAddressLines === null
       ? {}
       : { deliveryAddress: addressLinesJson(state.deliveryAddressLines) }),
+    ...(state.paymentMeans === null ? {} : { paymentMeans: paymentMeansJson(state.paymentMeans) }),
     bodyVersion: INVOICE_BODY_VERSION,
     documentKey: state.documentKey,
     documentSha256: state.documentSha256,
@@ -122,6 +125,10 @@ function toInvoiceState(row: InvoiceRow): InvoiceState {
     lines: read(invoiceLinesSchema, row.lines, "lines"),
     vat: read(vatBreakdownSchema, row.vatBreakdown, "vat_breakdown"),
     mentions: read(invoiceMentionsSchema, row.mentions, "mentions"),
+    paymentMeans:
+      row.paymentMeans === null
+        ? null
+        : read(invoicePaymentMeansSchema, row.paymentMeans, "payment_means"),
     documentKey: row.documentKey,
     documentSha256: row.documentSha256,
   };

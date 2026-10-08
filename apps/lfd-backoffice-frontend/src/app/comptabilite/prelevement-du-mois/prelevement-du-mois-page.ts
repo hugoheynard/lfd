@@ -5,6 +5,7 @@ import type {
   CollectionExclusionView,
   CollectionPreviewView,
   LegalEntityView,
+  MonthlyInvoicesView,
 } from '@lfd/contracts';
 import {
   FoldButtonComponent,
@@ -31,8 +32,11 @@ import {
   ofMonth,
 } from '../collection-month-wording';
 import { LegalEntitiesService } from '../legal-entities.service';
+import { day } from '../invoice-dossier-format';
+import { MonthlyInvoicesService } from '../monthly-invoices.service';
 import { BatchHistory, type HistoryDownload } from './batch-history/batch-history';
 import { ExcludedOrders } from './excluded-orders/excluded-orders';
+import { MonthInvoices } from './month-invoices/month-invoices';
 import { MonthPreview } from './month-preview/month-preview';
 import { MonthSchedule } from './month-schedule/month-schedule';
 import { PendingBatch, type PendingBatchGesture } from './pending-batch/pending-batch';
@@ -46,10 +50,12 @@ import { SettlePanel } from './settle-panel/settle-panel';
  * 1. le **calendrier** du mois et l'état de la préparation automatique ;
  * 2. le **mois en cours** : l'aperçu de ce qui sera prélevé, calculé comme le
  *    lot (une facture par payeur), et pourquoi il est vide ;
- * 3. le **lot à traiter** : préparé, pas encore déposé — ses lignes, ses
+ * 3. les **factures du mois** (plan `plan-emission-de-la-facture.md`, E4) :
+ *    émises le dernier jour à 22h, les payeurs signalés, le bouton qui émet ;
+ * 4. le **lot à traiter** : préparé, pas encore déposé — ses lignes, ses
  *    signalements, ses gestes ; et le bouton qui prépare le lot du mois clos,
  *    nommé par ce mois ;
- * 4. l'**historique** des lots, replié.
+ * 5. l'**historique** des lots, replié.
  *
  * Il remplace la page « Lots de prélèvement » et la carte « Prélèvement
  * SEPA » du tableau de bord, qui ne garde qu'un résumé.
@@ -58,7 +64,8 @@ import { SettlePanel } from './settle-panel/settle-panel';
  *
  * Les entités et les lots sont la condition de l'écran : leur échec le rend
  * illisible. L'aperçu ne l'est pas — il recalcule tout le mois, et une panne
- * de sa part coûte sa carte, pas les gestes du lot à déposer.
+ * de sa part coûte sa carte, pas les gestes du lot à déposer. Les factures du
+ * mois non plus : leur échec ne coûte que leur carte.
  */
 @Component({
   selector: 'app-prelevement-du-mois-page',
@@ -74,6 +81,7 @@ import { SettlePanel } from './settle-panel/settle-panel';
     FoldLoadingStateComponent,
     FoldPageLayoutComponent,
     FoldPageSectionComponent,
+    MonthInvoices,
     MonthPreview,
     MonthSchedule,
     PendingBatch,
@@ -84,6 +92,7 @@ import { SettlePanel } from './settle-panel/settle-panel';
 export class PrelevementDuMoisPage {
   private readonly api = inject(CollectionBatchesService);
   private readonly entitiesApi = inject(LegalEntitiesService);
+  private readonly invoicesApi = inject(MonthlyInvoicesService);
   private readonly notify = inject(NotifyService);
   private readonly panels = inject(FoldPanelHostService);
   private readonly permissions = inject(PermissionsStore);
@@ -93,6 +102,8 @@ export class PrelevementDuMoisPage {
   protected readonly view = signal<CollectionCycleView | null>(null);
   protected readonly preview = signal<CollectionPreviewView | null>(null);
   protected readonly previewError = signal<string | null>(null);
+  protected readonly invoices = signal<MonthlyInvoicesView | null>(null);
+  protected readonly invoicesError = signal<string | null>(null);
   protected readonly loading = signal(true);
   protected readonly loadError = signal<string | null>(null);
   protected readonly actionError = signal<string | null>(null);
@@ -165,8 +176,13 @@ export class PrelevementDuMoisPage {
       if (chosen === null) {
         this.view.set(null);
         this.preview.set(null);
+        this.invoices.set(null);
       } else {
-        const [view] = await Promise.all([this.api.cycle(chosen), this.loadPreview(chosen)]);
+        const [view] = await Promise.all([
+          this.api.cycle(chosen),
+          this.loadPreview(chosen),
+          this.loadInvoices(chosen),
+        ]);
         this.view.set(view);
       }
     } catch (caught) {
@@ -184,6 +200,36 @@ export class PrelevementDuMoisPage {
     } catch (caught) {
       this.preview.set(null);
       this.previewError.set(httpErrorMessage(caught, 'L’aperçu du mois est illisible.'));
+    }
+  }
+
+  /** Les factures du mois à part : leur échec ne coûte que leur carte. */
+  private async loadInvoices(entityId: string): Promise<void> {
+    this.invoicesError.set(null);
+    try {
+      this.invoices.set(await this.invoicesApi.month(entityId));
+    } catch (caught) {
+      this.invoices.set(null);
+      this.invoicesError.set(httpErrorMessage(caught, 'Les factures du mois sont illisibles.'));
+    }
+  }
+
+  /** « Émettre les factures de … » — rejouable ; le compte rendu dit ce qui est parti. */
+  protected async issueInvoices(month: string): Promise<void> {
+    const entityId = this.entityId();
+    if (entityId !== null) {
+      await this.act('invoices', async () => {
+        const report = await this.invoicesApi.issue({ legalEntityId: entityId, month });
+        const late = report.issued.find((issued) => issued.issuedOn.slice(0, 7) > month);
+        this.notify.success(
+          (late === undefined ? '' : `Émise(s) en retard, le ${day(late.issuedOn)} — `) +
+            `${String(report.issued.length)} facture(s) émise(s), ` +
+            `${String(report.blocked.length)} payeur(s) signalé(s)` +
+            (report.alreadyInvoiced > 0
+              ? `, ${String(report.alreadyInvoiced)} déjà facturé(s) pour ce mois.`
+              : '.'),
+        );
+      });
     }
   }
 

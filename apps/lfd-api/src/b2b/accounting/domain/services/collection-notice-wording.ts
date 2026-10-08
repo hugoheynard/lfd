@@ -40,6 +40,7 @@ export interface NoticeMailContent {
   readonly collectionDay: string;
   readonly mandateReference: string;
   readonly statementReference: string;
+  readonly invoiceNumbers: readonly string[];
   readonly previous: { readonly amount: string; readonly collectionDay: string } | null;
 }
 
@@ -60,6 +61,7 @@ export function noticeMailContent(state: CollectionNoticeState): NoticeMailConte
     collectionDay: noticeDay(state.terms.collectionDay),
     mandateReference: state.mandateReference,
     statementReference: state.line?.statementId ?? "",
+    invoiceNumbers: state.line?.invoiceNumbers ?? [],
     previous:
       state.previous === null
         ? null

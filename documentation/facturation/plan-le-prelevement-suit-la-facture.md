@@ -4,6 +4,14 @@
 > été contredite par `vitruve` le même jour (trois BLOQUANTS, six SÉRIEUX),
 > repris au § 7. Affirmations sur l'existant vérifiées dans le dépôt le
 > 2026-10-08.
+>
+> ⚠️ **2026-10-08, lot E4** ([`plan-emission-de-la-facture.md`](plan-emission-de-la-facture.md), § 8.5) :
+> **l'arrêté est remplacé par la facture émise.** Un lot ne fige plus
+> d'arrêté pour les bons passés depuis la mise en service de la facture du
+> mois (`invoicing_floor`, le 1er du mois qui suit le déploiement) : sa ligne
+> encaisse les factures émises du payeur. L'arrêté ne vit plus que pour les
+> bons d'avant ce plancher ; les arrêtés existants restent lisibles. Ce qui
+> suit décrit F1 à F4 tels qu'ils ont été bâtis.
 
 ## 1. Le besoin et la décision d'Hugo (2026-10-08)
 

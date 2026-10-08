@@ -35,6 +35,8 @@ function input(orders: readonly CollectableOrder[]): AssemblyInput {
       ["c_quai", "Café du Quai"],
     ]),
     liveSchemes: [],
+    invoices: new Map(),
+    invoicingFloor: null,
   };
 }
 

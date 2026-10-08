@@ -1,0 +1,18 @@
+.mi-stack {
+  display: flex;
+  flex-direction: column;
+  gap: var(--fold-space-md);
+}
+
+.mi-amount {
+  font-variant-numeric: tabular-nums;
+}
+
+.mi-said {
+  margin: 0;
+}
+
+.mi-muted {
+  display: block;
+  color: var(--fold-color-text-muted);
+}

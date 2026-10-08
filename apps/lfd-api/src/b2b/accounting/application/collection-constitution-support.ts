@@ -44,6 +44,19 @@ export interface ReadAssembly {
  */
 export type CycleChoice = (at: Date, previousClosure: Date | null) => BillingCycle;
 
+/** Comment on assemble : pour constituer (par défaut), ou pour l'aperçu. */
+export interface AssemblyMode {
+  readonly cycleOf: CycleChoice;
+  /**
+   * L'aperçu SIMULE la facture des bons qui n'en ont pas encore (le mois
+   * court, la facture du mois ne passe qu'à sa fin) ; la constitution les
+   * laisse attendre la leur (E4).
+   */
+  readonly simulateUninvoiced: boolean;
+}
+
+const TO_CONSTITUTE: AssemblyMode = { cycleOf: cycleToConstitute, simulateUninvoiced: false };
+
 /**
  * @throws {CollectionFloorMissingError} le plancher n'est pas posé.
  * @throws {CollectionNotYetOpenError} le cycle se clôt avant le plancher.
@@ -52,9 +65,10 @@ export async function readAssembly(
   readers: ConstitutionReaders,
   legalEntityId: string,
   at: Date,
-  cycleOf: CycleChoice = cycleToConstitute,
+  mode: AssemblyMode = TO_CONSTITUTE,
 ): Promise<ReadAssembly> {
   const { candidates } = readers;
+  const { cycleOf } = mode;
   const floor = await candidates.floor();
   if (floor === null) {
     throw new CollectionFloorMissingError();
@@ -68,6 +82,7 @@ export async function readAssembly(
     throw new CollectionNotYetOpenError(floor, cycleAt(floor, null).closesAt);
   }
   const orders = await candidates.collectableOrders(floor, cycle.closesAt);
+  const invoices = await candidates.invoicesOf(orders.map((order) => order.orderId));
   const follows = await candidates.billingFollowsOf(unique(orders.map((order) => order.companyId)));
   const payers = unique(orders.map((order) => billedPayerOf(order, follows)));
   // Les sites réglés par un autre : leur propre mandat peut être l'effectif
@@ -92,6 +107,8 @@ export async function readAssembly(
     // Les sites aussi : en formes 2 et 3, c'est le site qu'on nomme sans mandat.
     companyNames,
     liveSchemes: await candidates.liveSchemes(legalEntityId, cycle.closesAt),
+    invoices,
+    invoicingFloor: mode.simulateUninvoiced ? null : await candidates.invoicingFloor(),
   });
   return { cycle, previousClosure, floor, assembly, companyNames };
 }

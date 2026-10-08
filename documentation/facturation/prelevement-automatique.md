@@ -6,6 +6,14 @@
 > le citent encore sous son ancien nom). Touche **l'argent** :
 > le plan avait été contredit par `vitruve`.
 
+> ⚠️ **2026-10-08, lot E4** ([`plan-emission-de-la-facture.md`](plan-emission-de-la-facture.md), § 8.5) :
+> **le lot encaisse des factures émises.** Le dernier jour du mois à 22h, le
+> même passage horaire émet une facture par payeur légal ; le lot du 1er
+> regroupe, par mandat, les factures émises non encore prélevées (montant =
+> Σ TTC, aucun arrêté). L'arrêté ne vit plus que pour les bons passés avant
+> la mise en service (`invoicing_floor`, le 1er du mois qui suit le
+> déploiement). Les sections ci-dessous sont mises à jour en conséquence.
+
 Le mois de prélèvement d'une entité émettrice se déroule seul, selon un
 **calendrier** réglé sur l'entité. Il ne reste à la comptabilité que le
 contrôle du lot et le dépôt du fichier sur le portail de la banque.
@@ -14,8 +22,9 @@ contrôle du lot et le dépôt du fichier sur le portail de la banque.
 
 ```mermaid
 flowchart TB
-  A["Le mois court<br/>aperçu : la facture de chaque ligne"] --> B["Clôture · le 1er à 00h00"]
-  B -->|"auto si activé, + délai, une fois par mois"| C["Lot préparé · arrêtés figés<br/>avis de prélèvement en file"]
+  A["Le mois court<br/>aperçu : la facture de chaque ligne"] --> F["Dernier jour · 22h<br/>facture du mois par payeur (E4)"]
+  F --> B["Clôture · le 1er à 00h00"]
+  B -->|"auto si activé, + délai, une fois par mois"| C["Lot préparé · lignes = factures émises<br/>avis de prélèvement en file"]
   C --> D{"Contrôle par la compta"}
   D -->|"corriger"| E["Annuler, corriger, préparer de nouveau<br/>rectificatif ou annulation aux payeurs"]
   E --> D
@@ -27,6 +36,7 @@ flowchart TB
 | Étape                | Qui                  | Où dans le code                                                           |
 | -------------------- | -------------------- | ------------------------------------------------------------------------- |
 | Aperçu               | lecture, sans écrit  | `GET admin/accounting/collection/preview` · `GetCollectionPreviewHandler` |
+| Facture du mois      | cron, puis compta    | `POST admin/accounting/monthly-invoices` · `IssueMonthlyInvoicesCommand`  |
 | Préparation (bouton) | compta               | `ConstituteCollectionBatchesCommand`, auteur `staff`                      |
 | Préparation (auto)   | cron `15 * * * *`    | `POST admin/accounting/collection/autopilot` · `RunCollectionAutopilot`   |
 | Avis                 | à chaque préparation | `collection_notice`, fait durable `collection.notice_to_send`             |
@@ -65,8 +75,10 @@ carte « Prélèvement automatique » de la fiche de l'entité, sous
 ## 4. L'avis de prélèvement
 
 - **Un avis par ligne de débit**, écrit dans la transaction du lot
-  (`collection_notice`, migration `20261008160000`) : montant de l'arrêté,
-  échéance, RUM, ICS, raison sociale du créancier, référence de l'arrêté.
+  (`collection_notice`, migration `20261008160000`) : montant de la ligne,
+  échéance, RUM, ICS, raison sociale du créancier, et la pièce réglée — les
+  numéros des factures (`invoice_numbers`, E4), ou l'arrêté pour une ligne
+  de bons d'avant la facture du mois.
 - **Destinataire** (Hugo, 2026-10-08) : le contact de facturation
   (`company_contacts.role = billing`, le plus ancien) de la société payeuse,
   sinon son détenteur (`memberships.role = owner`). Ni l'un ni l'autre :
@@ -103,6 +115,10 @@ carte « Prélèvement automatique » de la fiche de l'entité, sous
   concordent.
 - Fait `collection.autopilot_ran`. L'écran montre la dernière tentative
   (`lastAutopilotRun`) et « Préparé automatiquement le … ».
+- **Depuis E4, le même passage émet d'abord la facture du mois** (le dernier
+  jour à 22h15, `RunInvoiceAutopilotCommand`), une tentative par (entité,
+  mois) dans `invoice_autopilot_run`. Elle ne dépend pas de « préparer le lot
+  tout seul ». La réponse du passage porte `invoiceRuns` à côté de `runs`.
 
 ## 6. L'écran « Prélèvement du mois »
 
@@ -110,7 +126,9 @@ carte « Prélèvement automatique » de la fiche de l'entité, sous
 (l'ancienne route `lots-de-prelevement` y redirige), de haut en bas : le
 calendrier (`collection-calendar/`, partagé avec la fiche de l'entité) et
 la dernière tentative ; l'aperçu (facture par ligne, signalements, pourquoi
-il est vide) ; le lot à traiter (lignes, arrêtés, état des avis, gestes
+il est vide) ; **les factures du mois** (émises, payeurs signalés, le bouton
+« Émettre les factures de … », la tentative automatique — E4) ; le lot à
+traiter (lignes et leurs factures ou leur arrêté, état des avis, gestes
 datés) ; l'historique replié. Le tableau de bord n'en garde qu'un résumé.
 
 ## 7. Ce qui reste ouvert

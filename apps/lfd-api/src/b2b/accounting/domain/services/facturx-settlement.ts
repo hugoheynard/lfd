@@ -13,8 +13,14 @@ import {
 
 /**
  * `ApplicableHeaderTradeSettlement` du XML Factur-X, dans l'ordre du schéma
- * CII D16B : devise, ventilation BG-23, remises BG-20 et frais BG-21,
- * conditions BT-20 et échéance BT-9, totaux BG-22, facture corrigée BT-25.
+ * CII D16B : ICS BT-90, devise, moyen de paiement BG-16, ventilation BG-23,
+ * remises BG-20 et frais BG-21, conditions BT-20, échéance BT-9 et RUM
+ * BT-89, totaux BG-22, facture corrigée BT-25.
+ *
+ * Le prélèvement (E4, question E3a b) : quand la facture a figé un mandat,
+ * le code 59 (UNTDID 4461), l'ICS du vendeur figé et la RUM. Sans mandat
+ * figé, aucun moyen n'est écrit plutôt qu'un moyen deviné. Ordre des
+ * éléments écrit de mémoire du XSD D16B, non vérifié contre lui.
  *
  * Tout est repris de la ventilation figée par l'émission ; rien n'est
  * recalculé ici. Une remise ou un frais se ventile en autant d'éléments que
@@ -52,13 +58,27 @@ export function lineTradeTax(rate: number): string {
 export function headerSettlement(state: InvoiceState): string {
   return [
     "<ram:ApplicableHeaderTradeSettlement>",
+    state.paymentMeans === null ? "" : textElement("ram:CreditorReferenceID", state.seller.ics),
     textElement("ram:InvoiceCurrencyCode", CURRENCY),
+    paymentMeans(state),
     ...state.vat.categories.map(headerTradeTax),
     ...state.vat.categories.flatMap(allowanceCharges),
     paymentTerms(state),
     monetarySummation(state.vat),
     correctedInvoice(state.correctedInvoiceNumber),
     "</ram:ApplicableHeaderTradeSettlement>",
+  ].join("");
+}
+
+/** BG-16 — BT-81, le code du moyen ; rien sans mandat figé. */
+function paymentMeans(state: InvoiceState): string {
+  if (state.paymentMeans === null) {
+    return "";
+  }
+  return [
+    "<ram:SpecifiedTradeSettlementPaymentMeans>",
+    textElement("ram:TypeCode", state.paymentMeans.code),
+    "</ram:SpecifiedTradeSettlementPaymentMeans>",
   ].join("");
 }
 
@@ -115,6 +135,9 @@ function paymentTerms(state: InvoiceState): string {
     "<ram:SpecifiedTradePaymentTerms>",
     textElement("ram:Description", paymentTermsDescription(state)),
     state.dueOn === null ? "" : dateElement("ram:DueDateDateTime", state.dueOn, "udt"),
+    state.paymentMeans === null
+      ? ""
+      : textElement("ram:DirectDebitMandateID", state.paymentMeans.mandateReference),
     "</ram:SpecifiedTradePaymentTerms>",
   ].join("");
 }

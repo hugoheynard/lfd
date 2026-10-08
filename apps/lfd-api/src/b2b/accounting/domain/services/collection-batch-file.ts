@@ -62,6 +62,10 @@ export function renderBatchFile(input: BatchFileInput): BatchFile {
       amountCents: debit.amountCents,
       ordersTotalCents: debit.ordersTotalCents,
       orderIds: debit.orders.map((order) => order.orderId),
+      invoices:
+        debit.settles.kind === "invoices"
+          ? debit.settles.invoices.map(({ invoiceId, number }) => ({ invoiceId, number }))
+          : [],
       priorOrderCount: debit.priorOrderCount,
     };
   });
@@ -91,8 +95,21 @@ export function sha256Of(xml: string): string {
   return createHash("sha256").update(xml, "utf8").digest("hex");
 }
 
-/** « Commandes du … (12), dont 3 de cycles anterieurs » — §3. */
+/**
+ * Une ligne de factures cite leurs numéros quand ils tiennent dans les 140
+ * caractères de `RmtInf` ; sinon leur nombre — jamais une liste coupée.
+ */
+const REMITTANCE_MAX = 140;
+
+/** « Commandes du … (12), dont 3 de cycles anterieurs » — §3 ; « Factures FA-… » (E4). */
 function remittanceOf(period: string, debit: DebitDraft): string {
+  if (debit.settles.kind === "invoices") {
+    const numbers = debit.settles.invoices.map((invoice) => invoice.number);
+    const listed = `Facture${numbers.length > 1 ? "s" : ""} ${numbers.join(" ")}`;
+    return listed.length <= REMITTANCE_MAX
+      ? listed
+      : `Factures du ${period} (${String(numbers.length)})`;
+  }
   const base = `Commandes du ${period} (${String(debit.orders.length)})`;
   return debit.priorOrderCount === 0
     ? base

@@ -56,6 +56,20 @@ import {
   PrismaCollectionAutopilotRuns,
   PrismaLastAutopilotRunReader,
 } from "./infrastructure/prisma-collection-autopilot-runs.js";
+import { IssueMonthlyInvoicesHandler } from "./application/commands/issue-monthly-invoices.handler.js";
+import { RunInvoiceAutopilotHandler } from "./application/commands/run-invoice-autopilot.handler.js";
+import { GetMonthlyInvoicesHandler } from "./application/queries/get-monthly-invoices.handler.js";
+import { BusAutomaticMonthlyInvoicer } from "./application/services/bus-automatic-monthly-invoicer.js";
+import { AutomaticMonthlyInvoicer } from "./domain/ports/automatic-monthly-invoicer.js";
+import { InvoiceAutopilotRuns } from "./domain/ports/invoice-autopilot-runs.js";
+import { MonthlyInvoiceOutcomes } from "./domain/ports/monthly-invoice-outcomes.js";
+import { MonthlyInvoicesReader } from "./domain/ports/monthly-invoices.reader.js";
+import { MonthlyInvoicingReader } from "./domain/ports/monthly-invoicing.reader.js";
+import { AdminMonthlyInvoicesController } from "./http/admin-monthly-invoices.controller.js";
+import { PrismaInvoiceAutopilotRuns } from "./infrastructure/prisma-invoice-autopilot-runs.js";
+import { PrismaMonthlyInvoiceOutcomes } from "./infrastructure/prisma-monthly-invoice-outcomes.js";
+import { PrismaMonthlyInvoicesReader } from "./infrastructure/prisma-monthly-invoices.reader.js";
+import { PrismaMonthlyInvoicingReader } from "./infrastructure/prisma-monthly-invoicing.reader.js";
 import { AdminDetachedUnpaidController } from "./http/admin-detached-unpaid.controller.js";
 import { CompanyDetachedUnpaidController } from "./http/company-detached-unpaid.controller.js";
 import { DetachedUnpaidReader } from "./domain/ports/detached-unpaid.reader.js";
@@ -163,6 +177,7 @@ import { PrismaLegalEntityRepository } from "./infrastructure/prisma-legal-entit
     AdminInvoiceDossiersController,
     AdminCollectionBatchesController,
     CollectionAutopilotController,
+    AdminMonthlyInvoicesController,
     AdminBillingStatementsController,
     AdminDetachedUnpaidController,
     CompanyDetachedUnpaidController,
@@ -197,6 +212,15 @@ import { PrismaLegalEntityRepository } from "./infrastructure/prisma-legal-entit
     { provide: InvoiceRepository, useClass: PrismaInvoiceRepository },
     { provide: InvoiceReader, useClass: PrismaInvoiceReader },
     InvoiceIssuer,
+    // La facture du mois, et le lot qui encaisse des factures (E4).
+    { provide: MonthlyInvoicingReader, useClass: PrismaMonthlyInvoicingReader },
+    { provide: MonthlyInvoiceOutcomes, useClass: PrismaMonthlyInvoiceOutcomes },
+    { provide: MonthlyInvoicesReader, useClass: PrismaMonthlyInvoicesReader },
+    { provide: InvoiceAutopilotRuns, useClass: PrismaInvoiceAutopilotRuns },
+    { provide: AutomaticMonthlyInvoicer, useClass: BusAutomaticMonthlyInvoicer },
+    IssueMonthlyInvoicesHandler,
+    RunInvoiceAutopilotHandler,
+    GetMonthlyInvoicesHandler,
     // L'avis de prélèvement (plan `prelevement-automatique.md`, PA2).
     { provide: CollectionNoticeRepository, useClass: PrismaCollectionNoticeRepository },
     { provide: CycleNoticesReader, useClass: PrismaCycleNoticesReader },

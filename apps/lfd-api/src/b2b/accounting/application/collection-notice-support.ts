@@ -61,7 +61,7 @@ export async function noticesOf(
   });
 }
 
-/** Chaque ligne de débit, avec la référence de son arrêté. */
+/** Chaque ligne de débit, avec la référence de son arrêté ou de ses factures (E4). */
 function noticeLinesOf(
   batches: readonly CollectionBatch[],
   issued: readonly IssuedStatement[],
@@ -74,14 +74,15 @@ function noticeLinesOf(
   );
   return batches.flatMap((batch) =>
     batch.lines.flatMap((line): NoticeLine[] => {
-      const statementId = statementOf.get(`${batch.id}:${line.rank}`);
-      // Inatteignable : `buildStatements` émet un arrêté par ligne, ou lève.
-      if (statementId === undefined) {
+      const statementId = statementOf.get(`${batch.id}:${line.rank}`) ?? null;
+      const invoiceNumbers = line.invoices.map((invoice) => invoice.number);
+      // Inatteignable : `buildStatements` émet un arrêté par ligne d'arrêté, ou lève.
+      if (statementId === null && invoiceNumbers.length === 0) {
         return [];
       }
       return [
         {
-          ref: { batchId: batch.id, lineRank: line.rank, statementId },
+          ref: { batchId: batch.id, lineRank: line.rank, statementId, invoiceNumbers },
           debtorCompanyId: line.debtorCompanyId,
           debtorName: line.debtorName,
           amountCents: line.amountCents,

@@ -22,7 +22,7 @@ const COLUMNS: readonly FoldTableColumn[] = [
   { key: 'billed', label: 'Total facturé (prélevé)', numeric: true },
   { key: 'gap', label: 'Écart', numeric: true },
   { key: 'notice', label: 'Avis de prélèvement' },
-  { key: 'statement', label: 'Dossier' },
+  { key: 'statement', label: 'Pièce' },
 ];
 
 /** Ce que la ligne dit — un lot d'avant l'arrêté n'a ni Σ bons, ni écart, ni dossier. */
@@ -34,12 +34,17 @@ export interface BatchLineRow {
   readonly orders: string | null;
   readonly gap: string | null;
   readonly statementId: string | null;
+  /** Les factures émises que la ligne encaisse (E4) ; vide pour une ligne d'arrêté. */
+  readonly invoiceNumbers: readonly string[];
   /** L'état de l'avis (PA2) — envoyé, en attente, échec, non envoyable. */
   readonly notice: NoticeBadge;
 }
 
 /**
  * Les lignes d'un lot (plan `plan-le-prelevement-suit-la-facture.md`, F4) :
+ * depuis E4 (plan `plan-emission-de-la-facture.md`), une ligne encaisse des
+ * factures émises et les cite par leur numéro ; les lignes d'arrêté restent
+ * lisibles telles quelles.
  * ce que les bons totalisent, ce qui est facturé — donc prélevé — et l'écart
  * signé entre les deux. Rien n'est calculé ici que cette soustraction : les
  * deux montants sont figés sur la ligne.
@@ -81,13 +86,16 @@ export function toRow(line: CollectionBatchLineView): BatchLineRow {
     notice: noticeBadge(line.notice),
   };
   const ordersTotal = line.ordersTotalCents;
-  if (ordersTotal === null || line.billingStatementId === null) {
-    return { ...head, orders: null, gap: null, statementId: null };
+  const invoiceNumbers = line.invoiceNumbers;
+  const settled = line.billingStatementId !== null || invoiceNumbers.length > 0;
+  if (ordersTotal === null || !settled) {
+    return { ...head, orders: null, gap: null, statementId: null, invoiceNumbers: [] };
   }
   return {
     ...head,
     orders: euros(ordersTotal),
     gap: signedEuros(line.amountCents - ordersTotal),
     statementId: line.billingStatementId,
+    invoiceNumbers,
   };
 }

@@ -2,7 +2,7 @@
   <fold-element-title
     variant="title"
     [title]="title()"
-    subtitle="Chaque ligne prélève le total de sa facture, calculée une fois sur ses bons ; l’écart aux bons est écrit à côté."
+    subtitle="Chaque ligne prélève le total de ses factures émises (ou, pour les bons d’avant la facture du mois, de son arrêté) ; l’écart aux bons est écrit à côté."
   />
   <fold-data-table
     [caption]="title()"
@@ -39,7 +39,12 @@
       </span>
     </ng-template>
     <ng-template foldCell="statement" let-row>
-      @if (row.statementId !== null) {
+      @if (row.invoiceNumbers.length > 0) {
+        <span class="invoices" data-line-invoices>
+          {{ row.invoiceNumbers.length > 1 ? 'Factures' : 'Facture' }}
+          {{ row.invoiceNumbers.join(', ') }}
+        </span>
+      } @else if (row.statementId !== null) {
         <a
           foldButton
           size="sm"

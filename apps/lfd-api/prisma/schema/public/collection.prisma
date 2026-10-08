@@ -46,6 +46,9 @@ enum CollectionExclusionReason {
   /// Un bon qu'on ne sait pas facturer (incohérent, surtaxe sans taux, taux
   /// de ligne illisible) — plan `plan-le-prelevement-suit-la-facture.md`, F2.
   unbillable
+  /// Une facture émise dont les bons tomberaient sur plusieurs mandats (E4) :
+  /// elle ne se prélève pas en morceaux.
+  invoice_split
 
   @@schema("public")
 }
@@ -135,12 +138,29 @@ model CollectionBatchLine {
   priorOrderCount  Int      @map("prior_order_count")
 
   orders    OrderCollection[]
-  /// Son arrêté de facturation (F3) ; absent pour une ligne d'un lot d'avant.
+  /// Son arrêté de facturation (F3) ; absent pour une ligne d'un lot d'avant,
+  /// et pour une ligne qui encaisse des factures (E4).
   statement BillingStatement?
+  /// Les factures émises que la ligne encaisse (E4) ; aucune avant E4.
+  invoices  CollectionBatchLineInvoice[]
 
   @@id([batchId, rank])
   @@index([mandateId])
   @@map("collection_batch_line")
+  @@schema("public")
+}
+
+/// Une facture qu'une ligne de débit encaisse (E4).
+model CollectionBatchLineInvoice {
+  batchId   String              @map("batch_id")
+  lineRank  Int                 @map("line_rank")
+  line      CollectionBatchLine @relation(fields: [batchId, lineRank], references: [batchId, rank], onDelete: Restrict)
+  invoiceId String              @map("invoice_id")
+  invoice   Invoice             @relation(fields: [invoiceId], references: [id], onDelete: Restrict)
+
+  @@id([batchId, lineRank, invoiceId])
+  @@index([invoiceId])
+  @@map("collection_batch_line_invoice")
   @@schema("public")
 }
 
@@ -234,13 +254,16 @@ model CollectionNotice {
   previousAmountCents   Int?      @map("previous_amount_cents")
   previousCollectionDay DateTime? @map("previous_collection_day") @db.Date
 
-  mandateReference String  @map("mandate_reference")
-  /// L'arrêté de la ligne ; NULL pour une annulation.
-  statementId      String? @map("statement_id")
-  creditorName     String  @map("creditor_name")
-  creditorIcs      String  @map("creditor_ics")
+  mandateReference String   @map("mandate_reference")
+  /// L'arrêté de la ligne ; NULL pour une annulation, et pour une ligne qui
+  /// encaisse des factures (E4).
+  statementId      String?  @map("statement_id")
+  /// Les factures que l'avis cite (E4) ; vide avant E4 et pour une annulation.
+  invoiceNumbers   String[] @default([]) @map("invoice_numbers")
+  creditorName     String   @map("creditor_name")
+  creditorIcs      String   @map("creditor_ics")
   /// L'avis parti que celui-ci rectifie, annule ou reconduit.
-  supersedesId     String? @map("supersedes_id")
+  supersedesId     String?  @map("supersedes_id")
 
   createdAt DateTime  @map("created_at") @db.Timestamptz(3)
   sentAt    DateTime? @map("sent_at") @db.Timestamptz(3)

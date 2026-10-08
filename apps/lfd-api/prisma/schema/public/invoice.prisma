@@ -62,6 +62,10 @@ model Invoice {
   /// Les lignes d'adresse de livraison, quand elle diffère de la facturation.
   deliveryAddress Json? @map("delivery_address")
 
+  /// Le moyen de paiement figé (BG-16) : prélèvement SEPA et la RUM du mandat
+  /// effectif ; NULL = aucun mandat unique à l'émission (E4).
+  paymentMeans Json? @map("payment_means")
+
   bodyVersion Int @map("body_version")
 
   /// Le document rendu (Factur-X), posé une fois après l'émission.
@@ -70,7 +74,9 @@ model Invoice {
 
   createdAt DateTime @default(now()) @map("created_at")
 
-  orders InvoiceOrder[]
+  orders          InvoiceOrder[]
+  monthlyOutcome  InvoiceMonthlyOutcome?
+  collectionLines CollectionBatchLineInvoice[]
 
   @@unique([legalEntityId, year, rank])
   @@unique([id, type])
@@ -113,5 +119,60 @@ model InvoiceNumberCounter {
 
   @@id([legalEntityId, year])
   @@map("invoice_number_counter")
+  @@schema("public")
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
+// La facture du mois — lot E4. Contraintes en SQL
+// (`20261008200000_la_facture_du_mois`) : mois `AAAA-MM`, émise ⇔ sa facture,
+// signalée ⇔ son refus ; une issue `issued` ne se défait pas (déclencheur
+// `invoice_monthly_outcome_final`).
+// ─────────────────────────────────────────────────────────────────────────────
+
+/// L'issue de la facture du mois d'UN payeur légal : émise, ou signalée.
+model InvoiceMonthlyOutcome {
+  legalEntityId    String      @map("legal_entity_id")
+  legalEntity      LegalEntity @relation(fields: [legalEntityId], references: [id], onDelete: Restrict)
+  /// `AAAA-MM` — le mois des COMMANDES (Q2).
+  month            String
+  /// Le payeur légal — opaque.
+  payerCompanyId   String      @map("payer_company_id")
+  payerName        String      @map("payer_name")
+  /// `issued` | `blocked`.
+  outcome          String
+  invoiceId        String?     @unique @map("invoice_id")
+  invoice          Invoice?    @relation(fields: [invoiceId], references: [id], onDelete: Restrict)
+  /// Le refus, en clair, pour `blocked`.
+  message          String?
+  /// Les références des bons signalés non facturables.
+  unbillableOrders String[]    @default([]) @map("unbillable_orders")
+  recordedAt       DateTime    @map("recorded_at") @db.Timestamptz(3)
+
+  @@id([legalEntityId, month, payerCompanyId])
+  @@map("invoice_monthly_outcome")
+  @@schema("public")
+}
+
+/// UNE tentative du passage automatique de la facture du mois par (entité, mois).
+model InvoiceAutopilotRun {
+  legalEntityId String      @map("legal_entity_id")
+  legalEntity   LegalEntity @relation(fields: [legalEntityId], references: [id], onDelete: Restrict)
+  month         String
+  ranAt         DateTime    @map("ran_at") @db.Timestamptz(3)
+  /// `pending` | `issued` | `nothing_to_invoice` | `not_yet_open` | `failed`.
+  outcome       String
+  message       String?
+
+  @@id([legalEntityId, month])
+  @@map("invoice_autopilot_run")
+  @@schema("public")
+}
+
+/// La mise en service de la facture du mois : une ligne, posée par la migration.
+model InvoicingFloor {
+  id      Boolean  @id @default(true)
+  floorAt DateTime @map("floor_at") @db.Timestamptz(3)
+
+  @@map("invoicing_floor")
   @@schema("public")
 }

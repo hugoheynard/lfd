@@ -52,3 +52,8 @@ export const invoiceLinesSchema = z.array(
 export const addressLinesSchema = z.array(z.string());
 
 export const invoiceTypeSchema = z.enum(["380", "381"]);
+
+export const invoicePaymentMeansSchema = z.object({
+  code: z.literal("59"),
+  mandateReference: z.string(),
+});

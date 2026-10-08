@@ -1,5 +1,9 @@
 import type { Prisma } from "../../../platform/database/client/client.js";
-import type { InvoiceLineInput, InvoiceMentions } from "../domain/entities/invoice.types.js";
+import type {
+  InvoiceLineInput,
+  InvoiceMentions,
+  InvoicePaymentMeans,
+} from "../domain/entities/invoice.types.js";
 
 /*
  * Les formes JSON propres à la facture émise (lot E2), **écrites champ à
@@ -36,4 +40,9 @@ export function invoiceLinesJson(lines: readonly InvoiceLineInput[]): Prisma.Inp
 
 export function addressLinesJson(lines: readonly string[]): Prisma.InputJsonValue {
   return [...lines];
+}
+
+/** BG-16 (E4) — colonne à part, nullable : son absence ne change pas `body_version`. */
+export function paymentMeansJson(means: InvoicePaymentMeans): Prisma.InputJsonValue {
+  return { code: means.code, mandateReference: means.mandateReference };
 }

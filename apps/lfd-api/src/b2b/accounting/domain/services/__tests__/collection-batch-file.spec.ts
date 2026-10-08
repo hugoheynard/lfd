@@ -18,6 +18,8 @@ function debits() {
     consumedMandates: new Set(),
     companyNames: new Map([["c_port", "Boulangerie du Port"]]),
     liveSchemes: [],
+    invoices: new Map(),
+    invoicingFloor: null,
   });
   return result.debits.get("B2B") ?? [];
 }

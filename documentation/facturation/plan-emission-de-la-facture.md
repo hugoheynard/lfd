@@ -1,6 +1,6 @@
 # L'émission de la facture
 
-> 📐 **Plan v2 ; E0, E1 et E2 bâtis le 2026-10-08** (§ 8.1, § 8.2, § 8.3). Touche **l'argent** et un
+> 📐 **Plan v2 ; E0, E1, E2, E3a et E4 bâtis le 2026-10-08** (§ 8.1 à § 8.5). Touche **l'argent** et un
 > document légal : la v1 a été contredite par `vitruve` le même jour (trois
 > BLOQUANTS, huit SÉRIEUX), repris au § 9. Les règles du CGI et du Code de
 > commerce sont citées **de mémoire**, ni par l'agent ni par moi rouvertes en
@@ -179,7 +179,7 @@ document_key, sha256       ← posés UNE fois, après le rendu
 | **E1** | ✅ **bâti le 2026-10-08** (non commité à l'écriture) — cf. § 8.2                                                                                   |
 | **E2** | ✅ **bâti le 2026-10-08** (non commité à l'écriture) — cf. § 8.3                                                                                   |
 | **E3** | **E3a ✅ bâti le 2026-10-08** (XML CII, non commité à l'écriture, § 8.4) ; E3b : essai PDF/A-3 borné, Schematron, veraPDF, seau en écriture unique |
-| **E4** | la facture du mois (dernier jour, 22h) sur les livraisons ; le lot encaisse des factures                                                           |
+| **E4** | ✅ **bâti le 2026-10-08** (non commité à l'écriture) — la facture du mois, le lot qui encaisse des factures ; cf. § 8.5                            |
 | **E5** | la facture carte à la livraison — après le suivi des remboursements                                                                                |
 | **E6** | e-mail, « Mes factures », l'onglet facturation de la fiche ; puis F5                                                                               |
 
@@ -347,6 +347,101 @@ version figée) et un processeur XSLT 2 pour l'exécuter (Saxon-HE, Java, ou
 `saxon-js`) ; les XSD CII D16B (fournis dans le paquet Factur-X 1.07 de
 FNFE-MPE) ; veraPDF (Java) ; une bibliothèque PDF Node candidate à l'essai
 PDF/A-3 (ex. `pdf-lib`, ou un rendu hors Node).
+
+### 8.5 E4 — la facture du mois, et le lot qui encaisse des factures (2026-10-08)
+
+Migration `20261008200000_la_facture_du_mois` (additive) ; commande
+`IssueMonthlyInvoicesCommand`
+(`apps/lfd-api/src/b2b/accounting/application/commands/issue-monthly-invoices.handler.ts`),
+domaine pur `apps/lfd-api/src/b2b/accounting/domain/services/monthly-invoicing.ts`
+et `apps/lfd-api/src/b2b/accounting/domain/services/collection-verdict.ts` ;
+route `admin/accounting/monthly-invoices` (`b2b_accounting`) ; e2e
+`apps/lfd-api/test/monthly-invoices.e2e-spec.ts`.
+
+```mermaid
+flowchart LR
+  B["Bons au compte du mois<br/>(createdAt, Q2)"] --> F["Dernier jour · 22h<br/>une facture par payeur légal<br/>ou le payeur SIGNALÉ"]
+  F --> L["Le 1er · lot<br/>une ligne = des factures émises<br/>montant = Σ TTC"]
+  L --> A["Avis : montant des factures,<br/>numéros cités"]
+  L -->|"lot annulé"| F2["les factures redeviennent à prélever"]
+```
+
+- **Périmètre** : les bons passés au compte (`billableOrderWhere`, le critère
+  du relevé et du lot) créés entre la mise en service et la fin du mois, et
+  qu'aucune facture 380 ne porte encore. Un payeur par `billedPayerOf` (Q3).
+- **Le moment** : le dernier jour du mois à 22h (Paris), par le **même**
+  passage horaire que le lot (`15 * * * *`, `collection-autopilot.controller.ts`) —
+  la facture d'abord, le lot ensuite. Un second cron aurait doublé la
+  déclaration (`wrangler.jsonc`, `worker.ts`, leur test de concordance) pour
+  le même rythme. **Une tentative par (entité, mois)** dans une table neuve,
+  `invoice_autopilot_run` : la clé de `collection_autopilot_run` est la
+  clôture, que le mois facturé partage avec le lot du même mois. Le passage
+  ne dépend **pas** de « préparer le lot tout seul » : la facture est une
+  obligation, le prélèvement un choix. Il tourne pour chaque entité en
+  service ; l'émission refuse sous une entité qui n'est pas la seule
+  (`NotTheInvoicingEntityError`), comme le mandat (`soleIssuer`).
+- **Le bouton** « Émettre les factures de septembre » : la même commande,
+  rejouable, ouverte à partir du dernier jour 22h (`MonthNotYetInvoiceableError`
+  avant). Il reprend les payeurs signalés une fois leur fiche corrigée.
+- **Dates — jamais d'antidate** (correctif du 2026-10-08) : `issued_on` =
+  le dernier jour du mois quand l'émission a lieu ce jour-là (après 22h) ;
+  émise **après** (bouton le 2, automatisme qui rattrape), elle porte le
+  jour réel de l'émission (Paris). La période facturée reste le mois (bons
+  `createdAt` dans le mois) ; l'écran et le rapport du bouton disent
+  « émise en retard, le … ». `due_on` = l'échéance du calendrier
+  (`collectionDayOf`, clôture + N), jamais avant `issued_on`. Une
+  préparation tardive du lot (D4) peut prélever après cette échéance : la
+  facture ne se réécrit pas.
+- **Une transaction courte par payeur** : la facture (`InvoiceIssuer`) et
+  son issue (`invoice_monthly_outcome`, `issued`) partent ensemble. Un refus
+  — manques d'E0, numérotation, base — défait la facture et son numéro ;
+  l'issue `blocked` porte le message en clair, l'écran la montre, le reste
+  continue. Une issue `issued` est définitive (déclencheur
+  `invoice_monthly_outcome_final`).
+- **Pas deux fois** : un payeur déjà facturé pour le mois est sauté, et le
+  rapport le compte (`alreadyInvoiced`) ; l'unicité du bon (E2) tient le
+  reste. Ses bons passés entre 22h et minuit, ou signalés non facturables,
+  restent sans facture et entrent dans celle du mois suivant (le périmètre
+  n'a pas de borne basse au-delà du plancher).
+- **Bon non facturable** (incohérent, surtaxe sans taux) : laissé hors de la
+  facture, cité sur l'issue du payeur ; un payeur qui n'a que ceux-là est
+  signalé.
+- **Moyen de paiement BG-16** (question E3a b) : `invoice.payment_means`
+  (`{code: "59", mandateReference}`) figé quand TOUS les bons tombent sur le
+  même mandat effectif de l'entité (`effectiveMandateOf`, la règle du lot) ;
+  sinon `null`, rien n'est écrit. Le XML porte `CreditorReferenceID` (BT-90,
+  l'ICS du vendeur figé), `SpecifiedTradeSettlementPaymentMeans/TypeCode` 59
+  et `DirectDebitMandateID` (BT-89). Ordre des éléments de mémoire du XSD.
+- **Le lot encaisse des factures** (`collection-assembly.ts`) : un bon
+  facturé se juge AVEC sa facture — entière ou rien. Tous ses bons au même
+  mandat → une ligne qui regroupe les factures du payeur sous ce mandat,
+  montant = Σ TTC (`collection_batch_line_invoice`) ; un bon écarté écarte
+  toute la facture, pour la même raison ; deux mandats → `invoice_split`
+  (valeur d'énumération neuve) ; un bon de la facture qui n'est plus ouvert
+  (réglé autrement) → la facture attend. **Aucun arrêté** pour ces lignes ;
+  l'avis annonce Σ TTC et cite les numéros (`collection_notice.invoice_numbers`),
+  le `RmtInf` aussi (« Facture FA-… »). Un lot annulé relâche les bons, donc
+  ses factures : le suivant les reprend.
+- **La bascule** : `invoicing_floor`, posé par la migration au **1er du mois
+  qui suit le déploiement** (00h00 Paris). Avant lui, un bon garde l'ancien
+  chemin — arrêté figé, à vie ; depuis, un bon sans facture **attend** la
+  sienne, il n'est ni arrêté ni écarté. Un bon facturé suit TOUJOURS sa
+  facture, plancher absent compris : aucun bon ne peut être à la fois arrêté
+  et facturé. L'aperçu du mois (PA4) simule encore la facture des bons qui
+  n'en ont pas (le mois court).
+- **Prévenir (Q3)** : **pas fait**. `invoice.issued` est journalisé (acteur
+  `invoice-autopilot` ou la fiche staff) ; l'e-mail « votre facture FA-… »
+  aux contacts de facturation du payeur et des sous-comptes demande un
+  gabarit, un fait durable et un abonné : laissé à E6, avec le PDF.
+
+**Ouvert après E4** : (a) les bons passés entre 22h et minuit le dernier jour
+appartiennent par `createdAt` au mois facturé mais à la facture du mois
+suivant (Q2 ne le tranche pas) ; (b) l'adresse de livraison n'est pas
+figée (`deliveryAddressLines: null`) : les bons d'un payeur peuvent avoir
+plusieurs adresses ; (c) une facture à cheval sur deux mandats (formes 2-3
+de sous-comptes) n'est ni prélevée ni découpée — à trancher ; (d) aucun fait
+de journal pour la tentative automatique ni pour un payeur signalé (la table
+et l'écran les portent).
 
 ## 9. Ce que `vitruve` a relevé (v1, 2026-10-08)
 

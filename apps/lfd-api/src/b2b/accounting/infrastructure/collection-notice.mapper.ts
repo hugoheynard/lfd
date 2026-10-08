@@ -26,7 +26,12 @@ export function toNoticeState(row: CollectionNoticeRow): CollectionNoticeState {
     line:
       row.batchId === null || row.lineRank === null
         ? null
-        : { batchId: row.batchId, lineRank: row.lineRank, statementId: row.statementId ?? "" },
+        : {
+            batchId: row.batchId,
+            lineRank: row.lineRank,
+            statementId: row.statementId,
+            invoiceNumbers: row.invoiceNumbers,
+          },
     debtorCompanyId: row.debtorCompanyId,
     debtorName: row.debtorName,
     kind: row.kind,
@@ -69,6 +74,7 @@ export function noticeColumns(state: CollectionNoticeState) {
     batchId: state.line?.batchId ?? null,
     lineRank: state.line?.lineRank ?? null,
     statementId: state.line?.statementId ?? null,
+    invoiceNumbers: [...(state.line?.invoiceNumbers ?? [])],
     debtorCompanyId: state.debtorCompanyId,
     debtorName: state.debtorName,
     kind: state.kind,

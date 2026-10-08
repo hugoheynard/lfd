@@ -6,7 +6,7 @@ import {
   InvoiceTotalsMismatchError,
 } from "../errors/invoice-errors.js";
 import { InvoiceQuantity } from "../value-objects/invoice-quantity.js";
-import type { InvoiceLineInput } from "./invoice.types.js";
+import type { InvoiceLineInput, InvoicePaymentMeans } from "./invoice.types.js";
 
 /**
  * Les invariants de la facture, purs — appelés par les factories de
@@ -175,4 +175,20 @@ export function assertWithinCorrected(
 
 function sum(values: readonly number[]): number {
   return values.reduce((total, value) => total + value, 0);
+}
+
+/** BT-89 : une RUM, 35 caractères au plus (SEPA). */
+const MANDATE_REFERENCE_MAX = 35;
+
+export function assertPaymentMeans(means: InvoicePaymentMeans | null): void {
+  if (means === null) {
+    return;
+  }
+  const reference = means.mandateReference;
+  if (reference.trim() === "" || reference.length > MANDATE_REFERENCE_MAX) {
+    throw new InvalidInvoiceError(
+      "moyen de paiement",
+      `RUM « ${reference} » vide ou plus longue que ${String(MANDATE_REFERENCE_MAX)} caractères`,
+    );
+  }
 }

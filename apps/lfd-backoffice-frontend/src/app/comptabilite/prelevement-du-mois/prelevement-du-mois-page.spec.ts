@@ -8,6 +8,8 @@ import type {
   CollectionPreviewView,
   ConstitutedBatchesView,
   LegalEntityView,
+  MonthlyInvoiceReportView,
+  MonthlyInvoicesView,
   StaffPermission,
 } from '@lfd/contracts';
 
@@ -15,6 +17,7 @@ import { PermissionsStore } from '../../auth/permissions.store';
 import { NotifyService } from '../../notify.service';
 import { CollectionBatchesService } from '../collection-batches.service';
 import { LegalEntitiesService } from '../legal-entities.service';
+import { MonthlyInvoicesService } from '../monthly-invoices.service';
 import { PrelevementDuMoisPage } from './prelevement-du-mois-page';
 
 /**
@@ -110,6 +113,57 @@ class FakeApi {
   }
 }
 
+const SEPTEMBER_INVOICES: MonthlyInvoicesView = {
+  month: '2026-09',
+  issuableFrom: '2026-09-30T20:00:00.000Z',
+  floorAt: '2026-09-01T00:00:00.000Z',
+  open: true,
+  invoices: [
+    {
+      invoiceId: 'inv1',
+      number: 'FA-2026-000001',
+      payerCompanyId: 'c1',
+      payerName: 'Boulangerie du Port',
+      issuedOn: '2026-09-30',
+      dueOn: '2026-10-15',
+      totalCents: 10_550,
+      orderCount: 2,
+      mandateReference: 'RUM-PORT',
+      unbillableOrders: [],
+    },
+  ],
+  signaled: [
+    {
+      payerCompanyId: 'c2',
+      payerName: 'Chalet Sans SIREN',
+      message: 'Le client « Chalet Sans SIREN » n’a pas de SIREN : le renseigner sur sa fiche.',
+      unbillableOrders: [],
+      recordedAt: '2026-09-30T20:05:00.000Z',
+    },
+  ],
+  autopilotRun: null,
+};
+
+class FakeInvoicesApi {
+  view: MonthlyInvoicesView = SEPTEMBER_INVOICES;
+  refusal: unknown = null;
+  issued: string[] = [];
+
+  month(): Promise<MonthlyInvoicesView> {
+    return this.refusal === null ? Promise.resolve(this.view) : Promise.reject(this.refusal);
+  }
+  issue(payload: { readonly month: string }): Promise<MonthlyInvoiceReportView> {
+    this.issued.push(payload.month);
+    return Promise.resolve({
+      month: payload.month,
+      issued: [],
+      blocked: [],
+      alreadyInvoiced: 1,
+      unbillableOrders: 0,
+    });
+  }
+}
+
 const ENTITY: Partial<LegalEntityView> = {
   id: 'le1',
   name: 'La Folie Douce',
@@ -129,12 +183,14 @@ async function render(
   api: FakeApi,
   permissions: readonly StaffPermission[] = ['b2b_accounting:read', 'b2b_accounting:write'],
   entity: Partial<LegalEntityView> = ENTITY,
+  invoicesApi: FakeInvoicesApi = new FakeInvoicesApi(),
 ): Promise<ComponentFixture<PrelevementDuMoisPage>> {
   TestBed.configureTestingModule({
     imports: [PrelevementDuMoisPage],
     providers: [
       provideRouter([]),
       { provide: CollectionBatchesService, useValue: api },
+      { provide: MonthlyInvoicesService, useValue: invoicesApi },
       {
         provide: LegalEntitiesService,
         useValue: {
@@ -175,14 +231,48 @@ function button(
 }
 
 describe('PrelevementDuMoisPage', () => {
-  it('se lit dans l’ordre du mois : calendrier, aperçu, lot à traiter', async () => {
+  it('se lit dans l’ordre du mois : calendrier, aperçu, factures, lot à traiter', async () => {
     const body = text(await render(new FakeApi()));
 
-    const order = ['Le calendrier du mois', 'Le mois en cours — octobre', 'Le lot à traiter'].map(
-      (heading) => body.indexOf(heading),
-    );
+    const order = [
+      'Le calendrier du mois',
+      'Le mois en cours — octobre',
+      'Les factures de septembre',
+      'Le lot à traiter',
+    ].map((heading) => body.indexOf(heading));
     expect(order.every((index) => index >= 0)).toBe(true);
     expect([...order].sort((a, b) => a - b)).toEqual(order);
+  });
+
+  it('les factures du mois : émises, signalées, et le bouton qui émet le mois (E4)', async () => {
+    const invoicesApi = new FakeInvoicesApi();
+    const fixture = await render(new FakeApi(), undefined, ENTITY, invoicesApi);
+
+    expect(host(fixture).querySelector('[data-invoices-table]')?.textContent).toContain(
+      'FA-2026-000001',
+    );
+    expect(host(fixture).querySelector('[data-signaled-table]')?.textContent).toContain(
+      'Chalet Sans SIREN',
+    );
+    button(fixture, 'Émettre les factures de septembre')?.click();
+    await settle(fixture);
+
+    expect(invoicesApi.issued).toEqual(['2026-09']);
+  });
+
+  it('sans le droit d’écrire, pas de bouton d’émission', async () => {
+    const fixture = await render(new FakeApi(), ['b2b_accounting:read']);
+
+    expect(host(fixture).querySelector('[data-issue-invoices]')).toBeNull();
+  });
+
+  it('les factures en panne ne coûtent que leur carte : le lot reste à l’écran', async () => {
+    const invoicesApi = new FakeInvoicesApi();
+    invoicesApi.refusal = new Error('boum');
+    const fixture = await render(new FakeApi(), undefined, ENTITY, invoicesApi);
+
+    expect(host(fixture).querySelector('[data-invoices-error]')).not.toBeNull();
+    expect(button(fixture, 'Marquer déposé')).toBeDefined();
   });
 
   it('le calendrier mène à la fiche de l’entité, et dit l’automatisme désactivé', async () => {
@@ -365,6 +455,7 @@ describe('PrelevementDuMoisPage', () => {
               amountCents: 10_550,
               ordersTotalCents: 10_550,
               billingStatementId: 'st_1',
+              invoiceNumbers: [],
               notice: {
                 kind: 'notice',
                 status: 'unsendable',

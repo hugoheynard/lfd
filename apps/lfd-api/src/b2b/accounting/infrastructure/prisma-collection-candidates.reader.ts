@@ -5,7 +5,9 @@ import {
   CollectionCandidatesReader,
   type CollectableOrder,
 } from "../domain/ports/collection-candidates.reader.js";
+import { COMMERCIAL_INVOICE } from "../domain/entities/invoice.types.js";
 import type { BillingFollow } from "../domain/ports/statement-billing.reader.js";
+import type { CollectableInvoice } from "../domain/services/collection-assembly.js";
 import type { CollectionFormName } from "../domain/value-objects/collection-form.js";
 import type { SepaScheme } from "../domain/value-objects/sepa-scheme.js";
 import { billableOrderWhere } from "./billable-order-criterion.js";
@@ -132,6 +134,36 @@ export class PrismaCollectionCandidatesReader extends CollectionCandidatesReader
       select: { cycleClosesAt: true },
     });
     return row?.cycleClosesAt ?? null;
+  }
+
+  async invoicingFloor(): Promise<Date | null> {
+    const row = await this.prisma.invoicingFloor.findUnique({ where: { id: true } });
+    return row?.floorAt ?? null;
+  }
+
+  async invoicesOf(orderIds: readonly string[]): Promise<ReadonlyMap<string, CollectableInvoice>> {
+    const rows = await this.prisma.invoice.findMany({
+      where: { type: COMMERCIAL_INVOICE, orders: { some: { orderId: { in: [...orderIds] } } } },
+      select: {
+        id: true,
+        number: true,
+        totalTtcCents: true,
+        orders: { select: { orderId: true }, orderBy: { position: "asc" } },
+      },
+    });
+    const byOrder = new Map<string, CollectableInvoice>();
+    for (const row of rows) {
+      const invoice: CollectableInvoice = {
+        invoiceId: row.id,
+        number: row.number,
+        totalCents: row.totalTtcCents,
+        orderIds: row.orders.map((order) => order.orderId),
+      };
+      for (const orderId of invoice.orderIds) {
+        byOrder.set(orderId, invoice);
+      }
+    }
+    return byOrder;
   }
 
   async liveSchemes(legalEntityId: string, closesAt: Date): Promise<readonly SepaScheme[]> {

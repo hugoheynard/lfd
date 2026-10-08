@@ -65,6 +65,11 @@ export function batchMonthName(cycleClosesAtIso: string): string {
   return nameOf(monthClosedBy(cycleClosesAtIso));
 }
 
+/** « septembre » — un mois écrit `AAAA-MM` (la facture du mois, E4). */
+export function monthKeyName(key: string): string {
+  return nameOf({ year: Number(key.slice(0, 4)), month: Number(key.slice(5, 7)) });
+}
+
 /** `2026-09` — le mois qu'une clôture ferme, comparable d'une année à l'autre. */
 export function closedMonthKey(cycleClosesAtIso: string): string {
   return keyOf(monthClosedBy(cycleClosesAtIso));

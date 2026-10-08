@@ -2,6 +2,7 @@ import type { OrderCollectionState } from "../entities/order-collection.js";
 import type { CollectionFormName } from "../value-objects/collection-form.js";
 import type { SepaScheme } from "../value-objects/sepa-scheme.js";
 import type { FrozenInvoiceOrder } from "../services/invoice-dossier.types.js";
+import type { CollectableInvoice } from "../services/collection-assembly.js";
 import type { BillingFollow } from "./statement-billing.reader.js";
 
 /**
@@ -71,6 +72,20 @@ export abstract class CollectionCandidatesReader {
 
   /** La dernière clôture d'un lot vivant de l'entité, strictement avant `before`. */
   abstract previousClosure(legalEntityId: string, before: Date): Promise<Date | null>;
+
+  /**
+   * La mise en service de la facture du mois (E4) : un bon passé depuis
+   * attend sa facture au lieu d'être arrêté. `null` si la ligne a disparu.
+   */
+  abstract invoicingFloor(): Promise<Date | null>;
+
+  /**
+   * Les factures émises (380) qui couvrent ces bons, par bon — chacune avec
+   * TOUS ses bons, pas seulement ceux demandés.
+   */
+  abstract invoicesOf(
+    orderIds: readonly string[],
+  ): Promise<ReadonlyMap<string, CollectableInvoice>>;
 
   /** Les schémas qui ont DÉJÀ un lot vivant pour cette clôture. */
   abstract liveSchemes(legalEntityId: string, closesAt: Date): Promise<readonly SepaScheme[]>;

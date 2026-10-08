@@ -33,7 +33,13 @@ export class PrismaCollectionBatchRepository extends CollectionBatchRepository {
     const row = await this.prisma.collectionBatch.findUnique({
       where: { id: batchId },
       include: {
-        lines: { orderBy: { rank: "asc" }, include: { orders: { select: { orderId: true } } } },
+        lines: {
+          orderBy: { rank: "asc" },
+          include: {
+            orders: { select: { orderId: true } },
+            invoices: { select: { invoiceId: true, invoice: { select: { number: true } } } },
+          },
+        },
       },
     });
     if (row === null) {
@@ -66,6 +72,9 @@ export class PrismaCollectionBatchRepository extends CollectionBatchRepository {
         amountCents: line.amountCents,
         ordersTotalCents: line.ordersTotalCents,
         orderIds: line.orders.map((order) => order.orderId),
+        invoices: line.invoices
+          .map((link) => ({ invoiceId: link.invoiceId, number: link.invoice.number }))
+          .sort((left, right) => left.number.localeCompare(right.number)),
         priorOrderCount: line.priorOrderCount,
       })),
       xml: row.xml,
@@ -120,6 +129,16 @@ export class PrismaCollectionBatchRepository extends CollectionBatchRepository {
     });
     await this.prisma.collectionBatchLine.createMany({
       data: state.lines.map((line) => this.lineColumns(state.id, line)),
+    });
+    // Les factures qu'une ligne encaisse (E4) : écrites avec elle, jamais réécrites.
+    await this.prisma.collectionBatchLineInvoice.createMany({
+      data: state.lines.flatMap((line) =>
+        line.invoices.map((invoice) => ({
+          batchId: state.id,
+          lineRank: line.rank,
+          invoiceId: invoice.invoiceId,
+        })),
+      ),
     });
   }
 

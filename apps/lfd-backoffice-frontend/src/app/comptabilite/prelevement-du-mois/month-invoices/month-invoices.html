@@ -1,0 +1,91 @@
+<fold-card>
+  <div class="mi-stack">
+    <fold-element-title variant="title" [title]="title()" [subtitle]="subtitle()">
+      @if (canIssue()) {
+        <button
+          titleAction
+          foldButton
+          size="sm"
+          icon="receipt"
+          [loading]="pending()"
+          (click)="onIssue()"
+          data-issue-invoices
+        >
+          {{ issueLabel() }}
+        </button>
+      }
+    </fold-element-title>
+
+    @if (error(); as message) {
+      <fold-callout variant="alert" data-invoices-error>{{ message }}</fold-callout>
+    } @else if (notYetOpen(); as sentence) {
+      <fold-empty-state
+        title="Pas encore de facture du mois"
+        [subtitle]="sentence"
+        data-invoices-not-open
+      >
+        <fold-icon empty-icon name="calendar" />
+      </fold-empty-state>
+    } @else {
+      @if (autopilot(); as sentence) {
+        <p class="mi-said" data-invoices-autopilot>{{ sentence }}</p>
+      }
+
+      @if (signaled().length > 0) {
+        <fold-callout variant="warning" data-invoices-signaled>
+          {{ signaled().length }} payeur(s) signalé(s)&nbsp;: leur facture n’est pas partie, leurs
+          bons ne seront pas prélevés tant qu’elle ne l’est pas. Corriger la fiche, puis «
+          {{ issueLabel() }} ».
+        </fold-callout>
+        <fold-data-table
+          caption="Payeurs signalés"
+          narrowLayout="cards"
+          [columns]="signalColumns"
+          [rows]="signaled()"
+          [rowKey]="rowKey"
+          data-signaled-table
+        >
+          <ng-template foldCell="payer" let-row>{{ row.payerName }}</ng-template>
+          <ng-template foldCell="message" let-row>{{ row.message }}</ng-template>
+        </fold-data-table>
+      }
+
+      @if (invoices().length > 0) {
+        <fold-data-table
+          [caption]="title()"
+          narrowLayout="cards"
+          zebra
+          [columns]="invoiceColumns"
+          [rows]="invoices()"
+          [rowKey]="rowKey"
+          data-invoices-table
+        >
+          <ng-template foldCell="number" let-row>
+            <strong>{{ row.number }}</strong>
+            @if (row.late !== null) {
+              <span class="mi-muted" data-invoice-late>{{ row.late }}</span>
+            }
+            @if (row.unbillable !== null) {
+              <span class="mi-muted" data-invoice-unbillable>{{ row.unbillable }}</span>
+            }
+          </ng-template>
+          <ng-template foldCell="payer" let-row>{{ row.payerName }}</ng-template>
+          <ng-template foldCell="orders" let-row>{{ row.orderCount }}</ng-template>
+          <ng-template foldCell="total" let-row>
+            <span class="mi-amount">{{ row.total }}</span>
+          </ng-template>
+          <ng-template foldCell="due" let-row>{{ row.due }}</ng-template>
+          <ng-template foldCell="mandate" let-row>{{ row.mandate }}</ng-template>
+        </fold-data-table>
+      } @else if (signaled().length === 0) {
+        <fold-empty-state
+          title="Aucune facture émise pour ce mois"
+          subtitle="Elles partent le dernier jour du mois à 22h, ou par le bouton."
+          data-invoices-empty
+        >
+          <fold-icon empty-icon name="receipt" />
+        </fold-empty-state>
+      }
+    }
+  </div>
+</fold-card>

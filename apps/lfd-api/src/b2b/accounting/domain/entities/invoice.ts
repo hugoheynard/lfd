@@ -11,6 +11,7 @@ import { InvoiceNumber } from "../value-objects/invoice-number.js";
 import {
   assertCalendarDate,
   assertLines,
+  assertPaymentMeans,
   assertSha256,
   assertTotals,
   assertWithinCorrected,
@@ -22,6 +23,7 @@ import {
   type InvoiceBuyer,
   type InvoiceLineInput,
   type InvoiceOrderReference,
+  type InvoicePaymentMeans,
   type InvoiceSeller,
   type InvoiceState,
 } from "./invoice.types.js";
@@ -42,6 +44,8 @@ export interface IssueInvoiceInput {
   readonly orders: readonly InvoiceOrderReference[];
   readonly lines: readonly InvoiceLineInput[];
   readonly vat: InvoiceVatBreakdown;
+  /** Le mandat effectif du payeur (BG-16) ; `null` s'il n'y en a pas un seul. */
+  readonly paymentMeans: InvoicePaymentMeans | null;
 }
 
 /** Ce que l'émission d'un avoir (381) reçoit. */
@@ -103,6 +107,7 @@ export class Invoice {
     assertOrders(input.orders);
     assertLines(input.lines);
     assertTotals(number, input.lines, input.vat);
+    assertPaymentMeans(input.paymentMeans);
     return new Invoice(
       {
         id: input.id,
@@ -118,6 +123,7 @@ export class Invoice {
         orders: [...input.orders],
         lines: [...input.lines],
         vat: input.vat,
+        paymentMeans: input.paymentMeans,
         documentKey: null,
         documentSha256: null,
       },
@@ -154,6 +160,8 @@ export class Invoice {
         correctedInvoiceNumber: corrected.number,
         issuedOn: input.issuedOn,
         dueOn: null,
+        // Un avoir n'appelle aucun paiement : il n'en dit pas le moyen.
+        paymentMeans: null,
         orders: [...input.orders],
         lines: [...input.lines],
         vat: input.vat,
@@ -175,6 +183,7 @@ export class Invoice {
     assertDates(number, state.issuedOn, state.dueOn);
     assertLines(state.lines);
     assertTotals(state.number, state.lines, state.vat);
+    assertPaymentMeans(state.paymentMeans);
     if (state.documentSha256 !== null) {
       assertSha256(state.documentSha256);
     }

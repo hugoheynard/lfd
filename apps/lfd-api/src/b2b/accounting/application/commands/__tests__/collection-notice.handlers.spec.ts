@@ -59,7 +59,7 @@ describe("l'avis de prélèvement, à la constitution", () => {
           collectionDay: batch?.requestedCollectionDay,
         },
         mandateReference: "RUM-c_port",
-        line: { batchId, lineRank: 1, statementId: statement?.id },
+        line: { batchId, lineRank: 1, statementId: statement?.id, invoiceNumbers: [] },
         creditor: { name: "Crazeativity", ics: "FR00ZZZ900001" },
       }),
     ]);

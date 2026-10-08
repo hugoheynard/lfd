@@ -49,6 +49,7 @@ export class PrismaCollectionBatchReader extends CollectionBatchReader {
             ordersTotalCents: true,
             orderCount: true,
             statement: { select: { id: true } },
+            invoices: { select: { invoice: { select: { number: true } } } },
           },
         },
         notices: {
@@ -89,6 +90,9 @@ export class PrismaCollectionBatchReader extends CollectionBatchReader {
         amountCents: line.amountCents,
         ordersTotalCents: line.ordersTotalCents,
         billingStatementId: line.statement?.id ?? null,
+        invoiceNumbers: line.invoices
+          .map((link) => link.invoice.number)
+          .sort((left, right) => left.localeCompare(right)),
         // Un lot d'avant PA2 n'a pas d'avis : `null`, et il ne se dépose pas.
         notice: lineNotice(row.notices, line.rank),
       })),

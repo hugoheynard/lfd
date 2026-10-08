@@ -45,6 +45,7 @@ function input(overrides: Partial<ConstituteBatchInput> = {}): ConstituteBatchIn
         amountCents: 1_000,
         ordersTotalCents: 1_000,
         orderIds: ["o1"],
+        invoices: [],
         priorOrderCount: 0,
       },
     ],

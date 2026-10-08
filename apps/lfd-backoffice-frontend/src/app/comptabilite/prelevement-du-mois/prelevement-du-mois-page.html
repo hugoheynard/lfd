@@ -1,7 +1,7 @@
 <fold-page-layout title="Prélèvement du mois" separator>
   <p description>
-    Le mois se lit de haut en bas&nbsp;: ses dates, ce qui sera prélevé à sa fin, le lot à déposer à
-    la banque, puis les lots passés.
+    Le mois se lit de haut en bas&nbsp;: ses dates, ce qui sera prélevé à sa fin, ses factures, le
+    lot à déposer à la banque, puis les lots passés.
   </p>
 
   @if (loading()) {
@@ -31,7 +31,16 @@
       <!-- 2. Le mois en cours : l'aperçu, calculé comme le lot. -->
       <app-month-preview [entity]="current" [preview]="preview()" [error]="previewError()" />
 
-      <!-- 3. Le lot à traiter. -->
+      <!-- 3. Les factures du mois : le lot du 1er les encaisse. -->
+      <app-month-invoices
+        [view]="invoices()"
+        [error]="invoicesError()"
+        [canWrite]="canWrite()"
+        [pending]="pending() === 'invoices'"
+        (issue)="issueInvoices($event)"
+      />
+
+      <!-- 4. Le lot à traiter. -->
       <fold-page-section title="Le lot à traiter" stack>
         @if (canWrite() && !alreadyPrepared()) {
           <button
@@ -72,7 +81,7 @@
         }
       </fold-page-section>
 
-      <!-- 4. L'historique, replié. -->
+      <!-- 5. L'historique, replié. -->
       @if (history().length > 0) {
         <app-batch-history [batches]="history()" (download)="download($event)" />
       }

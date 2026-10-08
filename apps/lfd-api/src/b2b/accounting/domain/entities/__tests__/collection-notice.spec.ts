@@ -13,7 +13,7 @@ function draft(overrides: Partial<NoticeDraft> = {}): NoticeDraft {
     id: "n1",
     legalEntityId: "le_1",
     cycleClosesAt: new Date("2026-09-30T22:00:00.000Z"),
-    line: { batchId: "b1", lineRank: 1, statementId: "st_1" },
+    line: { batchId: "b1", lineRank: 1, statementId: "st_1", invoiceNumbers: [] },
     debtorCompanyId: "c_port",
     debtorName: "Port",
     recipient: { email: "compta@port.test", source: "billing_contact" },

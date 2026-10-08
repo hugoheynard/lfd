@@ -65,6 +65,22 @@ export interface InvoiceOrderReference {
   readonly deliveredOn: string | null;
 }
 
+/** UNTDID 4461 — le prélèvement SEPA, seul moyen que la facture du mois porte. */
+export const SEPA_DIRECT_DEBIT = "59";
+
+/**
+ * Le moyen de paiement figé à l'émission (BG-16, lot E4) : le prélèvement
+ * SEPA sous le mandat EFFECTIF du payeur au jour de l'émission. L'ICS
+ * (BT-90) se relit sur le vendeur figé ; la RUM (BT-89) est la seule chose
+ * que le mandat ajoute. Un lot préparé plus tard sous un autre mandat ne
+ * réécrit pas la facture.
+ */
+export interface InvoicePaymentMeans {
+  readonly code: typeof SEPA_DIRECT_DEBIT;
+  /** BT-89 — la RUM du mandat. */
+  readonly mandateReference: string;
+}
+
 /** Tout ce que la facture fige — la forme persistée et relue (E2). */
 export interface InvoiceState {
   readonly id: string;
@@ -86,6 +102,8 @@ export interface InvoiceState {
   readonly lines: readonly InvoiceLineInput[];
   readonly vat: InvoiceVatBreakdown;
   readonly mentions: InvoiceMentions;
+  /** `null` : aucun mandat unique à l'émission, ou un avoir. */
+  readonly paymentMeans: InvoicePaymentMeans | null;
   readonly documentKey: string | null;
   readonly documentSha256: string | null;
 }

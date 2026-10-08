@@ -45,8 +45,20 @@ export interface CollectionBatchLine {
    */
   readonly ordersTotalCents: number | null;
   readonly orderIds: readonly string[];
+  /**
+   * Les factures émises que la ligne encaisse (E4) — vide pour une ligne
+   * d'arrêté et pour les lots d'avant E4. Une facture d'un lot annulé
+   * redevient à prélever avec ses bons.
+   */
+  readonly invoices: readonly BatchLineInvoice[];
   /** Dont commandes d'un cycle antérieur, reprises. */
   readonly priorOrderCount: number;
+}
+
+/** Une facture encaissée par une ligne : son id, et le numéro que l'avis cite. */
+export interface BatchLineInvoice {
+  readonly invoiceId: string;
+  readonly number: string;
 }
 
 /** Un instant et la fiche staff (identifiant LOCAL, jamais un `sub`). */

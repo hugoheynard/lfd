@@ -21,8 +21,10 @@ export interface CollectionNoticeMailData {
   readonly collectionDay: string;
   /** La RUM du mandat. */
   readonly mandateReference: string;
-  /** La référence de l'arrêté de facturation ; vide pour une annulation. */
+  /** La référence de l'arrêté de facturation ; vide pour une annulation et une ligne de factures. */
   readonly statementReference: string;
+  /** Les factures que la ligne encaisse (E4) ; vide pour une ligne d'arrêté. */
+  readonly invoiceNumbers: readonly string[];
   /** Pour un rectificatif : ce qu'annonçait l'avis précédent. */
   readonly previous: { readonly amount: string; readonly collectionDay: string } | null;
 }
@@ -39,7 +41,8 @@ const TITLES: Readonly<Record<CollectionNoticeMailKind, string>> = {
 /**
  * Le rendu, à part de `mail-templates.ts` : le registre n'en garde qu'une
  * ligne. Sobre, en français : un montant, une date, les deux références que
- * le payeur rapprochera de son relevé (RUM, ICS), et celle de l'arrêté.
+ * le payeur rapprochera de son relevé (RUM, ICS), et celle de la pièce
+ * réglée — ses factures (E4), ou l'arrêté d'un lot d'avant.
  */
 export function renderCollectionNoticeMail(
   data: CollectionNoticeMailData,
@@ -70,9 +73,27 @@ function bodyOf(data: CollectionNoticeMailData): string {
   const intro = data.kind === "correction" ? `Cet avis remplace le précédent. ` : "";
   return (
     `${head}${intro}${data.creditorName} prélèvera ${data.amount} sur le compte de ` +
-    `${data.debtorName} le ${data.collectionDay}, au titre de l'arrêté de facturation ` +
-    `${data.statementReference}.`
+    `${data.debtorName} le ${data.collectionDay}, au titre ${settledPieces(data)}.`
   );
+}
+
+/** Ce que le prélèvement règle : des factures émises (E4), ou l'arrêté d'avant. */
+function settledPieces(data: CollectionNoticeMailData): string {
+  const numbers = data.invoiceNumbers;
+  if (numbers.length === 0) {
+    return `de l'arrêté de facturation ${data.statementReference}`;
+  }
+  return numbers.length === 1
+    ? `de la facture ${numbers.join("")}`
+    : `des factures ${numbers.join(", ")}`;
+}
+
+function pieceRow(data: CollectionNoticeMailData): LayoutRow {
+  const numbers = data.invoiceNumbers;
+  if (numbers.length === 0) {
+    return { label: "Arrêté de facturation", value: data.statementReference };
+  }
+  return { label: numbers.length === 1 ? "Facture" : "Factures", value: numbers.join(", ") };
 }
 
 function rowsOf(data: CollectionNoticeMailData): readonly LayoutRow[] {
@@ -99,7 +120,7 @@ function rowsOf(data: CollectionNoticeMailData): readonly LayoutRow[] {
         ]),
     { label: "Date du prélèvement", value: data.collectionDay },
     ...references,
-    { label: "Arrêté de facturation", value: data.statementReference },
+    pieceRow(data),
     { label: "Montant", value: data.amount, strong: true },
   ];
 }

@@ -54,7 +54,7 @@ export class GetCollectionPreviewHandler implements IQueryHandler<
         { candidates: this.candidates, mandates: this.mandates },
         query.legalEntityId,
         this.clock.now(),
-        cycleAt,
+        { cycleOf: cycleAt, simulateUninvoiced: true },
       );
       return toView(read);
     } catch (caught) {
