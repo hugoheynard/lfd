@@ -1,0 +1,8 @@
+@if (visible()) {
+  <fold-callout variant="info" icon="reload" announce>
+    Une nouvelle version est en ligne.
+    <button foldButton actions size="sm" emphasis="soft" type="button" (click)="reload()">
+      Recharger
+    </button>
+  </fold-callout>
+}

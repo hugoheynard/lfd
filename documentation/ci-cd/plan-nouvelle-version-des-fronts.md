@@ -1,6 +1,34 @@
 # Un onglet apprend qu'une nouvelle version est en ligne
 
-> 📐 **Plan validé par Hugo le 2026-10-08, rien de bâti** (2026-10-08, Hugo : « pour tous mes fronts, je ne
+> 🟡 **Bâti le 2026-10-08, pas encore vu en production** (non commité à
+> l'écriture de ce bandeau).
+>
+> - **N1** — l'étape « Write build identity » des deux workflows
+>   (`deploy_lfd_backoffice.yml`, `deploy_lfc_boutique.yml`), juste après
+>   `ng build --configuration cloudflare` : le fichier de version et la balise
+>   `lfd-build` d'`index.html`, depuis `github.sha`. L'étape échoue si
+>   `index.html` n'a pas de `</head>` ou si la balise n'a pas été posée.
+> - **N2** — `packages/front-ops/src/new-version.ts` (décisions pures,
+>   `__tests__/new-version.spec.ts`) et `new-version-watch.ts`
+>   (`provideNewVersionWatch()`, le signal `NEW_VERSION`), branchés dans les
+>   deux `app.config.ts`. **Écart mécanique au § 2** : la décision se prend à
+>   `RoutesRecognized`, pas à `NavigationStart` — c'est le premier événement
+>   qui connaît la `data` de la route cible. La garde anti-boucle est celle de
+>   `stale-bundle.ts` (`shouldReload`, même clé, même délai).
+> - **N3** — `/coursier`, `/coursier/mes-donnees` et
+>   `/coursier/:roundId/chargement` portent `data: { newVersion: "banner" }` ;
+>   le bandeau est `shared/new-version-banner/`, posé au-dessus du
+>   `router-outlet` dans `app.html`.
+>
+> **Reste à vérifier au premier déploiement** : `https://<front>/version.json`
+> rend le SHA de `main` et `index.html` porte la balise (un YAML n'est lu que
+> par GitHub ; l'étape n'a été rejouée qu'en local, sur une copie) ; un onglet
+> ouvert avant le déploiement recharge à la navigation suivante ; le bandeau
+> s'affiche sous `/coursier` sans décaler la mise en page. Le provider n'a pas
+> de test sous `TestBed` (le jest du paquet tourne en `node`) : seules les
+> décisions pures sont testées.
+>
+> 📐 Plan validé par Hugo le 2026-10-08 (2026-10-08, Hugo : « pour tous mes fronts, je ne
 > devrais pas avoir un auto refresh quand je pousse une nouvelle version ? »).
 > Hors des quatre cas de `vitruve` (ni argent, ni migration, ni sécurité, ni
 > runbook) : affirmations vérifiées dans le dépôt le 2026-10-08.

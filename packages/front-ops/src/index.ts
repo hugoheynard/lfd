@@ -9,7 +9,9 @@
  * - {@link provideWebVitals} — LCP, INP, CLS renvoyés à notre API ;
  * - {@link provideSentry} — les erreurs, chez un tiers, pour les *source maps* ;
  * - {@link provideStaleBundleReload} — un onglet resté sur une version retirée
- *   se recharge une fois, au lieu de rester muet.
+ *   se recharge une fois, au lieu de rester muet ;
+ * - {@link provideNewVersionWatch} — un onglet apprend qu'une nouvelle version
+ *   est en ligne et la prend à la navigation suivante ({@link NEW_VERSION}).
  *
  * **Aucune donnée personnelle ne quitte le navigateur** par ces deux chemins,
  * et c'est vérifiable ici plutôt que dans quatre applications.
@@ -20,5 +22,7 @@
  * adresse en paramètres.
  */
 export { provideSentry } from "./sentry.js";
+export { NEW_VERSION, provideNewVersionWatch } from "./new-version-watch.js";
+export { NEW_VERSION_BANNER, newVersionModeOf } from "./new-version.js";
 export { provideStaleBundleReload } from "./stale-bundle-reload.js";
 export { provideWebVitals } from "./web-vitals.js";

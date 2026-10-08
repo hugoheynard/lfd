@@ -41,6 +41,7 @@ import { DEV_TOOLS } from './dev/dev-tools';
 import { StaffAuth } from './auth/staff-auth';
 import { StaffLoginPage } from './auth/staff-login/staff-login';
 import { PushNotificationsService } from './shared/push/push-notifications.service';
+import { NewVersionBanner } from './shared/new-version-banner/new-version-banner';
 import { NotificationBell } from './shared/notifications/notification-bell/notification-bell';
 import { groupRailItems, WorkspaceRailStore } from './shared/workspace-rail/workspace-rail.store';
 import { WorkspaceCatalogue, isExploitationUrl } from './shared/workspace-rail/workspaces';
@@ -80,6 +81,7 @@ import { WorkspaceCatalogue, isExploitationUrl } from './shared/workspace-rail/w
     FoldSpinnerComponent,
     FoldSurfaceDirective,
     FoldToastContainerComponent,
+    NewVersionBanner,
     NotificationBell,
     StaffLoginPage,
   ],

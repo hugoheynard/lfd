@@ -474,6 +474,9 @@
         </p>
       </div>
     } @else {
+      <!-- Sur les écrans de terrain (`data.newVersion === "banner"`), une version
+           neuve s'annonce au lieu de recharger à la navigation. -->
+      <app-new-version-banner />
       <router-outlet />
     }
 

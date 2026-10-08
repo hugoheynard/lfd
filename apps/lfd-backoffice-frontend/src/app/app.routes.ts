@@ -1,4 +1,5 @@
 import { type Routes } from '@angular/router';
+import { NEW_VERSION_BANNER } from '@lfd/front-ops';
 
 import { anyPermissionGuard, permissionGuard } from './auth/permission.guard';
 import {
@@ -302,6 +303,8 @@ export const routes: Routes = [
     path: 'coursier',
     canActivate: [permissionGuard('delivery_driving:read')],
     title: 'Coursier — LFC B2B admin',
+    // Un livreur en tournée ne voit pas son écran repartir de zéro : bandeau.
+    data: { newVersion: NEW_VERSION_BANNER },
     loadComponent: () =>
       import('./livraison/my-round-page/my-round-page').then((m) => m.MyRoundPage),
   },
@@ -311,6 +314,8 @@ export const routes: Routes = [
     path: 'coursier/mes-donnees',
     canActivate: [permissionGuard('delivery_driving:read')],
     title: 'Mes données — LFC B2B admin',
+    // Un livreur en tournée ne voit pas son écran repartir de zéro : bandeau.
+    data: { newVersion: NEW_VERSION_BANNER },
     loadComponent: () =>
       import('./livraison/driver-notice-page/driver-notice-page').then((m) => m.DriverNoticePage),
   },
@@ -343,6 +348,8 @@ export const routes: Routes = [
     path: 'coursier/:roundId/chargement',
     canActivate: [permissionGuard('delivery_driving:read')],
     title: 'Charger ma tournée — LFC B2B admin',
+    // Un livreur en tournée ne voit pas son écran repartir de zéro : bandeau.
+    data: { newVersion: NEW_VERSION_BANNER },
     loadComponent: () =>
       import('./livraison/my-round-loading/my-round-loading').then((m) => m.MyRoundLoading),
   },

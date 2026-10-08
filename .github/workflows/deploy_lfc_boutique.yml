@@ -126,6 +126,20 @@ jobs:
       - name: Build (static, browser-only)
         run: pnpm --filter lfc-ecommerce-frontend exec ng build --configuration cloudflare
 
+      # L'identité du build, servie (plan-nouvelle-version-des-fronts.md, N1) :
+      # `version.json` dit ce qui est en ligne, la balise `lfd-build` dit ce
+      # qu'un onglet a chargé. Même étape, même SHA — un onglet qui voit les
+      # deux différer sait qu'une nouvelle version est en ligne.
+      - name: Write build identity
+        working-directory: apps/lfc-ecommerce-frontend/dist/lfc-ecommerce-frontend/browser
+        env:
+          BUILD_SHA: ${{ github.sha }}
+        run: |
+          printf '{ "build": "%s" }\n' "$BUILD_SHA" > version.json
+          grep -q '</head>' index.html
+          sed -i "s|</head>|<meta name=\"lfd-build\" content=\"$BUILD_SHA\"></head>|" index.html
+          grep -q "name=\"lfd-build\" content=\"$BUILD_SHA\"" index.html
+
       # ── La porte, APRÈS la construction (2026-09-25) ────────────────────────
       # Tout ce qui précède se construit sans rien changer au monde : installer,
       # typer, construire. On le fait donc PENDANT que la CI (ou le backend)
