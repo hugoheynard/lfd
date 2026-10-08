@@ -1,6 +1,16 @@
 # Le lot de prélèvement figé
 
-> 📐 **Plan v2, rien n'est bâti** (2026-10-05). Prérequis **S4-0** du chantier
+> ✅ **P1 et P2 bâtis — vérifié dans le code le 2026-10-08** (commit
+> `659b6768b`). Ce bandeau disait « rien n'est bâti » (2026-10-05) : il était
+> périmé. Existent : les tables (`prisma/schema/public/collection.prisma`), le
+> plancher, la constitution sous verrou, l'annulation, le dépôt avec relecture
+> et refus sur commande annulée, « réglée autrement », `one_off_consumed`, le
+> XML stocké et le CSV de contrôle (`b2b/accounting/http/admin-collection-batches.controller.ts`),
+> et l'écran `comptabilite/lots-de-prelevement/` du back-office. La suite —
+> le montant prélevé = le total facturé — est
+> [`../facturation/plan-le-prelevement-suit-la-facture.md`](../facturation/plan-le-prelevement-suit-la-facture.md).
+>
+> Plan d'origine (2026-10-05) : prérequis **S4-0** du chantier
 > sous-comptes ([`../b2b/comptes-client/plan-sous-comptes.md`](../b2b/comptes-client/plan-sous-comptes.md),
 > §2.1 quater), mais il sert à **tous** les clients prélevés. Trouvaille T10 du
 > [ledger](../b2b/comptes-client/ledger-sous-comptes.md).

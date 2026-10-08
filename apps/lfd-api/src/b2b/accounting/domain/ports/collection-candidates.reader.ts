@@ -1,6 +1,7 @@
 import type { OrderCollectionState } from "../entities/order-collection.js";
 import type { CollectionFormName } from "../value-objects/collection-form.js";
 import type { SepaScheme } from "../value-objects/sepa-scheme.js";
+import type { FrozenInvoiceOrder } from "../services/invoice-dossier.types.js";
 import type { BillingFollow } from "./statement-billing.reader.js";
 
 /**
@@ -17,6 +18,12 @@ export interface CollectableOrder {
   /** Le payeur copié à la passation (S4), `null` pour une commande d'avant. */
   readonly billedCompanyId: string | null;
   readonly totalCents: number;
+  /**
+   * Ce que le bon a figé pour sa facture — les entrées du simulateur. Lu en
+   * F1 sans être consommé : le montant de ligne reste Σ `totalCents` jusqu'à
+   * F2 (`documentation/facturation/plan-le-prelevement-suit-la-facture.md`).
+   */
+  readonly frozen: FrozenInvoiceOrder;
   /** `null` = aucune ligne d'état : la commande est `due` par défaut. */
   readonly collection: OrderCollectionState | null;
 }

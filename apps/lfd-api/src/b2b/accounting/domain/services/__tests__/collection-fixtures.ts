@@ -1,5 +1,6 @@
 import type { CreditorSnapshot } from "../../creditor-snapshot.js";
 import type { CollectableOrder } from "../../ports/collection-candidates.reader.js";
+import type { FrozenInvoiceOrder } from "../invoice-dossier.types.js";
 import type { CollectionMandate } from "../../ports/collection-mandates.reader.js";
 
 /**
@@ -40,15 +41,46 @@ export function order(
   overrides: Partial<CollectableOrder> = {},
 ): CollectableOrder {
   seq += 1;
+  const orderNumber = `CMD-${String(seq).padStart(3, "0")}`;
+  const placedAt = new Date("2026-09-15T08:00:00.000Z");
   return {
     orderId: `o${String(seq)}`,
-    orderNumber: `CMD-${String(seq).padStart(3, "0")}`,
+    orderNumber,
     companyId,
-    placedAt: new Date("2026-09-15T08:00:00.000Z"),
+    placedAt,
     billedCompanyId: null,
     totalCents: 1_000,
+    frozen: frozenOrder(orderNumber, placedAt),
     collection: null,
     ...overrides,
+  };
+}
+
+/** Un bon figé à 1 000 c TTC (948 HT à 5,5 %), cohérent avec `order()`. */
+export function frozenOrder(reference: string, createdAt: Date): FrozenInvoiceOrder {
+  return {
+    reference,
+    createdAt,
+    requestedDeliveryDate: null,
+    lines: [
+      {
+        sku: "PAIN-1",
+        productNameSnapshot: "Pain",
+        unitPriceMillicents: 94_800,
+        vatRate: "5.50",
+        quantity: 1,
+        lineTotalCents: 948,
+      },
+    ],
+    discountCents: 0,
+    voucherDiscountCents: 0,
+    deliveryFeeCents: 0,
+    deliveryVatMode: null,
+    lateFeeCents: 0,
+    lateFeeVatRate: null,
+    vatShares: [{ rate: 5.5, amountCents: 52 }],
+    vatCents: 52,
+    totalCents: 1_000,
   };
 }
 

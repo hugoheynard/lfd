@@ -17,6 +17,7 @@
  */
 import type { CollectionCycleView, ConstitutedBatchesView } from "@lfd/contracts";
 
+import { CollectionCandidatesReader } from "../src/b2b/accounting/domain/ports/collection-candidates.reader.js";
 import { cycleToConstitute } from "../src/b2b/accounting/domain/services/billing-cycle.js";
 import { AdminTokenVerifier } from "../src/platform/auth/admin-token.verifier.js";
 import { bootstrapE2e, daysAgo, jsonBody, type E2eContext } from "./e2e-harness.js";
@@ -184,6 +185,53 @@ async function stateOf(orderId: string): Promise<string> {
   const row = await ctx.prisma.orderCollection.findUnique({ where: { orderId } });
   return row?.state ?? "absent";
 }
+
+describe("les bons que la constitution lit (F1)", () => {
+  it("portent leurs lignes figées et le taux de surtaxe, en une lecture", async () => {
+    const companyId = await client("Boulangerie figée");
+    const placed = await orderOf(companyId);
+    await ctx.prisma.order.update({
+      where: { id: placed.id },
+      data: {
+        lateFeeCents: 200,
+        lateFeeAdjustment: { adjustment: { mode: "amount", cents: 200 }, vatRatePercent: 5.5 },
+        vatShares: [{ rate: 5.5, amountCents: 550 }],
+        lines: {
+          create: {
+            sku: "PAIN-E2E",
+            productNameSnapshot: "Pain e2e",
+            unitPriceMillicents: 980_000,
+            vatRate: 5.5,
+            quantity: 1,
+            lineTotalCents: 9_800,
+          },
+        },
+      },
+    });
+    const reader = ctx.app.get(CollectionCandidatesReader);
+    const floor = await reader.floor();
+
+    const orders = await reader.collectableOrders(floor ?? closesAt, closesAt);
+
+    expect(orders).toHaveLength(1);
+    expect(orders[0]?.frozen).toMatchObject({
+      reference: placed.orderNumber,
+      lateFeeCents: 200,
+      lateFeeVatRate: 5.5,
+      vatShares: [{ rate: 5.5, amountCents: 550 }],
+      totalCents: 10_550,
+      lines: [
+        {
+          sku: "PAIN-E2E",
+          unitPriceMillicents: 980_000,
+          vatRate: "5.5",
+          quantity: 1,
+          lineTotalCents: 9_800,
+        },
+      ],
+    });
+  });
+});
 
 describe("le lot figé", () => {
   it("rend deux fois les MÊMES octets, sous les identifiants du lot", async () => {

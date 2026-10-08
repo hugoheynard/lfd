@@ -9,6 +9,10 @@ import type { BillingFollow } from "../domain/ports/statement-billing.reader.js"
 import type { CollectionFormName } from "../domain/value-objects/collection-form.js";
 import type { SepaScheme } from "../domain/value-objects/sepa-scheme.js";
 import { billableOrderWhere } from "./billable-order-criterion.js";
+import {
+  FROZEN_INVOICE_ORDER_SELECT,
+  toFrozenInvoiceOrder,
+} from "./frozen-invoice-order.mapper.js";
 import { toOrderCollectionState } from "./order-collection.mapper.js";
 
 /** Les états qu'une constitution reprend : l'absence de ligne compte comme `due`. */
@@ -37,13 +41,12 @@ export class PrismaCollectionCandidatesReader extends CollectionCandidatesReader
     const orders = await this.prisma.order.findMany({
       where: billableOrderWhere(floor, closesAt),
       orderBy: [{ createdAt: "asc" }, { orderNumber: "asc" }],
+      // Une seule lecture rend aussi ce que le bon a figé pour sa facture.
       select: {
+        ...FROZEN_INVOICE_ORDER_SELECT,
         id: true,
-        orderNumber: true,
         companyId: true,
         billedCompanyId: true,
-        createdAt: true,
-        totalCents: true,
       },
     });
     const states = await this.prisma.orderCollection.findMany({
@@ -63,6 +66,7 @@ export class PrismaCollectionCandidatesReader extends CollectionCandidatesReader
           placedAt: order.createdAt,
           billedCompanyId: order.billedCompanyId,
           totalCents: order.totalCents,
+          frozen: toFrozenInvoiceOrder(order),
           collection: state === undefined ? null : toOrderCollectionState(state),
         },
       ];

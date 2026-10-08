@@ -1,6 +1,6 @@
 # Le prélèvement suit la facture
 
-> 📐 **Plan v2, rien de bâti** (2026-10-08). Touche **l'argent** : la v1 a
+> 📐 **Plan v2 — F1 bâti** (2026-10-08), F2 à F4 à faire. Touche **l'argent** : la v1 a
 > été contredite par `vitruve` le même jour (trois BLOQUANTS, six SÉRIEUX),
 > repris au § 7. Affirmations sur l'existant vérifiées dans le dépôt le
 > 2026-10-08.
@@ -53,7 +53,11 @@ Une facture, la nôtre ou celle d'un logiciel, le reprend sans recalcul.
 
 ## 3. Ce qu'on construit
 
-### F1 — La constitution lit les bons figés
+### F1 — La constitution lit les bons figés ✅ (2026-10-08, non commité)
+
+> Bâti : `CollectableOrder.frozen` ; sélection et conversion partagées avec
+> le dossier dans `apps/lfd-api/src/b2b/accounting/infrastructure/frozen-invoice-order.mapper.ts`. Lu, pas
+> encore consommé : le montant de ligne reste Σ `totalCents` jusqu'à F2.
 
 `CollectionCandidatesReader` rend, pour chaque bon prélevable, les entrées
 du simulateur (`FrozenInvoiceOrder` : lignes figées, remises, port et son
@@ -162,7 +166,7 @@ reste un chantier à part.
 
 | Lot    | Contenu                                                                                                                                                                              |
 | ------ | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
-| **F1** | le lecteur de constitution rend les bons figés                                                                                                                                       |
+| **F1** | ✅ 2026-10-08 — le lecteur de constitution rend les bons figés                                                                                                                       |
 | **F2** | la facture par ligne ; montant = total facturé ; `unbillable` ; `orders_total_cents` ; CSV ; e2e : Σ lignes = Σ arrêtés = `CtrlSum`, un bon incohérent exclu sans bloquer les autres |
 | **F3** | la table des arrêtés, écrite et annulée avec le lot ; journal                                                                                                                        |
 | **F4** | l'écran du lot et le dossier par ligne de lot                                                                                                                                        |
