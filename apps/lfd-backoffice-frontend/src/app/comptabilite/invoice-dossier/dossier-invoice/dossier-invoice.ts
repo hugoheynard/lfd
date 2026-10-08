@@ -25,7 +25,7 @@ import {
  *
  * Elle ne lit que la facture : le dossier simulé d'un mois et l'arrêté figé
  * d'une ligne de prélèvement la rendent tous deux (plan
- * `plan-le-prelevement-suit-la-facture.md`, F4).
+ * `le-prelevement-suit-la-facture.md`).
  */
 @Component({
   selector: 'app-dossier-invoice',

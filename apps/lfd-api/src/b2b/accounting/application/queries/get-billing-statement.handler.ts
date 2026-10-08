@@ -7,7 +7,7 @@ import { GetBillingStatementQuery } from "./billing-statement-queries.js";
 
 /**
  * Le dossier d'UNE ligne de prélèvement : son arrêté figé, relu sans recalcul
- * (plan `plan-le-prelevement-suit-la-facture.md`, F4). Un arrêté annulé se lit
+ * (plan `le-prelevement-suit-la-facture.md`). Un arrêté annulé se lit
  * aussi — l'écran dit qu'il l'est.
  */
 @QueryHandler(GetBillingStatementQuery)

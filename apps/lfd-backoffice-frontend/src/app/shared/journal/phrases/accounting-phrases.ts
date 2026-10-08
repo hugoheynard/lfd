@@ -335,7 +335,7 @@ const FOR_CLIENT: Noun = { the: 'du client', a: 'd’un client' };
 
 /**
  * « … a émis l'arrêté de facturation « Arrêté Lot B2B 202609 · ligne 1 » du
- * client « X » — 12,34 € ». Le plan : `plan-le-prelevement-suit-la-facture.md`, F3.
+ * client « X » — 12,34 € ». Le plan : `le-prelevement-suit-la-facture.md`.
  */
 function onStatement(verb: string): Phrase {
   return (fact) => {

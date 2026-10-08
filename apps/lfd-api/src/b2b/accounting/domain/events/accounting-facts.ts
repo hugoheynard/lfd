@@ -68,7 +68,7 @@ export const COLLECTION_FACT_TYPES = {
 
 /**
  * Les faits de l'arrêté de facturation (plan
- * `plan-le-prelevement-suit-la-facture.md`, F3) : émis avec la constitution
+ * `le-prelevement-suit-la-facture.md`) : émis avec la constitution
  * du lot, annulé avec lui.
  */
 export const BILLING_STATEMENT_FACT_TYPES = {

@@ -15,7 +15,7 @@ import {
 } from "../billing-statement.js";
 
 /**
- * L'arrêté de facturation (plan `plan-le-prelevement-suit-la-facture.md`,
+ * L'arrêté de facturation (plan `le-prelevement-suit-la-facture.md`,
  * F3). Les dates ne sont comparées qu'entre elles — jamais à l'horloge.
  */
 

@@ -207,7 +207,7 @@ import { PrismaLegalEntityRepository } from "./infrastructure/prisma-legal-entit
     { provide: OrderCollectionRepository, useClass: PrismaOrderCollectionRepository },
     { provide: CollectionBatchReader, useClass: PrismaCollectionBatchReader },
     { provide: CollectionLock, useClass: PrismaCollectionLock },
-    // L'arrêté de facturation figé (plan `plan-le-prelevement-suit-la-facture.md`, F3).
+    // L'arrêté de facturation figé (plan `le-prelevement-suit-la-facture.md`).
     { provide: BillingStatementRepository, useClass: PrismaBillingStatementRepository },
     { provide: StatementBuyerReader, useClass: PrismaStatementBuyerReader },
     { provide: InvoiceIssuersReader, useClass: PrismaInvoiceIssuersReader },

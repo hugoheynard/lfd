@@ -9,7 +9,7 @@ import { BillingStatementsService } from '../billing-statements.service';
 import { ArreteDeFacturationPage } from './arrete-de-facturation-page';
 
 /**
- * Ce que ces cas tiennent (plan `plan-le-prelevement-suit-la-facture.md`, F4) :
+ * Ce que ces cas tiennent (plan `le-prelevement-suit-la-facture.md`) :
  * l'arrêté se relit tel que figé — bandeau, montant prélevé, écart aux bons,
  * facture, bons couverts ; annulé, il le dit et ne prétend plus être prélevé ;
  * inconnu, il ne se confond pas avec une panne.

@@ -13,7 +13,7 @@ export type CollectionExclusionReason =
   | "payer_detached"
   | "one_off_consumed"
   | "ambiguous_creditor"
-  /** Un bon qu'on ne sait pas facturer — plan-le-prelevement-suit-la-facture, F2. */
+  /** Un bon qu'on ne sait pas facturer — le-prelevement-suit-la-facture. */
   | "unbillable"
   /** Un bon d'une facture émise qui tomberait sur plusieurs mandats (E4). */
   | "invoice_split";

@@ -246,7 +246,7 @@ async function activeMandate(
 /**
  * Une commande du site passée au compte du principal, deux jours avant la
  * clôture. Elle porte sa ligne figée : depuis le lot F2
- * (`plan-le-prelevement-suit-la-facture.md`), un bon dont le total ne se
+ * (`le-prelevement-suit-la-facture.md`), un bon dont le total ne se
  * recompose pas de ses lignes est écarté `unbillable` du lot.
  */
 async function billedOrder(site: string, payer: string): Promise<string> {

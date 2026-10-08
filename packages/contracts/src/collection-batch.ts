@@ -78,7 +78,7 @@ export interface CollectionLineNoticeView {
 
 /**
  * Une ligne de débit du lot, telle que l'écran la lit (plan
- * `documentation/comptabilite/facturation/plan-le-prelevement-suit-la-facture.md`, F3).
+ * `documentation/comptabilite/facturation/le-prelevement-suit-la-facture.md`).
  */
 export interface CollectionBatchLineView {
   readonly rank: number;

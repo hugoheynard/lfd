@@ -8,7 +8,7 @@ import type { FrozenInvoiceOrder } from "../invoice-dossier.types.js";
 import { ENTITY_ID, SEPTEMBER, frozenOrder, mandate, order } from "./collection-fixtures.js";
 
 /**
- * Le prélèvement suit la facture (plan `plan-le-prelevement-suit-la-facture.md`,
+ * Le prélèvement suit la facture (plan `le-prelevement-suit-la-facture.md`,
  * F2) : une ligne prélève le total de la facture de SES bons, et un bon qu'on
  * ne sait pas facturer sort du lot sans bloquer les autres. Aucune horloge lue.
  */

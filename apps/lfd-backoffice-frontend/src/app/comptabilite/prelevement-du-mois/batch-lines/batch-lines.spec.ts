@@ -7,7 +7,7 @@ import type { CollectionBatchLineView, CollectionBatchView } from '@lfd/contract
 import { BatchLines, toRow } from './batch-lines';
 
 /**
- * Ce que ces cas tiennent (plan `plan-le-prelevement-suit-la-facture.md`, F4) :
+ * Ce que ces cas tiennent (plan `le-prelevement-suit-la-facture.md`) :
  * l'écart est signé, en euros, total facturé − Σ bons ; une ligne d'avant
  * l'arrêté dit qu'elle l'est, jamais zéro, et n'ouvre aucun dossier.
  */

@@ -8,7 +8,7 @@ export interface CancelledStatement {
 
 /**
  * Port d'ÉCRITURE des **arrêtés de facturation** (plan
- * `plan-le-prelevement-suit-la-facture.md`, F3).
+ * `le-prelevement-suit-la-facture.md`).
  *
  * 🔴 **Immuable par construction** : deux gestes, et rien d'autre. Pas de
  * `save`, pas de `load` — un arrêté ne se recharge pas pour être muté, et

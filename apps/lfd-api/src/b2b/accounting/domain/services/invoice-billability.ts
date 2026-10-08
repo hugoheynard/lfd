@@ -7,7 +7,7 @@ import type { FrozenInvoiceOrder } from "./invoice-dossier.types.js";
 
 /**
  * **Ce bon se facture-t-il ?** — jugé SEUL, avant d'être agrégé à une ligne de
- * débit (plan `plan-le-prelevement-suit-la-facture.md`, F2).
+ * débit (plan `le-prelevement-suit-la-facture.md`).
  *
  * Le critère est celui du simulateur lui-même, pas une recopie : on lui fait
  * calculer la facture de ce seul bon. Il refuse (surtaxe sans taux, taux de

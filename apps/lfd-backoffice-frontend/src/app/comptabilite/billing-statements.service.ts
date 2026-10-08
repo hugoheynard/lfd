@@ -8,7 +8,7 @@ import { B2B_API_BASE } from '../api/api-config';
 
 /**
  * Les **arrêtés de facturation figés** — le dossier d'une ligne de prélèvement
- * (plan `documentation/comptabilite/facturation/plan-le-prelevement-suit-la-facture.md`, F4).
+ * (plan `documentation/comptabilite/facturation/le-prelevement-suit-la-facture.md`).
  * Une relecture : le serveur ne recalcule rien, l'écran non plus.
  */
 @Injectable({ providedIn: 'root' })

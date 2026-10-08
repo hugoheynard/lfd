@@ -8,7 +8,7 @@
 > XML stocké et le CSV de contrôle (`b2b/accounting/http/admin-collection-batches.controller.ts`),
 > et l'écran `comptabilite/prelevement-du-mois/` (ex-`lots-de-prelevement/`, renommé le 2026-10-08) du back-office. La suite —
 > le montant prélevé = le total facturé — est
-> [`../facturation/plan-le-prelevement-suit-la-facture.md`](../facturation/plan-le-prelevement-suit-la-facture.md).
+> [`../facturation/le-prelevement-suit-la-facture.md`](../facturation/le-prelevement-suit-la-facture.md).
 >
 > Plan d'origine (2026-10-05) : prérequis **S4-0** du chantier
 > sous-comptes ([`../../b2b/comptes-client/plan-sous-comptes.md`](../../b2b/comptes-client/plan-sous-comptes.md),

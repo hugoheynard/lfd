@@ -22,7 +22,7 @@ export interface CollectableOrder {
   /**
    * Ce que le bon a figé pour sa facture — les entrées du simulateur. Lu en
    * F1 sans être consommé : le montant de ligne reste Σ `totalCents` jusqu'à
-   * F2 (`documentation/comptabilite/facturation/plan-le-prelevement-suit-la-facture.md`).
+   * F2 (`documentation/comptabilite/facturation/le-prelevement-suit-la-facture.md`).
    */
   readonly frozen: FrozenInvoiceOrder;
   /** `null` = aucune ligne d'état : la commande est `due` par défaut. */

@@ -111,7 +111,7 @@ export interface BillingStatementState {
 
 /**
  * **L'arrêté de facturation** — ce qu'une ligne de débit prélève, figé
- * (plan `plan-le-prelevement-suit-la-facture.md`, F3).
+ * (plan `le-prelevement-suit-la-facture.md`).
  *
  * Il naît actif avec la constitution du lot et ne change plus : il n'a
  * AUCUNE méthode de mutation. Son annulation est celle du lot

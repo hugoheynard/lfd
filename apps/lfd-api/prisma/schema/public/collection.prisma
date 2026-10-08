@@ -44,7 +44,7 @@ enum CollectionExclusionReason {
   one_off_consumed
   ambiguous_creditor
   /// Un bon qu'on ne sait pas facturer (incohérent, surtaxe sans taux, taux
-  /// de ligne illisible) — plan `plan-le-prelevement-suit-la-facture.md`, F2.
+  /// de ligne illisible) — plan `le-prelevement-suit-la-facture.md`.
   unbillable
   /// Une facture émise dont les bons tomberaient sur plusieurs mandats (E4) :
   /// elle ne se prélève pas en morceaux.

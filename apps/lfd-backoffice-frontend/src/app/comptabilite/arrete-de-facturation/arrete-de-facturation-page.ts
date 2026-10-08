@@ -29,7 +29,7 @@ type StatementState = 'loading' | 'ready' | 'not-found' | 'error';
 
 /**
  * **Le dossier d'une ligne de prélèvement**, ouvert depuis son arrêté (plan
- * `documentation/comptabilite/facturation/plan-le-prelevement-suit-la-facture.md`, F4).
+ * `documentation/comptabilite/facturation/le-prelevement-suit-la-facture.md`).
  *
  * Le périmètre exact du débit : ses bons, la facture calculée une fois sur
  * eux et figée à la constitution. Rien n'est recalculé — c'est ce total qui

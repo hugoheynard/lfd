@@ -1,6 +1,6 @@
 // ─────────────────────────────────────────────────────────────────────────────
 // L'arrêté de facturation figé — plan
-// `documentation/comptabilite/facturation/plan-le-prelevement-suit-la-facture.md` (F3).
+// `documentation/comptabilite/facturation/le-prelevement-suit-la-facture.md` (F3).
 // ─────────────────────────────────────────────────────────────────────────────
 //
 // Propriétaire : `src/b2b/accounting/`. Un arrêté par ligne de débit, écrit

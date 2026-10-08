@@ -2,7 +2,7 @@ import type { BillingStatementView } from "@lfd/contracts";
 
 /**
  * Port de LECTURE des **arrêtés de facturation** (plan
- * `plan-le-prelevement-suit-la-facture.md`, F4) — à part du port d'écriture,
+ * `le-prelevement-suit-la-facture.md`) — à part du port d'écriture,
  * qui n'a que `insert` et `cancel`.
  *
  * Il relit ce qui a été figé, sans rien recalculer : la facture rendue est le

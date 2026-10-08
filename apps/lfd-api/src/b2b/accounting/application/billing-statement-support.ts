@@ -30,7 +30,7 @@ export interface IssuedStatement {
 
 /**
  * **Un arrêté par ligne de débit d'arrêté** (plan
- * `plan-le-prelevement-suit-la-facture.md`, F3), avec exactement les bons de
+ * `le-prelevement-suit-la-facture.md`), avec exactement les bons de
  * la ligne. Une ligne qui encaisse des factures émises n'en reçoit pas : sa
  * pièce est la facture (plan `plan-emission-de-la-facture.md`, E4).
  *

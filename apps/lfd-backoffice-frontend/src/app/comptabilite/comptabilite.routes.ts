@@ -78,7 +78,7 @@ export const comptabiliteRoutes: Routes = [
         // Le dossier d'UNE ligne de prélèvement : son arrêté figé, ouvert
         // depuis le lot. Sous `b2b_accounting`, comme la coquille ; la route
         // serveur n'admet que ce droit, en lecture.
-        // Plan : documentation/comptabilite/facturation/plan-le-prelevement-suit-la-facture.md (F4).
+        // Plan : documentation/comptabilite/facturation/le-prelevement-suit-la-facture.md (F4).
         path: 'arretes-de-facturation/:id',
         title: 'Arrêté de facturation — LFC B2B admin',
         loadComponent: () =>

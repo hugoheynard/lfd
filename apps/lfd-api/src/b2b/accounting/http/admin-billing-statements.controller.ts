@@ -7,7 +7,7 @@ import { GetBillingStatementQuery } from "../application/queries/billing-stateme
 
 /**
  * Surface **staff** des arrêtés de facturation (plan
- * `plan-le-prelevement-suit-la-facture.md`, F4). Lecture seule, sous
+ * `le-prelevement-suit-la-facture.md`). Lecture seule, sous
  * `b2b_accounting:read` : l'arrêté s'écrit et s'annule avec son lot, jamais ici.
  * `404` pour un arrêté inconnu.
  */

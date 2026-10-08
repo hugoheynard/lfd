@@ -45,7 +45,7 @@ const HEADERS = [
  *
  * Le montant est le total facturé ; « Σ bons » et « Écart » (facture − bons)
  * le confrontent à la somme des bons (plan
- * `plan-le-prelevement-suit-la-facture.md`, F2). Le TOTAL reste Σ montants =
+ * `le-prelevement-suit-la-facture.md`). Le TOTAL reste Σ montants =
  * `CtrlSum`. Une ligne d'avant F2 n'a pas de Σ bons : cellules vides, et le
  * total de ces deux colonnes aussi — un total partiel se lirait comme exact.
  */

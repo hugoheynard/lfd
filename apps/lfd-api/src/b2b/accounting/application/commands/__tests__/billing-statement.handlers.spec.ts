@@ -13,7 +13,7 @@ import { sendAllQueued } from "./notice-doubles.js";
 
 /**
  * L'arrêté de facturation, écrit et annulé avec son lot (plan
- * `plan-le-prelevement-suit-la-facture.md`, F3).
+ * `le-prelevement-suit-la-facture.md`).
  */
 
 async function constituted(w: ReturnType<typeof world>): Promise<string> {

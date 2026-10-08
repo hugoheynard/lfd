@@ -41,7 +41,7 @@ export interface CollectionBatchLine {
    * Σ des totaux de ses bons — l'écart `amountCents − ordersTotalCents` est
    * celui de la LIGNE, jamais d'un bon. `null` pour une ligne d'un lot
    * constitué avant F2 (2026-10-08) : la colonne n'existait pas, et on
-   * n'invente pas sa valeur (plan `plan-le-prelevement-suit-la-facture.md`).
+   * n'invente pas sa valeur (plan `le-prelevement-suit-la-facture.md`).
    */
   readonly ordersTotalCents: number | null;
   readonly orderIds: readonly string[];

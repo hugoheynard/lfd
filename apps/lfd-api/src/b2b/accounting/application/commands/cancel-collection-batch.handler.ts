@@ -23,7 +23,7 @@ import { CancelCollectionBatchCommand } from "./cancel-collection-batch.command.
  * dans la prochaine constitution, sous un AUTRE lot — donc d'autres `MsgId`.
  *
  * Ses arrêtés de facturation passent `cancelled` dans la même transaction
- * (plan `plan-le-prelevement-suit-la-facture.md`, F3) — APRÈS
+ * (plan `le-prelevement-suit-la-facture.md`) — APRÈS
  * `batch.cancel()`, qui refuse un lot déposé, et AVANT l'écriture du lot :
  * la base n'accepte l'annulation d'un arrêté que si son lot est encore
  * `constituted` en base. La reconstitution en figera de nouveaux.

@@ -48,7 +48,7 @@ import { ConstituteCollectionBatchesCommand } from "./constitute-collection-batc
  * silence. Le refus n'arrive que si la constitution n'a strictement rien fait.
  *
  * Chaque ligne de débit reçoit son **arrêté de facturation** dans la même
- * transaction (plan `plan-le-prelevement-suit-la-facture.md`, F3) : la
+ * transaction (plan `le-prelevement-suit-la-facture.md`) : la
  * facture que `assembleCollection` a calculée pour la ligne, figée telle
  * quelle — son total EST le montant prélevé, jamais recalculé.
  *

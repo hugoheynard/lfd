@@ -131,7 +131,7 @@ export const COLLECTION_FACTS = {
   ),
   /**
    * L'arrêté de facturation d'une ligne de débit est figé avec la
-   * constitution du lot (plan `plan-le-prelevement-suit-la-facture.md`, F3).
+   * constitution du lot (plan `le-prelevement-suit-la-facture.md`).
    * Sujet : `billing_statement`. `totalCents` est son total TTC — ce que la
    * ligne prélève ; `ordersTotalCents` la somme de ses bons.
    */

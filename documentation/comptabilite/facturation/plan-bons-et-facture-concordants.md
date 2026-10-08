@@ -1,7 +1,7 @@
 # Des bons et une facture qui concordent
 
 > 📐 **Plan v2 — F5-0 et F6 bâtis** (2026-10-08). Suite de
-> [`plan-le-prelevement-suit-la-facture.md`](plan-le-prelevement-suit-la-facture.md).
+> [`le-prelevement-suit-la-facture.md`](le-prelevement-suit-la-facture.md).
 > Touche **l'argent** : la v1 a été contredite par `vitruve` le même jour
 > (deux BLOQUANTS, six SÉRIEUX), repris au § 8.
 
@@ -37,7 +37,7 @@ flowchart LR
 Retirer le TTC des bons n'est permis que si le client reçoit **avant** le
 débit un document qui le lui donne. Aujourd'hui, aucun : la facture n'est
 pas émise et l'avis de prélèvement n'existe pas
-(`plan-le-prelevement-suit-la-facture.md`, § 4). L'ordre est donc :
+(`le-prelevement-suit-la-facture.md`). L'ordre est donc :
 
 1. **F6** — la facture reprend les montants des bons ;
 2. **la facture émise** et **l'avis de prélèvement** — chantiers à part ;

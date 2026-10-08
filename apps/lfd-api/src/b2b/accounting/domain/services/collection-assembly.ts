@@ -33,7 +33,7 @@ import type { CollectionExclusionReason } from "../entities/order-collection.js"
  * 6. un schéma dont le lot de cette clôture vit déjà laisse la commande
  *    intacte : elle attend le lot suivant (la course avec la passation, §3) ;
  * 7. un bon qu'on ne sait pas facturer → `unbillable` : écarté, nommé, il ne
- *    bloque pas les autres (plan `plan-le-prelevement-suit-la-facture.md`, F2).
+ *    bloque pas les autres (plan `le-prelevement-suit-la-facture.md`).
  *    Jugé en dernier : un bon d'une autre entité n'est pas le nôtre à écarter.
  *
  * Les étapes 1 à 6 vivent dans `collection-verdict.ts` (`judgeMandate`).
