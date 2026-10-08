@@ -36,6 +36,26 @@ export const statementBuyerSchema = z.object({
 const cents = z.number().int();
 const part = z.object({ key: z.string(), amountCents: cents });
 
+/** La ventilation par taux — le miroir de `vatBreakdownJson`, partagé avec la facture émise. */
+export const vatBreakdownSchema = z.object({
+  categories: z.array(
+    z.object({
+      rate: z.number(),
+      goodsHtCents: cents,
+      allowances: z.array(part),
+      charges: z.array(part),
+      taxableBaseCents: cents,
+      vatCents: cents,
+    }),
+  ),
+  goodsHtCents: cents,
+  allowancesCents: cents,
+  chargesCents: cents,
+  taxableBaseCents: cents,
+  vatCents: cents,
+  totalCents: cents,
+});
+
 /** `body_version` 1 : la facture de `simulateInvoiceDossier`, telle que figée. */
 export const statementBodyV1Schema = z.object({
   lines: z.array(
@@ -62,23 +82,6 @@ export const statementBodyV1Schema = z.object({
   deliveries: z.array(
     z.object({ mode: z.enum(["standard", "follows_goods"]), amountCents: cents }),
   ),
-  vat: z.object({
-    categories: z.array(
-      z.object({
-        rate: z.number(),
-        goodsHtCents: cents,
-        allowances: z.array(part),
-        charges: z.array(part),
-        taxableBaseCents: cents,
-        vatCents: cents,
-      }),
-    ),
-    goodsHtCents: cents,
-    allowancesCents: cents,
-    chargesCents: cents,
-    taxableBaseCents: cents,
-    vatCents: cents,
-    totalCents: cents,
-  }),
+  vat: vatBreakdownSchema,
   totalCents: cents,
 });

@@ -130,3 +130,37 @@ export class InvoiceAssemblyError extends TechnicalError {
     );
   }
 }
+
+/**
+ * Une facture relue dont la forme n'est plus lisible (`body_version` inconnue,
+ * JSON qui ne passe pas le schéma, totaux qui ne se recomposent plus). Rien
+ * n'est rendu plutôt qu'un montant deviné.
+ */
+export class UnreadableInvoiceError extends TechnicalError {
+  constructor(
+    readonly invoiceId: string,
+    readonly reason: string,
+  ) {
+    super(
+      "accounting.invoice.unreadable",
+      `La facture ${invoiceId} est illisible (${reason}) : rien n'est affiché plutôt qu'un montant deviné. Prévenir l'équipe technique.`,
+    );
+  }
+}
+
+/**
+ * La numérotation est chronologique : une pièce ne se date pas avant la
+ * dernière émise par la même séquence.
+ */
+export class InvoiceIssuedBeforePreviousError extends BusinessError {
+  constructor(
+    readonly legalEntityId: string,
+    readonly issuedOn: string,
+  ) {
+    super(
+      "accounting.invoice.issued_before_previous",
+      `Une facture de l'entité ${legalEntityId} a déjà été émise après le ${issuedOn} : ` +
+        "la numérotation est chronologique, émettre à la date du jour.",
+    );
+  }
+}

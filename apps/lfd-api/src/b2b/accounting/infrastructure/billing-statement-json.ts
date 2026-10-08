@@ -1,4 +1,4 @@
-import type { InvoiceVatCategory, InvoiceVatPart } from "@lfd/money";
+import type { InvoiceVatBreakdown, InvoiceVatCategory, InvoiceVatPart } from "@lfd/money";
 
 import type { Prisma } from "../../../platform/database/client/client.js";
 import type { StatementBuyer, StatementSeller } from "../domain/entities/billing-statement.js";
@@ -53,15 +53,7 @@ export function bodyJson(invoice: Invoice): Prisma.InputJsonValue {
       mode: line.mode,
       amountCents: line.amountCents,
     })),
-    vat: {
-      categories: invoice.vat.categories.map(categoryJson),
-      goodsHtCents: invoice.vat.goodsHtCents,
-      allowancesCents: invoice.vat.allowancesCents,
-      chargesCents: invoice.vat.chargesCents,
-      taxableBaseCents: invoice.vat.taxableBaseCents,
-      vatCents: invoice.vat.vatCents,
-      totalCents: invoice.vat.totalCents,
-    },
+    vat: vatBreakdownJson(invoice.vat),
     totalCents: invoice.totalCents,
   };
 }
@@ -79,6 +71,23 @@ function lineJson(line: InvoiceLine): Prisma.InputJsonValue {
     ordersLineTotalCents: line.ordersLineTotalCents,
     firstDeliveryDate: line.firstDeliveryDate,
     lastDeliveryDate: line.lastDeliveryDate,
+  };
+}
+
+/**
+ * La ventilation par taux, champ à champ — partagée par l'arrêté (dans son
+ * `body`) et la facture émise (colonne `vat_breakdown`, lot E2) : même forme,
+ * même relecture (`vatBreakdownSchema`).
+ */
+export function vatBreakdownJson(vat: InvoiceVatBreakdown): Prisma.InputJsonValue {
+  return {
+    categories: vat.categories.map(categoryJson),
+    goodsHtCents: vat.goodsHtCents,
+    allowancesCents: vat.allowancesCents,
+    chargesCents: vat.chargesCents,
+    taxableBaseCents: vat.taxableBaseCents,
+    vatCents: vat.vatCents,
+    totalCents: vat.totalCents,
   };
 }
 

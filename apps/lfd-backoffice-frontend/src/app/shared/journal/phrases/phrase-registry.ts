@@ -13,6 +13,7 @@ import { DELIVERY_ROUND_PHRASES } from './delivery-round-phrases';
 import { DELIVERY_ROUTING_PHRASES } from './delivery-routing-phrases';
 import { DELIVERY_SIMULATION_PHRASES } from './delivery-simulation-phrases';
 import { HANDOVER_PROOF_PHRASES } from './handover-proof-phrases';
+import { INVOICE_PHRASES } from './invoice-phrases';
 import { PACKING_CONTAINER_PHRASES } from './packing-container-phrases';
 import { LOYALTY_PHRASES } from './loyalty-phrases';
 import { OPERATION_PHRASES } from './operation-phrases';
@@ -171,6 +172,7 @@ export const PHRASES: Readonly<Record<JournalFactType, Phrase>> = {
   ...ACCOUNTS_PHRASES,
   ...SUB_ACCOUNT_PHRASES,
   ...ACCOUNTING_PHRASES,
+  ...INVOICE_PHRASES,
   ...LOYALTY_PHRASES,
   ...TEAM_PHRASES,
 };

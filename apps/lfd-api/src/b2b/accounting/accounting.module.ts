@@ -33,6 +33,13 @@ import { CollectionBatchReader } from "./domain/ports/collection-batch.reader.js
 import { CollectionBatchRepository } from "./domain/ports/collection-batch.repository.js";
 import { CollectionCandidatesReader } from "./domain/ports/collection-candidates.reader.js";
 import { CollectionLock } from "./domain/ports/collection-lock.js";
+import { InvoiceNumbering } from "./domain/ports/invoice-numbering.js";
+import { InvoiceReader } from "./domain/ports/invoice.reader.js";
+import { InvoiceRepository } from "./domain/ports/invoice.repository.js";
+import { InvoiceIssuer } from "./application/services/invoice-issuer.js";
+import { PrismaInvoiceNumbering } from "./infrastructure/prisma-invoice-numbering.js";
+import { PrismaInvoiceReader } from "./infrastructure/prisma-invoice.reader.js";
+import { PrismaInvoiceRepository } from "./infrastructure/prisma-invoice.repository.js";
 import { OrderCollectionRepository } from "./domain/ports/order-collection.repository.js";
 import { OrderNumbersReader } from "./domain/ports/order-numbers.reader.js";
 import { RecordedClosureReader } from "./domain/ports/recorded-closure.reader.js";
@@ -185,6 +192,11 @@ import { PrismaLegalEntityRepository } from "./infrastructure/prisma-legal-entit
     { provide: BillingStatementReader, useClass: PrismaBillingStatementReader },
     { provide: CancelledOrdersReader, useClass: PrismaCancelledOrdersReader },
     { provide: OrderNumbersReader, useClass: PrismaOrderNumbersReader },
+    // La facture émise (plan `plan-emission-de-la-facture.md`, E2).
+    { provide: InvoiceNumbering, useClass: PrismaInvoiceNumbering },
+    { provide: InvoiceRepository, useClass: PrismaInvoiceRepository },
+    { provide: InvoiceReader, useClass: PrismaInvoiceReader },
+    InvoiceIssuer,
     // L'avis de prélèvement (plan `prelevement-automatique.md`, PA2).
     { provide: CollectionNoticeRepository, useClass: PrismaCollectionNoticeRepository },
     { provide: CycleNoticesReader, useClass: PrismaCycleNoticesReader },

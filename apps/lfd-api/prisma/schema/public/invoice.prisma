@@ -1,0 +1,117 @@
+// ─────────────────────────────────────────────────────────────────────────────
+// La facture émise et l'avoir — plan
+// `documentation/facturation/plan-emission-de-la-facture.md` (E2).
+// ─────────────────────────────────────────────────────────────────────────────
+//
+// Propriétaire : `src/b2b/accounting/`. Une pièce : écrite une fois, dans la
+// transaction de l'émission qui a pris son numéro, puis seulement complétée
+// de son document rendu.
+//
+// 🔴 Contraintes INVISIBLES ici — elles vivent dans la migration
+// `20261008190000_la_facture_emise`, Prisma ne sait pas les exprimer :
+//   · une facture ne se supprime pas et ne change pas, sauf `document_key` et
+//     `document_sha256` posés ensemble, de NULL à une valeur, une seule fois
+//     (déclencheur `invoice_immutable`) ; ses bons ne se retouchent pas
+//     (`invoice_order_immutable`) ;
+//   · le compteur ne recule jamais, n'avance que d'un rang et jamais vers un
+//     jour antérieur à `last_issued_on`
+//     (`invoice_number_counter_monotonic`), ne se supprime pas ;
+//   · un bon n'est porté que par UNE facture 380 (index partiel
+//     `invoice_order_invoiced_once`) ;
+//   · numéro = `FA-<year>-<rank sur 6>`, année = celle de `issued_on`,
+//     TTC = HT + TVA, 381 ⇔ facture corrigée, avoir sans échéance.
+
+/// Une facture (380) ou un avoir (381), figé à l'émission.
+model Invoice {
+  /// ULID.
+  id String @id
+
+  legalEntityId String      @map("legal_entity_id")
+  legalEntity   LegalEntity @relation(fields: [legalEntityId], references: [id], onDelete: Restrict)
+
+  /// `FA-<année>-<n° sur 6 chiffres>` — recomposé de `year` et `rank`.
+  number String @unique
+  year   Int
+  rank   Int
+
+  /// `380` facture, `381` avoir (UNTDID 1001).
+  type String
+
+  /// La facture qu'un avoir corrige ; NULL pour une facture.
+  correctsInvoiceId String?   @map("corrects_invoice_id")
+  corrects          Invoice?  @relation("InvoiceCorrection", fields: [correctsInvoiceId], references: [id], onDelete: Restrict)
+  creditNotes       Invoice[] @relation("InvoiceCorrection")
+
+  issuedOn DateTime  @map("issued_on") @db.Date
+  /// NULL pour un avoir, qui n'appelle aucun paiement.
+  dueOn    DateTime? @map("due_on") @db.Date
+
+  /// Identités figées — `body_version` en dit la forme.
+  seller         Json
+  buyer          Json
+  /// Le payeur légal (`buyer.companyId`) — opaque, la clé de « ses factures ».
+  payerCompanyId String @map("payer_company_id")
+  mentions       Json
+  lines          Json
+  vatBreakdown   Json   @map("vat_breakdown")
+
+  totalHtCents  Int @map("total_ht_cents")
+  totalVatCents Int @map("total_vat_cents")
+  totalTtcCents Int @map("total_ttc_cents")
+
+  /// Les lignes d'adresse de livraison, quand elle diffère de la facturation.
+  deliveryAddress Json? @map("delivery_address")
+
+  bodyVersion Int @map("body_version")
+
+  /// Le document rendu (Factur-X), posé une fois après l'émission.
+  documentKey    String? @map("document_key")
+  documentSha256 String? @map("document_sha256")
+
+  createdAt DateTime @default(now()) @map("created_at")
+
+  orders InvoiceOrder[]
+
+  @@unique([legalEntityId, year, rank])
+  @@unique([id, type])
+  @@index([payerCompanyId])
+  @@index([correctsInvoiceId])
+  @@map("invoice")
+  @@schema("public")
+}
+
+/// Les bons (BT-13) d'une facture ou d'un avoir. `order_id` est opaque.
+model InvoiceOrder {
+  invoiceId   String  @map("invoice_id")
+  /// Recopié de la facture (clé étrangère composite) : c'est lui que l'unicité
+  /// partielle lit — un bon n'est porté que par une facture 380.
+  invoiceType String  @map("invoice_type")
+  invoice     Invoice @relation(fields: [invoiceId, invoiceType], references: [id, type], onDelete: Restrict)
+
+  orderId     String    @map("order_id")
+  orderNumber String    @map("order_number")
+  /// La date de livraison RÉELLE ; NULL quand inconnue à l'émission.
+  deliveredOn DateTime? @map("delivered_on") @db.Date
+  /// Le rang d'écriture du bon sur la pièce — l'ordre de relecture.
+  position    Int
+
+  @@id([invoiceId, orderId])
+  @@unique([invoiceId, position])
+  @@index([orderId])
+  @@map("invoice_order")
+  @@schema("public")
+}
+
+/// Le dernier rang attribué, par entité et par année. Une ligne par couple.
+model InvoiceNumberCounter {
+  legalEntityId String      @map("legal_entity_id")
+  legalEntity   LegalEntity @relation(fields: [legalEntityId], references: [id], onDelete: Restrict)
+  year          Int
+  lastRank      Int         @map("last_rank")
+  /// Le jour d'émission du dernier rang : un rang suivant ne se date pas avant.
+  lastIssuedOn  DateTime    @map("last_issued_on") @db.Date
+
+  @@id([legalEntityId, year])
+  @@map("invoice_number_counter")
+  @@schema("public")
+}

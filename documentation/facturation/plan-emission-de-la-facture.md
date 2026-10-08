@@ -1,6 +1,6 @@
 # L'émission de la facture
 
-> 📐 **Plan v2 ; E0 et E1 bâtis le 2026-10-08** (§ 8.1, § 8.2). Touche **l'argent** et un
+> 📐 **Plan v2 ; E0, E1 et E2 bâtis le 2026-10-08** (§ 8.1, § 8.2, § 8.3). Touche **l'argent** et un
 > document légal : la v1 a été contredite par `vitruve` le même jour (trois
 > BLOQUANTS, huit SÉRIEUX), repris au § 9. Les règles du CGI et du Code de
 > commerce sont citées **de mémoire**, ni par l'agent ni par moi rouvertes en
@@ -177,7 +177,7 @@ document_key, sha256       ← posés UNE fois, après le rendu
 | ------ | ------------------------------------------------------------------------------------------------- |
 | **E0** | ✅ **bâti le 2026-10-08** (non commité à l'écriture) — cf. § 8.1                                  |
 | **E1** | ✅ **bâti le 2026-10-08** (non commité à l'écriture) — cf. § 8.2                                  |
-| **E2** | tables, numérotation, immuabilité en base                                                         |
+| **E2** | ✅ **bâti le 2026-10-08** (non commité à l'écriture) — cf. § 8.3                                  |
 | **E3** | essai PDF/A-3 borné, puis le rendu Factur-X validé (Schematron, veraPDF), seau en écriture unique |
 | **E4** | la facture du mois (dernier jour, 22h) sur les livraisons ; le lot encaisse des factures          |
 | **E5** | la facture carte à la livraison — après le suivi des remboursements                               |
@@ -251,6 +251,56 @@ Domaine pur, sans table ni route : `apps/lfd-api/src/b2b/accounting/domain/`
   fois (une seconde pose, même identique, est refusée). `Invoice.restore`
   revalide forme et totaux sans rejuger les parties.
 - **Pas de statut de paiement**.
+
+### 8.3 E2 — ce qui a été bâti et tranché (2026-10-08)
+
+Migration `20261008190000_la_facture_emise` (additive, `lock_timeout`),
+schéma `apps/lfd-api/prisma/schema/public/invoice.prisma` ; ports
+`InvoiceNumbering`, `InvoiceRepository` (`insert`, `attachDocument`),
+`InvoiceReader` (par id, par payeur, par entité et année, relu par
+`Invoice.restore`) ; service `InvoiceIssuer`
+(`apps/lfd-api/src/b2b/accounting/application/services/invoice-issuer.ts`) ;
+faits `invoice.issued` et `invoice.credit_note_issued` ; e2e
+`apps/lfd-api/test/invoices.e2e-spec.ts`.
+
+- **Numérotation chronologique et continue** : `invoice_number_counter`
+  (entité, année, dernier rang, `last_issued_on`), avancé par `INSERT … ON
+CONFLICT DO UPDATE … WHERE last_issued_on <= jour RETURNING` dans la
+  transaction de l'émission ; refusé hors transaction. Un jour antérieur à la
+  dernière émission ne prend aucun rang (`InvoiceIssuedBeforePreviousError`,
+  409). La base refuse un compteur qui ne naît pas à 1, qui avance d'autre
+  chose que +1, qui recule son `last_issued_on`, ou qu'on supprime. Un refus
+  de l'agrégat ou un bon déjà facturé défait la transaction et rend le rang
+  (éprouvé en e2e, concurrence comprise).
+- **Le brouillon se construit APRÈS le numéro** : `Invoice.issue` exige un
+  numéro, donc `InvoiceIssuer.issue` reçoit une fonction `draft(number)`
+  (`invoiceFromDossier`, `Invoice.creditNote`) appelée dans la transaction,
+  et refuse une pièce d'une autre entité ou d'un autre jour que la séquence
+  prise.
+- **Numéro unique dans toute la base** (`invoice.number`), en plus de
+  (entité, année, rang) : le format `FA-AAAA-NNNNNN` ne nomme pas l'entité,
+  et une seconde entité qui émettrait heurterait la première. **À trancher
+  avant qu'une seconde entité émette** (préfixe par entité, ou séquence
+  commune) ; aujourd'hui une seule encaisse.
+- **Un bon n'est facturé qu'une fois** : `invoice_order` recopie le type de
+  sa pièce (clé étrangère composite vers `invoice(id, type)`) et un index
+  partiel unique porte `order_id` sur les seules 380. **Un avoir, même
+  total, ne libère pas ses bons** : refacturer après avoir sera un geste
+  explicite d'un lot ultérieur, qui relâchera l'index en connaissance de
+  cause.
+- **Immuabilité** : déclencheur `invoice_immutable` — ni `DELETE`, ni
+  `UPDATE`, sauf `document_key` et `document_sha256` ensemble, de NULL à une
+  valeur, une fois ; `invoice_order_immutable` refuse tout. L'adaptateur
+  conditionne `attachDocument` sur `document_key IS NULL`.
+- **Contrôles en base** : numéro = `FA-<year>-<rank sur 6>`, année = celle de
+  `issued_on`, 381 ⇔ facture corrigée, avoir sans échéance, échéance ≥
+  émission, TTC = HT + TVA.
+- **Le numéro de la facture corrigée** n'est pas une colonne : il se relit
+  par la relation `corrects_invoice_id`.
+- **Les bons se relisent dans leur ordre d'écriture** : `invoice_order.position`
+  (unique par pièce).
+- **Aucune donnée personnelle** : l'acheteur est une société, le vendeur
+  notre entité ; `lint:rgpd-staff` vert sans entrée nouvelle.
 
 ## 9. Ce que `vitruve` a relevé (v1, 2026-10-08)
 

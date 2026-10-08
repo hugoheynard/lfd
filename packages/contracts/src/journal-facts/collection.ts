@@ -36,6 +36,16 @@ const statement = {
   totalCents: cents(),
 };
 
+/** Une pièce émise : son numéro, ses parties du jour, son jour, ses bons, son TTC. */
+const issuedInvoice = {
+  subjectLabel: subjectLabel(),
+  legalEntity: named("legal_entity"),
+  payer: named("company"),
+  issuedOn: day(),
+  orderCount: count(),
+  totalCents: cents(),
+};
+
 /**
  * L'avis de prélèvement d'un payeur (plan
  * `documentation/facturation/prelevement-automatique.md`, PA2). Sujet :
@@ -113,6 +123,16 @@ export const COLLECTION_FACTS = {
   ),
   /** Annulé avec son lot, avant dépôt : un nouvel arrêté naîtra à la reconstitution. */
   "billing_statement.cancelled": fact(payload(statement)),
+  /**
+   * Une facture (380) est émise et numérotée (plan
+   * `plan-emission-de-la-facture.md`, E2). Sujet : `invoice` ; `subjectLabel`
+   * est son numéro, `payer` le payeur légal, `totalCents` le TTC.
+   */
+  "invoice.issued": fact(payload(issuedInvoice)),
+  /** Un avoir (381) est émis sur une facture, citée par son numéro. */
+  "invoice.credit_note_issued": fact(
+    payload({ ...issuedInvoice, correctedInvoice: named("invoice") }),
+  ),
   /** L'avis est mis en file, dans la transaction du lot — pas encore envoyé. */
   "collection.notice_queued": fact(payload(notice)),
   /** Aucune adresse : ni contact de facturation, ni détenteur. Le lot ne se dépose pas. */

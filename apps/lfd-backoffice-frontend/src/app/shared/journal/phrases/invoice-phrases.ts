@@ -1,0 +1,86 @@
+import type { JournalFactType } from '@lfd/contracts/journal-facts';
+
+import { optional } from '../payload-read';
+import {
+  byActor,
+  cite,
+  inUnit,
+  subject,
+  subjectLabelOf,
+  text,
+  value,
+  type Noun,
+  type Phrase,
+  type PhraseFact,
+  type Segment,
+} from '../phrase';
+
+/**
+ * **La facture émise et l'avoir** (plan
+ * `documentation/facturation/plan-emission-de-la-facture.md`, E2) — famille
+ * `accounting` du catalogue. À part de `accounting-phrases.ts`, qui dépasse
+ * déjà la taille d'un fichier.
+ */
+
+const INVOICE: Noun = { the: 'la facture', a: 'une facture' };
+const CREDIT_NOTE: Noun = { the: 'l’avoir', a: 'un avoir' };
+const ON_INVOICE: Noun = { the: 'sur la facture', a: 'sur une facture' };
+const FOR_CLIENT: Noun = { the: 'au client', a: 'à un client' };
+const ENTITY: Noun = { the: 'l’entité émettrice', a: 'une entité émettrice' };
+
+const KEYS = ['subjectLabel', 'payer', 'legalEntity', 'issuedOn', 'orderCount', 'totalCents'];
+
+/** « la facture « FA-2026-000001 » », liée à sa pièce. */
+function piece(fact: PhraseFact, noun: Noun): Segment[] {
+  const label = subjectLabelOf(fact);
+  return label === null
+    ? [text(noun.a)]
+    : [text(`${noun.the} « `), subject(fact, label), text(' »')];
+}
+
+/** « … du 30/09/2026, 3 bon(s), chez l'entité « X » — 12,34 € ». */
+function details(fact: PhraseFact): Segment[] {
+  return [
+    text(' du '),
+    inUnit('day', fact.payload['issuedOn']),
+    text(', '),
+    value(`${String(optional(fact.payload['orderCount']) ?? '?')} bon(s)`),
+    text(', chez '),
+    ...cite(ENTITY, fact.payload['legalEntity']),
+    text(' — '),
+    inUnit('cents', fact.payload['totalCents']),
+  ];
+}
+
+const invoiceIssued: Phrase = (fact) =>
+  byActor(
+    fact,
+    [
+      text('a émis '),
+      ...piece(fact, INVOICE),
+      text(' '),
+      ...cite(FOR_CLIENT, fact.payload['payer']),
+      ...details(fact),
+    ],
+    KEYS,
+  );
+
+const creditNoteIssued: Phrase = (fact) =>
+  byActor(
+    fact,
+    [
+      text('a émis '),
+      ...piece(fact, CREDIT_NOTE),
+      text(' '),
+      ...cite(ON_INVOICE, fact.payload['correctedInvoice']),
+      text(' '),
+      ...cite(FOR_CLIENT, fact.payload['payer']),
+      ...details(fact),
+    ],
+    [...KEYS, 'correctedInvoice'],
+  );
+
+export const INVOICE_PHRASES = {
+  'invoice.issued': invoiceIssued,
+  'invoice.credit_note_issued': creditNoteIssued,
+} as const satisfies Partial<Record<JournalFactType, Phrase>>;

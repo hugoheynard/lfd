@@ -210,6 +210,12 @@ model LegalEntity {
   collectionBatches CollectionBatch[]
   autopilotRuns     CollectionAutopilotRun[]
 
+  // Les factures et avoirs émis sous cette entité, et leur compteur par année
+  // (plan `plan-emission-de-la-facture.md`, E2). Côté inverse obligatoire pour
+  // Prisma ; le FK empêche d'effacer une entité qu'une facture cite.
+  invoices       Invoice[]
+  invoiceCounter InvoiceNumberCounter[]
+
   createdAt DateTime @default(now()) @map("created_at")
   updatedAt DateTime @updatedAt @map("updated_at")
 

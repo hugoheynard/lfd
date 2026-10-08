@@ -126,6 +126,7 @@
   "test/handover-quality-hold.e2e-spec.ts": 4369,
   "test/invoice-dossiers.e2e-spec.ts": 6300,
   "test/invoice-payment-terms.e2e-spec.ts": 4000,
+  "test/invoices.e2e-spec.ts": 9000,
   "test/kbis.e2e-spec.ts": 4507,
   "test/late-fee-access.e2e-spec.ts": 3124,
   "test/leads.e2e-spec.ts": 7454,
