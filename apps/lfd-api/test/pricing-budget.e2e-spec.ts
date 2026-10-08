@@ -148,11 +148,15 @@ async function coldOperationsOf(run: () => Promise<unknown>): Promise<number> {
  * de lignes ni des règles —, et c'est elle qui permet de ne RIEN lire de plus
  * quand le panier n'en contient aucun, le cas de presque tous les devis.
  *
- * ⚠️ **La thèse du fichier n'a pas bougé** : ce qui compte n'est pas 4, 5, 6 ou 7,
- * c'est que dix lignes coûtent le même nombre qu'une seule. C'est l'égalité qui
- * attrape un N+1, pas la valeur absolue.
+ * 🔴 **De 7 à 8 le 2026-10-08** : le devis lit le mode de TVA de la livraison
+ * (`OrderDeliveryVatReader`, plan `documentation/order/plan-tva-des-frais-de-port.md`),
+ * UNE fois par devis, pour répondre comme la passation. Constante elle aussi.
+ *
+ * ⚠️ **La thèse du fichier n'a pas bougé** : ce qui compte n'est pas 4, 5, 6, 7
+ * ou 8, c'est que dix lignes coûtent le même nombre qu'une seule. C'est l'égalité
+ * qui attrape un N+1, pas la valeur absolue.
  */
-const COLD_QUOTE_OPS = 7;
+const COLD_QUOTE_OPS = 8;
 
 /**
  * Sème `count` règles de promotion **distinctes**.
