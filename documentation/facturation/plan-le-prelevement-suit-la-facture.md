@@ -22,6 +22,46 @@ objet que **nous** figeons : **l'arrêté de facturation** — les bons qu'un
 débit couvre, les lignes calculées en une fois, la ventilation par taux.
 Une facture, la nôtre ou celle d'un logiciel, le reprend sans recalcul.
 
+## 1 bis. En un schéma
+
+**Aujourd'hui** — on prélève la somme des bons :
+
+```mermaid
+flowchart LR
+  B1["Bon A<br/>40,12 €"] --> L["Ligne de prélèvement<br/>(un mandat)"]
+  B2["Bon B<br/>60,07 €"] --> L
+  L -->|"Σ bons = 100,19 €"| X["Fichier banque<br/>pain.008"]
+```
+
+**Après ce plan** — on prélève le total de la facture, calculée une fois sur
+ces mêmes bons, et figée dans un arrêté :
+
+```mermaid
+flowchart LR
+  B1["Bon A"] --> C{"Constitution<br/>du lot"}
+  B2["Bon B"] --> C
+  B3["Bon C<br/>incohérent"] --> C
+  C -->|"bons de la ligne"| S["Calcul de la facture<br/>en une fois"]
+  C -.->|"écarté : non facturable<br/>revient au lot suivant"| E["En tête du lot"]
+  S --> A[("Arrêté de facturation<br/>figé : lignes, TVA par taux,<br/>total 100,18 €")]
+  A -->|"total TTC"| L["Ligne de prélèvement<br/>100,18 € · bons 100,19 € · écart −0,01 €"]
+  L --> X["Fichier banque<br/>pain.008"]
+  A -.->|"aujourd'hui"| F["Notre facture<br/>Factur-X"]
+  A -.->|"demain"| G["Logiciel comptable"]
+```
+
+Ce que le schéma dit :
+
+- **L'arrêté est la seule source du montant.** La banque, notre facture et,
+  demain, le logiciel comptable lisent le même chiffre ; personne ne le
+  recalcule.
+- **Les bons ne bougent pas** : ils gardent leur total. L'écart de quelques
+  centimes est écrit sur la ligne, à côté de la somme des bons.
+- **Un bon qu'on ne sait pas facturer** sort du lot, nommé, et les autres
+  partent quand même.
+- **Annuler le lot** annule ses arrêtés ; une fois le lot déposé à la
+  banque, l'arrêté ne change plus.
+
 ## 2. Ce qui existe (vérifié le 2026-10-08)
 
 - **Le lot figé est bâti** (`../comptabilite/plan-lot-de-prelevement-fige.md`) :
