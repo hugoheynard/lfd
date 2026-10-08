@@ -126,6 +126,23 @@ document_key, sha256       ← posés UNE fois, après le rendu
   règle de rétention), clé qui n'est jamais réécrite ; l'empreinte prouve,
   le verrou empêche.
 
+## 7 bis. Réponses d'Hugo (2026-10-08)
+
+- **Q1 — oui** : la facture au dernier jour du mois, le lot ne fait
+  qu'encaisser des factures émises.
+- **Q2 — en suspens** : « la livraison a souvent lieu le lendemain de la
+  commande ». La règle ne change le mois que d'une commande passée le
+  dernier jour et livrée le 1er (ou plus tard) ; à reconfirmer avec cet
+  exemple.
+- **Q3 — le principal, et prévenir** : l'acheteur légal est la maison mère ;
+  l'émission prévient les rôles facturation de la maison mère **et** des
+  sous-comptes dont les bons figurent sur la facture.
+- **Q4 — une suggestion à l'écran** : le réglage des pénalités propose le
+  taux légal par défaut (BCE + 10 points) comme suggestion, modifiable par
+  l'admin ; rien n'est posé d'office.
+- **Q5 — à expliquer** : l'unité de mesure de chaque ligne (pièce, kilo,
+  litre), exigée par la norme.
+
 ## 7. Questions à Hugo (et au cabinet)
 
 - **Q1** — La bascule du § 3 : la facture au dernier jour du mois, le lot
