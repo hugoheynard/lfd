@@ -130,18 +130,25 @@ document_key, sha256       ← posés UNE fois, après le rendu
 
 - **Q1 — oui** : la facture au dernier jour du mois, le lot ne fait
   qu'encaisser des factures émises.
-- **Q2 — en suspens** : « la livraison a souvent lieu le lendemain de la
-  commande ». La règle ne change le mois que d'une commande passée le
-  dernier jour et livrée le 1er (ou plus tard) ; à reconfirmer avec cet
-  exemple.
+- **Q2 — non, le mois de la COMMANDE** : « une commande faite le 30 ou le 31
+  et livrée le 1er est facturée sur le mois passé ». Le périmètre reste
+  `createdAt` (celui du relevé et du lot). Conséquence assumée : la facture
+  du 31 au soir porte des bons pas encore livrés ; **à confirmer par le
+  cabinet** (fait générateur à la livraison, facture établie avant). Un bon
+  jamais retiré reste facturé, et signalé (§ 3.3 du simulateur).
 - **Q3 — le principal, et prévenir** : l'acheteur légal est la maison mère ;
   l'émission prévient les rôles facturation de la maison mère **et** des
   sous-comptes dont les bons figurent sur la facture.
 - **Q4 — une suggestion à l'écran** : le réglage des pénalités propose le
   taux légal par défaut (BCE + 10 points) comme suggestion, modifiable par
   l'admin ; rien n'est posé d'office.
-- **Q5 — à expliquer** : l'unité de mesure de chaque ligne (pièce, kilo,
-  litre), exigée par la norme.
+- **Q5 — pièce et kilo** : « une boîte de 6 est une pièce ». Le catalogue
+  vend à l'unité (déclinaisons et conditionnements, `weightGrams` est le
+  poids NET d'une unité) et `order_lines.quantity` est un entier : une
+  pièce (`H87`) partout tant qu'aucun produit ne se vend **au poids
+  variable**. Un produit pesé à la vente demanderait une unité portée par
+  la déclinaison et une quantité décimale — un chantier du catalogue, pas
+  de la facture.
 
 ## 7. Questions à Hugo (et au cabinet)
 
