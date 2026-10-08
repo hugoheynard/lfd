@@ -157,10 +157,14 @@ model Order {
   /// `0` = aucune — le cas de l'immense majorité des commandes. Figée comme la
   /// remise : changer le réglage demain ne doit pas réécrire ce qu'une commande
   /// partie disait.
-  lateFeeCents      Int   @default(0) @map("late_fee_cents")
+  lateFeeCents      Int     @default(0) @map("late_fee_cents")
   /// L'ajustement (%, ou € fixe) qui a PRODUIT `lateFeeCents`, et le taux qui l'a
   /// taxée. Un montant sans son taux ne se justifie pas devant un comptable.
-  lateFeeAdjustment Json? @map("late_fee_adjustment")
+  lateFeeAdjustment Json?   @map("late_fee_adjustment")
+  /// **Le mode de TVA du port**, figé à la passation : `standard` (taux normal)
+  /// ou `follows_goods` (au prorata des marchandises). `NULL` = commande passée
+  /// avant le réglage = taux normal. Tenu par un CHECK.
+  deliveryVatMode   String? @map("delivery_vat_mode")
 
   // L'acheminement CONVENU, figé à la commande, chaque valeur avec sa provenance
   // (défaut du réglage / override) — forme = `OrderFulfillment` de
@@ -523,6 +527,25 @@ model OrderLateFee {
   updatedBy String?  @map("updated_by")
 
   @@map("order_late_fee")
+  @@schema("public")
+}
+
+/// **La TVA de la livraison** — le réglage global du comptable (plan
+/// `documentation/order/plan-tva-des-frais-de-port.md`, V2) : le port au taux
+/// normal (`standard`), ou au prorata des marchandises (`follows_goods`).
+///
+/// Une ligne au plus, comme `order_late_fee`. Pas de ligne = `standard` : c'est
+/// le LECTEUR qui fait le repli, un DEFAULT ne jouant pas sur une ligne absente.
+model OrderDeliveryVat {
+  /// Toujours `singleton` — tenu par un CHECK.
+  id   String @id
+  /// `standard` | `follows_goods`, tenu par un CHECK.
+  mode String
+
+  updatedAt DateTime @updatedAt @map("updated_at")
+  updatedBy String?  @map("updated_by")
+
+  @@map("order_delivery_vat")
   @@schema("public")
 }
 

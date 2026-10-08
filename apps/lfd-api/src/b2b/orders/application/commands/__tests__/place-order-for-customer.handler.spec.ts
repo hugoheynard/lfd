@@ -45,6 +45,7 @@ import { noSaleOperations } from "../../../../catalog/application/__tests__/sale
 import { OrderCutoffReader } from "../../../domain/ports/order-cutoff.reader.js";
 import { OrderCutoffWaiverGate } from "../../../domain/ports/order-cutoff-waiver.gate.js";
 import { OrderLateFeeReader } from "../../../domain/ports/order-late-fee.reader.js";
+import { FixedDeliveryVat } from "./fixed-delivery-vat.js";
 import { OrderLinePricing } from "../../services/order-line-pricing.service.js";
 import { Pricer } from "../../../../pricing/application/pricer.js";
 import { PricingMaterialsLoader } from "../../../../pricing/application/pricing-materials.loader.js";
@@ -356,6 +357,7 @@ function handler(
       new CustomerAudiences(guardDouble),
       new OrderOperations(noSaleOperations(PRICED_AT)),
       options.payers ?? ownPayers(),
+      new FixedDeliveryVat(),
     ),
     repo(sink),
     options.payments ?? payments(),
@@ -618,6 +620,7 @@ describe("PlaceOrderForCustomerHandler — le règlement", () => {
         new CustomerAudiences(guard("orders")),
         new OrderOperations(noSaleOperations(PRICED_AT)),
         ownPayers(),
+        new FixedDeliveryVat(),
       ),
       repo(sink),
       payments(intents),

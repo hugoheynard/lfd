@@ -1,0 +1,61 @@
+@switch (state()) {
+  @case ('loading') {
+    <fold-loading message="Chargement de la TVA de la livraison…" />
+  }
+  @case ('error') {
+    <fold-empty-state tone="alert" title="Impossible de charger la TVA de la livraison">
+      <button foldButton (click)="load()">Réessayer</button>
+    </fold-empty-state>
+  }
+  @case ('ready') {
+    <fold-card>
+      <div cardHeader class="head">
+        <h2 class="section-title">À quel taux la livraison est taxée</h2>
+        <p class="section-desc">
+          Les frais de livraison d'une commande portent de la TVA. Selon les conditions de vente,
+          ils sont une <strong>prestation de transport distincte</strong>, au taux normal, ou
+          <strong>l'accessoire de la vente</strong>, et suivent alors le taux des produits livrés.
+        </p>
+      </div>
+
+      <div class="form">
+        <fold-listbox
+          label="TVA de la livraison"
+          [options]="options"
+          [value]="mode()"
+          [disabled]="!canWrite()"
+          (selectionChange)="onMode($event)"
+        />
+
+        <fold-callout variant="info">{{ whenRight() }}</fold-callout>
+
+        @if (!configured()) {
+          <fold-callout variant="warning">
+            Non réglé — taux normal appliqué. Aucun choix n'a encore été enregistré&nbsp;: les
+            commandes partent au taux normal (20&nbsp;%), comme elles l'ont toujours fait.
+          </fold-callout>
+        }
+
+        <fold-callout appearance="inset" variant="neutral">
+          Par exemple, 40&nbsp;€ HT de pâtisserie à 5,5&nbsp;% et 12&nbsp;€ HT de livraison&nbsp;:
+          <strong>56,60&nbsp;€ TTC</strong> au taux normal, <strong>54,86&nbsp;€ TTC</strong> au
+          prorata des produits.
+        </fold-callout>
+
+        <fold-callout variant="warning">
+          Une commande garde le mode de sa passation. Changer ce réglage ne touche que les commandes
+          à venir&nbsp;: celles déjà passées, leurs bons et leurs prélèvements restent tels qu'ils
+          ont été facturés.
+        </fold-callout>
+      </div>
+
+      @if (canWrite()) {
+        <div cardFooter class="foot">
+          <button foldButton [disabled]="!dirty() || saving()" (click)="submit()">
+            Enregistrer
+          </button>
+        </div>
+      }
+    </fold-card>
+  }
+}

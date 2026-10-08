@@ -133,6 +133,15 @@ export const DOSSIER_RECIPIENT_KIND = domain('sorte de destinataire', {
   external: 'Autre personne',
 });
 
+/**
+ * Le mode de TVA du port (`order_delivery_vat.mode_set`, plan TVA des frais de
+ * port) — les mêmes mots que l'écran Comptabilité › « TVA de la livraison ».
+ */
+export const DELIVERY_VAT_MODE = domain('TVA de la livraison', {
+  standard: 'Taux normal (20 %)',
+  follows_goods: 'Au prorata des produits',
+});
+
 export const ORDERS_VALUES: ValueFamily = {
   enums: [
     WEEKDAY,
@@ -153,6 +162,7 @@ export const ORDERS_VALUES: ValueFamily = {
     CONTAINER_NATURE,
     PRODUCTION_CLOSE_MODE,
     DOSSIER_RECIPIENT_KIND,
+    DELIVERY_VAT_MODE,
   ],
   literals: {
     // Ce qu'un contrôle qualité juge (`target.kind`).

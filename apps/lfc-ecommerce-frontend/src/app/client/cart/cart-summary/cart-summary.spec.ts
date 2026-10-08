@@ -170,6 +170,7 @@ describe('CartSummary — les points à gagner', () => {
   function quoted(
     points: number | null,
     space: WorkspaceDouble = workspaceDouble(),
+    overrides: Partial<MyShopQuoteView> = {},
   ): ComponentFixture<CartSummary> {
     localStorage.clear();
     TestBed.resetTestingModule();
@@ -197,10 +198,12 @@ describe('CartSummary — les points à gagner', () => {
       discountAdjustment: null,
       voucherDiscountCents: 0,
       deliveryFeeCents: 0,
+      deliveryVatMode: 'standard',
       vat: [],
       totalCents: 264,
       loyaltyPointsToEarn: points,
       voucherTotalEffectCents: 0,
+      ...overrides,
     };
     TestBed.inject(HttpTestingController)
       .expectOne((r) => r.url.endsWith('/shop/quote/mine'))
@@ -220,6 +223,22 @@ describe('CartSummary — les points à gagner', () => {
 
   it.each([0, null])('se tait quand le serveur annonce %s', (points) => {
     expect(el(quoted(points)).querySelector('.points')).toBeNull();
+  });
+
+  /** Plan TVA des frais de port, V5 : le port dit à quel taux il est taxé. */
+  it.each([
+    ['standard', 'TVA de la livraison : 20 %'],
+    ['follows_goods', 'TVA de la livraison : au prorata des produits'],
+  ] as const)('dit la TVA de la livraison en mode %s', (mode, label) => {
+    const fixture = quoted(null, workspaceDouble(), {
+      deliveryFeeCents: 1200,
+      deliveryVatMode: mode,
+    });
+    expect(el(fixture).querySelector('.fee-vat')?.textContent).toBe(label);
+  });
+
+  it('ne dit pas la TVA d’une livraison qui ne coûte rien', () => {
+    expect(el(quoted(null)).querySelector('.fee-vat')).toBeNull();
   });
 
   /** « Pas de fidélité en pro » (Hugo, 2026-09-27) : le devis perso ne survit pas à la bascule. */
@@ -252,6 +271,7 @@ describe('CartSummary — le bon de fidélité', () => {
     discountAdjustment: null,
     voucherDiscountCents: 0,
     deliveryFeeCents: 0,
+    deliveryVatMode: 'standard',
     vat: [],
     totalCents: 1055,
     loyaltyPointsToEarn: null,

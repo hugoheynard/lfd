@@ -29,11 +29,15 @@ import { fractionByBasisPoints, roundToCents, type Exact } from "./exact.js";
  */
 
 /**
- * Le taux de la prestation de **livraison** (transport) — le taux normal.
+ * Le **taux normal** — celui de la livraison quand elle est taxée comme une
+ * prestation à part (mode `standard`), et le repli d'un extra qui suit la
+ * marchandise quand il n'y a aucune marchandise à suivre.
  *
- * Une **constante**, et pas une donnée : le taux d'une prestation de transport
- * ne se paramètre pas par boutique. Les taux des marchandises, eux, sont de la
- * donnée — ils viennent du référentiel, article par article.
+ * Ce n'est plus « le taux du transport, point » : depuis la décision du
+ * 2026-09-21 (plan `documentation/order/plan-tva-des-frais-de-port.md`), le
+ * comptable peut décider que le port, accessoire de la vente, suit le taux de
+ * ce qu'il transporte ({@link VatExtra} `followsGoods`). Le taux normal reste
+ * une constante légale, pas une donnée par boutique.
  *
  * Elle vivait dans le domaine `orders`, et une copie littérale vivait dans le
  * front. Deux définitions d'un taux légal, c'est une de trop.
@@ -45,6 +49,19 @@ export interface VatLine {
   readonly htCents: number;
   readonly vatRate: number;
 }
+
+/**
+ * Un terme de panier **hors remise** (livraison, surtaxe) : soit il porte son
+ * propre taux, soit il **suit la marchandise** — réparti au prorata de la base
+ * hors taxe BRUTE de chaque taux.
+ *
+ * Un type distinct de {@link VatLine} parce qu'une marchandise ne peut pas
+ * « suivre la marchandise » : rendre la forme inexprimable vaut mieux que la
+ * refuser à l'exécution.
+ */
+export type VatExtra =
+  | { readonly htCents: number; readonly vatRate: number }
+  | { readonly htCents: number; readonly followsGoods: true };
 
 /** La TVA d'un taux, telle qu'une facture la porte. */
 export interface VatShare {
@@ -64,9 +81,10 @@ export interface VatVentilationInput {
    *
    * Ils entrent dans le groupe de leur taux, avec les marchandises qui portent
    * le même — c'est ce qui rend « une ligne par taux » vrai, et pas « une ligne
-   * par taux, plus une pour le transport ».
+   * par taux, plus une pour le transport ». Un extra qui suit la marchandise se
+   * répartit entre les groupes présents.
    */
-  readonly extras: readonly VatLine[];
+  readonly extras: readonly VatExtra[];
 }
 
 /** Le décompte complet, en centimes entiers. */
@@ -112,8 +130,9 @@ export function ventilateVat(input: VatVentilationInput): VatVentilation {
   for (const line of input.lines) {
     add(numByRate, line.vatRate, BigInt(Math.trunc(line.htCents)) * BigInt(netHtCents));
   }
+  const grossByRate = grossHtByRate(input.lines);
   for (const extra of input.extras) {
-    add(numByRate, extra.vatRate, BigInt(Math.trunc(extra.htCents)) * den);
+    addExtra(numByRate, extra, den, grossByRate);
   }
 
   const vat = [...numByRate.entries()]
@@ -133,7 +152,52 @@ export function ventilateVat(input: VatVentilationInput): VatVentilation {
   };
 }
 
-function sumHt(lines: readonly VatLine[]): number {
+/**
+ * Un extra à taux propre entre dans son groupe ; un extra qui suit la
+ * marchandise se répartit au prorata de la base BRUTE de chaque taux :
+ * `extra × ht(taux) / sous-total`, sur le dénominateur commun — aucun arrondi
+ * de plus, chaque groupe reste arrondi une fois.
+ *
+ * Brute et pas nette : quand la remise absorbe toute la marchandise (un bon qui
+ * solde), les proportions nettes sont 0/0. Tant que le net est positif, la
+ * remise est proratisée uniformément, et les deux proportions coïncident.
+ * Sans marchandise du tout, l'extra prend le taux normal.
+ */
+function addExtra(
+  byRate: Map<number, bigint>,
+  extra: VatExtra,
+  den: bigint,
+  grossByRate: ReadonlyMap<number, bigint>,
+): void {
+  const ht = BigInt(Math.trunc(extra.htCents));
+  if ("vatRate" in extra) {
+    add(byRate, extra.vatRate, ht * den);
+    return;
+  }
+  if (grossByRate.size === 0) {
+    add(byRate, DELIVERY_VAT_RATE, ht * den);
+    return;
+  }
+  for (const [rate, gross] of grossByRate) {
+    add(byRate, rate, ht * gross);
+  }
+}
+
+/** Le hors taxe brut de chaque taux, sans les groupes nuls. */
+function grossHtByRate(lines: readonly VatLine[]): ReadonlyMap<number, bigint> {
+  const byRate = new Map<number, bigint>();
+  for (const line of lines) {
+    add(byRate, line.vatRate, BigInt(Math.trunc(line.htCents)));
+  }
+  for (const [rate, gross] of byRate) {
+    if (gross === 0n) {
+      byRate.delete(rate);
+    }
+  }
+  return byRate;
+}
+
+function sumHt(lines: readonly { readonly htCents: number }[]): number {
   return lines.reduce((sum, line) => sum + Math.trunc(line.htCents), 0);
 }
 

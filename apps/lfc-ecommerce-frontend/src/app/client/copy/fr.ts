@@ -262,6 +262,8 @@ export const FR: ClientCopy = {
     subtotal: 'Sous-total HT',
     discount: 'Remise retrait {at} −{value}',
     fee: 'Coursier',
+    feeVatStandard: 'TVA de la livraison : 20 %',
+    feeVatProrata: 'TVA de la livraison : au prorata des produits',
     vat: 'TVA {rate}',
     total: 'Total TTC',
     pointsToEarn: 'Vous gagnerez {n} points',

@@ -59,5 +59,11 @@ export interface ActivitySlice {
  */
 export const TAX_JOURNAL_SLICE: ActivitySlice = {
   types: ["product_category.vat_changed", "product.vat_changed", "product.reclassified"],
-  prefixes: ["vat_rate.", "accounting_rules.", "sales_context.", "order_late_fee."],
+  prefixes: [
+    "vat_rate.",
+    "accounting_rules.",
+    "sales_context.",
+    "order_late_fee.",
+    "order_delivery_vat.",
+  ],
 };

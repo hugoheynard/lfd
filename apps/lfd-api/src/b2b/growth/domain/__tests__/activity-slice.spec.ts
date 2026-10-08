@@ -7,10 +7,17 @@ import { TAX_JOURNAL_SLICE } from "../activity-slice.js";
  */
 describe("TAX_JOURNAL_SLICE", () => {
   /** « Tout ce qui touche au taux » (Hugo, 2026-09-19). */
-  it("porte la TVA, le reclassement, les règles comptables, les contextes de vente et la surtaxe", () => {
+  it("porte la TVA, le reclassement, les règles comptables, les contextes de vente, la surtaxe et la TVA du port", () => {
     expect(TAX_JOURNAL_SLICE).toEqual({
       types: ["product_category.vat_changed", "product.vat_changed", "product.reclassified"],
-      prefixes: ["vat_rate.", "accounting_rules.", "sales_context.", "order_late_fee."],
+      prefixes: [
+        "vat_rate.",
+        "accounting_rules.",
+        "sales_context.",
+        "order_late_fee.",
+        // Le mode de TVA de la livraison change une TVA (2026-10-08).
+        "order_delivery_vat.",
+      ],
     });
   });
 
@@ -26,6 +33,7 @@ describe("TAX_JOURNAL_SLICE", () => {
       TAX_JOURNAL_SLICE.prefixes.some((prefix) => type.startsWith(prefix));
 
     expect(covered("order_late_fee.set")).toBe(true);
+    expect(covered("order_delivery_vat.mode_set")).toBe(true);
     expect(covered("order_cutoff_waiver.granted")).toBe(false);
     expect(covered("order.placed")).toBe(false);
   });

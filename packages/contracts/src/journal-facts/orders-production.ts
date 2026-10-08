@@ -42,7 +42,7 @@ import {
  * pas.
  *
  * Sans `subjectLabel`, et c'est voulu : les **réglages uniques**
- * (`order_late_fee.*`, `delivery_availability.updated`), dont le sujet n'a pas
+ * (`order_late_fee.*`, `order_delivery_vat.*`, `delivery_availability.updated`), dont le sujet n'a pas
  * d'autre nom que son type ; les **heures limites** et les **dérogations**, qui
  * n'ont pas de nom du tout — une règle se dit par son contenu (point, jour,
  * heure), une dérogation par son client et sa journée, et les deux sont dans la
@@ -179,6 +179,9 @@ const waiverDecision = () =>
   payload({ company: named("company"), fulfillmentDate: day(), reason: z.string() });
 
 const lateFee = () => payload({ fee: adjustment(), vatRatePercent: percent() });
+
+/** Un mode de TVA du port, tel que la colonne le porte (`DELIVERY_VAT_MODES`). */
+const deliveryVatMode = () => z.enum(["standard", "follows_goods"]);
 
 const containerRule = () =>
   payload({ unitsPerContainer: count(), singular: z.string(), plural: z.string() });
@@ -359,6 +362,14 @@ export const ORDERS_PRODUCTION_FACTS = {
   "order_cutoff_waiver.revoked": fact(waiverDecision(), [waiverDecisionBeforeLabel()]),
   "order_late_fee.set": fact(payload({ before: lateFee().nullable(), after: lateFee() })),
   "order_late_fee.cleared": fact(payload({ before: lateFee() })),
+  /**
+   * La TVA de la livraison (plan `plan-tva-des-frais-de-port.md`, V2). `before`
+   * est le mode qui S'APPLIQUAIT — `standard` sans réglage posé : le lecteur
+   * fait ce repli, et c'est ce que la passation facturait.
+   */
+  "order_delivery_vat.mode_set": fact(
+    payload({ before: deliveryVatMode(), after: deliveryVatMode() }),
+  ),
   "delivery_availability.updated": fact(
     payload({
       openToB2b: z.boolean(),

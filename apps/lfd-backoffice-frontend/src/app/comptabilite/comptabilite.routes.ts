@@ -105,6 +105,18 @@ export const comptabiliteRoutes: Routes = [
           import('./order-late-fee/order-late-fee-page').then((m) => m.OrderLateFeePage),
       },
       {
+        // La TVA de la livraison — taux normal ou au prorata des produits.
+        // Sous `b2b_accounting`, comme la coquille : pas de garde propre. Les
+        // gestes demandent `b2b_accounting:write` ; l'écran les masque sans lui.
+        // Plan : documentation/order/plan-tva-des-frais-de-port.md (V2).
+        path: 'tva-de-la-livraison',
+        title: 'TVA de la livraison — LFC B2B admin',
+        loadComponent: () =>
+          import('./order-delivery-vat/order-delivery-vat-page').then(
+            (m) => m.OrderDeliveryVatPage,
+          ),
+      },
+      {
         // La FICHE d'une entité — tout ce qui se règle sur un émetteur. Elle
         // n'a pas de garde propre pour la raison écrite en tête de fichier :
         // elle parle de la même ressource que la liste dont elle vient.

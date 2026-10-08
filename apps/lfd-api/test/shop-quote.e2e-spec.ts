@@ -317,6 +317,10 @@ describe("le devis de la vitrine", () => {
 
     expect(Object.keys(view).sort()).toEqual([
       "deliveryFeeCents",
+      // Ajouté le 2026-10-08 (plan TVA des frais de port, V4) et admis
+      // DÉLIBÉRÉMENT : la règle fiscale du port, la même pour tous — elle dit
+      // comment le port est taxé, rien de la façon dont un prix est fabriqué.
+      "deliveryVatMode",
       "discountAdjustment",
       "discountCents",
       "lines",

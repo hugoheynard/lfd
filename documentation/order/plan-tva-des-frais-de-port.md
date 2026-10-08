@@ -1,6 +1,13 @@
 # Le choix de la TVA des frais de port
 
-> 📐 **Plan v2, en construction** (2026-10-08) — contredit par `vitruve` le
+> ✅ **Bâti le 2026-10-08** (V1 à V6) : le calcul dans `@lfd/money`, la table
+> `order_delivery_vat` et ses routes `GET`/`PUT /admin/order-delivery-vat`
+> (`b2b_accounting`), `orders.delivery_vat_mode` figé à la passation, le devis
+> aligné, l'écran Comptabilité › « TVA de la livraison », la mention sur le
+> panier de la boutique et sur le détail d'une commande (« TVA 20 % » / « TVA
+> au prorata des produits »), le journal fiscal. Enregistrer le taux normal
+> sur un réglage jamais posé n'écrit aucun fait : le mode appliqué ne change
+> pas. Plan v2 — contredit par `vitruve` le
 > même jour (deux BLOQUANTS, sept SÉRIEUX, repris au § 5). Hugo : « bâtis le choix de TVA
 > livraison, réglage global ». Reprend la décision du 2026-09-21 et le
 > constat de [`todo-tva-des-frais-de-port.md`](todo-tva-des-frais-de-port.md).

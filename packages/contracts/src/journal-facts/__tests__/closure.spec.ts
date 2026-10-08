@@ -34,6 +34,7 @@ const UNNAMED_SUBJECTS: Readonly<Record<string, string>> = {
   "order_cutoff_waiver.revoked": "une dérogation se dit par son client (nommé) et sa journée",
   "order_late_fee.set": "réglage unique : son sujet n'a pas d'autre nom que son type",
   "order_late_fee.cleared": "réglage unique : son sujet n'a pas d'autre nom que son type",
+  "order_delivery_vat.mode_set": "réglage unique : son sujet n'a pas d'autre nom que son type",
   "delivery_availability.updated": "réglage unique : son sujet n'a pas d'autre nom que son type",
   "production_settings.close_changed":
     "réglage unique : son sujet n'a pas d'autre nom que son type",

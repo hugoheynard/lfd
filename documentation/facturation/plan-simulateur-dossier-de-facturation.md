@@ -52,11 +52,15 @@ voucherDiscountCents` ensemble, `b2b/orders/domain/services/vat.ts:126-129`)
 - **La TVA de la livraison** : Hugo a décidé le 2026-09-21 que l'admin
   **choisit** entre le taux normal (20 %) et la **ventilation au prorata** des
   marchandises (port accessoire de la vente) —
-  [`../order/todo-tva-des-frais-de-port.md`](../order/todo-tva-des-frais-de-port.md),
-  🔴 **pas bâti**. Aujourd'hui toute commande est taxée à `DELIVERY_VAT_RATE`
-  = 20 % (`packages/money/src/vat.ts:41`) : aucun appelant ne passe
-  `deliveryVatRate` hors des tests, et aucun mode n'est figé sur la commande
-  (vérifié le 2026-10-08). Le taux de la surtaxe vit dans le JSON
+  [`../order/todo-tva-des-frais-de-port.md`](../order/todo-tva-des-frais-de-port.md).
+  ✅ **Bâti côté serveur le 2026-10-08**
+  ([`../order/plan-tva-des-frais-de-port.md`](../order/plan-tva-des-frais-de-port.md),
+  V1 à V5) : réglage global `order_delivery_vat` (`standard` |
+  `follows_goods`, repli `standard` sans ligne), et le mode **figé sur chaque
+  commande** dans `orders.delivery_vat_mode` — `null` pour les bons passés
+  avant le réglage, qui ont tous été taxés à `DELIVERY_VAT_RATE` = 20 %. En
+  `follows_goods`, `ventilateVat` répartit le port au prorata de la base HT
+  **brute** de chaque taux, dans le même arrondi par taux. Le taux de la surtaxe vit dans le JSON
   `lateFeeAdjustment` (`orders.prisma:163`) ; absent, le calcul lève
   `MissingLateFeeVatRateError`.
 - **La seule date d'un bon** est `requestedDeliveryDate`, **nullable**
@@ -109,9 +113,13 @@ chaque `lateFeeAdjustment`. **Livraison, selon le mode figé sur chaque bon** :
 - un cycle peut mêler les deux modes (le réglage a changé en cours de mois) :
   deux lignes de livraison, une par mode.
 
-Tant que le mode n'est pas figé sur la commande, le dossier lit **taux
-normal** pour tout bon — c'est ce que le bon a réellement facturé — et le
-dit à l'écran. Un bon sans taux de surtaxe **arrête le dossier** avec
+Le mode de chaque bon se lit dans `deliveryVatMode`, figé à la passation ;
+`null` (bon d'avant le réglage) se lit **taux normal** — c'est ce que le bon
+a réellement facturé — et l'écran le dit. **La part HT du port par taux
+n'est figée nulle part** (`vatShares` = `{ rate, amountCents }`) : le dossier
+la recalcule sur l'agrégat, et l'écart qui en résulte avec ce que les bons
+avaient annoncé est rangé dans **« arrondi de la TVA »** (§ 3.4), écrit tel
+quel à l'écran. Un bon sans taux de surtaxe **arrête le dossier** avec
 sa référence : c'est un échec, pas une hypothèse.
 
 **La ventilation par taux** — une seule fonction neuve, dans `@lfd/money`,
@@ -152,11 +160,11 @@ demandée ne bouge pas.
 Total facture − Σ `totalCents` des bons = la somme de trois écarts, affichés
 séparément, par ligne et par taux :
 
-| Écart                  | Facture (§ 3.1)                                    | Ce que les bons annonçaient     |
-| ---------------------- | -------------------------------------------------- | ------------------------------- |
-| **Arrondi des lignes** | montant HT de chaque ligne agrégée                 | Σ `lineTotalCents` de la clé    |
-| **Arrondi de la TVA**  | TVA de chaque taux, bons ventilés seulement        | Σ des parts `vatShares` du taux |
-| **TVA non ventilée**   | TVA des bons d'avant le 2026-09-07 dans la facture | leur `vatCents`, sans taux      |
+| Écart                  | Facture (§ 3.1)                                                    | Ce que les bons annonçaient     |
+| ---------------------- | ------------------------------------------------------------------ | ------------------------------- |
+| **Arrondi des lignes** | montant HT de chaque ligne agrégée                                 | Σ `lineTotalCents` de la clé    |
+| **Arrondi de la TVA**  | TVA de chaque taux (port ventilé compris), bons ventilés seulement | Σ des parts `vatShares` du taux |
+| **TVA non ventilée**   | TVA des bons d'avant le 2026-09-07 dans la facture                 | leur `vatCents`, sans taux      |
 
 Les remises et les frais ne font pas d'écart : leurs totaux sont des sommes
 exactes. La somme des trois écarts **est** ce que le client paiera de plus ou
@@ -211,10 +219,10 @@ même temps que le prélèvement.
   premier lot de la facture réelle doit poser ce verrou dans le code, pas
   seulement dans ce texte.
 - **Facturer au mois de livraison** (§ 5), en même temps que le prélèvement.
-- **Bâtir le choix de la TVA de la livraison** (`todo-tva-des-frais-de-port.md`) :
-  un réglage, **figé sur chaque commande** — sans quoi le dossier ne saurait
-  pas quel mode un bon ancien a appliqué. Le simulateur lit ce mode dès qu'il
-  existe.
+- ~~**Bâtir le choix de la TVA de la livraison**~~ — bâti côté serveur le
+  2026-10-08 (`plan-tva-des-frais-de-port.md`) : le mode est figé sur chaque
+  commande, et le simulateur le lit (§ 3.1). Reste l'écran Comptabilité ›
+  « TVA de la livraison ».
 - **Prélever le total de la facture**, pas la somme des bons (D4) : le
   prélèvement (`plan-lot-de-prelevement-fige.md`) et le relevé devront lire
   la facture le jour où elle existera. Le simulateur ne prélève rien ; il

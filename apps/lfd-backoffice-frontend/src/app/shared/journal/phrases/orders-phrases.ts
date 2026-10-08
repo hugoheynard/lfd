@@ -13,6 +13,7 @@ import {
   subjectLabelOf,
   text,
   value,
+  valueIn,
   type Noun,
   type Phrase,
   type PhraseFact,
@@ -20,6 +21,7 @@ import {
   type Segment,
 } from '../phrase';
 import { formatCount, formatUnit } from '../units';
+import { DELIVERY_VAT_MODE } from '../values/orders-values';
 
 /**
  * **La vie d'une commande et la journée du fournil** — la passation, le colisage et le
@@ -360,6 +362,22 @@ export const ORDERS_PHRASES = {
         text(' : les dérogations ne coûtent plus rien'),
       ],
       ['before'],
+    ),
+
+  // Le serveur ne publie le fait que sur un CHANGEMENT, et `before` vaut
+  // toujours un mode — le repli `standard` quand rien n'était réglé (handler
+  // `save-order-delivery-vat`, vérifié le 2026-10-08). « de … à … » donnerait
+  // « à au prorata » : la flèche dit l'avant → après sans buter sur l'article.
+  'order_delivery_vat.mode_set': (fact) =>
+    byActor(
+      fact,
+      [
+        text('a changé la TVA de la livraison : '),
+        valueIn(DELIVERY_VAT_MODE, fact.payload['before'], { inSentence: true }),
+        text(' → '),
+        valueIn(DELIVERY_VAT_MODE, fact.payload['after'], { inSentence: true }),
+      ],
+      ['before', 'after'],
     ),
 
   // LA FLOTTE ET LE DÉPART (plan-preparation-de-tournee.md, lot 2).

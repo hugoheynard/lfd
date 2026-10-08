@@ -27,6 +27,7 @@ import {
 } from "../../domain/errors/order-errors.js";
 import { OrderCutoffReader } from "../../domain/ports/order-cutoff.reader.js";
 import { OrderCutoffWaiverGate } from "../../domain/ports/order-cutoff-waiver.gate.js";
+import { OrderDeliveryVatReader } from "../../domain/ports/order-delivery-vat.reader.js";
 import { OrderLateFeeReader } from "../../domain/ports/order-late-fee.reader.js";
 import { OrderPayerReader } from "../../domain/ports/order-payer.reader.js";
 import { orderPayerOf } from "../../domain/services/order-payer.js";
@@ -123,6 +124,7 @@ export class OrderDrafting {
     private readonly audiences: CustomerAudiences,
     private readonly operations: OrderOperations,
     private readonly payers: OrderPayerReader,
+    private readonly deliveryVat: OrderDeliveryVatReader,
   ) {}
 
   /**
@@ -181,6 +183,9 @@ export class OrderDrafting {
     // se paierait sur toutes les commandes à l'heure.
     const late = await this.lateFeeFor(waiverUsed, subtotalCents);
     const defaults = await this.defaultsFor(content, parties);
+    // Lu sur TOUTE passation, retrait compris : le mode se fige sur la commande
+    // (V3), et `null` y est réservé aux commandes d'avant le réglage.
+    const deliveryVatMode = await this.deliveryVat.current();
     const agreed = agreeWithWindow(
       {
         method: content.fulfillmentMethod,
@@ -223,6 +228,7 @@ export class OrderDrafting {
       // choix valable.
       lateFeeCents: late.cents,
       lateFeeAdjustment: late.frozen,
+      deliveryVatMode,
       voucher,
     });
     return { order, waiverUsed };

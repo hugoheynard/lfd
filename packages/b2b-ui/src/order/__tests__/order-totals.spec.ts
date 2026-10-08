@@ -32,6 +32,7 @@ function order(overrides: Partial<OrderView> = {}): OrderView {
     deliveryFeeCents: 0,
     lateFeeCents: 0,
     lateFeeAdjustment: null,
+    deliveryVatMode: null,
     vatCents: 550,
     totalCents: 10_550,
     currency: 'EUR',
@@ -61,6 +62,17 @@ describe('le récapitulatif des montants', () => {
   it('ne montre ni remise, ni livraison, ni surtaxe quand il n’y en a pas', () => {
     // Une ligne « Surtaxe 0,00 € » ferait chercher un retard qui n'a pas eu lieu.
     expect(keys(order())).toEqual(['subtotal', 'vat', 'total']);
+  });
+
+  /** Le mode de TVA de la livraison, figé à la passation (2026-10-08). */
+  it('dit la TVA de la livraison selon le mode figé, 20 % pour une commande d’avant le réglage', () => {
+    expect(row(order({ deliveryFeeCents: 500 }), 'delivery')?.hint).toBe('TVA 20 %');
+    expect(
+      row(order({ deliveryFeeCents: 500, deliveryVatMode: 'standard' }), 'delivery')?.hint,
+    ).toBe('TVA 20 %');
+    expect(
+      row(order({ deliveryFeeCents: 500, deliveryVatMode: 'follows_goods' }), 'delivery')?.hint,
+    ).toBe('TVA au prorata des produits');
   });
 
   it('place la surtaxe APRÈS la remise et la livraison', () => {

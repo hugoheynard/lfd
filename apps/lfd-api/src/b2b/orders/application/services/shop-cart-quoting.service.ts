@@ -5,7 +5,6 @@ import type {
   ShopQuoteView,
 } from "@lfd/contracts";
 import {
-  DELIVERY_VAT_RATE,
   lineTotalCents,
   ttcCentsOf,
   ventilateVat,
@@ -20,6 +19,8 @@ import {
   VoucherRequiresSignInError,
 } from "../../domain/errors/order-voucher-errors.js";
 import { LoyaltyVoucherQuoteReader } from "../../domain/ports/loyalty-voucher-quote.reader.js";
+import { OrderDeliveryVatReader } from "../../domain/ports/order-delivery-vat.reader.js";
+import { deliveryExtraOf } from "../../domain/services/vat.js";
 import { voucherImputationCents } from "../../domain/services/voucher-imputation.js";
 import { voucherTotalEffectCents } from "../../domain/services/voucher-total-effect.js";
 
@@ -77,6 +78,7 @@ export class ShopCartQuoting {
     private readonly operations: OrderOperations,
     private readonly voucherQuotes: LoyaltyVoucherQuoteReader,
     private readonly clock: Clock,
+    private readonly deliveryVat: OrderDeliveryVatReader,
   ) {}
 
   /**
@@ -131,6 +133,9 @@ export class ShopCartQuoting {
       subtotalHtCents - terms.discountCents,
     );
 
+    // Le MÊME lecteur que la passation (plan TVA des frais de port, V4) : si le
+    // réglage change entre le devis et la commande, la passation fait foi.
+    const deliveryVatMode = await this.deliveryVat.current();
     const ventilation: VatVentilationInput = {
       lines: lines.map((line): VatLine => ({
         htCents: line.lineTotalCents,
@@ -139,12 +144,13 @@ export class ShopCartQuoting {
       // Le bon s'ajoute à la remise, comme dans `computeOrderTotals` : devis et
       // commande ventilent la même somme (plan des points, C1).
       discountCents: terms.discountCents + voucherDiscountCents,
-      // Le coursier est un terme HORS remise, au taux du transport : on ne fait
-      // pas de geste commercial sur une prestation.
+      // Le coursier est un terme HORS remise — on ne fait pas de geste
+      // commercial sur une prestation —, taxé selon le mode réglé, traduit par
+      // la même fonction que `computeOrderTotals`.
       extras:
         terms.deliveryFeeCents === 0
           ? []
-          : [{ htCents: terms.deliveryFeeCents, vatRate: DELIVERY_VAT_RATE }],
+          : [deliveryExtraOf(terms.deliveryFeeCents, deliveryVatMode)],
     };
     const ventilated = ventilateVat(ventilation);
 
@@ -156,6 +162,7 @@ export class ShopCartQuoting {
       discountAdjustment: terms.discountAdjustment,
       voucherDiscountCents,
       deliveryFeeCents: terms.deliveryFeeCents,
+      deliveryVatMode,
       vat: ventilated.vat.map((share) => ({ rate: share.rate, amountCents: share.amountCents })),
       totalCents: ventilated.totalCents,
     };

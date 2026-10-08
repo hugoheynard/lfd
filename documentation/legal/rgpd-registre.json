@@ -1026,6 +1026,15 @@
       "information": false
     },
     {
+      "colonne": "public.order_delivery_vat.updated_by",
+      "personne": "staff",
+      "categorie": "auteur-geste",
+      "finalite": "Tracer quel membre du staff a fait le geste (`updated_by`) sur `order_delivery_vat`.",
+      "conservation": "aucune-limite-decidee",
+      "purge": null,
+      "information": false
+    },
+    {
       "colonne": "public.orders.handed_over_by",
       "personne": "livreur",
       "categorie": "auteur-geste",

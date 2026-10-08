@@ -193,7 +193,8 @@
 }
 
 /* La baisse de TTC du bon : une mention, pas un second montant. */
-.voucher-effect {
+.voucher-effect,
+.fee-vat {
   display: block;
   font-size: var(--lfc-text-note);
   font-weight: var(--fold-weight-regular);

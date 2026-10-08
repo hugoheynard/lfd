@@ -3,6 +3,7 @@ import type {
   // Deux « fulfillment » dans le même fichier finiraient par se confondre.
   OrderFulfillment as AgreedFulfillment,
   CartAdjustment,
+  DeliveryVatMode,
   LateFeeAdjustment,
   PaymentStatus,
 } from "@lfd/contracts";
@@ -60,6 +61,7 @@ export class Order {
     private readonly deliveryFeeAdjustment: CartAdjustment | null,
     private readonly lateFeeCents: number,
     private readonly lateFeeAdjustment: LateFeeAdjustment | null,
+    private readonly deliveryVatMode: DeliveryVatMode,
     private readonly voucher: { readonly id: string; readonly appliedCents: number } | null,
     private readonly subtotalCentsValue: number,
     private readonly vatCentsValue: number,
@@ -114,6 +116,7 @@ export class Order {
       discountCents: input.discountCents,
       voucherDiscountCents,
       deliveryFeeCents: input.deliveryFeeCents,
+      deliveryVatMode: input.deliveryVatMode,
       lateFeeCents: input.lateFeeCents,
       lateFeeVatRate: input.lateFeeAdjustment?.vatRatePercent ?? null,
     });
@@ -134,6 +137,7 @@ export class Order {
       input.deliveryFeeAdjustment,
       input.lateFeeCents,
       input.lateFeeAdjustment,
+      input.deliveryVatMode,
       input.voucher === null ? null : { id: input.voucher.id, appliedCents: voucherDiscountCents },
       subtotalCents,
       vatCents,
@@ -200,6 +204,7 @@ export class Order {
       deliveryFeeAdjustment: this.deliveryFeeAdjustment,
       lateFeeCents: this.lateFeeCents,
       lateFeeAdjustment: this.lateFeeAdjustment,
+      deliveryVatMode: this.deliveryVatMode,
       voucherDiscountCents: this.voucherDiscountCents,
       loyaltyVoucherId: this.voucher?.id ?? null,
       vatCents: this.vatCentsValue,

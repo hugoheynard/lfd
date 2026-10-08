@@ -58,6 +58,7 @@ import {
 import { OrderCutoffReader } from "../../../domain/ports/order-cutoff.reader.js";
 import { OrderCutoffWaiverGate } from "../../../domain/ports/order-cutoff-waiver.gate.js";
 import { OrderLateFeeReader } from "../../../domain/ports/order-late-fee.reader.js";
+import { FixedDeliveryVat } from "./fixed-delivery-vat.js";
 import { OrderReader } from "../../../domain/ports/order.reader.js";
 import { OrderRepository } from "../../../domain/ports/order.repository.js";
 import {
@@ -264,6 +265,7 @@ function drafting(): OrderDrafting {
     new CustomerAudiences(noCompanies),
     new OrderOperations(noSaleOperations(PRICED_AT)),
     ownPayers(),
+    new FixedDeliveryVat(),
   );
 }
 

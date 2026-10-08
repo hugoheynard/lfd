@@ -42,6 +42,7 @@ const STAFF_ORDER: OrderView = {
   deliveryFeeAdjustment: null,
   lateFeeCents: 0,
   lateFeeAdjustment: null,
+  deliveryVatMode: "follows_goods",
   vatCents: 118,
   vatShares: null,
   totalCents: 2_278,

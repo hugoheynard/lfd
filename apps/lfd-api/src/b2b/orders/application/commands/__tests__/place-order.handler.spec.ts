@@ -79,6 +79,7 @@ import { OrderIdempotencyStore } from "../../../domain/ports/order-idempotency.s
 import { OrderReader } from "../../../domain/ports/order.reader.js";
 import { UnitOfWork } from "../../../../../platform/database/unit-of-work.js";
 import { OrderLateFeeReader } from "../../../domain/ports/order-late-fee.reader.js";
+import { FixedDeliveryVat } from "./fixed-delivery-vat.js";
 import { OrderLinePricing } from "../../services/order-line-pricing.service.js";
 import { Pricer } from "../../../../pricing/application/pricer.js";
 import { PricingMaterialsLoader } from "../../../../pricing/application/pricing-materials.loader.js";
@@ -444,6 +445,7 @@ function drafting(
     readonly sale?: SaleOperations;
     readonly book?: DeliveryDefaultsReader;
     readonly payers?: FixedOrderPayers;
+    readonly deliveryVat?: FixedDeliveryVat;
   } = {},
 ): OrderDrafting {
   return new OrderDrafting(
@@ -479,6 +481,7 @@ function drafting(
     new CustomerAudiences(companiesAt(audience.status === undefined ? "active" : audience.status)),
     new OrderOperations(audience.sale ?? noSaleOperations(PRICED_AT)),
     audience.payers ?? ownPayers(),
+    audience.deliveryVat ?? new FixedDeliveryVat(),
   );
 }
 
@@ -1082,6 +1085,49 @@ describe("PlaceOrderHandler", () => {
     expect(sink.placed?.deliveryFeeCents).toBe(2000);
     expect(sink.placed?.vatCents).toBe(400);
     expect(sink.placed?.totalCents).toBe(2800);
+  });
+
+  /**
+   * Plan TVA des frais de port, V3 : la passation LIT le réglage, le passe au
+   * calcul et le fige. Le catalogue de test est à 0 % : un port qui suit la
+   * marchandise n'y porte donc aucune TVA.
+   */
+  it("en COURSIER, lit le mode de TVA du port, le fige et taxe le port au taux des marchandises", async () => {
+    const sink = { placed: null as OrderToPlace | null };
+    const deliveryVat = new FixedDeliveryVat("follows_goods");
+    const handler = new PlaceOrderHandler(
+      guard("orders", "active"),
+      drafting(pickups(), zones(TARENTAISE), versionsAt(CURRENT_VERSION), { deliveryVat }),
+      capturingRepo(sink),
+      payments(),
+      events(),
+      noWaivers,
+      new FixedClock(PRICED_AT),
+      freeKeys,
+      noReader,
+      directWork,
+      new FixedVoucherQuotes(),
+      new RecordingRedemption(),
+      publicDeliveryOpen(),
+      new RecordingDurable(),
+    );
+
+    await handler.execute(
+      new PlaceOrderCommand(
+        "u1",
+        payload({
+          fulfillmentMethod: "delivery",
+          deliveryAddress: COURIER_ADDR,
+          requestedWindow: BEFORE_TEN,
+        }),
+        "c1",
+      ),
+    );
+
+    expect(deliveryVat.reads).toBe(1);
+    expect(sink.placed?.deliveryVatMode).toBe("follows_goods");
+    expect(sink.placed?.vatCents).toBe(0);
+    expect(sink.placed?.totalCents).toBe(2400);
   });
 
   describe("le lien vers le carnet d'adresses", () => {

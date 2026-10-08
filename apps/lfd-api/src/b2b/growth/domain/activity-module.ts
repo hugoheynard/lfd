@@ -99,6 +99,8 @@ const PREFIXES: Readonly<Record<ActivityModule, readonly string[]>> = {
     // fait partie du préfixe —, d'où son entrée propre.
     "order_cutoff_waiver.",
     "order_late_fee.",
+    // La TVA du port (2026-10-08) : un réglage de la commande, comme la surtaxe.
+    "order_delivery_vat.",
     "delivery_availability.",
     // La flotte et le départ des tournées (2026-09-29) : avec quoi et d'où
     // part une livraison. Sous `commandes` faute d'un module « livraison » —

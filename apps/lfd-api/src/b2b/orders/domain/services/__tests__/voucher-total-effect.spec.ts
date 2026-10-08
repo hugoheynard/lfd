@@ -42,4 +42,30 @@ describe("voucherTotalEffectCents", () => {
     const withExtras = { ...cartOf(1_000, 500), extras: [{ htCents: 900, vatRate: 20 }] };
     expect(voucherTotalEffectCents(withExtras, 500)).toBe(564);
   });
+
+  /**
+   * Plan TVA des frais de port, V1 : un port qui suit la marchandise est
+   * ventilé dans les DEUX passes — avec et sans le bon. Sa part se répartit
+   * sur la base brute, elle ne bouge donc pas avec le bon.
+   */
+  describe("avec un port qui suit la marchandise", () => {
+    const cart = (voucherCents: number) => ({
+      lines: [
+        { htCents: 2_000, vatRate: 5.5 },
+        { htCents: 2_000, vatRate: 10 },
+      ],
+      discountCents: voucherCents,
+      extras: [{ htCents: 400, followsGoods: true as const }],
+    });
+
+    it("rend la baisse TTC des seules marchandises", () => {
+      // Sans : 2200 → 121 et 2200 → 220, total 4741 ; avec : 1200 → 66 et 120, total 2586.
+      expect(voucherTotalEffectCents(cart(2_000), 2_000)).toBe(4_741 - 2_586);
+    });
+
+    it("reste défini quand le bon solde toute la marchandise", () => {
+      // Avec : le port seul, 200 par taux → 11 et 20, total 431.
+      expect(voucherTotalEffectCents(cart(4_000), 4_000)).toBe(4_741 - 431);
+    });
+  });
 });

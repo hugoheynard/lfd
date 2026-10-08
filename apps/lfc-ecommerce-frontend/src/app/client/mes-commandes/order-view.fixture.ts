@@ -47,6 +47,7 @@ export const LIVE_PICKUP: CustomerOrderView = {
   deliveryFeeAdjustment: null,
   lateFeeCents: 0,
   lateFeeAdjustment: null,
+  deliveryVatMode: null,
   vatCents: 63,
   // La ventilation figée par la commande. Écrite ici plutôt que `null` pour
   // que les écrans soient éprouvés sur le cas COURANT — une commande d'après

@@ -4,6 +4,7 @@ import type {
   // Deux « fulfillment » dans le même fichier finiraient par se confondre.
   OrderFulfillment as AgreedFulfillment,
   CartAdjustment,
+  DeliveryVatMode,
   FulfillmentMethod,
   LateFeeAdjustment,
   OrderClientele,
@@ -98,6 +99,13 @@ export interface DraftOrderInput {
   /** L'ajustement ET le taux qui l'ont produite, figés. `null` si aucune. */
   readonly lateFeeAdjustment: LateFeeAdjustment | null;
   /**
+   * Le mode de TVA du port, lu au réglage par l'appelant (plan
+   * `plan-tva-des-frais-de-port.md`, V3). L'agrégat le passe au calcul et le
+   * fige : rien ne recalcule une commande passée, la commande garde donc le
+   * mode de sa passation par construction.
+   */
+  readonly deliveryVatMode: DeliveryVatMode;
+  /**
    * Le bon de fidélité, ou `null` (plan des points, lot C). Seulement pour une
    * commande personnelle : l'agrégat refuse un bon sur une commande de société.
    */
@@ -131,6 +139,8 @@ export interface OrderToPlace {
   readonly deliveryFeeAdjustment: CartAdjustment | null;
   readonly lateFeeCents: number;
   readonly lateFeeAdjustment: LateFeeAdjustment | null;
+  /** Le mode de TVA du port, figé (cf. {@link DraftOrderInput.deliveryVatMode}). */
+  readonly deliveryVatMode: DeliveryVatMode;
   /** La part du bon réellement imputée, HT — `0` sans bon. */
   readonly voucherDiscountCents: number;
   /** Le bon engagé, ou `null`. */

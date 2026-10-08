@@ -19,6 +19,7 @@ describe("la TVA des marchandises et des termes de panier", () => {
       deliveryFeeCents: 0,
       lateFeeCents: 0,
       lateFeeVatRate: null,
+      deliveryVatMode: null,
     });
     expect(vat).toBe(55);
   });
@@ -31,6 +32,7 @@ describe("la TVA des marchandises et des termes de panier", () => {
       deliveryFeeCents: 0,
       lateFeeCents: 0,
       lateFeeVatRate: null,
+      deliveryVatMode: null,
     });
     expect(vat).toBe(18);
   });
@@ -43,6 +45,7 @@ describe("la TVA des marchandises et des termes de panier", () => {
       deliveryFeeCents: 2000,
       lateFeeCents: 0,
       lateFeeVatRate: null,
+      deliveryVatMode: null,
     });
     expect(vat).toBe(455);
   });
@@ -58,6 +61,7 @@ describe("la TVA des marchandises et des termes de panier", () => {
       deliveryFeeCents: 0,
       lateFeeCents: 0,
       lateFeeVatRate: null,
+      deliveryVatMode: null,
     });
     expect(vat).toBe(88);
   });
@@ -69,6 +73,7 @@ describe("la TVA des marchandises et des termes de panier", () => {
       deliveryFeeCents: 1000,
       lateFeeCents: 0,
       lateFeeVatRate: null,
+      deliveryVatMode: null,
     });
     expect(vat).toBe(200);
   });
@@ -89,6 +94,7 @@ describe("la surtaxe de commande tardive", () => {
       deliveryFeeCents: 0,
       lateFeeCents: 500,
       lateFeeVatRate: 20,
+      deliveryVatMode: null,
     });
     // 1000 × 5,5 % = 55 ; 500 × 20 % = 100.
     expect(vat).toBe(155);
@@ -101,6 +107,7 @@ describe("la surtaxe de commande tardive", () => {
       deliveryFeeCents: 0,
       lateFeeCents: 1000,
       lateFeeVatRate: 5.5,
+      deliveryVatMode: null,
     });
     expect(vat).toBe(55);
   });
@@ -121,6 +128,7 @@ describe("la surtaxe de commande tardive", () => {
         deliveryFeeCents: 0,
         lateFeeCents: 500,
         lateFeeVatRate: null,
+        deliveryVatMode: null,
       }),
     ).toThrow(MissingLateFeeVatRateError);
   });
@@ -134,6 +142,7 @@ describe("la surtaxe de commande tardive", () => {
         deliveryFeeCents: 0,
         lateFeeCents: 0,
         lateFeeVatRate: null,
+        deliveryVatMode: null,
       }),
     ).not.toThrow();
   });
@@ -149,6 +158,7 @@ describe("la surtaxe de commande tardive", () => {
       deliveryFeeCents: 0,
       lateFeeCents: 500,
       lateFeeVatRate: 20,
+      deliveryVatMode: null,
     });
     // Marchandises entièrement remisées → 0 ; la surtaxe garde ses 100.
     expect(vat).toBe(100);
@@ -171,6 +181,7 @@ describe("le total TTC de la commande", () => {
       deliveryFeeCents: 200,
       lateFeeCents: 0,
       lateFeeVatRate: null,
+      deliveryVatMode: null,
     });
 
     expect(totals.vatCents).toBe(90);
@@ -189,6 +200,7 @@ describe("le total TTC de la commande", () => {
       deliveryFeeCents: 0,
       lateFeeCents: 500,
       lateFeeVatRate: 20,
+      deliveryVatMode: null,
     });
 
     // Marchandises entièrement remisées → net 0. La surtaxe garde ses 500 HT et
@@ -207,8 +219,59 @@ describe("le total TTC de la commande", () => {
       deliveryFeeCents: 0,
       lateFeeCents: 0,
       lateFeeVatRate: null,
+      deliveryVatMode: null,
     });
 
     expect(totals.totalCents).toBe(0);
+  });
+});
+
+/** Plan TVA des frais de port : le mode du port, tel que la commande le fige. */
+describe("le mode de TVA du port", () => {
+  const MIXED = {
+    lines: [
+      { htCents: 1000, vatRate: 5.5 },
+      { htCents: 3000, vatRate: 20 },
+    ],
+    discountCents: 0,
+    deliveryFeeCents: 500,
+    lateFeeCents: 0,
+    lateFeeVatRate: null,
+  };
+
+  it("taxe le port au taux normal en mode standard", () => {
+    // 5,5 % : 55 ; 20 % : (3000 + 500) × 20 % = 700.
+    expect(computeOrderTotals({ ...MIXED, deliveryVatMode: "standard" }).vatShares).toEqual([
+      { rate: 5.5, amountCents: 55 },
+      { rate: 20, amountCents: 700 },
+    ]);
+  });
+
+  it("traite une commande d'avant le réglage (`null`) comme standard", () => {
+    expect(computeOrderTotals({ ...MIXED, deliveryVatMode: null })).toEqual(
+      computeOrderTotals({ ...MIXED, deliveryVatMode: "standard" }),
+    );
+  });
+
+  it("répartit le port au prorata des marchandises en mode follows_goods", () => {
+    // 5,5 % : 1125 → 62 ; 20 % : 3375 → 675.
+    const totals = computeOrderTotals({ ...MIXED, deliveryVatMode: "follows_goods" });
+
+    expect(totals.vatShares).toEqual([
+      { rate: 5.5, amountCents: 62 },
+      { rate: 20, amountCents: 675 },
+    ]);
+    expect(totals.totalCents).toBe(4000 + 500 + 737);
+  });
+
+  it("reste défini quand un bon solde toute la marchandise", () => {
+    const totals = computeOrderTotals({
+      ...MIXED,
+      voucherDiscountCents: 4000,
+      deliveryVatMode: "follows_goods",
+    });
+
+    // Le port seul : 125 → 6,875 → 7 ; 375 → 75.
+    expect(totals.totalCents).toBe(500 + 7 + 75);
   });
 });

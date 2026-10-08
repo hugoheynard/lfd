@@ -215,3 +215,83 @@ describe("ttcCentsOf", () => {
     expect(plain(lines).totalCents - parLigne).toBe(1);
   });
 });
+
+/**
+ * Le port qui **suit la marchandise** (plan TVA des frais de port, V1) : réparti
+ * au prorata de la base hors taxe BRUTE de chaque taux, sans arrondi de plus.
+ */
+describe("un extra qui suit la marchandise", () => {
+  const FOLLOWS = (htCents: number) => ({ htCents, followsGoods: true as const });
+
+  it("se répartit entre les taux au prorata de leur hors taxe", () => {
+    // 5,5 % : 1000 + 500 × 1/4 = 1125 → 61,875 → 62 ; 20 % : 3000 + 375 → 675.
+    const result = ventilateVat({
+      lines: [CROISSANT, { htCents: 3000, vatRate: 20 }],
+      discountCents: 0,
+      extras: [FOLLOWS(500)],
+    });
+
+    expect(result.vat).toEqual([
+      { rate: 5.5, amountCents: 62 },
+      { rate: 20, amountCents: 675 },
+    ]);
+    expect(result.totalCents).toBe(4000 + 500 + 737);
+  });
+
+  it("suit les proportions du net tant que la remise laisse de la marchandise", () => {
+    // Net 1000, moitié par taux : 500 + 300 = 800 → 44 et 80.
+    const result = ventilateVat({
+      lines: [CROISSANT, QUICHE],
+      discountCents: 1000,
+      extras: [FOLLOWS(600)],
+    });
+
+    expect(result.vat).toEqual([
+      { rate: 5.5, amountCents: 44 },
+      { rate: 10, amountCents: 80 },
+    ]);
+  });
+
+  it("reste défini quand la remise égale le sous-total", () => {
+    // Net nul : le port seul, 200 par taux → 11 et 20.
+    const result = ventilateVat({
+      lines: [CROISSANT, QUICHE],
+      discountCents: 2000,
+      extras: [FOLLOWS(400)],
+    });
+
+    expect(result.vat).toEqual([
+      { rate: 5.5, amountCents: 11 },
+      { rate: 10, amountCents: 20 },
+    ]);
+    expect(result.totalCents).toBe(431);
+  });
+
+  it("reste défini quand un bon dépasse la marchandise et la solde", () => {
+    const result = ventilateVat({
+      lines: [CROISSANT, QUICHE],
+      discountCents: 9000,
+      extras: [FOLLOWS(400)],
+    });
+
+    expect(result.discountCents).toBe(2000);
+    expect(result.totalCents).toBe(431);
+  });
+
+  it("prend le taux normal sur un sous-total nul", () => {
+    const result = ventilateVat({ lines: [], discountCents: 0, extras: [FOLLOWS(1000)] });
+
+    expect(result.vat).toEqual([{ rate: DELIVERY_VAT_RATE, amountCents: 200 }]);
+    expect(result.totalCents).toBe(1200);
+  });
+
+  it("rejoint le groupe d'un extra à taux propre sans arrondi séparé", () => {
+    const result = ventilateVat({
+      lines: [{ htCents: 1000, vatRate: 20 }],
+      discountCents: 0,
+      extras: [FOLLOWS(333), { htCents: 333, vatRate: 20 }],
+    });
+
+    expect(result.vat).toEqual([{ rate: 20, amountCents: 333 }]);
+  });
+});

@@ -86,6 +86,7 @@ const EMPTY: ShopQuoteView = {
   discountAdjustment: null,
   voucherDiscountCents: 0,
   deliveryFeeCents: 0,
+  deliveryVatMode: 'standard',
   vat: [],
   totalCents: 0,
 };

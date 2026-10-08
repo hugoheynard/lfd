@@ -139,6 +139,7 @@
   "test/ops-vitals.e2e-spec.ts": 2676,
   "test/order-abandon.e2e-spec.ts": 8159,
   "test/order-cutoffs.e2e-spec.ts": 12711,
+  "test/order-delivery-vat.e2e-spec.ts": 3500,
   "test/order-handover-proof.e2e-spec.ts": 6126,
   "test/order-payment-reprise.e2e-spec.ts": 2247,
   "test/order-payment-retry.e2e-spec.ts": 3797,

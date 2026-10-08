@@ -7,6 +7,8 @@ import {
   billingAddressPayloadSchema,
   type CartAdjustment,
   cartAdjustmentSchema,
+  type DeliveryVatMode,
+  deliveryVatModeSchema,
   type FulfillmentMethod,
   type LateFeeAdjustment,
   lateFeeAdjustmentSchema,
@@ -82,6 +84,7 @@ interface OrderRow {
   readonly deliveryFeeCents: number;
   readonly lateFeeCents: number;
   readonly lateFeeAdjustment: Prisma.JsonValue | null;
+  readonly deliveryVatMode: string | null;
   readonly vatCents: number;
   readonly vatShares: Prisma.JsonValue | null;
   readonly totalCents: number;
@@ -125,6 +128,7 @@ const ORDER_SELECT = {
   deliveryFeeAdjustment: true,
   lateFeeCents: true,
   lateFeeAdjustment: true,
+  deliveryVatMode: true,
   vatCents: true,
   vatShares: true,
   totalCents: true,
@@ -584,6 +588,7 @@ function toOrderView(row: OrderRow): OrderView {
     deliveryFeeCents: row.deliveryFeeCents,
     lateFeeCents: row.lateFeeCents,
     lateFeeAdjustment: parseLateFee(row.lateFeeAdjustment),
+    deliveryVatMode: parseDeliveryVatMode(row.deliveryVatMode),
     vatCents: row.vatCents,
     vatShares: parseVatShares(row.vatShares),
     totalCents: row.totalCents,
@@ -621,6 +626,15 @@ function parseAdjustment(value: Prisma.JsonValue | null): CartAdjustment | null 
  */
 function parseLateFee(value: Prisma.JsonValue | null): LateFeeAdjustment | null {
   return value === null ? null : lateFeeAdjustmentSchema.parse(value);
+}
+
+/**
+ * Colonne → le mode de TVA du port figé, ou `null` (commande d'avant le
+ * réglage). Validé et non casté : le CHECK tient les valeurs en base, et le
+ * schéma refuse ce qu'il ne connaît pas plutôt que de l'afficher.
+ */
+function parseDeliveryVatMode(value: string | null): DeliveryVatMode | null {
+  return value === null ? null : deliveryVatModeSchema.parse(value);
 }
 
 /** Snapshot JSON → écarts vs gabarit récurrent, ou `null`. */

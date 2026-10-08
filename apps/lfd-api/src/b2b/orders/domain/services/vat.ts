@@ -1,4 +1,11 @@
-import { DELIVERY_VAT_RATE, ventilateVat, type VatLine, type VatShare } from "@lfd/money";
+import type { DeliveryVatMode } from "@lfd/contracts";
+import {
+  DELIVERY_VAT_RATE,
+  ventilateVat,
+  type VatExtra,
+  type VatLine,
+  type VatShare,
+} from "@lfd/money";
 
 import { TechnicalError } from "../../../../platform/shared/errors/app-error.js";
 
@@ -8,8 +15,9 @@ import { TechnicalError } from "../../../../platform/shared/errors/app-error.js"
  * Les prix du catalogue sont **HT**. La TVA se calcule par **taux** : on regroupe
  * les lignes par taux (5,5 % alimentaire, 20 % non-alimentaire, …), on déduit la
  * remise (retrait) au prorata de chaque groupe, puis on applique le taux au net.
- * Les **frais de livraison** (service coursier) portent leur propre taux — 20 %
- * par défaut (prestation de transport).
+ * Les **frais de livraison** (service coursier) suivent le mode réglé par le
+ * comptable : au taux normal (`standard`), ou au prorata des marchandises
+ * qu'ils transportent (`follows_goods`, décision du 2026-09-21).
  *
  * 🔴 **Le calcul lui-même vit dans `@lfd/money`** depuis le 2026-09-05. Il était
  * écrit ici, et deux copies en vivaient côté front ; celle du panier ne taxait
@@ -58,18 +66,23 @@ export interface VatInput {
   readonly voucherDiscountCents?: number;
   /** Frais de livraison (zone), HT, en centimes. */
   readonly deliveryFeeCents: number;
-  /** Taux de la livraison en %, défaut {@link DELIVERY_VAT_RATE}. */
-  readonly deliveryVatRate?: number;
+  /**
+   * Le mode de TVA du port, lu au réglage et figé sur la commande (plan
+   * `plan-tva-des-frais-de-port.md`) : `standard` = {@link DELIVERY_VAT_RATE},
+   * `follows_goods` = au prorata de la base hors taxe brute de chaque taux.
+   * `null` = commande d'avant le réglage, donc `standard`.
+   */
+  readonly deliveryVatMode: DeliveryVatMode | null;
   /** Surtaxe de commande tardive, HT, en centimes. `0` = aucune. */
   readonly lateFeeCents: number;
   /**
    * Taux de la surtaxe en %, **sans valeur par défaut**.
    *
-   * Contrairement au transport — dont le taux est une constante parce qu'une
-   * prestation de transport est au taux normal, point — celui de la surtaxe est
-   * un **réglage** : personne ne sait encore s'il suit les marchandises ou la
-   * prestation, et inventer une réponse la facturerait rétroactivement sur
-   * toutes les commandes tardives.
+   * Comme le mode du transport, c'est un **réglage** — mais sans repli : personne
+   * ne sait encore si la surtaxe suit les marchandises ou la prestation, et
+   * inventer une réponse la facturerait rétroactivement sur toutes les
+   * commandes tardives. Le transport, lui, retombe sur le taux normal, ce que
+   * toute commande a fait avant son réglage.
    *
    * Il ne peut donc pas manquer quand `lateFeeCents` n'est pas nul, et
    * {@link computeOrderTotals} le refuse plutôt que de retomber sur un défaut.
@@ -141,13 +154,10 @@ export function computeOrderTotals(input: VatInput): OrderTotals {
  * Un montant nul n'entre pas : une ligne à zéro ne change aucun total, mais
  * elle obligerait la surtaxe à porter un taux qu'aucune commande n'a réglé.
  */
-function extrasOf(input: VatInput): readonly VatLine[] {
-  const extras: VatLine[] = [];
+function extrasOf(input: VatInput): readonly VatExtra[] {
+  const extras: VatExtra[] = [];
   if (input.deliveryFeeCents !== 0) {
-    extras.push({
-      htCents: input.deliveryFeeCents,
-      vatRate: input.deliveryVatRate ?? DELIVERY_VAT_RATE,
-    });
+    extras.push(deliveryExtraOf(input.deliveryFeeCents, input.deliveryVatMode));
   }
   // La surtaxe porte SON taux, réglé, jamais un défaut. Un montant taxé au
   // hasard se rattrape à la main, commande par commande — et seulement si
@@ -159,4 +169,15 @@ function extrasOf(input: VatInput): readonly VatLine[] {
     extras.push({ htCents: input.lateFeeCents, vatRate: input.lateFeeVatRate });
   }
   return extras;
+}
+
+/**
+ * Le port comme terme de ventilation, selon son mode. Exporté pour le devis de
+ * la boutique : deux traductions du mode en extra finiraient par diverger, et
+ * le devis annoncerait un autre total que la caisse.
+ */
+export function deliveryExtraOf(htCents: number, mode: DeliveryVatMode | null): VatExtra {
+  return mode === "follows_goods"
+    ? { htCents, followsGoods: true }
+    : { htCents, vatRate: DELIVERY_VAT_RATE };
 }

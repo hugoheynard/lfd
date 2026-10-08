@@ -262,6 +262,8 @@ export const EN: ClientCopy = {
     subtotal: 'Subtotal excl. VAT',
     discount: 'Collection discount {at} −{value}',
     fee: 'Courier',
+    feeVatStandard: 'Delivery VAT: 20%',
+    feeVatProrata: 'Delivery VAT: in proportion to the products',
     vat: 'VAT {rate}',
     total: 'Total incl. VAT',
     pointsToEarn: 'You will earn {n} points',

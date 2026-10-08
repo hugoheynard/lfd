@@ -258,6 +258,20 @@ describe('la surtaxe de retard', () => {
   });
 });
 
+describe('la TVA de la livraison', () => {
+  it('dit l’avant → après du mode', () => {
+    const changed = fact({
+      type: 'order_delivery_vat.mode_set',
+      payload: { before: 'standard', after: 'follows_goods' },
+    });
+
+    expect(sentence(changed)).toBe(
+      'Colette Martin a changé la TVA de la livraison : taux normal (20 %) → au prorata des produits',
+    );
+    expect(renderFact(changed).detail).toEqual([]);
+  });
+});
+
 describe('la journée de production', () => {
   it('dit la date en français, jamais l’ISO du libellé', () => {
     const closed = fact({

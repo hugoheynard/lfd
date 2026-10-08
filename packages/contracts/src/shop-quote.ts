@@ -1,6 +1,7 @@
 import { z } from "zod";
 
 import type { CartAdjustment } from "./cart-adjustment.js";
+import type { DeliveryVatMode } from "./order-delivery-vat.js";
 import { orderQuantitySchema } from "./order.js";
 
 /**
@@ -158,6 +159,12 @@ export interface ShopQuoteView {
   readonly voucherDiscountCents: number;
   /** Les frais de coursier, HT. Zéro en retrait — et alors aucune ligne. */
   readonly deliveryFeeCents: number;
+  /**
+   * Le mode de TVA du port que la passation appliquerait — le réglage courant
+   * (plan `plan-tva-des-frais-de-port.md`, V4). Présent même en retrait : il
+   * dit la règle, pas un montant.
+   */
+  readonly deliveryVatMode: DeliveryVatMode;
   /** Une part par taux RÉELLEMENT présent, du plus bas au plus haut. */
   readonly vat: readonly ShopQuoteVatShare[];
   /** Le total **TTC** — ce qui sera débité. */

@@ -28,7 +28,7 @@ export {
 
 export { gapBp, discountBp, averageGapBp } from "./gap.js";
 export { DELIVERY_VAT_RATE, ventilateVat, ttcCentsOf } from "./vat.js";
-export type { VatLine, VatShare, VatVentilation, VatVentilationInput } from "./vat.js";
+export type { VatExtra, VatLine, VatShare, VatVentilation, VatVentilationInput } from "./vat.js";
 
 /**
  * La déduction du hors taxe depuis un prix d'étiquette — arrivée de

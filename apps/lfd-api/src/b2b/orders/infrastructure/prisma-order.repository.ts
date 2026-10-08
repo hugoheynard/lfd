@@ -109,6 +109,9 @@ export class PrismaOrderRepository extends OrderRepository {
         // se justifie pas devant un comptable, et il ne se recalcule pas — le
         // réglage aura changé.
         lateFeeAdjustment: state.lateFeeAdjustment ?? Prisma.DbNull,
+        // Le mode de TVA du port, figé : c'est ce que l'écran et le dossier de
+        // facturation relisent — rien ne recalcule la commande.
+        deliveryVatMode: state.deliveryVatMode,
         vatCents: state.vatCents,
         // La ventilation part AVEC le total, pas à côté : c'est ce qui
         // permettra au bon de détailler « dont TVA 5,5 % » sans rien refaire.

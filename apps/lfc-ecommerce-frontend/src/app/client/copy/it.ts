@@ -266,6 +266,8 @@ export const IT: ClientCopy = {
     subtotal: 'Subtotale IVA escl.',
     discount: 'Sconto ritiro {at} −{value}',
     fee: 'Corriere',
+    feeVatStandard: 'IVA sulla consegna: 20 %',
+    feeVatProrata: 'IVA sulla consegna: in proporzione ai prodotti',
     vat: 'IVA {rate}',
     total: 'Totale IVA incl.',
     pointsToEarn: 'Guadagnerai {n} punti',

@@ -426,3 +426,72 @@ describe("le devis de la vitrine et la facture", () => {
     expect(order.deliveryFeeAdjustment).toBeNull();
   });
 });
+
+/**
+ * 🔴 **La TVA du port, dans ses deux modes** (plan
+ * `documentation/order/plan-tva-des-frais-de-port.md`, V4) : le devis lit le
+ * même réglage que la passation, et la commande le fige. Comparé taux par
+ * taux : un port ventilé au mauvais taux garderait souvent le bon total.
+ */
+describe("le devis et la facture, selon le mode de TVA du port", () => {
+  async function courierParity(): Promise<void> {
+    const view = jsonBody<ShopQuoteView>(
+      await quote({
+        lines: [...PANIER],
+        fulfillment: { method: "delivery", codePostal: COURIER_ADDR.codePostal },
+      }).expect(200),
+    );
+    const placed = jsonBody<{ id: string }>(
+      await ctx
+        .asSub(BUYER)
+        .post("/orders")
+        .send({
+          idempotencyKey: randomUUID(),
+          companyId: null,
+          requestedDeliveryDate: SERVICE_DAY,
+          note: "",
+          fulfillmentMethod: "delivery",
+          requestedWindow: { start: null, end: "10:00" },
+          deliveryAddress: COURIER_ADDR,
+          lines: [...PANIER],
+        })
+        .expect(201),
+    ).id;
+    const order = await ctx.prisma.order.findUniqueOrThrow({
+      where: { id: placed },
+      select: { vatShares: true, totalCents: true, deliveryVatMode: true },
+    });
+
+    expect(order).toEqual({
+      vatShares: view.vat.map((share) => ({ ...share })),
+      totalCents: view.totalCents,
+      deliveryVatMode: view.deliveryVatMode,
+    });
+  }
+
+  it("🔴 s'accordent au taux normal sans réglage posé, et la commande fige `standard`", async () => {
+    await courierParity();
+
+    const order = await ctx.prisma.order.findFirstOrThrow({ select: { deliveryVatMode: true } });
+    expect(order.deliveryVatMode).toBe("standard");
+  });
+
+  it("🔴 s'accordent quand le port suit la marchandise, et la commande fige `follows_goods`", async () => {
+    await ctx.prisma.orderDeliveryVat.create({
+      data: { id: "singleton", mode: "follows_goods", updatedBy: "e2e" },
+    });
+
+    const view = jsonBody<ShopQuoteView>(
+      await quote({
+        lines: [...PANIER],
+        fulfillment: { method: "delivery", codePostal: COURIER_ADDR.codePostal },
+      }).expect(200),
+    );
+    // Le panier est alimentaire (5,5 % et 10 % au semis) : le port qui suit la
+    // marchandise n'apporte AUCUNE part à 20 %.
+    expect(view.deliveryVatMode).toBe("follows_goods");
+    expect(view.vat.map((share) => share.rate)).not.toContain(20);
+
+    await courierParity();
+  });
+});

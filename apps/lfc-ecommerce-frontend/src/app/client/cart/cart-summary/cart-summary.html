@@ -74,7 +74,12 @@
 
     @if (feeLabel(); as label) {
       <div class="row">
-        <dt>{{ label }}</dt>
+        <dt>
+          {{ label }}
+          @if (feeVatLabel(); as vat) {
+            <span class="fee-vat">{{ vat }}</span>
+          }
+        </dt>
         <dd>{{ money(totals().deliveryFeeCents) }}</dd>
       </div>
     }

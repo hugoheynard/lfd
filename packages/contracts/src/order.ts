@@ -11,6 +11,7 @@ import {
   fulfillmentWindowSchema,
 } from "./address.js";
 import type { CartAdjustment } from "./cart-adjustment.js";
+import type { DeliveryVatMode } from "./order-delivery-vat.js";
 import type { LateFeeAdjustment } from "./order-late-fee.js";
 
 /**
@@ -653,6 +654,13 @@ export interface OrderView {
    * donnerait celui d'aujourd'hui. `null` = aucune surtaxe.
    */
   readonly lateFeeAdjustment: LateFeeAdjustment | null;
+  /**
+   * **Le mode de TVA du port**, figé à la passation (plan
+   * `plan-tva-des-frais-de-port.md`, V3) : `standard` = taux normal,
+   * `follows_goods` = au prorata des marchandises. `null` = commande passée
+   * avant le réglage, donc au taux normal — l'écran le dit comme `standard`.
+   */
+  readonly deliveryVatMode: DeliveryVatMode | null;
   /** TVA totale (marchandises par taux + livraison + surtaxe), en centimes. */
   readonly vatCents: number;
   /**
@@ -842,6 +850,7 @@ export interface CustomerOrderView {
   readonly deliveryFeeAdjustment: CartAdjustment | null;
   readonly lateFeeCents: number;
   readonly lateFeeAdjustment: LateFeeAdjustment | null;
+  readonly deliveryVatMode: DeliveryVatMode | null;
   readonly vatCents: number;
   readonly vatShares: readonly VatShareView[] | null;
   readonly totalCents: number;
@@ -893,6 +902,7 @@ export function toCustomerOrder(view: OrderView): CustomerOrderView {
     deliveryFeeAdjustment: view.deliveryFeeAdjustment,
     lateFeeCents: view.lateFeeCents,
     lateFeeAdjustment: view.lateFeeAdjustment,
+    deliveryVatMode: view.deliveryVatMode,
     vatCents: view.vatCents,
     vatShares: view.vatShares,
     totalCents: view.totalCents,

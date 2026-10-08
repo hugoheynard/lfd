@@ -1,0 +1,32 @@
+:host {
+  display: flex;
+  flex-direction: column;
+  gap: var(--fold-space-lg);
+}
+
+.head {
+  display: flex;
+  flex-direction: column;
+  gap: var(--fold-space-xs);
+}
+
+.section-title {
+  margin: 0;
+  font-size: var(--fold-text-lg);
+}
+
+.section-desc {
+  margin: 0;
+  color: var(--fold-color-text-muted);
+}
+
+.form {
+  display: flex;
+  flex-direction: column;
+  gap: var(--fold-space-md);
+}
+
+.foot {
+  display: flex;
+  justify-content: flex-end;
+}

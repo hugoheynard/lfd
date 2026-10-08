@@ -76,6 +76,7 @@ const SCREENS: Readonly<Record<string, ScreenAccess>> = {
   // Son propre droit, venu des Réglages le 2026-09-29 : ni `b2b_settings`, que
   // le commercial lit, ni `b2b_accounting`.
   'comptabilite/surtaxe-de-retard': 'b2b_late_fee:read',
+  'comptabilite/tva-de-la-livraison': null,
 
   'comptes-clients/:id': 'b2b_companies:read',
   'comptes-clients/:id/dashboard': null,

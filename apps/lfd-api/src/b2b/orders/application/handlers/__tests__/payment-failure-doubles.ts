@@ -44,6 +44,7 @@ export function orderView(
     deliveryFeeCents: 0,
     deliveryFeeAdjustment: null,
     lateFeeAdjustment: null,
+    deliveryVatMode: null,
     lateFeeCents: 0,
     vatCents: 79,
     vatShares: [{ rate: 5.5, amountCents: 79 }],

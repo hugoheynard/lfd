@@ -484,6 +484,16 @@ export type {
 
 export { orderCutoffWaiverPayloadSchema, waiverDateSchema } from "./order-cutoff-waiver.js";
 export { lateFeeAdjustmentSchema, orderLateFeePayloadSchema } from "./order-late-fee.js";
+export {
+  DELIVERY_VAT_MODES,
+  deliveryVatModeSchema,
+  orderDeliveryVatPayloadSchema,
+} from "./order-delivery-vat.js";
+export type {
+  DeliveryVatMode,
+  OrderDeliveryVatPayload,
+  OrderDeliveryVatView,
+} from "./order-delivery-vat.js";
 export type { LateFeeAdjustment, OrderLateFeePayload, OrderLateFeeView } from "./order-late-fee.js";
 export type {
   ShopCatalogueView,

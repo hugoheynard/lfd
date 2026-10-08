@@ -128,6 +128,9 @@ export function orderTotalRows(order: CustomerOrderView): readonly TotalRow[] {
       label: 'Livraison HT',
       value: formatCents(order.deliveryFeeCents),
       strong: false,
+      // Le mode figé à la passation ; `null` = commande d'avant le réglage,
+      // taxée au taux normal (plan-tva-des-frais-de-port.md, V5).
+      hint: order.deliveryVatMode === 'follows_goods' ? 'TVA au prorata des produits' : 'TVA 20 %',
     });
   }
   if (order.lateFeeCents > 0) {

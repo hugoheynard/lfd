@@ -67,6 +67,7 @@ function draftInput(over: Partial<DraftOrderInput> = {}): DraftOrderInput {
     deliveryFeeAdjustment: null,
     lateFeeCents: 0,
     lateFeeAdjustment: null,
+    deliveryVatMode: "standard",
     voucher: null,
     ...over,
   };
@@ -135,6 +136,31 @@ describe("Order.draft — calcul monétaire", () => {
     expect(state.deliveryFeeCents).toBe(2000);
     expect(state.vatCents).toBe(400);
     expect(state.totalCents).toBe(2800);
+  });
+
+  /** Plan TVA des frais de port, V3 : le mode passe au calcul ET se fige. */
+  it("taxe le port au taux des marchandises en mode « suit la marchandise », et fige le mode", () => {
+    // 400 HT à 5,5 % + frais 2000 qui suivent → (400 + 2000) × 5,5 % = 132.
+    const state = deferred({
+      lines: [food(2)],
+      deliveryFeeAdjustment: { mode: "amount", cents: 2_000 },
+      fulfillment: {
+        method: "delivery",
+        deliveryZoneId: "z1",
+        deliveryAddress: ADDRESS,
+        deliveryAddressId: null,
+        pickupAddress: null,
+      },
+      deliveryFeeCents: 2000,
+      deliveryVatMode: "follows_goods",
+    });
+    expect(state.vatShares).toEqual([{ rate: 5.5, amountCents: 132 }]);
+    expect(state.totalCents).toBe(2532);
+    expect(state.deliveryVatMode).toBe("follows_goods");
+  });
+
+  it("fige le mode « standard » même sans livraison", () => {
+    expect(deferred().deliveryVatMode).toBe("standard");
   });
 
   it("refuse une commande sans ligne", () => {

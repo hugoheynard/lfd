@@ -128,6 +128,16 @@ export class CartSummary {
     return fee === 0 ? null : this.t().cart.fee;
   });
 
+  /** À quel taux le port est taxé — seulement quand il y a un port. */
+  protected readonly feeVatLabel = computed(() => {
+    const totals = this.totals();
+    if (totals.deliveryFeeCents === 0) {
+      return null;
+    }
+    const c = this.t().cart;
+    return totals.deliveryVatMode === 'follows_goods' ? c.feeVatProrata : c.feeVatStandard;
+  });
+
   protected readonly vatLines = computed(() => {
     const c = this.t().cart;
     return this.totals().vat.map((share) => ({
