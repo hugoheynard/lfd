@@ -77,7 +77,7 @@ export const ACCOUNTING_FACTS = {
   "legal_entity.pre_notification_changed": labelled({ days: days() }),
   /**
    * Le calendrier de prélèvement APRÈS le changement (plan
-   * `plan-prelevement-automatique.md`, PA1). `daysAfterClosure` nul = le délai
+   * `prelevement-automatique.md`, PA1). `daysAfterClosure` nul = le délai
    * de pré-notification ; cut-off nul = « à renseigner ».
    */
   "legal_entity.collection_schedule_changed": labelled({

@@ -12,7 +12,7 @@ import {
  * suffit à garantir le préavis en jours de calendrier. Un délai de 30 h
  * rognerait le préavis d'un jour sans que la règle ci-dessous le voie.
  * Au moins 1 : laisser passer le cron de minuit (plan
- * `plan-prelevement-automatique.md`, § 3).
+ * `prelevement-automatique.md`, § 3).
  */
 export const AUTO_COLLECTION_DELAY_DEFAULT_HOURS = 1;
 export const AUTO_COLLECTION_DELAY_MIN_HOURS = 1;

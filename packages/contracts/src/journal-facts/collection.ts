@@ -38,7 +38,7 @@ const statement = {
 
 /**
  * L'avis de prélèvement d'un payeur (plan
- * `documentation/facturation/plan-prelevement-automatique.md`, PA2). Sujet :
+ * `documentation/facturation/prelevement-automatique.md`, PA2). Sujet :
  * `collection_notice`, nommé « Avis <payeur> ». Jamais l'adresse du
  * destinataire : on dit d'où elle vient (`recipientSource`), pas laquelle.
  */
@@ -58,7 +58,7 @@ const notice = {
 
 /**
  * Une tentative de la constitution automatique (plan
- * `plan-prelevement-automatique.md`, PA3). Sujet : l'entité émettrice,
+ * `prelevement-automatique.md`, PA3). Sujet : l'entité émettrice,
  * nommée par sa raison sociale. Une par entité et par cycle, jamais deux.
  */
 const autopilotRun = {

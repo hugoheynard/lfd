@@ -13,7 +13,7 @@ import { GetCollectionPreviewQuery } from "../collection-batch-queries.js";
 import { GetCollectionPreviewHandler } from "../get-collection-preview.handler.js";
 
 /**
- * L'aperçu du mois (plan `plan-prelevement-automatique.md`, PA4). L'horloge est
+ * L'aperçu du mois (plan `prelevement-automatique.md`, PA4). L'horloge est
  * celle du monde du lot (2 octobre 2026) : le mois qui court se clôt le
  * 1er novembre. Les dates ne sont comparées qu'au cycle, jamais au mur.
  */

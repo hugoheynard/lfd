@@ -1,6 +1,6 @@
 /**
  * Les mots de l'écran **Prélèvement du mois** (plan
- * `documentation/facturation/plan-prelevement-automatique.md`, PA4) : un mois
+ * `documentation/facturation/prelevement-automatique.md`, PA4) : un mois
  * se nomme par son nom, jamais par « cycle » ni par une plage d'instants.
  *
  * ## Le mois d'une clôture se lit à Paris

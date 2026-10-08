@@ -14,7 +14,7 @@ export interface AutopilotTurn {
 
 /**
  * **Le tour de l'automatisme pour une entité** (plan
- * `plan-prelevement-automatique.md`, PA3) : le cycle qu'on constituerait à
+ * `prelevement-automatique.md`, PA3) : le cycle qu'on constituerait à
  * `now` — le dernier clos, comme le bouton (`cycleToConstitute`) — et si son
  * heure de constitution prévue (clôture + délai) est passée.
  *

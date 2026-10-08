@@ -62,7 +62,7 @@ interface PreviewLineRow {
 
 /**
  * **Le mois en cours** — ce que la prochaine préparation du lot prélèverait
- * (plan `plan-prelevement-automatique.md`, PA4).
+ * (plan `prelevement-automatique.md`, PA4).
  *
  * ## Le serveur calcule, l'écran soustrait
  *

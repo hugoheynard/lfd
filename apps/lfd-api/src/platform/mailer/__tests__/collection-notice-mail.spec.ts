@@ -1,7 +1,7 @@
 import { b2bMailTemplates } from "../mail-templates.js";
 
 /*
- * L'avis de prélèvement (plan-prelevement-automatique.md, PA2) : le minimum
+ * L'avis de prélèvement (prelevement-automatique.md, PA2) : le minimum
  * du rulebook (montant, date) et la pratique française (RUM, ICS), plus la
  * raison sociale du créancier et la référence de l'arrêté.
  */

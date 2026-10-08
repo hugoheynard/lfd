@@ -173,7 +173,7 @@ export class AdminLegalEntityBankingController {
    * après la clôture, date limite de dépôt. Répond **409** si N est plus court
    * que le délai de pré-notification — le message nomme les deux valeurs et la
    * clause contractuelle qui permettrait de réduire le délai (plan
-   * `plan-prelevement-automatique.md`, PA1).
+   * `prelevement-automatique.md`, PA1).
    */
   @Put(":id/collection-schedule")
   @HttpCode(HttpStatus.NO_CONTENT)

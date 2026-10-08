@@ -2,7 +2,7 @@ import type { CollectionBatchView, CollectionLineNoticeView } from '@lfd/contrac
 
 /**
  * Les mots de l'**avis de prélèvement** d'une ligne (plan
- * `documentation/facturation/plan-prelevement-automatique.md`, PA2), pour un
+ * `documentation/facturation/prelevement-automatique.md`, PA2), pour un
  * gérant : envoyé, en attente, échec, non envoyable. Mis en file ne se dit
  * jamais « envoyé » — c'est l'envoi que le dépôt exige.
  */

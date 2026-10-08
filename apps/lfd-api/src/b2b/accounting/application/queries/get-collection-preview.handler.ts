@@ -14,7 +14,7 @@ import { readAssembly, type ReadAssembly } from "../collection-constitution-supp
 import { GetCollectionPreviewQuery } from "./collection-batch-queries.js";
 
 /**
- * **L'aperçu du mois** (plan `plan-prelevement-automatique.md`, PA4) : ce que
+ * **L'aperçu du mois** (plan `prelevement-automatique.md`, PA4) : ce que
  * la préparation du lot débiterait à la prochaine clôture.
  *
  * ## Calculé comme le lot, par le même chemin

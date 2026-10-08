@@ -165,7 +165,7 @@
   //    /admin/accounting/collection/autopilot) : toutes les heures, au quart,
   //    prépare le lot du mois clos des entités qui l'ont activée, une fois
   //    l'heure prévue passée — UNE tentative par cycle, tenue en base (plan
-  //    `documentation/facturation/plan-prelevement-automatique.md`, PA3). Un
+  //    `documentation/facturation/prelevement-automatique.md`, PA3). Un
   //    cron à lui, pas celui des rappels : deux rythmes sans rapport. Recopié
   //    dans `COLLECTION_AUTOPILOT_CRON` (worker.ts), à l'identique.
   //

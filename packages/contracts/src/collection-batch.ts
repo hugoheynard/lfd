@@ -43,7 +43,7 @@ export const ORDER_COLLECTION_STATE_LABELS: Readonly<Record<OrderCollectionState
 
 /**
  * L'état de l'avis de prélèvement d'une ligne (plan
- * `documentation/facturation/plan-prelevement-automatique.md`, PA2).
+ * `documentation/facturation/prelevement-automatique.md`, PA2).
  * `queued` = mis en file, PAS envoyé ; `unsendable` = ni contact de
  * facturation ni détenteur avec une adresse — rien n'est parti.
  */
@@ -103,7 +103,7 @@ export interface CollectionBatchView {
   readonly constitutedAt: string;
   /**
    * Qui l'a préparé : la comptabilité (`staff`), ou la constitution
-   * automatique (`system`, plan `plan-prelevement-automatique.md`, PA3).
+   * automatique (`system`, plan `prelevement-automatique.md`, PA3).
    * L'écran dit « préparé automatiquement » ; aucune fiche n'est nommée.
    */
   readonly constitutedBy: CollectionBatchAuthorView;
@@ -118,7 +118,7 @@ export interface CollectionBatchView {
   /**
    * L'échéance FIGÉE à la constitution (`AAAA-MM-JJ`) — celle du fichier.
    * `null` pour un lot constitué avant le 2026-10-08 (plan
-   * `plan-prelevement-automatique.md`, PA1) : on n'invente pas sa valeur, le
+   * `prelevement-automatique.md`, PA1) : on n'invente pas sa valeur, le
    * XML stocké fait foi.
    */
   readonly requestedCollectionDay: string | null;
@@ -171,7 +171,7 @@ export type ConstituteBatchesPayload = z.infer<typeof constituteBatchesPayloadSc
 /**
  * Une ligne de l'**aperçu du mois** : ce que la prochaine préparation du lot
  * débiterait à ce payeur, calculé comme le lot (plan
- * `documentation/facturation/plan-prelevement-automatique.md`, PA4) — la
+ * `documentation/facturation/prelevement-automatique.md`, PA4) — la
  * facture de ses bons en une fois, pas leur somme.
  */
 export interface CollectionPreviewLineView {

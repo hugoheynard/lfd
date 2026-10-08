@@ -62,7 +62,7 @@ export class AdminCollectionBatchesController {
 
   /**
    * L'aperçu du mois qui court, calculé comme le lot — une lecture : rien
-   * n'est écrit ni verrouillé (plan `plan-prelevement-automatique.md`, PA4).
+   * n'est écrit ni verrouillé (plan `prelevement-automatique.md`, PA4).
    */
   @Get("preview")
   preview(@Query("legalEntityId") legalEntityId: string): Promise<CollectionPreviewView> {

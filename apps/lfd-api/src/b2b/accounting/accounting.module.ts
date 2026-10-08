@@ -181,7 +181,7 @@ import { PrismaLegalEntityRepository } from "./infrastructure/prisma-legal-entit
     { provide: BillingStatementReader, useClass: PrismaBillingStatementReader },
     { provide: CancelledOrdersReader, useClass: PrismaCancelledOrdersReader },
     { provide: OrderNumbersReader, useClass: PrismaOrderNumbersReader },
-    // L'avis de prélèvement (plan `plan-prelevement-automatique.md`, PA2).
+    // L'avis de prélèvement (plan `prelevement-automatique.md`, PA2).
     { provide: CollectionNoticeRepository, useClass: PrismaCollectionNoticeRepository },
     { provide: CycleNoticesReader, useClass: PrismaCycleNoticesReader },
     { provide: BatchNoticeStatesReader, useClass: PrismaBatchNoticeStatesReader },

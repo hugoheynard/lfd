@@ -38,7 +38,7 @@ import { LegalEntitiesService } from '../../../legal-entities.service';
 /**
  * **Le prélèvement automatique de l'entité** : le calendrier du cycle en
  * cours, l'automatisme, et les réglages qui décident des dates (plan
- * `documentation/facturation/plan-prelevement-automatique.md`, PA1).
+ * `documentation/facturation/prelevement-automatique.md`, PA1).
  *
  * ## Le calendrier vient du serveur
  *

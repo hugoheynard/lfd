@@ -296,7 +296,7 @@ describe('LegalEntityDetailPage', () => {
       // aucun champ ICS une fois l'ICS posé.
       'Description du contrat',
       // Et la carte du prélèvement automatique un autre depuis le 2026-10-08
-      // (plan-prelevement-automatique, PA1) : l'heure limite de dépôt.
+      // (prelevement-automatique.md, PA1) : l'heure limite de dépôt.
       'Heure limite (heure de Paris)',
     ]);
     expect(text(fixture)).toContain('Il ne se remplace pas');

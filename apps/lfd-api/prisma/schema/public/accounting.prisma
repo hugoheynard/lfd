@@ -164,7 +164,7 @@ model LegalEntity {
   // déploiement, et deux entités peuvent ne pas avoir le même.
   preNotificationDays Int @default(14) @map("pre_notification_days")
 
-  // Le PRÉLÈVEMENT AUTOMATIQUE (plan `plan-prelevement-automatique.md`, PA1).
+  // Le PRÉLÈVEMENT AUTOMATIQUE (plan `prelevement-automatique.md`, PA1).
   // Désactivé par défaut, et aucune migration ne l'active : c'est un fait de
   // journal. Le délai (1 à 23 h) garde la constitution le jour de la clôture.
   autoCollectionEnabled      Boolean @default(false) @map("auto_collection_enabled")

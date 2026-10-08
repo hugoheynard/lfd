@@ -14,7 +14,7 @@ export type SettledAutopilotOutcome = Exclude<CollectionAutopilotOutcome, "pendi
 
 /**
  * **La trace des tentatives de l'automatisme** — UNE par (entité, clôture),
- * jamais deux (plan `plan-prelevement-automatique.md`, PA3, et `vitruve` § 8 :
+ * jamais deux (plan `prelevement-automatique.md`, PA3, et `vitruve` § 8 :
  * « l'automatisme reconstituait un lot que la compta venait d'annuler »).
  *
  * C'est la base qui décide qui tente : deux passages simultanés se

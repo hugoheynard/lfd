@@ -1,6 +1,6 @@
 /**
  * E2E de l'**avis de prélèvement** (plan
- * `documentation/facturation/plan-prelevement-automatique.md`, PA2).
+ * `documentation/facturation/prelevement-automatique.md`, PA2).
  *
  * Ce que seul le vrai SQL prouve : l'avis et son fait de boîte d'envoi sont
  * écrits dans la transaction du lot, avec le montant de l'arrêté, l'échéance

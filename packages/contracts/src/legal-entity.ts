@@ -14,7 +14,7 @@ export const PRE_NOTIFICATION_MAX_DAYS = 60;
 /**
  * Les bornes du **calendrier de prélèvement**, recopiées du domaine
  * (`CollectionSchedule`), qui reste l'autorité. Plan
- * `documentation/facturation/plan-prelevement-automatique.md`, PA1.
+ * `documentation/facturation/prelevement-automatique.md`, PA1.
  */
 export const AUTO_COLLECTION_DELAY_MIN_HOURS = 1;
 /** Au plus 23 : la constitution reste le jour de la clôture, et le préavis entier. */
@@ -56,7 +56,7 @@ export interface CollectionCalendarView {
 
 /**
  * L'issue d'une tentative de la constitution automatique (plan
- * `plan-prelevement-automatique.md`, PA3). `pending` : prise, issue pas
+ * `prelevement-automatique.md`, PA3). `pending` : prise, issue pas
  * encore écrite — ou le passage s'est interrompu entre les deux.
  */
 export type CollectionAutopilotOutcomeView =

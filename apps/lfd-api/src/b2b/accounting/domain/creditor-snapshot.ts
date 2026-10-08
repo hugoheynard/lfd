@@ -53,7 +53,7 @@ export interface CreditorSnapshot {
   /**
    * N — l'échéance en jours après la clôture ; `null` = `preNotificationDays`.
    * Lu par le calendrier qui date `ReqdColltnDt` (plan
-   * `plan-prelevement-automatique.md`, PA1).
+   * `prelevement-automatique.md`, PA1).
    */
   readonly collectionDaysAfterClosure: number | null;
 

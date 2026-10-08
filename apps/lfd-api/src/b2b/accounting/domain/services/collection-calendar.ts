@@ -21,7 +21,7 @@ export interface LocalDeadline {
 }
 
 /**
- * Le calendrier d'UN cycle. Le plan : `plan-prelevement-automatique.md`, § 3.
+ * Le calendrier d'UN cycle. Le plan : `prelevement-automatique.md`, § 3.
  */
 export interface CollectionCalendar {
   readonly closesAt: Date;

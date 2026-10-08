@@ -94,7 +94,7 @@ export interface LegalEntitySnapshot {
   readonly logoKey: string | null;
   readonly archivedAt: Date | null;
   /**
-   * Le prélèvement automatique (plan `plan-prelevement-automatique.md`, PA1).
+   * Le prélèvement automatique (plan `prelevement-automatique.md`, PA1).
    * Désactivé par défaut ; l'activer est un fait de journal, jamais une
    * migration.
    */

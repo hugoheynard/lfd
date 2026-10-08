@@ -47,7 +47,7 @@ import { LegalEntitiesService } from '../legal-entities.service';
  *
  * ## Le prélèvement : un résumé, et le chemin
  *
- * Depuis l'écran « Prélèvement du mois » (plan `plan-prelevement-automatique.md`,
+ * Depuis l'écran « Prélèvement du mois » (plan `prelevement-automatique.md`,
  * PA4), la carte ne garde que la date du prochain prélèvement, le montant de
  * l'aperçu et le lien — plus la condition bloquante qu'elle sait vérifier :
  * sans ICS ni compte créancier, aucun lot ne partirait de toute façon.

@@ -312,7 +312,7 @@ describe("les bons que la constitution lit (F1)", () => {
 
 describe("le lot figé", () => {
   /**
-   * PA1 (plan `plan-prelevement-automatique.md`) : l'échéance du calendrier
+   * PA1 (plan `prelevement-automatique.md`) : l'échéance du calendrier
    * est FIGÉE sur le lot, et le fichier stocké porte la même. Attendue
    * calculée par le domaine depuis la clôture courante — aucune date écrite.
    */

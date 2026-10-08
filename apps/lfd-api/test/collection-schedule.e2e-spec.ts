@@ -1,6 +1,6 @@
 /**
  * E2E du **calendrier de prélèvement** de l'entité émettrice (plan
- * `documentation/facturation/plan-prelevement-automatique.md`, PA1).
+ * `documentation/facturation/prelevement-automatique.md`, PA1).
  *
  * Ce que seul le vrai serveur prouve : les colonnes s'écrivent et se relisent
  * (une colonne oubliée dans le mapper rendrait « enregistré » puis l'ancienne

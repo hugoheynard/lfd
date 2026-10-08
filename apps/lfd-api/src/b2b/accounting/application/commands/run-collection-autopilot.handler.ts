@@ -31,7 +31,7 @@ const ONLY_EXCLUSIONS =
 
 /**
  * **Le passage de la constitution automatique** (plan
- * `plan-prelevement-automatique.md`, PA3).
+ * `prelevement-automatique.md`, PA3).
  *
  * Pour chaque entité dont l'automatisme est activé et dont l'heure de
  * constitution prévue (clôture + délai) est passée : si le cycle n'a jamais

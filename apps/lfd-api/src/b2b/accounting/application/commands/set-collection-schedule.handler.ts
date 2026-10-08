@@ -16,7 +16,7 @@ import { SetCollectionScheduleCommand } from "./legal-entity-commands.js";
  * quelque chose a changé : une saisie rejouée n'est pas un fait.
  *
  * Un lot déjà constitué a FIGÉ son échéance : le changer ici ne le touche pas
- * (plan `plan-prelevement-automatique.md`, PA1 — annuler et reconstituer).
+ * (plan `prelevement-automatique.md`, PA1 — annuler et reconstituer).
  */
 @CommandHandler(SetCollectionScheduleCommand)
 export class SetCollectionScheduleHandler implements ICommandHandler<

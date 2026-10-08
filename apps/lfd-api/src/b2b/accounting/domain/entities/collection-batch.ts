@@ -57,7 +57,7 @@ export interface StaffStamp {
 
 /**
  * Qui a préparé le lot : une fiche staff, ou l'automatisme (plan
- * `plan-prelevement-automatique.md`, PA3). Deux formes, pas un identifiant
+ * `prelevement-automatique.md`, PA3). Deux formes, pas un identifiant
  * nullable : un lot `system` n'a pas de fiche à joindre à l'annuaire, et un
  * lot `staff` ne peut pas en manquer.
  */
@@ -89,7 +89,7 @@ export interface CollectionBatchState {
    * L'échéance (`AAAA-MM-JJ`) figée à la constitution — celle du XML.
    * `null` pour un lot d'avant le 2026-10-08 : son XML fait foi. Changer
    * l'échéance d'un lot = l'annuler et le reconstituer, jamais un report en
-   * place (plan `plan-prelevement-automatique.md`, PA1).
+   * place (plan `prelevement-automatique.md`, PA1).
    */
   readonly requestedCollectionDay: string | null;
   /**

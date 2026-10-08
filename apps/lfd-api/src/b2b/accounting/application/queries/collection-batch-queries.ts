@@ -16,7 +16,7 @@ export class ExportCollectionBatchAuditQuery {
 /**
  * L'aperçu du mois qui court : ce que la prochaine préparation du lot
  * débiterait, calculé comme le lot. Une LECTURE : rien n'est écrit ni
- * verrouillé (plan `plan-prelevement-automatique.md`, PA4).
+ * verrouillé (plan `prelevement-automatique.md`, PA4).
  */
 export class GetCollectionPreviewQuery {
   constructor(readonly legalEntityId: string) {}

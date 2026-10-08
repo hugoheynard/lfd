@@ -77,7 +77,7 @@ const nothing = (): Segment[] => [];
 /**
  * « : échéance à la clôture + 20 jours, constitution 2 h après la clôture,
  * dépôt au plus tard 2 jours ouvrés avant à 16:00 ». Plan
- * `plan-prelevement-automatique.md`, PA1. Une échéance nulle suit le préavis ;
+ * `prelevement-automatique.md`, PA1. Une échéance nulle suit le préavis ;
  * un cut-off nul est « à renseigner » — dit tel quel, jamais inventé.
  */
 function collectionSchedule(fact: PhraseFact): Segment[] {
@@ -367,7 +367,7 @@ const NOTICE_KEYS = [
 /**
  * « … a mis en file l'avis de prélèvement « Avis X » (rectificatif) du
  * client « X » chez l'entité « Y » — 105,50 €, le 16 oct. 2026 ». Le plan :
- * `plan-prelevement-automatique.md`, PA2. Jamais l'adresse du destinataire.
+ * `prelevement-automatique.md`, PA2. Jamais l'adresse du destinataire.
  */
 function onNotice(verb: string, after: (fact: PhraseFact) => Segment[] = nothing): Phrase {
   return (fact) => {
@@ -406,7 +406,7 @@ const noticeFailure = (fact: PhraseFact): Segment[] => [
 /**
  * « … a tenté la préparation automatique du lot de l'entité émettrice « X »
  * (clôture du 1 oct. 2026, 00:00) : échec — « message » ». Plan
- * `plan-prelevement-automatique.md`, PA3. Une tentative par mois.
+ * `prelevement-automatique.md`, PA3. Une tentative par mois.
  */
 function autopilotIssue(fact: PhraseFact): Segment[] {
   const message = optional(fact.payload['message']);

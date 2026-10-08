@@ -69,7 +69,7 @@ export class SetPreNotificationCommand {
 
 /**
  * Le calendrier de prélèvement : délai de constitution, échéance N, date
- * limite de dépôt (plan `plan-prelevement-automatique.md`, PA1).
+ * limite de dépôt (plan `prelevement-automatique.md`, PA1).
  */
 export class SetCollectionScheduleCommand {
   constructor(

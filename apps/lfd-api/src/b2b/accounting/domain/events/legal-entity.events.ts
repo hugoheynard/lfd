@@ -213,7 +213,7 @@ export class CollectionScheduleChangedEvent implements JournaledEvent {
 
 /**
  * La constitution automatique est activée, ou désactivée. Un fait DISTINCT du
- * calendrier (plan `plan-prelevement-automatique.md`, § 3) : c'est le geste
+ * calendrier (plan `prelevement-automatique.md`, § 3) : c'est le geste
  * qui fait partir des lots et des avis sans qu'un humain clique, et la
  * question « depuis quand ? » doit se lire sans fouiller les réglages.
  */

@@ -18,7 +18,7 @@ export class InvalidCollectionScheduleError extends DomainError {
  * (mandat, CGV), on le prélèverait avant le terme qu'on lui a promis — et
  * chaque débit serait contestable. La seule sortie légitime est contractuelle :
  * réduire le délai de pré-notification, ce qui suppose la clause écrite dans
- * les CGV pro et le mandat (plan `plan-prelevement-automatique.md`, § 3, Q1).
+ * les CGV pro et le mandat (plan `prelevement-automatique.md`, § 3, Q1).
  *
  * Levée dans les DEUX sens : régler N sous le délai, ou porter le délai
  * au-dessus d'un N déjà réglé.

@@ -53,7 +53,7 @@ import { ConstituteCollectionBatchesCommand } from "./constitute-collection-batc
  * quelle — son total EST le montant prélevé, jamais recalculé.
  *
  * Chaque ligne reçoit aussi son **avis de prélèvement** (plan
- * `plan-prelevement-automatique.md`, PA2), écrit avec le lot et mis dans la
+ * `prelevement-automatique.md`, PA2), écrit avec le lot et mis dans la
  * boîte d'envoi (`DurablePublisher`) dans CETTE transaction : un lot sans ses
  * avis, ou un avis sans son lot, ne peut pas exister. L'envoi part après la
  * validation (`SendCollectionNotice`). Une reconstitution rectifie, reconduit

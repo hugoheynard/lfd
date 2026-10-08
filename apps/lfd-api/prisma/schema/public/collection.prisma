@@ -200,7 +200,7 @@ enum CollectionNoticeStatus {
 }
 
 /// L'avis de prélèvement d'un payeur (plan
-/// `documentation/facturation/plan-prelevement-automatique.md`, PA2), écrit
+/// `documentation/facturation/prelevement-automatique.md`, PA2), écrit
 /// dans la transaction du lot. Contraintes en SQL
 /// (`20261008160000_l_avis_de_prelevement`) : une annulation n'a ni lot ni
 /// ligne, les autres ont les deux ; un rectificatif porte l'avant ; un avis
@@ -254,7 +254,7 @@ model CollectionNotice {
 }
 
 /// UNE tentative de la constitution automatique par (entité, clôture) — plan
-/// `documentation/facturation/plan-prelevement-automatique.md`, PA3. La clé
+/// `documentation/facturation/prelevement-automatique.md`, PA3. La clé
 /// départage deux passages et interdit de retenter : annuler un lot ne
 /// relance pas l'automatisme. Contraintes en SQL
 /// (`20261008170000_la_constitution_automatique`) : `outcome` ∈ `pending`,

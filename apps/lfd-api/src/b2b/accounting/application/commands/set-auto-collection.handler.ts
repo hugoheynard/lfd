@@ -14,7 +14,7 @@ import { SetAutoCollectionCommand } from "./legal-entity-commands.js";
  * Un fait distinct au journal, à chaque bascule réelle : c'est le geste qui
  * fera partir des lots et des avis sans clic (PA3), et « qui l'a activé, et
  * quand » doit se lire seul. Aucune migration ne l'active (plan
- * `plan-prelevement-automatique.md`, § 3).
+ * `prelevement-automatique.md`, § 3).
  */
 @CommandHandler(SetAutoCollectionCommand)
 export class SetAutoCollectionHandler implements ICommandHandler<SetAutoCollectionCommand, void> {

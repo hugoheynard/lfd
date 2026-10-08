@@ -22,7 +22,7 @@ export interface EntityViewReaders {
  *
  * Partagé par la fiche et la liste : deux lectures, un calcul. Le calendrier
  * vient de `collectionCalendar`, la même fonction que le fichier du lot
- * (plan `plan-prelevement-automatique.md`, PA1).
+ * (plan `prelevement-automatique.md`, PA1).
  */
 export async function withNextCollection(
   record: LegalEntityRecord,

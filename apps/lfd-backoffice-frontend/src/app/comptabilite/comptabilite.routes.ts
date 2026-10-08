@@ -56,7 +56,7 @@ export const comptabiliteRoutes: Routes = [
         // LE MOIS DU PRÉLÈVEMENT, de haut en bas : son calendrier, l'aperçu de
         // ce qui sera prélevé, le lot à déposer, l'historique. Les gestes
         // demandent `b2b_accounting:write`.
-        // Plan : documentation/facturation/plan-prelevement-automatique.md (PA4).
+        // Plan : documentation/facturation/prelevement-automatique.md (PA4).
         path: 'prelevement-du-mois',
         title: 'Prélèvement du mois — LFC B2B admin',
         loadComponent: () =>
