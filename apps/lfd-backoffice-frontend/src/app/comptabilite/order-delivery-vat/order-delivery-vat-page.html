@@ -36,11 +36,87 @@
           </fold-callout>
         }
 
-        <fold-callout appearance="inset" variant="neutral">
-          Par exemple, 40&nbsp;€ HT de pâtisserie à 5,5&nbsp;% et 12&nbsp;€ HT de livraison&nbsp;:
-          <strong>56,60&nbsp;€ TTC</strong> au taux normal, <strong>54,86&nbsp;€ TTC</strong> au
-          prorata des produits.
-        </fold-callout>
+        <section class="examples" aria-labelledby="examples-title">
+          <h3 id="examples-title" class="examples-title">
+            Le calcul, sur trois paniers de 100&nbsp;€ HT livrés pour {{ exampleDelivery }} HT
+          </h3>
+          <p class="examples-note">
+            Chaque fiche se refait à la main&nbsp;: base de chaque taux, TVA = base × taux arrondie
+            au centime, puis TTC = HT + TVA. Les montants viennent de la fonction qui facture les
+            commandes.
+          </p>
+
+          @for (example of examples; track example.label) {
+            <article class="sheet" [attr.aria-label]="example.label">
+              <h4 class="sheet-title">{{ example.label }}</h4>
+              <div class="modes">
+                @for (
+                  side of [
+                    { key: 'standard', title: 'Taux normal (20 %)', outcome: example.standard },
+                    {
+                      key: 'follows_goods',
+                      title: 'Au prorata des produits',
+                      outcome: example.followsGoods,
+                    },
+                  ];
+                  track side.key
+                ) {
+                  <div class="mode" [class.chosen]="mode() === side.key">
+                    <p class="mode-title">
+                      {{ side.title }}
+                      @if (mode() === side.key) {
+                        <span class="mode-badge">mode choisi</span>
+                      }
+                    </p>
+                    <dl class="calc">
+                      @for (row of side.outcome.rows; track row.rate) {
+                        @if (row.goodsHtCents > 0) {
+                          <dt>Produits HT à {{ rate(row.rate) }}</dt>
+                          <dd>{{ cents(row.goodsHtCents) }}</dd>
+                        }
+                      }
+                      @for (row of side.outcome.rows; track row.rate) {
+                        @if (row.deliveryHtCents > 0) {
+                          <dt>
+                            Livraison HT à {{ rate(row.rate) }}
+                            @if (side.key === 'follows_goods' && side.outcome.rows.length > 1) {
+                              <span class="why">
+                                ({{ goodsShare(side.outcome, row.goodsHtCents) }} des produits)
+                              </span>
+                            }
+                          </dt>
+                          <dd>{{ cents(row.deliveryHtCents) }}</dd>
+                        }
+                      }
+                      @for (row of side.outcome.rows; track row.rate) {
+                        <dt class="vat">
+                          TVA {{ rate(row.rate) }} = {{ cents(row.baseHtCents) }} ×
+                          {{ rate(row.rate) }}
+                        </dt>
+                        <dd class="vat">{{ cents(row.vatCents) }}</dd>
+                      }
+                      <dt class="total">Total HT</dt>
+                      <dd class="total">{{ cents(side.outcome.totalHtCents) }}</dd>
+                      <dt>Total TVA</dt>
+                      <dd>{{ cents(side.outcome.vatCents) }}</dd>
+                      <dt class="ttc">Total TTC</dt>
+                      <dd class="ttc">{{ cents(side.outcome.totalCents) }}</dd>
+                    </dl>
+                  </div>
+                }
+              </div>
+              <p class="gap">
+                @if (example.gapCents === 0) {
+                  Aucun écart&nbsp;: les produits sont déjà à 20&nbsp;%, la livraison aussi dans les
+                  deux modes.
+                } @else {
+                  Écart&nbsp;: le client paie <strong>{{ cents(example.gapCents) }}</strong> de plus
+                  au taux normal.
+                }
+              </p>
+            </article>
+          }
+        </section>
 
         <fold-callout variant="warning">
           Une commande garde le mode de sa passation. Changer ce réglage ne touche que les commandes

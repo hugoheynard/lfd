@@ -1,5 +1,6 @@
 import { ChangeDetectionStrategy, Component, computed, inject, signal } from '@angular/core';
 import type { DeliveryVatMode } from '@lfd/contracts';
+import { formatCents } from '@lfd/b2b-ui/order';
 import {
   FoldButtonComponent,
   FoldCalloutComponent,
@@ -12,6 +13,11 @@ import {
 
 import { PermissionsStore } from '../../auth/permissions.store';
 import { NotifyService } from '../../notify.service';
+import {
+  type DeliveryVatOutcome,
+  deliveryVatExamples,
+  EXAMPLE_DELIVERY_HT_CENTS,
+} from '../delivery-vat-examples';
 import { OrderDeliveryVatService } from './order-delivery-vat.service';
 
 type LoadState = 'loading' | 'ready' | 'error';
@@ -55,6 +61,22 @@ export class OrderDeliveryVatPage {
   private readonly permissions = inject(PermissionsStore);
 
   protected readonly canWrite = computed(() => this.permissions.can('b2b_accounting:write'));
+
+  /** Trois paniers de 100 € HT et 10 € HT de livraison, calculés comme on facture. */
+  protected readonly examples = deliveryVatExamples();
+  protected readonly exampleDelivery = formatCents(EXAMPLE_DELIVERY_HT_CENTS);
+  protected readonly cents = formatCents;
+
+  /** « 5,5 % » — un taux à la française. */
+  protected rate(value: number): string {
+    return `${String(value).replace('.', ',')}\u00a0%`;
+  }
+
+  /** La part HT des produits d'un taux dans tout le panier : « 60 % ». */
+  protected goodsShare(outcome: DeliveryVatOutcome, goodsHtCents: number): string {
+    const goods = outcome.rows.reduce((sum, row) => sum + row.goodsHtCents, 0);
+    return `${String(Math.round((goodsHtCents * 100) / goods))}\u00a0%`;
+  }
 
   protected readonly state = signal<LoadState>('loading');
   protected readonly saving = signal(false);
