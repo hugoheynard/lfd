@@ -1,11 +1,20 @@
-import type { InvoiceDossierOrderView, InvoiceDossierView } from "@lfd/contracts";
+import type {
+  InvoiceDossierHistoryEventView,
+  InvoiceDossierOrderView,
+  InvoiceDossierView,
+} from "@lfd/contracts";
 import { QueryHandler, type IQueryHandler } from "@nestjs/cqrs";
 
+import { OrderDeliveryHistoryReader } from "../../../../delivery/channels/commerce/index.js";
+import { OrderHandoverHistoryReader } from "../../../../handover/channels/commerce/index.js";
 import { Clock } from "../../../../platform/time/clock.js";
 import { InvoiceDossierReader } from "../../domain/ports/invoice-dossier.reader.js";
 import { StatementBillingReader } from "../../domain/ports/statement-billing.reader.js";
 import { STATEMENT_SCOPE } from "../../domain/services/cycle-statement-csv.js";
-import type { FrozenInvoiceOrder } from "../../domain/services/invoice-dossier.types.js";
+import type {
+  DossierHistoryEvent,
+  DossierOrderRecord,
+} from "../../domain/services/invoice-dossier-history.js";
 import { buildInvoiceDossier, type BuiltInvoiceDossier } from "../invoice-dossier-support.js";
 import { GetInvoiceDossierQuery } from "./invoice-dossier-queries.js";
 
@@ -21,12 +30,20 @@ export class GetInvoiceDossierHandler implements IQueryHandler<
   constructor(
     private readonly dossiers: InvoiceDossierReader,
     private readonly billing: StatementBillingReader,
+    private readonly handovers: OrderHandoverHistoryReader,
+    private readonly deliveries: OrderDeliveryHistoryReader,
     private readonly clock: Clock,
   ) {}
 
   async execute(query: GetInvoiceDossierQuery): Promise<InvoiceDossierView> {
     const built = await buildInvoiceDossier(
-      { dossiers: this.dossiers, billing: this.billing, clock: this.clock },
+      {
+        dossiers: this.dossiers,
+        billing: this.billing,
+        handovers: this.handovers,
+        deliveries: this.deliveries,
+        clock: this.clock,
+      },
       query.companyId,
       query.month,
     );
@@ -47,7 +64,8 @@ function toView(built: BuiltInvoiceDossier): InvoiceDossierView {
     },
     scope: STATEMENT_SCOPE,
     invoice: dossier.invoice,
-    orders: built.orders.map(toOrderView),
+    neverHandedOver: built.neverHandedOver,
+    orders: built.records.map(toOrderView),
     ordersTotalCents: dossier.ordersTotalCents,
     differenceCents: dossier.differenceCents,
     gaps: dossier.gaps,
@@ -58,7 +76,7 @@ function toView(built: BuiltInvoiceDossier): InvoiceDossierView {
   };
 }
 
-function toOrderView(order: FrozenInvoiceOrder): InvoiceDossierOrderView {
+function toOrderView({ order, place, history }: DossierOrderRecord): InvoiceDossierOrderView {
   return {
     reference: order.reference,
     placedAt: order.createdAt.toISOString(),
@@ -73,5 +91,17 @@ function toOrderView(order: FrozenInvoiceOrder): InvoiceDossierOrderView {
     vatShares: order.vatShares,
     vatCents: order.vatCents,
     totalCents: order.totalCents,
+    place,
+    history: history.events.map(toEventView),
+    actualDeliveryDay: history.actualDeliveryDay,
+  };
+}
+
+function toEventView(event: DossierHistoryEvent): InvoiceDossierHistoryEventView {
+  return {
+    kind: event.kind,
+    at: event.at.toISOString(),
+    serviceDay: event.serviceDay,
+    via: event.via,
   };
 }

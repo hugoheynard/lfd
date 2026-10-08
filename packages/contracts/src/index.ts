@@ -182,11 +182,13 @@ export type {
 export type {
   InvoiceDeliveryVatModeView,
   InvoiceDossierGapsView,
+  InvoiceDossierHistoryEventView,
   InvoiceDossierInconsistentOrderView,
   InvoiceDossierInvoiceView,
   InvoiceDossierLineView,
   InvoiceDossierOrderLineView,
   InvoiceDossierOrderView,
+  InvoiceDossierPlaceView,
   InvoiceDossierVatCategoryView,
   InvoiceDossierVatPartView,
   InvoiceDossierVatView,

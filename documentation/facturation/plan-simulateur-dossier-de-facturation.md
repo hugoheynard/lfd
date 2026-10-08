@@ -5,7 +5,10 @@
 > Choix faits en bâtissant, à relire (§ 3.5).
 > 🟡 **DF2 bâti le 2026-10-08** : `GET admin/accounting/invoice-dossiers/companies/:companyId?month=`
 > et ses trois CSV, sur `InvoiceDossierReader` ; les bons incohérents sont
-> signalés (§ 3.6). DF3 et DF4 restent à faire.
+> signalés (§ 3.6).
+> 🟡 **DF3 bâti le 2026-10-08** : l'historique par bon, le lieu, et les bons
+> jamais retirés signalés en tête (`neverHandedOver`) — choix au § 3.7. DF4
+> reste à faire.
 >
 > 📐 **Plan v3** (2026-10-08). Touche **l'argent** : contredit
 > deux fois par `vitruve` le 2026-10-08 (v1 : trois BLOQUANTS, v2 : quatre),
@@ -225,6 +228,36 @@ lateFeeCents + vatCents` (remise plafonnée à la passation, ou autre) est
 - **Non bâti** : le « lieu » du bon (§ 3.2, retrait ou adresse) n'est pas lu ;
   il viendra avec l'historique (DF3) ou l'écran (DF4).
 
+### 3.7 Ce que DF3 a tranché en bâtissant (2026-10-08)
+
+- **Les ports** : `OrderHandoverHistoryReader` (`handover/channels/commerce/`,
+  adaptateur `PrismaOrderHandoverHistoryReader`) et `OrderDeliveryHistoryReader`
+  (`delivery/channels/commerce/`, adaptateur `PrismaOrderDeliveryHistoryReader`),
+  reliés dans `handover-feed.module.ts` et `delivery-feed.module.ts`. Une
+  lecture par bloc et par dossier, par lot d'identifiants.
+- **Le § 2 était incomplet** : `handover/channels/commerce/` portait déjà un
+  lecteur dans l'autre sens, `HandoverProofReader` (2026-10-02). Le nouveau
+  lecteur suit sa figure.
+- **`order_departure` n'est pas lu** : une ligne par commande, qu'un second
+  départ écrase ; la livraison garde chaque arrêt. Départs, retours et
+  replacements viennent donc des arrêts (`delivery_round_stop`, sa tournée,
+  `stop_decision` « Rapporter » de l'arrêt) ; les arrêts retirés d'une tournée
+  sont ignorés.
+- **Les faits de la frise** : retiré au comptoir (scan / saisie), remis à la
+  porte (preuve présente), déposé (`via = deposit`), parti en tournée,
+  rapporté, replacé (un arrêt créé après un « Rapporter »).
+- **« Jamais retiré »** = aucune ligne `order_handover`. Un bon déposé est
+  retiré.
+- **La date de livraison réelle** (`actualDeliveryDay`) = le jour de la
+  dernière tournée partie et close sans retour, pour un bon remis à la porte ;
+  `null` au comptoir (l'instant du retrait est dans la frise).
+- **Le lieu** : `pickup_address` ou `delivery_address_snapshot` selon
+  `fulfillment_method`, lus avec indulgence (snapshot illisible = lieu sans
+  adresse, le dossier ne s'arrête pas).
+- **Au CSV des bons** : colonnes « Livré le (tournée) », « Lieu »,
+  « Historique retrait / livraison », et une ligne d'en-tête qui nomme les bons
+  sans aucun fait de retrait.
+
 ## 4. Les frontières
 
 - **Le calcul** est un service de domaine pur du contexte comptable
@@ -296,7 +329,7 @@ même temps que le prélèvement.
 | --------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
 | **DF1** ✅ 2026-10-08 | `invoiceVatBreakdown` dans `@lfd/money` (plus forts restes, TVA sur base arrondie) ; le service de domaine : clé normalisée, lignes en une fois, remises par nature, frais par taux, les trois écarts. Tests chiffrés : un changement de tarif, un changement de taux, des bons sans `vatShares`, une surtaxe sans taux (échec), et **total facture − Σ `totalCents` = Σ des trois écarts**, au centime. |
 | **DF2** ✅ 2026-10-08 | Lecture : `InvoiceDossierReader` (le critère du relevé, lignes figées, date demandée), la query, la route sous `b2b_accounting:read`, un CSV par sortie.                                                                                                                                                                                                                                                 |
-| **DF3**               | L'historique : un lecteur déclaré et implémenté par `handover`, un par `delivery`, reliés dans `appBootstrap` ; le commentaire de la porte et le CLAUDE.md disent les deux sens de ces canaux.                                                                                                                                                                                                           |
+| **DF3** ✅ 2026-10-08 | L'historique : un lecteur déclaré et implémenté par `handover`, un par `delivery`, reliés dans `appBootstrap` ; le commentaire de la porte et le CLAUDE.md disent les deux sens de ces canaux.                                                                                                                                                                                                           |
 | **DF4**               | L'écran Comptabilité › Dossier de facturation.                                                                                                                                                                                                                                                                                                                                                           |
 
 ## 8. Ce que `vitruve` a relevé (v1 et v2, 2026-10-08)

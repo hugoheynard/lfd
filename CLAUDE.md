@@ -348,6 +348,14 @@ que la livraison lui demande au départ d'une tournée (« lesquelles sont
 retenues ? », « elles sont parties ») : la garde passe au livreur, et c'est le
 retrait qui tient la garde (`documentation/livraisons/livreur/a-la-porte.md`, BQ).
 
+Depuis le 2026-10-08, `handover/channels/commerce/` et
+`delivery/channels/commerce/` portent **les deux sens** : chacun garde les
+lecteurs que le commerce implémente, et porte aussi un lecteur **déclaré et
+implémenté par le bloc lui-même**, que la comptabilité du commerce lit pour le
+dossier de facturation (`OrderHandoverHistoryReader`, `OrderDeliveryHistoryReader` —
+[`documentation/facturation/plan-simulateur-dossier-de-facturation.md`](documentation/facturation/plan-simulateur-dossier-de-facturation.md), DF3).
+Lectures synchrones, par lot ; `handover → b2b` et `delivery → b2b` restent interdits.
+
 🔴 **`delivery` écoute la clôture du fournil par un canal** (2026-10-04,
 Hugo, option B — `documentation/livraisons/tournees/composition-automatique.md`,
 §2.2). La matrice interdisait `production ↔ delivery` dans les deux sens, au

@@ -25,7 +25,9 @@ import {
   DeliveryProductsReader,
   DeliveryStepPhotosReader,
   DepartureCandidatesReader,
+  OrderDeliveryHistoryReader,
 } from "../delivery/channels/commerce/index.js";
+import { PrismaOrderDeliveryHistoryReader } from "../delivery/infrastructure/prisma-order-delivery-history.reader.js";
 
 /**
  * **Le fil de la livraison, relié** — la livraison déclare, le commerce
@@ -55,6 +57,10 @@ import {
  *   carnet décide et écrit, le commerce journalise. Son adaptateur vit dans
  *   `AccountModule` : `useExisting`.
  *
+ * Et un fil dans l'AUTRE sens (2026-10-08, DF3) : `OrderDeliveryHistoryReader`
+ * — la livraison déclare ET implémente, la comptabilité du commerce lit les
+ * arrêts de ses bons pour le dossier de facturation.
+ *
  * `@Global` pour la raison des autres fils : le consommateur est `delivery/`,
  * qui ne peut pas importer le module qui fournit le port sans dépendre du
  * commerce. Le jeton reste celui du contexte déclarant.
@@ -76,6 +82,7 @@ import {
       provide: DeliveryAddressPointCorrector,
       useExisting: CommerceDeliveryAddressPointCorrector,
     },
+    { provide: OrderDeliveryHistoryReader, useClass: PrismaOrderDeliveryHistoryReader },
   ],
   exports: [
     DepartureCandidatesReader,
@@ -88,6 +95,7 @@ import {
     CommerceDayVersionReader,
     DeliveryAddressPointsReader,
     DeliveryAddressPointCorrector,
+    OrderDeliveryHistoryReader,
   ],
 })
 export class DeliveryFeedModule {}

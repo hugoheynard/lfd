@@ -218,6 +218,12 @@ const PORT_SURFACE = {
   // consomme le fait qu'elle publie (`OrderHandedOverEvent`). Deux natures, une
   // seule surface : un événement qu'un autre bloc consomme fait partie de ce
   // qui est publié, au même titre qu'un port.
+  //
+  // Deux sens sur ce canal : le retrait y publie aussi des lecteurs qu'il
+  // DÉCLARE ET IMPLÉMENTE lui-même, et que le commerce lit — les preuves à la
+  // porte (`HandoverProofReader`, 2026-10-02) et, depuis le 2026-10-08, le
+  // retrait de chaque bon pour le dossier de facturation
+  // (`OrderHandoverHistoryReader`, DF3). Le commerce n'y lit aucune table.
   "b2b→handover": "handover/channels/commerce/",
   // 🔴 Le seul port du dossier que la remise CONSOMME. La production déclare
   // « quelles références ont été attestées depuis ma clôture » ; la remise
@@ -231,6 +237,11 @@ const PORT_SURFACE = {
   // Le commerce implémente ce que la LIVRAISON déclare : les points de retrait
   // candidats au départ des tournées (2026-09-29, plan de tournée, Q9). Il ne
   // voit ni la flotte, ni ses tables, ni ses règles.
+  //
+  // Deux sens depuis le 2026-10-08 (DF3) : la livraison y DÉCLARE ET
+  // IMPLÉMENTE aussi `OrderDeliveryHistoryReader`, que la comptabilité du
+  // commerce lit pour l'historique des bons du dossier de facturation — sur
+  // le modèle de `ContainerManagedOrders` (`packing/channels/delivery/`).
   "b2b→delivery": "delivery/channels/commerce/",
   // Le RETRAIT implémente ce que la livraison déclare (2026-10-01,
   // `a-la-porte.md`, BQ) : « lesquelles sont retenues ? » au départ, et

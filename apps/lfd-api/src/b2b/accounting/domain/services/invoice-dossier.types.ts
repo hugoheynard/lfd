@@ -151,3 +151,15 @@ export interface InvoiceDossier {
   /** Faux dès qu'un bon est incohérent : les trois écarts ne suffisent plus à expliquer la différence. */
   readonly threeGapInvariantHolds: boolean;
 }
+
+/**
+ * **Le lieu d'un bon** (§3.2) : retrait au labo, ou adresse livrée, lu dans
+ * les snapshots figés à la passation.
+ */
+export interface DossierOrderPlace {
+  readonly method: "pickup" | "delivery";
+  /** Le nom du point de retrait ou de l'adresse ; `null` sans nom. */
+  readonly label: string | null;
+  /** L'adresse sur une ligne ; `null` quand le bon n'en a figé aucune lisible. */
+  readonly address: string | null;
+}

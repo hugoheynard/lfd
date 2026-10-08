@@ -9,8 +9,10 @@ import {
   HandoverProofReader,
   HandoverQueueReader,
   HandoverSubjectReader,
+  OrderHandoverHistoryReader,
 } from "../handover/channels/commerce/index.js";
 import { PrismaHandoverProofReader } from "../handover/infrastructure/prisma-handover-proof.reader.js";
+import { PrismaOrderHandoverHistoryReader } from "../handover/infrastructure/prisma-order-handover-history.reader.js";
 import { PrismaAttestedHandoversReader } from "../handover/infrastructure/prisma-attested-handovers.reader.js";
 import { PrismaOrderCustodyReader } from "../handover/infrastructure/prisma-order-custody.reader.js";
 import {
@@ -44,6 +46,8 @@ import { ProductionModule } from "../production/production.module.js";
  * - `HandoverProofReader` (2026-10-02) — la **remise publie ET implémente**,
  *   le commerce lit : les preuves de remise à la porte, pour la fiche d'une
  *   commande. Même figure que `QualityHoldsReader`, dans l'autre sens.
+ * - `OrderHandoverHistoryReader` (2026-10-08) — même sens : le retrait de
+ *   chaque bon, pour le dossier de facturation de la comptabilité (DF3).
  *
  * 🔴 Aucun des trois contextes ne connaît les deux autres. C'est la racine de
  * composition qui sait, et elle seule — sans quoi la dépendance reviendrait par
@@ -67,6 +71,7 @@ import { ProductionModule } from "../production/production.module.js";
     { provide: AtelierSheetsReader, useClass: PrismaAtelierSheetsReader },
     { provide: OrderCustodyReader, useClass: PrismaOrderCustodyReader },
     { provide: HandoverProofReader, useClass: PrismaHandoverProofReader },
+    { provide: OrderHandoverHistoryReader, useClass: PrismaOrderHandoverHistoryReader },
   ],
   exports: [
     HandoverSubjectReader,
@@ -77,6 +82,7 @@ import { ProductionModule } from "../production/production.module.js";
     AtelierSheetsReader,
     OrderCustodyReader,
     HandoverProofReader,
+    OrderHandoverHistoryReader,
   ],
 })
 export class HandoverFeedModule {}

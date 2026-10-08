@@ -2,6 +2,11 @@
  * **Le canal que la livraison publie POUR le commerce** : des classes
  * abstraites qu'il implémente. `lint:context-boundaries` n'autorise
  * `b2b → delivery` que par ce chemin.
+ *
+ * Depuis le 2026-10-08, il porte aussi l'autre sens : `OrderDeliveryHistoryReader`
+ * est déclaré ET implémenté par la livraison, et lu par la comptabilité du
+ * commerce pour l'historique des bons (plan simulateur de dossier de
+ * facturation, DF3).
  */
 export {
   DepartureCandidatesReader,
@@ -51,3 +56,7 @@ export {
   DeliveryAddressPointCorrector,
   type DeliveryAddressPointCorrection,
 } from "./delivery-address-point.corrector.js";
+export {
+  OrderDeliveryHistoryReader,
+  type OrderDeliveryStopFact,
+} from "./order-delivery-history.reader.js";

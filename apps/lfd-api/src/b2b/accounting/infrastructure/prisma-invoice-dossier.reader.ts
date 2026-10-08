@@ -1,4 +1,8 @@
-import { lateFeeAdjustmentSchema, vatSharesSchema } from "@lfd/contracts";
+import {
+  billingAddressPayloadSchema,
+  lateFeeAdjustmentSchema,
+  vatSharesSchema,
+} from "@lfd/contracts";
 import { Injectable } from "@nestjs/common";
 
 import type { Prisma } from "../../../platform/database/client/client.js";
@@ -9,6 +13,7 @@ import {
 } from "../domain/ports/invoice-dossier.reader.js";
 import type { BillingCycle } from "../domain/services/billing-cycle.js";
 import type {
+  DossierOrderPlace,
   FrozenDeliveryVatMode,
   FrozenOrderVatShare,
 } from "../domain/services/invoice-dossier.types.js";
@@ -56,7 +61,11 @@ export class PrismaInvoiceDossierReader extends InvoiceDossierReader {
 }
 
 const DOSSIER_ORDER_SELECT = {
+  id: true,
   orderNumber: true,
+  fulfillmentMethod: true,
+  pickupAddress: true,
+  deliveryAddressSnapshot: true,
   createdAt: true,
   companyId: true,
   billedCompanyId: true,
@@ -87,6 +96,8 @@ type DossierOrderRow = Prisma.OrderGetPayload<{ select: typeof DOSSIER_ORDER_SEL
 
 function toDossierOrder(row: DossierOrderRow): InvoiceDossierOrder {
   return {
+    orderId: row.id,
+    place: placeOf(row),
     // Jamais vide : `billableOrderWhere` exige une société.
     companyId: row.companyId ?? "",
     billedCompanyId: row.billedCompanyId,
@@ -135,4 +146,27 @@ function parseLateFeeVatRate(value: Prisma.JsonValue | null): number | null {
 function parseVatShares(value: Prisma.JsonValue | null): readonly FrozenOrderVatShare[] | null {
   const parsed = vatSharesSchema.safeParse(value);
   return parsed.success ? parsed.data : null;
+}
+
+/**
+ * Le lieu figé du bon : le snapshot du point de retrait, ou l'adresse libre
+ * livrée. Lu avec indulgence — un snapshot illisible rend un lieu sans
+ * adresse, le dossier ne s'arrête pas pour un libellé.
+ */
+function placeOf(row: DossierOrderRow): DossierOrderPlace {
+  const method = row.fulfillmentMethod === "pickup" ? "pickup" : "delivery";
+  const parsed = billingAddressPayloadSchema.safeParse(
+    method === "pickup" ? row.pickupAddress : row.deliveryAddressSnapshot,
+  );
+  if (!parsed.success) {
+    return { method, label: null, address: null };
+  }
+  const address = parsed.data;
+  return {
+    method,
+    label: address.label === "" ? null : address.label,
+    address: [address.ligne1, address.ligne2, `${address.codePostal} ${address.ville}`]
+      .filter((part) => part !== "")
+      .join(", "),
+  };
 }

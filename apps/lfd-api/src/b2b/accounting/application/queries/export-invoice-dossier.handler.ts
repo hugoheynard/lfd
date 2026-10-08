@@ -1,5 +1,7 @@
 import { QueryHandler, type IQueryHandler } from "@nestjs/cqrs";
 
+import { OrderDeliveryHistoryReader } from "../../../../delivery/channels/commerce/index.js";
+import { OrderHandoverHistoryReader } from "../../../../handover/channels/commerce/index.js";
 import { Clock } from "../../../../platform/time/clock.js";
 import { InvoiceDossierReader } from "../../domain/ports/invoice-dossier.reader.js";
 import { StatementBillingReader } from "../../domain/ports/statement-billing.reader.js";
@@ -26,7 +28,7 @@ interface SheetRenderer {
 /** Une sortie, un rendu : une sortie de plus est une entrée de plus, pas une branche. */
 const SHEETS: Readonly<Record<InvoiceDossierSheet, SheetRenderer>> = {
   invoice: { prefix: "FACTURE-SIMULEE", render: (built, h) => invoiceCsv(built.dossier, h) },
-  orders: { prefix: "BONS", render: (built, h) => ordersCsv(built.orders, built.calendar, h) },
+  orders: { prefix: "BONS", render: (built, h) => ordersCsv(built.records, built.calendar, h) },
   gaps: { prefix: "ECARTS", render: (built, h) => gapsCsv(built.dossier, h) },
 };
 
@@ -43,12 +45,20 @@ export class ExportInvoiceDossierHandler implements IQueryHandler<
   constructor(
     private readonly dossiers: InvoiceDossierReader,
     private readonly billing: StatementBillingReader,
+    private readonly handovers: OrderHandoverHistoryReader,
+    private readonly deliveries: OrderDeliveryHistoryReader,
     private readonly clock: Clock,
   ) {}
 
   async execute(query: ExportInvoiceDossierQuery): Promise<InvoiceDossierFile> {
     const built = await buildInvoiceDossier(
-      { dossiers: this.dossiers, billing: this.billing, clock: this.clock },
+      {
+        dossiers: this.dossiers,
+        billing: this.billing,
+        handovers: this.handovers,
+        deliveries: this.deliveries,
+        clock: this.clock,
+      },
       query.companyId,
       query.month,
     );

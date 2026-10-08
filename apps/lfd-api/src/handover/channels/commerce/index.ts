@@ -12,6 +12,9 @@
  * - `HandoverProofReader` (2026-10-02) est un port qu'elle publie ET
  *   implémente : le commerce y lit les preuves de remise à la porte, sans
  *   toucher à leur table ni à leurs clés.
+ * - `OrderHandoverHistoryReader` (2026-10-08, plan simulateur de dossier de
+ *   facturation, DF3) : même sens — publié ET implémenté par le retrait, lu
+ *   par la comptabilité du commerce pour l'historique de chaque bon.
  *
  * Les deux sont de la surface, donc les deux vivent ici : un événement qu'un
  * autre bloc consomme fait partie de ce qui est publié, au même titre qu'un
@@ -36,6 +39,10 @@ export {
   type HandoverSubjectLine,
 } from "./handover-subject.reader.js";
 export { HandoverProofReader } from "./handover-proof.reader.js";
+export {
+  OrderHandoverHistoryReader,
+  type OrderHandoverHistoryFact,
+} from "./order-handover-history.reader.js";
 export type {
   HandoverProofExhibit,
   HandoverProofMode,

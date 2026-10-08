@@ -1,14 +1,18 @@
 import type { BillingCycle } from "../services/billing-cycle.js";
-import type { FrozenInvoiceOrder } from "../services/invoice-dossier.types.js";
+import type { DossierOrderPlace, FrozenInvoiceOrder } from "../services/invoice-dossier.types.js";
 
 /** Un bon du dossier, avec ce qu'il faut pour savoir qui le paie. */
 export interface InvoiceDossierOrder {
+  /** L'identifiant de la commande — la clé que le retrait et la livraison connaissent. */
+  readonly orderId: string;
   /** La société qui a commandé (`company_id`). */
   readonly companyId: string;
   /** Le payeur copié à la passation (S4), `null` pour une commande d'avant. */
   readonly billedCompanyId: string | null;
   /** Le bon tel que figé — `reference` est son `orderNumber`. */
   readonly order: FrozenInvoiceOrder;
+  /** Où le bon se retire ou se livre. */
+  readonly place: DossierOrderPlace;
 }
 
 /**

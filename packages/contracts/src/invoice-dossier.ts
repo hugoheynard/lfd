@@ -90,6 +90,31 @@ export interface InvoiceDossierOrderLineView {
   readonly lineTotalCents: number;
 }
 
+/** Le lieu d'un bon : retrait au labo, ou adresse livrée, figés à la passation. */
+export interface InvoiceDossierPlaceView {
+  readonly method: "pickup" | "delivery";
+  readonly label: string | null;
+  /** L'adresse sur une ligne ; `null` quand le bon n'en a figé aucune lisible. */
+  readonly address: string | null;
+}
+
+/**
+ * Un fait de la frise d'un bon (DF3). `handed_over` = retiré au comptoir ;
+ * `handed_over_at_door` = remis au client à la porte ; `deposited` = déposé
+ * sans personne ; `departed` = parti en tournée ; `brought_back` = rapporté ;
+ * `replaced` = remis dans une tournée après un retour.
+ */
+export interface InvoiceDossierHistoryEventView {
+  readonly kind:
+    "handed_over" | "handed_over_at_door" | "deposited" | "departed" | "brought_back" | "replaced";
+  /** ISO. */
+  readonly at: string;
+  /** `AAAA-MM-JJ` de la tournée, pour un fait de livraison. */
+  readonly serviceDay: string | null;
+  /** `scan`, `manual` ou `deposit`, pour un fait de retrait. */
+  readonly via: "scan" | "manual" | "deposit" | null;
+}
+
 /** Un bon du dossier, montants tels que figés. */
 export interface InvoiceDossierOrderView {
   /** Le numéro de commande. */
@@ -110,6 +135,14 @@ export interface InvoiceDossierOrderView {
   readonly vatShares: readonly VatShareView[] | null;
   readonly vatCents: number;
   readonly totalCents: number;
+  readonly place: InvoiceDossierPlaceView;
+  /** La frise retrait / livraison, du plus ancien au plus récent. */
+  readonly history: readonly InvoiceDossierHistoryEventView[];
+  /**
+   * Le jour de la tournée qui l'a livré à la porte — la date réelle d'un bon
+   * rapporté puis replacé. `null` au comptoir, ou pas encore livré.
+   */
+  readonly actualDeliveryDay: string | null;
 }
 
 /** Un bon dont le total figé ne se recompose pas à partir de ses montants. */
@@ -154,6 +187,8 @@ export interface InvoiceDossierView {
   readonly cycle: StatementCycleView;
   /** Le périmètre du relevé, en toutes lettres. */
   readonly scope: string;
+  /** Références des bons facturés sans AUCUN fait de retrait — à voir en premier. */
+  readonly neverHandedOver: readonly string[];
   readonly invoice: InvoiceDossierInvoiceView;
   readonly orders: readonly InvoiceDossierOrderView[];
   readonly ordersTotalCents: number;

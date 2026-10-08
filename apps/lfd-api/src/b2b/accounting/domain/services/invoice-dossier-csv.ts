@@ -1,6 +1,8 @@
 import { CSV_BOM, CSV_SEPARATOR, csvEuros, csvQuoted } from "./csv-cells.js";
 import { rateLabel, STATEMENT_SCOPE } from "./cycle-statement-csv.js";
 import type { DossierCalendarNotes } from "./invoice-dossier-calendar.js";
+import { historyCell, placeCell } from "./invoice-dossier-history-cells.js";
+import { neverHandedOver, type DossierOrderRecord } from "./invoice-dossier-history.js";
 import type { FrozenInvoiceOrder, InvoiceDossier } from "./invoice-dossier.types.js";
 
 /** Ce que l'en-tête de chaque fichier dit de lui-même. */
@@ -67,9 +69,9 @@ export function invoiceCsv(dossier: InvoiceDossier, heading: InvoiceDossierCsvHe
   return file(headingRows("Facture simulée", heading), rows);
 }
 
-/** Une ligne par bon, montants tels que figés, et ce que le calendrier en dit. */
+/** Une ligne par bon, montants tels que figés, son lieu, sa frise, et ce que le calendrier en dit. */
 export function ordersCsv(
-  orders: readonly FrozenInvoiceOrder[],
+  records: readonly DossierOrderRecord[],
   calendar: DossierCalendarNotes,
   heading: InvoiceDossierCsvHeading,
 ): string {
@@ -79,6 +81,8 @@ export function ordersCsv(
       "Référence",
       "Passation",
       "Livraison demandée",
+      "Livré le (tournée)",
+      "Lieu",
       "Marchandises HT (€)",
       "Remise HT (€)",
       "Bon de fidélité HT (€)",
@@ -87,12 +91,15 @@ export function ordersCsv(
       "TVA (€)",
       "TTC (€)",
       "Remarque",
+      "Historique retrait / livraison",
     ]),
-    ...orders.map((order) =>
+    ...records.map(({ order, place, history }) =>
       [
         csvQuoted(order.reference),
         csvQuoted(order.createdAt.toISOString()),
         csvQuoted(order.requestedDeliveryDate ?? ""),
+        csvQuoted(history.actualDeliveryDay ?? ""),
+        csvQuoted(placeCell(place)),
         csvEuros(order.lines.reduce((total, line) => total + line.lineTotalCents, 0)),
         csvEuros(order.discountCents),
         csvEuros(order.voucherDiscountCents),
@@ -101,10 +108,16 @@ export function ordersCsv(
         csvEuros(order.vatCents),
         csvEuros(order.totalCents),
         csvQuoted(remarkOf(order, otherMonth)),
+        csvQuoted(historyCell(history)),
       ].join(CSV_SEPARATOR),
     ),
   ];
-  return file(headingRows("Bons du dossier", heading), rows);
+  const unhanded = neverHandedOver(records);
+  const warning =
+    unhanded.length === 0
+      ? []
+      : [csvQuoted(`Facturés sans aucun fait de retrait : ${unhanded.join(", ")}`), ""];
+  return file(headingRows("Bons du dossier", heading), [...warning, ...rows]);
 }
 
 /** Les écarts, terme par terme, et leur somme. */

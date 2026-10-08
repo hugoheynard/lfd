@@ -1,3 +1,11 @@
+import {
+  OrderDeliveryHistoryReader,
+  type OrderDeliveryStopFact,
+} from "../../../../../delivery/channels/commerce/index.js";
+import {
+  OrderHandoverHistoryReader,
+  type OrderHandoverHistoryFact,
+} from "../../../../../handover/channels/commerce/index.js";
 import { FixedClock } from "../../../../../platform/time/fixed-clock.js";
 import { InvoiceDossierLateFeeRateMissingError } from "../../../domain/errors/invoice-dossier-errors.js";
 import {
@@ -73,6 +81,37 @@ class FixedBilling extends StatementBillingReader {
   }
 }
 
+/** Rend les retraits connus, et retient chaque lot demandé (une lecture par dossier). */
+class FixedHandovers extends OrderHandoverHistoryReader {
+  readonly asked: (readonly string[])[] = [];
+
+  constructor(private readonly facts: readonly OrderHandoverHistoryFact[] = []) {
+    super();
+  }
+
+  ofOrders(orderIds: readonly string[]): Promise<ReadonlyMap<string, OrderHandoverHistoryFact>> {
+    this.asked.push(orderIds);
+    return Promise.resolve(
+      new Map(
+        this.facts.filter((fact) => orderIds.includes(fact.orderId)).map((f) => [f.orderId, f]),
+      ),
+    );
+  }
+}
+
+class FixedStops extends OrderDeliveryHistoryReader {
+  readonly asked: (readonly string[])[] = [];
+
+  constructor(private readonly facts: readonly OrderDeliveryStopFact[] = []) {
+    super();
+  }
+
+  ofOrders(orderIds: readonly string[]): Promise<readonly OrderDeliveryStopFact[]> {
+    this.asked.push(orderIds);
+    return Promise.resolve(this.facts.filter((fact) => orderIds.includes(fact.orderId)));
+  }
+}
+
 /** Un bon d'une baguette à 1,00 € HT, 5,5 %, ventilé et cohérent. */
 function bon(
   reference: string,
@@ -110,8 +149,14 @@ function entry(
   companyId: string,
   order: FrozenInvoiceOrder,
   billedCompanyId: string | null = null,
-) {
-  return { companyId, billedCompanyId, order };
+): InvoiceDossierOrder {
+  return {
+    orderId: `id-${order.reference}`,
+    companyId,
+    billedCompanyId,
+    order,
+    place: { method: "pickup", label: "Labo", address: "1 rue du Four, 75001 Paris" },
+  };
 }
 
 const SITE_FOLLOW: BillingFollow = {
@@ -122,8 +167,13 @@ const SITE_FOLLOW: BillingFollow = {
   validTo: null,
 };
 
-function getHandler(reader: InvoiceDossierReader, billing = new FixedBilling()) {
-  return new GetInvoiceDossierHandler(reader, billing, new FixedClock(NOW));
+function getHandler(
+  reader: InvoiceDossierReader,
+  billing = new FixedBilling(),
+  handovers = new FixedHandovers(),
+  stops = new FixedStops(),
+) {
+  return new GetInvoiceDossierHandler(reader, billing, handovers, stops, new FixedClock(NOW));
 }
 
 describe("GetInvoiceDossierHandler", () => {
@@ -188,6 +238,71 @@ describe("GetInvoiceDossierHandler", () => {
     ).rejects.toBeInstanceOf(FutureStatementMonthError);
   });
 
+  it("lit l'historique de tous les bons en UN lot par bloc, et signale le bon jamais retiré", async () => {
+    const reader = new RecordingDossiers("Maison mère", [
+      entry("c1", bon("CMD-1", "2026-09-14")),
+      entry("c1", bon("CMD-2", "2026-09-15")),
+      entry("c1", bon("CMD-3", "2026-09-16")),
+    ]);
+    const handovers = new FixedHandovers([
+      {
+        orderId: "id-CMD-1",
+        handedOverAt: new Date("2026-09-14T07:30:00.000Z"),
+        via: "scan",
+        atDoor: false,
+      },
+      {
+        orderId: "id-CMD-2",
+        handedOverAt: new Date("2026-09-16T09:00:00.000Z"),
+        via: "manual",
+        atDoor: true,
+      },
+    ]);
+    // CMD-2 : rapporté le 15, replacé et livré le 16.
+    const stops = new FixedStops([
+      {
+        orderId: "id-CMD-2",
+        serviceDay: "2026-09-15",
+        placedAt: new Date("2026-09-14T15:00:00.000Z"),
+        departedAt: new Date("2026-09-15T06:00:00.000Z"),
+        closedAt: new Date("2026-09-15T08:00:00.000Z"),
+        broughtBackAt: new Date("2026-09-15T08:00:00.000Z"),
+      },
+      {
+        orderId: "id-CMD-2",
+        serviceDay: "2026-09-16",
+        placedAt: new Date("2026-09-15T14:00:00.000Z"),
+        departedAt: new Date("2026-09-16T06:00:00.000Z"),
+        closedAt: new Date("2026-09-16T09:00:00.000Z"),
+        broughtBackAt: null,
+      },
+    ]);
+    const view = await getHandler(reader, new FixedBilling(), handovers, stops).execute(
+      new GetInvoiceDossierQuery("c1", "2026-09"),
+    );
+
+    expect(handovers.asked).toEqual([["id-CMD-1", "id-CMD-2", "id-CMD-3"]]);
+    expect(stops.asked).toEqual([["id-CMD-1", "id-CMD-2", "id-CMD-3"]]);
+    expect(view.neverHandedOver).toEqual(["CMD-3"]);
+    expect(view.orders[0]?.history).toEqual([
+      { kind: "handed_over", at: "2026-09-14T07:30:00.000Z", serviceDay: null, via: "scan" },
+    ]);
+    expect(view.orders[0]?.place).toEqual({
+      method: "pickup",
+      label: "Labo",
+      address: "1 rue du Four, 75001 Paris",
+    });
+    expect(view.orders[1]?.history.map((event) => event.kind)).toEqual([
+      "departed",
+      "brought_back",
+      "replaced",
+      "departed",
+      "handed_over_at_door",
+    ]);
+    expect(view.orders[1]?.actualDeliveryDay).toBe("2026-09-16");
+    expect(view.orders[2]?.history).toEqual([]);
+  });
+
   it("arrête le dossier sur une surtaxe sans taux, en nommant le bon", async () => {
     const reader = new RecordingDossiers("Maison mère", [
       entry("c1", bon("CMD-7", "2026-09-14", { lateFeeCents: 50, totalCents: 156 })),
@@ -203,7 +318,20 @@ describe("ExportInvoiceDossierHandler", () => {
     entry("c1", bon("CMD-1", "2026-09-14")),
     entry("c1", bon("CMD-2", null)),
   ]);
-  const handler = new ExportInvoiceDossierHandler(reader, new FixedBilling(), new FixedClock(NOW));
+  const handler = new ExportInvoiceDossierHandler(
+    reader,
+    new FixedBilling(),
+    new FixedHandovers([
+      {
+        orderId: "id-CMD-1",
+        handedOverAt: new Date("2026-09-14T07:30:00.000Z"),
+        via: "scan",
+        atDoor: false,
+      },
+    ]),
+    new FixedStops(),
+    new FixedClock(NOW),
+  );
 
   it("rend la facture en CSV, euros à la virgule, et la nomme simulée", async () => {
     const file = await handler.execute(new ExportInvoiceDossierQuery("c1", "2026-09", "invoice"));
@@ -218,6 +346,9 @@ describe("ExportInvoiceDossierHandler", () => {
 
     expect(file.fileName).toBe("DOSSIER-BONS-Maison mère-2026-09.csv");
     expect(file.csv).toContain('"sans date demandée"');
+    expect(file.csv).toContain('"Facturés sans aucun fait de retrait : CMD-2"');
+    expect(file.csv).toContain('"Retrait — Labo, 1 rue du Four, 75001 Paris"');
+    expect(file.csv).toContain('"retiré au comptoir 2026-09-14T07:30:00.000Z (scan)"');
   });
 
   it("rend les écarts, et leur somme", async () => {
