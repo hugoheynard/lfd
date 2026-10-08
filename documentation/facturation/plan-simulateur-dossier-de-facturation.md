@@ -7,8 +7,10 @@
 > et ses trois CSV, sur `InvoiceDossierReader` ; les bons incohérents sont
 > signalés (§ 3.6).
 > 🟡 **DF3 bâti le 2026-10-08** : l'historique par bon, le lieu, et les bons
-> jamais retirés signalés en tête (`neverHandedOver`) — choix au § 3.7. DF4
-> reste à faire.
+> jamais retirés signalés en tête (`neverHandedOver`) — choix au § 3.7.
+> ✅ **DF4 bâti le 2026-10-08 — le simulateur est bâti** : l'écran
+> Comptabilité › « Dossier de facturation » (`/comptabilite/dossier-de-facturation`,
+> `apps/lfd-backoffice-frontend/src/app/comptabilite/invoice-dossier/`) — choix au § 3.8.
 >
 > 📐 **Plan v3** (2026-10-08). Touche **l'argent** : contredit
 > deux fois par `vitruve` le 2026-10-08 (v1 : trois BLOQUANTS, v2 : quatre),
@@ -258,6 +260,20 @@ lateFeeCents + vatCents` (remise plafonnée à la passation, ou autre) est
   « Historique retrait / livraison », et une ligne d'en-tête qui nomme les bons
   sans aucun fait de retrait.
 
+### 3.8 Ce que DF4 a tranché en bâtissant (2026-10-08)
+
+- **Les sociétés proposées** sont celles au crédit mensuel (la liste des
+  blocages du prélèvement, `admin/accounting/direct-debit-blocks`, sous
+  `b2b_accounting:read`) : le dossier vise les payeurs au compte, et la liste
+  de tous les comptes relève de `b2b_companies:read`. Une société sortie du
+  crédit mensuel n'y figure plus, même si un ancien cycle en porte des bons.
+- **Les cycles** sont ceux du relevé (`admin/accounting/statements/cycles`).
+- **L'ordre de l'écran** : signalements (et le périmètre), la facture et sa
+  ventilation par taux, les écarts avec leurs formules, les bons et leur frise
+  repliée. Un 409 affiche le message du serveur tel quel.
+- **L'écran ne calcule rien**, sauf la colonne « Lignes HT » d'un bon : Σ de
+  ses `lineTotalCents` figés, que le contrat n'expose pas en un champ.
+
 ## 4. Les frontières
 
 - **Le calcul** est un service de domaine pur du contexte comptable
@@ -307,8 +323,8 @@ même temps que le prélèvement.
 - **Facturer au mois de livraison** (§ 5), en même temps que le prélèvement.
 - ~~**Bâtir le choix de la TVA de la livraison**~~ — bâti côté serveur le
   2026-10-08 (`plan-tva-des-frais-de-port.md`) : le mode est figé sur chaque
-  commande, et le simulateur le lit (§ 3.1). Reste l'écran Comptabilité ›
-  « TVA de la livraison ».
+  commande, et le simulateur le lit (§ 3.1). L'écran Comptabilité › « TVA de la livraison » existe aussi
+  (`comptabilite/order-delivery-vat/`).
 - **Prélever le total de la facture**, pas la somme des bons (D4) : le
   prélèvement (`plan-lot-de-prelevement-fige.md`) et le relevé devront lire
   la facture le jour où elle existera. Le simulateur ne prélève rien ; il
@@ -330,7 +346,7 @@ même temps que le prélèvement.
 | **DF1** ✅ 2026-10-08 | `invoiceVatBreakdown` dans `@lfd/money` (plus forts restes, TVA sur base arrondie) ; le service de domaine : clé normalisée, lignes en une fois, remises par nature, frais par taux, les trois écarts. Tests chiffrés : un changement de tarif, un changement de taux, des bons sans `vatShares`, une surtaxe sans taux (échec), et **total facture − Σ `totalCents` = Σ des trois écarts**, au centime. |
 | **DF2** ✅ 2026-10-08 | Lecture : `InvoiceDossierReader` (le critère du relevé, lignes figées, date demandée), la query, la route sous `b2b_accounting:read`, un CSV par sortie.                                                                                                                                                                                                                                                 |
 | **DF3** ✅ 2026-10-08 | L'historique : un lecteur déclaré et implémenté par `handover`, un par `delivery`, reliés dans `appBootstrap` ; le commentaire de la porte et le CLAUDE.md disent les deux sens de ces canaux.                                                                                                                                                                                                           |
-| **DF4**               | L'écran Comptabilité › Dossier de facturation.                                                                                                                                                                                                                                                                                                                                                           |
+| **DF4** ✅ 2026-10-08 | L'écran Comptabilité › Dossier de facturation.                                                                                                                                                                                                                                                                                                                                                           |
 
 ## 8. Ce que `vitruve` a relevé (v1 et v2, 2026-10-08)
 

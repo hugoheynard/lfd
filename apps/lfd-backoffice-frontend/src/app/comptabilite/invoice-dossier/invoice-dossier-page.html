@@ -1,0 +1,110 @@
+<fold-card>
+  <fold-element-title
+    cardHeader
+    variant="title"
+    icon="receipt"
+    title="Dossier de facturation"
+    subtitle="La facture d’un payeur pour un cycle, calculée en une fois, à côté des bons qu’elle couvre et des écarts qui les séparent. Simulée : rien n’est émis ni prélevé sur sa base."
+  />
+
+  <div class="choose">
+    @if (choicesFailed()) {
+      <fold-empty-state tone="alert" title="Impossible de lire les sociétés et les cycles">
+        <button foldButton (click)="loadChoices()">Réessayer</button>
+      </fold-empty-state>
+    } @else {
+      <div class="pickers">
+        <fold-listbox
+          label="Société"
+          placeholder="Choisir un payeur au compte"
+          hint="Les sociétés au crédit mensuel."
+          [options]="companyChoices()"
+          [value]="companyId()"
+          (selectionChange)="onCompany($event)"
+          data-dossier-company
+        />
+        <fold-listbox
+          label="Cycle"
+          hint="Les bons passés dans le mois, comme au relevé et au prélèvement."
+          [options]="cycleChoices()"
+          [value]="month()"
+          (selectionChange)="onMonth($event)"
+          data-dossier-cycle
+        />
+      </div>
+      @if (state() === 'ready') {
+        <div class="downloads" data-dossier-downloads>
+          @for (entry of sheets; track entry.sheet) {
+            <button
+              foldButton
+              size="sm"
+              emphasis="outline"
+              icon="download"
+              [loading]="exporting() === entry.sheet"
+              [disabled]="exporting() !== null"
+              (click)="download(entry.sheet)"
+            >
+              {{ entry.label }} (CSV)
+            </button>
+          }
+        </div>
+      }
+    }
+  </div>
+</fold-card>
+
+@switch (state()) {
+  @case ('idle') {
+    <fold-empty-state
+      title="Choisissez une société"
+      subtitle="Le dossier se calcule pour un payeur et un cycle."
+      icon="search"
+    />
+  }
+  @case ('loading') {
+    <fold-loading message="Calcul du dossier…" />
+  }
+  @case ('not-found') {
+    <fold-empty-state
+      tone="alert"
+      title="Société introuvable"
+      subtitle="Elle n’existe pas, ou plus. Choisissez-en une autre dans la liste."
+    />
+  }
+  @case ('conflict') {
+    <fold-empty-state
+      tone="alert"
+      title="Un bon empêche le calcul du dossier"
+      [subtitle]="conflict()"
+      data-dossier-conflict
+    >
+      <button foldButton (click)="load()">Recalculer</button>
+    </fold-empty-state>
+  }
+  @case ('error') {
+    <fold-empty-state
+      tone="alert"
+      title="Impossible de calculer le dossier"
+      subtitle="La lecture a échoué — les bons, eux, sont intacts."
+    >
+      <button foldButton (click)="load()">Réessayer</button>
+    </fold-empty-state>
+  }
+  @case ('ready') {
+    @if (dossier(); as dossier) {
+      @if (dossier.orders.length === 0) {
+        <fold-empty-state
+          title="Aucun bon sur ce cycle"
+          subtitle="Aucune commande au compte n’a été passée ce mois-là : il n’y a rien à facturer."
+        >
+          <fold-icon empty-icon name="inbox" />
+        </fold-empty-state>
+      } @else {
+        <app-dossier-alerts [dossier]="dossier" />
+        <app-dossier-invoice [dossier]="dossier" />
+        <app-dossier-gaps [dossier]="dossier" />
+        <app-dossier-orders [dossier]="dossier" />
+      }
+    }
+  }
+}

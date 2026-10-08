@@ -1,0 +1,81 @@
+@let d = dossier();
+<fold-card>
+  <fold-element-title
+    cardHeader
+    variant="title"
+    title="Les bons"
+    [subtitle]="
+      count(d.orders.length) +
+      ' · Σ ' +
+      euros(d.ordersTotalCents) +
+      ' TTC, montants tels que figés à la passation'
+    "
+  />
+
+  <div class="body">
+    <fold-data-table
+      caption="Bons du dossier"
+      narrowLayout="cards"
+      zebra
+      [columns]="columns"
+      [rows]="d.orders"
+      [rowKey]="rowKey"
+      data-dossier-orders
+    >
+      <ng-template foldCell="reference" let-row>
+        <span class="stack">
+          <span class="num">{{ row.reference }}</span>
+          @if (row.vatShares === null) {
+            <fold-badge variant="neutral" content="TVA non ventilée" />
+          }
+        </span>
+      </ng-template>
+      <ng-template foldCell="placed" let-row>{{ instant(row.placedAt) }}</ng-template>
+      <ng-template foldCell="delivery" let-row>
+        <span class="stack">
+          <span>
+            demandée&nbsp;:
+            {{ row.requestedDeliveryDate === null ? 'sans date' : day(row.requestedDeliveryDate) }}
+          </span>
+          @if (row.actualDeliveryDay !== null) {
+            <span class="muted">livrée&nbsp;: {{ day(row.actualDeliveryDay) }}</span>
+          }
+        </span>
+      </ng-template>
+      <ng-template foldCell="place" let-row>{{ place(row.place) }}</ng-template>
+      <ng-template foldCell="ht" let-row>{{ euros(linesHt(row)) }}</ng-template>
+      <ng-template foldCell="discounts" let-row>
+        {{ euros(row.discountCents + row.voucherDiscountCents) }}
+      </ng-template>
+      <ng-template foldCell="fees" let-row>
+        {{ euros(row.deliveryFeeCents + row.lateFeeCents) }}
+      </ng-template>
+      <ng-template foldCell="vat" let-row>{{ euros(row.vatCents) }}</ng-template>
+      <ng-template foldCell="total" let-row>{{ euros(row.totalCents) }}</ng-template>
+    </fold-data-table>
+
+    <section class="history" aria-labelledby="dossier-history">
+      <h3 id="dossier-history" class="history-title">Historique retrait / livraison</h3>
+      @for (order of d.orders; track order.reference) {
+        <fold-disclosure [attr.data-dossier-history]="order.reference">
+          <span summary class="num">
+            {{ order.reference }} —
+            @if (order.history.length === 0) {
+              aucun fait de retrait
+            } @else {
+              {{ order.history.length }} fait{{ order.history.length > 1 ? 's' : '' }}
+            }
+          </span>
+          @if (order.history.length === 0) {
+            <p class="muted">Ni retiré au comptoir, ni parti en tournée.</p>
+          } @else {
+            <fold-timeline
+              [nodes]="nodes(order)"
+              [ariaLabel]="'Historique du bon ' + order.reference"
+            />
+          }
+        </fold-disclosure>
+      }
+    </section>
+  </div>
+</fold-card>

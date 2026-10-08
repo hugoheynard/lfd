@@ -1,0 +1,32 @@
+.body,
+.history {
+  display: flex;
+  flex-direction: column;
+  gap: var(--fold-space-md);
+}
+
+.history {
+  gap: var(--fold-space-xs);
+}
+
+.history-title {
+  margin: 0;
+  font-size: var(--fold-text-md);
+}
+
+.stack {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: var(--fold-space-xs);
+}
+
+.num {
+  font-variant-numeric: tabular-nums;
+}
+
+.muted {
+  margin: 0;
+  font-size: var(--fold-text-sm);
+  color: var(--fold-color-text-muted);
+}

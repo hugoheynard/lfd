@@ -1,0 +1,96 @@
+@let d = dossier();
+@let gaps = d.gaps;
+<fold-card>
+  <fold-element-title
+    cardHeader
+    variant="title"
+    title="Les écarts"
+    subtitle="Ce que le client paierait de plus ou de moins que la somme de ses bons, terme par terme."
+  />
+
+  <div class="body" data-dossier-gaps>
+    <section class="term">
+      <h3 class="term-title">Arrondi des lignes</h3>
+      <p class="formula">
+        Montant HT de la ligne de facture − Σ des montants de cette ligne sur les bons.
+      </p>
+      <dl class="calc">
+        @for (gap of lineGaps(); track $index) {
+          <dt>{{ lineLabel(gap) }}</dt>
+          <dd>{{ signed(gap.gapCents) }}</dd>
+        }
+        <dt class="total">Arrondi des lignes</dt>
+        <dd class="total">{{ signed(gaps.lineRoundingCents) }}</dd>
+      </dl>
+    </section>
+
+    <section class="term">
+      <h3 class="term-title">Arrondi de la TVA</h3>
+      <p class="formula">
+        TVA du taux sur la facture (port ventilé compris, bons ventilés seulement) − Σ des parts de
+        TVA figées sur les bons à ce taux.
+      </p>
+      <dl class="calc">
+        @for (gap of vatGaps(); track gap.rate) {
+          <dt>
+            TVA {{ rate(gap.rate) }}&nbsp;: {{ euros(gap.invoiceVatCents) }} −
+            {{ euros(gap.ordersVatCents) }}
+          </dt>
+          <dd>{{ signed(gap.gapCents) }}</dd>
+        }
+        <dt class="total">Arrondi de la TVA</dt>
+        <dd class="total">{{ signed(gaps.vatRoundingCents) }}</dd>
+      </dl>
+    </section>
+
+    <section class="term">
+      <h3 class="term-title">TVA non ventilée</h3>
+      <p class="formula">
+        TVA d’une facture calculée sur les seuls bons d’avant le 7 septembre 2026 − leur TVA figée,
+        sans taux.
+      </p>
+      <dl class="calc">
+        <dt>
+          {{ euros(gaps.unventilatedVat.invoiceVatCents) }} −
+          {{ euros(gaps.unventilatedVat.ordersVatCents) }}
+        </dt>
+        <dd class="total-plain">{{ signed(gaps.unventilatedVat.gapCents) }}</dd>
+      </dl>
+    </section>
+
+    @if (gaps.inconsistentOrdersCents !== 0 || d.inconsistentOrders.length > 0) {
+      <section class="term">
+        <h3 class="term-title">Bon incohérent</h3>
+        <p class="formula">
+          Total recomposé (Σ lignes − remises + livraison + surtaxe + TVA) − total figé, pour chaque
+          bon qui ne se recompose pas.
+        </p>
+        <dl class="calc">
+          @for (order of d.inconsistentOrders; track order.reference) {
+            <dt>
+              {{ order.reference }}&nbsp;: {{ euros(order.recomposedTotalCents) }} −
+              {{ euros(order.totalCents) }}
+            </dt>
+            <dd>{{ signed(order.gapCents) }}</dd>
+          }
+          <dt class="total">Bon incohérent</dt>
+          <dd class="total">{{ signed(gaps.inconsistentOrdersCents) }}</dd>
+        </dl>
+      </section>
+    }
+
+    <section class="term sum">
+      <h3 class="term-title">La somme</h3>
+      <dl class="calc">
+        <dt>Total de la facture</dt>
+        <dd>{{ euros(d.invoice.totalCents) }}</dd>
+        <dt>− Σ des totaux des bons</dt>
+        <dd>{{ euros(d.ordersTotalCents) }}</dd>
+        <dt class="total">= Différence</dt>
+        <dd class="total" data-dossier-difference>{{ signed(d.differenceCents) }}</dd>
+        <dt>Σ des écarts ci-dessus</dt>
+        <dd data-dossier-gaps-total>{{ signed(gaps.totalCents) }}</dd>
+      </dl>
+    </section>
+  </div>
+</fold-card>

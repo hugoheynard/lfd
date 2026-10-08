@@ -1,0 +1,98 @@
+@let d = dossier();
+<section class="alerts" aria-label="Signalements" data-dossier-alerts>
+  <fold-callout variant="neutral" appearance="inset">{{ d.scope }}</fold-callout>
+
+  @if (!any()) {
+    <fold-callout variant="success" data-dossier-all-clear>
+      Rien à signaler&nbsp;: tous les bons ont été retirés, se recomposent, et sont livrés dans le
+      mois de leur passation.
+    </fold-callout>
+  }
+
+  @if (d.neverHandedOver.length > 0) {
+    <fold-callout variant="alert" data-dossier-never-handed-over>
+      <strong
+        >{{ count(d.neverHandedOver.length) }} jamais retiré{{
+          d.neverHandedOver.length > 1 ? 's' : ''
+        }}</strong
+      >
+      — facturé{{ d.neverHandedOver.length > 1 ? 's' : '' }} sans aucun fait de retrait ni de
+      livraison&nbsp;:
+      <span class="refs">{{ d.neverHandedOver.join(', ') }}</span>
+    </fold-callout>
+  }
+
+  @if (d.inconsistentOrders.length > 0) {
+    <fold-callout variant="alert" data-dossier-inconsistent>
+      <div class="block">
+        <span>
+          <strong
+            >{{ count(d.inconsistentOrders.length) }} incohérent{{
+              d.inconsistentOrders.length > 1 ? 's' : ''
+            }}</strong
+          >
+          — le total figé ne se recompose pas à partir des lignes, remises, frais et TVA du bon.
+        </span>
+        <ul class="list">
+          @for (order of d.inconsistentOrders; track order.reference) {
+            <li>
+              <span class="refs">{{ order.reference }}</span
+              >&nbsp;: écart
+              <span class="num">{{ signed(order.gapCents) }}</span>
+            </li>
+          }
+        </ul>
+      </div>
+    </fold-callout>
+  }
+
+  @if (!d.threeGapInvariantHolds) {
+    <fold-callout variant="warning" data-dossier-invariant>
+      Les trois écarts (arrondi des lignes, arrondi de la TVA, TVA non ventilée) ne suffisent plus à
+      expliquer la différence&nbsp;: un quatrième terme, «&nbsp;bon incohérent&nbsp;», la complète.
+    </fold-callout>
+  }
+
+  @if (d.otherMonthOrders.length > 0) {
+    <fold-callout variant="warning" data-dossier-other-month>
+      <div class="block">
+        <span>
+          <strong
+            >{{ count(d.otherMonthOrders.length) }} livré{{
+              d.otherMonthOrders.length > 1 ? 's' : ''
+            }}
+            un autre mois</strong
+          >
+          — passé{{ d.otherMonthOrders.length > 1 ? 's' : '' }} dans ce cycle, donc dans ce dossier.
+        </span>
+        <ul class="list">
+          @for (order of d.otherMonthOrders; track order.reference) {
+            <li>
+              <span class="refs">{{ order.reference }}</span
+              >&nbsp;: livraison demandée le {{ day(order.requestedDeliveryDate) }} ({{
+                monthOfDay(order.requestedDeliveryDate)
+              }})
+            </li>
+          }
+        </ul>
+      </div>
+    </fold-callout>
+  }
+
+  @if (d.ordersWithoutDate.length > 0) {
+    <fold-callout variant="warning" data-dossier-without-date>
+      <strong>{{ count(d.ordersWithoutDate.length) }} sans date de livraison</strong>
+      — prélevé{{ d.ordersWithoutDate.length > 1 ? 's' : '' }} sans qu’aucun mois de livraison ne
+      les porte&nbsp;:
+      <span class="refs">{{ d.ordersWithoutDate.join(', ') }}</span>
+    </fold-callout>
+  }
+
+  @if (legacyDelivery().length > 0) {
+    <fold-callout variant="info" data-dossier-legacy-delivery>
+      {{ count(legacyDelivery().length) }} d’avant le réglage de la TVA de la livraison&nbsp;: leur
+      port est lu au taux normal (20&nbsp;%), comme ils l’ont facturé —
+      <span class="refs">{{ legacyDelivery().join(', ') }}</span>
+    </fold-callout>
+  }
+</section>

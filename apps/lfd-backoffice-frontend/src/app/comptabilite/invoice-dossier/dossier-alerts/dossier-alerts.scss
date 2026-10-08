@@ -1,0 +1,21 @@
+.alerts {
+  display: flex;
+  flex-direction: column;
+  gap: var(--fold-space-sm);
+}
+
+.block {
+  display: flex;
+  flex-direction: column;
+  gap: var(--fold-space-xs);
+}
+
+.list {
+  margin: 0;
+  padding-inline-start: var(--fold-space-lg);
+}
+
+.refs,
+.num {
+  font-variant-numeric: tabular-nums;
+}

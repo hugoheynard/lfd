@@ -748,6 +748,15 @@ export const COMPTABILITE_VIEWS: readonly WorkspaceView[] = [
     icon: 'tax',
     needs: 'b2b_accounting:read',
   },
+  {
+    // Le simulateur : la facture d'un payeur, ses bons et leurs écarts (plan
+    // `plan-simulateur-dossier-de-facturation.md`, DF4).
+    key: 'dossier-de-facturation',
+    label: 'Dossier de facturation',
+    link: '/comptabilite/dossier-de-facturation',
+    icon: 'receipt',
+    needs: 'b2b_accounting:read',
+  },
 ];
 
 /**

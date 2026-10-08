@@ -117,6 +117,16 @@ export const comptabiliteRoutes: Routes = [
           ),
       },
       {
+        // Le dossier de facturation SIMULÉ d'un payeur pour un cycle : la
+        // facture en une fois, les bons, les écarts. Sous `b2b_accounting`,
+        // comme la coquille ; la route serveur n'admet que ce droit.
+        // Plan : documentation/facturation/plan-simulateur-dossier-de-facturation.md (DF4).
+        path: 'dossier-de-facturation',
+        title: 'Dossier de facturation — LFC B2B admin',
+        loadComponent: () =>
+          import('./invoice-dossier/invoice-dossier-page').then((m) => m.InvoiceDossierPage),
+      },
+      {
         // La FICHE d'une entité — tout ce qui se règle sur un émetteur. Elle
         // n'a pas de garde propre pour la raison écrite en tête de fichier :
         // elle parle de la même ressource que la liste dont elle vient.

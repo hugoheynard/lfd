@@ -1,0 +1,118 @@
+@let d = dossier();
+@let vat = d.invoice.vat;
+<fold-card>
+  <fold-element-title
+    cardHeader
+    variant="title"
+    icon="receipt"
+    title="La facture"
+    subtitle="Une ligne par produit et par prix : montant HT = arrondi(quantité × prix unitaire), une seule fois, sur tout le cycle."
+  />
+
+  <div class="body">
+    <fold-data-table
+      caption="Lignes de la facture"
+      narrowLayout="cards"
+      zebra
+      [columns]="columns"
+      [rows]="d.invoice.lines"
+      [rowKey]="rowKey"
+      data-dossier-lines
+    >
+      <ng-template foldCell="label" let-row>
+        <span class="label">
+          <span>{{ row.label }}</span>
+          <span class="muted">{{ row.sku }}</span>
+          @if (row.otherLabels.length > 0) {
+            <span class="muted"
+              >vendu aussi sous «&nbsp;{{ row.otherLabels.join(' », « ') }}&nbsp;»</span
+            >
+          }
+        </span>
+      </ng-template>
+      <ng-template foldCell="period" let-row>{{ period(row) }}</ng-template>
+      <ng-template foldCell="rate" let-row>{{ rate(row.vatRate) }}</ng-template>
+      <ng-template foldCell="quantity" let-row>{{ row.quantity }}</ng-template>
+      <ng-template foldCell="unit" let-row>{{ unitPrice(row.unitPriceMillicents) }}</ng-template>
+      <ng-template foldCell="amount" let-row>{{ euros(row.amountCents) }}</ng-template>
+    </fold-data-table>
+
+    <div class="columns">
+      <section class="sheet" aria-labelledby="dossier-extras">
+        <h3 id="dossier-extras" class="sheet-title">Remises et frais</h3>
+        <dl class="calc">
+          <dt>Marchandises HT (Σ des lignes)</dt>
+          <dd>{{ euros(vat.goodsHtCents) }}</dd>
+          @if (d.invoice.companyDiscountCents > 0) {
+            <dt>− Remise société</dt>
+            <dd>{{ euros(d.invoice.companyDiscountCents) }}</dd>
+          }
+          @if (d.invoice.voucherDiscountCents > 0) {
+            <dt>− Bon de fidélité</dt>
+            <dd>{{ euros(d.invoice.voucherDiscountCents) }}</dd>
+          }
+          @for (delivery of d.invoice.deliveries; track delivery.mode) {
+            <dt>+ Livraison — {{ deliveryMode(delivery.mode) }}</dt>
+            <dd>{{ euros(delivery.amountCents) }}</dd>
+          }
+          @if (d.invoice.lateFeeCents > 0) {
+            <dt>+ Surtaxe de retard</dt>
+            <dd>{{ euros(d.invoice.lateFeeCents) }}</dd>
+          }
+          <dt class="total">Total HT</dt>
+          <dd class="total">{{ euros(vat.taxableBaseCents) }}</dd>
+        </dl>
+        <p class="note">
+          Les remises et les frais sont la somme exacte des montants figés sur les bons. Un bon
+          d’avant le réglage de la TVA de la livraison est lu au taux normal, comme il a facturé.
+        </p>
+      </section>
+
+      <section class="sheet" aria-labelledby="dossier-totals">
+        <h3 id="dossier-totals" class="sheet-title">Totaux</h3>
+        <dl class="calc">
+          <dt>Total HT</dt>
+          <dd>{{ euros(vat.taxableBaseCents) }}</dd>
+          <dt>Total TVA (Σ des taux)</dt>
+          <dd>{{ euros(vat.vatCents) }}</dd>
+          <dt class="total ttc">Total TTC</dt>
+          <dd class="total ttc" data-dossier-invoice-total>{{ euros(d.invoice.totalCents) }}</dd>
+        </dl>
+      </section>
+    </div>
+
+    <section class="vat" aria-labelledby="dossier-vat">
+      <h3 id="dossier-vat" class="sheet-title">Ventilation par taux</h3>
+      <p class="note">
+        Les remises sont réparties sur les taux au prorata des marchandises, au centime, aux plus
+        forts restes. La TVA d’un taux se calcule sur sa base imposable arrondie, puis s’arrondit au
+        centime.
+      </p>
+      <div class="columns">
+        @for (category of vat.categories; track category.rate) {
+          <section class="sheet" [attr.aria-label]="'TVA ' + rate(category.rate)">
+            <h4 class="sheet-title">TVA {{ rate(category.rate) }}</h4>
+            <dl class="calc">
+              <dt>Marchandises HT</dt>
+              <dd>{{ euros(category.goodsHtCents) }}</dd>
+              @for (allowance of category.allowances; track allowance.key) {
+                <dt>− {{ part(allowance.key) }}</dt>
+                <dd>{{ euros(allowance.amountCents) }}</dd>
+              }
+              @for (charge of category.charges; track charge.key) {
+                <dt>+ {{ part(charge.key) }}</dt>
+                <dd>{{ euros(charge.amountCents) }}</dd>
+              }
+              <dt class="total">Base imposable</dt>
+              <dd class="total">{{ euros(category.taxableBaseCents) }}</dd>
+              <dt class="strong">
+                TVA = {{ euros(category.taxableBaseCents) }} × {{ rate(category.rate) }}
+              </dt>
+              <dd class="strong">{{ euros(category.vatCents) }}</dd>
+            </dl>
+          </section>
+        }
+      </div>
+    </section>
+  </div>
+</fold-card>

@@ -9,9 +9,9 @@ sont conformes.
 
 ## Ce qui fait foi
 
-| Doc                                                                                      | État                                                                                                                                              |
-| ---------------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------- |
-| [`plan-simulateur-dossier-de-facturation.md`](plan-simulateur-dossier-de-facturation.md) | 📐 plan v3 — le dossier d'un payeur sur un cycle : facture simulée (une ligne par produit et par prix, datée), bons, historique, écarts d'arrondi |
+| Doc                                                                                      | État                                                                                                                                                                                                                                                       |
+| ---------------------------------------------------------------------------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| [`plan-simulateur-dossier-de-facturation.md`](plan-simulateur-dossier-de-facturation.md) | ✅ bâti le 2026-10-08 (DF1-DF4 : calcul, route et CSV, historique, écran Comptabilité › « Dossier de facturation ») — le dossier d'un payeur sur un cycle : facture simulée (une ligne par produit et par prix, datée), bons, historique, écarts d'arrondi |
 
 ## Ce qui existe ailleurs, et qu'il ne faut pas réécrire
 
