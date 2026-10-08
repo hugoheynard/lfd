@@ -1,0 +1,64 @@
+<fold-card>
+  <div class="pb-stack">
+    <fold-element-title variant="title" [title]="title()">
+      @if (batch().depositable) {
+        <fold-badge titleAction variant="info" content="À déposer" />
+      } @else {
+        <fold-badge titleAction variant="alert" content="Non déposable" />
+      }
+    </fold-element-title>
+
+    <fold-field-list>
+      <fold-field label="Date du prélèvement">{{ collectionDay() }}</fold-field>
+      <fold-field label="Déposer à la banque">{{ depositDeadline() }}</fold-field>
+      <fold-field label="Montant">
+        <strong class="pb-amount">{{ total() }}</strong>
+      </fold-field>
+      <fold-field label="Payeurs · bons"
+        >{{ batch().lineCount }} · {{ batch().orderCount }}</fold-field
+      >
+    </fold-field-list>
+
+    @if (batch().unmandatedCompanies.length > 0) {
+      <fold-callout appearance="inset" variant="alert" data-unmandated>
+        <strong>Non déposable — sans mandat prélevable&nbsp;:</strong>
+        {{ batch().unmandatedCompanies.join(', ') }}. Faire signer le mandat (ou régler autrement),
+        puis annuler le lot et le préparer de nouveau.
+      </fold-callout>
+    }
+
+    @if (batch().lines.length > 0) {
+      <app-batch-lines [batch]="batch()" />
+    }
+
+    <div class="pb-actions">
+      <button foldButton size="sm" emphasis="outline" icon="download" (click)="gesture.emit('xml')">
+        Fichier
+      </button>
+      <button foldButton size="sm" emphasis="outline" icon="download" (click)="gesture.emit('csv')">
+        Contrôle CSV
+      </button>
+      @if (canWrite()) {
+        <button
+          foldButton
+          size="sm"
+          [disabled]="!batch().depositable"
+          [loading]="pending()"
+          (click)="gesture.emit('deposit')"
+        >
+          Marquer déposé
+        </button>
+        <button
+          foldButton
+          size="sm"
+          emphasis="outline"
+          intent="neutral"
+          [loading]="pending()"
+          (click)="gesture.emit('cancel')"
+        >
+          Annuler
+        </button>
+      }
+    </div>
+  </div>
+</fold-card>

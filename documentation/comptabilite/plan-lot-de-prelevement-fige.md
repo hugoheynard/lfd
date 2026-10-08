@@ -6,7 +6,7 @@
 > plancher, la constitution sous verrou, l'annulation, le dépôt avec relecture
 > et refus sur commande annulée, « réglée autrement », `one_off_consumed`, le
 > XML stocké et le CSV de contrôle (`b2b/accounting/http/admin-collection-batches.controller.ts`),
-> et l'écran `comptabilite/lots-de-prelevement/` du back-office. La suite —
+> et l'écran `comptabilite/prelevement-du-mois/` (ex-`lots-de-prelevement/`, renommé le 2026-10-08) du back-office. La suite —
 > le montant prélevé = le total facturé — est
 > [`../facturation/plan-le-prelevement-suit-la-facture.md`](../facturation/plan-le-prelevement-suit-la-facture.md).
 >

@@ -160,25 +160,27 @@
         </fold-page-section>
       </fold-card>
 
-      <!-- ═══ PRÉLÈVEMENT SEPA — à moitié vivante ═══ -->
+      <!-- ═══ PRÉLÈVEMENT DU MOIS — un résumé ═══
+           Le détail vit dans son écran (plan-prelevement-automatique.md, PA4) :
+           ici, la date, le montant de l'aperçu, et le chemin. -->
       <fold-card class="tb-card">
-        <fold-page-section title="Prélèvement SEPA" separator>
-          <span sectionSubtitle>
-            L'export XML déposé chaque fin de mois dans le portail de la Caisse d'Épargne.
-          </span>
+        <fold-page-section title="Prélèvement du mois" separator>
+          <span sectionSubtitle>Ce qui sera prélevé à vos clients, et quand.</span>
 
-          <!--
-            La carte ne peut rien exporter — il n'y a pas de facture à prélever.
-            Mais sa PREMIÈRE condition bloquante est déjà vérifiable, et c'est ce
-            qu'elle répond : sans ICS ni compte créancier, aucun lot ne partirait
-            de toute façon. Attendre passivement sa tranche aurait laissé cette
-            question sans écran.
-          -->
           @if (issuer(); as ready) {
             <p class="tb-line">
               <fold-badge variant="success" content="Émetteur prêt" />
               <span class="tb-issuer">{{ ready.name }} · ICS {{ ready.ics }}</span>
             </p>
+            <p class="tb-line" data-next-collection>
+              Prochain prélèvement le <strong>{{ collectionDay(ready) }}</strong
+              >.
+            </p>
+            @if (previewError(); as message) {
+              <fold-callout appearance="inset" variant="alert">{{ message }}</fold-callout>
+            } @else if (previewSummary(); as summary) {
+              <p class="tb-said" data-preview-summary>{{ summary }}</p>
+            }
           } @else {
             <fold-callout appearance="inset" variant="warning">
               <strong>Aucun émetteur ne peut encaisser.</strong> Il manque {{ issuerGap() }}. Rien
@@ -187,57 +189,10 @@
             </fold-callout>
           }
 
-          <!--
-            ⚠️ Cette phrase disait « il suppose des factures à prélever ». C'est
-            devenu FAUX le 2026-09-10 : nous n'émettons pas de factures, et
-            l'assiette se somme depuis les commandes passées au compte. Une
-            consigne périmée dans un écran gèle un chantier — voir §0 quater.
-          -->
-          <!-- 2026-10-05 : le fichier déposé est celui d'un LOT constitué
-               (plan-lot-de-prelevement-fige.md). L'aperçu reste, recalculé. -->
-          <p class="tb-said">
-            Un <strong>aperçu</strong> du cycle en cours se télécharge à tout moment&nbsp;: il est
-            recalculé à chaque fois, avec les montants du moment.
-          </p>
-
-          <fold-callout appearance="inset" variant="warning">
-            <strong>L'aperçu ne se dépose jamais.</strong> Le fichier à déposer est celui d'un lot
-            constitué après la clôture, dans
-            <a routerLink="/comptabilite/lots-de-prelevement">Lots de prélèvement</a>.
-          </fold-callout>
-
           <div class="tb-actions">
-            @if (issuer(); as ready) {
-              <!-- Un fichier par schéma : un lot CORE et un lot interentreprises
-                   ne partent pas dans le même message.
-
-                   Le contrôle RELIT le XML au lieu de recalculer : il atteste ce
-                   que le fichier contient. Il confronte les deux totaux que le
-                   fichier DÉCLARE — `NbOfTxs` et `CtrlSum` — à ce qu'on obtient en
-                   comptant et sommant ses lignes, c'est-à-dire les deux champs dont
-                   un centime d'écart fait rejeter le message entier. -->
-              @for (draft of draftSchemes; track draft.scheme) {
-                <button
-                  foldButton
-                  class="tb-draft"
-                  icon="download"
-                  [loading]="busy()"
-                  (click)="downloadDraft(ready, draft.scheme)"
-                >
-                  {{ draft.draftLabel }}
-                </button>
-                <button
-                  foldButton
-                  class="tb-audit"
-                  emphasis="outline"
-                  icon="download"
-                  [loading]="busy()"
-                  (click)="downloadDraftAudit(ready, draft.scheme)"
-                >
-                  {{ draft.auditLabel }}
-                </button>
-              }
-            }
+            <a foldButton routerLink="/comptabilite/prelevement-du-mois">
+              Ouvrir le prélèvement du mois
+            </a>
             <a
               foldButton
               emphasis="outline"
@@ -250,30 +205,22 @@
         </fold-page-section>
       </fold-card>
 
-      <!-- ═══ FACTURATION — pas encore ═══ -->
+      <!-- ═══ FACTURATION ═══
+           ⚠️ Cette carte disait « Nous n'émettons pas de factures… nous
+           produisons la somme ». FAUX depuis l'arrêté de facturation
+           (plan-le-prelevement-suit-la-facture.md, F3) : chaque ligne de
+           prélèvement porte sa facture figée, et c'est elle qu'on prélève
+           (réécrite le 2026-10-08, PA4). -->
       <fold-card class="tb-card">
         <fold-page-section title="Facturation">
-          <span sectionSubtitle>Qui l'émet, et à partir de quoi.</span>
+          <span sectionSubtitle>Ce qui fait foi.</span>
 
-          <!--
-            ⚠️ Cette carte annonçait « les tranches 4 et 5 — l'agrégat facture,
-            puis sa numérotation sans trou ». Les deux ont été SUPPRIMÉES le
-            2026-09-10 : nous n'émettons pas de factures. Une carte qui promet un
-            chantier abandonné fait attendre quelque chose qui ne viendra pas.
-          -->
-          <fold-callout appearance="inset" variant="info">
-            <strong>Nous n'émettons pas de factures, et c'est une décision.</strong> Le comptable
-            importe nos commandes dans son logiciel et sort la facture mensuelle&nbsp;; nous
-            produisons la somme et le fichier de prélèvement. Bâtir un émetteur de factures
-            aujourd'hui, ce serait bâtir contre un régime de facturation électronique qui n'est pas
-            stabilisé.
+          <fold-callout appearance="inset" variant="info" data-billing>
+            <strong>L'arrêté de facturation fait foi&nbsp;:</strong> à la préparation du lot, chaque
+            ligne de prélèvement fige le sien — la facture de ses bons, calculée une fois — et c'est
+            son total qui est prélevé&nbsp;; la facture électronique structurée (Factur-X) reste à
+            faire.
           </fold-callout>
-
-          <p class="tb-said">
-            Ce qui manque encore ici, c'est <strong>l'export des commandes du cycle</strong>, par
-            société — l'entrée du logiciel du comptable. Sa forme dépend de ce que ce logiciel sait
-            lire, ce qui est une question à lui poser avant de l'écrire.
-          </p>
         </fold-page-section>
       </fold-card>
     </div>

@@ -74,7 +74,7 @@ export class CollectionNotYetOpenError extends BusinessError {
   ) {
     super(
       "accounting.collection.not_yet_open",
-      `Le premier cycle prélevable se clôt le ${parisLongDay(firstClosure)} : les commandes passées avant le ${parisLongDay(floorAt)} (mise en service du prélèvement) n'entrent dans aucun lot.`,
+      `Le premier mois prélevable se clôt le ${parisLongDay(firstClosure)} : les commandes passées avant le ${parisLongDay(floorAt)} (mise en service du prélèvement) n'entrent dans aucun lot.`,
     );
   }
 }

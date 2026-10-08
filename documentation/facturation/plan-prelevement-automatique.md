@@ -1,7 +1,7 @@
 # Le prélèvement automatique
 
-> 🟡 **Plan v2, PA1 bâti le 2026-10-08** (non commité à l'écriture de cette
-> ligne ; PA4, PA2, PA3 à faire). Touche **l'argent** et finira
+> 🟡 **Plan v2, PA1 et PA4 bâtis le 2026-10-08** (non commités à l'écriture
+> de cette ligne ; PA2, PA3 à faire). Touche **l'argent** et finira
 > dans un **runbook** : la v1 a été contredite par `vitruve` le même jour
 > (trois BLOQUANTS, neuf SÉRIEUX), repris au § 8. Affirmations sur
 > l'existant vérifiées dans le dépôt le 2026-10-08.
@@ -147,6 +147,36 @@ collection-calendar.ts`) sur `target2-calendar.ts` (Pâques par
 
 ### PA4 — L'écran « Prélèvement du mois »
 
+> ✅ **Bâti le 2026-10-08.** Ce qui a été tranché en le bâtissant :
+>
+> - **L'aperçu** : `GET admin/accounting/collection/preview?legalEntityId=`
+>   (`GetCollectionPreviewHandler`, lecture `b2b_accounting`). Il passe par
+>   `readAssembly` avec un cycle choisi — `cycleAt` (celui qui court) au lieu
+>   de `cycleToConstitute` — donc le même `assembleCollection` que le lot :
+>   montant de ligne = facture de la ligne. Ni verrou, ni transaction, ni
+>   écriture. Il lit TOUT ce qui reste à prélever depuis le plancher : un bon
+>   écarté d'un mois passé, ou un mois clos jamais préparé, y figure aussi.
+>   `CollectionNotYetOpenError` y devient l'état `not_yet_open` (plancher,
+>   première clôture) ; le plancher absent reste un 409.
+> - **Contrat en interfaces seules** (`CollectionPreviewView`), aucune valeur
+>   zod : rien à rebâtir dans `dist`.
+> - **L'écran** remplace `lots-de-prelevement/` (`/comptabilite/lots-de-prelevement`
+>   redirige ; rail et tuiles lisent la même table `workspaces.ts`). La frise
+>   est un composant partagé avec la fiche de l'entité (`collection-calendar/`).
+>   Le bouton « Préparer le lot de septembre » disparaît quand le lot du mois
+>   clos existe (préparé ou déposé) ; ses refus s'affichent tels quels.
+> - **Pas de « dernière tentative »** de l'automatisme : PA3 n'existe pas,
+>   l'écran dit « activée, mais pas encore branchée ». À poser avec PA3.
+> - **Pas d'état des avis** : PA2 n'existe pas.
+> - **Les aperçus XML/CSV par schéma** ont quitté le tableau de bord pour la
+>   carte de l'aperçu. Le tableau de bord garde : émetteur prêt, prochaine
+>   date de prélèvement, montant de l'aperçu, lien. Sa carte « Facturation »
+>   dit désormais que l'arrêté figé par ligne fait foi, Factur-X à faire.
+> - **Le dossier de facturation** reste une page à part, ouverte par un lien
+>   depuis l'aperçu ; il n'accepte pas de paramètre de payeur, donc pas de
+>   lien par ligne.
+> - Le refus serveur « premier cycle prélevable » dit désormais « mois ».
+
 Remplace la page des lots et la carte prélèvement du tableau de bord :
 
 - le **calendrier** du cycle (clôture, constitution, échéance, date limite
@@ -184,7 +214,7 @@ Import `pain.002` / `camt.054` ; un rejet remet les bons « à prélever ».
 | Lot     | Contenu                                                                                       |
 | ------- | --------------------------------------------------------------------------------------------- |
 | **PA1** | ✅ 2026-10-08 — réglages, `collectionCalendar` (TARGET2), échéance figée sur le lot           |
-| **PA4** | l'écran du mois, aperçu en facture, tableau de bord corrigé                                   |
+| **PA4** | ✅ 2026-10-08 — l'écran du mois, aperçu en facture, tableau de bord corrigé                   |
 | **PA2** | l'avis à la constitution, son état, rectificatif et annulation ; dépôt exige les avis envoyés |
 | **PA3** | l'automatisme une fois par cycle, cron propre, auteur `system`                                |
 

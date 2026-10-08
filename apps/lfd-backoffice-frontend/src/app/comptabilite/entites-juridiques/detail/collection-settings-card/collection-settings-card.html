@@ -8,11 +8,7 @@
          date le fichier déposé à la banque. -->
     <section class="cs-block" aria-labelledby="cs-calendar-title">
       <h3 id="cs-calendar-title" class="cs-heading">Le calendrier de ce mois</h3>
-      <fold-timeline
-        ariaLabel="Calendrier du prélèvement de ce mois"
-        datePlacement="above"
-        [nodes]="steps()"
-      />
+      <app-collection-calendar [calendar]="entity().nextCollection" />
     </section>
 
     <section class="cs-block" aria-labelledby="cs-auto-title">

@@ -1,0 +1,88 @@
+<fold-page-layout title="Prélèvement du mois" separator>
+  <p description>
+    Le mois se lit de haut en bas&nbsp;: ses dates, ce qui sera prélevé à sa fin, le lot à déposer à
+    la banque, puis les lots passés.
+  </p>
+
+  @if (loading()) {
+    <fold-loading message="Lecture du prélèvement du mois…" />
+  } @else if (loadError(); as message) {
+    <fold-empty-state
+      tone="alert"
+      title="Impossible de lire le prélèvement du mois"
+      [subtitle]="message"
+    >
+      <button foldButton (click)="load()">Réessayer</button>
+    </fold-empty-state>
+  } @else if (entity(); as current) {
+    <div class="stack">
+      @if (entityOptions().length > 1) {
+        <fold-listbox
+          label="Entité émettrice"
+          [options]="entityOptions()"
+          [value]="entityId()"
+          (valueChange)="choose($event)"
+        />
+      }
+
+      <!-- 1. Le calendrier du mois. -->
+      <app-month-schedule [entity]="current" />
+
+      <!-- 2. Le mois en cours : l'aperçu, calculé comme le lot. -->
+      <app-month-preview [entity]="current" [preview]="preview()" [error]="previewError()" />
+
+      <!-- 3. Le lot à traiter. -->
+      <fold-page-section title="Le lot à traiter" stack>
+        @if (canWrite() && !alreadyPrepared()) {
+          <button
+            sectionActions
+            foldButton
+            icon="archive"
+            [loading]="pending() === 'prepare'"
+            (click)="prepare()"
+            data-prepare
+          >
+            {{ prepareLabel() }}
+          </button>
+        }
+
+        @if (actionError(); as message) {
+          <fold-callout appearance="inset" variant="alert" announce>{{ message }}</fold-callout>
+        }
+
+        @for (batch of toProcess(); track batch.id) {
+          <app-pending-batch
+            [batch]="batch"
+            [canWrite]="canWrite()"
+            [pending]="pending() === batch.id"
+            (gesture)="onGesture(batch, $event)"
+          />
+        } @empty {
+          <fold-empty-state title="Aucun lot à déposer" [subtitle]="nothingToProcess()">
+            <fold-icon empty-icon name="archive" />
+          </fold-empty-state>
+        }
+
+        @if ((view()?.exclusions ?? []).length > 0) {
+          <app-excluded-orders
+            [exclusions]="view()?.exclusions ?? []"
+            [canWrite]="canWrite()"
+            (settle)="settle($event)"
+          />
+        }
+      </fold-page-section>
+
+      <!-- 4. L'historique, replié. -->
+      @if (history().length > 0) {
+        <app-batch-history [batches]="history()" (download)="download($event)" />
+      }
+    </div>
+  } @else {
+    <fold-empty-state
+      title="Aucune entité émettrice"
+      subtitle="Un lot se prépare sous une entité juridique qui peut encaisser."
+    >
+      <fold-icon empty-icon name="banknote" />
+    </fold-empty-state>
+  }
+</fold-page-layout>

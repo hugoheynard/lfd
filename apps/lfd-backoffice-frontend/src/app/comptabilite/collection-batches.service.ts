@@ -2,14 +2,18 @@ import { HttpClient } from '@angular/common/http';
 import { inject, Injectable } from '@angular/core';
 import { firstValueFrom } from 'rxjs';
 
-import type { CollectionCycleView, ConstitutedBatchesView } from '@lfd/contracts';
+import type {
+  CollectionCycleView,
+  CollectionPreviewView,
+  ConstitutedBatchesView,
+} from '@lfd/contracts';
 
 import { B2B_API_BASE } from '../api/api-config';
 import { attachmentFileName } from '../shared/download/content-disposition';
 import type { NamedBlob } from './comptabilite-dashboard.service';
 
 /**
- * Les **lots de prélèvement figés** — l'écran du cycle (plan
+ * Les **lots de prélèvement figés** — l'écran « Prélèvement du mois » (plan
  * `documentation/comptabilite/plan-lot-de-prelevement-fige.md`, P2).
  *
  * Les gestes demandent `b2b_accounting:write` ; le serveur refuse de toute
@@ -23,6 +27,13 @@ export class CollectionBatchesService {
   async cycle(legalEntityId: string): Promise<CollectionCycleView> {
     return firstValueFrom(
       this.http.get<CollectionCycleView>(`${this.base}/cycle`, { params: { legalEntityId } }),
+    );
+  }
+
+  /** L'aperçu du mois qui court, calculé comme le lot — rien n'est écrit (PA4). */
+  async preview(legalEntityId: string): Promise<CollectionPreviewView> {
+    return firstValueFrom(
+      this.http.get<CollectionPreviewView>(`${this.base}/preview`, { params: { legalEntityId } }),
     );
   }
 

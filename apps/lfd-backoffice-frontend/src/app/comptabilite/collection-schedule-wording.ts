@@ -1,4 +1,4 @@
-import type { LegalEntityView } from '@lfd/contracts';
+import type { CollectionCalendarView } from '@lfd/contracts';
 
 import { day, instant } from './invoice-dossier-format';
 
@@ -28,7 +28,7 @@ export interface CollectionStep {
 export const DEPOSIT_UNKNOWN = 'à renseigner';
 
 /** Le calendrier de ce mois, dans l'ordre où les choses arrivent. */
-export function collectionSteps(next: LegalEntityView['nextCollection']): CollectionStep[] {
+export function collectionSteps(next: CollectionCalendarView): CollectionStep[] {
   const deposit = next.depositDeadline;
   return [
     { key: 'closes', id: null, label: 'Le mois se clôt', displayDate: instant(next.closesAt) },

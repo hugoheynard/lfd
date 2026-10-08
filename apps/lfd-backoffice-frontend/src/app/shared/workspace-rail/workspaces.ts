@@ -701,9 +701,9 @@ export const COMPTABILITE_VIEWS: readonly WorkspaceView[] = [
     needs: 'b2b_accounting:read',
   },
   {
-    key: 'lots-de-prelevement',
-    label: 'Lots de prélèvement',
-    link: '/comptabilite/lots-de-prelevement',
+    key: 'prelevement-du-mois',
+    label: 'Prélèvement du mois',
+    link: '/comptabilite/prelevement-du-mois',
     icon: 'archive',
     needs: 'b2b_accounting:read',
   },

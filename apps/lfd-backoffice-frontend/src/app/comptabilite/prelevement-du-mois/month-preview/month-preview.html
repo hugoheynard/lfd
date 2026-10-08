@@ -1,0 +1,132 @@
+<fold-card>
+  <div class="mp-stack">
+    <fold-element-title variant="title" [title]="title()" [subtitle]="subtitle()">
+      <a
+        titleAction
+        foldButton
+        size="sm"
+        emphasis="outline"
+        intent="neutral"
+        icon="receipt"
+        routerLink="/comptabilite/dossier-de-facturation"
+      >
+        Dossier de facturation par payeur
+      </a>
+    </fold-element-title>
+
+    @if (error(); as message) {
+      <fold-callout variant="alert" data-preview-error>{{ message }}</fold-callout>
+    } @else if (notYetOpen(); as sentence) {
+      <fold-empty-state title="Pas encore prélevable" [subtitle]="sentence" data-not-yet-open>
+        <fold-icon empty-icon name="calendar" />
+      </fold-empty-state>
+    } @else if (empty(); as sentence) {
+      <fold-empty-state title="Rien à prélever pour l’instant" [subtitle]="sentence" data-empty>
+        <fold-icon empty-icon name="check" />
+      </fold-empty-state>
+    } @else if (open(); as view) {
+      @if (totals(); as sums) {
+        <fold-field-list>
+          <fold-field label="Total facturé (prélevé)">
+            <strong class="mp-amount" data-preview-total>{{ sums.billed }}</strong>
+          </fold-field>
+          <fold-field label="Σ bons"
+            ><span class="mp-amount">{{ sums.orders }}</span></fold-field
+          >
+          <fold-field label="Écart"
+            ><span class="mp-amount">{{ sums.gap }}</span></fold-field
+          >
+          <fold-field label="Payeurs">{{ sums.payers }}</fold-field>
+        </fold-field-list>
+      }
+
+      @if (view.unmandatedCompanies.length > 0) {
+        <fold-callout appearance="inset" variant="alert" data-unmandated>
+          <strong>Sans mandat prélevable&nbsp;:</strong>
+          {{ view.unmandatedCompanies.join(', ') }}. Leurs bons ne partiraient pas, et le lot ne
+          serait pas déposable&nbsp;: faire signer le mandat avant la fin du mois, ou régler
+          autrement.
+        </fold-callout>
+      }
+      @if (unbillable().length > 0) {
+        <fold-callout appearance="inset" variant="warning" data-unbillable>
+          <strong>Non facturables&nbsp;:</strong> {{ unbillable().join(', ') }}. Ils seraient
+          écartés du lot&nbsp;; les autres bons partent.
+        </fold-callout>
+      }
+
+      @if (rows().length > 0) {
+        <fold-data-table
+          caption="Ce qui serait prélevé, par payeur"
+          narrowLayout="cards"
+          zebra
+          [columns]="lineColumns"
+          [rows]="rows()"
+          [rowKey]="lineKey"
+          data-preview-lines
+        >
+          <ng-template foldCell="debtor" let-row>{{ row.debtorName }}</ng-template>
+          <ng-template foldCell="scheme" let-row>{{ row.scheme }}</ng-template>
+          <ng-template foldCell="orders" let-row>{{ row.orderCount }}</ng-template>
+          <ng-template foldCell="ordersTotal" let-row>
+            <span class="mp-amount">{{ row.ordersTotal }}</span>
+          </ng-template>
+          <ng-template foldCell="billed" let-row>
+            <span class="mp-amount">{{ row.billed }}</span>
+          </ng-template>
+          <ng-template foldCell="gap" let-row>
+            <span class="mp-amount">{{ row.gap }}</span>
+          </ng-template>
+        </fold-data-table>
+      }
+
+      @if (view.exclusions.length > 0) {
+        <fold-data-table
+          caption="Bons qui seraient écartés"
+          narrowLayout="cards"
+          zebra
+          [columns]="exclusionColumns"
+          [rows]="view.exclusions"
+          [rowKey]="exclusionKey"
+          data-preview-exclusions
+        >
+          <ng-template foldCell="order" let-row>{{ row.orderNumber }}</ng-template>
+          <ng-template foldCell="company" let-row>{{ row.companyName }}</ng-template>
+          <ng-template foldCell="amount" let-row>
+            <span class="mp-amount">{{ cents(row.amountCents) }}</span>
+          </ng-template>
+          <ng-template foldCell="reason" let-row>{{ reasonOf(row) }}</ng-template>
+        </fold-data-table>
+      }
+
+      @if (downloadError(); as message) {
+        <fold-callout appearance="inset" variant="alert" announce>{{ message }}</fold-callout>
+      }
+      <div class="mp-actions">
+        @for (scheme of schemes; track scheme) {
+          <button
+            foldButton
+            size="sm"
+            emphasis="outline"
+            icon="download"
+            [loading]="busy()"
+            (click)="download(scheme, 'xml')"
+          >
+            Aperçu du fichier {{ scheme }} (non déposable)
+          </button>
+          <button
+            foldButton
+            size="sm"
+            emphasis="outline"
+            intent="neutral"
+            icon="download"
+            [loading]="busy()"
+            (click)="download(scheme, 'csv')"
+          >
+            Contrôle CSV {{ scheme }}
+          </button>
+        }
+      </div>
+    }
+  </div>
+</fold-card>

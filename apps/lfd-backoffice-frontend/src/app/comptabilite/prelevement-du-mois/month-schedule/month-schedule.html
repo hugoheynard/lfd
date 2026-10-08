@@ -1,0 +1,36 @@
+<fold-card>
+  <div class="ms-stack">
+    <fold-element-title
+      variant="title"
+      title="Le calendrier du mois"
+      subtitle="Les dates de ce mois, celles que porte le fichier déposé à la banque."
+    >
+      <a
+        titleAction
+        foldButton
+        size="sm"
+        emphasis="outline"
+        intent="neutral"
+        icon="settings"
+        [routerLink]="['/comptabilite/entites-juridiques', entity().id]"
+        data-schedule-settings
+      >
+        Régler le calendrier
+      </a>
+    </fold-element-title>
+
+    <app-collection-calendar [calendar]="entity().nextCollection" />
+
+    @if (entity().autoCollectionEnabled) {
+      <fold-callout variant="info" data-auto-state>
+        <strong>Préparation automatique activée, mais pas encore branchée.</strong> Le lot ne se
+        prépare pas encore tout seul&nbsp;: d'ici là, préparez-le ici, après la fin du mois.
+      </fold-callout>
+    } @else {
+      <p class="ms-said" data-auto-state>
+        Préparation automatique désactivée&nbsp;: vous préparez le lot vous-même, après la fin du
+        mois.
+      </p>
+    }
+  </div>
+</fold-card>

@@ -1,0 +1,54 @@
+<fold-card>
+  <fold-page-section
+    title="Historique des lots"
+    [description]="batches().length + ' lot(s) déposé(s) ou annulé(s)'"
+    collapsible
+    [(open)]="open"
+  >
+    <fold-data-table
+      caption="Historique des lots"
+      narrowLayout="cards"
+      zebra
+      [columns]="columns"
+      [rows]="batches()"
+      [rowKey]="rowKey"
+      data-history
+    >
+      <ng-template foldCell="month" let-row>{{ monthOf(row) }}</ng-template>
+      <ng-template foldCell="scheme" let-row>{{ row.scheme }}</ng-template>
+      <ng-template foldCell="status" let-row>
+        <fold-badge
+          [variant]="row.status === 'deposited' ? 'success' : 'neutral'"
+          [content]="statusOf(row)"
+        />
+      </ng-template>
+      <ng-template foldCell="collected" let-row>{{ collectedOn(row) }}</ng-template>
+      <ng-template foldCell="lines" let-row>{{ row.lineCount }} · {{ row.orderCount }}</ng-template>
+      <ng-template foldCell="amount" let-row>
+        <span class="bh-amount">{{ cents(row.totalCents) }}</span>
+      </ng-template>
+      <ng-template foldCell="files" let-row>
+        <span class="bh-actions">
+          <button
+            foldButton
+            size="sm"
+            emphasis="outline"
+            icon="download"
+            (click)="download.emit({ batch: row, kind: 'xml' })"
+          >
+            Fichier
+          </button>
+          <button
+            foldButton
+            size="sm"
+            emphasis="outline"
+            icon="download"
+            (click)="download.emit({ batch: row, kind: 'csv' })"
+          >
+            Contrôle CSV
+          </button>
+        </span>
+      </ng-template>
+    </fold-data-table>
+  </fold-page-section>
+</fold-card>

@@ -1,16 +1,17 @@
 import { type ComponentFixture, TestBed } from '@angular/core/testing';
 import { provideRouter } from '@angular/router';
-import { afterEach, describe, expect, it, vi } from 'vitest';
+import { describe, expect, it } from 'vitest';
 
 import type {
   BillingCycleView,
   CatalogSummaryView,
+  CollectionPreviewView,
   CustomerPortfolioView,
   LegalEntityView,
-  SepaScheme,
 } from '@lfd/contracts';
 
-import { ComptabiliteDashboardService, type NamedBlob } from '../comptabilite-dashboard.service';
+import { CollectionBatchesService } from '../collection-batches.service';
+import { ComptabiliteDashboardService } from '../comptabilite-dashboard.service';
 import { LegalEntitiesService } from '../legal-entities.service';
 import { TableauDeBordPage } from './tableau-de-bord-page';
 
@@ -112,23 +113,6 @@ class FakeDashboard {
     this.downloaded.push('catalogue');
     return Promise.resolve(new Blob(['x']));
   }
-  /** Le nom que le serveur rend dans `Content-Disposition` ; `null` = en-tête absent. */
-  draftFileName: ((scheme: SepaScheme) => string) | null = (scheme) =>
-    `BROUILLON-prelevement-${scheme}-552100554-2026-09.xml`;
-  cycleDraftAudit(legalEntityId: string, scheme: SepaScheme): Promise<NamedBlob> {
-    this.downloaded.push(`controle:${legalEntityId}:${scheme}`);
-    return Promise.resolve({
-      blob: new Blob(['Référence']),
-      fileName: this.draftFileName === null ? null : `CONTROLE-${this.draftFileName(scheme)}`,
-    });
-  }
-  cycleDraft(legalEntityId: string, scheme: SepaScheme): Promise<NamedBlob> {
-    this.downloaded.push(`brouillon:${legalEntityId}:${scheme}`);
-    return Promise.resolve({
-      blob: new Blob(['<Document/>']),
-      fileName: this.draftFileName === null ? null : this.draftFileName(scheme),
-    });
-  }
 }
 
 class FakeEntities {
@@ -138,9 +122,29 @@ class FakeEntities {
   }
 }
 
+class FakeBatches {
+  view: CollectionPreviewView | null = {
+    state: 'open',
+    cycleStartsAt: '2026-09-30T22:00:00.000Z',
+    cycleClosesAt: '2026-10-31T23:00:00.000Z',
+    floorAt: '2026-08-01T00:00:00.000Z',
+    lines: [],
+    totalCents: 123_456,
+    ordersTotalCents: 123_460,
+    exclusions: [],
+    unmandatedCompanies: [],
+  };
+  preview(): Promise<CollectionPreviewView> {
+    return this.view === null
+      ? Promise.reject(new Error('aperçu indisponible'))
+      : Promise.resolve(this.view);
+  }
+}
+
 async function render(
   api = new FakeDashboard(),
   entities = new FakeEntities(),
+  batches = new FakeBatches(),
 ): Promise<{ fixture: ComponentFixture<TableauDeBordPage>; api: FakeDashboard }> {
   TestBed.configureTestingModule({
     imports: [TableauDeBordPage],
@@ -150,6 +154,7 @@ async function render(
       provideRouter([]),
       { provide: ComptabiliteDashboardService, useValue: api },
       { provide: LegalEntitiesService, useValue: entities },
+      { provide: CollectionBatchesService, useValue: batches },
     ],
   });
   const fixture: ComponentFixture<TableauDeBordPage> = TestBed.createComponent(TableauDeBordPage);
@@ -162,12 +167,15 @@ const text = (fixture: ComponentFixture<TableauDeBordPage>): string =>
   (fixture.nativeElement as HTMLElement).textContent ?? '';
 
 describe('TableauDeBordPage', () => {
-  it('🔴 ne montre AUCUN chiffre de facturation — il dit que la brique manque', async () => {
+  it('🔴 la carte Facturation dit ce qui fait foi, sans compter de factures', async () => {
     const { fixture } = await render();
+    const billing = (fixture.nativeElement as HTMLElement).querySelector('[data-billing]');
 
-    // La carte dit désormais une DÉCISION, plus une attente : nous n'émettons
-    // pas de factures, le comptable les sort de nos commandes (2026-09-10).
-    expect(text(fixture)).toContain("Nous n'émettons pas de factures");
+    // « Nous n'émettons pas de factures » était FAUX depuis l'arrêté de
+    // facturation (F3) : réécrite le 2026-10-08 (PA4).
+    expect(billing?.textContent).toContain("L'arrêté de facturation fait foi");
+    expect(billing?.textContent).toContain('Factur-X');
+    expect(text(fixture)).not.toContain("Nous n'émettons pas de factures");
     // Le mot « facture » ne doit jamais côtoyer un nombre sur cet écran.
     expect(text(fixture)).not.toMatch(/\d+\s*factures?\b/u);
   });
@@ -288,98 +296,43 @@ describe('TableauDeBordPage', () => {
   });
 });
 
-describe('TableauDeBordPage — les brouillons du lot, un par schéma', () => {
+describe('TableauDeBordPage — le résumé du prélèvement du mois', () => {
   const ready = (): FakeEntities => {
     const entities = new FakeEntities();
     entities.rows = [entity({ ics: 'FR72ZZZ123456', canCollect: true, missingToCollect: [] })];
     return entities;
   };
 
-  /** Les noms sous lesquels le navigateur a reçu les fichiers. */
-  function captureSaves(): string[] {
-    const names: string[] = [];
-    vi.spyOn(URL, 'createObjectURL').mockReturnValue('blob:brouillon');
-    vi.spyOn(URL, 'revokeObjectURL').mockReturnValue(undefined);
-    vi.spyOn(HTMLAnchorElement.prototype, 'click').mockImplementation(function (
-      this: HTMLAnchorElement,
-    ) {
-      names.push(this.download);
-    });
-    return names;
-  }
-
-  const draftButtons = (fixture: ComponentFixture<TableauDeBordPage>): HTMLButtonElement[] => [
-    ...(fixture.nativeElement as HTMLElement).querySelectorAll<HTMLButtonElement>(
-      'button.tb-draft',
-    ),
-  ];
-
-  afterEach(() => {
-    vi.restoreAllMocks();
-  });
-
-  const auditButtons = (fixture: ComponentFixture<TableauDeBordPage>): HTMLButtonElement[] => [
-    ...(fixture.nativeElement as HTMLElement).querySelectorAll<HTMLButtonElement>(
-      'button.tb-audit',
-    ),
-  ];
-
-  it('propose deux lots, CORE puis interentreprises, chacun avec son contrôle', async () => {
+  it('dit la prochaine date, le montant de l’aperçu, et mène à l’écran du mois', async () => {
     const { fixture } = await render(new FakeDashboard(), ready());
+    const host = fixture.nativeElement as HTMLElement;
 
-    expect(draftButtons(fixture).map((b) => b.textContent?.trim())).toEqual([
-      'Aperçu CORE, non déposable',
-      'Aperçu interentreprises, non déposable',
-    ]);
-    expect(auditButtons(fixture).map((b) => b.textContent?.trim())).toEqual([
-      'Contrôler CORE en CSV',
-      'Contrôler interentreprises en CSV',
-    ]);
+    expect(host.querySelector('[data-next-collection]')?.textContent).toContain('16 nov. 2026');
+    expect(host.querySelector('[data-preview-summary]')?.textContent).toMatch(/1\s?234,56\s€/u);
+    const link = Array.from(host.querySelectorAll('a')).find((a) =>
+      a.textContent?.includes('Ouvrir le prélèvement du mois'),
+    );
+    expect(link?.getAttribute('href')).toBe('/comptabilite/prelevement-du-mois');
   });
 
-  it('le contrôle suit le schéma, et le nom du serveur — ou son repli suffixé', async () => {
-    const names = captureSaves();
-    const api = new FakeDashboard();
-    const { fixture } = await render(api, ready());
+  it('pas encore prélevable : le dit, avec la date', async () => {
+    const batches = new FakeBatches();
+    batches.view = {
+      state: 'not_yet_open',
+      floorAt: '2026-11-05T08:00:00.000Z',
+      firstClosureAt: '2026-11-30T23:00:00.000Z',
+    };
+    const { fixture } = await render(new FakeDashboard(), ready(), batches);
 
-    auditButtons(fixture)[0]?.click();
-    await fixture.whenStable();
-    api.draftFileName = null;
-    auditButtons(fixture)[1]?.click();
-    await fixture.whenStable();
-
-    expect(api.downloaded).toEqual(['controle:le1:CORE', 'controle:le1:B2B']);
-    expect(names).toEqual([
-      'CONTROLE-BROUILLON-prelevement-CORE-552100554-2026-09.xml',
-      'CONTROLE-prelevement-552100554-B2B.csv',
-    ]);
+    expect(text(fixture)).toContain('le premier mois prélevable se clôt le 1er décembre 2026');
   });
 
-  it('demande chaque fichier avec son schéma, et l’enregistre sous le nom du serveur', async () => {
-    const names = captureSaves();
-    const { fixture, api } = await render(new FakeDashboard(), ready());
+  it('🔴 un aperçu illisible coûte sa phrase, pas la carte', async () => {
+    const batches = new FakeBatches();
+    batches.view = null;
+    const { fixture } = await render(new FakeDashboard(), ready(), batches);
 
-    draftButtons(fixture)[0]?.click();
-    await fixture.whenStable();
-    draftButtons(fixture)[1]?.click();
-    await fixture.whenStable();
-
-    expect(api.downloaded).toEqual(['brouillon:le1:CORE', 'brouillon:le1:B2B']);
-    expect(names).toEqual([
-      'BROUILLON-prelevement-CORE-552100554-2026-09.xml',
-      'BROUILLON-prelevement-B2B-552100554-2026-09.xml',
-    ]);
-  });
-
-  it('sans `Content-Disposition`, retombe sur un nom suffixé du schéma', async () => {
-    const names = captureSaves();
-    const api = new FakeDashboard();
-    api.draftFileName = null;
-    const { fixture } = await render(api, ready());
-
-    draftButtons(fixture)[1]?.click();
-    await fixture.whenStable();
-
-    expect(names).toEqual(['BROUILLON-prelevement-552100554-B2B.xml']);
+    expect(text(fixture)).toContain('Aperçu du mois illisible.');
+    expect(text(fixture)).toContain('Émetteur prêt');
   });
 });

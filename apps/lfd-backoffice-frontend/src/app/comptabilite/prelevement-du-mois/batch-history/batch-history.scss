@@ -1,0 +1,9 @@
+.bh-amount {
+  font-variant-numeric: tabular-nums;
+}
+
+.bh-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--fold-space-xs);
+}

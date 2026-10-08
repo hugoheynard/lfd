@@ -12,3 +12,12 @@ export class ExportCollectionBatchFileQuery {
 export class ExportCollectionBatchAuditQuery {
   constructor(readonly batchId: string) {}
 }
+
+/**
+ * L'aperçu du mois qui court : ce que la prochaine préparation du lot
+ * débiterait, calculé comme le lot. Une LECTURE : rien n'est écrit ni
+ * verrouillé (plan `plan-prelevement-automatique.md`, PA4).
+ */
+export class GetCollectionPreviewQuery {
+  constructor(readonly legalEntityId: string) {}
+}

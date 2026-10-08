@@ -23,11 +23,10 @@ import {
   FoldInputComponent,
   FoldNumberInputComponent,
   FoldPageSectionComponent,
-  FoldTimelineComponent,
 } from 'fold-ng';
 
+import { CollectionCalendar } from '../../../collection-calendar/collection-calendar';
 import {
-  collectionSteps,
   daysExample,
   daysTooShort,
   delayExample,
@@ -68,8 +67,8 @@ import { LegalEntitiesService } from '../../../legal-entities.service';
   selector: 'app-collection-settings-card',
   changeDetection: ChangeDetectionStrategy.OnPush,
   imports: [
+    CollectionCalendar,
     FoldPageSectionComponent,
-    FoldTimelineComponent,
     FoldCalloutComponent,
     FoldButtonComponent,
     FoldNumberInputComponent,
@@ -103,9 +102,6 @@ export class CollectionSettingsCard {
   protected readonly cutoffIncomplete = computed(
     () => (this.cutoffDaysDraft() === null) !== (this.cutoffTimeDraft().trim() === ''),
   );
-
-  /** La frise du mois, datée par le serveur (cf. `collection-schedule-wording.ts`). */
-  protected readonly steps = computed(() => collectionSteps(this.entity().nextCollection));
 
   protected readonly delayHint = computed(() => delayExample(this.delayDraft()));
   protected readonly daysHint = computed(() =>

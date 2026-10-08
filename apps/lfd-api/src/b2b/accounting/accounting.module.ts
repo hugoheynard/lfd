@@ -7,6 +7,7 @@ import { SettleOrderOtherwiseHandler } from "./application/commands/settle-order
 import { ExportCollectionBatchAuditHandler } from "./application/queries/export-collection-batch-audit.handler.js";
 import { ExportCollectionBatchFileHandler } from "./application/queries/export-collection-batch-file.handler.js";
 import { GetCollectionCycleHandler } from "./application/queries/get-collection-cycle.handler.js";
+import { GetCollectionPreviewHandler } from "./application/queries/get-collection-preview.handler.js";
 import { GetBillingStatementHandler } from "./application/queries/get-billing-statement.handler.js";
 import { BillingStatementReader } from "./domain/ports/billing-statement.reader.js";
 import { AdminBillingStatementsController } from "./http/admin-billing-statements.controller.js";
@@ -167,6 +168,7 @@ import { PrismaLegalEntityRepository } from "./infrastructure/prisma-legal-entit
     DepositCollectionBatchHandler,
     SettleOrderOtherwiseHandler,
     GetCollectionCycleHandler,
+    GetCollectionPreviewHandler,
     GetBillingStatementHandler,
     ExportCollectionBatchFileHandler,
     ExportCollectionBatchAuditHandler,

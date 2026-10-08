@@ -122,3 +122,54 @@ export const constituteBatchesPayloadSchema = z.strictObject({
   legalEntityId: z.string().min(1),
 });
 export type ConstituteBatchesPayload = z.infer<typeof constituteBatchesPayloadSchema>;
+
+/**
+ * Une ligne de l'**aperçu du mois** : ce que la prochaine préparation du lot
+ * débiterait à ce payeur, calculé comme le lot (plan
+ * `documentation/facturation/plan-prelevement-automatique.md`, PA4) — la
+ * facture de ses bons en une fois, pas leur somme.
+ */
+export interface CollectionPreviewLineView {
+  readonly scheme: "CORE" | "B2B";
+  readonly payerCompanyId: string;
+  readonly debtorName: string;
+  readonly orderCount: number;
+  /** Le total de la facture de la ligne — ce qui serait prélevé. */
+  readonly amountCents: number;
+  /** Σ des totaux des bons ; l'écart est `amountCents − ordersTotalCents`. */
+  readonly ordersTotalCents: number;
+}
+
+/** L'aperçu d'un mois prélevable : rien n'est écrit, rien n'est verrouillé. */
+export interface CollectionPreviewOpenView {
+  readonly state: "open";
+  /** ISO — inclusif. */
+  readonly cycleStartsAt: string;
+  /** ISO — exclusif : la prochaine clôture. */
+  readonly cycleClosesAt: string;
+  /** ISO — la mise en service du prélèvement : aucune commande d'avant n'entre. */
+  readonly floorAt: string;
+  /** Dans l'ordre des rangs du lot (par schéma, puis par nom). */
+  readonly lines: readonly CollectionPreviewLineView[];
+  readonly totalCents: number;
+  readonly ordersTotalCents: number;
+  /** Les bons qui seraient écartés, et pourquoi. */
+  readonly exclusions: readonly CollectionExclusionView[];
+  /** Les payeurs sans mandat — ils rendraient le lot non déposable. */
+  readonly unmandatedCompanies: readonly string[];
+}
+
+/**
+ * Le mois n'est pas encore prélevable : la mise en service tombe après sa
+ * clôture. Les deux dates disent quand le premier le sera.
+ */
+export interface CollectionPreviewNotYetOpenView {
+  readonly state: "not_yet_open";
+  /** ISO — la mise en service du prélèvement. */
+  readonly floorAt: string;
+  /** ISO — la clôture du premier mois prélevable. */
+  readonly firstClosureAt: string;
+}
+
+/** `GET admin/accounting/collection/preview?legalEntityId=` */
+export type CollectionPreviewView = CollectionPreviewOpenView | CollectionPreviewNotYetOpenView;

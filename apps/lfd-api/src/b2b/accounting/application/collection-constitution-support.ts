@@ -33,7 +33,16 @@ export interface ReadAssembly {
   /** La mise en service du prélèvement : aucune commande antérieure n'entre. */
   readonly floor: Date;
   readonly assembly: Assembly;
+  /** Les raisons sociales des payeurs et des sites lus — l'aperçu les nomme. */
+  readonly companyNames: ReadonlyMap<string, string>;
 }
+
+/**
+ * Quel cycle on assemble : celui qu'on CONSTITUE (le dernier clos, par
+ * défaut) ou celui qui COURT (l'aperçu du mois, PA4). Même signature que
+ * `cycleToConstitute` et `cycleAt`, qui sont les deux valeurs admises.
+ */
+export type CycleChoice = (at: Date, previousClosure: Date | null) => BillingCycle;
 
 /**
  * @throws {CollectionFloorMissingError} le plancher n'est pas posé.
@@ -43,15 +52,16 @@ export async function readAssembly(
   readers: ConstitutionReaders,
   legalEntityId: string,
   at: Date,
+  cycleOf: CycleChoice = cycleToConstitute,
 ): Promise<ReadAssembly> {
   const { candidates } = readers;
   const floor = await candidates.floor();
   if (floor === null) {
     throw new CollectionFloorMissingError();
   }
-  const target = cycleToConstitute(at, null).closesAt;
+  const target = cycleOf(at, null).closesAt;
   const previousClosure = await candidates.previousClosure(legalEntityId, target);
-  const cycle = cycleToConstitute(at, previousClosure);
+  const cycle = cycleOf(at, previousClosure);
   // Rien ne peut être après le plancher ET avant la clôture : le dire tel
   // quel, plutôt que « aucune commande à prélever ».
   if (floor >= cycle.closesAt) {
@@ -69,6 +79,7 @@ export async function readAssembly(
   );
   const mandates = await readers.mandates.activeFor(unique([...payers, ...sites]));
   const oneOffs = mandates.filter((mandate) => mandate.paymentType === "one_off");
+  const companyNames = await candidates.companyNames(unique([...payers, ...sites]));
   const assembly = assembleCollection({
     legalEntityId,
     at,
@@ -79,10 +90,10 @@ export async function readAssembly(
     collectionForms: await candidates.collectionFormsAt(sites, cycle.closesAt),
     consumedMandates: await candidates.consumedMandates(oneOffs.map((m) => m.mandateId)),
     // Les sites aussi : en formes 2 et 3, c'est le site qu'on nomme sans mandat.
-    companyNames: await candidates.companyNames(unique([...payers, ...sites])),
+    companyNames,
     liveSchemes: await candidates.liveSchemes(legalEntityId, cycle.closesAt),
   });
-  return { cycle, previousClosure, floor, assembly };
+  return { cycle, previousClosure, floor, assembly, companyNames };
 }
 
 export interface BuildInput {

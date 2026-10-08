@@ -2,6 +2,7 @@ import {
   constituteBatchesPayloadSchema,
   settleOrderOtherwisePayloadSchema,
   type CollectionCycleView,
+  type CollectionPreviewView,
   type ConstituteBatchesPayload,
   type ConstitutedBatchesView,
   type SettleOrderOtherwisePayload,
@@ -33,6 +34,7 @@ import {
   ExportCollectionBatchAuditQuery,
   ExportCollectionBatchFileQuery,
   GetCollectionCycleQuery,
+  GetCollectionPreviewQuery,
 } from "../application/queries/collection-batch-queries.js";
 import type { CollectionBatchAudit } from "../application/queries/export-collection-batch-audit.handler.js";
 import type { CollectionBatchFile } from "../application/queries/export-collection-batch-file.handler.js";
@@ -55,6 +57,17 @@ export class AdminCollectionBatchesController {
   cycle(@Query("legalEntityId") legalEntityId: string): Promise<CollectionCycleView> {
     return this.queries.execute<GetCollectionCycleQuery, CollectionCycleView>(
       new GetCollectionCycleQuery(legalEntityId),
+    );
+  }
+
+  /**
+   * L'aperçu du mois qui court, calculé comme le lot — une lecture : rien
+   * n'est écrit ni verrouillé (plan `plan-prelevement-automatique.md`, PA4).
+   */
+  @Get("preview")
+  preview(@Query("legalEntityId") legalEntityId: string): Promise<CollectionPreviewView> {
+    return this.queries.execute<GetCollectionPreviewQuery, CollectionPreviewView>(
+      new GetCollectionPreviewQuery(legalEntityId),
     );
   }
 

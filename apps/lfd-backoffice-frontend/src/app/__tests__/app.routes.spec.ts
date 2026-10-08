@@ -70,7 +70,7 @@ const SCREENS: Readonly<Record<string, ScreenAccess>> = {
   'comptabilite/entites-juridiques/:id': null,
   'comptabilite/blocages-prelevement': null,
   'comptabilite/liens-de-paiement': null,
-  'comptabilite/lots-de-prelevement': null,
+  'comptabilite/prelevement-du-mois': null,
   'comptabilite/arretes-de-facturation/:id': null,
   'comptabilite/fidelite': null,
   'comptabilite/limites-de-prix': 'lfc_price_limits:read',
@@ -447,6 +447,19 @@ describe("l'arbre de routes du back-office", () => {
       ['', 'previsionnel'],
       ['journee', '/fournil'],
       ['colisage', '/colisage'],
+    ]);
+  });
+
+  it('renvoie les lots de prélèvement vers le prélèvement du mois', () => {
+    // Remplacés par l'écran du mois le 2026-10-08 (PA4) : l'adresse vit dans
+    // des favoris, et dans les liens des arrêtés déjà ouverts.
+    const comptabilite = routes.find((route) => route.path === 'comptabilite');
+    const moved = (comptabilite?.children ?? [])
+      .filter((child) => typeof child.redirectTo === 'string')
+      .map((child) => [child.path, child.redirectTo]);
+    expect(moved).toEqual([
+      ['', 'tableau-de-bord'],
+      ['lots-de-prelevement', 'prelevement-du-mois'],
     ]);
   });
 

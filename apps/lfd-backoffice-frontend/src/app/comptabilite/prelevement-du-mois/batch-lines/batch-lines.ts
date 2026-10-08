@@ -10,8 +10,7 @@ import {
   type FoldTableColumn,
 } from 'fold-ng';
 
-import { formatOrderDate } from '@lfd/b2b-ui/order';
-
+import { batchMonthName, ofMonth } from '../../collection-month-wording';
 import { euros, signedEuros } from '../../invoice-dossier-format';
 
 const COLUMNS: readonly FoldTableColumn[] = [
@@ -62,7 +61,7 @@ export class BatchLines {
 
   protected readonly title = computed(() => {
     const batch = this.batch();
-    return `Lignes du lot ${batch.scheme} — clôture ${formatOrderDate(batch.cycleClosesAt)}`;
+    return `Lignes du lot ${ofMonth(batchMonthName(batch.cycleClosesAt))} — ${batch.scheme}`;
   });
 
   protected readonly rows = computed(() => this.batch().lines.map(toRow));

@@ -3,9 +3,9 @@ import { RouterLink } from '@angular/router';
 import type {
   BillingCycleView,
   CatalogSummaryView,
+  CollectionPreviewView,
   CustomerPortfolioView,
   LegalEntityView,
-  SepaScheme,
 } from '@lfd/contracts';
 import { NEW_CUSTOMER_WINDOW_DAYS } from '@lfd/contracts';
 import {
@@ -22,8 +22,11 @@ import {
 import { httpErrorMessage } from '@lfd/endpoints';
 
 import { saveBlob } from '../../shared/download/save-blob';
+import { CollectionBatchesService } from '../collection-batches.service';
+import { longDay } from '../collection-month-wording';
 import { ComptabiliteDashboardService, type NamedBlob } from '../comptabilite-dashboard.service';
 import { CycleBar } from '../cycle-bar/cycle-bar';
+import { day, euros } from '../invoice-dossier-format';
 import { LegalEntitiesService } from '../legal-entities.service';
 
 /**
@@ -42,13 +45,14 @@ import { LegalEntitiesService } from '../legal-entities.service';
  * parce qu'il veut dire quelque chose — et c'est précisément pour ça qu'une
  * brique absente ne peut pas emprunter la même forme.
  *
- * ## Une carte à moitié vivante, et c'est la plus utile
+ * ## Le prélèvement : un résumé, et le chemin
  *
- * Le prélèvement SEPA ne peut rien exporter tant que la facturation n'existe
- * pas. Mais sa **première condition bloquante** est déjà vérifiable : sans ICS
- * ni compte créancier, aucun lot ne partirait de toute façon. La carte répond
- * donc à ce qu'elle sait — « l'émetteur est prêt » ou « il lui manque ceci » —
- * plutôt que d'attendre passivement sa tranche.
+ * Depuis l'écran « Prélèvement du mois » (plan `plan-prelevement-automatique.md`,
+ * PA4), la carte ne garde que la date du prochain prélèvement, le montant de
+ * l'aperçu et le lien — plus la condition bloquante qu'elle sait vérifier :
+ * sans ICS ni compte créancier, aucun lot ne partirait de toute façon.
+ * L'aperçu est lu APRÈS les entités (il lui faut l'émetteur) et son échec est
+ * partiel : il coûte sa phrase, pas la carte.
  *
  * ## La bande de tête, sur le chrome
  *
@@ -87,6 +91,7 @@ import { LegalEntitiesService } from '../legal-entities.service';
 export class TableauDeBordPage {
   private readonly api = inject(ComptabiliteDashboardService);
   private readonly entitiesApi = inject(LegalEntitiesService);
+  private readonly batchesApi = inject(CollectionBatchesService);
 
   protected readonly customers = signal<CustomerPortfolioView | null>(null);
   protected readonly catalog = signal<CatalogSummaryView | null>(null);
@@ -101,6 +106,8 @@ export class TableauDeBordPage {
    * fait passer une bande manquante pour un tableau de bord illisible.
    */
   protected readonly cycleError = signal<string | null>(null);
+  protected readonly preview = signal<CollectionPreviewView | null>(null);
+  protected readonly previewError = signal<string | null>(null);
 
   protected readonly windowDays = NEW_CUSTOMER_WINDOW_DAYS;
 
@@ -114,6 +121,18 @@ export class TableauDeBordPage {
   protected readonly issuer = computed(
     () => this.entities().find((entity) => entity.canCollect) ?? null,
   );
+
+  /** Le montant de l'aperçu du mois, ou pourquoi il n'y en a pas. */
+  protected readonly previewSummary = computed(() => {
+    const view = this.preview();
+    if (view === null) {
+      return null;
+    }
+    if (view.state === 'not_yet_open') {
+      return `Pas encore prélevable : le premier mois prélevable se clôt le ${longDay(view.firstClosureAt)}.`;
+    }
+    return `Aperçu du mois en cours : ${euros(view.totalCents)} à prélever.`;
+  });
 
   /** Ce qui manque au plus avancé des émetteurs — de quoi nommer le geste suivant. */
   protected readonly issuerGap = computed(() => {
@@ -188,6 +207,7 @@ export class TableauDeBordPage {
       this.customers.set(customers);
       this.catalog.set(catalog);
       this.entities.set(entities);
+      await this.loadPreview();
     } catch (caught) {
       this.error.set(httpErrorMessage(caught, 'Tableau de bord illisible.'));
     } finally {
@@ -198,22 +218,25 @@ export class TableauDeBordPage {
     }
   }
 
-  /**
-   * Les deux lots — un fichier par schéma, et son contrôle avec lui. Le CORE
-   * d'abord, l'interentreprises ensuite.
-   */
-  protected readonly draftSchemes: readonly DraftScheme[] = [
-    {
-      scheme: 'CORE',
-      draftLabel: 'Aperçu CORE, non déposable',
-      auditLabel: 'Contrôler CORE en CSV',
-    },
-    {
-      scheme: 'B2B',
-      draftLabel: 'Aperçu interentreprises, non déposable',
-      auditLabel: 'Contrôler interentreprises en CSV',
-    },
-  ];
+  /** L'échéance du mois en cours, datée par le serveur (jour ouvré bancaire). */
+  protected collectionDay(issuer: LegalEntityView): string {
+    return day(issuer.nextCollection.collectionDay);
+  }
+
+  /** L'aperçu de l'émetteur prêt — son échec ne coûte que sa phrase. */
+  private async loadPreview(): Promise<void> {
+    this.preview.set(null);
+    this.previewError.set(null);
+    const ready = this.issuer();
+    if (ready === null) {
+      return;
+    }
+    try {
+      this.preview.set(await this.batchesApi.preview(ready.id));
+    } catch (caught) {
+      this.previewError.set(httpErrorMessage(caught, 'Aperçu du mois illisible.'));
+    }
+  }
 
   protected async exportCustomers(): Promise<void> {
     await this.download(
@@ -236,40 +259,6 @@ export class TableauDeBordPage {
    * pas de fichier, rien. Sans ce message, l'utilisateur reclique, et conclut
    * que le bouton ne marche pas.
    */
-  /**
-   * Le brouillon de prélèvement, pour l'émetteur prêt.
-   *
-   * L'entité est passée EXPLICITEMENT, jamais devinée côté serveur : le jour où
-   * il y en a deux, choisir en silence prélèverait sous le mauvais ICS.
-   *
-   * Le nom du fichier vient du serveur (`Content-Disposition`), qui le fait
-   * dériver du cycle et du schéma — le recalculer ici donnerait une seconde
-   * définition de « quel mois », et ce serait celle que l'utilisateur lit sur
-   * son bureau qui dériverait. Le nom de repli ne sert que si l'en-tête manque
-   * ou n'est pas exposé ; il porte le schéma, pour que deux téléchargements ne
-   * s'écrasent pas l'un l'autre.
-   */
-  protected async downloadDraft(issuer: LegalEntityView, scheme: SepaScheme): Promise<void> {
-    await this.download(
-      () => this.api.cycleDraft(issuer.id, scheme),
-      `BROUILLON-prelevement-${issuer.siren}-${scheme}.xml`,
-    );
-  }
-
-  /**
-   * Le contrôle du brouillon — un CSV **relu depuis le XML**, pas recalculé.
-   *
-   * C'est ce qui lui donne sa valeur : il atteste ce que le fichier contient. Un
-   * CSV produit en parallèle pourrait porter le même défaut que le XML, et les
-   * deux s'accorderaient.
-   */
-  protected async downloadDraftAudit(issuer: LegalEntityView, scheme: SepaScheme): Promise<void> {
-    await this.download(
-      () => this.api.cycleDraftAudit(issuer.id, scheme),
-      `CONTROLE-prelevement-${issuer.siren}-${scheme}.csv`,
-    );
-  }
-
   private async download(load: () => Promise<NamedBlob>, fallbackName: string): Promise<void> {
     this.busy.set(true);
     this.error.set(null);
@@ -282,13 +271,6 @@ export class TableauDeBordPage {
       this.busy.set(false);
     }
   }
-}
-
-/** Un schéma du lot, et les libellés de ses deux fichiers. */
-interface DraftScheme {
-  readonly scheme: SepaScheme;
-  readonly draftLabel: string;
-  readonly auditLabel: string;
 }
 
 /** Un export que l'écran nomme lui-même : le serveur n'en propose pas le nom. */

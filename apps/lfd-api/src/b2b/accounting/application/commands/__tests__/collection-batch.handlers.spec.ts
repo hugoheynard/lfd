@@ -141,7 +141,7 @@ describe("constituer, annuler, déposer un lot", () => {
    * « aucune commande à prélever » au lieu de dire que le premier cycle
    * prélevable n'était pas encore clos.
    */
-  it("plancher après la clôture : dit quand se clôt le premier cycle prélevable", async () => {
+  it("plancher après la clôture : dit quand se clôt le premier mois prélevable", async () => {
     const w = world();
     w.candidates.orders = [order("c_port")];
     w.mandates.mandates = [mandate("c_port")];
@@ -154,7 +154,7 @@ describe("constituer, annuler, déposer un lot", () => {
 
     await expect(refusal).rejects.toThrow(CollectionNotYetOpenError);
     await expect(refusal).rejects.toThrow(
-      "Le premier cycle prélevable se clôt le 1er novembre 2026 : les commandes passées avant le 5 octobre 2026 (mise en service du prélèvement) n'entrent dans aucun lot.",
+      "Le premier mois prélevable se clôt le 1er novembre 2026 : les commandes passées avant le 5 octobre 2026 (mise en service du prélèvement) n'entrent dans aucun lot.",
     );
     expect(w.batches.saved.size).toBe(0);
   });

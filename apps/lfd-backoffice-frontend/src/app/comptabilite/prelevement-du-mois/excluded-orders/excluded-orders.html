@@ -1,0 +1,30 @@
+<fold-card>
+  <fold-element-title
+    variant="title"
+    title="Bons écartés"
+    subtitle="Écartés à la dernière préparation : ils reviennent au lot suivant une fois corrigés, ou se règlent autrement."
+  />
+  <fold-data-table
+    caption="Bons écartés"
+    narrowLayout="cards"
+    zebra
+    [columns]="columns"
+    [rows]="exclusions()"
+    [rowKey]="rowKey"
+    data-exclusions
+  >
+    <ng-template foldCell="order" let-row>
+      {{ row.orderNumber }} <span class="muted">— {{ dateOf(row.placedAt) }}</span>
+    </ng-template>
+    <ng-template foldCell="company" let-row>{{ row.companyName }}</ng-template>
+    <ng-template foldCell="amount" let-row>{{ cents(row.amountCents) }}</ng-template>
+    <ng-template foldCell="reason" let-row>{{ reasonOf(row) }}</ng-template>
+    <ng-template foldCell="actions" let-row>
+      @if (canWrite()) {
+        <button foldButton size="sm" emphasis="outline" (click)="settle.emit(row)">
+          Réglée autrement
+        </button>
+      }
+    </ng-template>
+  </fold-data-table>
+</fold-card>

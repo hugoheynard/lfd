@@ -209,7 +209,7 @@ billing_statement_order ( statement_id, order_id )
 > sans recalcul — le `body` est revalidé par zod, une forme inconnue est un
 > refus technique plutôt qu'un montant deviné ; contrat
 > `packages/contracts/src/billing-statement.ts` (interfaces seules). Écran du
-> lot : `lots-de-prelevement/batch-lines/` (Σ bons, total facturé, écart
+> lot : `prelevement-du-mois/batch-lines/` (Σ bons, total facturé, écart
 > signé, lien « Dossier de la ligne ») et les bons non facturables en tête ;
 > page `comptabilite/arretes-de-facturation/:id`, qui réutilise
 > `dossier-invoice` (son entrée est devenue la seule facture). Tranché en

@@ -1,16 +1,15 @@
-.stack {
+.mp-stack {
   display: flex;
   flex-direction: column;
   gap: var(--fold-space-md);
 }
 
-.actions,
-.row-actions {
+.mp-amount {
+  font-variant-numeric: tabular-nums;
+}
+
+.mp-actions {
   display: flex;
   flex-wrap: wrap;
   gap: var(--fold-space-xs);
-}
-
-.muted {
-  color: var(--fold-color-text-muted);
 }

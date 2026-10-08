@@ -1,0 +1,15 @@
+.pb-stack {
+  display: flex;
+  flex-direction: column;
+  gap: var(--fold-space-md);
+}
+
+.pb-amount {
+  font-variant-numeric: tabular-nums;
+}
+
+.pb-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--fold-space-xs);
+}

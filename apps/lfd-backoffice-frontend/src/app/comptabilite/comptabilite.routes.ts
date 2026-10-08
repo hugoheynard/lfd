@@ -53,16 +53,19 @@ export const comptabiliteRoutes: Routes = [
           ),
       },
       {
-        // Les lots de prélèvement figés : constituer, annuler, déposer, et les
-        // commandes écartées. Les gestes demandent `b2b_accounting:write`.
-        // Plan : documentation/comptabilite/plan-lot-de-prelevement-fige.md (P2).
-        path: 'lots-de-prelevement',
-        title: 'Lots de prélèvement — LFC B2B admin',
+        // LE MOIS DU PRÉLÈVEMENT, de haut en bas : son calendrier, l'aperçu de
+        // ce qui sera prélevé, le lot à déposer, l'historique. Les gestes
+        // demandent `b2b_accounting:write`.
+        // Plan : documentation/facturation/plan-prelevement-automatique.md (PA4).
+        path: 'prelevement-du-mois',
+        title: 'Prélèvement du mois — LFC B2B admin',
         loadComponent: () =>
-          import('./lots-de-prelevement/lots-de-prelevement-page').then(
-            (m) => m.LotsDePrelevementPage,
+          import('./prelevement-du-mois/prelevement-du-mois-page').then(
+            (m) => m.PrelevementDuMoisPage,
           ),
       },
+      // L'ancienne adresse vit dans des favoris : remplacée le 2026-10-08 (PA4).
+      { path: 'lots-de-prelevement', redirectTo: 'prelevement-du-mois' },
       {
         // Le dossier d'UNE ligne de prélèvement : son arrêté figé, ouvert
         // depuis le lot. Sous `b2b_accounting`, comme la coquille ; la route
