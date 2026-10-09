@@ -49,7 +49,10 @@ import {
  * plausible mais faux est pire que pas de défaut : il désigne silencieusement
  * une base d'utilisateurs qui n'existe pas.
  */
-const DEFAULT_AUTH0_CUSTOMER_CONNECTION = "lfc-b2b-customers";
+// `lfc-customers` depuis le 2026-10-09 : la connexion a été recréée sous ce
+// nom (Auth0 ne renomme pas) ; `lfc-b2b-customers` porte encore les invités
+// jamais entrés.
+const DEFAULT_AUTH0_CUSTOMER_CONNECTION = "lfc-customers";
 
 /**
  * La connexion où naissent les identités **de l'équipe**. Valeur constatée dans

@@ -71,7 +71,15 @@ export interface AuthConfig {
  * comptes — c'est la décision de la note d'inscription, et le social la
  * contredisait en silence.
  */
-export const CUSTOMER_CONNECTION = 'lfc-b2b-customers';
+/*
+ * `lfc-customers` depuis le 2026-10-09 (Hugo : le « b2b » ne disait plus rien) :
+ * Auth0 ne renomme pas une connexion, `lfc-customers` a été CRÉÉE avec les
+ * mêmes réglages (mot de passe ramené à 8 caractères). L'ancienne
+ * `lfc-b2b-customers` reste activée tant que des invités y ont un compte
+ * jamais entré ; leur première entrée par code les rattache (cf.
+ * `connexion-par-code.md`).
+ */
+export const CUSTOMER_CONNECTION = 'lfc-customers';
 
 /**
  * La connexion Auth0 **sans mot de passe par code e-mail** — le chemin par

@@ -22,7 +22,7 @@ clientèle — **particulier** ou **pro** — se définit par **nos** comptes, p
 Auth0.
 
 - **Une personne, une identité.** Particuliers et pros naissent dans la même
-  connexion (`lfc-b2b-customers`, ou Google) et reçoivent le même jeton. Auth0
+  connexion (`lfc-customers`, code e-mail `email`, ou Google) et reçoivent le même jeton. Auth0
   atteste **qui** se connecte, rien d'autre : ni claim, ni rôle, ni connexion
   ne dit « pro ».
 - **Être pro se lit en base.** Une personne est rattachée à zéro, une ou
@@ -35,10 +35,18 @@ Auth0.
   une Action pour distinguer les pros. Ce serait une seconde définition de la
   clientèle, que personne ne tiendrait à jour avec la première.
 
-⚠️ **Les identifiants disent encore `b2b`, et c'est voulu.** `lfc-b2b-customers`
-et `api-b2b.lafoliedouce.eu` sont des **valeurs** : le nom d'une connexion Auth0
-ne se change pas après sa création, et changer une audience invaliderait tous
-les jetons en circulation. Le « b2b » y est un vestige, pas une restriction.
+⚠️ **L'audience dit encore `b2b`, et c'est voulu.** `api-b2b.lafoliedouce.eu`
+est une **valeur** : changer une audience invaliderait tous les jetons en
+circulation. Le « b2b » y est un vestige, pas une restriction.
+
+**La connexion des clients s'appelle `lfc-customers` depuis le 2026-10-09**
+(Hugo). Auth0 ne renomme pas une connexion : elle a été **créée** à côté de
+l'ancienne `lfc-b2b-customers`, avec les mêmes réglages (inscriptions
+ouvertes, protection contre les tentatives répétées, passkey) et un mot de
+passe ramené à **8 caractères** sans règle de composition. L'ancienne reste
+activée sur les mêmes applications tant que des invités y ont une identité
+jamais entrée (43 le 2026-10-09) ; leur première entrée par code les
+rattache. À désactiver ensuite.
 
 ---
 
@@ -51,7 +59,7 @@ les jetons en circulation. Le « b2b » y est un vestige, pas une restriction.
 | Audience **staff**    | `https://api-b2b.lafoliedouce.eu/admin` | `AUTH0_AUDIENCE_STAFF`           | back-office (`B2B_ADMIN_AUTH0_AUDIENCE`), API (`AUTH0_ADMIN_AUDIENCE`) |
 | SPA de la boutique    | `S4RtdOqH65uSqOH54kLbna7R6hjVKp5J`      | `AUTH0_LFC_BOUTIQUE_CLIENT_ID`   | boutique (`AUTH0_CLIENT_ID`)                                           |
 | SPA du back-office    | `Ne9hS7zH2AsYeVxu4EjZV6djtNiNIh7i`      | `AUTH0_LFD_BACKOFFICE_CLIENT_ID` | back-office (`B2B_ADMIN_AUTH0_CLIENT_ID`)                              |
-| Connexion des clients | `lfc-b2b-customers`                     | `AUTH0_CUSTOMER_CONNECTION`      | API, et la boutique en dur (`CUSTOMER_CONNECTION`)                     |
+| Connexion des clients | `lfc-customers`                         | `AUTH0_CUSTOMER_CONNECTION`      | API, et la boutique en dur (`CUSTOMER_CONNECTION`)                     |
 | Connexion de l'équipe | `lfc-staff`                             | `AUTH0_STAFF_CONNECTION`         | API                                                                    |
 | Connexion Google      | `google-oauth2`                         | —                                | boutique en dur (`GOOGLE_CONNECTION`)                                  |
 | Namespace des claims  | `https://lafoliedouce.eu`               | —                                | API en dur (`platform/auth/auth0-claims.ts`)                           |
@@ -76,11 +84,11 @@ donne `Service not found` au login côté front, ou un `401` sur tout côté API
 
 **Auth0 → Applications → Applications.**
 
-| Application      | Type               | Sert à                                                                       |
-| ---------------- | ------------------ | ---------------------------------------------------------------------------- |
-| boutique         | Single Page App    | la connexion des clients, particuliers et pros (`lfc-b2b-customers`, Google) |
-| back-office      | Single Page App    | la connexion de l'équipe (`lfc-staff`)                                       |
-| Management (M2M) | Machine to Machine | ouvrir des identités, poser des liens de mot de passe (§6)                   |
+| Application      | Type               | Sert à                                                                            |
+| ---------------- | ------------------ | --------------------------------------------------------------------------------- |
+| boutique         | Single Page App    | la connexion des clients, particuliers et pros (`lfc-customers`, `email`, Google) |
+| back-office      | Single Page App    | la connexion de l'équipe (`lfc-staff`)                                            |
+| Management (M2M) | Machine to Machine | ouvrir des identités, poser des liens de mot de passe (§6)                        |
 
 Pour les deux SPA :
 
@@ -148,18 +156,20 @@ et **toute nouvelle SPA** repassera par là.
 
 **Authentication → Database** et **Authentication → Social.**
 
-| Connexion           | Qui y naît                                               | Comment on y entre                                                      |
-| ------------------- | -------------------------------------------------------- | ----------------------------------------------------------------------- |
-| `lfc-b2b-customers` | les clients, particuliers et pros                        | inscription libre (passkey), ou identité ouverte par l'API (invitation) |
-| `lfc-staff`         | l'équipe                                                 | identité ouverte par l'API seulement (invitation staff)                 |
-| `google-oauth2`     | les clients qui choisissent Google, particuliers et pros | bouton « Continuer avec Google » de la boutique                         |
+| Connexion           | Qui y naît                                               | Comment on y entre                                                       |
+| ------------------- | -------------------------------------------------------- | ------------------------------------------------------------------------ |
+| `lfc-customers`     | les clients, particuliers et pros                        | « Utiliser un mot de passe », ou identité ouverte par l'API (invitation) |
+| `lfc-b2b-customers` | les invités d'avant le 2026-10-09                        | leur lien d'invitation ; à désactiver une fois les invités entrés        |
+| `email`             | les clients, par défaut                                  | code reçu par e-mail ([`connexion-par-code.md`](connexion-par-code.md))  |
+| `lfc-staff`         | l'équipe                                                 | identité ouverte par l'API seulement (invitation staff)                  |
+| `google-oauth2`     | les clients qui choisissent Google, particuliers et pros | bouton « Continuer avec Google » de la boutique                          |
 
 - **La boutique nomme la connexion à chaque redirection** (`connection` dans
   `authorizationParams`, `auth.facade.ts`). Sans elle, c'est la configuration de
   l'application qui choisit parmi les connexions activées — et une inscription
   atterrie sur la mauvaise base se voit proposer un mot de passe au lieu de la
   passkey.
-- **`lfc-b2b-customers` doit accepter les inscriptions** (« Disable Sign Ups »
+- **`lfc-customers` doit accepter les inscriptions** (« Disable Sign Ups »
   décoché) : la boutique ouvre l'inscription par `screen_hint: 'signup'`.
 - **`Username-Password-Authentication`, la connexion d'usine, ne sert à rien
   ici.** C'était le défaut du code jusqu'à ce qu'on constate qu'elle n'existe

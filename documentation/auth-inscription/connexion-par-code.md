@@ -23,7 +23,7 @@ et prod ([`le-tenant-auth0-est-partage.md`](le-tenant-auth0-est-partage.md)).
 ```mermaid
 flowchart LR
   A["« Recevoir un code » / « Créer mon compte »"] -->|continueWithEmailCode| E["Auth0 — connexion email"]
-  B["« Utiliser un mot de passe »"] -->|loginWithPassword / registerWithPassword| P["Auth0 — lfc-b2b-customers"]
+  B["« Utiliser un mot de passe »"] -->|loginWithPassword / registerWithPassword| P["Auth0 — lfc-customers"]
   G["« Continuer avec Google »"] --> GG["Auth0 — google-oauth2"]
   M["E-mail d'invitation — « Me connecter »"] --> R["/connexion/code"] -->|sans login_hint| E
 ```
