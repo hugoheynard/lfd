@@ -206,6 +206,40 @@ flowchart LR
   `accounting.invoice.document_not_rendered`.
 - **Journal** : `invoice.document_rendered`, `invoice.document_render_failed`.
 
+### La validation (2026-10-09)
+
+| Ce qui est vérifié                              | Par quoi                                                                                 | Version                                                    | Où                                                                                              | Relancer                                                 |
+| ----------------------------------------------- | ---------------------------------------------------------------------------------------- | ---------------------------------------------------------- | ----------------------------------------------------------------------------------------------- | -------------------------------------------------------- |
+| Le XML contre les règles EN 16931 (syntaxe CII) | Schematron officiel ConnectingEurope, compilé en SEF par `xslt3`, exécuté par `saxon-js` | `validation-1.3.16` (avril 2026), `saxon-js`/`xslt3` 2.7.0 | Jest unitaire, donc la CI : `domain/services/__tests__/facturx-schematron.spec.ts`              | `pnpm --filter lfd-api run test:unit facturx-schematron` |
+| Le PDF contre PDF/A-3B                          | veraPDF, image Docker figée                                                              | `verapdf/cli:v1.30.2`                                      | Hors Jest (la CI n'a pas forcément Docker) : `domain/services/__tests__/facturx-pdf.verapdf.ts` | `pnpm --filter lfd-api verify:facturx-pdf`               |
+
+Les deux passent sur les **mêmes pièces témoins** (`__tests__/facturx-samples.ts`) :
+facture du mois, plusieurs taux avec remise et livraison au prorata, prélèvement
+(59, ICS, RUM), carte acquittée (48, BT-113, reste dû 0), avoir 381 partiel au
+prorata, quantités KGM en millièmes ; veraPDF ajoute la facture du mois avec le
+logo du semis. Résultat au 2026-10-09 : **aucune règle Schematron enfreinte**,
+ni `fatal` ni `warning`, et **sept PDF déclarés conformes PDF/A-3B**.
+
+- L'XSLT est commité (`apps/lfd-api/test/fixtures/en16931-cii/`, EUPL 1.2) ;
+  le SEF (5 Mo) ne l'est pas : il est compilé une fois (~6 s) dans
+  `apps/lfd-api/node_modules/.cache/en16931-cii/<sha256 de l'xslt>.sef.json`.
+  Aucun réseau. Une nouvelle release se dépose à la place de l'XSLT et recompile
+  d'elle-même. Témoins du validateur : l'exemple officiel `CII_example1.xml`
+  (zéro règle) et un total falsifié (BR-CO-15).
+- **Ce que les pièces témoins doivent aux parties** : un vendeur sans pays
+  lisible (BR-09), un acheteur sans pays lisible (BR-11) ou un vendeur sans
+  numéro de TVA sur des lignes au taux normal (BR-S-02 à 04) sont refusés
+  `fatal`. L'émission garantit le pays du vendeur (`LegalAddress`) et son
+  numéro de TVA pour une forme assujettie ; **elle ne garantit pas le pays de
+  l'acheteur** (colonne `pays` en texte libre : seul « France » ou un code à
+  deux lettres est relu) ni son adresse.
+
+**Ce qui n'est toujours pas vérifié** : le schéma XSD CII D16B (l'ordre des
+éléments reste écrit de mémoire) ; les règles **CIUS FR** et celles de la
+plateforme de réception (PA/PDP) au-delà d'EN 16931 ; les valeurs XMP Factur-X
+(`fx:`) — veraPDF n'accepte que leur schéma d'extension, il ne contrôle pas
+Factur-X (un validateur dédié, type Mustang, le ferait).
+
 ## Prévenir, consulter, renvoyer
 
 - **E-mail** : fait durable `invoice.issued` (380 seulement), abonné
@@ -238,9 +272,11 @@ flowchart LR
 
 ## Ce qui reste ouvert
 
-- **Validation externe** : ni Schematron CEN EN 16931, ni XSD CII, ni veraPDF
-  ne tournent (téléchargements à soumettre à Hugo). Le profil, les codes de notes
-  et l'ordre des éléments sont écrits de mémoire.
+- **Validation externe** : Schematron EN 16931 et veraPDF tournent (§ « La
+  validation ») ; restent le XSD CII, la CIUS FR et les valeurs XMP Factur-X.
+- **Pays et adresse de l'acheteur** : aucune garde à l'émission ; une adresse
+  absente ou un pays en clair autre que « France » rend un XML refusé (BR-10,
+  BR-11).
 - **Le verrou d'objet du seau** (runbook) n'est pas posé.
 - **Re-rendu** : aucun geste dédié pour une pièce dont le rendu a échoué ; le
   renvoi de l'e-mail le fait au passage.

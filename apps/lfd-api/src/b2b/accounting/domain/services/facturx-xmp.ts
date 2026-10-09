@@ -7,7 +7,9 @@
  * Deux descriptions : le **schéma d'extension PDF/A** (PDF/A n'admet dans le
  * XMP que des propriétés dont le schéma est déclaré) et les quatre
  * propriétés `fx:` elles-mêmes. Écrites d'après la spécification Factur-X
- * 1.0 (de mémoire, 2026-10-08 ; non validées par veraPDF dans ce lot).
+ * 1.0 (de mémoire, 2026-10-08). veraPDF 1.30.2 accepte le schéma
+ * d'extension (PDF/A-3B, `verify:facturx-pdf`, 2026-10-09) ; il ne juge pas
+ * les VALEURS `fx:` au regard de Factur-X.
  *
  * Aucune valeur variable : le type est `INVOICE` pour une facture comme pour
  * un avoir (le XML porte 380 ou 381), et le nom du fichier joint est fixé

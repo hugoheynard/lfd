@@ -25,9 +25,12 @@ import { headerSettlement, lineTradeTax } from "./facturx-settlement.js";
  * séquences du schéma CII D16B ; tout texte passe par `escapeXml` ; tout
  * montant par l'arithmétique entière de `facturx-format.ts`.
  *
- * ⚠️ Ni le schéma XSD ni le Schematron CEN n'ont été passés sur ce rendu
- * (2026-10-08) : ils attendent l'accord de les télécharger (E3b). Les règles
- * arithmétiques, elles, sont rejouées par `facturXArithmeticViolations`.
+ * Le Schematron EN 16931 officiel (CII, `validation-1.3.16`) passe sur
+ * chaque forme de pièce émise sans règle enfreinte
+ * (`__tests__/facturx-schematron.spec.ts`, 2026-10-09). ⚠️ Le schéma XSD
+ * CII D16B, lui, n'a toujours pas été passé : l'ordre des éléments reste
+ * écrit de mémoire. Les règles arithmétiques sont aussi rejouées à
+ * l'émission par `facturXArithmeticViolations`.
  */
 export function renderFacturXml(invoice: Invoice): string {
   const state = invoice.toState();
