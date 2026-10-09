@@ -78,6 +78,15 @@ on ouvre une porte d'entrée de plus sur un compte.
 
 ## 4. Le point dur, concret
 
+> 🔴 **Périmé le 2026-10-09 : `link_with` n'est plus utilisé.** Il n'a jamais
+> marché en production : Auth0 exige que l'audience du jeton soit le client qui
+> appelle, et le jeton venait de la SPA boutique, pas du client de gestion
+> (400 à chaque essai, constaté par Hugo). Le rattachement passe désormais par
+> la **seconde forme** ci-dessous, `{ provider, user_id }`, avec le sujet que
+> NOUS avons vérifié. Comme Auth0 ne revérifie plus rien, seuls `google-oauth2`
+> et `facebook` sont admis (`LinkableIdentity`) : `auth0|…` pourrait être un
+> compte du staff. Le reste de la section décrit l'état d'avant.
+
 `linkIdentity` de notre passerelle ne sait rattacher que par **`link_with`**,
 c'est-à-dire avec un jeton de session :
 

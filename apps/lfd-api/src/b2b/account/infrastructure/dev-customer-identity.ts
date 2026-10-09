@@ -1,4 +1,5 @@
 import { Inject, Injectable, Logger } from "@nestjs/common";
+import type { LinkableIdentity } from "../domain/value-objects/linkable-identity.js";
 
 import { AppConfig } from "../../../platform/config/app-config.js";
 import { MAILER, type B2bMailer } from "../../../platform/mailer/mailer.tokens.js";
@@ -121,8 +122,13 @@ export class DevCustomerIdentity extends CustomerIdentityPort {
    * en local — précisément le parcours que cet adaptateur existe pour rendre
    * jouable. Elle meurt avec le processus, comme tout ce que le dev fabrique.
    */
-  linkLoginMethod(subject: string, idToken: string): Promise<readonly LoginMethod[]> {
-    const added = devSecondary(idToken);
+  linkLoginMethod(subject: string, secondary: LinkableIdentity): Promise<readonly LoginMethod[]> {
+    const added: LoginMethod = {
+      provider: secondary.provider,
+      secondaryUserId: secondary.userId,
+      connection: null,
+      isPrimary: false,
+    };
     const current = this.linked.get(subject) ?? [];
     const kept = current.filter((method) => method.secondaryUserId !== added.secondaryUserId);
     this.linked.set(subject, [...kept, added]);
@@ -174,25 +180,6 @@ function primaryOf(subject: string, customerConnection: string): LoginMethod {
     secondaryUserId: cut < 0 ? subject : subject.slice(cut + 1),
     connection: fabricated ? customerConnection : null,
     isPrimary: true,
-  };
-}
-
-/**
- * Ce qu'un jeton de preuve « rattache » en développement : le port de preuve
- * doublé rend un sujet, et c'est ce sujet-là qu'on ajoute.
- *
- * ⚠️ Elle ne passe **plus** par {@link primaryOf} : celle-ci emprunte la
- * connexion à mot de passe pour les sujets fabriqués ici, ce qui ferait passer
- * une méthode SECONDAIRE pour une identité à mot de passe — et le lien de
- * réinitialisation serait alors offert à un compte qui n'en a pas.
- */
-function devSecondary(provenSubject: string): LoginMethod {
-  const cut = provenSubject.indexOf("|");
-  return {
-    provider: cut < 0 ? DEV_PROVIDER : provenSubject.slice(0, cut),
-    secondaryUserId: cut < 0 ? provenSubject : provenSubject.slice(cut + 1),
-    connection: null,
-    isPrimary: false,
   };
 }
 

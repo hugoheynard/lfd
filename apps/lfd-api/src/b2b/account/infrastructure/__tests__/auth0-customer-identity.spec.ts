@@ -10,6 +10,7 @@ import {
 } from "../../../../platform/shared/errors/identity-errors.js";
 import type { B2bMailer } from "../../../../platform/mailer/mailer.tokens.js";
 import { LoginMethodsUnknownAccountError } from "../../domain/errors/account-errors.js";
+import { LinkableIdentity } from "../../domain/value-objects/linkable-identity.js";
 import { Auth0CustomerIdentity } from "../auth0-customer-identity.js";
 
 const SUBJECT = "auth0|inconnu-du-tenant";
@@ -70,7 +71,7 @@ describe("Auth0CustomerIdentity — un sujet que le fournisseur ne connaît plus
         geste === "list"
           ? port.listLoginMethods(SUBJECT)
           : geste === "link"
-            ? port.linkLoginMethod(SUBJECT, "jeton")
+            ? port.linkLoginMethod(SUBJECT, LinkableIdentity.of("google-oauth2|xyz"))
             : port.unlinkLoginMethod(SUBJECT, "google-oauth2", "xyz");
 
       await expect(call).rejects.toBeInstanceOf(LoginMethodsUnknownAccountError);

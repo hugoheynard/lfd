@@ -13,6 +13,7 @@ import {
 } from "../../domain/ports/customer-identity.port.js";
 import { IdentityProofVerifier } from "../../domain/ports/identity-proof.verifier.js";
 import { LoginSubjectReader } from "../../domain/ports/login-subject.reader.js";
+import { LinkableIdentity } from "../../domain/value-objects/linkable-identity.js";
 import { AccountJournalNames } from "../services/account-journal-names.service.js";
 import { LinkLoginMethodCommand } from "./link-login-method.command.js";
 
@@ -27,6 +28,16 @@ import { LinkLoginMethodCommand } from "./link-login-method.command.js";
  * déjà être dedans (jeton d'accès) **et** tenir la session de l'autre (jeton
  * d'identité). C'est ce qui rend impossible de s'approprier le compte de
  * quelqu'un en écrivant son adresse quelque part.
+ *
+ * 🔴 **Depuis le 2026-10-09, la preuve n'est vérifiée QUE chez nous.** Le
+ * fournisseur recevait le jeton (`link_with`) et le revérifiait ; il le
+ * refusait toujours, l'audience de la SPA n'étant pas son client de gestion.
+ * On lui désigne désormais le sujet vérifié — et le client de gestion peut
+ * absorber n'importe quel compte. D'où {@link LinkableIdentity} : seuls les
+ * fournisseurs que l'écran propose passent, jamais `auth0|…` (un compte staff
+ * vit dans le même tenant). Risque assumé : le vérificateur date l'émission
+ * du jeton, pas l'authentification, et ne lit pas de `nonce` ; un rejeu exige
+ * d'être déjà dans le compte principal.
  *
  * ## 🔴 Trois temps, et c'est une détection avec compensation — pas un verrou
  *
@@ -72,11 +83,12 @@ export class LinkLoginMethodHandler implements ICommandHandler<LinkLoginMethodCo
     if (proof.subject === command.subject) {
       throw new LoginMethodAlreadyLinkedError();
     }
-    await this.refuseIfClaimed(proof.subject, command.userId);
+    const secondary = LinkableIdentity.of(proof.subject);
+    await this.refuseIfClaimed(secondary.subject, command.userId);
 
-    const methods = await this.identity.linkLoginMethod(command.subject, command.idToken);
-    const linked = secondaryAmong(methods, proof.subject);
-    await this.undoIfClaimedMeanwhile(command, proof.subject, linked);
+    const methods = await this.identity.linkLoginMethod(command.subject, secondary);
+    const linked = secondaryAmong(methods, secondary);
+    await this.undoIfClaimedMeanwhile(command, secondary.subject, linked);
 
     await this.events.publishTraced(
       new LoginMethodLinkedEvent(
@@ -137,23 +149,21 @@ export class LinkLoginMethodHandler implements ICommandHandler<LinkLoginMethodCo
  * La méthode que le rattachement vient d'ajouter, parmi celles que le
  * fournisseur rend.
  *
- * Le repli découpe le sujet (`<provider>|<userId>`) : une réponse dont la forme
+ * Le repli reprend l'identité déjà découpée : une réponse dont la forme
  * surprend ne doit pas empêcher d'écrire le fait ni de tenter la compensation.
- * Le sujet ne sort pas d'ici — seuls `provider` et l'identifiant secondaire en
- * sont tirés, et seul le premier voyage au journal.
+ * Seul `provider` voyage au journal.
  */
-function secondaryAmong(methods: readonly LoginMethod[], provenSubject: string): LoginMethod {
+function secondaryAmong(methods: readonly LoginMethod[], secondary: LinkableIdentity): LoginMethod {
   const found = methods.find(
-    (method) => `${method.provider}|${method.secondaryUserId}` === provenSubject,
+    (method) =>
+      method.provider === secondary.provider && method.secondaryUserId === secondary.userId,
   );
-  if (found !== undefined) {
-    return found;
-  }
-  const cut = provenSubject.indexOf("|");
-  return {
-    provider: cut < 0 ? provenSubject : provenSubject.slice(0, cut),
-    secondaryUserId: cut < 0 ? "" : provenSubject.slice(cut + 1),
-    connection: null,
-    isPrimary: false,
-  };
+  return (
+    found ?? {
+      provider: secondary.provider,
+      secondaryUserId: secondary.userId,
+      connection: null,
+      isPrimary: false,
+    }
+  );
 }

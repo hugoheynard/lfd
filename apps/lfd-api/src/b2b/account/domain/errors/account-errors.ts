@@ -542,6 +542,20 @@ export class NoPasswordLoginMethodError extends BusinessError {
   }
 }
 
+/**
+ * Le compte prouvé n'est pas d'un fournisseur qu'on rattache depuis le profil
+ * (`LINKABLE_PROVIDERS`). Ce n'est pas le fournisseur qui refuse : c'est nous,
+ * avant de lui demander quoi que ce soit (2026-10-09).
+ */
+export class LoginMethodNotLinkableError extends DomainError {
+  constructor() {
+    super(
+      "identity.not_linkable",
+      "Seuls un compte Google ou Facebook peuvent être ajoutés à votre compte depuis le profil.",
+    );
+  }
+}
+
 export class LoginMethodAlreadyLinkedError extends BusinessError {
   constructor() {
     super(

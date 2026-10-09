@@ -14,6 +14,7 @@ import type {
   IdentityToProvision,
   ProvisionedIdentity,
 } from "../../../../platform/shared/identity/provisioned-identity.js";
+import type { LinkableIdentity } from "../value-objects/linkable-identity.js";
 
 // Ré-exportés pour que les appelants du port n'aient pas à connaître deux
 // chemins : la **forme** est partagée avec le contexte staff, le **contrat**
@@ -114,18 +115,19 @@ export abstract class CustomerIdentityPort {
   abstract listLoginMethods(subject: string): Promise<readonly LoginMethod[]>;
 
   /**
-   * **Absorbe** une identité secondaire dans ce compte, sur preuve.
+   * **Absorbe** une identité secondaire dans ce compte.
    *
-   * `idToken` est la preuve que la même personne tient les deux sessions ; le
-   * fournisseur en extrait lui-même le sujet secondaire. Aucune adresse n'est
-   * lue, ni comparée, ni recopiée — c'est ce qui rend impossible de s'approprier
-   * un compte en écrivant son adresse quelque part.
+   * `secondary` est un sujet DÉJÀ PROUVÉ et admis (`LinkableIdentity`) : le
+   * fournisseur ne revérifie rien (2026-10-09, cf. `LinkLoginMethodHandler`).
    *
    * @returns les méthodes du compte APRÈS rattachement.
-   * @throws {IdentityLinkRefusedError} le fournisseur refuse (jeton inutilisable
-   *   pour lui, identité déjà rattachée ailleurs).
+   * @throws {IdentityLinkRefusedError} le fournisseur refuse (identité déjà
+   *   rattachée ailleurs, inconnue de lui).
    */
-  abstract linkLoginMethod(subject: string, idToken: string): Promise<readonly LoginMethod[]>;
+  abstract linkLoginMethod(
+    subject: string,
+    secondary: LinkableIdentity,
+  ): Promise<readonly LoginMethod[]>;
 
   /**
    * Détache une identité **secondaire**. Rend les méthodes restantes.

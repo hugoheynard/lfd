@@ -261,10 +261,13 @@ export class Auth0IdentityGateway {
   /**
    * **Absorbe** une identité secondaire dans le compte principal.
    *
-   * `idToken` est la preuve que la même personne tient les deux sessions : Auth0
-   * en extrait le sujet secondaire lui-même. Aucune adresse n'est lue, ni
-   * comparée, ni recopiée — c'est ce qui rend impossible de s'approprier un
-   * compte en écrivant son adresse quelque part.
+   * L'identité secondaire est désignée par `provider` et `userId` — la forme
+   * serveur. 🔴 Plus par `link_with` (2026-10-09) : Auth0 exige que l'audience
+   * du jeton soit le client qui appelle, et le jeton venait de la SPA boutique,
+   * pas du client de gestion — le rattachement était refusé à chaque fois.
+   * Auth0 ne vérifie donc plus aucune preuve ici : l'appelant doit l'avoir
+   * fait, et n'admettre que des fournisseurs sûrs (`LinkableIdentity`, côté
+   * compte).
    *
    * Après absorption, se connecter par la méthode ajoutée produit un jeton dont
    * le `sub` est celui du **principal** : rien ne bouge chez nous.
@@ -273,14 +276,18 @@ export class Auth0IdentityGateway {
    *   pour lui, ou identité déjà rattachée ailleurs).
    * @throws {IdentitySubjectUnknownError} le compte principal lui est inconnu.
    */
-  async linkIdentity(primarySubject: string, idToken: string): Promise<readonly LinkedIdentity[]> {
+  async linkIdentity(
+    primarySubject: string,
+    provider: string,
+    secondaryUserId: string,
+  ): Promise<readonly LinkedIdentity[]> {
     if (!isProviderSubject(primarySubject)) {
       throw new IdentitySubjectUnknownError(primarySubject);
     }
     const linked = await this.api.call(
       "POST",
       `/api/v2/users/${encodeURIComponent(primarySubject)}/identities`,
-      { link_with: idToken },
+      { provider, user_id: secondaryUserId },
     );
     if (linked === NOT_FOUND) {
       throw new IdentitySubjectUnknownError(primarySubject);

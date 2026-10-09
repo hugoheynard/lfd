@@ -132,10 +132,14 @@ describe("Auth0IdentityGateway — les méthodes de connexion", () => {
   });
 
   describe("linkIdentity", () => {
-    it("absorbe l'identité secondaire et rend la liste qui en résulte", async () => {
+    /**
+     * Régression 2026-10-09 : `link_with` portait le jeton de la SPA, dont
+     * l'audience n'est pas le client de gestion — Auth0 refusait toujours.
+     */
+    it("désigne l'identité secondaire par fournisseur et identifiant, jamais par jeton", async () => {
       const { gateway, api } = gatewayReplying(USER_WITH_TWO_IDENTITIES.identities);
 
-      await expect(gateway.linkIdentity(PRIMARY, "le-jeton")).resolves.toEqual([
+      await expect(gateway.linkIdentity(PRIMARY, "google-oauth2", "1078")).resolves.toEqual([
         { provider: "auth0", userId: "abcdef", connection: "lfc-b2b-customers", isPrimary: true },
         {
           provider: "google-oauth2",
@@ -148,7 +152,7 @@ describe("Auth0IdentityGateway — les méthodes de connexion", () => {
         {
           method: "POST",
           path: `/api/v2/users/${encodeURIComponent(PRIMARY)}/identities`,
-          body: { link_with: "le-jeton" },
+          body: { provider: "google-oauth2", user_id: "1078" },
         },
       ]);
     });
@@ -161,7 +165,7 @@ describe("Auth0IdentityGateway — les méthodes de connexion", () => {
     it("nomme le refus du fournisseur au lieu d'en faire un incident", async () => {
       const { gateway } = gatewayReplying(BAD_REQUEST);
 
-      await expect(gateway.linkIdentity(PRIMARY, "le-jeton")).rejects.toBeInstanceOf(
+      await expect(gateway.linkIdentity(PRIMARY, "google-oauth2", "1078")).rejects.toBeInstanceOf(
         IdentityLinkRefusedError,
       );
     });
@@ -169,7 +173,7 @@ describe("Auth0IdentityGateway — les méthodes de connexion", () => {
     it("refuse un compte principal inconnu du fournisseur", async () => {
       const { gateway } = gatewayReplying(NOT_FOUND);
 
-      await expect(gateway.linkIdentity(PRIMARY, "le-jeton")).rejects.toBeInstanceOf(
+      await expect(gateway.linkIdentity(PRIMARY, "google-oauth2", "1078")).rejects.toBeInstanceOf(
         IdentitySubjectUnknownError,
       );
     });

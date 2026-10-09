@@ -1,4 +1,5 @@
 import { Inject, Injectable } from "@nestjs/common";
+import type { LinkableIdentity } from "../domain/value-objects/linkable-identity.js";
 
 import {
   Auth0IdentityGateway,
@@ -79,8 +80,15 @@ export class Auth0CustomerIdentity extends CustomerIdentityPort {
     return asLoginMethods(await this.known(() => this.identities.listIdentities(subject)));
   }
 
-  async linkLoginMethod(subject: string, idToken: string): Promise<readonly LoginMethod[]> {
-    return asLoginMethods(await this.known(() => this.identities.linkIdentity(subject, idToken)));
+  async linkLoginMethod(
+    subject: string,
+    secondary: LinkableIdentity,
+  ): Promise<readonly LoginMethod[]> {
+    return asLoginMethods(
+      await this.known(() =>
+        this.identities.linkIdentity(subject, secondary.provider, secondary.userId),
+      ),
+    );
   }
 
   async unlinkLoginMethod(

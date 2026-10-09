@@ -1,4 +1,5 @@
 import { Injectable } from "@nestjs/common";
+import type { LinkableIdentity } from "../domain/value-objects/linkable-identity.js";
 
 import { isProviderSubject } from "../../../platform/identity/identity-diagnosis.js";
 import {
@@ -76,8 +77,8 @@ export class SubjectRoutedCustomerIdentity extends CustomerIdentityPort {
     return this.of(subject).listLoginMethods(subject);
   }
 
-  linkLoginMethod(subject: string, idToken: string): Promise<readonly LoginMethod[]> {
-    return this.of(subject).linkLoginMethod(subject, idToken);
+  linkLoginMethod(subject: string, secondary: LinkableIdentity): Promise<readonly LoginMethod[]> {
+    return this.of(subject).linkLoginMethod(subject, secondary);
   }
 
   unlinkLoginMethod(

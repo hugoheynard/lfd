@@ -6,6 +6,7 @@ import {
 import {
   LoginMethodAlreadyLinkedError,
   LoginMethodClaimedElsewhereError,
+  LoginMethodNotLinkableError,
 } from "../../../domain/errors/account-errors.js";
 import {
   CustomerIdentityPort,
@@ -16,6 +17,7 @@ import {
   type IdentityProof,
 } from "../../../domain/ports/identity-proof.verifier.js";
 import { LoginSubjectReader } from "../../../domain/ports/login-subject.reader.js";
+import type { LinkableIdentity } from "../../../domain/value-objects/linkable-identity.js";
 import { ListMyLoginMethodsHandler } from "../../queries/list-my-login-methods.handler.js";
 import { ListMyLoginMethodsQuery } from "../../queries/list-my-login-methods.query.js";
 import { LinkLoginMethodCommand } from "../link-login-method.command.js";
@@ -88,6 +90,7 @@ const googleMethod: LoginMethod = {
 class Identity extends CustomerIdentityPort {
   readonly unlinked: string[] = [];
   linkCalls = 0;
+  readonly linkedTargets: string[] = [];
   constructor(private methods: readonly LoginMethod[] = [primaryMethod]) {
     super();
   }
@@ -106,8 +109,9 @@ class Identity extends CustomerIdentityPort {
   listLoginMethods(): Promise<readonly LoginMethod[]> {
     return Promise.resolve(this.methods);
   }
-  linkLoginMethod(): Promise<readonly LoginMethod[]> {
+  linkLoginMethod(_subject: string, secondary: LinkableIdentity): Promise<readonly LoginMethod[]> {
     this.linkCalls += 1;
+    this.linkedTargets.push(`${secondary.provider}|${secondary.userId}`);
     this.methods = [...this.methods, googleMethod];
     return Promise.resolve(this.methods);
   }
@@ -145,7 +149,7 @@ describe("rattacher une méthode de connexion", () => {
 
     await handler.execute(linkCommand);
 
-    expect(identity.linkCalls).toBe(1);
+    expect(identity.linkedTargets).toEqual([GOOGLE]);
     expect(events.factTypes()).toEqual(["user.identity_linked"]);
     const fact = events.traced[0]?.journalFact();
     expect(fact?.payload).toEqual({
@@ -197,6 +201,25 @@ describe("rattacher une méthode de connexion", () => {
     );
     expect(identity.linkCalls).toBe(0);
   });
+
+  /**
+   * 🔴 Le mur (vitruve, 2026-10-09) : le fournisseur ne revérifie plus la
+   * preuve, et `auth0|…` peut être un compte du staff — l'absorber le
+   * priverait du back-office.
+   */
+  it.each(["auth0|staff-123", "email|6ac8a7c2"])(
+    "refuse de rattacher « %s » sans rien demander au fournisseur",
+    async (subject) => {
+      const identity = new Identity();
+      const { handler, events } = linkHandler(identity, new Subjects(), new Proof(subject));
+
+      await expect(handler.execute(linkCommand)).rejects.toBeInstanceOf(
+        LoginMethodNotLinkableError,
+      );
+      expect(identity.linkCalls).toBe(0);
+      expect(events.traced).toEqual([]);
+    },
+  );
 
   it("laisse remonter une preuve périmée, et ne rattache rien", async () => {
     const identity = new Identity();
