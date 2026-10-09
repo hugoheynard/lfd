@@ -465,6 +465,19 @@ export const ACCOUNTS_AND_CARTS_FACTS = {
     }),
   ),
   /**
+   * **La première entrée d'un invité, par un autre moyen que celui de son
+   * invitation** (2026-10-09, connexion par code e-mail). Le compte provisionné
+   * par le staff portait l'identité à mot de passe créée à l'invitation ; la
+   * personne est entrée par code, avec la même adresse prouvée, et le compte a
+   * été rattaché à ce nouveau moyen au lieu d'être doublé.
+   *
+   * 🔴 **Pas le `sub`**, ni l'ancien ni le nouveau — même règle que
+   * `user.identity_linked` : `provider` nomme le moyen sans ambiguïté.
+   */
+  "user.login_method_switched_at_first_entry": fact(
+    payload({ subjectLabel: subjectLabel().optional(), ...loginMethod }),
+  ),
+  /**
    * Une méthode de connexion a été détachée. Seule une identité **secondaire**
    * peut l'être : la principale porte le compte et ne se délie jamais.
    */

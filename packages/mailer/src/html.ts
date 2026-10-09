@@ -96,6 +96,13 @@ export interface LayoutInput {
   /** Le corps, en texte brut. Les retours à la ligne sont préservés. */
   readonly body: string;
   readonly cta?: MailCta;
+  /**
+   * Un second chemin, en lien discret sous le bouton — « ou choisissez un mot
+   * de passe » (2026-10-09, l'invitation qui passe au code e-mail). Rendu
+   * seulement s'il y a un bouton : seul, il deviendrait l'action principale
+   * sans en avoir la forme.
+   */
+  readonly secondaryLink?: MailCta;
   /** La ligne de pied — mentions, désinscription. Texte brut. */
   readonly footer?: string;
   /**
@@ -149,6 +156,10 @@ export function renderLayout(input: LayoutInput): string {
   const cta =
     input.cta !== undefined && isRenderableUrl(input.cta.url)
       ? `<p style="margin:28px 0 4px;"><a href="${htmlEscape(input.cta.url)}" style="display:inline-block;padding:13px 22px;background:${BRAND.navy};color:#ffffff;text-decoration:none;border-radius:${BRAND.radius};font-weight:600;font-size:15px;">${htmlEscape(input.cta.label)}</a></p>`
+      : "";
+  const secondary =
+    cta !== "" && input.secondaryLink !== undefined && isRenderableUrl(input.secondaryLink.url)
+      ? `<p style="margin:12px 0 0;font-size:14px;"><a href="${htmlEscape(input.secondaryLink.url)}" style="color:${BRAND.navy};text-decoration:underline;">${htmlEscape(input.secondaryLink.label)}</a></p>`
       : "";
   // Le récapitulatif : un tableau de présentation, pas une grille. Outlook
   // ignore flex et grid, et un récapitulatif qui s'effondre en une colonne
@@ -216,6 +227,7 @@ export function renderLayout(input: LayoutInput): string {
         ${rows}
         ${image}
         ${cta}
+        ${secondary}
         ${footer}
       </td></tr>
       ${support}

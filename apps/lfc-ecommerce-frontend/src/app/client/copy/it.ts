@@ -15,7 +15,7 @@ import { ORDERS_IT } from './screens/orders.copy';
 export const IT: ClientCopy = {
   chrome: {
     identityConflict:
-      'Esiste già un account con questo indirizzo Google. Accedi con la tua email abituale.',
+      'Esiste già un account con questo indirizzo, aperto con un altro metodo di accesso. Riprendi quella strada: codice via e-mail, password o Google.',
     identityConflictDismiss: 'Ho capito',
     back: 'Indietro',
     menu: 'Menu',
@@ -108,8 +108,8 @@ export const IT: ClientCopy = {
     emailPlaceholder: 'tu@esempio.it',
     open: 'Iscriviti',
     submit: 'Crea il mio account',
-    fine: 'Una password per aprire, poi il suo dispositivo la riconosce.',
-    fineInline: 'Una password per aprire, poi il suo dispositivo la riconosce.',
+    fine: 'Un codice ricevuto via e-mail per entrare, nessuna password da ricordare.',
+    fineInline: 'Un codice ricevuto via e-mail per entrare, nessuna password da ricordare.',
     legal:
       'Continuando, accettate le condizioni generali di vendita e la nostra politica sui dati. Nessun pagamento è richiesto all’iscrizione.',
   },
@@ -130,11 +130,13 @@ export const IT: ClientCopy = {
   doors: {
     or: 'oppure',
     alreadyTitle: 'Sei già cliente ?',
-    alreadySub: 'Password, o il suo dispositivo',
+    alreadySub: 'Un codice via e-mail, una password o Google',
+    emailCodeEntry: 'Apertura dell’accesso con codice…',
     firstTitle: 'Prima volta ?',
     firstSub: 'Nome, e-mail, telefono',
     signInLead: 'Riprendi dal metodo che hai scelto aprendo il tuo account.',
-    signInSubmit: 'Continua',
+    signInSubmit: 'Ricevi un codice',
+    usePassword: 'Usa una password',
     switchLabel: 'Tipo di account',
     persoLabel: 'Privato',
     persoSub: 'Ordino per me',

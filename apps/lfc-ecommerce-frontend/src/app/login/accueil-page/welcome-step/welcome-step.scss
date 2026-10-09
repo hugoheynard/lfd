@@ -160,6 +160,20 @@ fold-input {
   cursor: pointer;
 }
 
+/* Le lien vers le mot de passe : en retrait sous l'action, en petit. Il hérite
+   de `.link` et n'en garde que la forme. */
+.password-link {
+  align-self: center;
+  font-size: var(--fold-text-xs);
+  font-weight: var(--fold-weight-regular);
+  text-decoration: underline;
+
+  &:disabled {
+    color: var(--lfc-color-text-subtle);
+    cursor: default;
+  }
+}
+
 /* ── Au-delà du pli ───────────────────────────────────────────────────────── */
 
 @media (min-width: 900px) {

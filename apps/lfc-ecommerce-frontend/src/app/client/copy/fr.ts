@@ -7,7 +7,7 @@ import { ORDERS_FR } from './screens/orders.copy';
 export const FR: ClientCopy = {
   chrome: {
     identityConflict:
-      'Un compte existe déjà avec cette adresse Google. Connectez-vous avec votre e-mail habituel.',
+      'Un compte existe déjà avec cette adresse, ouvert par un autre moyen de connexion. Reprenez ce chemin : code par e-mail, mot de passe ou Google.',
     identityConflictDismiss: 'Compris',
     back: 'Retour',
     menu: 'Menu',
@@ -101,8 +101,8 @@ export const FR: ClientCopy = {
     emailPlaceholder: 'vous@exemple.fr',
     open: 'S’inscrire',
     submit: 'Créer mon compte',
-    fine: 'Un mot de passe pour ouvrir, puis votre appareil vous reconnaît.',
-    fineInline: 'Un mot de passe pour ouvrir, puis votre appareil vous reconnaît.',
+    fine: 'Un code reçu par e-mail pour entrer, sans mot de passe à retenir.',
+    fineInline: 'Un code reçu par e-mail pour entrer, sans mot de passe à retenir.',
     legal:
       'En continuant, vous acceptez les conditions générales de vente et notre politique de données. Aucun paiement n’est demandé à l’inscription.',
   },
@@ -123,11 +123,13 @@ export const FR: ClientCopy = {
   doors: {
     or: 'ou',
     alreadyTitle: 'Déjà client ?',
-    alreadySub: 'Mot de passe, ou votre appareil',
+    alreadySub: 'Un code par e-mail, un mot de passe ou Google',
+    emailCodeEntry: 'Ouverture de la connexion par code…',
     firstTitle: 'Première visite ?',
     firstSub: 'Prénom, e-mail, téléphone',
     signInLead: 'Reprenez par le chemin que vous avez choisi en ouvrant votre compte.',
-    signInSubmit: 'Continuer',
+    signInSubmit: 'Recevoir un code',
+    usePassword: 'Utiliser un mot de passe',
     switchLabel: 'Type de compte',
     persoLabel: 'Particulier',
     persoSub: 'Je commande pour moi',

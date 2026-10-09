@@ -97,6 +97,16 @@
         {{ t().signup.open }}
       </button>
       <p class="fine">{{ t().signup.fine }}</p>
+      <!-- Le mot de passe reste, en retrait (2026-10-09) : mêmes champs, autre
+           connexion. Désarmé comme l'action tant que la carte n'est pas remplie. -->
+      <button
+        class="link password-link"
+        type="button"
+        [disabled]="!complete()"
+        (click)="submitWithPassword()"
+      >
+        {{ t().doors.usePassword }}
+      </button>
     </div>
 
     <!-- Le pied de la carte propose l'AUTRE porte, sous un filet : c'est la

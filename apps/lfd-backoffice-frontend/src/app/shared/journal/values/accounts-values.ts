@@ -141,6 +141,7 @@ export const SUPPORT_CHANNEL = domain('canal d’une demande de contact', {
  */
 export const LOGIN_PROVIDER = domain('méthode de connexion', {
   auth0: 'Mot de passe',
+  email: 'Code par e-mail',
   'google-oauth2': 'Google',
   facebook: 'Facebook',
 });

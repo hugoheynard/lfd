@@ -36,8 +36,11 @@ function boot(
       {
         provide: AuthFacade,
         useValue: {
-          login: (target: string, hint?: string): void => {
-            wire.calls.push(`login:${target}:${hint ?? '—'}`);
+          continueWithEmailCode: (target: string, hint?: string): void => {
+            wire.calls.push(`code:${target}:${hint ?? '—'}`);
+          },
+          loginWithPassword: (target: string, hint?: string): void => {
+            wire.calls.push(`password:${target}:${hint ?? '—'}`);
           },
           continueWithGoogle: (target: string): void => {
             wire.calls.push(`google:${target}`);
@@ -143,7 +146,7 @@ describe('SignInDialog', () => {
 
     clickLabelled(FR.doors.signInSubmit);
 
-    expect(wire.calls).toEqual([`login:${INTENT.target}:${INTENT.email}`]);
+    expect(wire.calls).toEqual([`code:${INTENT.target}:${INTENT.email}`]);
   });
 
   /**
@@ -156,7 +159,7 @@ describe('SignInDialog', () => {
 
     clickLabelled(FR.doors.signInSubmit);
 
-    expect(wire.calls).toEqual(['login:/mon-espace:—']);
+    expect(wire.calls).toEqual(['code:/mon-espace:—']);
   });
 
   it('une adresse faite de blancs ne devient pas un indice', () => {
@@ -165,7 +168,7 @@ describe('SignInDialog', () => {
 
     clickLabelled(FR.doors.signInSubmit);
 
-    expect(wire.calls).toEqual([`login:${INTENT.target}:—`]);
+    expect(wire.calls).toEqual([`code:${INTENT.target}:—`]);
   });
 
   it('chaque fournisseur emmène vers la même destination', () => {
@@ -181,13 +184,31 @@ describe('SignInDialog', () => {
    * la personne est désormais connectée.
    */
   it('se ferme avant de partir, quel que soit le chemin', () => {
-    for (const label of [FR.signup.google, FR.doors.signInSubmit]) {
+    for (const label of [FR.signup.google, FR.doors.signInSubmit, FR.doors.usePassword]) {
       fixture = boot();
       clickLabelled(label);
 
       expect(wire.closed).toEqual(['closed']);
       expect(wire.calls.length).toBe(1);
     }
+  });
+
+  /**
+   * Le chemin par défaut est le CODE (2026-10-09) ; le mot de passe reste,
+   * derrière un lien, avec la même adresse soufflée.
+   */
+  it('« Utiliser un mot de passe » part sur la connexion à mot de passe, l’adresse en main', () => {
+    fixture = boot();
+    clickLabelled(FR.doors.usePassword);
+
+    expect(wire.calls).toEqual([`password:${INTENT.target}:${INTENT.email}`]);
+  });
+
+  it('le lien du mot de passe ne souffle pas une adresse vide', () => {
+    fixture = boot({ target: '/mon-espace', email: '' });
+    clickLabelled(FR.doors.usePassword);
+
+    expect(wire.calls).toEqual(['password:/mon-espace:—']);
   });
 
   it('annuler ne connecte personne', () => {

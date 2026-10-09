@@ -3,6 +3,7 @@ import { CommandHandler, type ICommandHandler } from "@nestjs/cqrs";
 import { AppConfig } from "../../../../platform/config/app-config.js";
 import { DomainEventPublisher } from "../../../../platform/events/domain-event-publisher.js";
 import { NoPasswordLoginMethodError } from "../../domain/errors/account-errors.js";
+import { signInRouteOfProvider } from "../../domain/value-objects/sign-in-route.js";
 import { PasswordResetRequestedEvent } from "../../domain/events/person-acts.event.js";
 import { CustomerIdentityPort } from "../../domain/ports/customer-identity.port.js";
 import { AccountJournalNames } from "../services/account-journal-names.service.js";
@@ -42,7 +43,7 @@ import { RequestPasswordResetCommand } from "./request-password-reset.command.js
  *
  * ## Le seul refus, et il est posé avant le premier appel sortant
  *
- * Un compte entré par Google n'a pas d'identité à mot de passe. Le fournisseur
+ * Un compte entré par Google ou par code e-mail n'a pas d'identité à mot de passe. Le fournisseur
  * refuserait d'émettre, et la chaîne rendrait un 500 à quelqu'un dont le compte
  * va bien. On lit donc les méthodes du compte d'abord, et on nomme le cas.
  *
@@ -93,7 +94,13 @@ export class RequestPasswordResetHandler implements ICommandHandler<
     const methods = await this.identity.listLoginMethods(subject);
     const passwordConnection = this.config.auth0DatabaseConnection();
     if (!methods.some((method) => method.connection === passwordConnection)) {
-      throw new NoPasswordLoginMethodError();
+      // Nommer le moyen réel : un compte ouvert par code e-mail n'a pas de
+      // « service tiers » (2026-10-09). L'identité principale porte le compte.
+      // Un `auth0` hors de notre connexion n'est PAS notre mot de passe : on ne
+      // le nomme pas comme tel.
+      const main = methods.find((method) => method.isPrimary) ?? methods[0];
+      const route = main === undefined ? "other" : signInRouteOfProvider(main.provider);
+      throw new NoPasswordLoginMethodError(route === "password" ? "other" : route);
     }
   }
 }

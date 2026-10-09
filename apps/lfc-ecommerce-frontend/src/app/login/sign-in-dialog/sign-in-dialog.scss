@@ -32,3 +32,21 @@
   inline-size: 1.25rem;
   block-size: 1.25rem;
 }
+
+/* Le lien vers le mot de passe : discret, sous le champ. Même allure que les
+   liens de la carte d'inscription (`welcome-step`, `.link`), en plus petit. */
+.password {
+  margin: 0;
+  font-size: var(--fold-text-sm);
+  text-align: center;
+}
+
+.password-link {
+  padding: 0;
+  border: 0;
+  background: none;
+  color: var(--fold-color-text-muted);
+  font: inherit;
+  text-decoration: underline;
+  cursor: pointer;
+}

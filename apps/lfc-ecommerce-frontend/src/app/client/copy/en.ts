@@ -12,7 +12,8 @@ import { ORDERS_EN } from './screens/orders.copy';
  */
 export const EN: ClientCopy = {
   chrome: {
-    identityConflict: 'An account already uses this Google address. Sign in with your usual email.',
+    identityConflict:
+      'An account already uses this address, opened with another sign-in method. Take that path again: email code, password or Google.',
     identityConflictDismiss: 'Got it',
     back: 'Back',
     menu: 'Menu',
@@ -105,8 +106,8 @@ export const EN: ClientCopy = {
     emailPlaceholder: 'you@example.com',
     open: 'Sign up',
     submit: 'Create my account',
-    fine: 'A password to open the door, then your device recognises you.',
-    fineInline: 'A password to open the door, then your device recognises you.',
+    fine: 'A code sent by email to get in, no password to remember.',
+    fineInline: 'A code sent by email to get in, no password to remember.',
     legal:
       'By continuing, you accept the terms of sale and our data policy. No payment is asked for at sign-up.',
   },
@@ -127,11 +128,13 @@ export const EN: ClientCopy = {
   doors: {
     or: 'or',
     alreadyTitle: 'Already a customer ?',
-    alreadySub: 'Password, or your device',
+    alreadySub: 'A code by email, a password or Google',
+    emailCodeEntry: 'Opening sign-in by code…',
     firstTitle: 'First time ?',
     firstSub: 'First name, email, phone',
     signInLead: 'Continue the way you chose when you opened your account.',
-    signInSubmit: 'Continue',
+    signInSubmit: 'Get a code',
+    usePassword: 'Use a password',
     switchLabel: 'Account type',
     persoLabel: 'Individual',
     persoSub: 'I order for myself',

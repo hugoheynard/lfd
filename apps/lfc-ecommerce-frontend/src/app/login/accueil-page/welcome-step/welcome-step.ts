@@ -50,6 +50,12 @@ import { RuleOu } from '../rule-ou/rule-ou';
 export class WelcomeStep {
   /** Les trois champs. Le composant les COLLECTE ; il ne les envoie nulle part. */
   readonly signedUp = output<PendingProfile>();
+  /**
+   * Les mêmes trois champs, mais vers l'inscription PAR MOT DE PASSE — le lien
+   * discret « Utiliser un mot de passe » (2026-10-09). Le chemin par défaut,
+   * {@link signedUp}, part par code e-mail.
+   */
+  readonly signedUpWithPassword = output<PendingProfile>();
 
   /** L'e-mail déjà tapé, s'il y en a un : il préremplira l'écran d'Auth0. */
   readonly wantsLogin = output<string>();
@@ -79,11 +85,22 @@ export class WelcomeStep {
 
   protected submit(): void {
     if (this.complete()) {
-      this.signedUp.emit({
-        firstName: this.firstName().trim(),
-        email: this.email().trim(),
-        phone: this.tel().trim(),
-      });
+      this.signedUp.emit(this.profile());
     }
+  }
+
+  /** Le lien est désarmé tant que la carte n'est pas remplie : il emporte les mêmes champs. */
+  protected submitWithPassword(): void {
+    if (this.complete()) {
+      this.signedUpWithPassword.emit(this.profile());
+    }
+  }
+
+  private profile(): PendingProfile {
+    return {
+      firstName: this.firstName().trim(),
+      email: this.email().trim(),
+      phone: this.tel().trim(),
+    };
   }
 }

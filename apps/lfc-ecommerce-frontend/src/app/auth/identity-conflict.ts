@@ -7,8 +7,12 @@ import { catchError, throwError } from 'rxjs';
 import { AuthFacade } from './auth.facade';
 
 /**
- * Le code que l'API rend quand une connexion **Google** arrive sous l'adresse
- * d'un compte qui existe déjà (`SocialSignInAccountExistsError`).
+ * Le code que l'API rend quand une connexion — Google, code e-mail, mot de
+ * passe — arrive sous l'adresse d'un compte qui se connecte par un AUTRE moyen
+ * (`AccountExistsUnderAnotherSignInError` ; Google seulement jusqu'au
+ * 2026-10-09). Le message de l'API nomme ce moyen ; l'avis d'ici invite à
+ * « reprendre ce chemin » sans le nommer, l'enveloppe d'erreur ne portant que
+ * des nombres publiables.
  */
 export const IDENTITY_LINK_REQUIRED = 'account.identity.link_required';
 
@@ -21,7 +25,7 @@ const NOTICE_KEY = 'lfc-identity-link-required';
  *
  * ## Pourquoi sortir, et pourquoi un avis qui survit
  *
- * Une session Google refusée par l'API n'ouvre rien : chaque écran prendrait
+ * Une session refusée par l'API n'ouvre rien : chaque écran prendrait
  * son propre 409. On déconnecte donc tout de suite — et la déconnexion Auth0
  * recharge l'application. L'avis est gardé dans le stockage de session pour
  * être lu APRÈS ce rechargement, par le shell, là où le visiteur atterrit.

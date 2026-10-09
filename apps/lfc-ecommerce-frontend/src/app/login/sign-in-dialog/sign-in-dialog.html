@@ -56,6 +56,15 @@
     [value]="email()"
     (valueChange)="setEmail($event)"
   />
+
+  <!-- Le mot de passe reste, en retrait : le chemin par défaut est le code
+       (2026-10-09). Un lien et non un bouton du pied, pour ne pas lui donner
+       le poids d'une décision égale. -->
+  <p class="password">
+    <button class="password-link" type="button" (click)="withPassword()">
+      {{ t().doors.usePassword }}
+    </button>
+  </p>
 </fold-panel-body>
 
 <fold-panel-footer>

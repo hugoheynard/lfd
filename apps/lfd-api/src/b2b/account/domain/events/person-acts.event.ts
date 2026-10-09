@@ -17,8 +17,10 @@ import type { NamedRef, PersonRef } from "./journal-names.js";
  */
 
 /**
- * La seule voie de rattachement ouverte : le profil. La porte d'entrée, elle,
- * refuse toujours (`SocialSignInAccountExistsError`) et n'écrit donc aucun fait.
+ * La seule voie de rattachement ouverte à un compte déjà entré : le profil. La
+ * porte d'entrée, elle, refuse (`AccountExistsUnderAnotherSignInError`) — sauf
+ * la première entrée d'un invité, qui a son propre fait
+ * ({@link LoginMethodSwitchedAtFirstEntryEvent}, 2026-10-09).
  */
 const LINKED_VIA_PROFILE = "profile";
 
@@ -191,6 +193,33 @@ export class LoginMethodRevokedEvent implements JournaledEvent {
         provider: this.provider,
         connection: this.connection,
       },
+    };
+  }
+}
+
+/**
+ * **Un invité entre pour la première fois par un autre moyen que celui de son
+ * invitation** — par code e-mail au lieu du lien de mot de passe (2026-10-09).
+ *
+ * Le compte n'est pas doublé : il est rattaché au nouveau moyen
+ * (`customer-principal.resolver.ts`). La charge nomme le moyen par son
+ * fournisseur, jamais par le `sub` — ni l'ancien, ni le nouveau.
+ */
+export class LoginMethodSwitchedAtFirstEntryEvent implements JournaledEvent {
+  constructor(
+    readonly userId: string,
+    /** Le nom de la personne, ou `null` si son profil n'en porte pas. */
+    readonly name: string | null,
+    readonly provider: string,
+    readonly connection: string | null,
+  ) {}
+
+  journalFact(): JournalFact {
+    return {
+      type: ACCOUNT_FACTS.firstEntrySwitched,
+      subjectType: "user",
+      subjectId: this.userId,
+      payload: { ...labelOf(this.name), provider: this.provider, connection: this.connection },
     };
   }
 }

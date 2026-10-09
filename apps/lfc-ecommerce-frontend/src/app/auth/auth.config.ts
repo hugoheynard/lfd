@@ -74,12 +74,28 @@ export interface AuthConfig {
 export const CUSTOMER_CONNECTION = 'lfc-b2b-customers';
 
 /**
+ * La connexion Auth0 **sans mot de passe par code e-mail** — le chemin par
+ * défaut de « Se connecter » et « Créer mon compte » depuis le 2026-10-09.
+ *
+ * Son nom est imposé par Auth0 : une connexion passwordless e-mail s'appelle
+ * toujours `email`, et ses sujets s'écrivent `email|…`. Elle est activée pour la
+ * seule application de la boutique ; le back-office ne l'a pas (réglage de
+ * console, relevé le 2026-10-09 — `documentation/auth-inscription/connexion-par-code.md`).
+ *
+ * Le mot de passe ({@link CUSTOMER_CONNECTION}) reste derrière le lien
+ * « Utiliser un mot de passe ». Il n'y a pas de rattachement d'identités : un
+ * second compte sous une adresse connue est refusé par l'API, qui nomme le
+ * moyen par lequel le compte existant se connecte.
+ */
+export const EMAIL_CODE_CONNECTION = 'email';
+
+/**
  * La connexion Auth0 de **Google** — son nom par défaut dans le tenant.
  *
  * Nommée comme `CUSTOMER_CONNECTION`, et pour la même raison : le bouton mène
  * droit chez Google, sans passer par l'écran d'Auth0. La nommer est de
  * l'ergonomie, pas un contrôle — c'est l'API qui refuse un second compte sous
- * une adresse connue (`SocialSignInAccountExistsError`).
+ * une adresse connue (`AccountExistsUnderAnotherSignInError`).
  */
 export const GOOGLE_CONNECTION = 'google-oauth2';
 

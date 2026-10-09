@@ -323,6 +323,15 @@ export const routes: Routes = [
       // l'accueil public. Y envoyer qui clique « se connecter » l'aurait déposé
       // devant un bandeau de retrait.
       { path: 'connexion', pathMatch: 'full', redirectTo: 'inscription' },
+      {
+        // LE LIEN DE L'E-MAIL D'INVITATION (2026-10-09) : il part aussitôt sur
+        // la connexion par code. Sans garde, comme l'inscription : on entre
+        // à tous les niveaux de la boutique. Aucune adresse dans l'URL.
+        path: 'connexion/code',
+        title: 'Connexion — La Folie Coffee',
+        loadComponent: () =>
+          import('./login/email-code-entry/email-code-entry').then((m) => m.EmailCodeEntry),
+      },
       // 🔴 `/mon-espace` A ÉTÉ RETIRÉE le 2026-09-21 (Hugo : « bienvenue
       // centralise tout »). Son écran répondait « qu'est-ce qui m'attend
       // aujourd'hui ? », ce que `/bienvenue` fait désormais pour les trois

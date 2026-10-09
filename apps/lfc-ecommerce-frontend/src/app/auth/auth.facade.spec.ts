@@ -111,4 +111,23 @@ describe('AuthFacade — la porte pro', () => {
     expect(facade.pendingProRegistration()).toBeNull();
     expect(facade.pendingProfile()).toEqual(profile);
   });
+
+  /**
+   * La connexion par code (2026-10-09) : en bypass dev, comme les autres
+   * entrées, elle lève la déconnexion et va à la destination — sans Auth0.
+   * Ce qu'elle DEMANDE à Auth0 est éprouvé dans `auth-redirect.spec.ts`.
+   */
+  it('en bypass dev, entrer par code mène à la destination sans partir chez Auth0', () => {
+    const navigated: string[] = [];
+    TestBed.inject(Router).navigateByUrl = (url): Promise<boolean> => {
+      navigated.push(String(url));
+      return Promise.resolve(true);
+    };
+
+    facade.continueWithEmailCode('/accueil', 'pierre@brasserie.fr');
+
+    expect(redirects).toEqual([]);
+    expect(navigated).toEqual(['/accueil']);
+    expect(facade.isAuthenticated()).toBe(true);
+  });
 });

@@ -72,6 +72,34 @@ describe("le rendu", () => {
     });
     expect(html).not.toContain("Cliquez");
   });
+
+  it("rend le lien secondaire sous le bouton, échappé", () => {
+    const html = renderLayout({
+      title: "T",
+      body: "b",
+      cta: { label: "Me connecter", url: "https://lfc.fr/connexion/code" },
+      secondaryLink: { label: "Ou choisissez un mot de passe", url: "https://auth/t?a=1&b=2" },
+    });
+    expect(html).toContain("Ou choisissez un mot de passe");
+    expect(html).toContain("https://auth/t?a=1&amp;b=2");
+    expect(html.indexOf("Me connecter")).toBeLessThan(html.indexOf("Ou choisissez"));
+  });
+
+  it("ne rend PAS de lien secondaire sans bouton, ni sur un schéma hostile", () => {
+    const alone = renderLayout({
+      title: "T",
+      body: "b",
+      secondaryLink: { label: "Seul", url: "https://lfc.fr" },
+    });
+    const hostile = renderLayout({
+      title: "T",
+      body: "b",
+      cta: { label: "Voir", url: "https://lfc.fr" },
+      secondaryLink: { label: "Piège", url: "javascript:alert(1)" },
+    });
+    expect(alone).not.toContain("Seul");
+    expect(hostile).not.toContain("Piège");
+  });
 });
 
 describe("le mode à blanc", () => {

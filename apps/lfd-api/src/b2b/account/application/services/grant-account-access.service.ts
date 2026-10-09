@@ -1,5 +1,6 @@
 import { Inject, Injectable, Logger } from "@nestjs/common";
 
+import { AppConfig } from "../../../../platform/config/app-config.js";
 import { MAILER, type B2bMailer } from "../../../../platform/mailer/mailer.module.js";
 import { IdentitySubjectUnknownError } from "../../../../platform/shared/errors/identity-errors.js";
 import {
@@ -87,6 +88,7 @@ export class GrantAccountAccess extends AccountAccessGranter {
     private readonly members: CompanyMemberRepository,
     private readonly identity: CustomerIdentityPort,
     @Inject(MAILER) private readonly mailer: B2bMailer,
+    private readonly config: AppConfig,
   ) {
     super();
   }
@@ -303,11 +305,23 @@ export class GrantAccountAccess extends AccountAccessGranter {
         data: {
           firstName: input.firstName,
           companyName: input.companyName,
+          email: input.email,
+          signInUrl: this.emailCodeSignInUrl(),
           passwordSetupUrl,
         },
       }),
     );
     return { userId, outcome, mailSent };
+  }
+
+  /**
+   * L'entrée par code de la boutique, que l'invitation propose d'abord
+   * (2026-10-09) — ou `null` sans racine publique configurée, et l'e-mail
+   * retombe sur le lien de mot de passe seul.
+   */
+  private emailCodeSignInUrl(): string | null {
+    const root = this.config.clientBaseUrl();
+    return root === null ? null : `${root.replace(/\/+$/u, "")}${EMAIL_CODE_ENTRY_PATH}`;
   }
 
   /**
@@ -331,3 +345,10 @@ export class GrantAccountAccess extends AccountAccessGranter {
     }
   }
 }
+
+/**
+ * La route de la boutique qui part aussitôt sur la connexion par code
+ * (`apps/lfc-ecommerce-frontend/src/app/app.routes.ts`, `connexion/code`).
+ * Aucune adresse dans l'URL : la boutique ne souffle pas de `login_hint`.
+ */
+const EMAIL_CODE_ENTRY_PATH = "/connexion/code";

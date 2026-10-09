@@ -50,8 +50,12 @@ export class LoginPage {
     SignInDialog.open(this.panels, this.returnTo);
   }
 
-  /** Ouvre l'onglet inscription de l'Universal Login (création de compte). */
+  /**
+   * Créer un compte : par code e-mail, le chemin par défaut depuis le
+   * 2026-10-09 — la connexion sans mot de passe crée la personne au premier
+   * code. Le mot de passe reste derrière le dialogue des méthodes.
+   */
   protected signUp(): void {
-    this.facade.register(this.returnTo);
+    this.facade.continueWithEmailCode(this.returnTo);
   }
 }

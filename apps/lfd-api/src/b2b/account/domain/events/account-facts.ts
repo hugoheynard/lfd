@@ -155,4 +155,6 @@ export const ACCOUNT_FACTS = {
   identityLinked: "user.identity_linked",
   /** Une méthode de connexion secondaire a été détachée. */
   identityRevoked: "user.identity_revoked",
+  /** Un invité entre pour la première fois par un autre moyen que son invitation. */
+  firstEntrySwitched: "user.login_method_switched_at_first_entry",
 } as const satisfies Readonly<Record<string, JournalFactType>>;

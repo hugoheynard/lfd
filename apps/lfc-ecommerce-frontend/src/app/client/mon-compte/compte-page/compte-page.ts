@@ -199,7 +199,7 @@ export class ComptePage {
   }
 
   protected signIn(): void {
-    this.auth.login('/mon-compte');
+    this.auth.continueWithEmailCode('/mon-compte');
   }
 
   /**

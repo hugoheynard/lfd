@@ -186,10 +186,16 @@ export class AccueilPage {
   /**
    * Les trois champs sont pris. Ils partent avec la personne dans l'`appState`
    * — Auth0 ne sait ni les collecter ni les rendre — et reviendront se poser
-   * sur le compte au retour.
+   * sur le compte au retour. Par défaut, l'entrée se fait par un code reçu par
+   * e-mail (2026-10-09) ; l'adresse tapée est soufflée à Auth0.
    */
   protected signUp(profile: PendingProfile): void {
-    this.auth.register(AFTER_ENTRY, profile);
+    this.auth.continueWithEmailCode(AFTER_ENTRY, profile.email, profile);
+  }
+
+  /** Le lien « Utiliser un mot de passe » : les mêmes champs, l'onglet inscription. */
+  protected signUpWithPassword(profile: PendingProfile): void {
+    this.auth.registerWithPassword(AFTER_ENTRY, profile);
   }
 
   /**

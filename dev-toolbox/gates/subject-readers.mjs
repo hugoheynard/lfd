@@ -60,6 +60,11 @@ const ADMITTED = new Map([
     "l'adaptateur du port PrincipalResolver : rapproche le `sub` prouvé du `User` " +
       "local (provisionnement, invité sans compte qui se connecte, accès en attente)",
   ],
+  [
+    "apps/lfd-api/src/b2b/account/infrastructure/unknown-subject-admission.ts",
+    "un `sub` inconnu sous une adresse connue : refus d'un second compte, ou première " +
+      "entrée d'un invité rattachée à ce `sub` (2026-10-09) ; le `sub` n'est ni rendu ni journalisé",
+  ],
 ]);
 
 /** Le module du principal CLIENT — pas `staff-principal.js`. */

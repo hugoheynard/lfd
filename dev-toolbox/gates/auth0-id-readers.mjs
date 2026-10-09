@@ -62,6 +62,11 @@ const ADMITTED = new Map([
     "rapproche le `sub` prouvé du `User` local — c'est la résolution du principal client",
   ],
   [
+    `${ACCOUNT_DIR}infrastructure/unknown-subject-admission.ts`,
+    "nomme le moyen du compte qui porte déjà l'adresse, et rattache le `sub` à un invité " +
+      "jamais entré (2026-10-09) ; seul le fournisseur sort, jamais le `sub`",
+  ],
+  [
     `${ACCOUNT_DIR}infrastructure/prisma-company-member.repository.ts`,
     "rend le `sub` d'un membre pour lui émettre un lien ou propager son adresse chez le fournisseur",
   ],

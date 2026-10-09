@@ -103,11 +103,14 @@ describe('AccueilPage · porte pro', () => {
       registerPro: (target: string, registration: ProRegistration): void => {
         asked.push({ kind: 'registerPro', target, payload: registration });
       },
-      login: (target: string, hint?: string): void => {
+      loginWithPassword: (target: string, hint?: string): void => {
         asked.push({ kind: 'login', target, payload: hint });
       },
-      register: (): void => {
-        throw new Error('La porte pro ne passe jamais par `register`.');
+      registerWithPassword: (): void => {
+        throw new Error('La porte pro ne passe jamais par `registerWithPassword`.');
+      },
+      continueWithEmailCode: (): void => {
+        throw new Error('La porte pro reste au mot de passe : jamais par code.');
       },
       continueWithGoogle: (): void => {
         throw new Error('La porte pro n’a pas de fournisseur social.');

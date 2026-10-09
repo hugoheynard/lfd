@@ -93,7 +93,7 @@ function boot(
         useValue: {
           isLoading: () => false,
           isAuthenticated: () => authenticated,
-          login: (target: string): void => {
+          continueWithEmailCode: (target: string): void => {
             signIns.push(target);
           },
         },

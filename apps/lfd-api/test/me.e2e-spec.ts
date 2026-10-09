@@ -114,6 +114,85 @@ describe("PrincipalResolver — une connexion sociale sous une adresse connue", 
   });
 });
 
+/**
+ * La connexion par code e-mail (2026-10-09), par le vrai resolver sur la vraie
+ * base : la réécriture conditionnelle du `sub` d'un invité, et la fin de
+ * l'exemption des sujets `auth0|…`.
+ */
+describe("PrincipalResolver — connexion par code e-mail", () => {
+  const CODE = "email|e2e-code";
+  const ADDRESS = "pro@brasserie-code.fr";
+
+  function resolveAs(subject: string, emailVerified = true) {
+    return ctx.app
+      .get(PrincipalResolver)
+      .resolve({ subject, scopes: [], email: ADDRESS, emailVerified });
+  }
+
+  it("rattache l'invité jamais entré au `sub` du code, l'active, et le trace", async () => {
+    const invited = await createUser(ctx.prisma, {
+      auth0Sub: "auth0|invitation-e2e",
+      email: "Pro@Brasserie-Code.fr",
+      status: UserStatus.invited,
+    });
+
+    const principal = await resolveAs(CODE);
+
+    expect(principal.userId).toBe(invited.id);
+    const stored = await ctx.prisma.user.findUniqueOrThrow({ where: { id: invited.id } });
+    expect(stored).toMatchObject({ auth0Sub: CODE, status: UserStatus.active });
+    expect(
+      await ctx.prisma.user.count({ where: { email: { equals: ADDRESS, mode: "insensitive" } } }),
+    ).toBe(1);
+  });
+
+  it("refuse l'invité quand le jeton ne prouve pas l'adresse", async () => {
+    await createUser(ctx.prisma, {
+      auth0Sub: "auth0|invitation-e2e",
+      email: ADDRESS,
+      status: UserStatus.invited,
+    });
+
+    await expect(resolveAs(CODE, false)).rejects.toMatchObject({
+      code: "account.identity.link_required",
+    });
+    expect(await ctx.prisma.user.count({ where: { auth0Sub: CODE } })).toBe(0);
+  });
+
+  /**
+   * Deux premières entrées simultanées sous deux moyens : la réécriture
+   * conditionnelle n'en laisse passer qu'une, et aucun second compte ne naît.
+   */
+  it("une course entre deux moyens : un seul gagne, aucun doublon", async () => {
+    const invited = await createUser(ctx.prisma, {
+      auth0Sub: "auth0|invitation-e2e",
+      email: ADDRESS,
+      status: UserStatus.invited,
+    });
+
+    const outcomes = await Promise.allSettled([
+      resolveAs(CODE),
+      resolveAs("google-oauth2|e2e-race"),
+    ]);
+
+    expect(outcomes.filter((outcome) => outcome.status === "fulfilled")).toHaveLength(1);
+    expect(await ctx.prisma.user.count({ where: { email: ADDRESS } })).toBe(1);
+    const stored = await ctx.prisma.user.findUniqueOrThrow({ where: { id: invited.id } });
+    expect([CODE, "google-oauth2|e2e-race"]).toContain(stored.auth0Sub);
+  });
+
+  /** Régression : l'exemption `auth0|…` laissait un mot de passe doubler un compte ouvert par code. */
+  it("🔴 refuse un `auth0|…` neuf sous l'adresse d'un compte ouvert par code", async () => {
+    await createUser(ctx.prisma, { auth0Sub: CODE, email: ADDRESS });
+
+    await expect(resolveAs("auth0|neuf-e2e")).rejects.toMatchObject({
+      code: "account.identity.link_required",
+      existingRoute: "email_code",
+    });
+    expect(await ctx.prisma.user.count({ where: { email: ADDRESS } })).toBe(1);
+  });
+});
+
 describe("GET /me — le cycle se joue en base", () => {
   it("provisionne (JIT) un sub valide inconnu et renvoie 200 (zéro friction)", async () => {
     const response = await ctx.asSub("auth0|jamais-vu").get("/me");

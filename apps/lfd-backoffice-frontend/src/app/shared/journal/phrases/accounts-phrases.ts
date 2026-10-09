@@ -764,6 +764,18 @@ export const ACCOUNTS_PHRASES = {
   'user.profile_updated': profileUpdated,
   'user.identity_linked': loginMethod('a ajouté'),
   'user.identity_revoked': loginMethod('a retiré'),
+  // L'invité entre pour la première fois par un autre moyen que celui de son
+  // invitation (code e-mail au lieu du lien de mot de passe, 2026-10-09).
+  'user.login_method_switched_at_first_entry': (fact) =>
+    byActor(
+      fact,
+      [
+        text('est entré pour la première fois, '),
+        valueIn(LOGIN_PROVIDER, fact.payload['provider'], { inSentence: true }),
+        text(' plutôt que par son invitation'),
+      ],
+      ['provider', 'connection', ...selfLabel(fact)],
+    ),
   // La personne agit sur elle-même : la phrase ne nomme donc pas de tiers, et
   // ne dit RIEN de ce qu'il advient de son mot de passe actuel — rien ne
   // l'atteste chez nous (plan `plan-page-mon-profil.md`, §7.2).

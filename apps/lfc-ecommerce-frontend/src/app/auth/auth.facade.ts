@@ -9,7 +9,18 @@ import type { Observable } from 'rxjs';
 import { filter, switchMap, take } from 'rxjs/operators';
 
 import { appBaseUrl } from './app-base-url';
-import { CUSTOMER_CONNECTION, FACEBOOK_CONNECTION, GOOGLE_CONNECTION } from './auth.config';
+import {
+  CUSTOMER_CONNECTION,
+  EMAIL_CODE_CONNECTION,
+  FACEBOOK_CONNECTION,
+  GOOGLE_CONNECTION,
+} from './auth.config';
+import {
+  readLastConnection,
+  redirectParams,
+  type RedirectRequest,
+  writeLastConnection,
+} from './auth-redirect';
 import { DEV_BYPASS_AUTH } from './dev-flags';
 
 /**
@@ -60,7 +71,7 @@ export class AuthFacade {
    * On ne pouvait donc jamais regarder la porte d'entrée en dev.
    *
    * Gardé dans le stockage local pour survivre à un rechargement ; levé par
-   * `login()` ou `register()`. En production, `DEV_BYPASS_AUTH` vaut `false` en
+   * toute entrée (`enterInDev`). En production, `DEV_BYPASS_AUTH` vaut `false` en
    * tête de chaque lecture et ce signal n'est jamais consulté.
    */
   private readonly devSignedOut = signal(DEV_BYPASS_AUTH && this.isBrowser && readDevSignedOut());
@@ -149,8 +160,8 @@ export class AuthFacade {
   constructor() {
     // Restauration de la route demandée : au **retour** du callback Auth0 (un
     // nouveau chargement de page), le SDK émet l'`appState` passé à
-    // `loginWithRedirect`. On s'abonne ici, au constructeur, car `login()`
-    // n'est pas rappelé sur ce second chargement.
+    // `loginWithRedirect`. On s'abonne ici, au constructeur, car aucune méthode
+    // d'entrée n'est rappelée sur ce second chargement.
     this.auth0?.appState$.subscribe((state: unknown) => {
       this.pendingProfile.set(readProfile(state));
       const target = readTarget(state);
@@ -187,54 +198,64 @@ export class AuthFacade {
   }
 
   /**
-   * Redirige vers Auth0 ; `target` sera restauré au retour (`appState`).
+   * **Entrer par un code reçu par e-mail** — le chemin PAR DÉFAUT de la
+   * boutique depuis le 2026-10-09 (plan v2 de la connexion par code, § 0),
+   * connexion et inscription à la fois : la connexion `email` d'Auth0 crée la
+   * personne au premier code tapé, et l'API la provisionne à la première
+   * requête.
+   *
+   * `hint` préremplit l'adresse sur l'écran d'Auth0. `profile` fait
+   * l'aller-retour comme pour {@link registerWithPassword} : prénom et
+   * téléphone, saisis chez nous, sont reposés au retour par
+   * `ClientOnboarding` — l'inscription par code n'en perd donc rien.
+   *
+   * Pas d'onglet d'inscription : la connexion sans mot de passe n'en a pas,
+   * une adresse inconnue reçoit son code comme une autre.
+   */
+  continueWithEmailCode(target: string, hint?: string, profile?: PendingProfile): void {
+    if (DEV_BYPASS_AUTH && this.isBrowser) {
+      this.enterInDev(target);
+      return;
+    }
+    this.redirect({ target, profile }, { connection: EMAIL_CODE_CONNECTION, hint });
+  }
+
+  /**
+   * **Se connecter par mot de passe** — le lien « Utiliser un mot de passe ».
+   * La capacité reste (Hugo, 2026-10-09 : « on n'efface pas la capacité mot de
+   * passe ») ; ce n'est plus le chemin par défaut.
    *
    * `hint` préremplit l'identifiant sur l'écran d'Auth0 : quelqu'un qui vient de
    * taper son e-mail chez nous n'a pas à le retaper chez lui.
    */
-  login(target: string, hint?: string): void {
+  loginWithPassword(target: string, hint?: string): void {
     // En bypass dev, se connecter, c'est lever la déconnexion : il n'y a pas de
     // session Auth0 à ouvrir, l'API impersonne déjà l'utilisateur du seed.
     if (DEV_BYPASS_AUTH && this.isBrowser) {
-      writeDevSignedOut(false);
-      this.devSignedOut.set(false);
-      void this.router.navigateByUrl(target);
+      this.enterInDev(target);
       return;
     }
-    void this.auth0
-      ?.loginWithRedirect({
-        appState: { target },
-        authorizationParams: { connection: CUSTOMER_CONNECTION, ...loginHint(hint) },
-      })
-      .subscribe();
+    this.redirect({ target }, { connection: CUSTOMER_CONNECTION, hint });
   }
 
   /**
-   * Comme {@link login}, mais ouvre directement l'onglet **inscription** de
-   * l'Universal Login (`screen_hint: 'signup'`). La connexion est NOMMÉE : c'est
-   * elle qui porte la passkey, et la laisser deviner par l'application fait
-   * retomber l'écran sur un mot de passe. L'ouverture réelle des créations de
-   * compte dépend de cette connexion (sign-ups activés). Le nouveau compte arrive en base au 1er `GET /me` (statut invité).
+   * Comme {@link loginWithPassword}, mais ouvre directement l'onglet
+   * **inscription** de l'Universal Login (`screen_hint: 'signup'`). La connexion
+   * est NOMMÉE : c'est elle qui porte la passkey, et la laisser deviner par
+   * l'application fait retomber l'écran sur un mot de passe. Le nouveau compte
+   * arrive en base au 1er `GET /me` (statut invité).
    */
-  register(target: string, profile?: PendingProfile): void {
-    // En bypass dev, même geste que `login()`. Le profil saisi n'est PAS reposé :
-    // il écraserait celui de l'utilisateur du seed, que l'API impersonne.
+  registerWithPassword(target: string, profile?: PendingProfile): void {
+    // En bypass dev, même geste que `loginWithPassword()`. Le profil saisi n'est
+    // PAS reposé : il écraserait celui de l'utilisateur du seed, que l'API impersonne.
     if (DEV_BYPASS_AUTH && this.isBrowser) {
-      writeDevSignedOut(false);
-      this.devSignedOut.set(false);
-      void this.router.navigateByUrl(target);
+      this.enterInDev(target);
       return;
     }
-    void this.auth0
-      ?.loginWithRedirect({
-        appState: { target, profile },
-        authorizationParams: {
-          connection: CUSTOMER_CONNECTION,
-          screen_hint: 'signup',
-          ...loginHint(profile?.email),
-        },
-      })
-      .subscribe();
+    this.redirect(
+      { target, profile },
+      { connection: CUSTOMER_CONNECTION, hint: profile?.email, signup: true },
+    );
   }
 
   /**
@@ -243,7 +264,7 @@ export class AuthFacade {
    *
    * Aucun profil ne voyage : prénom et téléphone ne viennent pas de Google, et
    * le parcours d'accueil les demande ensuite. En bypass dev, même geste que
-   * {@link login} — il n'y a pas de Google à ouvrir.
+   * {@link loginWithPassword} — il n'y a pas de Google à ouvrir.
    */
   continueWithGoogle(target: string): void {
     this.continueWith(GOOGLE_CONNECTION, target);
@@ -271,19 +292,20 @@ export class AuthFacade {
    */
   private continueWith(connection: string, target: string): void {
     if (DEV_BYPASS_AUTH && this.isBrowser) {
-      this.login(target);
+      this.enterInDev(target);
       return;
     }
-    void this.auth0
-      ?.loginWithRedirect({ appState: { target }, authorizationParams: { connection } })
-      .subscribe();
+    this.redirect({ target }, { connection });
   }
 
   /**
-   * L'inscription par la porte pro : le même geste que {@link register}
-   * (onglet inscription, connexion nommée, e-mail soufflé), mais la déclaration
-   * entière fait l'aller-retour, pour être déposée au retour par
-   * `POST /me/establishment`.
+   * L'inscription par la porte pro : le même geste que
+   * {@link registerWithPassword} (onglet inscription, connexion nommée, e-mail
+   * soufflé), mais la déclaration entière fait l'aller-retour, pour être
+   * déposée au retour par `POST /me/establishment`.
+   *
+   * Elle reste au MOT DE PASSE, la connexion par code ne l'a pas changée : un
+   * compte pro change de mains (handoff §5).
    */
   registerPro(target: string, registration: ProRegistration): void {
     // En bypass dev, l'écran d'Auth0 est SIMULÉ : on y passe comme en
@@ -295,16 +317,28 @@ export class AuthFacade {
       void this.router.navigateByUrl(DEV_AUTH0_SIGNUP_SCREEN);
       return;
     }
-    void this.auth0
-      ?.loginWithRedirect({
-        appState: { target, proRegistration: registration },
-        authorizationParams: {
-          connection: CUSTOMER_CONNECTION,
-          screen_hint: 'signup',
-          ...loginHint(registration.email),
-        },
-      })
-      .subscribe();
+    this.redirect(
+      { target, proRegistration: registration },
+      { connection: CUSTOMER_CONNECTION, hint: registration.email, signup: true },
+    );
+  }
+
+  /**
+   * Le seul départ chez Auth0. La connexion demandée est retenue AVANT de
+   * partir : c'est elle qui décide au prochain départ s'il faut forcer l'écran
+   * (`prompt: 'login'`, cf. {@link redirectParams}).
+   */
+  private redirect(appState: Readonly<Record<string, unknown>>, request: RedirectRequest): void {
+    const authorizationParams = redirectParams(request, readLastConnection());
+    writeLastConnection(request.connection);
+    void this.auth0?.loginWithRedirect({ appState, authorizationParams }).subscribe();
+  }
+
+  /** En bypass dev, entrer, c'est lever la déconnexion puis aller à `target`. */
+  private enterInDev(target: string): void {
+    writeDevSignedOut(false);
+    this.devSignedOut.set(false);
+    void this.router.navigateByUrl(target);
   }
 
   /**
@@ -315,7 +349,7 @@ export class AuthFacade {
    * l'app. À la racine les deux coïncident ; la fonction reste la seule source.
    *
    * En bypass dev, aucun aller-retour Auth0 : on pose la déconnexion et on
-   * revient sur la porte d'entrée, où l'on reste jusqu'à `login()`.
+   * revient sur la porte d'entrée, où l'on reste jusqu'à la prochaine entrée.
    */
   logout(): void {
     if (!this.isBrowser) {
@@ -399,11 +433,6 @@ export interface PendingProfile {
   readonly firstName: string;
   readonly email: string;
   readonly phone: string;
-}
-
-/** `login_hint` seulement s'il y a quelque chose à souffler. */
-function loginHint(email: string | undefined): { login_hint?: string } {
-  return email !== undefined && email.trim() !== '' ? { login_hint: email.trim() } : {};
 }
 
 /** Prédicat de garde : `state` porte-t-il un `target` chaîne ? (sans cast). */

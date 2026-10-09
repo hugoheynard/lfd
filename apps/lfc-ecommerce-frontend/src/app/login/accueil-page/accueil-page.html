@@ -63,6 +63,7 @@
     } @else {
       <app-welcome-step
         (signedUp)="signUp($event)"
+        (signedUpWithPassword)="signUpWithPassword($event)"
         (wantsLogin)="signIn($event)"
         (wantsGoogle)="continueWithGoogle()"
         (wantsFacebook)="continueWithFacebook()"

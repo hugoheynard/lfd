@@ -1,5 +1,6 @@
 import { IdentityWithoutLoginMethods } from "../../../domain/ports/__tests__/login-method-doubles.js";
 import type { B2bMailer } from "../../../../../platform/mailer/mailer.module.js";
+import { AppConfig } from "../../../../../platform/config/app-config.js";
 import {
   AccountDisabledError,
   AccountEmailUnverifiedError,
@@ -128,6 +129,8 @@ interface SentMail {
   readonly carriesPasswordLink: boolean;
   /** Le prénom réellement écrit dans le corps — le sien, jamais celui saisi. */
   readonly greeting: unknown;
+  /** L'entrée par code proposée d'abord (2026-10-09), ou `null` / absente. */
+  readonly signInUrl?: unknown;
 }
 
 /**
@@ -151,6 +154,7 @@ function fakeMailer(options: { readonly failing?: boolean; readonly enabled?: bo
         template: args.template,
         carriesPasswordLink: "passwordSetupUrl" in args.data,
         greeting: "firstName" in args.data ? String(args.data.firstName) : "",
+        ...("signInUrl" in args.data ? { signInUrl: args.data.signInUrl } : {}),
       });
       return Promise.resolve({ providerId: null });
     },
@@ -190,9 +194,28 @@ const INPUT: AccessToGrant = {
   invitedBy: "staff-sub",
 };
 
+/** Une racine cliente posée : le `.env` du poste ne décide de rien. */
+class FakeConfig extends AppConfig {
+  constructor(private readonly root: string | null) {
+    super();
+  }
+
+  override clientBaseUrl(): string | null {
+    return this.root;
+  }
+}
+
 /** Le service, monté sur des doubles — aucun réseau, aucune base. */
-function granter(members: FakeMembers, mailer: B2bMailer, identity = new FakeIdentity()) {
-  return { service: new GrantAccountAccess(members, identity, mailer), identity };
+function granter(
+  members: FakeMembers,
+  mailer: B2bMailer,
+  identity = new FakeIdentity(),
+  clientRoot: string | null = "https://boutique.lfc.test/",
+) {
+  return {
+    service: new GrantAccountAccess(members, identity, mailer, new FakeConfig(clientRoot)),
+    identity,
+  };
 }
 
 describe("GrantAccountAccess — personne inconnue", () => {
@@ -207,6 +230,32 @@ describe("GrantAccountAccess — personne inconnue", () => {
     expect(identity.provisioned).toHaveLength(1);
     expect(members.attached).toEqual([{ userId: "user_new", companyId: "cmp_1", role: "owner" }]);
     expect(sent[0]?.template).toBe("customer.access-opened");
+    expect(sent[0]?.carriesPasswordLink).toBe(true);
+  });
+});
+
+/**
+ * L'invitation passe au code e-mail (Hugo, 2026-10-09) : elle propose d'abord
+ * `/connexion/code` — sans l'adresse dans l'URL —, et garde le lien de mot de
+ * passe en second.
+ */
+describe("GrantAccountAccess — l'entrée par code proposée d'abord", () => {
+  it("joint l'entrée par code de la boutique, ET le lien de mot de passe", async () => {
+    const { mailer, sent } = fakeMailer();
+
+    await granter(new FakeMembers(), mailer).service.grant(INPUT);
+
+    expect(sent[0]?.signInUrl).toBe("https://boutique.lfc.test/connexion/code");
+    expect(sent[0]?.carriesPasswordLink).toBe(true);
+    expect(String(sent[0]?.signInUrl)).not.toContain(INPUT.email);
+  });
+
+  it("sans racine cliente, pas d'entrée par code : le lien de mot de passe seul", async () => {
+    const { mailer, sent } = fakeMailer();
+
+    await granter(new FakeMembers(), mailer, new FakeIdentity(), null).service.grant(INPUT);
+
+    expect(sent[0]?.signInUrl).toBeNull();
     expect(sent[0]?.carriesPasswordLink).toBe(true);
   });
 });

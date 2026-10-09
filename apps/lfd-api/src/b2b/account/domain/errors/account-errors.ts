@@ -4,6 +4,7 @@ import {
   DomainError,
   ResourceNotFoundError,
 } from "../../../../platform/shared/errors/app-error.js";
+import type { SignInRoute } from "../value-objects/sign-in-route.js";
 
 // ─── Données mal formées : le modèle se protège lui-même (400) ───────────────
 
@@ -400,27 +401,49 @@ export class AccountEmailAmbiguousError extends BusinessError {
 }
 
 /**
- * **Une connexion sociale arrive sous l'adresse d'un compte qui existe déjà.**
+ * Comment dire à la personne le chemin par lequel son compte se connecte —
+ * dans un refus, pour qu'elle reprenne le bon (2026-10-09).
+ */
+const SIGN_IN_ROUTE_WORDS: Readonly<Record<SignInRoute, string>> = {
+  password: "avec votre mot de passe",
+  email_code: "par code reçu par e-mail",
+  google: "avec Google",
+  facebook: "avec Facebook",
+  other: "par votre moyen habituel",
+};
+
+/**
+ * **Une connexion arrive sous l'adresse d'un compte qui existe déjà, par un
+ * autre moyen.**
  *
  * 🔴 Refusée plutôt que doublée (Hugo, 2026-09-17 — le panneau d'entrée à la
  * Sushi Shop, première version sans rattachement). Sans ce refus, cliquer
  * « Continuer avec Google » avec l'adresse de son compte ouvrait un SECOND
  * compte, vide : ni sociétés, ni commandes, et rien ne disait pourquoi.
  *
+ * S'appelait `SocialSignInAccountExistsError` et nommait Google en dur jusqu'au
+ * 2026-10-09 : depuis la connexion par code e-mail, n'importe quel moyen peut
+ * arriver sous l'adresse d'un compte ouvert par un autre — y compris le mot de
+ * passe sous l'adresse d'un compte ouvert par code. Le message nomme donc le
+ * moyen du compte EXISTANT ({@link SignInRoute}), qui est le geste de sortie.
+ *
  * Aucun rattachement n'est tenté : rattacher par adresse ouvre la prise de
  * compte que le plan décrit (`documentation/auth-inscription/plan-connexion-sociale.md`,
- * §10 et §11). Le geste de sortie est dans le message : l'e-mail habituel.
+ * §10 et §11). Seule exception, étroite : la première entrée d'un invité
+ * (`customer-principal.resolver.ts`).
  *
- * ⚠️ Le refus confirme qu'un compte existe sous cette adresse. C'est déjà ce
- * que dit l'inscription d'Auth0 à qui la retape — l'information n'est pas
- * nouvelle, et la taire coûtait un compte fantôme à chaque client.
+ * ⚠️ Le refus confirme qu'un compte existe sous cette adresse, et par quel
+ * moyen il se connecte. C'est déjà ce que dit l'inscription d'Auth0 à qui la
+ * retape — l'information n'est pas nouvelle, et la taire coûtait un compte
+ * fantôme à chaque client.
  */
-export class SocialSignInAccountExistsError extends BusinessError {
-  constructor() {
+export class AccountExistsUnderAnotherSignInError extends BusinessError {
+  constructor(readonly existingRoute: SignInRoute) {
     super(
       "account.identity.link_required",
-      "Un compte existe déjà avec cette adresse. Connectez-vous avec votre e-mail " +
-        "habituel : la connexion par Google n'est pas encore reliée à ce compte.",
+      "Un compte existe déjà avec cette adresse, et il se connecte " +
+        `${SIGN_IN_ROUTE_WORDS[existingRoute]}. Reprenez ce chemin : ce moyen de ` +
+        "connexion-ci n'est pas relié à votre compte.",
     );
   }
 }
@@ -504,13 +527,17 @@ export class LoginMethodClaimedElsewhereError extends BusinessError {
  * envoie vers une porte fermée ne vaut pas mieux que pas de refus.
  */
 export class NoPasswordLoginMethodError extends BusinessError {
-  constructor() {
+  /**
+   * `route` : le moyen par lequel le compte se connecte, pour le nommer. Avant
+   * le 2026-10-09, le message disait « un service tiers (Google, par
+   * exemple) » — faux pour un compte ouvert par code e-mail.
+   */
+  constructor(readonly route: SignInRoute) {
     super(
       "identity.no_password_login",
-      "Votre compte n'utilise pas de mot de passe : vous vous connectez par un service " +
-        "tiers (Google, par exemple). Il n'y a donc rien à réinitialiser — continuez à " +
-        "vous connecter de cette façon, ou écrivez-nous si vous souhaitez ouvrir une " +
-        "connexion par mot de passe.",
+      `Votre compte n'utilise pas de mot de passe : vous vous connectez ${SIGN_IN_ROUTE_WORDS[route]}. ` +
+        "Il n'y a donc aucun mot de passe à réinitialiser — continuez à vous connecter de " +
+        "cette façon, ou écrivez-nous si vous souhaitez ouvrir une connexion par mot de passe.",
     );
   }
 }

@@ -58,6 +58,12 @@ describe('AccueilPage', () => {
   const TEL = 1;
   const MAIL = 2;
 
+  const PROFILE: PendingProfile = {
+    firstName: 'Pierre',
+    email: 'pierre@brasserie-marchand.fr',
+    phone: '06 12 44 09 87',
+  };
+
   const fillSignup = (): void => {
     type(FIRST, 'Pierre');
     type(TEL, '06 12 44 09 87');
@@ -65,7 +71,11 @@ describe('AccueilPage', () => {
   };
 
   /** Ce que l'écran demande à Auth0 — la seule chose qu'on veuille observer. */
-  let asked: { kind: 'register' | 'login' | 'google'; target: string; payload: unknown }[];
+  let asked: {
+    kind: 'code' | 'register' | 'login' | 'google';
+    target: string;
+    payload: unknown;
+  }[];
 
   /**
    * Les dialogues ouverts par l'écran.
@@ -86,10 +96,13 @@ describe('AccueilPage', () => {
     const auth = {
       isAuthenticated: signal(false),
       pendingProfile: signal<PendingProfile | null>(null),
-      register: (target: string, profile?: PendingProfile): void => {
+      continueWithEmailCode: (target: string, hint?: string, profile?: PendingProfile): void => {
+        asked.push({ kind: 'code', target, payload: { hint, profile } });
+      },
+      registerWithPassword: (target: string, profile?: PendingProfile): void => {
         asked.push({ kind: 'register', target, payload: profile });
       },
-      login: (target: string, hint?: string): void => {
+      loginWithPassword: (target: string, hint?: string): void => {
         asked.push({ kind: 'login', target, payload: hint });
       },
       continueWithGoogle: (target: string): void => {
@@ -157,23 +170,33 @@ describe('AccueilPage', () => {
     expect(button(FR.signup.open).disabled).toBe(false);
   });
 
-  it('les trois champs partent chez Auth0, avec la personne', () => {
-    // Prénom et téléphone n'existent nulle part chez Auth0 : ils voyagent avec
-    // elle, et se poseront sur le compte au retour.
+  /**
+   * Par défaut, l'inscription part PAR CODE e-mail (2026-10-09), et ne perd
+   * rien de ce qui est saisi chez nous : prénom et téléphone n'existent nulle
+   * part chez Auth0 — ils voyagent avec la personne et se poseront sur le
+   * compte au retour ; l'adresse est soufflée à l'écran du code.
+   */
+  it('les trois champs partent chez Auth0 par code, avec la personne', () => {
     fillSignup();
     click(FR.signup.open);
 
     expect(asked).toEqual([
       {
-        kind: 'register',
+        kind: 'code',
         target: '/accueil',
-        payload: {
-          firstName: 'Pierre',
-          email: 'pierre@brasserie-marchand.fr',
-          phone: '06 12 44 09 87',
-        },
+        payload: { hint: 'pierre@brasserie-marchand.fr', profile: PROFILE },
       },
     ]);
+  });
+
+  /** Le mot de passe reste, derrière un lien : mêmes champs, onglet inscription. */
+  it('« Utiliser un mot de passe » emporte les mêmes champs vers l’inscription par mot de passe', () => {
+    expect(button(FR.doors.usePassword).disabled).toBe(true);
+
+    fillSignup();
+    click(FR.doors.usePassword);
+
+    expect(asked).toEqual([{ kind: 'register', target: '/accueil', payload: PROFILE }]);
   });
 
   /**

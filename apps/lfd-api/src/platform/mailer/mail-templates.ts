@@ -14,6 +14,10 @@ import {
   renderCollectionNoticeMail,
   type CollectionNoticeMailData,
 } from "./collection-notice-mail.js";
+import {
+  renderCustomerAccessOpenedMail,
+  type CustomerAccessOpenedMailData,
+} from "./customer-access-opened-mail.js";
 import { renderInvoiceIssuedMail, type InvoiceIssuedMailData } from "./invoice-issued-mail.js";
 import {
   renderDeliveryEnRouteMail,
@@ -210,12 +214,7 @@ export interface B2bMails {
    * étaient déjà trois : `staff.password-reset` existe depuis l'ouverture du
    * back-office, et la phrase avait survécu à sa propre péremption.
    */
-  "customer.access-opened": {
-    readonly firstName: string;
-    readonly companyName: string;
-    /** Le lien à usage unique, à durée de vie limitée. */
-    readonly passwordSetupUrl: string;
-  };
+  "customer.access-opened": CustomerAccessOpenedMailData;
   /**
    * Une société de plus est apparue dans un espace existant. Destinataire : **le
    * client**.
@@ -684,20 +683,7 @@ export function b2bMailTemplates(brand: MailBranding): TemplateRegistry<B2bMails
           "Un doute ? Répondez à cet e-mail.",
       }),
     }),
-    "customer.access-opened": (data) => ({
-      subject: sanitiseSubject(`Votre accès à l'espace pro ${data.companyName}`),
-      html: customerMail({
-        title: `Bienvenue${data.firstName === "" ? "" : `, ${data.firstName}`}`,
-        body:
-          `Un accès à l'espace professionnel de ${data.companyName} vient d'être ouvert à votre nom ` +
-          "par l'équipe La Folie Coffee.\n\n" +
-          "Il ne reste qu'à choisir votre mot de passe. Le lien ci-dessous est valable 7 jours ; " +
-          "passé ce délai, demandez-nous simplement de vous en renvoyer un.",
-        cta: { label: "Choisir mon mot de passe", url: data.passwordSetupUrl },
-        footer:
-          "Vous n'attendiez pas cet e-mail ? Ignorez-le : sans mot de passe choisi, aucun accès n'est ouvert.",
-      }),
-    }),
+    "customer.access-opened": (data) => renderCustomerAccessOpenedMail(data, customerMail),
     "staff.invited": (data) => ({
       subject: sanitiseSubject("Votre accès au back-office La Folie Douce"),
       html: staffMail({

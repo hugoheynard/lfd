@@ -187,6 +187,7 @@ import { ImpersonationSubjects } from "../../platform/auth/impersonation-subject
 import { PrismaImpersonationSubjects } from "./infrastructure/prisma-impersonation-subjects.js";
 import { PrincipalResolver } from "../../platform/auth/principal.resolver.js";
 import { CustomerPrincipalResolver } from "./infrastructure/customer-principal.resolver.js";
+import { UnknownSubjectAdmission } from "./infrastructure/unknown-subject-admission.js";
 
 /**
  * Contexte **compte** : la personne (son profil) et ses entreprises.
@@ -401,6 +402,8 @@ import { CustomerPrincipalResolver } from "./infrastructure/customer-principal.r
     // prouver le `sub`, et le guard global — déclaré à la racine de composition
     // — les met bout à bout.
     { provide: PrincipalResolver, useClass: CustomerPrincipalResolver },
+    // Ce qu'on fait d'un `sub` inconnu sous une adresse connue (2026-10-09).
+    UnknownSubjectAdmission,
     // Le bypass d'impersonation de développement demandait `prisma.user` depuis
     // `platform/auth`. La table est ici, l'adaptateur aussi.
     { provide: ImpersonationSubjects, useClass: PrismaImpersonationSubjects },

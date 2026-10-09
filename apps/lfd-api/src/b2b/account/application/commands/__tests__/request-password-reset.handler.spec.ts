@@ -138,6 +138,28 @@ describe("RequestPasswordResetHandler", () => {
   });
 
   /**
+   * Un compte ouvert par code e-mail (connexion `email`, 2026-10-09) n'a pas de
+   * mot de passe : le refus le dit, au lieu d'évoquer « un service tiers ».
+   */
+  it("nomme le code e-mail quand le compte se connecte par code", async () => {
+    const identity = new Identity([
+      { provider: "email", secondaryUserId: "c1", connection: "email", isPrimary: true },
+    ]);
+    const { run } = handler(identity);
+
+    const refusal = run();
+    await expect(refusal).rejects.toMatchObject({ route: "email_code" });
+    await expect(refusal).rejects.toThrow("par code reçu par e-mail");
+    expect(identity.sent).toEqual([]);
+  });
+
+  it("nomme Google quand le compte se connecte par Google", async () => {
+    const { run } = handler(new Identity([googleMethod]));
+
+    await expect(run()).rejects.toThrow("avec Google");
+  });
+
+  /**
    * Un `provider` `auth0` ne suffit pas : c'est aussi ce que porte une identité
    * d'un autre tenant. Seule la **connexion** dit qu'il y a un mot de passe.
    */
@@ -146,6 +168,8 @@ describe("RequestPasswordResetHandler", () => {
     const { run } = handler(identity);
 
     await expect(run()).rejects.toBeInstanceOf(NoPasswordLoginMethodError);
+    // …et ne la nomme pas « mot de passe » : ce n'est pas le nôtre.
+    await expect(run()).rejects.toMatchObject({ route: "other" });
     expect(identity.sent).toEqual([]);
   });
 

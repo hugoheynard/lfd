@@ -2,6 +2,9 @@ import { RecordingPublisher } from "../../../../platform/events/__tests__/record
 import { Test } from "@nestjs/testing";
 import { UserRegisteredEvent } from "../../domain/events/user-registered.event.js";
 import { CustomerPrincipalResolver } from "../customer-principal.resolver.js";
+import { UnknownSubjectAdmission } from "../unknown-subject-admission.js";
+import { UnitOfWork } from "../../../../platform/database/unit-of-work.js";
+import { DirectUnitOfWork } from "../../../../platform/database/__tests__/direct-unit-of-work.js";
 import { PrismaService } from "../../../../platform/database/prisma.service.js";
 import {
   CustomerRole,
@@ -39,10 +42,40 @@ const activeUser: UserWithMemberships = {
   memberships: [{ companyId: "company_1", role: CustomerRole.orders }],
 };
 
+/** Un compte qui porte déjà l'adresse, tel que l'admission le lit. */
+interface Holder {
+  id: string;
+  email: string;
+  auth0Sub: string | null;
+  status: UserStatus;
+  firstName: string;
+  lastName: string;
+}
+
+/** La réécriture conditionnelle du `sub` d'un invité. */
+interface ClaimArgs {
+  where: { id: string; status: UserStatus; auth0Sub: string | null };
+  data: { auth0Sub: string; status: UserStatus };
+}
+
+/** Un compte actif ouvert par mot de passe, sous l'adresse donnée. */
+function holder(email: string, overrides: Partial<Holder> = {}): Holder {
+  return {
+    id: "user_existing",
+    email,
+    auth0Sub: "auth0|existing",
+    status: UserStatus.active,
+    firstName: "Jean",
+    lastName: "Client",
+    ...overrides,
+  };
+}
+
 /** Double Prisma : `findUnique` renvoie la séquence donnée (dernière valeur figée),
  *  `create` capture ses `data` et peut échouer (course d'unicité). */
 interface PrismaDouble {
   readonly createCalls: { auth0Sub: string; email: string; status: UserStatus }[];
+  readonly claimCalls: ClaimArgs[];
   readonly updateCalls: {
     where: { id: string };
     data: { status?: UserStatus; emailVerified?: boolean };
@@ -50,7 +83,8 @@ interface PrismaDouble {
   readonly prisma: {
     user: {
       findUnique: () => Promise<UserWithMemberships | null>;
-      findMany: () => Promise<{ email: string }[]>;
+      findMany: () => Promise<Holder[]>;
+      updateMany: (args: ClaimArgs) => Promise<{ count: number }>;
       create: (args: {
         data: { auth0Sub: string; email: string; status: UserStatus };
       }) => Promise<unknown>;
@@ -64,21 +98,39 @@ interface PrismaDouble {
 
 function prismaDouble(
   results: (UserWithMemberships | null)[],
-  options: { createError?: Error; connectableEmails?: readonly string[] } = {},
+  options: {
+    createError?: Error;
+    connectableEmails?: readonly string[];
+    holders?: readonly Holder[];
+    /** Lignes touchées par la réécriture conditionnelle — 0 : une autre requête est passée. */
+    claimCounts?: readonly number[];
+  } = {},
 ): PrismaDouble {
   let index = 0;
   const createCalls: PrismaDouble["createCalls"] = [];
   const updateCalls: PrismaDouble["updateCalls"] = [];
+  const claimCalls: ClaimArgs[] = [];
+
   return {
     createCalls,
     updateCalls,
+    claimCalls,
     prisma: {
       user: {
         findUnique: () => Promise.resolve(results[Math.min(index++, results.length - 1)] ?? null),
         // Le pré-filtre `ILIKE` de Prisma est simulé large : il rend TOUT ce qu'on
         // lui donne, et c'est au resolver de trancher l'égalité.
-        findMany: () =>
-          Promise.resolve((options.connectableEmails ?? []).map((email) => ({ email }))),
+        findMany: () => {
+          const fromEmails = (options.connectableEmails ?? []).map((email) => holder(email));
+          return Promise.resolve([...(options.holders ?? fromEmails)]);
+        },
+        updateMany: (args) => {
+          claimCalls.push(args);
+          const counts = options.claimCounts ?? [1];
+          return Promise.resolve({
+            count: counts[Math.min(claimCalls.length - 1, counts.length - 1)] ?? 1,
+          });
+        },
         create: ({ data }) => {
           createCalls.push(data);
           return options.createError === undefined
@@ -103,6 +155,8 @@ async function resolverWith(
       CustomerPrincipalResolver,
       { provide: PrismaService, useValue: double.prisma },
       { provide: DomainEventPublisher, useValue: events },
+      { provide: UnitOfWork, useValue: new DirectUnitOfWork() },
+      UnknownSubjectAdmission,
     ],
   }).compile();
   return moduleRef.get(CustomerPrincipalResolver);
@@ -448,16 +502,191 @@ describe("CustomerPrincipalResolver", () => {
       expect(double.createCalls).toHaveLength(1);
     });
 
-    it("ne touche pas à la base de données Auth0 : un sujet vieilli garde son compte neuf", async () => {
-      // Auth0 refuse déjà une seconde inscription sous la même adresse sur cette
-      // connexion ; un `auth0|…` inconnu est une identité recréée, et la
-      // refuser l'enfermerait dehors.
-      const double = prismaDouble([null, activeUser], { connectableEmails: ["jean@client.fr"] });
+    /**
+     * Régression (2026-10-09) : les sujets `auth0|…` étaient exemptés, au motif
+     * qu'Auth0 refuse une seconde inscription sous la même adresse. Vrai dans
+     * UNE connexion ; la connexion `email` existe à côté depuis ce jour-là, et
+     * un mot de passe sous l'adresse d'un compte ouvert par code le doublait.
+     */
+    it("🔴 refuse aussi un `auth0|…` sous l'adresse d'un compte ouvert par code, en nommant le code", async () => {
+      const double = prismaDouble([null], {
+        holders: [holder("jean@client.fr", { auth0Sub: "email|abc" })],
+      });
       const resolver = await resolverWith(double);
 
-      await resolver.resolve({ ...google, subject: "auth0|neuf" });
+      const refusal = resolver.resolve({ ...google, subject: "auth0|neuf" });
+      await expect(refusal).rejects.toMatchObject({
+        code: "account.identity.link_required",
+        existingRoute: "email_code",
+      });
+      await expect(refusal).rejects.toThrow("par code reçu par e-mail");
+      expect(double.createCalls).toEqual([]);
+    });
 
-      expect(double.createCalls).toHaveLength(1);
+    it("refuse un `email|…` sous l'adresse d'un compte à mot de passe, en nommant le mot de passe", async () => {
+      const double = prismaDouble([null], { holders: [holder("jean@client.fr")] });
+      const resolver = await resolverWith(double);
+
+      const refusal = resolver.resolve({ ...google, subject: "email|neuf" });
+      await expect(refusal).rejects.toMatchObject({ existingRoute: "password" });
+      await expect(refusal).rejects.toThrow("avec votre mot de passe");
+      expect(double.createCalls).toEqual([]);
+      expect(double.claimCalls).toEqual([]);
+    });
+
+    it("nomme Google pour un compte ouvert par Google, « votre moyen habituel » sinon", async () => {
+      for (const [sub, words] of [
+        ["google-oauth2|1", "avec Google"],
+        ["apple|1", "par votre moyen habituel"],
+      ] as const) {
+        const double = prismaDouble([null], {
+          holders: [holder("jean@client.fr", { auth0Sub: sub })],
+        });
+        const resolver = await resolverWith(double);
+
+        await expect(resolver.resolve({ ...google, subject: "email|neuf" })).rejects.toThrow(words);
+      }
+    });
+
+    it("crée un compte pour un `email|…` neuf dont l'adresse n'appartient à personne", async () => {
+      const double = prismaDouble([null, activeUser], { holders: [] });
+      const resolver = await resolverWith(double);
+
+      await resolver.resolve({ ...google, subject: "email|neuf" });
+
+      expect(double.createCalls).toEqual([
+        { auth0Sub: "email|neuf", email: "Jean@Client.fr ", status: UserStatus.active },
+      ]);
+    });
+
+    it("le même `sub` retrouve la personne, sans passer par l'admission", async () => {
+      const double = prismaDouble([{ ...activeUser, auth0Sub: "email|abc" }], {
+        holders: [holder("jean@client.fr", { auth0Sub: "email|abc" })],
+      });
+      const resolver = await resolverWith(double);
+
+      await expect(resolver.resolve({ ...google, subject: "email|abc" })).resolves.toMatchObject({
+        userId: "user_1",
+      });
+      expect(double.createCalls).toEqual([]);
+      expect(double.claimCalls).toEqual([]);
+    });
+  });
+
+  /**
+   * La première entrée d'un invité par un autre moyen que son invitation
+   * (2026-10-09) : 43 pros invités, `auth0|…` créé à l'invitation, jamais
+   * entrés. Sans elle, chacun serait refusé en arrivant par code.
+   */
+  describe("première entrée d'un invité", () => {
+    const code: VerifiedToken = {
+      subject: "email|neuf",
+      email: "pierre@brasserie.fr",
+      emailVerified: true,
+      scopes: [],
+    };
+    const invited = holder("Pierre@Brasserie.fr", {
+      id: "user_invited",
+      auth0Sub: "auth0|invitation",
+      status: UserStatus.invited,
+      firstName: "Pierre",
+      lastName: "Marchand",
+    });
+    const claimed: UserWithMemberships = {
+      ...activeUser,
+      id: "user_invited",
+      auth0Sub: "email|neuf",
+      email: "Pierre@Brasserie.fr",
+    };
+
+    it("rattache le compte invité au nouveau `sub`, l'active, et le trace sans le `sub`", async () => {
+      const events = new RecordingPublisher();
+      const double = prismaDouble([null, claimed], { holders: [invited] });
+      const resolver = await resolverWith(double, events);
+
+      await expect(resolver.resolve(code)).resolves.toMatchObject({ userId: "user_invited" });
+
+      expect(double.claimCalls).toEqual([
+        {
+          where: { id: "user_invited", status: UserStatus.invited, auth0Sub: "auth0|invitation" },
+          data: { auth0Sub: "email|neuf", status: UserStatus.active },
+        },
+      ]);
+      expect(double.createCalls).toEqual([]);
+      const fact = events.traced[0]?.journalFact();
+      expect(fact).toMatchObject({
+        type: "user.login_method_switched_at_first_entry",
+        subjectId: "user_invited",
+        payload: { subjectLabel: "Pierre Marchand", provider: "email", connection: null },
+      });
+      expect(JSON.stringify(fact)).not.toContain("|");
+      // Un compte rattaché n'est pas une inscription : pas de `user.registered`.
+      expect(events.published.some((event) => event instanceof UserRegisteredEvent)).toBe(false);
+    });
+
+    it("refuse quand le jeton ne prouve pas l'adresse", async () => {
+      const double = prismaDouble([null], { holders: [invited] });
+      const resolver = await resolverWith(double);
+
+      await expect(resolver.resolve({ ...code, emailVerified: false })).rejects.toMatchObject({
+        code: "account.identity.link_required",
+      });
+      expect(double.claimCalls).toEqual([]);
+    });
+
+    it("refuse un compte déjà entré (actif)", async () => {
+      const double = prismaDouble([null], {
+        holders: [{ ...invited, status: UserStatus.active }],
+      });
+      const resolver = await resolverWith(double);
+
+      await expect(resolver.resolve(code)).rejects.toMatchObject({ existingRoute: "password" });
+      expect(double.claimCalls).toEqual([]);
+    });
+
+    it("refuse quand deux comptes portent l'adresse, même si l'un est invité", async () => {
+      const double = prismaDouble([null], {
+        holders: [invited, { ...invited, id: "user_other", status: UserStatus.active }],
+      });
+      const resolver = await resolverWith(double);
+
+      await expect(resolver.resolve(code)).rejects.toMatchObject({
+        code: "account.identity.link_required",
+      });
+      expect(double.claimCalls).toEqual([]);
+    });
+
+    /**
+     * Deux premières entrées simultanées, sous deux moyens : la réécriture est
+     * conditionnelle, une seule touche la ligne. La perdante relit — son `sub`
+     * n'est pas celui du compte —, rejoue l'admission et trouve un compte
+     * désormais ACTIF : refus, et aucun second compte.
+     */
+    it("une course : la perdante ne crée rien et est refusée", async () => {
+      const events = new RecordingPublisher();
+      let reads = 0;
+      const double = prismaDouble([null, null], { claimCounts: [0] });
+      double.prisma.user.findMany = () => {
+        reads += 1;
+        return Promise.resolve(
+          reads === 1
+            ? [invited]
+            : [{ ...invited, auth0Sub: "google-oauth2|9", status: UserStatus.active }],
+        );
+      };
+      const resolver = await resolverWith(double, events);
+
+      await expect(resolver.resolve(code)).rejects.toMatchObject({ existingRoute: "google" });
+      expect(double.createCalls).toEqual([]);
+      expect(events.traced).toEqual([]);
+    });
+
+    it("une course sous le MÊME `sub` : la perdante retrouve le compte rattaché", async () => {
+      const double = prismaDouble([null, claimed], { holders: [invited], claimCounts: [0] });
+      const resolver = await resolverWith(double);
+
+      await expect(resolver.resolve(code)).resolves.toMatchObject({ userId: "user_invited" });
+      expect(double.createCalls).toEqual([]);
     });
   });
 });

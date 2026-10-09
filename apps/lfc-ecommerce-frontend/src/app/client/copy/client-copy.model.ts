@@ -201,6 +201,11 @@ export interface ClientCopy {
     readonly or: string;
     readonly alreadyTitle: string;
     readonly alreadySub: string;
+    /**
+     * L'attente de `/connexion/code`, le lien de l'e-mail d'invitation : le
+     * temps de partir chez Auth0 (2026-10-09).
+     */
+    readonly emailCodeEntry: string;
     readonly firstTitle: string;
     readonly firstSub: string;
 
@@ -220,8 +225,17 @@ export interface ClientCopy {
      * vers un refus.
      */
     readonly signInLead: string;
-    /** L'action du dialogue — elle mène à l'écran d'Auth0, elle ne connecte pas. */
+    /**
+     * L'action du dialogue — elle mène à l'écran d'Auth0, elle ne connecte pas.
+     * Depuis le 2026-10-09, elle part sur la connexion par code e-mail.
+     */
     readonly signInSubmit: string;
+    /**
+     * Le lien discret vers le parcours par mot de passe — connexion dans le
+     * dialogue, inscription sur la carte de l'accueil. La capacité reste ;
+     * elle n'est plus le chemin par défaut (2026-10-09).
+     */
+    readonly usePassword: string;
 
     /**
      * **Le segmenté des deux portes** — particulier / professionnel, en tête de

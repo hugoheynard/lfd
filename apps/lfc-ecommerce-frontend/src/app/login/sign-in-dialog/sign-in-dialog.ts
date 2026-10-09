@@ -50,8 +50,8 @@ import { RuleOu } from '../accueil-page/rule-ou/rule-ou';
  *
  * ## L'e-mail n'est pas un identifiant, c'est un raccourci
  *
- * Il est **facultatif** : `login()` le passe en `login_hint` pour préremplir
- * l'écran d'Auth0. Le laisser vide mène au même endroit, avec un champ à
+ * Il est **facultatif** : la façade le passe en `login_hint` pour préremplir
+ * l'écran d'Auth0 — celui du code comme celui du mot de passe. Le laisser vide mène au même endroit, avec un champ à
  * remplir de plus. Le bouton ne se désarme donc jamais — exiger une adresse
  * pour un champ qui ne sert qu'à en éviter la saisie serait absurde.
  */
@@ -113,15 +113,33 @@ export class SignInDialog {
   }
 
   /**
-   * Le chemin par e-mail : Auth0 reconnaîtra la passkey ou demandera le mot de
-   * passe. On ferme AVANT de rediriger — la page va disparaître, et un
-   * dialogue laissé ouvert se retrouverait à l'écran au retour.
+   * Le chemin par défaut : un code reçu par e-mail (2026-10-09). On ferme AVANT
+   * de rediriger — la page va disparaître, et un dialogue laissé ouvert se
+   * retrouverait à l'écran au retour.
    */
   protected withEmail(): void {
     const { target } = this.data();
-    const hint = this.email().trim();
+    const hint = this.hint();
     this.ref.close();
-    this.auth.login(target, hint === '' ? undefined : hint);
+    this.auth.continueWithEmailCode(target, hint);
+  }
+
+  /**
+   * « Utiliser un mot de passe » : l'écran d'Auth0 de la connexion à mot de
+   * passe, avec la même adresse soufflée. La capacité reste pour qui a ouvert
+   * son compte ainsi.
+   */
+  protected withPassword(): void {
+    const { target } = this.data();
+    const hint = this.hint();
+    this.ref.close();
+    this.auth.loginWithPassword(target, hint);
+  }
+
+  /** L'adresse tapée, ou rien : des blancs ne font pas un indice. */
+  private hint(): string | undefined {
+    const typed = this.email().trim();
+    return typed === '' ? undefined : typed;
   }
 
   protected withGoogle(): void {

@@ -281,11 +281,11 @@ export class CartDialog {
 
   /** La porte de qui a déjà un compte. Elle ramène ICI, panier compris. */
   protected signInFirst(): void {
-    this.auth.login(AFTER_SIGN_IN);
+    this.auth.continueWithEmailCode(AFTER_SIGN_IN);
   }
 
   protected signIn(): void {
-    this.auth.login(AFTER_SIGN_IN);
+    this.auth.continueWithEmailCode(AFTER_SIGN_IN);
   }
 
   /** Rouvrir le rayon, c'est simplement refermer le panier : on y était. */
