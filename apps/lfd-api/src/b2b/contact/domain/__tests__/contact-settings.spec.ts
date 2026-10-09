@@ -10,13 +10,33 @@ describe("ContactSettings — la carte de contact", () => {
     const blank = { fr: "  Une question ? ", en: "", it: "" };
     const settings = ContactSettings.pose({
       settings: {
-        cards: { ...DEFAULT_CONTACT_SETTINGS.cards, b2b: { title: blank, body: blank } },
+        cards: {
+          ...DEFAULT_CONTACT_SETTINGS.cards,
+          b2b: { kicker: blank, title: blank, body: blank },
+        },
       },
       at: new Date(0),
       author: AUTHOR,
     });
     expect(settings.cards.b2b.title.fr).toBe("Une question ?");
+    expect(settings.cards.b2b.kicker.fr).toBe("Une question ?");
     expect(settings.cards.b2c.title.fr).toBe("");
+  });
+
+  it("refuse un surtitre trop long", () => {
+    const kicker = { fr: "x".repeat(61), en: "", it: "" };
+    expect(() =>
+      ContactSettings.pose({
+        settings: {
+          cards: {
+            ...DEFAULT_CONTACT_SETTINGS.cards,
+            b2c: { ...DEFAULT_CONTACT_SETTINGS.cards.b2c, kicker },
+          },
+        },
+        at: new Date(0),
+        author: AUTHOR,
+      }),
+    ).toThrow(ContactTextTooLongError);
   });
 
   it("refuse une phrase trop longue", () => {
@@ -24,7 +44,10 @@ describe("ContactSettings — la carte de contact", () => {
     expect(() =>
       ContactSettings.pose({
         settings: {
-          cards: { ...DEFAULT_CONTACT_SETTINGS.cards, b2b: { title: long, body: long } },
+          cards: {
+            ...DEFAULT_CONTACT_SETTINGS.cards,
+            b2b: { kicker: { fr: "", en: "", it: "" }, title: long, body: long },
+          },
         },
         at: new Date(0),
         author: AUTHOR,

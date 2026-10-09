@@ -14,7 +14,7 @@ import type { LocaleCode } from '../client-locale.service';
 
 /**
  * **La carte de contact réglée au back-office** — le numéro et les textes par
- * public (`GET /contact-settings`, public ; `documentation/order/plan-nous-ecrire.md`, §4).
+ * public (`GET /contact-settings`, public ; `documentation/contenu-ecommerce/nous-contacter.md`, §4).
  *
  * Tant que le réglage n'est pas lu, ou si sa lecture échoue, il vaut son défaut
  * TOUT VIDE : la carte garde alors les textes du dictionnaire. Une lecture

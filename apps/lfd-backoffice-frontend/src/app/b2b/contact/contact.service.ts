@@ -17,7 +17,7 @@ import { B2B_API_BASE } from '../../api/api-config';
 /**
  * **« Nous écrire »** côté back-office — les objets proposés au formulaire, la
  * carte de contact de la boutique et les messages reçus
- * (`documentation/order/plan-nous-ecrire.md`, §2.1, §2.3, §4).
+ * (`documentation/contenu-ecommerce/nous-contacter.md`, §2.1, §2.3, §4).
  *
  * Les écritures rendent `204` (ou l'identifiant créé) : l'appelant relit.
  */

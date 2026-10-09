@@ -12,7 +12,7 @@ import { ContactInbox } from '../contact-inbox.store';
 /**
  * **E-commerce LFC › Contact** — trois onglets (Hugo, 2026-10-09) : le contenu
  * de la carte de contact, les objets du formulaire « Nous écrire », et la
- * messagerie (`documentation/order/plan-nous-ecrire.md`).
+ * messagerie (`documentation/contenu-ecommerce/nous-contacter.md`).
  *
  * Chaque onglet est une sous-route : l'onglet se lit dans l'adresse, et la
  * cloche du back-office ouvre directement la messagerie par

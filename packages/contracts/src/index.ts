@@ -1770,7 +1770,6 @@ export type {
 } from "./delivery-availability.js";
 export {
   CONTACT_BOUNDS,
-  CONTACT_MIN_FILL_MS,
   CONTACT_PRIORITIES,
   CONTACT_SUBJECT_AUDIENCES,
   DEFAULT_CONTACT_SETTINGS,

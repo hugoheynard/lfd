@@ -37,7 +37,7 @@ type SubjectsState = 'loading' | 'failed' | 'ready';
 
 /**
  * **« Nous écrire »** — le message à l'équipe, par objet
- * (`documentation/order/plan-nous-ecrire.md`, §2.2 et §4).
+ * (`documentation/contenu-ecommerce/nous-contacter.md`, §2.2 et §4).
  *
  * Remplace le `mailto:` de la carte de contact : l'objet choisi décide à quelle
  * adresse le message part, et le message est aussi rangé au back-office.
@@ -46,9 +46,8 @@ type SubjectsState = 'loading' | 'failed' | 'ready';
  *   le serveur revérifie qu'il est actif et visible pour ce public.
  * - Un client connecté a son nom, son e-mail et son téléphone pré-remplis ; il
  *   écrit par `/me/contact-messages`, qui prend sa société à l'espace courant.
- * - L'anti-abus du serveur lit deux choses que ce dialogue lui envoie : le champ
- *   piège `website`, qu'un humain ne voit pas, et `elapsedMs`, le temps écoulé
- *   depuis l'ouverture. Un robot est accepté EN APPARENCE ; l'écran n'en sait rien.
+ * - Le champ piège `lfd_trap`, qu'un humain ne voit pas, part avec le message ;
+ *   le public, lui, est déduit au serveur (un objet hors public → 409, dit ici).
  */
 @Component({
   selector: 'app-contact-dialog',
@@ -85,9 +84,6 @@ export class ContactDialog {
   private readonly authenticated = inject(AuthFacade).isAuthenticated;
   private readonly identity = inject(ClientIdentity);
 
-  /** L'instant d'ouverture, d'où se compte `elapsedMs`. Mesure de durée, pas du temps métier. */
-  private readonly openedAt = performance.now();
-
   protected readonly c = computed(() => contactDialogCopy(this.locale()));
   protected readonly bounds = CONTACT_BOUNDS;
 
@@ -108,7 +104,7 @@ export class ContactDialog {
   protected readonly phone = signal(this.authenticated() ? (this.identity.phone() ?? '') : '');
   protected readonly message = signal('');
   /** Le champ piège : jamais montré, jamais rempli par un humain. */
-  protected readonly website = signal('');
+  protected readonly trapValue = signal('');
 
   protected readonly sending = signal(false);
   /** Le refus du serveur, dit dans le dialogue, qui reste ouvert. */
@@ -156,13 +152,11 @@ export class ContactDialog {
     this.refusal.set(null);
     const payload: ContactMessagePayload = {
       subjectId,
-      audience: this.audience(),
       name: this.name().trim(),
       email: this.email().trim(),
       phone: this.phone().trim(),
       message: this.message().trim(),
-      website: this.website(),
-      elapsedMs: Math.round(performance.now() - this.openedAt),
+      lfd_trap: this.trapValue(),
     };
     const refusal = await this.gateway.send(payload);
     this.sending.set(false);
@@ -176,7 +170,7 @@ export class ContactDialog {
 
   protected trap(event: Event): void {
     if (event.target instanceof HTMLInputElement) {
-      this.website.set(event.target.value);
+      this.trapValue.set(event.target.value);
     }
   }
 

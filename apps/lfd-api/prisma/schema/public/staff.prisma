@@ -93,7 +93,7 @@ enum StaffResource {
   /// `plan-vitrine-enregistrement.md`, D7).
   b2b_storefront
   /// « NOUS ÉCRIRE » — objets de contact, carte de contact, messages reçus
-  /// (2026-10-09, `plan-nous-ecrire.md`, §5.6). Accordée à l'écran.
+  /// (2026-10-09, `nous-contacter.md`, §5.6). Accordée à l'écran.
   b2b_contact
   /// LE FOURNIL, un droit par geste — sortis de `b2b_orders` le 2026-10-01
   /// (`documentation/livraisons/droits/plan-droits-par-geste.md`, DG-D1) : le plan du

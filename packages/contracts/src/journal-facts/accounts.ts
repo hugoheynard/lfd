@@ -549,7 +549,7 @@ export const ACCOUNTS_AND_CARTS_FACTS = {
     [payload({ supportRequestId: ref("support_request") })],
   ),
   /**
-   * **Un message « Nous écrire » traité** (`plan-nous-ecrire.md`, §5.7,
+   * **Un message « Nous écrire » traité** (`nous-contacter.md`, §5.7,
    * 2026-10-09). Le sujet est le message ; `subjectLabel` est le libellé
    * français de son OBJET, jamais l'auteur : le message s'anonymise à douze
    * mois, et un nom recopié au journal y survivrait.

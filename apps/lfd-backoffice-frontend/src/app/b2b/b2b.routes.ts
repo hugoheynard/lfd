@@ -153,7 +153,7 @@ export const b2bRoutes: Routes = [
       },
       {
         // « NOUS ÉCRIRE » — les objets du formulaire, la carte de contact, et
-        // les messages reçus (plan-nous-ecrire.md), en trois onglets routés.
+        // les messages reçus (nous-contacter.md), en trois onglets routés.
         // Son propre droit : on peut répondre aux messages sans régler la
         // vente, et l'inverse.
         path: 'contact',

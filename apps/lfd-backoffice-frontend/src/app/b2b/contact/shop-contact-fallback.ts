@@ -8,7 +8,8 @@ import type { ContactLocalizedText, CustomerAudience } from '@lfd/contracts';
  * accueil-public.copy.ts`, §`contact`, relu le 2026-10-09 après sa
  * simplification (Hugo : « pas de fallback trop compliqué ») : un titre commun
  * aux deux publics, une phrase par public, plus de note d'heure creuse ni de
- * distinction visiteur / client connecté.
+ * distinction visiteur / client connecté. Surtitres relus le même jour, quand
+ * le back-office a su régler le sien.
  *
  * Pourquoi pas `DEFAULT_CONTACT_SETTINGS` (`@lfd/contracts`) : il dit « rien
  * n'est réglé », et la boutique lit le vide comme « garde ton texte ». Y mettre

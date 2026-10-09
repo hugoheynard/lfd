@@ -31,7 +31,6 @@ export {
 } from "./order-opening.values.js";
 export {
   CONTACT_BOUNDS,
-  CONTACT_MIN_FILL_MS,
   DEFAULT_CONTACT_SETTINGS,
   type ContactCardText,
   type ContactLocalizedText,

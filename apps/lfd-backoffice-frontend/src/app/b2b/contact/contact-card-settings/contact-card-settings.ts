@@ -39,7 +39,7 @@ import { ContactService } from '../contact.service';
 import { SHOP_CONTACT_FALLBACK } from '../shop-contact-fallback';
 
 type LoadState = 'loading' | 'ready' | 'error';
-type Part = 'title' | 'body';
+type Part = 'kicker' | 'title' | 'body';
 
 const AUDIENCES: readonly CustomerAudience[] = ['b2b', 'b2c'];
 const AUDIENCE_LABELS: Readonly<Record<CustomerAudience, string>> = {
@@ -47,7 +47,10 @@ const AUDIENCE_LABELS: Readonly<Record<CustomerAudience, string>> = {
   b2c: 'Particuliers',
 };
 
-/** Une langue où la carte n'a ni titre ni phrase à elle — la boutique y retombera. */
+/**
+ * Une langue où la carte n'a pas son titre ou sa phrase — la boutique y retombera.
+ * Le surtitre n'y compte pas : il est facultatif (Hugo, 2026-10-09).
+ */
 function untranslated(card: ContactCardText, lang: ContactLang): boolean {
   return card.title[lang].trim() === '' || card.body[lang].trim() === '';
 }
@@ -110,6 +113,9 @@ export class ContactCardSettings {
     for (const audience of AUDIENCES) {
       const card: ContactCardText = draft.cards[audience];
       for (const lang of CONTACT_LANGS) {
+        if (card.kicker[lang].trim().length > CONTACT_BOUNDS.cardKicker) {
+          return `Surtitre trop long (${String(CONTACT_BOUNDS.cardKicker)} caractères au plus).`;
+        }
         if (card.title[lang].trim().length > CONTACT_BOUNDS.cardTitle) {
           return `Titre trop long (${String(CONTACT_BOUNDS.cardTitle)} caractères au plus).`;
         }
@@ -172,7 +178,7 @@ export class ContactCardSettings {
     );
     const call = shop.call[lang];
     return {
-      kicker: shop.kicker[lang],
+      kicker: localizedOr(card.kicker, lang, shop.kicker[lang]),
       title: localizedOr(card.title, lang, shop.title[lang]),
       body: localizedOr(card.body, lang, shop.body[audience][lang]),
       calls:
@@ -274,6 +280,7 @@ export class ContactCardSettings {
       it: t.it.trim(),
     });
     const card = (c: ContactCardText): ContactCardText => ({
+      kicker: text(c.kicker),
       title: text(c.title),
       body: text(c.body),
     });

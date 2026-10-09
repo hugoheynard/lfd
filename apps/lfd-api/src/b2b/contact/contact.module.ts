@@ -6,6 +6,8 @@ import { CreateContactPhoneHandler } from "./application/commands/create-contact
 import { ReviseContactPhoneHandler } from "./application/commands/revise-contact-phone.handler.js";
 import { GetPublicContactSettingsHandler } from "./application/queries/get-public-contact-settings.handler.js";
 import { ListContactPhonesHandler } from "./application/queries/list-contact-phones.handler.js";
+import { ContactSenderAudience } from "./domain/ports/contact-sender-audience.js";
+import { PrismaContactSenderAudience } from "./infrastructure/prisma-contact-sender-audience.js";
 import { ContactPhoneReader } from "./domain/ports/contact-phone.reader.js";
 import { ContactPhoneRepository } from "./domain/ports/contact-phone.repository.js";
 import { AdminContactPhonesController } from "./http/admin-contact-phones.controller.js";
@@ -56,7 +58,7 @@ import {
 
 /**
  * **« Nous écrire »** — les objets de contact, la carte de contact de la
- * boutique, et les messages (`documentation/order/plan-nous-ecrire.md`).
+ * boutique, et les messages (`documentation/contenu-ecommerce/nous-contacter.md`).
  *
  * Importe `AccountModule` pour le seul `StaffDirectory` (l'auteur figé d'un
  * geste) ; le mailer et la cloche viennent de modules globaux. N'exporte rien :
@@ -82,6 +84,7 @@ import {
     { provide: ContactMessageAnonymizer, useClass: PrismaContactMessageAnonymizer },
     { provide: ContactSettingsReader, useClass: PrismaContactSettingsReader },
     { provide: ContactSettingsRepository, useClass: PrismaContactSettingsRepository },
+    { provide: ContactSenderAudience, useClass: PrismaContactSenderAudience },
     { provide: ContactPhoneRepository, useClass: PrismaContactPhoneRepository },
     { provide: ContactPhoneReader, useClass: PrismaContactPhoneReader },
     CreateContactPhoneHandler,

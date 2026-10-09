@@ -3,7 +3,7 @@
 > ✅ **Bâti le 2026-10-09**, à la demande d'Hugo (« une page dans Admin /
 > E-commerce LFC pour la contact ; écrire devra être un dialog avec un
 > formulaire dont on peut fabriquer l'objet qui ira dans un select »). Ce
-> document décrit l'état du code ; il remplace le plan `order/plan-nous-ecrire.md` (supprimé),
+> document décrit l'état du code ; il remplace le plan « Nous écrire » (supprimé),
 > relu par `vitruve` puis revu après construction.
 
 ## 1. Ce que voit chacun

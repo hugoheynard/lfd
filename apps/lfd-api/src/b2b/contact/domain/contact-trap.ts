@@ -1,20 +1,12 @@
-import { CONTACT_MIN_FILL_MS } from "@lfd/contracts";
-
-/** Ce que le formulaire dit de sa saisie, au-delà du message. */
-export interface ContactFormSignals {
-  /** Le champ piège : invisible à l'écran, un humain le laisse vide. */
-  readonly website: string;
-  /** Le temps écoulé depuis l'ouverture du dialogue, en millisecondes. */
-  readonly elapsedMs: number;
-}
-
 /**
- * **Le formulaire a-t-il été rempli par un robot ?** (`plan-nous-ecrire.md`,
- * §2.2 et §5.2.) Piège rempli, ou saisie plus rapide que `CONTACT_MIN_FILL_MS`.
+ * **Le formulaire a-t-il été rempli par un robot ?** (`nous-contacter.md`,
+ * §2.2 et §5.2.) Le champ piège `lfd_trap` est invisible à l'écran : un
+ * humain le laisse vide.
  *
- * Ce n'est pas une preuve, c'est un tri : un robot qui attend et laisse le
- * champ vide passe, et c'est le débit par IP qui le borne ensuite.
+ * Plus de délai minimal depuis la revue du 2026-10-09 : déclaré par le client,
+ * il n'arrêtait aucun robot et perdait le message d'un humain rapide (un
+ * client connecté, pré-rempli). C'est le débit par IP qui borne le reste.
  */
-export function looksAutomated(signals: ContactFormSignals): boolean {
-  return signals.website.trim() !== "" || signals.elapsedMs < CONTACT_MIN_FILL_MS;
+export function trapIsFilled(trap: string): boolean {
+  return trap.trim() !== "";
 }

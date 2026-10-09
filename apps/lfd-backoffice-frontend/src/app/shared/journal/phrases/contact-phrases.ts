@@ -10,7 +10,7 @@ import {
 } from '../phrase';
 
 /**
- * **« Nous écrire »** (`documentation/order/plan-nous-ecrire.md`, §5.7) — le
+ * **« Nous écrire »** (`documentation/contenu-ecommerce/nous-contacter.md`, §5.7) — le
  * miroir de `contact_message.handled` dans `@lfd/contracts`. La charge ne
  * porte que l'objet du message, figé à la réception : ni l'auteur ni le texte,
  * que l'anonymisation viderait de toute façon.

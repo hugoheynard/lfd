@@ -1,3 +1,4 @@
+import { isValidReplyTo } from "@lfd/mailer";
 import { Inject, Logger } from "@nestjs/common";
 import { EventsHandler, type IEventHandler } from "@nestjs/cqrs";
 
@@ -10,8 +11,9 @@ const ORIGIN_LABELS = { b2b: "Espace pro", b2c: "Particulier" } as const;
 
 /**
  * Envoie un message « Nous écrire » à l'adresse de son objet, **`Reply-To` =
- * l'auteur** : répondre au courriel lui écrit directement (`plan-nous-ecrire.md`,
- * §2.2 et §5.1).
+ * l'auteur** : répondre au courriel lui écrit directement (`nous-contacter.md`,
+ * §2.2 et §5.1) — sauf si l'adresse ne passe pas `isValidReplyTo` : le
+ * courriel part alors sans, plutôt que pas du tout.
  *
  * Hors de la requête, suivi par `BackgroundWork`. Un échec d'envoi est écrit
  * dans les logs — avec l'id du message, jamais l'adresse — et le message reste
@@ -32,10 +34,18 @@ export class MailContactMessage implements IEventHandler<ContactMessageReceivedE
 
   private async run(event: ContactMessageReceivedEvent): Promise<void> {
     const message = event.message.toPersistence();
+    // Une adresse que le mailer refuserait en en-tête ne fait pas perdre le
+    // courriel : il part sans Reply-To, l'adresse reste lisible dans le corps.
+    const replyable = isValidReplyTo(message.author.email);
+    if (!replyable) {
+      this.logger.warn(
+        `Courriel « Nous écrire » sans Reply-To (${message.id}) : adresse refusée en en-tête.`,
+      );
+    }
     try {
       await this.mailer.send({
         to: event.recipientEmail,
-        replyTo: message.author.email,
+        ...(replyable ? { replyTo: message.author.email } : {}),
         template: "staff.contact-message",
         idempotencyKey: `contact-message:${message.id}`,
         data: {

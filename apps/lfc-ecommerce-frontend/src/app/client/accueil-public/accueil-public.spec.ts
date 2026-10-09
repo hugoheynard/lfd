@@ -25,6 +25,7 @@ import { LIVE_PICKUP } from '../mes-commandes/order-view.fixture';
 import { ServicePoints } from '../shop/pickup-points.store';
 import { CartFulfillmentDays } from '../shop/cart-fulfillment-days.service';
 import { ShopCatalogue } from '../shop/shop-catalogue.store';
+import type { PublicContactSettingsView } from '@lfd/contracts/shop-values';
 import { ContactSettingsStore, NO_CONTACT_SETTINGS } from '../shop/contact-settings.store';
 import { AccueilPublic } from './accueil-public';
 
@@ -142,6 +143,9 @@ function line(productName: string, quantity: number, sku = productName): Custome
   return { ...LIVE_PICKUP.lines[0]!, sku, productName, quantity };
 }
 
+/** Le réglage de contact servi au montage suivant ; le défaut est vide. */
+let contactSettings: PublicContactSettingsView = NO_CONTACT_SETTINGS;
+
 async function mount(
   points: readonly PickupAddressView[],
   who: Regard = 'visiteur',
@@ -166,7 +170,7 @@ async function mount(
       // suite lisait la carte réglée sur l'API de dev du poste (2026-10-09).
       {
         provide: ContactSettingsStore,
-        useValue: { settings: signal(NO_CONTACT_SETTINGS), hydrate: () => Promise.resolve() },
+        useValue: { settings: signal(contactSettings), hydrate: () => Promise.resolve() },
       },
       ...whoProviders(who),
     ],
@@ -469,6 +473,23 @@ describe('AccueilPublic — les trois états', () => {
     expect(band?.querySelector('.kicker')?.textContent?.trim()).toBe('On répond');
     expect(band?.querySelector('.title')?.textContent).toBe('Nous contacter');
     expect(band?.querySelector('.who')?.textContent).toContain(fragment);
+  });
+
+  it('prend le surtitre réglé, et garde celui du dictionnaire quand il est vide', async () => {
+    const text = (fr: string) => ({ fr, en: '', it: '' });
+    contactSettings = {
+      ...NO_CONTACT_SETTINGS,
+      cards: {
+        ...NO_CONTACT_SETTINGS.cards,
+        b2c: { kicker: text('Au Labo'), title: text(''), body: text('') },
+      },
+    };
+    const fixture = await mount(POINTS, 'visiteur');
+    contactSettings = NO_CONTACT_SETTINGS;
+    const band = fixture.nativeElement.querySelector('app-contact-band');
+
+    expect(band?.querySelector('.kicker')?.textContent?.trim()).toBe('Au Labo');
+    expect(band?.querySelector('.title')?.textContent).toBe('Nous contacter');
   });
 });
 

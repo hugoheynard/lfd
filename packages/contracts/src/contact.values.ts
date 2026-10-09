@@ -2,7 +2,7 @@ import type { CustomerAudience } from "./customer-audience.js";
 
 /**
  * **« Nous écrire »** — les objets de contact, la carte de contact et les
- * messages, sans zod (`documentation/order/plan-nous-ecrire.md`).
+ * messages, sans zod (`documentation/contenu-ecommerce/nous-contacter.md`).
  *
  * Séparé de `contact.ts` pour la raison de poids de `order-opening.values.ts` :
  * la boutique lit la carte et les objets au démarrage, et le baril
@@ -40,18 +40,11 @@ export const CONTACT_BOUNDS = {
   authorPhone: 30,
   message: 4000,
   settingsPhone: 30,
+  cardKicker: 60,
   cardTitle: 120,
   cardBody: 400,
   phoneLabel: 80,
 } as const;
-
-/**
- * **Le délai minimal de saisie**, en millisecondes : un formulaire rempli plus
- * vite que ça l'a été par un robot. Le message est alors accepté EN
- * APPARENCE (même réponse), et rien n'est rangé ni envoyé — comme le champ
- * piège. Le front envoie le temps écoulé depuis l'ouverture du dialogue.
- */
-export const CONTACT_MIN_FILL_MS = 3_000;
 
 /** L'objet tel que le back-office le règle (`GET /admin/contact/subjects`). */
 export interface ContactSubjectView {
@@ -76,6 +69,8 @@ export interface PublicContactSubjectView {
 
 /** Le texte d'une carte de contact. Vide = le texte du dictionnaire de la boutique. */
 export interface ContactCardText {
+  /** Le surtitre (« On répond » à la boutique). Vide = le texte de la boutique. */
+  readonly kicker: ContactLocalizedText;
   readonly title: ContactLocalizedText;
   readonly body: ContactLocalizedText;
 }
@@ -123,7 +118,7 @@ export interface ContactSettingsView {
 }
 
 const EMPTY_TEXT: ContactLocalizedText = { fr: "", en: "", it: "" };
-const EMPTY_CARD: ContactCardText = { title: EMPTY_TEXT, body: EMPTY_TEXT };
+const EMPTY_CARD: ContactCardText = { kicker: EMPTY_TEXT, title: EMPTY_TEXT, body: EMPTY_TEXT };
 
 /** Le réglage tant que personne ne l'a posé : tout vide, la boutique garde ses textes. */
 export const DEFAULT_CONTACT_SETTINGS: ContactSettingsView = {

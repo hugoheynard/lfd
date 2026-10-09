@@ -259,7 +259,7 @@ export class AccueilPublic {
     const card = this.pro() ? settings.cards.b2b : settings.cards.b2c;
     const locale = this.locale.current();
     return {
-      kicker: contact.kicker,
+      kicker: localizedOr(card.kicker, locale, contact.kicker),
       phones: phonesFor(settings, this.pro() ? 'b2b' : 'b2c', locale),
       call: contact.call,
       write: contact.write,

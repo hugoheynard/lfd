@@ -26,7 +26,7 @@ import { telHref } from '../contact-settings.store';
  * superpose le réglage du back-office au dictionnaire.
  *
  * « Écrire » ouvre le dialogue « Nous écrire » (plan
- * `documentation/order/plan-nous-ecrire.md`, §4) : l'objet choisi décide où
+ * `documentation/contenu-ecommerce/nous-contacter.md`, §4) : l'objet choisi décide où
  * part le message, ce qu'un `mailto:` ne savait pas faire.
  */
 @Component({

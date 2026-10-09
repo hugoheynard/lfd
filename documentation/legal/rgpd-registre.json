@@ -1371,7 +1371,7 @@
       "colonne": "public.contact_message.handled_by_name",
       "personne": "staff",
       "categorie": "identite",
-      "finalite": "Nom figé de qui a traité un message « Nous écrire » (`plan-nous-ecrire.md`), lisible même si la fiche staff change. Reste après l'anonymisation du message, qui ne vide que les données de son auteur.",
+      "finalite": "Nom figé de qui a traité un message « Nous écrire » (`nous-contacter.md`), lisible même si la fiche staff change. Reste après l'anonymisation du message, qui ne vide que les données de son auteur.",
       "conservation": "aucune-limite-decidee",
       "purge": null,
       "information": false
@@ -1380,7 +1380,7 @@
       "colonne": "public.contact_message.handled_by_staff_id",
       "personne": "staff",
       "categorie": "auteur-geste",
-      "finalite": "Tracer quel membre du staff a marqué traité un message « Nous écrire » (`plan-nous-ecrire.md`, §5.7).",
+      "finalite": "Tracer quel membre du staff a marqué traité un message « Nous écrire » (`nous-contacter.md`, §5.7).",
       "conservation": "aucune-limite-decidee",
       "purge": null,
       "information": false
@@ -1389,7 +1389,7 @@
       "colonne": "public.contact_settings.updated_by_name",
       "personne": "staff",
       "categorie": "identite",
-      "finalite": "Nom figé de l'auteur du dernier réglage de la carte de contact (`plan-nous-ecrire.md`, §4).",
+      "finalite": "Nom figé de l'auteur du dernier réglage de la carte de contact (`nous-contacter.md`, §4).",
       "conservation": "aucune-limite-decidee",
       "purge": null,
       "information": false
@@ -1398,7 +1398,7 @@
       "colonne": "public.contact_settings.updated_by_staff_id",
       "personne": "staff",
       "categorie": "auteur-geste",
-      "finalite": "Tracer quel membre du staff a posé la carte de contact de la boutique (`plan-nous-ecrire.md`, §4).",
+      "finalite": "Tracer quel membre du staff a posé la carte de contact de la boutique (`nous-contacter.md`, §4).",
       "conservation": "aucune-limite-decidee",
       "purge": null,
       "information": false

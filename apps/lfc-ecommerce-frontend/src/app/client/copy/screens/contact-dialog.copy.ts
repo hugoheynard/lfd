@@ -1,7 +1,7 @@
 import type { LocaleCode } from '../../client-locale.service';
 
 /**
- * **Ce que dit le dialogue « Nous écrire »** (`documentation/order/plan-nous-ecrire.md`, §2.2).
+ * **Ce que dit le dialogue « Nous écrire »** (`documentation/contenu-ecommerce/nous-contacter.md`, §2.2).
  *
  * Les OBJETS proposés ne sont pas ici : ils sont réglés au back-office, en trois
  * langues, et servis par `GET /contact-subjects`.

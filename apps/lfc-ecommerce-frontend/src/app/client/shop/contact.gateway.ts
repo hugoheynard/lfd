@@ -9,7 +9,7 @@ import { AUTH_CONFIG } from '../../auth/auth.config';
 import { AuthFacade } from '../../auth/auth.facade';
 
 /**
- * **« Nous écrire »**, côté réseau (`documentation/order/plan-nous-ecrire.md`, §2.2).
+ * **« Nous écrire »**, côté réseau (`documentation/contenu-ecommerce/nous-contacter.md`, §2.2).
  *
  * Deux routes d'envoi et non une : `POST /contact-messages` est publique, et le
  * garde du serveur n'y résout aucun principal ; un client connecté écrit donc

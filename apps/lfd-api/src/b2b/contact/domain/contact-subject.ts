@@ -34,7 +34,7 @@ export interface ContactSubjectState extends Omit<ContactSubjectSettings, "recip
 }
 
 /**
- * **Un objet de « Nous écrire »** (`plan-nous-ecrire.md`, §2.1).
+ * **Un objet de « Nous écrire »** (`nous-contacter.md`, §2.1).
  *
  * Pas un agrégat à transitions : un réglage (CLAUDE.md §3.1, « CRUD
  * honnête »). Ce que la classe garantit, c'est la VALIDITÉ — un libellé

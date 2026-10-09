@@ -16,7 +16,7 @@ import { ContactDialog } from './contact-dialog';
 
 /**
  * **« Nous écrire »** — ce que le dialogue propose, ce qu'il pré-remplit, et ce
- * qu'il envoie (`documentation/order/plan-nous-ecrire.md`, §3 « Front »).
+ * qu'il envoie (`documentation/contenu-ecommerce/nous-contacter.md`, §3 « Front »).
  */
 
 const FR = contactDialogCopy('fr');
@@ -99,7 +99,6 @@ function form(fixture: ComponentFixture<ContactDialog>) {
     email: dialog['email'],
     phone: dialog['phone'],
     message: dialog['message'],
-    website: dialog['website'],
     canSend: () => dialog['canSend'](),
     send: () => dialog['send'](),
   };
@@ -157,7 +156,7 @@ describe('ContactDialog', () => {
     expect(f.canSend()).toBe(false);
   });
 
-  it('envoie le piège et le temps écoulé, annonce, puis ferme', async () => {
+  it('envoie le contrat exact (piège compris, sans public), annonce, puis ferme', async () => {
     const { fixture, sent, closed, toasts } = await mount({ audience: 'b2b', authenticated: true });
     const f = form(fixture);
     f.subjectId.set('s-order');
@@ -168,14 +167,20 @@ describe('ContactDialog', () => {
     expect(sent).toHaveLength(1);
     expect(sent[0]).toMatchObject({
       subjectId: 's-order',
-      audience: 'b2b',
       name: 'Jeanne Martin',
       email: 'jeanne@exemple.fr',
       phone: '06 12 34 56 78',
       message: 'Deux baguettes de plus',
-      website: '',
+      lfd_trap: '',
     });
-    expect(sent[0]?.elapsedMs).toBeGreaterThanOrEqual(0);
+    expect(Object.keys(sent[0] ?? {}).sort()).toEqual([
+      'email',
+      'lfd_trap',
+      'message',
+      'name',
+      'phone',
+      'subjectId',
+    ]);
     expect(toasts).toEqual([FR.sent]);
     expect(closed).toEqual([true]);
   });

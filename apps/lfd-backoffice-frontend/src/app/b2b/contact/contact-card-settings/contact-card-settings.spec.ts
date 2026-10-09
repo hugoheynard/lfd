@@ -157,6 +157,7 @@ describe('ContactCardSettings', () => {
       cards: {
         ...DEFAULT_CONTACT_SETTINGS.cards,
         b2b: {
+          kicker: { fr: '', en: 'Hello', it: '' },
           title: { fr: 'Un souci ?', en: '', it: '' },
           body: { fr: '', en: '', it: '' },
         },
@@ -175,10 +176,12 @@ describe('ContactCardSettings', () => {
 
     fixture.componentInstance['selectLang']('en');
     // L'anglais vide : le français réglé, comme la boutique.
-    expect(preview()).toMatchObject({ kicker: 'We answer', title: 'Un souci ?', write: 'Write' });
+    // Le surtitre réglé en anglais l'emporte ; vide en français, la boutique garde le sien.
+    expect(preview()).toMatchObject({ kicker: 'Hello', title: 'Un souci ?', write: 'Write' });
 
     fixture.componentInstance['selectAudience']('b2c');
     expect(preview()).toMatchObject({
+      kicker: 'We answer',
       title: 'Contact us',
       body: 'We reply as soon as we can',
       calls: ['Call · Shop · 04 79 11 22 33'],
@@ -196,6 +199,7 @@ describe('ContactCardSettings', () => {
 
   it('la bascule de langue signale ce qui n’est pas écrit', async () => {
     const fixture = await mount(new FakeContact(DEFAULT_CONTACT_SETTINGS));
+    type(fixture, '[data-kicker] input', 'Surtitre');
     type(fixture, '[data-title] input', 'Titre');
     type(fixture, '[data-body] textarea', 'Phrase');
     const dots = fixture.componentInstance['langOptions']().map((o) => o.dot);

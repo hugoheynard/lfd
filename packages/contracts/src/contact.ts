@@ -3,7 +3,7 @@ import { z } from "zod";
 import { CONTACT_BOUNDS } from "./contact.values.js";
 
 /**
- * Contrat de fil de **« Nous écrire »** (`documentation/order/plan-nous-ecrire.md`) :
+ * Contrat de fil de **« Nous écrire »** (`documentation/contenu-ecommerce/nous-contacter.md`) :
  * les schémas des charges, et le reste par réexport depuis `contact.values.ts`
  * (sans zod, pour la boutique).
  *
@@ -13,7 +13,6 @@ import { CONTACT_BOUNDS } from "./contact.values.js";
  */
 export {
   CONTACT_BOUNDS,
-  CONTACT_MIN_FILL_MS,
   CONTACT_PRIORITIES,
   CONTACT_SUBJECT_AUDIENCES,
   DEFAULT_CONTACT_SETTINGS,
@@ -51,6 +50,7 @@ export type ContactSubjectPayload = z.infer<typeof contactSubjectPayloadSchema>;
 
 const card = z
   .object({
+    kicker: localized(CONTACT_BOUNDS.cardKicker),
     title: localized(CONTACT_BOUNDS.cardTitle),
     body: localized(CONTACT_BOUNDS.cardBody),
   })
@@ -84,21 +84,22 @@ export const contactMessageStatusSchema = z.enum(["pending", "handled"]);
  * `POST /contact-messages` (visiteur) et `POST /me/contact-messages` (client
  * connecté) — le message.
  *
- * `website` est le **champ piège** : invisible à l'écran, un humain le laisse
- * vide. `elapsedMs` est le temps écoulé depuis l'ouverture du dialogue. Un
- * piège rempli ou un délai trop court rendent la MÊME réponse qu'un message
- * reçu — rien n'est rangé ni envoyé, et le robot n'apprend rien.
+ * Le PUBLIC n'y est pas : il se déduit au serveur (visiteur → `b2c` ; client
+ * connecté → `b2b` pour une société active, sinon `b2c`).
+ *
+ * `lfd_trap` est le **champ piège** : invisible à l'écran, et nommé pour
+ * qu'aucun navigateur ne le remplisse d'office. Un humain le laisse vide ;
+ * rempli, la réponse est la MÊME qu'un message reçu, et rien n'est rangé ni
+ * envoyé.
  */
 export const contactMessagePayloadSchema = z
   .object({
     subjectId: z.string().min(1).max(64),
-    audience: contactAudienceQuerySchema,
     name: bounded(CONTACT_BOUNDS.authorName),
     email: bounded(CONTACT_BOUNDS.authorEmail),
     phone: bounded(CONTACT_BOUNDS.authorPhone),
     message: bounded(CONTACT_BOUNDS.message),
-    website: z.string().max(200),
-    elapsedMs: z.number().int().min(0),
+    lfd_trap: z.string().max(200),
   })
   .strict();
 export type ContactMessagePayload = z.infer<typeof contactMessagePayloadSchema>;

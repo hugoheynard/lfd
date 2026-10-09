@@ -32,7 +32,7 @@ interface SubjectRow {
 
 /**
  * **Contact › Formulaire de contact** — les objets que le formulaire « Nous
- * écrire » propose (`documentation/order/plan-nous-ecrire.md`, §2.1).
+ * écrire » propose (`documentation/contenu-ecommerce/nous-contacter.md`, §2.1).
  *
  * Un clic sur un objet ouvre son dialogue ; qui n'a que la lecture reçoit le
  * même, sans Enregistrer ni archivage.

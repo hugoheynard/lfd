@@ -1,5 +1,5 @@
 -- LA PRIORITÉ DES OBJETS DE CONTACT — ajout de Hugo au plan
--- `documentation/order/plan-nous-ecrire.md` (2026-10-09) : « faible, moyen,
+-- `documentation/contenu-ecommerce/nous-contacter.md` (2026-10-09) : « faible, moyen,
 -- urgent », à usage interne.
 --
 -- ADDITIVE : une énumération neuve, deux colonnes neuves à défaut `medium`,

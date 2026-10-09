@@ -1,6 +1,6 @@
 /**
  * **Combien de temps un message traité garde ses données personnelles** —
- * douze mois après son traitement (`plan-nous-ecrire.md`, §5.3 ; durée par
+ * douze mois après son traitement (`nous-contacter.md`, §5.3 ; durée par
  * défaut, à confirmer par Hugo). Passé ce délai, le balayage nocturne vide le
  * nom, l'e-mail, le téléphone et le texte ; la ligne reste.
  */

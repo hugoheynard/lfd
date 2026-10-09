@@ -1,7 +1,7 @@
 import { sanitiseSubject, type LayoutInput, type RenderedMail } from "@lfd/mailer";
 
 /**
- * Les données du courriel **« Nous écrire »** (`plan-nous-ecrire.md`, §2.2).
+ * Les données du courriel **« Nous écrire »** (`nous-contacter.md`, §2.2).
  * Destinataire : l'adresse de l'objet choisi ; `Reply-To` : l'auteur — c'est
  * l'appelant qui la pose sur l'envoi, pas le gabarit.
  */

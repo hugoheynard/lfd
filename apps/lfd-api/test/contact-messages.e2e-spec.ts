@@ -1,5 +1,5 @@
 /**
- * E2E de **« Nous écrire »** (`documentation/order/plan-nous-ecrire.md`) — vrai
+ * E2E de **« Nous écrire »** (`documentation/contenu-ecommerce/nous-contacter.md`) — vrai
  * Postgres, mailer doublé.
  *
  * Ce que seul le vrai chemin prouve : qu'un visiteur sans jeton écrit
@@ -16,12 +16,13 @@ import type {
   PublicContactSettingsView,
   PublicContactSubjectView,
 } from "@lfd/contracts";
-import { CONTACT_MIN_FILL_MS, DEFAULT_CONTACT_SETTINGS } from "@lfd/contracts";
+import { DEFAULT_CONTACT_SETTINGS } from "@lfd/contracts";
 
 import { AdminTokenVerifier } from "../src/platform/auth/admin-token.verifier.js";
 import { MAILER } from "../src/platform/mailer/mailer.tokens.js";
 import { bootstrapE2e, E2E_STAFF_SUB, jsonBody, type E2eContext } from "./e2e-harness.js";
-import { createUser } from "./factories.js";
+import { CompanyStatus, CustomerRole } from "../src/platform/database/client/client.js";
+import { attachTo, createCompany, createUser } from "./factories.js";
 
 interface SentMail {
   readonly to: string;
@@ -98,13 +99,11 @@ function message(
 ): Record<string, unknown> {
   return {
     subjectId,
-    audience: "b2c",
     name: "Jean Martin",
     email: "jean@visiteur.test",
     phone: "",
     message: "Bonjour, ma commande est-elle prête ?",
-    website: "",
-    elapsedMs: CONTACT_MIN_FILL_MS + 4_000,
+    lfd_trap: "",
     ...overrides,
   };
 }
@@ -150,7 +149,7 @@ describe("un visiteur écrit", () => {
     const subjectId = await createSubject();
     await visitor()
       .post("/contact-messages")
-      .send(message(subjectId, { website: "https://spam.example" }))
+      .send(message(subjectId, { lfd_trap: "https://spam.example" }))
       .expect(204);
     await ctx.drain();
 
@@ -206,7 +205,44 @@ describe("un client connecté écrit", () => {
       .expect(204);
     await ctx.drain();
 
-    expect((await pending())[0]).toMatchObject({ userId: user.id, companyId: null });
+    expect((await pending())[0]).toMatchObject({
+      userId: user.id,
+      companyId: null,
+      audience: "b2c",
+    });
+  });
+
+  it("le public se déduit du principal : une société active ouvre l'objet pro, le corps n'y peut rien", async () => {
+    const buyer = await createUser(ctx.prisma, { auth0Sub: "auth0|contact-pro" });
+    const company = await createCompany(ctx.prisma, { status: CompanyStatus.active });
+    await attachTo(ctx.prisma, buyer.id, company.id, CustomerRole.owner);
+    await createUser(ctx.prisma, { auth0Sub: "auth0|contact-perso" });
+    const proOnly = await createSubject({ audience: "b2b" });
+
+    await ctx
+      .asSub("auth0|contact-pro")
+      .set("x-lfc-client-ip", "198.51.100.8")
+      .post("/me/contact-messages")
+      .send(message(proOnly))
+      .expect(204);
+    // Un `audience` au corps n'est plus un champ du contrat : refusé à la forme.
+    await ctx
+      .asSub("auth0|contact-perso")
+      .set("x-lfc-client-ip", "198.51.100.9")
+      .post("/me/contact-messages")
+      .send(message(proOnly, { audience: "b2b" }))
+      .expect(400);
+    await ctx
+      .asSub("auth0|contact-perso")
+      .set("x-lfc-client-ip", "198.51.100.10")
+      .post("/me/contact-messages")
+      .send(message(proOnly))
+      .expect(409);
+    await ctx.drain();
+
+    expect(await pending()).toEqual([
+      expect.objectContaining({ companyId: company.id, audience: "b2b" }),
+    ]);
   });
 });
 
@@ -240,6 +276,7 @@ describe("le staff traite", () => {
       cards: {
         ...DEFAULT_CONTACT_SETTINGS.cards,
         b2b: {
+          kicker: { fr: "Votre commercial", en: "Your sales rep", it: "" },
           title: { fr: "Une question pro ?", en: "", it: "" },
           body: { fr: "Votre commercial vous répond.", en: "", it: "" },
         },

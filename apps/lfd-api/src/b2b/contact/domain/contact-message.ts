@@ -56,7 +56,7 @@ export interface ContactMessageReception {
 }
 
 /**
- * **Un message « Nous écrire »** — l'agrégat (`plan-nous-ecrire.md`, §5.7).
+ * **Un message « Nous écrire »** — l'agrégat (`nous-contacter.md`, §5.7).
  *
  * Son invariant : un message se traite **une fois**. Le second traitement est
  * refusé en le nommant, sans quoi la trace dirait deux auteurs pour un même

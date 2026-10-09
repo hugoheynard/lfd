@@ -8,13 +8,14 @@ import { StaffNotifier } from "../../../../staff/notifications/domain/ports/staf
 import { ContactMessageReceivedEvent } from "../../domain/contact-message.events.js";
 
 /**
- * La page des messages au back-office. Route du front, posée ici faute de
- * l'écran (lot front de `plan-nous-ecrire.md`, à bâtir) : la cloche y mène.
+ * La page des messages au back-office (E-commerce LFC › Contact › Messages),
+ * route `b2b/contact/messages` de `lfd-backoffice-frontend` (vérifié le
+ * 2026-10-09 dans `b2b.routes.ts`) : la cloche y mène.
  */
 export const CONTACT_MESSAGES_LINK = "/b2b/contact/messages";
 
 /**
- * **La cloche « Nous écrire »** (`plan-nous-ecrire.md`, §5.5 ; le cas
+ * **La cloche « Nous écrire »** (`nous-contacter.md`, §5.5 ; le cas
  * « demandes de contact (J2) » que `staff.prisma` annonçait). Adressée par
  * droit, à qui lit `b2b_contact` : ceux qui traitent les messages. Ni le nom
  * de l'auteur ni son texte : la cloche annonce, l'écran explique — et une

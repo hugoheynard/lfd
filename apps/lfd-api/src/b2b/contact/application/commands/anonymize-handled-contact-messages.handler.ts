@@ -10,7 +10,7 @@ export const CONTACT_ANONYMIZE_BATCH_SIZE = 500;
 
 /**
  * L'anonymisation des messages traités depuis douze mois
- * (`plan-nous-ecrire.md`, §5.3). La frontière est `contactMessageKeptSince`.
+ * (`nous-contacter.md`, §5.3). La frontière est `contactMessageKeptSince`.
  *
  * @sans-journal un nettoyage déclenché par la machine : aucun acte de
  * personne, et le fait du traitement reste au journal tel quel.

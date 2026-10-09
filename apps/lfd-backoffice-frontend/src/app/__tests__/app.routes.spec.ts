@@ -159,7 +159,7 @@ const SCREENS: Readonly<Record<string, ScreenAccess>> = {
   'b2b/reglages/heures-limites': null,
   'b2b/reglages/ouverture-boutique': null,
   // « Nous écrire » : son propre droit. Répondre aux messages n'est pas
-  // régler la vente, et l'inverse non plus (plan-nous-ecrire.md, §5.6).
+  // régler la vente, et l'inverse non plus (nous-contacter.md, §5.6).
   'b2b/contact': 'b2b_contact:read',
   'b2b/contact/carte': null,
   'b2b/contact/formulaire': null,

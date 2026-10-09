@@ -1,5 +1,5 @@
 -- « NOUS ÉCRIRE » — les objets de contact, la carte de contact, les messages.
--- Plan `documentation/order/plan-nous-ecrire.md` (Hugo, 2026-10-09).
+-- Plan `documentation/contenu-ecommerce/nous-contacter.md` (Hugo, 2026-10-09).
 --
 -- ADDITIVE : trois tables neuves, une énumération neuve, une valeur
 -- d'énumération neuve. Aucune ligne existante réécrite, aucune colonne

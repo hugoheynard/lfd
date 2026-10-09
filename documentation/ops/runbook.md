@@ -355,7 +355,7 @@ compris, et la cloche « Nous écrire » ne sonne chez personne.
 **Le geste, juste après le déploiement** : `/admin/staff-roles`, rôle
 « Administrateur », ressource « Nous écrire » → écriture ; puis tout autre rôle
 qui doit lire ou traiter les messages. Plan :
-[`plan-nous-ecrire.md`](../order/plan-nous-ecrire.md), §5.6.
+[`nous-contacter.md`](../contenu-ecommerce/nous-contacter.md), §5.6.
 
 ## Avant de déployer « un seul détenteur par société »
 

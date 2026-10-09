@@ -1,10 +1,13 @@
 -- LES NUMÉROS DE CONTACT — ajout de Hugo au plan
--- `documentation/order/plan-nous-ecrire.md` (2026-10-09) : plusieurs numéros,
+-- `documentation/contenu-ecommerce/nous-contacter.md` (2026-10-09) : plusieurs numéros,
 -- chacun avec ce qu'on lit à côté (une boutique, un service…) et son public.
 --
 -- ADDITIVE : une table neuve. `contact_settings.phone` RESTE en base et n'est
 -- plus lue ; s'il est renseigné, il est repris ici en un premier numéro
--- « Contact », pour les deux publics. Aucun droit accordé.
+-- « Contact », pour les deux publics. ⚠️ Déployée avec la migration qui crée
+-- `contact_settings` vide, cette reprise ne copie rien en pratique : elle
+-- couvre seulement une base où un numéro aurait été posé entre les deux.
+-- Aucun droit accordé.
 --
 -- Retour arrière : `DROP TABLE "public"."contact_phone"` ; l'ancien numéro est
 -- toujours dans `contact_settings.phone`.

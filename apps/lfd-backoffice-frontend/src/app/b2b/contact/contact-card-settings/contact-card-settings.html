@@ -46,6 +46,16 @@
           <div class="ccs-split">
             <div class="ccs-fields ccs-form" [attr.data-card]="audience()">
               <fold-input
+                label="Surtitre"
+                optional
+                optionalLabel="facultatif"
+                hint="Vide : la boutique garde son surtitre."
+                [readOnly]="!canWrite()"
+                [value]="form.cards[audience()].kicker[lang()]"
+                (valueChange)="setText('kicker', $event)"
+                data-kicker
+              />
+              <fold-input
                 label="Titre"
                 hint="Un retour à la ligne coupe le titre."
                 [readOnly]="!canWrite()"

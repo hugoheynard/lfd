@@ -9,7 +9,7 @@ import { localizedText } from "./contact-text.js";
 
 /**
  * **La carte de contact de la boutique** — ses textes pour les pros et
- * les particuliers (`plan-nous-ecrire.md`, §4).
+ * les particuliers (`nous-contacter.md`, §4).
  *
  * Pas un agrégat : un réglage unique sans transition, comme `OrderOpening`.
  * Ce qu'elle garantit : des textes rognés et bornés, et la TRACE — un réglage
@@ -42,6 +42,7 @@ export class ContactSettings {
 
 function card(field: string, raw: ContactCardText): ContactCardText {
   return {
+    kicker: localizedText(`${field} — surtitre`, raw.kicker, CONTACT_BOUNDS.cardKicker),
     title: localizedText(`${field} — titre`, raw.title, CONTACT_BOUNDS.cardTitle),
     body: localizedText(`${field} — phrase`, raw.body, CONTACT_BOUNDS.cardBody),
   };

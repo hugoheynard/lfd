@@ -1,6 +1,6 @@
 // ─────────────────────────────────────────────────────────────────────────────
 // « Nous écrire » — les objets de contact, la carte de contact, les messages
-// (`documentation/order/plan-nous-ecrire.md`, 2026-10-09). Contexte
+// (`documentation/contenu-ecommerce/nous-contacter.md`, 2026-10-09). Contexte
 // `src/b2b/contact/`.
 // ─────────────────────────────────────────────────────────────────────────────
 
@@ -117,17 +117,27 @@ model ContactSettings {
   /// Toujours `contact` : il n'y a qu'un réglage.
   key String @id
 
-  /// ⚠️ PLUS LUE depuis le 2026-10-09 : remplacée par `contact_phone`, et
-  /// reprise en un premier numéro « Contact » par
-  /// `20261009160000_les_numeros_de_contact`. Reste en base (pas de suppression).
+  /// ⚠️ MORTE depuis le 2026-10-09 : ni lue ni écrite, remplacée par
+  /// `contact_phone`. `20261009160000_les_numeros_de_contact` copie sa valeur
+  /// si elle est renseignée — en pratique jamais : les deux migrations partent
+  /// ensemble et la colonne n'a été écrite par aucun déploiement. Reste en
+  /// base (pas de suppression).
   phone String @default("")
 
+  /// Le surtitre de la carte (« On répond » à la boutique) — 2026-10-09.
+  b2bKickerFr String @default("") @map("b2b_kicker_fr")
+  b2bKickerEn String @default("") @map("b2b_kicker_en")
+  b2bKickerIt String @default("") @map("b2b_kicker_it")
   b2bTitleFr String @default("") @map("b2b_title_fr")
   b2bTitleEn String @default("") @map("b2b_title_en")
   b2bTitleIt String @default("") @map("b2b_title_it")
   b2bBodyFr  String @default("") @map("b2b_body_fr")
   b2bBodyEn  String @default("") @map("b2b_body_en")
   b2bBodyIt  String @default("") @map("b2b_body_it")
+  /// Le surtitre de la carte (« On répond » à la boutique) — 2026-10-09.
+  b2cKickerFr String @default("") @map("b2c_kicker_fr")
+  b2cKickerEn String @default("") @map("b2c_kicker_en")
+  b2cKickerIt String @default("") @map("b2c_kicker_it")
   b2cTitleFr String @default("") @map("b2c_title_fr")
   b2cTitleEn String @default("") @map("b2c_title_en")
   b2cTitleIt String @default("") @map("b2c_title_it")
@@ -150,7 +160,7 @@ model ContactSettings {
 /// obligatoire), le numéro tel que saisi, son public, son rang. Archivé plutôt
 /// que supprimé, comme un objet de contact.
 model ContactPhone {
-  /// ULID (fourni par l'`IdGenerator`) ; `contact-phone-legacy` pour le numéro repris.
+  /// ULID (fourni par l'`IdGenerator`) ; `contact-phone-legacy` si la migration a repris l'ancien numéro.
   id String @id
 
   labelFr String @map("label_fr")

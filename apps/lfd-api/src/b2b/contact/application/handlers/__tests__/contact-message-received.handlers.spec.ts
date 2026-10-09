@@ -88,6 +88,33 @@ describe("MailContactMessage — le courriel à l'adresse de l'objet", () => {
   });
 });
 
+describe("MailContactMessage — une adresse refusée en en-tête", () => {
+  it("part SANS Reply-To plutôt que pas du tout", async () => {
+    const mailer = new RecordingMailer();
+    const work = new BackgroundWork();
+    // Valide pour le domaine (pas d'espace, une arobase, un point), refusée en
+    // en-tête par le mailer (chevron).
+    const odd = ContactMessage.receive({
+      id: "m2",
+      subject: { id: "s1", labelFr: "Devenir client pro", priority: "medium" },
+      audience: "b2c",
+      author: { name: "Jean", email: "jean<x>@exemple.fr", phone: "" },
+      body: "Bonjour",
+      userId: null,
+      companyId: null,
+      at: new Date(0),
+    });
+    new MailContactMessage(mailer, work).handle(
+      new ContactMessageReceivedEvent(odd, "commercial@lfc.fr"),
+    );
+    await work.whenIdle();
+
+    expect(mailer.sent).toHaveLength(1);
+    expect(mailer.sent[0]).not.toHaveProperty("replyTo");
+    expect(mailer.sent[0]?.data).toMatchObject({ authorEmail: "jean<x>@exemple.fr" });
+  });
+});
+
 describe("RingContactMessageReceived — la cloche", () => {
   it("sonne pour qui lit `b2b_contact`, sans le nom ni le texte de l'auteur", async () => {
     const notifier = new RecordingNotifier();
