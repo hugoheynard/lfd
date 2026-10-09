@@ -230,9 +230,16 @@ ni `fatal` ni `warning`, et **sept PDF déclarés conformes PDF/A-3B**.
   lisible (BR-09), un acheteur sans pays lisible (BR-11) ou un vendeur sans
   numéro de TVA sur des lignes au taux normal (BR-S-02 à 04) sont refusés
   `fatal`. L'émission garantit le pays du vendeur (`LegalAddress`) et son
-  numéro de TVA pour une forme assujettie ; **elle ne garantit pas le pays de
-  l'acheteur** (colonne `pays` en texte libre : seul « France » ou un code à
-  deux lettres est relu) ni son adresse.
+  numéro de TVA pour une forme assujettie ; depuis le 2026-10-09 (A43, Hugo :
+  bloquer), **elle garantit aussi le pays de l'acheteur** : `invoiceIssuanceBlockers`
+  refuse `buyer_address_missing` (aucune ligne d'adresse de facturation) et
+  `buyer_country_unknown` (le pays ne se relit pas). La lecture du pays est
+  `addressCountryCode` de `facturx-parties.ts`, la même que le rendu XML : seul
+  « France » ou un code à deux lettres est relu, et « Belgique » bloque. BR-10
+  n'exige qu'un `PostalTradeAddress` et BR-11 un `CountryID` non vide : ni le
+  code postal ni la ville ne sont exigés. L'adresse jugée est celle du snapshot
+  acheteur (`StatementBuyerReader`), commune à la facture du mois, à la facture
+  carte et au dossier. Un payeur bloqué est signalé, pas facturé.
 
 **Ce qui n'est toujours pas vérifié** : le schéma XSD CII D16B (l'ordre des
 éléments reste écrit de mémoire) ; les règles **CIUS FR** et celles de la
@@ -274,9 +281,6 @@ Factur-X (un validateur dédié, type Mustang, le ferait).
 
 - **Validation externe** : Schematron EN 16931 et veraPDF tournent (§ « La
   validation ») ; restent le XSD CII, la CIUS FR et les valeurs XMP Factur-X.
-- **Pays et adresse de l'acheteur** : aucune garde à l'émission ; une adresse
-  absente ou un pays en clair autre que « France » rend un XML refusé (BR-10,
-  BR-11).
 - **Le verrou d'objet du seau** (runbook) n'est pas posé.
 - **Re-rendu** : aucun geste dédié pour une pièce dont le rendu a échoué ; le
   renvoi de l'e-mail le fait au passage.

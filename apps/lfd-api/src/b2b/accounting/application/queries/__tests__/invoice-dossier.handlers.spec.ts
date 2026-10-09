@@ -168,7 +168,7 @@ const COMPLETE_BUYER: StatementBuyer = {
   siret: "73282932000074",
   siren: "732829320",
   vatNumber: "FR44732829320",
-  billingAddressLines: ["1 rue du Four", "75001 Paris"],
+  billingAddressLines: ["1 rue du Four", "75001 Paris", "France"],
 };
 
 /** Un bon d'une baguette à 1,00 € HT, 5,5 %, ventilé et cohérent. */

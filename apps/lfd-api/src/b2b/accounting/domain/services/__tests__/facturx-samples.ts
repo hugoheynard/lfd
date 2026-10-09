@@ -39,7 +39,7 @@ function realisticInput(overrides: Partial<IssueInvoiceInput>): IssueInvoiceInpu
       vatNumber: SELLER_FACTS.vatNumber,
       addressLines: ["Route de la Balme", "73000 Chambéry", "FR"],
     },
-    buyer: { ...BUYER, billingAddressLines: [...BUYER.billingAddressLines, "France"] },
+    buyer: BUYER,
     ...overrides,
   });
 }

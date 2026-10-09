@@ -82,6 +82,26 @@ export function createCompany(prisma: PrismaService, seed: CompanySeed = {}): Pr
 }
 
 /**
+ * Pose l'adresse de facturation par défaut d'une société. Sans elle, la
+ * facture n'a pas de pays acheteur (BR-11) et son émission est bloquée (A43) :
+ * un test qui facture un payeur le dit en l'appelant.
+ */
+export async function addBillingAddress(prisma: PrismaService, companyId: string): Promise<void> {
+  await prisma.address.create({
+    data: {
+      companyId,
+      kind: "billing",
+      label: "Siège",
+      ligne1: "1 rue du Port",
+      codePostal: "73000",
+      ville: "Chambéry",
+      pays: "France",
+      isDefault: true,
+    },
+  });
+}
+
+/**
  * Crée une personne — **sans aucune société**. Le rattachement est un acte à
  * part (`attachTo`) : c'est ce que le modèle dit désormais, et un test qui ne
  * rattache rien exerce l'état « compte tout juste créé ».

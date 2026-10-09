@@ -1,5 +1,6 @@
 import { legalFormRequiresVat, toLegalForm } from "@lfd/contracts";
 
+import { addressCountryCode } from "./facturx-parties.js";
 import type { InvoicePaymentTerms } from "../value-objects/invoice-payment-terms.js";
 
 /**
@@ -23,6 +24,12 @@ export interface InvoiceBuyerFacts {
   readonly legalForm: string;
   readonly siren: string;
   readonly vatNumber: string;
+  /**
+   * L'adresse de facturation telle que la facture l'imprimera — les mêmes
+   * lignes que le snapshot acheteur (`StatementBuyerReader`), jamais une
+   * autre lecture.
+   */
+  readonly billingAddressLines: readonly string[];
 }
 
 export type InvoiceIssuanceBlockerCode =
@@ -33,7 +40,9 @@ export type InvoiceIssuanceBlockerCode =
   | "payment_terms_missing"
   | "buyer_unknown"
   | "buyer_siren_missing"
-  | "buyer_vat_missing";
+  | "buyer_vat_missing"
+  | "buyer_address_missing"
+  | "buyer_country_unknown";
 
 /** Un manque, nommé : le code pour l'écran, la phrase pour la personne. */
 export interface InvoiceIssuanceBlocker {
@@ -168,7 +177,37 @@ function buyerBlockers(buyer: InvoiceBuyerFacts | null): readonly InvoiceIssuanc
         "intracommunautaire : le renseigner sur sa fiche client.",
     });
   }
+  blockers.push(...buyerAddressBlockers(buyer));
   return blockers;
+}
+
+/**
+ * BR-10 / BR-11 (A43, Hugo, 2026-10-09) : sans adresse ou sans pays relisible,
+ * le XML n'a pas de `ram:CountryID` acheteur et EN 16931 le refuse. Seul le
+ * pays est exigé — ni le code postal ni la ville ne le sont pour l'acheteur.
+ */
+function buyerAddressBlockers(buyer: InvoiceBuyerFacts): readonly InvoiceIssuanceBlocker[] {
+  if (buyer.billingAddressLines.every((line) => line.trim() === "")) {
+    return [
+      {
+        code: "buyer_address_missing",
+        message:
+          `Le client « ${buyer.name} » n'a pas d'adresse de facturation : ajoutez l'adresse de ` +
+          `facturation de « ${buyer.name} » sur sa fiche client, rubrique adresses.`,
+      },
+    ];
+  }
+  if (addressCountryCode(buyer.billingAddressLines) === null) {
+    return [
+      {
+        code: "buyer_country_unknown",
+        message:
+          `Le pays de l'adresse de facturation de « ${buyer.name} » ne se relit pas : écrivez le ` +
+          "pays en toutes lettres (France) ou en code à deux lettres (BE, IT…) sur sa fiche client.",
+      },
+    ];
+  }
+  return [];
 }
 
 function missingSellerIdentity(seller: InvoiceSellerFacts): readonly string[] {

@@ -27,7 +27,7 @@ import { AdminTokenVerifier } from "../src/platform/auth/admin-token.verifier.js
 import { CustomerRole, OrderClientele } from "../src/platform/database/client/client.js";
 import { OutboxRelay } from "../src/platform/outbox/outbox-relay.js";
 import { bootstrapE2e, daysAgo, jsonBody, type E2eContext } from "./e2e-harness.js";
-import { attachTo, createCompany, createUser } from "./factories.js";
+import { addBillingAddress, attachTo, createCompany, createUser } from "./factories.js";
 
 const ENTITIES = "/admin/accounting/legal-entities";
 const TOTAL = 1_055;
@@ -130,6 +130,7 @@ async function proOrder(
 ): Promise<Seeded> {
   seq += 1;
   const company = await createCompany(ctx.prisma, { raisonSociale: `Boulangerie ${String(seq)}` });
+  await addBillingAddress(ctx.prisma, company.id);
   await ctx.prisma.company.update({
     where: { id: company.id },
     data: { vatNumber: options.vatNumber ?? "FR40303265045" },

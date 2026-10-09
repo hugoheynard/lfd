@@ -26,6 +26,7 @@ const BUYER: InvoiceBuyerFacts = {
   legalForm: "SARL",
   siren: "732829320",
   vatNumber: "FR44732829320",
+  billingAddressLines: ["12 rue des Halles", "75001 Paris", "France"],
 };
 
 function codes(seller: InvoiceSellerFacts | null, buyer: InvoiceBuyerFacts | null): string[] {

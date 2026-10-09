@@ -32,7 +32,9 @@ export interface InvoiceIssuanceBlockerView {
     | "payment_terms_missing"
     | "buyer_unknown"
     | "buyer_siren_missing"
-    | "buyer_vat_missing";
+    | "buyer_vat_missing"
+    | "buyer_address_missing"
+    | "buyer_country_unknown";
   /** Rédigé par le domaine, pour du personnel : le manque et le geste. */
   readonly message: string;
 }

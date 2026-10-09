@@ -14,7 +14,7 @@ import type { InvoiceDossierView, LegalEntityView } from "@lfd/contracts";
 
 import { AdminTokenVerifier } from "../src/platform/auth/admin-token.verifier.js";
 import { bootstrapE2e, jsonBody, type E2eContext } from "./e2e-harness.js";
-import { createCompany } from "./factories.js";
+import { addBillingAddress, createCompany } from "./factories.js";
 
 const BASE = "/admin/accounting/legal-entities";
 
@@ -143,6 +143,7 @@ describe("le dossier de facturation dit ce qui empêcherait d'émettre", () => {
       "no_issuer",
       "buyer_siren_missing",
       "buyer_vat_missing",
+      "buyer_address_missing",
     ]);
     expect(view.issuanceBlockers[1]?.message).toContain("Café du Port");
   });
@@ -150,6 +151,7 @@ describe("le dossier de facturation dit ce qui empêcherait d'émettre", () => {
   it("l'entité sans mentions, puis plus rien côté vendeur une fois réglées", async () => {
     const id = await declare();
     const company = await createCompany(ctx.prisma, { raisonSociale: "Café du Port" });
+    await addBillingAddress(ctx.prisma, company.id);
     await ctx.prisma.company.update({
       where: { id: company.id },
       data: { vatNumber: "FR44732829320" },

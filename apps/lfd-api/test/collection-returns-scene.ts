@@ -8,7 +8,7 @@
  */
 import { CustomerRole } from "../src/platform/database/client/client.js";
 import { jsonBody, type E2eContext } from "./e2e-harness.js";
-import { attachTo, createCompany, createUser } from "./factories.js";
+import { addBillingAddress, attachTo, createCompany, createUser } from "./factories.js";
 
 const DAY_MS = 24 * 60 * 60 * 1000;
 const ENTITIES = "/admin/accounting/legal-entities";
@@ -74,6 +74,7 @@ export async function invoicedPayer(
   options: { readonly paymentType?: "recurrent" | "one_off" } = {},
 ): Promise<string> {
   const company = await createCompany(ctx.prisma, { raisonSociale: "Boulangerie du Port" });
+  await addBillingAddress(ctx.prisma, company.id);
   await ctx.prisma.company.update({
     where: { id: company.id },
     data: { vatNumber: "FR40303265045" },

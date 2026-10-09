@@ -41,7 +41,7 @@ export const BUYER: InvoiceBuyer = {
   siret: "55210055400013",
   siren: "552100554",
   vatNumber: "FR89552100554",
-  billingAddressLines: ["1 rue du Port", "73000 Chambéry"],
+  billingAddressLines: ["1 rue du Port", "73000 Chambéry", "France"],
 };
 
 /** Un prix de vitrine : la facture ne le multiplie jamais. */

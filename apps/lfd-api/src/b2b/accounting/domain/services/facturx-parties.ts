@@ -128,6 +128,16 @@ export function parseAddress(raw: readonly string[]): ParsedAddress {
   };
 }
 
+/**
+ * Le code pays (BT-40 / BT-55) que le XML imprimera pour ces lignes, ou
+ * `null` s'il ne s'en relit aucun. C'est LA lecture du pays : le blocage
+ * `buyer_country_unknown` l'appelle, pour qu'un pays accepté à l'écran soit
+ * exactement un pays émis (A43, BR-11).
+ */
+export function addressCountryCode(raw: readonly string[]): string | null {
+  return parseAddress(raw).country;
+}
+
 function countryOf(line: string): string | null {
   if (COUNTRY_CODE.test(line)) {
     return line;

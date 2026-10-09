@@ -32,7 +32,7 @@ import { MAILER } from "../src/platform/mailer/mailer.tokens.js";
 import { Clock } from "../src/platform/time/clock.js";
 import { FixedClock } from "../src/platform/time/fixed-clock.js";
 import { bootstrapE2e, daysAgo, jsonBody, type E2eContext } from "./e2e-harness.js";
-import { attachTo, createCompany, createUser } from "./factories.js";
+import { addBillingAddress, attachTo, createCompany, createUser } from "./factories.js";
 import { TEST_RECOMPUTE_TOKEN } from "./setup-env.js";
 
 const HOUR_MS = 60 * 60 * 1000;
@@ -150,12 +150,18 @@ async function entity(): Promise<string> {
 }
 
 /** Un payeur au compte : mandat B2B actif, détenteur joignable, un bon du mois. */
-async function payer(entityId: string, options: { readonly siren?: string } = {}) {
+async function payer(
+  entityId: string,
+  options: { readonly siren?: string; readonly billingAddress?: boolean } = {},
+) {
   seq += 1;
   const company = await createCompany(ctx.prisma, {
     raisonSociale: `Boulangerie ${String(seq)}`,
     ...(options.siren === undefined ? {} : { siren: options.siren }),
   });
+  if (options.billingAddress !== false) {
+    await addBillingAddress(ctx.prisma, company.id);
+  }
   await ctx.prisma.company.update({
     where: { id: company.id },
     data: { vatNumber: "FR40303265045" },
@@ -367,6 +373,22 @@ describe("la facture du mois, puis le lot qui l'encaisse (E4)", () => {
       (i) => i.rank,
     );
     expect(numbers).toEqual([1, 2]);
+  });
+
+  /** A43 (Hugo, 2026-10-09) : sans adresse, pas de pays acheteur — BR-10/BR-11. */
+  it("un payeur sans adresse de facturation est signalé, pas facturé", async () => {
+    const id = await entity();
+    const complete = await payer(id);
+    const homeless = await payer(id, { billingAddress: false });
+
+    const report = await issueByHand(id);
+
+    expect(report.issued.map((issue) => issue.payerCompanyId)).toEqual([complete.id]);
+    expect(report.blocked.map((issue) => issue.payerCompanyId)).toEqual([homeless.id]);
+    const signaled = (await view(id)).signaled;
+    expect(signaled.map((row) => row.payerCompanyId)).toEqual([homeless.id]);
+    expect(signaled[0]?.message).toContain("ajoutez l'adresse de facturation");
+    expect(await ctx.prisma.invoice.count({ where: { payerCompanyId: homeless.id } })).toBe(0);
   });
 
   it("le bouton le 2 du mois suivant : datée du 2, jamais antidatée, numéro dans l'ordre", async () => {

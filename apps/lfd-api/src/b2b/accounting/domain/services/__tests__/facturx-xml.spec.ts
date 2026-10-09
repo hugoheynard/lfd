@@ -72,7 +72,7 @@ describe("renderFacturXml — facture simple", () => {
       '<ram:SellerTradeParty><ram:Name>Crazeativity</ram:Name><ram:Description>SAS, au capital de 10000.00 EUR, RCS Chambéry 900000001</ram:Description><ram:SpecifiedLegalOrganization><ram:ID schemeID="0002">900000001</ram:ID></ram:SpecifiedLegalOrganization>',
     );
     expect(xml).toContain(
-      '<ram:BuyerTradeParty><ram:Name>Boulangerie du Port</ram:Name><ram:SpecifiedLegalOrganization><ram:ID schemeID="0002">552100554</ram:ID></ram:SpecifiedLegalOrganization><ram:PostalTradeAddress><ram:PostcodeCode>73000</ram:PostcodeCode><ram:LineOne>1 rue du Port</ram:LineOne><ram:CityName>Chambéry</ram:CityName></ram:PostalTradeAddress><ram:SpecifiedTaxRegistration><ram:ID schemeID="VA">FR89552100554</ram:ID></ram:SpecifiedTaxRegistration></ram:BuyerTradeParty>',
+      '<ram:BuyerTradeParty><ram:Name>Boulangerie du Port</ram:Name><ram:SpecifiedLegalOrganization><ram:ID schemeID="0002">552100554</ram:ID></ram:SpecifiedLegalOrganization><ram:PostalTradeAddress><ram:PostcodeCode>73000</ram:PostcodeCode><ram:LineOne>1 rue du Port</ram:LineOne><ram:CityName>Chambéry</ram:CityName><ram:CountryID>FR</ram:CountryID></ram:PostalTradeAddress><ram:SpecifiedTaxRegistration><ram:ID schemeID="VA">FR89552100554</ram:ID></ram:SpecifiedTaxRegistration></ram:BuyerTradeParty>',
     );
     expect(xml).toContain(
       "<ram:ApplicableHeaderTradeDelivery></ram:ApplicableHeaderTradeDelivery>",
