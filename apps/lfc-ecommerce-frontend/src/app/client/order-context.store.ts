@@ -5,7 +5,6 @@ import type { BillingAddressPayload, FulfillmentWindow } from '@lfd/contracts';
 import { deliveryOpenTo } from '@lfd/contracts/shop-values';
 
 import { ClientAudience } from './client-audience.service';
-import { ClientFeatureAccess } from './feature-access/client-feature-access.service';
 import { ClientWorkspace } from './client-workspace.service';
 import { ServicePoints } from './shop/pickup-points.store';
 import { isRecord, readLocal, readString, writeLocal } from './local-store';
@@ -206,7 +205,6 @@ export class OrderContextStore {
   private readonly workspace = inject(ClientWorkspace);
   private readonly audience = inject(ClientAudience);
   private readonly points = inject(ServicePoints);
-  private readonly access = inject(ClientFeatureAccess);
 
   readonly choice = signal<ServiceChoice | null>(readLocal(KEY, parseChoice));
 
@@ -262,24 +260,15 @@ export class OrderContextStore {
       // Idempotent : les écrans qui montrent les points l'ont souvent déjà fait.
       untracked(() => {
         void this.points.hydrate();
-        void this.access.load();
       });
       const audience = this.audience.current();
       if (audience === null || !this.points.deliveryAvailabilityKnown()) {
         return;
       }
+      // Le réglage « Livraison » est la SEULE porte depuis le 2026-10-09 : la
+      // clé `publicDelivery`, qui doublait `openToB2c` pour les particuliers,
+      // est retirée — le serveur n'oppose plus que ce réglage.
       if (!deliveryOpenTo(this.points.deliveryAvailability(), audience)) {
-        this.choice.set(null);
-        return;
-      }
-      // La livraison aux particuliers fermée (`publicDelivery`), LUE — jamais
-      // son défaut prudent pendant la lecture : un particulier ne garde pas
-      // un choix que `POST /orders` refusera (2026-10-07, audit § 3.4).
-      if (
-        audience === 'b2c' &&
-        this.access.state() === 'ready' &&
-        this.access.publicDelivery() === 'closed'
-      ) {
         this.choice.set(null);
       }
     });

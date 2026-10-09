@@ -45,7 +45,7 @@ export class FeatureLevelResolver {
    * Existe pour les handlers qui gardent une surface fermée par le serveur
    * (`customerMandate`) : ils n'ont pas de `FeatureSubject` sous la main, et
    * leur en fabriquer un ferait croire qu'une adresse pouvait compter. Le TYPE
-   * refuse une clé exemptible : `unexemptibleLevelOf("shop")` ne compile pas.
+   * refuse une clé exemptible — il n'en reste aucune depuis le 2026-10-09.
    */
   async unexemptibleLevelOf<Key extends UnexemptibleFeatureKey>(
     key: Key,

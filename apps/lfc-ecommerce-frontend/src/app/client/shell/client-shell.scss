@@ -237,9 +237,8 @@
   color: var(--lfc-paper-0);
 }
 
-/* L'échec de lecture des niveaux : aligné sur la gouttière de la page, pour se
-   lire comme le haut de l'écran et non comme un débordement du bandeau. */
-.feature-access-failed,
+/* L'avis du shell : aligné sur la gouttière de la page, pour se lire comme le
+   haut de l'écran et non comme un débordement du bandeau. */
 .shell-notice {
   padding: var(--fold-space-md) var(--lfc-inset) 0;
 }

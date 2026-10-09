@@ -1,4 +1,3 @@
-import { InvalidEmailError } from "../../../account/domain/errors/account-errors.js";
 import {
   FeatureNotExemptibleError,
   UnknownFeatureError,
@@ -13,32 +12,39 @@ const AT = new Date("2026-09-14T09:00:00.000Z");
 describe("FeatureOverride.pose — la valeur est confrontée au catalogue", () => {
   it("accepte un niveau de la clé, sans ses espaces", () => {
     const override = FeatureOverride.pose({
-      key: "shop",
-      value: " browse ",
+      key: "customerMandate",
+      value: " open ",
       at: AT,
       author: AUTHOR,
     });
 
-    expect(override.key).toBe("shop");
-    expect(override.value).toBe("browse");
+    expect(override.key).toBe("customerMandate");
+    expect(override.value).toBe("open");
     expect(override.author).toEqual(AUTHOR);
   });
 
   it("refuse une valeur qui n'est pas un niveau de la clé", () => {
     expect(() =>
-      FeatureOverride.pose({ key: "shop", value: "open", at: AT, author: AUTHOR }),
+      FeatureOverride.pose({ key: "customerMandate", value: "order", at: AT, author: AUTHOR }),
     ).toThrow(UnknownFeatureLevelError);
   });
 
   it("nomme les niveaux acceptés dans le refus", () => {
     expect(() =>
-      FeatureOverride.pose({ key: "shop", value: "open", at: AT, author: AUTHOR }),
-    ).toThrow("closed, browse, order");
+      FeatureOverride.pose({ key: "customerMandate", value: "order", at: AT, author: AUTHOR }),
+    ).toThrow("closed, open");
   });
 
   it("refuse une clé hors catalogue", () => {
     expect(() =>
       FeatureOverride.pose({ key: "legacy_flag", value: "order", at: AT, author: AUTHOR }),
+    ).toThrow(UnknownFeatureError);
+  });
+
+  /** Retirée le 2026-10-09 : on ne repose pas une dérogation sur une clé disparue. */
+  it("refuse une clé retirée du catalogue", () => {
+    expect(() =>
+      FeatureOverride.pose({ key: "shop", value: "closed", at: AT, author: AUTHOR }),
     ).toThrow(UnknownFeatureError);
   });
 });
@@ -67,17 +73,5 @@ describe("FeatureExemption.grant", () => {
         author: AUTHOR,
       }),
     ).toThrow(FeatureNotExemptibleError);
-  });
-
-  it("refuse ce qui n'est manifestement pas une adresse", () => {
-    expect(() =>
-      FeatureExemption.grant({
-        id: "ex_1",
-        key: "shop",
-        email: "pas-une-adresse",
-        at: AT,
-        author: AUTHOR,
-      }),
-    ).toThrow(InvalidEmailError);
   });
 });

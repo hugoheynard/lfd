@@ -33,7 +33,6 @@ import request from "supertest";
 
 import { PaymentGateway } from "../src/b2b/payments/domain/payment-gateway.js";
 import { bootstrapE2e, jsonBody, serviceDay, type E2eContext } from "./e2e-harness.js";
-import { openPublicDelivery } from "./public-delivery-scene.js";
 
 /** Passerelle doublée : une commande personnelle se règle par carte. */
 const fakeGateway = {
@@ -56,7 +55,6 @@ afterAll(async () => {
 
 beforeEach(async () => {
   await ctx.reset();
-  await openPublicDelivery(ctx);
   pickupId = await seedPickup();
   await seedZone();
 });

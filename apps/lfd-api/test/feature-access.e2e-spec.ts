@@ -4,17 +4,15 @@
  *
  * Ce que seul le vrai SQL prouve :
  * - « revenir au défaut » SUPPRIME la ligne, et la trace reste au journal ;
- * - l'unicité `(clé, adresse)` rend l'ajout d'exemption idempotent ;
- * - l'état du compte (`verified` / `unverified` / `none`) est lu dans la vraie
- *   table des personnes ;
+ * - une ligne de production d'une clé retirée (2026-10-09) est signalée et
+ *   jamais appliquée ;
  * - le mur staff : `commercial` lit, n'écrit pas ;
  * - la route publique ne dit rien des adresses exemptées.
  *
  * Une frontière doublée : la signature du jeton staff. Le reste est réel.
  */
-import type { AdminFeatureAccessView, CreatedIdResponse, FeatureLevelsView } from "@lfd/contracts";
+import type { AdminFeatureAccessView, FeatureLevelsView } from "@lfd/contracts";
 
-import { FeatureLevelResolver } from "../src/b2b/feature-access/application/feature-level.resolver.js";
 import { AdminTokenVerifier } from "../src/platform/auth/admin-token.verifier.js";
 import {
   bootstrapE2e,
@@ -27,6 +25,8 @@ import { createUser } from "./factories.js";
 
 const COMMERCIAL_SUB = "staff-commercial";
 const TESTER_EMAIL = "testeur@exemple.fr";
+const KEY = "customerMandate";
+const CLIENT = "auth0|client";
 
 const stubAdminVerifier = {
   verify: (token: string): Promise<{ subject: string; scopes: string[] }> =>
@@ -66,17 +66,10 @@ async function board(): Promise<AdminFeatureAccessView> {
 }
 
 /**
- * Toutes les clés sauf la boutique, à leur défaut : le mandat client est fermé
- * (2026-09-14), et la livraison aux particuliers l'est aussi (2026-09-21) —
- * ouvrir une tournée à qui n'a pas de compte est une décision commerciale.
+ * Le catalogue ne porte plus que le mandat client depuis le 2026-10-09 :
+ * `shop`, `orders`, `invoices`, `desktopMenu` et `publicDelivery` sont retirées.
  */
-const OTHER_DEFAULTS = {
-  orders: "visible",
-  invoices: "visible",
-  desktopMenu: "visible",
-  publicDelivery: "closed",
-  customerMandate: "closed",
-} as const;
+const DEFAULTS = { customerMandate: "closed" } as const;
 
 async function publicLevels(): Promise<FeatureLevelsView> {
   return jsonBody<FeatureLevelsView>(await ctx.http().get("/feature-access").expect(200));
@@ -86,37 +79,26 @@ describe("la dérogation — posée, puis retirée", () => {
   it("affiche le défaut du code sur une base vide", async () => {
     const view = await board();
 
+    // 2026-09-14 : fermé par défaut, et aucune exemption ne l'ouvre.
     expect(view.features).toEqual([
-      expect.objectContaining({ key: "shop", effectiveLevel: "order", override: null }),
-      expect.objectContaining({ key: "orders", effectiveLevel: "visible", override: null }),
-      expect.objectContaining({ key: "invoices", effectiveLevel: "visible", override: null }),
-      expect.objectContaining({ key: "desktopMenu", effectiveLevel: "visible", override: null }),
-      // 2026-09-21 : fermée par défaut, mais EXEMPTIBLE — c'est ainsi qu'on
-      // l'essaie sur une adresse avant de l'ouvrir à tous.
       expect.objectContaining({
-        key: "publicDelivery",
-        effectiveLevel: "closed",
-        exemptible: true,
-        override: null,
-      }),
-      // 2026-09-14 : fermé par défaut, et aucune exemption ne l'ouvre.
-      expect.objectContaining({
-        key: "customerMandate",
+        key: KEY,
         effectiveLevel: "closed",
         exemptible: false,
         override: null,
       }),
     ]);
-    await expect(publicLevels()).resolves.toEqual({ shop: "order", ...OTHER_DEFAULTS });
+    expect(view.ignored).toEqual([]);
+    await expect(publicLevels()).resolves.toEqual(DEFAULTS);
   });
 
   it("pose la valeur avec son auteur, puis la ligne DISPARAÎT au retour au défaut", async () => {
-    await admin().put("/admin/feature-access/shop").send({ value: "browse" }).expect(204);
+    await admin().put(`/admin/feature-access/${KEY}`).send({ value: "open" }).expect(204);
 
     const posed = await board();
     expect(posed.features[0]).toMatchObject({
-      effectiveLevel: "browse",
-      override: { value: "browse" },
+      effectiveLevel: "open",
+      override: { value: "open" },
     });
     // Un nom et un rôle, plus d'identifiant : le champ `sub` n'est plus servi
     // (plan de l'auteur, étape 5A).
@@ -127,18 +109,18 @@ describe("la dérogation — posée, puis retirée", () => {
     // L'auteur est l'id de fiche (plan de l'auteur, étape 3).
     await expect(
       ctx.prisma.featureAccessOverride.findUniqueOrThrow({
-        where: { key: "shop" },
+        where: { key: KEY },
         select: { updatedByStaffId: true },
       }),
     ).resolves.toEqual({ updatedByStaffId: E2E_STAFF_ID });
-    await expect(publicLevels()).resolves.toEqual({ shop: "browse", ...OTHER_DEFAULTS });
+    await expect(publicLevels()).resolves.toEqual({ customerMandate: "open" });
 
-    await admin().delete("/admin/feature-access/shop").expect(204);
+    await admin().delete(`/admin/feature-access/${KEY}`).expect(204);
 
     expect(await ctx.prisma.featureAccessOverride.count()).toBe(0);
-    await expect(publicLevels()).resolves.toEqual({ shop: "order", ...OTHER_DEFAULTS });
+    await expect(publicLevels()).resolves.toEqual(DEFAULTS);
     const types = await ctx.prisma.activityEvent.findMany({
-      where: { subjectType: "feature_access", subjectId: "shop" },
+      where: { subjectType: "feature_access", subjectId: KEY },
       select: { type: true },
     });
     expect(types.map((row) => row.type).sort()).toEqual([
@@ -148,122 +130,80 @@ describe("la dérogation — posée, puis retirée", () => {
   });
 
   it("refuse en 404 un second retour au défaut", async () => {
-    await admin().delete("/admin/feature-access/shop").expect(404);
+    await admin().delete(`/admin/feature-access/${KEY}`).expect(404);
   });
 
-  it("refuse en 400 une valeur hors catalogue, et en 404 une clé inconnue", async () => {
-    await admin().put("/admin/feature-access/shop").send({ value: "open" }).expect(400);
+  it("refuse en 400 une valeur hors catalogue, et en 404 une clé inconnue ou retirée", async () => {
+    await admin().put(`/admin/feature-access/${KEY}`).send({ value: "order" }).expect(400);
     await admin().put("/admin/feature-access/legacy_flag").send({ value: "order" }).expect(404);
+    await admin().put("/admin/feature-access/shop").send({ value: "closed" }).expect(404);
 
     expect(await ctx.prisma.featureAccessOverride.count()).toBe(0);
   });
 
-  it("signale une ligne dont la clé a quitté le catalogue, sans l'appliquer", async () => {
-    // Écrite en direct : le domaine ne PEUT pas produire cette ligne, et c'est
-    // précisément le cas éprouvé — une clé retirée du code après avoir été posée.
-    await ctx.prisma.featureAccessOverride.create({
+  /**
+   * Les clés retirées le 2026-10-09 ont pu laisser des lignes en production :
+   * elles ne sont pas effacées. Écrites ici en direct, parce que le domaine ne
+   * PEUT plus les produire — c'est précisément le cas éprouvé.
+   */
+  it("signale les lignes des clés retirées, sans les appliquer", async () => {
+    const removed = ["shop", "orders", "invoices", "desktopMenu", "publicDelivery"];
+    for (const key of removed) {
+      await ctx.prisma.featureAccessOverride.create({
+        data: {
+          key,
+          value: "closed",
+          updatedAt: new Date(),
+          updatedByStaffId: E2E_STAFF_ID,
+          updatedByName: "",
+          updatedByRole: "",
+        },
+      });
+    }
+    await ctx.prisma.featureAccessExemption.create({
       data: {
-        key: "legacy_flag",
-        value: "on",
-        updatedAt: new Date(),
-        updatedByStaffId: E2E_STAFF_ID,
-        updatedByName: "",
-        updatedByRole: "",
+        id: "ex_retiree",
+        key: "shop",
+        email: TESTER_EMAIL,
+        createdAt: new Date(),
+        createdByStaffId: E2E_STAFF_ID,
+        createdByName: "",
+        createdByRole: "",
       },
     });
 
     const view = await board();
 
-    expect(view.ignored).toEqual([
-      { table: "override", key: "legacy_flag", detail: "on", reason: "unknown_key" },
-    ]);
-    await expect(publicLevels()).resolves.toEqual({ shop: "order", ...OTHER_DEFAULTS });
+    expect(view.features.map((feature) => feature.key)).toEqual([KEY]);
+    expect(view.ignored).toEqual(
+      expect.arrayContaining([
+        ...removed.map((key) => ({
+          table: "override",
+          key,
+          detail: "closed",
+          reason: "unknown_key",
+        })),
+        { table: "exemption", key: "shop", detail: TESTER_EMAIL, reason: "unknown_key" },
+      ]),
+    );
+    expect(view.ignored).toHaveLength(removed.length + 1);
+    await expect(publicLevels()).resolves.toEqual(DEFAULTS);
   });
 });
 
 describe("la liste d'exemption", () => {
-  it("ajoute une adresse normalisée, idempotent, puis la retire", async () => {
-    const first = jsonBody<CreatedIdResponse>(
-      await admin()
-        .post("/admin/feature-access/shop/exemptions")
-        .send({ email: "  Testeur@Exemple.FR " })
-        .expect(201),
-    );
-    const second = jsonBody<CreatedIdResponse>(
-      await admin()
-        .post("/admin/feature-access/shop/exemptions")
-        .send({ email: TESTER_EMAIL })
-        .expect(201),
-    );
-
-    expect(second.id).toBe(first.id);
-    expect((await board()).features[0]?.exemptions).toEqual([
-      expect.objectContaining({ id: first.id, email: TESTER_EMAIL, accountState: "none" }),
-    ]);
-    // L'auteur est l'id de fiche (plan de l'auteur, étape 3).
-    await expect(
-      ctx.prisma.featureAccessExemption.findUniqueOrThrow({
-        where: { id: first.id },
-        select: { createdByStaffId: true },
-      }),
-    ).resolves.toEqual({ createdByStaffId: E2E_STAFF_ID });
-
-    await admin().delete(`/admin/feature-access/shop/exemptions/${first.id}`).expect(204);
-
-    expect(await ctx.prisma.featureAccessExemption.count()).toBe(0);
-    await admin().delete(`/admin/feature-access/shop/exemptions/${first.id}`).expect(404);
-  });
-
-  it("refuse en 400 ce qui n'est pas une adresse", async () => {
+  /** Plan mandat client §8 : aucune adresse n'ouvre le mandat. */
+  it("refuse en 409 d'exempter sur le mandat client, et en 404 sur une clé retirée", async () => {
     await admin()
-      .post("/admin/feature-access/shop/exemptions")
-      .send({ email: "pas-une-adresse" })
-      .expect(400);
-  });
-
-  it("dit pour chaque adresse si un compte la porte, et s'il l'a prouvée", async () => {
-    await createUser(ctx.prisma, {
-      auth0Sub: "auth0|verifie",
-      email: "verifie@exemple.fr",
-      emailVerified: true,
-    });
-    await createUser(ctx.prisma, {
-      auth0Sub: "auth0|non-verifie",
-      email: "Non-Verifie@exemple.fr",
-      emailVerified: false,
-    });
-    for (const email of ["verifie@exemple.fr", "non-verifie@exemple.fr", "personne@exemple.fr"]) {
-      await admin().post("/admin/feature-access/shop/exemptions").send({ email }).expect(201);
-    }
-
-    const states = Object.fromEntries(
-      ((await board()).features[0]?.exemptions ?? []).map((row) => [row.email, row.accountState]),
-    );
-
-    expect(states).toEqual({
-      "verifie@exemple.fr": "verified",
-      "non-verifie@exemple.fr": "unverified",
-      "personne@exemple.fr": "none",
-    });
-  });
-});
-
-describe("la résolution, contre la vraie base", () => {
-  it("ouvre à l'adresse prouvée et exemptée, pas à la même adresse non prouvée", async () => {
-    await admin().put("/admin/feature-access/shop").send({ value: "closed" }).expect(204);
+      .post(`/admin/feature-access/${KEY}/exemptions`)
+      .send({ email: TESTER_EMAIL })
+      .expect(409);
     await admin()
       .post("/admin/feature-access/shop/exemptions")
       .send({ email: TESTER_EMAIL })
-      .expect(201);
-    const resolver = ctx.app.get(FeatureLevelResolver);
+      .expect(404);
 
-    await expect(
-      resolver.levelFor("shop", { email: "Testeur@Exemple.fr", emailProven: true }),
-    ).resolves.toBe("order");
-    await expect(
-      resolver.levelFor("shop", { email: TESTER_EMAIL, emailProven: false }),
-    ).resolves.toBe("closed");
-    await expect(resolver.levelFor("shop", null)).resolves.toBe("closed");
+    expect(await ctx.prisma.featureAccessExemption.count()).toBe(0);
   });
 });
 
@@ -272,13 +212,13 @@ describe("le mur staff", () => {
     const commercial = (): ReturnType<E2eContext["asSub"]> => ctx.asSub(COMMERCIAL_SUB);
 
     await commercial().get("/admin/feature-access").expect(200);
-    await commercial().put("/admin/feature-access/shop").send({ value: "closed" }).expect(403);
-    await commercial().delete("/admin/feature-access/shop").expect(403);
+    await commercial().put(`/admin/feature-access/${KEY}`).send({ value: "open" }).expect(403);
+    await commercial().delete(`/admin/feature-access/${KEY}`).expect(403);
     await commercial()
-      .post("/admin/feature-access/shop/exemptions")
+      .post(`/admin/feature-access/${KEY}/exemptions`)
       .send({ email: TESTER_EMAIL })
       .expect(403);
-    await commercial().delete("/admin/feature-access/shop/exemptions/inexistant").expect(403);
+    await commercial().delete(`/admin/feature-access/${KEY}/exemptions/inexistant`).expect(403);
 
     expect(await ctx.prisma.featureAccessOverride.count()).toBe(0);
     expect(await ctx.prisma.featureAccessExemption.count()).toBe(0);
@@ -286,15 +226,25 @@ describe("le mur staff", () => {
 });
 
 describe("GET /feature-access — public", () => {
-  it("répond sans jeton, et ne révèle aucune adresse exemptée", async () => {
-    await admin()
-      .post("/admin/feature-access/shop/exemptions")
-      .send({ email: TESTER_EMAIL })
-      .expect(201);
-
+  it("répond sans jeton", async () => {
     const response = await ctx.http().get("/feature-access").expect(200);
 
-    expect(jsonBody<FeatureLevelsView>(response)).toEqual({ shop: "order", ...OTHER_DEFAULTS });
+    expect(jsonBody<FeatureLevelsView>(response)).toEqual(DEFAULTS);
     expect(response.text).not.toContain("@");
+  });
+});
+
+/** Repris de la suite des gardes de la boutique, retirée avec la clé `shop` le 2026-10-09. */
+describe("GET /feature-access/mine", () => {
+  it("rend les niveaux de la personne, de la même forme que la route publique", async () => {
+    await createUser(ctx.prisma, { auth0Sub: CLIENT, emailVerified: true });
+
+    const response = await ctx.asSub(CLIENT).get("/feature-access/mine").expect(200);
+
+    expect(jsonBody<FeatureLevelsView>(response)).toEqual(DEFAULTS);
+  });
+
+  it("exige une personne connectée", async () => {
+    await ctx.http().get("/feature-access/mine").expect(401);
   });
 });

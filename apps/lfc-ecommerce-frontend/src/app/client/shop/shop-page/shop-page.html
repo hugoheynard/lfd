@@ -89,7 +89,6 @@
 <app-product-sheet
   [product]="piece()"
   [quantity]="pieceQuantity()"
-  [orderable]="access.shop() !== 'browse'"
   (closed)="openPiece.set(null)"
   (quantitySet)="setPieceQuantity($event)"
 />

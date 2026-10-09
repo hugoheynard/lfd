@@ -15,9 +15,9 @@
 ## Ce qui fait foi
 
 - **À qui la livraison est proposée** : `plan-remise-et-livraison-par-clientele.md`,
-  lots A, B, C bâtis. Depuis le 2026-10-07, la clé `publicDelivery` ferme
-  aussi la livraison à un particulier connecté (`POST /orders`), et la
-  boutique efface son choix mémorisé.
+  lots A, B, C bâtis. La clé `publicDelivery`, qui doublait la case « B2C »
+  pour les particuliers, est retirée le 2026-10-09 : la case « B2C » de
+  « Livraison » est la seule porte, au devis comme aux deux passations.
 - **La procédure d'une adresse** : `plan-procedure-de-livraison.md`, bâtie ;
   reste la vignette.
 - **Ce qui reste** : la livraison accordée avant l'activation d'un compte

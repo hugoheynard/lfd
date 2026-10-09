@@ -35,7 +35,6 @@ import { ClientFeatureAccess } from '../../feature-access/client-feature-access.
 import { ClientCompany } from '../../client-company.service';
 import { ProOnboarding } from '../../pro-onboarding.service';
 import { FoldScrollIndicatorComponent, FoldWellComponent } from '../../../../shared';
-import { ShopPromise } from '../../shop-promise/shop-promise';
 import { AccountCard } from '../account-card/account-card';
 import { AddressesDeskCard } from '../addresses/addresses-desk-card/addresses-desk-card';
 import { AddressesMobileCard } from '../addresses/addresses-mobile-card/addresses-mobile-card';
@@ -89,16 +88,6 @@ const SECTIONS = [
   'preferences',
   'data',
 ] as const;
-
-/**
- * Les sujets qui n'ont de sens que si la boutique permet de COMMANDER (plan
- * `plan-inscription-pro-seule.md` §4) : un régime de règlement et une habitude
- * de service ne se lisent qu'à l'aune d'une commande.
- */
-const ORDER_ONLY_SECTIONS: ReadonlySet<(typeof SECTIONS)[number]> = new Set([
-  'payment',
-  'preferences',
-]);
 
 /**
  * Les rôles qui voient et déposent le RIB (`rib-client.md` §1) : le
@@ -160,7 +149,6 @@ const BANK_ROLES: ReadonlySet<CompanyMemberRole> = new Set(['owner', 'billing'])
     PaymentMobileCard,
     PreferencesDeskCard,
     PreferencesMobileCard,
-    ShopPromise,
     SupportCard,
     UsersDeskCard,
     UsersMobileCard,
@@ -176,25 +164,6 @@ export class ComptePage {
   private readonly chrome = inject(ClientChrome);
   protected readonly access = inject(ClientFeatureAccess);
   protected readonly onboarding = inject(ProOnboarding);
-
-  /**
-   * Le niveau qui décide de la promesse « ouvre bientôt » — `null` tant que la
-   * lecture est en vol, pour qu'elle ne clignote pas quand la boutique est
-   * ouverte. Un échec vaut `closed`, donc la phrase s'affiche : le sens prudent.
-   */
-  protected readonly promiseLevel = computed(() =>
-    this.access.state() === 'loading' ? null : this.access.shop(),
-  );
-
-  /**
-   * La promesse a-t-elle quelque chose à DIRE ? Elle se tait quand on commande
-   * (`order`) et tant que le niveau n'est pas lu : en pile, c'est ce qui décide
-   * si elle prend la place du titre dans le bleu.
-   */
-  protected readonly promiseShown = computed(() => {
-    const level = this.promiseLevel();
-    return level === 'closed' || level === 'browse';
-  });
 
   private readonly auth = inject(AuthFacade);
   protected readonly account = inject(AccountService);
@@ -354,14 +323,10 @@ export class ComptePage {
    */
   protected readonly summary = computed(() => {
     const labels = this.t().account.sections;
-    const orderable = this.access.atLeast('order');
     const bank = this.showsBank();
     const mandate = this.showsMandate();
     const shown = SECTIONS.filter(
-      (key) =>
-        (orderable || !ORDER_ONLY_SECTIONS.has(key)) &&
-        (bank || (key !== 'bank' && key !== 'invoices')) &&
-        (mandate || key !== 'mandate'),
+      (key) => (bank || (key !== 'bank' && key !== 'invoices')) && (mandate || key !== 'mandate'),
     );
     return shown.map((key, index) => ({
       key,

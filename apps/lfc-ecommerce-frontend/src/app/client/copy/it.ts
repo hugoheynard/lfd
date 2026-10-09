@@ -33,8 +33,6 @@ export const IT: ClientCopy = {
     kickerDone: 'Confermato',
     deskKicker: 'Val d’Isère · ordina online',
     brandLine: 'Panetteria · Val d’Isère',
-    featureAccessFailed:
-      'Non siamo riusciti a verificare cosa offre il negozio in questo momento: alcune pagine restano chiuse. Ricarica la pagina per riprovare.',
     accountMenu: 'Il mio account personale',
     myProfile: 'Il mio profilo',
     workspaceChoice: 'Spazio di lavoro',
@@ -230,7 +228,6 @@ export const IT: ClientCopy = {
       'Carrello vuoto. L’infornata del mattino va via in fretta — lo sci al pralinato non arriva mai al pomeriggio.',
     upsell: '{name} insieme?',
     upsellLine: 'La golosità che si rimpiange di non aver preso.',
-    orderingSoon: 'Gli ordini online aprono presto.',
     operationOpensOn: 'Apre il {date}',
     operationNotOpen: 'Non ancora aperto',
     operationClosed: 'Ordini chiusi',

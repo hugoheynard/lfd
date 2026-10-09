@@ -21,7 +21,6 @@ import {
 } from '../../client-workspace.service';
 import { ClientWorkspaceSwitch } from '../../client-workspace-switch.service';
 import { ClientCopyService } from '../../copy/client-copy.service';
-import { ClientFeatureAccess } from '../../feature-access/client-feature-access.service';
 import { LangSwitch } from '../../lang-switch/lang-switch';
 import { ClientNav } from '../client-nav.service';
 
@@ -62,7 +61,6 @@ export class ClientMenu {
 
   protected readonly t = inject(ClientCopyService).t;
   protected readonly nav = inject(ClientNav);
-  protected readonly access = inject(ClientFeatureAccess);
   protected readonly identity = inject(ClientIdentity);
   protected readonly workspace = inject(ClientWorkspace);
   private readonly switcher = inject(ClientWorkspaceSwitch);

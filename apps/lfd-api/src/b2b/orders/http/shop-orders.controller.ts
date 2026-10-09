@@ -9,7 +9,6 @@ import { Throttle } from "@nestjs/throttler";
 
 import { Public } from "../../../platform/auth/public.decorator.js";
 import { ZodBody } from "../../../platform/shared/http/zod-body.pipe.js";
-import { RequiresShop } from "../../feature-access/http/requires-shop.decorator.js";
 import {
   PlaceShopOrderCommand,
   type PlaceShopOrderResult,
@@ -28,24 +27,9 @@ import {
  * destiné au public ? à quel taux de TVA ?), qui n'est pas technique et qui
  * n'appartient à aucun lot.
  *
- * Et il n'existe aucune porte pour la livrer éteinte : `@RequiresShop("order")`
- * sur une route publique donne `featureSubjectOf(undefined) = null`, donc elle
- * suivrait le niveau **global** — le même drapeau qui ouvre la boutique pro
- * ouvrirait celle-ci. Le drapeau par audience est le D6 de
- * `analyse-boutique-publique.md`, et il n'est pas bâti. Ne pas enregistrer le
- * contrôleur est donc le seul « fermé » qui ne mente pas.
- *
  * **Pour l'ouvrir** : ajouter `ShopOrdersController` aux `controllers` du
  * module. Tout le reste — contrat, handler, registre de clés, table — est en
  * place et éprouvé.
- *
- * ## Le marquage `@RequiresShop`
- *
- * Posé quand même : la table des routes (`shop-route-table.spec.ts`) exige une
- * décision écrite pour toute route cliente, et une route neuve sans décision est
- * exactement ce qu'elle existe pour attraper. `order` comme `POST /orders` — la
- * boutique fermée ne doit pas laisser passer une commande par une porte que
- * personne n'a marquée.
  *
  * ## Le débit
  *
@@ -80,7 +64,6 @@ export class ShopOrdersController {
    * front a un seul écran de règlement, et deux formes pour un même paiement lui
    * feraient porter la distinction jusqu'à Stripe.
    */
-  @RequiresShop("order")
   @Post()
   @HttpCode(HttpStatus.CREATED)
   async place(

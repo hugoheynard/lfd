@@ -6,7 +6,6 @@
     [mediaSide]="mediaSide()"
     [tone]="tone()"
     [quantity]="cart.quantityOf(piece.sku)"
-    [orderable]="access.shop() !== 'browse'"
     (opened)="actions.productOpened.next(piece.sku)"
     (added)="actions.productAdded.next(piece.sku)"
   />

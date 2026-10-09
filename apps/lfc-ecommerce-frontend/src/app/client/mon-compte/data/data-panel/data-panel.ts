@@ -9,7 +9,6 @@ import {
 } from 'fold-ng';
 
 import { ClientCopyService } from '../../../copy/client-copy.service';
-import { ClientFeatureAccess } from '../../../feature-access/client-feature-access.service';
 import { panelSide } from '../../../panel-side';
 
 /**
@@ -41,5 +40,4 @@ export class DataPanel {
   }
 
   protected readonly t = inject(ClientCopyService).t;
-  protected readonly access = inject(ClientFeatureAccess);
 }

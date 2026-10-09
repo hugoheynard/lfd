@@ -1677,7 +1677,6 @@ export type { ProductionPlanClosure } from "./production-sheet.js";
 export {
   FEATURE_CATALOGUE,
   FEATURE_KEYS,
-  SHOP_LEVELS,
   featureExemptionPayloadSchema,
   featureLevelsOf,
   GATE_LEVELS,
@@ -1687,7 +1686,6 @@ export {
   isFeatureKey,
   isFeatureLevel,
   mostOpenLevel,
-  VISIBILITY_LEVELS,
 } from "./feature-access.js";
 export type {
   AdminFeatureAccessView,
@@ -1704,10 +1702,7 @@ export type {
   FeatureOverrideView,
   GateLevel,
   IgnoredFeatureRowView,
-  ShopLevel,
   UnexemptibleFeatureKey,
-  VisibilityFeatureKey,
-  VisibilityLevel,
 } from "./feature-access.js";
 
 export {

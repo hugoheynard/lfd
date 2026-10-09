@@ -9,11 +9,6 @@
       <p class="pitch">{{ copy().door.pitch }}</p>
     </div>
 
-    <!-- La promesse « la boutique ouvre bientôt », sous le titre (plan §3.1). -->
-    @if (shopLevel(); as level) {
-      <app-shop-promise [level]="level" />
-    }
-
     <!-- 🔴 L'ENSEIGNE D'ABORD. C'est ce qui distingue cette porte de l'autre :
          on n'ouvre pas le compte d'une personne, on ouvre celui d'un
          établissement, et le demander en dernier laissait croire l'inverse

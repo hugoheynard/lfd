@@ -181,9 +181,6 @@ export interface AccueilPublicCopy {
     readonly best: string;
     /** L'appel d'une maison ouverte. */
     readonly choose: string;
-    /** Une maison qui ne prend pas de commande — le refus PRÉCÈDE l'effort. */
-    readonly closed: string;
-    readonly closedHint: string;
     /** Le compte du rail, sous les puces. */
     readonly count: string;
     readonly scroll: string;
@@ -341,8 +338,6 @@ export const ACCUEIL_PUBLIC_FR: AccueilPublicCopy = {
   houses: {
     best: 'Le plus avantageux',
     choose: 'Choisir',
-    closed: 'Fermé',
-    closedHint: 'Cette maison ne prend pas de commande pour le moment.',
     count: '{count} maisons',
     scroll: 'faites défiler',
   },
@@ -445,8 +440,6 @@ export const ACCUEIL_PUBLIC_EN: AccueilPublicCopy = {
   houses: {
     best: 'Best value',
     choose: 'Choose',
-    closed: 'Closed',
-    closedHint: 'This bakery is not taking orders right now.',
     count: '{count} bakeries',
     scroll: 'scroll to see more',
   },
@@ -549,8 +542,6 @@ export const ACCUEIL_PUBLIC_IT: AccueilPublicCopy = {
   houses: {
     best: 'Il più vantaggioso',
     choose: 'Scegli',
-    closed: 'Chiuso',
-    closedHint: 'Questa bottega al momento non prende ordini.',
     count: '{count} botteghe',
     scroll: 'scorrete',
   },

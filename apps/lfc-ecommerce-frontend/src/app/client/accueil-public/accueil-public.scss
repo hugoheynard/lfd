@@ -517,15 +517,6 @@ $fournil: url('https://boulangerie.antidotcom.com/images/yootheme/photo-15958011
   transform: scale(0.985);
 }
 
-/* 🔴 Une maison fermée est GRISÉE et non cliquable, dès l'étape 1 : faire
-   choisir une heure pour une boutique fermée ferait arriver le refus après
-   l'effort. Le refus doit précéder l'effort. */
-.house:disabled {
-  background: var(--lfc-paper-100);
-  color: var(--lfc-soot-500);
-  cursor: not-allowed;
-}
-
 .house-head,
 .house-tail {
   display: flex;
@@ -538,11 +529,6 @@ $fournil: url('https://boulangerie.antidotcom.com/images/yootheme/photo-15958011
   padding: 0.35rem 0.65rem;
   background: var(--lfc-butter-300);
   color: var(--lfc-butter-900);
-}
-
-.house-flag.is-off {
-  background: var(--lfc-paper-200);
-  color: var(--lfc-soot-700);
 }
 
 .house-name {

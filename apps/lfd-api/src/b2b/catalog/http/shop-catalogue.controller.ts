@@ -4,7 +4,6 @@ import { QueryBus } from "@nestjs/cqrs";
 import { Throttle } from "@nestjs/throttler";
 
 import { Public } from "../../../platform/auth/public.decorator.js";
-import { RequiresShop } from "../../feature-access/http/requires-shop.decorator.js";
 import { ReadShopCatalogueQuery } from "../application/queries/read-shop-catalogue.js";
 
 /**
@@ -41,7 +40,6 @@ import { ReadShopCatalogueQuery } from "../application/queries/read-shop-catalog
 export class ShopCatalogueController {
   constructor(private readonly queries: QueryBus) {}
 
-  @RequiresShop("browse")
   @Get()
   read(): Promise<ShopCatalogueView> {
     return this.queries.execute<ReadShopCatalogueQuery, ShopCatalogueView>(

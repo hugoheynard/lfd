@@ -35,7 +35,6 @@
           [style.--m-rows]="cell.mobile.rows"
           [product]="piece"
           [quantity]="cart.quantityOf(piece.sku)"
-          [orderable]="access.shop() !== 'browse'"
           (opened)="actions.productOpened.next(piece.sku)"
           (added)="cart.add(piece.sku)"
         />
@@ -54,7 +53,6 @@
       [class.featured]="piece.isFeatured"
       [product]="piece"
       [quantity]="cart.quantityOf(piece.sku)"
-      [orderable]="access.shop() !== 'browse'"
       (opened)="actions.productOpened.next(piece.sku)"
       (added)="cart.add(piece.sku)"
     />

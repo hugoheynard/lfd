@@ -151,21 +151,10 @@
                 <ul class="houses" #rail (scroll)="onRailScroll()">
                   @for (house of houses(); track house.point.id) {
                     <li>
-                      <!-- 🔴 Une maison fermée est grisée et NON CLIQUABLE dès ici :
-                       faire choisir une heure pour une boutique fermée ferait
-                       arriver le refus après l'effort. Le refus précède
-                       l'effort. -->
-                      <button
-                        class="house"
-                        type="button"
-                        [disabled]="!canOrder()"
-                        (click)="chooseHouse(house)"
-                      >
+                      <button class="house" type="button" (click)="chooseHouse(house)">
                         <span class="house-head">
                           @if (house.best) {
                             <span class="house-flag">{{ c().houses.best }}</span>
-                          } @else if (!canOrder()) {
-                            <span class="house-flag is-off">{{ c().houses.closed }}</span>
                           }
 
                           <span class="house-name">{{ house.name }}</span>
@@ -179,11 +168,7 @@
 
                           <span class="house-foot">
                             <span class="house-state">
-                              @if (canOrder()) {
-                                {{ c().houses.choose }}
-                              } @else {
-                                {{ c().houses.closedHint }}
-                              }
+                              {{ c().houses.choose }}
                             </span>
                             <span class="house-chevron" aria-hidden="true">→</span>
                           </span>

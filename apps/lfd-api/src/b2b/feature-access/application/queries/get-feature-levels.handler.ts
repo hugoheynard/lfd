@@ -20,15 +20,8 @@ export class GetFeatureLevelsHandler implements IQueryHandler<
   constructor(private readonly resolver: FeatureLevelResolver) {}
 
   async execute(): Promise<FeatureLevelsView> {
-    const [shop, orders, invoices, desktopMenu, publicDelivery, customerMandate] =
-      await Promise.all([
-        this.resolver.levelFor("shop", null),
-        this.resolver.levelFor("orders", null),
-        this.resolver.levelFor("invoices", null),
-        this.resolver.levelFor("desktopMenu", null),
-        this.resolver.levelFor("publicDelivery", null),
-        this.resolver.levelFor("customerMandate", null),
-      ]);
-    return { shop, orders, invoices, desktopMenu, publicDelivery, customerMandate };
+    // Une seule clé depuis le 2026-10-09 : `shop`, `orders`, `invoices`,
+    // `desktopMenu` et `publicDelivery` ont été retirées du catalogue.
+    return { customerMandate: await this.resolver.levelFor("customerMandate", null) };
   }
 }

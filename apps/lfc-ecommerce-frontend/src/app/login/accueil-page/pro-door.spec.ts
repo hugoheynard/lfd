@@ -7,7 +7,6 @@ import { AuthFacade, type ProRegistration } from '../../auth/auth.facade';
 import { ClientChrome } from '../../client/client-chrome.service';
 import { FR } from '../../client/copy/fr';
 import { PRO_ACCOUNT_FR } from '../../client/copy/screens/pro-account.copy';
-import { openShopAt } from '../../client/feature-access/feature-access.fixture';
 import { AccueilPage } from './accueil-page';
 
 /**
@@ -274,20 +273,6 @@ describe('AccueilPage · porte pro', () => {
     expect(chrome.bell()).toBeNull();
     expect(chrome.barOnDesktop()).toBe(false);
     expect(chrome.kicker()).toBe(PRO_ACCOUNT_FR.door.kicker);
-  });
-
-  /** Plan §3.1 : la promesse suit le niveau que le serveur a rendu, et se tait avant. */
-  it('ne dit la promesse qu’une fois le niveau connu, et jamais boutique ouverte', () => {
-    boot();
-    expect(el().querySelector('app-shop-promise')).toBeNull();
-
-    openShopAt('closed');
-    fixture.detectChanges();
-    expect(el().textContent).toContain(PRO_ACCOUNT_FR.promise.closed);
-
-    openShopAt('order');
-    fixture.detectChanges();
-    expect(el().textContent).not.toContain(PRO_ACCOUNT_FR.promise.closed);
   });
 
   it('ne parle pas de devis traiteur : on n’y vend rien', () => {

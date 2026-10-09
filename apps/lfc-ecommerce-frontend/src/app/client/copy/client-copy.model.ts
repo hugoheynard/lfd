@@ -45,12 +45,6 @@ export interface ClientCopy {
     readonly deskKicker: string;
     /** La ligne sous la marque, dans la barre : ce qu'est la maison, sur tous les écrans. */
     readonly brandLine: string;
-    /**
-     * Ce que dit l'app quand elle n'a pas pu lire ce que la boutique permet.
-     * Elle se comporte alors comme fermée : la phrase dit pourquoi des écrans
-     * manquent, et comment réessayer.
-     */
-    readonly featureAccessFailed: string;
     /** Le nom du déclencheur du menu de la personne, dans l'en-tête : l'initiale seule n'en est pas un. */
     readonly accountMenu: string;
     /** L'entrée qui ouvre le profil de la personne — et le titre de son dialogue. */
@@ -388,12 +382,6 @@ export interface ClientCopy {
     /** `{name}` est remplacé par la gourmandise proposée. */
     readonly upsell: string;
     readonly upsellLine: string;
-    /**
-     * À la place du geste d'ajout, quand la boutique se VISITE sans encore
-     * permettre de commander (niveau `browse`). Pas de date : rien dans le
-     * système n'en porte une.
-     */
-    readonly orderingSoon: string;
     /**
      * À la place du « + » d'un article réservé à une opération datée, tant que
      * sa commande n'est pas ouverte (D8 de `architecture-operations-datees.md`).

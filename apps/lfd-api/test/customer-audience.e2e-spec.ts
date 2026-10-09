@@ -25,7 +25,6 @@ import {
   serviceDay,
   type E2eContext,
 } from "./e2e-harness.js";
-import { openPublicDelivery } from "./public-delivery-scene.js";
 import { attachTo, createCompany, createUser } from "./factories.js";
 
 const SERVICE_DAY = serviceDay();
@@ -76,7 +75,6 @@ afterAll(async () => {
 
 beforeEach(async () => {
   await ctx.reset();
-  await openPublicDelivery(ctx);
 });
 
 const staff = (): ReturnType<E2eContext["asSub"]> => ctx.asSub(E2E_STAFF_SUB);

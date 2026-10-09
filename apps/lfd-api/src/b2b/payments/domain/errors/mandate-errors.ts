@@ -357,8 +357,7 @@ export class MandateOptionsBoundToActiveMandateError extends BusinessError {
 /**
  * Le mandat en ligne n'est pas ouvert aux clients — **409**.
  *
- * Refus d'état et non d'autorisation, comme `ShopClosedError` : il ne dit rien
- * de la personne. Il tombe APRÈS le mur tenant, pour ne pas révéler à un
+ * Refus d'état et non d'autorisation : il ne dit rien de la personne. Il tombe APRÈS le mur tenant, pour ne pas révéler à un
  * non-membre qu'une société existe (plan §7 MINEUR, ordre testé).
  */
 export class CustomerMandateClosedError extends BusinessError {

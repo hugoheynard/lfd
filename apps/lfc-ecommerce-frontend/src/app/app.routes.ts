@@ -3,7 +3,6 @@ import { Router, type Route, type Routes } from '@angular/router';
 
 import { authenticatedGuard } from './auth/authenticated.guard';
 import { DEV_BYPASS_AUTH } from './auth/dev-flags';
-import { featureAccessGuard } from './client/feature-access/feature-access.guard';
 import {
   companyWorkspaceGuard,
   personalWorkspaceGuard,
@@ -195,9 +194,6 @@ export const routes: Routes = [
         // LE SUIVI, PUIS LA MÉMOIRE. Deux registres et l'ordre n'est pas
         // négociable : ce qui est en route d'abord, ce qui est passé ensuite.
         path: 'mes-commandes',
-        // Masquable en admin : seule la LISTE se ferme. Suivi, règlement et
-        // retrait gardent leurs adresses à eux, sans cette garde.
-        canActivate: [featureAccessGuard('orders', 'visible')],
         title: 'Mes commandes — La Folie Coffee',
         loadComponent: () =>
           import('./client/mes-commandes/commandes-page/commandes-page').then(
@@ -273,7 +269,6 @@ export const routes: Routes = [
         // d'ailleurs survit à ce qui la rendait vraie, et fait garder un
         // détour pour une raison qui n'existe plus.
         path: 'boutique',
-        canActivate: [featureAccessGuard('shop', 'browse')],
         title: 'Boutique — La Folie Coffee',
         loadComponent: () => import('./client/shop/shop-page/shop-page').then((m) => m.ShopPage),
       },

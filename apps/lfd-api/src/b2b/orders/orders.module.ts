@@ -3,7 +3,6 @@ import { Module } from "@nestjs/common";
 import { CatalogModule } from "../catalog/catalog.module.js";
 import { DeliveryAvailabilityModule } from "../delivery-availability/delivery-availability.module.js";
 import { DeliveryZonesModule } from "../delivery-zones/delivery-zones.module.js";
-import { FeatureAccessModule } from "../feature-access/feature-access.module.js";
 import { OrderCutoffRepository } from "../order-cutoffs/domain/order-cutoff.repository.js";
 import { OrderCutoffsModule } from "../order-cutoffs/order-cutoffs.module.js";
 import { OrderWaiversModule } from "../order-waivers/order-waivers.module.js";
@@ -67,7 +66,6 @@ import { OrderNumberReader } from "./domain/ports/order-number.reader.js";
 import { PrismaOrderNumberReader } from "./infrastructure/prisma-order-number.reader.js";
 import { CartAdjustments } from "./application/services/cart-adjustments.service.js";
 import { CustomerAudiences } from "./application/services/customer-audiences.service.js";
-import { PublicDeliveryGate } from "./application/services/public-delivery-gate.js";
 import { CompanyStatusReader } from "./domain/ports/company-status.reader.js";
 import { ShopCartController } from "./http/shop-cart.controller.js";
 import { ShopQuoteController } from "./http/shop-quote.controller.js";
@@ -166,12 +164,6 @@ import { AdminSupervisionController } from "./http/admin-supervision.controller.
     DeliveryZonesModule,
     // À qui la livraison est proposée : `CartAdjustments` le refuse au serveur.
     DeliveryAvailabilityModule,
-    // 🔴 La clé `publicDelivery` : `PlaceShopOrderHandler` refuse une livraison
-    // SANS COMPTE quand l'admin ne l'a pas ouverte. Le module est ici et pas
-    // seulement dans la racine parce qu'un handler résout ses dépendances dans
-    // SON module — l'oublier compile, passe les 4 247 tests unitaires, et
-    // empêche l'application de démarrer (constaté le 2026-09-21).
-    FeatureAccessModule,
     OrderCutoffsModule,
     OrderWaiversModule,
     PaymentsModule,
@@ -214,7 +206,6 @@ import { AdminSupervisionController } from "./http/admin-supervision.controller.
     OrderLinePricing,
     CartAdjustments,
     CustomerAudiences,
-    PublicDeliveryGate,
     PlaceOrderHandler,
     PlaceOrderForCustomerHandler,
     ConfirmOrderPaymentHandler,

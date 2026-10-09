@@ -17,20 +17,12 @@
      ne colle que dans son parent, et un parent court le relâcherait aussitôt.
      Au-delà du pli, ces deux blocs n'existent pas à l'écran : le bandeau reste
      celui de la bande, plus haut. -->
-<!-- EN PILE, LA PROMESSE PREND LA PLACE DU TITRE. Quand la boutique n'est pas
-     ouverte, c'est la première chose à dire, et la barre nomme déjà l'écran :
-     le titre et son texte ne reviennent que s'il n'y a pas de promesse.
-     Le callout ne prend PAS la surface `chrome`, qui inverserait ses tons. -->
 <div class="narrow-banner">
-  @if (promiseShown()) {
-    <app-shop-promise class="narrow-promise" [level]="promiseLevel() ?? 'order'" />
-  } @else {
-    <app-client-banner-block
-      foldSurface="chrome"
-      [title]="t().account.title"
-      [lead]="t().account.lead"
-    />
-  }
+  <app-client-banner-block
+    foldSurface="chrome"
+    [title]="t().account.title"
+    [lead]="t().account.lead"
+  />
 </div>
 <div class="narrow-pin" foldSurface="chrome">
   @if (view() === 'dossier') {
@@ -66,10 +58,6 @@
       </fold-empty-state>
     }
     @case ('incomplete') {
-      <!-- LA PROMESSE suit le niveau de la boutique (plan §3.1). -->
-      @if (promiseLevel(); as level) {
-        <app-shop-promise class="page-promise" [level]="level" />
-      }
       <!-- La déclaration en vol n'est pas un dossier à remplir : on attend. -->
       @if (onboarding.needsDossier()) {
         <app-dossier-card />
@@ -78,10 +66,6 @@
       }
     }
     @default {
-      @if (promiseLevel(); as level) {
-        <app-shop-promise class="page-promise" [level]="level" />
-      }
-
       <!-- CE QUI MANQUE, en tête du dossier, comme la fiche staff : la synthèse
            et un raccourci par élément, qui ouvre le dialogue de la carte. Rien
            quand rien ne manque — ni quand le verdict n'a pas pu être lu. -->
@@ -219,19 +203,15 @@
               </section>
             }
 
-            <!-- Règlement et habitudes de service n'ont de sens qu'au niveau où l'on
-           commande (plan §4) : le sommaire se renumérote sur ce qui reste. -->
-            @if (access.atLeast('order')) {
-              <section class="card payment" id="compte-payment">
-                <app-payment-desk-card class="desk" />
-                <app-payment-mobile-card class="mobile" />
-              </section>
+            <section class="card payment" id="compte-payment">
+              <app-payment-desk-card class="desk" />
+              <app-payment-mobile-card class="mobile" />
+            </section>
 
-              <section class="card preferences" id="compte-preferences">
-                <app-preferences-desk-card class="desk" />
-                <app-preferences-mobile-card class="mobile" />
-              </section>
-            }
+            <section class="card preferences" id="compte-preferences">
+              <app-preferences-desk-card class="desk" />
+              <app-preferences-mobile-card class="mobile" />
+            </section>
 
             <section class="card data" id="compte-data">
               <app-data-desk-card class="desk" />

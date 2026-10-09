@@ -11,9 +11,9 @@ import type { JournalFact, JournaledEvent } from "../../../platform/journal/jour
  * revient en arrière. Le journal est donc la seule mémoire de « qui avait fermé,
  * et depuis quand » — d'où `publishTraced`, dans la transaction de l'écriture.
  *
- * Le sujet est la CLÉ (`shop`) : c'est ce qu'on vient relire, et c'est ce qui
+ * Le sujet est la CLÉ (`customerMandate`) : c'est ce qu'on vient relire, et c'est ce qui
  * survit à la suppression d'une ligne. Son nom (`subjectLabel`, lot B du plan
- * des phrases) est le libellé du catalogue fermé — « Boutique » —, figé au
+ * des phrases) est le libellé du catalogue fermé — « Mandat SEPA client » —, figé au
  * moment du geste comme tout nom du journal.
  */
 export const FEATURE_ACCESS_FACTS = {

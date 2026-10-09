@@ -1,5 +1,9 @@
 # Plan — la remise de retrait et la livraison, par clientèle
 
+> ⚠️ **2026-10-09 : la clé `publicDelivery` est retirée** (Hugo). La livraison
+> aux particuliers ne dépend plus que de la case « B2C » de « Livraison » ; les
+> mentions de la clé plus bas (D4, D7, D8, Q4) décrivent l'état d'avant.
+>
 > **Statut : ✅ bâti — lots A (serveur), B (back-office) et C (boutique).
 > Relu contre le code le 2026-10-07** (audit du dossier `livraisons/` de ce
 > jour, §4.2). Le lot A depuis le 2026-09-15 : migration, `PickupDiscount`,
@@ -141,27 +145,17 @@ qui porte déjà la société).
   resterait choisissable comme préférence, puis refusée à la commande (vitruve,
   S4).
 
-⚠️ **Ce réglage n'est pas la seule clé de la livraison** (relu le 2026-10-07).
-Depuis le 2026-09-21, la clé d'accès **`publicDelivery`** — « Livraison aux
-particuliers », au catalogue des clés (`feature-access.levels.ts:101-115`) —
-gouverne aussi la livraison des particuliers et des visiteurs. Elle est
-**fermée par défaut** (Hugo, 2026-09-21), s'ouvre dans « Accès aux
-fonctionnalités » (`/admin/feature-access`, droit `b2b_feature_access`) et
-s'exempte par adresse e-mail pour l'essayer. Les pros n'en dépendent pas. Elle
-a deux lecteurs :
-
-- `POST /shop/orders`, la commande sans compte, refuse une livraison en 409
-  `PublicDeliveryClosedError` tant qu'elle est fermée
-  (`place-shop-order.handler.ts:94-99`) ;
-- la boutique ne propose la porte du coursier à une clientèle B2C que si la
-  case « B2C » **et** la clé l'ouvrent (D7).
-
-**Cocher « B2C » dans « Livraison » ne suffit donc pas** à ouvrir la livraison
-aux particuliers : avec la clé à son défaut, la boutique ne la leur propose
-pas, et une commande sans compte en livraison est refusée. « Ligne absente =
-ouverte aux deux », plus haut, ne vaut que pour ce réglage-ci. Ce que la clé ne
-gouverne pas — `POST /orders`, la commande d'un particulier connecté — est la
-question Q4.
+✅ **Ce réglage est la seule clé de la livraison depuis le 2026-10-09.** Du
+2026-09-21 au 2026-10-09, une clé d'accès `publicDelivery` (« Livraison aux
+particuliers », fermée par défaut) la doublait pour les particuliers et les
+visiteurs : `POST /shop/orders` et, depuis le 2026-10-07, `POST /orders`
+(`PublicDeliveryGate`) refusaient en 409 `PublicDeliveryClosedError`, et la
+boutique cachait la porte du coursier. Hugo l'a **retirée le 2026-10-09** :
+deux réglages pour une même porte se contredisaient, et cocher « B2C » ne
+suffisait pas à ouvrir. Le refus des particuliers est désormais celui de D5,
+au devis comme aux deux passations (`CartAdjustments.forDelivery`, appelé par
+`OrderDrafting` pour `POST /orders` et `POST /shop/orders`). Les passages
+ci-dessous qui parlent de la clé décrivent l'état d'avant cette date.
 
 **D5 — Une livraison fermée se refuse au serveur.** `forDelivery(codePostal,
 subtotal, audience)` lève `DeliveryClosedForAudienceError` (`BusinessError`, 409)

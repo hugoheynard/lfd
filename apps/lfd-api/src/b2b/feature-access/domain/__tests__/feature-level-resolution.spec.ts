@@ -3,23 +3,18 @@ import {
   normalizeEmailForLookup,
   resolveFeatureLevel,
 } from "../feature-level-resolution.js";
-import { FeatureExemption } from "../feature-exemption.js";
-
-const AUTHOR = { staffUserId: "staff_1", name: "Camille Admin", role: "admin" };
-const AT = new Date("2026-09-14T09:00:00.000Z");
 
 describe("resolveFeatureLevel — l'ordre de la résolution", () => {
   it("rend le défaut du code quand rien n'est posé", () => {
-    expect(resolveFeatureLevel("shop", { exempt: false, storedOverride: null })).toBe("order");
+    expect(resolveFeatureLevel("customerMandate", { exempt: false, storedOverride: null })).toBe(
+      "closed",
+    );
   });
 
   it("rend la dérogation quand elle est posée", () => {
-    expect(resolveFeatureLevel("shop", { exempt: false, storedOverride: "closed" })).toBe("closed");
-  });
-
-  it("fait passer l'exemption AVANT la dérogation", () => {
-    // La boutique est fermée pour tous, sauf pour le testeur.
-    expect(resolveFeatureLevel("shop", { exempt: true, storedOverride: "closed" })).toBe("order");
+    expect(resolveFeatureLevel("customerMandate", { exempt: false, storedOverride: "open" })).toBe(
+      "open",
+    );
   });
 
   /**
@@ -38,9 +33,9 @@ describe("resolveFeatureLevel — l'ordre de la résolution", () => {
   it("ignore une dérogation dont la valeur n'est plus un niveau de la clé", () => {
     // Deviner ce qu'un niveau disparu voulait dire ouvrirait ou fermerait la
     // vente sur une supposition : on retombe sur le défaut.
-    expect(resolveFeatureLevel("shop", { exempt: false, storedOverride: "maintenance" })).toBe(
-      "order",
-    );
+    expect(
+      resolveFeatureLevel("customerMandate", { exempt: false, storedOverride: "maintenance" }),
+    ).toBe("closed");
   });
 });
 
@@ -66,20 +61,10 @@ describe("exemptionLookupEmail — seule une adresse prouvée se cherche", () =>
   });
 });
 
-describe("la normalisation, à l'écriture comme à la lecture", () => {
-  it("écrit et cherche une adresse sous la MÊME forme", () => {
-    // Deux normalisations écrites séparément finiraient par diverger, et
-    // l'exemption cesserait de jouer pour une majuscule.
-    const raw = "  Jeanne.Testeuse@Exemple.FR ";
-    const written = FeatureExemption.grant({
-      id: "ex_1",
-      key: "shop",
-      email: raw,
-      at: AT,
-      author: AUTHOR,
-    }).email;
-
-    expect(written).toBe("jeanne.testeuse@exemple.fr");
-    expect(normalizeEmailForLookup(raw)).toBe(written);
+describe("la normalisation de la recherche", () => {
+  it("cherche une adresse sans espaces, en minuscules", () => {
+    expect(normalizeEmailForLookup("  Jeanne.Testeuse@Exemple.FR ")).toBe(
+      "jeanne.testeuse@exemple.fr",
+    );
   });
 });

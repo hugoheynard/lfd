@@ -20,63 +20,31 @@ describe("composeFeatureAccessBoard — l'écran admin", () => {
     const board = composeFeatureAccessBoard({ overrides: [], exemptions: [] });
 
     expect(board.ignored).toEqual([]);
+    // Une seule clé depuis le 2026-10-09 ; l'écran ne propose pas d'exemption
+    // sur celle-ci (2026-09-14).
     expect(board.features).toEqual([
       expect.objectContaining({
-        key: "shop",
-        label: "Boutique",
-        levels: ["closed", "browse", "order"],
-        defaultLevel: "order",
-        effectiveLevel: "order",
-        exemptible: true,
-        override: null,
-        exemptions: [],
-      }),
-      expect.objectContaining({
-        key: "orders",
-        levels: ["hidden", "visible"],
-        effectiveLevel: "visible",
-      }),
-      expect.objectContaining({
-        key: "invoices",
-        levels: ["hidden", "visible"],
-        effectiveLevel: "visible",
-      }),
-      expect.objectContaining({
-        key: "desktopMenu",
-        levels: ["hidden", "visible"],
-        effectiveLevel: "visible",
-      }),
-      // 🔴 FERMÉE PAR DÉFAUT (2026-09-21) : ouvrir la livraison à qui n'a pas de
-      // compte est une décision commerciale, et un défaut ouvert l'aurait prise
-      // à la place de celui qui déploie.
-      expect.objectContaining({
-        key: "publicDelivery",
-        levels: ["closed", "open"],
-        defaultLevel: "closed",
-        effectiveLevel: "closed",
-        exemptible: true,
-      }),
-      // 2026-09-14 : l'écran ne propose pas d'exemption sur cette clé.
-      expect.objectContaining({
         key: "customerMandate",
+        label: "Mandat SEPA client",
         levels: ["closed", "open"],
         defaultLevel: "closed",
         effectiveLevel: "closed",
         exemptible: false,
+        override: null,
+        exemptions: [],
       }),
     ]);
   });
 
   it("montre la dérogation, son auteur et sa date, et la valeur effective qui en découle", () => {
     const board = composeFeatureAccessBoard({
-      overrides: [override("shop", "browse")],
-      exemptions: [exemption("shop", "testeur@exemple.fr")],
+      overrides: [override("customerMandate", "open")],
+      exemptions: [],
     });
 
     expect(board.features[0]).toMatchObject({
-      effectiveLevel: "browse",
-      override: { value: "browse", updatedAt: AT.toISOString() },
-      exemptions: [{ email: "testeur@exemple.fr", accountState: "none" }],
+      effectiveLevel: "open",
+      override: { value: "open", updatedAt: AT.toISOString() },
     });
     // Un nom et un rôle, sans identifiant : le `sub` n'est plus servi (plan de
     // l'auteur, étape 5A).
@@ -93,7 +61,7 @@ describe("composeFeatureAccessBoard — l'écran admin", () => {
     });
 
     expect(board.features[0]).toMatchObject({
-      effectiveLevel: "order",
+      effectiveLevel: "closed",
       override: null,
       exemptions: [],
     });
@@ -103,15 +71,39 @@ describe("composeFeatureAccessBoard — l'écran admin", () => {
     ]);
   });
 
+  /**
+   * Les cinq clés retirées le 2026-10-09 : leurs lignes de production ne sont
+   * pas effacées, elles sont signalées et n'ouvrent ni ne ferment rien.
+   */
+  it("signale les lignes des clés retirées le 2026-10-09 en clé inconnue", () => {
+    const removed = ["shop", "orders", "invoices", "desktopMenu", "publicDelivery"];
+    const board = composeFeatureAccessBoard({
+      overrides: removed.map((key) => override(key, "closed")),
+      exemptions: [exemption("shop", "testeur@exemple.fr")],
+    });
+
+    expect(board.features.map((feature) => feature.key)).toEqual(["customerMandate"]);
+    expect(board.features[0]).toMatchObject({ effectiveLevel: "closed", override: null });
+    expect(board.ignored).toEqual([
+      ...removed.map((key) => ({
+        table: "override",
+        key,
+        detail: "closed",
+        reason: "unknown_key",
+      })),
+      { table: "exemption", key: "shop", detail: "testeur@exemple.fr", reason: "unknown_key" },
+    ]);
+  });
+
   it("signale une dérogation dont la valeur n'est plus un niveau, et retombe sur le défaut", () => {
     const board = composeFeatureAccessBoard({
-      overrides: [override("shop", "maintenance")],
+      overrides: [override("customerMandate", "maintenance")],
       exemptions: [],
     });
 
-    expect(board.features[0]).toMatchObject({ effectiveLevel: "order", override: null });
+    expect(board.features[0]).toMatchObject({ effectiveLevel: "closed", override: null });
     expect(board.ignored).toEqual([
-      { table: "override", key: "shop", detail: "maintenance", reason: "unknown_level" },
+      { table: "override", key: "customerMandate", detail: "maintenance", reason: "unknown_level" },
     ]);
   });
 });

@@ -22,7 +22,6 @@ import { ClientCartPill } from '../cart/client-cart-pill/client-cart-pill';
 import { ClientOnboarding } from '../client-onboarding.service';
 import { ProOnboarding } from '../pro-onboarding.service';
 import { ClientCopyService } from '../copy/client-copy.service';
-import { ClientFeatureAccess } from '../feature-access/client-feature-access.service';
 import { LangSwitch } from '../lang-switch/lang-switch';
 
 /**
@@ -78,7 +77,6 @@ export class ClientShell {
    * première retouche du dictionnaire, et faux en silence ensuite.
    */
   protected readonly signInLabels = this.copy.everyLocale((copy) => copy.chrome.signIn);
-  protected readonly access = inject(ClientFeatureAccess);
   protected readonly identityConflict = inject(IdentityConflictNotice);
   private readonly auth = inject(AuthFacade);
   private readonly router = inject(Router);

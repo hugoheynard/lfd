@@ -26,7 +26,6 @@ import {
   type ContactBandCopy,
   type DoorCopy,
 } from '../copy/screens/accueil-public.copy';
-import { ClientFeatureAccess } from '../feature-access/client-feature-access.service';
 import { OrderContextStore } from '../order-context.store';
 import { formatHour } from '../format-hour';
 import { MOCK_EVENT } from '../mock-event';
@@ -115,7 +114,6 @@ export class AccueilPublic {
   private readonly router = inject(Router);
   /** Là où le choix VOYAGE : c'est le store que la boutique et le panier lisent. */
   private readonly order = inject(OrderContextStore);
-  private readonly access = inject(ClientFeatureAccess);
   private readonly locale = inject(ClientLocale);
   private readonly panels = inject(FoldPanelHostService);
 
@@ -193,16 +191,16 @@ export class AccueilPublic {
    * La porte du coursier : ouverte, ou « bientôt ».
    *
    * 🔴 Elle ne dépendait que de la clientèle — `b2b` ouvert, tout le reste en
-   * attente. Elle lit maintenant {@link OrderDoors.deliveryOpen}, qui ajoute la
-   * clé d'admin `publicDelivery` — un pro livre par son CONTRAT et n'en dépend
-   * pas, un particulier ou un visiteur livre si la maison a ouvert la tournée —
-   * et le réglage « Livraison », qui ferme une clientèle entière, pros compris.
+   * attente. Elle lit maintenant {@link OrderDoors.deliveryOpen} : le réglage
+   * « Livraison », qui ferme une clientèle entière, pros compris. La clé
+   * `publicDelivery` qui s'y ajoutait pour les particuliers, et le niveau de
+   * boutique, ont été retirés le 2026-10-09.
    *
-   * ⚠️ Cacher n'est pas fermer : `POST /shop/orders` refuse la même chose en
-   * 409. Cet état-ci évite de montrer une porte qui mène à un refus.
+   * ⚠️ Cacher n'est pas fermer : le devis et la commande refusent la même chose
+   * en 409. Cet état-ci évite de montrer une porte qui mène à un refus.
    */
   protected readonly courierState = computed<'open' | 'pending'>(() =>
-    this.doors.deliveryOpen() && this.canOrder() ? 'open' : 'pending',
+    this.doors.deliveryOpen() ? 'open' : 'pending',
   );
 
   /**
@@ -211,8 +209,7 @@ export class AccueilPublic {
    * 🔴 Une seule cause a un nom : le dossier d'une société EN ATTENTE, et
    * seulement si le valider ouvrirait la livraison — le réglage « Livraison »
    * doit la proposer aux pros. Partout ailleurs, personne ne valide rien : le
-   * réglage ferme la clientèle, la clé `publicDelivery` est fermée, la société
-   * est active ou suspendue. C'est un choix de la maison, et la porte le dit
+   * réglage ferme la clientèle, la société est active ou suspendue. C'est un choix de la maison, et la porte le dit
    * sans promettre qui l'ouvre. Régression (audit B5, 2026-10-07) : « votre
    * commercial ouvre la livraison » se lisait aussi quand l'admin l'avait
    * fermée.
@@ -407,9 +404,6 @@ export class AccueilPublic {
    */
   protected readonly ready = signal(false);
 
-  /** La boutique prend-elle des commandes ? Sinon, aucune maison n'est cliquable. */
-  protected readonly canOrder = computed(() => this.access.shop() === 'order');
-
   /**
    * Les maisons, avec leur pastille d'offre.
    *
@@ -560,9 +554,6 @@ export class AccueilPublic {
    * on revisitera plus tard » — il n'est simplement plus traversé.
    */
   protected async chooseHouse(house: House): Promise<void> {
-    if (!this.canOrder()) {
-      return;
-    }
     const ref = SlotPickerDialog.open(this.panels, {
       pickupAddressId: house.point.id,
       place: house.name,
@@ -613,9 +604,6 @@ export class AccueilPublic {
    * qui l'utilise.
    */
   protected async openPickupDoor(): Promise<void> {
-    if (!this.canOrder()) {
-      return;
-    }
     const point = await PublicHousePickerDialog.open(this.panels, { currentId: null }).closed;
     if (point === undefined) {
       return;
@@ -640,9 +628,6 @@ export class AccueilPublic {
    * Le choix voyage par le MÊME magasin que le retrait, et mène au même rayon.
    */
   protected async openCourierDoor(): Promise<void> {
-    if (!this.canOrder()) {
-      return;
-    }
     // La porte, son garde et la saisie libre vivent dans `OrderDoors` : le
     // panier ouvre exactement la même, et deux copies finiraient par ne plus
     // ouvrir à la même personne.

@@ -17,7 +17,6 @@ import { NewOrderAction } from '../../nav/new-order-action/new-order-action';
 
 import { ClientChrome } from '../../client-chrome.service';
 import { ClientCopyService } from '../../copy/client-copy.service';
-import { ClientFeatureAccess } from '../../feature-access/client-feature-access.service';
 import { ClientCompany } from '../../client-company.service';
 import { ClientOrderHistory } from '../client-order-history.service';
 import { OrderSheetService } from '../order-sheet.service';
@@ -78,7 +77,6 @@ import { TrackCard } from '../track-card/track-card';
   styleUrl: './commandes-page.scss',
 })
 export class CommandesPage {
-  protected readonly access = inject(ClientFeatureAccess);
   protected readonly t = inject(ClientCopyService).t;
   private readonly chrome = inject(ClientChrome);
   private readonly router = inject(Router);

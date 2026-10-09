@@ -37,6 +37,12 @@
 > Ce qui n'est **pas** bâti : la nature `release` / `kill_switch`, l'âge d'un
 > flag à l'écran, et le cycle « un `release` se supprime » (§6). Les valeurs du
 > seul flag existant sont ordonnées, et une garde demande « au moins » un niveau.
+>
+> ⚠️ **Le 2026-10-09, le flag boutique est retiré** (Hugo), avec `orders`,
+> `invoices`, `desktopMenu` et `publicDelivery`, et la garde `@RequiresShop` /
+> `FeatureAccessGuard` avec lui. Il ne reste que `customerMandate`, gardé dans
+> ses propres handlers. Les lignes de base des clés retirées sont gardées et
+> signalées à l'écran (`unknown_key`), jamais appliquées.
 
 ---
 

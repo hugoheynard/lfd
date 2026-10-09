@@ -52,7 +52,6 @@
 
     @if (door() === 'pro') {
       <app-pro-step
-        [shopLevel]="shopLevel()"
         [callbackPhone]="phone() ?? ''"
         [bookedSlot]="bookedSlot()"
         (signedUp)="signUpPro($event)"

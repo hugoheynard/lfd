@@ -1,6 +1,6 @@
 import type { JournalFactType } from '@lfd/contracts/journal-facts';
 
-import { isKnownFeatureKey, levelLabel } from '../../feature-levels';
+import { journalLevelLabel } from '../../feature-levels';
 import { entries, optional, recordOf, strings, type Payload } from '../payload-read';
 import {
   byActor,
@@ -686,7 +686,7 @@ function feature(fact: PhraseFact): Segment[] {
 /** Le mot d'un niveau, pour la fonctionnalité de la ligne (« Fermée », « Masqué »). */
 function level(fact: PhraseFact, raw: unknown): Segment {
   const said = optional(raw) ?? '—';
-  return value(isKnownFeatureKey(fact.subjectId) ? levelLabel(fact.subjectId, said) : said);
+  return value(journalLevelLabel(fact.subjectId, said));
 }
 
 /** « … a passé « Boutique » de Commander à Fermée ». */

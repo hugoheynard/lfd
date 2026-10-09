@@ -7,7 +7,6 @@ import { deliveryOpenTo } from '@lfd/contracts/shop-values';
 import { FoldPanelHostService } from 'fold-ng';
 
 import { ClientAudience } from '../client-audience.service';
-import { ClientFeatureAccess } from '../feature-access/client-feature-access.service';
 import { formatHour } from '../format-hour';
 import { OrderContextStore } from '../order-context.store';
 import { DeliveryAddressDialog } from './delivery-address-dialog/delivery-address-dialog';
@@ -40,7 +39,6 @@ export class OrderDoors {
   private readonly panels = inject(FoldPanelHostService);
   private readonly points = inject(ServicePoints);
   private readonly order = inject(OrderContextStore);
-  private readonly access = inject(ClientFeatureAccess);
 
   /** Un visiteur est `b2c` — et le défaut penche de ce côté tant qu'on ne sait pas. */
   private readonly audience = inject(ClientAudience).shown;
@@ -48,16 +46,12 @@ export class OrderDoors {
   /**
    * **La porte du coursier est-elle ouverte à qui regarde ?**
    *
-   * Deux décisions d'admin la ferment, et elles ne visent pas les mêmes clients :
-   *
-   * - **le réglage « Livraison »** (`openToB2b` / `openToB2c`, servi par
-   *   `GET /delivery-availability`) ferme la livraison à une clientèle ENTIÈRE,
-   *   pros compris. C'est la règle `deliveryOpenTo` que le devis et la commande
-   *   appliquent au serveur.
-   * - **la clé `publicDelivery`** ne concerne pas les pros : un PRO livre par son
-   *   CONTRAT, et la fermer lui retirerait un service qu'il a négocié. Pour tout
-   *   le monde d'autre, elle est fermée par défaut — ouvrir une tournée à qui
-   *   n'a pas de compte n'est pas un réglage d'écran.
+   * Une seule décision d'admin la ferme : **le réglage « Livraison »**
+   * (`openToB2b` / `openToB2c`, servi par `GET /delivery-availability`), qui
+   * vise une clientèle ENTIÈRE. C'est la règle `deliveryOpenTo` que le devis et
+   * la commande appliquent au serveur. La clé `publicDelivery`, qui le doublait
+   * pour les particuliers, a été retirée le 2026-10-09 : deux réglages pour une
+   * même porte se contredisaient.
    *
    * 🔴 Régression du 2026-09-21 (`c71efb5b5`) : le `deliveryOffered` qui lisait
    * ce réglage est parti avec l'ancien écran de commande, et cette porte-ci ne
@@ -67,15 +61,12 @@ export class OrderDoors {
    * la porte reste alors celle d'avant, et le serveur garde le refus.
    *
    * ⚠️ **Cacher n'est pas fermer, et les deux existent.** Le serveur refuse la
-   * même chose en 409 — la clé à `POST /shop/orders`, le réglage au devis et à
-   * la commande : sans ce refus, une requête recopiée depuis l'onglet réseau
-   * ferait livrer quand même. Ce signal-ci évite seulement de montrer une porte
-   * qui mène à un refus.
+   * même chose en 409 au devis et à la commande : sans ce refus, une requête
+   * recopiée depuis l'onglet réseau ferait livrer quand même. Ce signal-ci
+   * évite seulement de montrer une porte qui mène à un refus.
    */
-  readonly deliveryOpen = computed(
-    () =>
-      deliveryOpenTo(this.points.deliveryAvailability(), this.audience()) &&
-      (this.audience() === 'b2b' || this.access.publicDelivery() === 'open'),
+  readonly deliveryOpen = computed(() =>
+    deliveryOpenTo(this.points.deliveryAvailability(), this.audience()),
   );
 
   /**

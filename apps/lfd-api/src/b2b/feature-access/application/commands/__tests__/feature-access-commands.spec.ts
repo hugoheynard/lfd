@@ -1,6 +1,5 @@
 import { FixedIdGenerator } from "../../../../../platform/id/fixed-id-generator.js";
 import { FixedClock } from "../../../../../platform/time/fixed-clock.js";
-import { InvalidEmailError } from "../../../../account/domain/errors/account-errors.js";
 import {
   FeatureExemptionNotFoundError,
   FeatureNotExemptibleError,
@@ -59,28 +58,28 @@ describe("SetFeatureOverrideHandler", () => {
   it("écrit la dérogation puis sa trace, DANS l'unité de travail", async () => {
     const h = harness();
 
-    await h.set.execute(new SetFeatureOverrideCommand("shop", "browse", "staff_admin"));
+    await h.set.execute(new SetFeatureOverrideCommand("customerMandate", "open", "staff_admin"));
 
     expect(h.steps.log).toEqual([
       "uow:begin",
-      "override:put:shop",
+      "override:put:customerMandate",
       "journal:feature_access.override_set",
       "uow:end",
     ]);
     expect(h.events.traced[0]?.journalFact()).toMatchObject({
       subjectType: "feature_access",
-      subjectId: "shop",
+      subjectId: "customerMandate",
       // Le nom de la fonctionnalité, figé depuis le catalogue fermé (lot B).
-      payload: { subjectLabel: "Boutique", value: "browse", previousValue: null },
+      payload: { subjectLabel: "Mandat SEPA client", value: "open", previousValue: null },
     });
   });
 
   it("fige l'auteur (id de fiche, nom, rôle) et l'instant du Clock", async () => {
     const h = harness();
 
-    await h.set.execute(new SetFeatureOverrideCommand("shop", "closed", "staff_admin"));
+    await h.set.execute(new SetFeatureOverrideCommand("customerMandate", "closed", "staff_admin"));
 
-    const row = h.overrides.rows.get("shop");
+    const row = h.overrides.rows.get("customerMandate");
     expect(row?.author).toEqual({
       staffUserId: "staff_admin",
       name: "Camille Admin",
@@ -92,9 +91,11 @@ describe("SetFeatureOverrideHandler", () => {
   it("garde l'id de fiche seul quand l'annuaire ne connaît pas l'agent", async () => {
     const h = harness();
 
-    await h.set.execute(new SetFeatureOverrideCommand("shop", "closed", "staff_inconnu"));
+    await h.set.execute(
+      new SetFeatureOverrideCommand("customerMandate", "closed", "staff_inconnu"),
+    );
 
-    expect(h.overrides.rows.get("shop")?.author).toEqual({
+    expect(h.overrides.rows.get("customerMandate")?.author).toEqual({
       staffUserId: "staff_inconnu",
       name: "",
       role: "",
@@ -103,14 +104,14 @@ describe("SetFeatureOverrideHandler", () => {
 
   it("dit au journal la valeur remplacée", async () => {
     const h = harness();
-    await h.set.execute(new SetFeatureOverrideCommand("shop", "browse", "staff_admin"));
+    await h.set.execute(new SetFeatureOverrideCommand("customerMandate", "open", "staff_admin"));
 
-    await h.set.execute(new SetFeatureOverrideCommand("shop", "closed", "staff_admin"));
+    await h.set.execute(new SetFeatureOverrideCommand("customerMandate", "closed", "staff_admin"));
 
     expect(h.events.traced[1]?.journalFact().payload).toEqual({
-      subjectLabel: "Boutique",
+      subjectLabel: "Mandat SEPA client",
       value: "closed",
-      previousValue: "browse",
+      previousValue: "open",
     });
   });
 
@@ -118,7 +119,7 @@ describe("SetFeatureOverrideHandler", () => {
     const h = harness();
 
     await expect(
-      h.set.execute(new SetFeatureOverrideCommand("shop", "open", "staff_admin")),
+      h.set.execute(new SetFeatureOverrideCommand("customerMandate", "order", "staff_admin")),
     ).rejects.toThrow(UnknownFeatureLevelError);
 
     expect(h.steps.log).toEqual([]);
@@ -138,20 +139,20 @@ describe("SetFeatureOverrideHandler", () => {
 describe("ClearFeatureOverrideHandler", () => {
   it("supprime la dérogation et trace la valeur retirée", async () => {
     const h = harness();
-    await h.set.execute(new SetFeatureOverrideCommand("shop", "closed", "staff_admin"));
+    await h.set.execute(new SetFeatureOverrideCommand("customerMandate", "closed", "staff_admin"));
     h.steps.log.length = 0;
 
-    await h.clear.execute(new ClearFeatureOverrideCommand("shop"));
+    await h.clear.execute(new ClearFeatureOverrideCommand("customerMandate"));
 
-    expect(h.overrides.rows.has("shop")).toBe(false);
+    expect(h.overrides.rows.has("customerMandate")).toBe(false);
     expect(h.steps.log).toEqual([
       "uow:begin",
-      "override:remove:shop",
+      "override:remove:customerMandate",
       "journal:feature_access.override_cleared",
       "uow:end",
     ]);
     expect(h.events.traced[1]?.journalFact().payload).toEqual({
-      subjectLabel: "Boutique",
+      subjectLabel: "Mandat SEPA client",
       previousValue: "closed",
     });
   });
@@ -159,51 +160,20 @@ describe("ClearFeatureOverrideHandler", () => {
   it("refuse en 404 quand la clé est déjà sur le défaut, sans trace", async () => {
     const h = harness();
 
-    await expect(h.clear.execute(new ClearFeatureOverrideCommand("shop"))).rejects.toThrow(
-      FeatureOverrideNotFoundError,
-    );
+    await expect(
+      h.clear.execute(new ClearFeatureOverrideCommand("customerMandate")),
+    ).rejects.toThrow(FeatureOverrideNotFoundError);
 
     expect(h.events.traced).toEqual([]);
   });
 });
 
+/**
+ * Depuis le 2026-10-09, le catalogue n'a plus aucune clé exemptible : l'ajout
+ * réussi et le retrait d'une exemption ne s'expriment plus avec une vraie clé.
+ * Reste le refus, qui est désormais le seul chemin de l'ajout.
+ */
 describe("AddFeatureExemptionHandler", () => {
-  it("ajoute l'adresse normalisée et trace l'ajout dans l'unité de travail", async () => {
-    const h = harness();
-
-    const id = await h.add.execute(
-      new AddFeatureExemptionCommand("shop", " Testeur@Exemple.FR ", "staff_admin"),
-    );
-
-    expect(id).toBe("ex_000001");
-    expect(h.steps.log).toEqual([
-      "uow:begin",
-      "exemption:add:testeur@exemple.fr",
-      "journal:feature_access.exemption_added",
-      "uow:end",
-    ]);
-    expect(h.exemptions.rows[0]?.author).toEqual({
-      staffUserId: "staff_admin",
-      name: "Camille Admin",
-      role: "admin",
-    });
-  });
-
-  it("est idempotent sur (clé, adresse) : même id, une seule ligne, une seule trace", async () => {
-    const h = harness();
-    const first = await h.add.execute(
-      new AddFeatureExemptionCommand("shop", "testeur@exemple.fr", "staff_admin"),
-    );
-
-    const second = await h.add.execute(
-      new AddFeatureExemptionCommand("shop", "TESTEUR@exemple.fr", "staff_admin"),
-    );
-
-    expect(second).toBe(first);
-    expect(h.exemptions.rows).toHaveLength(1);
-    expect(h.events.traced).toHaveLength(1);
-  });
-
   /** Plan mandat client §8 (2026-09-14) : la clé ne s'ouvre pas adresse par adresse. */
   it("refuse d'exempter sur le mandat client, sans écriture ni trace", async () => {
     const h = harness();
@@ -217,42 +187,24 @@ describe("AddFeatureExemptionHandler", () => {
     expect(h.steps.log).toEqual([]);
   });
 
-  it("refuse une adresse invalide avant toute écriture", async () => {
+  it("refuse d'exempter sur une clé retirée, sans écriture ni trace", async () => {
     const h = harness();
 
     await expect(
-      h.add.execute(new AddFeatureExemptionCommand("shop", "pas-une-adresse", "staff_admin")),
-    ).rejects.toThrow(InvalidEmailError);
+      h.add.execute(new AddFeatureExemptionCommand("shop", "testeur@exemple.fr", "staff_admin")),
+    ).rejects.toThrow(UnknownFeatureError);
 
     expect(h.steps.log).toEqual([]);
   });
 });
 
 describe("RemoveFeatureExemptionHandler", () => {
-  it("retire l'exemption et trace l'adresse retirée", async () => {
+  it("refuse en 404 un id inconnu, sans trace", async () => {
     const h = harness();
-    const id = await h.add.execute(
-      new AddFeatureExemptionCommand("shop", "testeur@exemple.fr", "staff_admin"),
-    );
-
-    await h.remove.execute(new RemoveFeatureExemptionCommand("shop", id));
-
-    expect(h.exemptions.rows).toEqual([]);
-    expect(h.events.traced[1]?.journalFact()).toMatchObject({
-      type: "feature_access.exemption_removed",
-      payload: { subjectLabel: "Boutique", exemptionId: id, email: "testeur@exemple.fr" },
-    });
-  });
-
-  it("refuse en 404 un id inconnu, ou rangé sous une autre clé", async () => {
-    const h = harness();
-    const id = await h.add.execute(
-      new AddFeatureExemptionCommand("shop", "testeur@exemple.fr", "staff_admin"),
-    );
 
     await expect(
-      h.remove.execute(new RemoveFeatureExemptionCommand("other_key", id)),
+      h.remove.execute(new RemoveFeatureExemptionCommand("shop", "ex_inconnu")),
     ).rejects.toThrow(FeatureExemptionNotFoundError);
-    expect(h.exemptions.rows).toHaveLength(1);
+    expect(h.events.traced).toEqual([]);
   });
 });

@@ -56,7 +56,7 @@
     <div dialog-foot class="foot">
       @if (gate()?.label; as closedLabel) {
         <p class="soon">{{ closedLabel }}</p>
-      } @else if (orderable()) {
+      } @else {
         <div class="picker">
           <app-quantity-rail
             size="lg"
@@ -91,8 +91,6 @@
           <span>{{ ctaLabel() }}</span>
           <span class="cta-total">{{ total() }}</span>
         </button>
-      } @else {
-        <p class="soon">{{ t().shop.orderingSoon }}</p>
       }
     </div>
   </app-client-dialog>

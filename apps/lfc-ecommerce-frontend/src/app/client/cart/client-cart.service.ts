@@ -5,7 +5,6 @@ import { CartStore } from './cart.store';
 import { ShopCartSync } from './shop-cart-sync.service';
 import { ShopQuote } from './shop-quote.service';
 import { ShopCatalogue } from '../shop/shop-catalogue.store';
-import { ClientFeatureAccess } from '../feature-access/client-feature-access.service';
 
 /**
  * **Le panier en cours** — un seul, partagé par le rayon, la fiche et le panier.
@@ -35,31 +34,19 @@ export class ClientCart {
   private readonly quote = inject(ShopQuote);
   private readonly catalogue = inject(ShopCatalogue);
 
-  private readonly access = inject(ClientFeatureAccess);
   private readonly injector = inject(Injector);
-
-  /** Vrai dès que le panier a demandé le catalogue et lancé sa synchronisation. */
-  private started = false;
 
   constructor() {
     /**
-     * 🔴 **Rien ne part tant que la boutique ne permet pas de COMMANDER.**
+     * Le panier démarre au premier passage des effets, et une seule fois : un
+     * effet qui ne lit aucun signal ne repasse jamais.
      *
-     * Le panier est construit par des écrans ouverts à des niveaux inférieurs —
-     * `ClientOrders`, l'espace. Sans cette attente, le catalogue et le panier
-     * serveur partaient à chaque construction, et le serveur les refuse en 409
-     * quand la boutique est fermée (plan `plan-inscription-pro-seule.md` §4).
-     * Au niveau `browse`, le rayon demande le catalogue lui-même : le panier,
-     * qui ne peut plus rien recevoir, n'a rien à y ajouter.
-     *
-     * Une fois lancé, il ne s'arrête plus : les niveaux sont lus une fois par
-     * chargement de page.
+     * Il attendait jusqu'au 2026-10-09 que la boutique permette de COMMANDER
+     * (clé `shop`) ; la clé est retirée, on commande toujours. Le report d'un
+     * passage est gardé tel quel : c'est le moment où le panier démarrait déjà
+     * boutique ouverte, et les suites qui le construisent en dépendent.
      */
     effect(() => {
-      if (this.started || !this.access.atLeast('order')) {
-        return;
-      }
-      this.started = true;
       // `untracked` : la synchronisation pose ses propres effets, ce qu'Angular
       // refuse depuis un contexte réactif.
       untracked(() => {

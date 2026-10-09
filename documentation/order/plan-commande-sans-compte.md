@@ -1,5 +1,11 @@
 # Commander sans compte obligatoire
 
+> ⚠️ **2026-10-09** : les mentions de `@RequiresShop("order")` et de la clé
+> `publicDelivery` plus bas décrivent l'état d'avant cette date. Les deux sont
+> retirées (Hugo) : aucune route n'est plus coupée par le niveau de boutique, et
+> une livraison sans compte n'est refusée que par le réglage « Livraison »
+> (`openToB2c`), dans `CartAdjustments.forDelivery`.
+
 **Statut** : ✅ **bâti le 2026-09-17, et fermé** — les trois lots existent, la
 route publique n'est pas joignable. **L'état à jour est au [§12](#12-létat--ce-qui-est-fait-ce-qui-reste)** :
 ce qui est fait, ce qui reste, et ce qu'ouvrir demandera.

@@ -25,8 +25,6 @@ export const FR: ClientCopy = {
     kickerDone: 'Confirmée',
     deskKicker: 'Val d’Isère · commande en ligne',
     brandLine: 'Boulangerie · Val d’Isère',
-    featureAccessFailed:
-      'Nous n’avons pas pu vérifier ce que la boutique propose en ce moment : certaines pages restent fermées. Rechargez la page pour réessayer.',
     accountMenu: 'Mon compte personnel',
     myProfile: 'Mon profil',
     workspaceChoice: 'Espace de travail',
@@ -226,7 +224,6 @@ export const FR: ClientCopy = {
       'Panier vide. La fournée du matin part vite — le ski praliné ne fait jamais l’après-midi.',
     upsell: '{name} avec ça ?',
     upsellLine: 'La gourmandise qu’on regrette de ne pas avoir prise.',
-    orderingSoon: 'La commande en ligne ouvre bientôt.',
     operationOpensOn: 'Ouvre le {date}',
     operationNotOpen: 'Pas encore ouvert',
     operationClosed: 'Commandes closes',

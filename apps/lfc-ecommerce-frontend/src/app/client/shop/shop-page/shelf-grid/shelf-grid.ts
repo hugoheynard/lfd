@@ -10,7 +10,6 @@ import {
 
 import { ClientCart } from '../../../cart/client-cart.service';
 import { ClientCopyService } from '../../../copy/client-copy.service';
-import { ClientFeatureAccess } from '../../../feature-access/client-feature-access.service';
 import { ProductTile } from '../../product-tile/product-tile';
 import { ShopCatalogue } from '../../shop-catalogue.store';
 import { withServedAnnouncements } from '../../storefront/served-announcements';
@@ -72,8 +71,6 @@ export class ShelfGrid {
 
   protected readonly t = inject(ClientCopyService).t;
   protected readonly cart = inject(ClientCart);
-  /** Au niveau `browse` exactement, le rayon se visite sans panier (plan §4). */
-  protected readonly access = inject(ClientFeatureAccess);
   private readonly catalogue = inject(ShopCatalogue);
 
   /** Ce que le catalogue sert — un objet peut montrer un article d'un autre rayon. */

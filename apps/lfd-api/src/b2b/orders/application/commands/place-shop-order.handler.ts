@@ -7,8 +7,6 @@ import { CommerceOrderPlacedFact } from "../../../../delivery/channels/commerce/
 import { Clock } from "../../../../platform/time/clock.js";
 import { PaymentGateway } from "../../../payments/domain/payment-gateway.js";
 import type { Order } from "../../domain/entities/order.js";
-import { FeatureLevelResolver } from "../../../feature-access/application/feature-level.resolver.js";
-import { PublicDeliveryClosedError } from "../../../feature-access/domain/public-delivery-closed.error.js";
 import {
   IdempotencyKeyReusedError,
   OrderAlreadyInFlightError,
@@ -70,7 +68,6 @@ export class PlaceShopOrderHandler implements ICommandHandler<
     private readonly keys: ShopOrderIdempotencyStore,
     private readonly reader: OrderReader,
     private readonly unitOfWork: UnitOfWork,
-    private readonly features: FeatureLevelResolver,
     private readonly durable: DurablePublisher,
   ) {}
 
@@ -86,20 +83,10 @@ export class PlaceShopOrderHandler implements ICommandHandler<
    */
   async execute(command: PlaceShopOrderCommand): Promise<PlaceShopOrderResult> {
     const { payload } = command;
-    // 🔴 LE REFUS PRÉCÈDE LA CLÉ D'IDEMPOTENCE, et c'est le sujet : une clé
-    // réclamée puis relâchée laisse une trace et fait porter au client un rejeu
-    // qui n'aurait jamais dû commencer. Ce refus ne dépend d'aucune écriture —
-    // il se prononce sur le seul contenu du corps.
-    //
-    // ⚠️ SUJET `null` : une commande publique n'a ni jeton ni compte, donc
-    // aucune adresse à exempter. Le niveau lu est le niveau GLOBAL, celui qu'un
-    // admin a posé — c'est la même lecture que la vitrine publique fait déjà.
-    if (payload.fulfillmentMethod === "delivery") {
-      const level = await this.features.levelFor("publicDelivery", null);
-      if (level === "closed") {
-        throw new PublicDeliveryClosedError();
-      }
-    }
+    // La livraison sans compte ne se juge plus ici : la clé `publicDelivery` a
+    // été retirée le 2026-10-09, et c'est le réglage « Livraison » (`openToB2c`)
+    // que `CartAdjustments.forDelivery` oppose pendant la composition, comme au
+    // devis. Le refus vient donc après la réclamation de la clé, qui est rendue.
     const key = payload.idempotencyKey;
     // `null` de société : une commande publique n'en a pas, et l'empreinte doit
     // le dire comme l'autre surface le dit — deux paniers identiques passés pour

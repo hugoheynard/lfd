@@ -6,7 +6,7 @@ import {
   type ActivatedRouteSnapshot,
   type RouterStateSnapshot,
 } from '@angular/router';
-import { PERSONAL_WORKSPACE, type ShopLevel } from '@lfd/contracts';
+import { PERSONAL_WORKSPACE } from '@lfd/contracts';
 import { of } from 'rxjs';
 
 import { AccountService } from '../account/account.service';
@@ -18,11 +18,9 @@ import {
   WORKSPACE_WAIT_MS,
 } from './client-workspace.guard';
 import { provideWorkspace, workspaceDouble } from './client-workspace.fixture';
-import { ClientFeatureAccess } from './feature-access/client-feature-access.service';
-import { DEFAULT_SURFACES } from './feature-access/feature-access.fixture';
 import { TOMMEUSES } from './mon-compte/account.fixture';
 
-/** La garde ne lit ni la route ni l'état : seulement l'espace et la boutique. */
+/** La garde ne lit ni la route ni l'état : seulement l'espace. */
 const ROUTE = {} as ActivatedRouteSnapshot;
 const STATE = {} as RouterStateSnapshot;
 
@@ -30,7 +28,6 @@ interface Case {
   readonly signedIn?: boolean;
   readonly current: string | null;
   readonly companies: boolean;
-  readonly shop?: ShopLevel;
   /** Une déclaration pro rapportée d'Auth0 attend d'être envoyée. */
   readonly declaring?: boolean;
 }
@@ -47,13 +44,7 @@ const PRO_DECLARATION = {
 };
 
 /** Où la garde envoie : `true`, ou l'adresse de renvoi. */
-async function run({
-  signedIn = true,
-  current,
-  companies,
-  shop = 'order',
-  declaring = false,
-}: Case) {
+async function run({ signedIn = true, current, companies, declaring = false }: Case) {
   TestBed.resetTestingModule();
   TestBed.configureTestingModule({
     providers: [
@@ -79,17 +70,8 @@ async function run({
           hasNoCompany: () => !companies,
         },
       },
-      {
-        provide: ClientFeatureAccess,
-        useFactory: () => {
-          const access = new ClientFeatureAccess();
-          access.load = () => Promise.resolve();
-          return access;
-        },
-      },
     ],
   });
-  TestBed.inject(ClientFeatureAccess).receive({ shop, ...DEFAULT_SURFACES });
   const result = await TestBed.runInInjectionContext(() => companyWorkspaceGuard(ROUTE, STATE));
   return result instanceof UrlTree ? TestBed.inject(Router).serializeUrl(result) : result;
 }
@@ -131,23 +113,6 @@ describe('companyWorkspaceGuard', () => {
 
   it('laisse passer qui n’est pas connecté — l’écran sait l’accueillir', async () => {
     expect(await run({ signedIn: false, current: null, companies: false })).toBe(true);
-  });
-
-  /**
-   * 🔴 LE RENVOI NE DÉPEND PLUS DE LA BOUTIQUE (2026-09-21). Il l'a fait, et
-   * pour une seule raison : le repli était `/mon-espace`, que
-   * `featureAccessGuard` renvoyait vers `/mon-compte` quand la boutique était
-   * fermée — les deux gardes se seraient renvoyé la personne sans fin. Le repli
-   * est `/bienvenue`, qui n'a aucune garde : la boucle est impossible, et la
-   * condition qui l'évitait laissait passer exactement ce cas-ci.
-   *
-   * Ce test disait `true` — l'adresse RESTAIT ouverte. Il dit maintenant
-   * qu'elle se ferme, et c'est le correctif, pas un ajustement.
-   */
-  it('🔴 ferme l’adresse même quand la boutique est fermée', async () => {
-    expect(await run({ current: PERSONAL_WORKSPACE, companies: true, shop: 'closed' })).toBe(
-      '/bienvenue',
-    );
   });
 });
 

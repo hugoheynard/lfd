@@ -13,7 +13,6 @@ import {
 } from '../../client-workspace.fixture';
 import { ClientWorkspaceSwitch } from '../../client-workspace-switch.service';
 import { FR } from '../../copy/fr';
-import { openShopAt } from '../../feature-access/feature-access.fixture';
 import { PROFILE, TOMMEUSES } from '../../mon-compte/account.fixture';
 import { ClientNav } from '../client-nav.service';
 import { ClientMenu } from './client-menu';
@@ -69,7 +68,6 @@ function boot(
       },
     ],
   });
-  openShopAt('order');
   const fixture = TestBed.createComponent(ClientMenu);
   fixture.componentRef.setInput('open', true);
   fixture.componentInstance.closed.subscribe(() => wire.events.push('closed'));

@@ -7,7 +7,6 @@ import {
   output,
   signal,
 } from '@angular/core';
-import type { ShopLevel } from '@lfd/contracts';
 import { FoldButtonComponent, FoldCardComponent, FoldInputComponent } from 'fold-ng';
 
 import type { ProRegistration } from '../../../auth/auth.facade';
@@ -15,7 +14,6 @@ import { ClientLocale } from '../../../client/client-locale.service';
 import { CallbackBlock } from '../../../client/callback-block/callback-block';
 import { ClientCopyService } from '../../../client/copy/client-copy.service';
 import { proAccountCopy } from '../../../client/copy/screens/pro-account.copy';
-import { ShopPromise } from '../../../client/shop-promise/shop-promise';
 
 /**
  * **La porte PRO** — quatre informations et le nom de l'établissement.
@@ -38,19 +36,11 @@ import { ShopPromise } from '../../../client/shop-promise/shop-promise';
 @Component({
   selector: 'app-pro-step',
   changeDetection: ChangeDetectionStrategy.OnPush,
-  imports: [CallbackBlock, FoldButtonComponent, FoldCardComponent, FoldInputComponent, ShopPromise],
+  imports: [CallbackBlock, FoldButtonComponent, FoldCardComponent, FoldInputComponent],
   templateUrl: './pro-step.html',
   styleUrl: './pro-step.scss',
 })
 export class ProStep {
-  /**
-   * Le niveau de la boutique, pour la promesse « ouvre bientôt ».
-   *
-   * `null` tant que la lecture est en vol : l'écran ne promet rien et ne
-   * clignote pas quand la boutique est ouverte.
-   */
-  readonly shopLevel = input<ShopLevel | null>(null);
-
   /**
    * Le numéro sur lequel le fournil rappellera — celui du COMPTE, s'il y en a
    * un. Vide : le lien d'appel disparaît.

@@ -59,18 +59,18 @@ describe('FeatureAccessService', () => {
   it('pose une dérogation par PUT sur la clé, puis relit', async () => {
     const { body, result } = await answerWriteThenBoard(
       'PUT',
-      `${BASE}/shop`,
-      service.setOverride('shop', 'browse'),
+      `${BASE}/customerMandate`,
+      service.setOverride('customerMandate', 'open'),
     );
-    expect(body).toEqual({ value: 'browse' });
+    expect(body).toEqual({ value: 'open' });
     expect(result).toEqual(BOARD);
   });
 
   it('revient au défaut par DELETE sur la clé, puis relit', async () => {
     const { result } = await answerWriteThenBoard(
       'DELETE',
-      `${BASE}/shop`,
-      service.clearOverride('shop'),
+      `${BASE}/customerMandate`,
+      service.clearOverride('customerMandate'),
     );
     expect(result).toEqual(BOARD);
   });
@@ -78,8 +78,8 @@ describe('FeatureAccessService', () => {
   it('ajoute une adresse par POST sur les exemptions de la clé, puis relit', async () => {
     const { body } = await answerWriteThenBoard(
       'POST',
-      `${BASE}/shop/exemptions`,
-      service.addExemption('shop', 'testeur@lfc.test'),
+      `${BASE}/customerMandate/exemptions`,
+      service.addExemption('customerMandate', 'testeur@lfc.test'),
     );
     expect(body).toEqual({ email: 'testeur@lfc.test' });
   });
@@ -87,17 +87,17 @@ describe('FeatureAccessService', () => {
   it('retire une adresse par DELETE sur son identifiant, puis relit', async () => {
     await answerWriteThenBoard(
       'DELETE',
-      `${BASE}/shop/exemptions/ex_1`,
-      service.removeExemption('shop', 'ex_1'),
+      `${BASE}/customerMandate/exemptions/ex_1`,
+      service.removeExemption('customerMandate', 'ex_1'),
     );
   });
 
   it("ne relit pas quand l'écriture est refusée", async () => {
     // Le refus remonte tel quel à l'écran, qui le notifie et relit lui-même :
     // une relecture ici masquerait l'erreur derrière un tableau à jour.
-    const pending = service.setOverride('shop', 'nimportequoi');
+    const pending = service.setOverride('customerMandate', 'nimportequoi');
     ctrl
-      .expectOne({ method: 'PUT', url: `${BASE}/shop` })
+      .expectOne({ method: 'PUT', url: `${BASE}/customerMandate` })
       .flush({ message: 'Niveau inconnu' }, { status: 400, statusText: 'Bad Request' });
     await expect(pending).rejects.toBeTruthy();
     await settle();

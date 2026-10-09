@@ -18,7 +18,6 @@ import { AuthFacade } from '../../auth/auth.facade';
 import { ClientAudience } from '../client-audience.service';
 import { ClientIdentity } from '../client-identity.service';
 import { ClientWorkspace } from '../client-workspace.service';
-import { ClientFeatureAccess } from '../feature-access/client-feature-access.service';
 import { ClientCart } from '../cart/client-cart.service';
 import { ACCUEIL_PUBLIC_FR } from '../copy/screens/accueil-public.copy';
 import { ClientOrderHistory } from '../mes-commandes/client-order-history.service';
@@ -144,11 +143,9 @@ function line(productName: string, quantity: number, sku = productName): Custome
 
 async function mount(
   points: readonly PickupAddressView[],
-  shop: 'order' | 'browse' | 'closed' = 'order',
   who: Regard = 'visiteur',
   orders: readonly CustomerOrderView[] = [],
   sold: readonly string[] = [],
-  publicDelivery: 'closed' | 'open' = 'closed',
 ): Promise<ComponentFixture<AccueilPublic>> {
   const store = new FakePoints();
   store.pickups.set(points);
@@ -159,14 +156,6 @@ async function mount(
       provideRouter([]),
       { provide: ServicePoints, useValue: store },
       { provide: ClientAudience, useValue: { shown: signal('b2c' as const) } },
-      {
-        provide: ClientFeatureAccess,
-        // ⚠️ `publicDelivery` FERMÉE, comme le catalogue : la porte du coursier
-        // d'un b2c dépend d'elle depuis le 2026-09-21, et un doublé qui
-        // l'ouvrirait ferait passer ces cas pour une règle qu'ils n'éprouvent
-        // pas. Le cas qui l'éprouve la pose lui-même.
-        useValue: { shop: signal(shop), publicDelivery: signal(publicDelivery) },
-      },
       { provide: ClientOrderHistory, useValue: { orders: signal(orders) } },
       { provide: ShopCatalogue, useValue: boutique },
       // Les jours bornés par le panier ne sont pas le sujet de l'accueil.
@@ -259,7 +248,6 @@ describe('AccueilPublic — ce qu’il refuse de dire', () => {
         provideRouter([]),
         { provide: ServicePoints, useValue: store },
         { provide: ClientAudience, useValue: { shown: signal('b2c' as const) } },
-        { provide: ClientFeatureAccess, useValue: { shop: signal('order' as const) } },
         { provide: ClientOrderHistory, useValue: { orders: signal([]) } },
         { provide: ShopCatalogue, useValue: new FakeShop([]) },
         { provide: CartFulfillmentDays, useValue: {} },
@@ -298,23 +286,13 @@ describe('AccueilPublic — ce qu’il refuse de dire', () => {
     expect(fixture.nativeElement.textContent).not.toContain('faites défiler');
     expect(fixture.nativeElement.textContent).toContain('2 maisons');
   });
-
-  it('🔴 ferme les maisons quand la boutique ne prend pas de commande', async () => {
-    // Le refus précède l'effort : faire choisir une heure pour une boutique
-    // fermée ferait arriver le refus APRÈS la saisie.
-    const fixture = await mount([point({ id: 'a' })], 'browse');
-
-    expect(fixture.componentInstance['canOrder']()).toBe(false);
-    const button: HTMLButtonElement | null = fixture.nativeElement.querySelector('button.house');
-    expect(button?.disabled).toBe(true);
-  });
 });
 
 describe('AccueilPublic — les trois états', () => {
   const POINTS = [point({ id: 'a' }), point({ id: 'b', label: 'Le Village' })];
 
   it('accueille un VISITEUR par les trois verbes, et lui garde le bandeau', async () => {
-    const fixture = await mount(POINTS, 'order', 'visiteur');
+    const fixture = await mount(POINTS, 'visiteur');
 
     expect(fixture.nativeElement.textContent).toContain('Bienvenue');
     expect(fixture.nativeElement.querySelector('.banner')).not.toBeNull();
@@ -326,7 +304,7 @@ describe('AccueilPublic — les trois états', () => {
    * donc rien à arbitrer : seule son ACCROCHE le reconnaît.
    */
   it('reconnaît un PERSO sans rien changer d’autre', async () => {
-    const fixture = await mount(POINTS, 'order', 'perso');
+    const fixture = await mount(POINTS, 'perso');
 
     expect(fixture.nativeElement.textContent).toContain('Nouvelle commande');
     expect(fixture.nativeElement.querySelector('.banner')).not.toBeNull();
@@ -349,7 +327,6 @@ describe('AccueilPublic — les trois états', () => {
   it('annonce sur la porte la MEILLEURE remise de retrait', async () => {
     const fixture = await mount(
       [point({ id: 'a' }), point({ id: 'b', label: 'Le Village', discount: DIX })],
-      'order',
       'pro',
     );
 
@@ -364,13 +341,13 @@ describe('AccueilPublic — les trois états', () => {
    * échappe pas.
    */
   it('ne met AUCUNE mention sur la porte quand il n’y a pas de remise', async () => {
-    const fixture = await mount(POINTS, 'order', 'pro');
+    const fixture = await mount(POINTS, 'pro');
 
     expect(fixture.nativeElement.querySelector('.door-pickup .door-note')).toBeNull();
   });
 
   it('dit les trois étapes dans la voix d’un PRO', async () => {
-    const fixture = await mount(POINTS, 'order', 'pro');
+    const fixture = await mount(POINTS, 'pro');
     const labels = [...fixture.nativeElement.querySelectorAll('.step-label')].map((node: Element) =>
       node.textContent?.trim(),
     );
@@ -383,7 +360,7 @@ describe('AccueilPublic — les trois états', () => {
   });
 
   it('donne ses deux portes à un PRO même non validé, à la place du bandeau', async () => {
-    const fixture = await mount(POINTS, 'order', 'pro');
+    const fixture = await mount(POINTS, 'pro');
 
     expect(fixture.nativeElement.querySelector('app-service-doors')).not.toBeNull();
     expect(fixture.nativeElement.querySelector('.banner')).toBeNull();
@@ -406,13 +383,13 @@ describe('AccueilPublic — les trois états', () => {
    * commande de personne, et propose de refaire ce qu'on n'a jamais commandé.
    */
   it('ne propose PAS de reprendre quand il n’y a rien à reprendre', async () => {
-    const fixture = await mount(POINTS, 'order', 'perso');
+    const fixture = await mount(POINTS, 'perso');
 
     expect(fixture.nativeElement.querySelector('app-shop-shortcuts')).toBeNull();
   });
 
   it('dit la VRAIE dernière commande — ses articles et son lieu', async () => {
-    const fixture = await mount(POINTS, 'order', 'perso', [
+    const fixture = await mount(POINTS, 'perso', [
       order({ lines: [line('traditions', 2), line('croissants', 4)] }),
     ]);
 
@@ -428,7 +405,7 @@ describe('AccueilPublic — les trois états', () => {
    */
   it('ne nomme pas de jour pour une commande trop ancienne', async () => {
     const vieille = new Date(Date.now() - 20 * 86_400_000).toISOString();
-    const fixture = await mount(POINTS, 'order', 'perso', [order({ placedAt: vieille })]);
+    const fixture = await mount(POINTS, 'perso', [order({ placedAt: vieille })]);
 
     expect(fixture.nativeElement.querySelector('.title')?.textContent?.trim()).toBe(
       'Comme votre dernière commande ?',
@@ -443,7 +420,6 @@ describe('AccueilPublic — les trois états', () => {
   it('refait le panier et retient l’écran quand un article a disparu', async () => {
     const fixture = await mount(
       POINTS,
-      'order',
       'perso',
       [order({ lines: [line('tradition', 2, 'TRAD'), line('éclair', 1, 'ECLAIR')] })],
       ['TRAD'],
@@ -468,7 +444,7 @@ describe('AccueilPublic — les trois états', () => {
    * le seul montage qui prouve quelque chose.
    */
   it('🔴 ne montre ni reprise ni suivis à un VISITEUR, même avec un historique en mémoire', async () => {
-    const fixture = await mount(POINTS, 'order', 'visiteur', [order({ lines: [line('a', 1)] })]);
+    const fixture = await mount(POINTS, 'visiteur', [order({ lines: [line('a', 1)] })]);
 
     expect(fixture.nativeElement.querySelector('app-shop-shortcuts')).toBeNull();
     expect(fixture.nativeElement.querySelector('app-live-orders-well')).toBeNull();
@@ -480,7 +456,7 @@ describe('AccueilPublic — les trois états', () => {
     ['perso', 'Changer l’heure, ajouter une pièce'],
     ['pro', 'Un ajout passe encore par téléphone'],
   ] as const)('répond à un %s dans ses mots', async (who, fragment) => {
-    const fixture = await mount(POINTS, 'order', who);
+    const fixture = await mount(POINTS, who);
     const band = fixture.nativeElement.querySelector('app-contact-band');
 
     expect(band?.querySelector('.kicker')?.textContent?.trim()).toBe('On répond');
@@ -502,14 +478,13 @@ describe('AccueilPublic — ce que dit la porte du coursier quand elle attend', 
 
   /**
    * L'accueil d'un client dont la société a ce statut (`null` : un visiteur,
-   * sans société), devant ce réglage « Livraison » et cette clé publique. Sa
+   * sans société), devant ce réglage « Livraison ». Sa
    * clientèle suit `audienceOf`, comme le vrai `ClientAudience` : `b2b` pour
    * une société ACTIVE seulement.
    */
   async function seenBy(
     status: CompanyStatus | null,
     availability: Partial<Pick<DeliveryAvailabilityView, 'openToB2b' | 'openToB2c'>> = {},
-    publicDelivery: 'closed' | 'open' = 'closed',
   ): Promise<ComponentFixture<AccueilPublic>> {
     const store = new FakePoints();
     store.pickups.set(MAISONS);
@@ -521,10 +496,6 @@ describe('AccueilPublic — ce que dit la porte du coursier quand elle attend', 
         provideRouter([]),
         { provide: ServicePoints, useValue: store },
         { provide: ClientAudience, useValue: { shown: signal(audienceOf(status)) } },
-        {
-          provide: ClientFeatureAccess,
-          useValue: { shop: signal('order' as const), publicDelivery: signal(publicDelivery) },
-        },
         { provide: ClientOrderHistory, useValue: { orders: signal([]) } },
         { provide: ShopCatalogue, useValue: boutique },
         { provide: CartFulfillmentDays, useValue: {} },
@@ -544,7 +515,7 @@ describe('AccueilPublic — ce que dit la porte du coursier quand elle attend', 
   }
 
   it('🔴 dit le dossier à une société EN ATTENTE quand la valider ouvrirait la livraison', async () => {
-    const porte = courier(await seenBy('pending'));
+    const porte = courier(await seenBy('pending', { openToB2c: false }));
 
     expect(porte?.disabled).toBe(true);
     expect(porte?.querySelector('.door-wait')?.textContent?.trim()).toBe(DOSSIER);
@@ -563,7 +534,7 @@ describe('AccueilPublic — ce que dit la porte du coursier quand elle attend', 
 
   /** Valider le dossier ne l'ouvrirait pas : le réglage la fermerait encore. */
   it('ne promet pas le commercial à une société en attente quand le réglage ferme les pros', async () => {
-    const porte = courier(await seenBy('pending', { openToB2b: false }));
+    const porte = courier(await seenBy('pending', { openToB2b: false, openToB2c: false }));
 
     expect(porte?.querySelector('.door-wait')?.textContent?.trim()).toBe(PAS_PROPOSEE);
   });
@@ -574,8 +545,8 @@ describe('AccueilPublic — ce que dit la porte du coursier quand elle attend', 
    * l'écran passerait à la porte : le jour où elle lui sera montrée, elle ne
    * lui parlera pas d'un dossier qu'il n'a pas.
    */
-  it('dit « pas proposée » à qui n’a pas de société, la clé publique fermée', async () => {
-    const fixture = await seenBy(null);
+  it('dit « pas proposée » à qui n’a pas de société, le réglage fermé aux particuliers', async () => {
+    const fixture = await seenBy(null, { openToB2c: false });
 
     expect(courier(fixture)).toBeNull();
     expect(fixture.componentInstance['courierDoor']().pending?.hint).toBe(PAS_PROPOSEE);

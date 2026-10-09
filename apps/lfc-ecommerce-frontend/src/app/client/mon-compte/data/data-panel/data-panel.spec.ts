@@ -2,7 +2,6 @@ import { TestBed } from '@angular/core/testing';
 import { FoldPanelRef } from 'fold-ng';
 
 import { FR } from '../../../copy/fr';
-import { openShopAt } from '../../../feature-access/feature-access.fixture';
 import { DataPanel } from './data-panel';
 
 describe('DataPanel', () => {
@@ -12,7 +11,6 @@ describe('DataPanel', () => {
       imports: [DataPanel],
       providers: [{ provide: FoldPanelRef, useValue: new FoldPanelRef(1, () => undefined) }],
     });
-    openShopAt('order');
     const fixture = TestBed.createComponent(DataPanel);
     fixture.detectChanges();
     const el = fixture.nativeElement as HTMLElement;

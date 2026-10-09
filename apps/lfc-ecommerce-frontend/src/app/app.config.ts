@@ -52,9 +52,9 @@ export const appConfig: ApplicationConfig = {
       withInterceptors([workspaceInterceptor, identityConflictInterceptor]),
     ),
     provideAuth(),
-    // Ce que la boutique permet, lu au DÉMARRAGE et sans attendre la réponse :
-    // le premier écran se dessine tout de suite, seules les gardes qui en
-    // dépendent patientent (cf. `featureAccessGuard`).
+    // Les niveaux de l'accès aux fonctionnalités (le seul mandat client depuis
+    // le 2026-10-09), lus au DÉMARRAGE et sans attendre la réponse : le premier
+    // écran se dessine tout de suite.
     provideAppInitializer(() => {
       void inject(ClientFeatureAccess).load();
     }),

@@ -1,5 +1,19 @@
 # L'ouverture de compte pro, et l'accès à la boutique piloté en admin
 
+> 🔴 **L'accès à la boutique piloté en admin est retiré le 2026-10-09** (Hugo).
+> Les clés `shop` (« Boutique », §2), `orders` (« Mes commandes »), `invoices`
+> (« Mes factures »), `desktopMenu` (« Menu au bureau », §11) et
+> `publicDelivery` (« Livraison aux particuliers ») ont quitté le catalogue,
+> avec la garde serveur `@RequiresShop` / `FeatureAccessGuard` /
+> `ShopClosedError`, les gardes et la promesse « ouvre bientôt » de l'app
+> cliente. Leur comportement est désormais celui de leur niveau le plus ouvert :
+> boutique ouverte à la commande, écrans et menus toujours montrés ; la
+> livraison aux particuliers ne dépend plus que du réglage « Livraison »
+> (`openToB2c`). Il ne reste au catalogue que `customerMandate`. Les lignes de
+> base de ces clés ne sont pas effacées : l'écran les signale (`unknown_key`),
+> rien ne les applique. **Tout ce qui suit sur ces clés décrit l'état d'avant
+> cette date** ; la porte pro, elle, est inchangée.
+
 > ⚠️ **Adresse changée le 2026-09-15.** La boutique est servie à la racine de
 > `lafoliecoffee.info` : la porte pro est désormais `/ouverture-compte-pro`.
 > L'ancien lien `/pro/ouverture-compte-pro`, que la commerciale a déjà donné,

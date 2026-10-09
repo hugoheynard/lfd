@@ -13,7 +13,7 @@ import { z } from "zod";
  * - **les valeurs sont ordonnées**, de la plus fermée à la plus ouverte. Une
  *   garde demande « au moins » un niveau, si bien qu'un niveau inséré plus tard
  *   ne demande de rouvrir aucune garde ;
- * - **le défaut du code est l'état d'avant ce module** (`order` pour `shop`) :
+ * - **le défaut du code est l'état d'avant ce module** :
  *   rien ne se ferme au déploiement, la fermeture est un geste d'admin.
  */
 

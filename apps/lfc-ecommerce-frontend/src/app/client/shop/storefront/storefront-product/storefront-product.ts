@@ -3,7 +3,6 @@ import type { PublicStorefrontContent } from '@lfd/contracts';
 import type { MediaFit, MediaSide, StorefrontShape, StorefrontTone } from '@lfd/storefront-layout';
 
 import { ClientCart } from '../../../cart/client-cart.service';
-import { ClientFeatureAccess } from '../../../feature-access/client-feature-access.service';
 import { ProductTile } from '../../product-tile/product-tile';
 import { ShopCatalogue } from '../../shop-catalogue.store';
 import { StorefrontActions } from '../storefront-actions';
@@ -38,7 +37,6 @@ export class StorefrontProduct implements StorefrontRenderer {
 
   private readonly catalogue = inject(ShopCatalogue);
   protected readonly cart = inject(ClientCart);
-  protected readonly access = inject(ClientFeatureAccess);
   protected readonly actions = inject(StorefrontActions);
 
   protected readonly item = computed(() => {

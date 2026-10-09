@@ -59,14 +59,6 @@ export class ProductTile {
   /** Ce qu'il y a déjà au panier. Zéro : le bouton redevient un « + ». */
   readonly quantity = input(0);
 
-  /**
-   * La boutique permet-elle d'ajouter au panier ? Faux au niveau `browse` (plan
-   * `plan-inscription-pro-seule.md` §4) : la vignette se regarde, et le geste
-   * d'ajout disparaît — à 112 px, il n'y a pas la place d'écrire pourquoi ; la
-   * fiche le dit.
-   */
-  readonly orderable = input(true);
-
   /** La forme de sa case de vitrine ; `null` hors vitrine composée. */
   readonly shape = input<StorefrontShape | null>(null);
   readonly mediaFit = input<MediaFit>('cover');

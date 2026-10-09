@@ -7,7 +7,6 @@ import {
   signal,
 } from '@angular/core';
 import { ActivatedRoute, Router } from '@angular/router';
-import type { ShopLevel } from '@lfd/contracts';
 import { FoldPanelHostService } from 'fold-ng';
 
 import { AuthFacade, type PendingProfile, type ProRegistration } from '../../auth/auth.facade';
@@ -17,7 +16,6 @@ import { ClientCopyService } from '../../client/copy/client-copy.service';
 import { ClientIdentity } from '../../client/client-identity.service';
 import { ClientLocale } from '../../client/client-locale.service';
 import { proAccountCopy } from '../../client/copy/screens/pro-account.copy';
-import { ClientFeatureAccess } from '../../client/feature-access/client-feature-access.service';
 import { WORKSPACE_HOME_ROUTE } from '../../client/client-workspace-switch.service';
 
 import { SignInDialog } from '../sign-in-dialog/sign-in-dialog';
@@ -75,7 +73,6 @@ export class AccueilPage {
   private readonly auth = inject(AuthFacade);
   private readonly router = inject(Router);
   private readonly locale = inject(ClientLocale);
-  private readonly access = inject(ClientFeatureAccess);
 
   protected readonly t = inject(ClientCopyService).t;
 
@@ -104,14 +101,6 @@ export class AccueilPage {
   private readonly panels = inject(FoldPanelHostService);
 
   private readonly proCopy = computed(() => proAccountCopy(this.locale.current()));
-
-  /**
-   * Le niveau de la boutique, pour la promesse « ouvre bientôt » de la porte
-   * pro. `null` tant que la lecture est en vol ; un échec vaut `closed`.
-   */
-  protected readonly shopLevel = computed<ShopLevel | null>(() =>
-    this.access.state() === 'loading' ? null : this.access.shop(),
-  );
 
   protected readonly kicker = computed(() =>
     this.door() === 'pro' ? this.proCopy().door.kicker : this.t().chrome.kickerWelcome,

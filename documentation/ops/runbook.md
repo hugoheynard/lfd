@@ -156,25 +156,22 @@ Dans `apps/lfc-*/wrangler.jsonc` : `"workers_dev": false` → `true`, commit,
 push. C'est un interrupteur de secours, pas un mode de fonctionnement — la
 passerelle reste le chemin normal.
 
-## Fermer ou ouvrir la boutique en ligne
+## Fermer ou ouvrir la boutique en ligne — ce geste n'existe plus
 
-Un réglage, pas un déploiement : **`/admin/feature-access`**, carte
-« Boutique », réservé à l'écriture `b2b_feature_access` (administrateurs).
-Trois niveaux : **Fermée** (rien, vitrine publique comprise), **Voir** (le
-catalogue et ses prix, sans commande), **Commander**. Le défaut du code est
-« Commander » : une base neuve est ouverte.
+> ⚠️ **Retiré le 2026-10-09** (Hugo). La clé « Boutique » (`shop`) a quitté
+> l'accès aux fonctionnalités, avec « Mes commandes », « Mes factures », « Menu
+> au bureau » et « Livraison aux particuliers » : la boutique est **toujours
+> ouverte à la commande**, et ces écrans toujours montrés. Il n'y a plus de
+> réglage pour fermer la vente en ligne ; la fermer demanderait un déploiement.
+>
+> La livraison aux particuliers ne se règle plus que dans **« Livraison »**
+> (`/b2b/reglages`, case B2C — `openToB2c`), que le serveur oppose au devis et
+> à la passation, avec ou sans compte.
 
-**Fermer, dans cet ordre** — l'inverse coupe les testeurs pendant l'intervalle :
+`/admin/feature-access` ne porte plus que le **mandat SEPA client**
+(`customerMandate`, fermé par défaut, sans exemption possible).
 
-1. dans « Adresses exemptées », ajouter les comptes de test ;
-2. **vérifier que chaque ligne affiche « vérifiée »**. « Non vérifiée » ou
-   « aucun compte » : l'exemption ne jouera pas. La cause la plus probable est
-   côté Auth0 — l'Action `add-email-claim` doit poser l'adresse ET
-   `email_verified` sur les jetons **clients** (`platform/auth/auth0-claims.ts`) ;
-   ou la personne n'a pas cliqué le lien de vérification ;
-3. choisir le niveau.
-
-**Comment savoir que ça a marché** — sans jeton :
+**Comment savoir ce qui est servi** — sans jeton :
 
 ```bash
 curl -s https://lfd-gateway.lafoliedouce.workers.dev/api/lfd/feature-access
@@ -183,19 +180,12 @@ curl -s https://lfd-gateway.lafoliedouce.workers.dev/api/lfd/feature-access
 (La passerelle est la seule porte publique et retire le préfixe `/api/lfd` —
 `documentation/ci-cd/architecture-deploiement.md`.)
 
-Attendu : `{"shop":"browse","orders":"visible","invoices":"visible","desktopMenu":"visible"}`
-(ou les niveaux posés — les trois dernières clés ne font que masquer des écrans
-de l'app, elles ne ferment rien côté API). Puis, toujours sans jeton,
-`POST /orders` ne doit plus passer : un **409** « Les commandes en ligne ne sont
-pas encore ouvertes. » — pas un 401, qui dirait seulement qu'il manque un jeton.
-Avec le compte d'un testeur exempté, l'app cliente montre la boutique entière.
+Attendu : `{"customerMandate":"closed"}` (ou `"open"` si l'admin l'a ouvert).
 
-**Ce qui reste ouvert quel que soit le niveau**, et c'est voulu : la saisie de
-commande par le staff (`POST /admin/orders`), les commandes **déjà passées**
-(suivi, QR de retrait, règlement, bon), et l'ouverture d'un compte pro.
-
-**Ouvrir** : poser « Commander », ou « Revenir au défaut ». Effet immédiat côté
-API (aucun cache) ; l'app cliente le prend au prochain chargement de page.
+**Les lignes d'avant ne sont pas effacées.** Une dérogation ou une exemption
+posée sur une clé retirée reste en base ; l'écran la liste en tête, sous
+« Des lignes en base ne correspondent pas au catalogue », et rien ne
+l'applique. Ce n'est pas une panne à corriger.
 
 ## Revenir en arrière
 

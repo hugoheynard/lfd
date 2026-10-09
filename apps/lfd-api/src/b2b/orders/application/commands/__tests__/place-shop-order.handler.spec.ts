@@ -8,9 +8,6 @@ import {
 } from "@lfd/contracts";
 
 import { ownPayers } from "./payer-doubles.js";
-import { FeatureLevelResolver } from "../../../../feature-access/application/feature-level.resolver.js";
-import { FeatureLevelLookup } from "../../../../feature-access/domain/ports/feature-level.lookup.js";
-import { PublicDeliveryClosedError } from "../../../../feature-access/domain/public-delivery-closed.error.js";
 import { DirectUnitOfWork } from "../../../../../platform/database/__tests__/direct-unit-of-work.js";
 import { RecordingPublisher } from "../../../../../platform/events/__tests__/recording-publisher.js";
 import { FixedClock } from "../../../../../platform/time/fixed-clock.js";
@@ -38,6 +35,7 @@ import { VolumeCommitmentReader } from "../../../../pricing/domain/ports/volume-
 import { VolumeLadderReader } from "../../../../pricing/domain/ports/volume-ladder.reader.js";
 import type { OrderToPlace } from "../../../domain/entities/order.js";
 import {
+  DeliveryClosedForAudienceError,
   IdempotencyKeyReusedError,
   OrderAlreadyInFlightError,
 } from "../../../domain/errors/order-errors.js";
@@ -234,7 +232,9 @@ function zones(found: DeliveryZoneView | null = null): DeliveryZoneRepository {
 }
 
 /** La composition réelle, montée sur les doubles ci-dessus. */
-function drafting(): OrderDrafting {
+function drafting(
+  delivery: DeliveryAvailabilityView = DEFAULT_DELIVERY_AVAILABILITY,
+): OrderDrafting {
   return new OrderDrafting(
     new OrderLinePricing(
       catalog,
@@ -255,7 +255,7 @@ function drafting(): OrderDrafting {
       new FixedClock(PRICED_AT),
     ),
     versionsAt("cver_courante"),
-    new CartAdjustments(pickups(), zones(), deliveryAvailability()),
+    new CartAdjustments(pickups(), zones(), deliveryAvailability(delivery)),
     noDeliveryDefaults,
     noOrderCutoffs,
     new FixedClock(PRICED_AT),
@@ -382,38 +382,9 @@ function payload(over: Partial<PlaceShopOrderPayload> = {}): PlaceShopOrderPaylo
   };
 }
 
-/**
- * Le VRAI résolveur, sur un faux port de lecture.
- *
- * ⚠️ Et non un doublé du résolveur : c'est lui qui décide si une dérogation
- * l'emporte sur le défaut du catalogue, et le doubler ferait passer ce test à
- * côté de la seule chose qu'il y ait à éprouver — que le niveau LU est bien
- * celui qui ferme.
- *
- * Ouvert par défaut : les cas de ce fichier éprouvent la passation, pas la
- * porte. Celui qui l'éprouve la ferme explicitement.
- */
-class FakeLevels extends FeatureLevelLookup {
-  constructor(private readonly level: "closed" | "open") {
-    super();
-  }
-
-  storedOverride(): Promise<string | null> {
-    return Promise.resolve(this.level);
-  }
-
-  isExempt(): Promise<boolean> {
-    return Promise.resolve(false);
-  }
-}
-
-function features(publicDelivery: "closed" | "open" = "open"): FeatureLevelResolver {
-  return new FeatureLevelResolver(new FakeLevels(publicDelivery));
-}
-
 /** Le handler et tout ce qu'il a touché, monté d'un coup. */
 function scene(
-  options: { readonly claim?: IdempotencyClaim; readonly publicDelivery?: "closed" | "open" } = {},
+  options: { readonly claim?: IdempotencyClaim; readonly delivery?: DeliveryAvailabilityView } = {},
 ) {
   const sink = { placed: null as OrderToPlace | null };
   const paid: PaymentCalls = { intent: null, retrieved: 0 };
@@ -423,7 +394,7 @@ function scene(
   const durable = new RecordingDurable();
   const handler = new PlaceShopOrderHandler(
     buyers,
-    drafting(),
+    drafting(options.delivery),
     capturingRepo(sink),
     payments(paid),
     published,
@@ -431,7 +402,6 @@ function scene(
     keys,
     noReader,
     new DirectUnitOfWork(),
-    features(options.publicDelivery),
     durable,
   );
   return { handler, sink, paid, keys, buyers, published, durable };
@@ -637,7 +607,12 @@ describe("PlaceShopOrderHandler — ce qui échoue avant l'écriture", () => {
  * depuis l'onglet réseau ferait livrer quand même, et l'admin qui a « fermé »
  * la livraison croirait l'avoir fermée.
  */
-describe("PlaceShopOrderHandler — la porte de la livraison publique", () => {
+/**
+ * La clé `publicDelivery` a été retirée le 2026-10-09 : la livraison sans
+ * compte ne dépend plus que du réglage « Livraison » (`openToB2c`), opposé par
+ * `CartAdjustments` pendant la composition — la même lecture que le devis.
+ */
+describe("PlaceShopOrderHandler — la livraison fermée aux particuliers", () => {
   const LIVRAISON = payload({
     fulfillmentMethod: "delivery",
     pickupAddressId: null,
@@ -650,52 +625,25 @@ describe("PlaceShopOrderHandler — la porte de la livraison publique", () => {
       pays: "France",
     },
   });
+  const CLOSED_TO_B2C = { ...DEFAULT_DELIVERY_AVAILABILITY, openToB2c: false };
 
-  it("🔴 refuse une livraison quand la clé est fermée", async () => {
-    const { handler } = scene({ publicDelivery: "closed" });
+  it("🔴 refuse une livraison quand le réglage la ferme aux particuliers, et rend la clé", async () => {
+    const { handler, sink, keys } = scene({ delivery: CLOSED_TO_B2C });
 
     await expect(handler.execute(new PlaceShopOrderCommand(LIVRAISON))).rejects.toBeInstanceOf(
-      PublicDeliveryClosedError,
+      DeliveryClosedForAudienceError,
     );
+    expect(sink.placed).toBeNull();
+    // Refusé pendant la composition, donc APRÈS la réclamation : la clé est
+    // rendue pour que le client puisse choisir le retrait et renvoyer.
+    expect(keys.released).toEqual([LIVRAISON.idempotencyKey]);
   });
 
-  /**
-   * ⚠️ **ET LA CLÉ D'IDEMPOTENCE N'EST PAS RÉCLAMÉE.** Le refus se prononce sur
-   * le seul contenu du corps, avant toute écriture : une clé réclamée puis
-   * relâchée laisserait une trace et ferait porter au client un rejeu qui
-   * n'aurait jamais dû commencer.
-   */
-  it("🔴 refuse SANS réclamer la clé d'idempotence", async () => {
-    const { handler, keys } = scene({ publicDelivery: "closed" });
-
-    await expect(handler.execute(new PlaceShopOrderCommand(LIVRAISON))).rejects.toThrow();
-
-    expect(keys.claimed).toEqual([]);
-    expect(keys.released).toEqual([]);
-  });
-
-  /** Le RETRAIT ne dépend pas de cette clé : elle ne parle que de livraison. */
-  it("laisse passer un retrait, clé fermée", async () => {
-    const { handler, sink } = scene({ publicDelivery: "closed" });
+  it("laisse passer un retrait, livraison fermée aux particuliers", async () => {
+    const { handler, sink } = scene({ delivery: CLOSED_TO_B2C });
 
     await handler.execute(new PlaceShopOrderCommand(payload()));
 
     expect(sink.placed).not.toBeNull();
-  });
-
-  /**
-   * ⚠️ **Ce test s'arrête à la PORTE, pas à la commande.** La scène de ce
-   * fichier ne sert aucune zone de livraison — la passation échoue donc plus
-   * bas, sur « aucune zone ne dessert ce code postal ». C'est exactement ce
-   * qu'on veut montrer : clé ouverte, le refus qui survient n'est plus le
-   * NÔTRE. Monter une zone ici ferait de ce cas un test de tarification, qui a
-   * déjà le sien.
-   */
-  it("laisse passer la porte quand la clé est ouverte", async () => {
-    const { handler } = scene({ publicDelivery: "open" });
-
-    await expect(handler.execute(new PlaceShopOrderCommand(LIVRAISON))).rejects.not.toBeInstanceOf(
-      PublicDeliveryClosedError,
-    );
   });
 });

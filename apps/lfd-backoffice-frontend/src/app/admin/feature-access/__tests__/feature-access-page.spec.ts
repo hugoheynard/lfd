@@ -20,7 +20,7 @@ import { FeatureAccessService } from '../feature-access.service';
  * - **« Revenir au défaut » n'apparaît que sur une dérogation** : sans elle, il
  *   n'y a pas de défaut vers lequel revenir ;
  * - 🔴 **l'état du compte d'une adresse exemptée se lit** : le runbook exige
- *   de voir « vérifiée » avant de fermer la boutique ;
+ *   de voir « vérifiée » avant de fermer une fonctionnalité ;
  * - 🔴 **une ligne hors catalogue est signalée, jamais peinte en réglage** ;
  * - un refus du serveur est notifié, et l'écran relit au lieu de garder le
  *   geste refusé.
@@ -39,14 +39,19 @@ function exemption(over: Partial<FeatureExemptionView> = {}): FeatureExemptionVi
   };
 }
 
-function shop(over: Partial<AdminFeatureView> = {}): AdminFeatureView {
+/**
+ * La seule clé du catalogue depuis le 2026-10-09. Posée EXEMPTIBLE ici : l'écran
+ * peint ce que le serveur dit (`exemptible`), et la liste d'exemption reste son
+ * comportement à éprouver même si aucune clé servie ne l'ouvre aujourd'hui.
+ */
+function mandate(over: Partial<AdminFeatureView> = {}): AdminFeatureView {
   return {
-    key: 'shop',
-    label: 'Boutique',
-    description: 'Ce que les clients peuvent faire de la boutique en ligne.',
-    levels: ['closed', 'browse', 'order'],
-    defaultLevel: 'order',
-    effectiveLevel: 'order',
+    key: 'customerMandate',
+    label: 'Mandat SEPA client',
+    description: 'La génération et le dépôt du mandat depuis « Mon compte ».',
+    levels: ['closed', 'open'],
+    defaultLevel: 'closed',
+    effectiveLevel: 'closed',
     exemptible: true,
     override: null,
     exemptions: [],
@@ -55,7 +60,7 @@ function shop(over: Partial<AdminFeatureView> = {}): AdminFeatureView {
 }
 
 function board(over: Partial<AdminFeatureAccessView> = {}): AdminFeatureAccessView {
-  return { features: [shop()], ignored: [], ...over };
+  return { features: [mandate()], ignored: [], ...over };
 }
 
 class FakeFeatureAccess {
@@ -133,10 +138,10 @@ describe('FeatureAccessPage', () => {
       const { fixture } = await render(
         board({
           features: [
-            shop({
-              effectiveLevel: 'browse',
+            mandate({
+              effectiveLevel: 'open',
               override: {
-                value: 'browse',
+                value: 'open',
                 updatedAt: '2026-09-14T09:00:00.000Z',
                 updatedBy: AUTHOR,
               },
@@ -155,7 +160,7 @@ describe('FeatureAccessPage', () => {
       expect(buttonSaying(fixture, 'Ajouter')).toBeNull();
       expect(text(fixture)).toContain('Lecture seule');
       // Ce qu'il doit pouvoir dire à un client reste lisible.
-      expect(text(fixture)).toContain('Voir');
+      expect(text(fixture)).toContain('Ouvert');
       expect(text(fixture)).toContain('Posé par Hugo Heynard');
       expect(text(fixture)).toContain('testeur@lfc.test');
     });
@@ -179,7 +184,7 @@ describe('FeatureAccessPage', () => {
       const { fixture } = await render(
         board({
           features: [
-            shop({
+            mandate({
               key: 'customerMandate',
               label: 'Mandat SEPA client',
               levels: ['closed', 'open'],
@@ -210,10 +215,10 @@ describe('FeatureAccessPage', () => {
       const { fixture, api } = await render(
         board({
           features: [
-            shop({
-              effectiveLevel: 'closed',
+            mandate({
+              effectiveLevel: 'open',
               override: {
-                value: 'closed',
+                value: 'open',
                 updatedAt: '2026-09-14T09:00:00.000Z',
                 updatedBy: AUTHOR,
               },
@@ -228,7 +233,7 @@ describe('FeatureAccessPage', () => {
       expect(revert).not.toBeNull();
       revert?.click();
       await fixture.whenStable();
-      expect(api.clearOverride).toHaveBeenCalledWith('shop');
+      expect(api.clearOverride).toHaveBeenCalledWith('customerMandate');
     });
 
     it('ne pose rien quand on choisit le niveau déjà en vigueur', async () => {
@@ -239,11 +244,11 @@ describe('FeatureAccessPage', () => {
         return;
       }
 
-      await fixture.componentInstance['chooseLevel'](card, 'order');
+      await fixture.componentInstance['chooseLevel'](card, 'closed');
       expect(api.setOverride).not.toHaveBeenCalled();
 
-      await fixture.componentInstance['chooseLevel'](card, 'browse');
-      expect(api.setOverride).toHaveBeenCalledWith('shop', 'browse');
+      await fixture.componentInstance['chooseLevel'](card, 'open');
+      expect(api.setOverride).toHaveBeenCalledWith('customerMandate', 'open');
     });
 
     it('notifie un refus et relit, au lieu de garder le geste refusé', async () => {
@@ -255,7 +260,7 @@ describe('FeatureAccessPage', () => {
       api.refuse = true;
       const readsBefore = api.board.mock.calls.length;
 
-      await fixture.componentInstance['chooseLevel'](card, 'closed');
+      await fixture.componentInstance['chooseLevel'](card, 'open');
 
       expect(notifyError).toHaveBeenCalledTimes(1);
       expect(api.board.mock.calls.length).toBe(readsBefore + 1);
@@ -271,11 +276,11 @@ describe('FeatureAccessPage', () => {
         throw new Error('carte absente');
       }
 
-      page['setDraft']('shop', '  testeur@lfc.test ');
+      page['setDraft']('customerMandate', '  testeur@lfc.test ');
       await page['addExemption'](card);
 
-      expect(api.addExemption).toHaveBeenCalledWith('shop', 'testeur@lfc.test');
-      expect(page['draft']('shop')).toBe('');
+      expect(api.addExemption).toHaveBeenCalledWith('customerMandate', 'testeur@lfc.test');
+      expect(page['draft']('customerMandate')).toBe('');
     });
 
     it("garde l'adresse saisie quand l'ajout est refusé", async () => {
@@ -289,10 +294,10 @@ describe('FeatureAccessPage', () => {
       }
       api.refuse = true;
 
-      page['setDraft']('shop', 'pas-une-adresse');
+      page['setDraft']('customerMandate', 'pas-une-adresse');
       await page['addExemption'](card);
 
-      expect(page['draft']('shop')).toBe('pas-une-adresse');
+      expect(page['draft']('customerMandate')).toBe('pas-une-adresse');
     });
   });
 
@@ -301,7 +306,7 @@ describe('FeatureAccessPage', () => {
       const { fixture } = await render(
         board({
           features: [
-            shop({
+            mandate({
               exemptions: [
                 exemption({ id: 'a', email: 'ok@lfc.test', accountState: 'verified' }),
                 exemption({ id: 'b', email: 'pas-encore@lfc.test', accountState: 'unverified' }),
@@ -322,7 +327,7 @@ describe('FeatureAccessPage', () => {
 
     it("nomme l'adresse dans la confirmation de retrait", async () => {
       const { fixture } = await render(
-        board({ features: [shop({ exemptions: [exemption({ email: 'retire@lfc.test' })] })] }),
+        board({ features: [mandate({ exemptions: [exemption({ email: 'retire@lfc.test' })] })] }),
         WRITER,
       );
       const page = fixture.componentInstance;
@@ -358,8 +363,8 @@ describe('FeatureAccessPage', () => {
       // clé arrive du FIL, donc hors du type — d'où le passage par JSON plutôt
       // qu'un cast, qui mentirait sur la provenance.
       const wire: AdminFeatureAccessView = JSON.parse(
-        JSON.stringify(board({ features: [shop(), shop()] })).replace(
-          /"key":"shop"(?![\s\S]*"key":"shop")/,
+        JSON.stringify(board({ features: [mandate(), mandate()] })).replace(
+          /"key":"customerMandate"(?![\s\S]*"key":"customerMandate")/,
           '"key":"loyalty"',
         ),
       );

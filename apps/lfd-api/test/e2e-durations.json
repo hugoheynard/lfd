@@ -115,7 +115,6 @@
   "test/devis-comptable.e2e-spec.ts": 4320,
   "test/direct-debit-blocks.e2e-spec.ts": 6182,
   "test/families-in-data-migration.e2e-spec.ts": 4921,
-  "test/feature-access-guards.e2e-spec.ts": 5668,
   "test/feature-access.e2e-spec.ts": 6862,
   "test/first-mandate-ledger.e2e-spec.ts": 4004,
   "test/fulfillment-days.e2e-spec.ts": 3668,

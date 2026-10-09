@@ -145,13 +145,6 @@ describe('ProductTile', () => {
     expect(el.querySelector('.quick')?.textContent?.trim()).toBe('3');
   });
 
-  it('au niveau `browse`, ne propose aucun ajout', () => {
-    fixture.componentRef.setInput('orderable', false);
-    fixture.detectChanges();
-
-    expect((fixture.nativeElement as HTMLElement).querySelector('.quick')).toBeNull();
-  });
-
   /**
    * Le best-seller se distingue par sa pastille ; une pièce ordinaire n'en a
    * pas — aucun chiffre de vente n'est servi, aucun n'est affiché.

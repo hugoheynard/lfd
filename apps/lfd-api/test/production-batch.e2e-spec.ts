@@ -28,7 +28,6 @@ import {
   serviceDay,
   type E2eContext,
 } from "./e2e-harness.js";
-import { openPublicDelivery } from "./public-delivery-scene.js";
 import { binTypeId } from "./delivery-loading-scene.js";
 import { fillOrder, packingOrderPath } from "./production-day-fixture.js";
 import { attachTo, createCompany, createUser } from "./factories.js";
@@ -105,7 +104,6 @@ afterAll(async () => {
 
 beforeEach(async () => {
   await ctx.reset();
-  await openPublicDelivery(ctx);
 });
 
 /** Sème une société active, son membre, sa zone, et son adresse de carnet. */

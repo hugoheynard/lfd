@@ -11,7 +11,6 @@ import { ActingCompany } from "../../../platform/auth/acting-company.decorator.j
 import { CurrentUser } from "../../../platform/auth/current-user.decorator.js";
 import type { Principal } from "../../../platform/auth/principal.js";
 import { ZodBody } from "../../../platform/shared/http/zod-body.pipe.js";
-import { RequiresShop } from "../../feature-access/http/requires-shop.decorator.js";
 import { SaveShopCartCommand } from "../application/commands/save-shop-cart.command.js";
 import { GetShopCartQuery } from "../application/queries/get-shop-cart.query.js";
 
@@ -70,7 +69,6 @@ export class ShopCartController {
   ) {}
 
   /** Le panier en cours de l'espace — `{ cart: null }` quand il n'y en a pas. */
-  @RequiresShop("browse")
   @Get()
   async mine(
     @CurrentUser() user: Principal,
@@ -83,7 +81,6 @@ export class ShopCartController {
   }
 
   /** Met le panier de l'espace de côté. Propriétaire et espace viennent de la porte. */
-  @RequiresShop("browse")
   @Put()
   async save(
     @CurrentUser() user: Principal,

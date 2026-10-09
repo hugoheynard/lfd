@@ -1,5 +1,4 @@
 import { FR } from '../../../copy/fr';
-import { openShopAt } from '../../../feature-access/feature-access.fixture';
 import { bootCard, TOMMEUSES } from '../../account.fixture';
 import { DataDeskCard } from './data-desk-card';
 
@@ -13,7 +12,6 @@ describe('DataDeskCard', () => {
    */
   it('garde les deux exports, la conservation et les deux gestes sensibles', () => {
     const fixture = bootCard(DataDeskCard, [TOMMEUSES]);
-    openShopAt('order');
     fixture.detectChanges();
     const el = fixture.nativeElement as HTMLElement;
 
@@ -25,14 +23,5 @@ describe('DataDeskCard', () => {
     ]);
     expect(el.textContent).toContain(FR.account.dataKeep);
     expect(el.querySelector('fold-callout')?.textContent).toContain(FR.account.closeBody);
-  });
-
-  it('sous `order`, retire l’export des commandes et garde l’export personnel', () => {
-    const fixture = bootCard(DataDeskCard, [TOMMEUSES]);
-    openShopAt('browse');
-    fixture.detectChanges();
-
-    expect(labels(fixture.nativeElement as HTMLElement)).not.toContain(FR.account.dataExportOrders);
-    expect(labels(fixture.nativeElement as HTMLElement)).toContain(FR.account.dataExportPersonal);
   });
 });

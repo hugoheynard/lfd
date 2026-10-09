@@ -25,7 +25,6 @@ import { OrderContextStore } from '../../../client/order-context.store';
 import { AuthFacade } from '../../../auth/auth.facade';
 import { ClientOrders } from '../../../client/client-orders.service';
 import { ClientCopyService, fill } from '../../../client/copy/client-copy.service';
-import { ClientFeatureAccess } from '../../feature-access/client-feature-access.service';
 import { ShopCatalogue } from '../shop-catalogue.store';
 import { Shop } from '../shop.service';
 import { ShopStorefront } from '../storefront/shop-storefront.store';
@@ -99,8 +98,6 @@ export class ShopPage {
 
   protected readonly t = inject(ClientCopyService).t;
   protected readonly cart = inject(ClientCart);
-  /** Au niveau `browse` exactement, la fiche porte une mention au lieu du geste d'ajout (plan §4). */
-  protected readonly access = inject(ClientFeatureAccess);
 
   protected readonly shop = inject(Shop);
   private readonly catalogue = inject(ShopCatalogue);

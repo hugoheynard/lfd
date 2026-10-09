@@ -30,8 +30,6 @@ export const EN: ClientCopy = {
     kickerDone: 'Confirmed',
     deskKicker: 'Val d’Isère · order online',
     brandLine: 'Bakery · Val d’Isère',
-    featureAccessFailed:
-      'We couldn’t check what the shop offers right now, so some pages stay closed. Reload the page to try again.',
     accountMenu: 'My personal account',
     myProfile: 'My profile',
     workspaceChoice: 'Workspace',
@@ -226,7 +224,6 @@ export const EN: ClientCopy = {
       'Empty basket. The morning batch goes fast — the praline ski never sees the afternoon.',
     upsell: '{name} with that?',
     upsellLine: 'The treat you regret leaving behind.',
-    orderingSoon: 'Online ordering opens soon.',
     operationOpensOn: 'Opens {date}',
     operationNotOpen: 'Not open yet',
     operationClosed: 'Orders closed',

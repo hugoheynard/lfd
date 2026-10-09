@@ -152,11 +152,14 @@ async function coldOperationsOf(run: () => Promise<unknown>): Promise<number> {
  * (`OrderDeliveryVatReader`, plan `documentation/order/plan-tva-des-frais-de-port.md`),
  * UNE fois par devis, pour répondre comme la passation. Constante elle aussi.
  *
+ * 🔴 **De 8 à 7 le 2026-10-09** : la lecture du flag boutique (celle du
+ * 2026-09-14, plus haut) a disparu avec la clé `shop` et sa garde.
+ *
  * ⚠️ **La thèse du fichier n'a pas bougé** : ce qui compte n'est pas 4, 5, 6, 7
  * ou 8, c'est que dix lignes coûtent le même nombre qu'une seule. C'est l'égalité
  * qui attrape un N+1, pas la valeur absolue.
  */
-const COLD_QUOTE_OPS = 8;
+const COLD_QUOTE_OPS = 7;
 
 /**
  * Sème `count` règles de promotion **distinctes**.

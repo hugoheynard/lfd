@@ -10,34 +10,23 @@
  *
  * Ce module n'importe rien. `feature-access.ts` le réexporte : le backend et le
  * baril n'y voient aucune différence. Un front importe ses valeurs par
- * `@lfd/contracts/feature-access-levels`.
+ * `@lfd/contracts/feature-access-levels` — aucun ne le fait depuis le
+ * 2026-10-09 (vérifié ce jour-là) : l'app cliente n'en tirait que `isAtLeast`
+ * pour la boutique, retirée. Le sous-chemin reste, pour qu'une valeur ajoutée
+ * ici ne repasse jamais par le baril et zod.
  *
  * Plan et décisions : `documentation/auth-inscription/plan-inscription-pro-seule.md` §2.
  */
-
-/** Les niveaux de la boutique, du plus fermé au plus ouvert. L'ordre EST la règle. */
-export const SHOP_LEVELS = ["closed", "browse", "order"] as const;
-export type ShopLevel = (typeof SHOP_LEVELS)[number];
-
-/**
- * Les niveaux d'une surface qu'on MONTRE ou qu'on cache dans l'app cliente.
- *
- * ⚠️ Masquer n'est pas fermer : ces clés ne gardent aucune route serveur. Une
- * commande déjà passée garde son suivi, son règlement et son QR de retrait par
- * lien direct (décision de Hugo, 2026-09-14).
- */
-export const VISIBILITY_LEVELS = ["hidden", "visible"] as const;
-export type VisibilityLevel = (typeof VISIBILITY_LEVELS)[number];
 
 /**
  * Les niveaux d'une surface que le SERVEUR ferme : `closed` refuse la route en
  * 409, `open` la sert.
  *
- * ⚠️ Distincts de {@link VISIBILITY_LEVELS}, et c'est le sujet : `hidden` ne
- * ferme rien, `closed` si. Réutiliser `hidden`/`visible` pour une clé gardée
- * ferait lire « masqué » là où la route refuse — la confusion même que la
- * contradiction du plan mandat client a relevée (plan
- * `documentation/comptabilite/mandat/plan-mandat-client.md` §6 #1, 2026-09-14).
+ * ⚠️ Ils ne disent pas `hidden`/`visible`, et c'est le sujet : masquer ne
+ * ferme rien, `closed` si — la confusion que la contradiction du plan mandat
+ * client a relevée (plan `documentation/comptabilite/mandat/plan-mandat-client.md`
+ * §6 #1, 2026-09-14). Les niveaux de visibilité ont disparu avec leurs clés le
+ * 2026-10-09.
  */
 export const GATE_LEVELS = ["closed", "open"] as const;
 export type GateLevel = (typeof GATE_LEVELS)[number];
@@ -62,57 +51,23 @@ export interface FeatureDefinition<Level extends string> {
 }
 
 /**
+ * **Les clés retirées le 2026-10-09** (Hugo) : `shop`, `orders`, `invoices`,
+ * `desktopMenu`, `publicDelivery`. Leur comportement est désormais celui de leur
+ * niveau le plus ouvert — boutique ouverte à la commande, menus et écrans
+ * toujours montrés — et la livraison aux particuliers ne dépend plus que du
+ * réglage admin « Livraison » (`openToB2c`), que la composition du panier
+ * applique au devis comme à la passation. Deux réglages pour une même porte se
+ * contredisaient. Les lignes de base qui les portent encore ne sont pas
+ * effacées : le catalogue ne les connaît plus, l'écran admin les signale
+ * (`unknown_key`) et rien ne les interprète.
+ */
+
+/**
  * **Le catalogue fermé.** Un flag de plus est une décision, pas une ligne qu'on
- * ajoute en passant (plan §7) : `shop` le 2026-09-14, puis les trois surfaces
- * masquables le même jour, à la demande de Hugo.
+ * ajoute en passant (plan §7). Il ne porte plus que `customerMandate` depuis le
+ * 2026-10-09 (cf. plus haut).
  */
 export const FEATURE_CATALOGUE = {
-  shop: {
-    label: "Boutique",
-    description:
-      "Ce que les clients peuvent faire de la boutique en ligne : rien (fermée), voir le catalogue et ses prix, ou commander.",
-    levels: SHOP_LEVELS,
-    defaultLevel: "order",
-    exemptible: true,
-  },
-  orders: {
-    label: "Mes commandes",
-    description:
-      "La liste « Mes commandes » de l'app cliente et son entrée de menu. Masquée, le suivi, le règlement et le QR de retrait d'une commande restent joignables par lien direct.",
-    levels: VISIBILITY_LEVELS,
-    defaultLevel: "visible",
-    exemptible: true,
-  },
-  invoices: {
-    label: "Mes factures",
-    description: "L'écran « Mes factures » de l'app cliente et son entrée de menu.",
-    levels: VISIBILITY_LEVELS,
-    defaultLevel: "visible",
-    exemptible: true,
-  },
-  desktopMenu: {
-    label: "Menu au bureau",
-    description:
-      "La sous-barre d'onglets sous le bandeau, sur grand écran. Le menu du téléphone et la barre du haut ne changent pas.",
-    levels: VISIBILITY_LEVELS,
-    defaultLevel: "visible",
-    exemptible: true,
-  },
-  publicDelivery: {
-    label: "Livraison aux particuliers",
-    description:
-      "La livraison par coursier pour les particuliers et les visiteurs. Fermée, la porte du coursier ne leur est pas montrée et `POST /shop/orders` refuse une commande en livraison. Les PROS gardent la leur : elle tient à leur contrat, pas à ce réglage.",
-    levels: GATE_LEVELS,
-    // 🔴 FERMÉE PAR DÉFAUT (Hugo, 2026-09-21). Ouvrir la livraison à qui n'a pas
-    // de compte est une décision commerciale — une tournée à faire, une adresse
-    // qu'aucun carnet ne vérifie — et un défaut ouvert l'aurait prise à la
-    // place de celui qui déploie.
-    defaultLevel: "closed",
-    // Exemptible : c'est justement ainsi qu'on l'essaie sur une adresse avant
-    // de l'ouvrir à tous. Rien de ce qu'elle ouvre n'est opposable — le
-    // paiement précède la livraison, il n'y a pas de crédit accordé.
-    exemptible: true,
-  },
   customerMandate: {
     label: "Mandat SEPA client",
     description:
@@ -131,17 +86,7 @@ export type FeatureLevel<Key extends FeatureKey = FeatureKey> =
   (typeof FEATURE_CATALOGUE)[Key]["levels"][number];
 
 /** Les clés, dans l'ordre du catalogue. */
-export const FEATURE_KEYS: readonly FeatureKey[] = [
-  "shop",
-  "orders",
-  "invoices",
-  "desktopMenu",
-  "publicDelivery",
-  "customerMandate",
-];
-
-/** Les clés qui se montrent ou se cachent, sans garde serveur. */
-export type VisibilityFeatureKey = "orders" | "invoices" | "desktopMenu";
+export const FEATURE_KEYS: readonly FeatureKey[] = ["customerMandate"];
 
 /**
  * Les clés qu'aucune exemption n'ouvre — calculées depuis le catalogue, pour

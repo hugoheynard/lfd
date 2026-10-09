@@ -3,12 +3,7 @@ import { HttpTestingController, provideHttpClientTesting } from '@angular/common
 import { signal } from '@angular/core';
 import { TestBed } from '@angular/core/testing';
 import { provideRouter, Router } from '@angular/router';
-import {
-  PERSONAL_WORKSPACE,
-  type CompanyView,
-  type ShopLevel,
-  type SubscriptionView,
-} from '@lfd/contracts';
+import { PERSONAL_WORKSPACE, type CompanyView, type SubscriptionView } from '@lfd/contracts';
 
 import { OPEN_LOYALTY } from '../client-loyalty.fixture';
 import { ClientLoyalty } from '../client-loyalty.service';
@@ -21,8 +16,6 @@ import { AccountService } from '../../account/account.service';
 import { provideRecognised } from '../client-orders.fixture';
 import { ClientOrderHistory } from '../mes-commandes/client-order-history.service';
 import { LIVE_PICKUP } from '../mes-commandes/order-view.fixture';
-import { ClientFeatureAccess } from '../feature-access/client-feature-access.service';
-import { DEFAULT_SURFACES, openShopAt } from '../feature-access/feature-access.fixture';
 import { ClientNav } from './client-nav.service';
 import { provideWorkspace, workspaceDouble } from '../client-workspace.fixture';
 import { TOMMEUSES } from '../mon-compte/account.fixture';
@@ -55,8 +48,6 @@ describe('Les destinations du menu', () => {
       ],
     });
     hydrateWith(TestBed.inject(ShopCatalogue), TEST_CATALOGUE);
-    // Ces cas décrivent le menu COMPLET : la boutique permet de commander.
-    openShopAt('order');
   });
 
   it('garde le même ordre, panier vide comme panier plein', () => {
@@ -65,22 +56,6 @@ describe('Les destinations du menu', () => {
 
     TestBed.inject(ClientCart).add('VIE-001');
     expect(nav.items().map((i) => i.id)).toEqual(ORDER);
-  });
-
-  /** Masquées en admin, les deux destinations partent ; les autres gardent leur ordre. */
-  it('retire commandes et factures quand l’admin les masque', () => {
-    TestBed.inject(ClientFeatureAccess).receive({
-      shop: 'order',
-      ...DEFAULT_SURFACES,
-      orders: 'hidden',
-      invoices: 'hidden',
-    });
-
-    expect(
-      TestBed.inject(ClientNav)
-        .items()
-        .map((i) => i.id),
-    ).toEqual(['shop', 'baskets', 'account']);
   });
 
   it('ne porte PAS le panier — il vit dans la barre, pas dans le menu', () => {
@@ -171,78 +146,6 @@ describe('Les destinations du menu', () => {
   });
 });
 
-/** Plan `plan-inscription-pro-seule.md` §4 : le menu suit ce que la boutique permet. */
-describe('Les destinations du menu, selon la boutique', () => {
-  function boot(): void {
-    localStorage.clear();
-    TestBed.resetTestingModule();
-    TestBed.configureTestingModule({
-      providers: [
-        provideRouter(ROUTES),
-        provideHttpClient(),
-        provideHttpClientTesting(),
-        provideRecognised(),
-      ],
-    });
-  }
-
-  const SHOWN: Readonly<Record<ShopLevel, readonly string[]>> = {
-    closed: ['orders', 'invoices', 'account'],
-    browse: ['shop', 'orders', 'invoices', 'account'],
-    order: ORDER,
-  };
-
-  for (const level of ['closed', 'browse', 'order'] as const) {
-    it(`boutique « ${level} » : retire des destinations, n’en réordonne aucune`, () => {
-      boot();
-      openShopAt(level);
-
-      const ids = TestBed.inject(ClientNav)
-        .items()
-        .map((i) => i.id);
-      expect(ids).toEqual(SHOWN[level]);
-      // Ce qui reste suit l'ordre figé : c'est une sous-suite, jamais un
-      // réarrangement.
-      expect(ids).toEqual(ORDER.filter((id) => ids.includes(id)));
-    });
-  }
-
-  /** Tant que les niveaux ne sont pas lus, on ne promet rien de ce qui peut être fermé. */
-  it('pendant la lecture, et après son échec, montre le menu de `closed`', () => {
-    boot();
-    const nav = TestBed.inject(ClientNav);
-    expect(nav.items().map((i) => i.id)).toEqual(SHOWN.closed);
-  });
-
-  /**
-   * Plan §9 : « le menu réduit ne lit plus ce qu'il ne montre pas ». Les paniers
-   * récurrents partaient lire `/subscriptions/mine` même quand leur destination
-   * n'était pas montrée.
-   */
-  it('ne lit les paniers récurrents qu’au niveau où il les montre', async () => {
-    const asked = async (): Promise<number> => {
-      TestBed.inject(ClientNav).items();
-      TestBed.tick();
-      // Le jeton, puis la requête : deux micro-tâches.
-      await Promise.resolve();
-      await Promise.resolve();
-      return TestBed.inject(HttpTestingController).match((r) =>
-        r.url.endsWith('/subscriptions/mine'),
-      ).length;
-    };
-
-    boot();
-    openShopAt('browse');
-    expect(await asked()).toBe(0);
-
-    // Le témoin : au niveau `order`, la lecture part bien — sans lui, le zéro
-    // ci-dessus ne prouverait rien.
-    boot();
-    openShopAt('order');
-    expect(await asked()).toBe(1);
-  });
-});
-
 /**
  * En perso, les écrans d'une SOCIÉTÉ n'ont rien à montrer (Hugo, 2026-09-15) —
  * mais seulement pour qui en a une : sans société, Mon compte est la porte pro.
@@ -271,7 +174,6 @@ describe('Les destinations du menu, selon l’espace', () => {
         },
       ],
     });
-    openShopAt('order');
     return TestBed.inject(ClientNav)
       .items()
       .map((i) => i.id);
@@ -317,7 +219,6 @@ describe('Le lien « Ma fidélité »', () => {
         { provide: ClientLoyalty, useValue: { isOpen: signal(open) } },
       ],
     });
-    openShopAt('order');
     return TestBed.inject(ClientNav)
       .items()
       .map((i) => i.id);
@@ -352,7 +253,6 @@ describe('Le lien « Ma fidélité », branché sur le vrai service', () => {
         provideWorkspace(workspaceDouble(current)),
       ],
     });
-    openShopAt('order');
   }
 
   it('paraît en espace personnel quand `me/loyalty` le dit ouvert', async () => {

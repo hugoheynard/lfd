@@ -28,8 +28,9 @@ import { PrismaFeatureOverrideRepository } from "./infrastructure/prisma-feature
  * Importe `AccountModule` pour le seul `StaffDirectory` : l'auteur d'un écart
  * est figé comme celui d'une certification de KBIS, par le même port.
  *
- * Exporte `FeatureLevelResolver` : `FeatureAccessGuard`, enregistrée à la racine
- * de composition, le consomme. Rien d'autre n'en sort.
+ * Exporte `FeatureLevelResolver` : la porte du mandat client
+ * (`payments/infrastructure/feature-access-customer-mandate-gate.ts`) le
+ * consomme. Rien d'autre n'en sort.
  */
 @Module({
   imports: [AccountModule],

@@ -606,6 +606,8 @@ describe('les demandes de contact', () => {
 });
 
 describe('l’accès aux fonctionnalités', () => {
+  // `shop` est retirée du catalogue depuis le 2026-10-09 : ces faits passés
+  // gardent leurs mots par la table des clés retirées (`feature-levels.ts`).
   function feature(type: string, payload: Record<string, unknown>): FactInput {
     return { ...company(type, payload), subjectType: 'feature_access', subjectId: 'shop' };
   }

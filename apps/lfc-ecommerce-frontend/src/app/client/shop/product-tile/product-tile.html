@@ -53,7 +53,7 @@
         <!-- Un article d'opération pas encore (ou plus) ouverte : l'état prend la
              place du « + » — l'ajouter ferait un panier que la caisse refuse. -->
         <fold-badge variant="neutral" [content]="closedLabel" />
-      } @else if (orderable()) {
+      } @else {
         <!-- UN seul geste, aux deux densités : il ajoute, et porte la quantité
              une fois l'article au panier. Le retrait se fait dans la fiche. -->
         <button

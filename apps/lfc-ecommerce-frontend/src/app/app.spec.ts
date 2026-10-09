@@ -4,7 +4,7 @@ import { convertToParamMap, provideRouter, Router, type Route, UrlTree } from '@
 import { servedByClientShell } from './app';
 import { routes } from './app.routes';
 import { ClientFeatureAccess } from './client/feature-access/client-feature-access.service';
-import { DEFAULT_SURFACES } from './client/feature-access/feature-access.fixture';
+import { DEFAULT_LEVELS } from './client/feature-access/feature-access.fixture';
 
 /**
  * Le chrome PRO ne doit jamais s'enrouler autour d'un écran CLIENT.
@@ -26,8 +26,8 @@ describe('Le chrome de l’app', () => {
     TestBed.configureTestingModule({
       providers: [
         provideRouter(routes),
-        // Les niveaux sont POSÉS, pas lus : la garde de boutique lisait l'API
-        // locale, et quand elle ne répondait pas, le repli attendait une session
+        // Les niveaux sont POSÉS, pas lus : la garde de boutique (retirée le
+        // 2026-10-09) lisait l'API locale, et quand elle ne répondait pas, le repli attendait une session
         // Auth0 qui ne vient jamais en test — dépassement à 5 s, sur du code
         // inchangé (constaté le 2026-09-15, API de dev arrêtée).
         {
@@ -35,7 +35,7 @@ describe('Le chrome de l’app', () => {
           useFactory: () => {
             const access = new ClientFeatureAccess();
             access.load = () => Promise.resolve();
-            access.receive({ shop: 'order', ...DEFAULT_SURFACES });
+            access.receive(DEFAULT_LEVELS);
             return access;
           },
         },

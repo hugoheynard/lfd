@@ -2,7 +2,6 @@ import { ChangeDetectionStrategy, Component, inject } from '@angular/core';
 import { FoldButtonComponent, FoldCalloutComponent } from 'fold-ng';
 
 import { ClientCopyService } from '../../../copy/client-copy.service';
-import { ClientFeatureAccess } from '../../../feature-access/client-feature-access.service';
 
 /**
  * La carte **Mes données** du bureau : ce qu'on garde, et les deux gestes
@@ -23,5 +22,4 @@ import { ClientFeatureAccess } from '../../../feature-access/client-feature-acce
 })
 export class DataDeskCard {
   protected readonly t = inject(ClientCopyService).t;
-  protected readonly access = inject(ClientFeatureAccess);
 }

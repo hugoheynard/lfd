@@ -167,15 +167,6 @@ describe('ProductSheet', () => {
     expect(keys).toEqual([FR.product.oven]);
   });
 
-  it('au niveau `browse`, remplace le geste par la mention', () => {
-    mount(TEST_ITEMS[0] as ShopItemView, 0, true);
-    fixture.componentRef.setInput('orderable', false);
-    fixture.detectChanges();
-
-    expect(cta()).toBeNull();
-    expect(el().textContent).toContain(FR.shop.orderingSoon);
-  });
-
   /** D8 : la fiche ne propose pas d'ajouter tant que l'opération n'est pas ouverte. */
   describe('un article réservé à une opération', () => {
     function mountOperation(state: ShopOperationState): void {

@@ -134,14 +134,16 @@ composait un panier, on partait répondre à « où », et il fallait un paramè
 d'URL pour revenir — ce paramètre était la preuve que le détour n'avait pas
 lieu d'être.
 
-⚠️ **La porte du coursier n'est pas ouverte à tout le monde.** Un PRO l'a par son
-contrat ; pour un particulier ou un visiteur, elle dépend de la clé d'admin
-`publicDelivery`, **fermée par défaut**, et `POST /shop/orders` refuse la même
+⚠️ **La porte du coursier n'est pas ouverte à tout le monde.** Elle suit le
+réglage admin « Livraison » (`openToB2b` / `openToB2c`), qui ferme une clientèle
+entière ; le devis et la passation — avec ou sans compte — refusent la même
 chose en 409 (`client/shop/order-doors.ts`,
-`b2b/feature-access/domain/public-delivery-closed.error.ts`).
+`b2b/orders/application/services/cart-adjustments.service.ts`). La clé d'admin
+`publicDelivery` qui s'y ajoutait pour les particuliers a été **retirée le
+2026-10-09** : deux réglages pour une même porte se contredisaient.
 
 ⚠️ **Et l'accueil ne montre ses deux portes qu'aux pros** (`@if (pro())`) :
-ouvrir la clé ne donne pas encore au visiteur une porte sur l'accueil — il
+ouvrir la livraison aux particuliers ne donne pas encore au visiteur une porte sur l'accueil — il
 passe par le panier. Dit ici plutôt que tu.
 
 | Écran                      | Visiteur            | Particulier | Pro          |
@@ -159,42 +161,12 @@ fonctionne déjà pour un visiteur.
 
 ## 3. Pourquoi un visiteur atteint la boutique et le panier
 
-C'est contre-intuitif : les deux routes portent un garde.
-
-- `/boutique` → `featureAccessGuard('shop', 'browse')`
-- `/commande/panier` → `featureAccessGuard('shop', 'order')`
-
-Le garde (`apps/lfc-ecommerce-frontend/src/app/client/feature-access/feature-access.guard.ts`)
-n'est pas une protection — son propre JSDoc le dit : « Ce n'est pas une
-protection — l'API refuse d'elle-même ». Il lit un niveau servi par le serveur,
-et **la route qui le sert est publique** :
-
-- `GET /feature-access` est `@Public()`
-  (`apps/lfd-api/src/b2b/feature-access/http/feature-access.controller.ts`) ;
-- elle résout avec un sujet `null`
-  (`apps/lfd-api/src/b2b/feature-access/application/queries/get-feature-levels.handler.ts`) ;
-- et le défaut de la clé `shop` au catalogue fermé est **`order`**
-  (`packages/contracts/src/feature-access.levels.ts`).
-
-Donc un anonyme reçoit `shop: "order"`, et `isAtLeast` le laisse passer sur les
-deux routes. Le front choisit la bonne lecture selon la reconnaissance
-(`client-feature-access.service.ts` : `/feature-access/mine` avec jeton,
-`/feature-access` sans).
-
-```mermaid
-sequenceDiagram
-    participant N as Navigateur (anonyme)
-    participant G as featureAccessGuard
-    participant API as GET /feature-access (@Public)
-    N->>G: /boutique
-    G->>API: lecture des niveaux globaux
-    API-->>G: { shop: "order", ... }
-    G-->>N: autorisé
-```
-
-⚠️ **Conséquence à ne pas manquer** : fermer la boutique en admin
-(`shop: closed`) renvoie aussi les visiteurs sur `/bienvenue`. Le même levier
-tient les trois publics.
+Aucune garde ne les ferme. Jusqu'au 2026-10-09, `/boutique` et `/mes-commandes`
+portaient `featureAccessGuard` sur les clés `shop` et `orders`, et le serveur
+une garde `@RequiresShop` ; les clés et les deux gardes ont été **retirées ce
+jour-là** (Hugo) : la boutique est toujours ouverte à la commande. Ce qui
+refuse encore une commande est au serveur — l'horaire, la zone, le réglage
+« Livraison » — et nulle part dans le routeur.
 
 ---
 

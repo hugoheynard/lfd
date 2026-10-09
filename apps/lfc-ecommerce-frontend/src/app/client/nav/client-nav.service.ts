@@ -1,6 +1,5 @@
 import { computed, inject, Injectable, Injector, untracked } from '@angular/core';
 import { toSignal } from '@angular/core/rxjs-interop';
-import type { ShopLevel, VisibilityFeatureKey } from '@lfd/contracts';
 import { NavigationEnd, Router } from '@angular/router';
 import { filter, map } from 'rxjs';
 
@@ -8,7 +7,6 @@ import { ClientOrderHistory } from '../mes-commandes/client-order-history.servic
 import { ClientLoyalty } from '../client-loyalty.service';
 import { ClientSubscriptions } from '../client-subscriptions.service';
 import { ClientCopyService } from '../copy/client-copy.service';
-import { ClientFeatureAccess } from '../feature-access/client-feature-access.service';
 import { ClientWorkspace } from '../client-workspace.service';
 import { AccountService } from '../../account/account.service';
 import { companyScreensClosed } from '../company-screens';
@@ -27,17 +25,6 @@ interface Destination {
    * les quatre autres, et l'habitude du pouce avec.
    */
   readonly ready: boolean;
-  /**
-   * Le niveau de boutique à partir duquel la destination paraît (plan
-   * `plan-inscription-pro-seule.md` §4). `closed` = à tous les niveaux.
-   *
-   * ⚠️ Ici, et contrairement à `ready`, la destination DISPARAÎT : un écran qui
-   * existe mais que la garde refuse n'a pas à s'annoncer. Ce qui reste garde
-   * son ordre relatif — on retire, on ne réordonne jamais.
-   */
-  readonly shop: ShopLevel;
-  /** La surface masquable en admin qui la porte, s'il y en a une. Masquée, elle disparaît. */
-  readonly surface?: VisibilityFeatureKey;
   /**
    * Un écran de SOCIÉTÉ : retiré en perso pour qui en a une (Hugo, 2026-09-15) —
    * le dossier, le relevé, les paniers récurrents. `companyWorkspaceGuard` ferme
@@ -80,19 +67,12 @@ interface Destination {
  * mène au rayon. Deux intentions, deux adresses.
  */
 const DESTINATIONS: readonly Destination[] = [
-  { id: 'shop', route: '/boutique', ready: true, shop: 'browse' },
-  { id: 'orders', route: '/mes-commandes', ready: true, shop: 'closed', surface: 'orders' },
-  { id: 'loyalty', route: '/ma-fidelite', ready: true, shop: 'closed', loyaltyOnly: true },
-  {
-    id: 'invoices',
-    route: '/mes-factures',
-    ready: true,
-    shop: 'closed',
-    surface: 'invoices',
-    companyOnly: true,
-  },
-  { id: 'baskets', route: '/paniers-recurrents', ready: false, shop: 'order', companyOnly: true },
-  { id: 'account', route: '/mon-compte', ready: true, shop: 'closed', companyOnly: true },
+  { id: 'shop', route: '/boutique', ready: true },
+  { id: 'orders', route: '/mes-commandes', ready: true },
+  { id: 'loyalty', route: '/ma-fidelite', ready: true, loyaltyOnly: true },
+  { id: 'invoices', route: '/mes-factures', ready: true, companyOnly: true },
+  { id: 'baskets', route: '/paniers-recurrents', ready: false, companyOnly: true },
+  { id: 'account', route: '/mon-compte', ready: true, companyOnly: true },
 ];
 
 /**
@@ -125,7 +105,9 @@ export interface NavItem {
  * Les destinations de l'app cliente, comptées — six, et une septième, « Ma
  * fidélité », en espace personnel quand le programme est ouvert (2026-09-27).
  * Elle ne s'intercale pas au gré d'un écran en chantier : elle paraît ou non
- * selon un réglage durable, comme une destination gardée par niveau.
+ * selon un réglage durable. Les niveaux de boutique et les surfaces masquables
+ * (`shop`, `orders`, `invoices`) qui en retiraient d'autres ont été retirés le
+ * 2026-10-09 : ces destinations sont toujours montrées.
  *
  * Un seul endroit les déclare, et les trois surfaces qui les affichent (menu
  * mobile, sous-barre desktop, et le rail le jour où il existera) le lisent : la
@@ -143,7 +125,6 @@ export interface NavItem {
 @Injectable({ providedIn: 'root' })
 export class ClientNav {
   private readonly orders = inject(ClientOrderHistory);
-  private readonly access = inject(ClientFeatureAccess);
   private readonly workspace = inject(ClientWorkspace);
   private readonly account = inject(AccountService);
   private readonly onboarding = inject(ProOnboarding);
@@ -175,8 +156,6 @@ export class ClientNav {
   readonly items = computed<readonly NavItem[]>(() =>
     DESTINATIONS.filter(
       (d) =>
-        this.access.atLeast(d.shop) &&
-        (d.surface === undefined || this.access.visible(d.surface)) &&
         !(d.companyOnly === true && this.companyScreensClosed()) &&
         // `isOpen` n'est vrai qu'en espace personnel connecté : le service rend
         // `{ open: false }` ailleurs sans appel, et lit une seule fois sinon.

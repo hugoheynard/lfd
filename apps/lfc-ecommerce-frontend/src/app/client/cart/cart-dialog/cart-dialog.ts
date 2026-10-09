@@ -136,8 +136,8 @@ export class CartDialog {
    * bien connecté** : sans cette garde, l'invite « Qui passe cette commande ? »
    * clignoterait devant un abonné, à l'écran le plus sensible du tunnel.
    *
-   * C'est la même précaution que `featureAccessGuard` prend, pour la même
-   * raison — et elle y est écrite.
+   * C'est la même précaution que prenait `featureAccessGuard` (retirée le
+   * 2026-10-09 avec la clé `shop`), pour la même raison.
    */
   private readonly unknownCustomer = computed(
     () => !this.auth.isLoading() && !this.auth.isAuthenticated(),

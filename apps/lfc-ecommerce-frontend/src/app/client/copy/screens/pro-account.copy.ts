@@ -80,15 +80,6 @@ export interface ProAccountCopy {
     readonly pitch: string;
     readonly submit: string;
   };
-  /**
-   * La promesse, selon le niveau de la boutique. **Aucune date** : rien dans le
-   * système n'en porte une (plan §3.1).
-   */
-  readonly promise: {
-    readonly closed: string;
-    /** ⚠️ Copie À VALIDER à l'écran (plan §3.1) — elle invite déjà au rayon. */
-    readonly browse: string;
-  };
 }
 
 export const PRO_ACCOUNT_FR: ProAccountCopy = {
@@ -130,11 +121,6 @@ export const PRO_ACCOUNT_FR: ProAccountCopy = {
       'Il nous manque de quoi ouvrir le dossier de votre établissement. Une fois envoyé, nous le vérifions.',
     submit: 'Envoyer mon dossier',
   },
-  promise: {
-    closed: 'Notre boutique en ligne ouvre bientôt. En attendant, configurez votre espace.',
-    browse:
-      'Notre boutique en ligne ouvre bientôt. En attendant, configurez votre espace et découvrez déjà la boutique.',
-  },
 };
 
 export const PRO_ACCOUNT_EN: ProAccountCopy = {
@@ -174,11 +160,6 @@ export const PRO_ACCOUNT_EN: ProAccountCopy = {
     subtitle: 'Your venue',
     pitch: 'We still need a few details to open your venue’s file. Once sent, we review it.',
     submit: 'Send my file',
-  },
-  promise: {
-    closed: 'Our online shop opens soon. In the meantime, set up your space.',
-    browse:
-      'Our online shop opens soon. In the meantime, set up your space and take a first look at the shop.',
   },
 };
 
@@ -220,11 +201,6 @@ export const PRO_ACCOUNT_IT: ProAccountCopy = {
     pitch:
       'Ci mancano alcuni dati per aprire la pratica del vostro locale. Una volta inviata, la verifichiamo.',
     submit: 'Invia la pratica',
-  },
-  promise: {
-    closed: 'Il nostro negozio online apre presto. Nel frattempo, configurate il vostro spazio.',
-    browse:
-      'Il nostro negozio online apre presto. Nel frattempo, configurate il vostro spazio e scoprite già il negozio.',
   },
 };
 

@@ -1,17 +1,9 @@
 import { HttpClient } from '@angular/common/http';
 import { computed, inject, Injectable, signal } from '@angular/core';
-import type {
-  FeatureKey,
-  FeatureLevel,
-  FeatureLevelsView,
-  GateLevel,
-  ShopLevel,
-  VisibilityFeatureKey,
-} from '@lfd/contracts';
-// Les imports de valeur du contrat passent par le sous-chemin sans zod. Le prendre
-// au baril embarquait zod dans le bundle initial, et le build de déploiement
-// dépassait son budget d'erreur (1,44 Mo pour 1,30 Mo, mesuré le 2026-09-14).
-import { FEATURE_CATALOGUE, isAtLeast } from '@lfd/contracts/feature-access-levels';
+// Types seulement : aucune valeur du baril du contrat n'entre ici, qui
+// embarquerait zod dans le bundle initial (1,44 Mo pour un budget de 1,30 Mo,
+// mesuré le 2026-09-14).
+import type { FeatureLevelsView, GateLevel } from '@lfd/contracts';
 import { firstValueFrom, switchMap, take, timeout, type Observable } from 'rxjs';
 
 import { AUTH_CONFIG } from '../../auth/auth.config';
@@ -30,27 +22,21 @@ export type FeatureAccessState = 'loading' | 'ready' | 'failed';
  */
 const READ_TIMEOUT_MS = 8_000;
 
-/**
- * Le niveau qu'on applique tant qu'on ne SAIT pas : pendant la lecture, et
- * après son échec (plan §4).
- *
- * Le sens prudent : un écran qui ne montre pas une commande possible coûte
- * moins qu'un écran qui envoie des requêtes que le serveur refusera en 409.
- */
-const UNKNOWN_LEVEL: ShopLevel = 'closed';
-
 /** Le mandat client tant qu'on ne sait pas : fermé, comme le défaut du catalogue. */
 const UNKNOWN_MANDATE_LEVEL: GateLevel = 'closed';
 
 /**
- * **Ce que l'app cliente peut faire de la boutique**, tel que le serveur le dit.
+ * **Les niveaux de l'accès aux fonctionnalités**, tels que le serveur les dit.
  *
  * Plan : `documentation/auth-inscription/plan-inscription-pro-seule.md` §4.
  *
+ * Il ne reste que le mandat client depuis le 2026-10-09 : la boutique, « Mes
+ * commandes », « Mes factures », le menu au bureau et la livraison aux
+ * particuliers ne sont plus des clés (la dernière dépend du réglage admin
+ * « Livraison », que le serveur applique).
+ *
  * Ce service ne FERME rien : c'est l'API qui refuse. Il évite seulement que
- * l'écran promette ce que le serveur refusera — une destination de menu, un
- * bouton de panier, une requête qui partirait en 409. Le code des écrans fermés
- * reste dans le bundle.
+ * l'écran montre une carte dont chaque requête partirait en 409.
  *
  * Les niveaux sont lus UNE fois par chargement de page (`app.config.ts`). Aucun
  * rafraîchissement : un changement fait en admin se voit au prochain
@@ -76,14 +62,6 @@ export class ClientFeatureAccess {
   readonly state = this.status.asReadonly();
 
   /**
-   * Le niveau de la boutique **appliqué**.
-   *
-   * `closed` pendant la lecture et après son échec : qui veut distinguer « on ne
-   * sait pas » de « c'est fermé » lit {@link state}.
-   */
-  readonly shop = computed<ShopLevel>(() => this.levels()?.shop ?? UNKNOWN_LEVEL);
-
-  /**
    * Le niveau **appliqué** du mandat client (`customerMandate`).
    *
    * `closed` tant qu'on ne sait pas — lecture en vol, échec, ou serveur qui ne
@@ -94,51 +72,6 @@ export class ClientFeatureAccess {
   readonly customerMandate = computed<GateLevel>(
     () => this.levels()?.customerMandate ?? UNKNOWN_MANDATE_LEVEL,
   );
-
-  /**
-   * Le niveau **appliqué** de la livraison aux particuliers (`publicDelivery`).
-   *
-   * `closed` tant qu'on ne sait pas — lecture en vol, échec, ou serveur qui ne
-   * connaît pas la clé. C'est le défaut du catalogue, et le sens prudent : la
-   * porte du coursier montrée à tort mènerait à une commande que
-   * `POST /shop/orders` refuse en 409, après la saisie d'une adresse.
-   *
-   * ⚠️ Elle ne concerne QUE le b2c. Un pro livre par son contrat, et sa porte
-   * ne lit pas cette clé — c'est l'écran qui fait la différence, parce que
-   * c'est lui qui sait à qui il parle.
-   */
-  readonly publicDelivery = computed<GateLevel>(
-    () => this.levels()?.publicDelivery ?? UNKNOWN_MANDATE_LEVEL,
-  );
-
-  /** « Au moins tel niveau » — le seul test qu'un écran écrit, par la règle du contrat. */
-  atLeast(required: ShopLevel): boolean {
-    return isAtLeast('shop', this.shop(), required);
-  }
-
-  /**
-   * Le niveau appliqué d'une clé, pour une garde qui la reçoit en paramètre.
-   *
-   * Tant qu'on ne sait pas — lecture en vol, échec, ou serveur plus ancien qui
-   * ne connaît pas la clé :
-   *
-   * - `shop` vaut `closed`, le sens prudent : l'API refuserait en 409 ;
-   * - une surface masquable vaut **son défaut** (`visible`). La masquer ne
-   *   protège rien, et une API muette ne doit pas retirer « Mes commandes » du
-   *   menu — la commande en cours avec ;
-   * - `customerMandate` vaut aussi son défaut, `closed` : voir
-   *   {@link customerMandate}.
-   */
-  levelOf(key: FeatureKey): FeatureLevel {
-    return (
-      this.levels()?.[key] ?? (key === 'shop' ? UNKNOWN_LEVEL : FEATURE_CATALOGUE[key].defaultLevel)
-    );
-  }
-
-  /** La surface est-elle montrée ? Vrai tant qu'on ne sait pas : c'est son défaut. */
-  visible(key: VisibilityFeatureKey): boolean {
-    return this.levelOf(key) === 'visible';
-  }
 
   /** Résout quand l'état a quitté `loading` — succès ou échec. */
   settled(): Promise<void> {
@@ -186,7 +119,7 @@ export class ClientFeatureAccess {
    *
    * On attend `authGate$()` et non `isAuthenticated` : ce signal vaut `false`
    * tant qu'Auth0 résout la session, et un client connecté lirait alors les
-   * niveaux globaux — un testeur exempté verrait la boutique fermée.
+   * niveaux globaux au lieu des siens.
    */
   private read(): Observable<FeatureLevelsView> {
     const base = AUTH_CONFIG.apiBaseUrl;

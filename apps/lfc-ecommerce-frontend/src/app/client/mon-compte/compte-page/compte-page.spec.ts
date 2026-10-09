@@ -6,7 +6,6 @@ import type {
   CompanyView,
   CustomerBankAccountView,
   GateLevel,
-  ShopLevel,
 } from '@lfd/contracts';
 import { FoldPanelHostService } from 'fold-ng';
 import { afterEach, vi } from 'vitest';
@@ -19,9 +18,8 @@ import { ClientChrome } from '../../client-chrome.service';
 import { ClientInvoices } from '../../client-invoices.service';
 import { ClientMandate } from '../../client-mandate.service';
 import { FR } from '../../copy/fr';
-import { PRO_ACCOUNT_FR } from '../../copy/screens/pro-account.copy';
 import { ClientFeatureAccess } from '../../feature-access/client-feature-access.service';
-import { DEFAULT_SURFACES, openShopAt } from '../../feature-access/feature-access.fixture';
+import { DEFAULT_LEVELS } from '../../feature-access/feature-access.fixture';
 import { ProOnboarding } from '../../pro-onboarding.service';
 import { asRole, matchMediaAt, openedPanel, PROFILE, TOMMEUSES } from '../account.fixture';
 import { IdentityPanel } from '../identity/identity-panel/identity-panel';
@@ -59,7 +57,6 @@ let signIns: string[] = [];
 
 function boot(
   companies: readonly CompanyView[],
-  shop: ShopLevel = 'order',
   {
     authenticated = true,
     status = 'ready',
@@ -142,13 +139,8 @@ function boot(
       { provide: ProOnboarding, useValue: { needsDossier: () => false } },
     ],
   });
-  openShopAt(shop);
   if (mandate === 'open') {
-    TestBed.inject(ClientFeatureAccess).receive({
-      shop,
-      ...DEFAULT_SURFACES,
-      customerMandate: 'open',
-    });
+    TestBed.inject(ClientFeatureAccess).receive({ ...DEFAULT_LEVELS, customerMandate: 'open' });
   }
   const fixture = TestBed.createComponent(ComptePage);
   fixture.detectChanges();
@@ -234,35 +226,6 @@ describe('ComptePage', () => {
    * règlement et préférences disparaissent — et le sommaire se renumérote sur
    * ce qui reste, sans trou ni ancre morte.
    */
-  it('sous `order`, retire règlement et préférences, et renumérote le sommaire', () => {
-    fixture = boot([TOMMEUSES], 'browse');
-
-    const links = Array.from(el().querySelectorAll('.summary-link'));
-    const anchors = links.map((a) => a.getAttribute('href')?.slice(1));
-    expect(anchors).toEqual([
-      'compte-identity',
-      'compte-users',
-      'compte-kbis',
-      'compte-addresses',
-      'compte-bank',
-      'compte-invoices',
-      'compte-data',
-    ]);
-    expect(links.map((a) => a.querySelector('.summary-num')?.textContent)).toEqual([
-      '01',
-      '02',
-      '03',
-      '04',
-      '05',
-      '06',
-      '07',
-    ]);
-    for (const anchor of anchors) {
-      expect(el().querySelector(`#${anchor}`)).not.toBeNull();
-    }
-    expect(el().querySelector('#compte-payment')).toBeNull();
-    expect(el().querySelector('#compte-preferences')).toBeNull();
-  });
 
   /**
    * `rib-client.md` §1 : le RIB n'appartient qu'au détenteur et au
@@ -301,7 +264,7 @@ describe('ComptePage', () => {
 
     it('se montre juste après le RIB, sur sa rangée, et le sommaire se renumérote avec lui', () => {
       for (const role of ['owner', 'billing'] as const) {
-        fixture = boot([asRole(role)], 'order', { mandate: 'open', bank: RIB });
+        fixture = boot([asRole(role)], { mandate: 'open', bank: RIB });
 
         const section = el().querySelector('section#compte-mandate');
         expect(section?.querySelectorAll('app-mandate-desk-card.desk').length).toBe(1);
@@ -321,7 +284,7 @@ describe('ComptePage', () => {
     });
 
     it('reste absent tant que le drapeau est fermé — le RIB reprend toute sa rangée', () => {
-      fixture = boot([TOMMEUSES], 'order', { mandate: 'closed', bank: RIB });
+      fixture = boot([TOMMEUSES], { mandate: 'closed', bank: RIB });
 
       expect(el().querySelector('#compte-mandate')).toBeNull();
       expect(anchors()).not.toContain('compte-mandate');
@@ -330,7 +293,7 @@ describe('ComptePage', () => {
     });
 
     it('reste absent sans RIB enregistré, même drapeau ouvert', () => {
-      fixture = boot([TOMMEUSES], 'order', { mandate: 'open', bank: null });
+      fixture = boot([TOMMEUSES], { mandate: 'open', bank: null });
 
       expect(el().querySelector('#compte-mandate')).toBeNull();
       expect(anchors()).toContain('compte-bank');
@@ -339,7 +302,7 @@ describe('ComptePage', () => {
 
     it('reste absent aux rôles qui ne voient pas le RIB, même drapeau ouvert et RIB lu', () => {
       for (const role of ['orders', 'admin'] as const) {
-        fixture = boot([asRole(role)], 'order', { mandate: 'open', bank: RIB });
+        fixture = boot([asRole(role)], { mandate: 'open', bank: RIB });
 
         expect(el().querySelector('#compte-mandate')).toBeNull();
         expect(anchors()).not.toContain('compte-mandate');
@@ -373,16 +336,8 @@ describe('ComptePage', () => {
   it('ne borne la page à l’écran que lorsque le dossier est affiché', () => {
     expect((fixture.nativeElement as HTMLElement).classList).toContain('dossier');
 
-    fixture = boot([], 'closed');
+    fixture = boot([]);
     expect((fixture.nativeElement as HTMLElement).classList).not.toContain('dossier');
-  });
-
-  /** Plan §3.1 : tant qu'on ne commande pas, l'écran dit pourquoi, et quoi faire. */
-  it('promet la boutique sous `order`, et se tait quand elle est ouverte', () => {
-    expect(el().textContent).not.toContain(PRO_ACCOUNT_FR.promise.closed);
-
-    fixture = boot([TOMMEUSES], 'closed');
-    expect(el().textContent).toContain(PRO_ACCOUNT_FR.promise.closed);
   });
 
   it('porte l’identité légale de LA société, pas celle d’une maquette', () => {
@@ -398,7 +353,7 @@ describe('ComptePage', () => {
    * au-dessus de sept cartes de compte vides. Il ne montre plus que de quoi entrer.
    */
   it('à qui n’est pas entré, ne montre que de quoi se connecter', () => {
-    fixture = boot([], 'order', { authenticated: false, status: 'idle' });
+    fixture = boot([], { authenticated: false, status: 'idle' });
 
     expect(el().textContent).toContain(FR.account.signedOutTitle);
     expect(el().querySelectorAll('.summary-link').length).toBe(0);
@@ -417,7 +372,7 @@ describe('ComptePage', () => {
    * redémarrait. C'est un échec, et on peut réessayer.
    */
   it('dit l’échec de lecture, et relit au clic', () => {
-    fixture = boot([], 'order', { status: 'error' });
+    fixture = boot([], { status: 'error' });
 
     expect(el().textContent).toContain(FR.account.loadFailedTitle);
     expect(el().textContent).not.toContain(FR.account.cardUnknown);
@@ -431,12 +386,11 @@ describe('ComptePage', () => {
 
   /** Connecté sans société : la carte de dossier, et pas le compte vide en dessous. */
   it('sans société, ne montre pas les cartes de compte', () => {
-    fixture = boot([], 'closed');
+    fixture = boot([]);
 
     expect(el().querySelectorAll('.summary-link').length).toBe(0);
     expect(el().querySelector('app-account-card')).toBeNull();
     expect(el().querySelector('app-identity-desk-card')).toBeNull();
-    expect(el().textContent).toContain(PRO_ACCOUNT_FR.promise.closed);
   });
   /**
    * Plan `plan-mon-compte-a-completer.md` §2.3 : comme la fiche staff, une
@@ -457,14 +411,14 @@ describe('ComptePage', () => {
     });
 
     it('ne montre aucune synthèse quand rien ne manque', () => {
-      fixture = boot([TOMMEUSES], 'order', {
+      fixture = boot([TOMMEUSES], {
         gate: { canActivate: false, blocking: [], checklist: [] },
       });
       expect(el().querySelector('lfd-company-activation-checklist')).toBeNull();
     });
 
     it('annonce le nombre d’éléments en tête, au-dessus des cartes', () => {
-      fixture = boot([TOMMEUSES], 'order', { gate: MISSING });
+      fixture = boot([TOMMEUSES], { gate: MISSING });
 
       const synthesis = el().querySelector('.page > lfd-company-activation-checklist + .body');
       expect(synthesis).not.toBeNull();
@@ -475,12 +429,12 @@ describe('ComptePage', () => {
     });
 
     it('ne dit « empêche l’activation » que sur une société en attente', () => {
-      fixture = boot([TOMMEUSES], 'order', { gate: MISSING });
+      fixture = boot([TOMMEUSES], { gate: MISSING });
       expect(el().querySelector('lfd-company-activation-checklist')?.textContent).not.toContain(
         'Empêche l’activation',
       );
 
-      fixture = boot([{ ...TOMMEUSES, status: 'pending' }], 'order', { gate: MISSING });
+      fixture = boot([{ ...TOMMEUSES, status: 'pending' }], { gate: MISSING });
       expect(el().querySelector('lfd-company-activation-checklist')?.textContent).toContain(
         'Empêche l’activation',
       );
@@ -488,7 +442,7 @@ describe('ComptePage', () => {
 
     it('un raccourci ouvre le dialogue de la carte', () => {
       vi.stubGlobal('matchMedia', matchMediaAt(false));
-      fixture = boot([TOMMEUSES], 'order', { gate: MISSING });
+      fixture = boot([TOMMEUSES], { gate: MISSING });
 
       const buttons = el().querySelectorAll<HTMLButtonElement>(
         'lfd-company-activation-checklist .step button',
@@ -505,7 +459,7 @@ describe('ComptePage', () => {
 
     it('pose un encart dans chaque carte concernée, et seulement là', () => {
       vi.stubGlobal('matchMedia', matchMediaAt(false));
-      fixture = boot([TOMMEUSES], 'order', { gate: MISSING });
+      fixture = boot([TOMMEUSES], { gate: MISSING });
 
       for (const kind of ['desk', 'mobile']) {
         const identity = el().querySelector(`app-identity-${kind}-card app-completion-callout`);

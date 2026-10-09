@@ -67,7 +67,6 @@ import { APP_GUARD } from "@nestjs/core";
 import { AuthGuard } from "../platform/auth/auth.guard.js";
 import { DevImpersonation } from "../platform/auth/dev-impersonation.js";
 import { PublicationEnabledGuard } from "../pim/publication/publication-switch.js";
-import { FeatureAccessGuard } from "../b2b/feature-access/http/feature-access.guard.js";
 
 @Module({
   imports: [
@@ -203,11 +202,8 @@ import { FeatureAccessGuard } from "../b2b/feature-access/http/feature-access.gu
     // APRÈS l'authentification : refuser un geste de publication à qui n'est
     // même pas identifié dirait au passage que ce déploiement en a un.
     { provide: APP_GUARD, useClass: PublicationEnabledGuard },
-    // APRÈS l'authentification, pour la même raison et une de plus : la garde
-    // de la boutique lit le `Principal` que `AuthGuard` vient de poser — c'est
-    // lui qui porte l'adresse prouvée d'une exemption. Avant, elle ne verrait
-    // personne et refuserait les testeurs (plan inscription-pro-seule §2.3).
-    { provide: APP_GUARD, useClass: FeatureAccessGuard },
+    // La garde de la boutique (`FeatureAccessGuard`, clé `shop`) a été retirée
+    // le 2026-10-09 avec la clé : la boutique est toujours ouverte à la commande.
   ],
 })
 export class AppModule {}
