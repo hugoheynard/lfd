@@ -47,6 +47,13 @@ export interface OwnedOrder {
    * passation. `null` quand la société paie elle-même, ou sans payeur copié.
    */
   readonly billedCustomer: SheetCustomer | null;
+  /**
+   * Le téléphone de l'**acheteur** — le client de `placedByUserId`, pas le
+   * staff qui a pu saisir pour lui —, lu à la lecture de la commande. Seul le
+   * bon public l'imprime (`plan-bon-public.md`, §5). `null` = aucun numéro
+   * déclaré : jamais une valeur inventée.
+   */
+  readonly buyerPhone: string | null;
 }
 
 /**

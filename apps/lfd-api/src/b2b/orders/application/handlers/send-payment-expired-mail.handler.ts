@@ -51,7 +51,10 @@ export class SendPaymentExpiredMail implements IEventHandler<OrderPaymentFailedE
     await this.mailer.send({
       to: recipient.email,
       template: "customer.payment-expired",
-      data: { sheet: clientSheetOf(owned.view, owned.billedCustomer), locale: DEFAULT_MAIL_LOCALE },
+      data: {
+        sheet: clientSheetOf(owned.view, owned.billedCustomer, owned.buyerPhone),
+        locale: DEFAULT_MAIL_LOCALE,
+      },
       idempotencyKey: `order.payment-expired:${event.orderId}`,
     });
   }

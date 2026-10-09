@@ -76,6 +76,7 @@ class ManyOrdersReader extends OrderReader {
             clientele: "public",
             loyaltyVoucherId: null,
             billedCustomer: null,
+            buyerPhone: null,
           },
     );
   }

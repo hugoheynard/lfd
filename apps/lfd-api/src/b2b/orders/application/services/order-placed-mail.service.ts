@@ -5,7 +5,9 @@ import { MAILER, type B2bMailer } from "../../../../platform/mailer/mailer.token
 import { OrderMailOrigins } from "../../domain/ports/order-mail-origins.js";
 import { OrderRecipientReader } from "../../domain/ports/order-recipient.reader.js";
 import { OrderReader } from "../../domain/ports/order.reader.js";
+import { handoverUrlOf } from "../../domain/services/handover-url.js";
 import { clientSheetOf } from "../../domain/services/order-sheet.js";
+import { OrderSheetAttachment } from "./order-sheet-attachment.service.js";
 
 /**
  * **« Votre commande est enregistrée »** — l'accusé de réception, et le seul
@@ -45,6 +47,7 @@ export class OrderPlacedMail {
     private readonly orders: OrderReader,
     private readonly recipients: OrderRecipientReader,
     private readonly origins: OrderMailOrigins,
+    private readonly attachment: OrderSheetAttachment,
     @Inject(MAILER) private readonly mailer: B2bMailer,
   ) {}
 
@@ -71,6 +74,7 @@ export class OrderPlacedMail {
     const client = this.origins.clientBaseUrl();
     const admin = this.origins.adminBaseUrl();
     const token = owned.view.handoverToken;
+    const sheet = clientSheetOf(owned.view, owned.billedCustomer, owned.buyerPhone);
 
     await this.mailer.send({
       to: recipient.email,
@@ -79,7 +83,7 @@ export class OrderPlacedMail {
         // La feuille PROJETÉE, pas la vue : ni SKU, ni tarif d'entrée, ni nom
         // d'étage tarifaire. Le courriel n'a rien à masquer parce qu'il n'a rien
         // reçu de plus.
-        sheet: clientSheetOf(owned.view, owned.billedCustomer),
+        sheet,
         handoverToken: token,
         // Vide quand l'origine n'est pas configurée : le gabarit omet alors le
         // bouton plutôt que de poser un lien relatif, inerte dans une boîte mail.
@@ -87,7 +91,9 @@ export class OrderPlacedMail {
         // Le QR encode une URL du BACK-OFFICE : c'est l'équipe qui le scanne,
         // pas le client. Sans origine admin, pas de QR — un code qui n'ouvre
         // rien vaut moins qu'un numéro de commande lisible.
-        handoverUrl: token === null || admin === null ? "" : `${admin}/retrait/${token}`,
+        handoverUrl: handoverUrlOf(admin, token),
+        // Le bon joint, pour pros et particuliers ; `null` si le rendu échoue.
+        document: await this.attachment.of(sheet, token),
         locale: DEFAULT_MAIL_LOCALE,
       },
       idempotencyKey: `order.placed:${orderId}`,

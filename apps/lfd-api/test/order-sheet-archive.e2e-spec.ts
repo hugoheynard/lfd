@@ -125,7 +125,9 @@ describe("le bon de commande s'archive", () => {
     // La révision est DANS le nom de fichier, et pas seulement dans le
     // document : le port dit qu'« une même clé écrase », donc un chemin sans
     // révision ferait disparaître, au premier avenant, le PDF qui circule déjà.
-    expect(await storageKeys("customers")).toEqual([`orders/${placed.id}/bon-de-commande-r0.pdf`]);
+    expect(await storageKeys("customers")).toEqual([
+      `orders/${placed.id}/bon-de-commande-r0-d2.pdf`,
+    ]);
   });
 
   it("ne range RIEN dans les autres usages — chaque usage a son bucket", async () => {
@@ -164,7 +166,7 @@ describe("le bon de commande s'archive", () => {
   it("sert les octets ARCHIVÉS, même s'ils ne sont plus ceux qu'on fabriquerait", async () => {
     const placed = await placeOrder();
     const original = await downloadBon(placed.id);
-    const key = `orders/${placed.id}/bon-de-commande-r0.pdf`;
+    const key = `orders/${placed.id}/bon-de-commande-r0-d2.pdf`;
 
     // On substitue des octets DIFFÉRENTS sous la même clé. Si la route les rend,
     // elle lit l'archive ; si elle rend l'original, elle refabrique — et alors
@@ -213,7 +215,7 @@ describe("le bon de commande s'archive", () => {
     const placed = await placeOrder();
     const first = await downloadBon(placed.id);
 
-    await deleteStorageObject("customers", `orders/${placed.id}/bon-de-commande-r0.pdf`);
+    await deleteStorageObject("customers", `orders/${placed.id}/bon-de-commande-r0-d2.pdf`);
     const refabricated = await downloadBon(placed.id);
 
     expect(refabricated.equals(first)).toBe(true);

@@ -5,6 +5,7 @@ import { MAILER, type B2bMailer } from "../../../../platform/mailer/mailer.token
 import { OrderMailOrigins } from "../../domain/ports/order-mail-origins.js";
 import { OrderRecipientReader } from "../../domain/ports/order-recipient.reader.js";
 import { OrderReader } from "../../domain/ports/order.reader.js";
+import { handoverUrlOf } from "../../domain/services/handover-url.js";
 import { clientSheetOf } from "../../domain/services/order-sheet.js";
 
 /**
@@ -70,10 +71,10 @@ export class OrderReadyMail {
       to: recipient.email,
       template: "customer.order-ready",
       data: {
-        sheet: clientSheetOf(owned.view, owned.billedCustomer),
+        sheet: clientSheetOf(owned.view, owned.billedCustomer, owned.buyerPhone),
         handoverToken: token,
         orderUrl: client === null ? "" : `${client}/mes-commandes`,
-        handoverUrl: token === null || admin === null ? "" : `${admin}/retrait/${token}`,
+        handoverUrl: handoverUrlOf(admin, token),
         locale: DEFAULT_MAIL_LOCALE,
       },
       idempotencyKey,

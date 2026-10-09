@@ -1,3 +1,5 @@
+import { Buffer } from "node:buffer";
+
 import type { OrderView } from "@lfd/contracts";
 import type { MailReceipt, SendMailArgs } from "@lfd/mailer";
 
@@ -11,6 +13,8 @@ import {
   type OrderRecipient,
 } from "../../../domain/ports/order-recipient.reader.js";
 import { OrderReader, type OwnedOrder } from "../../../domain/ports/order.reader.js";
+import { OrderSheetLogoSource } from "../../../domain/ports/order-sheet-logo.source.js";
+import { MissingLogo, sheetAttachment } from "../../services/__tests__/order-sheet-doubles.js";
 import { SendOrderPlacedMail } from "../send-order-placed-mail.handler.js";
 
 /**
@@ -110,7 +114,10 @@ class RecordingMailer implements B2bMailer {
  * le jour où `track` change de forme, ce doublé cesse de compiler.
  */
 class ImmediateWork extends BackgroundWork {
+  last: Promise<void> = Promise.resolve();
+
   override track(task: Promise<void>): Promise<void> {
+    this.last = task;
     return task;
   }
 }
@@ -198,6 +205,7 @@ function readerOf(order: OrderView | null): OrderReader {
           clientele: "public",
           loyaltyVoucherId: null,
           billedCustomer: null,
+          buyerPhone: null,
         },
   );
 }
@@ -211,6 +219,7 @@ function handler(options: {
   email?: string | null;
   client?: string | null;
   admin?: string | null;
+  logo?: OrderSheetLogoSource;
 }): { readonly run: SendOrderPlacedMail; readonly mailer: RecordingMailer } {
   const mailer = new RecordingMailer();
   const run = new SendOrderPlacedMail(
@@ -221,6 +230,10 @@ function handler(options: {
       options.admin === undefined ? "https://admin.lfc.test" : options.admin,
     ),
     work,
+    sheetAttachment({
+      ...(options.logo === undefined ? {} : { logo: options.logo }),
+      admin: options.admin === undefined ? "https://admin.lfc.test" : options.admin,
+    }),
     mailer,
   );
   return { run, mailer };
@@ -229,8 +242,9 @@ function handler(options: {
 /** Joue l'abonné et attend son travail de fond. */
 async function fire(subject: ReturnType<typeof handler>): Promise<void> {
   subject.run.handle(EVENT);
-  await Promise.resolve();
-  await Promise.resolve();
+  // Le rendu du bon joint est un vrai travail asynchrone : on attend la tâche
+  // elle-même, pas un nombre de micro-tâches.
+  await work.last;
 }
 
 describe("l'accusé de réception d'une commande", () => {
@@ -312,5 +326,27 @@ describe("l'accusé de réception d'une commande", () => {
     await fire(subject);
 
     expect(subject.mailer.sent).toBeNull();
+  });
+
+  it("joint le BON DE COMMANDE en PDF — le même que l'archive", async () => {
+    const subject = handler({});
+    await fire(subject);
+
+    const data = subject.mailer.sent?.data as B2bMails["customer.order-placed"];
+    expect(data.document?.fileName).toBe("bon-de-commande-ORD-4812.pdf");
+    expect(
+      Buffer.from(data.document?.pdfBase64 ?? "", "base64")
+        .subarray(0, 5)
+        .toString(),
+    ).toBe("%PDF-");
+  });
+
+  it("part SANS pièce jointe quand le rendu échoue — le courriel n'attend pas le bon", async () => {
+    const subject = handler({ logo: new MissingLogo() });
+    await fire(subject);
+
+    expect(subject.mailer.sent?.template).toBe("customer.order-placed");
+    const data = subject.mailer.sent?.data as B2bMails["customer.order-placed"];
+    expect(data.document).toBeNull();
   });
 });

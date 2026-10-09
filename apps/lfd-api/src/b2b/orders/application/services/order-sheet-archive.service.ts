@@ -1,10 +1,13 @@
 import { Buffer } from "node:buffer";
 
 import type { ClientSheet } from "@lfd/contracts";
-import { Injectable } from "@nestjs/common";
+import { Injectable, Logger } from "@nestjs/common";
 
 import { DocumentStorageUnavailableError } from "../../../../platform/shared/errors/storage-errors.js";
 import { CustomerDocumentStore } from "../../../../platform/storage/customer-document-store.js";
+import { OrderMailOrigins } from "../../domain/ports/order-mail-origins.js";
+import { OrderSheetLogoSource } from "../../domain/ports/order-sheet-logo.source.js";
+import { handoverUrlOf } from "../../domain/services/handover-url.js";
 import {
   orderSheetPdfFileName,
   orderSheetPdfKey,
@@ -42,13 +45,19 @@ export interface OrderSheetPdf {
  * taux rectifié : recalculer donnerait un PDF qui ne ressemble plus à celui que
  * le client a dans la poche — et c'est exactement la situation où il appelle.
  *
- * ## Pourquoi au premier téléchargement, et pourquoi la course est inoffensive
+ * ## À la passation, ou au premier téléchargement — réécrit le 2026-10-09
  *
- * Fabriquer à la passation produirait un document pour chaque commande, dont
- * l'immense majorité ne sera jamais demandée. On écrit donc à la demande.
+ * Ce paragraphe disait « on écrit à la demande » : fabriquer à la passation
+ * aurait produit un document par commande, que presque personne ne demande.
+ * Le plan `documentation/order/plan-bon-public.md` (§2.4, §5, Hugo,
+ * 2026-10-09) renverse la décision : le bon part **joint au courriel de
+ * confirmation**, donc chaque commande en écrit un (~50 Ko, logo 16 Ko).
+ * C'est l'expéditeur de `customer.order-placed` qui le demande ici ; le
+ * téléchargement relit alors l'archive, ou la refabrique si le rangement avait
+ * échoué.
  *
- * Deux téléchargements simultanés entrent alors tous les deux dans la branche
- * « la clé manque » et écrivent tous les deux — et le port du stockage dit
+ * Deux demandes simultanées entrent toutes les deux dans la branche
+ * « la clé manque » et écrivent toutes les deux — et le port du stockage dit
  * qu'« une même clé écrase ». **C'est sans conséquence à une condition, et elle
  * est tenue : le rendu est déterministe.** Deux rendus de la même révision
  * produisent les mêmes octets, le second `save` écrase le premier par un objet
@@ -56,10 +65,23 @@ export interface OrderSheetPdf {
  */
 @Injectable()
 export class OrderSheetArchive {
-  constructor(private readonly documents: CustomerDocumentStore) {}
+  private readonly logger = new Logger(OrderSheetArchive.name);
 
-  /** L'archive de cette feuille, ou le rendu neuf — rangé au passage. */
-  async pdfOf(sheet: ClientSheet): Promise<OrderSheetPdf> {
+  constructor(
+    private readonly documents: CustomerDocumentStore,
+    private readonly logo: OrderSheetLogoSource,
+    private readonly origins: OrderMailOrigins,
+  ) {}
+
+  /**
+   * L'archive de cette feuille, ou le rendu neuf — rangé au passage.
+   *
+   * `handoverToken` arrive À CÔTÉ de la feuille, jamais dedans : c'est le rendu
+   * qui décide de le dessiner (retrait seulement).
+   *
+   * @throws {OrderSheetLogoUnavailableError} le logo manque sur le disque.
+   */
+  async pdfOf(sheet: ClientSheet, handoverToken: string | null): Promise<OrderSheetPdf> {
     const key = orderSheetPdfKey(sheet);
     const fileName = orderSheetPdfFileName(sheet);
 
@@ -68,9 +90,27 @@ export class OrderSheetArchive {
       return { bytes: archived, fileName };
     }
 
-    const bytes = await renderOrderSheetPdf(sheet);
+    const bytes = await renderOrderSheetPdf(sheet, {
+      logo: await this.logo.load(),
+      handoverUrl: this.handoverUrlFor(sheet, handoverToken),
+    });
     await this.archive(key, bytes);
     return { bytes, fileName };
+  }
+
+  /**
+   * L'URL du QR — la même fabrique que les courriels. Un retrait avec jeton
+   * mais sans origine admin rend un bon SANS QR, et ce bon est gelé : il n'en
+   * aura jamais. Le journal le dit, pour qu'on sache pourquoi.
+   */
+  private handoverUrlFor(sheet: ClientSheet, handoverToken: string | null): string {
+    const admin = this.origins.adminBaseUrl();
+    if (sheet.fulfillment.method === "pickup" && handoverToken !== null && admin === null) {
+      this.logger.warn(
+        `Bon de commande ${sheet.reference} rendu sans QR de retrait : l'origine du back-office n'est pas configurée. Ce bon archivé n'en portera jamais.`,
+      );
+    }
+    return handoverUrlOf(admin, handoverToken);
   }
 
   /**

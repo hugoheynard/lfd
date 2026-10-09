@@ -88,6 +88,9 @@ import { GetOrderSheetHandler } from "./application/queries/get-order-sheet.hand
 import { GetAdminOrderSheetPdfHandler } from "./application/queries/get-admin-order-sheet-pdf.handler.js";
 import { GetOrderSheetPdfHandler } from "./application/queries/get-order-sheet-pdf.handler.js";
 import { OrderSheetArchive } from "./application/services/order-sheet-archive.service.js";
+import { OrderSheetAttachment } from "./application/services/order-sheet-attachment.service.js";
+import { OrderSheetLogoSource } from "./domain/ports/order-sheet-logo.source.js";
+import { DiskOrderSheetLogoSource } from "./infrastructure/disk-order-sheet-logo.source.js";
 import { MailDeliveryEnRoute } from "./application/handlers/mail-delivery-en-route.handler.js";
 import { OnProductionDayClosed } from "./application/handlers/on-production-day-closed.handler.js";
 import { OnOrderHandedOver } from "./application/handlers/on-order-handed-over.handler.js";
@@ -221,6 +224,9 @@ import { AdminSupervisionController } from "./http/admin-supervision.controller.
     GetOrderSheetPdfHandler,
     GetAdminOrderSheetPdfHandler,
     OrderSheetArchive,
+    OrderSheetAttachment,
+    // Le logo du bon (plan-bon-public §2.1), lu dans `assets/` comme les polices de la facture.
+    { provide: OrderSheetLogoSource, useClass: DiskOrderSheetLogoSource },
     GetOrderPaymentHandler,
     GetAdminOrderHandler,
     GetOrderHandoverProofHandler,

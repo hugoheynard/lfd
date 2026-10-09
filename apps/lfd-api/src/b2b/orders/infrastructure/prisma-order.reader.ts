@@ -254,6 +254,8 @@ export class PrismaOrderReader extends OrderReader {
         billedCompany: { select: { raisonSociale: true } },
         // Élargit la sélection commune : le bon nomme le site par son enseigne.
         company: { select: { raisonSociale: true, enseigne: true } },
+        // Élargit aussi l'acheteur : le bon public imprime son téléphone.
+        placedBy: { select: { firstName: true, lastName: true, email: true, phone: true } },
       },
     });
     if (row === null) {
@@ -267,6 +269,7 @@ export class PrismaOrderReader extends OrderReader {
       clientele: row.clientele,
       loyaltyVoucherId: row.loyaltyVoucherId,
       billedCustomer: billedCustomerOf(row),
+      buyerPhone: row.placedBy.phone.trim() === "" ? null : row.placedBy.phone,
     };
   }
 

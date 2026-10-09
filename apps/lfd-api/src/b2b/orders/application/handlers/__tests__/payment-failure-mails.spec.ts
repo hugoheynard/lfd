@@ -40,6 +40,7 @@ function subscribers(email: string | null = "camille@example.test") {
     clientele: "public",
     loyaltyVoucherId: null,
     billedCustomer: null,
+    buyerPhone: null,
   });
   const recipients = new OneRecipientReader(email);
   const work = new ImmediateWork();

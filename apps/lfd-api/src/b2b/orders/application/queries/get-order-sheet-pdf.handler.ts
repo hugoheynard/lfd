@@ -19,10 +19,11 @@ import { GetOrderSheetPdfQuery } from "./get-order-sheet-pdf.query.js";
  * le client a dans la poche — et c'est exactement la situation où il appelle.
  * Les octets rangés sont donc rendus tels quels, à jamais.
  *
- * ## Pourquoi au premier téléchargement, et pourquoi la course est inoffensive
+ * ## Quand il est écrit
  *
- * Fabriquer à la passation produirait un document pour chaque commande, dont
- * l'immense majorité ne sera jamais demandée. On écrit donc à la demande.
+ * À la passation désormais, par le courriel de confirmation qui le joint
+ * (`OrderSheetArchive`, réécrit le 2026-10-09) ; ce chemin le refabrique si
+ * le rangement avait échoué.
  *
  * Deux onglets simultanés entrent alors tous les deux dans la branche « la clé
  * manque » et écrivent tous les deux — et le port du stockage dit qu'« une même
@@ -72,8 +73,8 @@ import { GetOrderSheetPdfQuery } from "./get-order-sheet-pdf.query.js";
  * la surface staff : c'est le **même document sous la même clé**, et deux
  * chemins qui l'écriraient séparément finiraient par diverger.
  *
- * ⚠️ **Aucun QR.** Le jeton de remise n'est pas sur la feuille, donc ce chemin
- * ne peut pas l'imprimer — c'est une erreur de compilation, pas une consigne.
+ * Le jeton de retrait passe À CÔTÉ de la feuille : c'est le rendu qui ne le
+ * dessine qu'en retrait (plan `plan-bon-public.md`, §2.3).
  */
 @QueryHandler(GetOrderSheetPdfQuery)
 export class GetOrderSheetPdfHandler implements IQueryHandler<
@@ -95,6 +96,9 @@ export class GetOrderSheetPdfHandler implements IQueryHandler<
       owned.companyId === null ? null : await this.guard.roleOf(query.actorUserId, owned.companyId);
     ensureOrderVisible(owned, query.actorUserId, role, query.orderId);
 
-    return this.archive.pdfOf(clientSheetOf(owned.view, owned.billedCustomer));
+    return this.archive.pdfOf(
+      clientSheetOf(owned.view, owned.billedCustomer, owned.buyerPhone),
+      owned.view.handoverToken,
+    );
   }
 }

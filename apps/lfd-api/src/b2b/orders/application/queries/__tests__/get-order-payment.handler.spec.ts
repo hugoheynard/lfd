@@ -35,6 +35,7 @@ function owned(over: {
     clientele: "public",
     loyaltyVoucherId: null,
     billedCustomer: null,
+    buyerPhone: null,
   };
 }
 

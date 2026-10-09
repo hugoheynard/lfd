@@ -8,6 +8,7 @@ import type {
   SheetCustomer,
   SheetFulfillment,
   SheetMoney,
+  SheetVariant,
   StaffSheet,
   StaffSheetLine,
 } from "@lfd/contracts";
@@ -241,21 +242,51 @@ function clientCustomerOf(order: OrderView): SheetCustomer {
 }
 
 /**
+ * Le bon pro, ou le bon public — **lu sur la commande**, jamais deviné au rendu.
+ *
+ * Public = sans société, y compris la commande personnelle d'un pro : c'est un
+ * achat de particulier, réglé à la commande (plan `plan-bon-public.md`, §5).
+ */
+function variantOf(order: OrderView): SheetVariant {
+  return order.companyId === null ? "public" : "pro";
+}
+
+/**
+ * Le téléphone que le bon public imprime : celui de l'acheteur, s'il en a un.
+ * Une chaîne vide n'est pas un numéro — la ligne disparaît plutôt que de
+ * s'imprimer vide.
+ */
+function customerPhoneOf(variant: SheetVariant, buyerPhone: string | null): string | null {
+  if (variant === "pro" || buyerPhone === null) {
+    return null;
+  }
+  const trimmed = buyerPhone.trim();
+  return trimmed === "" ? null : trimmed;
+}
+
+/**
  * La feuille du client : son engagement, dans ses mots.
  *
  * `billedCustomer` : quand un AUTRE a réglé — un site facturé à son principal
  * (`plan-sous-comptes.md` §2.3, §3) —, le bon porte le nom du site et la
  * raison sociale du PAYEUR copié à la passation : c'est la mention légale.
  * `null`, et c'est le cas de toute commande d'une société qui paie seule.
+ *
+ * `buyerPhone` : le téléphone de l'acheteur (`placedByUserId`), lu par
+ * l'appelant au moment de construire la feuille. Seul le bon public l'imprime.
  */
 export function clientSheetOf(
   order: OrderView,
   billedCustomer: SheetCustomer | null = null,
+  buyerPhone: string | null = null,
 ): ClientSheet {
+  const variant = variantOf(order);
   return {
     ...commonOf(order),
     audience: "client",
     customer: billedCustomer ?? clientCustomerOf(order),
+    variant,
+    customerPhone: customerPhoneOf(variant, buyerPhone),
     lines: order.lines.map(clientLineOf),
     money: moneyOf(order),
   };

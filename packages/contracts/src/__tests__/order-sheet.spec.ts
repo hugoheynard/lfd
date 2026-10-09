@@ -106,6 +106,8 @@ describe("la feuille du client", () => {
     const parsed = clientSheetSchema.parse({
       ...COMMON,
       audience: "client",
+      variant: "pro",
+      customerPhone: null,
       customer: CUSTOMER,
       lines: [line],
       money: MONEY,
@@ -123,6 +125,8 @@ describe("la feuille du client", () => {
     const parsed = clientSheetSchema.parse({
       ...COMMON,
       audience: "client",
+      variant: "pro",
+      customerPhone: null,
       customer: CUSTOMER,
       lines: [{ ...line, entryPriceMillicents: 250_000, floored: true }],
       money: MONEY,
@@ -137,6 +141,8 @@ describe("la feuille du client", () => {
     const parsed = clientSheetSchema.parse({
       ...COMMON,
       audience: "client",
+      variant: "pro",
+      customerPhone: null,
       customer: CUSTOMER,
       lines: [line],
       money: MONEY,

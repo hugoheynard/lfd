@@ -287,3 +287,27 @@ describe("le tirage", () => {
     expect(clientSheetOf(order()).revision).toBe(0);
   });
 });
+
+/** Plan `documentation/order/plan-bon-public.md`, §2.2 et §5. */
+describe("le bon pro ou public", () => {
+  it("une commande de société donne le bon PRO, sans téléphone imprimé", () => {
+    const sheet = clientSheetOf(order(), null, "06 12 34 56 78");
+
+    expect(sheet.variant).toBe("pro");
+    expect(sheet.customerPhone).toBeNull();
+  });
+
+  it("une commande SANS société donne le bon PUBLIC, avec le téléphone de l'acheteur", () => {
+    const sheet = clientSheetOf(order({ companyId: null }), null, "06 12 34 56 78");
+
+    expect(sheet.variant).toBe("public");
+    expect(sheet.customerPhone).toBe("06 12 34 56 78");
+  });
+
+  it.each([null, "", "   "])(
+    "n'invente pas de téléphone quand l'acheteur n'en a pas (%p)",
+    (phone) => {
+      expect(clientSheetOf(order({ companyId: null }), null, phone).customerPhone).toBeNull();
+    },
+  );
+});

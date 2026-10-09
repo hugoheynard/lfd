@@ -154,6 +154,7 @@ function build(scenario: Scenario = {}) {
     clientele: scenario.clientele === undefined ? "public" : scenario.clientele,
     loyaltyVoucherId: scenario.voucher ?? null,
     billedCustomer: null,
+    buyerPhone: null,
   });
   const vouchers = new RecordingRedemption();
   const handler = new AbandonOrderHandler(

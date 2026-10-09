@@ -357,6 +357,21 @@ export interface AtelierSheet extends SheetCommon {
 }
 
 /**
+ * **Le bon d'un pro, ou le bon « public »** (plan
+ * `documentation/order/plan-bon-public.md`, Hugo, 2026-10-09).
+ *
+ * `public` = une commande **sans société** (`companyId === null`), y compris
+ * la commande personnelle d'un pro : c'est un achat de particulier, réglé à la
+ * commande. Le bon public ne montre ni référence d'article ni hors taxe — un
+ * particulier lit un prix taxe comprise. `pro` garde le dessin du bureau.
+ *
+ * Un champ et non une nouvelle audience : le bon reste celui du client, et
+ * c'est le même document sous la même route.
+ */
+export const sheetVariantSchema = z.enum(["pro", "public"]);
+export type SheetVariant = z.infer<typeof sheetVariantSchema>;
+
+/**
  * La feuille du client : son engagement, dans ses mots.
  *
  * 🔴 **Elle porte `customer` depuis le 2026-09-07**, et ce paragraphe disait
@@ -376,12 +391,23 @@ export const clientSheetSchema = z.object({
   ...sheetCommonShape,
   audience: z.literal("client"),
   customer: sheetCustomerSchema,
+  variant: sheetVariantSchema,
+  customerPhone: z.string().nullable(),
   lines: z.array(clientSheetLineSchema),
   money: sheetMoneySchema,
 });
 export interface ClientSheet extends SheetCommon {
   readonly audience: "client";
   readonly customer: SheetCustomer;
+  /** Pro ou public — dérivé de la commande, jamais deviné au rendu. */
+  readonly variant: SheetVariant;
+  /**
+   * Le téléphone de l'**acheteur** (le client qui a passé la commande, pas le
+   * staff qui l'a saisie pour lui), lu à la construction de la feuille.
+   * `null` sur un bon pro — son bloc client nomme une société —, et `null`
+   * quand l'acheteur n'en a pas déclaré : jamais une valeur inventée.
+   */
+  readonly customerPhone: string | null;
   readonly lines: readonly ClientSheetLine[];
   readonly money: SheetMoney;
 }

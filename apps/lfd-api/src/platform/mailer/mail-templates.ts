@@ -28,6 +28,7 @@ import {
   type ProductionDossierMailData,
 } from "./production-dossier-mail.js";
 import { MANDATE_TO_SIGN_WORDING, type MandateMailScheme } from "./mandate-to-sign-wording.js";
+import { type OrderSheetMailDocument, withAttachments } from "./order-sheet-mail-document.js";
 import { qrPng } from "./qr-image.js";
 
 /**
@@ -141,6 +142,12 @@ export interface B2bMails {
     readonly orderUrl: string;
     /** L'URL que le QR encode — vide quand il n'y a pas de jeton. */
     readonly handoverUrl: string;
+    /**
+     * Le bon de commande en PDF, joint — ou `null` : rendu ou lecture en
+     * échec, journalisé, et le courriel part sans (plan `plan-bon-public.md`,
+     * §2.4). Le même document que l'archive.
+     */
+    readonly document: OrderSheetMailDocument | null;
     /** ⚠️ Rien ne choisit encore : l'appelant passe `fr`. Cf. `mail-copy.ts`. */
     readonly locale: ContentLocale;
   };
@@ -589,18 +596,28 @@ export function b2bMailTemplates(brand: MailBranding): TemplateRegistry<B2bMails
           ...(data.orderUrl === "" ? {} : { cta: { label: copy.cta, url: data.orderUrl } }),
           footer: `${copy.changeNote}\n${copy.footer}`,
         }),
-        ...(showQr
-          ? {
-              attachments: [
+        ...withAttachments([
+          ...(showQr
+            ? [
                 {
                   filename: `retrait-${data.sheet.reference}.png`,
                   contentBase64: qrPng(data.handoverUrl).toString("base64"),
                   contentId: QR_CONTENT_ID,
                   contentType: "image/png",
                 },
-              ],
-            }
-          : {}),
+              ]
+            : []),
+          // Le bon, pour pros et particuliers : le même document que l'archive.
+          ...(data.document === null
+            ? []
+            : [
+                {
+                  filename: data.document.fileName,
+                  contentBase64: data.document.pdfBase64,
+                  contentType: "application/pdf",
+                },
+              ]),
+        ]),
       };
     },
     "ops.deploy-check": (data) => ({

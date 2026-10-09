@@ -40,6 +40,8 @@ function sheet(overrides: Partial<ClientSheet> = {}): ClientSheet {
     issuedAt: "2026-09-07T06:00:00.000Z",
     revision: 0,
     customer: { tradeName: "Hôtel des Trois Ponts", legalName: "SAS des Trois Ponts" },
+    variant: "pro",
+    customerPhone: null,
     lines: [
       {
         sku: "PAI-001",
@@ -78,6 +80,7 @@ function render(overrides: Partial<Parameters<typeof mail>[0]> = {}): ReturnType
     handoverToken: "tok_abc",
     orderUrl: "https://app.lfc.test/mes-commandes/order_1",
     handoverUrl: HANDOVER_URL,
+    document: null,
     locale: "fr",
     ...overrides,
   });
@@ -119,6 +122,30 @@ describe("le courriel de confirmation", () => {
 
     expect(rendered.attachments).toBeUndefined();
     expect(rendered.html).not.toContain("cid:");
+  });
+
+  it("joint le BON DE COMMANDE en PDF, à part du QR en ligne", () => {
+    const rendered = render({
+      document: { fileName: "bon-de-commande-ORD-4812.pdf", pdfBase64: "JVBERi0=" },
+    });
+
+    expect(rendered.attachments).toHaveLength(2);
+    const pdf = rendered.attachments?.[1];
+    expect(pdf?.filename).toBe("bon-de-commande-ORD-4812.pdf");
+    expect(pdf?.contentType).toBe("application/pdf");
+    // Pièce jointe ordinaire : sans `contentId`, le client la liste à ouvrir.
+    expect(pdf?.contentId).toBeUndefined();
+  });
+
+  it("joint le bon même sur une livraison, où il n'y a pas de QR", () => {
+    const rendered = render({
+      handoverToken: null,
+      handoverUrl: "",
+      document: { fileName: "bon-de-commande-ORD-4812.pdf", pdfBase64: "JVBERi0=" },
+    });
+
+    expect(rendered.attachments).toHaveLength(1);
+    expect(rendered.attachments?.[0]?.contentType).toBe("application/pdf");
   });
 
   it("porte le récapitulatif, dans l'ordre de l'écran", () => {

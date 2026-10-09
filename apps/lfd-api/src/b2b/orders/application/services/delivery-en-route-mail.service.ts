@@ -44,7 +44,7 @@ export class DeliveryEnRouteMail {
     if (recipient === null) {
       return false;
     }
-    const sheet = clientSheetOf(owned.view, owned.billedCustomer);
+    const sheet = clientSheetOf(owned.view, owned.billedCustomer, owned.buyerPhone);
     const address = sheet.fulfillment.address;
     const client = this.origins.clientBaseUrl();
     await this.mailer.send({

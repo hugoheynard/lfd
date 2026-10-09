@@ -205,6 +205,7 @@ function readerOf(order: OrderView | null): OrderReader {
           clientele: "public",
           loyaltyVoucherId: null,
           billedCustomer: null,
+          buyerPhone: null,
         },
   );
 }
