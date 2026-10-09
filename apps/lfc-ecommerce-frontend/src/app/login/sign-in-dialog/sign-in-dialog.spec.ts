@@ -90,12 +90,13 @@ describe('SignInDialog', () => {
     fixture.detectChanges();
   };
 
-  it('propose les trois chemins, sans en privilégier un seul', () => {
+  /** Facebook est masqué pour le moment (`FACEBOOK_LOGIN_SHOWN`, 2026-10-09). */
+  it('propose Google et l’adresse, sans Facebook pour le moment', () => {
     fixture = boot();
     const text = el().textContent ?? '';
 
     expect(text).toContain(FR.signup.google);
-    expect(text).toContain(FR.signup.facebook);
+    expect(text).not.toContain(FR.signup.facebook);
     expect(text).toContain(FR.doors.signInSubmit);
   });
 
@@ -142,11 +143,6 @@ describe('SignInDialog', () => {
     clickLabelled(FR.signup.google);
 
     expect(wire.calls).toEqual([`google:${INTENT.target}`]);
-
-    fixture = boot();
-    clickLabelled(FR.signup.facebook);
-
-    expect(wire.calls).toEqual([`facebook:${INTENT.target}`]);
   });
 
   /**
@@ -155,7 +151,7 @@ describe('SignInDialog', () => {
    * la personne est désormais connectée.
    */
   it('se ferme avant de partir, quel que soit le chemin', () => {
-    for (const label of [FR.signup.google, FR.signup.facebook, FR.doors.signInSubmit]) {
+    for (const label of [FR.signup.google, FR.doors.signInSubmit]) {
       fixture = boot();
       clickLabelled(label);
 

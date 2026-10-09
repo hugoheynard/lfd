@@ -10,6 +10,7 @@ import {
   FoldPanelRef,
 } from 'fold-ng';
 
+import { FACEBOOK_LOGIN_SHOWN } from '../../auth/auth.config';
 import { AuthFacade } from '../../auth/auth.facade';
 import { ClientCopyService } from '../../client/copy/client-copy.service';
 import { dialogSide } from '../../client/panel-side';
@@ -90,6 +91,8 @@ export class SignInDialog {
   readonly data = input.required<SignInIntent>();
 
   protected readonly t = inject(ClientCopyService).t;
+  /** Masqué pour le moment (`FACEBOOK_LOGIN_SHOWN`). */
+  protected readonly facebookShown = FACEBOOK_LOGIN_SHOWN;
   private readonly auth = inject(AuthFacade);
   private readonly ref = inject(FoldPanelRef);
 

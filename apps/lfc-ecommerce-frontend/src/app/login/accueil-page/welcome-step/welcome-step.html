@@ -36,19 +36,21 @@
         <img class="social-logo" src="brand/google-g.svg" alt="" width="20" height="20" />
         {{ t().signup.google }}
       </button>
-      <button
-        foldButton
-        class="social-button"
-        emphasis="outline"
-        intent="neutral"
-        size="lg"
-        type="button"
-        [block]="true"
-        (click)="wantsFacebook.emit()"
-      >
-        <img class="social-logo" src="brand/facebook-f.svg" alt="" width="20" height="20" />
-        {{ t().signup.facebook }}
-      </button>
+      @if (facebookShown) {
+        <button
+          foldButton
+          class="social-button"
+          emphasis="outline"
+          intent="neutral"
+          size="lg"
+          type="button"
+          [block]="true"
+          (click)="wantsFacebook.emit()"
+        >
+          <img class="social-logo" src="brand/facebook-f.svg" alt="" width="20" height="20" />
+          {{ t().signup.facebook }}
+        </button>
+      }
     </div>
 
     <app-rule-ou [label]="t().signup.orEmail" />
