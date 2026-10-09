@@ -181,7 +181,7 @@ const PREFIXES: Readonly<Record<ActivityModule, readonly string[]>> = {
     "loyalty_settings.",
     "loyalty.",
     // Le lot de prélèvement figé — constitué, annulé, déposé, et la commande
-    // réglée autrement (plan `plan-lot-de-prelevement-fige.md`, 2026-10-05).
+    // réglée autrement (plan `lot-de-prelevement-fige.md`, 2026-10-05).
     "collection.",
     // L'arrêté de facturation, figé et annulé avec son lot (plan
     // `le-prelevement-suit-la-facture.md`, 2026-10-08).

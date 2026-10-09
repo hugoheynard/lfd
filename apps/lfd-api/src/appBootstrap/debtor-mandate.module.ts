@@ -31,7 +31,7 @@ import { PrismaMandatesForBankExportReader } from "../b2b/payments/infrastructur
  * rien d'autre ne les recopie sur le trajet : le CSV de contrôle les masque.
  *
  * Depuis le 2026-10-05, deux fils de plus pour le lot figé
- * (`plan-lot-de-prelevement-fige.md`) : les mandats actifs avec leur créancier
+ * (`lot-de-prelevement-fige.md`) : les mandats actifs avec leur créancier
  * (constitution) et la relecture des mandats d'un lot (dépôt).
  *
  * Depuis le 2026-10-09, un fil de plus — le second qui fait sortir des IBAN en

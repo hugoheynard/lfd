@@ -281,7 +281,7 @@ const BATCH: Noun = { the: 'le lot', a: 'un lot' };
 
 /**
  * « … a constitué le lot « Lot B2B 202609 » de l'entité émettrice « X » —
- * 3 lignes, 1 234,00 € ». Le plan : `plan-lot-de-prelevement-fige.md`.
+ * 3 lignes, 1 234,00 € ». Le plan : `lot-de-prelevement-fige.md`.
  */
 function onBatch(verb: string, after: (fact: PhraseFact) => Segment[] = nothing): Phrase {
   return (fact) => {

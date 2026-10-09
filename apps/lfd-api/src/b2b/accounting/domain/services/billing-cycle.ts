@@ -130,7 +130,7 @@ function atLocalMidnight(day: string): Date {
  * locales ?
  *
  * La première clôture enregistrée doit l'être (plan
- * `plan-lot-de-prelevement-fige.md`, §6 bis) : le relevé de cycle a montré des
+ * `lot-de-prelevement-fige.md`) : le relevé de cycle a montré des
  * mois civils aux clients, et une première clôture ailleurs ferait changer de
  * relevé des commandes déjà montrées.
  */

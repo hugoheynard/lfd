@@ -1,6 +1,6 @@
 // ─────────────────────────────────────────────────────────────────────────────
 // Le lot de prélèvement figé — plan
-// `documentation/comptabilite/prelevement/plan-lot-de-prelevement-fige.md` (P1, P2).
+// `documentation/comptabilite/prelevement/lot-de-prelevement-fige.md`.
 // ─────────────────────────────────────────────────────────────────────────────
 //
 // Propriétaire : `src/b2b/accounting/`. Le fichier `pain.008` y est STOCKÉ,

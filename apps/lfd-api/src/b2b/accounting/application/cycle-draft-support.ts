@@ -59,7 +59,7 @@ export async function buildCycleDraft(
 
   const now = deps.clock.now();
   // La dernière clôture ENREGISTRÉE de l'entité — le lot figé l'écrit depuis
-  // le 2026-10-05 (plan `plan-lot-de-prelevement-fige.md`, §4).
+  // le 2026-10-05 (plan `lot-de-prelevement-fige.md`).
   const cycle = cycleAt(now, await deps.closures.lastClosure(legalEntityId));
   const lines = await deps.billable.billableBetween(cycle.startsAt, cycle.closesAt);
 

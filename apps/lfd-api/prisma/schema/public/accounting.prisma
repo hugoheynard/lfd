@@ -205,7 +205,7 @@ model LegalEntity {
   mandates PaymentMandate[]
 
   // Les lots de prélèvement constitués sous cette entité (plan
-  // `plan-lot-de-prelevement-fige.md`). Côté inverse obligatoire pour Prisma.
+  // `lot-de-prelevement-fige.md`). Côté inverse obligatoire pour Prisma.
   collectionBatches CollectionBatch[]
   autopilotRuns     CollectionAutopilotRun[]
 

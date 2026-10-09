@@ -209,7 +209,7 @@ import { PrismaLegalEntityRepository } from "./infrastructure/prisma-legal-entit
     { provide: StatementBillingReader, useClass: PrismaStatementBillingReader },
     { provide: LegalEntityLogoReader, useClass: PrismaLegalEntityLogoReader },
     { provide: FirstMandateLedger, useClass: PrismaFirstMandateLedger },
-    // Le lot de prélèvement figé (plan `plan-lot-de-prelevement-fige.md`).
+    // Le lot de prélèvement figé (plan `lot-de-prelevement-fige.md`).
     { provide: CollectionCandidatesReader, useClass: PrismaCollectionCandidatesReader },
     { provide: RecordedClosureReader, useClass: PrismaRecordedClosureReader },
     { provide: CollectionBatchRepository, useClass: PrismaCollectionBatchRepository },

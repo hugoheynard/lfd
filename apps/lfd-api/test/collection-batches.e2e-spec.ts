@@ -1,6 +1,6 @@
 /**
  * E2E du **lot de prélèvement figé** (plan
- * `documentation/comptabilite/prelevement/plan-lot-de-prelevement-fige.md`, P1 et P2).
+ * `documentation/comptabilite/prelevement/lot-de-prelevement-fige.md`).
  *
  * Ce que seul le vrai SQL prouve : le fichier STOCKÉ rend les mêmes octets,
  * un lot reconstitué change de `MsgId`, l'index partiel tient un lot vivant par

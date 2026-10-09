@@ -41,7 +41,7 @@ import type { CollectionBatchFile } from "../application/queries/export-collecti
 
 /**
  * Surface **staff** des lots de prélèvement figés (plan
- * `documentation/comptabilite/prelevement/plan-lot-de-prelevement-fige.md`, §4). L'action
+ * `documentation/comptabilite/prelevement/lot-de-prelevement-fige.md`). L'action
  * se déduit du verbe : `GET` lit, le reste écrit (`b2b_accounting:write`).
  */
 @Controller("admin/accounting/collection")

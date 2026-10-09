@@ -4,7 +4,7 @@ import { cents, count, day, fact, instant, named, payload, subjectLabel } from "
 
 /**
  * **Le lot de prélèvement figé** (plan
- * `documentation/comptabilite/prelevement/plan-lot-de-prelevement-fige.md`, §2) — rangé
+ * `documentation/comptabilite/prelevement/lot-de-prelevement-fige.md`) — rangé
  * dans la famille `accounting`, où l'étale `accounting.ts`.
  *
  * Sujet d'un geste sur un lot : `collection_batch`, nommé « Lot <schéma>

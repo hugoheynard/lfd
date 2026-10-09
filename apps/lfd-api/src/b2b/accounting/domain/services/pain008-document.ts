@@ -8,8 +8,7 @@ import { CreditorBicMissingError } from "../errors/accounting-errors.js";
 /**
  * **Le corps d'un `pain.008`**, quels que soient ses identifiants.
  *
- * Sorti de `pain008.ts` le 2026-10-05 (plan `plan-lot-de-prelevement-fige.md`,
- * §1) : le brouillon du cycle en cours et le lot figé rendent le MÊME message,
+ * Sorti de `pain008.ts` le 2026-10-05 (plan `lot-de-prelevement-fige.md`) : le brouillon du cycle en cours et le lot figé rendent le MÊME message,
  * et ne diffèrent que par trois choses — d'où viennent `MsgId` et
  * `EndToEndId`, ce que dit `RmtInf`, et le bandeau. Deux rendus du même
  * format finiraient par diverger ; ils partagent donc celui-ci, et chacun ne

@@ -11,7 +11,7 @@ import { GetCurrentBillingCycleQuery } from "./billing-cycle-queries.js";
  *
  * La clôture précédente est la dernière ENREGISTRÉE — celle du dernier lot
  * vivant, toutes entités confondues : la route ne nomme pas d'entité, et une
- * seule encaisse (Q4 du plan `plan-lot-de-prelevement-fige.md`, 2026-10-05).
+ * seule encaisse (Q4 du plan `lot-de-prelevement-fige.md`, 2026-10-05).
  * Sans lot, `null` : le cycle se rabat sur le 1er du mois courant.
  *
  * L'instant vient du port `Clock`, jamais de `new Date()` : c'est ce qui rend le

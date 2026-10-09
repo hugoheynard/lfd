@@ -130,7 +130,7 @@ export interface ConstituteBatchInput {
 
 /**
  * **Le lot de prélèvement** — un fichier `pain.008` figé, d'une entité, d'un
- * schéma, d'un cycle (plan `plan-lot-de-prelevement-fige.md`, §2).
+ * schéma, d'un cycle (plan `lot-de-prelevement-fige.md`).
  *
  * Il garde trois invariants, et rien d'autre ne les garde :
  *

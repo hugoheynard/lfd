@@ -3,7 +3,7 @@ import type { SequenceType } from "./pain008-document.js";
 
 /**
  * **Les références SEPA d'un lot** — dérivées de l'identifiant du LOT, jamais
- * du cycle (plan `plan-lot-de-prelevement-fige.md`, §1 ; trouvaille T16).
+ * du cycle (plan `lot-de-prelevement-fige.md` ; trouvaille T16).
  *
  * ## 🔴 Format ARRÊTÉ le 2026-10-05 — irréversible dès le premier dépôt
  *

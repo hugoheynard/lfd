@@ -2,7 +2,7 @@ import { z } from "zod";
 
 /**
  * **Les lots de prélèvement figés**, tels que l'écran du cycle les lit (plan
- * `documentation/comptabilite/prelevement/plan-lot-de-prelevement-fige.md`, §2, §4).
+ * `documentation/comptabilite/prelevement/lot-de-prelevement-fige.md`).
  * Montants en centimes.
  */
 

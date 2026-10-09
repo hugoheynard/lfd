@@ -11,7 +11,7 @@ import type { CollectionExclusionReason } from "../entities/order-collection.js"
 
 /**
  * **Qui paie quoi, sous quel mandat, chez quelle entité** — la partie pure de
- * la constitution d'un lot (plan `plan-lot-de-prelevement-fige.md`, §1, §3, §5).
+ * la constitution d'un lot (plan `lot-de-prelevement-fige.md`).
  *
  * Pour chaque commande, dans cet ordre :
  *

@@ -14,7 +14,7 @@ import type { NamedBlob } from './comptabilite-dashboard.service';
 
 /**
  * Les **lots de prélèvement figés** — l'écran « Prélèvement du mois » (plan
- * `documentation/comptabilite/prelevement/plan-lot-de-prelevement-fige.md`, P2).
+ * `documentation/comptabilite/prelevement/lot-de-prelevement-fige.md`).
  *
  * Les gestes demandent `b2b_accounting:write` ; le serveur refuse de toute
  * façon, et ses refus nomment le cas (société sans mandat, mandat révoqué…).

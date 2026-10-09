@@ -37,7 +37,7 @@ import { ConstituteCollectionBatchesCommand } from "./constitute-collection-batc
 
 /**
  * **Constitue les lots** d'une entité pour le dernier cycle clos (plan
- * `plan-lot-de-prelevement-fige.md`, §1-§4).
+ * `lot-de-prelevement-fige.md`).
  *
  * Tout se passe sous `pg_advisory_xact_lock` par entité, dans UNE transaction :
  * deux clics simultanés se suivent, et le second ne trouve plus rien à

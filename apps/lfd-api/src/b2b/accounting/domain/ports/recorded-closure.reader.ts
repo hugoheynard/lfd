@@ -1,6 +1,6 @@
 /**
  * **La clôture enregistrée** : la `cycle_closes_at` du dernier lot vivant
- * (non annulé). Plan `plan-lot-de-prelevement-fige.md`, §4 — c'est elle que
+ * (non annulé). Plan `lot-de-prelevement-fige.md` — c'est elle que
  * `cycleAt` reçoit enfin, au lieu de `null`.
  */
 export abstract class RecordedClosureReader {
