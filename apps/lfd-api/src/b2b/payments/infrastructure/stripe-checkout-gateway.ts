@@ -5,6 +5,7 @@ import { AppConfig } from "../../../platform/config/app-config.js";
 import type { CheckoutSession } from "../domain/entities/payment-link.js";
 import { PaymentGatewayUnavailableError } from "../domain/errors/payment-errors.js";
 import { CheckoutGateway, type CheckoutSessionRequest } from "../domain/ports/checkout-gateway.js";
+import { ACCEPTED_PAYMENT_METHOD_TYPES } from "./accepted-payment-methods.js";
 
 /**
  * La clé de métadonnée qui marque une session ouverte pour un lien libre. Le
@@ -38,6 +39,7 @@ export class StripeCheckoutGateway extends CheckoutGateway {
     };
     const session = await this.requireClient().checkout.sessions.create({
       mode: "payment",
+      payment_method_types: [...ACCEPTED_PAYMENT_METHOD_TYPES],
       line_items: [
         {
           quantity: 1,

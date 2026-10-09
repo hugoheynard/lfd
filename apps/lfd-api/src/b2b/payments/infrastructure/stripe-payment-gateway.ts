@@ -23,6 +23,7 @@ import {
   refusedWithoutState,
 } from "./stripe-intent-translation.js";
 import { PAYMENT_LINK_METADATA_KEY } from "./stripe-checkout-gateway.js";
+import { ACCEPTED_PAYMENT_METHOD_TYPES } from "./accepted-payment-methods.js";
 
 /**
  * Adaptateur **Stripe** du port {@link PaymentGateway}.
@@ -49,9 +50,8 @@ export class StripePaymentGateway extends PaymentGateway {
     const intent = await client.paymentIntents.create({
       amount: params.amountCents,
       currency: params.currency,
-      // Stripe choisit les moyens de paiement activés sur le compte (carte…),
-      // sans que le serveur ait à les énumérer.
-      automatic_payment_methods: { enabled: true },
+      // La carte seule — Apple Pay en est un portefeuille (2026-10-09).
+      payment_method_types: [...ACCEPTED_PAYMENT_METHOD_TYPES],
       metadata: { companyId: params.companyId ?? "personal" },
     });
     if (intent.client_secret === null) {

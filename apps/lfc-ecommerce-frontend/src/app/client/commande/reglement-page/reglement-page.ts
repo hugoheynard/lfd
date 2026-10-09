@@ -27,6 +27,7 @@ import { ClientCopyService, fill } from '../../copy/client-copy.service';
 import { formatCents } from '../../format-money';
 import { NotifyService } from '../../../notify.service';
 import { StripeLoader } from '../../stripe-loader.service';
+import { PAYMENT_ELEMENT_OPTIONS } from '../payment-element-options';
 
 /** L'écran ne peut être que dans un de ces états, et il n'en montre qu'un. */
 type Phase = 'loading' | 'ready' | 'paying' | 'unavailable' | 'closed';
@@ -206,7 +207,7 @@ export class ReglementPage {
     try {
       this.stripe = stripe;
       this.elements = stripe.elements({ clientSecret: payment.clientSecret });
-      this.elements.create('payment').mount(this.mountRef().nativeElement);
+      this.elements.create('payment', PAYMENT_ELEMENT_OPTIONS).mount(this.mountRef().nativeElement);
       this.phase.set('ready');
     } catch {
       this.unavailable();

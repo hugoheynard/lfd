@@ -12,6 +12,7 @@ import { FoldButtonComponent, FoldCalloutComponent } from 'fold-ng';
 import { loadStripe, type Stripe, type StripeElements } from '@stripe/stripe-js';
 
 import { formatEurValue } from '../../data/catalogue-seed';
+import { PAYMENT_ELEMENT_OPTIONS } from '../../../client/commande/payment-element-options';
 
 /**
  * Étape **paiement carte** du checkout (sociétés `per_order`).
@@ -69,7 +70,7 @@ export class StripePayment {
       }
       this.stripe = stripe;
       this.elements = stripe.elements({ clientSecret: this.clientSecret() });
-      const paymentElement = this.elements.create('payment');
+      const paymentElement = this.elements.create('payment', PAYMENT_ELEMENT_OPTIONS);
       paymentElement.mount(this.mountRef().nativeElement);
       this.loading.set(false);
     } catch {
