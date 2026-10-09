@@ -292,7 +292,7 @@ export const FR: ClientCopy = {
     settleTitle: 'Comment réglez-vous ?',
     settleCard: 'Paiement direct',
     settleAccount: 'Ajouter au compte',
-    browse: 'Voir le rayon',
+    closeEmpty: 'Fermer',
     whoTitle: 'Qui passe cette commande ?',
     whoHint: 'Il nous faut un nom et une adresse pour vous envoyer votre QR de retrait.',
     whoRegister: 'Je commande pour la première fois',

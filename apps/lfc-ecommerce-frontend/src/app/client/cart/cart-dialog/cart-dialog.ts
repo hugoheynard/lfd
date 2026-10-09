@@ -195,12 +195,13 @@ export class CartDialog {
 
   /**
    * Le bouton nomme la SUITE, et elle dépend de ce qui manque : un panier vide
-   * renvoie au rayon, un panier sans mode de service renvoie à la question, et
+   * se ferme (il disait « Voir le rayon », et ne faisait que fermer — ouvert
+   * depuis « Mes commandes », il y laissait ; Hugo, 2026-10-09), un panier sans mode de service renvoie à la question, et
    * un panier prêt porte le montant.
    */
   protected readonly ctaLabel = computed(() => {
     if (this.cart.isEmpty()) {
-      return this.t().cart.browse;
+      return this.t().cart.closeEmpty;
     }
     if (this.choice() === null) {
       return this.t().shop.pickService;

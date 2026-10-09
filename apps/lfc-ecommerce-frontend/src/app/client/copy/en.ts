@@ -294,7 +294,7 @@ export const EN: ClientCopy = {
     settleTitle: 'How are you paying?',
     settleCard: 'Pay now',
     settleAccount: 'Add to the account',
-    browse: 'See the counter',
+    closeEmpty: 'Close',
     whoTitle: 'Who is placing this order?',
     whoHint: 'We need a name and an address to send you your pickup QR.',
     whoRegister: 'This is my first order',

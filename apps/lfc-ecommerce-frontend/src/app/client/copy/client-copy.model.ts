@@ -542,7 +542,11 @@ export interface ClientCopy {
     readonly settleTitle: string;
     readonly settleCard: string;
     readonly settleAccount: string;
-    readonly browse: string;
+    /**
+     * Le bouton d'un panier vide : il ferme le panneau (2026-10-09). Il disait
+     * « Voir le rayon » et, ouvert depuis « Mes commandes », y ramenait.
+     */
+    readonly closeEmpty: string;
     readonly back: string;
     /**
      * L'invite qui remplace le règlement tant qu'on ne sait pas QUI commande.

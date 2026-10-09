@@ -297,7 +297,7 @@ export const IT: ClientCopy = {
     settleTitle: 'Come pagate ?',
     settleCard: 'Pagamento diretto',
     settleAccount: 'Aggiungi al conto',
-    browse: 'Vedi il banco',
+    closeEmpty: 'Chiudi',
     whoTitle: 'Chi effettua questo ordine?',
     whoHint: 'Ci servono un nome e un indirizzo per inviarle il QR di ritiro.',
     whoRegister: 'È il mio primo ordine',
