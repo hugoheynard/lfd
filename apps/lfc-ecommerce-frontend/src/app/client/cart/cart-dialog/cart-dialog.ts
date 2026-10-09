@@ -80,10 +80,18 @@ export class CartDialog {
     surface: 'solid',
   };
 
-  /** Ouvre le panier. Il ne rend rien : ce qu'on y décide part par le routeur. */
+  /**
+   * Ouvre le panier. Il ne rend rien : ce qu'on y décide part par le routeur.
+   *
+   * ⚠️ **Non modal en pile** (Hugo, 2026-10-09) : le voile de la feuille du bas
+   * bloquait la barre de l'app, donc la pastille qui devait la refermer. Au
+   * bureau, le dialogue centré reste modal — voile, piège de focus, Échap.
+   */
   static open(panels: FoldPanelHostService): FoldPanelRef<void> {
+    const side = dialogSide();
     return panels.open<undefined, void>(CartDialog, {
-      side: dialogSide(),
+      side,
+      modal: side !== 'bottom',
       stack: true,
       data: undefined,
     });

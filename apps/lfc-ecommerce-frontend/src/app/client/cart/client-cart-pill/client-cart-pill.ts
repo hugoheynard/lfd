@@ -7,6 +7,7 @@ import {
   FoldPopoverTriggerDirective,
 } from 'fold-ng';
 
+import { BarSheet } from '../../shell/bar-sheet.service';
 import { formatCents } from '../../format-money';
 import { CartSummary } from '../cart-summary/cart-summary';
 import { ClientCart } from '../client-cart.service';
@@ -91,6 +92,21 @@ export class ClientCartPill {
   protected async openCart(): Promise<void> {
     const { CartDialog } = await import('../cart-dialog/cart-dialog');
     CartDialog.open(this.panels);
+  }
+
+  /** La feuille de barre ouverte, partagée avec la cloche : une seule à la fois. */
+  private readonly sheets = inject(BarSheet);
+
+  /**
+   * **Un second clic sur la pastille referme le panier** (Hugo, 2026-10-09), et
+   * l'ouvrir ferme les notifications : en pile la feuille n'a plus de voile, la
+   * barre reste cliquable, et deux feuilles s'empilaient.
+   */
+  protected toggleCart(): void {
+    void this.sheets.toggle('cart', async () => {
+      const { CartDialog } = await import('../cart-dialog/cart-dialog');
+      return CartDialog.open(this.panels);
+    });
   }
 
   /** Depuis le popover : on le referme d'abord, sinon il reste sous le panneau. */

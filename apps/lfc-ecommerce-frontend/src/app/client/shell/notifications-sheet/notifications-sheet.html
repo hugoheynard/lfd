@@ -1,0 +1,9 @@
+<fold-panel-header
+  [title]="t().chrome.notifications"
+  [subtitle]="feed.countLine()"
+  [closeLabel]="t().chrome.notificationsClose"
+/>
+
+<fold-panel-body>
+  <app-notifications-feed-view [withHead]="false" />
+</fold-panel-body>

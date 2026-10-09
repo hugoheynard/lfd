@@ -15,7 +15,7 @@
 <!-- EN PILE : le panier ENTIER, en feuille du bas. C'était un lien vers la page
      panier, qui n'existe plus — elle est devenue un panneau, et `dialogSide()`
      le pose en bas sous le pli. -->
-<button class="pill in-pocket" type="button" [attr.aria-label]="label()" (click)="void openCart()">
+<button class="pill in-pocket" type="button" [attr.aria-label]="label()" (click)="toggleCart()">
   <ng-container [ngTemplateOutlet]="guts" />
 </button>
 

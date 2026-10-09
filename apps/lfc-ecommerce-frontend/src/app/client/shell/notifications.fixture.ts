@@ -1,4 +1,4 @@
-import type { LocaleCode } from '../../client-locale.service';
+import type { LocaleCode } from '../client-locale.service';
 
 /**
  * 🔴 **DES FAITS INVENTÉS. Aucune de ces quatre lignes n'est vraie.**
@@ -21,10 +21,10 @@ import type { LocaleCode } from '../../client-locale.service';
  *
  * ## Le seul point à rebrancher
  *
- * `NotificationsMenu` lit ce fichier en **une ligne** — la seule occurrence de
- * `NOTIFICATIONS_DEMO` dans le composant. Le jour où le fil existe, cette ligne
+ * `NotificationsFeed` lit ce fichier en **une ligne** — la seule occurrence de
+ * `NOTIFICATIONS_DEMO` dans le service. Le jour où le fil existe, cette ligne
  * devient une lecture de service, ce fichier disparaît, et rien d'autre ne
- * bouge : l'état « lu » est déjà porté par un signal du composant, prêt à
+ * bouge : l'état « lu » est déjà porté par un signal du service, prêt à
  * devenir un appel.
  *
  * Ce qui reste à spécifier côté serveur avant ça, et que cette maquette ne
