@@ -49,7 +49,7 @@
                 label="Surtitre"
                 optional
                 optionalLabel="facultatif"
-                hint="Vide : la boutique garde son surtitre."
+                hint="Vide : la carte n'a pas de surtitre."
                 [readOnly]="!canWrite()"
                 [value]="form.cards[audience()].kicker[lang()]"
                 (valueChange)="setText('kicker', $event)"

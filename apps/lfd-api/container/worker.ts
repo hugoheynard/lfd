@@ -312,7 +312,7 @@ async function triggerQualityUploadSweep(env: Env): Promise<void> {
     "admin/livraison/geocodage/sweep",
     "admin/livraison/positions/sweep",
     // L'anonymisation des messages « Nous écrire » traités depuis douze mois
-    // (`documentation/contenu-ecommerce/nous-contacter.md`, §5.3).
+    // (`documentation/contenu-ecommerce/demandes-clients.md`, §5.3).
     "admin/contact/messages/anonymization/sweep",
   ]) {
     await postSweep(env, token, path);
@@ -426,7 +426,7 @@ async function triggerRoundsGapBell(env: Env): Promise<void> {
 /**
  * Réveille le container et passe l'expiration des commandes boutique non
  * réglées : annulées avec leur intention 30 minutes après leur passation
- * (plan `documentation/order/plan-commandes-non-reglees.md`, §4.5). Sur le cron
+ * (plan `documentation/order/commande-carte-reglee.md`, §4.5). Sur le cron
  * de RAFRAÎCHISSEMENT, pas sur un cron à lui : passer toutes les cinq minutes
  * fait une promesse d'« au plus 35 minutes ». Même porte et même jeton que
  * l'autopilot de la facture du mois ; idempotent, l'écriture est conditionnée

@@ -1,21 +1,17 @@
-import {
-  CONTACT_BOUNDS,
-  type ContactLocalizedText,
-  type ContactSubjectAudience,
-} from "@lfd/contracts";
+import { CONTACT_BOUNDS, type ContactLocalizedText, type ContactAudience } from "@lfd/contracts";
 
 import { PhoneNumber } from "../../account/domain/value-objects/phone-number.js";
 import { localizedText } from "./contact-text.js";
 import {
   ContactPhoneIncompleteError,
-  ContactSubjectPositionInvalidError,
+  ContactPositionInvalidError,
 } from "./errors/contact-errors.js";
 
 /** Ce que le staff règle d'un numéro : tout, d'un bloc. */
 export interface ContactPhoneSettings {
   readonly label: ContactLocalizedText;
   readonly number: string;
-  readonly audience: ContactSubjectAudience;
+  readonly audience: ContactAudience;
   readonly position: number;
   readonly active: boolean;
 }
@@ -85,7 +81,7 @@ function validated(input: ContactPhoneSettings): ContactPhoneSettings {
     throw new ContactPhoneIncompleteError("number");
   }
   if (!Number.isInteger(input.position) || input.position < 0) {
-    throw new ContactSubjectPositionInvalidError(input.position);
+    throw new ContactPositionInvalidError(input.position);
   }
   return {
     label,

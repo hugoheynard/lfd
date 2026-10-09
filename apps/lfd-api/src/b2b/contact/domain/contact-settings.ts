@@ -9,7 +9,7 @@ import { localizedText } from "./contact-text.js";
 
 /**
  * **La carte de contact de la boutique** — ses textes pour les pros et
- * les particuliers (`nous-contacter.md`, §4).
+ * les particuliers (`demandes-clients.md`, §4).
  *
  * Pas un agrégat : un réglage unique sans transition, comme `OrderOpening`.
  * Ce qu'elle garantit : des textes rognés et bornés, et la TRACE — un réglage

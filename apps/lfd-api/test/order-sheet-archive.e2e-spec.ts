@@ -93,7 +93,7 @@ async function placeOrder(): Promise<PlacedOrderResponse> {
   );
   // Réglée : depuis le 2026-10-09, le bon d'un retrait NON réglé n'est pas
   // archivé (il n'a pas encore de QR, et le figer sans QR serait définitif —
-  // plan-carte-reglee-avant-tout.md §4.2). Ce qu'on éprouve ici est l'archive.
+  // commande-carte-reglee.md §4.2). Ce qu'on éprouve ici est l'archive.
   await ctx.prisma.order.update({ where: { id: placed.id }, data: { paymentStatus: "paid" } });
   return placed;
 }

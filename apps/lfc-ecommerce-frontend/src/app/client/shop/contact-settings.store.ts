@@ -2,6 +2,7 @@ import { HttpClient } from '@angular/common/http';
 import { inject, Injectable, signal } from '@angular/core';
 // Valeurs par le sous-chemin sans zod : l'accueil est au démarrage (budget `cloudflare`).
 import {
+  CONTACT_CARD_DEFAULTS,
   DEFAULT_CONTACT_SETTINGS,
   type ContactLocalizedText,
   type CustomerAudience,
@@ -14,19 +15,12 @@ import type { LocaleCode } from '../client-locale.service';
 
 /**
  * **La carte de contact réglée au back-office** — le numéro et les textes par
- * public (`GET /contact-settings`, public ; `documentation/contenu-ecommerce/nous-contacter.md`, §4).
+ * public (`GET /contact-settings`, public ; `documentation/contenu-ecommerce/demandes-clients.md`, §4).
  *
  * Tant que le réglage n'est pas lu, ou si sa lecture échoue, il vaut son défaut
  * TOUT VIDE : la carte garde alors les textes du dictionnaire. Une lecture
  * ratée ne fait donc rien disparaître.
  */
-/**
- * Le numéro de repli, quand le back-office n'en règle aucun. Une constante et
- * non une ligne de dictionnaire : un numéro ne se traduit pas, et le panneau
- * legacy, chargé au démarrage, n'a pas à embarquer les textes de l'accueil.
- */
-export const FALLBACK_CONTACT_PHONE = '+33 4 79 06 12 40';
-
 /** Le défaut public : aucun numéro, les cartes vides du contrat. */
 export const NO_CONTACT_SETTINGS: PublicContactSettingsView = {
   phones: [],
@@ -90,7 +84,7 @@ export interface ShownPhone {
 
 /**
  * Les numéros de ce public (`both` compris), dans l'ordre réglé, libellés dans
- * la langue de l'écran ; aucun → le seul {@link FALLBACK_CONTACT_PHONE}.
+ * la langue de l'écran ; aucun → le seul numéro de repli de `CONTACT_CARD_DEFAULTS`.
  */
 export function phonesFor(
   settings: PublicContactSettingsView,
@@ -101,5 +95,5 @@ export function phonesFor(
     .filter((phone) => phone.audience === 'both' || phone.audience === audience)
     .map((phone) => ({ label: localizedOr(phone.label, locale, ''), number: phone.number.trim() }))
     .filter((phone) => phone.number !== '');
-  return kept.length > 0 ? kept : [{ label: '', number: FALLBACK_CONTACT_PHONE }];
+  return kept.length > 0 ? kept : [{ label: '', number: CONTACT_CARD_DEFAULTS.phone }];
 }

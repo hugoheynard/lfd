@@ -396,6 +396,10 @@ import { AdminSupervisionController } from "./http/admin-supervision.controller.
     // DÉLÈGUE la lecture du sujet de remise plutôt que de recopier son `select`,
     // et Nest doit pouvoir le lui donner là où il est instancié.
     OrderReader,
+    // Le garde-fou d'accès, que le signalement d'un problème (`b2b/contact`)
+    // applique avec `isOrderVisible` : la règle d'accès d'une commande, pas
+    // une seconde (`demandes-clients.md`, §6.4, 2026-10-09).
+    OrderGuardReader,
     // Les commandes définitives, que la fidélité crédite (plan des points,
     // D3) : elle les lit par ce port, jamais dans les tables de la commande.
     CompletedOrderReader,

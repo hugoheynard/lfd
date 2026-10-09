@@ -142,6 +142,17 @@ export const b2bRoutes: Routes = [
               ),
           },
           {
+            // Les motifs des demandes, un onglet par type. Droit du contact,
+            // pas celui des réglages de vente (demandes-clients.md, §3.4).
+            path: 'motifs-des-demandes',
+            title: 'Motifs des demandes — LFC B2B admin',
+            canActivate: [permissionGuard('b2b_contact:read')],
+            loadComponent: () =>
+              import('./demandes/request-reasons-page/request-reasons-page').then(
+                (m) => m.RequestReasonsPage,
+              ),
+          },
+          {
             path: 'heures-limites',
             title: 'Heures limites de commande — LFC B2B admin',
             loadComponent: () =>
@@ -152,40 +163,30 @@ export const b2bRoutes: Routes = [
         ],
       },
       {
-        // « NOUS ÉCRIRE » — les objets du formulaire, la carte de contact, et
-        // les messages reçus (nous-contacter.md), en trois onglets routés.
-        // Son propre droit : on peut répondre aux messages sans régler la
-        // vente, et l'inverse.
+        // LA CARTE DE CONTACT — surtitre, titre, phrase et numéros. Elle portait
+        // aussi les objets et la messagerie, devenus « Motifs des demandes » et
+        // « Demandes clients » (demandes-clients.md, §3.5). Les anciennes
+        // adresses de ses onglets redirigent : elles sont dans des favoris.
         path: 'contact',
         title: 'Contact — LFC B2B admin',
         canActivate: [permissionGuard('b2b_contact:read')],
         loadComponent: () =>
           import('./contact/contact-page/contact-page').then((m) => m.ContactPage),
-        children: [
-          { path: '', pathMatch: 'full', redirectTo: 'carte' },
-          {
-            path: 'carte',
-            title: 'Contenu de la carte — LFC B2B admin',
-            loadComponent: () =>
-              import('./contact/contact-card-settings/contact-card-settings').then(
-                (m) => m.ContactCardSettings,
-              ),
-          },
-          {
-            path: 'formulaire',
-            title: 'Formulaire de contact — LFC B2B admin',
-            loadComponent: () =>
-              import('./contact/contact-subjects/contact-subjects').then((m) => m.ContactSubjects),
-          },
-          {
-            // L'adresse que la cloche donne (`CONTACT_MESSAGES_LINK` côté API) :
-            // elle ne change pas de forme quand l'écran en change.
-            path: 'messages',
-            title: 'Messagerie — LFC B2B admin',
-            loadComponent: () =>
-              import('./contact/contact-messages/contact-messages').then((m) => m.ContactMessages),
-          },
-        ],
+      },
+      { path: 'contact/carte', pathMatch: 'full', redirectTo: 'contact' },
+      { path: 'contact/formulaire', pathMatch: 'full', redirectTo: 'reglages/motifs-des-demandes' },
+      // L'ancienne adresse de la cloche : un courriel déjà parti la porte encore.
+      { path: 'contact/messages', pathMatch: 'full', redirectTo: 'demandes' },
+      {
+        // LA BOÎTE DES DEMANDES CLIENTS — « Nous écrire » et les problèmes de
+        // commande. Son droit est celui du contact : répondre aux clients
+        // n'est pas régler la vente (demandes-clients.md, §6.8).
+        // `?demande=<id>` vient du courriel à l'équipe.
+        path: 'demandes',
+        title: 'Demandes clients — LFC B2B admin',
+        canActivate: [permissionGuard('b2b_contact:read')],
+        loadComponent: () =>
+          import('./demandes/demandes-page/demandes-page').then((m) => m.DemandesPage),
       },
       {
         // LA BOÎTE DE RÉCEPTION — avant le catalogue dans la lecture comme dans

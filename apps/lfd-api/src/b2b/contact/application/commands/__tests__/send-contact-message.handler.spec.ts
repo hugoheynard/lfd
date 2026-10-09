@@ -1,41 +1,24 @@
-import type { ContactMessagePayload, CustomerAudience } from "@lfd/contracts";
+import type { ContactMessagePayload } from "@lfd/contracts";
 
 import { RecordingPublisher } from "../../../../../platform/events/__tests__/recording-publisher.js";
 import { FixedIdGenerator } from "../../../../../platform/id/fixed-id-generator.js";
 import { FixedClock } from "../../../../../platform/time/fixed-clock.js";
-import { ContactMessageReceivedEvent } from "../../../domain/contact-message.events.js";
-import { ContactSubject } from "../../../domain/contact-subject.js";
+import { CustomerRequestReceivedEvent } from "../../../domain/customer-request.events.js";
+import type { RequestReason } from "../../../domain/request-reason.js";
 import {
-  ContactMessageIncompleteError,
-  ContactSubjectNotFoundError,
-  ContactSubjectUnavailableError,
+  CustomerRequestIncompleteError,
+  RequestReasonNotFoundError,
+  RequestReasonUnavailableError,
 } from "../../../domain/errors/contact-errors.js";
+import { AT, CONTACT_SETTINGS, reason } from "../../../domain/__tests__/request-fixtures.js";
 import { SendContactMessageCommand } from "../send-contact-message.command.js";
 import { SendContactMessageHandler } from "../send-contact-message.handler.js";
-import { ContactSenderAudience } from "../../../domain/ports/contact-sender-audience.js";
-import { MemoryMessages, MemorySubjects } from "./contact-doubles.js";
+import { FixedAudiences, MemoryReasons, MemoryRequests } from "./contact-doubles.js";
 
-const AT = new Date(0);
 const IP = "203.0.113.x";
 
-function subject(
-  overrides: Partial<Parameters<typeof ContactSubject.create>[0]> = {},
-): ContactSubject {
-  return ContactSubject.create({
-    id: "s_pro",
-    label: { fr: "Devenir client pro", en: "", it: "" },
-    recipientEmail: "commercial@lfc.fr",
-    position: 0,
-    active: true,
-    audience: "b2b",
-    priority: "urgent",
-    at: AT,
-    ...overrides,
-  });
-}
-
 const PAYLOAD: ContactMessagePayload = {
-  subjectId: "s_pro",
+  reasonId: "r_pro",
   name: "Jean Martin",
   email: "jean@exemple.fr",
   phone: "",
@@ -43,26 +26,17 @@ const PAYLOAD: ContactMessagePayload = {
   lfd_trap: "",
 };
 
-/** Le public déduit : `b2b` pour la société `c_active`, `b2c` sinon. */
-class FixedAudiences extends ContactSenderAudience {
-  readonly asked: (string | null)[] = [];
-  of(companyId: string | null): Promise<CustomerAudience> {
-    this.asked.push(companyId);
-    return Promise.resolve(companyId === "c_active" ? "b2b" : "b2c");
-  }
-}
-
 const PRO = { userId: "u1", companyId: "c_active" };
 
-function setup(...subjects: ContactSubject[]): {
+function setup(...reasons: RequestReason[]): {
   handler: SendContactMessageHandler;
-  messages: MemoryMessages;
+  messages: MemoryRequests;
   events: RecordingPublisher;
 } {
-  const messages = new MemoryMessages();
+  const messages = new MemoryRequests();
   const events = new RecordingPublisher();
   const handler = new SendContactMessageHandler(
-    new MemorySubjects(...subjects),
+    new MemoryReasons(...reasons),
     messages,
     new FixedIdGenerator("msg"),
     new FixedClock(AT),
@@ -73,46 +47,36 @@ function setup(...subjects: ContactSubject[]): {
 }
 
 describe("SendContactMessageHandler — « Nous écrire »", () => {
-  it("range le message, puis publie sa réception vers l'adresse de l'objet", async () => {
-    const { handler, messages, events } = setup(subject());
+  it("range le message, puis publie sa réception vers l'adresse de l'motif", async () => {
+    const { handler, messages, events } = setup(reason());
     await handler.execute(new SendContactMessageCommand(PAYLOAD, PRO, IP));
 
     expect(messages.saved).toHaveLength(1);
     expect(messages.saved[0]?.toPersistence()).toMatchObject({
       id: "msg_000001",
-      subjectLabel: "Devenir client pro",
-      priority: "urgent",
+      reason: { id: "r_pro", labelFr: "Devenir client pro", priority: "urgent" },
+      details: { kind: "contact" },
       userId: "u1",
       companyId: "c_active",
     });
     expect(events.published).toHaveLength(1);
     const received = events.published[0];
-    expect(received).toBeInstanceOf(ContactMessageReceivedEvent);
+    expect(received).toBeInstanceOf(CustomerRequestReceivedEvent);
     expect(received).toMatchObject({ recipientEmail: "commercial@lfc.fr" });
     // Pas journalisé : la charge porterait des données qui s'anonymisent.
     expect(events.traced).toHaveLength(0);
   });
 
-  it("fige la priorité de l'objet : la changer ensuite ne requalifie pas le message", async () => {
-    const pro = subject();
+  it("fige la priorité de l'motif : la changer ensuite ne requalifie pas le message", async () => {
+    const pro = reason();
     const { handler, messages } = setup(pro);
     await handler.execute(new SendContactMessageCommand(PAYLOAD, PRO, IP));
-    pro.revise(
-      {
-        label: { fr: "Devenir client pro", en: "", it: "" },
-        recipientEmail: "commercial@lfc.fr",
-        position: 0,
-        active: true,
-        audience: "b2b",
-        priority: "low",
-      },
-      AT,
-    );
-    expect(messages.saved[0]?.toPersistence().priority).toBe("urgent");
+    pro.revise({ ...CONTACT_SETTINGS, priority: "low" }, AT);
+    expect(messages.saved[0]?.toPersistence().reason.priority).toBe("urgent");
   });
 
   it("un client connecté : sa personne et sa société sont rangées avec le message", async () => {
-    const { handler, messages } = setup(subject());
+    const { handler, messages } = setup(reason());
     await handler.execute(new SendContactMessageCommand(PAYLOAD, PRO, IP));
     expect(messages.saved[0]?.toPersistence()).toMatchObject({
       userId: "u1",
@@ -122,7 +86,7 @@ describe("SendContactMessageHandler — « Nous écrire »", () => {
   });
 
   it("champ piège rempli : accepté en apparence, rien rangé ni publié", async () => {
-    const { handler, messages, events } = setup(subject());
+    const { handler, messages, events } = setup(reason());
     await expect(
       handler.execute(new SendContactMessageCommand({ ...PAYLOAD, lfd_trap: "spam" }, null, IP)),
     ).resolves.toBeUndefined();
@@ -133,60 +97,71 @@ describe("SendContactMessageHandler — « Nous écrire »", () => {
   it("un humain rapide n'est plus écarté : aucun délai minimal", async () => {
     // Régression (revue du 2026-10-09) : le délai déclaré par le client faisait
     // perdre en silence le message d'un client connecté, pré-rempli.
-    const { handler, messages } = setup(subject());
+    const { handler, messages } = setup(reason());
     await handler.execute(new SendContactMessageCommand(PAYLOAD, PRO, IP));
     expect(messages.saved).toHaveLength(1);
   });
 
-  it("le piège passe AVANT l'objet : un robot n'apprend pas qu'un objet n'existe pas", async () => {
+  it("le piège passe AVANT l'motif : un robot n'apprend pas qu'un motif n'existe pas", async () => {
     const { handler } = setup();
     await expect(
       handler.execute(new SendContactMessageCommand({ ...PAYLOAD, lfd_trap: "x" }, null, IP)),
     ).resolves.toBeUndefined();
   });
 
-  it("refuse un objet inconnu", async () => {
+  it("refuse un motif inconnu", async () => {
     const { handler } = setup();
     await expect(handler.execute(new SendContactMessageCommand(PAYLOAD, PRO, IP))).rejects.toThrow(
-      ContactSubjectNotFoundError,
+      RequestReasonNotFoundError,
     );
   });
 
-  it("le public se déduit : un visiteur est `b2c`, un objet pro lui est refusé", async () => {
-    const { handler, messages } = setup(subject());
+  it("le public se déduit : un visiteur est `b2c`, un motif pro lui est refusé", async () => {
+    const { handler, messages } = setup(reason());
     await expect(handler.execute(new SendContactMessageCommand(PAYLOAD, null, IP))).rejects.toThrow(
-      ContactSubjectUnavailableError,
+      RequestReasonUnavailableError,
     );
     expect(messages.saved).toHaveLength(0);
   });
 
-  it("un client connecté hors société active est `b2c` : l'objet pro lui est refusé", async () => {
-    const { handler } = setup(subject());
+  it("un client connecté hors société active est `b2c` : l'motif pro lui est refusé", async () => {
+    const { handler } = setup(reason());
     await expect(
       handler.execute(
         new SendContactMessageCommand(PAYLOAD, { userId: "u2", companyId: null }, IP),
       ),
-    ).rejects.toThrow(ContactSubjectUnavailableError);
+    ).rejects.toThrow(RequestReasonUnavailableError);
   });
 
-  it("refuse un objet désactivé, ou archivé", async () => {
-    const archived = subject({ id: "s_old" });
+  it("refuse un motif désactivé, ou archivé", async () => {
+    const archived = reason({ id: "r_old" });
     archived.archive(AT);
-    const { handler } = setup(subject({ active: false }), archived);
+    const { handler } = setup(reason({ active: false }), archived);
     await expect(handler.execute(new SendContactMessageCommand(PAYLOAD, PRO, IP))).rejects.toThrow(
-      ContactSubjectUnavailableError,
+      RequestReasonUnavailableError,
     );
     await expect(
-      handler.execute(new SendContactMessageCommand({ ...PAYLOAD, subjectId: "s_old" }, PRO, IP)),
-    ).rejects.toThrow(ContactSubjectUnavailableError);
+      handler.execute(new SendContactMessageCommand({ ...PAYLOAD, reasonId: "r_old" }, PRO, IP)),
+    ).rejects.toThrow(RequestReasonUnavailableError);
   });
 
   it("refuse un message vide : rien rangé, rien publié", async () => {
-    const { handler, messages, events } = setup(subject());
+    const { handler, messages, events } = setup(reason());
     await expect(
       handler.execute(new SendContactMessageCommand({ ...PAYLOAD, message: "  " }, PRO, IP)),
-    ).rejects.toThrow(ContactMessageIncompleteError);
+    ).rejects.toThrow(CustomerRequestIncompleteError);
     expect(messages.saved).toHaveLength(0);
     expect(events.published).toHaveLength(0);
+  });
+});
+
+describe("SendContactMessageHandler — le motif doit être du formulaire « Nous écrire »", () => {
+  it("refuse un motif `order_problem`, même actif et visible (§6.5)", async () => {
+    const problem = reason({ kind: "order_problem" });
+    const { handler, messages } = setup(problem);
+    await expect(handler.execute(new SendContactMessageCommand(PAYLOAD, PRO, IP))).rejects.toThrow(
+      RequestReasonUnavailableError,
+    );
+    expect(messages.saved).toHaveLength(0);
   });
 });

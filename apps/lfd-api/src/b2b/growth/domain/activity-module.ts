@@ -57,9 +57,9 @@ const PREFIXES: Readonly<Record<ActivityModule, readonly string[]>> = {
   commercial: [
     "lead.",
     "appointment.",
-    // Un message « Nous écrire » traité (2026-10-09) : la relation client,
-    // comme les demandes de rappel et les rendez-vous.
-    "contact_message.",
+    // Une demande client traitée (2026-10-09) : la relation client, comme
+    // les demandes de rappel et les rendez-vous.
+    "customer_request.",
     "reco.",
     "price_rule.",
     "price_floor.",

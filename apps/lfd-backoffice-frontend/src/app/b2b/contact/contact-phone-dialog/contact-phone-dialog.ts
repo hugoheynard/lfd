@@ -12,7 +12,7 @@ import {
   CONTACT_BOUNDS,
   type ContactPhonePayload,
   type ContactPhoneView,
-  type ContactSubjectAudience,
+  type ContactAudience,
 } from '@lfd/contracts';
 import { httpErrorMessage } from '@lfd/endpoints';
 import {
@@ -85,7 +85,7 @@ export class ContactPhoneDialog implements FoldPanelContent<ContactPhoneDialogDa
 
   protected readonly labels = signal<Record<ContactLang, string>>({ fr: '', en: '', it: '' });
   protected readonly number = signal('');
-  protected readonly audience = signal<ContactSubjectAudience>('both');
+  protected readonly audience = signal<ContactAudience>('both');
   protected readonly active = signal(true);
   protected readonly position = signal<number | null>(0);
   protected readonly lang = signal<ContactLang>('fr');

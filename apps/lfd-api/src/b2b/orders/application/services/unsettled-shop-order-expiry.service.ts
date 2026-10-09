@@ -22,7 +22,7 @@ export interface UnsettledShopOrderExpiryReport {
 
 /**
  * **Une commande boutique non réglée n'est pas une commande** (plan
- * `documentation/order/plan-commandes-non-reglees.md`, §4.1, §4.2, §4.4).
+ * `documentation/order/commande-carte-reglee.md`, §4.1, §4.2, §4.4).
  *
  * Deux déclencheurs, un seul chemin : l'âge (`expireLapsed`, au cron) et la
  * nouvelle passation du même particulier (`replaceEarlier`). Pour chaque

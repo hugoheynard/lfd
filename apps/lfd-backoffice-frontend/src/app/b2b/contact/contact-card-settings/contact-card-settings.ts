@@ -1,6 +1,7 @@
 import { ChangeDetectionStrategy, Component, computed, inject, signal } from '@angular/core';
 import {
   CONTACT_BOUNDS,
+  CONTACT_CARD_DEFAULTS,
   type ContactCardText,
   type ContactPhoneView,
   type ContactSettingsPayload,
@@ -36,7 +37,7 @@ import {
 } from '../contact-langs';
 import { ContactPhones } from '../contact-phones/contact-phones';
 import { ContactService } from '../contact.service';
-import { SHOP_CONTACT_FALLBACK } from '../shop-contact-fallback';
+import { SHOP_CONTACT_BUTTONS } from '../shop-contact-fallback';
 
 type LoadState = 'loading' | 'ready' | 'error';
 type Part = 'kicker' | 'title' | 'body';
@@ -171,23 +172,24 @@ export class ContactCardSettings {
     if (draft === null) return null;
     const audience = this.audience();
     const lang = this.lang();
-    const shop = SHOP_CONTACT_FALLBACK;
+    const fallback = CONTACT_CARD_DEFAULTS.cards[audience];
     const card = draft.cards[audience];
     const phones = this.phones().filter(
       (p) => p.active && (p.audience === 'both' || p.audience === audience),
     );
-    const call = shop.call[lang];
+    const call = SHOP_CONTACT_BUTTONS.call[lang];
     return {
-      kicker: localizedOr(card.kicker, lang, shop.kicker[lang]),
-      title: localizedOr(card.title, lang, shop.title[lang]),
-      body: localizedOr(card.body, lang, shop.body[audience][lang]),
+      // Pas de repli : sans surtitre réglé, la carte n'en a pas.
+      kicker: localizedOr(card.kicker, lang, ''),
+      title: localizedOr(card.title, lang, fallback.title[lang]),
+      body: localizedOr(card.body, lang, fallback.body[lang]),
       calls:
         phones.length === 0
-          ? [`${call} · ${shop.phone}`]
+          ? [`${call} · ${CONTACT_CARD_DEFAULTS.phone}`]
           : [...phones]
               .sort((a, b) => a.position - b.position)
               .map((p) => `${call} · ${localizedOr(p.label, lang, '')} · ${p.number}`),
-      write: shop.write[lang],
+      write: SHOP_CONTACT_BUTTONS.write[lang],
     };
   });
 

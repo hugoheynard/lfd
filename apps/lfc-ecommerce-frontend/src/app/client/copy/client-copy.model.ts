@@ -599,7 +599,7 @@ export interface ClientCopy {
     readonly unknown: string;
     /**
      * Commande carte pas encore réglée : pas de code avant le paiement
-     * (plan `plan-carte-reglee-avant-tout.md`, 2026-10-09).
+     * (plan `commande-carte-reglee.md`, 2026-10-09).
      */
     readonly due: string;
   };

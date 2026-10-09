@@ -15,7 +15,7 @@ export const REVENUE_ORDER_STATUSES = [
 
 /**
  * **Règlements porteurs de CA** (plan
- * `documentation/order/plan-commandes-non-reglees.md`, §2.5, §4.7) : une
+ * `documentation/order/commande-carte-reglee.md`, §2.5, §4.7) : une
  * commande ne compte que réglée — au compte ou gratuite (`not_required`), ou
  * encaissée par carte (`paid`). Une carte en attente (`pending`) ou refusée
  * (`failed`) n'est pas un chiffre d'affaires : Hugo lisait 3 € pour 1,90 €

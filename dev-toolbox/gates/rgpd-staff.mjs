@@ -1,7 +1,7 @@
 #!/usr/bin/env node
 /**
- * Gate : **toute colonne qui porte une donnée personnelle du staff ou d'un
- * réceptionnaire est au registre — et le registre ne cite que des colonnes qui
+ * Gate : **toute colonne qui porte une donnée personnelle du staff, d'un
+ * réceptionnaire ou d'une personne qui nous écrit (`contact` — une demande client) est au registre — et le registre ne cite que des colonnes qui
  * existent.**
  *
  * ## Le trou que cette porte ferme
@@ -48,7 +48,13 @@ import { PRISMA_SCHEMA_DIR, prismaSchemaSource } from "./lib/prisma-schema.mjs";
 const ROOT = process.cwd();
 const REGISTRY_PATH = "documentation/legal/rgpd-registre.json";
 
-const PERSONS = ["livreur", "staff", "receptionnaire"];
+/**
+ * `contact` (2026-10-09) : la personne qui écrit par « Nous contacter » —
+ * visiteur ou client connecté. Ni du staff ni un réceptionnaire, mais ses
+ * données vivent ici pour la même raison : une colonne personnelle qu'aucun
+ * inventaire ne cite n'a ni durée ni purge.
+ */
+const PERSONS = ["livreur", "staff", "receptionnaire", "contact"];
 const DURATION_WORDS = ["aucune-limite-decidee", "a-decider"];
 
 /** Motifs valables dans tout schéma : un auteur, un livreur, une preuve. */
@@ -61,6 +67,14 @@ const NAME_PATTERNS = [
   /^photo_key$/u,
   /^signature_key$/u,
 ];
+
+/**
+ * Les tables dont CHAQUE colonne est candidate (2026-10-09) : les demandes
+ * clients et leurs photos (`demandes-clients.md`, §6.2) portent les
+ * données d'un tiers qui écrit, et une colonne neuve y est présumée
+ * personnelle — inscrite au registre, ou exclue avec sa raison.
+ */
+const ALL_PERSONAL_TABLES = new Set(["public.customer_request", "public.customer_request_photo"]);
 
 /**
  * Une position n'est candidate que dans le schéma de la livraison : ailleurs,
@@ -111,7 +125,8 @@ function readBlockLine(line, block) {
 }
 
 export function isCandidate(qualified) {
-  const [schema, , column] = qualified.split(".");
+  const [schema, table, column] = qualified.split(".");
+  if (ALL_PERSONAL_TABLES.has(`${schema}.${table}`)) return true;
   if (NAME_PATTERNS.some((pattern) => pattern.test(column))) return true;
   return schema === POSITION_SCHEMA && POSITION_PATTERNS.some((p) => p.test(column));
 }
@@ -244,7 +259,7 @@ function main() {
     process.exit(1);
   }
   console.log(
-    "✓ rgpd-staff : chaque donnée personnelle du staff et des réceptionnaires est au registre.",
+    "✓ rgpd-staff : chaque donnée personnelle du staff, des réceptionnaires et des contacts est au registre.",
   );
   for (const line of debtLines(registry)) console.log(line);
 }

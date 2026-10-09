@@ -1,6 +1,6 @@
 /**
  * **Le délai de vie d'une commande boutique non réglée** (plan
- * `documentation/order/plan-commandes-non-reglees.md`, §2.3, §4.5).
+ * `documentation/order/commande-carte-reglee.md`, §2.3, §4.5).
  *
  * Une commande que le particulier passe lui-même à la boutique, réglée par
  * carte, est écrite AVANT le paiement. Passé ce délai sans encaissement, elle

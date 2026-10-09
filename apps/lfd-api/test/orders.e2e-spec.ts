@@ -193,7 +193,7 @@ describe("zéro friction — commande sans entreprise", () => {
     expect(stored.stripePaymentIntentId).toBe("pi_e2e");
 
     // Non réglée, elle n'est pas listée (Hugo, 2026-10-09 : ni suivi, ni table —
-    // plan-carte-reglee-avant-tout.md) ; réglée, elle l'est.
+    // commande-carte-reglee.md) ; réglée, elle l'est.
     const before = jsonBody<readonly CustomerOrderView[]>(
       await ctx.asSub(MEMBER).get(`/orders/mine`).expect(200),
     );

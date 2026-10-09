@@ -42,13 +42,24 @@ export function ensureOrderVisible(
   role: OrderRole | null,
   orderId: string,
 ): void {
-  if (order.companyId === null) {
-    if (order.placedByUserId !== actorUserId) {
-      throw new OrderNotFoundError(orderId);
-    }
-    return;
-  }
-  if (role === null) {
+  if (!isOrderVisible(order, actorUserId, role)) {
     throw new OrderNotFoundError(orderId);
   }
+}
+
+/**
+ * La même règle, en prédicat — pour un lecteur qui doit répondre « pas à
+ * vous » sans lever l'erreur de ce contexte : le signalement d'un problème
+ * (`b2b/contact`, `demandes-clients.md` §6.4) l'emploie pour ne pas
+ * écrire une seconde règle d'accès.
+ */
+export function isOrderVisible(
+  order: { readonly companyId: string | null; readonly placedByUserId: string },
+  actorUserId: string,
+  role: OrderRole | null,
+): boolean {
+  if (order.companyId === null) {
+    return order.placedByUserId === actorUserId;
+  }
+  return role !== null;
 }

@@ -1,6 +1,7 @@
 import type { PublicContactSettingsView } from '@lfd/contracts/shop-values';
 import { describe, expect, it } from 'vitest';
 
+import { CONTACT_CARD_DEFAULTS } from '@lfd/contracts/shop-values';
 import { NO_CONTACT_SETTINGS, phonesFor } from './contact-settings.store';
 
 const label = (fr: string, en = '') => ({ fr, en, it: '' });
@@ -24,7 +25,7 @@ describe('phonesFor', () => {
 
   it('aucun numéro réglé → le seul numéro de repli', () => {
     expect(phonesFor(NO_CONTACT_SETTINGS, 'b2c', 'fr')).toEqual([
-      { label: '', number: '+33 4 79 06 12 40' },
+      { label: '', number: CONTACT_CARD_DEFAULTS.phone },
     ]);
   });
 });

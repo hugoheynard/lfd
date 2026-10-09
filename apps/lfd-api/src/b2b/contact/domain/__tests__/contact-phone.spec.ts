@@ -2,7 +2,7 @@ import { InvalidPhoneError } from "../../../account/domain/errors/account-errors
 import { ContactPhone, type ContactPhoneSettings } from "../contact-phone.js";
 import {
   ContactPhoneIncompleteError,
-  ContactSubjectPositionInvalidError,
+  ContactPositionInvalidError,
 } from "../errors/contact-errors.js";
 
 const AT = new Date(0);
@@ -39,7 +39,7 @@ describe("ContactPhone — un numéro de contact", () => {
       InvalidPhoneError,
     );
     expect(() => ContactPhone.create({ ...SHOP, position: -1, id: "p1", at: AT })).toThrow(
-      ContactSubjectPositionInvalidError,
+      ContactPositionInvalidError,
     );
   });
 

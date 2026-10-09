@@ -38,6 +38,7 @@ import { ClientOrderHistory } from '../mes-commandes/client-order-history.servic
 import { LiveOrdersWell } from '../mes-commandes/live-orders-well/live-orders-well';
 import { isLive, rowCopyOf, trackedOf } from '../mes-commandes/order-rows';
 import { ClientCart } from '../cart/client-cart.service';
+import { CONTACT_CARD_DEFAULTS } from '@lfd/contracts/shop-values';
 import { ContactBand } from '../shop/contact-band/contact-band';
 import { ContactSettingsStore, localizedOr, phonesFor } from '../shop/contact-settings.store';
 import { ShopCatalogue } from '../shop/shop-catalogue.store';
@@ -249,22 +250,24 @@ export class AccueilPublic {
    * CE QUE DIT LA BANDE DE CONTACT, selon à qui elle parle.
    *
    * Le réglage du back-office (`GET /contact-settings`) l'emporte, champ par
-   * champ ; vide, le dictionnaire reste — un titre commun, une phrase pour les
-   * pros, une pour les particuliers (plan « Nous écrire », §4 ; Hugo,
+   * champ ; vide, le repli partagé `CONTACT_CARD_DEFAULTS` (titre et phrase
+   * par public ; aucun surtitre) (plan « Nous écrire », §4 ; Hugo,
    * 2026-10-09 : « pas de fallback trop compliqué »).
    */
   protected readonly contact = computed<ContactBandCopy>(() => {
     const contact = this.c().contact;
     const settings = this.contactSettings.settings();
     const card = this.pro() ? settings.cards.b2b : settings.cards.b2c;
+    const fallback = this.pro() ? CONTACT_CARD_DEFAULTS.cards.b2b : CONTACT_CARD_DEFAULTS.cards.b2c;
     const locale = this.locale.current();
     return {
-      kicker: localizedOr(card.kicker, locale, contact.kicker),
+      // Pas de surtitre réglé, pas de surtitre (Hugo, 2026-10-09).
+      kicker: localizedOr(card.kicker, locale, ''),
       phones: phonesFor(settings, this.pro() ? 'b2b' : 'b2c', locale),
       call: contact.call,
       write: contact.write,
-      title: localizedOr(card.title, locale, contact.title),
-      who: localizedOr(card.body, locale, this.pro() ? contact.body.b2b : contact.body.b2c),
+      title: localizedOr(card.title, locale, fallback.title[locale]),
+      who: localizedOr(card.body, locale, fallback.body[locale]),
     };
   });
 

@@ -24,7 +24,7 @@ describe("handoverBlocker", () => {
    * Régression : le comptoir remettait une commande carte « À régler » — la
    * règle ne lisait pas le règlement (constaté en production le 2026-10-09).
    */
-  describe("le règlement (plan-carte-reglee-avant-tout.md, §4.4)", () => {
+  describe("le règlement (commande-carte-reglee.md, §4.4)", () => {
     it("refuse une commande non réglée, en nommant le cas", () => {
       const blocker = handoverBlocker(candidate({ settled: false }));
       expect(blocker).toBe(UNSETTLED_REASON);

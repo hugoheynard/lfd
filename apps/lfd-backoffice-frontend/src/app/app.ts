@@ -1,3 +1,4 @@
+import { CustomerRequestsInbox } from './b2b/demandes/customer-requests-inbox.store';
 import {
   ChangeDetectionStrategy,
   Component,
@@ -152,6 +153,7 @@ export class App {
   private readonly canSeeCompanies = computed(() => this.permissions.can('b2b_companies:read'));
 
   private readonly counts = inject(NavCountsService);
+  private readonly requestsInbox = inject(CustomerRequestsInbox);
   private readonly push = inject(PushNotificationsService);
   /** Ce qui attend derrière chaque entrée — `undefined` masque le badge. */
   protected readonly companyBadge = computed(() =>
@@ -385,6 +387,14 @@ export class App {
     effect(() => {
       if (this.canSeeCompanies()) {
         void this.counts.refresh();
+      }
+    });
+
+    // Le compte des demandes clients à traiter, tous types, pour l'entrée
+    // « Demandes clients » du rail et des tuiles. Même précaution : seulement avec le droit de lire.
+    effect(() => {
+      if (this.permissions.can('b2b_contact:read')) {
+        void this.requestsInbox.refresh();
       }
     });
 

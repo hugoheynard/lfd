@@ -146,10 +146,30 @@ export interface OrdersCopy {
   readonly reportTitle: string;
   readonly reportLead: string;
   readonly reasonHead: string;
-  /** Les cinq raisons, écrites comme on les entend au comptoir. */
-  readonly reasons: readonly [string, string, string, string, string];
+  /** Le texte de la liste des motifs (réglés au back-office), avant le choix. */
+  readonly reasonPlaceholder: string;
   readonly photoHead: string;
   readonly photoHint: string;
+  /** `{n}` : combien de photos on peut encore ajouter. */
+  readonly photoRemaining: string;
+  /** `{name}` : la photo retirée. */
+  readonly photoRemove: string;
+  /** `{name}` : le fichier refusé avant l'envoi. */
+  readonly photoBadType: string;
+  readonly photoTooBig: string;
+  /** `{n}` : la borne. */
+  readonly photoTooMany: string;
+  readonly reportCancel: string;
+  readonly sending: string;
+  /** L'annonce du succès, après quoi le dialogue se ferme. */
+  readonly reportSent: string;
+  /** Le repli d'un refus dont le serveur n'a pas dit la cause. */
+  readonly reportRefused: string;
+  readonly reasonsLoading: string;
+  readonly reasonsFailed: string;
+  readonly reasonsRetry: string;
+  readonly noReasonTitle: string;
+  readonly noReasonSubtitle: string;
   readonly wordHead: string;
   readonly wordPlaceholder: string;
   readonly send: string;
@@ -236,15 +256,23 @@ export const ORDERS_FR: OrdersCopy = {
   reportLead:
     'Dites-nous ce qui s’est passé. On répond dans la journée, et on remet la pièce sur la prochaine commande quand c’est de notre fait.',
   reasonHead: 'La raison',
-  reasons: [
-    'Un article manquait',
-    'Un article était abîmé',
-    'Ce n’est pas ce que j’avais commandé',
-    'Trop tard / trop tôt',
-    'Autre',
-  ],
-  photoHead: 'Une photo, si vous en avez',
-  photoHint: 'Ajouter une photo',
+  reasonPlaceholder: 'Choisir une raison',
+  photoRemaining: 'Jusqu’à {n} photo(s) de plus — JPEG, PNG ou WebP, 5 Mo chacune.',
+  photoRemove: 'Retirer {name}',
+  photoBadType: '« {name} » n’est pas une photo JPEG, PNG ou WebP.',
+  photoTooBig: '« {name} » dépasse 5 Mo.',
+  photoTooMany: '{n} photos au plus.',
+  reportCancel: 'Annuler',
+  sending: 'Envoi…',
+  reportSent: 'Signalement envoyé',
+  reportRefused: 'Le signalement n’est pas parti. Réessayez dans un instant.',
+  reasonsLoading: 'Chargement des raisons…',
+  reasonsFailed: 'Les raisons n’ont pas pu être lues.',
+  reasonsRetry: 'Réessayer',
+  noReasonTitle: 'Aucune raison proposée',
+  noReasonSubtitle: 'Appelez-nous ou écrivez-nous depuis l’accueil.',
+  photoHead: 'Des photos, si vous en avez',
+  photoHint: 'Prendre ou choisir une photo',
   wordHead: 'Un mot, si besoin',
   wordPlaceholder: 'Il manquait deux croissants dans le sachet…',
   send: 'Envoyer au Labo',
@@ -332,15 +360,23 @@ export const ORDERS_EN: OrdersCopy = {
   reportLead:
     'Tell us what happened. We answer the same day, and we put the item back on your next order when it is on us.',
   reasonHead: 'The reason',
-  reasons: [
-    'An item was missing',
-    'An item was damaged',
-    'This is not what I ordered',
-    'Too late / too early',
-    'Something else',
-  ],
-  photoHead: 'A photo, if you have one',
-  photoHint: 'Add a photo',
+  reasonPlaceholder: 'Choose a reason',
+  photoRemaining: 'Up to {n} more photo(s) — JPEG, PNG or WebP, 5 MB each.',
+  photoRemove: 'Remove {name}',
+  photoBadType: '“{name}” is not a JPEG, PNG or WebP photo.',
+  photoTooBig: '“{name}” is larger than 5 MB.',
+  photoTooMany: '{n} photos at most.',
+  reportCancel: 'Cancel',
+  sending: 'Sending…',
+  reportSent: 'Report sent',
+  reportRefused: 'The report was not sent. Please try again in a moment.',
+  reasonsLoading: 'Loading reasons…',
+  reasonsFailed: 'The reasons could not be loaded.',
+  reasonsRetry: 'Try again',
+  noReasonTitle: 'No reason available',
+  noReasonSubtitle: 'Call us or write to us from the home page.',
+  photoHead: 'Photos, if you have any',
+  photoHint: 'Take or choose a photo',
   wordHead: 'A word, if needed',
   wordPlaceholder: 'Two croissants were missing from the bag…',
   send: 'Send to Le Labo',
@@ -428,15 +464,23 @@ export const ORDERS_IT: OrdersCopy = {
   reportLead:
     'Diteci che cosa è successo. Rispondiamo in giornata e rimettiamo il pezzo sul prossimo ordine quando dipende da noi.',
   reasonHead: 'Il motivo',
-  reasons: [
-    'Mancava un articolo',
-    'Un articolo era rovinato',
-    'Non è quello che avevo ordinato',
-    'Troppo tardi / troppo presto',
-    'Altro',
-  ],
-  photoHead: 'Una foto, se l’avete',
-  photoHint: 'Aggiungere una foto',
+  reasonPlaceholder: 'Scegliere un motivo',
+  photoRemaining: 'Fino a {n} foto in più — JPEG, PNG o WebP, 5 MB ciascuna.',
+  photoRemove: 'Togliere {name}',
+  photoBadType: '«{name}» non è una foto JPEG, PNG o WebP.',
+  photoTooBig: '«{name}» supera 5 MB.',
+  photoTooMany: '{n} foto al massimo.',
+  reportCancel: 'Annulla',
+  sending: 'Invio…',
+  reportSent: 'Segnalazione inviata',
+  reportRefused: 'La segnalazione non è partita. Riprovate tra un istante.',
+  reasonsLoading: 'Caricamento dei motivi…',
+  reasonsFailed: 'Non è stato possibile leggere i motivi.',
+  reasonsRetry: 'Riprova',
+  noReasonTitle: 'Nessun motivo proposto',
+  noReasonSubtitle: 'Chiamateci o scriveteci dalla pagina iniziale.',
+  photoHead: 'Delle foto, se le avete',
+  photoHint: 'Scattare o scegliere una foto',
   wordHead: 'Due parole, se serve',
   wordPlaceholder: 'Mancavano due croissant nel sacchetto…',
   send: 'Inviare al Labo',

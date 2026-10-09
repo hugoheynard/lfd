@@ -1,7 +1,7 @@
 import { signal } from '@angular/core';
 import { type ComponentFixture, TestBed } from '@angular/core/testing';
 import type { ContactMessagePayload } from '@lfd/contracts';
-import type { CustomerAudience, PublicContactSubjectView } from '@lfd/contracts/shop-values';
+import type { CustomerAudience, PublicRequestReasonView } from '@lfd/contracts/shop-values';
 import { FoldPanelRef } from 'fold-ng';
 import { describe, expect, it, vi } from 'vitest';
 
@@ -16,12 +16,12 @@ import { ContactDialog } from './contact-dialog';
 
 /**
  * **« Nous écrire »** — ce que le dialogue propose, ce qu'il pré-remplit, et ce
- * qu'il envoie (`documentation/contenu-ecommerce/nous-contacter.md`, §3 « Front »).
+ * qu'il envoie (`documentation/contenu-ecommerce/demandes-clients.md`, §3 « Front »).
  */
 
 const FR = contactDialogCopy('fr');
 
-const SUBJECTS: PublicContactSubjectView[] = [
+const SUBJECTS: PublicRequestReasonView[] = [
   { id: 's-order', label: { fr: 'Une commande', en: 'An order', it: '' } },
   { id: 's-other', label: { fr: 'Autre chose', en: '', it: '' } },
 ];
@@ -38,7 +38,7 @@ interface Options {
   readonly audience?: CustomerAudience;
   readonly authenticated?: boolean;
   readonly locale?: LocaleCode;
-  readonly subjects?: () => Promise<PublicContactSubjectView[]>;
+  readonly subjects?: () => Promise<PublicRequestReasonView[]>;
   readonly refusal?: string | null;
 }
 
@@ -55,7 +55,8 @@ async function mount(options: Options = {}): Promise<Mounted> {
       {
         provide: ContactGateway,
         useValue: {
-          subjects: (audience: CustomerAudience) => {
+          reasons: (kind: string, audience: CustomerAudience) => {
+            expect(kind).toBe('contact');
             asked.push(audience);
             return (options.subjects ?? (() => Promise.resolve(SUBJECTS)))();
           },
@@ -94,7 +95,7 @@ function form(fixture: ComponentFixture<ContactDialog>) {
   const dialog = fixture.componentInstance;
   return {
     options: () => dialog['subjectOptions'](),
-    subjectId: dialog['subjectId'],
+    reasonId: dialog['reasonId'],
     name: dialog['name'],
     email: dialog['email'],
     phone: dialog['phone'],
@@ -149,7 +150,7 @@ describe('ContactDialog', () => {
     f.message.set('Bonjour');
     expect(f.canSend()).toBe(false);
 
-    f.subjectId.set('s-order');
+    f.reasonId.set('s-order');
     expect(f.canSend()).toBe(true);
 
     f.message.set('x'.repeat(4001));
@@ -159,14 +160,14 @@ describe('ContactDialog', () => {
   it('envoie le contrat exact (piège compris, sans public), annonce, puis ferme', async () => {
     const { fixture, sent, closed, toasts } = await mount({ audience: 'b2b', authenticated: true });
     const f = form(fixture);
-    f.subjectId.set('s-order');
+    f.reasonId.set('s-order');
     f.message.set('  Deux baguettes de plus  ');
 
     await f.send();
 
     expect(sent).toHaveLength(1);
     expect(sent[0]).toMatchObject({
-      subjectId: 's-order',
+      reasonId: 's-order',
       name: 'Jeanne Martin',
       email: 'jeanne@exemple.fr',
       phone: '06 12 34 56 78',
@@ -179,7 +180,7 @@ describe('ContactDialog', () => {
       'message',
       'name',
       'phone',
-      'subjectId',
+      'reasonId',
     ]);
     expect(toasts).toEqual([FR.sent]);
     expect(closed).toEqual([true]);
@@ -191,7 +192,7 @@ describe('ContactDialog', () => {
       refusal: 'Cet objet n’est plus proposé.',
     });
     const f = form(fixture);
-    f.subjectId.set('s-order');
+    f.reasonId.set('s-order');
     f.message.set('Bonjour');
 
     await f.send();
@@ -205,7 +206,7 @@ describe('ContactDialog', () => {
 
   it('dit l’échec de lecture des objets, et relit au clic', async () => {
     const subjects = vi
-      .fn<() => Promise<PublicContactSubjectView[]>>()
+      .fn<() => Promise<PublicRequestReasonView[]>>()
       .mockRejectedValueOnce(new Error('503'))
       .mockResolvedValueOnce(SUBJECTS);
     const { fixture } = await mount({ subjects });

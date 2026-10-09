@@ -1,0 +1,29 @@
+<div class="opd">
+  <fold-field-list>
+    <fold-field
+      label="Commande"
+      placeholder="Effacée à l'anonymisation"
+      [empty]="details().orderId === null"
+    >
+      @if (details().orderId; as orderId) {
+        <a [routerLink]="['/commandes', orderId]" data-order-link>
+          {{ details().orderNumber ?? 'Voir la commande' }}
+        </a>
+      }
+    </fold-field>
+  </fold-field-list>
+
+  @if (photosFailed()) {
+    <fold-callout variant="alert" data-photos-error>
+      Les photos de la demande n'ont pas pu être lues.
+    </fold-callout>
+  } @else if (photos().length > 0) {
+    <div class="opd-photos">
+      @for (photo of photos(); track photo.id; let i = $index) {
+        <a [href]="photo.url" target="_blank" rel="noopener" data-photo>
+          <img class="opd-photo" [src]="photo.url" [alt]="'Photo ' + (i + 1) + ' du client'" />
+        </a>
+      }
+    </div>
+  }
+</div>

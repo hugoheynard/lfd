@@ -2,7 +2,7 @@ import type { UnsettledSettlement } from "./unsettled-settlement.reader.js";
 
 /**
  * Port de **lecture** de l'expiration des commandes boutique non réglées (plan
- * `documentation/order/plan-commandes-non-reglees.md`, §4.1).
+ * `documentation/order/commande-carte-reglee.md`, §4.1).
  *
  * Le périmètre est celui que l'adaptateur pose dans chaque `where`, et lui
  * seul : une commande `placed`, au règlement `pending` ou `failed`, que le

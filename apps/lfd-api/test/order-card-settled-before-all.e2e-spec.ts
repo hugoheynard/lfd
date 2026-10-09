@@ -1,6 +1,6 @@
 /**
  * **Une commande carte n'existe qu'une fois réglée** (plan
- * `documentation/order/plan-carte-reglee-avant-tout.md`, §4.2–§4.4).
+ * `documentation/order/commande-carte-reglee.md`, §4.2–§4.4).
  *
  * Régression : en production le 2026-10-09, une commande « À régler » montrait
  * déjà son QR de retrait dans le suivi du client, et le comptoir l'aurait

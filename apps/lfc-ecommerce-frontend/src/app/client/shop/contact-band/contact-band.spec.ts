@@ -54,6 +54,12 @@ describe('ContactBand', () => {
    * une traduction n'a pas à connaître le HTML, et l'italien ne se plie pas où
    * le français se plie. Le rendu garde donc le saut de ligne tel quel.
    */
+  it('n’affiche pas de surtitre vide', () => {
+    const band = boot({ ...COPY, kicker: '' }).nativeElement as HTMLElement;
+
+    expect(band.querySelector('.kicker')).toBeNull();
+  });
+
   it('garde la coupe de ligne que la copie porte', () => {
     const titre = (boot().nativeElement as HTMLElement).querySelector('.title');
 

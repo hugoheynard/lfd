@@ -174,6 +174,12 @@ function pick(
   return Object.fromEntries(values.map((value) => [value, set.labels[value] ?? value]));
 }
 
+/** Le type d'une demande client (`customer_request.handled`) — les mots de la boîte des demandes. */
+export const CUSTOMER_REQUEST_KIND = domain('type de demande client', {
+  contact: 'Contact',
+  order_problem: 'Problème de commande',
+});
+
 export const ACCOUNTS_VALUES: ValueFamily = {
   enums: [
     DECLARED_VIA,
@@ -192,6 +198,7 @@ export const ACCOUNTS_VALUES: ValueFamily = {
     FOLLOW_ASPECT,
     PARENT_LINK_VIA,
     COLLECTION_FORM,
+    CUSTOMER_REQUEST_KIND,
   ],
   strings: {
     fields: CHANGED_FIELD,

@@ -1,11 +1,12 @@
 // ─────────────────────────────────────────────────────────────────────────────
-// « Nous écrire » — les objets de contact, la carte de contact, les messages
-// (`documentation/contenu-ecommerce/nous-contacter.md`, 2026-10-09). Contexte
-// `src/b2b/contact/`.
+// Les DEMANDES CLIENTS — motifs, demandes (« Nous écrire », « Signaler un
+// problème »), photos ; et la carte de contact de la boutique et ses numéros
+// (`documentation/contenu-ecommerce/demandes-clients.md`, 2026-10-09).
+// Contexte `src/b2b/contact/`.
 // ─────────────────────────────────────────────────────────────────────────────
 
-/// À qui un objet de contact est proposé ; pour un message, `b2b` ou `b2c`
-/// seulement — l'espace d'où il a été écrit.
+/// À qui un motif ou un numéro est proposé ; pour une demande, `b2b` ou `b2c`
+/// seulement — l'espace d'où elle a été écrite.
 enum ContactAudience {
   b2b
   b2c
@@ -14,10 +15,10 @@ enum ContactAudience {
   @@schema("public")
 }
 
-/// La priorité d'un objet, à usage interne : trie les messages à traiter.
+/// La priorité d'un motif, à usage interne : trie les demandes à traiter.
 /// Déclarée dans l'ordre croissant — Postgres trie une énumération par son
 /// rang, et « urgent d'abord » est un `ORDER BY priority DESC`.
-enum ContactPriority {
+enum RequestPriority {
   low
   medium
   urgent
@@ -25,60 +26,77 @@ enum ContactPriority {
   @@schema("public")
 }
 
-/// Un **objet** proposé dans le dialogue « Nous écrire » : son libellé en trois
-/// langues (le français obligatoire), l'adresse qui reçoit les messages, son
-/// rang et son public. Archivé plutôt que supprimé : un message reçu garde son
-/// objet. Pas d'auteur figé : un réglage sans règle de refus (CLAUDE.md §3.1).
-model ContactSubject {
+/// Le TYPE d'une demande — le formulaire d'où elle vient
+/// (`demandes-clients.md`, 2026-10-09). Un type à venir (rendez-vous,
+/// devis) est une valeur de plus, et ses détails ses propres colonnes.
+enum RequestKind {
+  contact
+  order_problem
+
+  @@schema("public")
+}
+
+/// Un **motif** proposé par un formulaire (« Nous écrire », « Signaler un
+/// problème ») : son type, immuable ; son libellé en trois langues (le
+/// français obligatoire) ; l'adresse qui reçoit les demandes ; son rang, son
+/// public, sa priorité. Archivé plutôt que supprimé : une demande garde son
+/// motif.
+model RequestReason {
   /// ULID (fourni par l'`IdGenerator`).
   id String @id
+
+  /// Le formulaire qui le propose. Immuable : le domaine refuse sa révision.
+  kind RequestKind
 
   labelFr String @map("label_fr")
   /// Vide = le libellé français.
   labelEn String @default("") @map("label_en")
   labelIt String @default("") @map("label_it")
 
-  /// L'adresse de l'équipe qui reçoit les messages de cet objet.
+  /// L'adresse de l'équipe qui reçoit les demandes de ce motif.
   recipientEmail String @map("recipient_email")
 
   position Int             @default(0)
   active   Boolean         @default(true)
   audience ContactAudience @default(both)
   /// Usage interne, jamais servie à la boutique.
-  priority ContactPriority @default(medium)
+  priority RequestPriority @default(medium)
 
   archivedAt DateTime? @map("archived_at")
   createdAt  DateTime  @map("created_at")
   updatedAt  DateTime  @map("updated_at")
 
-  messages ContactMessage[]
+  requests CustomerRequest[]
 
-  @@index([archivedAt, position])
-  @@map("contact_subject")
+  @@index([kind, archivedAt, position])
+  @@map("request_reason")
   @@schema("public")
 }
 
-/// Un **message** reçu par « Nous écrire », d'un visiteur ou d'un client
-/// connecté. Rangé à la réception, puis envoyé par e-mail à l'adresse de son
-/// objet — un envoi raté ne le fait pas disparaître.
+/// Une **demande client** : une ENVELOPPE commune (motif figé, auteur, texte,
+/// traitement, anonymisation) et les DÉTAILS de son type dans des colonnes
+/// typées — `order_id` / `order_number` pour un problème de commande, et la
+/// table `customer_request_photo`. Un CHECK tient la correspondance.
 ///
-/// 🔴 Données personnelles d'un tiers (nom, e-mail, téléphone, texte) :
-/// **anonymisées** douze mois après le traitement par le balayage nocturne
-/// (`AnonymizeHandledContactMessagesHandler`). La ligne reste, avec son objet
-/// et ses dates ; aucun `DELETE`.
-model ContactMessage {
+/// 🔴 Données personnelles d'un tiers (nom, e-mail, téléphone, texte,
+/// rattachements, commande, photos) : **anonymisées** douze mois après le
+/// traitement — ou la réception, jamais traitée — par le balayage nocturne.
+/// La ligne reste ; aucun `DELETE`.
+model CustomerRequest {
   /// ULID (fourni par l'`IdGenerator`).
   id String @id
 
-  subjectId String         @map("subject_id")
-  subject   ContactSubject @relation(fields: [subjectId], references: [id], onDelete: Restrict)
-  /// Le libellé français de l'objet, figé à la réception.
-  subjectLabel String @map("subject_label")
-  /// La priorité de l'objet, figée à la réception : changer l'objet ensuite
-  /// ne requalifie pas les messages déjà reçus.
-  priority     ContactPriority @default(medium)
+  /// Le formulaire d'où elle vient, figé.
+  kind RequestKind
 
-  /// L'espace d'où le message a été écrit : `b2b` ou `b2c`.
+  reasonId String        @map("reason_id")
+  reason   RequestReason @relation(fields: [reasonId], references: [id], onDelete: Restrict)
+  /// Le libellé français du motif, figé à la réception.
+  reasonLabel String          @map("reason_label")
+  /// La priorité du motif, figée à la réception.
+  priority    RequestPriority
+
+  /// L'espace d'où elle a été écrite : `b2b` ou `b2c`.
   audience ContactAudience
 
   authorName  String @map("author_name")
@@ -88,24 +106,57 @@ model ContactMessage {
   body        String
 
   /// Le client connecté et la société pour laquelle il agissait ; NULL pour un
-  /// visiteur. Identifiants opaques, sans clé étrangère : le message survit.
+  /// visiteur. Identifiants opaques, sans clé étrangère.
   userId    String? @map("user_id")
   companyId String? @map("company_id")
+
+  /// `order_problem` : la commande signalée (identifiant opaque, sans clé
+  /// étrangère) et son numéro figé. NULL pour `contact`, et après anonymisation.
+  orderId     String? @map("order_id")
+  orderNumber String? @map("order_number")
 
   receivedAt DateTime @map("received_at")
 
   handledAt        DateTime? @map("handled_at")
-  /// L'id de fiche staff de qui l'a traité — un identifiant, pas un nom.
+  /// L'id de fiche staff de qui l'a traitée — un identifiant, pas un nom.
   handledByStaffId String?   @map("handled_by_staff_id")
-  /// Nom figé de qui l'a traité ; vide si l'annuaire ne le connaissait pas.
+  /// Nom figé de qui l'a traitée ; vide si l'annuaire ne le connaissait pas.
   handledByName    String?   @map("handled_by_name")
 
   anonymizedAt DateTime? @map("anonymized_at")
 
-  @@index([handledAt, receivedAt])
+  photos CustomerRequestPhoto[]
+
   @@index([handledAt, priority, receivedAt])
-  @@index([subjectId])
-  @@map("contact_message")
+  @@index([kind, handledAt])
+  @@index([reasonId])
+  @@map("customer_request")
+  @@schema("public")
+}
+
+/// Une **photo** jointe à un signalement de problème (au plus trois). L'objet
+/// vit dans le stockage sous `requests/<demande>/<photo>` ; la ligne garde sa
+/// clé. À l'anonymisation, l'objet est SUPPRIMÉ du stockage et la ligne vidée
+/// (`purged_at` posé) — la ligne reste.
+model CustomerRequestPhoto {
+  /// ULID (fourni par l'`IdGenerator`).
+  id        String @id
+  requestId String @map("request_id")
+  request   CustomerRequest @relation(fields: [requestId], references: [id], onDelete: Restrict)
+
+  /// Rang d'affichage, 0..2.
+  position    Int
+  /// Vide une fois purgée.
+  storageKey  String @map("storage_key")
+  /// Relu dans les octets au dépôt ; vide une fois purgée.
+  contentType String @map("content_type")
+  sizeBytes   Int    @map("size_bytes")
+
+  createdAt DateTime  @map("created_at")
+  purgedAt  DateTime? @map("purged_at")
+
+  @@unique([requestId, position])
+  @@map("customer_request_photo")
   @@schema("public")
 }
 
@@ -116,13 +167,6 @@ model ContactMessage {
 model ContactSettings {
   /// Toujours `contact` : il n'y a qu'un réglage.
   key String @id
-
-  /// ⚠️ MORTE depuis le 2026-10-09 : ni lue ni écrite, remplacée par
-  /// `contact_phone`. `20261009160000_les_numeros_de_contact` copie sa valeur
-  /// si elle est renseignée — en pratique jamais : les deux migrations partent
-  /// ensemble et la colonne n'a été écrite par aucun déploiement. Reste en
-  /// base (pas de suppression).
-  phone String @default("")
 
   /// Le surtitre de la carte (« On répond » à la boutique) — 2026-10-09.
   b2bKickerFr String @default("") @map("b2b_kicker_fr")
@@ -158,9 +202,9 @@ model ContactSettings {
 /// Un **numéro de contact** de la boutique (Hugo, 2026-10-09) : ce qu'on lit à
 /// côté (« Boutique de Val d'Isère », « Service commercial », le français
 /// obligatoire), le numéro tel que saisi, son public, son rang. Archivé plutôt
-/// que supprimé, comme un objet de contact.
+/// que supprimé, comme un motif.
 model ContactPhone {
-  /// ULID (fourni par l'`IdGenerator`) ; `contact-phone-legacy` si la migration a repris l'ancien numéro.
+  /// ULID (fourni par l'`IdGenerator`).
   id String @id
 
   labelFr String @map("label_fr")

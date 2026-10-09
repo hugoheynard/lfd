@@ -1,7 +1,7 @@
 import { HttpClient, HttpHeaders } from '@angular/common/http';
 import { inject, Injectable } from '@angular/core';
-import type { ContactMessagePayload } from '@lfd/contracts';
-import type { CustomerAudience, PublicContactSubjectView } from '@lfd/contracts/shop-values';
+import type { ContactMessagePayload, RequestKind } from '@lfd/contracts';
+import type { CustomerAudience, PublicRequestReasonView } from '@lfd/contracts/shop-values';
 import { httpErrorMessage } from '@lfd/endpoints';
 import { firstValueFrom } from 'rxjs';
 
@@ -9,7 +9,7 @@ import { AUTH_CONFIG } from '../../auth/auth.config';
 import { AuthFacade } from '../../auth/auth.facade';
 
 /**
- * **« Nous écrire »**, côté réseau (`documentation/contenu-ecommerce/nous-contacter.md`, §2.2).
+ * **« Nous écrire »**, côté réseau (`documentation/contenu-ecommerce/demandes-clients.md`, §2.2).
  *
  * Deux routes d'envoi et non une : `POST /contact-messages` est publique, et le
  * garde du serveur n'y résout aucun principal ; un client connecté écrit donc
@@ -21,11 +21,14 @@ export class ContactGateway {
   private readonly http = inject(HttpClient);
   private readonly auth = inject(AuthFacade);
 
-  /** Les objets actifs proposés à ce public, dans l'ordre réglé. */
-  subjects(audience: CustomerAudience): Promise<PublicContactSubjectView[]> {
+  /**
+   * Les motifs actifs d'un type de demande (« Nous écrire » ou « Signaler un
+   * problème »), proposés à ce public, dans l'ordre réglé.
+   */
+  reasons(kind: RequestKind, audience: CustomerAudience): Promise<PublicRequestReasonView[]> {
     return firstValueFrom(
-      this.http.get<PublicContactSubjectView[]>(`${AUTH_CONFIG.apiBaseUrl}/contact-subjects`, {
-        params: { audience },
+      this.http.get<PublicRequestReasonView[]>(`${AUTH_CONFIG.apiBaseUrl}/request-reasons`, {
+        params: { kind, audience },
       }),
     );
   }

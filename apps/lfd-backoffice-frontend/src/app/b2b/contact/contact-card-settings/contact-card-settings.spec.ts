@@ -167,7 +167,8 @@ describe('ContactCardSettings', () => {
     const preview = () => fixture.componentInstance['preview']();
 
     expect(preview()).toMatchObject({
-      kicker: 'On répond',
+      // Aucun surtitre réglé en français : aucun affiché.
+      kicker: '',
       title: 'Un souci ?',
       // Les numéros actifs des pros, `both` compris, par rang ; le masqué n'y est pas.
       calls: ['Appeler · Boutique · 04 79 11 22 33', 'Appeler · Service pro · 04 79 99 99 99'],
@@ -181,7 +182,7 @@ describe('ContactCardSettings', () => {
 
     fixture.componentInstance['selectAudience']('b2c');
     expect(preview()).toMatchObject({
-      kicker: 'We answer',
+      kicker: '',
       title: 'Contact us',
       body: 'We reply as soon as we can',
       calls: ['Call · Shop · 04 79 11 22 33'],

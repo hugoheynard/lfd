@@ -1,0 +1,65 @@
+<fold-card [attr.data-request]="request().id">
+  <fold-element-title variant="title" [title]="request().reasonLabel" [subtitle]="subtitle()">
+    <div titleAction class="crc-actions">
+      <fold-badge variant="neutral" [content]="kindLabel()" data-kind />
+      <fold-badge [variant]="priorityVariant()" [content]="priorityLabel()" data-priority />
+      @if (canHandle()) {
+        <button
+          foldButton
+          size="sm"
+          type="button"
+          [disabled]="busy()"
+          [loading]="handling()"
+          (click)="handle.emit()"
+          data-handle
+        >
+          Marquer traité
+        </button>
+      }
+    </div>
+  </fold-element-title>
+
+  <div class="crc-body">
+    <fold-field-list>
+      <fold-field label="Nom" placeholder="—" [empty]="request().authorName === ''">{{
+        request().authorName
+      }}</fold-field>
+      <fold-field label="E-mail" placeholder="—" [empty]="request().authorEmail === ''">
+        @if (request().authorEmail !== '') {
+          <a [href]="'mailto:' + request().authorEmail">{{ request().authorEmail }}</a>
+        }
+      </fold-field>
+      <fold-field
+        label="Téléphone"
+        placeholder="Non donné"
+        [empty]="request().authorPhone === ''"
+        >{{ request().authorPhone }}</fold-field
+      >
+      <fold-field
+        label="Société"
+        placeholder="Visiteur ou particulier"
+        [empty]="request().companyId === null"
+      >
+        @if (request().companyId; as companyId) {
+          <a [routerLink]="['/comptes-clients', companyId]" data-company>Voir le compte client</a>
+        }
+      </fold-field>
+    </fold-field-list>
+
+    @if (details(); as d) {
+      <ng-container *ngComponentOutlet="d.component; inputs: d.inputs" />
+    }
+
+    @if (request().anonymizedAt !== null) {
+      <p class="crc-muted" data-anonymized>
+        Demande anonymisée à l'échéance de conservation : seuls le motif et les dates restent.
+      </p>
+    } @else if (request().message !== '') {
+      <p class="crc-text" data-text>{{ request().message }}</p>
+    }
+
+    @if (handled(); as text) {
+      <p class="crc-muted" data-handled>{{ text }}</p>
+    }
+  </div>
+</fold-card>

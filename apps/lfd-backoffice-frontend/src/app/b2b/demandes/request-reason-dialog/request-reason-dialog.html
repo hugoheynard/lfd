@@ -1,0 +1,126 @@
+<fold-panel-header
+  [title]="title()"
+  subtitle="Ce que le client choisit, et l'adresse où sa demande part"
+  closeLabel="Fermer"
+/>
+
+<fold-panel-body>
+  <div class="csd-fields">
+    <div class="csd-label">
+      <fold-view-toggle
+        ariaLabel="Langue du libellé"
+        size="sm"
+        [options]="langOptions()"
+        [value]="lang()"
+        (valueChange)="selectLang($event)"
+        data-lang-toggle
+      />
+      <fold-input
+        [label]="labelTitle()"
+        [required]="lang() === 'fr'"
+        [hint]="labelHint()"
+        [readOnly]="readOnly()"
+        [value]="labelOf(lang())"
+        (valueChange)="setLabel($event)"
+        data-label
+      />
+      <fold-listbox
+        size="sm"
+        [label]="previewWord()"
+        hint="Aperçu : la liste telle que la boutique la montrera dans cette langue."
+        [options]="previewOptions()"
+        [value]="'preview'"
+        data-preview
+      />
+    </div>
+
+    <fold-input
+      label="Adresse de destination"
+      type="email"
+      placeholder="commandes@lafoliedouce.fr"
+      hint="Le message y part par e-mail ; répondre répond à son auteur."
+      [readOnly]="readOnly()"
+      [value]="recipientEmail()"
+      (valueChange)="recipientEmail.set($event)"
+      data-recipient
+    />
+
+    <fold-listbox
+      label="Proposé à"
+      [disabled]="readOnly()"
+      [options]="audienceOptions"
+      [value]="audience()"
+      (selectionChange)="audience.set($event)"
+      data-audience
+    />
+
+    <fold-listbox
+      label="Priorité"
+      hint="Usage interne : les demandes urgentes passent en tête de la boîte."
+      [disabled]="readOnly()"
+      [options]="priorityOptions"
+      [value]="priority()"
+      (selectionChange)="priority.set($event)"
+      data-priority
+    />
+
+    <fold-number-input
+      label="Ordre"
+      hint="Les motifs sont proposés du plus petit au plus grand."
+      spinner="none"
+      integer
+      [min]="0"
+      [readOnly]="readOnly()"
+      [value]="position()"
+      (valueChange)="position.set($event)"
+      data-position
+    />
+
+    <fold-checkbox
+      label="Proposé au formulaire"
+      hint="Décoché, le motif reste réglé mais n'est plus proposé."
+      [disabled]="readOnly()"
+      [checked]="active()"
+      (checkedChange)="active.set($event)"
+      data-active
+    />
+
+    @if (shownIssue(); as message) {
+      <fold-callout variant="warning" data-issue>{{ message }}</fold-callout>
+    }
+
+    @if (refusal(); as message) {
+      <fold-callout variant="alert" announce>{{ message }}</fold-callout>
+    }
+
+    @if (!isCreate() && !readOnly()) {
+      <fold-danger-zone
+        appearance="section"
+        title="Archiver ce motif"
+        actionLabel="Archiver"
+        (confirmed)="archive()"
+      >
+        <p>Il ne sera plus proposé. Les demandes déjà reçues gardent son libellé.</p>
+      </fold-danger-zone>
+    }
+  </div>
+</fold-panel-body>
+
+<fold-panel-footer align="end">
+  <button foldButton emphasis="outline" intent="neutral" type="button" (click)="cancel()">
+    {{ readOnly() ? 'Fermer' : 'Annuler' }}
+  </button>
+  @if (!readOnly()) {
+    <button
+      foldButton
+      intent="primary"
+      type="button"
+      [disabled]="!canSubmit()"
+      [loading]="saving()"
+      (click)="submit()"
+      data-submit
+    >
+      {{ isCreate() ? 'Ajouter' : 'Enregistrer' }}
+    </button>
+  }
+</fold-panel-footer>

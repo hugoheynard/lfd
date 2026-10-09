@@ -1,5 +1,8 @@
 <div class="said">
-  <p class="kicker">{{ copy().kicker }}</p>
+  <!-- Pas de surtitre réglé, pas de surtitre : aucun repli (Hugo, 2026-10-09). -->
+  @if (copy().kicker) {
+    <p class="kicker">{{ copy().kicker }}</p>
+  }
   <!-- La coupe du titre vient du DICTIONNAIRE, jamais d'un `<br>` : une
        traduction n'a pas à connaître le HTML, et l'italien ne se plie pas où le
        français se plie. -->

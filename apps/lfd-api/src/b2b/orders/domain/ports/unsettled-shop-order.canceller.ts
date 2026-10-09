@@ -1,6 +1,6 @@
 /**
  * Port d'**écriture** de l'expiration des commandes boutique non réglées (plan
- * `documentation/order/plan-commandes-non-reglees.md`, §4.2).
+ * `documentation/order/commande-carte-reglee.md`, §4.2).
  *
  * 🔴 **Écriture nue, conditionnée en base, et c'est voulu** — même raison que
  * `OrderRepository.markAbandoned` (vérifié le 2026-10-09) : `Order` est un

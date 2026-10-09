@@ -83,7 +83,7 @@ export class OrderSheetArchive {
    * jeton manque parce que la commande n'est pas réglée
    * (`exposedHandoverToken`), et archiver ce rendu figerait un bon sans QR que
    * l'accusé au paiement joindrait ensuite (plan
-   * `documentation/order/plan-carte-reglee-avant-tout.md`, §2.5). Le
+   * `documentation/order/commande-carte-reglee.md`, §2.5). Le
    * téléchargement avant paiement reste permis : il rend un bon sans QR,
    * fabriqué à chaque demande. Ne pas relire l'archive empêche aussi d'y
    * reprendre le QR d'une commande remboursée avant son retrait.

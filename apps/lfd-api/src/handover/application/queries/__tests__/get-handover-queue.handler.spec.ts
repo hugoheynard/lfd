@@ -90,7 +90,7 @@ function handlerOf(
 
 /**
  * Régression : la file montrait « attendue » une commande carte « À régler »,
- * que le scan refuse désormais (plan-carte-reglee-avant-tout.md, §4.4,
+ * que le scan refuse désormais (commande-carte-reglee.md, §4.4,
  * 2026-10-09).
  */
 describe("GetHandoverQueueHandler — une commande non réglée", () => {

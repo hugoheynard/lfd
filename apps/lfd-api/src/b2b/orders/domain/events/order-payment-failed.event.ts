@@ -13,7 +13,7 @@
  *   la précédente, non réglée, est annulée avec son intention.
  *
  * `expired` et `replaced` n'appellent AUCUN courriel (plan
- * `documentation/order/plan-commandes-non-reglees.md`, §4.2) : la personne a
+ * `documentation/order/commande-carte-reglee.md`, §4.2) : la personne a
  * quitté la page ou relancé elle-même. Ils ne concernent que la clientèle
  * `public`, donc ne sonnent pas non plus.
  */

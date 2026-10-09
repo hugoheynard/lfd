@@ -239,17 +239,13 @@ export interface AccueilPublicCopy {
    * précisément celui qui a le plus de raisons d'appeler : il ne sait pas
    * encore si ce qu'il veut est faisable.
    *
-   * Ce qui suit n'est que le REPLI : le back-office règle numéro, titre et
-   * phrase par public (`GET /contact-settings`), et en recopie ces valeurs.
+   * Ne restent ici que les libellés des boutons : surtitre, titre, phrase et
+   * numéros viennent du réglage (`GET /contact-settings`), avec leurs replis
+   * dans `CONTACT_CARD_DEFAULTS` (`@lfd/contracts/shop-values`).
    */
   readonly contact: {
-    readonly kicker: string;
     readonly call: string;
     readonly write: string;
-    /** Le titre de repli, le même pour tous (Hugo, 2026-10-09 : « pas de fallback trop compliqué »). */
-    readonly title: string;
-    /** La phrase de repli, par public : les pros, les particuliers (visiteur et connecté). */
-    readonly body: { readonly b2b: string; readonly b2c: string };
   };
 
   /** Les opérations datées du fournil, quand il y en a. */
@@ -345,14 +341,8 @@ export const ACCUEIL_PUBLIC_FR: AccueilPublicCopy = {
       '{count} article(s) de cette commande ne sont plus au rayon. Le reste est dans votre panier.',
   },
   contact: {
-    kicker: 'On répond',
     call: 'Appeler',
     write: 'Écrire',
-    title: 'Nous contacter',
-    body: {
-      b2b: 'Nos équipes commerciales sont à votre écoute',
-      b2c: 'On répond au plus vite',
-    },
   },
   events: {
     title: 'En ce moment',
@@ -439,14 +429,8 @@ export const ACCUEIL_PUBLIC_EN: AccueilPublicCopy = {
       '{count} item(s) from that order are no longer on the shelf. The rest is in your basket.',
   },
   contact: {
-    kicker: 'We answer',
     call: 'Call',
     write: 'Write',
-    title: 'Contact us',
-    body: {
-      b2b: 'Our sales team is here for you',
-      b2c: 'We reply as soon as we can',
-    },
   },
   events: {
     title: 'Right now',
@@ -533,14 +517,8 @@ export const ACCUEIL_PUBLIC_IT: AccueilPublicCopy = {
       '{count} articolo/i di quest’ordine non sono più in vendita. Il resto è nel suo carrello.',
   },
   contact: {
-    kicker: 'Rispondiamo',
     call: 'Chiamare',
     write: 'Scrivere',
-    title: 'Contattaci',
-    body: {
-      b2b: 'Il nostro team commerciale è a vostra disposizione',
-      b2c: 'Rispondiamo il prima possibile',
-    },
   },
   events: {
     title: 'In questo momento',

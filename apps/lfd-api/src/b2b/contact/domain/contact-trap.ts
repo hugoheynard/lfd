@@ -1,5 +1,5 @@
 /**
- * **Le formulaire a-t-il été rempli par un robot ?** (`nous-contacter.md`,
+ * **Le formulaire a-t-il été rempli par un robot ?** (`demandes-clients.md`,
  * §2.2 et §5.2.) Le champ piège `lfd_trap` est invisible à l'écran : un
  * humain le laisse vide.
  *

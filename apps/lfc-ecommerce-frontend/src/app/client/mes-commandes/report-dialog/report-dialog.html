@@ -1,0 +1,106 @@
+<fold-panel-header
+  [title]="t().orders.reportTitle"
+  [subtitle]="t().orders.reportKicker + ' ' + data().reference"
+  [closeLabel]="t().orders.reportCancel"
+/>
+
+<fold-panel-body>
+  @switch (state()) {
+    @case ('loading') {
+      <fold-loading [message]="t().orders.reasonsLoading" />
+    }
+    @case ('failed') {
+      <fold-empty-state tone="alert" [title]="t().orders.reasonsFailed">
+        <button foldButton emphasis="outline" intent="neutral" type="button" (click)="load()">
+          {{ t().orders.reasonsRetry }}
+        </button>
+      </fold-empty-state>
+    }
+    @default {
+      @if (reasonOptions().length === 0) {
+        <fold-empty-state
+          [title]="t().orders.noReasonTitle"
+          [subtitle]="t().orders.noReasonSubtitle"
+        >
+          <fold-icon empty-icon name="mail" />
+        </fold-empty-state>
+      } @else {
+        <p class="lead">{{ t().orders.reportLead }}</p>
+
+        <!-- Un refus du serveur reste ici, dialogue ouvert : c'est ici qu'on corrige. -->
+        @if (refusal(); as said) {
+          <fold-callout variant="alert" announce>{{ said }}</fold-callout>
+        }
+
+        <fold-listbox
+          [label]="t().orders.reasonHead"
+          [placeholder]="t().orders.reasonPlaceholder"
+          [required]="true"
+          [options]="reasonOptions()"
+          [value]="reasonId()"
+          (valueChange)="reasonId.set($event)"
+        />
+
+        <fold-textarea
+          [label]="t().orders.wordHead"
+          [placeholder]="t().orders.wordPlaceholder"
+          [optional]="true"
+          [rows]="3"
+          [value]="message()"
+          (valueChange)="message.set($event)"
+        />
+
+        <div class="photos">
+          <span class="head">{{ t().orders.photoHead }}</span>
+
+          @if (photos().length > 0) {
+            <ul class="previews">
+              @for (photo of photos(); track photo.preview) {
+                <li class="preview">
+                  <img [src]="photo.preview" [alt]="photo.file.name" />
+                  <fold-button-icon
+                    class="remove"
+                    size="sm"
+                    icon="close"
+                    [tooltip]="removeLabel(photo)"
+                    (clicked)="remove(photo)"
+                  />
+                </li>
+              }
+            </ul>
+          }
+
+          @if (photoRejects().length > 0) {
+            <fold-callout variant="alert" announce>
+              @for (reject of photoRejects(); track $index) {
+                <span class="reject">{{ reject }}</span>
+              }
+            </fold-callout>
+          }
+
+          @if (remaining() > 0) {
+            <fold-file-dropzone
+              [accept]="accept"
+              [multiple]="true"
+              [label]="t().orders.photoHint"
+              [hint]="remainingHint()"
+              [disabled]="sending()"
+              (filesPicked)="pick($event)"
+            />
+          }
+        </div>
+
+        <p class="note">{{ t().orders.reportFoot }}</p>
+      }
+    }
+  }
+</fold-panel-body>
+
+<fold-panel-footer>
+  <button foldButton emphasis="outline" intent="neutral" type="button" (click)="cancel()">
+    {{ t().orders.reportCancel }}
+  </button>
+  <button foldButton intent="primary" type="button" [disabled]="!canSend()" (click)="send()">
+    {{ sending() ? t().orders.sending : t().orders.send }}
+  </button>
+</fold-panel-footer>

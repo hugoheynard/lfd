@@ -1,110 +1,126 @@
 import { Module } from "@nestjs/common";
 
 import { AccountModule } from "../account/account.module.js";
+import { OrdersModule } from "../orders/orders.module.js";
+import { AnonymizeCustomerRequestsHandler } from "./application/commands/anonymize-customer-requests.handler.js";
 import { ArchiveContactPhoneHandler } from "./application/commands/archive-contact-phone.handler.js";
+import { ArchiveRequestReasonHandler } from "./application/commands/archive-request-reason.handler.js";
 import { CreateContactPhoneHandler } from "./application/commands/create-contact-phone.handler.js";
+import { CreateRequestReasonHandler } from "./application/commands/create-request-reason.handler.js";
+import { MarkCustomerRequestHandledHandler } from "./application/commands/mark-customer-request-handled.handler.js";
+import { ReportOrderProblemHandler } from "./application/commands/report-order-problem.handler.js";
 import { ReviseContactPhoneHandler } from "./application/commands/revise-contact-phone.handler.js";
-import { GetPublicContactSettingsHandler } from "./application/queries/get-public-contact-settings.handler.js";
-import { ListContactPhonesHandler } from "./application/queries/list-contact-phones.handler.js";
-import { ContactSenderAudience } from "./domain/ports/contact-sender-audience.js";
-import { PrismaContactSenderAudience } from "./infrastructure/prisma-contact-sender-audience.js";
-import { ContactPhoneReader } from "./domain/ports/contact-phone.reader.js";
-import { ContactPhoneRepository } from "./domain/ports/contact-phone.repository.js";
-import { AdminContactPhonesController } from "./http/admin-contact-phones.controller.js";
-import {
-  PrismaContactPhoneReader,
-  PrismaContactPhoneRepository,
-} from "./infrastructure/prisma-contact-phones.js";
-import { AnonymizeHandledContactMessagesHandler } from "./application/commands/anonymize-handled-contact-messages.handler.js";
-import { ArchiveContactSubjectHandler } from "./application/commands/archive-contact-subject.handler.js";
-import { CreateContactSubjectHandler } from "./application/commands/create-contact-subject.handler.js";
-import { MarkContactMessageHandledHandler } from "./application/commands/mark-contact-message-handled.handler.js";
-import { ReviseContactSubjectHandler } from "./application/commands/revise-contact-subject.handler.js";
+import { ReviseRequestReasonHandler } from "./application/commands/revise-request-reason.handler.js";
 import { SendContactMessageHandler } from "./application/commands/send-contact-message.handler.js";
 import { UpdateContactSettingsHandler } from "./application/commands/update-contact-settings.handler.js";
-import { MailContactMessage } from "./application/handlers/mail-contact-message.handler.js";
-import { RingContactMessageReceived } from "./application/handlers/ring-contact-message-received.handler.js";
+import { MailCustomerRequest } from "./application/handlers/mail-customer-request.handler.js";
+import { RingCustomerRequestReceived } from "./application/handlers/ring-customer-request-received.handler.js";
 import { GetContactSettingsHandler } from "./application/queries/get-contact-settings.handler.js";
-import { ListContactMessagesHandler } from "./application/queries/list-contact-messages.handler.js";
-import { ListContactSubjectsHandler } from "./application/queries/list-contact-subjects.handler.js";
-import { ListOfferedContactSubjectsHandler } from "./application/queries/list-offered-contact-subjects.handler.js";
-import { ContactMessageAnonymizer } from "./domain/ports/contact-message.anonymizer.js";
-import { ContactMessageReader } from "./domain/ports/contact-message.reader.js";
-import { ContactMessageRepository } from "./domain/ports/contact-message.repository.js";
+import { GetCustomerRequestPhotoHandler } from "./application/queries/get-customer-request-photo.handler.js";
+import { GetPublicContactSettingsHandler } from "./application/queries/get-public-contact-settings.handler.js";
+import { ListContactPhonesHandler } from "./application/queries/list-contact-phones.handler.js";
+import { ListCustomerRequestsHandler } from "./application/queries/list-customer-requests.handler.js";
+import { ListOfferedRequestReasonsHandler } from "./application/queries/list-offered-request-reasons.handler.js";
+import { ListRequestReasonsHandler } from "./application/queries/list-request-reasons.handler.js";
+import { ContactPhoneReader } from "./domain/ports/contact-phone.reader.js";
+import { ContactPhoneRepository } from "./domain/ports/contact-phone.repository.js";
+import { ContactSenderAudience } from "./domain/ports/contact-sender-audience.js";
 import { ContactSettingsReader } from "./domain/ports/contact-settings.reader.js";
 import { ContactSettingsRepository } from "./domain/ports/contact-settings.repository.js";
-import { ContactSubjectReader } from "./domain/ports/contact-subject.reader.js";
-import { ContactSubjectRepository } from "./domain/ports/contact-subject.repository.js";
-import { AdminContactMessagesController } from "./http/admin-contact-messages.controller.js";
+import { CustomerRequestReader } from "./domain/ports/customer-request.reader.js";
+import { CustomerRequestRepository } from "./domain/ports/customer-request.repository.js";
+import { CustomerRequestRetention } from "./domain/ports/customer-request.retention.js";
+import { ReportableOrderReader } from "./domain/ports/reportable-order.reader.js";
+import { RequestAuthorDirectory } from "./domain/ports/request-author.directory.js";
+import { RequestPhotoStore } from "./domain/ports/request-photo.store.js";
+import { RequestReasonReader } from "./domain/ports/request-reason.reader.js";
+import { RequestReasonRepository } from "./domain/ports/request-reason.repository.js";
+import { AdminContactPhonesController } from "./http/admin-contact-phones.controller.js";
 import { AdminContactSettingsController } from "./http/admin-contact-settings.controller.js";
-import { AdminContactSubjectsController } from "./http/admin-contact-subjects.controller.js";
+import { AdminCustomerRequestsController } from "./http/admin-customer-requests.controller.js";
+import { AdminRequestReasonsController } from "./http/admin-request-reasons.controller.js";
 import { ContactAnonymizationSweepController } from "./http/contact-anonymization-sweep.controller.js";
 import { ContactMessagesController } from "./http/contact-messages.controller.js";
 import { ContactController } from "./http/contact.controller.js";
 import { MyContactMessagesController } from "./http/my-contact-messages.controller.js";
-import { PrismaContactMessageAnonymizer } from "./infrastructure/prisma-contact-message.anonymizer.js";
+import { MyOrderProblemsController } from "./http/my-order-problems.controller.js";
+import { DocumentRequestPhotoStore } from "./infrastructure/document-request-photo.store.js";
+import { OrderReportableOrderReader } from "./infrastructure/order-reportable-order.reader.js";
 import {
-  PrismaContactMessageReader,
-  PrismaContactMessageRepository,
-} from "./infrastructure/prisma-contact-messages.js";
+  PrismaContactPhoneReader,
+  PrismaContactPhoneRepository,
+} from "./infrastructure/prisma-contact-phones.js";
+import { PrismaContactSenderAudience } from "./infrastructure/prisma-contact-sender-audience.js";
 import {
   PrismaContactSettingsReader,
   PrismaContactSettingsRepository,
 } from "./infrastructure/prisma-contact-settings.js";
+import { PrismaCustomerRequestReader } from "./infrastructure/prisma-customer-request.reader.js";
+import { PrismaCustomerRequestRepository } from "./infrastructure/prisma-customer-request.repository.js";
+import { PrismaCustomerRequestRetention } from "./infrastructure/prisma-customer-request.retention.js";
+import { PrismaRequestAuthorDirectory } from "./infrastructure/prisma-request-author.directory.js";
 import {
-  PrismaContactSubjectReader,
-  PrismaContactSubjectRepository,
-} from "./infrastructure/prisma-contact-subjects.js";
+  PrismaRequestReasonReader,
+  PrismaRequestReasonRepository,
+} from "./infrastructure/prisma-request-reasons.js";
 
 /**
- * **« Nous écrire »** — les objets de contact, la carte de contact de la
- * boutique, et les messages (`documentation/contenu-ecommerce/nous-contacter.md`).
+ * **Les demandes clients** — motifs par formulaire, demandes (« Nous écrire »,
+ * « Signaler un problème ») et leurs photos, la carte de contact et ses
+ * numéros (`documentation/contenu-ecommerce/demandes-clients.md`).
  *
- * Importe `AccountModule` pour le seul `StaffDirectory` (l'auteur figé d'un
- * geste) ; le mailer et la cloche viennent de modules globaux. N'exporte rien :
- * aucun autre contexte ne lit ni n'écrit ces tables.
+ * Importe `AccountModule` pour le `StaffDirectory` (l'auteur figé d'un geste),
+ * et `OrdersModule` pour LIRE la commande signalée par ses ports et sa règle
+ * d'accès. Le mailer et la cloche viennent de modules globaux. N'exporte
+ * rien : aucun autre contexte ne lit ni n'écrit ces tables.
  */
 @Module({
-  imports: [AccountModule],
+  imports: [AccountModule, OrdersModule],
   controllers: [
-    AdminContactSubjectsController,
+    AdminRequestReasonsController,
+    AdminCustomerRequestsController,
     AdminContactSettingsController,
     AdminContactPhonesController,
-    AdminContactMessagesController,
     ContactController,
     ContactMessagesController,
     MyContactMessagesController,
+    MyOrderProblemsController,
     ContactAnonymizationSweepController,
   ],
   providers: [
-    { provide: ContactSubjectRepository, useClass: PrismaContactSubjectRepository },
-    { provide: ContactSubjectReader, useClass: PrismaContactSubjectReader },
-    { provide: ContactMessageRepository, useClass: PrismaContactMessageRepository },
-    { provide: ContactMessageReader, useClass: PrismaContactMessageReader },
-    { provide: ContactMessageAnonymizer, useClass: PrismaContactMessageAnonymizer },
+    { provide: RequestReasonRepository, useClass: PrismaRequestReasonRepository },
+    { provide: RequestReasonReader, useClass: PrismaRequestReasonReader },
+    { provide: CustomerRequestRepository, useClass: PrismaCustomerRequestRepository },
+    { provide: CustomerRequestReader, useClass: PrismaCustomerRequestReader },
+    { provide: CustomerRequestRetention, useClass: PrismaCustomerRequestRetention },
+    { provide: RequestPhotoStore, useClass: DocumentRequestPhotoStore },
+    { provide: ReportableOrderReader, useClass: OrderReportableOrderReader },
+    { provide: RequestAuthorDirectory, useClass: PrismaRequestAuthorDirectory },
     { provide: ContactSettingsReader, useClass: PrismaContactSettingsReader },
     { provide: ContactSettingsRepository, useClass: PrismaContactSettingsRepository },
     { provide: ContactSenderAudience, useClass: PrismaContactSenderAudience },
     { provide: ContactPhoneRepository, useClass: PrismaContactPhoneRepository },
     { provide: ContactPhoneReader, useClass: PrismaContactPhoneReader },
+    CreateRequestReasonHandler,
+    ReviseRequestReasonHandler,
+    ArchiveRequestReasonHandler,
+    ListRequestReasonsHandler,
+    ListOfferedRequestReasonsHandler,
+    SendContactMessageHandler,
+    ReportOrderProblemHandler,
+    MarkCustomerRequestHandledHandler,
+    AnonymizeCustomerRequestsHandler,
+    ListCustomerRequestsHandler,
+    GetCustomerRequestPhotoHandler,
     CreateContactPhoneHandler,
     ReviseContactPhoneHandler,
     ArchiveContactPhoneHandler,
     ListContactPhonesHandler,
-    GetPublicContactSettingsHandler,
-    CreateContactSubjectHandler,
-    ReviseContactSubjectHandler,
-    ArchiveContactSubjectHandler,
     UpdateContactSettingsHandler,
-    SendContactMessageHandler,
-    MarkContactMessageHandledHandler,
-    AnonymizeHandledContactMessagesHandler,
-    ListContactSubjectsHandler,
-    ListOfferedContactSubjectsHandler,
     GetContactSettingsHandler,
-    ListContactMessagesHandler,
-    MailContactMessage,
-    RingContactMessageReceived,
+    GetPublicContactSettingsHandler,
+    MailCustomerRequest,
+    RingCustomerRequestReceived,
   ],
 })
 export class ContactModule {}

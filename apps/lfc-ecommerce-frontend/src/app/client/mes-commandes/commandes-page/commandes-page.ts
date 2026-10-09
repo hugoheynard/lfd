@@ -1,13 +1,11 @@
-import {
-  ChangeDetectionStrategy,
-  Component,
-  computed,
-  effect,
-  inject,
-  signal,
-} from '@angular/core';
+import { ChangeDetectionStrategy, Component, computed, effect, inject } from '@angular/core';
 import { Router } from '@angular/router';
-import { FoldElementTitleComponent, FoldIconComponent, FoldPageSectionComponent } from 'fold-ng';
+import {
+  FoldElementTitleComponent,
+  FoldIconComponent,
+  FoldPageSectionComponent,
+  FoldPanelHostService,
+} from 'fold-ng';
 
 import { FoldScrollIndicatorComponent, FoldWellComponent } from '../../../../shared';
 
@@ -31,7 +29,7 @@ import {
 } from '../order-rows';
 import { HistoryTable } from '../history-table/history-table';
 import { NotifyService } from '../../../notify.service';
-import { ReportSheet } from '../report-sheet/report-sheet';
+import { ReportDialog } from '../report-dialog/report-dialog';
 import { TrackCard } from '../track-card/track-card';
 
 /**
@@ -70,7 +68,6 @@ import { TrackCard } from '../track-card/track-card';
     FoldWellComponent,
     HistoryTable,
     NewOrderAction,
-    ReportSheet,
     TrackCard,
   ],
   templateUrl: './commandes-page.html',
@@ -82,6 +79,7 @@ export class CommandesPage {
   private readonly router = inject(Router);
   private readonly sheets = inject(OrderSheetService);
   private readonly notify = inject(NotifyService);
+  private readonly panels = inject(FoldPanelHostService);
 
   private readonly history_ = inject(ClientOrderHistory);
   private readonly client = inject(ClientCompany);
@@ -101,9 +99,6 @@ export class CommandesPage {
     const org = this.client.name();
     return this.history_.orders().map((order) => historyRowOf(order, org, this.rowCopy()));
   });
-
-  /** La commande dont on signale un problème — `null` referme la feuille. */
-  protected readonly reported = signal<HistoryOrder | null>(null);
 
   /**
    * Le sur-titre du bandeau : combien de commandes VIVENT en ce moment.
@@ -128,8 +123,9 @@ export class CommandesPage {
     this.chrome.barOnDesktop.set(true);
   }
 
+  /** Ouvre le signalement de cette commande — un dialogue fold, qui envoie pour de bon. */
   protected report(order: HistoryOrder): void {
-    this.reported.set(order);
+    ReportDialog.open(this.panels, { orderId: order.id, reference: order.reference });
   }
 
   /**

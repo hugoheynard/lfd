@@ -470,12 +470,12 @@ describe('AccueilPublic — les trois états', () => {
     const fixture = await mount(POINTS, who);
     const band = fixture.nativeElement.querySelector('app-contact-band');
 
-    expect(band?.querySelector('.kicker')?.textContent?.trim()).toBe('On répond');
+    expect(band?.querySelector('.kicker')).toBeNull();
     expect(band?.querySelector('.title')?.textContent).toBe('Nous contacter');
     expect(band?.querySelector('.who')?.textContent).toContain(fragment);
   });
 
-  it('prend le surtitre réglé, et garde celui du dictionnaire quand il est vide', async () => {
+  it('prend le surtitre réglé — et n’en invente aucun quand il est vide', async () => {
     const text = (fr: string) => ({ fr, en: '', it: '' });
     contactSettings = {
       ...NO_CONTACT_SETTINGS,

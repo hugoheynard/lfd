@@ -284,7 +284,7 @@ export const staffResourceSchema = z.enum([
   /**
    * **« Nous écrire »** — régler les objets de contact et la carte de contact
    * de la boutique, lire et traiter les messages reçus
-   * (`documentation/contenu-ecommerce/nous-contacter.md`, §5.6, 2026-10-09).
+   * (`documentation/contenu-ecommerce/demandes-clients.md`, §5.6, 2026-10-09).
    *
    * Ajoutée SANS être accordée par la migration : elle s'accorde à l'écran
    * (`/admin/staff-roles`). La graine ne la donne qu'à l'administrateur.

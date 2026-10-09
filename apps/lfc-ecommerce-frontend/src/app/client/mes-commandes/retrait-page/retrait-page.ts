@@ -80,7 +80,7 @@ export class RetraitPage {
    * vivante. Le serveur ne sert alors aucun jeton (`exposedHandoverToken`) ;
    * l'écran dit pourquoi et mène au règlement de la même commande, au lieu
    * de laisser croire à une commande trop ancienne pour avoir un code
-   * (plan `documentation/order/plan-carte-reglee-avant-tout.md`, §2.1).
+   * (plan `documentation/order/commande-carte-reglee.md`, §2.1).
    */
   protected readonly due = computed(() => {
     const order = this.order();

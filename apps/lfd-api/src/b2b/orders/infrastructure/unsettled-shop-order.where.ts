@@ -7,7 +7,7 @@ import {
 
 /**
  * **Le périmètre de l'expiration boutique**, écrit UNE fois (plan
- * `documentation/order/plan-commandes-non-reglees.md`, §4.1) : une commande
+ * `documentation/order/commande-carte-reglee.md`, §4.1) : une commande
  * `placed`, non réglée (`pending` ou `failed`), passée par le particulier
  * lui-même, sans société, de clientèle `public`, avec une intention directe.
  *

@@ -1,7 +1,7 @@
 # TODO — l'accusé au paiement d'une commande carte vit sur le bus en mémoire
 
 **Ouvert le 2026-10-09**, sorti du plan
-[`plan-carte-reglee-avant-tout.md`](plan-carte-reglee-avant-tout.md) (§4.6)
+[`commande-carte-reglee.md`](commande-carte-reglee.md) (§4.6)
 après `vitruve`. Hors de ce lot ; rien n'est pris.
 
 ## Le constat (vérifié le 2026-10-09)

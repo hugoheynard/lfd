@@ -4,6 +4,7 @@ import { legalMentionLabels, legalMentionOrder } from '@lfd/contracts/content-va
 import type { FoldIconName } from 'fold-ng';
 
 import { PermissionsStore } from '../../auth/permissions.store';
+import { CustomerRequestsInbox } from '../../b2b/demandes/customer-requests-inbox.store';
 import { PimCapabilitiesStore } from '../../pim/capabilities/pim-capabilities.store';
 import type { WorkspaceRail, WorkspaceRailItem } from './workspace-rail.store';
 
@@ -23,7 +24,16 @@ export interface WorkspaceView extends WorkspaceRailItem {
    * le monde, administrateur compris — il n'y a pas de droit qui la rouvre.
    */
   readonly needsPublication?: boolean;
+  /**
+   * La source du compte affiché sur l'entrée, par son nom. Un nom et non une
+   * fonction : la table reste une donnée, et le catalogue, qui a l'injection,
+   * relie le nom au store qui compte.
+   */
+  readonly counter?: WorkspaceCounter;
 }
+
+/** Les comptes qu'une entrée de menu peut porter. */
+export type WorkspaceCounter = 'requests-pending';
 
 /**
  * Les vues du Commercial portent en plus ce que sa page doit DIRE : son titre
@@ -531,6 +541,18 @@ export const PIM_VIEWS: readonly WorkspaceView[] = [
  */
 export const B2B_VIEWS: readonly WorkspaceView[] = [
   {
+    // LA BOÎTE DES DEMANDES CLIENTS (demandes-clients.md, §3.3) : en tête,
+    // pour la même raison que la Réception — ce qui attend passe avant ce qui
+    // est réglé. Le compteur dit les demandes à traiter, TOUS types (§6.8).
+    key: 'demandes',
+    label: 'Demandes clients',
+    link: '/b2b/demandes',
+    icon: 'inbox',
+    section: 'Clients',
+    needs: 'b2b_contact:read',
+    counter: 'requests-pending',
+  },
+  {
     // En TÊTE de la section catalogue : ce qui attend une décision passe avant
     // ce qui est déjà en vente. Une arrivée non validée ne coûte rien tant
     // qu'on la voit ; c'est de ne pas la voir qui coûte.
@@ -627,13 +649,23 @@ export const B2B_VIEWS: readonly WorkspaceView[] = [
     icon: 'store',
     section: 'Réglages',
   },
-  // « Nous écrire » (nous-contacter.md) : son propre droit, `b2b_contact`.
-  // UNE entrée, trois onglets — carte, formulaire, messagerie (Hugo, 2026-10-09).
+  // La carte de contact (surtitre, titre, phrase, numéros) : son propre droit,
+  // `b2b_contact`. Ses objets et sa messagerie sont devenus les deux entrées
+  // des demandes clients (demandes-clients.md, §3.5).
   {
     key: 'contact',
     label: 'Contact',
     link: '/b2b/contact',
     icon: 'mail',
+    section: 'Réglages',
+    needs: 'b2b_contact:read',
+  },
+  // Les motifs des demandes, un onglet par type (demandes-clients.md, §3.4).
+  {
+    key: 'motifs-des-demandes',
+    label: 'Motifs des demandes',
+    link: '/b2b/reglages/motifs-des-demandes',
+    icon: 'list',
     section: 'Réglages',
     needs: 'b2b_contact:read',
   },
@@ -890,6 +922,7 @@ export type WorkspaceKey = keyof typeof WORKSPACES;
 export class WorkspaceCatalogue {
   private readonly permissions = inject(PermissionsStore);
   private readonly capabilities = inject(PimCapabilitiesStore);
+  private readonly requestsInbox = inject(CustomerRequestsInbox);
 
   /** Les vues d'un espace que la route laissera ouvrir. */
   views(key: WorkspaceKey): Signal<WorkspaceRailItem[]> {
@@ -897,8 +930,19 @@ export class WorkspaceCatalogue {
       WORKSPACES[key].views
         .filter((view) => this.grants(view.needs))
         .filter((view) => view.needsPublication !== true || this.capabilities.publication())
-        .map(({ needs, needsPublication, ...view }) => view),
+        .map(({ needs, needsPublication, counter, ...view }) => {
+          const count = counter === undefined ? null : this.count(counter);
+          return count === null || count <= 0 ? view : { ...view, badge: count };
+        }),
     );
+  }
+
+  /** Le compte derrière un nom de compteur ; `null` tant qu'il n'est pas lu. */
+  private count(counter: WorkspaceCounter): number | null {
+    switch (counter) {
+      case 'requests-pending':
+        return this.requestsInbox.pendingCount();
+    }
   }
 
   /** Tous les droits exigés par une vue sont-ils accordés ? */

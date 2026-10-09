@@ -31,12 +31,15 @@ export {
 } from "./order-opening.values.js";
 export {
   CONTACT_BOUNDS,
+  CONTACT_CARD_DEFAULTS,
+  type ContactCardFallback,
   DEFAULT_CONTACT_SETTINGS,
   type ContactCardText,
   type ContactLocalizedText,
   type PublicContactPhoneView,
   type PublicContactSettingsView,
-  type PublicContactSubjectView,
+  type PublicRequestReasonView,
+  REQUEST_PHOTO_BOUNDS,
 } from "./contact.values.js";
 export { ALL_DISCOUNT_AUDIENCES } from "./pickup-discount-audiences.js";
 export { PERSONAL_WORKSPACE, WORKSPACE_HEADER } from "./workspace.js";

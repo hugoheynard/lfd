@@ -55,9 +55,3 @@
     />
   </fold-page-section>
 </div>
-
-<app-report-sheet
-  [open]="reported() !== null"
-  [reference]="reported()?.reference ?? ''"
-  (closed)="reported.set(null)"
-/>

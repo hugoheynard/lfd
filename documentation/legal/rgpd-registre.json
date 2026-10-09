@@ -1,5 +1,5 @@
 {
-  "$commentaire": "Registre machine des données personnelles du staff et des réceptionnaires. Tenu par `pnpm lint:rgpd-staff` (dev-toolbox/gates/rgpd-staff.mjs) contre apps/lfd-api/prisma/schema. Prose et raisons : documentation/legal/rgpd-livreur.md §8. Pas un avis juridique.",
+  "$commentaire": "Registre machine des données personnelles du staff, des réceptionnaires et des personnes qui écrivent par « Nous contacter » (`contact`). Tenu par `pnpm lint:rgpd-staff` (dev-toolbox/gates/rgpd-staff.mjs) contre apps/lfd-api/prisma/schema. Prose et raisons : documentation/legal/rgpd-livreur.md §8. Pas un avis juridique.",
   "texteInformation": {
     "version": 2,
     "empreinte": "84c2108d32430d44"
@@ -1368,19 +1368,19 @@
       "information": false
     },
     {
-      "colonne": "public.contact_message.handled_by_name",
+      "colonne": "public.customer_request.handled_by_name",
       "personne": "staff",
       "categorie": "identite",
-      "finalite": "Nom figé de qui a traité un message « Nous écrire » (`nous-contacter.md`), lisible même si la fiche staff change. Reste après l'anonymisation du message, qui ne vide que les données de son auteur.",
+      "finalite": "Nom figé de qui a traité une demande client (`demandes-clients.md`), lisible même si la fiche staff change. Reste après l'anonymisation de la demande, qui ne vide que les données de son auteur.",
       "conservation": "aucune-limite-decidee",
       "purge": null,
       "information": false
     },
     {
-      "colonne": "public.contact_message.handled_by_staff_id",
+      "colonne": "public.customer_request.handled_by_staff_id",
       "personne": "staff",
       "categorie": "auteur-geste",
-      "finalite": "Tracer quel membre du staff a marqué traité un message « Nous écrire » (`nous-contacter.md`, §5.7).",
+      "finalite": "Tracer quel membre du staff a marqué traitée une demande client (`demandes-clients.md`).",
       "conservation": "aucune-limite-decidee",
       "purge": null,
       "information": false
@@ -1389,7 +1389,7 @@
       "colonne": "public.contact_settings.updated_by_name",
       "personne": "staff",
       "categorie": "identite",
-      "finalite": "Nom figé de l'auteur du dernier réglage de la carte de contact (`nous-contacter.md`, §4).",
+      "finalite": "Nom figé de l'auteur du dernier réglage de la carte de contact (`demandes-clients.md`, §4).",
       "conservation": "aucune-limite-decidee",
       "purge": null,
       "information": false
@@ -1398,9 +1398,130 @@
       "colonne": "public.contact_settings.updated_by_staff_id",
       "personne": "staff",
       "categorie": "auteur-geste",
-      "finalite": "Tracer quel membre du staff a posé la carte de contact de la boutique (`nous-contacter.md`, §4).",
+      "finalite": "Tracer quel membre du staff a posé la carte de contact de la boutique (`demandes-clients.md`, §4).",
       "conservation": "aucune-limite-decidee",
       "purge": null,
+      "information": false
+    },
+    {
+      "colonne": "public.customer_request.author_name",
+      "personne": "contact",
+      "categorie": "identite",
+      "finalite": "Le nom de qui écrit par « Nous contacter », pour lui répondre. Vidée 12 mois après le traitement, ou après la réception d'un message jamais traité (Hugo, 2026-10-09).",
+      "conservation": {
+        "jours": 365
+      },
+      "purge": "apps/lfd-api/src/b2b/contact/application/commands/anonymize-customer-requests.handler.ts",
+      "information": false
+    },
+    {
+      "colonne": "public.customer_request.author_email",
+      "personne": "contact",
+      "categorie": "coordonnees",
+      "finalite": "L'adresse de qui écrit, pour lui répondre (Reply-To du courriel à l'équipe). Vidée 12 mois après le traitement, ou après la réception d'un message jamais traité (Hugo, 2026-10-09).",
+      "conservation": {
+        "jours": 365
+      },
+      "purge": "apps/lfd-api/src/b2b/contact/application/commands/anonymize-customer-requests.handler.ts",
+      "information": false
+    },
+    {
+      "colonne": "public.customer_request.author_phone",
+      "personne": "contact",
+      "categorie": "coordonnees",
+      "finalite": "Le téléphone, facultatif, de qui écrit, pour le rappeler. Vidée 12 mois après le traitement, ou après la réception d'un message jamais traité (Hugo, 2026-10-09).",
+      "conservation": {
+        "jours": 365
+      },
+      "purge": "apps/lfd-api/src/b2b/contact/application/commands/anonymize-customer-requests.handler.ts",
+      "information": false
+    },
+    {
+      "colonne": "public.customer_request.body",
+      "personne": "contact",
+      "categorie": "contenu",
+      "finalite": "Le texte du message, pour y répondre. Vidée 12 mois après le traitement, ou après la réception d'un message jamais traité (Hugo, 2026-10-09).",
+      "conservation": {
+        "jours": 365
+      },
+      "purge": "apps/lfd-api/src/b2b/contact/application/commands/anonymize-customer-requests.handler.ts",
+      "information": false
+    },
+    {
+      "colonne": "public.customer_request.user_id",
+      "personne": "contact",
+      "categorie": "rattachement",
+      "finalite": "Le compte du client connecté qui a écrit, pour le retrouver au back-office. Vidée 12 mois après le traitement, ou après la réception d'un message jamais traité (Hugo, 2026-10-09).",
+      "conservation": {
+        "jours": 365
+      },
+      "purge": "apps/lfd-api/src/b2b/contact/application/commands/anonymize-customer-requests.handler.ts",
+      "information": false
+    },
+    {
+      "colonne": "public.customer_request.company_id",
+      "personne": "contact",
+      "categorie": "rattachement",
+      "finalite": "La société pour laquelle le client connecté écrivait, pour la retrouver au back-office. Vidée 12 mois après le traitement, ou après la réception d'un message jamais traité (Hugo, 2026-10-09).",
+      "conservation": {
+        "jours": 365
+      },
+      "purge": "apps/lfd-api/src/b2b/contact/application/commands/anonymize-customer-requests.handler.ts",
+      "information": false
+    },
+    {
+      "colonne": "public.customer_request.order_id",
+      "personne": "contact",
+      "categorie": "rattachement",
+      "finalite": "La commande signalée (« Signaler un problème »), pour la retrouver au back-office — elle relie la demande à la personne (`demandes-clients.md`, §6.2). Vidée 12 mois après le traitement, ou après la réception d'une demande jamais traitée (Hugo, 2026-10-09).",
+      "conservation": {
+        "jours": 365
+      },
+      "purge": "apps/lfd-api/src/b2b/contact/application/commands/anonymize-customer-requests.handler.ts",
+      "information": false
+    },
+    {
+      "colonne": "public.customer_request.order_number",
+      "personne": "contact",
+      "categorie": "rattachement",
+      "finalite": "Le numéro figé de la commande signalée, cité par le courriel et la boîte ; il désigne la commande, donc la personne. Vidée 12 mois après le traitement, ou après la réception d'une demande jamais traitée (Hugo, 2026-10-09).",
+      "conservation": {
+        "jours": 365
+      },
+      "purge": "apps/lfd-api/src/b2b/contact/application/commands/anonymize-customer-requests.handler.ts",
+      "information": false
+    },
+    {
+      "colonne": "public.customer_request_photo.storage_key",
+      "personne": "contact",
+      "categorie": "contenu",
+      "finalite": "La clé de la photo jointe à un signalement ; l'objet est SUPPRIMÉ du stockage et la clé vidée — une photo d'un colis ou d'un lieu peut identifier (§7). Vidée 12 mois après le traitement, ou après la réception d'une demande jamais traitée (Hugo, 2026-10-09).",
+      "conservation": {
+        "jours": 365
+      },
+      "purge": "apps/lfd-api/src/b2b/contact/application/commands/anonymize-customer-requests.handler.ts",
+      "information": false
+    },
+    {
+      "colonne": "public.customer_request_photo.content_type",
+      "personne": "contact",
+      "categorie": "contenu",
+      "finalite": "Le type de la photo jointe, relu au dépôt ; vidé avec la photo. Vidée 12 mois après le traitement, ou après la réception d'une demande jamais traitée (Hugo, 2026-10-09).",
+      "conservation": {
+        "jours": 365
+      },
+      "purge": "apps/lfd-api/src/b2b/contact/application/commands/anonymize-customer-requests.handler.ts",
+      "information": false
+    },
+    {
+      "colonne": "public.customer_request_photo.size_bytes",
+      "personne": "contact",
+      "categorie": "contenu",
+      "finalite": "Le poids de la photo jointe ; remis à zéro avec la photo. Vidée 12 mois après le traitement, ou après la réception d'une demande jamais traitée (Hugo, 2026-10-09).",
+      "conservation": {
+        "jours": 365
+      },
+      "purge": "apps/lfd-api/src/b2b/contact/application/commands/anonymize-customer-requests.handler.ts",
       "information": false
     }
   ],
@@ -1444,6 +1565,66 @@
     {
       "colonne": "public.delivery_procedure_steps.photo_key",
       "raison": "Photo d'une étape de la procédure d'accès d'un CLIENT, posée par le commercial : donnée du client (politique de confidentialité), hors staff et réceptionnaire."
+    },
+    {
+      "colonne": "public.customer_request.id",
+      "raison": "Pas une donnée de la personne qui écrit : l'identifiant du message."
+    },
+    {
+      "colonne": "public.customer_request.reason_id",
+      "raison": "Pas une donnée de la personne qui écrit : le motif choisi, un réglage de l'équipe."
+    },
+    {
+      "colonne": "public.customer_request.reason_label",
+      "raison": "Pas une donnée de la personne qui écrit : le libellé du motif, figé à la réception."
+    },
+    {
+      "colonne": "public.customer_request.priority",
+      "raison": "Pas une donnée de la personne qui écrit : la priorité du motif, figée à la réception."
+    },
+    {
+      "colonne": "public.customer_request.audience",
+      "raison": "Pas une donnée de la personne qui écrit : l'espace d'où le message est écrit (b2b/b2c), un public, pas une personne."
+    },
+    {
+      "colonne": "public.customer_request.received_at",
+      "raison": "Pas une donnée de la personne qui écrit : l'instant de réception ; reste après l'anonymisation pour dater la ligne."
+    },
+    {
+      "colonne": "public.customer_request.handled_at",
+      "raison": "Pas une donnée de la personne qui écrit : l'instant du traitement, geste du staff dont l'auteur est déjà au registre (`handled_by_*`)."
+    },
+    {
+      "colonne": "public.customer_request.anonymized_at",
+      "raison": "Pas une donnée de la personne qui écrit : l'instant de l'anonymisation, posé par la machine."
+    },
+    {
+      "colonne": "public.customer_request.kind",
+      "raison": "Pas une donnée de la personne qui écrit : le formulaire d'où vient la demande."
+    },
+    {
+      "colonne": "public.customer_request_photo.id",
+      "raison": "Pas une donnée de la personne qui écrit : l'identifiant de la photo."
+    },
+    {
+      "colonne": "public.customer_request_photo.request_id",
+      "raison": "Pas une donnée de la personne qui écrit : la demande à laquelle la photo est jointe."
+    },
+    {
+      "colonne": "public.customer_request_photo.position",
+      "raison": "Pas une donnée de la personne qui écrit : le rang d'affichage."
+    },
+    {
+      "colonne": "public.customer_request_photo.created_at",
+      "raison": "Pas une donnée de la personne qui écrit : l'instant du dépôt ; reste pour dater la ligne."
+    },
+    {
+      "colonne": "public.customer_request_photo.purged_at",
+      "raison": "Pas une donnée de la personne qui écrit : l'instant de la purge, posé par la machine."
+    },
+    {
+      "colonne": "public.customer_request.photos",
+      "raison": "Pas une colonne : le champ de relation Prisma vers `customer_request_photo`, dont chaque colonne est au registre ou exclue ici (la porte lit le schéma Prisma ligne à ligne, relu le 2026-10-09)."
     }
   ]
 }

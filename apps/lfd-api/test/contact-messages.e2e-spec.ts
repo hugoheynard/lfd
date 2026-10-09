@@ -1,26 +1,28 @@
 /**
- * E2E de **« Nous écrire »** (`documentation/contenu-ecommerce/nous-contacter.md`) — vrai
+ * E2E de **« Nous écrire »**, une demande `contact`
+ * (`documentation/contenu-ecommerce/demandes-clients.md`) — vrai
  * Postgres, mailer doublé.
  *
  * Ce que seul le vrai chemin prouve : qu'un visiteur sans jeton écrit
  * réellement (route `@Public`), que le message est RANGÉ puis envoyé à
- * l'adresse de son objet avec `Reply-To` = l'auteur, que le débit de la route
+ * l'adresse de son motif avec `Reply-To` = l'auteur, que le débit de la route
  * tient (3 par 10 minutes et par IP), que le piège n'écrit rien, et que le
  * staff marque traité une fois et une seule.
  */
 import type {
-  ContactMessageView,
   ContactSettingsPayload,
-  ContactSubjectPayload,
   CreatedIdResponse,
+  CustomerRequestView,
   PublicContactSettingsView,
-  PublicContactSubjectView,
+  PublicRequestReasonView,
+  RequestReasonPayload,
 } from "@lfd/contracts";
 import { DEFAULT_CONTACT_SETTINGS } from "@lfd/contracts";
 
 import { AdminTokenVerifier } from "../src/platform/auth/admin-token.verifier.js";
 import { MAILER } from "../src/platform/mailer/mailer.tokens.js";
-import { bootstrapE2e, E2E_STAFF_SUB, jsonBody, type E2eContext } from "./e2e-harness.js";
+import { bootstrapE2e, daysAgo, E2E_STAFF_SUB, jsonBody, type E2eContext } from "./e2e-harness.js";
+import { TEST_RECOMPUTE_TOKEN } from "./setup-env.js";
 import { CompanyStatus, CustomerRole } from "../src/platform/database/client/client.js";
 import { attachTo, createCompany, createUser } from "./factories.js";
 
@@ -76,7 +78,8 @@ function visitor(): ReturnType<E2eContext["http"]> {
 
 const staff = (): ReturnType<E2eContext["asSub"]> => ctx.asSub(E2E_STAFF_SUB);
 
-const SUBJECT: ContactSubjectPayload = {
+const SUBJECT: RequestReasonPayload = {
+  kind: "contact",
   label: { fr: "Une question sur ma commande", en: "About my order", it: "" },
   recipientEmail: "commandes@lfc.test",
   position: 0,
@@ -85,9 +88,9 @@ const SUBJECT: ContactSubjectPayload = {
   priority: "medium",
 };
 
-async function createSubject(overrides: Partial<ContactSubjectPayload> = {}): Promise<string> {
+async function createSubject(overrides: Partial<RequestReasonPayload> = {}): Promise<string> {
   const response = await staff()
-    .post("/admin/contact/subjects")
+    .post("/admin/request-reasons")
     .send({ ...SUBJECT, ...overrides })
     .expect(201);
   return jsonBody<CreatedIdResponse>(response).id;
@@ -98,7 +101,7 @@ function message(
   overrides: Record<string, unknown> = {},
 ): Record<string, unknown> {
   return {
-    subjectId,
+    reasonId: subjectId,
     name: "Jean Martin",
     email: "jean@visiteur.test",
     phone: "",
@@ -108,9 +111,9 @@ function message(
   };
 }
 
-async function pending(): Promise<ContactMessageView[]> {
-  return jsonBody<ContactMessageView[]>(
-    await staff().get("/admin/contact/messages?status=pending").expect(200),
+async function pending(): Promise<CustomerRequestView[]> {
+  return jsonBody<CustomerRequestView[]>(
+    await staff().get("/admin/customer-requests?status=pending").expect(200),
   );
 }
 
@@ -118,8 +121,8 @@ describe("un visiteur écrit", () => {
   it("le message est rangé, puis envoyé à l'adresse de l'objet, Reply-To = l'auteur", async () => {
     const subjectId = await createSubject();
 
-    const offered = jsonBody<PublicContactSubjectView[]>(
-      await visitor().get("/contact-subjects?audience=b2c").expect(200),
+    const offered = jsonBody<PublicRequestReasonView[]>(
+      await visitor().get("/request-reasons?kind=contact&audience=b2c").expect(200),
     );
     // L'adresse de destination ne sort pas vers la boutique.
     expect(offered).toEqual([{ id: subjectId, label: SUBJECT.label }]);
@@ -129,8 +132,10 @@ describe("un visiteur écrit", () => {
 
     const [received] = await pending();
     expect(received).toMatchObject({
-      subjectId,
-      subjectLabel: "Une question sur ma commande",
+      kind: "contact",
+      reasonId: subjectId,
+      reasonLabel: "Une question sur ma commande",
+      details: { kind: "contact" },
       authorName: "Jean Martin",
       authorEmail: "jean@visiteur.test",
       userId: null,
@@ -140,7 +145,7 @@ describe("un visiteur écrit", () => {
       expect.objectContaining({
         to: "commandes@lfc.test",
         replyTo: "jean@visiteur.test",
-        template: "staff.contact-message",
+        template: "staff.customer-request",
       }),
     ]);
   });
@@ -180,7 +185,7 @@ describe("la priorité, à usage interne", () => {
     const calm = await createSubject({ priority: "low" });
     const hot = await createSubject({ priority: "urgent", position: 1 });
     const offered = jsonBody<Record<string, unknown>[]>(
-      await visitor().get("/contact-subjects?audience=b2c").expect(200),
+      await visitor().get("/request-reasons?kind=contact&audience=b2c").expect(200),
     );
     expect(offered.every((subject) => !("priority" in subject))).toBe(true);
 
@@ -254,13 +259,13 @@ describe("le staff traite", () => {
     const [received] = await pending();
     const id = received?.id ?? "";
 
-    await staff().post(`/admin/contact/messages/${id}/handled`).expect(204);
-    const second = await staff().post(`/admin/contact/messages/${id}/handled`).expect(409);
-    expect(JSON.stringify(second.body)).toContain("contact.message.already_handled");
+    await staff().post(`/admin/customer-requests/${id}/handled`).expect(204);
+    const second = await staff().post(`/admin/customer-requests/${id}/handled`).expect(409);
+    expect(JSON.stringify(second.body)).toContain("contact.request.already_handled");
 
     expect(await pending()).toEqual([]);
-    const handled = jsonBody<ContactMessageView[]>(
-      await staff().get("/admin/contact/messages?status=handled").expect(200),
+    const handled = jsonBody<CustomerRequestView[]>(
+      await staff().get("/admin/customer-requests?status=handled").expect(200),
     );
     expect(handled).toHaveLength(1);
     expect(handled[0]?.handledAt).not.toBeNull();
@@ -304,5 +309,89 @@ describe("le staff traite", () => {
     expect(
       jsonBody<PublicContactSettingsView>(await visitor().get("/contact-settings").expect(200)),
     ).toEqual({ cards: payload.cards, phones: [{ ...shop, number: "04 79 00 00 00" }] });
+  });
+});
+
+describe("l'anonymisation à douze mois", () => {
+  it("vide un traité il y a plus d'un an ET un jamais traité reçu il y a plus d'un an — pas les récents", async () => {
+    const subjectId = await createSubject();
+    for (let index = 0; index < 4; index += 1) {
+      await visitor().post("/contact-messages").send(message(subjectId)).expect(204);
+    }
+    await ctx.drain();
+    const [oldHandled, oldPending, recentHandled, recentPending] = (await pending()).map(
+      (received) => received.id,
+    );
+    const yearAndMore = new Date(daysAgo(400));
+    const recent = new Date(daysAgo(30));
+    // Les dates sont posées en base : l'API n'écrit qu'à l'instant présent.
+    await ctx.prisma.customerRequest.update({
+      where: { id: oldHandled ?? "" },
+      data: {
+        receivedAt: yearAndMore,
+        handledAt: yearAndMore,
+        handledByStaffId: "s",
+        handledByName: "S",
+      },
+    });
+    await ctx.prisma.customerRequest.update({
+      where: { id: oldPending ?? "" },
+      data: { receivedAt: yearAndMore },
+    });
+    await ctx.prisma.customerRequest.update({
+      where: { id: recentHandled ?? "" },
+      data: {
+        receivedAt: yearAndMore,
+        handledAt: recent,
+        handledByStaffId: "s",
+        handledByName: "S",
+      },
+    });
+
+    const report = await ctx
+      .http()
+      .post("/admin/contact/messages/anonymization/sweep")
+      .set("x-lfc-recompute-token", TEST_RECOMPUTE_TOKEN)
+      .expect(200);
+    expect(report.body).toEqual({ anonymized: 2 });
+
+    const rows = await ctx.prisma.customerRequest.findMany({
+      select: { id: true, authorEmail: true, body: true, anonymizedAt: true },
+    });
+    const byId = new Map(rows.map((row) => [row.id, row]));
+    for (const id of [oldHandled, oldPending]) {
+      expect(byId.get(id ?? "")).toMatchObject({ authorEmail: "", body: "" });
+      expect(byId.get(id ?? "")?.anonymizedAt).not.toBeNull();
+    }
+    for (const id of [recentHandled, recentPending]) {
+      expect(byId.get(id ?? "")).toMatchObject({
+        authorEmail: "jean@visiteur.test",
+        anonymizedAt: null,
+      });
+    }
+  });
+});
+
+describe("les motifs par formulaire (§6.5)", () => {
+  it("un motif `order_problem` n'est ni proposé à « Nous écrire », ni accepté par lui", async () => {
+    const problem = await createSubject({ kind: "order_problem" });
+    const contact = await createSubject();
+    const offered = jsonBody<PublicRequestReasonView[]>(
+      await visitor().get("/request-reasons?kind=contact&audience=b2c").expect(200),
+    );
+    expect(offered.map((reason) => reason.id)).toEqual([contact]);
+    await visitor().post("/contact-messages").send(message(problem)).expect(409);
+
+    const tab = await staff().get("/admin/request-reasons?kind=order_problem").expect(200);
+    expect(jsonBody<{ id: string }[]>(tab).map((reason) => reason.id)).toEqual([problem]);
+  });
+
+  it("le type d'un motif ne change pas à la révision", async () => {
+    const contact = await createSubject();
+    const refused = await staff()
+      .put(`/admin/request-reasons/${contact}`)
+      .send({ ...SUBJECT, kind: "order_problem" })
+      .expect(400);
+    expect(JSON.stringify(refused.body)).toContain("contact.reason.kind_immutable");
   });
 });

@@ -289,7 +289,7 @@ describe("le courriel « votre commande est prête »", () => {
 
   /**
    * Régression : le QR d'une carte « À régler » sortait dans tout ce qui lisait
-   * le jeton brut (plan-carte-reglee-avant-tout.md, §4.2, 2026-10-09).
+   * le jeton brut (commande-carte-reglee.md, §4.2, 2026-10-09).
    */
   it("ne reporte AUCUN QR sur une commande carte non réglée", async () => {
     const subject = handler({ order: view({ paymentStatus: "pending" }) });

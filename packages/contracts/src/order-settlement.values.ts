@@ -11,7 +11,7 @@ import type { PaymentStatus } from "./order.js";
 /**
  * **Une commande est-elle réglée ?** — `paid` (encaissée) ou `not_required`
  * (au compte, ou gratuite). La seule définition du dépôt
- * (`documentation/order/plan-carte-reglee-avant-tout.md`, §1, §4.3) : le suivi
+ * (`documentation/order/commande-carte-reglee.md`, §1, §4.3) : le suivi
  * du client, la vue client, le comptoir et le bon la lisent tous.
  *
  * `pending` et `failed` ne le sont pas : la carte n'a pas abouti. `refunded`
@@ -30,7 +30,7 @@ export function isSettled(paymentStatus: PaymentStatus): boolean {
  * paiement d'une commande carte. Le servir brut affichait un QR de retrait sur
  * une commande « À régler » (constaté en production le 2026-10-09). Aucun
  * lecteur ne sert plus `handoverToken` brut à un client ni à un PDF (plan
- * `plan-carte-reglee-avant-tout.md`, §4.2) : il passe par ici.
+ * `commande-carte-reglee.md`, §4.2) : il passe par ici.
  */
 export function exposedHandoverToken(view: {
   readonly paymentStatus: PaymentStatus;

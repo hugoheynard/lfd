@@ -17,6 +17,12 @@ export interface WorkspaceRailItem {
    * se rendent exactement comme avant.
    */
   readonly section?: string;
+  /**
+   * Ce qui attend derrière l'entrée — un compte, rendu au rail ET sur la tuile
+   * du menu mobile. Absent quand il n'y a rien : un « 0 » attirerait l'œil
+   * pour dire qu'il n'y a rien à faire.
+   */
+  readonly badge?: number;
 }
 
 /** Un groupe de vues dans le rail — sans titre quand l'espace n'en groupe pas. */

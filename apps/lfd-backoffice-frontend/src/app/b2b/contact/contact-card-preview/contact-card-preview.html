@@ -1,6 +1,8 @@
 <fold-card>
   <div class="ccp" inert aria-label="Aperçu de la carte de contact">
-    <p class="ccp-kicker">{{ text().kicker }}</p>
+    @if (text().kicker !== '') {
+      <p class="ccp-kicker" data-preview-kicker>{{ text().kicker }}</p>
+    }
     <p class="ccp-title" data-preview-title>{{ text().title }}</p>
     <p class="ccp-body" data-preview-body>{{ text().body }}</p>
     <div class="ccp-acts">

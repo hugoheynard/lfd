@@ -1,0 +1,12 @@
+/* Les motifs, empilés : l'écart vient du `gap`. */
+.rrl-list {
+  display: flex;
+  flex-direction: column;
+  gap: var(--fold-space-md);
+}
+
+.rrl-row-actions {
+  display: flex;
+  align-items: center;
+  gap: var(--fold-space-sm);
+}

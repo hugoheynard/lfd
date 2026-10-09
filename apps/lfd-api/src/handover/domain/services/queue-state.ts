@@ -20,7 +20,7 @@ export interface QueuePresenceSource {
  *
  * 🔴 La file ne doit pas montrer attendue ce que le scan refuse
  * (`handoverBlocker`, « n'est pas réglée » — plan
- * `documentation/order/plan-carte-reglee-avant-tout.md`, §4.4). Une commande
+ * `documentation/order/commande-carte-reglee.md`, §4.4). Une commande
  * carte « À régler » n'existe pour personne tant qu'elle n'est pas payée : ni
  * pour le client (ni suivi ni QR), ni au comptoir.
  *

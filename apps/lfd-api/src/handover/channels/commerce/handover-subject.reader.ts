@@ -35,7 +35,7 @@ export interface HandoverSubject {
    *
    * 🔴 Une commande carte est écrite AVANT son paiement : sans ce fait, le
    * comptoir remettait une commande « À régler » (plan
-   * `documentation/order/plan-carte-reglee-avant-tout.md`, §4.4).
+   * `documentation/order/commande-carte-reglee.md`, §4.4).
    */
   readonly settled: boolean;
   readonly fulfillmentMethod: FulfillmentMethod;

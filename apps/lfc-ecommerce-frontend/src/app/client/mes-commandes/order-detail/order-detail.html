@@ -66,17 +66,20 @@
   <button foldButton block size="sm" emphasis="soft" type="button">
     {{ t().orders.reorder }}
   </button>
-  <button
-    foldButton
-    block
-    size="sm"
-    emphasis="outline"
-    intent="danger"
-    type="button"
-    (click)="problemRaised.emit()"
-  >
-    {{ t().orders.problem }}
-  </button>
+  <!-- Seulement sur une commande retirée ou livrée : avant, il n'y a rien à signaler. -->
+  @if (reportable()) {
+    <button
+      foldButton
+      block
+      size="sm"
+      emphasis="outline"
+      intent="danger"
+      type="button"
+      (click)="problemRaised.emit()"
+    >
+      {{ t().orders.problem }}
+    </button>
+  }
 </div>
 
 <!-- La note vit LÀ OÙ LA COMMANDE VIT, jamais dans une pop-up qui interrompt.

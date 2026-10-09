@@ -101,6 +101,22 @@ describe('OrderDetail', () => {
     expect(raised).toBe(1);
   });
 
+  /** Plan « demandes clients », §6.6 : rien à signaler avant le retrait ou la livraison. */
+  it.each(['received', 'bakery', 'ready', 'route', 'cancelled'] as const)(
+    'ne propose pas « Signaler un problème » sur une commande %s',
+    (status) => {
+      fixture.componentRef.setInput('order', { ...ROWS[0]!, status });
+      fixture.detectChanges();
+      expect(el().querySelector('button[intent="danger"]')).toBeNull();
+    },
+  );
+
+  it('le propose sur une commande livrée', () => {
+    fixture.componentRef.setInput('order', { ...ROWS[0]!, status: 'delivered' });
+    fixture.detectChanges();
+    expect(el().querySelector('button[intent="danger"]')).not.toBeNull();
+  });
+
   /** Plan des points, E2.3 : la part HT du bon, seulement quand il y en a une. */
   it('montre la ligne « Bon de fidélité (HT) » seulement quand un bon a été imputé', () => {
     expect(el().textContent).not.toContain(FR.cart.voucherHtLine);

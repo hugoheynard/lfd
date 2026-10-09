@@ -4,7 +4,7 @@ import { FoldButtonComponent } from 'fold-ng';
 
 import { ClientCopyService } from '../../copy/client-copy.service';
 import { formatCents } from '../../format-money';
-import type { HistoryOrder, OrderPayment } from '../order-rows';
+import { isFulfilled, type HistoryOrder, type OrderPayment } from '../order-rows';
 
 /** Une note de 1 à 5. Zéro veut dire « pas encore notée », pas « zéro étoile ». */
 const STARS = [1, 2, 3, 4, 5] as const;
@@ -52,6 +52,9 @@ export class OrderDetail {
   protected readonly t = inject(ClientCopyService).t;
   protected readonly stars = STARS;
 
+  /** « Signaler un problème » n'existe que sur une commande retirée ou livrée. */
+  protected readonly reportable = computed(() => isFulfilled(this.order()));
+
   protected readonly paymentLabel = computed(() => {
     const copy = this.t().orders;
     const labels: Record<OrderPayment, string> = {
@@ -66,7 +69,7 @@ export class OrderDetail {
   /**
    * Une commande carte non réglée se règle sur SA page de règlement — jamais
    * en repassant le panier, qui ferait une seconde commande (plan
-   * `documentation/order/plan-commandes-non-reglees.md`, §4.3).
+   * `documentation/order/commande-carte-reglee.md`, §4.3).
    */
   protected readonly settleable = computed(() => {
     const payment = this.order().payment;

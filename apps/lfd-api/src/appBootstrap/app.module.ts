@@ -114,7 +114,7 @@ import { PublicationEnabledGuard } from "../pim/publication/publication-switch.j
     // À qui la livraison est proposée — lu par la caisse et le devis.
     DeliveryAvailabilityModule,
     OrderOpeningModule,
-    // « Nous écrire » : objets, carte de contact, messages (nous-contacter.md).
+    // « Nous écrire » : objets, carte de contact, messages (demandes-clients.md).
     ContactModule,
     // L'accès aux fonctionnalités : ce qu'on peut faire de la boutique, réglé en admin.
     FeatureAccessModule,

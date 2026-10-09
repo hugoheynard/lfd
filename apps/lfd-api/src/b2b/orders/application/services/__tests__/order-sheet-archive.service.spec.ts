@@ -85,7 +85,7 @@ describe("l'archive du bon de commande", () => {
   /**
    * Régression : téléchargé avant le paiement, le bon d'une commande carte en
    * retrait aurait été archivé SANS QR, et l'accusé au paiement aurait joint ce
-   * bon figé (plan-carte-reglee-avant-tout.md, §2.5, 2026-10-09).
+   * bon figé (commande-carte-reglee.md, §2.5, 2026-10-09).
    */
   it("n'archive pas un bon de retrait sans jeton — commande non réglée", async () => {
     const { archive, documents } = archiveOf();

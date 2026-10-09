@@ -91,7 +91,7 @@ export const UNSETTLED_REASON =
  * commande remboursée après son retrait est partie, et le dire d'abord est le
  * seul fait vrai. Il passe avant la retenue qualité : une commande qu'on ne
  * remettra pas faute de paiement n'a rien à attendre du contrôle
- * (`plan-carte-reglee-avant-tout.md`, §4.4, 2026-10-09).
+ * (`commande-carte-reglee.md`, §4.4, 2026-10-09).
  */
 export function handoverBlocker(candidate: HandoverCandidate): string | null {
   if (candidate.status === "cancelled") {

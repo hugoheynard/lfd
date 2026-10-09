@@ -11,7 +11,7 @@ import { CONTACT_MESSAGE_THROTTLE } from "./contact-message.throttle.js";
 import { truncateIp } from "./truncate-ip.js";
 
 /**
- * **Écrire sans compte** — `POST /contact-messages` (`nous-contacter.md`,
+ * **Écrire sans compte** — `POST /contact-messages` (`demandes-clients.md`,
  * §2.2 et §5.2). Route publique qui ÉCRIT : débit explicite de 3 messages par
  * 10 minutes et par IP, en plus du champ piège et du délai minimal.
  *

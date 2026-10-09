@@ -1,7 +1,7 @@
 import { ChangeDetectionStrategy, Component, computed, inject, signal } from '@angular/core';
 import type { ContactMessagePayload } from '@lfd/contracts';
 // Valeurs par le sous-chemin sans zod : la carte qui ouvre ce dialogue est sur l'accueil (budget `cloudflare`).
-import { CONTACT_BOUNDS, type PublicContactSubjectView } from '@lfd/contracts/shop-values';
+import { CONTACT_BOUNDS, type PublicRequestReasonView } from '@lfd/contracts/shop-values';
 import {
   FoldButtonComponent,
   FoldCalloutComponent,
@@ -37,7 +37,7 @@ type SubjectsState = 'loading' | 'failed' | 'ready';
 
 /**
  * **« Nous écrire »** — le message à l'équipe, par objet
- * (`documentation/contenu-ecommerce/nous-contacter.md`, §2.2 et §4).
+ * (`documentation/contenu-ecommerce/demandes-clients.md`, §2.2 et §4).
  *
  * Remplace le `mailto:` de la carte de contact : l'objet choisi décide à quelle
  * adresse le message part, et le message est aussi rangé au back-office.
@@ -88,7 +88,7 @@ export class ContactDialog {
   protected readonly bounds = CONTACT_BOUNDS;
 
   protected readonly state = signal<SubjectsState>('loading');
-  private readonly subjects = signal<readonly PublicContactSubjectView[]>([]);
+  private readonly subjects = signal<readonly PublicRequestReasonView[]>([]);
 
   /** Les objets en options, libellés dans la langue de l'écran (le français à défaut). */
   protected readonly subjectOptions = computed(() =>
@@ -98,7 +98,7 @@ export class ContactDialog {
     })),
   );
 
-  protected readonly subjectId = signal<string | null>(null);
+  protected readonly reasonId = signal<string | null>(null);
   protected readonly name = signal(this.authenticated() ? this.identity.fullName() : '');
   protected readonly email = signal(this.authenticated() ? (this.identity.email() ?? '') : '');
   protected readonly phone = signal(this.authenticated() ? (this.identity.phone() ?? '') : '');
@@ -117,7 +117,7 @@ export class ContactDialog {
   protected readonly canSend = computed(
     () =>
       !this.sending() &&
-      this.subjectId() !== null &&
+      this.reasonId() !== null &&
       within(this.name(), CONTACT_BOUNDS.authorName) &&
       within(this.email(), CONTACT_BOUNDS.authorEmail) &&
       PLAUSIBLE_EMAIL.test(this.email().trim()) &&
@@ -136,7 +136,7 @@ export class ContactDialog {
   protected async load(): Promise<void> {
     this.state.set('loading');
     try {
-      this.subjects.set(await this.gateway.subjects(this.audience()));
+      this.subjects.set(await this.gateway.reasons('contact', this.audience()));
       this.state.set('ready');
     } catch {
       this.state.set('failed');
@@ -144,14 +144,14 @@ export class ContactDialog {
   }
 
   protected async send(): Promise<void> {
-    const subjectId = this.subjectId();
-    if (!this.canSend() || subjectId === null) {
+    const reasonId = this.reasonId();
+    if (!this.canSend() || reasonId === null) {
       return;
     }
     this.sending.set(true);
     this.refusal.set(null);
     const payload: ContactMessagePayload = {
-      subjectId,
+      reasonId,
       name: this.name().trim(),
       email: this.email().trim(),
       phone: this.phone().trim(),

@@ -10,7 +10,7 @@ import {
 
 /**
  * Endpoint **machine** de l'expiration des commandes boutique non réglées (plan
- * `documentation/order/plan-commandes-non-reglees.md`, §4.5) : présenté par le
+ * `documentation/order/commande-carte-reglee.md`, §4.5) : présenté par le
  * Worker sur son cron de RAFRAÎCHISSEMENT (`KEEP_WARM_CRON`, `*\/5 * * * *`,
  * `container/worker.ts`), avec le jeton du `RecomputeGuard` — la même porte que
  * l'autopilot de la facture du mois.

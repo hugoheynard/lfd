@@ -1,0 +1,86 @@
+<fold-page-layout icon="inbox" title="Demandes clients">
+  <p description>
+    Les messages « Nous écrire » et les problèmes de commande signalés depuis la boutique. Chaque
+    demande est aussi partie par e-mail à l'adresse de son motif ; « Marquer traité » dit à l'équipe
+    que quelqu'un a répondu.
+  </p>
+
+  <div class="dp-list">
+    <div class="dp-filters">
+      <fold-view-toggle
+        ariaLabel="État"
+        size="sm"
+        [options]="statuses"
+        [value]="status()"
+        (valueChange)="selectStatus($event)"
+        data-status-filter
+      />
+      <fold-view-toggle
+        ariaLabel="Type"
+        size="sm"
+        [options]="kinds"
+        [value]="kind()"
+        (valueChange)="selectKind($event)"
+        data-kind-filter
+      />
+      <fold-view-toggle
+        ariaLabel="Priorité"
+        size="sm"
+        [options]="priorities"
+        [value]="priority()"
+        (valueChange)="selectPriority($event)"
+        data-priority-filter
+      />
+    </div>
+
+    @if (refusal(); as message) {
+      <fold-callout variant="alert" announce data-refusal>{{ message }}</fold-callout>
+    }
+
+    @switch (state()) {
+      @case ('loading') {
+        <fold-loading message="Chargement des demandes…" />
+      }
+      @case ('error') {
+        <fold-empty-state tone="alert" title="Impossible de charger les demandes">
+          <button foldButton (click)="load()">Réessayer</button>
+        </fold-empty-state>
+      }
+      @case ('ready') {
+        @for (request of shown(); track request.id) {
+          <app-customer-request-card
+            [request]="request"
+            [canHandle]="status() === 'pending' && canWrite()"
+            [busy]="busyId() !== null"
+            [handling]="busyId() === request.id"
+            (handle)="markHandled(request)"
+          />
+        } @empty {
+          @if (filteredOut()) {
+            <fold-empty-state
+              title="Aucune demande de cette priorité"
+              subtitle="Choisissez « Toutes » pour revoir toute la liste."
+              data-filtered-empty
+            >
+              <fold-icon empty-icon name="filter" />
+            </fold-empty-state>
+          } @else {
+            <fold-empty-state
+              [title]="
+                status() === 'pending' ? 'Aucune demande à traiter' : 'Aucune demande traitée'
+              "
+              [subtitle]="
+                status() === 'pending'
+                  ? 'Les demandes écrites depuis la boutique arrivent ici.'
+                  : 'Les demandes marquées traitées apparaissent ici.'
+              "
+              data-empty
+            >
+              <fold-icon empty-icon name="inbox" />
+            </fold-empty-state>
+          }
+        }
+      }
+    }
+  </div>
+</fold-page-layout>

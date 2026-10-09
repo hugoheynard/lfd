@@ -3,6 +3,7 @@ import { FoldButtonComponent, FoldCardComponent } from 'fold-ng';
 
 /** Ce que la carte de la boutique affiche, déjà résolu (langue, repli). */
 export interface ContactCardPreviewText {
+  /** Vide : pas de surtitre — il n'a pas de repli. */
   readonly kicker: string;
   readonly title: string;
   readonly body: string;
