@@ -224,6 +224,14 @@
   cursor: not-allowed;
 }
 
+// La boutique fermée à la clientèle : la phrase prend la place du bouton.
+.closed {
+  margin: 0;
+  text-align: center;
+  font-weight: var(--fold-weight-semibold);
+  color: var(--lfc-color-text-subtle);
+}
+
 .hint {
   margin: 9px 0 0;
   text-align: center;

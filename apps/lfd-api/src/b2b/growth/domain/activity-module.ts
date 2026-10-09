@@ -102,6 +102,8 @@ const PREFIXES: Readonly<Record<ActivityModule, readonly string[]>> = {
     // La TVA du port (2026-10-08) : un réglage de la commande, comme la surtaxe.
     "order_delivery_vat.",
     "delivery_availability.",
+    // À qui la boutique prend des commandes (2026-10-09) : un réglage de la commande.
+    "order_opening.",
     // La flotte et le départ des tournées (2026-09-29) : avec quoi et d'où
     // part une livraison. Sous `commandes` faute d'un module « livraison » —
     // en créer un est un changement du contrat `ActivityModule`, que le lot 2

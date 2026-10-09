@@ -19,14 +19,23 @@
  */
 
 /**
+ * Les niveaux d'une surface qu'on MONTRE ou qu'on cache dans une app cliente.
+ *
+ * ⚠️ Masquer n'est pas fermer : une clé à ces niveaux ne garde aucune route
+ * serveur. Retirés le 2026-10-09 avec leurs clés, réintroduits le même jour pour
+ * `facebookLogin` (Hugo) — un bouton qu'on cache, pas une porte qu'on ferme.
+ */
+export const VISIBILITY_LEVELS = ["hidden", "visible"] as const;
+export type VisibilityLevel = (typeof VISIBILITY_LEVELS)[number];
+
+/**
  * Les niveaux d'une surface que le SERVEUR ferme : `closed` refuse la route en
  * 409, `open` la sert.
  *
- * ⚠️ Ils ne disent pas `hidden`/`visible`, et c'est le sujet : masquer ne
+ * ⚠️ Distincts de {@link VISIBILITY_LEVELS}, et c'est le sujet : masquer ne
  * ferme rien, `closed` si — la confusion que la contradiction du plan mandat
  * client a relevée (plan `documentation/comptabilite/mandat/plan-mandat-client.md`
- * §6 #1, 2026-09-14). Les niveaux de visibilité ont disparu avec leurs clés le
- * 2026-10-09.
+ * §6 #1, 2026-09-14).
  */
 export const GATE_LEVELS = ["closed", "open"] as const;
 export type GateLevel = (typeof GATE_LEVELS)[number];
@@ -64,8 +73,9 @@ export interface FeatureDefinition<Level extends string> {
 
 /**
  * **Le catalogue fermé.** Un flag de plus est une décision, pas une ligne qu'on
- * ajoute en passant (plan §7). Il ne porte plus que `customerMandate` depuis le
- * 2026-10-09 (cf. plus haut).
+ * ajoute en passant (plan §7). Il ne portait plus que `customerMandate` le
+ * matin du 2026-10-09 (cf. plus haut) ; `facebookLogin` s'y est ajouté le même
+ * jour, à la demande de Hugo.
  */
 export const FEATURE_CATALOGUE = {
   customerMandate: {
@@ -78,6 +88,18 @@ export const FEATURE_CATALOGUE = {
     // ouvre produit une autorisation de débit opposable, pas un aperçu.
     exemptible: false,
   },
+  facebookLogin: {
+    label: "Connexion par Facebook",
+    description:
+      "Le bouton « Continuer avec Facebook » de l'accueil et de la fenêtre de connexion de la boutique. Visible, il ne fonctionne que si la connexion Facebook est aussi activée dans Auth0.",
+    levels: VISIBILITY_LEVELS,
+    defaultLevel: "hidden",
+    // Non exemptible : l'écran de connexion précède toute identité, aucune
+    // adresse ne peut donc compter — seul le niveau global a du sens.
+    // Aucune garde serveur : cacher le bouton suffit, la connexion elle-même
+    // se règle chez Auth0.
+    exemptible: false,
+  },
 } as const satisfies Readonly<Record<string, FeatureDefinition<string>>>;
 
 export type FeatureKey = keyof typeof FEATURE_CATALOGUE;
@@ -86,7 +108,7 @@ export type FeatureLevel<Key extends FeatureKey = FeatureKey> =
   (typeof FEATURE_CATALOGUE)[Key]["levels"][number];
 
 /** Les clés, dans l'ordre du catalogue. */
-export const FEATURE_KEYS: readonly FeatureKey[] = ["customerMandate"];
+export const FEATURE_KEYS: readonly FeatureKey[] = ["customerMandate", "facebookLogin"];
 
 /**
  * Les clés qu'aucune exemption n'ouvre — calculées depuis le catalogue, pour

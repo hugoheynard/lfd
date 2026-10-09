@@ -94,14 +94,6 @@ export const GOOGLE_CONNECTION = 'google-oauth2';
  */
 export const FACEBOOK_CONNECTION = 'facebook';
 
-/**
- * **Le bouton Facebook est masqué** (Hugo, 2026-10-09 : « masque le facebook
- * login pour le moment »). Tout reste câblé — façade, connexion, copies — :
- * repasser à `true` le remontre, aux deux endroits qui le lisent (l'étape
- * d'accueil et la fenêtre de connexion).
- */
-export const FACEBOOK_LOGIN_SHOWN = false;
-
 export const AUTH_CONFIG: AuthConfig = {
   domain: AUTH_ENV.domain,
   clientId: AUTH_ENV.clientId,

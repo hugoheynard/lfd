@@ -1686,6 +1686,7 @@ export {
   isFeatureKey,
   isFeatureLevel,
   mostOpenLevel,
+  VISIBILITY_LEVELS,
 } from "./feature-access.js";
 export type {
   AdminFeatureAccessView,
@@ -1703,6 +1704,7 @@ export type {
   GateLevel,
   IgnoredFeatureRowView,
   UnexemptibleFeatureKey,
+  VisibilityLevel,
 } from "./feature-access.js";
 
 export {
@@ -1763,6 +1765,17 @@ export type {
   DeliveryAvailabilityView,
   PublicDeliveryAvailabilityView,
 } from "./delivery-availability.js";
+export {
+  DEFAULT_ORDER_OPENING,
+  ORDERS_CLOSED_FOR_AUDIENCE,
+  ordersOpenTo,
+  orderOpeningPatchSchema,
+} from "./order-opening.js";
+export type {
+  OrderOpeningPatch,
+  OrderOpeningView,
+  PublicOrderOpeningView,
+} from "./order-opening.js";
 export {
   ALL_DISCOUNT_AUDIENCES,
   pickupAddressUpdatePayloadSchema,

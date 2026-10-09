@@ -3,7 +3,9 @@ import { computed, inject, Injectable, signal } from '@angular/core';
 // Types seulement : aucune valeur du baril du contrat n'entre ici, qui
 // embarquerait zod dans le bundle initial (1,44 Mo pour un budget de 1,30 Mo,
 // mesuré le 2026-09-14).
-import type { FeatureLevelsView, GateLevel } from '@lfd/contracts';
+import type { FeatureLevelsView, GateLevel, VisibilityLevel } from '@lfd/contracts';
+// Les VALEURS passent par le sous-chemin sans zod, jamais par le baril.
+import { isAtLeast } from '@lfd/contracts/feature-access-levels';
 import { firstValueFrom, switchMap, take, timeout, type Observable } from 'rxjs';
 
 import { AUTH_CONFIG } from '../../auth/auth.config';
@@ -25,15 +27,18 @@ const READ_TIMEOUT_MS = 8_000;
 /** Le mandat client tant qu'on ne sait pas : fermé, comme le défaut du catalogue. */
 const UNKNOWN_MANDATE_LEVEL: GateLevel = 'closed';
 
+/** Le bouton Facebook tant qu'on ne sait pas : masqué, comme le défaut du catalogue. */
+const UNKNOWN_FACEBOOK_LEVEL: VisibilityLevel = 'hidden';
+
 /**
  * **Les niveaux de l'accès aux fonctionnalités**, tels que le serveur les dit.
  *
  * Plan : `documentation/auth-inscription/plan-inscription-pro-seule.md` §4.
  *
- * Il ne reste que le mandat client depuis le 2026-10-09 : la boutique, « Mes
- * commandes », « Mes factures », le menu au bureau et la livraison aux
- * particuliers ne sont plus des clés (la dernière dépend du réglage admin
- * « Livraison », que le serveur applique).
+ * Il ne reste que le mandat client et la connexion par Facebook depuis le
+ * 2026-10-09 : la boutique, « Mes commandes », « Mes factures », le menu au
+ * bureau et la livraison aux particuliers ne sont plus des clés (la dernière
+ * dépend du réglage admin « Livraison », que le serveur applique).
  *
  * Ce service ne FERME rien : c'est l'API qui refuse. Il évite seulement que
  * l'écran montre une carte dont chaque requête partirait en 409.
@@ -71,6 +76,17 @@ export class ClientFeatureAccess {
    */
   readonly customerMandate = computed<GateLevel>(
     () => this.levels()?.customerMandate ?? UNKNOWN_MANDATE_LEVEL,
+  );
+
+  /**
+   * Vrai si le bouton « Continuer avec Facebook » se montre (`facebookLogin`).
+   *
+   * Faux tant qu'on ne sait pas — lecture en vol, échec, serveur qui ne connaît
+   * pas la clé : un bouton montré sans la connexion activée chez Auth0 mènerait
+   * à une erreur, et rien ne le garde côté serveur.
+   */
+  readonly facebookLoginShown = computed<boolean>(() =>
+    isAtLeast('facebookLogin', this.levels()?.facebookLogin ?? UNKNOWN_FACEBOOK_LEVEL, 'visible'),
   );
 
   /** Résout quand l'état a quitté `loading` — succès ou échec. */

@@ -23,6 +23,7 @@ import { OrderRepository, type PlacedOrder } from "../../domain/ports/order.repo
 import { ensureOrderMember } from "../../domain/services/order-access.js";
 import { orderFingerprint } from "../../domain/services/order-fingerprint.js";
 import { OrderDrafting } from "../services/order-drafting.service.js";
+import { OrderIntake } from "../services/order-intake.service.js";
 import { settleOrder, type CreatedIntent } from "../services/order-settlement.js";
 import { PlaceOrderCommand, type PlaceOrderResult } from "./place-order.command.js";
 
@@ -55,6 +56,7 @@ export class PlaceOrderHandler implements ICommandHandler<PlaceOrderCommand, Pla
     private readonly voucherQuotes: LoyaltyVoucherQuoteReader,
     private readonly vouchers: LoyaltyVoucherRedemption,
     private readonly durable: DurablePublisher,
+    private readonly intake: OrderIntake,
   ) {}
 
   /**
@@ -125,6 +127,10 @@ export class PlaceOrderHandler implements ICommandHandler<PlaceOrderCommand, Pla
       const role = await this.guard.roleOf(command.actorUserId, companyId);
       ensureOrderMember(role, companyId);
     }
+    // La boutique fermée à la clientèle refuse ici, avant tout calcul : la clé
+    // est rendue, et un rejeu d'une commande déjà passée (plus haut) passe
+    // toujours — elle a été prise quand la boutique était ouverte.
+    await this.intake.ensureOpenFor(companyId);
 
     // Le bon se LIT ici, sans rien engager : sa valeur entre dans le total, donc
     // dans l'intention Stripe. C'est la réservation, plus bas, qui tranche une

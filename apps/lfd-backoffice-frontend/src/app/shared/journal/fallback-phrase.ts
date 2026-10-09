@@ -89,6 +89,7 @@ const SUBJECT_NOUNS: Readonly<Record<string, string>> = {
   company_bank_account: 'le RIB',
   delivery_availability: 'l’ouverture de la livraison',
   delivery_zone: 'la zone de livraison',
+  order_opening: 'l’ouverture de la boutique',
   feature_access: 'la fonctionnalité',
   floor: 'la limite de prix',
   ingredient: 'l’ingrédient',

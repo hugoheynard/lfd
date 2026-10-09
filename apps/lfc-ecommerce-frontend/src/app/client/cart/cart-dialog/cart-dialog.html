@@ -57,7 +57,11 @@
   <!-- Un panier vide n'a pas de bouton gris à offrir : il a un rayon à rouvrir.
        Le bouton ne se grise donc QUE faute de savoir qui commande — le seul cas
        où il n'a nulle part où mener. -->
-  @if (mayUseAccount()) {
+  @if (ordersClosed()) {
+    <!-- La boutique ne prend pas les commandes de cette clientèle : le
+         catalogue et le panier restent, le bouton cède la place à la phrase. -->
+    <p class="closed" role="status">{{ t().cart.ordersClosed }}</p>
+  } @else if (mayUseAccount()) {
     <!-- 🔴 DEUX ACTIONS, et non un interrupteur (Hugo, 2026-09-21). Payer
          comptant reste TOUJOURS possible, y compris au mensuel : régler tout de
          suite avec son propre tarif est un droit, pas une exception — c'est
@@ -87,5 +91,7 @@
       {{ ctaLabel() }}
     </button>
   }
-  <p class="hint">{{ t().cart.payHint }}</p>
+  @if (!ordersClosed()) {
+    <p class="hint">{{ t().cart.payHint }}</p>
+  }
 </fold-panel-footer>

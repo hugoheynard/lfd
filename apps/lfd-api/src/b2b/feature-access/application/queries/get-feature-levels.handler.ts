@@ -20,8 +20,12 @@ export class GetFeatureLevelsHandler implements IQueryHandler<
   constructor(private readonly resolver: FeatureLevelResolver) {}
 
   async execute(): Promise<FeatureLevelsView> {
-    // Une seule clé depuis le 2026-10-09 : `shop`, `orders`, `invoices`,
-    // `desktopMenu` et `publicDelivery` ont été retirées du catalogue.
-    return { customerMandate: await this.resolver.levelFor("customerMandate", null) };
+    // `facebookLogin` n'est pas exemptible : le sujet n'y change rien, mais la
+    // même résolution sert les deux routes.
+    const [customerMandate, facebookLogin] = await Promise.all([
+      this.resolver.levelFor("customerMandate", null),
+      this.resolver.levelFor("facebookLogin", null),
+    ]);
+    return { customerMandate, facebookLogin };
   }
 }

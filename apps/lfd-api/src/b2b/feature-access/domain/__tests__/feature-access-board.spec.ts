@@ -20,8 +20,7 @@ describe("composeFeatureAccessBoard — l'écran admin", () => {
     const board = composeFeatureAccessBoard({ overrides: [], exemptions: [] });
 
     expect(board.ignored).toEqual([]);
-    // Une seule clé depuis le 2026-10-09 ; l'écran ne propose pas d'exemption
-    // sur celle-ci (2026-09-14).
+    // Deux clés depuis le 2026-10-09 ; aucune ne propose d'exemption.
     expect(board.features).toEqual([
       expect.objectContaining({
         key: "customerMandate",
@@ -29,6 +28,16 @@ describe("composeFeatureAccessBoard — l'écran admin", () => {
         levels: ["closed", "open"],
         defaultLevel: "closed",
         effectiveLevel: "closed",
+        exemptible: false,
+        override: null,
+        exemptions: [],
+      }),
+      expect.objectContaining({
+        key: "facebookLogin",
+        label: "Connexion par Facebook",
+        levels: ["hidden", "visible"],
+        defaultLevel: "hidden",
+        effectiveLevel: "hidden",
         exemptible: false,
         override: null,
         exemptions: [],
@@ -82,7 +91,10 @@ describe("composeFeatureAccessBoard — l'écran admin", () => {
       exemptions: [exemption("shop", "testeur@exemple.fr")],
     });
 
-    expect(board.features.map((feature) => feature.key)).toEqual(["customerMandate"]);
+    expect(board.features.map((feature) => feature.key)).toEqual([
+      "customerMandate",
+      "facebookLogin",
+    ]);
     expect(board.features[0]).toMatchObject({ effectiveLevel: "closed", override: null });
     expect(board.ignored).toEqual([
       ...removed.map((key) => ({

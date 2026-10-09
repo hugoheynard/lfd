@@ -134,6 +134,14 @@ export const b2bRoutes: Routes = [
               ),
           },
           {
+            path: 'ouverture-boutique',
+            title: 'Ouverture de la boutique — LFC B2B admin',
+            loadComponent: () =>
+              import('./reglages/order-opening-page/order-opening-page').then(
+                (m) => m.OrderOpeningPage,
+              ),
+          },
+          {
             path: 'heures-limites',
             title: 'Heures limites de commande — LFC B2B admin',
             loadComponent: () =>

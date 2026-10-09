@@ -1,0 +1,66 @@
+<fold-page-layout icon="store" title="Ouverture de la boutique">
+  <p description>
+    À quelle clientèle la boutique prend des commandes. Fermée, elle garde son catalogue et ses prix
+    ; seules les commandes sont refusées. L'équipe peut toujours saisir une commande.
+  </p>
+
+  @switch (state()) {
+    @case ('loading') {
+      <fold-loading message="Chargement de l'ouverture de la boutique…" />
+    }
+    @case ('error') {
+      <fold-empty-state tone="alert" title="Impossible de charger l'ouverture de la boutique">
+        <button foldButton (click)="load()">Réessayer</button>
+      </fold-empty-state>
+    }
+    @case ('ready') {
+      <fold-card>
+        <fold-element-title
+          cardHeader
+          variant="title"
+          title="Prise de commandes"
+          subtitle="Chaque bascule s'applique dès sa confirmation."
+        />
+
+        <ul class="rows">
+          @for (row of rows(); track row.audience) {
+            <li class="row" [attr.data-audience]="row.audience">
+              <div class="what">
+                <p class="title">{{ row.words.title }}</p>
+                <p class="sentence">{{ row.words.sentence }}</p>
+              </div>
+              <fold-badge
+                [variant]="row.open ? 'success' : 'warning'"
+                [content]="row.open ? 'Ouverte' : 'Fermée'"
+              />
+              <fold-inline-confirm
+                [intent]="row.open ? 'warning' : 'primary'"
+                [message]="effect(row)"
+                [loading]="pending() === row.audience"
+                (confirmed)="toggle(row)"
+              >
+                <button
+                  foldButton
+                  size="sm"
+                  emphasis="outline"
+                  [intent]="row.open ? 'warning' : 'primary'"
+                  [disabled]="pending() !== null"
+                >
+                  {{ row.open ? 'Fermer' : 'Rouvrir' }}
+                </button>
+              </fold-inline-confirm>
+            </li>
+          }
+        </ul>
+
+        @if (settings()?.updatedBy; as author) {
+          <p class="trace">Dernier réglage par {{ author }}.</p>
+        }
+
+        @if (failure(); as message) {
+          <fold-callout variant="alert" announce>{{ message }}</fold-callout>
+        }
+      </fold-card>
+    }
+  }
+</fold-page-layout>

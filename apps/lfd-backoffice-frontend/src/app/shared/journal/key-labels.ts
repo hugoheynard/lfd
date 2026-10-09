@@ -157,6 +157,8 @@ export const KEY_LABELS: Readonly<Record<string, string>> = {
   options: 'Options',
   order: 'Ordre',
   orderCount: 'Bons',
+  ordersOpenToB2b: 'Commandes ouvertes aux professionnels',
+  ordersOpenToB2c: 'Commandes ouvertes aux particuliers',
   orderFrom: 'Ouverture des commandes',
   orderId: 'Commande',
   orderNumber: 'Numéro de commande',

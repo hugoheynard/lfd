@@ -1,8 +1,12 @@
+import { provideHttpClient } from '@angular/common/http';
+import { provideHttpClientTesting } from '@angular/common/http/testing';
 import { ComponentFixture, TestBed } from '@angular/core/testing';
 import { FoldPanelRef } from 'fold-ng';
 
 import { AuthFacade } from '../../auth/auth.facade';
 import { FR } from '../../client/copy/fr';
+import { ClientFeatureAccess } from '../../client/feature-access/client-feature-access.service';
+import { DEFAULT_LEVELS } from '../../client/feature-access/feature-access.fixture';
 
 import { SignInDialog, type SignInIntent } from './sign-in-dialog';
 
@@ -17,12 +21,18 @@ interface Wire {
 
 let wire: Wire;
 
-function boot(intent: SignInIntent = INTENT): ComponentFixture<SignInDialog> {
+/** Le niveau `facebookLogin` posé avant le rendu ; `null` = niveaux pas encore lus. */
+function boot(
+  intent: SignInIntent = INTENT,
+  facebookLogin: 'hidden' | 'visible' | null = null,
+): ComponentFixture<SignInDialog> {
   wire = { calls: [], closed: [] };
   TestBed.resetTestingModule();
   TestBed.configureTestingModule({
     imports: [SignInDialog],
     providers: [
+      provideHttpClient(),
+      provideHttpClientTesting(),
       {
         provide: AuthFacade,
         useValue: {
@@ -47,6 +57,9 @@ function boot(intent: SignInIntent = INTENT): ComponentFixture<SignInDialog> {
       },
     ],
   });
+  if (facebookLogin !== null) {
+    TestBed.inject(ClientFeatureAccess).receive({ ...DEFAULT_LEVELS, facebookLogin });
+  }
   const fixture = TestBed.createComponent(SignInDialog);
   fixture.componentRef.setInput('data', intent);
   fixture.detectChanges();
@@ -90,14 +103,31 @@ describe('SignInDialog', () => {
     fixture.detectChanges();
   };
 
-  /** Facebook est masqué pour le moment (`FACEBOOK_LOGIN_SHOWN`, 2026-10-09). */
-  it('propose Google et l’adresse, sans Facebook pour le moment', () => {
+  /**
+   * Facebook suit l'interrupteur `facebookLogin` (2026-10-09) : masqué tant
+   * que les niveaux ne sont pas lus.
+   */
+  it('propose Google et l’adresse, sans Facebook tant que les niveaux ne sont pas lus', () => {
     fixture = boot();
     const text = el().textContent ?? '';
 
     expect(text).toContain(FR.signup.google);
     expect(text).not.toContain(FR.signup.facebook);
     expect(text).toContain(FR.doors.signInSubmit);
+  });
+
+  it('garde Facebook masqué quand le niveau est masqué', () => {
+    fixture = boot(INTENT, 'hidden');
+
+    expect(el().textContent ?? '').not.toContain(FR.signup.facebook);
+  });
+
+  it('montre Facebook quand le niveau est visible, et le geste part chez Facebook', () => {
+    fixture = boot(INTENT, 'visible');
+
+    expect(el().textContent ?? '').toContain(FR.signup.facebook);
+    clickLabelled(FR.signup.facebook);
+    expect(wire.calls).toEqual([`facebook:${INTENT.target}`]);
   });
 
   /**

@@ -59,6 +59,22 @@ function mandate(over: Partial<AdminFeatureView> = {}): AdminFeatureView {
   };
 }
 
+/** Ajoutée le 2026-10-09 : un bouton qu'on cache, masqué par défaut, non exemptible. */
+function facebook(over: Partial<AdminFeatureView> = {}): AdminFeatureView {
+  return {
+    key: 'facebookLogin',
+    label: 'Connexion par Facebook',
+    description: 'Le bouton de la boutique ; la connexion doit aussi être activée dans Auth0.',
+    levels: ['hidden', 'visible'],
+    defaultLevel: 'hidden',
+    effectiveLevel: 'hidden',
+    exemptible: false,
+    override: null,
+    exemptions: [],
+    ...over,
+  };
+}
+
 function board(over: Partial<AdminFeatureAccessView> = {}): AdminFeatureAccessView {
   return { features: [mandate()], ignored: [], ...over };
 }
@@ -163,6 +179,37 @@ describe('FeatureAccessPage', () => {
       expect(text(fixture)).toContain('Ouvert');
       expect(text(fixture)).toContain('Posé par Hugo Heynard');
       expect(text(fixture)).toContain('testeur@lfc.test');
+    });
+  });
+
+  describe('la connexion par Facebook', () => {
+    it('montre la clé, son libellé et le mot de son niveau', async () => {
+      const { fixture } = await render(board({ features: [facebook()] }), READER);
+
+      expect(text(fixture)).toContain('Connexion par Facebook');
+      expect(text(fixture)).toContain('Auth0');
+      expect(text(fixture)).toContain('Masquée');
+      expect(text(fixture)).toContain('Aucune exemption ne s');
+    });
+
+    it('dit « Visible » quand la dérogation la montre', async () => {
+      const { fixture } = await render(
+        board({
+          features: [
+            facebook({
+              effectiveLevel: 'visible',
+              override: {
+                value: 'visible',
+                updatedAt: '2026-10-09T09:00:00.000Z',
+                updatedBy: AUTHOR,
+              },
+            }),
+          ],
+        }),
+        READER,
+      );
+
+      expect(text(fixture)).toContain('Visible');
     });
   });
 

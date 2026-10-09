@@ -618,6 +618,15 @@ export const B2B_VIEWS: readonly WorkspaceView[] = [
     icon: 'clock',
     section: 'Réglages',
   },
+  // À qui la boutique prend des commandes (Hugo, 2026-10-09). Même droit que
+  // « Livraison », `b2b_settings`, porté par l'espace.
+  {
+    key: 'ouverture-boutique',
+    label: 'Ouverture de la boutique',
+    link: '/b2b/reglages/ouverture-boutique',
+    icon: 'store',
+    section: 'Réglages',
+  },
 ];
 
 /**

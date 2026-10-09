@@ -36,7 +36,7 @@
         <img class="social-logo" src="brand/google-g.svg" alt="" width="20" height="20" />
         {{ t().signup.google }}
       </button>
-      @if (facebookShown) {
+      @if (facebookShown()) {
         <button
           foldButton
           class="social-button"

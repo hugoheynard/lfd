@@ -27,6 +27,7 @@ import { ClientCopyService, fill } from '../../copy/client-copy.service';
 import { dialogSide } from '../../panel-side';
 import { CartSummary } from '../cart-summary/cart-summary';
 import { OrderDoors } from '../../shop/order-doors';
+import { OrderOpeningStore } from '../../shop/order-opening.store';
 
 /**
  * Où Auth0 ramène, une fois l'identité obtenue : **le rayon**.
@@ -109,6 +110,18 @@ export class CartDialog {
   private readonly doors = inject(OrderDoors);
 
   private readonly firm = inject(ClientCompany);
+
+  /**
+   * La boutique fermée à la clientèle de la personne (« Ouverture de la
+   * boutique », 2026-10-09) : le pied dit « Les commandes sont fermées » à la
+   * place du bouton. Le serveur refuse de toute façon en 409.
+   */
+  private readonly opening = inject(OrderOpeningStore);
+  protected readonly ordersClosed = computed(() => !this.opening.ordersOpen());
+
+  constructor() {
+    void this.opening.hydrate();
+  }
 
   /**
    * **Le compte est-il une option ?** — seulement si le mensuel a été ACCORDÉ.

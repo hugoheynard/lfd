@@ -228,12 +228,11 @@ taux de TVA B2B », et ce point-là n'a **pas** été revérifié ici. La préco
 survit donc, mais comme **arbitrage de prix et de fiscalité**, pas comme verrou
 de code : elle n'empêche plus d'écrire ni d'éprouver la route.
 
-Et il n'y a pas de porte pour la lancer éteinte : `@RequiresShop("order")` sur
-une route publique donne `featureSubjectOf(undefined) = null`
-(`b2b/feature-access/http/feature-subject.ts`), donc la route suit le niveau
-**global** — `feature-access.guard.ts` l. 16-20 le dit explicitement. Le même
-flag `shop=order` qui ouvre la boutique pro ouvrirait celle-ci. Le flag **par
-audience** est le D6 de l'analyse, et il n'est pas bâti.
+> ⚠️ **Périmé le 2026-10-09** : la garde boutique (`@RequiresShop`, clé
+> `shop`) a été retirée de l'accès aux fonctionnalités. L'ouverture des
+> commandes se règle désormais **par clientèle** (pros / particuliers) :
+> [`ouverture-de-la-boutique.md`](ouverture-de-la-boutique.md). Le paragraphe
+> d'origine se relit dans l'historique git.
 
 [`analyse-boutique-publique.md`](../b2b/analyse-boutique-publique.md) §7 l'avait déjà
 posé : « **Aucune ouverture au public avant la fin du lot 5** », le tarif public

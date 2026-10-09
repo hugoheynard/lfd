@@ -131,6 +131,31 @@ model DeliveryAvailability {
   @@schema("public")
 }
 
+/// **L'ouverture de la boutique à la commande**, par clientèle (Hugo,
+/// 2026-10-09). Fermée, le catalogue et les prix restent visibles : seules les
+/// passations de la clientèle sont refusées (409). La saisie du staff passe
+/// toujours. Une ligne unique, de clé `orders` ; **ligne absente = ouverte aux
+/// deux**. Sa propre table et non `delivery_settings` : celle-là est le réglage
+/// de la LIVRAISON, et y loger la commande aurait fait de chaque geste de l'un
+/// une réécriture de l'autre. Doc : `documentation/order/ouverture-de-la-boutique.md`.
+model OrderOpening {
+  /// Toujours `orders` : il n'y a qu'un réglage.
+  key String @id
+
+  ordersOpenToB2b Boolean @default(true) @map("orders_open_to_b2b")
+  ordersOpenToB2c Boolean @default(true) @map("orders_open_to_b2c")
+
+  /// Instant du geste, lu du `Clock`.
+  updatedAt        DateTime @map("updated_at")
+  /// Qui l'a posé, figé au geste : l'id de fiche staff, un nom et un rôle instantanés.
+  updatedByStaffId String   @map("updated_by_staff_id")
+  updatedByName    String   @map("updated_by_name")
+  updatedByRole    String   @map("updated_by_role")
+
+  @@map("order_opening_settings")
+  @@schema("public")
+}
+
 /// Le **contenu de plateforme** — les textes de la vitrine, tenus par le staff.
 ///
 /// Ils vivaient compilés dans le bundle du front client, en trois dictionnaires

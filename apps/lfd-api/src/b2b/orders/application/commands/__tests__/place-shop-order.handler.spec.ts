@@ -5,9 +5,12 @@ import {
   type DeliveryZoneView,
   type PickupAddressView,
   type PlaceShopOrderPayload,
+  type PublicOrderOpeningView,
 } from "@lfd/contracts";
 
 import { ownPayers } from "./payer-doubles.js";
+import { intakeAt } from "./intake-doubles.js";
+import { OrdersClosedForAudienceError } from "../../../domain/errors/orders-closed-for-audience.error.js";
 import { DirectUnitOfWork } from "../../../../../platform/database/__tests__/direct-unit-of-work.js";
 import { RecordingPublisher } from "../../../../../platform/events/__tests__/recording-publisher.js";
 import { FixedClock } from "../../../../../platform/time/fixed-clock.js";
@@ -384,7 +387,11 @@ function payload(over: Partial<PlaceShopOrderPayload> = {}): PlaceShopOrderPaylo
 
 /** Le handler et tout ce qu'il a touché, monté d'un coup. */
 function scene(
-  options: { readonly claim?: IdempotencyClaim; readonly delivery?: DeliveryAvailabilityView } = {},
+  options: {
+    readonly claim?: IdempotencyClaim;
+    readonly delivery?: DeliveryAvailabilityView;
+    readonly opening?: PublicOrderOpeningView;
+  } = {},
 ) {
   const sink = { placed: null as OrderToPlace | null };
   const paid: PaymentCalls = { intent: null, retrieved: 0 };
@@ -403,6 +410,7 @@ function scene(
     noReader,
     new DirectUnitOfWork(),
     durable,
+    intakeAt(options.opening),
   );
   return { handler, sink, paid, keys, buyers, published, durable };
 }
@@ -641,6 +649,30 @@ describe("PlaceShopOrderHandler — la livraison fermée aux particuliers", () =
 
   it("laisse passer un retrait, livraison fermée aux particuliers", async () => {
     const { handler, sink } = scene({ delivery: CLOSED_TO_B2C });
+
+    await handler.execute(new PlaceShopOrderCommand(payload()));
+
+    expect(sink.placed).not.toBeNull();
+  });
+});
+
+/** L'ouverture de la boutique (Hugo, 2026-10-09) : sans compte = particulier. */
+describe("PlaceShopOrderHandler — la boutique fermée aux particuliers", () => {
+  it("refuse avant d'inscrire le porteur, et rend la clé", async () => {
+    const { handler, sink, buyers, keys } = scene({
+      opening: { ordersOpenToB2b: true, ordersOpenToB2c: false },
+    });
+
+    await expect(handler.execute(new PlaceShopOrderCommand(payload()))).rejects.toBeInstanceOf(
+      OrdersClosedForAudienceError,
+    );
+    expect(buyers.registered).toEqual([]);
+    expect(sink.placed).toBeNull();
+    expect(keys.released).toEqual([KEY]);
+  });
+
+  it("passe quand seule la boutique pro est fermée", async () => {
+    const { handler, sink } = scene({ opening: { ordersOpenToB2b: false, ordersOpenToB2c: true } });
 
     await handler.execute(new PlaceShopOrderCommand(payload()));
 

@@ -963,6 +963,24 @@
       "information": false
     },
     {
+      "colonne": "public.order_opening_settings.updated_by_name",
+      "personne": "staff",
+      "categorie": "identite",
+      "finalite": "Nom figé de l'auteur d'un geste sur `order_opening_settings`, lisible même si la fiche staff change.",
+      "conservation": "aucune-limite-decidee",
+      "purge": null,
+      "information": false
+    },
+    {
+      "colonne": "public.order_opening_settings.updated_by_staff_id",
+      "personne": "staff",
+      "categorie": "auteur-geste",
+      "finalite": "Tracer quel membre du staff a fait le geste (`updated_by_staff_id`) sur `order_opening_settings`.",
+      "conservation": "aucune-limite-decidee",
+      "purge": null,
+      "information": false
+    },
+    {
       "colonne": "public.feature_access_exemptions.created_by_name",
       "personne": "staff",
       "categorie": "identite",

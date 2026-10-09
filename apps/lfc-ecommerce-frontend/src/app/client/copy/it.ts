@@ -285,6 +285,7 @@ export const IT: ClientCopy = {
     dropAria: 'Rimuovi {name} dal carrello',
     pay: 'Pago il mio ordine · {total}',
     payHint: 'Pagamento online. Mostri il QR al banco, non deve saldare nulla sul posto.',
+    ordersClosed: 'Gli ordini sono chiusi per il momento.',
     settleTitle: 'Come pagate ?',
     settleCard: 'Pagamento diretto',
     settleAccount: 'Aggiungi al conto',

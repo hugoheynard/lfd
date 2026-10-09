@@ -22,5 +22,12 @@ export {
   type DeliveryAvailabilityView,
   type PublicDeliveryAvailabilityView,
 } from "./delivery-availability.values.js";
+export {
+  DEFAULT_ORDER_OPENING,
+  ORDERS_CLOSED_FOR_AUDIENCE,
+  ordersOpenTo,
+  type OrderOpeningView,
+  type PublicOrderOpeningView,
+} from "./order-opening.values.js";
 export { ALL_DISCOUNT_AUDIENCES } from "./pickup-discount-audiences.js";
 export { PERSONAL_WORKSPACE, WORKSPACE_HEADER } from "./workspace.js";

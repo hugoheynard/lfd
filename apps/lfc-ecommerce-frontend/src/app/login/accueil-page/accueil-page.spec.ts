@@ -1,3 +1,5 @@
+import { provideHttpClient } from '@angular/common/http';
+import { provideHttpClientTesting } from '@angular/common/http/testing';
 import { signal } from '@angular/core';
 import { ComponentFixture, TestBed } from '@angular/core/testing';
 import { provideRouter } from '@angular/router';
@@ -10,6 +12,8 @@ import { matchMediaAt } from '../../client/mon-compte/account.fixture';
 import { SignInDialog } from '../sign-in-dialog/sign-in-dialog';
 
 import { ClientChrome } from '../../client/client-chrome.service';
+import { ClientFeatureAccess } from '../../client/feature-access/client-feature-access.service';
+import { DEFAULT_LEVELS } from '../../client/feature-access/feature-access.fixture';
 import { FR } from '../../client/copy/fr';
 import { AccueilPage } from './accueil-page';
 
@@ -96,6 +100,10 @@ describe('AccueilPage', () => {
       imports: [AccueilPage],
       providers: [
         provideRouter([]),
+        // Les niveaux d'accès se lisent par HTTP ; aucune suite ne les
+        // demande ici — celles qui en ont besoin les posent par `receive`.
+        provideHttpClient(),
+        provideHttpClientTesting(),
         { provide: AuthFacade, useValue: auth },
         {
           provide: FoldPanelHostService,
@@ -186,6 +194,27 @@ describe('AccueilPage', () => {
     click(FR.signup.google);
 
     expect(asked).toEqual([{ kind: 'google', target: '/accueil', payload: undefined }]);
+  });
+
+  /**
+   * L'interrupteur `facebookLogin` (2026-10-09) : masqué tant que les niveaux
+   * ne sont pas lus — c'est l'état de chaque suite au démarrage —, visible
+   * quand l'admin le pose.
+   */
+  it('masque Facebook par défaut, et le montre quand le niveau est visible', () => {
+    expect(text()).not.toContain(FR.signup.facebook);
+
+    TestBed.inject(ClientFeatureAccess).receive({ ...DEFAULT_LEVELS, facebookLogin: 'visible' });
+    fixture.detectChanges();
+
+    expect(text()).toContain(FR.signup.facebook);
+  });
+
+  it('garde Facebook masqué quand le niveau est masqué', () => {
+    TestBed.inject(ClientFeatureAccess).receive(DEFAULT_LEVELS);
+    fixture.detectChanges();
+
+    expect(text()).not.toContain(FR.signup.facebook);
   });
 
   it('montre Google AVANT le formulaire', () => {

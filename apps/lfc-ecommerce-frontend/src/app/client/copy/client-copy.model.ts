@@ -496,6 +496,12 @@ export interface ClientCopy {
     /** `{total}` est remplacé par le montant dû. */
     readonly pay: string;
     readonly payHint: string;
+    /**
+     * À la place du bouton de commande quand la boutique ne prend pas les
+     * commandes de la clientèle de la personne (réglage « Ouverture de la
+     * boutique », 2026-10-09). Le catalogue et les prix restent visibles.
+     */
+    readonly ordersClosed: string;
 
     /**
      * **Le choix du règlement, au panier** — et il n'apparaît qu'à qui l'a

@@ -102,3 +102,22 @@ describe("delivery_availability.updated — l'avant et l'après de chaque client
     ).toBeNull();
   });
 });
+
+/** `order_opening.updated` (2026-10-09) : la même forme, pour la commande. */
+describe("order_opening.updated — l'avant et l'après de chaque clientèle", () => {
+  it("s'écrit avec les deux cases et leur état remplacé", () => {
+    expect(
+      checkJournalFact("order_opening.updated", {
+        ordersOpenToB2b: true,
+        ordersOpenToB2c: false,
+        previous: { ordersOpenToB2b: true, ordersOpenToB2c: true },
+      }),
+    ).toBeNull();
+  });
+
+  it("refuse une charge sans l'état remplacé", () => {
+    expect(
+      checkJournalFact("order_opening.updated", { ordersOpenToB2b: true, ordersOpenToB2c: false }),
+    ).not.toBeNull();
+  });
+});

@@ -11,11 +11,22 @@ import {
 describe("le catalogue de l'accès aux fonctionnalités", () => {
   /**
    * `shop`, `orders`, `invoices`, `desktopMenu` et `publicDelivery` ont été
-   * retirées le 2026-10-09 (Hugo) : il ne reste que le mandat client.
+   * retirées le 2026-10-09 (Hugo) ; `facebookLogin` est entrée le même jour.
    */
-  it("ne porte plus que le mandat client", () => {
-    expect(FEATURE_KEYS).toEqual(["customerMandate"]);
-    expect(Object.keys(FEATURE_CATALOGUE)).toEqual(["customerMandate"]);
+  it("porte le mandat client et la connexion par Facebook", () => {
+    expect(FEATURE_KEYS).toEqual(["customerMandate", "facebookLogin"]);
+    expect(Object.keys(FEATURE_CATALOGUE)).toEqual(["customerMandate", "facebookLogin"]);
+  });
+
+  /** Ajoutée le 2026-10-09 : un bouton qu'on cache, masqué tant qu'Auth0 n'est pas prêt. */
+  it("porte la connexion par Facebook, masquée par défaut et non exemptible", () => {
+    expect(FEATURE_CATALOGUE.facebookLogin.label).toBe("Connexion par Facebook");
+    expect(FEATURE_CATALOGUE.facebookLogin.description).toContain("Auth0");
+    expect(FEATURE_CATALOGUE.facebookLogin.levels).toEqual(["hidden", "visible"]);
+    expect(FEATURE_CATALOGUE.facebookLogin.defaultLevel).toBe("hidden");
+    expect(isExemptible("facebookLogin")).toBe(false);
+    expect(mostOpenLevel("facebookLogin")).toBe("visible");
+    expect(isAtLeast("facebookLogin", "hidden", "visible")).toBe(false);
   });
 
   /**

@@ -35,6 +35,31 @@ describe("FeatureLevelResolver.levelFor", () => {
 
     await expect(resolver.levelFor("customerMandate", null)).resolves.toBe("open");
   });
+
+  it("masque la connexion par Facebook par défaut, et la montre quand on la pose", async () => {
+    await expect(
+      new FeatureLevelResolver(new StubLookup({}, [])).levelFor("facebookLogin", null),
+    ).resolves.toBe("hidden");
+    await expect(
+      new FeatureLevelResolver(new StubLookup({ facebookLogin: "visible" }, [])).levelFor(
+        "facebookLogin",
+        null,
+      ),
+    ).resolves.toBe("visible");
+  });
+
+  /** L'écran de connexion précède toute identité : aucune adresse ne compte. */
+  it("ne cherche aucune exemption pour la connexion par Facebook", async () => {
+    const lookup = new StubLookup({}, ["testeur@exemple.fr"]);
+
+    await expect(
+      new FeatureLevelResolver(lookup).levelFor("facebookLogin", {
+        email: "testeur@exemple.fr",
+        emailProven: true,
+      }),
+    ).resolves.toBe("hidden");
+    expect(lookup.asked).toEqual(["override:facebookLogin"]);
+  });
 });
 
 describe("FeatureLevelResolver — une clé qu'aucune exemption n'ouvre", () => {

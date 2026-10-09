@@ -280,6 +280,7 @@ export const FR: ClientCopy = {
     dropAria: 'Retirer {name} du panier',
     pay: 'Régler ma commande · {total}',
     payHint: 'Paiement en ligne. Vous présentez votre QR au comptoir, rien à régler sur place.',
+    ordersClosed: 'Les commandes sont fermées pour le moment.',
     settleTitle: 'Comment réglez-vous ?',
     settleCard: 'Paiement direct',
     settleAccount: 'Ajouter au compte',

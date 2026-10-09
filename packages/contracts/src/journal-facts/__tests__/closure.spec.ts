@@ -36,6 +36,7 @@ const UNNAMED_SUBJECTS: Readonly<Record<string, string>> = {
   "order_late_fee.cleared": "réglage unique : son sujet n'a pas d'autre nom que son type",
   "order_delivery_vat.mode_set": "réglage unique : son sujet n'a pas d'autre nom que son type",
   "delivery_availability.updated": "réglage unique : son sujet n'a pas d'autre nom que son type",
+  "order_opening.updated": "réglage unique : son sujet n'a pas d'autre nom que son type",
   "production_settings.close_changed":
     "réglage unique : son sujet n'a pas d'autre nom que son type",
   "payment_refund.unmatched":

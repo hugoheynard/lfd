@@ -43,7 +43,8 @@ import {
  * pas.
  *
  * Sans `subjectLabel`, et c'est voulu : les **réglages uniques**
- * (`order_late_fee.*`, `order_delivery_vat.*`, `delivery_availability.updated`), dont le sujet n'a pas
+ * (`order_late_fee.*`, `order_delivery_vat.*`, `delivery_availability.updated`,
+ * `order_opening.updated`), dont le sujet n'a pas
  * d'autre nom que son type ; les **heures limites** et les **dérogations**, qui
  * n'ont pas de nom du tout — une règle se dit par son contenu (point, jour,
  * heure), une dérogation par son client et sa journée, et les deux sont dans la
@@ -379,6 +380,18 @@ export const ORDERS_PRODUCTION_FACTS = {
       deliveryMarginMinutes: marginOfFact(),
       pickupMarginMinutes: marginOfFact(),
       previous: openings(),
+    }),
+  ),
+  /**
+   * **L'ouverture de la boutique à la commande** (2026-10-09) : l'état posé de
+   * chaque clientèle et celui qu'il remplace — un geste ne bascule qu'une case,
+   * et « fermée aux particuliers » ne se relit qu'avec l'avant.
+   */
+  "order_opening.updated": fact(
+    payload({
+      ordersOpenToB2b: z.boolean(),
+      ordersOpenToB2c: z.boolean(),
+      previous: payload({ ordersOpenToB2b: z.boolean(), ordersOpenToB2c: z.boolean() }),
     }),
   ),
 

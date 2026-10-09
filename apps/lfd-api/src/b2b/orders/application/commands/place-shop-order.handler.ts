@@ -19,6 +19,7 @@ import { ShopOrderIdempotencyStore } from "../../domain/ports/shop-order-idempot
 import { orderFingerprint } from "../../domain/services/order-fingerprint.js";
 import { GuestIdentity } from "../../domain/value-objects/guest-identity.js";
 import { OrderDrafting } from "../services/order-drafting.service.js";
+import { OrderIntake } from "../services/order-intake.service.js";
 import { PlaceShopOrderCommand, type PlaceShopOrderResult } from "./place-shop-order.command.js";
 
 /** Devise unique de la plateforme (montants en centimes d'euro). */
@@ -69,6 +70,7 @@ export class PlaceShopOrderHandler implements ICommandHandler<
     private readonly reader: OrderReader,
     private readonly unitOfWork: UnitOfWork,
     private readonly durable: DurablePublisher,
+    private readonly intake: OrderIntake,
   ) {}
 
   /**
@@ -117,6 +119,9 @@ export class PlaceShopOrderHandler implements ICommandHandler<
     // n'a validé qu'une forme, et c'est le value object qui refuse une adresse
     // qui n'en est pas une. Même goulot que l'ouverture d'accès du commercial.
     const buyer = GuestIdentity.declare(payload.buyer);
+    // Sans compte = particulier. Refusé AVANT d'inscrire le porteur : une
+    // boutique fermée ne laisse pas de personne sans commande derrière elle.
+    await this.intake.ensureOpenFor(null);
     // 🔴 **Inscrit AVANT la composition**, et ce n'est pas gratuit : un refus
     // levé plus bas — SKU inconnu, secteur non desservi, heure limite dépassée —
     // laisse derrière lui une personne sans commande.

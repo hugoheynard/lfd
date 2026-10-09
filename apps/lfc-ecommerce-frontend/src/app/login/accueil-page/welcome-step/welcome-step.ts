@@ -9,8 +9,8 @@ import {
 import { FoldButtonComponent, FoldCardComponent, FoldInputComponent } from 'fold-ng';
 
 import type { PendingProfile } from '../../../auth/auth.facade';
-import { FACEBOOK_LOGIN_SHOWN } from '../../../auth/auth.config';
 import { ClientCopyService } from '../../../client/copy/client-copy.service';
+import { ClientFeatureAccess } from '../../../client/feature-access/client-feature-access.service';
 import { DoorCard } from '../door-card/door-card';
 import { RuleOu } from '../rule-ou/rule-ou';
 
@@ -60,8 +60,11 @@ export class WelcomeStep {
   readonly wantsPro = output<void>();
 
   protected readonly t = inject(ClientCopyService).t;
-  /** Masqué pour le moment (`FACEBOOK_LOGIN_SHOWN`). */
-  protected readonly facebookShown = FACEBOOK_LOGIN_SHOWN;
+  /**
+   * L'interrupteur `facebookLogin` de l'accès aux fonctionnalités (2026-10-09) :
+   * masqué tant que les niveaux ne sont pas lus, ou en échec.
+   */
+  protected readonly facebookShown = inject(ClientFeatureAccess).facebookLoginShown;
 
   protected readonly firstName = signal('');
   protected readonly email = signal('');

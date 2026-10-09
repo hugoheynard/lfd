@@ -66,10 +66,11 @@ async function board(): Promise<AdminFeatureAccessView> {
 }
 
 /**
- * Le catalogue ne porte plus que le mandat client depuis le 2026-10-09 :
- * `shop`, `orders`, `invoices`, `desktopMenu` et `publicDelivery` sont retirées.
+ * Le catalogue ne porte plus que le mandat client et la connexion par Facebook
+ * depuis le 2026-10-09 : `shop`, `orders`, `invoices`, `desktopMenu` et
+ * `publicDelivery` sont retirées.
  */
-const DEFAULTS = { customerMandate: "closed" } as const;
+const DEFAULTS = { customerMandate: "closed", facebookLogin: "hidden" } as const;
 
 async function publicLevels(): Promise<FeatureLevelsView> {
   return jsonBody<FeatureLevelsView>(await ctx.http().get("/feature-access").expect(200));
@@ -84,6 +85,12 @@ describe("la dérogation — posée, puis retirée", () => {
       expect.objectContaining({
         key: KEY,
         effectiveLevel: "closed",
+        exemptible: false,
+        override: null,
+      }),
+      expect.objectContaining({
+        key: "facebookLogin",
+        effectiveLevel: "hidden",
         exemptible: false,
         override: null,
       }),
@@ -113,7 +120,7 @@ describe("la dérogation — posée, puis retirée", () => {
         select: { updatedByStaffId: true },
       }),
     ).resolves.toEqual({ updatedByStaffId: E2E_STAFF_ID });
-    await expect(publicLevels()).resolves.toEqual({ customerMandate: "open" });
+    await expect(publicLevels()).resolves.toEqual({ ...DEFAULTS, customerMandate: "open" });
 
     await admin().delete(`/admin/feature-access/${KEY}`).expect(204);
 
@@ -174,7 +181,7 @@ describe("la dérogation — posée, puis retirée", () => {
 
     const view = await board();
 
-    expect(view.features.map((feature) => feature.key)).toEqual([KEY]);
+    expect(view.features.map((feature) => feature.key)).toEqual([KEY, "facebookLogin"]);
     expect(view.ignored).toEqual(
       expect.arrayContaining([
         ...removed.map((key) => ({
@@ -246,5 +253,16 @@ describe("GET /feature-access/mine", () => {
 
   it("exige une personne connectée", async () => {
     await ctx.http().get("/feature-access/mine").expect(401);
+  });
+
+  /** 2026-10-09 : le bouton Facebook se montre par l'admin, pour tous à la fois. */
+  it("sert la connexion par Facebook posée visible, sur les deux routes", async () => {
+    await createUser(ctx.prisma, { auth0Sub: CLIENT, emailVerified: true });
+    await admin().put("/admin/feature-access/facebookLogin").send({ value: "visible" }).expect(204);
+
+    const expected = { ...DEFAULTS, facebookLogin: "visible" };
+    await expect(publicLevels()).resolves.toEqual(expected);
+    const mine = await ctx.asSub(CLIENT).get("/feature-access/mine").expect(200);
+    expect(jsonBody<FeatureLevelsView>(mine)).toEqual(expected);
   });
 });

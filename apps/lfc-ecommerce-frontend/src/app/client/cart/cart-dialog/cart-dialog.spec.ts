@@ -14,6 +14,7 @@ import { FR } from '../../copy/fr';
 import { ClientCompany } from '../../client-company.service';
 import { ClientOrders } from '../../client-orders.service';
 import { OrderDoors } from '../../shop/order-doors';
+import { OrderOpeningStore } from '../../shop/order-opening.store';
 import { hydrateWith, TEST_CATALOGUE } from '../../shop/shop-catalogue.fixture';
 import { ShopCatalogue } from '../../shop/shop-catalogue.store';
 import { FoldPanelRef } from 'fold-ng';
@@ -57,6 +58,8 @@ interface Monde {
   readonly blocked?: boolean;
   readonly service?: ServiceChoice | null;
   readonly panier?: boolean;
+  /** Le réglage « Ouverture de la boutique » ; absent = pas encore lu (ouvert). */
+  readonly opening?: { readonly ordersOpenToB2b: boolean; readonly ordersOpenToB2c: boolean };
 }
 
 /** Le mode de règlement passé à `place()` — `null` = « le serveur décide ». */
@@ -73,6 +76,7 @@ function boot({
   panier = true,
   granted = [],
   blocked = false,
+  opening,
 }: Monde = {}): ComponentFixture<CartDialog> {
   localStorage.clear();
   TestBed.resetTestingModule();
@@ -147,6 +151,9 @@ function boot({
     visitees.push(Array.isArray(commands) ? commands.join('/') : String(commands));
     return Promise.resolve(true);
   };
+  if (opening !== undefined) {
+    TestBed.inject(OrderOpeningStore).receive(opening);
+  }
   const fixture = TestBed.createComponent(CartDialog);
   fixture.detectChanges();
   return fixture;
@@ -355,5 +362,30 @@ describe('le panier demande COMMENT régler, à qui a le choix', () => {
     await Promise.resolve();
 
     expect(regle).toEqual([null]);
+  });
+});
+
+/** « Ouverture de la boutique » (Hugo, 2026-10-09) : fermée, la phrase remplace le bouton. */
+describe('la boutique fermée à la commande', () => {
+  it('dit « Les commandes sont fermées » à un particulier, sans bouton de commande', () => {
+    const fixture = boot({ opening: { ordersOpenToB2b: true, ordersOpenToB2c: false } });
+
+    expect(bouton(fixture)).toBeNull();
+    expect(el(fixture).textContent).toContain(FR.cart.ordersClosed);
+    // Le panier reste : seule la commande est fermée.
+    expect(el(fixture).querySelector('app-cart-summary')).not.toBeNull();
+  });
+
+  it('garde le bouton d’un particulier quand seule la boutique pro est fermée', () => {
+    const fixture = boot({ opening: { ordersOpenToB2b: false, ordersOpenToB2c: true } });
+
+    expect(bouton(fixture)).not.toBeNull();
+    expect(el(fixture).textContent).not.toContain(FR.cart.ordersClosed);
+  });
+
+  it('garde le bouton tant que le réglage n’est pas lu', () => {
+    const fixture = boot();
+
+    expect(bouton(fixture)).not.toBeNull();
   });
 });

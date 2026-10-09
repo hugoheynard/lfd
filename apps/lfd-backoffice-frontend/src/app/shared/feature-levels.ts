@@ -18,6 +18,7 @@ import type { FeatureKey, FeatureLevel } from '@lfd/contracts';
 const LEVEL_LABELS: { readonly [Key in FeatureKey]: Readonly<Record<FeatureLevel<Key>, string>> } =
   {
     customerMandate: { closed: 'Fermé', open: 'Ouvert' },
+    facebookLogin: { hidden: 'Masquée', visible: 'Visible' },
   };
 
 /**

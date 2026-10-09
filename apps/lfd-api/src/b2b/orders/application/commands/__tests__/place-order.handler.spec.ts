@@ -122,6 +122,8 @@ import { PAINS } from "../../../../catalog/domain/__tests__/families.fixture.js"
 import { ownPricingParties } from "../../../../pricing/application/__tests__/pricing-parties.doubles.js";
 import { CommerceOrderPlacedFact } from "../../../../../delivery/channels/commerce/index.js";
 import { RecordingDurable } from "./durable-doubles.js";
+import { intakeAt } from "./intake-doubles.js";
+import { OrdersClosedForAudienceError } from "../../../domain/errors/orders-closed-for-audience.error.js";
 
 /**
  * L'historique du tarif canonique — **jamais consulté ici** : ces cas ne posent
@@ -561,6 +563,7 @@ describe("PlaceOrderHandler", () => {
       new FixedVoucherQuotes(),
       new RecordingRedemption(),
       new RecordingDurable(),
+      intakeAt(),
     );
 
     await handler.execute(new PlaceOrderCommand("u1", payload(), null));
@@ -589,6 +592,7 @@ describe("PlaceOrderHandler", () => {
       new FixedVoucherQuotes(),
       new RecordingRedemption(),
       new RecordingDurable(),
+      intakeAt(),
     );
 
     await handler.execute(new PlaceOrderCommand("u1", payload(), null));
@@ -614,6 +618,7 @@ describe("PlaceOrderHandler", () => {
       new FixedVoucherQuotes(),
       new RecordingRedemption(),
       durable,
+      intakeAt(),
     );
 
     await handler.execute(new PlaceOrderCommand("u1", payload(), null));
@@ -638,6 +643,7 @@ describe("PlaceOrderHandler", () => {
       new FixedVoucherQuotes(),
       new RecordingRedemption(),
       new RecordingDurable(),
+      intakeAt(),
     );
 
     await handler.execute(new PlaceOrderCommand("u1", payload(), null));
@@ -681,6 +687,7 @@ describe("PlaceOrderHandler", () => {
       new FixedVoucherQuotes(),
       new RecordingRedemption(),
       new RecordingDurable(),
+      intakeAt(),
     );
 
     await expect(
@@ -706,6 +713,7 @@ describe("PlaceOrderHandler", () => {
       new FixedVoucherQuotes(),
       new RecordingRedemption(),
       new RecordingDurable(),
+      intakeAt(),
     );
 
     const result = await handler.execute(new PlaceOrderCommand("u1", payload(), null));
@@ -733,6 +741,7 @@ describe("PlaceOrderHandler", () => {
       new FixedVoucherQuotes(),
       new RecordingRedemption(),
       new RecordingDurable(),
+      intakeAt(),
     );
 
     await handler.execute(
@@ -798,6 +807,7 @@ describe("PlaceOrderHandler", () => {
       new FixedVoucherQuotes(),
       new RecordingRedemption(),
       new RecordingDurable(),
+      intakeAt(),
     );
 
     await handler.execute(
@@ -837,6 +847,7 @@ describe("PlaceOrderHandler", () => {
       new FixedVoucherQuotes(),
       new RecordingRedemption(),
       new RecordingDurable(),
+      intakeAt(),
     );
 
     await expect(
@@ -863,6 +874,7 @@ describe("PlaceOrderHandler", () => {
       new FixedVoucherQuotes(),
       new RecordingRedemption(),
       new RecordingDurable(),
+      intakeAt(),
     );
 
     await handler.execute(new PlaceOrderCommand("u1", payload(), "c1"));
@@ -889,6 +901,7 @@ describe("PlaceOrderHandler", () => {
       new FixedVoucherQuotes(),
       new RecordingRedemption(),
       new RecordingDurable(),
+      intakeAt(),
     );
 
     await expect(
@@ -914,6 +927,7 @@ describe("PlaceOrderHandler", () => {
       new FixedVoucherQuotes(),
       new RecordingRedemption(),
       new RecordingDurable(),
+      intakeAt(),
     );
 
     // 2 × 200 = 400 ; remise 20 % = 80 ; total = 320.
@@ -951,6 +965,7 @@ describe("PlaceOrderHandler", () => {
       new FixedVoucherQuotes(),
       new RecordingRedemption(),
       new RecordingDurable(),
+      intakeAt(),
     );
 
     await handler.execute(new PlaceOrderCommand("u1", payload(), "c1"));
@@ -978,6 +993,7 @@ describe("PlaceOrderHandler", () => {
       new FixedVoucherQuotes(),
       new RecordingRedemption(),
       new RecordingDurable(),
+      intakeAt(),
     );
 
     await expect(
@@ -1008,6 +1024,7 @@ describe("PlaceOrderHandler", () => {
       new FixedVoucherQuotes(),
       new RecordingRedemption(),
       new RecordingDurable(),
+      intakeAt(),
     );
 
     // 2 × 200 = 400 HT (TVA 0 dans ce catalogue de test) ; frais 20 € = 2000 HT
@@ -1060,6 +1077,7 @@ describe("PlaceOrderHandler", () => {
       new FixedVoucherQuotes(),
       new RecordingRedemption(),
       new RecordingDurable(),
+      intakeAt(),
     );
 
     await handler.execute(
@@ -1099,6 +1117,7 @@ describe("PlaceOrderHandler", () => {
         new FixedVoucherQuotes(),
         new RecordingRedemption(),
         new RecordingDurable(),
+        intakeAt(),
       );
       await handler.execute(
         new PlaceOrderCommand(
@@ -1149,6 +1168,7 @@ describe("PlaceOrderHandler", () => {
       new FixedVoucherQuotes(),
       new RecordingRedemption(),
       new RecordingDurable(),
+      intakeAt(),
     );
 
     await expect(
@@ -1183,6 +1203,7 @@ describe("PlaceOrderHandler", () => {
       new FixedVoucherQuotes(),
       new RecordingRedemption(),
       new RecordingDurable(),
+      intakeAt(),
     );
 
     const result = await handler.execute(new PlaceOrderCommand("u1", payload(), "c1"));
@@ -1215,6 +1236,7 @@ describe("PlaceOrderHandler", () => {
       new FixedVoucherQuotes(),
       new RecordingRedemption(),
       new RecordingDurable(),
+      intakeAt(),
     );
 
     const result = await handler.execute(new PlaceOrderCommand("u1", payload(), "c1"));
@@ -1244,6 +1266,7 @@ describe("PlaceOrderHandler", () => {
       new FixedVoucherQuotes(),
       new RecordingRedemption(),
       new RecordingDurable(),
+      intakeAt(),
     );
 
     await handler.execute(new PlaceOrderCommand("u1", payload(), "c1"));
@@ -1297,6 +1320,7 @@ describe("PlaceOrderHandler — un article d'opération datée", () => {
       new FixedVoucherQuotes(),
       new RecordingRedemption(),
       new RecordingDurable(),
+      intakeAt(),
     );
   }
 
@@ -1355,6 +1379,7 @@ describe("PlaceOrderHandler — un article d'opération datée", () => {
       new FixedVoucherQuotes(),
       new RecordingRedemption(),
       new RecordingDurable(),
+      intakeAt(),
     );
 
     await handler.execute(
@@ -1390,6 +1415,7 @@ describe("PlaceOrderHandler — prélèvement bloqué", () => {
       new FixedVoucherQuotes(),
       new RecordingRedemption(),
       new RecordingDurable(),
+      intakeAt(),
     );
   }
 
@@ -1493,6 +1519,7 @@ describe("PlaceOrderHandler — le bon de fidélité", () => {
       new FixedVoucherQuotes({ v150: 150, v500: 500 }),
       over.redemption,
       new RecordingDurable(),
+      intakeAt(),
     );
   }
 
@@ -1599,6 +1626,7 @@ describe("PlaceOrderHandler — créneau ou échéance", () => {
       new FixedVoucherQuotes(),
       new RecordingRedemption(),
       new RecordingDurable(),
+      intakeAt(),
     );
     await handler.execute(
       new PlaceOrderCommand(
@@ -1709,6 +1737,7 @@ describe("PlaceOrderHandler — un site facturé à son principal", () => {
       new FixedVoucherQuotes(),
       new RecordingRedemption(),
       new RecordingDurable(),
+      intakeAt(),
     );
   }
 
@@ -1791,5 +1820,67 @@ describe("PlaceOrderHandler — un site facturé à son principal", () => {
 
     await expect(refusal).rejects.toBeInstanceOf(GroupAccountOrderRefusedError);
     expect(sink.placed).toBeNull();
+  });
+});
+
+/**
+ * L'ouverture de la boutique (Hugo, 2026-10-09) : fermée à une clientèle, la
+ * passation de cette clientèle est refusée en 409 avant toute écriture ; celle
+ * de l'autre passe. La clientèle se déduit de la société, comme la remise.
+ */
+describe("PlaceOrderHandler — la boutique fermée à une clientèle", () => {
+  function closedTo(
+    opening: { readonly ordersOpenToB2b: boolean; readonly ordersOpenToB2c: boolean },
+    sink: { placed: OrderToPlace | null },
+  ): PlaceOrderHandler {
+    return new PlaceOrderHandler(
+      guard("orders", "active"),
+      drafting(pickups(LABO_POINT), zones()),
+      capturingRepo(sink),
+      payments(),
+      events(),
+      noWaivers,
+      new FixedClock(PRICED_AT),
+      freeKeys,
+      noReader,
+      directWork,
+      new FixedVoucherQuotes(),
+      new RecordingRedemption(),
+      new RecordingDurable(),
+      intakeAt(opening, "active"),
+    );
+  }
+
+  it("refuse la commande d'un pro quand la boutique est fermée aux pros, sans rien écrire", async () => {
+    const sink: { placed: OrderToPlace | null } = { placed: null };
+    const handler = closedTo({ ordersOpenToB2b: false, ordersOpenToB2c: true }, sink);
+
+    const refusal = handler.execute(new PlaceOrderCommand("u1", payload(), "c1"));
+
+    await expect(refusal).rejects.toBeInstanceOf(OrdersClosedForAudienceError);
+    await expect(refusal).rejects.toThrow("ne prend pas de commandes des pros");
+    expect(sink.placed).toBeNull();
+  });
+
+  it("laisse passer un particulier connecté quand seule la boutique pro est fermée", async () => {
+    const sink: { placed: OrderToPlace | null } = { placed: null };
+    const handler = closedTo({ ordersOpenToB2b: false, ordersOpenToB2c: true }, sink);
+
+    await handler.execute(new PlaceOrderCommand("u1", payload(), null));
+
+    expect(sink.placed).not.toBeNull();
+  });
+
+  it("refuse un particulier connecté quand la boutique est fermée aux particuliers", async () => {
+    const sink: { placed: OrderToPlace | null } = { placed: null };
+    const handler = closedTo({ ordersOpenToB2b: true, ordersOpenToB2c: false }, sink);
+
+    await expect(handler.execute(new PlaceOrderCommand("u1", payload(), null))).rejects.toThrow(
+      "ne prend pas de commandes des particuliers",
+    );
+    expect(sink.placed).toBeNull();
+
+    await handler.execute(new PlaceOrderCommand("u1", payload(), "c1"));
+    expect(sink.placed).not.toBeNull();
   });
 });

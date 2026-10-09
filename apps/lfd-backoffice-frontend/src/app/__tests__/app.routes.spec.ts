@@ -157,6 +157,7 @@ const SCREENS: Readonly<Record<string, ScreenAccess>> = {
   'b2b/reglages/points-de-retrait/:id': null,
   'b2b/reglages/livraison': null,
   'b2b/reglages/heures-limites': null,
+  'b2b/reglages/ouverture-boutique': null,
 
   // **Médiathèque** — hors de `pim/`, derrière SA ressource : le mur que la
   // route serveur oppose (`@AdminSurface("media_library")`). Elle a eu la

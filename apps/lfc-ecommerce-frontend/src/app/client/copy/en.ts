@@ -281,6 +281,7 @@ export const EN: ClientCopy = {
     dropAria: 'Remove {name} from the basket',
     pay: 'Pay for my order · {total}',
     payHint: 'Paid online. You show your QR at the counter, nothing to settle there.',
+    ordersClosed: 'Orders are closed for the moment.',
     settleTitle: 'How are you paying?',
     settleCard: 'Pay now',
     settleAccount: 'Add to the account',

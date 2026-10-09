@@ -69,8 +69,30 @@ describe('ClientFeatureAccess', () => {
       // Un serveur qui ne connaît pas la clé : fermé.
       expect(access.customerMandate()).toBe('closed');
 
-      access.receive({ customerMandate: 'open' });
+      access.receive({ customerMandate: 'open', facebookLogin: 'hidden' });
       expect(access.customerMandate()).toBe('open');
+    });
+
+    /** 2026-10-09 : le bouton Facebook est masqué tant qu'on ne sait pas, et en échec. */
+    it('masque Facebook tant qu’on ne sait pas, et suit le serveur ensuite', async () => {
+      const loading = access.load();
+      expect(access.facebookLoginShown()).toBe(false);
+      http.expectOne(globalRead).flush({ customerMandate: 'closed' });
+      await loading;
+      // Un serveur qui ne connaît pas la clé : masqué.
+      expect(access.facebookLoginShown()).toBe(false);
+
+      access.receive({ customerMandate: 'closed', facebookLogin: 'visible' });
+      expect(access.facebookLoginShown()).toBe(true);
+    });
+
+    it('un échec de lecture masque Facebook', async () => {
+      const loading = access.load();
+      http.expectOne(globalRead).flush('panne', { status: 503, statusText: 'Service Unavailable' });
+      await loading;
+
+      expect(access.state()).toBe('failed');
+      expect(access.facebookLoginShown()).toBe(false);
     });
 
     /** L'échec est une réponse, et la réponse prudente est « fermé ». */
