@@ -9,7 +9,7 @@ import { GetPayerCollectionReturnsQuery } from "./collection-return-queries.js";
 
 /**
  * **Les retours d'un payeur** — la fiche client dit « Prélèvement rejeté le
- * … (motif) » (plan `plan-retours-bancaires.md`, § 2 bis-8). Le payeur est la
+ * … (motif) » (plan `retours-bancaires.md`). Le payeur est la
  * société DÉBITÉE par la ligne (`debtor_company_id`), pas le site qui a
  * commandé.
  */

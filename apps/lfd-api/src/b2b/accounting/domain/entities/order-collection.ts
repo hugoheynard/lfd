@@ -98,7 +98,7 @@ export class OrderCollection {
   /**
    * `collected` → `returned` : la banque a rejeté ou retourné sa ligne. Elle
    * garde sa ligne — c'est ce qui la relie au retour — et ne revient à aucun
-   * lot d'elle-même (plan `plan-retours-bancaires.md`, § 2 bis-1).
+   * lot d'elle-même (plan `retours-bancaires.md`).
    */
   bounce(at: Date): void {
     this.assertIn(["collected"], "revenir de la banque");

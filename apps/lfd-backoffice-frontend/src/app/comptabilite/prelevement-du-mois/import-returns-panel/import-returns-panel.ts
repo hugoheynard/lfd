@@ -42,8 +42,7 @@ const STATUS: Readonly<
 };
 
 /**
- * **Importer un fichier de la banque** (plan `plan-retours-bancaires.md`,
- * R5b) : un `pain.002` ou un `camt.054`. L'aperçu dit ce que chaque
+ * **Importer un fichier de la banque** (plan `retours-bancaires.md`) : un `pain.002` ou un `camt.054`. L'aperçu dit ce que chaque
  * transaction deviendrait ; seules les appariées s'enregistrent, et seulement
  * quand le staff confirme. Le serveur relit le fichier à la confirmation.
  */

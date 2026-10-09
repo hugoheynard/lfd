@@ -43,7 +43,7 @@ export type OrderCollectionStateView =
   | "excluded"
   | "collected"
   | "settled_otherwise"
-  /** Sa ligne est revenue de la banque (plan `plan-retours-bancaires.md`). */
+  /** Sa ligne est revenue de la banque (plan `retours-bancaires.md`). */
   | "returned"
   | "written_off";
 

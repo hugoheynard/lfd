@@ -27,7 +27,7 @@ export interface CollectionNoticeMailData {
   readonly invoiceNumbers: readonly string[];
   /**
    * Le jour du prélèvement rejeté que celui-ci présente de nouveau, en toutes
-   * lettres (plan `plan-retours-bancaires.md`, § 2 bis-6) ; `null` sinon.
+   * lettres (plan `retours-bancaires.md`) ; `null` sinon.
    */
   readonly representedRejectionDay: string | null;
   /** Pour un rectificatif : ce qu'annonçait l'avis précédent. */

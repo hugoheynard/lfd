@@ -58,7 +58,7 @@ import { SettlePanel } from './settle-panel/settle-panel';
  *    signalements, ses gestes ; et le bouton qui prépare le lot du mois clos,
  *    nommé par ce mois ;
  * 5. les **retours de la banque** sur les lots déposés (plan
- *    `plan-retours-bancaires.md`, R5a, R5b) ;
+ *    `retours-bancaires.md`) ;
  * 6. l'**historique** des lots, replié.
  *
  * Il remplace la page « Lots de prélèvement » et la carte « Prélèvement

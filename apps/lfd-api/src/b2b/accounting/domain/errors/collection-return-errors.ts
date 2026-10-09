@@ -6,7 +6,7 @@ import {
 
 /**
  * Les refus des **retours bancaires** (plan
- * `documentation/comptabilite/prelevement/plan-retours-bancaires.md`, R5a).
+ * `documentation/comptabilite/prelevement/retours-bancaires.md`).
  *
  * Lus par la comptabilité, sans le code sous les yeux : chacun nomme le cas
  * réel et le geste de sortie. Aucun ne porte d'IBAN.

@@ -35,7 +35,7 @@ const PAIN002_REJECTED = "RJCT";
 
 /**
  * **Lit un fichier de retours de la banque** (plan
- * `plan-retours-bancaires.md`, R5b) : un `pain.002` (CstmrPmtStsRpt, rejets
+ * `retours-bancaires.md`) : un `pain.002` (CstmrPmtStsRpt, rejets
  * avant règlement) ou un `camt.054` (BkToCstmrDbtCdtNtfctn, retours après).
  * Écrit d'après la norme ISO 20022 — versions `pain.002.001.03` et
  * `camt.054.001.02` ; **à éprouver sur un vrai fichier de la Caisse

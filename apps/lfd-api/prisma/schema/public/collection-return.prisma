@@ -1,4 +1,4 @@
-/// Le genre d'un retour bancaire (plan `plan-retours-bancaires.md`, § 2). Une VALEUR.
+/// Le genre d'un retour bancaire (plan `retours-bancaires.md`). Une VALEUR.
 enum CollectionReturnKind {
   /// Rejet avant règlement (`pain.002`).
   reject

@@ -97,7 +97,7 @@ paid` (ou `async_payment_succeeded`) ; **expiré** sur
 
 - Pas de blocage automatique sur un rejet de prélèvement, par décision
   (A36) : les retours bancaires sont lus depuis le 2026-10-09 (PA5,
-  [`plan-retours-bancaires.md`](plan-retours-bancaires.md)), la cloche et
+  [`retours-bancaires.md`](retours-bancaires.md)), la cloche et
   la fiche le disent, le staff bloque par l'outil existant s'il le faut.
 - Pas de lettrage automatique entre un lien libre et des commandes.
 - Le webhook Stripe de production doit être abonné aux événements

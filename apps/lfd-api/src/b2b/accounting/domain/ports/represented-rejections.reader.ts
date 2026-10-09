@@ -1,6 +1,6 @@
 /**
  * Ce que l'avis d'une re-présentation doit dire : « nouvelle présentation du
- * prélèvement rejeté du … » (plan `plan-retours-bancaires.md`, § 2 bis-6).
+ * prélèvement rejeté du … » (plan `retours-bancaires.md`).
  *
  * Seule une ligne de factures émises se re-présente : ses factures sont donc
  * celles de la ligne rejetée, et c'est par elles qu'on retrouve le rejet — la

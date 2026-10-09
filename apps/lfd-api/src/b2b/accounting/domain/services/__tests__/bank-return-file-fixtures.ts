@@ -2,7 +2,7 @@
  * Des fichiers de retours écrits d'après la norme ISO 20022 — `pain.002.001.03`
  * et `camt.054.001.02`, les versions les plus courantes en France. Aucun n'a
  * été comparé à un vrai fichier de la Caisse d'Épargne : à éprouver dès qu'on
- * en aura un (plan `plan-retours-bancaires.md`, R5b).
+ * en aura un (plan `retours-bancaires.md`).
  */
 
 export interface FixtureTransaction {

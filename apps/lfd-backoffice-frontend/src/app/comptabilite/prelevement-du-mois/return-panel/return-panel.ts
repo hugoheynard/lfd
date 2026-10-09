@@ -53,7 +53,7 @@ export interface ReturnPanelData {
 
 /**
  * **« Signaler un retour »** sur une ligne déposée (plan
- * `plan-retours-bancaires.md`, R5a). Le montant est celui de la ligne —
+ * `retours-bancaires.md`). Le montant est celui de la ligne —
  * un retour porte sur toute la ligne — et n'est donc pas saisi. Un lot B2B
  * ne propose pas le remboursement : le débiteur n'y a pas droit.
  */

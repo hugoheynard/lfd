@@ -23,7 +23,7 @@ import {
 } from '../values/accounting-values';
 
 /**
- * **Les retours bancaires** (plan `plan-retours-bancaires.md`, R5a) — famille
+ * **Les retours bancaires** (plan `retours-bancaires.md`) — famille
  * `accounting`. Sujet : la société payeuse. À part d'`accounting-phrases.ts`,
  * qui dépasse déjà la taille d'un fichier. Jamais d'IBAN : la ligne se dit par
  * son lot et son `EndToEndId`.

@@ -28,7 +28,7 @@ import { CollectionReturnsService } from '../../comptabilite/collection-returns.
 
 /**
  * **« Prélèvement rejeté le … (motif) »** — les retours bancaires dont la
- * ligne débitait cette société (plan `plan-retours-bancaires.md`, § 5). La
+ * ligne débitait cette société (plan `retours-bancaires.md`). La
  * fiche est celle du PAYEUR : un site qui suit son principal n'en a pas.
  *
  * Pas de blocage automatique (A36) : la carte le dit, le staff décide — par

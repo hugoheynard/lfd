@@ -2,7 +2,7 @@ import { BusinessError, DomainError } from "../../../../platform/shared/errors/a
 
 /**
  * Les refus de la lecture d'un fichier de retours de la banque (plan
- * `plan-retours-bancaires.md`, R5b). Le staff lit le message sans le code :
+ * `retours-bancaires.md`). Le staff lit le message sans le code :
  * il dit ce qui cloche dans le fichier, et quoi faire.
  */
 

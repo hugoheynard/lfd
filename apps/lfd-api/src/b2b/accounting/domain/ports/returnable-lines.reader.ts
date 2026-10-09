@@ -2,7 +2,7 @@ import type { ReturnableLine } from "../entities/collection-return.js";
 
 /**
  * Les lignes de lot qu'un retour peut viser, telles que le lot les a figées
- * (plan `plan-retours-bancaires.md`, R5a). Jamais d'IBAN : un retour n'en a
+ * (plan `retours-bancaires.md`). Jamais d'IBAN : un retour n'en a
  * pas besoin, et ce qui ne sort pas ne fuit pas.
  */
 export abstract class ReturnableLinesReader {

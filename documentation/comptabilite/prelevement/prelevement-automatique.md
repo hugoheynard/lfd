@@ -150,7 +150,7 @@ datés) ; l'historique replié. Le tableau de bord n'en garde qu'un résumé.
   ([`prelevement-sepa.md`](prelevement-sepa.md),
   questions 3 et 4).
 - **PA5, les retours bancaires** : **bâti le 2026-10-09** (R5a, R5b —
-  [`plan-retours-bancaires.md`](plan-retours-bancaires.md), § 10). Une
+  [`retours-bancaires.md`](retours-bancaires.md)). Une
   ligne rejetée passe ses commandes à `returned` ; re-présentée, elle entre
   au lot suivant normal avec un avis « nouvelle présentation ». Reste à
   éprouver l'import sur un vrai fichier de la Caisse d'Épargne.

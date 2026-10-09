@@ -15,7 +15,7 @@ import { B2B_API_BASE } from '../api/api-config';
 
 /**
  * Les **retours bancaires** d'un prélèvement (plan
- * `documentation/comptabilite/prelevement/plan-retours-bancaires.md`, R5a et
+ * `documentation/comptabilite/prelevement/retours-bancaires.md` et
  * R5b). Lire demande `b2b_accounting:read`, tout le reste `:write` ; le
  * serveur refuse de toute façon, et ses refus nomment le cas et le geste.
  */

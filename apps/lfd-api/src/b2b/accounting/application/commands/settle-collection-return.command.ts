@@ -1,6 +1,6 @@
 /**
  * La ligne d'un retour bancaire a été réglée par un autre chemin — lien de
- * paiement, virement (plan `plan-retours-bancaires.md`, § 4).
+ * paiement, virement (plan `retours-bancaires.md`).
  */
 export class SettleCollectionReturnCommand {
   constructor(

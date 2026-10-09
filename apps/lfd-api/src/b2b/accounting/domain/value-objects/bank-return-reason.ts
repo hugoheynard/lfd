@@ -1,7 +1,7 @@
 import { InvalidBankReturnReasonError } from "../errors/collection-return-errors.js";
 
 /**
- * Le genre d'un retour bancaire (plan `plan-retours-bancaires.md`, § 2) :
+ * Le genre d'un retour bancaire (plan `retours-bancaires.md`) :
  * un rejet AVANT règlement (`pain.002`), un retour APRÈS (`camt.054`), ou un
  * remboursement demandé par le débiteur — CORE seulement.
  */

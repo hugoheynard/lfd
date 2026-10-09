@@ -1,6 +1,6 @@
 /**
  * Re-présente au prochain lot la ligne d'un retour bancaire (plan
- * `plan-retours-bancaires.md`, § 2 bis-2, 5, 6).
+ * `retours-bancaires.md`).
  */
 export class RepresentCollectionReturnCommand {
   constructor(

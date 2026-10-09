@@ -33,7 +33,7 @@ export interface NoticeLineRef {
   readonly invoiceNumbers: readonly string[];
   /**
    * Le jour (`AAAA-MM-JJ`) du rejet que la ligne re-présente (plan
-   * `plan-retours-bancaires.md`, § 2 bis-6) ; `null` pour un premier débit.
+   * `retours-bancaires.md`) ; `null` pour un premier débit.
    */
   readonly representedRejectionDay: string | null;
 }

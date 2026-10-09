@@ -45,8 +45,7 @@ const BANK_FILE_HARD_LIMIT = 5 * 1024 * 1024;
 
 /**
  * **Les retours bancaires** (plan
- * `documentation/comptabilite/prelevement/plan-retours-bancaires.md`, R5a,
- * R5b). L'action se déduit du verbe : `GET` lit (`b2b_accounting:read`), le
+ * `documentation/comptabilite/prelevement/retours-bancaires.md`). L'action se déduit du verbe : `GET` lit (`b2b_accounting:read`), le
  * reste écrit (`b2b_accounting:write`, arbitrage A39) — y compris l'aperçu
  * d'un import, qui ne sert qu'à qui confirmera.
  */

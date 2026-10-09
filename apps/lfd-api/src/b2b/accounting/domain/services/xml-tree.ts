@@ -33,7 +33,7 @@ const NAMED_ENTITIES: Readonly<Record<string, string>> = {
 /**
  * **Un lecteur XML minimal et strict** — le dépôt n'en a aucun, et un fichier
  * de la banque ne justifie pas une dépendance (plan
- * `plan-retours-bancaires.md`, R5b). Il lit des éléments, du texte, des
+ * `retours-bancaires.md`). Il lit des éléments, du texte, des
  * attributs, des sections CDATA et les cinq entités de base.
  *
  * Il REFUSE ce dont un relevé bancaire n'a pas besoin et qui ouvre une

@@ -46,7 +46,7 @@ const COLUMNS: readonly FoldTableColumn[] = [
 ];
 
 /**
- * **Les retours de la banque** (plan `plan-retours-bancaires.md`, R5a, R5b)
+ * **Les retours de la banque** (plan `retours-bancaires.md`)
  * sur les lots DÉPOSÉS : les lignes du lot choisi, « Signaler un retour » sur
  * celles qui n'en ont pas, la liste des retours et leurs gestes, et l'import
  * d'un fichier de la banque. Un seul lot lu à la fois : l'écran ne multiplie

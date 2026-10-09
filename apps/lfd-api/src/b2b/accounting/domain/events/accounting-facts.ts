@@ -64,7 +64,7 @@ export const COLLECTION_FACT_TYPES = {
   noticeSent: "collection.notice_sent",
   noticeFailed: "collection.notice_failed",
   autopilotRan: "collection.autopilot_ran",
-  /** La banque a rejeté ou retourné une ligne (plan `plan-retours-bancaires.md`, R5a). */
+  /** La banque a rejeté ou retourné une ligne (plan `retours-bancaires.md`). */
   returned: "collection.returned",
   returnResolved: "collection.return_resolved",
 } as const satisfies Readonly<Record<string, JournalFactType>>;

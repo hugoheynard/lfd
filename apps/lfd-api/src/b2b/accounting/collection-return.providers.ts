@@ -21,8 +21,8 @@ import {
 import { PrismaReturnableLinesReader } from "./infrastructure/prisma-returnable-lines.reader.js";
 
 /**
- * Les providers des retours bancaires (plan `plan-retours-bancaires.md`, R5a
- * et R5b). À part du module, qui dépasse déjà la taille d'un fichier. Le
+ * Les providers des retours bancaires (plan `retours-bancaires.md`).
+ * À part du module, qui dépasse déjà la taille d'un fichier. Le
  * relecteur des mandats (`MandateRecheckReader`) n'est pas ici : `payments`
  * l'implémente, et il est déjà relié pour le dépôt.
  */

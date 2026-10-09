@@ -2,7 +2,7 @@ import type { BankReturnKind } from "../../domain/value-objects/bank-return-reas
 
 /**
  * Saisit à la main le retour bancaire d'une ligne de lot (plan
- * `plan-retours-bancaires.md`, R5a) : le montant est celui de la ligne.
+ * `retours-bancaires.md`) : le montant est celui de la ligne.
  */
 export class RecordCollectionReturnCommand {
   constructor(

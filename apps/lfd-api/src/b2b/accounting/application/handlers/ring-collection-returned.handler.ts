@@ -10,7 +10,7 @@ import {
 } from "../../domain/events/collection-return.events.js";
 
 /**
- * **« Prélèvement rejeté »** (plan `plan-retours-bancaires.md`, § 5) : la
+ * **« Prélèvement rejeté »** (plan `retours-bancaires.md`) : la
  * banque a renvoyé une ligne, ses commandes ne sont plus prélevées, et
  * quelqu'un doit décider de la suite. Sans destinataire nommé, comme
  * `RingRefundNotCredited`. Pas de blocage automatique du client (A36) : la

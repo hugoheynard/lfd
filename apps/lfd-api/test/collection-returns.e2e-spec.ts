@@ -1,6 +1,6 @@
 /**
  * E2E des **retours bancaires** (plan
- * `documentation/comptabilite/prelevement/plan-retours-bancaires.md`, R5a et R5b).
+ * `documentation/comptabilite/prelevement/retours-bancaires.md`).
  *
  * Ce que seul le vrai SQL prouve : le CHECK qui admet `returned` avec sa
  * ligne ; une commande retournée n'entre plus dans la constitution ;

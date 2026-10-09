@@ -79,7 +79,7 @@ export const RESOLUTION_NOTE_MAX = 500;
 const DAY_SHAPE = /^\d{4}-\d{2}-\d{2}$/u;
 
 /**
- * **Le retour bancaire d'une ligne de lot** (plan `plan-retours-bancaires.md`).
+ * **Le retour bancaire d'une ligne de lot** (plan `retours-bancaires.md`).
  *
  * Il garde ses règles, et rien d'autre ne les garde :
  *

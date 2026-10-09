@@ -115,7 +115,7 @@ const mandateBankExport = {
 
 /**
  * Le retour bancaire d'une ligne de lot (plan
- * `documentation/comptabilite/prelevement/plan-retours-bancaires.md`, R5a).
+ * `documentation/comptabilite/prelevement/retours-bancaires.md`).
  * Sujet : la société PAYEUSE (`company`), nommée par sa raison sociale — le
  * retour se lit sur sa fiche. Jamais l'IBAN : la ligne se reconnaît à son
  * `EndToEndId` et à son lot.

@@ -2,7 +2,7 @@ import { z } from "zod";
 
 /**
  * **Les retours bancaires d'un prélèvement** (plan
- * `documentation/comptabilite/prelevement/plan-retours-bancaires.md`, R5a et
+ * `documentation/comptabilite/prelevement/retours-bancaires.md` et
  * R5b). Montants en centimes, jours en `AAAA-MM-JJ`. Jamais d'IBAN.
  */
 
