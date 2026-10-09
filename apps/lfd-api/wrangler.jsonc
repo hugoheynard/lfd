@@ -173,8 +173,7 @@
   //    /admin/accounting/monthly-invoices/autopilot) : le dernier jour du mois
   //    à 23h55, heure de Paris — 21h55 UTC l'été, 22h55 UTC l'hiver ; l'autre
   //    passage tombe à 22h55 ou 00h55 et se tait (plan
-  //    `documentation/comptabilite/facturation/plan-emission-de-la-facture.md`,
-  //    E4b). Le backend décide sur l'heure de Paris ; il passe chaque jour et
+  //    `documentation/comptabilite/facturation/facture-emise.md`). Le backend décide sur l'heure de Paris ; il passe chaque jour et
   //    ne fait rien hors du dernier. Le passage `15 *` rattrape un 23h55
   //    manqué. Recopié dans `MONTHLY_INVOICE_CRON` (worker.ts), à l'identique.
   //

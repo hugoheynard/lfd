@@ -24,7 +24,7 @@ import { NotifyService } from '../../notify.service';
 
 /**
  * **Les factures émises** de la société — factures et avoirs adressés à ce
- * payeur légal (plan `plan-emission-de-la-facture.md`, E6), les plus
+ * payeur légal (plan `facture-emise.md`), les plus
  * récentes d'abord ; chacune mène à sa pièce dans la comptabilité, et son
  * PDF/A-3 Factur-X se télécharge d'ici une fois rendu (E3b).
  *

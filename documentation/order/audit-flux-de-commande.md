@@ -99,7 +99,7 @@ Ce qui reste vrai, et qui coûte :
   le 2026-10-09 : la maquette (`MOCK_LEDGER`, `MOCK_STATEMENT_SUM`) est
   retirée, et `/mes-factures` redirige vers « Mes factures » de
   `/mon-compte`, qui lit les factures émises (plan
-  [`plan-emission-de-la-facture.md`](../comptabilite/facturation/plan-emission-de-la-facture.md), § 8.6 (d)).
+  [`facture-emise.md`](../comptabilite/facturation/facture-emise.md)).
 
 Une autre maquette reste branchée, sans argent : `mock-event.ts`
 (l'opération datée de l'accueil public et de l'espace). Les récits du rayon

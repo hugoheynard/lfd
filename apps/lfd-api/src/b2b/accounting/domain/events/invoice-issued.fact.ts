@@ -6,8 +6,7 @@ export const INVOICE_ISSUED = "invoice.issued";
 
 /**
  * **Une facture (380) est émise** — écrit dans la boîte d'envoi, dans la
- * transaction qui a pris son numéro (plan `plan-emission-de-la-facture.md`,
- * E6). `{ invoiceId }`, rien d'autre : l'abonné relit la pièce figée. Clé :
+ * transaction qui a pris son numéro (plan `facture-emise.md`). `{ invoiceId }`, rien d'autre : l'abonné relit la pièce figée. Clé :
  * `invoice.issued:<invoiceId>`, une pièce ne s'émet qu'une fois.
  *
  * Un avoir n'en publie pas : Q3 ne demande de prévenir qu'à l'émission de la

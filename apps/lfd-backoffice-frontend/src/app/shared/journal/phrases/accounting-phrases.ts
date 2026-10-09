@@ -108,7 +108,7 @@ function collectionSchedule(fact: PhraseFact): Segment[] {
 /**
  * « : pénalités de retard 14,15 %, indemnité de recouvrement 40,00 €, escompte
  * « néant » ». Une mention nulle est « à renseigner » — dite telle quelle,
- * jamais remplacée par le taux légal (plan `plan-emission-de-la-facture.md`, E0).
+ * jamais remplacée par le taux légal (plan `facture-emise.md`).
  */
 function invoicePaymentTerms(fact: PhraseFact): Segment[] {
   const rate = fact.payload['latePenaltyRateBasisPoints'];

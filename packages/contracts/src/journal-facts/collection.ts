@@ -47,7 +47,7 @@ const issuedInvoice = {
 };
 
 /**
- * L'e-mail « votre facture » (plan `plan-emission-de-la-facture.md`, E6).
+ * L'e-mail « votre facture » (plan `facture-emise.md`).
  * Sujet : `invoice`, nommé par son numéro. Jamais les adresses : leur nombre.
  */
 const invoiceNotice = {
@@ -57,8 +57,7 @@ const invoiceNotice = {
 };
 
 /**
- * Le PDF/A-3 Factur-X d'une pièce (plan `plan-emission-de-la-facture.md`,
- * E3b). Sujet : `invoice`. Jamais la clé de stockage : sa taille, son
+ * Le PDF/A-3 Factur-X d'une pièce (plan `facture-emise.md`). Sujet : `invoice`. Jamais la clé de stockage : sa taille, son
  * empreinte, et s'il s'agit d'une facture ou d'un avoir.
  */
 const invoiceDocument = {
@@ -176,7 +175,7 @@ export const COLLECTION_FACTS = {
   "billing_statement.cancelled": fact(payload(statement)),
   /**
    * Une facture (380) est émise et numérotée (plan
-   * `plan-emission-de-la-facture.md`, E2). Sujet : `invoice` ; `subjectLabel`
+   * `facture-emise.md`). Sujet : `invoice` ; `subjectLabel`
    * est son numéro, `payer` le payeur légal, `totalCents` le TTC.
    */
   "invoice.issued": fact(payload(issuedInvoice)),

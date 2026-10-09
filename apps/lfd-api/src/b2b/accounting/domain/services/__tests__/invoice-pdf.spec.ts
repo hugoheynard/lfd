@@ -17,8 +17,7 @@ import { TEST_FONTS } from "./invoice-fonts-fixture.js";
 import { drawnUnicodeText, pdfObjects, streamsWith } from "./pdf-objects.js";
 
 /**
- * Le PDF/A-3b Factur-X d'une pièce (plan `plan-emission-de-la-facture.md`,
- * E3b). Sans veraPDF ni Schematron (hors lot) : on vérifie ce qu'un lecteur
+ * Le PDF/A-3b Factur-X d'une pièce (plan `facture-emise.md`). Sans veraPDF ni Schematron (hors lot) : on vérifie ce qu'un lecteur
  * Factur-X cherche d'abord — l'en-tête, le niveau PDF/A déclaré, le XML joint
  * au bit près et sa relation, les polices embarquées — puis le texte imprimé.
  * Les dates ne sont comparées qu'entre elles, jamais à l'horloge.

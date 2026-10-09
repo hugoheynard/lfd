@@ -18,7 +18,7 @@ export const RENDER_CREDIT_NOTE_DOCUMENT = "accounting.render-credit-note-docume
 
 /**
  * **Le PDF/A-3 d'un avoir est rendu** — l'abonné durable du fait
- * `invoice.credit_note_issued` (plan `plan-emission-de-la-facture.md`, E3b).
+ * `invoice.credit_note_issued` (plan `facture-emise.md`).
  * Un avoir ne prévient personne (Q3) : rendre est tout ce qu'il y a à faire.
  *
  * Même patron que `SendInvoiceNotice` : le décodage dans la transaction du

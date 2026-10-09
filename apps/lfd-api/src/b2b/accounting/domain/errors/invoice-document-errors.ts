@@ -5,7 +5,7 @@ import {
 
 /**
  * Les refus et pannes du **document Factur-X** d'une pièce émise (plan
- * `plan-emission-de-la-facture.md`, E3b). Le rendu se fait après
+ * `facture-emise.md`). Le rendu se fait après
  * l'émission : une pièce sans document est un état normal et visible, pas
  * une panne.
  */

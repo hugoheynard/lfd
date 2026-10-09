@@ -7,7 +7,7 @@
 | `OFL-LICENSE.md`          | La licence SIL Open Font License 1.1, qui permet de l'embarquer |
 
 Elles sont **embarquées** dans chaque PDF/A-3 Factur-X de facture et d'avoir
-(plan [`../../../documentation/comptabilite/facturation/plan-emission-de-la-facture.md`](../../../documentation/comptabilite/facturation/plan-emission-de-la-facture.md),
+(plan [`../../../documentation/comptabilite/facturation/facture-emise.md`](../../../documentation/comptabilite/facturation/facture-emise.md),
 E3b) : PDF/A interdit une police non embarquée, donc les polices standard de
 `pdfkit` (Helvetica…) en sont exclues.
 

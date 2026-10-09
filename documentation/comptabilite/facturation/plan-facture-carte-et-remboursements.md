@@ -2,7 +2,7 @@
 
 > 📐 **Plan v2, 2026-10-08** (v1 contredite par `vitruve` le même jour : quatre BLOQUANTS, neuf SÉRIEUX, repris au § 8 et dans le § 2 bis qui prime sur les §§ 2 à 4), écrit en l'absence d'Hugo (« fais tout, tiens
 > une liste des questions arbitrées »). Lot **E5** de
-> [`plan-emission-de-la-facture.md`](plan-emission-de-la-facture.md), qui
+> [`facture-emise.md`](facture-emise.md), qui
 > l'attendait derrière « le suivi des remboursements ». Touche **l'argent** :
 > contredit par `vitruve` avant d'être bâti (§ 8). Arbitrages reportés dans
 > [`../arbitrages-en-absence.md`](../arbitrages-en-absence.md).

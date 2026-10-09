@@ -93,7 +93,7 @@ export const ACCOUNTING_FACTS = {
   "legal_entity.auto_collection_disabled": labelled({}),
   /**
    * Les mentions de paiement de la facture APRÈS le changement (plan
-   * `plan-emission-de-la-facture.md`, E0). Chacune nulle = « à renseigner ».
+   * `facture-emise.md`). Chacune nulle = « à renseigner ».
    */
   "legal_entity.invoice_payment_terms_changed": labelled({
     latePenaltyRateBasisPoints: basisPoints().nullable(),

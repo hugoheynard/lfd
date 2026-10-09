@@ -66,7 +66,7 @@ type PayerIssue =
   | { readonly kind: "blocked"; readonly payerCompanyId: string; readonly message: string };
 
 /**
- * **La facture du mois** (plan `plan-emission-de-la-facture.md`, § 3, lot E4).
+ * **La facture du mois** (plan `facture-emise.md`).
  *
  * Pour chaque payeur légal (`billedPayerOf`) qui a des bons passés au compte
  * dans le mois et pas encore facturés : UNE facture 380 **par mandat

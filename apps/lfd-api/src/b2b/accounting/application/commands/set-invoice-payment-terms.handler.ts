@@ -14,7 +14,7 @@ import { SetInvoicePaymentTermsCommand } from "./legal-entity-commands.js";
  * Un fait au journal à chaque changement réel, l'APRÈS au payload : ces
  * mentions s'imprimeront sur des factures, et « quel taux portait la facture
  * de mars, et qui l'avait saisi » doit se lire seul. Une saisie rejouée
- * n'écrit rien (plan `plan-emission-de-la-facture.md`, E0).
+ * n'écrit rien (plan `facture-emise.md`).
  */
 @CommandHandler(SetInvoicePaymentTermsCommand)
 export class SetInvoicePaymentTermsHandler implements ICommandHandler<

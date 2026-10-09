@@ -89,7 +89,7 @@ export class SetAutoCollectionCommand {
 
 /**
  * Les mentions de paiement de la facture — pénalités de retard, indemnité de
- * recouvrement, escompte (plan `plan-emission-de-la-facture.md`, E0).
+ * recouvrement, escompte (plan `facture-emise.md`).
  */
 export class SetInvoicePaymentTermsCommand {
   constructor(

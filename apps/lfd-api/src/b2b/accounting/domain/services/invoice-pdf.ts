@@ -22,7 +22,7 @@ export interface InvoicePdfInput {
 
 /**
  * **Le PDF/A-3b Factur-X d'une facture ou d'un avoir** (plan
- * `plan-emission-de-la-facture.md`, E3b) : la pièce figée mise en page,
+ * `facture-emise.md`) : la pièce figée mise en page,
  * le XML EN 16931 joint (`factur-x.xml`, relation `Alternative`). Pur et
  * déterministe : ni horloge, ni réseau, ni disque.
  *

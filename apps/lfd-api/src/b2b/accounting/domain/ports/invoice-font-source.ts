@@ -8,7 +8,7 @@ export interface InvoicePdfFonts {
 
 /**
  * **Les polices embarquées de la facture PDF/A-3** (plan
- * `plan-emission-de-la-facture.md`, E3b).
+ * `facture-emise.md`).
  *
  * Un port, et pas un chemin écrit dans le rendu : PDF/A interdit une police
  * non embarquée, donc les quatorze polices standard de `pdfkit` (Helvetica…)

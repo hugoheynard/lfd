@@ -17,7 +17,7 @@ import { invoiceKind, invoiceMeta, invoicesCount } from '../invoices-section';
 
 /**
  * La carte **« Mes factures »** du bureau (plan
- * `plan-emission-de-la-facture.md`, E6) : chaque pièce adressée à la
+ * `facture-emise.md`) : chaque pièce adressée à la
  * société — numéro, date, période, échéance, TTC — et un clic qui ouvre
  * son dialogue. Lecture PARTAGÉE avec la carte mobile (`ClientInvoices`) ;
  * un échec de lecture se dit, il ne se montre pas comme « aucune facture ».

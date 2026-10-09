@@ -39,7 +39,7 @@ export interface InvoiceNoticeOutcome {
 
 /**
  * **Prévient de l'émission d'une facture** (plan
- * `plan-emission-de-la-facture.md`, E6, Q3) : un e-mail par adresse, puis
+ * `facture-emise.md`, Q3) : un e-mail par adresse, puis
  * l'issue au journal — `invoice.notice_sent`, ou `invoice.notice_failed`
  * quand personne n'est joignable ou que le fournisseur refuse.
  *

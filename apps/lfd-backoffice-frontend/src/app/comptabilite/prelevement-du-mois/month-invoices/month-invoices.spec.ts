@@ -6,7 +6,7 @@ import type { MonthlyInvoicesView } from '@lfd/contracts';
 import { MonthInvoices, autopilotSentence } from './month-invoices';
 
 /**
- * Ce que ces cas tiennent (plan `plan-emission-de-la-facture.md`, E4) : la
+ * Ce que ces cas tiennent (plan `facture-emise.md`) : la
  * carte nomme le mois, liste ses factures et ses payeurs signalés, dit
  * pourquoi elle est vide, et n'offre le bouton qu'à qui peut écrire, sur un
  * mois en service. Les dates ne sont comparées qu'entre elles.

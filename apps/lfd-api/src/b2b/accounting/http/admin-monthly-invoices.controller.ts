@@ -25,8 +25,7 @@ const issueMonthlyInvoicesPayloadSchema = z.strictObject({
 });
 
 /**
- * Surface **staff** de la facture du mois (plan `plan-emission-de-la-facture.md`,
- * lot E4) : `GET` lit, `POST` émet (`b2b_accounting:write`) — la même
+ * Surface **staff** de la facture du mois (plan `facture-emise.md`) : `GET` lit, `POST` émet (`b2b_accounting:write`) — la même
  * commande que le passage automatique.
  */
 @Controller("admin/accounting/monthly-invoices")

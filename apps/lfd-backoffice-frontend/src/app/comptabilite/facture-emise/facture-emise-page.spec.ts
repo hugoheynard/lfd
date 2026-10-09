@@ -11,7 +11,7 @@ import { IssuedInvoicesService } from '../issued-invoices.service';
 import { FactureEmisePage } from './facture-emise-page';
 
 /**
- * Ce que ces cas tiennent (plan `plan-emission-de-la-facture.md`, E6) : la
+ * Ce que ces cas tiennent (plan `facture-emise.md`) : la
  * pièce émise se relit telle que figée — parties, lignes, ventilation,
  * mentions, règlement, bons ; inconnue, elle ne se confond pas avec une panne.
  * Les dates ne sont qu'affichées.

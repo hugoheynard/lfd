@@ -41,8 +41,7 @@ export interface InvoiceDialogData {
 }
 
 /**
- * **Une facture**, en lecture seule (plan `plan-emission-de-la-facture.md`,
- * E6) : parties, lignes, ventilation par taux, totaux, mentions, règlement,
+ * **Une facture**, en lecture seule (plan `facture-emise.md`) : parties, lignes, ventilation par taux, totaux, mentions, règlement,
  * commandes facturées — tels que la pièce les a figés. Rien n'est recalculé.
  *
  * Un clic sur une facture ouvre ce dialogue directement (règle « Saisir » de

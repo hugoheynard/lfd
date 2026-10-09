@@ -829,7 +829,7 @@ commande ne porte (un lien libre) sonne aussi la cloche, sans rien écrire.
 ## Verrouiller les PDF des factures pour dix ans
 
 > 📐 **À faire, pas fait** (2026-10-08, lot E3b de
-> [`plan-emission-de-la-facture.md`](../comptabilite/facturation/plan-emission-de-la-facture.md)).
+> [`facture-emise.md`](../comptabilite/facturation/facture-emise.md)).
 > Personne n'a encore posé la règle ; l'état du seau n'a pas été relu.
 
 Chaque facture et chaque avoir émis ont leur PDF/A-3 Factur-X rangé dans le

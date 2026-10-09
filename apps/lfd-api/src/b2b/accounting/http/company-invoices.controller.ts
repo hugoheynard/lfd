@@ -14,8 +14,7 @@ import {
 import { invoicePdfResponse } from "./invoice-pdf-response.js";
 
 /**
- * Surface **client** de « Mes factures » (plan `plan-emission-de-la-facture.md`,
- * E6) — la section de `/mon-compte`. Le mur (détenteur ou facturation ;
+ * Surface **client** de « Mes factures » (plan `facture-emise.md`) — la section de `/mon-compte`. Le mur (détenteur ou facturation ;
  * non-membre 404, autre rôle 403) vit dans les handlers.
  */
 @Controller("companies")

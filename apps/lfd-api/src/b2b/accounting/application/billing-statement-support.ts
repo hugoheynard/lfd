@@ -32,7 +32,7 @@ export interface IssuedStatement {
  * **Un arrêté par ligne de débit d'arrêté** (plan
  * `le-prelevement-suit-la-facture.md`), avec exactement les bons de
  * la ligne. Une ligne qui encaisse des factures émises n'en reçoit pas : sa
- * pièce est la facture (plan `plan-emission-de-la-facture.md`, E4).
+ * pièce est la facture (plan `facture-emise.md`).
  *
  * Le rang d'une ligne EST l'indice de son brouillon + 1 (`renderBatchFile`) :
  * on relit donc les brouillons du schéma du lot, dans le même ordre. La

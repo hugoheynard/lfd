@@ -23,7 +23,7 @@ import { PrismaInvoicePeriodsReader } from "./infrastructure/prisma-invoice-peri
 import { PrismaInvoiceSiteContactsReader } from "./infrastructure/prisma-invoice-site-contacts.reader.js";
 
 /**
- * Les providers des lots E6 et E3b (plan `plan-emission-de-la-facture.md`) :
+ * Les providers des lots E6 et E3b (plan `facture-emise.md`) :
  * prévenir à l'émission, « Mes factures », l'onglet de la fiche, et le PDF/A-3
  * Factur-X de chaque pièce. À part du module, qui dépassait déjà la taille
  * d'un fichier.

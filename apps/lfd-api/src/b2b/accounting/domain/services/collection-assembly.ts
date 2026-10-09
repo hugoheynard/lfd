@@ -41,7 +41,7 @@ import type { CollectionExclusionReason } from "../entities/order-collection.js"
  * ## Deux sortes de lignes depuis E4
  *
  * - **Une ligne qui encaisse des FACTURES ÉMISES** (plan
- *   `plan-emission-de-la-facture.md`, § 3) : un bon couvert par une facture
+ *   `facture-emise.md`) : un bon couvert par une facture
  *   se juge AVEC elle — la facture entière, ou rien. Ses bons tous au même
  *   mandat → elle entre ; un bon ailleurs → elle attend ; un bon écarté →
  *   tous ses bons le sont, pour la même raison ; plusieurs mandats →

@@ -67,7 +67,7 @@ export const comptabiliteRoutes: Routes = [
       // L'ancienne adresse vit dans des favoris : remplacée le 2026-10-08 (PA4).
       { path: 'lots-de-prelevement', redirectTo: 'prelevement-du-mois' },
       {
-        // UNE facture émise, figée (plan-emission-de-la-facture.md, E6),
+        // UNE facture émise, figée (facture-emise.md),
         // ouverte depuis l'onglet « Facturation » de la fiche client.
         path: 'factures/:id',
         title: 'Facture — LFC B2B admin',

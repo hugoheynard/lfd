@@ -6,7 +6,7 @@
 > le citent encore sous son ancien nom). Touche **l'argent** :
 > le plan avait été contredit par `vitruve`.
 
-> ⚠️ **2026-10-08, lot E4** ([`../facturation/plan-emission-de-la-facture.md`](../facturation/plan-emission-de-la-facture.md), § 8.5) :
+> ⚠️ **2026-10-08, lot E4** ([`../facturation/facture-emise.md`](../facturation/facture-emise.md)) :
 > **le lot encaisse des factures émises.** Le dernier jour du mois à 23h55
 > (E4b ; 22h jusqu'au 2026-10-08), un cron propre émet une facture par payeur
 > légal et par mandat effectif ; le lot du 1er

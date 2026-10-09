@@ -39,7 +39,7 @@ const MAX_FAILURE_LENGTH = 500;
 
 /**
  * **Rend le PDF/A-3 Factur-X d'une pièce émise, une fois** (plan
- * `plan-emission-de-la-facture.md`, § 6, E3b) : XML contrôlé, PDF rendu,
+ * `facture-emise.md`) : XML contrôlé, PDF rendu,
  * rangé sous une clé jamais réécrite, puis attaché à la pièce
  * (`Invoice.attachDocument`) et journalisé.
  *

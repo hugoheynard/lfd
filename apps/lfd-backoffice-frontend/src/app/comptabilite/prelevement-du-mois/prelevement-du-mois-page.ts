@@ -52,7 +52,7 @@ import { SettlePanel } from './settle-panel/settle-panel';
  * 1. le **calendrier** du mois et l'état de la préparation automatique ;
  * 2. le **mois en cours** : l'aperçu de ce qui sera prélevé, calculé comme le
  *    lot (une facture par payeur), et pourquoi il est vide ;
- * 3. les **factures du mois** (plan `plan-emission-de-la-facture.md`, E4) :
+ * 3. les **factures du mois** (plan `facture-emise.md`) :
  *    émises le dernier jour à 23h55, les factures signalées, le bouton qui émet ;
  * 4. le **lot à traiter** : préparé, pas encore déposé — ses lignes, ses
  *    signalements, ses gestes ; et le bouton qui prépare le lot du mois clos,

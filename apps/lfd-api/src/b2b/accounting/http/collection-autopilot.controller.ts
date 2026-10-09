@@ -26,7 +26,7 @@ export interface HourlyAccountingReport extends CollectionAutopilotReport {
  * (`COLLECTION_AUTOPILOT_CRON`, `container/worker.ts`) : un cron partagé avec
  * les relances aurait lié deux rythmes qui n'ont rien à voir (`vitruve`, § 8).
  *
- * Depuis E4 (plan `plan-emission-de-la-facture.md`), le MÊME passage tente
+ * Depuis E4 (plan `facture-emise.md`), le MÊME passage tente
  * d'abord la facture du mois. Depuis E4b (2026-10-08), elle s'émet à 23h55
  * par son cron propre (`invoice-autopilot.controller.ts`) : ici, elle ne
  * part plus que pour RATTRAPER un 23h55 manqué — au plus tôt à 00h15 le 1er,

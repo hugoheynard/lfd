@@ -43,7 +43,7 @@ export interface InvoiceIssuanceBlocker {
 
 /**
  * **Pourquoi une facture ne pourrait pas être émise**, manque par manque
- * (plan `plan-emission-de-la-facture.md`, § 5, lot E0).
+ * (plan `facture-emise.md`).
  *
  * Une liste et pas un booléen : le dossier et la fiche de l'entité l'affichent
  * telle quelle, et l'émission (E4) refusera en la citant. Écrite une fois ici,

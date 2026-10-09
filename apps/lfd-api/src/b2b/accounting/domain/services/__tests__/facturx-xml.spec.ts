@@ -16,8 +16,7 @@ import { centsAmount, ratePercent } from "../facturx-format.js";
 import { FACTURX_EN16931_PROFILE, renderFacturXml } from "../facturx-xml.js";
 
 /**
- * Le XML Factur-X d'une pièce émise (plan `plan-emission-de-la-facture.md`,
- * § 6, lot E3a). Les dates ne sont comparées qu'entre elles et recopiées.
+ * Le XML Factur-X d'une pièce émise (plan `facture-emise.md`). Les dates ne sont comparées qu'entre elles et recopiées.
  *
  * Sans parseur : chaque montant attendu est RECALCULÉ depuis l'agrégat et
  * cherché dans la chaîne, puis les règles arithmétiques sont rejouées sur la

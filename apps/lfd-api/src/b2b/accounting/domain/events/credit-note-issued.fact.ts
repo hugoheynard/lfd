@@ -6,8 +6,7 @@ export const CREDIT_NOTE_ISSUED = "invoice.credit_note_issued";
 
 /**
  * **Un avoir (381) est émis** — écrit dans la boîte d'envoi, dans la
- * transaction qui a pris son numéro (plan `plan-emission-de-la-facture.md`,
- * E3b). Un avoir ne prévient personne (Q3), mais il a son PDF/A-3 comme la
+ * transaction qui a pris son numéro (plan `facture-emise.md`). Un avoir ne prévient personne (Q3), mais il a son PDF/A-3 comme la
  * facture : c'est le seul abonné. Clé : `invoice.credit_note_issued:<id>`,
  * une pièce ne s'émet qu'une fois.
  */

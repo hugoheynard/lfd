@@ -1,6 +1,6 @@
 /**
  * E2E des **factures émises, côté destinataires** (plan
- * `documentation/comptabilite/facturation/plan-emission-de-la-facture.md`, lot E6).
+ * `documentation/comptabilite/facturation/facture-emise.md`).
  *
  * Ce que seul le vrai SQL prouve : l'émission écrit son fait durable dans
  * la transaction du numéro ; « Votre facture » part, au bon montant, au

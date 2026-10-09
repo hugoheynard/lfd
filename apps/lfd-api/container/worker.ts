@@ -482,8 +482,7 @@ const COLLECTION_AUTOPILOT_CRON = "15 * * * *";
 
 /**
  * La facture du mois — le dernier jour à 23h55, heure de Paris (plan
- * `documentation/comptabilite/facturation/plan-emission-de-la-facture.md`,
- * E4b). Les crons sont en UTC : 21h55 UTC est 23h55 l'été, 22h55 UTC l'est
+ * `documentation/comptabilite/facturation/facture-emise.md`). Les crons sont en UTC : 21h55 UTC est 23h55 l'été, 22h55 UTC l'est
  * l'hiver. Les deux tombent CHAQUE jour ; c'est le backend qui décide sur
  * l'heure de Paris, et se tait hors du dernier jour. Même règle : identique à
  * `wrangler.jsonc`, sinon elle partirait en recompute.

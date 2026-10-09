@@ -103,7 +103,7 @@ export interface CollectionBatchLineView {
   readonly billingStatementId: string | null;
   /**
    * Les factures émises que la ligne encaisse, par numéro (plan
-   * `plan-emission-de-la-facture.md`, E4) — vide pour une ligne d'arrêté.
+   * `facture-emise.md`) — vide pour une ligne d'arrêté.
    * Une ligne a l'un ou l'autre, jamais les deux.
    */
   readonly invoiceNumbers: readonly string[];

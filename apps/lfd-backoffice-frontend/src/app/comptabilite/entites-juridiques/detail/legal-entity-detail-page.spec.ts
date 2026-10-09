@@ -321,7 +321,7 @@ describe('LegalEntityDetailPage', () => {
       // (prelevement-automatique.md, PA1) : l'heure limite de dépôt.
       'Heure limite (heure de Paris)',
       // Et la carte des mentions de la facture quatre depuis le 2026-10-08
-      // (plan-emission-de-la-facture.md, E0) — aucun n'est un champ ICS.
+      // (facture-emise.md) — aucun n'est un champ ICS.
       'Taux BCE de référence (%)',
       'Taux des pénalités de retard (%)',
       'Indemnité forfaitaire de recouvrement (€)',

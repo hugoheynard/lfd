@@ -1,7 +1,7 @@
 /**
  * **Les factures émises**, telles que le client (« Mes factures ») et la
  * fiche client du back-office les lisent (plan
- * `documentation/comptabilite/facturation/plan-emission-de-la-facture.md`, lot E6).
+ * `documentation/comptabilite/facturation/facture-emise.md`).
  * Types seulement : aucune valeur, rien n'entre dans le paquet exécuté par
  * la boutique. Montants en centimes, prix unitaires en millicentimes.
  *

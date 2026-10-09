@@ -13,7 +13,7 @@ import { headerSettlement, lineTradeTax } from "./facturx-settlement.js";
 
 /**
  * **Le XML Factur-X d'une facture émise** — CII D16B, profil EN 16931 (plan
- * `documentation/comptabilite/facturation/plan-emission-de-la-facture.md`, § 6, lot E3a).
+ * `documentation/comptabilite/facturation/facture-emise.md`).
  *
  * Dans `domain/services/` et pas dans `infrastructure/`, comme le `pain.008`
  * (`pain008-document.ts`) : c'est une fonction PURE de la pièce, sans

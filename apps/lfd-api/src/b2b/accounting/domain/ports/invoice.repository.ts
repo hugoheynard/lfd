@@ -2,7 +2,7 @@ import type { Invoice } from "../entities/invoice.js";
 
 /**
  * Port d'ÉCRITURE des **factures et avoirs émis** (plan
- * `plan-emission-de-la-facture.md`, § 5, lot E2).
+ * `facture-emise.md`).
  *
  * 🔴 **Immuable par construction** : deux gestes, et rien d'autre. Pas de
  * `save` — une facture ne se recharge pas pour être mutée. La base le tient

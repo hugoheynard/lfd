@@ -240,8 +240,7 @@ export class AutoCollectionChangedEvent implements JournaledEvent {
 /**
  * Les mentions de paiement de la facture ont changé. L'APRÈS au payload, nuls
  * compris (« à renseigner ») : c'est ce qui dira quelles mentions portaient
- * les factures émises de part et d'autre (plan `plan-emission-de-la-facture.md`,
- * E0).
+ * les factures émises de part et d'autre (plan `facture-emise.md`).
  */
 export class InvoicePaymentTermsChangedEvent implements JournaledEvent {
   constructor(

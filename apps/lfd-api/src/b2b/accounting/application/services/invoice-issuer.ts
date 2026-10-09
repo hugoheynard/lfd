@@ -27,8 +27,7 @@ export interface InvoiceIssuance {
 }
 
 /**
- * **Émet une facture ou un avoir** (plan `plan-emission-de-la-facture.md`,
- * lot E2) : réserve le numéro, construit la pièce, l'écrit et la journalise,
+ * **Émet une facture ou un avoir** (plan `facture-emise.md`) : réserve le numéro, construit la pièce, l'écrit et la journalise,
  * dans UNE transaction courte. Tout échec la défait entière — numéro compris.
  *
  * Une facture (380) écrit aussi son fait durable `invoice.issued` dans la

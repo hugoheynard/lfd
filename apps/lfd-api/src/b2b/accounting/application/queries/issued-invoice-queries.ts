@@ -1,6 +1,5 @@
 /**
- * Les lectures des **factures émises** (plan `plan-emission-de-la-facture.md`,
- * E6). Des lectures pures : une pièce émise ne change plus.
+ * Les lectures des **factures émises** (plan `facture-emise.md`). Des lectures pures : une pièce émise ne change plus.
  */
 
 /** « Mes factures » — le demandeur décide du mur. */

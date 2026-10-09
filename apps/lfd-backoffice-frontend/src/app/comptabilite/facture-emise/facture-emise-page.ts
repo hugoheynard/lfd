@@ -41,7 +41,7 @@ type InvoiceState = 'loading' | 'ready' | 'not-found' | 'error';
 
 /**
  * **Une facture émise**, telle qu'elle est figée (plan
- * `plan-emission-de-la-facture.md`, E6) : parties, lignes, ventilation par
+ * `facture-emise.md`) : parties, lignes, ventilation par
  * taux, mentions, bons couverts. Rien n'est recalculé.
  *
  * Elle ne reprend pas `app-dossier-invoice` : celui-ci lit la facture

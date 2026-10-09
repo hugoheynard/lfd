@@ -19,7 +19,7 @@ import {
   SELLER_FACTS,
 } from "./invoice-fixtures.js";
 
-/** La facture 380 (plan `plan-emission-de-la-facture.md`, § 5, lot E1). */
+/** La facture 380 (plan `facture-emise.md`). */
 
 const SHA = "a".repeat(64);
 

@@ -1,6 +1,6 @@
 /**
  * E2E de **la facture du mois, et du lot qui encaisse des factures** (plan
- * `documentation/comptabilite/facturation/plan-emission-de-la-facture.md`, lots E4, E4b).
+ * `documentation/comptabilite/facturation/facture-emise.md`).
  *
  * Ce que seul le vrai SQL prouve : le passage de 23h55 émet, le dernier jour,
  * une facture numérotée par payeur et par mandat ; le lot du 1er encaisse ces

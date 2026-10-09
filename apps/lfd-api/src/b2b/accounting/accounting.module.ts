@@ -223,7 +223,7 @@ import { PrismaLegalEntityRepository } from "./infrastructure/prisma-legal-entit
     { provide: BillingStatementReader, useClass: PrismaBillingStatementReader },
     { provide: CancelledOrdersReader, useClass: PrismaCancelledOrdersReader },
     { provide: OrderNumbersReader, useClass: PrismaOrderNumbersReader },
-    // La facture émise (plan `plan-emission-de-la-facture.md`, E2).
+    // La facture émise (plan `facture-emise.md`).
     { provide: InvoiceNumbering, useClass: PrismaInvoiceNumbering },
     { provide: InvoiceRepository, useClass: PrismaInvoiceRepository },
     { provide: InvoiceReader, useClass: PrismaInvoiceReader },

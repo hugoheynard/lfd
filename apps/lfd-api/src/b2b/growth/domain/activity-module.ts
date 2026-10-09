@@ -186,8 +186,7 @@ const PREFIXES: Readonly<Record<ActivityModule, readonly string[]>> = {
     // L'arrêté de facturation, figé et annulé avec son lot (plan
     // `le-prelevement-suit-la-facture.md`, 2026-10-08).
     "billing_statement.",
-    // La facture émise et l'avoir (plan `plan-emission-de-la-facture.md`,
-    // E2, 2026-10-08).
+    // La facture émise et l'avoir (plan `facture-emise.md`, 2026-10-08).
     "invoice.",
     // L'export des mandats pour le portail de la banque, préparé et marqué
     // importé sous `b2b_accounting` (plan `plan-export-des-mandats-pour-la-banque.md`,

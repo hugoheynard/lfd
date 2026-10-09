@@ -39,7 +39,7 @@ export const ACCOUNTING_FACTS = {
   autoCollectionDisabled: "legal_entity.auto_collection_disabled",
   /**
    * Les mentions de paiement de la facture — pénalités de retard, indemnité de
-   * recouvrement, escompte (plan `plan-emission-de-la-facture.md`, E0).
+   * recouvrement, escompte (plan `facture-emise.md`).
    */
   invoicePaymentTermsChanged: "legal_entity.invoice_payment_terms_changed",
   /**
@@ -90,7 +90,7 @@ export const BILLING_STATEMENT_FACT_TYPES = {
 } as const satisfies Readonly<Record<string, JournalFactType>>;
 
 /**
- * Les faits de la facture émise (plan `plan-emission-de-la-facture.md`, E2) :
+ * Les faits de la facture émise (plan `facture-emise.md`) :
  * une facture, un avoir. Aucun autre ne la change — une pièce émise ne
  * change plus ; « prévenu » et « non prévenu » (E6) disent l'e-mail parti, « renvoyé »
  * le geste du staff (suite (b)),

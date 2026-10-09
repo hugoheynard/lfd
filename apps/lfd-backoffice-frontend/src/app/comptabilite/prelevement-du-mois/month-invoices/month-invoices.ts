@@ -80,7 +80,7 @@ export function autopilotSentence(run: MonthlyInvoiceAutopilotRunView): string {
 }
 
 /**
- * **Les factures du mois** (plan `plan-emission-de-la-facture.md`, lot E4) :
+ * **Les factures du mois** (plan `facture-emise.md`) :
  * émises le dernier jour à 23h55, une par payeur légal et par mandat (E4b) ;
  * les factures SIGNALÉES (refusées, avec le geste de sortie) ; le bouton qui émet ou reprend.
  * Le lot du 1er encaisse ces factures — il n'y a plus d'arrêté à figer.

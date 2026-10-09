@@ -11,8 +11,7 @@ import { ConstituteCollectionBatchesCommand } from "../constitute-collection-bat
 import { world } from "./collection-world.js";
 
 /**
- * Le lot encaisse des factures émises (plan `plan-emission-de-la-facture.md`,
- * § 3, lot E4), à travers les handlers. Horloge fixe du monde, comparée au
+ * Le lot encaisse des factures émises (plan `facture-emise.md`), à travers les handlers. Horloge fixe du monde, comparée au
  * cycle seulement.
  */
 

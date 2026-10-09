@@ -7,7 +7,7 @@ import { FACTURX_FILE_NAME, facturXXmp } from "./facturx-xmp.js";
 
 /**
  * **Le contenant PDF/A-3 d'une facture Factur-X** (plan
- * `plan-emission-de-la-facture.md`, E3b) : niveau, profil de couleur,
+ * `facture-emise.md`) : niveau, profil de couleur,
  * polices embarquées, XML joint, métadonnées. La mise en page, elle, est
  * dans `invoice-pdf.ts` ; ce fichier ne sait rien de ce qui est dessiné.
  *

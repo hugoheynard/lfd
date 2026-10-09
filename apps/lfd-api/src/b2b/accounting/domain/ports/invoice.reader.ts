@@ -2,8 +2,7 @@ import type { Invoice } from "../entities/invoice.js";
 
 /**
  * Port de LECTURE des **factures émises** — à part du port d'écriture, qui
- * n'a que `insert` et `attachDocument` (plan `plan-emission-de-la-facture.md`,
- * lot E2).
+ * n'a que `insert` et `attachDocument` (plan `facture-emise.md`).
  *
  * Rend l'agrégat relu par `Invoice.restore` : la forme et les totaux sont
  * revalidés à chaque lecture, les parties ne sont pas rejugées. Une ligne

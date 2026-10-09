@@ -8,8 +8,7 @@ import { renderBatchFile } from "../collection-batch-file.js";
 import { BATCH_ID, CREDITOR, ENTITY_ID, SEPTEMBER, mandate, order } from "./collection-fixtures.js";
 
 /**
- * Le lot encaisse des factures émises (plan `plan-emission-de-la-facture.md`,
- * § 3, lot E4). Les dates ne sont comparées qu'entre elles et au cycle :
+ * Le lot encaisse des factures émises (plan `facture-emise.md`). Les dates ne sont comparées qu'entre elles et au cycle :
  * aucune horloge n'est lue.
  */
 

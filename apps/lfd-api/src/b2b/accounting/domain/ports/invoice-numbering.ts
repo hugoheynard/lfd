@@ -2,7 +2,7 @@ import type { InvoiceNumber } from "../value-objects/invoice-number.js";
 
 /**
  * **La numérotation des factures** — une séquence par entité et par année,
- * sans trou (plan `plan-emission-de-la-facture.md`, § 5, lot E2).
+ * sans trou (plan `facture-emise.md`).
  *
  * 🔴 Appelé DANS l'unité de travail de l'émission, et seulement là : le rang
  * pris verrouille le compteur jusqu'à la fin de la transaction, et un

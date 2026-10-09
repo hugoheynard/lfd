@@ -27,8 +27,7 @@ import { InvoiceDocumentRenderer } from "../invoice-document-renderer.js";
 import { MemoryInvoiceReader, MemoryKeptStore } from "./issued-invoice-doubles.js";
 
 /**
- * Le rendu du PDF/A-3 d'une pièce émise (plan `plan-emission-de-la-facture.md`,
- * E3b) : rendu, rangé, attaché, journalisé — une fois. Les dates des pièces ne
+ * Le rendu du PDF/A-3 d'une pièce émise (plan `facture-emise.md`) : rendu, rangé, attaché, journalisé — une fois. Les dates des pièces ne
  * sont comparées qu'entre elles ; `NOW` ne sert qu'au tampon des faits.
  */
 const NOW = new Date("2026-09-30T21:55:00.000Z");

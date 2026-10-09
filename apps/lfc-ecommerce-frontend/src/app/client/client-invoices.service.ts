@@ -15,8 +15,7 @@ export type InvoicesReadStatus = 'loading' | 'failed' | 'ready';
 
 /**
  * **Les factures de la société** — la section « Mes factures » de
- * `/mon-compte` (plan `documentation/comptabilite/facturation/plan-emission-de-la-facture.md`,
- * E6). Des lectures seulement : une facture émise ne change plus.
+ * `/mon-compte` (plan `documentation/comptabilite/facturation/facture-emise.md`). Des lectures seulement : une facture émise ne change plus.
  *
  * Une lecture partagée par les deux cartes (bureau et mobile, toutes deux
  * dans le DOM), comme `ClientBankAccount`. Paresseuse : seuls `owner` et

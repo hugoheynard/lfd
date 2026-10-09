@@ -18,7 +18,7 @@ import {
 
 /**
  * **La facture émise et l'avoir** (plan
- * `documentation/comptabilite/facturation/plan-emission-de-la-facture.md`, E2, E6, E3b) — famille
+ * `documentation/comptabilite/facturation/facture-emise.md`) — famille
  * `accounting` du catalogue. À part de `accounting-phrases.ts`, qui dépasse
  * déjà la taille d'un fichier.
  */

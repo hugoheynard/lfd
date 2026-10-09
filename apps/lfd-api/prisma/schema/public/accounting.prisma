@@ -178,8 +178,7 @@ model LegalEntity {
   depositCutoffBusinessDays  Int?    @map("deposit_cutoff_business_days")
   depositCutoffTime          String? @map("deposit_cutoff_time")
 
-  // Les MENTIONS DE PAIEMENT de la facture (plan `plan-emission-de-la-facture.md`,
-  // E0). Toutes NULL = « à renseigner » : aucune migration ne pose le taux
+  // Les MENTIONS DE PAIEMENT de la facture (plan `facture-emise.md`). Toutes NULL = « à renseigner » : aucune migration ne pose le taux
   // légal, qui n'est qu'une suggestion d'écran (Q4). Taux en points de base
   // (1 % = 100), indemnité en centimes (40 € = 4000). Bornes tenues par
   // l'agrégat ET par un CHECK.
@@ -211,7 +210,7 @@ model LegalEntity {
   autopilotRuns     CollectionAutopilotRun[]
 
   // Les factures et avoirs émis sous cette entité, et leur compteur par année
-  // (plan `plan-emission-de-la-facture.md`, E2). Côté inverse obligatoire pour
+  // (plan `facture-emise.md`). Côté inverse obligatoire pour
   // Prisma ; le FK empêche d'effacer une entité qu'une facture cite.
   invoices               Invoice[]
   invoiceCounter         InvoiceNumberCounter[]

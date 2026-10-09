@@ -7,7 +7,7 @@ import { Invoice, type IssueCreditNoteInput } from "../invoice.js";
 import type { InvoiceLineInput } from "../invoice.types.js";
 import { breakdownOf, issueInput, issuedInvoice, line, LINES } from "./invoice-fixtures.js";
 
-/** L'avoir 381 (plan `plan-emission-de-la-facture.md`, § 5, lot E1). */
+/** L'avoir 381 (plan `facture-emise.md`). */
 
 function creditInput(
   corrected: Invoice,

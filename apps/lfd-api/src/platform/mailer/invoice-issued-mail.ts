@@ -6,7 +6,7 @@ import { fill, mailCopyOf } from "./copy/mail-copy.js";
 
 /**
  * Les données de l'e-mail **« Votre facture FA-… »** (plan
- * `documentation/comptabilite/facturation/plan-emission-de-la-facture.md`, E6, Q3).
+ * `documentation/comptabilite/facturation/facture-emise.md`, Q3).
  * Destinataires : le contact de facturation du payeur légal (sinon son
  * détenteur) et les rôles facturation des sous-comptes dont des bons
  * figurent sur la facture. Tout est déjà mis en forme : le gabarit ne

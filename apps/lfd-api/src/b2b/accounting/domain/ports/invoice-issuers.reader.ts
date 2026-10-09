@@ -2,7 +2,7 @@ import type { InvoiceSellerFacts } from "../services/invoice-issuance-blockers.j
 
 /**
  * Les entités émettrices **en service**, telles que la facture les juge
- * (plan `plan-emission-de-la-facture.md`, E0) — lues par le dossier de
+ * (plan `facture-emise.md`) — lues par le dossier de
  * facturation pour dire ce qui empêcherait d'émettre.
  *
  * Un port à part de `LegalEntityReader` (la vue d'écran) et de

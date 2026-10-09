@@ -2,7 +2,7 @@ import { LEGAL_PENALTY_MARGIN_BASIS_POINTS } from '@lfd/contracts';
 
 /**
  * Les mots et les conversions de la carte « Mentions de la facture » (plan
- * `documentation/comptabilite/facturation/plan-emission-de-la-facture.md`, E0).
+ * `documentation/comptabilite/facturation/facture-emise.md`).
  *
  * Un taux se SAISIT en pourcents (« 14,15 ») et se RANGE en points de base
  * (1415) : la conversion se fait sur les chiffres, jamais par un flottant —

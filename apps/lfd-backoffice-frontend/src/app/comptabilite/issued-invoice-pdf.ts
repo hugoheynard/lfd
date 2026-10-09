@@ -4,7 +4,7 @@ import type { IssuedInvoicesService } from './issued-invoices.service';
 
 /**
  * **Télécharge le PDF/A-3 Factur-X d'une pièce émise** (plan
- * `plan-emission-de-la-facture.md`, E3b), nommé d'après son numéro — le
+ * `facture-emise.md`), nommé d'après son numéro — le
  * geste commun de la fiche client et de la pièce en comptabilité. Un échec
  * se dit par une notification ; la pièce reste lisible à l'écran.
  */

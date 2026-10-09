@@ -5,7 +5,7 @@ import type { StatementBuyer, StatementSeller } from "./billing-statement.js";
 
 /**
  * Les types de **l'agrégat `Invoice`** (plan
- * `documentation/comptabilite/facturation/plan-emission-de-la-facture.md`, § 5, lot E1).
+ * `documentation/comptabilite/facturation/facture-emise.md`).
  */
 
 /** 380 facture commerciale, 381 avoir — UNTDID 1001, BT-3. */

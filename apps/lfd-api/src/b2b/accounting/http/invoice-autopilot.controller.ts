@@ -10,8 +10,7 @@ import {
 
 /**
  * Endpoint **machine** de la facture du mois à 23h55 (plan
- * `documentation/comptabilite/facturation/plan-emission-de-la-facture.md`,
- * lot E4b) : présenté par le Worker sur son cron PROPRE
+ * `documentation/comptabilite/facturation/facture-emise.md`) : présenté par le Worker sur son cron PROPRE
  * (`MONTHLY_INVOICE_CRON`, `55 21,22 * * *` UTC — 23h55 à Paris l'été pour
  * l'un, l'hiver pour l'autre), avec le jeton du `RecomputeGuard`.
  *

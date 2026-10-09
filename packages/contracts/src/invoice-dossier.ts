@@ -224,7 +224,7 @@ export interface InvoiceDossierView {
   readonly ordersWithoutDate: readonly string[];
   /**
    * Ce qui empêcherait d'émettre la facture de ce payeur aujourd'hui (plan
-   * `plan-emission-de-la-facture.md`, E0) — vendeur, mentions, acheteur. Vide
+   * `facture-emise.md`) — vendeur, mentions, acheteur. Vide
    * quand rien ne manque. Rien n'est émis ici : c'est un signalement.
    */
   readonly issuanceBlockers: readonly InvoiceIssuanceBlockerView[];

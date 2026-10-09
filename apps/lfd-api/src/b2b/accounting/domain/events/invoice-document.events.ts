@@ -4,7 +4,7 @@ import { INVOICE_FACT_TYPES } from "./accounting-facts.js";
 
 /**
  * Les faits du **PDF/A-3 Factur-X** d'une pièce (plan
- * `plan-emission-de-la-facture.md`, E3b). Jamais la clé de stockage : elle
+ * `facture-emise.md`). Jamais la clé de stockage : elle
  * ne dit rien au lecteur du journal, et elle nomme un objet du seau.
  */
 

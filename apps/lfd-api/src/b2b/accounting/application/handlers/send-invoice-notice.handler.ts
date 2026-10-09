@@ -16,7 +16,7 @@ export const SEND_INVOICE_NOTICE = "accounting.send-invoice-notice";
 
 /**
  * **« Votre facture FA-… » part** — l'abonné durable du fait
- * `invoice.issued` (plan `plan-emission-de-la-facture.md`, E6, Q3). Le fait
+ * `invoice.issued` (plan `facture-emise.md`, Q3). Le fait
  * est écrit dans la transaction qui a pris le numéro ; le relais le livre
  * après sa validation, et le balayage du cron rattrape un réveil manqué.
  *

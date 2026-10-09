@@ -1,7 +1,7 @@
 import { b2bMailTemplates } from "../mail-templates.js";
 
 /*
- * « Votre facture FA-… » (plan-emission-de-la-facture.md, E6) : numéro,
+ * « Votre facture FA-… » (facture-emise.md) : numéro,
  * date, période, TTC, échéance et moyen de paiement ; le PDF/A-3 (E3b) en
  * pièce jointe quand il est rendu.
  */

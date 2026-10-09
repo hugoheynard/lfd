@@ -189,7 +189,7 @@ export interface DeliveryEnRouteCopy {
 }
 
 /**
- * **« Votre facture FA-… »** (plan `plan-emission-de-la-facture.md`, E6 ;
+ * **« Votre facture FA-… »** (plan `facture-emise.md` ;
  * rangé au dictionnaire le 2026-10-09, suite (c)). Les valeurs — dates,
  * période, montant, moyen de paiement — arrivent déjà mises en forme par la
  * comptabilité, en français : seuls les mots du gabarit se traduisent ici.

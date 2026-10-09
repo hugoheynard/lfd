@@ -151,8 +151,7 @@ export interface LegalEntityView {
    */
   readonly lastAutopilotRun: CollectionAutopilotRunView | null;
   /**
-   * Les mentions de paiement de la facture (plan `plan-emission-de-la-facture.md`,
-   * E0). Chacune `null` = « à renseigner » : aucune valeur n'est posée d'office.
+   * Les mentions de paiement de la facture (plan `facture-emise.md`). Chacune `null` = « à renseigner » : aucune valeur n'est posée d'office.
    */
   readonly invoicePaymentTerms: InvoicePaymentTermsView;
   /**

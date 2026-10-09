@@ -42,7 +42,7 @@ export interface BatchLineRow {
 
 /**
  * Les lignes d'un lot (plan `le-prelevement-suit-la-facture.md`) :
- * depuis E4 (plan `plan-emission-de-la-facture.md`), une ligne encaisse des
+ * depuis E4 (plan `facture-emise.md`), une ligne encaisse des
  * factures émises et les cite par leur numéro ; les lignes d'arrêté restent
  * lisibles telles quelles.
  * ce que les bons totalisent, ce qui est facturé — donc prélevé — et l'écart

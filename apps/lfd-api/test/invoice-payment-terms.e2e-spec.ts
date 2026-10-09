@@ -1,7 +1,6 @@
 /**
  * E2E des **mentions de paiement de la facture** et des **manques pour
- * émettre** (plan `documentation/comptabilite/facturation/plan-emission-de-la-facture.md`,
- * lot E0).
+ * émettre** (plan `documentation/comptabilite/facturation/facture-emise.md`).
  *
  * Ce que seul le vrai serveur prouve : les trois colonnes s'écrivent et se
  * relisent (une colonne oubliée dans le mapper rendrait « enregistré » puis

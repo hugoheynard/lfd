@@ -30,7 +30,7 @@ import { LegalEntitiesService } from '../../../legal-entities.service';
 /**
  * **Les mentions de la facture** : taux des pénalités de retard, indemnité
  * forfaitaire de recouvrement, escompte pour paiement anticipé (plan
- * `documentation/comptabilite/facturation/plan-emission-de-la-facture.md`, E0).
+ * `documentation/comptabilite/facturation/facture-emise.md`).
  *
  * ## Le taux légal est une suggestion, jamais un défaut
  *

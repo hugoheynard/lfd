@@ -1,6 +1,6 @@
 /**
  * Les **métadonnées XMP Factur-X** du PDF/A-3 (plan
- * `plan-emission-de-la-facture.md`, E3b) : ce qui fait d'un PDF/A-3 portant
+ * `facture-emise.md`) : ce qui fait d'un PDF/A-3 portant
  * un XML une facture Factur-X qu'un logiciel comptable reconnaît sans ouvrir
  * la pièce jointe.
  *
