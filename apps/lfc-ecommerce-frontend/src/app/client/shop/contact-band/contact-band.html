@@ -10,12 +10,16 @@
 <!-- 🔴 APPELER D'ABORD, ET EN PLEIN : c'est la hiérarchie de la source, et elle
      dit quelque chose — un imprévu se règle au téléphone, pas par écrit. -->
 <div class="acts">
-  <!-- Un bouton par numéro : le premier en plein, les suivants plus discrets. -->
-  @for (phone of copy().phones; track $index; let first = $first) {
-    <a class="call" [class.more]="!first" [href]="telHref(phone.number)">
-      <span>{{ copy().call }}{{ phone.label ? ' · ' + phone.label : '' }}</span>
-      <span class="number">{{ phone.number }}</span>
+  <!-- Un seul numéro : « Appeler » EST son lien `tel:`. Plusieurs : il ouvre
+       « Nous appeler », qui les montre tous — un dialogue pour un seul choix
+       serait une étape pour rien. -->
+  @if (copy().phones.length === 1) {
+    <a class="call" [href]="telHref(copy().phones[0]!.number)">
+      <span>{{ copy().call }}</span>
+      <span class="number">{{ copy().phones[0]!.number }}</span>
     </a>
+  } @else {
+    <button class="call" type="button" (click)="call()">{{ copy().call }}</button>
   }
   <button class="write" type="button" (click)="write()">{{ copy().write }}</button>
 </div>

@@ -1,0 +1,31 @@
+<fold-panel-header
+  [title]="c().callTitle"
+  [subtitle]="c().callSubtitle"
+  [closeLabel]="c().callClose"
+/>
+
+<fold-panel-body>
+  <!-- Une ligne par contact, pleine largeur et en grand : elle se vise au pouce. -->
+  @for (phone of data().phones; track $index) {
+    <a
+      foldButton
+      emphasis="outline"
+      intent="neutral"
+      size="lg"
+      icon="phone"
+      [block]="true"
+      [href]="telHref(phone.number)"
+    >
+      {{ phone.label ? phone.label + ' · ' : '' }}{{ phone.number }}
+    </a>
+  }
+</fold-panel-body>
+
+<fold-panel-footer>
+  <button foldButton emphasis="outline" intent="neutral" type="button" (click)="close()">
+    {{ c().callClose }}
+  </button>
+  <button foldButton intent="primary" type="button" (click)="write()">
+    {{ c().callWrite }}
+  </button>
+</fold-panel-footer>

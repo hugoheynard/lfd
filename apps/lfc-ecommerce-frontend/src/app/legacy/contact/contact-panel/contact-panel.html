@@ -3,11 +3,17 @@
 <div class="body">
   <section class="cp-block">
     <p class="cp-label">Contact direct</p>
-    @for (phone of phones(); track $index) {
-      <a class="cp-row" [href]="telHref(phone.number)">
+    <!-- Un numéro : le lien direct ; plusieurs : le dialogue « Nous appeler ». -->
+    @if (phones().length === 1) {
+      <a class="cp-row" [href]="telHref(phones()[0]!.number)">
         <fold-icon name="phone" [size]="18" />
-        <span>{{ phone.label ? phone.label + ' · ' : '' }}{{ phone.number }}</span>
+        <span>{{ phones()[0]!.number }}</span>
       </a>
+    } @else {
+      <button type="button" class="cp-row" (click)="call()">
+        <fold-icon name="phone" [size]="18" />
+        <span>Nous appeler</span>
+      </button>
     }
     <!-- « Écrire » ouvre le dialogue « Nous écrire » de la boutique, et non plus
          un `mailto:` (plan « Nous écrire », §4). -->

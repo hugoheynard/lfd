@@ -25,6 +25,7 @@ import { LIVE_PICKUP } from '../mes-commandes/order-view.fixture';
 import { ServicePoints } from '../shop/pickup-points.store';
 import { CartFulfillmentDays } from '../shop/cart-fulfillment-days.service';
 import { ShopCatalogue } from '../shop/shop-catalogue.store';
+import { ContactSettingsStore, NO_CONTACT_SETTINGS } from '../shop/contact-settings.store';
 import { AccueilPublic } from './accueil-public';
 
 /**
@@ -161,6 +162,12 @@ async function mount(
       // Les jours bornés par le panier ne sont pas le sujet de l'accueil.
       { provide: CartFulfillmentDays, useValue: {} },
       { provide: ClientCart, useValue: boutique },
+      // Le réglage de contact NE SE LIT PAS au réseau ici : sans double, la
+      // suite lisait la carte réglée sur l'API de dev du poste (2026-10-09).
+      {
+        provide: ContactSettingsStore,
+        useValue: { settings: signal(NO_CONTACT_SETTINGS), hydrate: () => Promise.resolve() },
+      },
       ...whoProviders(who),
     ],
   });

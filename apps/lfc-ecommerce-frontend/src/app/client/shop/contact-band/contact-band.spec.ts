@@ -3,6 +3,7 @@ import { FoldPanelHostService } from 'fold-ng';
 import { describe, expect, it, vi } from 'vitest';
 
 import type { ContactBandCopy } from '../../copy/screens/accueil-public.copy';
+import { CallDialog } from '../call-dialog/call-dialog';
 import { ContactDialog } from '../contact-dialog/contact-dialog';
 import { ContactBand } from './contact-band';
 
@@ -65,13 +66,14 @@ describe('ContactBand', () => {
    * `window.open` : sur un téléphone, c'est le système qui décide ce qu'il fait
    * d'un numéro. Le numéro composé est celui qu'on lit, sans ses espaces.
    */
-  it('appelle par le protocole, le numéro qu’elle affiche', () => {
+  it('un seul numéro : « Appeler » est directement son lien `tel:`', () => {
     const band = boot().nativeElement as HTMLElement;
 
     expect(band.querySelector('.call')?.getAttribute('href')).toBe('tel:+33479061240');
   });
 
-  it('un bouton par numéro, libellé, le premier seul en plein', () => {
+  it('plusieurs numéros : un seul « Appeler », qui ouvre « Nous appeler »', () => {
+    vi.stubGlobal('matchMedia', () => ({ matches: false }));
     const band = boot({
       ...COPY,
       phones: [
@@ -79,11 +81,12 @@ describe('ContactBand', () => {
         { label: 'Boutique de Val d’Isère', number: '04 79 00 00 02' },
       ],
     }).nativeElement as HTMLElement;
-    const calls = Array.from(band.querySelectorAll('a.call'));
 
-    expect(calls.map((a) => a.getAttribute('href'))).toEqual(['tel:0479000001', 'tel:0479000002']);
-    expect(calls[0]?.textContent).toContain('Service commercial');
-    expect(calls.map((a) => a.classList.contains('more'))).toEqual([false, true]);
+    expect(band.querySelectorAll('.call')).toHaveLength(1);
+    expect(band.querySelector('a.call')).toBeNull();
+    band.querySelector<HTMLButtonElement>('button.call')?.click();
+    expect(opened).toEqual([CallDialog]);
+    vi.unstubAllGlobals();
   });
 
   /** « Écrire » n'est plus un `mailto:` : il ouvre le dialogue « Nous écrire ». */

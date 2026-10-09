@@ -16,6 +16,7 @@ import {
   phonesFor,
   telHref,
 } from '../../../client/shop/contact-settings.store';
+import { CallDialog } from '../../../client/shop/call-dialog/call-dialog';
 import { ContactDialog } from '../../../client/shop/contact-dialog/contact-dialog';
 import {
   ActivationSupportPanel,
@@ -66,6 +67,11 @@ export class ContactPanel {
 
   /** TODO : brancher sur un réglage. */
   protected readonly hours = 'Du lundi au vendredi, 8h–18h';
+
+  /** Ouvre « Nous appeler » par-dessus ce panneau, quand il y a plusieurs numéros. */
+  protected call(): void {
+    CallDialog.open(this.panelHost, { phones: this.phones() }, true);
+  }
 
   /** Ouvre « Nous écrire » par-dessus ce panneau, qui reste dessous. */
   protected write(): void {

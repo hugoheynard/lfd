@@ -80,6 +80,8 @@
 
 .call {
   min-height: 48px;
+  border: 0;
+  cursor: pointer;
   padding: var(--fold-space-xs) var(--fold-space-md);
   background: var(--lfc-ink-800);
   color: var(--lfc-paper-0);
@@ -93,15 +95,6 @@
   font-weight: var(--lfc-weight-black);
   letter-spacing: 0;
   text-transform: none;
-}
-
-/* Les numéros suivants : la même forme, au ton du second choix. */
-.call.more {
-  min-height: 42px;
-  border: 1px solid var(--lfc-ink-100);
-  background: var(--lfc-paper-0);
-  color: var(--lfc-ink-800);
-  font-size: var(--lfc-text-note);
 }
 
 /* Le crème, et non une transparence : la bande est déjà bleue, et un bouton

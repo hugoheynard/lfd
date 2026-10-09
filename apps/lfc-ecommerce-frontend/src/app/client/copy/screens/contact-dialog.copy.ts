@@ -31,6 +31,12 @@ export interface ContactDialogCopy {
   readonly retry: string;
   readonly noSubjectTitle: string;
   readonly noSubjectSubtitle: string;
+  /** Le dialogue « Nous appeler », quand plusieurs numéros sont proposés. */
+  readonly callTitle: string;
+  readonly callSubtitle: string;
+  readonly callClose: string;
+  /** Bascule vers « Nous écrire ». */
+  readonly callWrite: string;
 }
 
 const FR: ContactDialogCopy = {
@@ -55,6 +61,10 @@ const FR: ContactDialogCopy = {
   retry: 'Réessayer',
   noSubjectTitle: 'Aucun objet proposé',
   noSubjectSubtitle: 'Appelez-nous : on décroche de 7 h à 19 h.',
+  callTitle: 'Nous appeler',
+  callSubtitle: 'Choisissez qui vous voulez joindre.',
+  callClose: 'Fermer',
+  callWrite: 'Écrire plutôt',
 };
 
 const EN: ContactDialogCopy = {
@@ -79,6 +89,10 @@ const EN: ContactDialogCopy = {
   retry: 'Try again',
   noSubjectTitle: 'No subject available',
   noSubjectSubtitle: 'Give us a call: we pick up from 7 am to 7 pm.',
+  callTitle: 'Call us',
+  callSubtitle: 'Choose who you would like to reach.',
+  callClose: 'Close',
+  callWrite: 'Write instead',
 };
 
 const IT: ContactDialogCopy = {
@@ -103,6 +117,10 @@ const IT: ContactDialogCopy = {
   retry: 'Riprova',
   noSubjectTitle: 'Nessun oggetto proposto',
   noSubjectSubtitle: 'Chiamateci: rispondiamo dalle 7 alle 19.',
+  callTitle: 'Chiamateci',
+  callSubtitle: 'Scegliete chi volete contattare.',
+  callClose: 'Chiudi',
+  callWrite: 'Scrivere invece',
 };
 
 const DICTIONARIES: Record<LocaleCode, ContactDialogCopy> = { fr: FR, en: EN, it: IT };

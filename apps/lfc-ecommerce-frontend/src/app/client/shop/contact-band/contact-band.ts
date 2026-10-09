@@ -2,6 +2,7 @@ import { ChangeDetectionStrategy, Component, inject, input } from '@angular/core
 import { FoldPanelHostService } from 'fold-ng';
 
 import type { ContactBandCopy } from '../../copy/screens/accueil-public.copy';
+import { CallDialog } from '../call-dialog/call-dialog';
 import { ContactDialog } from '../contact-dialog/contact-dialog';
 import { telHref } from '../contact-settings.store';
 
@@ -40,6 +41,10 @@ export class ContactBand {
   private readonly panels = inject(FoldPanelHostService);
 
   protected readonly telHref = telHref;
+
+  protected call(): void {
+    CallDialog.open(this.panels, { phones: this.copy().phones });
+  }
 
   protected write(): void {
     ContactDialog.open(this.panels);
