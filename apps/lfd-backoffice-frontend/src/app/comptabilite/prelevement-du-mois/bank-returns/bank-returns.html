@@ -1,0 +1,74 @@
+<fold-page-section title="Les retours de la banque" stack>
+  @if (canWrite()) {
+    <button sectionActions foldButton emphasis="outline" icon="upload" (click)="importFile()">
+      Importer un fichier de la banque
+    </button>
+  }
+
+  @if (options().length > 1) {
+    <fold-listbox
+      label="Lot déposé"
+      [options]="options()"
+      [value]="batch()?.id ?? null"
+      (valueChange)="chosenId.set($event)"
+    />
+  }
+
+  @if (error(); as message) {
+    <fold-callout appearance="inset" variant="alert" announce>{{ message }}</fold-callout>
+  }
+
+  @if (batch(); as current) {
+    <fold-card>
+      <fold-element-title
+        variant="title"
+        title="Lignes déposées"
+        subtitle="Un retour porte sur toute la ligne : ses commandes cessent d’être prélevées, rien ne repart seul au lot suivant."
+      />
+      <fold-data-table
+        caption="Lignes déposées"
+        narrowLayout="cards"
+        zebra
+        [columns]="columns"
+        [rows]="current.lines"
+        [rowKey]="rowKey"
+        data-deposited-lines
+      >
+        <ng-template foldCell="rank" let-row>{{ row.rank }}</ng-template>
+        <ng-template foldCell="debtor" let-row>{{ row.debtorName }}</ng-template>
+        <ng-template foldCell="amount" let-row>{{ amountOf(row) }}</ng-template>
+        <ng-template foldCell="action" let-row>
+          @if (hasReturn(row)) {
+            <span class="muted">Retour enregistré</span>
+          } @else if (canWrite()) {
+            <button
+              foldButton
+              size="sm"
+              emphasis="outline"
+              (click)="signalReturn(row)"
+              data-signal-return
+            >
+              Signaler un retour
+            </button>
+          }
+        </ng-template>
+      </fold-data-table>
+    </fold-card>
+  }
+
+  @if ((view()?.returns ?? []).length > 0) {
+    <fold-card>
+      <fold-element-title
+        variant="title"
+        title="Retours enregistrés"
+        subtitle="Re-présenter fait entrer la ligne au prochain lot, avec un nouvel avis ; régler autrement ou passer en perte la sort du prélèvement."
+      />
+      <app-return-rows
+        [returns]="view()?.returns ?? []"
+        [canWrite]="canWrite()"
+        [pendingId]="pendingId()"
+        (gesture)="onGesture($event)"
+      />
+    </fold-card>
+  }
+</fold-page-section>

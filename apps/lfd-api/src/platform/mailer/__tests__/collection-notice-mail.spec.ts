@@ -23,6 +23,7 @@ function render(overrides: Partial<Parameters<typeof notice>[0]> = {}) {
     mandateReference: "RUM-PORT-1",
     statementReference: "01JBQ7Z5K8M3QT9P2X4B000002",
     invoiceNumbers: [],
+    representedRejectionDay: null,
     previous: null,
     ...overrides,
   });
@@ -64,5 +65,23 @@ describe("le courriel « avis de prélèvement »", () => {
     expect(rendered.subject).toContain("Prélèvement annulé");
     expect(rendered.html).toContain("n&#39;aura pas lieu");
     expect(rendered.html).toContain("Aucune somme ne sera débitée");
+  });
+});
+
+describe("le courriel d'une re-présentation (retours bancaires, § 2 bis-6)", () => {
+  it("dit « nouvelle présentation du prélèvement rejeté du … », en tête et en ligne", () => {
+    const rendered = render({
+      invoiceNumbers: ["FA-2026-0001"],
+      representedRejectionDay: "jeudi 1er octobre 2026",
+    });
+
+    expect(rendered.html).toContain(
+      "Il s&#39;agit d&#39;une nouvelle présentation du prélèvement rejeté du jeudi 1er octobre 2026.",
+    );
+    expect(rendered.html).toContain("Nouvelle présentation du rejet du");
+  });
+
+  it("ne dit rien de tel pour un premier prélèvement", () => {
+    expect(render().html).not.toContain("nouvelle présentation");
   });
 });

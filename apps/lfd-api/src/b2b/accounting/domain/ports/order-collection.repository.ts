@@ -12,5 +12,8 @@ export abstract class OrderCollectionRepository {
   /** Les commandes portées par les lignes d'un lot. */
   abstract ofBatch(batchId: string): Promise<readonly OrderCollection[]>;
 
+  /** Les commandes portées par UNE ligne — celles qu'un retour bancaire touche. */
+  abstract ofLine(batchId: string, rank: number): Promise<readonly OrderCollection[]>;
+
   abstract saveAll(collections: readonly OrderCollection[]): Promise<void>;
 }

@@ -1,4 +1,7 @@
 import {
+  COLLECTION_RETURN_KIND_LABELS,
+  COLLECTION_RETURN_RESOLUTION_LABELS,
+  COLLECTION_RETURN_SOURCE_LABELS,
   MANDATE_STATUS_LABELS,
   ORDER_COLLECTION_STATE_LABELS,
   SEPA_SCHEME_LABELS,
@@ -66,6 +69,25 @@ export const ISSUED_PIECE_KIND = domain('sorte de pièce émise', {
   credit_note: 'Avoir',
 });
 
+/** Ce que dit la banque d'une ligne revenue (retours bancaires, R5a, 2026-10-09). */
+export const COLLECTION_RETURN_KIND = domain(
+  'genre d’un retour bancaire',
+  COLLECTION_RETURN_KIND_LABELS,
+);
+
+/** D'où vient la saisie d'un retour bancaire. */
+export const COLLECTION_RETURN_SOURCE = domain(
+  'source d’un retour bancaire',
+  COLLECTION_RETURN_SOURCE_LABELS,
+);
+
+/** Ce que le staff a fait d'un retour bancaire. */
+export const COLLECTION_RETURN_RESOLUTION = domain('suite d’un retour bancaire', {
+  represented: COLLECTION_RETURN_RESOLUTION_LABELS.represented,
+  settled_otherwise: COLLECTION_RETURN_RESOLUTION_LABELS.settled_otherwise,
+  written_off: COLLECTION_RETURN_RESOLUTION_LABELS.written_off,
+});
+
 export const ACCOUNTING_VALUES: ValueFamily = {
   enums: [
     SEPA_SCHEME,
@@ -77,5 +99,8 @@ export const ACCOUNTING_VALUES: ValueFamily = {
     NOTICE_RECIPIENT_SOURCE,
     AUTOPILOT_OUTCOME,
     ISSUED_PIECE_KIND,
+    COLLECTION_RETURN_KIND,
+    COLLECTION_RETURN_SOURCE,
+    COLLECTION_RETURN_RESOLUTION,
   ],
 };

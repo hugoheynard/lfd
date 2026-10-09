@@ -48,6 +48,8 @@
 | A38 | PA5                | Re-présentation automatique au lot suivant ?                                                                                                         | **Non**, geste staff ; refusée sous arrêté, pour un ponctuel consommé, ou si le mandat n'est plus actif.                                                                                                            | Un compte vide ne se re-présente pas à l'aveugle.                                                                                                                                                                                      | —                                                                                             |
 | A39 | PA5                | Quel droit pour saisir un retour et passer en perte ?                                                                                                | **`b2b_accounting:write`**.                                                                                                                                                                                         | Une ressource neuve doit s'accorder à l'écran, par toi.                                                                                                                                                                                | Créer une ressource et l'accorder.                                                            |
 | A40 | Fidélité           | Ouvrir la fidélité aux pros (lot F) maintenant que le signal « facture réglée » existe (facture carte acquittée, ligne de lot déposée sans retour) ? | **Pas bâti.**                                                                                                                                                                                                       | C'est une ouverture de produit, pas un reste : gagner sur le HT ou le TTC d'un pro, utiliser un bon sur la facture du mois (un rabais sur une facture récapitulative), le payeur ou le site comme titulaire. Ces choix sont les tiens. | Me dire les trois choix ; le signal est prêt.                                                 |
+| A41 | PA5                | Le fichier de retour : chaque transaction appariée se confirme une à une ?                                                                           | **Tout ou rien** : l'aperçu montre appariés, inconnus, montants différents ; la confirmation prend tous les appariés, fichier relu.                                                                                 | Simple et sans état intermédiaire.                                                                                                                                                                                                     | Une sélection à l'écran.                                                                      |
+| A42 | PA5                | « Révoquer le mandat » proposé sur un motif bancaire ?                                                                                               | Un lien vers la fiche client (le seul geste staff qui existe) ; rien n'est révoqué tout seul.                                                                                                                       | Pas de route de révocation par mandat.                                                                                                                                                                                                 | Une route dédiée.                                                                             |
 
 ## La file des chantiers (ordre de passage)
 
@@ -60,14 +62,19 @@ Un lot à la fois, chacun vérifié puis commité avant le suivant.
 5. ✅ **Suites d'E6** (bâties le 2026-10-09, non commité) — « Mes factures » d'un site, renvoi de l'e-mail, e-mail en/it, page maquette `mes-factures/`.
 6. ✅ **E5** — la facture d'une commande payée par carte, après un plan des remboursements (contredit par `vitruve`).
 7. ✅ **Export CSV des mandats** pour le portail de la banque (colonnes A–H).
-8. **PA5** — les retours bancaires (`pain.002`, `camt.054`), sur la norme.
+8. ✅ **PA5** — les retours bancaires (`pain.002`, `camt.054`), sur la norme.
 9. ⏸ **Fidélité** — tout ce qui ne dépend pas du cabinet est bâti pour les particuliers ; l'ouverture aux pros attend tes choix (A40).
 10. **Docs** — les plans bâtis deviennent des docs d'état (blocage et liens de paiement, mentions du mandat, restes du mandat, simulateur, le prélèvement suit la facture, bons et facture).
 
 ## À vérifier avant le push (lecteur-de-migrations, 2026-10-08)
 
 - `20261008170000` pose un `CHECK` sur `collection_batch` (`staff` ⇒ fiche) :
-  vérifier que les lots déjà en production le respectent.
+  compter en production les lots où `constituted_by_staff_id IS NULL` — **seul
+  CHECK des onze migrations qui peut échouer sur des données existantes**.
+- `20261008200000` fixe `invoicing_floor` au 1er du mois qui suit **le jour du
+  déploiement** : déployer en octobre = facture du mois à partir de novembre.
+- `20261009110100` remplace un CHECK sur `order_collection` (scan sous verrou,
+  `lock_timeout` 5 s) : regarder le volume de la table.
 - `20261008180000` pose trois `CHECK` sur `legal_entities` : vérifier les
   valeurs en production.
 - `20261008220000` prend un court verrou d'écriture sur `orders`

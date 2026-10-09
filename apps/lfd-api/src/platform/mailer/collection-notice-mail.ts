@@ -25,6 +25,11 @@ export interface CollectionNoticeMailData {
   readonly statementReference: string;
   /** Les factures que la ligne encaisse (E4) ; vide pour une ligne d'arrêté. */
   readonly invoiceNumbers: readonly string[];
+  /**
+   * Le jour du prélèvement rejeté que celui-ci présente de nouveau, en toutes
+   * lettres (plan `plan-retours-bancaires.md`, § 2 bis-6) ; `null` sinon.
+   */
+  readonly representedRejectionDay: string | null;
   /** Pour un rectificatif : ce qu'annonçait l'avis précédent. */
   readonly previous: { readonly amount: string; readonly collectionDay: string } | null;
 }
@@ -71,8 +76,12 @@ function bodyOf(data: CollectionNoticeMailData): string {
     );
   }
   const intro = data.kind === "correction" ? `Cet avis remplace le précédent. ` : "";
+  const again =
+    data.representedRejectionDay === null
+      ? ""
+      : `Il s'agit d'une nouvelle présentation du prélèvement rejeté du ${data.representedRejectionDay}. `;
   return (
-    `${head}${intro}${data.creditorName} prélèvera ${data.amount} sur le compte de ` +
+    `${head}${intro}${again}${data.creditorName} prélèvera ${data.amount} sur le compte de ` +
     `${data.debtorName} le ${data.collectionDay}, au titre ${settledPieces(data)}.`
   );
 }
@@ -119,6 +128,9 @@ function rowsOf(data: CollectionNoticeMailData): readonly LayoutRow[] {
           },
         ]),
     { label: "Date du prélèvement", value: data.collectionDay },
+    ...(data.representedRejectionDay === null
+      ? []
+      : [{ label: "Nouvelle présentation du rejet du", value: data.representedRejectionDay }]),
     ...references,
     pieceRow(data),
     { label: "Montant", value: data.amount, strong: true },

@@ -75,6 +75,7 @@
     <!-- Les commandes d'un site détaché que le prélèvement a écartées
          (plan-sous-comptes §2.1 quater) : rien si la liste est vide. -->
     <app-detached-unpaid-card [companyId]="id()" />
+    <app-collection-returns-card [companyId]="id()" />
 
     @if (maybeTruncated()) {
       <fold-callout appearance="inset" variant="warning">

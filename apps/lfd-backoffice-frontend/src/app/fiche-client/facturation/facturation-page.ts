@@ -30,6 +30,7 @@ import { AdminOrdersService } from '../../commandes/orders.service';
 import { NotifyService } from '../../notify.service';
 import { periodCsv, periodFileName } from './billing-csv';
 import { CycleStatementCard } from './cycle-statement-card/cycle-statement-card';
+import { CollectionReturnsCard } from '../collection-returns-card/collection-returns-card';
 import { DetachedUnpaidCard } from '../detached-unpaid-card/detached-unpaid-card';
 import { IssuedInvoicesCard } from '../issued-invoices-card/issued-invoices-card';
 import {
@@ -67,6 +68,7 @@ const ORDERS_WINDOW = 200;
   selector: 'app-client-facturation-page',
   changeDetection: ChangeDetectionStrategy.OnPush,
   imports: [
+    CollectionReturnsCard,
     CycleStatementCard,
     DetachedUnpaidCard,
     IssuedInvoicesCard,

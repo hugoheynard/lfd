@@ -32,6 +32,10 @@ enum OrderCollectionState {
   excluded
   collected
   settled_otherwise
+  /// La banque a rejeté ou retourné sa ligne (R5a) : garde sa ligne, hors des états ouverts.
+  returned
+  /// Passée en perte par le staff, après un retour.
+  written_off
 
   @@schema("public")
 }
@@ -137,12 +141,14 @@ model CollectionBatchLine {
   /// Dont commandes de cycles antérieurs — reprises.
   priorOrderCount  Int      @map("prior_order_count")
 
-  orders    OrderCollection[]
+  orders     OrderCollection[]
   /// Son arrêté de facturation (F3) ; absent pour une ligne d'un lot d'avant,
   /// et pour une ligne qui encaisse des factures (E4).
-  statement BillingStatement?
+  statement  BillingStatement?
   /// Les factures émises que la ligne encaisse (E4) ; aucune avant E4.
-  invoices  CollectionBatchLineInvoice[]
+  invoices   CollectionBatchLineInvoice[]
+  /// Le retour bancaire de la ligne (R5a) ; un seul, par `end_to_end_id`.
+  bankReturn CollectionReturn?
 
   @@id([batchId, rank])
   @@index([mandateId])
@@ -254,16 +260,18 @@ model CollectionNotice {
   previousAmountCents   Int?      @map("previous_amount_cents")
   previousCollectionDay DateTime? @map("previous_collection_day") @db.Date
 
-  mandateReference String   @map("mandate_reference")
+  mandateReference        String    @map("mandate_reference")
   /// L'arrêté de la ligne ; NULL pour une annulation, et pour une ligne qui
   /// encaisse des factures (E4).
-  statementId      String?  @map("statement_id")
+  statementId             String?   @map("statement_id")
   /// Les factures que l'avis cite (E4) ; vide avant E4 et pour une annulation.
-  invoiceNumbers   String[] @default([]) @map("invoice_numbers")
-  creditorName     String   @map("creditor_name")
-  creditorIcs      String   @map("creditor_ics")
+  invoiceNumbers          String[]  @default([]) @map("invoice_numbers")
+  /// Le jour du rejet que cette ligne re-présente (R5a) ; NULL sinon.
+  representedRejectionDay DateTime? @map("represented_rejection_day") @db.Date
+  creditorName            String    @map("creditor_name")
+  creditorIcs             String    @map("creditor_ics")
   /// L'avis parti que celui-ci rectifie, annule ou reconduit.
-  supersedesId     String?  @map("supersedes_id")
+  supersedesId            String?   @map("supersedes_id")
 
   createdAt DateTime  @map("created_at") @db.Timestamptz(3)
   sentAt    DateTime? @map("sent_at") @db.Timestamptz(3)

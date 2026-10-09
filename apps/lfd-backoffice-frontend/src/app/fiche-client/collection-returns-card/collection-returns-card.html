@@ -1,0 +1,35 @@
+@if (loadError()) {
+  <fold-callout variant="alert" data-collection-returns-error>
+    Impossible de lire les prélèvements rejetés de ce client.
+    <button foldButton size="sm" emphasis="soft" (click)="retry()">Réessayer</button>
+  </fold-callout>
+} @else if (returns().length > 0) {
+  <fold-card data-collection-returns>
+    <fold-element-title
+      cardHeader
+      variant="title"
+      icon="alert"
+      title="Prélèvements rejetés"
+      [subtitle]="pending().length + ' à traiter sur ' + returns().length"
+    />
+    <div class="body">
+      @if (pending().length > 0) {
+        <fold-callout appearance="inset" variant="warning">
+          Ces prélèvements sont revenus de la banque : les commandes ne sont pas payées. Les traiter
+          depuis
+          <a routerLink="/comptabilite/prelevement-du-mois">Prélèvement du mois</a>. Le compte n'est
+          pas bloqué d'office.
+        </fold-callout>
+      }
+      <ul class="returns">
+        @for (item of returns(); track item.id) {
+          <li [attr.data-collection-return]="item.id">
+            {{ sentence(item) }} — {{ item.batchLabel }} ·
+            <strong class="amount">{{ amount(item) }}</strong>
+            <fold-badge [variant]="badge(item).variant" [content]="badge(item).label" />
+          </li>
+        }
+      </ul>
+    </div>
+  </fold-card>
+}

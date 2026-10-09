@@ -1,0 +1,53 @@
+<fold-panel-header title="Signaler un retour de la banque" [subtitle]="subtitle()" />
+
+<div class="body">
+  <fold-listbox label="Ce que dit la banque" [options]="kindOptions()" [(value)]="kind" />
+  <fold-listbox
+    label="Motif"
+    placeholder="Le code de l'avis de la banque"
+    [options]="reasonOptions()"
+    [(value)]="reasonCode"
+  />
+  @if (narrative()) {
+    <fold-input
+      label="Libellé de la banque"
+      required
+      hint="Recopié tel quel. Au plus 140 caractères."
+      [(value)]="reasonLabel"
+    />
+  }
+  <fold-date
+    label="Date du retour"
+    required
+    hint="Celle de l'avis de la banque."
+    [(value)]="returnedOn"
+  />
+  <fold-input
+    label="Frais de la banque"
+    optional
+    placeholder="7,50"
+    hint="En euros. Notés sur le retour, jamais refacturés au client."
+    [(value)]="fee"
+  />
+  @if (feeInvalid()) {
+    <fold-callout appearance="inset" variant="warning">
+      Montant de frais illisible : écrire par exemple « 7,50 ».
+    </fold-callout>
+  }
+
+  <fold-callout appearance="inset" variant="info">
+    Toutes les commandes de la ligne cessent d'être prélevées. Rien ne repart seul au lot suivant :
+    il faudra re-présenter, régler autrement ou passer en perte.
+  </fold-callout>
+
+  @if (error(); as message) {
+    <fold-callout appearance="inset" variant="alert" announce>{{ message }}</fold-callout>
+  }
+</div>
+
+<footer class="foot">
+  <button foldButton emphasis="outline" intent="neutral" (click)="close()">Annuler</button>
+  <button foldButton [disabled]="!canSubmit()" [loading]="saving()" (click)="submit()">
+    Enregistrer le retour
+  </button>
+</footer>

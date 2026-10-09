@@ -174,6 +174,30 @@ export type {
   MandateBankExportsView,
 } from "./mandate-bank-export.js";
 export {
+  COLLECTION_RETURN_KIND_LABELS,
+  COLLECTION_RETURN_RESOLUTION_LABELS,
+  COLLECTION_RETURN_SOURCE_LABELS,
+  confirmCollectionReturnImportFieldsSchema,
+  recordCollectionReturnPayloadSchema,
+  resolveCollectionReturnPayloadSchema,
+} from "./collection-return.js";
+export type {
+  BankReturnReasonView,
+  BatchCollectionReturnsView,
+  CollectionReturnGesturesView,
+  CollectionReturnImportPreviewView,
+  CollectionReturnImportResultView,
+  CollectionReturnKindView,
+  CollectionReturnResolutionView,
+  CollectionReturnSourceView,
+  CollectionReturnView,
+  ConfirmCollectionReturnImportFields,
+  ImportedReturnStatusView,
+  ImportedReturnView,
+  RecordCollectionReturnPayload,
+  ResolveCollectionReturnPayload,
+} from "./collection-return.js";
+export {
   COLLECTION_BATCH_STATUS_LABELS,
   COLLECTION_EXCLUSION_REASON_LABELS,
   ORDER_COLLECTION_STATE_LABELS,

@@ -11,6 +11,7 @@ import { PayerNoticeContactsReader } from "../../../domain/ports/payer-notice-co
 import type { CycleNotice } from "../../../domain/services/collection-notice-plan.js";
 import type { PayerNoticeContacts } from "../../../domain/services/collection-notice-recipient.js";
 import type { MemoryBatches } from "./collection-doubles.js";
+import { RepresentedRejectionsReader } from "../../../domain/ports/represented-rejections.reader.js";
 
 /**
  * Doublés de l'avis de prélèvement (PA2), chacun héritant de son port. Les
@@ -118,5 +119,15 @@ export function sendAllQueued(store: NoticeStore, at: Date): void {
     if (notice.needsSending) {
       notice.markSent(at);
     }
+  }
+}
+
+/** Les rejets re-présentés, par facture — vide par défaut. */
+export class FixedRejections extends RepresentedRejectionsReader {
+  readonly days = new Map<string, string>();
+  rejectedDaysOf(invoiceIds: readonly string[]): Promise<ReadonlyMap<string, string>> {
+    return Promise.resolve(
+      new Map([...this.days].filter(([invoiceId]) => invoiceIds.includes(invoiceId))),
+    );
   }
 }

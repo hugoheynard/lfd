@@ -1,0 +1,82 @@
+<fold-data-table
+  caption="Retours de la banque"
+  narrowLayout="cards"
+  zebra
+  [columns]="columns"
+  [rows]="returns()"
+  [rowKey]="rowKey"
+  data-returns
+>
+  <ng-template foldCell="debtor" let-row>
+    <span class="cell">
+      {{ row.debtorName }}
+      <span class="muted">Ligne {{ row.lineRank }} · {{ row.mandateReference }}</span>
+    </span>
+  </ng-template>
+  <ng-template foldCell="what" let-row>{{ sentence(row) }}</ng-template>
+  <ng-template foldCell="amount" let-row>
+    <span class="amount">{{ amount(row) }}</span>
+  </ng-template>
+  <ng-template foldCell="state" let-row>
+    <span class="cell">
+      <fold-badge [variant]="badge(row).variant" [content]="badge(row).label" />
+      @if (row.resolutionNote !== null) {
+        <span class="muted">{{ row.resolutionNote }}</span>
+      }
+    </span>
+  </ng-template>
+  <ng-template foldCell="actions" let-row>
+    @if (row.gestures; as gestures) {
+      <span class="cell">
+        @if (canWrite()) {
+          <span class="actions">
+            <button
+              foldButton
+              size="sm"
+              [disabled]="gestures.representRefusal !== null"
+              [loading]="pendingId() === row.id"
+              (click)="gesture.emit({ item: row, gesture: 'represent' })"
+              data-represent
+            >
+              Re-présenter
+            </button>
+            <button
+              foldButton
+              size="sm"
+              emphasis="outline"
+              (click)="gesture.emit({ item: row, gesture: 'settle' })"
+            >
+              Régler autrement
+            </button>
+            <button
+              foldButton
+              size="sm"
+              emphasis="outline"
+              intent="neutral"
+              (click)="gesture.emit({ item: row, gesture: 'write-off' })"
+            >
+              Passer en perte
+            </button>
+          </span>
+        }
+        @if (gestures.representRefusal; as refusal) {
+          <span class="muted" data-represent-refusal
+            >Re-présentation impossible : {{ refusal }}.</span
+          >
+        }
+        @if (gestures.proposesRevocation) {
+          <a
+            foldButton
+            size="sm"
+            emphasis="soft"
+            icon="shield"
+            [routerLink]="informationsOf(row)"
+            data-propose-revocation
+          >
+            Le motif dit que le mandat ne tient plus : le révoquer
+          </a>
+        }
+      </span>
+    }
+  </ng-template>
+</fold-data-table>

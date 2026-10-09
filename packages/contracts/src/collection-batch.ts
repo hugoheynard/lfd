@@ -38,7 +38,14 @@ export const COLLECTION_EXCLUSION_REASON_LABELS: Readonly<
 
 /** L'état d'encaissement d'une commande — `due` quand aucun lot ne l'a vue. */
 export type OrderCollectionStateView =
-  "due" | "batched" | "excluded" | "collected" | "settled_otherwise";
+  | "due"
+  | "batched"
+  | "excluded"
+  | "collected"
+  | "settled_otherwise"
+  /** Sa ligne est revenue de la banque (plan `plan-retours-bancaires.md`). */
+  | "returned"
+  | "written_off";
 
 export const ORDER_COLLECTION_STATE_LABELS: Readonly<Record<OrderCollectionStateView, string>> = {
   due: "À prélever",
@@ -46,6 +53,8 @@ export const ORDER_COLLECTION_STATE_LABELS: Readonly<Record<OrderCollectionState
   excluded: "Écartée",
   collected: "Prélevée",
   settled_otherwise: "Réglée autrement",
+  returned: "Rejetée par la banque",
+  written_off: "Passée en perte",
 };
 
 /**

@@ -5,7 +5,15 @@ import {
 import type { StaffStamp } from "./collection-batch.js";
 
 export type OrderCollectionStateName =
-  "due" | "batched" | "excluded" | "collected" | "settled_otherwise";
+  | "due"
+  | "batched"
+  | "excluded"
+  | "collected"
+  | "settled_otherwise"
+  /** Sa ligne est revenue de la banque (R5a) : elle la garde, hors des états ouverts. */
+  | "returned"
+  /** Passée en perte après un retour. */
+  | "written_off";
 
 /** Pourquoi une commande a été écartée. Des VALEURS : elles vivent en base. */
 export type CollectionExclusionReason =
@@ -88,12 +96,50 @@ export class OrderCollection {
   }
 
   /**
+   * `collected` → `returned` : la banque a rejeté ou retourné sa ligne. Elle
+   * garde sa ligne — c'est ce qui la relie au retour — et ne revient à aucun
+   * lot d'elle-même (plan `plan-retours-bancaires.md`, § 2 bis-1).
+   */
+  bounce(at: Date): void {
+    this.assertIn(["collected"], "revenir de la banque");
+    this.state = { ...this.state, state: "returned", updatedAt: at };
+  }
+
+  /** `returned` → `due` : re-présentée, elle entrera au prochain lot ; le retour garde la trace. */
+  represent(at: Date): void {
+    this.assertIn(["returned"], "être re-présentée");
+    this.move({ state: "due", batchId: null, lineRank: null, exclusionReason: null }, at);
+  }
+
+  /** `returned` → `written_off` : passée en perte (la note vit sur le retour). */
+  writeOff(at: Date): void {
+    this.assertIn(["returned"], "être passée en perte");
+    this.move({ state: "written_off", batchId: null, lineRank: null, exclusionReason: null }, at);
+  }
+
+  /**
+   * `returned` → `settled_otherwise` : sa ligne revenue a été réglée par un
+   * autre chemin. Distinct de `settleOtherwise` : une commande retournée ne
+   * se règle qu'avec toute sa ligne, par le retour.
+   *
+   * @throws {SettlementNoteRequiredError} note vide.
+   */
+  settleReturned(note: string, stamp: StaffStamp): void {
+    this.assertIn(["returned"], "être réglée autrement après un retour");
+    this.settle(note, stamp);
+  }
+
+  /**
    * `due` ou `excluded` → `settled_otherwise`, avec une note.
    *
    * @throws {SettlementNoteRequiredError} note vide.
    */
   settleOtherwise(note: string, stamp: StaffStamp): void {
     this.assertIn(["due", "excluded"], "être réglée autrement");
+    this.settle(note, stamp);
+  }
+
+  private settle(note: string, stamp: StaffStamp): void {
     const trimmed = note.trim();
     if (trimmed === "") {
       throw new SettlementNoteRequiredError();

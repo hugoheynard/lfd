@@ -1,0 +1,16 @@
+<fold-panel-header [title]="words().title" [subtitle]="subtitle()" />
+
+<div class="body">
+  <fold-input [label]="words().label" required [hint]="words().hint" [(value)]="note" />
+
+  @if (error(); as message) {
+    <fold-callout appearance="inset" variant="alert" announce>{{ message }}</fold-callout>
+  }
+</div>
+
+<footer class="foot">
+  <button foldButton emphasis="outline" intent="neutral" (click)="close()">Annuler</button>
+  <button foldButton [disabled]="!canSubmit()" [loading]="saving()" (click)="submit()">
+    {{ words().button }}
+  </button>
+</footer>

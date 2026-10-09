@@ -1,0 +1,70 @@
+<fold-panel-header
+  title="Importer un fichier de la banque"
+  subtitle="pain.002 (rejets) ou camt.054 (retours), téléchargé du portail de la banque."
+/>
+
+<div class="body">
+  <fold-file-dropzone
+    label="Déposer le fichier"
+    accept=".xml,application/xml,text/xml"
+    hint="Rien n'est enregistré avant la confirmation."
+    [busy]="busy()"
+    busyLabel="Lecture du fichier…"
+    (filesPicked)="picked($event)"
+  />
+
+  @if (error(); as message) {
+    <fold-callout appearance="inset" variant="alert" announce>{{ message }}</fold-callout>
+  }
+
+  @if (preview(); as view) {
+    <fold-data-table
+      caption="Transactions du fichier"
+      narrowLayout="cards"
+      zebra
+      [columns]="columns"
+      [rows]="view.entries"
+      [rowKey]="rowKey"
+      data-import-preview
+    >
+      <ng-template foldCell="status" let-row>
+        <span class="cell">
+          <fold-badge [variant]="statusOf(row).variant" [content]="statusOf(row).label" />
+          @if (row.problem !== null) {
+            <span class="muted">{{ row.problem }}</span>
+          }
+        </span>
+      </ng-template>
+      <ng-template foldCell="debtor" let-row>
+        <span class="cell">
+          {{ row.debtorName ?? row.endToEndId }}
+          @if (row.batchLabel !== null) {
+            <span class="muted">{{ row.batchLabel }} · {{ dayOf(row) }}</span>
+          }
+        </span>
+      </ng-template>
+      <ng-template foldCell="reason" let-row>{{ row.reasonCode }} — {{ row.reason }}</ng-template>
+      <ng-template foldCell="amount" let-row>{{ amountOf(row) }}</ng-template>
+    </fold-data-table>
+
+    @if (matched().length === 0) {
+      <fold-callout appearance="inset" variant="warning">
+        Aucune transaction ne s'apparie à une ligne déposée : rien à enregistrer. Les retours
+        inconnus se saisissent à la main depuis la ligne du lot.
+      </fold-callout>
+    }
+  }
+</div>
+
+<footer class="foot">
+  <button foldButton emphasis="outline" intent="neutral" (click)="close()">Annuler</button>
+  <button
+    foldButton
+    [disabled]="matched().length === 0"
+    [loading]="busy()"
+    (click)="confirm()"
+    data-confirm-import
+  >
+    Enregistrer {{ matched().length }} retour(s)
+  </button>
+</footer>

@@ -114,6 +114,25 @@ const mandateBankExport = {
   mandateCount: count(),
 };
 
+/**
+ * Le retour bancaire d'une ligne de lot (plan
+ * `documentation/comptabilite/prelevement/plan-retours-bancaires.md`, R5a).
+ * Sujet : la société PAYEUSE (`company`), nommée par sa raison sociale — le
+ * retour se lit sur sa fiche. Jamais l'IBAN : la ligne se reconnaît à son
+ * `EndToEndId` et à son lot.
+ */
+const bankReturn = {
+  subjectLabel: subjectLabel(),
+  batch: named("collection_batch"),
+  endToEndId: z.string(),
+  kind: z.enum(["reject", "return", "refund_request"]),
+  reasonCode: z.string(),
+  /** Les mots du motif — ceux de la liste, ou le libellé de la banque. */
+  reason: z.string(),
+  returnedOn: day(),
+  amountCents: cents(),
+};
+
 export const COLLECTION_FACTS = {
   /**
    * Un lot est constitué. `unmandatedCompanies` le rend indéposable (Q2) ;
@@ -194,6 +213,26 @@ export const COLLECTION_FACTS = {
   "collection.notice_failed": fact(payload({ ...notice, failure: z.string() })),
   /** L'automatisme a tenté le cycle : son issue, rangée et visible, jamais avalée. */
   "collection.autopilot_ran": fact(payload(autopilotRun)),
+  /**
+   * La banque a rejeté ou retourné une ligne : ses commandes ne sont plus
+   * prélevées. `proposesRevocation` : le motif dit que le mandat ne tient plus.
+   */
+  "collection.returned": fact(
+    payload({
+      ...bankReturn,
+      feeCents: cents().nullable(),
+      source: z.enum(["manual", "pain002", "camt054"]),
+      proposesRevocation: z.boolean(),
+    }),
+  ),
+  /** Le staff a traité le retour : re-présenté, réglé autrement, ou perdu. */
+  "collection.return_resolved": fact(
+    payload({
+      ...bankReturn,
+      resolution: z.enum(["represented", "settled_otherwise", "written_off"]),
+      note: z.string().nullable(),
+    }),
+  ),
   /** Un export des mandats est préparé : son fichier se télécharge, rien n'est importé. */
   "mandate_bank_export.created": fact(payload(mandateBankExport)),
   /** Le staff a dit que la banque a importé l'export : ses mandats ne ressortiront plus. */

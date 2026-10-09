@@ -43,6 +43,14 @@ export class PrismaOrderCollectionRepository extends OrderCollectionRepository {
     return rows.map((row) => OrderCollection.rehydrate(toOrderCollectionState(row)));
   }
 
+  async ofLine(batchId: string, rank: number): Promise<readonly OrderCollection[]> {
+    const rows = await this.prisma.orderCollection.findMany({
+      where: { batchId, lineRank: rank },
+      orderBy: { orderId: "asc" },
+    });
+    return rows.map((row) => OrderCollection.rehydrate(toOrderCollectionState(row)));
+  }
+
   async saveAll(collections: readonly OrderCollection[]): Promise<void> {
     for (const collection of collections) {
       const state = collection.toPersistence();

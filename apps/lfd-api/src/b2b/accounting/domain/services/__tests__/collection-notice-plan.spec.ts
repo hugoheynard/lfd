@@ -13,7 +13,13 @@ const CLOSES_AT = new Date("2026-09-30T22:00:00.000Z");
 
 function line(debtor: string, amountCents: number, rank = 1): NoticeLine {
   return {
-    ref: { batchId: "b_new", lineRank: rank, statementId: `st_${debtor}`, invoiceNumbers: [] },
+    ref: {
+      batchId: "b_new",
+      lineRank: rank,
+      statementId: `st_${debtor}`,
+      invoiceNumbers: [],
+      representedRejectionDay: null,
+    },
     debtorCompanyId: debtor,
     debtorName: `Société ${debtor}`,
     amountCents,
@@ -31,7 +37,13 @@ function earlier(
     id: `old_${debtor}`,
     legalEntityId: "le_1",
     cycleClosesAt: CLOSES_AT,
-    line: { batchId: "b_old", lineRank: 1, statementId: `st_old_${debtor}`, invoiceNumbers: [] },
+    line: {
+      batchId: "b_old",
+      lineRank: 1,
+      statementId: `st_old_${debtor}`,
+      invoiceNumbers: [],
+      representedRejectionDay: null,
+    },
     debtorCompanyId: debtor,
     debtorName: `Société ${debtor}`,
     recipient: { email: `ancienne@${debtor}.test`, source: "owner" },
@@ -81,7 +93,13 @@ describe("les avis d'une constitution (PA2)", () => {
         recipient: { email: "compta@c1.test", source: "billing_contact" },
         terms: { amountCents: 10_018, collectionDay: "2026-10-16" },
         mandateReference: "RUM-c1",
-        line: { batchId: "b_new", lineRank: 1, statementId: "st_c1", invoiceNumbers: [] },
+        line: {
+          batchId: "b_new",
+          lineRank: 1,
+          statementId: "st_c1",
+          invoiceNumbers: [],
+          representedRejectionDay: null,
+        },
         creditor: { name: "Crazeativity", ics: "FR00ZZZ900001" },
       }),
     ]);

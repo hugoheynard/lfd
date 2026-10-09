@@ -68,7 +68,19 @@ describe("la constitution d'un lot de factures (E4)", () => {
       lineRank: 1,
       statementId: null,
       invoiceNumbers: [invoice.number],
+      representedRejectionDay: null,
     });
+  });
+
+  /** Retours bancaires, § 2 bis-6 : la re-présentation entre au lot normal, son avis le dit. */
+  it("une facture d'un rejet re-présenté : l'avis dit le jour du rejet", async () => {
+    const { w, invoice } = invoicedWorld();
+    w.rejections.days.set(invoice.invoiceId, "2026-10-16");
+
+    await constitute(w);
+
+    const [notice] = w.noticeStore.notices.map((n) => n.toPersistence());
+    expect(notice?.line?.representedRejectionDay).toBe("2026-10-16");
   });
 
   it("un lot annulé rend ses factures à prélever : le suivant les reprend", async () => {

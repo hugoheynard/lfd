@@ -41,6 +41,8 @@ export interface NoticeMailContent {
   readonly mandateReference: string;
   readonly statementReference: string;
   readonly invoiceNumbers: readonly string[];
+  /** « jeudi 1er octobre 2026 » — le rejet que ce prélèvement présente de nouveau ; `null` sinon. */
+  readonly representedRejectionDay: string | null;
   readonly previous: { readonly amount: string; readonly collectionDay: string } | null;
 }
 
@@ -62,6 +64,7 @@ export function noticeMailContent(state: CollectionNoticeState): NoticeMailConte
     mandateReference: state.mandateReference,
     statementReference: state.line?.statementId ?? "",
     invoiceNumbers: state.line?.invoiceNumbers ?? [],
+    representedRejectionDay: optionalNoticeDay(state.line?.representedRejectionDay ?? null),
     previous:
       state.previous === null
         ? null
@@ -70,4 +73,8 @@ export function noticeMailContent(state: CollectionNoticeState): NoticeMailConte
             collectionDay: noticeDay(state.previous.collectionDay),
           },
   };
+}
+
+function optionalNoticeDay(day: string | null): string | null {
+  return day === null ? null : noticeDay(day);
 }

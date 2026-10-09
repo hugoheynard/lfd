@@ -84,7 +84,12 @@
         }
       </fold-page-section>
 
-      <!-- 5. L'historique, replié. -->
+      <!-- 5. Les retours de la banque, sur les lots déposés. -->
+      @if (deposited().length > 0) {
+        <app-bank-returns [batches]="deposited()" [canWrite]="canWrite()" />
+      }
+
+      <!-- 6. L'historique, replié. -->
       @if (history().length > 0) {
         <app-batch-history [batches]="history()" (download)="download($event)" />
       }

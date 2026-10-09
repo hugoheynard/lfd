@@ -855,6 +855,24 @@
       "information": false
     },
     {
+      "colonne": "public.collection_return.recorded_by_staff_id",
+      "personne": "staff",
+      "categorie": "auteur-geste",
+      "finalite": "Tracer quel membre du staff a fait le geste (`recorded_by_staff_id`) sur `collection_return`.",
+      "conservation": "aucune-limite-decidee",
+      "purge": null,
+      "information": false
+    },
+    {
+      "colonne": "public.collection_return.resolved_by_staff_id",
+      "personne": "staff",
+      "categorie": "auteur-geste",
+      "finalite": "Tracer quel membre du staff a fait le geste (`resolved_by_staff_id`) sur `collection_return`.",
+      "conservation": "aucune-limite-decidee",
+      "purge": null,
+      "information": false
+    },
+    {
       "colonne": "public.companies.activated_by_name",
       "personne": "staff",
       "categorie": "identite",

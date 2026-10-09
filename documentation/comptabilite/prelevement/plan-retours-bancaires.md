@@ -1,7 +1,7 @@
 # Plan — les retours bancaires d'un prélèvement (PA5)
 
-> 📐 **Plan v2, 2026-10-09** (v1 contredite par `vitruve` : trois BLOQUANTS ; le § 2 bis prime sur les §§ 2 à 7), écrit en l'absence d'Hugo. Remplace, une fois
-> bâti, [`todo-rejets-bancaires.md`](todo-rejets-bancaires.md). Touche
+> 📐 **Plan v2, 2026-10-09** (v1 contredite par `vitruve` : trois BLOQUANTS ; le § 2 bis prime sur les §§ 2 à 7), écrit en l'absence d'Hugo. Il a remplacé
+> le TODO des rejets bancaires (supprimé le 2026-10-09, à la livraison de R5). Touche
 > **l'argent** : contredit par `vitruve` avant d'être bâti (§ 8). Arbitrages
 > dans [`../arbitrages-en-absence.md`](../arbitrages-en-absence.md).
 
@@ -134,3 +134,55 @@ révocation (5) ; préavis de la re-présentation (6) ; faits de résolution
 | ------- | -------------------------------------------------------------------------------------------------------- |
 | **R5a** | `collection_return`, saisie manuelle, effets sur la ligne / factures / commandes, suite, journal, écrans |
 | **R5b** | import `pain.002` / `camt.054`, appariement par `EndToEndId`, confirmation staff                         |
+
+## 10. R5 bâti (2026-10-09)
+
+R5a et R5b sont bâtis ensemble, non commités à l'écriture de ces lignes.
+Ce qui existe :
+
+- **Base** — `20261009110000_les_etats_du_retour_bancaire` (seule :
+  `returned`, `written_off` sur `OrderCollectionState`, une valeur d'enum ne
+  s'emploie pas dans sa transaction) puis `20261009110100_les_retours_bancaires` :
+  CHECK `order_collection_in_a_line_or_returned` posé AVANT le retrait de
+  `order_collection_in_a_line` ; table `collection_return` (clé étrangère
+  `end_to_end_id` → la ligne, unique) ; `collection_notice.represented_rejection_day`.
+  Colonnes staff au registre RGPD.
+- **Domaine** — `CollectionReturn` (`domain/entities/collection-return.ts`) :
+  lot déposé seulement, un retour par ligne, montant = ligne, pas de
+  `refund_request` en B2B, une résolution ; re-présenter refusé sous arrêté,
+  d'avant F3, pour une ligne `OOFF` (ponctuel consommé) et sous un mandat
+  inactif (relu par `MandateRecheckReader`, `status = active`, ce que dit
+  `debitable()`). `BankReturnReason` : liste fermée des codes SEPA, `NARR` =
+  autre avec libellé ; `MD06` refusé pour un rejet. `OrderCollection` :
+  `bounce`, `represent`, `writeOff`, `settleReturned`.
+- **Re-présentation** — les commandes repassent `due`, le lot suivant normal
+  les reprend avec leurs factures ; l'avis lit le jour du rejet par les
+  factures de la ligne (`RepresentedRejectionsReader`) et le courriel dit
+  « nouvelle présentation du prélèvement rejeté du … ».
+- **Faits** `collection.returned` / `collection.return_resolved` (sujet : le
+  payeur, jamais d'IBAN) ; cloche `collection.returned` vers la fiche.
+- **Routes** `admin/accounting/collection-returns` sous `b2b_accounting` :
+  `GET batches/:batchId`, `GET payers/:companyId` (lecture) ;
+  `POST batches/:batchId/lines/:rank`, `POST :id/represent`,
+  `:id/settle-otherwise`, `:id/write-off`, `import/preview`, `import/confirm`
+  (écriture, multipart pour l'import).
+- **R5b** — `domain/services/xml-tree.ts` (lecteur XML minimal, refuse
+  `DOCTYPE` et entités inconnues ; aucune dépendance) et `bank-return-file.ts`
+  (`pain.002.001.03` : `TxSts = RJCT`, `OrgnlTxRef/Amt/InstdAmt`, date
+  `GrpHdr/CreDtTm` ; `camt.054.001.02` : `TxDtls` avec `RtrInf`,
+  `AmtDtls/TxAmt/Amt`, date `BookgDt`, `MD06` → remboursement). L'aperçu fait
+  juger chaque transaction par l'agrégat, à blanc ; la confirmation relit le
+  fichier et refuse tout si une transaction retenue ne s'enregistre plus.
+  🔴 **Écrit d'après la norme, à éprouver sur un vrai fichier de la Caisse
+  d'Épargne** ([`question-banque.md`](question-banque.md)) : un rejet au
+  niveau du lot entier (`PmtInfSts`, sans `TxInfAndSts`) n'est pas lu.
+- **Écrans** — « Prélèvement du mois » : section « Les retours de la banque »
+  (lignes du lot déposé choisi, « Signaler un retour », retours et gestes,
+  « Importer un fichier de la banque ») ; fiche client › Facturation : carte
+  « Prélèvements rejetés ».
+
+Arbitrages de construction, en l'absence d'Hugo : la note d'une perte vit
+sur le retour (`resolution_note`) ; l'import confirme TOUTES les
+transactions appariées de l'aperçu (pas de sélection une à une à l'écran) ;
+« régler autrement » une commande retournée ne passe que par son retour
+(toute la ligne), jamais par le geste « réglée autrement » d'une commande.

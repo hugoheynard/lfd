@@ -1,0 +1,59 @@
+/// Le genre d'un retour bancaire (plan `plan-retours-bancaires.md`, § 2). Une VALEUR.
+enum CollectionReturnKind {
+  /// Rejet avant règlement (`pain.002`).
+  reject
+  /// Retour après règlement (`camt.054`).
+  return
+  /// Remboursement demandé par le débiteur — CORE seulement.
+  refund_request
+
+  @@schema("public")
+}
+
+/// D'où vient la saisie du retour.
+enum CollectionReturnSource {
+  manual
+  pain002
+  camt054
+
+  @@schema("public")
+}
+
+/// Ce que le staff a décidé d'un retour.
+enum CollectionReturnResolution {
+  pending
+  represented
+  settled_otherwise
+  written_off
+
+  @@schema("public")
+}
+
+/// UN retour bancaire par transaction, désignée par son `EndToEndId` (R5a).
+/// Le montant est celui de la ligne ; les frais de la banque à part. Jamais d'IBAN.
+model CollectionReturn {
+  id         String              @id
+  endToEndId String              @unique @map("end_to_end_id")
+  line       CollectionBatchLine @relation(fields: [endToEndId], references: [endToEndId], onDelete: Restrict)
+
+  kind        CollectionReturnKind
+  /// Le code ISO 20022 (quatre caractères) ; `NARR` = autre, avec un libellé.
+  reasonCode  String                 @map("reason_code")
+  reasonLabel String?                @map("reason_label")
+  returnedOn  DateTime               @map("returned_on") @db.Date
+  amountCents Int                    @map("amount_cents")
+  feeCents    Int?                   @map("fee_cents")
+  source      CollectionReturnSource
+
+  recordedAt        DateTime @map("recorded_at") @db.Timestamptz(3)
+  recordedByStaffId String   @map("recorded_by_staff_id")
+
+  resolution        CollectionReturnResolution
+  resolutionNote    String?                    @map("resolution_note")
+  resolvedAt        DateTime?                  @map("resolved_at") @db.Timestamptz(3)
+  resolvedByStaffId String?                    @map("resolved_by_staff_id")
+
+  @@index([resolution])
+  @@map("collection_return")
+  @@schema("public")
+}

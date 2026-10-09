@@ -5,11 +5,14 @@ import type { NoticeLine } from "../domain/services/collection-notice-plan.js";
 import { planCancellations, planNotices } from "../domain/services/collection-notice-plan.js";
 import type { CycleNoticesReader } from "../domain/ports/cycle-notices.reader.js";
 import type { PayerNoticeContactsReader } from "../domain/ports/payer-notice-contacts.reader.js";
+import type { RepresentedRejectionsReader } from "../domain/ports/represented-rejections.reader.js";
 import type { IssuedStatement } from "./billing-statement-support.js";
 
 export interface NoticeReaders {
   readonly earlier: CycleNoticesReader;
   readonly contacts: PayerNoticeContactsReader;
+  /** Le rejet qu'une ligne re-présente — l'avis le dit (retours bancaires, § 2 bis-6). */
+  readonly rejections: RepresentedRejectionsReader;
 }
 
 export interface NoticeConstitution {
@@ -35,7 +38,11 @@ export async function noticesOf(
   readers: NoticeReaders,
   input: NoticeConstitution,
 ): Promise<readonly CollectionNotice[]> {
-  const lines = noticeLinesOf(input.batches, input.issued);
+  const invoiceIds = input.batches.flatMap((batch) =>
+    batch.lines.flatMap((line) => line.invoices.map((invoice) => invoice.invoiceId)),
+  );
+  const rejected = await readers.rejections.rejectedDaysOf(invoiceIds);
+  const lines = noticeLinesOf(input.batches, input.issued, rejected);
   const earlier = await readers.earlier.ofCycle(input.legalEntityId, input.cycleClosesAt);
   const debtors = [
     ...new Set([
@@ -68,6 +75,7 @@ export async function noticesOf(
 function noticeLinesOf(
   batches: readonly CollectionBatch[],
   issued: readonly IssuedStatement[],
+  rejected: ReadonlyMap<string, string>,
 ): readonly NoticeLine[] {
   const statementOf = new Map(
     issued.map(({ statement }) => {
@@ -85,7 +93,13 @@ function noticeLinesOf(
       }
       return [
         {
-          ref: { batchId: batch.id, lineRank: line.rank, statementId, invoiceNumbers },
+          ref: {
+            batchId: batch.id,
+            lineRank: line.rank,
+            statementId,
+            invoiceNumbers,
+            representedRejectionDay: latestRejection(line.invoices, rejected),
+          },
           debtorCompanyId: line.debtorCompanyId,
           debtorName: line.debtorName,
           amountCents: line.amountCents,
@@ -94,4 +108,16 @@ function noticeLinesOf(
       ];
     }),
   );
+}
+
+/** Le rejet le plus récent qu'une de ces factures a connu, `null` si aucune. */
+function latestRejection(
+  invoices: readonly { readonly invoiceId: string }[],
+  rejected: ReadonlyMap<string, string>,
+): string | null {
+  const days = invoices.flatMap((invoice) => {
+    const day = rejected.get(invoice.invoiceId);
+    return day === undefined ? [] : [day];
+  });
+  return days.length === 0 ? null : days.reduce((a, b) => (a > b ? a : b));
 }

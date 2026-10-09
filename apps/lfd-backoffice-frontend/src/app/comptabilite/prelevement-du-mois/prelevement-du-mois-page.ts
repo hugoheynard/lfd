@@ -34,6 +34,7 @@ import {
 import { LegalEntitiesService } from '../legal-entities.service';
 import { day } from '../invoice-dossier-format';
 import { MonthlyInvoicesService } from '../monthly-invoices.service';
+import { BankReturns } from './bank-returns/bank-returns';
 import { BatchHistory, type HistoryDownload } from './batch-history/batch-history';
 import { ExcludedOrders } from './excluded-orders/excluded-orders';
 import { CardInvoiceSignals } from './card-invoice-signals/card-invoice-signals';
@@ -56,7 +57,9 @@ import { SettlePanel } from './settle-panel/settle-panel';
  * 4. le **lot à traiter** : préparé, pas encore déposé — ses lignes, ses
  *    signalements, ses gestes ; et le bouton qui prépare le lot du mois clos,
  *    nommé par ce mois ;
- * 5. l'**historique** des lots, replié.
+ * 5. les **retours de la banque** sur les lots déposés (plan
+ *    `plan-retours-bancaires.md`, R5a, R5b) ;
+ * 6. l'**historique** des lots, replié.
  *
  * Il remplace la page « Lots de prélèvement » et la carte « Prélèvement
  * SEPA » du tableau de bord, qui ne garde qu'un résumé.
@@ -72,6 +75,7 @@ import { SettlePanel } from './settle-panel/settle-panel';
   selector: 'app-prelevement-du-mois-page',
   changeDetection: ChangeDetectionStrategy.OnPush,
   imports: [
+    BankReturns,
     BatchHistory,
     ExcludedOrders,
     FoldButtonComponent,
@@ -146,6 +150,13 @@ export class PrelevementDuMoisPage {
 
   protected readonly history = computed(() =>
     (this.view()?.batches ?? []).filter((batch) => batch.status !== 'constituted'),
+  );
+
+  /** Les lots déposés, le plus récent d'abord — ceux qu'une banque peut renvoyer. */
+  protected readonly deposited = computed(() =>
+    [...this.history().filter((batch) => batch.status === 'deposited')].sort((a, b) =>
+      b.cycleClosesAt.localeCompare(a.cycleClosesAt),
+    ),
   );
 
   /**

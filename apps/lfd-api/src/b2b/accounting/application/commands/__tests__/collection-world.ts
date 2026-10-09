@@ -22,6 +22,7 @@ import {
 } from "./collection-doubles.js";
 import {
   FixedNoticeContacts,
+  FixedRejections,
   MemoryBatchNoticeStates,
   MemoryCycleNotices,
   MemoryNotices,
@@ -44,6 +45,7 @@ export function world() {
   const w = {
     noticeStore,
     contacts: new FixedNoticeContacts(),
+    rejections: new FixedRejections(),
     durable: new RecordingDurable(),
     steps,
     candidates: new FakeCandidates(steps),
@@ -67,6 +69,7 @@ export function world() {
     new MemoryNotices(noticeStore),
     new MemoryCycleNotices(noticeStore, batches),
     w.contacts,
+    w.rejections,
     w.durable,
     new RecordingLock(steps),
     new UlidSequence(),

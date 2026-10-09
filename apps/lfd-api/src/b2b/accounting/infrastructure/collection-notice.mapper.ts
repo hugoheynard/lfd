@@ -13,6 +13,10 @@ export function dayColumn(day: string): Date {
   return new Date(`${day}T00:00:00.000Z`);
 }
 
+function optionalDayColumn(day: string | null): Date | null {
+  return day === null ? null : dayColumn(day);
+}
+
 function dayOf(column: Date): string {
   return column.toISOString().slice(0, 10);
 }
@@ -31,6 +35,8 @@ export function toNoticeState(row: CollectionNoticeRow): CollectionNoticeState {
             lineRank: row.lineRank,
             statementId: row.statementId,
             invoiceNumbers: row.invoiceNumbers,
+            representedRejectionDay:
+              row.representedRejectionDay === null ? null : dayOf(row.representedRejectionDay),
           },
     debtorCompanyId: row.debtorCompanyId,
     debtorName: row.debtorName,
@@ -75,6 +81,7 @@ export function noticeColumns(state: CollectionNoticeState) {
     lineRank: state.line?.lineRank ?? null,
     statementId: state.line?.statementId ?? null,
     invoiceNumbers: [...(state.line?.invoiceNumbers ?? [])],
+    representedRejectionDay: optionalDayColumn(state.line?.representedRejectionDay ?? null),
     debtorCompanyId: state.debtorCompanyId,
     debtorName: state.debtorName,
     kind: state.kind,

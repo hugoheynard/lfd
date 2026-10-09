@@ -2,6 +2,8 @@ import { AdminIssuedInvoicesController } from "./http/admin-issued-invoices.cont
 import { CompanyInvoicesController } from "./http/company-invoices.controller.js";
 import { CARD_INVOICE_PROVIDERS } from "./card-invoice.providers.js";
 import { MANDATE_BANK_EXPORT_PROVIDERS } from "./mandate-bank-export.providers.js";
+import { COLLECTION_RETURN_PROVIDERS } from "./collection-return.providers.js";
+import { AdminCollectionReturnsController } from "./http/admin-collection-returns.controller.js";
 import { ISSUED_INVOICE_PROVIDERS } from "./issued-invoice.providers.js";
 import { Module } from "@nestjs/common";
 
@@ -174,6 +176,7 @@ import { PrismaLegalEntityRepository } from "./infrastructure/prisma-legal-entit
  */
 @Module({
   controllers: [
+    AdminCollectionReturnsController,
     // Trois surfaces sur la même adresse de base : le registre, ce qui décide
     // de l'encaissement, et ce qui sort en octets. Les chemins ne se recouvrent
     // pas, donc l'ordre ci-dessous ne décide de rien.
@@ -244,6 +247,7 @@ import { PrismaLegalEntityRepository } from "./infrastructure/prisma-legal-entit
     ...ISSUED_INVOICE_PROVIDERS,
     ...CARD_INVOICE_PROVIDERS,
     ...MANDATE_BANK_EXPORT_PROVIDERS,
+    ...COLLECTION_RETURN_PROVIDERS,
     // La constitution automatique (PA3).
     { provide: CollectionAutopilotRuns, useClass: PrismaCollectionAutopilotRuns },
     { provide: LastAutopilotRunReader, useClass: PrismaLastAutopilotRunReader },

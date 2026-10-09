@@ -158,6 +158,14 @@ export class MemoryOrderCollections extends OrderCollectionRepository {
       [...this.saved.values()].filter((order) => order.toPersistence().batchId === batchId),
     );
   }
+  ofLine(batchId: string, rank: number): Promise<readonly OrderCollection[]> {
+    return Promise.resolve(
+      [...this.saved.values()].filter((order) => {
+        const state = order.toPersistence();
+        return state.batchId === batchId && state.lineRank === rank;
+      }),
+    );
+  }
   saveAll(collections: readonly OrderCollection[]): Promise<void> {
     for (const collection of collections) {
       this.saved.set(collection.orderId, collection);

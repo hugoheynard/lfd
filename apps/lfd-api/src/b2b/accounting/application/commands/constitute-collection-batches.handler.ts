@@ -28,6 +28,7 @@ import { CreditorReader } from "../../domain/ports/creditor.reader.js";
 import { CycleNoticesReader } from "../../domain/ports/cycle-notices.reader.js";
 import { OrderCollectionRepository } from "../../domain/ports/order-collection.repository.js";
 import { PayerNoticeContactsReader } from "../../domain/ports/payer-notice-contacts.reader.js";
+import { RepresentedRejectionsReader } from "../../domain/ports/represented-rejections.reader.js";
 import { StatementBuyerReader } from "../../domain/ports/statement-buyer.reader.js";
 import { buildStatements, type IssuedStatement } from "../billing-statement-support.js";
 import { buildBatches, orderStates, readAssembly } from "../collection-constitution-support.js";
@@ -82,6 +83,7 @@ export class ConstituteCollectionBatchesHandler implements ICommandHandler<
     private readonly notices: CollectionNoticeRepository,
     private readonly earlierNotices: CycleNoticesReader,
     private readonly contacts: PayerNoticeContactsReader,
+    private readonly rejections: RepresentedRejectionsReader,
     private readonly durable: DurablePublisher,
     private readonly lock: CollectionLock,
     private readonly ids: IdGenerator,
@@ -160,7 +162,7 @@ export class ConstituteCollectionBatchesHandler implements ICommandHandler<
     at: Date,
   ): Promise<readonly CollectionNotice[]> {
     return noticesOf(
-      { earlier: this.earlierNotices, contacts: this.contacts },
+      { earlier: this.earlierNotices, contacts: this.contacts, rejections: this.rejections },
       {
         legalEntityId: creditor.legalEntityId,
         creditor,

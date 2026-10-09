@@ -31,7 +31,7 @@ flowchart TB
   E --> D
   D -->|"avis tous envoyés"| G["Dépôt sur le portail de la banque<br/>puis « Marquer déposé »"]
   G --> H["Prélèvement · clôture + N jours<br/>jour ouvré TARGET2"]
-  H --> I["Retours bancaires (PA5, pas bâti)"]
+  H --> I["Retours bancaires (PA5) : saisie ou import pain.002 / camt.054<br/>re-présenter, régler autrement, perte"]
 ```
 
 | Étape                | Qui                  | Où dans le code                                                           |
@@ -149,4 +149,8 @@ datés) ; l'historique replié. Le tableau de bord n'en garde qu'un résumé.
   d'Épargne ; FRST/RCUR et les mandats ponctuels
   ([`prelevement-sepa.md`](prelevement-sepa.md),
   questions 3 et 4).
-- **PA5, les retours bancaires** (`pain.002`, `camt.054`) : pas bâti.
+- **PA5, les retours bancaires** : **bâti le 2026-10-09** (R5a, R5b —
+  [`plan-retours-bancaires.md`](plan-retours-bancaires.md), § 10). Une
+  ligne rejetée passe ses commandes à `returned` ; re-présentée, elle entre
+  au lot suivant normal avec un avis « nouvelle présentation ». Reste à
+  éprouver l'import sur un vrai fichier de la Caisse d'Épargne.

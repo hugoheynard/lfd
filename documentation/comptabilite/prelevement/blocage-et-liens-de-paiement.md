@@ -95,9 +95,10 @@ paid` (ou `async_payment_succeeded`) ; **expiré** sur
 
 ## 3. Ce qui reste ouvert
 
-- Pas de blocage automatique sur un rejet de prélèvement : aucun retour
-  bancaire n'est encore lu (PA5,
-  [`todo-rejets-bancaires.md`](todo-rejets-bancaires.md)).
+- Pas de blocage automatique sur un rejet de prélèvement, par décision
+  (A36) : les retours bancaires sont lus depuis le 2026-10-09 (PA5,
+  [`plan-retours-bancaires.md`](plan-retours-bancaires.md)), la cloche et
+  la fiche le disent, le staff bloque par l'outil existant s'il le faut.
 - Pas de lettrage automatique entre un lien libre et des commandes.
 - Le webhook Stripe de production doit être abonné aux événements
   `checkout.session.completed`, `.async_payment_succeeded` et `.expired` — à vérifier dans le tableau de bord Stripe.
