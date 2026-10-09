@@ -1,7 +1,6 @@
 // ─────────────────────────────────────────────────────────────────────────────
-// L'export des mandats pour le portail de la banque — plan
-// `documentation/comptabilite/mandat/plan-export-des-mandats-pour-la-banque.md`
-// (§ 2 bis, lot M1).
+// L'export des mandats pour le portail de la banque — doc
+// `documentation/comptabilite/mandat/export-des-mandats-pour-la-banque.md`.
 // ─────────────────────────────────────────────────────────────────────────────
 //
 // Propriétaire : `src/b2b/accounting/`. Un export est une ÉCRITURE : il fige

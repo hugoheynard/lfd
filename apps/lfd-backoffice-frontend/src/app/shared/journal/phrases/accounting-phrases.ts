@@ -441,7 +441,7 @@ function autopilotIssue(fact: PhraseFact): Segment[] {
 
 /**
  * « : 3 mandats » — le nombre de mandats d'un export pour la banque (plan
- * `plan-export-des-mandats-pour-la-banque.md`). Jamais une RUM ni un IBAN : la
+ * `export-des-mandats-pour-la-banque.md`). Jamais une RUM ni un IBAN : la
  * charge ne les porte pas.
  */
 function mandateCount(fact: PhraseFact): Segment[] {

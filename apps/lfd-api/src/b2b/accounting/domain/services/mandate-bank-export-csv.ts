@@ -9,7 +9,7 @@ import { sepa } from "./pain008-document.js";
 
 /**
  * **Le fichier d'import des mandats** pour le portail de la banque (plan
- * `plan-export-des-mandats-pour-la-banque.md`, §§ 1 et 2 bis-6).
+ * `export-des-mandats-pour-la-banque.md`).
  *
  * Le modèle (`ModeleImportMandats`) : ASCII, `;` séparateur ET terminateur de
  * chaque cellule, fin de ligne CRLF, 17 colonnes dont A à H obligatoires, et

@@ -16,7 +16,7 @@ import {
 } from "./infrastructure/prisma-mandate-bank-exports.reader.js";
 
 /**
- * Les providers du lot M1 (plan `plan-export-des-mandats-pour-la-banque.md`) :
+ * Les providers du lot M1 (plan `export-des-mandats-pour-la-banque.md`) :
  * l'export des mandats pour la banque. À part du module, qui dépasse déjà la
  * taille d'un fichier. Le lecteur des mandats descellés
  * (`MandatesForBankExportReader`) n'est pas ici : `payments` l'implémente, et

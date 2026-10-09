@@ -33,8 +33,7 @@ import {
 /**
  * **Les mandats à la banque** — l'export du fichier d'import des mandats du
  * portail de la banque, depuis la fiche de l'entité émettrice (plan
- * `documentation/comptabilite/mandat/plan-export-des-mandats-pour-la-banque.md`,
- * § 2 bis, § 3).
+ * `documentation/comptabilite/mandat/export-des-mandats-pour-la-banque.md`).
  *
  * 🔴 Le fichier porte les IBAN en clair : il se lit sous l'ÉCRITURE comptable,
  * bien que ce soit un `GET` — le verbe ment sur ce qu'il fait sortir. Il n'est

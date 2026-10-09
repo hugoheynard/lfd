@@ -104,7 +104,7 @@ const autopilotRun = {
 
 /**
  * L'export des mandats pour le portail de la banque (plan
- * `plan-export-des-mandats-pour-la-banque.md`, § 2 bis). Sujet :
+ * `export-des-mandats-pour-la-banque.md`). Sujet :
  * `legal_entity`, nommé par sa raison sociale. Jamais un IBAN ni une RUM :
  * le nombre de mandats, et l'auteur de la ligne.
  */

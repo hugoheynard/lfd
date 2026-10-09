@@ -219,7 +219,7 @@ model LegalEntity {
   cardInvoiceOutcomes    CardInvoiceOutcome[]
   invoiceAutopilotRuns   InvoiceAutopilotRun[]
   // Les exports des mandats pour le portail de la banque (plan
-  // `plan-export-des-mandats-pour-la-banque.md`, M1). Côté inverse obligatoire.
+  // `export-des-mandats-pour-la-banque.md`). Côté inverse obligatoire.
   mandateBankExports     MandateBankExport[]
 
   createdAt DateTime @default(now()) @map("created_at")

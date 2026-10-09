@@ -6,7 +6,7 @@ import {
 
 /**
  * Les refus de l'**export des mandats pour la banque** (plan
- * `plan-export-des-mandats-pour-la-banque.md`). Lus par la comptabilité sans
+ * `export-des-mandats-pour-la-banque.md`). Lus par la comptabilité sans
  * le code sous les yeux : chacun nomme le cas et le geste de sortie. Aucun ne
  * porte d'IBAN — un message part au client HTTP tel quel.
  */

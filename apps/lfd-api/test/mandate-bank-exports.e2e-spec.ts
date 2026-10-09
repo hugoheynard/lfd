@@ -1,6 +1,6 @@
 /**
  * E2E de l'**export des mandats pour la banque** (plan
- * `documentation/comptabilite/mandat/plan-export-des-mandats-pour-la-banque.md`, M1).
+ * `documentation/comptabilite/mandat/export-des-mandats-pour-la-banque.md`).
  *
  * Ce que seul le vrai SQL et le vrai HTTP prouvent : les octets du fichier
  * (CRLF, `;` final, sans en-tête), l'IBAN descellé du vrai `FieldCipher`, la

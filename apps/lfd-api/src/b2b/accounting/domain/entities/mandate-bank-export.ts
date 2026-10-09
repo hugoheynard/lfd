@@ -25,7 +25,7 @@ export interface ExportMandatesInput {
 /**
  * **Un export des mandats pour la banque** — les mandats d'une entité, figés
  * avec l'empreinte du compte sous lequel ils partent (plan
- * `plan-export-des-mandats-pour-la-banque.md`, § 2 bis-1 et 4).
+ * `export-des-mandats-pour-la-banque.md`).
  *
  * Deux invariants, et rien d'autre ne les garde :
  *

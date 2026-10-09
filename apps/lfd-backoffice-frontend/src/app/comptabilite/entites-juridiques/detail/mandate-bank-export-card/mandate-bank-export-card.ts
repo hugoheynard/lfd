@@ -27,7 +27,7 @@ import { MandateBankExportsService } from '../../../mandate-bank-exports.service
 /**
  * **Mandats à la banque** — préparer, télécharger et marquer importé le
  * fichier d'import des mandats du portail de la banque (plan
- * `plan-export-des-mandats-pour-la-banque.md`, § 2 bis).
+ * `export-des-mandats-pour-la-banque.md`).
  *
  * ## Trois gestes, et aucun ne se confond avec un autre
  *

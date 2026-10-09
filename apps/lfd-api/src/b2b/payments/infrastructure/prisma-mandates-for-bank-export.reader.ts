@@ -25,7 +25,7 @@ const MANDATE_COLUMNS = {
 
 /**
  * Les mandats actifs d'une entité émettrice, pour la banque (plan
- * `plan-export-des-mandats-pour-la-banque.md`, § 2 bis-2). Rangé côté
+ * `export-des-mandats-pour-la-banque.md`). Rangé côté
  * `payments`, qui possède les mandats et les RIB ; descellé par le même
  * `FieldCipher` que les lecteurs du lot, et sur le compte que le mandat
  * DÉSIGNE (`debitedAccounts`, T8) — celui que le lot débitera.

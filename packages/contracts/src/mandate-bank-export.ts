@@ -3,8 +3,7 @@ import { z } from "zod";
 /**
  * **L'export des mandats pour le portail de la banque**, tel que la fiche de
  * l'entité émettrice le lit (plan
- * `documentation/comptabilite/mandat/plan-export-des-mandats-pour-la-banque.md`,
- * § 2 bis). Aucune coordonnée bancaire : l'IBAN ne sort que dans le fichier.
+ * `documentation/comptabilite/mandat/export-des-mandats-pour-la-banque.md`). Aucune coordonnée bancaire : l'IBAN ne sort que dans le fichier.
  */
 
 /** Pourquoi un mandat actif ne part pas à la banque. Une VALEUR : stable. */

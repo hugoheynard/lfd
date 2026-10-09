@@ -8,7 +8,7 @@ import { B2B_API_BASE } from '../api/api-config';
 /**
  * **Les mandats à la banque** — l'export du fichier d'import des mandats du
  * portail de la banque, depuis la fiche d'une entité (plan
- * `documentation/comptabilite/mandat/plan-export-des-mandats-pour-la-banque.md`).
+ * `documentation/comptabilite/mandat/export-des-mandats-pour-la-banque.md`).
  *
  * Un service à part de `LegalEntitiesService` : ce sont des écritures et un
  * fichier qui porte des IBAN en clair, sous l'ÉCRITURE comptable — pas un

@@ -36,7 +36,7 @@ import { PrismaMandatesForBankExportReader } from "../b2b/payments/infrastructur
  *
  * Depuis le 2026-10-09, un fil de plus — le second qui fait sortir des IBAN en
  * clair, pour la même raison : le fichier d'import des mandats de la banque
- * (`plan-export-des-mandats-pour-la-banque.md`) les porte par construction. Il
+ * (`export-des-mandats-pour-la-banque.md`) les porte par construction. Il
  * n'est servi que sous l'écriture comptable, et n'est rangé nulle part.
  */
 @Global()

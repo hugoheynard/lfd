@@ -71,7 +71,7 @@ export const COLLECTION_FACT_TYPES = {
 
 /**
  * Les faits de l'export des mandats pour la banque (plan
- * `plan-export-des-mandats-pour-la-banque.md`, § 2 bis). Sujet : l'entité
+ * `export-des-mandats-pour-la-banque.md`). Sujet : l'entité
  * émettrice ; charge : le nombre de mandats. JAMAIS un IBAN ni une RUM.
  */
 export const MANDATE_BANK_EXPORT_FACT_TYPES = {
