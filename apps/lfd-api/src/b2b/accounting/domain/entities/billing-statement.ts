@@ -20,7 +20,7 @@ export const STATEMENT_BODY_VERSION = 1;
  *   `arrondi(Σ quantité × prix)`, une fois ;
  * - `invoice-dossier/2026-10-08-f6` — lot F6 : montant de ligne repris des
  *   bons (Σ `lineTotalCents`). La forme du JSON n'a pas bougé, `body_version`
- *   non plus (`plan-bons-et-facture-concordants.md` §4).
+ *   non plus (`bons-et-facture-concordants.md`).
  */
 export const STATEMENT_COMPUTED_WITH = "invoice-dossier/2026-10-08-f6";
 

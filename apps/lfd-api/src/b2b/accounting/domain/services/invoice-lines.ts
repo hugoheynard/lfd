@@ -12,7 +12,7 @@ import type { FrozenInvoiceOrder, InvoiceLine } from "./invoice-dossier.types.js
  * Il vaut Σ des `lineTotalCents` figés des bons qu'elle regroupe, et non
  * `arrondi(Σ quantité × prix)` : un client qui rapproche ses bons et sa
  * facture doit retrouver le HT au centime (Hugo, 2026-10-08,
- * `plan-bons-et-facture-concordants.md` §4). L'arrondi unique pouvait en
+ * `bons-et-facture-concordants.md`). L'arrondi unique pouvait en
  * différer d'un centime par ligne.
  *
  * La norme l'admet (F6-0, lu sur les sources le 2026-10-08) : le Schematron
