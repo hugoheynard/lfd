@@ -64,6 +64,7 @@ export class OrderHandover {
       status: subject.status,
       handedOverAt: standing.handedOverAt,
       qualityHold: standing.qualityHold,
+      settled: subject.settled,
     });
     if (blocker !== null) {
       throw new HandoverRefusedError(blocker);

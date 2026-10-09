@@ -597,6 +597,11 @@ export interface ClientCopy {
     readonly unavailable: string;
     /** Commande introuvable — ou celle d'un autre : on ne distingue pas. */
     readonly unknown: string;
+    /**
+     * Commande carte pas encore réglée : pas de code avant le paiement
+     * (plan `plan-carte-reglee-avant-tout.md`, 2026-10-09).
+     */
+    readonly due: string;
   };
 
   /** L'écran de RÈGLEMENT — une étape, entre le panier et la confirmation. */

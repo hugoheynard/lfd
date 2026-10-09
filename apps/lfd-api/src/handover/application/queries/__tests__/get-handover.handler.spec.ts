@@ -31,6 +31,7 @@ function subject(overrides: Partial<HandoverSubject> = {}): HandoverSubject {
     requestedDeliveryDate: new Date(`${SERVICE_DAY}T00:00:00.000Z`),
     pickupLabel: "Le labo",
     status: "ready",
+    settled: true,
     fulfillmentMethod: "pickup",
     note: "",
     lines: [{ sku: "VIE-001", productName: "Croissant", quantity: 2 }],
@@ -122,6 +123,12 @@ describe.each(READERS)("$name — la retenue qualité", ({ read }) => {
     const view = await read(subject(), earlier, new FixedQualityHolds(["ord_1"]));
 
     expect(view.blockedReason).toBe("Cette commande a déjà été retirée.");
+  });
+
+  it("dit « pas réglée » d'une commande carte non réglée — la vue suit le scan", async () => {
+    const view = await read(subject({ settled: false }), null, new FixedQualityHolds());
+
+    expect(view.blockedReason).toMatch(/^Cette commande n'est pas réglée : /);
   });
 
   it("dit « annulée » d'une commande annulée ET retenue", async () => {

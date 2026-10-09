@@ -79,23 +79,40 @@ export class OrderSheetArchive {
    * `handoverToken` arrive À CÔTÉ de la feuille, jamais dedans : c'est le rendu
    * qui décide de le dessiner (retrait seulement).
    *
+   * 🔴 Un bon de RETRAIT sans jeton n'est ni lu dans l'archive, ni archivé : le
+   * jeton manque parce que la commande n'est pas réglée
+   * (`exposedHandoverToken`), et archiver ce rendu figerait un bon sans QR que
+   * l'accusé au paiement joindrait ensuite (plan
+   * `documentation/order/plan-carte-reglee-avant-tout.md`, §2.5). Le
+   * téléchargement avant paiement reste permis : il rend un bon sans QR,
+   * fabriqué à chaque demande. Ne pas relire l'archive empêche aussi d'y
+   * reprendre le QR d'une commande remboursée avant son retrait.
+   *
    * @throws {OrderSheetLogoUnavailableError} le logo manque sur le disque.
    */
   async pdfOf(sheet: ClientSheet, handoverToken: string | null): Promise<OrderSheetPdf> {
     const key = orderSheetPdfKey(sheet);
     const fileName = orderSheetPdfFileName(sheet);
 
+    if (awaitsItsQr(sheet, handoverToken)) {
+      return { bytes: await this.render(sheet, handoverToken), fileName };
+    }
+
     const archived = await this.readArchived(key);
     if (archived !== null) {
       return { bytes: archived, fileName };
     }
 
-    const bytes = await renderOrderSheetPdf(sheet, {
+    const bytes = await this.render(sheet, handoverToken);
+    await this.archive(key, bytes);
+    return { bytes, fileName };
+  }
+
+  private async render(sheet: ClientSheet, handoverToken: string | null): Promise<Buffer> {
+    return renderOrderSheetPdf(sheet, {
       logo: await this.logo.load(),
       handoverUrl: this.handoverUrlFor(sheet, handoverToken),
     });
-    await this.archive(key, bytes);
-    return { bytes, fileName };
   }
 
   /**
@@ -158,4 +175,13 @@ export class OrderSheetArchive {
       // l'adaptateur avant d'arriver ici.
     }
   }
+}
+
+/**
+ * Un bon de retrait dont le QR manque parce que le jeton n'est pas montrable —
+ * cf. {@link OrderSheetArchive.pdfOf}. Une livraison ne porte jamais de QR :
+ * son bon s'archive comme avant.
+ */
+function awaitsItsQr(sheet: ClientSheet, handoverToken: string | null): boolean {
+  return sheet.fulfillment.method === "pickup" && handoverToken === null;
 }

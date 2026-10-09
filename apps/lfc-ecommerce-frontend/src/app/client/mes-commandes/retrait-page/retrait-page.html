@@ -20,6 +20,11 @@
       @if (reference(); as ref) {
         <p class="ref">{{ ref }}</p>
       }
+      @if (due()) {
+        <a foldButton block size="sm" icon="credit-card" [routerLink]="['/reglement', orderId()]">
+          {{ t().orders.settle }}
+        </a>
+      }
     }
   }
 </div>

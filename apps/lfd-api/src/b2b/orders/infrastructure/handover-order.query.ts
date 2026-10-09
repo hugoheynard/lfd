@@ -1,5 +1,5 @@
 import type { Prisma } from "../../../platform/database/client/client.js";
-import { billingAddressPayloadSchema, type BillingAddressPayload } from "@lfd/contracts";
+import { billingAddressPayloadSchema, isSettled, type BillingAddressPayload } from "@lfd/contracts";
 
 import type { HandoverQueueWindow } from "../domain/ports/order.reader.js";
 import { fulfillmentOf, windowOf } from "./order-fulfillment.parse.js";
@@ -122,6 +122,8 @@ export const HANDOVER_SELECT = {
   id: true,
   orderNumber: true,
   status: true,
+  // Le comptoir refuse une commande non réglée (`isSettled`, 2026-10-09).
+  paymentStatus: true,
   fulfillmentMethod: true,
   requestedDeliveryDate: true,
   pickupAddress: true,
@@ -140,6 +142,7 @@ export const HANDOVER_QUEUE_SELECT = {
   id: true,
   orderNumber: true,
   status: true,
+  paymentStatus: true,
   fulfillmentMethod: true,
   pickupAddress: true,
   fulfillment: true,
@@ -165,6 +168,7 @@ export function toHandoverSubject(row: HandoverRow): {
   readonly requestedDeliveryDate: Date | null;
   readonly pickupLabel: string | null;
   readonly status: HandoverRow["status"];
+  readonly settled: boolean;
   readonly fulfillmentMethod: HandoverRow["fulfillmentMethod"];
   readonly note: string;
   readonly lines: readonly {
@@ -182,6 +186,9 @@ export function toHandoverSubject(row: HandoverRow): {
     requestedDeliveryDate: row.requestedDeliveryDate,
     pickupLabel: pickupLabelOf(row.pickupAddress),
     status: row.status,
+    // La définition du contrat, appliquée ici : le retrait ne connaît pas
+    // l'énuméré du règlement.
+    settled: isSettled(row.paymentStatus),
     fulfillmentMethod: row.fulfillmentMethod,
     note: row.note,
     lines: row.lines.map((line) => ({
@@ -204,6 +211,7 @@ export function toQueueEntry(row: QueueRow): {
   readonly window: HandoverQueueWindow | null;
   readonly totalUnits: number;
   readonly status: string;
+  readonly settled: boolean;
   readonly readyAt: Date | null;
   readonly placedAt: Date;
 } {
@@ -221,6 +229,7 @@ export function toQueueEntry(row: QueueRow): {
     window: windowOf(fulfillmentOf(row.fulfillment)),
     totalUnits: row.lines.reduce((sum, line) => sum + line.quantity, 0),
     status: row.status,
+    settled: isSettled(row.paymentStatus),
     readyAt: row.readyAt,
     placedAt: row.createdAt,
   };

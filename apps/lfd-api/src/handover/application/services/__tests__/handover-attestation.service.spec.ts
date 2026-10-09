@@ -37,6 +37,7 @@ function subject(): HandoverSubject {
     requestedDeliveryDate: null,
     pickupLabel: "Le labo",
     status: "ready",
+    settled: true,
     fulfillmentMethod: "pickup",
     note: "",
     lines: [{ sku: "VIE-001", productName: "Croissant", quantity: 2 }],

@@ -1,8 +1,10 @@
 import { ChangeDetectionStrategy, Component, computed, inject, signal } from '@angular/core';
-import { Router } from '@angular/router';
+import { Router, RouterLink } from '@angular/router';
 import { toSignal } from '@angular/core/rxjs-interop';
 import { ActivatedRoute } from '@angular/router';
 import type { CustomerOrderView } from '@lfd/contracts';
+import { isSettled } from '@lfd/contracts/shop-values';
+import { FoldButtonComponent } from 'fold-ng';
 import { QrCode } from '@lfd/b2b-ui/order';
 import { map } from 'rxjs/operators';
 
@@ -47,7 +49,7 @@ type Phase = 'loading' | 'ready' | 'none';
 @Component({
   selector: 'app-retrait-page',
   changeDetection: ChangeDetectionStrategy.OnPush,
-  imports: [QrCode],
+  imports: [QrCode, RouterLink, FoldButtonComponent],
   templateUrl: './retrait-page.html',
   styleUrl: './retrait-page.scss',
 })
@@ -69,6 +71,26 @@ export class RetraitPage {
   private readonly order = signal<CustomerOrderView | null>(null);
 
   protected readonly reference = computed(() => this.order()?.orderNumber ?? '');
+
+  /** L'identifiant serveur, pour le lien « Régler ». */
+  protected readonly orderId = computed(() => this.order()?.id ?? '');
+
+  /**
+   * **À régler** : une carte en attente ou refusée, sur une commande encore
+   * vivante. Le serveur ne sert alors aucun jeton (`exposedHandoverToken`) ;
+   * l'écran dit pourquoi et mène au règlement de la même commande, au lieu
+   * de laisser croire à une commande trop ancienne pour avoir un code
+   * (plan `documentation/order/plan-carte-reglee-avant-tout.md`, §2.1).
+   */
+  protected readonly due = computed(() => {
+    const order = this.order();
+    return (
+      order !== null &&
+      order.status !== 'cancelled' &&
+      order.paymentStatus !== 'refunded' &&
+      !isSettled(order.paymentStatus)
+    );
+  });
 
   /**
    * L'URL que le code encode, ou `null` — et `null` n'est pas un échec, c'est
@@ -94,9 +116,12 @@ export class RetraitPage {
    * jeton et n'en aura jamais — en fabriquer un rétroactivement inventerait un
    * secret que personne n'a reçu. `unavailable` le dit sans mentir sur la cause.
    */
-  protected readonly noCodeReason = computed(() =>
-    this.order() === null ? this.t().qr.unknown : this.t().qr.unavailable,
-  );
+  protected readonly noCodeReason = computed(() => {
+    if (this.order() === null) {
+      return this.t().qr.unknown;
+    }
+    return this.due() ? this.t().qr.due : this.t().qr.unavailable;
+  });
 
   protected readonly whenLabel = computed(() => {
     const day = this.order()?.requestedDeliveryDate ?? null;

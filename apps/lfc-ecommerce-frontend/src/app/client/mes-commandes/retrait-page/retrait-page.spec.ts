@@ -117,6 +117,31 @@ describe('RetraitPage', () => {
   });
 
   /**
+   * Régression : une commande carte « À régler » avait son QR de retrait
+   * (constaté en production le 2026-10-09). Le serveur ne sert plus le jeton
+   * avant le paiement ; l'écran dit « à régler » et mène au règlement.
+   */
+  it('dit « à régler » et mène au règlement d’une commande carte non réglée', async () => {
+    const fixture = await boot(
+      order({ paymentStatus: 'pending', settlement: 'paid', handoverToken: null }),
+    );
+    const root = fixture.nativeElement as HTMLElement;
+
+    expect(root.querySelector('lfd-qr-code')).toBeNull();
+    expect(text(fixture)).toContain(FR.qr.due);
+    expect(text(fixture)).not.toContain(FR.qr.unavailable);
+    expect(root.querySelector('a[href="/reglement/ord_9"]')).not.toBeNull();
+  });
+
+  it('ne propose pas de régler une commande réglée sans code', async () => {
+    const fixture = await boot(order({ handoverToken: null }));
+
+    expect(
+      (fixture.nativeElement as HTMLElement).querySelector('a[href^="/reglement"]'),
+    ).toBeNull();
+  });
+
+  /**
    * Introuvable ou celle d'un autre : le serveur rend 404 dans les deux cas, et
    * l'écran ne distingue pas — il n'a rien à montrer de toute façon.
    */

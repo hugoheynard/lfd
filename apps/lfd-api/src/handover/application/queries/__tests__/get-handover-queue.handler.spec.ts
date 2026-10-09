@@ -33,6 +33,7 @@ function entry(overrides: Partial<HandoverQueueEntry> = {}): HandoverQueueEntry 
     window: null,
     totalUnits: 3,
     status: "ready",
+    settled: true,
     readyAt: null,
     placedAt: PLACED_AT,
     ...overrides,
@@ -86,6 +87,46 @@ function handlerOf(
   const handler = new GetHandoverQueueHandler(queue, attestations, holds);
   return { handler, queue, attestations, holds };
 }
+
+/**
+ * Régression : la file montrait « attendue » une commande carte « À régler »,
+ * que le scan refuse désormais (plan-carte-reglee-avant-tout.md, §4.4,
+ * 2026-10-09).
+ */
+describe("GetHandoverQueueHandler — une commande non réglée", () => {
+  it("n'apparaît pas tant qu'elle n'est ni retirée ni annulée", async () => {
+    const { handler } = handlerOf(
+      [entry({ orderId: "ord_due", settled: false }), entry({ orderId: "ord_paid" })],
+      new Map(),
+    );
+
+    const view = await handler.execute(new GetHandoverQueueQuery("2026-09-10"));
+
+    expect(view.entries.map((line) => line.orderId)).toEqual(["ord_paid"]);
+  });
+
+  it("reste dans la journée une fois retirée, même remboursée après coup", async () => {
+    const { handler } = handlerOf(
+      [entry({ orderId: "ord_1", settled: false })],
+      new Map([["ord_1", attestation()]]),
+    );
+
+    const view = await handler.execute(new GetHandoverQueueQuery("2026-09-10"));
+
+    expect(view.entries[0]?.state).toBe("handed_over");
+  });
+
+  it("reste montrée annulée, comme avant", async () => {
+    const { handler } = handlerOf(
+      [entry({ orderId: "ord_1", settled: false, status: "cancelled" })],
+      new Map(),
+    );
+
+    const view = await handler.execute(new GetHandoverQueueQuery("2026-09-10"));
+
+    expect(view.entries[0]?.state).toBe("cancelled");
+  });
+});
 
 describe("GetHandoverQueueHandler — état d'une ligne (stateOf)", () => {
   it("🔴 une commande à la fois ATTESTÉE et ANNULÉE reste `handed_over` — le sac est parti", async () => {

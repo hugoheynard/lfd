@@ -82,6 +82,40 @@ describe("l'archive du bon de commande", () => {
     expect(noOrigin.bytes.equals(withoutToken.bytes)).toBe(true);
   });
 
+  /**
+   * Régression : téléchargé avant le paiement, le bon d'une commande carte en
+   * retrait aurait été archivé SANS QR, et l'accusé au paiement aurait joint ce
+   * bon figé (plan-carte-reglee-avant-tout.md, §2.5, 2026-10-09).
+   */
+  it("n'archive pas un bon de retrait sans jeton — commande non réglée", async () => {
+    const { archive, documents } = archiveOf();
+
+    const due = await archive.pdfOf(sheet(), null);
+    expect(due.bytes.toString("latin1").startsWith("%PDF-")).toBe(true);
+    expect(documents.objects.size).toBe(0);
+
+    const paid = await archive.pdfOf(sheet(), TOKEN);
+    expect(paid.bytes.equals(due.bytes)).toBe(false);
+    expect(documents.objects.size).toBe(1);
+  });
+
+  it("ne relit pas l'archive pour un bon de retrait sans jeton", async () => {
+    const { archive } = archiveOf();
+    const withQr = await archive.pdfOf(sheet(), TOKEN);
+
+    const withoutToken = await archive.pdfOf(sheet(), null);
+
+    expect(withoutToken.bytes.equals(withQr.bytes)).toBe(false);
+  });
+
+  it("archive toujours le bon d'une livraison, qui ne porte jamais de QR", async () => {
+    const { archive, documents } = archiveOf();
+
+    await archive.pdfOf(delivery(), null);
+
+    expect(documents.objects.size).toBe(1);
+  });
+
   it("lève une erreur technique nommée quand le logo manque", async () => {
     const archive = new OrderSheetArchive(
       new MemoryCustomerDocuments(),

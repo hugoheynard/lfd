@@ -319,6 +319,7 @@ export const FR: ClientCopy = {
     when: 'Pour le {day}',
     unavailable: 'Cette commande n’a pas de code : elle est antérieure au code de remise.',
     unknown: 'Cette commande est introuvable.',
+    due: 'Cette commande n’est pas encore réglée. Son code de remise apparaît dès que le paiement est accepté.',
   },
   pay: {
     title: 'Il reste à régler.',

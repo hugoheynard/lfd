@@ -31,3 +31,4 @@ export {
 } from "./order-opening.values.js";
 export { ALL_DISCOUNT_AUDIENCES } from "./pickup-discount-audiences.js";
 export { PERSONAL_WORKSPACE, WORKSPACE_HEADER } from "./workspace.js";
+export { exposedHandoverToken, isSettled } from "./order-settlement.values.js";

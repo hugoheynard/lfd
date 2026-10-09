@@ -1,4 +1,9 @@
-import { QUALITY_HOLD_REASON, handoverBlocker, type HandoverCandidate } from "../handover.js";
+import {
+  QUALITY_HOLD_REASON,
+  UNSETTLED_REASON,
+  handoverBlocker,
+  type HandoverCandidate,
+} from "../handover.js";
 
 /**
  * La règle de retrait, éprouvée là où elle vit maintenant.
@@ -11,10 +16,39 @@ import { QUALITY_HOLD_REASON, handoverBlocker, type HandoverCandidate } from "..
  */
 
 function candidate(overrides: Partial<HandoverCandidate> = {}): HandoverCandidate {
-  return { status: "ready", handedOverAt: null, qualityHold: false, ...overrides };
+  return { status: "ready", handedOverAt: null, qualityHold: false, settled: true, ...overrides };
 }
 
 describe("handoverBlocker", () => {
+  /**
+   * Régression : le comptoir remettait une commande carte « À régler » — la
+   * règle ne lisait pas le règlement (constaté en production le 2026-10-09).
+   */
+  describe("le règlement (plan-carte-reglee-avant-tout.md, §4.4)", () => {
+    it("refuse une commande non réglée, en nommant le cas", () => {
+      const blocker = handoverBlocker(candidate({ settled: false }));
+      expect(blocker).toBe(UNSETTLED_REASON);
+      expect(blocker).toMatch(/^Cette commande n'est pas réglée : /);
+    });
+
+    it("dit « déjà retirée » d'une commande remboursée après son retrait", () => {
+      const blocker = handoverBlocker(candidate({ settled: false, handedOverAt: new Date() }));
+      expect(blocker).toBe("Cette commande a déjà été retirée.");
+    });
+
+    it("dit « annulée » d'une carte non réglée puis annulée", () => {
+      expect(handoverBlocker(candidate({ settled: false, status: "cancelled" }))).toBe(
+        "Cette commande est annulée.",
+      );
+    });
+
+    it("dit « pas réglée » avant « en vérification »", () => {
+      expect(handoverBlocker(candidate({ settled: false, qualityHold: true }))).toBe(
+        UNSETTLED_REASON,
+      );
+    });
+  });
+
   it("laisse passer une commande prête", () => {
     expect(handoverBlocker(candidate())).toBeNull();
   });

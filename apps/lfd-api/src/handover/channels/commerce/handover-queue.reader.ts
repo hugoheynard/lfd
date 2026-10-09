@@ -85,6 +85,12 @@ export interface HandoverQueueEntry {
   readonly totalUnits: number;
   /** L'état côté COMMERCE. La règle de retrait le lit, elle ne l'écrit pas. */
   readonly status: string;
+  /**
+   * Réglée — encaissée, ou au compte — selon le commerce (`isSettled`). Même
+   * fait que {@link HandoverSubject.settled}, pour que la file ne montre pas
+   * attendue une commande que le scan refuse.
+   */
+  readonly settled: boolean;
   /** Quand le fournil l'a déclarée prête, ou `null` si elle ne l'est pas. */
   readonly readyAt: Date | null;
   /** Passée le — l'ordre de la file quand aucun créneau ne la départage. */

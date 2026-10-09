@@ -101,6 +101,7 @@ export function toHandoverView(
       status: subject.status,
       handedOverAt: handover === null ? null : handover.handedOverAt,
       qualityHold,
+      settled: subject.settled,
     }),
   };
 }

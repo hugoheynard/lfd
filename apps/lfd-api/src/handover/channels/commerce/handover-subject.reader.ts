@@ -28,6 +28,16 @@ export interface HandoverSubject {
   readonly pickupLabel: string | null;
   /** L'état côté COMMERCE — la règle de retrait le lit, elle ne l'écrit pas. */
   readonly status: OrderStatus;
+  /**
+   * La commande est **réglée** — encaissée, ou au compte (`isSettled` du
+   * contrat, appliqué par le commerce). Le commerce le dit ; le retrait ne
+   * connaît pas l'énuméré du règlement et ne le relit pas.
+   *
+   * 🔴 Une commande carte est écrite AVANT son paiement : sans ce fait, le
+   * comptoir remettait une commande « À régler » (plan
+   * `documentation/order/plan-carte-reglee-avant-tout.md`, §4.4).
+   */
+  readonly settled: boolean;
   readonly fulfillmentMethod: FulfillmentMethod;
   /** La note du client — elle est sur le bon, donc elle traverse. */
   readonly note: string;

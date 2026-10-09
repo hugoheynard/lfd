@@ -1,4 +1,5 @@
 import type { FulfillmentWindow, CustomerOrderView } from '@lfd/contracts';
+import { isSettled } from '@lfd/contracts/shop-values';
 
 import { formatWindow } from '../format-hour';
 
@@ -235,9 +236,19 @@ const STEP_OF_STATUS: Readonly<Record<string, number>> = {
   fulfilled: 3,
 };
 
-/** Une commande est-elle encore VIVANTE ? Le suivi ne montre que celles-là. */
+/**
+ * Une commande est-elle encore VIVANTE ? Le suivi ne montre que celles-là.
+ *
+ * 🔴 **Réglée, aussi** (`isSettled` du contrat). Une commande carte « À
+ * régler » montrait sa carte de suivi et son QR de retrait (constaté en
+ * production le 2026-10-09, plan
+ * `documentation/order/plan-carte-reglee-avant-tout.md`) : elle reste dans la
+ * liste, avec son étiquette et son bouton « Régler », pas dans le suivi.
+ */
 export function isLive(order: CustomerOrderView): boolean {
-  return order.status !== 'fulfilled' && order.status !== 'cancelled';
+  return (
+    order.status !== 'fulfilled' && order.status !== 'cancelled' && isSettled(order.paymentStatus)
+  );
 }
 
 /** Le suivi d'une commande en cours. */
@@ -293,10 +304,12 @@ function paymentOf(order: CustomerOrderView): OrderPayment {
   if (order.settlement === 'account' || order.settlement === 'free') {
     return 'account';
   }
-  if (order.paymentStatus === 'pending') {
-    return 'due';
+  // Réglée, ou réglée puis remboursée : l'étiquette dit la carte, `refundOf`
+  // dit le remboursement. La définition de « réglée » est celle du contrat.
+  if (isSettled(order.paymentStatus) || order.paymentStatus === 'refunded') {
+    return 'card';
   }
-  return order.paymentStatus === 'failed' ? 'refused' : 'card';
+  return order.paymentStatus === 'failed' ? 'refused' : 'due';
 }
 
 /**

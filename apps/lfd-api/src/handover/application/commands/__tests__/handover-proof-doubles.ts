@@ -108,6 +108,7 @@ export class NumberedSubjects extends HandoverSubjectReader {
             requestedDeliveryDate: null,
             pickupLabel: null,
             status: "fulfilled",
+            settled: true,
             fulfillmentMethod: "delivery",
             note: "",
             lines: [],

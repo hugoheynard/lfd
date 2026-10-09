@@ -66,7 +66,7 @@ const LABO: BillingAddressPayload = {
   pays: "France",
 };
 
-/** Une commande retrait passée par le client, et l'identifiant qu'elle rend. */
+/** Une commande retrait passée par le client, RÉGLÉE, et l'identifiant qu'elle rend. */
 async function placeOrder(): Promise<PlacedOrderResponse> {
   const user = await createUser(ctx.prisma, { auth0Sub: CLIENT });
   const company = await createCompany(ctx.prisma, { status: "active" });
@@ -76,7 +76,7 @@ async function placeOrder(): Promise<PlacedOrderResponse> {
     select: { id: true },
   });
 
-  return jsonBody<PlacedOrderResponse>(
+  const placed = jsonBody<PlacedOrderResponse>(
     await ctx
       .asSub(CLIENT)
       .post("/orders")
@@ -91,6 +91,11 @@ async function placeOrder(): Promise<PlacedOrderResponse> {
       })
       .expect(201),
   );
+  // Réglée : depuis le 2026-10-09, le bon d'un retrait NON réglé n'est pas
+  // archivé (il n'a pas encore de QR, et le figer sans QR serait définitif —
+  // plan-carte-reglee-avant-tout.md §4.2). Ce qu'on éprouve ici est l'archive.
+  await ctx.prisma.order.update({ where: { id: placed.id }, data: { paymentStatus: "paid" } });
+  return placed;
 }
 
 /** Télécharge le bon et rend ses octets — `supertest` les rend en `Buffer`. */

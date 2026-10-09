@@ -1,3 +1,4 @@
+import { exposedHandoverToken } from "@lfd/contracts";
 import { QueryHandler, type IQueryHandler } from "@nestjs/cqrs";
 
 import { OrderNotFoundError } from "../../domain/errors/order-errors.js";
@@ -35,7 +36,7 @@ export class GetAdminOrderSheetPdfHandler implements IQueryHandler<
     }
     return this.archive.pdfOf(
       clientSheetOf(owned.view, owned.billedCustomer, owned.buyerPhone),
-      owned.view.handoverToken,
+      exposedHandoverToken(owned.view),
     );
   }
 }

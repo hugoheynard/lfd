@@ -1,4 +1,5 @@
 import { toCustomerOrder } from "../order.js";
+import { exposedHandoverToken, isSettled } from "../order-settlement.values.js";
 import type { OrderView } from "../order.js";
 
 /**
@@ -167,5 +168,42 @@ describe("toCustomerOrder", () => {
     expect(order.refundedCents).toBe(500);
     expect(order.totalCents).toBe(2_278);
     expect(order.lines[0]?.lineTotalCents).toBe(2_160);
+  });
+});
+
+/**
+ * Régression : une commande carte « À régler » montrait son QR de retrait dans
+ * le suivi du client — le jeton est émis à la passation, avant le paiement
+ * (constaté en production le 2026-10-09).
+ */
+describe("le jeton de retrait n'est servi qu'à une commande réglée", () => {
+  it.each(["pending", "failed", "refunded"] as const)(
+    "ne sert pas le jeton d'une commande « %s »",
+    (paymentStatus) => {
+      expect(toCustomerOrder({ ...STAFF_ORDER, paymentStatus }).handoverToken).toBeNull();
+    },
+  );
+
+  it.each(["paid", "not_required"] as const)(
+    "sert le jeton d'une commande « %s »",
+    (paymentStatus) => {
+      expect(toCustomerOrder({ ...STAFF_ORDER, paymentStatus }).handoverToken).toBe("tok_1");
+    },
+  );
+
+  it("ne fabrique pas de jeton là où la commande n'en a pas", () => {
+    expect(exposedHandoverToken({ paymentStatus: "paid", handoverToken: null })).toBeNull();
+  });
+});
+
+describe("isSettled", () => {
+  it.each([
+    ["paid", true],
+    ["not_required", true],
+    ["pending", false],
+    ["failed", false],
+    ["refunded", false],
+  ] as const)("« %s » réglée : %s", (paymentStatus, expected) => {
+    expect(isSettled(paymentStatus)).toBe(expected);
   });
 });

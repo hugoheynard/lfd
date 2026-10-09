@@ -14,6 +14,7 @@ import type { CartAdjustment } from "./cart-adjustment.js";
 import type { DeliveryVatMode } from "./order-delivery-vat.js";
 import type { LateFeeAdjustment } from "./order-late-fee.js";
 import type { SettlementRegime } from "./order-sheet.js";
+import { exposedHandoverToken } from "./order-settlement.values.js";
 
 /**
  * Contrat de fil des **commandes** B2B.
@@ -990,7 +991,8 @@ export function toCustomerOrder(view: OrderView): CustomerOrderView {
             },
       allergens: line.allergens,
     })),
-    handoverToken: view.handoverToken,
+    // Pas de QR tant que la commande n'est pas réglée — cf. `exposedHandoverToken`.
+    handoverToken: exposedHandoverToken(view),
     confirmedAt: view.confirmedAt,
     readyAt: view.readyAt,
     handedOverAt: view.handedOverAt,

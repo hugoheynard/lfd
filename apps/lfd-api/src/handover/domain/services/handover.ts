@@ -39,6 +39,11 @@ export interface HandoverCandidate {
    * qui a été remis. C'est l'ordre des refus qui rend ce cas inoffensif.
    */
   readonly qualityHold: boolean;
+  /**
+   * Réglée — encaissée, ou au compte —, dit par le commerce
+   * (`HandoverSubject.settled`).
+   */
+  readonly settled: boolean;
 }
 
 /**
@@ -47,6 +52,14 @@ export interface HandoverCandidate {
  * (`plan-controle-qualite.md`, D4).
  */
 export const QUALITY_HOLD_REASON = "Commande en cours de vérification.";
+
+/**
+ * La phrase d'une commande non réglée — une carte qui n'a pas abouti, ou une
+ * commande remboursée avant son retrait. Elle dit le geste : ne pas remettre,
+ * renvoyer le client vers son espace ou vers le bureau.
+ */
+export const UNSETTLED_REASON =
+  "Cette commande n'est pas réglée : son paiement par carte n'est pas encaissé. Ne la remettez pas ; le client peut la régler depuis « Mes commandes », sinon appelez le bureau.";
 
 /**
  * Ce qui **empêche** le retrait, en clair — ou `null` si rien ne l'empêche.
@@ -73,6 +86,12 @@ export const QUALITY_HOLD_REASON = "Commande en cours de vérification.";
  * produit, parties comprises (D6). Lue avant, elle ferait répondre « en
  * vérification » à un scan rejoué sur un sac déjà remis : un mensonge sur un
  * fait physique. Lue après, une retenue sur un sac parti est inoffensive.
+ *
+ * 🔴 **Le règlement est lu après « déjà retirée »**, pour la même raison : une
+ * commande remboursée après son retrait est partie, et le dire d'abord est le
+ * seul fait vrai. Il passe avant la retenue qualité : une commande qu'on ne
+ * remettra pas faute de paiement n'a rien à attendre du contrôle
+ * (`plan-carte-reglee-avant-tout.md`, §4.4, 2026-10-09).
  */
 export function handoverBlocker(candidate: HandoverCandidate): string | null {
   if (candidate.status === "cancelled") {
@@ -83,6 +102,9 @@ export function handoverBlocker(candidate: HandoverCandidate): string | null {
   }
   if (candidate.handedOverAt !== null) {
     return "Cette commande a déjà été retirée.";
+  }
+  if (!candidate.settled) {
+    return UNSETTLED_REASON;
   }
   if (candidate.qualityHold) {
     return QUALITY_HOLD_REASON;

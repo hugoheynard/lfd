@@ -324,6 +324,7 @@ export const IT: ClientCopy = {
     when: 'Per il {day}',
     unavailable: 'Questo ordine non ha codice: è anteriore al codice di consegna.',
     unknown: 'Ordine non trovato.',
+    due: 'Questo ordine non è ancora pagato. Il codice di consegna appare appena il pagamento è accettato.',
   },
   pay: {
     title: 'Resta da pagare.',

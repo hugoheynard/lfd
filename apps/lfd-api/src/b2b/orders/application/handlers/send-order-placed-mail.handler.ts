@@ -1,4 +1,4 @@
-import type { PaymentStatus } from "@lfd/contracts";
+import { exposedHandoverToken, type PaymentStatus } from "@lfd/contracts";
 import { Inject } from "@nestjs/common";
 import { EventsHandler, type IEventHandler } from "@nestjs/cqrs";
 
@@ -95,7 +95,7 @@ export class SendOrderPlacedMail implements IEventHandler<OrderPlacedEvent> {
 
     const client = this.origins.clientBaseUrl();
     const admin = this.origins.adminBaseUrl();
-    const token = owned.view.handoverToken;
+    const token = exposedHandoverToken(owned.view);
     const sheet = clientSheetOf(owned.view, owned.billedCustomer, owned.buyerPhone);
 
     await this.mailer.send({

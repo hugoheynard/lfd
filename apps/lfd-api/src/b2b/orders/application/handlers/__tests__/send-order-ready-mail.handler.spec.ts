@@ -287,6 +287,19 @@ describe("le courriel « votre commande est prête »", () => {
     expect(data.handoverUrl).toBe("https://admin.lfc.test/retrait/tok_secret_42");
   });
 
+  /**
+   * Régression : le QR d'une carte « À régler » sortait dans tout ce qui lisait
+   * le jeton brut (plan-carte-reglee-avant-tout.md, §4.2, 2026-10-09).
+   */
+  it("ne reporte AUCUN QR sur une commande carte non réglée", async () => {
+    const subject = handler({ order: view({ paymentStatus: "pending" }) });
+    await fire(subject);
+
+    const data = subject.mailer.sent?.data as B2bMails["customer.order-ready"];
+    expect(data.handoverToken).toBeNull();
+    expect(data.handoverUrl).toBe("");
+  });
+
   it("dédoublonne par commande — un fait rejoué n'écrit pas deux fois", async () => {
     // Deuxième filet : l'écriture du colisage est déjà conditionnée en base,
     // donc un seul poste publie. La clé couvre le rejeu d'un fait, pas la course.

@@ -321,6 +321,7 @@ export const EN: ClientCopy = {
     when: 'For {day}',
     unavailable: 'This order has no code: it predates the handover code.',
     unknown: 'That order cannot be found.',
+    due: 'This order is not paid yet. Its handover code appears as soon as the payment goes through.',
   },
   pay: {
     title: 'One thing left: paying.',

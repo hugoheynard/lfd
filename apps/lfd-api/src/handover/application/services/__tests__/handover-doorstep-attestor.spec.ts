@@ -46,6 +46,7 @@ function subjectOf(orderId: string, status: HandoverSubject["status"] = "ready")
     requestedDeliveryDate: null,
     pickupLabel: null,
     status,
+    settled: true,
     fulfillmentMethod: "delivery",
     note: "",
     lines: [],

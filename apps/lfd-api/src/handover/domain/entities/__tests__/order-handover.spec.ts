@@ -25,6 +25,7 @@ function subject(overrides: Partial<HandoverSubject> = {}): HandoverSubject {
     requestedDeliveryDate: null,
     pickupLabel: "Le labo",
     status: "ready",
+    settled: true,
     fulfillmentMethod: "pickup",
     note: "",
     lines: [{ sku: "VIE-001", productName: "Croissant", quantity: 2 }],
@@ -47,6 +48,16 @@ describe("OrderHandover.attest", () => {
     expect(() =>
       OrderHandover.attest(subject({ status: "cancelled" }), FREE, AT, "staff-1", "scan"),
     ).toThrow(HandoverRefusedError);
+  });
+
+  /**
+   * Régression : une carte « À régler » se remettait au comptoir — la règle ne
+   * lisait pas le règlement (constaté en production le 2026-10-09).
+   */
+  it("refuse une commande NON RÉGLÉE en nommant le cas", () => {
+    expect(() =>
+      OrderHandover.attest(subject({ settled: false }), FREE, AT, "staff-1", "scan"),
+    ).toThrow(/n'est pas réglée/);
   });
 
   it("refuse quand le fournil tient DÉJÀ une attestation", () => {

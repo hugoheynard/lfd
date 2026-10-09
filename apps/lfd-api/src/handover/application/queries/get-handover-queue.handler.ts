@@ -6,7 +6,7 @@ import {
   HandoverAttestationsReader,
   type AttestedHandover,
 } from "../../domain/ports/handover-attestations.reader.js";
-import { queueStateOf } from "../../domain/services/queue-state.js";
+import { queueStateOf, showsInQueue } from "../../domain/services/queue-state.js";
 import { QualityHoldsReader } from "../../../production/channels/handover/index.js";
 import { GetHandoverQueueQuery } from "./get-handover-queue.query.js";
 
@@ -53,9 +53,11 @@ export class GetHandoverQueueHandler implements IQueryHandler<
     ]);
     return {
       day: query.day,
-      entries: expected.map((entry) =>
-        toEntryView(entry, attested.get(entry.orderId), held.has(entry.orderId)),
-      ),
+      // Une commande ni réglée, ni retirée, ni annulée n'attend personne
+      // au comptoir — cf. `showsInQueue`.
+      entries: expected
+        .filter((entry) => showsInQueue(entry, attested.get(entry.orderId)))
+        .map((entry) => toEntryView(entry, attested.get(entry.orderId), held.has(entry.orderId))),
     };
   }
 }

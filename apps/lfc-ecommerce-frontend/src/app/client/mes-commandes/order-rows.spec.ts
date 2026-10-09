@@ -164,6 +164,20 @@ describe('les lignes de l’écran des commandes', () => {
     expect(isLive({ ...ORDER, status: 'fulfilled' } as CustomerOrderView)).toBe(false);
     expect(isLive({ ...ORDER, status: 'cancelled' } as CustomerOrderView)).toBe(false);
   });
+
+  /**
+   * Régression : une commande carte « À régler » avait sa carte de suivi et
+   * son QR de retrait (constaté en production le 2026-10-09).
+   */
+  it('sort du suivi une commande carte non réglée, garde la réglée et celle au compte', () => {
+    const card = { ...ORDER, settlement: 'paid' } as CustomerOrderView;
+
+    expect(isLive({ ...card, paymentStatus: 'pending' })).toBe(false);
+    expect(isLive({ ...card, paymentStatus: 'failed' })).toBe(false);
+    expect(isLive({ ...card, paymentStatus: 'refunded' })).toBe(false);
+    expect(isLive({ ...card, paymentStatus: 'paid' })).toBe(true);
+    expect(isLive(ORDER)).toBe(true);
+  });
 });
 
 /**

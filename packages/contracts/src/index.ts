@@ -572,6 +572,7 @@ export type {
 } from "./dev-seed.js";
 export type { PickupAddressPayload, PickupAddressView, CreatedPickupResponse } from "./pickup.js";
 export { adminOrdersQuerySchema, orderLineAllergensSchema } from "./order.js";
+export { exposedHandoverToken, isSettled } from "./order-settlement.values.js";
 export { vatShareSchema, vatSharesSchema } from "./order.js";
 export type { VatShareView } from "./order.js";
 export type { AdminOrderRow, AdminOrdersQuery } from "./order.js";

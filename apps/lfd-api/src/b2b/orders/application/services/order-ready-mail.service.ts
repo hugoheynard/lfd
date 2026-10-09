@@ -1,3 +1,4 @@
+import { exposedHandoverToken } from "@lfd/contracts";
 import { Inject, Injectable } from "@nestjs/common";
 
 import { DEFAULT_MAIL_LOCALE } from "../../../../platform/mailer/copy/mail-copy.js";
@@ -65,7 +66,7 @@ export class OrderReadyMail {
 
     const client = this.origins.clientBaseUrl();
     const admin = this.origins.adminBaseUrl();
-    const token = owned.view.handoverToken;
+    const token = exposedHandoverToken(owned.view);
 
     await this.mailer.send({
       to: recipient.email,
