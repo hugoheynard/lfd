@@ -14,6 +14,20 @@ export const REVENUE_ORDER_STATUSES = [
 ] as const;
 
 /**
+ * **Règlements porteurs de CA** (plan
+ * `documentation/order/plan-commandes-non-reglees.md`, §2.5, §4.7) : une
+ * commande ne compte que réglée — au compte ou gratuite (`not_required`), ou
+ * encaissée par carte (`paid`). Une carte en attente (`pending`) ou refusée
+ * (`failed`) n'est pas un chiffre d'affaires : Hugo lisait 3 € pour 1,90 €
+ * encaissés le 2026-10-09.
+ *
+ * ⚠️ `refunded` est exclu aussi : la commande entière a été rendue. Un
+ * remboursement PARTIEL laisse `paid` et n'est pas déduit — les lecteurs de CA
+ * ne lisent pas `order_refunds` (vérifié le 2026-10-09).
+ */
+export const REVENUE_PAYMENT_STATUSES = ["not_required", "paid"] as const;
+
+/**
  * **CA marchandises HT** d'une commande, en centimes :
  * `subtotal − discount − voucherDiscount`.
  *

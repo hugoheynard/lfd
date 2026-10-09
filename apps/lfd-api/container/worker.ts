@@ -420,6 +420,23 @@ async function triggerRoundsGapBell(env: Env): Promise<void> {
 }
 
 /**
+ * Réveille le container et passe l'expiration des commandes boutique non
+ * réglées : annulées avec leur intention 30 minutes après leur passation
+ * (plan `documentation/order/plan-commandes-non-reglees.md`, §4.5). Sur le cron
+ * de RAFRAÎCHISSEMENT, pas sur un cron à lui : passer toutes les cinq minutes
+ * fait une promesse d'« au plus 35 minutes ». Même porte et même jeton que
+ * l'autopilot de la facture du mois ; idempotent, l'écriture est conditionnée
+ * en base.
+ */
+async function triggerUnsettledShopOrderExpiry(env: Env): Promise<void> {
+  const token = env.RECOMPUTE_TOKEN;
+  if (!token) {
+    return;
+  }
+  await postSweep(env, token, "admin/orders/unsettled-shop-orders/expire");
+}
+
+/**
  * Les balayages du cron de rafraîchissement, chacun pour soi : un échec de
  * l'un (container qui répond mal, réseau) ne prive pas les suivants de leur
  * tour. Le prochain passage est dans cinq minutes ; l'échec ne fait pas
@@ -431,6 +448,7 @@ async function refreshSweeps(env: Env): Promise<void> {
     triggerOutboxSweep(env),
     triggerAutoClose(env),
     triggerRoundsGapBell(env),
+    triggerUnsettledShopOrderExpiry(env),
   ]);
 }
 

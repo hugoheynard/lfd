@@ -104,7 +104,8 @@
   color: var(--fold-color-info-text);
 }
 
-.tag[data-status='route'] {
+.tag[data-status='route'],
+.tag[data-payment='due'] {
   background: var(--fold-color-warning-surface);
   color: var(--fold-color-warning-text);
 }
@@ -114,4 +115,11 @@
 .tag[data-payment='card'] {
   background: var(--fold-color-success-surface);
   color: var(--fold-color-success-text);
+}
+
+// Un paiement refusé est la seule pastille d'ALERTE : la commande attend un
+// geste du client, et « À régler » ne le dit pas assez fort.
+.tag[data-payment='refused'] {
+  background: var(--fold-color-alert-surface);
+  color: var(--fold-color-alert-text);
 }

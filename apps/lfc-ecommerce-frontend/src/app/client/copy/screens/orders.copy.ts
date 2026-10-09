@@ -89,6 +89,10 @@ export interface OrdersCopy {
   readonly statusDelivered: string;
   readonly payAccount: string;
   readonly payCard: string;
+  /** Une commande carte passée, dont le paiement n'a pas encore abouti. */
+  readonly payDue: string;
+  /** Une commande carte passée, dont la banque a refusé le paiement. */
+  readonly payRefused: string;
   /**
    * Le règlement dit aussi OÙ, et ce que la facture du mois porte : la TVA et
    * le TTC que la commande au compte ne chiffre plus (F5). Il disait « portée à
@@ -98,6 +102,10 @@ export interface OrdersCopy {
   /** Après le montant d'une commande au compte : il est hors taxe (F5). */
   readonly totalPretax: string;
   readonly payCardNote: string;
+  readonly payDueNote: string;
+  readonly payRefusedNote: string;
+  /** Le bouton qui rouvre l'écran de règlement de la MÊME commande. */
+  readonly settle: string;
   /** L'intitulé de la ligne « Remboursement » — absente sans remboursement. */
   readonly detailRefund: string;
   /** Le cumul des remboursements réussis atteint le total. */
@@ -195,9 +203,14 @@ export const ORDERS_FR: OrdersCopy = {
   statusDelivered: 'Livrée',
   payAccount: 'Au compte',
   payCard: 'Réglée · CB',
+  payDue: 'À régler',
+  payRefused: 'Paiement refusé',
   payAccountNote: 'portée à la facture du mois, avec la TVA et le TTC',
   totalPretax: 'HT',
   payCardNote: 'réglée à la commande',
+  payDueNote: 'le paiement par carte n’a pas abouti',
+  payRefusedNote: 'votre banque a refusé la carte',
+  settle: 'Régler',
   detailRefund: 'Remboursement',
   refundedFull: 'Remboursée',
   refundedPartial: 'Remboursée en partie ({amount})',
@@ -286,9 +299,14 @@ export const ORDERS_EN: OrdersCopy = {
   statusDelivered: 'Delivered',
   payAccount: 'On account',
   payCard: 'Paid · card',
+  payDue: 'To pay',
+  payRefused: 'Payment declined',
   payAccountNote: 'carried to the monthly invoice, with VAT and the total incl. VAT',
   totalPretax: 'excl. VAT',
   payCardNote: 'paid at checkout',
+  payDueNote: 'the card payment did not go through',
+  payRefusedNote: 'your bank declined the card',
+  settle: 'Pay',
   detailRefund: 'Refund',
   refundedFull: 'Refunded',
   refundedPartial: 'Partly refunded ({amount})',
@@ -377,9 +395,14 @@ export const ORDERS_IT: OrdersCopy = {
   statusDelivered: 'Consegnato',
   payAccount: 'Sul conto',
   payCard: 'Pagato · carta',
+  payDue: 'Da pagare',
+  payRefused: 'Pagamento rifiutato',
   payAccountNote: 'riportato sulla fattura del mese, con IVA e totale IVA inclusa',
   totalPretax: 'IVA escl.',
   payCardNote: 'pagato all’ordine',
+  payDueNote: 'il pagamento con carta non è andato a buon fine',
+  payRefusedNote: 'la tua banca ha rifiutato la carta',
+  settle: 'Paga',
   detailRefund: 'Rimborso',
   refundedFull: 'Rimborsato',
   refundedPartial: 'Rimborsato in parte ({amount})',

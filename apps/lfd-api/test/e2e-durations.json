@@ -151,6 +151,7 @@
   "test/order-cutoffs.e2e-spec.ts": 12711,
   "test/order-delivery-vat.e2e-spec.ts": 3500,
   "test/order-handover-proof.e2e-spec.ts": 6126,
+  "test/order-unsettled-shop-expiry.e2e-spec.ts": 5000,
   "test/shop-state-carry-over-migration.e2e-spec.ts": 3000,
   "test/order-opening.e2e-spec.ts": 7528,
   "test/order-payment-reprise.e2e-spec.ts": 2247,

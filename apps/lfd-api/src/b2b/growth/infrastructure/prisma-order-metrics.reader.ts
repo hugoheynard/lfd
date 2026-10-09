@@ -7,7 +7,8 @@ import { dayKey, dayRange, weekStarts } from "../domain/growth-stats.js";
 import { concentrationOf } from "../domain/growth-stats-advanced.js";
 import { computeOrderMetrics, type OrderDayTally } from "../domain/order-metrics.js";
 import { OrderMetricsReader } from "../domain/ports/order-metrics.reader.js";
-import { goodsCents, REVENUE_ORDER_STATUSES } from "../domain/revenue-scope.js";
+import { goodsCents } from "../domain/revenue-scope.js";
+import { revenueWhere } from "./revenue.where.js";
 
 const WINDOW_WEEKS = 13;
 
@@ -34,7 +35,7 @@ export class PrismaOrderMetricsReader extends OrderMetricsReader {
     const start = new Date(`${first}T00:00:00.000Z`);
 
     const orders = await this.prisma.order.findMany({
-      where: { createdAt: { gte: start }, status: { in: [...REVENUE_ORDER_STATUSES] } },
+      where: { createdAt: { gte: start }, ...revenueWhere() },
       select: {
         createdAt: true,
         totalCents: true,

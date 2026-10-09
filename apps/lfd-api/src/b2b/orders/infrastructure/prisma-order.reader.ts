@@ -30,7 +30,11 @@ import {
 } from "@lfd/contracts";
 import { Injectable } from "@nestjs/common";
 
-import type { Prisma } from "../../../platform/database/client/client.js";
+import {
+  OrderStatus as OrderStatusValue,
+  PaymentStatus as PaymentStatusValue,
+  type Prisma,
+} from "../../../platform/database/client/client.js";
 import { PrismaService } from "../../../platform/database/prisma.service.js";
 import { contactOf, pickupLabelOf, type HolderSide } from "./atelier-sheet-parts.js";
 import { fulfillmentOf } from "./order-fulfillment.parse.js";
@@ -181,6 +185,22 @@ const ORDER_SELECT = {
   },
 } as const;
 
+/**
+ * **Ce que le client voit de ses commandes** (plan
+ * `documentation/order/plan-commandes-non-reglees.md`, §2.1, §4.3) : une
+ * commande annulée sans avoir été payée n'en est pas une. Seule la carte
+ * connaît `pending` et `failed` (`settlement-regime.ts`) : la condition ne
+ * retire donc ni une commande au compte, ni une gratuite, ni une remboursée.
+ * Une commande non réglée encore `placed` reste visible — l'écran la dit « À
+ * régler » ou « Paiement refusé » et propose de la régler.
+ */
+const CUSTOMER_VISIBLE = {
+  NOT: {
+    status: OrderStatusValue.cancelled,
+    paymentStatus: { in: [PaymentStatusValue.pending, PaymentStatusValue.failed] },
+  },
+} satisfies Prisma.OrderWhereInput;
+
 /** Lecture des commandes (entreprise ou personnel), la plus récente en tête. */
 @Injectable()
 export class PrismaOrderReader extends OrderReader {
@@ -190,7 +210,7 @@ export class PrismaOrderReader extends OrderReader {
 
   async listByCompany(companyId: string): Promise<readonly OrderView[]> {
     const rows = await this.prisma.order.findMany({
-      where: { companyId },
+      where: { companyId, ...CUSTOMER_VISIBLE },
       orderBy: { createdAt: "desc" },
       select: ORDER_SELECT,
     });
@@ -200,7 +220,7 @@ export class PrismaOrderReader extends OrderReader {
   async listPersonal(userId: string): Promise<readonly OrderView[]> {
     const rows = await this.prisma.order.findMany({
       // Personnel = passée par ce client ET sans entreprise (le mur).
-      where: { placedByUserId: userId, companyId: null },
+      where: { placedByUserId: userId, companyId: null, ...CUSTOMER_VISIBLE },
       orderBy: { createdAt: "desc" },
       select: ORDER_SELECT,
     });

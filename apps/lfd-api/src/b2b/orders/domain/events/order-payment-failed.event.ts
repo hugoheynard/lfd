@@ -6,9 +6,18 @@
  * - `abandoned` — le client a quitté l'écran de règlement. Il vient de cliquer :
  *   aucun courriel ne lui apprend ce qu'il sait déjà ;
  * - `day_closed` — la clôture de la journée a coupé un règlement resté en
- *   l'air : la commande est annulée, pour toutes les clientèles (Q7).
+ *   l'air : la commande est annulée, pour toutes les clientèles (Q7) ;
+ * - `expired` — une commande boutique non réglée a dépassé son délai
+ *   (`UNSETTLED_SHOP_ORDER_TTL_MINUTES`) : annulée avec son intention ;
+ * - `replaced` — le même particulier a passé une nouvelle commande boutique :
+ *   la précédente, non réglée, est annulée avec son intention.
+ *
+ * `expired` et `replaced` n'appellent AUCUN courriel (plan
+ * `documentation/order/plan-commandes-non-reglees.md`, §4.2) : la personne a
+ * quitté la page ou relancé elle-même. Ils ne concernent que la clientèle
+ * `public`, donc ne sonnent pas non plus.
  */
-export type PaymentFailureCause = "refused" | "abandoned" | "day_closed";
+export type PaymentFailureCause = "refused" | "abandoned" | "day_closed" | "expired" | "replaced";
 
 /**
  * Fait de domaine : **le règlement d'une commande est mort**.

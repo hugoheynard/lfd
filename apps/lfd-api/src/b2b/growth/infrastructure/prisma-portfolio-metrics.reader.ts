@@ -4,7 +4,7 @@ import { Injectable } from "@nestjs/common";
 import { PrismaService } from "../../../platform/database/prisma.service.js";
 import { PortfolioMetricsReader } from "../domain/ports/portfolio-metrics.reader.js";
 import { classifyPulse, type AccountRevenueWindows } from "../domain/portfolio-pulse.js";
-import { REVENUE_ORDER_STATUSES } from "../domain/revenue-scope.js";
+import { revenueWhere } from "./revenue.where.js";
 
 const DAY_MS = 24 * 60 * 60 * 1000;
 const WINDOW_DAYS = 30;
@@ -57,7 +57,7 @@ export class PrismaPortfolioMetricsReader extends PortfolioMetricsReader {
       where: {
         companyId: { not: null },
         createdAt: { gte: from, lt: to },
-        status: { in: [...REVENUE_ORDER_STATUSES] },
+        ...revenueWhere(),
       },
       _sum: { totalCents: true },
     });

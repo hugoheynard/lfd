@@ -1,4 +1,5 @@
 import { ComponentFixture, TestBed } from '@angular/core/testing';
+import { provideRouter } from '@angular/router';
 
 import { FR } from '../../copy/fr';
 import { ROWS } from '../order-rows.fixture';
@@ -11,7 +12,7 @@ describe('OrderDetail', () => {
   const stars = (): HTMLButtonElement[] => Array.from(el().querySelectorAll('button.star'));
 
   beforeEach(() => {
-    TestBed.configureTestingModule({ imports: [OrderDetail] });
+    TestBed.configureTestingModule({ imports: [OrderDetail], providers: [provideRouter([])] });
     fixture = TestBed.createComponent(OrderDetail);
     fixture.componentRef.setInput('order', ROWS[0]);
     fixture.detectChanges();
@@ -41,6 +42,21 @@ describe('OrderDetail', () => {
     fixture.componentRef.setInput('order', ROWS[1]);
     fixture.detectChanges();
     expect(el().textContent).toContain(FR.orders.detailOrigin);
+  });
+
+  it('dit « À régler » et offre « Régler » vers la page de règlement de la MÊME commande', () => {
+    const settle = (): HTMLAnchorElement | null => el().querySelector('a[foldButton]');
+    expect(settle()).toBeNull();
+
+    fixture.componentRef.setInput('order', { ...ROWS[0], payment: 'due' });
+    fixture.detectChanges();
+    expect(el().textContent).toContain(FR.orders.payDue);
+    expect(settle()?.getAttribute('href')).toBe(`/reglement/${ROWS[0]?.id ?? ''}`);
+
+    fixture.componentRef.setInput('order', { ...ROWS[0], payment: 'refused' });
+    fixture.detectChanges();
+    expect(el().textContent).toContain(FR.orders.payRefused);
+    expect(settle()?.textContent?.trim()).toBe(FR.orders.settle);
   });
 
   it('offre les trois poids du système, jamais trois fois le même', () => {

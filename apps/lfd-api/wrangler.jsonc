@@ -135,7 +135,9 @@
   //    une nuit ou un dimanche suffisent à endormir le backend, et le premier
   //    visiteur du matin attend le boot de Node. Coût : ~8 600 requêtes Worker
   //    par mois, invisible dans le forfait. Le même passage balaie la boîte
-  //    d'envoi (POST /admin/outbox/sweep, `triggerOutboxSweep` dans worker.ts).
+  //    d'envoi (POST /admin/outbox/sweep, `triggerOutboxSweep` dans worker.ts),
+  //    et expire les commandes boutique non réglées depuis 30 min (POST
+  //    /admin/orders/unsettled-shop-orders/expire, au plus 35 min).
   //
   // 2. `0 3|11|19` — RECOMPUTE du read-model `lead_score` (POST /admin/recompute
   //    vers le container, jeton RECOMPUTE_TOKEN), 3×/jour aux HEURES CREUSES,

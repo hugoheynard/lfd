@@ -45,6 +45,14 @@
      problème est OFFERT sans être encouragé (bordé — un aplat rouge invite au
      clic). -->
 <div class="acts">
+  <!-- Le geste qui manque à une commande non réglée passe AVANT les autres :
+       c'est la seule chose qu'elle attend. Un lien, parce qu'il mène à une
+       page — la même que la passation ouvre. -->
+  @if (settleable()) {
+    <a foldButton block size="sm" icon="credit-card" [routerLink]="['/reglement', order().id]">
+      {{ t().orders.settle }}
+    </a>
+  }
   <button
     foldButton
     block

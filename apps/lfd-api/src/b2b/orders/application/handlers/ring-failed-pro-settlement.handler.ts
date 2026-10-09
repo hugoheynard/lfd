@@ -19,6 +19,10 @@ const CAUSE_LINES: Readonly<Record<PaymentFailureCause, string>> = {
   day_closed:
     "le paiement n'a pas abouti avant la clôture de la journée. La commande est annulée, " +
     "à ressaisir s'il le faut",
+  // Les deux suivantes ne visent que la clientèle `public`, qui ne sonne pas
+  // (`UnsettledShopOrderExpiry`) : écrites pour que la table reste totale.
+  expired: "le paiement n'a pas abouti dans le délai. La commande est annulée",
+  replaced: "le client a passé une nouvelle commande. Celle-ci est annulée",
 };
 
 /**

@@ -7,7 +7,7 @@ import { weekStart, weekStarts } from "../domain/growth-stats.js";
 import { computeMarketVolume } from "../domain/market-volume.js";
 import { MarketConfigStore } from "../domain/ports/market-config.store.js";
 import { MarketVolumeReader } from "../domain/ports/market-volume.reader.js";
-import { REVENUE_ORDER_STATUSES } from "../domain/revenue-scope.js";
+import { revenueWhere } from "./revenue.where.js";
 
 const WINDOW_WEEKS = 13;
 
@@ -35,7 +35,7 @@ export class PrismaMarketVolumeReader extends MarketVolumeReader {
     const marketActors = config.zones.reduce((sum, z) => sum + z.addressable, 0);
 
     const orders = await this.prisma.order.findMany({
-      where: { status: { in: [...REVENUE_ORDER_STATUSES] } },
+      where: revenueWhere(),
       select: { createdAt: true, totalCents: true },
     });
     const weeklyCents = new Map<string, number>();

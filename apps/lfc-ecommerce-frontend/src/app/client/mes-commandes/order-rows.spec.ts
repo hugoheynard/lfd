@@ -66,6 +66,19 @@ describe('les lignes de l’écran des commandes', () => {
   });
 
   /**
+   * Régression : « Réglée · CB » se lisait sur le régime, et une commande carte
+   * jamais payée s'affichait réglée (plan commandes non réglées, 2026-10-09).
+   */
+  it('dit le VRAI règlement d’une commande carte : réglée, à régler, refusée', () => {
+    const due = { ...ORDER, settlement: 'due' } as const;
+    expect(historyRowOf({ ...due, paymentStatus: 'pending' }, '', COPY).payment).toBe('due');
+    expect(historyRowOf({ ...due, paymentStatus: 'failed' }, '', COPY).payment).toBe('refused');
+    expect(
+      historyRowOf({ ...ORDER, paymentStatus: 'refunded', settlement: 'paid' }, '', COPY).payment,
+    ).toBe('card');
+  });
+
+  /**
    * F5 (plan `bons-et-facture-concordants`) : un pro au compte ne lit que le
    * HT — total moins TVA figés ; la TVA et le TTC sont sur la facture du mois.
    */

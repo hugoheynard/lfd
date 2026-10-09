@@ -7,7 +7,7 @@ import { dayKey, dayRange, weekStarts } from "../domain/growth-stats.js";
 import { computeSectorRevenue } from "../domain/sector-revenue.js";
 import { MarketConfigStore } from "../domain/ports/market-config.store.js";
 import { SectorRevenueReader } from "../domain/ports/sector-revenue.reader.js";
-import { REVENUE_ORDER_STATUSES } from "../domain/revenue-scope.js";
+import { revenueWhere } from "./revenue.where.js";
 
 const WINDOW_WEEKS = 13;
 
@@ -41,7 +41,7 @@ export class PrismaSectorRevenueReader extends SectorRevenueReader {
       where: {
         createdAt: { gte: start },
         companyId: { not: null },
-        status: { in: [...REVENUE_ORDER_STATUSES] },
+        ...revenueWhere(),
       },
       select: { createdAt: true, totalCents: true, company: { select: { nafCode: true } } },
     });

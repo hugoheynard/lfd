@@ -105,14 +105,21 @@ export type OrderRowStatus =
 export type OrderOrigin = '' | 'recurring' | 'phone';
 
 /**
- * Comment la commande est réglée — et il n'y a QUE ces deux-là.
+ * Comment la commande est réglée, lu sur le VRAI règlement.
  *
- * Une commande n'attend jamais son règlement : ou elle part au compte, et c'est
- * la facture du mois qui la porte, ou elle a été payée par carte au moment où
- * elle a été passée. Un troisième état « à régler » décrirait une commande
- * livrée que personne n'a payée — ça n'existe pas dans ce commerce.
+ * - `account` — portée au compte (ou gratuite) : la facture du mois la porte ;
+ * - `card` — encaissée par carte (une remboursée en reste une) ;
+ * - `due` — passée par carte, paiement pas encore abouti ;
+ * - `refused` — passée par carte, paiement refusé par la banque.
+ *
+ * ⚠️ Ce type disait « il n'y a QUE deux états » jusqu'au 2026-10-09, et
+ * l'étiquette « Réglée · CB » se lisait sur le régime : une commande carte
+ * jamais payée s'affichait réglée (plan
+ * `documentation/order/plan-commandes-non-reglees.md`, §2.4). Les deux derniers
+ * se règlent depuis l'écran de règlement de la même commande ; le serveur
+ * annule celles qui restent en l'air.
  */
-export type OrderPayment = 'account' | 'card';
+export type OrderPayment = 'account' | 'card' | 'due' | 'refused';
 
 /**
  * Ce que Stripe a rendu sur la commande (lot R1 du plan
@@ -274,11 +281,22 @@ export function historyRowOf(order: CustomerOrderView, org: string, copy: RowCop
     // Le régime calculé au serveur, pas une recopie du critère (F5) : `account`
     // = portée au compte, facturée en fin de mois ; `free` (total nul) gardait
     // déjà ce libellé. Tout le reste est passé par la carte.
-    payment: order.settlement === 'account' || order.settlement === 'free' ? 'account' : 'card',
+    payment: paymentOf(order),
     refund: refundOf(order),
     origin: originOf(order),
     org,
   };
+}
+
+/** Le règlement de la ligne : le régime d'abord, puis l'état réel de la carte. */
+function paymentOf(order: CustomerOrderView): OrderPayment {
+  if (order.settlement === 'account' || order.settlement === 'free') {
+    return 'account';
+  }
+  if (order.paymentStatus === 'pending') {
+    return 'due';
+  }
+  return order.paymentStatus === 'failed' ? 'refused' : 'card';
 }
 
 /**

@@ -1,9 +1,10 @@
 import { ChangeDetectionStrategy, Component, computed, inject, input, output } from '@angular/core';
+import { RouterLink } from '@angular/router';
 import { FoldButtonComponent } from 'fold-ng';
 
 import { ClientCopyService } from '../../copy/client-copy.service';
 import { formatCents } from '../../format-money';
-import type { HistoryOrder } from '../order-rows';
+import type { HistoryOrder, OrderPayment } from '../order-rows';
 
 /** Une note de 1 à 5. Zéro veut dire « pas encore notée », pas « zéro étoile ». */
 const STARS = [1, 2, 3, 4, 5] as const;
@@ -25,7 +26,7 @@ const STARS = [1, 2, 3, 4, 5] as const;
 @Component({
   selector: 'app-order-detail',
   changeDetection: ChangeDetectionStrategy.OnPush,
-  imports: [FoldButtonComponent],
+  imports: [FoldButtonComponent, RouterLink],
   templateUrl: './order-detail.html',
   styleUrl: './order-detail.scss',
 })
@@ -53,11 +54,23 @@ export class OrderDetail {
 
   protected readonly paymentLabel = computed(() => {
     const copy = this.t().orders;
-    const labels = {
+    const labels: Record<OrderPayment, string> = {
       account: copy.payAccount,
       card: copy.payCard,
+      due: copy.payDue,
+      refused: copy.payRefused,
     };
     return labels[this.order().payment];
+  });
+
+  /**
+   * Une commande carte non réglée se règle sur SA page de règlement — jamais
+   * en repassant le panier, qui ferait une seconde commande (plan
+   * `documentation/order/plan-commandes-non-reglees.md`, §4.3).
+   */
+  protected readonly settleable = computed(() => {
+    const payment = this.order().payment;
+    return payment === 'due' || payment === 'refused';
   });
 
   /** La part HT du bon de fidélité, mise en forme ; `null` sans bon. */
@@ -83,9 +96,11 @@ export class OrderDetail {
 
   protected readonly paymentNote = computed(() => {
     const copy = this.t().orders;
-    const notes = {
+    const notes: Record<OrderPayment, string> = {
       account: copy.payAccountNote,
       card: copy.payCardNote,
+      due: copy.payDueNote,
+      refused: copy.payRefusedNote,
     };
     return notes[this.order().payment];
   });

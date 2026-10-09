@@ -22,6 +22,22 @@ describe('HistoryTable', () => {
     fixture.detectChanges();
   });
 
+  /** Régression : l'étiquette disait « Réglée · CB » d'une carte jamais payée (2026-10-09). */
+  it('étiquette le VRAI règlement : réglée, à régler, refusée', () => {
+    const base = ROWS[0] as HistoryOrder;
+    fixture.componentRef.setInput('orders', [
+      { ...base, reference: 'CMD-P', payment: 'card' },
+      { ...base, reference: 'CMD-D', payment: 'due' },
+      { ...base, reference: 'CMD-R', payment: 'refused' },
+    ]);
+    fixture.detectChanges();
+
+    const tags = Array.from(el().querySelectorAll('.tag[data-payment]')).map((tag) =>
+      tag.textContent?.trim(),
+    );
+    expect(tags).toEqual([FR.orders.payCard, FR.orders.payDue, FR.orders.payRefused]);
+  });
+
   it('donne une ligne par commande, et n’en déplie aucune au départ', () => {
     expect(toggles().length).toBe(ROWS.length);
     expect(drawers().length).toBe(0);
