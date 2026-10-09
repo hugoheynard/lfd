@@ -1,5 +1,14 @@
 # Plan — ajouter Google ou Facebook à son compte, depuis son profil
 
+> 🔴 **Bandeau du 2026-10-09.** Le rattachement est bâti (profil, popup,
+> `POST /me/identities`), mais **le §-mécanisme `link_with` décrit plus bas est
+> abandonné** : Auth0 le refusait toujours en production (audience du jeton =
+> SPA boutique ≠ client de gestion). L'API vérifie la preuve elle-même puis
+> désigne l'identité par `{ provider, user_id }` ; seuls `google-oauth2` et
+> `facebook` sont admis (`LinkableIdentity`, objection de vitruve : `auth0|…`
+> peut être un compte staff). État décrit dans
+> [`les-deux-origines-d-un-compte.md`](les-deux-origines-d-un-compte.md) §4.
+
 **Statut** : 📐 plan, **version 1 du 2026-09-22**. Rien n'est bâti.
 Déplace une **frontière de sécurité** (qui peut ouvrir quel compte) → `vitruve`
 obligatoire avant soumission (CLAUDE.md §9 bis).
