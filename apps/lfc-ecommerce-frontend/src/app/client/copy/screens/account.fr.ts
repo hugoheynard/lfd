@@ -159,6 +159,7 @@ export const ACCOUNT_FR: AccountCopy = {
   loginMethodAuthFailed: 'L’autorisation n’a pas abouti. Réessayez.',
   loginMethodRetry: 'Recommencer',
   loginMethodEmail: 'E-mail',
+  loginMethodEmailCode: 'Code par e-mail',
   loginMethodGoogle: 'Google',
   loginMethodFacebook: 'Facebook',
   loginMethodEmailChange: 'Changer mon adresse',

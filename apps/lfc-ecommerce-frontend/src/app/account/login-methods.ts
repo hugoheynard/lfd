@@ -1,6 +1,6 @@
 import type { LoginMethodsView } from '@lfd/contracts';
 
-import { FACEBOOK_CONNECTION, GOOGLE_CONNECTION } from '../auth/auth.config';
+import { EMAIL_CODE_CONNECTION, FACEBOOK_CONNECTION, GOOGLE_CONNECTION } from '../auth/auth.config';
 import type { AccountCopy } from '../client/copy/screens/account.copy';
 
 /**
@@ -95,6 +95,10 @@ export function loginMethodLabel(provider: string, copy: AccountCopy): string {
   switch (provider) {
     case DATABASE_PROVIDER:
       return copy.loginMethodEmail;
+    // La connexion par code (2026-10-09) : Auth0 nomme son fournisseur
+    // `email`, et la carte affichait ce mot brut.
+    case EMAIL_CODE_CONNECTION:
+      return copy.loginMethodEmailCode;
     case GOOGLE_CONNECTION:
       return copy.loginMethodGoogle;
     case FACEBOOK_CONNECTION:

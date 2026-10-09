@@ -169,6 +169,22 @@ describe('LoginMethodsSection', () => {
     expect(cards[1]?.textContent).not.toContain(FR.account.loginMethodEmailChange);
   });
 
+  /**
+   * Régression 2026-10-09 : un compte ouvert par code voyait une carte
+   * intitulée « email », sans son adresse.
+   */
+  it('nomme la connexion par code et montre son adresse, sans geste de mot de passe', async () => {
+    fixture = await boot({
+      kind: 'loaded',
+      methods: [{ provider: 'email', connection: 'email', isPrimary: true }],
+    });
+
+    const card = el().querySelector('fold-card');
+    expect(card?.textContent).toContain(FR.account.loginMethodEmailCode);
+    expect(card?.textContent).toContain('hheynard@gmail.com');
+    expect(card?.textContent).not.toContain(FR.account.loginMethodEmailChange);
+  });
+
   /** Tant que `/me` n'a rien dit, il n'y a ni adresse à montrer ni quoi la changer. */
   it('ne montre pas d’adresse tant que le profil n’est pas lu', async () => {
     fixture = await bootWith(null, { kind: 'loaded', methods: EMAIL_ONLY });

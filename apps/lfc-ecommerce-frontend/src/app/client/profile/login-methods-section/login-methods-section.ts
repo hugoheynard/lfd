@@ -29,6 +29,7 @@ import {
 import { LoginMethodsService } from '../../../account/login-methods.service';
 import { ClientCopyService, fill } from '../../copy/client-copy.service';
 import { EmailDialog } from '../email-dialog/email-dialog';
+import { EMAIL_CODE_CONNECTION } from '../../../auth/auth.config';
 
 /** Où en est la lecture de la liste — « vide » n'est pas « pas encore su ». */
 type LoadStatus = 'loading' | 'ready' | 'error';
@@ -114,6 +115,7 @@ function removeConfirmLabels(): FoldInlineConfirmLabels {
 export class LoginMethodsSection {
   /** La ligne qui porte l'adresse de connexion, et elle seule. */
   protected readonly emailProvider = DATABASE_PROVIDER;
+  protected readonly emailCodeProvider = EMAIL_CODE_CONNECTION;
 
   protected readonly t = inject(ClientCopyService).t;
   private readonly service = inject(LoginMethodsService);

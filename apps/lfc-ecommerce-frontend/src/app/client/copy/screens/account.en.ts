@@ -158,6 +158,7 @@ export const ACCOUNT_EN: AccountCopy = {
   loginMethodAuthFailed: 'Authorisation did not complete. Try again.',
   loginMethodRetry: 'Start over',
   loginMethodEmail: 'E-mail',
+  loginMethodEmailCode: 'Code by e-mail',
   loginMethodGoogle: 'Google',
   loginMethodFacebook: 'Facebook',
   loginMethodEmailChange: 'Change my address',

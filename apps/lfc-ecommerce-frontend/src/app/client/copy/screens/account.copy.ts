@@ -193,6 +193,8 @@ export interface AccountCopy {
   readonly loginMethodRetry: string;
   /** Les noms des fournisseurs, tels qu'on les nomme à l'écran. */
   readonly loginMethodEmail: string;
+  /** La connexion par code reçu par e-mail (2026-10-09). */
+  readonly loginMethodEmailCode: string;
   readonly loginMethodGoogle: string;
   readonly loginMethodFacebook: string;
   /**

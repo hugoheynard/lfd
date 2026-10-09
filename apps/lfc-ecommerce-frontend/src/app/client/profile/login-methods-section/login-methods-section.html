@@ -73,6 +73,18 @@
               }
             </fold-element-title>
 
+            <!-- LA CONNEXION PAR CODE (2026-10-09) : l'adresse où le code
+                 arrive. Aucun geste ici — ni mot de passe, ni changement. -->
+            @if (method.provider === emailCodeProvider) {
+              @if (profile(); as person) {
+                <div class="email">
+                  <div class="address">
+                    <span>{{ person.email }}</span>
+                  </div>
+                </div>
+              }
+            }
+
             <!-- LA LIGNE « E-MAIL » porte l'adresse de connexion et ses deux
                  gestes : elle n'est pas une coordonnée, c'est la clé d'accès. -->
             @if (method.provider === emailProvider) {

@@ -159,6 +159,7 @@ export const ACCOUNT_IT: AccountCopy = {
   loginMethodAuthFailed: 'L’autorizzazione non è andata a buon fine. Riprovate.',
   loginMethodRetry: 'Ricominciare',
   loginMethodEmail: 'E-mail',
+  loginMethodEmailCode: 'Codice via e-mail',
   loginMethodGoogle: 'Google',
   loginMethodFacebook: 'Facebook',
   loginMethodEmailChange: 'Cambiare il mio indirizzo',
