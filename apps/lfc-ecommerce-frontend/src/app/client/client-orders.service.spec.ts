@@ -398,6 +398,38 @@ describe('le règlement de la commande', () => {
     await expect(asking).rejects.toBeDefined();
   });
 
+  /**
+   * Le panier suit le règlement (Hugo, 2026-10-09) — régression : il se vidait
+   * au clic sur « Commander », et revenir de la page de règlement sans payer
+   * rendait un panier vide.
+   */
+  it('garde le panier d’une commande à régler, et le vide au paiement de CETTE commande', async () => {
+    boot();
+    const orders = TestBed.inject(ClientOrders);
+    const cart = TestBed.inject(ClientCart);
+    TestBed.inject(OrderContextStore).choice.set(AU_LABO);
+    cart.add('VIE-001');
+
+    await placeOrderResponse({ id: 'ord_c', orderNumber: 'CMD-C', payment: CARD_DUE });
+    expect(cart.isEmpty()).toBe(false);
+
+    orders.markPaid('ord_autre');
+    expect(cart.isEmpty()).toBe(false);
+
+    orders.markPaid('ord_c');
+    expect(cart.isEmpty()).toBe(true);
+  });
+
+  it('vide le panier tout de suite quand rien n’est à encaisser', async () => {
+    boot();
+    TestBed.inject(OrderContextStore).choice.set(AU_LABO);
+    TestBed.inject(ClientCart).add('VIE-001');
+
+    await placeOrder('CMD-0011');
+
+    expect(TestBed.inject(ClientCart).isEmpty()).toBe(true);
+  });
+
   /** Le paiement abouti change l'état de CETTE commande, et d'aucune autre. */
   it('passe à RÉGLÉ la commande payée, et elle seule', async () => {
     boot();

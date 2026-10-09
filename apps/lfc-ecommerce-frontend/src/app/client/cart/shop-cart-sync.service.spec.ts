@@ -209,6 +209,23 @@ describe('ShopCartSync — la fusion', () => {
     expect(cart.quantities()).toEqual({ 'VIE-001': 2 });
   });
 
+  /**
+   * Régression 2026-10-09 (« au retour arrière, de temps en temps, mon panier
+   * se vide ») : une lecture ratée ouvrait l'écriture, et le brouillon suivant
+   * — une copie locale vide ou ancienne — écrasait le panier gardé.
+   */
+  it('n’écrit rien après une lecture ratée', () => {
+    const { cart, http } = boot();
+    wake();
+
+    reading(http, MAISON_A).error(new ProgressEvent('coupure'));
+    TestBed.tick();
+    cart.setQuantity('VIE-001', 1);
+    quiet();
+
+    expect(writes(http)).toEqual([]);
+  });
+
   /** Régression : un geste fait pendant une lecture lente partait avant elle. */
   it('n’écrit rien tant que la lecture n’a pas répondu', () => {
     const { cart, http } = boot();

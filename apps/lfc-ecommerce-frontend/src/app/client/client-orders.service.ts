@@ -119,6 +119,23 @@ const ATTEMPT_KEY = 'order-attempt';
 const attemptKeyOf = (workspace: string): string => `${ATTEMPT_KEY}.${workspace}`;
 
 /**
+ * **Le panier suit le règlement** (Hugo, 2026-10-09 : « faire une corrélation
+ * entre le statut de commande et le panier plutôt qu'effacer arbitrairement »).
+ *
+ * Une commande à régler par carte ne vide PAS le panier à la passation : il
+ * attend, sous cette clé, l'identifiant de la commande qui l'a emporté, et ne
+ * se vide qu'au paiement accepté de CETTE commande ({@link ClientOrders.markPaid}).
+ * Revenir en arrière sans payer rend donc le panier ; recommander remplace la
+ * commande restée en attente (`replace-unsettled-shop-orders.handler.ts`, API).
+ * Une commande sans rien à encaisser (compte, gratuite) vide le panier tout de
+ * suite : elle est réglée en naissant.
+ */
+const CART_AWAITING_KEY = 'cart-awaiting-payment';
+const cartAwaitingKeyOf = (workspace: string): string => `${CART_AWAITING_KEY}.${workspace}`;
+const readAwaiting = (workspace: string): string | null =>
+  readLocal(cartAwaitingKeyOf(workspace), (raw) => (typeof raw === 'string' ? raw : null));
+
+/**
  * La clé de tentative **avec un bon** : une par bon (plan des points, E2.2).
  * Changer de bon après un premier envoi est une autre commande — rejouée sous
  * la clé du premier, elle serait prise pour un rejeu. Le serveur exige un UUID :
@@ -355,7 +372,7 @@ export class ClientOrders {
     // et ni la liste ni le panier de l'espace où l'on est passé n'en sont touchés.
     if (this.workspace.current() === workspace) {
       this.placed.set(kept);
-      this.cart.clear();
+      this.settleCart(workspace, placed.id, payment !== null);
     }
     return order;
   }
@@ -468,7 +485,7 @@ export class ClientOrders {
     // d'un visiteur est `null`, donc aucune comparaison ne passerait — et la
     // confirmation n'aurait rien à montrer.
     this.placed.set(kept);
-    this.cart.clear();
+    this.settleCart(GUEST_WORKSPACE, placed.id, payment !== null);
     return order;
   }
 
@@ -528,6 +545,12 @@ export class ClientOrders {
    */
   markPaid(orderId: string): void {
     this.intent.set(null);
+    for (const workspace of [this.workspace.current() ?? GUEST_WORKSPACE, GUEST_WORKSPACE]) {
+      if (readAwaiting(workspace) === orderId) {
+        clearLocal(cartAwaitingKeyOf(workspace));
+        this.cart.clear();
+      }
+    }
     this.placed.update((all) =>
       all.map((order) => (order.id === orderId ? { ...order, settlement: 'paid' } : order)),
     );
@@ -535,6 +558,19 @@ export class ClientOrders {
     if (current !== null) {
       writeLocal(ordersKey(current), this.placed());
     }
+  }
+
+  /**
+   * À la passation : vide le panier si rien n'est à encaisser, sinon le garde
+   * en attente du paiement de cette commande (cf. `CART_AWAITING_KEY`).
+   */
+  private settleCart(workspace: string, orderId: string, due: boolean): void {
+    if (due) {
+      writeLocal(cartAwaitingKeyOf(workspace), orderId);
+      return;
+    }
+    clearLocal(cartAwaitingKeyOf(workspace));
+    this.cart.clear();
   }
 
   /**

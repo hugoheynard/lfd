@@ -5,8 +5,8 @@ import {
   catchError,
   debounceTime,
   filter,
-  finalize,
   of,
+  retry,
   switchMap,
   tap,
   type Observable,
@@ -27,6 +27,14 @@ import { ShopCartGateway } from './shop-cart.gateway';
  * eu aucune justification — c'est la même salve qu'ils absorbent.
  */
 const SAVE_DEBOUNCE_MS = 300;
+
+/**
+ * Les nouvelles tentatives de lecture du panier gardé, et leur écart : un
+ * démarrage à froid ou un jeton en cours de renouvellement ratent la première
+ * (2026-10-09). Au-delà, l'écriture reste fermée jusqu'à la prochaine entrée.
+ */
+const READ_RETRIES = 2;
+const READ_RETRY_DELAY_MS = 1500;
 
 /** Un état du panier, avec l'espace auquel il appartenait AU MOMENT du geste. */
 interface Draft {
@@ -187,17 +195,23 @@ export class ShopCartSync {
         tap((remote) => {
           this.reconcile(workspace, remote, carried);
         }),
-        // Un échec de lecture n'est pas un panier vide : on ne touche à rien
-        // de ce qui est affiché.
-        catchError(() => of(null)),
-        // `finalize` et non `tap` : l'écriture reprend aussi après un échec.
-        // Gardé par l'espace — une lecture abandonnée par une bascule se
-        // finalise aussi, et ne doit pas ouvrir l'écriture du nouvel espace.
-        finalize(() => {
+        // Un échec de lecture n'est pas un panier vide : on réessaie, puis on
+        // ne touche à rien de ce qui est affiché.
+        retry({ count: READ_RETRIES, delay: READ_RETRY_DELAY_MS }),
+        // 🔴 **L'écriture ne s'ouvre QU'APRÈS une lecture réussie** (régression
+        // du 2026-10-09, « au retour arrière, de temps en temps, mon panier se
+        // vide »). Elle s'ouvrait aussi après un échec (`finalize`) : le
+        // brouillon suivant — souvent l'élagage du catalogue, sur une copie
+        // locale vide ou ancienne — partait alors au serveur sans la règle
+        // « la plus récente gagne », et écrasait le panier gardé. Sans lecture,
+        // les gestes restent dans la copie locale ; la prochaine entrée les
+        // réconcilie.
+        tap(() => {
           if (this.synced === workspace) {
             this.resumed = true;
           }
         }),
+        catchError(() => of(null)),
         takeUntilDestroyed(this.destroyRef),
       )
       .subscribe();
