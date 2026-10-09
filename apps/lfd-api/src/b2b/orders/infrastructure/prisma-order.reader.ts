@@ -31,7 +31,6 @@ import {
 import { Injectable } from "@nestjs/common";
 
 import {
-  OrderStatus as OrderStatusValue,
   PaymentStatus as PaymentStatusValue,
   type Prisma,
 } from "../../../platform/database/client/client.js";
@@ -191,14 +190,15 @@ const ORDER_SELECT = {
  * commande annulée sans avoir été payée n'en est pas une. Seule la carte
  * connaît `pending` et `failed` (`settlement-regime.ts`) : la condition ne
  * retire donc ni une commande au compte, ni une gratuite, ni une remboursée.
- * Une commande non réglée encore `placed` reste visible — l'écran la dit « À
- * régler » ou « Paiement refusé » et propose de la régler.
+ *
+ * 🔴 **Resserré le 2026-10-09** (Hugo : « je ne veux plus voir une commande non
+ * réglée dans le suivi ou la table ») : une commande carte non réglée n'apparaît
+ * plus du tout, même encore `placed`. Elle se règle depuis la page de règlement
+ * où mène la passation ; le panier, gardé jusqu'au paiement, permet de la
+ * repasser, et la nouvelle remplace l'ancienne (`replace-unsettled-shop-orders`).
  */
 const CUSTOMER_VISIBLE = {
-  NOT: {
-    status: OrderStatusValue.cancelled,
-    paymentStatus: { in: [PaymentStatusValue.pending, PaymentStatusValue.failed] },
-  },
+  paymentStatus: { notIn: [PaymentStatusValue.pending, PaymentStatusValue.failed] },
 } satisfies Prisma.OrderWhereInput;
 
 /** Lecture des commandes (entreprise ou personnel), la plus récente en tête. */

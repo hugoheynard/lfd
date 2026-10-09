@@ -192,6 +192,14 @@ describe("zéro friction — commande sans entreprise", () => {
     expect(stored.paymentStatus).toBe("pending");
     expect(stored.stripePaymentIntentId).toBe("pi_e2e");
 
+    // Non réglée, elle n'est pas listée (Hugo, 2026-10-09 : ni suivi, ni table —
+    // plan-carte-reglee-avant-tout.md) ; réglée, elle l'est.
+    const before = jsonBody<readonly CustomerOrderView[]>(
+      await ctx.asSub(MEMBER).get(`/orders/mine`).expect(200),
+    );
+    expect(before).toEqual([]);
+    await ctx.prisma.order.update({ where: { id: placed.id }, data: { paymentStatus: "paid" } });
+
     const mine = jsonBody<readonly CustomerOrderView[]>(
       await ctx.asSub(MEMBER).get(`/orders/mine`).expect(200),
     );
@@ -252,6 +260,9 @@ describe("checkout → Order", () => {
       .expect(201);
     const placed = jsonBody<PlacedOrderResponse>(response);
     expect(placed.orderNumber).toMatch(/^ORD-/u);
+    // Réglée : une commande carte non réglée n'est pas listée au client
+    // (2026-10-09). Ce qu'on éprouve ici est la persistance des lignes.
+    await ctx.prisma.order.update({ where: { id: placed.id }, data: { paymentStatus: "paid" } });
 
     const list = jsonBody<readonly CustomerOrderView[]>(
       await ctx.asSub(MEMBER).get(`/companies/${companyId}/orders`).expect(200),

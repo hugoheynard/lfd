@@ -1,7 +1,7 @@
 # TODO — « Nous écrire » : les données des visiteurs hors du registre RGPD
 
 **Ouvert le 2026-10-09** par le lot backend de
-[`plan-nous-ecrire.md`](plan-nous-ecrire.md) (§5.3).
+[`nous-contacter.md`](nous-contacter.md) (§5.3).
 
 `public.contact_message` porte des données personnelles d'un **tiers** — le
 visiteur ou le client qui écrit : `author_name`, `author_email`,

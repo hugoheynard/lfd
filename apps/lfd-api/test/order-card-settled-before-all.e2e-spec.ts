@@ -130,11 +130,17 @@ describe("une commande carte non réglée", () => {
     const mine = jsonBody<CustomerOrderView[]>(
       await ctx.asSub(CLIENT).get(`/orders/mine`).expect(200),
     );
-    expect(mine.find((row) => row.id === order.id)?.handoverToken).toBeNull();
+    // Resserré le 2026-10-09 (Hugo) : une commande non réglée n'est même plus
+    // listée — ni suivi, ni table.
+    expect(mine.map((row) => row.id)).not.toContain(order.id);
 
     await settleCardPayments(ctx, issuedIntents);
 
     expect((await clientView(order.id)).handoverToken).not.toBeNull();
+    const after = jsonBody<CustomerOrderView[]>(
+      await ctx.asSub(CLIENT).get(`/orders/mine`).expect(200),
+    );
+    expect(after.map((row) => row.id)).toContain(order.id);
   });
 
   it("est refusée au comptoir en nommant le cas, puis remise une fois réglée", async () => {
