@@ -548,6 +548,13 @@ export const ACCOUNTS_AND_CARTS_FACTS = {
     payload({ subjectLabel: subjectLabel().optional(), supportRequestId: ref("support_request") }),
     [payload({ supportRequestId: ref("support_request") })],
   ),
+  /**
+   * **Un message « Nous écrire » traité** (`plan-nous-ecrire.md`, §5.7,
+   * 2026-10-09). Le sujet est le message ; `subjectLabel` est le libellé
+   * français de son OBJET, jamais l'auteur : le message s'anonymise à douze
+   * mois, et un nom recopié au journal y survivrait.
+   */
+  "contact_message.handled": fact(payload({ subjectLabel: subjectLabel() })),
 
   /** Le sujet est la clé de la fonctionnalité ; son libellé, celui du catalogue fermé. */
   "feature_access.override_set": labelled({

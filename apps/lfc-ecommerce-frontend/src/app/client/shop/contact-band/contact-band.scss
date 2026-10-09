@@ -79,10 +79,29 @@
 }
 
 .call {
-  height: 48px;
+  min-height: 48px;
+  padding: var(--fold-space-xs) var(--fold-space-md);
   background: var(--lfc-ink-800);
   color: var(--lfc-paper-0);
   font-size: var(--lfc-text-block);
+}
+
+/* Le numéro sous son libellé : il se lit, il ne crie pas. */
+.number {
+  font-family: var(--fold-font-label);
+  font-size: var(--lfc-text-note);
+  font-weight: var(--lfc-weight-black);
+  letter-spacing: 0;
+  text-transform: none;
+}
+
+/* Les numéros suivants : la même forme, au ton du second choix. */
+.call.more {
+  min-height: 42px;
+  border: 1px solid var(--lfc-ink-100);
+  background: var(--lfc-paper-0);
+  color: var(--lfc-ink-800);
+  font-size: var(--lfc-text-note);
 }
 
 /* Le crème, et non une transparence : la bande est déjà bleue, et un bouton
@@ -93,11 +112,5 @@
   background: var(--lfc-paper-0);
   color: var(--lfc-ink-800);
   font-size: var(--lfc-text-note);
-}
-
-.note {
-  margin: 2px 0 0;
-  font-size: var(--lfc-text-note);
-  line-height: 1.4;
-  color: var(--lfc-ink-700-text);
+  cursor: pointer;
 }

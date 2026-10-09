@@ -1,4 +1,4 @@
-import { ChangeDetectionStrategy, Component, inject } from '@angular/core';
+import { ChangeDetectionStrategy, Component, computed, inject } from '@angular/core';
 
 import {
   FoldButtonComponent,
@@ -9,6 +9,14 @@ import {
   FoldPanelRef,
 } from 'fold-ng';
 
+import { ClientAudience } from '../../../client/client-audience.service';
+import { ClientLocale } from '../../../client/client-locale.service';
+import {
+  ContactSettingsStore,
+  phonesFor,
+  telHref,
+} from '../../../client/shop/contact-settings.store';
+import { ContactDialog } from '../../../client/shop/contact-dialog/contact-dialog';
 import {
   ActivationSupportPanel,
   type SupportPanelData,
@@ -42,11 +50,27 @@ export class ContactPanel {
   private readonly ref = inject(FoldPanelRef);
   private readonly panelHost = inject(FoldPanelHostService);
 
-  /** Coordonnées de contact — TODO : brancher sur les vraies infos / un réglage. */
-  protected readonly phone = '+33 4 79 00 00 00';
-  protected readonly phoneHref = 'tel:+33479000000';
-  protected readonly email = 'contact@lafoliecoffee.fr';
+  private readonly settings = inject(ContactSettingsStore);
+  private readonly audience = inject(ClientAudience).shown;
+  private readonly locale = inject(ClientLocale).current;
+
+  /** Les numéros réglés au back-office pour ce public ; aucun → le numéro de repli. */
+  protected readonly phones = computed(() =>
+    phonesFor(this.settings.settings(), this.audience(), this.locale()),
+  );
+  protected readonly telHref = telHref;
+
+  constructor() {
+    void this.settings.hydrate();
+  }
+
+  /** TODO : brancher sur un réglage. */
   protected readonly hours = 'Du lundi au vendredi, 8h–18h';
+
+  /** Ouvre « Nous écrire » par-dessus ce panneau, qui reste dessous. */
+  protected write(): void {
+    ContactDialog.open(this.panelHost, true);
+  }
 
   /** Ouvre la réservation, sans contexte d'entreprise. */
   protected book(): void {

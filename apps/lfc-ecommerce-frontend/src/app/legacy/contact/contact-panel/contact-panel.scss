@@ -37,8 +37,11 @@
   border: 1px solid var(--fold-color-border);
   border-radius: var(--fold-radius-md, 10px);
   color: var(--fold-color-text);
+  background: none;
+  font: inherit;
   text-decoration: none;
   font-weight: 600;
+  cursor: pointer;
 }
 .cp-row:hover {
   border-color: var(--fold-color-primary);

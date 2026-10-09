@@ -8,11 +8,14 @@
 </div>
 
 <!-- 🔴 APPELER D'ABORD, ET EN PLEIN : c'est la hiérarchie de la source, et elle
-     dit quelque chose — un imprévu se règle au téléphone, pas par écrit. La
-     mention de l'heure creuse vient APRÈS les deux boutons : elle ne retient
-     pas, elle évite un appel qui sonnerait dans le vide. -->
+     dit quelque chose — un imprévu se règle au téléphone, pas par écrit. -->
 <div class="acts">
-  <a class="call" [href]="phoneHref">{{ copy().call }}</a>
-  <a class="write" [href]="mailHref">{{ copy().write }}</a>
-  <p class="note">{{ copy().note }}</p>
+  <!-- Un bouton par numéro : le premier en plein, les suivants plus discrets. -->
+  @for (phone of copy().phones; track $index; let first = $first) {
+    <a class="call" [class.more]="!first" [href]="telHref(phone.number)">
+      <span>{{ copy().call }}{{ phone.label ? ' · ' + phone.label : '' }}</span>
+      <span class="number">{{ phone.number }}</span>
+    </a>
+  }
+  <button class="write" type="button" (click)="write()">{{ copy().write }}</button>
 </div>

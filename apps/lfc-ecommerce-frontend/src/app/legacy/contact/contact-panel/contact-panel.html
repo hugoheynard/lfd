@@ -3,14 +3,18 @@
 <div class="body">
   <section class="cp-block">
     <p class="cp-label">Contact direct</p>
-    <a class="cp-row" [href]="phoneHref">
-      <fold-icon name="phone" [size]="18" />
-      <span>{{ phone }}</span>
-    </a>
-    <a class="cp-row" [href]="'mailto:' + email">
+    @for (phone of phones(); track $index) {
+      <a class="cp-row" [href]="telHref(phone.number)">
+        <fold-icon name="phone" [size]="18" />
+        <span>{{ phone.label ? phone.label + ' · ' : '' }}{{ phone.number }}</span>
+      </a>
+    }
+    <!-- « Écrire » ouvre le dialogue « Nous écrire » de la boutique, et non plus
+         un `mailto:` (plan « Nous écrire », §4). -->
+    <button type="button" class="cp-row" (click)="write()">
       <fold-icon name="mail" [size]="18" />
-      <span>{{ email }}</span>
-    </a>
+      <span>Nous écrire</span>
+    </button>
     <p class="cp-hours">{{ hours }}</p>
   </section>
 

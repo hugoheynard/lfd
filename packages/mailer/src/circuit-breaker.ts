@@ -1,4 +1,4 @@
-import { MailerCircuitOpenError, MailerRateLimitedError } from "./errors.js";
+import { MailerCircuitOpenError, MailerError, MailerRateLimitedError } from "./errors.js";
 import { silentLogger } from "./types.js";
 import type { Mailer, MailerLogger, MailReceipt, SendMailArgs, TemplateMap } from "./types.js";
 
@@ -64,7 +64,9 @@ export class CircuitBreakerMailer<M extends TemplateMap> implements Mailer<M> {
     } catch (error) {
       // Un refus de cadence n'est pas une panne : Resend répond, il demande de
       // ralentir. Le compter ouvrirait le disjoncteur sur une simple rafale.
-      if (!(error instanceof MailerRateLimitedError)) {
+      // Une donnée refusée (`business`, ex. un Reply-To invalide) non plus :
+      // rien n'a été tenté chez le fournisseur.
+      if (!(error instanceof MailerRateLimitedError) && !isRefusedData(error)) {
         this.recordFailure();
       }
       throw error;
@@ -86,4 +88,9 @@ export class CircuitBreakerMailer<M extends TemplateMap> implements Mailer<M> {
       cooldownMs: this.cooldownMs,
     });
   }
+}
+
+/** Un refus de la donnée par le mailer lui-même : le fournisseur n'a pas été appelé. */
+function isRefusedData(error: unknown): boolean {
+  return error instanceof MailerError && error.category === "business";
 }

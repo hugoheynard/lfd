@@ -29,6 +29,16 @@ export {
   type OrderOpeningView,
   type PublicOrderOpeningView,
 } from "./order-opening.values.js";
+export {
+  CONTACT_BOUNDS,
+  CONTACT_MIN_FILL_MS,
+  DEFAULT_CONTACT_SETTINGS,
+  type ContactCardText,
+  type ContactLocalizedText,
+  type PublicContactPhoneView,
+  type PublicContactSettingsView,
+  type PublicContactSubjectView,
+} from "./contact.values.js";
 export { ALL_DISCOUNT_AUDIENCES } from "./pickup-discount-audiences.js";
 export { PERSONAL_WORKSPACE, WORKSPACE_HEADER } from "./workspace.js";
 export { exposedHandoverToken, isSettled } from "./order-settlement.values.js";

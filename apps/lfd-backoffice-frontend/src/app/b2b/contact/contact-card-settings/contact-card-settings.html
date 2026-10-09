@@ -1,0 +1,104 @@
+<fold-card>
+  <fold-element-title
+    cardHeader
+    variant="title"
+    title="Carte de contact"
+    subtitle="Ce que la boutique affiche pour vous joindre. Un champ vide garde le texte actuel de la boutique."
+  />
+
+  @switch (state()) {
+    @case ('loading') {
+      <fold-loading message="Chargement de la carte de contact…" />
+    }
+    @case ('error') {
+      <fold-empty-state tone="alert" title="Impossible de charger la carte de contact">
+        <button foldButton (click)="load()">Réessayer</button>
+      </fold-empty-state>
+    }
+    @case ('ready') {
+      @if (draft(); as form) {
+        <div class="ccs-fields">
+          <app-contact-phones
+            [phones]="phones()"
+            [canWrite]="canWrite()"
+            (changed)="reloadPhones()"
+          />
+
+          <div class="ccs-switches">
+            <fold-view-toggle
+              ariaLabel="Clientèle"
+              size="sm"
+              [options]="audienceOptions()"
+              [value]="audience()"
+              (valueChange)="selectAudience($event)"
+              data-audience-toggle
+            />
+            <fold-view-toggle
+              ariaLabel="Langue"
+              size="sm"
+              [options]="langOptions()"
+              [value]="lang()"
+              (valueChange)="selectLang($event)"
+              data-lang-toggle
+            />
+          </div>
+
+          <div class="ccs-split">
+            <div class="ccs-fields ccs-form" [attr.data-card]="audience()">
+              <fold-input
+                label="Titre"
+                hint="Un retour à la ligne coupe le titre."
+                [readOnly]="!canWrite()"
+                [value]="form.cards[audience()].title[lang()]"
+                (valueChange)="setText('title', $event)"
+                data-title
+              />
+              <fold-textarea
+                label="Phrase"
+                [rows]="3"
+                [hint]="fallbackHint()"
+                [readOnly]="!canWrite()"
+                [value]="form.cards[audience()].body[lang()]"
+                (valueChange)="setText('body', $event)"
+                data-body
+              />
+            </div>
+
+            @if (preview(); as text) {
+              <div class="ccs-preview" data-preview>
+                <app-contact-card-preview [text]="text" />
+              </div>
+            }
+          </div>
+
+          @if (issue(); as message) {
+            <fold-callout variant="warning" data-issue>{{ message }}</fold-callout>
+          }
+          @if (refusal(); as message) {
+            <fold-callout variant="alert" announce>{{ message }}</fold-callout>
+          }
+
+          @if (updatedBy(); as author) {
+            <p class="ccs-trace">Dernier réglage par {{ author }}.</p>
+          }
+
+          @if (canWrite()) {
+            <div class="ccs-actions">
+              <button
+                foldButton
+                intent="primary"
+                type="button"
+                [disabled]="!canSubmit()"
+                [loading]="saving()"
+                (click)="submit()"
+                data-save-card
+              >
+                Enregistrer
+              </button>
+            </div>
+          }
+        </div>
+      }
+    }
+  }
+</fold-card>

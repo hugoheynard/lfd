@@ -1,0 +1,95 @@
+<fold-panel-header [title]="c().title" [subtitle]="c().subtitle" [closeLabel]="c().cancel" />
+
+<fold-panel-body>
+  @switch (state()) {
+    @case ('loading') {
+      <fold-loading [message]="c().loading" />
+    }
+    @case ('failed') {
+      <fold-empty-state tone="alert" [title]="c().loadFailed">
+        <button foldButton emphasis="outline" intent="neutral" type="button" (click)="load()">
+          {{ c().retry }}
+        </button>
+      </fold-empty-state>
+    }
+    @default {
+      @if (subjectOptions().length === 0) {
+        <fold-empty-state [title]="c().noSubjectTitle" [subtitle]="c().noSubjectSubtitle">
+          <fold-icon empty-icon name="mail" />
+        </fold-empty-state>
+      } @else {
+        <!-- Un refus du serveur reste ici, dialogue ouvert : c'est ici qu'on corrige. -->
+        @if (refusal(); as said) {
+          <fold-callout variant="alert" announce>{{ said }}</fold-callout>
+        }
+
+        <fold-listbox
+          [label]="c().subject"
+          [placeholder]="c().subjectPlaceholder"
+          [required]="true"
+          [options]="subjectOptions()"
+          [value]="subjectId()"
+          (valueChange)="subjectId.set($event)"
+        />
+
+        <fold-input
+          [label]="c().name"
+          [required]="true"
+          [value]="name()"
+          (valueChange)="name.set($event)"
+        />
+
+        <fold-input
+          type="email"
+          [label]="c().email"
+          [required]="true"
+          [value]="email()"
+          (valueChange)="email.set($event)"
+        />
+
+        <fold-input
+          type="tel"
+          [label]="c().phone"
+          [hint]="c().phoneHint"
+          [optional]="true"
+          [optionalLabel]="c().optional"
+          [value]="phone()"
+          (valueChange)="phone.set($event)"
+        />
+
+        <fold-textarea
+          [label]="c().message"
+          [required]="true"
+          [rows]="6"
+          [hint]="messageTooLong() ? tooLong(bounds.message) : undefined"
+          [value]="message()"
+          (valueChange)="message.set($event)"
+        />
+
+        <!-- 🔴 LE CHAMP PIÈGE. Hors de l'écran plutôt que `hidden` : un robot
+             saute un champ caché, il remplit un champ qu'il croit visible. Hors
+             de la tabulation et des lecteurs d'écran, pour qu'aucun humain ne
+             le remplisse. -->
+        <input
+          class="trap"
+          type="text"
+          name="website"
+          tabindex="-1"
+          autocomplete="off"
+          aria-hidden="true"
+          [value]="website()"
+          (input)="trap($event)"
+        />
+      }
+    }
+  }
+</fold-panel-body>
+
+<fold-panel-footer>
+  <button foldButton emphasis="outline" intent="neutral" type="button" (click)="cancel()">
+    {{ c().cancel }}
+  </button>
+  <button foldButton intent="primary" type="button" [disabled]="!canSend()" (click)="send()">
+    {{ sending() ? c().sending : c().send }}
+  </button>
+</fold-panel-footer>

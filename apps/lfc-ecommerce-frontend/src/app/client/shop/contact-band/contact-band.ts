@@ -1,7 +1,9 @@
-import { ChangeDetectionStrategy, Component, input } from '@angular/core';
+import { ChangeDetectionStrategy, Component, inject, input } from '@angular/core';
+import { FoldPanelHostService } from 'fold-ng';
 
 import type { ContactBandCopy } from '../../copy/screens/accueil-public.copy';
-import { CONTACT_MAIL_HREF, CONTACT_PHONE_HREF } from '../contact-details';
+import { ContactDialog } from '../contact-dialog/contact-dialog';
+import { telHref } from '../contact-settings.store';
 
 /**
  * **« On répond »** — la bande de contact de l'accueil (maquette du 2026-09-20,
@@ -19,7 +21,12 @@ import { CONTACT_MAIL_HREF, CONTACT_PHONE_HREF } from '../contact-details';
  * qu'une façon de dire ceci, et c'est celle-là.
  *
  * Elle ne décide rien : tout ce qu'elle dit lui est passé, y compris le
- * sur-titre. C'est l'écran qui sait à qui il parle.
+ * sur-titre et le numéro. C'est l'écran qui sait à qui il parle, et qui
+ * superpose le réglage du back-office au dictionnaire.
+ *
+ * « Écrire » ouvre le dialogue « Nous écrire » (plan
+ * `documentation/order/plan-nous-ecrire.md`, §4) : l'objet choisi décide où
+ * part le message, ce qu'un `mailto:` ne savait pas faire.
  */
 @Component({
   selector: 'app-contact-band',
@@ -30,6 +37,11 @@ import { CONTACT_MAIL_HREF, CONTACT_PHONE_HREF } from '../contact-details';
 export class ContactBand {
   readonly copy = input.required<ContactBandCopy>();
 
-  protected readonly phoneHref = CONTACT_PHONE_HREF;
-  protected readonly mailHref = CONTACT_MAIL_HREF;
+  private readonly panels = inject(FoldPanelHostService);
+
+  protected readonly telHref = telHref;
+
+  protected write(): void {
+    ContactDialog.open(this.panels);
+  }
 }

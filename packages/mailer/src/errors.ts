@@ -69,3 +69,19 @@ export class MailerCircuitOpenError extends MailerError {
     );
   }
 }
+
+/**
+ * L'adresse de réponse demandée pour un message n'est pas une adresse e-mail
+ * posable en en-tête (forme invalide, ou caractère de contrôle qui permettrait
+ * d'injecter un en-tête). **Pas retryable** : la même adresse sera refusée de
+ * la même façon — c'est la donnée qu'il faut corriger.
+ */
+export class MailerInvalidReplyToError extends MailerError {
+  constructor() {
+    super(
+      "mailer.invalid_reply_to",
+      "business",
+      "L'adresse de réponse de ce message n'est pas une adresse e-mail valide : rien n'est envoyé. Corriger l'adresse saisie.",
+    );
+  }
+}

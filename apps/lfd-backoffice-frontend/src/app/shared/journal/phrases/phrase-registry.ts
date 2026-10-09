@@ -26,6 +26,7 @@ import { REFUND_PHRASES } from './refund-phrases';
 import { REFERENTIAL_PHRASES } from './referential-phrases';
 import { REFERENTIAL_SETTINGS_PHRASES } from './referential-settings-phrases';
 import { SETTINGS_PHRASES } from './settings-phrases';
+import { CONTACT_PHRASES } from './contact-phrases';
 import { ORDER_OPENING_PHRASES } from './order-opening-phrases';
 import { STOREFRONT_PHRASES } from './storefront-phrases';
 import { SUB_ACCOUNT_PHRASES } from './sub-account-phrases';
@@ -158,6 +159,7 @@ export const PHRASES: Readonly<Record<JournalFactType, Phrase>> = {
   ...OPERATION_PHRASES,
   ...SETTINGS_PHRASES,
   ...ORDER_OPENING_PHRASES,
+  ...CONTACT_PHRASES,
   ...COMMERCE_PHRASES,
   ...STOREFRONT_PHRASES,
   ...ORDERS_PHRASES,

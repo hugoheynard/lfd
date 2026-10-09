@@ -14,6 +14,7 @@ import {
   renderCollectionNoticeMail,
   type CollectionNoticeMailData,
 } from "./collection-notice-mail.js";
+import { renderContactMessageMail, type ContactMessageMailData } from "./contact-message-mail.js";
 import {
   renderCustomerAccessOpenedMail,
   type CustomerAccessOpenedMailData,
@@ -356,6 +357,8 @@ export interface B2bMails {
     readonly phoneNumber: string;
     readonly message: string;
   };
+  /** Un message « Nous écrire ». Cf. `contact-message-mail.ts`. */
+  "staff.contact-message": ContactMessageMailData;
 }
 
 /** Le corps d'un e-mail interne : des lignes « Libellé : valeur », puis le message. */
@@ -834,6 +837,7 @@ export function b2bMailTemplates(brand: MailBranding): TemplateRegistry<B2bMails
       }),
     }),
     "staff.production-dossier": (data) => renderProductionDossierMail(data, staffMail),
+    "staff.contact-message": (data) => renderContactMessageMail(data, staffMail),
     "staff.password-reset": (data) => ({
       subject: sanitiseSubject("Votre lien de mot de passe — back-office La Folie Douce"),
       html: staffMail({

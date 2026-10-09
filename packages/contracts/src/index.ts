@@ -572,7 +572,6 @@ export type {
 } from "./dev-seed.js";
 export type { PickupAddressPayload, PickupAddressView, CreatedPickupResponse } from "./pickup.js";
 export { adminOrdersQuerySchema, orderLineAllergensSchema } from "./order.js";
-export { exposedHandoverToken, isSettled } from "./order-settlement.values.js";
 export { vatShareSchema, vatSharesSchema } from "./order.js";
 export type { VatShareView } from "./order.js";
 export type { AdminOrderRow, AdminOrdersQuery } from "./order.js";
@@ -861,6 +860,7 @@ export {
   orderRefundStatusSchema,
   refundedCentsOf,
 } from "./order.js";
+export { exposedHandoverToken, isSettled } from "./order-settlement.values.js";
 export type {
   OrderStatus,
   PaymentStatus,
@@ -1768,6 +1768,37 @@ export type {
   DeliveryAvailabilityView,
   PublicDeliveryAvailabilityView,
 } from "./delivery-availability.js";
+export {
+  CONTACT_BOUNDS,
+  CONTACT_MIN_FILL_MS,
+  CONTACT_PRIORITIES,
+  CONTACT_SUBJECT_AUDIENCES,
+  DEFAULT_CONTACT_SETTINGS,
+  contactAudienceQuerySchema,
+  contactMessagePayloadSchema,
+  contactMessageStatusSchema,
+  contactPhonePayloadSchema,
+  contactSettingsPayloadSchema,
+  contactSubjectPayloadSchema,
+} from "./contact.js";
+export type {
+  ContactCardText,
+  ContactLocalizedText,
+  ContactMessagePayload,
+  ContactMessageStatus,
+  ContactMessageView,
+  ContactPhonePayload,
+  ContactPhoneView,
+  ContactPriority,
+  ContactSettingsPayload,
+  ContactSettingsView,
+  ContactSubjectAudience,
+  ContactSubjectPayload,
+  ContactSubjectView,
+  PublicContactPhoneView,
+  PublicContactSettingsView,
+  PublicContactSubjectView,
+} from "./contact.js";
 export {
   DEFAULT_ORDER_OPENING,
   ORDERS_CLOSED_FOR_AUDIENCE,

@@ -1,0 +1,8 @@
+/* Le champ piège, hors de l'écran : présent pour un robot, absent pour un humain. */
+.trap {
+  position: absolute;
+  left: -10000px;
+  width: 1px;
+  height: 1px;
+  overflow: hidden;
+}

@@ -1,3 +1,5 @@
+import { MailerInvalidReplyToError } from "./errors.js";
+import { isValidReplyTo } from "./reply-to.js";
 import { silentLogger } from "./types.js";
 import type {
   Mailer,
@@ -31,6 +33,10 @@ export class DryRunMailer<M extends TemplateMap> implements Mailer<M> {
   }
 
   send<K extends keyof M>(args: SendMailArgs<M, K>): Promise<MailReceipt> {
+    // Le même refus qu'en vrai : une adresse de réponse invalide se voit en local.
+    if (args.replyTo !== undefined && !isValidReplyTo(args.replyTo)) {
+      return Promise.reject(new MailerInvalidReplyToError());
+    }
     const { subject, attachments } = this.registry[args.template](args.data);
     this.log.info("E-mail à blanc", {
       template: String(args.template),

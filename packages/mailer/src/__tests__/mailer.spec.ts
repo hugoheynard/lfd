@@ -1,7 +1,7 @@
 import { CircuitBreakerMailer } from "../circuit-breaker.js";
 import { createMailer } from "../create-mailer.js";
 import { DryRunMailer } from "../dry-run-mailer.js";
-import { MailerCircuitOpenError, MailerSendError } from "../errors.js";
+import { MailerCircuitOpenError, MailerInvalidReplyToError, MailerSendError } from "../errors.js";
 import { htmlEscape, renderLayout, sanitiseSubject } from "../html.js";
 import { ResendMailer, type ResendLike } from "../resend-mailer.js";
 import type { Mailer, SendMailArgs, TemplateRegistry } from "../types.js";
@@ -266,5 +266,64 @@ describe("l'accusé d'envoi", () => {
     });
 
     await expect(mailer.send(HELLO)).resolves.toEqual({ providerId: null });
+  });
+});
+
+describe("l'adresse de réponse par message", () => {
+  it("l'emporte sur celle du mailer", async () => {
+    const { client, calls } = fakeResend(ACCEPTED);
+    await new ResendMailer<TestMails>({
+      client,
+      registry,
+      fromAddress: "a@b.fr",
+      replyTo: "contact@b.fr",
+    }).send({ ...HELLO, replyTo: "visiteur@exemple.fr" });
+    expect(calls[0]?.[0]).toMatchObject({ replyTo: "visiteur@exemple.fr" });
+  });
+
+  it("garde celle du mailer quand le message n'en donne pas", async () => {
+    const { client, calls } = fakeResend(ACCEPTED);
+    await new ResendMailer<TestMails>({
+      client,
+      registry,
+      fromAddress: "a@b.fr",
+      replyTo: "contact@b.fr",
+    }).send(HELLO);
+    expect(calls[0]?.[0]).toMatchObject({ replyTo: "contact@b.fr" });
+  });
+
+  it.each([
+    "visiteur@exemple.fr\r\nBcc: victime@exemple.fr",
+    "pas-une-adresse",
+    "a@b",
+    "Nom <a@b.fr>",
+    "",
+  ])("refuse %j avant tout appel au fournisseur", async (replyTo) => {
+    const { client, calls } = fakeResend(ACCEPTED);
+    const mailer = new ResendMailer<TestMails>({ client, registry, fromAddress: "a@b.fr" });
+    await expect(mailer.send({ ...HELLO, replyTo })).rejects.toBeInstanceOf(
+      MailerInvalidReplyToError,
+    );
+    expect(calls).toHaveLength(0);
+  });
+
+  it("refuse aussi à blanc — le refus se voit en local", async () => {
+    const mailer = new DryRunMailer<TestMails>(registry);
+    await expect(mailer.send({ ...HELLO, replyTo: "a\n@b.fr" })).rejects.toBeInstanceOf(
+      MailerInvalidReplyToError,
+    );
+  });
+
+  it("n'ouvre pas le disjoncteur : rien n'a été tenté chez le fournisseur", async () => {
+    const { client, calls } = fakeResend(ACCEPTED);
+    const breaker = new CircuitBreakerMailer<TestMails>(
+      new ResendMailer<TestMails>({ client, registry, fromAddress: "a@b.fr" }),
+      { threshold: 1, cooldownMs: 1_000, now: () => 0 },
+    );
+    await expect(breaker.send({ ...HELLO, replyTo: "x" })).rejects.toBeInstanceOf(
+      MailerInvalidReplyToError,
+    );
+    await expect(breaker.send(HELLO)).resolves.toEqual({ providerId: "re_1" });
+    expect(calls).toHaveLength(1);
   });
 });

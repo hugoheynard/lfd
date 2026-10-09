@@ -452,14 +452,15 @@ describe('AccueilPublic — les trois états', () => {
   });
 
   it.each([
-    ['visiteur', 'Un buffet, un gros volume'],
-    ['perso', 'Changer l’heure, ajouter une pièce'],
-    ['pro', 'Un ajout passe encore par téléphone'],
+    ['visiteur', 'On répond au plus vite'],
+    ['perso', 'On répond au plus vite'],
+    ['pro', 'Nos équipes commerciales sont à votre écoute'],
   ] as const)('répond à un %s dans ses mots', async (who, fragment) => {
     const fixture = await mount(POINTS, who);
     const band = fixture.nativeElement.querySelector('app-contact-band');
 
     expect(band?.querySelector('.kicker')?.textContent?.trim()).toBe('On répond');
+    expect(band?.querySelector('.title')?.textContent).toBe('Nous contacter');
     expect(band?.querySelector('.who')?.textContent).toContain(fragment);
   });
 });

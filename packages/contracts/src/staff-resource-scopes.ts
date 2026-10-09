@@ -154,6 +154,11 @@ export const STAFF_RESOURCE_SCOPES: Readonly<Record<StaffResource, StaffResource
     read: "Voir la composition des pages de la boutique.",
     write: "Composer la vitrine — formes, positions, rayons, contenus — et l'enregistrer.",
   },
+  b2b_contact: {
+    read: "Voir les objets de « Nous écrire », la carte de contact de la boutique, et les messages reçus des clients et des visiteurs.",
+    write:
+      "Créer, modifier, ordonner ou archiver un objet de contact, régler le numéro et la carte de contact, marquer un message traité.",
+  },
   production_plan: {
     read: "Voir le plan du soir : l'état de la journée, le lot à produire et son PDF, le prévisionnel.",
     // L'arrêt est parti sous `production_count_stop` le 2026-10-06 : ce niveau

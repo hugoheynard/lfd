@@ -1,0 +1,71 @@
+<div class="cs-list">
+  @switch (state()) {
+    @case ('loading') {
+      <fold-loading message="Chargement des objets de contact…" />
+    }
+    @case ('error') {
+      <fold-empty-state tone="alert" title="Impossible de charger les objets de contact">
+        <button foldButton (click)="load()">Réessayer</button>
+      </fold-empty-state>
+    }
+    @case ('ready') {
+      <fold-element-title
+        variant="caps"
+        title="Objets proposés"
+        subtitle="Ce que le visiteur choisit en écrivant, dans cet ordre."
+      >
+        @if (canWrite()) {
+          <button
+            titleAction
+            foldButton
+            icon="plus"
+            size="sm"
+            type="button"
+            (click)="add()"
+            data-add
+          >
+            Ajouter un objet
+          </button>
+        }
+      </fold-element-title>
+      @for (row of rows(); track row.subject.id) {
+        <fold-card data-subject>
+          <fold-element-title
+            variant="title"
+            [title]="row.subject.label.fr"
+            [subtitle]="row.subtitle"
+          >
+            <div titleAction class="cs-row-actions">
+              <fold-badge
+                [variant]="priorityVariants[row.subject.priority]"
+                [content]="priorityLabels[row.subject.priority]"
+                data-priority
+              />
+              @if (!row.subject.active) {
+                <fold-badge variant="neutral" content="Non proposé" data-inactive />
+              }
+              <button
+                foldButton
+                emphasis="outline"
+                size="sm"
+                type="button"
+                (click)="openSubject(row.subject)"
+                data-open
+              >
+                {{ canWrite() ? 'Corriger' : 'Voir' }}
+              </button>
+            </div>
+          </fold-element-title>
+        </fold-card>
+      } @empty {
+        <fold-empty-state
+          title="Aucun objet"
+          subtitle="Sans objet, le formulaire « Nous écrire » n'a rien à proposer."
+          data-empty
+        >
+          <fold-icon empty-icon name="mail" />
+        </fold-empty-state>
+      }
+    }
+  }
+</div>

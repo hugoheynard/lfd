@@ -152,6 +152,42 @@ export const b2bRoutes: Routes = [
         ],
       },
       {
+        // « NOUS ÉCRIRE » — les objets du formulaire, la carte de contact, et
+        // les messages reçus (plan-nous-ecrire.md), en trois onglets routés.
+        // Son propre droit : on peut répondre aux messages sans régler la
+        // vente, et l'inverse.
+        path: 'contact',
+        title: 'Contact — LFC B2B admin',
+        canActivate: [permissionGuard('b2b_contact:read')],
+        loadComponent: () =>
+          import('./contact/contact-page/contact-page').then((m) => m.ContactPage),
+        children: [
+          { path: '', pathMatch: 'full', redirectTo: 'carte' },
+          {
+            path: 'carte',
+            title: 'Contenu de la carte — LFC B2B admin',
+            loadComponent: () =>
+              import('./contact/contact-card-settings/contact-card-settings').then(
+                (m) => m.ContactCardSettings,
+              ),
+          },
+          {
+            path: 'formulaire',
+            title: 'Formulaire de contact — LFC B2B admin',
+            loadComponent: () =>
+              import('./contact/contact-subjects/contact-subjects').then((m) => m.ContactSubjects),
+          },
+          {
+            // L'adresse que la cloche donne (`CONTACT_MESSAGES_LINK` côté API) :
+            // elle ne change pas de forme quand l'écran en change.
+            path: 'messages',
+            title: 'Messagerie — LFC B2B admin',
+            loadComponent: () =>
+              import('./contact/contact-messages/contact-messages').then((m) => m.ContactMessages),
+          },
+        ],
+      },
+      {
         // LA BOÎTE DE RÉCEPTION — avant le catalogue dans la lecture comme dans
         // le temps : ce qui attend d'être validé précède ce qui est en vente.
         path: 'reception',

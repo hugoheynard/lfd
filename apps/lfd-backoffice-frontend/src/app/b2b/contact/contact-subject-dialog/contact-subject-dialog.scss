@@ -1,0 +1,18 @@
+/* Les champs et les refus, empilés : l'écart vient du `gap`. */
+.csd-fields {
+  display: flex;
+  flex-direction: column;
+  gap: var(--fold-space-md);
+}
+
+/* La bascule de langue, son champ et l'aperçu de la liste, serrés. */
+.csd-label {
+  display: flex;
+  flex-direction: column;
+  align-items: stretch;
+  gap: var(--fold-space-sm);
+}
+
+.csd-label > fold-view-toggle {
+  align-self: flex-start;
+}

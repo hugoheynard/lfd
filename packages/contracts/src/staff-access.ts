@@ -281,6 +281,15 @@ export const staffResourceSchema = z.enum([
    * seuls.
    */
   "b2b_storefront",
+  /**
+   * **« Nous écrire »** — régler les objets de contact et la carte de contact
+   * de la boutique, lire et traiter les messages reçus
+   * (`documentation/order/plan-nous-ecrire.md`, §5.6, 2026-10-09).
+   *
+   * Ajoutée SANS être accordée par la migration : elle s'accorde à l'écran
+   * (`/admin/staff-roles`). La graine ne la donne qu'à l'administrateur.
+   */
+  "b2b_contact",
 
   // ── `production.` — LE FOURNIL ──────────────────────────────────────────
   // Sortis de `b2b_orders` le 2026-10-01, un par geste
@@ -523,6 +532,7 @@ export const STAFF_RESOURCE_LABELS: Readonly<Record<StaffResource, string>> = {
   pim_tax: "Référentiel — Fiscalité",
   media_library: "Médiathèque",
   b2b_storefront: "Vitrine",
+  b2b_contact: "Nous écrire",
   delivery_run_sheet: "Feuille de route",
   delivery_settings: "Réglages de livraison",
   delivery_rounds: "Tournées de livraison",
@@ -670,6 +680,8 @@ export const ROLE_GRANTS: Readonly<Record<StaffRole, RoleGrants>> = {
     b2b_settings: "write",
     media_library: "write",
     b2b_storefront: "write",
+    // Graine seulement (dev, e2e) : en production, accordée à l'écran (§5.6).
+    b2b_contact: "write",
     // `write` sur une lecture seule : l'administrateur couvre tout, sans trou.
     delivery_run_sheet: "write",
     delivery_settings: "write",

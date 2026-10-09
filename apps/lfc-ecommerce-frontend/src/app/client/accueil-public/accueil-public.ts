@@ -39,6 +39,7 @@ import { LiveOrdersWell } from '../mes-commandes/live-orders-well/live-orders-we
 import { isLive, rowCopyOf, trackedOf } from '../mes-commandes/order-rows';
 import { ClientCart } from '../cart/client-cart.service';
 import { ContactBand } from '../shop/contact-band/contact-band';
+import { ContactSettingsStore, localizedOr, phonesFor } from '../shop/contact-settings.store';
 import { ShopCatalogue } from '../shop/shop-catalogue.store';
 import { ShopShortcuts, type ShortcutCard } from '../shop/shop-shortcuts/shop-shortcuts';
 import { orderLinesSummary, orderPlaceLabel, orderWeekday } from '../shop/last-order-summary';
@@ -247,26 +248,27 @@ export class AccueilPublic {
   /**
    * CE QUE DIT LA BANDE DE CONTACT, selon à qui elle parle.
    *
-   * Trois variantes, un seul composant : le sur-titre, les boutons et l'heure
-   * creuse sont des faits sur la maison et ne bougent pas ; la question qu'on
-   * suppose au lecteur, elle, change avec lui. Le tri suit celui de la page —
-   * un pro d'abord, puis le reconnu, puis le visiteur.
+   * Le réglage du back-office (`GET /contact-settings`) l'emporte, champ par
+   * champ ; vide, le dictionnaire reste — un titre commun, une phrase pour les
+   * pros, une pour les particuliers (plan « Nous écrire », §4 ; Hugo,
+   * 2026-10-09 : « pas de fallback trop compliqué »).
    */
   protected readonly contact = computed<ContactBandCopy>(() => {
     const contact = this.c().contact;
-    const variant = this.pro()
-      ? contact.pro
-      : this.recognised()
-        ? contact.personal
-        : contact.visitor;
+    const settings = this.contactSettings.settings();
+    const card = this.pro() ? settings.cards.b2b : settings.cards.b2c;
+    const locale = this.locale.current();
     return {
       kicker: contact.kicker,
+      phones: phonesFor(settings, this.pro() ? 'b2b' : 'b2c', locale),
       call: contact.call,
       write: contact.write,
-      note: contact.note,
-      ...variant,
+      title: localizedOr(card.title, locale, contact.title),
+      who: localizedOr(card.body, locale, this.pro() ? contact.body.b2b : contact.body.b2c),
     };
   });
+
+  private readonly contactSettings = inject(ContactSettingsStore);
 
   private readonly history = inject(ClientOrderHistory);
   private readonly catalogue = inject(ShopCatalogue);
@@ -476,6 +478,7 @@ export class AccueilPublic {
     // Les jours proposés suivent les articles d'opération du panier (D6) :
     // les deux écrans qui ouvrent le choix de l'heure le démarrent.
     inject(CartFulfillmentDays);
+    void this.contactSettings.hydrate();
     const chrome = inject(ClientChrome);
     chrome.kicker.set(this.c().kicker);
     // Le menu suit la RECONNAISSANCE. Un visiteur n'en a pas : la barre lui

@@ -1,0 +1,13 @@
+<fold-card>
+  <div class="ccp" inert aria-label="Aperçu de la carte de contact">
+    <p class="ccp-kicker">{{ text().kicker }}</p>
+    <p class="ccp-title" data-preview-title>{{ text().title }}</p>
+    <p class="ccp-body" data-preview-body>{{ text().body }}</p>
+    <div class="ccp-acts">
+      @for (call of text().calls; track $index) {
+        <button foldButton type="button" tabindex="-1" data-preview-call>{{ call }}</button>
+      }
+      <button foldButton emphasis="outline" type="button" tabindex="-1">{{ text().write }}</button>
+    </div>
+  </div>
+</fold-card>

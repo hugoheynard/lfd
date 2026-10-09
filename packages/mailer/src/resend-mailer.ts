@@ -1,6 +1,7 @@
 import { Resend } from "resend";
 
 import { MailerRateLimitedError, MailerSendError } from "./errors.js";
+import { validReplyTo } from "./reply-to.js";
 import { silentLogger } from "./types.js";
 import type {
   Mailer,
@@ -161,7 +162,10 @@ export class ResendMailer<M extends TemplateMap> implements Mailer<M> {
     rendered: RenderedMail,
   ): Parameters<ResendLike["emails"]["send"]>[0] {
     const { subject, html, attachments } = rendered;
-    const replyTo = this.deps.replyTo ?? null;
+    // L'adresse du message l'emporte sur celle du mailer ; validée avant
+    // l'en-tête parce qu'elle peut avoir été saisie par un visiteur.
+    const replyTo =
+      args.replyTo !== undefined ? validReplyTo(args.replyTo) : (this.deps.replyTo ?? null);
     return {
       from: this.deps.fromAddress,
       to: args.to,

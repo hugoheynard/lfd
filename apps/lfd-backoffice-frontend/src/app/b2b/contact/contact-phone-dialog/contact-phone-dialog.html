@@ -1,0 +1,109 @@
+<fold-panel-header
+  [title]="title()"
+  subtitle="Ce que le numéro désigne, le numéro, et à qui la boutique le montre"
+  closeLabel="Fermer"
+/>
+
+<fold-panel-body>
+  <div class="cpd-fields">
+    <div class="cpd-label">
+      <fold-view-toggle
+        ariaLabel="Langue du libellé"
+        size="sm"
+        [options]="langOptions()"
+        [value]="lang()"
+        (valueChange)="selectLang($event)"
+        data-lang-toggle
+      />
+      <fold-input
+        [label]="labelTitle()"
+        [required]="lang() === 'fr'"
+        [hint]="labelHint()"
+        placeholder="Boutique de Val d'Isère"
+        [readOnly]="readOnly()"
+        [value]="labels()[lang()]"
+        (valueChange)="setLabel($event)"
+        data-label
+      />
+    </div>
+
+    <fold-input
+      label="Numéro"
+      type="tel"
+      placeholder="+33 4 79 06 12 40"
+      hint="Tel que la boutique l'affiche ; composé d'un toucher."
+      [readOnly]="readOnly()"
+      [value]="number()"
+      (valueChange)="number.set($event)"
+      data-number
+    />
+
+    <fold-listbox
+      label="Montré à"
+      [disabled]="readOnly()"
+      [options]="audienceOptions"
+      [value]="audience()"
+      (selectionChange)="audience.set($event)"
+      data-audience
+    />
+
+    <fold-number-input
+      label="Ordre"
+      hint="Les numéros sont affichés du plus petit au plus grand."
+      spinner="none"
+      integer
+      [min]="0"
+      [readOnly]="readOnly()"
+      [value]="position()"
+      (valueChange)="position.set($event)"
+      data-position
+    />
+
+    <fold-checkbox
+      label="Affiché sur la carte"
+      hint="Décoché, le numéro reste réglé mais n'est plus montré."
+      [disabled]="readOnly()"
+      [checked]="active()"
+      (checkedChange)="active.set($event)"
+      data-active
+    />
+
+    @if (shownIssue(); as message) {
+      <fold-callout variant="warning" data-issue>{{ message }}</fold-callout>
+    }
+
+    @if (refusal(); as message) {
+      <fold-callout variant="alert" announce>{{ message }}</fold-callout>
+    }
+
+    @if (!isCreate() && !readOnly()) {
+      <fold-danger-zone
+        appearance="section"
+        title="Archiver ce numéro"
+        actionLabel="Archiver"
+        (confirmed)="archive()"
+      >
+        <p>Il ne sera plus affiché sur la carte de contact.</p>
+      </fold-danger-zone>
+    }
+  </div>
+</fold-panel-body>
+
+<fold-panel-footer align="end">
+  <button foldButton emphasis="outline" intent="neutral" type="button" (click)="cancel()">
+    {{ readOnly() ? 'Fermer' : 'Annuler' }}
+  </button>
+  @if (!readOnly()) {
+    <button
+      foldButton
+      intent="primary"
+      type="button"
+      [disabled]="!canSubmit()"
+      [loading]="saving()"
+      (click)="submit()"
+      data-submit
+    >
+      {{ isCreate() ? 'Ajouter' : 'Enregistrer' }}
+    </button>
+  }
+</fold-panel-footer>

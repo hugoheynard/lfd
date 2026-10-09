@@ -1,0 +1,18 @@
+<fold-page-layout icon="mail" title="Contact">
+  <p description>
+    La carte de contact de la boutique, les objets du formulaire « Nous écrire », et les messages
+    reçus.
+  </p>
+
+  <fold-nav-layout>
+    <fold-view-nav
+      tabNav
+      [items]="tabs()"
+      size="comfortable"
+      activeStyle="underline"
+      background="transparent"
+    />
+
+    <router-outlet />
+  </fold-nav-layout>
+</fold-page-layout>

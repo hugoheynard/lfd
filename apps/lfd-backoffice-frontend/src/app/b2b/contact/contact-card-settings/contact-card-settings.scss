@@ -1,0 +1,35 @@
+/* Les champs, empilés : l'écart vient du `gap`. */
+.ccs-fields {
+  display: flex;
+  flex-direction: column;
+  gap: var(--fold-space-md);
+}
+
+.ccs-trace {
+  margin: 0;
+  color: var(--fold-color-text-muted);
+}
+
+.ccs-actions {
+  display: flex;
+  justify-content: flex-end;
+}
+
+.ccs-switches {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--fold-space-sm);
+}
+
+/* Les champs et l'aperçu côte à côte ; l'aperçu passe dessous quand la place manque. */
+.ccs-split {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--fold-space-lg);
+}
+
+.ccs-form,
+.ccs-preview {
+  flex: 1 1 20rem;
+  min-width: 0;
+}

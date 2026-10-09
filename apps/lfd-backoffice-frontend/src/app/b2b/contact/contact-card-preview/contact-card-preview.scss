@@ -1,0 +1,36 @@
+.ccp {
+  display: flex;
+  flex-direction: column;
+  gap: var(--fold-space-sm);
+}
+
+.ccp-kicker,
+.ccp-title,
+.ccp-body {
+  margin: 0;
+}
+
+.ccp-kicker {
+  color: var(--fold-color-text-muted);
+  text-transform: uppercase;
+  letter-spacing: var(--fold-tracking-wide);
+  font-size: var(--fold-text-sm);
+}
+
+/* La coupe du titre vient du texte (`\n`), comme dans la boutique. */
+.ccp-title {
+  font-size: var(--fold-text-xl);
+  font-weight: var(--fold-weight-semibold);
+  text-transform: uppercase;
+  white-space: pre-line;
+}
+
+.ccp-body {
+  color: var(--fold-color-text-muted);
+}
+
+.ccp-acts {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--fold-space-sm);
+}

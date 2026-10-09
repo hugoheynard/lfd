@@ -130,6 +130,16 @@ export interface SendMailArgs<M extends TemplateMap, K extends keyof M = keyof M
    * fois le même e-mail. Ignorée par les adaptateurs qui ne savent pas dédoublonner.
    */
   readonly idempotencyKey?: string;
+  /**
+   * Adresse de réponse **de ce message**, qui l'emporte sur celle du mailer.
+   *
+   * Sert quand la réponse doit aller à quelqu'un d'autre que l'expéditeur —
+   * l'auteur d'un message « Nous écrire », dont l'adresse a été SAISIE par un
+   * visiteur. Elle est donc validée avant de devenir un en-tête : forme
+   * d'adresse e-mail, aucun caractère de contrôle ; sinon `MailerInvalidReplyToError`
+   * et rien ne part.
+   */
+  readonly replyTo?: string;
 }
 
 /**

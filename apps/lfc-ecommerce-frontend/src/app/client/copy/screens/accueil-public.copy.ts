@@ -1,3 +1,4 @@
+import type { ShownPhone } from '../../shop/contact-settings.store';
 import type { LocaleCode } from '../../client-locale.service';
 
 /**
@@ -42,28 +43,16 @@ export interface DoorCopy {
   readonly pending?: { readonly tag: string; readonly hint: string };
 }
 
-/**
- * CE QUI CHANGE DANS LA BANDE DE CONTACT D'UN ÉTAT À L'AUTRE, et rien d'autre.
- *
- * Le sur-titre, les deux boutons et la mention de l'heure creuse ne bougent
- * pas : ce sont des faits sur la MAISON, et ils ne dépendent pas de qui les
- * lit. Ce qui dépend du lecteur, c'est la question qu'on lui suppose — un
- * visiteur se demande si c'est faisable, un client se demande s'il peut encore
- * changer quelque chose, un pro s'il peut encore ajouter.
- */
-export interface ContactVariant {
-  /** Le titre en capitales — la coupe vient du dictionnaire, pas d'un `<br>`. */
-  readonly title: string;
-  /** Qui répond, quand, et ce qu'on peut demander. */
-  readonly who: string;
-}
-
-/** La bande de contact telle que son composant la reçoit : le commun, plus la variante. */
-export interface ContactBandCopy extends ContactVariant {
+/** La bande de contact telle que son composant la reçoit, réglage et replis déjà fondus. */
+export interface ContactBandCopy {
   readonly kicker: string;
+  /** Les numéros à appeler, dans l'ordre : ceux du réglage, sinon celui du dictionnaire. */
+  readonly phones: readonly ShownPhone[];
+  readonly title: string;
+  /** La phrase sous le titre. */
+  readonly who: string;
   readonly call: string;
   readonly write: string;
-  readonly note: string;
 }
 
 export interface AccueilPublicCopy {
@@ -248,25 +237,19 @@ export interface AccueilPublicCopy {
    * 🔴 ELLE PARAÎT DANS LES TROIS ÉTATS (Hugo, 2026-09-20 : « on répond
    * toujours »), là où la maquette la réservait au pro. Un visiteur est
    * précisément celui qui a le plus de raisons d'appeler : il ne sait pas
-   * encore si ce qu'il veut est faisable. Seul le TEXTE change.
+   * encore si ce qu'il veut est faisable.
    *
-   * ⚠️ Les prénoms, les heures et le numéro viennent de la maquette et de la
-   * carte de l'espace, où ils sont déjà écrits ; rien dans le système ne les
-   * porte. Ils se corrigent ici et dans `client/copy/*.ts`, pas ailleurs.
+   * Ce qui suit n'est que le REPLI : le back-office règle numéro, titre et
+   * phrase par public (`GET /contact-settings`), et en recopie ces valeurs.
    */
   readonly contact: {
     readonly kicker: string;
     readonly call: string;
     readonly write: string;
-    /**
-     * L'HEURE CREUSE, commune aux trois : elle évite un appel qui sonnerait
-     * dans le vide. Dire qu'on ne décroche pas coûte moins cher que de ne pas
-     * décrocher.
-     */
-    readonly note: string;
-    readonly visitor: ContactVariant;
-    readonly personal: ContactVariant;
-    readonly pro: ContactVariant;
+    /** Le titre de repli, le même pour tous (Hugo, 2026-10-09 : « pas de fallback trop compliqué »). */
+    readonly title: string;
+    /** La phrase de repli, par public : les pros, les particuliers (visiteur et connecté). */
+    readonly body: { readonly b2b: string; readonly b2c: string };
   };
 
   /** Les opérations datées du fournil, quand il y en a. */
@@ -365,18 +348,10 @@ export const ACCUEIL_PUBLIC_FR: AccueilPublicCopy = {
     kicker: 'On répond',
     call: 'Appeler',
     write: 'Écrire',
-    note: 'Entre 12 h et 14 h on est au four : on ne prend pas d’appel, et on préfère le dire.',
-    visitor: {
-      title: 'Une commande\nparticulière ?',
-      who: 'Camille et Malik, au Labo, de 7 h à 19 h. Un buffet, un gros volume, une date à part : demandez avant de commander, on vous dira ce qui est faisable.',
-    },
-    personal: {
-      title: 'Une question,\nun imprévu ?',
-      who: 'Camille et Malik, au Labo, de 7 h à 19 h. Changer l’heure, ajouter une pièce, annuler : un appel suffit.',
-    },
-    pro: {
-      title: 'Une question,\nun imprévu ?',
-      who: 'Camille et Malik, au Labo, de 7 h à 19 h. Un ajout passe encore par téléphone jusqu’à 18 h.',
+    title: 'Nous contacter',
+    body: {
+      b2b: 'Nos équipes commerciales sont à votre écoute',
+      b2c: 'On répond au plus vite',
     },
   },
   events: {
@@ -467,18 +442,10 @@ export const ACCUEIL_PUBLIC_EN: AccueilPublicCopy = {
     kicker: 'We answer',
     call: 'Call',
     write: 'Write',
-    note: 'Between noon and 2 pm we are at the oven: we don’t take calls, and we’d rather say so.',
-    visitor: {
-      title: 'Something\nout of the ordinary?',
-      who: 'Camille and Malik, at Le Labo, 7 am to 7 pm. A buffet, a large order, an unusual date: ask before you order and we’ll tell you what’s possible.',
-    },
-    personal: {
-      title: 'A question,\nsomething unexpected?',
-      who: 'Camille and Malik, at Le Labo, 7 am to 7 pm. Changing the time, adding an item, cancelling: one call is enough.',
-    },
-    pro: {
-      title: 'A question,\nsomething unexpected?',
-      who: 'Camille and Malik, at Le Labo, 7 am to 7 pm. An extra item still goes through by phone until 6 pm.',
+    title: 'Contact us',
+    body: {
+      b2b: 'Our sales team is here for you',
+      b2c: 'We reply as soon as we can',
     },
   },
   events: {
@@ -569,18 +536,10 @@ export const ACCUEIL_PUBLIC_IT: AccueilPublicCopy = {
     kicker: 'Rispondiamo',
     call: 'Chiamare',
     write: 'Scrivere',
-    note: 'Tra le 12 e le 14 siamo al forno : non rispondiamo al telefono, e preferiamo dirlo.',
-    visitor: {
-      title: 'Un ordine\nparticolare ?',
-      who: 'Camille e Malik, al Labo, dalle 7 alle 19. Un buffet, un grande volume, una data particolare : chieda prima di ordinare, le diremo cosa è fattibile.',
-    },
-    personal: {
-      title: 'Una domanda,\nun imprevisto ?',
-      who: 'Camille e Malik, al Labo, dalle 7 alle 19. Cambiare l’ora, aggiungere un pezzo, annullare : basta una telefonata.',
-    },
-    pro: {
-      title: 'Una domanda,\nun imprevisto ?',
-      who: 'Camille e Malik, al Labo, dalle 7 alle 19. Un’aggiunta passa ancora per telefono fino alle 18.',
+    title: 'Contattaci',
+    body: {
+      b2b: 'Il nostro team commerciale è a vostra disposizione',
+      b2c: 'Rispondiamo il prima possibile',
     },
   },
   events: {

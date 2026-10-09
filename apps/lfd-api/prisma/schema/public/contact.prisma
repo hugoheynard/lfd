@@ -1,0 +1,172 @@
+// ─────────────────────────────────────────────────────────────────────────────
+// « Nous écrire » — les objets de contact, la carte de contact, les messages
+// (`documentation/order/plan-nous-ecrire.md`, 2026-10-09). Contexte
+// `src/b2b/contact/`.
+// ─────────────────────────────────────────────────────────────────────────────
+
+/// À qui un objet de contact est proposé ; pour un message, `b2b` ou `b2c`
+/// seulement — l'espace d'où il a été écrit.
+enum ContactAudience {
+  b2b
+  b2c
+  both
+
+  @@schema("public")
+}
+
+/// La priorité d'un objet, à usage interne : trie les messages à traiter.
+/// Déclarée dans l'ordre croissant — Postgres trie une énumération par son
+/// rang, et « urgent d'abord » est un `ORDER BY priority DESC`.
+enum ContactPriority {
+  low
+  medium
+  urgent
+
+  @@schema("public")
+}
+
+/// Un **objet** proposé dans le dialogue « Nous écrire » : son libellé en trois
+/// langues (le français obligatoire), l'adresse qui reçoit les messages, son
+/// rang et son public. Archivé plutôt que supprimé : un message reçu garde son
+/// objet. Pas d'auteur figé : un réglage sans règle de refus (CLAUDE.md §3.1).
+model ContactSubject {
+  /// ULID (fourni par l'`IdGenerator`).
+  id String @id
+
+  labelFr String @map("label_fr")
+  /// Vide = le libellé français.
+  labelEn String @default("") @map("label_en")
+  labelIt String @default("") @map("label_it")
+
+  /// L'adresse de l'équipe qui reçoit les messages de cet objet.
+  recipientEmail String @map("recipient_email")
+
+  position Int             @default(0)
+  active   Boolean         @default(true)
+  audience ContactAudience @default(both)
+  /// Usage interne, jamais servie à la boutique.
+  priority ContactPriority @default(medium)
+
+  archivedAt DateTime? @map("archived_at")
+  createdAt  DateTime  @map("created_at")
+  updatedAt  DateTime  @map("updated_at")
+
+  messages ContactMessage[]
+
+  @@index([archivedAt, position])
+  @@map("contact_subject")
+  @@schema("public")
+}
+
+/// Un **message** reçu par « Nous écrire », d'un visiteur ou d'un client
+/// connecté. Rangé à la réception, puis envoyé par e-mail à l'adresse de son
+/// objet — un envoi raté ne le fait pas disparaître.
+///
+/// 🔴 Données personnelles d'un tiers (nom, e-mail, téléphone, texte) :
+/// **anonymisées** douze mois après le traitement par le balayage nocturne
+/// (`AnonymizeHandledContactMessagesHandler`). La ligne reste, avec son objet
+/// et ses dates ; aucun `DELETE`.
+model ContactMessage {
+  /// ULID (fourni par l'`IdGenerator`).
+  id String @id
+
+  subjectId String         @map("subject_id")
+  subject   ContactSubject @relation(fields: [subjectId], references: [id], onDelete: Restrict)
+  /// Le libellé français de l'objet, figé à la réception.
+  subjectLabel String @map("subject_label")
+  /// La priorité de l'objet, figée à la réception : changer l'objet ensuite
+  /// ne requalifie pas les messages déjà reçus.
+  priority     ContactPriority @default(medium)
+
+  /// L'espace d'où le message a été écrit : `b2b` ou `b2c`.
+  audience ContactAudience
+
+  authorName  String @map("author_name")
+  authorEmail String @map("author_email")
+  /// Vide quand l'auteur ne l'a pas donné.
+  authorPhone String @default("") @map("author_phone")
+  body        String
+
+  /// Le client connecté et la société pour laquelle il agissait ; NULL pour un
+  /// visiteur. Identifiants opaques, sans clé étrangère : le message survit.
+  userId    String? @map("user_id")
+  companyId String? @map("company_id")
+
+  receivedAt DateTime @map("received_at")
+
+  handledAt        DateTime? @map("handled_at")
+  /// L'id de fiche staff de qui l'a traité — un identifiant, pas un nom.
+  handledByStaffId String?   @map("handled_by_staff_id")
+  /// Nom figé de qui l'a traité ; vide si l'annuaire ne le connaissait pas.
+  handledByName    String?   @map("handled_by_name")
+
+  anonymizedAt DateTime? @map("anonymized_at")
+
+  @@index([handledAt, receivedAt])
+  @@index([handledAt, priority, receivedAt])
+  @@index([subjectId])
+  @@map("contact_message")
+  @@schema("public")
+}
+
+/// La **carte de contact** de la boutique : le numéro, et le titre et la phrase
+/// de la carte pour les pros et pour les particuliers, en trois langues. Une
+/// ligne unique (clé `contact`) ; absente ou vide, la boutique garde les textes
+/// de son dictionnaire.
+model ContactSettings {
+  /// Toujours `contact` : il n'y a qu'un réglage.
+  key String @id
+
+  /// ⚠️ PLUS LUE depuis le 2026-10-09 : remplacée par `contact_phone`, et
+  /// reprise en un premier numéro « Contact » par
+  /// `20261009160000_les_numeros_de_contact`. Reste en base (pas de suppression).
+  phone String @default("")
+
+  b2bTitleFr String @default("") @map("b2b_title_fr")
+  b2bTitleEn String @default("") @map("b2b_title_en")
+  b2bTitleIt String @default("") @map("b2b_title_it")
+  b2bBodyFr  String @default("") @map("b2b_body_fr")
+  b2bBodyEn  String @default("") @map("b2b_body_en")
+  b2bBodyIt  String @default("") @map("b2b_body_it")
+  b2cTitleFr String @default("") @map("b2c_title_fr")
+  b2cTitleEn String @default("") @map("b2c_title_en")
+  b2cTitleIt String @default("") @map("b2c_title_it")
+  b2cBodyFr  String @default("") @map("b2c_body_fr")
+  b2cBodyEn  String @default("") @map("b2c_body_en")
+  b2cBodyIt  String @default("") @map("b2c_body_it")
+
+  /// Instant du geste, lu du `Clock`.
+  updatedAt        DateTime @map("updated_at")
+  /// Qui l'a posé, figé au geste : l'id de fiche staff et un nom instantané.
+  updatedByStaffId String   @map("updated_by_staff_id")
+  updatedByName    String   @map("updated_by_name")
+
+  @@map("contact_settings")
+  @@schema("public")
+}
+
+/// Un **numéro de contact** de la boutique (Hugo, 2026-10-09) : ce qu'on lit à
+/// côté (« Boutique de Val d'Isère », « Service commercial », le français
+/// obligatoire), le numéro tel que saisi, son public, son rang. Archivé plutôt
+/// que supprimé, comme un objet de contact.
+model ContactPhone {
+  /// ULID (fourni par l'`IdGenerator`) ; `contact-phone-legacy` pour le numéro repris.
+  id String @id
+
+  labelFr String @map("label_fr")
+  labelEn String @default("") @map("label_en")
+  labelIt String @default("") @map("label_it")
+
+  number   String
+  audience ContactAudience @default(both)
+  position Int             @default(0)
+  active   Boolean         @default(true)
+
+  archivedAt DateTime? @map("archived_at")
+  createdAt  DateTime  @map("created_at")
+  updatedAt  DateTime  @map("updated_at")
+
+  @@index([archivedAt, position])
+  @@map("contact_phone")
+  @@schema("public")
+}

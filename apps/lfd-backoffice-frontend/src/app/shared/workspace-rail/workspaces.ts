@@ -627,6 +627,16 @@ export const B2B_VIEWS: readonly WorkspaceView[] = [
     icon: 'store',
     section: 'Réglages',
   },
+  // « Nous écrire » (plan-nous-ecrire.md) : son propre droit, `b2b_contact`.
+  // UNE entrée, trois onglets — carte, formulaire, messagerie (Hugo, 2026-10-09).
+  {
+    key: 'contact',
+    label: 'Contact',
+    link: '/b2b/contact',
+    icon: 'mail',
+    section: 'Réglages',
+    needs: 'b2b_contact:read',
+  },
 ];
 
 /**

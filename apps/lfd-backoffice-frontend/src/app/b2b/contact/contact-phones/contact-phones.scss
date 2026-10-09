@@ -1,0 +1,12 @@
+/* Les numéros, empilés : l'écart vient du `gap`. */
+.cph-list {
+  display: flex;
+  flex-direction: column;
+  gap: var(--fold-space-sm);
+}
+
+.cph-actions {
+  display: flex;
+  align-items: center;
+  gap: var(--fold-space-sm);
+}

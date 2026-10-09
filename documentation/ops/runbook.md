@@ -343,6 +343,20 @@ pas jusqu'à un. Cette moitié-là n'est tenue que par l'agrégat, qui redresse 
 carnet bancal à la lecture — donc seulement pour les sociétés dont quelqu'un
 touche les adresses.
 
+## Après avoir déployé « Nous écrire » : accorder `b2b_contact`
+
+La migration `20261009140000_nous_ecrire` ajoute la ressource `b2b_contact`
+(objets de contact, carte de contact, messages reçus) **sans l'accorder à
+personne** — une migration n'écrit jamais un droit
+(`lint:no-role-grants-in-migrations`). Tant que rien n'est fait, les pages
+« E-commerce LFC › Contact » répondent 403 à tout le monde, administrateur
+compris, et la cloche « Nous écrire » ne sonne chez personne.
+
+**Le geste, juste après le déploiement** : `/admin/staff-roles`, rôle
+« Administrateur », ressource « Nous écrire » → écriture ; puis tout autre rôle
+qui doit lire ou traiter les messages. Plan :
+[`plan-nous-ecrire.md`](../order/plan-nous-ecrire.md), §5.6.
+
 ## Avant de déployer « un seul détenteur par société »
 
 ⚠️ **À faire une seule fois, AVANT le merge dans `main`** qui emporte
