@@ -23,7 +23,7 @@ import {
 import { CommandBus, QueryBus } from "@nestjs/cqrs";
 import type { Response } from "express";
 
-import { AdminSurface } from "../../../platform/auth/admin-surface.decorator.js";
+import { AdminSurface, RequirePermission } from "../../../platform/auth/admin-surface.decorator.js";
 import { StaffUserId } from "../../../platform/auth/staff.decorator.js";
 import { ZodBody } from "../../../platform/shared/http/zod-body.pipe.js";
 import { CancelCollectionBatchCommand } from "../application/commands/cancel-collection-batch.command.js";
@@ -106,8 +106,15 @@ export class AdminCollectionBatchesController {
     );
   }
 
-  /** Le fichier STOCKÉ — mêmes octets à chaque téléchargement, empreinte vérifiée. */
+  /**
+   * Le fichier STOCKÉ — mêmes octets à chaque téléchargement, empreinte vérifiée.
+   *
+   * 🔴 **Écriture comptable exigée, pas la lecture** que le verbe donnerait :
+   * le fichier porte les IBAN des débiteurs en clair. Resserré le 2026-10-09
+   * sur décision d'Hugo (arbitrage A16), comme l'export des mandats.
+   */
   @Get("batches/:id/file.xml")
+  @RequirePermission("b2b_accounting:write")
   @Header("Content-Type", "application/xml; charset=utf-8")
   async file(
     @Param("id") id: string,

@@ -57,9 +57,10 @@ const DEBTOR_RIB = {
 };
 const DAY_MS = 24 * 60 * 60 * 1000;
 
+/** Le jeton porteur EST le `sub` : le 403 de la seule lecture se joue en base. */
 const stubAdminVerifier = {
-  verify: (): Promise<{ subject: string; scopes: string[] }> =>
-    Promise.resolve({ subject: "staff-e2e", scopes: [] }),
+  verify: (token: string): Promise<{ subject: string; scopes: string[] }> =>
+    Promise.resolve({ subject: token, scopes: [] }),
 };
 
 /**
@@ -380,6 +381,43 @@ describe("le lot figé", () => {
 
     const [batch] = (await cycle(entity)).batches;
     expect(batch?.requestedCollectionDay).toBeNull();
+  });
+
+  /**
+   * Régression : le fichier, qui porte les IBAN en clair, se téléchargeait
+   * avec la seule lecture comptable (A16, resserré le 2026-10-09).
+   */
+  it("refuse le fichier du lot à la seule lecture comptable (403)", async () => {
+    const entity = await collectingEntity();
+    const port = await client("Boulangerie du Phare");
+    await mandated(entity, port);
+    await orderOf(port);
+    const [batchId] = await constitute(entity);
+    const reader = await ctx.prisma.staffUser.create({
+      data: {
+        firstName: "Test",
+        lastName: "lecture",
+        email: "lecture@lfc.test",
+        role: "communication",
+        status: "active",
+        auth0Id: "staff-lecture",
+      },
+    });
+    await ctx.prisma.staffPermissionOverride.create({
+      data: { staffUserId: reader.id, resource: "b2b_accounting", action: "read", effect: "allow" },
+    });
+
+    await ctx
+      .asSub("staff-lecture")
+      .get(`${BASE}/batches/${batchId ?? ""}/audit.csv`)
+      .expect(200);
+    await ctx
+      .asSub("staff-lecture")
+      .get(`${BASE}/batches/${batchId ?? ""}/file.xml`)
+      .expect(403);
+    await staff()
+      .get(`${BASE}/batches/${batchId ?? ""}/file.xml`)
+      .expect(200);
   });
 
   it("rend deux fois les MÊMES octets, sous les identifiants du lot", async () => {

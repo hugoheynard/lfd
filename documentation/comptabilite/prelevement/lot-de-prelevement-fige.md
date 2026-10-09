@@ -87,7 +87,7 @@ Routes `admin/accounting/collection` (`http/admin-collection-batches.controller.
 | Constituer         | `POST batches`                          | sous verrou par entité, `cycle_closes_at ≤ now` : lignes, exclusions, XML stocké                                                                              |
 | Annuler            | `POST batches/:id/cancel`               | `constituted` seulement ; ses commandes repassent `due`                                                                                                       |
 | Marquer déposé     | `POST batches/:id/deposit`              | relit mandats, comptes et commandes : mandat révoqué, IBAN changé, commande annulée, société sans mandat ou avis non envoyé → refus nommé ; sinon `collected` |
-| Télécharger        | `GET batches/:id/file.xml`, `audit.csv` | le fichier stocké ; le CSV de contrôle depuis les lignes                                                                                                      |
+| Télécharger        | `GET batches/:id/file.xml`, `audit.csv` | le fichier stocké (**écriture** exigée : IBAN en clair, A16) ; le CSV de contrôle (IBAN masqué)                                                               |
 | Réglée autrement   | `POST orders/:orderId/settle-otherwise` | `due` ou `excluded` → `settled_otherwise`, avec une note                                                                                                      |
 
 La constitution se fait aussi **toute seule** une fois par mois

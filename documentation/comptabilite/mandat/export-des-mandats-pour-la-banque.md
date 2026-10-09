@@ -87,5 +87,3 @@ flowchart LR
 - **Les colonnes L/M** (mandats repris d'un autre créancier) : à voir avec la
   banque (A17).
 - **F, G, H** à confirmer par la banque (A15).
-- **`GET …/batches/:id/file.xml`** du lot ne demande que la lecture alors qu'il
-  porte des IBAN en clair (A16, à trancher par Hugo).
