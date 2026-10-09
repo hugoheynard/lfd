@@ -123,6 +123,18 @@ describe("ordersByPayer — les bons par payeur légal", () => {
 });
 
 describe("planMonthlyInvoices — une facture par payeur légal et par mandat (E4b)", () => {
+  /**
+   * Hugo, 2026-10-09 : « même automatique, pas de facture si pas de commande ».
+   * Les payeurs naissent des bons du mois : un client sans commande n'est ni
+   * facturé ni signalé, quelle que soit sa fiche (adresse, mandat).
+   */
+  it("sans aucun bon du mois : ni facture, ni payeur signalé", () => {
+    const result = plan([]);
+
+    expect(result.invoices).toEqual([]);
+    expect(result.alreadyInvoiced).toEqual([]);
+  });
+
   it("un payeur sur un seul mandat : une facture, sous ce mandat", () => {
     const chalet = bon("c_chalet");
     const principal = bon("c_principal");
