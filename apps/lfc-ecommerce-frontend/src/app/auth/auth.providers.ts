@@ -5,6 +5,9 @@ import { provideAuth0 } from '@auth0/auth0-angular';
 import { appBaseUrl } from './app-base-url';
 import { AUTH_CONFIG } from './auth.config';
 
+/** La page des refus d'Auth0 — route `connexion/erreur` d'`app.routes.ts`. */
+export const SIGN_IN_FAILURE_PATH = '/connexion/erreur';
+
 /**
  * Providers Auth0 de l'app. L'app est **browser-only** (statique sur Cloudflare
  * Pages, pas de SSR), donc Auth0 est fourni directement dans `app.config.ts` :
@@ -64,6 +67,9 @@ export function provideAuth(): EnvironmentProviders {
       clientId: AUTH_CONFIG.clientId,
       useRefreshTokens: true,
       cacheLocation: 'localstorage',
+      // Un retour d'Auth0 en erreur s'affiche, au lieu de retomber sur l'accueil
+      // sans un mot (régression du 2026-10-09, `sign-in-failure.ts`).
+      errorPath: SIGN_IN_FAILURE_PATH,
       authorizationParams: {
         redirect_uri: appBaseUrl(),
         audience: AUTH_CONFIG.audience,

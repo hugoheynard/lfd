@@ -130,6 +130,12 @@ export const EN: ClientCopy = {
     alreadyTitle: 'Already a customer ?',
     alreadySub: 'A code by email, a password or Google',
     emailCodeEntry: 'Opening sign-in by code…',
+    signInFailedTitle: 'Sign-in did not go through',
+    signInFailedSub:
+      'No code was sent and no session was opened. Try again; if it fails again, send us this message.',
+    signInCancelledTitle: 'Sign-in cancelled',
+    signInCancelledSub: 'You are not signed in. You can start again whenever you like.',
+    signInFailedBack: 'Back to home',
     firstTitle: 'First time ?',
     firstSub: 'First name, email, phone',
     signInLead: 'Continue the way you chose when you opened your account.',

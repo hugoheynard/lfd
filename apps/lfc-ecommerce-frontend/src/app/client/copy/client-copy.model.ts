@@ -206,6 +206,15 @@ export interface ClientCopy {
      * temps de partir chez Auth0 (2026-10-09).
      */
     readonly emailCodeEntry: string;
+    /**
+     * `/connexion/erreur` : Auth0 a refusé la connexion (2026-10-09). Le texte
+     * d'Auth0 suit le sous-titre tel quel — c'est le cas réel.
+     */
+    readonly signInFailedTitle: string;
+    readonly signInFailedSub: string;
+    readonly signInCancelledTitle: string;
+    readonly signInCancelledSub: string;
+    readonly signInFailedBack: string;
     readonly firstTitle: string;
     readonly firstSub: string;
 

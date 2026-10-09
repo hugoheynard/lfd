@@ -125,6 +125,12 @@ export const FR: ClientCopy = {
     alreadyTitle: 'Déjà client ?',
     alreadySub: 'Un code par e-mail, un mot de passe ou Google',
     emailCodeEntry: 'Ouverture de la connexion par code…',
+    signInFailedTitle: "La connexion n'a pas abouti",
+    signInFailedSub:
+      "Aucun code ni aucune session n'a été ouvert. Réessayez ; si le refus revient, transmettez-nous ce message.",
+    signInCancelledTitle: 'Connexion annulée',
+    signInCancelledSub: "Vous n'êtes pas connecté. Vous pouvez recommencer quand vous voulez.",
+    signInFailedBack: "Revenir à l'accueil",
     firstTitle: 'Première visite ?',
     firstSub: 'Prénom, e-mail, téléphone',
     signInLead: 'Reprenez par le chemin que vous avez choisi en ouvrant votre compte.',

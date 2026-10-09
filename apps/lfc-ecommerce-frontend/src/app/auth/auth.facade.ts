@@ -6,7 +6,7 @@ import { Router } from '@angular/router';
 import { AuthService } from '@auth0/auth0-angular';
 import { NEVER, of } from 'rxjs';
 import type { Observable } from 'rxjs';
-import { filter, switchMap, take } from 'rxjs/operators';
+import { filter, map, switchMap, take } from 'rxjs/operators';
 
 import { appBaseUrl } from './app-base-url';
 import {
@@ -22,6 +22,7 @@ import {
   writeLastConnection,
 } from './auth-redirect';
 import { DEV_BYPASS_AUTH } from './dev-flags';
+import { signInFailureOf } from './sign-in-failure';
 
 /**
  * Façade d'authentification **SSR-safe** — l'unique frontière entre l'app et le
@@ -91,6 +92,16 @@ export class AuthFacade {
   readonly isAuthenticated = computed(
     () => (DEV_BYPASS_AUTH && this.isBrowser && !this.devSignedOut()) || this.rawIsAuthenticated(),
   );
+
+  /**
+   * Le dernier refus d'Auth0, lu par `/connexion/erreur` — la page où le SDK
+   * dépose la personne quand le retour d'Auth0 porte une erreur (`errorPath`,
+   * `auth.providers.ts`). `error$` rejoue la dernière : la page la lit après
+   * la navigation qui l'y a menée.
+   */
+  readonly signInFailure = toSignal((this.auth0?.error$ ?? NEVER).pipe(map(signInFailureOf)), {
+    initialValue: null,
+  });
 
   /** Profil Auth0 (claims du token) — « qui a prouvé son sub ». */
   readonly authUser = toSignal(this.auth0?.user$ ?? NEVER, {

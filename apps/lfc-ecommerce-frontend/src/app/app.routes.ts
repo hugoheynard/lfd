@@ -332,6 +332,15 @@ export const routes: Routes = [
         loadComponent: () =>
           import('./login/email-code-entry/email-code-entry').then((m) => m.EmailCodeEntry),
       },
+      {
+        // LES REFUS D'AUTH0 (2026-10-09) : le SDK y dépose la personne quand le
+        // retour porte une erreur (`errorPath`). Sans garde : on n'est pas
+        // connecté, par définition.
+        path: 'connexion/erreur',
+        title: 'Connexion — La Folie Coffee',
+        loadComponent: () =>
+          import('./login/sign-in-failure/sign-in-failure').then((m) => m.SignInFailure),
+      },
       // 🔴 `/mon-espace` A ÉTÉ RETIRÉE le 2026-09-21 (Hugo : « bienvenue
       // centralise tout »). Son écran répondait « qu'est-ce qui m'attend
       // aujourd'hui ? », ce que `/bienvenue` fait désormais pour les trois
