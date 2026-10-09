@@ -20,7 +20,7 @@ import { IssueCardInvoiceCommand } from "./issue-card-invoice.command.js";
 
 /**
  * **La facture carte d'une commande** (plan
- * `plan-facture-carte-et-remboursements.md`, § 2 bis, lot E5a).
+ * `facture-carte-et-remboursements.md`).
  *
  * Sous le verrou de la commande : lire (« déjà facturée ? »), juger
  * (`cardInvoiceVerdict`), préparer — tout refus se juge AVANT le numéro

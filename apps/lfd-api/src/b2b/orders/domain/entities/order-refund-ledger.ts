@@ -47,8 +47,7 @@ export type RefundRecording =
 
 /**
  * **Le carnet des remboursements d'une commande** — l'agrégat qui tient les
- * règles du lot R1 (plan `plan-facture-carte-et-remboursements.md`, § 2 bis-3,
- * § 3) :
+ * règles du lot R1 (`facture-carte-et-remboursements.md`) :
  *
  * - **idempotent par `stripe_refund_id`** : un webhook rejoué ne double rien ;
  * - **un statut ne régresse pas** (`refundTransition`) ;

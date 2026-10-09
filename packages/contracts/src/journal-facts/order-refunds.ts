@@ -4,8 +4,7 @@ import { cents, fact, instant, named, payload, subjectLabel } from "./fact.js";
 
 /**
  * **Les remboursements Stripe constatés** (plan
- * `documentation/comptabilite/facturation/plan-facture-carte-et-remboursements.md`,
- * lot R1). On les CONSTATE : le geste reste dans le tableau de bord Stripe, et
+ * `documentation/comptabilite/facturation/facture-carte-et-remboursements.md`). On les CONSTATE : le geste reste dans le tableau de bord Stripe, et
  * l'auteur de la ligne est le système.
  *
  * Le sujet est la COMMANDE, son libellé son numéro. 🔴 Aucun identifiant

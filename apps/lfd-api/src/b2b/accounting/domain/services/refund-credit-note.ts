@@ -3,8 +3,7 @@ import { millicentsFromCents, type InvoiceVatBreakdown, type InvoiceVatCategory 
 import type { InvoiceLineInput } from "../entities/invoice.types.js";
 
 /**
- * **L'avoir d'un remboursement** (plan `plan-facture-carte-et-remboursements.md`,
- * § 2 bis-5, lot E5b ; arbitrage A9) : Stripe rend un montant, pas des
+ * **L'avoir d'un remboursement** (plan `facture-carte-et-remboursements.md` ; arbitrage A9) : Stripe rend un montant, pas des
  * produits. Le montant se ventile donc par taux au **prorata** de ce que la
  * facture porte encore, et le remboursement qui **solde** prend le reste
  * exact, base et TVA, taux par taux — la somme des avoirs égale alors la

@@ -13,7 +13,7 @@ const PAYMENT_LINKS_SCREEN = "/comptabilite/liens-de-paiement";
 /**
  * **Un remboursement Stripe sur un paiement qu'aucune commande ne porte** —
  * un lien libre, le plus souvent (arbitrage A11 du plan
- * `plan-facture-carte-et-remboursements.md`) : noté au journal, la cloche
+ * `facture-carte-et-remboursements.md`) : noté au journal, la cloche
  * sonne, et rien d'autre. Pas d'avoir automatique, pas de table : un lien peut
  * solder un impayé déjà facturé au mois, et l'avoir dépend de ce qu'il
  * réglait — c'est un geste humain.

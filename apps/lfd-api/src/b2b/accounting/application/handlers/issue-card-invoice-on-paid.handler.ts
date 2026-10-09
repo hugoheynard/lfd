@@ -14,7 +14,7 @@ export const ISSUE_CARD_INVOICE_ON_PAID = "accounting.issue-card-invoice.on-paid
 
 /**
  * **La commande est encaissée : sa facture carte, si elle est déjà retirée**
- * (plan `plan-facture-carte-et-remboursements.md`, § 2 bis-1, lot E5a). Le
+ * (plan `facture-carte-et-remboursements.md`). Le
  * pendant de `IssueCardInvoiceOnFulfilled` : les deux appellent la même
  * commande, sans effet quand une 380 couvre déjà le bon.
  */

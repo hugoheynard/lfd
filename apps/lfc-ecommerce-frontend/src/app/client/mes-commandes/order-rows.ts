@@ -116,7 +116,7 @@ export type OrderPayment = 'account' | 'card';
 
 /**
  * Ce que Stripe a rendu sur la commande (lot R1 du plan
- * `plan-facture-carte-et-remboursements.md`). Lu sur `paymentStatus` et le
+ * `facture-carte-et-remboursements.md`). Lu sur `paymentStatus` et le
  * cumul RÉUSSI, jamais sur le régime : une commande remboursée reste « réglée
  * par carte ».
  */

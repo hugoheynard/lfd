@@ -7,7 +7,7 @@ export const ORDER_REFUND_SUCCEEDED = "order.refund_succeeded";
 /**
  * **Un remboursement Stripe a réussi sur une commande** — fait DURABLE, écrit
  * dans la transaction qui le constate (`RecordOrderRefundHandler`, lot E5b
- * du plan `plan-facture-carte-et-remboursements.md`, § 2 bis-7). La
+ * du plan `facture-carte-et-remboursements.md`). La
  * comptabilité l'écoute pour émettre l'avoir.
  *
  * Écrit quand le constat fait passer le remboursement à `succeeded` — une

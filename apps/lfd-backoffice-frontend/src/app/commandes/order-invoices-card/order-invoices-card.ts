@@ -23,7 +23,7 @@ import { IssuedInvoicesService } from '../../comptabilite/issued-invoices.servic
 
 /**
  * **« Facture et avoirs »** sur la fiche d'une commande (plan
- * `plan-facture-carte-et-remboursements.md`, lot E5c) : la facture qui porte
+ * `facture-carte-et-remboursements.md`) : la facture qui porte
  * le bon — carte ou du mois — et les avoirs qui la corrigent, chacun mené à
  * sa pièce dans la comptabilité.
  *

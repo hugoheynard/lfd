@@ -793,7 +793,7 @@ une page ouverte par le back-office.
 ## Abonner le webhook Stripe aux remboursements
 
 > 📐 **À faire, pas fait** (2026-10-08, lot R1 de
-> [`plan-facture-carte-et-remboursements.md`](../comptabilite/facturation/plan-facture-carte-et-remboursements.md)).
+> [`facture-carte-et-remboursements.md`](../comptabilite/facturation/facture-carte-et-remboursements.md)).
 > Le code est prêt ; l'abonnement de l'endpoint de production n'a pas été posé.
 
 Un remboursement se fait **dans le tableau de bord Stripe** ; le backend le

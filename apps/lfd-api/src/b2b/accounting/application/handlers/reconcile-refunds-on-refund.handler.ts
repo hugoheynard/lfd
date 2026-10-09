@@ -17,8 +17,7 @@ export const RECONCILE_REFUNDS_ON_REFUND = "accounting.reconcile-refunds.on-refu
 
 /**
  * **Un remboursement a réussi : son avoir, si la commande a une facture
- * carte** (plan `plan-facture-carte-et-remboursements.md`, § 2 bis-7, lot
- * E5b). Sans facture encore, rien : le rapprochement qui suit la facture le
+ * carte** (plan `facture-carte-et-remboursements.md`). Sans facture encore, rien : le rapprochement qui suit la facture le
  * rattrapera.
  */
 @Injectable()

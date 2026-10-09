@@ -24,7 +24,7 @@ export type RefundNotCreditedReason = "account_invoice" | "exceeds_invoice";
 
 /**
  * **Le rapprochement des remboursements** (plan
- * `plan-facture-carte-et-remboursements.md`, § 2 bis-7, lot E5b) : un
+ * `facture-carte-et-remboursements.md`) : un
  * BALAYAGE, pas un effet de bord. Pour chaque remboursement réussi sans avoir
  * d'une commande qui a une facture carte, un avoir du montant — ventilé au
  * prorata (`refundCreditNote`), le dernier prenant le reste exact.

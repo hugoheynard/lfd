@@ -7,8 +7,7 @@ export const ORDER_PAID = "order.paid";
 /**
  * **Une commande vient d'être encaissée par carte** — fait DURABLE, écrit
  * dans la transaction qui la passe `paid` (lot E5a du plan
- * `documentation/comptabilite/facturation/plan-facture-carte-et-remboursements.md`,
- * § 2 bis-1).
+ * `documentation/comptabilite/facturation/facture-carte-et-remboursements.md`).
  *
  * Pourquoi un fait durable à côté de `OrderPaymentSettledEvent`, qui reste en
  * mémoire pour l'accusé de réception : la facture carte naît quand la commande

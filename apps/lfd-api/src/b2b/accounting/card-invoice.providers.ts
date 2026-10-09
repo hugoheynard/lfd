@@ -28,7 +28,7 @@ import {
 } from "./infrastructure/prisma-refunds-to-credit.js";
 
 /**
- * Les providers du lot E5 (plan `plan-facture-carte-et-remboursements.md`) :
+ * Les providers du lot E5 (plan `facture-carte-et-remboursements.md`) :
  * la facture carte, ses issues signalées, l'avoir des remboursements. À part
  * du module, qui dépasse déjà la taille d'un fichier.
  */

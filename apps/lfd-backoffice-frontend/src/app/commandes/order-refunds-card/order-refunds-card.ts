@@ -30,7 +30,7 @@ interface RefundRow {
 
 /**
  * **« Remboursements »** sur la fiche d'une commande (plan
- * `plan-facture-carte-et-remboursements.md`, lot R1) : ce que Stripe a rendu,
+ * `facture-carte-et-remboursements.md`) : ce que Stripe a rendu,
  * constaté par le webhook — montant, statut, date. Le geste, lui, reste dans
  * le tableau de bord Stripe : la carte n'a aucun bouton.
  *

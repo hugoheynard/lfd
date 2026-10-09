@@ -7,7 +7,7 @@ import { ReconcileRefundsCommand } from "./reconcile-refunds.command.js";
 
 /**
  * **Le rapprochement d'une commande** (plan
- * `plan-facture-carte-et-remboursements.md`, § 2 bis-7, lot E5b) : sous le
+ * `facture-carte-et-remboursements.md`) : sous le
  * verrou de la commande — deux remboursements constatés ensemble ne lisent
  * pas tous deux « sans avoir » — puis `RefundReconciler`.
  *

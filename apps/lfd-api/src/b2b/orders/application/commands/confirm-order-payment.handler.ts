@@ -48,7 +48,7 @@ import { ConfirmOrderPaymentCommand } from "./confirm-order-payment.command.js";
  * `order.paid` part dans la même unité de travail que `markPaid` : la facture
  * carte d'une commande déjà retirée ne naît que de lui, et un fait en mémoire
  * perdu sur un redémarrage laisserait une vente sans facture (plan
- * `plan-facture-carte-et-remboursements.md`, § 2 bis-1).
+ * `facture-carte-et-remboursements.md`).
  *
  * ⚠️ `publish` et non `publishTraced` : ce sont des projections d'un événement
  * externe, pas des actes dont un humain doit répondre. Le journal des actes

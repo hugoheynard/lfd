@@ -10,7 +10,7 @@ import { breakdownOf, ISSUED_ON, issueInput, LINES } from "./invoice-fixtures.js
 
 /**
  * **La facture carte, acquittée** (lot E5a, plan
- * `plan-facture-carte-et-remboursements.md`, § 2 bis-4) : le moyen « carte »
+ * `facture-carte-et-remboursements.md`) : le moyen « carte »
  * (UNTDID 4461 code 48) et le déjà payé (BT-113) vont ensemble ; le reste dû
  * est nul. Les dates ne sont comparées qu'entre elles.
  */

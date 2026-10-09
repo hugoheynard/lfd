@@ -23,8 +23,7 @@ type Outcome =
 
 /**
  * **Constate un remboursement Stripe** sur sa commande (plan
- * `documentation/comptabilite/facturation/plan-facture-carte-et-remboursements.md`,
- * lot R1).
+ * `documentation/comptabilite/facturation/facture-carte-et-remboursements.md`).
  *
  * Charger le carnet sous verrou → `ledger.record()` → `save` → journal, dans
  * une seule unité de travail : la trace part avec l'écriture, ou rien ne part.

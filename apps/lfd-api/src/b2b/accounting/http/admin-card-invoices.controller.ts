@@ -15,7 +15,7 @@ import {
 
 /**
  * Surface **staff** de la facture carte (plan
- * `plan-facture-carte-et-remboursements.md`, lots E5a et E5c) : les factures
+ * `facture-carte-et-remboursements.md`) : les factures
  * signalées et « Réessayer » (`b2b_accounting:write`), et les pièces d'une
  * commande pour sa fiche.
  */

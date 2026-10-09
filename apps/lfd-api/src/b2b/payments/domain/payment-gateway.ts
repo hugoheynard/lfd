@@ -70,7 +70,7 @@ export type PaymentRefundStatus = (typeof PAYMENT_REFUND_STATUSES)[number];
 
 /**
  * Un **remboursement** annoncé par Stripe (`refund.created`, `refund.updated`,
- * `refund.failed`) — plan `plan-facture-carte-et-remboursements.md`, § 2 bis-3.
+ * `refund.failed`) — plan `facture-carte-et-remboursements.md`.
  *
  * `charge.refunded` n'en est PAS la source : depuis l'API 2022-11-15, son
  * objet ne porte plus la liste des remboursements. Montant en centimes ;

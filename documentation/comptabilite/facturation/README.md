@@ -16,7 +16,7 @@ sont conformes.
 | [`../prelevement/prelevement-automatique.md`](../prelevement/prelevement-automatique.md) | ✅ doc d'état — le mois de prélèvement : réglages de l'entité, calendrier TARGET2, avis de prélèvement, préparation automatique une fois par mois, écran « Prélèvement du mois » (PA1-PA4, 2026-10-08) |
 | [`bons-et-facture-concordants.md`](bons-et-facture-concordants.md)                       | ✅ doc d'état — le HT de la facture est celui des bons ; le régime figé de la commande ; le bon d'un pro au compte en HT, la facture porte TVA et TTC                                                  |
 | [`facture-emise.md`](facture-emise.md)                                                   | ✅ doc d'état — la facture et l'avoir Factur-X EN 16931 (PDF/A-3b) : numérotation par entité, facture du mois à 23h55 une par mandat, e-mail, Mes factures, renvoi ; le lot encaisse des factures      |
-| [`plan-facture-carte-et-remboursements.md`](plan-facture-carte-et-remboursements.md)     | 📐 plan v2, contredit par `vitruve` — la facture acquittée d'une commande pro payée par carte, au retrait ; les remboursements Stripe suivis et leurs avoirs (E5)                                      |
+| [`facture-carte-et-remboursements.md`](facture-carte-et-remboursements.md)               | ✅ doc d'état — la facture acquittée d'une commande pro payée par carte, retirée et payée ; les remboursements Stripe constatés et leur avoir au prorata, reste exact au solde                         |
 
 ## Ce qui existe ailleurs, et qu'il ne faut pas réécrire
 

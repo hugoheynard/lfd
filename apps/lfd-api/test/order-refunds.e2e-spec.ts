@@ -1,6 +1,6 @@
 /**
  * E2E des **remboursements Stripe constatés** (lot R1 du plan
- * `documentation/comptabilite/facturation/plan-facture-carte-et-remboursements.md`).
+ * `documentation/comptabilite/facturation/facture-carte-et-remboursements.md`).
  *
  * Ce que seul le vrai SQL prouve :
  * - la table `order_refund`, son unicité par `stripe_refund_id` et sa

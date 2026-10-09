@@ -1,6 +1,6 @@
 /**
  * E2E de **la facture carte et de l'avoir des remboursements** (lots E5a et
- * E5b du plan `documentation/comptabilite/facturation/plan-facture-carte-et-remboursements.md`).
+ * E5b du plan `documentation/comptabilite/facturation/facture-carte-et-remboursements.md`).
  *
  * Ce que seul le vrai SQL prouve :
  * - les deux déclencheurs durables (`order.fulfilled`, `order.paid`) relayés

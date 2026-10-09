@@ -754,7 +754,7 @@ export interface OrderView {
   readonly handedOverAt: string | null;
   /**
    * Les **remboursements Stripe constatés**, dans l'ordre de leur constat
-   * (lot R1 du plan `plan-facture-carte-et-remboursements.md`) — vide pour
+   * (lot R1 du plan `facture-carte-et-remboursements.md`) — vide pour
    * l'immense majorité des commandes. Seuls les `succeeded` comptent dans le
    * cumul ; les autres disent ce qui est en cours, ou ce qui a échoué.
    */

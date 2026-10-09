@@ -5,7 +5,7 @@ import { AppConfig } from "../../../../platform/config/app-config.js";
 import { StripePaymentGateway } from "../stripe-payment-gateway.js";
 
 /**
- * Les remboursements (lot R1 du plan `plan-facture-carte-et-remboursements.md`),
+ * Les remboursements (lot R1 du plan `facture-carte-et-remboursements.md`),
  * passés par la VRAIE vérification de signature : le corps est signé avec le
  * secret de test, exactement comme Stripe le ferait. Aucun réseau.
  */

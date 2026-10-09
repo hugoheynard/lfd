@@ -4,8 +4,7 @@ import type { FrozenInvoiceOrder } from "./invoice-dossier.types.js";
 
 /**
  * **La facture carte**, sa partie pure (plan
- * `documentation/comptabilite/facturation/plan-facture-carte-et-remboursements.md`,
- * § 2 bis, lot E5a) : faut-il facturer cette commande maintenant, et sous
+ * `documentation/comptabilite/facturation/facture-carte-et-remboursements.md`) : faut-il facturer cette commande maintenant, et sous
  * quel moyen. Ni horloge, ni port : la commande est donnée.
  */
 

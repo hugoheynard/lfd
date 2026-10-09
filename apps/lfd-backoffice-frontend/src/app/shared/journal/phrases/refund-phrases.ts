@@ -17,7 +17,7 @@ import { REFUND_NOT_CREDITED, REFUND_REJECTION, REFUND_STATUS } from '../values/
 
 /**
  * **Les remboursements Stripe constatés** (plan
- * `plan-facture-carte-et-remboursements.md`, lot R1), et ce que la facture
+ * `facture-carte-et-remboursements.md`), et ce que la facture
  * carte en fait (lots E5a, E5b : facture signalée, remboursement sans avoir) — familles
  * `ordersAndProduction` (`order.refund_*`) et `accounting`
  * (`payment_refund.unmatched`). À part de `orders-phrases.ts`, qui dépasse

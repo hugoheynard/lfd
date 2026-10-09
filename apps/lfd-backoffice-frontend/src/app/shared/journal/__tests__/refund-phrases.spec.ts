@@ -4,7 +4,7 @@ import { renderFact, type FactInput } from '../render-fact';
 
 /**
  * **Les remboursements Stripe constatés** (lot R1 du plan
- * `plan-facture-carte-et-remboursements.md`) : au passif, le geste a eu lieu
+ * `facture-carte-et-remboursements.md`) : au passif, le geste a eu lieu
  * chez Stripe, le système ne fait que le constater.
  */
 

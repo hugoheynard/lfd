@@ -6,7 +6,7 @@
 
 Les règles du CGI et du Code de commerce citées ici l'ont été **de mémoire** ;
 le cabinet tranche. La facture carte et l'avoir de remboursement sont décrits
-dans [`plan-facture-carte-et-remboursements.md`](plan-facture-carte-et-remboursements.md).
+dans [`facture-carte-et-remboursements.md`](facture-carte-et-remboursements.md).
 
 ## Les règles (décisions d'Hugo)
 

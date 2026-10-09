@@ -17,7 +17,7 @@ export const ISSUE_CARD_INVOICE_ON_FULFILLED = "accounting.issue-card-invoice.on
 
 /**
  * **La commande est retirée : sa facture carte, si elle est déjà payée**
- * (plan `plan-facture-carte-et-remboursements.md`, § 2 bis-1, lot E5a).
+ * (plan `facture-carte-et-remboursements.md`).
  *
  * Le fait écouté est `order.fulfilled`, celui des COMMANDES — un par commande,
  * écrit par l'écriture gagnante de `markFulfilled` —, pas `handover.handed_over`,

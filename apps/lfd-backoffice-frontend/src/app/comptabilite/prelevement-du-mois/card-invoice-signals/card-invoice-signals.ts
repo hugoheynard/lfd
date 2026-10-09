@@ -37,7 +37,7 @@ const RETRIED: Readonly<Record<CardInvoiceOutcome, string>> = {
 
 /**
  * **Les factures carte signalées** (plan
- * `plan-facture-carte-et-remboursements.md`, lot E5a) : une commande pro
+ * `facture-carte-et-remboursements.md`) : une commande pro
  * payée par carte et retirée dont la facture n'a pas pu partir — acheteur
  * sans SIREN ou sans TVA, pas d'émetteur… Chaque ligne dit pourquoi ; une fois
  * la fiche corrigée, « Réessayer » la rejoue.

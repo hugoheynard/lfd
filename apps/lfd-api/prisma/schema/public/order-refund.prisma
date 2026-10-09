@@ -12,8 +12,8 @@ enum OrderRefundStatus {
 }
 
 /// **Un remboursement Stripe constaté sur une commande** — une ligne par
-/// `re_…` (plan `documentation/comptabilite/facturation/plan-facture-carte-et-remboursements.md`,
-/// lot R1). On le CONSTATE, on ne l'initie pas : le geste reste dans le tableau
+/// `re_…` (plan `documentation/comptabilite/facturation/facture-carte-et-remboursements.md`). On le
+/// CONSTATE, on ne l'initie pas : le geste reste dans le tableau
 /// de bord Stripe.
 ///
 /// Écrite par l'agrégat `OrderRefundLedger` (`src/b2b/orders/`), qui tient

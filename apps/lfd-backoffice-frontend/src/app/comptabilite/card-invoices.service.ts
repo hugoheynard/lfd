@@ -7,8 +7,7 @@ import type { CardInvoiceRetryView, CardInvoiceSignalsView } from '@lfd/contract
 import { B2B_API_BASE } from '../api/api-config';
 
 /**
- * **La facture carte** (plan `documentation/comptabilite/facturation/plan-facture-carte-et-remboursements.md`,
- * lot E5a) : les factures signalées, et « Réessayer » (`b2b_accounting:write`)
+ * **La facture carte** (plan `documentation/comptabilite/facturation/facture-carte-et-remboursements.md`) : les factures signalées, et « Réessayer » (`b2b_accounting:write`)
  * — la même commande que les abonnés du retrait et de l'encaissement.
  */
 @Injectable({ providedIn: 'root' })
