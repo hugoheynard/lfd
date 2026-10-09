@@ -599,6 +599,14 @@
    spécificité. Une montée de version de fold peut la rendre muette : c'est
    l'écran qui le dira. */
 [data-theme='lfc-app'] fold-panel-host .panel-dock .panel[data-side='bottom'] {
-  height: 100%;
-  max-height: 100%;
+  /* 🔴 Jusqu'à la BARRE, pas jusqu'à la sous-barre (Hugo, 2026-10-09 : « le
+     panel panier devrait aller jusqu'au app header »). Le dock de l'hôte de
+     contenu commence sous la sous-barre (« Créer mon compte », 47 px mesurés
+     le 2026-10-09) : `100 %` de lui laissait cette bande au-dessus de la
+     feuille. Fixée sous la barre, elle la recouvre — vérifié à l'écran, le
+     dock n'a ni `transform` ni `filter` qui ferait de `fixed` un `absolute`. */
+  position: fixed;
+  inset: var(--lfc-header-height, 64px) 0 0;
+  height: auto;
+  max-height: none;
 }
