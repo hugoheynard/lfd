@@ -9,6 +9,11 @@ export const FR: ClientCopy = {
     identityConflict:
       'Un compte existe déjà avec cette adresse, ouvert par un autre moyen de connexion. Reprenez ce chemin : code par e-mail, mot de passe ou Google.',
     identityConflictDismiss: 'Compris',
+    installIosSafari: "Pour installer l'app : touchez Partager, puis « Sur l'écran d'accueil ».",
+    installIosOther: "Ouvrez cette page dans Safari pour installer l'app.",
+    installPrompt: "Installer l'app",
+    installAction: 'Installer',
+    installLater: 'Plus tard',
     back: 'Retour',
     menu: 'Menu',
     notifications: 'Notifications',

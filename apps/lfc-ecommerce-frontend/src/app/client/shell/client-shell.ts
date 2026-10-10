@@ -23,6 +23,7 @@ import { ClientOnboarding } from '../client-onboarding.service';
 import { ProOnboarding } from '../pro-onboarding.service';
 import { ClientCopyService } from '../copy/client-copy.service';
 import { LangSwitch } from '../lang-switch/lang-switch';
+import { InstallBanner } from '../install-banner/install-banner';
 
 /**
  * Le shell de l'app CLIENT : la barre de marque bleue, et rien d'autre.
@@ -50,6 +51,7 @@ import { LangSwitch } from '../lang-switch/lang-switch';
     FoldCalloutComponent,
     FoldIconComponent,
     FoldPanelHostComponent,
+    InstallBanner,
     LangSwitch,
     NotificationsMenu,
     RouterLink,

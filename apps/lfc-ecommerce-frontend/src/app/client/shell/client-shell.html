@@ -209,6 +209,11 @@
 
   <router-outlet />
 
+  <!-- Le bandeau d'installation : en fin de flux, collé au bas en défilant
+       (todo-installation-app-cliente.md). Rien au rendu serveur, rien en
+       app installée. -->
+  <app-install-banner />
+
   <!-- Le menu de poche : toujours dans l'arbre, ouvert par la barre. Il se
        ferme tout seul au-delà du pli, où la sous-barre le remplace. -->
   <app-client-menu [open]="menuOpen()" (closed)="menuOpen.set(false)" />

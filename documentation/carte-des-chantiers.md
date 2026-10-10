@@ -44,12 +44,12 @@ puis ce qui rend durable ce qui ne l'est pas, puis le confort.
 | 5   | E5 — courriels, alerte de connexion, image en faits durables                                                                  | M      | alerte de connexion | `journalisation/plan-evenements-durables.md`                       |
 | 6   | ✅ 2026-10-10 — L'écran des messages morts et le rejeu                                                                        | S–M    | rejeu gardé         | `journalisation/plan-boite-d-envoi.md` §9 bis                      |
 | 7   | ✅ 2026-10-10 — L'alerte lit l'historique d'AVANT la commande (TODO retiré)                                                   | S      | —                   | `apps/lfd-api/src/b2b/alerts/domain/ports/order-history.reader.ts` |
-| 8   | Les deux courriels non branchés (rendez-vous pris, demande de contact)                                                        | S–M    | —                   | `todos/todo-notifications.md`                                      |
+| 8   | ✅ 2026-10-10 — Les deux courriels internes (rendez-vous pris, demande de rappel) ; reste le nom de contact d'un rappel       | S–M    | —                   | `todos/todo-notifications.md`                                      |
 | 9   | ✅ déjà fait (`74672d5c6`, cron `45 3 * * *`) — le doc le disait à tort non planifié ; corrigé le 2026-10-10                  | —      | —                   | `production/plan-controle-qualite.md`                              |
 | 10  | ✅ 2026-10-10 — `expectedRevision` obligatoire sur les documents légaux (TODO retiré)                                         | S      | —                   | `packages/contracts/src/legal-document.ts`                         |
 | 11  | Les routes de déclaration de bacs encore servies par la livraison (4 e2e à réécrire d'abord)                                  | M      | —                   | `colisage/colisage.md` §9 a                                        |
 | 12  | Le journal : aucun fait pour la tentative automatique de facture, ni pour une facture signalée                                | S      | —                   | `comptabilite/facturation/facture-emise.md`                        |
-| 13  | Le bandeau d'installation de l'app cliente                                                                                    | S      | —                   | `todos/todo-installation-app-cliente.md`                           |
+| 13  | ✅ 2026-10-10 (reste le contrôle sur téléphone) — Le bandeau d'installation de l'app cliente                                  | S      | —                   | `todos/todo-installation-app-cliente.md`                           |
 | 14  | ✅ déjà fait le 2026-09-22 (`company-screens.ts`) — le TODO ne le disait pas ; corrigé le 2026-10-10                          | —      | —                   | `todos/todo-releve-version-deployee.md` §1                         |
 
 ## 4. Écrits, en attente d'une décision de Hugo

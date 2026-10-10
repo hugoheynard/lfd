@@ -11,6 +11,7 @@ import { provideFoldCommonLabels, provideFoldToasts } from 'fold-ng';
 import { routes } from './app.routes';
 import { AUTH_CONFIG } from './auth/auth.config';
 import { ClientFeatureAccess } from './client/feature-access/client-feature-access.service';
+import { InstallPrompt } from './client/install-prompt.service';
 import { workspaceInterceptor } from './client/client-workspace.interceptor';
 import { identityConflictInterceptor } from './auth/identity-conflict';
 import { ADDRESS_WRITER, LFD_NOTIFY } from '@lfd/b2b-ui/panel';
@@ -57,6 +58,11 @@ export const appConfig: ApplicationConfig = {
     // écran se dessine tout de suite.
     provideAppInitializer(() => {
       void inject(ClientFeatureAccess).load();
+    }),
+    // `beforeinstallprompt` ne passe qu'une fois, tôt : l'écouter AVANT que le
+    // bandeau d'installation ne soit monté, sans quoi il n'a rien à rejouer.
+    provideAppInitializer(() => {
+      inject(InstallPrompt).listen();
     }),
     // Toasts d'opération (succès/échec) : succès bref, erreur sticky (défauts fold).
     provideFoldToasts({}),

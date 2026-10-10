@@ -1,9 +1,24 @@
 # TODO — bandeau d'installation de l'app cliente
 
+> ✅ **Bâti le 2026-10-10** (non commité à l'écriture de ce bandeau). Fichiers :
+> `apps/lfc-ecommerce-frontend/src/app/client/install-prompt.service.ts` (la
+> détection en fonctions pures, la capture de `beforeinstallprompt` au démarrage
+> par `app.config.ts`, le refus mémorisé quatre semaines sous
+> `lfc.install-dismissed-at`) et `src/app/client/install-banner/` (le bandeau
+> `fold-callout`, monté par `client/shell/client-shell.html`), libellés dans
+> `client/copy/{fr,en,it}.ts`. **Reste à vérifier sur un vrai téléphone** :
+> iPhone Safari, iPhone Chrome, Android Chrome (le bouton rejoue l'invite), et
+> l'app une fois installée (rien ne doit paraître) — ainsi que la place du
+> bandeau au-dessus de la zone de geste iOS.
+
 > **État au 2026-08-29** : l'app est **installable** (manifeste + icônes livrés,
 > vérifiés en production sur `lafoliecoffee.info/pro`). Ce qui manque est
 > l'invitation à le faire — rien, aujourd'hui, ne dit à un client que l'app
 > peut sortir du navigateur.
+
+> ⚠️ **Budget** (mesuré le 2026-10-10) : la configuration `cloudflare` de la
+> boutique pèse 1,29 Mo pour un plafond d'erreur de 1,30 Mo — il reste une
+> dizaine de ko avant que le déploiement refuse.
 
 ## Le problème
 

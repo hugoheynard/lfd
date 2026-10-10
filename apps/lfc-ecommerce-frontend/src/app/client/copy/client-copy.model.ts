@@ -19,6 +19,12 @@ export interface ClientCopy {
     /** L'avis après une connexion Google refusée : un compte porte déjà l'adresse. */
     readonly identityConflict: string;
     readonly identityConflictDismiss: string;
+    /** Le bandeau d'installation : un message par contexte, puis ses deux gestes. */
+    readonly installIosSafari: string;
+    readonly installIosOther: string;
+    readonly installPrompt: string;
+    readonly installAction: string;
+    readonly installLater: string;
     readonly back: string;
     readonly menu: string;
     readonly notifications: string;

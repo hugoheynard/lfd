@@ -1,0 +1,33 @@
+@if (context() !== 'none') {
+  <div class="install-banner">
+    <fold-callout variant="info" icon="download">
+      @switch (context()) {
+        @case ('ios-safari') {
+          {{ t().chrome.installIosSafari }}
+        }
+        @case ('ios-other') {
+          {{ t().chrome.installIosOther }}
+        }
+        @case ('prompt') {
+          {{ t().chrome.installPrompt }}
+        }
+      }
+      @if (context() === 'prompt') {
+        <button actions foldButton size="sm" type="button" (click)="install()">
+          {{ t().chrome.installAction }}
+        </button>
+      }
+      <button
+        actions
+        foldButton
+        emphasis="soft"
+        intent="neutral"
+        size="sm"
+        type="button"
+        (click)="later()"
+      >
+        {{ t().chrome.installLater }}
+      </button>
+    </fold-callout>
+  </div>
+}

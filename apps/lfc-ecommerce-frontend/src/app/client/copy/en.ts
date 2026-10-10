@@ -15,6 +15,11 @@ export const EN: ClientCopy = {
     identityConflict:
       'An account already uses this address, opened with another sign-in method. Take that path again: email code, password or Google.',
     identityConflictDismiss: 'Got it',
+    installIosSafari: 'To install the app: tap Share, then “Add to Home Screen”.',
+    installIosOther: 'Open this page in Safari to install the app.',
+    installPrompt: 'Install the app',
+    installAction: 'Install',
+    installLater: 'Later',
     back: 'Back',
     menu: 'Menu',
     notifications: 'Notifications',

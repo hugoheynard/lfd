@@ -1,0 +1,10 @@
+// Collé au bas de la zone qui défile, au-dessus de la zone de geste iOS.
+// `sticky` et non `fixed` : en fin de défilement il retrouve sa place sous le
+// contenu, au lieu de couvrir le dernier bouton.
+.install-banner {
+  position: sticky;
+  bottom: 0;
+  z-index: 1;
+  padding: var(--fold-space-sm) var(--fold-space-md)
+    calc(var(--fold-space-sm) + env(safe-area-inset-bottom));
+}
