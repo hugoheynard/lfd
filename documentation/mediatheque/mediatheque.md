@@ -424,10 +424,10 @@ Le plan [`plan-la-mediatheque-amelioree.md`](plan-la-mediatheque-amelioree.md)
 tient l'avancement lot par lot, et ses décisions prises sans Hugo (R1…) à
 revoir. Ce qui reste, au 2026-10-10 :
 
-1. **L'accueil, seconde moitié (L6)** : la page « Accueil » de la vitrine,
-   sa bannière 21/9 et l'image de la porte « fournil » — en cours. La photo
-   actuelle de la porte est une URL tierce : elle doit être déposée au fonds
-   (ou remplacée) avant d'être choisie.
+1. **L'accueil (L6) est bâti** — la vitrine a une page « Accueil » (bannière
+   21/9, photo de la porte « Je passe la prendre » choisie au fonds) ; la
+   photo du fournil n'est plus une URL tierce. Rien n'est encore choisi :
+   déposer la photo au fonds puis la poser dans l'éditeur de vitrine.
 2. **Remplacer une image (L7).** Déposer, puis repointer tous les porteurs
    dans une unité ; l'ancienne reste au fonds (D5).
 3. **Le préfixe de clé s'appelle `products`** alors que le fonds sert tout
