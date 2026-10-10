@@ -37,7 +37,7 @@ async function setup(data: LibraryPickerData) {
       },
       {
         provide: MediaLibraryHttpApi,
-        useValue: { page: async () => ({ items: [image('a'), image('b')], total: 2 }) },
+        useValue: { page: async () => ({ items: [image('a'), image('b')], total: 2, next: null }) },
       },
     ],
   });

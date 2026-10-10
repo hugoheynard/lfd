@@ -5,6 +5,13 @@ import {
   type LibraryMediaRecord,
   type LibraryQuery,
 } from "../../domain/ports/media-library-reader.js";
+import {
+  encodeLibraryCursor,
+  InvalidLibraryCursorError,
+} from "../../domain/value-objects/library-cursor.js";
+import type { LibraryPosition } from "../../domain/value-objects/library-order.js";
+import { InvalidDepositPeriodError } from "../library-period.js";
+import { UnsupportedLibraryOffsetError } from "../browse-media-library.js";
 
 /**
  * Un lecteur qui n'interroge rien et **retient ce qu'on lui demande**.
@@ -15,10 +22,11 @@ import {
  */
 class SpyingReader extends MediaLibraryReader {
   asked: LibraryQuery | null = null;
+  next: LibraryPosition | null = null;
 
   page(query: LibraryQuery): Promise<LibraryMediaPage> {
     this.asked = query;
-    return Promise.resolve({ items: [], total: 0 });
+    return Promise.resolve({ items: [], total: 0, next: this.next });
   }
 
   /** Hors sujet ici, mais le port l'exige — et c'est ce qui rend ce doublé
@@ -39,7 +47,7 @@ describe("BrowseMediaLibrary — le bornage", () => {
     // le contrôleur peut se tromper, un test aussi.
     const reader = new SpyingReader();
 
-    await handlerOn(reader).execute(new BrowseMediaLibraryQuery(5000, 0));
+    await handlerOn(reader).execute(new BrowseMediaLibraryQuery({ limit: 5000 }));
 
     expect(reader.asked?.limit).toBe(100);
   });
@@ -47,7 +55,7 @@ describe("BrowseMediaLibrary — le bornage", () => {
   it("refuse un décalage négatif plutôt que de le passer à la base", async () => {
     const reader = new SpyingReader();
 
-    await handlerOn(reader).execute(new BrowseMediaLibraryQuery(10, -40));
+    await handlerOn(reader).execute(new BrowseMediaLibraryQuery({ limit: 10, offset: -40 }));
 
     expect(reader.asked?.offset).toBe(0);
   });
@@ -60,7 +68,7 @@ describe("BrowseMediaLibrary — la recherche", () => {
     // quoi qu'on tape — et rien à l'écran ne le disait.
     const reader = new SpyingReader();
 
-    await handlerOn(reader).execute(new BrowseMediaLibraryQuery(60, 0, "croissant", undefined));
+    await handlerOn(reader).execute(new BrowseMediaLibraryQuery({ q: "croissant" }));
 
     expect(reader.asked?.q).toBe("croissant");
   });
@@ -69,7 +77,7 @@ describe("BrowseMediaLibrary — la recherche", () => {
     const reader = new SpyingReader();
 
     await handlerOn(reader).execute(
-      new BrowseMediaLibraryQuery(60, 0, undefined, ["viennoiserie", "packshot"]),
+      new BrowseMediaLibraryQuery({ tags: ["viennoiserie", "packshot"] }),
     );
 
     expect(reader.asked?.tags).toEqual(["viennoiserie", "packshot"]);
@@ -81,8 +89,115 @@ describe("BrowseMediaLibrary — la recherche", () => {
     // croirait qu'un filtre est toujours là.
     const reader = new SpyingReader();
 
-    await handlerOn(reader).execute(new BrowseMediaLibraryQuery(60, 0));
+    await handlerOn(reader).execute(new BrowseMediaLibraryQuery());
 
-    expect(reader.asked).toEqual({ limit: 60, offset: 0 });
+    expect(reader.asked).toEqual({ limit: 60, offset: 0, sort: "deposited" });
+  });
+});
+
+describe("BrowseMediaLibrary — le curseur", () => {
+  const POSITION: LibraryPosition = {
+    sort: "name",
+    key: "croissant",
+    url: "https://media.test/products/a.png",
+  };
+
+  it("relit le curseur et le passe au lecteur comme une position", async () => {
+    const reader = new SpyingReader();
+
+    await handlerOn(reader).execute(
+      new BrowseMediaLibraryQuery({ sort: "name", after: encodeLibraryCursor(POSITION) }),
+    );
+
+    expect(reader.asked?.after).toEqual(POSITION);
+    expect(reader.asked?.sort).toBe("name");
+  });
+
+  it("rend la position suivante en curseur opaque, et `null` en fin de fonds", async () => {
+    const reader = new SpyingReader();
+    reader.next = POSITION;
+
+    const page = await handlerOn(reader).execute(new BrowseMediaLibraryQuery({ sort: "name" }));
+
+    expect(page.next).toBe(encodeLibraryCursor(POSITION));
+    reader.next = null;
+    expect((await handlerOn(reader).execute(new BrowseMediaLibraryQuery())).next).toBeNull();
+  });
+
+  it("refuse un curseur illisible AVANT d'interroger le fonds", async () => {
+    // Repartir du début en silence réafficherait des images déjà vues.
+    const reader = new SpyingReader();
+
+    await expect(
+      handlerOn(reader).execute(new BrowseMediaLibraryQuery({ after: "pas-un-curseur" })),
+    ).rejects.toBeInstanceOf(InvalidLibraryCursorError);
+    expect(reader.asked).toBeNull();
+  });
+
+  it("refuse un curseur émis pour un autre ordre", async () => {
+    const reader = new SpyingReader();
+
+    await expect(
+      handlerOn(reader).execute(
+        new BrowseMediaLibraryQuery({ sort: "deposited", after: encodeLibraryCursor(POSITION) }),
+      ),
+    ).rejects.toBeInstanceOf(InvalidLibraryCursorError);
+  });
+
+  it("refuse un décalage combiné à un curseur ou à un autre ordre que le dépôt", async () => {
+    const reader = new SpyingReader();
+    const handler = handlerOn(reader);
+
+    await expect(
+      handler.execute(
+        new BrowseMediaLibraryQuery({
+          sort: "name",
+          offset: 60,
+          after: encodeLibraryCursor(POSITION),
+        }),
+      ),
+    ).rejects.toBeInstanceOf(UnsupportedLibraryOffsetError);
+    await expect(
+      handler.execute(new BrowseMediaLibraryQuery({ sort: "uses", offset: 60 })),
+    ).rejects.toBeInstanceOf(UnsupportedLibraryOffsetError);
+    expect(reader.asked).toBeNull();
+  });
+});
+
+describe("BrowseMediaLibrary — les filtres", () => {
+  it("lit la période à l'heure de Paris, dernier jour inclus", async () => {
+    // L'heure d'été : minuit à Paris est 22 h UTC la veille. Un filtre en UTC
+    // rangerait une image déposée le 1er à 0 h 30 dans le mois d'avant.
+    const reader = new SpyingReader();
+
+    await handlerOn(reader).execute(
+      new BrowseMediaLibraryQuery({ from: "2026-07-01", to: "2026-07-31" }),
+    );
+
+    expect(reader.asked?.depositedFrom?.toISOString()).toBe("2026-06-30T22:00:00.000Z");
+    expect(reader.asked?.depositedBefore?.toISOString()).toBe("2026-07-31T22:00:00.000Z");
+  });
+
+  it("refuse une période à l'envers et un jour qui n'existe pas", async () => {
+    const reader = new SpyingReader();
+    const handler = handlerOn(reader);
+
+    await expect(
+      handler.execute(new BrowseMediaLibraryQuery({ from: "2026-07-31", to: "2026-07-01" })),
+    ).rejects.toBeInstanceOf(InvalidDepositPeriodError);
+    await expect(
+      handler.execute(new BrowseMediaLibraryQuery({ from: "2026-02-31" })),
+    ).rejects.toBeInstanceOf(InvalidDepositPeriodError);
+  });
+
+  it("transmet « non taguées » et « inutilisées », et rien quand ils sont baissés", async () => {
+    const reader = new SpyingReader();
+    const handler = handlerOn(reader);
+
+    await handler.execute(new BrowseMediaLibraryQuery({ untagged: true, unused: true }));
+    expect(reader.asked).toMatchObject({ untagged: true, unused: true });
+
+    await handler.execute(new BrowseMediaLibraryQuery({ untagged: false, unused: false }));
+    expect(reader.asked).toEqual({ limit: 60, offset: 0, sort: "deposited" });
   });
 });

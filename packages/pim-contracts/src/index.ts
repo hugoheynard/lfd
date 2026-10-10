@@ -20,10 +20,11 @@ export { localizedTextSchema, optionalLocalizedTextSchema } from "./localized.js
 export {
   mediaDetailsPayloadSchema,
   mediaItemPayloadSchema,
+  mediaLibraryQuerySchema,
   renameMediaTagPayloadSchema,
   setMediaPayloadSchema,
 } from "./media.js";
-export { MEDIA_LIMITS } from "./media.js";
+export { MEDIA_LIMITS, MEDIA_LIBRARY_SORTS } from "./media.js";
 
 export type {
   AttachedMediaView,
@@ -35,6 +36,8 @@ export type {
   MediaCarrierView,
   MediaUploadFailureView,
   MediaLibraryPageView,
+  MediaLibraryQuery,
+  MediaLibrarySort,
   MediaDetailsPayload,
   MediaTagView,
   RenameMediaTagPayload,

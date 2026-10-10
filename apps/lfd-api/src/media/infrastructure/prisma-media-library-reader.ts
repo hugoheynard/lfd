@@ -1,7 +1,4 @@
 import { Injectable } from "@nestjs/common";
-import { readAltColumn } from "./alt-columns.js";
-
-import { SOURCE_LOCALE } from "../domain/value-objects/alt-text.js";
 
 import { MediaCarriers } from "../channels/carriers/media-carriers.js";
 import { MediaPrismaService } from "../infra/database/media-prisma.service.js";
@@ -11,50 +8,39 @@ import {
   type LibraryMediaPage,
   type LibraryMediaRecord,
 } from "../domain/ports/media-library-reader.js";
+import { positionOf } from "../domain/value-objects/library-order.js";
+import { MAX_RANKED_IMAGES, rankLibrary } from "../domain/services/rank-library.js";
+import type { Prisma } from "../../platform/database/client/client.js";
+import { filterOf } from "./library-filter.js";
+import { KEYSET_READERS } from "./library-keyset.js";
+import { ASSET_COLUMNS, rankedOf, recordOf } from "./library-rows.js";
 
-/** Ce que la bibliothèque lit d'une image — une ligne, puisque l'URL est unique. */
-const ASSET_COLUMNS = {
-  url: true,
-  name: true,
-  storageKey: true,
-  contentType: true,
-  width: true,
-  height: true,
-  bytes: true,
-  focalX: true,
-  focalY: true,
-  tags: true,
-  alt: true,
-  createdAt: true,
-} as const;
-
-interface AssetRow {
-  readonly url: string;
-  readonly name: string;
-  readonly storageKey: string | null;
-  readonly contentType: string | null;
-  readonly width: number | null;
-  readonly height: number | null;
-  readonly bytes: number | null;
-  readonly focalX: number | null;
-  readonly focalY: number | null;
-  readonly tags: string[];
-  readonly alt: unknown;
-  readonly createdAt: Date;
-}
+/**
+ * Combien d'URL par question aux porteurs. Une question par paquet plutôt
+ * qu'une seule : un `IN` de cinq mille valeurs chez chaque porteur est une
+ * requête qu'on ne veut pas écrire, et un paquet par image serait cinq mille
+ * allers-retours.
+ */
+const USES_BATCH = 500;
 
 /**
  * La bibliothèque, **une ligne par image**.
  *
  * `media_asset.url` est unique depuis le 2026-09-23 (`une_image_une_ligne`) :
- * l'URL est l'identité, et la lecture n'a plus rien à regrouper. Elle l'a fait
- * tant qu'un enregistrement de fiche recréait une ligne par visuel ; le
- * groupement, ses reports « la dernière ligne qui porte un nom » et son compte
- * par `groupBy` sont tombés le 2026-10-10 avec la cause qui les justifiait.
+ * l'URL est l'identité, et la lecture n'a rien à regrouper.
+ *
+ * Deux chemins (plan L2, 2026-10-10) :
+ * - un ordre qui se lit en base (`KEYSET_READERS`) : par clé, `limit + 1`
+ *   lignes, total par `count()` ;
+ * - l'ordre « emplois » ou le filtre « inutilisées » : les emplois viennent des
+ *   porteurs, donc on lit l'URL de tout le fonds filtré (borné à
+ *   {@link MAX_RANKED_IMAGES}), on demande les emplois par paquets, et on
+ *   classe en mémoire. Le total y reste celui du filtre, « inutilisées »
+ *   compris — c'est ce qui le fait passer par ici plutôt que par une page
+ *   relue puis éclaircie, qui aurait annoncé un total faux.
  *
  * ⚠️ **Sans une ligne de SQL écrite à la main, et c'est imposé** :
- * `MediaPrismaService` n'expose pas `$queryRaw`, délibérément — une requête brute
- * atteindrait n'importe quelle table de n'importe quel schéma.
+ * `MediaPrismaService` n'expose pas `$queryRaw`, délibérément.
  */
 @Injectable()
 export class PrismaMediaLibraryReader extends MediaLibraryReader {
@@ -66,28 +52,25 @@ export class PrismaMediaLibraryReader extends MediaLibraryReader {
   }
 
   async page(query: LibraryQuery): Promise<LibraryMediaPage> {
-    const { limit, offset } = query;
-    // Le même `where` sert la page ET le total : les séparer ferait annoncer un
-    // nombre de résultats que le filtre ne rendrait pas, donc un « charger
-    // plus » qui promet des pages vides.
     const where = filterOf(query);
-    const [rows, total] = await Promise.all([
-      this.prisma.mediaAsset.findMany({
-        where,
-        select: ASSET_COLUMNS,
-        // L'URL départage deux dépôts du même instant : sans elle, une image
-        // pourrait passer d'une page à l'autre entre deux lectures.
-        orderBy: [{ createdAt: "desc" }, { url: "asc" }],
-        take: limit,
-        skip: offset,
-      }),
+    const keyset = KEYSET_READERS[query.sort];
+    if (keyset === undefined || query.unused === true) {
+      return this.rankedPage(query, where);
+    }
+    const [{ rows, more }, total] = await Promise.all([
+      keyset(this.prisma, { where, limit: query.limit, offset: query.offset, after: query.after }),
       this.prisma.mediaAsset.count({ where }),
     ]);
-    if (rows.length === 0) {
-      return { items: [], total };
-    }
-    const uses = await this.carriers.usesOf(rows.map((row) => row.url));
-    return { items: rows.map((row) => recordOf(row, uses.get(row.url) ?? 0)), total };
+    const uses = await this.usesOf(rows.map((row) => row.url));
+    const last = rows.at(-1);
+    return {
+      items: rows.map((row) => recordOf(row, uses.get(row.url) ?? 0)),
+      total,
+      next:
+        more && last !== undefined
+          ? positionOf(query.sort, rankedOf(last, uses.get(last.url) ?? 0))
+          : null,
+    };
   }
 
   async find(url: string): Promise<LibraryMediaRecord | null> {
@@ -98,67 +81,51 @@ export class PrismaMediaLibraryReader extends MediaLibraryReader {
     const uses = await this.carriers.usesOf([url]);
     return recordOf(row, uses.get(url) ?? 0);
   }
-}
 
-/**
- * Une image telle que la bibliothèque la rend.
- *
- * Le nombre d'emplois vient des PORTEURS, par le port : leurs tables de
- * rattachement leur appartiennent (`lint:prisma-model-ownership`).
- */
-function recordOf(row: AssetRow, uses: number): LibraryMediaRecord {
-  return {
-    url: row.url,
-    name: row.name,
-    tags: row.tags,
-    // Le repli sur l'URL vaut mieux qu'une chaîne vide : une alternative
-    // absente doit se VOIR, pas se confondre avec une alternative écrite.
-    alt: readAltColumn(row.alt) ?? { [SOURCE_LOCALE]: row.url },
-    storageKey: row.storageKey,
-    contentType: row.contentType,
-    width: row.width,
-    height: row.height,
-    bytes: row.bytes,
-    // `x` et `y` s'écrivent ensemble : un `y` seul n'existe pas.
-    focal: row.focalX === null ? null : { x: row.focalX, y: row.focalY ?? 0 },
-    uses,
-    depositedAt: row.createdAt,
-  };
-}
-
-/**
- * Ce que Prisma attend pour restreindre — et ce que le filtre RESTREINT
- * vraiment.
- *
- * Il porte sur la ligne, qui est l'image : une seule par URL.
- */
-type AssetFilter = {
-  name?: { contains: string; mode: "insensitive" };
-  tags?: { hasEvery: string[] };
-};
-
-/**
- * Traduit la recherche en `where`, et rend `{}` quand elle ne demande rien.
- *
- * ⚠️ Une chaîne VIDE n'est pas un critère : `contains: ""` est vrai partout, ce
- * qui ne coûterait rien ici, mais ferait croire au lecteur suivant qu'un
- * `where` est toujours posé. Un filtre absent doit être absent.
- *
- * ⚠️ Les tags sont normalisés à l'ÉCRITURE (découpés, minuscules,
- * dédoublonnés). On les met donc en minuscules ici aussi : `hasEvery` compare
- * des valeurs exactes, et un « Croissant » coché ne trouverait rien.
- */
-function filterOf(query: LibraryQuery): AssetFilter {
-  const filter: AssetFilter = {};
-  const needle = query.q?.trim() ?? "";
-  if (needle !== "") {
-    filter.name = { contains: needle, mode: "insensitive" };
+  private async rankedPage(
+    query: LibraryQuery,
+    where: Prisma.MediaAssetWhereInput,
+  ): Promise<LibraryMediaPage> {
+    // Un de plus que la borne : c'est lui qui dit qu'on la dépasse.
+    const candidates = await this.prisma.mediaAsset.findMany({
+      where,
+      select: { url: true, name: true, createdAt: true },
+      take: MAX_RANKED_IMAGES + 1,
+    });
+    const uses = await this.usesOf(candidates.map((candidate) => candidate.url));
+    const ranked = rankLibrary(
+      candidates.map((candidate) => rankedOf(candidate, uses.get(candidate.url) ?? 0)),
+      {
+        sort: query.sort,
+        limit: query.limit,
+        offset: query.offset,
+        after: query.after,
+        unused: query.unused,
+      },
+    );
+    const rows = await this.prisma.mediaAsset.findMany({
+      where: { url: { in: ranked.images.map((image) => image.url) } },
+      select: ASSET_COLUMNS,
+    });
+    const byUrl = new Map(rows.map((row) => [row.url, row]));
+    // Une image retirée entre les deux lectures disparaît de la page, sans
+    // trou ni erreur : la position du curseur, elle, reste valable.
+    const items = ranked.images.flatMap((image) => {
+      const row = byUrl.get(image.url);
+      return row === undefined ? [] : [recordOf(row, image.uses)];
+    });
+    return { items, total: ranked.total, next: ranked.next };
   }
-  const tags = (query.tags ?? [])
-    .map((tag) => tag.trim().toLowerCase())
-    .filter((tag) => tag !== "");
-  if (tags.length > 0) {
-    filter.tags = { hasEvery: tags };
+
+  /** Les emplois, par paquets — le silence d'un porteur fait échouer, jamais zéro. */
+  private async usesOf(urls: readonly string[]): Promise<ReadonlyMap<string, number>> {
+    const uses = new Map<string, number>();
+    for (let start = 0; start < urls.length; start += USES_BATCH) {
+      const answer = await this.carriers.usesOf(urls.slice(start, start + USES_BATCH));
+      for (const [url, count] of answer) {
+        uses.set(url, count);
+      }
+    }
+    return uses;
   }
-  return filter;
 }

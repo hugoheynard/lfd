@@ -14,6 +14,8 @@ import { FileInterceptor } from "@nestjs/platform-express";
 import { CommandBus, QueryBus } from "@nestjs/cqrs";
 import {
   mediaDetailsPayloadSchema,
+  mediaLibraryQuerySchema,
+  type MediaLibraryQuery,
   renameMediaTagPayloadSchema,
   type MediaTagView,
   type MediaLibraryPageView,
@@ -24,6 +26,7 @@ import {
 } from "@lfd/pim-contracts";
 
 import { AdminSurface } from "../../platform/auth/admin-surface.decorator.js";
+import { ZodQuery } from "../../platform/shared/http/zod-body.pipe.js";
 import { DepositImageCommand, type DepositImageResult } from "../application/deposit-image.js";
 import { UnsupportedImageError } from "../domain/value-objects/image-bytes.js";
 import { BrowseMediaLibraryQuery } from "../application/browse-media-library.js";
@@ -42,10 +45,6 @@ import { RemoveMediaTagCommand } from "../application/remove-media-tag.js";
  * un visuel de catalogue acceptable.
  */
 const IMAGE_UPLOAD_HARD_LIMIT = MEDIA_LIMITS.transportMaxBytes;
-
-/** Le repli quand le paramètre manque ou n'est pas un nombre. Le handler
- *  reborne de toute façon — ceci évite juste de lui passer un `NaN`. */
-const DEFAULT_PAGE = 60;
 
 /**
  * Le peu qu'on lit du fichier Multer.
@@ -103,27 +102,31 @@ export class MediaLibraryController {
   ) {}
 
   /**
-   * Parcourt la bibliothèque, une page à la fois.
+   * Parcourt la bibliothèque, une page à la fois — ordonnée, filtrée, par
+   * curseur (`after` ← `next`).
    *
    * Une image = une ligne = une URL : l'URL est unique depuis le 2026-09-23.
    *
-   * Le bornage réel est dans le handler, pas ici : un contrôleur peut se
-   * tromper, et « toute la bibliothèque » n'est pas une intention qu'on sert.
+   * Le schéma ne valide que la FORME. Le bornage, la lecture du curseur et la
+   * conversion des jours en instants sont dans le handler.
    */
   @Get()
   async browse(
-    @Query("limit") limit?: string,
-    @Query("offset") offset?: string,
-    @Query("q") q?: string,
-    @Query("tags") tags?: string,
+    @Query(new ZodQuery(mediaLibraryQuerySchema)) query: MediaLibraryQuery,
   ): Promise<MediaLibraryPageView> {
     return this.queries.execute<BrowseMediaLibraryQuery, MediaLibraryPageView>(
-      new BrowseMediaLibraryQuery(
-        numberOr(limit, DEFAULT_PAGE),
-        numberOr(offset, 0),
-        q,
-        tagsOf(tags),
-      ),
+      new BrowseMediaLibraryQuery({
+        limit: query.limit,
+        offset: query.offset,
+        after: query.after,
+        sort: query.sort,
+        q: query.q,
+        tags: query.tags,
+        from: query.from,
+        to: query.to,
+        untagged: query.untagged,
+        unused: query.unused,
+      }),
     );
   }
 
@@ -269,30 +272,4 @@ const DEFAULT_FAILURES_PAGE = 50;
 function numberOr(raw: string | undefined, fallback: number): number {
   const parsed = Number(raw);
   return Number.isFinite(parsed) ? parsed : fallback;
-}
-
-/**
- * Les mots-clés d'une requête : `?tags=a,b,c`.
- *
- * 🔴 Une VIRGULE, et pas un paramètre répété : les deux marchent avec Nest,
- * mais `?tags=a&tags=b` rend une string quand il y en a un seul et un tableau
- * quand il y en a deux — une forme qui change selon le nombre d'éléments est
- * la source d'une classe entière de bugs qu'un test à un seul tag ne voit pas.
- *
- * ⚠️ Un tag ne contient jamais de virgule : la normalisation d'écriture
- * (`mediaTags`) découpe dessus. Le séparateur ne peut donc pas être ambigu.
- *
- * Rend `undefined` — et non `[]` — quand rien n'est demandé : un tableau vide
- * dirait « filtre sur aucun tag », ce qui ne veut rien dire, là où l'absence
- * dit « ne filtre pas ».
- */
-function tagsOf(raw: string | undefined): readonly string[] | undefined {
-  if (raw === undefined) {
-    return undefined;
-  }
-  const tags = raw
-    .split(",")
-    .map((tag) => tag.trim())
-    .filter((tag) => tag !== "");
-  return tags.length === 0 ? undefined : tags;
 }

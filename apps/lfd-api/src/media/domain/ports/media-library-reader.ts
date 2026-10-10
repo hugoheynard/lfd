@@ -1,4 +1,5 @@
 import type { LocalizedText } from "../value-objects/alt-text.js";
+import type { LibraryPosition, LibrarySort } from "../value-objects/library-order.js";
 
 /**
  * Une image de la bibliothèque.
@@ -49,7 +50,28 @@ export interface LibraryMediaRecord {
  */
 export interface LibraryQuery {
   readonly limit: number;
+  /**
+   * Le décalage de l'écran qui ne lit pas encore `next` (plan L2). Ignoré dès
+   * que {@link after} est donné, et servi pour l'ordre `deposited` seul.
+   */
   readonly offset: number;
+  /** L'ordre de lecture ; l'URL départage toujours. */
+  readonly sort: LibrarySort;
+  /** Lire ce qui vient STRICTEMENT après cette position (curseur relu). */
+  readonly after?: LibraryPosition | undefined;
+  /** Déposée à cet instant ou après. */
+  readonly depositedFrom?: Date | undefined;
+  /** Déposée strictement avant cet instant. */
+  readonly depositedBefore?: Date | undefined;
+  /** Seulement les images sans aucun mot-clé. */
+  readonly untagged?: boolean | undefined;
+  /**
+   * Seulement les images qu'aucun porteur n'affiche.
+   *
+   * ⚠️ Ne se pose pas en base : les emplois viennent des porteurs, par le
+   * canal. L'adaptateur lit tout le fonds filtré et classe en mémoire — borné.
+   */
+  readonly unused?: boolean | undefined;
   /**
    * Cherché dans l'ÉTIQUETTE, en sous-chaîne et sans tenir compte de la casse.
    *
@@ -83,6 +105,8 @@ export interface LibraryQuery {
 export interface LibraryMediaPage {
   readonly items: readonly LibraryMediaRecord[];
   readonly total: number;
+  /** Où reprendre, ou `null` s'il ne reste rien. */
+  readonly next: LibraryPosition | null;
 }
 
 /**
@@ -99,10 +123,7 @@ export interface LibraryMediaPage {
  * bibliothèque ».
  */
 export abstract class MediaLibraryReader {
-  /**
-   * Une page de la bibliothèque, de l'entrée la plus récente à la plus
-   * ancienne.
-   */
+  /** Une page de la bibliothèque, dans l'ordre demandé. */
   abstract page(query: LibraryQuery): Promise<LibraryMediaPage>;
 
   /**

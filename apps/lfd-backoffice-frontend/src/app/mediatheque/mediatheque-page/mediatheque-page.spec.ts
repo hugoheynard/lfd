@@ -103,7 +103,7 @@ class FakeLibrary {
     if (this.fails) {
       return Promise.reject(new Error('réseau'));
     }
-    return Promise.resolve(this.pages.shift() ?? { items: [], total: 0 });
+    return Promise.resolve(this.pages.shift() ?? { items: [], total: 0, next: null });
   }
 }
 
@@ -196,8 +196,8 @@ describe('la médiathèque', () => {
   it('empile les pages au lieu de les remplacer, et avance d’autant', async () => {
     const screen = page();
     library.pages = [
-      { items: [image('a'), image('b')], total: 3 },
-      { items: [image('c')], total: 3 },
+      { items: [image('a'), image('b')], total: 3, next: null },
+      { items: [image('c')], total: 3, next: null },
     ];
 
     await screen['load']();
@@ -232,8 +232,8 @@ describe('la médiathèque — la recherche', () => {
     // suite de ceux de l'ancien.
     const screen = page();
     library.pages = [
-      { items: [image('a'), image('b')], total: 2 },
-      { items: [image('c')], total: 1 },
+      { items: [image('a'), image('b')], total: 2, next: null },
+      { items: [image('c')], total: 1, next: null },
     ];
     await screen['load']();
 
@@ -323,7 +323,9 @@ describe('la médiathèque — les mots-clés', () => {
   /** D1 : le retrait est immédiat, et l'annulation repose le mot à SA place. */
   it('repose un mot retiré d’une tuile, à sa place, par le même PUT', async () => {
     const screen = page();
-    library.pages = [{ items: [tagged('a', ['beurre', 'croissant', 'pain'])], total: 1 }];
+    library.pages = [
+      { items: [tagged('a', ['beurre', 'croissant', 'pain'])], total: 1, next: null },
+    ];
     await screen['load']();
 
     await screen['strip'](screen['items']()[0]!, 'croissant');
@@ -346,7 +348,7 @@ describe('la médiathèque — les mots-clés', () => {
   it('garde l’alternative de l’image quand on pose ou retire un mot', async () => {
     const screen = page();
     const described = { ...tagged('a', ['croissant']), alt: { fr: 'Croissant doré' } };
-    library.pages = [{ items: [described], total: 1 }];
+    library.pages = [{ items: [described], total: 1, next: null }];
     await screen['load']();
 
     await screen['strip'](screen['items']()[0]!, 'croissant');

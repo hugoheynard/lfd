@@ -177,11 +177,83 @@ export interface LibraryMediaView extends MediaFactsView {
   readonly depositedAt: string;
 }
 
-/** Une page de la bibliothèque, et le total pour la pagination. */
+/**
+ * Une page de la bibliothèque, le total du filtre, et de quoi lire la suivante.
+ *
+ * `next` est un curseur OPAQUE : on le renvoie tel quel en `?after=`, on ne le
+ * lit pas. `null` = plus rien après. ⚠️ Une page peut revenir plus courte que
+ * `limit` — voire vide — avec un `next` non nul : c'est `next`, et lui seul,
+ * qui dit s'il faut continuer.
+ */
 export interface MediaLibraryPageView {
   readonly items: readonly LibraryMediaView[];
+  /** Le total **du filtre**, jamais celui du fonds. */
   readonly total: number;
+  readonly next: string | null;
 }
+
+/**
+ * Les ordres du fonds (plan L2, 2026-10-10).
+ *
+ * - `deposited` — le dépôt, le plus récent d'abord (défaut) ;
+ * - `name` — l'étiquette, alphabétique, les images sans étiquette en dernier ;
+ * - `uses` — le nombre d'emplois, le plus employé d'abord.
+ *
+ * La prise de vue (`shot`) viendra avec les séries (L3) : une valeur de plus
+ * ici et un ordre de plus côté serveur, sans autre branche.
+ */
+export const MEDIA_LIBRARY_SORTS = ["deposited", "name", "uses"] as const;
+export type MediaLibrarySort = (typeof MEDIA_LIBRARY_SORTS)[number];
+
+/** Un jour nu, `AAAA-MM-JJ`, lu à l'heure de Paris par le serveur. */
+const libraryDaySchema = z
+  .string()
+  .regex(/^\d{4}-\d{2}-\d{2}$/, "jour attendu au format AAAA-MM-JJ");
+
+/** Un drapeau d'URL : `1`/`true` le lève, `0`/`false` le baisse. */
+const libraryFlagSchema = z
+  .enum(["1", "true", "0", "false"])
+  .transform((raw) => raw === "1" || raw === "true");
+
+/**
+ * **La FORME d'une demande de page** — `GET /media`.
+ *
+ * Le serveur borne `limit` lui-même (100 au plus) : une taille plus grande est
+ * ramenée, pas refusée, comme avant ce schéma. `offset` reste accepté pour
+ * l'écran qui ne lit pas encore `next` ; `after` le remplace.
+ *
+ * `tags` est une liste à VIRGULES et non un paramètre répété : `?tags=a&tags=b`
+ * rend une chaîne pour un seul et un tableau pour deux — une forme qui change
+ * avec le nombre d'éléments. Un tag ne contient jamais de virgule (la
+ * normalisation d'écriture découpe dessus).
+ */
+export const mediaLibraryQuerySchema = z.object({
+  limit: z.coerce.number().int().optional(),
+  offset: z.coerce.number().int().min(0).optional(),
+  after: z.string().min(1).optional(),
+  sort: z.enum(MEDIA_LIBRARY_SORTS).default("deposited"),
+  q: z.string().optional(),
+  tags: z
+    .string()
+    .optional()
+    .transform((raw) => {
+      const tags = (raw ?? "")
+        .split(",")
+        .map((tag) => tag.trim())
+        .filter((tag) => tag !== "");
+      // Rien demandé = AUCUN filtre, pas « filtre sur aucun tag ».
+      return tags.length === 0 ? undefined : tags;
+    }),
+  /** Premier jour de dépôt retenu, inclus. */
+  from: libraryDaySchema.optional(),
+  /** Dernier jour de dépôt retenu, inclus. */
+  to: libraryDaySchema.optional(),
+  /** Seulement les images sans aucun mot-clé. */
+  untagged: libraryFlagSchema.optional(),
+  /** Seulement les images qu'aucun porteur n'affiche. */
+  unused: libraryFlagSchema.optional(),
+});
+export type MediaLibraryQuery = z.infer<typeof mediaLibraryQuerySchema>;
 
 /** Un visuel attaché, tel qu'un écran le lit et le renvoie. */
 export interface AttachedMediaView extends MediaFactsView {

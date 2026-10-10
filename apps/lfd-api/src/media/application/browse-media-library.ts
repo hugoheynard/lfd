@@ -1,10 +1,17 @@
 import { QueryHandler, type IQueryHandler } from "@nestjs/cqrs";
 import type { MediaLibraryPageView } from "@lfd/pim-contracts";
 
+import { DomainError } from "../../platform/shared/errors/app-error.js";
 import {
   MediaLibraryReader,
   type LibraryMediaRecord,
 } from "../domain/ports/media-library-reader.js";
+import {
+  decodeLibraryCursor,
+  encodeLibraryCursor,
+} from "../domain/value-objects/library-cursor.js";
+import type { LibrarySort } from "../domain/value-objects/library-order.js";
+import { depositPeriodOf } from "./library-period.js";
 
 /**
  * Plafond d'une page. Une médiathèque se parcourt à l'œil : au-delà, l'écran
@@ -14,31 +21,55 @@ import {
 const MAX_PAGE = 100;
 const DEFAULT_PAGE = 60;
 
+/** Le décalage ne se combine ni avec un curseur ni avec un autre ordre que le dépôt. */
+export class UnsupportedLibraryOffsetError extends DomainError {
+  constructor() {
+    super(
+      "media.library.offset_unsupported",
+      "La médiathèque ne se lit plus par décalage qu'en tri par dépôt et sans curseur : reprenez la lecture avec le curseur `next` de la page précédente (`after`).",
+    );
+  }
+}
+
+/** Ce qu'on demande au fonds — tout facultatif sauf l'ordre. */
+export interface BrowseMediaLibraryCriteria {
+  readonly limit?: number | undefined;
+  /** L'ancien décalage — en attendant que l'écran lise `next`. */
+  readonly offset?: number | undefined;
+  /** Le curseur opaque rendu en `next` par la page précédente. */
+  readonly after?: string | undefined;
+  readonly sort?: LibrarySort | undefined;
+  /** Cherché dans l'étiquette, en sous-chaîne, casse ignorée. */
+  readonly q?: string | undefined;
+  /** Les mots-clés que l'image doit porter — tous. */
+  readonly tags?: readonly string[] | undefined;
+  /** Premier et dernier jour de dépôt, inclus, `AAAA-MM-JJ` à l'heure de Paris. */
+  readonly from?: string | undefined;
+  readonly to?: string | undefined;
+  readonly untagged?: boolean | undefined;
+  readonly unused?: boolean | undefined;
+}
+
 /**
- * Parcourt la bibliothèque de visuels, page par page — et filtrée.
+ * Parcourt la bibliothèque, page par page — filtrée et ordonnée.
  *
- * 🔴 **Le filtre est au SERVEUR depuis le 2026-09-23**, et c'était un défaut
- * avant d'être un manque : les deux écrans filtraient ce qu'ils avaient
- * chargé. Le sélecteur en charge cent ; l'image cent-unième était donc
- * introuvable quoi qu'on tape, et rien ne le disait.
+ * 🔴 **Le filtre est au SERVEUR depuis le 2026-09-23** : les deux écrans
+ * filtraient ce qu'ils avaient chargé, et l'image cent-unième était
+ * introuvable quoi qu'on tape.
+ *
+ * 🔴 **Par curseur depuis le 2026-10-10** (plan L2) : un dépôt pendant qu'on
+ * défile décalait le rang de tout ce qui suit, et « charger plus » rendait une
+ * image deux fois.
  */
 export class BrowseMediaLibraryQuery {
-  constructor(
-    readonly limit: number = DEFAULT_PAGE,
-    readonly offset: number = 0,
-    /** Cherché dans l'étiquette, en sous-chaîne, casse ignorée. */
-    readonly q: string | undefined = undefined,
-    /** Les mots-clés que l'image doit porter — tous. */
-    readonly tags: readonly string[] | undefined = undefined,
-  ) {}
+  constructor(readonly criteria: BrowseMediaLibraryCriteria = {}) {}
 }
 
 /**
  * La bibliothèque telle que la médiathèque la montre.
  *
- * Le handler ne fait qu'un bornage et une traduction : le groupement par URL —
- * la seule identité qui traverse un enregistrement — vit dans l'adaptateur,
- * parce qu'il est fait de SQL et de rien d'autre.
+ * Le handler borne, relit le curseur et la période, puis traduit : l'ordre et
+ * le filtre vivent dans l'adaptateur, parce qu'ils sont faits de SQL.
  */
 @QueryHandler(BrowseMediaLibraryQuery)
 export class BrowseMediaLibraryHandler implements IQueryHandler<
@@ -48,19 +79,36 @@ export class BrowseMediaLibraryHandler implements IQueryHandler<
   constructor(private readonly library: MediaLibraryReader) {}
 
   async execute(query: BrowseMediaLibraryQuery): Promise<MediaLibraryPageView> {
-    // Borné ICI et pas au bord : une requête est une intention, et « donne-moi
-    // toute la bibliothèque » n'en est pas une qu'on sert. Le contrôleur peut
-    // se tromper, un test aussi.
-    const limit = Math.min(Math.max(Math.trunc(query.limit), 1), MAX_PAGE);
-    const offset = Math.max(Math.trunc(query.offset), 0);
+    const { criteria } = query;
+    const sort = criteria.sort ?? "deposited";
+    // Borné ICI et pas au bord : « donne-moi toute la bibliothèque » n'est pas
+    // une intention qu'on sert. Le contrôleur peut se tromper, un test aussi.
+    const limit = Math.min(Math.max(Math.trunc(criteria.limit ?? DEFAULT_PAGE), 1), MAX_PAGE);
+    const offset = Math.max(Math.trunc(criteria.offset ?? 0), 0);
+    if (offset > 0 && (criteria.after !== undefined || sort !== "deposited")) {
+      throw new UnsupportedLibraryOffsetError();
+    }
+    const after =
+      criteria.after === undefined ? undefined : decodeLibraryCursor(criteria.after, sort);
+    const period = depositPeriodOf(criteria.from, criteria.to);
 
     const page = await this.library.page({
       limit,
       offset,
-      ...(query.q === undefined ? {} : { q: query.q }),
-      ...(query.tags === undefined ? {} : { tags: query.tags }),
+      sort,
+      ...(after === undefined ? {} : { after }),
+      ...(criteria.q === undefined ? {} : { q: criteria.q }),
+      ...(criteria.tags === undefined ? {} : { tags: criteria.tags }),
+      ...(period.from === undefined ? {} : { depositedFrom: period.from }),
+      ...(period.before === undefined ? {} : { depositedBefore: period.before }),
+      ...(criteria.untagged === true ? { untagged: true } : {}),
+      ...(criteria.unused === true ? { unused: true } : {}),
     });
-    return { items: page.items.map(viewOf), total: page.total };
+    return {
+      items: page.items.map(viewOf),
+      total: page.total,
+      next: page.next === null ? null : encodeLibraryCursor(page.next),
+    };
   }
 }
 
@@ -78,8 +126,7 @@ function viewOf(record: LibraryMediaRecord): MediaLibraryPageView["items"][numbe
     bytes: record.bytes,
     focal: record.focal,
     uses: record.uses,
-    // ISO, et pas un `Date` : ce qui sort d'ici est du JSON, et laisser Nest
-    // sérialiser à notre place rendrait la forme dépendante de son réglage.
+    // ISO, et pas un `Date` : ce qui sort d'ici est du JSON.
     depositedAt: record.depositedAt.toISOString(),
   };
 }
