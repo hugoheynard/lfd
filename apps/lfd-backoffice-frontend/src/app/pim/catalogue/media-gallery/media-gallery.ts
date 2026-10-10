@@ -4,6 +4,7 @@ import { readLocalized, SOURCE_LOCALE, type Locale, type LocalizedText } from '@
 
 import { FoldBadgeComponent, FoldButtonIconComponent } from 'fold-ng';
 
+import { formatGap, MEDIA_ROLE_FORMATS } from '../media-formats';
 import { isPublishedMediaRole } from '../media-roles';
 
 /** Le rôle que la vitrine du canal B2B cherche (`showcase.ts`). */
@@ -105,6 +106,15 @@ export class MediaGallery {
    */
   protected isUnpublished(slot: GallerySlot): boolean {
     return slot.role !== undefined && !isPublishedMediaRole(slot.role);
+  }
+
+  /**
+   * L'image s'écarte du format que son usage attend (cf. `media-formats.ts`).
+   * Rôle absent ou sans format, dimensions inconnues : rien à dire.
+   */
+  protected hasFormatGap(slot: GallerySlot): boolean {
+    const entry = slot.role === undefined ? undefined : MEDIA_ROLE_FORMATS[slot.role];
+    return entry !== undefined && formatGap(slot.width, slot.height, entry.format) !== null;
   }
 
   /** L'alternative dans la langue lue — repli sur la source, jamais du vide. */

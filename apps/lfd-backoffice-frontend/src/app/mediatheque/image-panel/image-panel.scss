@@ -63,19 +63,21 @@ fold-panel-body {
   }
 }
 
+/* Une rangée qui passe à la ligne ; chaque cadre a la MÊME hauteur, sa
+   largeur suit son format, et son libellé se lit dessous. */
 .crops {
-  display: grid;
-  grid-template-columns: 3fr 2.67fr 2fr;
-  align-items: end;
-  gap: var(--fold-space-sm);
+  display: flex;
+  flex-wrap: wrap;
+  align-items: flex-start;
+  gap: var(--fold-space-md);
 }
 
 .crop {
   display: flex;
   flex-direction: column;
+  align-items: flex-start;
   gap: var(--fold-space-xs);
   margin: 0;
-  min-width: 0;
 
   figcaption {
     color: var(--fold-color-text-muted);
@@ -86,6 +88,8 @@ fold-panel-body {
 
 .frame {
   display: block;
+  height: 5rem;
+  width: auto;
   overflow: hidden;
   border-radius: var(--fold-radius-md);
   background: var(--fold-color-surface-sunken);

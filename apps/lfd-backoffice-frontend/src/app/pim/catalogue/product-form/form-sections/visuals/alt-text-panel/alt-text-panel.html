@@ -7,7 +7,7 @@
   <!-- L'image, en grand : on ne choisit pas l'usage d'une image qu'on ne voit
        pas, et décider de la retirer demande de la regarder. -->
   @if (data().url !== '') {
-    <img class="preview" [src]="data().url" alt="" />
+    <img class="preview" [src]="data().url" alt="" (load)="measure($event)" />
   }
 
   @if (role(); as chosen) {
@@ -26,6 +26,11 @@
         Cet usage n'est publié sur aucun canal : la boutique ne montre que l'ouverture et la
         vignette de rayon.
       </p>
+    }
+    <!-- Dit au moment du choix, jamais refusé : la coupe est celle de la
+         boutique, et le point focal décide ce qu'elle garde. -->
+    @if (formatWarning(); as warning) {
+      <fold-callout variant="warning">{{ warning }}</fold-callout>
     }
   }
 </div>

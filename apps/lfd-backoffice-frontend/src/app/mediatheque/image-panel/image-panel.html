@@ -47,12 +47,12 @@
       </div>
 
       <div class="crops">
-        @for (crop of crops; track crop.ratio) {
+        @for (crop of crops; track crop.format.short) {
           <figure class="crop">
-            <span class="frame" [style.aspect-ratio]="crop.ratio">
+            <span class="frame" [style.aspect-ratio]="crop.format.css">
               <img [src]="image.url" alt="" [style.object-position]="objectPosition()" />
             </span>
-            <figcaption>{{ crop.label }} · {{ crop.short }}</figcaption>
+            <figcaption>{{ crop.label }} · {{ crop.format.short }}</figcaption>
           </figure>
         }
       </div>

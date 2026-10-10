@@ -68,7 +68,7 @@ export class VisualsForm {
     }
     void this.panels
       .open<AltTextPanelData, AltTextPanelResult>(AltTextPanel, {
-        data: { url: slot.url, role: slot.role },
+        data: { url: slot.url, role: slot.role, width: slot.width, height: slot.height },
       })
       .closed.then((result) => {
         if (result === undefined) {

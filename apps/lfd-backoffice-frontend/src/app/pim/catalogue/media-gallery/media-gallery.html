@@ -31,6 +31,10 @@
           @if (isUnpublished(slot)) {
             <fold-badge class="media-unpublished" variant="warning" content="Non publié" />
           }
+          @if (hasFormatGap(slot)) {
+            <!-- Le détail se lit dans le panneau du visuel, au choix de l'usage. -->
+            <fold-badge class="media-format-gap" variant="warning" content="Format" />
+          }
           <fold-button-icon
             class="media-menu"
             icon="more-vertical"

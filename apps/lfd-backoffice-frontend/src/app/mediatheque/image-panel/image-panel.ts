@@ -48,6 +48,7 @@ import {
   objectPositionOf,
   usesWording,
 } from '../image-facts';
+import { PREVIEW_FRAMES } from '../../pim/catalogue/media-formats';
 import { normalizeTag } from '../tag-palette';
 import { seriesLabel } from '../media-series';
 import { SeriesChip } from '../series-chip/series-chip';
@@ -58,13 +59,6 @@ const NO_SERIES = '';
 
 /** Combien de suggestions au plus : au-delà, on tape une lettre de plus. */
 const SUGGESTION_LIMIT = 8;
-
-/** Les cadres que la boutique annonce (doc médiathèque §6) — ce que le point décide. */
-const CROPS = [
-  { ratio: '3 / 2', short: '3/2', label: 'Ouverture' },
-  { ratio: '4 / 3', short: '4/3', label: 'Vignette' },
-  { ratio: '1 / 1', short: '1/1', label: 'Carré' },
-] as const;
 
 /** Ce qu'on sait d'une image sans l'avoir décrite — lu, jamais écrit ici. */
 export interface ImageFacts extends MediaFactsView {
@@ -179,7 +173,8 @@ export class ImagePanel {
   protected readonly locales = LOCALES;
   protected readonly names = LOCALE_NAMES;
   protected readonly sourceLocale = SOURCE_LOCALE;
-  protected readonly crops = CROPS;
+  /** Les cadres de la table des formats — ceux que la boutique coupe, et le 21/9 décidé (D9). */
+  protected readonly crops = PREVIEW_FRAMES;
   protected readonly recommended = ALT_RECOMMENDED_LENGTH;
 
   /** L'image à l'écran — celle de l'ouverture, puis celle où l'on a navigué. */

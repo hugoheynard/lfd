@@ -62,6 +62,7 @@ import type {
 import { CatalogueApi } from '../catalogue-api';
 import type { PickedMedia } from '../library-picker/library-picker';
 import { isPublishedMediaRole } from '../media-roles';
+import { MEDIA_ROLE_FORMATS, roleLabel } from '../media-formats';
 import { ReferenceApi } from '../reference-api';
 import {
   ProductHttpApi,
@@ -398,16 +399,12 @@ const MAIN_MEDIA_ROLE = 'hero';
  * Les cinq usages d'un visuel, et leur libellé.
  *
  * Ils existent dans le domaine depuis l'origine (`MEDIA_ROLES`) ; aucun écran
- * n'en proposait plus d'un jusqu'au 2026-09-23. Les ratios attendus de chacun
- * sont dans `documentation/mediatheque/mediatheque.md` §6.
+ * n'en proposait plus d'un jusqu'au 2026-09-23. Le libellé et le format de
+ * chacun viennent de la table des formats (`media-formats.ts`), seule source.
  */
-export const MEDIA_ROLE_LABELS: Readonly<Record<string, string>> = {
-  hero: 'Ouverture (3/2)',
-  thumbnail: 'Vignette de rayon (4/3)',
-  gallery: 'Galerie',
-  lifestyle: 'Mise en situation (16/9)',
-  print: 'Tirage papier (1/1)',
-};
+export const MEDIA_ROLE_LABELS: Readonly<Record<string, string>> = Object.fromEntries(
+  Object.entries(MEDIA_ROLE_FORMATS).map(([role, entry]) => [role, roleLabel(entry)]),
+);
 
 /**
  * Les rôles dont il ne peut exister **qu'un seul par fiche**.

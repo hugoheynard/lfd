@@ -1,8 +1,17 @@
 import { KeyValuePipe } from '@angular/common';
-import { ChangeDetectionStrategy, Component, effect, inject, input, signal } from '@angular/core';
+import {
+  ChangeDetectionStrategy,
+  Component,
+  computed,
+  effect,
+  inject,
+  input,
+  signal,
+} from '@angular/core';
 
 import {
   FoldButtonComponent,
+  FoldCalloutComponent,
   FoldListboxComponent,
   FoldOptionComponent,
   type FoldPanelDefaults,
@@ -10,6 +19,7 @@ import {
   FoldPanelRef,
 } from 'fold-ng';
 
+import { formatGap, formatGapSentence, MEDIA_ROLE_FORMATS } from '../../../../media-formats';
 import { isPublishedMediaRole } from '../../../../media-roles';
 import { MEDIA_ROLE_LABELS } from '../../../product-form-store';
 
@@ -30,6 +40,9 @@ export interface AltTextPanelData {
    * usages était atteignable, les quatre autres n'avaient aucun écran.
    */
   readonly role?: string | undefined;
+  /** Les dimensions mesurées au dépôt ; absentes, on les lit sur l'aperçu chargé. */
+  readonly width?: number | null | undefined;
+  readonly height?: number | null | undefined;
 }
 
 /**
@@ -79,6 +92,7 @@ export interface AltTextPanelResult {
     FoldOptionComponent,
     KeyValuePipe,
     FoldButtonComponent,
+    FoldCalloutComponent,
   ],
   templateUrl: './alt-text-panel.html',
   styleUrl: './alt-text-panel.scss',
@@ -95,10 +109,38 @@ export class AltTextPanel {
   protected readonly roles = MEDIA_ROLE_LABELS;
   protected readonly isPublished = isPublishedMediaRole;
 
+  /** Les dimensions lues sur l'aperçu chargé — repli quand le dépôt ne les a pas mesurées. */
+  private readonly loaded = signal<{ width: number; height: number } | null>(null);
+
+  /**
+   * Le signalement de format pour l'usage choisi — une phrase, jamais un refus :
+   * une image mal cadrée reste publiable, et c'est le point focal qui décide
+   * ce que la coupe garde.
+   */
+  protected readonly formatWarning = computed(() => {
+    const chosen = this.role();
+    const entry = chosen === undefined ? undefined : MEDIA_ROLE_FORMATS[chosen];
+    if (entry === undefined) {
+      return null;
+    }
+    const { width, height } = this.data();
+    const measured =
+      typeof width === 'number' && typeof height === 'number' ? { width, height } : this.loaded();
+    const gap = formatGap(measured?.width, measured?.height, entry.format);
+    return gap === null ? null : formatGapSentence(gap, entry);
+  });
+
   constructor() {
     effect(() => {
       this.role.set(this.data().role);
     });
+  }
+
+  protected measure(event: Event): void {
+    const image = event.target;
+    if (image instanceof HTMLImageElement && image.naturalWidth > 0) {
+      this.loaded.set({ width: image.naturalWidth, height: image.naturalHeight });
+    }
   }
 
   protected submit(): void {

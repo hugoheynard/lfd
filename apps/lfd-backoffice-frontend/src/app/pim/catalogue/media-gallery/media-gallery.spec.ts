@@ -39,3 +39,27 @@ describe('MediaGallery — usage non publié', () => {
     expect(badges(host)).toBe(1);
   });
 });
+
+describe('MediaGallery — format signalé', () => {
+  const gaps = (host: HTMLElement): number =>
+    host.querySelectorAll('.media-caption fold-badge.media-format-gap').length;
+  const sized = (role: string, width: number, height: number): GallerySlot => ({
+    url: '',
+    name: 'croissant',
+    role,
+    width,
+    height,
+  });
+
+  it('marque un 3/2 posé en ouverture', () => {
+    const host = render([sized('hero', 3000, 2000)]);
+    expect(gaps(host)).toBe(1);
+    expect(host.querySelector('.media-format-gap')?.textContent).toContain('Format');
+  });
+
+  it('ne marque ni une image au format, ni la galerie, ni une image non mesurée', () => {
+    expect(
+      gaps(render([sized('hero', 1600, 1200), sized('gallery', 3000, 1000), slot('hero')])),
+    ).toBe(0);
+  });
+});
