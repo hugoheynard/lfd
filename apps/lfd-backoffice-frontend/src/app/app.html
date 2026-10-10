@@ -75,6 +75,21 @@
         ></a>
       }
 
+      @if (canSeeTourManager()) {
+        <!-- TOUR MANAGER — l'organisation des tournées, sortie de la Livraison
+             (2026-10-10, Hugo) et rangée sous Prod manager. -->
+        <a
+          fold-menu-item
+          icon="places"
+          label="Tour manager"
+          routerLink="/tour-manager"
+          routerLinkActive
+          #tourManagerRla="routerLinkActive"
+          [active]="tourManagerRla.isActive"
+          (click)="mobileNavOpen.set(false)"
+        ></a>
+      }
+
       @if (canSeeBakehouse()) {
         <!-- FOURNIL — la fournée du jour, sortie de la production (2026-10-06)
              comme le colisage : un poste, pas une vue d'espace. -->
@@ -561,6 +576,19 @@
           routerLinkActive
           #prodManagerTile="routerLinkActive"
           [active]="prodManagerTile.isActive"
+          (click)="mobileNavOpen.set(false)"
+        ></a>
+      }
+      @if (canSeeTourManager()) {
+        <!-- La MÊME entrée qu'au rail, sous Prod manager. -->
+        <a
+          fold-nav-tile
+          icon="places"
+          label="Tour manager"
+          routerLink="/tour-manager"
+          routerLinkActive
+          #tourManagerTile="routerLinkActive"
+          [active]="tourManagerTile.isActive"
           (click)="mobileNavOpen.set(false)"
         ></a>
       }

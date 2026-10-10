@@ -372,6 +372,14 @@ export const routes: Routes = [
     loadComponent: () =>
       import('./production/previsionnel/previsionnel-page').then((m) => m.PrevisionnelPage),
   },
+  // TOUR MANAGER (Hugo, 2026-10-10) : l'organisation des tournées sort de la
+  // Livraison pour une entrée de premier niveau, sous Prod manager.
+  {
+    path: 'tour-manager',
+    canActivate: [permissionGuard('delivery_rounds:read')],
+    title: 'Tour manager — LFC B2B admin',
+    loadComponent: () => import('./livraison/rounds-page/rounds-page').then((m) => m.RoundsPage),
+  },
   // LE FOURNIL (2026-10-06) : la fournée du jour sort de la Production pour
   // devenir un poste de premier niveau, comme le Colisage — la fiche d'atelier
   // se prend dans le fournil, sur un téléphone, pas depuis un rail d'espace.
@@ -425,13 +433,9 @@ export const routes: Routes = [
         path: 'ma-tournee/:roundId/chargement',
         redirectTo: '/coursier/:roundId/chargement',
       },
-      {
-        path: 'tournees',
-        canActivate: [permissionGuard('delivery_rounds:read')],
-        title: 'Organisation de tournées — LFC B2B admin',
-        loadComponent: () =>
-          import('./livraison/rounds-page/rounds-page').then((m) => m.RoundsPage),
-      },
+      // Devenue « Tour manager », au premier niveau (2026-10-10) : favoris et
+      // liens portent `?jour=`, que la redirection garde.
+      { path: 'tournees', pathMatch: 'full', redirectTo: '/tour-manager' },
       // « NON REMIS » (a-la-porte.md, AP-D7) : une LECTURE, sous le droit
       // des tournées — c'est leur suite, et elle ne débloque rien.
       {

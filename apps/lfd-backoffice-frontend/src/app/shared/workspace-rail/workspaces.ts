@@ -177,15 +177,10 @@ export const LIVRAISON_VIEWS: readonly WorkspaceView[] = [
     icon: 'list',
     needs: 'delivery_run_sheet:read',
   },
+  // « Organisation de tournées » en est sortie le 2026-10-10 (Hugo) : c'est
+  // « Tour manager », au premier niveau sous Prod manager (`/tour-manager`).
   {
-    key: 'tournees',
-    label: 'Organisation de tournées',
-    link: '/livraison/tournees',
-    icon: 'places',
-    needs: 'delivery_rounds:read',
-  },
-  {
-    // Juste après les tournées : ce sont leurs arrêts restés ouverts (AP-D7).
+    // Les arrêts restés ouverts des tournées (AP-D7).
     key: 'non-remis',
     label: 'Non remis',
     link: '/livraison/non-remis',

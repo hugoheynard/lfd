@@ -66,10 +66,12 @@ function isAnyGuard(guard: unknown): guard is PermissionGuard | AnyPermissionGua
 /** Joue les gardes de la coquille PUIS de la vue : vrai si tous laissent passer. */
 async function opens(role: StaffRole | typeof LIVREUR, path: string): Promise<boolean> {
   configure(role);
-  // Le Coursier est de premier niveau (2026-10-03) : pas de coquille au-dessus.
-  const shell = path.startsWith('coursier')
-    ? undefined
-    : routes.find((route) => route.path === 'livraison');
+  // Le Coursier (2026-10-03) et le Tour manager (2026-10-10) sont de premier
+  // niveau : pas de coquille au-dessus.
+  const shell =
+    path.startsWith('coursier') || path === 'tour-manager'
+      ? undefined
+      : routes.find((route) => route.path === 'livraison');
   const view = (shell?.children ?? routes).find((child) => child.path === path);
   expect(view).toBeDefined();
   const guards = [...(shell?.canActivate ?? []), ...(view?.canActivate ?? [])].filter(isAnyGuard);
@@ -96,10 +98,9 @@ function deliveryViewKeys(role: StaffRole | typeof LIVREUR): string[] {
 }
 
 describe("l'espace Livraison", () => {
-  it('ouvre les dix vues au comptoir, qui prépare les départs, compose, relit les non-remis, corrige le carnet, simule, compare des bacs et charge (Q12, Q21, lot 9, G3, AP-D7)', async () => {
+  it('ouvre les neuf vues au comptoir, et le Tour manager, qui prépare les départs, compose, relit les non-remis, corrige le carnet, simule, compare des bacs et charge (Q12, Q21, lot 9, G3, AP-D7)', async () => {
     expect(deliveryViewKeys('comptoir')).toEqual([
       'feuille-de-route',
-      'tournees',
       'non-remis',
       'carnet-a-corriger',
       'simulateur',
@@ -109,7 +110,7 @@ describe("l'espace Livraison", () => {
       'contenances',
       'depart',
     ]);
-    expect(await opens('comptoir', 'tournees')).toBe(true);
+    expect(await opens('comptoir', 'tour-manager')).toBe(true);
     expect(await opens('comptoir', 'non-remis')).toBe(true);
     expect(await opens('comptoir', 'carnet-a-corriger')).toBe(true);
     expect(await opens('comptoir', 'simulateur')).toBe(true);
@@ -130,7 +131,7 @@ describe("l'espace Livraison", () => {
     expect(deliveryViewKeys('support')).toEqual(['feuille-de-route']);
     expect(await opens('support', 'feuille-de-route')).toBe(true);
     expect(await opens('support', 'vehicules')).toBe(false);
-    expect(await opens('support', 'tournees')).toBe(false);
+    expect(await opens('support', 'tour-manager')).toBe(false);
     expect(await opens('support', 'chargement')).toBe(false);
   });
 
@@ -160,8 +161,8 @@ describe("l'espace Livraison", () => {
   });
 
   it('ne montre ni n’ouvre les tournées au commercial', async () => {
-    expect(deliveryViewKeys('commercial')).not.toContain('tournees');
-    expect(await opens('commercial', 'tournees')).toBe(false);
+    expect(deliveryViewKeys('commercial')).not.toContain('tour-manager');
+    expect(await opens('commercial', 'tour-manager')).toBe(false);
   });
 
   it('🔴 la coquille ne ferme aucune vue : ni la flotte à qui ne lit qu’elle, ni l’inverse', () => {
@@ -180,7 +181,7 @@ describe("l'espace Livraison", () => {
     expect(deliveryViewKeys(LIVREUR)).toEqual([]);
     expect(await opens(LIVREUR, 'coursier')).toBe(true);
     expect(await opens(LIVREUR, 'coursier/:roundId/chargement')).toBe(true);
-    expect(await opens(LIVREUR, 'tournees')).toBe(false);
+    expect(await opens(LIVREUR, 'tour-manager')).toBe(false);
     expect(await opens(LIVREUR, 'chargement')).toBe(false);
     expect(await opens('comptoir', 'coursier')).toBe(false);
     expect(await opens('comptoir', 'coursier/:roundId/chargement')).toBe(false);

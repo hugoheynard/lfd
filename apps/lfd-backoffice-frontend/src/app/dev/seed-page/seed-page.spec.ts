@@ -185,7 +185,7 @@ describe('DevSeedPage — la journée de démo, étape par étape', () => {
     expect(three).toContain('À venir');
     expect(three).toContain('Charger jusqu’ici');
     expect(root(fixture).querySelector('a[href="/prod-manager"]')).not.toBeNull();
-    expect(root(fixture).querySelector('a[href="/livraison/tournees"]')).toBeNull();
+    expect(root(fixture).querySelector('a[href="/tour-manager"]')).toBeNull();
     expect(button(fixture, 'Étape suivante : Tournées composées')).toBeTruthy();
   });
 

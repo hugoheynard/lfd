@@ -197,6 +197,11 @@ export class App {
     this.permissions.can('production_plan:read'),
   );
 
+  /** Tour manager — l'organisation des tournées, au premier niveau (2026-10-10). */
+  protected readonly canSeeTourManager = computed(() =>
+    this.permissions.can('delivery_rounds:read'),
+  );
+
   /** Le Fournil — la fournée du jour, poste à part (2026-10-06), sous son seul droit. */
   protected readonly canSeeBakehouse = computed(() =>
     this.permissions.can('production_worksheet:read'),

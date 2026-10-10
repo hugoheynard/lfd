@@ -258,7 +258,7 @@ const SCREENS: Readonly<Record<string, ScreenAccess>> = {
   'coursier/mes-donnees': 'delivery_driving:read',
   livraison: OPEN,
   'livraison/feuille-de-route': 'delivery_run_sheet:read',
-  'livraison/tournees': 'delivery_rounds:read',
+  'tour-manager': 'delivery_rounds:read',
   'livraison/non-remis': 'delivery_rounds:read',
   // « À décider » (a-la-porte.md, B3) : le droit de décider, pas celui des
   // tournées ni des comptes (2026-10-02) ; la page s'ouvre en lecture, les

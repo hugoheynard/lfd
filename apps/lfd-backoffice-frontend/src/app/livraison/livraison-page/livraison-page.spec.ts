@@ -288,7 +288,7 @@ describe('DeliveryPage', () => {
       'Toutes les livraisons du jour, adresse par adresse',
     );
     expect(element.querySelector('[data-rounds-link]')?.getAttribute('href')).toBe(
-      '/livraison/tournees?jour=2026-10-07',
+      '/tour-manager?jour=2026-10-07',
     );
   });
 

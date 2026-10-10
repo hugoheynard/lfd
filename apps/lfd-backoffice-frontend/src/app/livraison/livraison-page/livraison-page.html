@@ -3,9 +3,7 @@
     Toutes les livraisons du jour, adresse par adresse, et comment livrer chacune. Pour les répartir
     entre véhicules&nbsp;:
     @if (canSeeRounds()) {
-      <a routerLink="/livraison/tournees" [queryParams]="{ jour: day() }" data-rounds-link
-        >Tournées</a
-      >.
+      <a routerLink="/tour-manager" [queryParams]="{ jour: day() }" data-rounds-link>Tournées</a>.
     } @else {
       Tournées.
     }

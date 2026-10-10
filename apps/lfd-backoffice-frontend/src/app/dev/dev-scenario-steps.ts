@@ -56,7 +56,7 @@ export const DEV_SCENARIO_STEPS: readonly DevScenarioStepText[] = [
       'Le calcul répartit les livraisons du jour entre les camionnettes. Les bacs ne sont pas encore faits.',
     meaning: 'les tournées sont composées',
     loading: 'Répartition des livraisons entre les camionnettes…',
-    links: [{ label: 'Tournées', route: '/livraison/tournees' }],
+    links: [{ label: 'Tournées', route: '/tour-manager' }],
   },
   {
     step: 3,
@@ -82,7 +82,7 @@ export const DEV_SCENARIO_STEPS: readonly DevScenarioStepText[] = [
     meaning: 'La journée est prête : les tournées peuvent partir depuis Ma tournée.',
     loading: 'Chargement des bacs dans les camionnettes…',
     links: [
-      { label: 'Tournées', route: '/livraison/tournees' },
+      { label: 'Tournées', route: '/tour-manager' },
       { label: 'Ma tournée', route: '/coursier' },
     ],
   },
