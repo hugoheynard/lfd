@@ -142,6 +142,7 @@ export const IT: ClientCopy = {
       'Nessun codice inviato e nessuna sessione aperta. Riprova; se il rifiuto si ripete, inviaci questo messaggio.',
     signInCancelledTitle: 'Accesso annullato',
     signInCancelledSub: 'Non sei connesso. Puoi ricominciare quando vuoi.',
+    invitationExpiredTitle: 'Invito scaduto',
     signInFailedBack: 'Torna alla home',
     firstTitle: 'Prima volta ?',
     firstSub: 'Nome, e-mail, telefono',

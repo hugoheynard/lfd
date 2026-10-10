@@ -4,6 +4,7 @@ import { FoldButtonComponent, FoldEmptyStateComponent } from 'fold-ng';
 
 import { AuthFacade } from '../../auth/auth.facade';
 import { SIGN_IN_CANCELLED } from '../../auth/sign-in-failure';
+import { InvitationExpiredNotice } from '../../auth/invitation-expired';
 import { ClientCopyService } from '../../client/copy/client-copy.service';
 
 /**
@@ -18,6 +19,11 @@ import { ClientCopyService } from '../../client/copy/client-copy.service';
  *
  * Une annulation (`access_denied`) n'est pas une panne : elle se dit sans ton
  * d'alerte et sans texte technique.
+ *
+ * Elle accueille aussi l'**invitation expirée** (2026-10-10) : l'API a refusé
+ * la session, l'intercepteur l'a fermée, et le message du serveur — qui nomme
+ * le geste de sortie — est dit ici tel quel. Il est lu une fois puis effacé :
+ * c'est ce qui empêche le shell d'y ramener en boucle.
  */
 @Component({
   selector: 'app-sign-in-failure',
@@ -29,10 +35,24 @@ export class SignInFailure {
   protected readonly t = inject(ClientCopyService).t;
   private readonly failure = inject(AuthFacade).signInFailure;
 
+  /** Le message du serveur si l'on vient d'un refus d'invitation expirée. */
+  protected readonly invitationExpired = inject(InvitationExpiredNotice).take();
+
+  protected readonly title = computed(() => {
+    const copy = this.t().doors;
+    if (this.invitationExpired !== null) {
+      return copy.invitationExpiredTitle;
+    }
+    return this.cancelled() ? copy.signInCancelledTitle : copy.signInFailedTitle;
+  });
+
   protected readonly cancelled = computed(() => this.failure()?.code === SIGN_IN_CANCELLED);
 
   protected readonly subtitle = computed(() => {
     const copy = this.t().doors;
+    if (this.invitationExpired !== null) {
+      return this.invitationExpired;
+    }
     if (this.cancelled()) {
       return copy.signInCancelledSub;
     }

@@ -140,6 +140,7 @@ export const EN: ClientCopy = {
       'No code was sent and no session was opened. Try again; if it fails again, send us this message.',
     signInCancelledTitle: 'Sign-in cancelled',
     signInCancelledSub: 'You are not signed in. You can start again whenever you like.',
+    invitationExpiredTitle: 'Invitation expired',
     signInFailedBack: 'Back to home',
     firstTitle: 'First time ?',
     firstSub: 'First name, email, phone',

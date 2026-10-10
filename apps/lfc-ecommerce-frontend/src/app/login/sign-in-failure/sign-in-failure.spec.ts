@@ -4,16 +4,18 @@ import { provideRouter } from '@angular/router';
 
 import { AuthFacade } from '../../auth/auth.facade';
 import type { SignInFailure as Failure } from '../../auth/sign-in-failure';
+import { InvitationExpiredNotice } from '../../auth/invitation-expired';
 import { SignInFailure } from './sign-in-failure';
 
 describe('SignInFailure', () => {
-  function render(failure: Failure | null): string {
+  function render(failure: Failure | null, expired: string | null = null): string {
     TestBed.resetTestingModule();
     TestBed.configureTestingModule({
       imports: [SignInFailure],
       providers: [
         provideRouter([]),
         { provide: AuthFacade, useValue: { signInFailure: signal(failure) } },
+        { provide: InvitationExpiredNotice, useValue: { take: (): string | null => expired } },
       ],
     });
     const fixture = TestBed.createComponent(SignInFailure);
@@ -42,5 +44,15 @@ describe('SignInFailure', () => {
 
     expect(text).toContain("La connexion n'a pas abouti");
     expect(text).not.toContain('(');
+  });
+
+  /** Régression 2026-10-10 : l'invitation expirée laissait chaque écran dire son 403. */
+  it('dit le message du serveur pour une invitation expirée', () => {
+    const message = 'Votre invitation a expiré. Demandez un nouvel accès.';
+    const text = render(null, message);
+
+    expect(text).toContain('Invitation expirée');
+    expect(text).toContain(message);
+    expect(text).toContain("Revenir à l'accueil");
   });
 });

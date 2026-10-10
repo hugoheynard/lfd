@@ -220,6 +220,11 @@ export interface ClientCopy {
     readonly signInFailedSub: string;
     readonly signInCancelledTitle: string;
     readonly signInCancelledSub: string;
+    /**
+     * `/connexion/erreur` après un refus `account.invitation.expired`
+     * (2026-10-10). Le sous-titre est le message du serveur, pas une copie.
+     */
+    readonly invitationExpiredTitle: string;
     readonly signInFailedBack: string;
     readonly firstTitle: string;
     readonly firstSub: string;

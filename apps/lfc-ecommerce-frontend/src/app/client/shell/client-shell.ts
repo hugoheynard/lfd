@@ -1,4 +1,11 @@
-import { ChangeDetectionStrategy, Component, computed, inject, signal } from '@angular/core';
+import {
+  ChangeDetectionStrategy,
+  Component,
+  computed,
+  effect,
+  inject,
+  signal,
+} from '@angular/core';
 import { Router, RouterLink, RouterOutlet } from '@angular/router';
 import {
   FoldAppShellComponent,
@@ -12,6 +19,8 @@ import {
 import { AuthFacade } from '../../auth/auth.facade';
 import { SignInDialog } from '../../login/sign-in-dialog/sign-in-dialog';
 import { IdentityConflictNotice } from '../../auth/identity-conflict';
+import { InvitationExpiredNotice } from '../../auth/invitation-expired';
+import { SIGN_IN_FAILURE_PATH } from '../../auth/auth.providers';
 import { ClientChrome } from '../client-chrome.service';
 import { AccountMenu } from './account-menu/account-menu';
 import { ClientFoot } from '../foot/client-foot';
@@ -113,6 +122,19 @@ export class ClientShell {
     // Même raison : c'est lui qui déclare l'établissement au retour de la porte
     // pro. Le shell enveloppe `/mon-compte`, où ce retour atterrit.
     inject(ProOnboarding);
+    // L'invitation expirée (2026-10-10) : l'intercepteur a fermé la session,
+    // la déconnexion Auth0 a rechargé l'app sur la racine. On mène à la page
+    // qui dit le message du serveur ; elle l'efface en le lisant, donc on n'y
+    // revient pas en boucle.
+    const invitationExpired = inject(InvitationExpiredNotice);
+    effect(() => {
+      if (
+        invitationExpired.pending() !== null &&
+        !this.router.url.startsWith(SIGN_IN_FAILURE_PATH)
+      ) {
+        void this.router.navigateByUrl(SIGN_IN_FAILURE_PATH);
+      }
+    });
   }
 
   protected goBack(): void {

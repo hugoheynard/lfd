@@ -1,6 +1,6 @@
 <fold-empty-state
-  [tone]="cancelled() ? 'neutral' : 'alert'"
-  [title]="cancelled() ? t().doors.signInCancelledTitle : t().doors.signInFailedTitle"
+  [tone]="cancelled() && invitationExpired === null ? 'neutral' : 'alert'"
+  [title]="title()"
   [subtitle]="subtitle()"
 >
   <a foldButton routerLink="/bienvenue">{{ t().doors.signInFailedBack }}</a>

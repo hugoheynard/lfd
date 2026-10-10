@@ -14,6 +14,7 @@ import { ClientFeatureAccess } from './client/feature-access/client-feature-acce
 import { InstallPrompt } from './client/install-prompt.service';
 import { workspaceInterceptor } from './client/client-workspace.interceptor';
 import { identityConflictInterceptor } from './auth/identity-conflict';
+import { invitationExpiredInterceptor } from './auth/invitation-expired';
 import { ADDRESS_WRITER, LFD_NOTIFY } from '@lfd/b2b-ui/panel';
 
 import { AddressesService } from './legacy/entreprises/addresses.service';
@@ -50,7 +51,11 @@ export const appConfig: ApplicationConfig = {
     // (`documentation/b2b/comptes-client/espace-de-travail.md`).
     provideHttpClient(
       withFetch(),
-      withInterceptors([workspaceInterceptor, identityConflictInterceptor]),
+      withInterceptors([
+        workspaceInterceptor,
+        identityConflictInterceptor,
+        invitationExpiredInterceptor,
+      ]),
     ),
     provideAuth(),
     // Les niveaux de l'accès aux fonctionnalités (le seul mandat client depuis
