@@ -1,4 +1,6 @@
+import { DirectUnitOfWork } from "../../../../../platform/database/__tests__/direct-unit-of-work.js";
 import { RecordingPublisher } from "../../../../../platform/events/__tests__/recording-publisher.js";
+import { FixedIdGenerator } from "../../../../../platform/id/fixed-id-generator.js";
 import {
   IdentityProofExpiredError,
   IdentityUnlinkRefusedError,
@@ -24,6 +26,7 @@ import { LinkLoginMethodCommand } from "../link-login-method.command.js";
 import { LinkLoginMethodHandler } from "../link-login-method.handler.js";
 import { RevokeLoginMethodCommand } from "../revoke-login-method.command.js";
 import { RevokeLoginMethodHandler } from "../revoke-login-method.handler.js";
+import { RecordingDurable } from "./durable-doubles.js";
 import { journalNames } from "./member-acts-doubles.js";
 
 /**
@@ -133,10 +136,21 @@ function linkHandler(
   subjects: Subjects,
   proof: Proof,
   events = new RecordingPublisher(),
-): { handler: LinkLoginMethodHandler; events: RecordingPublisher } {
+): { handler: LinkLoginMethodHandler; events: RecordingPublisher; durable: RecordingDurable } {
+  const durable = new RecordingDurable();
   return {
-    handler: new LinkLoginMethodHandler(proof, subjects, identity, events, journalNames()),
+    handler: new LinkLoginMethodHandler(
+      proof,
+      subjects,
+      identity,
+      events,
+      journalNames(),
+      new DirectUnitOfWork(),
+      durable,
+      new FixedIdGenerator("lnk"),
+    ),
     events,
+    durable,
   };
 }
 
@@ -162,6 +176,18 @@ describe("rattacher une méthode de connexion", () => {
     expect(JSON.stringify(fact?.payload)).not.toContain("10203040");
   });
 
+  /** Lot E5 (2026-10-10) : l'alerte au titulaire ne se perd plus sur un redémarrage. */
+  it("écrit le fait durable de l'alerte, sans le sujet secondaire", async () => {
+    const { handler, durable } = linkHandler(new Identity(), new Subjects(), new Proof(GOOGLE));
+
+    await handler.execute(linkCommand);
+
+    expect(durable.facts).toHaveLength(1);
+    expect(durable.facts[0]?.type).toBe("account.login_method_linked");
+    expect(durable.facts[0]?.payload).toMatchObject({ userId: OWNER, provider: "google-oauth2" });
+    expect(JSON.stringify(durable.facts[0])).not.toContain("10203040");
+  });
+
   it("refuse AVANT de rattacher quand le compte tiers ouvre déjà un autre compte", async () => {
     const identity = new Identity();
     const subjects = new Subjects({ [GOOGLE]: "u9" });
@@ -182,7 +208,7 @@ describe("rattacher une méthode de connexion", () => {
   it("défait le rattachement quand une ligne apparaît pendant le geste", async () => {
     const identity = new Identity();
     const subjects = new Subjects({}, { subject: GOOGLE, userId: "u9" });
-    const { handler, events } = linkHandler(identity, subjects, new Proof(GOOGLE));
+    const { handler, events, durable } = linkHandler(identity, subjects, new Proof(GOOGLE));
 
     await expect(handler.execute(linkCommand)).rejects.toBeInstanceOf(
       LoginMethodClaimedElsewhereError,
@@ -190,6 +216,7 @@ describe("rattacher une méthode de connexion", () => {
     expect(identity.linkCalls).toBe(1);
     expect(identity.unlinked).toEqual([GOOGLE]);
     expect(events.traced).toEqual([]);
+    expect(durable.facts).toEqual([]);
   });
 
   it("refuse une preuve qui désigne le compte courant — on ne se relie pas à soi-même", async () => {

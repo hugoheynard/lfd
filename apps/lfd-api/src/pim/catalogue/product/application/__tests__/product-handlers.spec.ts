@@ -5,7 +5,6 @@ import {
 } from "../../../../allergens/application/__tests__/in-memory-allergens.js";
 import { ArchivedAllergenDeclaredError } from "../../../../allergens/domain/errors/allergen-errors.js";
 import { NutritionPartExceedsWholeError } from "../../domain/value-objects/nutrition-declaration.js";
-import { RecordingPublisher } from "../../../../../platform/events/__tests__/recording-publisher.js";
 import { RecordingJournal } from "../../../../journal/__tests__/recording-journal.js";
 import {
   ArchivedProductNotWithdrawableError,
@@ -27,6 +26,7 @@ import {
 } from "../../domain/ports/editorial-reader.js";
 import { EditorialRepository } from "../../domain/ports/editorial.repository.js";
 import { SetProductMediaCommand, SetProductMediaHandler } from "../set-product-media.js";
+import { CountingPimIds, RecordingDurable } from "./durable-doubles.js";
 import { NutritionValuesRepository } from "../../domain/ports/nutrition-values.repository.js";
 import { VariantAllergensRepository } from "../../domain/ports/variant-allergens.repository.js";
 import { Product, type ProductSnapshot } from "../../domain/entities/product.js";
@@ -898,7 +898,8 @@ describe("SetProductMediaHandler", () => {
       editorials,
       new EmptyEditorialReader(),
       new RecordingJournal(),
-      new RecordingPublisher(),
+      new RecordingDurable(),
+      new CountingPimIds(),
       new DirectUnitOfWork(),
     ).execute(
       new SetProductMediaCommand(PRODUCT_ID, [
@@ -918,6 +919,33 @@ describe("SetProductMediaHandler", () => {
     expect(editorials.calls).toEqual([]);
   });
 
+  /**
+   * Lot E5 (2026-10-10) : l'annonce à la boutique est un fait DURABLE, écrit
+   * dans la transaction de la fiche — un redémarrage ne la perd plus.
+   */
+  it("annonce les visuels relus en fait durable, un par geste", async () => {
+    const durable = new RecordingDurable();
+
+    await new SetProductMediaHandler(
+      new FakeProductRepository(seedProduct()),
+      new RecordingEditorialRepository(),
+      new StoredMediaReader([mediaRow("hero", "https://cdn/1.jpg")]),
+      new RecordingJournal(),
+      durable,
+      new CountingPimIds(),
+      new DirectUnitOfWork(),
+    ).execute(new SetProductMediaCommand(PRODUCT_ID, [{ role: "hero", url: "https://cdn/1.jpg" }]));
+
+    expect(durable.facts).toHaveLength(1);
+    expect(durable.facts[0]?.type).toBe("pim.product_media_changed");
+    expect(durable.facts[0]?.key).toBe(`pim.product_media_changed:${PRODUCT_ID}:geste_1`);
+    expect(durable.facts[0]?.payload).toMatchObject({
+      productId: PRODUCT_ID,
+      image: { url: "https://cdn/1.jpg" },
+      thumbnail: null,
+    });
+  });
+
   it("accepte une liste vide — retirer le dernier visuel est un geste légitime", async () => {
     const products = new FakeProductRepository(seedProduct());
     const editorials = new RecordingEditorialRepository();
@@ -927,7 +955,8 @@ describe("SetProductMediaHandler", () => {
       editorials,
       new EmptyEditorialReader(),
       new RecordingJournal(),
-      new RecordingPublisher(),
+      new RecordingDurable(),
+      new CountingPimIds(),
       new DirectUnitOfWork(),
     ).execute(new SetProductMediaCommand(PRODUCT_ID, []));
 
@@ -951,7 +980,8 @@ describe("SetProductMediaHandler", () => {
       editorials,
       new StoredMediaReader([mediaRow("gallery", "https://cdn/1.jpg")]),
       journal,
-      new RecordingPublisher(),
+      new RecordingDurable(),
+      new CountingPimIds(),
       new DirectUnitOfWork(),
     ).execute(new SetProductMediaCommand(PRODUCT_ID, [{ role: "hero", url: "https://cdn/1.jpg" }]));
 
@@ -978,7 +1008,8 @@ describe("SetProductMediaHandler", () => {
       new RecordingEditorialRepository(),
       new StoredMediaReader([mediaRow("hero", "https://cdn/1.jpg")]),
       journal,
-      new RecordingPublisher(),
+      new RecordingDurable(),
+      new CountingPimIds(),
       new DirectUnitOfWork(),
     ).execute(new SetProductMediaCommand(PRODUCT_ID, [{ role: "hero", url: "https://cdn/1.jpg" }]));
 
@@ -1003,7 +1034,8 @@ describe("SetProductMediaHandler", () => {
         mediaRow("lifestyle", "https://cdn/2.jpg"),
       ]),
       journal,
-      new RecordingPublisher(),
+      new RecordingDurable(),
+      new CountingPimIds(),
       new DirectUnitOfWork(),
     ).execute(
       new SetProductMediaCommand(PRODUCT_ID, [

@@ -3,10 +3,9 @@ import { Buffer } from "node:buffer";
 import type { OrderView } from "@lfd/contracts";
 import type { MailReceipt, SendMailArgs } from "@lfd/mailer";
 
-import { BackgroundWork } from "../../../../../platform/events/background-work.js";
+import { CommerceOrderPlacedFact } from "../../../../../delivery/channels/commerce/commerce-order-placed.fact.js";
 import type { B2bMails } from "../../../../../platform/mailer/mail-templates.js";
 import type { B2bMailer } from "../../../../../platform/mailer/mailer.tokens.js";
-import { OrderPlacedEvent } from "../../../domain/events/order-placed.event.js";
 import { OrderMailOrigins } from "../../../domain/ports/order-mail-origins.js";
 import {
   OrderRecipientReader,
@@ -24,7 +23,7 @@ import { SendOrderPlacedMail } from "../send-order-placed-mail.handler.js";
  * un canal qu'on relit encore moins qu'un écran.
  */
 
-const EVENT = new OrderPlacedEvent("order_1", "ORD-4812", "user_7", null, 1_367);
+const DELIVERY = { eventId: "evt_1", ...new CommerceOrderPlacedFact("order_1").durableFact() };
 
 function view(overrides: Partial<OrderView> = {}): OrderView {
   return {
@@ -106,23 +105,6 @@ class RecordingMailer implements B2bMailer {
     return Promise.resolve({ providerId: "msg_1" });
   }
 }
-
-/**
- * Le travail de fond, joué en ATTENDANT la tâche : un test qui rendrait la main
- * avant l'envoi vérifierait un mailer encore vide et passerait par hasard.
- * `BackgroundWork` est une classe concrète — on l'ÉTEND, on ne la caste pas :
- * le jour où `track` change de forme, ce doublé cesse de compiler.
- */
-class ImmediateWork extends BackgroundWork {
-  last: Promise<void> = Promise.resolve();
-
-  override track(task: Promise<void>): Promise<void> {
-    this.last = task;
-    return task;
-  }
-}
-
-const work = new ImmediateWork();
 
 /** Les deux origines, fixées. Le port est étroit : rien d'autre à jouer. */
 class FixedOrigins extends OrderMailOrigins {
@@ -229,7 +211,6 @@ function handler(options: {
       options.client === undefined ? "https://app.lfc.test" : options.client,
       options.admin === undefined ? "https://admin.lfc.test" : options.admin,
     ),
-    work,
     sheetAttachment({
       ...(options.logo === undefined ? {} : { logo: options.logo }),
       admin: options.admin === undefined ? "https://admin.lfc.test" : options.admin,
@@ -239,12 +220,9 @@ function handler(options: {
   return { run, mailer };
 }
 
-/** Joue l'abonné et attend son travail de fond. */
+/** Joue l'abonné comme la boîte d'envoi le livre. */
 async function fire(subject: ReturnType<typeof handler>): Promise<void> {
-  subject.run.handle(EVENT);
-  // Le rendu du bon joint est un vrai travail asynchrone : on attend la tâche
-  // elle-même, pas un nombre de micro-tâches.
-  await work.last;
+  await subject.run.handle(DELIVERY);
 }
 
 describe("l'accusé de réception d'une commande", () => {
@@ -348,5 +326,22 @@ describe("l'accusé de réception d'une commande", () => {
     expect(subject.mailer.sent?.template).toBe("customer.order-placed");
     const data = subject.mailer.sent?.data as B2bMails["customer.order-placed"];
     expect(data.document).toBeNull();
+  });
+
+  it("n'envoie RIEN tant qu'une commande carte attend son règlement", async () => {
+    // L'accusé d'une commande carte part sur `order.paid` (`SendOrderSettledMail`).
+    const subject = handler({ order: view({ paymentStatus: "pending" }) });
+    await fire(subject);
+
+    expect(subject.mailer.sent).toBeNull();
+  });
+
+  it("lève sur un fait illisible — le message reste visible dans la boîte d'envoi", async () => {
+    const subject = handler({});
+
+    await expect(
+      subject.run.handle({ eventId: "evt_2", type: "commerce.order_placed", payload: {} }),
+    ).rejects.toThrow("illisible");
+    expect(subject.mailer.sent).toBeNull();
   });
 });

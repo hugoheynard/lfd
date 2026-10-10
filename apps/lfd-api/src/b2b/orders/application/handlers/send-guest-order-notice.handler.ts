@@ -1,18 +1,28 @@
-import { Inject } from "@nestjs/common";
-import { EventsHandler, type IEventHandler } from "@nestjs/cqrs";
+import { Inject, Injectable } from "@nestjs/common";
 
-import { BackgroundWork } from "../../../../platform/events/background-work.js";
+import {
+  COMMERCE_ORDER_PLACED,
+  CommerceOrderPlacedFact,
+} from "../../../../delivery/channels/commerce/commerce-order-placed.fact.js";
 import { MailJournal } from "../../../../platform/mailer/journal/mail-journal.port.js";
 import { MAILER, type B2bMailer } from "../../../../platform/mailer/mailer.tokens.js";
+import type { DurableDelivery } from "../../../../platform/outbox/durable-event.js";
+import {
+  DurableHandler,
+  type DurableSubscriber,
+} from "../../../../platform/outbox/durable-handler.js";
 import { Clock } from "../../../../platform/time/clock.js";
-import { OrderPlacedEvent } from "../../domain/events/order-placed.event.js";
 import { GuestOrderNoticeReader } from "../../domain/ports/guest-order-notice.reader.js";
+import { OrderReader } from "../../domain/ports/order.reader.js";
 
 /**
  * Le canal du registre d'unicité, à côté de `resend` — plan
  * `plan-commande-sans-compte.md`, D7.
  */
 const NOTICE_CHANNEL = "guest-order-notice";
+
+/** Nom STABLE de l'abonné — clé de son reçu dans la boîte d'envoi. */
+export const SEND_GUEST_ORDER_NOTICE = "orders.send-guest-notice.on-placed";
 
 /**
  * **« Une commande vient d'être passée avec votre adresse »** — prévenir le
@@ -47,26 +57,39 @@ const NOTICE_CHANNEL = "guest-order-notice";
  * (unicité `(provider, externalId)`), et son propre commentaire annonçait ce
  * moment : « ce registre n'a rien de spécifiquement postal […] on le sortira au
  * SECOND consommateur, pas avant ». Nous sommes ce second.
+ *
+ * ## Durable depuis le 2026-10-10 (lot E5)
+ *
+ * Il écoutait `OrderPlacedEvent` en mémoire : un redémarrage entre la
+ * passation et le saut laissait le propriétaire de l'adresse sans nouvelle.
+ * Il lit désormais `commerce.order_placed`, écrit par les trois passations
+ * dans leur transaction (`documentation/journalisation/plan-evenements-durables.md`,
+ * §7 quater). Le fait ne porte que `{ orderId }` : le porteur se relit sur la
+ * commande. Hors de la requête comme avant — la réponse HTTP ne bouge pas.
  */
-@EventsHandler(OrderPlacedEvent)
-export class SendGuestOrderNotice implements IEventHandler<OrderPlacedEvent> {
+@Injectable()
+@DurableHandler({ type: COMMERCE_ORDER_PLACED, subscriber: SEND_GUEST_ORDER_NOTICE })
+export class SendGuestOrderNotice implements DurableSubscriber {
   constructor(
+    private readonly orders: OrderReader,
     private readonly notices: GuestOrderNoticeReader,
     private readonly journal: MailJournal,
     private readonly clock: Clock,
-    private readonly work: BackgroundWork,
     @Inject(MAILER) private readonly mailer: B2bMailer,
   ) {}
 
-  handle(event: OrderPlacedEvent): void {
-    // Suivi : cet abonné tourne hors de la requête HTTP. Sans cette
-    // inscription, un test vide la base pendant que l'envoi la lit, et l'échec
-    // accuse le test SUIVANT.
-    void this.work.track(this.run(event), "send-guest-order-notice");
+  async handle(delivery: DurableDelivery): Promise<void> {
+    const fact = CommerceOrderPlacedFact.fromPayload(delivery.payload);
+    const order = await this.orders.findById(fact.orderId);
+    // Une commande introuvable n'est pas un cas à alerter : rien à prévenir.
+    if (order === null) {
+      return;
+    }
+    await this.run(order.placedByUserId);
   }
 
-  private async run(event: OrderPlacedEvent): Promise<void> {
-    const notice = await this.notices.noticeFor(event.placedByUserId);
+  private async run(placedByUserId: string): Promise<void> {
+    const notice = await this.notices.noticeFor(placedByUserId);
     // Le cas NORMAL : le porteur n'est pas un invité, ou personne d'autre ne
     // porte cette adresse. On ne prévient personne, et ce n'est pas un échec.
     if (notice === null) {

@@ -1,3 +1,4 @@
+import { DirectUnitOfWork } from "../../../../../platform/database/__tests__/direct-unit-of-work.js";
 import { HeldAfterCommit } from "../../../../../platform/database/__tests__/held-after-commit.js";
 import { RecordingPublisher } from "../../../../../platform/events/__tests__/recording-publisher.js";
 import {
@@ -6,10 +7,12 @@ import {
 } from "../../../../../staff/directory/domain/staff-author-directory.js";
 import { PackingRefusedError } from "../../../domain/errors/order-errors.js";
 import { OrderReadyEvent } from "../../../domain/events/order-ready.event.js";
+import { OrderReadyFact } from "../../../domain/events/order-ready.fact.js";
 import { OrderReader, type PackingOrder } from "../../../domain/ports/order.reader.js";
 import { OrderRepository } from "../../../domain/ports/order.repository.js";
 import { MarkOrderReadyCommand } from "../mark-order-ready.command.js";
 import { MarkOrderReadyHandler } from "../mark-order-ready.handler.js";
+import { RecordingDurable } from "./durable-doubles.js";
 
 // Comparées entre elles seulement : le handler ne lit aucune horloge.
 const PACKED_AT = new Date("2026-09-08T04:00:00.000Z");
@@ -111,14 +114,17 @@ function subject(states: PackingOrder[], wins = true) {
   const repository = new Repository(wins);
   const events = new RecordingPublisher();
   const afterCommit = new HeldAfterCommit();
+  const durable = new RecordingDurable();
   const handler = new MarkOrderReadyHandler(
     new Reader(states),
     repository,
     events,
     new NoAuthors(),
     afterCommit,
+    new DirectUnitOfWork(),
+    durable,
   );
-  return { handler, repository, events, afterCommit };
+  return { handler, repository, events, afterCommit, durable };
 }
 
 const ready = () => new MarkOrderReadyCommand(REFERENCE, "staff_a", PACKED_AT);
@@ -153,13 +159,22 @@ describe("déclarer une commande prête", () => {
     expect(view.readyAt).toBe(PACKED_AT.toISOString());
   });
 
+  /** Lot E5 (2026-10-10) : le courriel « prête » ne se perd plus sur un redémarrage. */
+  it("écrit `order.ready` dans l'unité de travail, une fois, par le gagnant", async () => {
+    const { handler, durable } = subject([order()]);
+
+    await handler.execute(ready());
+
+    expect(durable.facts).toEqual([new OrderReadyFact("ord_1").durableFact()]);
+  });
+
   /**
    * Régression : une commande déjà prête levait `PackingRefusedError`. Sous la
    * boîte d'envoi, un rescan du fournil (fait neuf) aurait échoué dix fois puis
    * fini en message mort, pour une commande parfaitement à jour.
    */
   it("une commande DÉJÀ prête est un succès sans effet — ni écriture, ni événement", async () => {
-    const { handler, repository, events, afterCommit } = subject([
+    const { handler, repository, events, afterCommit, durable } = subject([
       order({ status: "ready", readyAt: EARLIER, readyBy: "staff_b" }),
     ]);
 
@@ -168,12 +183,13 @@ describe("déclarer une commande prête", () => {
 
     expect(repository.writes).toBe(0);
     expect(events.published).toEqual([]);
+    expect(durable.facts).toEqual([]);
     expect(view.readyAt).toBe(EARLIER.toISOString());
     expect(view.readyBy).toBe("staff_b");
   });
 
   it("une course perdue contre une autre livraison est un succès sans événement", async () => {
-    const { handler, events, afterCommit } = subject(
+    const { handler, events, afterCommit, durable } = subject(
       [order(), order({ status: "ready", readyAt: EARLIER, readyBy: "staff_b" })],
       false,
     );
@@ -182,6 +198,7 @@ describe("déclarer une commande prête", () => {
     await afterCommit.commit();
 
     expect(events.published).toEqual([]);
+    expect(durable.facts).toEqual([]);
     expect(view.readyBy).toBe("staff_b");
   });
 

@@ -1,6 +1,6 @@
-import { BackgroundWork } from "../../../../../platform/events/background-work.js";
-import { DirectUnitOfWork } from "../../../../../platform/database/__tests__/direct-unit-of-work.js";
-import { ProductMediaChangedEvent } from "../../../../../pim/channels/b2b-platform/products/product-media-changed.event.js";
+import type { SyncMedia } from "@lfd/catalog-sync";
+
+import { ProductMediaChangedFact } from "../../../../../pim/channels/b2b-platform/products/product-media-changed.fact.js";
 import { CatalogItemRepository } from "../../../domain/ports/catalog-item.repository.js";
 import { CatalogItem } from "../../../domain/entities/catalog-item.js";
 import { OnProductMediaChangedHandler } from "../on-product-media-changed.handler.js";
@@ -68,17 +68,18 @@ function anItem(sku: string): CatalogItem {
   });
 }
 
-/**
- * Lance l'abonné et **attend qu'il ait fini**.
- *
- * `handle` est synchrone et rend la main tout de suite : le travail part en
- * fond. Sans cette attente, chaque cas éprouverait un état antérieur à la
- * projection — et serait vert sur du code qui ne fait rien.
- */
-async function run(items: SpyingItems, event: ProductMediaChangedEvent): Promise<void> {
-  const work = new BackgroundWork();
-  new OnProductMediaChangedHandler(items, work, new DirectUnitOfWork()).handle(event);
-  await work.whenIdle();
+/** Livre le fait à l'abonné comme la boîte d'envoi le livre. */
+async function run(
+  items: SpyingItems,
+  productId: string,
+  image: SyncMedia | null,
+  thumbnail: SyncMedia | null,
+): Promise<void> {
+  const fact = new ProductMediaChangedFact(productId, "geste_1", image, thumbnail).durableFact();
+  await new OnProductMediaChangedHandler(items).handle({
+    eventId: "evt_1",
+    ...fact,
+  });
 }
 
 describe("OnProductMediaChanged", () => {
@@ -95,7 +96,7 @@ describe("OnProductMediaChanged", () => {
     // pièce a deux images selon le format choisi.
     const items = new SpyingItems([anItem("CRO-001"), anItem("CRO-002")]);
 
-    await run(items, new ProductMediaChangedEvent("prd_croissant", HERO, VIGNETTE));
+    await run(items, "prd_croissant", HERO, VIGNETTE);
 
     expect(items.askedFor).toBe("prd_croissant");
     expect(items.saved).toHaveLength(2);
@@ -108,7 +109,7 @@ describe("OnProductMediaChanged", () => {
     // plus — et personne ne saurait d'où elle vient.
     const items = new SpyingItems([anItem("CRO-001")]);
 
-    await run(items, new ProductMediaChangedEvent("prd_croissant", null, null));
+    await run(items, "prd_croissant", null, null);
 
     expect(items.saved[0]?.image).toBeNull();
     expect(items.saved[0]?.thumbnail).toBeNull();
@@ -120,24 +121,39 @@ describe("OnProductMediaChanged", () => {
     // sans prix ni TVA.
     const items = new SpyingItems([]);
 
-    await run(items, new ProductMediaChangedEvent("prd_inconnu", HERO, null));
+    await run(items, "prd_inconnu", HERO, null);
 
     expect(items.saved).toEqual([]);
   });
 
-  it("ne relance JAMAIS vers l'émetteur", async () => {
-    // Un abonné est appelé APRÈS la transaction du référentiel : lever ici ne
-    // rejouerait rien et remonterait une panne de projection à qui
-    // enregistrait une fiche. La fiche est enregistrée, le fait est tracé ;
-    // seule la fraîcheur est perdue, et le prochain push la rattrape.
+  /**
+   * Inversé le 2026-10-10 (lot E5) : il avalait ses échecs, parce qu'un abonné
+   * en mémoire appelé après la transaction ne rejouait rien. Sous la boîte
+   * d'envoi, lever fait REJOUER ; avaler marquerait projetée une photo qui ne
+   * l'est pas.
+   */
+  it("LÈVE sur une panne, pour que la boîte d'envoi rejoue", async () => {
     class FailingItems extends SpyingItems {
       override loadByProduct(): Promise<CatalogItem[]> {
         return Promise.reject(new Error("base injoignable"));
       }
     }
 
+    await expect(run(new FailingItems(), "prd_croissant", HERO, VIGNETTE)).rejects.toThrow(
+      "base injoignable",
+    );
+  });
+
+  it("lève sur un fait illisible, sans rien écrire", async () => {
+    const items = new SpyingItems([anItem("CRO-001")]);
+
     await expect(
-      run(new FailingItems(), new ProductMediaChangedEvent("prd_croissant", HERO, VIGNETTE)),
-    ).resolves.toBeUndefined();
+      new OnProductMediaChangedHandler(items).handle({
+        eventId: "evt_2",
+        type: "pim.product_media_changed",
+        payload: { productId: "prd_croissant" },
+      }),
+    ).rejects.toThrow("illisible");
+    expect(items.saved).toEqual([]);
   });
 });

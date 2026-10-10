@@ -1,10 +1,9 @@
 import type { OrderView } from "@lfd/contracts";
 import type { MailReceipt, SendMailArgs } from "@lfd/mailer";
 
-import { BackgroundWork } from "../../../../../platform/events/background-work.js";
 import type { B2bMails } from "../../../../../platform/mailer/mail-templates.js";
 import type { B2bMailer } from "../../../../../platform/mailer/mailer.tokens.js";
-import { OrderReadyEvent } from "../../../domain/events/order-ready.event.js";
+import { OrderReadyFact } from "../../../domain/events/order-ready.fact.js";
 import { OrderMailOrigins } from "../../../domain/ports/order-mail-origins.js";
 import {
   OrderRecipientReader,
@@ -21,13 +20,10 @@ import { SendOrderReadyMail } from "../send-order-ready-mail.handler.js";
  * commande, et non un identifiant transporté par le fait.
  */
 
-const EVENT = new OrderReadyEvent(
-  "order_1",
-  "ORD-4812",
-  "auth0|client",
-  "auth0|karim",
-  new Date("2026-09-07T06:30:00.000Z"),
-);
+const DELIVERY = {
+  eventId: "evt_1",
+  ...new OrderReadyFact("order_1").durableFact(),
+};
 
 function view(overrides: Partial<OrderView> = {}): OrderView {
   return {
@@ -109,20 +105,6 @@ class RecordingMailer implements B2bMailer {
     return Promise.resolve({ providerId: "msg_1" });
   }
 }
-
-/**
- * Le travail de fond, joué en ATTENDANT la tâche : un test qui rendrait la main
- * avant l'envoi vérifierait un mailer encore vide et passerait par hasard.
- * `BackgroundWork` est une classe concrète — on l'ÉTEND, on ne la caste pas :
- * le jour où `track` change de forme, ce doublé cesse de compiler.
- */
-class ImmediateWork extends BackgroundWork {
-  override track(task: Promise<void>): Promise<void> {
-    return task;
-  }
-}
-
-const work = new ImmediateWork();
 
 /** Les deux origines, fixées. Le port est étroit : rien d'autre à jouer. */
 class FixedOrigins extends OrderMailOrigins {
@@ -236,16 +218,13 @@ function handler(options: {
       ),
       mailer,
     ),
-    work,
   );
   return { run, mailer };
 }
 
-/** Joue l'abonné et attend son travail de fond. */
+/** Joue l'abonné comme la boîte d'envoi le livre. */
 async function fire(subject: ReturnType<typeof handler>): Promise<void> {
-  subject.run.handle(EVENT);
-  await Promise.resolve();
-  await Promise.resolve();
+  await subject.run.handle(DELIVERY);
 }
 
 describe("le courriel « votre commande est prête »", () => {
@@ -330,6 +309,15 @@ describe("le courriel « votre commande est prête »", () => {
     const subject = handler({ order: null });
     await fire(subject);
 
+    expect(subject.mailer.sent).toBeNull();
+  });
+
+  it("lève sur un fait illisible — le message reste visible dans la boîte d'envoi", async () => {
+    const subject = handler({});
+
+    await expect(
+      subject.run.handle({ eventId: "evt_2", type: "order.ready", payload: {} }),
+    ).rejects.toThrow("illisible");
     expect(subject.mailer.sent).toBeNull();
   });
 });

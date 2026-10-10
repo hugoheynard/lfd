@@ -6,14 +6,15 @@ import {
   type LocalizedText,
 } from "../../shared/domain/value-objects/localized-text.js";
 
-import { DomainEventPublisher } from "../../../../platform/events/domain-event-publisher.js";
 import { UnitOfWork } from "../../../../platform/database/unit-of-work.js";
+import { DurablePublisher } from "../../../../platform/outbox/durable-publisher.js";
+import { PimIdGenerator } from "../../../infra/id/pim-id-generator.js";
 import { changesBetween } from "../../../../platform/journal/changes.js";
 import { PIM_EVENTS, PimJournal } from "../../../journal/pim-journal.js";
 import { EditorialReader } from "../domain/ports/editorial-reader.js";
 import { EditorialRepository } from "../domain/ports/editorial.repository.js";
 import { ProductRepository } from "../domain/ports/product.repository.js";
-import { ProductMediaChangedEvent } from "../../../channels/b2b-platform/products/product-media-changed.event.js";
+import { ProductMediaChangedFact } from "../../../channels/b2b-platform/products/product-media-changed.fact.js";
 import { mediaItems, type MediaInput } from "../domain/value-objects/editorial.js";
 import { requireProduct } from "./product-support.js";
 
@@ -44,7 +45,8 @@ export class SetProductMediaHandler implements ICommandHandler<SetProductMediaCo
     private readonly editorials: EditorialRepository,
     private readonly readers: EditorialReader,
     private readonly journal: PimJournal,
-    private readonly events: DomainEventPublisher,
+    private readonly durable: DurablePublisher,
+    private readonly ids: PimIdGenerator,
     private readonly uow: UnitOfWork,
   ) {}
 
@@ -68,43 +70,45 @@ export class SetProductMediaHandler implements ICommandHandler<SetProductMediaCo
             })
           : this.journal.untraced("section enregistrée sans modification");
       await this.editorials.replaceMedia(command.id, after, ticket);
+      await this.announce(command.id);
     });
-
-    await this.announce(command.id);
   }
 
   /**
-   * Annonce le changement, **hors de la transaction**.
+   * Annonce le changement, **DANS la transaction** — depuis le 2026-10-10 (lot E5).
    *
-   * 🔴 Après le `uow.run`, et jamais dedans : publier à l'intérieur ferait
-   * projeter un changement qui peut encore être annulé. Un abonné qui aurait
-   * déjà écrit en boutique ne serait pas rejoué par le rollback — il n'est pas
-   * dans la transaction, c'est tout l'intérêt.
+   * 🔴 C'était l'inverse : « après le `uow.run`, et jamais dedans », parce
+   * qu'un fait publié EN MÉMOIRE à l'intérieur faisait projeter un changement
+   * qui pouvait encore être annulé — l'abonné, hors de la transaction, n'était
+   * pas rejoué par le rollback. Le fait est désormais DURABLE : il s'écrit dans
+   * la boîte d'envoi de la même transaction, et le relais ne le livre qu'après
+   * la validation. Un rollback l'emporte avec la fiche ; une validation le
+   * garantit, redémarrage compris. Écrit après, il pouvait se perdre entre les
+   * deux — la boutique gardait l'ancienne photo jusqu'au prochain push.
    *
-   * ⚠️ **`publish` et non `publishTraced`.** Le fait décisif est déjà inscrit
-   * (`product.media_saved`) ; ceci en est la conséquence. Un second fait au
-   * journal ferait deux lignes d'historique là où il s'est passé une seule
-   * chose.
+   * ⚠️ **Pas de second fait au journal.** Le fait décisif est déjà inscrit
+   * (`product.media_saved`) ; ceci en est la conséquence.
+   *
+   * ⚠️ **Relu dans la transaction**, donc APRÈS `replaceMedia` : la lecture
+   * suit la transaction ambiante et voit la liste qu'on vient d'écrire.
    *
    * ⚠️ **Relu plutôt qu'assemblé depuis `after`.** La liste écrite ne porte que
    * le rôle et l'URL ; la vitrine a besoin de l'alternative, qui vit à la
    * médiathèque. Relire est un aller de plus sur un geste rare, et c'est le
    * prix de ne pas recopier une règle de composition qui existe déjà.
    *
-   * ⚠️ **Un échec ici n'annule rien.** La fiche est enregistrée, le fait est
-   * tracé ; seule la fraîcheur est perdue, et le prochain push la rattrape.
-   * C'est le couple habituel — un chemin rapide et faillible, un chemin lent et
-   * complet.
+   * ⚠️ **Un échec d'écriture ici annule le geste** : la fiche et son annonce
+   * tiennent ou tombent ensemble. C'est le prix de ne plus perdre l'annonce.
    */
   private async announce(productId: string): Promise<void> {
     const media = await this.readers.mediaOf(productId);
-    this.events.publish(
-      new ProductMediaChangedEvent(
-        productId,
-        syncMediaOf(media, MAIN_ROLE),
-        syncMediaOf(media, THUMBNAIL_ROLE),
-      ),
+    const fact = new ProductMediaChangedFact(
+      productId,
+      this.ids.next(),
+      syncMediaOf(media, MAIN_ROLE),
+      syncMediaOf(media, THUMBNAIL_ROLE),
     );
+    await this.durable.publish(fact.durableFact());
   }
 }
 

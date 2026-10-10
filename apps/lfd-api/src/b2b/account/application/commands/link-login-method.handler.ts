@@ -1,11 +1,15 @@
 import { Logger } from "@nestjs/common";
 import { CommandHandler, type ICommandHandler } from "@nestjs/cqrs";
 
+import { UnitOfWork } from "../../../../platform/database/unit-of-work.js";
 import { DomainEventPublisher } from "../../../../platform/events/domain-event-publisher.js";
+import { IdGenerator } from "../../../../platform/id/id-generator.js";
+import { DurablePublisher } from "../../../../platform/outbox/durable-publisher.js";
 import {
   LoginMethodAlreadyLinkedError,
   LoginMethodClaimedElsewhereError,
 } from "../../domain/errors/account-errors.js";
+import { LoginMethodLinkedFact } from "../../domain/events/login-method-linked.fact.js";
 import { LoginMethodLinkedEvent } from "../../domain/events/person-acts.event.js";
 import {
   CustomerIdentityPort,
@@ -58,10 +62,20 @@ import { LinkLoginMethodCommand } from "./link-login-method.command.js";
  * La fenêtre existe toujours ; ce qui change, c'est qu'on ne la traverse plus
  * en silence.
  *
- * `@hors-transaction` la vérification et le rattachement se font chez un tiers,
- * et **rien ne s'écrit chez nous** : le fait part seul, après la réussite. Une
- * transaction n'annulerait pas le rattachement, elle ne ferait que tenir une
- * connexion ouverte le temps de deux allers-retours réseau.
+ * ## La transaction ne couvre que ce qui s'écrit chez nous
+ *
+ * La vérification et le rattachement se font chez un tiers, HORS de toute
+ * transaction : elle n'annulerait pas le rattachement, elle ne ferait que
+ * tenir une connexion ouverte le temps de deux allers-retours réseau. Ce qui
+ * s'écrit chez nous après la réussite — la trace au journal et, depuis le
+ * 2026-10-10 (lot E5), le fait durable `account.login_method_linked` qui fait
+ * partir l'alerte — part dans UNE unité de travail : la trace et l'alerte
+ * tombent ou tiennent ensemble. Avant, l'alerte sautait en mémoire, et un
+ * redémarrage la perdait.
+ *
+ * ⚠️ La fenêtre entre le rattachement chez le tiers et cette unité reste : un
+ * arrêt à cet instant laisse un rattachement sans trace ni alerte. Elle n'est
+ * pas fermable sans transaction distribuée ; elle est réduite à un instant.
  */
 @CommandHandler(LinkLoginMethodCommand)
 export class LinkLoginMethodHandler implements ICommandHandler<LinkLoginMethodCommand, void> {
@@ -73,6 +87,9 @@ export class LinkLoginMethodHandler implements ICommandHandler<LinkLoginMethodCo
     private readonly identity: CustomerIdentityPort,
     private readonly events: DomainEventPublisher,
     private readonly names: AccountJournalNames,
+    private readonly uow: UnitOfWork,
+    private readonly durable: DurablePublisher,
+    private readonly ids: IdGenerator,
   ) {}
 
   async execute(command: LinkLoginMethodCommand): Promise<void> {
@@ -89,15 +106,22 @@ export class LinkLoginMethodHandler implements ICommandHandler<LinkLoginMethodCo
     const methods = await this.identity.linkLoginMethod(command.subject, secondary);
     const linked = secondaryAmong(methods, secondary);
     await this.undoIfClaimedMeanwhile(command, secondary.subject, linked);
+    await this.recordLinked(command.userId, linked);
+  }
 
-    await this.events.publishTraced(
-      new LoginMethodLinkedEvent(
-        command.userId,
-        await this.names.person(command.userId),
-        linked.provider,
-        linked.connection,
-      ),
+  /** La trace et l'alerte, dans une unité : l'une ne part pas sans l'autre. */
+  private async recordLinked(userId: string, linked: LoginMethod): Promise<void> {
+    const traced = new LoginMethodLinkedEvent(
+      userId,
+      await this.names.person(userId),
+      linked.provider,
+      linked.connection,
     );
+    const alert = new LoginMethodLinkedFact(userId, linked.provider, this.ids.next());
+    await this.uow.run(async () => {
+      await this.events.publishTraced(traced);
+      await this.durable.publish(alert.durableFact());
+    });
   }
 
   /** Le contrôle « avant » : il ferme le cas courant sans rien écrire nulle part. */

@@ -1,10 +1,18 @@
-import { Logger } from "@nestjs/common";
-import { EventsHandler, type IEventHandler } from "@nestjs/cqrs";
+import { Injectable } from "@nestjs/common";
 
-import { ProductMediaChangedEvent } from "../../../../pim/channels/b2b-platform/products/product-media-changed.event.js";
-import { BackgroundWork } from "../../../../platform/events/background-work.js";
-import { UnitOfWork } from "../../../../platform/database/unit-of-work.js";
+import {
+  PIM_PRODUCT_MEDIA_CHANGED,
+  ProductMediaChangedFact,
+} from "../../../../pim/channels/b2b-platform/products/product-media-changed.fact.js";
+import type { DurableDelivery } from "../../../../platform/outbox/durable-event.js";
+import {
+  DurableHandler,
+  type DurableSubscriber,
+} from "../../../../platform/outbox/durable-handler.js";
 import { CatalogItemRepository } from "../../domain/ports/catalog-item.repository.js";
+
+/** Nom STABLE de l'abonné — clé de son reçu dans la boîte d'envoi. */
+export const PROJECT_PRODUCT_MEDIA = "catalog.project-product-media";
 
 /**
  * **La photo d'une fiche arrive en boutique sans republier le catalogue.**
@@ -33,70 +41,51 @@ import { CatalogItemRepository } from "../../domain/ports/catalog-item.repositor
  *
  * ## Ce que cet abonné ne fait pas
  *
- * ⚠️ **Il n'importe PAS le référentiel** — il reçoit un fait publié sur le bus
- * de la plateforme. Le PIM publie sans savoir qui écoute ; le commerce écoute
- * sans que le PIM le connaisse. Aucune des deux flèches interdites par la
- * matrice n'est empruntée.
+ * ⚠️ **Il n'importe PAS l'intérieur du référentiel** — il lit un fait que le
+ * référentiel déclare dans son canal vers la plateforme. Le PIM publie sans
+ * savoir qui écoute ; `pim → b2b` reste interdit.
  *
  * ⚠️ **Il ne journalise rien.** Le référentiel a déjà inscrit la DÉCISION
- * (`product.media_saved`) ; ceci en est la conséquence, et un second fait
- * ferait deux lignes d'historique là où il s'est passé une seule chose.
+ * (`product.media_saved`) ; ceci en est la conséquence.
  *
- * ⚠️ **Il n'échoue jamais vers l'émetteur.** Un abonné est appelé après la
- * transaction du référentiel : lever ici ne rejouerait rien et remonterait une
- * panne de projection à qui enregistrait une fiche. La fiche est enregistrée,
- * le fait est tracé ; seule la fraîcheur est perdue, et le prochain push la
- * rattrape.
+ * ## Durable depuis le 2026-10-10 (lot E5)
+ *
+ * Il écoutait `ProductMediaChangedEvent` en mémoire, publié APRÈS la
+ * transaction du référentiel : un redémarrage entre les deux laissait la
+ * boutique sur l'ancienne photo jusqu'au prochain push, sans que personne le
+ * sache — la dernière dette de `lint:durable-cross-block`. Il lit désormais
+ * `pim.product_media_changed`, écrit dans la transaction de la fiche
+ * (`documentation/journalisation/plan-evenements-durables.md`, §7 quater).
+ *
+ * 🔴 **Il lève, désormais.** Il avalait ses échecs (« lever ne rejouerait
+ * rien et remonterait une panne à qui enregistrait une fiche ») : sous la
+ * boîte d'envoi, la fiche est déjà validée et lever fait REJOUER — avaler
+ * ferait enregistrer comme projetée une photo qui ne l'a pas été. Rejouée, la
+ * projection ne double rien : c'est un écrasement des deux visuels.
  */
-@EventsHandler(ProductMediaChangedEvent)
-export class OnProductMediaChangedHandler implements IEventHandler<ProductMediaChangedEvent> {
-  private readonly logger = new Logger(OnProductMediaChangedHandler.name);
+@Injectable()
+@DurableHandler({ type: PIM_PRODUCT_MEDIA_CHANGED, subscriber: PROJECT_PRODUCT_MEDIA })
+export class OnProductMediaChangedHandler implements DurableSubscriber {
+  constructor(private readonly items: CatalogItemRepository) {}
 
-  constructor(
-    private readonly items: CatalogItemRepository,
-    private readonly work: BackgroundWork,
-    private readonly uow: UnitOfWork,
-  ) {}
-
-  /**
-   * **Suivi** : cet abonné tourne hors de la requête HTTP. Sans cette
-   * inscription, personne — ni la production, ni un test — ne sait quand il a
-   * fini. Un e2e passerait alors sur une projection qui n'a pas encore eu
-   * lieu, et le vert dirait le contraire de ce qui s'est produit.
-   */
-  handle(event: ProductMediaChangedEvent): void {
-    void this.work.track(this.run(event), "on-product-media-changed");
-  }
-
-  private async run(event: ProductMediaChangedEvent): Promise<void> {
-    try {
-      // Les articles d'un produit, RETIRÉS COMPRIS : recevoir une photo n'est
-      // pas revenir au catalogue, et un retiré doit garder son visuel à jour.
-      const items = await this.items.loadByProduct(event.productId);
-      if (items.length === 0) {
-        // Le cas NORMAL d'une fiche jamais poussée : elle existe au
-        // référentiel et le commerce ne la connaît pas encore. Rien à
-        // projeter, et surtout rien à créer — un article naît d'un push.
-        return;
-      }
-
-      // 🔴 Par une méthode MÉTIER, jamais par une écriture de colonnes : le
-      // port de ce dépôt l'interdit en toutes lettres, et `showVisuals` porte
-      // une règle qu'un `updateMany` aurait tue — elle ne change QUE les
-      // visuels, ni le prix, ni le retrait, ni la décision commerciale.
-      const refreshed = items.map((item) => item.showVisuals(event.image, event.thumbnail));
-      await this.uow.run(async () => {
-        await this.items.saveMany(refreshed);
-      });
-    } catch (caught) {
-      // Avalé, et DIT. Voir le JSDoc de la classe : la fiche est enregistrée,
-      // le fait est tracé, seule la fraîcheur est perdue — et le prochain push
-      // la rattrape. Lever ici remonterait une panne de projection à qui
-      // enregistrait une fiche.
-      this.logger.warn(
-        `Visuels non projetés pour ${event.productId} — le prochain push les rattrapera.`,
-        caught,
-      );
+  async handle(delivery: DurableDelivery): Promise<void> {
+    const fact = ProductMediaChangedFact.fromPayload(delivery.payload);
+    // Les articles d'un produit, RETIRÉS COMPRIS : recevoir une photo n'est
+    // pas revenir au catalogue, et un retiré doit garder son visuel à jour.
+    const items = await this.items.loadByProduct(fact.productId);
+    if (items.length === 0) {
+      // Le cas NORMAL d'une fiche jamais poussée : elle existe au référentiel
+      // et le commerce ne la connaît pas encore. Rien à projeter, et surtout
+      // rien à créer — un article naît d'un push.
+      return;
     }
+
+    // 🔴 Par une méthode MÉTIER, jamais par une écriture de colonnes : le port
+    // de ce dépôt l'interdit en toutes lettres, et `showVisuals` porte une
+    // règle qu'un `updateMany` aurait tue — elle ne change QUE les visuels, ni
+    // le prix, ni le retrait, ni la décision commerciale.
+    // Sans unité de travail à lui : le relais l'appelle déjà dans celle de
+    // la livraison, qui porte aussi son reçu.
+    await this.items.saveMany(items.map((item) => item.showVisuals(fact.image, fact.thumbnail)));
   }
 }

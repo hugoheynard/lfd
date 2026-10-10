@@ -10,9 +10,9 @@ import type { ShopCatalogueView, ShopQuoteView } from "@lfd/contracts";
 import request from "supertest";
 
 import { B2bCatalogDriver } from "../src/pim/channels/b2b-platform/products/driver.js";
-import { ProductMediaChangedEvent } from "../src/pim/channels/b2b-platform/products/product-media-changed.event.js";
-import { BackgroundWork } from "../src/platform/events/background-work.js";
-import { DomainEventPublisher } from "../src/platform/events/domain-event-publisher.js";
+import { ProductMediaChangedFact } from "../src/pim/channels/b2b-platform/products/product-media-changed.fact.js";
+import { UnitOfWork } from "../src/platform/database/unit-of-work.js";
+import { DurablePublisher } from "../src/platform/outbox/durable-publisher.js";
 import { CATEGORY, PUBLIC_LABEL, snapshotOf } from "./catalog-ingest-fixtures.js";
 import { bootstrapE2e, jsonBody, type E2eContext } from "./e2e-harness.js";
 
@@ -377,6 +377,29 @@ describe("la vitrine publique sert le prix RÉSOLU", () => {
  */
 describe("la photo arrive sans push", () => {
   const VIGNETTE = "https://media.example/vignette.jpg";
+  let gesture = 0;
+
+  /**
+   * Écrit le fait comme le référentiel l'écrit — dans une unité de travail,
+   * par la boîte d'envoi (lot E5, 2026-10-10) — puis attend sa livraison.
+   */
+  async function announce(
+    productId: string,
+    image: ProductMediaChangedFact["image"],
+    thumbnail: ProductMediaChangedFact["thumbnail"],
+  ): Promise<void> {
+    gesture += 1;
+    const fact = new ProductMediaChangedFact(
+      productId,
+      `geste_${String(gesture)}`,
+      image,
+      thumbnail,
+    );
+    await ctx.app
+      .get(UnitOfWork)
+      .run(() => ctx.app.get(DurablePublisher).publish(fact.durableFact()));
+    await ctx.drain();
+  }
 
   it("projette les visuels d'une fiche sur toutes ses déclinaisons", async () => {
     await push([{ sku: "VIE-001", priceMillicents: 140_000, image: SHOT }]);
@@ -384,18 +407,9 @@ describe("la photo arrive sans push", () => {
     expect((await catalogue()).items[0]?.thumbnail).toBeNull();
 
     // Le référentiel annonce des visuels neufs. Aucun push entre les deux.
-    ctx.app.get(DomainEventPublisher).publish(
-      new ProductMediaChangedEvent("prd_VIE-001", SHOT, {
-        url: VIGNETTE,
-        alt: "Serré",
-        width: 720,
-        height: 540,
-      }),
-    );
-    // L'abonné tourne HORS de la requête : sans cette attente, le cas
-    // éprouverait un état antérieur à la projection et serait vert sur du
-    // code qui ne fait rien.
-    await ctx.app.get(BackgroundWork).whenIdle();
+    // L'abonné tourne HORS de la requête : `announce` attend la livraison,
+    // sans quoi le cas éprouverait un état antérieur à la projection.
+    await announce("prd_VIE-001", SHOT, { url: VIGNETTE, alt: "Serré", width: 720, height: 540 });
 
     const after = await catalogue();
     expect(after.items[0]?.thumbnail?.url).toBe(VIGNETTE);
@@ -407,10 +421,7 @@ describe("la photo arrive sans push", () => {
     // plus, et personne ne saurait d'où elle vient.
     await push([{ sku: "VIE-001", priceMillicents: 140_000, image: SHOT }]);
 
-    ctx.app
-      .get(DomainEventPublisher)
-      .publish(new ProductMediaChangedEvent("prd_VIE-001", null, null));
-    await ctx.app.get(BackgroundWork).whenIdle();
+    await announce("prd_VIE-001", null, null);
 
     expect((await catalogue()).items[0]?.image).toBeNull();
   });
@@ -420,10 +431,7 @@ describe("la photo arrive sans push", () => {
     // entrer en vente une référence sans prix ni TVA.
     await push([{ sku: "VIE-001", priceMillicents: 140_000 }]);
 
-    ctx.app
-      .get(DomainEventPublisher)
-      .publish(new ProductMediaChangedEvent("prd_JAMAIS_POUSSE", SHOT, null));
-    await ctx.app.get(BackgroundWork).whenIdle();
+    await announce("prd_JAMAIS_POUSSE", SHOT, null);
 
     expect((await catalogue()).items).toHaveLength(1);
   });
@@ -439,15 +447,7 @@ describe("la photo arrive sans push", () => {
    */
   it("laisse un push ÉCRASER une projection — c'est la réparation", async () => {
     await push([{ sku: "VIE-001", priceMillicents: 140_000, image: SHOT }]);
-    ctx.app.get(DomainEventPublisher).publish(
-      new ProductMediaChangedEvent("prd_VIE-001", SHOT, {
-        url: VIGNETTE,
-        alt: "Serré",
-        width: 720,
-        height: 540,
-      }),
-    );
-    await ctx.app.get(BackgroundWork).whenIdle();
+    await announce("prd_VIE-001", SHOT, { url: VIGNETTE, alt: "Serré", width: 720, height: 540 });
 
     await push([{ sku: "VIE-001", priceMillicents: 140_000, image: SHOT }]);
 

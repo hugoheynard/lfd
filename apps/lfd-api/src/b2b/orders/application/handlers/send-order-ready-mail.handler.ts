@@ -1,8 +1,15 @@
-import { EventsHandler, type IEventHandler } from "@nestjs/cqrs";
+import { Injectable } from "@nestjs/common";
 
-import { BackgroundWork } from "../../../../platform/events/background-work.js";
-import { OrderReadyEvent } from "../../domain/events/order-ready.event.js";
+import type { DurableDelivery } from "../../../../platform/outbox/durable-event.js";
+import {
+  DurableHandler,
+  type DurableSubscriber,
+} from "../../../../platform/outbox/durable-handler.js";
+import { ORDER_READY, OrderReadyFact } from "../../domain/events/order-ready.fact.js";
 import { OrderReadyMail } from "../services/order-ready-mail.service.js";
+
+/** Nom STABLE de l'abonné — clé de son reçu dans la boîte d'envoi. */
+export const SEND_ORDER_READY_MAIL = "orders.send-ready-mail.on-ready";
 
 /**
  * **« Votre commande est prête »** — le seul courriel qui parte à un moment où
@@ -28,25 +35,27 @@ import { OrderReadyMail } from "../services/order-ready-mail.service.js";
  * **conditionnée en base**, donc un seul poste gagne la course et un seul
  * publie le fait ; et la clé d'idempotence est déterministe par commande, donc
  * même un fait rejoué ne ferait pas partir un second message.
+ *
+ * ## Durable depuis le 2026-10-10 (lot E5)
+ *
+ * Il écoutait `OrderReadyEvent` en mémoire, lancé après la validation de la
+ * livraison du colisage : un redémarrage à cet instant perdait le courriel,
+ * sans ligne à rejouer. Il lit désormais `order.ready`, écrit par
+ * `MarkOrderReadyHandler` dans la transaction de `markReady`
+ * (`documentation/journalisation/plan-evenements-durables.md`, §7 quater).
+ * Rejoué, il ne double rien : la clé du courriel est `order.ready:<orderId>`.
  */
-@EventsHandler(OrderReadyEvent)
-export class SendOrderReadyMail implements IEventHandler<OrderReadyEvent> {
-  constructor(
-    private readonly mail: OrderReadyMail,
-    private readonly work: BackgroundWork,
-  ) {}
+@Injectable()
+@DurableHandler({ type: ORDER_READY, subscriber: SEND_ORDER_READY_MAIL })
+export class SendOrderReadyMail implements DurableSubscriber {
+  constructor(private readonly mail: OrderReadyMail) {}
 
-  handle(event: OrderReadyEvent): void {
-    // **Suivi** : cet abonné tourne hors de la requête du comptoir. Sans cette
-    // inscription, personne — ni la prod, ni un test — ne sait quand il a fini.
-    void this.work.track(this.run(event), "send-order-ready-mail");
-  }
-
-  private async run(event: OrderReadyEvent): Promise<void> {
-    // 🔴 Clé DÉTERMINISTE par commande : même un fait rejoué sur un bus en
-    // processus ne fait pas partir un second message. Le rappel du comptoir,
-    // lui, en compose une datée — c'est la même fonction d'envoi, et c'est
-    // l'appelant qui choisit s'il se répète.
-    await this.mail.send(event.orderId, `order.ready:${event.orderId}`);
+  async handle(delivery: DurableDelivery): Promise<void> {
+    const fact = OrderReadyFact.fromPayload(delivery.payload);
+    // 🔴 Clé DÉTERMINISTE par commande : un fait rejoué par la boîte d'envoi
+    // ne fait pas partir un second message. Le rappel du comptoir, lui, en
+    // compose une datée — c'est la même fonction d'envoi, et c'est l'appelant
+    // qui choisit s'il se répète.
+    await this.mail.send(fact.orderId, `order.ready:${fact.orderId}`);
   }
 }

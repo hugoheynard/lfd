@@ -1,5 +1,5 @@
 import type { Instant } from "../../../../../platform/context/request-context.js";
-import { BackgroundWork } from "../../../../../platform/events/background-work.js";
+import { CommerceOrderPlacedFact } from "../../../../../delivery/channels/commerce/commerce-order-placed.fact.js";
 import {
   MailJournal,
   type MailOutcome,
@@ -7,11 +7,12 @@ import {
 } from "../../../../../platform/mailer/journal/mail-journal.port.js";
 import type { B2bMailer } from "../../../../../platform/mailer/mailer.tokens.js";
 import { Clock } from "../../../../../platform/time/clock.js";
-import { OrderPlacedEvent } from "../../../domain/events/order-placed.event.js";
 import {
   GuestOrderNoticeReader,
   type GuestOrderNotice,
 } from "../../../domain/ports/guest-order-notice.reader.js";
+import type { OrderReader, OwnedOrder } from "../../../domain/ports/order.reader.js";
+import { OneOrderReader, orderView } from "./payment-failure-doubles.js";
 import { SendGuestOrderNotice } from "../send-guest-order-notice.handler.js";
 
 const PROPRIETAIRE: GuestOrderNotice = { email: "camille@exemple.fr", firstName: "Camille" };
@@ -20,7 +21,19 @@ const UN_MARDI = new Date("2026-09-15T09:00:00.000Z");
 const PLUS_TARD_LE_MEME_JOUR = new Date("2026-09-15T22:30:00.000Z");
 const LE_LENDEMAIN = new Date("2026-09-16T09:00:00.000Z");
 
-const EVENT = new OrderPlacedEvent("ord_1", "CMD-0001", "user_guest", null, 1_200);
+const DELIVERY = { eventId: "evt_1", ...new CommerceOrderPlacedFact("ord_1").durableFact() };
+
+/** La commande passée par l'invité : seul son auteur compte ici. */
+const GUEST_ORDER: OwnedOrder = {
+  view: orderView(),
+  companyId: null,
+  placedByUserId: "user_guest",
+  stripePaymentIntentId: null,
+  clientele: "public",
+  loyaltyVoucherId: null,
+  billedCustomer: null,
+  buyerPhone: null,
+};
 
 /** Ce qu'on prévient : à qui, avec quel gabarit, et quoi. */
 interface Sent {
@@ -31,11 +44,14 @@ interface Sent {
 
 /** Il y a quelqu'un à prévenir, ou personne — la seule question que ce port pose. */
 class NoticeStub extends GuestOrderNoticeReader {
+  readonly asked: string[] = [];
+
   constructor(private readonly notice: GuestOrderNotice | null) {
     super();
   }
 
-  noticeFor(): Promise<GuestOrderNotice | null> {
+  noticeFor(userId: string): Promise<GuestOrderNotice | null> {
+    this.asked.push(userId);
     return Promise.resolve(this.notice);
   }
 }
@@ -81,14 +97,14 @@ class ClockStub extends Clock {
   }
 }
 
-function scene(notice: GuestOrderNotice | null = PROPRIETAIRE) {
+function scene(
+  notice: GuestOrderNotice | null = PROPRIETAIRE,
+  orders: OrderReader = new OneOrderReader(GUEST_ORDER),
+) {
   const sent: Sent[] = [];
   const journal = new JournalStub();
   const clock = new ClockStub(UN_MARDI);
-  // 🔴 Le VRAI suivi de fond, pas un double : `whenIdle()` est fait pour ça, et
-  // un double laisserait dériver ce qu'il prétend jouer — notamment le fait
-  // qu'un échec d'envoi est avalé après journalisation.
-  const work = new BackgroundWork();
+  const notices = new NoticeStub(notice);
   const mailer: B2bMailer = {
     enabled: true,
     send: (args) => {
@@ -97,18 +113,18 @@ function scene(notice: GuestOrderNotice | null = PROPRIETAIRE) {
     },
   };
 
-  const handler = new SendGuestOrderNotice(new NoticeStub(notice), journal, clock, work, mailer);
+  const handler = new SendGuestOrderNotice(orders, notices, journal, clock, mailer);
 
   return {
     sent,
     keys: journal.keys,
-    /** Déclenche l'abonné et ATTEND son travail de fond. */
+    asked: notices.asked,
+    /** Livre le fait comme la boîte d'envoi le livre. */
     async fire(when?: Date): Promise<void> {
       if (when !== undefined) {
         clock.moveTo(when);
       }
-      handler.handle(EVENT);
-      await work.whenIdle();
+      await handler.handle(DELIVERY);
     },
   };
 }
@@ -148,6 +164,25 @@ describe("SendGuestOrderNotice — qui l'on prévient", () => {
 
     expect(world.sent).toEqual([]);
     expect(world.keys).toEqual([]);
+  });
+});
+
+describe("SendGuestOrderNotice — le fait durable", () => {
+  it("relit le porteur sur la commande : le fait ne porte que son identifiant", async () => {
+    const world = scene();
+
+    await world.fire();
+
+    expect(world.asked).toEqual(["user_guest"]);
+  });
+
+  it("ne prévient personne quand la commande est introuvable", async () => {
+    const world = scene(PROPRIETAIRE, new OneOrderReader(null));
+
+    await world.fire();
+
+    expect(world.asked).toEqual([]);
+    expect(world.sent).toEqual([]);
   });
 });
 

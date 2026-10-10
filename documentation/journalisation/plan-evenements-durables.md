@@ -4,7 +4,7 @@
 > changer la manière dont on journalise ? est-ce qu'il y a une refacto à
 > faire ? » État : **inventaire fait ; E1 bâti (§6), E2 bâti (§7), E3 bâti
 > le 2026-10-06 par le lot DD1 de la livraison (§7 bis), E4a et E4b bâtis le
-> 2026-10-10 (§7 ter)** ; E5 et E6 restent.
+> 2026-10-10 (§7 ter), E5 bâti le même jour (§7 quater)** ; E6 reste.
 > Suite de [`plan-boite-d-envoi.md`](plan-boite-d-envoi.md).
 
 ## 1. Ce qui ne change pas : le journal
@@ -285,6 +285,59 @@ l'unité de travail qui bascule la commande.
   et cause refusées) ; e2e `order-abandon`, `order-payment-*`, `order-refunds`,
   `order-unsettled-shop-expiry`, `production-closing-sweep`, `card-invoices`,
   `payment-links`, `payments-journal`, `loyalty-earning`, `order-card-settled-before-all` verts (81).
+
+## 7 quater. E5 — la conception, bâtie le 2026-10-10
+
+Quatre abonnés, dont un seul traverse un bloc. Les faits en mémoire restent
+pour leurs autres abonnés (croissance, alertes : E6) ; ce lot n'ajoute que le
+fait durable et bascule l'abonné qui compte.
+
+| #   | Abonné                            | Fait durable lu                                                              | Écrit par, dans son unité de travail                      |
+| --- | --------------------------------- | ---------------------------------------------------------------------------- | --------------------------------------------------------- |
+| 25  | `SendOrderPlacedMail`             | `commerce.order_placed` (`delivery/channels/commerce/`, existe déjà)         | les trois passations — **déjà** écrit (CA0)               |
+| 26  | `SendGuestOrderNotice`            | idem                                                                         | idem                                                      |
+| 27  | `SendOrderReadyMail`              | `order.ready` (neuf, `b2b/orders/domain/events/`)                            | `MarkOrderReadyHandler`, au franchissement                |
+| 13  | `SendLoginMethodLinkedMail`       | `account.login_method_linked` (neuf, `b2b/account/domain/events/`)           | `LinkLoginMethodHandler`, avec l'écriture du rattachement |
+| 12  | `OnProductMediaChanged` (catalog) | `pim.product_media_changed` (neuf, DÉCLARÉ par `pim/channels/b2b-platform/`) | `SetProductMedia`, dans son `uow.run`                     |
+
+- **Pas de nouveau fait de passation** : `commerce.order_placed` dit déjà
+  « une commande vient d'être passée », écrit dans la transaction des trois
+  passations. Les deux courriels l'écoutent et relisent la commande (le
+  payeur, la société) — `{ orderId }` suffit. Un second fait « passée »
+  ferait deux vérités du même instant.
+- **#12 ferme la dernière dette de `lint:durable-cross-block`** : le PIM
+  déclare le fait dans son canal vers la plateforme, la plateforme l'écoute ;
+  `pim → b2b` reste interdit.
+- Idempotence : courriels par clé (`order.placed:<id>`, `order.ready:…`,
+  celle de l'alerte de connexion) ; la projection d'image est un écrasement.
+- Rien de cela n'est de l'argent ; #13 est un signal de sécurité.
+
+**Tranché en bâtissant :**
+
+- **#13, la clé** : `account.login_method_linked:<userId>:<provider>:<linkId>`,
+  `linkId` tiré une fois par geste. Pas l'identité tierce : c'est un `sub`,
+  que `lint:auth0-id-readers` interdit de ranger ; et une clé
+  `<userId>:<provider>` dédoublonnerait en silence l'alerte d'un
+  re-rattachement après détachement. Le rattachement s'écrit chez le
+  fournisseur : l'unité couvre la trace et le fait, une fenêtre reste ouverte
+  entre l'appel au tiers et elle (sans transaction distribuée, on ne la ferme
+  pas).
+- **#12, l'annonce dans la transaction** : un échec d'écriture du fait
+  annule désormais l'enregistrement de la fiche — avant, l'image se perdait
+  en silence. L'abonné lève au lieu d'avaler (comme les cloches d'E4b).
+- **#12, ⚠️ l'ordre de rejeu n'est pas tenu** : les visuels sont figés dans
+  le fait. Si un fait ancien est rejoué APRÈS un plus récent (le premier en
+  échec, le second livré), l'ancienne image écrase la nouvelle jusqu'au geste
+  ou au push suivant. Il faut une panne pour y arriver, et un nouveau geste
+  répare ; le tenir demanderait de ranger au catalogue l'identifiant du
+  dernier geste appliqué (une colonne). Non fait, à décider.
+- **Le journal des envois** était cassé pour TOUT courriel parti d'un
+  abonné durable (E4a compris) : l'écriture héritait d'une transaction close.
+  Corrigé à part (`journaling-mailer.ts`, après validation).
+- `lint:durable-cross-block` : **dette à zéro**.
+- Éprouvé : specs des trois faits neufs et des cinq abonnés ; 16 suites e2e,
+  266 tests (`production-batch`, `shop-catalogue`, `login-methods`,
+  `storefront*`, `pim-media-library`, courriels de passation…).
 
 ## 8. Les ports entre blocs — inventaire (2026-10-04)
 

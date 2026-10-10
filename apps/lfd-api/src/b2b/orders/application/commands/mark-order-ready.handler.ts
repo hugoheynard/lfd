@@ -2,13 +2,16 @@ import type { OrderPackingView } from "@lfd/contracts";
 import { CommandHandler, type ICommandHandler } from "@nestjs/cqrs";
 
 import { AfterCommit } from "../../../../platform/database/after-commit.js";
+import { UnitOfWork } from "../../../../platform/database/unit-of-work.js";
 import { DomainEventPublisher } from "../../../../platform/events/domain-event-publisher.js";
+import { DurablePublisher } from "../../../../platform/outbox/durable-publisher.js";
 import { StaffAuthorDirectory } from "../../../../staff/directory/domain/staff-author-directory.js";
 import {
   OrderReferenceNotFoundError,
   PackingRefusedError,
 } from "../../domain/errors/order-errors.js";
 import { OrderReadyEvent } from "../../domain/events/order-ready.event.js";
+import { OrderReadyFact } from "../../domain/events/order-ready.fact.js";
 import { OrderReader, type PackingOrder } from "../../domain/ports/order.reader.js";
 import { OrderRepository } from "../../domain/ports/order.repository.js";
 import { packingBlocker } from "../../domain/services/packing.js";
@@ -41,6 +44,15 @@ import { MarkOrderReadyCommand } from "./mark-order-ready.command.js";
  * Les autres refus restent des refus (annulée, pas encore passée, déjà retirée
  * sans avoir été prête) : ce sont de vraies divergences, qu'un message mort
  * visible dans la carte de santé doit montrer.
+ *
+ * ## `order.ready` durable, depuis le 2026-10-10 (lot E5)
+ *
+ * Le courriel « prête » écoutait `OrderReadyEvent` en mémoire : un redémarrage
+ * entre la validation et le saut le perdait. `markReady` et le fait durable
+ * `order.ready` partent désormais dans UNE unité de travail — celle de la
+ * livraison durable du colisage, que celle-ci rejoint. Seul le gagnant l'écrit.
+ * `OrderReadyEvent` reste, après la validation, pour la croissance et le
+ * journal (E6).
  */
 @CommandHandler(MarkOrderReadyCommand)
 export class MarkOrderReadyHandler implements ICommandHandler<
@@ -53,6 +65,8 @@ export class MarkOrderReadyHandler implements ICommandHandler<
     private readonly events: DomainEventPublisher,
     private readonly staffAuthors: StaffAuthorDirectory,
     private readonly afterCommit: AfterCommit,
+    private readonly uow: UnitOfWork,
+    private readonly durable: DurablePublisher,
   ) {}
 
   async execute(command: MarkOrderReadyCommand): Promise<OrderPackingView> {
@@ -71,7 +85,13 @@ export class MarkOrderReadyHandler implements ICommandHandler<
     // L'instant vient de la COMMANDE — donc du fait constaté au fournil — et
     // non de l'horloge d'ici. Cf. `MarkOrderReadyCommand.at`.
     const at = command.at;
-    const won = await this.repository.markReady(command.reference, at, command.staffUserId);
+    const won = await this.uow.run(async () => {
+      const written = await this.repository.markReady(command.reference, at, command.staffUserId);
+      if (written) {
+        await this.durable.publish(new OrderReadyFact(order.orderId).durableFact());
+      }
+      return written;
+    });
     if (!won) {
       // Perdu la course : une autre livraison a écrit entre notre lecture et
       // notre écriture — ou une annulation. On ne réécrit rien et on ne publie

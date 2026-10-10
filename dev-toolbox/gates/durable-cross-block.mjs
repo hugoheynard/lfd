@@ -62,10 +62,11 @@ const SRC = join(ROOT, "apps/lfd-api/src");
  * bascule ; la liste ne grandit pas, elle se vide.
  */
 const DEBT = new Map([
-  ["apps/lfd-api/src/b2b/catalog/application/handlers/on-product-media-changed.handler.ts", "E5"],
   // Relevés le 2026-10-06, à l'élargissement au second chemin (port appelé) :
   // les deux abonnés du départ ont basculé le 2026-10-06 (DD1), la commande
-  // passée vers la livraison le 2026-10-07 (`commerce.order_placed`).
+  // passée vers la livraison le 2026-10-07 (`commerce.order_placed`), la
+  // projection des visuels le 2026-10-10 (E5, `pim.product_media_changed`).
+  // Liste VIDE : tout nouvel abonné qui traverse échoue.
 ]);
 
 const SKIP_DIRS = new Set(["node_modules", "__tests__", "client"]);

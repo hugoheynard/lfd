@@ -1,17 +1,26 @@
 import { exposedHandoverToken, type PaymentStatus } from "@lfd/contracts";
-import { Inject } from "@nestjs/common";
-import { EventsHandler, type IEventHandler } from "@nestjs/cqrs";
+import { Inject, Injectable } from "@nestjs/common";
 
-import { BackgroundWork } from "../../../../platform/events/background-work.js";
+import {
+  COMMERCE_ORDER_PLACED,
+  CommerceOrderPlacedFact,
+} from "../../../../delivery/channels/commerce/commerce-order-placed.fact.js";
 import { DEFAULT_MAIL_LOCALE } from "../../../../platform/mailer/copy/mail-copy.js";
 import { MAILER, type B2bMailer } from "../../../../platform/mailer/mailer.tokens.js";
-import { OrderPlacedEvent } from "../../domain/events/order-placed.event.js";
+import type { DurableDelivery } from "../../../../platform/outbox/durable-event.js";
+import {
+  DurableHandler,
+  type DurableSubscriber,
+} from "../../../../platform/outbox/durable-handler.js";
 import { OrderMailOrigins } from "../../domain/ports/order-mail-origins.js";
 import { OrderRecipientReader } from "../../domain/ports/order-recipient.reader.js";
 import { OrderReader } from "../../domain/ports/order.reader.js";
 import { handoverUrlOf } from "../../domain/services/handover-url.js";
 import { clientSheetOf } from "../../domain/services/order-sheet.js";
 import { OrderSheetAttachment } from "../services/order-sheet-attachment.service.js";
+
+/** Nom STABLE de l'abonné — clé de son reçu dans la boîte d'envoi. */
+export const SEND_ORDER_PLACED_MAIL = "orders.send-placed-mail.on-placed";
 
 /**
  * **L'accusé de réception d'une commande** — le premier courriel que la
@@ -37,23 +46,30 @@ import { OrderSheetAttachment } from "../services/order-sheet-attachment.service
  * La clé est **déterministe par commande**. Un événement rejoué — une reprise
  * après un délai d'attente que le fournisseur avait en fait accepté — est
  * dédoublonné chez lui : le client ne reçoit pas deux fois la même confirmation.
+ *
+ * ## Durable depuis le 2026-10-10 (lot E5)
+ *
+ * Il écoutait `OrderPlacedEvent` en mémoire : un redémarrage entre la
+ * passation et le saut perdait l'accusé et le bon qu'il joint, sans ligne à
+ * rejouer. Il lit désormais `commerce.order_placed`, que les trois passations
+ * écrivent déjà dans leur transaction pour la livraison
+ * (`documentation/journalisation/plan-evenements-durables.md`, §7 quater) —
+ * un second fait « passée » ferait deux vérités du même instant. Le fait ne
+ * porte que `{ orderId }` : l'auteur se relit sur la commande.
  */
-@EventsHandler(OrderPlacedEvent)
-export class SendOrderPlacedMail implements IEventHandler<OrderPlacedEvent> {
+@Injectable()
+@DurableHandler({ type: COMMERCE_ORDER_PLACED, subscriber: SEND_ORDER_PLACED_MAIL })
+export class SendOrderPlacedMail implements DurableSubscriber {
   constructor(
     private readonly orders: OrderReader,
     private readonly recipients: OrderRecipientReader,
     private readonly origins: OrderMailOrigins,
-    private readonly work: BackgroundWork,
     private readonly attachment: OrderSheetAttachment,
     @Inject(MAILER) private readonly mailer: B2bMailer,
   ) {}
 
-  handle(event: OrderPlacedEvent): void {
-    // **Suivi** : cet abonné tourne hors de la requête HTTP. Sans cette
-    // inscription, un test vide la base pendant que l'envoi la lit, et l'échec
-    // accuse le test SUIVANT.
-    void this.work.track(this.run(event), "send-order-placed-mail");
+  async handle(delivery: DurableDelivery): Promise<void> {
+    await this.run(CommerceOrderPlacedFact.fromPayload(delivery.payload).orderId);
   }
 
   /**
@@ -75,16 +91,17 @@ export class SendOrderPlacedMail implements IEventHandler<OrderPlacedEvent> {
     return payment === "pending";
   }
 
-  private async run(event: OrderPlacedEvent): Promise<void> {
-    const [owned, recipient] = await Promise.all([
-      this.orders.findById(event.orderId),
-      this.recipients.findById(event.placedByUserId),
-    ]);
+  private async run(orderId: string): Promise<void> {
+    const owned = await this.orders.findById(orderId);
     // Ni l'un ni l'autre ne devrait manquer — la commande vient d'être écrite,
     // et son auteur est authentifié. On sort en silence plutôt que de lever : un
     // abonné qui jette une exception sur une commande valide remplit les
     // journaux d'alertes qui ne désignent rien à corriger.
-    if (owned === null || recipient === null) {
+    if (owned === null) {
+      return;
+    }
+    const recipient = await this.recipients.findById(owned.placedByUserId);
+    if (recipient === null) {
       return;
     }
     // 🔴 La carte n'a pas encore répondu : l'accusé attend `order.paid`.
@@ -118,7 +135,7 @@ export class SendOrderPlacedMail implements IEventHandler<OrderPlacedEvent> {
         document: await this.attachment.of(sheet, token),
         locale: DEFAULT_MAIL_LOCALE,
       },
-      idempotencyKey: `order.placed:${event.orderId}`,
+      idempotencyKey: `order.placed:${orderId}`,
     });
   }
 }
