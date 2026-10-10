@@ -60,20 +60,6 @@
         ></a>
       }
 
-      @if (canSeeExploitation()) {
-        <!-- L'EXPLOITATION (2026-10-06) : la Production et la Livraison, deux
-             sections d'un même espace au rail secondaire. Les adresses n'ont pas
-             bougé ; l'entrée s'allume sur les deux. -->
-        <a
-          fold-menu-item
-          icon="production"
-          label="Exploitation"
-          [routerLink]="exploitationLink()"
-          [active]="exploitationActive()"
-          (click)="mobileNavOpen.set(false)"
-        ></a>
-      }
-
       @if (canSeeProdManager()) {
         <!-- PROD MANAGER — le prévisionnel, sorti de l'Exploitation (2026-10-10)
              et rangé au-dessus du Fournil : la semaine avant la fournée. -->
@@ -361,6 +347,23 @@
         ></a>
       }
 
+      @if (canSeeExploitation()) {
+        <!-- RÉGLAGES — l'espace de l'Exploitation (2026-10-06 : la Production et
+             la Livraison, deux sections d'un même rail secondaire ; puis le
+             Commercial). Renommé « Réglages » et descendu au pied, sous Outils
+             agent, le 2026-10-10 (Hugo). La clé `exploitation` et les adresses
+             ne bougent pas ; l'entrée s'allume sur toutes ses sections. -->
+        <a
+          footer
+          fold-menu-item
+          icon="settings"
+          label="Réglages"
+          [routerLink]="exploitationLink()"
+          [active]="exploitationActive()"
+          (click)="mobileNavOpen.set(false)"
+        ></a>
+      }
+
       <button
         footer
         fold-menu-item
@@ -547,26 +550,6 @@
           [active]="supervisionTile.isActive"
           (click)="mobileNavOpen.set(false)"
         ></a>
-      }
-      @if (canSeeExploitation()) {
-        <!-- L'Exploitation, lue dans le MÊME catalogue que le rail secondaire.
-             ⚠️ Le lanceur de fold ne sait pas titrer des sections dans un
-             groupe : les vues y suivent l'ordre des sections, à plat. -->
-        <fold-nav-group icon="production" label="Exploitation" [entryCountLabel]="entriesLabel">
-          @for (view of exploitationViews(); track view.key) {
-            <a
-              fold-nav-tile
-              [icon]="view.icon"
-              [label]="view.label"
-              [badge]="view.badge"
-              [routerLink]="view.link"
-              routerLinkActive
-              #exploitationTile="routerLinkActive"
-              [active]="exploitationTile.isActive"
-              (click)="mobileNavOpen.set(false)"
-            ></a>
-          }
-        </fold-nav-group>
       }
       @if (canSeeProdManager()) {
         <!-- La MÊME entrée qu'au rail, au-dessus du Fournil. -->
@@ -799,6 +782,26 @@
           [active]="agentTile.isActive"
           (click)="mobileNavOpen.set(false)"
         ></a>
+      }
+      @if (canSeeExploitation()) {
+        <!-- Les Réglages (l'Exploitation, renommée le 2026-10-10), lus dans le MÊME catalogue que le rail secondaire.
+             ⚠️ Le lanceur de fold ne sait pas titrer des sections dans un
+             groupe : les vues y suivent l'ordre des sections, à plat. -->
+        <fold-nav-group icon="settings" label="Réglages" [entryCountLabel]="entriesLabel">
+          @for (view of exploitationViews(); track view.key) {
+            <a
+              fold-nav-tile
+              [icon]="view.icon"
+              [label]="view.label"
+              [badge]="view.badge"
+              [routerLink]="view.link"
+              routerLinkActive
+              #exploitationTile="routerLinkActive"
+              [active]="exploitationTile.isActive"
+              (click)="mobileNavOpen.set(false)"
+            ></a>
+          }
+        </fold-nav-group>
       }
 
       <!-- Le pied : ce que l'application possède et que la bibliothèque n'a pas

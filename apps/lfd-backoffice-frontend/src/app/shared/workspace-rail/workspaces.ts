@@ -892,7 +892,8 @@ export const WORKSPACES = {
   commercial: { key: 'commercial', title: 'Commercial', icon: 'calendar', views: COMMERCIAL_VIEWS },
   exploitation: {
     key: 'exploitation',
-    title: 'Exploitation',
+    // « Réglages » à l'écran depuis le 2026-10-10 (Hugo) ; la clé reste.
+    title: 'Réglages',
     icon: 'production',
     views: EXPLOITATION_VIEWS,
   },
