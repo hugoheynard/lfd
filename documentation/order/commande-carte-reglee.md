@@ -22,11 +22,17 @@ gratuite naît `not_required` : elle est réglée en naissant.
 
 ```mermaid
 stateDiagram-v2
-    [*] --> AttentePaiement: « Commander » (placed · pending)<br/>le panier est GARDÉ
-    AttentePaiement --> Réglée: webhook payment_intent.succeeded<br/>→ paid · le panier se vide
+    [*] --> AttentePaiement: « Commander » (placed · pending)
+    note right of AttentePaiement
+        le panier est GARDÉ
+    end note
+    AttentePaiement --> Réglée: webhook payment_intent.succeeded → paid
+    note right of Réglée
+        le panier se vide
+    end note
     AttentePaiement --> Refusée: carte refusée → failed
     Refusée --> Réglée: nouvel essai sur /reglement/:id
-    AttentePaiement --> Annulée: 30 min sans paiement (au plus 35)<br/>ou nouvelle passation du même acheteur
+    AttentePaiement --> Annulée: 30 min sans paiement (au plus 35), ou nouvelle passation
     Refusée --> Annulée: idem
     Réglée --> [*]: liste, suivi, QR, retrait, courriel + bon PDF
     Annulée --> [*]: invisible au client · intention Stripe annulée

@@ -1,5 +1,6 @@
 import { HttpClient, HttpHeaders } from '@angular/common/http';
 import { inject, Injectable } from '@angular/core';
+import type { CreatedIdResponse } from '@lfd/contracts';
 import { httpErrorMessage } from '@lfd/endpoints';
 import { firstValueFrom } from 'rxjs';
 
@@ -39,7 +40,7 @@ export class OrderProblemGateway {
     try {
       const token = await firstValueFrom(this.auth.accessToken$());
       await firstValueFrom(
-        this.http.post<{ id: string }>(
+        this.http.post<CreatedIdResponse>(
           `${AUTH_CONFIG.apiBaseUrl}/me/orders/${encodeURIComponent(orderId)}/problems`,
           body,
           { headers: new HttpHeaders({ Authorization: `Bearer ${token}` }) },
