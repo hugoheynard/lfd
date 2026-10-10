@@ -297,6 +297,14 @@ model CatalogItem {
   /// alors : un produit n'est pas froid tant que personne ne l'a déclaré.
   requiresCold Boolean @default(false) @map("requires_cold")
 
+  /// **Le geste du référentiel qui a posé les visuels** (UUID v7, ordonné
+  /// dans le temps) — `null` tant qu'aucun fait de visuels n'a été projeté.
+  /// Les visuels sont figés dans le fait : un fait ancien rejoué APRÈS un plus
+  /// récent remettait l'ancienne image. La projection n'écrit que si le geste
+  /// reçu est postérieur à celui-ci. L'ingestion (le push) ne le touche pas.
+  /// Plan-evenements-durables §7 quater, #12 (2026-10-10).
+  visualsGestureId String? @map("visuals_gesture_id")
+
   override CatalogItemOverride?
 
   @@index([categoryId])

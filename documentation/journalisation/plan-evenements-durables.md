@@ -325,12 +325,24 @@ fait durable et bascule l'abonné qui compte.
 - **#12, l'annonce dans la transaction** : un échec d'écriture du fait
   annule désormais l'enregistrement de la fiche — avant, l'image se perdait
   en silence. L'abonné lève au lieu d'avaler (comme les cloches d'E4b).
-- **#12, ⚠️ l'ordre de rejeu n'est pas tenu** : les visuels sont figés dans
-  le fait. Si un fait ancien est rejoué APRÈS un plus récent (le premier en
-  échec, le second livré), l'ancienne image écrase la nouvelle jusqu'au geste
-  ou au push suivant. Il faut une panne pour y arriver, et un nouveau geste
-  répare ; le tenir demanderait de ranger au catalogue l'identifiant du
-  dernier geste appliqué (une colonne). Non fait, à décider.
+- **#12, l'ordre de rejeu — bâti le 2026-10-10 (Hugo, 2026-10-10 : « ça me
+  gêne, je veux le mieux »).** Les visuels sont figés dans le fait : un fait ancien
+  rejoué APRÈS un plus récent (le premier en échec, le second livré)
+  remettait l'ancienne image. **Conception** : chaque ligne du catalogue
+  (`catalog_items`) retient le geste qui a posé ses visuels
+  (`visuals_gesture_id`, colonne additive, nullable). La projection n'écrit
+  que si la ligne n'en a pas encore, ou si le geste reçu est **postérieur**
+  (identifiants UUID v7 du référentiel, ordonnés dans le temps — la
+  comparaison est celle de la chaîne). Une écriture conditionnée en base,
+  pas une lecture suivie d'une écriture : deux livraisons concurrentes ne
+  peuvent pas se doubler. L'ingestion (le push) ne touche pas la colonne : ce
+  qu'elle écrit est l'état courant, et un geste plus ancien que le dernier
+  appliqué reste ignoré après elle.
+  **Bâti** : colonne `public.catalog_items.visuals_gesture_id` (migration
+  `20261010120000_l_ordre_des_visuels`) ; port `CatalogVisualsProjection`
+  (`showIfNewer`), adaptateur `PrismaCatalogVisualsProjection` — un
+  `updateMany` par produit, `where visuals_gesture_id IS NULL OR < geste`,
+  qui pose le geste. Éprouvé dans `test/shop-catalogue.e2e-spec.ts`.
 - **Le journal des envois** était cassé pour TOUT courriel parti d'un
   abonné durable (E4a compris) : l'écriture héritait d'une transaction close.
   Corrigé à part (`journaling-mailer.ts`, après validation).

@@ -9,7 +9,7 @@ import {
   DurableHandler,
   type DurableSubscriber,
 } from "../../../../platform/outbox/durable-handler.js";
-import { CatalogItemRepository } from "../../domain/ports/catalog-item.repository.js";
+import { CatalogVisualsProjection } from "../../domain/ports/catalog-visuals.projection.js";
 
 /** Nom STABLE de l'abonné — clé de son reçu dans la boîte d'envoi. */
 export const PROJECT_PRODUCT_MEDIA = "catalog.project-product-media";
@@ -60,32 +60,28 @@ export const PROJECT_PRODUCT_MEDIA = "catalog.project-product-media";
  * 🔴 **Il lève, désormais.** Il avalait ses échecs (« lever ne rejouerait
  * rien et remonterait une panne à qui enregistrait une fiche ») : sous la
  * boîte d'envoi, la fiche est déjà validée et lever fait REJOUER — avaler
- * ferait enregistrer comme projetée une photo qui ne l'a pas été. Rejouée, la
- * projection ne double rien : c'est un écrasement des deux visuels.
+ * ferait enregistrer comme projetée une photo qui ne l'a pas été.
+ *
+ * ## L'ordre de rejeu (2026-10-10, #12)
+ *
+ * Les visuels sont figés dans le fait : un fait ancien rejoué APRÈS un plus
+ * récent remettait l'ancienne image. Il passe donc le GESTE à
+ * `CatalogVisualsProjection.showIfNewer`, qui n'écrit que si la ligne n'a pas
+ * encore de geste ou si celui-ci est postérieur — une écriture conditionnée
+ * en base, la seule qui ne laisse pas deux livraisons se doubler. Un rejeu du
+ * même geste n'écrit rien.
  */
 @Injectable()
 @DurableHandler({ type: PIM_PRODUCT_MEDIA_CHANGED, subscriber: PROJECT_PRODUCT_MEDIA })
 export class OnProductMediaChangedHandler implements DurableSubscriber {
-  constructor(private readonly items: CatalogItemRepository) {}
+  constructor(private readonly visuals: CatalogVisualsProjection) {}
 
   async handle(delivery: DurableDelivery): Promise<void> {
     const fact = ProductMediaChangedFact.fromPayload(delivery.payload);
-    // Les articles d'un produit, RETIRÉS COMPRIS : recevoir une photo n'est
-    // pas revenir au catalogue, et un retiré doit garder son visuel à jour.
-    const items = await this.items.loadByProduct(fact.productId);
-    if (items.length === 0) {
-      // Le cas NORMAL d'une fiche jamais poussée : elle existe au référentiel
-      // et le commerce ne la connaît pas encore. Rien à projeter, et surtout
-      // rien à créer — un article naît d'un push.
-      return;
-    }
-
-    // 🔴 Par une méthode MÉTIER, jamais par une écriture de colonnes : le port
-    // de ce dépôt l'interdit en toutes lettres, et `showVisuals` porte une
-    // règle qu'un `updateMany` aurait tue — elle ne change QUE les visuels, ni
-    // le prix, ni le retrait, ni la décision commerciale.
+    // Toutes les déclinaisons, retirées comprises ; un produit jamais poussé
+    // n'a aucune ligne, et rien n'est créé — un article naît d'un push.
     // Sans unité de travail à lui : le relais l'appelle déjà dans celle de
     // la livraison, qui porte aussi son reçu.
-    await this.items.saveMany(items.map((item) => item.showVisuals(fact.image, fact.thumbnail)));
+    await this.visuals.showIfNewer(fact.productId, fact.gestureId, fact.image, fact.thumbnail);
   }
 }

@@ -18,6 +18,7 @@ import { AcceptDeliveryHandler } from "./application/commands/accept-delivery.ha
 import { GetPendingDeliveryHandler } from "./application/queries/get-pending-delivery.handler.js";
 import { CatalogDeliveryRepository } from "./domain/ports/catalog-delivery.repository.js";
 import { CatalogItemRepository } from "./domain/ports/catalog-item.repository.js";
+import { CatalogVisualsProjection } from "./domain/ports/catalog-visuals.projection.js";
 import { CatalogVersionReader } from "./domain/ports/catalog-version.reader.js";
 import { CatalogVersionRepository } from "./domain/ports/catalog-version.repository.js";
 import { CanonicalPriceHistoryModule } from "./canonical-price-history.module.js";
@@ -28,6 +29,7 @@ import { PrismaCatalogAdminReader } from "./infrastructure/prisma-catalog-admin.
 import { PrismaCatalogCategoryProjection } from "./infrastructure/prisma-catalog-category.projection.js";
 import { PrismaCatalogDeliveryRepository } from "./infrastructure/prisma-catalog-delivery.repository.js";
 import { PrismaCatalogItemRepository } from "./infrastructure/prisma-catalog-item.repository.js";
+import { PrismaCatalogVisualsProjection } from "./infrastructure/prisma-catalog-visuals.projection.js";
 import {
   PrismaCatalogVersionReader,
   PrismaCatalogVersionRepository,
@@ -140,6 +142,7 @@ import { PrismaCatalogColdReader } from "./infrastructure/prisma-catalog-cold.re
     SetCatalogVisibilityHandler,
     SetCatalogFeaturedHandler,
     { provide: CatalogItemRepository, useClass: PrismaCatalogItemRepository },
+    { provide: CatalogVisualsProjection, useClass: PrismaCatalogVisualsProjection },
     { provide: CatalogCategoryProjection, useClass: PrismaCatalogCategoryProjection },
     { provide: CatalogReader, useClass: PrismaCatalogReader },
     // 🔴 **L'autorité de prix du checkout**, ramenée là d'où vient sa donnée le

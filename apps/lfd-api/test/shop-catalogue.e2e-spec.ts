@@ -11,6 +11,7 @@ import request from "supertest";
 
 import { B2bCatalogDriver } from "../src/pim/channels/b2b-platform/products/driver.js";
 import { ProductMediaChangedFact } from "../src/pim/channels/b2b-platform/products/product-media-changed.fact.js";
+import { UuidV7Generator } from "../src/pim/infra/id/pim-id-generator.js";
 import { UnitOfWork } from "../src/platform/database/unit-of-work.js";
 import { DurablePublisher } from "../src/platform/outbox/durable-publisher.js";
 import { CATEGORY, PUBLIC_LABEL, snapshotOf } from "./catalog-ingest-fixtures.js";
@@ -387,11 +388,12 @@ describe("la photo arrive sans push", () => {
     productId: string,
     image: ProductMediaChangedFact["image"],
     thumbnail: ProductMediaChangedFact["thumbnail"],
+    gestureId?: string,
   ): Promise<void> {
     gesture += 1;
     const fact = new ProductMediaChangedFact(
       productId,
-      `geste_${String(gesture)}`,
+      gestureId ?? `geste_${String(gesture)}`,
       image,
       thumbnail,
     );
@@ -452,5 +454,46 @@ describe("la photo arrive sans push", () => {
     await push([{ sku: "VIE-001", priceMillicents: 140_000, image: SHOT }]);
 
     expect((await catalogue()).items[0]?.thumbnail).toBeNull();
+  });
+
+  /**
+   * Défaut du 2026-10-10 (#12) : un fait ANCIEN rejoué après un plus récent
+   * (le premier en échec, le second livré) remettait l'ancienne image.
+   */
+  it("🔴 garde l'image du geste le plus RÉCENT quand l'ancien arrive après", async () => {
+    await push([{ sku: "VIE-001", priceMillicents: 140_000, image: SHOT }]);
+    // Le vrai générateur du référentiel : deux UUID v7 tirés dans l'ordre.
+    const ids = new UuidV7Generator();
+    const older = ids.next();
+    const newer = ids.next();
+    const OLD_SHOT = { ...SHOT, url: "https://media.example/ancien.jpg" };
+    const NEW_SHOT = { ...SHOT, url: "https://media.example/recent.jpg" };
+
+    await announce("prd_VIE-001", NEW_SHOT, null, newer);
+    await announce("prd_VIE-001", OLD_SHOT, null, older);
+
+    expect((await catalogue()).items[0]?.image?.url).toBe(NEW_SHOT.url);
+    const row = await ctx.prisma.catalogItem.findFirstOrThrow({
+      where: { productId: "prd_VIE-001" },
+    });
+    expect(row.visualsGestureId).toBe(newer);
+  });
+
+  it("applique un fait sur une ligne qui n'a encore aucun geste", async () => {
+    // Toute ligne d'avant la colonne : `visuals_gesture_id` est nul.
+    await push([{ sku: "VIE-001", priceMillicents: 140_000, image: SHOT }]);
+    const before = await ctx.prisma.catalogItem.findFirstOrThrow({
+      where: { productId: "prd_VIE-001" },
+    });
+    expect(before.visualsGestureId).toBeNull();
+    const gesture = new UuidV7Generator().next();
+
+    await announce("prd_VIE-001", null, null, gesture);
+
+    expect((await catalogue()).items[0]?.image).toBeNull();
+    const after = await ctx.prisma.catalogItem.findFirstOrThrow({
+      where: { productId: "prd_VIE-001" },
+    });
+    expect(after.visualsGestureId).toBe(gesture);
   });
 });
