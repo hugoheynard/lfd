@@ -101,7 +101,7 @@ dans deux colonnes nullables de `catalog_items` (migration additive), le push
 le porte aussi. La boutique pose `object-position`. ⚠️ Facultatif sur le fil :
 une livraison en attente sans lui doit rester lisible.
 
-## L5 — Les formats signalés
+## ~~L5 — Les formats signalés~~ ✅ bâti le 2026-10-10 (`d685de778`) — tolérance 8 %
 
 1. Le libellé et les aperçus disent les formats **réels** (D8, D9) : ouverture
    et vignette 4/3, carré 1/1, carte d'info 16/9, bannière 21/9. Les aperçus

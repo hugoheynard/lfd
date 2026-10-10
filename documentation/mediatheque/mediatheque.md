@@ -241,7 +241,7 @@ médiathèque » d'une fiche rend 403. Le rôle `communication` a aussi
 
 | Rôle        | Cardinalité | Ratio annoncé | Traverse vers le commerce | Lu par                                       |
 | ----------- | ----------- | ------------- | ------------------------- | -------------------------------------------- |
-| `hero`      | un seul     | 3/2           | ✅ `image`                | ouverture de fiche ; tuile de rayon en repli |
+| `hero`      | un seul     | 4/3           | ✅ `image`                | ouverture de fiche ; tuile de rayon en repli |
 | `thumbnail` | un seul     | 4/3           | ✅ `thumbnail` (fil v10)  | tuile de rayon                               |
 | `gallery`   | plusieurs   | —             | ❌                        | personne                                     |
 | `lifestyle` | plusieurs   | 16/9          | ❌                        | personne                                     |
@@ -266,8 +266,14 @@ médiathèque » d'une fiche rend 403. Le rôle `communication` a aussi
   (`apps/lfd-backoffice-frontend/src/app/pim/catalogue/media-roles.ts`) : elle
   recopie ce que `showcase.ts` fait traverser, et doit le suivre.
 
-- ⚠️ **Les ratios ne sont vérifiés nulle part.** Ce sont des libellés. Seule la
-  boutique applique un `aspect-ratio` en CSS et recadre au centre.
+- **Les formats se signalent, ils ne se refusent jamais** (L5, 2026-10-10).
+  Une seule table, `pim/catalogue/media-formats.ts` du back-office, recopiée
+  des feuilles de style de la boutique : ouverture et vignette 4/3 (l'ancien
+  libellé « 3/2 » était faux), mise en situation 16/9, tirage 1/1 ; cadres
+  d'aperçu 4/3, 1/1, 16/9, 21/9. Au-delà de 8 % d'écart entre l'image et son
+  usage, le panneau d'usage le dit et la tuile porte « Format ». ⚠️ Cette
+  table recopie la boutique : changer un `aspect-ratio` là-bas demande de la
+  suivre ici.
 
 ---
 
