@@ -1,12 +1,15 @@
+import { HOME_PAGE } from "@lfd/storefront-layout";
 import type {
   PublicStorefrontObjectView,
   StorefrontContent,
+  StorefrontPage,
   StorefrontObjectView,
   StorefrontTemplateView,
 } from "@lfd/contracts";
 
 import { infoActionOf, type StorefrontContentState } from "../domain/storefront-content.js";
 import type { StorefrontObjectState } from "../domain/storefront-object.js";
+import type { StorefrontPageState } from "../domain/storefront-page.js";
 import type { StorefrontTemplateState } from "../domain/storefront-template.js";
 
 /**
@@ -24,6 +27,12 @@ export function objectView(object: StorefrontObjectState): StorefrontObjectView 
     shelves: [...object.shelves],
     contents: object.contents.map(contentView),
   };
+}
+
+/** Une page : l'accueil porte toujours l'image de sa porte (`null` comprise), un rayon jamais. */
+export function pageView(page: StorefrontPageState): StorefrontPage {
+  const { shelfKey, rows, pickupDoorImage } = page;
+  return shelfKey === HOME_PAGE ? { shelfKey, rows, pickupDoorImage } : { shelfKey, rows };
 }
 
 export function templateView(template: StorefrontTemplateState): StorefrontTemplateView {

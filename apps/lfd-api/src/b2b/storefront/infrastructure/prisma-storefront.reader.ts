@@ -4,10 +4,11 @@ import { Injectable } from "@nestjs/common";
 import { PrismaService } from "../../../platform/database/prisma.service.js";
 import { STOREFRONT_ID } from "../domain/storefront.events.js";
 import { StorefrontObject } from "../domain/storefront-object.js";
+import { StorefrontPage } from "../domain/storefront-page.js";
 import { StorefrontReader } from "../domain/storefront.reader.js";
 import { StorefrontTemplate } from "../domain/storefront-template.js";
-import { objectInputOf, templateInputOf } from "./storefront-rows.js";
-import { objectView, templateView } from "./storefront-views.js";
+import { objectInputOf, pageInputOf, templateInputOf } from "./storefront-rows.js";
+import { objectView, pageView, templateView } from "./storefront-views.js";
 
 /** Lecteur Prisma de la vitrine pour l'éditeur. Objets archivés exclus. */
 @Injectable()
@@ -33,7 +34,7 @@ export class PrismaStorefrontReader extends StorefrontReader {
     return {
       revision: head?.revision ?? 0,
       updatedAt: head?.updatedAt.toISOString() ?? null,
-      pages: pages.map((page) => ({ shelfKey: page.shelfKey, rows: page.rows })),
+      pages: pages.map((row) => pageView(StorefrontPage.of(pageInputOf(row)).state)),
       objects: objects.map((row) => objectView(StorefrontObject.of(objectInputOf(row)).state)),
       templates: templates.map((row) =>
         templateView(StorefrontTemplate.of(templateInputOf(row)).state),

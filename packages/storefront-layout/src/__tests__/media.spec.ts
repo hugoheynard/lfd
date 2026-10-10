@@ -27,6 +27,7 @@ describe("l’image de l’objet", () => {
       "hero: left right full",
       "band: left right full",
       "doubleBand: left right full",
+      "banner: full",
     ]);
     expect(defaultSide("card")).toBe("top");
     expect(defaultSide("kakemono")).toBe("top");

@@ -35,14 +35,21 @@ export function object(
   shelves: readonly string[] = ["all"],
   overrides: Partial<StorefrontObjectInput> = {},
 ): StorefrontObjectInput {
-  const side = shape === "card" || shape === "kakemono" ? "top" : "left";
   return {
     id,
-    settings: settings({ shape, mediaSide: side }),
+    settings: settings({ shape, mediaSide: defaultSideOf(shape) }),
     column,
     row,
     shelves,
     contents: [],
     ...overrides,
   };
+}
+
+/** Le côté d'image par défaut d'une forme : en haut, plein (bannière), ou à gauche. */
+function defaultSideOf(shape: string): string {
+  if (shape === "card" || shape === "kakemono") {
+    return "top";
+  }
+  return shape === "banner" ? "full" : "left";
 }

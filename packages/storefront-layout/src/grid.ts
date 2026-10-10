@@ -33,6 +33,13 @@ export const DEFAULT_ROWS = 6;
  *
  * `hero` est ici une FORME de la grille (3×2), pas le rôle d'image
  * « Ouverture » de la médiathèque.
+ *
+ * `banner` (2026-10-10, plan `documentation/mediatheque/plan-la-mediatheque-amelioree.md`,
+ * L6, D9) : la grande bannière **21/9**, pleine largeur. Même emprise que la
+ * bande double (5×2) — c'est le rendu qui tient le 21/9, la grille ne connaît
+ * que des cases —, mais une image PLEINE et rien d'autre (`media.ts`). Elle
+ * se pose partout : l'accueil la veut, et rien sur un rayon ne s'y oppose
+ * qu'une bande double ne lui opposerait déjà.
  */
 export const STOREFRONT_SHAPES = [
   "card",
@@ -42,6 +49,7 @@ export const STOREFRONT_SHAPES = [
   "hero",
   "band",
   "doubleBand",
+  "banner",
 ] as const;
 export type StorefrontShape = (typeof STOREFRONT_SHAPES)[number];
 
@@ -74,6 +82,8 @@ export const FORMATS: readonly FormatSpec[] = [
   shape("hero", "Hero", [3, 2], [2, 2]),
   shape("band", "Bande simple", [5, 1], [2, 1]),
   shape("doubleBand", "Bande double", [5, 2], [2, 2]),
+  // En pile, 2×1 : sur deux colonnes, c'est le plus proche du 21/9.
+  shape("banner", "Bannière", [5, 2], [2, 1]),
 ];
 
 export interface Cell {
@@ -83,6 +93,15 @@ export interface Cell {
 
 /** Un rayon, par sa clé : l'identifiant de famille du référentiel, ou `all`. */
 export type ShelfKey = string;
+
+/**
+ * **La page « Accueil »** (2026-10-10, L6 du plan de la médiathèque) : une
+ * page de la vitrine qui n'est PAS un rayon. Elle se compose dans le même
+ * éditeur et se lit par la même route (`/shop/storefront/home`), mais aucune
+ * liste de rayons ne la porte, et aucune annonce ne peut l'« ouvrir ». Elle
+ * seule porte l'image de la porte « Je passe la prendre ».
+ */
+export const HOME_PAGE: ShelfKey = "home";
 
 /** Un objet posé. Le contenu (SKU, annonce) viendra au mapping : il peut exister vide. */
 export interface PlacedBlock extends Cell {

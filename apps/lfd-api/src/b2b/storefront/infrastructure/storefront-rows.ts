@@ -3,6 +3,7 @@ import { TechnicalError } from "../../../platform/shared/errors/app-error.js";
 import type { ObjectSettingsInput, ObjectSettingsState } from "../domain/object-settings.js";
 import type { StorefrontContentState } from "../domain/storefront-content.js";
 import type { StorefrontObjectInput } from "../domain/storefront-object.js";
+import type { StorefrontPageInput, StorefrontPageState } from "../domain/storefront-page.js";
 import type { StorefrontTemplateInput } from "../domain/storefront-template.js";
 import type { StorefrontTextState } from "../domain/storefront-text.js";
 
@@ -67,6 +68,39 @@ class CorruptStorefrontRowError extends TechnicalError {
       `Une ligne de la vitrine est illisible (${detail}) : elle a été écrite hors de l'application.`,
     );
   }
+}
+
+export interface PageRow {
+  readonly shelfKey: string;
+  readonly rows: number;
+  readonly pickupDoorImageUrl: string | null;
+  readonly pickupDoorImageAlt: Prisma.JsonValue;
+}
+
+export function pageInputOf(row: PageRow): StorefrontPageInput {
+  return {
+    shelfKey: row.shelfKey,
+    rows: row.rows,
+    pickupDoorImage:
+      row.pickupDoorImageUrl === null
+        ? null
+        : { url: row.pickupDoorImageUrl, alt: textOf(row.pickupDoorImageAlt) },
+  };
+}
+
+/** Les colonnes d'une page, pour l'écriture. */
+export function pageColumns(page: StorefrontPageState): {
+  readonly shelfKey: string;
+  readonly rows: number;
+  readonly pickupDoorImageUrl: string | null;
+  readonly pickupDoorImageAlt: NullableJson;
+} {
+  return {
+    shelfKey: page.shelfKey,
+    rows: page.rows,
+    pickupDoorImageUrl: page.pickupDoorImage?.url ?? null,
+    pickupDoorImageAlt: jsonOf(page.pickupDoorImage?.alt ?? null),
+  };
 }
 
 export function settingsOfRow(row: SettingsColumns): ObjectSettingsInput {

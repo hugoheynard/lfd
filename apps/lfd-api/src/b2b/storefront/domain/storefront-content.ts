@@ -1,6 +1,7 @@
 import { LinkedOperationKey } from "./operation-link.js";
 import { ShelfKey } from "./shelf-key.js";
 import { InvalidStorefrontError } from "./storefront-errors.js";
+import { StorefrontImage, type StorefrontImageState } from "./storefront-image.js";
 import {
   STOREFRONT_TEXT_FIELDS,
   StorefrontText,
@@ -8,7 +9,6 @@ import {
 } from "./storefront-text.js";
 
 const SKU_MAX = 64;
-const IMAGE_URL_MAX = 2048;
 
 /** Un contenu produit, en primitives : le SKU, et lui seul. */
 export interface ProductContentState {
@@ -34,7 +34,7 @@ export interface InfoContentState {
   readonly badge: StorefrontTextState | null;
   readonly title: StorefrontTextState | null;
   readonly lede: StorefrontTextState | null;
-  readonly image: { readonly url: string; readonly alt: StorefrontTextState | null } | null;
+  readonly image: StorefrontImageState | null;
   readonly linkShelfKey: string | null;
   readonly operationKey: string | null;
 }
@@ -110,7 +110,8 @@ function info(input: InfoContentInput): InfoContentState {
     value === null ? null : StorefrontText.of(value, STOREFRONT_TEXT_FIELDS[field]).toPersistence();
   const operationKey = input.operationKey ?? null;
   const targets = {
-    linkShelfKey: input.linkShelfKey === null ? null : ShelfKey.of(input.linkShelfKey).value,
+    linkShelfKey:
+      input.linkShelfKey === null ? null : ShelfKey.linkTarget(input.linkShelfKey).value,
     operationKey: operationKey === null ? null : LinkedOperationKey.of(operationKey).value,
   };
   ensureOneTarget(targets, input.action);
@@ -119,7 +120,7 @@ function info(input: InfoContentInput): InfoContentState {
     badge: text(input.badge, "badge"),
     title: title(input.title, targets.operationKey !== null),
     lede: text(input.lede, "lede"),
-    image: input.image === null ? null : image(input.image.url, text(input.image.alt, "imageAlt")),
+    image: input.image === null ? null : StorefrontImage.of(input.image, INFO_IMAGE_MISSING).state,
     ...targets,
   };
 }
@@ -164,13 +165,5 @@ function ensureOneTarget(
   }
 }
 
-function image(url: string, alt: StorefrontTextState | null): InfoContentState["image"] {
-  const trimmed = url.trim();
-  if (trimmed === "" || trimmed.length > IMAGE_URL_MAX) {
-    throw new InvalidStorefrontError(
-      "image",
-      "L'image d'une info vient de la médiathèque : choisissez-en une, ou retirez l'image.",
-    );
-  }
-  return { url: trimmed, alt };
-}
+const INFO_IMAGE_MISSING =
+  "L'image d'une info vient de la médiathèque : choisissez-en une, ou retirez l'image.";

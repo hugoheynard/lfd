@@ -17,7 +17,8 @@ export interface StorefrontChanges {
 
 /**
  * Compare deux états de la vitrine. Un rayon est « touché » quand sa page
- * apparaît, disparaît ou change de hauteur, ou qu'un objet qui y paraît —
+ * apparaît, disparaît ou change — de hauteur, ou d'image de porte pour
+ * l'accueil —, ou qu'un objet qui y paraît —
  * avant ou après — change en quoi que ce soit.
  */
 export function diffStorefront(
@@ -65,8 +66,12 @@ function touchedPages(
   before: readonly StorefrontPage[],
   after: readonly StorefrontPage[],
 ): readonly string[] {
-  const rowsBefore = new Map(before.map((page) => [page.shelfKey, page.rows]));
-  const rowsAfter = new Map(after.map((page) => [page.shelfKey, page.rows]));
-  const keys = new Set([...rowsBefore.keys(), ...rowsAfter.keys()]);
-  return [...keys].filter((key) => rowsBefore.get(key) !== rowsAfter.get(key));
+  const pagesBefore = new Map(before.map((page) => [page.shelfKey, page]));
+  const pagesAfter = new Map(after.map((page) => [page.shelfKey, page]));
+  const keys = new Set([...pagesBefore.keys(), ...pagesAfter.keys()]);
+  return [...keys].filter((key) => {
+    const old = pagesBefore.get(key);
+    const now = pagesAfter.get(key);
+    return old === undefined || now === undefined || !now.sameAs(old);
+  });
 }

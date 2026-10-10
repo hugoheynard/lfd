@@ -1,3 +1,5 @@
+import { HOME_PAGE } from "@lfd/storefront-layout";
+
 import { isOperationKey, OPERATION_SHELF_PREFIX } from "./operation-link.js";
 import { InvalidStorefrontError } from "./storefront-errors.js";
 
@@ -14,6 +16,10 @@ export const ALL_SHELVES = "all";
  * le référentiel (CLAUDE.md §1), elle en garde l'identifiant. Un rayon disparu
  * se signale dans l'éditeur, il n'est pas refusé ici (plan, D4) — une
  * opération retirée non plus ; seule la forme de sa clé l'est.
+ *
+ * `home` (`HOME_PAGE`) est la page d'accueil (2026-10-10) : une clé de PAGE
+ * valide partout où une page ou un objet en accepte une, mais pas un rayon —
+ * une annonce ne peut pas l'ouvrir ({@link ShelfKey.linkTarget}).
  */
 export class ShelfKey {
   private constructor(readonly value: string) {}
@@ -30,6 +36,22 @@ export class ShelfKey {
       throw refused(value);
     }
     return new ShelfKey(value);
+  }
+
+  /**
+   * Un rayon qu'une annonce peut OUVRIR : tout ce que {@link of} accepte, sauf
+   * l'accueil — la boutique n'a pas de rayon « home », le clic n'ouvrirait rien.
+   *
+   * @throws {InvalidStorefrontError} clé refusée par {@link of}, ou l'accueil.
+   */
+  static linkTarget(value: string): ShelfKey {
+    if (value === HOME_PAGE) {
+      throw new InvalidStorefrontError(
+        "shelf_key",
+        "Une annonce n'ouvre pas l'accueil : choisissez un rayon, une opération, ou aucune action.",
+      );
+    }
+    return ShelfKey.of(value);
   }
 }
 

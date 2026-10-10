@@ -35,10 +35,19 @@ model Storefront {
 /// **La page d'un rayon** : combien de rangées sa composition occupe. Sous la
 /// dernière, le reste du rayon s'écoule en cartes.
 model StorefrontPage {
-  /// L'identifiant de famille du référentiel, ou `all`. Chaîne OPAQUE, sans
+  /// L'identifiant de famille du référentiel, `all`, `op:<key>`, ou `home`
+  /// (l'accueil, qui n'est pas un rayon). Chaîne OPAQUE, sans
   /// clé étrangère vers le PIM (§1 : les deux contextes ne se lisent pas).
   shelfKey String @id @map("shelf_key")
   rows     Int    @db.SmallInt
+
+  /// L'image de la porte « Je passe la prendre » de l'accueil (plan de la
+  /// médiathèque, L6, D7) — sur la page `home` SEULE (CHECK de
+  /// `20261010220000_l_accueil_de_la_vitrine`). URL de la médiathèque, comptée
+  /// comme porteur par le canal `channels/media/`.
+  pickupDoorImageUrl String? @map("pickup_door_image_url")
+  /// Texte alternatif localisé `{ fr, en?, it? }`.
+  pickupDoorImageAlt Json?   @map("pickup_door_image_alt")
 
   @@map("storefront_page")
   @@schema("public")
@@ -52,7 +61,7 @@ model StorefrontPage {
 model StorefrontObject {
   /// ULID, posé par le serveur.
   id            String  @id
-  /// `StorefrontShape` de `@lfd/storefront-layout`.
+  /// `StorefrontShape` de `@lfd/storefront-layout` (`banner` depuis le 2026-10-10).
   shape         String
   col           Int     @db.SmallInt
   row           Int     @db.SmallInt

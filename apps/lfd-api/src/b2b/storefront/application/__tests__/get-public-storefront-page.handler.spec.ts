@@ -217,3 +217,20 @@ describe("GetPublicStorefrontPageHandler — les annonces d'opération (D11)", (
     expect(contents).toHaveLength(1);
   });
 });
+
+describe("GetPublicStorefrontPageHandler — l'accueil (L6, D7)", () => {
+  /** La résolution des annonces rebâtissait la page champ par champ, et aurait perdu la porte. */
+  it("sert l'image de la porte avec les annonces résolues", async () => {
+    const door = { url: "https://cdn.example/fournil.jpg", alt: { fr: "Le fournil" } };
+    const handler = new GetPublicStorefrontPageHandler(
+      new FixedPage({ rows: 2, objects: [object([LINKED])], pickupDoorImage: door }),
+      new ShownByAudience({ public: [NOEL] }),
+      NOW,
+    );
+
+    const page = await handler.execute(new GetPublicStorefrontPageQuery("home", null));
+
+    expect(page.pickupDoorImage).toEqual(door);
+    expect(page.objects[0]?.contents).toHaveLength(1);
+  });
+});

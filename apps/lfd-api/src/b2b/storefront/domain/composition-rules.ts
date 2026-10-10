@@ -1,4 +1,4 @@
-import { checkPlacement, describeFormat, refusalMessage } from "@lfd/storefront-layout";
+import { checkPlacement, describeFormat, HOME_PAGE, refusalMessage } from "@lfd/storefront-layout";
 
 import { ALL_SHELVES } from "./shelf-key.js";
 import { InvalidStorefrontError } from "./storefront-errors.js";
@@ -93,7 +93,10 @@ export function assertPlacements(
   }
 }
 
-/** Le nom d'un rayon dans une phrase : « Tout », ou sa clé. */
+/** Le nom d'un rayon dans une phrase : « Tout », « Accueil », ou sa clé. */
 function shelfLabel(shelf: string): string {
-  return shelf === ALL_SHELVES ? "Tout" : shelf;
+  if (shelf === ALL_SHELVES) {
+    return "Tout";
+  }
+  return shelf === HOME_PAGE ? "Accueil" : shelf;
 }

@@ -1870,6 +1870,7 @@ export type {
   StorefrontCatalogShelf,
   StorefrontCatalogView,
   StorefrontContent,
+  StorefrontImage,
   StorefrontInfoAction,
   StorefrontInfoContent,
   StorefrontObjectPayload,

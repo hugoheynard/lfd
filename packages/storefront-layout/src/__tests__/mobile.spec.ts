@@ -19,6 +19,7 @@ describe("le mobile", () => {
       "hero",
       "band",
       "doubleBand",
+      "banner",
     ]);
   });
 
@@ -35,6 +36,7 @@ describe("le mobile", () => {
       "hero 2×2",
       "band 2×1",
       "doubleBand 2×2",
+      "banner 2×1",
     ]);
   });
 

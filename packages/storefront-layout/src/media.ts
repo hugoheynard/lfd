@@ -19,6 +19,8 @@ export const DEFAULT_MEDIA_FIT: MediaFit = "cover";
 const SIDES_NARROW: readonly MediaSide[] = ["top", "full"];
 const SIDES_WIDE: readonly MediaSide[] = ["left", "right", "full"];
 const SIDES_BLOCK: readonly MediaSide[] = ["left", "right", "top", "full"];
+/** La bannière n'est qu'une image : le texte, s'il y en a, se pose par-dessus. */
+const SIDES_FULL: readonly MediaSide[] = ["full"];
 
 /** Les côtés d'image permis par forme ; le PREMIER est le défaut de la forme. */
 const SIDES_BY_SHAPE: Readonly<Record<StorefrontShape, readonly MediaSide[]>> = {
@@ -29,6 +31,7 @@ const SIDES_BY_SHAPE: Readonly<Record<StorefrontShape, readonly MediaSide[]>> = 
   hero: SIDES_WIDE,
   band: SIDES_WIDE,
   doubleBand: SIDES_WIDE,
+  banner: SIDES_FULL,
 };
 
 export function allowedSides(format: StorefrontShape): readonly MediaSide[] {

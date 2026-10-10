@@ -39,7 +39,7 @@ export function resolveOperationAnnouncements(
   shelfKey: string,
 ): PublicStorefrontPageView {
   return {
-    rows: page.rows,
+    ...page,
     objects: page.objects.map((object) => resolveObject(object, shown, shelfKey)),
   };
 }

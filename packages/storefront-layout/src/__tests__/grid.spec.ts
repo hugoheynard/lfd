@@ -29,7 +29,7 @@ const band2: PlacedBlock = { id: "d", format: "doubleBand", column: 1, row: 3, s
 const EXAMPLE = [tile, card, tileRight, band2];
 
 describe("la table des formats", () => {
-  it("porte les six formes du document, dans l’ordre de la palette (colonnes × rangées)", () => {
+  it("porte les formes du document et la bannière, dans l’ordre de la palette (colonnes × rangées)", () => {
     expect(FORMATS.map((f) => describeFormat(f.format))).toEqual([
       "Carte 1×1",
       "Kakémono 1×2",
@@ -38,6 +38,7 @@ describe("la table des formats", () => {
       "Hero 3×2",
       "Bande simple 5×1",
       "Bande double 5×2",
+      "Bannière 5×2",
     ]);
   });
 
@@ -57,6 +58,19 @@ describe("la table des formats", () => {
   it("les bandes couvrent toute la largeur", () => {
     expect(formatSpec("band").columns).toBe(GRID_COLUMNS);
     expect(formatSpec("doubleBand").columns).toBe(GRID_COLUMNS);
+    expect(formatSpec("banner").columns).toBe(GRID_COLUMNS);
+  });
+
+  it("la bannière pleine largeur ne tient pas à côté d'un autre objet", () => {
+    const banner: PlacedBlock = { id: "b", format: "banner", column: 1, row: 1, shelves: ALL };
+    expect(checkPlacement([banner], 4, { ...card, column: 5, row: 2 })).toMatchObject({
+      ok: false,
+      reason: "overlap",
+    });
+    expect(checkPlacement([], 4, { ...banner, column: 2 })).toEqual({
+      ok: false,
+      reason: "columns",
+    });
   });
 });
 

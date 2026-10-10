@@ -45,7 +45,8 @@ export interface Carrier {
    * La nature du porteur — elle décide de l'écran vers lequel on renvoie.
    *
    * `storefront` depuis le 2026-09-24 : un objet de la vitrine du commerce
-   * (`id` = l'identifiant de l'objet). La médiathèque ne sait pas qui répond
+   * (`id` = l'identifiant de l'objet ; `home` depuis le 2026-10-10 pour la
+   * porte « Je passe la prendre » de l'accueil, un réglage de page). La médiathèque ne sait pas qui répond
    * pour quel `kind` — `appBootstrap` interroge TOUS les porteurs et somme.
    *
    * `operation` depuis le 2026-09-24 : une opération datée du référentiel

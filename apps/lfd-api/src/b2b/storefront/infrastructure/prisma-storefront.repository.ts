@@ -10,6 +10,8 @@ import { Storefront, type StorefrontWrite } from "../domain/storefront.js";
 import {
   contentColumns,
   objectInputOf,
+  pageColumns,
+  pageInputOf,
   settingsColumns,
   templateInputOf,
 } from "./storefront-rows.js";
@@ -49,7 +51,7 @@ export class PrismaStorefrontRepository extends StorefrontRepository {
     return Storefront.reconstitute({
       revision: head?.revision ?? 0,
       updatedAt: head?.updatedAt ?? null,
-      pages: pages.map((page) => ({ shelfKey: page.shelfKey, rows: page.rows })),
+      pages: pages.map(pageInputOf),
       objects: objects.map(objectInputOf),
       templates: templates.map(templateInputOf),
     });
@@ -105,7 +107,7 @@ export class PrismaStorefrontRepository extends StorefrontRepository {
 
   private async replacePages(state: StorefrontWrite): Promise<void> {
     await this.prisma.storefrontPage.deleteMany({});
-    await this.prisma.storefrontPage.createMany({ data: [...state.pages] });
+    await this.prisma.storefrontPage.createMany({ data: state.pages.map(pageColumns) });
   }
 
   /** Remplacés en bloc : le nom est UNIQUE, et deux gabarits peuvent échanger leurs noms. */

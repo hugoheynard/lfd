@@ -74,6 +74,7 @@ export const storefrontImageSchema = z.object({
   url: z.string(),
   alt: storefrontTextSchema.nullable(),
 });
+export type StorefrontImage = z.infer<typeof storefrontImageSchema>;
 
 /**
  * Ce que fait une annonce au clic (D11 de
@@ -118,10 +119,19 @@ export const storefrontContentSchema = z.discriminatedUnion("kind", [
 ]);
 export type StorefrontContent = z.infer<typeof storefrontContentSchema>;
 
-/** Une page : un rayon (`all` ou l'identifiant d'une famille du référentiel), et ses rangées. */
+/**
+ * Une page : un rayon (`all`, l'identifiant d'une famille du référentiel ou
+ * `op:<key>`) ou la page **`home`** — l'accueil, qui n'est pas un rayon
+ * (`HOME_PAGE` de `@lfd/storefront-layout`) — et ses rangées.
+ *
+ * `pickupDoorImage` : l'image de la porte « Je passe la prendre » de
+ * l'accueil (D7 du plan de la médiathèque). Permise sur la page `home` SEULE ;
+ * absente vaut `null`. ⚠️ Un éditeur qui ne la renvoie pas l'efface.
+ */
 export const storefrontPageSchema = z.object({
   shelfKey: z.string(),
   rows: z.number().int(),
+  pickupDoorImage: storefrontImageSchema.nullable().optional(),
 });
 export type StorefrontPage = z.infer<typeof storefrontPageSchema>;
 
@@ -243,6 +253,12 @@ export type PublicStorefrontContent =
 export interface PublicStorefrontPageView {
   readonly rows: number;
   readonly objects: readonly PublicStorefrontObjectView[];
+  /**
+   * L'image de la porte « Je passe la prendre ». Présente sur la page `home`
+   * SEULE (`null` si personne ne l'a choisie : l'accueil garde sa photo par
+   * défaut), absente de tout rayon.
+   */
+  readonly pickupDoorImage?: StorefrontImage | null;
 }
 
 /**

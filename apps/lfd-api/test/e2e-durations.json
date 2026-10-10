@@ -252,6 +252,7 @@
   "test/staff-roles.e2e-spec.ts": 55877,
   "test/staff-users.e2e-spec.ts": 10030,
   "test/storefront-catalog.e2e-spec.ts": 3899,
+  "test/storefront-home.e2e-spec.ts": 6751,
   "test/storefront-media-carriers.e2e-spec.ts": 2991,
   "test/storefront-operations.e2e-spec.ts": 6621,
   "test/storefront-roles-migration.e2e-spec.ts": 2140,

@@ -15,7 +15,11 @@ import {
   type StorefrontObjectInput,
   type StorefrontObjectState,
 } from "./storefront-object.js";
-import { StorefrontPage, type StorefrontPageState } from "./storefront-page.js";
+import {
+  StorefrontPage,
+  type StorefrontPageInput,
+  type StorefrontPageState,
+} from "./storefront-page.js";
 import {
   StorefrontTemplate,
   type StorefrontTemplateInput,
@@ -31,7 +35,7 @@ export interface StorefrontState {
   /** `0` : jamais enregistrée. */
   readonly revision: number;
   readonly updatedAt: Date | null;
-  readonly pages: readonly StorefrontPageState[];
+  readonly pages: readonly StorefrontPageInput[];
   readonly objects: readonly StorefrontObjectInput[];
   readonly templates: readonly StorefrontTemplateInput[];
 }

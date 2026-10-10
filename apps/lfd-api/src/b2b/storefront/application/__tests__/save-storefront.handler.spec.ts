@@ -225,3 +225,65 @@ describe("SaveStorefrontHandler", () => {
     ).rejects.toThrow(StorefrontObjectUnknownError);
   });
 });
+
+describe("SaveStorefrontHandler — l'accueil (L6, D7, D9)", () => {
+  const DOOR = { url: "https://media.example/fournil.jpg", alt: { fr: "Le fournil" } };
+  const BANNER = {
+    ...SETTINGS,
+    shape: "banner",
+    mediaSide: "full",
+    column: 1,
+    row: 1,
+    shelves: ["home"],
+    contents: [
+      {
+        kind: "info",
+        badge: null,
+        title: { fr: "Bienvenue" },
+        lede: null,
+        image: { url: "https://media.example/banniere.jpg", alt: null },
+        linkShelfKey: null,
+      },
+    ],
+  } as const;
+
+  it("écrit la page `home`, sa bannière et sa porte, et trace l'accueil", async () => {
+    const { handler, repository, events } = harness({ revision: 0, objects: [] });
+    const pages = [
+      { shelfKey: "all", rows: 4 },
+      { shelfKey: "home", rows: 3, pickupDoorImage: DOOR },
+    ];
+
+    await handler.execute(
+      new SaveStorefrontCommand(
+        payload({
+          pages,
+          objects: [{ ...BANNER, contents: [...BANNER.contents], shelves: [...BANNER.shelves] }],
+        }),
+        STAFF,
+      ),
+    );
+
+    expect(repository.written?.pages).toContainEqual({
+      shelfKey: "home",
+      rows: 3,
+      pickupDoorImage: DOOR,
+    });
+    expect(repository.written?.objects[0]?.settings.shape).toBe("banner");
+    expect(events.traced[0]?.journalFact().payload).toMatchObject({ shelves: ["home"] });
+  });
+
+  it("refuse une porte posée sur un rayon, sans rien ouvrir", async () => {
+    const { handler, calls } = harness({ revision: 0, objects: [] });
+
+    await expect(
+      handler.execute(
+        new SaveStorefrontCommand(
+          payload({ pages: [{ shelfKey: "all", rows: 4, pickupDoorImage: DOOR }] }),
+          STAFF,
+        ),
+      ),
+    ).rejects.toThrow(InvalidStorefrontError);
+    expect(calls).toEqual([]);
+  });
+});
