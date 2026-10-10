@@ -53,6 +53,9 @@ export interface Carrier {
    *
    * `operation` depuis le 2026-09-24 : une opération datée du référentiel
    * (`id` = sa clé), dont l'image paraît dans l'annonce de la boutique.
+   * Depuis le 2026-10-10 (R18), la COPIE que le commerce en a reçue au push se
+   * nomme aussi `operation`, même clé, libellé « Boutique — opération … » :
+   * elle retient l'ancienne image jusqu'au push suivant et ne se repointe pas.
    */
   readonly kind: "product" | "category" | "storefront" | "operation";
   readonly id: string;

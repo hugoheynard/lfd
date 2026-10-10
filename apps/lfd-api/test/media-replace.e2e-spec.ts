@@ -13,6 +13,7 @@
  * Aucune date absolue comparée à l'horloge : l'opération se date par
  * `daysAgo` / `serviceDay`.
  */
+import type { SyncOperation } from "@lfd/catalog-sync";
 import type { ShopCatalogueView, StorefrontPayloadInput } from "@lfd/contracts";
 import request from "supertest";
 
@@ -91,14 +92,40 @@ async function setMedia(path: string, media: readonly Record<string, unknown>[])
   await staff().put(`${path}/media`).send({ media }).expect(200);
 }
 
-/** Une fiche que le commerce connaît sous le même identifiant — par un push. */
-async function pushToCommerce(productId: string): Promise<void> {
-  const snapshot = snapshotOf([{ sku: "VIE-001", priceMillicents: 140_000 }]);
+/**
+ * Une fiche que le commerce connaît sous le même identifiant — par un push.
+ * Avec `operation`, l'envoi porte aussi l'opération « noel » montrant cette
+ * image : c'est la COPIE que le commerce en garde (R18).
+ */
+async function pushToCommerce(
+  productId: string,
+  operation: { readonly image: string; readonly revision: string } | null = null,
+): Promise<void> {
+  const operations: SyncOperation[] =
+    operation === null
+      ? []
+      : [
+          {
+            key: "noel",
+            name: { fr: "Noël" },
+            lede: null,
+            image: { url: operation.image, alt: "Une bûche" },
+            announceFrom: daysAgo(-30),
+            orderFrom: daysAgo(-45),
+            orderUntil: daysAgo(-80),
+            pickupFrom: serviceDay(78),
+            pickupUntil: serviceDay(84),
+            audience: "both",
+            skus: ["VIE-001-1"],
+          },
+        ];
+  const snapshot = snapshotOf([{ sku: "VIE-001", priceMillicents: 140_000 }], [], operations);
+  const revision = operation?.revision ?? "replace";
   await ctx.app
     .get(B2bCatalogDriver)
     .send(
       { ...snapshot, products: snapshot.products.map((item) => ({ ...item, id: productId })) },
-      { revisionId: "rev_replace", fingerprint: "empreinte-replace" },
+      { revisionId: `rev_${revision}`, fingerprint: `empreinte-${revision}` },
     );
 }
 
@@ -293,6 +320,71 @@ describe("POST /media/replace — remplacer une image partout", () => {
     expect(await ctx.prisma.activityEvent.count({ where: { type: "media_asset.replaced" } })).toBe(
       0,
     );
+  });
+});
+
+/**
+ * R18 (2026-10-10) : l'image d'une opération est COPIÉE au commerce au push,
+ * et seulement là. Avant, après un remplacement, la médiathèque ne voyait
+ * plus aucun porteur de A alors que la boutique la servait encore : le retrait
+ * et le ramassage pouvaient l'effacer du bucket, et l'annonce cassait.
+ */
+describe("POST /media/replace — la copie de la boutique retient l'ancienne image", () => {
+  const COPY = {
+    kind: "operation",
+    id: "noel",
+    label: "Boutique — opération « Noël » (copie, suit au prochain envoi du catalogue)",
+  };
+
+  async function replacedWhileShopShowsA(): Promise<{ a: string; b: string; hero: string }> {
+    const { a, b, hero } = await imageShownEverywhere();
+    await pushToCommerce(hero, { image: a, revision: "copy_a" });
+    await settle();
+    await staff().post(REPLACE).send({ from: a, to: b }).expect(204);
+    return { a, b, hero };
+  }
+
+  it("garde A employée par la copie, nommée, après le remplacement", async () => {
+    const { a } = await replacedWhileShopShowsA();
+
+    expect(await carriersOf(a)).toEqual([COPY]);
+  });
+
+  it("refuse en 409 de retirer A tant que la copie la montre", async () => {
+    const { a } = await replacedWhileShopShowsA();
+
+    const response = await staff().delete(`${MEDIA}?url=${encodeURIComponent(a)}`);
+
+    expect(response.status).toBe(409);
+    expect(await ctx.prisma.mediaAsset.count({ where: { url: a } })).toBe(1);
+  });
+
+  it("épargne A au ramassage, même passé le délai de grâce", async () => {
+    const { a } = await replacedWhileShopShowsA();
+    await ctx.prisma.mediaAsset.update({
+      where: { url: a },
+      data: { createdAt: new Date(daysAgo(30)) },
+    });
+
+    await ctx
+      .http()
+      .post("/admin/media/sweep")
+      .set("x-lfc-recompute-token", TEST_RECOMPUTE_TOKEN)
+      .expect(200);
+
+    expect(await ctx.prisma.mediaAsset.count({ where: { url: a } })).toBe(1);
+  });
+
+  it("libère A dès qu'un push porte B", async () => {
+    const { a, b, hero } = await replacedWhileShopShowsA();
+
+    await pushToCommerce(hero, { image: b, revision: "copy_b" });
+    await settle();
+
+    expect(await carriersOf(a)).toEqual([]);
+    await staff()
+      .delete(`${MEDIA}?url=${encodeURIComponent(a)}`)
+      .expect(204);
   });
 });
 
