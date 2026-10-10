@@ -262,6 +262,15 @@ export const LIVRAISON_VIEWS: readonly WorkspaceView[] = [
     icon: 'map-pin',
     needs: 'delivery_settings:read',
   },
+  {
+    // Venue des réglages de l'e-commerce (Hugo, 2026-10-10) : à qui on livre
+    // et avec quelles marges. Son droit reste celui du serveur, `b2b_settings`.
+    key: 'zones',
+    label: 'Zones de livraison',
+    link: '/livraison/zones',
+    icon: 'truck',
+    needs: 'b2b_settings:read',
+  },
 ];
 
 /** Range une table de vues sous un titre de section du rail. */
@@ -615,8 +624,8 @@ export const B2B_VIEWS: readonly WorkspaceView[] = [
     icon: 'contracts',
     section: 'Contenu',
   })),
-  // LES RÉGLAGES DE L'E-COMMERCE — où retirer, à qui livrer, jusqu'à quand
-  // commander. Ils étaient un onglet des Réglages ; sous le droit qui ouvre
+  // LES RÉGLAGES DE L'E-COMMERCE — où retirer, jusqu'à quand commander (à
+  // qui livrer est parti dans l'Exploitation le 2026-10-10). Ils étaient un onglet des Réglages ; sous le droit qui ouvre
   // déjà l'espace, donc sans `needs` (plan « remise et livraison par
   // clientèle », D6).
   {
@@ -624,13 +633,6 @@ export const B2B_VIEWS: readonly WorkspaceView[] = [
     label: 'Points de retrait',
     link: '/b2b/reglages/points-de-retrait',
     icon: 'map-pin',
-    section: 'Réglages',
-  },
-  {
-    key: 'livraison',
-    label: 'Livraison',
-    link: '/b2b/reglages/livraison',
-    icon: 'truck',
     section: 'Réglages',
   },
   {

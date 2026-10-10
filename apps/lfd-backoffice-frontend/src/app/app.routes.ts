@@ -521,6 +521,18 @@ export const routes: Routes = [
         loadComponent: () =>
           import('./livraison/departure-page/departure-page').then((m) => m.DeparturePage),
       },
+      // LES ZONES ET LA DISPONIBILITÉ DE LA LIVRAISON, venues des réglages de
+      // l'e-commerce (Hugo, 2026-10-10). Le menu change, le mur non : le
+      // serveur garde `b2b_settings` (`@AdminSurface`), l'écran le suit.
+      {
+        path: 'zones',
+        canActivate: [permissionGuard('b2b_settings:read')],
+        title: 'Zones de livraison — LFC B2B admin',
+        loadComponent: () =>
+          import('./b2b/reglages/delivery-availability-page/delivery-availability-page').then(
+            (m) => m.DeliveryAvailabilityPage,
+          ),
+      },
     ],
   },
   {

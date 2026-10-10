@@ -155,7 +155,6 @@ const SCREENS: Readonly<Record<string, ScreenAccess>> = {
   // s'y lirait comme un identifiant.
   'b2b/reglages/points-de-retrait/nouveau': null,
   'b2b/reglages/points-de-retrait/:id': null,
-  'b2b/reglages/livraison': null,
   'b2b/reglages/heures-limites': null,
   'b2b/reglages/ouverture-boutique': null,
   // « Nous écrire » : son propre droit. Répondre aux messages n'est pas
@@ -283,6 +282,8 @@ const SCREENS: Readonly<Record<string, ScreenAccess>> = {
   'livraison/bacs': 'delivery_settings:read',
   'livraison/contenances': 'delivery_settings:read',
   'livraison/depart': 'delivery_settings:read',
+  // Venue des réglages de l'e-commerce (2026-10-10) : le mur du serveur.
+  'livraison/zones': 'b2b_settings:read',
   // Un QR de sa propre origine et un mode d'emploi : rien à garder.
   'app-mobile': OPEN,
   // 🔴 **L'outillage de développement**, et son absence de garde est le point.
@@ -444,6 +445,15 @@ describe("l'arbre de routes du back-office", () => {
     const contenu = b2b?.children?.find((child) => child.path === 'contenu');
     const vitrine = contenu?.children?.find((child) => child.path === 'vitrine');
     expect(vitrine?.redirectTo).toBe('/vitrine');
+  });
+
+  it('renvoie les anciens réglages de livraison vers l’Exploitation', () => {
+    // Partis des réglages de l'e-commerce pour Exploitation › Livraison
+    // (2026-10-10). Absolue, sans quoi elle resterait sous le mur de l'espace.
+    const b2b = routes.find((route) => route.path === 'b2b');
+    const reglages = b2b?.children?.find((child) => child.path === 'reglages');
+    const livraison = reglages?.children?.find((child) => child.path === 'livraison');
+    expect(livraison?.redirectTo).toBe('/livraison/zones');
   });
 
   it('renvoie l’ancienne fournée vers le Fournil, et /production vers sa première vue', () => {

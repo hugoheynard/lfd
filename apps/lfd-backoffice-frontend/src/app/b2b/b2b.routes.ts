@@ -126,12 +126,13 @@ export const b2bRoutes: Routes = [
               ),
           },
           {
+            // LA LIVRAISON est partie dans l'Exploitation (Hugo, 2026-10-10) :
+            // à qui on livre et avec quelles marges se règle à côté des
+            // tournées qui le tiennent. L'ancienne adresse est dans des favoris.
+            // La redirection s'applique AVANT les gardes.
             path: 'livraison',
-            title: 'Livraison — LFC B2B admin',
-            loadComponent: () =>
-              import('./reglages/delivery-availability-page/delivery-availability-page').then(
-                (m) => m.DeliveryAvailabilityPage,
-              ),
+            pathMatch: 'full',
+            redirectTo: '/livraison/zones',
           },
           {
             path: 'ouverture-boutique',

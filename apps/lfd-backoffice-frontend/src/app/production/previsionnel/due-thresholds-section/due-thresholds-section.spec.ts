@@ -101,7 +101,7 @@ describe('DueThresholdsSection', () => {
     const fixture = await mount(UNSET);
 
     const link: HTMLAnchorElement | null = fixture.nativeElement.querySelector('fold-callout a');
-    expect(link?.getAttribute('href')).toBe('/b2b/reglages/livraison');
+    expect(link?.getAttribute('href')).toBe('/livraison/zones');
   });
 
   it('dit l’échec de lecture', async () => {
