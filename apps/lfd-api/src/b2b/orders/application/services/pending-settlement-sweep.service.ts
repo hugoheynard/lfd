@@ -1,7 +1,7 @@
 import { Injectable, Logger } from "@nestjs/common";
 
 import { UnitOfWork } from "../../../../platform/database/unit-of-work.js";
-import { DomainEventPublisher } from "../../../../platform/events/domain-event-publisher.js";
+import { DurablePublisher } from "../../../../platform/outbox/durable-publisher.js";
 import { Clock } from "../../../../platform/time/clock.js";
 import {
   PendingSettlementSweeper,
@@ -42,7 +42,7 @@ import { settlementSweepWindow } from "../../domain/services/settlement-sweep.js
  *
  * `failAtClosing` est conditionné en base (`status: placed`, règlement non
  * encaissé) : un second passage ne trouve plus ces commandes, n'écrit rien et
- * ne republie rien. Le fait `day_closed` est publié ICI, sur le seul
+ * ne republie rien. Le fait `day_closed` est écrit ICI, sur le seul
  * franchissement — `FAILED_FROM` ne franchirait pas une commande déjà refusée.
  *
  * ## Le bon de fidélité revient avec l'annulation
@@ -60,7 +60,7 @@ export class PendingSettlementSweep extends PendingSettlementSweeper {
     private readonly unsettled: UnsettledSettlementReader,
     private readonly payments: PaymentGateway,
     private readonly orders: OrderRepository,
-    private readonly events: DomainEventPublisher,
+    private readonly durable: DurablePublisher,
     private readonly unitOfWork: UnitOfWork,
     private readonly vouchers: LoyaltyVoucherRedemption,
     private readonly clock: Clock,
@@ -82,19 +82,28 @@ export class PendingSettlementSweep extends PendingSettlementSweeper {
         return;
       }
     }
-    if (await this.failAtClosing(settlement)) {
-      this.events.publish(new OrderPaymentFailedEvent(settlement.orderId, "day_closed"));
-    }
+    await this.failAtClosing(settlement);
   }
 
-  /** L'annulation, et la libération du bon si elle a franchi — ensemble ou pas du tout. */
-  private async failAtClosing(settlement: UnsettledSettlement): Promise<boolean> {
-    return this.unitOfWork.run(async () => {
+  /**
+   * L'annulation, la libération du bon et le fait durable `order.payment_failed`
+   * (`day_closed`) si elle a franchi — ensemble ou pas du tout. Le fait partait
+   * en mémoire après la transaction jusqu'au 2026-10-10 (lot E4b) : un
+   * redémarrage entre les deux perdait le courriel « n'a pas abouti à temps »
+   * et la cloche du pro, alors que la commande était déjà annulée.
+   */
+  private async failAtClosing(settlement: UnsettledSettlement): Promise<void> {
+    await this.unitOfWork.run(async () => {
       const crossed = await this.orders.failAtClosing(settlement.orderId);
-      if (crossed && settlement.loyaltyVoucherId !== null) {
+      if (!crossed) {
+        return;
+      }
+      if (settlement.loyaltyVoucherId !== null) {
         await this.vouchers.release(settlement.loyaltyVoucherId, this.clock.now());
       }
-      return crossed;
+      await this.durable.publish(
+        new OrderPaymentFailedEvent(settlement.orderId, "day_closed").durableFact(),
+      );
     });
   }
 

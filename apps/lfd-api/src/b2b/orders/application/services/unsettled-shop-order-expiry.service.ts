@@ -1,7 +1,7 @@
 import { Injectable, Logger } from "@nestjs/common";
 
 import { UnitOfWork } from "../../../../platform/database/unit-of-work.js";
-import { DomainEventPublisher } from "../../../../platform/events/domain-event-publisher.js";
+import { DurablePublisher } from "../../../../platform/outbox/durable-publisher.js";
 import { Clock } from "../../../../platform/time/clock.js";
 import { PaymentGateway } from "../../../payments/domain/payment-gateway.js";
 import { OrderPaymentFailedEvent } from "../../domain/events/order-payment-failed.event.js";
@@ -55,6 +55,13 @@ export interface UnsettledShopOrderExpiryReport {
  *
  * Comme à l'abandon et à la clôture, le bon engagé est libéré dans la même
  * transaction que l'écriture, et seulement si elle a franchi.
+ *
+ * ## Le fait est durable (lot E4b, 2026-10-10)
+ *
+ * `order.payment_failed` s'écrit dans la même transaction que l'annulation.
+ * Aucun abonné ne lit aujourd'hui `expired` ni `replaced` ; le fait est écrit
+ * quand même, pour que le règlement mort ait un seul chemin, quel que soit
+ * le geste qui l'a tué.
  */
 @Injectable()
 export class UnsettledShopOrderExpiry {
@@ -64,7 +71,7 @@ export class UnsettledShopOrderExpiry {
     private readonly unsettled: UnsettledShopOrderReader,
     private readonly canceller: UnsettledShopOrderCanceller,
     private readonly payments: PaymentGateway,
-    private readonly events: DomainEventPublisher,
+    private readonly durable: DurablePublisher,
     private readonly unitOfWork: UnitOfWork,
     private readonly vouchers: LoyaltyVoucherRedemption,
     private readonly clock: Clock,
@@ -104,14 +111,17 @@ export class UnsettledShopOrderExpiry {
     }
     const crossed = await this.unitOfWork.run(async () => {
       const written = await this.canceller.cancel(settlement.orderId);
-      if (written && settlement.loyaltyVoucherId !== null) {
+      if (!written) {
+        return false;
+      }
+      if (settlement.loyaltyVoucherId !== null) {
         await this.vouchers.release(settlement.loyaltyVoucherId, this.clock.now());
       }
-      return written;
+      await this.durable.publish(
+        new OrderPaymentFailedEvent(settlement.orderId, cause).durableFact(),
+      );
+      return true;
     });
-    if (crossed) {
-      this.events.publish(new OrderPaymentFailedEvent(settlement.orderId, cause));
-    }
     return crossed;
   }
 

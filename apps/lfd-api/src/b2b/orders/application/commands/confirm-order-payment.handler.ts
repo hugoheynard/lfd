@@ -1,7 +1,6 @@
 import { CommandHandler, type ICommandHandler } from "@nestjs/cqrs";
 
 import { UnitOfWork } from "../../../../platform/database/unit-of-work.js";
-import { DomainEventPublisher } from "../../../../platform/events/domain-event-publisher.js";
 import { DurablePublisher } from "../../../../platform/outbox/durable-publisher.js";
 import { OrderPaidFact } from "../../domain/events/order-paid.fact.js";
 import { OrderPaidAfterCancellationEvent } from "../../domain/events/order-paid-after-cancellation.event.js";
@@ -51,7 +50,14 @@ import { ConfirmOrderPaymentCommand } from "./confirm-order-payment.command.js";
  * le SEUL fait du règlement acquis : le crédit de points et l'accusé de
  * réception l'écoutent aussi, et le fait en mémoire qui les servait est retiré.
  *
- * ⚠️ `publish` et non `publishTraced` : ce sont des projections d'un événement
+ * Depuis le lot E4b (2026-10-10), le refus (`order.payment_failed`) et le
+ * remboursement dû (`order.paid_after_cancellation`) sont durables aussi : ils
+ * partaient en mémoire après l'écriture, et un redémarrage entre l'accusé du
+ * webhook et le saut perdait le courriel de refus ou la cloche « à
+ * rembourser » — Stripe ne rejoue qu'un webhook NON accusé. Ce handler ne
+ * publie plus RIEN en mémoire.
+ *
+ * ⚠️ Pas de `publishTraced` : ce sont des projections d'un événement
  * externe, pas des actes dont un humain doit répondre. Le journal des actes
  * porte les gestes de l'équipe ; celui-ci appartient à Stripe.
  */
@@ -63,7 +69,6 @@ export class ConfirmOrderPaymentHandler implements ICommandHandler<
   constructor(
     private readonly orders: OrderRepository,
     private readonly cancelled: CancelledOrderPaymentReader,
-    private readonly events: DomainEventPublisher,
     private readonly uow: UnitOfWork,
     private readonly durable: DurablePublisher,
   ) {}
@@ -83,15 +88,29 @@ export class ConfirmOrderPaymentHandler implements ICommandHandler<
       if (settled !== null) {
         return;
       }
-      const refundDue = await this.cancelled.cancelledOrderOf(command.paymentIntentId);
-      if (refundDue !== null) {
-        this.events.publish(new OrderPaidAfterCancellationEvent(refundDue));
-      }
+      await this.ringRefundDue(command.paymentIntentId);
       return;
     }
-    const refused = await this.orders.markPaymentFailed(command.paymentIntentId);
-    if (refused !== null) {
-      this.events.publish(new OrderPaymentFailedEvent(refused, "refused"));
+    await this.uow.run(async () => {
+      const refused = await this.orders.markPaymentFailed(command.paymentIntentId);
+      if (refused !== null) {
+        await this.durable.publish(new OrderPaymentFailedEvent(refused, "refused").durableFact());
+      }
+    });
+  }
+
+  /**
+   * Un encaissement sur une commande annulée : rien ne bascule, seul le fait
+   * s'écrit — dans une unité de travail à lui, pour qu'il soit en boîte
+   * d'envoi AVANT que le webhook soit accusé.
+   */
+  private async ringRefundDue(paymentIntentId: string): Promise<void> {
+    const refundDue = await this.cancelled.cancelledOrderOf(paymentIntentId);
+    if (refundDue === null) {
+      return;
     }
+    await this.uow.run(async () => {
+      await this.durable.publish(new OrderPaidAfterCancellationEvent(refundDue).durableFact());
+    });
   }
 }

@@ -1,4 +1,3 @@
-import { BackgroundWork } from "../../../../../platform/events/background-work.js";
 import { FixedClock } from "../../../../../platform/time/fixed-clock.js";
 import {
   StaffNotifier,
@@ -10,7 +9,6 @@ import {
   type FailedSettlementSubject,
 } from "../../../domain/ports/failed-settlement.reader.js";
 import { RingRefundDue } from "../ring-refund-due.handler.js";
-import { ImmediateWork } from "./payment-failure-doubles.js";
 
 class OneSubject extends FailedSettlementReader {
   constructor(private readonly subject: FailedSettlementSubject | null) {
@@ -37,16 +35,6 @@ class BrokenNotifier extends StaffNotifier {
   }
 }
 
-/** Garde la tâche lancée, pour qu'on puisse l'attendre et voir comment elle finit. */
-class CapturingWork extends BackgroundWork {
-  readonly tasks: Promise<void>[] = [];
-
-  override track(task: Promise<void>): Promise<void> {
-    this.tasks.push(task);
-    return task;
-  }
-}
-
 const NOW = new Date(0);
 const PUBLIC: FailedSettlementSubject = {
   orderNumber: "ORD-5",
@@ -54,15 +42,17 @@ const PUBLIC: FailedSettlementSubject = {
   companyName: null,
 };
 
+/** Le fait tel que la boîte d'envoi le livre (lot E4b). */
+function delivery() {
+  const fact = new OrderPaidAfterCancellationEvent("order_5").durableFact();
+  return { eventId: "evt_1", type: fact.type, payload: fact.payload };
+}
+
 async function ring(subject: FailedSettlementSubject | null): Promise<readonly StaffNotice[]> {
   const notifier = new RecordingNotifier();
-  new RingRefundDue(
-    new OneSubject(subject),
-    notifier,
-    new FixedClock(NOW),
-    new ImmediateWork(),
-  ).handle(new OrderPaidAfterCancellationEvent("order_5"));
-  await new Promise((resolve) => setImmediate(resolve));
+  await new RingRefundDue(new OneSubject(subject), notifier, new FixedClock(NOW)).handle(
+    delivery(),
+  );
   return notifier.notices;
 }
 
@@ -93,15 +83,18 @@ describe("RingRefundDue", () => {
     expect(await ring(null)).toEqual([]);
   });
 
-  it("une cloche en panne ne fait pas échouer l'abonné", async () => {
-    const work = new CapturingWork();
-    new RingRefundDue(
+  /**
+   * Durable depuis le lot E4b (2026-10-10) : l'abonné ne rattrape plus une
+   * cloche en panne — il lève, et la boîte d'envoi rejoue. L'avaler aurait
+   * accusé le reçu d'une cloche jamais sonnée.
+   */
+  it("une cloche en panne fait échouer la livraison, pour qu'elle soit rejouée", async () => {
+    const subscriber = new RingRefundDue(
       new OneSubject(PUBLIC),
       new BrokenNotifier(),
       new FixedClock(NOW),
-      work,
-    ).handle(new OrderPaidAfterCancellationEvent("order_5"));
+    );
 
-    await expect(Promise.all(work.tasks)).resolves.toBeDefined();
+    await expect(subscriber.handle(delivery())).rejects.toThrow("cloche indisponible");
   });
 });

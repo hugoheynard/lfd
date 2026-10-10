@@ -1,6 +1,4 @@
 import { DirectUnitOfWork } from "../../../../../platform/database/__tests__/direct-unit-of-work.js";
-import { DomainEventPublisher } from "../../../../../platform/events/domain-event-publisher.js";
-import { OrderPaidAfterCancellationEvent } from "../../../domain/events/order-paid-after-cancellation.event.js";
 import { OrderPaymentFailedEvent } from "../../../domain/events/order-payment-failed.event.js";
 import { CancelledOrderPaymentReader } from "../../../domain/ports/cancelled-order-payment.reader.js";
 import { OrderRepository } from "../../../domain/ports/order.repository.js";
@@ -8,14 +6,18 @@ import { ConfirmOrderPaymentCommand } from "../confirm-order-payment.command.js"
 import { ConfirmOrderPaymentHandler } from "../confirm-order-payment.handler.js";
 import { RecordingDurable } from "./durable-doubles.js";
 
-/** Ce que les doublés ont vu passer : les marquages, et les faits publiés. */
+/** Ce que les doublés ont vu passer : les marquages, et les faits durables écrits. */
 interface Sink {
   paid: string[];
   failed: string[];
-  published: object[];
+  readonly durable: RecordingDurable;
 }
 
-const emptySink = (): Sink => ({ paid: [], failed: [], published: [] });
+const emptySink = (): Sink => ({ paid: [], failed: [], durable: new RecordingDurable() });
+
+/** Les faits du refus et du remboursement dû — `order.paid` est éprouvé à part. */
+const settlementFacts = (sink: Sink) =>
+  sink.durable.facts.filter((fact) => fact.type !== "order.paid");
 
 /**
  * Repo doublé : enregistre lequel des deux marquages a été appelé, avec quel
@@ -43,16 +45,6 @@ function recordingRepo(sink: Sink, franchit: string | null): OrderRepository {
   };
 }
 
-/** Le vrai port, branché sur un journal : c'est par lui que les faits sortent. */
-function recordingPublisher(sink: Sink): DomainEventPublisher {
-  return {
-    publish: (event: object) => {
-      sink.published.push(event);
-    },
-    publishTraced: () => Promise.reject(new Error("non utilisé")),
-  };
-}
-
 /** La commande annulée qui porte l'intention, ou aucune ; et les intentions demandées. */
 class CancelledOrders extends CancelledOrderPaymentReader {
   readonly asked: string[] = [];
@@ -71,14 +63,12 @@ const handlerWith = (
   sink: Sink,
   franchit: string | null,
   cancelled: CancelledOrders = new CancelledOrders(null),
-  durable: RecordingDurable = new RecordingDurable(),
 ): ConfirmOrderPaymentHandler =>
   new ConfirmOrderPaymentHandler(
     recordingRepo(sink, franchit),
     cancelled,
-    recordingPublisher(sink),
     new DirectUnitOfWork(),
-    durable,
+    sink.durable,
   );
 
 describe("ConfirmOrderPaymentHandler", () => {
@@ -109,24 +99,33 @@ describe("ConfirmOrderPaymentHandler", () => {
  */
 describe("ConfirmOrderPaymentHandler — ce qu'il PUBLIE", () => {
   /**
-   * Lot E4 (2026-10-10) : le règlement acquis ne part plus en mémoire — un
-   * redémarrage entre l'accusé du webhook et ce saut perdait les points et
-   * l'accusé. Il n'existe plus qu'en `order.paid`, durable (testé plus bas).
+   * Lot E4 (2026-10-10) : le règlement acquis n'existe plus qu'en
+   * `order.paid`, durable (testé plus bas) — aucun autre fait ne l'accompagne.
    */
-  it("ne publie RIEN en mémoire sur un règlement acquis", async () => {
+  it("n'écrit aucun fait de refus ni de remboursement sur un règlement acquis", async () => {
     const sink = emptySink();
 
     await handlerWith(sink, "order_7").execute(new ConfirmOrderPaymentCommand("pi_7", "succeeded"));
 
-    expect(sink.published).toEqual([]);
+    expect(settlementFacts(sink)).toEqual([]);
   });
 
-  it("publie le refus, avec l'identifiant de la COMMANDE", async () => {
+  /**
+   * Lot E4b (2026-10-10) : le refus partait en mémoire après `markPaymentFailed`
+   * — un redémarrage entre l'accusé du webhook et le saut perdait le courriel
+   * de refus et la cloche. Il s'écrit désormais durable, dans l'unité de
+   * travail de la bascule, et plus rien ne part en mémoire (le handler n'a
+   * même plus de bus à qui parler).
+   */
+  it("refus : le fait durable est écrit avec l'identifiant de la COMMANDE, rien en mémoire", async () => {
     const sink = emptySink();
 
     await handlerWith(sink, "order_8").execute(new ConfirmOrderPaymentCommand("pi_8", "failed"));
 
-    expect(sink.published).toEqual([new OrderPaymentFailedEvent("order_8", "refused")]);
+    expect(sink.durable.facts).toEqual([
+      new OrderPaymentFailedEvent("order_8", "refused").durableFact(),
+    ]);
+    expect(sink.durable.facts[0]?.key).toBe("order.payment_failed:order_8:refused");
   });
 
   /**
@@ -142,7 +141,7 @@ describe("ConfirmOrderPaymentHandler — ce qu'il PUBLIE", () => {
 
     // Le marquage est bien tenté : c'est la BASE qui arbitre, pas le handler.
     expect(sink.paid).toEqual(["pi_9"]);
-    expect(sink.published).toEqual([]);
+    expect(settlementFacts(sink)).toEqual([]);
   });
 
   it("🔴 ne publie rien non plus sur un refus déjà enregistré", async () => {
@@ -151,7 +150,7 @@ describe("ConfirmOrderPaymentHandler — ce qu'il PUBLIE", () => {
     await handlerWith(sink, null).execute(new ConfirmOrderPaymentCommand("pi_10", "failed"));
 
     expect(sink.failed).toEqual(["pi_10"]);
-    expect(sink.published).toEqual([]);
+    expect(settlementFacts(sink)).toEqual([]);
   });
 });
 
@@ -170,7 +169,13 @@ describe("ConfirmOrderPaymentHandler — un encaissement sur une commande annul�
     );
 
     expect(cancelled.asked).toEqual(["pi_11"]);
-    expect(sink.published).toEqual([new OrderPaidAfterCancellationEvent("order_11")]);
+    expect(sink.durable.facts).toEqual([
+      {
+        type: "order.paid_after_cancellation",
+        key: "order.paid_after_cancellation:order_11",
+        payload: { orderId: "order_11" },
+      },
+    ]);
   });
 
   it("ne demande rien quand l'encaissement a franchi", async () => {
@@ -182,7 +187,7 @@ describe("ConfirmOrderPaymentHandler — un encaissement sur une commande annul�
     );
 
     expect(cancelled.asked).toEqual([]);
-    expect(sink.published).toEqual([]);
+    expect(settlementFacts(sink)).toEqual([]);
   });
 
   it("ne sonne pas sur un refus arrivé après l'annulation — aucun argent reçu", async () => {
@@ -194,7 +199,7 @@ describe("ConfirmOrderPaymentHandler — un encaissement sur une commande annul�
     );
 
     expect(cancelled.asked).toEqual([]);
-    expect(sink.published).toEqual([]);
+    expect(settlementFacts(sink)).toEqual([]);
   });
 });
 
@@ -205,28 +210,22 @@ describe("ConfirmOrderPaymentHandler — un encaissement sur une commande annul�
  */
 describe("ConfirmOrderPaymentHandler — le fait durable de l'encaissement", () => {
   it("écrit `order.paid` au franchissement, avec la commande", async () => {
-    const durable = new RecordingDurable();
-    await handlerWith(emptySink(), "ord_1", undefined, durable).execute(
-      new ConfirmOrderPaymentCommand("pi_1", "succeeded"),
-    );
-    expect(durable.facts).toEqual([
+    const sink = emptySink();
+    await handlerWith(sink, "ord_1").execute(new ConfirmOrderPaymentCommand("pi_1", "succeeded"));
+    expect(sink.durable.facts).toEqual([
       { type: "order.paid", key: "order.paid:ord_1", payload: { orderId: "ord_1" } },
     ]);
   });
 
   it("n'écrit rien quand rien n'a franchi (webhook rejoué)", async () => {
-    const durable = new RecordingDurable();
-    await handlerWith(emptySink(), null, undefined, durable).execute(
-      new ConfirmOrderPaymentCommand("pi_1", "succeeded"),
-    );
-    expect(durable.facts).toEqual([]);
+    const sink = emptySink();
+    await handlerWith(sink, null).execute(new ConfirmOrderPaymentCommand("pi_1", "succeeded"));
+    expect(sink.durable.facts).toEqual([]);
   });
 
-  it("n'écrit rien sur un refus de carte", async () => {
-    const durable = new RecordingDurable();
-    await handlerWith(emptySink(), "ord_1", undefined, durable).execute(
-      new ConfirmOrderPaymentCommand("pi_1", "failed"),
-    );
-    expect(durable.facts).toEqual([]);
+  it("n'écrit pas `order.paid` sur un refus de carte", async () => {
+    const sink = emptySink();
+    await handlerWith(sink, "ord_1").execute(new ConfirmOrderPaymentCommand("pi_1", "failed"));
+    expect(sink.durable.facts.map((fact) => fact.type)).toEqual(["order.payment_failed"]);
   });
 });

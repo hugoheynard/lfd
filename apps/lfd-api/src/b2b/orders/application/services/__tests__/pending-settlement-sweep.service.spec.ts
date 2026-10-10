@@ -1,4 +1,3 @@
-import { RecordingPublisher } from "../../../../../platform/events/__tests__/recording-publisher.js";
 import { ServiceDay } from "../../../../../production/channels/commerce/index.js";
 import {
   PaymentGateway,
@@ -20,6 +19,7 @@ import {
 import type { SettlementSweepWindow } from "../../../domain/services/settlement-sweep.js";
 import { DirectUnitOfWork } from "../../../../../platform/database/__tests__/direct-unit-of-work.js";
 import { FixedClock } from "../../../../../platform/time/fixed-clock.js";
+import { RecordingDurable } from "../../commands/__tests__/durable-doubles.js";
 import { RecordingRedemption } from "../../commands/__tests__/voucher-doubles.js";
 import { PendingSettlementSweep } from "../pending-settlement-sweep.service.js";
 
@@ -122,7 +122,8 @@ interface Scenario {
 function build(scenario: Scenario) {
   const calls: string[] = [];
   const unsettled = new Unsettled(scenario.rows);
-  const events = new RecordingPublisher();
+  // Lot E4b (2026-10-10) : le règlement mort s'écrit durable, dans la transaction.
+  const events = new RecordingDurable();
   const vouchers = new RecordingRedemption();
   const sweep = new PendingSettlementSweep(
     unsettled,
@@ -165,9 +166,9 @@ describe("PendingSettlementSweep — la clôture coupe les règlements en vol", 
     await run();
 
     expect(calls).toEqual(["cancel:pi_1", "fail:ord_1", "cancel:pi_2", "fail:ord_2"]);
-    expect(events.published).toEqual([
-      new OrderPaymentFailedEvent("ord_1", "day_closed"),
-      new OrderPaymentFailedEvent("ord_2", "day_closed"),
+    expect(events.facts).toEqual([
+      new OrderPaymentFailedEvent("ord_1", "day_closed").durableFact(),
+      new OrderPaymentFailedEvent("ord_2", "day_closed").durableFact(),
     ]);
   });
 
@@ -195,7 +196,9 @@ describe("PendingSettlementSweep — la clôture coupe les règlements en vol", 
       await expect(run()).resolves.toBeUndefined();
 
       expect(calls).toEqual(["cancel:pi_1", "fail:ord_1"]);
-      expect(events.published).toEqual([new OrderPaymentFailedEvent("ord_1", "day_closed")]);
+      expect(events.facts).toEqual([
+        new OrderPaymentFailedEvent("ord_1", "day_closed").durableFact(),
+      ]);
     },
   );
 
@@ -216,7 +219,7 @@ describe("PendingSettlementSweep — la clôture coupe les règlements en vol", 
       await run();
 
       expect(calls).toEqual(["cancel:pi_1"]);
-      expect(events.published).toEqual([]);
+      expect(events.facts).toEqual([]);
     },
   );
 
@@ -228,7 +231,7 @@ describe("PendingSettlementSweep — la clôture coupe les règlements en vol", 
 
     await run();
 
-    expect(events.published).toEqual([]);
+    expect(events.facts).toEqual([]);
   });
 });
 

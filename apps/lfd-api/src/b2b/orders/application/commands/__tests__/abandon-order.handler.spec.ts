@@ -34,6 +34,7 @@ import { AbandonOrderCommand } from "../abandon-order.command.js";
 import { AbandonOrderHandler } from "../abandon-order.handler.js";
 import { DirectUnitOfWork } from "../../../../../platform/database/__tests__/direct-unit-of-work.js";
 import { FixedClock } from "../../../../../platform/time/fixed-clock.js";
+import { RecordingDurable } from "./durable-doubles.js";
 import { RecordingRedemption } from "./voucher-doubles.js";
 
 /** Un seul rôle, pour tout demandeur : membre (`orders`) ou étranger (`null`). */
@@ -157,6 +158,7 @@ function build(scenario: Scenario = {}) {
     buyerPhone: null,
   });
   const vouchers = new RecordingRedemption();
+  const durable = new RecordingDurable();
   const handler = new AbandonOrderHandler(
     new OneRoleGuard(scenario.role ?? null),
     reader,
@@ -166,21 +168,33 @@ function build(scenario: Scenario = {}) {
     new DirectUnitOfWork(),
     vouchers,
     new FixedClock(new Date(0)),
+    durable,
   );
   const abandon = (actor = "u1") => handler.execute(new AbandonOrderCommand(actor, "order_1"));
-  return { abandon, gateway, repository, events, vouchers };
+  return { abandon, gateway, repository, events, vouchers, durable };
 }
 
 describe("AbandonOrderHandler — l'ordre des gestes", () => {
-  it("annule l'intention chez Stripe, PUIS écrit, puis publie le fait et l'acte", async () => {
-    const { abandon, gateway, repository, events } = build();
+  /**
+   * Lot E4b (2026-10-10) : le règlement mort s'écrit DURABLE dans l'unité de
+   * travail de l'abandon ; seul l'acte (journal, croissance) part encore en
+   * mémoire.
+   */
+  it("annule l'intention chez Stripe, PUIS écrit avec le fait durable, puis publie l'acte", async () => {
+    const { abandon, gateway, repository, events, durable } = build();
 
     await abandon();
 
     expect(gateway.cancelled).toEqual(["pi_1"]);
     expect(repository.abandoned).toEqual(["order_1"]);
+    expect(durable.facts).toEqual([
+      {
+        type: "order.payment_failed",
+        key: "order.payment_failed:order_1:abandoned",
+        payload: { orderId: "order_1", cause: "abandoned" },
+      },
+    ]);
     expect(events.published).toEqual([
-      new OrderPaymentFailedEvent("order_1", "abandoned"),
       new OrderAbandonedEvent("order_1", "ORD-4812", "u1", "cancelled"),
     ]);
   });
@@ -194,7 +208,7 @@ describe("AbandonOrderHandler — l'ordre des gestes", () => {
   });
 
   it("rapporte ce que la base a écrit — un pro garde sa commande, son règlement tombe", async () => {
-    const { abandon, events } = build({
+    const { abandon, events, durable } = build({
       written: "failed",
       companyId: "cmp_1",
       role: "orders",
@@ -203,18 +217,21 @@ describe("AbandonOrderHandler — l'ordre des gestes", () => {
 
     await abandon();
 
+    expect(durable.facts).toEqual([
+      new OrderPaymentFailedEvent("order_1", "abandoned").durableFact(),
+    ]);
     expect(events.published).toEqual([
-      new OrderPaymentFailedEvent("order_1", "abandoned"),
       new OrderAbandonedEvent("order_1", "ORD-4812", "u1", "failed"),
     ]);
   });
 
   it("ne publie rien quand la base n'a rien franchi (second clic d'un pro)", async () => {
-    const { abandon, events } = build({ written: null, payment: "failed" });
+    const { abandon, events, durable } = build({ written: null, payment: "failed" });
 
     await abandon();
 
     expect(events.published).toEqual([]);
+    expect(durable.facts).toEqual([]);
   });
 
   it("écrit sans appeler Stripe quand la commande n'a pas d'intention", async () => {
@@ -263,11 +280,12 @@ describe("AbandonOrderHandler — les issues de Stripe qui interdisent d'écrire
     [{ kind: "in_progress" } as const, OrderPaymentInProgressError],
     [{ kind: "unavailable", reason: "ECONNRESET" } as const, OrderAbandonUnavailableError],
   ])("%o → refus nommé, rien d'écrit, rien de publié", async (outcome, error) => {
-    const { abandon, repository, events } = build({ outcome });
+    const { abandon, repository, events, durable } = build({ outcome });
 
     await expect(abandon()).rejects.toBeInstanceOf(error);
     expect(repository.abandoned).toEqual([]);
     expect(events.published).toEqual([]);
+    expect(durable.facts).toEqual([]);
   });
 });
 

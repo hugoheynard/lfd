@@ -1,14 +1,21 @@
-import { Logger } from "@nestjs/common";
-import { EventsHandler, type IEventHandler } from "@nestjs/cqrs";
+import { Injectable } from "@nestjs/common";
+import type { DurableDelivery } from "../../../../platform/outbox/durable-event.js";
+import {
+  DurableHandler,
+  type DurableSubscriber,
+} from "../../../../platform/outbox/durable-handler.js";
 
-import { BackgroundWork } from "../../../../platform/events/background-work.js";
 import { Clock } from "../../../../platform/time/clock.js";
 import { StaffNotifier } from "../../../../staff/notifications/domain/ports/staff-notifier.js";
 import {
+  ORDER_PAYMENT_FAILED,
   OrderPaymentFailedEvent,
   type PaymentFailureCause,
 } from "../../domain/events/order-payment-failed.event.js";
 import { FailedSettlementReader } from "../../domain/ports/failed-settlement.reader.js";
+
+/** Nom STABLE de l'abonné — clé de son reçu dans la boîte d'envoi. */
+export const RING_FAILED_PRO_SETTLEMENT = "orders.ring-failed-pro-settlement";
 
 /** Ce que la cloche dit de chaque cause, après « Règlement tombé — ». */
 const CAUSE_LINES: Readonly<Record<PaymentFailureCause, string>> = {
@@ -42,42 +49,41 @@ const CAUSE_LINES: Readonly<Record<PaymentFailureCause, string>> = {
  *
  * Une clé par commande ET par cause : un refus puis la clôture de la même
  * commande sont deux nouvelles, un webhook rejoué n'en est pas une.
+ *
+ * ## Durable depuis le 2026-10-10 (lot E4b)
+ *
+ * Elle écoutait le fait en mémoire, publié APRÈS l'écriture : un redémarrage
+ * entre les deux perdait la cloche d'un règlement pro tombé, sans témoin. Elle lit désormais le fait
+ * durable écrit dans l'unité de travail de l'émetteur
+ * (`documentation/journalisation/plan-evenements-durables.md`). Elle ne
+ * rattrape plus ses échecs : le geste est déjà accusé, et c'est la boîte
+ * d'envoi qui rejoue — la clé de la cloche dédoublonne.
  */
-@EventsHandler(OrderPaymentFailedEvent)
-export class RingFailedProSettlement implements IEventHandler<OrderPaymentFailedEvent> {
-  private readonly logger = new Logger(RingFailedProSettlement.name);
-
+@Injectable()
+@DurableHandler({ type: ORDER_PAYMENT_FAILED, subscriber: RING_FAILED_PRO_SETTLEMENT })
+export class RingFailedProSettlement implements DurableSubscriber {
   constructor(
     private readonly orders: FailedSettlementReader,
     private readonly notifier: StaffNotifier,
     private readonly clock: Clock,
-    private readonly work: BackgroundWork,
   ) {}
 
-  handle(event: OrderPaymentFailedEvent): void {
-    void this.work.track(this.run(event), "ring-failed-pro-settlement");
-  }
-
-  private async run(event: OrderPaymentFailedEvent): Promise<void> {
-    // Sonner ne fait jamais échouer le geste : le règlement est déjà écrit.
-    try {
-      const subject = await this.orders.subjectOf(event.orderId);
-      if (subject === null || subject.clientele !== "pro") {
-        return;
-      }
-      const who = subject.companyName ?? subject.orderNumber;
-      await this.notifier.notify([
-        {
-          kind: "order.payment_failed",
-          subject: `Règlement tombé — ${who}`,
-          body: `Commande ${subject.orderNumber} : ${CAUSE_LINES[event.cause]}.`,
-          link: `/commandes/${event.orderId}`,
-          idempotencyKey: `notification:order.payment_failed:${event.orderId}:${event.cause}`,
-          occurredAt: this.clock.now(),
-        },
-      ]);
-    } catch (error) {
-      this.logger.error(`Cloche « règlement tombé » non émise (commande ${event.orderId})`, error);
+  async handle(delivery: DurableDelivery): Promise<void> {
+    const event = OrderPaymentFailedEvent.fromPayload(delivery.payload);
+    const subject = await this.orders.subjectOf(event.orderId);
+    if (subject === null || subject.clientele !== "pro") {
+      return;
     }
+    const who = subject.companyName ?? subject.orderNumber;
+    await this.notifier.notify([
+      {
+        kind: "order.payment_failed",
+        subject: `Règlement tombé — ${who}`,
+        body: `Commande ${subject.orderNumber} : ${CAUSE_LINES[event.cause]}.`,
+        link: `/commandes/${event.orderId}`,
+        idempotencyKey: `notification:order.payment_failed:${event.orderId}:${event.cause}`,
+        occurredAt: this.clock.now(),
+      },
+    ]);
   }
 }

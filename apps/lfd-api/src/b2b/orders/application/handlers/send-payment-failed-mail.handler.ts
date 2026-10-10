@@ -1,14 +1,23 @@
-import { Inject } from "@nestjs/common";
-import { EventsHandler, type IEventHandler } from "@nestjs/cqrs";
+import { Inject, Injectable } from "@nestjs/common";
+import type { DurableDelivery } from "../../../../platform/outbox/durable-event.js";
+import {
+  DurableHandler,
+  type DurableSubscriber,
+} from "../../../../platform/outbox/durable-handler.js";
 
-import { BackgroundWork } from "../../../../platform/events/background-work.js";
 import { DEFAULT_MAIL_LOCALE } from "../../../../platform/mailer/copy/mail-copy.js";
 import { MAILER, type B2bMailer } from "../../../../platform/mailer/mailer.tokens.js";
-import { OrderPaymentFailedEvent } from "../../domain/events/order-payment-failed.event.js";
+import {
+  ORDER_PAYMENT_FAILED,
+  OrderPaymentFailedEvent,
+} from "../../domain/events/order-payment-failed.event.js";
 import { OrderMailOrigins } from "../../domain/ports/order-mail-origins.js";
 import { OrderRecipientReader } from "../../domain/ports/order-recipient.reader.js";
 import { OrderReader } from "../../domain/ports/order.reader.js";
 import { clientSheetOf } from "../../domain/services/order-sheet.js";
+
+/** Nom STABLE de l'abonné — clé de son reçu dans la boîte d'envoi. */
+export const SEND_PAYMENT_FAILED_MAIL = "orders.send-payment-failed-mail";
 
 /**
  * **« Votre paiement n'est pas passé »** — le seul courriel du parcours qui
@@ -40,26 +49,33 @@ import { clientSheetOf } from "../../domain/services/order-sheet.js";
  * Le fait n'est publié qu'au **franchissement** : le dépôt ne bascule que ce qui
  * était encore `pending`, donc un webhook rejoué — Stripe réémet jusqu'à un
  * 2xx — ne produit aucun second événement. La clé d'idempotence est en outre
- * déterministe par commande.
+ * déterministe par commande : un rejeu de la boîte d'envoi n'en envoie pas
+ * un second.
+ *
+ * ## Durable depuis le 2026-10-10 (lot E4b)
+ *
+ * Il écoutait le fait en mémoire, publié APRÈS la bascule : un redémarrage
+ * entre les deux perdait le courriel de refus, sans témoin. Il lit désormais le fait
+ * durable écrit dans l'unité de travail qui bascule la commande
+ * (`documentation/journalisation/plan-evenements-durables.md`) ; un échec
+ * lève, et la boîte d'envoi le rejoue.
  */
-@EventsHandler(OrderPaymentFailedEvent)
-export class SendPaymentFailedMail implements IEventHandler<OrderPaymentFailedEvent> {
+@Injectable()
+@DurableHandler({ type: ORDER_PAYMENT_FAILED, subscriber: SEND_PAYMENT_FAILED_MAIL })
+export class SendPaymentFailedMail implements DurableSubscriber {
   constructor(
     private readonly orders: OrderReader,
     private readonly recipients: OrderRecipientReader,
     private readonly origins: OrderMailOrigins,
-    private readonly work: BackgroundWork,
     @Inject(MAILER) private readonly mailer: B2bMailer,
   ) {}
 
-  handle(event: OrderPaymentFailedEvent): void {
+  async handle(delivery: DurableDelivery): Promise<void> {
+    const event = OrderPaymentFailedEvent.fromPayload(delivery.payload);
     if (event.cause !== "refused") {
       return;
     }
-    // **Suivi** : cet abonné tourne hors de la requête du webhook. Sans cette
-    // inscription, un test vide la base pendant que l'envoi la lit, et l'échec
-    // accuse le test SUIVANT.
-    void this.work.track(this.run(event), "send-payment-failed-mail");
+    await this.run(event);
   }
 
   private async run(event: OrderPaymentFailedEvent): Promise<void> {

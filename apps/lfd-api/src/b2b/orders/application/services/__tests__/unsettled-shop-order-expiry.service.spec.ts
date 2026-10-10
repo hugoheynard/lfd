@@ -1,5 +1,4 @@
 import { DirectUnitOfWork } from "../../../../../platform/database/__tests__/direct-unit-of-work.js";
-import { RecordingPublisher } from "../../../../../platform/events/__tests__/recording-publisher.js";
 import { FixedClock } from "../../../../../platform/time/fixed-clock.js";
 import {
   PaymentGateway,
@@ -12,6 +11,7 @@ import { OrderPaymentFailedEvent } from "../../../domain/events/order-payment-fa
 import { UnsettledShopOrderCanceller } from "../../../domain/ports/unsettled-shop-order.canceller.js";
 import { UnsettledShopOrderReader } from "../../../domain/ports/unsettled-shop-order.reader.js";
 import type { UnsettledSettlement } from "../../../domain/ports/unsettled-settlement.reader.js";
+import { RecordingDurable } from "../../commands/__tests__/durable-doubles.js";
 import { RecordingRedemption } from "../../commands/__tests__/voucher-doubles.js";
 import { UnsettledShopOrderExpiry } from "../unsettled-shop-order-expiry.service.js";
 
@@ -109,7 +109,8 @@ interface Scenario {
 
 function build(scenario: Scenario) {
   const calls: string[] = [];
-  const events = new RecordingPublisher();
+  // Lot E4b (2026-10-10) : le règlement mort s'écrit durable, dans la transaction.
+  const events = new RecordingDurable();
   const vouchers = new RecordingRedemption();
   const expiry = new UnsettledShopOrderExpiry(
     new Unsettled(scenario.rows),
@@ -131,7 +132,7 @@ describe("UnsettledShopOrderExpiry — l'expiration à trente minutes", () => {
 
     expect(report).toEqual({ cancelled: 1, kept: 0 });
     expect(calls).toEqual(["cancel-intent:pi_old", "cancel-order:old"]);
-    expect(events.published).toEqual([new OrderPaymentFailedEvent("old", "expired")]);
+    expect(events.facts).toEqual([new OrderPaymentFailedEvent("old", "expired").durableFact()]);
   });
 
   it("n'écrit pas quand le paiement est en cours ou déjà pris chez Stripe", async () => {
@@ -147,7 +148,7 @@ describe("UnsettledShopOrderExpiry — l'expiration à trente minutes", () => {
 
     expect(report).toEqual({ cancelled: 0, kept: 2 });
     expect(calls).toEqual(["cancel-intent:pi_paying", "cancel-intent:pi_paid"]);
-    expect(events.published).toEqual([]);
+    expect(events.facts).toEqual([]);
   });
 
   it("n'écrit pas quand Stripe est injoignable : le passage suivant réessaie", async () => {
@@ -172,7 +173,7 @@ describe("UnsettledShopOrderExpiry — l'expiration à trente minutes", () => {
     const report = await expiry.expireLapsed();
 
     expect(report).toEqual({ cancelled: 0, kept: 1 });
-    expect(events.published).toEqual([]);
+    expect(events.facts).toEqual([]);
     expect(vouchers.calls).toEqual([]);
   });
 
@@ -195,7 +196,7 @@ describe("UnsettledShopOrderExpiry — le remplacement par une nouvelle passatio
 
     expect(report).toEqual({ cancelled: 1, kept: 0 });
     expect(calls).toEqual(["cancel-intent:pi_mine", "cancel-order:mine"]);
-    expect(events.published).toEqual([new OrderPaymentFailedEvent("mine", "replaced")]);
+    expect(events.facts).toEqual([new OrderPaymentFailedEvent("mine", "replaced").durableFact()]);
   });
 
   it("garde la précédente quand elle est en train d'être payée (§4.4)", async () => {
@@ -207,7 +208,7 @@ describe("UnsettledShopOrderExpiry — le remplacement par une nouvelle passatio
     const report = await expiry.replaceEarlier("new");
 
     expect(report).toEqual({ cancelled: 0, kept: 1 });
-    expect(events.published).toEqual([]);
+    expect(events.facts).toEqual([]);
   });
 
   it("ne remplace rien quand la nouvelle commande est hors périmètre", async () => {

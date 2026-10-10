@@ -1,4 +1,3 @@
-import { BackgroundWork } from "../../../../../platform/events/background-work.js";
 import { FixedClock } from "../../../../../platform/time/fixed-clock.js";
 import {
   StaffNotifier,
@@ -13,7 +12,6 @@ import {
   type FailedSettlementSubject,
 } from "../../../domain/ports/failed-settlement.reader.js";
 import { RingFailedProSettlement } from "../ring-failed-pro-settlement.handler.js";
-import { ImmediateWork } from "./payment-failure-doubles.js";
 
 class OneSubject extends FailedSettlementReader {
   constructor(private readonly subject: FailedSettlementSubject | null) {
@@ -40,16 +38,6 @@ class BrokenNotifier extends StaffNotifier {
   }
 }
 
-/** Garde la tâche lancée, pour qu'on puisse l'attendre et voir comment elle finit. */
-class CapturingWork extends BackgroundWork {
-  readonly tasks: Promise<void>[] = [];
-
-  override track(task: Promise<void>): Promise<void> {
-    this.tasks.push(task);
-    return task;
-  }
-}
-
 const NOW = new Date(0);
 const PRO: FailedSettlementSubject = {
   orderNumber: "ORD-9",
@@ -58,12 +46,13 @@ const PRO: FailedSettlementSubject = {
 };
 
 function handlerWith(subject: FailedSettlementSubject | null, notifier: StaffNotifier) {
-  return new RingFailedProSettlement(
-    new OneSubject(subject),
-    notifier,
-    new FixedClock(NOW),
-    new ImmediateWork(),
-  );
+  return new RingFailedProSettlement(new OneSubject(subject), notifier, new FixedClock(NOW));
+}
+
+/** Le fait tel que la boîte d'envoi le livre (lot E4b). */
+function delivery(cause: PaymentFailureCause) {
+  const fact = new OrderPaymentFailedEvent("order_9", cause).durableFact();
+  return { eventId: "evt_1", type: fact.type, payload: fact.payload };
 }
 
 /** Publie le fait, laisse l'abonné finir, et rend ce que la cloche a reçu. */
@@ -72,8 +61,7 @@ async function ring(
   cause: PaymentFailureCause,
 ): Promise<readonly StaffNotice[]> {
   const notifier = new RecordingNotifier();
-  handlerWith(subject, notifier).handle(new OrderPaymentFailedEvent("order_9", cause));
-  await new Promise((resolve) => setImmediate(resolve));
+  await handlerWith(subject, notifier).handle(delivery(cause));
   return notifier.notices;
 }
 
@@ -122,16 +110,14 @@ describe("RingFailedProSettlement", () => {
     expect(notices[0]?.subject).toBe("Règlement tombé — ORD-9");
   });
 
-  it("une cloche en panne ne fait pas échouer l'abonné", async () => {
-    const work = new CapturingWork();
-    const handler = new RingFailedProSettlement(
-      new OneSubject(PRO),
-      new BrokenNotifier(),
-      new FixedClock(NOW),
-      work,
-    );
-    handler.handle(new OrderPaymentFailedEvent("order_9", "refused"));
-
-    await expect(work.tasks[0]).resolves.toBeUndefined();
+  /**
+   * Durable depuis le lot E4b (2026-10-10) : l'abonné ne rattrape plus une
+   * cloche en panne — il lève, et la boîte d'envoi rejoue. L'avaler aurait
+   * accusé le reçu d'une cloche jamais sonnée.
+   */
+  it("une cloche en panne fait échouer la livraison, pour qu'elle soit rejouée", async () => {
+    await expect(
+      handlerWith(PRO, new BrokenNotifier()).handle(delivery("refused")),
+    ).rejects.toThrow("cloche indisponible");
   });
 });

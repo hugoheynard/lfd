@@ -3,8 +3,8 @@
 > Hugo, 2026-10-04 : « maintenant qu'on a la boîte d'envoi, est-ce que ça doit
 > changer la manière dont on journalise ? est-ce qu'il y a une refacto à
 > faire ? » État : **inventaire fait ; E1 bâti (§6), E2 bâti (§7), E3 bâti
-> le 2026-10-06 par le lot DD1 de la livraison (§7 bis), E4a bâti le
-> 2026-10-10 (§7 ter)** ; E4b, E5 et E6 restent.
+> le 2026-10-06 par le lot DD1 de la livraison (§7 bis), E4a et E4b bâtis le
+> 2026-10-10 (§7 ter)** ; E5 et E6 restent.
 > Suite de [`plan-boite-d-envoi.md`](plan-boite-d-envoi.md).
 
 ## 1. Ce qui ne change pas : le journal
@@ -241,6 +241,50 @@ et écouté par le courriel de refus, celui d'expiration et la cloche du
 règlement pro refusé), et le **remboursement dû** (`OrderPaidAfterCancellationEvent`,
 la cloche « à rembourser »). Chaque émetteur doit écrire son fait durable dans
 l'unité de travail qui bascule la commande.
+
+### E4b — la conception, bâtie le 2026-10-10
+
+- **Les deux faits deviennent durables sans changer de nom de classe.**
+  `OrderPaymentFailedEvent` et `OrderPaidAfterCancellationEvent` implémentent
+  `DurableEvent` (`durableFact()`, `static fromPayload()`), comme
+  `OrderPaidFact`. Types stables : `order.payment_failed`,
+  `order.paid_after_cancellation`.
+- **Les clés reprennent celles des effets** : `order.payment_failed:<orderId>:<cause>`
+  (la cloche est déjà par commande ET par cause, les courriels par commande)
+  et `order.paid_after_cancellation:<orderId>`. Une même commande refusée
+  deux fois pour la même cause ne prévenait déjà qu'une fois : rien ne change
+  pour le client.
+- **Chaque émetteur écrit le fait dans l'unité de travail qui bascule** :
+  `ConfirmOrderPaymentHandler` (refus Stripe — `markPaymentFailed` passe dans
+  une `UnitOfWork` ; remboursement dû — le fait s'écrit dans une `UnitOfWork`
+  à lui, il ne bascule rien), `AbandonOrderHandler`, `UnsettledShopOrderExpiry`,
+  `PendingSettlementSweep`. Plus aucun `events.publish` de ces deux faits.
+- **Les quatre abonnés deviennent des `@DurableHandler`** :
+  `SendPaymentFailedMail`, `SendPaymentExpiredMail`, `RingFailedProSettlement`,
+  `RingRefundDue`. Leur logique ne change pas ; ils relisent le fait par
+  `fromPayload`, qui refuse une cause hors de `PaymentFailureCause`.
+- **Hors lot** : `OrderAbandonedEvent` (journal et croissance, bloc `b2b`,
+  E6) reste en mémoire.
+
+**Tranché en bâtissant :**
+
+- **Les cloches ne ravalent plus leur échec.** `RingFailedProSettlement` et
+  `RingRefundDue` avaient un `try/catch` qui journalisait et avalait
+  (« sonner ne fait jamais échouer le webhook »). Sous la boîte d'envoi, la
+  raison ne tient plus — le geste est déjà validé — et avaler ferait
+  enregistrer comme sonnée une cloche qui ne l'a pas été. L'abonné lève, la
+  boîte d'envoi rejoue ; la clé de la cloche dédoublonne.
+- **Les causes `expired` et `replaced` s'écrivent sans abonné.** Aucun
+  courriel ni cloche ne les lit (l'expiration d'une carte impayée ne prévient
+  personne, `commande-carte-reglee.md`) ; le fait est écrit pour qu'un abonné
+  futur n'ait pas à changer l'émetteur, et un fait sans abonné n'a aucune
+  ligne de livraison (§9 de la boîte d'envoi).
+- `OrderSettlementPayloadError` dit désormais « commande, cause ou
+  remboursement » : son message ne parlait que de facture et d'avoir.
+- Éprouvé : `order-settlement-death.facts.spec.ts` (aller-retour, clés, forme
+  et cause refusées) ; e2e `order-abandon`, `order-payment-*`, `order-refunds`,
+  `order-unsettled-shop-expiry`, `production-closing-sweep`, `card-invoices`,
+  `payment-links`, `payments-journal`, `loyalty-earning`, `order-card-settled-before-all` verts (81).
 
 ## 8. Les ports entre blocs — inventaire (2026-10-04)
 

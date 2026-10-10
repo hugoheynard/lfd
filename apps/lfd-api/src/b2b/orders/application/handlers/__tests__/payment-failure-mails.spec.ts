@@ -6,7 +6,6 @@ import { OrderMailOrigins } from "../../../domain/ports/order-mail-origins.js";
 import { SendPaymentExpiredMail } from "../send-payment-expired-mail.handler.js";
 import { SendPaymentFailedMail } from "../send-payment-failed-mail.handler.js";
 import {
-  ImmediateWork,
   OneOrderReader,
   OneRecipientReader,
   RecordingMailer,
@@ -43,15 +42,16 @@ function subscribers(email: string | null = "camille@example.test") {
     buyerPhone: null,
   });
   const recipients = new OneRecipientReader(email);
-  const work = new ImmediateWork();
   const all = [
-    new SendPaymentFailedMail(orders, recipients, new FixedOrigins(), work, mailer),
-    new SendPaymentExpiredMail(orders, recipients, work, mailer),
+    new SendPaymentFailedMail(orders, recipients, new FixedOrigins(), mailer),
+    new SendPaymentExpiredMail(orders, recipients, mailer),
   ];
+  // Chaque abonné reçoit le fait tel que la boîte d'envoi le livre (lot E4b).
   const publish = async (cause: PaymentFailureCause): Promise<void> => {
-    all.forEach((subscriber) => subscriber.handle(new OrderPaymentFailedEvent("order_1", cause)));
-    // Les abonnés rendent la main avant l'envoi ; on laisse les tâches finir.
-    await new Promise((resolve) => setImmediate(resolve));
+    const fact = new OrderPaymentFailedEvent("order_1", cause).durableFact();
+    for (const subscriber of all) {
+      await subscriber.handle({ eventId: "evt_1", type: fact.type, payload: fact.payload });
+    }
   };
   return { mailer, publish };
 }
@@ -92,6 +92,26 @@ describe("les courriels d'un règlement mort", () => {
 
     await publish("day_closed");
 
+    expect(mailer.sent).toEqual([]);
+  });
+});
+
+describe("le fait livré hors forme", () => {
+  it("refuse une cause inconnue : aucun courriel ne part sur un fait illisible", async () => {
+    const mailer = new RecordingMailer();
+    const subscriber = new SendPaymentExpiredMail(
+      new OneOrderReader(null),
+      new OneRecipientReader("camille@example.test"),
+      mailer,
+    );
+
+    await expect(
+      subscriber.handle({
+        eventId: "evt_1",
+        type: "order.payment_failed",
+        payload: { orderId: "order_1", cause: "lost" },
+      }),
+    ).rejects.toThrow("order.payment_failed");
     expect(mailer.sent).toEqual([]);
   });
 });

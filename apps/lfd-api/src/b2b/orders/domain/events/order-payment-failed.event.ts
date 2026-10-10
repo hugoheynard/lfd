@@ -1,3 +1,9 @@
+import type { DurableEvent, DurableFact } from "../../../../platform/outbox/durable-event.js";
+import { OrderSettlementPayloadError } from "../errors/order-settlement-payload.error.js";
+
+/** Nom STABLE du fait, clé de routage vers `@DurableHandler`. */
+export const ORDER_PAYMENT_FAILED = "order.payment_failed";
+
 /**
  * Pourquoi un règlement est mort — chacun appelle un message différent :
  *
@@ -19,6 +25,18 @@
  */
 export type PaymentFailureCause = "refused" | "abandoned" | "day_closed" | "expired" | "replaced";
 
+const PAYMENT_FAILURE_CAUSES: readonly PaymentFailureCause[] = [
+  "refused",
+  "abandoned",
+  "day_closed",
+  "expired",
+  "replaced",
+];
+
+function isPaymentFailureCause(value: unknown): value is PaymentFailureCause {
+  return PAYMENT_FAILURE_CAUSES.some((cause) => cause === value);
+}
+
 /**
  * Fait de domaine : **le règlement d'une commande est mort**.
  *
@@ -39,10 +57,40 @@ export type PaymentFailureCause = "refused" | "abandoned" | "day_closed" | "expi
  * de la journée le publient désormais eux-mêmes, avec leur cause ; les abonnés
  * (courriel, cloche) choisissent sur elle. Un onglet fermé SANS cliquer ne
  * publie toujours rien — c'est la clôture qui le rattrape.
+ *
+ * 🔴 **Durable depuis le 2026-10-10 (lot E4b)**
+ * (`documentation/journalisation/plan-evenements-durables.md`). Il partait en
+ * mémoire APRÈS la bascule : un redémarrage entre les deux perdait le
+ * courriel de refus ou la cloche du règlement pro, sans témoin — la commande
+ * était `failed`, et rien ne rejouait l'annonce. Il s'écrit désormais dans
+ * l'unité de travail qui bascule la commande. Clé
+ * `order.payment_failed:<orderId>:<cause>` : celle de la cloche, qui est déjà
+ * par commande ET par cause.
  */
-export class OrderPaymentFailedEvent {
+export class OrderPaymentFailedEvent implements DurableEvent {
   constructor(
     readonly orderId: string,
     readonly cause: PaymentFailureCause,
   ) {}
+
+  durableFact(): DurableFact {
+    return {
+      type: ORDER_PAYMENT_FAILED,
+      key: `${ORDER_PAYMENT_FAILED}:${this.orderId}:${this.cause}`,
+      payload: { orderId: this.orderId, cause: this.cause },
+    };
+  }
+
+  /**
+   * @throws {OrderSettlementPayloadError} payload hors forme, ou cause hors de
+   *   `PaymentFailureCause` — faute d'émetteur.
+   */
+  static fromPayload(payload: Readonly<Record<string, unknown>>): OrderPaymentFailedEvent {
+    const orderId = payload["orderId"];
+    const cause = payload["cause"];
+    if (typeof orderId !== "string" || orderId.length === 0 || !isPaymentFailureCause(cause)) {
+      throw new OrderSettlementPayloadError(ORDER_PAYMENT_FAILED);
+    }
+    return new OrderPaymentFailedEvent(orderId, cause);
+  }
 }

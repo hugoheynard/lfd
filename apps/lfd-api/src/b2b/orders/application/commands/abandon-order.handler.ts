@@ -3,6 +3,7 @@ import { CommandHandler, type ICommandHandler } from "@nestjs/cqrs";
 
 import { UnitOfWork } from "../../../../platform/database/unit-of-work.js";
 import { DomainEventPublisher } from "../../../../platform/events/domain-event-publisher.js";
+import { DurablePublisher } from "../../../../platform/outbox/durable-publisher.js";
 import { Clock } from "../../../../platform/time/clock.js";
 import {
   PaymentGateway,
@@ -78,6 +79,7 @@ export class AbandonOrderHandler implements ICommandHandler<AbandonOrderCommand,
     private readonly unitOfWork: UnitOfWork,
     private readonly vouchers: LoyaltyVoucherRedemption,
     private readonly clock: Clock,
+    private readonly durable: DurablePublisher,
   ) {}
 
   async execute(command: AbandonOrderCommand): Promise<void> {
@@ -98,7 +100,6 @@ export class AbandonOrderHandler implements ICommandHandler<AbandonOrderCommand,
     if (written === null) {
       return;
     }
-    this.events.publish(new OrderPaymentFailedEvent(command.orderId, "abandoned"));
     this.events.publish(
       new OrderAbandonedEvent(
         command.orderId,
@@ -109,7 +110,12 @@ export class AbandonOrderHandler implements ICommandHandler<AbandonOrderCommand,
     );
   }
 
-  /** L'écriture, et la libération du bon si elle a annulé — ensemble ou pas du tout. */
+  /**
+   * L'écriture, la libération du bon si elle a annulé, et le fait durable
+   * `order.payment_failed` (cause `abandoned`) — ensemble ou pas du tout.
+   * Le fait partait en mémoire après la transaction jusqu'au 2026-10-10
+   * (lot E4b) : un redémarrage entre les deux perdait la cloche du pro.
+   */
   private async abandon(
     orderId: string,
     voucherId: string | null,
@@ -118,6 +124,9 @@ export class AbandonOrderHandler implements ICommandHandler<AbandonOrderCommand,
       const written = await this.repository.markAbandoned(orderId);
       if (written === "cancelled" && voucherId !== null) {
         await this.vouchers.release(voucherId, this.clock.now());
+      }
+      if (written !== null) {
+        await this.durable.publish(new OrderPaymentFailedEvent(orderId, "abandoned").durableFact());
       }
       return written;
     });
