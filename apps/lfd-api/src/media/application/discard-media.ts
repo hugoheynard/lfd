@@ -18,15 +18,15 @@ export class DiscardMediaCommand {
  * ## La règle, et où elle est vraiment tenue
  *
  * « On ne supprime pas une image qui a été mappée quelque part » (Hugo,
- * 2026-09-23). Elle est tenue par **Postgres** : les deux tables de
- * rattachement référencent l'actif en `ON DELETE RESTRICT`. Ce handler ne la
- * remplace pas — il la fait arriver **avant** la tentative, et surtout il la
- * fait PARLER : un refus sans chiffre laisse chercher quelles fiches portent
- * l'image.
+ * 2026-09-23). Elle est tenue **ici, et seulement ici** : aucune clé étrangère
+ * ne traverse depuis que le fonds a son schéma (2026-09-23, vérifié le
+ * 2026-10-10). Le compte vient de TOUS les porteurs, par `MediaCarriers`, et le
+ * refus dit combien — un refus sans chiffre laisse chercher lesquels.
  *
- * ⚠️ Le comptage n'est donc pas une autorisation. Il vaut à l'instant de la
- * lecture ; si une fiche attrape l'image entre le compte et la suppression, la
- * contrainte refuse et c'est très bien — elle est le dernier mot.
+ * ⚠️ Le comptage n'est pas un verrou. Il vaut à l'instant de la lecture : un
+ * porteur qui attrape l'image entre le compte et la suppression afficherait une
+ * image disparue. La fenêtre est celle d'un aller-retour au bucket ; elle est
+ * connue, et rien ne la ferme aujourd'hui.
  *
  * ## L'ordre est la sûreté
  *

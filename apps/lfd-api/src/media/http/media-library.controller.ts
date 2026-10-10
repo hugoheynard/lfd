@@ -100,10 +100,7 @@ export class MediaLibraryController {
   /**
    * Parcourt la bibliothèque, une page à la fois.
    *
-   * 🔴 Une image y apparaît **une seule fois**, quel qu'ait été son nombre
-   * d'inscriptions : l'identité est l'URL, et la lecture groupe par elle (cf.
-   * `MediaLibraryReader`). Sans ce groupement, la liste montrerait la même
-   * photo autant de fois qu'on a enregistré les fiches qui la portent.
+   * Une image = une ligne = une URL : l'URL est unique depuis le 2026-09-23.
    *
    * Le bornage réel est dans le handler, pas ici : un contrôleur peut se
    * tromper, et « toute la bibliothèque » n'est pas une intention qu'on sert.
@@ -165,8 +162,8 @@ export class MediaLibraryController {
    * Nomme, tague et pointe une image.
    *
    * 🔴 La clé est l'**URL** dans le corps, et non un identifiant dans le
-   * chemin : les inscriptions sont recréées à chaque enregistrement de fiche,
-   * donc un identifiant d'actif ne désigne rien de durable.
+   * chemin : c'est l'URL que tous les porteurs citent, et c'est elle
+   * l'identité de l'image.
    *
    * Le contrôleur ne valide que la FORME (Zod). Ce qu'est un tag acceptable —
    * découpé, en minuscules, dédoublonné, borné — est une règle du domaine, et
@@ -190,8 +187,7 @@ export class MediaLibraryController {
    * Retire une image de la bibliothèque — octets compris.
    *
    * 🔴 **Refusé en 409 si un porteur l'affiche**, avec leur NOMBRE dans le
-   * message. La base le refuserait de toute façon (`ON DELETE RESTRICT`) ; ce
-   * refus-ci arrive avant, et il dit combien.
+   * message. Aucune clé étrangère ne traverse : ce refus est le seul gardien.
    *
    * L'URL en paramètre de requête et non dans le chemin : elle contient des
    * `/`, et l'encoder dans un segment la rendrait illisible dans les journaux

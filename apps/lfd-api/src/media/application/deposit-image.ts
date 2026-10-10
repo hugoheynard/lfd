@@ -75,8 +75,7 @@ export class DepositImageHandler implements ICommandHandler<DepositImageCommand,
       await this.journal.trace({
         type: MEDIA_EVENTS.mediaDeposited,
         subjectType: "media_asset",
-        // L'URL : c'est l'identité de l'image, et elle survivra aux
-        // inscriptions que les enregistrements de fiche recréeront.
+        // L'URL : c'est l'identité de l'image, celle que les porteurs citent.
         subjectId: stored.url,
         payload: {
           // Le nom de fichier du bucket, pas l'URL entière : une ligne de

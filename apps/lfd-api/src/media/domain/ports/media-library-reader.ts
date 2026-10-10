@@ -1,19 +1,13 @@
 import type { LocalizedText } from "../../../pim/catalogue/shared/domain/value-objects/localized-text.js";
 
 /**
- * Une image de la bibliothèque, **une seule fois**, quel qu'ait été son nombre
- * d'inscriptions.
+ * Une image de la bibliothèque.
  *
- * 🔴 Il n'y a pas d'identifiant ici, et ce n'est pas un oubli.
- * `replaceMedia` détache tout puis recrée un `MediaAsset` NEUF par visuel à
- * chaque enregistrement de section : un identifiant d'actif ne traverse pas
- * deux sauvegardes, et `media_asset` est en fait un journal de lignes. Ce qui
- * traverse, c'est l'URL — adressée par contenu (`products/{sha256}.{ext}`),
- * donc stable pour des octets donnés (vérifié le 2026-09-23).
- *
- * **L'identité d'une image est donc son URL**, et toute lecture de la
- * bibliothèque groupe par elle. Une requête ligne à ligne montrerait la même
- * image autant de fois qu'on a enregistré les fiches qui la portent.
+ * 🔴 Il n'y a pas d'identifiant de ligne ici, et ce n'est pas un oubli :
+ * l'identité est l'URL, adressée par contenu (`products/{sha256}.{ext}`), et
+ * c'est elle que tous les porteurs citent. `media_asset.url` est unique depuis
+ * le 2026-09-23 ; avant, un enregistrement de fiche recréait une ligne par
+ * visuel, et seul l'URL traversait deux sauvegardes.
  */
 export interface LibraryMediaRecord {
   /** L'identité. Voir ci-dessus : ce n'est pas un raccourci. */
@@ -32,16 +26,15 @@ export interface LibraryMediaRecord {
   /** Le point gardé au centre quand le cadre n'a pas la forme de l'image. */
   readonly focal: { readonly x: number; readonly y: number } | null;
   /**
-   * Combien de porteurs l'affichent — fiches et familles confondues.
+   * Combien de porteurs l'affichent, tous porteurs confondus.
    *
    * 🔴 C'est ce compte qui permet à l'écran de DIRE « cette image sert dans
-   * trois fiches » avant de proposer de la supprimer. Les clés étrangères sont
-   * en `ON DELETE RESTRICT` : sans ce compte, l'écran proposerait une
-   * suppression que Postgres refuserait, et l'utilisateur apprendrait la règle
-   * par un échec.
+   * trois fiches » avant de proposer de la supprimer. Aucune clé étrangère ne
+   * traverse depuis que le fonds a son schéma (2026-09-23) : ce compte, rejoué
+   * par `DiscardMediaHandler`, est le seul gardien de la règle.
    */
   readonly uses: number;
-  /** La PREMIÈRE inscription de ces octets — l'entrée dans la bibliothèque. */
+  /** L'entrée de ces octets dans la bibliothèque. */
   readonly depositedAt: Date;
 }
 
@@ -109,11 +102,6 @@ export abstract class MediaLibraryReader {
   /**
    * Une page de la bibliothèque, de l'entrée la plus récente à la plus
    * ancienne.
-   *
-   * Par date de PREMIER dépôt, et non de dernière inscription : réenregistrer
-   * une fiche recrée des lignes, et trier par elles ferait remonter en tête une
-   * image déposée il y a six mois parce qu'on vient de sauver le produit qui la
-   * porte.
    */
   abstract page(query: LibraryQuery): Promise<LibraryMediaPage>;
 
