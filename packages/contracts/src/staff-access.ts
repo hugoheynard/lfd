@@ -557,7 +557,7 @@ export const STAFF_RESOURCE_LABELS: Readonly<Record<StaffResource, string>> = {
   delivery_settings: "Réglages de livraison",
   delivery_availability: "Disponibilité de la livraison",
   delivery_fee: "Frais de livraison",
-  delivery_rounds: "Tournées de livraison",
+  delivery_rounds: "Tour manager",
   delivery_loading: "Chargement",
   delivery_driving: "Conduire sa tournée",
   delivery_doorstep: "Gestes à la porte",
