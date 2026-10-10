@@ -1,0 +1,131 @@
+# La médiathèque améliorée — le plan
+
+> **Plan, écrit le 2026-10-10.** Rien n'est bâti. L'état de départ est
+> [`mediatheque.md`](mediatheque.md), dont la dette a été soldée le même jour ;
+> chaque affirmation ci-dessous sur l'existant a été rouverte dans le dépôt ce
+> jour-là.
+>
+> Pas de `vitruve` : ni argent, ni migration de données (les migrations ne font
+> qu'ajouter), ni frontière de sécurité, ni runbook.
+
+---
+
+## Les décisions de Hugo (2026-10-10)
+
+| #   | Question                          | Décision                                                                              |
+| --- | --------------------------------- | ------------------------------------------------------------------------------------- |
+| D1  | Retirer un tag depuis une tuile   | **immédiat**, avec « Annuler » quelques secondes                                      |
+| D2  | Un redépôt dans une autre série   | l'image garde **sa série d'origine** ; le compte rendu du lot le dit                  |
+| D3  | La série au dépôt                 | **facultative**                                                                       |
+| D4  | « Triable par tag »               | **filtrer** par tag ; **regrouper** par série et par date — jamais par tag (doublons) |
+| D5  | Remplacer une image : l'ancienne  | reste au fonds ; le ramassage l'emporte après 7 jours sans porteur                    |
+| D6  | La fenêtre de course du retrait   | **assumée et écrite** ; le remède est de redéposer                                    |
+| D7  | La porte « fournil » de l'accueil | un **objet de la vitrine**, réglable à l'écran                                        |
+
+---
+
+## L1 — Les tags
+
+**Ce qui est vrai aujourd'hui** (`mediatheque-page`, `tag-palette.ts`) :
+
+- la bande dérive son vocabulaire des images **chargées** — un tag porté
+  seulement par une image hors de la page n'y figure pas, et rien ne le dit ;
+- un tag se retire d'une tuile d'un clic (`strip`), sans annulation ;
+- aucun geste ne renomme ni ne retire un tag dans tout le fonds ;
+- le panneau de l'image (`image-panel`) ne porte pas les tags.
+
+**À bâtir :**
+
+1. `GET /media/tags` → `[{ tag, count }]`, lu au serveur sur tout le fonds.
+   La bande l'affiche (« croissant · 12 ») et garde les tags inventés dans
+   l'onglet tant qu'ils ne sont posés nulle part.
+2. `PUT /media/tags/rename { from, to }` — sur toutes les images qui portent
+   `from`, dans **une** unité de travail ; `to` normalisé comme à l'écriture.
+   Si `to` existe déjà, c'est une **fusion**, et la confirmation le dit avec
+   les deux comptes.
+3. `DELETE /media/tags?tag=` — retire le mot de toutes les images, confirmation
+   avec le compte.
+4. Deux faits : `media_tag.renamed` et `media_tag.removed`, sujet le mot,
+   charge le nombre d'images. Un fait par geste, pas un par image : la question
+   qu'on pose au journal est « qui a renommé ce mot ».
+5. Le panneau de l'image : une section « Mots-clés », pastilles avec ×, champ
+   qui complète depuis le vocabulaire.
+6. Le retrait sur tuile : immédiat, puis « « croissant » retiré · Annuler »
+   (D1). L'annulation repose le mot par le même `PUT /media`.
+
+⚠️ Le renommage passe par le port d'écriture du fonds, qui exige un
+`WriteTicket` : `lint:journal-tracked` l'auditera d'office.
+
+## L2 — Le feed
+
+**Ce qui est vrai aujourd'hui** : pages par décalage (`limit`/`offset`, 60 par
+défaut, 100 au plus), « charger plus », un seul ordre (dépôt décroissant).
+
+**À bâtir :**
+
+1. **Curseur** au lieu du décalage : `?after=<curseur opaque>`. Un dépôt pendant
+   qu'on défile ne décale plus rien.
+2. **Tris serveur** : dépôt, prise de vue (L3), étiquette, emplois. Le curseur
+   encode la clé du tri plus l'URL qui départage.
+3. **Filtres cumulables** : tags (tous), série (L3), période, « non taguées »,
+   « inutilisées ».
+   - ⚠️ « Inutilisées » ne se filtre pas en base : les emplois viennent des
+     porteurs, par le canal. Le filtre lit les candidats par page et demande
+     leurs emplois — il peut rendre une page courte, et l'écran continue.
+4. **Défilement continu** et **intercalaires** (mois, série) quand le tri est
+   par date.
+5. **L'adresse porte le tri et les filtres**, comme le journal.
+
+## L3 — L'import
+
+1. **Vérifier avant d'envoyer** : type, poids et dimensions lus par le
+   navigateur, contre `MEDIA_LIMITS` du contrat. Le serveur reste l'autorité.
+2. **Les séries.**
+   - Migration additive : `media.media_series { id, title, shot_on date?,
+note?, created_at }`, et `media_asset.series_id` nullable. Aucune image
+     existante n'est touchée.
+   - Au dépôt : choisir ou créer une série (D3 : facultatif). L'identifiant
+     part avec chaque fichier du lot.
+   - Un redépôt d'une image déjà au fonds ne change pas sa série (D2) ; la
+     réponse le dit, et le compte rendu du lot l'affiche.
+   - Corriger une série ; rattacher ou détacher une image dans son panneau.
+   - Faits : `media_series.created`, `media_series.described`, et la série
+     dans `media_asset.described`.
+
+## L4 — Le point focal lu
+
+Le fait durable des visuels porte `focal` (facultatif), la projection le range
+dans deux colonnes nullables de `catalog_items` (migration additive), le push
+le porte aussi. La boutique pose `object-position`. ⚠️ Facultatif sur le fil :
+une livraison en attente sans lui doit rester lisible.
+
+## L5 — Les formats signalés
+
+Au choix d'un usage, si les dimensions de l'image s'écartent du ratio de
+l'usage : une phrase, jamais un refus — « cette image est en 4/3, l'ouverture
+attend du 3/2 ; vérifiez le point focal ».
+
+## L6 — L'accueil
+
+L'opération mise en avant lit les vraies opérations datées (fin de
+`MOCK_EVENT`), la porte « fournil » devient un objet de la vitrine (D7) — ses
+images viennent du fonds, cadrées par le point focal.
+
+## L7 — Remplacer une image
+
+Déposer (octets hors transaction), puis repointer **tous** les porteurs dans
+une unité : une méthode de plus sur le canal des porteurs, qui exige un
+`WriteTicket`. Le repointage fusionne les doublons. L'ancienne image reste au
+fonds (D5). La projection fait suivre la boutique.
+
+## L8 — La fenêtre du retrait, écrite
+
+`mediatheque.md` dit la fenêtre et son remède (D6). Rien à bâtir.
+
+---
+
+## Ordre et règles de chantier
+
+L1 → L8, un lot à la fois, un commit par geste, la doc d'état mise à jour au
+fil de l'eau ; ce plan se raye lot par lot et disparaît quand le dernier est
+bâti.
