@@ -192,6 +192,11 @@ export class App {
     this.permissions.can('b2b_supervision:read'),
   );
 
+  /** Prod manager — le prévisionnel, au premier niveau (2026-10-10), sous le plan du soir. */
+  protected readonly canSeeProdManager = computed(() =>
+    this.permissions.can('production_plan:read'),
+  );
+
   /** Le Fournil — la fournée du jour, poste à part (2026-10-06), sous son seul droit. */
   protected readonly canSeeBakehouse = computed(() =>
     this.permissions.can('production_worksheet:read'),

@@ -1,7 +1,12 @@
 import { type ComponentFixture, TestBed } from '@angular/core/testing';
-import type { DeliveryAvailabilityPatch, DeliveryAvailabilityView } from '@lfd/contracts';
+import type {
+  DeliveryAvailabilityPatch,
+  DeliveryAvailabilityView,
+  StaffPermission,
+} from '@lfd/contracts';
 import { describe, expect, it } from 'vitest';
 
+import { PermissionsStore } from '../../../auth/permissions.store';
 import { DeliveryAvailabilityService } from '../delivery-availability.service';
 import { DeliveryZonesService } from '../delivery-zones.service';
 import { DeliveryAvailabilityPage } from './delivery-availability-page';
@@ -21,13 +26,22 @@ const OPEN: DeliveryAvailabilityView = {
   updatedBy: null,
 };
 
+const EVERYTHING: readonly StaffPermission[] = [
+  'delivery_availability:read',
+  'delivery_availability:write',
+  'delivery_fee:read',
+  'delivery_fee:write',
+];
+
 class FakeSettings {
   readonly patches: DeliveryAvailabilityPatch[] = [];
+  reads = 0;
   refusal: unknown = null;
 
   constructor(private current: DeliveryAvailabilityView | Error) {}
 
   read(): Promise<DeliveryAvailabilityView> {
+    this.reads += 1;
     return this.current instanceof Error
       ? Promise.reject(this.current)
       : Promise.resolve(this.current);
@@ -59,12 +73,16 @@ class FakeSettings {
   }
 }
 
-async function mount(settings: FakeSettings): Promise<ComponentFixture<DeliveryAvailabilityPage>> {
+async function mount(
+  settings: FakeSettings,
+  granted: readonly StaffPermission[] = EVERYTHING,
+): Promise<ComponentFixture<DeliveryAvailabilityPage>> {
   TestBed.configureTestingModule({
     imports: [DeliveryAvailabilityPage],
     providers: [
       { provide: DeliveryAvailabilityService, useValue: settings },
       { provide: DeliveryZonesService, useValue: { list: () => Promise.resolve([]) } },
+      { provide: PermissionsStore, useValue: { can: (p: StaffPermission) => granted.includes(p) } },
     ],
   });
   const fixture = TestBed.createComponent(DeliveryAvailabilityPage);
@@ -240,5 +258,26 @@ describe('DeliveryAvailabilityPage — la disponibilité de la livraison', () =>
 
     expect(fixture.componentInstance['draft']()?.deliveryMarginMinutes).toBeNull();
     expect(saveButton(fixture).disabled).toBe(true);
+  });
+
+  /**
+   * Deux droits sur une page (2026-10-10) : la disponibilité sous
+   * `delivery_availability`, les zones sous `delivery_fee`.
+   */
+  it('sans la disponibilité en lecture, ne la charge pas et ne montre que les zones', async () => {
+    const settings = new FakeSettings(OPEN);
+    const fixture = await mount(settings, ['delivery_fee:read']);
+    const host = fixture.nativeElement as HTMLElement;
+    expect(settings.reads).toBe(0);
+    expect(host.querySelector('.availability')).toBeNull();
+    expect(host.querySelector('app-delivery-zones-section')).not.toBeNull();
+    expect(host.textContent).not.toContain('Ajouter une zone');
+  });
+
+  it('en lecture seule, montre la disponibilité sans « Enregistrer »', async () => {
+    const fixture = await mount(new FakeSettings(OPEN), ['delivery_availability:read']);
+    const host = fixture.nativeElement as HTMLElement;
+    expect(host.querySelector('.availability')).not.toBeNull();
+    expect(host.textContent).not.toContain('Enregistrer');
   });
 });

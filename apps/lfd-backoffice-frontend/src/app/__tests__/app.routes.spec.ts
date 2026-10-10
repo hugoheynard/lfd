@@ -229,7 +229,7 @@ const SCREENS: Readonly<Record<string, ScreenAccess>> = {
   production: OPEN,
   // LE FOURNIL, sorti de la Production le 2026-10-06, sous la fiche d'atelier.
   fournil: 'production_worksheet:read',
-  'production/previsionnel': 'production_plan:read',
+  'prod-manager': 'production_plan:read',
   'production/reglages': 'production_settings:read',
   // LE COMPTOIR non plus : la file de retrait (`handover_counter`) et la
   // commande pro (`b2b_place_order`) sont deux droits. Attester un retrait
@@ -282,8 +282,8 @@ const SCREENS: Readonly<Record<string, ScreenAccess>> = {
   'livraison/bacs': 'delivery_settings:read',
   'livraison/contenances': 'delivery_settings:read',
   'livraison/depart': 'delivery_settings:read',
-  // Venue des réglages de l'e-commerce (2026-10-10) : le mur du serveur.
-  'livraison/zones': 'b2b_settings:read',
+  // Venue des réglages de l'e-commerce (2026-10-10) : ses deux droits, l'un OU l'autre.
+  'livraison/zones': { anyOf: ['delivery_availability:read', 'delivery_fee:read'] },
   // Un QR de sa propre origine et un mode d'emploi : rien à garder.
   'app-mobile': OPEN,
   // 🔴 **L'outillage de développement**, et son absence de garde est le point.
@@ -456,15 +456,16 @@ describe("l'arbre de routes du back-office", () => {
     expect(livraison?.redirectTo).toBe('/livraison/zones');
   });
 
-  it('renvoie l’ancienne fournée vers le Fournil, et /production vers sa première vue', () => {
+  it('renvoie l’ancienne fournée vers le Fournil, et /production et le prévisionnel vers Prod manager', () => {
     // `/production/journee` est le favori des postes de labo (2026-10-06).
     const production = routes.find((route) => route.path === 'production');
     const moved = (production?.children ?? [])
       .filter((child) => typeof child.redirectTo === 'string')
       .map((child) => [child.path, child.redirectTo]);
     expect(moved).toEqual([
-      ['', 'previsionnel'],
+      ['', '/prod-manager'],
       ['journee', '/fournil'],
+      ['previsionnel', '/prod-manager'],
       ['colisage', '/colisage'],
     ]);
   });

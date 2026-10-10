@@ -47,7 +47,7 @@ export const DEV_SCENARIO_STEPS: readonly DevScenarioStepText[] = [
     explanation: 'Le soir, on arrête les commandes du jour : le fournil sait quoi produire.',
     meaning: 'le plan de production est clôturé',
     loading: 'Clôture du plan de production du jour…',
-    links: [{ label: 'Prévisionnel', route: '/production/previsionnel' }],
+    links: [{ label: 'Prod manager', route: '/prod-manager' }],
   },
   {
     step: 2,

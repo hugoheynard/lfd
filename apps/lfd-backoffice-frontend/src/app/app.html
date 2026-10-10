@@ -74,6 +74,21 @@
         ></a>
       }
 
+      @if (canSeeProdManager()) {
+        <!-- PROD MANAGER — le prévisionnel, sorti de l'Exploitation (2026-10-10)
+             et rangé au-dessus du Fournil : la semaine avant la fournée. -->
+        <a
+          fold-menu-item
+          icon="calendar"
+          label="Prod manager"
+          routerLink="/prod-manager"
+          routerLinkActive
+          #prodManagerRla="routerLinkActive"
+          [active]="prodManagerRla.isActive"
+          (click)="mobileNavOpen.set(false)"
+        ></a>
+      }
+
       @if (canSeeBakehouse()) {
         <!-- FOURNIL — la fournée du jour, sortie de la production (2026-10-06)
              comme le colisage : un poste, pas une vue d'espace. -->
@@ -140,14 +155,15 @@
       }
 
       @if (canSeePim()) {
-        <!-- LE PIM, à la place que ce rail lui gardait depuis le début : entre
-             la production et l'administration. Il fut une app à part, ouverte
-             en iframe ; il est un module d'ici — et il garde son nom, celui
-             sous lequel on l'a toujours appelé. -->
+        <!-- LE CATALOGUE (le PIM), à la place que ce rail lui gardait depuis le
+             début : entre la production et l'administration. Il fut une app à
+             part, ouverte en iframe ; il est un module d'ici. Il s'appelle
+             « Catalogue » à l'écran depuis le 2026-10-10 (Hugo) ; la clé et les
+             adresses `/pim` restent, elles vivent dans des favoris. -->
         <a
           fold-menu-item
           icon="catalog"
-          label="PIM"
+          label="Catalogue"
           routerLink="/pim"
           routerLinkActive
           #pimRla="routerLinkActive"
@@ -565,6 +581,19 @@
           }
         </fold-nav-group>
       }
+      @if (canSeeProdManager()) {
+        <!-- La MÊME entrée qu'au rail, au-dessus du Fournil. -->
+        <a
+          fold-nav-tile
+          icon="calendar"
+          label="Prod manager"
+          routerLink="/prod-manager"
+          routerLinkActive
+          #prodManagerTile="routerLinkActive"
+          [active]="prodManagerTile.isActive"
+          (click)="mobileNavOpen.set(false)"
+        ></a>
+      }
       @if (canSeeBakehouse()) {
         <!-- La MÊME entrée qu'au rail, en tuile simple comme le Colisage. -->
         <a
@@ -635,7 +664,7 @@
         ></a>
       }
       @if (canSeePim()) {
-        <fold-nav-group icon="catalog" label="PIM" [entryCountLabel]="entriesLabel">
+        <fold-nav-group icon="catalog" label="Catalogue" [entryCountLabel]="entriesLabel">
           @for (view of pimViews(); track view.key) {
             <a
               fold-nav-tile

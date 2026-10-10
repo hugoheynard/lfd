@@ -103,25 +103,27 @@
             }
           </div>
 
-          <div cardFooter class="foot">
-            <button
-              foldButton
-              emphasis="outline"
-              intent="neutral"
-              [disabled]="!dirty() || saving()"
-              (click)="reset()"
-            >
-              Annuler
-            </button>
-            <button
-              foldButton
-              [intent]="closing().length > 0 ? 'warning' : 'primary'"
-              [disabled]="!dirty() || saving()"
-              (click)="save()"
-            >
-              Enregistrer
-            </button>
-          </div>
+          @if (canWriteAvailability()) {
+            <div cardFooter class="foot">
+              <button
+                foldButton
+                emphasis="outline"
+                intent="neutral"
+                [disabled]="!dirty() || saving()"
+                (click)="reset()"
+              >
+                Annuler
+              </button>
+              <button
+                foldButton
+                [intent]="closing().length > 0 ? 'warning' : 'primary'"
+                [disabled]="!dirty() || saving()"
+                (click)="save()"
+              >
+                Enregistrer
+              </button>
+            </div>
+          }
         </fold-card>
       }
 

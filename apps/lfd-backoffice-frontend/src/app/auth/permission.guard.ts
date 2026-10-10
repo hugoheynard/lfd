@@ -22,8 +22,8 @@ const LANDINGS: readonly { readonly permission: StaffPermission; readonly path: 
   // `documentation/livraisons/droits/plan-droits-par-geste.md`, 5.1) : sans elles, qui ne tient que le colisage
   // serait laissé passer de 403 en 403, comme le livreur avant sa ligne.
   { permission: 'production_worksheet:read', path: '/fournil' },
-  { permission: 'production_plan:read', path: '/production/previsionnel' },
-  // `/production` redirige vers `previsionnel` (2026-10-06) : sans cette ligne,
+  { permission: 'production_plan:read', path: '/prod-manager' },
+  // `/production` redirige vers Prod manager (2026-10-10) : sans cette ligne,
   // qui ne tient que les réglages du fournil serait laissé sur un 403.
   { permission: 'production_settings:read', path: '/production/reglages' },
   { permission: 'production_packing:read', path: '/colisage' },

@@ -13,11 +13,13 @@ import { RemoveDeliveryZoneCommand } from "../application/remove-delivery-zone.c
 import { UpdateDeliveryZoneCommand } from "../application/update-delivery-zone.command.js";
 
 /**
- * Gestion **staff** des zones de livraison (page Réglages → Retraits & livraisons).
- * Surface staff murée par `@AdminSurface` : identité vérifiée, puis périmètre.
+ * Gestion **staff** des zones de livraison (Exploitation › Livraison › Zones
+ * de livraison). Surface staff murée par `@AdminSurface` : identité vérifiée,
+ * puis périmètre — `delivery_fee` depuis le 2026-10-10, sortie de
+ * `b2b_settings` : une zone, c'est un frais.
  */
 @Controller("admin/delivery-zones")
-@AdminSurface("b2b_settings")
+@AdminSurface("delivery_fee")
 export class AdminDeliveryZonesController {
   constructor(private readonly commands: CommandBus) {}
 

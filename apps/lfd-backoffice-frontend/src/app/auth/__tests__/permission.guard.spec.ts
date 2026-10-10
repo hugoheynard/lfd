@@ -65,7 +65,7 @@ describe('permissionGuard — redirige plutôt que de bloquer', () => {
    */
   it.each([
     ['production_worksheet:read', '/fournil'],
-    ['production_plan:read', '/production/previsionnel'],
+    ['production_plan:read', '/prod-manager'],
     ['production_settings:read', '/production/reglages'],
     ['production_packing:read', '/colisage'],
     ['handover_counter:read', '/comptoir/retrait'],

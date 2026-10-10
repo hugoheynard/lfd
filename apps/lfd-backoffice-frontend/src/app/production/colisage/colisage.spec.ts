@@ -442,9 +442,7 @@ describe('le poste de colisage', () => {
     expect(el.querySelector('.co-body')).toBeNull();
     expect(el.querySelector('fold-empty-state')).not.toBeNull();
     expect(el.textContent).toContain('pas arrêté');
-    expect(el.querySelector('a[foldButton]')?.getAttribute('href')).toBe(
-      '/production/previsionnel',
-    );
+    expect(el.querySelector('a[foldButton]')?.getAttribute('href')).toBe('/prod-manager');
   });
 
   it('lit DEMAIN dès que le plan de demain est arrêté', async () => {

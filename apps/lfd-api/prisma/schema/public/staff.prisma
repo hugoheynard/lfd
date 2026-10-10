@@ -113,6 +113,11 @@ enum StaffResource {
   delivery_run_sheet
   /// Les RÉGLAGES DE LIVRAISON — véhicules et point de départ (2026-09-29).
   delivery_settings
+  /// L'OFFRE DE LIVRAISON, sortie de `b2b_settings` (2026-10-10, Hugo) : la
+  /// disponibilité (clientèles, créneau ou échéance, marges) et les frais
+  /// (zones par code postal). Accordées à l'écran.
+  delivery_availability
+  delivery_fee
   /// COMPOSER LES TOURNÉES — répartir et ordonner (2026-09-29, lot 3, Q12).
   delivery_rounds
   /// LE CHARGEMENT — déclarer les sacs, charger, partir (2026-09-29, lot 4, Q21).

@@ -13,13 +13,14 @@ import { UpdateDeliveryAvailabilityCommand } from "../application/commands/updat
 import { GetDeliveryAvailabilityQuery } from "../application/queries/get-delivery-availability.query.js";
 
 /**
- * Réglage **staff** de la livraison par clientèle (« E-commerce LFC → Réglages
- * → Livraison »). Même ressource que les zones de livraison, `b2b_settings` :
- * les deux se règlent sur la même carte, par les mêmes personnes. L'action se
- * déduit du verbe (`@AdminSurface`).
+ * Réglage **staff** de la livraison par clientèle (Exploitation › Livraison ›
+ * Zones de livraison). Sa propre ressource, `delivery_availability`, depuis le
+ * 2026-10-10 (Hugo) : décider à qui l'on livre n'est pas fixer les frais des
+ * zones (`delivery_fee`), même affichés sur la même page. L'action se déduit
+ * du verbe (`@AdminSurface`).
  */
 @Controller("admin/delivery-availability")
-@AdminSurface("b2b_settings")
+@AdminSurface("delivery_availability")
 export class AdminDeliveryAvailabilityController {
   constructor(
     private readonly commands: CommandBus,

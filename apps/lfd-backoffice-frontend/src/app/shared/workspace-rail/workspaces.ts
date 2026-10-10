@@ -147,13 +147,8 @@ export const COMMERCIAL_VIEWS: readonly CommercialView[] = [
  * parce qu'un garde commun fermerait une vue à qui ne tient que l'autre.
  */
 export const PRODUCTION_VIEWS: readonly WorkspaceView[] = [
-  {
-    key: 'previsionnel',
-    label: 'Prévisionnel',
-    link: '/production/previsionnel',
-    icon: 'calendar',
-    needs: 'production_plan:read',
-  },
+  // Le prévisionnel en est sorti le 2026-10-10 (Hugo) : c'est « Prod manager »,
+  // entrée de premier niveau au-dessus du Fournil (`/prod-manager`).
   {
     // Lot A1 du plan d'arrêt (2026-10-06) : l'arrêt du plan et les jours fermés.
     key: 'reglages',
@@ -263,13 +258,15 @@ export const LIVRAISON_VIEWS: readonly WorkspaceView[] = [
     needs: 'delivery_settings:read',
   },
   {
-    // Venue des réglages de l'e-commerce (Hugo, 2026-10-10) : à qui on livre
-    // et avec quelles marges. Son droit reste celui du serveur, `b2b_settings`.
+    // Venue des réglages de l'e-commerce (Hugo, 2026-10-10) : à qui on livre,
+    // avec quelles marges, à quel prix. `needs` exige TOUS ses droits, et la
+    // route en veut un seul : le rail la montre à qui tient la disponibilité,
+    // le droit qui ouvre la page entière (les zones se lisent en public).
     key: 'zones',
     label: 'Zones de livraison',
     link: '/livraison/zones',
     icon: 'truck',
-    needs: 'b2b_settings:read',
+    needs: 'delivery_availability:read',
   },
 ];
 
@@ -834,42 +831,42 @@ export const DOCUMENTATION_VIEWS: readonly WorkspaceView[] = [
     label: 'Paramétrage général',
     link: '/documentation/parametrage-general',
     icon: 'sliders',
-    section: 'PIM',
+    section: 'Catalogue',
   },
   {
     key: 'product-settings',
     label: 'Paramétrage produit',
     link: '/documentation/parametrage-produit',
     icon: 'library',
-    section: 'PIM',
+    section: 'Catalogue',
   },
   {
     key: 'product-sheet',
     label: 'Remplir une fiche produit',
     link: '/documentation/remplir-une-fiche-produit',
     icon: 'product',
-    section: 'PIM',
+    section: 'Catalogue',
   },
   {
     key: 'overview',
     label: "Vue d'ensemble",
     link: '/documentation/vue-d-ensemble',
     icon: 'info',
-    section: 'PIM',
+    section: 'Catalogue',
   },
   {
     key: 'bricks',
     label: 'Les briques',
     link: '/documentation/briques',
     icon: 'grid',
-    section: 'PIM',
+    section: 'Catalogue',
   },
   {
     key: 'web',
     label: 'Segmentation web',
     link: '/documentation/segmentation-web',
     icon: 'globe',
-    section: 'PIM',
+    section: 'Catalogue',
   },
 ];
 
@@ -888,7 +885,9 @@ export const WORKSPACES = {
     icon: 'package-check',
     views: COMPTOIR_VIEWS,
   },
-  pim: { key: 'pim', title: 'PIM', icon: 'catalog', views: PIM_VIEWS },
+  // « Catalogue » : le libellé seul (Hugo, 2026-10-10). La clé et les adresses
+  // `/pim/…` restent, comme pour l'E-commerce LFC.
+  pim: { key: 'pim', title: 'Catalogue', icon: 'catalog', views: PIM_VIEWS },
   // « E-commerce LFC » : le libellé seul. La clé et les adresses `/b2b/…`
   // restent — elles vivent dans des favoris (précédent `journee`, redirigé vers `/fournil` le 2026-10-06).
   b2b: { key: 'b2b', title: 'E-commerce LFC', icon: 'store', views: B2B_VIEWS },

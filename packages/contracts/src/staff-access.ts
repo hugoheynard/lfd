@@ -268,7 +268,7 @@ export const staffResourceSchema = z.enum([
    * commerciale. Cf. `documentation/b2b/comptes-client/notes-du-commercial.md`.
    */
   "b2b_client_notes",
-  /** Le reste du paramétrage : contenu, zones de livraison, créneaux, retraits. */
+  /** Le reste du paramétrage : contenu, créneaux, retraits. */
   "b2b_settings",
   /**
    * **La vitrine** — composer les pages de la boutique : formes, positions,
@@ -351,11 +351,31 @@ export const staffResourceSchema = z.enum([
    * et le point de départ des tournées (`/admin/livraison/vehicules`,
    * `/admin/livraison/depart`).
    *
-   * Pas `b2b_settings` : celui-là règle l'OFFRE faite au client (zones, frais,
-   * à qui l'on livre) ; celui-ci l'EXPLOITATION — avec quoi l'on tient cette
-   * offre. Lecture pour `comptoir`, écriture pour `admin` seul.
+   * Pas `delivery_availability` ni `delivery_fee` : ceux-là règlent l'OFFRE
+   * faite au client (à qui l'on livre, à quel prix) ; celui-ci l'EXPLOITATION
+   * — avec quoi l'on tient cette offre. Lecture pour `comptoir`, écriture pour
+   * `admin` seul.
    */
   "delivery_settings",
+  /**
+   * **La disponibilité de la livraison** — à quelle clientèle on la propose,
+   * créneau ou échéance, et les marges de production
+   * (`/admin/delivery-availability`).
+   *
+   * Sortie de `b2b_settings` le 2026-10-10 (Hugo), avec l'écran parti dans
+   * Exploitation › Livraison. Ajoutée SANS être accordée par la migration :
+   * elle s'accorde à l'écran (`/admin/staff-roles`). La graine ne la donne
+   * qu'à l'administrateur.
+   */
+  "delivery_availability",
+  /**
+   * **Les frais de livraison** — les zones par code postal et ce qu'elles
+   * ajoutent au panier (`/admin/delivery-zones`).
+   *
+   * Sortie de `b2b_settings` le même jour, et séparée de la disponibilité :
+   * fixer un prix n'est pas décider à qui l'on livre. Accordée à l'écran.
+   */
+  "delivery_fee",
   /**
    * **Composer les tournées** — répartir les livraisons d'un jour entre les
    * véhicules, puis ordonner chaque tournée (`/admin/livraison/tournees`,
@@ -535,6 +555,8 @@ export const STAFF_RESOURCE_LABELS: Readonly<Record<StaffResource, string>> = {
   b2b_contact: "Nous écrire",
   delivery_run_sheet: "Feuille de route",
   delivery_settings: "Réglages de livraison",
+  delivery_availability: "Disponibilité de la livraison",
+  delivery_fee: "Frais de livraison",
   delivery_rounds: "Tournées de livraison",
   delivery_loading: "Chargement",
   delivery_driving: "Conduire sa tournée",
@@ -685,6 +707,9 @@ export const ROLE_GRANTS: Readonly<Record<StaffRole, RoleGrants>> = {
     // `write` sur une lecture seule : l'administrateur couvre tout, sans trou.
     delivery_run_sheet: "write",
     delivery_settings: "write",
+    // Graine seulement (dev, e2e) : en production, accordées à l'écran.
+    delivery_availability: "write",
+    delivery_fee: "write",
     delivery_rounds: "write",
     delivery_loading: "write",
     delivery_driving: "write",

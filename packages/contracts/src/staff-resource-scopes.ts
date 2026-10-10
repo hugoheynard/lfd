@@ -147,7 +147,7 @@ export const STAFF_RESOURCE_SCOPES: Readonly<Record<StaffResource, StaffResource
     write: "Ajouter, modifier, réordonner ou retirer une note photo.",
   },
   b2b_settings: {
-    read: "Voir les réglages du commerce : points de retrait et leurs créneaux, zones et jours de livraison, heures limites, pied de page, mentions légales. Ouvre aussi les espaces Réglages et B2B, que Catalogue vendu et Tarification supposent.",
+    read: "Voir les réglages du commerce : points de retrait et leurs créneaux, heures limites, pied de page, mentions légales. Ouvre aussi les espaces Réglages et B2B, que Catalogue vendu et Tarification supposent.",
     write: "Modifier ces réglages — ce qui change l'offre faite à tous les clients.",
   },
   b2b_storefront: {
@@ -196,6 +196,15 @@ export const STAFF_RESOURCE_SCOPES: Readonly<Record<StaffResource, StaffResource
     read: "Voir la flotte, les types de sacs et leurs contenances, le point de départ et les réglages du calcul de tournée.",
     write:
       "Ajouter, modifier ou retirer un véhicule ou un type de sac, régler les contenances, le départ et le calcul.",
+  },
+  delivery_availability: {
+    read: "Voir à quelle clientèle la livraison est proposée, si elle se demande par créneau ou par échéance, et les marges de production.",
+    write:
+      "Ouvrir ou fermer la livraison à une clientèle, choisir créneau ou échéance, régler les marges — ce qui change l'offre faite à tous les clients.",
+  },
+  delivery_fee: {
+    read: "Voir les zones de livraison et le frais que chacune ajoute au panier.",
+    write: "Ajouter, modifier ou retirer une zone de livraison et son frais.",
   },
   delivery_rounds: {
     read: "Voir les tournées du jour, les livreurs, les incidents et les commandes non remises, et se servir du simulateur et de l'assistant d'achat. Donne aussi la lecture de la flotte et du départ.",

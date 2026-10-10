@@ -1,4 +1,4 @@
-import { ChangeDetectionStrategy, Component, inject, signal } from '@angular/core';
+import { ChangeDetectionStrategy, Component, computed, inject, signal } from '@angular/core';
 import type { DeliveryZoneView } from '@lfd/contracts';
 import {
   FoldBadgeComponent,
@@ -12,6 +12,7 @@ import {
 } from 'fold-ng';
 
 import { formatAdjustmentValue } from '@lfd/b2b-ui/pricing';
+import { PermissionsStore } from '../../../auth/permissions.store';
 import { DeliveryZonesService } from '../delivery-zones.service';
 import { ZonePanel, type ZonePanelData } from './zone-panel/zone-panel';
 
@@ -43,6 +44,10 @@ type LoadState = 'loading' | 'ready' | 'error';
 export class DeliveryZonesSection {
   private readonly zones = inject(DeliveryZonesService);
   private readonly panels = inject(FoldPanelHostService);
+  private readonly permissions = inject(PermissionsStore);
+
+  /** Régler une zone, c'est fixer un frais : `delivery_fee` (2026-10-10). */
+  protected readonly canWrite = computed(() => this.permissions.can('delivery_fee:write'));
 
   protected readonly state = signal<LoadState>('loading');
   protected readonly list = signal<readonly DeliveryZoneView[]>([]);

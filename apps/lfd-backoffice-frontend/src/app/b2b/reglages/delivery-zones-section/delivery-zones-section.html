@@ -17,7 +17,9 @@
             d'Isère, Tignes…), en % ou en €. Sans zone, la livraison n'ajoute aucun frais.
           </p>
         </div>
-        <button foldButton size="sm" icon="plus" (click)="add()">Ajouter une zone</button>
+        @if (canWrite()) {
+          <button foldButton size="sm" icon="plus" (click)="add()">Ajouter une zone</button>
+        }
       </div>
 
       <ul class="zones">
@@ -33,14 +35,16 @@
               </div>
 
               <!-- Pas de menu : modifier comme supprimer se font dans le panneau. -->
-              <button
-                type="button"
-                class="edit-trigger"
-                aria-label="Ouvrir la zone de livraison"
-                (click)="edit(zone)"
-              >
-                <fold-icon name="more-vertical" [size]="18" />
-              </button>
+              @if (canWrite()) {
+                <button
+                  type="button"
+                  class="edit-trigger"
+                  aria-label="Ouvrir la zone de livraison"
+                  (click)="edit(zone)"
+                >
+                  <fold-icon name="more-vertical" [size]="18" />
+                </button>
+              }
             </div>
           </li>
         } @empty {

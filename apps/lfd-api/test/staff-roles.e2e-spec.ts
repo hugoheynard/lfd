@@ -98,6 +98,12 @@ const SURFACES: readonly { readonly resource: StaffResource; readonly path: stri
   { resource: "delivery_settings", path: "/admin/livraison/vehicules" },
   { resource: "delivery_settings", path: "/admin/livraison/depart" },
   /**
+   * La DISPONIBILITÉ DE LA LIVRAISON (2026-10-10) — sortie de `b2b_settings`
+   * avec l'écran des zones. `delivery_fee` n'a pas de lecture staff à
+   * éprouver ici : les zones se lisent en public, seule l'écriture est murée.
+   */
+  { resource: "delivery_availability", path: "/admin/delivery-availability" },
+  /**
    * COMPOSER LES TOURNÉES (2026-09-29, plan de tournée lot 3, Q12) — lecture
    * et écriture pour l'administrateur et le comptoir.
    */

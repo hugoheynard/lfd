@@ -21,6 +21,7 @@ import {
   type FoldViewToggleOption,
 } from 'fold-ng';
 
+import { PermissionsStore } from '../../../auth/permissions.store';
 import { DeliveryAvailabilityService } from '../delivery-availability.service';
 import { DeliveryZonesSection } from '../delivery-zones-section/delivery-zones-section';
 
@@ -101,6 +102,19 @@ const CLIENTELE: Readonly<Record<CustomerAudience, string>> = {
 })
 export class DeliveryAvailabilityPage {
   private readonly service = inject(DeliveryAvailabilityService);
+  private readonly permissions = inject(PermissionsStore);
+
+  /**
+   * Deux droits sur une page (2026-10-10) : la carte de disponibilité ne se
+   * lit qu'avec `delivery_availability`, les zones avec `delivery_fee`. Sans
+   * la lecture, la carte n'est pas chargée — le serveur la refuserait.
+   */
+  protected readonly canReadAvailability = computed(() =>
+    this.permissions.can('delivery_availability:read'),
+  );
+  protected readonly canWriteAvailability = computed(() =>
+    this.permissions.can('delivery_availability:write'),
+  );
 
   protected readonly state = signal<LoadState>('loading');
   /** Le réglage tel que le serveur le tient. */
@@ -148,6 +162,10 @@ export class DeliveryAvailabilityPage {
   }
 
   protected async load(): Promise<void> {
+    if (!this.canReadAvailability()) {
+      this.state.set('ready');
+      return;
+    }
     this.state.set('loading');
     try {
       this.receive(await this.service.read());

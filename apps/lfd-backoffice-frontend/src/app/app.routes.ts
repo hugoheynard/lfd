@@ -331,6 +331,16 @@ export const routes: Routes = [
     title: 'Colisage — LFC B2B admin',
     loadComponent: () => import('./production/colisage/colisage').then((m) => m.Colisage),
   },
+  // PROD MANAGER (Hugo, 2026-10-10) : le prévisionnel sort de l'Exploitation
+  // pour une entrée de premier niveau, juste au-dessus du Fournil — on regarde
+  // ce qui tombe avant de lancer la fournée. L'ancienne adresse redirige.
+  {
+    path: 'prod-manager',
+    canActivate: [permissionGuard('production_plan:read')],
+    title: 'Prod manager — LFC B2B admin',
+    loadComponent: () =>
+      import('./production/previsionnel/previsionnel-page').then((m) => m.PrevisionnelPage),
+  },
   // LE FOURNIL (2026-10-06) : la fournée du jour sort de la Production pour
   // devenir un poste de premier niveau, comme le Colisage — la fiche d'atelier
   // se prend dans le fournil, sur un téléphone, pas depuis un rail d'espace.
@@ -522,11 +532,11 @@ export const routes: Routes = [
           import('./livraison/departure-page/departure-page').then((m) => m.DeparturePage),
       },
       // LES ZONES ET LA DISPONIBILITÉ DE LA LIVRAISON, venues des réglages de
-      // l'e-commerce (Hugo, 2026-10-10). Le menu change, le mur non : le
-      // serveur garde `b2b_settings` (`@AdminSurface`), l'écran le suit.
+      // l'e-commerce (Hugo, 2026-10-10), sous leurs deux droits : la page
+      // s'ouvre à l'un OU l'autre, chaque carte ne se montre qu'au sien.
       {
         path: 'zones',
-        canActivate: [permissionGuard('b2b_settings:read')],
+        canActivate: [anyPermissionGuard('delivery_availability:read', 'delivery_fee:read')],
         title: 'Zones de livraison — LFC B2B admin',
         loadComponent: () =>
           import('./b2b/reglages/delivery-availability-page/delivery-availability-page').then(
@@ -640,17 +650,13 @@ export const routes: Routes = [
       // fournée est partie au Fournil (2026-10-06), et l'entrée Production
       // ouvre désormais sa première vue. Qui ne tient que la fiche d'atelier
       // est renvoyé par le garde vers son atterrissage, `/fournil`.
-      { path: '', pathMatch: 'full', redirectTo: 'previsionnel' },
+      // Depuis le 2026-10-10, la première vue est partie en Prod manager.
+      { path: '', pathMatch: 'full', redirectTo: '/prod-manager' },
       // La fournée est un poste à part depuis le 2026-10-06, comme le
       // colisage : l'ancienne adresse est le favori des postes de labo.
       { path: 'journee', pathMatch: 'full', redirectTo: '/fournil' },
-      {
-        path: 'previsionnel',
-        canActivate: [permissionGuard('production_plan:read')],
-        title: 'Prévisionnel — LFC B2B admin',
-        loadComponent: () =>
-          import('./production/previsionnel/previsionnel-page').then((m) => m.PrevisionnelPage),
-      },
+      // Devenu « Prod manager », au premier niveau (2026-10-10) : favori.
+      { path: 'previsionnel', pathMatch: 'full', redirectTo: '/prod-manager' },
       {
         // L'arrêt du plan et les jours fermés (arret-du-plan.md, lot A1) :
         // lecture sous `production_settings:read`, la page se fige sans `:write`.
