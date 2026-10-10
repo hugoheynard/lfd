@@ -1,5 +1,6 @@
 import type { Mailer, MailReceipt, SendMailArgs, TemplateMap } from "@lfd/mailer";
 
+import { AfterCommit } from "../../database/after-commit.js";
 import { BackgroundWork } from "../../events/background-work.js";
 import { Clock } from "../../time/clock.js";
 import { MailJournal } from "./mail-journal.port.js";
@@ -21,6 +22,7 @@ export class JournalingMailer<M extends TemplateMap> implements Mailer<M> {
     private readonly journal: MailJournal,
     private readonly clock: Clock,
     private readonly work: BackgroundWork,
+    private readonly afterCommit: AfterCommit,
   ) {}
 
   get enabled(): boolean {
@@ -47,16 +49,29 @@ export class JournalingMailer<M extends TemplateMap> implements Mailer<M> {
    * comptée, et `whenIdle()` donne le point d'attente qui manquait. L'appelant,
    * lui, n'attend toujours pas — un envoi ne doit pas dépendre d'une écriture
    * annexe.
+   *
+   * 🔴 **Après la validation de la transaction ambiante** (2026-10-10). Un
+   * courriel envoyé par un abonné durable part DANS la transaction de sa
+   * livraison ; l'écriture en tâche de fond en héritait, s'exécutait une fois
+   * la transaction close, échouait, et `PrismaMailJournal` l'avalait (« envoi
+   * non consigné ») : le courriel partait, sa trace jamais. Trouvé par l'e2e
+   * `production-batch` après le lot E5 ; le courriel « réglée » d'E4a était
+   * déjà touché. Hors transaction, `AfterCommit` exécute tout de suite.
    */
   async send<K extends keyof M>(args: SendMailArgs<M, K>): Promise<MailReceipt> {
     const receipt = await this.inner.send(args);
-    void this.work.track(
-      this.journal.recordSend({
-        providerId: receipt.providerId,
-        template: String(args.template),
-        recipient: args.to,
-        at: this.clock.now(),
-      }),
+    const at = this.clock.now();
+    this.afterCommit.defer(
+      () =>
+        this.work.track(
+          this.journal.recordSend({
+            providerId: receipt.providerId,
+            template: String(args.template),
+            recipient: args.to,
+            at,
+          }),
+          "mail-journal-record",
+        ),
       "mail-journal-record",
     );
     return receipt;

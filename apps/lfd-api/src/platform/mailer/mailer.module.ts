@@ -2,6 +2,7 @@ import { createMailer, type MailerLogger } from "@lfd/mailer";
 import { Global, Logger, Module } from "@nestjs/common";
 
 import { AppConfig } from "../config/app-config.js";
+import { AfterCommit } from "../database/after-commit.js";
 import { BackgroundWork } from "../events/background-work.js";
 import { Clock } from "../time/clock.js";
 import { AdminMailCheckController } from "./admin-mail-check.controller.js";
@@ -40,12 +41,13 @@ export type { B2bMailer };
     ReceiveResendEventHandler,
     {
       provide: MAILER,
-      inject: [AppConfig, MailJournal, Clock, BackgroundWork],
+      inject: [AppConfig, MailJournal, Clock, BackgroundWork, AfterCommit],
       useFactory: (
         config: AppConfig,
         journal: MailJournal,
         clock: Clock,
         work: BackgroundWork,
+        afterCommit: AfterCommit,
       ): B2bMailer => {
         const mailer = config.mailerConfig();
         // Le journal ENVELOPPE le mailer : `@lfd/mailer` est partagé et ne
@@ -67,7 +69,7 @@ export type { B2bMailer };
           replyTo: mailer.replyTo,
           logger: nestLogger(),
         });
-        return new JournalingMailer(inner, journal, clock, work);
+        return new JournalingMailer(inner, journal, clock, work, afterCommit);
       },
     },
   ],
