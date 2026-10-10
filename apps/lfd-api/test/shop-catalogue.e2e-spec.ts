@@ -11,7 +11,7 @@ import request from "supertest";
 
 import { B2bCatalogDriver } from "../src/pim/channels/b2b-platform/products/driver.js";
 import { ProductMediaChangedFact } from "../src/pim/channels/b2b-platform/products/product-media-changed.fact.js";
-import { UuidV7Generator } from "../src/pim/infra/id/pim-id-generator.js";
+import { UuidV7Generator } from "../src/platform/id/uuid-generator.js";
 import { UnitOfWork } from "../src/platform/database/unit-of-work.js";
 import { DurablePublisher } from "../src/platform/outbox/durable-publisher.js";
 import { CATEGORY, PUBLIC_LABEL, snapshotOf } from "./catalog-ingest-fixtures.js";

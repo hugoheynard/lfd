@@ -2,7 +2,7 @@ import { Injectable } from "@nestjs/common";
 
 import type { WriteTicket } from "../../../../platform/journal/scoped-journal.js";
 import { referenceFrom } from "../../../../platform/id/reference.js";
-import { PimIdGenerator } from "../../../infra/id/pim-id-generator.js";
+import { UuidGenerator } from "../../../../platform/id/uuid-generator.js";
 import { PimPrismaService } from "../../../infra/database/pim-prisma.service.js";
 import {
   CatalogRevisionRepository,
@@ -34,7 +34,7 @@ function isUniqueViolation(error: unknown): boolean {
 export class PrismaCatalogRevisionRepository extends CatalogRevisionRepository {
   constructor(
     private readonly prisma: PimPrismaService,
-    private readonly ids: PimIdGenerator,
+    private readonly ids: UuidGenerator,
   ) {
     super();
   }

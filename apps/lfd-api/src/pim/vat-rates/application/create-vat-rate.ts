@@ -2,7 +2,7 @@ import { UnitOfWork } from "../../../platform/database/unit-of-work.js";
 import { Inject } from "@nestjs/common";
 import { CommandHandler, type ICommandHandler } from "@nestjs/cqrs";
 
-import { PimIdGenerator } from "../../infra/id/pim-id-generator.js";
+import { UuidGenerator } from "../../../platform/id/uuid-generator.js";
 import { PIM_EVENTS, PimJournal } from "../../journal/pim-journal.js";
 import { VatRate } from "../domain/entities/vat-rate.js";
 import { VatRateRepository } from "../domain/ports/vat-rate.repository.js";
@@ -22,7 +22,7 @@ export class CreateVatRateCommand {
 export class CreateVatRateHandler implements ICommandHandler<CreateVatRateCommand, string> {
   constructor(
     private readonly rates: VatRateRepository,
-    @Inject(PimIdGenerator) private readonly ids: PimIdGenerator,
+    @Inject(UuidGenerator) private readonly ids: UuidGenerator,
     private readonly journal: PimJournal,
     private readonly uow: UnitOfWork,
   ) {}

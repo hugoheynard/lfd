@@ -1,6 +1,6 @@
 import type { DurableFact } from "../../../../../platform/outbox/durable-event.js";
 import { DurablePublisher } from "../../../../../platform/outbox/durable-publisher.js";
-import { PimIdGenerator } from "../../../../infra/id/pim-id-generator.js";
+import { UuidGenerator } from "../../../../../platform/id/uuid-generator.js";
 
 /** La boîte d'envoi du référentiel, enregistrée : quels faits, dans quel ordre. */
 export class RecordingDurable extends DurablePublisher {
@@ -13,7 +13,7 @@ export class RecordingDurable extends DurablePublisher {
 }
 
 /** Des identifiants de geste prévisibles : `geste_1`, `geste_2`, … */
-export class CountingPimIds extends PimIdGenerator {
+export class CountingPimIds extends UuidGenerator {
   private counter = 0;
 
   next(): string {

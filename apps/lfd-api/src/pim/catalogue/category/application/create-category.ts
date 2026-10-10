@@ -3,7 +3,7 @@ import { PIM_EVENTS, PimJournal } from "../../../journal/pim-journal.js";
 import { Inject } from "@nestjs/common";
 import { CommandHandler, type ICommandHandler } from "@nestjs/cqrs";
 
-import { PimIdGenerator } from "../../../infra/id/pim-id-generator.js";
+import { UuidGenerator } from "../../../../platform/id/uuid-generator.js";
 import { CategoryArchivedParentError } from "../domain/errors/category-errors.js";
 import { Category } from "../domain/entities/category.js";
 import { CategoryRepository } from "../domain/ports/category.repository.js";
@@ -29,7 +29,7 @@ export class CreateCategoryCommand {
 export class CreateCategoryHandler implements ICommandHandler<CreateCategoryCommand, string> {
   constructor(
     private readonly categories: CategoryRepository,
-    @Inject(PimIdGenerator) private readonly ids: PimIdGenerator,
+    @Inject(UuidGenerator) private readonly ids: UuidGenerator,
     private readonly journal: PimJournal,
     private readonly uow: UnitOfWork,
   ) {}

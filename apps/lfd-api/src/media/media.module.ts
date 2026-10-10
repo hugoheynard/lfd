@@ -1,7 +1,6 @@
 import { Module } from "@nestjs/common";
 
 import { MediaDatabaseModule } from "./infra/database/media-database.module.js";
-import { MediaIdGenerator, UuidV7MediaIds } from "./infra/id/media-id-generator.js";
 
 import { BrowseMediaLibraryHandler } from "./application/browse-media-library.js";
 import { ListMediaCarriersHandler } from "./application/list-media-carriers.js";
@@ -61,7 +60,6 @@ import { PrismaMediaLibraryWriter } from "./infrastructure/prisma-media-library-
     DiscardMediaHandler,
     DepositImageHandler,
     SweepOrphanMediaHandler,
-    { provide: MediaIdGenerator, useClass: UuidV7MediaIds },
     { provide: MediaLibrary, useClass: PrismaMediaLibrary },
     { provide: MediaLibraryReader, useClass: PrismaMediaLibraryReader },
     { provide: MediaLibraryWriter, useClass: PrismaMediaLibraryWriter },

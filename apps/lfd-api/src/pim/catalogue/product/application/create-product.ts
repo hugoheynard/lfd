@@ -4,7 +4,7 @@ import { Inject } from "@nestjs/common";
 import { CommandHandler, type ICommandHandler } from "@nestjs/cqrs";
 
 import { AllergenCatalogueReader } from "../../../allergens/domain/ports/allergen-catalogue.reader.js";
-import { PimIdGenerator } from "../../../infra/id/pim-id-generator.js";
+import { UuidGenerator } from "../../../../platform/id/uuid-generator.js";
 import {
   CategoryArchivedError,
   CategoryNotFoundError,
@@ -80,7 +80,7 @@ export class CreateProductHandler implements ICommandHandler<CreateProductComman
     private readonly editorials: EditorialRepository,
     private readonly journal: PimJournal,
     private readonly uow: UnitOfWork,
-    @Inject(PimIdGenerator) private readonly ids: PimIdGenerator,
+    @Inject(UuidGenerator) private readonly ids: UuidGenerator,
     @Inject(SKU_AVAILABILITY) private readonly availability: SkuAvailability,
   ) {}
 

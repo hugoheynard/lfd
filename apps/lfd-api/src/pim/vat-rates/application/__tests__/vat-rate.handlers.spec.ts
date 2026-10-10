@@ -1,5 +1,5 @@
 import { DirectUnitOfWork } from "../../../../platform/database/__tests__/direct-unit-of-work.js";
-import { PimIdGenerator } from "../../../infra/id/pim-id-generator.js";
+import { UuidGenerator } from "../../../../platform/id/uuid-generator.js";
 import { RecordingJournal } from "../../../journal/__tests__/recording-journal.js";
 import { SalesContextRegistry } from "../../../sales-contexts/domain/ports/sales-context.registry.js";
 import type { SalesContext } from "../../../sales-contexts/domain/value-objects/sales-context.js";
@@ -88,7 +88,7 @@ function context(key: string, label: string, active: boolean): SalesContext {
   };
 }
 
-class StubIds extends PimIdGenerator {
+class StubIds extends UuidGenerator {
   private count = 0;
   next(): string {
     this.count += 1;

@@ -3,7 +3,7 @@ import { PIM_EVENTS, PimJournal } from "../../journal/pim-journal.js";
 import { Inject } from "@nestjs/common";
 import { CommandHandler, type ICommandHandler } from "@nestjs/cqrs";
 
-import { PimIdGenerator } from "../../infra/id/pim-id-generator.js";
+import { UuidGenerator } from "../../../platform/id/uuid-generator.js";
 import { PointOfSale } from "../domain/entities/point-of-sale.js";
 import { PointOfSaleRepository } from "../domain/ports/point-of-sale.repository.js";
 import { SalesContextRegistry } from "../../sales-contexts/domain/ports/sales-context.registry.js";
@@ -33,7 +33,7 @@ export class OpenPointOfSaleCommand {
 export class OpenPointOfSaleHandler implements ICommandHandler<OpenPointOfSaleCommand, string> {
   constructor(
     private readonly points: PointOfSaleRepository,
-    @Inject(PimIdGenerator) private readonly ids: PimIdGenerator,
+    @Inject(UuidGenerator) private readonly ids: UuidGenerator,
     private readonly contexts: SalesContextRegistry,
     private readonly journal: PimJournal,
     private readonly uow: UnitOfWork,

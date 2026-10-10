@@ -3,7 +3,7 @@ import { CommandHandler, type ICommandHandler } from "@nestjs/cqrs";
 import type { OrderTimeLimitPayload } from "@lfd/pim-contracts";
 
 import { UnitOfWork } from "../../../platform/database/unit-of-work.js";
-import { PimIdGenerator } from "../../infra/id/pim-id-generator.js";
+import { UuidGenerator } from "../../../platform/id/uuid-generator.js";
 import { PIM_EVENTS, PimJournal } from "../../journal/pim-journal.js";
 import { OrderTimeLimit } from "../domain/entities/order-time-limit.js";
 import { LimitScopeNamer } from "../domain/ports/limit-scope.namer.js";
@@ -32,7 +32,7 @@ export class SetOrderTimeLimitCommand {
 export class SetOrderTimeLimitHandler implements ICommandHandler<SetOrderTimeLimitCommand, string> {
   constructor(
     private readonly limits: OrderTimeLimitRepository,
-    @Inject(PimIdGenerator) private readonly ids: PimIdGenerator,
+    @Inject(UuidGenerator) private readonly ids: UuidGenerator,
     private readonly journal: PimJournal,
     private readonly uow: UnitOfWork,
     private readonly scopes: LimitScopeNamer,

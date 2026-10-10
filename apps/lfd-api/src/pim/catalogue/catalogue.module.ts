@@ -4,7 +4,6 @@ import { AllergensModule } from "../allergens/allergens.module.js";
 import { VatRatesModule } from "../vat-rates/vat-rates.module.js";
 import { PrismaMediaCarriers } from "./shared/infrastructure/prisma-media-carriers.js";
 import { PimDatabaseModule } from "../infra/database/pim-database.module.js";
-import { PimIdGenerator, UuidV7Generator } from "../infra/id/pim-id-generator.js";
 import { ArchiveCategoryHandler } from "./category/application/archive-category.js";
 import { ArchiveProductHandler } from "./product/application/archive-product.js";
 import { CreateCategoryHandler } from "./category/application/create-category.js";
@@ -91,7 +90,7 @@ import {
 /**
  * Câblage du module catalogue.
  *
- * Les classes abstraites (`CategoryRepository`, `ProductRepository`, `PimIdGenerator`)
+ * Les classes abstraites (`CategoryRepository`, `ProductRepository`)
  * servent de **jetons d'injection** : l'application dépend d'elles, l'infrastructure les
  * fournit. Remplacer Prisma ne touche que ce fichier.
  */
@@ -156,7 +155,6 @@ import {
     // L'onglet « Historique » : la lignée ici, le journal par le port global.
     GetProductHistoryHandler,
     { provide: ProductLineageReader, useClass: PrismaProductLineageReader },
-    { provide: PimIdGenerator, useClass: UuidV7Generator },
     { provide: CategoryRepository, useClass: PrismaCategoryRepository },
     // Deux LECTURES posées hors du dépôt des familles : le compte de fiches
     // interroge les produits, l'existence d'un emplacement interroge les

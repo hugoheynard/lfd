@@ -99,7 +99,7 @@ disparaît avec elle.
 l'`AppModule`, donc la DI Nest **par type**, donc `design:paramtypes` :
 
 - esbuild (`tsx`) ne supporte pas `emitDecoratorMetadata` — la DI échoue sur
-  `CreateCategoryHandler (?, PimIdGenerator)` ;
+  `CreateCategoryHandler (?, UuidGenerator)` ;
 - `ts-node` 10.9 ne tourne plus sur le TypeScript 6.x épinglé ici.
 
 ⚠️ C'est la seconde raison qui a cassé **`pnpm seed:growth`**, aujourd'hui

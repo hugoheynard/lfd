@@ -3,6 +3,7 @@ import { Global, Module } from "@nestjs/common";
 import { AesGcmFieldCipher } from "../crypto/aes-gcm-field-cipher.js";
 import { FieldCipher } from "../crypto/field-cipher.js";
 import { IdGenerator } from "../id/id-generator.js";
+import { UuidGenerator, UuidV7Generator } from "../id/uuid-generator.js";
 import { UlidGenerator } from "../id/ulid-generator.js";
 import { RandomSecretGenerator } from "../secret/random-secret-generator.js";
 import { SecretGenerator } from "../secret/secret-generator.js";
@@ -35,6 +36,7 @@ import { SystemClock } from "../time/system-clock.js";
   providers: [
     { provide: Clock, useClass: SystemClock },
     { provide: IdGenerator, useClass: UlidGenerator },
+    { provide: UuidGenerator, useClass: UuidV7Generator },
     { provide: SecretGenerator, useClass: RandomSecretGenerator },
     // La clé vient de `AppConfig`, qui l'a déjà validée au démarrage — et qui
     // refuse de booter en production si elle manque. L'adaptateur, lui, ne sait
@@ -74,6 +76,7 @@ import { SystemClock } from "../time/system-clock.js";
   exports: [
     Clock,
     IdGenerator,
+    UuidGenerator,
     SecretGenerator,
     FieldCipher,
     DocumentStore,

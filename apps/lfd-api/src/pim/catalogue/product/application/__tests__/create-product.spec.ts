@@ -7,7 +7,7 @@ import {
   InMemoryAllergenCatalogueReader,
 } from "../../../../allergens/application/__tests__/in-memory-allergens.js";
 import { ArchivedAllergenDeclaredError } from "../../../../allergens/domain/errors/allergen-errors.js";
-import { PimIdGenerator } from "../../../../infra/id/pim-id-generator.js";
+import { UuidGenerator } from "../../../../../platform/id/uuid-generator.js";
 import { Category } from "../../../category/domain/entities/category.js";
 import { CategoryArchivedError } from "../../../category/domain/errors/category-errors.js";
 import { CategoryRepository } from "../../../category/domain/ports/category.repository.js";
@@ -126,7 +126,7 @@ class SilentEditorial extends EditorialRepository {
 }
 
 /** Vrais UUID v7 : la référence dérive de leur queue, un id figé la figerait aussi. */
-class RealIds extends PimIdGenerator {
+class RealIds extends UuidGenerator {
   next(): string {
     return uuidV7();
   }

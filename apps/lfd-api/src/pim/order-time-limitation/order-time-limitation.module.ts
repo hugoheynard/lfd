@@ -1,7 +1,6 @@
 import { Module } from "@nestjs/common";
 
 import { PimDatabaseModule } from "../infra/database/pim-database.module.js";
-import { PimIdGenerator, UuidV7Generator } from "../infra/id/pim-id-generator.js";
 import { ListOrderTimeLimitsHandler } from "./application/list-order-time-limits.js";
 import { RemoveOrderTimeLimitHandler } from "./application/remove-order-time-limit.js";
 import { SetOrderTimeLimitHandler } from "./application/set-order-time-limit.js";
@@ -32,7 +31,6 @@ import { PrismaOrderTimeLimitRepository } from "./infrastructure/prisma-order-ti
   imports: [PimDatabaseModule],
   controllers: [OrderTimeLimitController],
   providers: [
-    { provide: PimIdGenerator, useClass: UuidV7Generator },
     { provide: OrderTimeLimitRepository, useClass: PrismaOrderTimeLimitRepository },
     { provide: LimitScopeNamer, useClass: PrismaLimitScopeNamer },
     SetOrderTimeLimitHandler,

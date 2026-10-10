@@ -8,7 +8,7 @@ import {
 
 import { UnitOfWork } from "../../../../platform/database/unit-of-work.js";
 import { DurablePublisher } from "../../../../platform/outbox/durable-publisher.js";
-import { PimIdGenerator } from "../../../infra/id/pim-id-generator.js";
+import { UuidGenerator } from "../../../../platform/id/uuid-generator.js";
 import { changesBetween } from "../../../../platform/journal/changes.js";
 import { PIM_EVENTS, PimJournal } from "../../../journal/pim-journal.js";
 import { EditorialReader } from "../domain/ports/editorial-reader.js";
@@ -46,7 +46,7 @@ export class SetProductMediaHandler implements ICommandHandler<SetProductMediaCo
     private readonly readers: EditorialReader,
     private readonly journal: PimJournal,
     private readonly durable: DurablePublisher,
-    private readonly ids: PimIdGenerator,
+    private readonly ids: UuidGenerator,
     private readonly uow: UnitOfWork,
   ) {}
 

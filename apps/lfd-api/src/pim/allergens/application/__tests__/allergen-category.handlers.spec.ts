@@ -1,6 +1,6 @@
 import { DirectUnitOfWork } from "../../../../platform/database/__tests__/direct-unit-of-work.js";
 import { FixedClock } from "../../../../platform/time/fixed-clock.js";
-import { PimIdGenerator } from "../../../infra/id/pim-id-generator.js";
+import { UuidGenerator } from "../../../../platform/id/uuid-generator.js";
 import { RecordingJournal } from "../../../journal/__tests__/recording-journal.js";
 import {
   AllergenCategoryKeyTakenError,
@@ -48,7 +48,7 @@ import {
  */
 const NOW = new Date("2026-09-02T10:00:00.000Z");
 
-class StubIds extends PimIdGenerator {
+class StubIds extends UuidGenerator {
   private count = 0;
   next(): string {
     this.count += 1;

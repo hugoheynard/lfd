@@ -3,7 +3,7 @@ import { CommandHandler, type ICommandHandler } from "@nestjs/cqrs";
 import type { CreateAllergenEntryPayload } from "@lfd/pim-contracts";
 
 import { UnitOfWork } from "../../../platform/database/unit-of-work.js";
-import { PimIdGenerator } from "../../infra/id/pim-id-generator.js";
+import { UuidGenerator } from "../../../platform/id/uuid-generator.js";
 import { PIM_EVENTS, PimJournal } from "../../journal/pim-journal.js";
 import { AllergenEntry } from "../domain/entities/allergen-entry.js";
 import { AllergenCategoryRepository } from "../domain/ports/allergen-category.repository.js";
@@ -34,7 +34,7 @@ export class CreateAllergenEntryHandler implements ICommandHandler<
   constructor(
     private readonly entries: AllergenEntryRepository,
     private readonly categories: AllergenCategoryRepository,
-    @Inject(PimIdGenerator) private readonly ids: PimIdGenerator,
+    @Inject(UuidGenerator) private readonly ids: UuidGenerator,
     private readonly journal: PimJournal,
     private readonly uow: UnitOfWork,
   ) {}

@@ -2,7 +2,6 @@ import { Logger, Module, type OnModuleInit } from "@nestjs/common";
 
 import { PimDatabaseModule } from "../infra/database/pim-database.module.js";
 import { SalesContextsModule } from "../sales-contexts/sales-contexts.module.js";
-import { PimIdGenerator, UuidV7Generator } from "../infra/id/pim-id-generator.js";
 import { StartupReport } from "../../platform/startup/startup-report.service.js";
 import { CloseShopHandler } from "./application/close-shop.js";
 import { GenerateTableQrHandler } from "./application/generate-table-qr.js";
@@ -41,7 +40,6 @@ import { UuidTableTokenGenerator } from "./infrastructure/uuid-table-token-gener
     GenerateTableQrHandler,
     RemoveTableQrHandler,
     ListPointsOfSaleHandler,
-    { provide: PimIdGenerator, useClass: UuidV7Generator },
     { provide: TableTokenGenerator, useClass: UuidTableTokenGenerator },
     { provide: PointOfSaleRepository, useClass: PrismaPointOfSaleRepository },
     { provide: PointOfSaleReader, useClass: PrismaPointOfSaleReader },

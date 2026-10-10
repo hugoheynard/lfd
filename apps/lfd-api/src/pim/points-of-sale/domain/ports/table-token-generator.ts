@@ -1,5 +1,5 @@
 /**
- * Génère le token rotatif d'un QR de table. **Port** (comme `PimIdGenerator`) : le
+ * Génère le token rotatif d'un QR de table. **Port** (comme `UuidGenerator`, de `platform/id/`) : le
  * domaine dépend de l'abstraction, l'infrastructure fournit l'aléa. Un token
  * neuf remplace l'ancien — ce qui invalide tout QR déjà imprimé.
  */

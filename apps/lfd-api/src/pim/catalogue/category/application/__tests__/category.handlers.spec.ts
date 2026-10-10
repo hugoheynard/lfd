@@ -7,7 +7,7 @@ import {
   VatRateRepository,
   type VatRateUsage,
 } from "../../../../vat-rates/domain/ports/vat-rate.repository.js";
-import { PimIdGenerator } from "../../../../infra/id/pim-id-generator.js";
+import { UuidGenerator } from "../../../../../platform/id/uuid-generator.js";
 import { Category, type CategorySnapshot } from "../../domain/entities/category.js";
 import { UnknownPointOfSaleError } from "../../../shared/domain/errors/channel-errors.js";
 import {
@@ -233,7 +233,7 @@ const ALL_OPEN: SalesChannels = [
   { pointOfSaleId: "emp_val", context: "takeaway" },
 ];
 
-class SequentialIds extends PimIdGenerator {
+class SequentialIds extends UuidGenerator {
   private count = 0;
   next(): string {
     this.count += 1;

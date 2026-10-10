@@ -1,7 +1,7 @@
 import { Injectable } from "@nestjs/common";
 
 import { MediaPrismaService } from "../infra/database/media-prisma.service.js";
-import { MediaIdGenerator } from "../infra/id/media-id-generator.js";
+import { UuidGenerator } from "../../platform/id/uuid-generator.js";
 import {
   MediaLibrary,
   type MediaFacts,
@@ -17,7 +17,7 @@ import {
 export class PrismaMediaLibrary extends MediaLibrary {
   constructor(
     private readonly prisma: MediaPrismaService,
-    private readonly ids: MediaIdGenerator,
+    private readonly ids: UuidGenerator,
   ) {
     super();
   }
