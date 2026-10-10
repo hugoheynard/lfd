@@ -33,8 +33,7 @@ export abstract class AccountOrderHistoryReader {
     readonly companyId: string;
     /**
      * La commande évaluée : l'historique s'arrête **avant elle** — les
-     * commandes passées plus tôt, et, au même instant, celles d'identifiant
-     * inférieur. `null` quand il n'y a pas encore de commande : le contrôle de
+     * commandes passées plus tôt, et celles du même instant (sauf elle). `null` quand il n'y a pas encore de commande : le contrôle de
      * panier compare un panier à l'historique complet, rien n'y est écrit.
      *
      * Ce n'était pas « avant elle » mais « toutes sauf elle » jusqu'au

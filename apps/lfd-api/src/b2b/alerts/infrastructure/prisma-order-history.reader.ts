@@ -43,8 +43,8 @@ export class PrismaAccountOrderHistoryReader extends AccountOrderHistoryReader {
       status: { in: [...COUNTED_STATUSES] },
       // Les commandes d'AVANT celle qu'on évalue, et non « toutes sauf elle » :
       // une commande passée pendant que l'évaluation attendait sur le bus n'est
-      // pas son historique. L'identifiant départage deux commandes du même
-      // instant. Rien à borner lors d'un contrôle de panier : rien n'est écrit.
+      // pas son historique. À instant égal, les autres commandes comptent (cf.
+      // `before`). Rien à borner lors d'un contrôle de panier : rien n'est écrit.
       ...(input.evaluatedOrder === null ? {} : before(input.evaluatedOrder)),
     };
 
@@ -102,14 +102,24 @@ export class PrismaProductNormReader extends ProductNormReader {
   }
 }
 
-/** Les commandes passées avant `order` — strictement, l'identifiant départageant l'égalité. */
+/**
+ * Les commandes passées avant `order`, et celles du **même instant**, sauf
+ * elle-même.
+ *
+ * À instant égal, les autres comptent — comme sous la règle d'avant. Les
+ * départager par l'identifiant (aléatoire) rendait l'historique instable : la
+ * graine de démo pose plusieurs commandes au même instant exact, et le nombre
+ * d'alertes changeait d'un rechargement à l'autre (`dev-scenario-stability`,
+ * constaté le 2026-10-10). La course fermée ici n'en dépend pas : une commande
+ * passée pendant que l'évaluation attendait porte un instant plus tardif.
+ */
 function before(order: EvaluatedOrderBound): {
-  OR: ({ createdAt: { lt: Date } } | { createdAt: Date; id: { lt: string } })[];
+  OR: ({ createdAt: { lt: Date } } | { createdAt: Date; id: { not: string } })[];
 } {
   return {
     OR: [
       { createdAt: { lt: order.placedAt } },
-      { createdAt: order.placedAt, id: { lt: order.id } },
+      { createdAt: order.placedAt, id: { not: order.id } },
     ],
   };
 }
