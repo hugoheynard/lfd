@@ -48,7 +48,7 @@ stateDiagram-v2
 | Pas de jeton de retrait exposé       | `exposedHandoverToken` — vue client, bons PDF client et admin, courriels                                                                                 |
 | Bon PDF sans QR jamais archivé       | `order-sheet-archive.service.ts` : rendu à la demande tant qu'il n'y a pas de jeton                                                                      |
 | Refus au comptoir, absent de la file | `handoverBlocker` (`handover/domain/services/handover.ts`) ; `HandoverSubject.settled` par le canal `handover/channels/commerce/`                        |
-| Courriel de confirmation + bon       | au paiement (`send-order-settled-mail.handler.ts`), jamais à la passation d'une carte                                                                    |
+| Courriel de confirmation + bon       | au paiement, sur le fait DURABLE `order.paid` (`send-order-settled-mail.handler.ts`, lot E4a du 2026-10-10), jamais à la passation d'une carte           |
 | Chiffre d'affaires du cockpit        | `REVENUE_PAYMENT_STATUSES` (`b2b/growth/domain/revenue-scope.ts`) : `not_required`, `paid`                                                               |
 
 ## 3. Le périmètre de l'expiration et du remplacement
@@ -66,9 +66,6 @@ injoignable : rien n'est écrit, le passage suivant réessaie.
 
 ## 4. Ce qui reste
 
-- **L'accusé au paiement n'est pas durable** : il écoute un fait en mémoire ;
-  un redémarrage au mauvais moment le perd —
-  [`todo-accuse-au-paiement-durable.md`](todo-accuse-au-paiement-durable.md).
 - **Une commande saisie par le staff et payée en caisse** n'a aucun geste
   « payé sur place » : le comptoir la refuse. Décision d'Hugo attendue.
 - Un remboursement partiel reste compté en entier dans le chiffre d'affaires.
