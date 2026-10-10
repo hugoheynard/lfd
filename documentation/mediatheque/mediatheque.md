@@ -50,9 +50,21 @@ Il en découle trois propriétés :
 - **l'identité est stable** : tous les porteurs désignent l'image par son URL,
   jamais par l'identifiant de ligne.
 
-⚠️ **La contrepartie : on ne peut pas « remplacer » une image.** Retoucher une
-photo donne d'autres octets, donc une autre URL. Les porteurs restent sur
-l'ancienne (§11).
+⚠️ **La contrepartie : retoucher une photo crée une AUTRE image.** D'autres
+octets, donc une autre URL. Le geste « Remplacer » (L7, `POST /media/replace`)
+fait passer TOUS les porteurs de l'ancienne à la nouvelle en une unité :
+fiches, familles, opérations, objets de vitrine, porte de l'accueil. Un
+porteur qui affichait déjà la nouvelle sous le même rôle garde une seule
+ligne (R19). L'ancienne reste au fonds (D5) ; la boutique suit sans
+republier (fait durable `media.asset_described` sur la nouvelle). L'écran
+propose de reprendre la description de l'ancienne quand la nouvelle n'en a
+pas.
+
+⚠️ **Une copie au commerce compte comme porteur** (R18). L'image d'une
+opération n'est copiée au commerce qu'au push : tant qu'une opération poussée
+affiche l'ancienne image, celle-ci n'est ni retirable ni ramassable — le
+panneau des porteurs la nomme « Boutique — opération « X » (copie, suit au
+prochain envoi du catalogue) », et le prochain push la libère.
 
 ⚠️ **Ce qu'un redépôt ne rend pas** : l'étiquette, les mots-clés,
 l'alternative et le point focal. Ils décrivent l'image, pas ses octets. **Et
@@ -376,11 +388,15 @@ Un cron Cloudflare (`apps/lfd-api/wrangler.jsonc`, `30 3`, via
 
 ## 10. Ce qui est journalisé
 
-Trois faits, avec l'URL pour sujet :
+Les faits d'une image, avec l'URL pour sujet :
 
-- `media_asset.deposited` ;
-- `media_asset.described` ;
+- `media_asset.deposited` (et sa série, s'il y en a une) ;
+- `media_asset.described` (dont le changement de série) ;
+- `media_asset.replaced` (vers quelle image, chez combien de porteurs) ;
 - `media_asset.discarded`.
+
+Et ceux du vocabulaire et des séries : `media_tag.renamed`,
+`media_tag.removed`, `media_series.created`, `media_series.described`.
 
 Ils se lisent sous le module **Médiathèque** du journal d'activité.
 
@@ -428,8 +444,10 @@ revoir. Ce qui reste, au 2026-10-10 :
    21/9, photo de la porte « Je passe la prendre » choisie au fonds) ; la
    photo du fournil n'est plus une URL tierce. Rien n'est encore choisi :
    déposer la photo au fonds puis la poser dans l'éditeur de vitrine.
-2. **Remplacer une image (L7).** Déposer, puis repointer tous les porteurs
-   dans une unité ; l'ancienne reste au fonds (D5).
+2. **L'image d'une opération ne suit qu'au push** : après un remplacement,
+   l'annonce en boutique garde l'ancienne image jusqu'à la prochaine
+   publication (R18 l'empêche seulement de casser). Une projection vive des
+   opérations fermerait l'écart.
 3. **Le préfixe de clé s'appelle `products`** alors que le fonds sert tout
    porteur. C'est une valeur, pas un nom : il ne se renomme pas sans migrer
    les URL, et rien ne l'exige.
