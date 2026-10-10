@@ -1,9 +1,17 @@
 /**
- * **Le colisage proposé** et les moitiés libres (plan de tournée, lot 4 bis,
- * L4b-C4, v2-3, v2-4, tranche C) — sur le vrai Postgres : les lignes lues par
- * le canal commerce, le froid du miroir du catalogue, les contenances de la
- * grille, la place de la commande dans sa tournée, et le droit relu en base.
- * Proposer n'écrit rien : aucun bac n'est déclaré par ces routes.
+ * **« Proposer » et les moitiés partageables, lus au poste de colisage** —
+ * `GET admin/packing/:date/orders/:orderId/proposal` et `…/shareable-halves`,
+ * qui passent par `BinDesk` jusqu'à la proposition de la livraison. Sur le
+ * vrai Postgres : les lignes lues par le canal commerce, le froid du miroir du
+ * catalogue, l'isotherme, `no_capacity`, la moitié libre de l'arrêt voisin, la
+ * place de la commande dans sa tournée, et le droit relu en base.
+ *
+ * Ces cas vivaient sous `delivery-packing.e2e-spec.ts`, contre les routes de
+ * la livraison retirées le 2026-10-10 (`colisage/colisage.md` §9, voie (b)) ;
+ * `packing-proposal.e2e-spec.ts` éprouve l'APPLICATION, pas ces lectures. Les
+ * commandes sont semées sur un jour libre : la proposition ne demande pas que
+ * le fournil ait clôturé, et ce n'est pas ce qu'on éprouve ici.
+ * Proposer n'écrit rien.
  */
 import type {
   CreatedIdResponse,
@@ -22,11 +30,26 @@ import {
   openRound,
   seedDelivery,
 } from "./delivery-rounds-scene.js";
-import { BINS, binTypeId, declareTypedBins, depart, LOADING } from "./delivery-loading-scene.js";
+import {
+  BINS,
+  binTypeId,
+  declareTypedBins,
+  depart,
+  LOADING,
+  shareBin,
+} from "./delivery-loading-scene.js";
 
 const DAY = serviceDay();
-const PROPOSAL = `${LOADING}/colisage/proposition`;
-const PARTNERS = `${BINS}/partenaires`;
+
+/** La proposition du poste pour cette commande. */
+function proposalPath(orderId: string): string {
+  return `/admin/packing/${DAY}/orders/${orderId}/proposal`;
+}
+
+/** Les moitiés partageables du poste pour cette commande. */
+function halvesPath(orderId: string): string {
+  return `/admin/packing/${DAY}/orders/${orderId}/shareable-halves`;
+}
 
 /** Deux produits du semis du catalogue : un sec, un qu'on déclare froid. */
 const CROISSANT = "VIE-001";
@@ -92,7 +115,7 @@ async function isothermType(): Promise<string> {
 
 async function proposalOf(orderId: string): Promise<DeliveryPackingProposalView> {
   return jsonBody<DeliveryPackingProposalView>(
-    await admin(ctx).get(`${PROPOSAL}?commande=${orderId}`).expect(200),
+    await admin(ctx).get(proposalPath(orderId)).expect(200),
   );
 }
 
@@ -110,7 +133,7 @@ async function threeStops() {
   return { roundId, orders };
 }
 
-describe("GET colisage/proposition", () => {
+describe("GET …/proposal", () => {
   it("colise le froid en isotherme, le sec à part, et signale ce qui n'a pas de contenance", async () => {
     const order = await seedDelivery(ctx, DAY);
     const bacM = await binTypeId(ctx);
@@ -190,12 +213,11 @@ describe("GET colisage/proposition", () => {
   });
 
   it("refuse une commande inconnue (409), comme la déclaration", async () => {
-    await admin(ctx).get(`${PROPOSAL}?commande=inconnue`).expect(409);
-    await admin(ctx).get(PROPOSAL).expect(400);
+    await admin(ctx).get(proposalPath("inconnue")).expect(409);
   });
 });
 
-describe("GET colisage/bacs/partenaires", () => {
+describe("GET …/shareable-halves", () => {
   it("rend la place de la commande et les moitiés libres de ses voisins", async () => {
     const { roundId, orders } = await threeStops();
     const [left] = await declareTypedBins(ctx, {
@@ -212,7 +234,7 @@ describe("GET colisage/bacs/partenaires", () => {
     });
 
     const view = jsonBody<DeliveryBinFreeHalvesView>(
-      await admin(ctx).get(`${PARTNERS}?commande=${orders[1].id}`).expect(200),
+      await admin(ctx).get(halvesPath(orders[1].id)).expect(200),
     );
 
     expect(view.round).toMatchObject({ roundId, day: DAY, departedAt: null });
@@ -222,12 +244,9 @@ describe("GET colisage/bacs/partenaires", () => {
     ]);
 
     // Partagée, la moitié n'est plus libre.
-    await admin(ctx)
-      .post(`${BINS}/partage`)
-      .send({ orderId: orders[1].id, partnerBinId: left, innerBags: 0 })
-      .expect(201);
+    await shareBin(ctx, orders[1].id, left ?? "");
     const after = jsonBody<DeliveryBinFreeHalvesView>(
-      await admin(ctx).get(`${PARTNERS}?commande=${orders[1].id}`).expect(200),
+      await admin(ctx).get(halvesPath(orders[1].id)).expect(200),
     );
     expect(after.halves.map((half) => half.binId)).toEqual([right]);
   });
@@ -236,7 +255,7 @@ describe("GET colisage/bacs/partenaires", () => {
     const order = await seedDelivery(ctx, DAY);
 
     const view = jsonBody<DeliveryBinFreeHalvesView>(
-      await admin(ctx).get(`${PARTNERS}?commande=${order.id}`).expect(200),
+      await admin(ctx).get(halvesPath(order.id)).expect(200),
     );
 
     expect(view).toEqual({
@@ -248,7 +267,7 @@ describe("GET colisage/bacs/partenaires", () => {
   });
 });
 
-describe("le droit `delivery_loading`", () => {
+describe("le droit `production_packing`", () => {
   async function asRole(role: StaffRole): Promise<ReturnType<E2eContext["asSub"]>> {
     const sub = `staff-${role}`;
     await ctx.prisma.staffUser.create({
@@ -264,11 +283,17 @@ describe("le droit `delivery_loading`", () => {
     return ctx.asSub(sub);
   }
 
-  it("le support ne lit ni la proposition ni les moitiés libres (403)", async () => {
+  /**
+   * La proposition de la livraison s'ouvrait en ÉCRITURE (`delivery_loading`
+   * ou `production_packing`) ; celle du poste se LIT sous
+   * `production_packing:read` — le support la lit donc désormais. On tient
+   * ici qu'un rôle SANS le colisage n'y entre pas.
+   */
+  it("un rôle sans le colisage ne lit ni la proposition ni les moitiés libres (403)", async () => {
     const order = await seedDelivery(ctx, DAY);
-    const support = await asRole("support");
+    const outsider = await asRole("communication");
 
-    await support.get(`${PROPOSAL}?commande=${order.id}`).expect(403);
-    await support.get(`${PARTNERS}?commande=${order.id}`).expect(403);
+    await outsider.get(proposalPath(order.id)).expect(403);
+    await outsider.get(halvesPath(order.id)).expect(403);
   });
 });

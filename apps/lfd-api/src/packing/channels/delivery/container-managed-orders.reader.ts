@@ -5,8 +5,9 @@
  *
  * Une commande dont les contenants se listent au colisage (`container_mode =
  * 'listed'`) n'a qu'une porte pour ses bacs : `BinDesk`. Les anciennes routes
- * de la livraison — déclarer, annuler, partager — la lisent et refusent, en
- * nommant le geste de sortie. Sans quoi un bac naîtrait sans contenant, ou un
+ * de la livraison la lisaient et refusaient ; depuis le retrait de la
+ * déclaration et du partage (2026-10-10, §9, voie (b)), il ne reste que
+ * l'annulation (`VoidDeliveryBinHandler`, vérifié le 2026-10-10). Sans quoi un
  * contenant pointerait un bac annulé à son insu.
  */
 export abstract class ContainerManagedOrders {

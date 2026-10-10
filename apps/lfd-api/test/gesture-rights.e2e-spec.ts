@@ -74,7 +74,6 @@ const ROUTES = {
   handoverQueue: (agent) => agent.get(`/admin/handover/file?jour=${DAY}`),
   binsOfOrder: (agent) => agent.get("/admin/livraison/colisage/bacs?commande=CMD-INCONNUE"),
   binSheet: (agent) => agent.get("/admin/livraison/colisage/bacs/bac-inconnu"),
-  proposal: (agent) => agent.get("/admin/livraison/colisage/proposition?commande=CMD-INCONNUE"),
   procedure: (agent) =>
     agent.get("/admin/companies/societe-inconnue/delivery-addresses/adresse-inconnue/procedure"),
 } satisfies Record<string, Call>;
@@ -107,7 +106,7 @@ describe("un geste, ses routes et elles seules", () => {
 
     await expectGates(
       agent,
-      ["packing", "packingSheet", "packed", "version", "binsOfOrder", "proposal"],
+      ["packing", "packingSheet", "packed", "version", "binsOfOrder"],
       ["placeOrder", "quote", "draft", "listOrders", "batch", "dayStatus", "worksheet"],
     );
   });
@@ -189,9 +188,11 @@ describe("un geste, ses routes et elles seules", () => {
       { resource: "production_packing", action: "read" },
     ]);
 
-    await expectGates(loader, ["binsOfOrder", "proposal"], ["packing"]);
+    // La proposition de la livraison (`…/colisage/proposition`) est retirée le
+    // 2026-10-10 (colisage.md §9, voie (b)) : le poste lit celle du colisage.
+    await expectGates(loader, ["binsOfOrder"], ["packing"]);
     // Lire le colisage n'est pas le faire : le panneau reste fermé (5.3).
-    await expectGates(packingReader, ["packing", "version"], ["binsOfOrder", "proposal", "packed"]);
+    await expectGates(packingReader, ["packing", "version"], ["binsOfOrder", "packed"]);
   });
 
   /**

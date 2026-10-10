@@ -12,8 +12,9 @@ import { PackingModule } from "../packing/packing.module.js";
  *
  * - `BinDesk` — la livraison l'implémente (`DeliveryBinDesk`) : déclarer,
  *   annuler, partager un bac, proposer, « ces bacs sont-ils vivants ? » ;
- * - `ContainerManagedOrders` — le colisage l'implémente lui-même, et les
- *   anciennes routes des bacs de la livraison le lisent pour refuser.
+ * - `ContainerManagedOrders` — le colisage l'implémente lui-même, et
+ *   l'annulation d'un bac par la livraison le lit pour refuser (ses routes de
+ *   déclaration et de partage sont retirées le 2026-10-10).
  *
  * `@Global` pour la raison des autres fils : ni `packing/` ni `delivery/` ne
  * peuvent importer le module de l'autre.

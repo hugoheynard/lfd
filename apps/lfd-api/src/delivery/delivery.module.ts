@@ -32,10 +32,8 @@ import { PrismaRoutingSettingsRepository } from "./infrastructure/prisma-routing
 import { PrismaDoorstepSettingsReader } from "./infrastructure/prisma-doorstep-settings.reader.js";
 import { PrismaDoorstepSettingsRepository } from "./infrastructure/prisma-doorstep-settings.repository.js";
 
-import { DeclareDeliveryBinsHandler } from "./application/commands/declare-delivery-bins.handler.js";
 import { DeliveryBinDesk } from "./application/delivery-bin-desk.js";
 import { DeliveryBinOffice } from "./application/delivery-bin-office.js";
-import { ShareDeliveryBinHandler } from "./application/commands/share-delivery-bin.handler.js";
 import { DepartDeliveryRoundHandler } from "./application/commands/depart-delivery-round.handler.js";
 import { LoadDeliveryBinHandler } from "./application/commands/load-delivery-bin.handler.js";
 import { UnloadDeliveryBinHandler } from "./application/commands/unload-delivery-bin.handler.js";
@@ -183,12 +181,11 @@ import {
     ReorderDeliveryRoundHandler,
     RemoveDeliveryStopHandler,
     GetDeliveryRoundsDayHandler,
-    DeclareDeliveryBinsHandler,
-    // Le guichet des bacs (K2b) : servi aux anciennes routes ET au colisage,
-    // qui l'atteint par `BinDesk` (relié par `PackingBinsModule`).
+    // Le guichet des bacs (K2b) : servi au colisage, qui l'atteint par
+    // `BinDesk` (relié par `PackingBinsModule`), et à l'annulation de la
+    // livraison. Déclarer et partager n'ont plus de route ici (2026-10-10).
     DeliveryBinOffice,
     DeliveryBinDesk,
-    ShareDeliveryBinHandler,
     VoidDeliveryBinHandler,
     LoadDeliveryBinHandler,
     UnloadDeliveryBinHandler,

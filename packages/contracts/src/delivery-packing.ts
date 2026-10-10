@@ -4,14 +4,19 @@
  * lot 4 bis, L4b-C4, v2-3 et v2-4, tranche C).
  *
  * Une PROPOSITION, jamais imposée : le poste de colisage la montre (« 2 Bac M
- * + ½ Bac S »), puis le fournil **déclare ce qu'il a réellement fait**
- * (`POST colisage/bacs`, `POST colisage/bacs/partage`) — c'est la déclaration
- * qui fait foi. Lire une proposition n'écrit rien.
+ * + ½ Bac S »), puis **crée les contenants qu'il a réellement faits** — c'est
+ * la déclaration qui fait foi. Lire une proposition n'écrit rien.
  *
- * Routes (`admin/livraison/…`, sous `delivery_loading`) :
+ * Routes (`admin/packing/:date/orders/:orderId/…`, sous `production_packing`,
+ * `packing-containers.ts`) — elles passent par `BinDesk` jusqu'à la
+ * livraison, qui calcule :
  *
- * - `GET colisage/proposition?commande=` → {@link DeliveryPackingProposalView} ;
- * - `GET colisage/bacs/partenaires?commande=` → {@link DeliveryBinFreeHalvesView}.
+ * - `GET proposal` → {@link DeliveryPackingProposalView} ;
+ * - `GET shareable-halves` → {@link DeliveryBinFreeHalvesView}.
+ *
+ * Les routes de la livraison `GET colisage/proposition` et
+ * `GET colisage/bacs/partenaires` sont retirées le 2026-10-10
+ * (`documentation/colisage/colisage.md` §9, voie (b)).
  *
  * Une commande inconnue, annulée ou passée en retrait est refusée comme à la
  * déclaration (409 `delivery.bins_not_declarable`).
@@ -84,7 +89,7 @@ export interface DeliveryPackingUnplacedView {
 export interface DeliveryPackingShareCandidateView {
   readonly partnerOrderId: string;
   readonly partnerReference: string;
-  /** La moitié déjà déclarée, à passer à `POST colisage/bacs/partage`. */
+  /** La moitié déjà déclarée, à partager depuis le poste (`partnerBinId` d'un nouveau contenant). */
   readonly partnerBinId: string;
   /** Le type du bac partagé — celui de la moitié partenaire. */
   readonly binTypeId: string;

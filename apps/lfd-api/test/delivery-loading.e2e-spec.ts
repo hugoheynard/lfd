@@ -26,7 +26,6 @@ import {
 } from "./delivery-rounds-scene.js";
 import {
   BINS,
-  binTypeId,
   composedOrder,
   declareBins,
   depart,
@@ -74,7 +73,8 @@ describe("déclarer, puis charger", () => {
       where: { type: "delivery_bin.declared" },
       select: { subjectId: true, actorId: true },
     });
-    expect(declared).toEqual([{ subjectId: order.id, actorId: E2E_STAFF_ID }]);
+    // Un fait par bac : le poste déclare bac par bac (`BinDesk.declareBin`).
+    expect(declared).toEqual(binIds.map(() => ({ subjectId: order.id, actorId: E2E_STAFF_ID })));
   });
 
   it("charge par le QR puis par le code tapé : l'arrêt passe de partiel à chargé", async () => {
@@ -220,16 +220,9 @@ describe("partir (Q14, L4-C4)", () => {
       .post(`${ROUNDS}/${roundId}/arrets/${stopId}/retrait`)
       .send({ version: view.version })
       .expect(409);
-    await admin(ctx)
-      .post(BINS)
-      .send({
-        orderId: order.id,
-        binTypeId: await binTypeId(ctx),
-        whole: 1,
-        half: false,
-        innerBags: 0,
-      })
-      .expect(409);
+    await expect(declareBins(ctx, order.id, 1)).rejects.toMatchObject({
+      code: "delivery.round_departed",
+    });
     expect((await depart(ctx, roundId)).status).toBe(409);
 
     const departed = await ctx.prisma.activityEvent.findMany({

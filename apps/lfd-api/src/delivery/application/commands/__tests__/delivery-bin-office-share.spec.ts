@@ -1,3 +1,4 @@
+import type { BinShareRequest } from "../../../../packing/channels/delivery/index.js";
 import { DirectUnitOfWork } from "../../../../platform/database/__tests__/direct-unit-of-work.js";
 import { RecordingPublisher } from "../../../../platform/events/__tests__/recording-publisher.js";
 import { FixedIdGenerator } from "../../../../platform/id/fixed-id-generator.js";
@@ -11,8 +12,6 @@ import {
   DeliveryBinNotFoundError,
 } from "../../../domain/errors/delivery-loading-errors.js";
 import { DeliveryBinOffice } from "../../delivery-bin-office.js";
-import { ShareDeliveryBinCommand } from "../share-delivery-bin.command.js";
-import { ShareDeliveryBinHandler } from "../share-delivery-bin.handler.js";
 import {
   binOf,
   binTypeOf,
@@ -22,7 +21,6 @@ import {
   ScriptedDrawer,
   stopOf,
 } from "./loading-doubles.js";
-import { FixedManagedOrders } from "./managed-orders-double.js";
 import { deliveryOn, FixedDeliveryOrders } from "./round-doubles.js";
 
 // Des jours comparés entre eux seulement, jamais à l'horloge.
@@ -48,30 +46,33 @@ function sharing(
 ) {
   const events = new RecordingPublisher();
   const bins = options.bins ?? new InMemoryBins(LEFT);
-  const handler = new ShareDeliveryBinHandler(
-    new DeliveryBinOffice(
-      bins,
-      new FixedBinTypeLookup(binTypeOf("t_m")),
-      options.loadings ?? new InMemoryStopLoadings(inRound("o_2"), inRound("o_3")),
-      ORDERS,
-      new ScriptedDrawer(["JJJJJJ"]),
-      new FixedIdGenerator("bin"),
-      new FixedClock(NOW),
-      events,
-      new DirectUnitOfWork(),
-    ),
-    new FixedManagedOrders(),
+  const office = new DeliveryBinOffice(
+    bins,
+    new FixedBinTypeLookup(binTypeOf("t_m")),
+    options.loadings ?? new InMemoryStopLoadings(inRound("o_2"), inRound("o_3")),
+    ORDERS,
+    new ScriptedDrawer(["JJJJJJ"]),
+    new FixedIdGenerator("bin"),
+    new FixedClock(NOW),
+    events,
+    new DirectUnitOfWork(),
   );
+  const handler = {
+    execute: async (request: BinShareRequest): Promise<string> => (await office.share(request)).id,
+  };
   return { handler, bins, events };
 }
 
-describe("ShareDeliveryBinHandler — le bac partagé (lot 4 bis, v2-4)", () => {
+/**
+ * Le partage du guichet — que `BinDesk.shareHalf` appelle. Il avait une route
+ * et son handler, retirés le 2026-10-10 (`colisage.md` §9, voie (b)) ; ses
+ * règles restent ici.
+ */
+describe("DeliveryBinOffice.share — le bac partagé (lot 4 bis, v2-4)", () => {
   it("déclare l'autre moitié pour la commande de l'arrêt voisin, et UN fait qui cite les deux", async () => {
     const { handler, bins, events } = sharing();
 
-    const id = await handler.execute(
-      new ShareDeliveryBinCommand({ orderId: "o_2", partnerBinId: "h_1", innerBags: 2 }),
-    );
+    const id = await handler.execute({ orderId: "o_2", partnerBinId: "h_1", innerBags: 2 });
 
     expect(bins.byId.get(id)?.toSnapshot()).toMatchObject({
       orderId: "o_2",
@@ -103,9 +104,7 @@ describe("ShareDeliveryBinHandler — le bac partagé (lot 4 bis, v2-4)", () => 
     const { handler, bins, events } = sharing();
 
     await expect(
-      handler.execute(
-        new ShareDeliveryBinCommand({ orderId: "o_3", partnerBinId: "h_1", innerBags: 0 }),
-      ),
+      handler.execute({ orderId: "o_3", partnerBinId: "h_1", innerBags: 0 }),
     ).rejects.toThrow(SharedBinNotAdjacentError);
     expect(bins.byId.size).toBe(1);
     expect(events.traced).toEqual([]);
@@ -116,9 +115,7 @@ describe("ShareDeliveryBinHandler — le bac partagé (lot 4 bis, v2-4)", () => 
     const { handler } = sharing({ bins: new InMemoryBins(LEFT, right) });
 
     await expect(
-      handler.execute(
-        new ShareDeliveryBinCommand({ orderId: "o_2", partnerBinId: "h_1", innerBags: 0 }),
-      ),
+      handler.execute({ orderId: "o_2", partnerBinId: "h_1", innerBags: 0 }),
     ).rejects.toThrow(BinHalfTakenError);
   });
 
@@ -126,14 +123,10 @@ describe("ShareDeliveryBinHandler — le bac partagé (lot 4 bis, v2-4)", () => 
     const { handler } = sharing();
 
     await expect(
-      handler.execute(
-        new ShareDeliveryBinCommand({ orderId: "o_pickup", partnerBinId: "h_1", innerBags: 0 }),
-      ),
+      handler.execute({ orderId: "o_pickup", partnerBinId: "h_1", innerBags: 0 }),
     ).rejects.toThrow(BinsNotDeclarableError);
     await expect(
-      handler.execute(
-        new ShareDeliveryBinCommand({ orderId: "o_2", partnerBinId: "h_x", innerBags: 0 }),
-      ),
+      handler.execute({ orderId: "o_2", partnerBinId: "h_x", innerBags: 0 }),
     ).rejects.toThrow(DeliveryBinNotFoundError);
   });
 });

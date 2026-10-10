@@ -40,8 +40,10 @@ function deskBinOf(bin: DeliveryBin): DeskBin {
  * `colisage/colisage.md` §5–§5.1) — implémente `BinDesk`,
  * que le colisage déclare.
  *
- * Il ne refait aucune règle : il passe par `DeliveryBinOffice`, celui-là même
- * que servent les anciennes routes, et ses refus remontent tels quels. Il ne
+ * Il ne refait aucune règle : il passe par `DeliveryBinOffice`, et ses refus
+ * remontent tels quels. C'est la SEULE porte de déclaration et de partage
+ * depuis le retrait des routes de la livraison (2026-10-10, `colisage.md` §9,
+ * voie (b)) ; les e2e de chargement posent leurs bacs par lui. Il ne
  * lit PAS `ContainerManagedOrders` — c'est justement la porte réservée aux
  * commandes gérées au colisage.
  *

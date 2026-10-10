@@ -60,7 +60,7 @@ flowchart LR
 | `production/channels/packing/` | le fournil  | les cinq faits (§2.1), et les lecteurs `QualityHeldOrdersReader`, `PlannedDestinationsReader` (que le colisage lit)                                         | le fournil (`appBootstrap/packing-feed.module.ts`)                               |
 | idem                           | le fournil  | `PackedOrdersReader` (« cette commande est-elle colisée ? », pour l'état du jour et le contrôle qualité) et `PackingDayVersionReader` (la version du poste) | le colisage (`PrismaPackedOrdersReader`, `PrismaPackingDayVersionReader`)        |
 | `packing/channels/delivery/`   | le colisage | `BinDesk` : déclarer, annuler, partager un bac ; proposer ; contenances ; moitiés libres ; `assertAtHand` (aucun bac chargé ni tournée partie) ; `liveBins` | la livraison (`DeliveryBinDesk`, `appBootstrap/packing-delivery-feed.module.ts`) |
-| idem                           | le colisage | `ContainerManagedOrders` : les anciennes routes des bacs de la livraison refusent une commande que le colisage tient                                        | le colisage (`PrismaContainerManagedOrders`)                                     |
+| idem                           | le colisage | `ContainerManagedOrders` : l'annulation d'un bac par la livraison refuse une commande que le colisage tient (seule route restante depuis le 2026-10-10)     | le colisage (`PrismaContainerManagedOrders`)                                     |
 
 `production → packing` et `packing → delivery` restent interdits : le fournil
 publie sans savoir qui écoute, et le colisage déclare `BinDesk` sans savoir qui
@@ -322,33 +322,21 @@ Les supprimer est un geste à part, sur ordre de Hugo.
 
 ## 9. Reste à faire
 
-- **Côté livraison, retirer les routes de déclaration que le poste n'appelle
-  plus** : `POST admin/livraison/colisage/bacs`, `POST …/bacs/partage`,
-  `GET …/bacs/partenaires` et `GET admin/livraison/colisage/proposition`. Le
-  front ne les appelle plus (vérifié le 2026-10-05 : `delivery-loading.service.ts`
-  n'utilise que `GET …/bacs?commande=`, `GET …/bacs/:binId` et
-  `POST …/bacs/:binId/annulation`), mais les e2e de chargement et de départ
-  bâtissent leurs bacs par elles (`delivery-loading-scene.ts`,
-  `delivery-packing*.e2e-spec.ts`, `delivery-my-round-packing.e2e-spec.ts`,
-  `gesture-rights.e2e-spec.ts`) ; il faut d'abord les faire coliser au
-  colisage. Un lot de la livraison.
-  ⚠️ **Mesuré le 2026-10-10 : ce n'est pas cinq suites, c'est environ
-  vingt-cinq.** `declareBins`/`declareTypedBins` (`test/delivery-loading-scene.ts`)
-  servent, directement ou par `test/delivery-handover-scene.ts`, presque toute
-  la livraison (chargement, départ, porte, fin de tournée, preuves…). Et le
-  colisage ne connaît une commande qu'après la clôture du fournil : les faire
-  coliser « pour de vrai » demande le harnais de production (commandes payées,
-  `closePlan`, relais), quand ces suites sèment leurs commandes en Prisma sur
-  des jours libres. Trois voies, **à trancher par Hugo** : (a) porter les
-  vingt-cinq suites sur le harnais de production ; (b) une aide de test qui
-  déclare le bac par le port `BinDesk` — ce qui ne colise pas, mais garde ce
-  qu'elles éprouvent (chargement, départ, porte), le colisage étant éprouvé
-  par ses propres suites ; (c) garder une voie de déclaration réservée aux
-  tests. Les deux `GET` (proposition, partenaires) ont des handlers vivants
-  (`DeliveryBinDesk.propose`/`freeHalves`), et `delivery-packing.e2e-spec.ts`
-  éprouve le froid, l'isotherme et `no_capacity` sur vrai Postgres, ce que
-  `packing-proposal.e2e-spec.ts` ne couvre pas. `ContainerManagedOrders`
-  perdrait son seul appelant.
+- ~~**Côté livraison, retirer les routes de déclaration que le poste n'appelle
+  plus**~~ ✅ **2026-10-10, voie (b)** (tranchée par Hugo le même jour) : `POST
+admin/livraison/colisage/bacs`, `POST …/bacs/partage`, `GET …/bacs/partenaires`
+  et `GET admin/livraison/colisage/proposition` sont retirées, avec les
+  commandes `DeclareDeliveryBins` / `ShareDeliveryBin` et leurs schémas au
+  contrat. Les e2e de chargement, de départ et de porte posent leurs bacs par
+  `BinDesk` (`apps/lfd-api/test/delivery-loading-scene.ts`, `declareTypedBins` / `shareBin`) :
+  elles ne colisent pas, elles éprouvent ce qui suit le colisage ; le colisage
+  l'est par ses propres suites. Le froid, l'isotherme, `no_capacity`,
+  `shareCandidate` et les moitiés libres sont éprouvés sur la proposition du
+  poste (`apps/lfd-api/test/packing-proposal-reading.e2e-spec.ts`). `ContainerManagedOrders`
+  **reste** : l'annulation d'un bac par la livraison (`POST …/bacs/:binId/annulation`,
+  que le front appelle) le lit encore. Conséquence assumée : un bac posé par
+  `BinDesk` écrit un fait `delivery_bin.declared` par bac, là où l'ancienne
+  route en écrivait un par déclaration.
 - **Retirer le contenu d'un bac chargé** sur une commande encore ouverte n'est
   pas refusé : `withdraw` ne demande pas `assertAtHand` à la livraison (vérifié
   le 2026-10-05 dans `withdraw-from-container.handler.ts`), seuls rouvrir et

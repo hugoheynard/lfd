@@ -1,24 +1,32 @@
 /**
- * Les fixtures partagées par les deux suites e2e du **chargement** (plan de
- * tournée, lot 4) : le parcours (`delivery-loading.e2e-spec.ts`) et les gardes
- * (`delivery-loading-guards.e2e-spec.ts`). Elles s'appuient sur celles de la
- * composition (`delivery-rounds-scene.ts`) : on ne charge que ce qu'on a
- * composé.
+ * Les fixtures partagées par les suites e2e du **chargement**, du **départ** et
+ * de la **porte** (plan de tournée, lot 4, et toutes celles qui passent par
+ * `delivery-handover-scene.ts`). Elles s'appuient sur celles de la composition
+ * (`delivery-rounds-scene.ts`) : on ne charge que ce qu'on a composé.
+ *
+ * 🔴 **Elles ne colisent pas : elles POSENT des bacs** (voie (b) de
+ * `documentation/colisage/colisage.md` §9, tranchée par Hugo le 2026-10-10).
+ * Les routes de déclaration de la livraison sont retirées ; un bac naît par
+ * `BinDesk`, le port que le colisage déclare et que la livraison implémente —
+ * celui-là même qu'appelle le poste. Ces suites sèment leurs commandes sur des
+ * jours libres, que le colisage ne connaît pas (il ne voit une commande
+ * qu'après la clôture du fournil) : ce qu'elles éprouvent, c'est le
+ * chargement, le départ et la porte. Le colisage, lui, est éprouvé par ses
+ * propres suites (`packing-*.e2e-spec.ts`).
  */
-import type {
-  BinTypesView,
-  DeclareDeliveryBinsPayload,
-  DeliveryLoadingRoundView,
-  DeliveryOrderBinsView,
-} from "@lfd/contracts";
+import type { BinTypesView, DeliveryLoadingRoundView, DeliveryOrderBinsView } from "@lfd/contracts";
 import type request from "supertest";
 
-import { jsonBody, type E2eContext } from "./e2e-harness.js";
+import { BinDesk, type DeskBin } from "../src/packing/channels/delivery/index.js";
+import { newTraceId } from "../src/platform/context/trace-context.js";
+import { runWithRequestContext } from "../src/platform/context/request-context.store.js";
+import { Clock } from "../src/platform/time/clock.js";
+import { E2E_STAFF_ID, jsonBody, type E2eContext } from "./e2e-harness.js";
 import { addVehicle, admin, assign, openRound, seedDelivery } from "./delivery-rounds-scene.js";
 
 export const LOADING = "/admin/livraison";
 
-/** Les bacs déclarés d'une commande : le colisage, pas le catalogue des types. */
+/** Les bacs déclarés d'une commande — les lire, en ouvrir la fiche, les annuler. */
 export const BINS = `${LOADING}/colisage/bacs`;
 
 /** Le type de bac cloisonnable des suites, créé au premier besoin (la base est remise à zéro par suite). */
@@ -52,7 +60,32 @@ export async function binTypeId(
   return jsonBody<{ id: string }>(response).id;
 }
 
-/** Déclare `count` bacs ENTIERS du type des suites ; rend leurs identifiants. */
+/** Ce que pose `declareTypedBins` : `whole` bacs entiers, puis une moitié si `half`. */
+export interface BinsToPlace {
+  readonly orderId: string;
+  readonly whole: number;
+  readonly half: boolean;
+  readonly innerBags: number;
+  /** Le type des suites si absent. */
+  readonly binTypeId?: string;
+}
+
+/**
+ * Appelle `BinDesk` comme le ferait le poste : dans un contexte de requête dont
+ * l'acteur est le staff des e2e, pour que le journal nomme quelqu'un. Le
+ * guichet ouvre sa propre unité de travail — il rejoint celle de l'appelant
+ * quand il y en a une, il en ouvre une sinon.
+ */
+function atTheDesk<T>(ctx: E2eContext, gesture: (desk: BinDesk) => Promise<T>): Promise<T> {
+  const seed = {
+    now: ctx.app.get(Clock).now(),
+    traceId: newTraceId(),
+    actor: { type: "staff", id: E2E_STAFF_ID },
+  } as const;
+  return runWithRequestContext(seed, () => gesture(ctx.app.get(BinDesk)));
+}
+
+/** Pose `count` bacs ENTIERS du type des suites ; rend leurs identifiants. */
 export async function declareBins(
   ctx: E2eContext,
   orderId: string,
@@ -61,16 +94,36 @@ export async function declareBins(
   return declareTypedBins(ctx, { orderId, whole: count, half: false, innerBags: 0 });
 }
 
-/** Déclare des bacs typés ; le type par défaut est celui des suites. */
+/**
+ * Pose des bacs typés, un par un, par `BinDesk.declareBin` — les entiers, puis
+ * la moitié. Un appel par bac, donc un fait `delivery_bin.declared` par bac :
+ * c'est ce que fait le poste. Les refus remontent tels quels (`AppError`).
+ */
 export async function declareTypedBins(
   ctx: E2eContext,
-  payload: Omit<DeclareDeliveryBinsPayload, "binTypeId"> & { readonly binTypeId?: string },
+  bins: BinsToPlace,
 ): Promise<readonly string[]> {
-  const response = await admin(ctx)
-    .post(BINS)
-    .send({ ...payload, binTypeId: payload.binTypeId ?? (await binTypeId(ctx)) })
-    .expect(201);
-  return jsonBody<{ binIds: string[] }>(response).binIds;
+  const typeId = bins.binTypeId ?? (await binTypeId(ctx));
+  const request = { orderId: bins.orderId, binTypeId: typeId, innerBags: bins.innerBags };
+  const declared: DeskBin[] = [];
+  for (let index = 0; index < bins.whole; index += 1) {
+    declared.push(await atTheDesk(ctx, (desk) => desk.declareBin({ ...request, half: false })));
+  }
+  if (bins.half) {
+    declared.push(await atTheDesk(ctx, (desk) => desk.declareBin({ ...request, half: true })));
+  }
+  return declared.map((bin) => bin.binId);
+}
+
+/** Pose l'autre moitié d'un bac partagé, par `BinDesk.shareHalf` ; rend son identifiant. */
+export async function shareBin(
+  ctx: E2eContext,
+  orderId: string,
+  partnerBinId: string,
+  innerBags = 0,
+): Promise<string> {
+  const bin = await atTheDesk(ctx, (desk) => desk.shareHalf({ orderId, partnerBinId, innerBags }));
+  return bin.binId;
 }
 
 export async function orderBins(ctx: E2eContext, orderId: string): Promise<DeliveryOrderBinsView> {

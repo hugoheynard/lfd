@@ -15,10 +15,14 @@ import type { DeliveryOrderRoundPlaceView } from "./delivery-packing.js";
  * Un bac naît quand on le DÉCLARE (L4-C16) ; l'imprimer est une lecture. Le bac
  * appartient à la commande, son chargement appartient à l'arrêt (L4-C18).
  *
+ * 🔴 Il se déclare et se partage au **poste de colisage** (`admin/packing/…`,
+ * `packing-containers.ts`), qui passe par `BinDesk`. Les routes de la
+ * livraison `POST colisage/bacs` et `POST colisage/bacs/partage`, et leurs
+ * schémas, sont retirés le 2026-10-10 (`documentation/colisage/colisage.md`
+ * §9, voie (b)).
+ *
  * Routes (`admin/livraison/…`, sous `delivery_loading`) :
  *
- * - `POST colisage/bacs` ({@link DeclareDeliveryBinsPayload}) → {@link DeclaredDeliveryBinsResponse} ;
- * - `POST colisage/bacs/partage` ({@link ShareDeliveryBinPayload}) → {@link SharedDeliveryBinResponse} ;
  * - `GET colisage/bacs?commande=` → {@link DeliveryOrderBinsView} ;
  * - `GET colisage/bacs/:binId` → {@link DeliveryBinDetailView} (le QR ouvert) ;
  * - `POST colisage/bacs/:binId/annulation` → 204 ;
@@ -40,47 +44,6 @@ export const DELIVERY_BIN_INNER_BAGS_MAX = 50;
 /** Une moitié de bac cloisonné. `null` ailleurs = un bac entier. */
 export const deliveryBinHalfSchema = z.enum(["left", "right"]);
 export type DeliveryBinHalf = z.infer<typeof deliveryBinHalfSchema>;
-
-/**
- * Déclarer des bacs d'UN type pour une commande : `whole` bacs entiers, et
- * `half: true` pour une moitié de plus (la gauche d'un bac physique neuf, dont
- * la droite reste libre). Au moins un bac. `innerBags` s'applique à CHAQUE bac
- * déclaré ici. Les bornes et la cloison sont tenues par le domaine (400).
- */
-export const declareDeliveryBinsPayloadSchema = z.object({
-  orderId: z.string().trim().min(1, "commande requise"),
-  binTypeId: z.string().trim().min(1, "type de bac requis"),
-  whole: z.number().int("un nombre entier de bacs"),
-  half: z.boolean(),
-  innerBags: z.number().int("un nombre entier de sacs"),
-});
-export type DeclareDeliveryBinsPayload = z.infer<typeof declareDeliveryBinsPayloadSchema>;
-
-/**
- * Déclarer, pour une commande, l'AUTRE moitié d'un bac dont une moitié est
- * déjà déclarée pour une autre commande (v2-4, dernier recours). Refusé si les
- * deux commandes ne sont pas dans la même tournée vivante, à des arrêts
- * consécutifs. Même type que la moitié partenaire, côté opposé.
- */
-export const shareDeliveryBinPayloadSchema = z.object({
-  orderId: z.string().trim().min(1, "commande requise"),
-  partnerBinId: z.string().trim().min(1, "moitié partenaire requise"),
-  innerBags: z.number().int("un nombre entier de sacs"),
-});
-export type ShareDeliveryBinPayload = z.infer<typeof shareDeliveryBinPayloadSchema>;
-
-/**
- * Ce que rend une déclaration : les bacs créés, dans l'ordre de déclaration
- * (les entiers, puis la moitié) — de quoi ouvrir leurs étiquettes sans relire.
- */
-export interface DeclaredDeliveryBinsResponse {
-  readonly binIds: readonly string[];
-}
-
-/** Ce que rend un partage : la moitié créée pour la commande. */
-export interface SharedDeliveryBinResponse {
-  readonly binId: string;
-}
 
 /** Le type d'un bac déclaré, tel qu'on l'imprime. Archivé : toujours lisible (v2-7). */
 export interface DeliveryBinTypeRef {

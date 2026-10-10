@@ -5,10 +5,6 @@ import { FixedClock } from "../../../../platform/time/fixed-clock.js";
 import { BinsManagedAtPackingError } from "../../../domain/errors/delivery-bin-declaration-errors.js";
 import { DeliveryBinDesk } from "../../delivery-bin-desk.js";
 import { DeliveryBinOffice } from "../../delivery-bin-office.js";
-import { DeclareDeliveryBinsCommand } from "../declare-delivery-bins.command.js";
-import { DeclareDeliveryBinsHandler } from "../declare-delivery-bins.handler.js";
-import { ShareDeliveryBinCommand } from "../share-delivery-bin.command.js";
-import { ShareDeliveryBinHandler } from "../share-delivery-bin.handler.js";
 import { VoidDeliveryBinCommand } from "../void-delivery-bin.command.js";
 import { VoidDeliveryBinHandler } from "../void-delivery-bin.handler.js";
 import {
@@ -40,8 +36,10 @@ const NOW = new Date(0);
 
 /**
  * K2b, §5.1 B1 : une commande dont les contenants se listent au colisage n'a
- * qu'une porte pour ses bacs — `BinDesk`. Les trois anciennes routes refusent,
- * et `DeliveryBinDesk` (la porte) applique les MÊMES règles qu'elles.
+ * qu'une porte pour ses bacs — `BinDesk`. L'annulation de la livraison refuse,
+ * et `DeliveryBinDesk` (la porte) applique les MÊMES règles qu'elle. Déclarer
+ * et partager n'ont plus de route à la livraison (2026-10-10, `colisage.md`
+ * §9, voie (b)) : leurs refus n'ont plus d'objet.
  */
 function setup(bins = new InMemoryBins(binOf("b_1", "o_listed", "AAAAAA"))) {
   const events = new RecordingPublisher();
@@ -64,23 +62,7 @@ function setup(bins = new InMemoryBins(binOf("b_1", "o_listed", "AAAAAA"))) {
   return { bins, events, office, managed };
 }
 
-describe("Les anciennes routes des bacs — refusées pour une commande gérée au colisage", () => {
-  it("refuse de déclarer, en nommant le geste de sortie", async () => {
-    const { office, managed, bins } = setup();
-    const handler = new DeclareDeliveryBinsHandler(office, managed);
-    const command = new DeclareDeliveryBinsCommand({
-      orderId: "o_listed",
-      binTypeId: "t_m",
-      whole: 1,
-      half: false,
-      innerBags: 0,
-    });
-
-    await expect(handler.execute(command)).rejects.toThrow(BinsManagedAtPackingError);
-    await expect(handler.execute(command)).rejects.toThrow(/colonne Contenants/u);
-    expect(bins.byId.size).toBe(1);
-  });
-
+describe("L'annulation de la livraison — refusée pour une commande gérée au colisage", () => {
   it("refuse d'annuler un bac d'une commande gérée au colisage", async () => {
     const { office, managed, bins } = setup();
 
@@ -88,32 +70,6 @@ describe("Les anciennes routes des bacs — refusées pour une commande gérée 
       new VoidDeliveryBinHandler(office, managed).execute(new VoidDeliveryBinCommand("b_1")),
     ).rejects.toThrow(BinsManagedAtPackingError);
     expect(bins.byId.get("b_1")?.voidedAt).toBeNull();
-  });
-
-  it("refuse de partager une moitié pour une commande gérée au colisage", async () => {
-    const { office, managed } = setup();
-
-    await expect(
-      new ShareDeliveryBinHandler(office, managed).execute(
-        new ShareDeliveryBinCommand({ orderId: "o_listed", partnerBinId: "b_1", innerBags: 0 }),
-      ),
-    ).rejects.toThrow(BinsManagedAtPackingError);
-  });
-
-  it("laisse déclarer pour une commande qui compte encore ses contenants", async () => {
-    const { office, managed } = setup();
-
-    const ids = await new DeclareDeliveryBinsHandler(office, managed).execute(
-      new DeclareDeliveryBinsCommand({
-        orderId: "o_counted",
-        binTypeId: "t_m",
-        whole: 1,
-        half: false,
-        innerBags: 0,
-      }),
-    );
-
-    expect(ids).toHaveLength(1);
   });
 });
 

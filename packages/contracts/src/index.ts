@@ -1120,17 +1120,11 @@ export {
   DELIVERY_BINS_PER_DECLARATION_MAX,
   DELIVERY_BIN_INNER_BAGS_MAX,
   deliveryBinHalfSchema,
-  declareDeliveryBinsPayloadSchema,
-  shareDeliveryBinPayloadSchema,
   loadDeliveryBinPayloadSchema,
   departDeliveryRoundPayloadSchema,
 } from "./delivery-loading.js";
 export type {
   DeliveryBinHalf,
-  DeclareDeliveryBinsPayload,
-  ShareDeliveryBinPayload,
-  DeclaredDeliveryBinsResponse,
-  SharedDeliveryBinResponse,
   DeliveryBinTypeRef,
   DeliveryBinPartnerView,
   DeliveryLoadingBinView,

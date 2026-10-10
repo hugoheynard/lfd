@@ -1,5 +1,6 @@
-import type { DeclareDeliveryBinsPayload, ShareDeliveryBinPayload } from "@lfd/contracts";
 import { Injectable } from "@nestjs/common";
+
+import type { BinShareRequest } from "../../packing/channels/delivery/index.js";
 
 import { UnitOfWork } from "../../platform/database/unit-of-work.js";
 import { DomainEventPublisher } from "../../platform/events/domain-event-publisher.js";
@@ -26,13 +27,23 @@ import {
   lookUpBinType,
 } from "./delivery-loading-support.js";
 
+/** Une déclaration : `whole` bacs entiers d'un type, et au besoin une moitié. */
+export interface BinsDeclaration {
+  readonly orderId: string;
+  readonly binTypeId: string;
+  readonly whole: number;
+  readonly half: boolean;
+  readonly innerBags: number;
+}
+
 /**
  * **Le guichet des bacs de la livraison** — déclarer, annuler, partager, avec
  * leurs refus et leur fait au journal. Sorti des trois handlers le 2026-10-04
- * (K2b, `colisage/colisage.md` §5–§5.1) pour être servi à
- * DEUX portes sans dupliquer une règle : les anciennes routes de la livraison
- * (qui refusent d'abord une commande gérée au colisage) et `BinDesk`, que le
- * colisage appelle dans sa propre transaction.
+ * (K2b, `colisage/colisage.md` §5–§5.1). Depuis le retrait des routes de
+ * déclaration et de partage de la livraison (2026-10-10, §9, voie (b)), il
+ * sert `BinDesk`, que le colisage appelle dans sa propre transaction, et
+ * l'annulation par la route de la livraison (qui refuse d'abord une commande
+ * gérée au colisage).
  *
  * Chaque geste ouvre son unité de travail, qui rejoint celle de l'appelant
  * quand elle existe (`UnitOfWork.run`).
@@ -66,7 +77,7 @@ export class DeliveryBinOffice {
    * @throws {DeliveryRoundDepartedError} @throws {BinCodeExhaustedError}
    * @throws {BinCodeCollisionError}
    */
-  async declare(payload: DeclareDeliveryBinsPayload): Promise<readonly DeliveryBin[]> {
+  async declare(payload: BinsDeclaration): Promise<readonly DeliveryBin[]> {
     const { orderId, binTypeId, whole, half, innerBags } = payload;
     return this.uow.run(async () => {
       const binType = await lookUpBinType(this.binTypes, binTypeId);
@@ -134,7 +145,7 @@ export class DeliveryBinOffice {
    * @throws {BinsNotDeclarableError} @throws {DeliveryRoundDepartedError}
    * @throws {DeliveryLoadingStaleError} @throws {BinHalfRaceError}
    */
-  async share(payload: ShareDeliveryBinPayload): Promise<DeliveryBin> {
+  async share(payload: BinShareRequest): Promise<DeliveryBin> {
     const { orderId, partnerBinId, innerBags } = payload;
     return this.uow.run(async () => {
       const reference = await declarableReference(this.orders, orderId);

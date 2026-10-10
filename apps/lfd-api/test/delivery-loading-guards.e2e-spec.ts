@@ -23,7 +23,6 @@ import {
 } from "./delivery-rounds-scene.js";
 import {
   BINS,
-  binTypeId,
   composedOrder,
   declareBins,
   depart,
@@ -224,40 +223,23 @@ describe("le droit `delivery_loading` (Q21)", () => {
   }
 
   it("le support ne lit ni n'écrit le chargement (403)", async () => {
-    const { roundId, order } = await composedOrder(ctx, DAY, "Kangoo");
+    const { roundId } = await composedOrder(ctx, DAY, "Kangoo");
     const support = await asRole("support");
 
     await support.get(`${LOADING}/chargement/${roundId}`).expect(403);
     await support.get(`${LOADING}/chargement?jour=${DAY}`).expect(403);
-    await support
-      .post(BINS)
-      .send({
-        orderId: order.id,
-        binTypeId: await binTypeId(ctx),
-        whole: 1,
-        half: false,
-        innerBags: 0,
-      })
-      .expect(403);
     await support.post(`${LOADING}/tournees/${roundId}/depart`).send({ version: 1 }).expect(403);
     expect(await ctx.prisma.deliveryBin.count()).toBe(0);
   });
 
-  it("le comptoir déclare et charge", async () => {
+  // Le comptoir déclarait aussi, par la route de la livraison retirée le
+  // 2026-10-10 (colisage.md §9, voie (b)) : un bac naît désormais au poste de
+  // colisage, dont les suites `packing-*` éprouvent les droits.
+  it("le comptoir charge", async () => {
     const { roundId, order } = await composedOrder(ctx, DAY, "Kangoo");
     const counter = await asRole("comptoir");
 
-    const declared = await counter
-      .post(BINS)
-      .send({
-        orderId: order.id,
-        binTypeId: await binTypeId(ctx),
-        whole: 1,
-        half: false,
-        innerBags: 0,
-      })
-      .expect(201);
-    const [binId] = jsonBody<{ binIds: string[] }>(declared).binIds;
+    const [binId] = await declareBins(ctx, order.id, 1);
     await counter.post(`${LOADING}/chargement/${roundId}/bacs`).send({ binId }).expect(204);
   });
 });

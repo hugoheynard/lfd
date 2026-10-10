@@ -7,7 +7,7 @@
  */
 import type { DeliveryBinView } from "@lfd/contracts";
 
-import { bootstrapE2e, jsonBody, serviceDay, type E2eContext } from "./e2e-harness.js";
+import { bootstrapE2e, serviceDay, type E2eContext } from "./e2e-harness.js";
 import {
   ADMIN_VERIFIER_OVERRIDE,
   addVehicle,
@@ -28,6 +28,7 @@ import {
   loadBin,
   loadingOf,
   orderBins,
+  shareBin,
 } from "./delivery-loading-scene.js";
 
 const DAY = serviceDay();
@@ -68,8 +69,9 @@ async function halfFor(orderId: string): Promise<string> {
   return binId ?? "";
 }
 
-function share(orderId: string, partnerBinId: string) {
-  return admin(ctx).post(`${BINS}/partage`).send({ orderId, partnerBinId, innerBags: 2 });
+/** Partage par `BinDesk.shareHalf`, comme le poste ; rend la moitié créée. */
+function share(orderId: string, partnerBinId: string): Promise<string> {
+  return shareBin(ctx, orderId, partnerBinId, 2);
 }
 
 describe("déclarer des bacs typés", () => {
@@ -95,8 +97,9 @@ describe("déclarer des bacs typés", () => {
     ]);
     expect(bins[2]?.physicalBinId).not.toBeNull();
     expect(bins[0]?.physicalBinId).toBeNull();
+    // Un fait par bac : le poste déclare bac par bac (`BinDesk.declareBin`).
     expect(await ctx.prisma.activityEvent.count({ where: { type: "delivery_bin.declared" } })).toBe(
-      1,
+      3,
     );
   });
 
@@ -107,18 +110,14 @@ describe("déclarer des bacs typés", () => {
     await admin(ctx).post(`${LOADING}/bacs/${old}/archiver`).expect(204);
 
     const body = { orderId: orders[0].id, innerBags: 0 };
-    await admin(ctx)
-      .post(BINS)
-      .send({ ...body, binTypeId: rigid, whole: 0, half: true })
-      .expect(409);
-    await admin(ctx)
-      .post(BINS)
-      .send({ ...body, binTypeId: old, whole: 1, half: false })
-      .expect(409);
-    await admin(ctx)
-      .post(BINS)
-      .send({ ...body, binTypeId: rigid, whole: 0, half: false })
-      .expect(400);
+    await expect(
+      declareTypedBins(ctx, { ...body, binTypeId: rigid, whole: 0, half: true }),
+    ).rejects.toMatchObject({ code: "delivery.bin_type_not_divisible" });
+    await expect(
+      declareTypedBins(ctx, { ...body, binTypeId: old, whole: 1, half: false }),
+    ).rejects.toMatchObject({ code: "delivery.bin_type_archived_for_declaration" });
+    // La déclaration VIDE (ni entier ni moitié) n'a plus d'appelant : le guichet
+    // déclare un bac à la fois (`BinDeclaration.of` la refuse toujours, au domaine).
     expect(await ctx.prisma.deliveryBin.count()).toBe(0);
   });
 });
@@ -148,8 +147,7 @@ describe("le bac partagé — deux arrêts consécutifs (v2-4)", () => {
     const { orders } = await threeStops();
     const left = await halfFor(orders[0].id);
 
-    const response = await share(orders[1].id, left).expect(201);
-    const { binId } = jsonBody<{ binId: string }>(response);
+    const binId = await share(orders[1].id, left);
 
     const [mine] = (await orderBins(ctx, orders[1].id)).bins;
     const [theirs] = (await orderBins(ctx, orders[0].id)).bins;
@@ -169,17 +167,18 @@ describe("le bac partagé — deux arrêts consécutifs (v2-4)", () => {
     const { orders } = await threeStops();
     const left = await halfFor(orders[0].id);
 
-    const refused = await share(orders[2].id, left).expect(409);
-    expect(JSON.stringify(refused.body)).toContain("ne sont pas à deux arrêts consécutifs");
-    await share(orders[1].id, left).expect(201);
-    await share(orders[1].id, left).expect(409);
+    await expect(share(orders[2].id, left)).rejects.toThrow(
+      "ne sont pas à deux arrêts consécutifs",
+    );
+    await share(orders[1].id, left);
+    await expect(share(orders[1].id, left)).rejects.toMatchObject({ category: "business" });
     expect(await ctx.prisma.deliveryBin.count()).toBe(2);
   });
 
   it("à refaire après un réordonnancement ; « Partir » le refuse ; remis côte à côte, il ne l'est plus", async () => {
     const { roundId, orders, stopIds } = await threeStops();
     const left = await halfFor(orders[0].id);
-    await share(orders[1].id, left).expect(201);
+    await share(orders[1].id, left);
     await declareTypedBins(ctx, { orderId: orders[2].id, whole: 1, half: false, innerBags: 0 });
     for (const { bins } of (await loadingOf(ctx, roundId)).stops) {
       for (const bin of bins) {

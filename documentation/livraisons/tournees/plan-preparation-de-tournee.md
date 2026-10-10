@@ -1239,6 +1239,13 @@ DEFAULT false` — une fiche n'est pas froide tant qu'on ne l'a pas dit) ;
 > seul sac : elle vérifie v2-6 au lieu de la croire (en local, les 8 sacs
 > semés ont été effacés avant d'appliquer — le semis les recrée).
 >
+> ⚠️ **2026-10-10** : `POST colisage/bacs`, `POST colisage/bacs/partage`,
+> `GET colisage/bacs/partenaires` et `GET colisage/proposition` (tranche C,
+> plus bas) sont **retirées**, avec `DeclaredDeliveryBinsResponse` et
+> `SharedDeliveryBinResponse` : un bac se déclare et se partage au poste de
+> colisage, par `BinDesk` (`documentation/colisage/colisage.md` §9, voie (b)).
+> Le texte ci-dessous décrit le bâti du 2026-09-29.
+>
 > Routes (`admin/livraison/…`, `delivery_loading`) : `colisage/bacs` (POST
 > déclarer `{ orderId, binTypeId, whole, half, innerBags }` → `{ binIds }` ;
 > GET `?commande=`), `colisage/bacs/partage` (POST `{ orderId, partnerBinId,

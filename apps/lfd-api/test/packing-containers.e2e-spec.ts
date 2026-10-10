@@ -215,22 +215,6 @@ describe("la colonne Contenants — le colisage tient le contenu, la livraison g
     expect(await ctx.prisma.packingContainer.count()).toBe(0);
   });
 
-  it("la déclaration de la livraison refuse une commande `listed`, en nommant le colisage", async () => {
-    const { delivery } = await day();
-
-    const declared = await staff()
-      .post(BINS)
-      .send({
-        orderId: delivery.orderId,
-        binTypeId: await binTypeId(ctx),
-        whole: 1,
-        half: false,
-        innerBags: 0,
-      });
-    expect(declared.status).toBe(409);
-    expect(codeOf(declared)).toBe("delivery.bins_managed_at_packing");
-  });
-
   it("coupe une ligne entre deux bacs, et la commande se ferme quand tout est réparti", async () => {
     const { delivery } = await day();
     const typeId = await binTypeId(ctx);

@@ -16,9 +16,7 @@ import {
   InvalidInnerBagsError,
 } from "../../../domain/errors/delivery-bin-declaration-errors.js";
 import { BinTypeNotFoundError } from "../../../domain/errors/delivery-bin-errors.js";
-import { DeliveryBinOffice } from "../../delivery-bin-office.js";
-import { DeclareDeliveryBinsCommand } from "../declare-delivery-bins.command.js";
-import { DeclareDeliveryBinsHandler } from "../declare-delivery-bins.handler.js";
+import { type BinsDeclaration, DeliveryBinOffice } from "../../delivery-bin-office.js";
 import { VoidDeliveryBinCommand } from "../void-delivery-bin.command.js";
 import { VoidDeliveryBinHandler } from "../void-delivery-bin.handler.js";
 import {
@@ -51,20 +49,16 @@ function tools() {
 }
 
 /** Une déclaration pour `o_1`, un Bac M entier, zéro sac dedans — sauf ce qu'on précise. */
-function declaring(
-  overrides: Partial<DeclareDeliveryBinsCommand["payload"]>,
-): DeclareDeliveryBinsCommand {
-  return new DeclareDeliveryBinsCommand({
-    orderId: "o_1",
-    binTypeId: "t_m",
-    whole: 0,
-    half: false,
-    innerBags: 0,
-    ...overrides,
-  });
+function declaring(overrides: Partial<BinsDeclaration>): BinsDeclaration {
+  return { orderId: "o_1", binTypeId: "t_m", whole: 0, half: false, innerBags: 0, ...overrides };
 }
 
-describe("DeclareDeliveryBinsHandler — L4-C16, L4-C20, lot 4 bis", () => {
+/**
+ * La déclaration du guichet — que `BinDesk.declareBin` appelle. Elle avait une
+ * route et son handler, retirés le 2026-10-10 (`colisage.md` §9, voie (b)) ;
+ * ses règles, elles, restent ici, et c'est elles qu'on éprouve.
+ */
+describe("DeliveryBinOffice.declare — L4-C16, L4-C20, lot 4 bis", () => {
   function declare(options: {
     readonly bins?: InMemoryBins;
     readonly loadings?: InMemoryStopLoadings;
@@ -72,24 +66,25 @@ describe("DeclareDeliveryBinsHandler — L4-C16, L4-C20, lot 4 bis", () => {
   }) {
     const { clock, events, uow } = tools();
     const bins = options.bins ?? new InMemoryBins();
-    const handler = new DeclareDeliveryBinsHandler(
-      new DeliveryBinOffice(
-        bins,
-        new FixedBinTypeLookup(
-          binTypeOf("t_m"),
-          binTypeOf("t_s", { divisible: false }),
-          binTypeOf("t_old", { archived: true }),
-        ),
-        options.loadings ?? new InMemoryStopLoadings(),
-        ORDERS,
-        new ScriptedDrawer(options.codes ?? ["AAAAAA", "BBBBBB", "CCCCCC"]),
-        new FixedIdGenerator("bin"),
-        clock,
-        events,
-        uow,
+    const office = new DeliveryBinOffice(
+      bins,
+      new FixedBinTypeLookup(
+        binTypeOf("t_m"),
+        binTypeOf("t_s", { divisible: false }),
+        binTypeOf("t_old", { archived: true }),
       ),
-      new FixedManagedOrders(),
+      options.loadings ?? new InMemoryStopLoadings(),
+      ORDERS,
+      new ScriptedDrawer(options.codes ?? ["AAAAAA", "BBBBBB", "CCCCCC"]),
+      new FixedIdGenerator("bin"),
+      clock,
+      events,
+      uow,
     );
+    const handler = {
+      execute: async (payload: BinsDeclaration): Promise<readonly string[]> =>
+        (await office.declare(payload)).map((bin) => bin.id),
+    };
     return { handler, bins, events };
   }
 

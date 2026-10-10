@@ -1,24 +1,11 @@
-import {
-  type DeclaredDeliveryBinsResponse,
-  type DeclareDeliveryBinsPayload,
-  type DeliveryBinFreeHalvesView,
-  declareDeliveryBinsPayloadSchema,
-  type DeliveryBinDetailView,
-  type DeliveryOrderBinsView,
-  type SharedDeliveryBinResponse,
-  type ShareDeliveryBinPayload,
-  shareDeliveryBinPayloadSchema,
-} from "@lfd/contracts";
-import { Body, Controller, Get, HttpCode, HttpStatus, Param, Post, Query } from "@nestjs/common";
+import type { DeliveryBinDetailView, DeliveryOrderBinsView } from "@lfd/contracts";
+import { Controller, Get, HttpCode, HttpStatus, Param, Post, Query } from "@nestjs/common";
 import { CommandBus, QueryBus } from "@nestjs/cqrs";
 import { z } from "zod";
 
 import { AdminSurface, RequireAnyPermission } from "../../platform/auth/admin-surface.decorator.js";
-import { ZodBody, ZodQuery } from "../../platform/shared/http/zod-body.pipe.js";
-import { DeclareDeliveryBinsCommand } from "../application/commands/declare-delivery-bins.command.js";
-import { ShareDeliveryBinCommand } from "../application/commands/share-delivery-bin.command.js";
+import { ZodQuery } from "../../platform/shared/http/zod-body.pipe.js";
 import { VoidDeliveryBinCommand } from "../application/commands/void-delivery-bin.command.js";
-import { GetDeliveryBinFreeHalvesQuery } from "../application/queries/get-delivery-bin-free-halves.query.js";
 import { GetDeliveryBinQuery } from "../application/queries/get-delivery-bin.query.js";
 import { GetDeliveryOrderBinsQuery } from "../application/queries/get-delivery-order-bins.query.js";
 
@@ -27,17 +14,21 @@ const orderQuerySchema = z.object({ commande: z.string().trim().min(1, "commande
 type OrderQuery = z.infer<typeof orderQuerySchema>;
 
 /**
- * **Les bacs déclarés** — déclarer, partager, lire, annuler
- * (`documentation/livraisons/tournees/plan-preparation-de-tournee.md`, lot 4, L4-C16,
+ * **Les bacs déclarés** — lire, annuler
+ * (`documentation/livraisons/tournees/plan-preparation-de-tournee.md`, lot 4,
  * L4-C19, L4-C21 ; lot 4 bis, v2-4, tranche B).
+ *
+ * 🔴 Déclarer, partager et lister les moitiés libres ne passent plus par ici
+ * depuis le 2026-10-10 (`documentation/colisage/colisage.md` §9, voie (b)) :
+ * un bac naît au poste de colisage, par `BinDesk`, et les routes
+ * `POST`, `POST partage` et `GET partenaires` sont retirées.
  *
  * Sous `admin/livraison/colisage/bacs` : `admin/livraison/bacs` est le
  * CATALOGUE des types (tranche A), un réglage — un bac déclaré est un fait du
  * colisage d'une commande.
  *
  * Sous `delivery_loading` : lecture et écriture pour `admin` et `comptoir`
- * (Q21). `GET partenaires?commande=` : les moitiés libres autour d'une
- * commande (tranche C). Lire un bac ou les bacs d'une commande — la page imprimable, le QR
+ * (Q21). Lire un bac ou les bacs d'une commande — la page imprimable, le QR
  * ouvert — n'écrit rien. Il n'injecte que les bus.
  *
  * 🔴 La porte s'ouvre AUSSI au colisage (2026-10-01, `documentation/livraisons/droits/plan-droits-par-geste.md`,
@@ -54,8 +45,8 @@ type OrderQuery = z.infer<typeof orderQuerySchema>;
  * chargement montrent déjà en lecture : ni montant, ni contact, ni adresse
  * (vérifié le 2026-10-02 sur `delivery-loading.ts`).
  *
- * Les deux autres `GET` — les bacs d'une commande, les moitiés libres —
- * restent en écriture : ils sont le PANNEAU du geste, que la lecture du
+ * L'autre `GET` — les bacs d'une commande — reste en écriture : il est le
+ * PANNEAU du geste, que la lecture du
  * colisage n'ouvre pas (plan 5.3 ; `gesture-rights.e2e-spec.ts` le tient).
  */
 @Controller("admin/livraison/colisage/bacs")
@@ -66,30 +57,6 @@ export class DeliveryBinsController {
     private readonly queries: QueryBus,
   ) {}
 
-  @Post()
-  @RequireAnyPermission("production_packing:write", "delivery_loading:write")
-  @HttpCode(HttpStatus.CREATED)
-  async declare(
-    @Body(new ZodBody(declareDeliveryBinsPayloadSchema)) payload: DeclareDeliveryBinsPayload,
-  ): Promise<DeclaredDeliveryBinsResponse> {
-    const binIds = await this.commands.execute<DeclareDeliveryBinsCommand, readonly string[]>(
-      new DeclareDeliveryBinsCommand(payload),
-    );
-    return { binIds };
-  }
-
-  @Post("partage")
-  @RequireAnyPermission("production_packing:write", "delivery_loading:write")
-  @HttpCode(HttpStatus.CREATED)
-  async share(
-    @Body(new ZodBody(shareDeliveryBinPayloadSchema)) payload: ShareDeliveryBinPayload,
-  ): Promise<SharedDeliveryBinResponse> {
-    const binId = await this.commands.execute<ShareDeliveryBinCommand, string>(
-      new ShareDeliveryBinCommand(payload),
-    );
-    return { binId };
-  }
-
   @Get()
   @RequireAnyPermission("production_packing:write", "delivery_loading:write")
   orderBins(
@@ -97,24 +64,6 @@ export class DeliveryBinsController {
   ): Promise<DeliveryOrderBinsView> {
     return this.queries.execute<GetDeliveryOrderBinsQuery, DeliveryOrderBinsView>(
       new GetDeliveryOrderBinsQuery(query.commande),
-    );
-  }
-
-  /**
-   * Les moitiés libres des arrêts consécutifs de la tournée de la commande
-   * (v2-4, tranche C). Déclarée AVANT `:binId`, qui la prendrait sinon pour
-   * un identifiant de bac.
-   *
-   * Reste en ÉCRITURE : c'est l'aide du geste de partage (la proposition de
-   * colisage, sa voisine, l'est aussi) — elle ne sert qu'à qui va partager.
-   */
-  @Get("partenaires")
-  @RequireAnyPermission("production_packing:write", "delivery_loading:write")
-  freeHalves(
-    @Query(new ZodQuery(orderQuerySchema)) query: OrderQuery,
-  ): Promise<DeliveryBinFreeHalvesView> {
-    return this.queries.execute<GetDeliveryBinFreeHalvesQuery, DeliveryBinFreeHalvesView>(
-      new GetDeliveryBinFreeHalvesQuery(query.commande),
     );
   }
 

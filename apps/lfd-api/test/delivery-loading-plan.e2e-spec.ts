@@ -17,7 +17,7 @@ import {
   seedDelivery,
   VEHICLES,
 } from "./delivery-rounds-scene.js";
-import { BINS, declareTypedBins, LOADING, loadingOf } from "./delivery-loading-scene.js";
+import { BINS, declareTypedBins, LOADING, loadingOf, shareBin } from "./delivery-loading-scene.js";
 
 const DAY = serviceDay();
 
@@ -72,10 +72,7 @@ describe("le plan de chargement d'une tournée composée", () => {
       half: true,
       innerBags: 0,
     });
-    await admin(ctx)
-      .post(`${BINS}/partage`)
-      .send({ orderId: orders[1].id, partnerBinId: left, innerBags: 0 })
-      .expect(201);
+    await shareBin(ctx, orders[1].id, left ?? "");
     const [voided] = await declareTypedBins(ctx, {
       orderId: orders[1].id,
       whole: 1,
