@@ -72,7 +72,7 @@ export class DepositImageHandler implements ICommandHandler<DepositImageCommand,
     // adressé par son contenu, donc un second dépôt du même fichier le réécrit
     // à l'identique. Le ramassage prendra celui-ci si personne ne l'attache.
     return this.uow.run(async () => {
-      await this.journal.trace({
+      const ticket = await this.journal.trace({
         type: MEDIA_EVENTS.mediaDeposited,
         subjectType: "media_asset",
         // L'URL : c'est l'identité de l'image, celle que les porteurs citent.
@@ -87,14 +87,17 @@ export class DepositImageHandler implements ICommandHandler<DepositImageCommand,
           height: image.height,
         },
       });
-      return this.library.register({
-        url: stored.url,
-        storageKey: stored.storageKey,
-        contentType: image.contentType,
-        width: image.width,
-        height: image.height,
-        bytes: image.byteLength,
-      });
+      return this.library.register(
+        {
+          url: stored.url,
+          storageKey: stored.storageKey,
+          contentType: image.contentType,
+          width: image.width,
+          height: image.height,
+          bytes: image.byteLength,
+        },
+        ticket,
+      );
     });
   }
 

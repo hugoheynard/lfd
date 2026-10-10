@@ -314,6 +314,34 @@ function* walk(dir) {
   }
 }
 
+/**
+ * **Les ports d'écriture**, reconnus à leur signature et non à leur nom.
+ *
+ * Un port dont une méthode exige un `WriteTicket` écrit : c'est la définition
+ * même du laissez-passer (`platform/journal/scoped-journal.ts`). Cette porte
+ * reconnaissait les dépôts par une liste de noms — `*Repository`, puis
+ * `MediaLibraryWriter` et `MediaLibrary` ajoutés à la main le jour où Hugo a
+ * réclamé le journal de la médiathèque, qu'elle n'avait pas vu. Une liste en dur
+ * est ce que cette porte reproche aux autres ; depuis le 2026-10-10, un port
+ * neuf qui exige le ticket est audité sans qu'on touche à ce fichier.
+ *
+ * Lu sur les classes ABSTRAITES seulement : les adaptateurs qui les
+ * implémentent ne s'injectent pas, et un handler qui reçoit un ticket en
+ * paramètre n'est pas un port.
+ */
+const TICKET_PORTS = [...walk(SRC)].flatMap((path) => {
+  const source = readFileSync(path, "utf8");
+  if (!source.includes("WriteTicket")) {
+    return [];
+  }
+  return (
+    [...source.matchAll(/export abstract class (\w+)[^{]*\{([\s\S]*?)\n\}/gu)]
+      // Un PARAMÈTRE typé `WriteTicket` : le journal, lui, en RENVOIE.
+      .filter(([, , body]) => /[(,]\s*\w+\??\s*:\s*WriteTicket\b/u.test(body))
+      .map(([, name]) => name)
+  );
+});
+
 /** Le corps du constructeur d'une classe — ses dépendances injectées. */
 function constructorParams(source, from) {
   const start = source.indexOf("constructor(", from);
@@ -358,10 +386,13 @@ function handlerBody(source, index) {
  */
 function auditWithTicket(journalName) {
   return (source, index, params, handler) => {
-    // `*Repository` — et `MediaLibraryWriter`, qui EST un dépôt sans en porter
-    // le nom. La porte ne le voyait pas : c'est Hugo qui a réclamé le journal
-    // de la médiathèque, pas elle (2026-09-23).
-    if (!/\b(\w*Repository|MediaLibraryWriter|MediaLibrary)\b/.test(params)) {
+    // Un PORT D'ÉCRITURE, reconnu à ce qu'il exige un `WriteTicket` — plus
+    // `*Repository` par nom, pour les dépôts du référentiel écrits avant le
+    // laissez-passer. Cf. `TICKET_PORTS`.
+    if (
+      !/\b\w*Repository\b/.test(params) &&
+      !TICKET_PORTS.some((port) => new RegExp(`\\b${port}\\b`).test(params))
+    ) {
       return null;
     }
     checked += 1;

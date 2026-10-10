@@ -1,3 +1,5 @@
+import type { WriteTicket } from "../../../platform/journal/scoped-journal.js";
+
 /** Ce qu'on a constaté d'un visuel qu'on héberge. `null` ⇒ URL externe. */
 export interface MediaFacts {
   readonly storageKey: string | null;
@@ -23,7 +25,15 @@ export interface RegisteredMedia extends MediaFacts {
  */
 export abstract class MediaLibrary {
   /** Inscrit un visuel déposé. Sa `url` est celle du bucket public. */
-  abstract register(entry: Omit<RegisteredMedia, "id">): Promise<RegisteredMedia>;
+  /**
+   * Inscrit une image. Le ticket dit qu'on a tracé le dépôt — ou nommé
+   * pourquoi pas : écrire sans rien affirmer ne compile pas (2026-10-10, comme
+   * `MediaLibraryWriter`).
+   */
+  abstract register(
+    entry: Omit<RegisteredMedia, "id">,
+    ticket: WriteTicket,
+  ): Promise<RegisteredMedia>;
 
   /**
    * Retrouve ce qu'on sait d'une URL, ou `null`.
@@ -83,5 +93,5 @@ export abstract class MediaLibrary {
    *
    * @returns le nombre de lignes oubliées.
    */
-  abstract forget(storageKey: string): Promise<number>;
+  abstract forget(storageKey: string, ticket: WriteTicket): Promise<number>;
 }

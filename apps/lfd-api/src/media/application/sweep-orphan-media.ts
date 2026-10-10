@@ -6,6 +6,7 @@ import { MediaStore } from "../../platform/storage/media-store.js";
 import { MediaCarriers } from "../channels/carriers/media-carriers.js";
 import { MediaFailureLog } from "../domain/ports/media-failure-log.js";
 import { MediaLibrary } from "../domain/ports/media-library.js";
+import { MediaJournal } from "../journal/media-journal.js";
 
 /**
  * Le délai de grâce : on ne ramasse rien de plus récent.
@@ -65,10 +66,10 @@ export class SweepOrphanMediaCommand {}
  *
  * ## Pourquoi il faut un ramassage
  *
- * Rien ne supprime jamais un objet au fil de l'eau, et c'est délibéré :
- * `replaceMedia` détache sans supprimer, parce que les mêmes octets tombent sur
- * la même clé et peuvent donc servir une fiche voisine. Seul un comptage global
- * sait qu'un objet n'a plus aucun lecteur — c'est ici.
+ * Rien ne supprime un objet au fil de l'eau, et c'est délibéré : retirer une
+ * image d'une fiche ne touche pas le fonds, parce que la même image peut
+ * servir ailleurs. Seul un comptage auprès de TOUS les porteurs sait qu'un
+ * objet n'a plus aucun lecteur — c'est ici.
  *
  * ## L'ordre est la sûreté
  *
@@ -85,7 +86,7 @@ export class SweepOrphanMediaCommand {}
  * ## La fenêtre qui reste
  *
  * Entre le recensement et la suppression, quelqu'un peut redéposer la même
- * image et l'attacher. `isStillOrphan` est donc rejoué juste avant chaque
+ * image et l'attacher. `stillOld` et le compte des porteurs sont donc rejoués juste avant chaque
  * suppression, ce qui ramène la fenêtre à quelques millisecondes sans la
  * fermer — seul un verrou la fermerait, pour un risque qui ne le mérite pas.
  * Le pire cas est un visuel cassé sur une fiche, réparable en redéposant le
@@ -120,11 +121,15 @@ export class SweepOrphanMediaHandler implements ICommandHandler<
     private readonly carriers: MediaCarriers,
     private readonly failures: MediaFailureLog,
     private readonly clock: Clock,
+    private readonly journal: MediaJournal,
   ) {}
 
   async execute(): Promise<OrphanSweepReport> {
     const before = this.graceCutoff();
     const candidates = await this.library.findCandidates(before, MAX_PER_RUN);
+    // La dérogation est NOMMÉE, pas tacite : le port exige un ticket, et le
+    // seul qu'un automate sans auteur puisse présenter est celui-ci.
+    const ticket = this.journal.untraced("ramassage automatique, sans auteur");
 
     let removed = 0;
     let forgotten = 0;
@@ -155,7 +160,7 @@ export class SweepOrphanMediaHandler implements ICommandHandler<
         continue;
       }
       await this.store.remove(candidate.storageKey);
-      forgotten += await this.library.forget(candidate.storageKey);
+      forgotten += await this.library.forget(candidate.storageKey, ticket);
       removed += 1;
     }
 

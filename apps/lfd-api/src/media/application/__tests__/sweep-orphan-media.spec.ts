@@ -8,6 +8,7 @@ import {
 import { MediaCarriers, type Carrier } from "../../channels/carriers/media-carriers.js";
 import { MediaFailureLog, type LoggedFailure } from "../../domain/ports/media-failure-log.js";
 import { SweepOrphanMediaHandler } from "../sweep-orphan-media.js";
+import { RecordingMediaJournal } from "../../journal/__tests__/recording-media-journal.js";
 
 /**
  * Ce que les PORTEURS répondent. Muet par défaut — personne n'affiche rien —
@@ -175,6 +176,7 @@ function handler(
       new FakeCarriers(carried),
       failures,
       new FixedClock(NOW),
+      new RecordingMediaJournal(),
     ),
     steps,
     library,
@@ -294,6 +296,7 @@ describe("SweepOrphanMediaHandler", () => {
       new BrokenCarriers(),
       new SpyingFailures(),
       new FixedClock(NOW),
+      new RecordingMediaJournal(),
     );
 
     await expect(run.execute()).rejects.toThrow("porteur injoignable");
