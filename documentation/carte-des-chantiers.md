@@ -159,16 +159,15 @@ supprimé, sauf si un `migration.sql` le cite — alors bandeau daté) :
 - `order/audit-flux-de-commande.md` §1 : `cancelled` est écrit (expiration des impayés).
 - `order/todo-conservation-des-bons-en-r2.md` : `R2_CUSTOMERS_EU_*` posés le 2026-09-21 ; le bon est joint au courriel.
 - `pim/todo.md` : `AddVariant` existe ; l'item « collection » est une notion Shopify.
-- `pim/images-du-catalogue.md` §8 et `mediatheque/la-mediatheque.md` : le point focal a un lecteur (la bibliothèque) ; seul manque la boutique.
 - `livraisons/chargement/plan-geometrie-du-plancher.md` l.273 : le jeu entre bacs est un réglage depuis `20261008090000`.
 - `pricing/README.md` : cinq docs non indexés ; `documentation/README.md` : `operations-datees/`, `formules/`, `contenu-ecommerce/` absents, `release-plan-2026-08.md` et `plan-demo-2026-09-19.md` disent encore « piloter la semaine ».
-- `todos/` à archiver : `todo-ecran-tarification-ignore-les-baremes.md` (clos), `todo-file-hors-ligne-bloquee-par-un-refus.md` (sans objet), `todo-mediatheque.md` (dette `PimJournal` soldée), `ledger-composition-automatique.md` (« à supprimer après le débrief »).
+- `todos/` à archiver : `todo-ecran-tarification-ignore-les-baremes.md` (clos), `todo-file-hors-ligne-bloquee-par-un-refus.md` (sans objet), `ledger-composition-automatique.md` (« à supprimer après le débrief »).
 
 ## 7. Les dettes comptées et le reste
 
 - `todos/todo-agregat-company-trop-gros.md` : `company.ts` dépasse 740 lignes (règle ≲ 300), découpe « à la cinquième transition ».
 - `todos/todo-flake-des-e2e.md`, `todo-e2e-dependantes-de-l-ordre.md`, `todo-tests-unitaires-coupes-en-ci.md` : la CI tient, la cause n'est pas trouvée.
-- `todos/todo-images-web.md` (poids des images), `plan-visuel-sans-republier.md` (le `thumbnail` ne voyage pas ; version de snapshot à monter).
+- `mediatheque/mediatheque.md` §11 : la médiathèque refaite à plat le 2026-10-10, quatorze points à faire, dont trois qui attendent une décision (rôle par défaut, emprunts au référentiel, ratios).
 - `livraisons/tournees/todo-calculateur.md` : « Proposer » à 200 clients, p95 12,4 s.
 - `todos/todo-retrait-de-pro-les-restes.md` : passer la redirection `/pro` en 301, retirer les URL Auth0.
 - PIM : `ChangeVariantSku`, `SKU_PATTERN` partagé, l'écran Conditionnements (« Écran à venir »), les ratios d'image à l'affectation, remplacer une image (`vitruve`).

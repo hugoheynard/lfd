@@ -1,0 +1,409 @@
+# La médiathèque — état des lieux
+
+> **Doc technique, écrite le 2026-10-10 contre le code** (`dev` = `8560a5be1`).
+> Chaque affirmation sur l'existant a été ouverte dans le dépôt ce jour-là.
+>
+> Elle **remplace** neuf documents, retirés le même jour : l'ancienne doc
+> d'architecture et son TODO, le versant référentiel des images, la note
+> d'infrastructure du stockage des images, le TODO du poids des images, et les
+> quatre plans exécutés (`plan-la-mediatheque.md`,
+> `plan-la-mediatheque-bloc-a-part.md`, `plan-les-six-de-la-mediatheque.md`,
+> `todos/plan-visuel-sans-republier.md`). Ces quatre derniers survivent en
+> renvoi d'une ligne, parce que des migrations appliquées les citent, et
+> qu'on ne retouche pas une migration appliquée.
+>
+> Ce qui reste à faire est au §11, et **nulle part ailleurs**.
+
+---
+
+## 1. Ce que c'est
+
+Le **fonds d'images de la maison**. Il n'appartient à aucun de ceux qui
+l'affichent : les fiches produit, les familles, les opérations datées et les
+objets de la vitrine du commerce y **choisissent** des images. Aucun d'eux
+n'en dépose.
+
+| Couche       | Où                                                                               |
+| ------------ | -------------------------------------------------------------------------------- |
+| Bloc backend | `apps/lfd-api/src/media/`, monté par `MediaModule`                               |
+| Schéma       | Postgres `media` : `media_asset`, `media_upload_failure`                         |
+| Routes       | `/media` (staff), `/admin/media/sweep` (cron)                                    |
+| Droit        | `media_library` (`read` pour `GET`, `write` pour le reste)                       |
+| Écran        | back-office `/mediatheque` (`apps/lfd-backoffice-frontend/src/app/mediatheque/`) |
+| Octets       | bucket R2 `lfc-media`, servi par `https://media.lafoliecoffee.info`              |
+| Contrats     | `@lfd/pim-contracts` (`media.ts` : vues, limites, payloads)                      |
+
+---
+
+## 2. L'identité d'une image est son URL
+
+`products/{SHA-256}.{ext}` : la clé de stockage **est** le hachage du contenu
+(`DepositImageHandler`, préfixe `products` en dur, le nom est historique).
+`media_asset.url` est `@unique`.
+
+Il en découle trois propriétés :
+
+- **la déduplication est gratuite** : les mêmes octets tombent sur la même
+  ligne ;
+- **un redépôt est idempotent** : reprendre un lot à moitié échoué ne
+  duplique rien ;
+- **l'identité est stable** : tous les porteurs désignent l'image par son URL,
+  jamais par l'identifiant de ligne.
+
+⚠️ **La contrepartie : on ne peut pas « remplacer » une image.** Retoucher une
+photo donne d'autres octets, donc une autre URL. Les porteurs restent sur
+l'ancienne (§11).
+
+⚠️ **Ce qu'un redépôt ne rend pas** : l'étiquette, les mots-clés,
+l'alternative et le point focal. Ils décrivent l'image, pas ses octets.
+
+---
+
+## 3. Les frontières
+
+```mermaid
+flowchart LR
+    subgraph media["media/ — le fonds"]
+        LIB[(media.media_asset)]
+    end
+    subgraph pim["pim/ — le référentiel"]
+        PM[(product_media<br/>category_media<br/>operation)]
+    end
+    subgraph b2b["b2b/storefront — la vitrine"]
+        SF[(objets de vitrine)]
+    end
+    APP{{appBootstrap/}}
+
+    pim -- "pim/channels/media/ImageCatalogue<br/>« décris-moi ces URL »" --> media
+    media -- "media/channels/carriers/MediaCarriers<br/>« qui affiche cette URL ? »" --> APP
+    APP -- composite --> pim
+    APP -- StorefrontMediaCarriers --> b2b
+```
+
+**Deux canaux, un par sens**, et aucun bloc ne lit la table de l'autre
+(`lint:prisma-model-ownership`) :
+
+| Canal                      | Déclaré par    | Implémenté par                                                                                                                            |
+| -------------------------- | -------------- | ----------------------------------------------------------------------------------------------------------------------------------------- |
+| `pim/channels/media/`      | le référentiel | la médiathèque (`PrismaImageCatalogue`)                                                                                                   |
+| `media/channels/carriers/` | la médiathèque | le référentiel (`PrismaMediaCarriers` : fiches, familles, opérations) **et** la vitrine (`StorefrontMediaCarriers`, dans `appBootstrap/`) |
+
+`appBootstrap/composite-media-carriers.ts` interroge **tous** les porteurs et
+additionne leurs réponses. 🔴 **Il échoue dès qu'un seul échoue.** Un porteur
+muet ne vaut pas « zéro emploi » : sans cette règle, une panne de port
+deviendrait un effacement de masse.
+
+La surface Prisma du bloc (`MediaPrismaService`) ne déclare que ses deux
+modèles. Ses identifiants viennent de `MediaIdGenerator` (UUID v7).
+
+### Ce que le bloc emprunte encore
+
+| Emprunt                                 | Depuis                     | Statut                                                        |
+| --------------------------------------- | -------------------------- | ------------------------------------------------------------- |
+| le laissez-passer d'écriture du journal | `platform/journal/`        | ✅ à sa place                                                 |
+| `localized-text.ts`, `json-readers.ts`  | `pim/catalogue/shared/`    | 🟠 transverses, mais ils importent `@lfd/pim-contracts` (§11) |
+| `MediaIdGenerator`                      | jumeau de `PimIdGenerator` | 🟠 duplication assumée (§11)                                  |
+
+C'est pourquoi `lint:context-boundaries` ouvre encore `media→pim` sur `pim/`
+entier, et non sur le seul canal.
+
+---
+
+## 4. Le modèle
+
+```
+media.media_asset
+  id            uuid v7
+  url           UNIQUE — l'identité
+  name          l'étiquette, "" par défaut
+  alt           jsonb { fr: …, en: … } — UNE alternative par image
+  tags          text[] — index GIN media_asset_tags_idx
+  focal_x/_y    fractions 0..1 depuis le coin haut-gauche, NULL = « personne ne s'est prononcé »
+  storage_key, content_type, width, height, bytes
+  created_at
+
+media.media_upload_failure      les dépôts refusés, 90 jours
+  file_name, reason (français), code, bytes?, content_type?, actor_name?, occurred_at
+```
+
+### Ce qui appartient à l'image, et ce qui appartient à l'emploi
+
+C'est la règle de partage, et elle décide de tout le reste :
+
+| À l'IMAGE (`media_asset`)                                      | À l'EMPLOI (la table du porteur) |
+| -------------------------------------------------------------- | -------------------------------- |
+| étiquette, mots-clés, **alternative**, point focal, dimensions | URL, **rôle**, **position**      |
+
+🔴 **L'alternative est sur l'image** (Hugo, 2026-09-23 : « un seul point dans
+la médiathèque »). La corriger change ce que toutes les fiches en disent, et
+c'est voulu. Le panneau Visuels de la fiche n'en porte donc plus.
+
+⚠️ L'index GIN des tags est posé par la migration
+`20260923120000_les_tags_de_la_mediatheque` et **n'est pas déclaré** dans
+`prisma/schema/media/media-asset.prisma`. `@@index([url])` y double en
+revanche l'index que `@unique` crée déjà (§11).
+
+---
+
+## 5. Les gestes
+
+| Geste                            | Route                      | Où, à l'écran                      | Ce qu'il tient                                                                                                                          |
+| -------------------------------- | -------------------------- | ---------------------------------- | --------------------------------------------------------------------------------------------------------------------------------------- |
+| Parcourir, chercher              | `GET /media?q=&tags=`      | médiathèque, sélecteur             | `q` cherche dans l'étiquette (sous-chaîne, casse ignorée) ; les `tags` filtrent par `hasEvery`, donc **tous**. Pages de 60, 100 au plus |
+| Déposer                          | `POST /media` (multipart)  | **médiathèque seulement**          | PNG, JPEG ou WebP, lu dans les octets ; 10 Mo ; 200 px de côté au moins ; garde de transport à 25 Mo                                    |
+| Voir les refus                   | `GET /media/failures`      | médiathèque                        | l'historique survit au rechargement ; il ne **rejoue** pas, puisque l'octet n'a pas été stocké                                          |
+| Nommer, taguer, décrire, pointer | `PUT /media`               | médiathèque                        | les tags sont découpés, mis en minuscules et dédoublonnés (`mediaTags`)                                                                 |
+| Qui l'affiche ?                  | `GET /media/carriers?url=` | médiathèque                        | les porteurs, nommés et cliquables, pas un simple compte                                                                                |
+| Retirer du fonds                 | `DELETE /media?url=`       | médiathèque                        | **409 dès qu'un porteur l'affiche**, avec leur nombre                                                                                   |
+| Choisir, donner un usage         | `PUT` du porteur           | fiche, famille, opération, vitrine | le porteur écrit sa propre table de rattachement ; il ne touche jamais le fonds                                                         |
+
+🔴 **On ne dépose qu'à la médiathèque**, et c'est un choix de métier. Celui qui
+alimente et tague le fonds n'est pas celui qui rédige les fiches. Un dépôt
+offert au rédacteur remplirait le fonds d'images non taguées, donc
+introuvables. Les clients HTTP du référentiel n'ont plus de méthode de dépôt :
+le geste y est inexprimable.
+
+Le dépôt en lot (`batch-upload.ts`) est **séquentiel**. Il ne s'arrête jamais
+sur un refus et garde les `File` refusés pour qu'on puisse les rejouer. Il est
+séquentiel parce que le serveur tient les octets en mémoire pour les mesurer.
+
+L'URL passe en paramètre de requête plutôt que dans le chemin, parce qu'elle
+contient des `/`.
+
+### Le droit
+
+`media_library` ne vient **pas** de `pim_catalog`. Depuis la migration
+`20260923200000`, seuls `admin` et `communication` l'ont, en écriture. Pour
+`commercial`, `comptabilite` et `dev`, le bouton « Choisir dans la
+médiathèque » d'une fiche rend 403. Le rôle `communication` a aussi
+`pim_catalog:read` : sans lui, les liens vers les porteurs mèneraient à un 403.
+
+---
+
+## 6. Les usages d'un visuel sur une fiche
+
+`MediaRole` : `hero`, `thumbnail`, `gallery`, `lifestyle`, `print`.
+
+| Rôle        | Cardinalité | Ratio annoncé | Traverse vers le commerce | Lu par                                       |
+| ----------- | ----------- | ------------- | ------------------------- | -------------------------------------------- |
+| `hero`      | un seul     | 3/2           | ✅ `image`                | ouverture de fiche ; tuile de rayon en repli |
+| `thumbnail` | un seul     | 4/3           | ✅ `thumbnail` (fil v10)  | tuile de rayon                               |
+| `gallery`   | plusieurs   | —             | ❌                        | personne                                     |
+| `lifestyle` | plusieurs   | 16/9          | ❌                        | personne                                     |
+| `print`     | plusieurs   | 1/1           | ❌                        | personne                                     |
+
+- **L'unicité appartient au verbe.** `setMediaRole` déloge en une seule mise à
+  jour celui qui portait le même rôle unique, et seulement lui.
+- **La fourche `hero` / `thumbnail` est tranchée.** Les deux traversent, et la
+  boutique retombe sur `hero` quand la fiche n'a pas de vignette
+  (`thumbnailOf` dans `prisma-catalog.reader.ts`).
+- 🔴 **Le rôle par défaut ne voyage nulle part.** Une image choisie sans rôle
+  prend `gallery` (`DEFAULT_MEDIA_ROLE`, `product-form-store.ts`), et `gallery`
+  ne traverse pas. Une photo posée sans décision n'apparaît donc **jamais** en
+  boutique, et l'écran ne le signale pas (§11).
+- ⚠️ **Les ratios ne sont vérifiés nulle part.** Ce sont des libellés. Seule la
+  boutique applique un `aspect-ratio` en CSS et recadre au centre.
+
+---
+
+## 7. Le trajet d'une image jusqu'à la boutique
+
+```mermaid
+sequenceDiagram
+    participant BO as Back-office (fiche)
+    participant PIM as pim — set-product-media
+    participant OB as Boîte d'envoi (outbox)
+    participant B2B as b2b/catalog — on-product-media-changed
+    participant CI as public.catalog_items
+    participant SHOP as Boutique
+    participant CDN as media.lafoliecoffee.info
+
+    BO->>PIM: PUT visuels (URL, rôle, position)
+    PIM->>OB: fait « visuels changés » (même transaction, id de geste v7)
+    OB->>B2B: livraison durable, rejouable
+    B2B->>CI: image_* / thumbnail_*<br/>si visuals_gesture_id est NULL ou plus ancien
+    SHOP->>CI: lecture du catalogue
+    SHOP->>CDN: /cdn-cgi/image/width=…,format=auto/products/…
+```
+
+- **Changer une photo ne demande plus de republier.** La projection vive passe
+  par un abonné **durable** (`ProductMediaChanged`, lot E5 du 2026-10-10).
+  L'ordre est tenu par `visuals_gesture_id` (migration
+  `20261010120000_l_ordre_des_visuels`) : un fait plus ancien rejoué après un
+  plus récent ne l'écrase pas.
+- **Deux écrivains, et c'est voulu.** Un push (ingestion d'un instantané)
+  réécrit aussi `image_*` et `thumbnail_*`. Les deux lisent la même source :
+  la projection fait la fraîcheur, le push fait la réparation. Une image qui
+  « revient » après une publication n'est pas un défaut.
+- **La boutique garde une copie de l'URL** : le snapshot vaut aussi pour
+  l'image. Repointer le référentiel ne repointe la boutique que par l'un de
+  ces deux chemins.
+- **Le poids.** La boutique ne sert jamais l'original. `media-source.ts`
+  réécrit l'URL en transformation Cloudflare (`width`, `format=auto`,
+  `fit=scale-down`) et pose un `srcset`. `onerror=redirect` retombe sur
+  l'original si la transformation échoue. On ne convertit rien au dépôt et on
+  ne stocke aucune dérivée : R2 garde **un** fichier par image.
+  ⚠️ Le serveur d'images rétrécit, il n'invente pas de pixels : un master de
+  400 px reste flou à 1800.
+
+---
+
+## 8. Stockage et service
+
+```mermaid
+flowchart LR
+    ADM["Back-office<br/>/mediatheque"] -->|multipart| API["lfd-api<br/>POST /media"]
+    API -->|"clé = sha256"| R2[("R2 lfc-media<br/>hint WEUR")]
+    NAV["Navigateur"] --> POP["PoP Cloudflare"]
+    POP -.->|"miss, une fois"| R2
+```
+
+- **Le dépôt passe par l'API** : il faut un droit, une validation et une
+  ligne. **La lecture ne passe jamais par nous** : le domaine média pointe sur
+  le bucket, et la sortie R2 est gratuite.
+- **Un bucket séparé des KBIS, avec son propre jeton.** Le KBIS est privé (URL
+  signée, `attachment` forcé, aucun cache) ; l'image est publique (URL stable,
+  `inline`, cache permanent). Un jeton fuité côté images n'ouvre pas les
+  papiers des clients.
+- **Configuration** (`deploy_lfd_api.yml`) : les variables
+  `R2_MEDIA_ENDPOINT`, `R2_MEDIA_BUCKET` et `R2_MEDIA_PUBLIC_BASE_URL`, plus les
+  deux secrets `R2_MEDIA_ACCESS_KEY_ID` et `R2_MEDIA_SECRET_ACCESS_KEY`.
+  - Si elles manquent, la plateforme continue de démarrer : l'usage s'éteint,
+    le bulletin de démarrage nomme ce qui manque, et le dépôt répond
+    `MediaStorageUnavailableError`.
+  - Un secret posé ne relance rien : il faut une image neuve.
+- **Coût.** Le catalogue tient dans le palier gratuit de R2. Le seul poste qui
+  croît avec le trafic, ce sont les transformations d'images, facturées à la
+  transformation unique et par mois. 5 000 sont incluses (relevé du
+  2026-09-23).
+
+---
+
+## 9. Le ramassage des orphelines
+
+Un cron Cloudflare (`apps/lfd-api/wrangler.jsonc`, `30 3`, via
+`container/worker.ts`) poste sur `/admin/media/sweep`, derrière le
+`RecomputeGuard` :
+
+- **candidates** : les images de plus de **7 jours** sans aucun porteur, au
+  plus **200** par passage. Le rapport porte `capped` quand le plafond a mordu ;
+- **juste avant chaque suppression, il recompte.** La fenêtre de course n'est
+  pas fermée pour autant : elle tombe à quelques millisecondes ;
+- **il supprime l'objet R2 d'abord, la ligne ensuite.** Dans l'ordre inverse,
+  un échec sur R2 effacerait la seule trace de ce qu'il reste à supprimer ;
+- **il purge l'historique des refus** au-delà de **90 jours**.
+
+---
+
+## 10. Ce qui est journalisé
+
+Trois faits, avec l'URL pour sujet :
+
+- `media_asset.deposited` ;
+- `media_asset.described` ;
+- `media_asset.discarded`.
+
+Le port d'écriture exige un ticket de `platform/journal/scoped-journal.ts`. On
+n'obtient ce ticket qu'en traçant, ou en nommant pourquoi on ne trace pas
+(`untraced`). Écrire sans affirmer ne compile pas.
+
+Le ramassage ne journalise rien, et c'est déclaré : une passe automatique n'a
+pas d'auteur. Son rapport en tient lieu.
+
+Les **refus de dépôt ne sont pas le journal** : leur sujet n'existe pas. Ils
+s'inscrivent dans leur propre unité de travail, sinon le rollback du dépôt les
+emporterait.
+
+---
+
+## 11. Les points à faire
+
+Rangés par ce que ça coûte de **ne pas** les faire. Les lignes marquées 🔵
+attendent une décision de Hugo avant tout code.
+
+### 🔴 Ce qui se voit déjà
+
+1. **🔵 Le rôle par défaut ne publie rien** (§6). Trois sorties :
+   - **A** : le premier visuel devient `hero` d'office ;
+   - **B** : l'écran dit qu'une `gallery` n'est publiée nulle part ;
+   - **C** : `gallery` traverse en repli.
+
+   Recommandation : **B**, éventuellement avec A. A seul déciderait à la place
+   de la personne qui photographie.
+
+2. **Les visuels de l'accueil vivent hors du fonds.**
+   - L'accueil public lit encore `MOCK_EVENT`, avec une URL Unsplash en dur
+     (`apps/lfc-ecommerce-frontend/src/app/client/mock-event.ts`).
+   - La porte « fournil » est une URL tierce dans `accueil-public.scss`
+     (`$fournil`).
+
+   Les opérations datées et la vitrine sont pourtant déjà porteuses : il reste
+   à brancher l'écran.
+
+3. **Le module d'activité range `media_asset.` sous le PIM**
+   (`b2b/growth/domain/activity-module.ts`). Un module « Médiathèque »
+   demande une entrée de plus côté écran (`MODULE_LABELS`).
+
+### 🟠 Ce qui mordra
+
+4. **Le point focal n'a aucun lecteur.** Il se saisit, se range et voyage
+   dans les contrats de la médiathèque, mais pas sur le fil du catalogue, et
+   la boutique recadre au centre.
+   - Le brancher : l'ajouter à la projection des visuels (le fait durable
+     d'abord, le push ensuite), puis poser un `object-position` côté boutique.
+   - C'est ce qu'attendent les cartes sans forme fixe de l'accueil.
+   - ⚠️ Un `focal` **requis** sur le fil rendrait illisible une livraison en
+     attente qui porte une image : il doit être optionnel.
+5. **Remplacer une image sur place.** Concrètement : déposer (octets **hors**
+   transaction), puis repointer tous les porteurs dans **une** unité.
+   - Le repointage fusionne : un porteur qui affiche déjà les deux images
+     produirait deux lignes identiques.
+   - Il journalise.
+   - Il laisse la projection faire suivre la boutique.
+   - ⚠️ `lint:journal-tracked` ne le rattrapera pas : un port nommé
+     `MediaCarriers` passe sous sa liste (point 8).
+6. **`countUrls()` ramène une ligne par URL pour les compter**
+   (`prisma-media-library-reader.ts`). Depuis que `url` est unique, un
+   `count()` suffit, et le `groupBy` de la lecture de page aussi peut tomber.
+   La lecture « groupée par URL » date du temps où une image avait plusieurs
+   lignes.
+7. **L'index GIN est hors du schéma Prisma** (§4). Un `migrate dev` futur
+   pourrait proposer de le supprimer. Il faut le déclarer
+   (`@@index([tags], type: Gin)`) et retirer le `@@index([url])` redondant,
+   dans une migration additive.
+
+### 🟡 Dette de structure
+
+8. **`lint:journal-tracked` reconnaît les dépôts par leur nom**
+   (`dev-toolbox/gates/journal-tracked.mjs`, `MediaLibraryWriter|MediaLibrary`
+   en dur). Le bon critère serait « ce paramètre est un port d'écriture ».
+9. **🔵 `localized-text.ts` et `json-readers.ts`.** Ces deux fichiers sont
+   transverses, mais ils importent `@lfd/pim-contracts`, et `platform/`
+   n'importe aucun contrat métier. Tant que ce n'est pas tranché, `media→pim`
+   reste ouvert sur `pim/` entier.
+10. **`MediaIdGenerator` est le jumeau de `PimIdGenerator`.** Les deux
+    devraient se fondre dans `platform/id/`, ce qui touche tous les dépôts du
+    référentiel.
+11. **Des justifications périmées dans le code**, à corriger au prochain
+    passage :
+    - le JSDoc de `media.module.ts` dit encore emprunter `PimJournal` ;
+    - le commentaire de `usesByUrl` parle d'un refus de Postgres alors qu'il
+      n'y a plus de clé étrangère ;
+    - celui de `discard` (`media-library.controller.ts`) dit pareil ;
+    - le préfixe de clé s'appelle `products` alors que le fonds sert
+      désormais tout porteur. C'est une valeur, pas un nom : elle ne se
+      renomme pas sans migration des URL.
+
+### 🔵 Ce qui attend une décision ou un constat
+
+12. **Les ratios.** La décision est prise : signaler **à l'affectation**, pas
+    refuser au dépôt. Le point focal existe justement pour que recadrer soit
+    correct. `describe(urls)` rend déjà les dimensions.
+13. **La pré-validation à l'écran.** Le type, le poids et les dimensions sont
+    connus du navigateur avant l'envoi. Aujourd'hui, l'erreur revient du
+    serveur, loin du geste.
+14. **Non vérifié depuis le dépôt** : la transformation d'images est-elle
+    activée sur la zone ? (`onerror=redirect` masquerait qu'elle ne l'est
+    pas.) Le ramassage a-t-il tourné en production, et `capped` a-t-il déjà
+    mordu ? Un coup d'œil au tableau de bord et aux journaux du cron répond
+    aux deux.

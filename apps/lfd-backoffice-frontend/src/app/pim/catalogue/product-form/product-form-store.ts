@@ -398,7 +398,7 @@ const MAIN_MEDIA_ROLE = 'hero';
  *
  * Ils existent dans le domaine depuis l'origine (`MEDIA_ROLES`) ; aucun écran
  * n'en proposait plus d'un jusqu'au 2026-09-23. Les ratios attendus de chacun
- * sont dans `documentation/pim/images-du-catalogue.md` §2.
+ * sont dans `documentation/mediatheque/mediatheque.md` §6.
  */
 export const MEDIA_ROLE_LABELS: Readonly<Record<string, string>> = {
   hero: 'Ouverture (3/2)',

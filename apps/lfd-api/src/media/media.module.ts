@@ -43,11 +43,11 @@ import { PrismaMediaLibraryWriter } from "./infrastructure/prisma-media-library-
  * détail de câblage : tant qu'elle passait par celle du PIM, elle pouvait
  * atteindre tout ce que celle-ci déclare.
  *
- * ⚠️ Ce qu'elle emprunte ENCORE, et pourquoi : le journal du référentiel
- * (`PimJournal`), le value object du texte localisé et les lecteurs de colonnes
- * JSON. Les trois sont transverses et devraient vivre dans `platform/` — le
- * `CLAUDE.md` le dit déjà du journal, « au troisième bloc émetteur », et nous y
- * sommes. Cf. `documentation/todos/todo-mediatheque.md`.
+ * ⚠️ Ce qu'elle emprunte ENCORE (vérifié le 2026-10-10) : le value object du
+ * texte localisé et les lecteurs de colonnes JSON du référentiel. Le journal,
+ * lui, est monté en `platform/journal/`. Les deux restants importent
+ * `@lfd/pim-contracts`, que `platform/` n'importe pas — cf.
+ * `documentation/mediatheque/mediatheque.md` §11.
  */
 @Module({
   imports: [MediaDatabaseModule],

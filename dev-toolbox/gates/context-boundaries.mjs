@@ -286,7 +286,7 @@ const PORT_SURFACE = {
   // contrat métier aujourd'hui — l'y forcer lui ferait connaître les langues
   // que parle le catalogue. Tant que ce point n'est pas tranché, cette ligne
   // reste large, et elle dit pourquoi
-  // (`documentation/todos/todo-mediatheque.md`).
+  // (`documentation/mediatheque/mediatheque.md` §11).
   "media→pim": "pim/",
   // L'autre sens : le RÉFÉRENTIEL implémente ce que la bibliothèque déclare.
   // Elle ne peut pas lire `product_media` ni `category_media` — ce sont les
