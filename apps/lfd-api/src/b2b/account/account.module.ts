@@ -147,6 +147,9 @@ import { PrismaNavPreferencesRepository } from "./infrastructure/prisma-nav-pref
 import { PrismaUserProfileRepository } from "./infrastructure/prisma-user-profile.repository.js";
 import { PrismaSupportRequestRepository } from "./infrastructure/prisma-support-request.repository.js";
 import { SupportRequestRepository } from "./domain/ports/support-request.repository.js";
+import { SupportRequestReader } from "./domain/ports/support-request.reader.js";
+import { PrismaSupportRequestReader } from "./infrastructure/prisma-support-request.reader.js";
+import { MailSupportRequested } from "./application/handlers/mail-support-requested.handler.js";
 import { AdminCompaniesController } from "./http/admin-companies.controller.js";
 import { AdminCompanyHierarchyController } from "./http/admin-company-hierarchy.controller.js";
 import { AdminCompanyPricingFollowController } from "./http/admin-company-pricing-follow.controller.js";
@@ -394,6 +397,8 @@ import { UnknownSubjectAdmission } from "./infrastructure/unknown-subject-admiss
     DevCustomerIdentity,
     SubjectRoutedCustomerIdentity,
     { provide: SupportRequestRepository, useClass: PrismaSupportRequestRepository },
+    { provide: SupportRequestReader, useClass: PrismaSupportRequestReader },
+    MailSupportRequested,
     OnCompanyDeclaredResolveNaf,
     { provide: CompanyNafWriter, useClass: PrismaCompanyNafWriter },
     { provide: EstablishmentDirectory, useClass: RechercheEntreprisesEstablishmentDirectory },

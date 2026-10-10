@@ -50,6 +50,32 @@
     **b) est préférable** : l'événement dit _ce qui s'est passé_, pas _ce qu'on
     veut afficher_.
 
+#### La conception retenue — ✅ bâtie le 2026-10-10
+
+Port `AppointmentBookedAlert` (croissance) et son adaptateur
+`mail-appointment-booked-alert.ts` ; abonné `MailSupportRequested` (compte),
+qui relit la demande par un port de lecture neuf, `SupportRequestReader`.
+Libellés du motif et du canal : `platform/mailer/staff-mail-labels.ts` —
+⚠️ recopiés des libellés courts de `@lfd/b2b-ui`, que le backend ne peut pas
+importer : rien ne garde les deux copies d'accord. Reste ouvert : la demande
+de rappel ne stocke aucun **nom de contact** ; le courriel prend celui de la
+société, sinon de la personne (`subjectLabel`), et peut donc être vide. Les
+deux envois restent best-effort et en mémoire, comme la conception le veut.
+
+- **Rendez-vous pris** : `BookAppointmentHandler` appelle, APRÈS l'écriture,
+  un port du domaine croissance (`AppointmentBookedAlert`), dont
+  l'adaptateur envoie `staff.appointment-booked` à `MAILER_STAFF_INBOX`.
+  Best-effort : une panne du fournisseur est journalisée, jamais remontée —
+  la réservation est faite. Clé `mail:appointment.booked:<id>`. Heure mise en
+  forme en heure de Paris ; libellés du motif et du canal en français, à un
+  seul endroit ; lien vers le rendez-vous dans le back-office (racine
+  `adminBaseUrl`, sans bouton si elle manque — comme les alertes).
+- **Demande de rappel** : un abonné de `SupportRequestedEvent` relit la
+  demande (option b) et envoie `staff.support-requested`. Clé
+  `mail:support.requested:<id>`.
+- Sans `MAILER_STAFF_INBOX`, rien ne part, et un avertissement le dit — la
+  règle des alertes de compte.
+
 ### 2. Deux réglages, qui ne sont pas du code
 
 > **2026-08-16** — la procédure de mise en service (domaine, DNS, les quatre

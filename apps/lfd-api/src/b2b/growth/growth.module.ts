@@ -49,6 +49,8 @@ import { ListProspectsHandler } from "./application/queries/list-prospects.handl
 import { ActivationReader } from "./domain/ports/activation.reader.js";
 import { AppointmentReader } from "./domain/ports/appointment.reader.js";
 import { AppointmentRepository } from "./domain/ports/appointment.repository.js";
+import { AppointmentBookedAlert } from "./domain/ports/appointment-booked-alert.js";
+import { MailAppointmentBookedAlert } from "./infrastructure/mail-appointment-booked-alert.js";
 import { AvailabilityStore } from "./domain/ports/availability.store.js";
 import { ActivityRecorder } from "./domain/ports/activity-recorder.js";
 import { GrowthStatsReader } from "./domain/ports/growth-stats.reader.js";
@@ -181,6 +183,7 @@ import { PrismaProspectReader } from "./infrastructure/prisma-prospect.reader.js
     { provide: AvailabilityStore, useClass: PrismaAvailabilityStore },
     { provide: AppointmentRepository, useClass: PrismaAppointmentRepository },
     { provide: AppointmentReader, useClass: PrismaAppointmentReader },
+    { provide: AppointmentBookedAlert, useClass: MailAppointmentBookedAlert },
     RecomputeGuard,
     RecomputeLeadScoresHandler,
     CaptureLeadHandler,

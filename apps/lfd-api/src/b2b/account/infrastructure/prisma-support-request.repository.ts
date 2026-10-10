@@ -1,10 +1,4 @@
-import { appointmentPurposeSchema } from "@lfd/contracts";
-import type {
-  ActivationSupportPayload,
-  AppointmentPurpose,
-  SupportRequestView,
-  SupportSlot,
-} from "@lfd/contracts";
+import type { ActivationSupportPayload, SupportRequestView } from "@lfd/contracts";
 import { Injectable } from "@nestjs/common";
 
 import { PrismaService } from "../../../platform/database/prisma.service.js";
@@ -13,6 +7,7 @@ import {
   type HandledSupportRequest,
   type SupportRequestScope,
 } from "../domain/ports/support-request.repository.js";
+import { toSupportRequestView } from "./support-request-mapping.js";
 
 /** Adaptateur Prisma des demandes de support. */
 @Injectable()
@@ -57,7 +52,7 @@ export class PrismaSupportRequestRepository extends SupportRequestRepository {
       where: openOnly ? { handledAt: null } : {},
       orderBy: { createdAt: "asc" },
     });
-    return rows.map(toView);
+    return rows.map(toSupportRequestView);
   }
 
   async markHandled(
@@ -81,57 +76,4 @@ export class PrismaSupportRequestRepository extends SupportRequestRepository {
     }
     return { companyId: row.companyId, requestedByUserId: row.requestedByUserId };
   }
-}
-
-/**
- * Le motif relu de la base. Colonne texte (pas d'enum Postgres) : on **renarrow**
- * par le schéma du contrat plutôt que de faire confiance à la ligne — un `as`
- * mensonger se propagerait jusqu'au front. Un motif inconnu retombe sur « autre ».
- *
- * Passe par le schéma et non par le vocabulaire de `growth` : les deux contextes
- * partagent le contrat, pas leurs adaptateurs.
- */
-function toPurpose(value: string): AppointmentPurpose {
-  const parsed = appointmentPurposeSchema.safeParse(value);
-  return parsed.success ? parsed.data : "other";
-}
-
-/** Une ligne `support_requests` vers la vue plate rendue au staff. */
-function toView(row: {
-  id: string;
-  companyId: string | null;
-  requestedByUserId: string;
-  channel: string;
-  purpose: string;
-  phoneNumber: string;
-  asap: boolean;
-  scheduledDate: Date | null;
-  slot: string | null;
-  message: string;
-  handledAt: Date | null;
-  createdAt: Date;
-}): SupportRequestView {
-  return {
-    id: row.id,
-    companyId: row.companyId,
-    requestedByUserId: row.requestedByUserId,
-    channel: row.channel === "email" ? "email" : "phone",
-    purpose: toPurpose(row.purpose),
-    phoneNumber: row.phoneNumber,
-    asap: row.asap,
-    // Colonne DATE : on garde le jour tel quel, sans passer par un fuseau qui
-    // pourrait le décaler d'un cran.
-    scheduledDate: row.scheduledDate === null ? null : row.scheduledDate.toISOString().slice(0, 10),
-    slot: toSlot(row.slot),
-    message: row.message,
-    handledAt: row.handledAt?.toISOString() ?? null,
-    createdAt: row.createdAt.toISOString(),
-  };
-}
-
-function toSlot(value: string | null): SupportSlot | null {
-  if (value === "morning" || value === "afternoon") {
-    return value;
-  }
-  return null;
 }
