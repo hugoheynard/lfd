@@ -11,6 +11,11 @@ import { DepositImageHandler } from "./application/deposit-image.js";
 import { DiscardMediaHandler } from "./application/discard-media.js";
 import { SaveMediaDetailsHandler } from "./application/save-media-details.js";
 import { SweepOrphanMediaHandler } from "./application/sweep-orphan-media.js";
+import { ListMediaTagsHandler } from "./application/list-media-tags.js";
+import { RenameMediaTagHandler } from "./application/rename-media-tag.js";
+import { RemoveMediaTagHandler } from "./application/remove-media-tag.js";
+import { MediaTagReader, MediaTagWriter } from "./domain/ports/media-tags.js";
+import { PrismaMediaTagReader, PrismaMediaTagWriter } from "./infrastructure/prisma-media-tags.js";
 import { MediaLibrary } from "./domain/ports/media-library.js";
 import { MediaLibraryReader } from "./domain/ports/media-library-reader.js";
 import { MediaLibraryWriter } from "./domain/ports/media-library-writer.js";
@@ -60,6 +65,11 @@ import { PrismaMediaLibraryWriter } from "./infrastructure/prisma-media-library-
     DiscardMediaHandler,
     DepositImageHandler,
     SweepOrphanMediaHandler,
+    ListMediaTagsHandler,
+    RenameMediaTagHandler,
+    RemoveMediaTagHandler,
+    { provide: MediaTagReader, useClass: PrismaMediaTagReader },
+    { provide: MediaTagWriter, useClass: PrismaMediaTagWriter },
     { provide: MediaLibrary, useClass: PrismaMediaLibrary },
     { provide: MediaLibraryReader, useClass: PrismaMediaLibraryReader },
     { provide: MediaLibraryWriter, useClass: PrismaMediaLibraryWriter },

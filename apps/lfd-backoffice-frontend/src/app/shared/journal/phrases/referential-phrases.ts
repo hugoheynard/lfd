@@ -19,6 +19,7 @@ import {
 } from '../phrase';
 import { PRODUCT_KIND } from '../values/referential-values';
 
+import { MEDIA_TAG_PHRASES } from './media-tag-phrases';
 import { REFERENTIAL_CATEGORY_PHRASES } from './referential-category-phrases';
 import { REFERENTIAL_VARIANT_PHRASES } from './referential-variant-phrases';
 import { REFERENTIAL_VAT_PHRASES } from './referential-vat-phrases';
@@ -366,6 +367,7 @@ export const REFERENTIAL_PHRASES = {
   'media_asset.deposited': mediaDeposited,
   'media_asset.described': mediaDescribed,
   'media_asset.discarded': mediaDiscarded,
+  ...MEDIA_TAG_PHRASES,
 
   ...REFERENTIAL_VARIANT_PHRASES,
   ...REFERENTIAL_CATEGORY_PHRASES,

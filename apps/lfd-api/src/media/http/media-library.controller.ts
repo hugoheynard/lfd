@@ -14,6 +14,8 @@ import { FileInterceptor } from "@nestjs/platform-express";
 import { CommandBus, QueryBus } from "@nestjs/cqrs";
 import {
   mediaDetailsPayloadSchema,
+  renameMediaTagPayloadSchema,
+  type MediaTagView,
   type MediaLibraryPageView,
   type UploadedMediaView,
   MEDIA_LIMITS,
@@ -29,6 +31,9 @@ import { ListMediaCarriersQuery } from "../application/list-media-carriers.js";
 import { ReadUploadFailuresQuery } from "../application/read-upload-failures.js";
 import { DiscardMediaCommand } from "../application/discard-media.js";
 import { SaveMediaDetailsCommand } from "../application/save-media-details.js";
+import { ListMediaTagsQuery } from "../application/list-media-tags.js";
+import { RenameMediaTagCommand } from "../application/rename-media-tag.js";
+import { RemoveMediaTagCommand } from "../application/remove-media-tag.js";
 
 /**
  * Garde-fou DoS du multipart, **très au-dessus** de la limite métier (le
@@ -156,6 +161,43 @@ export class MediaLibraryController {
     return this.queries.execute<ListMediaCarriersQuery, readonly MediaCarrierView[]>(
       new ListMediaCarriersQuery(url ?? ""),
     );
+  }
+
+  /**
+   * **Le vocabulaire** — chaque mot-clé de tout le fonds, et son compte.
+   *
+   * 🔴 Tout le fonds, pas la page : la bande de l'écran dérivait ses mots des
+   * images chargées, et un mot porté hors de la page n'existait pas pour elle.
+   */
+  @Get("tags")
+  async tags(): Promise<readonly MediaTagView[]> {
+    return this.queries.execute<ListMediaTagsQuery, readonly MediaTagView[]>(
+      new ListMediaTagsQuery(),
+    );
+  }
+
+  /**
+   * Renomme un mot-clé partout — une fusion si le nouveau mot existe déjà.
+   *
+   * Rend 204 et rien d'autre (CQRS) : l'écran relit `GET /media/tags`.
+   */
+  @Put("tags/rename")
+  @HttpCode(204)
+  async renameTag(@Body() body: unknown): Promise<void> {
+    const payload = renameMediaTagPayloadSchema.parse(body);
+    await this.commands.execute<RenameMediaTagCommand, void>(
+      new RenameMediaTagCommand(payload.from, payload.to),
+    );
+  }
+
+  /**
+   * Retire un mot-clé de toutes les images. Le mot en paramètre de requête,
+   * comme l'URL de `DELETE /media` : un mot libre peut contenir une `/`.
+   */
+  @Delete("tags")
+  @HttpCode(204)
+  async removeTag(@Query("tag") tag?: string): Promise<void> {
+    await this.commands.execute<RemoveMediaTagCommand, void>(new RemoveMediaTagCommand(tag ?? ""));
   }
 
   /**

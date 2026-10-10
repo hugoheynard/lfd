@@ -255,3 +255,22 @@ export const mediaDetailsPayloadSchema = z.object({
 });
 
 export type MediaDetailsPayload = z.infer<typeof mediaDetailsPayloadSchema>;
+
+/**
+ * Un mot-clé du fonds, et combien d'images le portent — compté sur TOUT le
+ * fonds, jamais sur la page chargée (L1, 2026-10-10).
+ */
+export interface MediaTagView {
+  readonly tag: string;
+  readonly count: number;
+}
+
+/**
+ * Renommer un mot-clé partout. Le schéma ne dit que la forme : la
+ * normalisation de `to`, le refus d'un mot vide ou inchangé sont au domaine.
+ */
+export const renameMediaTagPayloadSchema = z.object({
+  from: z.string(),
+  to: z.string(),
+});
+export type RenameMediaTagPayload = z.infer<typeof renameMediaTagPayloadSchema>;

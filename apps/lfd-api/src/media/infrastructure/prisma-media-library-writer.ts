@@ -13,10 +13,9 @@ export class PrismaMediaLibraryWriter extends MediaLibraryWriter {
   async describe(url: string, details: MediaDetails): Promise<boolean> {
     // Le laissez-passer n'est pas lu : sa seule existence prouve qu'un fait a
     // été posé (ou une dérogation nommée) avant qu'on arrive ici.
-    // 🔴 `updateMany` et non `update` : plusieurs inscriptions portent la même
-    // URL, et n'en corriger qu'une laisserait les autres dire le contraire. La
-    // lecture groupe par URL et prend « la plus récente qui en porte » — elle
-    // choisirait alors au hasard de la date.
+    // `updateMany` sur une URL unique (une image, une ligne, depuis le
+    // 2026-09-23) : il touche au plus une ligne, et rend 0 sans lever quand
+    // l'image a disparu entre-temps — ce que `update` ferait en 404 technique.
     const written = await this.prisma.mediaAsset.updateMany({
       where: { url },
       data: {

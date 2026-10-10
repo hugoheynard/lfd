@@ -24,9 +24,10 @@ export interface RegisteredMedia extends MediaFacts {
  * n'apparaissaient qu'au moment de sauver une fiche.
  */
 export abstract class MediaLibrary {
-  /** Inscrit un visuel déposé. Sa `url` est celle du bucket public. */
   /**
-   * Inscrit une image. Le ticket dit qu'on a tracé le dépôt — ou nommé
+   * Inscrit un visuel déposé. Sa `url` est celle du bucket public.
+   *
+   * Le ticket dit qu'on a tracé le dépôt — ou nommé
    * pourquoi pas : écrire sans rien affirmer ne compile pas (2026-10-10, comme
    * `MediaLibraryWriter`).
    */

@@ -193,7 +193,8 @@ const PREFIXES: Readonly<Record<ActivityModule, readonly string[]>> = {
   ],
   // Le fonds d'images : un bloc à lui depuis le 2026-09-23, avec son droit
   // (`media_library`). Rangé sous `pim` jusqu'au 2026-10-10.
-  mediatheque: ["media_asset."],
+  // `media_tag.` : les gestes sur un mot-clé dans tout le fonds (L1, 2026-10-10).
+  mediatheque: ["media_asset.", "media_tag."],
 };
 
 /** Les préfixes d'un module — l'entrée du filtre côté base. */

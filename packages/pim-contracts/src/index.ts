@@ -20,6 +20,7 @@ export { localizedTextSchema, optionalLocalizedTextSchema } from "./localized.js
 export {
   mediaDetailsPayloadSchema,
   mediaItemPayloadSchema,
+  renameMediaTagPayloadSchema,
   setMediaPayloadSchema,
 } from "./media.js";
 export { MEDIA_LIMITS } from "./media.js";
@@ -35,6 +36,8 @@ export type {
   MediaUploadFailureView,
   MediaLibraryPageView,
   MediaDetailsPayload,
+  MediaTagView,
+  RenameMediaTagPayload,
 } from "./media.js";
 
 export type { AllergenEntry, AllergenReference, AllergenScope } from "./allergen.js";

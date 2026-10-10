@@ -28,12 +28,17 @@ import { ScopedJournal } from "../../platform/journal/scoped-journal.js";
  * redépôt, à une fusion de doublons et à un changement de schéma. Un
  * identifiant d'actif aurait désigné une ligne — et les lignes, elles, ont
  * déjà été refondues une fois.
+ *
+ * `media_tag` (L1, 2026-10-10) : un MOT-CLÉ, quand un geste le vise dans tout
+ * le fonds. Son `subjectId` est le mot lui-même — un vocabulaire libre n'a
+ * pas d'autre identité.
  */
-export type MediaSubjectType = "media_asset";
+export type MediaSubjectType = "media_asset" | "media_tag";
 
 /**
- * Les faits du fonds. **Trois**, et ils décrivent la vie d'une IMAGE — jamais
- * l'usage qu'un porteur en fait.
+ * Les faits du fonds. Ils décrivent la vie d'une IMAGE — ou, depuis L1
+ * (2026-10-10), d'un mot-clé du vocabulaire — jamais l'usage qu'un porteur en
+ * fait.
  *
  * C'est la même ligne de partage que partout dans ce bloc : rattacher une image
  * à une fiche est un fait du RÉFÉRENTIEL (`product.media_saved`), parce que
@@ -47,6 +52,10 @@ export const MEDIA_EVENTS = {
   mediaDescribed: "media_asset.described",
   /** Elle quitte la bibliothèque, octets compris. */
   mediaDiscarded: "media_asset.discarded",
+  /** Un mot-clé renommé (ou fusionné) sur toutes les images qui le portent. */
+  tagRenamed: "media_tag.renamed",
+  /** Un mot-clé retiré de toutes les images qui le portent. */
+  tagRemoved: "media_tag.removed",
 } as const satisfies Readonly<Record<string, JournalFactType>>;
 
 /**
@@ -63,7 +72,7 @@ export interface MediaJournalEntry {
   /** Un des {@link MEDIA_EVENTS} — donc un type du catalogue des faits. */
   readonly type: JournalFactType;
   readonly subjectType: MediaSubjectType;
-  /** L'URL de l'image. Voir {@link MediaSubjectType}. */
+  /** L'URL de l'image, ou le mot. Voir {@link MediaSubjectType}. */
   readonly subjectId: string;
   /**
    * Ce que le fait a changé — le « avant → après », en clair. Reste petit : un

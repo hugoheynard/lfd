@@ -521,4 +521,30 @@ export const REFERENTIAL_CATALOGUE_FACTS = {
    * l'avait ». Écrire `uses: 0` serait une colonne pour une constante.
    */
   "media_asset.discarded": fact(payload({ subjectLabel: subjectLabel() })),
+  /**
+   * Un mot-clé renommé dans **tout le fonds**, en un geste (L1, 2026-10-10).
+   * Un fait par geste et non par image : la question posée au journal est
+   * « qui a renommé ce mot », pas « qu'est-il arrivé à cette image ». Le
+   * sujet est le mot d'AVANT, `subjectLabel` aussi.
+   *
+   * `merged` : au moins une image portait déjà `to` — le renommage a fusionné
+   * deux mots, et ne se défait plus en renommant dans l'autre sens.
+   */
+  "media_tag.renamed": fact(
+    payload({
+      subjectLabel: subjectLabel(),
+      from: z.string().min(1),
+      to: z.string().min(1),
+      images: z.number().int().min(1),
+      merged: z.boolean(),
+    }),
+  ),
+  /** Un mot-clé retiré de toutes les images qui le portaient (L1, 2026-10-10). */
+  "media_tag.removed": fact(
+    payload({
+      subjectLabel: subjectLabel(),
+      tag: z.string().min(1),
+      images: z.number().int().min(1),
+    }),
+  ),
 } as const satisfies JournalFactFamily;
