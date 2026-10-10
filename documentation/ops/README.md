@@ -8,15 +8,15 @@ fronts vivent dans [`../ci-cd/`](../ci-cd/) ; la table ci-dessous y renvoie.
 
 ## Par où entrer
 
-| Doc                                                                            | Quand l'ouvrir                                                                                                                                          |
-| ------------------------------------------------------------------------------ | ------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| [`../ci-cd/architecture-deploiement.md`](../ci-cd/architecture-deploiement.md) | « Qu'est-ce qui tourne, et où ? » — la carte, le chemin d'une requête, les containers, les bases                                                        |
-| [`../ci-cd/pipelines.md`](../ci-cd/pipelines.md)                               | « Pourquoi ça s'est déployé (ou pas) ? » — déclencheurs, ordre des étapes, aléas connus                                                                 |
-| [`secrets-et-variables.md`](secrets-et-variables.md)                           | « Où vit cette valeur ? » — Secret ou Variable, qui la lit, laquelle doit résoudre                                                                      |
-| [`securite-frontiere-de-confiance.md`](securite-frontiere-de-confiance.md)     | « Qu'est-ce qui nous protège vraiment ? » — les trois couches, dont une inerte                                                                          |
-| [`runbook.md`](runbook.md)                                                     | « Comment je fais, et comment je sais que ça a marché ? » — les gestes et leurs contrôles                                                               |
-| [`mailer-resend.md`](mailer-resend.md)                                         | « Pourquoi l'e-mail n'est pas arrivé ? » — le domaine à vérifier, les 4 réglages, les contrôles                                                         |
-| [`../mediatheque/mediatheque.md`](../mediatheque/mediatheque.md)               | « Où vivent les images, et comment sont-elles servies ? » — R2 `lfc-media`, domaine média, transformation à la lecture (§8 de la doc de la médiathèque) |
+| Doc                                                                            | Quand l'ouvrir                                                                                                                                                                                                         |
+| ------------------------------------------------------------------------------ | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| [`../ci-cd/architecture-deploiement.md`](../ci-cd/architecture-deploiement.md) | « Qu'est-ce qui tourne, et où ? » — la carte, le chemin d'une requête, les containers, les bases                                                                                                                       |
+| [`../ci-cd/pipelines.md`](../ci-cd/pipelines.md)                               | « Pourquoi ça s'est déployé (ou pas) ? » — déclencheurs, ordre des étapes, aléas connus                                                                                                                                |
+| [`secrets-et-variables.md`](secrets-et-variables.md)                           | « Où vit cette valeur ? » — Secret ou Variable, qui la lit, laquelle doit résoudre                                                                                                                                     |
+| [`securite-frontiere-de-confiance.md`](securite-frontiere-de-confiance.md)     | « Qu'est-ce qui nous protège vraiment ? » — les trois couches, dont une inerte                                                                                                                                         |
+| [`runbook.md`](runbook.md)                                                     | « Comment je fais, et comment je sais que ça a marché ? » — les gestes et leurs contrôles                                                                                                                              |
+| [`mailer-resend.md`](mailer-resend.md)                                         | « Pourquoi l'e-mail n'est pas arrivé ? » — le domaine à vérifier, les 4 réglages, les contrôles                                                                                                                        |
+| [`cloudflare-images.md`](cloudflare-images.md)                                 | « Les images sont-elles bien servies ? » — bucket `lfc-media`, domaine média (TLS 1.2), transformations mesurées, cache immuable, coût et la question ouverte au-delà de 5 000 transformations, gestes de vérification |
 
 Voir aussi, hors de ce dossier :
 [`b2b/admin-app-ios-capacitor.md`](../b2b/admin-app-ios-capacitor.md) (l'admin en
@@ -62,4 +62,4 @@ app iPhone) et
   vérifié de bout en bout.
 - **Faire servir la zone.** Le domaine est là ; aucune des sept choses
   déployées n'est derrière lui. Le premier usage prévu est le domaine média
-  ([`../mediatheque/mediatheque.md`](../mediatheque/mediatheque.md) §8).
+  ([`cloudflare-images.md`](cloudflare-images.md)).

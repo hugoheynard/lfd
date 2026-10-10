@@ -10,7 +10,7 @@ qui ont mené à ce découpage vivent ailleurs, et ne sont pas réécrites ici :
 - pourquoi les pièces d'un client sont coupées en deux buckets —
   [`../order/architecture-pieces-en-r2.md`](../order/architecture-pieces-en-r2.md) ;
 - pourquoi les images du catalogue sont publiques et servies par un domaine —
-  [`../mediatheque/mediatheque.md`](../mediatheque/mediatheque.md) §8.
+  [`cloudflare-images.md`](cloudflare-images.md).
 
 ---
 
@@ -332,6 +332,6 @@ passer sur un montage où les deux se confondraient.
   cycle de vie ne doit viser `orders/` :
   [`../order/todo-conservation-des-bons-en-r2.md`](../order/todo-conservation-des-bons-en-r2.md).
 - **Le cache, le domaine et ce que « CDN » recouvre** :
-  [`../mediatheque/mediatheque.md`](../mediatheque/mediatheque.md) §8.
+  [`cloudflare-images.md`](cloudflare-images.md).
 - **Ce qui est vérifié à chaque déploiement** :
   [`runbook.md`](runbook.md).

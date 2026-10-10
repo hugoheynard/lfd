@@ -276,44 +276,20 @@ sequenceDiagram
 - **La boutique garde une copie de l'URL** : le snapshot vaut aussi pour
   l'image. Repointer le référentiel ne repointe la boutique que par l'un de
   ces deux chemins.
-- **Le poids.** La boutique ne sert jamais l'original. `media-source.ts`
-  réécrit l'URL en transformation Cloudflare (`width`, `format=auto`,
-  `fit=scale-down`) et pose un `srcset`. `onerror=redirect` retombe sur
-  l'original si la transformation échoue. On ne convertit rien au dépôt et on
-  ne stocke aucune dérivée : R2 garde **un** fichier par image.
-  ⚠️ Le serveur d'images rétrécit, il n'invente pas de pixels : un master de
-  400 px reste flou à 1800.
+- **Le poids.** La boutique ne sert jamais l'original : `media-source.ts`
+  demande une transformation Cloudflare à la largeur affichée, avec un
+  `srcset`. Mesures, réglages et repli silencieux :
+  [`../ops/cloudflare-images.md`](../ops/cloudflare-images.md) §3.
 
 ---
 
 ## 8. Stockage et service
 
-```mermaid
-flowchart LR
-    ADM["Back-office<br/>/mediatheque"] -->|multipart| API["lfd-api<br/>POST /media"]
-    API -->|"clé = sha256"| R2[("R2 lfc-media<br/>hint WEUR")]
-    NAV["Navigateur"] --> POP["PoP Cloudflare"]
-    POP -.->|"miss, une fois"| R2
-```
-
-- **Le dépôt passe par l'API** : il faut un droit, une validation et une
-  ligne. **La lecture ne passe jamais par nous** : le domaine média pointe sur
-  le bucket, et la sortie R2 est gratuite.
-- **Un bucket séparé des KBIS, avec son propre jeton.** Le KBIS est privé (URL
-  signée, `attachment` forcé, aucun cache) ; l'image est publique (URL stable,
-  `inline`, cache permanent). Un jeton fuité côté images n'ouvre pas les
-  papiers des clients.
-- **Configuration** (`deploy_lfd_api.yml`) : les variables
-  `R2_MEDIA_ENDPOINT`, `R2_MEDIA_BUCKET` et `R2_MEDIA_PUBLIC_BASE_URL`, plus les
-  deux secrets `R2_MEDIA_ACCESS_KEY_ID` et `R2_MEDIA_SECRET_ACCESS_KEY`.
-  - Si elles manquent, la plateforme continue de démarrer : l'usage s'éteint,
-    le bulletin de démarrage nomme ce qui manque, et le dépôt répond
-    `MediaStorageUnavailableError`.
-  - Un secret posé ne relance rien : il faut une image neuve.
-- **Coût.** Le catalogue tient dans le palier gratuit de R2. Le seul poste qui
-  croît avec le trafic, ce sont les transformations d'images, facturées à la
-  transformation unique et par mois. 5 000 sont incluses (relevé du
-  2026-09-23).
+Les octets vivent dans le bucket R2 `lfc-media`, servis par
+`media.lafoliecoffee.info` ; l'API dépose, la lecture ne passe jamais par
+nous. Tout ce qui se règle chez Cloudflare — bucket, domaine, TLS, jeton et
+variables, transformations, cache immuable, coût, vérifications — est
+rassemblé dans [`../ops/cloudflare-images.md`](../ops/cloudflare-images.md).
 
 ---
 

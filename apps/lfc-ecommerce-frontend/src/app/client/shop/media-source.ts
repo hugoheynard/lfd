@@ -28,7 +28,7 @@
  * ⚠️ Le revers, qu'il faut connaître : un repli SILENCIEUX. Le jour où les
  * transformations s'arrêtent, rien ne le dira — seul le poids servi le dirait.
  * C'est pour ça que la mesure du poids ne se remplace pas par un test vert
- * (`documentation/mediatheque/mediatheque.md` §7).
+ * (`documentation/ops/cloudflare-images.md` §3).
  *
  * ⚠️ **`format=auto` plutôt qu'un format choisi.** Dans l'URL, `auto` et `webp`
  * coûtent le même effort et le même stockage — c'est-à-dire aucun. Écrire
