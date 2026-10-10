@@ -92,18 +92,25 @@ muet ne vaut pas « zéro emploi » : sans cette règle, une panne de port
 deviendrait un effacement de masse.
 
 La surface Prisma du bloc (`MediaPrismaService`) ne déclare que ses deux
-modèles. Ses identifiants viennent de `MediaIdGenerator` (UUID v7).
+modèles.
 
-### Ce que le bloc emprunte encore
+### Ce que le bloc prend ailleurs
 
-| Emprunt                                 | Depuis                     | Statut                                                        |
-| --------------------------------------- | -------------------------- | ------------------------------------------------------------- |
-| le laissez-passer d'écriture du journal | `platform/journal/`        | ✅ à sa place                                                 |
-| `localized-text.ts`, `json-readers.ts`  | `pim/catalogue/shared/`    | 🟠 transverses, mais ils importent `@lfd/pim-contracts` (§11) |
-| `MediaIdGenerator`                      | jumeau de `PimIdGenerator` | 🟠 duplication assumée (§11)                                  |
+**Rien au référentiel, hors de son canal** : `lint:context-boundaries` borne
+`media→pim` à `pim/channels/media/` depuis le 2026-10-10. Les briques
+techniques viennent de `platform/` :
 
-C'est pourquoi `lint:context-boundaries` ouvre encore `media→pim` sur `pim/`
-entier, et non sur le seul canal.
+| Brique                                     | Où                                   |
+| ------------------------------------------ | ------------------------------------ |
+| le laissez-passer d'écriture du journal    | `platform/journal/scoped-journal.ts` |
+| les identifiants UUID v7 (`UuidGenerator`) | `platform/id/uuid-generator.ts`      |
+| la mécanique du texte en plusieurs langues | `platform/i18n/localized-text.ts`    |
+| la lecture des colonnes `jsonb`            | `platform/database/json-columns.ts`  |
+
+La **liste** des langues, elle, reste au contrat (`LOCALES`, `SOURCE_LOCALE`
+de `@lfd/pim-contracts`) : `platform/` n'importe aucun contrat métier, et
+chaque bloc lui passe ses langues en donnée (`MEDIA_LANGUAGES`,
+`media/domain/value-objects/alt-text.ts`).
 
 ---
 
@@ -115,7 +122,7 @@ media.media_asset
   url           UNIQUE — l'identité
   name          l'étiquette, "" par défaut
   alt           jsonb { fr: …, en: … } — UNE alternative par image
-  tags          text[] — index GIN media_asset_tags_idx
+  tags          text[] — index GIN media_asset_tags_idx, déclaré au schéma
   focal_x/_y    fractions 0..1 depuis le coin haut-gauche, NULL = « personne ne s'est prononcé »
   storage_key, content_type, width, height, bytes
   created_at
@@ -136,10 +143,8 @@ C'est la règle de partage, et elle décide de tout le reste :
 la médiathèque »). La corriger change ce que toutes les fiches en disent, et
 c'est voulu. Le panneau Visuels de la fiche n'en porte donc plus.
 
-⚠️ L'index GIN des tags est posé par la migration
-`20260923120000_les_tags_de_la_mediatheque` et **n'est pas déclaré** dans
-`prisma/schema/media/media-asset.prisma`. `@@index([url])` y double en
-revanche l'index que `@unique` crée déjà (§11).
+Une image a **une** ligne : la lecture ne regroupe rien, la page est un
+`findMany` trié par date de dépôt (départagé par l'URL), le total un `count()`.
 
 ---
 
@@ -195,10 +200,20 @@ médiathèque » d'une fiche rend 403. Le rôle `communication` a aussi
 - **La fourche `hero` / `thumbnail` est tranchée.** Les deux traversent, et la
   boutique retombe sur `hero` quand la fiche n'a pas de vignette
   (`thumbnailOf` dans `prisma-catalog.reader.ts`).
-- 🔴 **Le rôle par défaut ne voyage nulle part.** Une image choisie sans rôle
-  prend `gallery` (`DEFAULT_MEDIA_ROLE`, `product-form-store.ts`), et `gallery`
-  ne traverse pas. Une photo posée sans décision n'apparaît donc **jamais** en
-  boutique, et l'écran ne le signale pas (§11).
+- 🔴 **Le rôle par défaut ne voyage nulle part, et l'écran le dit.** Une
+  image choisie sans rôle prend `gallery` (`DEFAULT_MEDIA_ROLE`), qui ne
+  traverse pas. Rien n'est décidé à la place de qui photographie (Hugo,
+  2026-10-10, option B), mais depuis ce jour :
+  - une tuile en usage non publié porte la pastille « Non publié » (jamais
+    sur un visuel de famille, qui n'a pas d'usage) ;
+  - le panneau d'usage le dit au moment du choix ;
+  - une fiche qui a des visuels et aucun publié affiche un avertissement
+    au-dessus de la grille.
+
+  La liste des usages publiés est `PUBLISHED_MEDIA_ROLES`
+  (`apps/lfd-backoffice-frontend/src/app/pim/catalogue/media-roles.ts`) : elle
+  recopie ce que `showcase.ts` fait traverser, et doit le suivre.
+
 - ⚠️ **Les ratios ne sont vérifiés nulle part.** Ce sont des libellés. Seule la
   boutique applique un `aspect-ratio` en CSS et recadre au centre.
 
@@ -301,12 +316,17 @@ Trois faits, avec l'URL pour sujet :
 - `media_asset.described` ;
 - `media_asset.discarded`.
 
-Le port d'écriture exige un ticket de `platform/journal/scoped-journal.ts`. On
-n'obtient ce ticket qu'en traçant, ou en nommant pourquoi on ne trace pas
-(`untraced`). Écrire sans affirmer ne compile pas.
+Ils se lisent sous le module **Médiathèque** du journal d'activité.
+
+Les deux ports d'écriture (`MediaLibrary`, `MediaLibraryWriter`) exigent un
+ticket de `platform/journal/scoped-journal.ts`. On n'obtient ce ticket qu'en
+traçant, ou en nommant pourquoi on ne trace pas (`untraced`). Écrire sans
+affirmer ne compile pas. `lint:journal-tracked` reconnaît un port d'écriture
+à ce ticket, pas à son nom : un port neuf qui l'exige est audité d'office.
 
 Le ramassage ne journalise rien, et c'est déclaré : une passe automatique n'a
-pas d'auteur. Son rapport en tient lieu.
+pas d'auteur. Il présente le ticket `untraced("ramassage automatique, sans
+auteur")`, et son rapport tient lieu de trace.
 
 Les **refus de dépôt ne sont pas le journal** : leur sujet n'existe pas. Ils
 s'inscrivent dans leur propre unité de travail, sinon le rollback du dépôt les
@@ -316,20 +336,24 @@ emporterait.
 
 ## 11. Les points à faire
 
-Rangés par ce que ça coûte de **ne pas** les faire. Les lignes marquées 🔵
-attendent une décision de Hugo avant tout code.
+La **dette** a été soldée le 2026-10-10 (encadré ci-dessous). Ce qui reste
+est de l'**amélioration** : des capacités que le fonds n'a pas encore. Les
+lignes marquées 🔵 attendent une décision ou un constat de Hugo.
 
-### 🔴 Ce qui se voit déjà
+> **Soldé le 2026-10-10**
+>
+> - la lecture ne regroupe plus par URL, le total est un `count()` (`22b143e94`) ;
+> - les justifications qui invoquaient une clé étrangère disparue (`22b143e94`) ;
+> - le module « Médiathèque » du journal d'activité (`6ce533307`) ;
+> - un seul générateur UUID v7, en `platform/id/` (`d00deda08`) ;
+> - le texte localisé et les colonnes `jsonb` en `platform/`, `media→pim`
+>   resserré sur le canal (`eb4d6e1ee`) ;
+> - `lint:journal-tracked` reconnaît un port d'écriture à son ticket ;
+>   `MediaLibrary` exige le sien (`eacb27232`) ;
+> - l'index GIN déclaré au schéma, le doublon sur `url` retiré (`158bf9273`) ;
+> - l'écran dit qu'un visuel en usage non publié n'apparaît nulle part (§6).
 
-1. **🔵 Le rôle par défaut ne publie rien** (§6). Trois sorties :
-   - **A** : le premier visuel devient `hero` d'office ;
-   - **B** : l'écran dit qu'une `gallery` n'est publiée nulle part ;
-   - **C** : `gallery` traverse en repli.
-
-   Recommandation : **B**, éventuellement avec A. A seul déciderait à la place
-   de la personne qui photographie.
-
-2. **Les visuels de l'accueil vivent hors du fonds.**
+1. **Les visuels de l'accueil vivent hors du fonds.**
    - L'accueil public lit encore `MOCK_EVENT`, avec une URL Unsplash en dur
      (`apps/lfc-ecommerce-frontend/src/app/client/mock-event.ts`).
    - La porte « fournil » est une URL tierce dans `accueil-public.scss`
@@ -338,13 +362,7 @@ attendent une décision de Hugo avant tout code.
    Les opérations datées et la vitrine sont pourtant déjà porteuses : il reste
    à brancher l'écran.
 
-3. **Le module d'activité range `media_asset.` sous le PIM**
-   (`b2b/growth/domain/activity-module.ts`). Un module « Médiathèque »
-   demande une entrée de plus côté écran (`MODULE_LABELS`).
-
-### 🟠 Ce qui mordra
-
-4. **Le point focal n'a aucun lecteur.** Il se saisit, se range et voyage
+2. **Le point focal n'a aucun lecteur.** Il se saisit, se range et voyage
    dans les contrats de la médiathèque, mais pas sur le fil du catalogue, et
    la boutique recadre au centre.
    - Le brancher : l'ajouter à la projection des visuels (le fait durable
@@ -352,56 +370,28 @@ attendent une décision de Hugo avant tout code.
    - C'est ce qu'attendent les cartes sans forme fixe de l'accueil.
    - ⚠️ Un `focal` **requis** sur le fil rendrait illisible une livraison en
      attente qui porte une image : il doit être optionnel.
-5. **Remplacer une image sur place.** Concrètement : déposer (octets **hors**
+3. **Remplacer une image sur place.** Concrètement : déposer (octets **hors**
    transaction), puis repointer tous les porteurs dans **une** unité.
    - Le repointage fusionne : un porteur qui affiche déjà les deux images
      produirait deux lignes identiques.
-   - Il journalise.
+   - Il journalise : le port de repointage exigera un `WriteTicket`, et la
+     porte l'auditera d'office.
    - Il laisse la projection faire suivre la boutique.
-   - ⚠️ `lint:journal-tracked` ne le rattrapera pas : un port nommé
-     `MediaCarriers` passe sous sa liste (point 8).
-6. **`countUrls()` ramène une ligne par URL pour les compter**
-   (`prisma-media-library-reader.ts`). Depuis que `url` est unique, un
-   `count()` suffit, et le `groupBy` de la lecture de page aussi peut tomber.
-   La lecture « groupée par URL » date du temps où une image avait plusieurs
-   lignes.
-7. **L'index GIN est hors du schéma Prisma** (§4). Un `migrate dev` futur
-   pourrait proposer de le supprimer. Il faut le déclarer
-   (`@@index([tags], type: Gin)`) et retirer le `@@index([url])` redondant,
-   dans une migration additive.
-
-### 🟡 Dette de structure
-
-8. **`lint:journal-tracked` reconnaît les dépôts par leur nom**
-   (`dev-toolbox/gates/journal-tracked.mjs`, `MediaLibraryWriter|MediaLibrary`
-   en dur). Le bon critère serait « ce paramètre est un port d'écriture ».
-9. **🔵 `localized-text.ts` et `json-readers.ts`.** Ces deux fichiers sont
-   transverses, mais ils importent `@lfd/pim-contracts`, et `platform/`
-   n'importe aucun contrat métier. Tant que ce n'est pas tranché, `media→pim`
-   reste ouvert sur `pim/` entier.
-10. **`MediaIdGenerator` est le jumeau de `PimIdGenerator`.** Les deux
-    devraient se fondre dans `platform/id/`, ce qui touche tous les dépôts du
-    référentiel.
-11. **Des justifications périmées dans le code**, à corriger au prochain
-    passage :
-    - le JSDoc de `media.module.ts` dit encore emprunter `PimJournal` ;
-    - le commentaire de `usesByUrl` parle d'un refus de Postgres alors qu'il
-      n'y a plus de clé étrangère ;
-    - celui de `discard` (`media-library.controller.ts`) dit pareil ;
-    - le préfixe de clé s'appelle `products` alors que le fonds sert
-      désormais tout porteur. C'est une valeur, pas un nom : elle ne se
-      renomme pas sans migration des URL.
-
-### 🔵 Ce qui attend une décision ou un constat
-
-12. **Les ratios.** La décision est prise : signaler **à l'affectation**, pas
-    refuser au dépôt. Le point focal existe justement pour que recadrer soit
-    correct. `describe(urls)` rend déjà les dimensions.
-13. **La pré-validation à l'écran.** Le type, le poids et les dimensions sont
-    connus du navigateur avant l'envoi. Aujourd'hui, l'erreur revient du
-    serveur, loin du geste.
-14. **Non vérifié depuis le dépôt** : la transformation d'images est-elle
-    activée sur la zone ? (`onerror=redirect` masquerait qu'elle ne l'est
-    pas.) Le ramassage a-t-il tourné en production, et `capped` a-t-il déjà
-    mordu ? Un coup d'œil au tableau de bord et aux journaux du cron répond
-    aux deux.
+4. **La fenêtre du retrait.** `DiscardMediaHandler` compte les porteurs puis
+   supprime : un porteur qui attrape l'image entre les deux afficherait une
+   image disparue. La fenêtre est celle d'un aller-retour au bucket ; rien ne
+   la ferme.
+5. **Les ratios.** La décision est prise : signaler **à l'affectation**, pas
+   refuser au dépôt. Le point focal existe justement pour que recadrer soit
+   correct. `describe(urls)` rend déjà les dimensions.
+6. **La pré-validation à l'écran.** Le type, le poids et les dimensions sont
+   connus du navigateur avant l'envoi. Aujourd'hui, l'erreur revient du
+   serveur, loin du geste.
+7. **Le préfixe de clé s'appelle `products`** alors que le fonds sert tout
+   porteur. C'est une valeur, pas un nom : il ne se renomme pas sans migrer
+   les URL, et rien ne l'exige.
+8. **🔵 Non vérifié depuis le dépôt** : la transformation d'images est-elle
+   activée sur la zone ? (`onerror=redirect` masquerait qu'elle ne l'est
+   pas.) Le ramassage a-t-il tourné en production, et `capped` a-t-il déjà
+   mordu ? Un coup d'œil au tableau de bord et aux journaux du cron répond
+   aux deux.
