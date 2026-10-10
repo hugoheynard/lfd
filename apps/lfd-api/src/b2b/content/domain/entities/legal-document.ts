@@ -55,10 +55,10 @@ export class LegalDocument {
     /**
      * La révision LUE au chargement. L'adaptateur conditionne l'écriture à
      * elle (§4.5, B2) : c'est ce qui empêche un écran périmé d'effacer le geste
-     * d'un collègue. `null` : l'appelant n'a annoncé aucune révision, l'écriture
-     * n'est pas conditionnée (transition, cf. `legalDocumentExpectedRevisionSchema`).
+     * d'un collègue. Toujours présente depuis le 2026-10-10 : elle a été
+     * facultative (`null`, écriture non conditionnée) le temps d'une transition.
      */
-    readonly revision: number | null,
+    readonly revision: number,
   ) {}
 
   /**
@@ -75,7 +75,7 @@ export class LegalDocument {
   static reconstitute(
     mention: LegalMention,
     content: LegalDocumentContent,
-    revision: number | null,
+    revision: number,
   ): LegalDocument {
     return new LegalDocument(mention, content.title, [...content.paragraphs], revision);
   }

@@ -76,12 +76,9 @@ export class FakeContentRepository extends PlatformContentRepository {
     return this.counts.get(mention) ?? 0;
   }
 
-  loadLegalDocument(
-    mention: LegalMention,
-    expectedRevision: number | undefined,
-  ): Promise<LegalDocument> {
+  loadLegalDocument(mention: LegalMention, expectedRevision: number): Promise<LegalDocument> {
     const revision = this.revision(mention);
-    if (expectedRevision !== undefined && revision !== expectedRevision) {
+    if (revision !== expectedRevision) {
       return Promise.reject(new LegalDocumentChangedError(expectedRevision, "document"));
     }
     return Promise.resolve(LegalDocument.reconstitute(mention, this.content(mention), revision));
@@ -94,7 +91,7 @@ export class FakeContentRepository extends PlatformContentRepository {
   ): Promise<void> {
     // Le même verrou que l'adaptateur : l'écriture est conditionnée à la
     // révision CHARGÉE, pas seulement vérifiée au chargement.
-    if (document.revision !== null && document.revision !== this.revision(mention)) {
+    if (document.revision !== this.revision(mention)) {
       return Promise.reject(new LegalDocumentChangedError(document.revision, "document"));
     }
     this.stored.set(mention, document.snapshot());

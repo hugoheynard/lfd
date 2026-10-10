@@ -136,19 +136,12 @@ export class PrismaPlatformContentRepository extends PlatformContentRepository {
    * différence de la lecture (plan `legal/plan-page-confidentialite.md` §4.5,
    * B3) : on réécrirait le document de production vide. Refus, rien n'est écrit.
    */
-  async loadLegalDocument(
-    mention: LegalMention,
-    expectedRevision: number | undefined,
-  ): Promise<LegalDocument> {
+  async loadLegalDocument(mention: LegalMention, expectedRevision: number): Promise<LegalDocument> {
     const row = await this.prisma.platformContent.findUnique({
       where: { key: LEGAL_DOCUMENT_KEYS[mention] },
     });
     const content =
       row === null ? DEFAULT_LEGAL_DOCUMENT(mention) : this.parseForWrite(mention, row.content);
-    if (expectedRevision === undefined) {
-      // Transition : aucune révision annoncée, écriture non conditionnée.
-      return LegalDocument.reconstitute(mention, content, null);
-    }
     const revision = row?.revision ?? 0;
     if (revision !== expectedRevision) {
       throw new LegalDocumentChangedError(expectedRevision, content.title.fr);
@@ -158,6 +151,11 @@ export class PrismaPlatformContentRepository extends PlatformContentRepository {
 
   /**
    * Enregistre, conditionné à la révision chargée — un seul ordre SQL par cas.
+   *
+   * 🔴 TOUJOURS conditionné depuis le 2026-10-10 : la branche « sans contrôle »
+   * (`upsertUnconditioned`, 2026-09-29) laissait un écran périmé effacer la
+   * section requise créée par un collègue. Elle est retirée avec le
+   * resserrement du contrat.
    *
    * - révision 0 : le document n'existait pas. `createMany` + `skipDuplicates`
    *   n'insère rien si un collègue l'a créé entre-temps (`count` 0 → refus).
@@ -173,10 +171,6 @@ export class PrismaPlatformContentRepository extends PlatformContentRepository {
     const key = LEGAL_DOCUMENT_KEYS[mention];
     const content = document.snapshot();
     const expected = document.revision;
-    if (expected === null) {
-      await this.upsertUnconditioned(key, content, staffUserId);
-      return;
-    }
     const written =
       expected === 0
         ? await this.prisma.platformContent.createMany({
@@ -230,22 +224,6 @@ export class PrismaPlatformContentRepository extends PlatformContentRepository {
       `Contenu « ${LEGAL_DOCUMENT_KEYS[mention]} » illisible en base, repli sur le contenu de départ : ${parsed.error.message}`,
     );
     return DEFAULT_LEGAL_DOCUMENT(mention);
-  }
-
-  /**
-   * L'écriture d'AVANT la révision attendue, gardée le temps que le
-   * back-office en ligne l'envoie (2026-09-29). À retirer au resserrement.
-   */
-  private async upsertUnconditioned(
-    key: string,
-    content: LegalDocumentContent,
-    staffUserId: string,
-  ): Promise<void> {
-    await this.prisma.platformContent.upsert({
-      where: { key },
-      create: { key, content, revision: 1, updatedBy: staffUserId },
-      update: { content, revision: { increment: 1 }, updatedBy: staffUserId },
-    });
   }
 
   /** La relecture pour ÉCRIRE : même schéma, mais un refus là où la lecture se replie. */

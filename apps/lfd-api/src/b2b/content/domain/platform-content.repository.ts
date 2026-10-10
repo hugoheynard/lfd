@@ -65,15 +65,15 @@ export abstract class PlatformContentRepository {
    * `legal/plan-page-confidentialite.md`) :
    *
    * @throws {LegalDocumentChangedError} la révision courante n'est pas celle que
-   *   l'écran a lue (B2), quand il en annonce une (facultative jusqu'au
-   *   resserrement, `documentation/todos/todo-legal-expected-revision.md`) — refusé avant tout geste, pour qu'un écran périmé lise
+   *   l'écran a lue (B2) — toujours annoncée depuis le 2026-10-10 — refusé
+   *   avant tout geste, pour qu'un écran périmé lise
    *   « rechargez » et non l'erreur de ce qu'il ne voit plus.
    * @throws {UnreadableLegalDocumentError} le contenu stocké ne se relit plus
    *   (B3) : partir du repli réécrirait le document VIDE.
    */
   abstract loadLegalDocument(
     mention: LegalMention,
-    expectedRevision: number | undefined,
+    expectedRevision: number,
   ): Promise<LegalDocument>;
 
   /**

@@ -58,15 +58,12 @@ class FakeContentRepository extends PlatformContentRepository {
     });
   }
 
-  loadLegalDocument(
-    mention: LegalMention,
-    expectedRevision: number | undefined,
-  ): Promise<LegalDocument> {
+  loadLegalDocument(mention: LegalMention, expectedRevision: number): Promise<LegalDocument> {
     return Promise.resolve(
       LegalDocument.reconstitute(
         mention,
         this.documents.get(mention) ?? DEFAULT_LEGAL_DOCUMENT(mention),
-        expectedRevision ?? null,
+        expectedRevision,
       ),
     );
   }

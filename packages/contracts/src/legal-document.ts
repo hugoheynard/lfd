@@ -145,17 +145,16 @@ export type LegalDocument = z.infer<typeof legalDocumentSchema>;
  * ouvert avant un geste d'un collègue le réécrirait sans ce geste, en silence.
  * L'écriture est conditionnée à cette révision, et refusée (409) sinon.
  *
- * ⚠️ FACULTATIVE sur les cinq écritures déjà servies (décidé le 2026-09-29,
- * CLAUDE.md §0 : étendre → basculer → resserrer) : le back-office en ligne ne
- * l'envoie pas encore. Absente, pas de contrôle — le comportement d'avant.
- * À resserrer en obligatoire une fois le back-office déployé
- * (`documentation/todos/todo-legal-expected-revision.md`).
+ * 🔴 OBLIGATOIRE sur les six écritures depuis le 2026-10-10 : elle a été
+ * facultative du 2026-09-29 à ce jour, le temps que le back-office l'envoie, et
+ * une écriture sans elle n'était pas conditionnée — un écran périmé pouvait
+ * alors effacer la section requise créée par un collègue. Absente : 400.
  */
 export const legalDocumentExpectedRevisionSchema = z.number().int().min(0);
 
 /** Renommer le document : le titre dans les trois langues, et la révision lue. */
 export const legalDocumentTitlePayloadSchema = legalDocumentHeadingSchema.extend({
-  expectedRevision: legalDocumentExpectedRevisionSchema.optional(),
+  expectedRevision: legalDocumentExpectedRevisionSchema,
 });
 export type LegalDocumentTitlePayload = z.infer<typeof legalDocumentTitlePayloadSchema>;
 
@@ -167,7 +166,7 @@ export type LegalDocumentTitlePayload = z.infer<typeof legalDocumentTitlePayload
  * n'a rien à faire dans le JSON enregistré.
  */
 export const legalDocumentParagraphWritePayloadSchema = legalDocumentParagraphPayloadSchema.extend({
-  expectedRevision: legalDocumentExpectedRevisionSchema.optional(),
+  expectedRevision: legalDocumentExpectedRevisionSchema,
 });
 export type LegalDocumentParagraphWritePayload = z.infer<
   typeof legalDocumentParagraphWritePayloadSchema
@@ -179,7 +178,6 @@ export type LegalDocumentParagraphWritePayload = z.infer<
  */
 export const legalRequiredSectionPayloadSchema = legalDocumentParagraphPayloadSchema.extend({
   section: legalSectionKeySchema,
-  // OBLIGATOIRE ici, dès maintenant : aucun front en ligne n'appelle cette route.
   expectedRevision: legalDocumentExpectedRevisionSchema,
 });
 export type LegalRequiredSectionPayload = z.infer<typeof legalRequiredSectionPayloadSchema>;
@@ -189,7 +187,7 @@ export type LegalRequiredSectionPayload = z.infer<typeof legalRequiredSectionPay
  * route `DELETE` n'a pas de corps. Coercée : un paramètre d'URL est une chaîne.
  */
 export const legalDocumentRevisionQuerySchema = z.object({
-  expectedRevision: z.coerce.number().int().min(0).optional(),
+  expectedRevision: z.coerce.number().int().min(0),
 });
 export type LegalDocumentRevisionQuery = z.infer<typeof legalDocumentRevisionQuerySchema>;
 
@@ -202,7 +200,7 @@ export type LegalDocumentRevisionQuery = z.infer<typeof legalDocumentRevisionQue
  */
 export const legalDocumentPositionPayloadSchema = z.object({
   position: z.number().int().min(0),
-  expectedRevision: legalDocumentExpectedRevisionSchema.optional(),
+  expectedRevision: legalDocumentExpectedRevisionSchema,
 });
 export type LegalDocumentPositionPayload = z.infer<typeof legalDocumentPositionPayloadSchema>;
 

@@ -351,8 +351,9 @@ sans eux, c'est publier des engagements qu'on ne tient pas.
    la phrase « seulement les cookies nécessaires ».
 8. **La section « Suppression des données » créée en production**, avec son
    texte définitif, par le bouton « Créer la section » (P2 déployé d'abord).
-9. **Resserrer `expectedRevision`** en obligatoire à la livraison suivante
-   ([`todo-legal-expected-revision.md`](../todos/todo-legal-expected-revision.md)).
+9. ~~**Resserrer `expectedRevision`** en obligatoire à la livraison suivante~~
+   — fait le 2026-10-10 : obligatoire sur les six écritures (absent → 400),
+   écriture toujours conditionnée, `upsertUnconditioned` retiré.
 
 ### 9.4 Ce qui manque — de ton côté
 

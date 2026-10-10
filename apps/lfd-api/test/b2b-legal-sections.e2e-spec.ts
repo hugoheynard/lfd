@@ -163,13 +163,24 @@ describe("la révision attendue (§4.5, B2)", () => {
    * Transition (2026-09-29) : le back-office en ligne n'envoie pas encore la
    * révision. Absente, l'écriture passe comme avant. À retirer au resserrement.
    */
-  it("écrit sans contrôle une écriture existante qui n'annonce pas sa révision", async () => {
-    const id = jsonBody<LegalDocumentParagraphCreated>(
-      await staff().post("/admin/content/legal/privacy/paragraphs").send(prose("x")).expect(201),
-    ).id;
-    await staff().put(`/admin/content/legal/privacy/paragraphs/${id}`).send(prose("y")).expect(204);
-    await staff().delete(`/admin/content/legal/privacy/paragraphs/${id}`).expect(204);
-    expect(await revisionOf("privacy")).toBe(3);
+  /**
+   * Régression : jusqu'au 2026-10-10, une écriture sans révision n'était pas
+   * conditionnée — un écran périmé effaçait la section requise d'un collègue.
+   */
+  it("refuse (400) une écriture qui n'annonce pas sa révision, sans rien écrire", async () => {
+    const id = await addParagraph("x", "privacy");
+    await staff().post("/admin/content/legal/privacy/paragraphs").send(prose("y")).expect(400);
+    await staff().put(`/admin/content/legal/privacy/paragraphs/${id}`).send(prose("y")).expect(400);
+    await staff().delete(`/admin/content/legal/privacy/paragraphs/${id}`).expect(400);
+    await staff()
+      .put(`/admin/content/legal/privacy/paragraphs/${id}/position`)
+      .send({ position: 0 })
+      .expect(400);
+    await staff()
+      .put("/admin/content/legal/privacy/title")
+      .send({ fr: "a", en: "b", it: "c" })
+      .expect(400);
+    expect(await revisionOf("privacy")).toBe(1);
   });
 });
 
