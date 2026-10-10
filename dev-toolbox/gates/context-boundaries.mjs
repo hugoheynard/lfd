@@ -272,22 +272,14 @@ const PORT_SURFACE = {
   // URL », « cette image existe-t-elle ». Elle ne voit rien d'autre de lui —
   // ni ses tables, ni ses règles, ni son vocabulaire.
   //
-  // ✅ **Deux des trois emprunts sont tombés.** `pim/infra/database` est parti
-  // avec le schéma `media` (déploiement ③, appliqué), et `pim/journal` le
-  // 2026-09-23 : la mécanique du laissez-passer est montée en
-  // `platform/journal/scoped-journal.ts`, et le fonds nomme ses faits chez lui
-  // (`media/journal/media-journal.ts`). C'était la raison qu'invoquait ce
-  // commentaire, et elle n'existe plus.
-  //
-  // ⚠️ **Il en reste UN, et il est nommé** : `localized-text.ts` et
-  // `json-readers.ts`, deux utilitaires transverses de
-  // `pim/catalogue/shared/`. Ils ne montent pas en `platform/` sans décision :
-  // ils importent `@lfd/pim-contracts`, et la plateforme n'importe AUCUN
-  // contrat métier aujourd'hui — l'y forcer lui ferait connaître les langues
-  // que parle le catalogue. Tant que ce point n'est pas tranché, cette ligne
-  // reste large, et elle dit pourquoi
-  // (`documentation/mediatheque/mediatheque.md` §11).
-  "media→pim": "pim/",
+  // ✅ **Les trois emprunts sont tombés** (vérifié le 2026-10-10) :
+  // `pim/infra/database` avec le schéma `media`, `pim/journal` le 2026-09-23
+  // (`platform/journal/scoped-journal.ts`), et le 2026-10-10 le texte
+  // localisé et les lecteurs `jsonb` — leur mécanique est en
+  // `platform/i18n/` et `platform/database/json-columns.ts`, la LISTE des
+  // langues reste au contrat (`@lfd/pim-contracts`) et chaque bloc la passe en
+  // donnée. La ligne se resserre donc sur le seul canal.
+  "media→pim": "pim/channels/media/",
   // L'autre sens : le RÉFÉRENTIEL implémente ce que la bibliothèque déclare.
   // Elle ne peut pas lire `product_media` ni `category_media` — ce sont les
   // tables des porteurs, et `lint:prisma-model-ownership` dit qu'un modèle

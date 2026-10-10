@@ -1,4 +1,8 @@
-import { DomainError } from "../../../../../platform/shared/errors/app-error.js";
+import {
+  buildLocalized,
+  InvalidLocalizedTextError,
+  type Languages,
+} from "../../../../../platform/i18n/localized-text.js";
 import {
   LOCALES,
   SOURCE_LOCALE,
@@ -7,52 +11,30 @@ import {
   type TranslatedLocale,
 } from "@lfd/pim-contracts";
 
-/** Les langues à traduire, calculées une fois depuis la liste. */
-const TRANSLATED_LOCALES = LOCALES.filter(
-  (locale): locale is TranslatedLocale => locale !== SOURCE_LOCALE,
-);
-
 export type { Locale, LocalizedText, TranslatedLocale };
-export { LOCALES, SOURCE_LOCALE };
-
-export class InvalidLocalizedTextError extends DomainError {
-  constructor(field: string) {
-    super(
-      "catalogue.localized_text.invalid",
-      `Le champ « ${field} » doit avoir une valeur en ${SOURCE_LOCALE}.`,
-    );
-  }
-}
+export { InvalidLocalizedTextError, LOCALES, SOURCE_LOCALE };
 
 /**
- * Construit un texte traduisible à partir d'une carte de locales.
+ * Les langues du catalogue, en DONNÉE — ce que la mécanique de `platform/`
+ * boucle sans les connaître (2026-10-10 : la liste est un contrat métier, que
+ * la plateforme n'importe pas).
+ */
+export const CATALOGUE_LANGUAGES: Languages<typeof SOURCE_LOCALE, Locale> = {
+  source: SOURCE_LOCALE,
+  all: LOCALES,
+};
+
+/**
+ * Construit un texte traduisible à partir d'une carte de langues.
  *
- * Une CARTE, et non plus `(fr, en?)` : la signature positionnelle imposait
- * d'ajouter un paramètre par langue, à chaque appelant, dans le bon ordre. La
- * carte se boucle sur {@link LOCALES} — ouvrir une langue ne touche donc ni
- * cette fonction ni personne qui l'appelle.
- *
- * Les valeurs sont rognées, et une chaîne vide est traitée comme ABSENTE : une
- * traduction vide n'est pas une traduction, et la garder ferait passer la fiche
- * pour traduite auprès de tout ce qui compte les locales renseignées.
+ * Une CARTE, et non `(fr, en?)` : la signature positionnelle imposait
+ * d'ajouter un paramètre par langue, à chaque appelant, dans le bon ordre.
  */
 export function localizedText(
   field: string,
   values: Partial<Record<Locale, string | undefined>>,
 ): LocalizedText {
-  const source = (values[SOURCE_LOCALE] ?? "").trim();
-  if (source === "") {
-    throw new InvalidLocalizedTextError(field);
-  }
-
-  const translations: Partial<Record<TranslatedLocale, string>> = {};
-  for (const locale of TRANSLATED_LOCALES) {
-    const translated = (values[locale] ?? "").trim();
-    if (translated !== "") {
-      translations[locale] = translated;
-    }
-  }
-  return { [SOURCE_LOCALE]: source, ...translations };
+  return buildLocalized(CATALOGUE_LANGUAGES, field, values);
 }
 
 /** Repli documenté : une locale absente retombe sur la langue source. */

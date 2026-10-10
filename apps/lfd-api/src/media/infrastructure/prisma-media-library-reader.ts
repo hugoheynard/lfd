@@ -1,7 +1,7 @@
 import { Injectable } from "@nestjs/common";
+import { readAltColumn } from "./alt-columns.js";
 
-import { SOURCE_LOCALE } from "../../pim/catalogue/shared/domain/value-objects/localized-text.js";
-import { optionalLocalizedColumn as localizedOf } from "../../pim/catalogue/shared/infrastructure/json-readers.js";
+import { SOURCE_LOCALE } from "../domain/value-objects/alt-text.js";
 
 import { MediaCarriers } from "../channels/carriers/media-carriers.js";
 import { MediaPrismaService } from "../infra/database/media-prisma.service.js";
@@ -113,7 +113,7 @@ function recordOf(row: AssetRow, uses: number): LibraryMediaRecord {
     tags: row.tags,
     // Le repli sur l'URL vaut mieux qu'une chaîne vide : une alternative
     // absente doit se VOIR, pas se confondre avec une alternative écrite.
-    alt: localizedOf(row.alt) ?? { [SOURCE_LOCALE]: row.url },
+    alt: readAltColumn(row.alt) ?? { [SOURCE_LOCALE]: row.url },
     storageKey: row.storageKey,
     contentType: row.contentType,
     width: row.width,

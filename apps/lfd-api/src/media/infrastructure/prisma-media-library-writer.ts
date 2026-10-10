@@ -1,6 +1,6 @@
 import { Injectable } from "@nestjs/common";
+import { altColumn } from "./alt-columns.js";
 
-import { localizedColumn } from "../../pim/catalogue/shared/infrastructure/json-readers.js";
 import { MediaPrismaService } from "../infra/database/media-prisma.service.js";
 import { MediaLibraryWriter, type MediaDetails } from "../domain/ports/media-library-writer.js";
 
@@ -22,7 +22,7 @@ export class PrismaMediaLibraryWriter extends MediaLibraryWriter {
       data: {
         name: details.name,
         tags: [...details.tags],
-        alt: localizedColumn(details.alt),
+        alt: altColumn(details.alt),
         focalX: details.focal?.x ?? null,
         focalY: details.focal?.y ?? null,
       },

@@ -1,4 +1,5 @@
 import { Injectable } from "@nestjs/common";
+import { altColumn } from "./alt-columns.js";
 
 import { MediaPrismaService } from "../infra/database/media-prisma.service.js";
 import { UuidGenerator } from "../../platform/id/uuid-generator.js";
@@ -7,11 +8,7 @@ import {
   type MediaFacts,
   type RegisteredMedia,
 } from "../domain/ports/media-library.js";
-import { localizedColumn } from "../../pim/catalogue/shared/infrastructure/json-readers.js";
-import {
-  localizedText,
-  SOURCE_LOCALE,
-} from "../../pim/catalogue/shared/domain/value-objects/localized-text.js";
+import { altText, SOURCE_LOCALE } from "../domain/value-objects/alt-text.js";
 
 @Injectable()
 export class PrismaMediaLibrary extends MediaLibrary {
@@ -32,7 +29,7 @@ export class PrismaMediaLibrary extends MediaLibrary {
         // quelqu'un qui sait ce que le produit raconte. Au dépôt il n'y a
         // personne pour l'écrire : la colonne est obligatoire, on y met l'URL,
         // comme le fait déjà le rattachement quand le champ est laissé vide.
-        alt: localizedColumn(localizedText("texte alternatif", { [SOURCE_LOCALE]: entry.url })),
+        alt: altColumn(altText("texte alternatif", { [SOURCE_LOCALE]: entry.url })),
         storageKey: entry.storageKey,
         contentType: entry.contentType,
         width: entry.width,

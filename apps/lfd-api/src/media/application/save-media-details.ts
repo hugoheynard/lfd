@@ -5,10 +5,7 @@ import { changesBetween } from "../../platform/journal/changes.js";
 import { MEDIA_EVENTS, MediaJournal } from "../journal/media-journal.js";
 import { MediaLibraryReader } from "../domain/ports/media-library-reader.js";
 import { MediaLibraryWriter } from "../domain/ports/media-library-writer.js";
-import {
-  localizedText,
-  SOURCE_LOCALE,
-} from "../../pim/catalogue/shared/domain/value-objects/localized-text.js";
+import { altText, SOURCE_LOCALE } from "../domain/value-objects/alt-text.js";
 import {
   focalPoint,
   MediaNotInLibraryError,
@@ -67,7 +64,7 @@ export class SaveMediaDetailsHandler implements ICommandHandler<SaveMediaDetails
       // Le repli est l'URL, comme partout ailleurs dans ce dépôt : une
       // alternative absente doit se VOIR, jamais se confondre avec une
       // alternative rédigée.
-      alt: localizedText(
+      alt: altText(
         "texte alternatif",
         command.alt[SOURCE_LOCALE] === undefined ? { [SOURCE_LOCALE]: url } : command.alt,
       ),

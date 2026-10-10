@@ -1,9 +1,9 @@
 import { Injectable } from "@nestjs/common";
+import { readAltColumn } from "./alt-columns.js";
 
 import { ImageCatalogue, type CatalogueImage } from "../../pim/channels/media/image-catalogue.js";
 import { MediaPrismaService } from "../infra/database/media-prisma.service.js";
-import { SOURCE_LOCALE } from "../../pim/catalogue/shared/domain/value-objects/localized-text.js";
-import { optionalLocalizedColumn as localizedOf } from "../../pim/catalogue/shared/infrastructure/json-readers.js";
+import { SOURCE_LOCALE } from "../domain/value-objects/alt-text.js";
 
 /**
  * Ce que la **bibliothèque** répond aux porteurs.
@@ -43,7 +43,7 @@ export class PrismaImageCatalogue extends ImageCatalogue {
           name: row.name,
           // Le repli sur l'URL vaut mieux qu'une chaîne vide : une alternative
           // absente doit se VOIR, pas se confondre avec une alternative écrite.
-          alt: localizedOf(row.alt) ?? { [SOURCE_LOCALE]: row.url },
+          alt: readAltColumn(row.alt) ?? { [SOURCE_LOCALE]: row.url },
           width: row.width,
           height: row.height,
           bytes: row.bytes,
