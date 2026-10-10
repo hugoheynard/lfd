@@ -58,6 +58,8 @@ describe('datedEventOf — la carte', () => {
     expect(event.teaser).toBe('Neuf bûches.');
     expect(event.dates.startsWith('Retrait du ')).toBe(true);
     expect(event.route).toBe('/boutique');
+    // La carte mène au RAYON de l'opération, pas seulement à la boutique.
+    expect(event.queryParams).toEqual({ rayon: 'op:noel' });
   });
 
   it('ouverte, le jour de la clôture : « Dernier jour »', () => {

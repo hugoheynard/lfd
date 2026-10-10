@@ -13,6 +13,7 @@ const EVENT: DatedEvent = {
   teaser: 'Neuf bûches.',
   image: { src: 'https://media.example.test/noel.jpg', srcset: '', alt: 'Une bûche' },
   route: '/boutique',
+  queryParams: { rayon: 'op:noel' },
 };
 
 function mount(event: DatedEvent = EVENT) {

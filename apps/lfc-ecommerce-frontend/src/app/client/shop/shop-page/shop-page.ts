@@ -29,6 +29,7 @@ import { ShopCatalogue } from '../shop-catalogue.store';
 import { Shop } from '../shop.service';
 import { ShopStorefront } from '../storefront/shop-storefront.store';
 import { ShopStore } from '../shop.store';
+import { ShelfAddress } from '../shelf-address';
 import { formatHour } from '../../format-hour';
 import { CartFulfillmentDays } from '../cart-fulfillment-days.service';
 import { ServicePoints } from '../pickup-points.store';
@@ -85,7 +86,7 @@ import { ShelfNav } from './shelf-nav/shelf-nav';
    * parcouru — défendable, mais c'est un choix de produit, pas une conséquence
    * de la découpe. Cf. {@link ShopStore}.
    */
-  providers: [ShopStore, Shop],
+  providers: [ShopStore, Shop, ShelfAddress],
 })
 export class ShopPage {
   protected readonly chrome = inject(ClientChrome);
@@ -176,6 +177,8 @@ export class ShopPage {
     // Les jours proposés suivent les articles d'opération du panier (D6) :
     // les deux écrans qui ouvrent le choix de l'heure le démarrent.
     inject(CartFulfillmentDays);
+    // Le rayon suit l'adresse (`?rayon=`), et l'adresse suit le rayon.
+    inject(ShelfAddress);
     this.chrome.kicker.set(this.t().chrome.kickerShop);
     this.chrome.barOnDesktop.set(true);
     // Pas de chevron : le logo reprend le coin (Hugo, 2026-09-24 — « ça

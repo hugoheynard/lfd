@@ -1,4 +1,4 @@
-<a class="event" [routerLink]="event().route">
+<a class="event" [routerLink]="event().route" [queryParams]="event().queryParams">
   @if (event().image; as image) {
     <!-- La bannière est en 21/9 (D9) : la photo la couvre, centrée faute de
          point focal porté par l'opération. -->

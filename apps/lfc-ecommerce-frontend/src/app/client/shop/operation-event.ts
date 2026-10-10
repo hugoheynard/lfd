@@ -5,7 +5,8 @@ import type { ClientCopy } from '../copy/client-copy.model';
 import { fill } from '../copy/client-copy.service';
 import { SHEET_WIDTHS, mediaSrcset, sizedMedia } from './media-source';
 import { SHOP_TIME_ZONE } from '../shop-time-zone';
-import { operationText, pickupSpan, shortDate } from './operations';
+import { SHELF_PARAM } from './shelves';
+import { operationShelfId, operationText, pickupSpan, shortDate } from './operations';
 
 /**
  * **L'opération datée mise en avant sur l'accueil** — Pâques, Noël, ce que le
@@ -29,8 +30,10 @@ export interface DatedEvent {
   readonly teaser: string;
   /** La photo redimensionnée, ou `null` : la bannière garde alors son aplat de la palette. */
   readonly image: DatedEventImage | null;
-  /** Où mène la carte. */
+  /** Où mène la carte : la boutique… */
   readonly route: string;
+  /** …ouverte sur le rayon de l'opération (`?rayon=op:<key>`). */
+  readonly queryParams: Readonly<Record<string, string>>;
 }
 
 export interface DatedEventImage {
@@ -40,11 +43,7 @@ export interface DatedEventImage {
   readonly alt: string;
 }
 
-/**
- * La boutique, faute d'adresse de rayon : le rayon actif vit dans un magasin
- * propre à la page (`shop.store.ts`), aucun paramètre d'URL ne l'ouvre
- * (vérifié le 2026-10-10).
- */
+/** La boutique ; le rayon s'ouvre par `?rayon=` (cf. `shelf-address.ts`). */
 const SHOP_ROUTE = '/boutique';
 
 const DAY_MS = 86_400_000;
@@ -164,5 +163,6 @@ export function datedEventOf(
     teaser: operation.lede === null ? '' : operationText(operation.lede, locale),
     image: imageOf(operation),
     route: SHOP_ROUTE,
+    queryParams: { [SHELF_PARAM]: operationShelfId(operation.key) },
   };
 }

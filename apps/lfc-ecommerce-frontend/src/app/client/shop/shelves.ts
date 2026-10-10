@@ -7,3 +7,10 @@
  * ne rendra jamais un rayon « all ».
  */
 export const ALL_SHELVES = 'all';
+
+/**
+ * Le paramètre d'adresse qui ouvre un rayon : `/boutique?rayon=op:noel`. Ici
+ * et pas dans `shelf-address.ts` : l'accueil le lit, et ne doit pas embarquer
+ * le routeur de la boutique pour une chaîne.
+ */
+export const SHELF_PARAM = 'rayon';
