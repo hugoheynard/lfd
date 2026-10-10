@@ -64,7 +64,11 @@ model MediaAsset {
 
   createdAt DateTime @default(now()) @map("created_at")
 
-  @@index([url])
+  /// La recherche par mots-clés filtre en `hasEvery`, que sert un index GIN.
+  /// Il existait depuis `20260923120000_les_tags_de_la_mediatheque` sans être
+  /// déclaré ici : un `migrate dev` aurait proposé de le supprimer. Déclaré le
+  /// 2026-10-10 sous le nom qu'il porte déjà — aucune ligne de SQL.
+  @@index([tags], type: Gin)
   @@map("media_asset")
   @@schema("media")
 }
