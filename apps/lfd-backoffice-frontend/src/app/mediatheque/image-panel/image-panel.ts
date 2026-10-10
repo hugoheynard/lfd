@@ -6,6 +6,7 @@ import {
   inject,
   input,
   signal,
+  untracked,
 } from '@angular/core';
 import {
   LOCALES,
@@ -273,8 +274,13 @@ export class ImagePanel {
   });
 
   constructor() {
+    // 🔴 `untracked` : `load` lit les signaux qu'il écrit (l'état d'origine
+    // se calcule par `result()`). Sans lui, l'effet s'abonnait à TOUS — le
+    // point, les mots-clés, l'étiquette — et chaque geste rechargeait l'image
+    // d'origine par-dessus : rien ne tenait à l'écran (vu le 2026-10-10).
     effect(() => {
-      this.load(this.data());
+      const data = this.data();
+      untracked(() => this.load(data));
     });
   }
 

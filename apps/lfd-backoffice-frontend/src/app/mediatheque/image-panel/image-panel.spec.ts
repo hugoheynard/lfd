@@ -1,5 +1,5 @@
 import { provideZonelessChangeDetection } from '@angular/core';
-import { TestBed } from '@angular/core/testing';
+import { type ComponentFixture, TestBed } from '@angular/core/testing';
 import { FoldPanelRef } from 'fold-ng';
 import { describe, expect, it, vi } from 'vitest';
 
@@ -18,6 +18,7 @@ const URL = 'https://media.test/products/abc.png';
 
 function panel(data: ImagePanelData): {
   panel: ImagePanel;
+  fixture: ComponentFixture<ImagePanel>;
   closed: ImagePanelResult[];
   dismissed: () => number;
 } {
@@ -43,7 +44,7 @@ function panel(data: ImagePanelData): {
   const fixture = TestBed.createComponent(ImagePanel);
   fixture.componentRef.setInput('data', data);
   fixture.detectChanges();
-  return { panel: fixture.componentInstance, closed, dismissed: () => dismissals };
+  return { panel: fixture.componentInstance, fixture, closed, dismissed: () => dismissals };
 }
 
 const bare: ImagePanelData = {
@@ -57,6 +58,23 @@ const bare: ImagePanelData = {
 };
 
 describe('décrire une image', () => {
+  /**
+   * Régression : l'effet de chargement lisait les signaux qu'il écrit, donc
+   * s'y abonnait — poser un point, une étiquette ou un mot-clé relançait le
+   * chargement, qui remettait l'image d'origine (2026-10-10).
+   */
+  it('garde ce qu’on vient de saisir quand l’écran se rafraîchit', () => {
+    const { panel: screen, fixture } = panel(bare);
+
+    screen['focal'].set({ x: 0.8, y: 0.2 });
+    screen['label'].set('Abricotin');
+    fixture.detectChanges();
+
+    expect(screen['focal']()).toEqual({ x: 0.8, y: 0.2 });
+    expect(screen['label']()).toBe('Abricotin');
+    expect(screen['dirty']()).toBe(true);
+  });
+
   it('n’affiche PAS l’URL de repli comme si c’était une alternative', () => {
     const { panel: screen } = panel(bare);
 
