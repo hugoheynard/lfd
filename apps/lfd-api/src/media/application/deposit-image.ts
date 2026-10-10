@@ -6,13 +6,25 @@ import { MediaStore } from "../../platform/storage/media-store.js";
 import { MEDIA_EVENTS, MediaJournal } from "../journal/media-journal.js";
 import { MediaFailureLog } from "../domain/ports/media-failure-log.js";
 import { MediaLibrary, type RegisteredMedia } from "../domain/ports/media-library.js";
+import { MediaSeriesReader, type MediaSeriesLabel } from "../domain/ports/media-series.js";
+import { MediaSeriesNotFoundError } from "../domain/errors/media-series-errors.js";
 import { productImage, type ProductImage } from "../domain/value-objects/image-bytes.js";
 
 /** Le préfixe d'usage dans le bucket. Il nomme l'emploi, pas un propriétaire. */
 const PREFIX = "products";
 
-/** Ce que rend un dépôt : l'entrée de bibliothèque créée. */
-export type DepositImageResult = RegisteredMedia;
+/**
+ * Ce que rend un dépôt : l'entrée de bibliothèque — créée, ou celle qui
+ * portait déjà ces octets.
+ *
+ * `alreadyInLibrary` dit lequel des deux (D2, 2026-10-10) : un redépôt ne
+ * change rien à l'image, sa série comprise, et le compte rendu du lot doit
+ * pouvoir le dire plutôt que de laisser croire qu'elle a rejoint la série
+ * choisie.
+ */
+export interface DepositImageResult extends RegisteredMedia {
+  readonly alreadyInLibrary: boolean;
+}
 
 export class DepositImageCommand {
   constructor(
@@ -27,6 +39,11 @@ export class DepositImageCommand {
      * c'est pour ça qu'il est facultatif.
      */
     readonly fileName: string = "",
+    /**
+     * La série où ranger l'image NEUVE (D3 : facultative). Sans effet sur une
+     * image déjà au fonds (D2).
+     */
+    readonly seriesId: string | null = null,
   ) {}
 }
 
@@ -49,17 +66,24 @@ export class DepositImageCommand {
  * l'identique au prochain dépôt.
  */
 @CommandHandler(DepositImageCommand)
-export class DepositImageHandler implements ICommandHandler<DepositImageCommand, RegisteredMedia> {
+export class DepositImageHandler implements ICommandHandler<
+  DepositImageCommand,
+  DepositImageResult
+> {
   constructor(
     private readonly store: MediaStore,
     private readonly library: MediaLibrary,
+    private readonly series: MediaSeriesReader,
     private readonly journal: MediaJournal,
     private readonly failures: MediaFailureLog,
     private readonly uow: UnitOfWork,
   ) {}
 
-  async execute(command: DepositImageCommand): Promise<RegisteredMedia> {
+  async execute(command: DepositImageCommand): Promise<DepositImageResult> {
     const image = await this.validated(command);
+    // 🔴 La série se vérifie AVANT de ranger les octets : un dépôt refusé pour
+    // une série inconnue ne doit rien laisser dans le bucket.
+    const series = await this.seriesOf(command.seriesId);
     const stored = await this.store.put(PREFIX, {
       bytes: image.bytes,
       contentType: image.contentType,
@@ -72,6 +96,12 @@ export class DepositImageHandler implements ICommandHandler<DepositImageCommand,
     // adressé par son contenu, donc un second dépôt du même fichier le réécrit
     // à l'identique. Le ramassage prendra celui-ci si personne ne l'attache.
     return this.uow.run(async () => {
+      const existing = await this.library.alreadyRegistered(stored.url);
+      if (existing !== null) {
+        // D2 : les mêmes octets sont déjà au fonds. Rien n'est écrit — ni
+        // série, ni fait : il ne s'est rien passé dans la bibliothèque.
+        return { ...existing, alreadyInLibrary: true };
+      }
       const ticket = await this.journal.trace({
         type: MEDIA_EVENTS.mediaDeposited,
         subjectType: "media_asset",
@@ -85,9 +115,10 @@ export class DepositImageHandler implements ICommandHandler<DepositImageCommand,
           bytes: image.byteLength,
           width: image.width,
           height: image.height,
+          series: series === null ? null : { id: series.id, name: series.title },
         },
       });
-      return this.library.register(
+      const registered = await this.library.register(
         {
           url: stored.url,
           storageKey: stored.storageKey,
@@ -95,10 +126,24 @@ export class DepositImageHandler implements ICommandHandler<DepositImageCommand,
           width: image.width,
           height: image.height,
           bytes: image.byteLength,
+          seriesId: series?.id ?? null,
         },
         ticket,
       );
+      return { ...registered, alreadyInLibrary: false };
     });
+  }
+
+  /** La série demandée, ou `null` sans série. @throws {MediaSeriesNotFoundError} */
+  private async seriesOf(id: string | null): Promise<MediaSeriesLabel | null> {
+    if (id === null) {
+      return null;
+    }
+    const series = await this.series.find(id);
+    if (series === null) {
+      throw new MediaSeriesNotFoundError(id);
+    }
+    return series;
   }
 
   /**

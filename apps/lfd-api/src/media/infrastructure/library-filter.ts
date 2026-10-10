@@ -29,6 +29,9 @@ export function filterOf(query: LibraryQuery): Prisma.MediaAssetWhereInput {
   if (tags.length > 0) {
     clauses.push({ tags: { hasEvery: tags } });
   }
+  if (query.seriesId !== undefined && query.seriesId !== "") {
+    clauses.push({ seriesId: query.seriesId });
+  }
   if (query.untagged === true) {
     clauses.push({ tags: { isEmpty: true } });
   }

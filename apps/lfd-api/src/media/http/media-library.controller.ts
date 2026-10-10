@@ -11,6 +11,7 @@ import {
   UseInterceptors,
 } from "@nestjs/common";
 import { FileInterceptor } from "@nestjs/platform-express";
+import { z } from "zod";
 import { CommandBus, QueryBus } from "@nestjs/cqrs";
 import {
   mediaDetailsPayloadSchema,
@@ -126,6 +127,7 @@ export class MediaLibraryController {
         to: query.to,
         untagged: query.untagged,
         unused: query.unused,
+        series: query.series,
       }),
     );
   }
@@ -224,6 +226,7 @@ export class MediaLibraryController {
         payload.tags,
         payload.alt ?? {},
         payload.focal,
+        payload.seriesId,
       ),
     );
   }
@@ -247,24 +250,39 @@ export class MediaLibraryController {
   /**
    * Dépose une image et rend son entrée de bibliothèque.
    *
-   * Aucune validation ici : le contrôleur ne fait que le transport. C'est
-   * `productImage` qui décide, en relisant les octets — ni le `Content-Type`
+   * Aucune validation d'image ici : le contrôleur ne fait que le transport.
+   * Le champ `seriesId`, facultatif, range l'image NEUVE dans une série (D3) ;
+   * une image déjà au fonds garde la sienne (D2). C'est `productImage` qui décide, en relisant les octets — ni le `Content-Type`
    * annoncé, ni l'extension ne sont crus.
    */
   @Post()
   @UseInterceptors(FileInterceptor("file", { limits: { fileSize: IMAGE_UPLOAD_HARD_LIMIT } }))
-  async upload(@UploadedFile() file: UploadedFilePart | undefined): Promise<UploadedMediaView> {
+  async upload(
+    @UploadedFile() file: UploadedFilePart | undefined,
+    @Body() body: unknown,
+  ): Promise<UploadedMediaView> {
     if (file === undefined) {
       throw new UnsupportedImageError("aucun fichier reçu.");
     }
+    // La série est un champ texte du MÊME multipart (D3 : facultatif) ; une
+    // chaîne vide vaut « sans série ».
+    const { seriesId } = depositFieldsSchema.parse(body ?? {});
     return this.commands.execute<DepositImageCommand, DepositImageResult>(
       // Le nom de fichier ne sert PAS au dépôt — la clé est le SHA-256 du
       // contenu. Il sert au refus : sur un lot de cinquante, « lequel n'est
       // pas passé » n'a de réponse que par lui.
-      new DepositImageCommand(file.buffer, file.originalname),
+      new DepositImageCommand(file.buffer, file.originalname, seriesId ?? null),
     );
   }
 }
+
+/** Les champs texte du dépôt multipart — la forme seulement. */
+const depositFieldsSchema = z.object({
+  seriesId: z
+    .string()
+    .optional()
+    .transform((raw) => (raw === undefined || raw.trim() === "" ? undefined : raw.trim())),
+});
 
 /** Ce que l'écran demande par défaut à l'historique des refus. */
 const DEFAULT_FAILURES_PAGE = 50;

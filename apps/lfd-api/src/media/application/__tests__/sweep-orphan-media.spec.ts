@@ -87,6 +87,10 @@ class FakeLibrary extends MediaLibrary {
     );
   }
 
+  alreadyRegistered(): Promise<RegisteredMedia | null> {
+    return Promise.resolve(null);
+  }
+
   stillOld(storageKey: string, before: Date): Promise<string | null> {
     this.cutoff = before;
     this.steps.push(`check:${storageKey}`);

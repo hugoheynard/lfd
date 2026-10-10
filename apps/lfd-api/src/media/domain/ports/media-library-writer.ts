@@ -19,6 +19,8 @@ export interface MediaDetails {
   readonly alt: LocalizedText;
   /** `null` = personne ne s'est prononcé, jamais « au centre ». */
   readonly focal: FocalPoint | null;
+  /** La série de l'image (L3) — `null` = aucune. Déjà vérifiée par l'appelant. */
+  readonly seriesId: string | null;
 }
 
 /**

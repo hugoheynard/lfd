@@ -35,9 +35,26 @@ export class PrismaMediaLibrary extends MediaLibrary {
         width: entry.width,
         height: entry.height,
         bytes: entry.bytes,
+        seriesId: entry.seriesId,
       },
     });
     return { id, ...entry };
+  }
+
+  async alreadyRegistered(url: string): Promise<RegisteredMedia | null> {
+    return this.prisma.mediaAsset.findUnique({
+      where: { url },
+      select: {
+        id: true,
+        url: true,
+        storageKey: true,
+        contentType: true,
+        width: true,
+        height: true,
+        bytes: true,
+        seriesId: true,
+      },
+    });
   }
 
   async findCandidates(

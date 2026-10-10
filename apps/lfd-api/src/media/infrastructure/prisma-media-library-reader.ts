@@ -89,7 +89,7 @@ export class PrismaMediaLibraryReader extends MediaLibraryReader {
     // Un de plus que la borne : c'est lui qui dit qu'on la dépasse.
     const candidates = await this.prisma.mediaAsset.findMany({
       where,
-      select: { url: true, name: true, createdAt: true },
+      select: { url: true, name: true, createdAt: true, series: { select: { shotOn: true } } },
       take: MAX_RANKED_IMAGES + 1,
     });
     const uses = await this.usesOf(candidates.map((candidate) => candidate.url));

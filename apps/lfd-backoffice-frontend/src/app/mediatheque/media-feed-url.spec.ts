@@ -55,7 +55,7 @@ describe("l'adresse de la médiathèque", () => {
 
   it('lit un lien retouché sans vider la médiathèque', () => {
     const read = readCriteria(
-      convertToParamMap({ sort: 'shot', from: '1/10/2026', untagged: 'oui', tags: ' a, ,a,b ' }),
+      convertToParamMap({ sort: 'colour', from: '1/10/2026', untagged: 'oui', tags: ' a, ,a,b ' }),
     );
     expect(read).toEqual({ ...ALL_MEDIA, tags: ['a', 'b'] });
   });

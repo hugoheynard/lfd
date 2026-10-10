@@ -37,6 +37,16 @@ export interface LibraryMediaRecord {
   readonly uses: number;
   /** L'entrée de ces octets dans la bibliothèque. */
   readonly depositedAt: Date;
+  /** Sa série (L3), avec de quoi l'afficher et la ranger — `null` = aucune. */
+  readonly series: LibraryMediaSeries | null;
+}
+
+/** La série d'une image, telle qu'une tuile la montre. */
+export interface LibraryMediaSeries {
+  readonly id: string;
+  readonly title: string;
+  /** `AAAA-MM-JJ`, ou `null` : jour de prise de vue inconnu. */
+  readonly shotOn: string | null;
 }
 
 /**
@@ -93,6 +103,8 @@ export interface LibraryQuery {
    * l'inverse de ce que le geste demande.
    */
   readonly tags?: readonly string[] | undefined;
+  /** Seulement les images de cette série (L3). */
+  readonly seriesId?: string | undefined;
 }
 
 /**

@@ -12,6 +12,7 @@ import {
   localizedText,
   named,
   payload,
+  day,
   ref,
   retired,
   subjectLabel,
@@ -182,8 +183,17 @@ const mediaDescribed = () =>
       // le sujet est l'image.
       alt: localizedText(),
       focal: z.object({ x: z.number(), y: z.number() }).nullable(),
+      // La série de l'image (L3, 2026-10-10), citée avec son titre du moment.
+      series: named("media_series").nullable(),
     }),
   });
+
+/** Ce qu'on décide d'une série de la médiathèque (L3, 2026-10-10). */
+const mediaSeriesFields = () => ({
+  title: z.string().min(1),
+  shotOn: day().nullable(),
+  note: z.string().nullable(),
+});
 
 const mediaDeposited = () =>
   payload({
@@ -192,6 +202,9 @@ const mediaDeposited = () =>
     bytes: z.number().nullable(),
     width: z.number().nullable(),
     height: z.number().nullable(),
+    // La série où l'image NEUVE est rangée (L3, 2026-10-10). Facultative :
+    // les dépôts d'avant ne la portent pas.
+    series: named("media_series").nullable().optional(),
   });
 /** La même charge avant que le rôle n'entre dans le diff (2026-09-23). */
 const mediaSavedV1 = () => payload({ changes: changes({ media: mediaListV1() }) });
@@ -546,5 +559,14 @@ export const REFERENTIAL_CATALOGUE_FACTS = {
       tag: z.string().min(1),
       images: z.number().int().min(1),
     }),
+  ),
+  /**
+   * Une série ouverte (L3, 2026-10-10). Le sujet est son identifiant, le
+   * libellé son titre. Les images qu'on y dépose ont leur propre fait.
+   */
+  "media_series.created": fact(payload({ subjectLabel: subjectLabel(), ...mediaSeriesFields() })),
+  /** Son titre, son jour de prise de vue ou sa note corrigés — le diff. */
+  "media_series.described": fact(
+    payload({ subjectLabel: subjectLabel(), changes: changes(mediaSeriesFields()) }),
   ),
 } as const satisfies JournalFactFamily;

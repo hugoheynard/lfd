@@ -21,6 +21,7 @@ export {
   mediaDetailsPayloadSchema,
   mediaItemPayloadSchema,
   mediaLibraryQuerySchema,
+  mediaSeriesPayloadSchema,
   renameMediaTagPayloadSchema,
   setMediaPayloadSchema,
 } from "./media.js";
@@ -41,6 +42,9 @@ export type {
   MediaDetailsPayload,
   MediaTagView,
   RenameMediaTagPayload,
+  MediaSeriesPayload,
+  MediaSeriesRefView,
+  MediaSeriesView,
 } from "./media.js";
 
 export type { AllergenEntry, AllergenReference, AllergenScope } from "./allergen.js";

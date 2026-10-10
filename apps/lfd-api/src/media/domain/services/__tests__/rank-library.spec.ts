@@ -6,7 +6,7 @@ const EARLY = new Date("2026-01-01T08:00:00.000Z");
 const LATE = new Date("2026-01-02T08:00:00.000Z");
 
 function image(url: string, over: Partial<RankedImage> = {}): RankedImage {
-  return { url, name: "", depositedAt: EARLY, uses: 0, ...over };
+  return { url, name: "", depositedAt: EARLY, uses: 0, shotOn: null, ...over };
 }
 
 const urls = (images: readonly RankedImage[]): string[] => images.map((one) => one.url);
@@ -19,6 +19,22 @@ describe("les ordres du fonds", () => {
       "c",
       "a",
       "b",
+    ]);
+  });
+
+  it("classe par prise de vue, la plus récente d'abord, les images sans date EN DERNIER", () => {
+    const fonds = [
+      image("z"),
+      image("y", { shotOn: "2026-03-01" }),
+      image("x", { shotOn: "2026-05-01" }),
+      image("w", { shotOn: "2026-03-01" }),
+    ];
+
+    expect(urls([...fonds].sort((x, y) => compareImages("shot", x, y)))).toEqual([
+      "x",
+      "w",
+      "y",
+      "z",
     ]);
   });
 

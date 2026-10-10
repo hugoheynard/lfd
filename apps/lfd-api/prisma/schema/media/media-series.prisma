@@ -1,0 +1,26 @@
+/// **Une série** — des images prises ensemble, sous un même titre (plan L3,
+/// 2026-10-10 : `documentation/mediatheque/plan-la-mediatheque-amelioree.md`).
+///
+/// Elle REGROUPE, elle ne possède pas : une image a au plus une série, et la
+/// perd sans rien perdre d'autre. C'est pour ça que la référence est portée
+/// par l'image (`media_asset.series_id`) et non l'inverse.
+///
+/// ⚠️ Pas de suppression : une série se corrige, elle ne disparaît pas. La clé
+/// étrangère est en `ON DELETE RESTRICT` — retirer une série qu'une image
+/// porte encore est refusé par Postgres lui-même.
+model MediaSeries {
+  /// UUID v7, assigné par la commande (`UuidGenerator`) — jamais par la base.
+  id     String    @id
+  /// Le titre, rogné et non vide : c'est lui qu'on lit dans le sélecteur du dépôt.
+  title  String    @db.VarChar(120)
+  /// Le JOUR de la prise de vue, sans heure — `null` = on ne sait pas.
+  shotOn DateTime? @map("shot_on") @db.Date
+  note   String?   @db.VarChar(2000)
+
+  createdAt DateTime @default(now()) @map("created_at") @db.Timestamptz(3)
+
+  assets MediaAsset[]
+
+  @@map("media_series")
+  @@schema("media")
+}

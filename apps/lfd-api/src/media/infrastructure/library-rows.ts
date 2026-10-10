@@ -1,4 +1,5 @@
 import { readAltColumn } from "./alt-columns.js";
+import { readDayColumn } from "./series-day.js";
 
 import { SOURCE_LOCALE } from "../domain/value-objects/alt-text.js";
 import type { RankedImage } from "../domain/value-objects/library-order.js";
@@ -18,7 +19,15 @@ export const ASSET_COLUMNS = {
   tags: true,
   alt: true,
   createdAt: true,
+  series: { select: { id: true, title: true, shotOn: true } },
 } as const;
+
+/** La série d'une ligne, telle que Prisma la rend. */
+interface SeriesRow {
+  readonly id: string;
+  readonly title: string;
+  readonly shotOn: Date | null;
+}
 
 export interface AssetRow {
   readonly url: string;
@@ -33,6 +42,7 @@ export interface AssetRow {
   readonly tags: string[];
   readonly alt: unknown;
   readonly createdAt: Date;
+  readonly series: SeriesRow | null;
 }
 
 /**
@@ -58,13 +68,28 @@ export function recordOf(row: AssetRow, uses: number): LibraryMediaRecord {
     focal: row.focalX === null ? null : { x: row.focalX, y: row.focalY ?? 0 },
     uses,
     depositedAt: row.createdAt,
+    series:
+      row.series === null
+        ? null
+        : { id: row.series.id, title: row.series.title, shotOn: readDayColumn(row.series.shotOn) },
   };
 }
 
 /** Ce qu'un ordre lit d'une ligne. */
 export function rankedOf(
-  row: { readonly url: string; readonly name: string; readonly createdAt: Date },
+  row: {
+    readonly url: string;
+    readonly name: string;
+    readonly createdAt: Date;
+    readonly series: { readonly shotOn: Date | null } | null;
+  },
   uses: number,
 ): RankedImage {
-  return { url: row.url, name: row.name, depositedAt: row.createdAt, uses };
+  return {
+    url: row.url,
+    name: row.name,
+    depositedAt: row.createdAt,
+    uses,
+    shotOn: readDayColumn(row.series?.shotOn ?? null),
+  };
 }

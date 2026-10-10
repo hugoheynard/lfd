@@ -13,6 +13,8 @@ export interface MediaFacts {
 export interface RegisteredMedia extends MediaFacts {
   readonly id: string;
   readonly url: string;
+  /** La série de l'image (L3) — `null` = aucune. */
+  readonly seriesId: string | null;
 }
 
 /**
@@ -35,6 +37,16 @@ export abstract class MediaLibrary {
     entry: Omit<RegisteredMedia, "id">,
     ticket: WriteTicket,
   ): Promise<RegisteredMedia>;
+
+  /**
+   * L'inscription qui porte DÉJÀ cette URL, ou `null`.
+   *
+   * Sert au redépôt (D2, 2026-10-10) : les mêmes octets tombent sur la même
+   * URL, et l'image déjà au fonds garde tout — sa série comprise. Sans cette
+   * lecture, le second dépôt butait sur l'unicité de l'URL et rendait un 409
+   * « Cette ressource existe déjà » (constaté le 2026-10-10).
+   */
+  abstract alreadyRegistered(url: string): Promise<RegisteredMedia | null>;
 
   /**
    * Retrouve ce qu'on sait d'une URL, ou `null`.

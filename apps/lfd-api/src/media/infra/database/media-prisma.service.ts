@@ -9,9 +9,9 @@ import type { PrismaService } from "../../../platform/database/prisma.service.js
  * autres lisibles depuis n'importe quel dépôt de la médiathèque — un mur tombé
  * sans que personne ne l'écrive.
  *
- * Ici, la surface tient en DEUX lignes, et c'est exactement ce qu'on voulait
- * démontrer : la bibliothèque ne connaît QUE ce qui est à elle — ses images, et
- * les dépôts qu'elle a refusés. Elle ne lit ni `product_media` ni
+ * Ici, la surface tient en TROIS lignes, et c'est exactement ce qu'on voulait
+ * démontrer : la bibliothèque ne connaît QUE ce qui est à elle — ses images, leurs
+ * séries, et les dépôts qu'elle a refusés. Elle ne lit ni `product_media` ni
  * `category_media` — ce sont les tables des porteurs, et elle leur pose la
  * question par `MediaCarriers`.
  *
@@ -24,4 +24,6 @@ export abstract class MediaPrismaService {
   abstract readonly mediaAsset: PrismaService["mediaAsset"];
   /** L'historique des dépôts refusés — des TENTATIVES, pas des images. */
   abstract readonly mediaUploadFailure: PrismaService["mediaUploadFailure"];
+  /** Les séries du fonds (L3, 2026-10-10) — un regroupement d'images. */
+  abstract readonly mediaSeries: PrismaService["mediaSeries"];
 }

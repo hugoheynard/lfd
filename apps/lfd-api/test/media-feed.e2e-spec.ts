@@ -191,7 +191,8 @@ describe("GET /media — le curseur", () => {
   });
 
   it("refuse en 400 un ordre inconnu et un jour mal formé", async () => {
-    expect((await staff().get(MEDIA).query({ sort: "shot" })).status).toBe(400);
+    // `shot` servait d'ordre inconnu jusqu'à L3 (2026-10-10), qui l'a rendu réel.
+    expect((await staff().get(MEDIA).query({ sort: "colour" })).status).toBe(400);
     expect((await staff().get(MEDIA).query({ from: "hier" })).status).toBe(400);
   });
 });

@@ -24,6 +24,7 @@ export class PrismaMediaLibraryWriter extends MediaLibraryWriter {
         alt: altColumn(details.alt),
         focalX: details.focal?.x ?? null,
         focalY: details.focal?.y ?? null,
+        seriesId: details.seriesId,
       },
     });
     return written.count > 0;

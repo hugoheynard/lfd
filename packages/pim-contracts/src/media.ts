@@ -175,6 +175,16 @@ export interface LibraryMediaView extends MediaFactsView {
   readonly uses: number;
   /** L'entrée dans la bibliothèque — le PREMIER dépôt de ces octets. */
   readonly depositedAt: string;
+  /** Sa série (L3, 2026-10-10) — `null` = aucune. */
+  readonly series: MediaSeriesRefView | null;
+}
+
+/** La série d'une image, telle qu'une tuile la montre. */
+export interface MediaSeriesRefView {
+  readonly id: string;
+  readonly title: string;
+  /** `AAAA-MM-JJ`, ou `null` : jour de prise de vue inconnu. */
+  readonly shotOn: string | null;
 }
 
 /**
@@ -197,12 +207,11 @@ export interface MediaLibraryPageView {
  *
  * - `deposited` — le dépôt, le plus récent d'abord (défaut) ;
  * - `name` — l'étiquette, alphabétique, les images sans étiquette en dernier ;
- * - `uses` — le nombre d'emplois, le plus employé d'abord.
- *
- * La prise de vue (`shot`) viendra avec les séries (L3) : une valeur de plus
- * ici et un ordre de plus côté serveur, sans autre branche.
+ * - `uses` — le nombre d'emplois, le plus employé d'abord ;
+ * - `shot` — le jour de prise de vue de la série, le plus récent d'abord, les
+ *   images sans série ou sans date en dernier (L3, 2026-10-10).
  */
-export const MEDIA_LIBRARY_SORTS = ["deposited", "name", "uses"] as const;
+export const MEDIA_LIBRARY_SORTS = ["deposited", "name", "uses", "shot"] as const;
 export type MediaLibrarySort = (typeof MEDIA_LIBRARY_SORTS)[number];
 
 /** Un jour nu, `AAAA-MM-JJ`, lu à l'heure de Paris par le serveur. */
@@ -252,6 +261,8 @@ export const mediaLibraryQuerySchema = z.object({
   untagged: libraryFlagSchema.optional(),
   /** Seulement les images qu'aucun porteur n'affiche. */
   unused: libraryFlagSchema.optional(),
+  /** Seulement les images de cette série (L3) — son identifiant. */
+  series: z.string().min(1).optional(),
 });
 export type MediaLibraryQuery = z.infer<typeof mediaLibraryQuerySchema>;
 
@@ -280,6 +291,13 @@ export interface AttachedMediaView extends MediaFactsView {
 export interface UploadedMediaView extends MediaFactsView {
   readonly id: string;
   readonly url: string;
+  /** La série de l'image — celle d'ORIGINE si elle était déjà au fonds (D2). */
+  readonly seriesId: string | null;
+  /**
+   * `true` : ces octets étaient déjà au fonds, et RIEN n'a changé — ni la
+   * série, ni l'étiquette (D2, 2026-10-10). Le compte rendu du lot le dit.
+   */
+  readonly alreadyInLibrary: boolean;
 }
 
 /**
@@ -324,6 +342,11 @@ export const mediaDetailsPayloadSchema = z.object({
    * que la forme.
    */
   focal: z.object({ x: z.number(), y: z.number() }).nullable(),
+  /**
+   * La série (L3) : un identifiant rattache, `null` détache, et l'ABSENCE ne
+   * change rien — un écran qui ignore les séries ne les efface pas.
+   */
+  seriesId: z.string().min(1).nullable().optional(),
 });
 
 export type MediaDetailsPayload = z.infer<typeof mediaDetailsPayloadSchema>;
@@ -346,3 +369,31 @@ export const renameMediaTagPayloadSchema = z.object({
   to: z.string(),
 });
 export type RenameMediaTagPayload = z.infer<typeof renameMediaTagPayloadSchema>;
+
+/**
+ * **Une série** — des images prises ensemble (L3, 2026-10-10), telle que la
+ * liste la rend : triées par prise de vue décroissante, puis par création.
+ */
+export interface MediaSeriesView {
+  readonly id: string;
+  readonly title: string;
+  /** `AAAA-MM-JJ`, ou `null` : jour inconnu. */
+  readonly shotOn: string | null;
+  readonly note: string | null;
+  /** Les images qui la portent, sur tout le fonds. */
+  readonly images: number;
+  /** ISO 8601. */
+  readonly createdAt: string;
+}
+
+/**
+ * Ouvrir ou corriger une série. Le schéma ne dit que la FORME : le titre
+ * rogné non vide, les plafonds, le jour qui existe et n'est pas à venir sont
+ * au domaine (`MediaSeries`).
+ */
+export const mediaSeriesPayloadSchema = z.object({
+  title: z.string(),
+  shotOn: z.string().nullable(),
+  note: z.string().nullable(),
+});
+export type MediaSeriesPayload = z.infer<typeof mediaSeriesPayloadSchema>;

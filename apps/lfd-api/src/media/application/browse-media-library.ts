@@ -48,6 +48,8 @@ export interface BrowseMediaLibraryCriteria {
   readonly to?: string | undefined;
   readonly untagged?: boolean | undefined;
   readonly unused?: boolean | undefined;
+  /** Seulement les images de cette série (L3). */
+  readonly series?: string | undefined;
 }
 
 /**
@@ -99,6 +101,7 @@ export class BrowseMediaLibraryHandler implements IQueryHandler<
       ...(after === undefined ? {} : { after }),
       ...(criteria.q === undefined ? {} : { q: criteria.q }),
       ...(criteria.tags === undefined ? {} : { tags: criteria.tags }),
+      ...(criteria.series === undefined ? {} : { seriesId: criteria.series }),
       ...(period.from === undefined ? {} : { depositedFrom: period.from }),
       ...(period.before === undefined ? {} : { depositedBefore: period.before }),
       ...(criteria.untagged === true ? { untagged: true } : {}),
@@ -128,5 +131,6 @@ function viewOf(record: LibraryMediaRecord): MediaLibraryPageView["items"][numbe
     uses: record.uses,
     // ISO, et pas un `Date` : ce qui sort d'ici est du JSON.
     depositedAt: record.depositedAt.toISOString(),
+    series: record.series,
   };
 }

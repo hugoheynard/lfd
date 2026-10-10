@@ -21,6 +21,15 @@ import { MediaLibraryReader } from "./domain/ports/media-library-reader.js";
 import { MediaLibraryWriter } from "./domain/ports/media-library-writer.js";
 import { MediaLibraryController } from "./http/media-library.controller.js";
 import { MediaSweepController } from "./http/media-sweep.controller.js";
+import { MediaSeriesController } from "./http/media-series.controller.js";
+import { DeclareMediaSeriesHandler } from "./application/declare-media-series.js";
+import { DescribeMediaSeriesHandler } from "./application/describe-media-series.js";
+import { ListMediaSeriesHandler } from "./application/list-media-series.js";
+import { MediaSeriesReader, MediaSeriesRepository } from "./domain/ports/media-series.js";
+import {
+  PrismaMediaSeriesReader,
+  PrismaMediaSeriesRepository,
+} from "./infrastructure/prisma-media-series.js";
 import { PrismaImageCatalogue } from "./infrastructure/prisma-image-catalogue.js";
 import { PrismaMediaLibrary } from "./infrastructure/prisma-media-library.js";
 import { PrismaMediaLibraryReader } from "./infrastructure/prisma-media-library-reader.js";
@@ -55,7 +64,7 @@ import { PrismaMediaLibraryWriter } from "./infrastructure/prisma-media-library-
  */
 @Module({
   imports: [MediaDatabaseModule],
-  controllers: [MediaLibraryController, MediaSweepController],
+  controllers: [MediaLibraryController, MediaSeriesController, MediaSweepController],
   providers: [
     BrowseMediaLibraryHandler,
     ListMediaCarriersHandler,
@@ -68,6 +77,11 @@ import { PrismaMediaLibraryWriter } from "./infrastructure/prisma-media-library-
     ListMediaTagsHandler,
     RenameMediaTagHandler,
     RemoveMediaTagHandler,
+    DeclareMediaSeriesHandler,
+    DescribeMediaSeriesHandler,
+    ListMediaSeriesHandler,
+    { provide: MediaSeriesRepository, useClass: PrismaMediaSeriesRepository },
+    { provide: MediaSeriesReader, useClass: PrismaMediaSeriesReader },
     { provide: MediaTagReader, useClass: PrismaMediaTagReader },
     { provide: MediaTagWriter, useClass: PrismaMediaTagWriter },
     { provide: MediaLibrary, useClass: PrismaMediaLibrary },

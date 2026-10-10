@@ -16,6 +16,12 @@ import {
   type RegisteredMedia,
 } from "../../domain/ports/media-library.js";
 import { UnsupportedImageError } from "../../domain/value-objects/image-bytes.js";
+import {
+  MediaSeriesReader,
+  type MediaSeriesLabel,
+  type MediaSeriesListing,
+} from "../../domain/ports/media-series.js";
+import { MediaSeriesNotFoundError } from "../../domain/errors/media-series-errors.js";
 import { DepositImageCommand, DepositImageHandler } from "../deposit-image.js";
 
 function png(width: number, height: number): Buffer {
@@ -68,8 +74,30 @@ class RecordingFailures extends MediaFailureLog {
   }
 }
 
+/** Les séries connues — `Été` seulement. */
+class FakeSeries extends MediaSeriesReader {
+  readonly asked: string[] = [];
+
+  list(): Promise<readonly MediaSeriesListing[]> {
+    return Promise.resolve([]);
+  }
+  find(id: string): Promise<MediaSeriesLabel | null> {
+    this.asked.push(id);
+    return Promise.resolve(id === "series_ete" ? { id, title: "Été" } : null);
+  }
+}
+
 class FakeLibrary extends MediaLibrary {
   readonly registered: Omit<RegisteredMedia, "id">[] = [];
+
+  /** Ce que le fonds porte déjà, par URL — un redépôt tombe dessus. */
+  constructor(private readonly existing: readonly RegisteredMedia[] = []) {
+    super();
+  }
+
+  alreadyRegistered(url: string): Promise<RegisteredMedia | null> {
+    return Promise.resolve(this.existing.find((entry) => entry.url === url) ?? null);
+  }
 
   register(entry: Omit<RegisteredMedia, "id">): Promise<RegisteredMedia> {
     this.registered.push(entry);
@@ -98,6 +126,7 @@ describe("DepositImageHandler", () => {
     const handler = new DepositImageHandler(
       store,
       library,
+      new FakeSeries(),
       journal,
       new RecordingFailures(),
       new DirectUnitOfWork(),
@@ -138,6 +167,7 @@ describe("DepositImageHandler", () => {
     const handler = new DepositImageHandler(
       store,
       library,
+      new FakeSeries(),
       new RecordingMediaJournal(),
       new RecordingFailures(),
       new DirectUnitOfWork(),
@@ -159,6 +189,7 @@ describe("DepositImageHandler", () => {
     const handler = new DepositImageHandler(
       new FakeStore(),
       new FakeLibrary(),
+      new FakeSeries(),
       new RecordingMediaJournal(),
       failures,
       new DirectUnitOfWork(),
@@ -187,6 +218,7 @@ describe("DepositImageHandler", () => {
     const handler = new DepositImageHandler(
       new FakeStore(),
       new FakeLibrary(),
+      new FakeSeries(),
       new RecordingMediaJournal(),
       failures,
       new DirectUnitOfWork(),
@@ -214,6 +246,7 @@ describe("DepositImageHandler", () => {
     const handler = new DepositImageHandler(
       new FakeStore(),
       new FakeLibrary(),
+      new FakeSeries(),
       new RecordingMediaJournal(),
       new DeafLog(),
       new DirectUnitOfWork(),
@@ -242,6 +275,7 @@ describe("DepositImageHandler", () => {
     const handler = new DepositImageHandler(
       new FailingStore(),
       library,
+      new FakeSeries(),
       new RecordingMediaJournal(),
       new RecordingFailures(),
       new DirectUnitOfWork(),
@@ -251,5 +285,78 @@ describe("DepositImageHandler", () => {
       "R2 refuse",
     );
     expect(library.registered).toEqual([]);
+  });
+
+  it("range l'image NEUVE dans la série demandée, et le fait la nomme", async () => {
+    const library = new FakeLibrary();
+    const journal = new RecordingMediaJournal();
+    const handler = new DepositImageHandler(
+      new FakeStore(),
+      library,
+      new FakeSeries(),
+      journal,
+      new RecordingFailures(),
+      new DirectUnitOfWork(),
+    );
+
+    const result = await handler.execute(new DepositImageCommand(png(400, 400), "", "series_ete"));
+
+    expect(library.registered[0]?.seriesId).toBe("series_ete");
+    expect(result).toMatchObject({ seriesId: "series_ete", alreadyInLibrary: false });
+    expect(journal.entries[0]?.payload).toMatchObject({
+      series: { id: "series_ete", name: "Été" },
+    });
+  });
+
+  it("refuse une série inconnue AVANT de ranger les octets", async () => {
+    // L3 : les octets partent au bucket avant la transaction. Vérifier la
+    // série après aurait laissé un objet dans le bucket pour un dépôt refusé.
+    const store = new FakeStore();
+    const library = new FakeLibrary();
+    const journal = new RecordingMediaJournal();
+    const handler = new DepositImageHandler(
+      store,
+      library,
+      new FakeSeries(),
+      journal,
+      new RecordingFailures(),
+      new DirectUnitOfWork(),
+    );
+
+    await expect(
+      handler.execute(new DepositImageCommand(png(400, 400), "", "series_disparue")),
+    ).rejects.toThrow(MediaSeriesNotFoundError);
+    expect(store.puts).toEqual([]);
+    expect(library.registered).toEqual([]);
+    expect(journal.entries).toEqual([]);
+  });
+
+  it("un redépôt garde la série d'ORIGINE, n'écrit rien, et le dit (D2)", async () => {
+    const origin: RegisteredMedia = {
+      id: "media_0",
+      url: "https://media.example/products/deadbeef.png",
+      storageKey: "products/deadbeef.png",
+      contentType: "image/png",
+      width: 400,
+      height: 400,
+      bytes: 24,
+      seriesId: "series_printemps",
+    };
+    const library = new FakeLibrary([origin]);
+    const journal = new RecordingMediaJournal();
+    const handler = new DepositImageHandler(
+      new FakeStore(),
+      library,
+      new FakeSeries(),
+      journal,
+      new RecordingFailures(),
+      new DirectUnitOfWork(),
+    );
+
+    const result = await handler.execute(new DepositImageCommand(png(400, 400), "", "series_ete"));
+
+    expect(result).toEqual({ ...origin, alreadyInLibrary: true });
+    expect(library.registered).toEqual([]);
+    expect(journal.entries).toEqual([]);
   });
 });

@@ -228,6 +228,8 @@ describe("moduleOf — la médiathèque", () => {
     ["media_asset.discarded", "mediatheque"],
     ["media_tag.renamed", "mediatheque"],
     ["media_tag.removed", "mediatheque"],
+    ["media_series.created", "mediatheque"],
+    ["media_series.described", "mediatheque"],
   ])("%s → %s", (type, module) => {
     expect(moduleOf(type)).toBe(module);
   });

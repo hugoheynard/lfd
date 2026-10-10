@@ -5,6 +5,8 @@ import { changesBetween } from "../../platform/journal/changes.js";
 import { MEDIA_EVENTS, MediaJournal } from "../journal/media-journal.js";
 import { MediaLibraryReader } from "../domain/ports/media-library-reader.js";
 import { MediaLibraryWriter } from "../domain/ports/media-library-writer.js";
+import { MediaSeriesReader, type MediaSeriesLabel } from "../domain/ports/media-series.js";
+import { MediaSeriesNotFoundError } from "../domain/errors/media-series-errors.js";
 import { altText, SOURCE_LOCALE } from "../domain/value-objects/alt-text.js";
 import {
   focalPoint,
@@ -27,6 +29,12 @@ export class SaveMediaDetailsCommand {
     readonly tags: readonly string[],
     readonly alt: Readonly<Record<string, string>>,
     readonly focal: FocalPoint | null,
+    /**
+     * La série (L3) : un identifiant la rattache, `null` la détache, et
+     * `undefined` n'y touche PAS — le panneau renvoie tous ses champs à chaque
+     * geste, et un champ absent ne doit rien changer.
+     */
+    readonly seriesId?: string | null | undefined,
   ) {}
 }
 
@@ -35,6 +43,7 @@ export class SaveMediaDetailsHandler implements ICommandHandler<SaveMediaDetails
   constructor(
     private readonly library: MediaLibraryWriter,
     private readonly readers: MediaLibraryReader,
+    private readonly series: MediaSeriesReader,
     private readonly journal: MediaJournal,
     private readonly uow: UnitOfWork,
   ) {}
@@ -70,10 +79,23 @@ export class SaveMediaDetailsHandler implements ICommandHandler<SaveMediaDetails
       ),
       focal: focalPoint(command.focal),
     };
+    const series = await this.seriesAfter(command.seriesId, before.series);
 
     const changes = changesBetween(
-      { name: before.name, tags: [...before.tags], alt: before.alt, focal: before.focal },
-      { name: details.name, tags: [...details.tags], alt: details.alt, focal: details.focal },
+      {
+        name: before.name,
+        tags: [...before.tags],
+        alt: before.alt,
+        focal: before.focal,
+        series: namedSeries(before.series),
+      },
+      {
+        name: details.name,
+        tags: [...details.tags],
+        alt: details.alt,
+        focal: details.focal,
+        series: namedSeries(series),
+      },
     );
 
     await this.uow.run(async () => {
@@ -92,9 +114,37 @@ export class SaveMediaDetailsHandler implements ICommandHandler<SaveMediaDetails
             // les trois champs à chaque geste, même quand il n'en change qu'un.
             // Tracer « rien n'a bougé » remplirait le journal de bruit.
             this.journal.untraced("aucune décision modifiée");
-      await this.library.describe(url, details, ticket);
+      await this.library.describe(url, { ...details, seriesId: series?.id ?? null }, ticket);
     });
   }
+
+  /**
+   * La série après le geste. Absente : celle d'avant. Changée : relue, pour
+   * refuser une série inconnue en 404 nommé plutôt qu'en clé étrangère.
+   */
+  private async seriesAfter(
+    requested: string | null | undefined,
+    before: MediaSeriesLabel | null,
+  ): Promise<MediaSeriesLabel | null> {
+    if (requested === undefined) {
+      return before;
+    }
+    if (requested === null || requested === before?.id) {
+      return requested === null ? null : before;
+    }
+    const found = await this.series.find(requested);
+    if (found === null) {
+      throw new MediaSeriesNotFoundError(requested);
+    }
+    return found;
+  }
+}
+
+/** La série telle que le journal la cite : son id et son titre du moment. */
+function namedSeries(
+  series: MediaSeriesLabel | null,
+): { readonly id: string; readonly name: string } | null {
+  return series === null ? null : { id: series.id, name: series.title };
 }
 
 /**

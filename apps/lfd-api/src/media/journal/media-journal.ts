@@ -32,8 +32,12 @@ import { ScopedJournal } from "../../platform/journal/scoped-journal.js";
  * `media_tag` (L1, 2026-10-10) : un MOT-CLÉ, quand un geste le vise dans tout
  * le fonds. Son `subjectId` est le mot lui-même — un vocabulaire libre n'a
  * pas d'autre identité.
+ *
+ * `media_series` (L3, 2026-10-10) : une SÉRIE, par son identifiant. Le
+ * rattachement d'une image à une série, lui, reste un fait de l'IMAGE
+ * (`media_asset.described`) : c'est elle qui change.
  */
-export type MediaSubjectType = "media_asset" | "media_tag";
+export type MediaSubjectType = "media_asset" | "media_tag" | "media_series";
 
 /**
  * Les faits du fonds. Ils décrivent la vie d'une IMAGE — ou, depuis L1
@@ -56,6 +60,10 @@ export const MEDIA_EVENTS = {
   tagRenamed: "media_tag.renamed",
   /** Un mot-clé retiré de toutes les images qui le portent. */
   tagRemoved: "media_tag.removed",
+  /** Une série ouverte (L3) — titre, jour de prise de vue, note. */
+  seriesCreated: "media_series.created",
+  /** Son titre, son jour ou sa note corrigés — le diff. */
+  seriesDescribed: "media_series.described",
 } as const satisfies Readonly<Record<string, JournalFactType>>;
 
 /**

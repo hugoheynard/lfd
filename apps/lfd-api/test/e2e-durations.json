@@ -142,6 +142,7 @@
   "test/mandate-scheme.e2e-spec.ts": 7755,
   "test/mandate.e2e-spec.ts": 6766,
   "test/media-feed.e2e-spec.ts": 13479,
+  "test/media-series.e2e-spec.ts": 26508,
   "test/media-tags.e2e-spec.ts": 7300,
   "test/me-establishment.e2e-spec.ts": 3105,
   "test/me.e2e-spec.ts": 7571,

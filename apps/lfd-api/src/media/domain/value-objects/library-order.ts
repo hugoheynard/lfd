@@ -6,10 +6,10 @@
  * l'image, et sans elle deux dépôts du même instant pourraient changer de place
  * entre deux lectures.
  *
- * 🔴 Une table d'ordres, pas un `switch` : la prise de vue (L3) sera une entrée
- * de plus ici, sans branche ajoutée ailleurs.
+ * 🔴 Une table d'ordres, pas un `switch` : la prise de vue (`shot`, L3) y est
+ * entrée comme une ligne de plus, sans branche ajoutée ailleurs.
  */
-export const LIBRARY_SORTS = ["deposited", "name", "uses"] as const;
+export const LIBRARY_SORTS = ["deposited", "name", "uses", "shot"] as const;
 export type LibrarySort = (typeof LIBRARY_SORTS)[number];
 
 /** La clé d'un ordre : un instant ISO, une étiquette, un compte. */
@@ -34,6 +34,8 @@ export interface RankedImage {
   readonly name: string;
   readonly depositedAt: Date;
   readonly uses: number;
+  /** Le jour de prise de vue de sa série, `AAAA-MM-JJ` — `null` sans série ni date. */
+  readonly shotOn: string | null;
 }
 
 interface LibraryOrder {
@@ -45,6 +47,16 @@ interface LibraryOrder {
 }
 
 const byText = (a: string, b: string): number => (a < b ? -1 : a > b ? 1 : 0);
+
+/** Une clé vide va EN DERNIER, quel que soit le sens des autres. */
+function emptyLast(a: string, b: string, compare: (a: string, b: string) => number): number {
+  if ((a === "") !== (b === "")) {
+    return a === "" ? 1 : -1;
+  }
+  return compare(a, b);
+}
+
+const DAY_KEY = /^\d{4}-\d{2}-\d{2}$/;
 
 const ORDERS: Readonly<Record<LibrarySort, LibraryOrder>> = {
   deposited: {
@@ -60,15 +72,16 @@ const ORDERS: Readonly<Record<LibrarySort, LibraryOrder>> = {
     keyOf: (image) => image.name,
     // Une image sans étiquette n'a rien à classer : elle va EN DERNIER, sans
     // quoi le tri alphabétique ouvrirait sur la pile de ce que personne n'a nommé.
-    compare: (a, b) => {
-      const left = String(a);
-      const right = String(b);
-      if ((left === "") !== (right === "")) {
-        return left === "" ? 1 : -1;
-      }
-      return byText(left, right);
-    },
+    compare: (a, b) => emptyLast(String(a), String(b), byText),
     accepts: (key): key is string => typeof key === "string",
+  },
+  shot: {
+    // Le jour de prise de vue de la série ; `""` = sans série, ou série sans
+    // date — rangées EN DERNIER : on ne sait pas où les mettre dans le temps.
+    keyOf: (image) => image.shotOn ?? "",
+    // La plus récente d'abord. Des jours `AAAA-MM-JJ` se comparent comme du texte.
+    compare: (a, b) => emptyLast(String(a), String(b), (left, right) => byText(right, left)),
+    accepts: (key): key is string => typeof key === "string" && (key === "" || DAY_KEY.test(key)),
   },
   uses: {
     keyOf: (image) => image.uses,
