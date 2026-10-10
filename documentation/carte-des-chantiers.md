@@ -50,7 +50,7 @@ puis ce qui rend durable ce qui ne l'est pas, puis le confort.
 | 11  | Les routes de déclaration de bacs encore servies par la livraison (4 e2e à réécrire d'abord)                                  | M      | —                   | `colisage/colisage.md` §9 a                                        |
 | 12  | Le journal : aucun fait pour la tentative automatique de facture, ni pour une facture signalée                                | S      | —                   | `comptabilite/facturation/facture-emise.md`                        |
 | 13  | Le bandeau d'installation de l'app cliente                                                                                    | S      | —                   | `todos/todo-installation-app-cliente.md`                           |
-| 14  | « Mon compte » ouvre l'ouverture pro à qui n'en a pas besoin                                                                  | S      | —                   | `todos/todo-releve-version-deployee.md` §1                         |
+| 14  | ✅ déjà fait le 2026-09-22 (`company-screens.ts`) — le TODO ne le disait pas ; corrigé le 2026-10-10                          | —      | —                   | `todos/todo-releve-version-deployee.md` §1                         |
 
 ## 4. Écrits, en attente d'une décision de Hugo
 

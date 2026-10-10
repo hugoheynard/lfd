@@ -10,6 +10,13 @@
 
 ## 1. « Mon compte » ouvre une ouverture de compte pro qu'on n'a pas demandée
 
+> ✅ **Corrigé le 2026-09-22, constaté le 2026-10-10** : le menu ET l'adresse se
+> ferment sans société, par une seule règle lue des deux côtés
+> (`apps/lfc-ecommerce-frontend/src/app/client/company-screens.ts`,
+> `companyScreensClosed`), sauf déclaration pro en vol. La porte pro vit sur
+> `/mon-profil`. Ce qui suit est le constat d'origine, gardé pour l'histoire ;
+> les trois chantiers qu'il a ouverts sont renvoyés en fin de section.
+
 **Ce qu'on voit.** Connecté sur un compte perso, le menu propose « Mon compte ».
 L'écran ne montre pas un compte : il montre le **premier pas d'une déclaration
 d'établissement** — SIRET, raison sociale — alors que rien n'a été demandé.
