@@ -7,6 +7,7 @@
           class="cell"
           [class.alone]="cell.desk.alone"
           [class.tall]="cell.desk.rows > 1"
+          [class.banner]="slot.object.shape === 'banner'"
           [class.full]="cell.desk.cols === fullWidth && cell.mobile.cols === pileWidth"
           [style.--d-col]="cell.desk.col"
           [style.--d-row]="cell.desk.row"

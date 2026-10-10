@@ -263,6 +263,33 @@
   }
 }
 
+/* 🔴 LA BANNIÈRE TIENT LE 21/9 (D9 du plan de la médiathèque), à toutes les
+   largeurs : la grille ne connaît que des cases, c'est le rendu qui fixe le
+   format. L'image couvre, recadrée AU CENTRE — la vitrine ne porte pas le
+   point focal (R12) —, et le texte passe par-dessus, sur le voile du « plein »
+   (seul côté que la forme permet). La phrase se coupe à deux lignes : sur un
+   téléphone, la bannière ne mesure que 160 px de haut. */
+:host(.shape-banner) {
+  height: auto;
+  aspect-ratio: 21 / 9;
+}
+
+:host(.shape-banner) .layout {
+  min-height: 0;
+  overflow: hidden;
+}
+
+:host(.shape-banner) .art {
+  object-position: center;
+}
+
+:host(.shape-banner) .lede {
+  display: -webkit-box;
+  -webkit-box-orient: vertical;
+  -webkit-line-clamp: 2;
+  overflow: hidden;
+}
+
 /* Une annonce SANS image (autorisée depuis le 2026-09-24) : le texte prend la
    case entière, quel que soit le côté réglé, et se centre verticalement. Posée
    en dernier, elle l'emporte sur les grilles à deux colonnes du côté. */

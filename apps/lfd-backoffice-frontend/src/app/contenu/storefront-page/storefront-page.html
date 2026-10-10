@@ -1,8 +1,8 @@
 <fold-page-layout icon="view" title="Vitrine boutique">
   <p description>
-    Composer la page d’un rayon : une grille de {{ columns }} colonnes, des formes glissées dessus,
-    et leurs contenus ; les cases libres reçoivent le reste du rayon. Enregistrer publie : la
-    boutique montre la vitrine dès l’enregistrement.
+    Composer l’accueil ou la page d’un rayon : une grille de {{ columns }} colonnes, des formes
+    glissées dessus, et leurs contenus ; les cases libres reçoivent le reste du rayon. Enregistrer
+    publie : la boutique montre la vitrine dès l’enregistrement.
   </p>
 
   @if (persistence.status() === 'ready' && canWrite()) {
@@ -124,15 +124,24 @@
       <div class="settings">
         <fold-listbox
           size="sm"
-          label="Rayon"
+          label="Page"
           [options]="shelfOptions()"
           [value]="store.shelf()"
           (selectionChange)="store.pickShelf($event)"
-        />
+        >
+          <ng-template #option let-o>
+            <span class="page-option">
+              @if (o.value === home) {
+                <fold-icon name="home" size="sm" />
+              }
+              {{ o.label }}
+            </span>
+          </ng-template>
+        </fold-listbox>
         <fold-number-input
           size="sm"
-          label="Rangées de ce rayon"
-          hint="Chaque rayon a les siennes."
+          label="Rangées de cette page"
+          hint="Chaque page a les siennes."
           integer
           [min]="minRows"
           [max]="maxRows"
@@ -198,7 +207,7 @@
                   [style.grid-row]="cell.row"
                   aria-hidden="true"
                 >
-                  article du rayon
+                  {{ store.onHome() ? 'reste vide' : 'article du rayon' }}
                 </div>
               }
 
@@ -206,6 +215,7 @@
                 <div
                   class="block draggable"
                   [class.selected]="store.selectedId() === block.id"
+                  [class.banner]="block.format === 'banner'"
                   [class.dragging]="drag()?.blockId === block.id && drag()?.moved"
                   [style.grid-column]="block.column + ' / span ' + spec(block.format).columns"
                   [style.grid-row]="block.row + ' / span ' + spec(block.format).rows"
@@ -231,6 +241,9 @@
                     {{ spec(block.format).label }}
                     <span class="block-size">
                       {{ spec(block.format).columns }}×{{ spec(block.format).rows }}
+                      @if (block.format === 'banner') {
+                        · 21/9
+                      }
                     </span>
                   </span>
                   @if (contentLabel(block); as label) {
@@ -275,25 +288,37 @@
                 ></div>
               }
             </div>
-            <span class="caption flow"
-              >↓ le reste du rayon s’écoule ici, en cartes, sans pagination</span
-            >
+            @if (!store.onHome()) {
+              <span class="caption flow"
+                >↓ le reste du rayon s’écoule ici, en cartes, sans pagination</span
+              >
+            }
           </div>
         </fold-card>
 
         <!-- La colonne de droite n'a plus que l'aperçu mobile de la page : l'objet
-             se règle dans son dialogue (double-clic, Entrée ou « Modifier »). -->
-        <fold-card>
-          <fold-element-title
-            title="Mobile"
-            subtitle="Déduit : 2 colonnes, dans l’ordre de lecture."
-          />
-          <app-storefront-mobile-preview
-            [blocks]="store.pageBlocks()"
-            [rows]="store.rows()"
-            [returned]="store.returnedIds()"
-          />
-        </fold-card>
+             se règle dans son dialogue (double-clic, Entrée ou « Modifier »).
+             Sur l'Accueil, la porte « Je passe la prendre » s'y règle aussi :
+             c'est un réglage de la page, pas un objet de la grille (R10). -->
+        <div class="side">
+          @if (store.onHome()) {
+            <app-storefront-door-panel
+              [image]="store.pickupDoorImage()"
+              (changed)="store.pickupDoorImage.set($event)"
+            />
+          }
+          <fold-card>
+            <fold-element-title
+              title="Mobile"
+              subtitle="Déduit : 2 colonnes, dans l’ordre de lecture."
+            />
+            <app-storefront-mobile-preview
+              [blocks]="store.pageBlocks()"
+              [rows]="store.rows()"
+              [returned]="store.returnedIds()"
+            />
+          </fold-card>
+        </div>
       </div>
     }
   }

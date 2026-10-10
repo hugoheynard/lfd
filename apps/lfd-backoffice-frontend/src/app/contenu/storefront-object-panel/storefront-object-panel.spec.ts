@@ -110,6 +110,6 @@ describe('StorefrontObjectPanel', () => {
     panel.formatChange.subscribe((f) => formats.push(f));
     panel.formatChange.emit('tile');
     expect(formats).toEqual(['tile']);
-    expect(panel['formatOptions']).toHaveLength(7);
+    expect(panel['formatOptions']).toHaveLength(8);
   });
 });

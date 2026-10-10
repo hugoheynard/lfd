@@ -1,4 +1,5 @@
 import type {
+  StorefrontImage,
   StorefrontObjectView,
   StorefrontPayloadInput,
   StorefrontTemplateView,
@@ -8,6 +9,7 @@ import {
   carouselOf,
   contentsOf,
   DEFAULT_ROWS,
+  HOME_PAGE,
   mediaFitOf,
   mediaSideOf,
   type ShelfKey,
@@ -35,9 +37,22 @@ export interface EditorState {
   readonly rows: Readonly<Record<ShelfKey, number>>;
   readonly blocks: readonly EditorBlock[];
   readonly templates: readonly StorefrontTemplate[];
+  /**
+   * L'image de la porte « Je passe la prendre » — un réglage de la page
+   * Accueil, pas un objet de la grille (R10 du plan de la médiathèque).
+   * 🔴 Elle repart à chaque `PUT` : le serveur tient une porte absente pour
+   * `null`, et un éditeur qui ne la renverrait pas l'effacerait.
+   */
+  readonly pickupDoorImage: StorefrontImage | null;
 }
 
-export const EMPTY_STATE: EditorState = { revision: 0, rows: {}, blocks: [], templates: [] };
+export const EMPTY_STATE: EditorState = {
+  revision: 0,
+  rows: {},
+  blocks: [],
+  templates: [],
+  pickupDoorImage: null,
+};
 
 export function rowsIn(state: Pick<EditorState, 'rows'>, shelf: ShelfKey): number {
   return state.rows[shelf] ?? DEFAULT_ROWS;
@@ -83,6 +98,8 @@ export function stateOf(view: StorefrontView): EditorState {
     rows: Object.fromEntries(view.pages.map((page) => [page.shelfKey, page.rows])),
     blocks: view.objects.map(blockOf),
     templates: view.templates.map(templateOf),
+    pickupDoorImage:
+      view.pages.find((page) => page.shelfKey === HOME_PAGE)?.pickupDoorImage ?? null,
   };
 }
 
@@ -116,14 +133,25 @@ function idOf(id: string): { readonly id?: string } {
  * (`composition-rules.ts`, `assertPlacements`, lu le 2026-09-24).
  */
 function pageKeys(state: EditorState): readonly ShelfKey[] {
-  return [...new Set([...Object.keys(state.rows), ...state.blocks.flatMap((b) => b.shelves)])];
+  const door = state.pickupDoorImage === null ? [] : [HOME_PAGE];
+  return [
+    ...new Set([...Object.keys(state.rows), ...state.blocks.flatMap((b) => b.shelves), ...door]),
+  ];
+}
+
+/** Une page, telle que le `PUT` l'attend : l'Accueil seul porte la porte. */
+function pagePayload(state: EditorState, shelfKey: ShelfKey) {
+  const rows = rowsIn(state, shelfKey);
+  return shelfKey === HOME_PAGE
+    ? { shelfKey, rows, pickupDoorImage: state.pickupDoorImage }
+    : { shelfKey, rows };
 }
 
 /** La vitrine ENTIÈRE, telle que le `PUT` l'attend. */
 export function payloadOf(state: EditorState): StorefrontPayloadInput {
   return {
     revision: state.revision,
-    pages: pageKeys(state).map((shelfKey) => ({ shelfKey, rows: rowsIn(state, shelfKey) })),
+    pages: pageKeys(state).map((shelfKey) => pagePayload(state, shelfKey)),
     objects: state.blocks.map((block) => ({
       ...idOf(block.id),
       ...settingsOf(block),

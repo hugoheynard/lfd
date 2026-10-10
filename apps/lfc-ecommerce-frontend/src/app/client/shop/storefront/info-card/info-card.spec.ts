@@ -153,4 +153,12 @@ describe('InfoCard', () => {
       expect(el().querySelector('button')).toBeNull();
     });
   });
+
+  /** D9 : la bannière tient le 21/9 au rendu, image pleine et texte par-dessus. */
+  it('une bannière se rend en forme `banner`, image pleine', () => {
+    render({ shape: 'banner', mediaSide: 'full' });
+    expect(el().classList).toContain('shape-banner');
+    expect(el().classList).toContain('side-full');
+    expect(text('.title')).toBe('Le rayon de Noël');
+  });
 });

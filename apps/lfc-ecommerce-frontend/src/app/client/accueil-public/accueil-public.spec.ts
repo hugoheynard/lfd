@@ -28,6 +28,9 @@ import { CartFulfillmentDays } from '../shop/cart-fulfillment-days.service';
 import { ShopCatalogue } from '../shop/shop-catalogue.store';
 import type { PublicContactSettingsView } from '@lfd/contracts/shop-values';
 import { ContactSettingsStore, NO_CONTACT_SETTINGS } from '../shop/contact-settings.store';
+import type { StorefrontPageState } from '../shop/storefront/shop-storefront.store';
+import { ShopStorefront } from '../shop/storefront/shop-storefront.store';
+import { NOEL, storefrontObject } from '../shop/storefront/storefront.fixture';
 import { AccueilPublic } from './accueil-public';
 
 /**
@@ -116,6 +119,13 @@ let servedOperations: readonly ShopOperationView[] = [];
 
 class FakeShop {
   constructor(private readonly sold: readonly string[]) {}
+  readonly items = signal<readonly { readonly sku: string }[]>([]);
+  operationOf(): null {
+    return null;
+  }
+  quantityOf(): number {
+    return 0;
+  }
   readonly operations = signal<readonly ShopOperationView[]>(servedOperations);
   readonly posed = new Map<string, number>();
   hydrate(): Promise<void> {
@@ -148,6 +158,12 @@ function line(productName: string, quantity: number, sku = productName): Custome
   return { ...LIVE_PICKUP.lines[0]!, sku, productName, quantity };
 }
 
+/**
+ * La page `home` de la vitrine servie au montage suivant ; `null` : personne
+ * ne l'a demandée. Doublée : l'accueil ne lit pas le réseau ici.
+ */
+let homeState: StorefrontPageState | null = null;
+
 /** Le réglage de contact servi au montage suivant ; le défaut est vide. */
 let contactSettings: PublicContactSettingsView = NO_CONTACT_SETTINGS;
 
@@ -176,6 +192,14 @@ async function mount(
       {
         provide: ContactSettingsStore,
         useValue: { settings: signal(contactSettings), hydrate: () => Promise.resolve() },
+      },
+      {
+        provide: ShopStorefront,
+        useValue: {
+          reader: signal('visiteur'),
+          stateOf: (key: string) => (key === 'home' ? homeState : null),
+          load: () => Promise.resolve(),
+        },
       },
       ...whoProviders(who),
     ],
@@ -622,5 +646,70 @@ describe('AccueilPublic — « En ce moment », les vraies opérations datées',
       'Noël au fournil',
     );
     expect(host.textContent).not.toContain('Pâques prend');
+  });
+});
+
+describe('AccueilPublic — la vitrine de l’Accueil (L6)', () => {
+  afterEach(() => {
+    homeState = null;
+  });
+
+  const banner = storefrontObject({
+    id: 'b-1',
+    shape: 'banner',
+    mediaSide: 'full',
+    contents: [{ ...NOEL, operationKey: null }],
+  });
+
+  it('un accueil vide n’affiche rien — ni grille, ni « aucun article »', async () => {
+    homeState = { status: 'ready', page: { rows: 6, objects: [], pickupDoorImage: null } };
+    const fixture = await mount([point({ id: 'a' })]);
+    const root = fixture.nativeElement as HTMLElement;
+    expect(root.querySelector('app-home-storefront')).not.toBeNull();
+    expect(root.querySelector('app-shelf-grid')).toBeNull();
+  });
+
+  it('une vitrine illisible n’affiche rien non plus', async () => {
+    homeState = { status: 'failed' };
+    const fixture = await mount([point({ id: 'a' })]);
+    expect((fixture.nativeElement as HTMLElement).querySelector('app-shelf-grid')).toBeNull();
+  });
+
+  it('pose la bannière de l’Accueil, en forme 21/9', async () => {
+    homeState = { status: 'ready', page: { rows: 2, objects: [banner], pickupDoorImage: null } };
+    const fixture = await mount([point({ id: 'a' })]);
+    const card = (fixture.nativeElement as HTMLElement).querySelector('app-info-card');
+    expect(card?.classList).toContain('shape-banner');
+    expect(card?.classList).toContain('side-full');
+  });
+
+  it('la porte prend la photo choisie, redimensionnée, avec son texte alternatif', async () => {
+    homeState = {
+      status: 'ready',
+      page: {
+        rows: 6,
+        objects: [],
+        pickupDoorImage: { url: 'https://media.test/porte.jpg', alt: { fr: 'Le comptoir' } },
+      },
+    };
+    const fixture = await mount([point({ id: 'a' })]);
+    const root = fixture.nativeElement as HTMLElement;
+    const page = root.querySelector<HTMLElement>('.page');
+    expect(page?.style.getPropertyValue('--lfc-photo-door')).toContain(
+      'https://media.test/cdn-cgi/image/width=1800',
+    );
+    const photo = root.querySelector('.banner-photo');
+    expect(photo?.getAttribute('role')).toBe('img');
+    expect(photo?.getAttribute('aria-label')).toBe('Le comptoir');
+  });
+
+  it('sans photo choisie, la porte garde le fond de la palette — aucune URL tierce', async () => {
+    homeState = { status: 'ready', page: { rows: 6, objects: [], pickupDoorImage: null } };
+    const fixture = await mount([point({ id: 'a' })]);
+    const root = fixture.nativeElement as HTMLElement;
+    expect(
+      root.querySelector<HTMLElement>('.page')?.style.getPropertyValue('--lfc-photo-door'),
+    ).toBe('');
+    expect(root.querySelector('.banner-photo')?.getAttribute('aria-hidden')).toBe('true');
   });
 });

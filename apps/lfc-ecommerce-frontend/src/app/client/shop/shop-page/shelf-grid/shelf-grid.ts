@@ -1,18 +1,13 @@
 import { ChangeDetectionStrategy, Component, computed, inject, input } from '@angular/core';
 import { outputFromObservable, takeUntilDestroyed } from '@angular/core/rxjs-interop';
 import type { PublicStorefrontPageView, ShopItemView } from '@lfd/contracts';
-import {
-  composeShelf,
-  GRID_COLUMNS,
-  hasComposedObject,
-  MOBILE_COLUMNS,
-} from '@lfd/storefront-layout';
+import { GRID_COLUMNS, MOBILE_COLUMNS } from '@lfd/storefront-layout';
 
 import { ClientCart } from '../../../cart/client-cart.service';
 import { ClientCopyService } from '../../../copy/client-copy.service';
 import { ProductTile } from '../../product-tile/product-tile';
 import { ShopCatalogue } from '../../shop-catalogue.store';
-import { withServedAnnouncements } from '../../storefront/served-announcements';
+import { composedCells } from '../../storefront/composed-cells';
 import { StorefrontActions } from '../../storefront/storefront-actions';
 import { StorefrontSlot } from '../../storefront/storefront-slot/storefront-slot';
 
@@ -90,12 +85,12 @@ export class ShelfGrid {
     if (page === null) {
       return null;
     }
-    const cells = composeShelf(
-      withServedAnnouncements(page, (key) => this.catalogue.operationOf(key) !== null),
+    return composedCells(
+      page,
       this.products().map((item) => item.sku),
       this.served(),
+      (key) => this.catalogue.operationOf(key) !== null,
     );
-    return hasComposedObject(cells) ? cells : null;
   });
 
   /** Une case pleine largeur au bureau reste pleine largeur quand la grille perd des colonnes. */

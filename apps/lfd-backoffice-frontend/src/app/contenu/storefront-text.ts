@@ -165,3 +165,20 @@ export function emptyInfo(): InfoContent {
     action: 'none',
   };
 }
+
+/**
+ * Ce qui empêcherait le serveur d'accepter le texte alternatif d'une image
+ * posée hors d'une info — la porte de l'Accueil : trop long dans une langue,
+ * ou traduit sans son français. Les mêmes règles que celles d'une info.
+ */
+export function imageAltIssues(alt: StorefrontText | null): readonly string[] {
+  const limit = TEXT_LIMITS.imageAlt;
+  const issues: string[] = [];
+  if (STOREFRONT_LOCALES.some((locale) => textIn(alt, locale).trim().length > limit.max)) {
+    issues.push(`${limit.label} tient en ${limit.max} caractères, dans chaque langue.`);
+  }
+  if (alt !== null && alt.fr.trim() === '') {
+    issues.push(`${limit.label} a une traduction : écrivez aussi son français.`);
+  }
+  return issues;
+}

@@ -150,3 +150,26 @@
   margin: 0;
   padding-inline-start: var(--fold-space-lg);
 }
+
+// La colonne de droite : la porte de l'Accueil, puis l'aperçu mobile.
+.side {
+  display: flex;
+  flex-direction: column;
+  gap: var(--fold-space-lg);
+  min-width: 0;
+}
+
+// L'Accueil se distingue des rayons par sa maison.
+.page-option {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--fold-space-xs);
+}
+
+// La bannière se montre en 21/9, centrée dans ses 5×2 cases (D9).
+.block.banner .block-mock {
+  flex: 1 1 0;
+  align-self: center;
+  max-width: 100%;
+  aspect-ratio: 21 / 9;
+}

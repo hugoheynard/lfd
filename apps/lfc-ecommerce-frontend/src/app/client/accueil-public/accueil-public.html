@@ -9,7 +9,7 @@
      contextes d'empilement différents ne se superposent pas dans l'ordre qu'on
      veut. Le sur-titre, lui, reprend les tokens de l'en-tête de page du
      dépôt. -->
-<div class="page">
+<div class="page" [style.--lfc-photo-door]="doorPhoto()">
   <header class="intro">
     <!-- 🔴 TROIS ÉTATS, UNE SEULE ACCROCHE (`SPEC.md` §1 du handoff du
          2026-09-20). Le visiteur lit « Bienvenue » et les trois verbes ; le
@@ -89,10 +89,15 @@
 
     @if (!pro()) {
       <section class="banner">
-        <!-- La photo du fournil, FONDUE dans l'encre par un seul dégradé diagonal :
+        <!-- La photo de la porte, choisie dans la vitrine (R10), FONDUE dans l'encre par un seul dégradé diagonal :
          opaque à gauche, où vit le texte, presque claire à droite, où l'on veut
          voir la vitrine. -->
-        <span class="banner-photo" aria-hidden="true"></span>
+        <span
+          class="banner-photo"
+          [attr.role]="doorAlt() ? 'img' : null"
+          [attr.aria-label]="doorAlt()"
+          [attr.aria-hidden]="doorAlt() ? null : 'true'"
+        ></span>
         <span class="banner-veil" aria-hidden="true"></span>
 
         <!-- 🔴 La pastille est SŒUR du bloc de texte, pas son premier enfant : c'est
@@ -291,6 +296,13 @@
       />
     }
 
+    <!-- LA VITRINE DE L'ACCUEIL (L6 du plan de la médiathèque) : ce que
+         l'équipe compose dans l'éditeur, par la grille des rayons. Elle se pose
+         AVANT « En ce moment », à la place que la maquette donne à sa grande
+         image : après ce qui sert (portes, raccourcis, contact, suivis), avant
+         l'opération du moment. Vide, elle n'existe pas. -->
+    <app-home-storefront [page]="homePage()" />
+
     <!-- EN CE MOMENT. `null` est un état de PREMIÈRE CLASSE : hors période, le
        bloc n'existe pas — pas de carte vide, pas de « bientôt ». L'or est
        réservé à ce bloc, et c'est le panneau lui-même qui le porte. -->
@@ -300,7 +312,7 @@
         [heading]="c().events.title"
         [lead]="c().events.lead"
         [cta]="c().events.cta"
-        (opened)="browse()"
+        (opened)="openEvent(dated)"
       />
     }
   </div>

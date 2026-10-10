@@ -1,0 +1,8 @@
+@if (shown(); as page) {
+  <app-shelf-grid
+    [products]="products"
+    [page]="page"
+    (shelfOpened)="openShelf($event)"
+    (opened)="openShop()"
+  />
+}

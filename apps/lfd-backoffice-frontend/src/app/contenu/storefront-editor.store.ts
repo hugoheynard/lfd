@@ -1,6 +1,6 @@
 import { computed, Injectable, signal } from '@angular/core';
 import { contentIssuesOf, returnedIdsOf, shelfOptionsOf } from './storefront-diagnostics';
-import type { StorefrontContent } from '@lfd/contracts';
+import type { StorefrontContent, StorefrontImage } from '@lfd/contracts';
 import {
   type CarouselSettings,
   checkRowLimit,
@@ -8,6 +8,7 @@ import {
   describeFormat,
   firstFreeCell,
   freeCells,
+  HOME_PAGE,
   type MediaFit,
   type MediaSide,
   onShelf,
@@ -46,6 +47,7 @@ import {
 import type { StorefrontObjectHost } from './storefront-object-host';
 import { announcedShelvesOf } from './storefront-operation-shelves';
 import { reshape } from './storefront-reshape';
+import { imageAltIssues } from './storefront-text';
 import {
   createTemplate,
   deleteTemplate,
@@ -55,6 +57,9 @@ import {
   type TemplateResult,
   updateTemplateLabel,
 } from './storefront-templates';
+
+/** Le nom de la page `home` dans l'éditeur. */
+export const HOME_LABEL = 'Accueil';
 
 /**
  * La composition de la vitrine, et les intentions qui la modifient.
@@ -79,6 +84,8 @@ export class StorefrontEditorStore implements StorefrontObjectHost {
   /** Tous les objets, de tous les rayons. */
   readonly blocks = signal<readonly EditorBlock[]>([]);
   readonly templates = signal<readonly StorefrontTemplate[]>([]);
+  /** La photo de la porte « Je passe la prendre » — un réglage de la page Accueil (R10). */
+  readonly pickupDoorImage = signal<StorefrontImage | null>(null);
   /**
    * La vitrine telle que chargée ou enregistrée, en payload : le point de comparaison.
    * Notifie à CHAQUE `apply`, même à l'identique : la page y remet sa sortie retenue.
@@ -95,6 +102,7 @@ export class StorefrontEditorStore implements StorefrontObjectHost {
     rows: this.rowsByShelf(),
     blocks: this.blocks(),
     templates: this.templates(),
+    pickupDoorImage: this.pickupDoorImage(),
   }));
 
   /** Des modifications que le serveur n'a pas. */
@@ -119,11 +127,21 @@ export class StorefrontEditorStore implements StorefrontObjectHost {
    * catalogue, on n'en sait rien — et l'on n'en affirme aucun.
    */
   readonly vanished = computed<readonly ShelfKey[]>(() =>
-    this.catalog() === null ? [] : vanishedShelves(this.usedShelves(), this.shelves()),
+    this.catalog() === null
+      ? []
+      : vanishedShelves(
+          this.usedShelves().filter((key) => key !== HOME_PAGE),
+          this.shelves(),
+        ),
   );
 
   /** Tant qu'il y en a, Enregistrer reste fermé (`contentIssuesOf`). */
-  readonly contentIssues = computed(() => contentIssuesOf(this.blocks(), this.shelfLabel));
+  readonly contentIssues = computed(() => [
+    ...contentIssuesOf(this.blocks(), this.shelfLabel),
+    ...imageAltIssues(this.pickupDoorImage()?.alt ?? null).map(
+      (issue) => `Porte « Je passe la prendre » de l’Accueil : ${issue}`,
+    ),
+  ]);
 
   /** Les objets qui rendent leurs cases au rayon (`returnedIdsOf`). */
   readonly returnedIds = computed(() => returnedIdsOf(this.blocks(), this.catalog()));
@@ -133,7 +151,12 @@ export class StorefrontEditorStore implements StorefrontObjectHost {
     () => new Map((this.catalog()?.products ?? []).map((product) => [product.sku, product.name])),
   );
 
-  readonly shelfLabel = (key: ShelfKey): string => shelfLabelIn(this.shelves(), key);
+  /** L'Accueil n'est pas un rayon : aucun catalogue ne le nomme, l'éditeur le fait. */
+  readonly shelfLabel = (key: ShelfKey): string =>
+    key === HOME_PAGE ? HOME_LABEL : shelfLabelIn(this.shelves(), key);
+
+  /** La page éditée est-elle l'Accueil ? Elle seule porte la porte. */
+  readonly onHome = computed(() => this.shelf() === HOME_PAGE);
 
   /** Les rangées d'un rayon — chacun a les siennes. */
   readonly rowsOf = (shelf: ShelfKey): number => rowsIn({ rows: this.rowsByShelf() }, shelf);
@@ -161,6 +184,7 @@ export class StorefrontEditorStore implements StorefrontObjectHost {
     this.rowsByShelf.set(state.rows);
     this.blocks.set(state.blocks);
     this.templates.set(state.templates);
+    this.pickupDoorImage.set(state.pickupDoorImage);
     this.baseline.set(JSON.stringify(payloadOf(state)));
     this.notice.set(null);
     if (!state.blocks.some((block) => block.id === this.selectedId())) {

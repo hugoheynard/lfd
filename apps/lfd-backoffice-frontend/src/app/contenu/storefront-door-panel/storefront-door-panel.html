@@ -1,0 +1,45 @@
+<fold-card>
+  <fold-element-title
+    variant="title"
+    [level]="3"
+    title="Porte « Je passe la prendre »"
+    subtitle="La photo du retrait, sur l’accueil de la boutique — recadrée au centre."
+  />
+  <div class="form">
+    @if (image(); as door) {
+      <img class="preview" [src]="door.url" [alt]="textIn(door.alt, 'fr')" />
+      <div class="field-group">
+        <span class="caption">Langue</span>
+        <fold-view-toggle
+          size="sm"
+          ariaLabel="Langue écrite"
+          [options]="localeOptions"
+          [value]="locale()"
+          (valueChange)="pickLocale($event)"
+        />
+      </div>
+      <fold-input
+        size="sm"
+        optional
+        [label]="altLabel()"
+        [hint]="altHint()"
+        [value]="textIn(door.alt, locale())"
+        (valueChange)="setAlt($event)"
+      />
+      <div class="actions">
+        <button foldButton type="button" size="sm" emphasis="outline" (click)="choose()">
+          Changer d’image
+        </button>
+        <button foldButton type="button" size="sm" emphasis="soft" (click)="remove()">
+          Retirer
+        </button>
+      </div>
+    } @else {
+      <div class="preview empty" aria-hidden="true"></div>
+      <span class="caption">Aucune photo : la porte garde un fond uni.</span>
+      <button foldButton type="button" size="sm" emphasis="outline" (click)="choose()">
+        Choisir dans la médiathèque
+      </button>
+    }
+  </div>
+</fold-card>

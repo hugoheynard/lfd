@@ -7,6 +7,7 @@ import {
   type ElementRef,
   inject,
   signal,
+  untracked,
   viewChild,
 } from '@angular/core';
 import { Router } from '@angular/router';
@@ -41,12 +42,16 @@ import { CONTACT_CARD_DEFAULTS } from '@lfd/contracts/shop-values';
 import { ContactBand } from '../shop/contact-band/contact-band';
 import { ContactSettingsStore, localizedOr, phonesFor } from '../shop/contact-settings.store';
 import { ShopCatalogue } from '../shop/shop-catalogue.store';
-import { datedEventOf, featuredOperation } from '../shop/operation-event';
+import { datedEventOf, featuredOperation, type DatedEvent } from '../shop/operation-event';
 import { ShopShortcuts, type ShortcutCard } from '../shop/shop-shortcuts/shop-shortcuts';
 import { orderLinesSummary, orderPlaceLabel, orderWeekday } from '../shop/last-order-summary';
 import { PublicSteps } from '../shop/public-steps/public-steps';
 import { ServiceDoors } from '../shop/service-doors/service-doors';
 import { SlotPickerDialog } from '../shop/slot-picker-dialog/slot-picker-dialog';
+import { sizedMedia, SHEET_WIDTHS } from '../shop/media-source';
+import { ShopStorefront } from '../shop/storefront/shop-storefront.store';
+import { HOME_PAGE } from '@lfd/storefront-layout';
+import { HomeStorefront } from './home-storefront/home-storefront';
 
 /**
  * **La boutique** — où l'on va une fois la maison et l'heure choisies, et aussi
@@ -102,6 +107,7 @@ interface House {
     ContactBand,
     CurrentEvents,
     FoldCalloutComponent,
+    HomeStorefront,
     LiveOrdersWell,
     PublicSteps,
     ServiceDoors,
@@ -393,6 +399,41 @@ export class AccueilPublic {
       : datedEventOf(operation, new Date(), this.locale.current(), this.t());
   });
 
+  private readonly storefront = inject(ShopStorefront);
+
+  /**
+   * La page `home` de la vitrine, ou `null` tant qu'elle n'est pas lue — et
+   * si elle ne l'a pas été : l'Accueil se passe alors de sa grille et de sa
+   * photo de porte, il ne tombe jamais en erreur pour elles.
+   */
+  protected readonly homePage = computed(() => {
+    const state = this.storefront.stateOf(HOME_PAGE);
+    return state?.status === 'ready' ? state.page : null;
+  });
+
+  /** La photo de la porte « Je passe la prendre », choisie dans la vitrine (R10), ou `null`. */
+  private readonly doorImage = computed(() => this.homePage()?.pickupDoorImage ?? null);
+
+  /**
+   * La photo, en valeur CSS, servie à la largeur d'une fiche (elle couvre la
+   * largeur de la page) et recadrée au centre (R12). `null` : la porte garde
+   * le fond de la palette.
+   */
+  protected readonly doorPhoto = computed(() => {
+    const image = this.doorImage();
+    return image === null ? null : `url(${JSON.stringify(sizedMedia(image.url, SHEET_WIDTHS[1]))})`;
+  });
+
+  /** Son texte alternatif dans la langue du visiteur, le français sinon ; `null` : décorative. */
+  protected readonly doorAlt = computed(() => {
+    const alt = this.doorImage()?.alt ?? null;
+    if (alt === null) {
+      return null;
+    }
+    const translated = alt[this.locale.current()];
+    return translated !== undefined && translated.trim() !== '' ? translated : alt.fr;
+  });
+
   /** Le rail des maisons, pour lire sa position de défilement. */
   private readonly rail = viewChild<ElementRef<HTMLUListElement>>('rail');
 
@@ -517,6 +558,15 @@ export class AccueilPublic {
     });
 
     void this.points.hydrate().finally(() => this.ready.set(true));
+
+    // La page `home` de la vitrine (L6), une fois par lecteur, comme un rayon :
+    // se reconnaître relit — une annonce peut viser une clientèle.
+    effect(() => {
+      this.storefront.reader();
+      untracked(() => {
+        void this.storefront.load(HOME_PAGE);
+      });
+    });
 
     // Le rail n'existe qu'une fois les points lus : on l'observe quand il
     // paraît, et on lâche l'observateur avec lui. `ResizeObserver` est absent
@@ -658,6 +708,14 @@ export class AccueilPublic {
 
   protected browse(): void {
     void this.router.navigate([SHOP]);
+  }
+
+  /**
+   * La carte d'opération mène au RAYON de l'opération (R13), comme la
+   * bannière : `browse()` ouvrait la boutique sur « Tout ».
+   */
+  protected openEvent(event: DatedEvent): void {
+    void this.router.navigate([event.route], { queryParams: event.queryParams });
   }
 
   /** Le QR de retrait — le MÊME écran que depuis « Mes commandes ». */

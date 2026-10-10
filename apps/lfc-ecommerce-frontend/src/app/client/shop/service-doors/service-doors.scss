@@ -207,17 +207,16 @@
    se lisait. Aucune mesure de géométrie ne pouvait le dire — seul l'œil.
 
    🔴 LA SOURCE VIENT DE L'ÉCRAN, par variable. Les portes ne connaissent pas
-   les images de la maison : l'URL du fournil vit dans `accueil-public.scss`,
-   qui la sert déjà au bandeau. La recopier ici ferait deux endroits à corriger
-   le jour où elle change.
+   les images de la maison : la photo de la porte est choisie dans la vitrine
+   (page Accueil) et posée par `accueil-public`, qui la sert déjà au bandeau.
 
    ⚠️ SANS SOURCE, PAS DE CALQUE : `--door-photo-*` n'a pas de valeur de repli.
    Une carte sans photo garde son voile, qui tient seul comme aplat.
 
    🔴 LA PHOTO DU COURSIER EST PROVISOIRE (Hugo, 2026-09-20 : « une photo pour
    voir »). Le dépôt n'a AUCUNE photographie de livraison — les fichiers de
-   `public/banners/` sont des SVG décoratifs de 1,3 ko. L'écran lui passe donc
-   celle du FOURNIL, pour juger de l'effet : derrière « On vous l'apporte »,
+   `public/banners/` sont des SVG décoratifs de 1,3 ko. Le coursier reprend donc
+   celle de la porte du retrait (le repli ci-dessous), pour juger de l'effet : derrière « On vous l'apporte »,
    elle montre une vitrine.
 
    ⚠️ À REMPLACER DÈS QU'UNE VRAIE IMAGE EXISTE — une ligne, dans

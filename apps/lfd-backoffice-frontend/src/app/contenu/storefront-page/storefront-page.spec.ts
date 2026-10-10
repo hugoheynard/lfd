@@ -758,3 +758,107 @@ describe('StorefrontPage — contenus', () => {
     ]);
   });
 });
+
+/** L'Accueil enregistré avec sa porte, à côté du « Tout » d'aujourd'hui. */
+function homeView(): StorefrontView {
+  const view = composedView();
+  return {
+    ...view,
+    pages: [
+      ...view.pages,
+      {
+        shelfKey: 'home',
+        rows: 3,
+        pickupDoorImage: { url: 'https://media.test/porte.jpg', alt: { fr: 'La porte du Labo' } },
+      },
+    ],
+  };
+}
+
+describe('StorefrontPage — l’Accueil (L6)', () => {
+  it('l’Accueil vient en tête du choix de page, à part des rayons, et n’est jamais un rayon disparu', async () => {
+    const { page, store } = await setup({ view: homeView() });
+    const options = page['shelfOptions']();
+    expect(options[0]).toEqual({ label: 'Pages', options: [{ value: 'home', label: 'Accueil' }] });
+    expect(options[1]?.label).toBe('Rayons');
+    expect(store.vanished()).toEqual([]);
+    expect(store.shelfLabel('home')).toBe('Accueil');
+  });
+
+  it('la palette propose la Bannière, posée en 5×2 et montrée en 21/9', async () => {
+    const { fixture, store, root } = await setup({ view: EMPTY_VIEW });
+    const labels = [...root.querySelectorAll('.editor .draggable')].map((b) =>
+      b.textContent?.trim(),
+    );
+    expect(labels.some((label) => label?.startsWith('Bannière'))).toBe(true);
+    store.addFormat('banner');
+    fixture.detectChanges();
+    expect(store.blocks().at(-1)).toMatchObject({ format: 'banner', column: 1, row: 1 });
+    const block = root.querySelector('.grid .block.banner');
+    expect(block).not.toBeNull();
+    expect(block?.textContent).toContain('21/9');
+  });
+
+  it('le panneau de la porte ne paraît que sur l’Accueil', async () => {
+    const { fixture, store, root } = await setup({ view: homeView() });
+    expect(root.querySelector('app-storefront-door-panel')).toBeNull();
+    store.pickShelf('home');
+    fixture.detectChanges();
+    expect(root.querySelector('app-storefront-door-panel')?.textContent).toContain(
+      'Porte « Je passe la prendre »',
+    );
+    expect(root.querySelector('.grid .free-cell')?.textContent).toContain('reste vide');
+  });
+
+  /**
+   * Régression : l'éditeur reconstruisait les pages depuis les seules rangées,
+   * et un enregistrement EFFAÇAIT la porte (signalé au commit `4f516b0f6`).
+   */
+  it('la porte lue repart telle quelle à l’enregistrement — l’aller-retour ne l’efface pas', async () => {
+    const { store, persistence, api } = await setup({ view: homeView() });
+    expect(store.dirty()).toBe(false);
+    store.pickShelf('bread');
+    store.addFormat('card');
+    await persistence.save();
+    const home = api.saved[0]?.pages.find((p) => p.shelfKey === 'home');
+    expect(home).toEqual({
+      shelfKey: 'home',
+      rows: 3,
+      pickupDoorImage: { url: 'https://media.test/porte.jpg', alt: { fr: 'La porte du Labo' } },
+    });
+    // Les rayons ne la portent jamais : le serveur la refuserait ailleurs.
+    expect(api.saved[0]?.pages.filter((p) => 'pickupDoorImage' in p)).toHaveLength(1);
+  });
+
+  it('retirer la porte l’envoie à `null`', async () => {
+    const { store, persistence, api } = await setup({ view: homeView() });
+    store.pickupDoorImage.set(null);
+    expect(store.dirty()).toBe(true);
+    await persistence.save();
+    expect(api.saved[0]?.pages.find((p) => p.shelfKey === 'home')?.pickupDoorImage).toBeNull();
+  });
+
+  it('une porte choisie sur une vitrine vierge crée la page Accueil', async () => {
+    const fresh = await setup({ view: EMPTY_VIEW });
+    fresh.store.pickupDoorImage.set({ url: 'https://media.test/neuve.jpg', alt: null });
+    await fresh.persistence.save();
+    expect(fresh.api.saved[0]?.pages).toEqual([
+      {
+        shelfKey: 'home',
+        rows: 6,
+        pickupDoorImage: { url: 'https://media.test/neuve.jpg', alt: null },
+      },
+    ]);
+  });
+
+  it('un texte alternatif de porte trop long ferme Enregistrer, en nommant la porte', async () => {
+    const { store } = await setup({ view: homeView() });
+    store.pickupDoorImage.set({
+      url: 'https://media.test/porte.jpg',
+      alt: { fr: 'x'.repeat(201) },
+    });
+    expect(store.contentIssues()).toEqual([
+      'Porte « Je passe la prendre » de l’Accueil : Le texte alternatif tient en 200 caractères, dans chaque langue.',
+    ]);
+  });
+});

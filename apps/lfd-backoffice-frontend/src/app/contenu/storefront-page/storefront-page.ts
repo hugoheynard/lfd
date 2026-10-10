@@ -14,6 +14,7 @@ import {
   FORMATS,
   formatSpec,
   GRID_COLUMNS,
+  HOME_PAGE,
   MAX_ROWS,
   mediaFitOf,
   mediaSideOf,
@@ -27,17 +28,20 @@ import {
   FoldCardComponent,
   FoldElementTitleComponent,
   FoldEmptyStateComponent,
+  FoldIconComponent,
   FoldListboxComponent,
   FoldLoadingStateComponent,
   FoldNumberInputComponent,
   FoldPageLayoutComponent,
   FoldPanelHostService,
+  type FoldSelectItem,
 } from 'fold-ng';
 
 import type { HasPendingChanges } from '../../pim/catalogue/product-form/pending-changes.guard';
 import { type EditorBlock, itemsOf, toneOf } from '../storefront-block';
 import { PointerDrag } from '../storefront-drag';
-import { StorefrontEditorStore } from '../storefront-editor.store';
+import { HOME_LABEL, StorefrontEditorStore } from '../storefront-editor.store';
+import { StorefrontDoorPanel } from '../storefront-door-panel/storefront-door-panel';
 import { StorefrontMediaMock } from '../storefront-media-mock/storefront-media-mock';
 import { StorefrontMobilePreview } from '../storefront-mobile-preview/storefront-mobile-preview';
 import { StorefrontObjectDialog } from '../storefront-object-dialog/storefront-object-dialog';
@@ -81,10 +85,12 @@ const ARROW_STEPS: Readonly<Record<string, Cell>> = {
     FoldCardComponent,
     FoldElementTitleComponent,
     FoldEmptyStateComponent,
+    FoldIconComponent,
     FoldListboxComponent,
     FoldLoadingStateComponent,
     FoldNumberInputComponent,
     FoldPageLayoutComponent,
+    StorefrontDoorPanel,
     StorefrontMediaMock,
     StorefrontTemplateList,
     StorefrontMobilePreview,
@@ -130,10 +136,22 @@ export class StorefrontPage implements HasPendingChanges {
     return false;
   });
 
-  /** Le choix du rayon : les rayons servis, puis les disparus, qu'on peut encore regarder. */
-  protected readonly shelfOptions = computed(() => [
-    ...this.store.shelves().map((shelf) => ({ value: shelf.key, label: shelf.label })),
-    ...this.store.vanished().map((key) => ({ value: key, label: `${key} — rayon disparu` })),
+  protected readonly home = HOME_PAGE;
+
+  /**
+   * Le choix de la page : l'**Accueil** en tête, à part — ce n'est pas un rayon
+   * (L6 du plan de la médiathèque) —, puis les rayons servis, puis les
+   * disparus, qu'on peut encore regarder.
+   */
+  protected readonly shelfOptions = computed<readonly FoldSelectItem<string>[]>(() => [
+    { label: 'Pages', options: [{ value: HOME_PAGE, label: HOME_LABEL }] },
+    {
+      label: 'Rayons',
+      options: [
+        ...this.store.shelves().map((shelf) => ({ value: shelf.key, label: shelf.label })),
+        ...this.store.vanished().map((key) => ({ value: key, label: `${key} — rayon disparu` })),
+      ],
+    },
   ]);
 
   /** Ce que le champ demande ; la grille ne le suit que si rien ne déborde. Remis au rayon changé. */
