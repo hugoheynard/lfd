@@ -47,3 +47,24 @@ export function watchdogVerdict({ now, alive, startedAt, lastHealthyAt }) {
   const lastSign = Math.max(startedAt, lastHealthyAt ?? 0);
   return now - lastSign >= SILENCE_LIMIT_MS ? "restart" : "ok";
 }
+
+/**
+ * **Que faire d'une API tombée sur des migrations en attente ?**
+ *
+ * Elle refuse de démarrer (`persistence.migrations_pending`), et la relance
+ * en boucle n'y change rien : la base n'avance pas toute seule. Le 2026-10-10,
+ * un lot a laissé une migration non commitée dans l'arbre, et l'API de Hugo
+ * tournait toutes les 30 s sans dire quoi faire.
+ *
+ * - `apply` : la base est locale et TOUTES les migrations en attente sont
+ *   commitées et intactes. C'est exactement ce que fait le hook post-commit
+ *   (`sync-dev-db-after-git.mjs`) — rattrape un geste git qui l'a sauté.
+ * - `wait` : au moins une est non commitée ou retouchée. On ne l'applique PAS :
+ *   une migration appliquée en cours d'écriture changerait de somme de contrôle
+ *   ensuite, et Prisma refuserait la version finale. On le dit, et on attend.
+ * - `retry` : rien d'attendu, ou base non locale — la relance ordinaire.
+ */
+export function catchUpVerdict({ local, pending, uncommitted }) {
+  if (!local || pending.length === 0) return "retry";
+  return pending.some((name) => uncommitted.includes(name)) ? "wait" : "apply";
+}

@@ -24,7 +24,10 @@
  *    `SETTLE_MS`, pour ne jamais démarrer sur un build à moitié écrit. Un
  *    paquet dont le `dist` apparaît plus tard est pris aussi.
  * 3. Une API morte seule est relancée (2 s, 5 s, 15 s, puis 30 s) ; un
- *    changement de fichier remet le compteur à zéro.
+ *    changement de fichier remet le compteur à zéro. **Sauf si c'est la base
+ *    qui est en retard** (depuis le 2026-10-10) : une migration commitée en
+ *    attente est appliquée à la base locale, une migration non commitée est
+ *    nommée avec la commande à lancer, et la relance en boucle s'arrête.
  * 4. Un chien de garde interroge `/health` toutes les 10 s, et relance une API
  *    vivante mais muette depuis une minute.
  * 5. `Ctrl-C` / `SIGTERM` tuent tsc et Node : aucun orphelin (cf. l'en-tête de
@@ -42,10 +45,19 @@ import {
   HEALTH_PERIOD_MS,
   SETTLE_MS,
   backoffDelay,
+  catchUpVerdict,
   isRelevantChange,
   isTscReady,
   watchdogVerdict,
 } from "./api-dev-policy.mjs";
+import {
+  DEV_DB_RETRY,
+  applyMigrations,
+  databaseIsLocal,
+  pendingMigrations,
+  postgresReady,
+  uncommittedMigrations,
+} from "./dev-db.mjs";
 
 const ROOT = resolve(dirname(fileURLToPath(import.meta.url)), "..");
 const API = join(ROOT, "apps", "lfd-api");
@@ -104,9 +116,51 @@ function startApp(reason) {
 function onAppExit(current, code, signal) {
   if (app === current) app = null;
   if (current.expected || stopping) return;
+  const how = signal ? `signal ${signal}` : `code ${String(code)}`;
+  void catchUpThenRetry(how);
+}
+
+/**
+ * Avant de relancer une API tombée, regarde si c'est la base qui est en
+ * retard (`catchUpVerdict`). Une migration commitée qu'un geste git a sautée
+ * est appliquée ici ; une migration en cours d'écriture ne l'est jamais — on
+ * le dit, et on attend que le fichier change ou soit commité (le hook
+ * post-commit l'appliquera, puis la régénération du client relancera l'API).
+ */
+async function catchUpThenRetry(how) {
+  const pending = (await postgresReady()) ? await pendingMigrations().catch(() => []) : [];
+  const uncommitted =
+    pending.length > 0 ? await uncommittedMigrations(pending).catch(() => pending) : [];
+  const verdict = catchUpVerdict({ local: databaseIsLocal(), pending, uncommitted });
+  if (stopping) return;
+  if (verdict === "wait") {
+    say(
+      `✋ API arrêtée (${how}) : la base de dev attend ${uncommitted.join(", ")}, ` +
+        "pas encore commitée — elle n'est pas appliquée d'office (une migration en cours " +
+        "d'écriture changerait de somme de contrôle). Commitez-la, ou si elle est finie : " +
+        `${DEV_DB_RETRY}. L'API repart au prochain changement.`,
+    );
+    return;
+  }
+  if (verdict === "apply") {
+    say(
+      `↻ API arrêtée (${how}) : migrations commitées en attente (${pending.join(", ")}) — appliquées à la base de dev.`,
+    );
+    try {
+      await applyMigrations();
+      crashes = 0;
+      startApp("base de dev rattrapée, relance");
+    } catch (error) {
+      const said = String(error?.stderr || error?.message || error)
+        .split("\n")
+        .slice(-4)
+        .join("\n");
+      say(`✖ rattrapage de la base refusé :\n${said}\nÀ relancer : ${DEV_DB_RETRY}`);
+    }
+    return;
+  }
   const delay = backoffDelay(crashes);
   crashes += 1;
-  const how = signal ? `signal ${signal}` : `code ${String(code)}`;
   say(`API arrêtée seule (${how}) — relance dans ${String(delay / 1000)} s.`);
   retryTimer = setTimeout(() => startApp("relance après arrêt"), delay);
 }

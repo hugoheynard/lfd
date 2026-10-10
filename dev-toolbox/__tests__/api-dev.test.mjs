@@ -3,6 +3,7 @@ import { test } from "node:test";
 import assert from "node:assert/strict";
 import {
   backoffDelay,
+  catchUpVerdict,
   isRelevantChange,
   isTscReady,
   watchdogVerdict,
@@ -83,4 +84,12 @@ test("une réponse saine récente la laisse tranquille", () => {
     }),
     "ok",
   );
+});
+
+test("rattrape la base seulement quand toutes les migrations attendues sont commitées", () => {
+  const pending = ["20261010180000_les_series"];
+  assert.equal(catchUpVerdict({ local: true, pending, uncommitted: [] }), "apply");
+  assert.equal(catchUpVerdict({ local: true, pending, uncommitted: pending }), "wait");
+  assert.equal(catchUpVerdict({ local: false, pending, uncommitted: [] }), "retry");
+  assert.equal(catchUpVerdict({ local: true, pending: [], uncommitted: [] }), "retry");
 });

@@ -27,13 +27,13 @@
  *      relancer, et le script sort toujours en 0.
  */
 import { execFile } from "node:child_process";
-import { readFileSync } from "node:fs";
 import { promisify } from "node:util";
+
+import { DEV_DB_RETRY, databaseIsLocal, postgresReady } from "./dev-db.mjs";
 
 const run = promisify(execFile);
 const PRISMA_DIR = "apps/lfd-api/prisma/";
-const LOCAL_HOSTS = new Set(["localhost", "127.0.0.1", "::1", "[::1]"]);
-const RETRY = "pnpm --filter lfd-api db:deploy && pnpm --filter lfd-api db:generate";
+const RETRY = DEV_DB_RETRY;
 
 /** Les fichiers que le geste git a fait changer. */
 async function changedFiles(mode, args) {
@@ -50,56 +50,6 @@ async function changedFiles(mode, args) {
     return [];
   }
   return git("diff", "--name-only", from, to).catch(() => []);
-}
-
-/** L'URL de la base de dev vise-t-elle cette machine ? Lue, jamais affichée. */
-function databaseIsLocal() {
-  let env;
-  try {
-    env = readFileSync("apps/lfd-api/.env", "utf8");
-  } catch {
-    return false;
-  }
-  const line = env.split("\n").find((l) => l.startsWith("DATABASE_LFD_URL="));
-  if (line === undefined) {
-    return false;
-  }
-  const raw = line
-    .slice("DATABASE_LFD_URL=".length)
-    .trim()
-    .replace(/^["']|["']$/g, "");
-  try {
-    const url = new URL(raw);
-    return (
-      (url.protocol === "postgresql:" || url.protocol === "postgres:") &&
-      LOCAL_HOSTS.has(url.hostname)
-    );
-  } catch {
-    return false;
-  }
-}
-
-async function postgresReady() {
-  try {
-    await run(
-      "docker",
-      [
-        "compose",
-        "-f",
-        "docker-compose.dev.yml",
-        "exec",
-        "-T",
-        "postgres",
-        "pg_isready",
-        "-U",
-        "lfc",
-      ],
-      { timeout: 5_000 },
-    );
-    return true;
-  } catch {
-    return false;
-  }
 }
 
 async function main() {
