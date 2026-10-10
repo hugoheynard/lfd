@@ -1,0 +1,63 @@
+<h2>Messages morts</h2>
+
+@switch (state()) {
+  @case ('loading') {
+    <fold-loading message="Lecture des messages morts…" />
+  }
+  @case ('error') {
+    <fold-empty-state
+      tone="alert"
+      title="Messages morts illisibles"
+      subtitle="La lecture de la boîte d'envoi a échoué."
+    >
+      <button foldButton (click)="load()">Réessayer</button>
+    </fold-empty-state>
+  }
+  @default {
+    @if (letters().length === 0) {
+      <fold-empty-state
+        title="Aucun message mort"
+        subtitle="Chaque fait durable a été livré à tous ses abonnés, ou a encore des essais."
+      >
+        <fold-icon empty-icon name="check-circle" />
+      </fold-empty-state>
+    } @else {
+      <ul class="letters">
+        @for (letter of letters(); track rowKey(letter)) {
+          <li>
+            <fold-card>
+              <fold-element-title variant="title" [title]="letter.type" [subtitle]="letter.key">
+                @if (canReplay()) {
+                  <button
+                    titleAction
+                    foldButton
+                    emphasis="soft"
+                    size="sm"
+                    [loading]="replaying() === rowKey(letter)"
+                    [disabled]="replaying() !== null"
+                    (click)="replay(letter)"
+                  >
+                    Rejouer
+                  </button>
+                }
+              </fold-element-title>
+              <dl class="facts">
+                <dt>Abonné qui bloque</dt>
+                <dd>{{ letter.subscriber }}</dd>
+                <dt>Survenu le</dt>
+                <dd>{{ letter.occurredAt | date: 'dd/MM/yyyy HH:mm:ss' }}</dd>
+                <dt>Essais</dt>
+                <dd>{{ letter.attempts }}</dd>
+                <dt>Dernière erreur</dt>
+                <dd>{{ letter.lastError ?? '—' }}</dd>
+              </dl>
+            </fold-card>
+          </li>
+        }
+      </ul>
+      @if (view()?.truncated) {
+        <p class="truncated">Il y en a d'autres : seuls les 100 plus récents sont affichés.</p>
+      }
+    }
+  }
+}

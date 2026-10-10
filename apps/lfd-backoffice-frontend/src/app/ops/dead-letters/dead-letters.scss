@@ -1,0 +1,35 @@
+:host {
+  display: flex;
+  flex-direction: column;
+  gap: var(--fold-space-md);
+}
+
+.letters {
+  display: flex;
+  flex-direction: column;
+  gap: var(--fold-space-sm);
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.facts {
+  display: grid;
+  grid-template-columns: max-content 1fr;
+  gap: var(--fold-space-xs) var(--fold-space-md);
+  margin: 0;
+
+  dt {
+    color: var(--fold-color-text-muted);
+  }
+
+  dd {
+    margin: 0;
+    overflow-wrap: anywhere;
+  }
+}
+
+.truncated {
+  margin: 0;
+  color: var(--fold-color-text-muted);
+}
