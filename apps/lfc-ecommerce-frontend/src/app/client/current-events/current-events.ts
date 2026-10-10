@@ -2,7 +2,7 @@ import { ChangeDetectionStrategy, Component, input, output } from '@angular/core
 
 import { EventBanner } from '../event-banner/event-banner';
 import { EventCard } from '../event-card/event-card';
-import { type DatedEvent } from '../mock-event';
+import { type DatedEvent } from '../shop/operation-event';
 
 /**
  * **EN CE MOMENT** — le panneau des opérations datées de l'accueil public.

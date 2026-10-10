@@ -1,18 +1,38 @@
 <a class="event" [routerLink]="event().route">
+  @if (event().image; as image) {
+    <!-- La bannière est en 21/9 (D9) : la photo la couvre, centrée faute de
+         point focal porté par l'opération. -->
+    <img
+      class="photo"
+      [src]="image.src"
+      [attr.srcset]="image.srcset || null"
+      sizes="(min-width: 900px) 50vw, 100vw"
+      [alt]="image.alt"
+      decoding="async"
+    />
+  }
   <span class="veil" aria-hidden="true"></span>
 
-  <span class="marks">
-    <span class="badge">{{ event().badge }}</span>
-    <!-- Le compte à rebours est l'information, pas l'ornement : une collection
-         datée ne se rattrape pas la semaine suivante. -->
-    <span class="count">{{ event().countdown }}</span>
-  </span>
+  @if (event().badge !== null || event().countdown !== null) {
+    <span class="marks">
+      @if (event().badge; as badge) {
+        <span class="badge">{{ badge }}</span>
+      }
+      <!-- Le compte à rebours est l'information, pas l'ornement : une collection
+           datée ne se rattrape pas la semaine suivante. -->
+      @if (event().countdown; as countdown) {
+        <span class="count">{{ countdown }}</span>
+      }
+    </span>
+  }
 
   <h2 class="title">{{ event().title }}</h2>
 
   <span class="foot">
     <span class="dates">{{ event().dates }}</span>
-    <span class="teaser">{{ event().teaser }}</span>
+    @if (event().teaser) {
+      <span class="teaser">{{ event().teaser }}</span>
+    }
   </span>
 
   <span class="cta">{{ cta() }}</span>

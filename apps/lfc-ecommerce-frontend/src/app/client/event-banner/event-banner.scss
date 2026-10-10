@@ -8,16 +8,31 @@
   position: relative;
   display: flex;
   flex-direction: column;
+  /* La bannière d'opération est en 21/9 (D9). Le ratio est une hauteur
+     PRÉFÉRÉE : un titre long l'allonge plutôt que d'être coupé. */
+  aspect-ratio: 21 / 9;
   min-height: 132px;
   padding: var(--fold-space-lg);
   border-radius: var(--fold-radius-lg);
-  background: var(--lfc-butter-400) var(--event-photo) center 42% / cover no-repeat;
+  /* Sans photo, l'aplat de la palette — jamais une image de banque. */
+  background: var(--lfc-butter-400);
   color: var(--lfc-paper-0);
   text-decoration: none;
   overflow: hidden;
   /* Le voile est un enfant en `z-index: -1` : sans contexte d'empilement propre,
      il passerait DERRIÈRE le fond de la carte et ne voilerait rien. */
   isolation: isolate;
+}
+
+/* La photo est un élément, pas un fond : elle prend le `srcset` du fonds. */
+.photo {
+  position: absolute;
+  inset: 0;
+  z-index: -2;
+  inline-size: 100%;
+  block-size: 100%;
+  object-fit: cover;
+  object-position: center;
 }
 
 /* Le voile est un ÉLÉMENT et pas une ombre portée sur le texte : il doit couvrir

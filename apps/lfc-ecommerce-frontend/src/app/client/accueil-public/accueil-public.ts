@@ -28,7 +28,6 @@ import {
 } from '../copy/screens/accueil-public.copy';
 import { OrderContextStore } from '../order-context.store';
 import { formatHour } from '../format-hour';
-import { MOCK_EVENT } from '../mock-event';
 import { bestPickupDiscount, discountLabel, pickupOffer } from '../shop/pickup-discount';
 import { OrderDoors } from '../shop/order-doors';
 import { CartFulfillmentDays } from '../shop/cart-fulfillment-days.service';
@@ -42,6 +41,7 @@ import { CONTACT_CARD_DEFAULTS } from '@lfd/contracts/shop-values';
 import { ContactBand } from '../shop/contact-band/contact-band';
 import { ContactSettingsStore, localizedOr, phonesFor } from '../shop/contact-settings.store';
 import { ShopCatalogue } from '../shop/shop-catalogue.store';
+import { datedEventOf, featuredOperation } from '../shop/operation-event';
 import { ShopShortcuts, type ShortcutCard } from '../shop/shop-shortcuts/shop-shortcuts';
 import { orderLinesSummary, orderPlaceLabel, orderWeekday } from '../shop/last-order-summary';
 import { PublicSteps } from '../shop/public-steps/public-steps';
@@ -380,7 +380,18 @@ export class AccueilPublic {
     this.t().orders.wellHint.replace('{n}', String(this.tracked().length)),
   );
 
-  protected readonly event = signal(MOCK_EVENT);
+  /**
+   * L'opération mise en avant — la plus pertinente de celles que le catalogue
+   * public sert (`featuredOperation`), ou `null` : alors le bloc n'existe pas.
+   * Le décompte se lit à l'heure du navigateur : c'est un libellé, le serveur
+   * a déjà dit l'état.
+   */
+  protected readonly event = computed(() => {
+    const operation = featuredOperation(this.catalogue.operations());
+    return operation === null
+      ? null
+      : datedEventOf(operation, new Date(), this.locale.current(), this.t());
+  });
 
   /** Le rail des maisons, pour lire sa position de défilement. */
   private readonly rail = viewChild<ElementRef<HTMLUListElement>>('rail');
@@ -482,6 +493,9 @@ export class AccueilPublic {
     // les deux écrans qui ouvrent le choix de l'heure le démarrent.
     inject(CartFulfillmentDays);
     void this.contactSettings.hydrate();
+    // Les opérations datées voyagent avec le catalogue public. Un échec laisse
+    // la liste vide : le bloc « En ce moment » n'existe alors pas.
+    void this.catalogue.hydrate();
     const chrome = inject(ClientChrome);
     chrome.kicker.set(this.c().kicker);
     // Le menu suit la RECONNAISSANCE. Un visiteur n'en a pas : la barre lui

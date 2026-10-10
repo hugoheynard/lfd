@@ -6,13 +6,14 @@ import type {
   CustomerOrderLineView,
   CustomerOrderView,
   PickupAddressView,
+  ShopOperationView,
 } from '@lfd/contracts';
 import {
   audienceOf,
   DEFAULT_DELIVERY_AVAILABILITY,
   type DeliveryAvailabilityView,
 } from '@lfd/contracts/shop-values';
-import { describe, expect, it } from 'vitest';
+import { afterEach, describe, expect, it } from 'vitest';
 
 import { AuthFacade } from '../../auth/auth.facade';
 import { ClientAudience } from '../client-audience.service';
@@ -110,8 +111,12 @@ function whoProviders(who: Regard, status?: CompanyStatus): readonly unknown[] {
  *
  * `sold` est la liste des SKU encore au rayon ; tout le reste est retiré.
  */
+/** Les opérations datées que le catalogue public sert au montage suivant. */
+let servedOperations: readonly ShopOperationView[] = [];
+
 class FakeShop {
   constructor(private readonly sold: readonly string[]) {}
+  readonly operations = signal<readonly ShopOperationView[]>(servedOperations);
   readonly posed = new Map<string, number>();
   hydrate(): Promise<void> {
     return Promise.resolve();
@@ -579,5 +584,43 @@ describe('AccueilPublic — ce que dit la porte du coursier quand elle attend', 
 
     expect(courier(fixture)).toBeNull();
     expect(fixture.componentInstance['courierDoor']().pending?.hint).toBe(PAS_PROPOSEE);
+  });
+});
+
+describe('AccueilPublic — « En ce moment », les vraies opérations datées', () => {
+  afterEach(() => {
+    servedOperations = [];
+  });
+
+  it('sans opération, le bloc n’existe pas', async () => {
+    servedOperations = [];
+    const host: HTMLElement = (await mount([])).nativeElement;
+
+    expect(host.querySelector('app-current-events')).toBeNull();
+  });
+
+  it('montre l’opération servie par le catalogue, et non plus une simulation', async () => {
+    const day = 86_400_000;
+    const at = (offset: number): string => new Date(Date.now() + offset * day).toISOString();
+    servedOperations = [
+      {
+        key: 'noel',
+        name: { fr: 'Noël au fournil' },
+        lede: null,
+        image: null,
+        state: 'open',
+        orderFrom: at(-2),
+        orderUntil: at(5),
+        pickupFrom: at(8).slice(0, 10),
+        pickupUntil: at(9).slice(0, 10),
+        skus: [],
+      },
+    ];
+    const host: HTMLElement = (await mount([])).nativeElement;
+
+    expect(host.querySelector('app-current-events .title')?.textContent).toContain(
+      'Noël au fournil',
+    );
+    expect(host.textContent).not.toContain('Pâques prend');
   });
 });
