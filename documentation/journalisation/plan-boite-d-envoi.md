@@ -2,8 +2,10 @@
 
 > Hugo, 2026-10-04 : « le code n'a aucun moyen sûr de publier un événement,
 > c'est un smell ; certaines décisions ont été prises en supposant que tout le
-> monde vit dans le même bâtiment. » État : **doc-first**, rien de bâti.
-> `vitruve` d'office (table neuve, runbook).
+> monde vit dans le même bâtiment. » État au 2026-10-10 : **BE1 bâti (§9),
+> BE3 bâti (§10), BE2 bâti par E1 (`on-packing-order-packed.handler.ts`),
+> l'écran des messages morts bâti (§9 bis)**. Ce bandeau disait « doc-first,
+> rien de bâti » jusqu'au 2026-10-10. `vitruve` d'office (table neuve, runbook).
 
 ## 1. Ce qui existe (relu le 2026-10-04)
 
@@ -189,8 +191,33 @@ Deux ajouts à BE1, que la comparaison a fait voir :
   défaut). À régler à l'écran.
 - Le rattrapage passe par le cron `*/5` existant (`container/worker.ts`) :
   aucun cron n'a été ajouté.
-- **Reste** : l'affichage des messages morts dans la carte de santé (un nœud
-  du manifeste, `@lfd/ops-contract`, l'écran). Les données sont prêtes.
+- ~~**Reste** : l'affichage des messages morts dans la carte de santé~~ —
+  bâti le 2026-10-10, §9 bis.
+
+## 9 bis. Les messages morts à l'écran (2026-10-10)
+
+Le « reste » du §9, bâti. Ce n'est pas un nœud du manifeste
+`@lfd/ops-contract` comme le §9 l'envisageait : un message mort n'est pas une
+brique en panne, c'est une **ligne à rejouer** — il a sa section dans la page
+de santé, pas une pastille sur le schéma.
+
+- **Lecture** : `GET /admin/outbox/dead-letters` (`ops_health:read`),
+  `ListDeadLettersQuery` → port `DeadLettersReader` →
+  `PrismaDeadLettersReader`. Un message mort = un couple message × abonné non
+  livré dont les essais ont atteint `MAX_DELIVERY_ATTEMPTS` (la borne de
+  `isExhausted`, lue et non recopiée). Les plus récents d'abord, bornés à 100
+  (`truncated` le dit). **Le corps du fait n'est pas servi** : il peut porter
+  des identifiants métier, et le rejeu n'en a pas besoin. Contrat
+  `DeadLettersView` (`packages/contracts/src/outbox-dead-letters.ts`).
+- **Rejeu** : la route du §8, `POST /admin/outbox/replay`, sous
+  `ops_health:write` ; l'écran ne montre le bouton qu'avec ce droit.
+- **Écran** : une section « Messages morts » de `/sante` — par ligne, le fait
+  (`type`, `key`), l'abonné qui bloque, la date, les essais, la dernière
+  erreur, et « Rejouer ». Vide, elle le dit (« Aucun message mort ») plutôt
+  que de disparaître : un zéro qu'on voit est une mesure, un zéro qu'on ne
+  voit pas est un oubli.
+- Éprouvé : `test/outbox.e2e-spec.ts` (liste le mort et lui seul, ne compte
+  pas un abonné qui a encore des essais, refuse l'anonyme).
 
 ## 10. BE3 bâti en premier (2026-10-04) — la clôture de journée
 

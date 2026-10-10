@@ -8,6 +8,7 @@
  */
 import { CommandBus } from "@nestjs/cqrs";
 
+import { AdminTokenVerifier } from "../src/platform/auth/admin-token.verifier.js";
 import { UnitOfWork } from "../src/platform/database/unit-of-work.js";
 import { DurablePublisher } from "../src/platform/outbox/durable-publisher.js";
 import { DurableFactOutsideUnitOfWorkError } from "../src/platform/outbox/outbox-errors.js";
@@ -19,11 +20,19 @@ import {
   ProbeCounter,
   ProbeHappened,
 } from "./durable-probe.js";
-import { bootstrapE2e, daysAgo, type E2eContext } from "./e2e-harness.js";
+import type { DeadLettersView } from "@lfd/contracts";
+
+import { bootstrapE2e, daysAgo, E2E_STAFF_SUB, jsonBody, type E2eContext } from "./e2e-harness.js";
 import { TEST_RECOMPUTE_TOKEN } from "./setup-env.js";
 
 /** L'émetteur a échoué APRÈS avoir écrit son fait. */
 class EmitterFailed extends TypeError {}
+
+/** Le staff des routes admin (messages morts) : l'opérateur semé par le harnais. */
+const stubAdminVerifier = {
+  verify: (): Promise<{ subject: string; scopes: string[] }> =>
+    Promise.resolve({ subject: E2E_STAFF_SUB, scopes: [] }),
+};
 
 let ctx: E2eContext;
 let publisher: DurablePublisher;
@@ -31,7 +40,10 @@ let unitOfWork: UnitOfWork;
 let probe: ProbeCounter;
 
 beforeAll(async () => {
-  ctx = await bootstrapE2e({ imports: [DurableProbeModule] });
+  ctx = await bootstrapE2e({
+    imports: [DurableProbeModule],
+    overrides: [{ token: AdminTokenVerifier, value: stubAdminVerifier }],
+  });
   publisher = ctx.app.get(DurablePublisher);
   unitOfWork = ctx.app.get(UnitOfWork);
   probe = ctx.app.get(ProbeCounter);
@@ -172,6 +184,56 @@ describe("la boîte d'envoi", () => {
     expect(probe.received).toEqual([eventId]);
   });
 
+  /**
+   * L'écran des messages morts (2026-10-10, plan §8) : un message mort qu'on
+   * ne voit pas est une divergence muette entre deux blocs.
+   */
+  it("liste les messages morts — et eux seuls — en nommant l'abonné qui bloque", async () => {
+    probe.failuresLeft = 1;
+    await publish("morte");
+    await publish("vivante");
+    await ctx.drain();
+    const dead = await ctx.prisma.outboxDelivery.findFirstOrThrow({
+      where: { deliveredAt: null },
+      include: { message: true },
+    });
+    await ctx.prisma.outboxDelivery.update({
+      where: { eventId_subscriber: { eventId: dead.eventId, subscriber: dead.subscriber } },
+      data: { attempts: 10 },
+    });
+
+    const view = jsonBody<DeadLettersView>(
+      await ctx.asSub(E2E_STAFF_SUB).get("/admin/outbox/dead-letters").expect(200),
+    );
+
+    expect(view).toEqual({
+      letters: [
+        {
+          eventId: dead.eventId,
+          subscriber: PROBE_SUBSCRIBER,
+          type: dead.message.type,
+          key: dead.message.key,
+          occurredAt: dead.message.occurredAt.toISOString(),
+          attempts: 10,
+          lastError: "sonde en panne",
+        },
+      ],
+      truncated: false,
+    });
+  });
+
+  it("ne compte pas comme mort un abonné qui a encore des essais", async () => {
+    probe.failuresLeft = 1;
+    await publish("en-reprise");
+    await ctx.drain();
+
+    const view = jsonBody<DeadLettersView>(
+      await ctx.asSub(E2E_STAFF_SUB).get("/admin/outbox/dead-letters").expect(200),
+    );
+
+    expect(view.letters).toEqual([]);
+  });
+
   it("le balayage et le rejeu refusent l'anonyme", async () => {
     await ctx.http().post("/admin/outbox/sweep").expect(401);
     await ctx
@@ -179,5 +241,6 @@ describe("la boîte d'envoi", () => {
       .post("/admin/outbox/replay")
       .send({ eventId: "x", subscriber: PROBE_SUBSCRIBER })
       .expect(401);
+    await ctx.http().get("/admin/outbox/dead-letters").expect(401);
   });
 });

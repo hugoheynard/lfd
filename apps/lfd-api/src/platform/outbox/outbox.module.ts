@@ -2,6 +2,8 @@ import { Global, Module } from "@nestjs/common";
 import { DiscoveryModule } from "@nestjs/core";
 
 import { AdminOutboxController } from "./admin-outbox.controller.js";
+import { AdminOutboxDeadLettersController } from "./admin-outbox-dead-letters.controller.js";
+import { DeadLettersReader } from "./dead-letters.reader.js";
 import { DiscoveredDurableSubscribers } from "./discovered-durable-subscribers.js";
 import { DurableDeliveryGuard } from "./durable-delivery-guard.js";
 import { DurableSubscribers } from "./durable-handler.js";
@@ -13,6 +15,8 @@ import { OutboxRelay } from "./outbox-relay.js";
 import { OutboxRelayStore } from "./outbox-relay-store.js";
 import { OutboxRelayTrigger } from "./outbox-relay-trigger.js";
 import { OutboxSweepController } from "./outbox-sweep.controller.js";
+import { ListDeadLettersHandler } from "./list-dead-letters.handler.js";
+import { PrismaDeadLettersReader } from "./prisma-dead-letters.reader.js";
 import { PrismaOutbox } from "./prisma-outbox.js";
 import { PrismaOutboxDeliveryRepository } from "./prisma-outbox-delivery.repository.js";
 import { PrismaOutboxRelayStore } from "./prisma-outbox-relay-store.js";
@@ -27,7 +31,7 @@ import { SweepOutboxHandler } from "./sweep-outbox.handler.js";
 @Global()
 @Module({
   imports: [DiscoveryModule],
-  controllers: [OutboxSweepController, AdminOutboxController],
+  controllers: [OutboxSweepController, AdminOutboxController, AdminOutboxDeadLettersController],
   providers: [
     DiscoveredDurableSubscribers,
     { provide: DurableSubscribers, useExisting: DiscoveredDurableSubscribers },
@@ -40,6 +44,8 @@ import { SweepOutboxHandler } from "./sweep-outbox.handler.js";
     { provide: OutboxRelayTrigger, useExisting: OutboxRelay },
     SweepOutboxHandler,
     ReplayOutboxDeliveryHandler,
+    { provide: DeadLettersReader, useClass: PrismaDeadLettersReader },
+    ListDeadLettersHandler,
   ],
   exports: [DurablePublisher, OutboxRelayTrigger, OutboxRelay],
 })
