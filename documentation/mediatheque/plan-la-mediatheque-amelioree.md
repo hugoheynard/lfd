@@ -138,3 +138,23 @@ fonds (D5). La projection fait suivre la boutique.
 L1 → L8, un lot à la fois, un commit par geste, la doc d'état mise à jour au
 fil de l'eau ; ce plan se raye lot par lot et disparaît quand le dernier est
 bâti.
+
+---
+
+## Décisions prises sans Hugo, à revoir ensemble
+
+> Hugo, 2026-10-10 : « continue tous les sujets, prends les décisions et note
+> les, on review à la fin ». Chaque ligne dit ce qui a été tranché, pourquoi,
+> et comment revenir dessus.
+
+| #   | Sujet                                                                        | Décision                                                                                                  | Pourquoi                                                                                                        | Pour revenir dessus                                                          |
+| --- | ---------------------------------------------------------------------------- | --------------------------------------------------------------------------------------------------------- | --------------------------------------------------------------------------------------------------------------- | ---------------------------------------------------------------------------- |
+| R1  | Filtre « inutilisées » (L2)                                                  | total EXACT, classé en mémoire comme le tri par emplois, plutôt que des pages courtes                     | un total faux ferait promettre des pages qui n'existent pas                                                     | repasser `unused` au filtrage par page dans `prisma-media-library-reader.ts` |
+| R2  | Tri par emplois (L2)                                                         | borné à 5 000 images filtrées, 409 au-delà avec « restreignez d'abord »                                   | les emplois viennent des porteurs, pas de la base : pas de keyset SQL                                           | relever la borne, ou projeter un compteur d'emplois                          |
+| R3  | Prise de vue future (L3)                                                     | refusée                                                                                                   | une date future est une faute de frappe et tiendrait la tête du tri pour toujours                               | retirer le refus dans `MediaSeries`                                          |
+| R4  | Le dépôt mentionne la série au journal (L3)                                  | oui, en `named` facultatif                                                                                | savoir qui a rangé quelle image dans quelle série                                                               | retirer le champ du fait `media_asset.deposited`                             |
+| R5  | Tolérance d'écart de format (L5)                                             | 8 % (≈ 4 % rognés par bord)                                                                               | en dessous, `cover` ne se voit pas ; un 3/2 en 4/3 (12,5 %) est signalé                                         | `media-formats.ts`                                                           |
+| R6  | Opération mise en avant à l'accueil (L6)                                     | ouvertes, puis annoncées, puis closes ; à égalité, l'échéance la plus proche                              | la plus utile au client d'abord                                                                                 | `featuredOperation` dans `operation-event.ts`                                |
+| R7  | Décompte de l'opération (L6)                                                 | J-n jusqu'à la clôture (ouverte) ou l'ouverture (annoncée), « Dernier jour » le jour même, jours de Paris | ce qui presse le client                                                                                         | `datedEventOf`                                                               |
+| R8  | Recadrage automatique Cloudflare (`gravity=auto`) pour les images sans point | **pas fait** : le centre reste le défaut                                                                  | changer `fit` côté serveur d'images touche toutes les tuiles et le compte des transformations ; à mesurer avant | à décider                                                                    |
+| R9  | Pousser `dev`                                                                | après L8 et une batterie complète verte, sans redemander ; `main` jamais sans Hugo                        | Hugo : « continue tous les sujets »                                                                             | —                                                                            |
