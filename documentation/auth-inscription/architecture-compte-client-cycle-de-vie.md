@@ -324,6 +324,86 @@ Trigger** qui appelle déjà `POST /admin/recompute` trois fois par jour, derri�
 C'est le seul écart **déjà en production** entre ce que l'écran dit et ce que la
 base contient.
 
+### 8.1 bis — Le trou ouvert par la connexion par code, et la décision (2026-10-10)
+
+> 📐 **Plan, pas encore bâti.** Décidé par Hugo le 2026-10-10 : option (a).
+> Relu par `vitruve` avant de bâtir (frontière d'accès).
+
+**Le constat** (relu le 2026-10-10, `customer-principal.resolver.ts`) :
+`invitation-expiry.ts` affirme qu'« aucun balayage n'est nécessaire : le lien se
+révoque tout seul chez Auth0 ». C'était vrai tant que le lien de mot de passe
+était la seule porte. Depuis le 2026-10-09, la connexion par **code e-mail**
+est ouverte sur la boutique, et Google aussi : une personne invitée dont
+l'invitation a expiré peut se connecter sur la même adresse, et à sa
+première requête `record()` la passe `invited → active` — elle entre dans la
+société, des mois après. Le rattachement, lui, n'a jamais été retiré.
+
+**La décision (a) — refuser à l'entrée, plutôt que (b) balayer la nuit** :
+rien n'est supprimé, et le trou se ferme à la requête, pas au passage suivant.
+
+**La conception v1 a été contredite par `vitruve` le 2026-10-10** (3 BLOQUANT,
+5 SÉRIEUX). Ce qu'il a montré, et que la v2 reprend :
+
+- **B1 — le trou ne passe pas par `record()`.** Une connexion par code ou par
+  Google arrive avec un `sub` inconnu : `provision` → `admitted` →
+  `UnknownSubjectAdmission.claim()`, dont l'`updateMany` passe la personne
+  `active` (`unknown-subject-admission.ts:142-145`). La règle doit vivre DANS
+  cette écriture conditionnée, et dans `record()` pour le chemin du lien.
+- **B2 — le statut `invited` est porté par la PERSONNE, pas par le
+  rattachement** (`Membership` n'a que `role`, `createdAt`, `updatedAt`). Une
+  personne invitée par A (expirée) et B, qui entre par B, voit A s'ouvrir
+  pour toujours : `findBySub` charge tous ses rattachements.
+- **B3 — remplir la colonne avec `created_at` fermerait d'un coup** toutes
+  les invitations de plus de 7 jours en production (43 comptes `invited`
+  le 2026-10-09), alors que l'e-mail d'invitation propose d'entrer par code
+  depuis ce jour-là.
+
+**La conception v2 :**
+
+1. **Le rattachement porte sa propre invitation** : `invited_at` (quand
+   l'invitation a été émise ou renouvelée) et `accepted_at` (quand la
+   personne est entrée par lui ; `null` = pas encore). Un rattachement
+   **ouvre** la société s'il est accepté, ou si son invitation vit.
+2. **L'entrée accepte les rattachements vivants**, dans la même écriture
+   conditionnée : `claim()` (sub inconnu) et `record()` (lien) posent
+   `accepted_at` sur les rattachements non acceptés dont l'invitation vit, et
+   passent la personne `active` seulement s'il y en a au moins un. Sinon :
+   refus.
+3. **Le `Principal` ne porte que les rattachements qui ouvrent** (acceptés,
+   ou invitation vivante) : une société dont l'invitation a expiré ne
+   s'ouvre pas, même à une personne active ailleurs.
+4. **Un lien neuf renouvelle UNE invitation** : celui que le commercial
+   remet depuis la fiche d'une société repose `invited_at` de CE
+   rattachement ; `attach` sur un rattachement existant aussi (aujourd'hui il
+   ne fait que réécrire le rôle). `IssuePasswordLinkCommand` gagne la
+   société.
+5. **Les trois lecteurs de date** (`company-contacts.projection.ts`,
+   `prisma-admin-company.reader.ts`, `prisma-pending-access.reader.ts`) lisent
+   `invited_at` : l'écran ne contredit plus l'entrée.
+6. **Le refus** est une erreur nommée (« Votre invitation a expiré. Demandez
+   un nouvel accès à votre interlocuteur La Folie Coffee. »), un fait au
+   journal (id local, jamais le `sub`) et une cloche au commercial — le seul
+   qui peut faire le geste de sortie. La boutique doit afficher le message
+   au lieu de relancer la connexion (à vérifier).
+7. **La migration** : `accepted_at = created_at` pour les personnes déjà
+   `active` (elles sont entrées) ; pour les `invited`, `invited_at` = **à
+   trancher par Hugo** (grâce de 7 jours à la date du déploiement, ou
+   fermeture assumée avec une relance).
+8. **Le staff** a le même trou par « mot de passe oublié » sur la connexion
+   de base, et par le rapprochement d'adresse vérifiée
+   (`prisma-staff-access.resolver.ts:159-200`) ; `invitedAt` y est nullable
+   et ignoré quand nul (`staff-user.rows.ts:87`). **À trancher par Hugo** :
+   même règle, dans le même lot ou après.
+9. Une fois la règle lue à l'entrée, retirer les colonnes rouvrirait le trou :
+   **irréversible dans les faits**. Les JSDoc fausses
+   (`invitation-expiry.ts:17`, `company-contacts.projection.ts:124-126`,
+   `unknown-subject-admission.ts:67-70`) sont corrigées.
+
+**Éprouvé par** : e2e « invitée expirée qui entre par code : refusée, reste
+`invited`, rien ne s'ouvre » ; « un lien remis pour B renouvelle B, pas A » ;
+« active par B, A expirée ne s'ouvre pas » ; « la migration n'a fermé
+aucune invitation » (selon l'option).
+
 ### 8.2 Révoquer un accès depuis l'admin
 
 Le cas qui arrivera **en premier** : le commercial se trompe d'adresse.
