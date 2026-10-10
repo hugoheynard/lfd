@@ -86,9 +86,19 @@ export class SendOrderPlacedMail implements DurableSubscriber {
    *
    * L'accusé d'une commande carte part donc sur `order.paid` (durable,
    * `SendOrderSettledMail`), par le MÊME service, avec la MÊME clé d'idempotence.
+   *
+   * 🔴 **Décidé par le MODE, pas par l'état du moment** (corrigé le 2026-10-10).
+   * La garde disait « `pending` ⇒ on attend ». Vrai tant que cet abonné
+   * tournait en mémoire, à l'instant de la passation — la carte y était
+   * toujours `pending`. Durable, il tourne quand la boîte d'envoi le livre, et
+   * Stripe a pu répondre entre-temps : la commande se lisait `paid`, cet abonné
+   * envoyait, `order.paid` envoyait aussi. Deux accusés, et deux rendus du bon
+   * archivé (`production-batch` et `order-sheet-archive`, rouges une fois sur
+   * deux). Seule une commande `not_required` — au compte, rien à encaisser —
+   * part d'ici : une commande carte ne l'est à aucun moment de sa vie.
    */
-  private awaitingPayment(payment: PaymentStatus): boolean {
-    return payment === "pending";
+  private decidedAtPlacement(payment: PaymentStatus): boolean {
+    return payment === "not_required";
   }
 
   private async run(orderId: string): Promise<void> {
@@ -104,9 +114,9 @@ export class SendOrderPlacedMail implements DurableSubscriber {
     if (recipient === null) {
       return;
     }
-    // 🔴 La carte n'a pas encore répondu : l'accusé attend `order.paid`.
-    // Cf. `awaitingPayment` pour la raison.
-    if (this.awaitingPayment(owned.view.paymentStatus)) {
+    // 🔴 Une commande carte écrit son accusé sur `order.paid`, quel que soit
+    // son état quand ce fait arrive. Cf. `decidedAtPlacement`.
+    if (!this.decidedAtPlacement(owned.view.paymentStatus)) {
       return;
     }
 

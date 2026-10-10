@@ -30,7 +30,7 @@ function view(overrides: Partial<OrderView> = {}): OrderView {
     id: "order_1",
     orderNumber: "ORD-4812",
     status: "placed",
-    paymentStatus: "paid",
+    paymentStatus: "not_required",
     settlement: "paid",
     requestedDeliveryDate: "2026-09-08",
     fulfillmentMethod: "pickup",
@@ -335,6 +335,21 @@ describe("l'accusé de réception d'une commande", () => {
 
     expect(subject.mailer.sent).toBeNull();
   });
+
+  /**
+   * Régression : abonné devenu durable, il pouvait tourner APRÈS le règlement
+   * Stripe. La commande carte se lisait alors `paid`, et il envoyait un second
+   * accusé à côté de celui d'`order.paid` (corrigé le 2026-10-10).
+   */
+  it.each(["paid", "failed", "refunded"] as const)(
+    "laisse l'accusé d'une commande carte à `order.paid`, même déjà %s quand le fait arrive",
+    async (paymentStatus) => {
+      const subject = handler({ order: view({ paymentStatus }) });
+      await fire(subject);
+
+      expect(subject.mailer.sent).toBeNull();
+    },
+  );
 
   it("lève sur un fait illisible — le message reste visible dans la boîte d'envoi", async () => {
     const subject = handler({});
