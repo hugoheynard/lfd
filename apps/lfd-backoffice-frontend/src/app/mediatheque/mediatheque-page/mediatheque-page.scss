@@ -39,24 +39,6 @@
   }
 }
 
-.name {
-  overflow: hidden;
-  text-overflow: ellipsis;
-  white-space: nowrap;
-  font-size: var(--fold-text-sm);
-}
-
-.uses {
-  color: var(--fold-color-text-muted);
-  font-size: var(--fold-text-xs);
-}
-
-/* Une image que personne ne porte se distingue : c'est la seule qu'on pourra
-   supprimer, et c'est aussi celle qui a peut-être été déposée pour rien. */
-.uses-free {
-  color: var(--fold-color-warning-text);
-}
-
 .deposit {
   display: flex;
   flex-direction: column;
@@ -117,18 +99,6 @@
   color: var(--fold-color-text-muted);
 }
 
-.band {
-  display: flex;
-  flex-wrap: wrap;
-  align-items: center;
-  gap: var(--fold-space-sm);
-  margin-bottom: var(--fold-space-lg);
-  padding: var(--fold-space-sm);
-  border-radius: var(--fold-radius-md);
-  background: var(--fold-color-surface-sunken);
-}
-
-.coin,
 .sift {
   padding: var(--fold-space-xs) var(--fold-space-sm);
   border: 1px solid var(--fold-color-border);
@@ -146,28 +116,6 @@
   margin: 0;
   padding: 0;
   list-style: none;
-}
-
-.tag {
-  padding: 2px var(--fold-space-xs);
-  border: 1px solid var(--fold-color-border);
-  border-radius: var(--fold-radius-pill);
-  background: var(--fold-color-surface-card);
-  color: inherit;
-  font: inherit;
-  font-size: var(--fold-text-xs);
-  cursor: grab;
-}
-
-/* Le tag armé se voit franchement : tant qu'il l'est, chaque clic sur une image
-   écrit. Une nuance discrète ferait poser des mots-clés par surprise. */
-.tag-armed {
-  border-color: var(--fold-color-primary);
-  background: var(--fold-color-primary-surface);
-}
-
-.tag-worn {
-  cursor: pointer;
 }
 
 .hint {
@@ -190,24 +138,6 @@
   cursor: pointer;
 }
 
-/* Discret : retirer est rare, et un bouton franc sur chaque vignette ferait de
-   la grille un champ de mines. */
-.discard {
-  align-self: flex-start;
-  padding: 0;
-  border: 0;
-  background: none;
-  color: var(--fold-color-text-muted);
-  font: inherit;
-  font-size: var(--fold-text-xs);
-  text-decoration: underline;
-  cursor: pointer;
-}
-
-.discard:hover {
-  color: var(--fold-color-alert-text);
-}
-
 /* LE FILTRE. Sa propre rangée, sous la bande de tags : la bande sert à POSER
    un mot-clé, celle-ci à en CHERCHER. Les mêler ferait d'un clic deux gestes
    dont on ne saurait pas lequel part. */
@@ -219,43 +149,128 @@
   margin-bottom: var(--fold-space-md);
 }
 
-/* Un mot-clé RETENU dans le filtre. Distinct d'un tag de la bande : celui-ci
-   se retire d'un clic, et le dire par la forme évite de l'écrire. */
-.chip {
+/* LA BANDE. Trois étages, espacés par le seul `gap` : les outils, les mots,
+   l'aide du mot armé. Pas de fond ni de bordure — la section fold la titre. */
+.band {
+  display: flex;
+  flex-direction: column;
+  gap: var(--fold-space-md);
+}
+
+.band-tools {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--fold-space-sm);
+}
+
+.band-search,
+.band-coin {
+  flex: 1 1 14rem;
+  max-width: 20rem;
+}
+
+.band-none {
+  margin: 0;
+  color: var(--fold-color-text-muted);
+  font-size: var(--fold-text-sm);
+}
+
+/* L'annulation flotte en bas, au centre : la file des toasts du service tient
+   le coin droit, et les deux ne doivent pas se recouvrir. */
+.undo {
+  position: fixed;
+  inset-block-end: var(--fold-space-lg);
+  inset-inline-start: 50%;
+  transform: translateX(-50%);
+  z-index: 1;
+}
+
+.undo-line {
   display: inline-flex;
   align-items: center;
-  gap: var(--fold-space-xs);
-  padding: var(--fold-space-xs) var(--fold-space-sm);
-  border: 1px solid var(--fold-color-primary);
-  border-radius: var(--fold-radius-pill);
-  background: var(--fold-color-surface-card);
-  color: inherit;
-  font: inherit;
-  font-size: var(--fold-text-xs);
-  cursor: pointer;
+  gap: var(--fold-space-sm);
 }
 
-/* Le mot que l'œil n'a pas besoin de lire, et que le lecteur d'écran doit
-   entendre : « × » seul ne dit pas ce qu'il retire. */
-.sr-only {
-  position: absolute;
-  width: 1px;
-  height: 1px;
+/* LA LÉGENDE D'UNE TUILE : un titre, les mots, un pied. Mêmes tailles et
+   mêmes écarts partout, par le seul `gap` de `.card`. */
+.name {
   overflow: hidden;
-  clip-path: inset(50%);
+  text-overflow: ellipsis;
   white-space: nowrap;
+  font-size: var(--fold-text-sm);
+  font-weight: var(--fold-weight-semibold);
 }
 
-/* Le compte d'emplois quand il MÈNE quelque part. Il garde l'aspect du texte
-   voisin et ne gagne qu'un soulignement : c'est une information qu'on peut
-   suivre, pas une action qu'on déclenche. */
+.name-missing {
+  color: var(--fold-color-text-muted);
+  font-weight: var(--fold-weight-regular);
+}
+
+.foot {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--fold-space-sm);
+}
+
+.actions {
+  display: inline-flex;
+  gap: var(--fold-space-xs);
+}
+
+/* Le compte d'emplois MÈNE aux porteurs : la pastille d'état est le bouton. */
 .uses-link {
+  display: inline-flex;
   padding: 0;
   border: 0;
+  border-radius: var(--fold-radius-pill);
   background: none;
-  color: inherit;
-  font: inherit;
-  text-align: start;
-  text-decoration: underline;
   cursor: pointer;
+}
+
+.uses-link:focus-visible {
+  outline: 2px solid var(--fold-color-primary);
+  outline-offset: 2px;
+}
+
+app-tag-chip[draggable] {
+  cursor: grab;
+}
+
+/* Le déclencheur du menu, DANS la pastille : discret, révélé au survol et au
+   focus ; toujours là au toucher, où il n'y a pas de survol. */
+.tag-actions {
+  display: inline-flex;
+}
+
+.tag-menu {
+  display: inline-flex;
+  align-items: center;
+  padding: 0 var(--fold-space-xs);
+  border: 0;
+  border-radius: var(--fold-radius-pill);
+  background: none;
+  color: var(--fold-color-text-muted);
+  cursor: pointer;
+  transition: opacity var(--fold-motion-fast);
+}
+
+.tag-menu:hover {
+  color: var(--fold-color-text);
+}
+
+.tag-menu:focus-visible {
+  outline: 2px solid var(--fold-color-primary);
+  outline-offset: 2px;
+}
+
+@media (hover: hover) {
+  app-tag-chip:not(:hover, :focus-within) .tag-menu:not([aria-expanded='true']) {
+    opacity: 0;
+  }
+}
+
+/* « Refus passés » reste un bouton, pas une barre. */
+.past {
+  align-self: flex-end;
 }

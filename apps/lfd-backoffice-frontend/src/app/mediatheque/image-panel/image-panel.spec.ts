@@ -40,7 +40,14 @@ function panel(data: ImagePanelData): { panel: ImagePanel; closed: ImagePanelRes
   return { panel: fixture.componentInstance, closed };
 }
 
-const bare: ImagePanelData = { url: URL, name: '', alt: { fr: URL }, focal: null };
+const bare: ImagePanelData = {
+  url: URL,
+  name: '',
+  alt: { fr: URL },
+  focal: null,
+  tags: [],
+  vocabulary: [],
+};
 
 describe('décrire une image', () => {
   it('n’affiche PAS l’URL de repli comme si c’était une alternative', () => {
@@ -128,5 +135,56 @@ describe('décrire une image', () => {
     // `null` veut dire « personne ne s'est prononcé ». Le centre est un choix
     // comme un autre, et les confondre retirerait le moyen de ne pas décider.
     expect(closed[0]?.focal).toBeNull();
+  });
+});
+
+describe('décrire une image — les mots-clés', () => {
+  const tagged: ImagePanelData = {
+    ...bare,
+    tags: ['croissant'],
+    vocabulary: ['beurre', 'croissant', 'pain au chocolat', 'chocolatine'],
+  };
+
+  it('ajoute la saisie normalisée, et la rend avec le reste', () => {
+    const { panel: screen, closed } = panel(tagged);
+
+    screen['tagDraft'].set('  Beurre ');
+    expect(screen['tagWritten']()).toBe('beurre');
+    screen['addTag'](screen['tagDraft']());
+    screen['submit']();
+
+    expect(closed[0]?.tags).toEqual(['croissant', 'beurre']);
+    expect(screen['tagDraft']()).toBe('');
+  });
+
+  it('ne double pas un mot déjà porté, et ignore une saisie vide', () => {
+    const { panel: screen } = panel(tagged);
+
+    screen['addTag']('Croissant');
+    screen['addTag']('   ');
+
+    expect(screen['tags']()).toEqual(['croissant']);
+  });
+
+  it('retire un mot', () => {
+    const { panel: screen, closed } = panel(tagged);
+
+    screen['removeTag']('croissant');
+    screen['submit']();
+
+    expect(closed[0]?.tags).toEqual([]);
+  });
+
+  it('propose les mots existants qui contiennent la saisie, hors ceux portés', () => {
+    const { panel: screen } = panel(tagged);
+
+    screen['tagDraft'].set('CHOC');
+    expect(screen['suggestions']()).toEqual(['pain au chocolat', 'chocolatine']);
+
+    screen['tagDraft'].set('crois');
+    expect(screen['suggestions']()).toEqual([]);
+
+    screen['tagDraft'].set('');
+    expect(screen['suggestions']()).toEqual([]);
   });
 });

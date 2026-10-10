@@ -1,0 +1,33 @@
+<fold-panel-header
+  title="Renommer le mot-clé"
+  [subtitle]="
+    (data().tag.count === 1
+      ? 'Sur l’image qui porte « '
+      : 'Sur les ' + data().tag.count + ' images qui portent « ') +
+    data().tag.tag +
+    ' ».'
+  "
+/>
+
+<fold-panel-body>
+  <fold-input
+    label="Nouveau mot"
+    [hint]="'Sera écrit : « ' + written() + ' »'"
+    [autofocus]="true"
+    [value]="draft()"
+    (valueChange)="draft.set($event)"
+    (keydown.enter)="submit()"
+  />
+
+  @if (merge(); as sentence) {
+    <!-- Dit AVANT : une fusion ne se défait pas. -->
+    <fold-callout variant="warning" announce>{{ sentence }}</fold-callout>
+  }
+</fold-panel-body>
+
+<fold-panel-footer>
+  <button foldButton emphasis="outline" intent="neutral" (click)="cancel()">Annuler</button>
+  <button foldButton [disabled]="blocked()" (click)="submit()">
+    {{ target() === null ? 'Renommer' : 'Fusionner' }}
+  </button>
+</fold-panel-footer>

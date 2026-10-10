@@ -5,6 +5,8 @@ import type {
   MediaUploadFailureView,
   MediaDetailsPayload,
   MediaLibraryPageView,
+  MediaTagView,
+  RenameMediaTagPayload,
   UploadedMediaView,
 } from '@lfd/pim-contracts';
 import { firstValueFrom } from 'rxjs';
@@ -151,5 +153,31 @@ export class MediaLibraryHttpApi {
    */
   async discard(url: string): Promise<void> {
     await firstValueFrom(this.http.delete<void>(`${this.base}/media`, { params: { url } }));
+  }
+
+  /**
+   * **Le vocabulaire du fonds** — chaque mot-clé et combien d'images le
+   * portent, compté sur TOUT le fonds (L1, 2026-10-10).
+   *
+   * 🔴 Il remplace un vocabulaire dérivé des images CHARGÉES : un mot porté
+   * seulement par une image hors de la page n'apparaissait pas dans la bande,
+   * et rien ne le disait.
+   */
+  async tags(): Promise<readonly MediaTagView[]> {
+    return firstValueFrom(this.http.get<readonly MediaTagView[]>(`${this.base}/media/tags`));
+  }
+
+  /**
+   * Renomme un mot-clé sur toutes les images qui le portent. Si `to` existe
+   * déjà, c'est une **fusion** : le serveur ne la distingue pas, l'écran
+   * l'annonce avant.
+   */
+  async renameTag(payload: RenameMediaTagPayload): Promise<void> {
+    await firstValueFrom(this.http.put<void>(`${this.base}/media/tags/rename`, payload));
+  }
+
+  /** Retire un mot-clé de toutes les images. Les images restent au fonds. */
+  async removeTag(tag: string): Promise<void> {
+    await firstValueFrom(this.http.delete<void>(`${this.base}/media/tags`, { params: { tag } }));
   }
 }

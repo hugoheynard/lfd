@@ -2,11 +2,16 @@ import { provideZonelessChangeDetection } from '@angular/core';
 import { TestBed } from '@angular/core/testing';
 import type {
   LibraryMediaView,
+  MediaDetailsPayload,
   MediaLibraryPageView,
+  MediaTagView,
   MediaUploadFailureView,
+  RenameMediaTagPayload,
 } from '@lfd/pim-contracts';
+import { FoldPanelHostService } from 'fold-ng';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 
+import { NotifyService } from '../../notify.service';
 import { MediaLibraryHttpApi } from '../media-library-http-api';
 
 import { MediathequePage } from './mediatheque-page';
@@ -47,6 +52,34 @@ function image(url: string, name = '', uses = 0): LibraryMediaView {
 }
 
 class FakeLibrary {
+  vocabulary: MediaTagView[] = [];
+  described: MediaDetailsPayload[] = [];
+  renamed: RenameMediaTagPayload[] = [];
+  removed: string[] = [];
+  refuseNext: unknown = null;
+
+  tags(): Promise<readonly MediaTagView[]> {
+    return Promise.resolve(this.vocabulary);
+  }
+
+  describe(details: MediaDetailsPayload): Promise<void> {
+    this.described.push(details);
+    return Promise.resolve();
+  }
+
+  renameTag(payload: RenameMediaTagPayload): Promise<void> {
+    if (this.refuseNext !== null) {
+      return Promise.reject(this.refuseNext);
+    }
+    this.renamed.push(payload);
+    return Promise.resolve();
+  }
+
+  removeTag(tag: string): Promise<void> {
+    this.removed.push(tag);
+    return Promise.resolve();
+  }
+
   /** Ce que l'historique PERSISTANT rend — distinct de la file en mémoire. */
   past: MediaUploadFailureView[] = [];
   failuresCalls = 0;
@@ -76,13 +109,42 @@ class FakeLibrary {
 
 let library: FakeLibrary;
 
+/** Ce que le prochain panneau ouvert rendra à sa fermeture. */
+let panelResult: unknown;
+let opened: unknown[];
+
+class FakeNotify {
+  successes: string[] = [];
+  refusals: unknown[] = [];
+  success(message: string): void {
+    this.successes.push(message);
+  }
+  refused(error: unknown): void {
+    this.refusals.push(error);
+  }
+}
+let notify: FakeNotify;
+
 function page(): MediathequePage {
   TestBed.resetTestingModule();
   library = new FakeLibrary();
+  notify = new FakeNotify();
+  opened = [];
+  panelResult = undefined;
   TestBed.configureTestingModule({
     providers: [
       provideZonelessChangeDetection(),
       { provide: MediaLibraryHttpApi, useFactory: () => library },
+      { provide: NotifyService, useFactory: () => notify },
+      {
+        provide: FoldPanelHostService,
+        useValue: {
+          open: (_component: unknown, config: { data: unknown }) => {
+            opened.push(config.data);
+            return { closed: Promise.resolve(panelResult) };
+          },
+        },
+      },
     ],
   });
   return TestBed.createComponent(MediathequePage).componentInstance;
@@ -98,7 +160,7 @@ describe('la médiathèque', () => {
   it('dit combien de porteurs affichent une image', () => {
     const screen = page();
 
-    expect(screen['usesLabel'](image('a', '', 0))).toBe('aucun emploi');
+    expect(screen['usesLabel'](image('a', '', 0))).toBe('Inutilisée');
     expect(screen['usesLabel'](image('a', '', 1))).toBe('1 emploi');
     expect(screen['usesLabel'](image('a', '', 3))).toBe('3 emplois');
   });
@@ -106,7 +168,7 @@ describe('la médiathèque', () => {
   it('avoue qu’une image n’a pas d’étiquette plutôt que de laisser un vide', () => {
     const screen = page();
 
-    expect(screen['label'](image('https://cdn.test/products/abc.png'))).toBe('Sans étiquette');
+    expect(screen['label'](image('https://cdn.test/products/abc.png'))).toBe('Sans nom');
     expect(screen['label'](image('a', 'croissant de face'))).toBe('croissant de face');
   });
 
@@ -241,5 +303,124 @@ describe("la médiathèque — l'historique des refus", () => {
 
     expect(screen['showPast']()).toBe(false);
     expect(library.failuresCalls).toBe(1);
+  });
+});
+
+describe('la médiathèque — les mots-clés', () => {
+  function tagged(url: string, tags: string[]): LibraryMediaView {
+    return { ...image(url), tags };
+  }
+
+  it('remplit la bande au démarrage, depuis le fonds entier', async () => {
+    const screen = page();
+    library.vocabulary = [{ tag: 'croissant', count: 12 }];
+
+    await screen['palette'].refresh();
+
+    expect(screen['palette'].all()).toEqual([{ tag: 'croissant', count: 12, fresh: false }]);
+  });
+
+  /** D1 : le retrait est immédiat, et l'annulation repose le mot à SA place. */
+  it('repose un mot retiré d’une tuile, à sa place, par le même PUT', async () => {
+    const screen = page();
+    library.pages = [{ items: [tagged('a', ['beurre', 'croissant', 'pain'])], total: 1 }];
+    await screen['load']();
+
+    await screen['strip'](screen['items']()[0]!, 'croissant');
+    expect(screen['items']()[0]?.tags).toEqual(['beurre', 'pain']);
+    const [last] = screen['stripped']();
+    expect(last?.tag).toBe('croissant');
+
+    await screen['undoStrip'](last!);
+
+    expect(screen['items']()[0]?.tags).toEqual(['beurre', 'croissant', 'pain']);
+    expect(library.described.at(-1)?.tags).toEqual(['beurre', 'croissant', 'pain']);
+    expect(screen['stripped']()).toEqual([]);
+  });
+
+  /**
+   * Régression : poser ou retirer un mot depuis la bande omettait
+   * l'alternative, que le serveur lit alors comme effacée — chaque mot-clé
+   * effaçait la description de l'image (corrigé le 2026-10-10).
+   */
+  it('garde l’alternative de l’image quand on pose ou retire un mot', async () => {
+    const screen = page();
+    const described = { ...tagged('a', ['croissant']), alt: { fr: 'Croissant doré' } };
+    library.pages = [{ items: [described], total: 1 }];
+    await screen['load']();
+
+    await screen['strip'](screen['items']()[0]!, 'croissant');
+    expect(library.described.at(-1)?.alt).toEqual({ fr: 'Croissant doré' });
+
+    await screen['apply'](screen['items']()[0]!, 'beurre');
+    expect(library.described.at(-1)?.alt).toEqual({ fr: 'Croissant doré' });
+  });
+
+  it('renomme partout, l’annonce, et suit le filtre', async () => {
+    const screen = page();
+    library.vocabulary = [{ tag: 'croisant', count: 3 }];
+    await screen['palette'].refresh();
+    await screen['toggleFilterTag']('croisant');
+    panelResult = { to: 'croissant' };
+
+    await screen['rename']({ tag: 'croisant', count: 3, fresh: false });
+
+    expect(library.renamed).toEqual([{ from: 'croisant', to: 'croissant' }]);
+    expect(notify.successes).toEqual(['Mot-clé renommé']);
+    expect(screen['filterTags']()).toEqual(['croissant']);
+  });
+
+  it('dit « fusionnés » quand le mot existait déjà, et passe les comptes au panneau', async () => {
+    const screen = page();
+    library.vocabulary = [
+      { tag: 'croisant', count: 3 },
+      { tag: 'croissant', count: 12 },
+    ];
+    await screen['palette'].refresh();
+    panelResult = { to: 'croissant' };
+
+    await screen['rename']({ tag: 'croisant', count: 3, fresh: false });
+
+    expect(opened[0]).toEqual({
+      tag: { tag: 'croisant', count: 3 },
+      vocabulary: [
+        { tag: 'croisant', count: 3 },
+        { tag: 'croissant', count: 12 },
+      ],
+    });
+    expect(notify.successes).toEqual(['Mots-clés fusionnés']);
+  });
+
+  it('rapporte le refus du serveur, et n’annonce aucun succès', async () => {
+    const screen = page();
+    const refusal = new Error('404');
+    library.refuseNext = refusal;
+    panelResult = { to: 'croissant' };
+
+    await screen['rename']({ tag: 'croisant', count: 3, fresh: false });
+
+    expect(notify.refusals).toEqual([refusal]);
+    expect(notify.successes).toEqual([]);
+  });
+
+  it('n’écrit rien quand on annule le renommage', async () => {
+    const screen = page();
+
+    await screen['rename']({ tag: 'croisant', count: 3, fresh: false });
+
+    expect(library.renamed).toEqual([]);
+  });
+
+  it('retire partout après confirmation, en disant de combien d’images', async () => {
+    const screen = page();
+    await screen['toggleFilterTag']('croisant');
+    panelResult = true;
+
+    await screen['removeEverywhere']({ tag: 'croisant', count: 3, fresh: false });
+
+    expect(opened[0]).toEqual({ tag: { tag: 'croisant', count: 3 } });
+    expect(library.removed).toEqual(['croisant']);
+    expect(notify.successes).toEqual(['Mot-clé retiré de 3 images']);
+    expect(screen['filterTags']()).toEqual([]);
   });
 });

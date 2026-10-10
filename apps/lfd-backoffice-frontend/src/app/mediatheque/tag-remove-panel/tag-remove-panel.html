@@ -1,0 +1,11 @@
+<fold-panel-header title="Supprimer le mot-clé partout" />
+
+<fold-panel-body>
+  <p class="question">{{ question() }}</p>
+  <p class="aside">Les images restent dans le fonds ; seul le mot disparaît.</p>
+</fold-panel-body>
+
+<fold-panel-footer>
+  <button foldButton emphasis="outline" intent="neutral" (click)="cancel()">Annuler</button>
+  <button foldButton intent="danger" (click)="confirm()">Retirer partout</button>
+</fold-panel-footer>

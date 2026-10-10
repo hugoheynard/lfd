@@ -23,6 +23,41 @@
     (valueChange)="label.set($event)"
   />
 
+  <!-- LES MOTS-CLÉS de cette image. Ils partent avec le reste au même
+       enregistrement : l'écriture est un remplacement, pas une retouche. -->
+  <section class="tags" aria-labelledby="image-panel-tags">
+    <h3 id="image-panel-tags" class="tags-title">Mots-clés</h3>
+    @if (tags().length === 0) {
+      <p class="tags-none">Aucun mot-clé.</p>
+    } @else {
+      <ul class="chips">
+        @for (tag of tags(); track tag) {
+          <li><app-tag-chip [tag]="tag" removable (removed)="removeTag(tag)" /></li>
+        }
+      </ul>
+    }
+    <fold-input
+      label="Ajouter un mot-clé"
+      [hint]="
+        tagWritten() !== '' && tagWritten() !== tagDraft().trim()
+          ? 'Sera écrit : « ' + tagWritten() + ' »'
+          : 'Entrée pour ajouter. Écrit en minuscules.'
+      "
+      [value]="tagDraft()"
+      (valueChange)="tagDraft.set($event)"
+      (keydown.enter)="addTag(tagDraft())"
+    />
+    @if (suggestions().length > 0) {
+      <!-- Des boutons, pas une liste déroulante : chacun s'atteint à la
+           tabulation et se lit pour ce qu'il fait. -->
+      <div class="suggestions" role="group" aria-label="Mots-clés existants">
+        @for (word of suggestions(); track word) {
+          <app-tag-chip [tag]="word" pressable (pressed)="addTag(word)" />
+        }
+      </div>
+    }
+  </section>
+
   <!-- Les TROIS langues ensemble : une traduction se juge à côté de sa source,
        pas de mémoire. -->
   @for (locale of locales; track locale) {

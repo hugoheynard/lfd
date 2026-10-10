@@ -1,0 +1,13 @@
+.question,
+.aside {
+  margin: 0;
+}
+
+.question {
+  font-weight: var(--fold-weight-semibold);
+}
+
+.aside {
+  color: var(--fold-color-text-muted);
+  font-size: var(--fold-text-sm);
+}

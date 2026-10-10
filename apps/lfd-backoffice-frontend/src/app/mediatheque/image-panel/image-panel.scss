@@ -59,3 +59,31 @@
   gap: var(--fold-space-sm);
   margin-top: var(--fold-space-lg);
 }
+
+.tags {
+  display: flex;
+  flex-direction: column;
+  gap: var(--fold-space-sm);
+}
+
+.tags-title {
+  margin: 0;
+  font-size: var(--fold-text-sm);
+  font-weight: var(--fold-weight-semibold);
+}
+
+.tags-none {
+  margin: 0;
+  color: var(--fold-color-text-muted);
+  font-size: var(--fold-text-sm);
+}
+
+.chips,
+.suggestions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--fold-space-xs);
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}

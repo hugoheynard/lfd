@@ -1,4 +1,12 @@
-import { ChangeDetectionStrategy, Component, effect, inject, input, signal } from '@angular/core';
+import {
+  ChangeDetectionStrategy,
+  Component,
+  computed,
+  effect,
+  inject,
+  input,
+  signal,
+} from '@angular/core';
 import {
   LOCALES,
   SOURCE_LOCALE,
@@ -15,6 +23,11 @@ import {
 } from 'fold-ng';
 
 import { LOCALE_NAMES } from '../../shared/lang-switch/locale-names';
+import { normalizeTag } from '../tag-palette';
+import { TagChip } from '../tag-chip/tag-chip';
+
+/** Combien de suggestions au plus : au-delà, on tape une lettre de plus. */
+const SUGGESTION_LIMIT = 8;
 
 /** Ce qu'on décrit, et ce qui en est déjà écrit. */
 export interface ImagePanelData {
@@ -22,6 +35,9 @@ export interface ImagePanelData {
   readonly name: string;
   readonly alt: LocalizedText;
   readonly focal: FocalPoint | null;
+  readonly tags: readonly string[];
+  /** Le vocabulaire du fonds, d'où viennent les suggestions. */
+  readonly vocabulary: readonly string[];
 }
 
 /** Ce que le panneau rend. `undefined` au `closed` = annulé, et rien n'est écrit. */
@@ -29,10 +45,13 @@ export interface ImagePanelResult {
   readonly name: string;
   readonly alt: LocalizedText;
   readonly focal: FocalPoint | null;
+  readonly tags: readonly string[];
 }
 
 /**
- * Panneau **Décrire une image** — son étiquette, ses alternatives, son point.
+ * Panneau **Décrire une image** — son étiquette, ses alternatives, son point,
+ * et ses mots-clés (L1, 2026-10-10 : la bande pose un mot sur beaucoup
+ * d'images, le panneau règle tous ceux d'UNE image).
  *
  * 🔴 C'est le SEUL point où ces trois champs s'écrivent (Hugo, 2026-09-23). Ils
  * décrivaient l'image depuis la fiche produit jusqu'à ce jour-là, et une image
@@ -46,7 +65,7 @@ export interface ImagePanelResult {
 @Component({
   selector: 'app-image-panel',
   changeDetection: ChangeDetectionStrategy.OnPush,
-  imports: [FoldPanelHeaderComponent, FoldInputComponent, FoldButtonComponent],
+  imports: [FoldPanelHeaderComponent, FoldInputComponent, FoldButtonComponent, TagChip],
   templateUrl: './image-panel.html',
   styleUrl: './image-panel.scss',
 })
@@ -64,6 +83,30 @@ export class ImagePanel {
   protected readonly label = signal('');
   protected readonly draft = signal<LocalizedText>({ fr: '' });
   protected readonly focal = signal<FocalPoint | null>(null);
+  protected readonly tags = signal<readonly string[]>([]);
+  /** Ce qu'on tape dans le champ « Ajouter un mot-clé ». */
+  protected readonly tagDraft = signal('');
+
+  /** Ce qui sera écrit — montré dès que la normalisation change la saisie. */
+  protected readonly tagWritten = computed(() => normalizeTag(this.tagDraft()));
+
+  /**
+   * Les mots existants qui contiennent la saisie, hors ceux déjà portés.
+   *
+   * N'importe où dans le mot, comme la bande : « sant » trouve « croissant ».
+   * Proposer l'existant, c'est ce qui évite « croisant » à côté de
+   * « croissant ».
+   */
+  protected readonly suggestions = computed(() => {
+    const needle = this.tagWritten();
+    if (needle === '') {
+      return [];
+    }
+    const worn = new Set(this.tags());
+    return this.data()
+      .vocabulary.filter((word) => word.includes(needle) && !worn.has(word))
+      .slice(0, SUGGESTION_LIMIT);
+  });
 
   constructor() {
     effect(() => {
@@ -74,6 +117,7 @@ export class ImagePanel {
       // rédigée, et la première sauvegarde la figerait.
       this.draft.set(data.alt[SOURCE_LOCALE] === data.url ? { fr: '' } : data.alt);
       this.focal.set(data.focal);
+      this.tags.set(data.tags);
     });
   }
 
@@ -116,6 +160,19 @@ export class ImagePanel {
     });
   }
 
+  /** Ajoute la saisie (ou une suggestion), normalisée. Un mot déjà porté ne double pas. */
+  protected addTag(raw: string): void {
+    const tag = normalizeTag(raw);
+    if (tag !== '' && !this.tags().includes(tag)) {
+      this.tags.update((current) => [...current, tag]);
+    }
+    this.tagDraft.set('');
+  }
+
+  protected removeTag(tag: string): void {
+    this.tags.update((current) => current.filter((kept) => kept !== tag));
+  }
+
   /** Retire la désignation — distinct de « au centre », qui est un choix. */
   protected unpoint(): void {
     this.focal.set(null);
@@ -141,6 +198,7 @@ export class ImagePanel {
       // que plus rien ne rattache à ce qu'elle traduit.
       alt: text[SOURCE_LOCALE].trim() === '' ? { fr: '' } : text,
       focal: this.focal(),
+      tags: this.tags(),
     });
   }
 

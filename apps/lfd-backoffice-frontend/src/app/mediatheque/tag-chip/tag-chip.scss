@@ -1,0 +1,91 @@
+/* LA pastille. Un seul dessin pour la bande, la tuile et le panneau : un mot
+   qui change d'allure selon l'endroit se lit comme deux choses différentes. */
+:host {
+  display: inline-flex;
+  align-items: stretch;
+  max-width: 100%;
+  border: 1px solid var(--fold-color-border-subtle);
+  border-radius: var(--fold-radius-pill);
+  background: var(--fold-color-surface-card);
+  color: var(--fold-color-text);
+  font-size: var(--fold-text-xs);
+  line-height: var(--fold-leading-tight);
+  transition:
+    border-color var(--fold-motion-fast),
+    background-color var(--fold-motion-fast);
+}
+
+:host(:hover) {
+  border-color: var(--fold-color-border);
+  background: var(--fold-color-surface-hover);
+}
+
+/* Armé : franc, parce que tant qu'il l'est, chaque clic sur une image écrit.
+   Une nuance discrète ferait poser des mots-clés par surprise. */
+:host(.is-armed) {
+  border-color: var(--fold-color-primary-border);
+  background: var(--fold-color-primary-surface);
+  color: var(--fold-color-primary-text);
+}
+
+/* Pas encore posé : un contour en tirets, qui dit « provisoire » sans un mot. */
+:host(.is-fresh) {
+  border-style: dashed;
+  color: var(--fold-color-text-secondary);
+}
+
+.word,
+.remove {
+  display: inline-flex;
+  align-items: center;
+  border: 0;
+  background: none;
+  color: inherit;
+  font: inherit;
+}
+
+.word {
+  gap: var(--fold-space-xs);
+  min-width: 0;
+  padding: var(--fold-space-xs) var(--fold-space-sm);
+  border-radius: var(--fold-radius-pill);
+  white-space: nowrap;
+}
+
+button.word {
+  cursor: pointer;
+}
+
+/* Le compte se lit dans la pastille, sans lui voler la vedette. */
+.count {
+  color: var(--fold-color-text-muted);
+  font-variant-numeric: tabular-nums;
+}
+
+:host(.is-armed) .count {
+  color: inherit;
+}
+
+.remove {
+  justify-content: center;
+  padding: 0 var(--fold-space-xs);
+  border-radius: var(--fold-radius-pill);
+  color: var(--fold-color-text-muted);
+  cursor: pointer;
+}
+
+.remove:hover {
+  color: var(--fold-color-alert-text);
+}
+
+/* Le × colle au mot : sans lui, la pastille garde sa marge de droite. */
+.word:has(+ .remove),
+.word:has(+ [chipAction]) {
+  padding-inline-end: 0;
+}
+
+.word:focus-visible,
+.remove:focus-visible {
+  outline: 2px solid var(--fold-color-primary);
+  outline-offset: 2px;
+}

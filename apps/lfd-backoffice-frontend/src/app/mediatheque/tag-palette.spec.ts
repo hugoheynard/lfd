@@ -1,97 +1,160 @@
 import { TestBed } from '@angular/core/testing';
+import type { MediaTagView, RenameMediaTagPayload } from '@lfd/pim-contracts';
 import { describe, expect, it } from 'vitest';
 
+import { MediaLibraryHttpApi } from './media-library-http-api';
 import { TagPaletteStore } from './tag-palette';
 
 /**
- * Ce que ces cas tiennent : **la bande montre ce qui va être écrit**, et le
- * vocabulaire est dérivé de l'usage plutôt que stocké à part.
+ * Ce que ces cas tiennent : **la bande montre le vocabulaire du FONDS**, avec
+ * son compte, et ce qui va être écrit.
  *
- * Un écran qui accepte « Croissant » puis affiche « croissant » après le
- * serveur donne l'impression de corriger en douce ; et un second endroit où le
- * vocabulaire vivrait finirait par diverger de ce que les images portent.
+ * Régression (L1, 2026-10-10) : la bande dérivait son vocabulaire des images
+ * CHARGÉES. Un mot porté seulement par une image hors de la page n'y figurait
+ * pas, et rien ne le disait.
  */
 
-function palette(): TagPaletteStore {
+class FakeTags {
+  vocabulary: MediaTagView[] = [];
+  fails = false;
+  renamed: RenameMediaTagPayload[] = [];
+  removed: string[] = [];
+
+  tags(): Promise<readonly MediaTagView[]> {
+    return this.fails ? Promise.reject(new Error('réseau')) : Promise.resolve(this.vocabulary);
+  }
+
+  renameTag(payload: RenameMediaTagPayload): Promise<void> {
+    this.renamed.push(payload);
+    return Promise.resolve();
+  }
+
+  removeTag(tag: string): Promise<void> {
+    this.removed.push(tag);
+    return Promise.resolve();
+  }
+}
+
+function palette(vocabulary: MediaTagView[] = []): { band: TagPaletteStore; api: FakeTags } {
+  const api = new FakeTags();
+  api.vocabulary = vocabulary;
   TestBed.resetTestingModule();
-  TestBed.configureTestingModule({ providers: [TagPaletteStore] });
-  return TestBed.inject(TagPaletteStore);
+  TestBed.configureTestingModule({
+    providers: [TagPaletteStore, { provide: MediaLibraryHttpApi, useValue: api }],
+  });
+  return { band: TestBed.inject(TagPaletteStore), api };
 }
 
 describe('la bande de tags', () => {
+  it('lit le vocabulaire du fonds, avec le compte de chaque mot', async () => {
+    const { band } = palette([
+      { tag: 'croissant', count: 12 },
+      { tag: 'beurre', count: 3 },
+    ]);
+
+    await band.refresh();
+
+    expect(band.all()).toEqual([
+      { tag: 'beurre', count: 3, fresh: false },
+      { tag: 'croissant', count: 12, fresh: false },
+    ]);
+  });
+
   it('normalise à la saisie, comme le fera le serveur', () => {
-    const band = palette();
+    const { band } = palette();
 
     expect(band.draft('  Croissant ')).toBe('croissant');
-    expect(band.all()).toEqual(['croissant']);
+    expect(band.words()).toEqual(['croissant']);
   });
 
   it('refuse une saisie vide sans rien ajouter', () => {
-    const band = palette();
+    const { band } = palette();
 
     expect(band.draft('   ')).toBeNull();
     expect(band.all()).toEqual([]);
   });
 
-  it('dérive le vocabulaire de ce que les images portent', () => {
-    const band = palette();
+  it('garde un mot inventé, à zéro et marqué « pas encore posé »', async () => {
+    const { band } = palette([{ tag: 'croissant', count: 12 }]);
+    band.draft('nouveau');
 
-    band.observe([['beurre', 'croissant'], ['croissant'], []]);
+    // Une relecture du serveur ne doit pas l'emporter sous les doigts.
+    await band.refresh();
 
-    expect(band.all()).toEqual(['beurre', 'croissant']);
+    expect(band.all()).toContainEqual({ tag: 'nouveau', count: 0, fresh: true });
   });
 
-  it('ne double pas un mot déjà porté par une image', () => {
-    const band = palette();
-    band.observe([['croissant']]);
+  it('ne double pas un mot déjà au fonds', async () => {
+    const { band } = palette([{ tag: 'croissant', count: 12 }]);
+    await band.refresh();
 
     band.draft('Croissant');
 
-    expect(band.all()).toEqual(['croissant']);
+    expect(band.all()).toEqual([{ tag: 'croissant', count: 12, fresh: false }]);
   });
 
-  /**
-   * La recherche cherche N'IMPORTE OÙ dans le mot : savoir comment un tag
-   * commence est précisément ce qu'on ne sait pas quand on le cherche.
-   */
-  it('trouve un mot par son milieu', () => {
-    const band = palette();
-    band.observe([['croissant', 'beurre', 'chocolat']]);
+  it('cesse de marquer « pas encore posé » un mot que le fonds porte désormais', async () => {
+    const { band, api } = palette();
+    band.draft('nouveau');
+
+    api.vocabulary = [{ tag: 'nouveau', count: 1 }];
+    await band.refresh();
+
+    expect(band.all()).toEqual([{ tag: 'nouveau', count: 1, fresh: false }]);
+  });
+
+  it('trouve un mot par son milieu', async () => {
+    const { band } = palette([
+      { tag: 'croissant', count: 1 },
+      { tag: 'beurre', count: 1 },
+    ]);
+    await band.refresh();
 
     band.search.set('SANT');
 
-    expect(band.shown()).toEqual(['croissant']);
+    expect(band.shown().map((entry) => entry.tag)).toEqual(['croissant']);
   });
 
-  it('arme le mot qu’on vient d’écrire, pour qu’il serve tout de suite', () => {
-    const band = palette();
+  it('arme le mot qu’on vient d’écrire, et le désarme au second clic', () => {
+    const { band } = palette();
 
     band.draft('croissant');
-
     expect(band.armed()).toBe('croissant');
-  });
-
-  it('désarme au second clic, pour qu’un clic sur une image n’écrive plus', () => {
-    const band = palette();
-    band.observe([['croissant']]);
 
     band.toggle('croissant');
-    band.toggle('croissant');
-
     expect(band.armed()).toBeNull();
   });
 
-  /**
-   * Régression attendue : `observe` réécrit l'usage à chaque relecture. Il ne
-   * doit pas emporter un mot écrit dans la bande et pas encore posé — sinon il
-   * disparaît sous les doigts au premier chargement de page suivante.
-   */
-  it('ne perd pas un mot écrit mais pas encore posé', () => {
-    const band = palette();
-    band.draft('nouveau');
+  it('dit qu’il n’a pas pu relire, et garde ce qu’il avait', async () => {
+    const { band, api } = palette([{ tag: 'croissant', count: 12 }]);
+    await band.refresh();
 
-    band.observe([['croissant']]);
+    api.fails = true;
+    await band.refresh();
 
-    expect(band.all()).toEqual(['croissant', 'nouveau']);
+    expect(band.failure()).not.toBeNull();
+    expect(band.words()).toEqual(['croissant']);
+  });
+
+  it('suit le mot armé quand il est renommé', async () => {
+    const { band, api } = palette([{ tag: 'croisant', count: 3 }]);
+    await band.refresh();
+    band.toggle('croisant');
+
+    await band.rename('croisant', 'Croissant');
+
+    expect(api.renamed).toEqual([{ from: 'croisant', to: 'Croissant' }]);
+    expect(band.armed()).toBe('croissant');
+  });
+
+  it('désarme un mot retiré partout', async () => {
+    const { band, api } = palette([{ tag: 'croisant', count: 3 }]);
+    await band.refresh();
+    band.toggle('croisant');
+
+    await band.remove('croisant');
+
+    expect(api.removed).toEqual(['croisant']);
+    expect(band.armed()).toBeNull();
   });
 });

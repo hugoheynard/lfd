@@ -1,0 +1,35 @@
+@if (pressable()) {
+  <button
+    type="button"
+    class="word"
+    [attr.aria-pressed]="armed()"
+    [attr.title]="fresh() ? 'Pas encore posé : il disparaîtra au rechargement' : null"
+    (click)="pressed.emit()"
+  >
+    <span>{{ tag() }}</span>
+    @if (count() !== null) {
+      <span class="count" [attr.aria-label]="count() + (count() === 1 ? ' image' : ' images')">{{
+        count()
+      }}</span>
+    }
+  </button>
+} @else {
+  <span class="word">
+    <span>{{ tag() }}</span>
+    @if (count() !== null) {
+      <span class="count">{{ count() }}</span>
+    }
+  </span>
+}
+<ng-content select="[chipAction]" />
+@if (removable()) {
+  <button
+    type="button"
+    class="remove"
+    [attr.aria-label]="'Retirer « ' + tag() + ' »'"
+    [attr.title]="'Retirer « ' + tag() + ' »'"
+    (click)="removed.emit()"
+  >
+    <fold-icon name="close" [size]="12" />
+  </button>
+}

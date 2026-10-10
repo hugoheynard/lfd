@@ -68,7 +68,7 @@
     <!-- L'HISTORIQUE. Il survit au rechargement, là où le compte rendu
          ci-dessus s'efface avec l'onglet. Deux questions distinctes : « où en
          est mon import » et « qu'est-ce qui n'est pas entré ». -->
-    <button foldButton emphasis="soft" size="sm" (click)="togglePast()">
+    <button foldButton class="past" emphasis="soft" (click)="togglePast()">
       {{ showPast() ? 'Masquer les refus passés' : 'Refus passés' }}
     </button>
 
@@ -97,61 +97,108 @@
     }
   </div>
 
-  <!-- LA BANDE DE TAGS. Le vocabulaire est DÉRIVÉ de ce que les images portent,
-       plus ce qu'on vient d'écrire : il n'y a pas de table de tags, parce qu'un
-       tag n'a rien à porter d'autre que son mot. -->
-  <div class="band">
-    <input
-      class="coin"
-      type="text"
-      placeholder="Nouveau mot-clé"
-      (keydown.enter)="coin($event.target)"
-    />
-    @if (palette.all().length > 6) {
-      <!-- La recherche n'apparaît qu'une fois la bande assez fournie pour
-           qu'on s'y perde : avant, elle serait un champ de plus à ignorer. -->
-      <input
-        class="sift"
-        type="search"
-        placeholder="Chercher un mot-clé"
-        [value]="palette.search()"
-        (input)="palette.search.set($any($event.target).value)"
-      />
-    }
+  <!-- LA BANDE DE TAGS. Le vocabulaire du fonds ENTIER, compté au serveur
+       (L1, 2026-10-10) — plus ce qu'on vient d'écrire sans l'avoir posé. -->
+  <fold-page-section
+    title="Mots-clés"
+    description="Cliquez un mot pour l'armer, puis une image pour le poser — ou glissez-le dessus."
+  >
+    <div class="band">
+      <div class="band-tools">
+        <fold-search
+          class="band-search"
+          size="sm"
+          placeholder="Chercher un mot-clé"
+          ariaLabel="Chercher un mot-clé"
+          [(value)]="palette.search"
+        />
+        <fold-input
+          class="band-coin"
+          size="sm"
+          placeholder="Nouveau mot-clé"
+          ariaLabel="Nouveau mot-clé — Entrée pour l'ajouter"
+          leadingIcon="plus"
+          [value]="coinDraft()"
+          (valueChange)="coinDraft.set($event)"
+          (keydown.enter)="coin()"
+        />
+      </div>
 
-    <ul class="tags">
-      @for (tag of palette.shown(); track tag) {
-        <li>
-          <!-- Cliquable ET déplaçable : on ne glisse pas au clavier, et une
-               bande utilisable à la seule souris fermerait l'écran à qui
-               navigue autrement. Le clic ARME, le clic suivant sur une image
-               pose. -->
-          <button
-            type="button"
-            class="tag"
-            draggable="true"
-            [class.tag-armed]="palette.armed() === tag"
-            (dragstart)="carry($event, tag)"
-            (click)="palette.toggle(tag)"
-          >
-            {{ tag }}
-          </button>
-        </li>
+      @if (palette.failure(); as message) {
+        <!-- Échec PARTIEL : la grille reste juste, seul le compte est en cause. -->
+        <fold-callout variant="alert">{{ message }}</fold-callout>
       }
-    </ul>
 
-    @if (palette.armed(); as tag) {
-      <p class="hint">
-        « {{ tag }} » est armé : cliquez une image pour le poser.
-        <!-- Le même mot sert à POSER et à CHERCHER. Deux bandes de tags
-             auraient dédoublé le vocabulaire à l'écran pour une différence
-             d'intention, pas de nature. -->
-        <button foldButton emphasis="soft" size="sm" (click)="toggleFilterTag(tag)">
-          {{ isFiltering(tag) ? 'Ne plus filtrer dessus' : 'Filtrer sur ce mot-clé' }}
-        </button>
-      </p>
-    }
-  </div>
+      @if (palette.shown().length === 0) {
+        <p class="band-none">
+          {{
+            palette.all().length === 0
+              ? 'Aucun mot-clé au fonds. Écrivez-en un ci-dessus.'
+              : 'Aucun mot-clé ne contient « ' + palette.search() + ' ».'
+          }}
+        </p>
+      } @else {
+        <ul class="tags">
+          @for (entry of palette.shown(); track entry.tag) {
+            <li>
+              <!-- Cliquable ET déplaçable : on ne glisse pas au clavier. Le clic
+                   ARME, le clic suivant sur une image pose. -->
+              <app-tag-chip
+                draggable="true"
+                pressable
+                [tag]="entry.tag"
+                [count]="entry.count"
+                [armed]="palette.armed() === entry.tag"
+                [fresh]="entry.fresh"
+                (dragstart)="carry($event, entry.tag)"
+                (pressed)="palette.toggle(entry.tag)"
+              >
+                <!-- Le menu vit DANS la pastille, à droite : un mot inventé
+                     n'a rien à renommer au fonds, il n'en a pas. -->
+                @if (!entry.fresh) {
+                  <span chipAction class="tag-actions" *appCan="'media_library:write'">
+                    <fold-dropdown
+                      placement="bottom-start"
+                      [ariaLabel]="'Actions sur « ' + entry.tag + ' »'"
+                    >
+                      <button
+                        foldPopoverTrigger="menu"
+                        type="button"
+                        class="tag-menu"
+                        [attr.aria-label]="'Actions sur « ' + entry.tag + ' »'"
+                      >
+                        <fold-icon name="more-vertical" [size]="12" />
+                      </button>
+                      <fold-dropdown-item icon="edit" (selected)="rename(entry)">
+                        Renommer
+                      </fold-dropdown-item>
+                      <fold-dropdown-item
+                        icon="bin"
+                        tone="danger"
+                        (selected)="removeEverywhere(entry)"
+                      >
+                        Supprimer partout
+                      </fold-dropdown-item>
+                    </fold-dropdown>
+                  </span>
+                }
+              </app-tag-chip>
+            </li>
+          }
+        </ul>
+      }
+
+      @if (palette.armed(); as tag) {
+        <p class="hint">
+          « {{ tag }} » est armé : cliquez une image pour le poser.
+          <!-- Le même mot sert à POSER et à CHERCHER. -->
+          <button foldButton emphasis="soft" size="sm" (click)="toggleFilterTag(tag)">
+            {{ isFiltering(tag) ? 'Ne plus filtrer dessus' : 'Filtrer sur ce mot-clé' }}
+          </button>
+        </p>
+      }
+    </div>
+  </fold-page-section>
 
   <!-- LE FILTRE. Il part au SERVEUR : filtrer ce qui est chargé ne cherche pas,
        ça trie un échantillon de soixante. -->
@@ -166,10 +213,9 @@
       (search)="refilter()"
     />
     @for (tag of filterTags(); track tag) {
-      <button type="button" class="chip" (click)="toggleFilterTag(tag)">
-        {{ tag }} <span aria-hidden="true">×</span>
-        <span class="sr-only">retirer ce mot-clé du filtre</span>
-      </button>
+      <!-- Le MÊME dessin que la bande, armé : c'est un mot retenu. Son × le
+           relâche du filtre, il ne touche aucune image. -->
+      <app-tag-chip [tag]="tag" armed removable (removed)="toggleFilterTag(tag)" />
     }
     @if (filtering()) {
       <button foldButton emphasis="soft" size="sm" (click)="clearFilter()">Tout afficher</button>
@@ -228,37 +274,53 @@
           <button type="button" class="frame" (click)="apply(item, palette.armed())">
             <img [src]="item.url" [alt]="label(item)" loading="lazy" />
           </button>
-          <span class="name" [title]="fileOf(item)">{{ label(item) }}</span>
+          <span class="name" [class.name-missing]="item.name === ''" [title]="fileOf(item)">
+            {{ label(item) }}
+          </span>
           @if (item.tags.length > 0) {
             <ul class="worn">
               @for (tag of item.tags; track tag) {
-                <li>
-                  <button type="button" class="tag tag-worn" (click)="strip(item, tag)">
-                    {{ tag }} ×
-                  </button>
-                </li>
+                <li><app-tag-chip [tag]="tag" removable (removed)="strip(item, tag)" /></li>
               }
             </ul>
           }
-          <!-- Le compte d'emplois, toujours visible : c'est lui qui dira
-               pourquoi une suppression est refusée, avant qu'on l'essaie.
-               CLIQUABLE dès qu'il y en a : un nombre qui empêche sans permettre
-               de trouver quoi que ce soit transforme un garde-fou en mur. -->
-          @if (item.uses === 0) {
-            <span class="uses uses-free">{{ usesLabel(item) }}</span>
-            <!-- Proposé SEULEMENT quand rien ne la porte : offrir le geste sur
-                 une image affichée ferait apprendre la règle par un refus.
-                 🔴 Le serveur refuse quand même, et c'est LUI le dernier mot —
-                 ce commentaire disait « et la base derrière lui », ce qui est
-                 faux depuis le 2026-09-23 : il n'y a plus de clé étrangère, la
-                 règle vit entièrement dans le code. -->
-            <button type="button" class="discard" (click)="discard(item)">Retirer</button>
-          } @else {
-            <button type="button" class="uses uses-link" (click)="showCarriers(item)">
-              {{ usesLabel(item) }} — voir où
-            </button>
-          }
-          <button type="button" class="discard" (click)="describe(item)">Décrire</button>
+          <!-- LE PIED : l'état d'emploi à gauche, les actions à droite.
+               Le compte d'emplois, toujours visible, dit pourquoi une
+               suppression serait refusée avant qu'on l'essaie ; CLIQUABLE dès
+               qu'il y en a, pour trouver les porteurs. -->
+          <div class="foot">
+            @if (item.uses === 0) {
+              <fold-badge variant="neutral" [content]="usesLabel(item)" />
+            } @else {
+              <button
+                type="button"
+                class="uses-link"
+                [attr.aria-label]="usesLabel(item) + ' — voir où'"
+                (click)="showCarriers(item)"
+              >
+                <fold-badge variant="accent" [content]="usesLabel(item)" />
+              </button>
+            }
+            <span class="actions">
+              <fold-button-icon
+                icon="edit"
+                size="sm"
+                tooltip="Décrire"
+                (clicked)="describe(item)"
+              />
+              <!-- Proposé SEULEMENT quand rien ne la porte ; le serveur reste
+                   le dernier mot et refuse quand même. -->
+              @if (item.uses === 0) {
+                <fold-button-icon
+                  icon="bin"
+                  size="sm"
+                  tone="critical"
+                  tooltip="Retirer du fonds"
+                  (clicked)="discard(item)"
+                />
+              }
+            </span>
+          </div>
         </li>
       }
     </ul>
@@ -268,5 +330,22 @@
         Charger la suite
       </button>
     }
+  }
+
+  <!-- L'ANNULATION d'un retrait sur tuile (D1). Un `fold-toast` posé à part
+       plutôt que la file du service : celle-ci ne porte que du texte, et le
+       geste demande un bouton. Le compte à rebours se met en pause sous le
+       pointeur ou le clavier — on a le temps de l'atteindre. -->
+  @for (last of stripped(); track last.id) {
+    <div class="undo">
+      <fold-toast variant="info" dismissible [duration]="undoMs" (dismiss)="dismissStrip()">
+        <span class="undo-line">
+          « {{ last.tag }} » retiré
+          <button foldButton emphasis="soft" size="sm" icon="undo" (click)="undoStrip(last)">
+            Annuler
+          </button>
+        </span>
+      </fold-toast>
+    </div>
   }
 </fold-page-layout>
