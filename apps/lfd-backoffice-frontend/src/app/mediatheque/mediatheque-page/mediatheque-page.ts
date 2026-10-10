@@ -7,22 +7,16 @@ import {
   FoldButtonComponent,
   FoldButtonIconComponent,
   FoldCalloutComponent,
-  FoldDropdownComponent,
-  FoldDropdownItemComponent,
   FoldEmptyStateComponent,
   FoldIconComponent,
-  FoldInputComponent,
   FoldLoadingStateComponent,
   FoldPageLayoutComponent,
   FoldPageSectionComponent,
-  FoldPopoverTriggerDirective,
-  FoldSearchComponent,
   FoldToastComponent,
 } from 'fold-ng';
 
 import { PermissionsStore } from '../../auth/permissions.store';
 import { NotifyService } from '../../notify.service';
-import { CanDirective } from '../../shared/can/can.directive';
 
 import { BatchUploadStore } from '../batch-upload';
 import { MediaDeposit } from '../media-deposit/media-deposit';
@@ -56,6 +50,7 @@ import {
   type ReplacePanelResult,
   carriersWording,
 } from '../replace-panel/replace-panel';
+import { TagBand } from '../tag-band/tag-band';
 import { TagChip } from '../tag-chip/tag-chip';
 import { TagPaletteStore, type PaletteTag } from '../tag-palette';
 import {
@@ -99,26 +94,21 @@ interface StrippedTag {
 @Component({
   selector: 'app-mediatheque-page',
   imports: [
-    CanDirective,
     FoldBadgeComponent,
     FoldButtonComponent,
     FoldButtonIconComponent,
     FoldCalloutComponent,
-    FoldDropdownComponent,
-    FoldDropdownItemComponent,
     FoldEmptyStateComponent,
     FoldIconComponent,
-    FoldInputComponent,
     FoldLoadingStateComponent,
     FoldPageLayoutComponent,
     FoldPageSectionComponent,
-    FoldPopoverTriggerDirective,
-    FoldSearchComponent,
     FoldToastComponent,
     FeedTail,
     MediaDeposit,
     MediaToolbar,
     SeriesChip,
+    TagBand,
     TagChip,
   ],
   templateUrl: './mediatheque-page.html',
@@ -144,9 +134,6 @@ export class MediathequePage {
   /** Le dernier retrait sur tuile, tant qu'on peut l'annuler. Un seul à la fois. */
   protected readonly stripped = signal<readonly StrippedTag[]>([]);
   private strips = 0;
-
-  /** Ce qu'on tape dans « Nouveau mot-clé ». */
-  protected readonly coinDraft = signal('');
 
   /**
    * Ce que la grille montre — le tri et les filtres, **tels que l'adresse les
@@ -315,13 +302,6 @@ export class MediathequePage {
     await this.feed.restart(this.criteria());
   }
 
-  /** Le tag saisi dans la bande rejoint le vocabulaire et s'arme. */
-  protected coin(): void {
-    if (this.palette.draft(this.coinDraft()) !== null) {
-      this.coinDraft.set('');
-    }
-  }
-
   /**
    * Pose sur une image le tag qu'on lui amène.
    *
@@ -461,12 +441,6 @@ export class MediathequePage {
       return;
     }
     await this.show(next);
-  }
-
-  /** Le glisser-déposer transporte le MOT, pas un index : la bande peut être
-   *  refiltrée entre la prise et le relâché. */
-  protected carry(event: DragEvent, tag: string): void {
-    event.dataTransfer?.setData('text/plain', tag);
   }
 
   protected async drop(event: DragEvent, item: LibraryMediaView): Promise<void> {

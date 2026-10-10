@@ -1,0 +1,103 @@
+<div class="band-tools">
+  <fold-search
+    class="band-search"
+    size="sm"
+    placeholder="Chercher ou créer un mot-clé"
+    ariaLabel="Chercher ou créer un mot-clé — Entrée pour armer ou créer, Échap pour vider"
+    placement="end"
+    [resultCount]="searching() ? palette.shown().length : null"
+    [resultLabel]="resultLabel()"
+    [(value)]="palette.search"
+    (keydown.enter)="submit()"
+    (keydown.escape)="clear()"
+  />
+</div>
+
+@if (ordered().length === 0 && palette.creatable() === null) {
+  <p class="band-none">Aucun mot-clé au fonds. Écrivez-en un ci-dessus.</p>
+} @else {
+  <ul #list class="tags">
+    @if (palette.creatable(); as word) {
+      <li>
+        <!-- En TÊTE : c'est ce qu'Entrée déclenchera. -->
+        <button
+          foldButton
+          type="button"
+          emphasis="soft"
+          size="sm"
+          shape="pill"
+          icon="plus"
+          (click)="create()"
+        >
+          Créer « {{ word }} »
+        </button>
+      </li>
+    }
+    @for (entry of visible(); track entry.tag) {
+      <li class="word-item">
+        <!-- Cliquable ET déplaçable : on ne glisse pas au clavier. Le clic
+             ARME, le clic suivant sur une image pose. -->
+        <app-tag-chip
+          draggable="true"
+          pressable
+          [tag]="entry.tag"
+          [count]="entry.count"
+          [armed]="palette.armed() === entry.tag"
+          [fresh]="entry.fresh"
+          (dragstart)="carry($event, entry.tag)"
+          (pressed)="palette.toggle(entry.tag)"
+        >
+          <!-- Le menu vit DANS la pastille, à droite : un mot inventé
+               n'a rien à renommer au fonds, il n'en a pas. -->
+          @if (!entry.fresh) {
+            <span chipAction class="tag-actions" *appCan="'media_library:write'">
+              <fold-dropdown
+                placement="bottom-start"
+                [ariaLabel]="'Actions sur « ' + entry.tag + ' »'"
+              >
+                <button
+                  foldPopoverTrigger="menu"
+                  type="button"
+                  class="tag-menu"
+                  [attr.aria-label]="'Actions sur « ' + entry.tag + ' »'"
+                >
+                  <fold-icon name="more-vertical" [size]="12" />
+                </button>
+                <fold-dropdown-item icon="edit" (selected)="renameRequested.emit(entry)">
+                  Renommer
+                </fold-dropdown-item>
+                <fold-dropdown-item
+                  icon="bin"
+                  tone="danger"
+                  (selected)="removeRequested.emit(entry)"
+                >
+                  Supprimer partout
+                </fold-dropdown-item>
+              </fold-dropdown>
+            </span>
+          }
+        </app-tag-chip>
+      </li>
+    }
+    @if (!searching() && (expanded() || hidden() > 0 || measuring())) {
+      <li class="toggle-item">
+        <button
+          foldButton
+          type="button"
+          emphasis="outline"
+          intent="neutral"
+          size="sm"
+          shape="pill"
+          [attr.aria-expanded]="expanded()"
+          (click)="toggleExpanded()"
+        >
+          {{
+            expanded()
+              ? 'Réduire'
+              : '+ ' + toggleCount() + (toggleCount() === 1 ? ' autre' : ' autres')
+          }}
+        </button>
+      </li>
+    }
+  </ul>
+}

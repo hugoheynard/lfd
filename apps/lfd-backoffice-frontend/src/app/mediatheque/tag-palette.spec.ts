@@ -158,3 +158,42 @@ describe('la bande de tags', () => {
     expect(band.armed()).toBeNull();
   });
 });
+
+describe('la recherche de la bande', () => {
+  it('range les plus portés d’abord, puis par ordre alphabétique', async () => {
+    const { band } = palette([
+      { tag: 'beurre', count: 3 },
+      { tag: 'croissant', count: 12 },
+      { tag: 'amande', count: 3 },
+    ]);
+    await band.refresh();
+
+    expect(band.shown().map((entry) => entry.tag)).toEqual(['croissant', 'amande', 'beurre']);
+  });
+
+  it('trouve un mot sans égard aux accents ni à la casse', async () => {
+    const { band } = palette([{ tag: 'éclair', count: 2 }]);
+    await band.refresh();
+
+    band.search.set('ECLA');
+
+    expect(band.shown().map((entry) => entry.tag)).toEqual(['éclair']);
+  });
+
+  it('ne propose de créer que sans correspondance exacte, accents compris', async () => {
+    const { band } = palette([{ tag: 'éclair', count: 2 }]);
+    await band.refresh();
+
+    band.search.set('  Éclair ');
+    expect(band.exact()).toBe('éclair');
+    expect(band.creatable()).toBeNull();
+
+    // Le serveur garde les accents : « eclair » serait un second mot.
+    band.search.set('eclair');
+    expect(band.exact()).toBeNull();
+    expect(band.creatable()).toBe('eclair');
+
+    band.search.set('   ');
+    expect(band.creatable()).toBeNull();
+  });
+});

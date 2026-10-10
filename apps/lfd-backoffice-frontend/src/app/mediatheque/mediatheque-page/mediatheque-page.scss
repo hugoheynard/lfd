@@ -76,7 +76,6 @@
   align-self: flex-start;
 }
 
-.tags,
 .worn {
   display: flex;
   flex-wrap: wrap;
@@ -112,24 +111,6 @@
   display: flex;
   flex-direction: column;
   gap: var(--fold-space-md);
-}
-
-.band-tools {
-  display: flex;
-  flex-wrap: wrap;
-  gap: var(--fold-space-sm);
-}
-
-.band-search,
-.band-coin {
-  flex: 1 1 14rem;
-  max-width: 20rem;
-}
-
-.band-none {
-  margin: 0;
-  color: var(--fold-color-text-muted);
-  font-size: var(--fold-text-sm);
 }
 
 /* L'annulation flotte en bas, au centre : la file des toasts du service tient
@@ -188,41 +169,4 @@
 .uses-link:focus-visible {
   outline: 2px solid var(--fold-color-primary);
   outline-offset: 2px;
-}
-
-app-tag-chip[draggable] {
-  cursor: grab;
-}
-
-/* Le déclencheur du menu, DANS la pastille : discret, révélé au survol et au
-   focus ; toujours là au toucher, où il n'y a pas de survol. */
-.tag-actions {
-  display: inline-flex;
-}
-
-.tag-menu {
-  display: inline-flex;
-  align-items: center;
-  padding: 0 var(--fold-space-xs);
-  border: 0;
-  border-radius: var(--fold-radius-pill);
-  background: none;
-  color: var(--fold-color-text-muted);
-  cursor: pointer;
-  transition: opacity var(--fold-motion-fast);
-}
-
-.tag-menu:hover {
-  color: var(--fold-color-text);
-}
-
-.tag-menu:focus-visible {
-  outline: 2px solid var(--fold-color-primary);
-  outline-offset: 2px;
-}
-
-@media (hover: hover) {
-  app-tag-chip:not(:hover, :focus-within) .tag-menu:not([aria-expanded='true']) {
-    opacity: 0;
-  }
 }

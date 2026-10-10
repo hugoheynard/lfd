@@ -59,18 +59,41 @@ export class TagPaletteStore {
   readonly words = computed(() => this.all().map((entry) => entry.tag));
 
   /**
-   * Ce que la bande affiche : le vocabulaire filtré par la recherche.
+   * Ce que la bande affiche : le vocabulaire filtré par la recherche, les mots
+   * les plus portés d'abord (puis l'ordre alphabétique).
    *
    * Elle cherche **n'importe où** dans le mot : « sant » doit trouver
    * « croissant », sinon il faut savoir comment le tag commence pour le
-   * retrouver, ce qui est exactement ce qu'on ne sait pas.
+   * retrouver, ce qui est exactement ce qu'on ne sait pas. Et sans égard aux
+   * accents : « eclair » trouve « éclair », parce qu'on tape vite.
+   *
+   * L'ordre par compte sert le repli à deux rangées : ce qui reste visible
+   * quand la bande est repliée, c'est ce qu'on pose le plus.
    */
   readonly shown = computed(() => {
-    const needle = normalizeTag(this.search());
-    if (needle === '') {
-      return this.all();
-    }
-    return this.all().filter((entry) => entry.tag.includes(needle));
+    const needle = searchKey(this.search());
+    const ranked = [...this.all()].sort(
+      (a, b) => b.count - a.count || a.tag.localeCompare(b.tag, 'fr'),
+    );
+    return needle === '' ? ranked : ranked.filter((entry) => searchKey(entry.tag).includes(needle));
+  });
+
+  /**
+   * Le mot que la saisie désigne EXACTEMENT, à la normalisation du serveur près
+   * — `null` s'il n'existe pas encore, et c'est alors lui qu'on propose de créer.
+   *
+   * Exact au sens du serveur, donc accents compris : « eclair » et « éclair »
+   * sont deux mots au fonds, et la bande ne doit pas faire croire le contraire.
+   */
+  readonly exact = computed<string | null>(() => {
+    const typed = normalizeTag(this.search());
+    return typed !== '' && this.words().includes(typed) ? typed : null;
+  });
+
+  /** Ce que « Créer » écrirait, ou `null` quand rien n'est à créer. */
+  readonly creatable = computed<string | null>(() => {
+    const typed = normalizeTag(this.search());
+    return typed === '' || this.exact() !== null ? null : typed;
   });
 
   /**
@@ -142,4 +165,12 @@ export class TagPaletteStore {
 /** La même normalisation que le domaine : découpé, en minuscules. */
 export function normalizeTag(raw: string): string {
   return raw.trim().toLowerCase();
+}
+
+/**
+ * La clé de RECHERCHE — pas d'écriture : minuscules et sans diacritiques, pour
+ * que la bande trouve ce qu'on tape sans accents. Jamais envoyée au serveur.
+ */
+export function searchKey(raw: string): string {
+  return normalizeTag(raw).normalize('NFD').replace(/\p{M}/gu, '');
 }

@@ -16,89 +16,16 @@
     description="Cliquez un mot pour l'armer, puis une image pour le poser — ou glissez-le dessus."
   >
     <div class="band">
-      <div class="band-tools">
-        <fold-search
-          class="band-search"
-          size="sm"
-          placeholder="Chercher un mot-clé"
-          ariaLabel="Chercher un mot-clé"
-          [(value)]="palette.search"
-        />
-        <fold-input
-          class="band-coin"
-          size="sm"
-          placeholder="Nouveau mot-clé"
-          ariaLabel="Nouveau mot-clé — Entrée pour l'ajouter"
-          leadingIcon="plus"
-          [value]="coinDraft()"
-          (valueChange)="coinDraft.set($event)"
-          (keydown.enter)="coin()"
-        />
-      </div>
-
       @if (palette.failure(); as message) {
         <!-- Échec PARTIEL : la grille reste juste, seul le compte est en cause. -->
         <fold-callout variant="alert">{{ message }}</fold-callout>
       }
 
-      @if (palette.shown().length === 0) {
-        <p class="band-none">
-          {{
-            palette.all().length === 0
-              ? 'Aucun mot-clé au fonds. Écrivez-en un ci-dessus.'
-              : 'Aucun mot-clé ne contient « ' + palette.search() + ' ».'
-          }}
-        </p>
-      } @else {
-        <ul class="tags">
-          @for (entry of palette.shown(); track entry.tag) {
-            <li>
-              <!-- Cliquable ET déplaçable : on ne glisse pas au clavier. Le clic
-                   ARME, le clic suivant sur une image pose. -->
-              <app-tag-chip
-                draggable="true"
-                pressable
-                [tag]="entry.tag"
-                [count]="entry.count"
-                [armed]="palette.armed() === entry.tag"
-                [fresh]="entry.fresh"
-                (dragstart)="carry($event, entry.tag)"
-                (pressed)="palette.toggle(entry.tag)"
-              >
-                <!-- Le menu vit DANS la pastille, à droite : un mot inventé
-                     n'a rien à renommer au fonds, il n'en a pas. -->
-                @if (!entry.fresh) {
-                  <span chipAction class="tag-actions" *appCan="'media_library:write'">
-                    <fold-dropdown
-                      placement="bottom-start"
-                      [ariaLabel]="'Actions sur « ' + entry.tag + ' »'"
-                    >
-                      <button
-                        foldPopoverTrigger="menu"
-                        type="button"
-                        class="tag-menu"
-                        [attr.aria-label]="'Actions sur « ' + entry.tag + ' »'"
-                      >
-                        <fold-icon name="more-vertical" [size]="12" />
-                      </button>
-                      <fold-dropdown-item icon="edit" (selected)="rename(entry)">
-                        Renommer
-                      </fold-dropdown-item>
-                      <fold-dropdown-item
-                        icon="bin"
-                        tone="danger"
-                        (selected)="removeEverywhere(entry)"
-                      >
-                        Supprimer partout
-                      </fold-dropdown-item>
-                    </fold-dropdown>
-                  </span>
-                }
-              </app-tag-chip>
-            </li>
-          }
-        </ul>
-      }
+      <app-tag-band
+        [filterTags]="criteria().tags"
+        (renameRequested)="rename($event)"
+        (removeRequested)="removeEverywhere($event)"
+      />
 
       @if (palette.armed(); as tag) {
         <p class="hint">
