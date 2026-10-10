@@ -6,11 +6,9 @@
 > Elle **remplace** neuf documents, retirés le même jour : l'ancienne doc
 > d'architecture et son TODO, le versant référentiel des images, la note
 > d'infrastructure du stockage des images, le TODO du poids des images, et les
-> quatre plans exécutés (`plan-la-mediatheque.md`,
-> `plan-la-mediatheque-bloc-a-part.md`, `plan-les-six-de-la-mediatheque.md`,
-> `todos/plan-visuel-sans-republier.md`). Ces quatre derniers survivent en
-> renvoi d'une ligne, parce que des migrations appliquées les citent, et
-> qu'on ne retouche pas une migration appliquée.
+> quatre plans exécutés. Des migrations appliquées citent encore ces plans
+> par leur nom : elles ne se retouchent pas, et leur texte se retrouve dans
+> l'historique git (ce document les remplace tous).
 >
 > Ce qui reste à faire est au §11, et **nulle part ailleurs**.
 

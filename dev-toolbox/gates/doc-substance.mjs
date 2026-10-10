@@ -109,17 +109,7 @@ const FLOOR = 12;
  * l'écriture de la porte, et c'est le résultat voulu : un document du dépôt qui
  * ne tient pas douze lignes n'a pas encore été écrit.
  */
-const ALLOWED = [
-  // Quatre plans de la médiathèque vidés le 2026-10-10, sur décision de Hugo
-  // (« efface tous les anciens docs ») : leur contenu est fondu, vérifié contre
-  // le code, dans `documentation/mediatheque/mediatheque.md`. Ils ne peuvent pas
-  // disparaître — des `migration.sql` appliqués les citent, et une migration
-  // appliquée ne se retouche pas. Ce sont des renvois, pas des moignons.
-  "documentation/mediatheque/plan-la-mediatheque.md",
-  "documentation/mediatheque/plan-la-mediatheque-bloc-a-part.md",
-  "documentation/mediatheque/plan-les-six-de-la-mediatheque.md",
-  "documentation/todos/plan-visuel-sans-republier.md",
-];
+const ALLOWED = [];
 
 /** Ce que le dépôt contient — `.gitignore` honoré, et le même partout. */
 const everyFile = execFileSync("git", ["ls-files"], { cwd: ROOT, encoding: "utf8" })

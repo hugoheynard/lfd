@@ -362,7 +362,7 @@ export const REFERENTIAL_PHRASES = {
 
   // La MÉDIATHÈQUE. Rangée ici parce que la bibliothèque vit encore dans le
   // bloc `pim` ; elle déménagera avec lui
-  // (`documentation/mediatheque/plan-la-mediatheque-bloc-a-part.md`).
+  // (le déménagement de la médiathèque du 2026-09-23, `documentation/mediatheque/mediatheque.md`).
   'media_asset.deposited': mediaDeposited,
   'media_asset.described': mediaDescribed,
   'media_asset.discarded': mediaDiscarded,

@@ -1,9 +1,0 @@
-# Changer une photo sans republier le catalogue — exécuté
-
-> ⚠️ **Ce fichier ne porte plus rien, et il ne peut pas disparaître.** Des
-> migrations appliquées le citent, et une migration appliquée ne se retouche
-> pas : son empreinte est enregistrée en base.
->
-> Son contenu a été vérifié contre le code et fondu le 2026-10-10 dans
-> [`../mediatheque/mediatheque.md`](../mediatheque/mediatheque.md), qui décrit l'état de la médiathèque et ses points à faire.
-> L'historique de ce texte est dans git.

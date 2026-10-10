@@ -46,10 +46,9 @@ const PREFIXES: Readonly<Record<ActivityModule, readonly string[]>> = {
     // catalogue (plan des opérations datées, D1 — 2026-09-24).
     "operation.",
     // La MÉDIATHÈQUE : le fonds d'images n'appartient à aucun référentiel — les
-    // fiches en portent, les familles aussi — mais son code vit dans le bloc
-    // `pim` et s'écrit sous ses droits. Le jour où elle devient un bloc à elle
-    // (`documentation/mediatheque/plan-la-mediatheque-bloc-a-part.md`), cette ligne
-    // sera le premier endroit à relire.
+    // fiches en portent, les familles aussi. ⚠️ Elle est un bloc à elle, avec
+    // son droit, depuis le 2026-09-23 : cette ligne la range encore sous le PIM
+    // (`documentation/mediatheque/mediatheque.md` §11, vérifié le 2026-10-10).
     "media_asset.",
   ],
   // La tarification négociée est du COMMERCIAL : c'est le même métier que le

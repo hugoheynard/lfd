@@ -96,7 +96,7 @@ export class PrismaCatalogRevisionSource extends CatalogRevisionSource {
    * 🔴 En DEUX requêtes et non par un `include` : le rattachement désigne
    * l'image par son URL depuis le 2026-09-23, et la relation disparaîtra avec
    * la clé étrangère au déploiement ③
-   * (`documentation/mediatheque/plan-la-mediatheque-bloc-a-part.md`).
+   * (le déménagement de la médiathèque du 2026-09-23, `documentation/mediatheque/mediatheque.md`).
    *
    * Ce que ça change pour une ANCRE, et c'est ce qui compte ici : l'alternative
    * entre dans le payload **hashé** d'une révision. Elle vient désormais de

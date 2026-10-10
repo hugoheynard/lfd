@@ -111,7 +111,7 @@ export class PrismaEditorialRepository extends EditorialRepository {
    *
    * L'inscription à la volée reste ici parce que le visuel saisi **par son
    * URL** est encore permis par l'API. Elle disparaîtra avec lui
-   * (`documentation/mediatheque/plan-la-mediatheque-bloc-a-part.md` §2), et
+   * (le déménagement de la médiathèque du 2026-09-23, `documentation/mediatheque/mediatheque.md`), et
    * c'est ce départ-là qui libérera le déménagement : tant que le référentiel
    * peut inscrire, il ÉCRIT la bibliothèque, et la porte de propriété lui en
    * donne la charge.

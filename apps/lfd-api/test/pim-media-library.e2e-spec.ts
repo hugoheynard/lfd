@@ -361,7 +361,7 @@ describe("retirer une image de la bibliothèque", () => {
 });
 
 /**
- * Déploiement ① du plan `plan-la-mediatheque-bloc-a-part.md` : la colonne
+ * Déploiement ① du déménagement de la médiathèque (2026-09-23) : la colonne
  * existe, elle est écrite, **personne ne la lit**.
  *
  * 🔴 Ce cas est le seul garde-fou de la double écriture. Rien d'autre ne la
@@ -391,7 +391,7 @@ describe("déploiement ① — l’URL est écrite sur le rattachement", () => {
 });
 
 /**
- * Déploiement ② de `plan-la-mediatheque-bloc-a-part.md`, première étape : la
+ * Déploiement ② du déménagement de la médiathèque (2026-09-23), première étape : la
  * table des actifs **redevient une bibliothèque**.
  *
  * 🔴 Ces cas gardent ce que la contrainte d'unicité rend inexprimable, et ce
