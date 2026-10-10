@@ -3,6 +3,8 @@ import type { EnvironmentProviders } from "@angular/core";
 import { onCLS, onINP, onLCP, type Metric } from "web-vitals";
 import { isWebVitalName, type WebVitalSample } from "@lfd/ops-contract";
 
+import { sendVitals } from "./vitals-sender.js";
+
 /**
  * **Ce que les vraies personnes vivent**, renvoyé à notre API.
  *
@@ -24,9 +26,9 @@ import { isWebVitalName, type WebVitalSample } from "@lfd/ops-contract";
  * pour la même information — et sur la boutique, c'est le genre de détail qui
  * finit en ligne de facture.
  *
- * `sendBeacon` plutôt que `fetch` : il survit à la fermeture de l'onglet, là où
- * une requête classique est annulée. Un envoi au `beforeunload` qui n'arrive
- * jamais, c'est une mesure qu'on croit avoir.
+ * `fetch` en `keepalive`, sans identifiants (`sendVitals`) : il survit à la
+ * fermeture de l'onglet, là où une requête classique est annulée. Un envoi au
+ * `beforeunload` qui n'arrive jamais, c'est une mesure qu'on croit avoir.
  */
 export function provideWebVitals(front: string, apiBaseUrl: string): EnvironmentProviders {
   return provideEnvironmentInitializer(() => {
@@ -55,13 +57,9 @@ function startReporting(front: string, endpoint: string): void {
   onCLS(collect);
 
   const flush = (): void => {
-    if (pending.length === 0) {
-      return;
-    }
-    const body = JSON.stringify({ samples: pending.splice(0) });
-    // Le type MIME compte : sans `application/json`, le beacon part en
-    // `text/plain` et l'API le reçoit non analysé — donc vide, silencieusement.
-    navigator.sendBeacon(endpoint, new Blob([body], { type: "application/json" }));
+    // Le type MIME compte : sans `application/json`, l'API reçoit le corps non
+    // analysé — donc vide, silencieusement. `sendVitals` le pose.
+    sendVitals(endpoint, pending.splice(0), (input, init) => fetch(input, init));
   };
 
   // `visibilitychange` et non `unload` : sur mobile, une page mise en arrière-plan

@@ -1,5 +1,11 @@
 # Les web vitals sont refusés par le CORS, sur les DEUX fronts
 
+> ✅ **Corrigé dans le code le 2026-10-10** par la sortie ② : `sendVitals`
+> (`packages/front-ops/src/vitals-sender.ts`) envoie en `fetch` `keepalive`,
+> `credentials: "omit"` ; le CORS de l'API ne bouge pas. **Reste** : redéployer
+> les deux fronts, puis le contrôle en production décrit plus bas (préflight
+> accepté, `/health` non nul). Ce TODO se retire après ce contrôle.
+
 **Ouvert le 2026-09-09**, en diagnostiquant une erreur de console signalée sur
 `lfd-backoffice.pages.dev`. 🔴 Dette **active** : la mesure ne remonte pas, et
 personne ne le savait — un envoi qui échoue en silence est indistinguable d'un
