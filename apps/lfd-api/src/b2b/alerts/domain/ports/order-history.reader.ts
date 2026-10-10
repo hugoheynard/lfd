@@ -21,15 +21,29 @@ export interface AccountOrderHistory {
  * annulées écartées, zéro-friction exclues, fenêtre appliquée. Un consommateur ne
  * doit pas pouvoir « oublier » un de ces filtres.
  */
+/** La commande évaluée, réduite à ce qui borne son historique. */
+export interface EvaluatedOrderBound {
+  readonly id: string;
+  /** L'instant de passation — celui que la commande porte, pas celui de l'évaluation. */
+  readonly placedAt: Date;
+}
+
 export abstract class AccountOrderHistoryReader {
   abstract read(input: {
     readonly companyId: string;
     /**
-     * La commande évaluée — exclue de son propre historique. `null` quand il n'y
-     * a pas encore de commande : le contrôle de panier compare un panier à
-     * l'historique complet, puisque rien n'y a été écrit.
+     * La commande évaluée : l'historique s'arrête **avant elle** — les
+     * commandes passées plus tôt, et, au même instant, celles d'identifiant
+     * inférieur. `null` quand il n'y a pas encore de commande : le contrôle de
+     * panier compare un panier à l'historique complet, rien n'y est écrit.
+     *
+     * Ce n'était pas « avant elle » mais « toutes sauf elle » jusqu'au
+     * 2026-10-10 (le TODO « l'évaluation d'une alerte lit maintenant », retiré ce jour-là) :
+     * l'évaluation part sur le bus, et une commande passée juste après entrait
+     * dans l'historique de la précédente — qui signalait alors son propre
+     * produit comme « jamais commandé ».
      */
-    readonly excludeOrderId: string | null;
+    readonly evaluatedOrder: EvaluatedOrderBound | null;
     readonly skus: readonly string[];
     /** Fenêtre de récence, en jours (celle de la règle de dérive). */
     readonly windowDays: number;

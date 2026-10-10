@@ -4,6 +4,8 @@ import type { EvaluatedLine } from "../detectors/context.js";
 export interface EvaluatedOrder {
   readonly id: string;
   readonly orderNumber: string;
+  /** L'instant de passation : l'historique de l'alerte s'arrête avant lui. */
+  readonly placedAt: Date;
   /** `null` pour une commande zéro friction — elle ne produit aucune alerte. */
   readonly companyId: string | null;
   /** Raison sociale, lue avec la commande : la cloche et l'e-mail la nomment. */

@@ -17,6 +17,7 @@ import {
 
 import { AdminTokenVerifier } from "../src/platform/auth/admin-token.verifier.js";
 import { CustomerRole, type CompanyStatus } from "../src/platform/database/client/client.js";
+import { AccountOrderHistoryReader } from "../src/b2b/alerts/domain/ports/order-history.reader.js";
 import { PaymentGateway } from "../src/b2b/payments/domain/payment-gateway.js";
 import {
   bootstrapE2e,
@@ -195,20 +196,43 @@ describe("une commande déclenche l'évaluation", () => {
       (found) => found.length > 0,
     );
     expect(alerts[0]?.kind).toBe("product.first_order");
-    // ⚠️ On assert la PRÉSENCE de VIE-002, pas sa position — et cette nuance
-    // n'est pas de la prudence de style : `findings[0]` a rendu "VIE-001" dans
-    // une passe complète du 2026-09-07, et la suite est passée au rouge sans
-    // qu'une ligne ait bougé.
-    //
-    // La cause n'est pas dans le test. `EvaluateOrderAlerts` passe
-    // `excludeOrderId` : l'historique est « toutes les AUTRES commandes », pas
-    // « celles d'AVANT ». L'évaluation de la première commande, si elle traîne,
-    // voit déjà la seconde, cesse de se croire première, et signale VIE-001.
-    //
-    // Ce test tient donc ce dont il est le sujet — un produit inédit parle —
-    // sans prétendre tenir l'ordre, que le système ne garantit pas encore.
-    // La course est notée : `documentation/todos/todo-course-evaluation-alertes.md`.
-    expect(alerts[0]?.findings.map((finding) => finding.sku)).toContain("VIE-002");
+    // Le contenu EXACT, depuis le 2026-10-10 : l'historique s'arrête avant la
+    // commande évaluée. Jusque-là, `findings[0]` rendait parfois "VIE-001" —
+    // l'évaluation de la première commande, en retard sur le bus, voyait déjà
+    // la seconde (course du 2026-09-07).
+    expect(alerts[0]?.findings.map((finding) => finding.sku)).toEqual(["VIE-002"]);
+  });
+
+  /**
+   * Régression : l'historique d'une commande était « toutes les AUTRES
+   * commandes », pas « celles d'AVANT » ; une évaluation en retard sur le bus
+   * voyait la commande suivante et signalait son propre produit comme
+   * « jamais commandé » (2026-09-07 → corrigé 2026-10-10).
+   */
+  it("n'inclut pas dans l'historique d'une commande celles passées APRÈS elle", async () => {
+    const companyId = await seed();
+    await orderSku(companyId, "VIE-001", 3);
+    await orderSku(companyId, "VIE-002", 2);
+    const [first] = await ctx.prisma.order.findMany({
+      where: { companyId },
+      orderBy: [{ createdAt: "asc" }, { id: "asc" }],
+      select: { id: true, createdAt: true },
+    });
+    if (first === undefined) {
+      throw new TypeError("la première commande manque");
+    }
+
+    const history = await ctx.app.get(AccountOrderHistoryReader).read({
+      companyId,
+      evaluatedOrder: { id: first.id, placedAt: first.createdAt },
+      skus: ["VIE-001", "VIE-002"],
+      windowDays: 365,
+      maxOrdersPerSku: 10,
+      now: new Date(),
+    });
+
+    expect(history.previousOrderCount).toBe(0);
+    expect([...history.everOrdered]).toEqual([]);
   });
 
   it("ne signale pas un produit déjà commandé", async () => {

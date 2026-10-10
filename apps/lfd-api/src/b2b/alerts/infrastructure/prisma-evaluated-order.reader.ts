@@ -24,6 +24,7 @@ export class PrismaEvaluatedOrderReader extends EvaluatedOrderReader {
       select: {
         id: true,
         orderNumber: true,
+        createdAt: true,
         companyId: true,
         company: { select: { status: true, raisonSociale: true } },
         lines: { select: { sku: true, productNameSnapshot: true, quantity: true } },
@@ -35,6 +36,7 @@ export class PrismaEvaluatedOrderReader extends EvaluatedOrderReader {
     return {
       id: row.id,
       orderNumber: row.orderNumber,
+      placedAt: row.createdAt,
       companyId: row.companyId,
       companyActive: row.company?.status === "active",
       companyName: row.company?.raisonSociale ?? "",

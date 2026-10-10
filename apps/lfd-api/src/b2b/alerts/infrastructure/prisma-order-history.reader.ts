@@ -6,6 +6,7 @@ import {
   AccountOrderHistoryReader,
   ProductNormReader,
   type AccountOrderHistory,
+  type EvaluatedOrderBound,
 } from "../domain/ports/order-history.reader.js";
 
 /**
@@ -30,7 +31,7 @@ export class PrismaAccountOrderHistoryReader extends AccountOrderHistoryReader {
 
   async read(input: {
     readonly companyId: string;
-    readonly excludeOrderId: string | null;
+    readonly evaluatedOrder: EvaluatedOrderBound | null;
     readonly skus: readonly string[];
     readonly windowDays: number;
     readonly maxOrdersPerSku: number;
@@ -40,8 +41,11 @@ export class PrismaAccountOrderHistoryReader extends AccountOrderHistoryReader {
     const walled = {
       companyId: input.companyId,
       status: { in: [...COUNTED_STATUSES] },
-      // Pas de commande à exclure lors d'un contrôle de panier : rien n'est écrit.
-      ...(input.excludeOrderId === null ? {} : { id: { not: input.excludeOrderId } }),
+      // Les commandes d'AVANT celle qu'on évalue, et non « toutes sauf elle » :
+      // une commande passée pendant que l'évaluation attendait sur le bus n'est
+      // pas son historique. L'identifiant départage deux commandes du même
+      // instant. Rien à borner lors d'un contrôle de panier : rien n'est écrit.
+      ...(input.evaluatedOrder === null ? {} : before(input.evaluatedOrder)),
     };
 
     const [recent, ever, previousOrderCount] = await Promise.all([
@@ -96,4 +100,16 @@ export class PrismaProductNormReader extends ProductNormReader {
       ]),
     );
   }
+}
+
+/** Les commandes passées avant `order` — strictement, l'identifiant départageant l'égalité. */
+function before(order: EvaluatedOrderBound): {
+  OR: ({ createdAt: { lt: Date } } | { createdAt: Date; id: { lt: string } })[];
+} {
+  return {
+    OR: [
+      { createdAt: { lt: order.placedAt } },
+      { createdAt: order.placedAt, id: { lt: order.id } },
+    ],
+  };
 }

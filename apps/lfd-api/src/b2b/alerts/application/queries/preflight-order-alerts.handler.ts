@@ -51,7 +51,7 @@ export class PreflightOrderAlertsHandler implements IQueryHandler<
         productName: line.sku,
         quantity: line.quantity,
       })),
-      excludeOrderId: null,
+      evaluatedOrder: null,
       now: this.clock.now(),
     });
     return { warnings: customerWarnings(drafts, rules) };

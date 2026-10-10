@@ -41,7 +41,7 @@ export class EvaluateOrderAlerts {
     const { drafts, rules } = await this.basket.evaluate({
       companyId,
       lines: order.lines,
-      excludeOrderId: order.id,
+      evaluatedOrder: { id: order.id, placedAt: order.placedAt },
       now,
     });
     if (drafts.length === 0) {

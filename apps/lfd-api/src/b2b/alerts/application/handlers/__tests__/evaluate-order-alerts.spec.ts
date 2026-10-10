@@ -18,6 +18,7 @@ const SKU = "VIE-001";
 const ORDER: EvaluatedOrder = {
   id: "order_1",
   orderNumber: "LFC-1042",
+  placedAt: new Date("2026-08-11T08:59:00.000Z"),
   companyId: "company_1",
   companyName: "Boulangerie Périn",
   companyActive: true,
@@ -150,11 +151,15 @@ describe("EvaluateOrderAlerts", () => {
     await service.evaluate("order_1");
 
     expect(readCalls).toHaveLength(1);
-    const call = readCalls[0] as { windowDays: number; now: Date; excludeOrderId: string };
+    const call = readCalls[0] as {
+      windowDays: number;
+      now: Date;
+      evaluatedOrder: { id: string; placedAt: Date };
+    };
     expect(call.windowDays).toBe(365);
-    // La commande évaluée est exclue de son propre historique — sinon elle
-    // tirerait sa propre moyenne vers elle.
-    expect(call.excludeOrderId).toBe("order_1");
+    // L'historique s'arrête AVANT la commande évaluée — à son instant de
+    // passation, pas à celui de l'évaluation (course du 2026-09-07).
+    expect(call.evaluatedOrder).toEqual({ id: "order_1", placedAt: ORDER.placedAt });
     expect(call.now).toBe(NOW);
   });
 

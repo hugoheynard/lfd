@@ -10,6 +10,7 @@ import { AlertRulesStore } from "../../domain/ports/alert-rules.store.js";
 import {
   AccountOrderHistoryReader,
   ProductNormReader,
+  type EvaluatedOrderBound,
 } from "../../domain/ports/order-history.reader.js";
 
 /** Ce qu'une évaluation rend : ce qui se déclenche, et les règles qui l'ont dit. */
@@ -41,8 +42,8 @@ export class EvaluateBasket {
   async evaluate(input: {
     readonly companyId: string;
     readonly lines: readonly EvaluatedLine[];
-    /** La commande évaluée, exclue de son propre historique — `null` pour un panier. */
-    readonly excludeOrderId: string | null;
+    /** La commande évaluée : l'historique s'arrête avant elle — `null` pour un panier. */
+    readonly evaluatedOrder: EvaluatedOrderBound | null;
     readonly now: Date;
   }): Promise<BasketEvaluation> {
     const effective = activeRulesFor(
@@ -59,7 +60,7 @@ export class EvaluateBasket {
     const [history, norms] = await Promise.all([
       this.history.read({
         companyId: input.companyId,
-        excludeOrderId: input.excludeOrderId,
+        evaluatedOrder: input.evaluatedOrder,
         skus,
         windowDays: widestWindow(effective),
         maxOrdersPerSku: MAX_BASELINE_ORDERS,
