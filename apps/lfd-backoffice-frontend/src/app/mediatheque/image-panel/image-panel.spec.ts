@@ -16,8 +16,13 @@ import { ImagePanel, type ImagePanelData, type ImagePanelResult } from './image-
 
 const URL = 'https://media.test/products/abc.png';
 
-function panel(data: ImagePanelData): { panel: ImagePanel; closed: ImagePanelResult[] } {
+function panel(data: ImagePanelData): {
+  panel: ImagePanel;
+  closed: ImagePanelResult[];
+  dismissed: () => number;
+} {
   const closed: ImagePanelResult[] = [];
+  let dismissals = 0;
   TestBed.resetTestingModule();
   TestBed.configureTestingModule({
     providers: [
@@ -26,6 +31,7 @@ function panel(data: ImagePanelData): { panel: ImagePanel; closed: ImagePanelRes
         provide: FoldPanelRef,
         useValue: {
           close: (result?: ImagePanelResult): void => {
+            dismissals += 1;
             if (result !== undefined) {
               closed.push(result);
             }
@@ -37,7 +43,7 @@ function panel(data: ImagePanelData): { panel: ImagePanel; closed: ImagePanelRes
   const fixture = TestBed.createComponent(ImagePanel);
   fixture.componentRef.setInput('data', data);
   fixture.detectChanges();
-  return { panel: fixture.componentInstance, closed };
+  return { panel: fixture.componentInstance, closed, dismissed: () => dismissals };
 }
 
 const bare: ImagePanelData = {
@@ -186,5 +192,219 @@ describe('décrire une image — les mots-clés', () => {
 
     screen['tagDraft'].set('');
     expect(screen['suggestions']()).toEqual([]);
+  });
+});
+
+describe('décrire une image — le cadrage', () => {
+  it('centre les recadrages tant qu’aucun point n’est posé', () => {
+    const { panel: screen } = panel(bare);
+
+    expect(screen['objectPosition']()).toBe('50% 50%');
+  });
+
+  it('fait suivre le point aux recadrages', () => {
+    const { panel: screen } = panel({ ...bare, focal: { x: 0.2, y: 0.75 } });
+    expect(screen['objectPosition']()).toBe('20% 75%');
+
+    screen['unpoint']();
+
+    expect(screen['objectPosition']()).toBe('50% 50%');
+  });
+});
+
+describe('décrire une image — le texte alternatif', () => {
+  it('compte les caractères, et avertit au-delà de 125 sans bloquer', () => {
+    const { panel: screen, closed } = panel(bare);
+
+    screen['write']('fr', 'a'.repeat(125));
+    expect(screen['lengthOf']('fr')).toBe(125);
+    expect(screen['tooLong']('fr')).toBe(false);
+
+    screen['write']('fr', 'a'.repeat(126));
+    expect(screen['tooLong']('fr')).toBe(true);
+    screen['submit']();
+
+    expect(closed[0]?.alt.fr).toHaveLength(126);
+  });
+
+  it('affiche le repli sur l’URL comme un champ vide, compté zéro', () => {
+    const { panel: screen } = panel(bare);
+
+    expect(screen['valueOf']('fr')).toBe('');
+    expect(screen['lengthOf']('fr')).toBe(0);
+    // Ouvrir une image non décrite n'est pas la modifier.
+    expect(screen['dirty']()).toBe(false);
+  });
+});
+
+describe('décrire une image — enregistrer et partir', () => {
+  it('n’active Enregistrer qu’une fois quelque chose changé', () => {
+    const { panel: screen, closed } = panel({ ...bare, name: 'Croissant' });
+    expect(screen['dirty']()).toBe(false);
+    screen['submit']();
+    expect(closed).toEqual([]);
+
+    screen['label'].set('Croissant beurre');
+    expect(screen['dirty']()).toBe(true);
+
+    screen['label'].set('Croissant');
+    expect(screen['dirty']()).toBe(false);
+  });
+
+  it('ferme sans demander quand rien n’a changé', () => {
+    const { panel: screen, dismissed } = panel(bare);
+
+    screen['cancel']();
+
+    expect(dismissed()).toBe(1);
+  });
+
+  it('demande avant de jeter une saisie, et la garde si l’on continue', () => {
+    const { panel: screen, dismissed } = panel(bare);
+    screen['addTag']('beurre');
+
+    screen['cancel']();
+    expect(screen['leaving']()).toBe(true);
+    expect(dismissed()).toBe(0);
+
+    screen['keepEditing']();
+    expect(screen['tags']()).toEqual(['beurre']);
+
+    screen['cancel']();
+    screen['discard']();
+    expect(dismissed()).toBe(1);
+  });
+});
+
+describe('décrire une image — la série', () => {
+  const images = ['a', 'b', 'c'].map((key) => ({
+    ...bare,
+    url: `https://media.test/${key}.png`,
+    alt: { fr: `https://media.test/${key}.png` },
+    name: key,
+  }));
+
+  function image(at: number): ImagePanelData {
+    const found = images[at];
+    if (found === undefined) {
+      throw new Error(`pas d'image ${String(at)}`);
+    }
+    return found;
+  }
+
+  function serie(at: number, save: (result: ImagePanelResult) => Promise<boolean>) {
+    const saved: ImagePanelResult[] = [];
+    const opened = panel({
+      ...image(at),
+      sequence: {
+        images: () => images,
+        save: (result) => {
+          saved.push(result);
+          return save(result);
+        },
+      },
+    });
+    return { ...opened, saved };
+  }
+
+  it('passe à la suivante et à la précédente, bornées aux deux bouts', async () => {
+    const { panel: screen, saved } = serie(0, () => Promise.resolve(true));
+    expect(screen['previous']()).toBeNull();
+
+    await screen['go']('next');
+    expect(screen['shown']()?.url).toBe(image(1).url);
+    expect(screen['label']()).toBe('b');
+
+    await screen['go']('previous');
+    expect(screen['shown']()?.url).toBe(image(0).url);
+    // Rien n'avait changé : rien n'est écrit en passant.
+    expect(saved).toEqual([]);
+  });
+
+  it('enregistre la saisie avant de passer, sous l’URL de l’image quittée', async () => {
+    const { panel: screen, saved } = serie(1, () => Promise.resolve(true));
+    screen['label'].set('Baguette');
+
+    await screen['go']('next');
+
+    expect(saved).toEqual([expect.objectContaining({ url: image(1).url, name: 'Baguette' })]);
+    expect(screen['shown']()?.url).toBe(image(2).url);
+    expect(screen['dirty']()).toBe(false);
+  });
+
+  it('reste sur l’image, saisie intacte, quand l’écriture est refusée', async () => {
+    const { panel: screen } = serie(1, () => Promise.resolve(false));
+    screen['label'].set('Baguette');
+
+    await screen['go']('next');
+
+    expect(screen['shown']()?.url).toBe(image(1).url);
+    expect(screen['label']()).toBe('Baguette');
+  });
+
+  it('suit les flèches du clavier hors d’un champ, pas dedans', () => {
+    const { panel: screen } = serie(0, () => Promise.resolve(true));
+    const field = document.createElement('input');
+    field.addEventListener('keydown', (event) => {
+      screen['onKey'](event);
+    });
+    field.dispatchEvent(new KeyboardEvent('keydown', { key: 'ArrowRight' }));
+    expect(screen['shown']()?.url).toBe(image(0).url);
+
+    const elsewhere = document.createElement('div');
+    elsewhere.addEventListener('keydown', (event) => {
+      screen['onKey'](event);
+    });
+    elsewhere.dispatchEvent(new KeyboardEvent('keydown', { key: 'ArrowRight' }));
+    expect(screen['shown']()?.url).toBe(image(1).url);
+  });
+});
+
+describe('décrire une image — les informations', () => {
+  it('met en forme format, dimensions, poids, date de Paris, fichier et emplois', () => {
+    const { panel: screen } = panel({
+      ...bare,
+      facts: {
+        width: 4808,
+        height: 3205,
+        bytes: 2_516_582,
+        contentType: 'image/jpeg',
+        // 22 h UTC un 23 septembre = minuit le 24 à Paris.
+        depositedAt: '2026-09-23T22:00:00.000Z',
+        uses: 2,
+      },
+    });
+
+    const info = screen['facts']();
+    expect(info).toMatchObject({
+      format: 'JPEG',
+      dimensions: '4808 × 3205 px',
+      weight: '2,4 Mo',
+      fileName: 'abc.png',
+      usesWording: '2 emplois',
+    });
+    expect(info?.depositedAt).toContain('24 septembre 2026');
+    expect(info?.depositedAt).toContain('00:00');
+  });
+
+  it('dit les kilo-octets sous le méga, et ne mesure pas ce qui manque', () => {
+    const { panel: screen } = panel({
+      ...bare,
+      facts: {
+        width: null,
+        height: null,
+        bytes: 251_187,
+        contentType: null,
+        depositedAt: '2026-09-23T08:00:00.000Z',
+        uses: 0,
+      },
+    });
+
+    expect(screen['facts']()).toMatchObject({
+      format: null,
+      dimensions: null,
+      weight: '245,3 Ko',
+      usesWording: 'Inutilisée',
+    });
   });
 });

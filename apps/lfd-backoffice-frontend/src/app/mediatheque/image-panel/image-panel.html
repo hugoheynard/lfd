@@ -1,76 +1,234 @@
-<fold-panel-header title="Décrire l’image" subtitle="Ce qui vaut partout où elle apparaît." />
+<fold-panel-header
+  title="Décrire l’image"
+  subtitle="Ce qui vaut partout où elle apparaît."
+  closeLabel="Fermer"
+>
+  @if (hasSequence()) {
+    <span actions class="nav">
+      <fold-button-icon
+        icon="chevron-left"
+        size="sm"
+        tooltip="Image précédente (←)"
+        [disabled]="previous() === null || moving()"
+        (clicked)="go('previous')"
+      />
+      <fold-button-icon
+        icon="chevron-right"
+        size="sm"
+        tooltip="Image suivante (→)"
+        [disabled]="next() === null || moving()"
+        (clicked)="go('next')"
+      />
+    </span>
+  }
+</fold-panel-header>
 
-<div class="body">
-  <!-- L'image en grand, et CLIQUABLE : poser le point focal demande de viser
-       le sujet, donc de le voir. -->
-  <span class="preview" (click)="point($event)">
-    <img [src]="data().url" alt="" />
-    @if (focal(); as point) {
-      <span class="dot" [style.left.%]="point.x * 100" [style.top.%]="point.y * 100"></span>
-    }
-  </span>
-  <p class="focal">
-    {{ focalLabel() }}
-    @if (focal() !== null) {
-      <button type="button" class="clear" (click)="unpoint()">Retirer le point</button>
-    }
-  </p>
+<fold-panel-body>
+  @if (shown(); as image) {
+    <fold-page-section
+      title="Aperçu et cadrage"
+      description="Cliquez sur le sujet : les cadres de la boutique le garderont en vue."
+      [headingLevel]="3"
+      stack
+    >
+      <!-- La cible ÉPOUSE l'image : un clic dans une bande autour donnerait une
+           fraction fausse. Le fond de scène, lui, porte les bandes. -->
+      <div class="stage">
+        <span class="target" (click)="point($event)">
+          <img [src]="image.url" alt="" />
+          @if (focal(); as point) {
+            <span
+              class="reticle"
+              [style.left.%]="point.x * 100"
+              [style.top.%]="point.y * 100"
+            ></span>
+          }
+        </span>
+      </div>
 
-  <fold-input
-    label="Étiquette"
-    hint="Pour la retrouver dans la médiathèque. Elle ne se traduit pas."
-    [value]="label()"
-    (valueChange)="label.set($event)"
-  />
-
-  <!-- LES MOTS-CLÉS de cette image. Ils partent avec le reste au même
-       enregistrement : l'écriture est un remplacement, pas une retouche. -->
-  <section class="tags" aria-labelledby="image-panel-tags">
-    <h3 id="image-panel-tags" class="tags-title">Mots-clés</h3>
-    @if (tags().length === 0) {
-      <p class="tags-none">Aucun mot-clé.</p>
-    } @else {
-      <ul class="chips">
-        @for (tag of tags(); track tag) {
-          <li><app-tag-chip [tag]="tag" removable (removed)="removeTag(tag)" /></li>
-        }
-      </ul>
-    }
-    <fold-input
-      label="Ajouter un mot-clé"
-      [hint]="
-        tagWritten() !== '' && tagWritten() !== tagDraft().trim()
-          ? 'Sera écrit : « ' + tagWritten() + ' »'
-          : 'Entrée pour ajouter. Écrit en minuscules.'
-      "
-      [value]="tagDraft()"
-      (valueChange)="tagDraft.set($event)"
-      (keydown.enter)="addTag(tagDraft())"
-    />
-    @if (suggestions().length > 0) {
-      <!-- Des boutons, pas une liste déroulante : chacun s'atteint à la
-           tabulation et se lit pour ce qu'il fait. -->
-      <div class="suggestions" role="group" aria-label="Mots-clés existants">
-        @for (word of suggestions(); track word) {
-          <app-tag-chip [tag]="word" pressable (pressed)="addTag(word)" />
+      <div class="crops">
+        @for (crop of crops; track crop.ratio) {
+          <figure class="crop">
+            <span class="frame" [style.aspect-ratio]="crop.ratio">
+              <img [src]="image.url" alt="" [style.object-position]="objectPosition()" />
+            </span>
+            <figcaption>{{ crop.label }} · {{ crop.short }}</figcaption>
+          </figure>
         }
       </div>
+
+      <div class="focal-line">
+        @if (focal(); as point) {
+          <span>Point posé à {{ percent(point.x) }} / {{ percent(point.y) }}</span>
+          <button
+            foldButton
+            emphasis="soft"
+            intent="neutral"
+            size="sm"
+            icon="close"
+            (click)="unpoint()"
+          >
+            Retirer le point
+          </button>
+        } @else {
+          <span>Centré par défaut</span>
+        }
+      </div>
+    </fold-page-section>
+
+    <fold-page-section
+      title="Identification"
+      description="Pour la retrouver dans la médiathèque. Elle ne se traduit pas."
+      [headingLevel]="3"
+      stack
+    >
+      <fold-input label="Étiquette" [value]="label()" (valueChange)="label.set($event)" />
+    </fold-page-section>
+
+    <!-- La future section « Série » (lot L3) prendra place ici, entre ce qui
+         nomme l'image et les mots par lesquels on la retrouve. -->
+
+    <!-- Les mots-clés partent avec le reste au même enregistrement :
+         l'écriture est un remplacement, pas une retouche. -->
+    <fold-page-section
+      title="Mots-clés"
+      description="Les mots par lesquels on la retrouve dans le fonds."
+      [headingLevel]="3"
+      stack
+    >
+      @if (tags().length === 0) {
+        <p class="muted">Aucun mot-clé.</p>
+      } @else {
+        <ul class="chips">
+          @for (tag of tags(); track tag) {
+            <li><app-tag-chip [tag]="tag" removable (removed)="removeTag(tag)" /></li>
+          }
+        </ul>
+      }
+      <fold-input
+        label="Ajouter un mot-clé"
+        [hint]="
+          tagWritten() !== '' && tagWritten() !== tagDraft().trim()
+            ? 'Sera écrit : « ' + tagWritten() + ' »'
+            : 'Entrée pour ajouter. Écrit en minuscules.'
+        "
+        [value]="tagDraft()"
+        (valueChange)="tagDraft.set($event)"
+        (keydown.enter)="addTag(tagDraft())"
+      />
+      @if (suggestions().length > 0) {
+        <div class="chips" role="group" aria-label="Mots-clés existants">
+          @for (word of suggestions(); track word) {
+            <app-tag-chip [tag]="word" pressable (pressed)="addTag(word)" />
+          }
+        </div>
+      }
+    </fold-page-section>
+
+    <!-- Les TROIS langues ensemble : une traduction se juge à côté de sa
+         source, pas de mémoire. -->
+    <fold-page-section
+      title="Texte alternatif"
+      description="Ce que lit un lecteur d’écran à la place de l’image."
+      [headingLevel]="3"
+      stack
+    >
+      @for (locale of locales; track locale) {
+        <div class="alt">
+          <fold-textarea
+            [label]="names[locale]"
+            [rows]="2"
+            [placeholder]="
+              locale === sourceLocale ? 'Pas encore décrite' : 'Vide : retombe sur le français'
+            "
+            [value]="valueOf(locale)"
+            (valueChange)="write(locale, $event)"
+          />
+          <div class="alt-meta">
+            <span class="muted">
+              @if (locale === sourceLocale) {
+                {{ lengthOf(locale) === 0 ? 'Pas encore décrite.' : 'Le français fait foi.' }}
+              } @else {
+                {{ lengthOf(locale) === 0 ? 'Retombe sur le français.' : 'Traduction.' }}
+              }
+            </span>
+            <span
+              class="count"
+              [class.is-over]="tooLong(locale)"
+              [attr.title]="'Recommandé : ' + recommended + ' caractères au plus'"
+              >{{ lengthOf(locale) }} / {{ recommended }}</span
+            >
+          </div>
+        </div>
+      }
+    </fold-page-section>
+
+    @if (facts(); as info) {
+      <fold-page-section
+        title="Informations"
+        description="Ce que le dépôt a mesuré."
+        [headingLevel]="3"
+      >
+        <fold-field-list>
+          <fold-field label="Format" [empty]="info.format === null">{{ info.format }}</fold-field>
+          <fold-field label="Dimensions" [empty]="info.dimensions === null">{{
+            info.dimensions
+          }}</fold-field>
+          <fold-field label="Poids" [empty]="info.weight === null">{{ info.weight }}</fold-field>
+          <fold-field label="Déposée le">{{ info.depositedAt }}</fold-field>
+          <fold-field label="Fichier"
+            ><span class="file">{{ info.fileName }}</span></fold-field
+          >
+          <fold-field label="Emplois">
+            <span class="uses">
+              {{ info.usesWording }}
+              @if (info.uses > 0 && data().showCarriers) {
+                <button
+                  foldButton
+                  emphasis="soft"
+                  intent="neutral"
+                  size="sm"
+                  (click)="showCarriers()"
+                >
+                  Voir où
+                </button>
+              }
+            </span>
+          </fold-field>
+        </fold-field-list>
+        <div>
+          <button
+            foldButton
+            emphasis="outline"
+            intent="neutral"
+            size="sm"
+            icon="copy"
+            (click)="copyAddress()"
+          >
+            Copier l’adresse
+          </button>
+        </div>
+      </fold-page-section>
     }
-  </section>
-
-  <!-- Les TROIS langues ensemble : une traduction se juge à côté de sa source,
-       pas de mémoire. -->
-  @for (locale of locales; track locale) {
-    <fold-input
-      [label]="names[locale]"
-      [hint]="locale === sourceLocale ? 'Le français fait foi.' : 'Vide : retombe sur le français.'"
-      [value]="valueOf(locale)"
-      (valueChange)="write(locale, $event)"
-    />
   }
-</div>
+</fold-panel-body>
 
-<div class="foot">
-  <button foldButton emphasis="outline" (click)="cancel()">Annuler</button>
-  <button foldButton (click)="submit()">Enregistrer</button>
-</div>
+<fold-panel-footer [align]="leaving() ? 'start' : 'between'">
+  @if (leaving()) {
+    <fold-callout variant="warning" class="leave">
+      Des modifications ne sont pas enregistrées.
+      <span actions class="leave-actions">
+        <button foldButton emphasis="outline" intent="neutral" size="sm" (click)="keepEditing()">
+          Continuer
+        </button>
+        <button foldButton intent="danger" size="sm" (click)="discard()">Abandonner</button>
+      </span>
+    </fold-callout>
+  } @else {
+    <span class="muted">{{ dirty() ? 'Modifications non enregistrées' : '' }}</span>
+    <span class="actions">
+      <button foldButton emphasis="outline" intent="neutral" (click)="cancel()">Annuler</button>
+      <button foldButton [disabled]="!dirty() || moving()" (click)="submit()">Enregistrer</button>
+    </span>
+  }
+</fold-panel-footer>

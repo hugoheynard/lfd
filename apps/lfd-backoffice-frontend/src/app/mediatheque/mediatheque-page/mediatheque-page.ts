@@ -45,7 +45,12 @@ import {
 import { MediaToolbar } from '../media-toolbar/media-toolbar';
 import { feedRows } from '../month-dividers';
 import { CarriersPanel, type CarriersPanelData } from '../carriers-panel/carriers-panel';
-import { ImagePanel, type ImagePanelData, type ImagePanelResult } from '../image-panel/image-panel';
+import {
+  type ImageDescription,
+  ImagePanel,
+  type ImagePanelData,
+  type ImagePanelResult,
+} from '../image-panel/image-panel';
 import { TagChip } from '../tag-chip/tag-chip';
 import { TagPaletteStore, type PaletteTag } from '../tag-palette';
 import {
@@ -578,44 +583,83 @@ export class MediathequePage {
     void this.panels
       .open<ImagePanelData, ImagePanelResult>(ImagePanel, {
         data: {
-          url: item.url,
-          name: item.name,
-          alt: item.alt,
-          focal: item.focal,
-          tags: item.tags,
+          ...describedImage(item),
           vocabulary: this.palette.words(),
+          // Le fil CHARGÉ, relu à chaque pas : décrire une série sans refermer.
+          sequence: {
+            images: () => this.feed.items().map(describedImage),
+            save: (result) => this.writeDescription(result),
+          },
+          showCarriers: (url) => {
+            const carrier = this.feed.items().find((entry) => entry.url === url);
+            if (carrier !== undefined) {
+              this.showCarriers(carrier);
+            }
+          },
         },
       })
       .closed.then(async (result) => {
-        if (result === undefined) {
-          return;
-        }
-        const written = {
-          ...item,
-          name: result.name,
-          alt: result.alt,
-          focal: result.focal,
-          tags: result.tags,
-        };
-        this.replace(written);
-        try {
-          await this.api.describe({
-            url: item.url,
-            name: result.name,
-            tags: [...result.tags],
-            // Une source vide veut dire « pas d'alternative » : le contrat la
-            // refuserait, et le serveur retombe sur l'URL quand elle est
-            // absente. On l'omet plutôt que d'envoyer un texte sans sa langue.
-            ...(result.alt.fr.trim() === '' ? {} : { alt: result.alt }),
-            focal: result.focal,
-          });
-          await this.palette.refresh();
-        } catch (caught) {
-          this.replace(item);
-          this.notify.refused(caught, "L'image n'a pas pu être décrite.");
+        if (result !== undefined) {
+          await this.writeDescription(result);
         }
       });
   }
+
+  /**
+   * Écrit ce que le panneau a décrit — à l'avance dans le fil, puis au
+   * serveur ; un refus remet l'image telle qu'elle était. Rend `false` sur
+   * refus : le panneau qui navigue reste alors sur l'image.
+   */
+  private async writeDescription(result: ImagePanelResult): Promise<boolean> {
+    const item = this.feed.items().find((entry) => entry.url === result.url);
+    if (item === undefined) {
+      return false;
+    }
+    this.replace({
+      ...item,
+      name: result.name,
+      alt: result.alt,
+      focal: result.focal,
+      tags: result.tags,
+    });
+    try {
+      await this.api.describe({
+        url: item.url,
+        name: result.name,
+        tags: [...result.tags],
+        // Une source vide veut dire « pas d'alternative » : le contrat la
+        // refuserait, et le serveur retombe sur l'URL quand elle est
+        // absente. On l'omet plutôt que d'envoyer un texte sans sa langue.
+        ...(result.alt.fr.trim() === '' ? {} : { alt: result.alt }),
+        focal: result.focal,
+      });
+      await this.palette.refresh();
+      return true;
+    } catch (caught) {
+      this.replace(item);
+      this.notify.refused(caught, "L'image n'a pas pu être décrite.");
+      return false;
+    }
+  }
+}
+
+/** Ce que le panneau lit d'une image du fil. */
+function describedImage(item: LibraryMediaView): ImageDescription {
+  return {
+    url: item.url,
+    name: item.name,
+    alt: item.alt,
+    focal: item.focal,
+    tags: item.tags,
+    facts: {
+      width: item.width,
+      height: item.height,
+      bytes: item.bytes,
+      contentType: item.contentType,
+      depositedAt: item.depositedAt,
+      uses: item.uses,
+    },
+  };
 }
 
 /**
