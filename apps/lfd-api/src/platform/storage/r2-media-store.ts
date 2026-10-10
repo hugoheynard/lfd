@@ -21,6 +21,17 @@ function missingMediaReason(missing: readonly string[], baseUrl: string | null):
 }
 
 /**
+ * Une image adressée par son contenu ne change JAMAIS sous la même clé : elle
+ * se met en cache pour un an, sans revalidation.
+ *
+ * 🔴 `content-address.ts` justifiait l'adressage par cet en-tête depuis le
+ * premier jour, et aucun dépôt ne le posait : le domaine média servait le
+ * défaut du bucket, 4 h (`max-age=14400`, constaté le 2026-10-10 sur une image
+ * de production). Les objets déposés avant gardent leur en-tête d'origine.
+ */
+const IMMUTABLE_CACHE = "public, max-age=31536000, immutable";
+
+/**
  * Adaptateur **R2** du stockage des médias publics.
  *
  * Construit à la première image, et seulement si le bucket ET le domaine public
@@ -52,7 +63,7 @@ export class R2MediaStore extends MediaStore {
       );
     }
     try {
-      await service.upload(storageKey, asset.bytes, asset.contentType);
+      await service.upload(storageKey, asset.bytes, asset.contentType, IMMUTABLE_CACHE);
     } catch (error) {
       const cause = error instanceof Error ? error.name : String(error);
       this.logger.error(`Stockage média — dépôt de « ${storageKey} » refusé : ${cause}`);

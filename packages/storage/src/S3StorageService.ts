@@ -79,7 +79,17 @@ export class S3StorageService implements IStorageService {
     }
   }
 
-  async upload(key: string, body: Buffer | Readable, contentType: string): Promise<void> {
+  /**
+   * @param cacheControl l'en-tête que le bucket servira avec l'objet. Absent :
+   *   le défaut du service (4 h derrière le domaine média, constaté le
+   *   2026-10-10). Seul un objet adressé par son contenu peut se dire immuable.
+   */
+  async upload(
+    key: string,
+    body: Buffer | Readable,
+    contentType: string,
+    cacheControl?: string,
+  ): Promise<void> {
     const bytes = Buffer.isBuffer(body) ? body.length : undefined;
     await this.track(
       "put",
@@ -91,6 +101,7 @@ export class S3StorageService implements IStorageService {
             Key: key,
             Body: body,
             ContentType: contentType,
+            ...(cacheControl === undefined ? {} : { CacheControl: cacheControl }),
           }),
         ),
       () => (bytes !== undefined ? { bytes } : {}),

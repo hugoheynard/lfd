@@ -40,6 +40,8 @@ beforeEach(() => {
   s3Mock.reset();
 });
 
+const IMMUTABLE = "public, max-age=31536000, immutable";
+
 describe("S3StorageService.upload / delete", () => {
   it("uploads with bucket, key, body, content-type", async () => {
     s3Mock.on(PutObjectCommand).resolves({});
@@ -50,6 +52,15 @@ describe("S3StorageService.upload / delete", () => {
       Key: "owner/u/x.mp3",
       ContentType: "audio/mpeg",
     });
+  });
+
+  it("passes Cache-Control only when asked", async () => {
+    s3Mock.on(PutObjectCommand).resolves({});
+    await svc().upload("products/ab.jpg", Buffer.from("abc"), "image/jpeg", IMMUTABLE);
+    await svc().upload("owner/u/x.mp3", Buffer.from("abc"), "audio/mpeg");
+    const [first, second] = s3Mock.commandCalls(PutObjectCommand).map((call) => call.args[0].input);
+    expect(first).toMatchObject({ CacheControl: IMMUTABLE });
+    expect(second).not.toHaveProperty("CacheControl");
   });
 
   it("deletes a single key", async () => {
