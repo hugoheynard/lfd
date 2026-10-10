@@ -44,7 +44,9 @@ Il en découle trois propriétés :
 - **la déduplication est gratuite** : les mêmes octets tombent sur la même
   ligne ;
 - **un redépôt est idempotent** : reprendre un lot à moitié échoué ne
-  duplique rien ;
+  duplique rien — le dépôt répond `alreadyInLibrary` et n'écrit rien (vrai
+  depuis le 2026-10-10 seulement : avant, un `create` sur l'URL unique
+  rendait un 409) ;
 - **l'identité est stable** : tous les porteurs désignent l'image par son URL,
   jamais par l'identifiant de ligne.
 
@@ -53,7 +55,8 @@ photo donne d'autres octets, donc une autre URL. Les porteurs restent sur
 l'ancienne (§11).
 
 ⚠️ **Ce qu'un redépôt ne rend pas** : l'étiquette, les mots-clés,
-l'alternative et le point focal. Ils décrivent l'image, pas ses octets.
+l'alternative et le point focal. Ils décrivent l'image, pas ses octets. **Et
+il ne change pas sa série** : une image garde celle de son premier dépôt (D2).
 
 ---
 
@@ -124,8 +127,12 @@ media.media_asset
   alt           jsonb { fr: …, en: … } — UNE alternative par image
   tags          text[] — index GIN media_asset_tags_idx, déclaré au schéma
   focal_x/_y    fractions 0..1 depuis le coin haut-gauche, NULL = « personne ne s'est prononcé »
+  series_id     → media_series, NULL = sans série (ON DELETE RESTRICT)
   storage_key, content_type, width, height, bytes
   created_at
+
+media.media_series              d'où viennent les images
+  id, title (≤ 120), shot_on (jour, jamais futur), note (≤ 2000), created_at
 
 media.media_upload_failure      les dépôts refusés, 90 jours
   file_name, reason (français), code, bytes?, content_type?, actor_name?, occurred_at
@@ -176,6 +183,26 @@ mots-clés filtrés, compte) au-dessus d'une grille qui charge la page suivante
 en approchant du bas. Sous le tri par dépôt, des intercalaires de mois à
 l'heure de Paris — jamais par tag, une image y paraîtrait plusieurs fois (D4).
 L'adresse porte la vue, sans le curseur.
+
+### Les séries
+
+Une série dit l'**origine** d'un lot d'images : « Shooting carte 2026 », sa
+date de prise de vue, sa note d'intention. Facultative au dépôt (D3) ; une
+image en a au plus une, celle de son premier dépôt (D2).
+
+| Geste                  | Route                        | Ce qu'il tient                                                              |
+| ---------------------- | ---------------------------- | --------------------------------------------------------------------------- |
+| Lister                 | `GET /media/series`          | avec le nombre d'images, prise de vue décroissante                          |
+| Ouvrir, corriger       | `POST` / `PUT /media/series` | prise de vue future refusée — faute de frappe, et tête du tri pour toujours |
+| Déposer dans une série | `POST /media` (`seriesId`)   | vérifiée AVANT d'écrire au bucket ; un redépôt garde sa série               |
+| Rattacher, détacher    | `PUT /media` (`seriesId`)    | un id rattache, `null` détache, l'absence ne change rien                    |
+
+À l'écran : la série du lot se choisit au-dessus de la zone de dépôt, le
+compte rendu dit « déjà au fonds — série X » sans alarme, une pastille de
+série paraît sur les tuiles et dans le panneau, et le fil se filtre par
+série et se trie par prise de vue (intercalaires par série). Le poste vérifie
+type, poids et dimensions avant d'envoyer, avec les phrases du serveur, qui
+reste l'autorité. Pas de suppression de série.
 
 ### Les tags à l'écran
 
