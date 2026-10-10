@@ -18,7 +18,7 @@
          compteur ment. -->
     <p class="tally">{{ carriers().length }} porteur(s)</p>
     <ul class="list">
-      @for (carrier of carriers(); track carrier.kind + carrier.id) {
+      @for (carrier of carriers(); track carrier.kind + carrier.id + carrier.label) {
         <li>
           <button type="button" class="carrier" (click)="open(carrier)">
             <span class="kind">{{ word(carrier) }}</span>

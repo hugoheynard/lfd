@@ -103,6 +103,11 @@ export interface ImagePanelData extends ImageDescription {
   readonly sequence?: ImagePanelSequence;
   /** Ouvre la liste des porteurs — « voir où » des informations. */
   readonly showCarriers?: (url: string) => void;
+  /**
+   * Ouvre le remplacement de l'image (L7) — ce panneau se ferme alors, un
+   * panneau à la fois. Absent : le geste n'est pas offert.
+   */
+  readonly replace?: (url: string) => void;
 }
 
 /**
@@ -363,6 +368,17 @@ export class ImagePanel {
     const shown = this.shown();
     if (shown !== null) {
       this.data().showCarriers?.(shown.url);
+    }
+  }
+
+  /**
+   * Passe au remplacement. Fermé tant qu'une saisie est en cours : ouvrir un
+   * autre panneau ferme celui-ci, et la saisie serait perdue sans un mot.
+   */
+  protected replaceImage(): void {
+    const shown = this.shown();
+    if (shown !== null && !this.dirty()) {
+      this.data().replace?.(shown.url);
     }
   }
 

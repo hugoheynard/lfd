@@ -230,7 +230,7 @@
             </span>
           </fold-field>
         </fold-field-list>
-        <div>
+        <div class="info-actions">
           <button
             foldButton
             emphasis="outline"
@@ -241,6 +241,23 @@
           >
             Copier l’adresse
           </button>
+          @if (data().replace) {
+            <!-- Fermé pendant une saisie : le remplacement ferme ce panneau. -->
+            <button
+              foldButton
+              emphasis="outline"
+              intent="neutral"
+              size="sm"
+              icon="reload"
+              [disabled]="dirty()"
+              (click)="replaceImage()"
+            >
+              Remplacer…
+            </button>
+            @if (dirty()) {
+              <span class="muted">Enregistrez d’abord la description.</span>
+            }
+          }
         </div>
       </fold-page-section>
     }

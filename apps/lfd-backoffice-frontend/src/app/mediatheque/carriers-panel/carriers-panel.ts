@@ -34,6 +34,11 @@ const CARRIER_DESTINATIONS: Readonly<
   operation: { word: 'Opération', path: (key) => ['/pim', 'operations', key] },
 };
 
+/** Le mot qui précède le libellé d'un porteur : « Fiche », « Famille », « Vitrine ». */
+export function carrierWord(carrier: MediaCarrierView): string {
+  return CARRIER_DESTINATIONS[carrier.kind].word;
+}
+
 /** L'image dont on demande les porteurs. */
 export interface CarriersPanelData {
   readonly url: string;
@@ -109,7 +114,7 @@ export class CarriersPanel {
 
   /** Le mot qui précède le libellé : « Fiche », « Famille », « Vitrine ». */
   protected word(carrier: MediaCarrierView): string {
-    return CARRIER_DESTINATIONS[carrier.kind].word;
+    return carrierWord(carrier);
   }
 
   protected dismiss(): void {

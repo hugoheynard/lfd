@@ -1,0 +1,236 @@
+<fold-panel-header
+  title="Remplacer l’image"
+  subtitle="Tous ses porteurs afficheront la nouvelle."
+  closeLabel="Fermer"
+/>
+
+<fold-panel-body>
+  <!-- L'ANCIENNE, et chez qui elle sera remplacée : le geste touche des
+       écrans qu'on n'a pas sous les yeux, il faut les nommer avant. -->
+  <fold-page-section title="L’image actuelle" [headingLevel]="3" stack>
+    <div class="current">
+      <span class="thumb">
+        <img [src]="from().url" alt="" [style.object-position]="fromPosition()" />
+      </span>
+      <span class="name">{{ fromLabel() }}</span>
+    </div>
+
+    @if (carriersLoading()) {
+      <fold-loading message="Lecture des porteurs…" size="sm" />
+    } @else if (carriersFailure(); as message) {
+      <fold-callout variant="alert">{{ message }}</fold-callout>
+    } @else if (carriers().length === 0) {
+      <fold-callout variant="info">
+        Aucune fiche, famille ni vitrine ne l’affiche : il n’y a rien à remplacer.
+      </fold-callout>
+    } @else {
+      <p class="lead">Elle sera remplacée chez {{ carriersWording() }} :</p>
+      <ul class="carriers">
+        @for (carrier of carriers(); track carrier.kind + carrier.id + carrier.label) {
+          <li>
+            <span class="kind">{{ word(carrier) }}</span>
+            <span class="kind" aria-hidden="true">·</span>
+            <span>{{ carrier.label }}</span>
+          </li>
+        }
+      </ul>
+    }
+  </fold-page-section>
+
+  <fold-page-section
+    title="La nouvelle image"
+    description="Déposez un fichier, ou choisissez une image déjà dans la médiathèque."
+    [headingLevel]="3"
+    stack
+  >
+    @if (candidate(); as chosen) {
+      <!-- A → B, côte à côte : on juge un remplacement en regardant les deux. -->
+      <div class="swap">
+        <figure class="side">
+          <span class="frame">
+            <img [src]="from().url" alt="" [style.object-position]="fromPosition()" />
+          </span>
+          <figcaption>Avant · {{ fromLabel() }}</figcaption>
+        </figure>
+        <fold-icon name="arrow-right" class="arrow" />
+        <figure class="side">
+          <span class="frame">
+            <img [src]="chosen.image.url" alt="" [style.object-position]="toPosition()" />
+          </span>
+          <figcaption>Après · {{ labelOf(chosen.image) }}</figcaption>
+        </figure>
+      </div>
+
+      @if (sameImage()) {
+        <fold-callout variant="warning">
+          C’est l’image actuelle : choisissez-en une autre.
+        </fold-callout>
+      } @else if (chosen.alreadyInLibrary && source() === 'deposit') {
+        <fold-callout variant="info">
+          Ce fichier est déjà dans la médiathèque : c’est cette image qui sera utilisée, avec sa
+          série et sa description.
+        </fold-callout>
+      }
+
+      <div>
+        <button
+          foldButton
+          emphasis="soft"
+          intent="neutral"
+          size="sm"
+          icon="reset"
+          [disabled]="running()"
+          (click)="undesignate()"
+        >
+          Choisir une autre image
+        </button>
+      </div>
+    } @else {
+      <fold-choice-row
+        ariaLabel="D’où vient la nouvelle image"
+        [options]="sources"
+        [activeKey]="source()"
+        (selected)="choose($event)"
+      />
+
+      @if (source() === 'deposit') {
+        <fold-listbox
+          size="sm"
+          label="Série du fichier"
+          hint="Celle de l’image actuelle, par défaut. Un fichier déjà au fonds garde la sienne."
+          [options]="seriesOptions()"
+          [value]="seriesId()"
+          (selectionChange)="seriesId.set($event)"
+        />
+        <fold-file-dropzone
+          [accept]="limits.accept"
+          label="Déposer la nouvelle image"
+          [hint]="limits.hint"
+          [busy]="uploading()"
+          busyLabel="Dépôt en cours…"
+          (filesPicked)="deposit($event)"
+        />
+        @if (depositRefusal(); as message) {
+          <fold-callout variant="alert">{{ message }}</fold-callout>
+        }
+      } @else {
+        <fold-search
+          placeholder="Chercher par étiquette"
+          ariaLabel="Chercher dans la médiathèque"
+          [value]="search()"
+          (searchChange)="searchFor($event)"
+        />
+        @if (searching()) {
+          <fold-loading message="Lecture de la médiathèque…" size="sm" />
+        } @else if (searchFailure(); as message) {
+          <fold-empty-state tone="alert" title="Médiathèque illisible" [subtitle]="message">
+            <button foldButton emphasis="outline" size="sm" icon="reload" (click)="research()">
+              Réessayer
+            </button>
+          </fold-empty-state>
+        } @else if (results().length === 0) {
+          <fold-empty-state
+            [title]="search().trim() === '' ? 'Médiathèque vide' : 'Aucune image ne correspond'"
+            [subtitle]="
+              search().trim() === ''
+                ? 'Déposez plutôt un fichier.'
+                : 'La recherche porte sur l’étiquette des images.'
+            "
+          >
+            <fold-icon empty-icon name="search" />
+          </fold-empty-state>
+        } @else {
+          <ul class="grid">
+            @for (image of results(); track image.url) {
+              <li>
+                <button
+                  type="button"
+                  class="tile"
+                  [class.is-current]="isCurrent(image.url)"
+                  [disabled]="isCurrent(image.url)"
+                  (click)="pick(image)"
+                >
+                  <img [src]="image.url" alt="" loading="lazy" />
+                  <span class="caption">
+                    {{ isCurrent(image.url) ? 'Image actuelle' : labelOf(image) }}
+                  </span>
+                </button>
+              </li>
+            }
+          </ul>
+          @if (hasMore()) {
+            <div>
+              <button
+                foldButton
+                emphasis="soft"
+                intent="neutral"
+                size="sm"
+                [loading]="loadingMore()"
+                (click)="more()"
+              >
+                Charger la suite
+              </button>
+            </div>
+          }
+        }
+      }
+    }
+  </fold-page-section>
+
+  @if (candidate() !== null && !sameImage()) {
+    <fold-page-section
+      title="Description"
+      description="La nouvelle image garde la sienne, sauf si vous reprenez celle de l’actuelle."
+      [headingLevel]="3"
+      stack
+    >
+      <fold-checkbox
+        label="Reprendre la description de l’ancienne image"
+        hint="Étiquette, mots-clés, texte alternatif et point focal. Sa série ne change pas."
+        [checked]="takeOver()"
+        [disabled]="running()"
+        (checkedChange)="takeOver.set($event)"
+      />
+      @if (candidate()?.described === null) {
+        <fold-callout variant="neutral">
+          La description actuelle de cette image n’a pas pu être lue ici : la reprendre remplacerait
+          ce qu’elle porte peut-être déjà.
+        </fold-callout>
+      }
+    </fold-page-section>
+  }
+
+  @if (failure(); as message) {
+    <!-- Le refus du serveur, nommé ; la nouvelle image reste désignée. -->
+    <fold-callout variant="alert" announce>{{ message }}</fold-callout>
+  }
+</fold-panel-body>
+
+<fold-panel-footer [align]="confirming() ? 'start' : 'end'">
+  @if (confirming()) {
+    <fold-callout variant="warning" class="confirm">
+      Remplacer chez {{ carriersWording() }} ? L’ancienne image reste dans la médiathèque ; le
+      ramassage la retirera quand plus rien ne l’affichera.
+      <span actions class="actions">
+        <button
+          foldButton
+          emphasis="outline"
+          intent="neutral"
+          size="sm"
+          [disabled]="running()"
+          (click)="back()"
+        >
+          Retour
+        </button>
+        <button foldButton size="sm" [loading]="running()" (click)="replace()">Remplacer</button>
+      </span>
+    </fold-callout>
+  } @else {
+    <span class="actions">
+      <button foldButton emphasis="outline" intent="neutral" (click)="cancel()">Annuler</button>
+      <button foldButton [disabled]="!canReplace()" (click)="ask()">
+        Remplacer chez {{ carriersWording() }}
+      </button>
+    </span>
+  }
+</fold-panel-footer>

@@ -20,6 +20,7 @@ import {
   FoldToastComponent,
 } from 'fold-ng';
 
+import { PermissionsStore } from '../../auth/permissions.store';
 import { NotifyService } from '../../notify.service';
 import { CanDirective } from '../../shared/can/can.directive';
 
@@ -49,6 +50,12 @@ import {
   type ImagePanelData,
   type ImagePanelResult,
 } from '../image-panel/image-panel';
+import {
+  ReplacePanel,
+  type ReplacePanelData,
+  type ReplacePanelResult,
+  carriersWording,
+} from '../replace-panel/replace-panel';
 import { TagChip } from '../tag-chip/tag-chip';
 import { TagPaletteStore, type PaletteTag } from '../tag-palette';
 import {
@@ -128,6 +135,7 @@ export class MediathequePage {
   protected readonly palette = inject(TagPaletteStore);
   private readonly panels = inject(FoldPanelHostService);
   private readonly notify = inject(NotifyService);
+  private readonly permissions = inject(PermissionsStore);
   private readonly route = inject(ActivatedRoute);
   private readonly router = inject(Router);
   protected readonly feed = inject(MediaFeedStore);
@@ -528,12 +536,55 @@ export class MediathequePage {
               this.showCarriers(carrier);
             }
           },
+          // Le remplacement écrit : offert seulement à qui a le droit d'écrire.
+          ...(this.permissions.can('media_library:write')
+            ? { replace: (url: string) => this.openReplace(url) }
+            : {}),
         },
       })
       .closed.then(async (result) => {
         if (result !== undefined) {
           await this.writeDescription(result);
         }
+      });
+  }
+
+  /**
+   * Ouvre le **remplacement** d'une image (L7) — le panneau de l'image se
+   * ferme, un panneau à la fois.
+   *
+   * Après succès, le fil est relu depuis le début : l'ancienne a perdu ses
+   * porteurs, la nouvelle les a gagnés, et un dépôt a pu entrer au fonds. Le
+   * panneau ne rouvre pas sur la nouvelle : le fil la montre, et le toast dit
+   * ce qui a été fait.
+   */
+  private openReplace(url: string): void {
+    const item = this.feed.items().find((entry) => entry.url === url);
+    if (item === undefined) {
+      return;
+    }
+    void this.panels
+      .open<ReplacePanelData, ReplacePanelResult>(ReplacePanel, {
+        data: {
+          from: describedImage(item),
+          seriesChoices: () => this.series.all(),
+          lookup: (wanted) => {
+            const found = this.feed.items().find((entry) => entry.url === wanted);
+            return found === undefined ? null : describedImage(found);
+          },
+        },
+      })
+      .closed.then(async (result) => {
+        if (result === undefined) {
+          return;
+        }
+        this.notify.success(`Image remplacée chez ${carriersWording(result.carriers)}`);
+        if (typeof result.description === 'string') {
+          // Le remplacement est FAIT ; seule la reprise a échoué. La dire à
+          // part : la refaire se fait depuis le panneau de la nouvelle image.
+          this.notify.refused(null, `La description n'a pas été reprise : ${result.description}`);
+        }
+        await Promise.all([this.reload(), this.palette.refresh(), this.series.refresh()]);
       });
   }
 

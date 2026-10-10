@@ -11,6 +11,7 @@ import type {
   MediaSeriesView,
   MediaTagView,
   RenameMediaTagPayload,
+  ReplaceMediaPayload,
   UploadedMediaView,
 } from '@lfd/pim-contracts';
 import { firstValueFrom } from 'rxjs';
@@ -164,6 +165,22 @@ export class MediaLibraryHttpApi {
    */
   async describe(details: MediaDetailsPayload): Promise<void> {
     await firstValueFrom(this.http.put<void>(`${this.base}/media`, details));
+  }
+
+  /**
+   * **Remplacer une image** chez tous ses porteurs (L7, D5) — 204, rien
+   * d'autre : l'écran relit ce qu'il montre.
+   *
+   * L'ancienne image RESTE au fonds ; le ramassage la retirera quand plus rien
+   * ne l'affichera. La nouvelle garde sa propre description : la reprendre est
+   * un second geste ({@link describe}), décidé par l'écran.
+   *
+   * Refus du serveur, chacun nommé dans son message : 404 (l'une des deux
+   * n'est pas au fonds), 400 (adresse vide, ou la même image), 409 (une
+   * révision de vitrine a changé entre-temps).
+   */
+  async replace(payload: ReplaceMediaPayload): Promise<void> {
+    await firstValueFrom(this.http.post<void>(`${this.base}/media/replace`, payload));
   }
 
   /**

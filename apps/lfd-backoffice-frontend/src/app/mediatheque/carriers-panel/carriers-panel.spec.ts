@@ -117,4 +117,27 @@ describe('CarriersPanel', () => {
     await fixture.whenStable();
     expect(TestBed.inject(Router).url).toBe('/vitrine');
   });
+
+  it('montre DEUX porteurs de même kind et id quand leurs libellés diffèrent', async () => {
+    // L'opération du référentiel et sa copie au commerce partagent `kind` et
+    // `id` : suivies par ces deux seuls champs, Angular levait une clé en double.
+    const api = new FakeApi();
+    api.answer = [
+      { kind: 'operation', id: 'paques', label: 'Pâques' },
+      {
+        kind: 'operation',
+        id: 'paques',
+        label: 'Boutique — opération « Pâques » (copie, suit au prochain envoi du catalogue)',
+      },
+    ];
+
+    const { fixture } = mount(api);
+    fixture.detectChanges();
+    await fixture.whenStable();
+    fixture.detectChanges();
+
+    const host = fixture.nativeElement as HTMLElement;
+    expect(host.querySelectorAll('.carrier').length).toBe(2);
+    expect(host.textContent).toContain('copie, suit au prochain envoi');
+  });
 });

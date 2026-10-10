@@ -23,6 +23,7 @@ export {
   mediaLibraryQuerySchema,
   mediaSeriesPayloadSchema,
   renameMediaTagPayloadSchema,
+  replaceMediaPayloadSchema,
   setMediaPayloadSchema,
 } from "./media.js";
 export { MEDIA_LIMITS, MEDIA_LIBRARY_SORTS } from "./media.js";
@@ -42,6 +43,7 @@ export type {
   MediaDetailsPayload,
   MediaTagView,
   RenameMediaTagPayload,
+  ReplaceMediaPayload,
   MediaSeriesPayload,
   MediaSeriesRefView,
   MediaSeriesView,

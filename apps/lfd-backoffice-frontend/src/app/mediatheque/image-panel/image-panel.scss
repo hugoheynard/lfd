@@ -165,6 +165,13 @@ fold-panel-body {
   overflow-wrap: anywhere;
 }
 
+.info-actions {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: var(--fold-space-sm);
+}
+
 .uses {
   display: inline-flex;
   flex-wrap: wrap;

@@ -1,0 +1,154 @@
+/* Les sections se séparent par l'espace, comme dans le panneau de l'image. */
+fold-panel-body {
+  gap: var(--fold-space-2xl);
+}
+
+/* L'image actuelle : une vignette et son nom, sur une ligne. */
+.current {
+  display: flex;
+  align-items: center;
+  gap: var(--fold-space-md);
+}
+
+.thumb {
+  flex: none;
+  width: 6rem;
+  aspect-ratio: 4 / 3;
+  overflow: hidden;
+  border-radius: var(--fold-radius-md);
+  background: var(--fold-color-surface-sunken);
+
+  img {
+    display: block;
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+  }
+}
+
+.name {
+  overflow-wrap: anywhere;
+}
+
+.lead {
+  margin: 0;
+  font-size: var(--fold-text-sm);
+}
+
+.carriers {
+  display: flex;
+  flex-direction: column;
+  gap: var(--fold-space-xs);
+  margin: 0;
+  padding: 0;
+  list-style: none;
+  font-size: var(--fold-text-sm);
+}
+
+.kind {
+  color: var(--fold-color-text-muted);
+}
+
+/* Avant → après : deux cadres de même forme, la flèche entre les deux. */
+.swap {
+  display: flex;
+  align-items: center;
+  gap: var(--fold-space-md);
+}
+
+.side {
+  display: flex;
+  flex: 1;
+  flex-direction: column;
+  gap: var(--fold-space-xs);
+  min-width: 0;
+  margin: 0;
+
+  figcaption {
+    overflow: hidden;
+    color: var(--fold-color-text-muted);
+    font-size: var(--fold-text-xs);
+    text-overflow: ellipsis;
+    white-space: nowrap;
+  }
+}
+
+.frame {
+  display: block;
+  aspect-ratio: 4 / 3;
+  overflow: hidden;
+  border-radius: var(--fold-radius-md);
+  background: var(--fold-color-surface-sunken);
+
+  img {
+    display: block;
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+  }
+}
+
+.arrow {
+  flex: none;
+  color: var(--fold-color-text-muted);
+}
+
+/* La grille de choix dans le fonds. */
+.grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(7.5rem, 1fr));
+  gap: var(--fold-space-sm);
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.tile {
+  display: flex;
+  flex-direction: column;
+  gap: var(--fold-space-xs);
+  width: 100%;
+  padding: var(--fold-space-xs);
+  border: 2px solid transparent;
+  border-radius: var(--fold-radius-md);
+  background: none;
+  color: inherit;
+  font: inherit;
+  text-align: start;
+  cursor: pointer;
+
+  &:hover:not(:disabled),
+  &:focus-visible {
+    border-color: var(--fold-color-primary);
+  }
+
+  img {
+    aspect-ratio: 4 / 3;
+    width: 100%;
+    object-fit: cover;
+    border-radius: var(--fold-radius-md);
+    background: var(--fold-color-surface-sunken);
+  }
+
+  /* L'image actuelle : visible, hors d'atteinte — la masquer ferait la chercher. */
+  &.is-current {
+    cursor: default;
+    opacity: 0.55;
+  }
+}
+
+.caption {
+  overflow: hidden;
+  font-size: var(--fold-text-xs);
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.actions {
+  display: inline-flex;
+  gap: var(--fold-space-sm);
+}
+
+.confirm {
+  flex: 1;
+}

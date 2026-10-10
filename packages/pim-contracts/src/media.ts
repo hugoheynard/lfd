@@ -371,6 +371,17 @@ export const renameMediaTagPayloadSchema = z.object({
 export type RenameMediaTagPayload = z.infer<typeof renameMediaTagPayloadSchema>;
 
 /**
+ * **Remplacer une image** (L7, D5) — `POST /media/replace` : les adresses de
+ * l'ancienne et de la nouvelle. La forme seulement : qu'elles soient au fonds
+ * et distinctes, c'est le domaine et le handler qui le disent.
+ */
+export const replaceMediaPayloadSchema = z.object({
+  from: z.string(),
+  to: z.string(),
+});
+export type ReplaceMediaPayload = z.infer<typeof replaceMediaPayloadSchema>;
+
+/**
  * **Une série** — des images prises ensemble (L3, 2026-10-10), telle que la
  * liste la rend : triées par prise de vue décroissante, puis par création.
  */

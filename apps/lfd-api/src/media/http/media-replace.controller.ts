@@ -1,22 +1,11 @@
 import { Body, Controller, HttpCode, Post } from "@nestjs/common";
 import { CommandBus } from "@nestjs/cqrs";
-import { z } from "zod";
+import { type ReplaceMediaPayload, replaceMediaPayloadSchema } from "@lfd/pim-contracts";
 
 import { AdminSurface } from "../../platform/auth/admin-surface.decorator.js";
 import { StaffUserId } from "../../platform/auth/staff.decorator.js";
 import { ZodBody } from "../../platform/shared/http/zod-body.pipe.js";
 import { ReplaceMediaCommand } from "../application/replace-media.js";
-
-/**
- * La forme du corps, et seulement elle : deux URL. Qu'elles soient au fonds
- * et distinctes, c'est le domaine et le handler qui le disent.
- */
-const replaceMediaPayloadSchema = z.object({
-  from: z.string(),
-  to: z.string(),
-});
-
-type ReplaceMediaPayload = z.infer<typeof replaceMediaPayloadSchema>;
 
 /**
  * **Remplacer une image du fonds** (L7, 2026-10-10) — `POST /media/replace`.
