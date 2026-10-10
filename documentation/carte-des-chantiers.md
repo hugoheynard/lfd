@@ -27,20 +27,76 @@
 | **maintenant**   | Lancer les deux requêtes de contrôle de la grâce des invitations : aucune invitation en cours ne doit avoir été fermée par la migration `20261010140000` (appliquée sans sauvegarde préalable, que la relecture conseillait) | Hugo (base de prod)         | `ops/runbook.md`, `auth-inscription/architecture-compte-client-cycle-de-vie.md` §8.1 bis |
 | **maintenant**   | Regarder `/sante` : les web vitals doivent remonter (non nulles) depuis le redéploiement des deux fronts ; sinon, rejouer le préflight décrit au TODO                                                                        | Hugo                        | `todos/todo-vitals-refuses-par-le-cors.md`                                               |
 
-### Déployé le 2026-10-10 (`main` = `2324a62fc`)
+### Déployé le 2026-10-10 au soir (`main` = `9b42839c6`)
 
-Promotion après la CI verte sur le SHA exact et la relecture de
-`lecteur-de-migrations` (4 migrations additives, aucun droit accordé :
-`20261009180000_les_demandes_clients`, `20261010100000_les_droits_de_l_offre_de_livraison`,
-`20261010120000_l_ordre_des_visuels`, `20261010140000_l_invitation_du_rattachement`).
-Les quatre déploiements (API, passerelle, back-office, boutique) réussis,
-`/health` à 200. Ce qui est parti : demandes clients et « Signaler un
-problème » ; le menu du back-office réorganisé (Catalogue, Prod manager,
-Tour manager, Réglages au pied, Outils agent) ; les droits de l'offre de
-livraison ; tout le § 3 ci-dessous ; le correctif du journal des envois ;
-l'ordre des images ; le refus des invitations expirées.
+Avance rapide depuis `2324a62fc`, après une batterie complète verte (42 portes,
+8 726 unitaires et 3 106 e2e de l'API, 5 047 tests du back-office, 1 387 de la
+boutique, builds AOT ; boutique à 1,29 Mo), la CI verte sur le SHA exact et la
+relecture de `lecteur-de-migrations` : 4 migrations, aucune perte, aucun
+droit accordé — `20261010160000_l_index_des_mots_cles_se_declare` (retire un
+index en double), `20261010180000_les_series_de_la_mediatheque`,
+`20261010200000_le_point_focal_voyage`, `20261010220000_l_accueil_de_la_vitrine`.
+Quatre déploiements réussis ; `/api/lfd/health` à 200 par la passerelle (et
+404 en direct, comme le runbook l'attend).
 
-### Restes ouverts de la journée
+Ce qui est parti :
+
+- **La médiathèque, huit lots** (`mediatheque/mediatheque.md`,
+  `mediatheque/plan-la-mediatheque-amelioree.md`) : vocabulaire de mots-clés
+  du fonds entier (renommer, fusionner, retirer partout, annuler) ; le fil
+  (curseur, tris, filtres, intercalaires, adresse) ; les séries (titre, prise
+  de vue, note d'intention) et la vérification avant envoi ; le panneau de
+  l'image refait (point focal visible, quatre recadrages 4/3, 1/1, 16/9,
+  21/9) ; les formats vrais et signalés ; le point focal lu par la boutique
+  sans republier ; l'accueil composé par la vitrine (page `home`, bannière
+  21/9, photo de la porte), les vraies opérations et `?rayon=` ; remplacer
+  une image chez tous ses porteurs.
+- **Correctifs de production** : une commande carte n'a plus qu'un accusé ;
+  poser un mot-clé n'efface plus la description de l'image ; les images se
+  mettent en cache un an ; redéposer une image n'est plus un 409 ; une image
+  encore copiée au commerce n'est plus ramassable ; le panneau de l'image
+  gardait mal ce qu'on y saisissait.
+- **L'outillage** : l'API de dev rattrape la base au lieu de boucler sur une
+  migration ; Cloudflare a sa doc d'exploitation (`ops/cloudflare-images.md`),
+  le domaine média est en TLS 1.2.
+
+### Ce que Hugo doit faire, et ce qu'il reste
+
+**À faire par Hugo :**
+
+- **Revoir les 26 décisions prises sans lui** (R1 à R26,
+  `mediatheque/plan-la-mediatheque-amelioree.md`, fin du document). En
+  priorité : R10 (la porte est un réglage de page), R12 (pas de point focal
+  sur les images de vitrine), R18/R23 (les copies du commerce retiennent une
+  image jusqu'au prochain push), R8 (pas de recadrage automatique).
+- **Regarder en production** : une image produit reste centrée tant qu'aucun
+  point n'est posé ; l'accueil s'affiche, sans photo de porte ; un dépôt
+  marche avec et sans série.
+- **La photo de la porte « Je passe la prendre »** : l'URL tierce est
+  partie ; déposer la photo au fonds puis la choisir dans l'éditeur de
+  vitrine, page Accueil. D'ici là, la porte et le bandeau visiteur sont sur
+  le fond de la palette.
+- **Cloudflare au-delà de 5 000 transformations par mois** : facturé ou
+  arrêté ? L'offre Images & Stream n'est pas souscrite
+  (`ops/cloudflare-images.md` §5).
+- Les trois gestes de la matinée restent dus (tableau ci-dessus : droits,
+  contrôle de la grâce, web vitals).
+
+**Non vu à l'œil** (le panneau du navigateur était masqué) : la bannière 21/9
+sur une vraie photo, la porte de l'accueil, le panneau de remplacement, la
+pastille « Format » sur une fiche.
+
+**Restes ouverts, médiathèque :**
+
+- l'image d'une opération ne suit qu'au push : après un remplacement,
+  l'annonce garde l'ancienne image jusqu'à la prochaine publication (R18
+  l'empêche seulement de casser) ;
+- les images de vitrine se recadrent au centre (R12) ;
+- `staff-roles-in-database` a rendu une fois un 500 inexpliqué en suite
+  parallèle, jamais reproduit ;
+- `accueil-public.ts` dépasse 700 lignes, `mediatheque-page.ts` 600.
+
+**Restes ouverts du matin**, inchangés :
 
 - **Back-office** : les deux écrans qui remettent un lien d'invitation
   (`admin-companies.service.ts`, `pending-access.service.ts`) n'envoient pas
