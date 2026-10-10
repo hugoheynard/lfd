@@ -216,4 +216,41 @@ describe('VisualsForm', () => {
     expect(host.querySelector('.media-thumb .media-menu')).toBeNull();
     expect(host.querySelector('.media-caption .media-menu')).not.toBeNull();
   });
+
+  describe('callout « aucun visuel publié »', () => {
+    const picked = (url: string) => ({
+      url,
+      name: 'croissant',
+      width: 800,
+      height: 600,
+      bytes: 1024,
+      contentType: 'image/png',
+    });
+    const callout = (): Element | null => {
+      const fixture = TestBed.createComponent(VisualsForm);
+      fixture.detectChanges();
+      return (fixture.nativeElement as HTMLElement).querySelector('fold-callout');
+    };
+
+    it('paraît quand tous les visuels sont en usage non publié', () => {
+      const store = setup();
+      store.addFromLibrary([picked('https://media.test/a.png')]);
+      expect(callout()?.textContent).toContain("Aucun visuel de cette fiche n'est publié");
+    });
+
+    it('se tait dès qu’un visuel a un usage publié', () => {
+      const store = setup();
+      store.addFromLibrary([
+        picked('https://media.test/a.png'),
+        picked('https://media.test/b.png'),
+      ]);
+      store.setMediaRole(1, 'thumbnail');
+      expect(callout()).toBeNull();
+    });
+
+    it('se tait sur une fiche sans visuel — le vide de la grille le dit', () => {
+      setup();
+      expect(callout()).toBeNull();
+    });
+  });
 });

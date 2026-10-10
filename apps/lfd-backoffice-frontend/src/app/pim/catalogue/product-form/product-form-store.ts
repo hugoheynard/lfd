@@ -61,6 +61,7 @@ import type {
 } from '../../data/models';
 import { CatalogueApi } from '../catalogue-api';
 import type { PickedMedia } from '../library-picker/library-picker';
+import { isPublishedMediaRole } from '../media-roles';
 import { ReferenceApi } from '../reference-api';
 import {
   ProductHttpApi,
@@ -690,6 +691,15 @@ export class ProductFormStore {
   readonly nutrition = signal<NutritionValues>(EMPTY_NUTRITION);
   readonly editorial = signal<EditorialFields>(EMPTY_EDITORIAL);
   readonly media = signal<MediaSlot[]>([]);
+
+  /**
+   * La fiche a des visuels, et AUCUN n'a un usage publié : la boutique n'en
+   * montrera aucun. Faux sur une fiche sans visuel — le vide de la grille le
+   * dit déjà.
+   */
+  readonly noPublishedMedia = computed(
+    () => this.media().length > 0 && !this.media().some((slot) => isPublishedMediaRole(slot.role)),
+  );
 
   /**
    * La référence — **lue, jamais saisie**. Le référentiel l'émet à la création

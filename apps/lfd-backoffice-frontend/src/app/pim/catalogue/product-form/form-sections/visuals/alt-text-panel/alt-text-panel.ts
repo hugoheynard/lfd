@@ -10,6 +10,7 @@ import {
   FoldPanelRef,
 } from 'fold-ng';
 
+import { isPublishedMediaRole } from '../../../../media-roles';
 import { MEDIA_ROLE_LABELS } from '../../../product-form-store';
 
 /** Charge d'ouverture : l'image qu'on décrit, et ce qui en est déjà écrit. */
@@ -92,6 +93,7 @@ export class AltTextPanel {
   /** `undefined` tant que le porteur n'a pas la notion — voir la donnée. */
   protected readonly role = signal<string | undefined>(undefined);
   protected readonly roles = MEDIA_ROLE_LABELS;
+  protected readonly isPublished = isPublishedMediaRole;
 
   constructor() {
     effect(() => {

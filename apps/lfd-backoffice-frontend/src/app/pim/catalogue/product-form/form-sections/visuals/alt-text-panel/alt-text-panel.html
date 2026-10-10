@@ -19,6 +19,14 @@
         <fold-option [value]="entry.key">{{ entry.value }}</fold-option>
       }
     </fold-listbox>
+    <!-- Dit au moment du choix : une image en galerie a passé pour une panne
+         (2026-10-10), faute que l'écran dise qu'elle ne paraît nulle part. -->
+    @if (!isPublished(chosen)) {
+      <p class="note">
+        Cet usage n'est publié sur aucun canal : la boutique ne montre que l'ouverture et la
+        vignette de rayon.
+      </p>
+    }
   }
 </div>
 

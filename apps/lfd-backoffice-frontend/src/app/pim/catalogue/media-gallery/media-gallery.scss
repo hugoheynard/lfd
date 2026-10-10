@@ -119,7 +119,8 @@
   color: var(--fold-color-text-muted);
 }
 
-.media-menu {
+.media-menu,
+.media-unpublished {
   flex: none;
 }
 

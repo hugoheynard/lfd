@@ -28,6 +28,9 @@
           @if (isMain(slot)) {
             <span class="media-main">Principal</span>
           }
+          @if (isUnpublished(slot)) {
+            <fold-badge class="media-unpublished" variant="warning" content="Non publié" />
+          }
           <fold-button-icon
             class="media-menu"
             icon="more-vertical"

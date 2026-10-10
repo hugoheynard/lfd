@@ -1,6 +1,15 @@
 <!-- 🔴 Plus de sélecteur de langue ici depuis le 2026-09-23 : cette section ne
      porte plus aucun texte. L'étiquette et l'alternative décrivent l'image, pas
      l'emploi qu'une fiche en fait, et se saisissent dans la médiathèque. -->
+<!-- Des visuels, et aucun que la boutique montre : c'est l'état qui a passé
+     pour une panne le 2026-10-10. Rien quand la fiche n'en a aucun — le vide
+     de la grille le dit déjà. -->
+@if (store.noPublishedMedia()) {
+  <fold-callout variant="warning">
+    Aucun visuel de cette fiche n'est publié. Donnez à l'un d'eux l'usage Ouverture ou Vignette de
+    rayon pour qu'il paraisse en boutique.
+  </fold-callout>
+}
 <app-media-gallery [slots]="store.media()" (edit)="editMedia($event)" />
 
 <!-- 🔴 Le seul geste d'ajout depuis le 2026-09-23. Il était en second, à côté

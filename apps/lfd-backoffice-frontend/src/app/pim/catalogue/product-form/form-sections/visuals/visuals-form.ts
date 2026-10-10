@@ -1,6 +1,6 @@
 import { ChangeDetectionStrategy, Component, inject } from '@angular/core';
 
-import { FoldButtonComponent, FoldPanelHostService } from 'fold-ng';
+import { FoldButtonComponent, FoldCalloutComponent, FoldPanelHostService } from 'fold-ng';
 
 import { MediaGallery } from '../../../media-gallery/media-gallery';
 
@@ -42,7 +42,7 @@ import { ProductFormStore } from '../../product-form-store';
 @Component({
   selector: 'app-visuals-form',
   changeDetection: ChangeDetectionStrategy.OnPush,
-  imports: [FoldButtonComponent, MediaGallery],
+  imports: [FoldButtonComponent, FoldCalloutComponent, MediaGallery],
   templateUrl: './visuals-form.html',
   styleUrls: ['../form-section.scss'],
 })

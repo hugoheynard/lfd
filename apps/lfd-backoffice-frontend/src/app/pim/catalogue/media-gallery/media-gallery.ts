@@ -2,7 +2,9 @@ import { ChangeDetectionStrategy, Component, input, output } from '@angular/core
 
 import { readLocalized, SOURCE_LOCALE, type Locale, type LocalizedText } from '@lfd/pim-contracts';
 
-import { FoldButtonIconComponent } from 'fold-ng';
+import { FoldBadgeComponent, FoldButtonIconComponent } from 'fold-ng';
+
+import { isPublishedMediaRole } from '../media-roles';
 
 /** Le rôle que la vitrine du canal B2B cherche (`showcase.ts`). */
 const MAIN_ROLE = 'hero';
@@ -69,7 +71,7 @@ function formatBytes(bytes: number): string {
 @Component({
   selector: 'app-media-gallery',
   changeDetection: ChangeDetectionStrategy.OnPush,
-  imports: [FoldButtonIconComponent],
+  imports: [FoldBadgeComponent, FoldButtonIconComponent],
   templateUrl: './media-gallery.html',
   styleUrl: './media-gallery.scss',
 })
@@ -95,6 +97,14 @@ export class MediaGallery {
   /** Le packshot — celui que les canaux montrent quand ils n'en montrent qu'un. */
   protected isMain(slot: GallerySlot): boolean {
     return slot.role === MAIN_ROLE;
+  }
+
+  /**
+   * Un usage qu'aucun canal ne montre. Rôle absent = le porteur n'en a pas la
+   * notion (une famille) : rien à dire, donc rien dit.
+   */
+  protected isUnpublished(slot: GallerySlot): boolean {
+    return slot.role !== undefined && !isPublishedMediaRole(slot.role);
   }
 
   /** L'alternative dans la langue lue — repli sur la source, jamais du vide. */
