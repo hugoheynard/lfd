@@ -332,6 +332,23 @@ Les supprimer est un geste à part, sur ordre de Hugo.
   `delivery-packing*.e2e-spec.ts`, `delivery-my-round-packing.e2e-spec.ts`,
   `gesture-rights.e2e-spec.ts`) ; il faut d'abord les faire coliser au
   colisage. Un lot de la livraison.
+  ⚠️ **Mesuré le 2026-10-10 : ce n'est pas cinq suites, c'est environ
+  vingt-cinq.** `declareBins`/`declareTypedBins` (`test/delivery-loading-scene.ts`)
+  servent, directement ou par `test/delivery-handover-scene.ts`, presque toute
+  la livraison (chargement, départ, porte, fin de tournée, preuves…). Et le
+  colisage ne connaît une commande qu'après la clôture du fournil : les faire
+  coliser « pour de vrai » demande le harnais de production (commandes payées,
+  `closePlan`, relais), quand ces suites sèment leurs commandes en Prisma sur
+  des jours libres. Trois voies, **à trancher par Hugo** : (a) porter les
+  vingt-cinq suites sur le harnais de production ; (b) une aide de test qui
+  déclare le bac par le port `BinDesk` — ce qui ne colise pas, mais garde ce
+  qu'elles éprouvent (chargement, départ, porte), le colisage étant éprouvé
+  par ses propres suites ; (c) garder une voie de déclaration réservée aux
+  tests. Les deux `GET` (proposition, partenaires) ont des handlers vivants
+  (`DeliveryBinDesk.propose`/`freeHalves`), et `delivery-packing.e2e-spec.ts`
+  éprouve le froid, l'isotherme et `no_capacity` sur vrai Postgres, ce que
+  `packing-proposal.e2e-spec.ts` ne couvre pas. `ContainerManagedOrders`
+  perdrait son seul appelant.
 - **Retirer le contenu d'un bac chargé** sur une commande encore ouverte n'est
   pas refusé : `withdraw` ne demande pas `assertAtHand` à la livraison (vérifié
   le 2026-10-05 dans `withdraw-from-container.handler.ts`), seuls rouvrir et
