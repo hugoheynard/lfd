@@ -46,6 +46,10 @@ interface ItemRow {
   readonly imageAlt: string | null;
   readonly imageWidth: number | null;
   readonly imageHeight: number | null;
+  readonly imageFocalX: number | null;
+  readonly imageFocalY: number | null;
+  readonly thumbnailFocalX: number | null;
+  readonly thumbnailFocalY: number | null;
   readonly orderLimitDaysBefore: number | null;
   readonly orderLimitTime: string | null;
   readonly orderLimitGraceMinutes: number | null;
@@ -385,6 +389,7 @@ function imageOf(row: ItemRow): ResolvedCatalogItem["image"] {
     alt: row.imageAlt ?? "",
     width: row.imageWidth,
     height: row.imageHeight,
+    focal: focalOf(row.imageFocalX, row.imageFocalY),
   };
 }
 
@@ -405,6 +410,7 @@ function thumbnailOf(row: ItemRow): ResolvedCatalogItem["thumbnail"] {
     alt: row.thumbnailAlt ?? "",
     width: row.thumbnailWidth,
     height: row.thumbnailHeight,
+    focal: focalOf(row.thumbnailFocalX, row.thumbnailFocalY),
   };
 }
 
@@ -482,4 +488,9 @@ export async function operationOnlySkusOf(prisma: PrismaService): Promise<Readon
     select: { sku: true },
   });
   return new Set(rows.map((row) => row.sku));
+}
+
+/** Les deux colonnes du point focal, ou `null` : une moitié de point ne désigne rien. */
+function focalOf(x: number | null, y: number | null): { x: number; y: number } | null {
+  return x === null || y === null ? null : { x, y };
 }

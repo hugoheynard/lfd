@@ -611,6 +611,7 @@ export type {
 export type { LateFeeAdjustment, OrderLateFeePayload, OrderLateFeeView } from "./order-late-fee.js";
 export type {
   ShopCatalogueView,
+  ShopImageFocal,
   ShopImageView,
   ShopItemOperationView,
   ShopItemView,

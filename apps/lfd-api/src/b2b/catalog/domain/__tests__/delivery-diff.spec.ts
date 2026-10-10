@@ -16,11 +16,14 @@ import {
  * majoritaire.
  */
 
-const shot = (over: Partial<NonNullable<DeliveredItem["image"]>> = {}) => ({
+const shot = (
+  over: Partial<NonNullable<DeliveredItem["image"]>> = {},
+): NonNullable<DeliveredItem["image"]> => ({
   url: "https://m.example/croissant.jpg",
   alt: "Un croissant",
   width: 800,
   height: 800,
+  focal: null,
   ...over,
 });
 
@@ -265,6 +268,21 @@ describe("le diff d'une arrivée › la vitrine", () => {
     expect(diffDelivery([erased], [never])).toEqual([
       { sku: "VIE-001", kind: "changed", fields: ["note"] },
     ]);
+  });
+
+  /**
+   * L4 (2026-10-10) : déplacer le point focal change ce que la vignette
+   * montre d'une pièce. Le comparer comme les dimensions — sans quoi il
+   * passerait en vente sans relecture.
+   */
+  it("voit un point focal qui bouge sur la même image", () => {
+    const before = item("VIE-001", { thumbnail: shot() });
+    const after = item("VIE-001", { thumbnail: shot({ focal: { x: 0.2, y: 0.8 } }) });
+
+    expect(diffDelivery([after], [before])).toEqual([
+      { sku: "VIE-001", kind: "changed", fields: ["thumbnail"] },
+    ]);
+    expect(diffDelivery([after], [after])).toEqual([]);
   });
 
   it("voit un packshot qui change d'image", () => {

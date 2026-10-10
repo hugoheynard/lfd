@@ -39,7 +39,7 @@ export const PIM_PRODUCT_MEDIA_CHANGED = "pim.product_media_changed";
  * ## Le contrat
  *
  * `{ productId, gestureId, image, thumbnail }` : les deux visuels que le fil
- * transporte (`SyncMedia`, le vocabulaire du FIL que le référentiel parle déjà
+ * transporte — point focal compris depuis L4, facultatif à la relecture (`SyncMedia`, le vocabulaire du FIL que le référentiel parle déjà
  * en émetteur), figés au geste. L'abonné ne rappelle pas le référentiel — il
  * ne le peut pas. Clé `pim.product_media_changed:<productId>:<gestureId>` :
  * UN fait par enregistrement de la section, tiré une fois par le handler ;
@@ -108,10 +108,41 @@ function mediaOf(value: unknown): SyncMedia | null | undefined {
     return undefined;
   }
   const { url, alt, width, height } = value;
-  if (!isFilled(url) || typeof alt !== "string" || !isDimension(width) || !isDimension(height)) {
+  const focal = focalOf(value["focal"]);
+  if (
+    !isFilled(url) ||
+    typeof alt !== "string" ||
+    !isDimension(width) ||
+    !isDimension(height) ||
+    focal === undefined
+  ) {
     return undefined;
   }
-  return { url, alt, width, height };
+  return { url, alt, width, height, focal };
+}
+
+function isFraction(value: unknown): value is number {
+  return typeof value === "number" && value >= 0 && value <= 1;
+}
+
+/**
+ * Le point focal relu : `null` s'il est absent ou nul, `undefined` s'il est
+ * hors forme.
+ *
+ * 🔴 **L'ABSENCE se lit `null`** (L4, 2026-10-10). Un fait écrit avant que le
+ * point focal ne voyage dort peut-être encore dans la boîte d'envoi — en
+ * attente, ou en lettre morte qu'on rejouera. Le refuser ferait d'un ajout de
+ * champ une panne de projection ; il se lit « personne ne s'est prononcé »,
+ * ce qui était exact au moment où il a été écrit.
+ */
+function focalOf(value: unknown): { readonly x: number; readonly y: number } | null | undefined {
+  if (value === undefined || value === null) {
+    return null;
+  }
+  if (!isRecord(value) || !isFraction(value["x"]) || !isFraction(value["y"])) {
+    return undefined;
+  }
+  return { x: value["x"], y: value["y"] };
 }
 
 /** Un fait « visuels changés » illisible : la boutique garde l'ancienne photo. */

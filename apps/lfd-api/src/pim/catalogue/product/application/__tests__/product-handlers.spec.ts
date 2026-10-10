@@ -253,6 +253,7 @@ function mediaRow(role: string, url: string): ProductMediaRecord {
     height: null,
     bytes: null,
     contentType: null,
+    focal: null,
   };
 }
 

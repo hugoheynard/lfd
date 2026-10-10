@@ -340,6 +340,23 @@ export const syncMediaSchema = z.object({
   alt: z.string(),
   width: z.number().int().positive().nullable(),
   height: z.number().int().positive().nullable(),
+  /**
+   * **Le point focal** posé à la médiathèque, en fractions de 0 à 1 — la
+   * vitrine recadre autour de lui. `null` = personne ne s'est prononcé, et la
+   * vitrine recadre au centre.
+   *
+   * ⚠️ **Facultatif, et sans changer de version** (L4 de
+   * `documentation/mediatheque/plan-la-mediatheque-amelioree.md`,
+   * 2026-10-10). Un champ ajouté n'est pas une rupture de forme : un envoi qui
+   * l'omet garde exactement le sens d'avant (« centre »), et un récepteur qui
+   * ne le connaît pas l'ignore. Le rendre requis exigerait un bump ET ferait
+   * du schéma stocké, qui réutilise celui-ci, un lecteur incapable de relire
+   * une livraison en attente reçue la veille. L'absence se lit `null`.
+   */
+  focal: z
+    .object({ x: z.number().min(0).max(1), y: z.number().min(0).max(1) })
+    .nullable()
+    .optional(),
 });
 export type SyncMedia = z.infer<typeof syncMediaSchema>;
 

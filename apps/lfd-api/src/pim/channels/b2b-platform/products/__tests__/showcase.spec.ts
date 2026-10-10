@@ -36,6 +36,7 @@ const media = (over: Partial<ProductMediaRecord> = {}): ProductMediaRecord => ({
   height: 800,
   bytes: null,
   contentType: "image/jpeg",
+  focal: { x: 0.3, y: 0.6 },
   ...over,
 });
 
@@ -65,6 +66,8 @@ describe("showcaseOf", () => {
         alt: "Un croissant doré",
         width: 800,
         height: 800,
+        // L4 : le point focal posé à la médiathèque voyage avec le visuel.
+        focal: { x: 0.3, y: 0.6 },
       },
       // La fiche ne désigne pas de vignette : le récepteur retombera sur le
       // packshot. On n'en fabrique PAS une ici — l'émetteur dit ce que la

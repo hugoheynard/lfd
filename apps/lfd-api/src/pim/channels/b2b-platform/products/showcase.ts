@@ -79,5 +79,6 @@ function mediaOf(medias: readonly ProductMediaRecord[], role: string): SyncMedia
     alt: hero.alt[SOURCE_LOCALE] ?? "",
     width: hero.width,
     height: hero.height,
+    focal: hero.focal,
   };
 }

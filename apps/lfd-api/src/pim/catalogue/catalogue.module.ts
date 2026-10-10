@@ -34,6 +34,9 @@ import { PublishProductHandler } from "./product/application/publish-product.js"
 import { UnpublishProductHandler } from "./product/application/unpublish-product.js";
 import { RestoreProductHandler } from "./product/application/restore-product.js";
 import { SetProductMediaHandler } from "./product/application/set-product-media.js";
+import { OnMediaAssetDescribedHandler } from "./product/application/on-media-asset-described.js";
+import { ProductImageUsage } from "./product/domain/ports/product-image-usage.js";
+import { PrismaProductImageUsage } from "./product/infrastructure/prisma-product-image-usage.js";
 import { SetProductChannelsHandler } from "./product/application/set-product-channels.js";
 import { SetProductOperationOnlyHandler } from "./product/application/set-product-operation-only.js";
 import { SetProductColdRequirementHandler } from "./product/application/set-product-cold-requirement.js";
@@ -137,6 +140,7 @@ import {
     UpdateVariantPricingHandler,
     RenameProductVariantHandler,
     SetProductMediaHandler,
+    OnMediaAssetDescribedHandler,
     SetProductChannelsHandler,
     SetProductOperationOnlyHandler,
     SetProductColdRequirementHandler,
@@ -170,6 +174,7 @@ import {
     { provide: NutritionValuesRepository, useClass: PrismaNutritionValuesRepository },
     { provide: EditorialRepository, useClass: PrismaEditorialRepository },
     { provide: EditorialReader, useClass: PrismaEditorialReader },
+    { provide: ProductImageUsage, useClass: PrismaProductImageUsage },
     { provide: CatalogRevisionRepository, useClass: PrismaCatalogRevisionRepository },
     { provide: CatalogRevisionSource, useClass: PrismaCatalogRevisionSource },
     TakeCatalogRevisionHandler,

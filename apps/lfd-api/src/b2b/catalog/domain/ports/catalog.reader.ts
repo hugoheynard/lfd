@@ -73,6 +73,8 @@ export interface ResolvedCatalogItem {
     readonly alt: string;
     readonly width: number | null;
     readonly height: number | null;
+    /** Le point focal (L4) ; `null` = recadrer au centre. */
+    readonly focal: { readonly x: number; readonly y: number } | null;
   } | null;
   /**
    * La **vignette de rayon** — distincte du packshot, et pas un doublon :
@@ -89,6 +91,8 @@ export interface ResolvedCatalogItem {
     readonly alt: string;
     readonly width: number | null;
     readonly height: number | null;
+    /** Le point focal (L4) ; `null` = recadrer au centre. */
+    readonly focal: { readonly x: number; readonly y: number } | null;
   } | null;
 }
 

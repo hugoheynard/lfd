@@ -1,6 +1,7 @@
 import { DirectUnitOfWork } from "../../../platform/database/__tests__/direct-unit-of-work.js";
 import { UuidGenerator } from "../../../platform/id/uuid-generator.js";
 import type { WriteTicket } from "../../../platform/journal/scoped-journal.js";
+import { RecordingDurable } from "./media-durable-doubles.js";
 import { FixedClock } from "../../../platform/time/fixed-clock.js";
 import { RecordingMediaJournal } from "../../journal/__tests__/recording-media-journal.js";
 import { MediaSeries } from "../../domain/entities/media-series.js";
@@ -272,6 +273,8 @@ describe("SaveMediaDetailsHandler — la série d'une image", () => {
       new KnownSeries([SPRING, SUMMER]),
       journal,
       new DirectUnitOfWork(),
+      new RecordingDurable(),
+      new StubIds(),
     );
     return { handler, writer, journal };
   }

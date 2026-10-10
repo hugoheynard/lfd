@@ -34,6 +34,21 @@ export interface ShopImageView {
    */
   readonly width: number | null;
   readonly height: number | null;
+  /**
+   * **Le point focal** posé à la médiathèque, en fractions de 0 à 1 depuis le
+   * coin haut gauche — la vitrine recadre autour (`object-position`).
+   *
+   * Facultatif (L4, 2026-10-10) : absent ou `null`, la vitrine recadre au
+   * centre, ce qu'elle a toujours fait. Une boutique déployée avant le serveur
+   * l'ignore ; un serveur déployé avant la boutique ne le lui doit pas.
+   */
+  readonly focal?: ShopImageFocal | null | undefined;
+}
+
+/** Un point focal : deux fractions de 0 à 1. */
+export interface ShopImageFocal {
+  readonly x: number;
+  readonly y: number;
 }
 
 /** Une référence en vente. */

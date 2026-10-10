@@ -1,6 +1,9 @@
 import { CommandHandler, type ICommandHandler } from "@nestjs/cqrs";
 
 import { UnitOfWork } from "../../platform/database/unit-of-work.js";
+import { UuidGenerator } from "../../platform/id/uuid-generator.js";
+import { DurablePublisher } from "../../platform/outbox/durable-publisher.js";
+import { MediaAssetDescribedFact } from "../channels/carriers/media-asset-described.fact.js";
 import { changesBetween } from "../../platform/journal/changes.js";
 import { MEDIA_EVENTS, MediaJournal } from "../journal/media-journal.js";
 import { MediaLibraryReader } from "../domain/ports/media-library-reader.js";
@@ -46,6 +49,8 @@ export class SaveMediaDetailsHandler implements ICommandHandler<SaveMediaDetails
     private readonly series: MediaSeriesReader,
     private readonly journal: MediaJournal,
     private readonly uow: UnitOfWork,
+    private readonly durable: DurablePublisher,
+    private readonly ids: UuidGenerator,
   ) {}
 
   async execute(command: SaveMediaDetailsCommand): Promise<void> {
@@ -115,6 +120,9 @@ export class SaveMediaDetailsHandler implements ICommandHandler<SaveMediaDetails
             // Tracer « rien n'a bougé » remplirait le journal de bruit.
             this.journal.untraced("aucune décision modifiée");
       await this.library.describe(url, { ...details, seriesId: series?.id ?? null }, ticket);
+      if (CARRIED_FIELDS.some((field) => field in changes)) {
+        await this.durable.publish(new MediaAssetDescribedFact(url, this.ids.next()).durableFact());
+      }
     });
   }
 
@@ -139,6 +147,17 @@ export class SaveMediaDetailsHandler implements ICommandHandler<SaveMediaDetails
     return found;
   }
 }
+
+/**
+ * Les champs qu'un porteur recopie — et donc les seuls dont le changement
+ * mérite d'être annoncé (L4, 2026-10-10). L'alternative et le point focal
+ * voyagent jusqu'à la vitrine ; l'étiquette, les tags et la série restent au
+ * fonds. Annoncer pour un tag ferait réécrire des fiches pour rien.
+ *
+ * ⚠️ Annoncé **dans la transaction** : la description et son annonce tiennent
+ * ou tombent ensemble, et le relais ne livre qu'après la validation.
+ */
+const CARRIED_FIELDS: readonly string[] = ["alt", "focal"];
 
 /** La série telle que le journal la cite : son id et son titre du moment. */
 function namedSeries(

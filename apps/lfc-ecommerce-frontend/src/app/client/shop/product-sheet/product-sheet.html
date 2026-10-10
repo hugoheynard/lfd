@@ -17,6 +17,7 @@
           [attr.srcset]="artSrcset() || null"
           sizes="(min-width: 900px) 450px, 100vw"
           [attr.alt]="visual.alt"
+          [style.object-position]="artPosition()"
           decoding="async"
         />
       }

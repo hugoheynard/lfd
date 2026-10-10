@@ -92,7 +92,7 @@ note?, created_at }`, et `media_asset.series_id` nullable. Aucune image
    - Faits : `media_series.created`, `media_series.described`, et la série
      dans `media_asset.described`.
 
-## L4 — Le point focal lu
+## ~~L4 — Le point focal lu~~ ✅ bâti le 2026-10-10 (non commité à l'écriture) — et la médiathèque fait suivre la boutique sans republier (fait durable `media.asset_described`)
 
 Le fait durable des visuels porte `focal` (facultatif), la projection le range
 dans deux colonnes nullables de `catalog_items` (migration additive), le push

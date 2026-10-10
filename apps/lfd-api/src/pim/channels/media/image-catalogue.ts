@@ -12,6 +12,19 @@ export interface CatalogueImage {
   readonly height: number | null;
   readonly bytes: number | null;
   readonly contentType: string | null;
+  /**
+   * Le **point focal**, en fractions de 0 à 1 — là où un recadrage doit
+   * garder l'œil. `null` = personne ne s'est prononcé : le porteur recadre au
+   * centre. Il voyage jusqu'à la vitrine (L4 de
+   * `documentation/mediatheque/plan-la-mediatheque-amelioree.md`).
+   */
+  readonly focal: CatalogueFocal | null;
+}
+
+/** Un point focal : deux fractions de 0 à 1, à partir du coin haut gauche. */
+export interface CatalogueFocal {
+  readonly x: number;
+  readonly y: number;
 }
 
 /**

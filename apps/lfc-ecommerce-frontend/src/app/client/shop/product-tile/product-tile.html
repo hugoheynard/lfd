@@ -15,6 +15,7 @@
         [attr.srcset]="artSrcset() || null"
         [attr.sizes]="sizes()"
         [attr.alt]="art().alt"
+        [style.object-position]="artPosition()"
         loading="lazy"
         decoding="async"
       />

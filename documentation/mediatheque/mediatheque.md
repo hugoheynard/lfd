@@ -273,6 +273,20 @@ sequenceDiagram
   réécrit aussi `image_*` et `thumbnail_*`. Les deux lisent la même source :
   la projection fait la fraîcheur, le push fait la réparation. Une image qui
   « revient » après une publication n'est pas un défaut.
+- **Le point focal voyage** (L4, 2026-10-10). `ImageCatalogue` le rend ; le
+  fait des visuels et le fil (`syncMediaSchema.focal`, facultatif, sans
+  changer de version) le portent ; `catalog_items` le range en
+  `image_focal_x/y` et `thumbnail_focal_x/y` (migration
+  `20261010200000_le_point_focal_voyage`) ; la boutique pose
+  `object-position` sur la tuile et l'ouverture de fiche — au centre quand il
+  est absent.
+- **Redécrire une image fait suivre la boutique.** Quand l'alternative ou le
+  point focal changent, `SaveMediaDetailsHandler` écrit le fait durable
+  `media.asset_described` (`media/channels/carriers/`) dans sa transaction ;
+  le référentiel l'écoute (`on-media-asset-described.ts`, `@DurableHandler`)
+  et réannonce `pim.product_media_changed` pour chaque fiche qui porte l'URL
+  en `hero` ou `thumbnail`. Ni familles, ni opérations, ni vitrine : elles
+  n'ont pas de copie projetée.
 - **La boutique garde une copie de l'URL** : le snapshot vaut aussi pour
   l'image. Repointer le référentiel ne repointe la boutique que par l'un de
   ces deux chemins.

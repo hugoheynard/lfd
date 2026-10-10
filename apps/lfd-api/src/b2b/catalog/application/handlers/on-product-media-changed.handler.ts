@@ -10,6 +10,7 @@ import {
   type DurableSubscriber,
 } from "../../../../platform/outbox/durable-handler.js";
 import { CatalogVisualsProjection } from "../../domain/ports/catalog-visuals.projection.js";
+import { pimImageOf } from "../pim-image.js";
 
 /** Nom STABLE de l'abonné — clé de son reçu dans la boîte d'envoi. */
 export const PROJECT_PRODUCT_MEDIA = "catalog.project-product-media";
@@ -82,6 +83,11 @@ export class OnProductMediaChangedHandler implements DurableSubscriber {
     // n'a aucune ligne, et rien n'est créé — un article naît d'un push.
     // Sans unité de travail à lui : le relais l'appelle déjà dans celle de
     // la livraison, qui porte aussi son reçu.
-    await this.visuals.showIfNewer(fact.productId, fact.gestureId, fact.image, fact.thumbnail);
+    await this.visuals.showIfNewer(
+      fact.productId,
+      fact.gestureId,
+      pimImageOf(fact.image),
+      pimImageOf(fact.thumbnail),
+    );
   }
 }

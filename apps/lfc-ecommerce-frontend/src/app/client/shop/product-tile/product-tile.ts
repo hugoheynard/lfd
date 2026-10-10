@@ -18,7 +18,7 @@ import {
 import { ClientLocale } from '../../client-locale.service';
 import { operationGate } from '../operations';
 import { ShopCatalogue } from '../shop-catalogue.store';
-import { tileArtOf } from '../shelf-display';
+import { objectPositionOf, tileArtOf } from '../shelf-display';
 import { mediaSrcset, sizedMedia, TILE_WIDTHS } from '../media-source';
 import { ShopPriceBasis } from '../shop-price-basis.service';
 
@@ -173,6 +173,9 @@ export class ProductTile {
    * l'illustration du rayon. Voir `tileArtOf` pour le sens du repli.
    */
   protected readonly art = computed(() => tileArtOf(this.product()));
+
+  /** Le recadrage autour du point focal — le centre sans lui. */
+  protected readonly artPosition = computed(() => objectPositionOf(this.art()));
 
   /**
    * L'image **à la taille de la tuile**, et non le master.

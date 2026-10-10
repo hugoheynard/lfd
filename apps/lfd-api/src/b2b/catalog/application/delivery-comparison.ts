@@ -3,6 +3,7 @@ import type { StoredCatalogSnapshot } from "@lfd/catalog-sync";
 import type { CatalogItem } from "../domain/entities/catalog-item.js";
 import type { DeliveredItem } from "../domain/delivery-diff.js";
 import { snapshotLimitReader } from "../domain/snapshot-limits.js";
+import { pimImageOf } from "./pim-image.js";
 
 /**
  * **Les deux côtés d'une comparaison d'arrivée**, mis à la même forme.
@@ -37,11 +38,11 @@ export function deliveredItems(snapshot: StoredCatalogSnapshot): DeliveredItem[]
       // l'ingestion — les deux côtés de la comparaison doivent parler de la
       // même chose. `?? null` couvre une arrivée d'avant la v8.
       note: product.note ?? null,
-      image: product.image ?? null,
+      image: pimImageOf(product.image),
       // `?? null` couvre une arrivée d'avant la v10 : la vignette de rayon ne
       // traversait pas. Les deux côtés de la comparaison doivent lire la même
       // absence, sinon le premier push v10 signalerait un changement sur TOUT.
-      thumbnail: product.thumbnail ?? null,
+      thumbnail: pimImageOf(product.thumbnail),
       // `?? false` couvre une arrivée d'avant la v11, comme à l'ingestion : les
       // deux côtés doivent lire la même absence.
       operationOnly: product.operationOnly ?? false,

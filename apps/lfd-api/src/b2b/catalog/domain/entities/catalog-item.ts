@@ -185,6 +185,18 @@ export interface PimImage {
   readonly alt: string;
   readonly width: number | null;
   readonly height: number | null;
+  /**
+   * Le **point focal** posé à la médiathèque, en fractions de 0 à 1 (L4,
+   * 2026-10-10). `null` = personne ne s'est prononcé, ou un envoi d'avant :
+   * la vitrine recadre au centre, ce qu'elle a toujours fait.
+   */
+  readonly focal: ImageFocal | null;
+}
+
+/** Un point focal : deux fractions de 0 à 1, depuis le coin haut gauche. */
+export interface ImageFocal {
+  readonly x: number;
+  readonly y: number;
 }
 
 /** Une mention d'étiquette reçue : la catégorie INCO et son libellé français. */

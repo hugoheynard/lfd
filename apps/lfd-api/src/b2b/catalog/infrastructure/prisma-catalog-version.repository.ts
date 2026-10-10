@@ -3,7 +3,7 @@ import { z } from "zod";
 
 import { Prisma } from "../../../platform/database/client/client.js";
 import { PrismaService } from "../../../platform/database/prisma.service.js";
-import type { PimFacts } from "../domain/entities/catalog-item.js";
+import type { PimFacts, PimImage } from "../domain/entities/catalog-item.js";
 import { CatalogVersion } from "../domain/entities/catalog-version.js";
 import { CatalogVersionReader } from "../domain/ports/catalog-version.reader.js";
 import { CatalogVersionRepository } from "../domain/ports/catalog-version.repository.js";
@@ -20,6 +20,15 @@ import { archivedOperationsJson, readArchivedOperations } from "./archived-opera
  * plus besoin. C'est la différence avec le snapshot d'une arrivée, qui vit une
  * journée et qu'on a raison de revalider strictement.
  */
+/**
+ * Le point focal d'un visuel archivé (L4, 2026-10-10). `nullish` : toutes les
+ * versions figées avant ce jour l'ignorent, et « au centre » y est exact.
+ */
+const archivedFocalSchema = z
+  .object({ x: z.number(), y: z.number() })
+  .nullish()
+  .transform((value) => value ?? null);
+
 const archivedFactsSchema = z.object({
   sku: z.string(),
   productId: z.string(),
@@ -85,6 +94,7 @@ const archivedFactsSchema = z.object({
       alt: z.string(),
       width: z.number().int().nullable(),
       height: z.number().int().nullable(),
+      focal: archivedFocalSchema,
     })
     .nullish()
     .transform((value) => value ?? null),
@@ -98,6 +108,7 @@ const archivedFactsSchema = z.object({
       alt: z.string(),
       width: z.number().int().nullable(),
       height: z.number().int().nullable(),
+      focal: archivedFocalSchema,
     })
     .nullish()
     .transform((value) => value ?? null),
@@ -198,12 +209,20 @@ function toJson(facts: PimFacts): Prisma.InputJsonObject {
     // MONTRAIT ce jour-là, pas ce qu'elle montre aujourd'hui. Une relecture qui
     // irait chercher l'éditorial courant raconterait une autre vitrine.
     note: facts.note,
-    image: facts.image === null ? null : { ...facts.image },
-    thumbnail: facts.thumbnail === null ? null : { ...facts.thumbnail },
+    image: imageJson(facts.image),
+    thumbnail: imageJson(facts.thumbnail),
     operationOnly: facts.operationOnly,
     requiresCold: facts.requiresCold,
     receivedAt: facts.receivedAt.toISOString(),
   };
+}
+
+/** Un visuel figé pour le `jsonb`, point focal compris. */
+function imageJson(image: PimImage | null): Prisma.InputJsonObject | null {
+  if (image === null) {
+    return null;
+  }
+  return { ...image, focal: image.focal === null ? null : { ...image.focal } };
 }
 
 @Injectable()

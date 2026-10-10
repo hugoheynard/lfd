@@ -587,3 +587,36 @@ describe("le froid des produits (fil v12)", () => {
     expect(parsed.data?.products[0]?.requiresCold).toBeUndefined();
   });
 });
+
+describe("le point focal, facultatif sur le fil (L4)", () => {
+  const withImage = (image: Record<string, unknown>): Record<string, unknown> => ({
+    ...snapshot,
+    products: [{ ...snapshot.products[0], image }],
+  });
+  const base = { url: "https://media.example/c.jpg", alt: "Un croissant", width: 800, height: 600 };
+
+  it("accepte un visuel qui porte son point focal", () => {
+    const parsed = catalogSnapshotSchema.safeParse(
+      withImage({ ...base, focal: { x: 0.2, y: 0.8 } }),
+    );
+
+    expect(parsed.success && parsed.data.products[0]?.image?.focal).toEqual({ x: 0.2, y: 0.8 });
+  });
+
+  it("refuse un point focal hors des fractions 0..1", () => {
+    expect(
+      catalogSnapshotSchema.safeParse(withImage({ ...base, focal: { x: 1.2, y: 0.5 } })).success,
+    ).toBe(false);
+  });
+
+  /**
+   * 🔴 Une livraison en attente reçue AVANT le point focal ne porte pas le
+   * champ ; le schéma stocké réutilise celui du fil, et la rendre illisible la
+   * ferait disparaître de l'écran de revue.
+   */
+  it("relit une livraison en attente dont le visuel n'a pas de point focal", () => {
+    const parsed = storedCatalogSnapshotSchema.safeParse(withImage(base));
+
+    expect(parsed.success).toBe(true);
+  });
+});

@@ -260,4 +260,22 @@ describe('ProductTile', () => {
       expect(el().querySelector('.quick')).not.toBeNull();
     });
   });
+
+  /** L4 (2026-10-10) : la tuile recadre autour du point focal de la vignette. */
+  it('pose object-position depuis le point focal, et le centre sans lui', () => {
+    const img = (): HTMLImageElement | null =>
+      (fixture.nativeElement as HTMLElement).querySelector('img');
+    const photo = { url: 'https://media.example/c.jpg', alt: 'Croissant', width: 800, height: 600 };
+
+    fixture.componentRef.setInput('product', {
+      ...TEST_ITEMS[0],
+      thumbnail: { ...photo, focal: { x: 0.2, y: 0.7 } },
+    });
+    fixture.detectChanges();
+    expect(img()?.style.objectPosition).toBe('20% 70%');
+
+    fixture.componentRef.setInput('product', { ...TEST_ITEMS[0], thumbnail: photo });
+    fixture.detectChanges();
+    expect(img()?.style.objectPosition).toBe('50% 50%');
+  });
 });

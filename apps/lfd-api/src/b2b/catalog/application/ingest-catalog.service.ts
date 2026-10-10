@@ -8,6 +8,7 @@ import { CatalogCategoryProjection } from "../domain/ports/catalog-category.proj
 import { CatalogItemRepository } from "../domain/ports/catalog-item.repository.js";
 import { CatalogOperationRepository } from "../domain/ports/catalog-operation.repository.js";
 import { operationFactsOf } from "./operation-facts.js";
+import { pimImageOf } from "./pim-image.js";
 
 /** Ce qu'une ingestion a réellement changé, pour que l'appelant puisse le dire. */
 export interface IngestionOutcome {
@@ -197,10 +198,10 @@ function factsOf(snapshot: StoredCatalogSnapshot, receivedAt: Date): PimFacts[] 
       // l'article, qui est ce que la boutique montre. `?? null` couvre une
       // arrivée d'avant la v8, qui n'en portait aucun.
       note: product.note ?? null,
-      image: product.image ?? null,
+      image: pimImageOf(product.image),
       // `?? null` couvre une arrivée d'avant la v10 : la vignette de rayon ne
       // traversait pas le fil. Une absence, jamais un défaut inventé.
-      thumbnail: product.thumbnail ?? null,
+      thumbnail: pimImageOf(product.thumbnail),
       // Absent avant la v11 : aucun article n'était réservé aux opérations, et
       // `false` le dit — c'est la version qui décide de la lecture (D10).
       operationOnly: product.operationOnly ?? false,

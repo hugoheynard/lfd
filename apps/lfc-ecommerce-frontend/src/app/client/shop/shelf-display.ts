@@ -86,3 +86,28 @@ export function artOf(item: ShopItemView): ShopImageView {
 export function tileArtOf(item: ShopItemView): ShopImageView {
   return item.thumbnail ?? artOf(item);
 }
+
+/** Le centre : ce que la vitrine fait quand personne ne s'est prononcé. */
+const CENTERED = '50% 50%';
+
+/**
+ * **Où recadrer un visuel** en `object-fit: cover` — la valeur de
+ * `object-position`, tirée du point focal posé à la médiathèque (L4,
+ * 2026-10-10).
+ *
+ * Le point focal est en fractions de 0 à 1 ; `object-position` en
+ * pourcentages place le MÊME point de l'image sur le même point du cadre,
+ * donc la pièce reste dans le champ quel que soit le ratio. Absent ou `null`
+ * (illustration de rayon, envoi d'avant) : le centre, comme toujours.
+ */
+export function objectPositionOf(image: ShopImageView): string {
+  const focal = image.focal;
+  if (focal === null || focal === undefined) {
+    return CENTERED;
+  }
+  return `${percent(focal.x)} ${percent(focal.y)}`;
+}
+
+function percent(fraction: number): string {
+  return `${String(Math.round(fraction * 1000) / 10)}%`;
+}

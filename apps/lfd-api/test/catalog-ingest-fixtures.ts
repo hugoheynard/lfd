@@ -1,6 +1,7 @@
 import {
   CATALOG_SNAPSHOT_VERSION,
   type CatalogSnapshot,
+  type SyncMedia,
   type SyncOperation,
   type SyncOrderTimeLimitRule,
 } from "@lfd/catalog-sync";
@@ -72,23 +73,13 @@ export interface IngestedSku {
   };
   /** La vitrine (v8) — absente par défaut, comme sur une fiche sans éditorial. */
   readonly note?: string | null;
-  readonly image?: {
-    url: string;
-    alt: string;
-    width: number | null;
-    height: number | null;
-  } | null;
+  readonly image?: SyncMedia | null;
   /** Réservé aux opérations datées (v11) — non par défaut, comme tout article courant. */
   readonly operationOnly?: boolean;
   /** Demande le froid (v12) — non par défaut, comme toute fiche non déclarée. */
   readonly requiresCold?: boolean;
   /** La vignette de rayon (v10) — absente par défaut, comme la plupart des fiches. */
-  readonly thumbnail?: {
-    url: string;
-    alt: string;
-    width: number | null;
-    height: number | null;
-  } | null;
+  readonly thumbnail?: SyncMedia | null;
 }
 
 /**

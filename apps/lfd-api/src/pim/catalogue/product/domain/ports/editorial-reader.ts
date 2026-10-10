@@ -40,6 +40,8 @@ export interface ProductMediaRecord {
   readonly height: number | null;
   readonly bytes: number | null;
   readonly contentType: string | null;
+  /** Le point focal posé à la médiathèque, en fractions de 0 à 1 ; `null` = centre. */
+  readonly focal: { readonly x: number; readonly y: number } | null;
 }
 
 export abstract class EditorialReader {

@@ -232,6 +232,11 @@ model CatalogItem {
   imageAlt    String? @map("image_alt")
   imageWidth  Int?    @map("image_width")
   imageHeight Int?    @map("image_height")
+  /// Le **point focal** du packshot, en fractions de 0 à 1 — recopié de la
+  /// médiathèque (`media_asset.focal_x/focal_y`). `NULL` = personne ne s'est
+  /// prononcé, et la vitrine recadre au centre. Les deux vont ensemble.
+  imageFocalX Float?  @map("image_focal_x")
+  imageFocalY Float?  @map("image_focal_y")
 
   /// **La vignette de rayon** — le `thumbnail` du référentiel.
   ///
@@ -248,6 +253,9 @@ model CatalogItem {
   thumbnailAlt    String? @map("thumbnail_alt")
   thumbnailWidth  Int?    @map("thumbnail_width")
   thumbnailHeight Int?    @map("thumbnail_height")
+  /// Le point focal de la vignette — même règle que celui du packshot.
+  thumbnailFocalX Float?  @map("thumbnail_focal_x")
+  thumbnailFocalY Float?  @map("thumbnail_focal_y")
 
   orderLimitDaysBefore   Int?    @map("order_limit_days_before")
   orderLimitTime         String? @map("order_limit_time")

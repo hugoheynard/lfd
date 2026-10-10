@@ -16,7 +16,7 @@ import { discountBp, lineTotalCents, millicentsFromCents, unitPriceCents } from 
 
 import { ClientLocale } from '../../client-locale.service';
 import { operationGate, pickupSpan } from '../operations';
-import { artOf, ovenHoursOf } from '../shelf-display';
+import { artOf, objectPositionOf, ovenHoursOf } from '../shelf-display';
 import { mediaSrcset, sizedMedia, SHEET_WIDTHS } from '../media-source';
 import { ShopCatalogue } from '../shop-catalogue.store';
 import { ShopPriceBasis } from '../shop-price-basis.service';
@@ -137,6 +137,12 @@ export class ProductSheet {
   protected readonly art = computed(() => {
     const product = this.product();
     return product === null ? null : artOf(product);
+  });
+
+  /** Le recadrage de l'ouverture autour du point focal — le centre sans lui. */
+  protected readonly artPosition = computed(() => {
+    const visual = this.art();
+    return visual === null ? null : objectPositionOf(visual);
   });
 
   /**

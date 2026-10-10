@@ -33,6 +33,8 @@ export class PrismaImageCatalogue extends ImageCatalogue {
         height: true,
         bytes: true,
         contentType: true,
+        focalX: true,
+        focalY: true,
       },
     });
     return new Map(
@@ -48,6 +50,10 @@ export class PrismaImageCatalogue extends ImageCatalogue {
           height: row.height,
           bytes: row.bytes,
           contentType: row.contentType,
+          // Les deux ou rien : une moitié de point ne désigne aucun endroit,
+          // et le domaine ne l'écrit jamais seule.
+          focal:
+            row.focalX === null || row.focalY === null ? null : { x: row.focalX, y: row.focalY },
         },
       ]),
     );

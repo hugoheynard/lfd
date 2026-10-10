@@ -5,7 +5,13 @@ import type { PimImage } from "../../../domain/entities/catalog-item.js";
 import { CatalogVisualsProjection } from "../../../domain/ports/catalog-visuals.projection.js";
 import { OnProductMediaChangedHandler } from "../on-product-media-changed.handler.js";
 
-const HERO = { url: "https://m.test/hero.jpg", alt: "Ouverture", width: 1800, height: 1200 };
+const HERO = {
+  url: "https://m.test/hero.jpg",
+  alt: "Ouverture",
+  width: 1800,
+  height: 1200,
+  focal: { x: 0.4, y: 0.3 },
+};
 const VIGNETTE = { url: "https://m.test/vig.jpg", alt: "Serré", width: 720, height: 540 };
 
 interface Shown {
@@ -55,7 +61,13 @@ describe("OnProductMediaChanged", () => {
     await run(visuals, HERO, VIGNETTE);
 
     expect(visuals.shown).toEqual([
-      { productId: "prd_croissant", gestureId: "geste_1", image: HERO, thumbnail: VIGNETTE },
+      {
+        productId: "prd_croissant",
+        gestureId: "geste_1",
+        image: HERO,
+        // La vignette n'a pas de point focal : « au centre », jamais absent.
+        thumbnail: { ...VIGNETTE, focal: null },
+      },
     ]);
   });
 
@@ -104,5 +116,21 @@ describe("OnProductMediaChanged", () => {
       }),
     ).rejects.toThrow("illisible");
     expect(visuals.shown).toEqual([]);
+  });
+
+  /**
+   * L4 (2026-10-10) : un fait écrit avant que le point focal ne voyage dort
+   * peut-être dans la boîte d'envoi. Il doit se projeter, « au centre ».
+   */
+  it("projette un fait d'AVANT le point focal, sans point focal", async () => {
+    const visuals = new SpyingVisuals();
+
+    await new OnProductMediaChangedHandler(visuals).handle({
+      eventId: "evt_ancien",
+      type: "pim.product_media_changed",
+      payload: { productId: "prd_croissant", gestureId: "g_0", image: VIGNETTE, thumbnail: null },
+    });
+
+    expect(visuals.shown[0]?.image).toEqual({ ...VIGNETTE, focal: null });
   });
 });

@@ -36,6 +36,10 @@ interface ItemRow {
   readonly imageAlt: string | null;
   readonly imageWidth: number | null;
   readonly imageHeight: number | null;
+  readonly imageFocalX: number | null;
+  readonly imageFocalY: number | null;
+  readonly thumbnailFocalX: number | null;
+  readonly thumbnailFocalY: number | null;
   readonly orderLimitDaysBefore: number | null;
   readonly orderLimitTime: string | null;
   readonly orderLimitGraceMinutes: number | null;
@@ -274,6 +278,7 @@ function imageOf(row: ItemRow) {
     alt: row.imageAlt ?? "",
     width: row.imageWidth,
     height: row.imageHeight,
+    focal: focalOf(row.imageFocalX, row.imageFocalY),
   };
 }
 
@@ -290,6 +295,7 @@ function thumbnailOf(row: ItemRow) {
     alt: row.thumbnailAlt ?? "",
     width: row.thumbnailWidth,
     height: row.thumbnailHeight,
+    focal: focalOf(row.thumbnailFocalX, row.thumbnailFocalY),
   };
 }
 
@@ -362,6 +368,8 @@ function factsRow(state: CatalogItemState) {
     imageAlt: facts.image?.alt ?? null,
     imageWidth: facts.image?.width ?? null,
     imageHeight: facts.image?.height ?? null,
+    imageFocalX: facts.image?.focal?.x ?? null,
+    imageFocalY: facts.image?.focal?.y ?? null,
     // `?? null` et non `undefined` : sur un upsert, `undefined` laisserait la
     // colonne INCHANGÉE, et un article dont la fiche a perdu sa vignette
     // garderait celle d'avant. Même repli, même raison que les allergènes.
@@ -369,6 +377,8 @@ function factsRow(state: CatalogItemState) {
     thumbnailAlt: facts.thumbnail?.alt ?? null,
     thumbnailWidth: facts.thumbnail?.width ?? null,
     thumbnailHeight: facts.thumbnail?.height ?? null,
+    thumbnailFocalX: facts.thumbnail?.focal?.x ?? null,
+    thumbnailFocalY: facts.thumbnail?.focal?.y ?? null,
     orderLimitDaysBefore: facts.orderTimeLimit?.daysBefore ?? null,
     orderLimitTime: facts.orderTimeLimit?.time ?? null,
     orderLimitGraceMinutes: facts.orderTimeLimit?.graceMinutes ?? null,
@@ -421,4 +431,9 @@ function allergensOf(raw: unknown): readonly string[] | null {
     return null;
   }
   return raw.filter((code): code is string => typeof code === "string");
+}
+
+/** Les deux colonnes du point focal, ou `null` : une moitié de point ne désigne rien. */
+function focalOf(x: number | null, y: number | null): { x: number; y: number } | null {
+  return x === null || y === null ? null : { x, y };
 }

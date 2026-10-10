@@ -1,4 +1,4 @@
-import type { PimContextPrice } from "./entities/catalog-item.js";
+import type { PimContextPrice, PimImage } from "./entities/catalog-item.js";
 
 /**
  * **Qu'est-ce que cette arrivée change ?**
@@ -71,12 +71,7 @@ export interface DeliveredItem {
    * avant d'acheter, et la seule prose que la maison publie sous son nom.
    */
   readonly note: string | null;
-  readonly image: {
-    readonly url: string;
-    readonly alt: string;
-    readonly width: number | null;
-    readonly height: number | null;
-  } | null;
+  readonly image: PimImage | null;
   /**
    * La **vignette de rayon**, comparée pour exactement la même raison que le
    * packshot : c'est ce qu'un client voit d'abord, en rayon, avant même
@@ -88,12 +83,7 @@ export interface DeliveredItem {
    * « rien n'a bougé » : il ne dit rien du tout, et c'est pire parce qu'on le
    * lit comme le premier.
    */
-  readonly thumbnail: {
-    readonly url: string;
-    readonly alt: string;
-    readonly width: number | null;
-    readonly height: number | null;
-  } | null;
+  readonly thumbnail: PimImage | null;
   /**
    * **Vendu seulement pendant une opération** (fil v11). Comparé pour la
    * raison que la vignette donne juste au-dessus : rendre la bûche exclusive
@@ -208,10 +198,7 @@ function sameLimit(
  * des dimensions corrigées changent la place que la grille réserve. Trois faits
  * distincts, trois raisons de relire.
  */
-function sameImage(
-  left: DeliveredItem["image"] | DeliveredItem["thumbnail"],
-  right: DeliveredItem["image"] | DeliveredItem["thumbnail"],
-): boolean {
+function sameImage(left: PimImage | null, right: PimImage | null): boolean {
   if (left === null || right === null) {
     return left === right;
   }
@@ -219,8 +206,21 @@ function sameImage(
     left.url === right.url &&
     left.alt === right.alt &&
     left.width === right.width &&
-    left.height === right.height
+    left.height === right.height &&
+    sameFocal(left.focal, right.focal)
   );
+}
+
+/**
+ * Le point focal compte comme les dimensions (L4, 2026-10-10) : le déplacer
+ * change ce que la vignette montre d'une pièce, et un diff qui l'ignorerait le
+ * ferait passer en vente sans relecture.
+ */
+function sameFocal(left: PimImage["focal"], right: PimImage["focal"]): boolean {
+  if (left === null || right === null) {
+    return left === right;
+  }
+  return left.x === right.x && left.y === right.y;
 }
 
 /** Les champs qui diffèrent entre ce qui arrive et ce qu'on tient. */
