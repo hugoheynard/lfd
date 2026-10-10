@@ -338,7 +338,8 @@ emporterait.
 
 La **dette** a été soldée le 2026-10-10 (encadré ci-dessous). Ce qui reste
 est de l'**amélioration** : des capacités que le fonds n'a pas encore. Les
-lignes marquées 🔵 attendent une décision ou un constat de Hugo.
+lignes marquées 🔵 attendent une décision ou un constat de Hugo. Leur plan, avec les décisions de
+Hugo : [`plan-la-mediatheque-amelioree.md`](plan-la-mediatheque-amelioree.md).
 
 > **Soldé le 2026-10-10**
 >
