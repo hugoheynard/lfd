@@ -183,8 +183,8 @@ seule table des formes : deux implémentations divergeraient à la première
 forme ajoutée. Sans zod, il ne pèse rien dans le budget de la boutique.
 
 La simulation remplacée au lot 4 — la tuile Noël et la bande Pâques, écrites
-en dur dans la boutique — est retirée (2026-09-24). La carte Pâques de l'accueil (`mock-event.ts`) reste hors
-lot.
+en dur dans la boutique — est retirée (2026-09-24). La carte Pâques de l'accueil est restée hors
+lot ; elle lit les vraies opérations depuis le 2026-10-10.
 
 ### D9 — La vitrine, troisième porteur de la médiathèque — la matrice ne bouge pas
 
@@ -275,7 +275,8 @@ Les lots 1 et 2 partent ensemble : sans le 2, le 1 ouvre un trou.
   **audience** (pro / particulier) : décidées dans le document de
   conception, pas encore construites. La table `storefront_object` est prête
   à recevoir `valid_from` / `valid_until` sans migration de données.
-- La **carte Pâques de l'accueil** (`mock-event.ts`) reste simulée.
+- ~~La **carte Pâques de l'accueil** reste simulée.~~ Elle lit les vraies
+  opérations depuis le 2026-10-10.
 - Un **brouillon** distinct de la version publiée : ce lot publie à
   l'enregistrement.
 

@@ -101,8 +101,8 @@ Ce qui reste vrai, et qui coûte :
   `/mon-compte`, qui lit les factures émises (plan
   [`facture-emise.md`](../comptabilite/facturation/facture-emise.md)).
 
-Une autre maquette reste branchée, sans argent : `mock-event.ts`
-(l'opération datée de l'accueil public et de l'espace). Les récits du rayon
+L'opération datée de l'accueil public était une autre maquette, sans
+argent ; elle lit les vraies opérations depuis le 2026-10-10 (`operation-event.ts`). Les récits du rayon
 (`mock-shelf-stories`) sont partis le 2026-09-24 avec le bandeau « En savoir
 plus » qui les lisait.
 
