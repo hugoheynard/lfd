@@ -1,6 +1,7 @@
 import { Injectable } from "@nestjs/common";
 
 import { PrismaService } from "../../../platform/database/prisma.service.js";
+import { Clock } from "../../../platform/time/clock.js";
 import {
   AccountEmailAmbiguousError,
   CompanyAlreadyHasOwnerError,
@@ -83,7 +84,10 @@ export class PrismaCompanyMemberReader extends CompanyMemberReader {
 /** Adaptateur Prisma de l'**écriture** des accès. */
 @Injectable()
 export class PrismaCompanyMemberRepository extends CompanyMemberRepository {
-  constructor(private readonly prisma: PrismaService) {
+  constructor(
+    private readonly prisma: PrismaService,
+    private readonly clock: Clock,
+  ) {
     super();
   }
 
@@ -180,6 +184,12 @@ export class PrismaCompanyMemberRepository extends CompanyMemberRepository {
    * `P2002` avorterait toute transaction englobante. La lecture ne porte pas la
    * règle — c'est le `role <> owner` de {@link rewriteRole}, dans la même
    * instruction SQL que l'écriture, qui la tient sous concurrence.
+   *
+   * **Rattacher, c'est inviter** (2026-10-10, §8.1 bis, point 4) : la date
+   * d'invitation du rattachement est posée, ou REPOSÉE s'il existait — y
+   * compris celui du détenteur, dont le rôle, lui, ne bouge pas. Sans quoi
+   * renvoyer son lien à quelqu'un dont l'invitation a expiré lui enverrait de
+   * quoi se faire refuser à l'entrée.
    */
   async attach(userId: string, companyId: string, role: CompanyRole): Promise<void> {
     try {
@@ -191,6 +201,7 @@ export class PrismaCompanyMemberRepository extends CompanyMemberRepository {
         await this.createOrRewrite(userId, companyId, role);
       } else {
         await this.rewriteRole(userId, companyId, role);
+        await this.renewInvitation(userId, companyId);
       }
     } catch (error) {
       throw translateRivalOwner(error, companyId);
@@ -208,7 +219,9 @@ export class PrismaCompanyMemberRepository extends CompanyMemberRepository {
     role: CompanyRole,
   ): Promise<void> {
     try {
-      await this.prisma.membership.create({ data: { userId, companyId, role } });
+      await this.prisma.membership.create({
+        data: { userId, companyId, role, invitedAt: this.clock.now() },
+      });
     } catch (error) {
       const raced = await this.prisma.membership.findUnique({
         where: { userId_companyId: { userId, companyId } },
@@ -218,7 +231,20 @@ export class PrismaCompanyMemberRepository extends CompanyMemberRepository {
         throw error;
       }
       await this.rewriteRole(userId, companyId, role);
+      await this.renewInvitation(userId, companyId);
     }
+  }
+
+  /**
+   * Repose la date d'invitation, sans condition de rôle : le détenteur se
+   * réinvite comme les autres. Un rattachement déjà accepté ouvre de toute
+   * façon ; la date n'y change rien.
+   */
+  private async renewInvitation(userId: string, companyId: string): Promise<void> {
+    await this.prisma.membership.updateMany({
+      where: { userId, companyId },
+      data: { invitedAt: this.clock.now() },
+    });
   }
 
   /**

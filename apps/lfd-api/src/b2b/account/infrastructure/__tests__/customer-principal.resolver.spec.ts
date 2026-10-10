@@ -13,6 +13,30 @@ import {
 } from "../../../../platform/database/client/client.js";
 import { DomainEventPublisher } from "../../../../platform/events/domain-event-publisher.js";
 import type { VerifiedToken } from "../../../../platform/auth/principal.js";
+import { BackgroundWork } from "../../../../platform/events/background-work.js";
+import { Clock } from "../../../../platform/time/clock.js";
+import { FixedClock } from "../../../../platform/time/fixed-clock.js";
+import {
+  StaffNotifier,
+  type StaffNotice,
+} from "../../../../staff/notifications/domain/ports/staff-notifier.js";
+import { MembershipAcceptance } from "../membership-acceptance.js";
+
+/** L'instant de la requête — une horloge figée : l'échéance se compare à elle seule. */
+const NOW = new Date("2026-08-12T10:00:00.000Z");
+const DAY_MS = 24 * 60 * 60 * 1000;
+/** Une invitation émise il y a `days` jours. */
+const daysBefore = (days: number): Date => new Date(NOW.getTime() - days * DAY_MS);
+
+/** La cloche doublée : retient ce qu'on lui fait sonner. */
+class RecordingBell extends StaffNotifier {
+  readonly notices: StaffNotice[] = [];
+
+  notify(notices: readonly StaffNotice[]): Promise<void> {
+    this.notices.push(...notices);
+    return Promise.resolve();
+  }
+}
 
 /** Publisher doublé : capture les événements publiés (extension du port, sans cast). */
 const token: VerifiedToken = {
@@ -20,10 +44,16 @@ const token: VerifiedToken = {
   scopes: ["read:orders"],
 };
 
+/** Un rattachement tel que l'entrée le lit. */
+interface MembershipRow {
+  companyId: string;
+  role: CustomerRole;
+  invitedAt: Date;
+  acceptedAt: Date | null;
+}
+
 /** Ce que le resolver lit : la personne et ses rattachements. */
-type UserWithMemberships = User & {
-  memberships: { companyId: string; role: CustomerRole }[];
-};
+type UserWithMemberships = User & { memberships: MembershipRow[] };
 
 /** Une personne active, rattachée à une société. */
 const activeUser: UserWithMemberships = {
@@ -39,7 +69,31 @@ const activeUser: UserWithMemberships = {
   invitedBy: null,
   createdAt: new Date(0),
   updatedAt: new Date(0),
-  memberships: [{ companyId: "company_1", role: CustomerRole.orders }],
+  // Entrée il y a longtemps : accepté, il ouvre quel que soit l'âge de l'invitation.
+  memberships: [
+    {
+      companyId: "company_1",
+      role: CustomerRole.orders,
+      invitedAt: daysBefore(400),
+      acceptedAt: daysBefore(399),
+    },
+  ],
+};
+
+/** Un rattachement accepté de longue date. */
+const ACCEPTED = { invitedAt: daysBefore(400), acceptedAt: daysBefore(399) } as const;
+
+/** Une invitation d'hier, pas encore acceptée — elle vit. */
+const LIVE = { invitedAt: daysBefore(1), acceptedAt: null } as const;
+
+/** Une invitation de trois semaines, jamais acceptée — elle a expiré. */
+const EXPIRED = { invitedAt: daysBefore(21), acceptedAt: null } as const;
+
+/** Une personne invitée, rattachée à une société par une invitation vivante. */
+const invitedUser: UserWithMemberships = {
+  ...activeUser,
+  status: UserStatus.invited,
+  memberships: [{ companyId: "company_1", role: CustomerRole.orders, ...LIVE }],
 };
 
 /** Un compte qui porte déjà l'adresse, tel que l'admission le lit. */
@@ -56,6 +110,23 @@ interface Holder {
 interface ClaimArgs {
   where: { id: string; status: UserStatus; auth0Sub: string | null };
   data: { auth0Sub: string; status: UserStatus };
+}
+
+/** Le passage `invited → active` d'une personne connue. */
+interface ActivationArgs {
+  where: { id: string; status: UserStatus };
+  data: { status: UserStatus };
+}
+
+/** La réécriture du `sub` se reconnaît à ce qu'elle écrit un `sub`. */
+function isClaim(args: ClaimArgs | ActivationArgs): args is ClaimArgs {
+  return "auth0Sub" in args.data;
+}
+
+/** L'acceptation conditionnée des rattachements dont l'invitation vit. */
+interface AcceptArgs {
+  where: { userId: string; acceptedAt: null; invitedAt: { gte: Date } };
+  data: { acceptedAt: Date };
 }
 
 /** Un compte actif ouvert par mot de passe, sous l'adresse donnée. */
@@ -76,6 +147,8 @@ function holder(email: string, overrides: Partial<Holder> = {}): Holder {
 interface PrismaDouble {
   readonly createCalls: { auth0Sub: string; email: string; status: UserStatus }[];
   readonly claimCalls: ClaimArgs[];
+  readonly activationCalls: ActivationArgs[];
+  readonly acceptCalls: AcceptArgs[];
   readonly updateCalls: {
     where: { id: string };
     data: { status?: UserStatus; emailVerified?: boolean };
@@ -84,7 +157,7 @@ interface PrismaDouble {
     user: {
       findUnique: () => Promise<UserWithMemberships | null>;
       findMany: () => Promise<Holder[]>;
-      updateMany: (args: ClaimArgs) => Promise<{ count: number }>;
+      updateMany: (args: ClaimArgs | ActivationArgs) => Promise<{ count: number }>;
       create: (args: {
         data: { auth0Sub: string; email: string; status: UserStatus };
       }) => Promise<unknown>;
@@ -93,6 +166,7 @@ interface PrismaDouble {
         data: { status?: UserStatus; emailVerified?: boolean };
       }) => Promise<unknown>;
     };
+    membership: { updateMany: (args: AcceptArgs) => Promise<{ count: number }> };
   };
 }
 
@@ -104,17 +178,23 @@ function prismaDouble(
     holders?: readonly Holder[];
     /** Lignes touchées par la réécriture conditionnelle — 0 : une autre requête est passée. */
     claimCounts?: readonly number[];
+    /** Rattachements acceptés par l'écriture conditionnée — 0 : aucune invitation ne vit. */
+    acceptCount?: number;
   } = {},
 ): PrismaDouble {
   let index = 0;
   const createCalls: PrismaDouble["createCalls"] = [];
   const updateCalls: PrismaDouble["updateCalls"] = [];
   const claimCalls: ClaimArgs[] = [];
+  const activationCalls: ActivationArgs[] = [];
+  const acceptCalls: AcceptArgs[] = [];
 
   return {
     createCalls,
     updateCalls,
     claimCalls,
+    activationCalls,
+    acceptCalls,
     prisma: {
       user: {
         findUnique: () => Promise.resolve(results[Math.min(index++, results.length - 1)] ?? null),
@@ -125,6 +205,10 @@ function prismaDouble(
           return Promise.resolve([...(options.holders ?? fromEmails)]);
         },
         updateMany: (args) => {
+          if (!isClaim(args)) {
+            activationCalls.push(args);
+            return Promise.resolve({ count: 1 });
+          }
           claimCalls.push(args);
           const counts = options.claimCounts ?? [1];
           return Promise.resolve({
@@ -142,6 +226,12 @@ function prismaDouble(
           return Promise.resolve({});
         },
       },
+      membership: {
+        updateMany: (args) => {
+          acceptCalls.push(args);
+          return Promise.resolve({ count: options.acceptCount ?? 1 });
+        },
+      },
     },
   };
 }
@@ -149,6 +239,7 @@ function prismaDouble(
 async function resolverWith(
   double: PrismaDouble,
   events: DomainEventPublisher = new RecordingPublisher(),
+  bell: StaffNotifier = new RecordingBell(),
 ): Promise<CustomerPrincipalResolver> {
   const moduleRef = await Test.createTestingModule({
     providers: [
@@ -156,6 +247,10 @@ async function resolverWith(
       { provide: PrismaService, useValue: double.prisma },
       { provide: DomainEventPublisher, useValue: events },
       { provide: UnitOfWork, useValue: new DirectUnitOfWork() },
+      { provide: Clock, useValue: new FixedClock(NOW) },
+      { provide: StaffNotifier, useValue: bell },
+      BackgroundWork,
+      MembershipAcceptance,
       UnknownSubjectAdmission,
     ],
   }).compile();
@@ -191,13 +286,16 @@ describe("CustomerPrincipalResolver", () => {
       // présenter un token prouve qu'il l'a suivi. Le laisser `invited`
       // maintiendrait dehors le client à qui le commercial vient d'ouvrir
       // l'accès — pour toujours.
-      const double = prismaDouble([{ ...activeUser, status: UserStatus.invited }]);
+      const double = prismaDouble([invitedUser]);
       const resolver = await resolverWith(double);
 
       await expect(resolver.resolve(token)).resolves.toMatchObject({ userId: "user_1" });
 
-      expect(double.updateCalls).toEqual([
-        { where: { id: "user_1" }, data: { status: UserStatus.active } },
+      expect(double.activationCalls).toEqual([
+        {
+          where: { id: "user_1", status: UserStatus.invited },
+          data: { status: UserStatus.active },
+        },
       ]);
     });
 
@@ -254,14 +352,13 @@ describe("CustomerPrincipalResolver", () => {
 
     it("active l'invité même sans preuve d'adresse recopiable", async () => {
       // Seule la recopie de la preuve dépend de l'adresse du jeton.
-      const double = prismaDouble([{ ...activeUser, status: UserStatus.invited }]);
+      const double = prismaDouble([invitedUser]);
       const resolver = await resolverWith(double);
 
       await resolver.resolve({ ...token, email: "autre@client.fr", emailVerified: true });
 
-      expect(double.updateCalls).toEqual([
-        { where: { id: "user_1" }, data: { status: UserStatus.active } },
-      ]);
+      expect(double.updateCalls).toEqual([]);
+      expect(double.activationCalls).toHaveLength(1);
     });
 
     /**
@@ -316,8 +413,8 @@ describe("CustomerPrincipalResolver", () => {
           {
             ...activeUser,
             memberships: [
-              { companyId: "company_1", role: CustomerRole.owner },
-              { companyId: "company_2", role: CustomerRole.orders },
+              { ...ACCEPTED, companyId: "company_1", role: CustomerRole.owner },
+              { ...ACCEPTED, companyId: "company_2", role: CustomerRole.orders },
             ],
           },
         ]),
@@ -687,6 +784,141 @@ describe("CustomerPrincipalResolver", () => {
 
       await expect(resolver.resolve(code)).resolves.toMatchObject({ userId: "user_invited" });
       expect(double.createCalls).toEqual([]);
+    });
+  });
+
+  /**
+   * L'invitation expirée (2026-10-10, `architecture-compte-client-cycle-de-vie.md`
+   * §8.1 bis). Régression : une personne invitée dont l'invitation avait passé
+   * ses 7 jours entrait encore — par le lien (`record`), et surtout par code ou
+   * par Google (`claim`) — et la société s'ouvrait des mois après.
+   */
+  describe("l'invitation expirée", () => {
+    it("accepte le rattachement vivant, à l'instant de l'horloge, dans la même écriture conditionnée", async () => {
+      const double = prismaDouble([invitedUser]);
+      const resolver = await resolverWith(double);
+
+      await expect(resolver.resolve(token)).resolves.toMatchObject({
+        memberships: [{ companyId: "company_1", role: CustomerRole.orders }],
+      });
+
+      expect(double.acceptCalls).toEqual([
+        {
+          where: { userId: "user_1", acceptedAt: null, invitedAt: { gte: daysBefore(7) } },
+          data: { acceptedAt: NOW },
+        },
+      ]);
+    });
+
+    it("🔴 refuse l'invitée dont l'invitation a expiré, sans rien écrire — et le dit", async () => {
+      const events = new RecordingPublisher();
+      const bell = new RecordingBell();
+      const expired: UserWithMemberships = {
+        ...invitedUser,
+        memberships: [{ companyId: "company_1", role: CustomerRole.orders, ...EXPIRED }],
+      };
+      const double = prismaDouble([expired]);
+      const resolver = await resolverWith(double, events, bell);
+
+      await expect(resolver.resolve(token)).rejects.toMatchObject({
+        code: "account.invitation.expired",
+        message:
+          "Votre invitation a expiré. Demandez un nouvel accès à votre interlocuteur La Folie Coffee.",
+      });
+
+      expect(double.acceptCalls).toEqual([]);
+      expect(double.activationCalls).toEqual([]);
+      const fact = events.traced[0]?.journalFact();
+      expect(fact).toEqual({
+        type: "user.entry_refused_invitation_expired",
+        subjectType: "user",
+        subjectId: "user_1",
+        payload: { subjectLabel: "Jean Client" },
+      });
+      // Ni le `sub`, ni l'adresse : le journal se relit largement.
+      expect(JSON.stringify(fact)).not.toContain("auth0|");
+      expect(JSON.stringify(fact)).not.toContain("@");
+    });
+
+    it("refuse aussi quand l'invitation expire entre la lecture et l'écriture", async () => {
+      // La règle est dans le `WHERE` : rien n'est accepté, la personne reste dehors.
+      const double = prismaDouble([invitedUser], { acceptCount: 0 });
+      const resolver = await resolverWith(double);
+
+      await expect(resolver.resolve(token)).rejects.toMatchObject({
+        code: "account.invitation.expired",
+      });
+      expect(double.activationCalls).toEqual([]);
+    });
+
+    it("🔴 active par B, A expirée : le Principal ne porte pas A", async () => {
+      // Objection B2 de `vitruve` : le statut `invited` est porté par la
+      // personne ; entrée par B, elle ouvrait A pour toujours.
+      const double = prismaDouble([
+        {
+          ...activeUser,
+          memberships: [
+            { companyId: "company_a", role: CustomerRole.admin, ...EXPIRED },
+            { companyId: "company_b", role: CustomerRole.orders, ...ACCEPTED },
+          ],
+        },
+      ]);
+      const resolver = await resolverWith(double);
+
+      const principal = await resolver.resolve(token);
+
+      expect(principal.memberships).toEqual([
+        { companyId: "company_b", role: CustomerRole.orders },
+      ]);
+      // Rien n'attendait d'être accepté : aucune écriture.
+      expect(double.acceptCalls).toEqual([]);
+    });
+
+    it("une personne active accepte une société de plus à sa première requête", async () => {
+      const double = prismaDouble([
+        {
+          ...activeUser,
+          memberships: [
+            { companyId: "company_1", role: CustomerRole.orders, ...ACCEPTED },
+            { companyId: "company_2", role: CustomerRole.admin, ...LIVE },
+          ],
+        },
+      ]);
+      const resolver = await resolverWith(double);
+
+      const principal = await resolver.resolve(token);
+
+      expect(principal.memberships.map((m) => m.companyId)).toEqual(["company_1", "company_2"]);
+      expect(double.acceptCalls).toHaveLength(1);
+      expect(double.activationCalls).toEqual([]);
+    });
+
+    it("🔴 par code (sub inconnu) : refuse, et défait la réécriture du `sub`", async () => {
+      const events = new RecordingPublisher();
+      const invited = holder("jean@client.fr", {
+        id: "user_invited",
+        auth0Sub: "auth0|invitation",
+        status: UserStatus.invited,
+      });
+      const double = prismaDouble([null, null], { holders: [invited], acceptCount: 0 });
+      const resolver = await resolverWith(double, events);
+
+      await expect(
+        resolver.resolve({
+          subject: "email|neuf",
+          email: "jean@client.fr",
+          emailVerified: true,
+          scopes: [],
+        }),
+      ).rejects.toMatchObject({ code: "account.invitation.expired" });
+
+      // L'écriture conditionnée a été tentée, puis défaite par la transaction
+      // (la `DirectUnitOfWork` n'annule rien : l'e2e le prouve en base).
+      expect(double.claimCalls).toHaveLength(1);
+      expect(double.createCalls).toEqual([]);
+      expect(events.traced.map((event) => event.journalFact().type)).toEqual([
+        "user.entry_refused_invitation_expired",
+      ]);
     });
   });
 });

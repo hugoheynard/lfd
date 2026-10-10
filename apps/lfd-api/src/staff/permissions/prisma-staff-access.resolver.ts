@@ -17,6 +17,11 @@ import type { StaffAccess, StaffPrincipal } from "../../platform/auth/staff-prin
 import { staffStatusFact } from "../directory/domain/staff-facts.js";
 import { linkedSubject } from "../directory/infrastructure/staff-subject-aliases.js";
 import { HELD_ROLE_SELECT, isRescueFiche, resolveHeldRole } from "./infrastructure/held-role.js";
+import {
+  isInvitationAlive,
+  oldestLiveInvitation,
+} from "../../platform/shared/invitation/invitation-expiry.js";
+import { StaffEntryRefusal } from "./staff-entry-refusal.js";
 
 /** Durée de vie d'une entrée de cache, en millisecondes. */
 const CACHE_TTL_MS = 30_000;
@@ -37,6 +42,8 @@ const STAFF_SELECT = {
   ...HELD_ROLE_SELECT,
   status: true,
   auth0Id: true,
+  // L'échéance de l'invitation : une fiche `invited` n'entre que si elle vit.
+  invitedAt: true,
   overrides: { select: { resource: true, action: true, effect: true } },
 } as const;
 
@@ -70,6 +77,14 @@ const STAFF_SELECT = {
  *   se perd. ⚠️ Ce n'est PAS le mur client/staff : un `auth0|` client passe
  *   cette règle, et c'est l'audience du jeton qui le tient.
  *
+ * - **Une invitation expirée n'ouvre plus rien** (2026-10-10,
+ *   `architecture-compte-client-cycle-de-vie.md` §8.1 bis, point 8). Une fiche
+ *   `invited` dont le lien est mort entrait encore par « mot de passe oublié »
+ *   sur la connexion de base, ou par le rapprochement d'adresse vérifiée.
+ *   Elle ne passe `active` que si son invitation vit ; sinon, refus nommé
+ *   ({@link StaffEntryRefusal}). La condition est aussi dans le `WHERE` de
+ *   l'écriture.
+ *
  * La sortie d'une fiche liée à un `sub` mort ou refusé est la **réinvitation**
  * (`OpenStaffAccess`), qui rouvre une identité par l'adresse et relie la fiche.
  * - **Fail-closed.** Un `sub` inconnu de l'annuaire n'obtient **rien**. Porter un
@@ -90,10 +105,12 @@ export class PrismaStaffAccessResolver extends StaffAccessResolver {
     private readonly clock: Clock,
     private readonly journal: Journal,
     private readonly config: AppConfig,
+    private readonly refusal: StaffEntryRefusal,
   ) {
     super();
   }
 
+  /** @throws {StaffInvitationExpiredError} une fiche `invited` dont l'invitation a expiré. */
   async resolve(principal: StaffPrincipal): Promise<StaffAccess | null> {
     if (isOutsideDatabaseConnection(principal.subject)) {
       return null;
@@ -105,6 +122,9 @@ export class PrismaStaffAccessResolver extends StaffAccessResolver {
     const row = await this.findStaff(principal);
     if (row === null || row.status === "suspended") {
       return null;
+    }
+    if (row.status === "invited" && !this.invitationLives(row)) {
+      return this.refusal.refuse(row);
     }
     if (!(await this.recordEntry(row, principal.subject))) {
       return null;
@@ -188,20 +208,39 @@ export class PrismaStaffAccessResolver extends StaffAccessResolver {
    */
   private async recordEntry(row: EnteringStaff, subject: string): Promise<boolean> {
     if (row.auth0Id === null) {
-      const won = await this.link(row.id, subject);
+      const won = await this.link(row, subject);
       if (won) {
         await this.recordActivation(row);
       }
       return won;
     }
     if (row.status !== "active") {
-      await this.prisma.staffUser.update({
-        where: { id: row.id },
+      const { count } = await this.prisma.staffUser.updateMany({
+        where: { id: row.id, status: row.status, ...this.liveInvitationOf(row) },
         data: { status: "active" },
       });
+      if (count !== 1) {
+        // Expirée (ou réécrite) entre la lecture et l'écriture : la fiche n'entre pas.
+        return false;
+      }
       await this.recordActivation(row);
     }
     return true;
+  }
+
+  /** L'invitation de cette fiche vit-elle ? Une date absente n'a jamais rien ouvert. */
+  private invitationLives(row: EnteringStaff): boolean {
+    return row.invitedAt !== null && isInvitationAlive(row.invitedAt, this.clock.now());
+  }
+
+  /**
+   * La règle de l'échéance, en condition d'écriture — pour une fiche `invited`
+   * seulement : `pending` n'a jamais reçu de lien, et le plan ne la vise pas.
+   */
+  private liveInvitationOf(row: EnteringStaff): { invitedAt?: { gte: Date } } {
+    return row.status === "invited"
+      ? { invitedAt: { gte: oldestLiveInvitation(this.clock.now()) } }
+      : {};
   }
 
   /**
@@ -212,10 +251,11 @@ export class PrismaStaffAccessResolver extends StaffAccessResolver {
    * course n'est pas celui de cette fiche, et l'inscrire lui attribuerait des
    * actes qu'elle n'a pas faits.
    */
-  private async link(staffUserId: string, subject: string): Promise<boolean> {
+  private async link(row: EnteringStaff, subject: string): Promise<boolean> {
+    const staffUserId = row.id;
     return this.prisma.$transaction(async (tx) => {
       const linked = await tx.staffUser.updateMany({
-        where: { id: staffUserId, auth0Id: null },
+        where: { id: staffUserId, auth0Id: null, ...this.liveInvitationOf(row) },
         data: { auth0Id: subject, status: "active" },
       });
       if (linked.count !== 1) {
@@ -299,4 +339,5 @@ interface EnteringStaff {
   readonly lastName: string;
   readonly status: StaffStatus;
   readonly auth0Id: string | null;
+  readonly invitedAt: Date | null;
 }

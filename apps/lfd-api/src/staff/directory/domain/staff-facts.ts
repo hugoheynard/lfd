@@ -43,6 +43,8 @@ export const STAFF_FACTS = {
   suspended: "staff_user.suspended",
   /** La PREMIÈRE activation — de `pending` ou `invited` vers `active` (D7). */
   activated: "staff_user.activated",
+  /** Une fiche `invited` refusée à l'entrée : son invitation a expiré (§8.1 bis). */
+  entryRefusedInvitationExpired: "staff_user.entry_refused_invitation_expired",
   /** Le rétablissement d'une fiche SUSPENDUE. */
   reinstated: "staff_user.reinstated",
   deleted: "staff_user.deleted",
@@ -113,6 +115,11 @@ export function staffUserInvitedFact(
 
 export function staffPasswordLinkIssuedFact(id: string, person: StaffPerson): JournalFact {
   return fact(STAFF_FACTS.passwordLinkIssued, id, { person: personOf(person) });
+}
+
+/** L'entrée refusée d'une fiche dont l'invitation a expiré — la fiche pour auteur. */
+export function staffEntryRefusedFact(id: string, person: StaffPerson): JournalFact {
+  return fact(STAFF_FACTS.entryRefusedInvitationExpired, id, { person: personOf(person) });
 }
 
 /**

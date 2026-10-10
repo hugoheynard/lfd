@@ -29,7 +29,13 @@ import { IssuePasswordLinkCommand } from "../issue-password-link.command.js";
 import { IssuePasswordLinkHandler } from "../issue-password-link.handler.js";
 import { UpdateMyProfileCommand } from "../update-my-profile.command.js";
 import { UpdateMyProfileHandler } from "../update-my-profile.handler.js";
-import { EMAIL, InMemoryCompanies, journalNames, PHONE } from "./member-acts-doubles.js";
+import {
+  EMAIL,
+  InMemoryCompanies,
+  journalNames,
+  PHONE,
+  RecordingRenewal,
+} from "./member-acts-doubles.js";
 
 /**
  * **Ce qu'un geste sur une personne laisse au journal** (plan
@@ -294,6 +300,7 @@ describe("le lien de mot de passe", () => {
       new FixedClock(new Date("2026-02-03T10:00:00Z")),
       events,
       journalNames(),
+      new RecordingRenewal(),
     );
 
     const link = await handler.execute(new IssuePasswordLinkCommand("u1"));
@@ -318,6 +325,7 @@ describe("le lien de mot de passe", () => {
       new FixedClock(new Date("2026-02-03T10:00:00Z")),
       events,
       journalNames(),
+      new RecordingRenewal(),
     );
 
     await handler.execute(new IssuePasswordLinkCommand("user_sans_fiche"));

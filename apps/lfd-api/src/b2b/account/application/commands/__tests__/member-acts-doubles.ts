@@ -17,6 +17,7 @@ import {
 } from "../../../domain/ports/user-profile.repository.js";
 import { AccountJournalNames } from "../../services/account-journal-names.service.js";
 import { MembershipReader } from "../../../domain/ports/membership.reader.js";
+import { InvitationRenewal } from "../../../domain/ports/invitation-renewal.js";
 import type { CompanyRole } from "../../../domain/value-objects/company-role.js";
 import { ContactDetails } from "../../../domain/value-objects/contact-details.js";
 import { withSlotList } from "../../../domain/services/delivery-slot-list.js";
@@ -242,3 +243,17 @@ export function journalNames(
 
 /** Le nom de la société témoin, tel que les faits le figent. */
 export const COMPANY_LABEL = "Le Pain Quotidien";
+
+/** Le renouvellement doublé : retient ce qu'on lui demande, rend la société choisie. */
+export class RecordingRenewal extends InvitationRenewal {
+  readonly renewed: { userId: string; companyId: string | null; at: Date }[] = [];
+
+  constructor(private readonly found: string | null = "cmp_shown") {
+    super();
+  }
+
+  renew(userId: string, companyId: string | null, at: Date): Promise<string | null> {
+    this.renewed.push({ userId, companyId, at });
+    return Promise.resolve(this.found === null ? null : (companyId ?? this.found));
+  }
+}

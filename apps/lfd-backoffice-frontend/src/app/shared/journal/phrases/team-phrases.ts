@@ -130,6 +130,13 @@ export const TEAM_PHRASES = {
     staff('Droits individuels', overridesSegments(fact), ['person', 'added', 'removed', 'changed']),
   'staff_user.suspended': onPerson('Accès suspendu', 'a suspendu l’accès de '),
   'staff_user.activated': onPerson('Accès activé', 'a activé l’accès de '),
+  // L'auteur est la fiche elle-même : elle a tenté d'entrer (2026-10-10, §8.1 bis).
+  'staff_user.entry_refused_invitation_expired': (fact) =>
+    staff(
+      'Entrée refusée — invitation expirée',
+      [text(`${fact.actor} n’a pas pu entrer : son invitation a expiré`)],
+      ['person'],
+    ),
   // Jusqu'au 2026-09-19, ce type couvrait AUSSI la première activation d'une
   // fiche en attente (D7 du plan des phrases) : la phrase dit ce qui est vrai
   // des deux, puisque les lignes anciennes ne se réécrivent pas.

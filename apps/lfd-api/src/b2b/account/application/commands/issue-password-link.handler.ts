@@ -10,6 +10,8 @@ import {
 } from "../../../../platform/identity/password-link.js";
 import { PendingAccessReader } from "../../domain/ports/pending-access.reader.js";
 import { PendingAccessNotFoundError } from "../../domain/errors/account-errors.js";
+import { PendingInvitationNotFoundError } from "../../domain/errors/invitation-errors.js";
+import { InvitationRenewal } from "../../domain/ports/invitation-renewal.js";
 import { IssuePasswordLinkCommand } from "./issue-password-link.command.js";
 import { AccountJournalNames } from "../services/account-journal-names.service.js";
 
@@ -41,8 +43,13 @@ import { AccountJournalNames } from "../services/account-journal-names.service.j
  * passe, et lui fabriquer un lien reviendrait alors à offrir de quoi le
  * réinitialiser sans qu'elle ait rien demandé.
  *
- * `@hors-transaction` le lien est fabriqué chez le fournisseur d'identité, et
- * rien ne s'écrit chez nous : le fait part après, seul. Un journal en panne
+ * **Le lien renouvelle l'invitation d'UNE société** (2026-10-10, §8.1 bis,
+ * point 4) : celle de la commande, ou à défaut celle que la file affiche. Sans
+ * ce geste, l'entrée — qui refuse désormais une invitation de plus de 7 jours
+ * — refuserait la personne qui suit le lien qu'on vient de lui remettre.
+ *
+ * `@hors-transaction` le lien est fabriqué chez le fournisseur d'identité ;
+ * le renouvellement et le fait partent après, chacun seul. Un journal en panne
  * échoue la requête — le lien n'est pas rendu, donc pas remis.
  */
 @CommandHandler(IssuePasswordLinkCommand)
@@ -56,6 +63,7 @@ export class IssuePasswordLinkHandler implements ICommandHandler<
     private readonly clock: Clock,
     private readonly events: DomainEventPublisher,
     private readonly names: AccountJournalNames,
+    private readonly renewal: InvitationRenewal,
   ) {}
 
   async execute(command: IssuePasswordLinkCommand): Promise<IssuedPasswordLink> {
@@ -64,6 +72,12 @@ export class IssuePasswordLinkHandler implements ICommandHandler<
       throw new PendingAccessNotFoundError(command.userId);
     }
     const url = await this.identity.issuePasswordLink(subject);
+    const renewed = await this.renewal.renew(command.userId, command.companyId, this.clock.now());
+    if (renewed === null) {
+      // Le lien fabriqué n'est pas rendu : sans invitation renouvelée, il ne
+      // mènerait qu'à un refus.
+      throw new PendingInvitationNotFoundError(command.userId, command.companyId);
+    }
     await this.events.publishTraced(
       new PasswordLinkIssuedEvent(command.userId, await this.names.person(command.userId)),
     );

@@ -15,6 +15,12 @@ import type { JournalFact } from "../../../platform/journal/journal-fact.js";
 import { Journal } from "../../../platform/journal/journal.js";
 import { Clock } from "../../../platform/time/clock.js";
 import { PrismaStaffAccessResolver } from "../prisma-staff-access.resolver.js";
+import { StaffEntryRefusal } from "../staff-entry-refusal.js";
+import { BackgroundWork } from "../../../platform/events/background-work.js";
+import {
+  StaffNotifier,
+  type StaffNotice,
+} from "../../notifications/domain/ports/staff-notifier.js";
 import type { StaffPrincipal } from "../../../platform/auth/staff-principal.js";
 
 /** Ce que le résolveur lit d'une fiche. */
@@ -32,7 +38,23 @@ interface StaffRow {
   };
   readonly status: "pending" | "invited" | "active" | "suspended";
   readonly auth0Id: string | null;
+  readonly invitedAt: Date | null;
   readonly overrides: { resource: string; action: string; effect: string }[];
+}
+
+/** La cloche doublée : retient ce qu'on lui fait sonner. */
+class RecordingBell extends StaffNotifier {
+  readonly notices: StaffNotice[] = [];
+
+  notify(notices: readonly StaffNotice[]): Promise<void> {
+    this.notices.push(...notices);
+    return Promise.resolve();
+  }
+}
+
+/** Ce que l'entrée d'une fiche demande en plus du résolveur : le refus et ce qu'il fait sonner. */
+function entryProviders(bell: StaffNotifier = new RecordingBell()) {
+  return [{ provide: StaffNotifier, useValue: bell }, BackgroundWork, StaffEntryRefusal];
 }
 
 /** Le journal, qui retient aussi l'AUTEUR que le contexte lui présente à l'écriture. */
@@ -103,6 +125,7 @@ async function buildResolver(
       { provide: Clock, useValue: clock },
       { provide: Journal, useValue: journal },
       { provide: AppConfig, useValue: { bootstrapAdminEmail: (): string => RESCUE_EMAIL } },
+      ...entryProviders(),
       PrismaStaffAccessResolver,
     ],
   }).compile();
@@ -176,12 +199,18 @@ function row(overrides: Partial<StaffRow> = {}): StaffRow {
     roleDefinition: seeded("comptabilite"),
     status: "active",
     auth0Id: null,
+    invitedAt: null,
     overrides: [],
     ...overrides,
   };
 }
 
 const NOW = new Date("2026-08-12T10:00:00.000Z");
+const DAY_MS = 24 * 60 * 60 * 1000;
+/** Invitée hier : l'invitation vit. */
+const YESTERDAY = new Date(NOW.getTime() - DAY_MS);
+/** Invitée il y a trois semaines : l'invitation a expiré. */
+const THREE_WEEKS_AGO = new Date(NOW.getTime() - 21 * DAY_MS);
 const TOKEN: StaffPrincipal = {
   subject: "auth0|colette",
   email: "compta@lfc.test",
@@ -320,7 +349,9 @@ describe("PrismaStaffAccessResolver — l'entrée se constate", () => {
   });
 
   it("active une fiche invitée déjà liée, sans toucher au lien", async () => {
-    const { prisma, updates } = fakePrisma(row({ auth0Id: TOKEN.subject, status: "invited" }));
+    const { prisma, updates } = fakePrisma(
+      row({ auth0Id: TOKEN.subject, status: "invited", invitedAt: YESTERDAY }),
+    );
 
     await (await buildResolver(prisma, new MovableClock(NOW))).resolve(TOKEN);
 
@@ -403,7 +434,9 @@ describe("PrismaStaffAccessResolver — la première entrée au journal", () => 
 
   it("écrit `activated` aussi quand la fiche était DÉJÀ liée — l'invitation relie d'avance", async () => {
     const journal = new AuthoredJournal();
-    const { prisma, updates } = fakePrisma(row({ auth0Id: TOKEN.subject, status: "invited" }));
+    const { prisma, updates } = fakePrisma(
+      row({ auth0Id: TOKEN.subject, status: "invited", invitedAt: YESTERDAY }),
+    );
 
     await (await buildResolver(prisma, new MovableClock(NOW), journal)).resolve(TOKEN);
 
@@ -418,13 +451,16 @@ describe("PrismaStaffAccessResolver — la première entrée au journal", () => 
    * requête tant que la fiche resterait `invited`.
    */
   it("journal en panne : la personne entre, le fait manque, l'erreur est journalisée", async () => {
-    const { prisma, updates } = fakePrisma(row({ auth0Id: TOKEN.subject, status: "invited" }));
+    const { prisma, updates } = fakePrisma(
+      row({ auth0Id: TOKEN.subject, status: "invited", invitedAt: YESTERDAY }),
+    );
     const moduleRef = await Test.createTestingModule({
       providers: [
         { provide: PrismaService, useValue: prisma },
         { provide: Clock, useValue: new MovableClock(NOW) },
         { provide: Journal, useValue: new RecordingJournal(new Error("journal en panne")) },
         { provide: AppConfig, useValue: { bootstrapAdminEmail: (): string => RESCUE_EMAIL } },
+        ...entryProviders(),
         ObservedResolver,
       ],
     }).compile();
@@ -493,6 +529,7 @@ async function observed(prisma: object): Promise<ObservedResolver> {
       { provide: Clock, useValue: new MovableClock(NOW) },
       { provide: Journal, useValue: new AuthoredJournal() },
       { provide: AppConfig, useValue: { bootstrapAdminEmail: (): string => RESCUE_EMAIL } },
+      ...entryProviders(),
       ObservedResolver,
     ],
   }).compile();
@@ -668,5 +705,100 @@ describe("PrismaStaffAccessResolver — 🔴 le secours s'ancre sur la fiche li�
     const access = await (await buildResolver(prisma, new MovableClock(NOW))).resolve(rescueToken);
 
     expect(access).toBeNull();
+  });
+});
+
+/**
+ * Régression (2026-10-10, `architecture-compte-client-cycle-de-vie.md` §8.1 bis,
+ * point 8) : une fiche `invited` dont le lien était mort entrait encore par
+ * « mot de passe oublié » ou par le rapprochement d'adresse vérifiée.
+ */
+describe("PrismaStaffAccessResolver — l'invitation expirée", () => {
+  async function resolverWithBell(prisma: object, journal: Journal, bell: RecordingBell) {
+    const moduleRef = await Test.createTestingModule({
+      providers: [
+        { provide: PrismaService, useValue: prisma },
+        { provide: Clock, useValue: new MovableClock(NOW) },
+        { provide: Journal, useValue: journal },
+        { provide: AppConfig, useValue: { bootstrapAdminEmail: (): string => RESCUE_EMAIL } },
+        ...entryProviders(bell),
+        PrismaStaffAccessResolver,
+      ],
+    }).compile();
+    return {
+      resolver: moduleRef.get(PrismaStaffAccessResolver),
+      work: moduleRef.get(BackgroundWork),
+    };
+  }
+
+  it("🔴 refuse une fiche invitée dont l'invitation a expiré, sans la toucher — et le dit", async () => {
+    const journal = new AuthoredJournal();
+    const bell = new RecordingBell();
+    const { prisma, updates, aliases } = fakePrisma(
+      row({ auth0Id: TOKEN.subject, status: "invited", invitedAt: THREE_WEEKS_AGO }),
+    );
+    const { resolver, work } = await resolverWithBell(prisma, journal, bell);
+
+    await expect(resolver.resolve(TOKEN)).rejects.toMatchObject({
+      code: "staff.invitation.expired",
+      message: "Votre accès a expiré. Demandez à un administrateur de vous le rouvrir.",
+    });
+    await work.whenIdle();
+
+    expect(updates).toEqual([]);
+    expect(aliases).toEqual([]);
+    expect(journal.types()).toEqual(["staff_user.entry_refused_invitation_expired"]);
+    expect(journal.authors).toEqual([{ type: "staff", id: "s1" }]);
+    expect(bell.notices).toMatchObject([
+      {
+        kind: "staff.invitation_expired",
+        audience: "staff_access:write",
+        idempotencyKey: `notification:staff.invitation_expired:s1:${THREE_WEEKS_AGO.toISOString()}`,
+      },
+    ]);
+  });
+
+  it("refuse aussi au rapprochement par adresse vérifiée (fiche jamais liée)", async () => {
+    const { prisma, updates } = fakePrisma(
+      null,
+      row({ status: "invited", invitedAt: THREE_WEEKS_AGO }),
+    );
+    const { resolver } = await resolverWithBell(prisma, new AuthoredJournal(), new RecordingBell());
+
+    await expect(resolver.resolve(TOKEN)).rejects.toMatchObject({
+      code: "staff.invitation.expired",
+    });
+    expect(updates).toEqual([]);
+  });
+
+  it("refuse une fiche invitée sans date d'invitation : rien n'a jamais ouvert ce lien", async () => {
+    const { prisma } = fakePrisma(
+      row({ auth0Id: TOKEN.subject, status: "invited", invitedAt: null }),
+    );
+    const { resolver } = await resolverWithBell(prisma, new AuthoredJournal(), new RecordingBell());
+
+    await expect(resolver.resolve(TOKEN)).rejects.toMatchObject({
+      code: "staff.invitation.expired",
+    });
+  });
+
+  it("n'entre pas quand l'invitation expire entre la lecture et l'écriture", async () => {
+    // La condition est dans le `WHERE` : 0 ligne touchée, aucun accès rendu.
+    const { prisma } = fakePrisma(
+      row({ auth0Id: TOKEN.subject, status: "invited", invitedAt: YESTERDAY }),
+      null,
+      true,
+    );
+    const { resolver } = await resolverWithBell(prisma, new AuthoredJournal(), new RecordingBell());
+
+    await expect(resolver.resolve(TOKEN)).resolves.toBeNull();
+  });
+
+  it("laisse entrer une fiche `pending` — elle n'a jamais reçu de lien, la règle ne la vise pas", async () => {
+    const { prisma, updates } = fakePrisma(null, row({ status: "pending" }));
+    const { resolver } = await resolverWithBell(prisma, new AuthoredJournal(), new RecordingBell());
+
+    await expect(resolver.resolve(TOKEN)).resolves.toMatchObject({ staffUserId: "s1" });
+    expect(updates).toHaveLength(1);
   });
 });

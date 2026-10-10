@@ -11,6 +11,7 @@ import { RemoveStaffUserHandler } from "./directory/application/remove-staff-use
 import { SetStaffStatusHandler } from "./directory/application/set-staff-status.handler.js";
 import { UpdateStaffUserHandler } from "./directory/application/update-staff-user.handler.js";
 import { PrismaStaffAccessResolver } from "./permissions/prisma-staff-access.resolver.js";
+import { StaffEntryRefusal } from "./permissions/staff-entry-refusal.js";
 import { StaffAccessCache } from "./permissions/staff-access-cache.port.js";
 import { StaffIdentityPort } from "./invitations/staff-identity.port.js";
 import { StaffNavPreferencesRepository } from "./directory/domain/staff-nav-preferences.repository.js";
@@ -76,6 +77,7 @@ import {
     // L'adaptateur de résolution vit ICI, avec les tables qu'il lit ; c'est la
     // racine de composition qui le relie au port (cf. `StaffAccessModule`).
     PrismaStaffAccessResolver,
+    StaffEntryRefusal,
     // Le resolver EST le cache : il n'y en a qu'un, et l'annuaire ne le connaît
     // que par ce port étroit — il ne sait ni sa clé, ni sa durée de vie.
     { provide: StaffAccessCache, useExisting: PrismaStaffAccessResolver },

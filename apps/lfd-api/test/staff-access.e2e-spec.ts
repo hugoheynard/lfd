@@ -10,7 +10,7 @@
 import { AdminTokenVerifier } from "../src/platform/auth/admin-token.verifier.js";
 import type { StaffUserView } from "@lfd/contracts";
 
-import { bootstrapE2e, E2E_STAFF_SUB, jsonBody, type E2eContext } from "./e2e-harness.js";
+import { bootstrapE2e, daysAgo, E2E_STAFF_SUB, jsonBody, type E2eContext } from "./e2e-harness.js";
 
 /** Le comptable : il écrit les commandes, ne touche ni aux réglages ni à l'annuaire. */
 const ACCOUNTANT_SUB = "staff-comptable";
@@ -440,6 +440,9 @@ describe("le mur staff — la première entrée se journalise", () => {
         email: NEWCOMER_EMAIL,
         role: "comptabilite",
         status: "invited",
+        // Une invitation qui VIT : une expirée est refusée depuis le 2026-10-10
+        // (`invitation-expiry.e2e-spec.ts`).
+        invitedAt: new Date(daysAgo(1)),
       },
     });
 

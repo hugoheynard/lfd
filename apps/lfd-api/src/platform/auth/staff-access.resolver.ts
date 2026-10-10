@@ -17,7 +17,13 @@ import type { StaffAccess, StaffPrincipal } from "./staff-principal.js";
  * traîner l'annuaire derrière lui.
  */
 export abstract class StaffAccessResolver {
-  /** @returns l'effectif de cette personne, ou `null` si l'annuaire l'ignore. */
+  /**
+   * @returns l'effectif de cette personne, ou `null` si l'annuaire l'ignore.
+   * @throws {AuthorizationError} un refus NOMMÉ, quand l'annuaire connaît la
+   *   personne mais ne la laisse pas entrer et doit lui dire pourquoi — une
+   *   invitation expirée (2026-10-10). Le filtre d'erreurs en fait une 403
+   *   avec son message ; `null` reste le refus muet de l'inconnu.
+   */
   abstract resolve(principal: StaffPrincipal): Promise<StaffAccess | null>;
 
   /**

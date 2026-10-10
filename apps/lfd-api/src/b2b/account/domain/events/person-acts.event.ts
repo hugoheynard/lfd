@@ -223,3 +223,28 @@ export class LoginMethodSwitchedAtFirstEntryEvent implements JournaledEvent {
     };
   }
 }
+
+/**
+ * **Une personne invitée refusée à l'entrée : aucune de ses invitations ne vit
+ * encore** (2026-10-10, `architecture-compte-client-cycle-de-vie.md` §8.1 bis).
+ *
+ * Écrit au refus, par code, par Google ou par le lien — c'est-à-dire là où
+ * l'entrée se serait faite des mois après, avant ce jour-là. La charge ne porte
+ * que le nom : ni le `sub`, ni l'adresse.
+ */
+export class EntryRefusedOnExpiredInvitationEvent implements JournaledEvent {
+  constructor(
+    readonly userId: string,
+    /** Le nom de la personne, ou `null` si son profil n'en porte pas. */
+    readonly name: string | null,
+  ) {}
+
+  journalFact(): JournalFact {
+    return {
+      type: ACCOUNT_FACTS.entryRefusedInvitationExpired,
+      subjectType: "user",
+      subjectId: this.userId,
+      payload: { ...labelOf(this.name) },
+    };
+  }
+}

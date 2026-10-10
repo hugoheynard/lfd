@@ -5,10 +5,11 @@ import {
   type ProvisionedIdentity,
 } from "../../../domain/ports/customer-identity.port.js";
 import { PendingAccessNotFoundError } from "../../../domain/errors/account-errors.js";
+import { PendingInvitationNotFoundError } from "../../../domain/errors/invitation-errors.js";
 import { PendingAccessReader } from "../../../domain/ports/pending-access.reader.js";
 import { IssuePasswordLinkCommand } from "../issue-password-link.command.js";
 import { IssuePasswordLinkHandler } from "../issue-password-link.handler.js";
-import { journalNames } from "./member-acts-doubles.js";
+import { journalNames, RecordingRenewal } from "./member-acts-doubles.js";
 
 function reader(subject: string | null): PendingAccessReader {
   return {
@@ -74,6 +75,7 @@ describe("fabriquer un lien à remettre à la main", () => {
       { now: () => new Date("2026-08-14T09:00:00.000Z") },
       new RecordingPublisher(),
       journalNames(),
+      new RecordingRenewal(),
     );
 
     const link = await handler.execute(new IssuePasswordLinkCommand("usr_1"));
@@ -95,11 +97,54 @@ describe("fabriquer un lien à remettre à la main", () => {
       { now: () => new Date("2026-08-14T09:00:00.000Z") },
       new RecordingPublisher(),
       journalNames(),
+      new RecordingRenewal(),
     );
 
     await expect(handler.execute(new IssuePasswordLinkCommand("usr_1"))).rejects.toThrow(
       PendingAccessNotFoundError,
     );
     expect(issued).toEqual([]);
+  });
+});
+
+describe("le lien remis renouvelle l'invitation d'UNE société (§8.1 bis, point 4)", () => {
+  const NOW = new Date("2026-08-14T09:00:00.000Z");
+
+  function handlerWith(renewal: RecordingRenewal, publisher = new RecordingPublisher()) {
+    return new IssuePasswordLinkHandler(
+      reader("auth0|abc"),
+      identity("https://auth/ticket-neuf"),
+      { now: () => NOW },
+      publisher,
+      journalNames(),
+      renewal,
+    );
+  }
+
+  it("renouvelle la société désignée, à l'instant de l'horloge", async () => {
+    const renewal = new RecordingRenewal();
+
+    await handlerWith(renewal).execute(new IssuePasswordLinkCommand("usr_1", "cmp_b"));
+
+    expect(renewal.renewed).toEqual([{ userId: "usr_1", companyId: "cmp_b", at: NOW }]);
+  });
+
+  it("sans société désignée, laisse l'adaptateur prendre celle que la file affiche", async () => {
+    const renewal = new RecordingRenewal();
+
+    await handlerWith(renewal).execute(new IssuePasswordLinkCommand("usr_1"));
+
+    expect(renewal.renewed).toEqual([{ userId: "usr_1", companyId: null, at: NOW }]);
+  });
+
+  it("refuse — et ne rend pas le lien — quand il n'y a aucune invitation à renouveler", async () => {
+    // Un lien sans invitation vivante mènerait la personne à un refus d'entrée.
+    const publisher = new RecordingPublisher();
+    const handler = handlerWith(new RecordingRenewal(null), publisher);
+
+    await expect(handler.execute(new IssuePasswordLinkCommand("usr_1", "cmp_x"))).rejects.toThrow(
+      PendingInvitationNotFoundError,
+    );
+    expect(publisher.traced).toEqual([]);
   });
 });

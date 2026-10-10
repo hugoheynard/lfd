@@ -191,6 +191,9 @@ import { PrismaImpersonationSubjects } from "./infrastructure/prisma-impersonati
 import { PrincipalResolver } from "../../platform/auth/principal.resolver.js";
 import { CustomerPrincipalResolver } from "./infrastructure/customer-principal.resolver.js";
 import { UnknownSubjectAdmission } from "./infrastructure/unknown-subject-admission.js";
+import { MembershipAcceptance } from "./infrastructure/membership-acceptance.js";
+import { InvitationRenewal } from "./domain/ports/invitation-renewal.js";
+import { PrismaInvitationRenewal } from "./infrastructure/prisma-invitation-renewal.js";
 
 /**
  * Contexte **compte** : la personne (son profil) et ses entreprises.
@@ -332,6 +335,7 @@ import { UnknownSubjectAdmission } from "./infrastructure/unknown-subject-admiss
     { provide: DirectDebitBlockReader, useClass: PrismaDirectDebitBlockReader },
     { provide: CounterCustomerReader, useClass: PrismaCounterCustomerReader },
     { provide: PendingAccessReader, useClass: PrismaPendingAccessReader },
+    { provide: InvitationRenewal, useClass: PrismaInvitationRenewal },
     ListPendingAccessHandler,
     IssuePasswordLinkHandler,
     { provide: CustomerSheetReader, useClass: PrismaCustomerSheetReader },
@@ -409,6 +413,7 @@ import { UnknownSubjectAdmission } from "./infrastructure/unknown-subject-admiss
     { provide: PrincipalResolver, useClass: CustomerPrincipalResolver },
     // Ce qu'on fait d'un `sub` inconnu sous une adresse connue (2026-10-09).
     UnknownSubjectAdmission,
+    MembershipAcceptance,
     // Le bypass d'impersonation de développement demandait `prisma.user` depuis
     // `platform/auth`. La table est ici, l'adaptateur aussi.
     { provide: ImpersonationSubjects, useClass: PrismaImpersonationSubjects },

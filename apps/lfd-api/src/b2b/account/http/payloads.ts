@@ -162,3 +162,16 @@ export type AdminCreateCompanyPayload = z.infer<typeof adminCreateCompanyPayload
 export const blockDirectDebitPayload = z.strictObject({ reason: z.string() });
 
 export type BlockDirectDebitPayload = z.infer<typeof blockDirectDebitPayload>;
+
+/**
+ * La remise d'un lien de la main à la main : la société dont on renouvelle
+ * l'invitation (§8.1 bis, point 4, 2026-10-10). Facultative tant que les deux
+ * écrans du back-office envoient `{}` — le serveur prend alors celle que la
+ * file affiche. Le corps entier l'est aussi : la route n'en exigeait aucun
+ * avant ce jour, et un appelant qui n'en envoie pas ne doit pas tomber en 400.
+ */
+export const issuePasswordLinkPayload = z
+  .object({ companyId: z.string().min(1).optional() })
+  .optional();
+
+export type IssuePasswordLinkPayload = z.infer<typeof issuePasswordLinkPayload>;

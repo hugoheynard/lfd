@@ -14,9 +14,17 @@ import { PASSWORD_TICKET_TTL_SECONDS } from "../../identity/auth0-identity.gatew
  * « invitée » sur un lien mort. Deux nombres écrits séparément pour dire la
  * même chose finissent toujours par diverger.
  *
- * **Aucun balayage n'existe, et aucun n'est nécessaire** : le lien se révoque
- * tout seul chez Auth0. Cette règle ne sert qu'à le **dire** à l'écran ; le
- * geste de sortie est le renvoi, qui frappe un lien neuf.
+ * ⚠️ **Cette règle est lue à l'ENTRÉE depuis le 2026-10-10**, plus seulement à
+ * l'écran. Ce paragraphe disait qu'« aucun balayage n'est nécessaire : le lien
+ * se révoque tout seul chez Auth0 ». C'était vrai tant que le lien de mot de
+ * passe était la seule porte ; depuis le 2026-10-09, la connexion par code
+ * e-mail et Google entrent sous la même adresse sans lui, et une invitation
+ * expirée ouvrait encore la société des mois après. Les deux résolveurs
+ * (`customer-principal.resolver.ts`, `unknown-subject-admission.ts`,
+ * `prisma-staff-access.resolver.ts`, relus le 2026-10-10) refusent donc
+ * l'entrée sur une invitation expirée — rien n'est balayé, le refus se fait à
+ * la requête (`architecture-compte-client-cycle-de-vie.md` §8.1 bis). Le geste
+ * de sortie reste le renvoi, qui frappe un lien neuf et repose la date.
  *
  * Elle vit dans `shared/` parce qu'elle a **deux** usagers — le contact d'une
  * société cliente et le membre de l'équipe. Une invitation périmée doit l'être
@@ -46,4 +54,23 @@ export function invitationExpiresAt(invitedAt: Date): Date {
  */
 export function isInvitationExpired(invitedAt: Date, now: Date): boolean {
   return now.getTime() > invitationExpiresAt(invitedAt).getTime();
+}
+
+/**
+ * L'invitation **vit-elle** encore ? Le contraire exact de
+ * {@link isInvitationExpired}, nommé pour l'entrée : c'est la question qu'un
+ * résolveur pose, et la double négation y a déjà coûté une lecture fausse.
+ */
+export function isInvitationAlive(invitedAt: Date, now: Date): boolean {
+  return !isInvitationExpired(invitedAt, now);
+}
+
+/**
+ * La plus ancienne date d'invitation qui vit encore à `now` — la borne qu'une
+ * écriture conditionnée met dans son `WHERE` (`invited_at >= borne`), pour que
+ * la règle tienne dans la même instruction SQL que l'écriture. Même borne
+ * inclusive que {@link isInvitationExpired}.
+ */
+export function oldestLiveInvitation(now: Date): Date {
+  return new Date(now.getTime() - INVITATION_LIFETIME_MS);
 }

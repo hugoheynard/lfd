@@ -112,6 +112,9 @@ describe("la fiche rend UNE liste d'interlocuteurs", () => {
       emailVerified: true,
     });
     await attachTo(ctx.prisma, active.id, companyId, CustomerRole.owner);
+    // Elle est ENTRÉE par ce rattachement : depuis le 2026-10-10, l'état se lit
+    // sur le rattachement (accepté ou non), plus seulement sur la personne.
+    await ctx.asSub("auth0|actif").get("/me").expect(200);
 
     const [holder] = await contactsOf();
 

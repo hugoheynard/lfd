@@ -29,11 +29,16 @@ export interface AccessRow {
   readonly status: UserStatus;
   readonly emailVerified: boolean;
   /**
-   * Quand elle a été rattachée **à cette société** — la date du membership, pas
-   * celle du compte : la même personne peut avoir été invitée ailleurs il y a un
-   * an et ici hier.
+   * Quand l'invitation **à cette société** a été émise ou renouvelée — celle du
+   * rattachement, pas du compte : la même personne peut avoir été invitée
+   * ailleurs il y a un an et ici hier. Lue sur `memberships.invited_at` depuis
+   * le 2026-10-10, comme l'entrée : jusque-là `created_at`, qu'un lien remis
+   * ne renouvelait pas, et l'écran disait « expirée » d'une invitation que
+   * l'entrée aurait acceptée.
    */
-  readonly attachedAt: Date;
+  readonly invitedAt: Date;
+  /** Quand la personne est entrée par ce rattachement ; `null` = pas encore. */
+  readonly acceptedAt: Date | null;
 }
 
 /**
@@ -121,20 +126,27 @@ interface AccessState {
 /**
  * L'état d'accès, **échéance comprise**, ou l'absence des deux.
  *
- * L'expiration est calculée ici plutôt que lue en base : le balayage qui révoque
- * pour de bon ne passe que quelques fois par jour, et entre deux passages
- * l'écran doit dire la vérité — pas « invité » sur un lien mort depuis une
- * semaine. La règle, elle, n'est écrite qu'une fois (`isInvitationExpired`) et
- * sert aux deux.
+ * L'expiration est calculée ici plutôt que lue en base, avec la même règle
+ * (`isInvitationExpired`) que l'entrée, qui refuse une invitation expirée
+ * depuis le 2026-10-10 (`customer-principal.resolver.ts`,
+ * `unknown-subject-admission.ts`). ⚠️ Ce commentaire citait un « balayage qui
+ * révoque pour de bon […] quelques fois par jour » : il n'a jamais existé
+ * (vérifié le 2026-10-10 — `ExpireStaleInvitationsCommand` n'est écrite nulle
+ * part). Rien n'est balayé ; c'est l'entrée qui refuse.
+ *
+ * L'état se lit sur le RATTACHEMENT : non accepté, il est `invited` tant que
+ * son invitation vit et `expired` ensuite — même pour une personne active
+ * ailleurs, que l'entrée ne laisse pas non plus ouvrir cette société.
  */
 function accessState(row: AccessRow | undefined, now: Date): AccessState {
   if (row === undefined) {
     return { access: "none", emailVerified: false };
   }
-  if (row.status === "invited" && isInvitationExpired(row.attachedAt, now)) {
-    return { access: "expired", emailVerified: row.emailVerified };
+  if (row.status === "disabled" || row.acceptedAt !== null) {
+    return { access: toAccess(row.status), emailVerified: row.emailVerified };
   }
-  return { access: toAccess(row.status), emailVerified: row.emailVerified };
+  const expired = isInvitationExpired(row.invitedAt, now);
+  return { access: expired ? "expired" : "invited", emailVerified: row.emailVerified };
 }
 
 /**

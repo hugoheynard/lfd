@@ -1,6 +1,8 @@
 import { Injectable } from "@nestjs/common";
 
 import { PrismaService } from "../../../platform/database/prisma.service.js";
+import { Clock } from "../../../platform/time/clock.js";
+import { openingMembership } from "../../shared/membership-opening/opening-membership.js";
 import { LoyaltyConversionGate } from "../domain/ports/loyalty-conversion.gate.js";
 import type { LoyaltyHolder } from "../domain/value-objects/loyalty-holder.js";
 
@@ -18,7 +20,10 @@ const ACTIVE = "active";
  */
 @Injectable()
 export class PrismaLoyaltyConversionGate extends LoyaltyConversionGate {
-  constructor(private readonly prisma: PrismaService) {
+  constructor(
+    private readonly prisma: PrismaService,
+    private readonly clock: Clock,
+  ) {
     super();
   }
 
@@ -33,8 +38,13 @@ export class PrismaLoyaltyConversionGate extends LoyaltyConversionGate {
       });
       return user?.status === ACTIVE;
     }
-    const membership = await this.prisma.membership.findUnique({
-      where: { userId_companyId: { userId: actorUserId, companyId: holder.id } },
+    const membership = await this.prisma.membership.findFirst({
+      // Seul un rattachement qui OUVRE compte (§8.1 bis, 2026-10-10).
+      where: {
+        userId: actorUserId,
+        companyId: holder.id,
+        ...openingMembership(this.clock.now()),
+      },
       select: { user: { select: { status: true } } },
     });
     return membership?.user.status === ACTIVE;

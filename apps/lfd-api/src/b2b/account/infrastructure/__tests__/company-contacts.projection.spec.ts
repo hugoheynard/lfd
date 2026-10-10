@@ -45,7 +45,8 @@ const ACTIVE: AccessRow = {
   email: "camille@halles.fr",
   status: "active",
   emailVerified: true,
-  attachedAt: YESTERDAY,
+  invitedAt: YESTERDAY,
+  acceptedAt: YESTERDAY,
 };
 
 describe("projectContacts", () => {
@@ -85,11 +86,12 @@ describe("projectContacts", () => {
 });
 
 describe("projectContacts — l'échéance d'une invitation", () => {
-  const invited = (attachedAt: Date): AccessRow => ({
+  const invited = (invitedAt: Date): AccessRow => ({
     email: "camille@halles.fr",
     status: "invited",
     emailVerified: false,
-    attachedAt,
+    invitedAt,
+    acceptedAt: null,
   });
 
   it("laisse « invité » tant que le délai court", () => {
@@ -98,11 +100,9 @@ describe("projectContacts — l'échéance d'une invitation", () => {
     expect(rows[0]?.access).toBe("invited");
   });
 
-  it("dit « expirée » au-delà, sans attendre le balayage", () => {
-    // Le balayage ne passe que quelques fois par jour ; entre deux passages
-    // l'écran doit dire la vérité, pas « invité » sur un lien mort depuis une
-    // semaine. Le lien de mot de passe est de toute façon périmé chez le
-    // fournisseur — on ne fait que cesser de l'ignorer.
+  it("dit « expirée » au-delà — ce que l'entrée refuse aussi", () => {
+    // Aucun balayage n'existe (vérifié le 2026-10-10) : l'entrée refuse une
+    // invitation expirée, et l'écran dit la même chose qu'elle.
     const rows = projectContacts(HOLDER, [], [invited(LONG_AGO)], NOW);
 
     expect(rows[0]?.access).toBe("expired");
@@ -111,8 +111,38 @@ describe("projectContacts — l'échéance d'une invitation", () => {
   it("ne périme JAMAIS un accès déjà réclamé", () => {
     // Une personne entrée il y a deux ans reste active : l'échéance porte sur
     // l'invitation, pas sur l'ancienneté du client.
-    const rows = projectContacts(HOLDER, [], [{ ...ACTIVE, attachedAt: LONG_AGO }], NOW);
+    const rows = projectContacts(
+      HOLDER,
+      [],
+      [{ ...ACTIVE, invitedAt: LONG_AGO, acceptedAt: LONG_AGO }],
+      NOW,
+    );
 
     expect(rows[0]?.access).toBe("active");
+  });
+
+  it("dit « expirée » pour une personne active AILLEURS dont l'invitation ici a expiré", () => {
+    // Le statut `active` est porté par la personne : entrée par une autre
+    // société, elle n'a pas accepté celle-ci, et l'entrée ne l'ouvre pas
+    // (§8.1 bis, objection B2). L'écran ne doit pas dire « active ».
+    const rows = projectContacts(
+      HOLDER,
+      [],
+      [{ ...ACTIVE, invitedAt: LONG_AGO, acceptedAt: null }],
+      NOW,
+    );
+
+    expect(rows[0]?.access).toBe("expired");
+  });
+
+  it("dit « invitée » pour une personne active ailleurs tant que l'invitation ici vit", () => {
+    const rows = projectContacts(
+      HOLDER,
+      [],
+      [{ ...ACTIVE, invitedAt: YESTERDAY, acceptedAt: null }],
+      NOW,
+    );
+
+    expect(rows[0]?.access).toBe("invited");
   });
 });

@@ -478,6 +478,19 @@ export const ACCOUNTS_AND_CARTS_FACTS = {
     payload({ subjectLabel: subjectLabel().optional(), ...loginMethod }),
   ),
   /**
+   * **Une entrée refusée sur une invitation expirée** (2026-10-10,
+   * `architecture-compte-client-cycle-de-vie.md` §8.1 bis). Une personne
+   * invitée s'est connectée — par code, par Google ou par son lien — alors
+   * qu'aucun de ses rattachements n'avait d'invitation vivante. Elle reste
+   * `invited`, et aucune société ne s'ouvre.
+   *
+   * 🔴 **Pas le `sub`**, ni d'adresse : la personne est nommée par son nom,
+   * omis si son profil n'en porte pas.
+   */
+  "user.entry_refused_invitation_expired": fact(
+    payload({ subjectLabel: subjectLabel().optional() }),
+  ),
+  /**
    * Une méthode de connexion a été détachée. Seule une identité **secondaire**
    * peut l'être : la principale porte le compte et ne se délie jamais.
    */

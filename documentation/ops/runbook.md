@@ -414,6 +414,38 @@ admin (fait le 2026-09-17).
 plus la fiche de l'admin racine. Celle qui l'a liée en premier la garde ;
 pour changer, remettre `auth0_id` à `NULL` sur la base **locale**.
 
+## Après avoir déployé « l'invitation expirée refusée à l'entrée »
+
+Migration `20261010140000_l_invitation_du_rattachement` (2026-10-10,
+[`architecture-compte-client-cycle-de-vie.md`](../auth-inscription/architecture-compte-client-cycle-de-vie.md)
+§8.1 bis). L'entrée — client et staff — refuse désormais une invitation de
+plus de 7 jours. La migration donne une **grâce** : toute invitation en cours
+repart de l'instant du déploiement.
+
+**Juste après le déploiement, lire en production** — les deux doivent rendre `0` :
+
+```sql
+-- une personne invitée dont un rattachement n'a pas reçu la grâce
+select count(*) from memberships m join users u on u.id = m.user_id
+where u.status = 'invited' and m.invited_at < now() - interval '1 hour';
+
+-- une fiche staff invitée sans date d'invitation (elle serait refusée)
+select count(*) from staff_users where status = 'invited' and invited_at is null;
+```
+
+**Sept jours après** : les invitations non acceptées d'ici là ferment. La
+cloche « Invitation expirée » sonne chez les détenteurs de
+`b2b_companies:write` (client) ou de `staff_access:write` (équipe) à la
+première tentative de la personne ; le geste de sortie est un **lien neuf**
+depuis la fiche de la société, ou une réinvitation depuis l'annuaire.
+
+⚠️ La boutique n'affiche pas encore le message du refus (`account.invitation.expired`) :
+la personne voit des écrans en erreur, sans explication. C'est la cloche qui
+prévient le commercial.
+
+**Retour arrière** : aucun. Retirer `invited_at` / `accepted_at` rouvrirait
+le trou que la migration ferme.
+
 ## Avant de déployer le fil v11 (les opérations datées)
 
 Lot 2 de [`architecture-operations-datees.md`](../operations-datees/architecture-operations-datees.md)

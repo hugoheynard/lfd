@@ -1,6 +1,8 @@
 import { Injectable } from "@nestjs/common";
 
 import { PrismaService } from "../../../platform/database/prisma.service.js";
+import { Clock } from "../../../platform/time/clock.js";
+import { openingMembership } from "../../shared/membership-opening/opening-membership.js";
 import {
   AccountReader,
   type AccountView,
@@ -33,7 +35,10 @@ interface ContactRow {
  */
 @Injectable()
 export class PrismaAccountReader extends AccountReader {
-  constructor(private readonly prisma: PrismaService) {
+  constructor(
+    private readonly prisma: PrismaService,
+    private readonly clock: Clock,
+  ) {
     super();
   }
 
@@ -48,6 +53,9 @@ export class PrismaAccountReader extends AccountReader {
         phone: true,
         navPrefs: true,
         memberships: {
+          // Seules les sociétés que le rattachement OUVRE : une invitation
+          // expirée ne liste pas sa société (§8.1 bis, 2026-10-10).
+          where: openingMembership(this.clock.now()),
           orderBy: { createdAt: "asc" },
           select: {
             role: true,

@@ -393,6 +393,8 @@ describe("le staff, sur l'accès d'un client", () => {
       auth0Sub: "auth0|attend",
       status: UserStatus.invited,
     });
+    // Un lien renouvelle l'invitation d'une société (2026-10-10) : il en faut une.
+    await attachTo(ctx.prisma, waiting.id, companyId);
 
     await staff().post(`/admin/access-pending/${waiting.id}/link`).expect(201);
 

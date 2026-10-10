@@ -11,6 +11,7 @@ import {
   inUnit,
   name,
   plain,
+  said,
   subject,
   subjectLabelOf,
   text,
@@ -781,6 +782,17 @@ export const ACCOUNTS_PHRASES = {
   // l'atteste chez nous (plan `plan-page-mon-profil.md`, §7.2).
   'user.password_reset_requested': (fact) =>
     byActor(fact, [text('a demandé à changer son mot de passe')], selfLabel(fact)),
+  // Personne n'a agi : la personne a été refusée à l'entrée (2026-10-10,
+  // §8.1 bis). La phrase ne nomme donc pas d'auteur.
+  'user.entry_refused_invitation_expired': (fact) =>
+    said(
+      [
+        text('Entrée refusée à '),
+        ...person(fact, 'une personne invitée'),
+        text(' : son invitation a expiré'),
+      ],
+      ['subjectLabel'],
+    ),
   'user.password_link_issued': (fact) =>
     byActor(
       fact,

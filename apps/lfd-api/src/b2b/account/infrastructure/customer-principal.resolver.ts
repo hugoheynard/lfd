@@ -7,6 +7,16 @@ import { DomainEventPublisher } from "../../../platform/events/domain-event-publ
 import { PrincipalResolver } from "../../../platform/auth/principal.resolver.js";
 import type { Principal, VerifiedToken } from "../../../platform/auth/principal.js";
 import { UnknownSubjectAdmission } from "./unknown-subject-admission.js";
+import { MembershipAcceptance } from "./membership-acceptance.js";
+import { UnitOfWork } from "../../../platform/database/unit-of-work.js";
+import { Clock } from "../../../platform/time/clock.js";
+import { InvitationExpiredError } from "../domain/errors/invitation-errors.js";
+import {
+  awaitsAcceptance,
+  canEnter,
+  opensCompany,
+  type MembershipInvitation,
+} from "../domain/services/membership-entry.js";
 
 /** La personne + ses rattachements, réduits à ce que la résolution lit. */
 interface ResolvedUser {
@@ -14,13 +24,13 @@ interface ResolvedUser {
   readonly email: string;
   readonly status: UserStatus;
   readonly emailVerified: boolean;
-  readonly memberships: { readonly companyId: string; readonly role: CustomerRole }[];
+  readonly memberships: readonly ResolvedMembership[];
 }
 
-/** Ce qu'une connexion **prouve**, et qu'il faut donc recopier en base. */
-interface ProvenFacts {
-  status?: UserStatus;
-  emailVerified?: boolean;
+/** Un rattachement, avec ce que l'entrée en lit : son invitation. */
+interface ResolvedMembership extends MembershipInvitation {
+  readonly companyId: string;
+  readonly role: CustomerRole;
 }
 
 /**
@@ -49,6 +59,14 @@ interface ProvenFacts {
  * token prouve qu'il l'a suivi. On le passe donc `active` à cette occasion —
  * sinon le client à qui le commercial vient d'ouvrir un accès resterait dehors
  * pour toujours. `disabled` reste refusé : c'est une décision, pas une attente.
+ *
+ * ⚠️ **Depuis le 2026-10-10, seulement si une invitation vit encore**
+ * (`architecture-compte-client-cycle-de-vie.md` §8.1 bis). Présenter un jeton
+ * prouve la boîte, pas que l'invitation vaut encore : la connexion par code et
+ * Google entrent sans le lien, des mois après. L'entrée accepte les
+ * rattachements dont l'invitation vit, refuse si aucun ne l'accueille, et le
+ * `Principal` ne porte que les rattachements qui ouvrent (acceptés, ou
+ * invitation vivante) — y compris pour une personne active ailleurs.
  */
 @Injectable()
 export class CustomerPrincipalResolver extends PrincipalResolver {
@@ -56,6 +74,9 @@ export class CustomerPrincipalResolver extends PrincipalResolver {
     private readonly prisma: PrismaService,
     private readonly events: DomainEventPublisher,
     private readonly admission: UnknownSubjectAdmission,
+    private readonly acceptance: MembershipAcceptance,
+    private readonly unitOfWork: UnitOfWork,
+    private readonly clock: Clock,
   ) {
     super();
   }
@@ -64,8 +85,10 @@ export class CustomerPrincipalResolver extends PrincipalResolver {
    * Résout le `Principal` enrichi à partir d'un jeton vérifié. Provisionne le
    * self-signup absent (JIT), active l'invité qui se connecte pour la 1re fois.
    * @throws UnauthorizedException si le compte est désactivé.
+   * @throws {InvitationExpiredError} une personne invitée dont aucune invitation ne vit.
    */
   async resolve(token: VerifiedToken): Promise<Principal> {
+    const now = this.clock.now();
     const user = (await this.findBySub(token.subject)) ?? (await this.provision(token));
 
     if (user.status === UserStatus.disabled) {
@@ -75,7 +98,7 @@ export class CustomerPrincipalResolver extends PrincipalResolver {
     // ligne lue avant l'écriture, la requête qui apporte la preuve voyait encore
     // l'ancien `emailVerified` — et une exemption par adresse prouvée ne jouait
     // qu'à la requête SUIVANTE.
-    const recorded = await this.record(user, token);
+    const recorded = await this.record(await this.enter(user, now), token);
 
     // `subject` vient du token ; `userId`/`email`/`memberships` de la BASE (autorité).
     return {
@@ -83,15 +106,20 @@ export class CustomerPrincipalResolver extends PrincipalResolver {
       userId: recorded.id,
       email: recorded.email,
       emailProven: recorded.emailVerified,
-      memberships: recorded.memberships,
+      // Seulement ceux qui ouvrent : une invitation expirée n'ouvre pas sa
+      // société, même à une personne entrée par une autre (§8.1 bis, point 3).
+      memberships: recorded.memberships
+        .filter((membership) => opensCompany(membership, now))
+        .map(({ companyId, role }) => ({ companyId, role })),
       scopes: token.scopes,
     };
   }
 
   /**
-   * Recopie ce que **cette connexion** vient de prouver : l'invité devient
-   * actif, et l'adresse devient vérifiée si le token la prouve — celle en
-   * base, pas une autre (cf. {@link tokenProvesAddress}).
+   * Recopie ce que **cette connexion** vient de prouver : l'adresse devient
+   * vérifiée si le token la prouve — celle en base, pas une autre (cf.
+   * {@link tokenProvesAddress}). L'entrée de l'invité est à part
+   * ({@link enter}) : elle peut refuser, la recopie jamais.
    *
    * Écrit seulement si quelque chose change — une requête d'écriture par appel
    * authentifié serait un coût permanent pour un fait qui ne bouge qu'une fois.
@@ -101,18 +129,69 @@ export class CustomerPrincipalResolver extends PrincipalResolver {
    * @returns la personne telle qu'elle est en base APRÈS cette recopie.
    */
   private async record(user: ResolvedUser, token: VerifiedToken): Promise<ResolvedUser> {
-    const facts: ProvenFacts = {};
-    if (user.status === UserStatus.invited) {
-      facts.status = UserStatus.active;
-    }
-    if (!user.emailVerified && tokenProvesAddress(token, user.email)) {
-      facts.emailVerified = true;
-    }
-    if (Object.keys(facts).length === 0) {
+    if (user.emailVerified || !tokenProvesAddress(token, user.email)) {
       return user;
     }
-    await this.prisma.user.update({ where: { id: user.id }, data: facts });
-    return { ...user, ...facts };
+    await this.prisma.user.update({ where: { id: user.id }, data: { emailVerified: true } });
+    return { ...user, emailVerified: true };
+  }
+
+  /**
+   * **L'entrée par les rattachements** (§8.1 bis, point 2) : accepte ceux dont
+   * l'invitation vit, et passe l'invité `active` seulement si l'un d'eux
+   * l'accueille. N'écrit rien quand rien n'attend — le cas de toute requête
+   * d'une personne déjà entrée.
+   *
+   * Vaut aussi pour une personne ACTIVE : un rattachement posé depuis (une
+   * société de plus) s'accepte à sa première requête dans les 7 jours, et
+   * n'ouvre plus rien après.
+   *
+   * @throws {InvitationExpiredError} une personne invitée qu'aucun rattachement n'accueille.
+   */
+  private async enter(user: ResolvedUser, now: Date): Promise<ResolvedUser> {
+    const invited = user.status === UserStatus.invited;
+    if (!invited && !user.memberships.some((membership) => awaitsAcceptance(membership, now))) {
+      return user;
+    }
+    if (invited && !canEnter(user.memberships, now)) {
+      return this.acceptance.refuse(user.id);
+    }
+    try {
+      await this.unitOfWork.run(() => this.acceptAndActivate(user, now));
+    } catch (error) {
+      if (error instanceof InvitationExpiredError) {
+        return this.acceptance.refuse(user.id);
+      }
+      throw error;
+    }
+    return {
+      ...user,
+      status: invited ? UserStatus.active : user.status,
+      memberships: user.memberships.map((membership) =>
+        awaitsAcceptance(membership, now) ? { ...membership, acceptedAt: now } : membership,
+      ),
+    };
+  }
+
+  /**
+   * Les deux écritures de l'entrée, ensemble. La règle est dans le `WHERE` de
+   * l'acceptation : si l'invitation a expiré entre la lecture et l'écriture,
+   * rien n'est accepté, et l'invité qui n'avait rien d'autre est refusé — la
+   * transaction défaite.
+   */
+  private async acceptAndActivate(user: ResolvedUser, now: Date): Promise<void> {
+    const accepted = await this.acceptance.acceptLive(user.id, now);
+    if (user.status !== UserStatus.invited) {
+      return;
+    }
+    const alreadyAccepted = user.memberships.some((membership) => membership.acceptedAt !== null);
+    if (accepted === 0 && !alreadyAccepted) {
+      throw new InvitationExpiredError(user.id);
+    }
+    await this.prisma.user.updateMany({
+      where: { id: user.id, status: UserStatus.invited },
+      data: { status: UserStatus.active },
+    });
   }
 
   /**
@@ -145,7 +224,11 @@ export class CustomerPrincipalResolver extends PrincipalResolver {
       where: { auth0Sub: subject },
       // Les rattachements font partie de l'identité autorisée : on les charge AVEC
       // la personne, plutôt que dans une seconde requête que chacun pourrait oublier.
-      include: { memberships: { select: { companyId: true, role: true } } },
+      include: {
+        memberships: {
+          select: { companyId: true, role: true, invitedAt: true, acceptedAt: true },
+        },
+      },
     });
   }
 

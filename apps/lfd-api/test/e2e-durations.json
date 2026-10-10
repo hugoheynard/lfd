@@ -125,6 +125,7 @@
   "test/handover-durable.e2e-spec.ts": 3056,
   "test/handover-proof-purge.e2e-spec.ts": 2792,
   "test/handover-quality-hold.e2e-spec.ts": 4369,
+  "test/invitation-expiry.e2e-spec.ts": 6000,
   "test/invoice-dossiers.e2e-spec.ts": 6300,
   "test/invoice-payment-terms.e2e-spec.ts": 4000,
   "test/invoices.e2e-spec.ts": 9000,

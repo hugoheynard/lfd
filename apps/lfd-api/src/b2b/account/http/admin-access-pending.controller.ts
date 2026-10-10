@@ -1,11 +1,13 @@
 import { AdminSurface } from "../../../platform/auth/admin-surface.decorator.js";
-import { Controller, Get, Param, Post } from "@nestjs/common";
+import { Body, Controller, Get, Param, Post } from "@nestjs/common";
 import { CommandBus, QueryBus } from "@nestjs/cqrs";
 
 import { IssuePasswordLinkCommand } from "../application/commands/issue-password-link.command.js";
 import type { IssuedPasswordLink } from "../../../platform/identity/password-link.js";
 import { ListPendingAccessQuery } from "../application/queries/list-pending-access.query.js";
 import type { PendingAccessView } from "../domain/ports/pending-access.reader.js";
+import { ZodBody } from "../../../platform/shared/http/zod-body.pipe.js";
+import { issuePasswordLinkPayload, type IssuePasswordLinkPayload } from "./payloads.js";
 
 /**
  * Surface **staff** des accès à remettre à la main — le canal de secours quand
@@ -33,11 +35,18 @@ export class AdminAccessPendingController {
     );
   }
 
-  /** Fabrique un lien **frais** à remettre. Le lien n'est jamais journalisé ; le geste, si. */
+  /**
+   * Fabrique un lien **frais** à remettre, et renouvelle l'invitation de la
+   * société désignée (`companyId`, sinon celle que la file affiche). Le lien
+   * n'est jamais journalisé ; le geste, si.
+   */
   @Post(":userId/link")
-  issueLink(@Param("userId") userId: string): Promise<IssuedPasswordLink> {
+  issueLink(
+    @Param("userId") userId: string,
+    @Body(new ZodBody(issuePasswordLinkPayload)) payload: IssuePasswordLinkPayload,
+  ): Promise<IssuedPasswordLink> {
     return this.commands.execute<IssuePasswordLinkCommand, IssuedPasswordLink>(
-      new IssuePasswordLinkCommand(userId),
+      new IssuePasswordLinkCommand(userId, payload?.companyId ?? null),
     );
   }
 }

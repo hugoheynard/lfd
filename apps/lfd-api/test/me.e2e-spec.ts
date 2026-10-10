@@ -135,6 +135,9 @@ describe("PrincipalResolver — connexion par code e-mail", () => {
       email: "Pro@Brasserie-Code.fr",
       status: UserStatus.invited,
     });
+    // Une invitation qui VIT : depuis le 2026-10-10, une expirée est refusée
+    // (`invitation-expiry.e2e-spec.ts`).
+    await attachTo(ctx.prisma, invited.id, (await createCompany(ctx.prisma)).id);
 
     const principal = await resolveAs(CODE);
 
@@ -169,6 +172,7 @@ describe("PrincipalResolver — connexion par code e-mail", () => {
       email: ADDRESS,
       status: UserStatus.invited,
     });
+    await attachTo(ctx.prisma, invited.id, (await createCompany(ctx.prisma)).id);
 
     const outcomes = await Promise.allSettled([
       resolveAs(CODE),
@@ -212,7 +216,10 @@ describe("GET /me — le cycle se joue en base", () => {
     // de création de mot de passe : présenter un jeton prouve qu'il l'a suivi.
     // Le refuser laisserait dehors, pour toujours, le client à qui le commercial
     // vient d'ouvrir l'accès.
-    await createUser(ctx.prisma, { auth0Sub: SUB, status: UserStatus.invited });
+    // Rattaché par une invitation qui VIT : sans elle, l'entrée est refusée
+    // depuis le 2026-10-10 (`invitation-expiry.e2e-spec.ts`).
+    const invited = await createUser(ctx.prisma, { auth0Sub: SUB, status: UserStatus.invited });
+    await attachTo(ctx.prisma, invited.id, (await createCompany(ctx.prisma)).id);
 
     const response = await ctx.asSub(SUB).get("/me");
 

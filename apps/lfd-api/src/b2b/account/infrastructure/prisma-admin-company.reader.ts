@@ -153,11 +153,13 @@ export class PrismaAdminCompanyReader extends AdminCompanyReader {
       }),
       this.prisma.membership.findMany({
         where: { companyId },
-        // `createdAt` du MEMBERSHIP : c'est la date du rattachement à CETTE
-        // société, donc le compteur de l'invitation. Celle du compte serait
-        // fausse — la personne a pu être invitée ailleurs il y a un an.
+        // `invitedAt` du MEMBERSHIP : la date de l'invitation à CETTE société,
+        // renouvelée par un lien remis — le compteur que l'entrée lit aussi
+        // (2026-10-10). Celle du compte serait fausse — la personne a pu être
+        // invitée ailleurs il y a un an.
         select: {
-          createdAt: true,
+          invitedAt: true,
+          acceptedAt: true,
           user: { select: { email: true, status: true, emailVerified: true } },
         },
       }),
@@ -171,7 +173,11 @@ export class PrismaAdminCompanyReader extends AdminCompanyReader {
       contacts: projectContacts(
         row,
         book,
-        access.map((membership) => ({ ...membership.user, attachedAt: membership.createdAt })),
+        access.map((membership) => ({
+          ...membership.user,
+          invitedAt: membership.invitedAt,
+          acceptedAt: membership.acceptedAt,
+        })),
         this.clock.now(),
       ),
       activation:

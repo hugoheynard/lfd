@@ -9,6 +9,8 @@ import { Clock } from "../../platform/time/clock.js";
 import { staffPasswordLinkIssuedFact } from "../directory/domain/staff-facts.js";
 import { expiryFrom, type IssuedPasswordLink } from "../../platform/identity/password-link.js";
 import { StaffUserNotFoundError } from "../directory/domain/staff-user-errors.js";
+import { StaffUserRepository } from "../directory/domain/staff-user.repository.js";
+import { StaffAccessCache } from "../permissions/staff-access-cache.port.js";
 
 /**
  * Le jumeau staff de `IssuePasswordLinkHandler` — mêmes précautions, autre
@@ -33,6 +35,8 @@ export class IssueStaffPasswordLinkHandler implements ICommandHandler<
     private readonly clock: Clock,
     private readonly journal: Journal,
     private readonly uow: UnitOfWork,
+    private readonly staff: StaffUserRepository,
+    private readonly cache: StaffAccessCache,
   ) {}
 
   async execute(command: IssueStaffPasswordLinkCommand): Promise<IssuedPasswordLink> {
@@ -41,9 +45,14 @@ export class IssueStaffPasswordLinkHandler implements ICommandHandler<
       throw new StaffUserNotFoundError(command.staffUserId);
     }
     const url = await this.identities.issuePasswordLink(invitee.subject);
-    await this.uow.run(() =>
-      this.journal.append(staffPasswordLinkIssuedFact(command.staffUserId, invitee)),
-    );
+    // Le lien neuf RENOUVELLE l'invitation (2026-10-10, §8.1 bis, point 8) :
+    // l'entrée refuse une fiche `invited` dont l'invitation a expiré, et
+    // remettre un lien sans reposer la date enverrait de quoi se faire refuser.
+    await this.uow.run(async () => {
+      await this.staff.markInvited(command.staffUserId, invitee.subject, this.clock.now());
+      await this.journal.append(staffPasswordLinkIssuedFact(command.staffUserId, invitee));
+    });
+    this.cache.forgetAll();
     // Le même calcul que côté client : un seul TTL, une seule vérité.
     return { url, expiresAt: expiryFrom(this.clock.now()) };
   }

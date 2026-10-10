@@ -1,4 +1,8 @@
-import { BusinessError, ResourceNotFoundError } from "../../../platform/shared/errors/app-error.js";
+import {
+  AuthorizationError,
+  BusinessError,
+  ResourceNotFoundError,
+} from "../../../platform/shared/errors/app-error.js";
 
 /** Le user staff visé n'existe pas (**404**). */
 export class StaffUserNotFoundError extends ResourceNotFoundError {
@@ -152,6 +156,25 @@ export class StaffUserRemovalRetiredError extends BusinessError {
     super(
       "staff_user.removal_retired",
       "On ne supprime plus une fiche : elle signe tout ce que la personne a fait, et la supprimer effacerait son nom de ces actes. Pour lui couper l'accès, suspendez-la — « Retirer de l'équipe » remplacera bientôt ce geste.",
+    );
+  }
+}
+
+/**
+ * **Une fiche `invited` se connecte après l'échéance de son invitation**
+ * (2026-10-10, `architecture-compte-client-cycle-de-vie.md` §8.1 bis, point 8).
+ *
+ * « Mot de passe oublié » sur la connexion de base, ou le rapprochement d'une
+ * adresse vérifiée, ouvraient encore l'accès d'une invitation morte. Refus
+ * **403** : l'identité est prouvée, l'accès ne l'est plus. Le geste de sortie
+ * est une réinvitation par un détenteur de `staff_access:write`, que la cloche
+ * prévient.
+ */
+export class StaffInvitationExpiredError extends AuthorizationError {
+  constructor(readonly staffUserId: string) {
+    super(
+      "staff.invitation.expired",
+      "Votre accès a expiré. Demandez à un administrateur de vous le rouvrir.",
     );
   }
 }

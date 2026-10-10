@@ -31,11 +31,15 @@ export class PrismaPendingAccessReader extends PendingAccessReader {
         email: true,
         firstName: true,
         lastName: true,
-        createdAt: true,
+        // L'invitation la plus récente non acceptée : c'est elle qu'un lien
+        // remis depuis cette file renouvelle (`PrismaInvitationRenewal`), et
+        // sa date est celle que l'entrée lit (2026-10-10, §8.1 bis).
         memberships: {
-          orderBy: { createdAt: "asc" },
+          where: { acceptedAt: null },
+          orderBy: { invitedAt: "desc" },
           take: 1,
           select: {
+            invitedAt: true,
             company: { select: { id: true, enseigne: true, raisonSociale: true } },
           },
         },
@@ -43,10 +47,11 @@ export class PrismaPendingAccessReader extends PendingAccessReader {
     });
 
     return rows.flatMap((row) => {
-      const company = row.memberships[0]?.company;
-      if (company === undefined) {
+      const membership = row.memberships[0];
+      if (membership === undefined) {
         return [];
       }
+      const { company } = membership;
       return [
         {
           userId: row.id,
@@ -57,7 +62,7 @@ export class PrismaPendingAccessReader extends PendingAccessReader {
           // Le nom d'USAGE : celui sous lequel le commercial reconnaît la
           // société au téléphone, comme partout ailleurs.
           companyName: company.enseigne.trim() === "" ? company.raisonSociale : company.enseigne,
-          invitedAt: row.createdAt.toISOString(),
+          invitedAt: membership.invitedAt.toISOString(),
         },
       ];
     });

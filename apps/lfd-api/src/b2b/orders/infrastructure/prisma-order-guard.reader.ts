@@ -1,6 +1,8 @@
 import { Injectable } from "@nestjs/common";
 
 import { PrismaService } from "../../../platform/database/prisma.service.js";
+import { Clock } from "../../../platform/time/clock.js";
+import { openingMembership } from "../../shared/membership-opening/opening-membership.js";
 import {
   OrderGuardReader,
   type AccountSettlementStanding,
@@ -11,13 +13,21 @@ import {
 /** Adaptateur Prisma des garde-fous : rôle du membre + statut de l'entreprise. */
 @Injectable()
 export class PrismaOrderGuardReader extends OrderGuardReader {
-  constructor(private readonly prisma: PrismaService) {
+  constructor(
+    private readonly prisma: PrismaService,
+    private readonly clock: Clock,
+  ) {
     super();
   }
 
   async roleOf(userId: string, companyId: string): Promise<OrderRole | null> {
-    const membership = await this.prisma.membership.findUnique({
-      where: { userId_companyId: { userId, companyId } },
+    const membership = await this.prisma.membership.findFirst({
+      where: {
+        userId,
+        companyId,
+        // Seul un rattachement qui OUVRE compte (§8.1 bis, 2026-10-10).
+        ...openingMembership(this.clock.now()),
+      },
       select: { role: true },
     });
     return membership?.role ?? null;

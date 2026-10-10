@@ -2,7 +2,9 @@ import { PASSWORD_TICKET_TTL_SECONDS } from "../../../identity/auth0-identity.ga
 import {
   INVITATION_LIFETIME_DAYS,
   invitationExpiresAt,
+  isInvitationAlive,
   isInvitationExpired,
+  oldestLiveInvitation,
 } from "../invitation-expiry.js";
 
 const DAY_MS = 24 * 60 * 60 * 1000;
@@ -76,5 +78,26 @@ describe("invitationExpiresAt", () => {
     invitationExpiresAt(INVITED_AT);
 
     expect(INVITED_AT.getTime()).toBe(original);
+  });
+});
+
+/**
+ * La même borne, écrite pour l'ENTRÉE (2026-10-10) : la lecture en mémoire et
+ * la condition SQL (`invited_at >= oldestLiveInvitation(now)`) ne doivent
+ * jamais donner deux réponses sur la même invitation.
+ */
+describe("isInvitationAlive / oldestLiveInvitation", () => {
+  const atDeadline = invitationExpiresAt(INVITED_AT);
+
+  it("vit à l'échéance exacte, et la borne SQL l'admet aussi", () => {
+    expect(isInvitationAlive(INVITED_AT, atDeadline)).toBe(true);
+    expect(INVITED_AT.getTime() >= oldestLiveInvitation(atDeadline).getTime()).toBe(true);
+  });
+
+  it("meurt une milliseconde après, et la borne SQL l'écarte aussi", () => {
+    const after = new Date(atDeadline.getTime() + 1);
+
+    expect(isInvitationAlive(INVITED_AT, after)).toBe(false);
+    expect(INVITED_AT.getTime() >= oldestLiveInvitation(after).getTime()).toBe(false);
   });
 });

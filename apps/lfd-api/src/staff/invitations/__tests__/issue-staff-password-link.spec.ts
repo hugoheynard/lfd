@@ -1,6 +1,10 @@
 import { RecordingJournal } from "../../../platform/journal/__tests__/recording-journal.js";
 import { FixedClock } from "../../../platform/time/fixed-clock.js";
-import { TrackingUnitOfWork } from "../../directory/application/__tests__/staff-doubles.js";
+import {
+  RecordingAccessCache,
+  ScriptedStaffUsers,
+  TrackingUnitOfWork,
+} from "../../directory/application/__tests__/staff-doubles.js";
 import { STAFF_FACTS } from "../../directory/domain/staff-facts.js";
 import { StaffUserNotFoundError } from "../../directory/domain/staff-user-errors.js";
 import { IssueStaffPasswordLinkCommand } from "../issue-staff-password-link.command.js";
@@ -55,14 +59,19 @@ const SOPHIE: PendingStaffSubject = {
 function harness(invitee: PendingStaffSubject | null, journalDown = false) {
   const journal = new RecordingJournal(journalDown ? new Error("journal en panne") : null);
   const identities = new LinkFactory();
+  const uow = new TrackingUnitOfWork();
+  const staff = new ScriptedStaffUsers(uow);
+  const cache = new RecordingAccessCache(uow);
   const handler = new IssueStaffPasswordLinkHandler(
     new OnePending(invitee),
     identities,
     new FixedClock(NOW),
     journal,
-    new TrackingUnitOfWork(),
+    uow,
+    staff,
+    cache,
   );
-  return { handler, journal, identities };
+  return { handler, journal, identities, staff, cache };
 }
 
 describe("IssueStaffPasswordLinkHandler — le lien à remettre à la main", () => {
@@ -101,5 +110,17 @@ describe("IssueStaffPasswordLinkHandler — le lien à remettre à la main", () 
     );
     expect(h.identities.issued).toEqual([]);
     expect(h.journal.facts).toEqual([]);
+    expect(h.staff.writes).toEqual([]);
+  });
+
+  it("renouvelle l'invitation dans la transaction du fait, puis oublie le cache après", async () => {
+    // Un lien neuf sans date reposée mènerait à un refus d'entrée : l'accès
+    // staff refuse une fiche `invited` dont l'invitation a expiré (§8.1 bis).
+    const h = harness(SOPHIE);
+
+    await h.handler.execute(new IssueStaffPasswordLinkCommand("s1"));
+
+    expect(h.staff.writes).toEqual([{ method: "markInvited", insideTransaction: true }]);
+    expect(h.cache.forgotten).toEqual([{ insideTransaction: false }]);
   });
 });

@@ -6,9 +6,12 @@ import { UnitOfWork } from "../../../platform/database/unit-of-work.js";
 import { DomainEventPublisher } from "../../../platform/events/domain-event-publisher.js";
 import type { VerifiedToken } from "../../../platform/auth/principal.js";
 import { AccountExistsUnderAnotherSignInError } from "../domain/errors/account-errors.js";
+import { InvitationExpiredError } from "../domain/errors/invitation-errors.js";
 import { personName } from "../domain/events/journal-names.js";
 import { LoginMethodSwitchedAtFirstEntryEvent } from "../domain/events/person-acts.event.js";
 import { signInRouteOfSubject } from "../domain/value-objects/sign-in-route.js";
+import { Clock } from "../../../platform/time/clock.js";
+import { MembershipAcceptance } from "./membership-acceptance.js";
 
 /**
  * Ce qu'il advient d'un `sub` inconnu avant qu'on lui crée un compte :
@@ -69,6 +72,14 @@ interface Holder {
  * code ne donne rien de plus que ce que le lien donnait déjà. Hors de ce cas —
  * compte actif, déjà entré —, le refus tient.
  *
+ * ⚠️ **Cette justification n'était vraie que pendant la vie du lien**
+ * (corrigé le 2026-10-10, §8.1 bis de
+ * `architecture-compte-client-cycle-de-vie.md`). Le lien meurt au bout de
+ * 7 jours ; le code, lui, ne meurt pas. Sans autre garde, prouver la boîte
+ * donnait donc PLUS que le lien : une entrée des mois après l'invitation. Le
+ * rattachement exige désormais qu'au moins une invitation vive encore
+ * (`claim`), et n'accepte que celles-là.
+ *
  * L'écriture est conditionnelle (`id`, `status = invited`, ancien `sub`) et
  * passe le compte `active` dans le même geste : deux premières entrées
  * simultanées sous deux moyens différents n'en font gagner qu'une, et la
@@ -88,6 +99,8 @@ export class UnknownSubjectAdmission {
     private readonly prisma: PrismaService,
     private readonly unitOfWork: UnitOfWork,
     private readonly events: DomainEventPublisher,
+    private readonly acceptance: MembershipAcceptance,
+    private readonly clock: Clock,
   ) {}
 
   /**
@@ -134,28 +147,53 @@ export class UnknownSubjectAdmission {
 
   /**
    * Réécrit le `sub` du compte invité et l'active, à condition qu'il soit
-   * toujours invité et toujours sous son ancien `sub` ; la trace part dans la
-   * même transaction. Rend `false` si une autre requête est passée avant.
+   * toujours invité et toujours sous son ancien `sub`, ET qu'au moins un de
+   * ses rattachements l'accueille ; la trace part dans la même transaction.
+   * Rend `false` si une autre requête est passée avant.
+   *
+   * 🔴 C'est ICI que passait le trou de l'invitation expirée (objection B1 de
+   * `vitruve`, 2026-10-10) : une connexion par code ou par Google arrive
+   * toujours par ce chemin, jamais par `record()`. Les rattachements dont
+   * l'invitation vit sont acceptés dans la même transaction ; s'il n'y en a
+   * aucun, tout est défait — ni `sub` réécrit, ni statut — et l'entrée est
+   * refusée (§8.1 bis, point 2).
+   *
+   * @throws {InvitationExpiredError} aucune invitation vivante.
    */
-  private claim(holder: Holder, token: VerifiedToken): Promise<boolean> {
-    return this.unitOfWork.run(async () => {
-      const { count } = await this.prisma.user.updateMany({
-        where: { id: holder.id, status: UserStatus.invited, auth0Sub: holder.auth0Sub },
-        data: { auth0Sub: token.subject, status: UserStatus.active },
-      });
-      if (count !== 1) {
-        return false;
+  private async claim(holder: Holder, token: VerifiedToken): Promise<boolean> {
+    try {
+      return await this.unitOfWork.run(() => this.claimOrUndo(holder, token));
+    } catch (error) {
+      // Levée DANS la transaction pour la défaire ; dite (journal, cloche) APRÈS,
+      // pour que le fait du refus ne soit pas défait avec elle.
+      if (error instanceof InvitationExpiredError) {
+        return this.acceptance.refuse(holder.id);
       }
-      await this.events.publishTraced(
-        new LoginMethodSwitchedAtFirstEntryEvent(
-          holder.id,
-          personName(holder.firstName, holder.lastName),
-          providerOf(token.subject),
-          null,
-        ),
-      );
-      return true;
+      throw error;
+    }
+  }
+
+  private async claimOrUndo(holder: Holder, token: VerifiedToken): Promise<boolean> {
+    const { count } = await this.prisma.user.updateMany({
+      where: { id: holder.id, status: UserStatus.invited, auth0Sub: holder.auth0Sub },
+      data: { auth0Sub: token.subject, status: UserStatus.active },
     });
+    if (count !== 1) {
+      return false;
+    }
+    if ((await this.acceptance.acceptLive(holder.id, this.clock.now())) === 0) {
+      // Lever défait la transaction : la réécriture du `sub` ne survit pas.
+      throw new InvitationExpiredError(holder.id);
+    }
+    await this.events.publishTraced(
+      new LoginMethodSwitchedAtFirstEntryEvent(
+        holder.id,
+        personName(holder.firstName, holder.lastName),
+        providerOf(token.subject),
+        null,
+      ),
+    );
+    return true;
   }
 }
 

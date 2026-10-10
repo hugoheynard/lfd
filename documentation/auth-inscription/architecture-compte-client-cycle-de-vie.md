@@ -283,24 +283,26 @@ stateDiagram-v2
     end note
 ```
 
-**L'entrée se constate.** `invited → active` se fait tout seul, à la première
-requête authentifiée (`customer-principal.resolver.ts`). Rien à instrumenter.
+**L'entrée se constate — si l'invitation vit.** `invited → active` se fait
+tout seul, à la première requête authentifiée (`customer-principal.resolver.ts`,
+ou `unknown-subject-admission.ts` pour une entrée par code ou Google), et
+seulement si au moins un rattachement l'accueille : accepté, ou invitation de
+moins de 7 jours. Sinon, refus nommé (§8.1 bis, bâti le 2026-10-10).
 
 **L'invitation périme au bout de 7 jours** (`INVITATION_LIFETIME_DAYS`), la
 durée de vie du lien de mot de passe chez le fournisseur, dont elle est
 **dérivée** depuis le 2026-09-18. Elle valait 14 jours avant, sur un lien qui en
 vivait 7 : du 8ᵉ au 14ᵉ jour, l'écran annonçait un lien déjà mort.
 
-Le compteur est le `createdAt` du **membership**, pas celui du compte : la même
-personne a pu être invitée ailleurs il y a un an et ici hier.
+Le compteur est le `invited_at` du **membership** (depuis le 2026-10-10 ;
+`created_at` avant, qu'un lien remis ne renouvelait pas), pas celui du compte :
+la même personne a pu être invitée ailleurs il y a un an et ici hier. Un lien
+remis pour une société, ou un nouvel « ouvrir l'accès », le repose.
 
 La règle (`isInvitationExpired`) est **pure et écrite une seule fois**, parce
-qu'elle sert deux endroits : l'écran, qui doit dire vrai entre deux balayages, et
-le balayage lui-même. À l'échéance, l'accès tombe ; **le contact reste en fiche**
-— le commercial ne perd pas sa saisie, et « relancer » refait une demande neuve.
-
-> ⚠️ **La lecture est faite, la révocation ne l'est pas.** La fiche affiche
-> `expired`, mais aucun balayage ne supprime encore le membership. Cf. §8.
+qu'elle sert deux endroits : l'écran et l'**entrée**. À l'échéance, rien n'est
+supprimé : l'entrée refuse, et **le contact reste en fiche** — le commercial
+ne perd pas sa saisie, et « relancer » refait une demande neuve.
 
 ## 8. Ce qui reste à faire
 
@@ -326,8 +328,10 @@ base contient.
 
 ### 8.1 bis — Le trou ouvert par la connexion par code, et la décision (2026-10-10)
 
-> 📐 **Plan, pas encore bâti.** Décidé par Hugo le 2026-10-10 : option (a).
-> Relu par `vitruve` avant de bâtir (frontière d'accès).
+> ✅ **Bâti le 2026-10-10**. Décidé
+> par Hugo le 2026-10-10 : option (a), grâce de 7 jours, staff dans le même
+> lot. Relu par `vitruve` avant de bâtir (frontière d'accès). Ce qui a été
+> tranché en bâtissant, et ce qui reste, est en fin de section.
 
 **Le constat** (relu le 2026-10-10, `customer-principal.resolver.ts`) :
 `invitation-expiry.ts` affirme qu'« aucun balayage n'est nécessaire : le lien se
@@ -385,24 +389,84 @@ rien n'est supprimé, et le trou se ferme à la requête, pas au passage suivant
    journal (id local, jamais le `sub`) et une cloche au commercial — le seul
    qui peut faire le geste de sortie. La boutique doit afficher le message
    au lieu de relancer la connexion (à vérifier).
-7. **La migration** : `accepted_at = created_at` pour les personnes déjà
-   `active` (elles sont entrées) ; pour les `invited`, `invited_at` = **à
-   trancher par Hugo** (grâce de 7 jours à la date du déploiement, ou
-   fermeture assumée avec une relance).
-8. **Le staff** a le même trou par « mot de passe oublié » sur la connexion
-   de base, et par le rapprochement d'adresse vérifiée
-   (`prisma-staff-access.resolver.ts:159-200`) ; `invitedAt` y est nullable
-   et ignoré quand nul (`staff-user.rows.ts:87`). **À trancher par Hugo** :
-   même règle, dans le même lot ou après.
+7. **La migration** : `accepted_at = created_at` pour les rattachements
+   d'une personne déjà `active` (elle est entrée) ; pour ceux d'une personne
+   `invited`, **`invited_at` = l'instant de la migration** — une **grâce de
+   7 jours** (Hugo, 2026-10-10) : aucune invitation en cours n'est fermée
+   par le déploiement, et celles qui ne seront pas acceptées d'ici là
+   expireront normalement.
+8. **Le staff, dans le même lot** (Hugo, 2026-10-10). Il a le même trou :
+   une fiche `invited` dont le lien est mort entre encore par « mot de passe
+   oublié » sur la connexion de base, ou par le rapprochement d'adresse
+   vérifiée (`prisma-staff-access.resolver.ts:159-200`) ; `invitedAt` y est
+   nullable et l'échéance ignorée quand il est nul (`staff-user.rows.ts:87`).
+   Même règle : le résolveur staff ne passe `invited → active` que si
+   l'invitation vit, sinon refus nommé (« Votre accès a expiré. Demandez à
+   un administrateur de vous le rouvrir. »), fait au journal, cloche aux
+   détenteurs de `staff_access:write`. Chaque lien émis
+   (`open-staff-access.service.ts`, invitation ou réinitialisation) repose
+   `invitedAt`. La migration pose `invited_at` = l'instant de la migration
+   pour les fiches `invited` où il est nul — la même grâce.
 9. Une fois la règle lue à l'entrée, retirer les colonnes rouvrirait le trou :
    **irréversible dans les faits**. Les JSDoc fausses
    (`invitation-expiry.ts:17`, `company-contacts.projection.ts:124-126`,
    `unknown-subject-admission.ts:67-70`) sont corrigées.
 
-**Éprouvé par** : e2e « invitée expirée qui entre par code : refusée, reste
-`invited`, rien ne s'ouvre » ; « un lien remis pour B renouvelle B, pas A » ;
-« active par B, A expirée ne s'ouvre pas » ; « la migration n'a fermé
-aucune invitation » (selon l'option).
+**Éprouvé par** : la suite e2e « invitation-expiry » de `lfd-api` — invitée
+expirée par code (refusée, reste `invited`, `sub` non réécrit, fait et
+cloche) ; par le lien (403) ; invitation vivante (entre, `accepted_at`
+posé) ; « un lien remis pour B renouvelle B, pas A » ; « active par B, A
+expirée ne s'ouvre pas » ; staff invité expiré refusé, et un lien neuf qui
+le fait entrer. La grâce de la migration n'a pas d'e2e (la base de test part
+vide) : elle se contrôle en production (`documentation/ops/runbook.md`).
+
+**Tranché en bâtissant (2026-10-10)** :
+
+- **Migration** `20261010140000_l_invitation_du_rattachement`. Une personne
+  `active` SANS `auth0_sub` (l'invité de la commande sans compte) n'est jamais
+  entrée : ses rattachements reçoivent la grâce au lieu d'être acceptés.
+- **Refus** : `InvitationExpiredError` (`account.invitation.expired`) et
+  `StaffInvitationExpiredError` (`staff.invitation.expired`), catégorie
+  `AuthorizationError` → **403**. Faits `user.entry_refused_invitation_expired`
+  et `staff_user.entry_refused_invitation_expired`. Cloches
+  `account.invitation_expired` (audience `b2b_companies:write`, lien vers la
+  fiche de la société) et `staff.invitation_expired` (`staff_access:write`),
+  une par invitation (clé = date de la dernière invitation) ; le fait, lui,
+  s'écrit à chaque tentative refusée.
+- **Sur le chemin du code**, la réécriture du `sub` et l'activation sont
+  défaites par la transaction quand aucun rattachement n'est accepté.
+- **Une personne ACTIVE** (validé par Hugo le 2026-10-10) accepte aussi un rattachement neuf à sa première
+  requête dans les 7 jours ; au-delà, il n'ouvre plus rien. L'écran lit l'état
+  sur le rattachement : non accepté, `invited` puis `expired`, même pour une
+  personne active ailleurs.
+- **`POST /admin/access-pending/:userId/link`** prend `{ companyId? }` ; sans
+  société (les deux écrans d'aujourd'hui), le serveur renouvelle la plus
+  récente invitation non acceptée — celle que la file affiche désormais.
+  Sans invitation à renouveler : 404 `account.invitation.not_found`.
+- **Le mur n'est pas que dans le `Principal`** (trouvé en bâtissant, fermé
+  le même jour). Une seule définition côté requête,
+  `openingMembership(now)` (dans `b2b/shared`, même borne que `isInvitationAlive`), portée par les six gardes qui relisent
+  le rattachement en base (`roleOf` de `prisma-membership.reader.ts`,
+  `prisma-order-guard.reader.ts`, `prisma-unpaid-access.reader.ts`,
+  `prisma-bank-account-guard.reader.ts`, `prisma-loyalty-conversion.gate.ts`,
+  `prisma-alert-company.reader.ts`) et par `GET /me`
+  (`prisma-account.reader.ts`). Les autres lecteurs de `memberships`
+  (contacts de facturation, détenteur affiché sur un bon, fiche et file du
+  staff, paniers d'abonnement, semis) ne décident d'aucun accès et ne la
+  portent pas (relu le 2026-10-10).
+- **L'invité de la commande sans compte** reçoit la grâce dans la migration
+  (Hugo, 2026-10-10).
+- **Le fait de refus** s'écrit à chaque tentative ; seule la cloche est
+  dédoublonnée (Hugo, 2026-10-10).
+
+**Reste** :
+
+- **Staff `pending`** (jamais invité) : hors périmètre — il entre encore par
+  le rapprochement d'une adresse vérifiée (Hugo, 2026-10-10).
+
+- La boutique ne reconnaît pas `account.invitation.expired` : elle n'affiche
+  pas le message et ne déconnecte pas (seul `identity.link_required` l'est).
+- Les deux écrans du back-office n'envoient pas encore la société au lien.
 
 ### 8.2 Révoquer un accès depuis l'admin
 

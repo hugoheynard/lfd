@@ -455,6 +455,15 @@ model Membership {
 
   role CustomerRole
 
+  /// Quand l'invitation de CE rattachement a été émise ou renouvelée (un lien
+  /// remis pour cette société, un `attach` qui la réinvite). Le compteur des 7
+  /// jours part d'ici, pas de `createdAt` (§8.1 bis, 2026-10-10).
+  invitedAt  DateTime  @default(now()) @map("invited_at") @db.Timestamptz(3)
+  /// Quand la personne est entrée par ce rattachement ; `null` = pas encore.
+  /// Un rattachement n'ouvre la société que s'il est accepté, ou si son
+  /// invitation vit.
+  acceptedAt DateTime? @map("accepted_at") @db.Timestamptz(3)
+
   createdAt DateTime @default(now()) @map("created_at")
   updatedAt DateTime @updatedAt @map("updated_at")
 

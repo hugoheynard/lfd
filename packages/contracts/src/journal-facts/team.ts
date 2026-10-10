@@ -100,6 +100,15 @@ export const TEAM_FACTS = {
    */
   "staff_user.activated": fact(payload({ subjectLabel: subjectLabel(), person: person() })),
   /**
+   * **Une entrée refusée sur une invitation expirée** (2026-10-10,
+   * `architecture-compte-client-cycle-de-vie.md` §8.1 bis, point 8). La fiche
+   * `invited` a présenté un jeton valide — « mot de passe oublié » sur la
+   * connexion de base, ou le rapprochement d'adresse vérifiée — alors que son
+   * invitation avait passé ses 7 jours. Elle reste `invited`, et n'entre pas.
+   * L'auteur est la fiche elle-même : personne d'autre n'a agi.
+   */
+  "staff_user.entry_refused_invitation_expired": labelled({ person: person() }),
+  /**
    * Le **rétablissement** d'une fiche suspendue. ⚠️ Les lignes écrites avant
    * le 2026-09-19 couvrent AUSSI la première activation (D7) : leur phrase dit
    * « a activé ou rétabli l'accès ».
