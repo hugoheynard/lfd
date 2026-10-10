@@ -319,6 +319,12 @@ export async function place(
         new PlaceOrderCommand(target.buyerUserId, payload, target.companyId),
       ),
   );
+  // L'antidatage APRÈS que les abonnés de la passation ont fini : l'évaluation
+  // des alertes lit l'instant de passation, et partie en tâche de fond, elle
+  // lisait tantôt l'heure réelle, tantôt `order.at`, selon qui gagnait — le
+  // nombre d'alertes variait d'un rechargement à l'autre
+  // (`dev-scenario-stability`, CI du 2026-10-10).
+  await context.settle();
   const row = await context.prisma.order.update({
     where: { id: placed.id },
     data: {
