@@ -56,7 +56,7 @@
 ⚠️ Le renommage passe par le port d'écriture du fonds, qui exige un
 `WriteTicket` : `lint:journal-tracked` l'auditera d'office.
 
-## L2 — Le feed
+## ~~L2 — Le feed~~ ✅ bâti le 2026-10-10 (`a92ccbdd1`, `7596e4448`) — « inutilisées » garde un total exact (classé en mémoire comme le tri par emplois), au lieu de pages courtes
 
 **Ce qui est vrai aujourd'hui** : pages par décalage (`limit`/`offset`, 60 par
 défaut, 100 au plus), « charger plus », un seul ordre (dépôt décroissant).
