@@ -200,137 +200,142 @@
     </div>
   </fold-page-section>
 
-  <!-- LE FILTRE. Il part au SERVEUR : filtrer ce qui est chargé ne cherche pas,
-       ça trie un échantillon de soixante. -->
-  <div class="sieve">
-    <input
-      class="sift"
-      type="search"
-      placeholder="Chercher par étiquette"
-      [value]="search()"
-      (input)="search.set($any($event.target).value)"
-      (keydown.enter)="refilter()"
-      (search)="refilter()"
-    />
-    @for (tag of filterTags(); track tag) {
-      <!-- Le MÊME dessin que la bande, armé : c'est un mot retenu. Son × le
-           relâche du filtre, il ne touche aucune image. -->
-      <app-tag-chip [tag]="tag" armed removable (removed)="toggleFilterTag(tag)" />
-    }
-    @if (filtering()) {
-      <button foldButton emphasis="soft" size="sm" (click)="clearFilter()">Tout afficher</button>
+  <!-- LA GRILLE ET SA BARRE. Tout part au SERVEUR, et l'adresse porte la vue
+       (plan L2) : filtrer ce qui est chargé ne cherche pas, ça trie un
+       échantillon. La barre reste au-dessus de tous les états — un tri
+       refusé ou un filtre sans résultat se défait d'ici. -->
+  <div class="feed">
+    <app-media-toolbar [criteria]="criteria()" [total]="feed.total()" (changed)="show($event)" />
+
+    @if (feed.loading() && feed.pages() === 0) {
+      <fold-loading message="Lecture de la médiathèque…" />
+    } @else if (feed.failure() !== null && feed.pages() === 0) {
+      <!-- L'échec a son propre état : une grille vide et une grille qui n'a
+           pas pu charger se ressemblent, et les confondre ferait croire le
+           fonds vide au premier réseau qui tousse. Le message est celui du
+           serveur quand il en dit un (le tri par emplois refusé sur un fonds
+           trop grand nomme le cas). -->
+      <fold-empty-state
+        tone="alert"
+        title="Médiathèque illisible"
+        [subtitle]="feed.failure() ?? ''"
+      >
+        <fold-icon empty-icon name="image" [size]="40" />
+        <button foldButton emphasis="outline" icon="reset" (click)="feed.retry()">Réessayer</button>
+      </fold-empty-state>
+    } @else if (feed.items().length === 0 && !feed.hasMore() && filtering()) {
+      <!-- Un fonds VIDE et un filtre sans résultat ne se disent pas pareil : le
+           premier demande de déposer, le second d'élargir. -->
+      <fold-empty-state
+        title="Aucune image ne correspond"
+        subtitle="Élargissez la recherche, ou retirez un critère du filtre."
+      >
+        <fold-icon empty-icon name="image" [size]="40" />
+        <button foldButton emphasis="outline" icon="reset" (click)="clearFilter()">
+          Tout afficher
+        </button>
+      </fold-empty-state>
+    } @else if (feed.items().length === 0 && !feed.hasMore()) {
+      <!-- 🔴 Le dépôt n'existe QUE sur cet écran depuis le 2026-09-23 :
+           alimenter et taguer le fonds est un autre métier que rédiger une
+           fiche. Une phrase qui envoie chercher un geste supprimé coûte plus
+           qu'une absence de phrase. -->
+      <fold-empty-state
+        title="La médiathèque est vide"
+        subtitle="Déposez une première image : c'est ici, et seulement ici, qu'elles entrent."
+      >
+        <fold-icon empty-icon name="image" [size]="40" />
+      </fold-empty-state>
+    } @else {
+      @if (feed.failure(); as message) {
+        <!-- Échec PARTIEL : ce qui est lu reste à l'écran, seule la suite manque. -->
+        <fold-callout variant="alert">
+          <span class="partial">
+            {{ message }}
+            <button foldButton emphasis="soft" size="sm" icon="reset" (click)="feed.retry()">
+              Réessayer
+            </button>
+          </span>
+        </fold-callout>
+      }
+
+      <ul class="grid">
+        @for (row of rows(); track row.key) {
+          @if (row.kind === 'month') {
+            <!-- L'INTERCALAIRE : sous le tri par dépôt seulement, à l'heure de
+                 Paris. Jamais par tag (D4) : une image y paraîtrait deux fois. -->
+            <li class="month">{{ row.label }}</li>
+          } @else {
+            @let item = row.item;
+            <li
+              class="card"
+              [class.card-target]="palette.armed() !== null"
+              (dragover)="$event.preventDefault()"
+              (drop)="drop($event, item)"
+            >
+              <!-- L'aperçu est le point de dépôt ET le bouton de pose : les deux
+                   gestes visent la même chose, ils ne peuvent pas viser deux
+                   surfaces différentes. -->
+              <button type="button" class="frame" (click)="apply(item, palette.armed())">
+                <img [src]="item.url" [alt]="label(item)" loading="lazy" />
+              </button>
+              <span class="name" [class.name-missing]="item.name === ''" [title]="fileOf(item)">
+                {{ label(item) }}
+              </span>
+              @if (item.tags.length > 0) {
+                <ul class="worn">
+                  @for (tag of item.tags; track tag) {
+                    <li><app-tag-chip [tag]="tag" removable (removed)="strip(item, tag)" /></li>
+                  }
+                </ul>
+              }
+              <!-- LE PIED : l'état d'emploi à gauche, les actions à droite.
+                   Le compte d'emplois, toujours visible, dit pourquoi une
+                   suppression serait refusée avant qu'on l'essaie ; CLIQUABLE
+                   dès qu'il y en a, pour trouver les porteurs. -->
+              <div class="foot">
+                @if (item.uses === 0) {
+                  <fold-badge variant="neutral" [content]="usesLabel(item)" />
+                } @else {
+                  <button
+                    type="button"
+                    class="uses-link"
+                    [attr.aria-label]="usesLabel(item) + ' — voir où'"
+                    (click)="showCarriers(item)"
+                  >
+                    <fold-badge variant="accent" [content]="usesLabel(item)" />
+                  </button>
+                }
+                <span class="actions">
+                  <fold-button-icon
+                    icon="edit"
+                    size="sm"
+                    tooltip="Décrire"
+                    (clicked)="describe(item)"
+                  />
+                  <!-- Proposé SEULEMENT quand rien ne la porte ; le serveur
+                       reste le dernier mot et refuse quand même. -->
+                  @if (item.uses === 0) {
+                    <fold-button-icon
+                      icon="bin"
+                      size="sm"
+                      tone="critical"
+                      tooltip="Retirer du fonds"
+                      (clicked)="discard(item)"
+                    />
+                  }
+                </span>
+              </div>
+            </li>
+          }
+        }
+      </ul>
+
+      <!-- Le défilement continu : la sentinelle demande la suite, son bouton
+           reste là pour le clavier. -->
+      <app-feed-tail [state]="tail()" (reached)="feed.more()" />
     }
   </div>
-
-  @if (loading() && items().length === 0) {
-    <fold-loading message="Lecture de la bibliothèque…" />
-  } @else if (failure(); as message) {
-    <!-- L'échec a son propre état : une grille vide et une grille qui n'a pas
-         pu charger se ressemblent, et les confondre ferait croire le fonds vide
-         au premier réseau qui tousse. -->
-    <fold-empty-state tone="alert" title="Bibliothèque illisible" [subtitle]="message">
-      <fold-icon empty-icon name="image" [size]="40" />
-    </fold-empty-state>
-  } @else if (items().length === 0 && filtering()) {
-    <!-- Un fonds VIDE et un filtre sans résultat ne se disent pas pareil : le
-         premier demande de déposer, le second d'élargir. Les confondre ferait
-         croire la bibliothèque vide à qui vient de taper trois lettres. -->
-    <fold-empty-state
-      title="Aucune image ne correspond"
-      subtitle="Élargissez la recherche, ou retirez un mot-clé du filtre."
-    >
-      <fold-icon empty-icon name="image" [size]="40" />
-    </fold-empty-state>
-  } @else if (items().length === 0) {
-    <!-- 🔴 Ce sous-titre disait « les images entrent par la section Visuels
-         d'une fiche produit ou d'une famille ». C'est faux depuis le
-         2026-09-23 : le dépôt n'existe plus QUE sur cet écran, parce
-         qu'alimenter et taguer le fonds est un autre métier que rédiger une
-         fiche. Une phrase qui envoie chercher un geste supprimé coûte plus
-         qu'une absence de phrase. -->
-    <fold-empty-state
-      title="La bibliothèque est vide"
-      subtitle="Déposez des images ici : c'est le seul endroit par lequel elles entrent."
-    >
-      <fold-icon empty-icon name="image" [size]="40" />
-    </fold-empty-state>
-  } @else {
-    <!-- « sur N » est le total DU FILTRE, pas celui du fonds : annoncer le
-         fonds ferait promettre des pages que « charger plus » ne rendrait
-         jamais. -->
-    <p class="count">{{ items().length }} sur {{ total() }}</p>
-
-    <ul class="grid">
-      @for (item of items(); track item.url) {
-        <li
-          class="card"
-          [class.card-target]="palette.armed() !== null"
-          (dragover)="$event.preventDefault()"
-          (drop)="drop($event, item)"
-        >
-          <!-- L'aperçu est le point de dépôt ET le bouton de pose : les deux
-               gestes visent la même chose, ils ne peuvent pas viser deux
-               surfaces différentes. -->
-          <button type="button" class="frame" (click)="apply(item, palette.armed())">
-            <img [src]="item.url" [alt]="label(item)" loading="lazy" />
-          </button>
-          <span class="name" [class.name-missing]="item.name === ''" [title]="fileOf(item)">
-            {{ label(item) }}
-          </span>
-          @if (item.tags.length > 0) {
-            <ul class="worn">
-              @for (tag of item.tags; track tag) {
-                <li><app-tag-chip [tag]="tag" removable (removed)="strip(item, tag)" /></li>
-              }
-            </ul>
-          }
-          <!-- LE PIED : l'état d'emploi à gauche, les actions à droite.
-               Le compte d'emplois, toujours visible, dit pourquoi une
-               suppression serait refusée avant qu'on l'essaie ; CLIQUABLE dès
-               qu'il y en a, pour trouver les porteurs. -->
-          <div class="foot">
-            @if (item.uses === 0) {
-              <fold-badge variant="neutral" [content]="usesLabel(item)" />
-            } @else {
-              <button
-                type="button"
-                class="uses-link"
-                [attr.aria-label]="usesLabel(item) + ' — voir où'"
-                (click)="showCarriers(item)"
-              >
-                <fold-badge variant="accent" [content]="usesLabel(item)" />
-              </button>
-            }
-            <span class="actions">
-              <fold-button-icon
-                icon="edit"
-                size="sm"
-                tooltip="Décrire"
-                (clicked)="describe(item)"
-              />
-              <!-- Proposé SEULEMENT quand rien ne la porte ; le serveur reste
-                   le dernier mot et refuse quand même. -->
-              @if (item.uses === 0) {
-                <fold-button-icon
-                  icon="bin"
-                  size="sm"
-                  tone="critical"
-                  tooltip="Retirer du fonds"
-                  (clicked)="discard(item)"
-                />
-              }
-            </span>
-          </div>
-        </li>
-      }
-    </ul>
-
-    @if (hasMore()) {
-      <button foldButton emphasis="outline" [disabled]="loading()" (click)="load()">
-        Charger la suite
-      </button>
-    }
-  }
 
   <!-- L'ANNULATION d'un retrait sur tuile (D1). Un `fold-toast` posé à part
        plutôt que la file du service : celle-ci ne porte que du texte, et le

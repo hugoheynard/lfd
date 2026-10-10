@@ -1,5 +1,6 @@
 import { provideZonelessChangeDetection } from '@angular/core';
 import { TestBed } from '@angular/core/testing';
+import { Router, provideRouter } from '@angular/router';
 import type {
   LibraryMediaView,
   MediaDetailsPayload,
@@ -11,8 +12,10 @@ import type {
 import { FoldPanelHostService } from 'fold-ng';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 
+import { ALL_MEDIA } from '../media-feed-url';
+
 import { NotifyService } from '../../notify.service';
-import { MediaLibraryHttpApi } from '../media-library-http-api';
+import { MediaLibraryHttpApi, type MediaPageRequest } from '../media-library-http-api';
 
 import { MediathequePage } from './mediatheque-page';
 
@@ -91,15 +94,10 @@ class FakeLibrary {
 
   pages: MediaLibraryPageView[] = [];
   fails = false;
-  calls: { limit: number; offset: number; q: string; tags: readonly string[] }[] = [];
+  calls: MediaPageRequest[] = [];
 
-  page(
-    limit: number,
-    offset: number,
-    q = '',
-    tags: readonly string[] = [],
-  ): Promise<MediaLibraryPageView> {
-    this.calls.push({ limit, offset, q, tags });
+  page(request: MediaPageRequest): Promise<MediaLibraryPageView> {
+    this.calls.push(request);
     if (this.fails) {
       return Promise.reject(new Error('réseau'));
     }
@@ -134,6 +132,7 @@ function page(): MediathequePage {
   TestBed.configureTestingModule({
     providers: [
       provideZonelessChangeDetection(),
+      provideRouter([]),
       { provide: MediaLibraryHttpApi, useFactory: () => library },
       { provide: NotifyService, useFactory: () => notify },
       {
@@ -148,6 +147,15 @@ function page(): MediathequePage {
     ],
   });
   return TestBed.createComponent(MediathequePage).componentInstance;
+}
+
+/**
+ * Relit le fonds sous les critères courants. Le constructeur a déjà lancé une
+ * lecture (l'adresse émet d'emblée) ; celle-ci la remplace, et la réponse de
+ * la première est jetée.
+ */
+async function reread(screen: MediathequePage): Promise<void> {
+  await screen['feed'].restart(screen['criteria']());
 }
 
 // `library` est construit dans `page()`, mais le fournisseur doit exister avant
@@ -187,27 +195,52 @@ describe('la médiathèque', () => {
     const screen = page();
     library.fails = true;
 
-    await screen['load']();
+    await reread(screen);
 
-    expect(screen['failure']()).not.toBeNull();
-    expect(screen['items']()).toHaveLength(0);
+    expect(screen['feed'].failure()).not.toBeNull();
+    expect(screen['feed'].items()).toHaveLength(0);
   });
 
-  it('empile les pages au lieu de les remplacer, et avance d’autant', async () => {
+  it('empile les pages au lieu de les remplacer, par curseur', async () => {
     const screen = page();
     library.pages = [
-      { items: [image('a'), image('b')], total: 3, next: null },
+      { items: [image('a'), image('b')], total: 3, next: 'c1' },
       { items: [image('c')], total: 3, next: null },
     ];
 
-    await screen['load']();
-    await screen['load']();
+    await reread(screen);
+    await screen['feed'].more();
 
-    expect(screen['items']().map((item) => item.url)).toEqual(['a', 'b', 'c']);
-    // L'offset suit ce qui a été REÇU, pas ce qui a été demandé : une page
-    // courte ne doit pas faire sauter des images.
-    expect(library.calls.map((call) => call.offset)).toEqual([0, 0, 2]);
-    expect(screen['hasMore']()).toBe(false);
+    expect(screen['feed'].items().map((item) => item.url)).toEqual(['a', 'b', 'c']);
+    // 🔴 Plus aucun `offset` ne part (plan L2) : la suite se lit par `after`.
+    expect(library.calls.map((call) => call.after)).toEqual([undefined, undefined, 'c1']);
+    expect(library.calls.some((call) => 'offset' in call)).toBe(false);
+    expect(screen['feed'].hasMore()).toBe(false);
+  });
+
+  it('dit la fin du fonds en bas de grille après plus d’une page', async () => {
+    const screen = page();
+    library.pages = [
+      { items: [image('a')], total: 2, next: 'c1' },
+      { items: [image('b')], total: 2, next: null },
+    ];
+
+    await reread(screen);
+    expect(screen['tail']()).toBe('more');
+    await screen['feed'].more();
+
+    expect(screen['tail']()).toBe('end');
+  });
+
+  it('ne pose des intercalaires que sous le tri par dépôt', async () => {
+    const screen = page();
+    library.pages = [{ items: [image('a')], total: 1, next: null }];
+    await reread(screen);
+    expect(screen['rows']().map((row) => row.kind)).toEqual(['month', 'image']);
+
+    library.pages = [{ items: [image('a')], total: 1, next: null }];
+    await screen['show']({ ...screen['criteria'](), sort: 'name' });
+    expect(screen['rows']().map((row) => row.kind)).toEqual(['image']);
   });
 });
 
@@ -219,29 +252,25 @@ describe('la médiathèque — la recherche', () => {
    */
   it('envoie le critère au SERVEUR', async () => {
     const screen = page();
-    screen['search'].set('croissant');
-
-    await screen['refilter']();
+    await screen['show']({ ...screen['criteria'](), q: 'croissant' });
 
     expect(library.calls.at(-1)?.q).toBe('croissant');
   });
 
   it('repart du DÉBUT quand le critère change', async () => {
-    // `load()` ajoute à ce qui est affiché — il sert « charger plus ».
-    // Réutilisé tel quel, il collerait les résultats du nouveau filtre à la
-    // suite de ceux de l'ancien.
+    // Le curseur encode la clé du tri qui l'a produit : rejoué sous un autre
+    // critère, il reprendrait au milieu d'une autre liste.
     const screen = page();
     library.pages = [
-      { items: [image('a'), image('b')], total: 2, next: null },
+      { items: [image('a'), image('b')], total: 3, next: 'c1' },
       { items: [image('c')], total: 1, next: null },
     ];
-    await screen['load']();
+    await reread(screen);
 
-    screen['search'].set('croissant');
-    await screen['refilter']();
+    await screen['show']({ ...screen['criteria'](), q: 'croissant' });
 
-    expect(screen['items']().map((item) => item.url)).toEqual(['c']);
-    expect(library.calls.at(-1)?.offset).toBe(0);
+    expect(screen['feed'].items().map((item) => item.url)).toEqual(['c']);
+    expect(library.calls.at(-1)).not.toHaveProperty('after');
   });
 
   it('restreint en cumulant les mots-clés retenus', async () => {
@@ -326,16 +355,16 @@ describe('la médiathèque — les mots-clés', () => {
     library.pages = [
       { items: [tagged('a', ['beurre', 'croissant', 'pain'])], total: 1, next: null },
     ];
-    await screen['load']();
+    await reread(screen);
 
-    await screen['strip'](screen['items']()[0]!, 'croissant');
-    expect(screen['items']()[0]?.tags).toEqual(['beurre', 'pain']);
+    await screen['strip'](screen['feed'].items()[0]!, 'croissant');
+    expect(screen['feed'].items()[0]?.tags).toEqual(['beurre', 'pain']);
     const [last] = screen['stripped']();
     expect(last?.tag).toBe('croissant');
 
     await screen['undoStrip'](last!);
 
-    expect(screen['items']()[0]?.tags).toEqual(['beurre', 'croissant', 'pain']);
+    expect(screen['feed'].items()[0]?.tags).toEqual(['beurre', 'croissant', 'pain']);
     expect(library.described.at(-1)?.tags).toEqual(['beurre', 'croissant', 'pain']);
     expect(screen['stripped']()).toEqual([]);
   });
@@ -349,12 +378,12 @@ describe('la médiathèque — les mots-clés', () => {
     const screen = page();
     const described = { ...tagged('a', ['croissant']), alt: { fr: 'Croissant doré' } };
     library.pages = [{ items: [described], total: 1, next: null }];
-    await screen['load']();
+    await reread(screen);
 
-    await screen['strip'](screen['items']()[0]!, 'croissant');
+    await screen['strip'](screen['feed'].items()[0]!, 'croissant');
     expect(library.described.at(-1)?.alt).toEqual({ fr: 'Croissant doré' });
 
-    await screen['apply'](screen['items']()[0]!, 'beurre');
+    await screen['apply'](screen['feed'].items()[0]!, 'beurre');
     expect(library.described.at(-1)?.alt).toEqual({ fr: 'Croissant doré' });
   });
 
@@ -369,7 +398,7 @@ describe('la médiathèque — les mots-clés', () => {
 
     expect(library.renamed).toEqual([{ from: 'croisant', to: 'croissant' }]);
     expect(notify.successes).toEqual(['Mot-clé renommé']);
-    expect(screen['filterTags']()).toEqual(['croissant']);
+    expect(screen['criteria']().tags).toEqual(['croissant']);
   });
 
   it('dit « fusionnés » quand le mot existait déjà, et passe les comptes au panneau', async () => {
@@ -423,6 +452,47 @@ describe('la médiathèque — les mots-clés', () => {
     expect(opened[0]).toEqual({ tag: { tag: 'croisant', count: 3 } });
     expect(library.removed).toEqual(['croisant']);
     expect(notify.successes).toEqual(['Mot-clé retiré de 3 images']);
-    expect(screen['filterTags']()).toEqual([]);
+    expect(screen['criteria']().tags).toEqual([]);
+  });
+});
+
+describe("la médiathèque — l'adresse porte la vue", () => {
+  it('relit le fonds sous ce que l’adresse demande', async () => {
+    const screen = page();
+    await TestBed.inject(Router).navigateByUrl('/?sort=uses&tags=a,b&unused=1');
+
+    await vi.waitFor(() => expect(screen['criteria']().sort).toBe('uses'));
+    expect(screen['criteria']()).toEqual({
+      ...ALL_MEDIA,
+      sort: 'uses',
+      tags: ['a', 'b'],
+      unused: true,
+    });
+    expect(library.calls.at(-1)).toMatchObject({ sort: 'uses', tags: ['a', 'b'], unused: true });
+  });
+
+  it('écrit un critère dans l’adresse, sans le curseur, et sans relire deux fois', async () => {
+    const screen = page();
+    const router = TestBed.inject(Router);
+    library.pages = [{ items: [image('a')], total: 9, next: 'c1' }];
+    await reread(screen);
+    const before = library.calls.length;
+
+    await screen['show']({ ...screen['criteria'](), untagged: true, from: '2026-10-01' });
+
+    await vi.waitFor(() => expect(router.url).toContain('untagged=1'));
+    expect(router.url).toContain('from=2026-10-01');
+    expect(router.url).not.toContain('after');
+    expect(library.calls.length).toBe(before + 1);
+  });
+
+  it('« Tout afficher » rend l’adresse nue mais garde le tri', async () => {
+    const screen = page();
+    const router = TestBed.inject(Router);
+    await screen['show']({ ...ALL_MEDIA, sort: 'name', q: 'croissant', unused: true });
+
+    await screen['clearFilter']();
+
+    await vi.waitFor(() => expect(router.url).toBe('/?sort=name'));
   });
 });

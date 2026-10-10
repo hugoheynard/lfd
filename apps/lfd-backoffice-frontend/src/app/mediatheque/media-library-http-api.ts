@@ -5,6 +5,7 @@ import type {
   MediaUploadFailureView,
   MediaDetailsPayload,
   MediaLibraryPageView,
+  MediaLibrarySort,
   MediaTagView,
   RenameMediaTagPayload,
   UploadedMediaView,
@@ -12,6 +13,45 @@ import type {
 import { firstValueFrom } from 'rxjs';
 
 import { B2B_API_BASE } from '../api/api-config';
+
+/**
+ * Ce qu'un écran demande d'une page du fonds. Seul `limit` est obligatoire :
+ * un critère absent n'est pas un filtre.
+ */
+export interface MediaPageRequest {
+  readonly limit: number;
+  /** Le `next` de la page précédente, rendu tel quel — jamais lu. */
+  readonly after?: string | undefined;
+  readonly sort?: MediaLibrarySort | undefined;
+  readonly q?: string | undefined;
+  readonly tags?: readonly string[] | undefined;
+  /** Premier jour de dépôt retenu, `AAAA-MM-JJ`, inclus. */
+  readonly from?: string | undefined;
+  /** Dernier jour de dépôt retenu, `AAAA-MM-JJ`, inclus. */
+  readonly to?: string | undefined;
+  readonly untagged?: boolean | undefined;
+  readonly unused?: boolean | undefined;
+}
+
+/**
+ * Les paramètres d'URL d'une demande. Un critère vide ne part PAS : envoyer
+ * `q=` ferait poser un filtre qui n'en est pas un, et le serveur devrait le
+ * défaire.
+ */
+export function pageParams(request: MediaPageRequest): Record<string, string> {
+  const params: Record<string, string> = { limit: String(request.limit) };
+  const q = request.q?.trim() ?? '';
+  if (request.after !== undefined) params['after'] = request.after;
+  if (request.sort !== undefined) params['sort'] = request.sort;
+  if (q !== '') params['q'] = q;
+  if (request.tags !== undefined && request.tags.length > 0)
+    params['tags'] = request.tags.join(',');
+  if (request.from !== undefined && request.from !== '') params['from'] = request.from;
+  if (request.to !== undefined && request.to !== '') params['to'] = request.to;
+  if (request.untagged === true) params['untagged'] = '1';
+  if (request.unused === true) params['unused'] = '1';
+  return params;
+}
 
 /**
  * La **bibliothèque de visuels**, lue par la médiathèque.
@@ -39,12 +79,16 @@ export class MediaLibraryHttpApi {
   private readonly base = B2B_API_BASE;
 
   /**
-   * Une page de la bibliothèque, filtrée **au serveur**.
+   * Une page de la bibliothèque, filtrée et triée **au serveur**.
    *
    * 🔴 Au serveur depuis le 2026-09-23, et c'était un défaut avant d'être un
    * manque : les écrans filtraient ce qu'ils avaient chargé. Le sélecteur en
    * charge cent ; l'image cent-unième était donc introuvable quoi qu'on tape,
    * et rien ne le disait à l'écran.
+   *
+   * 🔴 Par CURSEUR depuis le 2026-10-10 (plan L2) : `after` reprend où `next`
+   * s'est arrêté, et un dépôt pendant qu'on défile ne décale plus rien.
+   * `offset` reste servi, mais plus aucun écran ne l'envoie.
    *
    * ⚠️ Les tags partent séparés par une VIRGULE, pas en paramètre répété :
    * `?tags=a&tags=b` rend une chaîne quand il y en a un et un tableau quand il
@@ -53,22 +97,10 @@ export class MediaLibraryHttpApi {
    * ne contient jamais de virgule — la normalisation d'écriture découpe
    * dessus.
    */
-  async page(
-    limit: number,
-    offset: number,
-    q = '',
-    tags: readonly string[] = [],
-  ): Promise<MediaLibraryPageView> {
+  async page(request: MediaPageRequest): Promise<MediaLibraryPageView> {
     return firstValueFrom(
       this.http.get<MediaLibraryPageView>(`${this.base}/media`, {
-        params: {
-          limit: String(limit),
-          offset: String(offset),
-          // Un critère vide ne part PAS : envoyer `q=` ferait poser un filtre
-          // qui n'en est pas un, et le serveur devrait le défaire.
-          ...(q.trim() === '' ? {} : { q: q.trim() }),
-          ...(tags.length === 0 ? {} : { tags: tags.join(',') }),
-        },
+        params: pageParams(request),
       }),
     );
   }

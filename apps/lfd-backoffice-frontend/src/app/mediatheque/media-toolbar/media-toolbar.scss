@@ -1,0 +1,52 @@
+/* La barre : une rangée qui passe à la ligne, alignée sur le BAS — les champs
+   portent un libellé au-dessus, les bascules non ; c'est le bas qui aligne. */
+.bar {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: flex-end;
+  gap: var(--fold-space-sm) var(--fold-space-md);
+}
+
+.search {
+  flex: 1 1 14rem;
+  max-width: 20rem;
+}
+
+.sort {
+  flex: 0 0 11rem;
+}
+
+.day {
+  flex: 0 0 9.5rem;
+}
+
+.toggles {
+  display: inline-flex;
+  gap: var(--fold-space-xs);
+}
+
+/* À droite, quelle que soit la ligne où la barre le pose. */
+.summary {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--fold-space-sm);
+  margin-inline-start: auto;
+}
+
+.count {
+  color: var(--fold-color-text-muted);
+  font-size: var(--fold-text-sm);
+  font-variant-numeric: tabular-nums;
+  white-space: nowrap;
+}
+
+/* Les mots retenus : leur propre ligne, sous les contrôles. */
+.kept {
+  display: flex;
+  flex-basis: 100%;
+  flex-wrap: wrap;
+  gap: var(--fold-space-xs);
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}

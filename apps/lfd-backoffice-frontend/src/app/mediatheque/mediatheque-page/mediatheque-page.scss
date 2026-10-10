@@ -1,7 +1,35 @@
-.count {
-  margin: 0 0 var(--fold-space-md);
+/* LA GRILLE ET SA BARRE : la barre, l'état ou la grille, puis le bas du fil —
+   espacés par le seul `gap`. */
+.feed {
+  display: flex;
+  flex-direction: column;
+  gap: var(--fold-space-lg);
+}
+
+/* L'INTERCALAIRE de mois : toute la largeur de la grille, en petites
+   capitales atténuées — le même registre que l'en-tête « Mots-clés ». Un filet
+   sous le mot le rattache aux tuiles qui suivent. */
+.month {
+  grid-column: 1 / -1;
+  padding-block: var(--fold-space-sm) var(--fold-space-xs);
+  border-block-end: 1px solid var(--fold-color-border-subtle);
   color: var(--fold-color-text-muted);
-  font-size: var(--fold-text-sm);
+  font-size: var(--fold-text-xs);
+  font-weight: var(--fold-weight-semibold);
+  letter-spacing: var(--fold-tracking-caps);
+  text-transform: uppercase;
+}
+
+/* Le premier intercalaire ouvre la grille : pas d'air au-dessus. */
+.month:first-child {
+  padding-block-start: 0;
+}
+
+.partial {
+  display: inline-flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: var(--fold-space-sm);
 }
 
 .grid {
@@ -99,15 +127,6 @@
   color: var(--fold-color-text-muted);
 }
 
-.sift {
-  padding: var(--fold-space-xs) var(--fold-space-sm);
-  border: 1px solid var(--fold-color-border);
-  border-radius: var(--fold-radius-md);
-  background: var(--fold-color-surface-card);
-  color: inherit;
-  font: inherit;
-}
-
 .tags,
 .worn {
   display: flex;
@@ -136,17 +155,6 @@
   padding: 0;
   border: 0;
   cursor: pointer;
-}
-
-/* LE FILTRE. Sa propre rangée, sous la bande de tags : la bande sert à POSER
-   un mot-clé, celle-ci à en CHERCHER. Les mêler ferait d'un clic deux gestes
-   dont on ne saurait pas lequel part. */
-.sieve {
-  display: flex;
-  flex-wrap: wrap;
-  align-items: center;
-  gap: var(--fold-space-sm);
-  margin-bottom: var(--fold-space-md);
 }
 
 /* LA BANDE. Trois étages, espacés par le seul `gap` : les outils, les mots,

@@ -1,4 +1,4 @@
-import { ChangeDetectionStrategy, Component, inject, input, signal } from '@angular/core';
+import { ChangeDetectionStrategy, Component, computed, inject, input, signal } from '@angular/core';
 import type { LibraryMediaView, MediaFactsView } from '@lfd/pim-contracts';
 import {
   FoldButtonComponent,
@@ -87,6 +87,16 @@ export class LibraryPicker {
   protected readonly loading = signal(true);
   protected readonly failure = signal<string | null>(null);
   protected readonly search = signal('');
+  /**
+   * Le curseur de la page suivante, `null` quand tout est lu.
+   *
+   * 🔴 Par curseur depuis le 2026-10-10 (plan L2) : plus aucun écran n'envoie
+   * `offset`. Le sélecteur ne trie ni ne filtre au-delà de l'étiquette — il
+   * désigne, il ne range pas le fonds.
+   */
+  private readonly next = signal<string | null>(null);
+  protected readonly hasMore = computed(() => this.next() !== null);
+  protected readonly loadingMore = signal(false);
 
   /** Les URL retenues. Un `Set` serait plus juste, mais les signaux comparent
    *  par référence et un tableau relu suffit à cette échelle. */
@@ -105,7 +115,30 @@ export class LibraryPicker {
    */
   protected async research(): Promise<void> {
     this.loading.set(true);
+    this.failure.set(null);
     await this.load();
+  }
+
+  /** La page suivante, mise à la suite. Une recherche relancée repart du début. */
+  protected async more(): Promise<void> {
+    const after = this.next();
+    if (after === null || this.loadingMore()) {
+      return;
+    }
+    this.loadingMore.set(true);
+    const search = this.search();
+    try {
+      const page = await this.api.page({ limit: PAGE_SIZE, q: search, after });
+      if (search !== this.search()) {
+        return;
+      }
+      this.images.update((current) => [...current, ...page.items]);
+      this.next.set(page.next);
+    } catch {
+      this.failure.set("La suite de la médiathèque n'a pas pu être lue.");
+    } finally {
+      this.loadingMore.set(false);
+    }
   }
 
   constructor() {
@@ -173,8 +206,9 @@ export class LibraryPicker {
 
   private async load(): Promise<void> {
     try {
-      const page = await this.api.page(PAGE_SIZE, 0, this.search());
+      const page = await this.api.page({ limit: PAGE_SIZE, q: this.search() });
       this.images.set(page.items);
+      this.next.set(page.next);
     } catch {
       this.failure.set("La médiathèque n'a pas pu être lue.");
     } finally {

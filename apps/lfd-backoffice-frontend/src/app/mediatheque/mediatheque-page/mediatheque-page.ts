@@ -1,4 +1,6 @@
 import { ChangeDetectionStrategy, Component, computed, inject, signal } from '@angular/core';
+import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
+import { ActivatedRoute, Router } from '@angular/router';
 import { MEDIA_LIMITS } from '@lfd/pim-contracts';
 import type {
   LibraryMediaView,
@@ -6,7 +8,6 @@ import type {
   MediaTagView,
   MediaUploadFailureView,
 } from '@lfd/pim-contracts';
-import { httpErrorMessage } from '@lfd/endpoints';
 import {
   FoldBadgeComponent,
   FoldButtonComponent,
@@ -30,6 +31,19 @@ import { NotifyService } from '../../notify.service';
 import { CanDirective } from '../../shared/can/can.directive';
 
 import { BatchUploadStore } from '../batch-upload';
+import { FeedTail, type FeedTailState } from '../feed-tail/feed-tail';
+import { MediaFeedStore } from '../media-feed';
+import {
+  ALL_MEDIA,
+  isFiltering,
+  readCriteria,
+  sameCriteria,
+  toQueryParams,
+  withoutFilters,
+  type MediaFeedCriteria,
+} from '../media-feed-url';
+import { MediaToolbar } from '../media-toolbar/media-toolbar';
+import { feedRows } from '../month-dividers';
 import { CarriersPanel, type CarriersPanelData } from '../carriers-panel/carriers-panel';
 import { ImagePanel, type ImagePanelData, type ImagePanelResult } from '../image-panel/image-panel';
 import { TagChip } from '../tag-chip/tag-chip';
@@ -46,9 +60,6 @@ import {
 } from '../tag-rename-panel/tag-rename-panel';
 import { MediaLibraryHttpApi } from '../media-library-http-api';
 import { FoldPanelHostService } from 'fold-ng';
-
-/** Une page d'aperçus. Le serveur reborne de toute façon à 100. */
-const PAGE_SIZE = 60;
 
 /** Le temps laissé pour annuler un retrait sur tuile (D1). Le compte à rebours
  *  de `fold-toast` se met en pause sous le pointeur ou le clavier. */
@@ -95,13 +106,15 @@ interface StrippedTag {
     FoldPopoverTriggerDirective,
     FoldSearchComponent,
     FoldToastComponent,
+    FeedTail,
+    MediaToolbar,
     TagChip,
   ],
   templateUrl: './mediatheque-page.html',
   styleUrl: './mediatheque-page.scss',
   // Fourni par la PAGE et non à la racine : un compte rendu de dépôt appartient
   // à l'écran qui l'a lancé, et le quitter doit l'oublier.
-  providers: [BatchUploadStore, TagPaletteStore],
+  providers: [BatchUploadStore, MediaFeedStore, TagPaletteStore],
   changeDetection: ChangeDetectionStrategy.OnPush,
 })
 export class MediathequePage {
@@ -110,6 +123,9 @@ export class MediathequePage {
   protected readonly palette = inject(TagPaletteStore);
   private readonly panels = inject(FoldPanelHostService);
   private readonly notify = inject(NotifyService);
+  private readonly route = inject(ActivatedRoute);
+  private readonly router = inject(Router);
+  protected readonly feed = inject(MediaFeedStore);
 
   protected readonly undoMs = UNDO_MS;
   /** Le dernier retrait sur tuile, tant qu'on peut l'annuler. Un seul à la fois. */
@@ -119,29 +135,34 @@ export class MediathequePage {
   /** Ce qu'on tape dans « Nouveau mot-clé ». */
   protected readonly coinDraft = signal('');
 
-  protected readonly items = signal<readonly LibraryMediaView[]>([]);
-  protected readonly total = signal(0);
-  protected readonly loading = signal(true);
   /**
-   * Le message d'un échec, `null` sinon.
+   * Ce que la grille montre — le tri et les filtres, **tels que l'adresse les
+   * porte** (plan L2, point 5). Un lien partagé rouvre la même vue.
    *
-   * Une grille vide et une grille qui n'a pas pu charger se ressemblent à
-   * l'écran ; les confondre ferait croire le fonds vide au premier réseau qui
-   * tousse.
+   * 🔴 Tout part au SERVEUR : filtrer ce qui est chargé ne cherche pas, ça trie
+   * un échantillon — une image non chargée était introuvable quoi qu'on tape
+   * (corrigé le 2026-09-23).
    */
-  protected readonly failure = signal<string | null>(null);
+  protected readonly criteria = signal<MediaFeedCriteria>(ALL_MEDIA);
 
-  private readonly offset = signal(0);
+  /** La grille avec ses intercalaires de mois — sous le tri par dépôt seulement. */
+  protected readonly rows = computed(() => feedRows(this.feed.items(), this.criteria().sort));
 
-  /**
-   * Ce qu'on cherche — **envoyé au serveur**, pas appliqué ici.
-   *
-   * 🔴 Filtrer ce qui est chargé ne cherche pas, ça trie un échantillon : le
-   * fonds se parcourt soixante par soixante, donc une image non chargée était
-   * introuvable quoi qu'on tape. C'est le défaut que ce champ corrige
-   * (2026-09-23).
-   */
-  protected readonly search = signal('');
+  protected readonly filtering = computed(() => isFiltering(this.criteria()));
+
+  /** Ce que le bas de la grille dit. Un échec se dit au-dessus, pas ici. */
+  protected readonly tail = computed<FeedTailState>(() => {
+    if (this.feed.failure() !== null) {
+      return 'idle';
+    }
+    if (this.feed.loading()) {
+      return 'loading';
+    }
+    if (this.feed.hasMore()) {
+      return 'more';
+    }
+    return this.feed.ended() ? 'end' : 'idle';
+  });
 
   /**
    * **Ce qui n'est pas entré**, relu du serveur.
@@ -180,30 +201,48 @@ export class MediathequePage {
   protected readonly pastFailures = signal<readonly MediaUploadFailureView[]>([]);
   protected readonly showPast = signal(false);
 
-  /** Les mots-clés retenus — l'image doit les porter TOUS. */
-  protected readonly filterTags = signal<readonly string[]>([]);
-
-  protected readonly hasMore = computed(() => this.items().length < this.total());
-
   constructor() {
-    void this.load();
+    // La première émission ouvre l'écran ; les suivantes ne relisent que si
+    // l'adresse dit autre chose que l'écran (Précédent, un lien collé). Celles
+    // que l'écran provoque lui-même disent la même chose, et ne relisent pas
+    // une seconde fois — patron de `admin/journal/journal-page.ts`.
+    let opened = false;
+    this.route.queryParamMap.pipe(takeUntilDestroyed()).subscribe((params) => {
+      const criteria = readCriteria(params);
+      if (opened && sameCriteria(criteria, this.criteria())) {
+        return;
+      }
+      opened = true;
+      this.criteria.set(criteria);
+      void this.feed.restart(criteria);
+    });
     void this.palette.refresh();
   }
 
-  /** Charge la page suivante et l'ajoute à ce qui est déjà affiché. */
-  protected async load(): Promise<void> {
-    this.loading.set(true);
-    this.failure.set(null);
-    try {
-      const page = await this.api.page(PAGE_SIZE, this.offset(), this.search(), this.filterTags());
-      this.items.update((current) => [...current, ...page.items]);
-      this.total.set(page.total);
-      this.offset.update((current) => current + page.items.length);
-    } catch {
-      this.failure.set("La bibliothèque n'a pas pu être lue.");
-    } finally {
-      this.loading.set(false);
+  /**
+   * Pose de nouveaux critères : l'adresse d'abord, puis une lecture **depuis
+   * le début** — un curseur ne survit pas à un changement de critère.
+   */
+  protected async show(criteria: MediaFeedCriteria): Promise<void> {
+    if (sameCriteria(criteria, this.criteria())) {
+      return;
     }
+    this.criteria.set(criteria);
+    this.syncUrl();
+    await this.feed.restart(criteria);
+  }
+
+  /**
+   * `replaceUrl` : un filtre qu'on essaie n'est pas une page qu'on visite, et
+   * « Précédent » doit ramener d'où l'on vient.
+   */
+  private syncUrl(): void {
+    void this.router.navigate([], {
+      relativeTo: this.route,
+      queryParams: toQueryParams(this.criteria()),
+      queryParamsHandling: 'merge',
+      replaceUrl: true,
+    });
   }
 
   /**
@@ -233,41 +272,21 @@ export class MediathequePage {
     return new Date(failure.occurredAt).toLocaleString('fr-FR');
   }
 
-  /**
-   * Relit le fonds **depuis le début** avec le filtre courant.
-   *
-   * 🔴 Depuis le début, et c'est le point : `load()` AJOUTE à ce qui est
-   * affiché, parce qu'il sert « charger plus ». Réutilisé tel quel après un
-   * changement de critère, il collerait les résultats du nouveau filtre à la
-   * suite de ceux de l'ancien — un écran qui mélange deux recherches.
-   */
-  protected async refilter(): Promise<void> {
-    this.items.set([]);
-    this.offset.set(0);
-    await this.load();
-  }
-
   /** Retient ou relâche un mot-clé du filtre. Retenir RESTREINT. */
   protected async toggleFilterTag(tag: string): Promise<void> {
-    this.filterTags.update((current) =>
-      current.includes(tag) ? current.filter((kept) => kept !== tag) : [...current, tag],
-    );
-    await this.refilter();
+    const kept = this.criteria().tags;
+    await this.show({
+      ...this.criteria(),
+      tags: kept.includes(tag) ? kept.filter((other) => other !== tag) : [...kept, tag],
+    });
   }
 
   protected isFiltering(tag: string): boolean {
-    return this.filterTags().includes(tag);
+    return this.criteria().tags.includes(tag);
   }
 
-  /** Y a-t-il un critère posé ? Sert à proposer de l'effacer. */
-  protected readonly filtering = computed(
-    () => this.search().trim() !== '' || this.filterTags().length > 0,
-  );
-
   protected async clearFilter(): Promise<void> {
-    this.search.set('');
-    this.filterTags.set([]);
-    await this.refilter();
+    await this.show(withoutFilters(this.criteria()));
   }
 
   /**
@@ -347,10 +366,9 @@ export class MediathequePage {
     }
   }
 
+  /** Relit depuis le début, sous les mêmes critères. */
   private async reload(): Promise<void> {
-    this.items.set([]);
-    this.offset.set(0);
-    await this.load();
+    await this.feed.restart(this.criteria());
   }
 
   /** Le tag saisi dans la bande rejoint le vocabulaire et s'arme. */
@@ -416,7 +434,7 @@ export class MediathequePage {
    */
   protected async undoStrip(last: StrippedTag): Promise<void> {
     this.stripped.set([]);
-    const item = this.items().find((entry) => entry.url === last.url);
+    const item = this.feed.items().find((entry) => entry.url === last.url);
     if (item === undefined || item.tags.includes(last.tag)) {
       return;
     }
@@ -465,10 +483,9 @@ export class MediathequePage {
       return;
     }
     this.notify.success(merged ? 'Mots-clés fusionnés' : 'Mot-clé renommé');
-    this.filterTags.update((current) => [
-      ...new Set(current.map((kept) => (kept === entry.tag ? result.to : kept))),
-    ]);
-    await this.reload();
+    await this.followFilter(
+      this.criteria().tags.map((kept) => (kept === entry.tag ? result.to : kept)),
+    );
   }
 
   /** Retire un mot de tout le fonds, après une confirmation qui donne le compte. */
@@ -486,8 +503,20 @@ export class MediathequePage {
       return;
     }
     this.notify.success(`Mot-clé retiré de ${imagesLabel(entry.count)}`);
-    this.filterTags.update((current) => current.filter((kept) => kept !== entry.tag));
-    await this.reload();
+    await this.followFilter(this.criteria().tags.filter((kept) => kept !== entry.tag));
+  }
+
+  /**
+   * Le filtre suit le mot renommé ou retiré, puis la grille est relue — même
+   * si le filtre n'a pas bougé : elle montre encore l'ancien mot.
+   */
+  private async followFilter(tags: readonly string[]): Promise<void> {
+    const next = { ...this.criteria(), tags: [...new Set(tags)] };
+    if (sameCriteria(next, this.criteria())) {
+      await this.reload();
+      return;
+    }
+    await this.show(next);
   }
 
   /** Le glisser-déposer transporte le MOT, pas un index : la bande peut être
@@ -502,7 +531,7 @@ export class MediathequePage {
   }
 
   private replace(item: LibraryMediaView): void {
-    this.items.update((current) => current.map((entry) => (entry.url === item.url ? item : entry)));
+    this.feed.replace(item);
   }
 
   /**
@@ -523,16 +552,14 @@ export class MediathequePage {
     if (!confirm(`Retirer « ${kept} » ? Ses mots-clés et son point focal seront perdus.`)) {
       return;
     }
-    this.failure.set(null);
     try {
       await this.api.discard(item.url);
-      this.items.update((current) => current.filter((entry) => entry.url !== item.url));
-      this.total.update((current) => Math.max(current - 1, 0));
-      this.offset.update((current) => Math.max(current - 1, 0));
+      this.feed.drop(item.url);
     } catch (caught) {
       // Le refus du serveur porte le NOMBRE de fiches ; `message` vaudrait
       // « Http failure response … : 409 » et ferait chercher lesquelles.
-      this.failure.set(httpErrorMessage(caught, "L'image n'a pas pu être retirée."));
+      // Un toast et pas l'état d'échec : la grille reste juste.
+      this.notify.refused(caught, "L'image n'a pas pu être retirée.");
     }
   }
 
@@ -585,7 +612,7 @@ export class MediathequePage {
           await this.palette.refresh();
         } catch (caught) {
           this.replace(item);
-          this.failure.set(httpErrorMessage(caught, "L'image n'a pas pu être décrite."));
+          this.notify.refused(caught, "L'image n'a pas pu être décrite.");
         }
       });
   }

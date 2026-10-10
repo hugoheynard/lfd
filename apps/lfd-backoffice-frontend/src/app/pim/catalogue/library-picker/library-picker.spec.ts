@@ -1,9 +1,12 @@
 import { TestBed } from '@angular/core/testing';
-import type { LibraryMediaView } from '@lfd/pim-contracts';
+import type { LibraryMediaView, MediaLibraryPageView } from '@lfd/pim-contracts';
 import { FoldPanelRef } from 'fold-ng';
 import { describe, expect, it, vi } from 'vitest';
 
-import { MediaLibraryHttpApi } from '../../../mediatheque/media-library-http-api';
+import {
+  MediaLibraryHttpApi,
+  type MediaPageRequest,
+} from '../../../mediatheque/media-library-http-api';
 import { LibraryPicker, type LibraryPickerData, type PickedMedia } from './library-picker';
 
 /**
@@ -27,8 +30,12 @@ function image(url: string): LibraryMediaView {
   };
 }
 
-async function setup(data: LibraryPickerData) {
+async function setup(
+  data: LibraryPickerData,
+  pages: MediaLibraryPageView[] = [{ items: [image('a'), image('b')], total: 2, next: null }],
+) {
   const closed: (readonly PickedMedia[] | undefined)[] = [];
+  const requests: MediaPageRequest[] = [];
   TestBed.configureTestingModule({
     providers: [
       {
@@ -37,7 +44,12 @@ async function setup(data: LibraryPickerData) {
       },
       {
         provide: MediaLibraryHttpApi,
-        useValue: { page: async () => ({ items: [image('a'), image('b')], total: 2, next: null }) },
+        useValue: {
+          page: async (request: MediaPageRequest) => {
+            requests.push(request);
+            return pages.shift() ?? { items: [], total: 0, next: null };
+          },
+        },
       },
     ],
   });
@@ -46,7 +58,7 @@ async function setup(data: LibraryPickerData) {
   fixture.detectChanges();
   const picker = fixture.componentInstance;
   await vi.waitFor(() => expect(picker['loading']()).toBe(false));
-  return { picker, closed };
+  return { picker, closed, requests };
 }
 
 describe('LibraryPicker', () => {
@@ -71,5 +83,34 @@ describe('LibraryPicker', () => {
     picker['toggle']('a');
     picker['confirm']();
     expect(closed[0]?.[0]).not.toHaveProperty('alt');
+  });
+
+  it('lit la suite par CURSEUR, jamais par décalage', async () => {
+    const { picker, requests } = await setup({ already: [] }, [
+      { items: [image('a')], total: 2, next: 'c1' },
+      { items: [image('b')], total: 2, next: null },
+    ]);
+    expect(picker['hasMore']()).toBe(true);
+
+    await picker['more']();
+
+    expect(picker['images']().map((kept) => kept.url)).toEqual(['a', 'b']);
+    expect(requests.map((request) => request.after)).toEqual([undefined, 'c1']);
+    expect(requests.some((request) => 'offset' in request)).toBe(false);
+    expect(picker['hasMore']()).toBe(false);
+  });
+
+  it('une recherche repart du début, sans curseur', async () => {
+    const { picker, requests } = await setup({ already: [] }, [
+      { items: [image('a')], total: 2, next: 'c1' },
+      { items: [image('z')], total: 1, next: null },
+    ]);
+    picker['search'].set('croissant');
+
+    await picker['research']();
+
+    expect(requests.at(-1)).toEqual({ limit: 100, q: 'croissant' });
+    expect(picker['images']().map((kept) => kept.url)).toEqual(['z']);
+    expect(picker['hasMore']()).toBe(false);
   });
 });

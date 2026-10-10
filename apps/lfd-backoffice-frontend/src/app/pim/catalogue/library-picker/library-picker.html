@@ -50,6 +50,11 @@
         </li>
       }
     </ul>
+    @if (hasMore()) {
+      <button foldButton emphasis="soft" size="sm" [loading]="loadingMore()" (click)="more()">
+        Charger la suite
+      </button>
+    }
   }
 </div>
 

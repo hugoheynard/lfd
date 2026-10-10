@@ -1,0 +1,86 @@
+<!-- UNE barre : les contrôles s'alignent sur leur ligne de base et passent à
+     la ligne d'un bloc quand la largeur manque ; le compte reste à droite. -->
+<div class="bar">
+  <fold-search
+    class="search"
+    size="sm"
+    placeholder="Chercher par étiquette"
+    ariaLabel="Chercher par étiquette"
+    [value]="criteria().q"
+    (searchChange)="set({ q: $event })"
+  />
+
+  <fold-listbox
+    class="sort"
+    size="sm"
+    label="Trier"
+    [options]="sorts"
+    [value]="criteria().sort"
+    (selectionChange)="set({ sort: $event })"
+  />
+
+  <fold-date
+    class="day"
+    size="sm"
+    label="Déposées du"
+    [value]="criteria().from"
+    [max]="bound(criteria().to)"
+    (valueChange)="set({ from: $event })"
+  />
+  <fold-date
+    class="day"
+    size="sm"
+    label="au"
+    [value]="criteria().to"
+    [min]="bound(criteria().from)"
+    (valueChange)="set({ to: $event })"
+  />
+
+  <!-- Deux bascules indépendantes, cumulables : pas un choix exclusif, donc
+       pas une rangée segmentée. Pleines quand elles filtrent. -->
+  <span class="toggles">
+    <button
+      foldButton
+      size="sm"
+      shape="pill"
+      icon="tag"
+      [emphasis]="criteria().untagged ? 'solid' : 'outline'"
+      [attr.aria-pressed]="criteria().untagged"
+      (click)="set({ untagged: !criteria().untagged })"
+    >
+      Non taguées
+    </button>
+    <button
+      foldButton
+      size="sm"
+      shape="pill"
+      icon="image"
+      [emphasis]="criteria().unused ? 'solid' : 'outline'"
+      [attr.aria-pressed]="criteria().unused"
+      (click)="set({ unused: !criteria().unused })"
+    >
+      Inutilisées
+    </button>
+  </span>
+
+  <span class="summary">
+    @if (count(); as count) {
+      <span class="count" aria-live="polite">{{ count }}</span>
+    }
+    @if (filtering()) {
+      <button foldButton emphasis="soft" size="sm" icon="reset" (click)="showAll()">
+        Tout afficher
+      </button>
+    }
+  </span>
+
+  @if (criteria().tags.length > 0) {
+    <!-- Le MÊME dessin que la bande, armé : un mot retenu. Son × le relâche
+         du filtre, il ne touche aucune image. -->
+    <ul class="kept" aria-label="Mots-clés du filtre">
+      @for (tag of criteria().tags; track tag) {
+        <li><app-tag-chip [tag]="tag" armed removable (removed)="release(tag)" /></li>
+      }
+    </ul>
+  }
+</div>

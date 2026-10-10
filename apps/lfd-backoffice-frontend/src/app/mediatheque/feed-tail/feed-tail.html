@@ -1,0 +1,12 @@
+@switch (state()) {
+  @case ('more') {
+    <!-- Le repli : au clavier, ou sans observateur. Discret, mais toujours là. -->
+    <button foldButton emphasis="soft" size="sm" (click)="reached.emit()">Charger la suite</button>
+  }
+  @case ('loading') {
+    <fold-spinner size="sm" label="Lecture de la suite…" />
+  }
+  @case ('end') {
+    <p class="end">Fin du fonds</p>
+  }
+}
