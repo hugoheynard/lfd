@@ -340,6 +340,24 @@ rassemblé dans [`../ops/cloudflare-images.md`](../ops/cloudflare-images.md).
 
 ---
 
+### La fenêtre du retrait — assumée (D6)
+
+`DiscardMediaHandler` compte les porteurs **puis** supprime. Si un porteur
+choisit l'image entre les deux — une fiche enregistrée pendant l'aller-retour
+au bucket —, il affichera une image disparue. Rien ne ferme cette fenêtre, et
+c'est décidé (Hugo, 2026-10-10) : un verrou partagé entre le retrait et tous
+les gestes qui choisissent une image traverserait quatre blocs (référentiel,
+familles, opérations, vitrine) pour une fenêtre de quelques centaines de
+millisecondes sur un geste rare.
+
+**Le remède, s'il arrive** : redéposer le même fichier. L'adressage par le
+contenu redonne la même URL, et le porteur retrouve son image — sans ses
+mots-clés, son alternative ni son point focal, qui étaient au fonds.
+
+**Ce qui le rendrait faux** : un retrait automatisé en masse, ou plusieurs
+personnes qui alimentent le fonds en même temps qu'on le nettoie. Le
+ramassage, lui, rejoue le compte juste avant chaque suppression.
+
 ## 9. Le ramassage des orphelines
 
 Un cron Cloudflare (`apps/lfd-api/wrangler.jsonc`, `30 3`, via
@@ -402,45 +420,20 @@ Hugo : [`plan-la-mediatheque-amelioree.md`](plan-la-mediatheque-amelioree.md).
 > - l'index GIN déclaré au schéma, le doublon sur `url` retiré (`158bf9273`) ;
 > - l'écran dit qu'un visuel en usage non publié n'apparaît nulle part (§6).
 
-1. **Les visuels de l'accueil vivent hors du fonds.**
-   - L'accueil public lit encore `MOCK_EVENT`, avec une URL Unsplash en dur
-     (`apps/lfc-ecommerce-frontend/src/app/client/mock-event.ts`).
-   - La porte « fournil » est une URL tierce dans `accueil-public.scss`
-     (`$fournil`).
+Le plan [`plan-la-mediatheque-amelioree.md`](plan-la-mediatheque-amelioree.md)
+tient l'avancement lot par lot, et ses décisions prises sans Hugo (R1…) à
+revoir. Ce qui reste, au 2026-10-10 :
 
-   Les opérations datées et la vitrine sont pourtant déjà porteuses : il reste
-   à brancher l'écran.
-
-2. **Le point focal n'a aucun lecteur.** Il se saisit, se range et voyage
-   dans les contrats de la médiathèque, mais pas sur le fil du catalogue, et
-   la boutique recadre au centre.
-   - Le brancher : l'ajouter à la projection des visuels (le fait durable
-     d'abord, le push ensuite), puis poser un `object-position` côté boutique.
-   - C'est ce qu'attendent les cartes sans forme fixe de l'accueil.
-   - ⚠️ Un `focal` **requis** sur le fil rendrait illisible une livraison en
-     attente qui porte une image : il doit être optionnel.
-3. **Remplacer une image sur place.** Concrètement : déposer (octets **hors**
-   transaction), puis repointer tous les porteurs dans **une** unité.
-   - Le repointage fusionne : un porteur qui affiche déjà les deux images
-     produirait deux lignes identiques.
-   - Il journalise : le port de repointage exigera un `WriteTicket`, et la
-     porte l'auditera d'office.
-   - Il laisse la projection faire suivre la boutique.
-4. **La fenêtre du retrait.** `DiscardMediaHandler` compte les porteurs puis
-   supprime : un porteur qui attrape l'image entre les deux afficherait une
-   image disparue. La fenêtre est celle d'un aller-retour au bucket ; rien ne
-   la ferme.
-5. **Les ratios.** La décision est prise : signaler **à l'affectation**, pas
-   refuser au dépôt. Le point focal existe justement pour que recadrer soit
-   correct. `describe(urls)` rend déjà les dimensions.
-6. **La pré-validation à l'écran.** Le type, le poids et les dimensions sont
-   connus du navigateur avant l'envoi. Aujourd'hui, l'erreur revient du
-   serveur, loin du geste.
-7. **Le préfixe de clé s'appelle `products`** alors que le fonds sert tout
+1. **L'accueil, seconde moitié (L6)** : la page « Accueil » de la vitrine,
+   sa bannière 21/9 et l'image de la porte « fournil » — en cours. La photo
+   actuelle de la porte est une URL tierce : elle doit être déposée au fonds
+   (ou remplacée) avant d'être choisie.
+2. **Remplacer une image (L7).** Déposer, puis repointer tous les porteurs
+   dans une unité ; l'ancienne reste au fonds (D5).
+3. **Le préfixe de clé s'appelle `products`** alors que le fonds sert tout
    porteur. C'est une valeur, pas un nom : il ne se renomme pas sans migrer
    les URL, et rien ne l'exige.
-8. **🔵 Non vérifié depuis le dépôt** : la transformation d'images est-elle
-   activée sur la zone ? (`onerror=redirect` masquerait qu'elle ne l'est
-   pas.) Le ramassage a-t-il tourné en production, et `capped` a-t-il déjà
-   mordu ? Un coup d'œil au tableau de bord et aux journaux du cron répond
-   aux deux.
+4. **🔵 Au-delà de 5 000 transformations par mois**, l'offre Images & Stream
+   n'étant pas souscrite : facturé, ou arrêté ? Cf.
+   [`../ops/cloudflare-images.md`](../ops/cloudflare-images.md) §5.
+5. **🔵 Recadrage automatique** des images sans point (R8 du plan) : non fait.

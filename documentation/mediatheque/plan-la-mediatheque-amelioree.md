@@ -127,7 +127,7 @@ une unité : une méthode de plus sur le canal des porteurs, qui exige un
 `WriteTicket`. Le repointage fusionne les doublons. L'ancienne image reste au
 fonds (D5). La projection fait suivre la boutique.
 
-## L8 — La fenêtre du retrait, écrite
+## ~~L8 — La fenêtre du retrait, écrite~~ ✅ 2026-10-10 (`mediatheque.md` §8)
 
 `mediatheque.md` dit la fenêtre et son remède (D6). Rien à bâtir.
 
