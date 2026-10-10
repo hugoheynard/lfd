@@ -215,3 +215,18 @@ describe("moduleOf — aucun type du catalogue sans module", () => {
     expect(moduleOf("company_mercuriale.archived")).toBe("commercial");
   });
 });
+
+/**
+ * Régression : les faits du fonds d'images se rangeaient sous « Référentiel »,
+ * alors que le fonds a son bloc et son droit depuis le 2026-09-23 (corrigé le
+ * 2026-10-10).
+ */
+describe("moduleOf — la médiathèque", () => {
+  it.each([
+    ["media_asset.deposited", "mediatheque"],
+    ["media_asset.described", "mediatheque"],
+    ["media_asset.discarded", "mediatheque"],
+  ])("%s → %s", (type, module) => {
+    expect(moduleOf(type)).toBe(module);
+  });
+});

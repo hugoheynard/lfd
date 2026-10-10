@@ -18,6 +18,12 @@ import { z } from "zod";
  * réponse sans la parser (`http.get<T>`) et masque la pastille d'un module qu'il
  * ne connaît pas (`@if (line.moduleLabel)`), vérifié le 2026-09-19.
  *
+ * `mediatheque` — le fonds d'images (2026-10-10). Il était rangé sous `pim`
+ * depuis le temps où il vivait dans le référentiel ; il en est sorti le
+ * 2026-09-23 avec son bloc et son droit, et le filtre « Référentiel » montrait
+ * donc à qui gère le catalogue des faits d'un fonds qu'il ne gère pas. Même
+ * ordre de déploiement que `comptabilite` : l'API d'abord.
+ *
  * `comptabilite` — notre entité émettrice et les mandats SEPA (Hugo,
  * 2026-09-19) : le travail de la comptabilité, pas un compte client. Même
  * déploiement que `production` : le back-office déjà servi masque la pastille
@@ -33,6 +39,7 @@ export const activityModuleSchema = z.enum([
   "equipe",
   "production",
   "comptabilite",
+  "mediatheque",
 ]);
 export type ActivityModule = z.infer<typeof activityModuleSchema>;
 

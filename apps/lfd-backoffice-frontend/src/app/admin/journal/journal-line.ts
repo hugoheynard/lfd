@@ -22,6 +22,7 @@ export const MODULE_LABELS: Readonly<Record<ActivityModule, string>> = {
   equipe: 'Équipe',
   production: 'Production',
   comptabilite: 'Comptabilité',
+  mediatheque: 'Médiathèque',
 };
 
 /** Les clés que la ligne affiche hors de la phrase : le client d'une commande. */

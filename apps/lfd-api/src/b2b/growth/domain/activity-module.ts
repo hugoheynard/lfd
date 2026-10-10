@@ -45,11 +45,6 @@ const PREFIXES: Readonly<Record<ActivityModule, readonly string[]>> = {
     // choisir les articles de Noël et fixer ses dates, c'est le travail du
     // catalogue (plan des opérations datées, D1 — 2026-09-24).
     "operation.",
-    // La MÉDIATHÈQUE : le fonds d'images n'appartient à aucun référentiel — les
-    // fiches en portent, les familles aussi. ⚠️ Elle est un bloc à elle, avec
-    // son droit, depuis le 2026-09-23 : cette ligne la range encore sous le PIM
-    // (`documentation/mediatheque/mediatheque.md` §11, vérifié le 2026-10-10).
-    "media_asset.",
   ],
   // La tarification négociée est du COMMERCIAL : c'est le même métier que le
   // lead et le rendez-vous — ce qu'on consent à un client pour qu'il achète.
@@ -196,6 +191,9 @@ const PREFIXES: Readonly<Record<ActivityModule, readonly string[]>> = {
     // importé sous `b2b_accounting` (plan `export-des-mandats-pour-la-banque.md`, 2026-10-09).
     "mandate_bank_export.",
   ],
+  // Le fonds d'images : un bloc à lui depuis le 2026-09-23, avec son droit
+  // (`media_library`). Rangé sous `pim` jusqu'au 2026-10-10.
+  mediatheque: ["media_asset."],
 };
 
 /** Les préfixes d'un module — l'entrée du filtre côté base. */
@@ -212,6 +210,7 @@ const MODULES: readonly ActivityModule[] = [
   "equipe",
   "production",
   "comptabilite",
+  "mediatheque",
 ];
 
 /** Le module d'un type, ou `null` si son préfixe n'est rattaché à aucun. */
