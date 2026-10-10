@@ -156,6 +156,9 @@ Une image a **une** ligne : la lecture ne regroupe rien, la page est un
 | Déposer                          | `POST /media` (multipart)  | **médiathèque seulement**          | PNG, JPEG ou WebP, lu dans les octets ; 10 Mo ; 200 px de côté au moins ; garde de transport à 25 Mo                                    |
 | Voir les refus                   | `GET /media/failures`      | médiathèque                        | l'historique survit au rechargement ; il ne **rejoue** pas, puisque l'octet n'a pas été stocké                                          |
 | Nommer, taguer, décrire, pointer | `PUT /media`               | médiathèque                        | les tags sont découpés, mis en minuscules et dédoublonnés (`mediaTags`)                                                                 |
+| Le vocabulaire                   | `GET /media/tags`          | la bande de tags                   | chaque mot du fonds ENTIER et son nombre d'images — jamais la page chargée                                                              |
+| Renommer, fusionner un mot       | `PUT /media/tags/rename`   | menu de la pastille                | partout, en une unité ; la fusion avec un mot existant est annoncée avant de valider                                                    |
+| Retirer un mot partout           | `DELETE /media/tags?tag=`  | menu de la pastille                | confirmation avec le compte ; les images restent                                                                                        |
 | Qui l'affiche ?                  | `GET /media/carriers?url=` | médiathèque                        | les porteurs, nommés et cliquables, pas un simple compte                                                                                |
 | Retirer du fonds                 | `DELETE /media?url=`       | médiathèque                        | **409 dès qu'un porteur l'affiche**, avec leur nombre                                                                                   |
 | Choisir, donner un usage         | `PUT` du porteur           | fiche, famille, opération, vitrine | le porteur écrit sa propre table de rattachement ; il ne touche jamais le fonds                                                         |
@@ -165,6 +168,20 @@ alimente et tague le fonds n'est pas celui qui rédige les fiches. Un dépôt
 offert au rédacteur remplirait le fonds d'images non taguées, donc
 introuvables. Les clients HTTP du référentiel n'ont plus de méthode de dépôt :
 le geste y est inexprimable.
+
+### Les tags à l'écran
+
+Une **pastille unique** (`tag-chip`) sert partout : bande (mot et compte,
+menu intégré), tuile (×), filtre, panneau de l'image (mots portés et
+suggestions). Retirer un mot d'une tuile est immédiat et s'annule pendant six
+secondes (D1 du plan). Chaque geste de tags renvoie l'alternative de l'image
+telle qu'elle est : le serveur lit une alternative **absente** comme effacée
+(c'est ainsi que le panneau la vide), et ces gestes l'ont effacée jusqu'au
+2026-10-10.
+
+⚠️ Renommer n'est pas verrouillé ligne à ligne (pas de SQL brut sur le fonds) :
+un enregistrement de tags concurrent peut écraser le renommage. La fenêtre est
+celle d'une transaction courte, et elle est écrite dans le handler.
 
 Le dépôt en lot (`batch-upload.ts`) est **séquentiel**. Il ne s'arrête jamais
 sur un refus et garde les `File` refusés pour qu'on puisse les rejouer. Il est

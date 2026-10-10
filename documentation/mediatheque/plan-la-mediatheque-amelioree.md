@@ -24,7 +24,7 @@
 
 ---
 
-## L1 — Les tags
+## ~~L1 — Les tags~~ ✅ bâti le 2026-10-10 (`9e0f9f93e`, `cddc296ff`)
 
 **Ce qui est vrai aujourd'hui** (`mediatheque-page`, `tag-palette.ts`) :
 
