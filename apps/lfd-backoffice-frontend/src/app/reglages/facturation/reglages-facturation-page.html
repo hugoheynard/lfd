@@ -1,488 +1,495 @@
-<header class="intro">
-  <h1 class="title">Comment un prix se fabrique</h1>
-  <p class="lede">
-    Cette page explique ce que le système fait quand il facture, et pourquoi. Elle ne règle rien —
-    la saisie se trouve dans l'onglet <strong>Tarification</strong>. Elle sert à répondre à un
-    client qui conteste, et à décider en connaissant les contreparties.
-  </p>
-</header>
-
-<fold-card>
-  <div cardHeader class="head"><h2 class="section-title">La chaîne</h2></div>
-
-  <p>
-    Un prix part du <strong>tarif du PIM</strong> et traverse quatre étages. Chacun peut le modifier
-    ; à la fin, une <strong>limite</strong> vérifie qu'on n'est pas allé trop loin.
-  </p>
-
-  <app-pipeline-schema />
-
-  <div class="pair">
-    <div class="fact">
-      <h3 class="fact-title">Les étages se composent</h3>
-      <p>
-        −20 % puis −10 % font <strong>−28 %</strong> (0,8 × 0,9), jamais −30 %. Chaque étage
-        s'applique au prix qui sort du précédent.
-      </p>
-      <p class="why">
-        C'est la seule règle qui reste vraie quand on <em>insère</em> un étage. Avec l'addition, un
-        cinquième étage changerait rétroactivement le sens des quatre autres.
-      </p>
-    </div>
-    <div class="fact">
-      <h3 class="fact-title">L'ordre est une décision commerciale</h3>
-      <p>
-        −20 % puis −5 € ne donne pas le même prix que −5 € puis −20 %. L'ordre des quatre étages
-        n'est pas un détail technique : c'est un choix, arrêté une fois.
-      </p>
-    </div>
-  </div>
-
-  <fold-callout variant="info">
-    <p>
-      <strong>Un seul arrondi, à la toute fin.</strong> La chaîne calcule en fractions exactes et
-      n'arrondit qu'au dernier moment. Arrondir à chaque étage décalerait d'un centime au bout de
-      quatre — et un centime sur une facture, ça se voit.
+<!-- Partie des Réglages vers la Documentation le 2026-10-10 (Hugo) : elle
+     explique, elle ne règle rien. -->
+<fold-page-layout icon="tag" title="Facturation">
+  <header class="intro">
+    <h1 class="title">Comment un prix se fabrique</h1>
+    <p class="lede">
+      Cette page explique ce que le système fait quand il facture, et pourquoi. Elle ne règle rien —
+      la saisie se trouve dans l'onglet <strong>Tarification</strong>. Elle sert à répondre à un
+      client qui conteste, et à décider en connaissant les contreparties.
     </p>
-  </fold-callout>
-</fold-card>
+  </header>
 
-<fold-card>
-  <div cardHeader class="head"><h2 class="section-title">Poser un prix ≠ le modifier</h2></div>
+  <fold-card>
+    <div cardHeader class="head"><h2 class="section-title">La chaîne</h2></div>
 
-  <div class="pair">
-    <div class="fact">
-      <h3 class="fact-title">Poser un prix — en euros</h3>
-      <p>
-        « Ce client paie 2,10 € le croissant. » Le prix ne bouge pas si le tarif de liste monte.
-      </p>
-      <p class="why">C'est ce qu'on signe : un engagement, pas une réduction.</p>
-    </div>
-    <div class="fact">
-      <h3 class="fact-title">Modifier — en % ou en €</h3>
-      <p>
-        « −10 % sur la viennoiserie. » Le prix suit le tarif : si la liste monte, le prix monte.
-      </p>
-      <p class="why">C'est ce qu'on veut pour une promotion ou un dégressif.</p>
-    </div>
-  </div>
-
-  <fold-callout variant="warning">
     <p>
-      <strong>Le piège que le système refuse.</strong> Une mercuriale saisie en « −13 % »
-      <em>suivrait</em> les hausses du tarif de liste : le jour où le PIM augmente, le prix «
-      négocié » du client augmente avec lui. Ce n'est pas ce qui a été promis. Le système refuse
-      donc une mercuriale exprimée en pourcentage — elle doit être un montant.
+      Un prix part du <strong>tarif du PIM</strong> et traverse quatre étages. Chacun peut le
+      modifier ; à la fin, une <strong>limite</strong> vérifie qu'on n'est pas allé trop loin.
     </p>
-  </fold-callout>
-</fold-card>
 
-<fold-card>
-  <div cardHeader class="head">
-    <h2 class="section-title">Qui gagne, quand deux règles se croisent</h2>
-  </div>
+    <app-pipeline-schema />
 
-  <p>
-    Dans un <strong>même étage</strong>, une seule règle s'applique : la plus précise
-    <strong>remplace</strong> les autres. Elles ne s'additionnent pas.
-  </p>
+    <div class="pair">
+      <div class="fact">
+        <h3 class="fact-title">Les étages se composent</h3>
+        <p>
+          −20 % puis −10 % font <strong>−28 %</strong> (0,8 × 0,9), jamais −30 %. Chaque étage
+          s'applique au prix qui sort du précédent.
+        </p>
+        <p class="why">
+          C'est la seule règle qui reste vraie quand on <em>insère</em> un étage. Avec l'addition,
+          un cinquième étage changerait rétroactivement le sens des quatre autres.
+        </p>
+      </div>
+      <div class="fact">
+        <h3 class="fact-title">L'ordre est une décision commerciale</h3>
+        <p>
+          −20 % puis −5 € ne donne pas le même prix que −5 € puis −20 %. L'ordre des quatre étages
+          n'est pas un détail technique : c'est un choix, arrêté une fois.
+        </p>
+      </div>
+    </div>
 
-  <ol class="ranks">
-    <li>
-      <span class="rank-n">1</span>
-      <span class="rank-body">
-        <strong>Le client d'abord.</strong> Une règle qui vise CE client bat une règle qui vise ce
-        produit pour tout le monde.
-        <span class="why">
-          L'inverse laisserait une promotion générale écraser un tarif négocié individuellement —
-          exactement ce pour quoi un client appelle.
+    <fold-callout variant="info">
+      <p>
+        <strong>Un seul arrondi, à la toute fin.</strong> La chaîne calcule en fractions exactes et
+        n'arrondit qu'au dernier moment. Arrondir à chaque étage décalerait d'un centime au bout de
+        quatre — et un centime sur une facture, ça se voit.
+      </p>
+    </fold-callout>
+  </fold-card>
+
+  <fold-card>
+    <div cardHeader class="head"><h2 class="section-title">Poser un prix ≠ le modifier</h2></div>
+
+    <div class="pair">
+      <div class="fact">
+        <h3 class="fact-title">Poser un prix — en euros</h3>
+        <p>
+          « Ce client paie 2,10 € le croissant. » Le prix ne bouge pas si le tarif de liste monte.
+        </p>
+        <p class="why">C'est ce qu'on signe : un engagement, pas une réduction.</p>
+      </div>
+      <div class="fact">
+        <h3 class="fact-title">Modifier — en % ou en €</h3>
+        <p>
+          « −10 % sur la viennoiserie. » Le prix suit le tarif : si la liste monte, le prix monte.
+        </p>
+        <p class="why">C'est ce qu'on veut pour une promotion ou un dégressif.</p>
+      </div>
+    </div>
+
+    <fold-callout variant="warning">
+      <p>
+        <strong>Le piège que le système refuse.</strong> Une mercuriale saisie en « −13 % »
+        <em>suivrait</em> les hausses du tarif de liste : le jour où le PIM augmente, le prix «
+        négocié » du client augmente avec lui. Ce n'est pas ce qui a été promis. Le système refuse
+        donc une mercuriale exprimée en pourcentage — elle doit être un montant.
+      </p>
+    </fold-callout>
+  </fold-card>
+
+  <fold-card>
+    <div cardHeader class="head">
+      <h2 class="section-title">Qui gagne, quand deux règles se croisent</h2>
+    </div>
+
+    <p>
+      Dans un <strong>même étage</strong>, une seule règle s'applique : la plus précise
+      <strong>remplace</strong> les autres. Elles ne s'additionnent pas.
+    </p>
+
+    <ol class="ranks">
+      <li>
+        <span class="rank-n">1</span>
+        <span class="rank-body">
+          <strong>Le client d'abord.</strong> Une règle qui vise CE client bat une règle qui vise ce
+          produit pour tout le monde.
+          <span class="why">
+            L'inverse laisserait une promotion générale écraser un tarif négocié individuellement —
+            exactement ce pour quoi un client appelle.
+          </span>
         </span>
-      </span>
-    </li>
-    <li>
-      <span class="rank-n">2</span>
-      <span class="rank-body">
-        <strong>Puis la précision produit.</strong> Déclinaison, puis produit, puis famille, puis
-        tout le catalogue.
-      </span>
-    </li>
-    <li>
-      <span class="rank-n">3</span>
-      <span class="rank-body">
-        <strong>Puis le palier.</strong> À égalité, le seuil de quantité le plus haut parmi ceux
-        atteints l'emporte — « 100+ » bat « 50+ ».
-      </span>
-    </li>
-  </ol>
+      </li>
+      <li>
+        <span class="rank-n">2</span>
+        <span class="rank-body">
+          <strong>Puis la précision produit.</strong> Déclinaison, puis produit, puis famille, puis
+          tout le catalogue.
+        </span>
+      </li>
+      <li>
+        <span class="rank-n">3</span>
+        <span class="rank-body">
+          <strong>Puis le palier.</strong> À égalité, le seuil de quantité le plus haut parmi ceux
+          atteints l'emporte — « 100+ » bat « 50+ ».
+        </span>
+      </li>
+    </ol>
 
-  <p class="why">
-    Deux règles strictement aussi précises au même moment sont <strong>impossibles</strong> : la
-    base les refuse. Sans ça, le prix dépendrait de l'ordre de tri, donc du hasard, et deux
-    commandes identiques pourraient être facturées différemment.
-  </p>
-</fold-card>
-
-<fold-card>
-  <div cardHeader class="head">
-    <h2 class="section-title">La limite : dure et souple</h2>
-  </div>
-
-  <p>
-    Une limite unique force à choisir entre <em>protéger</em> et <em>laisser négocier</em>. Il y en
-    a donc deux, et une clé entre les deux.
-  </p>
-
-  <app-floor-schema />
-
-  <div class="pair">
-    <div class="fact">
-      <h3 class="fact-title">Limite dure — le mur</h3>
-      <p>
-        La performance <strong>en dessous de laquelle on ne descend pas</strong>, quoi qu'il arrive.
-        C'est la ligne de la direction, en un nombre.
-      </p>
-    </div>
-    <div class="fact">
-      <h3 class="fact-title">Limite souple — la porte</h3>
-      <p>
-        La performance qu'on <strong>accepte de céder en échange de volume</strong>. Ouverte
-        seulement si <strong>les deux</strong> conditions sont remplies : la quantité de la
-        commande, et le volume observé. La plus stricte gagne.
-      </p>
-      <p class="why">
-        Ce n'est pas une exigence relâchée, c'est un <strong>autre marché</strong> : moins par unité
-        contre plus d'unités.
-      </p>
-    </div>
-  </div>
-
-  <fold-callout variant="info">
-    <p>
-      <strong>Faute de mesure, on protège.</strong> Sans historique de ventes, la condition de
-      volume est considérée comme non remplie et le mur s'applique. Un déverrouillage par ignorance
-      serait une remise accordée par un trou dans les données — et personne ne la verrait passer.
+    <p class="why">
+      Deux règles strictement aussi précises au même moment sont <strong>impossibles</strong> : la
+      base les refuse. Sans ça, le prix dépendrait de l'ordre de tri, donc du hasard, et deux
+      commandes identiques pourraient être facturées différemment.
     </p>
-  </fold-callout>
+  </fold-card>
 
-  <h3 class="sub">Une intention de performance, pas une marge</h3>
-
-  <p>
-    Les deux limites expriment ce que la maison <strong>veut obtenir</strong>. Elles ne sont
-    <strong>pas</strong> calculées à partir de coûts opérationnels — et c'est un choix, pas un
-    manque.
-  </p>
-
-  <div class="pair">
-    <div class="fact">
-      <h3 class="fact-title">Une marge se dérive</h3>
-      <p>
-        La calculer oblige à trancher quinze arbitraires : matière seule ou main-d'œuvre incluse,
-        quelle clé pour l'amortissement du four, quels rendements, quelles pertes. Chacun se propage
-        ensuite <em>dans un prix</em>.
-      </p>
+  <fold-card>
+    <div cardHeader class="head">
+      <h2 class="section-title">La limite : dure et souple</h2>
     </div>
-    <div class="fact">
-      <h3 class="fact-title">Une limite se décide</h3>
-      <p>
-        Un nombre, une intention, un auteur, une date. « Je ne descends pas sous 1,50 € » — la
-        phrase qu'on prononce vraiment. Personne ne dit « il me faut 62 % de marge brute sur le
-        croissant ».
-      </p>
+
+    <p>
+      Une limite unique force à choisir entre <em>protéger</em> et <em>laisser négocier</em>. Il y
+      en a donc deux, et une clé entre les deux.
+    </p>
+
+    <app-floor-schema />
+
+    <div class="pair">
+      <div class="fact">
+        <h3 class="fact-title">Limite dure — le mur</h3>
+        <p>
+          La performance <strong>en dessous de laquelle on ne descend pas</strong>, quoi qu'il
+          arrive. C'est la ligne de la direction, en un nombre.
+        </p>
+      </div>
+      <div class="fact">
+        <h3 class="fact-title">Limite souple — la porte</h3>
+        <p>
+          La performance qu'on <strong>accepte de céder en échange de volume</strong>. Ouverte
+          seulement si <strong>les deux</strong> conditions sont remplies : la quantité de la
+          commande, et le volume observé. La plus stricte gagne.
+        </p>
+        <p class="why">
+          Ce n'est pas une exigence relâchée, c'est un <strong>autre marché</strong> : moins par
+          unité contre plus d'unités.
+        </p>
+      </div>
     </div>
-  </div>
 
-  <fold-callout variant="warning">
-    <p>
-      <strong>Le pire cas n'est pas l'absence de marge, c'est la marge fausse.</strong> Un coût de
-      revient à 15 % près — optimiste, sur du frais — affiché dans un tableau de bord porte
-      l'autorité d'une mesure. On prend alors des décisions confiantes et fausses, et rien à l'écran
-      ne le signale. Une limite ne prétend jamais être une mesure : c'est un jugement, donc elle se
-      conteste.
-    </p>
-  </fold-callout>
-
-  <p class="why">
-    <strong>Ce que ce choix coûte, et qu'il faut savoir :</strong> une intention date. Le beurre
-    prend 30 %, la limite reste où elle était, en silence — juste en août, plus juste en février, et
-    l'écran l'affiche avec le même aplomb. Le correctif n'est pas un coût de revient (ce serait
-    revenir sur la décision) mais un signal de dérive : « ton intention date de huit mois et le
-    tarif a bougé de 12 %, tu la confirmes ? ». Pas encore construit.
-  </p>
-</fold-card>
-
-<fold-card>
-  <div cardHeader class="head"><h2 class="section-title">Ce qu'une remise coûte en volume</h2></div>
-
-  <p>
-    Une remise ne se juge pas au pourcentage. Elle se juge à ce qu'elle
-    <strong>oblige à vendre</strong>.
-  </p>
-
-  <div class="formula">
-    <span class="formula-line">baisser de 20 % ⇒ vendre <strong>×1,25</strong></span>
-    <span class="formula-note">pour encaisser le même chiffre d'affaires</span>
-  </div>
-
-  <p>
-    L'écran Tarification affiche ce ratio par article, l'objectif de volume qu'il implique, et où en
-    est le réalisé — <strong>depuis la pose de la règle</strong> (deux fenêtres de même durée, de
-    part et d'autre) et sur les <strong>30 derniers jours</strong>. Les deux répondent à des
-    questions différentes : la première juge la décision, la seconde dit où on en est.
-  </p>
-
-  <fold-callout variant="warning">
-    <p>
-      <strong>Trois limites à connaître avant de s'y fier.</strong> Le calcul est à
-      <em>chiffre constant</em>, jamais à marge constante. La comparaison avant/après n'a aucun
-      groupe témoin — en station, comparer février à mars mesure surtout la saison. Et le chiffre
-      est <em>par article</em> : si la baisse du croissant déplace du volume depuis le pain au
-      chocolat, l'objectif s'affichera atteint sans que le chiffre total ait bougé.
-    </p>
-  </fold-callout>
-
-  <p class="why">
-    Sous quatorze jours de recul, l'écran affiche « trop tôt » au lieu d'un pourcentage. Moins de
-    deux semaines couvre un nombre inégal de week-ends, et on ne vend pas la même chose un samedi
-    qu'un mardi.
-  </p>
-</fold-card>
-
-<fold-card>
-  <div cardHeader class="head"><h2 class="section-title">La remise encore accordable</h2></div>
-
-  <p>
-    L'écart entre le prix final et la limite : c'est ce qu'un commercial peut lâcher au téléphone
-    sans demander à personne. Il est donné en <strong>euros</strong> et en
-    <strong>pourcentage</strong>, au même poids — à chacun de choisir la métrique qu'il annonce.
-  </p>
-  <p class="why">
-    Le pourcentage se calcule sur le <strong>prix final</strong>, pas sur le tarif du PIM : c'est
-    sur ce prix-là qu'on dit « je te fais 5 % ». Le canonique, le client ne l'a jamais vu.
-  </p>
-</fold-card>
-
-<fold-card>
-  <div cardHeader class="head">
-    <h2 class="section-title">Qui porte le risque : prix vivant ou prix bloqué</h2>
-  </div>
-
-  <p>
-    Quand les coûts de la maison montent en cours de saison, quelqu'un encaisse. Le système sait
-    dire <em>qui</em> — et c'est un choix commercial, pas une fatalité.
-  </p>
-
-  <app-risk-schema />
-
-  <div class="pair">
-    <div class="fact">
-      <h3 class="fact-title">Prix vivant — le défaut</h3>
+    <fold-callout variant="info">
       <p>
-        Le client paie le tarif du jour. Une hausse s'applique à lui dès sa commande suivante. Aucun
-        engagement de volume, aucune garantie de prix.
+        <strong>Faute de mesure, on protège.</strong> Sans historique de ventes, la condition de
+        volume est considérée comme non remplie et le mur s'applique. Un déverrouillage par
+        ignorance serait une remise accordée par un trou dans les données — et personne ne la
+        verrait passer.
       </p>
-      <p class="why"><strong>Il assume la hausse.</strong></p>
+    </fold-callout>
+
+    <h3 class="sub">Une intention de performance, pas une marge</h3>
+
+    <p>
+      Les deux limites expriment ce que la maison <strong>veut obtenir</strong>. Elles ne sont
+      <strong>pas</strong> calculées à partir de coûts opérationnels — et c'est un choix, pas un
+      manque.
+    </p>
+
+    <div class="pair">
+      <div class="fact">
+        <h3 class="fact-title">Une marge se dérive</h3>
+        <p>
+          La calculer oblige à trancher quinze arbitraires : matière seule ou main-d'œuvre incluse,
+          quelle clé pour l'amortissement du four, quels rendements, quelles pertes. Chacun se
+          propage ensuite <em>dans un prix</em>.
+        </p>
+      </div>
+      <div class="fact">
+        <h3 class="fact-title">Une limite se décide</h3>
+        <p>
+          Un nombre, une intention, un auteur, une date. « Je ne descends pas sous 1,50 € » — la
+          phrase qu'on prononce vraiment. Personne ne dit « il me faut 62 % de marge brute sur le
+          croissant ».
+        </p>
+      </div>
     </div>
-    <div class="fact">
-      <h3 class="fact-title">Prix bloqué — l'engagement</h3>
+
+    <fold-callout variant="warning">
       <p>
-        Le client engage un volume sur une durée. En échange, son prix d'entrée est figé : les
-        hausses de tarif ne l'atteignent pas.
+        <strong>Le pire cas n'est pas l'absence de marge, c'est la marge fausse.</strong> Un coût de
+        revient à 15 % près — optimiste, sur du frais — affiché dans un tableau de bord porte
+        l'autorité d'une mesure. On prend alors des décisions confiantes et fausses, et rien à
+        l'écran ne le signale. Une limite ne prétend jamais être une mesure : c'est un jugement,
+        donc elle se conteste.
       </p>
-      <p class="why"><strong>Le volume absorbe la hausse.</strong></p>
+    </fold-callout>
+
+    <p class="why">
+      <strong>Ce que ce choix coûte, et qu'il faut savoir :</strong> une intention date. Le beurre
+      prend 30 %, la limite reste où elle était, en silence — juste en août, plus juste en février,
+      et l'écran l'affiche avec le même aplomb. Le correctif n'est pas un coût de revient (ce serait
+      revenir sur la décision) mais un signal de dérive : « ton intention date de huit mois et le
+      tarif a bougé de 12 %, tu la confirmes ? ». Pas encore construit.
+    </p>
+  </fold-card>
+
+  <fold-card>
+    <div cardHeader class="head">
+      <h2 class="section-title">Ce qu'une remise coûte en volume</h2>
     </div>
-  </div>
 
-  <h3 class="sub">Le contrat brasseur, pour fixer les idées</h3>
-  <p>
-    Un café qui achète au coup par coup paie le prix du jour : le brasseur augmente en mars, il paie
-    plus dès la commande suivante. Un café qui s'engage sur 40 hectolitres sur douze mois ne bouge
-    pas — il a <strong>acheté la stabilité</strong>, et il l'a payée en s'engageant. Si le malt
-    s'envole, c'est le brasseur qui encaisse, et il l'accepte parce que le volume garanti absorbe
-    ses frais fixes.
-  </p>
-  <p class="why">
-    Ce n'est pas une faveur, c'est un <strong>échange</strong> : le client cède sa liberté de
-    volume, la maison cède sa liberté de prix. Un hôtel qui prend 300 viennoiseries chaque matin de
-    décembre à avril veut un prix ferme pour son budget ; un restaurant qui commande au gré de son
-    remplissage veut le tarif du jour et aucune obligation.
-  </p>
-
-  <h3 class="sub">Mesurer le modèle, pas le client</h3>
-  <p>
-    Un hôtel engagé sur 300 viennoiseries par jour couvre une part des frais fixes de la saison. Il
-    ne couvre pas, à lui seul, une envolée du beurre. Regardé isolément, son contrat paraîtra
-    toujours une perte dès que les coûts montent.
-  </p>
-  <fold-callout variant="info">
     <p>
-      <strong>La performance se mesure sur la population des adoptants, en moyenne.</strong> Juger
-      client par client tuerait l'instrument : chaque contrat pris seul semblerait mauvais
-      exactement quand le dispositif entier fonctionne.
+      Une remise ne se juge pas au pourcentage. Elle se juge à ce qu'elle
+      <strong>oblige à vendre</strong>.
     </p>
-  </fold-callout>
-  <ul class="consequences">
-    <li>
-      <strong>Un contrat déficitaire n'est pas un mauvais contrat.</strong> Il ne l'est que si la
-      moyenne de la cohorte l'est aussi — sinon on résilie le mauvais.
-    </li>
-    <li>
-      <strong>Le seuil est un signal d'arrêt, pas de résiliation.</strong> Quand la cohorte passe
-      sous l'équilibre, on arrête de <em>signer</em> au prix actuel. On n'arrête pas d'honorer ce
-      qui existe : honorer est exactement ce qu'on a vendu.
-    </li>
-    <li>
-      <strong>La cohorte se renouvelle par le bas.</strong> Chaque nouveau contrat se signe au tarif
-      du jour, donc plus haut ; la moyenne remonte d'elle-même à mesure que les anciens arrivent à
-      terme. Sans renouvellement, le dispositif dériverait vers une remise permanente que personne
-      n'a décidée.
-    </li>
-  </ul>
-  <p class="why">
-    Conséquence pour l'écran : l'unité d'affichage du prix bloqué n'est pas la fiche client, c'est
-    la <strong>cohorte</strong>. La fiche montre un engagement ; seul le tableau de bord dit si le
-    dispositif tient.
-  </p>
 
-  <h3 class="sub">La question qui se pose ensuite : activer une promo sur le prix bloqué ?</h3>
-  <p>
-    Un client engagé n'est pas exclu des opérations commerciales. Mais sa base est plus ancienne —
-    donc, quand les prix montent, plus basse. Une même promotion lui donne mécaniquement moins cher
-    qu'à un client au prix vivant.
-  </p>
-  <fold-callout variant="warning">
+    <div class="formula">
+      <span class="formula-line">baisser de 20 % ⇒ vendre <strong>×1,25</strong></span>
+      <span class="formula-note">pour encaisser le même chiffre d'affaires</span>
+    </div>
+
     <p>
-      <strong>La lecture qui décide.</strong> Si le client au prix bloqué est <em>déjà</em> sous le
-      prix vivant promotionné, la promo ne lui est pas nécessaire : elle offrirait une remise à
-      quelqu'un qui a <strong>déjà obtenu la sienne en s'engageant</strong>. L'activer le paierait
-      deux fois pour le même engagement.
+      L'écran Tarification affiche ce ratio par article, l'objectif de volume qu'il implique, et où
+      en est le réalisé — <strong>depuis la pose de la règle</strong> (deux fenêtres de même durée,
+      de part et d'autre) et sur les <strong>30 derniers jours</strong>. Les deux répondent à des
+      questions différentes : la première juge la décision, la seconde dit où on en est.
     </p>
-  </fold-callout>
 
-  <fold-callout variant="warning">
-    <p>
-      <strong>Le pari est asymétrique, et il faut l'assumer.</strong> Si les coûts baissent, le
-      client engagé se retrouve au-dessus du marché — et il le verra. Un contrat qui devient
-      défavorable au client n'est pas un revenu stable, c'est une demande de renégociation. En
-      station, une mauvaise saison, c'est tout le monde qui renégocie en même temps.
-    </p>
-  </fold-callout>
-
-  <p class="pending">
-    Le prix bloqué est une <strong>décision prise, pas encore construite</strong>. Ce qui reste à
-    trancher avant de coder : ce qui se passe quand le volume engagé n'est pas atteint.
-  </p>
-</fold-card>
-
-<fold-card>
-  <div cardHeader class="head">
-    <h2 class="section-title">Le prix et le territoire</h2>
-  </div>
-
-  <p>
-    Val d'Isère en février et une vallée à vingt kilomètres ne sont pas le même marché : ni la même
-    concurrence, ni la même disposition à payer. Le
-    <strong>canonique peut s'adapter par zone de code postal</strong> — et la zone se
-    <em>déduit de l'adresse livrée</em>, elle ne se choisit pas. Personne ne peut donc s'annoncer
-    dans un secteur moins cher que le sien.
-  </p>
-
-  <fold-callout variant="warning">
-    <p>
-      <strong>Deux justifications à ne pas confondre.</strong> La zone porte <em>déjà</em> un frais
-      de livraison, qui couvre le <strong>coût</strong> — la distance, le temps de tournée. Un
-      canonique local, lui, couvre le <strong>marché</strong> — la concurrence, ce que la place
-      supporte. Les confondre revient à facturer deux fois la même distance, et le client qui
-      compare le verra.
-    </p>
-  </fold-callout>
-
-  <p class="why">
-    Cette distinction sert au téléphone : « vous êtes plus loin » explique un frais, pas un tarif de
-    base plus élevé. Si personne ne sait dire ce qui l'explique, il ne faut pas le poser.
-  </p>
-
-  <p>
-    Le canonique local agit <strong>à l'entrée de la chaîne</strong>, comme le prix bloqué : il
-    remplace le canonique national, et tout le reste se déroule sans changement. Quand un client a
-    un prix bloqué <em>et</em> livre dans une zone adaptée, <strong>le contrat gagne</strong> —
-    sinon il casserait sa propre garantie en changeant d'adresse.
-  </p>
-</fold-card>
-
-<fold-card>
-  <div cardHeader class="head">
-    <h2 class="section-title">La coopérative d'acheteurs</h2>
-  </div>
-
-  <p>
-    Le palier se mesure sur la <strong>zone</strong>, pas sur le client. Les acheteurs d'un même
-    secteur mettent leur volume en commun, et le total ouvre un meilleur tarif pour tous ceux qui
-    s'y trouvent.
-  </p>
-
-  <app-coop-schema />
-
-  <div class="pair">
-    <div class="fact">
-      <h3 class="fact-title">Pourquoi la zone est légitime</h3>
+    <fold-callout variant="warning">
       <p>
-        Ce n'est pas un regroupement arbitraire :
-        <strong>la tournée est l'unité réelle du coût</strong> — un camion, un chauffeur, une
-        matinée. Deux clients sur la même tournée coûtent réellement moins cher chacun.
+        <strong>Trois limites à connaître avant de s'y fier.</strong> Le calcul est à
+        <em>chiffre constant</em>, jamais à marge constante. La comparaison avant/après n'a aucun
+        groupe témoin — en station, comparer février à mars mesure surtout la saison. Et le chiffre
+        est <em>par article</em> : si la baisse du croissant déplace du volume depuis le pain au
+        chocolat, l'objectif s'affichera atteint sans que le chiffre total ait bougé.
       </p>
+    </fold-callout>
+
+    <p class="why">
+      Sous quatorze jours de recul, l'écran affiche « trop tôt » au lieu d'un pourcentage. Moins de
+      deux semaines couvre un nombre inégal de week-ends, et on ne vend pas la même chose un samedi
+      qu'un mardi.
+    </p>
+  </fold-card>
+
+  <fold-card>
+    <div cardHeader class="head"><h2 class="section-title">La remise encore accordable</h2></div>
+
+    <p>
+      L'écart entre le prix final et la limite : c'est ce qu'un commercial peut lâcher au téléphone
+      sans demander à personne. Il est donné en <strong>euros</strong> et en
+      <strong>pourcentage</strong>, au même poids — à chacun de choisir la métrique qu'il annonce.
+    </p>
+    <p class="why">
+      Le pourcentage se calcule sur le <strong>prix final</strong>, pas sur le tarif du PIM : c'est
+      sur ce prix-là qu'on dit « je te fais 5 % ». Le canonique, le client ne l'a jamais vu.
+    </p>
+  </fold-card>
+
+  <fold-card>
+    <div cardHeader class="head">
+      <h2 class="section-title">Qui porte le risque : prix vivant ou prix bloqué</h2>
     </div>
-    <div class="fact">
-      <h3 class="fact-title">Le client devient prescripteur</h3>
+
+    <p>
+      Quand les coûts de la maison montent en cours de saison, quelqu'un encaisse. Le système sait
+      dire <em>qui</em> — et c'est un choix commercial, pas une fatalité.
+    </p>
+
+    <app-risk-schema />
+
+    <div class="pair">
+      <div class="fact">
+        <h3 class="fact-title">Prix vivant — le défaut</h3>
+        <p>
+          Le client paie le tarif du jour. Une hausse s'applique à lui dès sa commande suivante.
+          Aucun engagement de volume, aucune garantie de prix.
+        </p>
+        <p class="why"><strong>Il assume la hausse.</strong></p>
+      </div>
+      <div class="fact">
+        <h3 class="fact-title">Prix bloqué — l'engagement</h3>
+        <p>
+          Le client engage un volume sur une durée. En échange, son prix d'entrée est figé : les
+          hausses de tarif ne l'atteignent pas.
+        </p>
+        <p class="why"><strong>Le volume absorbe la hausse.</strong></p>
+      </div>
+    </div>
+
+    <h3 class="sub">Le contrat brasseur, pour fixer les idées</h3>
+    <p>
+      Un café qui achète au coup par coup paie le prix du jour : le brasseur augmente en mars, il
+      paie plus dès la commande suivante. Un café qui s'engage sur 40 hectolitres sur douze mois ne
+      bouge pas — il a <strong>acheté la stabilité</strong>, et il l'a payée en s'engageant. Si le
+      malt s'envole, c'est le brasseur qui encaisse, et il l'accepte parce que le volume garanti
+      absorbe ses frais fixes.
+    </p>
+    <p class="why">
+      Ce n'est pas une faveur, c'est un <strong>échange</strong> : le client cède sa liberté de
+      volume, la maison cède sa liberté de prix. Un hôtel qui prend 300 viennoiseries chaque matin
+      de décembre à avril veut un prix ferme pour son budget ; un restaurant qui commande au gré de
+      son remplissage veut le tarif du jour et aucune obligation.
+    </p>
+
+    <h3 class="sub">Mesurer le modèle, pas le client</h3>
+    <p>
+      Un hôtel engagé sur 300 viennoiseries par jour couvre une part des frais fixes de la saison.
+      Il ne couvre pas, à lui seul, une envolée du beurre. Regardé isolément, son contrat paraîtra
+      toujours une perte dès que les coûts montent.
+    </p>
+    <fold-callout variant="info">
       <p>
-        Chacun a intérêt à ce que son voisin commande : ça monte le palier commun, donc baisse son
-        propre prix. La clientèle prospecte là où la tournée passe déjà.
+        <strong>La performance se mesure sur la population des adoptants, en moyenne.</strong> Juger
+        client par client tuerait l'instrument : chaque contrat pris seul semblerait mauvais
+        exactement quand le dispositif entier fonctionne.
       </p>
-      <p class="why">
-        C'est le seul mécanisme de cette page qui <strong>crée</strong> du volume au lieu de le
-        constater.
+    </fold-callout>
+    <ul class="consequences">
+      <li>
+        <strong>Un contrat déficitaire n'est pas un mauvais contrat.</strong> Il ne l'est que si la
+        moyenne de la cohorte l'est aussi — sinon on résilie le mauvais.
+      </li>
+      <li>
+        <strong>Le seuil est un signal d'arrêt, pas de résiliation.</strong> Quand la cohorte passe
+        sous l'équilibre, on arrête de <em>signer</em> au prix actuel. On n'arrête pas d'honorer ce
+        qui existe : honorer est exactement ce qu'on a vendu.
+      </li>
+      <li>
+        <strong>La cohorte se renouvelle par le bas.</strong> Chaque nouveau contrat se signe au
+        tarif du jour, donc plus haut ; la moyenne remonte d'elle-même à mesure que les anciens
+        arrivent à terme. Sans renouvellement, le dispositif dériverait vers une remise permanente
+        que personne n'a décidée.
+      </li>
+    </ul>
+    <p class="why">
+      Conséquence pour l'écran : l'unité d'affichage du prix bloqué n'est pas la fiche client, c'est
+      la <strong>cohorte</strong>. La fiche montre un engagement ; seul le tableau de bord dit si le
+      dispositif tient.
+    </p>
+
+    <h3 class="sub">La question qui se pose ensuite : activer une promo sur le prix bloqué ?</h3>
+    <p>
+      Un client engagé n'est pas exclu des opérations commerciales. Mais sa base est plus ancienne —
+      donc, quand les prix montent, plus basse. Une même promotion lui donne mécaniquement moins
+      cher qu'à un client au prix vivant.
+    </p>
+    <fold-callout variant="warning">
+      <p>
+        <strong>La lecture qui décide.</strong> Si le client au prix bloqué est <em>déjà</em> sous
+        le prix vivant promotionné, la promo ne lui est pas nécessaire : elle offrirait une remise à
+        quelqu'un qui a <strong>déjà obtenu la sienne en s'engageant</strong>. L'activer le paierait
+        deux fois pour le même engagement.
       </p>
+    </fold-callout>
+
+    <fold-callout variant="warning">
+      <p>
+        <strong>Le pari est asymétrique, et il faut l'assumer.</strong> Si les coûts baissent, le
+        client engagé se retrouve au-dessus du marché — et il le verra. Un contrat qui devient
+        défavorable au client n'est pas un revenu stable, c'est une demande de renégociation. En
+        station, une mauvaise saison, c'est tout le monde qui renégocie en même temps.
+      </p>
+    </fold-callout>
+
+    <p class="pending">
+      Le prix bloqué est une <strong>décision prise, pas encore construite</strong>. Ce qui reste à
+      trancher avant de coder : ce qui se passe quand le volume engagé n'est pas atteint.
+    </p>
+  </fold-card>
+
+  <fold-card>
+    <div cardHeader class="head">
+      <h2 class="section-title">Le prix et le territoire</h2>
     </div>
-  </div>
 
-  <ul class="consequences">
-    <li>
-      <strong>Un palier acquis ne se perd pas en cours de période.</strong> Si un membre part et
-      fait retomber le secteur sous le seuil, ceux qui restent ne doivent pas être punis d'être
-      restés — le palier se réévalue à la période suivante.
-    </li>
-    <li>
-      <strong>Le retardataire en profite sans avoir construit, et c'est voulu.</strong> C'est
-      exactement l'incitation qu'on cherche ; la retirer par souci d'équité serait un mauvais
-      calcul.
-    </li>
-    <li>
-      <strong>Un secteur à un seul acheteur</strong> transforme le mécanisme en remise individuelle
-      déguisée. Il faudra un nombre minimum de membres, ou l'assumer par écrit.
-    </li>
-  </ul>
+    <p>
+      Val d'Isère en février et une vallée à vingt kilomètres ne sont pas le même marché : ni la
+      même concurrence, ni la même disposition à payer. Le
+      <strong>canonique peut s'adapter par zone de code postal</strong> — et la zone se
+      <em>déduit de l'adresse livrée</em>, elle ne se choisit pas. Personne ne peut donc s'annoncer
+      dans un secteur moins cher que le sien.
+    </p>
 
-  <p class="pending">
-    Le canonique par zone et la coopérative sont des
-    <strong>décisions prises, pas encore construites</strong>. Le frais de zone, lui, existe et
-    fonctionne aujourd'hui.
-  </p>
-</fold-card>
+    <fold-callout variant="warning">
+      <p>
+        <strong>Deux justifications à ne pas confondre.</strong> La zone porte <em>déjà</em> un
+        frais de livraison, qui couvre le <strong>coût</strong> — la distance, le temps de tournée.
+        Un canonique local, lui, couvre le <strong>marché</strong> — la concurrence, ce que la place
+        supporte. Les confondre revient à facturer deux fois la même distance, et le client qui
+        compare le verra.
+      </p>
+    </fold-callout>
 
-<fold-card>
-  <div cardHeader class="head"><h2 class="section-title">Pourquoi ce prix ? — la trace</h2></div>
+    <p class="why">
+      Cette distinction sert au téléphone : « vous êtes plus loin » explique un frais, pas un tarif
+      de base plus élevé. Si personne ne sait dire ce qui l'explique, il ne faut pas le poser.
+    </p>
 
-  <p>
-    Chaque ligne de commande garde <strong>l'explication de son prix</strong>, figée au moment de la
-    passation : le tarif d'entrée, chaque étage qui a joué avec son libellé, et si la limite a
-    relevé le résultat.
-  </p>
-  <p class="why">
-    Elle survit à la règle qui l'a produite. Une promotion supprimée en avril n'efface pas
-    l'explication d'une facture de février — sans quoi la seule réponse possible à « pourquoi ce
-    prix ? » serait « c'était le prix ».
-  </p>
-  <p>
-    Le client lit les <strong>libellés</strong> que l'équipe a écrits (« Promotion de rentrée »),
-    jamais le nom des étages : « mercuriale » et « geste » sont du vocabulaire de la maison.
-  </p>
-</fold-card>
+    <p>
+      Le canonique local agit <strong>à l'entrée de la chaîne</strong>, comme le prix bloqué : il
+      remplace le canonique national, et tout le reste se déroule sans changement. Quand un client a
+      un prix bloqué <em>et</em> livre dans une zone adaptée, <strong>le contrat gagne</strong> —
+      sinon il casserait sa propre garantie en changeant d'adresse.
+    </p>
+  </fold-card>
+
+  <fold-card>
+    <div cardHeader class="head">
+      <h2 class="section-title">La coopérative d'acheteurs</h2>
+    </div>
+
+    <p>
+      Le palier se mesure sur la <strong>zone</strong>, pas sur le client. Les acheteurs d'un même
+      secteur mettent leur volume en commun, et le total ouvre un meilleur tarif pour tous ceux qui
+      s'y trouvent.
+    </p>
+
+    <app-coop-schema />
+
+    <div class="pair">
+      <div class="fact">
+        <h3 class="fact-title">Pourquoi la zone est légitime</h3>
+        <p>
+          Ce n'est pas un regroupement arbitraire :
+          <strong>la tournée est l'unité réelle du coût</strong> — un camion, un chauffeur, une
+          matinée. Deux clients sur la même tournée coûtent réellement moins cher chacun.
+        </p>
+      </div>
+      <div class="fact">
+        <h3 class="fact-title">Le client devient prescripteur</h3>
+        <p>
+          Chacun a intérêt à ce que son voisin commande : ça monte le palier commun, donc baisse son
+          propre prix. La clientèle prospecte là où la tournée passe déjà.
+        </p>
+        <p class="why">
+          C'est le seul mécanisme de cette page qui <strong>crée</strong> du volume au lieu de le
+          constater.
+        </p>
+      </div>
+    </div>
+
+    <ul class="consequences">
+      <li>
+        <strong>Un palier acquis ne se perd pas en cours de période.</strong> Si un membre part et
+        fait retomber le secteur sous le seuil, ceux qui restent ne doivent pas être punis d'être
+        restés — le palier se réévalue à la période suivante.
+      </li>
+      <li>
+        <strong>Le retardataire en profite sans avoir construit, et c'est voulu.</strong> C'est
+        exactement l'incitation qu'on cherche ; la retirer par souci d'équité serait un mauvais
+        calcul.
+      </li>
+      <li>
+        <strong>Un secteur à un seul acheteur</strong> transforme le mécanisme en remise
+        individuelle déguisée. Il faudra un nombre minimum de membres, ou l'assumer par écrit.
+      </li>
+    </ul>
+
+    <p class="pending">
+      Le canonique par zone et la coopérative sont des
+      <strong>décisions prises, pas encore construites</strong>. Le frais de zone, lui, existe et
+      fonctionne aujourd'hui.
+    </p>
+  </fold-card>
+
+  <fold-card>
+    <div cardHeader class="head"><h2 class="section-title">Pourquoi ce prix ? — la trace</h2></div>
+
+    <p>
+      Chaque ligne de commande garde <strong>l'explication de son prix</strong>, figée au moment de
+      la passation : le tarif d'entrée, chaque étage qui a joué avec son libellé, et si la limite a
+      relevé le résultat.
+    </p>
+    <p class="why">
+      Elle survit à la règle qui l'a produite. Une promotion supprimée en avril n'efface pas
+      l'explication d'une facture de février — sans quoi la seule réponse possible à « pourquoi ce
+      prix ? » serait « c'était le prix ».
+    </p>
+    <p>
+      Le client lit les <strong>libellés</strong> que l'équipe a écrits (« Promotion de rentrée »),
+      jamais le nom des étages : « mercuriale » et « geste » sont du vocabulaire de la maison.
+    </p>
+  </fold-card>
+</fold-page-layout>

@@ -243,6 +243,16 @@ export const routes: Routes = [
     children: [
       { path: '', pathMatch: 'full', redirectTo: 'parametrage-general' },
       {
+        // Venue des Réglages le 2026-10-10 (Hugo) : elle explique comment un
+        // prix se fabrique, elle ne règle rien.
+        path: 'facturation',
+        title: 'Facturation — LFC B2B admin',
+        loadComponent: () =>
+          import('./reglages/facturation/reglages-facturation-page').then(
+            (m) => m.ReglagesFacturationPage,
+          ),
+      },
+      {
         // EN PREMIER, et c'est le sens de lecture : rien du référentiel ne se
         // comprend sans le contexte de vente et le point de vente, qui viennent
         // eux-mêmes de la loi et non d'un choix produit.
@@ -330,6 +340,27 @@ export const routes: Routes = [
     canActivate: [permissionGuard('production_packing:read')],
     title: 'Colisage — LFC B2B admin',
     loadComponent: () => import('./production/colisage/colisage').then((m) => m.Colisage),
+  },
+  // L'EXPLOITATION a ses propres écrans depuis le 2026-10-10 : les réglages
+  // commerciaux, venus des Réglages. Même coquille que la Production — elle
+  // publie le rail de l'Exploitation et ne dessine rien.
+  {
+    path: 'exploitation',
+    loadComponent: () =>
+      import('./production/production-workspace/production-workspace-page').then(
+        (m) => m.ProductionWorkspacePage,
+      ),
+    children: [
+      {
+        path: 'commercial',
+        canActivate: [permissionGuard('b2b_growth:read')],
+        title: 'Réglages commerciaux — LFC B2B admin',
+        loadComponent: () =>
+          import('./reglages/commercial/reglages-commercial-page').then(
+            (m) => m.ReglagesCommercialPage,
+          ),
+      },
+    ],
   },
   // PROD MANAGER (Hugo, 2026-10-10) : le prévisionnel sort de l'Exploitation
   // pour une entrée de premier niveau, juste au-dessus du Fournil — on regarde

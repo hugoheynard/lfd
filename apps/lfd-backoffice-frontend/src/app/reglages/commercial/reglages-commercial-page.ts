@@ -1,5 +1,10 @@
 import { ChangeDetectionStrategy, Component, computed, signal } from '@angular/core';
-import { FoldViewNavComponent, observeElementWidth, type FoldViewNavItem } from 'fold-ng';
+import {
+  FoldPageLayoutComponent,
+  FoldViewNavComponent,
+  observeElementWidth,
+  type FoldViewNavItem,
+} from 'fold-ng';
 
 import { AvailabilityCard } from './availability-card/availability-card';
 import { AccountAlertsCard } from './account-alerts-card/account-alerts-card';
@@ -39,6 +44,7 @@ const COLLAPSE_AT = 560;
   selector: 'app-reglages-commercial-page',
   changeDetection: ChangeDetectionStrategy.OnPush,
   imports: [
+    FoldPageLayoutComponent,
     FoldViewNavComponent,
     AvailabilityCard,
     MarketCard,

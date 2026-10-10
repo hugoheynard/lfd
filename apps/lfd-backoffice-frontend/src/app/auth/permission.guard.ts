@@ -28,7 +28,7 @@ const LANDINGS: readonly { readonly permission: StaffPermission; readonly path: 
   { permission: 'production_settings:read', path: '/production/reglages' },
   { permission: 'production_packing:read', path: '/colisage' },
   { permission: 'handover_counter:read', path: '/comptoir/retrait' },
-  { permission: 'b2b_settings:read', path: '/reglages' },
+  { permission: 'b2b_settings:read', path: '/b2b/reglages/points-de-retrait' },
 ];
 
 /**

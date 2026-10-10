@@ -127,11 +127,11 @@ const SCREENS: Readonly<Record<string, ScreenAccess>> = {
   // de suivre — et un écran qui expose la topologie interne mérite sa décision.
   sante: 'ops_health:read',
 
-  reglages: 'b2b_settings:read',
-  // Page de DOCUMENTATION : elle explique la tarification, elle ne la règle pas.
-  // Même mur que l'onglet qu'elle commente.
-  'reglages/facturation': null,
-  'reglages/commercial': 'b2b_growth:read',
+  // Les Réglages vidés le 2026-10-10 : la facturation est une page de la
+  // Documentation, les réglages commerciaux une vue de l'Exploitation.
+  'documentation/facturation': OPEN,
+  exploitation: OPEN,
+  'exploitation/commercial': 'b2b_growth:read',
 
   // L'ESPACE B2B — ce que la plateforme client vend, et à quel prix. Même mur
   // que les réglages d'où ses écrans viennent : décider d'un prix de vente est
@@ -426,7 +426,7 @@ describe("l'arbre de routes du back-office", () => {
       .map((child) => [child.path, child.redirectTo]);
 
     expect(moved).toEqual([
-      ['', 'facturation'],
+      ['', '/documentation/facturation'],
       ['catalogue', '/b2b/catalogue'],
       ['tarification', '/b2b/tarification'],
       ['tarification/frise', '/b2b/tarification/frise'],
@@ -434,6 +434,9 @@ describe("l'arbre de routes du back-office", () => {
       ['retraits-livraisons', '/b2b/reglages/points-de-retrait'],
       // Partie en Comptabilité sous son propre droit (2026-09-29).
       ['surtaxe-de-retard', '/comptabilite/surtaxe-de-retard'],
+      // Les deux derniers écrans, partis le 2026-10-10.
+      ['facturation', '/documentation/facturation'],
+      ['commercial', '/exploitation/commercial'],
     ]);
   });
 

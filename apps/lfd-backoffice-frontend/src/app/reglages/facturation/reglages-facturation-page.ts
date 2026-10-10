@@ -1,5 +1,5 @@
 import { ChangeDetectionStrategy, Component } from '@angular/core';
-import { FoldCalloutComponent, FoldCardComponent } from 'fold-ng';
+import { FoldCalloutComponent, FoldCardComponent, FoldPageLayoutComponent } from 'fold-ng';
 
 import { CoopSchema } from './schemas/coop-schema/coop-schema';
 import { FloorSchema } from './schemas/floor-schema/floor-schema';
@@ -33,6 +33,7 @@ import { RiskSchema } from './schemas/risk-schema/risk-schema';
   selector: 'app-reglages-facturation-page',
   changeDetection: ChangeDetectionStrategy.OnPush,
   imports: [
+    FoldPageLayoutComponent,
     FoldCardComponent,
     FoldCalloutComponent,
     PipelineSchema,

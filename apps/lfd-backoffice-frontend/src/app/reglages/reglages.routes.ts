@@ -1,16 +1,13 @@
 import { type Routes } from '@angular/router';
 
-import { permissionGuard } from '../auth/permission.guard';
-
-/** Les routes des **Réglages** — paramétrage de la plateforme. */
+/** Les anciennes adresses des **Réglages**, vidés le 2026-10-10. */
 export const reglagesRoutes: Routes = [
   {
     path: 'reglages',
-    canActivate: [permissionGuard('b2b_settings:read')],
-    title: 'Réglages — LFC B2B admin',
-    loadComponent: () => import('./reglages-page').then((m) => m.ReglagesPage),
+    // Plus d'écran depuis le 2026-10-10 : seulement les anciennes adresses,
+    // qui vivent dans des favoris. Sans garde, la destination porte le sien.
     children: [
-      { path: '', pathMatch: 'full', redirectTo: 'facturation' },
+      { path: '', pathMatch: 'full', redirectTo: '/documentation/facturation' },
 
       // Le catalogue et la tarification B2B ont DÉMÉNAGÉ dans l'espace B2B : on
       // ne va pas dans les réglages pour travailler. Les anciennes adresses
@@ -33,19 +30,10 @@ export const reglagesRoutes: Routes = [
       // sous le mur `b2b_settings` de ce parent.
       { path: 'surtaxe-de-retard', redirectTo: '/comptabilite/surtaxe-de-retard' },
 
-      {
-        path: 'facturation',
-        title: 'Facturation — LFC B2B admin',
-        loadComponent: () =>
-          import('./facturation/reglages-facturation-page').then((m) => m.ReglagesFacturationPage),
-      },
-      {
-        path: 'commercial',
-        canActivate: [permissionGuard('b2b_growth:read')],
-        title: 'Commercial — LFC B2B admin',
-        loadComponent: () =>
-          import('./commercial/reglages-commercial-page').then((m) => m.ReglagesCommercialPage),
-      },
+      // Partis le 2026-10-10 (Hugo) : la facturation explique, elle va à la
+      // Documentation ; les réglages commerciaux vont à l'Exploitation.
+      { path: 'facturation', redirectTo: '/documentation/facturation' },
+      { path: 'commercial', redirectTo: '/exploitation/commercial' },
     ],
   },
 ];

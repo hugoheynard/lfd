@@ -289,6 +289,15 @@ function underSection(section: string, views: readonly WorkspaceView[]): Workspa
 export const EXPLOITATION_VIEWS: readonly WorkspaceView[] = [
   ...underSection('Production', PRODUCTION_VIEWS),
   ...underSection('Livraison', LIVRAISON_VIEWS),
+  // Venus des Réglages le 2026-10-10 (Hugo) : rendez-vous, marchés, alertes.
+  {
+    key: 'reglages-commerciaux',
+    label: 'Réglages commerciaux',
+    link: '/exploitation/commercial',
+    icon: 'calendar',
+    section: 'Commercial',
+    needs: 'b2b_growth:read',
+  },
 ];
 
 /**
@@ -867,6 +876,14 @@ export const DOCUMENTATION_VIEWS: readonly WorkspaceView[] = [
     link: '/documentation/segmentation-web',
     icon: 'globe',
     section: 'Catalogue',
+  },
+  // Venue des Réglages le 2026-10-10 (Hugo) : comment un prix se fabrique.
+  {
+    key: 'facturation',
+    label: 'Facturation',
+    link: '/documentation/facturation',
+    icon: 'tag',
+    section: 'Commerce',
   },
 ];
 
