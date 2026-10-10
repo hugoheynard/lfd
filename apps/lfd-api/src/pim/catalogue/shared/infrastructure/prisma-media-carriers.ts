@@ -1,6 +1,11 @@
 import { Injectable } from "@nestjs/common";
 
-import { MediaCarriers, type Carrier } from "../../../../media/channels/carriers/media-carriers.js";
+import {
+  MediaCarriers,
+  type Carrier,
+  type ImageReplacement,
+} from "../../../../media/channels/carriers/media-carriers.js";
+import type { WriteTicket } from "../../../../platform/journal/scoped-journal.js";
 import { SOURCE_LOCALE } from "../domain/value-objects/localized-text.js";
 import { optionalLocalizedColumn as localizedOf } from "./json-readers.js";
 import { PimPrismaService } from "../../../infra/database/pim-prisma.service.js";
@@ -122,6 +127,80 @@ export class PrismaMediaCarriers extends MediaCarriers {
       });
     }
     return [...carriers.values()];
+  }
+
+  /**
+   * Repointe fiches, familles et opérations de `from` vers `to` (L7,
+   * 2026-10-10), dans la transaction ambiante.
+   *
+   * 🔴 **La fusion, avant le repointage** : la clé de `product_media` et de
+   * `category_media` est `(porteur, url, rôle)`. Un porteur qui tenait déjà
+   * `to` sous le même rôle que `from` verrait le repointage heurter la clé ;
+   * on retire donc d'abord sa ligne `to`, et c'est la ligne de `from` qui
+   * devient `to` — avec SON rang. Sous deux rôles différents, les deux lignes
+   * restent : ce ne sont pas des doublons.
+   *
+   * Les opérations, ARCHIVÉES comprises — comme {@link usesOf} les compte.
+   * Leur texte alternatif reste le leur.
+   *
+   * ⚠️ Pas de réannonce ici : la médiathèque publie dans la même transaction
+   * le fait durable `media.asset_described` sur `to`, que le référentiel
+   * écoute déjà (`on-media-asset-described.ts`) pour réannoncer les fiches
+   * qui le montrent en `hero` ou `thumbnail`.
+   */
+  async repoint({ from, to }: ImageReplacement, ticket: WriteTicket): Promise<number> {
+    void ticket;
+    const products = await this.repointProducts(from, to);
+    const categories = await this.repointCategories(from, to);
+    const operations = await this.prisma.operation.updateMany({
+      where: { imageUrl: from },
+      data: { imageUrl: to },
+    });
+    return products + categories + operations.count;
+  }
+
+  /** Les fiches : fusion par `(fiche, rôle)`, puis repointage. Rend le nombre de fiches. */
+  private async repointProducts(from: string, to: string): Promise<number> {
+    const rows = await this.prisma.productMedia.findMany({
+      where: { mediaUrl: from },
+      select: { productId: true, role: true },
+    });
+    if (rows.length === 0) {
+      return 0;
+    }
+    await this.prisma.productMedia.deleteMany({
+      where: {
+        mediaUrl: to,
+        OR: rows.map(({ productId, role }) => ({ productId, role })),
+      },
+    });
+    await this.prisma.productMedia.updateMany({
+      where: { mediaUrl: from },
+      data: { mediaUrl: to },
+    });
+    return new Set(rows.map((row) => row.productId)).size;
+  }
+
+  /** Les familles : même fusion, même compte. */
+  private async repointCategories(from: string, to: string): Promise<number> {
+    const rows = await this.prisma.categoryMedia.findMany({
+      where: { mediaUrl: from },
+      select: { categoryId: true, role: true },
+    });
+    if (rows.length === 0) {
+      return 0;
+    }
+    await this.prisma.categoryMedia.deleteMany({
+      where: {
+        mediaUrl: to,
+        OR: rows.map(({ categoryId, role }) => ({ categoryId, role })),
+      },
+    });
+    await this.prisma.categoryMedia.updateMany({
+      where: { mediaUrl: from },
+      data: { mediaUrl: to },
+    });
+    return new Set(rows.map((row) => row.categoryId)).size;
   }
 }
 

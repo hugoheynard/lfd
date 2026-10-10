@@ -535,6 +535,20 @@ export const REFERENTIAL_CATALOGUE_FACTS = {
    */
   "media_asset.discarded": fact(payload({ subjectLabel: subjectLabel() })),
   /**
+   * Une autre image prend sa place chez TOUS ses porteurs — fiches, familles,
+   * opérations, vitrine (L7, 2026-10-10). Le sujet est l'image REMPLACÉE, qui
+   * reste au fonds ; `to` est l'URL de la nouvelle, `carriers` le nombre de
+   * porteurs qui l'affichaient au moment du geste (zéro possible : le geste
+   * est permis sur une image que personne n'affiche, et le dit).
+   */
+  "media_asset.replaced": fact(
+    payload({
+      subjectLabel: subjectLabel(),
+      to: z.string().min(1),
+      carriers: z.number().int().min(0),
+    }),
+  ),
+  /**
    * Un mot-clé renommé dans **tout le fonds**, en un geste (L1, 2026-10-10).
    * Un fait par geste et non par image : la question posée au journal est
    * « qui a renommé ce mot », pas « qu'est-il arrivé à cette image ». Le

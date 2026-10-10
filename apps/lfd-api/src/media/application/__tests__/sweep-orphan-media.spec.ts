@@ -41,6 +41,11 @@ class FakeCarriers extends MediaCarriers {
    * prétend jouer : le jour où le balayage lira les porteurs nommés, un faux
    * incomplet le laisserait vert sur du code qui ne peut pas tourner.
    */
+  /** Ces suites ne remplacent rien : un repointage ici serait une faute du code testé. */
+  repoint(): Promise<number> {
+    return Promise.reject(new Error("repointage inattendu"));
+  }
+
   carriersOf(): Promise<readonly Carrier[]> {
     return Promise.resolve([]);
   }
@@ -53,6 +58,11 @@ class FakeCarriers extends MediaCarriers {
 class BrokenCarriers extends MediaCarriers {
   usesOf(): Promise<ReadonlyMap<string, number>> {
     return Promise.reject(new Error("porteur injoignable"));
+  }
+
+  /** Ces suites ne remplacent rien : un repointage ici serait une faute du code testé. */
+  repoint(): Promise<number> {
+    return Promise.reject(new Error("repointage inattendu"));
   }
 
   carriersOf(): Promise<readonly Carrier[]> {

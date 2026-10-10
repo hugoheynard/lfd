@@ -1,7 +1,13 @@
 import { Injectable } from "@nestjs/common";
 
+import { StorefrontImageRepointing } from "../b2b/storefront/channels/media/storefront-image-repointing.js";
 import { StorefrontMediaUsage } from "../b2b/storefront/channels/media/storefront-media-usage.js";
-import { MediaCarriers, type Carrier } from "../media/channels/carriers/media-carriers.js";
+import {
+  MediaCarriers,
+  type Carrier,
+  type ImageReplacement,
+} from "../media/channels/carriers/media-carriers.js";
+import type { WriteTicket } from "../platform/journal/scoped-journal.js";
 
 /**
  * **Ce que la VITRINE répond à la médiathèque** : quels objets de vitrine
@@ -15,7 +21,10 @@ import { MediaCarriers, type Carrier } from "../media/channels/carriers/media-ca
  */
 @Injectable()
 export class StorefrontMediaCarriers extends MediaCarriers {
-  constructor(private readonly usage: StorefrontMediaUsage) {
+  constructor(
+    private readonly usage: StorefrontMediaUsage,
+    private readonly repointing: StorefrontImageRepointing,
+  ) {
     super();
   }
 
@@ -31,5 +40,9 @@ export class StorefrontMediaCarriers extends MediaCarriers {
       // Jamais vide : `StorefrontMediaUsageEntry.label` le garantit déjà.
       label,
     }));
+  }
+
+  repoint(replacement: ImageReplacement, ticket: WriteTicket): Promise<number> {
+    return this.repointing.repoint(replacement, ticket);
   }
 }

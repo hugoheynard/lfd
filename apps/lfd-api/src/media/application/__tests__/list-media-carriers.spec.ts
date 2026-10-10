@@ -13,6 +13,11 @@ class FakeCarriers extends MediaCarriers {
     return Promise.resolve(new Map());
   }
 
+  /** Ces suites ne remplacent rien : un repointage ici serait une faute du code testé. */
+  repoint(): Promise<number> {
+    return Promise.reject(new Error("repointage inattendu"));
+  }
+
   carriersOf(url: string): Promise<readonly Carrier[]> {
     this.asked = url;
     return Promise.resolve(this.byUrl.get(url) ?? []);

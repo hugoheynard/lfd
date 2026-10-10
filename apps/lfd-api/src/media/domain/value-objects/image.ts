@@ -112,14 +112,15 @@ export class MediaNotInLibraryError extends ResourceNotFoundError {
 /**
  * On ne supprime pas une image qu'un porteur affiche (→ 409).
  *
- * 🔴 **La base tient déjà la règle** : `product_media` et `category_media`
- * référencent l'actif en `ON DELETE RESTRICT`, donc Postgres refuserait de
- * toute façon. Cette erreur-ci existe pour que le refus arrive **avant** la
- * tentative, et surtout pour qu'il DISE combien de fiches la portent : un
- * « suppression impossible » sans chiffre laisse chercher lesquelles.
+ * 🔴 **Elle EST la règle** : aucune clé étrangère ne traverse depuis que le
+ * fonds a son schéma (2026-09-23, vérifié le 2026-10-10) — Postgres ne
+ * refuserait rien. Elle compte les porteurs par le canal, et DIT combien la
+ * portent : un « suppression impossible » sans chiffre laisse chercher
+ * lesquelles.
  *
- * ⚠️ Le compte ne peut pas devenir une autorisation. Il vaut au moment de la
- * lecture ; c'est la contrainte de base qui reste le dernier mot.
+ * ⚠️ Le compte ne peut pas devenir une autorisation : il vaut au moment de la
+ * lecture, et rien ne ferme la fenêtre qui suit (assumée, D6 — cf.
+ * `documentation/mediatheque/mediatheque.md` §8).
  */
 export class MediaStillInUseError extends BusinessError {
   constructor(readonly uses: number) {

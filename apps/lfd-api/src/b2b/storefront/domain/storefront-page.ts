@@ -69,6 +69,14 @@ export class StorefrontPage {
     return this.state.rows;
   }
 
+  /** La même page, sa porte `from` devenue `to` — ou `this` si elle ne la montrait pas. */
+  withImageRepointed(from: string, to: string): StorefrontPage {
+    const door = this.state.pickupDoorImage;
+    return door === null || door.url !== from
+      ? this
+      : new StorefrontPage({ ...this.state, pickupDoorImage: { ...door, url: to } });
+  }
+
   /** Est-elle, en tout point, la même que `other` ? Comparaison de valeur. */
   sameAs(other: StorefrontPage): boolean {
     return JSON.stringify(this.state) === JSON.stringify(other.state);

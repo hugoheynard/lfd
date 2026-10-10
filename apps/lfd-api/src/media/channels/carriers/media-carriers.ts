@@ -1,3 +1,5 @@
+import type { WriteTicket } from "../../../platform/journal/scoped-journal.js";
+
 /**
  * **Ce que la médiathèque a besoin de savoir de ceux qui affichent ses images.**
  *
@@ -61,6 +63,26 @@ export interface Carrier {
   readonly label: string;
 }
 
+/**
+ * **Remplacer une image partout où elle est affichée** (L7 du plan
+ * `documentation/mediatheque/plan-la-mediatheque-amelioree.md`, 2026-10-10).
+ *
+ * `staffId` et `at` ne servent pas à repointer : ils servent aux porteurs qui
+ * signent leurs écritures. La vitrine en est un — son verrou de révision
+ * inscrit qui l'a modifiée et quand, et un repointage qui ne le ferait pas
+ * laisserait un éditeur ouvert réécrire l'ancienne image sans être refusé.
+ */
+export interface ImageReplacement {
+  /** L'URL remplacée — elle reste au fonds (D5). */
+  readonly from: string;
+  /** L'URL qui la remplace, déjà au fonds. */
+  readonly to: string;
+  /** La fiche INTERNE du staff qui remplace — jamais un `sub`. */
+  readonly staffId: string;
+  /** L'instant du geste, lu une fois par l'appelant. */
+  readonly at: Date;
+}
+
 export abstract class MediaCarriers {
   /**
    * Combien des siens portent chacune de ces URL.
@@ -91,4 +113,24 @@ export abstract class MediaCarriers {
    * c'est le cas normal d'une image orpheline, pas une anomalie.
    */
   abstract carriersOf(url: string): Promise<readonly Carrier[]>;
+
+  /**
+   * **Repointe** chacun des siens qui affiche `from` vers `to`, dans la
+   * transaction de l'appelant, et rend combien de porteurs ont changé —
+   * comptés comme {@link carriersOf} les nomme : une fiche qui tenait l'image
+   * sous deux rôles compte une fois.
+   *
+   * 🔴 **Un porteur qui affichait déjà `to` ne finit pas avec deux fois la
+   * même image** : la ligne de `to` en double est retirée, et celle de `from`
+   * garde sa place (son rang, son rôle). Remplacer, c'est mettre la nouvelle
+   * image À LA PLACE de l'ancienne.
+   *
+   * Exige un {@link WriteTicket} : on ne repointe pas sans avoir tracé le
+   * remplacement, ou nommé pourquoi on ne le trace pas. C'est aussi ce qui
+   * fait auditer l'appelant par `lint:journal-tracked`.
+   *
+   * Chaque porteur n'écrit que SES tables ; la médiathèque ne lit ni n'écrit
+   * les leurs.
+   */
+  abstract repoint(replacement: ImageReplacement, ticket: WriteTicket): Promise<number>;
 }

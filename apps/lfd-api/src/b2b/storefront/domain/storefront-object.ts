@@ -95,8 +95,30 @@ export class StorefrontObject {
     return before.state.column !== this.state.column || before.state.row !== this.state.row;
   }
 
+  /**
+   * Le même objet, ses images `from` devenues `to` — ou `this` s'il n'en
+   * montrait aucune, pour que la vitrine compte ceux qui ont changé.
+   */
+  withImageRepointed(from: string, to: string): StorefrontObject {
+    if (!this.state.contents.some((content) => imageUrlOf(content) === from)) {
+      return this;
+    }
+    return new StorefrontObject({
+      ...this.state,
+      contents: this.state.contents.map((content) =>
+        content.kind === "info" && content.image !== null && content.image.url === from
+          ? { ...content, image: { ...content.image, url: to } }
+          : content,
+      ),
+    });
+  }
+
   /** Est-il, en tout point, le même que `other` ? Comparaison de valeur. */
   sameAs(other: StorefrontObject): boolean {
     return JSON.stringify(this.state) === JSON.stringify(other.state);
   }
+}
+
+function imageUrlOf(content: StorefrontContentState): string | null {
+  return content.kind === "info" ? (content.image?.url ?? null) : null;
 }

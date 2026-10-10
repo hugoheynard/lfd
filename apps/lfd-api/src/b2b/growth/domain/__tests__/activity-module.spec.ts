@@ -226,6 +226,7 @@ describe("moduleOf — la médiathèque", () => {
     ["media_asset.deposited", "mediatheque"],
     ["media_asset.described", "mediatheque"],
     ["media_asset.discarded", "mediatheque"],
+    ["media_asset.replaced", "mediatheque"],
     ["media_tag.renamed", "mediatheque"],
     ["media_tag.removed", "mediatheque"],
     ["media_series.created", "mediatheque"],

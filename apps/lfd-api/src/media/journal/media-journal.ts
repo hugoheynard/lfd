@@ -56,6 +56,12 @@ export const MEDIA_EVENTS = {
   mediaDescribed: "media_asset.described",
   /** Elle quitte la bibliothèque, octets compris. */
   mediaDiscarded: "media_asset.discarded",
+  /**
+   * Une autre image prend sa place chez tous ses porteurs (L7, 2026-10-10).
+   * Elle reste au fonds (D5) : c'est son EMPLOI qui change, pas elle — mais
+   * le geste vise l'image, pas un porteur, et c'est donc un fait du fonds.
+   */
+  mediaReplaced: "media_asset.replaced",
   /** Un mot-clé renommé (ou fusionné) sur toutes les images qui le portent. */
   tagRenamed: "media_tag.renamed",
   /** Un mot-clé retiré de toutes les images qui le portent. */

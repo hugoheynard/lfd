@@ -5,7 +5,9 @@ import { CatalogModule } from "../catalog/catalog.module.js";
 import { GetStorefrontCatalogHandler } from "./application/get-storefront-catalog.handler.js";
 import { GetPublicStorefrontPageHandler } from "./application/get-public-storefront-page.handler.js";
 import { GetStorefrontHandler } from "./application/get-storefront.handler.js";
+import { RepointStorefrontImage } from "./application/repoint-storefront-image.js";
 import { SaveStorefrontHandler } from "./application/save-storefront.handler.js";
+import { StorefrontImageRepointing } from "./channels/media/storefront-image-repointing.js";
 import { StorefrontMediaUsage } from "./channels/media/storefront-media-usage.js";
 import { PublicStorefrontReader } from "./domain/public-storefront.reader.js";
 import { StorefrontCatalogReader } from "./domain/storefront-catalog.reader.js";
@@ -34,7 +36,8 @@ import { PrismaStorefrontRepository } from "./infrastructure/prisma-storefront.r
  * `StorefrontOperationsReader`, branché sur `CatalogOperationsReader` : une
  * annonce liée s'éteint avec son opération (D11). Et un canal publié,
  * `channels/media/` : les images qu'emploie la vitrine, que `appBootstrap/`
- * branche sur la médiathèque (D9).
+ * branche sur la médiathèque (D9) — et, depuis L7 de la médiathèque
+ * (2026-10-10), leur remplacement, par l'agrégat.
  */
 @Module({
   imports: [CatalogModule],
@@ -44,6 +47,7 @@ import { PrismaStorefrontRepository } from "./infrastructure/prisma-storefront.r
     { provide: StorefrontReader, useClass: PrismaStorefrontReader },
     { provide: PublicStorefrontReader, useClass: PrismaPublicStorefrontReader },
     { provide: StorefrontMediaUsage, useClass: PrismaStorefrontMediaUsage },
+    { provide: StorefrontImageRepointing, useClass: RepointStorefrontImage },
     { provide: StorefrontCatalogReader, useClass: CatalogBackedStorefrontCatalogReader },
     { provide: StorefrontOperationsReader, useClass: CatalogBackedStorefrontOperationsReader },
     SaveStorefrontHandler,
@@ -51,6 +55,6 @@ import { PrismaStorefrontRepository } from "./infrastructure/prisma-storefront.r
     GetPublicStorefrontPageHandler,
     GetStorefrontCatalogHandler,
   ],
-  exports: [StorefrontMediaUsage],
+  exports: [StorefrontMediaUsage, StorefrontImageRepointing],
 })
 export class StorefrontModule {}

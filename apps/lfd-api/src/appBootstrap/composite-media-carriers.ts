@@ -1,4 +1,9 @@
-import { MediaCarriers, type Carrier } from "../media/channels/carriers/media-carriers.js";
+import {
+  MediaCarriers,
+  type Carrier,
+  type ImageReplacement,
+} from "../media/channels/carriers/media-carriers.js";
+import type { WriteTicket } from "../platform/journal/scoped-journal.js";
 
 /**
  * **Tous les porteurs de la médiathèque, interrogés ensemble.**
@@ -35,5 +40,22 @@ export class CompositeMediaCarriers extends MediaCarriers {
   async carriersOf(url: string): Promise<readonly Carrier[]> {
     const answers = await Promise.all(this.carriers.map((carrier) => carrier.carriersOf(url)));
     return answers.flat();
+  }
+
+  /**
+   * Repointe chez TOUS les porteurs, l'un après l'autre, et additionne.
+   *
+   * 🔴 **En série, et dans la transaction de l'appelant.** Il n'y a qu'un
+   * client Prisma : chaque porteur écrit par le même proxy transactionnel, et
+   * l'unité ouverte par la médiathèque les emporte tous ou n'en garde aucun.
+   * `Promise.all` n'y gagnerait rien — une transaction interactive passe ses
+   * ordres un par un sur la même connexion — et mêlerait les erreurs.
+   */
+  async repoint(replacement: ImageReplacement, ticket: WriteTicket): Promise<number> {
+    let total = 0;
+    for (const carrier of this.carriers) {
+      total += await carrier.repoint(replacement, ticket);
+    }
+    return total;
   }
 }

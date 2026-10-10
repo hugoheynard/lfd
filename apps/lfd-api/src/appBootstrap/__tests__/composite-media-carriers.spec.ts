@@ -1,4 +1,9 @@
-import { MediaCarriers, type Carrier } from "../../media/channels/carriers/media-carriers.js";
+import {
+  MediaCarriers,
+  type Carrier,
+  type ImageReplacement,
+} from "../../media/channels/carriers/media-carriers.js";
+import { RecordingMediaJournal } from "../../media/journal/__tests__/recording-media-journal.js";
 import { CompositeMediaCarriers } from "../composite-media-carriers.js";
 
 /** Un porteur qui répond ce qu'on lui a mis, pour toutes les URL. */
@@ -6,8 +11,16 @@ class StubCarriers extends MediaCarriers {
   constructor(
     private readonly counts: ReadonlyMap<string, number>,
     private readonly named: readonly Carrier[] = [],
+    private readonly repointed = 0,
   ) {
     super();
+  }
+
+  readonly replacements: ImageReplacement[] = [];
+
+  repoint(replacement: ImageReplacement): Promise<number> {
+    this.replacements.push(replacement);
+    return Promise.resolve(this.repointed);
   }
 
   usesOf(urls: readonly string[]): Promise<ReadonlyMap<string, number>> {
@@ -26,6 +39,10 @@ class BrokenCarriers extends MediaCarriers {
   }
 
   carriersOf(): Promise<readonly Carrier[]> {
+    return Promise.reject(new Error("vitrine injoignable"));
+  }
+
+  repoint(): Promise<number> {
     return Promise.reject(new Error("vitrine injoignable"));
   }
 }
@@ -90,5 +107,34 @@ describe("CompositeMediaCarriers", () => {
     ]);
 
     await expect(composite.carriersOf(A)).rejects.toThrow("vitrine injoignable");
+  });
+
+  describe("repoint (L7)", () => {
+    const REPLACEMENT: ImageReplacement = {
+      from: A,
+      to: B,
+      staffId: "fiche-communication",
+      at: new Date(0),
+    };
+    const ticket = () => new RecordingMediaJournal().untraced("test du composite");
+
+    it("repointe chez TOUS les porteurs, avec le même geste, et ADDITIONNE", async () => {
+      const pim = new StubCarriers(new Map(), [], 3);
+      const storefront = new StubCarriers(new Map(), [], 2);
+      const composite = new CompositeMediaCarriers([pim, storefront]);
+
+      expect(await composite.repoint(REPLACEMENT, ticket())).toBe(5);
+      expect(pim.replacements).toEqual([REPLACEMENT]);
+      expect(storefront.replacements).toEqual([REPLACEMENT]);
+    });
+
+    it("ÉCHOUE dès qu'UN porteur échoue — l'unité de l'appelant emporte le reste", async () => {
+      const composite = new CompositeMediaCarriers([
+        new StubCarriers(new Map(), [], 1),
+        new BrokenCarriers(),
+      ]);
+
+      await expect(composite.repoint(REPLACEMENT, ticket())).rejects.toThrow("vitrine injoignable");
+    });
   });
 });

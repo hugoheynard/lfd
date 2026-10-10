@@ -164,6 +164,33 @@ export class Storefront {
     return changes;
   }
 
+  /**
+   * **Remplace une image de la médiathèque** partout où la vitrine la montre
+   * — contenus des objets vivants, porte de l'accueil (L7 du plan de la
+   * médiathèque, 2026-10-10). Le texte alternatif reste celui du porteur.
+   *
+   * Rend le nombre de porteurs changés. À zéro, rien n'est à écrire : la
+   * révision ne monte pas, et un éditeur ouvert n'est pas refusé pour rien.
+   * Sinon, l'enregistrement qui suit monte la révision comme un `compose()`
+   * — c'est ce qui fait refuser l'éditeur ouvert avant le remplacement.
+   *
+   * Un objet à plusieurs contenus qui montrait déjà `to` le montre deux fois
+   * après : ce sont deux contenus distincts (titres, liens), pas un doublon.
+   */
+  repointImage(from: string, to: string, saving: StorefrontSaving): number {
+    const objects = this.objects.map((object) => object.withImageRepointed(from, to));
+    const pages = this.pages.map((page) => page.withImageRepointed(from, to));
+    const carriers =
+      objects.filter((object, index) => object !== this.objects[index]).length +
+      pages.filter((page, index) => page !== this.pages[index]).length;
+    if (carriers > 0) {
+      this.objects = objects;
+      this.pages = pages;
+      this.saving = { ...saving, archived: [] };
+    }
+    return carriers;
+  }
+
   /** @throws {StorefrontNotComposedError} rien n'a été composé : il n'y a rien à écrire. */
   toPersistence(): StorefrontWrite {
     if (this.saving === null) {

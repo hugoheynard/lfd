@@ -9,6 +9,7 @@ import { MediaFailureLog } from "./domain/ports/media-failure-log.js";
 import { PrismaMediaFailureLog } from "./infrastructure/prisma-media-failure-log.js";
 import { DepositImageHandler } from "./application/deposit-image.js";
 import { DiscardMediaHandler } from "./application/discard-media.js";
+import { ReplaceMediaHandler } from "./application/replace-media.js";
 import { SaveMediaDetailsHandler } from "./application/save-media-details.js";
 import { SweepOrphanMediaHandler } from "./application/sweep-orphan-media.js";
 import { ListMediaTagsHandler } from "./application/list-media-tags.js";
@@ -20,6 +21,7 @@ import { MediaLibrary } from "./domain/ports/media-library.js";
 import { MediaLibraryReader } from "./domain/ports/media-library-reader.js";
 import { MediaLibraryWriter } from "./domain/ports/media-library-writer.js";
 import { MediaLibraryController } from "./http/media-library.controller.js";
+import { MediaReplaceController } from "./http/media-replace.controller.js";
 import { MediaSweepController } from "./http/media-sweep.controller.js";
 import { MediaSeriesController } from "./http/media-series.controller.js";
 import { DeclareMediaSeriesHandler } from "./application/declare-media-series.js";
@@ -64,7 +66,12 @@ import { PrismaMediaLibraryWriter } from "./infrastructure/prisma-media-library-
  */
 @Module({
   imports: [MediaDatabaseModule],
-  controllers: [MediaLibraryController, MediaSeriesController, MediaSweepController],
+  controllers: [
+    MediaLibraryController,
+    MediaReplaceController,
+    MediaSeriesController,
+    MediaSweepController,
+  ],
   providers: [
     BrowseMediaLibraryHandler,
     ListMediaCarriersHandler,
@@ -72,6 +79,7 @@ import { PrismaMediaLibraryWriter } from "./infrastructure/prisma-media-library-
     { provide: MediaFailureLog, useClass: PrismaMediaFailureLog },
     SaveMediaDetailsHandler,
     DiscardMediaHandler,
+    ReplaceMediaHandler,
     DepositImageHandler,
     SweepOrphanMediaHandler,
     ListMediaTagsHandler,
