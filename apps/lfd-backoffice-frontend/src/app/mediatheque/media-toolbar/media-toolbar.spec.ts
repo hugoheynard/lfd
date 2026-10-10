@@ -5,12 +5,24 @@ import { describe, expect, it } from 'vitest';
 import { ALL_MEDIA, type MediaFeedCriteria } from '../media-feed-url';
 import { MediaToolbar } from './media-toolbar';
 
+const SERIES = [
+  {
+    id: 's1',
+    title: 'Shooting carte 2026',
+    shotOn: '2026-03-14',
+    note: null,
+    images: 12,
+    createdAt: '2026-03-20T10:00:00.000Z',
+  },
+];
+
 function mount(criteria: MediaFeedCriteria, total: number | null = null) {
   TestBed.resetTestingModule();
   TestBed.configureTestingModule({ providers: [provideZonelessChangeDetection()] });
   const fixture = TestBed.createComponent(MediaToolbar);
   fixture.componentRef.setInput('criteria', criteria);
   fixture.componentRef.setInput('total', total);
+  fixture.componentRef.setInput('series', SERIES);
   const emitted: MediaFeedCriteria[] = [];
   fixture.componentInstance.changed.subscribe((next) => emitted.push(next));
   fixture.detectChanges();
@@ -56,5 +68,33 @@ describe("la barre d'outils de la médiathèque", () => {
     const { fixture } = mount({ ...ALL_MEDIA, untagged: true });
     const pressed = [...(fixture.nativeElement as HTMLElement).querySelectorAll('[aria-pressed]')];
     expect(pressed.map((button) => button.getAttribute('aria-pressed'))).toEqual(['true', 'false']);
+  });
+
+  it('filtre sur une série, et la relâche sans toucher au reste (L3)', () => {
+    const { toolbar, emitted } = mount({ ...ALL_MEDIA, tags: ['a'] });
+    toolbar['set']({ series: 's1' });
+    expect(emitted[0]).toEqual({ ...ALL_MEDIA, tags: ['a'], series: 's1' });
+
+    const kept = mount({ ...ALL_MEDIA, series: 's1', tags: ['a'] });
+    expect(kept.toolbar['filteredSeries']()?.title).toBe('Shooting carte 2026');
+    kept.toolbar['releaseSeries']();
+    expect(kept.emitted[0]).toEqual({ ...ALL_MEDIA, tags: ['a'] });
+  });
+
+  it('propose « Toutes les séries » puis chaque série datée', () => {
+    const { toolbar } = mount(ALL_MEDIA);
+    expect(toolbar['seriesOptions']().map((option) => option.label)).toEqual([
+      'Toutes les séries',
+      'Shooting carte 2026 · mars 2026',
+    ]);
+  });
+
+  it('propose le tri par prise de vue', () => {
+    const { toolbar } = mount(ALL_MEDIA);
+    expect(toolbar['sorts'].map((sort) => sort.value)).toContain('shot');
+  });
+
+  it('ne montre pas de pastille pour une série que la liste ne connaît pas', () => {
+    expect(mount({ ...ALL_MEDIA, series: 'inconnue' }).toolbar['filteredSeries']()).toBeNull();
   });
 });

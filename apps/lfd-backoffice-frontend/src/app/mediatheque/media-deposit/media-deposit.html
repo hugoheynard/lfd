@@ -1,0 +1,125 @@
+<!-- LA SÉRIE DU PROCHAIN LOT (D3 : facultative). Elle part avec chaque
+     fichier ; une image déjà au fonds garde la sienne (D2). -->
+<div class="series">
+  <fold-listbox
+    class="series-pick"
+    size="sm"
+    label="Série du lot"
+    optional
+    [options]="options()"
+    [value]="choice()"
+    (selectionChange)="pick($event)"
+  />
+  @if (chosen(); as chosen) {
+    <app-series-chip
+      [series]="chosen"
+      removable
+      removeLabel="Déposer sans série"
+      (removed)="clearChoice()"
+    />
+  }
+</div>
+
+@if (series.failure(); as message) {
+  <!-- Échec PARTIEL : on peut toujours déposer, sans série. -->
+  <fold-callout variant="alert">{{ message }}</fold-callout>
+}
+
+<!-- `accept` et les bornes viennent du CONTRAT. Chaque fichier est vérifié
+     dans le navigateur avant l'envoi (L3) ; le serveur reste l'autorité. -->
+<fold-file-dropzone
+  class="pick"
+  [accept]="limits.accept"
+  [multiple]="true"
+  label="Déposer des images"
+  [hint]="limits.hint"
+  [busy]="batch.running()"
+  busyLabel="Dépôt en cours…"
+  (filesPicked)="deposit($event)"
+/>
+
+@if (batch.entries().length > 0) {
+  <section class="batch" aria-label="Compte rendu du lot">
+    <header class="batch-head">
+      @if (shownBatchSeries(); as target) {
+        <span class="batch-into">Lot déposé dans</span>
+        <app-series-chip [series]="target" />
+      } @else {
+        <span class="batch-into">Lot sans série</span>
+      }
+      <span class="tally">
+        {{ batch.deposited() }} déposée(s)
+        @if (batch.alreadyKnown() > 0) {
+          · {{ batch.alreadyKnown() }} déjà au fonds
+        }
+        · {{ batch.refused() }} refusée(s)
+        @if (batch.remaining() > 0) {
+          · {{ batch.remaining() }} en attente
+        }
+      </span>
+    </header>
+
+    <!-- CHAQUE fichier, et ce qu'il est devenu. -->
+    <ul class="report">
+      @for (entry of batch.entries(); track $index) {
+        @let badge = badgeOf(entry);
+        <li class="line">
+          <fold-badge [variant]="badge.variant" [content]="badge.label" />
+          <span class="file">{{ entry.name }}</span>
+          @if (entry.state === 'refusé' && entry.reason) {
+            <span class="detail detail-refused">
+              {{ entry.reason }}
+              @if (entry.refusedBy === 'poste') {
+                <span class="origin">— vérifié avant l’envoi</span>
+              }
+            </span>
+          } @else if (entry.state === 'déjà au fonds') {
+            <span class="detail">{{ alreadyOf(entry) }}</span>
+          }
+        </li>
+      }
+    </ul>
+
+    @if (batch.hasRefused() && !batch.running()) {
+      <!-- Sans danger : la clé de stockage est le hachage du contenu. Possible
+           ICI seulement : ce magasin détient les `File`. Les refus du poste
+           n'y sont pas — ils le seraient encore. -->
+      <div>
+        <button foldButton emphasis="outline" size="sm" icon="reset" (click)="retry()">
+          Réessayer les refus du serveur
+        </button>
+      </div>
+    }
+  </section>
+}
+
+<!-- L'HISTORIQUE. Il survit au rechargement, là où le compte rendu ci-dessus
+     s'efface avec l'onglet. -->
+<button foldButton class="past" emphasis="soft" size="sm" (click)="togglePast()">
+  {{ showPast() ? 'Masquer les refus passés' : 'Refus passés' }}
+</button>
+
+@if (showPast()) {
+  @if (pastFailures().length === 0) {
+    <p class="tally">Aucun refus enregistré.</p>
+  } @else {
+    <ul class="report">
+      @for (past of pastFailures(); track past.id) {
+        <li class="line">
+          <fold-badge variant="alert" [content]="whenOf(past)" />
+          <span class="file">{{ past.fileName }}</span>
+          <span class="detail detail-refused">
+            {{ past.reason }}
+            @if (past.actorName; as who) {
+              <span class="origin">— {{ who }}</span>
+            }
+          </span>
+        </li>
+      }
+    </ul>
+    <!-- Dit ce que cette liste NE permet pas : sans octets, pas de réessai. -->
+    <p class="tally">
+      Ces fichiers n'ont pas été conservés : redéposez-les depuis votre poste pour réessayer.
+    </p>
+  }
+}

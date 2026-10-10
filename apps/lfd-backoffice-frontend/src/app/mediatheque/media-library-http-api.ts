@@ -1,11 +1,14 @@
 import { HttpClient } from '@angular/common/http';
 import { Injectable, inject } from '@angular/core';
 import type {
+  CreatedIdResponse,
   MediaCarrierView,
   MediaUploadFailureView,
   MediaDetailsPayload,
   MediaLibraryPageView,
   MediaLibrarySort,
+  MediaSeriesPayload,
+  MediaSeriesView,
   MediaTagView,
   RenameMediaTagPayload,
   UploadedMediaView,
@@ -31,6 +34,8 @@ export interface MediaPageRequest {
   readonly to?: string | undefined;
   readonly untagged?: boolean | undefined;
   readonly unused?: boolean | undefined;
+  /** L'identifiant d'une série (L3). */
+  readonly series?: string | undefined;
 }
 
 /**
@@ -50,6 +55,7 @@ export function pageParams(request: MediaPageRequest): Record<string, string> {
   if (request.to !== undefined && request.to !== '') params['to'] = request.to;
   if (request.untagged === true) params['untagged'] = '1';
   if (request.unused === true) params['unused'] = '1';
+  if (request.series !== undefined && request.series !== '') params['series'] = request.series;
   return params;
 }
 
@@ -117,9 +123,14 @@ export class MediaLibraryHttpApi {
    * ne duplique rien. C'est ce qui permet de proposer « réessayer » sans
    * précaution particulière.
    */
-  async upload(file: File): Promise<UploadedMediaView> {
+  async upload(file: File, seriesId: string | null = null): Promise<UploadedMediaView> {
     const body = new FormData();
     body.append('file', file);
+    // La série part avec CHAQUE fichier du lot (L3, D3 : facultative). Une
+    // image déjà au fonds garde la sienne (D2) : la réponse le dit.
+    if (seriesId !== null) {
+      body.append('seriesId', seriesId);
+    }
     return firstValueFrom(this.http.post<UploadedMediaView>(`${this.base}/media`, body));
   }
 
@@ -211,5 +222,25 @@ export class MediaLibraryHttpApi {
   /** Retire un mot-clé de toutes les images. Les images restent au fonds. */
   async removeTag(tag: string): Promise<void> {
     await firstValueFrom(this.http.delete<void>(`${this.base}/media/tags`, { params: { tag } }));
+  }
+
+  /** Les séries, la plus récente prise de vue en tête — l'ordre du serveur. */
+  async series(): Promise<readonly MediaSeriesView[]> {
+    return firstValueFrom(this.http.get<readonly MediaSeriesView[]>(`${this.base}/media/series`));
+  }
+
+  /** Ouvre une série ; rend son identifiant. Les refus (400) nomment la règle. */
+  async openSeries(payload: MediaSeriesPayload): Promise<string> {
+    const created = await firstValueFrom(
+      this.http.post<CreatedIdResponse>(`${this.base}/media/series`, payload),
+    );
+    return created.id;
+  }
+
+  /** Corrige le titre, la date ou la note d'une série. Pas de suppression : le serveur n'en a pas. */
+  async describeSeries(id: string, payload: MediaSeriesPayload): Promise<void> {
+    await firstValueFrom(
+      this.http.put<void>(`${this.base}/media/series/${encodeURIComponent(id)}`, payload),
+    );
   }
 }

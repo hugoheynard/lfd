@@ -1,0 +1,18 @@
+<span class="body" [attr.title]="series().title">
+  <fold-icon name="folder" [size]="12" />
+  <span class="title">{{ series().title }}</span>
+  @if (month(); as month) {
+    <span class="month">· {{ month }}</span>
+  }
+</span>
+@if (removable()) {
+  <button
+    type="button"
+    class="remove"
+    [attr.aria-label]="removeLabel()"
+    [attr.title]="removeLabel()"
+    (click)="removed.emit()"
+  >
+    <fold-icon name="close" [size]="12" />
+  </button>
+}

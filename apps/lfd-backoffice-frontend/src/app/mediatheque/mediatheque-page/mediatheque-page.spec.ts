@@ -6,7 +6,7 @@ import type {
   MediaDetailsPayload,
   MediaLibraryPageView,
   MediaTagView,
-  MediaUploadFailureView,
+  MediaSeriesView,
   RenameMediaTagPayload,
 } from '@lfd/pim-contracts';
 import { FoldPanelHostService } from 'fold-ng';
@@ -84,13 +84,10 @@ class FakeLibrary {
     return Promise.resolve();
   }
 
-  /** Ce que l'historique PERSISTANT rend — distinct de la file en mémoire. */
-  past: MediaUploadFailureView[] = [];
-  failuresCalls = 0;
+  seriesList: MediaSeriesView[] = [];
 
-  failures(): Promise<readonly MediaUploadFailureView[]> {
-    this.failuresCalls += 1;
-    return Promise.resolve(this.past);
+  series(): Promise<readonly MediaSeriesView[]> {
+    return Promise.resolve(this.seriesList);
   }
 
   pages: MediaLibraryPageView[] = [];
@@ -233,11 +230,11 @@ describe('la médiathèque', () => {
     expect(screen['tail']()).toBe('end');
   });
 
-  it('ne pose des intercalaires que sous le tri par dépôt', async () => {
+  it('ne pose des intercalaires que sous les tris par date', async () => {
     const screen = page();
     library.pages = [{ items: [image('a')], total: 1, next: null }];
     await reread(screen);
-    expect(screen['rows']().map((row) => row.kind)).toEqual(['month', 'image']);
+    expect(screen['rows']().map((row) => row.kind)).toEqual(['divider', 'image']);
 
     library.pages = [{ items: [image('a')], total: 1, next: null }];
     await screen['show']({ ...screen['criteria'](), sort: 'name' });
@@ -291,48 +288,6 @@ describe('la médiathèque — la recherche', () => {
 
     expect(library.calls.at(-1)?.tags).toEqual([]);
     expect(screen['filtering']()).toBe(false);
-  });
-});
-
-describe("la médiathèque — l'historique des refus", () => {
-  function refusal(fileName: string): MediaUploadFailureView {
-    return {
-      id: `f_${fileName}`,
-      fileName,
-      reason: 'Visuel refusé : format non accepté.',
-      code: 'catalogue.media.unsupported_image',
-      bytes: 1024,
-      contentType: null,
-      actorName: 'Hugo',
-      occurredAt: '2026-09-23T08:00:00.000Z',
-    };
-  }
-
-  /**
-   * Régression (2026-09-23) : le compte rendu d'un lot vivait en mémoire.
-   * Fermer l'onglet l'effaçait, et « qu'est-ce qui n'est pas entré hier »
-   * n'avait aucune réponse.
-   */
-  it('lit le serveur à l’OUVERTURE, pas au chargement de la page', async () => {
-    // Personne ne consulte l'historique à chaque visite : le charger d'office
-    // coûterait une requête à tout le monde pour servir quelques-uns.
-    const screen = page();
-    expect(library.failuresCalls).toBe(0);
-
-    library.past = [refusal('croissant.heic')];
-    await screen['togglePast']();
-
-    expect(library.failuresCalls).toBe(1);
-    expect(screen['pastFailures']().map((f) => f.fileName)).toEqual(['croissant.heic']);
-  });
-
-  it('referme sans relire', async () => {
-    const screen = page();
-    await screen['togglePast']();
-    await screen['togglePast']();
-
-    expect(screen['showPast']()).toBe(false);
-    expect(library.failuresCalls).toBe(1);
   });
 });
 
@@ -495,5 +450,73 @@ describe("la médiathèque — l'adresse porte la vue", () => {
     await screen['clearFilter']();
 
     await vi.waitFor(() => expect(router.url).toBe('/?sort=name'));
+  });
+});
+
+describe('la médiathèque — la série d’une image (L3)', () => {
+  const CARTE: MediaSeriesView = {
+    id: 's1',
+    title: 'Shooting carte 2026',
+    shotOn: '2026-03-14',
+    note: null,
+    images: 3,
+    createdAt: '2026-03-20T10:00:00.000Z',
+  };
+
+  it('envoie la série au même enregistrement, et la montre sur la tuile', async () => {
+    const screen = page();
+    library.seriesList = [CARTE];
+    await screen['series'].refresh();
+    library.pages = [{ items: [image('a')], total: 1, next: null }];
+    await reread(screen);
+
+    const saved = await screen['writeDescription']({
+      url: 'a',
+      name: '',
+      alt: { fr: '' },
+      focal: null,
+      tags: [],
+      seriesId: 's1',
+    });
+
+    expect(saved).toBe(true);
+    expect(library.described.at(-1)?.seriesId).toBe('s1');
+    expect(screen['feed'].items()[0]?.series).toEqual({
+      id: 's1',
+      title: 'Shooting carte 2026',
+      shotOn: '2026-03-14',
+    });
+  });
+
+  it('les gestes de mots-clés n’envoient PAS la série — absente, elle ne change pas', async () => {
+    const screen = page();
+    library.pages = [
+      {
+        items: [{ ...image('a'), series: { id: 's1', title: 'x', shotOn: null } }],
+        total: 1,
+        next: null,
+      },
+    ];
+    await reread(screen);
+
+    await screen['apply'](screen['feed'].items()[0]!, 'beurre');
+
+    expect(library.described.at(-1)).not.toHaveProperty('seriesId');
+  });
+
+  it('passe la série de l’image au panneau', async () => {
+    const screen = page();
+    library.pages = [
+      {
+        items: [{ ...image('a'), series: { id: 's1', title: 'x', shotOn: null } }],
+        total: 1,
+        next: null,
+      },
+    ];
+    await reread(screen);
+
+    screen['describe'](screen['feed'].items()[0]!);
+
+    expect(opened.at(-1)).toMatchObject({ series: { id: 's1' } });
   });
 });

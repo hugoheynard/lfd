@@ -1,0 +1,104 @@
+:host {
+  display: flex;
+  flex-direction: column;
+  gap: var(--fold-space-sm);
+}
+
+/* Le choix de série et sa pastille, alignés sur le bas du champ. */
+.series {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: flex-end;
+  gap: var(--fold-space-sm);
+}
+
+.series-pick {
+  flex: 0 1 22rem;
+}
+
+.series app-series-chip {
+  align-self: center;
+}
+
+.pick {
+  display: block;
+}
+
+/* Le compte rendu : un en-tête qui dit où va le lot, puis une ligne par
+   fichier, sur une surface en retrait — il appartient au dépôt. */
+.batch {
+  display: flex;
+  flex-direction: column;
+  gap: var(--fold-space-sm);
+  padding: var(--fold-space-md);
+  border-radius: var(--fold-radius-md);
+  background: var(--fold-color-surface-subtle);
+}
+
+.batch-head {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: var(--fold-space-sm);
+}
+
+.batch-into {
+  font-size: var(--fold-text-sm);
+  font-weight: var(--fold-weight-semibold);
+}
+
+.tally {
+  margin: 0;
+  color: var(--fold-color-text-muted);
+  font-size: var(--fold-text-sm);
+  font-variant-numeric: tabular-nums;
+}
+
+.batch-head .tally {
+  margin-inline-start: auto;
+}
+
+.report {
+  display: flex;
+  flex-direction: column;
+  gap: var(--fold-space-xs);
+  margin: 0;
+  padding: 0;
+  list-style: none;
+  font-size: var(--fold-text-sm);
+}
+
+/* Pastille d'état à gauche, nom, puis le détail sur sa propre ligne, aligné
+   sous le nom. */
+.line {
+  display: grid;
+  grid-template-columns: auto minmax(0, 1fr);
+  align-items: center;
+  gap: var(--fold-space-xs) var(--fold-space-sm);
+}
+
+.file {
+  overflow: hidden;
+  font-weight: var(--fold-weight-semibold);
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.detail {
+  grid-column: 2;
+  color: var(--fold-color-text-secondary);
+}
+
+/* `alert` et non `danger` : fold n'a pas de `--fold-color-danger-*`. */
+.detail-refused {
+  color: var(--fold-color-alert-text);
+}
+
+.origin {
+  color: var(--fold-color-text-muted);
+}
+
+/* « Refus passés » reste un bouton, pas une barre. */
+.past {
+  align-self: flex-end;
+}

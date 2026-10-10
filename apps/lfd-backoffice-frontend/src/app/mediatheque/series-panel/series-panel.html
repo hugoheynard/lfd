@@ -1,0 +1,57 @@
+<fold-panel-header
+  [title]="editing() ? 'Corriger la série' : 'Nouvelle série'"
+  subtitle="Des images prises ensemble, retrouvées ensemble."
+  icon="folder"
+  closeLabel="Fermer"
+/>
+
+<fold-panel-body>
+  <fold-input
+    label="Titre"
+    required
+    placeholder="Shooting carte d’automne"
+    [hint]="titleLength() + ' / ' + limits.title"
+    [autofocus]="true"
+    [value]="title()"
+    (valueChange)="edit('title', $event)"
+    (keydown.enter)="submit()"
+  />
+
+  <fold-date
+    label="Prise de vue"
+    optional
+    hint="Le jour où les images ont été prises. Elles se rangeront par cette date."
+    [max]="data().today"
+    [value]="shotOn()"
+    (valueChange)="edit('shotOn', $event)"
+  />
+
+  <div class="note">
+    <fold-textarea
+      label="Note d’intention"
+      optional
+      placeholder="Lumière du matin, viennoiseries sur ardoise…"
+      [rows]="4"
+      [value]="note()"
+      (valueChange)="edit('note', $event)"
+    />
+    <span class="count" [class.is-over]="noteLength() > limits.note"
+      >{{ noteLength() }} / {{ limits.note }}</span
+    >
+  </div>
+
+  @if (problem(); as problem) {
+    <fold-callout variant="warning" announce>{{ problem }}</fold-callout>
+  }
+  @if (refusal(); as refusal) {
+    <!-- Le refus du SERVEUR, tel quel : c'est lui qui fait foi. -->
+    <fold-callout variant="alert" announce>{{ refusal }}</fold-callout>
+  }
+</fold-panel-body>
+
+<fold-panel-footer>
+  <button foldButton emphasis="outline" intent="neutral" (click)="cancel()">Annuler</button>
+  <button foldButton [disabled]="blocked()" (click)="submit()">
+    {{ editing() ? 'Enregistrer' : 'Créer la série' }}
+  </button>
+</fold-panel-footer>

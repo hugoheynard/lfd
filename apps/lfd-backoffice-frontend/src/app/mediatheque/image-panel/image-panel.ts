@@ -14,6 +14,8 @@ import {
   type FocalPoint,
   type LocalizedText,
   type MediaFactsView,
+  type MediaSeriesRefView,
+  type MediaSeriesView,
 } from '@lfd/pim-contracts';
 import {
   FoldButtonComponent,
@@ -22,12 +24,14 @@ import {
   FoldFieldComponent,
   FoldFieldListComponent,
   FoldInputComponent,
+  FoldListboxComponent,
   FoldPageSectionComponent,
   FoldPanelBodyComponent,
   type FoldPanelDefaults,
   FoldPanelFooterComponent,
   FoldPanelHeaderComponent,
   FoldPanelRef,
+  type FoldSelectOption,
   FoldTextareaComponent,
 } from 'fold-ng';
 
@@ -44,7 +48,12 @@ import {
   usesWording,
 } from '../image-facts';
 import { normalizeTag } from '../tag-palette';
+import { seriesLabel } from '../media-series';
+import { SeriesChip } from '../series-chip/series-chip';
 import { TagChip } from '../tag-chip/tag-chip';
+
+/** « Aucune » dans la liste des séries — une série n'a jamais un identifiant vide. */
+const NO_SERIES = '';
 
 /** Combien de suggestions au plus : au-delà, on tape une lettre de plus. */
 const SUGGESTION_LIMIT = 8;
@@ -69,6 +78,8 @@ export interface ImageDescription {
   readonly alt: LocalizedText;
   readonly focal: FocalPoint | null;
   readonly tags: readonly string[];
+  /** Sa série (L3) ; `null` = aucune. */
+  readonly series: MediaSeriesRefView | null;
   /** Absent : la section « Informations » ne s'affiche pas. */
   readonly facts?: ImageFacts;
 }
@@ -89,6 +100,11 @@ export interface ImagePanelSequence {
 export interface ImagePanelData extends ImageDescription {
   /** Le vocabulaire du fonds, d'où viennent les suggestions. */
   readonly vocabulary: readonly string[];
+  /**
+   * Les séries où la rattacher — relues à chaque ouverture de la liste.
+   * Absent : la série se lit, elle ne se change pas.
+   */
+  readonly seriesChoices?: () => readonly MediaSeriesView[];
   readonly sequence?: ImagePanelSequence;
   /** Ouvre la liste des porteurs — « voir où » des informations. */
   readonly showCarriers?: (url: string) => void;
@@ -106,6 +122,8 @@ export interface ImagePanelResult {
   readonly alt: LocalizedText;
   readonly focal: FocalPoint | null;
   readonly tags: readonly string[];
+  /** Un identifiant rattache, `null` détache — envoyé au même enregistrement. */
+  readonly seriesId: string | null;
 }
 
 /**
@@ -135,12 +153,14 @@ export interface ImagePanelResult {
     FoldPanelFooterComponent,
     FoldPageSectionComponent,
     FoldInputComponent,
+    FoldListboxComponent,
     FoldTextareaComponent,
     FoldButtonComponent,
     FoldButtonIconComponent,
     FoldCalloutComponent,
     FoldFieldListComponent,
     FoldFieldComponent,
+    SeriesChip,
     TagChip,
   ],
   templateUrl: './image-panel.html',
@@ -170,6 +190,10 @@ export class ImagePanel {
   protected readonly draft = signal<LocalizedText>({ fr: '' });
   protected readonly focal = signal<FocalPoint | null>(null);
   protected readonly tags = signal<readonly string[]>([]);
+  /** La série, telle qu'elle partira ; `null` = aucune. */
+  protected readonly series = signal<MediaSeriesRefView | null>(null);
+  /** « Changer » a été demandé : la liste des séries s'ouvre. */
+  protected readonly changingSeries = signal(false);
   /** Ce qu'on tape dans le champ « Ajouter un mot-clé ». */
   protected readonly tagDraft = signal('');
   /** On a demandé à partir avec une saisie en cours : le pied le demande. */
@@ -195,6 +219,16 @@ export class ImagePanel {
       .vocabulary.filter((word) => word.includes(needle) && !worn.has(word))
       .slice(0, SUGGESTION_LIMIT);
   });
+
+  protected readonly canChangeSeries = computed(() => this.data().seriesChoices !== undefined);
+
+  protected readonly seriesOptions = computed((): readonly FoldSelectOption<string>[] => [
+    { value: NO_SERIES, label: 'Aucune série' },
+    ...(this.data().seriesChoices?.() ?? []).map((series) => ({
+      value: series.id,
+      label: seriesLabel(series),
+    })),
+  ]);
 
   protected readonly objectPosition = computed(() => objectPositionOf(this.focal()));
 
@@ -313,6 +347,17 @@ export class ImagePanel {
     this.tags.update((current) => current.filter((kept) => kept !== tag));
   }
 
+  /** Rattache à une série de la liste, ou détache (« Aucune série »). */
+  protected chooseSeries(id: string): void {
+    const found = this.data()
+      .seriesChoices?.()
+      .find((series) => series.id === id);
+    this.series.set(
+      found === undefined ? null : { id: found.id, title: found.title, shotOn: found.shotOn },
+    );
+    this.changingSeries.set(false);
+  }
+
   protected showCarriers(): void {
     const shown = this.shown();
     if (shown !== null) {
@@ -404,6 +449,8 @@ export class ImagePanel {
     this.draft.set(image.alt[SOURCE_LOCALE] === image.url ? { fr: '' } : image.alt);
     this.focal.set(image.focal);
     this.tags.set(image.tags);
+    this.series.set(image.series);
+    this.changingSeries.set(false);
     this.tagDraft.set('');
     this.leaving.set(false);
     this.origin.set(this.result());
@@ -420,6 +467,7 @@ export class ImagePanel {
       alt: text[SOURCE_LOCALE].trim() === '' ? { fr: '' } : text,
       focal: this.focal(),
       tags: this.tags(),
+      seriesId: this.series()?.id ?? null,
     };
   }
 }
@@ -427,6 +475,7 @@ export class ImagePanel {
 function sameDescription(a: ImagePanelResult, b: ImagePanelResult): boolean {
   return (
     a.name === b.name &&
+    a.seriesId === b.seriesId &&
     a.focal?.x === b.focal?.x &&
     a.focal?.y === b.focal?.y &&
     a.tags.length === b.tags.length &&

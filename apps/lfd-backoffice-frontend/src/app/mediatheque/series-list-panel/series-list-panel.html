@@ -1,0 +1,58 @@
+<fold-panel-header
+  title="Séries"
+  subtitle="Des images prises ensemble, la plus récente prise de vue en tête."
+  icon="folder"
+  closeLabel="Fermer"
+/>
+
+<fold-panel-body>
+  @if (data().failure(); as message) {
+    <!-- Échec PARTIEL : ce qui était lu reste affiché. -->
+    <fold-callout variant="alert">{{ message }}</fold-callout>
+  }
+
+  @if (lines().length === 0) {
+    @if (data().failure() === null) {
+      <fold-empty-state
+        title="Aucune série"
+        subtitle="Ouvrez-en une ici, ou au moment de déposer un lot d’images."
+      >
+        <fold-icon empty-icon name="folder" [size]="40" />
+      </fold-empty-state>
+    }
+  } @else {
+    <ul class="list">
+      @for (line of lines(); track line.series.id) {
+        <li class="line">
+          <span class="head">
+            <span class="title">{{ line.series.title }}</span>
+            <fold-badge
+              [variant]="line.series.images === 0 ? 'neutral' : 'info'"
+              [content]="line.images"
+            />
+          </span>
+          <span class="day">
+            <fold-icon name="calendar" [size]="12" />
+            {{ line.day }}
+          </span>
+          @if (line.series.note; as note) {
+            <span class="note" [attr.title]="note">{{ note }}</span>
+          }
+          <span class="edit">
+            <fold-button-icon
+              icon="edit"
+              size="sm"
+              tooltip="Modifier"
+              (clicked)="data().edit(line.series)"
+            />
+          </span>
+        </li>
+      }
+    </ul>
+  }
+</fold-panel-body>
+
+<fold-panel-footer align="between">
+  <button foldButton emphasis="outline" intent="neutral" (click)="close()">Fermer</button>
+  <button foldButton icon="plus" (click)="data().edit(null)">Nouvelle série</button>
+</fold-panel-footer>

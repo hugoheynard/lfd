@@ -1,13 +1,7 @@
 import { ChangeDetectionStrategy, Component, computed, inject, signal } from '@angular/core';
 import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
 import { ActivatedRoute, Router } from '@angular/router';
-import { MEDIA_LIMITS } from '@lfd/pim-contracts';
-import type {
-  LibraryMediaView,
-  MediaDetailsPayload,
-  MediaTagView,
-  MediaUploadFailureView,
-} from '@lfd/pim-contracts';
+import type { LibraryMediaView, MediaDetailsPayload, MediaTagView } from '@lfd/pim-contracts';
 import {
   FoldBadgeComponent,
   FoldButtonComponent,
@@ -15,7 +9,6 @@ import {
   FoldCalloutComponent,
   FoldDropdownComponent,
   FoldDropdownItemComponent,
-  FoldFileDropzoneComponent,
   FoldEmptyStateComponent,
   FoldIconComponent,
   FoldInputComponent,
@@ -31,6 +24,11 @@ import { NotifyService } from '../../notify.service';
 import { CanDirective } from '../../shared/can/can.directive';
 
 import { BatchUploadStore } from '../batch-upload';
+import { MediaDeposit } from '../media-deposit/media-deposit';
+import { MediaSeriesStore } from '../media-series';
+import { SeriesChip } from '../series-chip/series-chip';
+import { SeriesEditor } from '../series-editor';
+import { SeriesListPanel, type SeriesListPanelData } from '../series-list-panel/series-list-panel';
 import { FeedTail, type FeedTailState } from '../feed-tail/feed-tail';
 import { MediaFeedStore } from '../media-feed';
 import {
@@ -101,7 +99,6 @@ interface StrippedTag {
     FoldCalloutComponent,
     FoldDropdownComponent,
     FoldDropdownItemComponent,
-    FoldFileDropzoneComponent,
     FoldEmptyStateComponent,
     FoldIconComponent,
     FoldInputComponent,
@@ -112,19 +109,22 @@ interface StrippedTag {
     FoldSearchComponent,
     FoldToastComponent,
     FeedTail,
+    MediaDeposit,
     MediaToolbar,
+    SeriesChip,
     TagChip,
   ],
   templateUrl: './mediatheque-page.html',
   styleUrl: './mediatheque-page.scss',
   // Fourni par la PAGE et non à la racine : un compte rendu de dépôt appartient
   // à l'écran qui l'a lancé, et le quitter doit l'oublier.
-  providers: [BatchUploadStore, MediaFeedStore, TagPaletteStore],
+  providers: [BatchUploadStore, MediaFeedStore, MediaSeriesStore, SeriesEditor, TagPaletteStore],
   changeDetection: ChangeDetectionStrategy.OnPush,
 })
 export class MediathequePage {
   private readonly api = inject(MediaLibraryHttpApi);
-  protected readonly batch = inject(BatchUploadStore);
+  protected readonly series = inject(MediaSeriesStore);
+  private readonly seriesEditor = inject(SeriesEditor);
   protected readonly palette = inject(TagPaletteStore);
   private readonly panels = inject(FoldPanelHostService);
   private readonly notify = inject(NotifyService);
@@ -150,7 +150,10 @@ export class MediathequePage {
    */
   protected readonly criteria = signal<MediaFeedCriteria>(ALL_MEDIA);
 
-  /** La grille avec ses intercalaires de mois — sous le tri par dépôt seulement. */
+  /**
+   * La grille avec ses intercalaires — le mois sous le tri par dépôt, la
+   * série sous le tri par prise de vue (D4 : jamais par tag).
+   */
   protected readonly rows = computed(() => feedRows(this.feed.items(), this.criteria().sort));
 
   protected readonly filtering = computed(() => isFiltering(this.criteria()));
@@ -169,43 +172,6 @@ export class MediathequePage {
     return this.feed.ended() ? 'end' : 'idle';
   });
 
-  /**
-   * **Ce qui n'est pas entré**, relu du serveur.
-   *
-   * 🔴 Distinct de `batch.entries()`, qui est la file de CE lot-ci : celle-là
-   * vit en mémoire et s'efface quand on ferme l'onglet, celui-ci survit. Les
-   * deux cohabitent parce qu'ils répondent à deux questions — « où en est mon
-   * import » et « qu'est-ce qui n'est pas entré ».
-   *
-   * ⚠️ On ne propose PAS « réessayer » ici : un fichier refusé n'a pas été
-   * stocké, donc il n'y a pas d'octets à renvoyer. Seule la file en mémoire,
-   * qui détient les `File`, peut le faire.
-   */
-  /**
-   * **Ce que le dépôt accepte**, dit AVANT qu'on essaie.
-   *
-   * 🔴 L'écran n'en disait rien : le seul moyen d'apprendre qu'un fichier est
-   * trop lourd était de se le faire refuser — et sur un lot de cinquante, de
-   * découvrir la règle cinquante fois.
-   *
-   * ⚠️ Lu du CONTRAT, jamais recopié. Une borne annoncée à l'écran et une
-   * borne appliquée au serveur ne peuvent pas vivre à deux endroits : l'un des
-   * deux finit par mentir, et c'est toujours celui qui ne refuse rien.
-   *
-   * ⚠️ La garde de TRANSPORT (25 Mo) n'est pas annoncée : ce n'est pas une
-   * règle mais une protection, elle coupe bien plus haut, et la dire ferait
-   * deux chiffres pour une seule question.
-   */
-  protected readonly limits = {
-    accept: MEDIA_LIMITS.accept,
-    formats: MEDIA_LIMITS.formatLabels.join(' · '),
-    maxSize: `${String(MEDIA_LIMITS.maxBytes / (1024 * 1024))} Mo`,
-    minEdge: `${String(MEDIA_LIMITS.minEdgePixels)} × ${String(MEDIA_LIMITS.minEdgePixels)} px`,
-  };
-
-  protected readonly pastFailures = signal<readonly MediaUploadFailureView[]>([]);
-  protected readonly showPast = signal(false);
-
   constructor() {
     // La première émission ouvre l'écran ; les suivantes ne relisent que si
     // l'adresse dit autre chose que l'écran (Précédent, un lien collé). Celles
@@ -222,6 +188,7 @@ export class MediathequePage {
       void this.feed.restart(criteria);
     });
     void this.palette.refresh();
+    void this.series.refresh();
   }
 
   /**
@@ -251,30 +218,28 @@ export class MediathequePage {
   }
 
   /**
-   * Ouvre — ou referme — l'historique des refus, en le relisant à l'ouverture.
+   * Ouvre la liste des séries. « Modifier » et « Nouvelle série » ouvrent le
+   * panneau de série PAR-DESSUS : la liste reste derrière, et se relit.
    *
-   * Relu à chaque ouverture plutôt que chargé avec la page : personne ne le
-   * consulte à chaque visite, et le charger d'office coûterait une requête à
-   * tout le monde pour servir quelques-uns.
+   * Une série corrigée change ce que les tuiles montrent (titre, date) : la
+   * grille est relue à la fermeture, une fois.
    */
-  protected async togglePast(): Promise<void> {
-    const opening = !this.showPast();
-    this.showPast.set(opening);
-    if (!opening) {
-      return;
+  protected async manageSeries(): Promise<void> {
+    let touched = false;
+    await this.panels.open<SeriesListPanelData, void>(SeriesListPanel, {
+      data: {
+        series: () => this.series.all(),
+        failure: () => this.series.failure(),
+        edit: (series) => {
+          void this.seriesEditor.edit(series, true).then((id) => {
+            touched ||= id !== undefined;
+          });
+        },
+      },
+    }).closed;
+    if (touched) {
+      await this.reload();
     }
-    try {
-      this.pastFailures.set(await this.api.failures());
-    } catch {
-      // Muet et vide : un historique illisible n'est pas une panne de la
-      // médiathèque, et rougir ici ferait croire que le fonds est en cause.
-      this.pastFailures.set([]);
-    }
-  }
-
-  /** La date d'un refus, lisible — l'ISO du serveur ne se lit pas. */
-  protected whenOf(failure: MediaUploadFailureView): string {
-    return new Date(failure.occurredAt).toLocaleString('fr-FR');
   }
 
   /** Retient ou relâche un mot-clé du filtre. Retenir RESTREINT. */
@@ -333,46 +298,12 @@ export class MediathequePage {
   }
 
   /**
-   * Dépose la sélection, puis relit la bibliothèque **une seule fois**.
-   *
-   * Relire après chaque fichier ferait N requêtes et un écran qui saute à
-   * chaque image. Le compte rendu du lot dit déjà où en est chacun ; la grille
-   * n'a besoin d'être juste qu'à la fin.
-   *
-   * 🔴 On relit depuis le DÉBUT : une image déposée peut apparaître n'importe
-   * où dans l'ordre — la bibliothèque trie par premier dépôt, et redéposer des
-   * octets déjà connus ne crée pas d'entrée neuve. Ajouter une page à la suite
+   * Un lot est passé : relu depuis le DÉBUT, et une seule fois. Une image
+   * déposée peut apparaître n'importe où dans l'ordre — redéposer des octets
+   * connus ne crée pas d'entrée neuve, et ajouter une page à la suite
    * laisserait la grille mentir.
    */
-  /**
-   * Dépose une sélection — ou un glisser-déposer.
-   *
-   * 🔴 Par `fold-file-dropzone` depuis le 2026-09-23. C'était un `<label>` et
-   * un `<input type="file">` masqué, sous un commentaire qui disait « fold n'en
-   * propose pas » : c'était faux, et ça l'était déjà quand la phrase a été
-   * écrite. Le composant existe, il accepte le glisser-déposer, il porte son
-   * état d'attente — et il remet sa sélection à zéro tout seul, ce que le
-   * contrôle fait main devait faire à la main sous peine de paraître cassé au
-   * second dépôt du même fichier.
-   */
-  protected async deposit(files: readonly File[]): Promise<void> {
-    if (files.length === 0) {
-      return;
-    }
-    if ((await this.batch.send(files)) > 0) {
-      await this.reload();
-    }
-  }
-
-  /** Rejoue les refusés, et relit si quelque chose est passé. */
-  protected async retry(): Promise<void> {
-    if ((await this.batch.retry()) > 0) {
-      await this.reload();
-    }
-  }
-
-  /** Relit depuis le début, sous les mêmes critères. */
-  private async reload(): Promise<void> {
+  protected async reload(): Promise<void> {
     await this.feed.restart(this.criteria());
   }
 
@@ -585,6 +516,7 @@ export class MediathequePage {
         data: {
           ...describedImage(item),
           vocabulary: this.palette.words(),
+          seriesChoices: () => this.series.all(),
           // Le fil CHARGÉ, relu à chaque pas : décrire une série sans refermer.
           sequence: {
             images: () => this.feed.items().map(describedImage),
@@ -621,6 +553,10 @@ export class MediathequePage {
       alt: result.alt,
       focal: result.focal,
       tags: result.tags,
+      series:
+        result.seriesId === (item.series?.id ?? null)
+          ? item.series
+          : this.seriesRef(result.seriesId),
     });
     try {
       await this.api.describe({
@@ -632,14 +568,26 @@ export class MediathequePage {
         // absente. On l'omet plutôt que d'envoyer un texte sans sa langue.
         ...(result.alt.fr.trim() === '' ? {} : { alt: result.alt }),
         focal: result.focal,
+        // La série part au MÊME enregistrement : un id rattache, `null` détache.
+        seriesId: result.seriesId,
       });
       await this.palette.refresh();
+      if (result.seriesId !== (item.series?.id ?? null)) {
+        // Le compte d'images des séries a bougé.
+        await this.series.refresh();
+      }
       return true;
     } catch (caught) {
       this.replace(item);
       this.notify.refused(caught, "L'image n'a pas pu être décrite.");
       return false;
     }
+  }
+
+  /** La référence qu'une tuile montre, relue dans la liste des séries. */
+  private seriesRef(id: string | null): LibraryMediaView['series'] {
+    const found = this.series.find(id);
+    return found === null ? null : { id: found.id, title: found.title, shotOn: found.shotOn };
   }
 }
 
@@ -651,6 +599,7 @@ function describedImage(item: LibraryMediaView): ImageDescription {
     alt: item.alt,
     focal: item.focal,
     tags: item.tags,
+    series: item.series,
     facts: {
       width: item.width,
       height: item.height,

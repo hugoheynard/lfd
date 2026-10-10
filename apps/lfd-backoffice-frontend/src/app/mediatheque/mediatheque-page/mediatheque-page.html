@@ -4,98 +4,10 @@
     soit le nombre de fiches qui l'affichent.
   </p>
 
-  <!-- LE DÉPÔT EN LOT. `accept` vient du CONTRAT, comme les bornes affichées :
-       l'écran ne valide rien — c'est le serveur qui relit les octets — mais
-       autant ne pas laisser choisir un PDF dans l'explorateur pour le refuser
-       trois secondes plus tard. -->
-  <div class="deposit">
-    <!-- 🔴 Les bornes sont DITES en `hint`, avant qu'on essaie. L'écran n'en
-         disait rien : on les apprenait par un refus, et sur un lot de cinquante
-         on les apprenait cinquante fois.
-
-         ⚠️ La garde de transport (25 Mo) n'y est pas : ce n'est pas une règle
-         mais une protection, elle coupe bien plus haut, et la dire ferait deux
-         chiffres pour une seule question. -->
-    <fold-file-dropzone
-      class="pick"
-      [accept]="limits.accept"
-      [multiple]="true"
-      label="Déposer des images"
-      [hint]="
-        limits.formats + ' · ' + limits.maxSize + ' par image · ' + limits.minEdge + ' minimum'
-      "
-      [busy]="batch.running()"
-      busyLabel="Dépôt en cours…"
-      (filesPicked)="deposit($event)"
-    />
-
-    @if (batch.entries().length > 0) {
-      <p class="tally">
-        {{ batch.deposited() }} déposée(s) · {{ batch.refused() }} refusée(s)
-        @if (batch.remaining() > 0) {
-          · {{ batch.remaining() }} en attente
-        }
-      </p>
-
-      <!-- Le compte rendu ne montre QUE ce qui a mal tourné une fois le lot
-           fini : vingt lignes « déposé » n'apprennent rien, et noieraient les
-           deux qui comptent. Pendant l'envoi, en revanche, tout s'affiche —
-           c'est la seule façon de voir que ça avance. -->
-      <ul class="report">
-        @for (entry of batch.entries(); track entry.name) {
-          @if (batch.running() || entry.state === 'refusé') {
-            <li class="line" [class.line-refused]="entry.state === 'refusé'">
-              <span class="file">{{ entry.name }}</span>
-              <span class="state">{{ entry.state }}</span>
-              @if (entry.reason; as reason) {
-                <span class="reason">{{ reason }}</span>
-              }
-            </li>
-          }
-        }
-      </ul>
-
-      @if (batch.hasRefused() && !batch.running()) {
-        <!-- Réessayer est sans danger : la clé de stockage est le hachage du
-             contenu, donc redéposer les mêmes octets ne duplique rien.
-             🔴 Et c'est possible ICI et NULLE PART ailleurs : ce magasin
-             détient les `File`. L'historique persistant, lui, n'a que des noms
-             — proposer « réessayer » là-bas promettrait l'impossible. -->
-        <button foldButton emphasis="outline" (click)="retry()">Réessayer les refusés</button>
-      }
-    }
-
-    <!-- L'HISTORIQUE. Il survit au rechargement, là où le compte rendu
-         ci-dessus s'efface avec l'onglet. Deux questions distinctes : « où en
-         est mon import » et « qu'est-ce qui n'est pas entré ». -->
-    <button foldButton class="past" emphasis="soft" (click)="togglePast()">
-      {{ showPast() ? 'Masquer les refus passés' : 'Refus passés' }}
-    </button>
-
-    @if (showPast()) {
-      @if (pastFailures().length === 0) {
-        <p class="tally">Aucun refus enregistré.</p>
-      } @else {
-        <ul class="report">
-          @for (past of pastFailures(); track past.id) {
-            <li class="line line-refused">
-              <span class="file">{{ past.fileName }}</span>
-              <span class="state">{{ whenOf(past) }}</span>
-              <span class="reason">{{ past.reason }}</span>
-              @if (past.actorName; as who) {
-                <span class="state">{{ who }}</span>
-              }
-            </li>
-          }
-        </ul>
-        <!-- Dit en toutes lettres ce que cette liste NE permet pas. Sans cette
-             phrase, l'absence de bouton « réessayer » se lit comme un oubli. -->
-        <p class="tally">
-          Ces fichiers n'ont pas été conservés : redéposez-les depuis votre poste pour réessayer.
-        </p>
-      }
-    }
-  </div>
+  <!-- LE DÉPÔT EN LOT : la série du lot, la zone de dépôt, le compte rendu
+       et les refus passés (L3). Il dit quand un lot est passé ; la page relit
+       alors le fonds, une fois. -->
+  <app-media-deposit class="deposit" (passed)="reload()" />
 
   <!-- LA BANDE DE TAGS. Le vocabulaire du fonds ENTIER, compté au serveur
        (L1, 2026-10-10) — plus ce qu'on vient d'écrire sans l'avoir posé. -->
@@ -205,7 +117,13 @@
        échantillon. La barre reste au-dessus de tous les états — un tri
        refusé ou un filtre sans résultat se défait d'ici. -->
   <div class="feed">
-    <app-media-toolbar [criteria]="criteria()" [total]="feed.total()" (changed)="show($event)" />
+    <app-media-toolbar
+      [criteria]="criteria()"
+      [total]="feed.total()"
+      [series]="series.all()"
+      (changed)="show($event)"
+      (manageSeries)="manageSeries()"
+    />
 
     @if (feed.loading() && feed.pages() === 0) {
       <fold-loading message="Lecture de la médiathèque…" />
@@ -261,9 +179,10 @@
 
       <ul class="grid">
         @for (row of rows(); track row.key) {
-          @if (row.kind === 'month') {
-            <!-- L'INTERCALAIRE : sous le tri par dépôt seulement, à l'heure de
-                 Paris. Jamais par tag (D4) : une image y paraîtrait deux fois. -->
+          @if (row.kind === 'divider') {
+            <!-- L'INTERCALAIRE : le mois sous le tri par dépôt (heure de Paris),
+                 la série sous le tri par prise de vue. Jamais par tag (D4) :
+                 une image y paraîtrait deux fois. -->
             <li class="month">{{ row.label }}</li>
           } @else {
             @let item = row.item;
@@ -282,6 +201,11 @@
               <span class="name" [class.name-missing]="item.name === ''" [title]="fileOf(item)">
                 {{ label(item) }}
               </span>
+              @if (item.series; as itemSeries) {
+                <!-- La série AU-DESSUS des mots-clés : elle dit d'où vient
+                     l'image, eux comment on la retrouve. -->
+                <app-series-chip class="worn-series" [series]="itemSeries" />
+              }
               @if (item.tags.length > 0) {
                 <ul class="worn">
                   @for (tag of item.tags; track tag) {

@@ -1,0 +1,64 @@
+.list {
+  display: flex;
+  flex-direction: column;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+/* Une ligne : le titre et son compte, la date, la note — le crayon à droite,
+   sur toute la hauteur. Un filet sépare les lignes, pas une carte chacune. */
+.line {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  gap: var(--fold-space-xs) var(--fold-space-md);
+  padding-block: var(--fold-space-md);
+  border-block-end: 1px solid var(--fold-color-border-subtle);
+}
+
+.line:last-child {
+  border-block-end: 0;
+}
+
+.head,
+.day,
+.note {
+  grid-column: 1;
+}
+
+.head {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: var(--fold-space-sm);
+}
+
+.title {
+  font-weight: var(--fold-weight-semibold);
+}
+
+.day {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--fold-space-xs);
+  color: var(--fold-color-text-muted);
+  font-size: var(--fold-text-sm);
+}
+
+/* La note tronquée à deux lignes : elle rappelle l'intention, elle ne la
+   déroule pas. Son texte entier est au survol. */
+.note {
+  display: -webkit-box;
+  overflow: hidden;
+  -webkit-box-orient: vertical;
+  -webkit-line-clamp: 2;
+  line-clamp: 2;
+  color: var(--fold-color-text-secondary);
+  font-size: var(--fold-text-sm);
+}
+
+.edit {
+  grid-column: 2;
+  grid-row: 1 / span 3;
+  align-self: center;
+}

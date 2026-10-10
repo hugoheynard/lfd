@@ -52,6 +52,7 @@ const bare: ImagePanelData = {
   alt: { fr: URL },
   focal: null,
   tags: [],
+  series: null,
   vocabulary: [],
 };
 
@@ -406,5 +407,75 @@ describe('décrire une image — les informations', () => {
       weight: '245,3 Ko',
       usesWording: 'Inutilisée',
     });
+  });
+});
+
+describe('décrire une image — sa série (L3)', () => {
+  const carte = {
+    id: 's1',
+    title: 'Shooting carte 2026',
+    shotOn: '2026-03-14',
+    note: null,
+    images: 12,
+    createdAt: '2026-03-20T10:00:00.000Z',
+  };
+  const atelier = { ...carte, id: 's2', title: 'Atelier', shotOn: null };
+  const inCarte: ImagePanelData = {
+    ...bare,
+    series: { id: 's1', title: carte.title, shotOn: carte.shotOn },
+    seriesChoices: () => [carte, atelier],
+  };
+
+  it('part de la série actuelle, et n’est pas « modifié » à l’ouverture', () => {
+    const { panel: screen } = panel(inCarte);
+
+    expect(screen['series']()?.id).toBe('s1');
+    expect(screen['dirty']()).toBe(false);
+  });
+
+  it('change de série : modifié, et la nouvelle part au même enregistrement', () => {
+    const { panel: screen, closed } = panel(inCarte);
+
+    screen['changingSeries'].set(true);
+    screen['chooseSeries']('s2');
+    expect(screen['dirty']()).toBe(true);
+    expect(screen['changingSeries']()).toBe(false);
+
+    screen['submit']();
+    expect(closed[0]?.seriesId).toBe('s2');
+  });
+
+  it('« Aucune série » détache — `null`, pas l’absence', () => {
+    const { panel: screen, closed } = panel(inCarte);
+
+    screen['chooseSeries']('');
+    screen['submit']();
+
+    expect(closed[0]?.seriesId).toBeNull();
+  });
+
+  it('revenir à la série d’origine n’est plus une modification', () => {
+    const { panel: screen } = panel(inCarte);
+
+    screen['chooseSeries']('s2');
+    screen['chooseSeries']('s1');
+
+    expect(screen['dirty']()).toBe(false);
+  });
+
+  it('propose « Aucune série » en tête, puis les séries datées', () => {
+    const { panel: screen } = panel(inCarte);
+
+    expect(screen['seriesOptions']().map((option) => option.label)).toEqual([
+      'Aucune série',
+      'Shooting carte 2026 · mars 2026',
+      'Atelier',
+    ]);
+  });
+
+  it('sans liste de séries, la série se lit mais ne se change pas', () => {
+    const { panel: screen } = panel({ ...bare, series: inCarte.series });
+
+    expect(screen['canChangeSeries']()).toBe(false);
   });
 });

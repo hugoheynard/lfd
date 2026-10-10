@@ -85,8 +85,42 @@
       <fold-input label="Étiquette" [value]="label()" (valueChange)="label.set($event)" />
     </fold-page-section>
 
-    <!-- La future section « Série » (lot L3) prendra place ici, entre ce qui
-         nomme l'image et les mots par lesquels on la retrouve. -->
+    <!-- LA SÉRIE (L3), entre ce qui nomme l'image et les mots par lesquels
+         on la retrouve. Elle part au MÊME enregistrement que le reste. -->
+    <fold-page-section
+      title="Série"
+      description="Les images prises ensemble. Une image en a une au plus."
+      [headingLevel]="3"
+      stack
+    >
+      <div class="series-line">
+        @if (series(); as current) {
+          <app-series-chip [series]="current" />
+        } @else {
+          <span class="muted">Aucune série.</span>
+        }
+        @if (canChangeSeries() && !changingSeries()) {
+          <button
+            foldButton
+            emphasis="soft"
+            intent="neutral"
+            size="sm"
+            icon="edit"
+            (click)="changingSeries.set(true)"
+          >
+            Changer
+          </button>
+        }
+      </div>
+      @if (changingSeries()) {
+        <fold-listbox
+          label="Rattacher à"
+          [options]="seriesOptions()"
+          [value]="series()?.id ?? ''"
+          (selectionChange)="chooseSeries($event)"
+        />
+      }
+    </fold-page-section>
 
     <!-- Les mots-clés partent avec le reste au même enregistrement :
          l'écriture est un remplacement, pas une retouche. -->

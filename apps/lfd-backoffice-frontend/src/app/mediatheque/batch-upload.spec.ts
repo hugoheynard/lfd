@@ -4,6 +4,7 @@ import { beforeEach, describe, expect, it } from 'vitest';
 
 import { BatchUploadStore } from './batch-upload';
 import { MediaLibraryHttpApi } from './media-library-http-api';
+import { IMAGE_MEASURE, type MeasuredSize } from './upload-check';
 
 /**
  * Ce que ces cas tiennent : **un fichier refusé ne prive pas les autres de leur
@@ -25,25 +26,49 @@ function refusal(message: string): HttpErrorResponse {
 
 class FakeApi {
   refuse = new Map<string, HttpErrorResponse>();
+  /** Les fichiers déjà au fonds, et leur série d'origine. */
+  known = new Map<string, string | null>();
   sent: string[] = [];
+  seriesSent: (string | null)[] = [];
 
-  async upload(file: File): Promise<{ id: string; url: string }> {
+  async upload(
+    file: File,
+    seriesId: string | null = null,
+  ): Promise<{ id: string; url: string; seriesId: string | null; alreadyInLibrary: boolean }> {
     const refused = this.refuse.get(file.name);
     if (refused !== undefined) {
       throw refused;
     }
     this.sent.push(file.name);
-    return { id: file.name, url: `https://cdn.test/${file.name}` };
+    this.seriesSent.push(seriesId);
+    const already = this.known.has(file.name);
+    return {
+      id: file.name,
+      url: `https://cdn.test/${file.name}`,
+      seriesId: already ? (this.known.get(file.name) ?? null) : seriesId,
+      alreadyInLibrary: already,
+    };
   }
 }
 
 let api: FakeApi;
+/** Les dimensions que le « navigateur » lit, par nom de fichier. Absent : 800×600. */
+let sizes: Map<string, MeasuredSize | null>;
 
 function store(): BatchUploadStore {
   TestBed.resetTestingModule();
   api = new FakeApi();
+  sizes = new Map();
   TestBed.configureTestingModule({
-    providers: [{ provide: MediaLibraryHttpApi, useFactory: () => api }, BatchUploadStore],
+    providers: [
+      { provide: MediaLibraryHttpApi, useFactory: () => api },
+      {
+        provide: IMAGE_MEASURE,
+        useValue: async (file: File) =>
+          sizes.has(file.name) ? (sizes.get(file.name) ?? null) : { width: 800, height: 600 },
+      },
+      BatchUploadStore,
+    ],
   });
   return TestBed.inject(BatchUploadStore);
 }
@@ -123,5 +148,69 @@ describe('le dépôt en lot', () => {
 
     expect(batch.entries()).toEqual([]);
     expect(batch.deposited()).toBe(0);
+  });
+});
+
+describe('le dépôt en lot — vérifié avant l’envoi (L3)', () => {
+  it('n’envoie pas un fichier trop petit, et dit pourquoi comme le serveur', async () => {
+    const batch = store();
+    sizes.set('icone.png', { width: 64, height: 64 });
+
+    const sent = await batch.send([image('a.png'), image('icone.png')]);
+
+    expect(sent).toBe(1);
+    expect(api.sent).toEqual(['a.png']);
+    expect(batch.entries()[1]).toMatchObject({
+      state: 'refusé',
+      refusedBy: 'poste',
+      reason: 'Visuel refusé : 64×64 est trop petit — 200 px minimum sur chaque côté.',
+    });
+  });
+
+  it('ne propose pas de réessayer un refus du poste — il le serait encore', async () => {
+    const batch = store();
+    sizes.set('icone.png', { width: 64, height: 64 });
+
+    await batch.send([image('icone.png')]);
+
+    expect(batch.refused()).toBe(1);
+    expect(batch.hasRefused()).toBe(false);
+  });
+
+  it('laisse le serveur juger quand le navigateur ne sait pas lire les dimensions', async () => {
+    const batch = store();
+    sizes.set('rare.png', null);
+
+    await batch.send([image('rare.png')]);
+
+    expect(api.sent).toEqual(['rare.png']);
+  });
+});
+
+describe('le dépôt en lot — la série (L3)', () => {
+  it('envoie la série du lot avec chaque fichier, réessais compris', async () => {
+    const batch = store();
+    api.refuse.set('b.png', refusal('Réseau.'));
+    await batch.send([image('a.png'), image('b.png')], 's1');
+    api.refuse.clear();
+
+    await batch.retry();
+
+    expect(api.seriesSent).toEqual(['s1', 's1']);
+  });
+
+  it('dit « déjà au fonds » et garde la série d’origine (D2)', async () => {
+    const batch = store();
+    api.known.set('a.png', 's0');
+
+    const sent = await batch.send([image('a.png'), image('b.png')], 's1');
+
+    expect(sent).toBe(2);
+    expect(batch.entries().map((entry) => [entry.state, entry.seriesId])).toEqual([
+      ['déjà au fonds', 's0'],
+      ['déposé', 's1'],
+    ]);
+    expect(batch.alreadyKnown()).toBe(1);
+    expect(batch.deposited()).toBe(1);
   });
 });

@@ -19,6 +19,15 @@
     (selectionChange)="set({ sort: $event })"
   />
 
+  <fold-listbox
+    class="series"
+    size="sm"
+    label="Série"
+    [options]="seriesOptions()"
+    [value]="criteria().series"
+    (selectionChange)="set({ series: $event })"
+  />
+
   <fold-date
     class="day"
     size="sm"
@@ -64,6 +73,17 @@
   </span>
 
   <span class="summary">
+    <!-- Discret : corriger une série est rare, la filtrer est courant. -->
+    <button
+      foldButton
+      emphasis="soft"
+      intent="neutral"
+      size="sm"
+      icon="folder"
+      (click)="manageSeries.emit()"
+    >
+      Séries
+    </button>
     @if (count(); as count) {
       <span class="count" aria-live="polite">{{ count }}</span>
     }
@@ -74,10 +94,21 @@
     }
   </span>
 
-  @if (criteria().tags.length > 0) {
-    <!-- Le MÊME dessin que la bande, armé : un mot retenu. Son × le relâche
-         du filtre, il ne touche aucune image. -->
-    <ul class="kept" aria-label="Mots-clés du filtre">
+  @if (criteria().tags.length > 0 || filteredSeries() !== null) {
+    <!-- Ce qui est retenu : la série d'abord, puis les mots — le MÊME dessin
+         que la bande, armé. Chaque × relâche du filtre, sans toucher aucune
+         image. -->
+    <ul class="kept" aria-label="Filtre en cours">
+      @if (filteredSeries(); as kept) {
+        <li>
+          <app-series-chip
+            [series]="kept"
+            removable
+            removeLabel="Ne plus filtrer sur cette série"
+            (removed)="releaseSeries()"
+          />
+        </li>
+      }
       @for (tag of criteria().tags; track tag) {
         <li><app-tag-chip [tag]="tag" armed removable (removed)="release(tag)" /></li>
       }

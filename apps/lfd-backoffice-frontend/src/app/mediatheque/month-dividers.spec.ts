@@ -21,7 +21,7 @@ function deposited(url: string, depositedAt: string): LibraryMediaView {
 }
 
 function labels(rows: readonly FeedRow[]): string[] {
-  return rows.map((row) => (row.kind === 'month' ? `# ${row.label}` : row.item.url));
+  return rows.map((row) => (row.kind === 'divider' ? `# ${row.label}` : row.item.url));
 }
 
 // Les dates ne sont comparées qu'ENTRE ELLES et au fuseau, jamais à
@@ -72,5 +72,44 @@ describe('les intercalaires de mois', () => {
   it('donnent des clés distinctes des images', () => {
     const rows = feedRows([deposited('a', '2026-10-09T08:00:00.000Z')], 'deposited');
     expect(new Set(rows.map((row) => row.key)).size).toBe(rows.length);
+  });
+});
+
+function inSeries(
+  url: string,
+  series: { id: string; title: string; shotOn: string | null } | null,
+): LibraryMediaView {
+  return { ...deposited(url, '2026-10-09T08:00:00.000Z'), series };
+}
+
+describe('les intercalaires de série', () => {
+  const carte = { id: 's1', title: 'Shooting carte 2026', shotOn: '2026-03-14' };
+  const atelier = { id: 's2', title: 'Atelier', shotOn: null };
+
+  it('posent la série (titre · mois) sous le tri par prise de vue', () => {
+    const rows = feedRows(
+      [inSeries('a', carte), inSeries('b', carte), inSeries('c', atelier), inSeries('d', null)],
+      'shot',
+    );
+    expect(labels(rows)).toEqual([
+      '# Shooting carte 2026 · mars 2026',
+      'a',
+      'b',
+      '# Atelier',
+      'c',
+      '# Sans série',
+      'd',
+    ]);
+  });
+
+  it('ne fondent pas deux séries homonymes sous un seul intercalaire', () => {
+    const twin = { ...atelier, id: 's3' };
+    const rows = feedRows([inSeries('a', atelier), inSeries('b', twin)], 'shot');
+    expect(labels(rows)).toEqual(['# Atelier', 'a', '# Atelier', 'b']);
+  });
+
+  it('ne regroupent jamais par série sous le tri par dépôt', () => {
+    const rows = feedRows([inSeries('a', carte), inSeries('b', atelier)], 'deposited');
+    expect(labels(rows)).toEqual(['# Octobre 2026', 'a', 'b']);
   });
 });

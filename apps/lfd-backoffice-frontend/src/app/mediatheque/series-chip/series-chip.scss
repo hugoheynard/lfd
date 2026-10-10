@@ -1,0 +1,61 @@
+/* La pastille de série : la forme de la pastille de mot-clé (pill, même corps
+   de texte), une autre surface — `info` — et une icône. Une série regroupe,
+   un mot-clé retrouve : les deux ne doivent pas se lire comme une seule liste. */
+:host {
+  display: inline-flex;
+  align-items: stretch;
+  max-width: 100%;
+  border: 1px solid var(--fold-color-info-border);
+  border-radius: var(--fold-radius-pill);
+  background: var(--fold-color-info-surface);
+  color: var(--fold-color-info-text);
+  font-size: var(--fold-text-xs);
+  line-height: var(--fold-leading-tight);
+}
+
+.body {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--fold-space-xs);
+  min-width: 0;
+  padding: var(--fold-space-xs) var(--fold-space-sm);
+  white-space: nowrap;
+}
+
+/* Le titre cède avant la date : une date tronquée ne se lit plus. */
+.title {
+  overflow: hidden;
+  min-width: 0;
+  font-weight: var(--fold-weight-semibold);
+  text-overflow: ellipsis;
+}
+
+.month {
+  flex-shrink: 0;
+  font-variant-numeric: tabular-nums;
+}
+
+.remove {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  padding: 0 var(--fold-space-xs);
+  border: 0;
+  border-radius: var(--fold-radius-pill);
+  background: none;
+  color: inherit;
+  cursor: pointer;
+}
+
+.remove:hover {
+  color: var(--fold-color-alert-text);
+}
+
+.remove:focus-visible {
+  outline: 2px solid var(--fold-color-primary);
+  outline-offset: 2px;
+}
+
+.body:has(+ .remove) {
+  padding-inline-end: 0;
+}

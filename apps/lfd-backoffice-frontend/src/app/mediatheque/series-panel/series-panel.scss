@@ -1,0 +1,18 @@
+/* La note et son compteur : le compteur sous le champ, à droite, sans marge —
+   l'écart vient du `gap`. */
+.note {
+  display: flex;
+  flex-direction: column;
+  gap: var(--fold-space-xs);
+}
+
+.count {
+  align-self: flex-end;
+  color: var(--fold-color-text-faded);
+  font-size: var(--fold-text-xs);
+  font-variant-numeric: tabular-nums;
+
+  &.is-over {
+    color: var(--fold-color-warning-text);
+  }
+}

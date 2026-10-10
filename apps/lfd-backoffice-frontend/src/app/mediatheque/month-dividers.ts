@@ -1,8 +1,10 @@
 import type { LibraryMediaView, MediaLibrarySort } from '@lfd/pim-contracts';
 
-/** Une rangée de la grille : un intercalaire de mois, ou une image. */
+import { seriesLabel } from './media-series';
+
+/** Une rangée de la grille : un intercalaire (mois ou série), ou une image. */
 export type FeedRow =
-  | { readonly kind: 'month'; readonly key: string; readonly label: string }
+  | { readonly kind: 'divider'; readonly key: string; readonly label: string }
   | { readonly kind: 'image'; readonly key: string; readonly item: LibraryMediaView };
 
 /**
@@ -30,29 +32,55 @@ function monthOf(depositedAt: string): { key: string; label: string } {
   };
 }
 
+/** L'intercalaire d'une image sous le tri par prise de vue : sa série. */
+function seriesOf(item: LibraryMediaView): { key: string; label: string } {
+  const series = item.series;
+  return series === null
+    ? { key: 'series:none', label: 'Sans série' }
+    : { key: `series:${series.id}`, label: seriesLabel(series) };
+}
+
+/** Ce qui regroupe, selon l'ordre — `null` : rien ne regroupe. */
+function grouping(
+  sort: MediaLibrarySort,
+): ((item: LibraryMediaView) => { key: string; label: string }) | null {
+  if (sort === 'deposited') {
+    return (item) => monthOf(item.depositedAt);
+  }
+  return sort === 'shot' ? seriesOf : null;
+}
+
 /**
- * La grille telle qu'elle s'affiche : les images, et un en-tête de mois
- * chaque fois que le mois de dépôt change.
+ * La grille telle qu'elle s'affiche : les images, et un intercalaire chaque
+ * fois que le groupe change.
  *
- * Seulement quand le tri est PAR DÉPÔT : sous un autre ordre, deux images du
- * même mois ne se suivent pas, et l'intercalaire se répéterait. Jamais par tag
- * (D4, Hugo 2026-10-10) : une image à trois tags paraîtrait trois fois.
+ * - Tri par DÉPÔT : le mois de dépôt, à l'heure de Paris.
+ * - Tri par PRISE DE VUE : la série (titre · mois), puis « Sans série » —
+ *   le serveur range les images sans série ou sans date en dernier (L3).
+ *
+ * Sous un autre ordre, deux images du même groupe ne se suivent pas, et
+ * l'intercalaire se répéterait. Jamais par tag (D4, Hugo 2026-10-10) : une
+ * image à trois tags paraîtrait trois fois.
+ *
+ * ⚠️ Deux séries sans date se suivent sous « prise de vue » : la clé est
+ * l'IDENTIFIANT, pas le titre, pour que deux séries homonymes ne se fondent
+ * pas sous un seul intercalaire.
  */
 export function feedRows(
   items: readonly LibraryMediaView[],
   sort: MediaLibrarySort,
 ): readonly FeedRow[] {
-  const images = items.map((item): FeedRow => ({ kind: 'image', key: item.url, item }));
-  if (sort !== 'deposited') {
-    return images;
+  const groupOf = grouping(sort);
+  if (groupOf === null) {
+    return items.map((item): FeedRow => ({ kind: 'image', key: item.url, item }));
   }
   const rows: FeedRow[] = [];
   let current = '';
   for (const item of items) {
-    const month = monthOf(item.depositedAt);
-    if (month.key !== current) {
-      current = month.key;
-      rows.push({ kind: 'month', key: month.key, label: month.label });
+    const group = groupOf(item);
+    if (group.key !== current) {
+      current = group.key;
+      rows.push({ kind: 'divider', key: group.key, label: group.label });
     }
     rows.push({ kind: 'image', key: item.url, item });
   }

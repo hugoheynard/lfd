@@ -31,6 +31,7 @@ const FULL: MediaFeedCriteria = {
   to: '2026-10-31',
   untagged: true,
   unused: true,
+  series: '01JSERIE',
 };
 
 describe("l'adresse de la médiathèque", () => {
@@ -79,5 +80,24 @@ describe("l'adresse de la médiathèque", () => {
   it('pose le curseur sur la demande, et seulement s’il y en a un', () => {
     expect(toPageRequest(FULL, 60, null)).not.toHaveProperty('after');
     expect(toPageRequest(FULL, 60, 'c1')).toMatchObject({ after: 'c1', sort: 'uses', limit: 60 });
+  });
+
+  it('porte la série et le tri par prise de vue (L3)', () => {
+    const view = { ...ALL_MEDIA, sort: 'shot' as const, series: 's1' };
+    expect(address(view)).toEqual({ sort: 'shot', series: 's1' });
+    expect(readCriteria(convertToParamMap({ sort: 'shot', series: ' s1 ' }))).toEqual(view);
+  });
+
+  it('compte la série comme un filtre, que « Tout afficher » défait', () => {
+    const view = { ...ALL_MEDIA, sort: 'shot' as const, series: 's1' };
+    expect(isFiltering(view)).toBe(true);
+    expect(withoutFilters(view)).toEqual({ ...ALL_MEDIA, sort: 'shot' });
+    expect(sameCriteria(view, { ...view, series: 's2' })).toBe(false);
+  });
+
+  it('envoie la série au serveur', () => {
+    expect(toPageRequest({ ...ALL_MEDIA, series: 's1' }, 60, null)).toMatchObject({
+      series: 's1',
+    });
   });
 });

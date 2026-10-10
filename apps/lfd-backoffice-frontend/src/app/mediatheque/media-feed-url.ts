@@ -26,6 +26,8 @@ export interface MediaFeedCriteria {
   readonly to: string;
   readonly untagged: boolean;
   readonly unused: boolean;
+  /** L'identifiant d'une série (L3) ; `''` = toutes. */
+  readonly series: string;
 }
 
 /** Tout le fonds, du plus récent au plus ancien — l'ordre du serveur par défaut. */
@@ -37,6 +39,7 @@ export const ALL_MEDIA: MediaFeedCriteria = {
   to: '',
   untagged: false,
   unused: false,
+  series: '',
 };
 
 const DAY = /^\d{4}-\d{2}-\d{2}$/;
@@ -74,6 +77,10 @@ export function readCriteria(params: ParamMap): MediaFeedCriteria {
     to: readDay(params, 'to'),
     untagged: readFlag(params, 'untagged'),
     unused: readFlag(params, 'unused'),
+    // Opaque, comme un curseur : une série inconnue rend une grille vide, et
+    // « Tout afficher » la défait — l'écran ne connaît pas la liste au
+    // moment où il lit l'adresse.
+    series: (params.get('series') ?? '').trim(),
   };
 }
 
@@ -91,6 +98,7 @@ export function toQueryParams(criteria: MediaFeedCriteria): Params {
     to: criteria.to === '' ? null : criteria.to,
     untagged: criteria.untagged ? '1' : null,
     unused: criteria.unused ? '1' : null,
+    series: criteria.series === '' ? null : criteria.series,
   };
 }
 
@@ -102,6 +110,7 @@ export function sameCriteria(a: MediaFeedCriteria, b: MediaFeedCriteria): boolea
     a.to === b.to &&
     a.untagged === b.untagged &&
     a.unused === b.unused &&
+    a.series === b.series &&
     a.tags.length === b.tags.length &&
     a.tags.every((tag, index) => b.tags[index] === tag)
   );
@@ -118,7 +127,8 @@ export function isFiltering(criteria: MediaFeedCriteria): boolean {
     criteria.from !== '' ||
     criteria.to !== '' ||
     criteria.untagged ||
-    criteria.unused
+    criteria.unused ||
+    criteria.series !== ''
   );
 }
 
@@ -143,5 +153,6 @@ export function toPageRequest(
     to: criteria.to,
     untagged: criteria.untagged,
     unused: criteria.unused,
+    series: criteria.series,
   };
 }
