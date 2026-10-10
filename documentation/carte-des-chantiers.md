@@ -19,12 +19,45 @@
 
 ## 1. Les échéances
 
-| Quand            | Quoi                                                                                                                                                     | Qui                         | Doc                                                |
-| ---------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------- | --------------------------- | -------------------------------------------------- |
-| avant le 30 nov  | **65 sociétés sans adresse de facturation**, et les mentions de paiement de l'entité (pénalités, indemnité de 40 €) : la facture du mois les refuse déjà | Hugo (saisie)               | `comptabilite/facturation/todo-facture-du-mois.md` |
-| avant le 1er déc | **Sortie d'Accelerate** : le code est fait (`prisma.service.ts`) ; restent la vérification en production et la révocation de la clé                      | Hugo (console Prisma)       | `todos/todo-sortie-d-accelerate.md`                |
-| au déploiement   | Accorder à l'écran `b2b_contact`, `delivery_availability`, `delivery_fee` — sans quoi personne, admin compris, ne règle les zones                        | Hugo (`/admin/staff-roles`) | `contenu-ecommerce/demandes-clients.md`            |
-| au déploiement   | Promouvoir `dev` → `main` : `lecteur-de-migrations` sur les migrations du 2026-10-08 au 2026-10-10, CI verte sur le SHA exact                            | moi, sur ordre              | `comptabilite/arbitrages-en-absence.md`            |
+| Quand            | Quoi                                                                                                                                                                                                                         | Qui                         | Doc                                                                                      |
+| ---------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | --------------------------- | ---------------------------------------------------------------------------------------- |
+| avant le 30 nov  | **65 sociétés sans adresse de facturation**, et les mentions de paiement de l'entité (pénalités, indemnité de 40 €) : la facture du mois les refuse déjà                                                                     | Hugo (saisie)               | `comptabilite/facturation/todo-facture-du-mois.md`                                       |
+| avant le 1er déc | **Sortie d'Accelerate** : le code est fait (`prisma.service.ts`) ; restent la vérification en production et la révocation de la clé                                                                                          | Hugo (console Prisma)       | `todos/todo-sortie-d-accelerate.md`                                                      |
+| **maintenant**   | Accorder à l'écran `b2b_contact`, `delivery_availability`, `delivery_fee` — sans quoi personne, admin compris, ne règle les zones ni ne traite les demandes clients                                                          | Hugo (`/admin/staff-roles`) | `contenu-ecommerce/demandes-clients.md`                                                  |
+| **maintenant**   | Lancer les deux requêtes de contrôle de la grâce des invitations : aucune invitation en cours ne doit avoir été fermée par la migration `20261010140000` (appliquée sans sauvegarde préalable, que la relecture conseillait) | Hugo (base de prod)         | `ops/runbook.md`, `auth-inscription/architecture-compte-client-cycle-de-vie.md` §8.1 bis |
+| **maintenant**   | Regarder `/sante` : les web vitals doivent remonter (non nulles) depuis le redéploiement des deux fronts ; sinon, rejouer le préflight décrit au TODO                                                                        | Hugo                        | `todos/todo-vitals-refuses-par-le-cors.md`                                               |
+
+### Déployé le 2026-10-10 (`main` = `2324a62fc`)
+
+Promotion après la CI verte sur le SHA exact et la relecture de
+`lecteur-de-migrations` (4 migrations additives, aucun droit accordé :
+`20261009180000_les_demandes_clients`, `20261010100000_les_droits_de_l_offre_de_livraison`,
+`20261010120000_l_ordre_des_visuels`, `20261010140000_l_invitation_du_rattachement`).
+Les quatre déploiements (API, passerelle, back-office, boutique) réussis,
+`/health` à 200. Ce qui est parti : demandes clients et « Signaler un
+problème » ; le menu du back-office réorganisé (Catalogue, Prod manager,
+Tour manager, Réglages au pied, Outils agent) ; les droits de l'offre de
+livraison ; tout le § 3 ci-dessous ; le correctif du journal des envois ;
+l'ordre des images ; le refus des invitations expirées.
+
+### Restes ouverts de la journée
+
+- **Back-office** : les deux écrans qui remettent un lien d'invitation
+  (`admin-companies.service.ts`, `pending-access.service.ts`) n'envoient pas
+  encore la société ; le serveur se rabat sur l'invitation affichée.
+- **Staff** : une fiche `pending` (jamais invitée) entre encore par le
+  rapprochement d'adresse vérifiée — hors du périmètre du n°2.
+- **Demande de rappel** : aucun nom de contact n'est stocké ; le courriel à
+  l'équipe prend celui de la société (`todos/todo-notifications.md`).
+- **Bandeau d'installation** : à vérifier sur de vrais téléphones ; la
+  boutique pèse 1,29 Mo pour un plafond de 1,30 Mo en configuration
+  déployée (`todos/todo-installation-app-cliente.md`).
+- **Courriels internes** : partent seulement si `MAILER_STAFF_INBOX` est
+  renseignée.
+- **Projection des images** : `CatalogItem.showVisuals` n'a plus d'appelant ;
+  deux JSDoc de `PrismaCatalogItemRepository` le citent encore.
+- **Le village** : la notion de _site_ puis le plan des transferts internes
+  restent à écrire (§ 4).
 
 ## 2. En cours
 
