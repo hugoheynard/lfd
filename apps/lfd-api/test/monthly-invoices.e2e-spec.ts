@@ -269,6 +269,18 @@ describe("la facture du mois, puis le lot qui l'encaisse (E4)", () => {
     expect(invoice.number).toMatch(NUMBER);
     expect(invoice.issuedOn.toISOString().slice(0, 10)).toBe(lastDayOf(month));
     expect(invoice.paymentMeans).toEqual({ code: "59", mandateReference: "RUM-E4-1" });
+    // Le passage est au journal, issue et nombres compris, auteur système.
+    const ran = await ctx.prisma.activityEvent.findFirstOrThrow({
+      where: { type: "invoice.autopilot_ran", subjectId: id },
+    });
+    expect(ran).toMatchObject({ actorType: "system", subjectType: "legal_entity" });
+    expect(ran.payload).toMatchObject({
+      month: month.toString(),
+      outcome: "issued",
+      issuedCount: 1,
+      signalledCount: 0,
+      message: null,
+    });
 
     // Le 1er, deux heures après la clôture : le lot.
     clock.set(new Date(closesAt.getTime() + 2 * HOUR_MS));
@@ -360,6 +372,16 @@ describe("la facture du mois, puis le lot qui l'encaisse (E4)", () => {
     const signaled = (await view(id)).signaled;
     expect(signaled.map((row) => row.payerCompanyId)).toEqual([incomplete.id]);
     expect(signaled[0]?.message).toContain("SIREN");
+    // Le payeur signalé est au journal : sa raison, jamais un montant.
+    const flagged = await ctx.prisma.activityEvent.findFirstOrThrow({
+      where: { type: "invoice.signalled", subjectId: incomplete.id },
+    });
+    expect(flagged.subjectType).toBe("company");
+    expect(flagged.payload).toMatchObject({
+      month: month.toString(),
+      reason: signaled[0]?.message,
+    });
+    expect(Object.keys(flagged.payload ?? {}).sort()).toEqual(["month", "reason", "subjectLabel"]);
 
     await ctx.prisma.company.update({
       where: { id: incomplete.id },

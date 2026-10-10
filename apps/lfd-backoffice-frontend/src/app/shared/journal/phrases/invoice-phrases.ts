@@ -10,11 +10,13 @@ import {
   subjectLabelOf,
   text,
   value,
+  valueIn,
   type Noun,
   type Phrase,
   type PhraseFact,
   type Segment,
 } from '../phrase';
+import { INVOICE_AUTOPILOT_OUTCOME } from '../values/accounting-values';
 
 /**
  * **La facture émise et l'avoir** (plan
@@ -31,7 +33,7 @@ const ENTITY: Noun = { the: 'l’entité émettrice', a: 'une entité émettrice
 
 const KEYS = ['subjectLabel', 'payer', 'legalEntity', 'issuedOn', 'orderCount', 'totalCents'];
 
-/** « la facture « FA-2026-000001 » », liée à sa pièce. */
+/** « la facture « FA-2026-000001 » » — ou tout sujet nommé du fait, lié à sa fiche. */
 function piece(fact: PhraseFact, noun: Noun): Segment[] {
   const label = subjectLabelOf(fact);
   return label === null
@@ -178,6 +180,51 @@ const documentRenderFailed: Phrase = (fact) =>
     [...DOCUMENT_KEYS, 'failure'],
   );
 
+/**
+ * « … a tenté la facture du mois 2026-09 de l'entité émettrice « X » :
+ * factures émises (3 facture(s), 1 payeur(s) signalé(s)) — « message » ».
+ * Copie de `collection.autopilot_ran` ; l'auteur est le système.
+ */
+const autopilotRan: Phrase = (fact) => {
+  const message = optional(fact.payload['message']);
+  return byActor(
+    fact,
+    [
+      text('a tenté la facture du mois '),
+      value(optional(fact.payload['month']) ?? '—'),
+      text(' de '),
+      ...piece(fact, ENTITY),
+      text(' : '),
+      valueIn(INVOICE_AUTOPILOT_OUTCOME, fact.payload['outcome'], { inSentence: true }),
+      text(' ('),
+      value(`${String(count(fact.payload['issuedCount']) ?? '?')} facture(s)`),
+      text(', '),
+      value(`${String(count(fact.payload['signalledCount']) ?? '?')} payeur(s) signalé(s)`),
+      text(')'),
+      ...(message === null ? [] : [text(' — « '), name(message), text(' »')]),
+    ],
+    ['subjectLabel', 'month', 'outcome', 'issuedCount', 'signalledCount', 'message'],
+  );
+};
+
+const PAYER: Noun = { the: 'le client', a: 'un client' };
+
+/** « … a signalé le client « X » à la facture du mois 2026-09 : « raison » » — jamais un montant. */
+const signalled: Phrase = (fact) =>
+  byActor(
+    fact,
+    [
+      text('a signalé '),
+      ...piece(fact, PAYER),
+      text(' à la facture du mois '),
+      value(optional(fact.payload['month']) ?? '—'),
+      text(' : « '),
+      name(optional(fact.payload['reason']) ?? '—'),
+      text(' »'),
+    ],
+    ['subjectLabel', 'month', 'reason'],
+  );
+
 export const INVOICE_PHRASES = {
   'invoice.issued': invoiceIssued,
   'invoice.credit_note_issued': creditNoteIssued,
@@ -186,4 +233,6 @@ export const INVOICE_PHRASES = {
   'invoice.notice_resent': noticeResent,
   'invoice.document_rendered': documentRendered,
   'invoice.document_render_failed': documentRenderFailed,
+  'invoice.autopilot_ran': autopilotRan,
+  'invoice.signalled': signalled,
 } as const satisfies Partial<Record<JournalFactType, Phrase>>;

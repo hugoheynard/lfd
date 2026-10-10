@@ -104,4 +104,8 @@ export const INVOICE_FACT_TYPES = {
   noticeResent: "invoice.notice_resent",
   documentRendered: "invoice.document_rendered",
   documentRenderFailed: "invoice.document_render_failed",
+  /** Le passage automatique a tenté le mois — son issue, jamais avalée. */
+  autopilotRan: "invoice.autopilot_ran",
+  /** Un payeur n'est pas facturé ce mois-ci : la raison, jamais un montant. */
+  signalled: "invoice.signalled",
 } as const satisfies Readonly<Record<string, JournalFactType>>;

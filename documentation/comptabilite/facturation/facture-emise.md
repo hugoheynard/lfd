@@ -294,8 +294,17 @@ Factur-X (un validateur dédié, type Mustang, le ferait).
   (`invoice_split` ou `no_mandate`) alors que BG-16 nomme déjà un mandat.
 - **Rattrapage après minuit** : la facture porte le 1er (« émise en retard ») —
   acceptable, ou dater du dernier jour tant que le lot n'est pas fait ?
-- **Journal** : aucun fait pour la tentative automatique ni pour une facture
-  signalée.
+- ~~**Journal** : aucun fait pour la tentative automatique ni pour une facture
+  signalée.~~ **Bâti le 2026-10-10**, sur le modèle exact du prélèvement
+  (`CollectionAutopilotRanEvent`) : `invoice.autopilot_ran` (sujet :
+  l'entité émettrice ; le mois, l'issue, `issuedCount`, `signalledCount`,
+  le message), publié par `RunInvoiceAutopilotHandler` dans la transaction
+  qui range `InvoiceAutopilotRun` ; `invoice.signalled` (sujet : le payeur ;
+  le mois et la raison, jamais un montant), publié par
+  `IssueMonthlyInvoicesHandler` dans la transaction qui range l'issue
+  signalée (`InvoiceMonthlyOutcome`). Auteur : le système sous le passage
+  automatique, la personne sous le bouton — comme le prélèvement. Les deux
+  sont dans `domain/events/invoice-autopilot.events.ts`.
 - **Au cabinet** : facture établie avant la livraison (Q2), nouvelles mentions
   de la réforme.
 - **F5** (bons en HT pour les pros au compte) reste à faire.

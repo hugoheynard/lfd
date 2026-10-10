@@ -5,10 +5,12 @@ import { CommandHandler, type ICommandHandler } from "@nestjs/cqrs";
 import { OrderDeliveryHistoryReader } from "../../../../delivery/channels/commerce/index.js";
 import { OrderHandoverHistoryReader } from "../../../../handover/channels/commerce/index.js";
 import { UnitOfWork } from "../../../../platform/database/unit-of-work.js";
+import { DomainEventPublisher } from "../../../../platform/events/domain-event-publisher.js";
 import { IdGenerator } from "../../../../platform/id/id-generator.js";
 import { Clock } from "../../../../platform/time/clock.js";
 import type { CreditorSnapshot } from "../../domain/creditor-snapshot.js";
 import { statementSellerOf } from "../../domain/entities/billing-statement.js";
+import { InvoiceSignalledEvent } from "../../domain/events/invoice-autopilot.events.js";
 import { LegalEntityNotFoundError } from "../../domain/errors/accounting-errors.js";
 import {
   InvoicingFloorMissingError,
@@ -82,7 +84,8 @@ type PayerIssue =
  *   pour la facture des bons sans mandat ;
  * - un refus (manque nommé, numérotation, base) : la facture n'est pas
  *   émise, le payeur est **signalé** — rangé dans `invoice_monthly_outcome`,
- *   journalisé — et les autres continuent. Rien n'est avalé ;
+ *   journalisé (`invoice.signalled`, dans la transaction de l'issue) — et les
+ *   autres continuent. Rien n'est avalé ;
  * - un bon non facturable est signalé et laissé hors de la facture.
  *
  * ⚠️ L'échéance est celle du calendrier AU JOUR de l'émission : une
@@ -107,6 +110,7 @@ export class IssueMonthlyInvoicesHandler implements ICommandHandler<
     private readonly issuer: InvoiceIssuer,
     private readonly outcomes: MonthlyInvoiceOutcomes,
     private readonly ids: IdGenerator,
+    private readonly events: DomainEventPublisher,
     private readonly clock: Clock,
     private readonly uow: UnitOfWork,
   ) {}
@@ -203,8 +207,7 @@ export class IssueMonthlyInvoicesHandler implements ICommandHandler<
     const { payerId } = payer;
     if (payer.billable.length === 0) {
       const message = `Aucun bon facturable ce mois-ci : ${key.unbillableOrders.join(", ")} (bon incohérent ou sans taux de TVA) — le signaler à l'équipe technique.`;
-      await this.outcomes.recordBlocked(key, message);
-      return { kind: "blocked", payerCompanyId: payerId, message };
+      return this.signal(key, message);
     }
     try {
       const number = await this.uow.run(async () => {
@@ -220,9 +223,24 @@ export class IssueMonthlyInvoicesHandler implements ICommandHandler<
     } catch (error) {
       const message = error instanceof Error ? error.message : String(error);
       this.logger.warn({ message: "monthly_invoice_blocked", payerId, reason: message });
-      await this.outcomes.recordBlocked(key, message);
-      return { kind: "blocked", payerCompanyId: payerId, message };
+      return this.signal(key, message);
     }
+  }
+
+  /** Le payeur signalé : son issue rangée et son fait au journal, ensemble. */
+  private async signal(key: MonthlyInvoiceOutcomeKey, message: string): Promise<PayerIssue> {
+    await this.uow.run(async () => {
+      await this.outcomes.recordBlocked(key, message);
+      await this.events.publishTraced(
+        new InvoiceSignalledEvent(
+          { id: key.payerCompanyId, name: key.payerName },
+          key.month,
+          message,
+          key.at,
+        ),
+      );
+    });
+    return { kind: "blocked", payerCompanyId: key.payerCompanyId, message };
   }
 }
 

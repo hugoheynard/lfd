@@ -63,6 +63,14 @@ export const AUTOPILOT_OUTCOME = domain('issue de la préparation automatique', 
   failed: 'Échec',
 });
 
+/** L'issue d'un passage automatique de la facture du mois (E4, 2026-10-10). */
+export const INVOICE_AUTOPILOT_OUTCOME = domain('issue du passage automatique de la facture', {
+  issued: 'Factures émises',
+  nothing_to_invoice: 'Rien à facturer',
+  not_yet_open: 'Facture du mois pas encore en service',
+  failed: 'Échec',
+});
+
 /** La sorte d'une pièce émise dont le PDF Factur-X est rendu ou en échec (E3b, 2026-10-08). */
 export const ISSUED_PIECE_KIND = domain('sorte de pièce émise', {
   invoice: 'Facture',
@@ -98,6 +106,7 @@ export const ACCOUNTING_VALUES: ValueFamily = {
     COLLECTION_NOTICE_KIND,
     NOTICE_RECIPIENT_SOURCE,
     AUTOPILOT_OUTCOME,
+    INVOICE_AUTOPILOT_OUTCOME,
     ISSUED_PIECE_KIND,
     COLLECTION_RETURN_KIND,
     COLLECTION_RETURN_SOURCE,

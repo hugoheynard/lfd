@@ -67,6 +67,30 @@ const invoiceDocument = {
 };
 
 /**
+ * Le mois facturé, `AAAA-MM` — tel que `StatementMonth` l'a validé. Pas de
+ * motif ici : le journal n'a pas d'unité « mois », et le moteur de phrases
+ * ne sait éprouver une chaîne que libre ou dans une unité connue.
+ */
+const invoicedMonth = () => z.string().min(1);
+
+/**
+ * Le passage automatique de la facture du mois (plan `facture-emise.md`,
+ * E4). Sujet : `legal_entity`. Copie de `autopilotRun`, au mois plutôt
+ * qu'au cycle.
+ */
+const invoiceAutopilotRun = {
+  subjectLabel: subjectLabel(),
+  month: invoicedMonth(),
+  outcome: z.enum(["issued", "nothing_to_invoice", "not_yet_open", "failed"]),
+  /** Les factures émises par ce passage — zéro hors `issued`. */
+  issuedCount: count(),
+  /** Les payeurs signalés par ce passage. */
+  signalledCount: count(),
+  /** Le refus tel quel en `failed`, l'explication sinon. */
+  message: z.string().nullable(),
+};
+
+/**
  * L'avis de prélèvement d'un payeur (plan
  * `documentation/comptabilite/prelevement/prelevement-automatique.md`, PA2). Sujet :
  * `collection_notice`, nommé « Avis <payeur> ». Jamais l'adresse du
@@ -202,6 +226,15 @@ export const COLLECTION_FACTS = {
   ),
   /** Le rendu a échoué : la pièce reste sans PDF, `failure` dit pourquoi. */
   "invoice.document_render_failed": fact(payload({ ...invoiceDocument, failure: z.string() })),
+  /** Le passage automatique a tenté la facture du mois : son issue, jamais avalée. */
+  "invoice.autopilot_ran": fact(payload(invoiceAutopilotRun)),
+  /**
+   * Un payeur n'est pas facturé ce mois-ci (sujet : `company`) : la raison
+   * rangée dans `invoice_monthly_outcome`. JAMAIS un montant non facturé.
+   */
+  "invoice.signalled": fact(
+    payload({ subjectLabel: subjectLabel(), month: invoicedMonth(), reason: z.string() }),
+  ),
   /** L'avis est mis en file, dans la transaction du lot — pas encore envoyé. */
   "collection.notice_queued": fact(payload(notice)),
   /** Aucune adresse : ni contact de facturation, ni détenteur. Le lot ne se dépose pas. */

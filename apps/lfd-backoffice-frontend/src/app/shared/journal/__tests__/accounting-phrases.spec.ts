@@ -553,3 +553,42 @@ describe('l’export des mandats pour la banque', () => {
     ).toMatch(/: 1 mandat$/u);
   });
 });
+
+describe('la facture du mois — passage automatique et payeur signalé (2026-10-10)', () => {
+  it('dit le mois, l’issue et les deux nombres, l’auteur étant le système', () => {
+    const said = sentence({
+      ...entity('invoice.autopilot_ran', {
+        subjectLabel: ENTITY,
+        month: '2026-09',
+        outcome: 'issued',
+        issuedCount: 3,
+        signalledCount: 1,
+        message: '1 payeur(s) signalé(s)',
+      }),
+      actorName: null,
+      actorType: 'system',
+    });
+
+    expect(said).toContain(
+      'a tenté la facture du mois 2026-09 de l’entité émettrice « La Folie Douce SAS »',
+    );
+    expect(said).toContain(': factures émises (3 facture(s), 1 payeur(s) signalé(s))');
+    expect(said).toContain('— « 1 payeur(s) signalé(s) »');
+  });
+
+  it('dit le payeur signalé et sa raison, lié à sa fiche', () => {
+    const said = sentence({
+      ...entity('invoice.signalled', {
+        subjectLabel: 'Café des Halles',
+        month: '2026-09',
+        reason: 'SIREN manquant',
+      }),
+      subjectType: 'company',
+      subjectId: 'co_1',
+    });
+
+    expect(said).toContain(
+      'a signalé le client « Café des Halles » à la facture du mois 2026-09 : « SIREN manquant »',
+    );
+  });
+});

@@ -105,6 +105,7 @@ function harness(options: { buyers?: StatementBuyerReader; at?: Date } = {}) {
     issuer,
     outcomes,
     new UlidSequence(),
+    events,
     clock,
     uow,
   );
@@ -167,6 +168,37 @@ describe("IssueMonthlyInvoices — la facture du mois (E4)", () => {
     expect(signaled?.message).toContain("SIREN");
   });
 
+  it("un payeur signalé est journalisé `invoice.signalled` : sa raison, jamais un montant", async () => {
+    const h = harness({ buyers: new BuyersWithout("c_principal") });
+    h.reader.orders = [bon("c_principal"), bon("c_port")];
+
+    await h.run();
+
+    expect([...h.events.factTypes()].sort()).toEqual(["invoice.issued", "invoice.signalled"]);
+    const signalled = h.events.traced
+      .map((event) => event.journalFact())
+      .find((fact) => fact.type === "invoice.signalled");
+    expect(signalled).toMatchObject({
+      subjectType: "company",
+      subjectId: "c_principal",
+      payload: { month: MONTH, reason: h.outcomes.rows.get(PRINCIPAL)?.message },
+    });
+    expect(Object.keys(signalled?.payload ?? {}).sort()).toEqual([
+      "month",
+      "reason",
+      "subjectLabel",
+    ]);
+  });
+
+  it("un payeur facturé n'écrit aucun `invoice.signalled`", async () => {
+    const h = harness();
+    h.reader.orders = [bon("c_port")];
+
+    await h.run();
+
+    expect(h.events.factTypes()).toEqual(["invoice.issued"]);
+  });
+
   it("rejouer ne facture personne deux fois — le rejeu le dit", async () => {
     const h = harness();
     h.reader.orders = [bon("c_port"), bon("c_principal")];
@@ -222,6 +254,7 @@ describe("IssueMonthlyInvoices — la facture du mois (E4)", () => {
     expect(h.invoices.inserted[0]?.toState().orders.map((o) => o.orderId)).toEqual([good.orderId]);
     expect(h.outcomes.rows.get(PORT)?.key.unbillableOrders).toEqual([broken.orderNumber]);
     expect(h.outcomes.rows.get(PRINCIPAL)?.message).toContain(lonely.orderNumber);
+    expect(h.events.factTypes().filter((type) => type === "invoice.signalled")).toHaveLength(1);
   });
 
   it("des bons sur deux mandats : une facture par mandat, chacune sous SA RUM (E4b)", async () => {
@@ -348,6 +381,7 @@ describe("IssueMonthlyInvoices — la facture du mois (E4)", () => {
         ),
         h.outcomes,
         new UlidSequence(),
+        h.events,
         new FixedClock(AFTER_MOMENT),
         new DirectUnitOfWork(),
       ).execute(other),

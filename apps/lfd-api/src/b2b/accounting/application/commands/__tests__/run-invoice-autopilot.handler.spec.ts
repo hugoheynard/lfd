@@ -1,3 +1,5 @@
+import { DirectUnitOfWork } from "../../../../../platform/database/__tests__/direct-unit-of-work.js";
+import { RecordingPublisher } from "../../../../../platform/events/__tests__/recording-publisher.js";
 import { FixedClock } from "../../../../../platform/time/fixed-clock.js";
 import { SELLER_FACTS } from "../../../domain/entities/__tests__/invoice-fixtures.js";
 import { InvoicingNotYetOpenError } from "../../../domain/errors/monthly-invoice-errors.js";
@@ -64,13 +66,16 @@ const ISSUED: MonthlyInvoiceReport = {
 function harness(answer: () => MonthlyInvoiceReport, at = AT_MOMENT) {
   const runs = new MemoryRuns();
   const invoicer = new ScriptedInvoicer(answer);
+  const events = new RecordingPublisher();
   const handler = new RunInvoiceAutopilotHandler(
     new FixedIssuers([SELLER_FACTS]),
     runs,
     invoicer,
+    events,
     new FixedClock(at),
+    new DirectUnitOfWork(),
   );
-  return { runs, invoicer, handler };
+  return { runs, invoicer, events, handler };
 }
 
 describe("RunInvoiceAutopilot — une tentative par (entité, mois)", () => {
@@ -83,6 +88,47 @@ describe("RunInvoiceAutopilot — une tentative par (entité, mois)", () => {
     expect(h.runs.rows.get(`${ENTITY}:2026-09`)).toEqual({
       outcome: "issued",
       message: "1 payeur(s) signalé(s)",
+    });
+  });
+
+  it("journalise `invoice.autopilot_ran` : l'entité, le mois, l'issue et les deux nombres", async () => {
+    const h = harness(() => ISSUED);
+
+    await h.handler.execute();
+
+    expect(h.events.traced.map((event) => event.journalFact())).toEqual([
+      {
+        type: "invoice.autopilot_ran",
+        subjectType: "legal_entity",
+        subjectId: ENTITY,
+        occurredAt: AT_MOMENT,
+        payload: {
+          subjectLabel: SELLER_FACTS.name,
+          month: "2026-09",
+          outcome: "issued",
+          issuedCount: 1,
+          signalledCount: 1,
+          message: "1 payeur(s) signalé(s)",
+        },
+      },
+    ]);
+  });
+
+  it("un échec est journalisé aussi, à zéro facture — et un mois déjà tenté ne l'est plus", async () => {
+    const h = harness(() => {
+      throw new Error("base indisponible");
+    });
+
+    await h.handler.execute();
+    await h.handler.execute();
+
+    const facts = h.events.traced.map((event) => event.journalFact());
+    expect(facts).toHaveLength(1);
+    expect(facts[0]?.payload).toMatchObject({
+      outcome: "failed",
+      issuedCount: 0,
+      signalledCount: 0,
+      message: "base indisponible",
     });
   });
 
