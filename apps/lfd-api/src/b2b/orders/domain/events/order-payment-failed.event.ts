@@ -28,7 +28,7 @@ export type PaymentFailureCause = "refused" | "abandoned" | "day_closed" | "expi
  * passation, un courriel lui annonçant que sa commande entrait en fabrication —
  * et le comptoir continuait de l'attendre.
  *
- * ⚠️ Comme son jumeau {@link OrderPaymentSettledEvent}, il n'est publié qu'au
+ * ⚠️ Comme son jumeau `order.paid`, il n'est publié qu'au
  * **franchissement** : un webhook rejoué ou un second clic ne bascule aucune
  * ligne, donc ne prévient pas deux fois.
  *

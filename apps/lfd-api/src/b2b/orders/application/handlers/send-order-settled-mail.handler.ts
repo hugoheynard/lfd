@@ -1,8 +1,15 @@
-import { EventsHandler, type IEventHandler } from "@nestjs/cqrs";
+import { Injectable } from "@nestjs/common";
 
-import { BackgroundWork } from "../../../../platform/events/background-work.js";
-import { OrderPaymentSettledEvent } from "../../domain/events/order-payment-settled.event.js";
+import type { DurableDelivery } from "../../../../platform/outbox/durable-event.js";
+import {
+  DurableHandler,
+  type DurableSubscriber,
+} from "../../../../platform/outbox/durable-handler.js";
+import { ORDER_PAID, OrderPaidFact } from "../../domain/events/order-paid.fact.js";
 import { OrderPlacedMail } from "../services/order-placed-mail.service.js";
+
+/** Nom STABLE de l'abonné — clé de son reçu dans la boîte d'envoi. */
+export const SEND_ORDER_SETTLED_MAIL = "orders.send-settled-mail.on-paid";
 
 /**
  * **L'accusé de réception d'une commande PAYÉE PAR CARTE.**
@@ -20,26 +27,25 @@ import { OrderPlacedMail } from "../services/order-placed-mail.service.js";
  * d'idempotence** : une commande ne peut pas produire deux accusés, quel que
  * soit le chemin qui l'annonce.
  *
- * ⚠️ Ce qui reste ouvert, et qui n'est pas de ce lot : une carte ABANDONNÉE
- * n'émet aucun événement Stripe. Sa commande reste `pending` pour toujours, et
- * son client ne reçoit jamais rien — ni accusé, ni refus. Fermer ce cas demande
- * d'expirer les commandes impayées
- * (`documentation/order/architecture-reglement-et-compte-de-production.md`, §8).
+ * ## Durable depuis le 2026-10-10 (lot E4)
+ *
+ * Il écoutait le fait « réglée » en mémoire : un redémarrage entre l'accusé
+ * du webhook et ce saut perdait le courriel, et le bon qu'il joint — Stripe ne
+ * rejoue qu'un webhook NON accusé. Il lit désormais `order.paid`, écrit dans la
+ * transaction de `markPaid` (`documentation/journalisation/plan-evenements-durables.md`).
+ * Rejoué, il ne double rien : la clé d'idempotence du courriel est
+ * `order.placed:<orderId>`.
+ *
+ * Une carte abandonnée n'émet aucun événement Stripe ; elle expire à 30 min
+ * (`documentation/order/commande-carte-reglee.md`).
  */
-@EventsHandler(OrderPaymentSettledEvent)
-export class SendOrderSettledMail implements IEventHandler<OrderPaymentSettledEvent> {
-  constructor(
-    private readonly mail: OrderPlacedMail,
-    private readonly work: BackgroundWork,
-  ) {}
+@Injectable()
+@DurableHandler({ type: ORDER_PAID, subscriber: SEND_ORDER_SETTLED_MAIL })
+export class SendOrderSettledMail implements DurableSubscriber {
+  constructor(private readonly mail: OrderPlacedMail) {}
 
-  handle(event: OrderPaymentSettledEvent): void {
-    // **Suivi** : cet abonné tourne hors de la requête du webhook. Sans lui,
-    // personne — ni la prod, ni un test — ne sait quand il a fini.
-    void this.work.track(this.run(event), "send-order-settled-mail");
-  }
-
-  private async run(event: OrderPaymentSettledEvent): Promise<void> {
-    await this.mail.send(event.orderId);
+  async handle(delivery: DurableDelivery): Promise<void> {
+    const fact = OrderPaidFact.fromPayload(delivery.payload);
+    await this.mail.send(fact.orderId);
   }
 }

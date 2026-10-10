@@ -2,7 +2,6 @@ import { DirectUnitOfWork } from "../../../../../platform/database/__tests__/dir
 import { DomainEventPublisher } from "../../../../../platform/events/domain-event-publisher.js";
 import { OrderPaidAfterCancellationEvent } from "../../../domain/events/order-paid-after-cancellation.event.js";
 import { OrderPaymentFailedEvent } from "../../../domain/events/order-payment-failed.event.js";
-import { OrderPaymentSettledEvent } from "../../../domain/events/order-payment-settled.event.js";
 import { CancelledOrderPaymentReader } from "../../../domain/ports/cancelled-order-payment.reader.js";
 import { OrderRepository } from "../../../domain/ports/order.repository.js";
 import { ConfirmOrderPaymentCommand } from "../confirm-order-payment.command.js";
@@ -109,12 +108,17 @@ describe("ConfirmOrderPaymentHandler", () => {
  * d'écrire deux fois à la même personne.
  */
 describe("ConfirmOrderPaymentHandler — ce qu'il PUBLIE", () => {
-  it("publie le règlement acquis, avec l'identifiant de la COMMANDE", async () => {
+  /**
+   * Lot E4 (2026-10-10) : le règlement acquis ne part plus en mémoire — un
+   * redémarrage entre l'accusé du webhook et ce saut perdait les points et
+   * l'accusé. Il n'existe plus qu'en `order.paid`, durable (testé plus bas).
+   */
+  it("ne publie RIEN en mémoire sur un règlement acquis", async () => {
     const sink = emptySink();
 
     await handlerWith(sink, "order_7").execute(new ConfirmOrderPaymentCommand("pi_7", "succeeded"));
 
-    expect(sink.published).toEqual([new OrderPaymentSettledEvent("order_7")]);
+    expect(sink.published).toEqual([]);
   });
 
   it("publie le refus, avec l'identifiant de la COMMANDE", async () => {
@@ -178,7 +182,7 @@ describe("ConfirmOrderPaymentHandler — un encaissement sur une commande annul�
     );
 
     expect(cancelled.asked).toEqual([]);
-    expect(sink.published).toEqual([new OrderPaymentSettledEvent("order_12")]);
+    expect(sink.published).toEqual([]);
   });
 
   it("ne sonne pas sur un refus arrivé après l'annulation — aucun argent reçu", async () => {

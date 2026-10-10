@@ -9,8 +9,10 @@ export const ORDER_PAID = "order.paid";
  * dans la transaction qui la passe `paid` (lot E5a du plan
  * `documentation/comptabilite/facturation/facture-carte-et-remboursements.md`).
  *
- * Pourquoi un fait durable à côté de `OrderPaymentSettledEvent`, qui reste en
- * mémoire pour l'accusé de réception : la facture carte naît quand la commande
+ * Il a été écrit à côté d'un fait en mémoire, `OrderPaymentSettledEvent`, qui
+ * servait l'accusé et les points ; ce jumeau est retiré le 2026-10-10 (lot E4)
+ * et ses deux abonnés lisent désormais celui-ci. La raison d'origine : la
+ * facture carte naît quand la commande
  * est retirée ET payée, dans l'ordre qu'on voudra. Un encaissement qui arrive
  * après le retrait est le SEUL signal qui la fait émettre ; le perdre sur un
  * redémarrage laisserait une vente sans facture, que rien ne rattraperait.

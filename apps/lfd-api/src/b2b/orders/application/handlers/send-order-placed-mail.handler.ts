@@ -68,8 +68,8 @@ export class SendOrderPlacedMail implements IEventHandler<OrderPlacedEvent> {
    * carte serait refusée trente secondes plus tard — et c'était le seul message
    * qu'il recevait jamais.
    *
-   * L'accusé d'une commande carte part donc sur {@link OrderPaymentSettledEvent},
-   * par le MÊME service, avec la MÊME clé d'idempotence.
+   * L'accusé d'une commande carte part donc sur `order.paid` (durable,
+   * `SendOrderSettledMail`), par le MÊME service, avec la MÊME clé d'idempotence.
    */
   private awaitingPayment(payment: PaymentStatus): boolean {
     return payment === "pending";
@@ -87,8 +87,8 @@ export class SendOrderPlacedMail implements IEventHandler<OrderPlacedEvent> {
     if (owned === null || recipient === null) {
       return;
     }
-    // 🔴 La carte n'a pas encore répondu : l'accusé attend {@link
-    // OrderPaymentSettledEvent}. Cf. `awaitingPayment` pour la raison.
+    // 🔴 La carte n'a pas encore répondu : l'accusé attend `order.paid`.
+    // Cf. `awaitingPayment` pour la raison.
     if (this.awaitingPayment(owned.view.paymentStatus)) {
       return;
     }

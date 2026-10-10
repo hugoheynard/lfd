@@ -3,7 +3,8 @@
 > Hugo, 2026-10-04 : « maintenant qu'on a la boîte d'envoi, est-ce que ça doit
 > changer la manière dont on journalise ? est-ce qu'il y a une refacto à
 > faire ? » État : **inventaire fait ; E1 bâti (§6), E2 bâti (§7), E3 bâti
-> le 2026-10-06 par le lot DD1 de la livraison (§7 bis)** ; E4 à E6 restent.
+> le 2026-10-06 par le lot DD1 de la livraison (§7 bis), E4a bâti le
+> 2026-10-10 (§7 ter)** ; E4b, E5 et E6 restent.
 > Suite de [`plan-boite-d-envoi.md`](plan-boite-d-envoi.md).
 
 ## 1. Ce qui ne change pas : le journal
@@ -211,6 +212,35 @@ dans [`../livraisons/livreur/en-route.md`](../livraisons/livreur/en-route.md) et
 - **La porte** `lint:durable-cross-block` : la dette passe de quatre abonnés à
   deux — `on-product-media-changed` (E5) et l'abonné de la commande passée vers
   la livraison, basculé le 2026-10-07 en fait durable `commerce.order_placed`.
+
+## 7 ter. E4a bâti (2026-10-10) — le règlement acquis
+
+Le règlement acquis avait **deux** faits : `order.paid`, durable depuis le lot
+E5a de la facture carte (2026-10-08), et `OrderPaymentSettledEvent`, en
+mémoire, qui servait le crédit de points (#10) et l'accusé de réception (#24).
+Stripe ne rejoue qu'un webhook **non accusé** : un redémarrage entre l'accusé
+et le saut en mémoire perdait les points d'une commande remise puis payée, et
+le courriel avec son bon — sans témoin.
+
+- `CreditPointsOnPaymentSettled` (`loyalty.credit-points.on-paid`) et
+  `SendOrderSettledMail` (`orders.send-settled-mail.on-paid`) sont des
+  `@DurableHandler` de `order.paid`, comme `IssueCardInvoiceOnPaid`.
+- **Rejoués, ils ne doublent rien** : l'index unique
+  `loyalty_ledger_entries_earned_order_key` refuse un second gain ; le courriel
+  porte la clé `order.placed:<orderId>`, la même que l'accusé de passation.
+- `OrderPaymentSettledEvent` est **retiré** : plus aucun abonné. Le
+  règlement acquis n'a plus qu'un fait.
+- Éprouvé : `confirm-order-payment.handler.spec.ts` (« ne publie RIEN en
+  mémoire sur un règlement acquis ») ; e2e `card-invoices`, `loyalty-earning`,
+  `order-refunds`, `order-payment-retry`, `order-payment-reprise`,
+  `order-card-settled-before-all`, `order-abandon` verts.
+
+**Reste E4b** : le **refus** (`OrderPaymentFailedEvent`, publié par quatre
+gestes — refus Stripe, abandon, expiration des impayés, balayage de clôture —
+et écouté par le courriel de refus, celui d'expiration et la cloche du
+règlement pro refusé), et le **remboursement dû** (`OrderPaidAfterCancellationEvent`,
+la cloche « à rembourser »). Chaque émetteur doit écrire son fait durable dans
+l'unité de travail qui bascule la commande.
 
 ## 8. Les ports entre blocs — inventaire (2026-10-04)
 

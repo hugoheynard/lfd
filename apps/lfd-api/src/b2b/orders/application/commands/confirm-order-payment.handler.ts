@@ -6,7 +6,6 @@ import { DurablePublisher } from "../../../../platform/outbox/durable-publisher.
 import { OrderPaidFact } from "../../domain/events/order-paid.fact.js";
 import { OrderPaidAfterCancellationEvent } from "../../domain/events/order-paid-after-cancellation.event.js";
 import { OrderPaymentFailedEvent } from "../../domain/events/order-payment-failed.event.js";
-import { OrderPaymentSettledEvent } from "../../domain/events/order-payment-settled.event.js";
 import { CancelledOrderPaymentReader } from "../../domain/ports/cancelled-order-payment.reader.js";
 import { OrderRepository } from "../../domain/ports/order.repository.js";
 import { ConfirmOrderPaymentCommand } from "./confirm-order-payment.command.js";
@@ -48,7 +47,9 @@ import { ConfirmOrderPaymentCommand } from "./confirm-order-payment.command.js";
  * `order.paid` part dans la même unité de travail que `markPaid` : la facture
  * carte d'une commande déjà retirée ne naît que de lui, et un fait en mémoire
  * perdu sur un redémarrage laisserait une vente sans facture (plan
- * `facture-carte-et-remboursements.md`).
+ * `facture-carte-et-remboursements.md`). Depuis le lot E4 (2026-10-10), c'est
+ * le SEUL fait du règlement acquis : le crédit de points et l'accusé de
+ * réception l'écoutent aussi, et le fait en mémoire qui les servait est retiré.
  *
  * ⚠️ `publish` et non `publishTraced` : ce sont des projections d'un événement
  * externe, pas des actes dont un humain doit répondre. Le journal des actes
@@ -76,8 +77,10 @@ export class ConfirmOrderPaymentHandler implements ICommandHandler<
         }
         return orderId;
       });
+      // Le règlement acquis ne part plus qu'en `order.paid`, durable (lot E4,
+      // 2026-10-10) : ses trois abonnés — facture carte, points, accusé — le
+      // lisent dans la boîte d'envoi.
       if (settled !== null) {
-        this.events.publish(new OrderPaymentSettledEvent(settled));
         return;
       }
       const refundDue = await this.cancelled.cancelledOrderOf(command.paymentIntentId);
