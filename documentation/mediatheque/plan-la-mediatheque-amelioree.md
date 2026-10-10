@@ -12,15 +12,17 @@
 
 ## Les décisions de Hugo (2026-10-10)
 
-| #   | Question                          | Décision                                                                              |
-| --- | --------------------------------- | ------------------------------------------------------------------------------------- |
-| D1  | Retirer un tag depuis une tuile   | **immédiat**, avec « Annuler » quelques secondes                                      |
-| D2  | Un redépôt dans une autre série   | l'image garde **sa série d'origine** ; le compte rendu du lot le dit                  |
-| D3  | La série au dépôt                 | **facultative**                                                                       |
-| D4  | « Triable par tag »               | **filtrer** par tag ; **regrouper** par série et par date — jamais par tag (doublons) |
-| D5  | Remplacer une image : l'ancienne  | reste au fonds ; le ramassage l'emporte après 7 jours sans porteur                    |
-| D6  | La fenêtre de course du retrait   | **assumée et écrite** ; le remède est de redéposer                                    |
-| D7  | La porte « fournil » de l'accueil | un **objet de la vitrine**, réglable à l'écran                                        |
+| #   | Question                          | Décision                                                                                                              |
+| --- | --------------------------------- | --------------------------------------------------------------------------------------------------------------------- |
+| D1  | Retirer un tag depuis une tuile   | **immédiat**, avec « Annuler » quelques secondes                                                                      |
+| D2  | Un redépôt dans une autre série   | l'image garde **sa série d'origine** ; le compte rendu du lot le dit                                                  |
+| D3  | La série au dépôt                 | **facultative**                                                                                                       |
+| D4  | « Triable par tag »               | **filtrer** par tag ; **regrouper** par série et par date — jamais par tag (doublons)                                 |
+| D5  | Remplacer une image : l'ancienne  | reste au fonds ; le ramassage l'emporte après 7 jours sans porteur                                                    |
+| D6  | La fenêtre de course du retrait   | **assumée et écrite** ; le remède est de redéposer                                                                    |
+| D7  | La porte « fournil » de l'accueil | un **objet de la vitrine**, réglable à l'écran                                                                        |
+| D8  | Le format de l'ouverture de fiche | **4/3**, celui que la boutique applique (`product-sheet.scss`) ; le libellé « 3/2 » était faux (relevé le 2026-10-10) |
+| D9  | Les formats larges                | **21/9** pour les grandes bannières et les opérations ; **16/9** reste celui des cartes d'info de la vitrine          |
 
 ---
 
@@ -101,15 +103,22 @@ une livraison en attente sans lui doit rester lisible.
 
 ## L5 — Les formats signalés
 
-Au choix d'un usage, si les dimensions de l'image s'écartent du ratio de
-l'usage : une phrase, jamais un refus — « cette image est en 4/3, l'ouverture
-attend du 3/2 ; vérifiez le point focal ».
+1. Le libellé et les aperçus disent les formats **réels** (D8, D9) : ouverture
+   et vignette 4/3, carré 1/1, carte d'info 16/9, bannière 21/9. Les aperçus
+   du panneau de l'image les montrent tous.
+2. Au choix d'un usage, si les dimensions de l'image s'écartent du ratio de
+   l'usage : une phrase, jamais un refus — « cette image est en 4/3, une
+   bannière attend du 21/9 : une grande partie sera coupée ; vérifiez le
+   point focal ».
 
 ## L6 — L'accueil
 
-L'opération mise en avant lit les vraies opérations datées (fin de
-`MOCK_EVENT`), la porte « fournil » devient un objet de la vitrine (D7) — ses
-images viennent du fonds, cadrées par le point focal.
+- L'opération mise en avant lit les vraies opérations datées (fin de
+  `MOCK_EVENT`) et s'affiche en **bannière 21/9** (D9).
+- Une **grande bannière 21/9** de l'accueil devient un objet de la vitrine,
+  réglable à l'écran.
+- La porte « fournil » devient un objet de la vitrine (D7).
+- Toutes leurs images viennent du fonds, cadrées par le point focal.
 
 ## L7 — Remplacer une image
 
