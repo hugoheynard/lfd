@@ -132,6 +132,13 @@ export class UnknownSubjectAdmission {
       const outcome = await this.guests.claim(token);
       return outcome === "none" ? "new" : outcome;
     }
+    // Le compte qui porte l'adresse est CE sujet : une requête concurrente du
+    // même `sub` vient de le créer ou de rattacher sa fiche invité. Ce n'est pas
+    // un doublon, c'est la course perdue — relire (régression CI du 2026-10-11 :
+    // deux premières entrées simultanées par code, la seconde était refusée).
+    if (holders.some((holder) => holder.auth0Sub === token.subject)) {
+      return "lost";
+    }
     if (holders.length === 1 && token.emailVerified === true && isNeverEntered(only)) {
       return (await this.claim(only, token)) ? "claimed" : "lost";
     }
