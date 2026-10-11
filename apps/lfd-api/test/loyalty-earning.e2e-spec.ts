@@ -30,6 +30,7 @@ import {
 } from "../src/platform/database/client/client.js";
 import {
   bootstrapE2e,
+  daysAgo,
   E2E_STAFF_ID,
   E2E_STAFF_SUB,
   jsonBody,
@@ -44,6 +45,7 @@ const SETTINGS: SetLoyaltySettingsPayload = {
   openToPublic: true,
   openToPro: false,
   voucherValidityDays: 365,
+  welcomeBonusPoints: null,
 };
 
 const stubAdminVerifier = {
@@ -68,11 +70,11 @@ beforeEach(async () => {
   await ctx.reset();
 });
 
-async function openProgram(): Promise<void> {
+async function openProgram(settings: SetLoyaltySettingsPayload = SETTINGS): Promise<void> {
   await ctx
     .asSub(E2E_STAFF_SUB)
     .put("/admin/accounting/loyalty/settings")
-    .send(SETTINGS)
+    .send(settings)
     .expect(204);
 }
 
@@ -97,6 +99,8 @@ interface OrderSeed {
   readonly vatCents?: number;
   readonly deliveryFeeCents?: number;
   readonly lateFeeCents?: number;
+  /** L'instant de passation (`created_at`) ; maintenant par défaut. */
+  readonly placedAt?: Date;
 }
 
 /** Une commande prête au comptoir ; carte en attente par défaut. */
@@ -124,6 +128,7 @@ async function seedOrder(seed: OrderSeed): Promise<{ id: string; number: string;
       totalCents: subtotalCents - discountCents + deliveryFeeCents + lateFeeCents + vatCents,
       paymentStatus: seed.paymentStatus ?? PaymentStatus.pending,
       stripePaymentIntentId: intent,
+      ...(seed.placedAt === undefined ? {} : { createdAt: seed.placedAt }),
     },
     select: { id: true },
   });
@@ -293,11 +298,17 @@ describe("ce qui ne crédite pas", () => {
 
 describe("le rattrapage — POST /admin/loyalty/sweep", () => {
   it("crédite ce que les abonnés ont manqué, une seule fois", async () => {
-    // Le programme ouvre APRÈS les deux faits : les abonnés n'ont rien écrit.
+    // Le public est FERMÉ pendant les deux faits : les abonnés n'ont rien
+    // écrit. Il a été ouvert une première fois AVANT la commande — sans quoi
+    // R4 (plan bienvenue, 2026-10-11) la refuserait : jusqu'à ce jour, ce
+    // test ouvrait le programme après la passation.
+    await openProgram();
+    await openProgram({ ...SETTINGS, openToPublic: false });
     const userId = await member();
     const order = await seedOrder({ placedByUserId: userId });
     await pay(order.intent);
     await handOver(order.number);
+    expect(await earned()).toEqual([]);
     await openProgram();
 
     expect(await sweep()).toMatchObject({ scanned: 1, credited: 1 });
@@ -307,5 +318,37 @@ describe("le rattrapage — POST /admin/loyalty/sweep", () => {
 
   it("est murée : sans le jeton machine, rien", async () => {
     await ctx.http().post("/admin/loyalty/sweep").expect(401);
+  });
+});
+
+/**
+ * R4 du plan bienvenue (2026-10-11) : une commande de particulier passée
+ * avant la PREMIÈRE ouverture du programme au public ne rapporte rien, même
+ * définitive et même rattrapée — une fiche ancienne ne se crédite pas d'un
+ * coup, au barème du jour, d'achats faits programme fermé.
+ */
+describe("avant l'ouverture au public (R4)", () => {
+  it("ne crédite pas une commande passée avant la première ouverture", async () => {
+    const order = await seedOrder({
+      placedByUserId: await member(),
+      placedAt: new Date(daysAgo(3)),
+    });
+    await pay(order.intent);
+    await handOver(order.number);
+    await openProgram();
+
+    expect(await sweep()).toMatchObject({ scanned: 1, credited: 0 });
+    expect(await earned()).toEqual([]);
+  });
+
+  it("pose l'instant d'ouverture une fois : fermer puis rouvrir ne le déplace pas", async () => {
+    await openProgram();
+    const first = await ctx.prisma.loyaltySettings.findUniqueOrThrow({ where: { id: "default" } });
+    await openProgram({ ...SETTINGS, openToPublic: false });
+    await openProgram();
+    const after = await ctx.prisma.loyaltySettings.findUniqueOrThrow({ where: { id: "default" } });
+
+    expect(first.publicOpenedAt).not.toBeNull();
+    expect(after.publicOpenedAt).toEqual(first.publicOpenedAt);
   });
 });

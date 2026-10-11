@@ -67,6 +67,7 @@ const activeUser: UserWithMemberships = {
   status: UserStatus.active,
   emailVerified: false,
   invitedBy: null,
+  becameAccountAt: new Date(0),
   createdAt: new Date(0),
   updatedAt: new Date(0),
   // Entrée il y a longtemps : accepté, il ouvre quel que soit l'âge de l'invitation.

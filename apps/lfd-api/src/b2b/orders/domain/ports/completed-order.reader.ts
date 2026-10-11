@@ -22,6 +22,8 @@
 export interface CompletedOrder {
   readonly orderId: string;
   readonly orderNumber: string;
+  /** L'instant de passation (`orders.created_at`) — la fidélité ne crédite pas une commande passée avant d'ouvrir son programme. */
+  readonly placedAt: Date;
   readonly clientele: "pro" | "public";
   /** Nul pour le public, ou pour un pro dont la société a été supprimée. */
   readonly companyId: string | null;

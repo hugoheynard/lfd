@@ -18,6 +18,7 @@ const BOTH = LoyaltySettings.of({ ...OPEN, openToPro: true });
 const PUBLIC_ORDER: EarnableOrder = {
   orderId: "o1",
   orderNumber: "CMD-1",
+  placedAt: new Date("2026-03-01T10:00:00.000Z"),
   clientele: "public",
   companyId: null,
   placedByUserId: "u1",
@@ -82,5 +83,42 @@ describe("earningFor — ce que rapporte une commande définitive, et à qui", (
   it("ne rapporte rien quand le bon couvre toutes les marchandises", () => {
     const order = { ...PUBLIC_ORDER, subtotalCents: 700, voucherDiscountCents: 700 };
     expect(earningFor(order, PUBLIC_ONLY)).toEqual({ kind: "skip", reason: "empty_basis" });
+  });
+
+  /**
+   * R4 du plan bienvenue : une commande passée programme fermé au public ne se
+   * crédite pas d'un coup, au barème du jour. Les dates ne sont comparées
+   * qu'entre elles, jamais à l'horloge.
+   */
+  describe("avant l'ouverture au public (R4)", () => {
+    const OPENED_AT = PUBLIC_ORDER.placedAt;
+    const OPENED = LoyaltySettings.of(
+      { ...OPEN, openToPro: true },
+      { publicOpenedAt: OPENED_AT, welcomeBonusSince: null },
+    );
+    const before = new Date(OPENED_AT.getTime() - 1);
+
+    it("ne rapporte rien pour une commande de particulier passée avant", () => {
+      expect(earningFor({ ...PUBLIC_ORDER, placedAt: before }, OPENED)).toEqual({
+        kind: "skip",
+        reason: "before_program",
+      });
+    });
+
+    it("crédite une commande passée à l'instant même de l'ouverture, ou après", () => {
+      expect(earningFor(PUBLIC_ORDER, OPENED)).toMatchObject({ kind: "earn", points: 2_340 });
+    });
+
+    it("ne borne pas une commande pro : le jalon est celui du public", () => {
+      expect(earningFor({ ...PRO_ORDER, placedAt: before }, OPENED)).toMatchObject({
+        kind: "earn",
+      });
+    });
+
+    it("dit d'abord qu'un invité est un invité", () => {
+      expect(
+        earningFor({ ...PUBLIC_ORDER, placedAt: before, buyerHasAccount: false }, OPENED),
+      ).toEqual({ kind: "skip", reason: "guest_buyer" });
+    });
   });
 });

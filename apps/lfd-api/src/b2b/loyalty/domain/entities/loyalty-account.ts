@@ -15,8 +15,8 @@ import type { LoyaltyReason } from "../value-objects/loyalty-reason.js";
 import type { LoyaltySettings } from "../value-objects/loyalty-settings.js";
 import { LoyaltyVoucher } from "./loyalty-voucher.js";
 
-/** Les sortes de lignes du livre (plan D2). */
-export type LoyaltyEntryKind = "earned" | "converted" | "adjusted";
+/** Les sortes de lignes du livre (plan D2). `welcome` : le bonus de bienvenue, écrit au lot C du plan bienvenue — le solde, somme du livre, le compte déjà. */
+export type LoyaltyEntryKind = "earned" | "converted" | "adjusted" | "welcome";
 
 /** Une ligne du livre à écrire — jamais réécrite, jamais effacée. */
 export interface LoyaltyLedgerEntry {

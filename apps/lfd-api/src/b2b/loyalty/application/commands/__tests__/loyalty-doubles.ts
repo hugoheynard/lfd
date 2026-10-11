@@ -32,6 +32,7 @@ import type { LoyaltyHolder } from "../../../domain/value-objects/loyalty-holder
 import {
   LoyaltySettings,
   type LoyaltySettingsInput,
+  type LoyaltySettingsMilestones,
 } from "../../../domain/value-objects/loyalty-settings.js";
 
 /** Doubles écrits à la main, héritant des ports — jamais `jest.fn()`. */
@@ -42,6 +43,7 @@ export const OPEN_TO_PUBLIC: LoyaltySettingsInput = {
   openToPublic: true,
   openToPro: false,
   voucherValidityDays: 365,
+  welcomeBonusPoints: null,
 };
 
 /** Le livre en mémoire : `loadLocked` somme, `save` ajoute. Journalise ses appels. */
@@ -116,20 +118,35 @@ export class InMemoryVouchers extends LoyaltyVoucherRepository {
 }
 
 export class FixedLoyaltySettings extends LoyaltySettingsReader {
-  constructor(private readonly input: LoyaltySettingsInput | null) {
+  constructor(
+    private readonly input: LoyaltySettingsInput | null,
+    private readonly milestones?: LoyaltySettingsMilestones,
+  ) {
     super();
   }
 
   read(): Promise<LoyaltySettings | null> {
-    return Promise.resolve(this.input === null ? null : LoyaltySettings.of(this.input));
+    return Promise.resolve(
+      this.input === null ? null : LoyaltySettings.of(this.input, this.milestones),
+    );
   }
 }
 
 export class RecordingSettingsWriter extends LoyaltySettingsWriter {
-  readonly written: { settings: LoyaltySettingsInput; at: Date; by: string }[] = [];
+  readonly written: {
+    settings: LoyaltySettingsInput;
+    milestones: LoyaltySettingsMilestones;
+    at: Date;
+    by: string;
+  }[] = [];
 
   write(settings: LoyaltySettings, updatedAt: Date, updatedByStaffId: string): Promise<void> {
-    this.written.push({ settings: settings.toInput(), at: updatedAt, by: updatedByStaffId });
+    this.written.push({
+      settings: settings.toInput(),
+      milestones: settings.milestones,
+      at: updatedAt,
+      by: updatedByStaffId,
+    });
     return Promise.resolve();
   }
 }
@@ -206,6 +223,7 @@ export function completedOrder(overrides: Partial<CompletedOrder> = {}): Complet
   return {
     orderId: "o1",
     orderNumber: "CMD-1",
+    placedAt: new Date(0),
     clientele: "public",
     companyId: null,
     placedByUserId: "u1",

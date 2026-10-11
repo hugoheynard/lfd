@@ -32,6 +32,16 @@ export class InvalidVoucherValidityError extends DomainError {
   }
 }
 
+/** Un bonus de bienvenue entier, strictement positif — ou aucun — **400**. */
+export class InvalidWelcomeBonusError extends DomainError {
+  constructor(points: number) {
+    super(
+      "loyalty.invalid_welcome_bonus",
+      `Bonus de bienvenue invalide (${String(points)} points) : saisissez un nombre entier de points, au moins 1, ou laissez le champ vide pour n'offrir aucun bonus.`,
+    );
+  }
+}
+
 /**
  * Ouvrir la fidélité aux pros avant qu'on sache qu'une facture est réglée —
  * **409**. Chez un pro, `not_required` veut dire « payé à terme », pas encaissé :

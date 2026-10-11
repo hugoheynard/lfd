@@ -51,6 +51,8 @@ export interface LoyaltyCopy {
   readonly entryEarnedNoOrder: string;
   readonly entryConverted: string;
   readonly entryAdjusted: string;
+  /** Le bonus offert à la création du compte (plan bienvenue). */
+  readonly entryWelcome: string;
   readonly emptyTitle: string;
   readonly emptyBody: string;
   readonly loading: string;
@@ -93,6 +95,7 @@ export const LOYALTY_FR: LoyaltyCopy = {
   entryEarnedNoOrder: 'Commande',
   entryConverted: 'Conversion en bon',
   entryAdjusted: 'Ajustement',
+  entryWelcome: 'Bienvenue',
   emptyTitle: 'Pas encore de points',
   emptyBody: 'Vos commandes vous en rapportent une fois retirées et réglées.',
   loading: 'Lecture de votre fidélité…',
@@ -135,6 +138,7 @@ export const LOYALTY_EN: LoyaltyCopy = {
   entryEarnedNoOrder: 'Order',
   entryConverted: 'Converted to a voucher',
   entryAdjusted: 'Adjustment',
+  entryWelcome: 'Welcome',
   emptyTitle: 'No points yet',
   emptyBody: 'Your orders earn points once collected and paid.',
   loading: 'Reading your loyalty…',
@@ -177,6 +181,7 @@ export const LOYALTY_IT: LoyaltyCopy = {
   entryEarnedNoOrder: 'Ordine',
   entryConverted: 'Conversione in buono',
   entryAdjusted: 'Rettifica',
+  entryWelcome: 'Benvenuto',
   emptyTitle: 'Ancora nessun punto',
   emptyBody: 'I tuoi ordini ne fanno guadagnare una volta ritirati e pagati.',
   loading: 'Lettura della tua fedeltà…',

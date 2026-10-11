@@ -216,6 +216,9 @@ export const ACCOUNTING_FACTS = {
       openToPublic: z.boolean(),
       openToPro: z.boolean(),
       voucherValidityDays: days(),
+      // Le bonus de bienvenue (plan bienvenue, lot B, 2026-10-11) — `null` =
+      // aucun ; absent des faits écrits avant lui.
+      welcomeBonusPoints: count().nullable().optional(),
     }),
   ),
   /** Une commande remise et réglée a rapporté des points (lot D). */

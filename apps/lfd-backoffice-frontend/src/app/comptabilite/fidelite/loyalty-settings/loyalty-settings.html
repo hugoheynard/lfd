@@ -81,6 +81,22 @@
         [(value)]="voucherValidityDays"
       />
 
+      <fold-number-input
+        label="Points offerts à la création d'un compte"
+        optional
+        optionalLabel="facultatif"
+        integer
+        [min]="1"
+        placeholder="Aucun bonus"
+        [readOnly]="!canWrite()"
+        [hint]="
+          bonusInvalid()
+            ? 'Un nombre entier de points, supérieur à zéro — ou laissez vide pour n\'offrir aucun bonus.'
+            : 'Crédités une fois par personne, à la création d\'un compte dont l\'adresse est prouvée. Une adresse jetable en vaut un.'
+        "
+        [(value)]="welcomeBonusPoints"
+      />
+
       @if (canWrite()) {
         @if (saveError(); as message) {
           <fold-callout appearance="inset" variant="alert" announce>{{ message }}</fold-callout>

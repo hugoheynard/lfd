@@ -18,6 +18,7 @@ const COMPLETED_WHERE = {
 const SELECT = {
   id: true,
   orderNumber: true,
+  createdAt: true,
   clientele: true,
   companyId: true,
   placedByUserId: true,
@@ -30,6 +31,8 @@ const SELECT = {
 interface CompletedRow {
   readonly id: string;
   readonly orderNumber: string;
+  /** « passée le » — la colonne n'a pas d'autre nom (`orders.prisma`). */
+  readonly createdAt: Date;
   readonly clientele: "pro" | "public" | null;
   readonly companyId: string | null;
   readonly placedByUserId: string;
@@ -82,6 +85,7 @@ function toCompleted(row: CompletedRow): CompletedOrder | null {
   return {
     orderId: row.id,
     orderNumber: row.orderNumber,
+    placedAt: row.createdAt,
     clientele: row.clientele,
     companyId: row.companyId,
     placedByUserId: row.placedByUserId,

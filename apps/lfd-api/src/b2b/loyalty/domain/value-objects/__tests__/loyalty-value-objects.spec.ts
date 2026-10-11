@@ -3,6 +3,7 @@ import {
   InvalidLoyaltyRatioError,
   InvalidLoyaltyReasonError,
   InvalidVoucherValidityError,
+  InvalidWelcomeBonusError,
 } from "../../errors/loyalty-errors.js";
 import { LoyaltyHolder } from "../loyalty-holder.js";
 import { LoyaltyRatio } from "../loyalty-ratio.js";
@@ -15,6 +16,7 @@ const SETTINGS = {
   openToPublic: true,
   openToPro: false,
   voucherValidityDays: 365,
+  welcomeBonusPoints: null,
 };
 
 describe("LoyaltyRatio — des entiers, toujours", () => {
@@ -98,6 +100,62 @@ describe("LoyaltySettings — le réglage du programme", () => {
     expect(settings.equals(LoyaltySettings.of(SETTINGS))).toBe(true);
     expect(settings.equals(LoyaltySettings.of({ ...SETTINGS, openToPro: true }))).toBe(false);
     expect(settings.toInput()).toEqual(SETTINGS);
+  });
+
+  it("lit un bonus absent comme aucun bonus", () => {
+    const { welcomeBonusPoints: _omitted, ...withoutBonus } = SETTINGS;
+    expect(LoyaltySettings.of(withoutBonus).welcomeBonusPoints).toBeNull();
+  });
+
+  it.each([0, -5, 2.5])("refuse un bonus de bienvenue de %s point(s)", (points) => {
+    expect(() => LoyaltySettings.of({ ...SETTINGS, welcomeBonusPoints: points })).toThrow(
+      InvalidWelcomeBonusError,
+    );
+  });
+
+  it("ne compte pas les jalons dans l'égalité : ils découlent des valeurs saisies", () => {
+    const opened = LoyaltySettings.of(SETTINGS, {
+      publicOpenedAt: new Date(0),
+      welcomeBonusSince: null,
+    });
+    expect(opened.equals(LoyaltySettings.of(SETTINGS))).toBe(true);
+  });
+});
+
+describe("LoyaltySettings.configure — les jalons déduits du geste", () => {
+  const T1 = new Date(1_000);
+  const T2 = new Date(2_000);
+
+  it("pose la première ouverture au public, puis ne la déplace plus", () => {
+    const first = LoyaltySettings.configure(null, SETTINGS, T1);
+    expect(first.publicOpenedAt).toEqual(T1);
+    const closed = LoyaltySettings.configure(first, { ...SETTINGS, openToPublic: false }, T2);
+    expect(closed.publicOpenedAt).toEqual(T1);
+    expect(LoyaltySettings.configure(closed, SETTINGS, T2).publicOpenedAt).toEqual(T1);
+  });
+
+  it("ne pose rien tant que le public est fermé", () => {
+    const closed = LoyaltySettings.configure(null, { ...SETTINGS, openToPublic: false }, T1);
+    expect(closed.publicOpenedAt).toBeNull();
+    expect(LoyaltySettings.configure(closed, SETTINGS, T2).publicOpenedAt).toEqual(T2);
+  });
+
+  it("date le bonus à chaque allumage, pas à chaque changement de montant", () => {
+    const on = LoyaltySettings.configure(null, { ...SETTINGS, welcomeBonusPoints: 500 }, T1);
+    expect(on.welcomeBonusSince).toEqual(T1);
+    const changed = LoyaltySettings.configure(on, { ...SETTINGS, welcomeBonusPoints: 900 }, T2);
+    expect(changed.welcomeBonusSince).toEqual(T1);
+    const off = LoyaltySettings.configure(changed, SETTINGS, T2);
+    expect(off.welcomeBonusPoints).toBeNull();
+    const again = LoyaltySettings.configure(off, { ...SETTINGS, welcomeBonusPoints: 500 }, T2);
+    expect(again.welcomeBonusSince).toEqual(T2);
+  });
+
+  it("borne une commande passée avant l'ouverture, pas celle d'après", () => {
+    const opened = LoyaltySettings.configure(null, SETTINGS, T1);
+    expect(opened.isBeforePublicOpening(new Date(999))).toBe(true);
+    expect(opened.isBeforePublicOpening(T1)).toBe(false);
+    expect(LoyaltySettings.of(SETTINGS).isBeforePublicOpening(new Date(0))).toBe(false);
   });
 });
 

@@ -10,6 +10,8 @@ export interface EarnableOrder {
   readonly orderId: string;
   /** Le nom de la commande au journal — elle n'en a pas d'autre. */
   readonly orderNumber: string;
+  /** L'instant de passation — comparé à l'ouverture du programme au public (R4). */
+  readonly placedAt: Date;
   readonly clientele: "pro" | "public";
   readonly companyId: string | null;
   readonly placedByUserId: string;
@@ -28,7 +30,12 @@ const POINTS_PER_CENT = 1;
 
 /** Pourquoi une commande définitive ne rapporte rien. */
 export type EarningSkipReason =
-  "program_closed" | "clientele_closed" | "company_missing" | "guest_buyer" | "empty_basis";
+  | "program_closed"
+  | "clientele_closed"
+  | "company_missing"
+  | "guest_buyer"
+  | "before_program"
+  | "empty_basis";
 
 export type OrderEarning =
   | { readonly kind: "earn"; readonly holder: LoyaltyHolder; readonly points: number }
@@ -45,7 +52,11 @@ export type OrderEarning =
  *   pas de point (plan C6, tranché par Hugo le 2026-09-27). Ni la TVA — on ne
  *   rend pas en crédit ce qu'on reverse à l'État (Hugo, 2026-09-26) —, ni le
  *   port, ni la surtaxe ;
- * - rien tant que le programme est fermé, ou fermé à cette clientèle.
+ * - rien tant que le programme est fermé, ou fermé à cette clientèle ;
+ * - rien pour une commande de particulier passée AVANT la première ouverture
+ *   du programme au public (R4 du plan bienvenue) : une fiche ancienne ne se
+ *   crédite pas, au barème du jour, d'achats faits programme fermé. Une
+ *   commande déjà créditée n'est pas reprise — rien ne relit un gain écrit.
  *
  * Un « rien » n'est pas une erreur : c'est le cas normal d'une grande part
  * des commandes, et l'abonné comme le rattrapage le traversent sans bruit.
@@ -60,6 +71,9 @@ export function earningFor(order: EarnableOrder, settings: LoyaltySettings | nul
   }
   if (!settings.isOpenTo(holder)) {
     return skip("clientele_closed");
+  }
+  if (holder.kind === "user" && settings.isBeforePublicOpening(order.placedAt)) {
+    return skip("before_program");
   }
   const basisCents = order.subtotalCents - order.discountCents - order.voucherDiscountCents;
   if (basisCents <= 0) {

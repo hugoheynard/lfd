@@ -26,6 +26,7 @@ const SET: NonNullable<LoyaltySettingsView['settings']> = {
   openToPublic: true,
   openToPro: false,
   voucherValidityDays: 365,
+  welcomeBonusPoints: null,
 };
 
 class FakeApi {
@@ -91,7 +92,7 @@ function hasButton(fixture: ComponentFixture<LoyaltySettings>, label: string): b
   );
 }
 
-/** Les champs, dans l'ordre de l'écran : points, valeur, validité. */
+/** Les champs, dans l'ordre de l'écran : points, valeur, validité, bonus de bienvenue. */
 function fields(fixture: ComponentFixture<LoyaltySettings>): HTMLInputElement[] {
   return Array.from(
     root(fixture).querySelectorAll<HTMLInputElement>('fold-number-input input, fold-input input'),
@@ -134,6 +135,7 @@ describe('LoyaltySettings', () => {
         openToPublic: true,
         openToPro: false,
         voucherValidityDays: 365,
+        welcomeBonusPoints: null,
       },
     ]);
   });
@@ -187,6 +189,44 @@ describe('LoyaltySettings', () => {
     await settle(fixture);
 
     expect(api.saved).toEqual([{ ...SET, voucherValidityDays: 180 }]);
+  });
+
+  describe('le bonus de bienvenue (plan bienvenue, lot B)', () => {
+    it('vide, il part à null : aucun bonus — et la règle se lit sous le champ', async () => {
+      const api = new FakeApi();
+      api.settings = SET;
+      const fixture = await render(api);
+
+      expect(fields(fixture)[3]?.value).toBe('');
+      expect(text(fixture)).toContain(
+        "Crédités une fois par personne, à la création d'un compte dont l'adresse est prouvée. Une adresse jetable en vaut un.",
+      );
+    });
+
+    it('un nombre posé part tel quel, sans confirmation', async () => {
+      const api = new FakeApi();
+      api.settings = SET;
+      const fixture = await render(api);
+
+      type(fixture, 3, '500');
+      button(fixture, 'Enregistrer').click();
+      await settle(fixture);
+
+      expect(api.saved).toEqual([{ ...SET, welcomeBonusPoints: 500 }]);
+    });
+
+    it('vider le champ éteint le bonus', async () => {
+      const api = new FakeApi();
+      api.settings = { ...SET, welcomeBonusPoints: 500 };
+      const fixture = await render(api);
+
+      expect(fields(fixture)[3]?.value).toBe('500');
+      type(fixture, 3, '');
+      button(fixture, 'Enregistrer').click();
+      await settle(fixture);
+
+      expect(api.saved).toEqual([{ ...SET, welcomeBonusPoints: null }]);
+    });
   });
 
   it('sans droit d’écriture et sans réglage : « Programme fermé », aucun geste', async () => {

@@ -15,11 +15,14 @@
 //   · une annulation porte son instant, son auteur et son motif.
 
 /// La sorte d'une ligne du livre. `earned` (+) une commande remise et réglée,
-/// `converted` (−) un bon émis, `adjusted` (±) un geste motivé du staff.
+/// `converted` (−) un bon émis, `adjusted` (±) un geste motivé du staff,
+/// `welcome` (+) le bonus offert à une personne qui devient un compte — une
+/// fois par personne (index partiel, migration `20261011210100_le_bonus_de_bienvenue`).
 enum LoyaltyEntryKind {
   earned
   converted
   adjusted
+  welcome
 
   @@schema("public")
 }
@@ -53,6 +56,15 @@ model LoyaltySettings {
 
   /// La durée de vie d'un bon émis, en jours — lue à l'émission, figée sur le bon.
   voucherValidityDays Int @map("voucher_validity_days")
+
+  /// Le premier instant d'ouverture au public — posé une fois, jamais effacé.
+  /// Une commande publique passée avant ne rapporte rien (R4).
+  publicOpenedAt DateTime? @map("public_opened_at") @db.Timestamptz(6)
+
+  /// Le bonus de bienvenue : `null` = aucun, sinon > 0 (`CHECK`).
+  welcomeBonusPoints Int?      @map("welcome_bonus_points")
+  /// Posé chaque fois que le bonus passe de `null` à un nombre.
+  welcomeBonusSince  DateTime? @map("welcome_bonus_since") @db.Timestamptz(6)
 
   updatedAt        DateTime @map("updated_at")
   updatedByStaffId String   @map("updated_by_staff_id")

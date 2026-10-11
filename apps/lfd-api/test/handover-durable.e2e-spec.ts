@@ -34,6 +34,7 @@ const SETTINGS: SetLoyaltySettingsPayload = {
   openToPublic: true,
   openToPro: false,
   voucherValidityDays: 365,
+  welcomeBonusPoints: null,
 };
 
 /** Le crédit des points a échoué — la panne qu'on injecte. */

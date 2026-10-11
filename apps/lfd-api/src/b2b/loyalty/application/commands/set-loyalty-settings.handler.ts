@@ -20,6 +20,10 @@ import { SetLoyaltySettingsCommand } from "./set-loyalty-settings.command.js";
  * Aucun bon émis n'est touché : le ratio est figé sur chacun d'eux (plan D5).
  * Un réglage inchangé n'écrit ni ne trace rien.
  *
+ * Les deux jalons (première ouverture au public, allumage du bonus de
+ * bienvenue) sont déduits par {@link LoyaltySettings.configure} à partir du
+ * réglage relu : l'écran ne les saisit pas, et ne peut donc pas les effacer.
+ *
  * 🔴 La clientèle pro ne s'ouvre pas encore : c'est ici, au seul geste qui
  * écrit, et non dans {@link LoyaltySettings}, pour que le crédit d'une société
  * reste éprouvable avant le lot F.
@@ -40,13 +44,14 @@ export class SetLoyaltySettingsHandler implements ICommandHandler<SetLoyaltySett
     if (command.settings.openToPro) {
       throw new LoyaltyProNotYetOpenableError();
     }
-    const next = LoyaltySettings.of(command.settings);
+    const now = this.clock.now();
     const current = await this.reader.read();
+    const next = LoyaltySettings.configure(current, command.settings, now);
     if (current?.equals(next) === true) {
       return;
     }
     await this.uow.run(async () => {
-      await this.writer.write(next, this.clock.now(), command.staffUserId);
+      await this.writer.write(next, now, command.staffUserId);
       await this.events.publishTraced(new LoyaltySettingsSetEvent(next));
     });
   }

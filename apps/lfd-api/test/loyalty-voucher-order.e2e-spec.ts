@@ -58,6 +58,7 @@ const SETTINGS: SetLoyaltySettingsPayload = {
   openToPublic: true,
   openToPro: false,
   voucherValidityDays: 365,
+  welcomeBonusPoints: null,
 };
 
 const CLIENT = "auth0|bon-fidele";

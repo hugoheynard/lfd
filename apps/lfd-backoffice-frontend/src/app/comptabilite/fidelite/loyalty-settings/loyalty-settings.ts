@@ -65,10 +65,23 @@ function positiveInt(value: number | null): number | null {
   return value !== null && Number.isInteger(value) && value > 0 ? value : null;
 }
 
+/** Un bonus vide (`null` : aucun) ou un entier strictement positif ; sinon illisible. */
+function optionalPositiveInt(value: number | null): {
+  readonly ok: boolean;
+  readonly value: number | null;
+} {
+  if (value === null) {
+    return { ok: true, value: null };
+  }
+  const parsed = positiveInt(value);
+  return { ok: parsed !== null, value: parsed };
+}
+
 /**
  * **Le réglage du programme de fidélité** : combien de points font un palier,
  * ce que vaut un palier en euros **hors taxe**, quelles clientèles gagnent, et combien de
- * temps vit un bon.
+ * temps vit un bon — et, facultatif, combien de points sont offerts à la
+ * création d'un compte (plan bienvenue, lot B : vide = aucun bonus).
  *
  * Tant que rien n'est enregistré, le programme est **fermé** (plan D5) : aucune
  * colonne n'a de défaut en base, tout se pose d'un coup. La valeur se saisit
@@ -115,19 +128,30 @@ export class LoyaltySettings {
   protected readonly stepValueInput = signal('');
   protected readonly openToPublic = signal(true);
   protected readonly voucherValidityDays = signal<number | null>(DEFAULT_VOUCHER_VALIDITY_DAYS);
+  /** Vide (`null`) = aucun bonus de bienvenue. */
+  protected readonly welcomeBonusPoints = signal<number | null>(null);
 
   protected readonly canWrite = computed(() => this.permissions.can('b2b_accounting:write'));
 
   protected readonly pointsInvalid = computed(() => positiveInt(this.pointsPerStep()) === null);
   protected readonly stepValueInvalid = computed(() => centsOf(this.stepValueInput()) === null);
   protected readonly daysInvalid = computed(() => positiveInt(this.voucherValidityDays()) === null);
+  protected readonly bonusInvalid = computed(
+    () => !optionalPositiveInt(this.welcomeBonusPoints()).ok,
+  );
 
   /** Le payload complet, ou `null` tant qu'un champ est illisible. */
   protected readonly payload = computed<SetLoyaltySettingsPayload | null>(() => {
     const pointsPerStep = positiveInt(this.pointsPerStep());
     const stepValueCents = centsOf(this.stepValueInput());
     const voucherValidityDays = positiveInt(this.voucherValidityDays());
-    if (pointsPerStep === null || stepValueCents === null || voucherValidityDays === null) {
+    const bonus = optionalPositiveInt(this.welcomeBonusPoints());
+    if (
+      pointsPerStep === null ||
+      stepValueCents === null ||
+      voucherValidityDays === null ||
+      !bonus.ok
+    ) {
       return null;
     }
     return {
@@ -136,6 +160,7 @@ export class LoyaltySettings {
       openToPublic: this.openToPublic(),
       openToPro: this.saved()?.openToPro ?? false,
       voucherValidityDays,
+      welcomeBonusPoints: bonus.value,
     };
   });
 
@@ -150,7 +175,8 @@ export class LoyaltySettings {
       payload.pointsPerStep !== saved.pointsPerStep ||
       payload.stepValueCents !== saved.stepValueCents ||
       payload.openToPublic !== saved.openToPublic ||
-      payload.voucherValidityDays !== saved.voucherValidityDays
+      payload.voucherValidityDays !== saved.voucherValidityDays ||
+      payload.welcomeBonusPoints !== saved.welcomeBonusPoints
     );
   });
 
@@ -243,5 +269,6 @@ export class LoyaltySettings {
     this.stepValueInput.set(centsField(settings.stepValueCents));
     this.openToPublic.set(settings.openToPublic);
     this.voucherValidityDays.set(settings.voucherValidityDays);
+    this.welcomeBonusPoints.set(settings.welcomeBonusPoints);
   }
 }

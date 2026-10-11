@@ -41,7 +41,7 @@ import {
   jsonBody,
   type E2eContext,
 } from "./e2e-harness.js";
-import { createUser } from "./factories.js";
+import { createCompany, createUser } from "./factories.js";
 
 const BASE = "/admin/accounting/loyalty";
 const SETTINGS: SetLoyaltySettingsPayload = {
@@ -50,6 +50,7 @@ const SETTINGS: SetLoyaltySettingsPayload = {
   openToPublic: true,
   openToPro: false,
   voucherValidityDays: 365,
+  welcomeBonusPoints: null,
 };
 
 const stubAdminVerifier = {
@@ -290,6 +291,74 @@ describe("les contraintes de la base", () => {
           ("id", "user_id", "kind", "points", "voucher_id", "occurred_at", "staff_user_id", "reason")
         VALUES ('doublon', ${userId}, 'adjusted', 1000, ${voucherId}, now(), 'staff', 'rejeu')`,
     ).rejects.toThrow(/loyalty_ledger_entries_adjusted_voucher_key/u);
+  });
+  /** La bienvenue (plan bienvenue, lot B, 2026-10-11) : une personne, une fois, en positif. */
+  async function insertWelcome(
+    id: string,
+    companyId: string | null,
+    userId: string | null,
+    points = 500,
+  ): Promise<unknown> {
+    return ctx.prisma.$executeRaw`
+      INSERT INTO "public"."loyalty_ledger_entries"
+        ("id", "company_id", "user_id", "kind", "points", "occurred_at")
+      VALUES (${id}, ${companyId}, ${userId}, 'welcome', ${points}, now())`;
+  }
+
+  it("🔴 accepte une bienvenue à une personne, et la refuse à une société ou en négatif", async () => {
+    const userId = await person();
+    const company = await createCompany(ctx.prisma);
+    await expect(insertWelcome("bienvenue", null, userId)).resolves.toBe(1);
+    await expect(insertWelcome("societe", company.id, null)).rejects.toThrow(
+      /loyalty_ledger_entries_kind_shape/u,
+    );
+    await expect(
+      insertWelcome(
+        "negatif",
+        null,
+        (await createUser(ctx.prisma, { auth0Sub: "auth0|autre" })).id,
+        -5,
+      ),
+    ).rejects.toThrow(/loyalty_ledger_entries_kind_shape/u);
+  });
+
+  it("🔴 refuse une bienvenue sans personne", async () => {
+    await expect(insertWelcome("orpheline", null, null)).rejects.toThrow(
+      /loyalty_ledger_entries_(kind_shape|one_holder)/u,
+    );
+  });
+
+  it("🔴 refuse une seconde bienvenue pour la même personne", async () => {
+    const userId = await person();
+    await insertWelcome("premiere", null, userId);
+    await expect(insertWelcome("seconde", null, userId)).rejects.toThrow(
+      /loyalty_ledger_entries_welcome_user_key/u,
+    );
+  });
+
+  it("refuse un bonus de bienvenue nul en base", async () => {
+    await staff().put(`${BASE}/settings`).send(SETTINGS).expect(204);
+    await expect(
+      ctx.prisma.$executeRaw`UPDATE "public"."loyalty_settings" SET "welcome_bonus_points" = 0`,
+    ).rejects.toThrow(/loyalty_settings_welcome_bonus_positive/u);
+  });
+});
+
+describe("le réglage du bonus de bienvenue", () => {
+  it("se pose, se relit, et date son allumage", async () => {
+    await staff()
+      .put(`${BASE}/settings`)
+      .send({ ...SETTINGS, welcomeBonusPoints: 500 })
+      .expect(204);
+    const read = await staff().get(`${BASE}/settings`).expect(200);
+    expect(jsonBody<LoyaltySettingsView>(read).settings).toMatchObject({ welcomeBonusPoints: 500 });
+    const row = await ctx.prisma.loyaltySettings.findUniqueOrThrow({ where: { id: "default" } });
+    expect(row.welcomeBonusSince).not.toBeNull();
+  });
+
+  it("refuse un corps sans le champ : un vieux client n'éteint pas le bonus en silence", async () => {
+    const { welcomeBonusPoints: _absent, ...withoutBonus } = SETTINGS;
+    await staff().put(`${BASE}/settings`).send(withoutBonus).expect(400);
   });
 });
 

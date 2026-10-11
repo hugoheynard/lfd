@@ -226,6 +226,8 @@ export class LoyaltyCard {
         return c.entryConverted;
       case 'adjusted':
         return c.entryAdjusted;
+      case 'welcome':
+        return c.entryWelcome;
     }
   }
 

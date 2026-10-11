@@ -407,6 +407,11 @@ model User {
   // Pas de FK cross-db → simple identifiant.
   invitedBy String? @map("invited_by")
 
+  // L'instant où la fiche est devenue un compte connectable — création,
+  // rattachement d'un invité, ouverture d'accès staff. `null` = un invité.
+  // Posé par le lot A du plan `comptabilite/fidelite/plan-bienvenue-et-invite-rattache.md`.
+  becameAccountAt DateTime? @map("became_account_at") @db.Timestamptz(6)
+
   createdAt DateTime @default(now()) @map("created_at")
   updatedAt DateTime @updatedAt @map("updated_at")
 

@@ -110,6 +110,29 @@ describe('LoyaltyCard', () => {
     expect(text()).toContain('+350');
   });
 
+  it('nomme « Bienvenue » le bonus offert à la création du compte', async () => {
+    await mount({
+      open: true,
+      balancePoints: 500,
+      pointsPerStep: 1000,
+      stepValueCents: 500,
+      convertibleSteps: 0,
+      vouchers: [],
+      entries: [
+        {
+          id: 'e_welcome',
+          kind: 'welcome',
+          points: 500,
+          occurredAt: '2026-09-25T10:00:00.000Z',
+          orderNumber: null,
+        },
+      ],
+    });
+
+    expect(text()).toContain('Bienvenue');
+    expect(text()).toContain('+500');
+  });
+
   it('montre l’état vide sans liste, et aucune conversion', async () => {
     await mount(EMPTY_LOYALTY);
 

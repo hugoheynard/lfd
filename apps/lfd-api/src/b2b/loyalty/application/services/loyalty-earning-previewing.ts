@@ -4,6 +4,7 @@ import {
   LoyaltyEarningPreview,
   type LoyaltyEarningBasis,
 } from "../../../orders/domain/ports/loyalty-earning-preview.js";
+import { Clock } from "../../../../platform/time/clock.js";
 import { LoyaltySettingsReader } from "../../domain/ports/loyalty-settings.store.js";
 import { earningFor } from "../../domain/services/order-earning.js";
 
@@ -19,10 +20,16 @@ const QUOTE_ORDER_ID = "quote";
  * de particulier au compte connectable : la règle d'assiette et d'ouverture
  * n'existe qu'une fois, et ce que le panier annonce est ce que la remise
  * créditera — au réglage près, qui peut changer entre les deux.
+ *
+ * Le panier n'est pas encore passé : pour la règle d'ouverture (R4), il l'est
+ * **maintenant**, à l'horloge du serveur.
  */
 @Injectable()
 export class LoyaltyEarningPreviewing extends LoyaltyEarningPreview {
-  constructor(private readonly settings: LoyaltySettingsReader) {
+  constructor(
+    private readonly settings: LoyaltySettingsReader,
+    private readonly clock: Clock,
+  ) {
     super();
   }
 
@@ -31,6 +38,7 @@ export class LoyaltyEarningPreviewing extends LoyaltyEarningPreview {
       {
         orderId: QUOTE_ORDER_ID,
         orderNumber: QUOTE_ORDER_ID,
+        placedAt: this.clock.now(),
         clientele: "public",
         companyId: null,
         placedByUserId: basis.buyerUserId,

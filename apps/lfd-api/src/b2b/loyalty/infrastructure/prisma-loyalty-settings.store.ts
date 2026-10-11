@@ -33,13 +33,26 @@ export class PrismaLoyaltySettingsStore
         openToPublic: true,
         openToPro: true,
         voucherValidityDays: true,
+        welcomeBonusPoints: true,
+        publicOpenedAt: true,
+        welcomeBonusSince: true,
       },
     });
-    return row === null ? null : LoyaltySettings.of(row);
+    if (row === null) {
+      return null;
+    }
+    const { publicOpenedAt, welcomeBonusSince, ...input } = row;
+    return LoyaltySettings.of(input, { publicOpenedAt, welcomeBonusSince });
   }
 
   async write(settings: LoyaltySettings, updatedAt: Date, updatedByStaffId: string): Promise<void> {
-    const columns = { ...settings.toInput(), updatedAt, updatedByStaffId };
+    const columns = {
+      ...settings.toInput(),
+      publicOpenedAt: settings.publicOpenedAt,
+      welcomeBonusSince: settings.welcomeBonusSince,
+      updatedAt,
+      updatedByStaffId,
+    };
     await this.prisma.loyaltySettings.upsert({
       where: { id: SETTINGS_ID },
       create: { id: SETTINGS_ID, ...columns },

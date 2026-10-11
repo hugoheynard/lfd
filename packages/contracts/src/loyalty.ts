@@ -35,6 +35,8 @@ export interface LoyaltySettingsView {
     readonly openToPublic: boolean;
     readonly openToPro: boolean;
     readonly voucherValidityDays: number;
+    /** Points offerts à qui devient un compte — `null` = aucun bonus. */
+    readonly welcomeBonusPoints: number | null;
   } | null;
 }
 
@@ -45,6 +47,11 @@ export const setLoyaltySettingsPayloadSchema = z.object({
   openToPublic: z.boolean(),
   openToPro: z.boolean(),
   voucherValidityDays: z.int().positive(),
+  /**
+   * Le bonus de bienvenue — `null` = aucun. Obligatoire dans le corps, même
+   * nul : un client qui ne le connaît pas ne doit pas l'éteindre en silence.
+   */
+  welcomeBonusPoints: z.int().positive().nullable(),
 });
 export type SetLoyaltySettingsPayload = z.infer<typeof setLoyaltySettingsPayloadSchema>;
 
@@ -128,9 +135,10 @@ export interface MyLoyaltyVoucherView {
 /**
  * La sorte d'une ligne de l'historique, **pas un libellé** : la boutique la
  * met en mots — `earned` « Commande CMD-… », `converted` « Conversion en
- * bon », `adjusted` « Ajustement ».
+ * bon », `adjusted` « Ajustement », `welcome` « Bienvenue » (le bonus offert
+ * à la création du compte, plan bienvenue).
  */
-export const myLoyaltyEntryKindSchema = z.enum(["earned", "converted", "adjusted"]);
+export const myLoyaltyEntryKindSchema = z.enum(["earned", "converted", "adjusted", "welcome"]);
 export type MyLoyaltyEntryKind = z.infer<typeof myLoyaltyEntryKindSchema>;
 
 /**

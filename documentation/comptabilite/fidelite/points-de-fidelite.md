@@ -68,7 +68,17 @@ migration `20260926160000_la_fidelite`, purement additive).
 | `open_to_public`                    | la clientèle publique gagne et convertit                                       |
 | `open_to_pro`                       | la clientèle pro — **refusée à l'écriture** (§7)                               |
 | `voucher_validity_days`             | durée de validité d'un bon (365 au premier enregistrement proposé par l'écran) |
+| `public_opened_at`                  | la **première** ouverture au public — posée une fois, jamais effacée (R4)      |
+| `welcome_bonus_points`              | le bonus de bienvenue : `NULL` = aucun, sinon un entier > 0 (`CHECK`)          |
+| `welcome_bonus_since`               | posé chaque fois que le bonus passe de `NULL` à un nombre                      |
 | `updated_at`, `updated_by_staff_id` | qui a posé le réglage, et quand                                                |
+
+Les trois colonnes du milieu viennent de `20261011210100_le_bonus_de_bienvenue`
+(lot B du [plan bienvenue](plan-bienvenue-et-invite-rattache.md)). Les deux
+instants ne se saisissent pas : `LoyaltySettings.configure` les déduit du
+réglage relu, à chaque enregistrement. La reprise a posé `public_opened_at` =
+`updated_at` sur une ligne déjà ouverte au public — une approximation par
+excès, écrite dans la migration.
 
 **Aucune ligne n'est semée.** L'absence de ligne _est_ l'état « programme
 fermé » : aucune valeur par défaut n'est inventée.
@@ -78,7 +88,7 @@ fermé » : aucune valeur par défaut n'est inventée.
 | Colonne                   | Sens                                                           |
 | ------------------------- | -------------------------------------------------------------- |
 | `company_id` / `user_id`  | le titulaire — **exactement un des deux** (`CHECK`)            |
-| `kind`                    | `earned`, `converted` ou `adjusted`                            |
+| `kind`                    | `earned`, `converted`, `adjusted` ou `welcome`                 |
 | `points`                  | entier **signé**                                               |
 | `order_id`                | la commande d'un gain — identifiant opaque, sans clé étrangère |
 | `voucher_id`              | le bon d'une conversion ou d'une annulation                    |
@@ -90,6 +100,14 @@ fermé » : aucune valeur par défaut n'est inventée.
 | `earned`    | > 0   | `order_id`                           | `order_id`                   |
 | `converted` | < 0   | `voucher_id`                         | `voucher_id`                 |
 | `adjusted`  | ≠ 0   | `staff_user_id` et un motif non vide | `voucher_id` si lié à un bon |
+| `welcome`   | > 0   | `user_id` (jamais une société)       | `user_id`                    |
+
+`welcome` (migrations `20261011210000_la_bienvenue_au_grand_livre` pour la
+valeur seule, `20261011210100_le_bonus_de_bienvenue` pour le `CHECK` et
+l'index) est le bonus offert à une personne qui devient un compte. **Aucun
+chemin ne l'écrit encore** : le crédit est le lot C du plan bienvenue. Le
+solde, le relevé du client (« Bienvenue ») et l'écran des soldes le lisent
+déjà.
 
 Les formes et les unicités sont des `CHECK` et des index partiels : une ligne
 mal formée, ou un second crédit pour une même commande, est refusée par la
@@ -127,6 +145,7 @@ vident d'abord les deux tables de fidélité, par un seul `TRUNCATE`.
 | commande `pro`, `company_id` nul (société supprimée) | rien — `company_missing`             |
 | commande `public` passée **sans compte** (invité)    | rien — `guest_buyer`                 |
 | clientèle fermée au réglage                          | rien — `clientele_closed`            |
+| commande `public` passée avant `public_opened_at`    | rien — `before_program`              |
 | assiette ≤ 0                                         | rien — `empty_basis`                 |
 | sinon                                                | **assiette × 1** points au titulaire |
 
@@ -138,6 +157,13 @@ vident d'abord les deux tables de fidélité, par un seul `TRUNCATE`.
 - **Le titulaire** est `Order.companyId` pour `pro`, `Order.placedByUserId`
   pour `public`. Une `clientele` nulle (commandes d'avant ce champ) n'est
   jamais lue.
+- **Avant l'ouverture, rien** (R4 du plan bienvenue) : une commande de
+  particulier dont l'instant de passation (`orders.created_at`, rendu par
+  `CompletedOrderReader` en `placedAt`) précède `public_opened_at` ne
+  rapporte rien, même rattrapée la nuit. Une fiche ancienne ne se crédite pas,
+  au barème du jour, d'achats faits programme fermé. Les commandes déjà
+  créditées ne sont pas reprises. L'aperçu du devis compte le panier comme
+  passé **maintenant**.
 - **Un invité ne gagne rien** : `User.email` n'est pas unique, et ses points
   resteraient sur une fiche à laquelle personne ne peut se connecter.
 
@@ -289,11 +315,11 @@ une seule fois), ou rien à émettre. Le passage de nuit ne relit que les bons
 (`apps/lfd-backoffice-frontend/src/app/comptabilite/fidelite/`), sous le droit
 `b2b_accounting` : la lecture pour voir, l'écriture pour agir.
 
-| Onglet               | Ce qu'on y fait                                                                                                                                                                                                        |
-| -------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| **Réglage**          | poser le ratio (valeur saisie en euros, envoyée en centimes entiers), les clientèles, la validité. « Programme fermé » tant que rien n'est enregistré. Changer le ratio d'un programme réglé demande une confirmation. |
-| **Soldes**           | le solde de chaque titulaire, et un ajustement ± motivé                                                                                                                                                                |
-| **Bons de fidélité** | chaque bon avec son état et son ratio figé, et l'annulation motivée d'un bon disponible                                                                                                                                |
+| Onglet               | Ce qu'on y fait                                                                                                                                                                                                                                                                                                 |
+| -------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| **Réglage**          | poser le ratio (valeur saisie en euros, envoyée en centimes entiers), les clientèles, la validité, et — facultatif — les « Points offerts à la création d'un compte » (vide = aucun bonus). « Programme fermé » tant que rien n'est enregistré. Changer le ratio d'un programme réglé demande une confirmation. |
+| **Soldes**           | le solde de chaque titulaire, et un ajustement ± motivé                                                                                                                                                                                                                                                         |
+| **Bons de fidélité** | chaque bon avec son état et son ratio figé, et l'annulation motivée d'un bon disponible                                                                                                                                                                                                                         |
 
 Les routes (`admin/accounting/loyalty`, `@AdminSurface("b2b_accounting")`) :
 
@@ -381,16 +407,16 @@ La question complète, posée au cabinet, est rangée dans
 
 ## 9. Le journal
 
-| Fait                               | Quand                                                                        |
-| ---------------------------------- | ---------------------------------------------------------------------------- |
-| `loyalty_settings.set`             | le réglage change (un réglage identique n'écrit rien)                        |
-| `loyalty.points_earned`            | une commande définitive crédite                                              |
-| `loyalty.points_adjusted`          | un ajustement du staff                                                       |
-| `loyalty.voucher_issued`           | une conversion                                                               |
-| `loyalty.voucher_expired`          | la nuit écrit une expiration                                                 |
-| `loyalty.voucher_cancelled`        | le staff annule un bon                                                       |
-| `loyalty.voucher_remainder_issued` | le reliquat d'un bon consommé est émis (lot C)                               |
-| `loyalty.voucher_remainder_lapsed` | un reliquat s'éteint, bon échu avant que sa commande soit définitive (lot C) |
+| Fait                               | Quand                                                                                                   |
+| ---------------------------------- | ------------------------------------------------------------------------------------------------------- |
+| `loyalty_settings.set`             | le réglage change (un réglage identique n'écrit rien) ; porte `welcomeBonusPoints` depuis le 2026-10-11 |
+| `loyalty.points_earned`            | une commande définitive crédite                                                                         |
+| `loyalty.points_adjusted`          | un ajustement du staff                                                                                  |
+| `loyalty.voucher_issued`           | une conversion                                                                                          |
+| `loyalty.voucher_expired`          | la nuit écrit une expiration                                                                            |
+| `loyalty.voucher_cancelled`        | le staff annule un bon                                                                                  |
+| `loyalty.voucher_remainder_issued` | le reliquat d'un bon consommé est émis (lot C)                                                          |
+| `loyalty.voucher_remainder_lapsed` | un reliquat s'éteint, bon échu avant que sa commande soit définitive (lot C)                            |
 
 Ils se rangent sous la comptabilité dans le journal. `loyalty` est une zone
 d'argent pour `lint:journal-tracked` : tout gestionnaire doit tracer sous
