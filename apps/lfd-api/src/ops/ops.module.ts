@@ -23,6 +23,10 @@ import { TrafficReader } from "./traffic/traffic-reader.port.js";
 import { TOPOLOGY } from "./topology/topology.js";
 import { AdminMediaThresholdsController } from "./media/admin-media-thresholds.controller.js";
 import { ReadMediaThresholdsHandler } from "./media/read-media-thresholds.handler.js";
+import { AdminCapabilitiesController } from "./capabilities/admin-capabilities.controller.js";
+import { CapabilityInventory } from "./capabilities/capability-inventory.port.js";
+import { ReadCapabilitiesHandler } from "./capabilities/read-capabilities.handler.js";
+import { StartupCapabilityInventory } from "./capabilities/startup-capability-inventory.js";
 
 /**
  * Les sondes de fronts sont **dérivées de la carte**, pas listées à la main :
@@ -58,6 +62,7 @@ const FRONTEND_PROBES: readonly NodeProbe[] = TOPOLOGY.flatMap((node) =>
     AdminTrafficController,
     AdminHealthController,
     AdminMediaThresholdsController,
+    AdminCapabilitiesController,
     VitalsController,
   ],
   providers: [
@@ -89,6 +94,10 @@ const FRONTEND_PROBES: readonly NodeProbe[] = TOPOLOGY.flatMap((node) =>
     // Les seuils de la médiathèque : le compte vient du port que la racine
     // relie (`MediaLibraryCensusModule`), jamais d'une lecture de sa table.
     ReadMediaThresholdsHandler,
+    // Les capacités éteintes : le bulletin de démarrage (global, `platform/`),
+    // lu par un port étroit — la même source que la route au jeton.
+    ReadCapabilitiesHandler,
+    { provide: CapabilityInventory, useClass: StartupCapabilityInventory },
     {
       // Le choix se fait UNE FOIS, au démarrage, sur la présence de la
       // configuration — jamais requête par requête. Une bascule en cours de

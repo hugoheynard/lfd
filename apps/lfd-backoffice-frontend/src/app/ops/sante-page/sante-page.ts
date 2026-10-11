@@ -8,8 +8,14 @@ import {
   signal,
 } from '@angular/core';
 import { FoldLoadingStateComponent } from 'fold-ng';
-import type { EcosystemHealth, HealthReason, TrafficReport } from '@lfd/ops-contract';
+import type {
+  CapabilitiesReport,
+  EcosystemHealth,
+  HealthReason,
+  TrafficReport,
+} from '@lfd/ops-contract';
 
+import { Capabilities, type CapabilitiesState } from '../capabilities/capabilities';
 import { ChargeTable } from '../charge-table/charge-table';
 import { DeadLetters } from '../dead-letters/dead-letters';
 import { MediaThresholds } from '../media-thresholds/media-thresholds';
@@ -45,6 +51,7 @@ type LoadState = 'loading' | 'ready' | 'error';
   selector: 'app-sante-page',
   standalone: true,
   imports: [
+    Capabilities,
     ChargeTable,
     DatePipe,
     DeadLetters,
@@ -105,7 +112,16 @@ export class SantePage {
     this.nodes().filter((node) => node.status === 'down' || node.status === 'degraded'),
   );
 
+  protected readonly capabilitiesState = signal<CapabilitiesState>('loading');
+  protected readonly capabilities = signal<CapabilitiesReport | null>(null);
+
+  /** Une bloquante remonte la carte en tête : c'est elle qu'on vient lire. */
+  protected readonly hasBlocking = computed(
+    () => this.capabilities()?.missing.some((entry) => entry.severity === 'blocking') ?? false,
+  );
+
   constructor() {
+    void this.loadCapabilities();
     void this.refresh();
     const timer = setInterval(() => void this.refresh(), REFRESH_MS);
     // Sans ça, l'intervalle survit à la navigation et continue d'interroger
@@ -113,6 +129,20 @@ export class SantePage {
     inject(DestroyRef).onDestroy(() => {
       clearInterval(timer);
     });
+  }
+
+  /**
+   * Lu une fois, hors du rafraîchissement : une capacité ne se rallume qu'au
+   * redéploiement, jamais entre deux relevés.
+   */
+  protected async loadCapabilities(): Promise<void> {
+    this.capabilitiesState.set('loading');
+    try {
+      this.capabilities.set(await this.ops.capabilities());
+      this.capabilitiesState.set('ready');
+    } catch {
+      this.capabilitiesState.set('error');
+    }
   }
 
   protected async refresh(): Promise<void> {

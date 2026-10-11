@@ -33,3 +33,9 @@ export type {
   MediaThresholdState,
   MediaThresholdsReport,
 } from "./media.js";
+
+export type {
+  CapabilitiesReport,
+  CapabilitySeverity,
+  MissingCapabilityView,
+} from "./capabilities.js";

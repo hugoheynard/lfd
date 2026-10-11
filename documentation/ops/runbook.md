@@ -287,6 +287,17 @@ Elle rend la révision servie et la liste des canaux éteints — la capacité e
 mots métier, la variable à poser, ce qui ne marchera pas. Rien de secret n'en
 sort : l'inventaire ne manipule que des booléens.
 
+**Sans jeton ni journal**, le même inventaire se lit dans le back-office :
+OPS → Santé, carte **« Capacités »** (droit `ops_health`, route
+`GET /admin/ops/capabilities/staff`). Elle passe en tête de page dès qu'une
+capacité est bloquante, et suit les briques sinon ; « Tout est branché » quand
+la liste est vide. Chaque ligne dit la capacité, sa gravité, ce qu'elle
+empêche et le NOM de la variable — jamais sa valeur. Le geste de sortie est
+celui écrit sur la carte : poser la variable dans les secrets du workflow
+`deploy_lfd_api.yml`, puis redéployer — un secret posé ne relance rien. Les
+deux routes lisent le même bulletin de démarrage ; celle au jeton reste celle
+du cron et de l'exploitation.
+
 La sonde publique `/health` en porte les **compteurs** (`capabilities.blocking`
 / `.degraded`), sans nommer aucun réglage : dire au monde quelle porte n'est pas
 verrouillée est une aide qu'on ne doit qu'à soi-même. Le déploiement s'arrête

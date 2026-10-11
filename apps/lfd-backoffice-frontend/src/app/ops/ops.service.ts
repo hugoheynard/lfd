@@ -3,7 +3,12 @@ import { inject, Injectable } from '@angular/core';
 import { firstValueFrom } from 'rxjs';
 
 import type { DeadLettersView } from '@lfd/contracts';
-import type { EcosystemHealth, MediaThresholdsReport, TrafficReport } from '@lfd/ops-contract';
+import type {
+  CapabilitiesReport,
+  EcosystemHealth,
+  MediaThresholdsReport,
+  TrafficReport,
+} from '@lfd/ops-contract';
 
 import { B2B_API_BASE } from '../api/api-config';
 
@@ -31,6 +36,13 @@ export class OpsService {
   /** Le fonds de la médiathèque face à ses limites connues, jugé côté serveur. */
   mediaThresholds(): Promise<MediaThresholdsReport> {
     return firstValueFrom(this.http.get<MediaThresholdsReport>(`${B2B_API_BASE}/admin/ops/media`));
+  }
+
+  /** Les capacités éteintes de l'instance en service — des noms de variables, jamais leur valeur. */
+  capabilities(): Promise<CapabilitiesReport> {
+    return firstValueFrom(
+      this.http.get<CapabilitiesReport>(`${B2B_API_BASE}/admin/ops/capabilities/staff`),
+    );
   }
 
   /** Les messages morts de la boîte d'envoi, les plus récents d'abord, bornés. */

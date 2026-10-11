@@ -1,0 +1,59 @@
+<h2>Capacités</h2>
+
+@switch (state()) {
+  @case ('loading') {
+    <fold-loading message="Lecture des capacités…" />
+  }
+  @case ('error') {
+    <fold-empty-state
+      tone="alert"
+      title="Capacités illisibles"
+      subtitle="La lecture a échoué. Ce n'est pas une capacité qui est tombée, c'est la carte qui ne voit plus."
+    >
+      <button foldButton (click)="retry.emit()">Réessayer</button>
+    </fold-empty-state>
+  }
+  @default {
+    @if (report(); as board) {
+      @if (board.missing.length === 0) {
+        <fold-card>
+          <fold-element-title variant="title" title="Tout est branché">
+            <fold-badge titleAction radius="pill" variant="success" content="OK" />
+          </fold-element-title>
+          <p class="hint">Aucune capacité éteinte sur la version {{ board.revision }}.</p>
+        </fold-card>
+      } @else {
+        <p class="hint">
+          Pour rallumer une capacité : poser la variable nommée dans les secrets du workflow
+          <code>deploy_lfd_api.yml</code> (GitHub), puis <strong>redéployer</strong> — un secret
+          posé ne relance rien. Version en service : <code>{{ board.revision }}</code
+          >.
+        </p>
+        <ul class="capabilities">
+          @for (entry of board.missing; track entry.capability) {
+            <li [attr.data-severity]="entry.severity">
+              <fold-card>
+                <fold-element-title variant="title" [title]="entry.capability">
+                  <fold-badge
+                    titleAction
+                    radius="pill"
+                    [variant]="tone(entry.severity)"
+                    [content]="label(entry.severity)"
+                  />
+                </fold-element-title>
+                <p class="consequence">{{ entry.consequence }}</p>
+                @if (hasSetting(entry.setting)) {
+                  <p class="setting">
+                    À poser : <code>{{ entry.setting }}</code>
+                  </p>
+                } @else {
+                  <p class="setting">Aucune variable en cause : voir le message ci-dessus.</p>
+                }
+              </fold-card>
+            </li>
+          }
+        </ul>
+      }
+    }
+  }
+}
