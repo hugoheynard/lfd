@@ -24,6 +24,14 @@
     @if (product().isFeatured) {
       <span class="badge">★ {{ t().product.bestSeller }}</span>
     }
+
+    <!-- La quantité au panier, en pastille sur la photo (Hugo, 2026-10-11) :
+         le « + » garde sa place et son sens, et ce qu'on a pris se lit là où
+         l'œil reconnaît l'article. Le lecteur d'écran l'entend par les
+         boutons, qui portent le nom de l'article. -->
+    @if (quantity() > 0) {
+      <span class="count" aria-hidden="true">{{ quantity() }}</span>
+    }
   </div>
 
   <div class="content">
@@ -55,21 +63,25 @@
              place du « + » — l'ajouter ferait un panier que la caisse refuse. -->
         <fold-badge variant="neutral" [content]="closedLabel" />
       } @else {
-        <!-- UN seul geste, aux deux densités : il ajoute, et porte la quantité
-             une fois l'article au panier. Le retrait se fait dans la fiche. -->
-        <button
-          class="quick"
-          type="button"
-          [class.filled]="quantity() > 0"
-          [attr.aria-label]="addLabel()"
-          (click)="added.emit()"
-        >
+        <!-- Le « + » ne bouge JAMAIS (Hugo, 2026-10-11) : il ajoutait, puis
+             devenait le chiffre, et le doigt qui revenait ajouter tombait sur
+             un compteur. Une fois l'article pris, un « − » plus petit paraît
+             à sa gauche ; la quantité, elle, est sur la photo. -->
+        <div class="steps">
           @if (quantity() > 0) {
-            {{ quantity() }}
-          } @else {
-            <fold-icon name="plus" />
+            <button
+              class="quick less"
+              type="button"
+              [attr.aria-label]="removeLabel()"
+              (click)="removed.emit()"
+            >
+              <fold-icon name="minus" />
+            </button>
           }
-        </button>
+          <button class="quick" type="button" [attr.aria-label]="addLabel()" (click)="added.emit()">
+            <fold-icon name="plus" />
+          </button>
+        </div>
       }
     </div>
   </div>

@@ -68,6 +68,8 @@ export class ProductTile {
 
   readonly opened = output<void>();
   readonly added = output<void>();
+  /** Le « − » : une pièce de moins. N'existe qu'une fois l'article au panier. */
+  readonly removed = output<void>();
 
   /**
    * La mise en page du best-seller : sur toute forme autre que la carte 1×1,
@@ -193,6 +195,10 @@ export class ProductTile {
 
   protected readonly addLabel = computed(() =>
     fill(this.t().shop.addAria, { name: this.product().name }),
+  );
+
+  protected readonly removeLabel = computed(() =>
+    fill(this.t().shop.removeAria, { name: this.product().name }),
   );
 
   /**

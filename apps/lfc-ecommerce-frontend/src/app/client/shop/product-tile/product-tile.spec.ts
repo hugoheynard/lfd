@@ -124,25 +124,32 @@ describe('ProductTile', () => {
   });
 
   /**
-   * La maquette de la boutique pro a UNIFIÉ les deux densités : un seul bouton,
-   * qui ajoute, et porte la quantité une fois l'article au panier. Plus de
-   * stepper dans la vignette — le retrait se fait dans la fiche.
+   * Le « + » NE BOUGE JAMAIS (Hugo, 2026-10-11) : il devenait le chiffre, et le
+   * doigt qui revenait ajouter tombait sur un compteur. Une fois l'article
+   * pris, un « − » paraît à sa gauche, et la quantité se pose sur la photo.
    */
-  it('porte UN seul geste d’ajout, « + » à vide puis la quantité', () => {
+  it('garde le « + » en place, ajoute un « − » et une pastille de quantité', () => {
     const el = fixture.nativeElement as HTMLElement;
-    const added: number[] = [];
-    fixture.componentInstance.added.subscribe(() => added.push(1));
+    const gestures: string[] = [];
+    fixture.componentInstance.added.subscribe(() => gestures.push('+'));
+    fixture.componentInstance.removed.subscribe(() => gestures.push('-'));
 
     expect(el.querySelectorAll('.quick')).toHaveLength(1);
-    expect(el.querySelector('app-quantity-rail')).toBeNull();
-    expect(el.querySelector('.quick fold-icon')).not.toBeNull();
-
-    el.querySelector<HTMLButtonElement>('.quick')?.click();
-    expect(added).toHaveLength(1);
+    expect(el.querySelector('.quick.less')).toBeNull();
+    expect(el.querySelector('.count')).toBeNull();
 
     fixture.componentRef.setInput('quantity', 3);
     fixture.detectChanges();
-    expect(el.querySelector('.quick')?.textContent?.trim()).toBe('3');
+
+    const [less, more] = [...el.querySelectorAll<HTMLButtonElement>('.quick')];
+    expect(less?.classList).toContain('less');
+    expect(more?.querySelector('fold-icon')).not.toBeNull();
+    expect(more?.textContent?.trim()).toBe('');
+    expect(el.querySelector('.media .count')?.textContent?.trim()).toBe('3');
+
+    more?.click();
+    less?.click();
+    expect(gestures).toEqual(['+', '-']);
   });
 
   /**

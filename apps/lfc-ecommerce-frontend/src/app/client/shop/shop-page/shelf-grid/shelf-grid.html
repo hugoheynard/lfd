@@ -38,6 +38,7 @@
           [quantity]="cart.quantityOf(piece.sku)"
           (opened)="actions.productOpened.next(piece.sku)"
           (added)="cart.add(piece.sku)"
+          (removed)="cart.remove(piece.sku)"
         />
       }
     }
@@ -56,6 +57,7 @@
       [quantity]="cart.quantityOf(piece.sku)"
       (opened)="actions.productOpened.next(piece.sku)"
       (added)="cart.add(piece.sku)"
+      (removed)="cart.remove(piece.sku)"
     />
   }
 }

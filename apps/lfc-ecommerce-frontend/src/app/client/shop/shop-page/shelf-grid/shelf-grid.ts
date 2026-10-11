@@ -101,5 +101,8 @@ export class ShelfGrid {
     this.actions.productAdded.pipe(takeUntilDestroyed()).subscribe((sku) => {
       this.cart.add(sku);
     });
+    this.actions.productRemoved.pipe(takeUntilDestroyed()).subscribe((sku) => {
+      this.cart.remove(sku);
+    });
   }
 }

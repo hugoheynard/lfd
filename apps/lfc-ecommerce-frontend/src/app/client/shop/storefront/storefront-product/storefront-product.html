@@ -8,5 +8,6 @@
     [quantity]="cart.quantityOf(piece.sku)"
     (opened)="actions.productOpened.next(piece.sku)"
     (added)="actions.productAdded.next(piece.sku)"
+    (removed)="actions.productRemoved.next(piece.sku)"
   />
 }

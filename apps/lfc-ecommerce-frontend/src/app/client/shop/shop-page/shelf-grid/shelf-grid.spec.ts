@@ -53,13 +53,18 @@ describe('ShelfGrid', () => {
    */
   it('ajoute au panier sans passer par la page', () => {
     const first = TEST_ITEMS[0];
-    // Le geste rapide de la première pièce — la pastille qui porte la quantité.
+    // Le « + » de la première pièce.
     tiles()[0]?.querySelector<HTMLButtonElement>('.quick')?.click();
     fixture.detectChanges();
 
     expect(cart.quantityOf(first?.sku ?? '')).toBe(1);
-    // Et la pièce le montre : la pastille affiche ce qu'on vient d'y mettre.
-    expect(tiles()[0]?.querySelector('.quick')?.textContent?.trim()).toBe('1');
+    // Et la pièce le montre : la pastille de la photo affiche ce qu'on vient d'y mettre.
+    expect(tiles()[0]?.querySelector('.count')?.textContent?.trim()).toBe('1');
+
+    // Le « − » qui vient de paraître retire la pièce.
+    tiles()[0]?.querySelector<HTMLButtonElement>('.quick.less')?.click();
+    fixture.detectChanges();
+    expect(cart.quantityOf(first?.sku ?? '')).toBe(0);
   });
 
   /** La fiche, elle, est un état de l'ÉCRAN — la grille ne fait que le signaler. */

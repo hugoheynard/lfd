@@ -15,6 +15,8 @@ export class StorefrontActions {
   readonly productOpened = new Subject<string>();
   /** Le SKU à ajouter au panier. */
   readonly productAdded = new Subject<string>();
+  /** Le « − » d'une tuile de la vitrine : une pièce de moins. */
+  readonly productRemoved = new Subject<string>();
   /** Le rayon qu'ouvre une annonce. */
   readonly shelfOpened = new Subject<string>();
 }

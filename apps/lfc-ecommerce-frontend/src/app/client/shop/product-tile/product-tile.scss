@@ -190,8 +190,43 @@
 }
 
 /* Au panier, le bouton élargit sa pastille : la quantité se lit avant le prix. */
-.quick.filled {
-  min-width: 64px;
+.steps {
+  flex: none;
+  display: flex;
+  align-items: center;
+  gap: var(--fold-space-xs);
+}
+
+/* Le « − » : plus petit, et en retrait — retirer est le geste rare. */
+.quick.less {
+  min-width: 32px;
+  height: 32px;
+  padding: 0;
+  background: var(--fold-color-surface-card);
+  color: var(--fold-color-primary);
+  box-shadow: inset 0 0 0 1px var(--fold-color-border);
+}
+
+/* La pastille de quantité, en haut à droite de la photo — le best-seller tient
+   le coin gauche. */
+.count {
+  position: absolute;
+  top: var(--fold-space-sm);
+  right: var(--fold-space-sm);
+  display: grid;
+  place-items: center;
+  min-width: 28px;
+  height: 28px;
+  padding: 0 8px;
+  border-radius: var(--fold-radius-pill);
+  background: var(--fold-color-primary);
+  color: var(--fold-color-on-primary);
+  font-family: var(--fold-font-label);
+  font-size: var(--fold-text-sm);
+  font-weight: var(--lfc-weight-black);
+  font-variant-numeric: tabular-nums;
+  box-shadow: var(--lfc-shadow-card);
+  pointer-events: none;
 }
 
 /* ── Le best-seller ──────────────────────────────────────────────────────
