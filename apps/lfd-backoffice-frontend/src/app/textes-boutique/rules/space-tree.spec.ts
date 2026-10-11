@@ -45,9 +45,12 @@ describe('spaceTree — l’arbre des espaces', () => {
     expect(tree).toEqual([expect.objectContaining({ space: 'cart', count: 1 })]);
   });
 
-  it('cherche dans les trois langues, sans accents ni casse', () => {
-    const tree = spaceTree(ENTRIES, { ...ALL, matches: (entry) => matchesSearch(entry, 'BASKET') });
+  it('cherche dans la langue affichée, sans accents ni casse', () => {
+    const tree = spaceTree(ENTRIES, {
+      ...ALL,
+      matches: (entry) => matchesSearch(entry, 'BASKET', 'en'),
+    });
     expect(tree.map((node) => node.space)).toEqual(['cart']);
-    expect(matchesSearch(entryView('k', 's', 'Règlement'), 'reglement')).toBe(true);
+    expect(matchesSearch(entryView('k', 's', 'Règlement'), 'reglement', 'fr')).toBe(true);
   });
 });

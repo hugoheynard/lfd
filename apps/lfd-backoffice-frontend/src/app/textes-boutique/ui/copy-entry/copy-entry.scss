@@ -1,28 +1,22 @@
-.ce-body,
-.ce-locale {
+.ce-body {
   display: flex;
   flex-direction: column;
   gap: var(--fold-space-sm);
 }
 
-.ce-body {
-  gap: var(--fold-space-md);
-}
-
-.ce-variables,
-.ce-foot {
+.ce-line {
   display: flex;
   flex-wrap: wrap;
   align-items: center;
   gap: var(--fold-space-xs);
 }
 
+.ce-muted {
+  color: var(--fold-color-text-muted);
+  font-size: var(--fold-text-sm);
+}
+
 .ce-original {
   flex: 1 1 auto;
   margin: 0;
-  color: var(--fold-color-text-muted);
-}
-
-.ce-original-label {
-  font-weight: var(--fold-weight-semibold);
 }

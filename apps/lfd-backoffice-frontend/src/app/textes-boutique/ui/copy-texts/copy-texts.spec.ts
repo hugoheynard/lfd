@@ -13,7 +13,11 @@ import { CopyTexts } from './copy-texts';
 
 async function render() {
   const view = adminView(
-    [entryView('cart.title', 'cart', 'Votre panier'), entryView('nav.home', 'nav', 'Accueil')],
+    [
+      entryView('cart.title', 'cart', 'Votre panier'),
+      entryView('cart.empty.kicker', 'cart', 'Rien encore'),
+      entryView('nav.home', 'nav', 'Accueil'),
+    ],
     [entryView('old.key', null, '', { locales: { fr: { publishedText: 'Ancien texte' } } })],
   );
   TestBed.configureTestingModule({
@@ -40,10 +44,19 @@ async function render() {
 describe('CopyTexts — les textes de l’espace', () => {
   it('montre l’espace ouvert, et les orphelins à part', async () => {
     const { element } = await render();
-    expect(element.textContent).toContain('cart.title');
-    expect(element.textContent).not.toContain('nav.home');
+    const fields = [...element.querySelectorAll('textarea')].map((field) => field.value);
+    expect(fields).toContain('Votre panier');
+    expect(fields).not.toContain('Accueil');
     expect(element.textContent).toContain('Textes que le code ne connaît plus');
     expect(element.textContent).toContain('old.key');
+  });
+
+  it('range les textes sous l’intertitre de leur groupe', async () => {
+    const { element } = await render();
+    const titles = [...element.querySelectorAll('fold-element-title')].map((node) =>
+      node.textContent?.trim(),
+    );
+    expect(titles.slice(0, 3)).toEqual(['Titre', 'Empty', 'Surtitre']);
   });
 
   it('une recherche sans résultat le dit', async () => {

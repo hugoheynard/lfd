@@ -78,3 +78,17 @@ export function isModified(entry: ShopCopyEntryView): boolean {
 export function isStale(entry: ShopCopyEntryView): boolean {
   return entry.staleTranslations.length > 0;
 }
+
+/** Les caractères qu'une ligne de champ tient à peu près, à la largeur de la colonne. */
+const CHARACTERS_PER_ROW = 60;
+
+/**
+ * La hauteur du champ, en lignes, pour que tout le texte se lise sans
+ * défiler : une ligne pour un titre court. `fold-textarea` a une hauteur fixe
+ * (`rows`, relu le 2026-10-11) — c'est donc le nombre de lignes qui suit le texte.
+ */
+export function rowsFor(text: string): number {
+  return text
+    .split('\n')
+    .reduce((rows, line) => rows + Math.max(1, Math.ceil(line.length / CHARACTERS_PER_ROW)), 0);
+}

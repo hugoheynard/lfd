@@ -1,7 +1,8 @@
 import { computed, inject, Injectable, signal } from '@angular/core';
-import type { ShopCopyEntryView } from '@lfd/contracts';
+import type { ContentLocale, ShopCopyEntryView } from '@lfd/contracts';
 
 import { matchesSearch } from '../rules/copy-search';
+import { COPY_LOCALES } from '../rules/copy-text';
 import { passes, spaceTree, type SpaceFilter, type SpaceNode } from '../rules/space-tree';
 import { ShopCopyStore } from './shop-copy-store';
 
@@ -12,10 +13,28 @@ import { ShopCopyStore } from './shop-copy-store';
  * Séparé du store : la navigation ne parle pas au réseau, et le store ne sait
  * pas ce qu'on regarde. Fourni par la page.
  */
+/** Où l'écran garde la langue choisie, d'une visite à l'autre. */
+export const COPY_LOCALE_STORAGE_KEY = 'lfd.shop-copy.locale';
+
+function storedLocale(): ContentLocale {
+  try {
+    const stored = localStorage.getItem(COPY_LOCALE_STORAGE_KEY);
+    return COPY_LOCALES.find((locale) => locale === stored) ?? 'fr';
+  } catch {
+    // Stockage refusé (navigation privée, quota) : on repart du français.
+    return 'fr';
+  }
+}
+
 @Injectable()
 export class CopyNavigation {
   private readonly store = inject(ShopCopyStore);
 
+  /**
+   * La langue affichée : celle qu'on édite, que l'aperçu montre, et dans
+   * laquelle on cherche. Une seule à la fois — c'est ce qui rend la colonne lisible.
+   */
+  readonly locale = signal<ContentLocale>(storedLocale());
   readonly query = signal('');
   readonly selectedSpace = signal<string | null>(null);
   readonly selectedKey = signal<string | null>(null);
@@ -25,8 +44,9 @@ export class CopyNavigation {
 
   private readonly filter = computed<SpaceFilter>(() => {
     const query = this.query();
+    const locale = this.locale();
     return {
-      matches: (entry) => matchesSearch(entry, query),
+      matches: (entry) => matchesSearch(entry, query, locale),
       visibleKeys: this.onlyVisible() ? (this.visibleKeys() ?? new Set<string>()) : null,
     };
   });
@@ -50,11 +70,25 @@ export class CopyNavigation {
   /** Les orphelines suivent la recherche, jamais l'aperçu : il ne les connaît pas. */
   readonly orphans = computed<readonly ShopCopyEntryView[]>(() => {
     const query = this.query();
-    return this.store.orphans().filter((entry) => matchesSearch(entry, query));
+    const locale = this.locale();
+    return this.store.orphans().filter((entry) => matchesSearch(entry, query, locale));
   });
 
   /** Combien de clés la recherche et le filtre retiennent, toutes espaces. */
   readonly resultCount = computed(() => this.tree().reduce((sum, node) => sum + node.count, 0));
+
+  setLocale(value: string): void {
+    const locale = COPY_LOCALES.find((candidate) => candidate === value);
+    if (locale === undefined) {
+      return;
+    }
+    this.locale.set(locale);
+    try {
+      localStorage.setItem(COPY_LOCALE_STORAGE_KEY, locale);
+    } catch {
+      // Sans stockage, le choix vaut pour la visite : rien à dire de plus.
+    }
+  }
 
   openSpace(space: string): void {
     this.selectedSpace.set(space);

@@ -9,3 +9,15 @@
     grid-template-columns: auto minmax(0, 1fr) minmax(0, 1fr);
   }
 }
+
+// La langue, puis la recherche qui prend le reste de la ligne.
+.sc-toolbar {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: var(--fold-space-md);
+}
+
+.sc-search {
+  flex: 1 1 16rem;
+}

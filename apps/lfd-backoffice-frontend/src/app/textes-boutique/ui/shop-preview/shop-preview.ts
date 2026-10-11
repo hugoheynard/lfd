@@ -16,14 +16,8 @@ import {
   type FoldViewToggleOption,
 } from 'fold-ng';
 
-import { COPY_LOCALES, LOCALE_LABELS } from '../../rules/copy-text';
 import { JOURNEY_LABELS } from '../../rules/journey-labels';
 import { PreviewLink } from '../../state/preview-link';
-
-const LOCALE_OPTIONS: readonly FoldViewToggleOption[] = COPY_LOCALES.map((locale) => ({
-  value: locale,
-  label: LOCALE_LABELS[locale],
-}));
 
 const VIEWPORT_OPTIONS: readonly FoldViewToggleOption[] = [
   { value: 'mobile', icon: 'mobile', label: 'Mobile' },
@@ -32,7 +26,8 @@ const VIEWPORT_OPTIONS: readonly FoldViewToggleOption[] = [
 
 /**
  * **L'aperçu** (plan §7, colonne 3 ; §10 B3) — l'application d'aperçu dans une
- * `<iframe>`, et au-dessus le parcours, la langue et la largeur. Sans adresse
+ * `<iframe>`, et au-dessus le parcours et la largeur — la langue est celle
+ * de l'écran, choisie en tête de page. Sans adresse
  * configurée, la colonne le dit et l'édition reste possible.
  *
  * L'écoute des messages vit ici parce qu'elle tient à l'iframe ; ce qu'on en
@@ -65,7 +60,6 @@ export class ShopPreview {
     value: journey,
     label: JOURNEY_LABELS[journey],
   }));
-  protected readonly localeOptions = LOCALE_OPTIONS;
   protected readonly viewportOptions = VIEWPORT_OPTIONS;
 
   constructor() {
@@ -77,13 +71,6 @@ export class ShopPreview {
   /** L'iframe a (re)chargé : on lui parle de nouveau dès son `ready`. */
   protected loaded(): void {
     this.link.attach(this.frame()?.nativeElement.contentWindow ?? null);
-  }
-
-  protected setLocale(value: string): void {
-    const locale = COPY_LOCALES.find((candidate) => candidate === value);
-    if (locale !== undefined) {
-      this.link.locale.set(locale);
-    }
   }
 
   protected setViewport(value: string): void {

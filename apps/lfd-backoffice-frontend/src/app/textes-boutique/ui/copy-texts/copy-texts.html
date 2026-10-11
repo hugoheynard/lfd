@@ -2,8 +2,13 @@
   @if (navigation.currentSpace(); as space) {
     <fold-page-section [title]="space.title" [description]="space.count + ' textes'">
       <div class="ct-list">
-        @for (entry of navigation.spaceEntries(); track entry.key) {
-          <app-copy-entry [entry]="entry" />
+        @for (group of groups(); track group.group) {
+          @if (group.title !== '') {
+            <fold-element-title variant="caps" [title]="group.title" />
+          }
+          @for (entry of group.entries; track entry.key) {
+            <app-copy-entry [entry]="entry" />
+          }
         }
       </div>
     </fold-page-section>

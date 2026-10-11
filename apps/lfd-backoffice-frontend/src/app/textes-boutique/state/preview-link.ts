@@ -1,5 +1,4 @@
 import { computed, effect, inject, Injectable, signal } from '@angular/core';
-import type { ContentLocale } from '@lfd/contracts';
 import {
   SHOP_COPY_PREVIEW_JOURNEYS,
   SHOP_COPY_PREVIEW_SOURCE,
@@ -38,7 +37,8 @@ export class PreviewLink {
   readonly origin = previewOrigin(this.url);
 
   readonly journey = signal<ShopCopyPreviewJourney>(SHOP_COPY_PREVIEW_JOURNEYS[0]);
-  readonly locale = signal<ContentLocale>('fr');
+  /** La langue de l'aperçu est celle de l'écran : une seule source, la navigation. */
+  readonly locale = this.navigation.locale;
   readonly viewport = signal<ShopCopyPreviewViewport>('mobile');
   readonly ready = signal(false);
 

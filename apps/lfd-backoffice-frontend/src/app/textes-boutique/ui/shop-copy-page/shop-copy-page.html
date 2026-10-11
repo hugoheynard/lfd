@@ -1,8 +1,8 @@
 <fold-page-layout icon="edit" title="Textes de la boutique">
   <p description>
-    Reformuler ce que la boutique dit, en français, en anglais et en italien. Chaque frappe est
-    gardée en brouillon ; rien ne change pour les clients avant « Publier ». Un texte est du texte
-    brut : ni mise en forme, ni lien.
+    Reformuler ce que la boutique dit, une langue à la fois. Chaque frappe est gardée en brouillon ;
+    rien ne change pour les clients avant « Publier ». Un texte est du texte brut : ni mise en
+    forme, ni lien.
   </p>
 
   @if (store.status() === 'ready') {
@@ -58,14 +58,23 @@
       @if (store.loadError(); as error) {
         <fold-callout variant="alert">{{ error }}</fold-callout>
       }
-      <fold-search
-        placeholder="Chercher un texte, dans les trois langues"
-        ariaLabel="Chercher un texte"
-        [value]="navigation.query()"
-        [resultCount]="navigation.resultCount()"
-        resultLabel="textes"
-        (searchChange)="navigation.query.set($event)"
-      />
+      <div class="sc-toolbar">
+        <fold-view-toggle
+          ariaLabel="Langue des textes"
+          [options]="localeOptions"
+          [value]="navigation.locale()"
+          (valueChange)="navigation.setLocale($event)"
+        />
+        <fold-search
+          class="sc-search"
+          ariaLabel="Chercher un texte"
+          [placeholder]="'Chercher un texte en ' + localeNames[navigation.locale()]"
+          [value]="navigation.query()"
+          [resultCount]="navigation.resultCount()"
+          resultLabel="textes"
+          (searchChange)="navigation.query.set($event)"
+        />
+      </div>
       <div class="sc-columns">
         <app-space-tree />
         <app-copy-texts />

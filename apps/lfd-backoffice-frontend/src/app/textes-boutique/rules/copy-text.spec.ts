@@ -1,7 +1,7 @@
 import { describe, expect, it } from 'vitest';
 
 import { localeView } from '../shop-copy.testing';
-import { missingVariables, segmentsOf, upcomingText } from './copy-text';
+import { missingVariables, rowsFor, segmentsOf, upcomingText } from './copy-text';
 
 describe('copy-text', () => {
   it('dit les variables perdues', () => {
@@ -27,5 +27,11 @@ describe('copy-text', () => {
     ).toBe('Code');
     expect(upcomingText(localeView('Code', { publishedText: 'En ligne' }))).toBe('En ligne');
     expect(upcomingText(localeView('Code'))).toBe('Code');
+  });
+
+  it('donne au champ la hauteur de son texte : une ligne pour un titre court', () => {
+    expect(rowsFor('Bienvenue')).toBe(1);
+    expect(rowsFor('Commander.\nRetirer.\nDéguster.')).toBe(3);
+    expect(rowsFor('x'.repeat(130))).toBe(3);
   });
 });
