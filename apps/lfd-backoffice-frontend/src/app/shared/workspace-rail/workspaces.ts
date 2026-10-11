@@ -880,6 +880,14 @@ export const DOCUMENTATION_VIEWS: readonly WorkspaceView[] = [
     icon: 'tag',
     section: 'Commerce',
   },
+  // Le fonds d'images, expliqué au personnel (Hugo, 2026-10-11).
+  {
+    key: 'mediatheque',
+    label: 'Médiathèque',
+    link: '/documentation/mediatheque',
+    icon: 'image',
+    section: 'Médiathèque',
+  },
 ];
 
 /** Le catalogue, par clé. */

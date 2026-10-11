@@ -1,0 +1,317 @@
+<fold-page-layout icon="image" title="Médiathèque">
+  <p description>
+    Comment fonctionne le fonds d'images de la maison&nbsp;: déposer, ranger, retrouver, décrire et
+    cadrer une photo, puis savoir où elle est affichée.
+  </p>
+  <a pageActions foldButton emphasis="outline" intent="neutral" size="sm" routerLink="/mediatheque">
+    Ouvrir la médiathèque
+  </a>
+
+  <div class="doc-stack">
+    <fold-card class="doc-card">
+      <fold-element-title
+        variant="title"
+        icon="image"
+        iconTone="primary"
+        title="Ce qu'est la médiathèque"
+        subtitle="Une image, un seul fichier"
+      />
+      <p>
+        La médiathèque rassemble toutes les photos de la maison. Elle n'appartient à personne en
+        particulier&nbsp;: les fiches produit, les familles, les opérations et la vitrine de la
+        boutique viennent y <strong>choisir</strong> leurs images. On ne dépose qu'ici.
+      </p>
+      <ul class="doc-list">
+        <li>
+          Une image n'existe qu'<strong>une seule fois</strong>. Si la photo du croissant au beurre
+          sert sur sa fiche, sur la famille « Viennoiseries » et sur une bannière, c'est le même
+          fichier, affiché à trois endroits.
+        </li>
+        <li>
+          Redéposer exactement le même fichier ne crée <strong>pas de doublon</strong>&nbsp;: le
+          compte rendu dit simplement qu'elle est déjà au fonds.
+        </li>
+        <li>
+          À l'inverse, une photo retouchée (recadrée, éclaircie) est un <strong>autre</strong>
+          fichier, donc une autre image. Pour la mettre à la place de l'ancienne partout, on utilise
+          « Remplacer… » (voir plus bas).
+        </li>
+      </ul>
+    </fold-card>
+
+    <fold-card class="doc-card">
+      <fold-element-title
+        variant="title"
+        icon="upload"
+        iconTone="primary"
+        title="Déposer des images"
+        subtitle="Un fichier ou un lot entier"
+      />
+      <ul class="doc-list">
+        <li>Formats acceptés&nbsp;: <strong>PNG, JPEG et WebP</strong>.</li>
+        <li>Poids&nbsp;: <strong>10&nbsp;Mo au plus</strong> par fichier.</li>
+        <li>
+          Taille&nbsp;: <strong>au moins 200&nbsp;pixels</strong> de côté. En dessous, c'est une
+          icône ou une erreur, pas une photo de catalogue.
+        </li>
+      </ul>
+      <p>
+        On peut glisser plusieurs fichiers d'un coup dans « Déposer des images ». Ils partent un par
+        un. Un fichier refusé n'arrête pas les autres, et l'écran vérifie le format, le poids et la
+        taille avant même d'envoyer.
+      </p>
+      <p>
+        <strong>La série du lot</strong>, facultative, dit d'où viennent les photos&nbsp;: un titre
+        (« Shooting carte de printemps »), la date de prise de vue et une note d'intention («
+        lumière du matin, fond lin »). On la choisit ou on la crée dans « Série du lot » avant de
+        déposer. Une image garde la série de son <strong>premier</strong> dépôt&nbsp;: la redéposer
+        dans une autre série ne la déplace pas, et le compte rendu le dit. La série se corrige
+        ensuite dans le panneau de l'image.
+      </p>
+      <p>
+        Les dépôts refusés sont gardés 90&nbsp;jours, avec leur raison&nbsp;: on les retrouve sous «
+        Refus passés ».
+      </p>
+    </fold-card>
+
+    <fold-card class="doc-card">
+      <fold-element-title
+        variant="title"
+        icon="tags"
+        iconTone="primary"
+        title="Les mots-clés"
+        subtitle="Pour retrouver une photo"
+      />
+      <p>
+        Un mot-clé («&nbsp;croissant&nbsp;», «&nbsp;vitrine&nbsp;», «&nbsp;noël&nbsp;») sert à
+        retrouver une image. La bande « Mots-clés » montre tous les mots du fonds, avec le nombre
+        d'images qui les portent.
+      </p>
+      <ol class="doc-steps">
+        <li><strong>Armer un mot</strong>&nbsp;: cliquez-le dans la bande. Il reste armé.</li>
+        <li>
+          <strong>Le poser</strong>&nbsp;: cliquez une image, ou glissez le mot dessus. On peut en
+          taguer dix à la suite sans rien réarmer.
+        </li>
+        <li>
+          <strong>Le retirer d'une image</strong>&nbsp;: la croix de la pastille. C'est immédiat, et
+          « Annuler » reste proposé quelques secondes.
+        </li>
+      </ol>
+      <ul class="doc-list">
+        <li>
+          Le champ « Chercher ou créer un mot-clé » fait les deux&nbsp;: il filtre la bande pendant
+          qu'on écrit (sans tenir compte des accents ni des majuscules), et propose de
+          <strong>créer</strong> le mot seulement s'il n'existe pas encore exactement. Cela évite
+          d'avoir « eclair » et « éclair » côte à côte.
+        </li>
+        <li>
+          Repliée, la bande tient sur <strong>deux rangées</strong>&nbsp;: les mots les plus portés,
+          plus le mot armé et ceux du filtre. Le bouton « + n autres » la déplie, « Réduire » la
+          replie.
+        </li>
+        <li>
+          Le menu d'un mot propose « Renommer » — si le nouveau mot existe déjà, les deux sont
+          <strong>fusionnés</strong>, et la confirmation le dit — et « Supprimer partout »&nbsp;: le
+          mot disparaît de toutes les images, les images restent.
+        </li>
+        <li>Un mot armé peut aussi servir de filtre&nbsp;: « Filtrer sur ce mot-clé ».</li>
+      </ul>
+    </fold-card>
+
+    <fold-card class="doc-card">
+      <fold-element-title
+        variant="title"
+        icon="filter"
+        iconTone="primary"
+        title="Parcourir le fonds"
+        subtitle="Tris, filtres et repères"
+      />
+      <p>
+        Les images défilent en continu, la suite se charge en approchant du bas. L'adresse de la
+        page garde le tri et les filtres&nbsp;: on peut l'envoyer à un collègue.
+      </p>
+      <ul class="doc-list">
+        <li>
+          <strong>Trier</strong>&nbsp;: « Plus récentes » (date de dépôt), « Prise de vue », «
+          Étiquette A→Z » ou « Plus employées ».
+        </li>
+        <li>
+          <strong>Filtrer</strong>, en cumulant&nbsp;: par mot-clé, par « Série », par dates de
+          dépôt (« Déposées du … au … »), « Non taguées » pour retrouver ce qui reste à ranger, «
+          Inutilisées » pour ce qu'aucune fiche ni vitrine n'affiche.
+        </li>
+        <li>
+          <strong>Une période de prise de vue</strong> se pose depuis la frise des couleurs (voir
+          plus bas)&nbsp;: une pastille « Prises du … au … » apparaît, qu'on retire d'un clic.
+        </li>
+        <li>
+          Triées par date, les images sont séparées par des <strong>intercalaires de mois</strong>
+          («&nbsp;octobre 2026&nbsp;») ; triées par prise de vue, par série.
+        </li>
+      </ul>
+    </fold-card>
+
+    <fold-card class="doc-card">
+      <fold-element-title
+        variant="title"
+        icon="edit"
+        iconTone="primary"
+        title="Décrire et cadrer une image"
+        subtitle="Le panneau « Décrire l’image »"
+      />
+      <p>
+        Le crayon d'une tuile ouvre son panneau. Ce qu'on y écrit vaut
+        <strong>partout</strong> où l'image apparaît.
+      </p>
+      <ul class="doc-list">
+        <li>
+          <strong>L'étiquette</strong>&nbsp;: le nom de l'image dans la médiathèque, celui que la
+          recherche lit.
+        </li>
+        <li>
+          <strong>Le texte alternatif</strong>&nbsp;: une phrase qui décrit la photo («&nbsp;Trois
+          pains de campagne sur une planche en bois&nbsp;»). Il est lu à voix haute aux personnes
+          malvoyantes et affiché si la photo ne charge pas. Le français fait foi&nbsp;; une langue
+          laissée vide retombe sur le français.
+        </li>
+        <li>
+          <strong>Le point focal</strong>&nbsp;: cliquez dans l'aperçu sur ce qui compte (le cœur de
+          la tarte, le visage du boulanger). Sur la boutique, une même photo est découpée en formats
+          différents selon l'endroit&nbsp;: <strong>4/3</strong> pour l'ouverture d'une fiche et la
+          vignette de rayon, <strong>1/1</strong> en carré, <strong>16/9</strong> pour les cartes
+          d'info de la vitrine, <strong>21/9</strong> pour les grandes bannières et les opérations.
+          Le point focal décide de ce qui reste visible quand on coupe. Sans point, l'image est
+          centrée («&nbsp;Centré par défaut&nbsp;»)&nbsp;; « Retirer le point » y revient.
+        </li>
+        <li>
+          Les aperçus du panneau montrent l'image dans chacun de ces formats&nbsp;: c'est là qu'on
+          vérifie qu'une bannière très large ne coupe pas le produit.
+        </li>
+      </ul>
+      <p>
+        Sur une fiche produit, une image trop éloignée du format de l'usage où elle est posée porte
+        la pastille <strong>« Format »</strong>. Ce n'est jamais un refus&nbsp;: c'est une
+        invitation à vérifier le point focal, ou à choisir une photo mieux proportionnée.
+      </p>
+    </fold-card>
+
+    <fold-card class="doc-card">
+      <fold-element-title
+        variant="title"
+        icon="eye"
+        iconTone="primary"
+        title="Où une image est affichée"
+        subtitle="Remplacer, retirer"
+      />
+      <p>
+        Le compte d'emplois d'une tuile («&nbsp;3 emplois&nbsp;») se clique&nbsp;: le panneau « Qui
+        affiche cette image » liste ses porteurs — fiches, familles, opérations, objets de la
+        vitrine, porte de l'accueil.
+      </p>
+      <ul class="doc-list">
+        <li>
+          <strong>Remplacer A par B partout</strong>&nbsp;: « Remplacer… » dans le panneau de A.
+          Déposez ou choisissez B&nbsp;; tous les porteurs de A afficheront B, à la même place.
+          L'ancienne description peut être reprise si B n'en a pas. A reste au fonds, sans porteur.
+        </li>
+        <li>
+          <strong>Retirer une image du fonds</strong>&nbsp;: la corbeille « Retirer du fonds »
+          n'apparaît que si plus rien ne l'affiche. Retirer une image encore affichée laisserait un
+          trou sur la fiche ou la vitrine qui la montre&nbsp;: d'abord la remplacer ou la retirer de
+          ses porteurs. Ses mots-clés et son point focal disparaissent avec elle.
+        </li>
+        <li>
+          <strong>Les opérations sont un cas à part</strong>&nbsp;: leur image n'est recopiée à la
+          boutique qu'au <strong>prochain envoi du catalogue</strong>. Après un remplacement,
+          l'annonce garde l'ancienne image jusque-là, et l'ancienne reste comptée comme affichée
+          («&nbsp;copie, suit au prochain envoi du catalogue&nbsp;»).
+        </li>
+      </ul>
+      <p>
+        Pour les fiches et la vitrine, en revanche, rien à republier&nbsp;: un nouveau texte
+        alternatif, un nouveau point focal ou un remplacement suivent seuls sur la boutique.
+      </p>
+    </fold-card>
+
+    <fold-card class="doc-card">
+      <fold-element-title
+        variant="title"
+        icon="store"
+        iconTone="primary"
+        title="Le cadrage sur la vitrine"
+        subtitle="Porte, bannières, opérations"
+      />
+      <p>
+        La photo de la porte « Je passe la prendre », les grandes bannières et les cartes d'info de
+        la vitrine suivent le point focal posé dans la médiathèque. Le déplacer dans le panneau de
+        l'image recadre la vitrine sans passer par son éditeur.
+      </p>
+      <p>
+        Les bannières d'<strong>opération</strong> (« Galette des rois », « Fête des mères »)
+        prennent le point focal au moment de l'envoi du catalogue&nbsp;: un changement ne s'y voit
+        qu'au <strong>prochain envoi</strong>.
+      </p>
+    </fold-card>
+
+    <fold-card class="doc-card">
+      <fold-element-title
+        variant="title"
+        icon="bin"
+        iconTone="primary"
+        title="Le ramassage automatique"
+        subtitle="Les images orphelines"
+      />
+      <p>
+        Chaque nuit, la médiathèque supprime d'elle-même les images déposées depuis
+        <strong>plus de 7&nbsp;jours</strong> qu'<strong>aucun porteur</strong> n'affiche — les
+        essais, les doublons retouchés, l'ancienne image après un remplacement. Juste avant de
+        supprimer, elle revérifie que l'image n'a pas été choisie entre-temps.
+      </p>
+      <p>
+        Une image qu'on veut garder sans l'afficher doit donc être posée quelque part dans la
+        semaine. Si une image a disparu par erreur, redéposer le même fichier la fait revenir à la
+        même adresse — mais sans ses mots-clés, son texte alternatif ni son point focal.
+      </p>
+    </fold-card>
+
+    <fold-card class="doc-card">
+      <fold-element-title
+        variant="title"
+        icon="palette"
+        iconTone="primary"
+        title="La frise des couleurs"
+        subtitle="La couleur du fonds dans le temps"
+      />
+      <p>
+        Au-dessus des images, une bande montre comment la couleur des photos évolue, de la plus
+        ancienne prise de vue à la plus récente (date de dépôt à défaut). On y voit d'un coup d'œil
+        l'automne doré des viennoiseries ou le rouge des fêtes.
+      </p>
+      <ul class="doc-list">
+        <li>
+          Chaque colonne empile les <strong>couleurs dominantes</strong> en haut, dans la proportion
+          où elles occupent les photos, et les <strong>couleurs rares</strong> en bas — un fruit
+          rouge sur une tarte claire, par exemple.
+        </li>
+        <li>
+          Elle <strong>suit les filtres</strong>&nbsp;: filtrez sur «&nbsp;tarte&nbsp;», la frise ne
+          montre plus que les tartes.
+        </li>
+        <li>
+          Elle a toujours la <strong>largeur de l'écran</strong>&nbsp;: quand il y a beaucoup de
+          photos, plusieurs sont regroupées dans une même colonne.
+        </li>
+        <li>
+          <strong>Le survol</strong> d'une colonne donne ses dates, son nombre de photos et une
+          vignette. <strong>Un clic</strong> filtre les images sur cette période de prise de vue.
+        </li>
+        <li>
+          Une colonne <strong>hachurée</strong> regroupe des photos dont les couleurs ne sont pas
+          encore calculées. Le calcul se fait au dépôt&nbsp;; pour les images plus anciennes,
+          l'écran le rattrape tout seul à l'ouverture de la médiathèque.
+        </li>
+      </ul>
+    </fold-card>
+  </div>
+</fold-page-layout>

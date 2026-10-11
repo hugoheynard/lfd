@@ -304,6 +304,16 @@ export const routes: Routes = [
             (m) => m.DocWebSegmentationPage,
           ),
       },
+      {
+        // Pour le personnel qui alimente le fonds (Hugo, 2026-10-11) ; la page
+        // médiathèque y renvoie depuis son en-tête.
+        path: 'mediatheque',
+        title: 'Médiathèque — LFC B2B admin',
+        loadComponent: () =>
+          import('./documentation/media-library-page/media-library-page').then(
+            (m) => m.DocMediaLibraryPage,
+          ),
+      },
     ],
   },
   // LE COURSIER (2026-10-03) : la page du livreur, espace de PREMIER niveau,
