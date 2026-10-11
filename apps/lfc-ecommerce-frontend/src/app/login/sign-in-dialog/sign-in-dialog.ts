@@ -1,7 +1,6 @@
-import { ChangeDetectionStrategy, Component, inject, input, linkedSignal } from '@angular/core';
+import { ChangeDetectionStrategy, Component, inject, input } from '@angular/core';
 import {
   FoldButtonComponent,
-  FoldInputComponent,
   FoldPanelBodyComponent,
   type FoldPanelDefaults,
   FoldPanelFooterComponent,
@@ -10,11 +9,9 @@ import {
   FoldPanelRef,
 } from 'fold-ng';
 
-import { AuthFacade } from '../../auth/auth.facade';
 import { ClientCopyService } from '../../client/copy/client-copy.service';
-import { ClientFeatureAccess } from '../../client/feature-access/client-feature-access.service';
 import { dialogSide } from '../../client/panel-side';
-import { RuleOu } from '../accueil-page/rule-ou/rule-ou';
+import { SignInChoices } from '../sign-in-choices/sign-in-choices';
 
 /**
  * **Se connecter** — les méthodes réunies dans un dialogue.
@@ -60,14 +57,12 @@ import { RuleOu } from '../accueil-page/rule-ou/rule-ou';
   changeDetection: ChangeDetectionStrategy.OnPush,
   imports: [
     FoldButtonComponent,
-    FoldInputComponent,
     FoldPanelBodyComponent,
     FoldPanelFooterComponent,
     FoldPanelHeaderComponent,
-    RuleOu,
+    SignInChoices,
   ],
   templateUrl: './sign-in-dialog.html',
-  styleUrl: './sign-in-dialog.scss',
 })
 export class SignInDialog {
   /** `sm` : deux boutons et un champ — plus large, le dialogue serait vide. */
@@ -91,70 +86,10 @@ export class SignInDialog {
   readonly data = input.required<SignInIntent>();
 
   protected readonly t = inject(ClientCopyService).t;
-  /**
-   * L'interrupteur `facebookLogin` de l'accès aux fonctionnalités (2026-10-09) :
-   * masqué tant que les niveaux ne sont pas lus, ou en échec.
-   */
-  protected readonly facebookShown = inject(ClientFeatureAccess).facebookLoginShown;
-  private readonly auth = inject(AuthFacade);
   private readonly ref = inject(FoldPanelRef);
 
-  /**
-   * Le champ part de ce qui a déjà été tapé sur l'accueil, s'il y a lieu.
-   *
-   * `linkedSignal` et non `signal(this.data().email)` : un `input` n'est pas
-   * lisible à la construction, et le lire là rendrait une valeur vide pour
-   * toujours.
-   */
-  protected readonly email = linkedSignal(() => this.data().email);
-
-  protected setEmail(value: string): void {
-    this.email.set(value);
-  }
-
-  /**
-   * Le chemin par défaut : un code reçu par e-mail (2026-10-09). On ferme AVANT
-   * de rediriger — la page va disparaître, et un dialogue laissé ouvert se
-   * retrouverait à l'écran au retour.
-   */
-  protected withEmail(): void {
-    const { target } = this.data();
-    const hint = this.hint();
-    this.ref.close();
-    this.auth.continueWithEmailCode(target, hint);
-  }
-
-  /**
-   * « Utiliser un mot de passe » : l'écran d'Auth0 de la connexion à mot de
-   * passe, avec la même adresse soufflée. La capacité reste pour qui a ouvert
-   * son compte ainsi.
-   */
-  protected withPassword(): void {
-    const { target } = this.data();
-    const hint = this.hint();
-    this.ref.close();
-    this.auth.loginWithPassword(target, hint);
-  }
-
-  /** L'adresse tapée, ou rien : des blancs ne font pas un indice. */
-  private hint(): string | undefined {
-    const typed = this.email().trim();
-    return typed === '' ? undefined : typed;
-  }
-
-  protected withGoogle(): void {
-    const { target } = this.data();
-    this.ref.close();
-    this.auth.continueWithGoogle(target);
-  }
-
-  protected withFacebook(): void {
-    const { target } = this.data();
-    this.ref.close();
-    this.auth.continueWithFacebook(target);
-  }
-
-  protected cancel(): void {
+  /** Annuler, ou partir chez Auth0 : dans les deux cas le dialogue se referme. */
+  protected close(): void {
     this.ref.close();
   }
 }

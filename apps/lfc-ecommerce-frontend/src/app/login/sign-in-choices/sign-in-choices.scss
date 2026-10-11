@@ -1,7 +1,9 @@
-/* Le corps du dialogue empile ses blocs ; l'espacement vient d'ici, jamais des
-   marges des enfants (règle « Un composant ne pose JAMAIS sa marge »). */
+/* Le bloc empile ses parts ; l'espacement vient d'ici, jamais des marges des
+   enfants (règle « Un composant ne pose JAMAIS sa marge »). */
 :host {
-  display: contents;
+  display: flex;
+  flex-direction: column;
+  gap: var(--fold-space-md);
 }
 
 .lead {

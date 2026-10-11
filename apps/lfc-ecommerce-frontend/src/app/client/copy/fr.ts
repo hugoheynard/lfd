@@ -306,8 +306,6 @@ export const FR: ClientCopy = {
     whoSignInCta: 'Me connecter',
     whoSignIn: "J'ai déjà un compte",
     back: 'Retour à la boutique',
-    guestTitle: 'Qui vient chercher ?',
-    guestSubtitle: 'Pas de compte à créer. Il nous faut de quoi vous envoyer votre QR.',
     guestFirstName: 'Prénom',
     guestFirstNameHint: 'C’est le nom qu’on appellera au comptoir.',
     guestEmail: 'Adresse e-mail',
@@ -316,8 +314,6 @@ export const FR: ClientCopy = {
     guestEmailMismatch: 'Les deux adresses ne sont pas identiques.',
     guestPhone: 'Téléphone',
     guestPhoneHint: 'Pour vous joindre si quelque chose cloche avec votre commande.',
-    guestCancel: 'Annuler',
-    guestConfirm: 'Continuer',
   },
   qr: {
     title: 'Votre code de remise',

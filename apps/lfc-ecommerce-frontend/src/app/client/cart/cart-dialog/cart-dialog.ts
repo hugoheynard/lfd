@@ -1,4 +1,4 @@
-import { ChangeDetectionStrategy, Component, computed, inject, input } from '@angular/core';
+import { ChangeDetectionStrategy, Component, computed, inject, input, signal } from '@angular/core';
 import { Router } from '@angular/router';
 import { instantToLocal } from '@lfd/contracts';
 import {
@@ -10,7 +10,8 @@ import {
   FoldPanelRef,
 } from 'fold-ng';
 
-import { GuestIdentityDialog } from '../guest-identity-dialog/guest-identity-dialog';
+import { SignInChoices } from '../../../login/sign-in-choices/sign-in-choices';
+import { GuestIdentityForm, type GuestIdentity } from '../guest-identity-form/guest-identity-form';
 
 import type { OrderSettlement } from '@lfd/contracts';
 
@@ -63,6 +64,8 @@ const AFTER_SIGN_IN = '/boutique';
   changeDetection: ChangeDetectionStrategy.OnPush,
   imports: [
     CartSummary,
+    GuestIdentityForm,
+    SignInChoices,
     FoldPanelBodyComponent,
     FoldPanelFooterComponent,
     FoldPanelHeaderComponent,
@@ -112,7 +115,6 @@ export class CartDialog {
   private readonly order = inject(OrderContextStore);
   private readonly orders = inject(ClientOrders);
   /** L'hôte des panneaux fold : c'est lui qui ouvre la saisie du visiteur. */
-  private readonly panels = inject(FoldPanelHostService);
 
   /** Les portes du mode de service — les mêmes que l'accueil ouvre. */
   private readonly doors = inject(OrderDoors);
@@ -175,6 +177,12 @@ export class CartDialog {
   protected readonly identityNeeded = computed(
     () => this.unknownCustomer() && !this.cart.isEmpty() && this.choice() !== null,
   );
+
+  /** L'identité que le visiteur a saisie dans la carte, complète, ou `null`. */
+  protected readonly guest = signal<GuestIdentity | null>(null);
+
+  /** Le règlement attend qu'on sache qui commande : un compte, ou une saisie complète. */
+  protected readonly payBlocked = computed(() => this.identityNeeded() && this.guest() === null);
 
   /**
    * « demain · créneau choisi », avec la VRAIE journée : celle que le serveur a
@@ -252,50 +260,24 @@ export class CartDialog {
   }
 
   /**
-   * **La porte de qui n'a pas de compte : commander sans en créer un.**
-   *
-   * 🔴 Elle menait à l'inscription Auth0, faute de route publique — c'est ce que
-   * disait ce JSDoc, et ce n'est plus vrai : `POST /shop/orders` est branchée.
-   * Un visiteur déclare qui il est, et repart avec sa commande ; il n'a aucune
-   * identité de connexion, et rien de ce qu'il tape ici n'ouvre quoi que ce soit.
-   *
-   * ⚠️ **Le dialogue peut se fermer sans rien rendre**, et fermer n'est pas
-   * commander : on reste alors sur le panier, intact, sans rien avoir envoyé.
-   *
-   * ## La suite : on PAIE, puis on confirme
-   *
-   * Exactement le chemin du client connecté ({@link proceed}), et il est
-   * praticable sans compte parce que `POST /shop/orders` rend l'intention
-   * Stripe **avec** la commande : l'écran de règlement la reçoit de la mémoire
-   * et ne redemande rien à `GET /orders/:id/payment`, qui est murée.
-   *
-   * ⚠️ **La commande existe AVANT le paiement**, des deux côtés : écrite au
-   * serveur par le `201`, rangée dans le navigateur par `placeAsGuest`. Un
-   * règlement qui aboutit ne peut donc pas retomber sur une commande
-   * introuvable, et un règlement abandonné laisse une commande à payer — pas un
-   * panier fantôme.
+   * « Me connecter » REMPLACE la saisie d'invité par les méthodes de
+   * connexion, dans la même carte (Hugo, 2026-10-11) ; « Commander en tant
+   * qu'invité » la rend. On ne garde pas une identité à moitié tapée derrière
+   * un choix qu'on vient de défaire.
    */
-  protected async orderAsGuest(): Promise<void> {
-    const buyer = await GuestIdentityDialog.open(this.panels).closed;
-    if (buyer === undefined) {
-      return;
-    }
-    const placed = await this.orders.placeAsGuest(buyer);
-    if (placed === null) {
-      // Le refus a déjà été dit, et le panier est intact.
-      return;
-    }
-    this.leaveFor(placed);
+  protected readonly signingIn = signal(false);
+
+  protected showSignIn(): void {
+    this.guest.set(null);
+    this.signingIn.set(true);
   }
 
-  /** La porte de qui a déjà un compte. Elle ramène ICI, panier compris. */
-  protected signInFirst(): void {
-    this.auth.continueWithEmailCode(AFTER_SIGN_IN);
+  protected showGuest(): void {
+    this.signingIn.set(false);
   }
 
-  protected signIn(): void {
-    this.auth.continueWithEmailCode(AFTER_SIGN_IN);
-  }
+  /** Où revenir une fois connecté : ICI, panier compris. */
+  protected readonly afterSignIn = AFTER_SIGN_IN;
 
   /** Rouvrir le rayon, c'est simplement refermer le panier : on y était. */
   protected backToShop(): void {
@@ -344,7 +326,17 @@ export class CartDialog {
         return;
       }
     }
-    const placed = await this.orders.place(settlement);
+    // Un visiteur commande avec ce qu'il a saisi dans la carte : `POST
+    // /shop/orders` rend l'intention Stripe AVEC la commande, et la suite est
+    // celle d'un client connecté.
+    const buyer = this.guest();
+    if (this.identityNeeded() && buyer === null) {
+      return;
+    }
+    const placed =
+      this.identityNeeded() && buyer !== null
+        ? await this.orders.placeAsGuest(buyer)
+        : await this.orders.place(settlement);
     if (placed === null) {
       // Le refus a déjà été dit, et le panier est intact : on ne bouge pas de
       // l'écran où la correction est possible.

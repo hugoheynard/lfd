@@ -65,6 +65,9 @@ interface Monde {
 /** Le mode de règlement passé à `place()` — `null` = « le serveur décide ». */
 let regle: (string | null)[] = [];
 
+/** Les identités d'invité passées à `placeAsGuest()`. */
+let invites: unknown[] = [];
+
 /** Ce que l'écran a demandé aux portes, où il est allé, et s'il s'est fermé. */
 let ouvertes: string[] = [];
 let visitees: string[] = [];
@@ -115,7 +118,10 @@ function boot({
             // commande passée ferait naviguer et quitterait le sujet.
             return Promise.resolve(null);
           },
-          placeAsGuest: (): Promise<null> => Promise.resolve(null),
+          placeAsGuest: (buyer: unknown): Promise<null> => {
+            invites.push(buyer);
+            return Promise.resolve(null);
+          },
         },
       },
       // Les portes sont des DIALOGUES : on n'en monte pas le contenu ici, on
@@ -139,6 +145,7 @@ function boot({
   visitees = [];
   fermetures = [];
   regle = [];
+  invites = [];
   hydrateWith(TestBed.inject(ShopCatalogue), TEST_CATALOGUE);
   TestBed.inject(OrderContextStore).choice.set(service);
   const cart = TestBed.inject(ClientCart);
@@ -181,25 +188,55 @@ describe('le panier demande qui commande', () => {
     expect(bouton(fixture)?.disabled).toBe(true);
   });
 
-  it('offre les DEUX portes, jamais une seule', () => {
+  /**
+   * Hugo, 2026-10-11 : « qui passe cette commande » ouvre le panier, la saisie
+   * d'invité y est OUVERTE d'office, et « Me connecter » la remplace par la
+   * connexion, dans la même carte.
+   */
+  it('ouvre le panier sur « qui », la saisie d’invité déjà dépliée', () => {
     const fixture = boot({ auth: VISITEUR });
-
-    expect(el(fixture).querySelectorAll('.who-door')).toHaveLength(2);
-  });
-
-  /** Hugo, 2026-10-11 : la situation en sur-titre, le geste en bouton, et le bloc en tête. */
-  it('ouvre le panier sur « qui », chaque porte avec son sur-titre et son geste', () => {
-    const fixture = boot({ auth: VISITEUR });
-    const blocks = [...el(fixture).querySelectorAll('.who-door-block')].map((block) => [
-      block.querySelector('.who-kicker')?.textContent?.trim(),
-      block.querySelector('.who-door')?.textContent?.trim(),
-    ]);
+    const kickers = [...el(fixture).querySelectorAll('.who-kicker')].map((node) =>
+      node.textContent?.trim(),
+    );
 
     expect(el(fixture).querySelector('.page > *')?.classList).toContain('who');
-    expect(blocks).toEqual([
-      ['Je commande pour la première fois', 'Commander en tant qu’invité'],
-      ["J'ai déjà un compte", 'Me connecter'],
-    ]);
+    expect(el(fixture).querySelector('app-guest-identity-form')).not.toBeNull();
+    expect(kickers).toEqual(['Je commande pour la première fois', "J'ai déjà un compte"]);
+    expect(el(fixture).querySelector('.who-door')?.textContent?.trim()).toBe('Me connecter');
+  });
+
+  it('« Me connecter » remplace la saisie par la connexion, et l’invité la rend', () => {
+    const fixture = boot({ auth: VISITEUR });
+
+    el(fixture).querySelector<HTMLButtonElement>('.who-door')?.click();
+    fixture.detectChanges();
+
+    expect(el(fixture).querySelector('app-guest-identity-form')).toBeNull();
+    expect(el(fixture).querySelector('app-sign-in-choices')).not.toBeNull();
+    expect(bouton(fixture)?.disabled).toBe(true);
+
+    el(fixture).querySelector<HTMLButtonElement>('.who-door')?.click();
+    fixture.detectChanges();
+
+    expect(el(fixture).querySelector('app-guest-identity-form')).not.toBeNull();
+    expect(el(fixture).querySelector('app-sign-in-choices')).toBeNull();
+  });
+
+  it('règle en invité dès que la saisie est complète', async () => {
+    const fixture = boot({ auth: VISITEUR });
+    const buyer = { firstName: 'Jean', email: 'jean@exemple.fr', phone: '0612345678' };
+
+    fixture.debugElement
+      .query((node) => node.name === 'app-guest-identity-form')
+      .triggerEventHandler('identityChange', buyer);
+    fixture.detectChanges();
+    expect(bouton(fixture)?.disabled).toBe(false);
+
+    bouton(fixture)?.click();
+    await fixture.whenStable();
+
+    expect(invites).toEqual([buyer]);
+    expect(regle).toEqual([]);
   });
 
   /**

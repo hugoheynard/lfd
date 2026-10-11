@@ -308,8 +308,6 @@ export const EN: ClientCopy = {
     whoSignInCta: 'Sign in',
     whoSignIn: 'I already have an account',
     back: 'Back to the shop',
-    guestTitle: 'Who is collecting?',
-    guestSubtitle: 'No account to create. We just need a way to send you your QR.',
     guestFirstName: 'First name',
     guestFirstNameHint: 'This is the name we will call at the counter.',
     guestEmail: 'Email address',
@@ -318,8 +316,6 @@ export const EN: ClientCopy = {
     guestEmailMismatch: 'The two addresses are not the same.',
     guestPhone: 'Phone',
     guestPhoneHint: 'So we can reach you if something is wrong with your order.',
-    guestCancel: 'Cancel',
-    guestConfirm: 'Continue',
   },
   qr: {
     title: 'Your handover code',
