@@ -34,8 +34,19 @@ export {
   paletteSwatchSchema,
   imagePaletteSchema,
   mediaPalettePayloadSchema,
+  PALETTE_STRIP_LIMITS,
+  mediaPaletteStripQuerySchema,
+  paletteStripColumnSchema,
+  mediaPaletteStripViewSchema,
 } from "./media-palette.js";
-export type { PaletteSwatch, ImagePalette, MediaPalettePayload } from "./media-palette.js";
+export type {
+  PaletteSwatch,
+  ImagePalette,
+  MediaPalettePayload,
+  MediaPaletteStripQuery,
+  PaletteStripColumnView,
+  MediaPaletteStripView,
+} from "./media-palette.js";
 
 export type {
   AttachedMediaView,

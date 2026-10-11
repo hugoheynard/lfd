@@ -11,17 +11,10 @@ import {
 import { positionOf } from "../domain/value-objects/library-order.js";
 import { MAX_RANKED_IMAGES, rankLibrary } from "../domain/services/rank-library.js";
 import type { Prisma } from "../../platform/database/client/client.js";
+import { usesInBatches } from "./carrier-uses.js";
 import { filterOf } from "./library-filter.js";
 import { KEYSET_READERS } from "./library-keyset.js";
 import { ASSET_COLUMNS, rankedOf, recordOf } from "./library-rows.js";
-
-/**
- * Combien d'URL par question aux porteurs. Une question par paquet plutôt
- * qu'une seule : un `IN` de cinq mille valeurs chez chaque porteur est une
- * requête qu'on ne veut pas écrire, et un paquet par image serait cinq mille
- * allers-retours.
- */
-const USES_BATCH = 500;
 
 /**
  * La bibliothèque, **une ligne par image**.
@@ -117,15 +110,7 @@ export class PrismaMediaLibraryReader extends MediaLibraryReader {
     return { items, total: ranked.total, next: ranked.next };
   }
 
-  /** Les emplois, par paquets — le silence d'un porteur fait échouer, jamais zéro. */
   private async usesOf(urls: readonly string[]): Promise<ReadonlyMap<string, number>> {
-    const uses = new Map<string, number>();
-    for (let start = 0; start < urls.length; start += USES_BATCH) {
-      const answer = await this.carriers.usesOf(urls.slice(start, start + USES_BATCH));
-      for (const [url, count] of answer) {
-        uses.set(url, count);
-      }
-    }
-    return uses;
+    return usesInBatches(this.carriers, urls);
   }
 }

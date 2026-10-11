@@ -1,5 +1,7 @@
 import { z } from "zod";
 
+import { mediaLibraryQuerySchema } from "./media.js";
+
 /**
  * **La palette d'une image** — la frise des couleurs (plan L9, 2026-10-11).
  *
@@ -71,3 +73,58 @@ export const mediaPalettePayloadSchema = z.object({
   palette: imagePaletteSchema,
 });
 export type MediaPalettePayload = z.infer<typeof mediaPalettePayloadSchema>;
+
+/**
+ * **La frise des couleurs** — `GET /media/palette-strip` (L9, 2026-10-11).
+ *
+ * Une lecture AGRÉGÉE : l'écran reçoit au plus `maxColumns` colonnes, quel que
+ * soit le volume du fonds, plutôt qu'une palette par photo.
+ */
+export const PALETTE_STRIP_LIMITS = {
+  maxColumns: 400,
+  defaultColumns: 120,
+} as const;
+
+/**
+ * Les MÊMES filtres que le feed (`GET /media`), sans page, curseur ni tri —
+ * la frise est toujours chronologique — et le nombre de colonnes voulu.
+ */
+export const mediaPaletteStripQuerySchema = mediaLibraryQuerySchema
+  .omit({ limit: true, offset: true, after: true, sort: true })
+  .extend({
+    columns: z.coerce
+      .number()
+      .int()
+      .min(1)
+      .max(PALETTE_STRIP_LIMITS.maxColumns)
+      .default(PALETTE_STRIP_LIMITS.defaultColumns),
+  });
+export type MediaPaletteStripQuery = z.infer<typeof mediaPaletteStripQuerySchema>;
+
+/**
+ * Une colonne de la frise : une tranche CONSÉCUTIVE d'images, dans l'ordre de
+ * la prise de vue (dépôt à défaut).
+ *
+ * `palette` peut être VIDE — aucune image de la tranche n'est encore peinte —
+ * ce qu'une palette d'image ne peut pas être : d'où un schéma distinct.
+ */
+export const paletteStripColumnSchema = z.object({
+  /** Date retenue de la première image de la colonne, ISO. */
+  from: z.string(),
+  /** Date retenue de la dernière image de la colonne, ISO. */
+  to: z.string(),
+  count: z.number().int().min(1),
+  palette: z.union([imagePaletteSchema, z.array(paletteSwatchSchema).length(0)]),
+  /** Une image de la tranche, pour l'aperçu au survol. */
+  sampleUrl: z.string(),
+});
+export type PaletteStripColumnView = z.infer<typeof paletteStripColumnSchema>;
+
+export const mediaPaletteStripViewSchema = z.object({
+  columns: z.array(paletteStripColumnSchema).max(PALETTE_STRIP_LIMITS.maxColumns),
+  /** Les images retenues par le filtre. */
+  total: z.number().int().min(0),
+  /** Parmi elles, celles qui n'ont pas encore de palette. */
+  unpainted: z.number().int().min(0),
+});
+export type MediaPaletteStripView = z.infer<typeof mediaPaletteStripViewSchema>;

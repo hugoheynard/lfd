@@ -1,6 +1,6 @@
 import type { Prisma } from "../../platform/database/client/client.js";
 
-import type { LibraryQuery } from "../domain/ports/media-library-reader.js";
+import type { LibraryFilter } from "../domain/ports/media-library-reader.js";
 
 /**
  * Traduit la recherche en `where`, et rend `{}` quand elle ne demande rien.
@@ -17,7 +17,7 @@ import type { LibraryQuery } from "../domain/ports/media-library-reader.js";
  * `tags` et `untagged` ensemble ne trouvent rien, et c'est exact : une image
  * ne peut pas porter « croissant » et aucun mot.
  */
-export function filterOf(query: LibraryQuery): Prisma.MediaAssetWhereInput {
+export function filterOf(query: LibraryFilter): Prisma.MediaAssetWhereInput {
   const clauses: Prisma.MediaAssetWhereInput[] = [];
   const needle = query.q?.trim() ?? "";
   if (needle !== "") {

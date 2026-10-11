@@ -111,6 +111,12 @@ export interface LibraryQuery {
 }
 
 /**
+ * **Ce qui restreint le fonds**, sans page ni ordre — ce que le feed et la
+ * frise des couleurs (L9) partagent : les deux doivent montrer le même fonds.
+ */
+export type LibraryFilter = Omit<LibraryQuery, "limit" | "offset" | "sort" | "after">;
+
+/**
  * Une page de la bibliothèque, et le total pour la pagination.
  *
  * 🔴 `total` est le total **du filtre**, jamais celui du fonds. Sinon « charger
