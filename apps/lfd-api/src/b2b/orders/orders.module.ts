@@ -28,6 +28,7 @@ import { PrismaUnpaidLinkOrderReader } from "./infrastructure/prisma-unpaid-link
 import { SendSettlementRemindersHandler } from "./application/commands/send-settlement-reminders.handler.js";
 import { SettlementRemindersController } from "./http/admin-settlement-reminders.controller.js";
 import { UnsettledShopOrdersController } from "./http/admin-unsettled-shop-orders.controller.js";
+import { ShopOrdersController } from "./http/shop-orders.controller.js";
 import { ExpireUnsettledShopOrdersHandler } from "./application/commands/expire-unsettled-shop-orders.handler.js";
 import { ReplaceUnsettledShopOrders } from "./application/handlers/replace-unsettled-shop-orders.handler.js";
 import { UnsettledShopOrderExpiry } from "./application/services/unsettled-shop-order-expiry.service.js";
@@ -215,6 +216,10 @@ import { AdminSupervisionController } from "./http/admin-supervision.controller.
     // Porte machine, elle aussi : l'expiration des commandes boutique non
     // réglées, au cron de rafraîchissement (plan commandes non réglées, §4.5).
     UnsettledShopOrdersController,
+    // La commande SANS compte (plan-commande-sans-compte.md, §6) : ouverte le
+    // 2026-10-11, Hugo ayant tranché que le visiteur paie le prix et la TVA
+    // d'un particulier connecté — ce que `OrderDrafting` sans société calcule.
+    ShopOrdersController,
   ],
   providers: [
     OrderDrafting,
@@ -364,11 +369,7 @@ import { AdminSupervisionController } from "./http/admin-supervision.controller.
     { provide: OrderIdempotencyStore, useClass: PrismaOrderIdempotencyStore },
     // La commande **sans compte** — plan `plan-commande-sans-compte.md`, lot C.
     //
-    // 🔴 Le handler et ses deux ports sont branchés ; `ShopOrdersController` ne
-    // l'est PAS (cf. son en-tête). La route n'existe donc pas à l'exécution,
-    // pendant que tout ce qu'elle appellerait est monté, éprouvé contre le vrai
-    // Postgres, et prêt à servir le jour de l'arbitrage de prix (§6). Ouvrir
-    // tient en une ligne : ajouter le contrôleur aux `controllers`.
+    // Sa route, `ShopOrdersController`, est ouverte depuis le 2026-10-11 (§6).
     PlaceShopOrderHandler,
     { provide: ShopOrderIdempotencyStore, useClass: PrismaShopOrderIdempotencyStore },
     { provide: GuestBuyerRegistrar, useClass: PrismaGuestBuyerRegistrar },

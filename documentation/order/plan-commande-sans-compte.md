@@ -19,10 +19,10 @@ décision. Écrites le 2026-09-17, **contredites par `vitruve` le même jour**
 (cinq BLOQUANTS, six SÉRIEUX), puis refondues ; le sort de chaque objection est
 au §8.
 
-> 🔴 **Ce plan ne s'ouvre pas quand il est bâti.** La route peut être écrite et
-> éprouvée ; sa mise en service dépend d'un arbitrage de prix qui n'est pas
-> technique. Voir §6 — c'est la seule objection de la contradiction que la
-> refonte **ne fait pas disparaître**, mais sa nature a changé le 2026-09-17.
+> ✅ **Ouvert le 2026-10-11.** La route attendait un arbitrage de prix et de
+> fiscalité (§6). Hugo l'a tranché : « la TVA publique, c'est la même boutique
+> que public mais juste pas loggé, pareil pour le prix » — un visiteur paie
+> exactement ce que paie un particulier connecté.
 
 ## 0. La demande
 
@@ -201,9 +201,14 @@ dossier, aucun contrat de canal, aucun événement de domaine.
   ses routes prennent `AuthenticatedStaffRequest`. Le client l'**affiche**, le
   comptoir le **scanne**.
 
-## 6. 🔴 La précondition : le tarif public
+## 6. ✅ La précondition : le tarif public — tranchée le 2026-10-11
 
-**Ce plan peut être bâti ; il ne peut pas être ouvert.**
+> **Tranché par Hugo le 2026-10-11** : « la TVA publique, c'est la même
+> boutique que public mais juste pas loggé, pareil pour le prix ». Un visiteur
+> paie le prix et la TVA d'un particulier connecté ; la route est ouverte. Ce
+> qui suit est l'analyse d'avant la décision.
+
+**Ce plan pouvait être bâti ; il ne pouvait pas être ouvert.**
 
 ⚠️ **Ce paragraphe affirmait « un prix résolu sans société est le prix pro »
 et en faisait un verrou technique. C'est inexact, vérifié dans le code le
@@ -504,29 +509,23 @@ revient que pour contester une décision. Ce qui suit est le seul état à jour.
 | ----- | ------------------------------------------------------------------------------------ | ---------- |
 | **A** | Le panier retient le règlement tant qu'il ignore qui commande, et le dit             | `9fddf8d9` |
 | **B** | `auth0Sub` nullable : un client existe sans identité de connexion                    | `3c8f20f3` |
-| **C** | `POST /shop/orders` — écrite, éprouvée, **pas ouverte**                              | `d83da52e` |
+| **C** | `POST /shop/orders` — écrite, éprouvée ; **ouverte le 2026-10-11**                   | `d83da52e` |
 | **D** | Rien à faire : courriels, QR et fiche marchent dès que le porteur est un `User` réel |            |
 
 **Ce que le lot A fait déjà, et qu'il ne faut pas défaire** : il offre les deux
 portes **ensemble**, sans jamais regarder l'adresse saisie. C'est D7 appliqué —
 une surface publique ne répond jamais « ce compte existe ».
 
-🔴 **Le lot C est fermé par l'absence de son contrôleur dans `orders.module.ts`.**
-La route n'existe pas à l'exécution ; tout ce qu'elle appellerait est monté et
-éprouvé. C'est le seul « fermé » qui ne mente pas — aucune porte du dépôt ne
-sait livrer une route publique éteinte (§6).
+✅ **Le lot C est ouvert depuis le 2026-10-11** : `ShopOrdersController` est
+enregistré dans `orders.module.ts`. Le prix et la TVA d'un visiteur sont ceux
+d'un particulier connecté — les deux passent par `OrderDrafting` sans société.
 
 ### ⬜ Reste à faire
 
-1. 🔴 **D9, point 1 — confirmer l'adresse à l'écran avant de régler.** Le seul
-   geste qui _empêche_ la faute de frappe au lieu de la rattraper. ⚠️ **Bloqué,
-   et pas par choix** : il suppose un formulaire de saisie que l'écran n'a pas
-   — le panier mène aujourd'hui à l'inscription (lot A). Il s'écrit donc **avec**
-   le branchement de la route, jamais avant.
-2. **L'ouverture**, et elle ne dépend pas du code : l'arbitrage de prix du §6.
-   Le jour venu, trois gestes — enregistrer `ShopOrdersController`, faire pointer
-   la porte « première commande » du panier vers la route publique au lieu de
-   l'inscription, et trancher le tarif public.
+✅ **D9, point 1, et l'ouverture : faits le 2026-10-11.** La saisie d'invité
+(prénom, adresse tapée deux fois, téléphone) vit dans la carte « Qui passe
+cette commande ? » du panier, ouverte d'office ; le bouton de règlement passe
+par la route publique. Rien d'autre ne reste de ce plan.
 
 ### Ce qui a été bâti le 2026-09-17, après les lots
 

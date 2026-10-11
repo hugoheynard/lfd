@@ -18,18 +18,12 @@ import {
  * **Commander sans compte** — plan
  * `documentation/order/plan-commande-sans-compte.md`, §5 et lot C.
  *
- * 🔴 **CE CONTRÔLEUR N'EST PAS BRANCHÉ**, et c'est délibéré (§6, §12).
- *
- * Il ne figure pas dans les `controllers` d'`OrdersModule` : la route n'existe
- * donc pas à l'exécution, et un appel rend 404. Le plan le dit en toutes
- * lettres — « ce plan ne s'ouvre pas quand il est bâti » : sa mise en service
- * dépend d'un **arbitrage de prix et de fiscalité** (le tarif de liste est-il
- * destiné au public ? à quel taux de TVA ?), qui n'est pas technique et qui
- * n'appartient à aucun lot.
- *
- * **Pour l'ouvrir** : ajouter `ShopOrdersController` aux `controllers` du
- * module. Tout le reste — contrat, handler, registre de clés, table — est en
- * place et éprouvé.
+ * 🔴 **Ouvert le 2026-10-11** (§6). Il est resté construit et non branché
+ * tant qu'un arbitrage de prix et de fiscalité manquait. Hugo l'a tranché :
+ * « la TVA publique, c'est la même boutique que public mais juste pas loggé,
+ * pareil pour le prix ». Un visiteur paie donc exactement ce que paie un
+ * particulier connecté — et c'est ce que calcule déjà `OrderDrafting` sans
+ * société, le même service que la commande connectée (vérifié le 2026-10-11).
  *
  * ## Le débit
  *

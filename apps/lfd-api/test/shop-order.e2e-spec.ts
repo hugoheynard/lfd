@@ -25,19 +25,12 @@ import { createUser } from "./factories.js";
  *   avec son jeton de retrait — donc que la file du comptoir, le prévisionnel et
  *   le colisage la voient sans une ligne de changement (§2, lot D).
  *
- * ## 🔴 Pourquoi la surface HTTP n'est pas traversée
+ * ## La surface HTTP
  *
- * **Parce qu'elle n'est pas ouverte, et que c'est la décision.**
- * `ShopOrdersController` n'est pas enregistré dans `OrdersModule` : la mise en
- * service dépend d'un arbitrage de prix et de fiscalité qui n'est pas technique
- * (§6), et il n'existe aucun drapeau pour la livrer éteinte — le niveau `shop`
- * est global, donc celui qui ouvre la boutique pro ouvrirait celle-ci.
- *
- * Cette suite éprouve donc **le tout sauf la porte**, en passant par le handler
- * tel que l'application le monte — vrais ports, vrai Prisma, vraies contraintes
- * — et vérifie en propre que la porte, elle, ne répond pas. Le jour de
- * l'ouverture, une ligne dans le module la branche, et un test ci-dessous
- * devient faux **bruyamment** : c'est ce qu'on veut d'un interrupteur.
+ * La porte est ouverte depuis le 2026-10-11 (§6) ; la suite en éprouve
+ * l'existence et le refus de forme, et passe le reste par le handler tel que
+ * l'application le monte — vrais ports, vrai Prisma, vraies contraintes —,
+ * pour ne pas créer d'intention de paiement par HTTP.
  */
 
 /**
@@ -135,11 +128,11 @@ async function place(over: Partial<PlaceShopOrderPayload> = {}) {
 }
 
 describe("la commande sans compte — la porte", () => {
-  it("N'EST PAS OUVERTE, et c'est la décision", async () => {
-    // §6 : ce plan se bâtit et s'éprouve, il ne se met pas en service. Le
-    // contrôleur existe, écrit et marqué, mais il n'est pas enregistré — la
-    // route n'a donc aucune existence à l'exécution.
-    await ctx.http().post("/shop/orders").send({}).expect(404);
+  it("est ouverte, sans jeton, et refuse un corps mal formé (400)", async () => {
+    // §6 tranché le 2026-10-11 : la route existe à l'exécution et ne demande
+    // aucun jeton. Un corps vide n'atteint pas le handler — c'est la forme
+    // qui refuse, pas une absence de route (qui rendait 404).
+    await ctx.http().post("/shop/orders").send({}).expect(400);
   });
 });
 
