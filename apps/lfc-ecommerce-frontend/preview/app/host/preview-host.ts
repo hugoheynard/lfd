@@ -20,6 +20,23 @@ import { outbound, readShowMessage } from '../protocol/preview-messages';
 const SETTLE_MS = 250;
 
 /**
+ * Ouverts par une fenêtre dont on ne peut pas lire l'origine : le temps laissé
+ * au back-office pour nous parler avant de montrer l'écran « hors cadre ».
+ */
+export const OPENER_GRACE_MS = 1500;
+
+/** La largeur de la fenêtre détachée, selon la largeur simulée demandée. */
+const WINDOW_WIDTHS: Readonly<Record<ShopCopyPreviewShowMessage['viewport'], number>> = {
+  mobile: 430,
+  desktop: 1280,
+};
+
+/** Le back-office, vu d'ici : une fenêtre à qui écrire, et RIEN d'autre. */
+interface EditorWindow {
+  postMessage(message: unknown, targetOrigin: string): void;
+}
+
+/**
  * **Le chef d'orchestre de l'aperçu** — il parle au back-office, et démarre
  * la boutique dans l'état du parcours demandé (plan
  * `plan-textes-de-la-boutique.md`, §5, §6, §10 B3).
@@ -27,12 +44,26 @@ const SETTLE_MS = 250;
  * - **Hors cadre** (aucun parent, ou un parent dont l'origine n'est pas sur la
  *   liste) : il démarre l'écran « Cet aperçu s'ouvre depuis le back-office »,
  *   et ne fait RIEN d'autre — aucun écouteur, aucun message.
+ * - **Ouvert par le back-office** (`window.opener`, la fenêtre détachée du
+ *   2026-10-11) : même conversation, avec l'opener au lieu du parent. Son
+ *   origine est illisible d'ici ; `ready` part donc à chacune des origines
+ *   autorisées et le navigateur ne le livre qu'à la bonne. Sans `show` accepté
+ *   dans {@link OPENER_GRACE_MS}, l'écran « hors cadre » s'affiche — un
+ *   `show` tardif le remplace. Une largeur demandée redimensionne la fenêtre,
+ *   si le navigateur le permet.
  * - **Encadré** : il annonce `ready` au back-office, puis applique chaque
  *   `show`. Un changement de parcours REDÉMARRE la boutique — stockage vidé,
  *   injecteur neuf : un parcours ne garde rien du précédent. Un changement de
  *   textes, de langue ou de surbrillance s'applique à la boutique en place.
  *
  * Il n'envoie qu'aux origines du back-office, jamais à `'*'`.
+ *
+ * 🔴 **Ce qui protège une fenêtre ouverte, c'est la garde des messages, pas
+ * l'en-tête.** `frame-ancestors` empêche un tiers de NOUS ENCADRER ; il ne
+ * l'empêche pas de nous OUVRIR. Ce qui tient alors, et ne se relâche jamais :
+ * la liste d'origines (on n'écrit qu'à elles, on ne lit que d'elles) et le
+ * contrôle de l'émetteur (`event.source === window.opener`). De l'opener, on
+ * n'utilise QUE `postMessage` : on ne le navigue pas, on ne le lit pas.
  */
 export class PreviewHost {
   private readonly markers = new CopyMarkers();
@@ -46,6 +77,11 @@ export class PreviewHost {
   private highlight: string | null = null;
   private lastKeys = '';
   private settleTimer: ReturnType<typeof setTimeout> | null = null;
+  /** La fenêtre du back-office : le parent qui nous encadre, ou l'opener. */
+  private editor: EditorWindow | null = null;
+  private opened = false;
+  private graceTimer: ReturnType<typeof setTimeout> | null = null;
+  private windowViewport: ShopCopyPreviewShowMessage['viewport'] | null = null;
 
   constructor(
     private readonly win: Window,
@@ -55,7 +91,8 @@ export class PreviewHost {
 
   /** Démarre : l'écran hors cadre, ou l'écoute du back-office. */
   async start(): Promise<void> {
-    if (!this.framedByEditor()) {
+    this.editor = this.findEditor();
+    if (this.editor === null) {
       await bootstrapApplication(OutsideFrame);
       return;
     }
@@ -67,13 +104,32 @@ export class PreviewHost {
       characterData: true,
     });
     this.send(outbound({ type: 'ready' }));
+    if (this.opened) {
+      this.graceTimer = setTimeout(() => {
+        this.graceTimer = null;
+        this.queue = this.queue.then(() => this.showOutside());
+      }, OPENER_GRACE_MS);
+    }
+  }
+
+  /** Personne ne nous a parlé à temps : l'écran « hors cadre », remplaçable par un `show`. */
+  private async showOutside(): Promise<void> {
+    if (this.app !== null) {
+      return;
+    }
+    this.ensureRoot();
+    this.app = await bootstrapApplication(OutsideFrame);
   }
 
   /** Le démarrage du parcours demandé, ou rien s'il tourne déjà. */
   private receive(event: MessageEvent): void {
-    const message = readShowMessage(event, this.allowedOrigins, this.win.parent);
+    const message = readShowMessage(event, this.allowedOrigins, this.editor);
     if (message === null) {
       return;
+    }
+    if (this.graceTimer !== null) {
+      clearTimeout(this.graceTimer);
+      this.graceTimer = null;
     }
     this.editorOrigin = event.origin;
     this.latest = message;
@@ -86,6 +142,7 @@ export class PreviewHost {
       return;
     }
     this.latest = null;
+    this.fitWindow(message.viewport);
     if (this.journey !== message.journey || this.app === null) {
       await this.remount(message);
     } else {
@@ -109,6 +166,19 @@ export class PreviewHost {
     // Les textes AVANT le parcours : le premier écran se dessine déjà avec eux.
     this.applyCopy(message);
     await journey.enter(app.injector);
+  }
+
+  /** Fenêtre détachée : la largeur simulée devient celle de la fenêtre, si le navigateur le permet. */
+  private fitWindow(viewport: ShopCopyPreviewShowMessage['viewport']): void {
+    if (!this.opened || this.windowViewport === viewport) {
+      return;
+    }
+    this.windowViewport = viewport;
+    try {
+      this.win.resizeTo(WINDOW_WIDTHS[viewport], this.win.outerHeight);
+    } catch {
+      // Refusé par le navigateur (onglet, réglage) : la page s'adapte à la fenêtre telle qu'elle est.
+    }
   }
 
   private applyCopy(message: ShopCopyPreviewShowMessage): void {
@@ -161,21 +231,34 @@ export class PreviewHost {
   private send(message: ShopCopyPreviewOutbound): void {
     const targets = this.editorOrigin === null ? this.allowedOrigins : [this.editorOrigin];
     for (const origin of targets) {
-      this.win.parent.postMessage(message, origin);
+      this.editor?.postMessage(message, origin);
     }
   }
 
   /**
-   * Encadrés par le back-office ? Sans parent, non. Avec un parent, on lit son
-   * origine quand le navigateur la donne (`ancestorOrigins`) — elle devient
+   * La fenêtre du back-office : le parent si on est encadré par lui, sinon
+   * l'opener s'il y en a un — son origine ne se lit pas d'ici, la garde des
+   * messages en décide. `null` : personne, l'écran « hors cadre ».
+   */
+  private findEditor(): EditorWindow | null {
+    if (this.win.parent !== this.win) {
+      return this.framedByEditor() ? this.win.parent : null;
+    }
+    const opener: unknown = this.win.opener;
+    if (isEditorWindow(opener)) {
+      this.opened = true;
+      return opener;
+    }
+    return null;
+  }
+
+  /**
+   * Encadrés par le back-office ? On lit l'origine du parent quand le navigateur la donne (`ancestorOrigins`) — elle devient
    * alors la seule destination ; sinon on la suppose — l'en-tête
    * `frame-ancestors` a déjà refusé tout autre encadrement, et la garde des
    * messages refuse tout autre émetteur.
    */
   private framedByEditor(): boolean {
-    if (this.win.parent === this.win) {
-      return false;
-    }
     const ancestors = this.win.location.ancestorOrigins;
     const parentOrigin =
       ancestors === undefined || ancestors.length === 0 ? null : ancestors.item(0);
@@ -196,4 +279,13 @@ export class PreviewHost {
       document.body.prepend(document.createElement('app-root'));
     }
   }
+}
+
+function isEditorWindow(value: unknown): value is EditorWindow {
+  return (
+    typeof value === 'object' &&
+    value !== null &&
+    'postMessage' in value &&
+    typeof value.postMessage === 'function'
+  );
 }

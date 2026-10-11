@@ -24,8 +24,10 @@ export interface IncomingMessage {
  * ignoré sans bruit :
  *
  * 1. l'**origine** est une de celles du back-office de cet environnement ;
- * 2. l'**émetteur** est la fenêtre qui nous encadre (`window.parent`), pas un
- *    onglet ouvert par nous ni une autre iframe de la même origine ;
+ * 2. l'**émetteur** est la fenêtre du back-office — celle qui nous encadre
+ *    (`window.parent`), ou celle qui nous a ouverts (`window.opener`, la
+ *    fenêtre détachée du 2026-10-11) —, pas un onglet ouvert par nous ni une
+ *    autre fenêtre de la même origine ;
  * 3. la **forme** est celle d'un `show` complet — chaque champ relu, rien de cru.
  *
  * Rend le message typé, ou `null`.
@@ -33,9 +35,14 @@ export interface IncomingMessage {
 export function readShowMessage(
   event: IncomingMessage,
   allowedOrigins: readonly string[],
-  parent: unknown,
+  editor: unknown,
 ): ShopCopyPreviewShowMessage | null {
-  if (!allowedOrigins.includes(event.origin) || event.source !== parent || parent === null) {
+  if (
+    !allowedOrigins.includes(event.origin) ||
+    editor === null ||
+    editor === undefined ||
+    event.source !== editor
+  ) {
     return null;
   }
   const data = event.data;

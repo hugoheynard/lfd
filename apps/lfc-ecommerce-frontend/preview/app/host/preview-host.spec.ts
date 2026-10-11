@@ -1,7 +1,7 @@
 import { SHOP_COPY_PREVIEW_SOURCE } from '@lfd/contracts/shop-copy-preview';
 
 import { shadowBrowserStorage } from '../composition/memory-storage';
-import { PreviewHost } from './preview-host';
+import { OPENER_GRACE_MS, PreviewHost } from './preview-host';
 
 const EDITOR = 'http://127.0.0.1:7317';
 const ALLOWED = ['http://localhost:7317', EDITOR];
@@ -18,6 +18,43 @@ function framedWindow(parent: { postMessage: (message: unknown, origin: string) 
     },
   });
 }
+
+/**
+ * Une fenêtre ouverte par `window.open` : sans parent (le sien est elle-même),
+ * avec un opener qui note ce qu'on lui envoie, et un `resizeTo` observé.
+ */
+function openedWindow(
+  opener: { postMessage: (message: unknown, origin: string) => void },
+  resizeTo: (width: number, height: number) => void = () => undefined,
+): Window {
+  const opened: Window = new Proxy(window, {
+    get(target, property) {
+      if (property === 'parent') {
+        return opened;
+      }
+      if (property === 'opener') {
+        return opener;
+      }
+      if (property === 'resizeTo') {
+        return resizeTo;
+      }
+      const value: unknown = Reflect.get(target, property);
+      return typeof value === 'function' ? value.bind(target) : value;
+    },
+  });
+  return opened;
+}
+
+const SHOW = {
+  source: SHOP_COPY_PREVIEW_SOURCE,
+  type: 'show',
+  journey: 'visitor-first-visit',
+  locale: 'fr',
+  viewport: 'mobile',
+  drafts: {},
+  published: {},
+  highlight: null,
+};
 
 /** Un message tel que le navigateur le livre — l'origine et l'émetteur sont ceux qu'il atteste. */
 function deliver(origin: string, source: unknown, data: unknown): void {
@@ -90,6 +127,55 @@ describe('l’hôte de l’aperçu', () => {
     const targets = new Set(parent.postMessage.mock.calls.map(([, origin]) => origin));
     expect([...targets]).toEqual([EDITOR]);
     expect(parent.postMessage.mock.calls.some(([message]) => isVisibleKeys(message))).toBe(true);
+  });
+
+  describe('ouvert dans une fenêtre par le back-office', () => {
+    it('annonce `ready` à l’opener, aux seules origines du back-office, jamais à « * »', async () => {
+      const opener = { postMessage: vi.fn<(message: unknown, origin: string) => void>() };
+
+      await new PreviewHost(openedWindow(opener), ALLOWED, shadowBrowserStorage(window)).start();
+
+      expect(opener.postMessage.mock.calls).toEqual(
+        ALLOWED.map((origin) => [{ source: SHOP_COPY_PREVIEW_SOURCE, type: 'ready' }, origin]),
+      );
+      expect(opener.postMessage.mock.calls.some(([, origin]) => origin === '*')).toBe(false);
+    });
+
+    it('joue le `show` de l’opener, ne répond qu’à son origine, et prend la largeur demandée', async () => {
+      const opener = { postMessage: vi.fn<(message: unknown, origin: string) => void>() };
+      const resizeTo = vi.fn<(width: number, height: number) => void>();
+      await new PreviewHost(
+        openedWindow(opener, resizeTo),
+        ALLOWED,
+        shadowBrowserStorage(window),
+      ).start();
+      opener.postMessage.mockClear();
+
+      // Même origine, autre émetteur : ignoré.
+      deliver(EDITOR, {}, SHOW);
+      await settle(50);
+      expect(resizeTo).not.toHaveBeenCalled();
+
+      deliver(EDITOR, opener, SHOW);
+      await settle(800);
+
+      const targets = new Set(opener.postMessage.mock.calls.map(([, origin]) => origin));
+      expect([...targets]).toEqual([EDITOR]);
+      expect(resizeTo).toHaveBeenCalledWith(430, expect.any(Number));
+    });
+
+    it('refuse un opener d’une origine non autorisée, puis montre l’écran « hors cadre »', async () => {
+      const opener = { postMessage: vi.fn<(message: unknown, origin: string) => void>() };
+      await new PreviewHost(openedWindow(opener), ALLOWED, shadowBrowserStorage(window)).start();
+      opener.postMessage.mockClear();
+
+      deliver('https://evil.example', opener, SHOW);
+      await settle(OPENER_GRACE_MS + 300);
+
+      expect(document.querySelector('app-client-shell')).toBeNull();
+      expect(document.body.textContent).toContain("Cet aperçu s'ouvre depuis le back-office");
+      expect(opener.postMessage).not.toHaveBeenCalled();
+    });
   });
 });
 

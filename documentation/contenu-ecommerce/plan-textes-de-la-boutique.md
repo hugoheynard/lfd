@@ -136,6 +136,16 @@ sequenceDiagram
 - **inactif hors cadre** : `/apercu` ouvert directement dans un onglet ne joue
   rien (pas de parent autorisé, pas de parcours).
 
+**La fenêtre détachée (2026-10-11, demandée par Hugo).** « Ouvrir dans une
+fenêtre » déplace l'aperçu dans une fenêtre à part (`window.open`, nom fixe
+`lfc-shop-copy-preview`, sans `noopener`) ; la colonne le dit et propose
+« Ramener ici ». Une seule cible à la fois ; la fermeture est sondée et
+rétablit l'iframe. L'aperçu parle alors à `window.opener` comme à un parent :
+`ready` à chaque origine autorisée, garde origine + émetteur, puis la seule
+origine du premier `show`. ⚠️ `frame-ancestors` ne protège pas une fenêtre
+ouverte : ce sont la liste d'origines et le contrôle de `source` qui tiennent.
+Sans `show` accepté en 1,5 s, l'écran « hors cadre » s'affiche.
+
 Les lectures publiques (catalogue, vitrine, points de retrait) restent
 réelles : l'aperçu montre les vrais produits.
 
@@ -260,6 +270,11 @@ aperçu**, aucune façade d'auth factice, aucun intercepteur de démonstration.
 La frontière de sécurité disparaît au lieu d'être gardée (interdire plutôt que
 vérifier). Le prix : un second build et un second déploiement, et l'aperçu ne
 lit pas le vrai catalogue (des produits de démonstration, typés).
+
+Le 2026-10-11, l'aperçu peut aussi vivre dans une **fenêtre détachée** ouverte
+par l'éditeur (§5) : même protocole, l'opener à la place du parent ; la largeur
+choisie redimensionne la fenêtre (`resizeTo`, par l'aperçu lui-même — l'éditeur
+ne le peut pas sur une autre origine) quand le navigateur le permet.
 
 ### Les objections sérieuses
 

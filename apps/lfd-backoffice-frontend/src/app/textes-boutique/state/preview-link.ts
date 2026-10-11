@@ -13,7 +13,10 @@ import { CopyNavigation } from './copy-navigation';
 import { DraftWriter } from './draft-writer';
 import { ShopCopyStore } from './shop-copy-store';
 
-/** Ce à quoi l'on écrit : la fenêtre de l'iframe, réduite à ce qu'on lui demande. */
+/**
+ * Ce à quoi l'on écrit : la fenêtre de l'iframe, ou la fenêtre détachée —
+ * réduite à ce qu'on lui demande.
+ */
 export interface PreviewWindow {
   postMessage(message: unknown, targetOrigin: string): void;
 }
@@ -24,8 +27,12 @@ export interface PreviewWindow {
  * `show` à chaque changement — parcours, langue, largeur, brouillons, clé
  * surlignée. On reçoit `pick` (ouvrir une clé) et `visible-keys`.
  *
- * 🔴 Un message n'est lu que s'il vient de l'origine configurée ET de notre
- * iframe (`acceptPreviewMessage`) ; on n'écrit qu'à cette origine, jamais `'*'`.
+ * **Une seule cible à la fois** (2026-10-11) : l'iframe, ou la fenêtre
+ * détachée (`detached`). Changer de cible oublie l'autre — un message de
+ * l'ancienne est alors refusé comme celui de n'importe quelle fenêtre.
+ *
+ * 🔴 Un message n'est lu que s'il vient de l'origine configurée ET de la cible
+ * active (`acceptPreviewMessage`) ; on n'écrit qu'à cette origine, jamais `'*'`.
  */
 @Injectable()
 export class PreviewLink {
@@ -41,6 +48,8 @@ export class PreviewLink {
   readonly locale = this.navigation.locale;
   readonly viewport = signal<ShopCopyPreviewViewport>('mobile');
   readonly ready = signal(false);
+  /** L'aperçu vit dans une autre fenêtre : la colonne n'encadre plus rien. */
+  readonly detached = signal(false);
 
   private frame: PreviewWindow | null = null;
 
@@ -88,6 +97,18 @@ export class PreviewLink {
   attach(frame: PreviewWindow | null): void {
     this.frame = frame;
     this.ready.set(false);
+  }
+
+  /** La fenêtre détachée devient la seule cible ; l'iframe est oubliée. */
+  detachTo(popup: PreviewWindow): void {
+    this.attach(popup);
+    this.detached.set(true);
+  }
+
+  /** Retour à la colonne : plus de cible tant que l'iframe n'a pas rechargé. */
+  reattach(): void {
+    this.attach(null);
+    this.detached.set(false);
   }
 
   receive(event: IncomingMessage): void {

@@ -15,15 +15,35 @@
         [value]="link.viewport()"
         (valueChange)="setViewport($event)"
       />
+      <button
+        foldButton
+        size="sm"
+        emphasis="outline"
+        intent="neutral"
+        type="button"
+        (click)="openWindow()"
+      >
+        Ouvrir dans une fenêtre
+      </button>
     </div>
-    <iframe
-      #frame
-      class="sp-frame"
-      title="Aperçu de la boutique"
-      [class.sp-frame-mobile]="link.viewport() === 'mobile'"
-      [src]="url"
-      (load)="loaded()"
-    ></iframe>
+    @if (link.detached()) {
+      <fold-empty-state
+        title="L’aperçu est ouvert dans une autre fenêtre"
+        subtitle="Il y suit vos modifications comme ici. Fermez-la, ou ramenez-le dans cette colonne."
+      >
+        <fold-icon empty-icon name="view" />
+        <button foldButton type="button" (click)="bringBack()">Ramener ici</button>
+      </fold-empty-state>
+    } @else {
+      <iframe
+        #frame
+        class="sp-frame"
+        title="Aperçu de la boutique"
+        [class.sp-frame-mobile]="link.viewport() === 'mobile'"
+        [src]="url"
+        (load)="loaded()"
+      ></iframe>
+    }
   } @else {
     <fold-empty-state
       title="Aperçu indisponible"
