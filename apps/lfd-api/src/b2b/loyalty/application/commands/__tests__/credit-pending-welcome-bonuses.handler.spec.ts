@@ -23,7 +23,13 @@ const SINCE = new Date(NOW.getTime() - HOUR_MS);
 const BONUS: LoyaltySettingsInput = { ...OPEN_TO_PUBLIC, welcomeBonusPoints: 500 };
 
 function person(userId: string, overrides: Partial<WelcomeCandidateFacts> = {}) {
-  return { userId, becameAccountAt: NOW, addressProven: true, ...overrides };
+  return {
+    userId,
+    becameAccountAt: NOW,
+    addressProven: true,
+    accountDisabled: false,
+    ...overrides,
+  };
 }
 
 function setup(

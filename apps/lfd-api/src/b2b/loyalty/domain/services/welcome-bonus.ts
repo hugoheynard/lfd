@@ -8,6 +8,8 @@ export interface WelcomeCandidate {
   readonly becameAccountAt: Date | null;
   /** `users.email_verified` : une connexion a prouvé l'adresse en base (§7 S9). */
   readonly addressProven: boolean;
+  /** Le staff a désactivé le compte (Hugo, 2026-10-11). */
+  readonly accountDisabled: boolean;
   /** Sa ligne `welcome` existe déjà. */
   readonly alreadyWelcomed: boolean;
 }
@@ -20,6 +22,7 @@ export type WelcomeSkipReason =
   | "not_an_account"
   | "before_bonus"
   | "address_unproven"
+  | "account_disabled"
   | "already_welcomed";
 
 export type WelcomeBonus =
@@ -67,6 +70,11 @@ export function welcomeBonusFor(
   }
   if (!candidate.addressProven) {
     return skip("address_unproven");
+  }
+  // Un compte que le staff a désactivé ne reçoit rien (Hugo, 2026-10-11) ; s'il
+  // est réactivé, la passe de nuit le rattrape.
+  if (candidate.accountDisabled) {
+    return skip("account_disabled");
   }
   if (candidate.alreadyWelcomed) {
     return skip("already_welcomed");

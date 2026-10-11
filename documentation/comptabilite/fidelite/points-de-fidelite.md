@@ -225,7 +225,7 @@ commandes de particulier, quelle que soit la société qu'elle rejoint ensuite.
 
 La règle est une fonction pure, `welcomeBonusFor`
 (`loyalty/domain/services/welcome-bonus.ts`), à côté d'`earningFor`. Il faut
-les quatre ; chaque refus a sa raison nommée.
+les cinq ; chaque refus a sa raison nommée.
 
 1. **Le bonus est allumé** : un réglage existe, ouvert au public, avec un
    `welcome_bonus_points` et un `welcome_bonus_since`
@@ -235,7 +235,10 @@ les quatre ; chaque refus a sa raison nommée.
    pas quand on l'allume (`not_an_account`, `before_bonus`).
 3. **Son adresse est prouvée** en base (`users.email_verified`,
    `address_unproven`).
-4. **Elle n'a pas déjà sa ligne `welcome`** (`already_welcomed`).
+4. **Son compte n'est pas désactivé** par le staff (`users.status`,
+   `account_disabled` ; Hugo, 2026-10-11). Réactivé, la passe de nuit le
+   rattrape.
+5. **Elle n'a pas déjà sa ligne `welcome`** (`already_welcomed`).
 
 Le montant est celui du réglage **au moment du crédit** ; le changer ensuite
 ne touche aucun bonus écrit.

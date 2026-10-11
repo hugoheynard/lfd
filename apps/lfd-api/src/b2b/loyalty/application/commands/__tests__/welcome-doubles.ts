@@ -31,7 +31,9 @@ export class FixedWelcomeCandidates extends WelcomeCandidateReader {
       this.ledger.entries.filter((entry) => entry.kind === "welcome").map((e) => e.holder.id),
     );
     const rest = this.people
-      .filter((person) => person.addressProven && !welcomed.has(person.userId))
+      .filter(
+        (person) => person.addressProven && !person.accountDisabled && !welcomed.has(person.userId),
+      )
       .filter((person) => (person.becameAccountAt?.getTime() ?? -1) >= since.getTime())
       .map((person) => person.userId)
       .sort()

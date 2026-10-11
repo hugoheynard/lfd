@@ -32,6 +32,7 @@ export class WelcomeBonusPreviewing extends WelcomeBonusPreview {
         userId: PROSPECT_USER_ID,
         becameAccountAt: this.clock.now(),
         addressProven: true,
+        accountDisabled: false,
         alreadyWelcomed: false,
       },
       await this.settings.read(),

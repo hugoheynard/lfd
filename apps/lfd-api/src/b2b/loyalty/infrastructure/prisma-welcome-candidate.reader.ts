@@ -1,5 +1,6 @@
 import { Injectable } from "@nestjs/common";
 
+import { UserStatus } from "../../../platform/database/client/client.js";
 import { PrismaService } from "../../../platform/database/prisma.service.js";
 import {
   WelcomeCandidateReader,
@@ -21,7 +22,7 @@ export class PrismaWelcomeCandidateReader extends WelcomeCandidateReader {
   async candidate(userId: string): Promise<WelcomeCandidateFacts | null> {
     const user = await this.prisma.user.findUnique({
       where: { id: userId },
-      select: { id: true, becameAccountAt: true, emailVerified: true },
+      select: { id: true, becameAccountAt: true, emailVerified: true, status: true },
     });
     return user === null
       ? null
@@ -29,6 +30,7 @@ export class PrismaWelcomeCandidateReader extends WelcomeCandidateReader {
           userId: user.id,
           becameAccountAt: user.becameAccountAt,
           addressProven: user.emailVerified,
+          accountDisabled: user.status === UserStatus.disabled,
         };
   }
 
@@ -42,6 +44,7 @@ export class PrismaWelcomeCandidateReader extends WelcomeCandidateReader {
       where: {
         becameAccountAt: { gte: since },
         emailVerified: true,
+        status: { not: UserStatus.disabled },
         loyaltyEntries: { none: { kind: "welcome" } },
         ...(after === null ? {} : { id: { gt: after } }),
       },

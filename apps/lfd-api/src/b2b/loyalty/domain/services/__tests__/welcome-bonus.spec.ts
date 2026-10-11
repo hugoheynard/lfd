@@ -24,6 +24,7 @@ const NEWCOMER: WelcomeCandidate = {
   userId: "u1",
   becameAccountAt: SINCE,
   addressProven: true,
+  accountDisabled: false,
   alreadyWelcomed: false,
 };
 
@@ -91,6 +92,14 @@ describe("welcomeBonusFor — le bonus de bienvenue, une fois par personne", () 
     expect(welcomeBonusFor({ ...NEWCOMER, addressProven: false }, ACTIVE)).toEqual({
       kind: "skip",
       reason: "address_unproven",
+    });
+  });
+
+  /** Hugo, 2026-10-11 : un compte désactivé par le staff ne reçoit pas de bonus. */
+  it("compte désactivé : rien", () => {
+    expect(welcomeBonusFor({ ...NEWCOMER, accountDisabled: true }, ACTIVE)).toEqual({
+      kind: "skip",
+      reason: "account_disabled",
     });
   });
 

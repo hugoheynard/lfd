@@ -156,6 +156,22 @@ describe("le bonus de bienvenue, à la nuit", () => {
     expect((await nightly()).welcome).toEqual({ scanned: 0, credited: 0 });
   });
 
+  /** Hugo, 2026-10-11 : un compte désactivé par le staff ne reçoit pas de bonus. */
+  it("compte désactivé, adresse prouvée : rien, même à la nuit ; réactivé, la nuit crédite", async () => {
+    await setSettings(BONUS);
+    const userId = await enter(BY_PASSWORD, false);
+    await ctx.prisma.user.update({
+      where: { id: userId },
+      data: { emailVerified: true, status: "disabled" },
+    });
+
+    expect((await nightly()).welcome).toEqual({ scanned: 0, credited: 0 });
+    expect(await welcomes()).toEqual([]);
+
+    await ctx.prisma.user.update({ where: { id: userId }, data: { status: "active" } });
+    expect((await nightly()).welcome).toEqual({ scanned: 1, credited: 1 });
+  });
+
   it("deux passages simultanés n'écrivent qu'une ligne", async () => {
     await setSettings(BONUS);
     const userId = await enter(BY_PASSWORD, false);

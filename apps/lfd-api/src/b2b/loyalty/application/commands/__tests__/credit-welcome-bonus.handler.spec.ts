@@ -25,7 +25,12 @@ const SINCE = new Date(NOW.getTime() - HOUR_MS);
 const BONUS: LoyaltySettingsInput = { ...OPEN_TO_PUBLIC, welcomeBonusPoints: 500 };
 const MILESTONES: LoyaltySettingsMilestones = { publicOpenedAt: SINCE, welcomeBonusSince: SINCE };
 
-const NEWCOMER: WelcomeCandidateFacts = { userId: "u1", becameAccountAt: NOW, addressProven: true };
+const NEWCOMER: WelcomeCandidateFacts = {
+  userId: "u1",
+  becameAccountAt: NOW,
+  addressProven: true,
+  accountDisabled: false,
+};
 
 function setup(
   people: readonly WelcomeCandidateFacts[] = [NEWCOMER],

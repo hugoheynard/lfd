@@ -3,6 +3,8 @@ export interface WelcomeCandidateFacts {
   readonly userId: string;
   readonly becameAccountAt: Date | null;
   readonly addressProven: boolean;
+  /** Le staff l'a désactivé : pas de bonus tant qu'il l'est (Hugo, 2026-10-11). */
+  readonly accountDisabled: boolean;
 }
 
 /** Un lot de personnes à qui le bonus est peut-être dû, et le curseur du suivant. */
