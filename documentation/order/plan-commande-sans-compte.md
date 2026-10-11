@@ -336,8 +336,19 @@ externalId)` (`platform/mailer/journal/mail-journal.port.ts`) est un
   Tranché. Aucune route publique de reprise : le `clientSecret` n'est pas
   persisté, et en rendre un depuis une surface publique serait la passoire que
   le §5 écarte pour l'idempotence, par le même mécanisme (`retrieveIntent` rend
-  un secret vivant). La commande existe, elle se règle au comptoir ou sur
-  relance. On rouvrira si le cas se produit vraiment.
+  un secret vivant). La commande existe ; non réglée, elle expire (plan des
+  commandes non réglées). On rouvrira si le cas se produit vraiment.
+
+  🔴 **Rien ne se règle au comptoir, ni sur relance hors ligne** (Hugo,
+  2026-10-11 : « soit on est au compte, soit on paye, c'est tout »). Une
+  commande est réglée en ligne par carte, ou portée au compte d'une société
+  — il n'existe pas de troisième voie. Ce n'est pas qu'un choix d'usage :
+  c'est ce qui tient la boutique dans la tolérance du BOFiP
+  (BOI-TVA-DECLA-30-10-30, § 35 : un site qui n'accepte que la carte ou le
+  virement est dispensé de logiciel de caisse certifié). Un encaissement au
+  comptoir, même ponctuel, ferait tomber la tolérance et imposerait une caisse
+  conforme à l'article 286 du CGI.
+
 - **D5 — la clientèle.** `Order.clientele` existe depuis le 2026-09-15. Une
   commande publique l'alimente en conséquence ; **à confirmer contre les valeurs
   réelles de l'énuméré au moment de bâtir** — elles n'ont pas été ouvertes ici.
