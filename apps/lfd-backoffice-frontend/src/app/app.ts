@@ -256,9 +256,15 @@ export class App {
    * Ouvrir cet écran ARME les outils WebMCP : ils écrivent. Le montrer à qui
    * n'a que `pim_catalog:read` lui promettrait un atelier dont chaque appel
    * rendrait 403 — et la route, elle, le refuserait de toute façon
-   * (`app.routes.ts`, `permissionGuard('pim_catalog:write')`).
+   * (`app.routes.ts`, `anyPermissionGuard('pim_catalog:write',
+   * 'media_library:write')`).
    */
-  protected readonly canUseAgentTools = computed(() => this.permissions.can('pim_catalog:write'));
+  // Le même « l'un OU l'autre » que la garde de `/outils-agent` (2026-10-11) :
+  // l'entrée suit la route, sinon un compte médiathèque seul aurait un écran
+  // ouvert que rien n'annonce.
+  protected readonly canUseAgentTools = computed(
+    () => this.permissions.can('pim_catalog:write') || this.permissions.can('media_library:write'),
+  );
 
   /**
    * **Admin** — deux vues, deux murs : les accès à remettre demandent

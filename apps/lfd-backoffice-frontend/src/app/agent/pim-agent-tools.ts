@@ -5,6 +5,8 @@ import { CategoryStore } from '../pim/catalogue/category-store';
 import { ProductHttpApi } from '../pim/catalogue/product-http-api';
 import type { NutritionValues } from '../pim/data/models';
 
+import { said } from './agent-tool-text';
+
 /**
  * **Les outils WebMCP du référentiel** — ce qu'un agent peut faire sur le PIM
  * sans passer par le clic.
@@ -25,25 +27,6 @@ import type { NutritionValues } from '../pim/data/models';
  * où l'application tourne. Ils n'ont pas de mode bac à sable, et c'est
  * volontaire : un bac à sable ferait croire qu'on s'entraîne.
  */
-
-/** Ce que rend un outil : Angular ne transforme rien, la JSDoc dit « raw string ». */
-type ToolText = string;
-
-/**
- * Rend un refus **lisible**, jamais une exception.
- *
- * Un outil qui jette casse la boucle de l'agent, qui recommence à l'aveugle. Un
- * outil qui dit « le serveur a refusé, et voici pourquoi » se corrige au coup
- * suivant.
- */
-async function said(what: string, run: () => Promise<string>): Promise<ToolText> {
-  try {
-    return await run();
-  } catch (caught) {
-    const detail = caught instanceof Error ? caught.message : String(caught);
-    return `${what} — REFUSÉ : ${detail}`;
-  }
-}
 
 /**
  * Déclare la trousse et rend les noms déclarés, pour que l'écran puisse les

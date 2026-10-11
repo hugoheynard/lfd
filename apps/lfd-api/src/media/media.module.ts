@@ -4,6 +4,7 @@ import { MediaDatabaseModule } from "./infra/database/media-database.module.js";
 
 import { BrowseMediaLibraryHandler } from "./application/browse-media-library.js";
 import { ListMediaCarriersHandler } from "./application/list-media-carriers.js";
+import { ReadMediaImageHandler } from "./application/read-media-image.js";
 import { ReadUploadFailuresHandler } from "./application/read-upload-failures.js";
 import { MediaFailureLog } from "./domain/ports/media-failure-log.js";
 import { PrismaMediaFailureLog } from "./infrastructure/prisma-media-failure-log.js";
@@ -87,6 +88,7 @@ import { PrismaMediaLibraryWriter } from "./infrastructure/prisma-media-library-
   providers: [
     BrowseMediaLibraryHandler,
     ListMediaCarriersHandler,
+    ReadMediaImageHandler,
     ReadUploadFailuresHandler,
     { provide: MediaFailureLog, useClass: PrismaMediaFailureLog },
     SaveMediaDetailsHandler,

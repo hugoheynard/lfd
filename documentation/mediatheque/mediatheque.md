@@ -73,8 +73,8 @@ l'ancienne URL.
 - **L'ancienne reste au fonds** ; le ramassage l'emporte après 7 jours sans
   porteur (§9).
 - **La boutique suit sans republier** : le remplacement écrit le fait durable
-  `media.asset_described` sur la nouvelle, et les abonnés du §7 la recadrent
-  sur **son** point focal.
+  `media.asset_described` sur la nouvelle, et les abonnés du §7 et du §7 bis
+  — fiches, vitrine, opérations — la posent avec **son** point focal.
 - **Déposer et remplacer sont deux appels**, pas une route : une route
   combinée échouerait à moitié (nouvelle image entrée, remplacement refusé).
 - À l'écran, le panneau de l'image se ferme pendant le remplacement (fold
@@ -84,13 +84,19 @@ l'ancienne URL.
   n'écrase jamais une description sans geste.
 
 ⚠️ **Une copie au commerce compte comme porteur.** L'image d'une opération
-n'est copiée au commerce qu'au push : tant qu'une opération poussée affiche
-l'ancienne image, celle-ci n'est ni retirable ni ramassable — le panneau des
-porteurs la nomme « Boutique — opération « X » (copie, suit au prochain envoi
-du catalogue) », et le prochain push la libère. Une opération finie ou
-masquée compte encore tant qu'un envoi ne l'a pas retirée : un effacement ne
-dépend pas d'un calcul de date. Les copies d'image des **articles**, elles, ne
-comptent pas : la projection vive les réécrit.
+est copiée au commerce (`catalog_operations`) au push, et suit un
+remplacement sans push (§7 bis) : la copie passe à la nouvelle dès que le
+fait `pim.operation_image_changed` est livré. Tant que la copie affiche
+l'ancienne image — ces quelques secondes, ou jusqu'au push quand l'image a
+été changée sur l'opération elle-même au référentiel —, celle-ci n'est ni
+retirable ni ramassable : le panneau des porteurs la nomme « Boutique —
+opération « X » (copie, suit au prochain envoi du catalogue) ». Le
+repointage de la copie dans la transaction du remplacement reste à zéro
+(`CatalogCopyMediaCarriers.repoint`) : c'est le fait qui la fait suivre,
+avec l'ordre de ses gestes. Une opération finie ou masquée compte encore
+tant qu'un envoi ne l'a pas retirée : un effacement ne dépend pas d'un
+calcul de date. Les copies d'image des **articles**, elles, ne comptent
+pas : la projection vive les réécrit.
 
 ⚠️ **Ce qu'un redépôt ne rend pas** : l'étiquette, les mots-clés,
 l'alternative et le point focal. Ils décrivent l'image, pas ses octets. **Et
@@ -205,6 +211,7 @@ Une image a **une** ligne : la lecture ne regroupe rien, la page est un
 | Le vocabulaire                   | `GET /media/tags`                                                                | la bande de tags                   | chaque mot du fonds ENTIER et son nombre d'images — jamais la page chargée                                                                                                                                                                                                                                                                                                                                                                                                                                          |
 | Renommer, fusionner un mot       | `PUT /media/tags/rename`                                                         | menu de la pastille                | partout, en une unité ; la fusion avec un mot existant est annoncée avant de valider                                                                                                                                                                                                                                                                                                                                                                                                                                |
 | Retirer un mot partout           | `DELETE /media/tags?tag=`                                                        | menu de la pastille                | confirmation avec le compte ; les images restent                                                                                                                                                                                                                                                                                                                                                                                                                                                                    |
+| Lire une image seule             | `GET /media/one?url=`                                                            | outils agent                       | la même vue qu'une ligne du fil ; 404 `media.not_in_library` si elle n'est pas au fonds. Ouverte le 2026-10-11 : qui écrit sans voir l'image doit la relire, `PUT /media` remplaçant tout                                                                                                                                                                                                                                                                                                                           |
 | Qui l'affiche ?                  | `GET /media/carriers?url=`                                                       | médiathèque                        | les porteurs, nommés et cliquables, pas un simple compte                                                                                                                                                                                                                                                                                                                                                                                                                                                            |
 | Retirer du fonds                 | `DELETE /media?url=`                                                             | médiathèque                        | **409 dès qu'un porteur l'affiche**, avec leur nombre                                                                                                                                                                                                                                                                                                                                                                                                                                                               |
 | Choisir, donner un usage         | `PUT` du porteur                                                                 | fiche, famille, opération, vitrine | le porteur écrit sa propre table de rattachement ; il ne touche jamais le fonds                                                                                                                                                                                                                                                                                                                                                                                                                                     |
@@ -370,8 +377,8 @@ sequenceDiagram
   `media.asset_described` (`media/channels/carriers/`) dans sa transaction ;
   le référentiel l'écoute (`on-media-asset-described.ts`, `@DurableHandler`)
   et réannonce `pim.product_media_changed` pour chaque fiche qui porte l'URL
-  en `hero` ou `thumbnail`. Un second abonné recadre la vitrine (§7 bis) ;
-  familles et opérations n'ont pas de copie projetée.
+  en `hero` ou `thumbnail`. Deux autres abonnés recadrent la vitrine et les
+  opérations (§7 bis) ; les familles n'ont pas de copie projetée.
 - **La boutique garde une copie de l'URL** : le snapshot vaut aussi pour
   l'image. Repointer le référentiel ne repointe la boutique que par l'un de
   ces deux chemins.
@@ -395,7 +402,8 @@ sequenceDiagram
     participant OB as Boîte d'envoi
     participant RB as appBootstrap — storefront.refocus-images
     participant SF as b2b/storefront — Storefront.refocus
-    participant PUSH as push du catalogue
+    participant OP as pim — pim.reannounce-operation-media
+    participant CO as b2b/catalog — catalog.project-operation-image
     participant SHOP as Boutique
 
     ED->>SF: enregistrer {url, alt, focal} (focal lu au choix dans la médiathèque)
@@ -404,7 +412,11 @@ sequenceDiagram
     RB->>MED: ImageCatalogue.describe([url]) — le point d'AUJOURD'HUI
     RB->>SF: RefocusStorefrontImageCommand(url, focal)
     SF->>SF: load → refocus → save (révision +1)
-    PUSH->>SHOP: opérations : focal lu dans la médiathèque au push
+    OB->>OP: livraison durable
+    OP->>MED: ImageCatalogue.describe([url])
+    OP->>OB: pim.operation_image_changed {clé, geste, url, alt, focal}
+    OB->>CO: livraison durable
+    CO->>CO: catalog_operations.image_* si image_gesture_id NULL ou plus ancien
     SHOP->>SHOP: object-position / background-position
 ```
 
@@ -432,10 +444,31 @@ sequenceDiagram
   n'est écrit et la révision ne monte pas.
 - **Un remplacement A → B recadre sur le point de B** : le fait
   `media.asset_described` est écrit sur B (§2).
-- **Les opérations** reçoivent le point au **push**, dans le snapshot
-  (`packages/catalog-sync`), lu dans la médiathèque à ce moment-là, rangé en
-  `catalog_operations.image_focal_x/y`. Comme leur image, il ne suit une
-  redescription qu'au push suivant.
+- **Les opérations** reçoivent l'image et son point au **push**, dans le
+  snapshot (`packages/catalog-sync`), lu dans la médiathèque à ce moment-là,
+  rangé en `catalog_operations.image_*` et `image_focal_x/y`.
+- **Entre deux push, l'image d'une opération suit la médiathèque.** Le
+  remplacement repointe l'opération au référentiel dans sa transaction ;
+  `OnMediaAssetDescribedForOperationsHandler`
+  (`apps/lfd-api/src/pim/operations/application/on-media-asset-described.ts`, abonné durable
+  `pim.reannounce-operation-media`) écoute `media.asset_described`, relit les
+  opérations qui affichent l'URL (archivées comprises, tant que leur copie
+  vit) et le point courant, et publie pour chacune
+  `pim.operation_image_changed` (`pim/channels/b2b-platform/operations/`) —
+  l'URL, l'alternative **de l'opération**, le point de la médiathèque, un
+  geste UUID v7 neuf. Le commerce (`OnOperationImageChangedHandler`, abonné
+  `catalog.project-operation-image`) l'écrit par UNE écriture conditionnée
+  sur `image_gesture_id` (migration `20261011180000_l_image_des_operations_suit`,
+  additive) : un fait plus ancien livré après un plus récent n'écrit rien.
+  Seule l'image traverse ainsi — dates, sélection et clientèle attendent le
+  push, qui reste la réparation et ne touche pas au geste. La parité du
+  catalogue reste verte : la projection du référentiel et la copie disent la
+  même image.
+- **Une image changée sur l'opération elle-même** (édition au référentiel)
+  ne suit encore qu'au push.
+- **L'éditeur de vitrine** reçoit le point des opérations
+  (`storefrontCatalogOperationSchema.image.focal`, facultatif) : l'aperçu
+  d'une image héritée se recadre par `focalPositionOf`.
 - **La boutique** pose `object-position` sur les infos et les bannières,
   `background-position` sur la porte (fond CSS), par le calcul de
   `objectPositionOf` (`shelf-display.ts`).
@@ -599,23 +632,22 @@ marquées 🔵 attendent une décision de Hugo.
 > - plus aucun fichier de la médiathèque au-delà de 300 lignes ; les codes de
 >   l'ancien plan ont quitté le code ;
 > - la photo du fournil est posée sur la porte (production), le CORS du
->   bucket autorise le back-office (vérifié sur une image).
+>   bucket autorise le back-office (vérifié sur une image) ;
+> - l'image d'une opération et son point suivent un remplacement ou une
+>   redescription sans push (§7 bis) ; l'aperçu hérité de l'éditeur de
+>   vitrine se recadre sur le point de l'opération.
 
-1. **L'image d'une opération ne suit qu'au push**, son point focal aussi :
-   après un remplacement ou une redescription, l'annonce en boutique garde
-   l'ancien état jusqu'à la prochaine publication (le compte des porteurs
-   l'empêche seulement de casser, §2). Une projection vive des opérations
-   fermerait l'écart.
-2. **L'aperçu d'une image héritée d'une opération** reste centré dans le
-   formulaire d'info de l'éditeur : le contrat admin des opérations
-   (`storefrontCatalogOperationSchema.image`) ne porte pas le point.
-3. **Le préfixe de clé s'appelle `products`** alors que le fonds sert tout
+1. **Le préfixe de clé s'appelle `products`** alors que le fonds sert tout
    porteur. C'est une valeur, pas un nom : il ne se renomme pas sans migrer
    les URL, et rien ne l'exige.
-4. **🔵 Au-delà de 5 000 transformations par mois**, l'offre Images & Stream
+2. **🔵 Au-delà de 5 000 transformations par mois**, l'offre Images & Stream
    n'étant pas souscrite : facturé, ou arrêté ? Cf.
    [`../ops/cloudflare-images.md`](../ops/cloudflare-images.md) §5. Laissé en
    l'état (Hugo, 2026-10-11).
-5. **🔵 Recadrage automatique** (`gravity=auto`) des images sans point : non
+   La carte OPS « Médiathèque — les seuils » prévient à 80 % (vers 1 000
+   images) et dit quand passer au payant, avec les deux autres limites du
+   fonds (tri par emplois, frise) : cf.
+   [`../ops/cloudflare-images.md`](../ops/cloudflare-images.md) §5 bis.
+3. **🔵 Recadrage automatique** (`gravity=auto`) des images sans point : non
    fait, le centre reste le défaut. Changer `fit` touche toutes les tuiles et
    le compte des transformations : à mesurer avant.

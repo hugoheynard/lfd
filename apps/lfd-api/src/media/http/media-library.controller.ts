@@ -25,6 +25,7 @@ import {
   MEDIA_LIMITS,
   type MediaCarrierView,
   type MediaUploadFailureView,
+  type LibraryMediaView,
 } from "@lfd/pim-contracts";
 
 import { AdminSurface } from "../../platform/auth/admin-surface.decorator.js";
@@ -36,7 +37,9 @@ import {
   BrowseMediaLibraryQuery,
   type BrowsedLibraryPage,
 } from "../application/browse-media-library.js";
-import { libraryPageView, uploadedView } from "./library-media-view.js";
+import { libraryMediaView, libraryPageView, uploadedView } from "./library-media-view.js";
+import { ReadMediaImageQuery } from "../application/read-media-image.js";
+import type { LibraryMediaRecord } from "../domain/ports/media-library-reader.js";
 import {
   failuresQuerySchema,
   imageUrlQuerySchema,
@@ -140,6 +143,22 @@ export class MediaLibraryController {
       }),
     );
     return libraryPageView(page);
+  }
+
+  /**
+   * **Une image seule**, par son URL — la même vue qu'une ligne du fil.
+   *
+   * L'URL en paramètre de requête, pour la raison de `carriers` ci-dessous.
+   * Inconnue (ou vide) : 404 `media.not_in_library`.
+   */
+  @Get("one")
+  async one(
+    @Query(new ZodQuery(imageUrlQuerySchema)) query: ImageUrlQuery,
+  ): Promise<LibraryMediaView> {
+    const image = await this.queries.execute<ReadMediaImageQuery, LibraryMediaRecord>(
+      new ReadMediaImageQuery(query.url ?? ""),
+    );
+    return libraryMediaView(image);
   }
 
   /**

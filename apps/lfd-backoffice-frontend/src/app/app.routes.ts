@@ -107,9 +107,11 @@ export const routes: Routes = [
     // que tant qu'on est dessus. Route de premier niveau, hors de `pim/` : ce
     // n'est pas un écran du référentiel, c'est un atelier qui le pilote.
     //
-    // Le garde demande l'ÉCRITURE, pas la lecture : ces outils écrivent.
+    // Le garde demande l'ÉCRITURE, pas la lecture : ces outils écrivent. L'un
+    // OU l'autre (2026-10-11) : la page porte deux trousses, le référentiel et
+    // la médiathèque, et ne déclare que celle dont le compte a le droit.
     path: 'outils-agent',
-    canActivate: [permissionGuard('pim_catalog:write')],
+    canActivate: [anyPermissionGuard('pim_catalog:write', 'media_library:write')],
     title: 'Outils agent — LFC B2B admin',
     loadComponent: () =>
       import('./agent/agent-tools-page/agent-tools-page').then((m) => m.AgentToolsPage),

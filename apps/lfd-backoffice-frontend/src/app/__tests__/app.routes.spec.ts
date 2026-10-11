@@ -180,7 +180,9 @@ const SCREENS: Readonly<Record<string, ScreenAccess>> = {
   // référentiel s'ouvre en lecture (`pim_catalog:read`), cet atelier écrit. Il
   // ne peut donc pas hériter, sinon un lecteur du catalogue armerait des outils
   // d'écriture et récolterait des 403 — ce que la table existe pour empêcher.
-  'outils-agent': 'pim_catalog:write',
+  // Deux trousses depuis le 2026-10-11 : le référentiel OU la médiathèque,
+  // chacune en écriture ; la page ne déclare que celle dont on a le droit.
+  'outils-agent': { anyOf: ['pim_catalog:write', 'media_library:write'] },
 
   pim: 'pim_catalog:read',
   // La SEULE vue du PIM à ne pas hériter : poser un taux de TVA est une

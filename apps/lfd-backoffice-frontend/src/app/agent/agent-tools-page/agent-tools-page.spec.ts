@@ -3,15 +3,24 @@ import { provideHttpClientTesting } from '@angular/common/http/testing';
 import { TestBed } from '@angular/core/testing';
 import { afterEach, describe, expect, it, vi } from 'vitest';
 
+import { PermissionsStore } from '../../auth/permissions.store';
+
 import { AgentToolsPage } from './agent-tools-page';
 
 /**
  * L'écran des outils agent. Aucune requête n'est vidée : la page se peint sans
  * réseau, et c'est ce qu'on vérifie en même temps que le reste.
  */
-function render() {
+function render(granted: readonly string[] = ['pim_catalog:write']) {
+  const permissions: Pick<PermissionsStore, 'can'> = {
+    can: (permission) => granted.includes(permission),
+  };
   TestBed.configureTestingModule({
-    providers: [provideHttpClient(), provideHttpClientTesting()],
+    providers: [
+      provideHttpClient(),
+      provideHttpClientTesting(),
+      { provide: PermissionsStore, useValue: permissions },
+    ],
   });
   const fixture = TestBed.createComponent(AgentToolsPage);
   fixture.detectChanges();
@@ -133,5 +142,27 @@ describe('AgentToolsPage', () => {
     vi.advanceTimersByTime(PROBE_MS * 10);
 
     expect(registered).toEqual([]);
+  });
+
+  it('ne déclare la trousse de la médiathèque qu’avec `media_library:write`', () => {
+    const without = render(['pim_catalog:write']);
+    const listed = [...without.root.querySelectorAll('code')].map((el) => el.textContent?.trim());
+    expect(listed.some((name) => name?.startsWith('media_'))).toBe(false);
+    expect(without.root.textContent).toContain("pas le droit d'écrire dans la médiathèque");
+    TestBed.resetTestingModule();
+
+    const granted = render(['pim_catalog:write', 'media_library:write']);
+    const both = [...granted.root.querySelectorAll('code')].map((el) => el.textContent?.trim());
+    expect(both).toContain('media_search');
+    expect(both).toContain('pim_product_create');
+  });
+
+  it('ne déclare QUE la médiathèque pour un compte qui n’a qu’elle, et dit ce qui manque', () => {
+    const { root } = render(['media_library:write']);
+    const listed = [...root.querySelectorAll('code')].map((el) => el.textContent?.trim() ?? '');
+
+    expect(listed).toContain('media_search');
+    expect(listed.some((name) => name.startsWith('pim_'))).toBe(false);
+    expect(root.textContent).toContain("pas le droit d'écrire dans le référentiel");
   });
 });

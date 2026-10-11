@@ -9,6 +9,8 @@ import {
 } from '@angular/core';
 import { FoldCalloutComponent, FoldPageLayoutComponent } from 'fold-ng';
 
+import { PermissionsStore } from '../../auth/permissions.store';
+import { declareMediaAgentTools } from '../media-agent-tools';
 import { declarePimAgentTools } from '../pim-agent-tools';
 
 /**
@@ -100,6 +102,24 @@ export class AgentToolsPage {
    */
   protected readonly tools = signal<readonly string[]>([]);
 
+  /**
+   * La trousse de la médiathèque — vide sans `media_library:write` (celle du
+   * référentiel, {@link tools}, est vide sans `pim_catalog:write`), le droit
+   * que ses routes d'écriture opposent (`@AdminSurface("media_library")`).
+   * Déclarer des outils que le serveur refuserait tous ferait apprendre la
+   * règle par une suite d'échecs.
+   */
+  protected readonly mediaTools = signal<readonly string[]>([]);
+
+  /**
+   * Lus une fois : la garde de la route a déjà chargé les permissions. Elle
+   * laisse passer l'un OU l'autre droit ; chaque trousse suit le sien, et la
+   * page dit laquelle manque.
+   */
+  private readonly permissions = inject(PermissionsStore);
+  protected readonly pimAllowed = this.permissions.can('pim_catalog:write');
+  protected readonly mediaAllowed = this.permissions.can('media_library:write');
+
   /** Un agent est-il branché ? Un signal, puisque la réponse change. */
   protected readonly bridged = signal(false);
 
@@ -116,7 +136,7 @@ export class AgentToolsPage {
     // Déclaration d'ouverture : inerte sans agent, mais c'est elle qui rend les
     // noms à afficher. Sans agent, le comportement est celui d'avant, au
     // caractère près.
-    this.tools.set(declarePimAgentTools());
+    this.declareAll();
     this.armed = agentIsBridged();
     this.bridged.set(this.armed);
 
@@ -143,8 +163,14 @@ export class AgentToolsPage {
       return false;
     }
     this.armed = true;
-    this.tools.set(runInInjectionContext(this.injector, () => declarePimAgentTools()));
+    runInInjectionContext(this.injector, () => this.declareAll());
     this.bridged.set(true);
     return true;
+  }
+
+  /** Déclare les deux trousses ; à appeler dans le contexte d'injection du composant. */
+  private declareAll(): void {
+    this.tools.set(this.pimAllowed ? declarePimAgentTools() : []);
+    this.mediaTools.set(this.mediaAllowed ? declareMediaAgentTools() : []);
   }
 }

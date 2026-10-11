@@ -1,4 +1,4 @@
-import type { MediaLibraryPageView, UploadedMediaView } from "@lfd/pim-contracts";
+import type { LibraryMediaView, MediaLibraryPageView, UploadedMediaView } from "@lfd/pim-contracts";
 
 import type { BrowsedLibraryPage } from "../application/browse-media-library.js";
 import type { DepositImageResult } from "../application/deposit-image.js";
@@ -9,7 +9,8 @@ export function libraryPageView(page: BrowsedLibraryPage): MediaLibraryPageView 
   return { items: page.items.map(libraryMediaView), total: page.total, next: page.next };
 }
 
-function libraryMediaView(record: LibraryMediaRecord): MediaLibraryPageView["items"][number] {
+/** Une image du fonds, telle qu'elle part en JSON — la même forme dans le fil et seule. */
+export function libraryMediaView(record: LibraryMediaRecord): LibraryMediaView {
   return {
     url: record.url,
     name: record.name,

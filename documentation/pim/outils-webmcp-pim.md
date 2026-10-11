@@ -13,15 +13,14 @@
 
 ## 1. S'en servir, en trois phrases
 
-1. Ouvrir **`/outils-agent`** dans le back-office. La route est gardée par
-   `permissionGuard('pim_catalog:write')` — l'écriture, pas la lecture, puisque
-   ces outils écrivent.
-
-   🔴 **Il faut taper l'adresse : aucune entrée de menu n'y mène** (constaté le
-   2026-09-22, ni dans le rail ni dans les tuiles). La route existe, l'écran
-   fonctionne, et rien dans l'application ne dit qu'il est là. Ce n'est pas une
-   protection — un écran qu'on ne trouve pas n'est pas un écran fermé, c'est un
-   écran oublié.
+1. Ouvrir **Outils agent** dans le back-office (`/outils-agent`) — l'entrée
+   est au pied du rail et parmi les tuiles du menu mobile (vérifié dans
+   `app.html` le 2026-10-11). La route est gardée par
+   `anyPermissionGuard('pim_catalog:write', 'media_library:write')` depuis le
+   2026-10-11 — l'écriture, pas la lecture, puisque ces outils écrivent ; la
+   trousse du référentiel n'est déclarée qu'avec `pim_catalog:write`, celle de
+   la médiathèque ([`../mediatheque/outils-agent.md`](../mediatheque/outils-agent.md))
+   qu'avec `media_library:write`.
 
 2. L'écran dit s'il y a un agent branché. **Il n'y en a aucun par défaut** :
    aucun navigateur ne fournit `modelContext` aujourd'hui, et l'assistant doit
@@ -40,7 +39,7 @@ lit.
 
 Ils vivent dans
 [`agent/pim-agent-tools.ts`](../../apps/lfd-backoffice-frontend/src/app/agent/pim-agent-tools.ts)
-(336 lignes), déclarés par l'écran
+déclarés par l'écran
 [`agent/agent-tools-page/`](../../apps/lfd-backoffice-frontend/src/app/agent/agent-tools-page/).
 
 | Outil                       | Ce qu'il fait                                     |

@@ -3,6 +3,7 @@ import { Injectable, inject } from '@angular/core';
 import type {
   CreatedIdResponse,
   ImagePalette,
+  LibraryMediaView,
   MediaCarrierView,
   MediaUploadFailureView,
   MediaDetailsPayload,
@@ -118,6 +119,19 @@ export class MediaLibraryHttpApi {
       this.http.get<MediaLibraryPageView>(`${this.base}/media`, {
         params: pageParams(request),
       }),
+    );
+  }
+
+  /**
+   * **UNE image**, par son URL — `GET /media/one` (2026-10-11), la même vue
+   * qu'une ligne du fil. 404 si elle n'est pas au fonds.
+   *
+   * Elle sert à qui écrit sans avoir l'image sous les yeux (les outils agent) :
+   * {@link describe} remplace tout, donc on relit d'abord.
+   */
+  async one(url: string): Promise<LibraryMediaView> {
+    return firstValueFrom(
+      this.http.get<LibraryMediaView>(`${this.base}/media/one`, { params: { url } }),
     );
   }
 
