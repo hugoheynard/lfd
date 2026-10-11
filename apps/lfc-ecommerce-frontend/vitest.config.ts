@@ -16,12 +16,12 @@ export default defineConfig({
   plugins: [angular()],
   // Confine dependency discovery to the specs so Vite never crawls build
   // artefacts under dist/ (which reference hashed, unresolvable entry chunks).
-  optimizeDeps: { entries: ['src/**/*.spec.ts'] },
+  optimizeDeps: { entries: ['src/**/*.spec.ts', 'preview/**/*.spec.ts'] },
   test: {
     globals: true,
     environment: 'jsdom',
     setupFiles: ['vitest.setup.ts'],
-    include: ['src/**/*.spec.ts'],
+    include: ['src/**/*.spec.ts', 'preview/**/*.spec.ts'],
     isolate: true,
   },
 });

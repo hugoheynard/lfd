@@ -1,0 +1,137 @@
+name: deploy_lfc_apercu_textes
+
+# Construit L'APPLICATION D'APERÇU des textes de la boutique et la publie sur
+# SON PROPRE projet Cloudflare Pages (plan
+# `documentation/contenu-ecommerce/plan-textes-de-la-boutique.md`, §10 B3).
+#
+# C'est une seconde application Angular du même espace que la boutique
+# (`apps/lfc-ecommerce-frontend/angular.json`, projet `lfc-ecommerce-preview`) :
+# elle importe les vrais écrans et remplace à la composition tout ce qui touche
+# le monde. Le back-office l'encadre ; rien d'autre ne le peut (`_headers`,
+# `frame-ancestors`).
+#
+# Calqué sur `deploy_lfc_boutique.yml`, avec TROIS différences voulues :
+#
+# 1. LE NOM DU PROJET PAGES EST UNE VARIABLE, et rien ne le devine.
+#    `vars.LFC_APERCU_TEXTES_PAGES_PROJECT` (onglet *Variables*). Absente, le
+#    déploiement ÉCHOUE au lieu de créer un projet au nom vide ou inventé : le
+#    `|| true` de la création avale un « already exists » comme une création
+#    qui n'aurait pas dû avoir lieu — c'est ce qui a envoyé la boutique sur une
+#    adresse que personne n'ouvrait, le 2026-09-21 (cf. le workflow boutique).
+# 2. AUCUNE CONFIGURATION RÉELLE n'entre dans le bundle. L'aperçu n'appelle
+#    aucune API (son backend de démonstration ne sort pas, et `_headers` pose
+#    `connect-src 'none'`) et n'ouvre aucune session Auth0 : on génère la
+#    configuration avec une adresse d'API qui ne se résout pas (`.invalid`) et
+#    rien d'autre.
+# 3. LE DÉPLOIEMENT PART DE LA RACINE DU DÉPÔT, pas du dossier de l'app.
+#    `wrangler pages deploy` emporte le `./functions` du répertoire courant
+#    (wrangler 4) : lancé depuis l'app, il publierait les Functions de la
+#    BOUTIQUE sur l'aperçu. La racine n'a pas de `functions/` (vérifié le
+#    2026-10-11).
+#
+# Secrets (onglet *Secrets*) :
+#   CLOUDFLARE_LFC_APERCU_TEXTES_PAGES — jeton « Account · Cloudflare Pages ·
+#     Edit », propre à cette app (un jeton par app : ils se révoquent seuls).
+#   CLOUDFLARE_ACCOUNT_ID — l'identifiant du compte, partagé.
+
+on:
+  push:
+    branches: [main]
+    # Ce qui entre dans le build : l'app (la boutique ET l'aperçu, qui en
+    # importe les écrans), les paquets locaux qu'elle embarque, le `catalog:`.
+    paths:
+      - "apps/lfc-ecommerce-frontend/**"
+      - "packages/**"
+      - "pnpm-workspace.yaml"
+      - ".github/workflows/deploy_lfc_apercu_textes.yml"
+  workflow_dispatch:
+
+concurrency:
+  group: deploy_lfc_apercu_textes
+  cancel-in-progress: true
+
+permissions:
+  contents: read
+  actions: read # lire le verdict des autres workflows
+
+jobs:
+  deploy_lfc_apercu_textes:
+    runs-on: ubuntu-latest
+    env:
+      PAGES_PROJECT: ${{ vars.LFC_APERCU_TEXTES_PAGES_PROJECT }}
+    steps:
+      # Avant tout le reste : sans nom de projet, rien ne doit être construit
+      # pour être ensuite publié n'importe où.
+      - name: Exiger le nom du projet Pages
+        run: |
+          if [ -z "$PAGES_PROJECT" ]; then
+            echo "::error::Variable LFC_APERCU_TEXTES_PAGES_PROJECT absente (Settings → Secrets and variables → Actions → Variables)."
+            exit 1
+          fi
+
+      - uses: actions/checkout@v7
+
+      - uses: pnpm/action-setup@v6
+
+      - uses: actions/setup-node@v7
+        with:
+          node-version-file: .nvmrc
+          cache: pnpm
+
+      - run: pnpm install --frozen-lockfile
+
+      # Les paquets partagés AVANT le build : le bundler suit le `exports` des
+      # package.json (`dist/`), et l'aperçu lit `@lfd/contracts/shop-copy-preview`.
+      - name: Build shared packages
+        run: pnpm --filter "./packages/**" build
+
+      # La configuration générée est importée par les écrans de la boutique.
+      # Aucune valeur réelle : une API qui ne se résout pas, pas d'Auth0, pas
+      # de Sentry, pas d'origine d'administration.
+      - name: Generate config (aucune valeur réelle)
+        working-directory: apps/lfc-ecommerce-frontend
+        env:
+          APP_REVISION: ${{ github.sha }}
+          API_BASE_URL: https://api.apercu.invalid
+        run: node scripts/generate-auth-config.mjs
+
+      - name: Typecheck
+        working-directory: apps/lfc-ecommerce-frontend
+        run: pnpm exec tsc -p tsconfig.preview.json --noEmit
+
+      - name: Build (static)
+        working-directory: apps/lfc-ecommerce-frontend
+        run: pnpm exec ng build lfc-ecommerce-preview --configuration production
+
+      # Un aperçu publié sans son en-tête `frame-ancestors` s'encadrerait
+      # n'importe où : on vérifie que le fichier est bien dans la sortie.
+      - name: Vérifier les en-têtes publiés
+        working-directory: apps/lfc-ecommerce-frontend/dist/lfc-ecommerce-preview/browser
+        run: |
+          grep -q "frame-ancestors" _headers
+          grep -q "connect-src 'none'" _headers
+
+      - name: Attendre que la CI soit verte
+        if: github.event_name != 'workflow_dispatch'
+        uses: ./.github/actions/attendre-un-run
+        with:
+          workflow: ci.yml
+
+      - name: Ensure Pages project exists
+        env:
+          CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_LFC_APERCU_TEXTES_PAGES }}
+          CLOUDFLARE_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
+        run: >-
+          pnpm dlx wrangler pages project create "$PAGES_PROJECT"
+          --production-branch=main || true
+
+      # Depuis la RACINE (cf. en-tête, point 3).
+      - name: Deploy to Cloudflare Pages
+        env:
+          CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_LFC_APERCU_TEXTES_PAGES }}
+          CLOUDFLARE_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
+        run: >-
+          pnpm dlx wrangler pages deploy
+          apps/lfc-ecommerce-frontend/dist/lfc-ecommerce-preview/browser
+          --project-name="$PAGES_PROJECT"
+          --branch=main

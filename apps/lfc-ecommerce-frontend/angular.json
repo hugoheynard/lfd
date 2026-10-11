@@ -124,8 +124,102 @@
             "buildTarget": "::development",
             "tsConfig": "tsconfig.spec.json",
             "runner": "vitest",
-            "isolate": true
+            "isolate": true,
+            "include": ["**/*.spec.ts", "../preview/**/*.spec.ts"]
           }
+        }
+      }
+    },
+    "lfc-ecommerce-preview": {
+      "projectType": "application",
+      "schematics": {
+        "@schematics/angular:component": {
+          "style": "scss"
+        }
+      },
+      "root": "preview",
+      "sourceRoot": "preview",
+      "prefix": "app",
+      "architect": {
+        "build": {
+          "builder": "@angular/build:application",
+          "options": {
+            "outputPath": "dist/lfc-ecommerce-preview",
+            "index": "preview/index.html",
+            "browser": "preview/main.ts",
+            "tsConfig": "tsconfig.preview.json",
+            "inlineStyleLanguage": "scss",
+            "outputMode": "static",
+            "ssr": false,
+            "server": false,
+            "assets": [
+              {
+                "glob": "**/*",
+                "input": "public",
+                "ignore": ["_redirects", "robots.txt", "manifest.webmanifest", "MANIFEST-README.md"]
+              },
+              {
+                "glob": "**/*",
+                "input": "preview/public"
+              }
+            ],
+            "styles": ["src/styles.scss", "preview/preview.scss"],
+            "security": {
+              "allowedHosts": []
+            }
+          },
+          "configurations": {
+            "production": {
+              "budgets": [
+                {
+                  "type": "anyComponentStyle",
+                  "maximumWarning": "10kB",
+                  "maximumError": "14kB"
+                }
+              ],
+              "outputHashing": "all",
+              "baseHref": "/",
+              "optimization": {
+                "scripts": true,
+                "styles": {
+                  "minify": true,
+                  "inlineCritical": false
+                },
+                "fonts": true
+              }
+            },
+            "development": {
+              "optimization": false,
+              "extractLicenses": false,
+              "sourceMap": true,
+              "fileReplacements": [
+                {
+                  "replace": "preview/environments/preview-environment.ts",
+                  "with": "preview/environments/preview-environment.development.ts"
+                }
+              ]
+            }
+          },
+          "defaultConfiguration": "production"
+        },
+        "serve": {
+          "builder": "@angular/build:dev-server",
+          "options": {
+            "port": 7318,
+            "host": "127.0.0.1",
+            "headers": {
+              "Content-Security-Policy": "frame-ancestors http://localhost:7317 http://127.0.0.1:7317"
+            }
+          },
+          "configurations": {
+            "production": {
+              "buildTarget": "lfc-ecommerce-preview:build:production"
+            },
+            "development": {
+              "buildTarget": "lfc-ecommerce-preview:build:development"
+            }
+          },
+          "defaultConfiguration": "development"
         }
       }
     }

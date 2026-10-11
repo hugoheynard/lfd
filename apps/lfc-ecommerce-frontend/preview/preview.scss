@@ -1,0 +1,19 @@
+// Les deux marques propres à l'aperçu ; tout le reste est la feuille de la
+// boutique (`src/styles.scss`), chargée avant celle-ci.
+
+// Le texte en cours d'édition (`copy-highlighter.ts`, API des surlignages CSS).
+::highlight(lfc-preview-copy) {
+  background-color: var(--fold-color-warning-surface);
+  color: var(--fold-color-warning-text);
+}
+
+// La place de l'élément de paiement de Stripe (`demo-stripe-loader.ts`).
+.preview-payment-stand {
+  display: grid;
+  place-items: center;
+  min-height: 14rem;
+  border: 1px dashed var(--fold-color-border);
+  border-radius: var(--fold-radius-md);
+  color: var(--fold-color-text-muted);
+  background: var(--fold-color-surface-sunken);
+}

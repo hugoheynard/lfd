@@ -1,0 +1,3 @@
+# Une seule page, et un routeur côté navigateur : toute adresse profonde rend
+# `index.html` avec un 200.
+/*    /index.html   200

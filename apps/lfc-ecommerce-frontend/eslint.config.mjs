@@ -58,9 +58,33 @@ export default tslint.config(
     },
   },
   {
-    files: ['src/**/*.ts'],
+    files: ['src/**/*.ts', 'preview/**/*.ts'],
     rules: {
       '@typescript-eslint/no-explicit-any': 'error',
+    },
+  },
+  // 🔴 LA BOUTIQUE N'IMPORTE JAMAIS L'APERÇU (plan
+  // `plan-textes-de-la-boutique.md`, §10 B3). L'aperçu est une seconde
+  // application qui importe les écrans de la boutique et remplace, à la
+  // composition, tout ce qui touche le monde : une façade d'auth sans Auth0, un
+  // backend qui ne sort pas. Qu'un seul de ces remplaçants soit importé depuis
+  // `src/`, et il entre dans le bundle de production — la frontière que la
+  // séparation a fait disparaître reviendrait par un import.
+  {
+    files: ['src/**/*.ts'],
+    rules: {
+      'no-restricted-imports': [
+        'error',
+        {
+          patterns: [
+            {
+              regex: '(^|/)preview(/|$)',
+              message:
+                "La boutique n'importe pas l'application d'aperçu (`preview/`) : c'est elle qui importe la boutique.",
+            },
+          ],
+        },
+      ],
     },
   },
 );

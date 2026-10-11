@@ -1,0 +1,21 @@
+# L'aperçu des textes de la boutique (plan `plan-textes-de-la-boutique.md`,
+# §10 B3), servi par son propre projet Pages.
+#
+# `frame-ancestors` : il ne s'encadre QUE dans le back-office. Même liste que
+# `preview/environments/preview-environment.ts`, qui refuse de son côté tout
+# message d'une autre origine — un mur pour le navigateur, un pour le code.
+#
+# Le reste de la politique est le second mur de « l'aperçu ne sort jamais » :
+# le backend de démonstration ne sort pas, et le navigateur REFUSE toute
+# connexion (`connect-src 'none'`) et tout script venu d'ailleurs. Ce n'est pas
+# théorique : `@stripe/stripe-js` injecte `js.stripe.com` dès qu'on l'importe,
+# et la boutique l'importe (`stripe-loader.service.ts`) — ici, refusé.
+#
+# `style-src 'unsafe-inline'` : Angular pose les styles des composants en
+# `<style>`. L'inlining du CSS critique, qui exigerait un script en ligne,
+# est coupé dans `angular.json`.
+/*
+  Content-Security-Policy: default-src 'self'; script-src 'self'; style-src 'self' 'unsafe-inline'; img-src 'self' data: blob:; font-src 'self' data:; connect-src 'none'; frame-src 'none'; object-src 'none'; base-uri 'self'; form-action 'none'; frame-ancestors https://lfd-backoffice.com https://lfd-backoffice.pages.dev
+  X-Content-Type-Options: nosniff
+  Referrer-Policy: strict-origin-when-cross-origin
+  X-Robots-Tag: noindex
