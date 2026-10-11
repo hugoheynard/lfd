@@ -711,6 +711,43 @@ describe('AccueilPublic — la vitrine de l’Accueil (L6)', () => {
     expect(page?.style.getPropertyValue('--lfc-photo-door-at')).toBe('30% 70%');
   });
 
+  it('la carte livraison prend la photo de la porte livraison, recadrée sur son point', async () => {
+    homeState = {
+      status: 'ready',
+      page: {
+        rows: 6,
+        objects: [],
+        pickupDoorImage: { url: 'https://media.test/porte.jpg', alt: null },
+        deliveryDoorImage: {
+          url: 'https://media.test/coursier.jpg',
+          alt: null,
+          focal: { x: 0.2, y: 0.9 },
+        },
+      },
+    };
+    const fixture = await mount([point({ id: 'a' })]);
+    const page = (fixture.nativeElement as HTMLElement).querySelector<HTMLElement>('.page');
+    expect(page?.style.getPropertyValue('--lfc-photo-courier')).toContain('coursier.jpg');
+    expect(page?.style.getPropertyValue('--lfc-photo-courier-at')).toBe('20% 90%');
+    expect(page?.style.getPropertyValue('--lfc-photo-door')).toContain('porte.jpg');
+  });
+
+  it('sans porte livraison, l’écran ne pose rien : la carte reprend la photo du retrait', async () => {
+    homeState = {
+      status: 'ready',
+      page: {
+        rows: 6,
+        objects: [],
+        pickupDoorImage: { url: 'https://media.test/porte.jpg', alt: null },
+        deliveryDoorImage: null,
+      },
+    };
+    const fixture = await mount([point({ id: 'a' })]);
+    const page = (fixture.nativeElement as HTMLElement).querySelector<HTMLElement>('.page');
+    expect(page?.style.getPropertyValue('--lfc-photo-courier')).toBe('');
+    expect(page?.style.getPropertyValue('--lfc-photo-courier-at')).toBe('');
+  });
+
   it('sans photo choisie, la porte garde le fond de la palette — aucune URL tierce', async () => {
     homeState = { status: 'ready', page: { rows: 6, objects: [], pickupDoorImage: null } };
     const fixture = await mount([point({ id: 'a' })]);

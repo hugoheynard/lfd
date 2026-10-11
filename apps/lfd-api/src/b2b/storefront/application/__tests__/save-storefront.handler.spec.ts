@@ -268,6 +268,7 @@ describe("SaveStorefrontHandler — l'accueil", () => {
       shelfKey: "home",
       rows: 3,
       pickupDoorImage: DOOR,
+      deliveryDoorImage: null,
     });
     expect(repository.written?.objects[0]?.settings.shape).toBe("banner");
     expect(events.traced[0]?.journalFact().payload).toMatchObject({ shelves: ["home"] });

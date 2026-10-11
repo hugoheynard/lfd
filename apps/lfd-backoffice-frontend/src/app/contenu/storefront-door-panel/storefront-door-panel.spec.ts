@@ -62,6 +62,16 @@ describe('StorefrontDoorPanel', () => {
     ]);
   });
 
+  it('nomme la porte et son vide par ses entrées — le même panneau sert la livraison', () => {
+    const { fixture, root } = setup(null);
+    fixture.componentRef.setInput('title', 'Porte livraison');
+    fixture.componentRef.setInput('emptyCaption', 'Vide : la carte reprend la porte retrait.');
+    fixture.detectChanges();
+    expect(root.textContent).toContain('Porte livraison');
+    expect(root.textContent).toContain('Vide : la carte reprend la porte retrait.');
+    expect(root.textContent).not.toContain('Je passe la prendre');
+  });
+
   it('avec photo : l’aperçu, son alternative, et « Retirer » rend `null`', () => {
     const { root, emitted, button } = setup(DOOR);
     const img = root.querySelector('img');

@@ -7,7 +7,8 @@ import { StorefrontObject } from "../domain/storefront-object.js";
 import { StorefrontPage } from "../domain/storefront-page.js";
 import { StorefrontReader } from "../domain/storefront.reader.js";
 import { StorefrontTemplate } from "../domain/storefront-template.js";
-import { objectInputOf, pageInputOf, templateInputOf } from "./storefront-rows.js";
+import { pageInputOf } from "./storefront-page-rows.js";
+import { objectInputOf, templateInputOf } from "./storefront-rows.js";
 import { objectView, pageView, templateView } from "./storefront-views.js";
 
 /** Lecteur Prisma de la vitrine pour l'éditeur. Objets archivés exclus. */

@@ -213,15 +213,9 @@
    ⚠️ SANS SOURCE, PAS DE CALQUE : `--door-photo-*` n'a pas de valeur de repli.
    Une carte sans photo garde son voile, qui tient seul comme aplat.
 
-   🔴 LA PHOTO DU COURSIER EST PROVISOIRE (Hugo, 2026-09-20 : « une photo pour
-   voir »). Le dépôt n'a AUCUNE photographie de livraison — les fichiers de
-   `public/banners/` sont des SVG décoratifs de 1,3 ko. Le coursier reprend donc
-   celle de la porte du retrait (le repli ci-dessous), pour juger de l'effet : derrière « On vous l'apporte »,
-   elle montre une vitrine.
-
-   ⚠️ À REMPLACER DÈS QU'UNE VRAIE IMAGE EXISTE — une ligne, dans
-   `accueil-public.scss`. Laissée en place, elle deviendrait une de ces valeurs
-   de démonstration que personne ne remarque plus. */
+   🔴 LA PHOTO DU COURSIER est celle de la porte livraison, réglée dans la
+   vitrine (page Accueil) à côté de la porte retrait. Vide, la carte reprend la
+   photo et le recadrage du retrait (le repli ci-dessous). */
 .door::before,
 .door::after {
   content: '';
@@ -240,15 +234,13 @@
   background-position: var(--door-photo-pickup-at, center);
 }
 
-/* 🔴 LE REPLI EST LA PHOTO DU RETRAIT, et ce n'est pas qu'une commodité : la
-   recopier côté écran coûtait 112 OCTETS — l'URL est longue — et faisait
-   franchir à `accueil-public.scss` son budget de 10 kB, qui est une ERREUR
-   dans la configuration de déploiement. Une valeur écrite deux fois se paie
-   deux fois.
-   Poser `--door-photo-courier` le jour où une vraie image existe suffit à
-   reprendre la main : le repli s'efface tout seul. */
+/* 🔴 LE REPLI EST LA PHOTO DU RETRAIT : une porte livraison laissée vide dans
+   la vitrine montre l'image de la porte retrait, recadrée comme elle. Le repli
+   vit ici plutôt que côté écran — y recopier la valeur ferait franchir à
+   `accueil-public.scss` son budget, qui est une ERREUR au déploiement. */
 .door-courier::before {
   background-image: var(--door-photo-courier, var(--door-photo-pickup, none));
+  background-position: var(--door-photo-courier-at, var(--door-photo-pickup-at, center));
 }
 
 /* Le voile DESCEND VERS L'ENCRE LA PLUS PROFONDE : transparent en haut, où l'on

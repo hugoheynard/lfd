@@ -29,10 +29,12 @@ export function objectView(object: StorefrontObjectState): StorefrontObjectView 
   };
 }
 
-/** Une page : l'accueil porte toujours l'image de sa porte (`null` comprise), un rayon jamais. */
+/** Une page : l'accueil porte toujours les images de ses deux portes (`null` comprise), un rayon jamais. */
 export function pageView(page: StorefrontPageState): StorefrontPage {
-  const { shelfKey, rows, pickupDoorImage } = page;
-  return shelfKey === HOME_PAGE ? { shelfKey, rows, pickupDoorImage } : { shelfKey, rows };
+  const { shelfKey, rows, pickupDoorImage, deliveryDoorImage } = page;
+  return shelfKey === HOME_PAGE
+    ? { shelfKey, rows, pickupDoorImage, deliveryDoorImage }
+    : { shelfKey, rows };
 }
 
 export function templateView(template: StorefrontTemplateState): StorefrontTemplateView {

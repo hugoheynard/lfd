@@ -75,6 +75,29 @@ describe("Storefront.repointImage", () => {
     });
   });
 
+  it("repointe aussi la porte livraison, et compte l'accueil UNE fois quand ses deux portes la montraient", () => {
+    const storefront = Storefront.reconstitute({
+      revision: 3,
+      updatedAt: null,
+      pages: [
+        {
+          shelfKey: HOME_PAGE,
+          rows: 4,
+          pickupDoorImage: { url: OLD, alt: null },
+          deliveryDoorImage: { url: OLD, alt: { fr: "Le coursier" } },
+        },
+      ],
+      objects: [],
+      templates: [],
+    });
+
+    expect(storefront.repointImage(OLD, NEW, SAVING)).toBe(1);
+
+    const [home] = storefront.toPersistence().pages;
+    expect(home?.pickupDoorImage?.url).toBe(NEW);
+    expect(home?.deliveryDoorImage).toEqual({ url: NEW, alt: { fr: "Le coursier" }, focal: null });
+  });
+
   it("garde les deux contenus d'un objet qui montrait déjà la nouvelle image", () => {
     const storefront = stored(null, [[info(NEW, "Avant"), info(OLD, "Après")]]);
 

@@ -429,8 +429,8 @@ sequenceDiagram
 
 ## 7 bis. Le point focal hors des fiches : vitrine et opérations
 
-La bannière, les cartes d'info, la porte « Je passe la prendre » et la
-bannière d'opération se cadrent sur le point focal de la médiathèque — au
+La bannière, les cartes d'info, les deux portes de l'accueil (« Je passe la
+prendre » et livraison) et la bannière d'opération se cadrent sur le point focal de la médiathèque — au
 centre seulement quand l'image n'en a pas.
 
 ```mermaid
@@ -522,7 +522,7 @@ sequenceDiagram
   (`storefrontCatalogOperationSchema.image.focal`, facultatif) : l'aperçu
   d'une image héritée se recadre par `focalPositionOf`.
 - **La boutique** pose `object-position` sur les infos et les bannières,
-  `background-position` sur la porte (fond CSS), par le calcul de
+  `background-position` sur les deux portes (fond CSS), par le calcul de
   `objectPositionOf` (`shelf-display.ts`).
 
 ### L'accueil de la vitrine
@@ -534,6 +534,16 @@ sequenceDiagram
   visiteur affiche la même image, avec son alternative ; la porte d'un pro,
   décorative à côté de son libellé, n'en porte pas (fond CSS). Son aperçu
   dans l'éditeur est en 2/1, faute de ratio fixe côté boutique.
+- La même page porte la **porte livraison** (`deliveryDoorImage`, depuis le
+  2026-10-11), sa jumelle : mêmes règles (accueil seul, mêmes CHECK sur
+  `storefront_page.delivery_door_*`), réglée dans le même éditeur par un
+  second panneau, comptée comme porteur (« Accueil — porte livraison »),
+  repointée par un remplacement et recadrée par une redescription comme la
+  porte retrait. **Vide, la carte livraison reprend la photo et le
+  recadrage de la porte retrait** — le repli vit dans `service-doors.scss`,
+  l'écran ne pose `--door-photo-courier` que quand une image est choisie.
+  Une page dont les deux portes montrent la même image compte pour UN
+  porteur.
 - Une **bannière 21/9** se pose partout, accueil et rayons, comme la bande
   double de même emprise. La grille de vitrine se pose juste avant « En ce
   moment », après les portes, qui restent le geste principal.

@@ -146,11 +146,15 @@ export type StorefrontContent = z.infer<typeof storefrontContentSchema>;
  * `pickupDoorImage` : l'image de la porte « Je passe la prendre » de
  * l'accueil (D7 du plan de la médiathèque). Permise sur la page `home` SEULE ;
  * absente vaut `null`. ⚠️ Un éditeur qui ne la renvoie pas l'efface.
+ *
+ * `deliveryDoorImage` : l'image de la porte livraison de l'accueil, mêmes
+ * règles. `null` : la boutique reprend l'image de la porte retrait.
  */
 export const storefrontPageSchema = z.object({
   shelfKey: z.string(),
   rows: z.number().int(),
   pickupDoorImage: storefrontImageSchema.nullable().optional(),
+  deliveryDoorImage: storefrontImageSchema.nullable().optional(),
 });
 export type StorefrontPage = z.infer<typeof storefrontPageSchema>;
 
@@ -278,6 +282,11 @@ export interface PublicStorefrontPageView {
    * défaut), absente de tout rayon.
    */
   readonly pickupDoorImage?: StorefrontImage | null;
+  /**
+   * L'image de la porte livraison — mêmes règles de présence. `null` : la
+   * carte livraison reprend l'image de la porte retrait.
+   */
+  readonly deliveryDoorImage?: StorefrontImage | null;
 }
 
 /**

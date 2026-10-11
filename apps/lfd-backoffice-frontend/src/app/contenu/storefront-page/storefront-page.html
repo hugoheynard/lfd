@@ -298,13 +298,21 @@
 
         <!-- La colonne de droite n'a plus que l'aperçu mobile de la page : l'objet
              se règle dans son dialogue (double-clic, Entrée ou « Modifier »).
-             Sur l'Accueil, la porte « Je passe la prendre » s'y règle aussi :
-             c'est un réglage de la page, pas un objet de la grille. -->
+             Sur l'Accueil, les deux portes — « Je passe la prendre » et la
+             livraison — s'y règlent aussi : des réglages de la page, pas des
+             objets de la grille. -->
         <div class="side">
           @if (store.onHome()) {
             <app-storefront-door-panel
               [image]="store.pickupDoorImage()"
               (changed)="store.pickupDoorImage.set($event)"
+            />
+            <app-storefront-door-panel
+              title="Porte livraison"
+              subtitle="La photo du coursier, sur l’accueil de la boutique — recadrée sur son point focal."
+              emptyCaption="Aucune photo : la carte livraison reprend celle de la porte « Je passe la prendre »."
+              [image]="store.deliveryDoorImage()"
+              (changed)="store.deliveryDoorImage.set($event)"
             />
           }
           <fold-card>

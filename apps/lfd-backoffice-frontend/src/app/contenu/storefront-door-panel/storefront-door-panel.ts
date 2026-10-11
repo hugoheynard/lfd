@@ -35,10 +35,11 @@ function isLocale(value: string): value is StorefrontLocale {
 }
 
 /**
- * **La porte « Je passe la prendre »** de l'Accueil : sa photo, choisie dans
- * la médiathèque, et son texte alternatif — un réglage de la page, pas un
- * objet de la grille (`documentation/mediatheque/mediatheque.md` §7 bis,
- * « L'accueil de la vitrine »).
+ * **Une porte de l'Accueil** — « Je passe la prendre » ou la livraison : sa
+ * photo, choisie dans la médiathèque, et son texte alternatif — un réglage de
+ * la page, pas un objet de la grille (`documentation/mediatheque/mediatheque.md`
+ * §7 bis, « L'accueil de la vitrine »). Le même panneau sert les deux portes :
+ * seuls ses mots changent, par entrées (défaut : la porte retrait).
  *
  * L'aperçu la recadre sur son point focal, par le calcul de la boutique
  * ({@link focalPositionOf}) ; au centre seulement quand l'image n'en a pas
@@ -66,6 +67,12 @@ export class StorefrontDoorPanel {
   private readonly panels = inject(FoldPanelHostService);
 
   readonly image = input.required<StorefrontImage | null>();
+  readonly title = input('Porte « Je passe la prendre »');
+  readonly subtitle = input(
+    'La photo du retrait, sur l’accueil de la boutique — recadrée sur son point focal.',
+  );
+  /** Ce que la boutique montre quand la porte n'a pas de photo. */
+  readonly emptyCaption = input('Aucune photo : la porte garde un fond uni.');
   readonly changed = output<StorefrontImage | null>();
 
   protected readonly localeOptions = LOCALE_OPTIONS;

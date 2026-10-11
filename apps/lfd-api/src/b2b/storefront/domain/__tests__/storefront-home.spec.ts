@@ -17,6 +17,11 @@ import { object, settings } from "./storefront-fixtures.js";
  */
 const SAVING = { at: new Date(Date.UTC(2026, 9, 10, 8, 0)), staffId: "fiche-communication" };
 const DOOR = { url: "https://media.example/fournil.jpg", alt: { fr: "Le fournil" }, focal: null };
+const COURIER = {
+  url: "https://media.example/coursier.jpg",
+  alt: { fr: "Le coursier" },
+  focal: null,
+};
 const PAGES: readonly StorefrontPageInput[] = [
   { shelfKey: "all", rows: 4 },
   { shelfKey: HOME_PAGE, rows: 4, pickupDoorImage: null },
@@ -85,6 +90,42 @@ describe("la page `home`", () => {
   });
 });
 
+describe("la porte livraison de l'accueil", () => {
+  it("porte sa propre image, nettoyée, à côté de celle de la porte retrait", () => {
+    const page = StorefrontPage.of({
+      shelfKey: HOME_PAGE,
+      rows: 2,
+      pickupDoorImage: DOOR,
+      deliveryDoorImage: { url: ` ${COURIER.url}  `, alt: { fr: " Le coursier " } },
+    });
+    expect(page.state.deliveryDoorImage).toEqual(COURIER);
+    expect(page.state.pickupDoorImage).toEqual(DOOR);
+  });
+
+  it("absente, vaut `null` : la boutique reprend l'image de la porte retrait", () => {
+    const page = StorefrontPage.of({ shelfKey: HOME_PAGE, rows: 2, pickupDoorImage: DOOR });
+    expect(page.state.deliveryDoorImage).toBeNull();
+  });
+
+  it("refuse une porte livraison sur un rayon, en la nommant", () => {
+    expect(() =>
+      StorefrontPage.of({ shelfKey: "all", rows: 2, deliveryDoorImage: COURIER }),
+    ).toThrow(
+      "Le rayon « all » n'a pas de porte livraison : son image se règle sur la page d'accueil.",
+    );
+  });
+
+  it("refuse une porte livraison sans adresse d'image, en la nommant", () => {
+    expect(() =>
+      StorefrontPage.of({
+        shelfKey: HOME_PAGE,
+        rows: 2,
+        deliveryDoorImage: { url: " ", alt: null },
+      }),
+    ).toThrow("L'image de la porte livraison vient de la médiathèque");
+  });
+});
+
 describe("la bannière 21/9", () => {
   it("n'a qu'une image pleine", () => {
     expect(ObjectSettings.of(settings({ shape: "banner", mediaSide: "full" })).state.shape).toBe(
@@ -124,6 +165,7 @@ describe("la porte au journal", () => {
       shelfKey: HOME_PAGE,
       rows: 4,
       pickupDoorImage: DOOR,
+      deliveryDoorImage: null,
     });
   });
 });

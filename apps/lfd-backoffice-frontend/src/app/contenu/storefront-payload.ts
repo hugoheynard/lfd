@@ -44,6 +44,11 @@ export interface EditorState {
    * `null`, et un éditeur qui ne la renverrait pas l'effacerait.
    */
   readonly pickupDoorImage: StorefrontImage | null;
+  /**
+   * L'image de la porte livraison — mêmes règles. `null` : la boutique
+   * reprend l'image de la porte retrait.
+   */
+  readonly deliveryDoorImage: StorefrontImage | null;
 }
 
 export const EMPTY_STATE: EditorState = {
@@ -52,6 +57,7 @@ export const EMPTY_STATE: EditorState = {
   blocks: [],
   templates: [],
   pickupDoorImage: null,
+  deliveryDoorImage: null,
 };
 
 export function rowsIn(state: Pick<EditorState, 'rows'>, shelf: ShelfKey): number {
@@ -93,13 +99,14 @@ function templateOf(template: StorefrontTemplateView): StorefrontTemplate {
 }
 
 export function stateOf(view: StorefrontView): EditorState {
+  const home = view.pages.find((page) => page.shelfKey === HOME_PAGE);
   return {
     revision: view.revision,
     rows: Object.fromEntries(view.pages.map((page) => [page.shelfKey, page.rows])),
     blocks: view.objects.map(blockOf),
     templates: view.templates.map(templateOf),
-    pickupDoorImage:
-      view.pages.find((page) => page.shelfKey === HOME_PAGE)?.pickupDoorImage ?? null,
+    pickupDoorImage: home?.pickupDoorImage ?? null,
+    deliveryDoorImage: home?.deliveryDoorImage ?? null,
   };
 }
 
@@ -133,17 +140,23 @@ function idOf(id: string): { readonly id?: string } {
  * (`composition-rules.ts`, `assertPlacements`, lu le 2026-09-24).
  */
 function pageKeys(state: EditorState): readonly ShelfKey[] {
-  const door = state.pickupDoorImage === null ? [] : [HOME_PAGE];
+  const door =
+    state.pickupDoorImage === null && state.deliveryDoorImage === null ? [] : [HOME_PAGE];
   return [
     ...new Set([...Object.keys(state.rows), ...state.blocks.flatMap((b) => b.shelves), ...door]),
   ];
 }
 
-/** Une page, telle que le `PUT` l'attend : l'Accueil seul porte la porte. */
+/** Une page, telle que le `PUT` l'attend : l'Accueil seul porte les deux portes. */
 function pagePayload(state: EditorState, shelfKey: ShelfKey) {
   const rows = rowsIn(state, shelfKey);
   return shelfKey === HOME_PAGE
-    ? { shelfKey, rows, pickupDoorImage: state.pickupDoorImage }
+    ? {
+        shelfKey,
+        rows,
+        pickupDoorImage: state.pickupDoorImage,
+        deliveryDoorImage: state.deliveryDoorImage,
+      }
     : { shelfKey, rows };
 }
 

@@ -29,6 +29,7 @@ const ADMIN = "/admin/storefront";
 let ctx: E2eContext;
 let BANNER_IMAGE = "";
 let DOOR_IMAGE = "";
+let COURIER_IMAGE = "";
 
 beforeAll(async () => {
   ctx = await bootstrapE2e({
@@ -44,6 +45,7 @@ beforeEach(async () => {
   await ctx.reset();
   BANNER_IMAGE = await deposit("banniere.png", 2100, 900);
   DOOR_IMAGE = await deposit("fournil.png", 800, 600);
+  COURIER_IMAGE = await deposit("coursier.png", 600, 800);
 });
 
 const staff = (): ReturnType<E2eContext["asSub"]> => ctx.asSub(E2E_STAFF_SUB);
@@ -122,6 +124,7 @@ describe("la page d'accueil", () => {
         shelfKey: "home",
         rows: 3,
         pickupDoorImage: { url: DOOR_IMAGE, alt: { fr: "Le fournil" }, focal: null },
+        deliveryDoorImage: null,
       },
     ]);
     expect(view.objects[0]).toMatchObject({
@@ -159,7 +162,7 @@ describe("la page d'accueil", () => {
       await ctx.http().get("/shop/storefront/all").expect(200),
     );
 
-    expect(home).toEqual({ rows: 0, objects: [], pickupDoorImage: null });
+    expect(home).toEqual({ rows: 0, objects: [], pickupDoorImage: null, deliveryDoorImage: null });
     expect(all).toEqual({ rows: 0, objects: [] });
   });
 
@@ -270,5 +273,90 @@ describe("l'accueil, porteur de la médiathèque", () => {
       .expect(204);
 
     expect(await discard(DOOR_IMAGE)).toBe(204);
+  });
+});
+
+/** L'accueil avec ses DEUX portes : la retrait sur le fournil, la livraison sur le coursier. */
+function bothDoors(revision: number): StorefrontPayloadInput {
+  return {
+    revision,
+    pages: [
+      {
+        shelfKey: "home",
+        rows: 3,
+        pickupDoorImage: { url: DOOR_IMAGE, alt: { fr: "Le fournil" } },
+        deliveryDoorImage: {
+          url: COURIER_IMAGE,
+          alt: { fr: "Le coursier" },
+          focal: { x: 0.4, y: 0.6 },
+        },
+      },
+    ],
+    objects: [],
+    templates: [],
+  };
+}
+
+describe("la porte livraison de l'accueil", () => {
+  it("s'enregistre à côté de la porte retrait, et se lit SANS connexion", async () => {
+    await staff().put(ADMIN).send(bothDoors(0)).expect(204);
+
+    const page = jsonBody<PublicStorefrontPageView>(
+      await ctx.http().get("/shop/storefront/home").expect(200),
+    );
+
+    expect(page.deliveryDoorImage).toEqual({
+      url: COURIER_IMAGE,
+      alt: { fr: "Le coursier" },
+      focal: { x: 0.4, y: 0.6 },
+    });
+    expect(page.pickupDoorImage?.url).toBe(DOOR_IMAGE);
+  });
+
+  it("refuse une porte livraison posée sur un rayon (400)", async () => {
+    const body: StorefrontPayloadInput = {
+      revision: 0,
+      pages: [{ shelfKey: "all", rows: 4, deliveryDoorImage: { url: COURIER_IMAGE, alt: null } }],
+      objects: [],
+      templates: [],
+    };
+
+    await staff().put(ADMIN).send(body).expect(400);
+  });
+
+  it("le CHECK refuse une porte livraison hors de l'accueil, ou à une seule coordonnée, écrite à la main", async () => {
+    await expect(
+      ctx.prisma.$executeRawUnsafe(
+        `INSERT INTO "public"."storefront_page" ("shelf_key", "rows", "delivery_door_image_url") VALUES ('all', 4, 'https://x/y.png')`,
+      ),
+    ).rejects.toThrow(/storefront_page_delivery_door_on_home/u);
+    await expect(
+      ctx.prisma.$executeRawUnsafe(
+        `INSERT INTO "public"."storefront_page" ("shelf_key", "rows", "delivery_door_image_url", "delivery_door_focal_x") VALUES ('home', 4, 'https://x/y.png', 0.5)`,
+      ),
+    ).rejects.toThrow(/storefront_page_delivery_door_focal_check/u);
+  });
+
+  it("est un porteur de la médiathèque : nommée, et son image ne se retire pas (409)", async () => {
+    await staff().put(ADMIN).send(bothDoors(0)).expect(204);
+
+    const response = await staff()
+      .get(`${MEDIA}/carriers`)
+      .query({ url: COURIER_IMAGE })
+      .expect(200);
+
+    expect(jsonBody<unknown>(response)).toEqual([
+      { kind: "storefront", id: "home", label: "Accueil — porte livraison" },
+    ]);
+    expect(await discard(COURIER_IMAGE)).toBe(409);
+  });
+
+  it("libère son image une fois retirée, la porte retrait gardant la sienne", async () => {
+    await staff().put(ADMIN).send(bothDoors(0)).expect(204);
+
+    await staff().put(ADMIN).send(homeBody(1, [])).expect(204);
+
+    expect(await discard(COURIER_IMAGE)).toBe(204);
+    expect(await discard(DOOR_IMAGE)).toBe(409);
   });
 });

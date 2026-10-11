@@ -4,7 +4,6 @@ import type { ObjectSettingsInput, ObjectSettingsState } from "../domain/object-
 import type { StorefrontContentState } from "../domain/storefront-content.js";
 import type { StorefrontFocal } from "../domain/storefront-image.js";
 import type { StorefrontObjectInput } from "../domain/storefront-object.js";
-import type { StorefrontPageInput, StorefrontPageState } from "../domain/storefront-page.js";
 import type { StorefrontTemplateInput } from "../domain/storefront-template.js";
 import type { StorefrontTextState } from "../domain/storefront-text.js";
 
@@ -71,50 +70,6 @@ class CorruptStorefrontRowError extends TechnicalError {
       `Une ligne de la vitrine est illisible (${detail}) : elle a été écrite hors de l'application.`,
     );
   }
-}
-
-export interface PageRow {
-  readonly shelfKey: string;
-  readonly rows: number;
-  readonly pickupDoorImageUrl: string | null;
-  readonly pickupDoorImageAlt: Prisma.JsonValue;
-  readonly pickupDoorFocalX: number | null;
-  readonly pickupDoorFocalY: number | null;
-}
-
-export function pageInputOf(row: PageRow): StorefrontPageInput {
-  return {
-    shelfKey: row.shelfKey,
-    rows: row.rows,
-    pickupDoorImage:
-      row.pickupDoorImageUrl === null
-        ? null
-        : {
-            url: row.pickupDoorImageUrl,
-            alt: textOf(row.pickupDoorImageAlt),
-            focal: focalOf(row.pickupDoorFocalX, row.pickupDoorFocalY),
-          },
-  };
-}
-
-/** Les colonnes d'une page, pour l'écriture. */
-export function pageColumns(page: StorefrontPageState): {
-  readonly shelfKey: string;
-  readonly rows: number;
-  readonly pickupDoorImageUrl: string | null;
-  readonly pickupDoorImageAlt: NullableJson;
-  readonly pickupDoorFocalX: number | null;
-  readonly pickupDoorFocalY: number | null;
-} {
-  const focal = page.pickupDoorImage?.focal ?? null;
-  return {
-    shelfKey: page.shelfKey,
-    rows: page.rows,
-    pickupDoorImageUrl: page.pickupDoorImage?.url ?? null,
-    pickupDoorImageAlt: jsonOf(page.pickupDoorImage?.alt ?? null),
-    pickupDoorFocalX: focal?.x ?? null,
-    pickupDoorFocalY: focal?.y ?? null,
-  };
 }
 
 export function settingsOfRow(row: SettingsColumns): ObjectSettingsInput {
@@ -199,7 +154,7 @@ function contentOfRow(row: ContentColumns): StorefrontContentState {
 }
 
 /** Une colonne `jsonb` nullable, à l'écriture : `DbNull` est l'ABSENCE, pas un `null` JSON. */
-type NullableJson = Prisma.InputJsonValue | typeof Prisma.DbNull;
+export type NullableJson = Prisma.InputJsonValue | typeof Prisma.DbNull;
 
 /** Les colonnes d'un contenu, pour l'écriture. `DbNull` : l'ABSENCE, pas un `null` JSON. */
 export function contentColumns(content: StorefrontContentState): {
@@ -247,11 +202,11 @@ export function contentColumns(content: StorefrontContentState): {
 
 /** Le point focal relu : les deux colonnes, ou aucune (CHECK de la migration
  * `20261011140000_le_point_focal_jusqu_a_la_vitrine`). */
-function focalOf(x: number | null, y: number | null): StorefrontFocal | null {
+export function focalOf(x: number | null, y: number | null): StorefrontFocal | null {
   return x === null || y === null ? null : { x, y };
 }
 
-function jsonOf(text: StorefrontTextState | null): NullableJson {
+export function jsonOf(text: StorefrontTextState | null): NullableJson {
   if (text === null) {
     return Prisma.DbNull;
   }
@@ -266,7 +221,7 @@ function jsonOf(text: StorefrontTextState | null): NullableJson {
 }
 
 /** Un `jsonb` de texte localisé, relu. `null` : la colonne est vide. */
-function textOf(value: Prisma.JsonValue): StorefrontTextState | null {
+export function textOf(value: Prisma.JsonValue): StorefrontTextState | null {
   if (value === null) {
     return null;
   }

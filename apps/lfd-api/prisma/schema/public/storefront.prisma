@@ -52,6 +52,15 @@ model StorefrontPage {
   /// Les deux ou aucun (CHECK de `20261011140000_le_point_focal_jusqu_a_la_vitrine`).
   pickupDoorFocalX   Float?  @map("pickup_door_focal_x")
   pickupDoorFocalY   Float?  @map("pickup_door_focal_y")
+  /// L'image de la porte livraison (2026-10-11) — la jumelle de la porte
+  /// retrait, mêmes CHECK (`20261011200000_l_image_de_la_livraison`). `NULL` :
+  /// la boutique reprend l'image de la porte retrait.
+  deliveryDoorImageUrl String? @map("delivery_door_image_url")
+  /// Texte alternatif localisé `{ fr, en?, it? }`.
+  deliveryDoorImageAlt Json?   @map("delivery_door_image_alt")
+  /// Le point focal de la porte livraison, fractions de 0 à 1. `NULL` = centre.
+  deliveryDoorFocalX   Float?  @map("delivery_door_focal_x")
+  deliveryDoorFocalY   Float?  @map("delivery_door_focal_y")
 
   @@map("storefront_page")
   @@schema("public")

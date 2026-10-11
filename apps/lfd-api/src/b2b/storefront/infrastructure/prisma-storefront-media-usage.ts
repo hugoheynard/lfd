@@ -9,11 +9,13 @@ import {
 
 /** Le libellé de la porte de l'accueil, comme porteur. */
 const PICKUP_DOOR_LABEL = "Accueil — porte « Je passe la prendre »";
+/** Le libellé de la porte livraison de l'accueil, comme porteur. */
+const DELIVERY_DOOR_LABEL = "Accueil — porte livraison";
 
 /**
  * Adaptateur Prisma du canal « quelles images emploie la vitrine ». Il lit
- * les contenus info des objets NON archivés, et l'image de la porte de
- * l'accueil — les tables de la vitrine, que seul ce contexte lit
+ * les contenus info des objets NON archivés, et les images des deux portes
+ * de l'accueil — les tables de la vitrine, que seul ce contexte lit
  * (`lint:prisma-model-ownership`).
  */
 @Injectable()
@@ -31,19 +33,31 @@ export class PrismaStorefrontMediaUsage extends StorefrontMediaUsage {
       select: { imageUrl: true, objectId: true },
     });
     const doors = await this.prisma.storefrontPage.findMany({
-      where: { pickupDoorImageUrl: { in: [...urls] } },
-      select: { pickupDoorImageUrl: true, shelfKey: true },
+      where: {
+        OR: [
+          { pickupDoorImageUrl: { in: [...urls] } },
+          { deliveryDoorImageUrl: { in: [...urls] } },
+        ],
+      },
+      select: { pickupDoorImageUrl: true, deliveryDoorImageUrl: true, shelfKey: true },
     });
     const carriersByUrl = new Map<string, Set<string>>();
+    const asked = new Set(urls);
+    // `asked` : une page tirée par SA porte livraison peut montrer à la porte
+    // retrait une image qu'on n'a pas demandée, et inversement.
     const add = (url: string | null, carrier: string): void => {
-      if (url !== null) {
+      if (url !== null && asked.has(url)) {
         const carriers = carriersByUrl.get(url) ?? new Set<string>();
         carriers.add(carrier);
         carriersByUrl.set(url, carriers);
       }
     };
     rows.forEach((row) => add(row.imageUrl, row.objectId));
-    doors.forEach((door) => add(door.pickupDoorImageUrl, `page:${door.shelfKey}`));
+    // Une page dont les deux portes montrent la même image compte UNE fois (le Set).
+    doors.forEach((door) => {
+      add(door.pickupDoorImageUrl, `page:${door.shelfKey}`);
+      add(door.deliveryDoorImageUrl, `page:${door.shelfKey}`);
+    });
     return new Map([...carriersByUrl].map(([url, carriers]) => [url, carriers.size]));
   }
 
@@ -64,9 +78,15 @@ export class PrismaStorefrontMediaUsage extends StorefrontMediaUsage {
         byObject.set(row.objectId, objectLabel(titleOf(row.title), row.object.shape, onHome));
       }
     }
-    const doors = await this.prisma.storefrontPage.count({ where: { pickupDoorImageUrl: url } });
+    const pickupDoors = await this.prisma.storefrontPage.count({
+      where: { pickupDoorImageUrl: url },
+    });
+    const deliveryDoors = await this.prisma.storefrontPage.count({
+      where: { deliveryDoorImageUrl: url },
+    });
     return [
-      ...(doors > 0 ? [{ objectId: HOME_PAGE, label: PICKUP_DOOR_LABEL }] : []),
+      ...(pickupDoors > 0 ? [{ objectId: HOME_PAGE, label: PICKUP_DOOR_LABEL }] : []),
+      ...(deliveryDoors > 0 ? [{ objectId: HOME_PAGE, label: DELIVERY_DOOR_LABEL }] : []),
       ...[...byObject].map(([objectId, label]) => ({ objectId, label })),
     ];
   }

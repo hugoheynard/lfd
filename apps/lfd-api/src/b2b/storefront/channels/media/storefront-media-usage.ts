@@ -8,9 +8,10 @@
  * tables du commerce (`lint:prisma-model-ownership`). `appBootstrap/` relie ce
  * port au porteur que la médiathèque déclare — la matrice ne bouge pas.
  *
- * Comptent les objets VIVANTS, et l'image de la porte « Je passe la prendre »
- * de l'accueil (2026-10-10, `documentation/mediatheque/mediatheque.md` §7 bis) — un réglage de la
- * page `home`, compté comme UN porteur d'identifiant `home`.
+ * Comptent les objets VIVANTS, et les images des deux portes de l'accueil —
+ * « Je passe la prendre » (2026-10-10) et livraison (2026-10-11),
+ * `documentation/mediatheque/mediatheque.md` §7 bis : des réglages de la page `home`, comptée comme
+ * UN porteur d'identifiant `home` même si ses deux portes montrent la même image.
  *
  * Seuls comptent les objets VIVANTS : une image posée sur un objet archivé ne
  * s'affiche plus nulle part, et la retenir empêcherait de faire le ménage du
@@ -30,7 +31,8 @@ export abstract class StorefrontMediaUsage {
    * **Lesquels** des objets vivants portent cette URL, nommés : le titre
    * français du contenu qui la montre, sinon « Objet <forme> » — préfixés
    * « Accueil — » sur l'accueil (« Accueil — bannière ») ; la porte de
-   * l'accueil se nomme « Accueil — porte « Je passe la prendre » ». Liste
+   * l'accueil se nomme « Accueil — porte « Je passe la prendre » », sa porte
+   * livraison « Accueil — porte livraison » (deux entrées d'identifiant `home`). Liste
    * vide si personne — le cas normal d'une image orpheline.
    */
   abstract usagesOf(url: string): Promise<readonly StorefrontMediaUsageEntry[]>;
@@ -38,7 +40,7 @@ export abstract class StorefrontMediaUsage {
 
 /** Un objet de la vitrine qui montre une image. */
 export interface StorefrontMediaUsageEntry {
-  /** L'identifiant de l'objet — ou `home` pour la porte de l'accueil. */
+  /** L'identifiant de l'objet — ou `home` pour une porte de l'accueil. */
   readonly objectId: string;
   /** Jamais vide : ce qu'un écran affiche pour renvoyer vers la vitrine. */
   readonly label: string;

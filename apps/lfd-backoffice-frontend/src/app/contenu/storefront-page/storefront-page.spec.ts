@@ -810,6 +810,64 @@ describe('StorefrontPage — l’Accueil', () => {
     expect(root.querySelector('.grid .free-cell')?.textContent).toContain('reste vide');
   });
 
+  it('le second panneau règle la porte livraison, et dit qu’à vide elle reprend la porte retrait', async () => {
+    const { fixture, store, root } = await setup({ view: homeView() });
+    store.pickShelf('home');
+    fixture.detectChanges();
+    const panels = root.querySelectorAll('app-storefront-door-panel');
+    expect(panels).toHaveLength(2);
+    expect(panels[1]?.textContent).toContain('Porte livraison');
+    expect(panels[1]?.textContent).toContain(
+      'la carte livraison reprend celle de la porte « Je passe la prendre »',
+    );
+  });
+
+  it('la porte livraison lue repart à l’enregistrement, à côté de la porte retrait', async () => {
+    const view = homeView();
+    const courier = { url: 'https://media.test/coursier.jpg', alt: { fr: 'Le coursier' } };
+    const { store, persistence, api } = await setup({
+      view: {
+        ...view,
+        pages: view.pages.map((p) =>
+          p.shelfKey === 'home' ? { ...p, deliveryDoorImage: courier } : p,
+        ),
+      },
+    });
+    expect(store.deliveryDoorImage()).toEqual(courier);
+    store.deliveryDoorImage.set(null);
+    expect(store.dirty()).toBe(true);
+    await persistence.save();
+    const home = api.saved[0]?.pages.find((p) => p.shelfKey === 'home');
+    expect(home?.deliveryDoorImage).toBeNull();
+    expect(home?.pickupDoorImage?.url).toBe('https://media.test/porte.jpg');
+    expect(api.saved[0]?.pages.filter((p) => 'deliveryDoorImage' in p)).toHaveLength(1);
+  });
+
+  it('une porte livraison seule, sur une vitrine vierge, crée la page Accueil', async () => {
+    const fresh = await setup({ view: EMPTY_VIEW });
+    fresh.store.deliveryDoorImage.set({ url: 'https://media.test/coursier.jpg', alt: null });
+    await fresh.persistence.save();
+    expect(fresh.api.saved[0]?.pages).toEqual([
+      {
+        shelfKey: 'home',
+        rows: 6,
+        pickupDoorImage: null,
+        deliveryDoorImage: { url: 'https://media.test/coursier.jpg', alt: null },
+      },
+    ]);
+  });
+
+  it('un texte alternatif trop long sur la porte livraison ferme Enregistrer, en la nommant', async () => {
+    const { store } = await setup({ view: homeView() });
+    store.deliveryDoorImage.set({
+      url: 'https://media.test/coursier.jpg',
+      alt: { fr: 'x'.repeat(201) },
+    });
+    expect(store.contentIssues()).toEqual([
+      'Porte livraison de l’Accueil : Le texte alternatif tient en 200 caractères, dans chaque langue.',
+    ]);
+  });
+
   /**
    * Régression : l'éditeur reconstruisait les pages depuis les seules rangées,
    * et un enregistrement EFFAÇAIT la porte (signalé au commit `4f516b0f6`).
@@ -825,6 +883,7 @@ describe('StorefrontPage — l’Accueil', () => {
       shelfKey: 'home',
       rows: 3,
       pickupDoorImage: { url: 'https://media.test/porte.jpg', alt: { fr: 'La porte du Labo' } },
+      deliveryDoorImage: null,
     });
     // Les rayons ne la portent jamais : le serveur la refuserait ailleurs.
     expect(api.saved[0]?.pages.filter((p) => 'pickupDoorImage' in p)).toHaveLength(1);
@@ -847,6 +906,7 @@ describe('StorefrontPage — l’Accueil', () => {
         shelfKey: 'home',
         rows: 6,
         pickupDoorImage: { url: 'https://media.test/neuve.jpg', alt: null },
+        deliveryDoorImage: null,
       },
     ]);
   });

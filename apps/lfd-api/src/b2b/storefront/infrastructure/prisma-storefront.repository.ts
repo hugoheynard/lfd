@@ -10,11 +10,10 @@ import { Storefront, type StorefrontWrite } from "../domain/storefront.js";
 import {
   contentColumns,
   objectInputOf,
-  pageColumns,
-  pageInputOf,
   settingsColumns,
   templateInputOf,
 } from "./storefront-rows.js";
+import { pageColumns, pageInputOf } from "./storefront-page-rows.js";
 
 /**
  * Adaptateur Prisma de la vitrine.

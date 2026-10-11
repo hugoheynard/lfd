@@ -434,6 +434,21 @@ export class AccueilPublic {
     return image === null ? null : objectPositionOf(image);
   });
 
+  /**
+   * La photo de la porte livraison (la carte du coursier), et son recadrage —
+   * `null` sans photo choisie : la carte reprend alors celle du retrait, par
+   * le repli de `service-doors.scss`. Décorative : la carte a son texte.
+   */
+  private readonly courierImage = computed(() => this.homePage()?.deliveryDoorImage ?? null);
+  protected readonly courierPhoto = computed(() => {
+    const image = this.courierImage();
+    return image === null ? null : `url(${JSON.stringify(sizedMedia(image.url, SHEET_WIDTHS[1]))})`;
+  });
+  protected readonly courierPosition = computed(() => {
+    const image = this.courierImage();
+    return image === null ? null : objectPositionOf(image);
+  });
+
   /** Son texte alternatif dans la langue du visiteur, le français sinon ; `null` : décorative. */
   protected readonly doorAlt = computed(() => {
     const alt = this.doorImage()?.alt ?? null;

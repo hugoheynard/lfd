@@ -102,6 +102,30 @@ describe("Storefront.refocus", () => {
     });
   });
 
+  it("recadre la porte livraison seule quand c'est elle qui montre l'image", () => {
+    const storefront = Storefront.reconstitute({
+      revision: 3,
+      updatedAt: null,
+      updatedByStaffId: AUTHOR,
+      pages: [
+        {
+          shelfKey: HOME_PAGE,
+          rows: 4,
+          pickupDoorImage: { url: OTHER, alt: null },
+          deliveryDoorImage: { url: URL, alt: null },
+        },
+      ],
+      objects: [],
+      templates: [],
+    });
+
+    expect(storefront.refocus(URL, { x: 0.7, y: 0.3 }, { at: AT })).toBe(1);
+
+    const [home] = storefront.toPersistence().pages;
+    expect(home?.deliveryDoorImage?.focal).toEqual({ x: 0.7, y: 0.3 });
+    expect(home?.pickupDoorImage?.focal).toBeNull();
+  });
+
   it("garde l'auteur du dernier enregistrement : le recadrage n'est le geste de personne ici", () => {
     const storefront = stored(null, [[info(URL)]]);
 

@@ -1,10 +1,5 @@
 <fold-card>
-  <fold-element-title
-    variant="title"
-    [level]="3"
-    title="Porte « Je passe la prendre »"
-    subtitle="La photo du retrait, sur l’accueil de la boutique — recadrée sur son point focal."
-  />
+  <fold-element-title variant="title" [level]="3" [title]="title()" [subtitle]="subtitle()" />
   <div class="form">
     @if (image(); as door) {
       <img
@@ -41,7 +36,7 @@
       </div>
     } @else {
       <div class="preview empty" aria-hidden="true"></div>
-      <span class="caption">Aucune photo : la porte garde un fond uni.</span>
+      <span class="caption">{{ emptyCaption() }}</span>
       <button foldButton type="button" size="sm" emphasis="outline" (click)="choose()">
         Choisir dans la médiathèque
       </button>

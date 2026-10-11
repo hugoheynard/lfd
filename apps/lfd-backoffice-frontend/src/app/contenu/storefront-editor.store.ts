@@ -86,6 +86,8 @@ export class StorefrontEditorStore implements StorefrontObjectHost {
   readonly templates = signal<readonly StorefrontTemplate[]>([]);
   /** La photo de la porte « Je passe la prendre » — un réglage de la page Accueil, pas un objet de la grille. */
   readonly pickupDoorImage = signal<StorefrontImage | null>(null);
+  /** La photo de la porte livraison — vide, la boutique reprend celle de la porte retrait. */
+  readonly deliveryDoorImage = signal<StorefrontImage | null>(null);
   /**
    * La vitrine telle que chargée ou enregistrée, en payload : le point de comparaison.
    * Notifie à CHAQUE `apply`, même à l'identique : la page y remet sa sortie retenue.
@@ -103,6 +105,7 @@ export class StorefrontEditorStore implements StorefrontObjectHost {
     blocks: this.blocks(),
     templates: this.templates(),
     pickupDoorImage: this.pickupDoorImage(),
+    deliveryDoorImage: this.deliveryDoorImage(),
   }));
 
   /** Des modifications que le serveur n'a pas. */
@@ -141,6 +144,9 @@ export class StorefrontEditorStore implements StorefrontObjectHost {
     ...imageAltIssues(this.pickupDoorImage()?.alt ?? null).map(
       (issue) => `Porte « Je passe la prendre » de l’Accueil : ${issue}`,
     ),
+    ...imageAltIssues(this.deliveryDoorImage()?.alt ?? null).map(
+      (issue) => `Porte livraison de l’Accueil : ${issue}`,
+    ),
   ]);
 
   /** Les objets qui rendent leurs cases au rayon (`returnedIdsOf`). */
@@ -155,7 +161,7 @@ export class StorefrontEditorStore implements StorefrontObjectHost {
   readonly shelfLabel = (key: ShelfKey): string =>
     key === HOME_PAGE ? HOME_LABEL : shelfLabelIn(this.shelves(), key);
 
-  /** La page éditée est-elle l'Accueil ? Elle seule porte la porte. */
+  /** La page éditée est-elle l'Accueil ? Elle seule porte les portes. */
   readonly onHome = computed(() => this.shelf() === HOME_PAGE);
 
   /** Les rangées d'un rayon — chacun a les siennes. */
@@ -185,6 +191,7 @@ export class StorefrontEditorStore implements StorefrontObjectHost {
     this.blocks.set(state.blocks);
     this.templates.set(state.templates);
     this.pickupDoorImage.set(state.pickupDoorImage);
+    this.deliveryDoorImage.set(state.deliveryDoorImage);
     this.baseline.set(JSON.stringify(payloadOf(state)));
     this.notice.set(null);
     if (!state.blocks.some((block) => block.id === this.selectedId())) {

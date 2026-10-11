@@ -6,14 +6,15 @@ import { PrismaService } from "../../../platform/database/prisma.service.js";
 import { PublicStorefrontReader } from "../domain/public-storefront.reader.js";
 import { StorefrontObject } from "../domain/storefront-object.js";
 import { StorefrontPage } from "../domain/storefront-page.js";
-import { objectInputOf, pageInputOf } from "./storefront-rows.js";
+import { pageInputOf } from "./storefront-page-rows.js";
+import { objectInputOf } from "./storefront-rows.js";
 import { publicObjectView } from "./storefront-views.js";
 
 /**
  * Lecteur Prisma de la page publique d'un rayon (plan, D8) : les objets
  * VIVANTS qui paraissent sur ce rayon, en ordre de lecture, contenus dans
- * leur ordre de défilement. L'accueil (`home`) porte en plus l'image de sa
- * porte — `null` tant que personne ne l'a choisie, et aussi quand il n'a pas
+ * leur ordre de défilement. L'accueil (`home`) porte en plus les images de ses
+ * deux portes (retrait, livraison) — chacune `null` tant que personne ne l'a choisie, et aussi quand il n'a pas
  * de page : l'accueil reste servi, avec sa photo par défaut.
  */
 @Injectable()
@@ -24,7 +25,7 @@ export class PrismaPublicStorefrontReader extends PublicStorefrontReader {
 
   async pageOf(shelfKey: string): Promise<PublicStorefrontPageView> {
     const page = await this.prisma.storefrontPage.findUnique({ where: { shelfKey } });
-    const door = shelfKey === HOME_PAGE ? { pickupDoorImage: null } : {};
+    const door = shelfKey === HOME_PAGE ? { pickupDoorImage: null, deliveryDoorImage: null } : {};
     if (page === null) {
       return { rows: 0, objects: [], ...door };
     }
@@ -36,7 +37,9 @@ export class PrismaPublicStorefrontReader extends PublicStorefrontReader {
     });
     return {
       rows: state.rows,
-      ...(shelfKey === HOME_PAGE ? { pickupDoorImage: state.pickupDoorImage } : {}),
+      ...(shelfKey === HOME_PAGE
+        ? { pickupDoorImage: state.pickupDoorImage, deliveryDoorImage: state.deliveryDoorImage }
+        : {}),
       objects: objects.map((row) =>
         publicObjectView(StorefrontObject.of(objectInputOf(row)).state),
       ),

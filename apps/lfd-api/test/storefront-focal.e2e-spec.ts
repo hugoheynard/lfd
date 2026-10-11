@@ -198,6 +198,35 @@ describe("le point focal suit quand la médiathèque redécrit l'image", () => {
       .expect(409);
   });
 
+  it("recadre aussi la porte livraison, la porte retrait gardant son point", async () => {
+    const courier = await deposit("coursier.png", 600, 800);
+    const body = homeBody(0, null, null);
+    await staff()
+      .put(ADMIN)
+      .send({
+        ...body,
+        pages: [
+          {
+            shelfKey: "home",
+            rows: 3,
+            pickupDoorImage: { url: DOOR_IMAGE, alt: null },
+            deliveryDoorImage: { url: courier, alt: null },
+          },
+        ],
+      })
+      .expect(204);
+
+    await staff()
+      .put(MEDIA)
+      .send({ url: courier, name: "coursier", tags: [], focal: { x: 0.6, y: 0.1 } })
+      .expect(200);
+    await settle();
+
+    const page = await home();
+    expect(page.deliveryDoorImage?.focal).toEqual({ x: 0.6, y: 0.1 });
+    expect(page.pickupDoorImage?.focal).toBeNull();
+  });
+
   it("ne touche pas la vitrine quand l'image redécrite n'y paraît pas", async () => {
     await staff()
       .put(ADMIN)

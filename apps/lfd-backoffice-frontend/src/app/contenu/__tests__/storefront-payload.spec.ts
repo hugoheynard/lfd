@@ -58,6 +58,27 @@ const VIEW: StorefrontView = {
 };
 
 describe('le payload de la vitrine', () => {
+  it('lit les deux portes de l’Accueil et les renvoie sur l’Accueil seul', () => {
+    const pickup = { url: 'https://media.test/porte.jpg', alt: null };
+    const delivery = { url: 'https://media.test/coursier.jpg', alt: { fr: 'Le coursier' } };
+    const state = stateOf({
+      ...VIEW,
+      pages: [
+        ...VIEW.pages,
+        { shelfKey: 'home', rows: 2, pickupDoorImage: pickup, deliveryDoorImage: delivery },
+      ],
+    });
+    expect(state.deliveryDoorImage).toEqual(delivery);
+    const pages = payloadOf(state).pages;
+    expect(pages.find((page) => page.shelfKey === 'home')).toEqual({
+      shelfKey: 'home',
+      rows: 2,
+      pickupDoorImage: pickup,
+      deliveryDoorImage: delivery,
+    });
+    expect(pages.filter((page) => 'deliveryDoorImage' in page)).toHaveLength(1);
+  });
+
   it('relit fidèlement ce qu’il a chargé : un aller-retour ne change rien', () => {
     const payload = payloadOf(stateOf(VIEW));
     expect(payload.revision).toBe(7);

@@ -267,6 +267,37 @@ describe("POST /media/replace — remplacer une image partout", () => {
     });
   });
 
+  it("repointe la porte livraison de l'accueil, la porte retrait gardant son image", async () => {
+    const door = await deposit(1003);
+    const courier = await deposit(1004);
+    const next = await deposit(1005);
+    await staff()
+      .put(STOREFRONT)
+      .send({
+        revision: 0,
+        pages: [
+          {
+            shelfKey: "home",
+            rows: 3,
+            pickupDoorImage: { url: door, alt: null },
+            deliveryDoorImage: { url: courier, alt: { fr: "Le coursier" } },
+          },
+        ],
+        objects: [],
+        templates: [],
+      })
+      .expect(204);
+
+    await staff().post(REPLACE).send({ from: courier, to: next }).expect(204);
+
+    const home = await ctx.prisma.storefrontPage.findUniqueOrThrow({ where: { shelfKey: "home" } });
+    expect([home.pickupDoorImageUrl, home.deliveryDoorImageUrl]).toEqual([door, next]);
+    expect(await carriersOf(courier)).toEqual([]);
+    expect(await carriersOf(next)).toEqual([
+      { kind: "storefront", id: "home", label: "Accueil — porte livraison" },
+    ]);
+  });
+
   /**
    * 🔴 La clé de `product_media` est `(fiche, url, rôle)` : sans fusion, la
    * fiche qui montrait déjà B aurait heurté la clé, et TOUT le geste tombait.

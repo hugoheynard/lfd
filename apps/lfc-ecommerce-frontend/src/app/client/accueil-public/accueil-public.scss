@@ -921,8 +921,10 @@
    c'est ce chevauchement qui en fait le premier objet de la page. Il vit ICI et
    non dans le composant — c'est la mise en page de l'écran, pas la leur. */
 /* L'écran donne leurs images aux portes — la photo de la porte est celle qu'il
-   sert déjà au bandeau. ⚠️ Celle du COURSIER est provisoire : voir
-   `service-doors.scss`, qui porte la raison.
+   sert déjà au bandeau, celle du coursier la porte livraison de la vitrine.
+   🔴 SANS REPLI ICI pour le coursier : une variable posée à `none` masquerait
+   celui de `service-doors.scss` (la photo du retrait). Non posée, elle reste
+   invalide, et c'est le repli du composant qui s'applique.
    ⚠️ Une version de ce commentaire disait que les COMMENTAIRES comptaient dans
    le budget. C'est faux : ils sont minifiés. Ce qui compte, ce sont les
    littéraux recopiés — vérifié le 2026-09-20 en sortant 600 octets de prose
@@ -930,6 +932,8 @@
 app-service-doors {
   --door-photo-pickup: var(--lfc-photo-door, none);
   --door-photo-pickup-at: var(--lfc-photo-door-at, center);
+  --door-photo-courier: var(--lfc-photo-courier);
+  --door-photo-courier-at: var(--lfc-photo-courier-at);
 }
 
 @media (min-width: 900px) {
