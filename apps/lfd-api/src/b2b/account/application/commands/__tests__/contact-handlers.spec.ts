@@ -76,6 +76,7 @@ function bookRecorder(recorder: Recorder): CompanyContactBook {
 function membersStub(): CompanyMemberRepository {
   return {
     rebindSubject: () => Promise.resolve(),
+    bindGuestSubject: () => Promise.resolve(),
     findAccountByEmail: () => Promise.resolve(null),
     findOwner: () => Promise.resolve(null),
     createInvited: () => Promise.resolve("user_new"),

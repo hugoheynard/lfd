@@ -116,6 +116,20 @@ export abstract class CompanyMemberRepository {
   abstract rebindSubject(userId: string, subject: string): Promise<void>;
 
   /**
+   * Pose le **premier** `sub` d'une fiche invité (sans identité de connexion),
+   * et l'instant où elle devient un compte (`became_account_at`, plan
+   * `comptabilite/fidelite/plan-bienvenue-et-invite-rattache.md`, §7 S1).
+   *
+   * Distinct de {@link rebindSubject} : réaligner un `sub` périmé ne fait pas
+   * d'un compte un compte une seconde fois. Conditionnel sur l'absence de
+   * `sub` — une fiche que sa titulaire vient de rattacher elle-même n'est pas
+   * écrasée.
+   *
+   * @throws {GuestBecameAccountMeanwhileError} la fiche porte déjà un `sub`.
+   */
+  abstract bindGuestSubject(userId: string, subject: string): Promise<void>;
+
+  /**
    * Rattache une personne à une société avec un rôle — **ou aligne son rôle**
    * si elle l'est déjà.
    *

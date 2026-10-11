@@ -3,6 +3,7 @@ import { Test } from "@nestjs/testing";
 import { UserRegisteredEvent } from "../../domain/events/user-registered.event.js";
 import { CustomerPrincipalResolver } from "../customer-principal.resolver.js";
 import { UnknownSubjectAdmission } from "../unknown-subject-admission.js";
+import { GuestAccountClaim } from "../guest-account-claim.js";
 import { UnitOfWork } from "../../../../platform/database/unit-of-work.js";
 import { DirectUnitOfWork } from "../../../../platform/database/__tests__/direct-unit-of-work.js";
 import { PrismaService } from "../../../../platform/database/prisma.service.js";
@@ -146,7 +147,12 @@ function holder(email: string, overrides: Partial<Holder> = {}): Holder {
 /** Double Prisma : `findUnique` renvoie la séquence donnée (dernière valeur figée),
  *  `create` capture ses `data` et peut échouer (course d'unicité). */
 interface PrismaDouble {
-  readonly createCalls: { auth0Sub: string; email: string; status: UserStatus }[];
+  readonly createCalls: {
+    auth0Sub: string;
+    email: string;
+    status: UserStatus;
+    becameAccountAt: Date;
+  }[];
   readonly claimCalls: ClaimArgs[];
   readonly activationCalls: ActivationArgs[];
   readonly acceptCalls: AcceptArgs[];
@@ -160,7 +166,7 @@ interface PrismaDouble {
       findMany: () => Promise<Holder[]>;
       updateMany: (args: ClaimArgs | ActivationArgs) => Promise<{ count: number }>;
       create: (args: {
-        data: { auth0Sub: string; email: string; status: UserStatus };
+        data: { auth0Sub: string; email: string; status: UserStatus; becameAccountAt: Date };
       }) => Promise<unknown>;
       update: (args: {
         where: { id: string };
@@ -253,6 +259,7 @@ async function resolverWith(
       BackgroundWork,
       MembershipAcceptance,
       UnknownSubjectAdmission,
+      GuestAccountClaim,
     ],
   }).compile();
   return moduleRef.get(CustomerPrincipalResolver);
@@ -449,7 +456,12 @@ describe("CustomerPrincipalResolver", () => {
       });
 
       expect(double.createCalls).toEqual([
-        { auth0Sub: "auth0|new", email: "new@client.fr", status: UserStatus.active },
+        {
+          auth0Sub: "auth0|new",
+          email: "new@client.fr",
+          status: UserStatus.active,
+          becameAccountAt: NOW,
+        },
       ]);
       expect(principal).toMatchObject({
         subject: "auth0|new",
@@ -514,7 +526,7 @@ describe("CustomerPrincipalResolver", () => {
       await resolver.resolve({ subject: "auth0|new", scopes: [] });
 
       expect(double.createCalls).toEqual([
-        { auth0Sub: "auth0|new", email: "", status: UserStatus.active },
+        { auth0Sub: "auth0|new", email: "", status: UserStatus.active, becameAccountAt: NOW },
       ]);
     });
 
@@ -653,7 +665,12 @@ describe("CustomerPrincipalResolver", () => {
       await resolver.resolve({ ...google, subject: "email|neuf" });
 
       expect(double.createCalls).toEqual([
-        { auth0Sub: "email|neuf", email: "Jean@Client.fr ", status: UserStatus.active },
+        {
+          auth0Sub: "email|neuf",
+          email: "Jean@Client.fr ",
+          status: UserStatus.active,
+          becameAccountAt: NOW,
+        },
       ]);
     });
 

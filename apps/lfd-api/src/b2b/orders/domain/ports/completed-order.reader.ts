@@ -58,4 +58,15 @@ export abstract class CompletedOrderReader {
    * saute ni ne répète rien, même si l'état change entre deux lots.
    */
   abstract listCompleted(after: string | null, limit: number): Promise<CompletedOrderPage>;
+
+  /**
+   * Le même parcours, borné aux commandes PASSÉES par cette personne
+   * (`placed_by_user_id`) — le crédit immédiat d'une fiche invité qui vient de
+   * devenir un compte (plan `comptabilite/fidelite/plan-bienvenue-et-invite-rattache.md`, §7).
+   */
+  abstract listCompletedPlacedBy(
+    userId: string,
+    after: string | null,
+    limit: number,
+  ): Promise<CompletedOrderPage>;
 }

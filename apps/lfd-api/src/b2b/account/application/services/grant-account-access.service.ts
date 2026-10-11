@@ -11,7 +11,10 @@ import {
   CompanyMemberRepository,
   type KnownAccount,
 } from "../../domain/ports/company-member.repository.js";
-import { CustomerIdentityPort } from "../../domain/ports/customer-identity.port.js";
+import {
+  CustomerIdentityPort,
+  type ProvisionedIdentity,
+} from "../../domain/ports/customer-identity.port.js";
 import {
   ensureHolderKeepsOwnership,
   ensureNoRivalOwner,
@@ -215,7 +218,10 @@ export class GrantAccountAccess extends AccountAccessGranter {
     // réparent par le même geste, et `provision` est idempotent sur l'adresse.
     if (known.subject === null) {
       this.logger.log(`Ouverture d'une identité pour ${email} — invité sans sujet.`);
-      return this.adoptIdentity(known, email);
+      const provisioned = await this.openIdentity(known, email);
+      // Le premier `sub` : la fiche DEVIENT un compte (plan bienvenue, §7 S1).
+      await this.members.bindGuestSubject(known.userId, provisioned.subject);
+      return provisioned.passwordSetupUrl;
     }
     try {
       return await this.identity.issuePasswordLink(known.subject);
@@ -237,9 +243,10 @@ export class GrantAccountAccess extends AccountAccessGranter {
    * nous.
    *
    * `provision` est idempotent sur l'e-mail : il crée si rien n'existe, rend
-   * l'existant sinon. C'est ce qui permet au même geste de servir les deux cas
-   * qui l'appellent — l'invité qui n'a jamais eu de sujet, et celui dont le
-   * nôtre a vieilli. On réécrit le pointeur technique, jamais la clé humaine.
+   * l'existant sinon. Il sert le compte dont notre sujet a vieilli ; l'invité
+   * qui n'en a jamais eu passe par {@link openIdentity} et
+   * `bindGuestSubject`, qui pose AUSSI l'instant où la fiche devient un compte
+   * (2026-10-11). On réécrit le pointeur technique, jamais la clé humaine.
    *
    * ⚠️ Appelé **uniquement** depuis {@link linkForKnown}, c'est-à-dire sur une
    * personne que le commercial vient de désigner par son adresse — jamais depuis
@@ -248,15 +255,16 @@ export class GrantAccountAccess extends AccountAccessGranter {
    * compte d'un autre en tapant son adresse (plan §3.2).
    */
   private async adoptIdentity(known: KnownAccount, email: string): Promise<string> {
-    // Son prénom à ELLE : `provision` ne sert ici qu'à ouvrir ou retrouver
-    // l'identité, il ne doit pas la renommer avec ce qu'un commercial a tapé.
-    const provisioned = await this.identity.provision({
-      email,
-      firstName: known.firstName,
-      lastName: "",
-    });
+    const provisioned = await this.openIdentity(known, email);
     await this.members.rebindSubject(known.userId, provisioned.subject);
     return provisioned.passwordSetupUrl;
+  }
+
+  /** Ouvre ou retrouve l'identité de cette adresse chez le fournisseur. */
+  private openIdentity(known: KnownAccount, email: string): Promise<ProvisionedIdentity> {
+    // Son prénom à ELLE : `provision` ne sert ici qu'à ouvrir ou retrouver
+    // l'identité, il ne doit pas la renommer avec ce qu'un commercial a tapé.
+    return this.identity.provision({ email, firstName: known.firstName, lastName: "" });
   }
 
   /** Cliente active : une société de plus dans son espace, pas un second compte. */

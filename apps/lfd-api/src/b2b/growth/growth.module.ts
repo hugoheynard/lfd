@@ -23,6 +23,7 @@ import { OnOrderPlaced } from "./application/handlers/on-order-placed.handler.js
 import { OnOrderAbandoned } from "./application/handlers/on-order-abandoned.handler.js";
 import { OnOrderReady } from "./application/handlers/on-order-ready.handler.js";
 import { OnSubscriptionCreated } from "./application/handlers/on-subscription-created.handler.js";
+import { OnGuestAccountClaimed } from "./application/handlers/on-guest-account-claimed.handler.js";
 import { OnUserRegistered } from "./application/handlers/on-user-registered.handler.js";
 import { OnUserRegisteredLinkLead } from "./application/handlers/on-user-registered-link-lead.handler.js";
 import { OnSupportHandled } from "./application/handlers/on-support-handled.handler.js";
@@ -216,6 +217,7 @@ import { PrismaProspectReader } from "./infrastructure/prisma-prospect.reader.js
     OnSubscriptionCreated,
     OnUserRegistered,
     OnUserRegisteredLinkLead,
+    OnGuestAccountClaimed,
     OnSupportRequested,
     OnSupportHandled,
     SaveAvailabilityHandler,

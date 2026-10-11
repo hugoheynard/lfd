@@ -67,6 +67,11 @@ const ADMITTED = new Map([
       "jamais entré (2026-10-09) ; seul le fournisseur sort, jamais le `sub`",
   ],
   [
+    `${ACCOUNT_DIR}infrastructure/guest-account-claim.ts`,
+    "pose le `sub` d'une première entrée sur l'unique fiche invité de l'adresse, sous la " +
+      "condition `auth0_sub IS NULL` (R1 du plan bienvenue, 2026-10-11) ; le `sub` ne sort pas",
+  ],
+  [
     `${ACCOUNT_DIR}infrastructure/prisma-company-member.repository.ts`,
     "rend le `sub` d'un membre pour lui émettre un lien ou propager son adresse chez le fournisseur",
   ],

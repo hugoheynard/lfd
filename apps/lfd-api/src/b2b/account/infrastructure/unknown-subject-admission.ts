@@ -12,13 +12,16 @@ import { LoginMethodSwitchedAtFirstEntryEvent } from "../domain/events/person-ac
 import { signInRouteOfSubject } from "../domain/value-objects/sign-in-route.js";
 import { Clock } from "../../../platform/time/clock.js";
 import { MembershipAcceptance } from "./membership-acceptance.js";
+import { GuestAccountClaim } from "./guest-account-claim.js";
 
 /**
  * Ce qu'il advient d'un `sub` inconnu avant qu'on lui crée un compte :
  *
  * - `new` — aucun compte connectable ne porte son adresse : on peut créer ;
  * - `claimed` — c'était la première entrée d'un invité, et CETTE requête a
- *   rattaché son compte au nouveau `sub` ;
+ *   rattaché son compte au nouveau `sub` — ou, depuis le 2026-10-11, posé ce
+ *   `sub` sur l'unique fiche invité (sans `sub`) de l'adresse (R1, plan
+ *   `comptabilite/fidelite/plan-bienvenue-et-invite-rattache.md`) ;
  * - `lost` — une autre requête a modifié le compte invité entre la lecture et
  *   l'écriture : relire avant de conclure.
  */
@@ -91,7 +94,16 @@ interface Holder {
  * session sur un `sub` inconnu — qui tombe alors sous la règle anti-doublon.
  *
  * Le préfixe du sujet n'est lu que pour PARLER (nommer le moyen, le journal) :
- * aucun accès n'en dépend.
+ * aucun accès n'en dépend — ICI. Le rattachement d'une fiche invité, lui, en
+ * dépend (`GuestAccountClaim`, 2026-10-11) : seules le code e-mail et Google y
+ * mènent.
+ *
+ * ## Après la règle anti-doublon : la fiche invité (R1, 2026-10-11)
+ *
+ * Quand AUCUN compte connectable ne porte l'adresse, et seulement alors, la
+ * première entrée peut prendre possession de l'unique fiche invité de cette
+ * adresse plutôt que d'ouvrir un compte neuf — cf. `GuestAccountClaim`. La
+ * règle ci-dessus est inchangée : elle parle avant.
  */
 @Injectable()
 export class UnknownSubjectAdmission {
@@ -101,6 +113,7 @@ export class UnknownSubjectAdmission {
     private readonly events: DomainEventPublisher,
     private readonly acceptance: MembershipAcceptance,
     private readonly clock: Clock,
+    private readonly guests: GuestAccountClaim,
   ) {}
 
   /**
@@ -116,7 +129,8 @@ export class UnknownSubjectAdmission {
     const holders = await this.holdersOf(email);
     const [only] = holders;
     if (only === undefined) {
-      return "new";
+      const outcome = await this.guests.claim(token);
+      return outcome === "none" ? "new" : outcome;
     }
     if (holders.length === 1 && token.emailVerified === true && isNeverEntered(only)) {
       return (await this.claim(only, token)) ? "claimed" : "lost";

@@ -206,8 +206,25 @@ export class FixedCompletedOrders extends CompletedOrderReader {
   }
 
   listCompleted(after: string | null, limit: number): Promise<CompletedOrderPage> {
+    return this.page(this.orders, after, limit);
+  }
+
+  listCompletedPlacedBy(
+    userId: string,
+    after: string | null,
+    limit: number,
+  ): Promise<CompletedOrderPage> {
+    const placed = this.orders.filter((order) => order.placedByUserId === userId);
+    return this.page(placed, after, limit);
+  }
+
+  private page(
+    orders: readonly CompletedOrder[],
+    after: string | null,
+    limit: number,
+  ): Promise<CompletedOrderPage> {
     this.pages.push(after);
-    const sorted = [...this.orders].sort((a, b) => a.orderId.localeCompare(b.orderId));
+    const sorted = [...orders].sort((a, b) => a.orderId.localeCompare(b.orderId));
     const rest = sorted.filter((order) => after === null || order.orderId > after);
     const page = rest.slice(0, limit);
     const last = page.at(-1);

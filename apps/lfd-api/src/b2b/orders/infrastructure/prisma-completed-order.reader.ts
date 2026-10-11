@@ -61,9 +61,25 @@ export class PrismaCompletedOrderReader extends CompletedOrderReader {
     return row === null ? null : toCompleted(row);
   }
 
-  async listCompleted(after: string | null, limit: number): Promise<CompletedOrderPage> {
+  listCompleted(after: string | null, limit: number): Promise<CompletedOrderPage> {
+    return this.page({}, after, limit);
+  }
+
+  listCompletedPlacedBy(
+    userId: string,
+    after: string | null,
+    limit: number,
+  ): Promise<CompletedOrderPage> {
+    return this.page({ placedByUserId: userId }, after, limit);
+  }
+
+  private async page(
+    scope: { readonly placedByUserId?: string },
+    after: string | null,
+    limit: number,
+  ): Promise<CompletedOrderPage> {
     const rows = await this.prisma.order.findMany({
-      where: after === null ? COMPLETED_WHERE : { ...COMPLETED_WHERE, id: { gt: after } },
+      where: { ...COMPLETED_WHERE, ...scope, ...(after === null ? {} : { id: { gt: after } }) },
       select: SELECT,
       orderBy: { id: "asc" },
       take: limit,

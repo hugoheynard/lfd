@@ -40,7 +40,6 @@ function setup(
   );
   const handler = new CreditPendingOrderPointsHandler(
     reader,
-    earned,
     new FixedLoyaltySettings(settings),
     crediting,
   );

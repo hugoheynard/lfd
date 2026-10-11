@@ -216,6 +216,10 @@ const MONEY_DELEGATES = new Map([
     "creditEarnedPoints",
     join("b2b", "loyalty", "application", "services", "order-points-crediting.ts"),
   ],
+  // Le même gain, par lot : le rattrapage de nuit et le crédit immédiat d'un
+  // invité rattaché (plan bienvenue, lot A, 2026-10-11) passent par lui ; il
+  // appelle `creditEarnedPoints`, donc trace dans la même transaction.
+  ["creditPending", join("b2b", "loyalty", "application", "services", "order-points-crediting.ts")],
   // Le reliquat d'un bon consommé, partagé par la passation (commande sans
   // règlement) et le rattrapage de nuit (plan des points, C5, 2026-09-27) : il
   // trace `loyalty.voucher_remainder_issued` dans la transaction qui l'écrit.

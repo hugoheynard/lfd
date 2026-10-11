@@ -95,14 +95,17 @@ describe("PrincipalResolver — une connexion sociale sous une adresse connue", 
     expect(await ctx.prisma.user.count({ where: { auth0Sub: GOOGLE } })).toBe(0);
   });
 
-  it("crée le compte quand l'adresse n'appartient qu'à un acheteur sans compte", async () => {
+  it("reprend la fiche d'un acheteur sans compte quand Google prouve la même boîte", async () => {
     // Un acheteur de la boutique n'a pas d'identité de connexion : ce n'est pas
-    // un compte, et il ne doit pas fermer la porte à qui prouve la même boîte.
-    await createGuest(ctx.prisma, { email: "gerant@client-cycle.fr" });
+    // un compte, et il ne ferme pas la porte à qui prouve la même boîte. Depuis
+    // le 2026-10-11 (plan bienvenue, R1), sa fiche DEVIENT le compte au lieu
+    // d'en laisser naître un second à côté.
+    const guest = await createGuest(ctx.prisma, { email: "gerant@client-cycle.fr" });
 
     await resolveGoogle("gerant@client-cycle.fr");
 
     expect(await ctx.prisma.user.count({ where: { auth0Sub: GOOGLE } })).toBe(1);
+    expect((await ctx.prisma.user.findUnique({ where: { id: guest.id } }))?.auth0Sub).toBe(GOOGLE);
   });
 
   it("ne confond pas deux adresses que `ILIKE` rapprocherait", async () => {

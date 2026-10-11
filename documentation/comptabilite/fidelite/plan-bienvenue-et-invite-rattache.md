@@ -1,6 +1,6 @@
 # Plan — le bonus de bienvenue, et l'invité qui devient un compte
 
-> **Statut : plan ; lot B bâti le 2026-10-11 (§7), A, C et D restent.** Écrit le 2026-10-11. Touche l'**argent**
+> **Statut : plan ; lots B et A bâtis le 2026-10-11 (§7), C et D restent.** Écrit le 2026-10-11. Touche l'**argent**
 > (des points qui valent des bons) et une **frontière de sécurité** (prendre
 > possession d'une fiche par son adresse). Contredit par `vitruve` le même jour
 > (3 BLOQUANTS, 9 SÉRIEUX) : le sort de chaque objection est au §7, et les
@@ -196,9 +196,9 @@ Ces corrections **l'emportent** sur les sections 2 à 5 quand elles divergent.
 
 ### Les lots, révisés
 
-| Lot       | Contenu                                                                                                                                                                                                  |
-| --------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| ~~**B**~~ | ~~Les deux migrations ; `public_opened_at` et R4 dans `earningFor` ; le réglage du bonus (API, écran) ; `welcome` dans contrat, domaine, relevés.~~ — **bâti le 2026-10-11** (non commité à l'écriture). |
-| **A**     | `became_account_at` posé par les trois chemins ; R1 (connexions admises, écriture conditionnelle, course, adresse vide) ; crédit immédiat ; `GuestAccountClaimedEvent`.                                  |
-| **C**     | Crédit du bonus aux trois chemins, passe de nuit, unicité.                                                                                                                                               |
-| **D**     | La confirmation invité au futur, avec le bonus.                                                                                                                                                          |
+| Lot       | Contenu                                                                                                                                                                                                                          |
+| --------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| ~~**B**~~ | ~~Les deux migrations ; `public_opened_at` et R4 dans `earningFor` ; le réglage du bonus (API, écran) ; `welcome` dans contrat, domaine, relevés.~~ — **bâti le 2026-10-11** (non commité à l'écriture).                         |
+| ~~**A**~~ | ~~`became_account_at` posé par les trois chemins ; R1 (connexions admises, écriture conditionnelle, course, adresse vide) ; crédit immédiat ; `GuestAccountClaimedEvent`.~~ — **bâti le 2026-10-11** (non commité à l'écriture). |
+| **C**     | Crédit du bonus aux trois chemins, passe de nuit, unicité.                                                                                                                                                                       |
+| **D**     | La confirmation invité au futur, avec le bonus.                                                                                                                                                                                  |

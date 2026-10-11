@@ -5,6 +5,7 @@ import { Clock } from "../../../platform/time/clock.js";
 import {
   AccountEmailAmbiguousError,
   CompanyAlreadyHasOwnerError,
+  GuestBecameAccountMeanwhileError,
 } from "../domain/errors/account-errors.js";
 import {
   CompanyMemberReader,
@@ -154,6 +155,19 @@ export class PrismaCompanyMemberRepository extends CompanyMemberRepository {
 
   async rebindSubject(userId: string, subject: string): Promise<void> {
     await this.prisma.user.update({ where: { id: userId }, data: { auth0Sub: subject } });
+  }
+
+  async bindGuestSubject(userId: string, subject: string): Promise<void> {
+    // Une fiche sans `sub` n'a jamais de `became_account_at` : aucun chemin ne
+    // retire un `sub` (vérifié le 2026-10-11). La condition sur le `sub` suffit
+    // donc à ne jamais le réécrire.
+    const { count } = await this.prisma.user.updateMany({
+      where: { id: userId, auth0Sub: null },
+      data: { auth0Sub: subject, becameAccountAt: this.clock.now() },
+    });
+    if (count !== 1) {
+      throw new GuestBecameAccountMeanwhileError(userId);
+    }
   }
 
   async findOwner(companyId: string): Promise<KnownAccount | null> {

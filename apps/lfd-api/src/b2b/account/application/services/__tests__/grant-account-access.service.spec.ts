@@ -44,6 +44,7 @@ class FakeMembers extends CompanyMemberRepository {
   readonly created: MemberToCreate[] = [];
   readonly attached: Attachment[] = [];
   readonly rebound: { readonly userId: string; readonly subject: string }[] = [];
+  readonly boundGuests: { readonly userId: string; readonly subject: string }[] = [];
 
   constructor(private readonly existing: Existing = {}) {
     super();
@@ -69,6 +70,11 @@ class FakeMembers extends CompanyMemberRepository {
 
   rebindSubject(userId: string, subject: string): Promise<void> {
     this.rebound.push({ userId, subject });
+    return Promise.resolve();
+  }
+
+  bindGuestSubject(userId: string, subject: string): Promise<void> {
+    this.boundGuests.push({ userId, subject });
     return Promise.resolve();
   }
 
@@ -427,8 +433,11 @@ describe("GrantAccountAccess — un invité, qui n'a JAMAIS eu d'identité", () 
       { email: "camille@halles.fr", firstName: "Claire", lastName: "" },
     ]);
     // Le pointeur est écrit : au prochain passage, elle est une personne comme
-    // les autres.
-    expect(members.rebound).toEqual([{ userId: "user_guest", subject: "auth0|1" }]);
+    // les autres. Par le PREMIER `sub` d'une fiche (2026-10-11), qui pose
+    // aussi l'instant où elle devient un compte — pas par le réalignement d'un
+    // `sub` périmé, qui ne fait pas d'un compte un compte une seconde fois.
+    expect(members.boundGuests).toEqual([{ userId: "user_guest", subject: "auth0|1" }]);
+    expect(members.rebound).toEqual([]);
     expect(sent[0]?.carriesPasswordLink).toBe(true);
   });
 

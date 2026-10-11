@@ -193,6 +193,9 @@ export class NoKnownMembers extends CompanyMemberRepository {
   rebindSubject(): Promise<void> {
     return Promise.resolve();
   }
+  bindGuestSubject(): Promise<void> {
+    return Promise.resolve();
+  }
   attach(): Promise<void> {
     return Promise.resolve();
   }

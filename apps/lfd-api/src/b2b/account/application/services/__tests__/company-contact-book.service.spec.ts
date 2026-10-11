@@ -87,6 +87,7 @@ function bookWith(
 
   const members: CompanyMemberRepository = {
     rebindSubject: () => Promise.resolve(),
+    bindGuestSubject: () => Promise.resolve(),
     findAccountByEmail: () => Promise.resolve(known),
     findOwner: () => Promise.resolve(owner),
     createInvited: () => Promise.resolve("user_new"),

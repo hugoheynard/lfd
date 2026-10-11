@@ -166,6 +166,15 @@ vident d'abord les deux tables de fidélité, par un seul `TRUNCATE`.
   passé **maintenant**.
 - **Un invité ne gagne rien** : `User.email` n'est pas unique, et ses points
   resteraient sur une fiche à laquelle personne ne peut se connecter.
+- **Un invité rattaché gagne** (depuis le 2026-10-11, lot A du
+  [plan bienvenue](plan-bienvenue-et-invite-rattache.md)) : quand sa première
+  entrée, par code e-mail ou Google, adresse prouvée, prend possession de
+  l'unique fiche invité de son adresse, la fiche porte un `sub` et
+  `buyerHasAccount` devient vrai pour toutes ses commandes. Ses commandes
+  définitives sont créditées **aussitôt** (`GuestAccountClaimedEvent` →
+  `credit-claimed-guest-points.handler.ts`, le rattrapage borné à ce
+  titulaire) ; celles passées avant `public_opened_at` restent sans points
+  (R4). Le rattrapage de nuit reste le filet.
 
 ### Quand : une commande définitive
 
@@ -180,13 +189,14 @@ le webhook Stripe `payment_intent.succeeded` → `ConfirmOrderPaymentHandler`
 → `markPaid`. Le comptoir n'écrit aucun règlement ; un lien de paiement libre
 ne touche aucune commande.
 
-### Comment : trois déclencheurs, une écriture
+### Comment : quatre déclencheurs, une écriture
 
-| Déclencheur                                    | Fichier                                       | Rôle                                |
-| ---------------------------------------------- | --------------------------------------------- | ----------------------------------- |
-| la remise (`OrderHandedOverEvent` du commerce) | `credit-points-on-handover.handler.ts`        | au fil de l'eau                     |
-| le règlement (`OrderPaymentSettledEvent`)      | `credit-points-on-payment-settled.handler.ts` | au fil de l'eau                     |
-| le rattrapage de nuit                          | `credit-pending-order-points.handler.ts`      | écrit ce que les abonnés ont manqué |
+| Déclencheur                                              | Fichier                                       | Rôle                                |
+| -------------------------------------------------------- | --------------------------------------------- | ----------------------------------- |
+| la remise (`OrderHandedOverEvent` du commerce)           | `credit-points-on-handover.handler.ts`        | au fil de l'eau                     |
+| le règlement (`OrderPaymentSettledEvent`)                | `credit-points-on-payment-settled.handler.ts` | au fil de l'eau                     |
+| le rattrapage de nuit                                    | `credit-pending-order-points.handler.ts`      | écrit ce que les abonnés ont manqué |
+| un invité devient un compte (`GuestAccountClaimedEvent`) | `credit-points-on-guest-claimed.handler.ts`   | ses commandes définitives, aussitôt |
 
 Les deux abonnés relisent l'état de la commande : le crédit n'a donc lieu
 qu'au **second** des deux faits, quel que soit leur ordre. Ils passent par

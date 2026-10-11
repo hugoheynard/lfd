@@ -4,6 +4,8 @@ import { AdjustLoyaltyPointsHandler } from "./application/commands/adjust-loyalt
 import { CancelLoyaltyVoucherHandler } from "./application/commands/cancel-loyalty-voucher.handler.js";
 import { CreditOrderPointsHandler } from "./application/commands/credit-order-points.handler.js";
 import { CreditPendingOrderPointsHandler } from "./application/commands/credit-pending-order-points.handler.js";
+import { CreditClaimedGuestPointsHandler } from "./application/commands/credit-claimed-guest-points.handler.js";
+import { CreditPointsOnGuestClaimed } from "./application/handlers/credit-points-on-guest-claimed.handler.js";
 import { ConvertLoyaltyPointsHandler } from "./application/commands/convert-loyalty-points.handler.js";
 import { ExpireLoyaltyVouchersHandler } from "./application/commands/expire-loyalty-vouchers.handler.js";
 import { SetLoyaltySettingsHandler } from "./application/commands/set-loyalty-settings.handler.js";
@@ -82,6 +84,8 @@ import { PrismaLoyaltyVoucherRepository } from "./infrastructure/prisma-loyalty-
     SettleVoucherRemaindersHandler,
     CreditOrderPointsHandler,
     CreditPendingOrderPointsHandler,
+    CreditClaimedGuestPointsHandler,
+    CreditPointsOnGuestClaimed,
     CreditPointsOnHandover,
     CreditPointsOnPaymentSettled,
     SetLoyaltySettingsHandler,

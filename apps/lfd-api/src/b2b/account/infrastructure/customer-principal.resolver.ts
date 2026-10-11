@@ -7,6 +7,7 @@ import { DomainEventPublisher } from "../../../platform/events/domain-event-publ
 import { PrincipalResolver } from "../../../platform/auth/principal.resolver.js";
 import type { Principal, VerifiedToken } from "../../../platform/auth/principal.js";
 import { UnknownSubjectAdmission } from "./unknown-subject-admission.js";
+import { tokenProvesAddress } from "./token-address-proof.js";
 import { MembershipAcceptance } from "./membership-acceptance.js";
 import { UnitOfWork } from "../../../platform/database/unit-of-work.js";
 import { Clock } from "../../../platform/time/clock.js";
@@ -196,7 +197,8 @@ export class CustomerPrincipalResolver extends PrincipalResolver {
 
   /**
    * Passe le `sub` inconnu par {@link UnknownSubjectAdmission} : refus d'un
-   * second compte, ou première entrée d'un invité rattachée à ce `sub`.
+   * second compte, première entrée d'un invité rattachée à ce `sub`, ou fiche
+   * invité sans `sub` qui devient le compte (R1, 2026-10-11).
    *
    * Rend la personne quand un compte EXISTANT l'accueille, `null` quand il
    * faut en créer un. Une course perdue (`lost`) se relit : si l'autre requête
@@ -250,6 +252,10 @@ export class CustomerPrincipalResolver extends PrincipalResolver {
           auth0Sub: token.subject,
           email: token.email ?? "",
           status: UserStatus.active,
+          // Né compte : l'instant où il l'est devenu est celui de sa création
+          // (plan bienvenue, B2). Une course perdue n'écrit rien, donc rien ne
+          // le réécrit.
+          becameAccountAt: this.clock.now(),
         },
       });
       createdHere = true;
@@ -270,33 +276,6 @@ export class CustomerPrincipalResolver extends PrincipalResolver {
     }
     return user;
   }
-}
-
-/**
- * Le jeton prouve-t-il l'adresse **actuellement en base** ?
- *
- * Il faut les deux claims, et que l'adresse soit la même (trim + minuscules).
- * Un jeton émis pour l'ancienne adresse ne prouve pas la nouvelle : sans cette
- * comparaison, la requête qui suit un changement d'adresse, portée par le jeton
- * d'accès encore valide, remettait `email_verified` à `true` sur une adresse
- * que personne n'a vérifiée — et l'exemption par adresse prouvée devenait
- * contournable pour toute la durée de vie du jeton (décidé le 2026-09-14).
- *
- * Claim d'adresse absent ou adresse différente : « on ne sait pas », qui
- * n'efface ni ne prouve. Seule la recopie de la preuve en dépend — ni le
- * provisionnement au vol, ni l'activation de l'invité.
- */
-function tokenProvesAddress(token: VerifiedToken, storedEmail: string): boolean {
-  return (
-    token.emailVerified === true &&
-    token.email !== undefined &&
-    normalizeEmail(token.email) === normalizeEmail(storedEmail)
-  );
-}
-
-/** Forme de comparaison d'une adresse : la casse et les blancs ne font pas une autre adresse. */
-function normalizeEmail(raw: string): string {
-  return raw.trim().toLowerCase();
 }
 
 /** Violation d'unicité Prisma (`P2002`) — duck-typée, sans importer le client. */

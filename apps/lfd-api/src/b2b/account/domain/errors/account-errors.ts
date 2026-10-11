@@ -597,3 +597,22 @@ export class DeliveryAddressBookStaleError extends BusinessError {
     );
   }
 }
+
+/**
+ * La fiche invité visée par une ouverture d'accès est devenue un compte
+ * **entre-temps** : la personne est entrée elle-même, par code ou par Google,
+ * pendant que le commercial ouvrait son accès (R1 du plan
+ * `comptabilite/fidelite/plan-bienvenue-et-invite-rattache.md`, 2026-10-11).
+ *
+ * Écraser son `sub` par l'identité à mot de passe la mettrait dehors du compte
+ * qu'elle vient d'ouvrir. On refuse, et le même geste, refait, la trouve
+ * connectable et rattache la société à son compte.
+ */
+export class GuestBecameAccountMeanwhileError extends BusinessError {
+  constructor(readonly userId: string) {
+    super(
+      "account.access.guest_became_account",
+      "Cette personne vient d'ouvrir son compte elle-même. Rouvrez l'accès : la société sera rattachée à son compte.",
+    );
+  }
+}

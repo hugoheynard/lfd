@@ -1,7 +1,6 @@
 import { CommandHandler, type ICommandHandler } from "@nestjs/cqrs";
 
 import { CompletedOrderReader } from "../../../orders/domain/ports/completed-order.reader.js";
-import { LoyaltyEarnedOrdersReader } from "../../domain/ports/loyalty-earned-orders.reader.js";
 import { LoyaltySettingsReader } from "../../domain/ports/loyalty-settings.store.js";
 import { OrderPointsCrediting } from "../services/order-points-crediting.js";
 import {
@@ -32,7 +31,6 @@ export class CreditPendingOrderPointsHandler implements ICommandHandler<
 > {
   constructor(
     private readonly orders: CompletedOrderReader,
-    private readonly earned: LoyaltyEarnedOrdersReader,
     private readonly settings: LoyaltySettingsReader,
     private readonly crediting: OrderPointsCrediting,
   ) {}
@@ -47,15 +45,7 @@ export class CreditPendingOrderPointsHandler implements ICommandHandler<
     let credited = 0;
     do {
       const page = await this.orders.listCompleted(after, CREDIT_BATCH);
-      const done = await this.earned.earnedAmong(page.orders.map((order) => order.orderId));
-      for (const order of page.orders) {
-        if (
-          !done.has(order.orderId) &&
-          (await this.crediting.creditEarnedPoints(order, settings))
-        ) {
-          credited += 1;
-        }
-      }
+      credited += await this.crediting.creditPending(page.orders, settings);
       scanned += page.orders.length;
       after = page.nextAfter;
     } while (after !== null);

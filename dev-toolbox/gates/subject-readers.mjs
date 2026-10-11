@@ -65,6 +65,11 @@ const ADMITTED = new Map([
     "un `sub` inconnu sous une adresse connue : refus d'un second compte, ou première " +
       "entrée d'un invité rattachée à ce `sub` (2026-10-09) ; le `sub` n'est ni rendu ni journalisé",
   ],
+  [
+    "apps/lfd-api/src/b2b/account/infrastructure/guest-account-claim.ts",
+    "première entrée d'un `sub` inconnu : son préfixe dit la connexion (code e-mail, Google), " +
+      "et il est posé sur l'unique fiche invité de l'adresse (R1, 2026-10-11) ; ni rendu ni journalisé",
+  ],
 ]);
 
 /** Le module du principal CLIENT — pas `staff-principal.js`. */

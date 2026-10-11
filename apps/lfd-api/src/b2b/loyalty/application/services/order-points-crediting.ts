@@ -34,6 +34,26 @@ export class OrderPointsCrediting {
     private readonly uow: UnitOfWork,
   ) {}
 
+  /**
+   * Un lot de commandes définitives : écarte celles qui ont déjà leur gain, et
+   * crédite le reste — une transaction par commande, un échec n'en emporte
+   * qu'une. Rend le nombre de gains écrits. Partagé par le rattrapage de nuit
+   * et le crédit immédiat d'un invité rattaché.
+   */
+  async creditPending(
+    orders: readonly EarnableOrder[],
+    settings: LoyaltySettings,
+  ): Promise<number> {
+    const done = await this.earned.earnedAmong(orders.map((order) => order.orderId));
+    let credited = 0;
+    for (const order of orders) {
+      if (!done.has(order.orderId) && (await this.creditEarnedPoints(order, settings))) {
+        credited += 1;
+      }
+    }
+    return credited;
+  }
+
   /** Vrai si ce passage a écrit le gain ; faux si rien n'est dû, ou déjà écrit. */
   async creditEarnedPoints(
     order: EarnableOrder,

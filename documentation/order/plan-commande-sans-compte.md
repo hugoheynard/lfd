@@ -327,6 +327,11 @@ externalId)` (`platform/mailer/journal/mail-journal.port.ts`) est un
   **D7 décide que le rapatriement ne réécrit pas** ce qui est figé à la
   passation. Un invité qui crée un compte ne reprend donc pas ses commandes sans
   un geste explicite, à concevoir ailleurs.
+  ⚠️ **Ce geste existe depuis le 2026-10-11** : la première entrée par code
+  e-mail ou Google, adresse prouvée, pose son `sub` sur l'unique fiche invité
+  de l'adresse — ses commandes et leurs points la suivent, rien n'est réécrit
+  sur les commandes. Mot de passe, Facebook, ou plusieurs fiches : compte neuf,
+  comme avant. Cf. [`../comptabilite/fidelite/plan-bienvenue-et-invite-rattache.md`](../comptabilite/fidelite/plan-bienvenue-et-invite-rattache.md), R1 et §7.
 - **D4 — un règlement interrompu perd le PAIEMENT, pas la COMMANDE.** ✅
   Tranché. Aucune route publique de reprise : le `clientSecret` n'est pas
   persisté, et en rendre un depuis une surface publique serait la passoire que
