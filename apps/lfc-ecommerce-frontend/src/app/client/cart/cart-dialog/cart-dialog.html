@@ -2,6 +2,27 @@
 
 <fold-panel-body>
   <div class="page">
+    <!-- « Qui passe cette commande » EN TÊTE (Hugo, 2026-10-11) : c'est la
+       question qui bloque le règlement, elle passe avant « où » et « quoi ».
+       DEUX gestes — donc une section, pas un bouton géant. Elle ne paraît que
+       devant une commande réglable (cf. `identityNeeded`). -->
+    @if (identityNeeded()) {
+      <section class="who">
+        <p class="ask-title">{{ t().cart.whoTitle }}</p>
+        <p class="ask-hint">{{ t().cart.whoHint }}</p>
+        <div class="who-doors">
+          <!-- Commander SANS créer de compte : la porte mène au dialogue de
+             saisie, plus à l'inscription Auth0. -->
+          <button class="who-door" type="button" (click)="orderAsGuest()">
+            {{ t().cart.whoRegister }}
+          </button>
+          <button class="who-door is-quiet" type="button" (click)="signInFirst()">
+            {{ t().cart.whoSignIn }}
+          </button>
+        </div>
+      </section>
+    }
+
     @if (choice(); as service) {
       <section class="service">
         <p class="service-kicker">
@@ -27,26 +48,6 @@
         <span class="ask-title">{{ t().shop.pickService }}</span>
         <span class="ask-hint">{{ t().shop.pickServiceHint }}</span>
       </button>
-    }
-
-    <!-- « Où » est réglé, « qui » ne l'est pas : la même forme que l'invite du
-       dessus, mais DEUX gestes — donc une section, pas un bouton géant. Elle ne
-       paraît que devant une commande réglable (cf. `identityNeeded`). -->
-    @if (identityNeeded()) {
-      <section class="who">
-        <p class="ask-title">{{ t().cart.whoTitle }}</p>
-        <p class="ask-hint">{{ t().cart.whoHint }}</p>
-        <div class="who-doors">
-          <!-- Commander SANS créer de compte : la porte mène au dialogue de
-             saisie, plus à l'inscription Auth0. -->
-          <button class="who-door" type="button" (click)="orderAsGuest()">
-            {{ t().cart.whoRegister }}
-          </button>
-          <button class="who-door is-quiet" type="button" (click)="signInFirst()">
-            {{ t().cart.whoSignIn }}
-          </button>
-        </div>
-      </section>
     }
 
     <app-cart-summary />
