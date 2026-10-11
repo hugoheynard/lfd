@@ -75,6 +75,7 @@ function image(focal: FocalPoint | null): LibraryMediaRecord {
     uses: 1,
     depositedAt: DEPOSITED_AT,
     series: null,
+    palette: null,
   };
 }
 

@@ -1,6 +1,7 @@
 import { z } from "zod";
 
 import { optionalLocalizedTextSchema } from "./localized.js";
+import type { ImagePalette } from "./media-palette.js";
 import type { LocalizedText } from "./shared.js";
 
 /**
@@ -177,6 +178,11 @@ export interface LibraryMediaView extends MediaFactsView {
   readonly depositedAt: string;
   /** Sa série (L3, 2026-10-10) — `null` = aucune. */
   readonly series: MediaSeriesRefView | null;
+  /**
+   * Ses couleurs (L9, 2026-10-11) — `null` = pas encore calculée : l'écran la
+   * calcule et la pose par `PUT /media/palette`.
+   */
+  readonly palette: ImagePalette | null;
 }
 
 /** La série d'une image, telle qu'une tuile la montre. */

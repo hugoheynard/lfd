@@ -132,5 +132,6 @@ function viewOf(record: LibraryMediaRecord): MediaLibraryPageView["items"][numbe
     // ISO, et pas un `Date` : ce qui sort d'ici est du JSON.
     depositedAt: record.depositedAt.toISOString(),
     series: record.series,
+    palette: record.palette,
   };
 }

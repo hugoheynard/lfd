@@ -101,6 +101,7 @@ function image(series: MediaSeriesLabel | null): LibraryMediaRecord {
     uses: 0,
     depositedAt: NOW,
     series: series === null ? null : { ...series, shotOn: null },
+    palette: null,
   };
 }
 

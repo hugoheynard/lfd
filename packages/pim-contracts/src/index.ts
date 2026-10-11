@@ -27,6 +27,15 @@ export {
   setMediaPayloadSchema,
 } from "./media.js";
 export { MEDIA_LIMITS, MEDIA_LIBRARY_SORTS } from "./media.js";
+export {
+  PALETTE_LIMITS,
+  PALETTE_MAX_SWATCHES,
+  PALETTE_HEX_PATTERN,
+  paletteSwatchSchema,
+  imagePaletteSchema,
+  mediaPalettePayloadSchema,
+} from "./media-palette.js";
+export type { PaletteSwatch, ImagePalette, MediaPalettePayload } from "./media-palette.js";
 
 export type {
   AttachedMediaView,

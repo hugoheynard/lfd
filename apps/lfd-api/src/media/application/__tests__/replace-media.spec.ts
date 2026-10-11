@@ -127,6 +127,7 @@ function record(url: string): LibraryMediaRecord {
     uses: 0,
     depositedAt: AT,
     series: null,
+    palette: null,
   };
 }
 

@@ -11,7 +11,6 @@ import {
   UseInterceptors,
 } from "@nestjs/common";
 import { FileInterceptor } from "@nestjs/platform-express";
-import { z } from "zod";
 import { CommandBus, QueryBus } from "@nestjs/cqrs";
 import {
   mediaDetailsPayloadSchema,
@@ -27,7 +26,8 @@ import {
 } from "@lfd/pim-contracts";
 
 import { AdminSurface } from "../../platform/auth/admin-surface.decorator.js";
-import { ZodQuery } from "../../platform/shared/http/zod-body.pipe.js";
+import { ZodBody, ZodQuery } from "../../platform/shared/http/zod-body.pipe.js";
+import { depositFieldsSchema, type DepositFields } from "./deposit-fields.js";
 import { DepositImageCommand, type DepositImageResult } from "../application/deposit-image.js";
 import { UnsupportedImageError } from "../domain/value-objects/image-bytes.js";
 import { BrowseMediaLibraryQuery } from "../application/browse-media-library.js";
@@ -259,30 +259,22 @@ export class MediaLibraryController {
   @UseInterceptors(FileInterceptor("file", { limits: { fileSize: IMAGE_UPLOAD_HARD_LIMIT } }))
   async upload(
     @UploadedFile() file: UploadedFilePart | undefined,
-    @Body() body: unknown,
+    // La série et la palette sont des champs texte du MÊME multipart (D3, L9) :
+    // la forme seulement, une palette illisible est un 400 nommé.
+    @Body(new ZodBody(depositFieldsSchema)) fields: DepositFields,
   ): Promise<UploadedMediaView> {
     if (file === undefined) {
       throw new UnsupportedImageError("aucun fichier reçu.");
     }
-    // La série est un champ texte du MÊME multipart (D3 : facultatif) ; une
-    // chaîne vide vaut « sans série ».
-    const { seriesId } = depositFieldsSchema.parse(body ?? {});
+    const { seriesId, palette } = fields;
     return this.commands.execute<DepositImageCommand, DepositImageResult>(
       // Le nom de fichier ne sert PAS au dépôt — la clé est le SHA-256 du
       // contenu. Il sert au refus : sur un lot de cinquante, « lequel n'est
       // pas passé » n'a de réponse que par lui.
-      new DepositImageCommand(file.buffer, file.originalname, seriesId ?? null),
+      new DepositImageCommand(file.buffer, file.originalname, seriesId ?? null, palette ?? null),
     );
   }
 }
-
-/** Les champs texte du dépôt multipart — la forme seulement. */
-const depositFieldsSchema = z.object({
-  seriesId: z
-    .string()
-    .optional()
-    .transform((raw) => (raw === undefined || raw.trim() === "" ? undefined : raw.trim())),
-});
 
 /** Ce que l'écran demande par défaut à l'historique des refus. */
 const DEFAULT_FAILURES_PAGE = 50;

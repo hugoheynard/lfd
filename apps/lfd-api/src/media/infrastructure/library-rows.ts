@@ -1,5 +1,6 @@
 import { readAltColumn } from "./alt-columns.js";
 import { readDayColumn } from "./series-day.js";
+import { readPaletteColumn } from "./palette-column.js";
 
 import { SOURCE_LOCALE } from "../domain/value-objects/alt-text.js";
 import type { RankedImage } from "../domain/value-objects/library-order.js";
@@ -19,6 +20,7 @@ export const ASSET_COLUMNS = {
   tags: true,
   alt: true,
   createdAt: true,
+  palette: true,
   series: { select: { id: true, title: true, shotOn: true } },
 } as const;
 
@@ -42,6 +44,7 @@ export interface AssetRow {
   readonly tags: string[];
   readonly alt: unknown;
   readonly createdAt: Date;
+  readonly palette: unknown;
   readonly series: SeriesRow | null;
 }
 
@@ -68,6 +71,7 @@ export function recordOf(row: AssetRow, uses: number): LibraryMediaRecord {
     focal: row.focalX === null ? null : { x: row.focalX, y: row.focalY ?? 0 },
     uses,
     depositedAt: row.createdAt,
+    palette: readPaletteColumn(row.palette),
     series:
       row.series === null
         ? null

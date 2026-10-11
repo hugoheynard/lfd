@@ -70,6 +70,13 @@ model MediaAsset {
   seriesId String?      @map("series_id")
   series   MediaSeries? @relation(fields: [seriesId], references: [id], onDelete: Restrict)
 
+  /// Les couleurs de l'image (plan L9, 2026-10-11) — `[{ hex, share, outlier }]`,
+  /// 1 à 8 entrées, calculées par le NAVIGATEUR (R28) et revalidées par le
+  /// domaine (`imagePalette`). `null` = pas encore calculée. Posée une fois :
+  /// l'identité d'une image est son contenu, sa palette ne change donc jamais,
+  /// et l'écriture ne vise que `palette IS NULL`.
+  palette Json?
+
   /// La recherche par mots-clés filtre en `hasEvery`, que sert un index GIN.
   /// Il existait depuis `20260923120000_les_tags_de_la_mediatheque` sans être
   /// déclaré ici : un `migrate dev` aurait proposé de le supprimer. Déclaré le

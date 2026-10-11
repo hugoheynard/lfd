@@ -9,6 +9,10 @@ import { MediaFailureLog } from "./domain/ports/media-failure-log.js";
 import { PrismaMediaFailureLog } from "./infrastructure/prisma-media-failure-log.js";
 import { DepositImageHandler } from "./application/deposit-image.js";
 import { DiscardMediaHandler } from "./application/discard-media.js";
+import { PaintMediaPaletteHandler } from "./application/paint-media-palette.js";
+import { MediaPalettes } from "./domain/ports/media-palettes.js";
+import { PrismaMediaPalettes } from "./infrastructure/prisma-media-palettes.js";
+import { MediaPaletteController } from "./http/media-palette.controller.js";
 import { ReplaceMediaHandler } from "./application/replace-media.js";
 import { SaveMediaDetailsHandler } from "./application/save-media-details.js";
 import { SweepOrphanMediaHandler } from "./application/sweep-orphan-media.js";
@@ -69,6 +73,7 @@ import { PrismaMediaLibraryWriter } from "./infrastructure/prisma-media-library-
   controllers: [
     MediaLibraryController,
     MediaReplaceController,
+    MediaPaletteController,
     MediaSeriesController,
     MediaSweepController,
   ],
@@ -80,6 +85,8 @@ import { PrismaMediaLibraryWriter } from "./infrastructure/prisma-media-library-
     SaveMediaDetailsHandler,
     DiscardMediaHandler,
     ReplaceMediaHandler,
+    PaintMediaPaletteHandler,
+    { provide: MediaPalettes, useClass: PrismaMediaPalettes },
     DepositImageHandler,
     SweepOrphanMediaHandler,
     ListMediaTagsHandler,

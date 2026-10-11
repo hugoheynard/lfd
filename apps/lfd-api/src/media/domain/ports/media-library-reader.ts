@@ -1,4 +1,5 @@
 import type { LocalizedText } from "../value-objects/alt-text.js";
+import type { ImagePalette } from "../value-objects/image-palette.js";
 import type { LibraryPosition, LibrarySort } from "../value-objects/library-order.js";
 
 /**
@@ -39,6 +40,8 @@ export interface LibraryMediaRecord {
   readonly depositedAt: Date;
   /** Sa série (L3), avec de quoi l'afficher et la ranger — `null` = aucune. */
   readonly series: LibraryMediaSeries | null;
+  /** Ses couleurs (L9) — `null` = pas encore calculée par l'écran. */
+  readonly palette: ImagePalette | null;
 }
 
 /** La série d'une image, telle qu'une tuile la montre. */

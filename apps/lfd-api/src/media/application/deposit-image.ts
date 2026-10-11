@@ -1,6 +1,7 @@
 import { CommandHandler, type ICommandHandler } from "@nestjs/cqrs";
 
 import { AppError } from "../../platform/shared/errors/app-error.js";
+import type { WriteTicket } from "../../platform/journal/scoped-journal.js";
 import { UnitOfWork } from "../../platform/database/unit-of-work.js";
 import { MediaStore } from "../../platform/storage/media-store.js";
 import { MEDIA_EVENTS, MediaJournal } from "../journal/media-journal.js";
@@ -9,6 +10,12 @@ import { MediaLibrary, type RegisteredMedia } from "../domain/ports/media-librar
 import { MediaSeriesReader, type MediaSeriesLabel } from "../domain/ports/media-series.js";
 import { MediaSeriesNotFoundError } from "../domain/errors/media-series-errors.js";
 import { productImage, type ProductImage } from "../domain/value-objects/image-bytes.js";
+import { MediaPalettes } from "../domain/ports/media-palettes.js";
+import {
+  imagePalette,
+  type ImagePalette,
+  type PaletteSwatch,
+} from "../domain/value-objects/image-palette.js";
 
 /** Le préfixe d'usage dans le bucket. Il nomme l'emploi, pas un propriétaire. */
 const PREFIX = "products";
@@ -44,6 +51,12 @@ export class DepositImageCommand {
      * image déjà au fonds (D2).
      */
     readonly seriesId: string | null = null,
+    /**
+     * Les couleurs, calculées par le navigateur (L9, R28) — `null` = l'écran
+     * ne les a pas envoyées, elles se rattraperont par `PUT /media/palette`.
+     * Posées aussi sur une image déjà au fonds qui n'en avait pas.
+     */
+    readonly palette: readonly PaletteSwatch[] | null = null,
   ) {}
 }
 
@@ -77,10 +90,13 @@ export class DepositImageHandler implements ICommandHandler<
     private readonly journal: MediaJournal,
     private readonly failures: MediaFailureLog,
     private readonly uow: UnitOfWork,
+    private readonly palettes: MediaPalettes,
   ) {}
 
   async execute(command: DepositImageCommand): Promise<DepositImageResult> {
     const image = await this.validated(command);
+    // Refusée AVANT de ranger, comme la série : un dépôt refusé ne laisse rien.
+    const palette = command.palette === null ? null : imagePalette(command.palette);
     // 🔴 La série se vérifie AVANT de ranger les octets : un dépôt refusé pour
     // une série inconnue ne doit rien laisser dans le bucket.
     const series = await this.seriesOf(command.seriesId);
@@ -99,7 +115,13 @@ export class DepositImageHandler implements ICommandHandler<
       const existing = await this.library.alreadyRegistered(stored.url);
       if (existing !== null) {
         // D2 : les mêmes octets sont déjà au fonds. Rien n'est écrit — ni
-        // série, ni fait : il ne s'est rien passé dans la bibliothèque.
+        // série, ni fait : il ne s'est rien passé dans la bibliothèque. Seule
+        // une palette MANQUANTE se pose — elle se déduit des octets (L9).
+        await this.paint(
+          stored.url,
+          palette,
+          this.journal.untraced("la palette se déduit des octets : aucune décision n'est prise"),
+        );
         return { ...existing, alreadyInLibrary: true };
       }
       const ticket = await this.journal.trace({
@@ -130,8 +152,20 @@ export class DepositImageHandler implements ICommandHandler<
         },
         ticket,
       );
+      await this.paint(stored.url, palette, ticket);
       return { ...registered, alreadyInLibrary: false };
     });
+  }
+
+  /** Pose la palette si l'écran en a envoyé une ; ne remplace jamais. */
+  private async paint(
+    url: string,
+    palette: ImagePalette | null,
+    ticket: WriteTicket,
+  ): Promise<void> {
+    if (palette !== null) {
+      await this.palettes.paintIfBlank(url, palette, ticket);
+    }
   }
 
   /** La série demandée, ou `null` sans série. @throws {MediaSeriesNotFoundError} */
