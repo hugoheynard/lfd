@@ -266,6 +266,27 @@ describe('ReglementPage', () => {
     expect(gone).toEqual([['/boutique']]);
   });
 
+  /** Hugo, 2026-10-11 : abandonner repart de zéro — panier, lieu et heure oubliés. */
+  it('oublie le panier et le service en abandonnant', async () => {
+    const { fixture } = await boot(stripeThatAnswers({}));
+    const forget = vi.spyOn(TestBed.inject(ClientOrders), 'forgetAbandoned');
+
+    await leave(fixture);
+
+    expect(forget).toHaveBeenCalledWith('ord_9');
+  });
+
+  it('ne vide rien quand le paiement a abouti entre-temps', async () => {
+    const { fixture } = await boot(stripeThatAnswers({}), 'ord_9', CARD_DUE, {
+      outcome: 'settled',
+    });
+    const forget = vi.spyOn(TestBed.inject(ClientOrders), 'forgetAbandoned');
+
+    await leave(fixture);
+
+    expect(forget).not.toHaveBeenCalled();
+  });
+
   /** Un pro garde une intention vivante jusqu'à la clôture (Q8, a) : jamais « annulée ». */
   it('ne dit pas « annulée » à un pro, dont la commande reste payable', async () => {
     const { fixture, gone } = await boot(stripeThatAnswers({}), 'ord_9', CARD_DUE, { pro: true });

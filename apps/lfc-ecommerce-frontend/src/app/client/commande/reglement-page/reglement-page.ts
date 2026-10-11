@@ -260,6 +260,10 @@ export class ReglementPage {
     }
     this.leaving.set(true);
     const outcome = await this.abandoning.abandon(this.id());
+    // Payée malgré tout, elle n'est pas abandonnée : le panier suit `markPaid`.
+    if (outcome !== 'settled') {
+      this.orders.forgetAbandoned(this.id());
+    }
     this.announce(outcome);
     this.confirmOpen.set(false);
     void (outcome === 'settled' ? this.toConfirmation() : this.router.navigate(['/boutique']));

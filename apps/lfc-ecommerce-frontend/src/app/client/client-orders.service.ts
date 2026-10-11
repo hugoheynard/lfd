@@ -561,6 +561,27 @@ export class ClientOrders {
   }
 
   /**
+   * **La commande est abandonnée** : on repart de zéro (Hugo, 2026-10-11 :
+   * « abandonner ma commande devrait nettoyer le panier et le choix heure et
+   * acheminement »).
+   *
+   * Le panier gardé en attente de CE règlement se vide, et le lieu et l'heure
+   * s'oublient : les reproposer ferait recomposer, sans le dire, la commande
+   * qu'on vient de quitter. Un panier qui n'attendait pas cette commande-là
+   * n'est pas touché.
+   */
+  forgetAbandoned(orderId: string): void {
+    this.intent.set(null);
+    for (const workspace of [this.workspace.current() ?? GUEST_WORKSPACE, GUEST_WORKSPACE]) {
+      if (readAwaiting(workspace) === orderId) {
+        clearLocal(cartAwaitingKeyOf(workspace));
+        this.cart.clear();
+        this.order.choice.set(null);
+      }
+    }
+  }
+
+  /**
    * À la passation : vide le panier si rien n'est à encaisser, sinon le garde
    * en attente du paiement de cette commande (cf. `CART_AWAITING_KEY`).
    */

@@ -420,6 +420,25 @@ describe('le règlement de la commande', () => {
     expect(cart.isEmpty()).toBe(true);
   });
 
+  /** Hugo, 2026-10-11 : abandonner vide le panier ET oublie le lieu et l'heure. */
+  it('oublie le panier et le service à l’abandon de CETTE commande, et d’aucune autre', async () => {
+    boot();
+    const orders = TestBed.inject(ClientOrders);
+    const cart = TestBed.inject(ClientCart);
+    const choice = TestBed.inject(OrderContextStore).choice;
+    choice.set(AU_LABO);
+    cart.add('VIE-001');
+    await placeOrderResponse({ id: 'ord_c', orderNumber: 'CMD-C', payment: CARD_DUE });
+
+    orders.forgetAbandoned('ord_autre');
+    expect(cart.isEmpty()).toBe(false);
+    expect(choice()).not.toBeNull();
+
+    orders.forgetAbandoned('ord_c');
+    expect(cart.isEmpty()).toBe(true);
+    expect(choice()).toBeNull();
+  });
+
   it('vide le panier tout de suite quand rien n’est à encaisser', async () => {
     boot();
     TestBed.inject(OrderContextStore).choice.set(AU_LABO);
