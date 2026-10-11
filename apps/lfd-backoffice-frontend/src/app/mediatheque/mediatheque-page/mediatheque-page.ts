@@ -7,7 +7,7 @@ import {
   signal,
 } from '@angular/core';
 import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
-import { ActivatedRoute, Router } from '@angular/router';
+import { ActivatedRoute, Router, RouterLink } from '@angular/router';
 import type { LibraryMediaView, MediaDetailsPayload, MediaTagView } from '@lfd/pim-contracts';
 import {
   FoldBadgeComponent,
@@ -34,13 +34,14 @@ import { SeriesListPanel, type SeriesListPanelData } from '../series-list-panel/
 import { FeedTail, type FeedTailState } from '../feed-tail/feed-tail';
 import { MediaFeedStore } from '../media-feed';
 import { PaletteBackfill } from '../palette-backfill';
-import { PaletteStrip } from '../palette-strip/palette-strip';
+import { PaletteStrip, type StripRange } from '../palette-strip/palette-strip';
 import { PaletteStripStore } from '../palette-strip-store';
 import {
   ALL_MEDIA,
   isFiltering,
   readCriteria,
   sameCriteria,
+  shotRangeLabel,
   toQueryParams,
   withoutFilters,
   type MediaFeedCriteria,
@@ -118,6 +119,7 @@ interface StrippedTag {
     MediaDeposit,
     MediaToolbar,
     PaletteStrip,
+    RouterLink,
     SeriesChip,
     TagBand,
     TagChip,
@@ -293,6 +295,18 @@ export class MediathequePage {
 
   protected isFiltering(tag: string): boolean {
     return this.criteria().tags.includes(tag);
+  }
+
+  /** La pastille de la période de prise de vue posée par la frise (L11). */
+  protected readonly shotLabel = computed(() => shotRangeLabel(this.criteria()));
+
+  /** Clic sur une colonne de la frise : ses photos, par leur date de prise de vue. */
+  protected async openShotRange(range: StripRange): Promise<void> {
+    await this.show({ ...this.criteria(), shotFrom: range.from, shotTo: range.to });
+  }
+
+  protected async clearShotRange(): Promise<void> {
+    await this.show({ ...this.criteria(), shotFrom: '', shotTo: '' });
   }
 
   protected async clearFilter(): Promise<void> {

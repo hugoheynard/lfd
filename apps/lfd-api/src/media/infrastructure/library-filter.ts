@@ -1,6 +1,7 @@
 import type { Prisma } from "../../platform/database/client/client.js";
 
 import type { LibraryFilter } from "../domain/ports/media-library-reader.js";
+import { takenWhere } from "./taken-on.js";
 
 /**
  * Traduit la recherche en `where`, et rend `{}` quand elle ne demande rien.
@@ -40,6 +41,10 @@ export function filterOf(query: LibraryFilter): Prisma.MediaAssetWhereInput {
   }
   if (query.depositedBefore !== undefined) {
     clauses.push({ createdAt: { lt: query.depositedBefore } });
+  }
+  const taken = takenWhere(query.takenFrom, query.takenTo);
+  if (taken !== null) {
+    clauses.push(taken);
   }
   return clauses.length === 0 ? {} : { AND: clauses };
 }

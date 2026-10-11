@@ -11,7 +11,7 @@ import {
   encodeLibraryCursor,
 } from "../domain/value-objects/library-cursor.js";
 import type { LibrarySort } from "../domain/value-objects/library-order.js";
-import { depositPeriodOf } from "./library-period.js";
+import { libraryFilterOf, type LibraryFilterCriteria } from "./library-filter-criteria.js";
 
 /**
  * Plafond d'une page. Une médiathèque se parcourt à l'œil : au-delà, l'écran
@@ -32,24 +32,13 @@ export class UnsupportedLibraryOffsetError extends DomainError {
 }
 
 /** Ce qu'on demande au fonds — tout facultatif sauf l'ordre. */
-export interface BrowseMediaLibraryCriteria {
+export interface BrowseMediaLibraryCriteria extends LibraryFilterCriteria {
   readonly limit?: number | undefined;
   /** L'ancien décalage — en attendant que l'écran lise `next`. */
   readonly offset?: number | undefined;
   /** Le curseur opaque rendu en `next` par la page précédente. */
   readonly after?: string | undefined;
   readonly sort?: LibrarySort | undefined;
-  /** Cherché dans l'étiquette, en sous-chaîne, casse ignorée. */
-  readonly q?: string | undefined;
-  /** Les mots-clés que l'image doit porter — tous. */
-  readonly tags?: readonly string[] | undefined;
-  /** Premier et dernier jour de dépôt, inclus, `AAAA-MM-JJ` à l'heure de Paris. */
-  readonly from?: string | undefined;
-  readonly to?: string | undefined;
-  readonly untagged?: boolean | undefined;
-  readonly unused?: boolean | undefined;
-  /** Seulement les images de cette série (L3). */
-  readonly series?: string | undefined;
 }
 
 /**
@@ -92,20 +81,14 @@ export class BrowseMediaLibraryHandler implements IQueryHandler<
     }
     const after =
       criteria.after === undefined ? undefined : decodeLibraryCursor(criteria.after, sort);
-    const period = depositPeriodOf(criteria.from, criteria.to);
+    const filter = libraryFilterOf(criteria);
 
     const page = await this.library.page({
       limit,
       offset,
       sort,
       ...(after === undefined ? {} : { after }),
-      ...(criteria.q === undefined ? {} : { q: criteria.q }),
-      ...(criteria.tags === undefined ? {} : { tags: criteria.tags }),
-      ...(criteria.series === undefined ? {} : { seriesId: criteria.series }),
-      ...(period.from === undefined ? {} : { depositedFrom: period.from }),
-      ...(period.before === undefined ? {} : { depositedBefore: period.before }),
-      ...(criteria.untagged === true ? { untagged: true } : {}),
-      ...(criteria.unused === true ? { unused: true } : {}),
+      ...filter,
     });
     return {
       items: page.items.map(viewOf),

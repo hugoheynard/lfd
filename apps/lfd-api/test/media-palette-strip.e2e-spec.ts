@@ -8,7 +8,7 @@
  */
 import { AdminTokenVerifier } from "../src/platform/auth/admin-token.verifier.js";
 import { MediaStore } from "../src/platform/storage/media-store.js";
-import { bootstrapE2e, E2E_STAFF_SUB, jsonBody, type E2eContext } from "./e2e-harness.js";
+import { bootstrapE2e, daysAgo, E2E_STAFF_SUB, jsonBody, type E2eContext } from "./e2e-harness.js";
 import { InMemoryMediaStore } from "./in-memory-media-store.js";
 
 const stubAdminVerifier = {
@@ -83,6 +83,15 @@ async function strip(query: Record<string, string | number>): Promise<StripView>
   return jsonBody<StripView>(await staff().get(STRIP).query(query).expect(200));
 }
 
+const dayAgo = (days: number): string => daysAgo(days).slice(0, 10);
+
+async function feedUrls(query: Record<string, string>): Promise<readonly string[]> {
+  const page = jsonBody<{ items: readonly { url: string }[] }>(
+    await staff().get(MEDIA).query(query).expect(200),
+  );
+  return page.items.map((item) => item.url);
+}
+
 describe("GET /media/palette-strip", () => {
   it("découpe le fonds en quantiles par rang, du dépôt le plus ancien au plus récent", async () => {
     const urls: string[] = [];
@@ -120,6 +129,40 @@ describe("GET /media/palette-strip", () => {
     const untagged = await strip({ untagged: 1 });
     expect(untagged.total).toBe(0);
     expect(untagged.columns).toEqual([]);
+  });
+
+  it("filtre le feed ET la frise par prise de vue — série, sinon dépôt (L11)", async () => {
+    const shotOn = dayAgo(30);
+    const opened = await staff()
+      .post("/media/series")
+      .send({ title: "Fournil", shotOn, note: null });
+    expect(opened.status).toBe(201);
+    const seriesId = jsonBody<{ id: string }>(opened).id;
+    const shot = jsonBody<{ url: string }>(
+      await staff()
+        .post(MEDIA)
+        .field("seriesId", seriesId)
+        .attach("file", png(), "image.png")
+        .expect(201),
+    ).url;
+    const loose = await deposit(RED);
+
+    // Le jour de la série, et lui seul : l'image de la série, déposée aujourd'hui.
+    const onShotDay = { shotFrom: shotOn, shotTo: shotOn };
+    expect(await feedUrls(onShotDay)).toEqual([shot]);
+    expect((await strip(onShotDay)).columns.map((column) => column.sampleUrl)).toEqual([shot]);
+
+    // Autour d'aujourd'hui : l'image sans série, par son dépôt — pas celle de la série.
+    const aroundToday = { shotFrom: dayAgo(2), shotTo: dayAgo(-2) };
+    expect(await feedUrls(aroundToday)).toEqual([loose]);
+    expect((await strip(aroundToday)).total).toBe(1);
+
+    for (const path of [MEDIA, STRIP]) {
+      await staff()
+        .get(path)
+        .query({ shotFrom: dayAgo(1), shotTo: dayAgo(3) })
+        .expect(400);
+    }
   });
 
   it("refuse en 400 un nombre de colonnes hors de 1 à 400", async () => {

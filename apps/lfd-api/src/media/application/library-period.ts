@@ -6,9 +6,38 @@ import { DomainError } from "../../platform/shared/errors/app-error.js";
 const DAY_START = "00:00";
 
 export class InvalidDepositPeriodError extends DomainError {
-  constructor(reason: string) {
-    super("media.library.invalid_period", `Période de dépôt refusée : ${reason}`);
+  constructor(reason: string, what = "de dépôt") {
+    super("media.library.invalid_period", `Période ${what} refusée : ${reason}`);
   }
+}
+
+/** Une période de prise de vue en jours nus, bornes incluses, vérifiée. */
+export interface ShotPeriod {
+  readonly from?: string | undefined;
+  readonly to?: string | undefined;
+}
+
+/**
+ * **La période de prise de vue** (L11) — vérifiée comme celle du dépôt, mais
+ * rendue en JOURS : le jour de série est une colonne `date`, que seul
+ * l'adaptateur sait comparer, et le dépôt s'y lit à l'heure de Paris.
+ *
+ * @throws {InvalidDepositPeriodError} jour inexistant, ou `from` après `to`.
+ */
+export function shotPeriodOf(from: string | undefined, to: string | undefined): ShotPeriod {
+  if (from !== undefined && to !== undefined && from > to) {
+    throw new InvalidDepositPeriodError(
+      `le premier jour (${from}) est après le dernier (${to}) — inversez les deux dates.`,
+      "de prise de vue",
+    );
+  }
+  for (const day of [from, to]) {
+    if (day !== undefined) dayStart(day, "de prise de vue");
+  }
+  return {
+    ...(from === undefined ? {} : { from }),
+    ...(to === undefined ? {} : { to }),
+  };
 }
 
 /** La période en instants : `from` inclus, `before` exclu. */
@@ -39,10 +68,10 @@ export function depositPeriodOf(from: string | undefined, to: string | undefined
   };
 }
 
-function dayStart(day: string): Date {
+function dayStart(day: string, what?: string): Date {
   const instant = localToInstant(day, DAY_START);
   if (instant === null) {
-    throw new InvalidDepositPeriodError(`le jour ${day} n'existe pas au calendrier.`);
+    throw new InvalidDepositPeriodError(`le jour ${day} n'existe pas au calendrier.`, what);
   }
   return instant;
 }

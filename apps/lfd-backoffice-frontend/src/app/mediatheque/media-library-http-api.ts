@@ -34,6 +34,9 @@ export interface MediaPageRequest {
   readonly from?: string | undefined;
   /** Dernier jour de dépôt retenu, `AAAA-MM-JJ`, inclus. */
   readonly to?: string | undefined;
+  /** Premier et dernier jour de prise de vue, inclus (L11). */
+  readonly shotFrom?: string | undefined;
+  readonly shotTo?: string | undefined;
   readonly untagged?: boolean | undefined;
   readonly unused?: boolean | undefined;
   /** L'identifiant d'une série (L3). */
@@ -55,6 +58,10 @@ export function pageParams(request: MediaPageRequest): Record<string, string> {
     params['tags'] = request.tags.join(',');
   if (request.from !== undefined && request.from !== '') params['from'] = request.from;
   if (request.to !== undefined && request.to !== '') params['to'] = request.to;
+  if (request.shotFrom !== undefined && request.shotFrom !== '') {
+    params['shotFrom'] = request.shotFrom;
+  }
+  if (request.shotTo !== undefined && request.shotTo !== '') params['shotTo'] = request.shotTo;
   if (request.untagged === true) params['untagged'] = '1';
   if (request.unused === true) params['unused'] = '1';
   if (request.series !== undefined && request.series !== '') params['series'] = request.series;

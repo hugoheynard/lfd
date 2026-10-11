@@ -190,6 +190,26 @@ describe("BrowseMediaLibrary — les filtres", () => {
     ).rejects.toBeInstanceOf(InvalidDepositPeriodError);
   });
 
+  it("transmet la période de prise de vue en jours, et la refuse à l'envers (L11)", async () => {
+    const reader = new SpyingReader();
+    const handler = handlerOn(reader);
+
+    await handler.execute(
+      new BrowseMediaLibraryQuery({ shotFrom: "2026-07-01", shotTo: "2026-07-31" }),
+    );
+    expect(reader.asked).toMatchObject({ takenFrom: "2026-07-01", takenTo: "2026-07-31" });
+    expect(reader.asked?.depositedFrom).toBeUndefined();
+
+    await expect(
+      handler.execute(
+        new BrowseMediaLibraryQuery({ shotFrom: "2026-07-31", shotTo: "2026-07-01" }),
+      ),
+    ).rejects.toBeInstanceOf(InvalidDepositPeriodError);
+    await expect(
+      handler.execute(new BrowseMediaLibraryQuery({ shotTo: "2026-02-30" })),
+    ).rejects.toBeInstanceOf(InvalidDepositPeriodError);
+  });
+
   it("transmet « non taguées » et « inutilisées », et rien quand ils sont baissés", async () => {
     const reader = new SpyingReader();
     const handler = handlerOn(reader);

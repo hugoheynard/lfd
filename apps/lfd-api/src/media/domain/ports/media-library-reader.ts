@@ -76,6 +76,14 @@ export interface LibraryQuery {
   readonly depositedFrom?: Date | undefined;
   /** Déposée strictement avant cet instant. */
   readonly depositedBefore?: Date | undefined;
+  /**
+   * Premier jour de PRISE DE VUE retenu, inclus, `AAAA-MM-JJ` déjà validé (L11).
+   * La date est celle de la frise : le jour de la série, sinon le dépôt lu à
+   * l'heure de Paris.
+   */
+  readonly takenFrom?: string | undefined;
+  /** Dernier jour de prise de vue retenu, inclus — même date que `takenFrom`. */
+  readonly takenTo?: string | undefined;
   /** Seulement les images sans aucun mot-clé. */
   readonly untagged?: boolean | undefined;
   /**

@@ -68,8 +68,9 @@ const HATCH_PX = 4;
  * dessinées sur UN canvas : la frise ne dépend pas du nombre de photos.
  *
  * Elle annonce sa largeur en colonnes ({@link columnsChange}) ; la page relit
- * la frise à cette largeur. Survol : la plage, le compte, une vignette. Pas de clic
- * (R32) : le feed filtre par dépôt, la frise range par prise de vue.
+ * la frise à cette largeur. Survol : la plage, le compte, une vignette. Clic
+ * (L11, R32 révisée) : la plage de la colonne, en jours de Paris, que la page
+ * pose en filtre de prise de vue — la date même par laquelle la frise range.
  */
 @Component({
   selector: 'app-palette-strip',
@@ -83,6 +84,8 @@ export class PaletteStrip {
   private readonly columns = computed(() => this.view()?.columns ?? []);
   /** Le nombre de colonnes qui tiennent dans la largeur, à chaque changement. */
   readonly columnsChange = output<number>();
+  /** La plage de la colonne cliquée, en jours de Paris, bornes incluses (L11). */
+  readonly rangeChosen = output<StripRange>();
 
   private readonly host = inject<ElementRef<HTMLElement>>(ElementRef);
   private readonly canvas = viewChild.required<ElementRef<HTMLCanvasElement>>('canvas');
@@ -128,6 +131,14 @@ export class PaletteStrip {
 
   protected hover(event: MouseEvent): void {
     this.hoveredIndex.set(this.indexAt(event));
+  }
+
+  protected choose(event: MouseEvent): void {
+    const index = this.indexAt(event);
+    const column = index === null ? undefined : this.columns()[index];
+    if (column !== undefined) {
+      this.rangeChosen.emit(rangeOf(column));
+    }
   }
 
   protected leave(): void {

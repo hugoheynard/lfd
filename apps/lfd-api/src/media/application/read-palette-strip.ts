@@ -3,18 +3,11 @@ import { PALETTE_STRIP_LIMITS, type MediaPaletteStripView } from "@lfd/pim-contr
 
 import { MediaPaletteStripReader } from "../domain/ports/media-palette-strip-reader.js";
 import { paletteStrip, type StripColumn } from "../domain/services/palette-strip.js";
-import { depositPeriodOf } from "./library-period.js";
+import { libraryFilterOf, type LibraryFilterCriteria } from "./library-filter-criteria.js";
 
 /** Les filtres du feed, sans page ni tri, et le nombre de colonnes voulu. */
-export interface ReadPaletteStripCriteria {
+export interface ReadPaletteStripCriteria extends LibraryFilterCriteria {
   readonly columns?: number | undefined;
-  readonly q?: string | undefined;
-  readonly tags?: readonly string[] | undefined;
-  readonly from?: string | undefined;
-  readonly to?: string | undefined;
-  readonly untagged?: boolean | undefined;
-  readonly unused?: boolean | undefined;
-  readonly series?: string | undefined;
 }
 
 /**
@@ -50,16 +43,7 @@ export class ReadPaletteStripHandler implements IQueryHandler<
       Math.max(Math.trunc(criteria.columns ?? PALETTE_STRIP_LIMITS.defaultColumns), 1),
       PALETTE_STRIP_LIMITS.maxColumns,
     );
-    const period = depositPeriodOf(criteria.from, criteria.to);
-    const images = await this.reader.chronicle({
-      ...(criteria.q === undefined ? {} : { q: criteria.q }),
-      ...(criteria.tags === undefined ? {} : { tags: criteria.tags }),
-      ...(criteria.series === undefined ? {} : { seriesId: criteria.series }),
-      ...(period.from === undefined ? {} : { depositedFrom: period.from }),
-      ...(period.before === undefined ? {} : { depositedBefore: period.before }),
-      ...(criteria.untagged === true ? { untagged: true } : {}),
-      ...(criteria.unused === true ? { unused: true } : {}),
-    });
+    const images = await this.reader.chronicle(libraryFilterOf(criteria));
     const strip = paletteStrip(images, columns);
     return { columns: strip.columns.map(viewOf), total: strip.total, unpainted: strip.unpainted };
   }

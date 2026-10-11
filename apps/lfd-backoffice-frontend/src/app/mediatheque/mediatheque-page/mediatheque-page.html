@@ -3,6 +3,17 @@
     Le fonds d'images de la maison. Une image y figure <strong>une seule fois</strong>, quel que
     soit le nombre de fiches qui l'affichent.
   </p>
+  <a
+    pageActions
+    foldButton
+    emphasis="soft"
+    intent="neutral"
+    size="sm"
+    icon="help"
+    routerLink="/documentation/mediatheque"
+  >
+    Comment fonctionne la médiathèque
+  </a>
 
   <!-- LE DÉPÔT EN LOT : la série du lot, la zone de dépôt, le compte rendu
        et les refus passés (L3). Il dit quand un lot est passé ; la page relit
@@ -53,12 +64,31 @@
     />
 
     <!-- LA FRISE DES COULEURS (L9) : agrégée au SERVEUR sur tout le filtre,
-         dans l'ordre du temps quel que soit le tri ; pas de clic (R32). Hors des états du feed : elle mesure sa largeur
-         avant même la première lecture. -->
+         dans l'ordre du temps quel que soit le tri. Un clic sur une colonne
+         filtre le feed sur sa période de prise de vue (L11). Hors des états
+         du feed : elle mesure sa largeur avant même la première lecture. -->
     @if (colorStrip.failure(); as message) {
       <fold-callout variant="alert">{{ message }}</fold-callout>
     }
-    <app-palette-strip [view]="colorStrip.view()" (columnsChange)="resizeStrip($event)" />
+    <app-palette-strip
+      [view]="colorStrip.view()"
+      (columnsChange)="resizeStrip($event)"
+      (rangeChosen)="openShotRange($event)"
+    />
+    @if (shotLabel(); as shot) {
+      <p class="shot-range">
+        <button
+          foldButton
+          emphasis="soft"
+          size="sm"
+          icon="close"
+          [attr.aria-label]="shot + ' — retirer ce filtre'"
+          (click)="clearShotRange()"
+        >
+          {{ shot }}
+        </button>
+      </p>
+    }
 
     @if (feed.loading() && feed.pages() === 0) {
       <fold-loading message="Lecture de la médiathèque…" />

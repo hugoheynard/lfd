@@ -24,6 +24,12 @@ export interface MediaFeedCriteria {
   readonly from: string;
   /** Dernier jour de dépôt, `AAAA-MM-JJ`, inclus. */
   readonly to: string;
+  /**
+   * Premier et dernier jour de PRISE DE VUE (série, sinon dépôt), inclus —
+   * posés par un clic sur la frise des couleurs (L11).
+   */
+  readonly shotFrom: string;
+  readonly shotTo: string;
   readonly untagged: boolean;
   readonly unused: boolean;
   /** L'identifiant d'une série (L3) ; `''` = toutes. */
@@ -37,6 +43,8 @@ export const ALL_MEDIA: MediaFeedCriteria = {
   tags: [],
   from: '',
   to: '',
+  shotFrom: '',
+  shotTo: '',
   untagged: false,
   unused: false,
   series: '',
@@ -75,6 +83,8 @@ export function readCriteria(params: ParamMap): MediaFeedCriteria {
     tags: [...new Set(tags)],
     from: readDay(params, 'from'),
     to: readDay(params, 'to'),
+    shotFrom: readDay(params, 'shotFrom'),
+    shotTo: readDay(params, 'shotTo'),
     untagged: readFlag(params, 'untagged'),
     unused: readFlag(params, 'unused'),
     // Opaque, comme un curseur : une série inconnue rend une grille vide, et
@@ -96,6 +106,8 @@ export function toQueryParams(criteria: MediaFeedCriteria): Params {
     tags: criteria.tags.length === 0 ? null : criteria.tags.join(','),
     from: criteria.from === '' ? null : criteria.from,
     to: criteria.to === '' ? null : criteria.to,
+    shotFrom: criteria.shotFrom === '' ? null : criteria.shotFrom,
+    shotTo: criteria.shotTo === '' ? null : criteria.shotTo,
     untagged: criteria.untagged ? '1' : null,
     unused: criteria.unused ? '1' : null,
     series: criteria.series === '' ? null : criteria.series,
@@ -108,6 +120,8 @@ export function sameCriteria(a: MediaFeedCriteria, b: MediaFeedCriteria): boolea
     a.q === b.q &&
     a.from === b.from &&
     a.to === b.to &&
+    a.shotFrom === b.shotFrom &&
+    a.shotTo === b.shotTo &&
     a.untagged === b.untagged &&
     a.unused === b.unused &&
     a.series === b.series &&
@@ -126,6 +140,8 @@ export function isFiltering(criteria: MediaFeedCriteria): boolean {
     criteria.tags.length > 0 ||
     criteria.from !== '' ||
     criteria.to !== '' ||
+    criteria.shotFrom !== '' ||
+    criteria.shotTo !== '' ||
     criteria.untagged ||
     criteria.unused ||
     criteria.series !== ''
@@ -151,8 +167,39 @@ export function toPageRequest(
     tags: criteria.tags,
     from: criteria.from,
     to: criteria.to,
+    shotFrom: criteria.shotFrom,
+    shotTo: criteria.shotTo,
     untagged: criteria.untagged,
     unused: criteria.unused,
     series: criteria.series,
   };
+}
+
+const DAY_LABEL = new Intl.DateTimeFormat('fr-FR', {
+  timeZone: 'UTC',
+  day: 'numeric',
+  month: 'long',
+  year: 'numeric',
+});
+
+/** Un jour nu en toutes lettres — lu en UTC à midi, il ne glisse d'aucun fuseau. */
+function dayLabel(day: string): string {
+  return DAY_LABEL.format(new Date(`${day}T12:00:00Z`));
+}
+
+/**
+ * La pastille de la période de prise de vue (L11) : « Prises du 3 octobre
+ * 2026 au 9 octobre 2026 », « Prises le 3 octobre 2026 », ou `null` sans
+ * période. Une borne seule vient d'une adresse retouchée ; elle se dit aussi.
+ */
+export function shotRangeLabel(criteria: MediaFeedCriteria): string | null {
+  const { shotFrom, shotTo } = criteria;
+  if (shotFrom !== '' && shotTo !== '') {
+    return shotFrom === shotTo
+      ? `Prises le ${dayLabel(shotFrom)}`
+      : `Prises du ${dayLabel(shotFrom)} au ${dayLabel(shotTo)}`;
+  }
+  if (shotFrom !== '') return `Prises depuis le ${dayLabel(shotFrom)}`;
+  if (shotTo !== '') return `Prises jusqu'au ${dayLabel(shotTo)}`;
+  return null;
 }

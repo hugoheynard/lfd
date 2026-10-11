@@ -125,6 +125,8 @@ export class MediaLibraryController {
         tags: query.tags,
         from: query.from,
         to: query.to,
+        shotFrom: query.shotFrom,
+        shotTo: query.shotTo,
         untagged: query.untagged,
         unused: query.unused,
         series: query.series,

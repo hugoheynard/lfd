@@ -6,6 +6,7 @@ import {
   isFiltering,
   readCriteria,
   sameCriteria,
+  shotRangeLabel,
   toPageRequest,
   toQueryParams,
   withoutFilters,
@@ -29,6 +30,8 @@ const FULL: MediaFeedCriteria = {
   tags: ['viennoiserie', 'packshot'],
   from: '2026-10-01',
   to: '2026-10-31',
+  shotFrom: '2026-09-05',
+  shotTo: '2026-09-11',
   untagged: true,
   unused: true,
   series: '01JSERIE',
@@ -99,5 +102,36 @@ describe("l'adresse de la médiathèque", () => {
     expect(toPageRequest({ ...ALL_MEDIA, series: 's1' }, 60, null)).toMatchObject({
       series: 's1',
     });
+  });
+
+  it('porte la période de prise de vue posée par la frise (L11)', () => {
+    const view = { ...ALL_MEDIA, shotFrom: '2026-09-05', shotTo: '2026-09-11' };
+    expect(address(view)).toEqual({ shotFrom: '2026-09-05', shotTo: '2026-09-11' });
+    expect(readCriteria(convertToParamMap(address(view)))).toEqual(view);
+    expect(readCriteria(convertToParamMap({ shotFrom: '5/9/2026' })).shotFrom).toBe('');
+    expect(toPageRequest(view, 60, null)).toMatchObject({
+      shotFrom: '2026-09-05',
+      shotTo: '2026-09-11',
+    });
+  });
+
+  it('compte la période de prise de vue comme un filtre, que « Tout afficher » défait', () => {
+    const view = { ...ALL_MEDIA, shotFrom: '2026-09-05', shotTo: '2026-09-11' };
+    expect(isFiltering(view)).toBe(true);
+    expect(withoutFilters(view)).toEqual(ALL_MEDIA);
+    expect(sameCriteria(view, { ...view, shotTo: '2026-09-12' })).toBe(false);
+  });
+
+  it('dit la période de prise de vue en toutes lettres, sans glisser de jour', () => {
+    expect(shotRangeLabel({ ...ALL_MEDIA, shotFrom: '2026-09-05', shotTo: '2026-09-11' })).toBe(
+      'Prises du 5 septembre 2026 au 11 septembre 2026',
+    );
+    expect(shotRangeLabel({ ...ALL_MEDIA, shotFrom: '2026-09-05', shotTo: '2026-09-05' })).toBe(
+      'Prises le 5 septembre 2026',
+    );
+    expect(shotRangeLabel({ ...ALL_MEDIA, shotTo: '2026-09-05' })).toBe(
+      "Prises jusqu'au 5 septembre 2026",
+    );
+    expect(shotRangeLabel(ALL_MEDIA)).toBeNull();
   });
 });

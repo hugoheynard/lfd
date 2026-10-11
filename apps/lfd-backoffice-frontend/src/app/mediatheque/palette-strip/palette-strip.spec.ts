@@ -41,4 +41,22 @@ describe('la frise des couleurs', () => {
       '40 photos, dont 3 sans couleurs encore',
     );
   });
+
+  it('rend la plage de la colonne cliquée, en jours de Paris (L11)', async () => {
+    TestBed.configureTestingModule({ providers: [provideZonelessChangeDetection()] });
+    const fixture = TestBed.createComponent(PaletteStrip);
+    const host = fixture.nativeElement as HTMLElement;
+    Object.defineProperty(host, 'clientWidth', { value: 300 });
+    const second = { ...WEEK, from: '2026-10-11T22:00:00.000Z', to: '2026-10-18T21:00:00.000Z' };
+    fixture.componentRef.setInput('view', { columns: [WEEK, second], total: 24, unpainted: 0 });
+    const chosen: unknown[] = [];
+    fixture.componentInstance.rangeChosen.subscribe((range) => chosen.push(range));
+    await fixture.whenStable();
+
+    const click = new MouseEvent('click');
+    Object.defineProperty(click, 'offsetX', { value: 200 });
+    host.querySelector('canvas')?.dispatchEvent(click);
+
+    expect(chosen).toEqual([{ from: '2026-10-12', to: '2026-10-18' }]);
+  });
 });

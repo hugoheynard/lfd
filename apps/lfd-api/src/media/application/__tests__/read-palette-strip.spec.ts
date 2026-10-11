@@ -52,6 +52,24 @@ describe("ReadPaletteStripHandler", () => {
     ]);
   });
 
+  it("transmet la période de prise de vue telle que le feed la lit (L11)", async () => {
+    const reader = new FakeStripReader([]);
+    await new ReadPaletteStripHandler(reader).execute(
+      new ReadPaletteStripQuery({ shotFrom: "2026-03-01", shotTo: "2026-03-02" }),
+    );
+    expect(reader.filters).toEqual([{ takenFrom: "2026-03-01", takenTo: "2026-03-02" }]);
+  });
+
+  it("refuse une période de prise de vue à l'envers, sans lire le fonds", async () => {
+    const reader = new FakeStripReader([]);
+    await expect(
+      new ReadPaletteStripHandler(reader).execute(
+        new ReadPaletteStripQuery({ shotFrom: "2026-03-05", shotTo: "2026-03-01" }),
+      ),
+    ).rejects.toThrow(/prise de vue/);
+    expect(reader.filters).toEqual([]);
+  });
+
   it("n'envoie aucun filtre quand rien n'est demandé", async () => {
     const reader = new FakeStripReader([]);
     await new ReadPaletteStripHandler(reader).execute(new ReadPaletteStripQuery());

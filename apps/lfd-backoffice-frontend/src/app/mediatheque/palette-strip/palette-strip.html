@@ -6,6 +6,7 @@
     [attr.aria-label]="'Frise des couleurs : ' + summary()"
     (mousemove)="hover($event)"
     (mouseleave)="leave()"
+    (click)="choose($event)"
   ></canvas>
 
   <!-- LA LECTURE : la plage survolée, son compte, une vignette. -->

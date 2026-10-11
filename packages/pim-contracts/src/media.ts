@@ -263,6 +263,13 @@ export const mediaLibraryQuerySchema = z.object({
   from: libraryDaySchema.optional(),
   /** Dernier jour de dépôt retenu, inclus. */
   to: libraryDaySchema.optional(),
+  /**
+   * Premier jour de PRISE DE VUE retenu, inclus (L11, 2026-10-11) : le jour de
+   * la série, sinon le jour de dépôt — la date de la frise des couleurs.
+   */
+  shotFrom: libraryDaySchema.optional(),
+  /** Dernier jour de prise de vue retenu, inclus — même date que `shotFrom`. */
+  shotTo: libraryDaySchema.optional(),
   /** Seulement les images sans aucun mot-clé. */
   untagged: libraryFlagSchema.optional(),
   /** Seulement les images qu'aucun porteur n'affiche. */

@@ -1,5 +1,4 @@
 import { Injectable } from "@nestjs/common";
-import { localToInstant } from "@lfd/contracts";
 
 import { MediaCarriers } from "../channels/carriers/media-carriers.js";
 import { MediaPrismaService } from "../infra/database/media-prisma.service.js";
@@ -9,10 +8,7 @@ import type { StripImage } from "../domain/services/palette-strip.js";
 import { usesInBatches } from "./carrier-uses.js";
 import { filterOf } from "./library-filter.js";
 import { readPaletteColumn } from "./palette-column.js";
-import { readDayColumn } from "./series-day.js";
-
-/** Un jour de prise de vue se place à son début, à l'heure de Paris. */
-const DAY_START = "00:00";
+import { takenAtOf } from "./taken-on.js";
 
 /**
  * La frise lue en UNE requête : l'URL, le dépôt, le jour de la série et la
@@ -62,9 +58,4 @@ export class PrismaMediaPaletteStripReader extends MediaPaletteStripReader {
     );
     return rows.filter((row) => (uses.get(row.url) ?? 0) === 0);
   }
-}
-
-function takenAtOf(shotOn: Date | null, depositedAt: Date): Date {
-  const day = readDayColumn(shotOn);
-  return (day === null ? null : localToInstant(day, DAY_START)) ?? depositedAt;
 }
