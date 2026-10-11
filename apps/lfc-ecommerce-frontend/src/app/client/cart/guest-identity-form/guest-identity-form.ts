@@ -10,6 +10,7 @@ import {
 import { FoldCalloutComponent, FoldInputComponent } from 'fold-ng';
 
 import { ClientCopyService } from '../../copy/client-copy.service';
+import { isRecord, readLocal, readString, writeLocal } from '../../local-store';
 
 /** Ce que le visiteur déclare — exactement les trois champs de `guestBuyerSchema`. */
 export interface GuestIdentity {
@@ -27,6 +28,34 @@ export interface GuestIdentity {
  * l'écran qui aurait tort. On n'attrape donc que ce qu'un humain voit
  * immédiatement : pas d'arobase, ou rien après le point.
  */
+/**
+ * Où la saisie se garde ENTRE deux visites (Hugo, 2026-10-11 : « j'ai quitté la
+ * fenêtre et suis revenu et je dois tout retaper »). Dans le navigateur de
+ * qui l'a tapée, et nulle part ailleurs : rien ne part au serveur avant la
+ * commande.
+ */
+const DRAFT_KEY = 'guest.identity';
+
+interface GuestDraft {
+  readonly firstName: string;
+  readonly email: string;
+  readonly emailAgain: string;
+  readonly phone: string;
+}
+
+/** Relu du navigateur : du texte, donc validé champ par champ. */
+function parseDraft(raw: unknown): GuestDraft | null {
+  if (!isRecord(raw)) {
+    return null;
+  }
+  return {
+    firstName: readString(raw['firstName']) ?? '',
+    email: readString(raw['email']) ?? '',
+    emailAgain: readString(raw['emailAgain']) ?? '',
+    phone: readString(raw['phone']) ?? '',
+  };
+}
+
 const PLAUSIBLE_EMAIL = /^[^\s@]+@[^\s@]+\.[^\s@]+$/u;
 
 /**
@@ -73,10 +102,12 @@ export class GuestIdentityForm {
   /** L'identité complète à chaque frappe, ou `null` tant qu'elle ne l'est pas. */
   readonly identityChange = output<GuestIdentity | null>();
 
-  protected readonly firstName = signal('');
-  protected readonly email = signal('');
-  protected readonly emailAgain = signal('');
-  protected readonly phone = signal('');
+  private readonly draft = readLocal(DRAFT_KEY, parseDraft);
+
+  protected readonly firstName = signal(this.draft?.firstName ?? '');
+  protected readonly email = signal(this.draft?.email ?? '');
+  protected readonly emailAgain = signal(this.draft?.emailAgain ?? '');
+  protected readonly phone = signal(this.draft?.phone ?? '');
 
   /** L'écart ne se dit qu'une fois la confirmation commencée. */
   private readonly confirmTouched = computed(() => this.emailAgain().trim() !== '');
@@ -101,6 +132,14 @@ export class GuestIdentityForm {
   );
 
   constructor() {
+    effect(() => {
+      writeLocal(DRAFT_KEY, {
+        firstName: this.firstName(),
+        email: this.email(),
+        emailAgain: this.emailAgain(),
+        phone: this.phone(),
+      } satisfies GuestDraft);
+    });
     effect(() => {
       this.identityChange.emit(this.identity());
     });

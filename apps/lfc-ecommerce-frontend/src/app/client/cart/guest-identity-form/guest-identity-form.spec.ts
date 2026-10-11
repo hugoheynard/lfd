@@ -18,8 +18,11 @@ import { GuestIdentityForm, type GuestIdentity } from './guest-identity-form';
 let emitted: (GuestIdentity | null)[];
 const last = (): GuestIdentity | null | undefined => emitted.at(-1);
 
-function mount(): ComponentFixture<GuestIdentityForm> {
+function mount({ keep = false } = {}): ComponentFixture<GuestIdentityForm> {
   emitted = [];
+  if (!keep) {
+    localStorage.clear();
+  }
   TestBed.resetTestingModule();
   TestBed.configureTestingModule({ imports: [GuestIdentityForm] });
   const fixture = TestBed.createComponent(GuestIdentityForm);
@@ -131,5 +134,21 @@ describe('GuestIdentityForm', () => {
     type(FR.cart.guestPhone, '');
 
     expect(last()).toBeNull();
+  });
+
+  /** Hugo, 2026-10-11 : quitter la fenêtre et revenir ne fait plus tout retaper. */
+  it('retrouve la saisie d’une visite à l’autre', () => {
+    fixture = mount();
+    fillAll();
+
+    fixture = mount({ keep: true });
+
+    expect(field(FR.cart.guestFirstName).value).toBe('Jean');
+    expect(field(FR.cart.guestEmailAgain).value).toBe('jean@exemple.fr');
+    expect(last()).toEqual<GuestIdentity>({
+      firstName: 'Jean',
+      email: 'jean@exemple.fr',
+      phone: '06 12 34 56 78',
+    });
   });
 });
