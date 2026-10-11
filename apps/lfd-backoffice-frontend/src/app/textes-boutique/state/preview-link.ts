@@ -1,8 +1,10 @@
 import { computed, effect, inject, Injectable, signal } from '@angular/core';
 import {
-  SHOP_COPY_PREVIEW_JOURNEYS,
+  isShopCopyPreviewScene,
+  SHOP_COPY_OUTSIDE_SCREENS,
   SHOP_COPY_PREVIEW_SOURCE,
-  type ShopCopyPreviewJourney,
+  type ShopCopyAudience,
+  type ShopCopyPreviewStep,
   type ShopCopyPreviewShowMessage,
   type ShopCopyPreviewViewport,
 } from '@lfd/contracts/shop-copy-preview';
@@ -24,7 +26,7 @@ export interface PreviewWindow {
 /**
  * **La conversation avec l'aperçu** (plan §10 B3, protocole
  * `@lfd/contracts/shop-copy-preview`) : on attend `ready`, puis on envoie
- * `show` à chaque changement — parcours, langue, largeur, brouillons, clé
+ * `show` à chaque changement — clientèle, étape, langue, largeur, brouillons, clé
  * surlignée. On reçoit `pick` (ouvrir une clé) et `visible-keys`.
  *
  * **Une seule cible à la fois** (2026-10-11) : l'iframe, ou la fenêtre
@@ -43,10 +45,21 @@ export class PreviewLink {
   readonly url = inject(SHOP_PREVIEW_URL_TOKEN);
   readonly origin = previewOrigin(this.url);
 
-  readonly journey = signal<ShopCopyPreviewJourney>(SHOP_COPY_PREVIEW_JOURNEYS[0]);
+  /** Qui regarde : celle de l'écran, choisie en tête de page. */
+  readonly audience = this.navigation.audience;
+  /** L'étape demandée — gardée d'une clientèle à l'autre. */
+  private readonly requestedStep = signal<ShopCopyPreviewStep>('welcome');
+  /**
+   * L'étape montrée : celle demandée, si la clientèle l'a. Sinon (la fidélité
+   * en pro), le premier écran hors commande de la clientèle, ou la bienvenue.
+   */
+  readonly step = computed<ShopCopyPreviewStep>(() =>
+    fallbackStep(this.audience(), this.requestedStep()),
+  );
   /** La langue de l'aperçu est celle de l'écran : une seule source, la navigation. */
   readonly locale = this.navigation.locale;
-  readonly viewport = signal<ShopCopyPreviewViewport>('mobile');
+  /** Bureau par défaut (Hugo, 2026-10-11) : dézoomé dans la colonne. Rien n'est mémorisé. */
+  readonly viewport = signal<ShopCopyPreviewViewport>('desktop');
   readonly ready = signal(false);
   /** L'aperçu vit dans une autre fenêtre : la colonne n'encadre plus rien. */
   readonly detached = signal(false);
@@ -75,7 +88,8 @@ export class PreviewLink {
     return {
       source: SHOP_COPY_PREVIEW_SOURCE,
       type: 'show',
-      journey: this.journey(),
+      audience: this.audience(),
+      step: this.step(),
       locale,
       viewport: this.viewport(),
       drafts,
@@ -91,6 +105,14 @@ export class PreviewLink {
         this.post(message);
       }
     });
+  }
+
+  /** Choisit une étape ; l'ancienne liste des clés montrées ne vaut plus. */
+  setStep(step: ShopCopyPreviewStep): void {
+    if (step !== this.step()) {
+      this.navigation.visibleKeys.set(null);
+    }
+    this.requestedStep.set(step);
   }
 
   /** L'iframe s'est (re)chargée : on attend de nouveau son `ready`. */
@@ -139,4 +161,12 @@ export class PreviewLink {
       this.frame.postMessage(message, this.origin);
     }
   }
+}
+
+function fallbackStep(audience: ShopCopyAudience, step: ShopCopyPreviewStep): ShopCopyPreviewStep {
+  if (isShopCopyPreviewScene(audience, step)) {
+    return step;
+  }
+  const outside: readonly ShopCopyPreviewStep[] = SHOP_COPY_OUTSIDE_SCREENS[audience];
+  return outside[0] ?? 'welcome';
 }

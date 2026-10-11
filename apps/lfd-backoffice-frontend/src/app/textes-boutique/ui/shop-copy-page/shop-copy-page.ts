@@ -13,6 +13,9 @@ import {
   type FoldViewToggleOption,
 } from 'fold-ng';
 
+import { SHOP_COPY_AUDIENCES } from '@lfd/contracts/shop-copy-preview';
+
+import { AUDIENCE_HELP, AUDIENCE_LABELS } from '../../rules/audience-labels';
 import { COPY_LOCALES, LOCALE_LABELS } from '../../rules/copy-text';
 
 import { CopyNavigation } from '../../state/copy-navigation';
@@ -27,7 +30,9 @@ import { SpaceTree } from '../space-tree/space-tree';
 /**
  * **Contenu › Textes de la boutique** (`plan-textes-de-la-boutique.md`, §7) —
  * les espaces, les textes de l'espace dans la langue choisie, et l'aperçu qui suit
- * la frappe. En tête : la langue, la recherche, ce qui attend, Publier, l'historique.
+ * la frappe. En tête : la clientèle (qui regarde — elle pilote les espaces,
+ * l'aperçu et la recherche), la langue, la recherche, ce qui attend, Publier,
+ * l'historique.
  *
  * Sous `b2b_storefront:read` (la route) ; écrire et publier demandent `:write`,
  * que le store lit pour ouvrir ou fermer les champs.
@@ -36,6 +41,12 @@ const LOCALE_OPTIONS: readonly FoldViewToggleOption[] = COPY_LOCALES.map((locale
   value: locale,
   label: locale.toUpperCase(),
   ariaLabel: LOCALE_LABELS[locale],
+}));
+
+/** Qui regarde : le premier contrôle de l'écran. */
+const AUDIENCE_OPTIONS: readonly FoldViewToggleOption[] = SHOP_COPY_AUDIENCES.map((audience) => ({
+  value: audience,
+  label: AUDIENCE_LABELS[audience],
 }));
 
 /** « Chercher un texte en … » */
@@ -68,6 +79,8 @@ export class ShopCopyPage implements OnInit {
   private readonly writer = inject(DraftWriter);
   private readonly panels = inject(FoldPanelHostService);
 
+  protected readonly audienceOptions = AUDIENCE_OPTIONS;
+  protected readonly audienceHelp = AUDIENCE_HELP;
   protected readonly localeOptions = LOCALE_OPTIONS;
   protected readonly localeNames = LOCALE_NAMES;
 

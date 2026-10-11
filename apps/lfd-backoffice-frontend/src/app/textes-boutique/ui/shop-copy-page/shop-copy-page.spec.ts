@@ -2,13 +2,14 @@ import { HttpErrorResponse } from '@angular/common/http';
 import { TestBed } from '@angular/core/testing';
 import type { StaffPermission } from '@lfd/contracts';
 import { FoldPanelHostService } from 'fold-ng';
-import { describe, expect, it, vi } from 'vitest';
+import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 
 import { PermissionsStore } from '../../../auth/permissions.store';
 import { NotifyService } from '../../../notify.service';
 import { SHOP_PREVIEW_URL_TOKEN } from '../../data/shop-preview-config';
 import { ShopCopyService } from '../../data/shop-copy.service';
-import { adminView, entryView } from '../../shop-copy.testing';
+import { adminView, entryView, FakeResizeObserver } from '../../shop-copy.testing';
+import { COPY_AUDIENCE_STORAGE_KEY, CopyNavigation } from '../../state/copy-navigation';
 import { PublicationHistoryPanel } from '../publication-history-panel/publication-history-panel';
 import { ShopCopyPage } from './shop-copy-page';
 
@@ -50,14 +51,37 @@ function buttonLabels(element: HTMLElement): readonly string[] {
 }
 
 describe('ShopCopyPage — Contenu › Textes de la boutique', () => {
+  beforeEach(() => vi.stubGlobal('ResizeObserver', FakeResizeObserver));
+  afterEach(() => vi.unstubAllGlobals());
+
   it('ouvre le premier espace du parcours et dit ce qui attend Publier', async () => {
     const { element } = await render({ load: () => Promise.resolve(VIEW) }, [
       'b2b_storefront:write',
     ]);
     expect(element.textContent).toContain('1 modification à publier');
-    expect(element.textContent).toContain('Panier, connexion et saisie invité');
     expect(buttonLabels(element)).toContain('Publier');
     expect(element.textContent).toContain('Aperçu indisponible');
+    expect(element.textContent).toContain('Choisissez un écran dans la liste complète');
+  });
+
+  it('sans aperçu, « Voir tous les textes » ouvre la liste de la clientèle', async () => {
+    const { element, fixture } = await render({ load: () => Promise.resolve(VIEW) }, []);
+    [...element.querySelectorAll('button')]
+      .find((b) => b.textContent?.includes('Voir tous les textes'))
+      ?.click();
+    await fixture.whenStable();
+    expect(element.textContent).toContain('Panier, connexion et saisie invité');
+  });
+
+  it('la clientèle vient en premier, et une phrase dit ce qu’elle voit', async () => {
+    const { element, fixture } = await render({ load: () => Promise.resolve(VIEW) }, []);
+    // Le premier contrôle de l'écran, avant la langue.
+    expect(element.querySelector('fold-view-toggle')?.textContent).toContain('Non connecté');
+    expect(element.textContent).toContain('Ce que voit quelqu’un qui n’est pas connecté');
+    fixture.debugElement.injector.get(CopyNavigation).setAudience('pro');
+    await fixture.whenStable();
+    expect(element.textContent).toContain('Ce que voit un pro');
+    localStorage.removeItem(COPY_AUDIENCE_STORAGE_KEY);
   });
 
   it('sans le droit d’écrire, pas de Publier', async () => {

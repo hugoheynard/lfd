@@ -5,7 +5,6 @@ import type {
   PlacedOrderResponse,
   PublicOrderOpeningView,
 } from '@lfd/contracts';
-import type { ShopCopyPreviewJourney } from '@lfd/contracts/shop-copy-preview';
 
 /**
  * **Le monde d'un parcours** — ce que le backend de démonstration et la façade
@@ -29,12 +28,11 @@ export interface PreviewWorld {
 export const PREVIEW_WORLD = new InjectionToken<PreviewWorld>('PREVIEW_WORLD');
 
 /**
- * Un parcours : un monde, puis les gestes qui amènent l'écran ou le dialogue à
+ * Une scène — une clientèle à une étape : un monde, puis les gestes qui amènent l'écran ou le dialogue à
  * montrer — par les API PUBLIQUES de la boutique (stores, dialogues, routeur),
  * jamais en écrivant leur état en dessous.
  */
 export interface PreviewJourney {
-  readonly id: ShopCopyPreviewJourney;
   readonly world: PreviewWorld;
   enter(injector: Injector): Promise<void>;
 }

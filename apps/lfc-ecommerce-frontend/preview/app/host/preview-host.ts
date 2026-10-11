@@ -1,8 +1,9 @@
 import type { ApplicationRef } from '@angular/core';
 import { bootstrapApplication } from '@angular/platform-browser';
-import type {
-  ShopCopyPreviewOutbound,
-  ShopCopyPreviewShowMessage,
+import {
+  SHOP_COPY_PREVIEW_VIEWPORT_WIDTHS,
+  type ShopCopyPreviewOutbound,
+  type ShopCopyPreviewShowMessage,
 } from '@lfd/contracts/shop-copy-preview';
 
 import { App } from '../../../src/app/app';
@@ -12,7 +13,7 @@ import { previewConfig } from '../composition/preview-config';
 import type { PreviewStorages } from '../composition/memory-storage';
 import { highlightKey, keyAtClick, visibleKeys } from '../copy-picking/copy-highlighter';
 import { CopyMarkers } from '../copy-picking/copy-markers';
-import { PREVIEW_JOURNEYS } from '../journeys/journeys';
+import { previewScene } from '../journeys/journeys';
 import { OutsideFrame } from '../outside-frame/outside-frame';
 import { outbound, readShowMessage } from '../protocol/preview-messages';
 
@@ -28,7 +29,7 @@ export const OPENER_GRACE_MS = 1500;
 /** La largeur de la fenêtre détachée, selon la largeur simulée demandée. */
 const WINDOW_WIDTHS: Readonly<Record<ShopCopyPreviewShowMessage['viewport'], number>> = {
   mobile: 430,
-  desktop: 1280,
+  desktop: SHOP_COPY_PREVIEW_VIEWPORT_WIDTHS.desktop,
 };
 
 /** Le back-office, vu d'ici : une fenêtre à qui écrire, et RIEN d'autre. */
@@ -68,7 +69,8 @@ interface EditorWindow {
 export class PreviewHost {
   private readonly markers = new CopyMarkers();
   private app: ApplicationRef | null = null;
-  private journey: ShopCopyPreviewShowMessage['journey'] | null = null;
+  /** La scène montée — `clientèle/étape` ; `null` avant la première. */
+  private scene: string | null = null;
   /** L'origine du back-office qui nous parle, connue au premier `show` accepté. */
   private editorOrigin: string | null = null;
   /** Les `show` s'appliquent un par un ; seul le dernier reçu compte. */
@@ -143,26 +145,30 @@ export class PreviewHost {
     }
     this.latest = null;
     this.fitWindow(message.viewport);
-    if (this.journey !== message.journey || this.app === null) {
+    if (this.scene !== sceneOf(message) || this.app === null) {
       await this.remount(message);
     } else {
       this.applyCopy(message);
     }
   }
 
-  /** Un parcours neuf : la boutique précédente détruite, le stockage vidé, puis on rejoue. */
+  /** Une scène neuve : la boutique précédente détruite, le stockage vidé, puis on rejoue. */
   private async remount(message: ShopCopyPreviewShowMessage): Promise<void> {
     this.app?.destroy();
     this.app = null;
     this.storages.local.clear();
     this.storages.session.clear();
-    const journey = PREVIEW_JOURNEYS[message.journey];
+    const journey = previewScene(message.audience, message.step);
+    if (journey === null) {
+      // La garde l'a déjà refusé ; rien à monter.
+      return;
+    }
     // L'adresse du parcours précédent ne doit pas monter son écran au démarrage.
     this.win.history.replaceState(null, '', '/');
     this.ensureRoot();
     const app = await bootstrapApplication(App, previewConfig(journey.world, this.markers));
     this.app = app;
-    this.journey = message.journey;
+    this.scene = sceneOf(message);
     // Les textes AVANT le parcours : le premier écran se dessine déjà avec eux.
     this.applyCopy(message);
     await journey.enter(app.injector);
@@ -288,4 +294,9 @@ function isEditorWindow(value: unknown): value is EditorWindow {
     'postMessage' in value &&
     typeof value.postMessage === 'function'
   );
+}
+
+/** L'identité d'une scène : changer de clientèle OU d'étape rejoue tout. */
+function sceneOf(message: ShopCopyPreviewShowMessage): string {
+  return `${message.audience}/${message.step}`;
 }

@@ -10,7 +10,8 @@ function show(overrides: Record<string, unknown> = {}): Record<string, unknown> 
   return {
     source: SHOP_COPY_PREVIEW_SOURCE,
     type: 'show',
-    journey: 'visitor-first-visit',
+    audience: 'visitor',
+    step: 'welcome',
     locale: 'fr',
     viewport: 'mobile',
     drafts: { 'cart.whoTitle': 'Qui commande ?' },
@@ -58,7 +59,10 @@ describe('la garde des messages de l’aperçu', () => {
 
   it('refuse un champ mal formé, sans rien en garder', () => {
     const malformed = [
-      show({ journey: 'inconnu' }),
+      show({ step: 'inconnu' }),
+      show({ audience: 'inconnu' }),
+      // Une étape que la clientèle n'a pas : un visiteur n'a pas de fidélité.
+      show({ step: 'loyalty' }),
       show({ locale: 'de' }),
       show({ viewport: 'tablet' }),
       show({ drafts: { 'cart.whoTitle': 3 } }),

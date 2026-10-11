@@ -6,6 +6,11 @@ export const COPY_HIGHLIGHT = 'lfc-preview-copy';
 /**
  * **Les clés que l'écran montre** : un parcours des nœuds de texte, et des
  * `placeholder` — les seuls attributs qu'on lit à l'écran.
+ *
+ * TOUT le document rendu, pas la seule zone affichée : un dialogue ouvert
+ * (monté dans le `body`) en fait partie, le bas d'une page aussi. Les clés
+ * sont rendues dans l'ORDRE du document (textes, puis `placeholder`) :
+ * l'éditeur range ses espaces comme l'écran les montre.
  */
 export function visibleKeys(root: Element, markers: CopyMarkers): readonly string[] {
   const keys = new Set<string>();
@@ -20,7 +25,7 @@ export function visibleKeys(root: Element, markers: CopyMarkers): readonly strin
       keys.add(marker.key);
     }
   }
-  return [...keys].sort();
+  return [...keys];
 }
 
 /**

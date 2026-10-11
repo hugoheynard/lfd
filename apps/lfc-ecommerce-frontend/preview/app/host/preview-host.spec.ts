@@ -48,7 +48,8 @@ function openedWindow(
 const SHOW = {
   source: SHOP_COPY_PREVIEW_SOURCE,
   type: 'show',
-  journey: 'visitor-first-visit',
+  audience: 'visitor',
+  step: 'welcome',
   locale: 'fr',
   viewport: 'mobile',
   drafts: {},
@@ -109,7 +110,8 @@ describe('l’hôte de l’aperçu', () => {
     const show = {
       source: SHOP_COPY_PREVIEW_SOURCE,
       type: 'show',
-      journey: 'visitor-first-visit',
+      audience: 'visitor',
+      step: 'welcome',
       locale: 'fr',
       viewport: 'mobile',
       drafts: {},
@@ -127,6 +129,23 @@ describe('l’hôte de l’aperçu', () => {
     const targets = new Set(parent.postMessage.mock.calls.map(([, origin]) => origin));
     expect([...targets]).toEqual([EDITOR]);
     expect(parent.postMessage.mock.calls.some(([message]) => isVisibleKeys(message))).toBe(true);
+  });
+
+  it('une autre étape REJOUE la scène : l’étape 2 ouvre le dialogue « où »', async () => {
+    const parent = { postMessage: vi.fn<(message: unknown, origin: string) => void>() };
+    await new PreviewHost(framedWindow(parent), ALLOWED, shadowBrowserStorage(window)).start();
+    deliver(EDITOR, parent, SHOW);
+    await settle(800);
+    parent.postMessage.mockClear();
+
+    deliver(EDITOR, parent, { ...SHOW, step: 'routing' });
+    await settle(1500);
+
+    const keys = parent.postMessage.mock.calls
+      .map(([message]) => message)
+      .filter(isVisibleKeys)
+      .flatMap((message) => Reflect.get(Object(message), 'keys') as readonly string[]);
+    expect(keys).toEqual(expect.arrayContaining(['housePicker.title']));
   });
 
   describe('ouvert dans une fenêtre par le back-office', () => {

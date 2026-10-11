@@ -32,6 +32,8 @@ async function render() {
     ],
   });
   await TestBed.inject(ShopCopyStore).load();
+  // La liste complète : sans aperçu, la colonne ne montrerait rien.
+  TestBed.inject(CopyNavigation).showAll.set(true);
   const fixture = TestBed.createComponent(CopyTexts);
   await fixture.whenStable();
   return {

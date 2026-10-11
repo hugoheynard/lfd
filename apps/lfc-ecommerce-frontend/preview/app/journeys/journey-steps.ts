@@ -2,7 +2,11 @@ import { effect, type Injector, untracked } from '@angular/core';
 import { Router } from '@angular/router';
 import { FoldPanelHostService } from 'fold-ng';
 
+import type { OrderSettlement } from '@lfd/contracts';
+
 import { ClientCart } from '../../../src/app/client/cart/client-cart.service';
+import { ClientOrders, type PlacedOrder } from '../../../src/app/client/client-orders.service';
+import { OrderDoors } from '../../../src/app/client/shop/order-doors';
 import { ClientWorkspace } from '../../../src/app/client/client-workspace.service';
 import { ShopCatalogue } from '../../../src/app/client/shop/shop-catalogue.store';
 import { formatHour } from '../../../src/app/client/format-hour';
@@ -105,4 +109,40 @@ export function chooseLabTomorrow(injector: Injector): void {
 export async function openCart(injector: Injector): Promise<void> {
   const { CartDialog } = await import('../../../src/app/client/cart/cart-dialog/cart-dialog');
   CartDialog.open(injector.get(FoldPanelHostService));
+}
+
+/** Le panier rempli, le Labo choisi pour demain, le rayon affiché — le point de départ des étapes 4 à 7. */
+export async function atShelf(injector: Injector, signedIn: boolean): Promise<void> {
+  await settleSignedIn(injector, signedIn);
+  await fillCart(injector);
+  chooseLabTomorrow(injector);
+  await go(injector, '/boutique');
+}
+
+/** Passe la commande du panier par le vrai chemin (personne connue), une fois le devis arrivé. */
+export async function placeSignedIn(
+  injector: Injector,
+  settlement: OrderSettlement,
+): Promise<PlacedOrder | null> {
+  await atShelf(injector, true);
+  await settleCart(injector);
+  return injector.get(ClientOrders).place(settlement);
+}
+
+/** Passe la commande en invité, par le vrai chemin. */
+export async function placeAsGuest(injector: Injector): Promise<PlacedOrder | null> {
+  await atShelf(injector, false);
+  await settleCart(injector);
+  return injector.get(ClientOrders).placeAsGuest({
+    firstName: 'Camille',
+    email: 'camille@apercu.invalid',
+    phone: '06 00 00 00 00',
+  });
+}
+
+/** Ouvre le dialogue « quand » sur le Labo, depuis l'accueil — sans l'attendre : il rend la main à sa fermeture. */
+export function openLabTime(injector: Injector): void {
+  if (LAB !== undefined) {
+    void injector.get(OrderDoors).time(LAB.id, LAB.label, `${LAB.ligne1}, ${LAB.ville}`);
+  }
 }

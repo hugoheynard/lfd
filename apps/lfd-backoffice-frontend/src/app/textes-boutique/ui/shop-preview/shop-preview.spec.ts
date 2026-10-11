@@ -1,12 +1,12 @@
 import { TestBed } from '@angular/core/testing';
 import type { StaffPermission } from '@lfd/contracts';
-import { afterEach, describe, expect, it, vi } from 'vitest';
+import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 
 import { PermissionsStore } from '../../../auth/permissions.store';
 import { NotifyService } from '../../../notify.service';
 import { SHOP_PREVIEW_URL_TOKEN } from '../../data/shop-preview-config';
 import { ShopCopyService } from '../../data/shop-copy.service';
-import { adminView, entryView } from '../../shop-copy.testing';
+import { adminView, entryView, FakeResizeObserver } from '../../shop-copy.testing';
 import { CopyNavigation } from '../../state/copy-navigation';
 import { DraftWriter } from '../../state/draft-writer';
 import { PreviewLink } from '../../state/preview-link';
@@ -51,6 +51,9 @@ async function render(url: string) {
     link: TestBed.inject(PreviewLink),
   };
 }
+
+beforeEach(() => vi.stubGlobal('ResizeObserver', FakeResizeObserver));
+afterEach(() => vi.unstubAllGlobals());
 
 describe('ShopPreview — l’aperçu', () => {
   it('sans adresse configurée, dit « Aperçu indisponible »', async () => {
@@ -224,5 +227,97 @@ describe('ShopPreview — la fenêtre détachée', () => {
     expect(close).toHaveBeenCalled();
     expect(link.detached()).toBe(false);
     expect(element.querySelector('iframe')).not.toBeNull();
+  });
+});
+
+describe('ShopPreview — la clientèle et les étapes', () => {
+  afterEach(() => localStorage.removeItem('lfd.shop-copy.audience'));
+
+  it('envoie la clientèle et l’étape ; changer de clientèle garde l’étape', async () => {
+    const { fixture, link } = await render(`${ORIGIN}/apercu`);
+    const frame = { postMessage: vi.fn() };
+    link.attach(frame);
+    link.receive({ origin: ORIGIN, source: frame, data: { source: SOURCE, type: 'ready' } });
+    link.setStep('cart');
+    TestBed.inject(CopyNavigation).setAudience('pro');
+    await fixture.whenStable();
+    expect(frame.postMessage).toHaveBeenLastCalledWith(
+      expect.objectContaining({ audience: 'pro', step: 'cart' }),
+      ORIGIN,
+    );
+  });
+
+  it('cliquer une étape de la frise envoie un `show` sur cette étape — pour chaque étape', async () => {
+    const { fixture, element, link } = await render(`${ORIGIN}/apercu`);
+    TestBed.inject(CopyNavigation).setAudience('personal');
+    const frame = { postMessage: vi.fn() };
+    link.attach(frame);
+    link.receive({ origin: ORIGIN, source: frame, data: { source: SOURCE, type: 'ready' } });
+    await fixture.whenStable();
+    const steps = ['welcome', 'routing', 'time', 'shop', 'cart', 'payment', 'confirmation'];
+    for (const [index, step] of steps.entries()) {
+      const segment = [...element.querySelectorAll<HTMLElement>('[role="radio"]')].find(
+        (radio) => radio.textContent?.trim() === String(index + 1),
+      );
+      segment?.click();
+      await fixture.whenStable();
+      expect(frame.postMessage).toHaveBeenLastCalledWith(
+        expect.objectContaining({ audience: 'personal', step }),
+        ORIGIN,
+      );
+    }
+    [...element.querySelectorAll<HTMLElement>('[role="radio"]')]
+      .find((radio) => radio.textContent?.includes('Hors commande'))
+      ?.click();
+    await fixture.whenStable();
+    expect(frame.postMessage).toHaveBeenLastCalledWith(
+      expect.objectContaining({ step: 'orders' }),
+      ORIGIN,
+    );
+  });
+
+  it('« Hors commande » n’existe que pour qui est connecté ; une étape absente se replie', async () => {
+    const { fixture, element, link } = await render(`${ORIGIN}/apercu`);
+    expect(element.textContent).not.toContain('Hors commande');
+    const navigation = TestBed.inject(CopyNavigation);
+    navigation.setAudience('personal');
+    link.setStep('loyalty');
+    await fixture.whenStable();
+    expect(element.textContent).toContain('Hors commande');
+    expect(element.textContent).toContain('Fidélité');
+    // Le pro n'a pas de fidélité : son premier écran hors commande.
+    navigation.setAudience('pro');
+    expect(link.step()).toBe('orders');
+  });
+
+  it('dit qu’il n’y a pas d’étape de paiement au compte', async () => {
+    const { fixture, element, link } = await render(`${ORIGIN}/apercu`);
+    TestBed.inject(CopyNavigation).setAudience('pro');
+    link.setStep('payment');
+    await fixture.whenStable();
+    expect(element.textContent).toContain('Pas d’étape de paiement au compte');
+  });
+
+  it('part en bureau : 1280 px réduits à la colonne, et le dit', async () => {
+    const { fixture, element, link } = await render(`${ORIGIN}/apercu`);
+    expect(link.viewport()).toBe('desktop');
+    const observer = FakeResizeObserver.instances.at(-1);
+    Object.defineProperty(fixture.nativeElement, 'clientWidth', { value: 640 });
+    observer?.resize();
+    await fixture.whenStable();
+    const frame = element.querySelector('iframe');
+    expect(frame?.style.width).toBe('1280px');
+    expect(frame?.style.transform).toBe('scale(0.5)');
+    expect(element.textContent).toContain('Aperçu réduit à 50 %');
+    link.viewport.set('mobile');
+    await fixture.whenStable();
+    expect(element.textContent).not.toContain('Aperçu réduit');
+  });
+
+  it('débranche l’observateur de taille en partant', async () => {
+    const { fixture } = await render(`${ORIGIN}/apercu`);
+    const observer = FakeResizeObserver.instances.at(-1);
+    fixture.destroy();
+    expect(observer?.disconnected).toBe(true);
   });
 });

@@ -14,23 +14,32 @@ export interface SpaceNode {
   readonly stale: number;
 }
 
-/** Ce qui restreint l'arbre : la recherche, et les clés que l'aperçu montre. */
+/** Ce qui restreint l'arbre : la recherche, les espaces admis, et les clés que l'aperçu montre. */
 export interface SpaceFilter {
   readonly matches: (entry: ShopCopyEntryView) => boolean;
-  /** `null` : pas de restriction à l'aperçu. */
-  readonly visibleKeys: ReadonlySet<string> | null;
+  /** Les espaces admis (ceux d'une clientèle) ; `null` : tous. */
+  readonly spaces?: ((space: string) => boolean) | null;
+  /**
+   * Les clés que l'aperçu montre, DANS L'ORDRE où il les montre ; `null` : pas
+   * de restriction à l'aperçu. L'arbre range alors ses espaces dans cet ordre.
+   */
+  readonly visibleKeys: readonly string[] | null;
 }
 
 /** Une clé passe-t-elle le filtre ? */
 export function passes(entry: ShopCopyEntryView, filter: SpaceFilter): boolean {
-  if (filter.visibleKeys !== null && !filter.visibleKeys.has(entry.key)) {
+  if (filter.visibleKeys !== null && !filter.visibleKeys.includes(entry.key)) {
+    return false;
+  }
+  if (entry.space !== null && filter.spaces != null && !filter.spaces(entry.space)) {
     return false;
   }
   return filter.matches(entry);
 }
 
 /**
- * L'arbre des espaces, dans l'ordre du recueil. Un espace sans aucune clé
+ * L'arbre des espaces, dans l'ordre du recueil — ou, filtré par l'aperçu,
+ * dans l'ordre où l'écran montre leur première clé. Un espace sans aucune clé
  * retenue par le filtre disparaît ; un espace que la liste recopiée ne connaît
  * pas s'affiche sous son identifiant, à la fin — jamais perdu.
  */
@@ -52,7 +61,14 @@ export function spaceTree(
   const unknown = [...bySpace.keys()]
     .filter((space) => !knownIds.has(space))
     .map((space) => ({ space, title: space, journey: false }));
-  return [...known, ...unknown].map((space) => node(space, bySpace.get(space.space) ?? []));
+  const nodes = [...known, ...unknown].map((space) => node(space, bySpace.get(space.space) ?? []));
+  const order = filter.visibleKeys;
+  if (order === null) {
+    return nodes;
+  }
+  const rank = (space: string): number =>
+    order.findIndex((key) => bySpace.get(space)?.some((entry) => entry.key === key) === true);
+  return [...nodes].sort((a, b) => rank(a.space) - rank(b.space));
 }
 
 function node(

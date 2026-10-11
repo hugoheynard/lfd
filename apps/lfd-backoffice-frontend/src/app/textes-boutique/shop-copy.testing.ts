@@ -68,3 +68,33 @@ export function present<T>(value: T | null): T {
   }
   return value;
 }
+
+/**
+ * Un `ResizeObserver` de test — jsdom n'en a pas. Retient ce qu'il observe,
+ * et s'il a été débranché ; `resize` rejoue un relevé.
+ */
+export class FakeResizeObserver {
+  static readonly instances: FakeResizeObserver[] = [];
+  readonly observed: Element[] = [];
+  disconnected = false;
+
+  constructor(private readonly callback: () => void) {
+    FakeResizeObserver.instances.push(this);
+  }
+
+  observe(target: Element): void {
+    this.observed.push(target);
+  }
+
+  unobserve(): void {
+    // Rien à oublier : l'aperçu n'observe qu'un élément.
+  }
+
+  disconnect(): void {
+    this.disconnected = true;
+  }
+
+  resize(): void {
+    this.callback();
+  }
+}

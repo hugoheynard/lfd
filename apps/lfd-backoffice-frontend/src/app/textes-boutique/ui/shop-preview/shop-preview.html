@@ -1,13 +1,30 @@
 <div class="sp-column">
   @if (src; as url) {
     <div class="sp-toolbar">
-      <fold-listbox
+      <fold-view-toggle
         size="sm"
-        label="Parcours"
-        [options]="journeys"
-        [value]="link.journey()"
-        (selectionChange)="link.journey.set($event)"
+        ariaLabel="Étape de la commande"
+        [options]="stageOptions()"
+        [value]="stage()"
+        (valueChange)="setStage($event)"
       />
+      @if (stage() === 'outside') {
+        <fold-view-toggle
+          size="sm"
+          ariaLabel="Écran hors commande"
+          [options]="outsideOptions()"
+          [value]="link.step()"
+          (valueChange)="setOutside($event)"
+        />
+      }
+    </div>
+    @if (stepTitle(); as title) {
+      <p class="sp-step">{{ title }}</p>
+    }
+    @if (note(); as text) {
+      <fold-callout variant="info">{{ text }}</fold-callout>
+    }
+    <div class="sp-toolbar">
       <fold-view-toggle
         size="sm"
         ariaLabel="Largeur de l’aperçu"
@@ -15,6 +32,9 @@
         [value]="link.viewport()"
         (valueChange)="setViewport($event)"
       />
+      @if (scaleLabel(); as label) {
+        <span class="sp-scale">{{ label }}</span>
+      }
       <button
         foldButton
         size="sm"
@@ -35,14 +55,19 @@
         <button foldButton type="button" (click)="bringBack()">Ramener ici</button>
       </fold-empty-state>
     } @else {
-      <iframe
-        #frame
-        class="sp-frame"
-        title="Aperçu de la boutique"
-        [class.sp-frame-mobile]="link.viewport() === 'mobile'"
-        [src]="url"
-        (load)="loaded()"
-      ></iframe>
+      @let s = scale();
+      <div class="sp-box" [style.width.px]="s.boxWidth" [style.height.px]="s.boxHeight">
+        <iframe
+          #frame
+          class="sp-frame"
+          title="Aperçu de la boutique"
+          [style.width.px]="s.frameWidth"
+          [style.height.px]="s.frameHeight"
+          [style.transform]="'scale(' + s.k + ')'"
+          [src]="url"
+          (load)="loaded()"
+        ></iframe>
+      </div>
     }
   } @else {
     <fold-empty-state

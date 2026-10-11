@@ -1,51 +1,130 @@
 <div class="st-tree">
-  <fold-checkbox
-    label="Seulement ce que l’aperçu montre"
-    [hint]="navigation.visibleKeys() === null ? 'L’aperçu n’a encore rien affiché.' : ''"
-    [disabled]="navigation.visibleKeys() === null"
-    [checked]="navigation.onlyVisible()"
-    (checkedChange)="navigation.onlyVisible.set($event)"
-  />
-
-  @if (navigation.tree().length === 0) {
-    <fold-empty-state
-      title="Aucun espace"
-      subtitle="Aucun texte ne répond à la recherche ou au filtre."
-    />
-  } @else {
-    <fold-menu level="tertiary" navLabel="Espaces de la boutique" [expanded]="true">
-      @if (journey().length > 0) {
-        <fold-menu-separator label="Parcours de commande" />
-        @for (node of journey(); track node.space) {
-          @let b = badge(node);
-          <button
-            fold-menu-item
-            type="button"
-            icon="shopping-cart"
-            [label]="node.title"
-            [active]="navigation.currentSpace()?.space === node.space"
-            [badge]="b?.text"
-            [badgeTone]="b?.tone ?? 'follow'"
-            (click)="navigation.openSpace(node.space)"
-          ></button>
+  @switch (navigation.mode()) {
+    @case ('preview') {
+      @if (navigation.visibleKeys() === null) {
+        @if (previewAvailable) {
+          <fold-loading message="L’aperçu se charge…" />
+        } @else {
+          <fold-empty-state
+            title="Aperçu indisponible"
+            subtitle="Choisissez un écran dans la liste complète."
+          >
+            <fold-icon empty-icon name="eye-off" />
+          </fold-empty-state>
         }
+      } @else if (navigation.tree().length === 0) {
+        <fold-empty-state
+          title="Aucun texte à l’écran"
+          subtitle="L’aperçu ne montre aucun texte de la boutique pour l’instant."
+        >
+          <fold-icon empty-icon name="view" />
+        </fold-empty-state>
+      } @else {
+        <fold-menu level="tertiary" navLabel="Ce que l’aperçu montre" [expanded]="true">
+          <fold-menu-separator label="À l’écran, dans l’ordre" />
+          @for (node of navigation.tree(); track node.space) {
+            @let b = badge(node);
+            <button
+              fold-menu-item
+              type="button"
+              icon="view"
+              [label]="node.title"
+              [active]="navigation.currentSpace()?.space === node.space"
+              [badge]="b?.text"
+              [badgeTone]="b?.tone ?? 'follow'"
+              (click)="navigation.openSpace(node.space)"
+            ></button>
+          }
+        </fold-menu>
       }
-      @if (others().length > 0) {
-        <fold-menu-separator label="Le reste de la boutique" />
-        @for (node of others(); track node.space) {
-          @let b = badge(node);
-          <button
-            fold-menu-item
-            type="button"
-            icon="store"
-            [label]="node.title"
-            [active]="navigation.currentSpace()?.space === node.space"
-            [badge]="b?.text"
-            [badgeTone]="b?.tone ?? 'follow'"
-            (click)="navigation.openSpace(node.space)"
-          ></button>
-        }
+      <button
+        foldButton
+        size="sm"
+        emphasis="outline"
+        intent="neutral"
+        icon="list"
+        type="button"
+        (click)="navigation.showAll.set(true)"
+      >
+        Voir tous les textes
+      </button>
+    }
+    @default {
+      @if (navigation.mode() === 'all') {
+        <button
+          foldButton
+          size="sm"
+          emphasis="outline"
+          intent="neutral"
+          icon="view"
+          type="button"
+          (click)="navigation.showAll.set(false)"
+        >
+          Revenir à ce que l’aperçu montre
+        </button>
       }
-    </fold-menu>
+      @if (navigation.tree().length === 0) {
+        <fold-empty-state
+          title="Aucun espace"
+          subtitle="Aucun texte de cette clientèle ne répond à la recherche."
+        />
+      } @else {
+        <fold-menu level="tertiary" navLabel="Espaces de la boutique" [expanded]="true">
+          @if (journey().length > 0) {
+            <fold-menu-separator label="Parcours de commande" />
+            @for (node of journey(); track node.space) {
+              @let b = badge(node);
+              <button
+                fold-menu-item
+                type="button"
+                icon="shopping-cart"
+                [label]="node.title"
+                [active]="navigation.currentSpace()?.space === node.space"
+                [badge]="b?.text"
+                [badgeTone]="b?.tone ?? 'follow'"
+                (click)="navigation.openSpace(node.space)"
+              ></button>
+            }
+          }
+          @if (others().length > 0) {
+            <fold-menu-separator label="Le reste de la boutique" />
+            @for (node of others(); track node.space) {
+              @let b = badge(node);
+              <button
+                fold-menu-item
+                type="button"
+                icon="store"
+                [label]="node.title"
+                [active]="navigation.currentSpace()?.space === node.space"
+                [badge]="b?.text"
+                [badgeTone]="b?.tone ?? 'follow'"
+                (click)="navigation.openSpace(node.space)"
+              ></button>
+            }
+          }
+          @if (navigation.unshownTree().length > 0) {
+            <fold-menu-section
+              label="Pas montré aujourd’hui"
+              collapsible
+              [(collapsed)]="unshownCollapsed"
+            >
+              @for (node of navigation.unshownTree(); track node.space) {
+                @let b = badge(node);
+                <button
+                  fold-menu-item
+                  type="button"
+                  icon="eye-off"
+                  [label]="node.title"
+                  [active]="navigation.currentSpace()?.space === node.space"
+                  [badge]="b?.text"
+                  [badgeTone]="b?.tone ?? 'follow'"
+                  (click)="navigation.openSpace(node.space)"
+                ></button>
+              }
+            </fold-menu-section>
+          }
+        </fold-menu>
+      }
+    }
   }
 </div>

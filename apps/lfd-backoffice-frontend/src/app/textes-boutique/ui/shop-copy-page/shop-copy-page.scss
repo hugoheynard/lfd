@@ -21,3 +21,16 @@
 .sc-search {
   flex: 1 1 16rem;
 }
+
+// La clientèle, puis la phrase qui dit ce qu'elle voit.
+.sc-audience {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: var(--fold-space-xs);
+}
+
+.sc-help {
+  margin: 0;
+  color: var(--fold-color-text-muted);
+}

@@ -11,6 +11,11 @@ import type {
 
 import { DEMO_CATALOGUE } from '../demo-data/demo-catalogue';
 import {
+  DEMO_COMPANY_ADDRESSES,
+  DEMO_COMPANY_BANK_ACCOUNT,
+  DEMO_COMPANY_INVOICES,
+} from '../demo-data/demo-company';
+import {
   DEMO_DELIVERY_AVAILABILITY,
   DEMO_DELIVERY_ZONES,
   DEMO_PICKUP_ADDRESSES,
@@ -203,6 +208,24 @@ export const DEMO_ROUTES: readonly DemoRoute[] = [
     pattern: /^\/companies\/[^/]+\/activation$/u,
     serves: 'une société activable',
     answer: () => ok(ACTIVATION),
+  },
+  {
+    method: 'GET',
+    pattern: /^\/companies\/[^/]+\/addresses$/u,
+    serves: 'le carnet de la société : une facturation, une livraison par défaut',
+    answer: () => ok(DEMO_COMPANY_ADDRESSES),
+  },
+  {
+    method: 'GET',
+    pattern: /^\/companies\/[^/]+\/bank-account$/u,
+    serves: 'aucun RIB déposé',
+    answer: () => ok(DEMO_COMPANY_BANK_ACCOUNT),
+  },
+  {
+    method: 'GET',
+    pattern: /^\/companies\/[^/]+\/invoices$/u,
+    serves: 'aucune facture émise',
+    answer: () => ok(DEMO_COMPANY_INVOICES),
   },
   {
     method: 'POST',

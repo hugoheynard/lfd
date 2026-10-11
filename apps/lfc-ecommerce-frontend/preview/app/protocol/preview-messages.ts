@@ -1,8 +1,11 @@
 import {
   isShopCopyPreviewMessage,
-  SHOP_COPY_PREVIEW_JOURNEYS,
+  isShopCopyPreviewScene,
+  SHOP_COPY_AUDIENCES,
+  SHOP_COPY_ORDER_STEPS,
   SHOP_COPY_PREVIEW_SOURCE,
-  type ShopCopyPreviewJourney,
+  type ShopCopyAudience,
+  type ShopCopyPreviewStep,
   type ShopCopyPreviewOutbound,
   type ShopCopyPreviewShowMessage,
   type ShopCopyPreviewViewport,
@@ -49,14 +52,17 @@ export function readShowMessage(
   if (!isShopCopyPreviewMessage(data) || data.type !== 'show') {
     return null;
   }
-  const journey = field(data, 'journey');
+  const audience = field(data, 'audience');
+  const step = field(data, 'step');
   const locale = field(data, 'locale');
   const viewport = field(data, 'viewport');
   const drafts = textRecord(field(data, 'drafts'));
   const published = textRecord(field(data, 'published'));
   const highlight = field(data, 'highlight');
   if (
-    !isJourney(journey) ||
+    !isAudience(audience) ||
+    !isStep(step) ||
+    !isShopCopyPreviewScene(audience, step) ||
     !isLocale(locale) ||
     !isViewport(viewport) ||
     drafts === null ||
@@ -68,7 +74,8 @@ export function readShowMessage(
   return {
     source: SHOP_COPY_PREVIEW_SOURCE,
     type: 'show',
-    journey,
+    audience,
+    step,
     locale,
     viewport,
     drafts,
@@ -90,8 +97,19 @@ function field(data: object, name: string): unknown {
   return Object.hasOwn(data, name) ? Reflect.get(data, name) : undefined;
 }
 
-function isJourney(value: unknown): value is ShopCopyPreviewJourney {
-  return SHOP_COPY_PREVIEW_JOURNEYS.some((journey) => journey === value);
+function isAudience(value: unknown): value is ShopCopyAudience {
+  return SHOP_COPY_AUDIENCES.some((audience) => audience === value);
+}
+
+const STEPS: readonly ShopCopyPreviewStep[] = [
+  ...SHOP_COPY_ORDER_STEPS,
+  'orders',
+  'loyalty',
+  'account',
+];
+
+function isStep(value: unknown): value is ShopCopyPreviewStep {
+  return STEPS.some((step) => step === value);
 }
 
 function isLocale(value: unknown): value is LocaleCode {

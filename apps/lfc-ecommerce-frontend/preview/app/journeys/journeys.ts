@@ -1,27 +1,50 @@
-import type { ShopCopyPreviewJourney } from '@lfd/contracts/shop-copy-preview';
+import type {
+  ShopCopyAudience,
+  ShopCopyPreviewStep,
+  ShopCopyPreviewStepsOf,
+} from '@lfd/contracts/shop-copy-preview';
 
-import { CUSTOMER_SIGNED_IN } from './customer-signed-in.journey';
+import { CART } from './cart.scenes';
+import { CONFIRMATION } from './confirmation.scenes';
+import { PERSONAL_OUTSIDE, PRO_OUTSIDE } from './outside.scenes';
+import { PAYMENT } from './payment.scenes';
 import type { PreviewJourney } from './preview-world';
-import { PRO_ON_ACCOUNT } from './pro-on-account.journey';
-import { SHOP_CLOSED } from './shop-closed.journey';
-import { VISITOR_CART_WITHOUT_PLACE } from './visitor-cart-without-place.journey';
-import { VISITOR_CHOOSING_PLACE } from './visitor-choosing-place.journey';
-import { VISITOR_CONFIRMATION } from './visitor-confirmation.journey';
-import { VISITOR_FIRST_VISIT } from './visitor-first-visit.journey';
-import { VISITOR_READY_TO_PAY } from './visitor-ready-to-pay.journey';
+import { ROUTING } from './routing.scenes';
+import { SHOP } from './shop.scenes';
+import { TIME } from './time.scenes';
+import { WELCOME } from './welcome.scenes';
+
+function orderSteps(audience: ShopCopyAudience) {
+  return {
+    welcome: WELCOME[audience],
+    routing: ROUTING[audience],
+    time: TIME[audience],
+    shop: SHOP[audience],
+    cart: CART[audience],
+    payment: PAYMENT[audience],
+    confirmation: CONFIRMATION[audience],
+  };
+}
 
 /**
- * **Les huit parcours**, par leur identifiant du protocole. Un `Record` sur le
- * type du contrat : un parcours ajouté à `SHOP_COPY_PREVIEW_JOURNEYS` sans être
- * écrit ici ne compile pas.
+ * **Les scènes de l'aperçu** — une clientèle × une étape. Typé sur le contrat :
+ * une étape qu'une clientèle a (`ShopCopyPreviewStepsOf`) sans scène ici ne
+ * compile pas.
  */
-export const PREVIEW_JOURNEYS: Readonly<Record<ShopCopyPreviewJourney, PreviewJourney>> = {
-  'visitor-first-visit': VISITOR_FIRST_VISIT,
-  'visitor-choosing-place': VISITOR_CHOOSING_PLACE,
-  'visitor-cart-without-place': VISITOR_CART_WITHOUT_PLACE,
-  'visitor-ready-to-pay': VISITOR_READY_TO_PAY,
-  'visitor-confirmation': VISITOR_CONFIRMATION,
-  'customer-signed-in': CUSTOMER_SIGNED_IN,
-  'pro-on-account': PRO_ON_ACCOUNT,
-  'shop-closed': SHOP_CLOSED,
+export const PREVIEW_SCENES: {
+  readonly [A in ShopCopyAudience]: Readonly<Record<ShopCopyPreviewStepsOf<A>, PreviewJourney>>;
+} = {
+  visitor: orderSteps('visitor'),
+  personal: { ...orderSteps('personal'), ...PERSONAL_OUTSIDE },
+  pro: { ...orderSteps('pro'), ...PRO_OUTSIDE },
 };
+
+/** La scène d'une clientèle à une étape ; `null` si elle ne l'a pas (un visiteur n'a pas de fidélité). */
+export function previewScene(
+  audience: ShopCopyAudience,
+  step: ShopCopyPreviewStep,
+): PreviewJourney | null {
+  const scenes: Readonly<Partial<Record<ShopCopyPreviewStep, PreviewJourney>>> =
+    PREVIEW_SCENES[audience];
+  return scenes[step] ?? null;
+}

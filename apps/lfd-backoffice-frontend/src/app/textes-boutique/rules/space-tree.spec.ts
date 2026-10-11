@@ -41,7 +41,7 @@ describe('spaceTree — l’arbre des espaces', () => {
   });
 
   it('ne garde que les clés que l’aperçu montre', () => {
-    const tree = spaceTree(ENTRIES, { ...ALL, visibleKeys: new Set(['cart.empty']) });
+    const tree = spaceTree(ENTRIES, { ...ALL, visibleKeys: ['cart.empty'] });
     expect(tree).toEqual([expect.objectContaining({ space: 'cart', count: 1 })]);
   });
 
@@ -52,5 +52,18 @@ describe('spaceTree — l’arbre des espaces', () => {
     });
     expect(tree.map((node) => node.space)).toEqual(['cart']);
     expect(matchesSearch(entryView('k', 's', 'Règlement'), 'reglement', 'fr')).toBe(true);
+  });
+
+  it('filtré par l’aperçu, range les espaces dans l’ordre de l’écran', () => {
+    const tree = spaceTree(ENTRIES, {
+      ...ALL,
+      visibleKeys: ['nav.home', 'hero.title', 'cart.title'],
+    });
+    expect(tree.map((node) => node.space)).toEqual(['nav', 'hero', 'cart']);
+  });
+
+  it('ne garde que les espaces admis (ceux d’une clientèle)', () => {
+    const tree = spaceTree(ENTRIES, { ...ALL, spaces: (space) => space === 'cart' });
+    expect(tree.map((node) => node.space)).toEqual(['cart']);
   });
 });

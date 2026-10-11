@@ -58,6 +58,15 @@
       @if (store.loadError(); as error) {
         <fold-callout variant="alert">{{ error }}</fold-callout>
       }
+      <div class="sc-audience">
+        <fold-view-toggle
+          ariaLabel="Qui regarde la boutique"
+          [options]="audienceOptions"
+          [value]="navigation.audience()"
+          (valueChange)="navigation.setAudience($event)"
+        />
+        <p class="sc-help">{{ audienceHelp[navigation.audience()] }}</p>
+      </div>
       <div class="sc-toolbar">
         <fold-view-toggle
           ariaLabel="Langue des textes"
@@ -68,7 +77,7 @@
         <fold-search
           class="sc-search"
           ariaLabel="Chercher un texte"
-          [placeholder]="'Chercher un texte en ' + localeNames[navigation.locale()]"
+          [placeholder]="'Chercher dans tous ses textes, en ' + localeNames[navigation.locale()]"
           [value]="navigation.query()"
           [resultCount]="navigation.resultCount()"
           resultLabel="textes"
