@@ -250,6 +250,7 @@
   "test/schema.e2e-spec.ts": 3429,
   "test/shop-cart.e2e-spec.ts": 6279,
   "test/shop-catalogue.e2e-spec.ts": 7754,
+  "test/shop-copy.e2e-spec.ts": 8102,
   "test/shop-order.e2e-spec.ts": 5551,
   "test/shop-quote.e2e-spec.ts": 6182,
   "test/shop-state-carry-over-migration.e2e-spec.ts": 3000,

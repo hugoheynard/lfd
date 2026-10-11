@@ -78,6 +78,9 @@ const PREFIXES: Readonly<Record<ActivityModule, readonly string[]>> = {
     // La vitrine décide ce qu'on met en avant, sur quel rayon : le même métier
     // que la mise en avant d'un article (`catalog_item.featured`), 2026-09-24.
     "storefront.",
+    // Les textes de la boutique publiés (2026-10-11) : le même métier que la
+    // vitrine — ce que la boutique dit, sous le même droit.
+    "shop_copy.",
   ],
   // Zones, points de retrait, heures limites et ouverture de la livraison
   // décident où et quand une commande part : ils se lisent avec les commandes,

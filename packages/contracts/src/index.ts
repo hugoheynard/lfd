@@ -1973,3 +1973,22 @@ export type {
   AddressPointDecisionPayload,
 } from "./delivery-address-suggestions.js";
 export type { DeadLetterView, DeadLettersView } from "./outbox-dead-letters.js";
+export {
+  SHOP_COPY_DRAFT_STATES,
+  shopCopyLocaleQuerySchema,
+  shopCopyDraftPayloadSchema,
+  shopCopyResetPayloadSchema,
+  shopCopyHistoryQuerySchema,
+} from "./shop-copy.js";
+export type {
+  ShopCopyLocaleQuery,
+  PublishedShopCopyView,
+  ShopCopyDraftPayload,
+  ShopCopyResetPayload,
+  ShopCopyDraftState,
+  ShopCopyLocaleView,
+  ShopCopyEntryView,
+  ShopCopyAdminView,
+  ShopCopyPublishedView,
+  ShopCopyHistoryQuery,
+} from "./shop-copy.js";

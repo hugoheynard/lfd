@@ -5,6 +5,8 @@ import type { ClientCopy } from './client-copy.model';
 import { EN } from './en';
 import { FR } from './fr';
 import { IT } from './it';
+import { overlayCopy } from './shop-copy-overlay';
+import { ShopCopyOverrides } from './shop-copy-overrides';
 
 const DICTIONARIES: Record<LocaleCode, ClientCopy> = { fr: FR, en: EN, it: IT };
 
@@ -13,12 +15,22 @@ const DICTIONARIES: Record<LocaleCode, ClientCopy> = { fr: FR, en: EN, it: IT };
  *
  * Un `computed` et rien d'autre : changer de langue change la valeur, et tout ce
  * qui la lit se redessine. Aucun abonnement, aucun rechargement.
+ *
+ * C'est le SEUL point où les remplacements publiés (`ShopCopyOverrides`) se
+ * superposent au texte du code — clé par clé, une clé inconnue ignorée ; c'est
+ * `ShopCopyLoader`, au démarrage, qui les lit (plan
+ * `plan-textes-de-la-boutique.md`, lot T1). Les fonctions d'écran
+ * (`*Copy(locale)`) n'en passent pas encore par là : elles migrent en T4.
  */
 @Injectable({ providedIn: 'root' })
 export class ClientCopyService {
   private readonly locale = inject(ClientLocale);
+  private readonly overrides = inject(ShopCopyOverrides);
 
-  readonly t = computed<ClientCopy>(() => DICTIONARIES[this.locale.current()]);
+  readonly t = computed<ClientCopy>(() => {
+    const locale = this.locale.current();
+    return overlayCopy(DICTIONARIES[locale], this.overrides.texts(locale));
+  });
 
   /**
    * La même phrase dans TOUTES les langues.

@@ -7,6 +7,9 @@
     "removeComments": true,
     "resolvePackageJsonExports": true,
     "isolatedModules": true,
+    // Les textes de la boutique : l'API embarque le manifeste de son build
+    // (`b2b/shop-copy/infrastructure/embedded/`), et `tsc` le copie dans `dist`.
+    "resolveJsonModule": true,
     "outDir": "./dist",
     // Redondants avec le flag layer (tsc les hérite déjà via `extends`), mais
     // déclarés en clair parce que les transpileurs ne résolvent pas `extends`.

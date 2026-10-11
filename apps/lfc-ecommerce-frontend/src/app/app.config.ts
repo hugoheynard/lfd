@@ -11,6 +11,7 @@ import { provideFoldCommonLabels, provideFoldToasts } from 'fold-ng';
 import { routes } from './app.routes';
 import { AUTH_CONFIG } from './auth/auth.config';
 import { ClientFeatureAccess } from './client/feature-access/client-feature-access.service';
+import { SHOP_COPY_STARTUP_BUDGET_MS, ShopCopyLoader } from './client/copy/shop-copy-loader';
 import { InstallPrompt } from './client/install-prompt.service';
 import { workspaceInterceptor } from './client/client-workspace.interceptor';
 import { identityConflictInterceptor } from './auth/identity-conflict';
@@ -64,6 +65,11 @@ export const appConfig: ApplicationConfig = {
     provideAppInitializer(() => {
       void inject(ClientFeatureAccess).load();
     }),
+    // Les textes publiés de la langue courante, ATTENDUS avant le premier
+    // dessin — au plus 300 ms : un texte qui changerait sous les yeux au
+    // premier chargement se verrait (plan `plan-textes-de-la-boutique.md`,
+    // §10). Au-delà, la boutique démarre avec le texte du code.
+    provideAppInitializer(() => inject(ShopCopyLoader).start(SHOP_COPY_STARTUP_BUDGET_MS)),
     // `beforeinstallprompt` ne passe qu'une fois, tôt : l'écouter AVANT que le
     // bandeau d'installation ne soit monté, sans quoi il n'a rien à rejouer.
     provideAppInitializer(() => {

@@ -70,3 +70,63 @@ describe('la vitrine enregistrée', () => {
     ).toBe('Colette Martin a enregistré la vitrine (version 5), sans rien y changer');
   });
 });
+
+/**
+ * **Les textes de la boutique publiés** (`shop_copy.published`,
+ * `plan-textes-de-la-boutique.md`, §10) : la phrase compte, la charge garde
+ * chaque texte avant et après.
+ */
+function published(payload: Record<string, unknown>): FactInput {
+  return {
+    type: 'shop_copy.published',
+    payload,
+    subjectType: 'shop_copy',
+    subjectId: 'shop',
+    actorName: 'Colette Martin',
+    actorType: 'staff',
+  };
+}
+
+describe('les textes de la boutique publiés', () => {
+  it('dit la version, les textes modifiés et ceux rendus à l’original', () => {
+    const rendered = renderFact(
+      published({
+        subjectLabel: 'Textes de la boutique',
+        version: 3,
+        changes: [
+          { key: 'cart.whoTitle', locale: 'fr', before: null, after: 'Pour qui ?' },
+          { key: 'cart.whoTitle', locale: 'en', before: 'Who?', after: 'For whom?' },
+          { key: 'cart.title', locale: 'fr', before: 'Mon panier', after: null },
+        ],
+      }),
+    );
+
+    expect(rendered.sentence).toBe(
+      'Colette Martin a publié les textes de la boutique (version 3) : 2 textes modifiés, 1 texte rendu à l’original',
+    );
+    expect(rendered.detail).toEqual([]);
+  });
+
+  it('ne nomme jamais une clé de manifeste', () => {
+    const { sentence } = renderFact(
+      published({
+        subjectLabel: 'Textes de la boutique',
+        version: 1,
+        changes: [{ key: 'cart.whoTitle', locale: 'fr', before: null, after: 'Pour qui ?' }],
+      }),
+    );
+    expect(sentence).toBe(
+      'Colette Martin a publié les textes de la boutique (version 1) : 1 texte modifié',
+    );
+    expect(sentence).not.toContain('cart.whoTitle');
+  });
+
+  it('dit une publication qui ne change rien à l’écran', () => {
+    expect(
+      renderFact(published({ subjectLabel: 'Textes de la boutique', version: 4, changes: [] }))
+        .sentence,
+    ).toBe(
+      'Colette Martin a publié les textes de la boutique (version 4), sans rien changer à l’écran',
+    );
+  });
+});

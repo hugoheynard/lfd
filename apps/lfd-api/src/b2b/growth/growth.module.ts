@@ -233,6 +233,8 @@ import { PrismaProspectReader } from "./infrastructure/prisma-prospect.reader.js
     ListAppointmentsHandler,
     ListMyAppointmentsHandler,
   ],
-  exports: [ActivityRecorder],
+  // Le port de LECTURE du journal : l'historique des publications des textes
+  // de la boutique le lit sous le droit de la vitrine (`b2b/shop-copy`).
+  exports: [ActivityRecorder, ActivityJournalReader],
 })
 export class GrowthModule {}

@@ -122,6 +122,29 @@ export const COMMERCE_FACTS = {
   ),
 
   /**
+   * **Les textes de la boutique publiés** (`plan-textes-de-la-boutique.md`,
+   * §3, §10) : UN fait par « Publier », qui porte pour chaque texte la valeur
+   * publiée AVANT et APRÈS — de quoi relire, et annuler à la main. `null` =
+   * le texte du code (aucun remplacement).
+   *
+   * `subjectLabel` : « Textes de la boutique » — il n'y a qu'un jeu publié.
+   */
+  "shop_copy.published": fact(
+    payload({
+      subjectLabel: subjectLabel(),
+      version: count(),
+      changes: z.array(
+        payload({
+          key: z.string().min(1),
+          locale: z.enum(["fr", "en", "it"]),
+          before: z.string().nullable(),
+          after: z.string().nullable(),
+        }),
+      ),
+    }),
+  ),
+
+  /**
    * Un prospect saisi à la main. L'e-mail en est sorti le 2026-09-19 (lot B) :
    * une coordonnée n'a rien à faire au journal, et le lead la garde sur sa
    * propre ligne. `subjectLabel` : son enseigne — la même que `businessName`.

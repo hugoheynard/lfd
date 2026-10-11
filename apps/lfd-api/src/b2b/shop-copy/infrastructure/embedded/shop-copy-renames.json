@@ -1,0 +1,4 @@
+{
+  "$comment": "Renommages des clés du manifeste des textes, ancienne → nouvelle. L'API y reporte les remplacements au démarrage ; lint:shop-copy-digest refuse qu'une clé commitée disparaisse sans entrée ici. Plan : documentation/contenu-ecommerce/plan-textes-de-la-boutique.md, §10.",
+  "renames": {}
+}

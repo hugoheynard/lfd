@@ -1,0 +1,73 @@
+// ─────────────────────────────────────────────────────────────────────────────
+// Les textes de la boutique — des REMPLACEMENTS, jamais une copie
+// ─────────────────────────────────────────────────────────────────────────────
+//
+// Plan : documentation/contenu-ecommerce/plan-textes-de-la-boutique.md (§2, §3,
+// §10). Écrites et lues par `b2b/shop-copy` seul. Le code de la boutique reste
+// la source de chaque texte : une ligne ne dit que ce qui le REMPLACE, et une
+// base vide rend la boutique d'aujourd'hui.
+//
+// 🔴 Les CHECK (forme du brouillon, langues admises, version positive) vivent
+// dans la migration `20261011220000_les_textes_de_la_boutique` : Prisma ne sait
+// pas les dire.
+
+/// Le brouillon d'un texte : rien à publier, un remplacement, ou le retour à
+/// l'original. Trois états et pas un `draft_text` nullable seul : « pas de
+/// brouillon » et « revenir au texte du code » sont deux intentions distinctes
+/// (§10, objection « le brouillon a trois états »).
+enum ShopCopyDraftState {
+  unchanged
+  set
+  reset
+
+  @@schema("public")
+}
+
+/// **Un texte de la boutique dans une langue** — clé du manifeste + langue.
+///
+/// Jamais supprimé : publier un `reset` met `published_text` à NULL, la ligne
+/// reste, et son auteur avec elle.
+model ShopCopyEntry {
+  /// La clé du manifeste (`cart.whoTitle`). Chaîne OPAQUE : elle peut ne plus
+  /// exister dans le code (orpheline), et c'est montré, pas refusé.
+  key    String
+  /// `fr`, `en` ou `it` (CHECK).
+  locale String
+
+  /// Monte à chaque écriture du brouillon : le verrou entre deux rédacteurs.
+  revision Int
+
+  draftState ShopCopyDraftState @default(unchanged) @map("draft_state")
+  /// Présent si et seulement si `draft_state = 'set'` (CHECK).
+  draftText  String?            @map("draft_text")
+  /// Le dernier geste de brouillon (écrire, revenir à l'original). GARDÉ après
+  /// publication : il dit quand cette langue a été touchée pour la dernière
+  /// fois, ce que lit l'avertissement « le français a changé depuis » (A2).
+  draftAt    DateTime?          @map("draft_at")
+  /// L'identifiant INTERNE de la fiche staff — jamais un `sub` Auth0.
+  draftBy    String?            @map("draft_by")
+
+  /// Ce que la boutique sert. NULL = le texte du code.
+  publishedText String?   @map("published_text")
+  publishedAt   DateTime? @map("published_at")
+  publishedBy   String?   @map("published_by")
+
+  @@id([key, locale])
+  @@map("shop_copy_entries")
+  @@schema("public")
+}
+
+/// **La version publiée des textes**, en une ligne : `key = 'shop'`. Elle monte
+/// à chaque « Publier » et sert d'estampille aux caches (API, navigateur). Pas
+/// de ligne semée : absente, la version est 0.
+model ShopCopyPublication {
+  /// Toujours `'shop'` : il n'y a qu'un jeu de textes publiés.
+  key         String   @id
+  version     Int
+  publishedAt DateTime @map("published_at")
+  /// L'identifiant INTERNE de la fiche staff — jamais un `sub` Auth0.
+  publishedBy String   @map("published_by")
+
+  @@map("shop_copy_publication")
+  @@schema("public")
+}

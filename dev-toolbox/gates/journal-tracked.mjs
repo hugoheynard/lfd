@@ -114,6 +114,15 @@ const SETTINGS_ZONES = ["delivery-zones", "pickup-addresses", "order-cutoffs"];
 const STOREFRONT_ZONE = "storefront";
 
 /**
+ * **Les textes de la boutique** (2026-10-11,
+ * `documentation/contenu-ecommerce/plan-textes-de-la-boutique.md`) : « Publier »
+ * change ce que la boutique dit, et son fait `shop_copy.published` porte chaque
+ * texte avant et après. Les brouillons, invisibles hors de l'éditeur, se
+ * déclarent `@sans-journal`.
+ */
+const SHOP_COPY_ZONE = "shop-copy";
+
+/**
  * La tarification, elle, est tenue par le COMPILATEUR : ses dépôts d'écriture
  * exigent un `PricingAct` en paramètre, et un acte non fourni ne compile pas.
  * C'est plus fort que cette porte, et ça couvre règles, limites et barèmes.
@@ -503,6 +512,10 @@ const ZONES = [
   },
   {
     root: join(SRC, "b2b", STOREFRONT_ZONE),
+    audit: (source, index, params, handler) => auditTraced(source, index, params, handler),
+  },
+  {
+    root: join(SRC, "b2b", SHOP_COPY_ZONE),
     audit: (source, index, params, handler) => auditTraced(source, index, params, handler),
   },
   ...SETTINGS_ZONES.map((zone) => ({

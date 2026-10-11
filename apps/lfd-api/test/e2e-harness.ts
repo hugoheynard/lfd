@@ -44,6 +44,7 @@ import { AppErrorFilter } from "../src/platform/shared/http/app-error.filter.js"
 import type { VerifiedToken } from "../src/platform/auth/principal.js";
 import { PointOfSaleReader } from "../src/pim/points-of-sale/domain/ports/point-of-sale.reader.js";
 import { PricingMaterialsCache } from "../src/b2b/pricing/infrastructure/pricing-materials.cache.js";
+import { CachedPublishedShopCopyReader } from "../src/b2b/shop-copy/infrastructure/cached-published-shop-copy.reader.js";
 import { StaffAccessResolver } from "../src/platform/auth/staff-access.resolver.js";
 import { prismaSchemaSource } from "../src/platform/database/prisma-schema-source.js";
 import { testDatabaseUrl } from "./setup-env.js";
@@ -242,6 +243,10 @@ export async function bootstrapE2e(options: E2eOptions = {}): Promise<E2eContext
       // Sans cet oubli, une suite tarifierait avec les règles de la précédente
       // — vertes ou rouges au hasard de l'ordre d'exécution.
       app.get(PricingMaterialsCache).invalidate();
+      // Les textes publiés de la boutique, gardés en mémoire sous leur version :
+      // le `TRUNCATE` fait revenir la version à 0, et une langue gardée sous
+      // l'ancienne serait resservie à la suite suivante.
+      app.get(CachedPublishedShopCopyReader).forget();
       await resetStorage();
     },
     // 🔴 On draine avant de FERMER, pour la même raison qu'avant de vider — et

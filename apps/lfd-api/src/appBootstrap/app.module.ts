@@ -13,6 +13,7 @@ import { ContactModule } from "../b2b/contact/contact.module.js";
 import { OrderOpeningModule } from "../b2b/order-opening/order-opening.module.js";
 import { FeatureAccessModule } from "../b2b/feature-access/feature-access.module.js";
 import { PlatformContentModule } from "../b2b/content/content.module.js";
+import { ShopCopyModule } from "../b2b/shop-copy/shop-copy.module.js";
 import { GrowthModule } from "../b2b/growth/growth.module.js";
 import { OrdersModule } from "../b2b/orders/orders.module.js";
 import { PricerModule } from "../b2b/pricing/pricer.module.js";
@@ -120,6 +121,7 @@ import { PublicationEnabledGuard } from "../pim/publication/publication-switch.j
     // L'accès aux fonctionnalités : ce qu'on peut faire de la boutique, réglé en admin.
     FeatureAccessModule,
     PlatformContentModule,
+    ShopCopyModule,
     // Annuaire back-office (isolé, source de vérité locale).
     StaffUsersModule,
     // La résolution d'accès staff, reliée : le port est technique, l'adaptateur

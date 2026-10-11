@@ -112,6 +112,7 @@ const SUBJECT_NOUNS: Readonly<Record<string, string>> = {
   public_pickup_schedule: 'les créneaux publics',
   rule: 'la règle de prix',
   sales_context: 'le contexte de vente',
+  shop_copy: 'les textes de la boutique',
   staff_role: 'le rôle',
   staff_user: 'la fiche d’équipe',
   subscription: 'le panier récurrent',

@@ -34,8 +34,15 @@ export const PLAY = domain('coup recommandé', {
   nurture: 'Démarchage',
 });
 
+/** La langue d'un texte de la boutique publié (`shop_copy.published`). */
+export const SHOP_COPY_LOCALE = domain('langue d’un texte de la boutique', {
+  fr: 'Français',
+  en: 'Anglais',
+  it: 'Italien',
+});
+
 export const COMMERCE_VALUES: ValueFamily = {
-  enums: [LEAD_STATUS, APPOINTMENT_CHANNEL, PLAY],
+  enums: [LEAD_STATUS, APPOINTMENT_CHANNEL, PLAY, SHOP_COPY_LOCALE],
   literals: {
     // `lead.converted` : converti à la main, ou rapproché à l'inscription.
     manual: 'À la main',
