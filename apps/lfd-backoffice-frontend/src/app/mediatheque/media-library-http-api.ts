@@ -2,6 +2,7 @@ import { HttpClient } from '@angular/common/http';
 import { Injectable, inject } from '@angular/core';
 import type {
   CreatedIdResponse,
+  ImagePalette,
   MediaCarrierView,
   MediaUploadFailureView,
   MediaDetailsPayload,
@@ -124,15 +125,32 @@ export class MediaLibraryHttpApi {
    * ne duplique rien. C'est ce qui permet de proposer « réessayer » sans
    * précaution particulière.
    */
-  async upload(file: File, seriesId: string | null = null): Promise<UploadedMediaView> {
+  async upload(
+    file: File,
+    seriesId: string | null = null,
+    palette: ImagePalette | null = null,
+  ): Promise<UploadedMediaView> {
     const body = new FormData();
     body.append('file', file);
+    // La palette est calculée par le navigateur (L9, R28) : l'API n'a pas de
+    // décodeur. Absente, le serveur range `NULL` et le rattrapage la posera.
+    if (palette !== null) {
+      body.append('palette', JSON.stringify(palette));
+    }
     // La série part avec CHAQUE fichier du lot (L3, D3 : facultative). Une
     // image déjà au fonds garde la sienne (D2) : la réponse le dit.
     if (seriesId !== null) {
       body.append('seriesId', seriesId);
     }
     return firstValueFrom(this.http.post<UploadedMediaView>(`${this.base}/media`, body));
+  }
+
+  /**
+   * **Le rattrapage d'une palette** (L9) — 204 qu'elle soit posée ou déjà
+   * présente : le serveur n'écrase jamais une palette existante.
+   */
+  async paint(url: string, palette: ImagePalette): Promise<void> {
+    await firstValueFrom(this.http.put<void>(`${this.base}/media/palette`, { url, palette }));
   }
 
   /**

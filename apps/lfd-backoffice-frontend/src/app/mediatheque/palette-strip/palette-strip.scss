@@ -1,0 +1,32 @@
+:host {
+  display: block;
+}
+
+.strip {
+  display: flex;
+  flex-direction: column;
+  gap: var(--fold-space-xs);
+}
+
+.canvas {
+  display: block;
+  width: 100%;
+  height: var(--fold-space-5xl);
+  border-radius: var(--fold-radius-sm);
+  background: var(--fold-color-surface-sunken);
+}
+
+.readout {
+  display: flex;
+  align-items: center;
+  gap: var(--fold-space-sm);
+  min-height: var(--fold-space-2xl);
+  color: var(--fold-color-text-muted);
+}
+
+.thumb {
+  width: var(--fold-space-2xl);
+  height: var(--fold-space-2xl);
+  object-fit: cover;
+  border-radius: var(--fold-radius-xs);
+}

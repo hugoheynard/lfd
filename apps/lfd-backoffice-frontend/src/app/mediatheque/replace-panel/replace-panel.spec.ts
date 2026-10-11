@@ -58,6 +58,7 @@ function libraryItem(over: Partial<LibraryMediaView>): LibraryMediaView {
     uses: 0,
     depositedAt: '2026-10-01T08:00:00.000Z',
     series: null,
+    palette: null,
     width: 1600,
     height: 1200,
     bytes: 1000,

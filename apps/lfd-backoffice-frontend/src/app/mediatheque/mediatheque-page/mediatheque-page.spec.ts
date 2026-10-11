@@ -16,6 +16,7 @@ import { ALL_MEDIA } from '../media-feed-url';
 
 import { NotifyService } from '../../notify.service';
 import { MediaLibraryHttpApi, type MediaPageRequest } from '../media-library-http-api';
+import { PaletteStripApi } from '../palette-strip-api';
 
 import { MediathequePage } from './mediatheque-page';
 
@@ -52,6 +53,7 @@ function image(url: string, name = '', uses = 0): LibraryMediaView {
     contentType: null,
     depositedAt: '2026-09-23T08:00:00.000Z',
     series: null,
+    palette: null,
   };
 }
 
@@ -132,6 +134,11 @@ function page(): MediathequePage {
       provideZonelessChangeDetection(),
       provideRouter([]),
       { provide: MediaLibraryHttpApi, useFactory: () => library },
+      // La frise lit son propre endpoint ; ici, une frise vide.
+      {
+        provide: PaletteStripApi,
+        useValue: { strip: async () => ({ columns: [], total: 0, unpainted: 0 }) },
+      },
       { provide: NotifyService, useFactory: () => notify },
       {
         provide: FoldPanelHostService,

@@ -17,6 +17,7 @@ function deposited(url: string, depositedAt: string): LibraryMediaView {
     contentType: null,
     depositedAt,
     series: null,
+    palette: null,
   };
 }
 

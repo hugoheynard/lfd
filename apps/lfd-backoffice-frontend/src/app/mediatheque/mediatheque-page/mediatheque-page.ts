@@ -1,4 +1,11 @@
-import { ChangeDetectionStrategy, Component, computed, inject, signal } from '@angular/core';
+import {
+  ChangeDetectionStrategy,
+  Component,
+  computed,
+  effect,
+  inject,
+  signal,
+} from '@angular/core';
 import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
 import { ActivatedRoute, Router } from '@angular/router';
 import type { LibraryMediaView, MediaDetailsPayload, MediaTagView } from '@lfd/pim-contracts';
@@ -26,6 +33,9 @@ import { SeriesEditor } from '../series-editor';
 import { SeriesListPanel, type SeriesListPanelData } from '../series-list-panel/series-list-panel';
 import { FeedTail, type FeedTailState } from '../feed-tail/feed-tail';
 import { MediaFeedStore } from '../media-feed';
+import { PaletteBackfill } from '../palette-backfill';
+import { PaletteStrip } from '../palette-strip/palette-strip';
+import { PaletteStripStore } from '../palette-strip-store';
 import {
   ALL_MEDIA,
   isFiltering,
@@ -107,6 +117,7 @@ interface StrippedTag {
     FeedTail,
     MediaDeposit,
     MediaToolbar,
+    PaletteStrip,
     SeriesChip,
     TagBand,
     TagChip,
@@ -115,7 +126,15 @@ interface StrippedTag {
   styleUrl: './mediatheque-page.scss',
   // Fourni par la PAGE et non à la racine : un compte rendu de dépôt appartient
   // à l'écran qui l'a lancé, et le quitter doit l'oublier.
-  providers: [BatchUploadStore, MediaFeedStore, MediaSeriesStore, SeriesEditor, TagPaletteStore],
+  providers: [
+    BatchUploadStore,
+    MediaFeedStore,
+    MediaSeriesStore,
+    PaletteBackfill,
+    PaletteStripStore,
+    SeriesEditor,
+    TagPaletteStore,
+  ],
   changeDetection: ChangeDetectionStrategy.OnPush,
 })
 export class MediathequePage {
@@ -129,6 +148,10 @@ export class MediathequePage {
   private readonly route = inject(ActivatedRoute);
   private readonly router = inject(Router);
   protected readonly feed = inject(MediaFeedStore);
+  private readonly backfill = inject(PaletteBackfill);
+  protected readonly colorStrip = inject(PaletteStripStore);
+  /** Combien de colonnes la frise peut montrer — sa largeur, qu'elle annonce. */
+  private readonly stripColumns = signal(0);
 
   protected readonly undoMs = UNDO_MS;
   /** Le dernier retrait sur tuile, tant qu'on peut l'annuler. Un seul à la fois. */
@@ -184,6 +207,24 @@ export class MediathequePage {
     });
     void this.palette.refresh();
     void this.series.refresh();
+    // LE RATTRAPAGE DES COULEURS (L9) : les images chargées sans palette. Le
+    // serveur ne l'accepte que de qui écrit dans la médiathèque.
+    effect(() => {
+      const items = this.feed.items();
+      if (this.permissions.can('media_library:write')) {
+        this.backfill.offer(items);
+      }
+    });
+    // LA FRISE (L9) : relue au serveur quand le filtre, la largeur, ou un lot
+    // de rattrapage change ce qu'elle dit.
+    effect(() => {
+      const columns = this.stripColumns();
+      const criteria = this.criteria();
+      this.backfill.batches();
+      if (columns > 0) {
+        void this.colorStrip.load(criteria, columns);
+      }
+    });
   }
 
   /**
@@ -219,6 +260,10 @@ export class MediathequePage {
    * Une série corrigée change ce que les tuiles montrent (titre, date) : la
    * grille est relue à la fermeture, une fois.
    */
+  protected resizeStrip(columns: number): void {
+    this.stripColumns.set(columns);
+  }
+
   protected async manageSeries(): Promise<void> {
     let touched = false;
     await this.panels.open<SeriesListPanelData, void>(SeriesListPanel, {

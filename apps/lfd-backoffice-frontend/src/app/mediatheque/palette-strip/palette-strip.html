@@ -1,0 +1,22 @@
+<div class="strip">
+  <canvas
+    #canvas
+    class="canvas"
+    role="img"
+    [attr.aria-label]="'Frise des couleurs : ' + summary()"
+    (mousemove)="hover($event)"
+    (mouseleave)="leave()"
+  ></canvas>
+
+  <!-- LA LECTURE : la plage survolée, son compte, une vignette. -->
+  <div class="readout" aria-live="polite">
+    @if (hovered(); as column) {
+      @if (column.sampleUrl; as sample) {
+        <img class="thumb" [src]="sample" alt="" />
+      }
+      <span>{{ label(column) }}</span>
+    } @else {
+      <span>{{ summary() }}</span>
+    }
+  </div>
+</div>

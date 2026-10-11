@@ -2,6 +2,7 @@ import { Injectable, computed, inject, signal } from '@angular/core';
 import { httpErrorMessage } from '@lfd/endpoints';
 
 import { MediaLibraryHttpApi } from './media-library-http-api';
+import { PALETTE_READER } from './palette-extract';
 import { IMAGE_MEASURE, checkBeforeUpload } from './upload-check';
 
 /**
@@ -57,6 +58,7 @@ export interface UploadEntry {
 export class BatchUploadStore {
   private readonly api = inject(MediaLibraryHttpApi);
   private readonly measure = inject(IMAGE_MEASURE);
+  private readonly readPalette = inject(PALETTE_READER);
   /** La série du lot en cours — elle part avec chaque fichier, réessais compris. */
   private seriesId: string | null = null;
 
@@ -151,8 +153,11 @@ export class BatchUploadStore {
           this.mark(index, { state: 'refusé', reason: local, refusedBy: 'poste' });
           continue;
         }
+        // La palette (L9) : un échec rend `null`, jamais un refus — le
+        // rattrapage de l'écran la posera plus tard.
+        const palette = await this.readPalette(entry.file).catch(() => null);
         try {
-          const uploaded = await this.api.upload(entry.file, this.seriesId);
+          const uploaded = await this.api.upload(entry.file, this.seriesId, palette);
           this.mark(index, {
             state: uploaded.alreadyInLibrary ? 'déjà au fonds' : 'déposé',
             seriesId: uploaded.seriesId,

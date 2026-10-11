@@ -1,5 +1,5 @@
 import { Injectable, computed, inject, signal } from '@angular/core';
-import type { LibraryMediaView } from '@lfd/pim-contracts';
+import type { ImagePalette, LibraryMediaView } from '@lfd/pim-contracts';
 import { httpErrorMessage } from '@lfd/endpoints';
 
 import { ALL_MEDIA, toPageRequest, type MediaFeedCriteria } from './media-feed-url';
@@ -80,6 +80,16 @@ export class MediaFeedStore {
   /** Une image décrite ou retaguée : remplacée sur place. */
   replace(item: LibraryMediaView): void {
     this.items.update((current) => current.map((entry) => (entry.url === item.url ? item : entry)));
+  }
+
+  /**
+   * Une palette posée par le rattrapage (L9) : seule la palette change, pour
+   * ne pas défaire une description écrite entre-temps.
+   */
+  paint(url: string, palette: ImagePalette): void {
+    this.items.update((current) =>
+      current.map((entry) => (entry.url === url ? { ...entry, palette } : entry)),
+    );
   }
 
   /** Une image retirée du fonds. Le curseur ne bouge pas : il ne compte rien. */

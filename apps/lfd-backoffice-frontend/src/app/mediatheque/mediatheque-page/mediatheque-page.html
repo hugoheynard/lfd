@@ -52,6 +52,14 @@
       (manageSeries)="manageSeries()"
     />
 
+    <!-- LA FRISE DES COULEURS (L9) : agrégée au SERVEUR sur tout le filtre,
+         dans l'ordre du temps quel que soit le tri ; pas de clic (R32). Hors des états du feed : elle mesure sa largeur
+         avant même la première lecture. -->
+    @if (colorStrip.failure(); as message) {
+      <fold-callout variant="alert">{{ message }}</fold-callout>
+    }
+    <app-palette-strip [view]="colorStrip.view()" (columnsChange)="resizeStrip($event)" />
+
     @if (feed.loading() && feed.pages() === 0) {
       <fold-loading message="Lecture de la médiathèque…" />
     } @else if (feed.failure() !== null && feed.pages() === 0) {

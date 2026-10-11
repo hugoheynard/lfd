@@ -22,6 +22,7 @@ function image(url: string): LibraryMediaView {
     contentType: null,
     depositedAt: '2026-09-23T08:00:00.000Z',
     series: null,
+    palette: null,
   };
 }
 

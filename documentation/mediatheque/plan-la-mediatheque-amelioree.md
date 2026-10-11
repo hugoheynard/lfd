@@ -133,6 +133,58 @@ fonds (D5). La projection fait suivre la boutique.
 
 ---
 
+## L9 — La frise des couleurs (demandée le 2026-10-11)
+
+Hugo : « une frise de pixels qui représente les photos, pour voir l'évolution
+de la colorimétrie générale dans le temps […] selon les critères de filtre,
+une palette représentant la photo et ses outliers ».
+
+**Ce qu'on voit.** Une bande au-dessus du feed, dessinée sur un seul canvas :
+des colonnes de 3 px dans l'ordre de la prise de vue (dépôt à défaut), quel
+que soit le tri du feed. Une colonne empile les dominantes (hauteur ∝ part)
+puis, en bas, les écarts. Elle suit les filtres du feed. Survol : plage de
+dates, nombre de photos, vignette. Pas de clic (R32).
+
+**Taille bornée** (R31, Hugo le 2026-10-11 : « si j'ai plus de photos ça va
+devenir énorme »). `GET /media/palette-strip?<filtres du feed>&columns=N`
+rend au plus N colonnes déjà agrégées (`{ from, to, count, palette,
+sampleUrl }`, plus `total` et `unpainted`) : les images filtrées, rangées,
+sont découpées en tranches consécutives de même effectif ; chaque tranche
+fusionne ses palettes (ΔE < 12, 5 dominantes, 3 écarts). La réponse ne
+dépend pas du nombre de photos. Pré-agrégation à prévoir au-delà d'environ
+20 000 images filtrées (estimé, pas mesuré).
+
+**La palette — le contrat** (dans le paquet qui porte `MEDIA_LIMITS`) :
+
+```ts
+type PaletteSwatch = { hex: "#rrggbb"; share: number /* 0..1 */; outlier: boolean };
+type ImagePalette = readonly PaletteSwatch[]; // 1 à 8 entrées
+```
+
+Refus serveur : hex mal formé, part hors [0, 1], plus de 8 entrées, somme
+des parts des dominantes hors [0,95 ; 1,05].
+
+**Où elle se calcule : dans le navigateur** (R28). L'API n'a aucun décodeur
+d'image (`@lfd/storage` ne lit que l'en-tête pour les dimensions, vérifié le
+2026-10-11) ; le canvas décode tout ce que la médiathèque accepte.
+Miniature 64 px, k-means en Lab (k = 5, graine déterministe), écarts = couleurs
+à ΔE76 > 25 de toute dominante et couvrant ≥ 1 % (R29), au plus 3.
+
+**Stockage.** `media_asset.palette jsonb NULL` — migration additive. L'identité
+d'une image est son contenu : la palette ne change jamais, donc pas de fait
+journalisé ni de recalcul.
+
+**Les gestes.**
+
+- Dépôt : champ multipart optionnel `palette` (JSON) ; absent → `NULL`.
+- Rattrapage : `PUT /media/palette { url, palette }`, droit d'écriture de la
+  médiathèque ; n'écrit que si la palette est `NULL` (idempotent, pas
+  d'écrasement). L'écran le fait tout seul pour les images visibles sans
+  palette, à l'ouverture.
+- Le feed rend `palette: ImagePalette | null` par image.
+
+**Hors lot.** Regroupement par série, export, analyse côté serveur.
+
 ## Ordre et règles de chantier
 
 L1 → L8, un lot à la fois, un commit par geste, la doc d'état mise à jour au
@@ -175,3 +227,10 @@ bâti.
 | R24 | Copies d'image des articles (R18)                                            | ne comptent PAS                                                                                                                        | la projection vive les réécrit ; un article retiré n'est pas servi                                                                                                                         | —                                                                                 |
 | R25 | Le panneau de l'image pendant un remplacement (L7)                           | se ferme ; « Remplacer… » est inactif tant que la description a des modifications                                                      | fold n'ouvre qu'un panneau à la fois ; ne pas perdre une saisie                                                                                                                            | panneaux empilés                                                                  |
 | R26 | Reprendre la description de l'ancienne image (L7)                            | proposée, cochée d'office seulement si la nouvelle n'en a aucune                                                                       | ne jamais écraser une description existante sans geste                                                                                                                                     | —                                                                                 |
+| R27 | Recherche des mots-clés (bande)                                              | sans accents ni casse pour filtrer ; exacte pour « Créer »                                                                             | le serveur tient « eclair » et « éclair » pour deux mots ; le filtre montre le voisin                                                                                                      | normaliser au serveur                                                             |
+| R28 | Où se calcule la palette (L9)                                                | dans le navigateur, au dépôt et en rattrapage                                                                                          | l'API n'a aucun décodeur ; `sharp` serait une dépendance native pour un usage cosmétique                                                                                                   | `sharp` côté API et rattrapage serveur                                            |
+| R29 | Ce qu'est un outlier (L9)                                                    | ΔE76 > 25 de toute dominante, ≥ 1 % de l'image, au plus 3                                                                              | assez loin pour être une autre couleur, assez présent pour ne pas être du bruit                                                                                                            | `palette-extract.ts`                                                              |
+| R30 | Axe de la frise (L9)                                                         | date de prise de vue, dépôt à défaut, toujours chronologique ; tranches de même effectif (R31)                                         | la frise montre le temps, le feed garde son tri                                                                                                                                            | —                                                                                 |
+| R31 | Taille de la frise (L9)                                                      | agrégée au serveur en N colonnes (largeur / 3 px, ≤ 400), tranches de même effectif                                                    | le volume ne doit pas grandir avec le fonds ; des tranches égales évitent les colonnes vides des trimestres sans shooting                                                                  | tranches par durée                                                                |
+| R32 | Clic sur une colonne (L9)                                                    | **aucun** pour l'instant                                                                                                               | le feed ne filtre que sur le dépôt, la frise suit la prise de vue : le clic ouvrirait d'autres photos                                                                                      | un filtre « prise de vue » au feed, puis rebrancher                               |
+| R33 | Frise au clavier (L9)                                                        | non accessible au clavier                                                                                                              | un canvas unique ; la frise double une information que le feed donne déjà                                                                                                                  | colonnes en éléments focusables                                                   |
