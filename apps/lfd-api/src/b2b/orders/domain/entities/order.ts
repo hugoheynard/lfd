@@ -166,6 +166,23 @@ export class Order {
     return this.voucher?.appliedCents ?? 0;
   }
 
+  /**
+   * L'assiette des points telle que la fidélité la crédite — sous-total,
+   * remise et part du bon, tous trois hors taxe et tels qu'ils seront écrits.
+   * Lue par la passation sans compte pour dire ce qu'un compte aurait rapporté.
+   */
+  get earningAmounts(): {
+    readonly subtotalCents: number;
+    readonly discountCents: number;
+    readonly voucherDiscountCents: number;
+  } {
+    return {
+      subtotalCents: this.subtotalCentsValue,
+      discountCents: this.discountCents,
+      voucherDiscountCents: this.voucherDiscountCents,
+    };
+  }
+
   /** Règlement **carte** : rattache l'intention Stripe. Refuse un total nul. */
   payByCard(paymentIntentId: string): void {
     if (this.totalCentsValue <= 0) {

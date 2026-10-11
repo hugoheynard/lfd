@@ -4,8 +4,10 @@ import type { PlaceShopOrderPayload } from "@lfd/contracts";
 
 import { PlaceShopOrderCommand } from "../src/b2b/orders/application/commands/place-shop-order.command.js";
 import { PlaceShopOrderHandler } from "../src/b2b/orders/application/commands/place-shop-order.handler.js";
+import { LoyaltySettings } from "../src/b2b/loyalty/domain/value-objects/loyalty-settings.js";
+import { PrismaLoyaltySettingsStore } from "../src/b2b/loyalty/infrastructure/prisma-loyalty-settings.store.js";
 import { PaymentGateway } from "../src/b2b/payments/domain/payment-gateway.js";
-import { bootstrapE2e, serviceDay, type E2eContext } from "./e2e-harness.js";
+import { bootstrapE2e, E2E_STAFF_ID, serviceDay, type E2eContext } from "./e2e-harness.js";
 import { createUser } from "./factories.js";
 
 /**
@@ -316,5 +318,58 @@ describe("la commande sans compte — l'idempotence, arbitrée par Postgres", ()
     const retried = await place({ idempotencyKey: key });
 
     expect(retried.id).toBeTruthy();
+  });
+});
+
+/**
+ * « Avec un compte, cette commande vous aurait rapporté N points » — le
+ * conditionnel que la confirmation d'un invité affiche (Hugo, 2026-10-11).
+ */
+describe("la commande sans compte — les points qu'un compte aurait rapportés", () => {
+  /** Ouvre le programme aux particuliers, par l'adaptateur de stockage. */
+  async function openProgram(): Promise<void> {
+    await ctx.app.get(PrismaLoyaltySettingsStore).write(
+      LoyaltySettings.of({
+        pointsPerStep: 1_000,
+        stepValueCents: 500,
+        openToPublic: true,
+        openToPro: false,
+        voucherValidityDays: 365,
+      }),
+      new Date(),
+      E2E_STAFF_ID,
+    );
+  }
+
+  it("la réponse HTTP porte null quand le programme est fermé", async () => {
+    const response = await ctx.http().post("/shop/orders").send(payload()).expect(201);
+    await ctx.drain();
+
+    expect(response.body).toMatchObject({ loyaltyPointsWithAccount: null });
+  });
+
+  it("la réponse HTTP porte les points de l'assiette écrite, programme ouvert", async () => {
+    await openProgram();
+
+    const response = await ctx.http().post("/shop/orders").send(payload()).expect(201);
+    await ctx.drain();
+
+    const order = await ctx.prisma.order.findFirstOrThrow({
+      select: { subtotalCents: true, discountCents: true },
+    });
+    // Un point par centime HT payé (`POINTS_PER_CENT`, vérifié le 2026-10-11).
+    const expected = order.subtotalCents - order.discountCents;
+    expect(expected).toBeGreaterThan(0);
+    expect(response.body).toMatchObject({ loyaltyPointsWithAccount: expected });
+  });
+
+  it("le rejeu rend null : il ne recompose pas la commande", async () => {
+    await openProgram();
+    const key = randomUUID();
+    await place({ idempotencyKey: key });
+
+    const replayed = await place({ idempotencyKey: key });
+
+    expect(replayed.loyaltyPointsWithAccount).toBeNull();
   });
 });

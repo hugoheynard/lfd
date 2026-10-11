@@ -68,8 +68,11 @@ export class ShopOrdersController {
     );
     // `payment` n'est ajouté que s'il existe (exactOptionalPropertyTypes) : il
     // est absent d'un rejeu, par décision — cf. `PlaceShopOrderHandler.replay`.
-    return placed.payment === undefined
-      ? { id: placed.id, orderNumber: placed.orderNumber }
-      : { id: placed.id, orderNumber: placed.orderNumber, payment: placed.payment };
+    const base = {
+      id: placed.id,
+      orderNumber: placed.orderNumber,
+      loyaltyPointsWithAccount: placed.loyaltyPointsWithAccount,
+    };
+    return placed.payment === undefined ? base : { ...base, payment: placed.payment };
   }
 }

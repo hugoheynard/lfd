@@ -1034,6 +1034,14 @@ export interface PlacedOrderResponse {
    * 2026-10-09) : son absence se lit « pas au compte ».
    */
   readonly settlement?: SettlementRegime;
+  /**
+   * Les points que cette commande AURAIT rapportés avec un compte — servi
+   * seulement par la route sans compte (`POST /shop/orders`), absent de
+   * `POST /orders`. Un conditionnel : l'invité ne gagne rien, et la commande
+   * n'est pas rattachée au compte qu'il créerait ensuite. `null` quand elle
+   * n'en aurait rapporté aucun, ou sur un rejeu.
+   */
+  readonly loyaltyPointsWithAccount?: number | null;
 }
 
 // ─── Surface ADMIN (staff) ───────────────────────────────────────────────────

@@ -211,6 +211,44 @@ describe('passer commande', () => {
     expect(body.deliveryAddressId).toBeNull();
   });
 
+  /** Les points qu'un compte aurait rapportés suivent la commande du visiteur. */
+  async function placeGuest(response: object) {
+    const http = boot();
+    TestBed.inject(OrderContextStore).choice.set(AU_LABO);
+    TestBed.inject(ClientCart).add('VIE-001');
+    const placing = TestBed.inject(ClientOrders).placeAsGuest({
+      firstName: 'Jean',
+      email: 'jean@example.com',
+      phone: '0600000000',
+    });
+    await Promise.resolve();
+    await Promise.resolve();
+    http.expectOne((r) => r.url.endsWith('/shop/orders')).flush(response);
+    return placing;
+  }
+
+  it('un visiteur garde les points qu’un compte aurait rapportés', async () => {
+    const order = await placeGuest({
+      id: 'ord_1',
+      orderNumber: 'CMD-0007',
+      loyaltyPointsWithAccount: 1240,
+    });
+
+    expect(order?.loyaltyPointsWithAccount).toBe(1240);
+    expect(TestBed.inject(ClientOrders).latest()?.loyaltyPointsWithAccount).toBe(1240);
+  });
+
+  it('un visiteur ne garde rien quand le serveur n’annonce aucun point', async () => {
+    const order = await placeGuest({
+      id: 'ord_1',
+      orderNumber: 'CMD-0007',
+      loyaltyPointsWithAccount: null,
+    });
+
+    expect(order).not.toBeNull();
+    expect(order && 'loyaltyPointsWithAccount' in order).toBe(false);
+  });
+
   /** Le numéro vient du SERVEUR : c'est celui qu'on lira au téléphone. */
   it('garde le numéro rendu par le serveur, pas un compteur local', async () => {
     boot();

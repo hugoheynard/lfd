@@ -99,7 +99,10 @@ describe('ConfirmationPage — le récapitulatif selon le régime', () => {
  * qui reprend sa fiche invité.
  */
 describe('ConfirmationPage — un visiteur sans compte', () => {
-  function render(authenticated: boolean): {
+  function render(
+    authenticated: boolean,
+    order: PlacedOrder = placed(),
+  ): {
     el: HTMLElement;
     signUps: unknown[][];
   } {
@@ -109,7 +112,7 @@ describe('ConfirmationPage — un visiteur sans compte', () => {
       imports: [ConfirmationPage],
       providers: [
         provideRouter([]),
-        { provide: ClientOrders, useValue: { latest: computed(() => placed()) } },
+        { provide: ClientOrders, useValue: { latest: computed(() => order) } },
         {
           provide: AuthFacade,
           useValue: {
@@ -154,6 +157,21 @@ describe('ConfirmationPage — un visiteur sans compte', () => {
       ],
     ]);
     localStorage.clear();
+  });
+
+  it('lui dit combien de points cette commande aurait rapportés avec un compte', () => {
+    const { el } = render(false, placed({ loyaltyPointsWithAccount: 1240 }));
+
+    const join = el.querySelector('.join')?.textContent ?? '';
+    expect(join).toMatch(/Avec un compte, cette commande vous aurait rapporté 1\s?240 points\./u);
+    expect(join).not.toContain(FR.done.joinLine);
+  });
+
+  it('garde l’invitation générale quand le nombre manque ou vaut zéro', () => {
+    expect(render(false).el.querySelector('.join')?.textContent).toContain(FR.done.joinLine);
+    expect(
+      render(false, placed({ loyaltyPointsWithAccount: 0 })).el.querySelector('.join')?.textContent,
+    ).toContain(FR.done.joinLine);
   });
 
   it('garde « Mes commandes » pour qui est connecté, sans invitation', () => {

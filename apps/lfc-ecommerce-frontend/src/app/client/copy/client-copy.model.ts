@@ -683,6 +683,12 @@ export interface ClientCopy {
     /** L'invitation à créer un compte, sous la confirmation d'un visiteur. */
     readonly joinTitle: string;
     readonly joinLine: string;
+    /**
+     * Remplace `joinLine` quand le serveur a chiffré les points qu'un compte
+     * aurait rapportés. Un CONDITIONNEL : l'invité ne gagne rien, et la
+     * commande n'est pas rattachée au compte créé ensuite. `{points}` est le nombre.
+     */
+    readonly joinPoints: string;
     readonly joinAction: string;
     readonly recapPickup: string;
     readonly recapDelivery: string;

@@ -71,6 +71,13 @@ export interface PlacedOrder {
    * non plus. Absent d'une commande gardée avant F5 : lu `false`.
    */
   readonly onAccount?: boolean;
+  /**
+   * Les points que cette commande AURAIT rapportés avec un compte — rendu par
+   * `POST /shop/orders` à un visiteur seulement. Un conditionnel : il n'a rien
+   * gagné. Absent quand le serveur n'en annonce aucun, et sur toute commande
+   * passée connecté.
+   */
+  readonly loyaltyPointsWithAccount?: number;
 }
 
 /**
@@ -201,7 +208,9 @@ function isPlaced(value: unknown): value is PlacedOrder {
     isRecord(value['service']) &&
     isRecord(value['totals']) &&
     Array.isArray(value['lines']) &&
-    readNumber(value['pieces']) !== null
+    readNumber(value['pieces']) !== null &&
+    (value['loyaltyPointsWithAccount'] === undefined ||
+      readNumber(value['loyaltyPointsWithAccount']) !== null)
   );
 }
 
@@ -466,6 +475,7 @@ export class ClientOrders {
       // `due` dès qu'il y a une intention : la commande publique se règle par
       // carte, et le serveur n'en rend aucune sur un total nul.
       settlement: payment === null ? 'not_required' : 'due',
+      ...pointsWithAccountOf(placed),
     };
     // 🔴 **L'INTENTION EST GARDÉE, et c'est ce qui rend le règlement possible
     // sans compte.** `POST /shop/orders` la rend avec la commande ; gardée ici,
@@ -775,4 +785,15 @@ function guestContentOf(
 /** Le serveur a répondu, et il refuse : un 4xx. Un réseau coupé (0) ou un 5xx n'en est pas un. */
 function isServerRefusal(error: unknown): boolean {
   return error instanceof HttpErrorResponse && error.status >= 400 && error.status < 500;
+}
+
+/**
+ * Les points qu'un compte aurait rapportés, gardés seulement s'il y en a :
+ * `null`, zéro ou un champ absent ne disent rien à la confirmation.
+ */
+function pointsWithAccountOf(placed: PlacedOrderResponse): {
+  readonly loyaltyPointsWithAccount?: number;
+} {
+  const points = placed.loyaltyPointsWithAccount ?? null;
+  return points !== null && points > 0 ? { loyaltyPointsWithAccount: points } : {};
 }

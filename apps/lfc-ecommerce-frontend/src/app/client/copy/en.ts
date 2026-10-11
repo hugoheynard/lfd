@@ -365,6 +365,7 @@ export const EN: ClientCopy = {
     guestMailLine: 'It goes to the address you gave, with your order summary.',
     joinTitle: 'Create your La Folie Coffee account',
     joinLine: 'Earn loyalty points on every order, and find your orders and QR codes in one place.',
+    joinPoints: 'With an account, this order would have earned you {points} points.',
     joinAction: 'Create my account',
     recapPickup: 'Collection',
     recapDelivery: 'Delivery',

@@ -32,4 +32,10 @@ export interface PlaceShopOrderResult {
   readonly id: string;
   readonly orderNumber: string;
   readonly payment?: OrderPaymentIntent;
+  /**
+   * Les points que CETTE commande aurait rapportés avec un compte — un
+   * conditionnel : un invité ne gagne rien. `null` quand elle n'en aurait
+   * rapporté aucun, et toujours sur un rejeu, qui ne recompose pas la commande.
+   */
+  readonly loyaltyPointsWithAccount: number | null;
 }

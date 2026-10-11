@@ -60,6 +60,10 @@ import { OrderCutoffReader } from "../../../domain/ports/order-cutoff.reader.js"
 import { OrderCutoffWaiverGate } from "../../../domain/ports/order-cutoff-waiver.gate.js";
 import { OrderLateFeeReader } from "../../../domain/ports/order-late-fee.reader.js";
 import { FixedDeliveryVat } from "./fixed-delivery-vat.js";
+import {
+  LoyaltyEarningPreview,
+  type LoyaltyEarningBasis,
+} from "../../../domain/ports/loyalty-earning-preview.js";
 import { OrderReader } from "../../../domain/ports/order.reader.js";
 import { OrderRepository } from "../../../domain/ports/order.repository.js";
 import {
@@ -368,6 +372,20 @@ const noReader: OrderReader = {
   listForProduction: () => Promise.resolve([]),
 };
 
+/** La fidélité doublée : elle note l'assiette reçue et rend le nombre qu'on lui dit. */
+class FakeEarning extends LoyaltyEarningPreview {
+  readonly asked: LoyaltyEarningBasis[] = [];
+
+  constructor(private readonly points: number | null) {
+    super();
+  }
+
+  pointsToEarn(basis: LoyaltyEarningBasis): Promise<number | null> {
+    this.asked.push(basis);
+    return Promise.resolve(this.points);
+  }
+}
+
 const KEY = "3f2504e0-4f89-41d3-9a0c-0305e82c3301";
 
 function payload(over: Partial<PlaceShopOrderPayload> = {}): PlaceShopOrderPayload {
@@ -391,8 +409,10 @@ function scene(
     readonly claim?: IdempotencyClaim;
     readonly delivery?: DeliveryAvailabilityView;
     readonly opening?: PublicOrderOpeningView;
+    readonly points?: number | null;
   } = {},
 ) {
+  const earning = new FakeEarning(options.points ?? null);
   const sink = { placed: null as OrderToPlace | null };
   const paid: PaymentCalls = { intent: null, retrieved: 0 };
   const keys = new FakeKeys(options.claim ?? { kind: "claimed" });
@@ -411,8 +431,9 @@ function scene(
     new DirectUnitOfWork(),
     durable,
     intakeAt(options.opening),
+    earning,
   );
-  return { handler, sink, paid, keys, buyers, published, durable };
+  return { handler, sink, paid, keys, buyers, published, durable, earning };
 }
 
 describe("PlaceShopOrderHandler — le porteur", () => {
@@ -547,6 +568,32 @@ describe("PlaceShopOrderHandler — le règlement", () => {
       amountCents: sink.placed?.totalCents,
     });
     expect(sink.placed?.paymentStatus).toBe("pending");
+  });
+});
+
+describe("PlaceShopOrderHandler — les points qu'un compte aurait rapportés", () => {
+  it("rend les points calculés sur l'assiette que la commande a écrite", async () => {
+    const { handler, sink, earning } = scene({ points: 12 });
+
+    const placed = await handler.execute(new PlaceShopOrderCommand(payload()));
+
+    expect(placed.loyaltyPointsWithAccount).toBe(12);
+    expect(earning.asked).toEqual([
+      {
+        buyerUserId: "user_guest",
+        subtotalCents: sink.placed?.subtotalCents,
+        discountCents: sink.placed?.discountCents,
+        voucherDiscountCents: 0,
+      },
+    ]);
+  });
+
+  it("rend null quand la commande n'en aurait rapporté aucun", async () => {
+    const { handler } = scene({ points: null });
+
+    const placed = await handler.execute(new PlaceShopOrderCommand(payload()));
+
+    expect(placed.loyaltyPointsWithAccount).toBeNull();
   });
 });
 

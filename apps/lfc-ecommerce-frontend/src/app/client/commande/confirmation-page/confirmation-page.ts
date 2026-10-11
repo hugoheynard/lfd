@@ -5,6 +5,7 @@ import { FoldIconComponent } from 'fold-ng';
 import { AuthFacade } from '../../../auth/auth.facade';
 import { storedGuestIdentity } from '../../cart/guest-identity-form/guest-identity-form';
 import { formatCents, formatRate } from '../../../client/format-money';
+import { ClientLocale } from '../../../client/client-locale.service';
 import { ClientChrome } from '../../../client/client-chrome.service';
 import { ClientOrders } from '../../../client/client-orders.service';
 import { ClientCopyService, fill } from '../../../client/copy/client-copy.service';
@@ -40,6 +41,7 @@ export class ConfirmationPage {
   private readonly orders = inject(ClientOrders);
   /** Reconnu ou non : c'est ce qui décide si le QR est atteignable ici. */
   private readonly auth = inject(AuthFacade);
+  private readonly locale = inject(ClientLocale);
 
   protected readonly t = inject(ClientCopyService).t;
   protected readonly order = this.orders.latest;
@@ -112,6 +114,22 @@ export class ConfirmationPage {
    * qu'il ne peut pas ouvrir.
    */
   protected readonly isGuest = computed(() => !this.auth.isAuthenticated());
+
+  /**
+   * « Avec un compte, cette commande vous aurait rapporté N points » quand le
+   * serveur l'a chiffré ; sinon l'invitation générale. Un conditionnel, et rien
+   * de plus : l'invité n'a rien gagné, et la commande ne suivra pas le compte.
+   */
+  protected readonly joinLine = computed(() => {
+    const done = this.t().done;
+    const points = this.order()?.loyaltyPointsWithAccount ?? 0;
+    if (points <= 0) {
+      return done.joinLine;
+    }
+    return fill(done.joinPoints, {
+      points: new Intl.NumberFormat(this.locale.current()).format(points),
+    });
+  });
 
   /**
    * Créer son compte reprend la fiche invité : prénom, adresse et téléphone
