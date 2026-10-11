@@ -193,29 +193,36 @@ describe('le panier demande qui commande', () => {
    * d'invité y est OUVERTE d'office, et « Me connecter » la remplace par la
    * connexion, dans la même carte.
    */
-  it('ouvre le panier sur « qui », la saisie d’invité déjà dépliée', () => {
+  it('ouvre le panier sur « qui », l’invité choisi d’office et sa saisie dépliée', () => {
     const fixture = boot({ auth: VISITEUR });
-    const kickers = [...el(fixture).querySelectorAll('.who-kicker')].map((node) =>
-      node.textContent?.trim(),
-    );
+    const doors = [...el(fixture).querySelectorAll('.who-door-block')].map((block) => [
+      block.querySelector('.who-kicker')?.textContent?.trim(),
+      block.querySelector('.who-door')?.textContent?.trim(),
+      block.querySelector('.who-door')?.getAttribute('aria-pressed'),
+    ]);
 
     expect(el(fixture).querySelector('.page > *')?.classList).toContain('who');
+    expect(doors).toEqual([
+      ['Je commande pour la première fois', 'Commander en tant qu’invité', 'true'],
+      ["J'ai déjà un compte", 'Me connecter', 'false'],
+    ]);
     expect(el(fixture).querySelector('app-guest-identity-form')).not.toBeNull();
-    expect(kickers).toEqual(['Je commande pour la première fois', "J'ai déjà un compte"]);
-    expect(el(fixture).querySelector('.who-door')?.textContent?.trim()).toBe('Me connecter');
   });
 
-  it('« Me connecter » remplace la saisie par la connexion, et l’invité la rend', () => {
+  it('l’interrupteur bascule la carte entre la saisie et la connexion', () => {
     const fixture = boot({ auth: VISITEUR });
+    const door = (index: number): HTMLButtonElement | undefined =>
+      [...el(fixture).querySelectorAll<HTMLButtonElement>('.who-door')][index];
 
-    el(fixture).querySelector<HTMLButtonElement>('.who-door')?.click();
+    door(1)?.click();
     fixture.detectChanges();
 
     expect(el(fixture).querySelector('app-guest-identity-form')).toBeNull();
     expect(el(fixture).querySelector('app-sign-in-choices')).not.toBeNull();
+    expect(door(1)?.getAttribute('aria-pressed')).toBe('true');
     expect(bouton(fixture)?.disabled).toBe(true);
 
-    el(fixture).querySelector<HTMLButtonElement>('.who-door')?.click();
+    door(0)?.click();
     fixture.detectChanges();
 
     expect(el(fixture).querySelector('app-guest-identity-form')).not.toBeNull();

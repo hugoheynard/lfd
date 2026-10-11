@@ -15,30 +15,41 @@
              doit la remplir pour commander, un bouton pour la déplier était un
              geste de trop. Le bouton de règlement du pied envoie la commande
              dès qu'elle est complète. -->
-        @if (signingIn()) {
-          <div class="who-door-block">
-            <p class="who-kicker">{{ t().cart.whoSignIn }}</p>
-            <app-sign-in-choices [target]="afterSignIn" />
-          </div>
-
+        <!-- 🔴 UN INTERRUPTEUR À DEUX PORTES (Hugo, 2026-10-11) : la porte
+             choisie est pleine, l'autre discrète, et ce qui est dessous suit.
+             L'invité est choisi d'office — tout visiteur a de quoi remplir sa
+             saisie, pas forcément un compte. -->
+        <div class="who-doors" role="group" [attr.aria-label]="t().cart.whoTitle">
           <div class="who-door-block">
             <p class="who-kicker">{{ t().cart.whoRegister }}</p>
-            <button class="who-door is-quiet" type="button" (click)="showGuest()">
+            <button
+              class="who-door"
+              type="button"
+              [class.is-quiet]="signingIn()"
+              [attr.aria-pressed]="!signingIn()"
+              (click)="showGuest()"
+            >
               {{ t().cart.whoGuestCta }}
             </button>
           </div>
-        } @else {
-          <div class="who-door-block">
-            <p class="who-kicker">{{ t().cart.whoRegister }}</p>
-            <app-guest-identity-form (identityChange)="guest.set($event)" />
-          </div>
-
           <div class="who-door-block">
             <p class="who-kicker">{{ t().cart.whoSignIn }}</p>
-            <button class="who-door is-quiet" type="button" (click)="showSignIn()">
+            <button
+              class="who-door"
+              type="button"
+              [class.is-quiet]="!signingIn()"
+              [attr.aria-pressed]="signingIn()"
+              (click)="showSignIn()"
+            >
               {{ t().cart.whoSignInCta }}
             </button>
           </div>
+        </div>
+
+        @if (signingIn()) {
+          <app-sign-in-choices [target]="afterSignIn" />
+        } @else {
+          <app-guest-identity-form (identityChange)="guest.set($event)" />
         }
       </section>
     }

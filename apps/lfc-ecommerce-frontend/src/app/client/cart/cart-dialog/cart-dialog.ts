@@ -268,6 +268,9 @@ export class CartDialog {
   protected readonly signingIn = signal(false);
 
   protected showSignIn(): void {
+    if (this.signingIn()) {
+      return;
+    }
     this.guest.set(null);
     this.signingIn.set(true);
   }
