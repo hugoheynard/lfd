@@ -109,14 +109,35 @@ export class GuestIdentityForm {
   protected readonly emailAgain = signal(this.draft?.emailAgain ?? '');
   protected readonly phone = signal(this.draft?.phone ?? '');
 
-  /** L'écart ne se dit qu'une fois la confirmation commencée. */
-  private readonly confirmTouched = computed(() => this.emailAgain().trim() !== '');
+  /**
+   * La confirmation a-t-elle été QUITTÉE depuis la dernière frappe ?
+   *
+   * 🔴 L'écart ne se dit qu'à ce moment-là (Hugo, 2026-10-11 : « ne devrait pas
+   * apparaître tant qu'on est encore en train de taper dans le champ de
+   * confirmation ») : pendant la frappe, les deux adresses diffèrent forcément
+   * — on n'a pas fini. Retaper dans le champ le fait taire jusqu'à la sortie
+   * suivante.
+   */
+  private readonly confirmLeft = signal(false);
 
   private readonly emailsMatch = computed(
     () => normalize(this.email()) === normalize(this.emailAgain()),
   );
 
-  protected readonly mismatch = computed(() => this.confirmTouched() && !this.emailsMatch());
+  protected readonly mismatch = computed(
+    () => this.confirmLeft() && this.emailAgain().trim() !== '' && !this.emailsMatch(),
+  );
+
+  protected typeConfirmation(value: string): void {
+    this.emailAgain.set(value);
+    this.confirmLeft.set(false);
+  }
+
+  protected leaveConfirmation(touched: boolean): void {
+    if (touched) {
+      this.confirmLeft.set(true);
+    }
+  }
 
   private readonly identity = computed<GuestIdentity | null>(() =>
     this.firstName().trim() !== '' &&

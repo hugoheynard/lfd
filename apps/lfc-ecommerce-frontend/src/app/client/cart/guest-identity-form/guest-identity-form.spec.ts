@@ -77,12 +77,29 @@ describe('GuestIdentityForm', () => {
     expect(last()).not.toBeNull();
   });
 
-  it('🔴 dit l’écart entre les deux adresses PENDANT la frappe', () => {
+  /** Quitte le champ `label`, comme un clic ailleurs ou une tabulation. */
+  const leave = (label: string): void => {
+    field(label).dispatchEvent(new Event('blur'));
+    fixture.detectChanges();
+  };
+
+  /**
+   * Hugo, 2026-10-11 : pendant qu'on tape la confirmation, elle diffère
+   * forcément — on n'a pas fini. L'écart ne se dit qu'en la quittant, et se
+   * tait dès qu'on y retape.
+   */
+  it('🔴 tait l’écart pendant la frappe, le dit en quittant la confirmation', () => {
     fixture = mount();
     fillAll('jean@exemple.fr', 'jean@exemple.f');
 
-    expect(el().textContent).toContain(FR.cart.guestEmailMismatch);
+    expect(el().textContent).not.toContain(FR.cart.guestEmailMismatch);
     expect(last()).toBeNull();
+
+    leave(FR.cart.guestEmailAgain);
+    expect(el().textContent).toContain(FR.cart.guestEmailMismatch);
+
+    type(FR.cart.guestEmailAgain, 'jean@exemple.fr');
+    expect(el().textContent).not.toContain(FR.cart.guestEmailMismatch);
   });
 
   it('ne gronde pas un second champ encore vide', () => {

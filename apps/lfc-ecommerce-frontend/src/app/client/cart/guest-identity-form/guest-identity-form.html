@@ -1,5 +1,5 @@
-<!-- L'écart entre les deux adresses se dit PENDANT la frappe, là où l'on
-     corrige. -->
+<!-- L'écart entre les deux adresses se dit en QUITTANT la confirmation, pas
+     pendant qu'on la tape : elle ne peut qu'être incomplète à ce moment-là. -->
 @if (mismatch()) {
   <fold-callout variant="alert" announce>{{ t().cart.guestEmailMismatch }}</fold-callout>
 }
@@ -28,7 +28,8 @@
   [label]="t().cart.guestEmailAgain"
   [required]="true"
   [value]="emailAgain()"
-  (valueChange)="emailAgain.set($event)"
+  (valueChange)="typeConfirmation($event)"
+  (touchedChange)="leaveConfirmation($event)"
 />
 
 <fold-input
