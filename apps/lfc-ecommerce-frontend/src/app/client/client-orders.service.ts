@@ -549,6 +549,8 @@ export class ClientOrders {
       if (readAwaiting(workspace) === orderId) {
         clearLocal(cartAwaitingKeyOf(workspace));
         this.cart.clear();
+        // La commande est faite : la suivante repart de zéro (Hugo, 2026-10-11).
+        this.order.choice.set(null);
       }
     }
     this.placed.update((all) =>
@@ -592,6 +594,9 @@ export class ClientOrders {
     }
     clearLocal(cartAwaitingKeyOf(workspace));
     this.cart.clear();
+    // Rien à encaisser : la commande est faite, et la suivante repart de zéro —
+    // lieu et heure compris (Hugo, 2026-10-11).
+    this.order.choice.set(null);
   }
 
   /**

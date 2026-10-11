@@ -56,6 +56,25 @@ function parseDraft(raw: unknown): GuestDraft | null {
   };
 }
 
+/**
+ * La fiche invité gardée, si elle est complète — ce que la confirmation
+ * reprend pour proposer de créer un compte sans rien faire retaper.
+ */
+export function storedGuestIdentity(): GuestIdentity | null {
+  const draft = readLocal(DRAFT_KEY, parseDraft);
+  if (draft === null) {
+    return null;
+  }
+  const identity = {
+    firstName: draft.firstName.trim(),
+    email: draft.email.trim(),
+    phone: draft.phone.trim(),
+  };
+  return identity.firstName === '' || identity.email === '' || identity.phone === ''
+    ? null
+    : identity;
+}
+
 const PLAUSIBLE_EMAIL = /^[^\s@]+@[^\s@]+\.[^\s@]+$/u;
 
 /**

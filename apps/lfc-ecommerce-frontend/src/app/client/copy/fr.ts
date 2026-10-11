@@ -360,6 +360,13 @@ export const FR: ClientCopy = {
     intro: 'Votre commande entre dans la fournée de demain matin.',
     keptTitle: 'Gardée dans votre espace',
     keptLine: 'Retrouvez-la, avec son QR de retrait, dans « Mes commandes ».',
+    guestMailTitle: 'Votre QR de retrait arrive par e-mail',
+    guestMailLine:
+      'Il part à l’adresse que vous avez donnée, avec le récapitulatif de votre commande.',
+    joinTitle: 'Créez votre compte La Folie Coffee',
+    joinLine:
+      'Cumulez des points de fidélité à chaque commande, et retrouvez vos commandes et vos QR au même endroit.',
+    joinAction: 'Créer mon compte',
     recapPickup: 'Retrait',
     recapDelivery: 'Livraison',
     recapContent: 'Contenu',

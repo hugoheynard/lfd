@@ -14,13 +14,33 @@
          Aucun des trois n'existe : pas de gabarit de courriel de commande, pas
          de facture, et le QR vit désormais dans l'app. Il dit ce qui est vrai —
          où la commande se retrouve. -->
-    <section class="mail">
-      <span class="mail-icon" aria-hidden="true"><fold-icon name="archive" /></span>
-      <span class="mail-text">
-        <span class="mail-title">{{ t().done.keptTitle }}</span>
-        <span class="mail-line">{{ t().done.keptLine }}</span>
-      </span>
-    </section>
+    @if (isGuest()) {
+      <!-- Un visiteur n'a pas d'espace : son QR est dans le courriel, et ce
+           qu'on lui propose, c'est d'en ouvrir un. -->
+      <section class="mail">
+        <span class="mail-icon" aria-hidden="true"><fold-icon name="mail" /></span>
+        <span class="mail-text">
+          <span class="mail-title">{{ t().done.guestMailTitle }}</span>
+          <span class="mail-line">{{ t().done.guestMailLine }}</span>
+        </span>
+      </section>
+
+      <section class="join">
+        <span class="mail-title">{{ t().done.joinTitle }}</span>
+        <span class="mail-line">{{ t().done.joinLine }}</span>
+        <button class="qr" type="button" (click)="createAccount()">
+          {{ t().done.joinAction }}
+        </button>
+      </section>
+    } @else {
+      <section class="mail">
+        <span class="mail-icon" aria-hidden="true"><fold-icon name="archive" /></span>
+        <span class="mail-text">
+          <span class="mail-title">{{ t().done.keptTitle }}</span>
+          <span class="mail-line">{{ t().done.keptLine }}</span>
+        </span>
+      </section>
+    }
 
     <dl class="recap">
       <div class="row">

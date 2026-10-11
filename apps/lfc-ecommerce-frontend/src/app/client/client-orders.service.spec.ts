@@ -317,6 +317,8 @@ describe('le règlement de la commande', () => {
     });
     expect(account?.onAccount).toBe(true);
 
+    // La commande faite oublie le lieu et l'heure : la suivante les repose.
+    TestBed.inject(OrderContextStore).choice.set(AU_LABO);
     TestBed.inject(ClientCart).add('VIE-001');
     const free = await placeOrderResponse({
       id: 'ord_2',
@@ -418,6 +420,8 @@ describe('le règlement de la commande', () => {
 
     orders.markPaid('ord_c');
     expect(cart.isEmpty()).toBe(true);
+    // Hugo, 2026-10-11 : la commande faite, lieu et heure s'oublient aussi.
+    expect(TestBed.inject(OrderContextStore).choice()).toBeNull();
   });
 
   /** Hugo, 2026-10-11 : abandonner vide le panier ET oublie le lieu et l'heure. */
@@ -447,6 +451,7 @@ describe('le règlement de la commande', () => {
     await placeOrder('CMD-0011');
 
     expect(TestBed.inject(ClientCart).isEmpty()).toBe(true);
+    expect(TestBed.inject(OrderContextStore).choice()).toBeNull();
   });
 
   /** Le paiement abouti change l'état de CETTE commande, et d'aucune autre. */

@@ -92,3 +92,74 @@ describe('ConfirmationPage — le récapitulatif selon le régime', () => {
     expect(el.querySelector('.pretax-note')).toBeNull();
   });
 });
+
+/**
+ * Hugo, 2026-10-11 : un visiteur n'a pas d'espace — « Mes commandes » ne lui
+ * mène nulle part. On lui dit où est son QR, et on l'invite à créer un compte
+ * qui reprend sa fiche invité.
+ */
+describe('ConfirmationPage — un visiteur sans compte', () => {
+  function render(authenticated: boolean): {
+    el: HTMLElement;
+    signUps: unknown[][];
+  } {
+    const signUps: unknown[][] = [];
+    TestBed.resetTestingModule();
+    TestBed.configureTestingModule({
+      imports: [ConfirmationPage],
+      providers: [
+        provideRouter([]),
+        { provide: ClientOrders, useValue: { latest: computed(() => placed()) } },
+        {
+          provide: AuthFacade,
+          useValue: {
+            isAuthenticated: () => authenticated,
+            continueWithEmailCode: (...args: unknown[]) => signUps.push(args),
+          },
+        },
+      ],
+    });
+    const fixture = TestBed.createComponent(ConfirmationPage);
+    fixture.detectChanges();
+    return { el: fixture.nativeElement as HTMLElement, signUps };
+  }
+
+  it('ne lui parle pas de « Mes commandes », mais du courriel et d’un compte', () => {
+    const { el } = render(false);
+
+    expect(el.textContent).not.toContain(FR.done.keptLine);
+    expect(el.textContent).toContain(FR.done.guestMailTitle);
+    expect(el.querySelector('.join')?.textContent).toContain(FR.done.joinTitle);
+  });
+
+  it('crée le compte en reprenant la fiche invité', () => {
+    localStorage.setItem(
+      'lfc.guest.identity',
+      JSON.stringify({
+        firstName: 'Jean',
+        email: 'jean@exemple.fr',
+        emailAgain: 'jean@exemple.fr',
+        phone: '0612345678',
+      }),
+    );
+    const { el, signUps } = render(false);
+
+    el.querySelector<HTMLButtonElement>('.join button')?.click();
+
+    expect(signUps).toEqual([
+      [
+        '/mes-commandes',
+        'jean@exemple.fr',
+        { firstName: 'Jean', email: 'jean@exemple.fr', phone: '0612345678' },
+      ],
+    ]);
+    localStorage.clear();
+  });
+
+  it('garde « Mes commandes » pour qui est connecté, sans invitation', () => {
+    const { el } = render(true);
+
+    expect(el.textContent).toContain(FR.done.keptLine);
+    expect(el.querySelector('.join')).toBeNull();
+  });
+});

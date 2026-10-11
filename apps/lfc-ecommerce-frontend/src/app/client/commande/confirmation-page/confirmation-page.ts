@@ -3,11 +3,14 @@ import { Router } from '@angular/router';
 import { FoldIconComponent } from 'fold-ng';
 
 import { AuthFacade } from '../../../auth/auth.facade';
+import { storedGuestIdentity } from '../../cart/guest-identity-form/guest-identity-form';
 import { formatCents, formatRate } from '../../../client/format-money';
 import { ClientChrome } from '../../../client/client-chrome.service';
 import { ClientOrders } from '../../../client/client-orders.service';
 import { ClientCopyService, fill } from '../../../client/copy/client-copy.service';
 
+/** Où mène la création de compte d'un visiteur : son espace, ses commandes. */
+const AFTER_SIGN_UP = '/mes-commandes';
 /**
  * La commande passée.
  *
@@ -101,6 +104,27 @@ export class ConfirmationPage {
    * Le bouton disparaît donc plutôt que de promettre une porte fermée.
    */
   protected readonly hasCode = computed(() => this.order() !== null && this.auth.isAuthenticated());
+
+  /**
+   * **Un visiteur ne retrouve rien dans « Mes commandes »** (Hugo,
+   * 2026-10-11) : il n'a pas d'espace. On lui dit où est son QR — le courriel —
+   * et on l'invite à créer un compte, plutôt que de lui indiquer une porte
+   * qu'il ne peut pas ouvrir.
+   */
+  protected readonly isGuest = computed(() => !this.auth.isAuthenticated());
+
+  /**
+   * Créer son compte reprend la fiche invité : prénom, adresse et téléphone
+   * sont déjà connus, et la connexion par code ne demande que l'adresse.
+   */
+  protected createAccount(): void {
+    const identity = storedGuestIdentity();
+    if (identity === null) {
+      this.auth.continueWithEmailCode(AFTER_SIGN_UP);
+      return;
+    }
+    this.auth.continueWithEmailCode(AFTER_SIGN_UP, identity.email, identity);
+  }
 
   protected readonly piecesLabel = computed(() =>
     fill(this.t().done.recapPieces, { count: String(this.order()?.pieces ?? 0) }),

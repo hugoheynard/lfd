@@ -677,6 +677,13 @@ export interface ClientCopy {
      */
     readonly keptTitle: string;
     readonly keptLine: string;
+    /** Un visiteur : son QR est dans le courriel, il n'a pas d'espace. */
+    readonly guestMailTitle: string;
+    readonly guestMailLine: string;
+    /** L'invitation à créer un compte, sous la confirmation d'un visiteur. */
+    readonly joinTitle: string;
+    readonly joinLine: string;
+    readonly joinAction: string;
     readonly recapPickup: string;
     readonly recapDelivery: string;
     readonly recapContent: string;

@@ -75,6 +75,18 @@
   background: var(--fold-color-info-surface);
 }
 
+/* L'invitation d'un visiteur : la même famille que le bloc du courriel, en
+   encre de la marque — c'est une offre, pas une information. */
+.join {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  padding: 13px 14px;
+  margin-bottom: 16px;
+  border-radius: var(--fold-radius-lg);
+  background: var(--lfc-color-accent-surface);
+}
+
 .mail-icon {
   flex: none;
   display: grid;
