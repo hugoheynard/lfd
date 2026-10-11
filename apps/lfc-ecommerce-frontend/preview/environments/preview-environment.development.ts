@@ -1,4 +1,4 @@
-import type { PreviewEnvironment } from './preview-environment';
+import type { PreviewEnvironment } from './preview-environment.model';
 
 /**
  * Le back-office de développement (`ng serve` sur le port 7317). Les deux

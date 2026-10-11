@@ -14,7 +14,7 @@
     "dev:preview": "pnpm config:auth && ng serve lfc-ecommerce-preview",
     "lint": "eslint src preview --fix",
     "lint:ci": "eslint src preview",
-    "dev": "pnpm config:auth && node ../../dev-toolbox/ng-serve-quiet.mjs",
+    "dev": "pnpm config:auth && node ../../dev-toolbox/ng-serve-shop-and-preview.mjs",
     "postinstall": "pnpm config:auth",
     "build:capacitor": "pnpm config:auth && ng build --configuration capacitor",
     "cap:icons": "node scripts/native-assets.mjs",

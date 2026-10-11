@@ -12,10 +12,7 @@
  * Ce fichier est celui de la PRODUCTION ; la configuration `development` le
  * remplace par `preview-environment.development.ts` (`angular.json`).
  */
-export interface PreviewEnvironment {
-  /** Les origines exactes (schéma, hôte, port) du back-office qui encadre l'aperçu. */
-  readonly editorOrigins: readonly string[];
-}
+import type { PreviewEnvironment } from './preview-environment.model';
 
 export const PREVIEW_ENVIRONMENT: PreviewEnvironment = {
   editorOrigins: ['https://lfd-backoffice.com', 'https://lfd-backoffice.pages.dev'],
