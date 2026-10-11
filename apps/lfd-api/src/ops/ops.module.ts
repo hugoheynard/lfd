@@ -21,6 +21,8 @@ import { AnalyticsEngineTrafficReader } from "./traffic/analytics-engine-traffic
 import { RehearsalTrafficReader } from "./traffic/rehearsal-traffic.reader.js";
 import { TrafficReader } from "./traffic/traffic-reader.port.js";
 import { TOPOLOGY } from "./topology/topology.js";
+import { AdminMediaThresholdsController } from "./media/admin-media-thresholds.controller.js";
+import { ReadMediaThresholdsHandler } from "./media/read-media-thresholds.handler.js";
 
 /**
  * Les sondes de fronts sont **dérivées de la carte**, pas listées à la main :
@@ -52,7 +54,12 @@ const FRONTEND_PROBES: readonly NodeProbe[] = TOPOLOGY.flatMap((node) =>
   // La collecte des vitals est la SEULE route publique d'OPS, et elle doit
   // l'être : un visiteur de la boutique n'a pas de jeton, et c'est justement son
   // expérience qu'on mesure. Ce qui la rend acceptable est écrit sur elle.
-  controllers: [AdminTrafficController, AdminHealthController, VitalsController],
+  controllers: [
+    AdminTrafficController,
+    AdminHealthController,
+    AdminMediaThresholdsController,
+    VitalsController,
+  ],
   providers: [
     OpsHealthService,
     DatabaseReadingsReader,
@@ -79,6 +86,9 @@ const FRONTEND_PROBES: readonly NodeProbe[] = TOPOLOGY.flatMap((node) =>
     AnalyticsEngineTrafficReader,
     RehearsalTrafficReader,
     ReadTrafficHandler,
+    // Les seuils de la médiathèque : le compte vient du port que la racine
+    // relie (`MediaLibraryCensusModule`), jamais d'une lecture de sa table.
+    ReadMediaThresholdsHandler,
     {
       // Le choix se fait UNE FOIS, au démarrage, sur la présence de la
       // configuration — jamais requête par requête. Une bascule en cours de

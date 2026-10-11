@@ -42,6 +42,7 @@ import { PackingModule } from "../packing/packing.module.js";
 import { PackingFeedModule } from "./packing-feed.module.js";
 import { PackingDeliveryFeedModule } from "./packing-delivery-feed.module.js";
 import { ImageCatalogueModule } from "./image-catalogue.module.js";
+import { MediaLibraryCensusModule } from "./media-library-census.module.js";
 import { MediaCarriersModule } from "./media-carriers.module.js";
 import { CatalogFeedModule } from "./catalog-feed.module.js";
 import { JournalModule } from "./journal.module.js";
@@ -140,6 +141,7 @@ import { PublicationEnabledGuard } from "../pim/publication/publication-switch.j
     // Le fil des images : le port que le référentiel déclare, branché sur
     // l'adaptateur de la médiathèque.
     ImageCatalogueModule,
+    MediaLibraryCensusModule,
     MediaCarriersModule,
     JournalModule,
     // Contextes métier.

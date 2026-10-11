@@ -1,0 +1,58 @@
+<h2>Médiathèque — les seuils</h2>
+
+@switch (state()) {
+  @case ('loading') {
+    <fold-loading message="Lecture du fonds…" />
+  }
+  @case ('error') {
+    <fold-empty-state
+      tone="alert"
+      title="Seuils illisibles"
+      subtitle="Le compte du fonds a échoué. Ce n'est pas la médiathèque qui est tombée, c'est la carte qui ne voit plus."
+    >
+      <button foldButton (click)="load()">Réessayer</button>
+    </fold-empty-state>
+  }
+  @default {
+    @if (report(); as board) {
+      <p class="total">
+        <strong>{{ board.images | number: '1.0-0' }}</strong> images au fonds — la borne de toute
+        lecture filtrée.
+      </p>
+      <ul class="thresholds">
+        @for (threshold of board.thresholds; track threshold.key) {
+          <li [attr.data-threshold]="threshold.key">
+            <fold-card>
+              <fold-element-title
+                variant="title"
+                [title]="threshold.label"
+                [subtitle]="threshold.source"
+              >
+                <fold-badge
+                  titleAction
+                  radius="pill"
+                  [variant]="tone(threshold.state)"
+                  [content]="label(threshold.state)"
+                />
+              </fold-element-title>
+              <fold-meter
+                [label]="
+                  (threshold.estimated ? '≈ ' : '') +
+                  (threshold.measured | number: '1.0-0') +
+                  ' / ' +
+                  (threshold.limit | number: '1.0-0') +
+                  ' ' +
+                  threshold.unit
+                "
+                [value]="threshold.measured"
+                [max]="threshold.limit"
+                [tone]="tone(threshold.state)"
+              />
+              <p class="message">{{ threshold.message }}</p>
+            </fold-card>
+          </li>
+        }
+      </ul>
+    }
+  }
+}

@@ -26,3 +26,10 @@ export type { OpsSignal, OpsSink, OpsReporter, OpsReporterOptions } from "./repo
 
 export { WEB_VITALS, isWebVitalName, VITAL_THRESHOLDS, VITAL_MAX, vitalVerdict } from "./vitals.js";
 export type { WebVitalName, WebVitalSample } from "./vitals.js";
+
+export type {
+  MediaThreshold,
+  MediaThresholdKey,
+  MediaThresholdState,
+  MediaThresholdsReport,
+} from "./media.js";

@@ -12,6 +12,7 @@ import type { EcosystemHealth, HealthReason, TrafficReport } from '@lfd/ops-cont
 
 import { ChargeTable } from '../charge-table/charge-table';
 import { DeadLetters } from '../dead-letters/dead-letters';
+import { MediaThresholds } from '../media-thresholds/media-thresholds';
 import { EcosystemMap } from '../ecosystem-map/ecosystem-map';
 import { OpsService } from '../ops.service';
 import { elapsedSince } from '../elapsed';
@@ -50,6 +51,7 @@ type LoadState = 'loading' | 'ready' | 'error';
     DecimalPipe,
     EcosystemMap,
     FoldLoadingStateComponent,
+    MediaThresholds,
   ],
   templateUrl: './sante-page.html',
   styleUrl: './sante-page.scss',

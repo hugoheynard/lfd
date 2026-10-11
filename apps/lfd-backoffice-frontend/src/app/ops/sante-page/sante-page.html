@@ -105,6 +105,12 @@
   </footer>
 }
 
+<!-- Hors du bloc de la carte, comme les messages morts : un seuil approché
+     n'est pas une panne, et sa lecture ne suit pas le rafraîchissement. -->
+<section aria-label="Seuils de la médiathèque">
+  <app-media-thresholds />
+</section>
+
 <!-- Hors du bloc de la carte, exprès : les messages morts ont leur propre
      lecture, et ne s'effacent pas quand la carte se relit. -->
 <section aria-label="Messages morts">

@@ -132,6 +132,38 @@ lever le doute, du moins cher au plus tardif : cliquer « Purchase » sur
 l'offre à 0 $ (on verra si une carte est demandée), demander au support, ou
 surveiller le poids servi en approchant des 1 250 images.
 
+### 5 bis. Les seuils qu'on surveille
+
+La carte de santé du back-office (**OPS → Santé**, carte « Médiathèque — les
+seuils », route `GET /admin/ops/media`) compte les images au fonds et les
+juge contre trois limites. Le compte du fonds est la borne supérieure de toute
+lecture filtrée : un filtre large n'en lit jamais plus.
+
+| Seuil                            | Mesure                  | Limite                 | Source                                                                  | Geste de sortie            |
+| -------------------------------- | ----------------------- | ---------------------- | ----------------------------------------------------------------------- | -------------------------- |
+| Transformations Cloudflare       | images × 4 (**estimé**) | 5 000 / mois           | ce document, §5                                                         | souscrire Images & Stream  |
+| Tri par emplois, « inutilisées » | images au fonds         | 5 000 images           | [`../mediatheque/mediatheque.md`](../mediatheque/mediatheque.md) §5     | restreindre avant de trier |
+| Frise des couleurs               | images au fonds         | 20 000 images (estimé) | [`../mediatheque/mediatheque.md`](../mediatheque/mediatheque.md) §9 bis | pré-agréger la frise       |
+
+Chaque seuil a trois états : **OK** sous 80 % de la limite, **Attention**
+à partir de 80 %, **Dépassé** dès que la limite est atteinte (l'image suivante
+fait basculer). Le message de l'état porte le geste de sortie. Les constantes
+et leur source sont dans `apps/lfd-api/src/ops/media/media-thresholds.ts` ;
+la limite du tri y est recopiée de `MAX_RANKED_IMAGES`, qu'`ops` n'a pas le
+droit d'importer.
+
+**Quand passer au payant** : quand la carte des transformations passe en
+**Attention**, soit vers **1 000 images** au fonds (4 000 transformations
+estimées), il est temps de lever le doute du §5 et de souscrire
+Images & Stream ; à **1 250 images**, le palier gratuit est atteint et la carte
+passe à **Dépassé**. L'estimation compte quatre transformations uniques par
+image et par mois ; elle surestime un mois où une partie du fonds n'est pas
+vue, et ne mesure rien : le chiffre réel est dans le tableau de bord
+Cloudflare (Images → Transformations).
+
+La sonde ne pèse sur rien d'autre : elle a sa propre route, hors de
+`/admin/ops/health` et de la readiness — un seuil approché n'est pas une panne.
+
 ---
 
 ## 6. Vérifier

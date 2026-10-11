@@ -3,7 +3,7 @@ import { inject, Injectable } from '@angular/core';
 import { firstValueFrom } from 'rxjs';
 
 import type { DeadLettersView } from '@lfd/contracts';
-import type { EcosystemHealth, TrafficReport } from '@lfd/ops-contract';
+import type { EcosystemHealth, MediaThresholdsReport, TrafficReport } from '@lfd/ops-contract';
 
 import { B2B_API_BASE } from '../api/api-config';
 
@@ -26,6 +26,11 @@ export class OpsService {
     return firstValueFrom(
       this.http.get<TrafficReport>(`${B2B_API_BASE}/admin/ops/traffic?minutes=${minutes}`),
     );
+  }
+
+  /** Le fonds de la médiathèque face à ses limites connues, jugé côté serveur. */
+  mediaThresholds(): Promise<MediaThresholdsReport> {
+    return firstValueFrom(this.http.get<MediaThresholdsReport>(`${B2B_API_BASE}/admin/ops/media`));
   }
 
   /** Les messages morts de la boîte d'envoi, les plus récents d'abord, bornés. */
