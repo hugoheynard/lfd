@@ -20,7 +20,7 @@ export const REANNOUNCE_PRODUCT_MEDIA = "pim.reannounce-product-media";
 
 /**
  * **Le point focal posé à la médiathèque arrive en boutique sans republier**
- * (L4 de `documentation/mediatheque/plan-la-mediatheque-amelioree.md`,
+ * (cf. `documentation/mediatheque/mediatheque.md` §7,
  * 2026-10-10).
  *
  * La vitrine garde une COPIE des visuels d'une fiche — URL, alternative,

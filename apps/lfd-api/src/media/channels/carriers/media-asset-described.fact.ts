@@ -7,8 +7,8 @@ export const MEDIA_ASSET_DESCRIBED = "media.asset_described";
 /**
  * **Ce que les porteurs montrent d'une image a changé** — fait DURABLE que la
  * médiathèque DÉCLARE dans son canal vers les porteurs, et écrit dans la
- * transaction de `SaveMediaDetailsHandler` (L4 de
- * `documentation/mediatheque/plan-la-mediatheque-amelioree.md`, 2026-10-10).
+ * transaction de `SaveMediaDetailsHandler` (cf.
+ * `documentation/mediatheque/mediatheque.md` §7, 2026-10-10).
  *
  * Sans lui, déplacer le point focal à la médiathèque ne changeait rien en
  * boutique : la vitrine garde une COPIE des visuels, et seuls un

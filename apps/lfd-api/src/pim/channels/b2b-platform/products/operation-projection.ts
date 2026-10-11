@@ -83,7 +83,7 @@ export interface OperationImageFocal {
 
 /**
  * **Le point focal des images d'opération**, posé sur une projection déjà
- * faite (L10 de `documentation/mediatheque/plan-la-mediatheque-amelioree.md`,
+ * faite (cf. `documentation/mediatheque/mediatheque.md` §7 bis,
  * 2026-10-11). Pure : les points sont lus à la médiathèque par l'appelant,
  * AU PUSH — une redescription ne suit qu'au push suivant, comme l'image.
  *

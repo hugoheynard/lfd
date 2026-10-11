@@ -1,6 +1,6 @@
 /**
- * E2E — **le point focal jusqu'à la vitrine** (L10 de
- * `documentation/mediatheque/plan-la-mediatheque-amelioree.md`, 2026-10-11).
+ * E2E — **le point focal jusqu'à la vitrine** (cf.
+ * `documentation/mediatheque/mediatheque.md` §7 bis, 2026-10-11).
  *
  * Ce que seul ce niveau prouve : que les colonnes et leurs CHECK de
  * `20261011140000_le_point_focal_jusqu_a_la_vitrine` tiennent, que le point

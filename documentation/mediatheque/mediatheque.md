@@ -10,6 +10,12 @@
 > par leur nom : elles ne se retouchent pas, et leur texte se retrouve dans
 > l'historique git (ce document les remplace tous).
 >
+> **Relue le 2026-10-11** (`dev` = `b19e0a893`) pour y fondre le plan de la
+> médiathèque améliorée, retiré ce jour-là : ses décisions, toutes validées
+> par Hugo, sont devenues les règles énoncées ci-dessous, là où elles
+> s'appliquent. Cinq migrations citent encore ce plan par son nom : elles ne
+> se retouchent pas.
+>
 > Ce qui reste à faire est au §11, et **nulle part ailleurs**.
 
 ---
@@ -51,24 +57,43 @@ Il en découle trois propriétés :
   jamais par l'identifiant de ligne.
 
 ⚠️ **La contrepartie : retoucher une photo crée une AUTRE image.** D'autres
-octets, donc une autre URL. Le geste « Remplacer » (L7, `POST /media/replace`)
+octets, donc une autre URL. Le geste « Remplacer » (`POST /media/replace`)
 fait passer TOUS les porteurs de l'ancienne à la nouvelle en une unité :
-fiches, familles, opérations, objets de vitrine, porte de l'accueil. Un
-porteur qui affichait déjà la nouvelle sous le même rôle garde une seule
-ligne (R19). L'ancienne reste au fonds (D5) ; la boutique suit sans
-republier (fait durable `media.asset_described` sur la nouvelle). L'écran
-propose de reprendre la description de l'ancienne quand la nouvelle n'en a
-pas.
+fiches, familles, opérations, objets de vitrine, porte de l'accueil. Le canal
+des porteurs l'exprime par `MediaCarriers.repoint(replacement, ticket)`, qui
+exige un `WriteTicket` ; la vitrine y signe sa révision, si bien qu'un
+éditeur ouvert avant le remplacement est refusé (409) au lieu de réécrire
+l'ancienne URL.
 
-⚠️ **Une copie au commerce compte comme porteur** (R18). L'image d'une
-opération n'est copiée au commerce qu'au push : tant qu'une opération poussée
-affiche l'ancienne image, celle-ci n'est ni retirable ni ramassable — le
-panneau des porteurs la nomme « Boutique — opération « X » (copie, suit au
-prochain envoi du catalogue) », et le prochain push la libère.
+- Un porteur qui affichait déjà la nouvelle **sous le même rôle** garde une
+  seule ligne, celle de l'ancienne, à son rang : remplacer garde la place.
+  Sous deux rôles différents, les deux restent.
+- **L'ancienne reste au fonds** ; le ramassage l'emporte après 7 jours sans
+  porteur (§9).
+- **La boutique suit sans republier** : le remplacement écrit le fait durable
+  `media.asset_described` sur la nouvelle, et les abonnés du §7 la recadrent
+  sur **son** point focal.
+- **Déposer et remplacer sont deux appels**, pas une route : une route
+  combinée échouerait à moitié (nouvelle image entrée, remplacement refusé).
+- À l'écran, le panneau de l'image se ferme pendant le remplacement (fold
+  n'ouvre qu'un panneau à la fois), et « Remplacer… » est inactif tant que la
+  description a des modifications. La reprise de la description de l'ancienne
+  est proposée, cochée d'office seulement si la nouvelle n'en a aucune : on
+  n'écrase jamais une description sans geste.
+
+⚠️ **Une copie au commerce compte comme porteur.** L'image d'une opération
+n'est copiée au commerce qu'au push : tant qu'une opération poussée affiche
+l'ancienne image, celle-ci n'est ni retirable ni ramassable — le panneau des
+porteurs la nomme « Boutique — opération « X » (copie, suit au prochain envoi
+du catalogue) », et le prochain push la libère. Une opération finie ou
+masquée compte encore tant qu'un envoi ne l'a pas retirée : un effacement ne
+dépend pas d'un calcul de date. Les copies d'image des **articles**, elles, ne
+comptent pas : la projection vive les réécrit.
 
 ⚠️ **Ce qu'un redépôt ne rend pas** : l'étiquette, les mots-clés,
 l'alternative et le point focal. Ils décrivent l'image, pas ses octets. **Et
-il ne change pas sa série** : une image garde celle de son premier dépôt (D2).
+il ne change pas sa série** : une image garde celle de son premier dépôt, et
+le compte rendu du lot le dit.
 
 ---
 
@@ -169,18 +194,18 @@ Une image a **une** ligne : la lecture ne regroupe rien, la page est un
 
 ## 5. Les gestes
 
-| Geste                            | Route                                                          | Où, à l'écran                      | Ce qu'il tient                                                                                                                                                                                                                                                                                                              |
-| -------------------------------- | -------------------------------------------------------------- | ---------------------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| Parcourir, trier, filtrer        | `GET /media?after=&sort=&q=&tags=&from=&to=&untagged=&unused=` | médiathèque (le fil), sélecteur    | par **curseur** (`next`), jamais par décalage : un dépôt pendant qu'on défile ne crée ni doublon ni saut. Tris : dépôt, étiquette (vides en dernier), emplois. `tags` filtre par `hasEvery`. Les emplois venant des porteurs, le tri par emplois et « inutilisées » classent en mémoire, bornés à 5000 images (409 au-delà) |
-| Déposer                          | `POST /media` (multipart)                                      | **médiathèque seulement**          | PNG, JPEG ou WebP, lu dans les octets ; 10 Mo ; 200 px de côté au moins ; garde de transport à 25 Mo                                                                                                                                                                                                                        |
-| Voir les refus                   | `GET /media/failures`                                          | médiathèque                        | l'historique survit au rechargement ; il ne **rejoue** pas, puisque l'octet n'a pas été stocké                                                                                                                                                                                                                              |
-| Nommer, taguer, décrire, pointer | `PUT /media`                                                   | médiathèque                        | les tags sont découpés, mis en minuscules et dédoublonnés (`mediaTags`)                                                                                                                                                                                                                                                     |
-| Le vocabulaire                   | `GET /media/tags`                                              | la bande de tags                   | chaque mot du fonds ENTIER et son nombre d'images — jamais la page chargée                                                                                                                                                                                                                                                  |
-| Renommer, fusionner un mot       | `PUT /media/tags/rename`                                       | menu de la pastille                | partout, en une unité ; la fusion avec un mot existant est annoncée avant de valider                                                                                                                                                                                                                                        |
-| Retirer un mot partout           | `DELETE /media/tags?tag=`                                      | menu de la pastille                | confirmation avec le compte ; les images restent                                                                                                                                                                                                                                                                            |
-| Qui l'affiche ?                  | `GET /media/carriers?url=`                                     | médiathèque                        | les porteurs, nommés et cliquables, pas un simple compte                                                                                                                                                                                                                                                                    |
-| Retirer du fonds                 | `DELETE /media?url=`                                           | médiathèque                        | **409 dès qu'un porteur l'affiche**, avec leur nombre                                                                                                                                                                                                                                                                       |
-| Choisir, donner un usage         | `PUT` du porteur                                               | fiche, famille, opération, vitrine | le porteur écrit sa propre table de rattachement ; il ne touche jamais le fonds                                                                                                                                                                                                                                             |
+| Geste                            | Route                                                                            | Où, à l'écran                      | Ce qu'il tient                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                      |
+| -------------------------------- | -------------------------------------------------------------------------------- | ---------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| Parcourir, trier, filtrer        | `GET /media?after=&sort=&q=&tags=&from=&to=&shotFrom=&shotTo=&untagged=&unused=` | médiathèque (le fil), sélecteur    | par **curseur** (`next`), jamais par décalage : un dépôt pendant qu'on défile ne crée ni doublon ni saut. Tris : dépôt, prise de vue, étiquette (vides en dernier), emplois. `tags` filtre par `hasEvery`. Le tri par emplois et « inutilisées » sont bornés à 5 000 images filtrées (409, « restreignez d'abord ») : les emplois viennent des porteurs, il n'y a pas de pagination SQL possible. « Inutilisées » garde ainsi un total exact, plutôt que des pages courtes qui promettraient des pages inexistantes |
+| Déposer                          | `POST /media` (multipart)                                                        | **médiathèque seulement**          | PNG, JPEG ou WebP, lu dans les octets ; 10 Mo ; 200 px de côté au moins ; garde de transport à 25 Mo                                                                                                                                                                                                                                                                                                                                                                                                                |
+| Voir les refus                   | `GET /media/failures`                                                            | médiathèque                        | l'historique survit au rechargement ; il ne **rejoue** pas, puisque l'octet n'a pas été stocké                                                                                                                                                                                                                                                                                                                                                                                                                      |
+| Nommer, taguer, décrire, pointer | `PUT /media`                                                                     | médiathèque                        | les tags sont découpés, mis en minuscules et dédoublonnés (`mediaTags`)                                                                                                                                                                                                                                                                                                                                                                                                                                             |
+| Le vocabulaire                   | `GET /media/tags`                                                                | la bande de tags                   | chaque mot du fonds ENTIER et son nombre d'images — jamais la page chargée                                                                                                                                                                                                                                                                                                                                                                                                                                          |
+| Renommer, fusionner un mot       | `PUT /media/tags/rename`                                                         | menu de la pastille                | partout, en une unité ; la fusion avec un mot existant est annoncée avant de valider                                                                                                                                                                                                                                                                                                                                                                                                                                |
+| Retirer un mot partout           | `DELETE /media/tags?tag=`                                                        | menu de la pastille                | confirmation avec le compte ; les images restent                                                                                                                                                                                                                                                                                                                                                                                                                                                                    |
+| Qui l'affiche ?                  | `GET /media/carriers?url=`                                                       | médiathèque                        | les porteurs, nommés et cliquables, pas un simple compte                                                                                                                                                                                                                                                                                                                                                                                                                                                            |
+| Retirer du fonds                 | `DELETE /media?url=`                                                             | médiathèque                        | **409 dès qu'un porteur l'affiche**, avec leur nombre                                                                                                                                                                                                                                                                                                                                                                                                                                                               |
+| Choisir, donner un usage         | `PUT` du porteur                                                                 | fiche, famille, opération, vitrine | le porteur écrit sa propre table de rattachement ; il ne touche jamais le fonds                                                                                                                                                                                                                                                                                                                                                                                                                                     |
 
 🔴 **On ne dépose qu'à la médiathèque**, et c'est un choix de métier. Celui qui
 alimente et tague le fonds n'est pas celui qui rédige les fiches. Un dépôt
@@ -193,14 +218,23 @@ le geste y est inexprimable.
 Une barre d'outils (recherche, tri, période, « Non taguées », « Inutilisées »,
 mots-clés filtrés, compte) au-dessus d'une grille qui charge la page suivante
 en approchant du bas. Sous le tri par dépôt, des intercalaires de mois à
-l'heure de Paris — jamais par tag, une image y paraîtrait plusieurs fois (D4).
-L'adresse porte la vue, sans le curseur.
+l'heure de Paris — jamais par tag, une image y paraîtrait plusieurs fois : on
+**filtre** par tag, on **regroupe** par date et par série. L'adresse porte la
+vue, sans le curseur.
+
+`shotFrom` / `shotTo` filtrent par **jour de prise de vue**, bornes incluses :
+la date de la série, le jour de dépôt à l'heure de Paris à défaut — la même
+date que la frise (§9 bis). Une période inversée est refusée en 400
+(`shotPeriodOf`, `media/application/library-period.ts`). L'écran les montre
+en pastille « Prises du … au … » (`shotRangeLabel`, `media-feed-url.ts`), qui
+se retire d'un clic.
 
 ### Les séries
 
 Une série dit l'**origine** d'un lot d'images : « Shooting carte 2026 », sa
-date de prise de vue, sa note d'intention. Facultative au dépôt (D3) ; une
-image en a au plus une, celle de son premier dépôt (D2).
+date de prise de vue, sa note d'intention. Facultative au dépôt ; une image
+en a au plus une, celle de son premier dépôt. Le fait `media_asset.deposited`
+nomme la série, pour savoir qui a rangé quelle image où.
 
 | Geste                  | Route                        | Ce qu'il tient                                                              |
 | ---------------------- | ---------------------------- | --------------------------------------------------------------------------- |
@@ -221,7 +255,9 @@ reste l'autorité. Pas de suppression de série.
 Une **pastille unique** (`tag-chip`) sert partout : bande (mot et compte,
 menu intégré), tuile (×), filtre, panneau de l'image (mots portés et
 suggestions). Retirer un mot d'une tuile est immédiat et s'annule pendant six
-secondes (D1 du plan). Chaque geste de tags renvoie l'alternative de l'image
+secondes. La recherche de la bande ignore accents et casse pour filtrer, mais
+« Créer » reste exact : le serveur tient « eclair » et « éclair » pour deux
+mots, et le filtre montre le voisin (`tag-palette.ts`). Chaque geste de tags renvoie l'alternative de l'image
 telle qu'elle est : le serveur lit une alternative **absente** comme effacée
 (c'est ainsi que le panneau la vide), et ces gestes l'ont effacée jusqu'au
 2026-10-10.
@@ -278,12 +314,14 @@ médiathèque » d'une fiche rend 403. Le rôle `communication` a aussi
   (`apps/lfd-backoffice-frontend/src/app/pim/catalogue/media-roles.ts`) : elle
   recopie ce que `showcase.ts` fait traverser, et doit le suivre.
 
-- **Les formats se signalent, ils ne se refusent jamais** (L5, 2026-10-10).
-  Une seule table, `pim/catalogue/media-formats.ts` du back-office, recopiée
+- **Les formats se signalent, ils ne se refusent jamais.** Une seule table, `pim/catalogue/media-formats.ts` du back-office, recopiée
   des feuilles de style de la boutique : ouverture et vignette 4/3 (l'ancien
   libellé « 3/2 » était faux), mise en situation 16/9, tirage 1/1 ; cadres
   d'aperçu 4/3, 1/1, 16/9, 21/9. Au-delà de 8 % d'écart entre l'image et son
-  usage, le panneau d'usage le dit et la tuile porte « Format ». ⚠️ Cette
+  usage, le panneau d'usage le dit et la tuile porte « Format » : en dessous
+  (≈ 4 % rognés par bord), `cover` ne se voit pas ; un 3/2 posé en 4/3
+  (12,5 %) est signalé. Le 21/9 est celui des grandes bannières et des
+  opérations, le 16/9 celui des cartes d'info de la vitrine. ⚠️ Cette
   table recopie la boutique : changer un `aspect-ratio` là-bas demande de la
   suivre ici.
 
@@ -318,7 +356,7 @@ sequenceDiagram
   réécrit aussi `image_*` et `thumbnail_*`. Les deux lisent la même source :
   la projection fait la fraîcheur, le push fait la réparation. Une image qui
   « revient » après une publication n'est pas un défaut.
-- **Le point focal voyage** (L4, 2026-10-10). `ImageCatalogue` le rend ; le
+- **Le point focal voyage.** `ImageCatalogue` le rend ; le
   fait des visuels et le fil (`syncMediaSchema.focal`, facultatif, sans
   changer de version) le portent ; `catalog_items` le range en
   `image_focal_x/y` et `thumbnail_focal_x/y` (migration
@@ -330,8 +368,8 @@ sequenceDiagram
   `media.asset_described` (`media/channels/carriers/`) dans sa transaction ;
   le référentiel l'écoute (`on-media-asset-described.ts`, `@DurableHandler`)
   et réannonce `pim.product_media_changed` pour chaque fiche qui porte l'URL
-  en `hero` ou `thumbnail`. Ni familles, ni opérations, ni vitrine : elles
-  n'ont pas de copie projetée.
+  en `hero` ou `thumbnail`. Un second abonné recadre la vitrine (§7 bis) ;
+  familles et opérations n'ont pas de copie projetée.
 - **La boutique garde une copie de l'URL** : le snapshot vaut aussi pour
   l'image. Repointer le référentiel ne repointe la boutique que par l'un de
   ces deux chemins.
@@ -339,6 +377,84 @@ sequenceDiagram
   demande une transformation Cloudflare à la largeur affichée, avec un
   `srcset`. Mesures, réglages et repli silencieux :
   [`../ops/cloudflare-images.md`](../ops/cloudflare-images.md) §3.
+
+---
+
+## 7 bis. Le point focal hors des fiches : vitrine et opérations
+
+La bannière, les cartes d'info, la porte « Je passe la prendre » et la
+bannière d'opération se cadrent sur le point focal de la médiathèque — au
+centre seulement quand l'image n'en a pas.
+
+```mermaid
+sequenceDiagram
+    participant ED as Éditeur de vitrine
+    participant MED as media — SaveMediaDetails / ReplaceMedia
+    participant OB as Boîte d'envoi
+    participant RB as appBootstrap — storefront.refocus-images
+    participant SF as b2b/storefront — Storefront.refocus
+    participant PUSH as push du catalogue
+    participant SHOP as Boutique
+
+    ED->>SF: enregistrer {url, alt, focal} (focal lu au choix dans la médiathèque)
+    MED->>OB: media.asset_described {url} (même transaction)
+    OB->>RB: livraison durable
+    RB->>MED: ImageCatalogue.describe([url]) — le point d'AUJOURD'HUI
+    RB->>SF: RefocusStorefrontImageCommand(url, focal)
+    SF->>SF: load → refocus → save (révision +1)
+    PUSH->>SHOP: opérations : focal lu dans la médiathèque au push
+    SHOP->>SHOP: object-position / background-position
+```
+
+- **À l'enregistrement**, `StorefrontImage` porte `{ url, alt, focal? }`
+  (`focal ∈ [0,1]²`) : l'éditeur envoie le point qu'il lit dans la
+  médiathèque. Il est rangé en `image_focal_x/y` (`storefront_content`) et
+  `pickup_door_focal_x/y` (`storefront_page`), nullables, avec un `CHECK`
+  « les deux ou aucune » (migration
+  `20261011140000_le_point_focal_jusqu_a_la_vitrine`). Le contrat public
+  (`storefrontImageSchema`, `@lfd/contracts`) sert `focal`, facultatif.
+- **Quand la médiathèque redécrit** : `RefocusStorefrontOnMediaDescribed`
+  (`appBootstrap/storefront-media-focus.ts`, abonné durable
+  `storefront.refocus-images`) écoute `media.asset_described`. Il vit dans la
+  racine parce que `b2b → media` est hors de la matrice : seule elle voit les
+  deux blocs. Il relit le point courant, pas celui du geste — un fait rejoué
+  tard pose le point d'aujourd'hui, et une image retirée entre-temps n'est pas
+  recadrée.
+- **Le recadrage passe par l'agrégat** : `Storefront.refocus(url, focal, at)`
+  recadre chaque objet et page qui porte l'URL, et monte la révision — un
+  éditeur ouvert avant est refusé (409) au lieu de réécrire l'ancien point.
+  Il **garde l'auteur du dernier enregistrement** et pose `updated_at` à
+  l'instant du recadrage : la décision est `media_asset.described`, tracée à
+  la médiathèque, et la vitrine n'a pas été composée par quelqu'un (pas de
+  `storefront.saved`). Sans porteur, ou sur une vitrine jamais composée, rien
+  n'est écrit et la révision ne monte pas.
+- **Un remplacement A → B recadre sur le point de B** : le fait
+  `media.asset_described` est écrit sur B (§2).
+- **Les opérations** reçoivent le point au **push**, dans le snapshot
+  (`packages/catalog-sync`), lu dans la médiathèque à ce moment-là, rangé en
+  `catalog_operations.image_focal_x/y`. Comme leur image, il ne suit une
+  redescription qu'au push suivant.
+- **La boutique** pose `object-position` sur les infos et les bannières,
+  `background-position` sur la porte (fond CSS), par le calcul de
+  `objectPositionOf` (`shelf-display.ts`).
+
+### L'accueil de la vitrine
+
+- La page « Accueil » de la vitrine porte la **porte « Je passe la prendre »**
+  en réglage de page (`pickupDoorImage`), pas en objet de grille : la porte
+  n'est pas dans la grille, et un objet aurait demandé une position et une
+  règle « une seule porte » pour rien. Elle compte comme porteur. Le bandeau
+  visiteur affiche la même image, avec son alternative ; la porte d'un pro,
+  décorative à côté de son libellé, n'en porte pas (fond CSS). Son aperçu
+  dans l'éditeur est en 2/1, faute de ratio fixe côté boutique.
+- Une **bannière 21/9** se pose partout, accueil et rayons, comme la bande
+  double de même emprise. La grille de vitrine se pose juste avant « En ce
+  moment », après les portes, qui restent le geste principal.
+- **L'opération mise en avant** (`featuredOperation`, `operation-event.ts`) :
+  les ouvertes, puis les annoncées, puis les closes ; à égalité, l'échéance
+  la plus proche. Son décompte (`datedEventOf`) court jusqu'à la clôture
+  (ouverte) ou l'ouverture (annoncée), « Dernier jour » le jour même, en jours
+  de Paris. Sa carte mène au rayon de l'opération (`/boutique?rayon=op:<key>`).
 
 ---
 
@@ -352,7 +468,7 @@ rassemblé dans [`../ops/cloudflare-images.md`](../ops/cloudflare-images.md).
 
 ---
 
-### La fenêtre du retrait — assumée (D6)
+### La fenêtre du retrait — assumée
 
 `DiscardMediaHandler` compte les porteurs **puis** supprime. Si un porteur
 choisit l'image entre les deux — une fiche enregistrée pendant l'aller-retour
@@ -411,7 +527,11 @@ flowchart LR
 - ⚠️ Le canvas ne lit une image servie par R2 que si le bucket l'autorise
   (CORS). Sans quoi la colonne reste hachurée, sans erreur. Vérifié en dev,
   pas en production.
-- Pas de clic (le feed ne filtre pas par prise de vue), pas de clavier.
+- **Un clic sur une colonne ouvre ses photos** : il pose `shotFrom` /
+  `shotTo` sur le fil (§5), la plage de jours de prise de vue de la colonne,
+  la même date que l'axe de la frise.
+- Pas de clavier : un canvas unique, qui double une information que le fil
+  donne déjà.
 
 ## 10. Ce qui est journalisé
 
@@ -445,10 +565,9 @@ emporterait.
 
 ## 11. Les points à faire
 
-La **dette** a été soldée le 2026-10-10 (encadré ci-dessous). Ce qui reste
-est de l'**amélioration** : des capacités que le fonds n'a pas encore. Les
-lignes marquées 🔵 attendent une décision ou un constat de Hugo. Leur plan, avec les décisions de
-Hugo : [`plan-la-mediatheque-amelioree.md`](plan-la-mediatheque-amelioree.md).
+La **dette** a été soldée le 2026-10-10 (encadré ci-dessous). Ce qui reste,
+au 2026-10-11, est ici et nulle part ailleurs. Les lignes marquées 🔵
+attendent une décision ou un constat de Hugo.
 
 > **Soldé le 2026-10-10**
 >
@@ -463,22 +582,31 @@ Hugo : [`plan-la-mediatheque-amelioree.md`](plan-la-mediatheque-amelioree.md).
 > - l'index GIN déclaré au schéma, le doublon sur `url` retiré (`158bf9273`) ;
 > - l'écran dit qu'un visuel en usage non publié n'apparaît nulle part (§6).
 
-Le plan [`plan-la-mediatheque-amelioree.md`](plan-la-mediatheque-amelioree.md)
-tient l'avancement lot par lot, et ses décisions prises sans Hugo (R1…) à
-revoir. Ce qui reste, au 2026-10-10 :
-
-1. **L'accueil (L6) est bâti** — la vitrine a une page « Accueil » (bannière
-   21/9, photo de la porte « Je passe la prendre » choisie au fonds) ; la
-   photo du fournil n'est plus une URL tierce. Rien n'est encore choisi :
-   déposer la photo au fonds puis la poser dans l'éditeur de vitrine.
-2. **L'image d'une opération ne suit qu'au push** : après un remplacement,
-   l'annonce en boutique garde l'ancienne image jusqu'à la prochaine
-   publication (R18 l'empêche seulement de casser). Une projection vive des
-   opérations fermerait l'écart.
-3. **Le préfixe de clé s'appelle `products`** alors que le fonds sert tout
+1. **La photo du fournil n'est pas choisie** : la page « Accueil » l'attend
+   au fonds. La déposer, puis la poser dans l'éditeur de vitrine ; regarder
+   alors le rendu 21/9 sur une vraie photo.
+2. **L'image d'une opération ne suit qu'au push**, son point focal aussi :
+   après un remplacement ou une redescription, l'annonce en boutique garde
+   l'ancien état jusqu'à la prochaine publication (le compte des porteurs
+   l'empêche seulement de casser, §2). Une projection vive des opérations
+   fermerait l'écart.
+3. **La parité du catalogue ignore le point focal des opérations** : un écart
+   entre `catalog_operations.image_focal_*` et la médiathèque ne s'y voit pas.
+4. **Les aperçus de l'éditeur de vitrine se recadrent encore au centre**
+   (`storefront-door-panel.scss` le dit), alors que la boutique pose le point.
+5. **Deux recadrages quasi simultanés** de la même vitrine se disputent la
+   révision : le second échoue et la livraison durable le rejoue. Le chemin
+   est écrit, il n'est éprouvé par aucun test.
+6. **Des fichiers dépassent 300 lignes** : `mediatheque-page.ts` (≈ 710),
+   `image-panel.ts` (≈ 510).
+7. **Le préfixe de clé s'appelle `products`** alors que le fonds sert tout
    porteur. C'est une valeur, pas un nom : il ne se renomme pas sans migrer
    les URL, et rien ne l'exige.
-4. **🔵 Au-delà de 5 000 transformations par mois**, l'offre Images & Stream
+8. **🔵 CORS du bucket R2 en production** : la frise (§9 bis) n'y a pas été
+   vérifiée ; sans lui, les colonnes restent hachurées sans erreur.
+9. **🔵 Au-delà de 5 000 transformations par mois**, l'offre Images & Stream
    n'étant pas souscrite : facturé, ou arrêté ? Cf.
    [`../ops/cloudflare-images.md`](../ops/cloudflare-images.md) §5.
-5. **🔵 Recadrage automatique** des images sans point (R8 du plan) : non fait.
+10. **🔵 Recadrage automatique** (`gravity=auto`) des images sans point : non
+    fait, le centre reste le défaut. Changer `fit` touche toutes les tuiles et
+    le compte des transformations : à mesurer avant.

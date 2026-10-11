@@ -11,8 +11,8 @@ export interface StorefrontImageChange {
 
 /**
  * **Repointer une image dans la vitrine** — le pendant d'écriture de
- * {@link StorefrontMediaUsage}, publié par le même canal (L7 du plan
- * `documentation/mediatheque/plan-la-mediatheque-amelioree.md`, 2026-10-10).
+ * {@link StorefrontMediaUsage}, publié par le même canal (cf.
+ * `documentation/mediatheque/mediatheque.md` §2, 2026-10-10).
  *
  * Deux ports et pas un (ISP) : compter les emplois sert au ramassage et au
  * retrait, qui n'ont rien à faire d'un port capable de réécrire la vitrine.

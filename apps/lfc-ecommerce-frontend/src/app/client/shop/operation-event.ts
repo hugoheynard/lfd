@@ -11,7 +11,7 @@ import { operationShelfId, operationText, pickupSpan, shortDate } from './operat
 
 /**
  * **L'opération datée mise en avant sur l'accueil** — Pâques, Noël, ce que le
- * fournil décide (L6 de `documentation/mediatheque/plan-la-mediatheque-amelioree.md`).
+ * fournil décide (cf. `documentation/mediatheque/mediatheque.md` §7 bis).
  *
  * Remplace la simulation `MOCK_EVENT` (retirée le 2026-10-10) : la carte est
  * désormais dérivée d'une {@link ShopOperationView} de `GET /shop/catalogue`,

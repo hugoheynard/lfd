@@ -1,6 +1,6 @@
 /**
- * E2E — **l'accueil de la vitrine** (plan
- * `documentation/mediatheque/plan-la-mediatheque-amelioree.md`, L6, D7, D9).
+ * E2E — **l'accueil de la vitrine** (cf.
+ * `documentation/mediatheque/mediatheque.md` §7 bis).
  *
  * Ce que seul ce niveau prouve : que la page `home` et sa porte passent les
  * CHECK de la migration `20261010220000_l_accueil_de_la_vitrine`, que la

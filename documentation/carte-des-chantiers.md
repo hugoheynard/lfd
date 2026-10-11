@@ -41,8 +41,8 @@ Quatre déploiements réussis ; `/api/lfd/health` à 200 par la passerelle (et
 
 Ce qui est parti :
 
-- **La médiathèque, huit lots** (`mediatheque/mediatheque.md`,
-  `mediatheque/plan-la-mediatheque-amelioree.md`) : vocabulaire de mots-clés
+- **La médiathèque, huit lots** (`mediatheque/mediatheque.md`, où le plan a
+  été fondu le 2026-10-11) : vocabulaire de mots-clés
   du fonds entier (renommer, fusionner, retirer partout, annuler) ; le fil
   (curseur, tris, filtres, intercalaires, adresse) ; les séries (titre, prise
   de vue, note d'intention) et la vérification avant envoi ; le panneau de
@@ -64,11 +64,10 @@ Ce qui est parti :
 
 **À faire par Hugo :**
 
-- **Revoir les 26 décisions prises sans lui** (R1 à R26,
-  `mediatheque/plan-la-mediatheque-amelioree.md`, fin du document). En
-  priorité : R10 (la porte est un réglage de page), R12 (pas de point focal
-  sur les images de vitrine), R18/R23 (les copies du commerce retiennent une
-  image jusqu'au prochain push), R8 (pas de recadrage automatique).
+- ~~**Revoir les décisions prises sans lui**~~ : validées le 2026-10-11, R12
+  et R32 révisées (point focal sur la vitrine, clic de la frise) ; elles sont
+  devenues les règles de `mediatheque/mediatheque.md`, dont le §11 tient ce
+  qui reste (dont le recadrage automatique, à décider).
 - **Regarder en production** : une image produit reste centrée tant qu'aucun
   point n'est posé ; l'accueil s'affiche, sans photo de porte ; un dépôt
   marche avec et sans série.

@@ -34,8 +34,8 @@ export const DEFAULT_ROWS = 6;
  * `hero` est ici une FORME de la grille (3×2), pas le rôle d'image
  * « Ouverture » de la médiathèque.
  *
- * `banner` (2026-10-10, plan `documentation/mediatheque/plan-la-mediatheque-amelioree.md`,
- * L6, D9) : la grande bannière **21/9**, pleine largeur. Même emprise que la
+ * `banner` (2026-10-10, `documentation/mediatheque/mediatheque.md`,
+ * §7 bis) : la grande bannière **21/9**, pleine largeur. Même emprise que la
  * bande double (5×2) — c'est le rendu qui tient le 21/9, la grille ne connaît
  * que des cases —, mais une image PLEINE et rien d'autre (`media.ts`). Elle
  * se pose partout : l'accueil la veut, et rien sur un rayon ne s'y oppose

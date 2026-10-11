@@ -81,8 +81,8 @@ export type StorefrontFocal = z.infer<typeof storefrontFocalSchema>;
  * L'image d'une info ou de la porte : une URL de la médiathèque, son texte
  * alternatif, et son point focal.
  *
- * `focal` est **facultatif** (L10 de
- * `documentation/mediatheque/plan-la-mediatheque-amelioree.md`, 2026-10-11) :
+ * `focal` est **facultatif** (cf.
+ * `documentation/mediatheque/mediatheque.md` §7 bis, 2026-10-11) :
  * absent ou `null`, la boutique recadre au centre, ce qu'elle a toujours
  * fait. L'éditeur l'envoie au choix de l'image ; la médiathèque le fait
  * suivre quand elle redécrit l'image. Le serveur le rend toujours (`null`

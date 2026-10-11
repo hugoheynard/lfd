@@ -1,8 +1,8 @@
 import { DomainError } from "../../../platform/shared/errors/app-error.js";
 
 /**
- * **Une image remplacée par une autre** (L7 du plan
- * `documentation/mediatheque/plan-la-mediatheque-amelioree.md`, 2026-10-10) :
+ * **Une image remplacée par une autre** (cf.
+ * `documentation/mediatheque/mediatheque.md` §2, 2026-10-10) :
  * deux URL du fonds, bordées, et distinctes.
  *
  * Que les deux soient AU FONDS ne se décide pas ici — il faut le lire, et

@@ -1,8 +1,8 @@
 import type { StorefrontFocal } from "../domain/storefront-image.js";
 
 /**
- * Recadre une image de la médiathèque partout où la vitrine la montre (L10 de
- * `documentation/mediatheque/plan-la-mediatheque-amelioree.md`, 2026-10-11).
+ * Recadre une image de la médiathèque partout où la vitrine la montre (cf.
+ * `documentation/mediatheque/mediatheque.md` §7 bis, 2026-10-11).
  *
  * Envoyée par la racine de composition quand la médiathèque redécrit l'image
  * (`media.asset_described`) : la vitrine ne lit pas la médiathèque, elle

@@ -15,8 +15,8 @@ export interface CatalogueImage {
   /**
    * Le **point focal**, en fractions de 0 à 1 — là où un recadrage doit
    * garder l'œil. `null` = personne ne s'est prononcé : le porteur recadre au
-   * centre. Il voyage jusqu'à la vitrine (L4 de
-   * `documentation/mediatheque/plan-la-mediatheque-amelioree.md`).
+   * centre. Il voyage jusqu'à la vitrine (cf.
+   * `documentation/mediatheque/mediatheque.md` §7).
    */
   readonly focal: CatalogueFocal | null;
 }

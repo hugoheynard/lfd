@@ -15,8 +15,8 @@ export const REFOCUS_STOREFRONT_IMAGES = "storefront.refocus-images";
 
 /**
  * **Le point focal posé à la médiathèque arrive sur la vitrine** — bannières,
- * infos, porte « Je passe la prendre » (L10 de
- * `documentation/mediatheque/plan-la-mediatheque-amelioree.md`, 2026-10-11).
+ * infos, porte « Je passe la prendre » (cf.
+ * `documentation/mediatheque/mediatheque.md` §7 bis, 2026-10-11).
  *
  * 🔴 Ici, dans `appBootstrap/`, et pas dans `b2b/` : `b2b → media` est hors
  * de la matrice, et la vitrine ne lit pas la médiathèque. Seule la racine de

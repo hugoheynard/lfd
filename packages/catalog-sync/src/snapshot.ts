@@ -345,8 +345,8 @@ export const syncMediaSchema = z.object({
    * vitrine recadre autour de lui. `null` = personne ne s'est prononcé, et la
    * vitrine recadre au centre.
    *
-   * ⚠️ **Facultatif, et sans changer de version** (L4 de
-   * `documentation/mediatheque/plan-la-mediatheque-amelioree.md`,
+   * ⚠️ **Facultatif, et sans changer de version** (cf.
+   * `documentation/mediatheque/mediatheque.md` §7,
    * 2026-10-10). Un champ ajouté n'est pas une rupture de forme : un envoi qui
    * l'omet garde exactement le sens d'avant (« centre »), et un récepteur qui
    * ne le connaît pas l'ignore. Le rendre requis exigerait un bump ET ferait
@@ -469,8 +469,8 @@ export const syncOperationSchema = z.object({
   lede: syncLocalizedTextSchema.nullable(),
   /**
    * Une image de la médiathèque, ou `null`. Sans dimensions : l'annonce les
-   * recadre — autour de `focal`, lu à la médiathèque au moment du push (L10 de
-   * `documentation/mediatheque/plan-la-mediatheque-amelioree.md`, 2026-10-11).
+   * recadre — autour de `focal`, lu à la médiathèque au moment du push (cf.
+   * `documentation/mediatheque/mediatheque.md` §7 bis, 2026-10-11).
    * Facultatif et sans changer de version, pour la raison de
    * {@link syncMediaSchema} : un envoi qui l'omet dit « centre ».
    */

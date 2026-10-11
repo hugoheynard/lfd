@@ -1,6 +1,6 @@
 /**
- * E2E du **point focal jusqu'à la boutique** (L4 de
- * `documentation/mediatheque/plan-la-mediatheque-amelioree.md`, 2026-10-10).
+ * E2E du **point focal jusqu'à la boutique** (cf.
+ * `documentation/mediatheque/mediatheque.md` §7, 2026-10-10).
  *
  * Ce que seul ce niveau prouve : la chaîne entière, sur le vrai Postgres et la
  * vraie boîte d'envoi — la médiathèque décrit, le référentiel réannonce les

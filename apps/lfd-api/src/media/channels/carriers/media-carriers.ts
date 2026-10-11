@@ -67,8 +67,8 @@ export interface Carrier {
 }
 
 /**
- * **Remplacer une image partout où elle est affichée** (L7 du plan
- * `documentation/mediatheque/plan-la-mediatheque-amelioree.md`, 2026-10-10).
+ * **Remplacer une image partout où elle est affichée** (cf.
+ * `documentation/mediatheque/mediatheque.md` §2, 2026-10-10).
  *
  * `staffId` et `at` ne servent pas à repointer : ils servent aux porteurs qui
  * signent leurs écritures. La vitrine en est un — son verrou de révision

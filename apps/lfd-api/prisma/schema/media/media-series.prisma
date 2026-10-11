@@ -1,5 +1,5 @@
-/// **Une série** — des images prises ensemble, sous un même titre (plan L3,
-/// 2026-10-10 : `documentation/mediatheque/plan-la-mediatheque-amelioree.md`).
+/// **Une série** — des images prises ensemble, sous un même titre (2026-10-10 ;
+/// `documentation/mediatheque/mediatheque.md` §5).
 ///
 /// Elle REGROUPE, elle ne possède pas : une image a au plus une série, et la
 /// perd sans rien perdre d'autre. C'est pour ça que la référence est portée

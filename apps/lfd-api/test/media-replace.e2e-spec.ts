@@ -1,6 +1,6 @@
 /**
- * E2E du **remplacement d'une image** (L7 de
- * `documentation/mediatheque/plan-la-mediatheque-amelioree.md`, 2026-10-10).
+ * E2E du **remplacement d'une image** (cf.
+ * `documentation/mediatheque/mediatheque.md` §2, 2026-10-10).
  *
  * Ce que seul ce niveau prouve : que TOUS les porteurs sont repointés dans
  * une seule transaction, sur le vrai SQL — fiches (clé `(fiche, url, rôle)`,

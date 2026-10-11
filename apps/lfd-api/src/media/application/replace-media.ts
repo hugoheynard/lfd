@@ -22,8 +22,8 @@ export class ReplaceMediaCommand {
 }
 
 /**
- * **Remplacer une image** (L7 de
- * `documentation/mediatheque/plan-la-mediatheque-amelioree.md`, 2026-10-10).
+ * **Remplacer une image** (cf.
+ * `documentation/mediatheque/mediatheque.md` §2, 2026-10-10).
  *
  * L'identité d'une image est son URL — le hachage de ses octets. Retoucher
  * une photo en fait donc une AUTRE, qu'il fallait rechoisir porteur par
