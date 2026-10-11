@@ -135,6 +135,19 @@ describe("la carte de l'écosystème", () => {
     expect(board.nodes.every((node) => typeof node.reason === "string")).toBe(true);
   });
 
+  it("🔴 rattache le trafic à la gateway et à l'API au lieu de les laisser « inconnus »", async () => {
+    // Régression du 2026-10-11 : 48 requêtes à l'écran, et pourtant gateway et
+    // API en « aucune preuve » — le trafic arrivait sous la clé `lfd`, la carte
+    // attendait `b2b`. Le lecteur de répétition rend une fenêtre non vide.
+    const { body } = await health();
+    const board = body as { nodes: { node: string; reason: string }[] };
+    const reasonOf = (id: string): string | undefined =>
+      board.nodes.find((node) => node.node === id)?.reason;
+
+    expect(reasonOf("gateway")).not.toBe("no-evidence");
+    expect(reasonOf("b2b")).not.toBe("no-evidence");
+  });
+
   it("ne peint AUCUN nœud en orange faute de battement", async () => {
     // Aucune brique n'émet encore de heartbeat (J6). Si un `expectsHeartbeat`
     // était posé par erreur, toute la carte virerait au dégradé en permanence —

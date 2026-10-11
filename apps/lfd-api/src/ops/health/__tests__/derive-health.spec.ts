@@ -294,3 +294,27 @@ const BLANK: NodeHealth = {
   dependsOn: [],
   readings: [],
 };
+
+describe("la note d'une sonde debout sous condition", () => {
+  it("porte le détail de la sonde en note, sans changer la couleur", () => {
+    const [stripe] = derive([node({ id: "stripe", kind: "external-api" })], {
+      stripe: { probe: { verdict: "up", detail: "clé restreinte (lecture du solde refusée)" } },
+    });
+
+    expect(stripe).toMatchObject({
+      status: "up",
+      reason: "probe-ok",
+      note: "clé restreinte (lecture du solde refusée)",
+    });
+    expect(stripe?.lastError).toBeUndefined();
+  });
+
+  it("ne double pas en note la cause d'un nœud tombé", () => {
+    const [stripe] = derive([node({ id: "stripe", kind: "external-api" })], {
+      stripe: { probe: { verdict: "down", detail: "injoignable" } },
+    });
+
+    expect(stripe?.note).toBeUndefined();
+    expect(stripe?.lastError?.message).toBe("injoignable");
+  });
+});

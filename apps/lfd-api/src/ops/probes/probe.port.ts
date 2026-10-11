@@ -49,28 +49,58 @@ export const NODE_PROBES = Symbol("NODE_PROBES");
 export const PROBE_TIMEOUT_MS = 2500;
 
 /**
+ * Une réponse non-`2xx` telle qu'une sonde la reçoit — de quoi la reconnaître,
+ * rien de plus.
+ */
+export interface ProbeAnswer {
+  readonly status: number;
+  /** Le corps en texte, vide quand il n'y en a pas ou qu'il est illisible. */
+  readonly body: string;
+}
+
+/**
+ * Ce qu'un tiers rend quand il est **là** sans nous servir ce qu'on demande :
+ * le détail à afficher si la réponse est reconnue, `null` sinon.
+ *
+ * Propre à chaque tiers, et c'est pour ça qu'elle vit à côté de sa sonde : une
+ * clé Stripe restreinte répond `403`, une clé Resend « envoi seulement » répond
+ * `401` avec un nom d'erreur à elle, et un `401` sans ce nom est une clé morte.
+ * Deux réponses du même code, deux diagnostics.
+ */
+export type ReachableAnswer = (answer: ProbeAnswer) => string | null;
+
+/**
  * Un appel HTTP de sonde, ramené à un verdict.
  *
- * `2xx`/`3xx` ⇒ debout. `401`/`403` ⇒ **debout, mais on n'y a plus accès** — le
- * service répond, c'est notre clé qui ne vaut plus. C'est la panne la plus
- * fréquente et la plus silencieuse, et la confondre avec une panne du tiers
- * enverrait chercher un incident chez quelqu'un d'autre.
+ * `2xx`/`3xx` ⇒ debout. Toute autre réponse ⇒ **tombé**, sauf si le tiers l'a
+ * déclarée « joignable » par `reachable` — et alors debout, avec le détail
+ * qu'elle nomme. `401`/`403` restent tombés par défaut : une clé révoquée ne
+ * prouve pas que le service nous sert, et c'est la panne la plus silencieuse.
  */
 export async function probeHttp(
   request: () => Promise<Response>,
   startedAt: number,
+  reachable?: ReachableAnswer,
 ): Promise<ProbeOutcome> {
+  let response: Response;
   try {
-    const response = await request();
-    const latencyMs = Date.now() - startedAt;
-    if (response.status === 401 || response.status === 403) {
-      return { verdict: "down", latencyMs, detail: `accès refusé (${response.status})` };
-    }
-    if (!response.ok) {
-      return { verdict: "down", latencyMs, detail: `réponse ${response.status}` };
-    }
-    return { verdict: "up", latencyMs };
+    response = await request();
   } catch {
     return { verdict: "down", latencyMs: Date.now() - startedAt, detail: "injoignable" };
   }
+  const latencyMs = Date.now() - startedAt;
+  if (response.ok) {
+    return { verdict: "up", latencyMs };
+  }
+  if (reachable !== undefined) {
+    const body = await response.text().catch(() => "");
+    const detail = reachable({ status: response.status, body });
+    if (detail !== null) {
+      return { verdict: "up", latencyMs, detail };
+    }
+  }
+  if (response.status === 401 || response.status === 403) {
+    return { verdict: "down", latencyMs, detail: `accès refusé (${response.status})` };
+  }
+  return { verdict: "down", latencyMs, detail: `réponse ${response.status}` };
 }

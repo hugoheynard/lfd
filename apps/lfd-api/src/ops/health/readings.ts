@@ -72,6 +72,37 @@ export function gatewayReadings(windows: readonly TrafficWindow[]): readonly Nod
 }
 
 /**
+ * La fenêtre de la **gateway elle-même** : tout ce qu'elle a routé.
+ *
+ * Elle ne s'indexe pas dans Analytics Engine — elle est ce qui écrit. Mais
+ * chaque point écrit est une requête qu'elle a traitée : une fenêtre non vide
+ * prouve qu'elle vit. Sans elle, la carte la disait « inconnue » sous une liste
+ * de 48 requêtes qu'elle venait de router (constaté le 2026-10-11).
+ *
+ * Les erreurs des backends et les fautes de passerelle n'y entrent PAS : un
+ * `5xx` rendu par l'API est l'API, et un upstream injoignable désigne le nœud
+ * qui ne répond pas — c'est lui que la dérivation fait tomber, pas celle qui
+ * le constate. Le p95 est le plus haut des nœuds routés, amont compris.
+ * `undefined` sans fenêtre : pas de trafic, pas de preuve.
+ */
+export function gatewayWindow(windows: readonly TrafficWindow[]): TrafficWindow | undefined {
+  const [first] = windows;
+  if (first === undefined) {
+    return undefined;
+  }
+  return {
+    node: "gateway",
+    from: first.from,
+    to: first.to,
+    requests: windows.reduce((sum, window) => sum + window.requests, 0),
+    serverErrors: 0,
+    throttled: windows.reduce((sum, window) => sum + window.throttled, 0),
+    gatewayFaults: 0,
+    p95Ms: Math.max(0, ...windows.map((window) => window.p95Ms)),
+  };
+}
+
+/**
  * Les relevés d'un service applicatif : sa charge **par module**.
  *
  * C'est ce qui transforme « l'API peine » en « l'API peine SUR le référentiel ».

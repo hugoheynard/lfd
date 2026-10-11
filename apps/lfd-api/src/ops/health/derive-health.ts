@@ -139,6 +139,10 @@ export function deriveHealth(
       verdict.status === "down" && probeDetail !== undefined
         ? { lastError: { at: since, message: probeDetail } }
         : {};
+    // Debout mais sous condition (clé restreinte, confirmation en attente) :
+    // le détail voyage en NOTE, sans changer la couleur.
+    const note =
+      verdict.status !== "down" && probeDetail !== undefined ? { note: probeDetail } : {};
     return {
       node: node.id,
       kind: node.kind,
@@ -154,6 +158,7 @@ export function deriveHealth(
       dependsOn: node.dependsOn,
       readings: observed?.readings ?? [],
       ...lastError,
+      ...note,
       ...(fallen === undefined ? {} : { dependencyDown: fallen }),
     };
   });

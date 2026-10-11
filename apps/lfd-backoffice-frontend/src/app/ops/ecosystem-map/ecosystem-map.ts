@@ -355,6 +355,9 @@ function describe(node: NodeHealth, occupancy: Occupancy): string {
   if (occupancy.basis !== 'aucune mesure') {
     parts.push(`occupation ${Math.round(occupancy.ratio * 100)} % d'après la ${occupancy.basis}`);
   }
+  if (node.note !== undefined) {
+    parts.push(node.note);
+  }
   if (node.dependencyDown !== undefined) {
     parts.push(`dépendance injoignable : ${node.dependencyDown}`);
   }

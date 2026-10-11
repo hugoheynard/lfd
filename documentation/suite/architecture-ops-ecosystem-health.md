@@ -786,15 +786,15 @@ centre par défaut aurait été le comportement le plus discret et le plus faux.
 
 L'objectif est qu'aucune carte ne soit muette. L'état au 2026-08-19 :
 
-| Nœud                      | Mesure principale                                           |
-| ------------------------- | ----------------------------------------------------------- |
-| Gateway                   | requêtes par seconde                                        |
-| API                       | charge par module (B2B, PIM, OPS, Staff)                    |
-| Database — LFD            | opérations Prisma /min + répartition, connexions, taille    |
-| Auth0                     | actifs 30 j (ou identités) et part du plafond gratuit       |
-| Stripe · Resend · Shopify | latence de la sonde                                         |
-| Stockage R2               | latence de la sonde — les opérations A/B attendent un jeton |
-| Fronts                    | aucune : leur sonde dit « servi », elle ne compte rien      |
+| Nœud                      | Mesure principale                                                                                     |
+| ------------------------- | ----------------------------------------------------------------------------------------------------- |
+| Gateway                   | requêtes par seconde                                                                                  |
+| API                       | charge par module (B2B, PIM, OPS, Staff)                                                              |
+| Database — LFD            | opérations Prisma /min + répartition, connexions, taille                                              |
+| Auth0                     | actifs 30 j (ou identités) et part du plafond gratuit                                                 |
+| Stripe · Resend · Shopify | latence de la sonde                                                                                   |
+| Stockage R2               | latence de la sonde (HEAD anonyme sur le domaine public, §30) — les opérations A/B attendent un jeton |
+| Fronts                    | aucune : leur sonde dit « servi », elle ne compte rien                                                |
 
 La **latence de sonde** est le repli universel : c'est le seul chiffre qu'un
 tiers donne sans qu'on demande rien à personne. Elle n'est rendue que si la sonde
@@ -1417,3 +1417,58 @@ référence et les déploie, le source est déjà lisible.
 
 Le téléversement demande enfin un **`SENTRY_AUTH_TOKEN`** en CI — celui-là est
 un vrai secret, contrairement au DSN qui voyage dans le bundle.
+
+## 30. Trois « inconnu » et deux faux rouges — corrigés le 2026-10-11
+
+Constatés en production le même jour, sur la carte de santé.
+
+### Une clé restreinte n'est pas un service tombé
+
+Stripe et Resend s'affichaient « injoignable — accès refusé » alors que les
+paiements passaient et que les e-mails partaient. Nos clés sont **restreintes** :
+
+| Tiers  | Appel de sonde    | Réponse d'une clé restreinte              | Verdict                                                    |
+| ------ | ----------------- | ----------------------------------------- | ---------------------------------------------------------- |
+| Stripe | `GET /v1/balance` | `403` (permission `balance:read` absente) | **up**, note « clé restreinte (lecture du solde refusée) » |
+| Resend | `GET /domains`    | `401` + `{"name":"restricted_api_key",…}` | **up**, note « clé restreinte (envoi seulement) »          |
+
+Toute **autre** `401`/`403` (clé révoquée, inconnue), un `5xx` ou un délai
+dépassé restent **down**. La reconnaissance est propre à chaque tiers : chaque
+sonde passe à `probeHttp` une fonction `ReachableAnswer` (`stripeReachable`,
+`resendReachable`, `r2Reachable` dans `ops/probes/external.probes.ts`), pure et
+testée ; le lanceur ne sait rien d'aucun tiers.
+
+Le détail d'une sonde **debout** voyage en `note` sur le `NodeHealth`
+(`@lfd/ops-contract`) — l'infobulle de la carte l'affiche. Il ne change pas la
+couleur ; `lastError` reste réservé aux nœuds tombés.
+
+### Le trafic arrivait sous un nom que la carte n'attendait pas
+
+La gateway écrit dans Analytics Engine sa **clé de routage** (`lfd`, cf.
+`API_PREFIXES` de `gateway/src/routes.ts`), la carte attendait `b2b`. Le
+tableau de charge listait 48 requêtes, la carte disait gateway et API
+« inconnu », et le bandeau « Aucune mesure de trafic » contredisait la liste.
+
+La couture est désormais **une table déclarée**, `GATEWAY_TRAFFIC_NODES` dans
+`ops/topology/topology.ts` (`lfd → b2b`), appliquée par le lecteur
+(`traffic-query.ts`) aux fenêtres, aux surfaces et à l'histoire : le contrat dit
+que `TrafficWindow.node` est un nœud de topologie, et c'est maintenant vrai. Une
+clé hors table (`routePlanner`, `unrouted`, `dev`, `pro`) garde son nom.
+
+`pro` n'y est pas, délibérément : la gateway enregistre la redirection
+`/pro → /` en origine `gateway`, que la lecture compte comme faute de
+passerelle. Rattachée au front, elle le ferait tomber à chaque redirection.
+
+La **gateway** elle-même reçoit une fenêtre : la somme de ce qu'elle a routé
+(`gatewayWindow`, `ops/health/readings.ts`), sans les erreurs ni les fautes des
+backends — un upstream injoignable fait tomber l'upstream, pas celle qui le
+constate. Sans trafic, pas de fenêtre : elle reste « inconnue », ce qui est
+exact.
+
+### Le stockage R2 a sa sonde
+
+`R2Probe` : un `HEAD` **anonyme** sur `R2_MEDIA_PUBLIC_BASE_URL`, le domaine qui
+sert chaque image. Aucune clé, aucune écriture. La racine n'est pas un objet :
+le `404` que R2 rend alors prouve que le domaine est relié et servi (**up**,
+note « domaine public servi »). `401`/`403` (accès public retiré), `5xx`, délai
+dépassé : **down**. Variable absente : **unknown** (« non configuré »).

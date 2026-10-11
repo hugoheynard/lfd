@@ -87,6 +87,12 @@ export interface NodeHealth {
   readonly readings: readonly NodeReading[];
   readonly metrics?: HeartbeatMetrics;
   readonly lastError?: { readonly at: string; readonly message: string };
+  /**
+   * Ce que la sonde a constaté sur un nœud **qui n'est pas tombé** — « clé
+   * restreinte (envoi seulement) ». Le vert dit que le service répond ; la note
+   * dit à quelles conditions, sans le repeindre.
+   */
+  readonly note?: string;
 }
 
 /**

@@ -1,6 +1,12 @@
 import type { TrafficWindow } from "@lfd/ops-contract";
 
-import { gatewayReadings, moduleOf, moduleReadings, throughputOf } from "../readings.js";
+import {
+  gatewayReadings,
+  gatewayWindow,
+  moduleOf,
+  moduleReadings,
+  throughputOf,
+} from "../readings.js";
 
 const window = (over: Partial<TrafficWindow> = {}): TrafficWindow => ({
   node: "b2b",
@@ -110,5 +116,24 @@ describe("moduleReadings", () => {
   it("ne rend rien sans détail par surface", () => {
     expect(moduleReadings(window())).toEqual([]);
     expect(moduleReadings(undefined)).toEqual([]);
+  });
+});
+
+describe("gatewayWindow — ce que la gateway a routé prouve qu'elle vit", () => {
+  it("🔴 donne une fenêtre à la gateway dès qu'elle a routé quelque chose", () => {
+    // Régression du 2026-10-11 : « Gateway — inconnu » sous 48 requêtes routées.
+    const routed = gatewayWindow([window({ requests: 40 }), window({ node: "pro", requests: 8 })]);
+
+    expect(routed).toMatchObject({ node: "gateway", requests: 48 });
+  });
+
+  it("n'impute à la gateway ni les erreurs ni les fautes des backends", () => {
+    const routed = gatewayWindow([window({ serverErrors: 50, gatewayFaults: 7 })]);
+
+    expect(routed).toMatchObject({ serverErrors: 0, gatewayFaults: 0 });
+  });
+
+  it("rend `undefined` sans aucune fenêtre : pas de trafic, pas de preuve", () => {
+    expect(gatewayWindow([])).toBeUndefined();
   });
 });

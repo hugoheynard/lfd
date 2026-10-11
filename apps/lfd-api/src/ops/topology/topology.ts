@@ -14,11 +14,12 @@ import type { NodeManifest } from "@lfd/ops-contract";
  * dépend des deux backends qu'elle route. C'est le sens qui rend la causalité
  * lisible de l'amont vers l'aval.
  *
- * ⚠️ Les identifiants des deux backends (`b2b`, `pim`) sont **les mêmes** que
- * ceux écrits par la gateway dans Analytics Engine (`index1`). C'est la seule
- * couture entre l'observation et la carte : la rompre ne casserait rien
- * bruyamment — les nœuds passeraient simplement en « aucune preuve », ce qui est
- * beaucoup plus difficile à remarquer.
+ * ⚠️ La gateway n'écrit PAS ces identifiants dans Analytics Engine (`index1`) :
+ * elle écrit sa clé de routage (`lfd`). La couture est la table
+ * {@link GATEWAY_TRAFFIC_NODES}, et elle seule. La rompre ne casse rien
+ * bruyamment — les nœuds passent en « aucune preuve », ce qui est beaucoup plus
+ * difficile à remarquer. C'est arrivé : jusqu'au 2026-10-11, la carte attendait
+ * `b2b` alors que la gateway écrivait `lfd` depuis le renommage du préfixe.
  */
 export const TOPOLOGY: readonly NodeManifest[] = [
   // ▸ CE QU'ON OUVRE — les quatre fronts. On entre dans le système par eux, et
@@ -81,8 +82,25 @@ export const TOPOLOGY: readonly NodeManifest[] = [
 ];
 
 /**
- * Les nœuds que la **passerelle** peut observer : ceux dont l'identifiant est
- * aussi une clé d'index dans Analytics Engine. Les autres n'ont, à ce stade,
- * aucune source — leurs sondes sont l'étape suivante.
+ * **La couture entre la gateway et la carte** : clé de routage écrite dans
+ * Analytics Engine (`API_PREFIXES` de `gateway/src/routes.ts`) → nœud de la
+ * topologie. Déclarée, jamais devinée, pour la même raison que la carte.
+ *
+ * `pro` (la boutique servie par la zone) n'y est PAS, délibérément (vérifié le
+ * 2026-10-11) : la gateway enregistre ses redirections `/pro → /` en origine
+ * `gateway`, que la lecture compte comme des fautes de passerelle — rattachées
+ * au front, elles le feraient tomber à chaque redirection.
  */
-export const OBSERVED_BY_GATEWAY: readonly string[] = ["b2b"];
+export const GATEWAY_TRAFFIC_NODES: ReadonlyMap<string, string> = new Map([["lfd", "b2b"]]);
+
+/** Les nœuds que la passerelle observe. */
+export const OBSERVED_BY_GATEWAY: readonly string[] = [...GATEWAY_TRAFFIC_NODES.values()];
+
+/**
+ * Le nœud de la carte que désigne une clé de la gateway. Une clé hors table
+ * (`routePlanner`, `unrouted`, `dev`) garde son nom : elle reste lisible dans
+ * le tableau de charge sans entrer dans la carte sous une identité empruntée.
+ */
+export function topologyNodeOf(gatewayKey: string): string {
+  return GATEWAY_TRAFFIC_NODES.get(gatewayKey) ?? gatewayKey;
+}

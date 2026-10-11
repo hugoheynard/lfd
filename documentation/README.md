@@ -423,7 +423,7 @@ ci-dessous sont ce vers quoi il renvoie.
 | [`suite/architecture-topologie-apps.md`](suite/architecture-topologie-apps.md)                       | 📐   | 🔴 **Fédération abandonnée le 2026-08-20** (le shell est retiré ; la règle de découpage, elle, reste). Backend par propriété des données, front par audience × appareil. |
 | [`suite/architecture-suite-gateway-scaling.md`](suite/architecture-suite-gateway-scaling.md)         | 🟡   | Passerelle Cloudflare, sous-domaines, backends conteneurisés. Elle SURVIT au retrait du shell : c'est la frontière de confiance, pas une pièce de la suite.              |
 | [`suite/architecture-cloisonnement-des-schemas.md`](suite/architecture-cloisonnement-des-schemas.md) | 🟡   | Qui a le droit de lire quel schéma. Le référentiel est cloisonné (fait) ; les trois autres blocs ne le sont pas. La question ouverte est : qui possède `public`.         |
-| [`suite/architecture-ops-ecosystem-health.md`](suite/architecture-ops-ecosystem-health.md)           | 📐   | L'app OPS « Ecosystem Health ». Rien n'est codé.                                                                                                                         |
+| [`suite/architecture-ops-ecosystem-health.md`](suite/architecture-ops-ecosystem-health.md)           | ✅   | L'app OPS « Ecosystem Health » : la carte de santé (OPS → Santé), ses sondes, son trafic.                                                                                |
 
 ## Journalisation — ce qui reste à faire sur les journaux
 

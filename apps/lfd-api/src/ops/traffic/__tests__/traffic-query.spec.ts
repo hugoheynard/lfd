@@ -205,3 +205,28 @@ describe("l'histoire du trafic", () => {
     expect(rowsToSeries([{ bucket: 1, requests: 3 }])).toEqual([]);
   });
 });
+
+describe("la couture gateway → carte", () => {
+  const bounds = { from: "2026-08-19T11:00:00.000Z", to: "2026-08-19T12:00:00.000Z" };
+
+  /**
+   * Régression du 2026-10-11 : la gateway écrit `lfd` (sa clé de routage), la
+   * carte attendait `b2b`. L'API et la gateway restaient « inconnues » sous une
+   * liste de 48 requêtes, avec le bandeau « aucune mesure de trafic ».
+   */
+  it("🔴 rattache le trafic écrit sous `lfd` au nœud `b2b` de la carte", () => {
+    const [window] = rowsToWindows([{ node: "lfd", requests: "48" }], bounds);
+    const surfaces = rowsToSurfaces([{ node: "lfd", surface: "orders", requests: "48" }]);
+    const series = rowsToSeries([{ node: "lfd", bucket: 1_755_600_000, requests: "48" }]);
+
+    expect(window?.node).toBe("b2b");
+    expect([...surfaces.keys()]).toEqual(["b2b"]);
+    expect(series.map((one) => one.node)).toEqual(["b2b"]);
+  });
+
+  it("laisse une clé hors carte sous son nom plutôt que de l'emprunter", () => {
+    const [window] = rowsToWindows([{ node: "routePlanner", requests: "3" }], bounds);
+
+    expect(window?.node).toBe("routePlanner");
+  });
+});

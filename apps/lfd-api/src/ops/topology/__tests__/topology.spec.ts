@@ -1,4 +1,4 @@
-import { OBSERVED_BY_GATEWAY, TOPOLOGY } from "../topology.js";
+import { OBSERVED_BY_GATEWAY, TOPOLOGY, topologyNodeOf } from "../topology.js";
 
 /**
  * La topologie est **déclarée**. Un tableau écrit à la main peut mentir de deux
@@ -28,6 +28,13 @@ describe("la topologie déclarée", () => {
     const known = new Set(TOPOLOGY.map((node) => node.id));
 
     expect(OBSERVED_BY_GATEWAY.filter((id) => !known.has(id))).toEqual([]);
+  });
+
+  it("🔴 traduit la clé que la gateway écrit (`lfd`) en nœud de la carte", () => {
+    // Régression du 2026-10-11 : la carte attendait `b2b` sous la clé que la
+    // gateway n'écrivait plus depuis le renommage de son préfixe en `/api/lfd`.
+    // Clé tenue par `API_PREFIXES` dans `gateway/src/routes.ts`.
+    expect(topologyNodeOf("lfd")).toBe("b2b");
   });
 
   it("donne une sonde à tout nœud qu'on ne possède pas", () => {

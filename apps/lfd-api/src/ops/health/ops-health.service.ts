@@ -19,7 +19,7 @@ import { vitalsReadings } from "./vitals-readings.js";
 import { deriveHealth, type NodeEvidence } from "./derive-health.js";
 import { ProbeRunner } from "../probes/probe-runner.service.js";
 import type { ProbeOutcome } from "../probes/probe.port.js";
-import { gatewayReadings, moduleReadings } from "./readings.js";
+import { gatewayReadings, gatewayWindow, moduleReadings } from "./readings.js";
 import { StatusJournal } from "../journal/status-journal.port.js";
 import { VitalsStore } from "../vitals/vitals.store.js";
 
@@ -99,7 +99,12 @@ export class OpsHealthService {
     // La gateway ne se mesure pas elle-même : elle est ce qui mesure. Son relevé
     // est donc la somme de ce qu'elle a routé — le débit, pas un total, parce
     // qu'un total dépend de la fenêtre et ne se compare pas d'un écran à l'autre.
-    evidence.set("gateway", { readings: gatewayReadings(report.windows) });
+    // Et ce qu'elle a routé est aussi la preuve qu'elle vit (cf. `gatewayWindow`).
+    const routed = gatewayWindow(report.windows);
+    evidence.set("gateway", {
+      ...(routed === undefined ? {} : { traffic: routed }),
+      readings: gatewayReadings(report.windows),
+    });
     evidence.set("postgres-b2b", { readings: databaseReadings });
     evidence.set("auth0", { readings: auth0Readings });
     // La sonde dit que Resend RÉPOND ; ces relevés disent que nos e-mails

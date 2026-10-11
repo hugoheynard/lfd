@@ -5,6 +5,8 @@ import type {
   TrafficWindow,
 } from "@lfd/ops-contract";
 
+import { topologyNodeOf } from "../topology/topology.js";
+
 /**
  * La **décision** de lecture d'Analytics Engine : la requête SQL, et la lecture
  * de ses lignes. Pur et testé — l'adaptateur ne fait plus que l'appel HTTP.
@@ -112,7 +114,7 @@ export function rowsToWindows(
     }
     return [
       {
-        node,
+        node: topologyNodeOf(node),
         from: bounds.from,
         to: bounds.to,
         requests: toNumber(row.requests),
@@ -191,7 +193,8 @@ export function rowsToSurfaces(
       gatewayFaults: toNumber(row.gatewayFaults),
       p95Ms: Math.round(toNumber(row.p95Ms)),
     };
-    byNode.set(node, [...(byNode.get(node) ?? []), entry]);
+    const key = topologyNodeOf(node);
+    byNode.set(key, [...(byNode.get(key) ?? []), entry]);
   }
   return byNode;
 }
@@ -253,13 +256,14 @@ export function rowsToSeries(rows: readonly SeriesRow[]): readonly TrafficSeries
     if (typeof row.node !== "string" || row.node === "") {
       continue;
     }
-    const points = byNode.get(row.node) ?? [];
+    const node = topologyNodeOf(row.node);
+    const points = byNode.get(node) ?? [];
     points.push({
       at: new Date(toNumber(row.bucket) * 1000).toISOString(),
       requests: toNumber(row.requests),
       failures: toNumber(row.failures),
     });
-    byNode.set(row.node, points);
+    byNode.set(node, points);
   }
   return [...byNode.entries()].map(([node, points]) => ({ node, points }));
 }
