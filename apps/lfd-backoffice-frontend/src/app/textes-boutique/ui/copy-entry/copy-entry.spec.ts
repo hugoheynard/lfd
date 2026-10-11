@@ -54,7 +54,7 @@ describe('CopyEntry — un texte, dans la langue affichée', () => {
     const { element, field } = await render(ENTRY);
     expect(element.querySelectorAll('fold-textarea')).toHaveLength(1);
     expect(field()).toBe('{n} articles');
-    expect(element.textContent).toContain('Count');
+    expect(element.textContent).toContain('Nombre');
     expect(element.textContent).not.toContain('Texte d’origine');
     expect(element.textContent).toContain('À garder :');
     expect(element.textContent).toContain('{n}');

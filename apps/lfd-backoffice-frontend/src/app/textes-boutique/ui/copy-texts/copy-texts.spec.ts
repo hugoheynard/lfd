@@ -56,7 +56,7 @@ describe('CopyTexts — les textes de l’espace', () => {
     const titles = [...element.querySelectorAll('fold-element-title')].map((node) =>
       node.textContent?.trim(),
     );
-    expect(titles.slice(0, 3)).toEqual(['Titre', 'Empty', 'Surtitre']);
+    expect(titles.slice(0, 3)).toEqual(['Titre', 'Vide', 'Surtitre']);
   });
 
   it('une recherche sans résultat le dit', async () => {

@@ -1,5 +1,7 @@
 import type { ShopCopyEntryView } from '@lfd/contracts';
 
+import { SHOP_COPY_GLOSSARY } from './glossary/shop-copy-glossary';
+
 /**
  * Ce que dit un nom de texte, en clair — lu au dernier segment de la clé, ou
  * aux deux derniers quand le dernier seul ne dit rien (`empty.title`).
@@ -67,8 +69,16 @@ function capitalize(text: string): string {
   return text.charAt(0).toLocaleUpperCase('fr') + text.slice(1);
 }
 
+/**
+ * Le nom français d'un segment, s'il est connu : le glossaire d'abord, puis les
+ * rôles génériques. `undefined` : seul un repli mécanique saurait le dire.
+ */
+export function knownSegmentLabel(segment: string): string | undefined {
+  return SHOP_COPY_GLOSSARY[segment] ?? LABELS[segment];
+}
+
 function labelOfSegment(segment: string): string {
-  const known = LABELS[segment];
+  const known = knownSegmentLabel(segment);
   if (known !== undefined) {
     return known;
   }
@@ -104,9 +114,12 @@ export function copyName(entry: ShopCopyEntryView): CopyName {
   };
 }
 
-/** L'intertitre d'un groupe : `doors.pickup` → « Doors › pickup ». */
+/** L'intertitre d'un groupe : `doors.pickup` → « Portes › Retrait ». */
 export function groupTitle(group: string): string {
-  return capitalize(group.split('.').map(wordsOf).join(' › '));
+  return group
+    .split('.')
+    .map((segment) => capitalize(labelOfSegment(segment)))
+    .join(' › ');
 }
 
 /** Les textes d'un même groupe, dans l'ordre du recueil. */

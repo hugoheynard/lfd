@@ -4,7 +4,9 @@
   "extends": "./tsconfig.json",
   "compilerOptions": {
     "outDir": "./out-tsc/spec",
-    "types": ["vitest/globals", "node"]
+    "types": ["vitest/globals", "node"],
+    // Le manifeste des textes de la boutique, lu par la spec du glossaire.
+    "resolveJsonModule": true
   },
   "include": ["src/**/*.d.ts", "src/**/*.spec.ts"]
 }
