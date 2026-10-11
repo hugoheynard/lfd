@@ -4,7 +4,7 @@ import { imagePaletteSchema } from "@lfd/pim-contracts";
 /**
  * Les champs texte du dépôt multipart — la forme seulement.
  *
- * `palette` (L9, 2026-10-11) arrive en CHAÎNE JSON : un multipart ne porte que
+ * `palette` (2026-10-11) arrive en CHAÎNE JSON : un multipart ne porte que
  * du texte. Une chaîne illisible est un 400 nommé, pas un 500 de `JSON.parse`.
  */
 export const depositFieldsSchema = z.object({

@@ -24,7 +24,7 @@ import { RefocusStorefrontOnMediaDescribed } from "./storefront-media-focus.js";
  * token est lié à un {@link CompositeMediaCarriers} qui interroge les deux, et
  * échoue si l'un échoue (plan `documentation/order/plan-vitrine-enregistrement.md`, D9).
  *
- * Depuis le 2026-10-10 (R18), un troisième : les COPIES d'images du catalogue
+ * Depuis le 2026-10-10 (`documentation/mediatheque/mediatheque.md` §2), un troisième : les COPIES d'images du catalogue
  * du commerce (`catalog_operations`), qui retiennent l'ancienne image d'une
  * opération jusqu'au push suivant — elles ne se repointent pas.
  *
@@ -38,7 +38,7 @@ import { RefocusStorefrontOnMediaDescribed } from "./storefront-media-focus.js";
   providers: [
     StorefrontMediaCarriers,
     CatalogCopyMediaCarriers,
-    // L10 : le point focal suit jusqu'à la vitrine, par un fait durable.
+    // Depuis le 2026-10-11 (§7 bis de la médiathèque) : le point focal suit jusqu'à la vitrine, par un fait durable.
     RefocusStorefrontOnMediaDescribed,
     // L'adaptateur du référentiel vient du module qui le construit ; celui de
     // la vitrine vit ici, faute de droit `b2b → media` dans la matrice.

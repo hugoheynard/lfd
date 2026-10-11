@@ -19,14 +19,20 @@ export { localizedTextSchema, optionalLocalizedTextSchema } from "./localized.js
 
 export {
   mediaDetailsPayloadSchema,
-  mediaItemPayloadSchema,
   mediaLibraryQuerySchema,
   mediaSeriesPayloadSchema,
   renameMediaTagPayloadSchema,
   replaceMediaPayloadSchema,
-  setMediaPayloadSchema,
 } from "./media.js";
-export { MEDIA_LIMITS, MEDIA_LIBRARY_SORTS } from "./media.js";
+export {
+  MEDIA_LIMITS,
+  MEDIA_LIBRARY_SORTS,
+  MEDIA_CARRIER_KINDS,
+  MEDIA_MAX_TAGS_PER_IMAGE,
+} from "./media.js";
+export { mediaItemPayloadSchema, setMediaPayloadSchema } from "./attached-media.js";
+export type { AttachedMediaView, SetMediaPayload } from "./attached-media.js";
+export { isMediaAltWritten, mediaAltOrUrl, type DraftAlt } from "./media-alt.js";
 export {
   PALETTE_LIMITS,
   PALETTE_MAX_SWATCHES,
@@ -49,9 +55,8 @@ export type {
 } from "./media-palette.js";
 
 export type {
-  AttachedMediaView,
   MediaFactsView,
-  SetMediaPayload,
+  MediaCarrierKind,
   UploadedMediaView,
   FocalPoint,
   LibraryMediaView,

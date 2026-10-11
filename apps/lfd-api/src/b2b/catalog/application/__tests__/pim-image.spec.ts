@@ -3,7 +3,7 @@ import { pimImageOf } from "../pim-image.js";
 const BASE = { url: "https://m.test/c.jpg", alt: "Un croissant", width: 800, height: 600 };
 
 /**
- * L4 (2026-10-10) : l'ingestion, la comparaison d'une arrivée et la projection
+ * Depuis le 2026-10-10 : l'ingestion, la comparaison d'une arrivée et la projection
  * traduisent toutes trois le visuel du fil par ici. Un point focal ABSENT doit
  * se lire `null` partout, sinon le premier push après le déploiement
  * signalerait un changement sur toutes les fiches.

@@ -2,6 +2,7 @@ import { Injectable } from "@nestjs/common";
 
 import { PrismaService } from "../../../platform/database/prisma.service.js";
 import {
+  catalogMediaCopyLabel,
   CatalogMediaCopies,
   type CatalogMediaCopy,
 } from "../channels/media/catalog-media-copies.js";
@@ -53,7 +54,10 @@ export class PrismaCatalogMediaCopies extends CatalogMediaCopies {
       select: { key: true, name: true },
       orderBy: { key: "asc" },
     });
-    return rows.map((row) => ({ operationKey: row.key, name: frenchName(row.name) ?? row.key }));
+    return rows.map((row) => ({
+      operationKey: row.key,
+      label: catalogMediaCopyLabel(frenchName(row.name) ?? row.key),
+    }));
   }
 }
 

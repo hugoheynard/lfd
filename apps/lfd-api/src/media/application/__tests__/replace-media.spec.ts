@@ -24,7 +24,7 @@ import { ReplaceMediaCommand, ReplaceMediaHandler } from "../replace-media.js";
 import { RecordingDurable } from "./media-durable-doubles.js";
 
 /**
- * Remplacer une image (L7). L'instant n'est comparé qu'à lui-même : il n'est
+ * Remplacer une image. L'instant n'est comparé qu'à lui-même : il n'est
  * qu'inscrit, jamais confronté à l'horloge.
  */
 const A = "https://media.example/products/a.jpg";

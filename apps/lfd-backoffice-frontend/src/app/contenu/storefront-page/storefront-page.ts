@@ -140,7 +140,7 @@ export class StorefrontPage implements HasPendingChanges {
 
   /**
    * Le choix de la page : l'**Accueil** en tête, à part — ce n'est pas un rayon
-   * (L6 du plan de la médiathèque) —, puis les rayons servis, puis les
+   * (mediatheque.md §7 bis) —, puis les rayons servis, puis les
    * disparus, qu'on peut encore regarder.
    */
   protected readonly shelfOptions = computed<readonly FoldSelectItem<string>[]>(() => [

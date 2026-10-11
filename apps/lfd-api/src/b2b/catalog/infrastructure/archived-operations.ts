@@ -23,7 +23,7 @@ const archivedOperationSchema = z.object({
   key: z.string(),
   name: textSchema,
   lede: textSchema.nullable(),
-  // `focal` facultatif : les envois archivés avant L10 (2026-10-11) n'en ont pas.
+  // `focal` facultatif : les envois archivés avant le 2026-10-11 n'en ont pas.
   image: z
     .object({
       url: z.string(),

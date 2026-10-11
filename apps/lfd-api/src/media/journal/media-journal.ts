@@ -29,18 +29,18 @@ import { ScopedJournal } from "../../platform/journal/scoped-journal.js";
  * identifiant d'actif aurait désigné une ligne — et les lignes, elles, ont
  * déjà été refondues une fois.
  *
- * `media_tag` (L1, 2026-10-10) : un MOT-CLÉ, quand un geste le vise dans tout
+ * `media_tag` (2026-10-10) : un MOT-CLÉ, quand un geste le vise dans tout
  * le fonds. Son `subjectId` est le mot lui-même — un vocabulaire libre n'a
  * pas d'autre identité.
  *
- * `media_series` (L3, 2026-10-10) : une SÉRIE, par son identifiant. Le
+ * `media_series` (2026-10-10) : une SÉRIE, par son identifiant. Le
  * rattachement d'une image à une série, lui, reste un fait de l'IMAGE
  * (`media_asset.described`) : c'est elle qui change.
  */
 export type MediaSubjectType = "media_asset" | "media_tag" | "media_series";
 
 /**
- * Les faits du fonds. Ils décrivent la vie d'une IMAGE — ou, depuis L1
+ * Les faits du fonds. Ils décrivent la vie d'une IMAGE — ou, depuis le 2026-10-10
  * (2026-10-10), d'un mot-clé du vocabulaire — jamais l'usage qu'un porteur en
  * fait.
  *
@@ -57,8 +57,8 @@ export const MEDIA_EVENTS = {
   /** Elle quitte la bibliothèque, octets compris. */
   mediaDiscarded: "media_asset.discarded",
   /**
-   * Une autre image prend sa place chez tous ses porteurs (L7, 2026-10-10).
-   * Elle reste au fonds (D5) : c'est son EMPLOI qui change, pas elle — mais
+   * Une autre image prend sa place chez tous ses porteurs (2026-10-10).
+   * Elle reste au fonds : c'est son EMPLOI qui change, pas elle — mais
    * le geste vise l'image, pas un porteur, et c'est donc un fait du fonds.
    */
   mediaReplaced: "media_asset.replaced",
@@ -66,7 +66,7 @@ export const MEDIA_EVENTS = {
   tagRenamed: "media_tag.renamed",
   /** Un mot-clé retiré de toutes les images qui le portent. */
   tagRemoved: "media_tag.removed",
-  /** Une série ouverte (L3) — titre, jour de prise de vue, note. */
+  /** Une série ouverte — titre, jour de prise de vue, note. */
   seriesCreated: "media_series.created",
   /** Son titre, son jour ou sa note corrigés — le diff. */
   seriesDescribed: "media_series.described",

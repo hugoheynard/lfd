@@ -3,7 +3,8 @@ import type { MediaSeriesPayload, MediaSeriesView } from '@lfd/pim-contracts';
 import { httpErrorMessage } from '@lfd/endpoints';
 import { FoldPanelHostService } from 'fold-ng';
 
-import { MediaSeriesStore, parisToday } from './media-series';
+import { MediaSeriesStore } from './media-series';
+import { parisDay } from './paris-calendar';
 import {
   SeriesPanel,
   type SeriesPanelData,
@@ -31,7 +32,10 @@ export class SeriesEditor {
       stack,
       data: {
         series,
-        today: parisToday(),
+        // La borne haute d'une prise de vue, lue à l'ouverture du panneau. Le
+        // serveur reste l'autorité (il refuse un jour à venir) ; l'écran ne
+        // fait que griser ce qu'il refuserait.
+        today: parisDay(new Date()),
         save: (payload) => this.write(series, payload),
       },
     }).closed;

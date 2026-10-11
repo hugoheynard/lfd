@@ -9,7 +9,7 @@
  * port au porteur que la médiathèque déclare — la matrice ne bouge pas.
  *
  * Comptent les objets VIVANTS, et l'image de la porte « Je passe la prendre »
- * de l'accueil (2026-10-10, D7 du plan de la médiathèque) — un réglage de la
+ * de l'accueil (2026-10-10, `documentation/mediatheque/mediatheque.md` §7 bis) — un réglage de la
  * page `home`, compté comme UN porteur d'identifiant `home`.
  *
  * Seuls comptent les objets VIVANTS : une image posée sur un objet archivé ne

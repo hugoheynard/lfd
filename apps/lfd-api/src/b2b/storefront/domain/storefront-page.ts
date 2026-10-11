@@ -1,9 +1,10 @@
 import { HOME_PAGE, MAX_ROWS, MIN_ROWS } from "@lfd/storefront-layout";
 
+import { sameUnitPoint } from "../../../platform/shared/geometry/unit-point.js";
+
 import { ShelfKey } from "./shelf-key.js";
 import { InvalidStorefrontError } from "./storefront-errors.js";
 import {
-  sameFocal,
   StorefrontImage,
   type StorefrontFocal,
   type StorefrontImageInput,
@@ -33,7 +34,7 @@ const DOOR_IMAGE_MISSING =
  * l'éditeur (« la limite par page »). Sous la dernière rangée, le reste du
  * rayon s'écoule en cartes.
  *
- * La page **`home`** (l'accueil, D7 du plan de la médiathèque) porte en plus
+ * La page **`home`** (l'accueil, `documentation/mediatheque/mediatheque.md` §7 bis) porte en plus
  * l'image de la porte « Je passe la prendre ». Un RÉGLAGE de la page plutôt
  * qu'un objet de la grille : la porte n'est pas dans la grille — l'accueil la
  * pose à côté de celle de la livraison —, et un objet demanderait une
@@ -85,11 +86,11 @@ export class StorefrontPage {
 
   /**
    * La même page, sa porte recadrée sur `focal` si elle montre `url` — ou
-   * `this` si elle ne la montre pas, ou déjà sur ce point (L10).
+   * `this` si elle ne la montre pas, ou déjà sur ce point (§7 bis de la médiathèque).
    */
   withImageRefocused(url: string, focal: StorefrontFocal | null): StorefrontPage {
     const door = this.state.pickupDoorImage;
-    return door === null || door.url !== url || sameFocal(door.focal, focal)
+    return door === null || door.url !== url || sameUnitPoint(door.focal, focal)
       ? this
       : new StorefrontPage({ ...this.state, pickupDoorImage: { ...door, focal } });
   }

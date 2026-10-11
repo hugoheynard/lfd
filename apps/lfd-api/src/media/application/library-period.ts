@@ -18,7 +18,7 @@ export interface ShotPeriod {
 }
 
 /**
- * **La période de prise de vue** (L11) — vérifiée comme celle du dépôt, mais
+ * **La période de prise de vue** — vérifiée comme celle du dépôt, mais
  * rendue en JOURS : le jour de série est une colonne `date`, que seul
  * l'adaptateur sait comparer, et le dépôt s'y lit à l'heure de Paris.
  *

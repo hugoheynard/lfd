@@ -2,10 +2,11 @@ import type { ParamMap, Params } from '@angular/router';
 import { MEDIA_LIBRARY_SORTS, type MediaLibrarySort } from '@lfd/pim-contracts';
 
 import type { MediaPageRequest } from './media-library-http-api';
+import { civilDayLabel } from './paris-calendar';
 
 /**
  * **Ce que la médiathèque montre** — le tri et les filtres, tels que
- * l'adresse les porte (plan L2, point 5).
+ * l'adresse les porte (`mediatheque.md` §5).
  *
  * Patron repris de `admin/journal/journal-url.ts`. Une différence, voulue :
  * la recherche `q` y entre. Le journal l'écarte parce qu'un terme cherché peut
@@ -26,13 +27,13 @@ export interface MediaFeedCriteria {
   readonly to: string;
   /**
    * Premier et dernier jour de PRISE DE VUE (série, sinon dépôt), inclus —
-   * posés par un clic sur la frise des couleurs (L11).
+   * posés par un clic sur la frise des couleurs.
    */
   readonly shotFrom: string;
   readonly shotTo: string;
   readonly untagged: boolean;
   readonly unused: boolean;
-  /** L'identifiant d'une série (L3) ; `''` = toutes. */
+  /** L'identifiant d'une série ; `''` = toutes. */
   readonly series: string;
 }
 
@@ -175,20 +176,13 @@ export function toPageRequest(
   };
 }
 
-const DAY_LABEL = new Intl.DateTimeFormat('fr-FR', {
-  timeZone: 'UTC',
-  day: 'numeric',
-  month: 'long',
-  year: 'numeric',
-});
-
-/** Un jour nu en toutes lettres — lu en UTC à midi, il ne glisse d'aucun fuseau. */
+/** Un jour nu en toutes lettres ; mal formé (adresse retouchée), il se dit tel quel. */
 function dayLabel(day: string): string {
-  return DAY_LABEL.format(new Date(`${day}T12:00:00Z`));
+  return civilDayLabel(day) ?? day;
 }
 
 /**
- * La pastille de la période de prise de vue (L11) : « Prises du 3 octobre
+ * La pastille de la période de prise de vue : « Prises du 3 octobre
  * 2026 au 9 octobre 2026 », « Prises le 3 octobre 2026 », ou `null` sans
  * période. Une borne seule vient d'une adresse retouchée ; elle se dit aussi.
  */

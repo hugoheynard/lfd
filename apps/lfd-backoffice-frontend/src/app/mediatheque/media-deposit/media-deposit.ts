@@ -6,7 +6,7 @@ import {
   output,
   signal,
 } from '@angular/core';
-import { MEDIA_LIMITS, type MediaUploadFailureView } from '@lfd/pim-contracts';
+import type { MediaUploadFailureView } from '@lfd/pim-contracts';
 import {
   FoldBadgeComponent,
   type FoldBadgeVariant,
@@ -19,12 +19,11 @@ import {
 
 import { BatchUploadStore, type UploadEntry, type UploadState } from '../batch-upload';
 import { MediaLibraryHttpApi } from '../media-library-http-api';
-import { MediaSeriesStore, seriesLabel } from '../media-series';
+import { MediaSeriesStore, NO_SERIES, chosenSeriesId, seriesOptions } from '../media-series';
 import { SeriesChip } from '../series-chip/series-chip';
 import { SeriesEditor } from '../series-editor';
+import { UPLOAD_LIMITS } from '../upload-check';
 
-/** Le choix « aucune série » — une série n'a jamais un identifiant vide. */
-export const NO_SERIES = '';
 /** Le choix qui ouvre le panneau de création — jamais un identifiant ULID. */
 export const NEW_SERIES = '__new__';
 
@@ -32,15 +31,15 @@ export const NEW_SERIES = '__new__';
 const STATE_BADGES: Readonly<
   Record<UploadState, { readonly label: string; readonly variant: FoldBadgeVariant }>
 > = {
-  attente: { label: 'En attente', variant: 'neutral' },
-  envoi: { label: 'Envoi…', variant: 'accent' },
-  déposé: { label: 'Déposé', variant: 'success' },
-  'déjà au fonds': { label: 'Déjà au fonds', variant: 'info' },
-  refusé: { label: 'Refusé', variant: 'alert' },
+  waiting: { label: 'En attente', variant: 'neutral' },
+  sending: { label: 'Envoi…', variant: 'accent' },
+  deposited: { label: 'Déposé', variant: 'success' },
+  already_in_library: { label: 'Déjà au fonds', variant: 'info' },
+  refused: { label: 'Refusé', variant: 'alert' },
 };
 
 /**
- * Ce qu'on dit d'une image déjà au fonds (D2, Hugo 2026-10-10) : elle GARDE
+ * Ce qu'on dit d'une image déjà au fonds (Hugo, 2026-10-10) : elle GARDE
  * sa série d'origine. Sans alarme — rien n'est perdu, rien n'a changé.
  *
  * @param findTitle le titre d'une série connue, `null` si on ne la connaît pas.
@@ -69,7 +68,7 @@ export function alreadyNote(
  * **Le dépôt en lot** — choisir une série, déposer, lire le compte rendu, et
  * relire ce qui n'est pas entré les jours passés.
  *
- * Sorti de la page le 2026-10-10 (L3) : la série au dépôt et le compte rendu
+ * Sorti de la page le 2026-10-10 : la série au dépôt et le compte rendu
  * détaillé y ajoutaient un sujet entier, et la page en portait déjà quatre.
  *
  * Il ne relit pas le fonds : il dit à la page qu'un lot est passé (`passed`),
@@ -98,28 +97,15 @@ export class MediaDeposit {
   /** Au moins un fichier est passé : la grille est à relire. */
   readonly passed = output();
 
-  /**
-   * **Ce que le dépôt accepte**, dit AVANT qu'on essaie — lu du CONTRAT,
-   * jamais recopié. La garde de transport (25 Mo) n'est pas annoncée : ce
-   * n'est pas une règle mais une protection.
-   */
-  protected readonly limits = {
-    accept: MEDIA_LIMITS.accept,
-    hint: [
-      MEDIA_LIMITS.formatLabels.join(' · '),
-      `${String(MEDIA_LIMITS.maxBytes / (1024 * 1024))} Mo par image`,
-      `${String(MEDIA_LIMITS.minEdgePixels)} × ${String(MEDIA_LIMITS.minEdgePixels)} px minimum`,
-    ].join(' · '),
-  };
+  protected readonly limits = UPLOAD_LIMITS;
 
-  /** La série choisie pour le PROCHAIN lot. `''` = aucune (D3 : facultative). */
+  /** La série choisie pour le PROCHAIN lot. `''` = aucune (facultative, `mediatheque.md` §5). */
   protected readonly choice = signal<string>(NO_SERIES);
   /** La série du lot affiché dans le compte rendu — figée à l'envoi. */
   protected readonly batchSeries = signal<string | null>(null);
 
   protected readonly options = computed((): readonly FoldSelectOption<string>[] => [
-    { value: NO_SERIES, label: 'Aucune série' },
-    ...this.series.all().map((series) => ({ value: series.id, label: seriesLabel(series) })),
+    ...seriesOptions(this.series.all()),
     { value: NEW_SERIES, label: 'Nouvelle série…' },
   ]);
 
@@ -132,7 +118,7 @@ export class MediaDeposit {
   /** L'identifiant réellement choisi, débarrassé des deux valeurs spéciales. */
   private chosenId(): string | null {
     const value = this.choice();
-    return value === NO_SERIES || value === NEW_SERIES ? null : value;
+    return value === NEW_SERIES ? null : chosenSeriesId(value);
   }
 
   /**

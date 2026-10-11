@@ -42,7 +42,7 @@ describe('la frise des couleurs', () => {
     );
   });
 
-  it('rend la plage de la colonne cliquée, en jours de Paris (L11)', async () => {
+  it('rend la plage de la colonne cliquée, en jours de Paris', async () => {
     TestBed.configureTestingModule({ providers: [provideZonelessChangeDetection()] });
     const fixture = TestBed.createComponent(PaletteStrip);
     const host = fixture.nativeElement as HTMLElement;

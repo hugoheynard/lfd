@@ -8,7 +8,7 @@ import { MediaTagReader } from "../domain/ports/media-tags.js";
  *
  * 🔴 Il existe parce que la bande de l'écran dérivait ses mots des images
  * CHARGÉES : un mot porté seulement hors de la page n'y figurait pas, et rien
- * ne le disait (plan L1, 2026-10-10).
+ * ne le disait (2026-10-10).
  */
 export class ListMediaTagsQuery {}
 

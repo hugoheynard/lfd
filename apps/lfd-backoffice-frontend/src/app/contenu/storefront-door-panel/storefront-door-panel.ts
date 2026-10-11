@@ -15,6 +15,7 @@ import {
   type LibraryPickerData,
   type PickedMedia,
 } from '../../pim/catalogue/library-picker/library-picker';
+import { focalPositionOf } from '../storefront-focal';
 import {
   optionalText,
   STOREFRONT_LOCALES,
@@ -35,12 +36,14 @@ function isLocale(value: string): value is StorefrontLocale {
 
 /**
  * **La porte « Je passe la prendre »** de l'Accueil : sa photo, choisie dans
- * la médiathèque, et son texte alternatif (R10 du plan de la médiathèque —
- * un réglage de la page, pas un objet de la grille).
+ * la médiathèque, et son texte alternatif — un réglage de la page, pas un
+ * objet de la grille (`documentation/mediatheque/mediatheque.md` §7 bis,
+ * « L'accueil de la vitrine »).
  *
- * L'aperçu la recadre AU CENTRE, comme la boutique : la vitrine ne porte pas
- * le point focal de la médiathèque (R12). Sans photo, la boutique garde un
- * fond uni de sa palette.
+ * L'aperçu la recadre sur son point focal, par le calcul de la boutique
+ * ({@link focalPositionOf}) ; au centre seulement quand l'image n'en a pas
+ * (depuis le 2026-10-11). Sans photo, la boutique garde un fond uni de sa
+ * palette.
  *
  * Comme le formulaire d'une info, il ne garde rien : chaque geste rend la
  * porte entière (`null` : retirée), que l'éditeur range. 🔴 Une image neuve
@@ -68,6 +71,7 @@ export class StorefrontDoorPanel {
   protected readonly localeOptions = LOCALE_OPTIONS;
   protected readonly locale = signal<StorefrontLocale>('fr');
   protected readonly textIn = textIn;
+  protected readonly positionOf = focalPositionOf;
   protected readonly altMax = TEXT_LIMITS.imageAlt.max;
 
   protected pickLocale(value: string): void {

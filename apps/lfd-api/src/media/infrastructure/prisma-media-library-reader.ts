@@ -22,7 +22,7 @@ import { ASSET_COLUMNS, rankedOf, recordOf } from "./library-rows.js";
  * `media_asset.url` est unique depuis le 2026-09-23 (`une_image_une_ligne`) :
  * l'URL est l'identité, et la lecture n'a rien à regrouper.
  *
- * Deux chemins (plan L2, 2026-10-10) :
+ * Deux chemins (2026-10-10) :
  * - un ordre qui se lit en base (`KEYSET_READERS`) : par clé, `limit + 1`
  *   lignes, total par `count()` ;
  * - l'ordre « emplois » ou le filtre « inutilisées » : les emplois viennent des

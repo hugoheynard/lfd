@@ -7,7 +7,7 @@ import { ZodBody } from "../../platform/shared/http/zod-body.pipe.js";
 import { PaintMediaPaletteCommand } from "../application/paint-media-palette.js";
 
 /**
- * **Rattraper la palette d'une image** (L9, 2026-10-11) — `PUT /media/palette`.
+ * **Rattraper la palette d'une image** (2026-10-11) — `PUT /media/palette`.
  *
  * Son propre contrôleur, comme le remplacement : celui du fonds frôle la borne
  * des 300 lignes. Même droit, `media_library:write` (le verbe n'est pas `GET`).

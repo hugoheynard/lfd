@@ -3,7 +3,11 @@ import { z } from "zod";
 import { salesChannelsSchema } from "./category.js";
 
 import { localizedTextSchema, optionalLocalizedTextSchema } from "./localized.js";
-import { mediaItemPayloadSchema, setMediaPayloadSchema, type AttachedMediaView } from "./media.js";
+import {
+  mediaItemPayloadSchema,
+  setMediaPayloadSchema,
+  type AttachedMediaView,
+} from "./attached-media.js";
 import type { LocalizedText, SalesChannels } from "./shared.js";
 
 /**

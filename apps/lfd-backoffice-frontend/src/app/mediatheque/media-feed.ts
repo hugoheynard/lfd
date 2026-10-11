@@ -17,7 +17,7 @@ export const FEED_PAGE_SIZE = 60;
  *
  * 🔴 C'est `next`, et lui seul, qui dit s'il reste à lire. Le filtre
  * « Inutilisées » se fait hors base et peut rendre une page courte — voire
- * vide — avec une suite (plan L2, point 3) ; compter les images reçues contre
+ * vide — avec une suite (`mediatheque.md` §5) ; compter les images reçues contre
  * `total` s'arrêterait trop tôt.
  *
  * Une réponse arrivée après un changement de critère est jetée : sans quoi
@@ -58,6 +58,15 @@ export class MediaFeedStore {
     await this.fetch(null);
   }
 
+  /**
+   * Relit depuis le DÉBUT sous les mêmes critères, une seule fois — après un
+   * lot, un remplacement, un renommage. Une image peut apparaître n'importe
+   * où dans l'ordre : ajouter une page à la suite laisserait la grille mentir.
+   */
+  async reload(): Promise<void> {
+    await this.restart(this.criteria);
+  }
+
   /** La page suivante, s'il y en a une et qu'aucune lecture n'est en vol. */
   async more(): Promise<void> {
     const after = this.next();
@@ -83,7 +92,7 @@ export class MediaFeedStore {
   }
 
   /**
-   * Une palette posée par le rattrapage (L9) : seule la palette change, pour
+   * Une palette posée par le rattrapage (`mediatheque.md` §9 bis) : seule la palette change, pour
    * ne pas défaire une description écrite entre-temps.
    */
   paint(url: string, palette: ImagePalette): void {

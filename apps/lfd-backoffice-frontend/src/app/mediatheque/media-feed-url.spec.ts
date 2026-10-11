@@ -85,7 +85,7 @@ describe("l'adresse de la médiathèque", () => {
     expect(toPageRequest(FULL, 60, 'c1')).toMatchObject({ after: 'c1', sort: 'uses', limit: 60 });
   });
 
-  it('porte la série et le tri par prise de vue (L3)', () => {
+  it('porte la série et le tri par prise de vue', () => {
     const view = { ...ALL_MEDIA, sort: 'shot' as const, series: 's1' };
     expect(address(view)).toEqual({ sort: 'shot', series: 's1' });
     expect(readCriteria(convertToParamMap({ sort: 'shot', series: ' s1 ' }))).toEqual(view);
@@ -104,7 +104,7 @@ describe("l'adresse de la médiathèque", () => {
     });
   });
 
-  it('porte la période de prise de vue posée par la frise (L11)', () => {
+  it('porte la période de prise de vue posée par la frise', () => {
     const view = { ...ALL_MEDIA, shotFrom: '2026-09-05', shotTo: '2026-09-11' };
     expect(address(view)).toEqual({ shotFrom: '2026-09-05', shotTo: '2026-09-11' });
     expect(readCriteria(convertToParamMap(address(view)))).toEqual(view);

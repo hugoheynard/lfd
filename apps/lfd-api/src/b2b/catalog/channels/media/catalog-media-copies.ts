@@ -1,7 +1,7 @@
 /**
  * **Les images que le catalogue du commerce a COPIÉES** — le canal que
  * `b2b/catalog` publie pour qui doit savoir si une image sert encore
- * (décision R18 de la médiathèque, 2026-10-10).
+ * (depuis le 2026-10-10, `documentation/mediatheque/mediatheque.md` §2).
  *
  * 🔴 Une copie n'est pas un porteur comme les autres : elle ne se repointe
  * pas. L'image d'une opération datée est recopiée dans `catalog_operations`
@@ -30,8 +30,8 @@ export abstract class CatalogMediaCopies {
   abstract usesOf(urls: readonly string[]): Promise<ReadonlyMap<string, number>>;
 
   /**
-   * **Lesquelles**, nommées par leur nom français — liste vide si aucune,
-   * le cas normal.
+   * **Lesquelles**, chacune nommée comme le personnel la lira à la
+   * médiathèque — liste vide si aucune, le cas normal.
    */
   abstract copiesOf(url: string): Promise<readonly CatalogMediaCopy[]>;
 }
@@ -40,6 +40,18 @@ export abstract class CatalogMediaCopies {
 export interface CatalogMediaCopy {
   /** La clé de l'opération — celle du référentiel, que l'envoi transporte. */
   readonly operationKey: string;
-  /** Le nom français reçu ; jamais vide (la clé à défaut). */
-  readonly name: string;
+  /**
+   * Le libellé d'écran, rédigé ICI parce que c'est le commerce qui sait ce
+   * qu'est une copie et quand elle suit ; la racine qui le relaie n'a pas à
+   * le savoir.
+   */
+  readonly label: string;
+}
+
+/**
+ * Le libellé d'une copie, à partir du nom français reçu (la clé à défaut) :
+ * il dit au personnel que l'image suivra au prochain envoi, et pas avant.
+ */
+export function catalogMediaCopyLabel(name: string): string {
+  return `Boutique — opération « ${name} » (copie, suit au prochain envoi du catalogue)`;
 }

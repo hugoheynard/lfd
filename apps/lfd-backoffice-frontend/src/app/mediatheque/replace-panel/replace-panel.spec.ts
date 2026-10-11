@@ -12,17 +12,11 @@ import type {
 import { FoldPanelRef } from 'fold-ng';
 import { describe, expect, it } from 'vitest';
 
-import type { ImageDescription } from '../image-panel/image-panel';
+import type { ImageDescription } from '../image-description';
 import { MediaLibraryHttpApi, type MediaPageRequest } from '../media-library-http-api';
 import { IMAGE_MEASURE } from '../upload-check';
 
-import {
-  ReplacePanel,
-  type ReplacePanelData,
-  type ReplacePanelResult,
-  isDescribed,
-  takenOver,
-} from './replace-panel';
+import { ReplacePanel, type ReplacePanelData, type ReplacePanelResult } from './replace-panel';
 
 /**
  * Ce que ces cas tiennent : **le remplacement part avant la reprise**, la
@@ -306,18 +300,5 @@ describe('ReplacePanel', () => {
 
     expect(mounted.text()).toContain('C’est l’image actuelle');
     expect(mounted.panel['canReplace']()).toBe(false);
-  });
-});
-
-describe('isDescribed / takenOver', () => {
-  it('ne prend pas le repli sur l’adresse pour une description', () => {
-    const bare: ImageDescription = { ...OLD, name: '', tags: [], focal: null, alt: { fr: A } };
-    expect(isDescribed(bare)).toBe(false);
-    expect(isDescribed({ ...bare, focal: { x: 0.5, y: 0.5 } })).toBe(true);
-  });
-
-  it('omet une alternative qui n’en est pas une', () => {
-    const payload = takenOver({ ...OLD, alt: { fr: A } }, B);
-    expect('alt' in payload).toBe(false);
   });
 });

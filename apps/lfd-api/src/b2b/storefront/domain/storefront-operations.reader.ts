@@ -20,7 +20,7 @@ export interface ShownOperation {
   readonly key: string;
   readonly name: ShownOperationText;
   readonly lede: ShownOperationText | null;
-  /** `focal` absent ou `null` : centre (L10 du plan de la médiathèque). */
+  /** `focal` absent ou `null` : centre (`documentation/mediatheque/mediatheque.md` §7 bis). */
   readonly image: {
     readonly url: string;
     readonly alt: string;

@@ -70,7 +70,7 @@ describe("la barre d'outils de la médiathèque", () => {
     expect(pressed.map((button) => button.getAttribute('aria-pressed'))).toEqual(['true', 'false']);
   });
 
-  it('filtre sur une série, et la relâche sans toucher au reste (L3)', () => {
+  it('filtre sur une série, et la relâche sans toucher au reste', () => {
     const { toolbar, emitted } = mount({ ...ALL_MEDIA, tags: ['a'] });
     toolbar['set']({ series: 's1' });
     expect(emitted[0]).toEqual({ ...ALL_MEDIA, tags: ['a'], series: 's1' });

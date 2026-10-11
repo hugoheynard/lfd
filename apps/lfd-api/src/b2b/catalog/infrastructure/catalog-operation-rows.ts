@@ -139,7 +139,8 @@ function isRecord(raw: unknown): raw is Readonly<Record<string, unknown>> {
   return typeof raw === "object" && raw !== null && !Array.isArray(raw);
 }
 
-/** Les deux colonnes, ou aucune (CHECK de la migration L10). */
+/** Les deux colonnes, ou aucune (CHECK de la migration
+ * `20261011140000_le_point_focal_jusqu_a_la_vitrine`). */
 function focalOf(x: number | null, y: number | null): OperationFocal | null {
   return x === null || y === null ? null : { x, y };
 }

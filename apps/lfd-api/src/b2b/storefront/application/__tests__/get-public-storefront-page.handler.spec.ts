@@ -183,7 +183,7 @@ describe("GetPublicStorefrontPageHandler — les annonces d'opération (D11)", (
     expect(content).toMatchObject({ image: { url: "https://cdn.example/x.jpg", alt: null } });
   });
 
-  it("une image héritée de l'opération garde le point focal lu au push (L10)", async () => {
+  it("une image héritée de l'opération garde le point focal lu au push", async () => {
     const image = { url: "https://cdn.example/x.jpg", alt: "", focal: { x: 0.25, y: 0.75 } };
     const [content] = await read([LINKED], new ShownByAudience({ public: [{ ...NOEL, image }] }));
 
@@ -225,7 +225,7 @@ describe("GetPublicStorefrontPageHandler — les annonces d'opération (D11)", (
   });
 });
 
-describe("GetPublicStorefrontPageHandler — l'accueil (L6, D7)", () => {
+describe("GetPublicStorefrontPageHandler — l'accueil", () => {
   /** La résolution des annonces rebâtissait la page champ par champ, et aurait perdu la porte. */
   it("sert l'image de la porte avec les annonces résolues", async () => {
     const door = { url: "https://cdn.example/fournil.jpg", alt: { fr: "Le fournil" } };

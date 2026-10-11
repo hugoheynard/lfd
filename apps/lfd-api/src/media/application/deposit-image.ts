@@ -1,21 +1,22 @@
 import { CommandHandler, type ICommandHandler } from "@nestjs/cqrs";
 
-import { AppError } from "../../platform/shared/errors/app-error.js";
 import type { WriteTicket } from "../../platform/journal/scoped-journal.js";
 import { UnitOfWork } from "../../platform/database/unit-of-work.js";
-import { MediaStore } from "../../platform/storage/media-store.js";
+import { MediaStore, type StoredAsset } from "../../platform/storage/media-store.js";
 import { MEDIA_EVENTS, MediaJournal } from "../journal/media-journal.js";
-import { MediaFailureLog } from "../domain/ports/media-failure-log.js";
 import { MediaLibrary, type RegisteredMedia } from "../domain/ports/media-library.js";
 import { MediaSeriesReader, type MediaSeriesLabel } from "../domain/ports/media-series.js";
 import { MediaSeriesNotFoundError } from "../domain/errors/media-series-errors.js";
-import { productImage, type ProductImage } from "../domain/value-objects/image-bytes.js";
-import { MediaPalettes } from "../domain/ports/media-palettes.js";
+import { MediaAlreadyRegisteredError } from "../domain/errors/media-library-errors.js";
+import type { ProductImage } from "../domain/value-objects/image-bytes.js";
+import { mediaFileName } from "../domain/value-objects/image.js";
 import {
   imagePalette,
   type ImagePalette,
   type PaletteSwatch,
 } from "../domain/value-objects/image-palette.js";
+import { DepositPalette } from "./deposit-palette.js";
+import { DepositRefusals } from "./deposit-refusals.js";
 
 /** Le préfixe d'usage dans le bucket. Il nomme l'emploi, pas un propriétaire. */
 const PREFIX = "products";
@@ -24,7 +25,7 @@ const PREFIX = "products";
  * Ce que rend un dépôt : l'entrée de bibliothèque — créée, ou celle qui
  * portait déjà ces octets.
  *
- * `alreadyInLibrary` dit lequel des deux (D2, 2026-10-10) : un redépôt ne
+ * `alreadyInLibrary` dit lequel des deux (2026-10-10) : un redépôt ne
  * change rien à l'image, sa série comprise, et le compte rendu du lot doit
  * pouvoir le dire plutôt que de laisser croire qu'elle a rejoint la série
  * choisie.
@@ -47,12 +48,12 @@ export class DepositImageCommand {
      */
     readonly fileName: string = "",
     /**
-     * La série où ranger l'image NEUVE (D3 : facultative). Sans effet sur une
-     * image déjà au fonds (D2).
+     * La série où ranger l'image NEUVE — facultative. Sans effet sur une image
+     * déjà au fonds : un redépôt ne change rien (2026-10-10).
      */
     readonly seriesId: string | null = null,
     /**
-     * Les couleurs, calculées par le navigateur (L9, R28) — `null` = l'écran
+     * Les couleurs, calculées par le navigateur (2026-10-11) — `null` = l'écran
      * ne les a pas envoyées, elles se rattraperont par `PUT /media/palette`.
      * Posées aussi sur une image déjà au fonds qui n'en avait pas.
      */
@@ -88,84 +89,111 @@ export class DepositImageHandler implements ICommandHandler<
     private readonly library: MediaLibrary,
     private readonly series: MediaSeriesReader,
     private readonly journal: MediaJournal,
-    private readonly failures: MediaFailureLog,
+    private readonly refusals: DepositRefusals,
     private readonly uow: UnitOfWork,
-    private readonly palettes: MediaPalettes,
+    private readonly palette: DepositPalette,
   ) {}
 
   async execute(command: DepositImageCommand): Promise<DepositImageResult> {
-    const image = await this.validated(command);
-    // Refusée AVANT de ranger, comme la série : un dépôt refusé ne laisse rien.
+    const image = await this.refusals.measured(command.bytes, command.fileName);
+    // Refusées AVANT de ranger : un dépôt refusé — palette illisible, série
+    // inconnue — ne doit rien laisser dans le bucket.
     const palette = command.palette === null ? null : imagePalette(command.palette);
-    // 🔴 La série se vérifie AVANT de ranger les octets : un dépôt refusé pour
-    // une série inconnue ne doit rien laisser dans le bucket.
     const series = await this.seriesOf(command.seriesId);
     const stored = await this.store.put(PREFIX, {
       bytes: image.bytes,
       contentType: image.contentType,
     });
-    // 🔴 Le fait est posé DANS la transaction de l'inscription : un dépôt dont
-    // la trace échouerait laisserait une image dans la bibliothèque que rien
-    // n'explique, et une lacune de journal ne se rattrape pas.
-    //
-    // L'objet R2, lui, est déjà rangé — et c'est sans conséquence : il est
-    // adressé par son contenu, donc un second dépôt du même fichier le réécrit
-    // à l'identique. Le ramassage prendra celui-ci si personne ne l'attache.
-    return this.uow.run(async () => {
-      const existing = await this.library.alreadyRegistered(stored.url);
-      if (existing !== null) {
-        // D2 : les mêmes octets sont déjà au fonds. Rien n'est écrit — ni
-        // série, ni fait : il ne s'est rien passé dans la bibliothèque. Seule
-        // une palette MANQUANTE se pose — elle se déduit des octets (L9).
-        await this.paint(
-          stored.url,
-          palette,
-          this.journal.untraced("la palette se déduit des octets : aucune décision n'est prise"),
-        );
-        return { ...existing, alreadyInLibrary: true };
+    // L'objet R2 est déjà rangé, et c'est sans conséquence si la suite échoue :
+    // il est adressé par son contenu, un second dépôt le réécrit à l'identique,
+    // et le ramassage le prendra si personne ne l'attache.
+    try {
+      return await this.uow.run(() => this.registered(stored, image, series, palette));
+    } catch (caught) {
+      // Deux dépôts SIMULTANÉS des mêmes octets : tous deux ont lu « absente »,
+      // celui-ci a perdu la course à l'unicité, sa transaction est annulée.
+      // L'image est au fonds — c'est un redépôt (2026-10-11).
+      const existing =
+        caught instanceof MediaAlreadyRegisteredError
+          ? await this.uow.run(() => this.alreadyThere(stored.url, palette))
+          : null;
+      if (existing === null) {
+        throw caught;
       }
-      const ticket = await this.journal.trace({
-        type: MEDIA_EVENTS.mediaDeposited,
-        subjectType: "media_asset",
-        // L'URL : c'est l'identité de l'image, celle que les porteurs citent.
-        subjectId: stored.url,
-        payload: {
-          // Le nom de fichier du bucket, pas l'URL entière : une ligne de
-          // journal se lit par quelqu'un qui n'a pas le code sous les yeux.
-          subjectLabel: stored.storageKey.split("/").at(-1) ?? stored.storageKey,
-          contentType: image.contentType,
-          bytes: image.byteLength,
-          width: image.width,
-          height: image.height,
-          series: series === null ? null : { id: series.id, name: series.title },
-        },
-      });
-      const registered = await this.library.register(
-        {
-          url: stored.url,
-          storageKey: stored.storageKey,
-          contentType: image.contentType,
-          width: image.width,
-          height: image.height,
-          bytes: image.byteLength,
-          seriesId: series?.id ?? null,
-        },
-        ticket,
-      );
-      await this.paint(stored.url, palette, ticket);
-      return { ...registered, alreadyInLibrary: false };
-    });
+      return existing;
+    }
   }
 
-  /** Pose la palette si l'écran en a envoyé une ; ne remplace jamais. */
-  private async paint(
+  /**
+   * Inscrit l'image neuve, ou rend celle qui portait déjà ces octets.
+   *
+   * 🔴 Le fait est posé DANS la transaction de l'inscription : un dépôt dont
+   * la trace échouerait laisserait une image dans la bibliothèque que rien
+   * n'explique, et une lacune de journal ne se rattrape pas.
+   */
+  private async registered(
+    stored: StoredAsset,
+    image: ProductImage,
+    series: MediaSeriesLabel | null,
+    palette: ImagePalette | null,
+  ): Promise<DepositImageResult> {
+    const existing = await this.alreadyThere(stored.url, palette);
+    if (existing !== null) {
+      return existing;
+    }
+    const ticket = await this.traceDeposit(stored, image, series);
+    const registered = await this.library.register(
+      {
+        url: stored.url,
+        storageKey: stored.storageKey,
+        contentType: image.contentType,
+        width: image.width,
+        height: image.height,
+        bytes: image.byteLength,
+        seriesId: series?.id ?? null,
+      },
+      ticket,
+    );
+    await this.palette.paint(stored.url, palette, ticket);
+    return { ...registered, alreadyInLibrary: false };
+  }
+
+  /**
+   * Les mêmes octets sont déjà au fonds : rien n'est écrit — ni série, ni
+   * fait, il ne s'est rien passé dans la bibliothèque. Seule une palette
+   * MANQUANTE se pose, parce qu'elle se déduit des octets.
+   */
+  private async alreadyThere(
     url: string,
     palette: ImagePalette | null,
-    ticket: WriteTicket,
-  ): Promise<void> {
-    if (palette !== null) {
-      await this.palettes.paintIfBlank(url, palette, ticket);
+  ): Promise<DepositImageResult | null> {
+    const existing = await this.library.alreadyRegistered(url);
+    if (existing === null) {
+      return null;
     }
+    await this.palette.paintDeduced(url, palette);
+    return { ...existing, alreadyInLibrary: true };
+  }
+
+  private traceDeposit(
+    stored: StoredAsset,
+    image: ProductImage,
+    series: MediaSeriesLabel | null,
+  ): Promise<WriteTicket> {
+    return this.journal.trace({
+      type: MEDIA_EVENTS.mediaDeposited,
+      subjectType: "media_asset",
+      // L'URL : c'est l'identité de l'image, celle que les porteurs citent.
+      subjectId: stored.url,
+      payload: {
+        subjectLabel: mediaFileName(stored.storageKey),
+        contentType: image.contentType,
+        bytes: image.byteLength,
+        width: image.width,
+        height: image.height,
+        series: series === null ? null : { id: series.id, name: series.title },
+      },
+    });
   }
 
   /** La série demandée, ou `null` sans série. @throws {MediaSeriesNotFoundError} */
@@ -178,42 +206,5 @@ export class DepositImageHandler implements ICommandHandler<
       throw new MediaSeriesNotFoundError(id);
     }
     return series;
-  }
-
-  /**
-   * Relit les octets, et **inscrit le refus** avant de le relancer.
-   *
-   * 🔴 **Hors de toute transaction, et c'est le point.** Le refus est levé
-   * AVANT que l'unité de travail du dépôt s'ouvre ; y ranger l'inscription la
-   * ferait emporter par le rollback, et l'historique serait vide précisément
-   * les jours où il sert. `MediaFailureLog.record` ouvre donc la sienne.
-   *
-   * ⚠️ Et il **relance toujours**. L'historique observe, il n'absout pas : un
-   * fichier refusé reste refusé, et l'appelant reçoit sa raison — celle qui
-   * dit quoi corriger.
-   *
-   * On n'inscrit que les refus MÉTIER (`AppError`). Une panne de lecture
-   * d'octets n'apprend rien sur le fichier et remplirait l'historique de
-   * lignes qui parlent de nous, pas de lui.
-   */
-  private async validated(command: DepositImageCommand): Promise<ProductImage> {
-    try {
-      return productImage(command.bytes);
-    } catch (caught) {
-      if (caught instanceof AppError) {
-        await this.failures.record({
-          fileName: command.fileName,
-          reason: caught.message,
-          code: caught.code,
-          // Ce qu'on SAIT, et rien de plus : la taille est toujours
-          // mesurable, le type non — un refus pour type non supporté n'a, par
-          // construction, pas de type constaté. `null` dit « pas mesurable »,
-          // pas « vide ».
-          bytes: command.bytes.length,
-          contentType: null,
-        });
-      }
-      throw caught;
-    }
   }
 }

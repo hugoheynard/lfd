@@ -3,10 +3,10 @@ import type { LibraryMediaView } from '@lfd/pim-contracts';
 
 import { MediaFeedStore } from './media-feed';
 import { MediaLibraryHttpApi } from './media-library-http-api';
-import { PALETTE_READER } from './palette-extract';
+import { PALETTE_READER } from './palette-reader';
 
 /**
- * **Le rattrapage des palettes** (plan L9) — les images déposées avant la
+ * **Le rattrapage des palettes** (`mediatheque.md` §9 bis) — les images déposées avant la
  * frise, ou dont le navigateur n'a pas su lire les couleurs au dépôt.
  *
  * L'écran calcule, le serveur range (`PUT /media/palette`, sans écrasement).

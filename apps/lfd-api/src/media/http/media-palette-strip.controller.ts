@@ -11,7 +11,7 @@ import { ZodQuery } from "../../platform/shared/http/zod-body.pipe.js";
 import { ReadPaletteStripQuery } from "../application/read-palette-strip.js";
 
 /**
- * **La frise des couleurs** (L9, 2026-10-11) — `GET /media/palette-strip`.
+ * **La frise des couleurs** (2026-10-11) — `GET /media/palette-strip`.
  *
  * Son propre contrôleur, comme le rattrapage : celui du fonds frôle la borne
  * des 300 lignes. Même droit que le feed, `media_library:read` (verbe `GET`).

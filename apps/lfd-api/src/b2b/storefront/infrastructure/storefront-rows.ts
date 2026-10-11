@@ -245,7 +245,8 @@ export function contentColumns(content: StorefrontContentState): {
   };
 }
 
-/** Le point focal relu : les deux colonnes, ou aucune (CHECK de la migration L10). */
+/** Le point focal relu : les deux colonnes, ou aucune (CHECK de la migration
+ * `20261011140000_le_point_focal_jusqu_a_la_vitrine`). */
 function focalOf(x: number | null, y: number | null): StorefrontFocal | null {
   return x === null || y === null ? null : { x, y };
 }

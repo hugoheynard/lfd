@@ -8,7 +8,7 @@ import type { PimImage } from "../domain/entities/catalog-item.js";
  * Le seul endroit qui traduit, pour les trois lecteurs du fil : l'ingestion,
  * la comparaison d'une arrivée, et la projection des visuels. Trois
  * traductions finiraient par diverger sur le détail qui compte ici — un point
- * focal ABSENT (envoi d'avant L4, ou livraison en attente) se lit `null`,
+ * focal ABSENT (envoi d'avant le 2026-10-10, ou livraison en attente) se lit `null`,
  * « au centre », jamais autrement. Sans quoi le premier push après le
  * déploiement signalerait un changement sur toutes les fiches.
  */

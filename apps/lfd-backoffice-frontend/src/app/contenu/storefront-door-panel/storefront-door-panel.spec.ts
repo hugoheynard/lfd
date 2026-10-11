@@ -56,7 +56,7 @@ describe('StorefrontDoorPanel', () => {
     await Promise.resolve();
     expect(opened).toEqual([{ already: [], single: true }]);
     // Une image neuve repart sans alternative : celle de l'ancienne ne la décrit pas.
-    // Son point focal, lui, vient de la médiathèque (L10).
+    // Son point focal, lui, vient de la médiathèque.
     expect(emitted).toEqual([
       { url: 'https://media.test/neuve.jpg', alt: null, focal: { x: 0.1, y: 0.4 } },
     ]);
@@ -69,6 +69,16 @@ describe('StorefrontDoorPanel', () => {
     expect(img?.getAttribute('alt')).toBe('La porte');
     button('Retirer')?.click();
     expect(emitted).toEqual([null]);
+  });
+
+  it('l’aperçu se recadre sur le point focal, comme la porte de la boutique', () => {
+    const { root } = setup({ ...DOOR, focal: { x: 0.2, y: 0.8 } });
+    expect(root.querySelector('img')?.style.objectPosition).toBe('20% 80%');
+  });
+
+  it('sans point focal, l’aperçu se recadre au centre', () => {
+    const { root } = setup(DOOR);
+    expect(root.querySelector('img')?.style.objectPosition).toBe('50% 50%');
   });
 
   it('écrire l’alternative rend la porte entière ; la vider la rend à `null`', () => {

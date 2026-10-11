@@ -38,9 +38,9 @@ export interface LibraryMediaRecord {
   readonly uses: number;
   /** L'entrée de ces octets dans la bibliothèque. */
   readonly depositedAt: Date;
-  /** Sa série (L3), avec de quoi l'afficher et la ranger — `null` = aucune. */
+  /** Sa série, avec de quoi l'afficher et la ranger — `null` = aucune. */
   readonly series: LibraryMediaSeries | null;
-  /** Ses couleurs (L9) — `null` = pas encore calculée par l'écran. */
+  /** Ses couleurs — `null` = pas encore calculée par l'écran. */
   readonly palette: ImagePalette | null;
 }
 
@@ -64,7 +64,7 @@ export interface LibraryMediaSeries {
 export interface LibraryQuery {
   readonly limit: number;
   /**
-   * Le décalage de l'écran qui ne lit pas encore `next` (plan L2). Ignoré dès
+   * Le décalage de l'écran qui ne lit pas encore `next`. Ignoré dès
    * que {@link after} est donné, et servi pour l'ordre `deposited` seul.
    */
   readonly offset: number;
@@ -77,7 +77,7 @@ export interface LibraryQuery {
   /** Déposée strictement avant cet instant. */
   readonly depositedBefore?: Date | undefined;
   /**
-   * Premier jour de PRISE DE VUE retenu, inclus, `AAAA-MM-JJ` déjà validé (L11).
+   * Premier jour de PRISE DE VUE retenu, inclus, `AAAA-MM-JJ` déjà validé.
    * La date est celle de la frise : le jour de la série, sinon le dépôt lu à
    * l'heure de Paris.
    */
@@ -114,13 +114,13 @@ export interface LibraryQuery {
    * l'inverse de ce que le geste demande.
    */
   readonly tags?: readonly string[] | undefined;
-  /** Seulement les images de cette série (L3). */
+  /** Seulement les images de cette série. */
   readonly seriesId?: string | undefined;
 }
 
 /**
  * **Ce qui restreint le fonds**, sans page ni ordre — ce que le feed et la
- * frise des couleurs (L9) partagent : les deux doivent montrer le même fonds.
+ * frise des couleurs partagent : les deux doivent montrer le même fonds.
  */
 export type LibraryFilter = Omit<LibraryQuery, "limit" | "offset" | "sort" | "after">;
 

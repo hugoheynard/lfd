@@ -3,11 +3,16 @@
     variant="title"
     [level]="3"
     title="Porte « Je passe la prendre »"
-    subtitle="La photo du retrait, sur l’accueil de la boutique — recadrée au centre."
+    subtitle="La photo du retrait, sur l’accueil de la boutique — recadrée sur son point focal."
   />
   <div class="form">
     @if (image(); as door) {
-      <img class="preview" [src]="door.url" [alt]="textIn(door.alt, 'fr')" />
+      <img
+        class="preview"
+        [src]="door.url"
+        [alt]="textIn(door.alt, 'fr')"
+        [style.object-position]="positionOf(door.focal)"
+      />
       <div class="field-group">
         <span class="caption">Langue</span>
         <fold-view-toggle

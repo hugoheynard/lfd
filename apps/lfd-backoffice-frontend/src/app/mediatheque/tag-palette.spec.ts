@@ -9,7 +9,7 @@ import { TagPaletteStore } from './tag-palette';
  * Ce que ces cas tiennent : **la bande montre le vocabulaire du FONDS**, avec
  * son compte, et ce qui va être écrit.
  *
- * Régression (L1, 2026-10-10) : la bande dérivait son vocabulaire des images
+ * Régression (depuis le 2026-10-10) : la bande dérivait son vocabulaire des images
  * CHARGÉES. Un mot porté seulement par une image hors de la page n'y figurait
  * pas, et rien ne le disait.
  */

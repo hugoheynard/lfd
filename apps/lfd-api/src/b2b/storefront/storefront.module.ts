@@ -37,8 +37,8 @@ import { PrismaStorefrontRepository } from "./infrastructure/prisma-storefront.r
  * `StorefrontOperationsReader`, branché sur `CatalogOperationsReader` : une
  * annonce liée s'éteint avec son opération (D11). Et un canal publié,
  * `channels/media/` : les images qu'emploie la vitrine, que `appBootstrap/`
- * branche sur la médiathèque (D9) — et, depuis L7 de la médiathèque
- * (2026-10-10), leur remplacement, par l'agrégat.
+ * branche sur la médiathèque (D9) — et, depuis le 2026-10-10, leur remplacement, par l'agrégat
+ * (`documentation/mediatheque/mediatheque.md` §2).
  */
 @Module({
   imports: [CatalogModule],

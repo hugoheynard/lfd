@@ -5,7 +5,10 @@ import { MediaFailureLog, type LoggedFailure } from "../../domain/ports/media-fa
 import { MediaStore, type StoredAsset } from "../../../platform/storage/media-store.js";
 import { UnsupportedImageError } from "../../domain/value-objects/image-bytes.js";
 import { MediaSeriesNotFoundError } from "../../domain/errors/media-series-errors.js";
+import { MediaAlreadyRegisteredError } from "../../domain/errors/media-library-errors.js";
 import { DepositImageCommand, DepositImageHandler } from "../deposit-image.js";
+import { DepositPalette } from "../deposit-palette.js";
+import { DepositRefusals } from "../deposit-refusals.js";
 import {
   FakeLibrary,
   FakeSeries,
@@ -25,9 +28,9 @@ describe("DepositImageHandler", () => {
       library,
       new FakeSeries(),
       journal,
-      new RecordingFailures(),
+      new DepositRefusals(new RecordingFailures()),
       new DirectUnitOfWork(),
-      new RecordingPalettes(),
+      new DepositPalette(new RecordingPalettes(), new RecordingMediaJournal()),
     );
 
     const result = await handler.execute(new DepositImageCommand(png(1200, 800)));
@@ -67,9 +70,9 @@ describe("DepositImageHandler", () => {
       library,
       new FakeSeries(),
       new RecordingMediaJournal(),
-      new RecordingFailures(),
+      new DepositRefusals(new RecordingFailures()),
       new DirectUnitOfWork(),
-      new RecordingPalettes(),
+      new DepositPalette(new RecordingPalettes(), new RecordingMediaJournal()),
     );
 
     await expect(
@@ -90,9 +93,9 @@ describe("DepositImageHandler", () => {
       new FakeLibrary(),
       new FakeSeries(),
       new RecordingMediaJournal(),
-      failures,
+      new DepositRefusals(failures),
       new DirectUnitOfWork(),
-      new RecordingPalettes(),
+      new DepositPalette(new RecordingPalettes(), new RecordingMediaJournal()),
     );
 
     await expect(
@@ -120,9 +123,9 @@ describe("DepositImageHandler", () => {
       new FakeLibrary(),
       new FakeSeries(),
       new RecordingMediaJournal(),
-      failures,
+      new DepositRefusals(failures),
       new DirectUnitOfWork(),
-      new RecordingPalettes(),
+      new DepositPalette(new RecordingPalettes(), new RecordingMediaJournal()),
     );
 
     await handler.execute(new DepositImageCommand(png(400, 400), "croissant.png"));
@@ -149,9 +152,9 @@ describe("DepositImageHandler", () => {
       new FakeLibrary(),
       new FakeSeries(),
       new RecordingMediaJournal(),
-      new DeafLog(),
+      new DepositRefusals(new DeafLog()),
       new DirectUnitOfWork(),
-      new RecordingPalettes(),
+      new DepositPalette(new RecordingPalettes(), new RecordingMediaJournal()),
     );
 
     // ⚠️ Ici l'historique RELANCE, et le refus d'origine est perdu — c'est
@@ -179,9 +182,9 @@ describe("DepositImageHandler", () => {
       library,
       new FakeSeries(),
       new RecordingMediaJournal(),
-      new RecordingFailures(),
+      new DepositRefusals(new RecordingFailures()),
       new DirectUnitOfWork(),
-      new RecordingPalettes(),
+      new DepositPalette(new RecordingPalettes(), new RecordingMediaJournal()),
     );
 
     await expect(handler.execute(new DepositImageCommand(png(400, 400)))).rejects.toThrow(
@@ -198,9 +201,9 @@ describe("DepositImageHandler", () => {
       library,
       new FakeSeries(),
       journal,
-      new RecordingFailures(),
+      new DepositRefusals(new RecordingFailures()),
       new DirectUnitOfWork(),
-      new RecordingPalettes(),
+      new DepositPalette(new RecordingPalettes(), new RecordingMediaJournal()),
     );
 
     const result = await handler.execute(new DepositImageCommand(png(400, 400), "", "series_ete"));
@@ -213,7 +216,7 @@ describe("DepositImageHandler", () => {
   });
 
   it("refuse une série inconnue AVANT de ranger les octets", async () => {
-    // L3 : les octets partent au bucket avant la transaction. Vérifier la
+    // Les octets partent au bucket avant la transaction. Vérifier la
     // série après aurait laissé un objet dans le bucket pour un dépôt refusé.
     const store = new FakeStore();
     const library = new FakeLibrary();
@@ -223,9 +226,9 @@ describe("DepositImageHandler", () => {
       library,
       new FakeSeries(),
       journal,
-      new RecordingFailures(),
+      new DepositRefusals(new RecordingFailures()),
       new DirectUnitOfWork(),
-      new RecordingPalettes(),
+      new DepositPalette(new RecordingPalettes(), new RecordingMediaJournal()),
     );
 
     await expect(
@@ -236,7 +239,7 @@ describe("DepositImageHandler", () => {
     expect(journal.entries).toEqual([]);
   });
 
-  it("un redépôt garde la série d'ORIGINE, n'écrit rien, et le dit (D2)", async () => {
+  it("un redépôt garde la série d'ORIGINE, n'écrit rien, et le dit", async () => {
     const origin: RegisteredMedia = {
       id: "media_0",
       url: "https://media.example/products/deadbeef.png",
@@ -254,9 +257,9 @@ describe("DepositImageHandler", () => {
       library,
       new FakeSeries(),
       journal,
-      new RecordingFailures(),
+      new DepositRefusals(new RecordingFailures()),
       new DirectUnitOfWork(),
-      new RecordingPalettes(),
+      new DepositPalette(new RecordingPalettes(), new RecordingMediaJournal()),
     );
 
     const result = await handler.execute(new DepositImageCommand(png(400, 400), "", "series_ete"));
@@ -265,4 +268,56 @@ describe("DepositImageHandler", () => {
     expect(library.registered).toEqual([]);
     expect(journal.entries).toEqual([]);
   });
+
+  /**
+   * Régression : deux dépôts SIMULTANÉS des mêmes octets lisaient tous deux
+   * « absente », et le second butait sur l'unicité de l'URL — un 409 « Cette
+   * ressource existe déjà » pour un geste qui, successif, rend l'image au fonds.
+   */
+  it("rend l'image déjà au fonds quand un dépôt simultané l'a inscrite d'abord", async () => {
+    const winner: RegisteredMedia = {
+      id: "media_0",
+      url: "https://media.example/products/deadbeef.png",
+      storageKey: "products/deadbeef.png",
+      contentType: "image/png",
+      width: 400,
+      height: 400,
+      bytes: 24,
+      seriesId: null,
+    };
+    const handler = new DepositImageHandler(
+      new FakeStore(),
+      new RacedLibrary(winner),
+      new FakeSeries(),
+      new RecordingMediaJournal(),
+      new DepositRefusals(new RecordingFailures()),
+      new DirectUnitOfWork(),
+      new DepositPalette(new RecordingPalettes(), new RecordingMediaJournal()),
+    );
+
+    const result = await handler.execute(new DepositImageCommand(png(400, 400)));
+
+    expect(result).toEqual({ ...winner, alreadyInLibrary: true });
+  });
 });
+
+/**
+ * Le fonds tel qu'un dépôt concurrent le laisse : absente à la première
+ * lecture, prise à l'écriture, présente à la relecture.
+ */
+class RacedLibrary extends FakeLibrary {
+  private reads = 0;
+
+  constructor(private readonly winner: RegisteredMedia) {
+    super();
+  }
+
+  override alreadyRegistered(): Promise<RegisteredMedia | null> {
+    this.reads += 1;
+    return Promise.resolve(this.reads === 1 ? null : this.winner);
+  }
+
+  override register(entry: Omit<RegisteredMedia, "id">): Promise<RegisteredMedia> {
+    return Promise.reject(new MediaAlreadyRegisteredError(entry.url));
+  }
+}

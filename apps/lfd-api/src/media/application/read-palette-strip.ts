@@ -11,7 +11,7 @@ export interface ReadPaletteStripCriteria extends LibraryFilterCriteria {
 }
 
 /**
- * **La frise des couleurs** (L9, 2026-10-11) — l'évolution de la colorimétrie
+ * **La frise des couleurs** (2026-10-11) — l'évolution de la colorimétrie
  * du fonds filtré, en au plus {@link PALETTE_STRIP_LIMITS.maxColumns} colonnes.
  */
 export class ReadPaletteStripQuery {

@@ -1,5 +1,5 @@
-<!-- LA SÉRIE DU PROCHAIN LOT (D3 : facultative). Elle part avec chaque
-     fichier ; une image déjà au fonds garde la sienne (D2). -->
+<!-- LA SÉRIE DU PROCHAIN LOT (facultative, `mediatheque.md` §5). Elle part avec chaque
+     fichier ; une image déjà au fonds garde la sienne. -->
 <div class="series">
   <fold-listbox
     class="series-pick"
@@ -26,7 +26,7 @@
 }
 
 <!-- `accept` et les bornes viennent du CONTRAT. Chaque fichier est vérifié
-     dans le navigateur avant l'envoi (L3) ; le serveur reste l'autorité. -->
+     dans le navigateur avant l'envoi ; le serveur reste l'autorité. -->
 <fold-file-dropzone
   class="pick"
   [accept]="limits.accept"
@@ -66,14 +66,14 @@
         <li class="line">
           <fold-badge [variant]="badge.variant" [content]="badge.label" />
           <span class="file">{{ entry.name }}</span>
-          @if (entry.state === 'refusé' && entry.reason) {
+          @if (entry.state === 'refused' && entry.reason) {
             <span class="detail detail-refused">
               {{ entry.reason }}
-              @if (entry.refusedBy === 'poste') {
+              @if (entry.refusedBy === 'device') {
                 <span class="origin">— vérifié avant l’envoi</span>
               }
             </span>
-          } @else if (entry.state === 'déjà au fonds') {
+          } @else if (entry.state === 'already_in_library') {
             <span class="detail">{{ alreadyOf(entry) }}</span>
           }
         </li>

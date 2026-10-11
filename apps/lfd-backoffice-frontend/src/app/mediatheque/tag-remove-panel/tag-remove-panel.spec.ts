@@ -3,7 +3,8 @@ import { TestBed } from '@angular/core/testing';
 import { FoldPanelRef } from 'fold-ng';
 import { describe, expect, it } from 'vitest';
 
-import { TagRemovePanel, imagesLabel } from './tag-remove-panel';
+import { imagesLabel } from '../media-wording';
+import { TagRemovePanel } from './tag-remove-panel';
 
 /** Ce que ces cas tiennent : **la question porte le compte**. */
 describe('supprimer un mot-clé partout', () => {

@@ -52,7 +52,9 @@ Il en découle trois propriétés :
 - **un redépôt est idempotent** : reprendre un lot à moitié échoué ne
   duplique rien — le dépôt répond `alreadyInLibrary` et n'écrit rien (vrai
   depuis le 2026-10-10 seulement : avant, un `create` sur l'URL unique
-  rendait un 409) ;
+  rendait un 409). Deux dépôts **simultanés** des mêmes octets aussi, depuis
+  le 2026-10-11 : le perdant de la course à l'unicité relit l'image et rend
+  `alreadyInLibrary` ;
 - **l'identité est stable** : tous les porteurs désignent l'image par son URL,
   jamais par l'identifiant de ligne.
 
@@ -565,9 +567,9 @@ emporterait.
 
 ## 11. Les points à faire
 
-La **dette** a été soldée le 2026-10-10 (encadré ci-dessous). Ce qui reste,
-au 2026-10-11, est ici et nulle part ailleurs. Les lignes marquées 🔵
-attendent une décision ou un constat de Hugo.
+La **dette** a été soldée les 2026-10-10 et 2026-10-11 (encadrés ci-dessous).
+Ce qui reste, au 2026-10-11, est ici et nulle part ailleurs. Les lignes
+marquées 🔵 attendent une décision de Hugo.
 
 > **Soldé le 2026-10-10**
 >
@@ -582,31 +584,38 @@ attendent une décision ou un constat de Hugo.
 > - l'index GIN déclaré au schéma, le doublon sur `url` retiré (`158bf9273`) ;
 > - l'écran dit qu'un visuel en usage non publié n'apparaît nulle part (§6).
 
-1. **La photo du fournil n'est pas choisie** : la page « Accueil » l'attend
-   au fonds. La déposer, puis la poser dans l'éditeur de vitrine ; regarder
-   alors le rendu 21/9 sur une vraie photo.
-2. **L'image d'une opération ne suit qu'au push**, son point focal aussi :
+> **Soldé le 2026-10-11** (relecture SOLID/DDD)
+>
+> - un corps mal formé rend 400, plus 500 ; `POST /media` ne sort plus la clé
+>   de stockage ; deux dépôts simultanés des mêmes octets sont idempotents ;
+> - la règle « alternative vide = URL » a une seule source
+>   (`isMediaAltWritten`, `@lfd/pim-contracts`), serveur et écran ;
+> - un seul `UnitPoint` (`platform/shared/geometry`) valide le point focal
+>   pour la médiathèque, la vitrine et le catalogue ;
+> - les aperçus de l'éditeur de vitrine se recadrent sur le point ; la parité
+>   du catalogue compare le point focal des opérations ;
+> - deux recadrages quasi simultanés : éprouvé (`storefront-focal-race`), la
+>   livraison rejouée pose le dernier point ;
+> - plus aucun fichier de la médiathèque au-delà de 300 lignes ; les codes de
+>   l'ancien plan ont quitté le code ;
+> - la photo du fournil est posée sur la porte (production), le CORS du
+>   bucket autorise le back-office (vérifié sur une image).
+
+1. **L'image d'une opération ne suit qu'au push**, son point focal aussi :
    après un remplacement ou une redescription, l'annonce en boutique garde
    l'ancien état jusqu'à la prochaine publication (le compte des porteurs
    l'empêche seulement de casser, §2). Une projection vive des opérations
    fermerait l'écart.
-3. **La parité du catalogue ignore le point focal des opérations** : un écart
-   entre `catalog_operations.image_focal_*` et la médiathèque ne s'y voit pas.
-4. **Les aperçus de l'éditeur de vitrine se recadrent encore au centre**
-   (`storefront-door-panel.scss` le dit), alors que la boutique pose le point.
-5. **Deux recadrages quasi simultanés** de la même vitrine se disputent la
-   révision : le second échoue et la livraison durable le rejoue. Le chemin
-   est écrit, il n'est éprouvé par aucun test.
-6. **Des fichiers dépassent 300 lignes** : `mediatheque-page.ts` (≈ 710),
-   `image-panel.ts` (≈ 510).
-7. **Le préfixe de clé s'appelle `products`** alors que le fonds sert tout
+2. **L'aperçu d'une image héritée d'une opération** reste centré dans le
+   formulaire d'info de l'éditeur : le contrat admin des opérations
+   (`storefrontCatalogOperationSchema.image`) ne porte pas le point.
+3. **Le préfixe de clé s'appelle `products`** alors que le fonds sert tout
    porteur. C'est une valeur, pas un nom : il ne se renomme pas sans migrer
    les URL, et rien ne l'exige.
-8. **🔵 CORS du bucket R2 en production** : la frise (§9 bis) n'y a pas été
-   vérifiée ; sans lui, les colonnes restent hachurées sans erreur.
-9. **🔵 Au-delà de 5 000 transformations par mois**, l'offre Images & Stream
+4. **🔵 Au-delà de 5 000 transformations par mois**, l'offre Images & Stream
    n'étant pas souscrite : facturé, ou arrêté ? Cf.
-   [`../ops/cloudflare-images.md`](../ops/cloudflare-images.md) §5.
-10. **🔵 Recadrage automatique** (`gravity=auto`) des images sans point : non
-    fait, le centre reste le défaut. Changer `fit` touche toutes les tuiles et
-    le compte des transformations : à mesurer avant.
+   [`../ops/cloudflare-images.md`](../ops/cloudflare-images.md) §5. Laissé en
+   l'état (Hugo, 2026-10-11).
+5. **🔵 Recadrage automatique** (`gravity=auto`) des images sans point : non
+   fait, le centre reste le défaut. Changer `fit` touche toutes les tuiles et
+   le compte des transformations : à mesurer avant.

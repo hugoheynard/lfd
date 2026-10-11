@@ -9,14 +9,7 @@ import {
   untracked,
 } from '@angular/core';
 import { httpErrorMessage } from '@lfd/endpoints';
-import {
-  MEDIA_LIMITS,
-  SOURCE_LOCALE,
-  type LibraryMediaView,
-  type MediaCarrierView,
-  type MediaDetailsPayload,
-  type MediaSeriesView,
-} from '@lfd/pim-contracts';
+import type { LibraryMediaView, MediaSeriesView } from '@lfd/pim-contracts';
 import {
   FoldButtonComponent,
   FoldCalloutComponent,
@@ -39,24 +32,24 @@ import {
 
 import { carrierWord } from '../carriers-panel/carriers-panel';
 import { objectPositionOf } from '../image-facts';
-import type { ImageDescription } from '../image-panel/image-panel';
+import { ImageReplacer } from '../image-replacer';
+import type { ImageDescription } from '../image-description';
+import { LibrarySearch } from '../library-search';
+import { MediaCarriersStore } from '../media-carriers';
 import { MediaLibraryHttpApi } from '../media-library-http-api';
-import { seriesLabel } from '../media-series';
-import { IMAGE_MEASURE, checkBeforeUpload } from '../upload-check';
-
-/** « Aucune » dans la liste des séries — une série n'a jamais un identifiant vide. */
-const NO_SERIES = '';
-
-/** Une page de recherche dans le fonds : de quoi choisir sans faire défiler un mur. */
-const PAGE_SIZE = 24;
-
-/** Les deux façons de désigner la nouvelle image. */
-type Source = 'deposit' | 'library';
-
-const SOURCES = [
-  { key: 'deposit', label: 'Déposer un fichier' },
-  { key: 'library', label: 'Choisir dans le fonds' },
-] as const satisfies readonly { key: Source; label: string }[];
+import { NO_SERIES, chosenSeriesId, seriesOptions } from '../media-series';
+import { carriersWording } from '../media-wording';
+import {
+  blankImage,
+  candidateImage,
+  depositedDescribed,
+  imageLabel,
+  isDescribed,
+  REPLACE_SOURCES,
+  type ReplaceCandidate,
+  type ReplaceSource,
+} from '../replace-rules';
+import { IMAGE_MEASURE, UPLOAD_LIMITS, checkBeforeUpload } from '../upload-check';
 
 /** Ce que le panneau reçoit. */
 export interface ReplacePanelData {
@@ -80,27 +73,10 @@ export interface ReplacePanelResult {
   readonly description: true | string | null;
 }
 
-/** La nouvelle image désignée, et ce qu'on sait de sa description. */
-interface Candidate {
-  readonly image: ImageDescription;
-  /**
-   * `true` / `false` : décrite ou non. `null` : déjà au fonds mais hors du fil
-   * chargé — on ne sait pas, et dans le doute on n'écrase rien.
-   */
-  readonly described: boolean | null;
-  /** Le dépôt a reconnu des octets déjà au fonds. */
-  readonly alreadyInLibrary: boolean;
-}
-
 /**
- * Panneau **Remplacer une image** (L7, D5) — repointer TOUS ses porteurs vers
- * une autre image, déposée à l'instant ou choisie dans le fonds.
- *
- * 🔴 Deux appels, dans cet ordre : `POST /media/replace`, puis — seulement si
- * on l'a demandé — `PUT /media` sur la nouvelle pour lui reprendre la
- * description de l'ancienne. Le serveur ne combine pas les deux (le contrôleur
- * dit pourquoi) ; le panneau ne prétend donc pas qu'ils sont atomiques, et un
- * refus de la reprise est rendu à part.
+ * Panneau **Remplacer une image** (`documentation/mediatheque/mediatheque.md`
+ * §2) — repointer TOUS ses porteurs vers une autre image, déposée à l'instant
+ * ou choisie dans le fonds. Les deux appels et leur ordre : {@link ImageReplacer}.
  *
  * Un refus du remplacement reste DANS le panneau, saisie intacte : le message
  * du serveur nomme le cas (404, 400, 409), et la nouvelle image désignée ne
@@ -129,6 +105,7 @@ interface Candidate {
     FoldListboxComponent,
     FoldLoadingStateComponent,
   ],
+  providers: [LibrarySearch, MediaCarriersStore],
   templateUrl: './replace-panel.html',
   styleUrl: './replace-panel.scss',
 })
@@ -137,42 +114,28 @@ export class ReplacePanel {
 
   private readonly ref = inject<FoldPanelRef<ReplacePanelResult>>(FoldPanelRef);
   private readonly api = inject(MediaLibraryHttpApi);
+  private readonly replacer = inject(ImageReplacer);
   private readonly measure = inject(IMAGE_MEASURE);
 
   readonly data = input.required<ReplacePanelData>();
 
-  protected readonly sources = SOURCES;
-  protected readonly limits = {
-    accept: MEDIA_LIMITS.accept,
-    hint: [
-      MEDIA_LIMITS.formatLabels.join(' · '),
-      `${String(MEDIA_LIMITS.maxBytes / (1024 * 1024))} Mo par image`,
-      `${String(MEDIA_LIMITS.minEdgePixels)} × ${String(MEDIA_LIMITS.minEdgePixels)} px minimum`,
-    ].join(' · '),
-  };
+  protected readonly sources = REPLACE_SOURCES;
+  protected readonly limits = UPLOAD_LIMITS;
 
   // — Les porteurs de l'ancienne image —
-  protected readonly carriers = signal<readonly MediaCarrierView[]>([]);
-  protected readonly carriersLoading = signal(true);
-  protected readonly carriersFailure = signal<string | null>(null);
+  private readonly carrierList = inject(MediaCarriersStore);
+  protected readonly carriers = this.carrierList.carriers.asReadonly();
+  protected readonly carriersLoading = this.carrierList.loading.asReadonly();
+  protected readonly carriersFailure = this.carrierList.failure.asReadonly();
 
   // — Désigner la nouvelle —
-  protected readonly source = signal<Source>('deposit');
+  protected readonly source = signal<ReplaceSource>('deposit');
   protected readonly seriesId = signal(NO_SERIES);
   protected readonly uploading = signal(false);
   protected readonly depositRefusal = signal<string | null>(null);
+  protected readonly library = inject(LibrarySearch);
 
-  protected readonly search = signal('');
-  protected readonly results = signal<readonly LibraryMediaView[]>([]);
-  protected readonly searching = signal(false);
-  protected readonly searchFailure = signal<string | null>(null);
-  private readonly next = signal<string | null>(null);
-  protected readonly hasMore = computed(() => this.next() !== null);
-  protected readonly loadingMore = signal(false);
-  /** La recherche a été lancée au moins une fois (le fonds n'est pas lu d'office avant l'onglet). */
-  private searched = false;
-
-  protected readonly candidate = signal<Candidate | null>(null);
+  protected readonly candidate = signal<ReplaceCandidate | null>(null);
   protected readonly takeOver = signal(false);
 
   // — Le geste —
@@ -181,19 +144,16 @@ export class ReplacePanel {
   protected readonly failure = signal<string | null>(null);
 
   protected readonly from = computed(() => this.data().from);
-  protected readonly fromLabel = computed(() => labelOf(this.from()));
+  protected readonly fromLabel = computed(() => imageLabel(this.from()));
   protected readonly fromPosition = computed(() => objectPositionOf(this.from().focal));
   protected readonly toPosition = computed(() =>
     objectPositionOf(this.candidate()?.image.focal ?? null),
   );
   protected readonly fromDescribed = computed(() => isDescribed(this.from()));
 
-  protected readonly seriesOptions = computed((): readonly FoldSelectOption<string>[] => [
-    { value: NO_SERIES, label: 'Aucune série' },
-    ...this.data()
-      .seriesChoices()
-      .map((series) => ({ value: series.id, label: seriesLabel(series) })),
-  ]);
+  protected readonly seriesOptions = computed((): readonly FoldSelectOption<string>[] =>
+    seriesOptions(this.data().seriesChoices()),
+  );
 
   /** La nouvelle est l'ancienne : le serveur refuserait, l'écran le dit avant. */
   protected readonly sameImage = computed(() => this.candidate()?.image.url === this.from().url);
@@ -217,27 +177,23 @@ export class ReplacePanel {
       const from = this.data().from;
       untracked(() => {
         this.seriesId.set(from.series?.id ?? NO_SERIES);
-        void this.loadCarriers(from.url);
+        // Sans la liste, on ne sait pas chez qui : le bouton reste fermé.
+        void this.carrierList.load(from.url);
       });
     });
   }
 
-  protected word(carrier: MediaCarrierView): string {
-    return carrierWord(carrier);
-  }
-
-  protected labelOf(image: { readonly name: string; readonly url: string }): string {
-    return labelOf(image);
-  }
+  protected readonly word = carrierWord;
+  protected readonly labelOf = imageLabel;
 
   protected choose(key: string): void {
-    const source = SOURCES.find((entry) => entry.key === key)?.key;
+    const source = REPLACE_SOURCES.find((entry) => entry.key === key)?.key;
     if (source === undefined) {
       return;
     }
     this.source.set(source);
-    if (source === 'library' && !this.searched) {
-      void this.research();
+    if (source === 'library') {
+      void this.library.open();
     }
   }
 
@@ -260,20 +216,11 @@ export class ReplacePanel {
     }
     this.uploading.set(true);
     try {
-      const seriesId = this.seriesId();
-      const uploaded = await this.api.upload(file, seriesId === NO_SERIES ? null : seriesId);
+      const uploaded = await this.api.upload(file, chosenSeriesId(this.seriesId()));
       const known = uploaded.alreadyInLibrary ? this.data().lookup(uploaded.url) : null;
-      const image: ImageDescription = known ?? {
-        url: uploaded.url,
-        name: '',
-        alt: { fr: '' },
-        focal: null,
-        tags: [],
-        series: null,
-      };
       this.designate({
-        image,
-        described: uploaded.alreadyInLibrary ? (known === null ? null : isDescribed(known)) : false,
+        image: known ?? blankImage(uploaded.url),
+        described: depositedDescribed(uploaded.alreadyInLibrary, known),
         alreadyInLibrary: uploaded.alreadyInLibrary,
       });
     } catch (caught) {
@@ -283,64 +230,11 @@ export class ReplacePanel {
     }
   }
 
-  /** Une saisie posée : la recherche part au serveur (le champ attend la fin de la frappe). */
-  protected searchFor(term: string): void {
-    this.search.set(term);
-    void this.research();
-  }
-
-  /** Relit le fonds avec la recherche courante — au serveur, par étiquette. */
-  protected async research(): Promise<void> {
-    this.searched = true;
-    this.searching.set(true);
-    this.searchFailure.set(null);
-    const search = this.search();
-    try {
-      const page = await this.api.page({ limit: PAGE_SIZE, q: search });
-      if (search !== this.search()) {
-        return;
-      }
-      this.results.set(page.items);
-      this.next.set(page.next);
-    } catch {
-      this.searchFailure.set("La médiathèque n'a pas pu être lue.");
-    } finally {
-      this.searching.set(false);
-    }
-  }
-
-  protected async more(): Promise<void> {
-    const after = this.next();
-    if (after === null || this.loadingMore()) {
-      return;
-    }
-    this.loadingMore.set(true);
-    const search = this.search();
-    try {
-      const page = await this.api.page({ limit: PAGE_SIZE, q: search, after });
-      if (search === this.search()) {
-        this.results.update((current) => [...current, ...page.items]);
-        this.next.set(page.next);
-      }
-    } catch {
-      this.searchFailure.set("La suite de la médiathèque n'a pas pu être lue.");
-    } finally {
-      this.loadingMore.set(false);
-    }
-  }
-
   protected pick(item: LibraryMediaView): void {
     if (item.url === this.from().url) {
       return;
     }
-    const image: ImageDescription = {
-      url: item.url,
-      name: item.name,
-      alt: item.alt,
-      focal: item.focal,
-      tags: item.tags,
-      series: item.series,
-    };
+    const image = candidateImage(item);
     this.designate({ image, described: isDescribed(image), alreadyInLibrary: true });
   }
 
@@ -375,42 +269,26 @@ export class ReplacePanel {
     this.ref.close();
   }
 
-  /**
-   * Remplace, PUIS reprend la description si on l'a demandé. Un refus du
-   * remplacement garde tout à l'écran ; un refus de la reprise ne défait pas
-   * le remplacement, déjà fait — il est rendu pour être dit.
-   */
+  /** Un refus du remplacement garde tout à l'écran, nouvelle image désignée. */
   protected async replace(): Promise<void> {
     const candidate = this.candidate();
     if (candidate === null || !this.canReplace()) {
       return;
     }
-    const from = this.from();
     const carriers = this.carriers().length;
     this.running.set(true);
     this.failure.set(null);
-    try {
-      await this.api.replace({ from: from.url, to: candidate.image.url });
-    } catch (caught) {
-      this.failure.set(httpErrorMessage(caught, "L'image n'a pas pu être remplacée."));
+    const outcome = await this.replacer.replace(this.from(), candidate.image.url, this.takeOver());
+    this.running.set(false);
+    if ('refusal' in outcome) {
+      this.failure.set(outcome.refusal);
       this.confirming.set(false);
-      this.running.set(false);
       return;
     }
-    let description: ReplacePanelResult['description'] = null;
-    if (this.takeOver()) {
-      try {
-        await this.api.describe(takenOver(from, candidate.image.url));
-        description = true;
-      } catch (caught) {
-        description = httpErrorMessage(caught, "La description n'a pas pu être reprise.");
-      }
-    }
-    this.running.set(false);
-    this.ref.close({ to: candidate.image.url, carriers, description });
+    this.ref.close({ to: candidate.image.url, carriers, description: outcome.description });
   }
 
-  private designate(candidate: Candidate): void {
+  private designate(candidate: ReplaceCandidate): void {
     this.candidate.set(candidate);
     // Cochée d'office seulement si la nouvelle n'a rien : dans le doute
     // (`null`), on n'écrase pas une description qu'on n'a pas lue.
@@ -418,59 +296,4 @@ export class ReplacePanel {
     this.confirming.set(false);
     this.failure.set(null);
   }
-
-  private async loadCarriers(url: string): Promise<void> {
-    this.carriersLoading.set(true);
-    this.carriersFailure.set(null);
-    try {
-      this.carriers.set(await this.api.carriersOf(url));
-    } catch {
-      // Un échec de LECTURE, pas une absence de porteurs : sans la liste, on
-      // ne sait pas chez qui on remplacerait — le bouton reste fermé.
-      this.carriersFailure.set("La liste des porteurs n'a pas pu être lue.");
-    } finally {
-      this.carriersLoading.set(false);
-    }
-  }
-}
-
-/** « 1 porteur », « 4 porteurs ». */
-export function carriersWording(count: number): string {
-  return count === 1 ? '1 porteur' : `${String(count)} porteurs`;
-}
-
-function labelOf(image: { readonly name: string; readonly url: string }): string {
-  return image.name !== '' ? image.name : (image.url.split('/').at(-1) ?? image.url);
-}
-
-/**
- * L'image porte-t-elle une description ? L'alternative de repli EST l'URL
- * quand personne n'a écrit (le serveur le rend ainsi) : elle ne compte pas.
- */
-export function isDescribed(image: ImageDescription): boolean {
-  const alt = image.alt[SOURCE_LOCALE].trim();
-  return (
-    image.name.trim() !== '' ||
-    image.tags.length > 0 ||
-    image.focal !== null ||
-    (alt !== '' && alt !== image.url)
-  );
-}
-
-/**
- * Le corps qui reprend la description de l'ancienne sur la nouvelle — TOUS
- * les champs, puisque l'écriture est un remplacement. `seriesId` est OMIS :
- * absent = inchangé, et la nouvelle garde sa série.
- */
-export function takenOver(from: ImageDescription, to: string): MediaDetailsPayload {
-  const alt = from.alt[SOURCE_LOCALE].trim();
-  return {
-    url: to,
-    name: from.name,
-    tags: [...from.tags],
-    // Une source vide (ou le repli sur l'URL) veut dire « pas d'alternative » :
-    // le contrat refuserait un texte sans sa langue, le serveur retombe sur l'URL.
-    ...(alt === '' || alt === from.url ? {} : { alt: from.alt }),
-    focal: from.focal,
-  };
 }

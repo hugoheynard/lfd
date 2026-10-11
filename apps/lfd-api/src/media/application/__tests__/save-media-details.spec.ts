@@ -106,7 +106,7 @@ const save = (
   );
 
 /**
- * L4 (2026-10-10) : la vitrine garde une COPIE du cadrage. Sans annonce, un
+ * Depuis le 2026-10-10, la vitrine garde une COPIE du cadrage. Sans annonce, un
  * point focal déplacé à la médiathèque n'arrivait en boutique qu'au prochain
  * enregistrement de la fiche ou au prochain push.
  */

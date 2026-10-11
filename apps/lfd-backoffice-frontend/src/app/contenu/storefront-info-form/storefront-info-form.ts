@@ -29,6 +29,7 @@ import {
   type PickedMedia,
 } from '../../pim/catalogue/library-picker/library-picker';
 import type { ShelfOption } from '../storefront-catalog';
+import { focalPositionOf } from '../storefront-focal';
 import { inheritedBadge, operationOf, operationOptionLabel } from '../storefront-operations';
 import {
   type InfoContent,
@@ -118,6 +119,7 @@ export class StorefrontInfoForm {
   protected readonly localeOptions = LOCALE_OPTIONS;
   protected readonly locale = signal<StorefrontLocale>('fr');
   protected readonly textIn = textIn;
+  protected readonly positionOf = focalPositionOf;
 
   protected readonly actionOptions = ACTION_OPTIONS;
   protected readonly action = computed(() => infoActionOf(this.info()));
@@ -237,7 +239,7 @@ export class StorefrontInfoForm {
 
   /**
    * Une image neuve repart sans alternative : celle de l'ancienne ne la décrit
-   * pas. Son point focal, lui, vient de la médiathèque (L10) : la boutique
+   * pas. Son point focal, lui, vient de la médiathèque (§7 bis) : la boutique
    * recadre autour, et la médiathèque le fait suivre s'il bouge.
    */
   protected chooseImage(): void {

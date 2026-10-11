@@ -119,7 +119,7 @@ describe("OnProductMediaChanged", () => {
   });
 
   /**
-   * L4 (2026-10-10) : un fait écrit avant que le point focal ne voyage dort
+   * Depuis le 2026-10-10 : un fait écrit avant que le point focal ne voyage dort
    * peut-être dans la boîte d'envoi. Il doit se projeter, « au centre ».
    */
   it("projette un fait d'AVANT le point focal, sans point focal", async () => {

@@ -16,13 +16,13 @@
   font-weight: var(--fold-weight-semibold);
 }
 
-// Recadrée au centre, comme la boutique la pose (R12 : pas de point focal).
+// Recadrée sur son point focal comme la boutique la pose (`object-position`
+// posé par le gabarit ; le centre faute de point).
 .preview {
   display: block;
   width: 100%;
   aspect-ratio: 2 / 1;
   object-fit: cover;
-  object-position: center;
   border-radius: var(--fold-radius-md);
   background: var(--fold-color-surface-sunken);
 

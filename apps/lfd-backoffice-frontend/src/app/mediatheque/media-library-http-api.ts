@@ -8,6 +8,7 @@ import type {
   MediaDetailsPayload,
   MediaLibraryPageView,
   MediaLibrarySort,
+  MediaPalettePayload,
   MediaSeriesPayload,
   MediaSeriesView,
   MediaTagView,
@@ -34,12 +35,12 @@ export interface MediaPageRequest {
   readonly from?: string | undefined;
   /** Dernier jour de dépôt retenu, `AAAA-MM-JJ`, inclus. */
   readonly to?: string | undefined;
-  /** Premier et dernier jour de prise de vue, inclus (L11). */
+  /** Premier et dernier jour de prise de vue, inclus. */
   readonly shotFrom?: string | undefined;
   readonly shotTo?: string | undefined;
   readonly untagged?: boolean | undefined;
   readonly unused?: boolean | undefined;
-  /** L'identifiant d'une série (L3). */
+  /** L'identifiant d'une série. */
   readonly series?: string | undefined;
 }
 
@@ -101,7 +102,7 @@ export class MediaLibraryHttpApi {
    * charge cent ; l'image cent-unième était donc introuvable quoi qu'on tape,
    * et rien ne le disait à l'écran.
    *
-   * 🔴 Par CURSEUR depuis le 2026-10-10 (plan L2) : `after` reprend où `next`
+   * 🔴 Par CURSEUR depuis le 2026-10-10 : `after` reprend où `next`
    * s'est arrêté, et un dépôt pendant qu'on défile ne décale plus rien.
    * `offset` reste servi, mais plus aucun écran ne l'envoie.
    *
@@ -139,13 +140,13 @@ export class MediaLibraryHttpApi {
   ): Promise<UploadedMediaView> {
     const body = new FormData();
     body.append('file', file);
-    // La palette est calculée par le navigateur (L9, R28) : l'API n'a pas de
+    // La palette est calculée par le navigateur (`mediatheque.md` §9 bis) : l'API n'a pas de
     // décodeur. Absente, le serveur range `NULL` et le rattrapage la posera.
     if (palette !== null) {
       body.append('palette', JSON.stringify(palette));
     }
-    // La série part avec CHAQUE fichier du lot (L3, D3 : facultative). Une
-    // image déjà au fonds garde la sienne (D2) : la réponse le dit.
+    // La série part avec CHAQUE fichier du lot (facultative, `mediatheque.md` §5). Une
+    // image déjà au fonds garde la sienne : la réponse le dit.
     if (seriesId !== null) {
       body.append('seriesId', seriesId);
     }
@@ -153,11 +154,12 @@ export class MediaLibraryHttpApi {
   }
 
   /**
-   * **Le rattrapage d'une palette** (L9) — 204 qu'elle soit posée ou déjà
+   * **Le rattrapage d'une palette** (`mediatheque.md` §9 bis) — 204 qu'elle soit posée ou déjà
    * présente : le serveur n'écrase jamais une palette existante.
    */
   async paint(url: string, palette: ImagePalette): Promise<void> {
-    await firstValueFrom(this.http.put<void>(`${this.base}/media/palette`, { url, palette }));
+    const body: MediaPalettePayload = { url, palette: [...palette] };
+    await firstValueFrom(this.http.put<void>(`${this.base}/media/palette`, body));
   }
 
   /**
@@ -193,7 +195,7 @@ export class MediaLibraryHttpApi {
   }
 
   /**
-   * **Remplacer une image** chez tous ses porteurs (L7, D5) — 204, rien
+   * **Remplacer une image** chez tous ses porteurs (`mediatheque.md` §2) — 204, rien
    * d'autre : l'écran relit ce qu'il montre.
    *
    * L'ancienne image RESTE au fonds ; le ramassage la retirera quand plus rien
@@ -242,7 +244,7 @@ export class MediaLibraryHttpApi {
 
   /**
    * **Le vocabulaire du fonds** — chaque mot-clé et combien d'images le
-   * portent, compté sur TOUT le fonds (L1, 2026-10-10).
+   * portent, compté sur TOUT le fonds (depuis le 2026-10-10).
    *
    * 🔴 Il remplace un vocabulaire dérivé des images CHARGÉES : un mot porté
    * seulement par une image hors de la page n'apparaissait pas dans la bande,

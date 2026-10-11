@@ -1,4 +1,4 @@
-import { ChangeDetectionStrategy, Component, effect, inject, input, signal } from '@angular/core';
+import { ChangeDetectionStrategy, Component, effect, inject, input } from '@angular/core';
 import { Router } from '@angular/router';
 import type { MediaCarrierView } from '@lfd/pim-contracts';
 import {
@@ -8,7 +8,7 @@ import {
   FoldPanelRef,
 } from 'fold-ng';
 
-import { MediaLibraryHttpApi } from '../media-library-http-api';
+import { MediaCarriersStore } from '../media-carriers';
 
 /**
  * Où mène un porteur, et comment il se nomme — une entrée par `kind`.
@@ -65,6 +65,7 @@ export interface CarriersPanelData {
   selector: 'app-carriers-panel',
   changeDetection: ChangeDetectionStrategy.OnPush,
   imports: [FoldPanelHeaderComponent, FoldButtonComponent],
+  providers: [MediaCarriersStore],
   templateUrl: './carriers-panel.html',
   styleUrl: './carriers-panel.scss',
 })
@@ -72,14 +73,14 @@ export class CarriersPanel {
   static readonly foldPanel: FoldPanelDefaults = { side: 'auto' };
 
   private readonly ref = inject<FoldPanelRef<void>>(FoldPanelRef);
-  private readonly api = inject(MediaLibraryHttpApi);
   private readonly router = inject(Router);
 
   readonly data = input.required<CarriersPanelData>();
 
-  protected readonly carriers = signal<readonly MediaCarrierView[]>([]);
-  protected readonly loading = signal(true);
-  protected readonly failure = signal<string | null>(null);
+  private readonly store = inject(MediaCarriersStore);
+  protected readonly carriers = this.store.carriers.asReadonly();
+  protected readonly loading = this.store.loading.asReadonly();
+  protected readonly failure = this.store.failure.asReadonly();
 
   /**
    * 🔴 Dans un `effect`, et **jamais dans le constructeur**.
@@ -96,7 +97,7 @@ export class CarriersPanel {
   constructor() {
     effect(() => {
       const { url } = this.data();
-      void this.load(url);
+      void this.store.load(url);
     });
   }
 
@@ -119,18 +120,5 @@ export class CarriersPanel {
 
   protected dismiss(): void {
     this.ref.close();
-  }
-
-  private async load(url: string): Promise<void> {
-    try {
-      this.carriers.set(await this.api.carriersOf(url));
-    } catch {
-      // Un échec de LECTURE, pas une absence de porteurs. Les confondre ferait
-      // croire l'image libre au premier réseau qui tousse — et proposer de la
-      // supprimer.
-      this.failure.set("La liste des porteurs n'a pas pu être lue.");
-    } finally {
-      this.loading.set(false);
-    }
   }
 }

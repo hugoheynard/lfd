@@ -124,15 +124,32 @@ export interface MediaUploadFailureView {
  * identifiant. Une ligne sans mot ne se clique pas.
  */
 export interface MediaCarrierView {
-  /**
-   * Elle décide de l'écran vers lequel le lien renvoie. `storefront` = un
-   * objet de la vitrine du commerce (`id` = l'identifiant de l'objet) ;
-   * `operation` = une opération datée du référentiel (`id` = sa clé).
-   */
-  readonly kind: "product" | "category" | "storefront" | "operation";
+  /** Elle décide de l'écran vers lequel le lien renvoie — cf. {@link MEDIA_CARRIER_KINDS}. */
+  readonly kind: MediaCarrierKind;
   readonly id: string;
   readonly label: string;
 }
+
+/**
+ * **Les natures de porteur** — la seule liste, que le canal des porteurs du
+ * serveur et l'écran lisent tous deux (fondue le 2026-10-11 : elle était
+ * écrite deux fois, et une nature ajoutée d'un seul côté aurait rendu un lien
+ * vers nulle part).
+ *
+ * `storefront` = un objet de la vitrine du commerce (`id` = son identifiant,
+ * `home` pour la porte de l'accueil) ; `operation` = une opération datée du
+ * référentiel (`id` = sa clé), ou la copie que le commerce en a reçue au push.
+ */
+export const MEDIA_CARRIER_KINDS = ["product", "category", "storefront", "operation"] as const;
+export type MediaCarrierKind = (typeof MEDIA_CARRIER_KINDS)[number];
+
+/**
+ * **Combien de mots-clés une image porte au plus**, une fois dédoublonnés —
+ * la seule borne, lue par le domaine pour refuser et par le schéma du corps.
+ * Elles disaient 30 et 60 jusqu'au 2026-10-11 : deux bornes qui ne disent pas
+ * la même chose finissent par laisser croire que la plus large est la règle.
+ */
+export const MEDIA_MAX_TAGS_PER_IMAGE = 30;
 
 /**
  * Une image de la **bibliothèque**, telle que la médiathèque la montre.
@@ -279,21 +296,6 @@ export const mediaLibraryQuerySchema = z.object({
 });
 export type MediaLibraryQuery = z.infer<typeof mediaLibraryQuerySchema>;
 
-/** Un visuel attaché, tel qu'un écran le lit et le renvoie. */
-export interface AttachedMediaView extends MediaFactsView {
-  /** `hero`, `gallery`, `lifestyle`, `thumbnail`, `print`. */
-  readonly role: string;
-  readonly url: string;
-  /**
-   * L'étiquette de la bibliothèque — courte, non traduite, faite pour
-   * RETROUVER. Distincte du texte alternatif, qui DÉCRIT l'image à qui ne la
-   * voit pas : deux informations, deux publics. `''` = pas nommé.
-   */
-  readonly name: string;
-  /** Le SEUL champ d'image qui se traduit — accessibilité ET référencement. */
-  readonly alt: LocalizedText;
-}
-
 /**
  * Ce que rend un dépôt d'image : l'entrée de bibliothèque créée.
  *
@@ -314,28 +316,6 @@ export interface UploadedMediaView extends MediaFactsView {
 }
 
 /**
- * Un visuel tel qu'un écran l'ENVOIE : **le rôle et l'adresse**.
- *
- * 🔴 Plus d'étiquette ni d'alternative depuis le 2026-09-23 — elles décrivent
- * l'image, qui est partagée, et se saisissent dans la médiathèque. Les
- * envoyer d'ici faisait écrire la bibliothèque à chaque enregistrement de
- * fiche, et corriger l'une changeait silencieusement ce que l'autre affichait.
- */
-export const mediaItemPayloadSchema = z.object({
-  role: z.string().min(1),
-  url: z.string().min(1),
-});
-
-/**
- * La liste ENTIÈRE des visuels, dans son ordre. Un remplacement et non un
- * ajout : l'écran envoie ce qu'il affiche, et l'ordre affiché EST l'ordre.
- */
-export const setMediaPayloadSchema = z.object({
-  media: z.array(mediaItemPayloadSchema),
-});
-export type SetMediaPayload = z.infer<typeof setMediaPayloadSchema>;
-
-/**
  * Ce qu'un écran DÉCIDE d'une image — par opposition à ce qu'on en a mesuré.
  *
  * Clé = l'**URL**, parce qu'elle EST l'identité d'une image : le SHA-256 de
@@ -348,7 +328,7 @@ export const mediaDetailsPayloadSchema = z.object({
   name: z.string().max(120),
   /** Le SEUL champ d'image qui se traduit — accessibilité ET référencement. */
   alt: optionalLocalizedTextSchema,
-  tags: z.array(z.string()).max(60),
+  tags: z.array(z.string()).max(MEDIA_MAX_TAGS_PER_IMAGE),
   /**
    * `null` veut dire « personne ne s'est prononcé », jamais « au centre ».
    * Les bornes réelles (0 à 1) sont tenues par le domaine ; le schéma ne dit

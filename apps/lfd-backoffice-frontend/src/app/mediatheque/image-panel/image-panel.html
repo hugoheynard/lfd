@@ -85,7 +85,7 @@
       <fold-input label="Étiquette" [value]="label()" (valueChange)="label.set($event)" />
     </fold-page-section>
 
-    <!-- LA SÉRIE (L3), entre ce qui nomme l'image et les mots par lesquels
+    <!-- LA SÉRIE, entre ce qui nomme l'image et les mots par lesquels
          on la retrouve. Elle part au MÊME enregistrement que le reste. -->
     <fold-page-section
       title="Série"
@@ -94,30 +94,30 @@
       stack
     >
       <div class="series-line">
-        @if (series(); as current) {
+        @if (seriesChoice.current(); as current) {
           <app-series-chip [series]="current" />
         } @else {
           <span class="muted">Aucune série.</span>
         }
-        @if (canChangeSeries() && !changingSeries()) {
+        @if (seriesChoice.canChange() && !seriesChoice.changing()) {
           <button
             foldButton
             emphasis="soft"
             intent="neutral"
             size="sm"
             icon="edit"
-            (click)="changingSeries.set(true)"
+            (click)="seriesChoice.changing.set(true)"
           >
             Changer
           </button>
         }
       </div>
-      @if (changingSeries()) {
+      @if (seriesChoice.changing()) {
         <fold-listbox
           label="Rattacher à"
-          [options]="seriesOptions()"
-          [value]="series()?.id ?? ''"
-          (selectionChange)="chooseSeries($event)"
+          [options]="seriesChoice.options()"
+          [value]="seriesChoice.current()?.id ?? ''"
+          (selectionChange)="seriesChoice.choose($event)"
         />
       }
     </fold-page-section>
@@ -130,30 +130,30 @@
       [headingLevel]="3"
       stack
     >
-      @if (tags().length === 0) {
+      @if (tagEditor.tags().length === 0) {
         <p class="muted">Aucun mot-clé.</p>
       } @else {
         <ul class="chips">
-          @for (tag of tags(); track tag) {
-            <li><app-tag-chip [tag]="tag" removable (removed)="removeTag(tag)" /></li>
+          @for (tag of tagEditor.tags(); track tag) {
+            <li><app-tag-chip [tag]="tag" removable (removed)="tagEditor.remove(tag)" /></li>
           }
         </ul>
       }
       <fold-input
         label="Ajouter un mot-clé"
         [hint]="
-          tagWritten() !== '' && tagWritten() !== tagDraft().trim()
-            ? 'Sera écrit : « ' + tagWritten() + ' »'
+          tagEditor.written() !== '' && tagEditor.written() !== tagEditor.draft().trim()
+            ? 'Sera écrit : « ' + tagEditor.written() + ' »'
             : 'Entrée pour ajouter. Écrit en minuscules.'
         "
-        [value]="tagDraft()"
-        (valueChange)="tagDraft.set($event)"
-        (keydown.enter)="addTag(tagDraft())"
+        [value]="tagEditor.draft()"
+        (valueChange)="tagEditor.draft.set($event)"
+        (keydown.enter)="tagEditor.add(tagEditor.draft())"
       />
-      @if (suggestions().length > 0) {
+      @if (tagEditor.suggestions().length > 0) {
         <div class="chips" role="group" aria-label="Mots-clés existants">
-          @for (word of suggestions(); track word) {
-            <app-tag-chip [tag]="word" pressable (pressed)="addTag(word)" />
+          @for (word of tagEditor.suggestions(); track word) {
+            <app-tag-chip [tag]="word" pressable (pressed)="tagEditor.add(word)" />
           }
         </div>
       }
@@ -175,22 +175,22 @@
             [placeholder]="
               locale === sourceLocale ? 'Pas encore décrite' : 'Vide : retombe sur le français'
             "
-            [value]="valueOf(locale)"
-            (valueChange)="write(locale, $event)"
+            [value]="alt.valueOf(locale)"
+            (valueChange)="alt.write(locale, $event)"
           />
           <div class="alt-meta">
             <span class="muted">
               @if (locale === sourceLocale) {
-                {{ lengthOf(locale) === 0 ? 'Pas encore décrite.' : 'Le français fait foi.' }}
+                {{ alt.lengthOf(locale) === 0 ? 'Pas encore décrite.' : 'Le français fait foi.' }}
               } @else {
-                {{ lengthOf(locale) === 0 ? 'Retombe sur le français.' : 'Traduction.' }}
+                {{ alt.lengthOf(locale) === 0 ? 'Retombe sur le français.' : 'Traduction.' }}
               }
             </span>
             <span
               class="count"
-              [class.is-over]="tooLong(locale)"
+              [class.is-over]="alt.tooLong(locale)"
               [attr.title]="'Recommandé : ' + recommended + ' caractères au plus'"
-              >{{ lengthOf(locale) }} / {{ recommended }}</span
+              >{{ alt.lengthOf(locale) }} / {{ recommended }}</span
             >
           </div>
         </div>

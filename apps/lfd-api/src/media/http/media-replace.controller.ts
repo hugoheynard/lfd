@@ -8,7 +8,7 @@ import { ZodBody } from "../../platform/shared/http/zod-body.pipe.js";
 import { ReplaceMediaCommand } from "../application/replace-media.js";
 
 /**
- * **Remplacer une image du fonds** (L7, 2026-10-10) — `POST /media/replace`.
+ * **Remplacer une image du fonds** (2026-10-10) — `POST /media/replace`.
  *
  * Son propre contrôleur : celui du fonds frôle la borne des 300 lignes, et ce
  * geste n'a rien à partager avec lui que la surface. Même droit,

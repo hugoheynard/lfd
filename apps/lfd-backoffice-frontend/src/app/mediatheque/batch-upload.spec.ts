@@ -151,7 +151,7 @@ describe('le dépôt en lot', () => {
   });
 });
 
-describe('le dépôt en lot — vérifié avant l’envoi (L3)', () => {
+describe('le dépôt en lot — vérifié avant l’envoi', () => {
   it('n’envoie pas un fichier trop petit, et dit pourquoi comme le serveur', async () => {
     const batch = store();
     sizes.set('icone.png', { width: 64, height: 64 });
@@ -161,8 +161,8 @@ describe('le dépôt en lot — vérifié avant l’envoi (L3)', () => {
     expect(sent).toBe(1);
     expect(api.sent).toEqual(['a.png']);
     expect(batch.entries()[1]).toMatchObject({
-      state: 'refusé',
-      refusedBy: 'poste',
+      state: 'refused',
+      refusedBy: 'device',
       reason: 'Visuel refusé : 64×64 est trop petit — 200 px minimum sur chaque côté.',
     });
   });
@@ -187,7 +187,7 @@ describe('le dépôt en lot — vérifié avant l’envoi (L3)', () => {
   });
 });
 
-describe('le dépôt en lot — la série (L3)', () => {
+describe('le dépôt en lot — la série', () => {
   it('envoie la série du lot avec chaque fichier, réessais compris', async () => {
     const batch = store();
     api.refuse.set('b.png', refusal('Réseau.'));
@@ -199,7 +199,7 @@ describe('le dépôt en lot — la série (L3)', () => {
     expect(api.seriesSent).toEqual(['s1', 's1']);
   });
 
-  it('dit « déjà au fonds » et garde la série d’origine (D2)', async () => {
+  it('dit « déjà au fonds » et garde la série d’origine', async () => {
     const batch = store();
     api.known.set('a.png', 's0');
 
@@ -207,8 +207,8 @@ describe('le dépôt en lot — la série (L3)', () => {
 
     expect(sent).toBe(2);
     expect(batch.entries().map((entry) => [entry.state, entry.seriesId])).toEqual([
-      ['déjà au fonds', 's0'],
-      ['déposé', 's1'],
+      ['already_in_library', 's0'],
+      ['deposited', 's1'],
     ]);
     expect(batch.alreadyKnown()).toBe(1);
     expect(batch.deposited()).toBe(1);

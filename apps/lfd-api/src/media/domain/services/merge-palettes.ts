@@ -17,7 +17,7 @@ interface Cluster {
 }
 
 /**
- * **La palette d'une tranche de photos** — fonction pure (L9, 2026-10-11).
+ * **La palette d'une tranche de photos** — fonction pure (2026-10-11).
  *
  * - Dominantes : chacune pèse `share × 1/n` (n = images peintes), regroupées
  *   par proximité (ΔE76 < {@link MERGE_DELTA_E}, moyenne Lab pondérée) ; on

@@ -109,7 +109,7 @@ describe("CompositeMediaCarriers", () => {
     await expect(composite.carriersOf(A)).rejects.toThrow("vitrine injoignable");
   });
 
-  describe("repoint (L7)", () => {
+  describe("repoint", () => {
     const REPLACEMENT: ImageReplacement = {
       from: A,
       to: B,

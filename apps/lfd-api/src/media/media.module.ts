@@ -8,6 +8,8 @@ import { ReadUploadFailuresHandler } from "./application/read-upload-failures.js
 import { MediaFailureLog } from "./domain/ports/media-failure-log.js";
 import { PrismaMediaFailureLog } from "./infrastructure/prisma-media-failure-log.js";
 import { DepositImageHandler } from "./application/deposit-image.js";
+import { DepositPalette } from "./application/deposit-palette.js";
+import { DepositRefusals } from "./application/deposit-refusals.js";
 import { DiscardMediaHandler } from "./application/discard-media.js";
 import { PaintMediaPaletteHandler } from "./application/paint-media-palette.js";
 import { ReadPaletteStripHandler } from "./application/read-palette-strip.js";
@@ -95,6 +97,8 @@ import { PrismaMediaLibraryWriter } from "./infrastructure/prisma-media-library-
     ReadPaletteStripHandler,
     { provide: MediaPaletteStripReader, useClass: PrismaMediaPaletteStripReader },
     DepositImageHandler,
+    DepositRefusals,
+    DepositPalette,
     SweepOrphanMediaHandler,
     ListMediaTagsHandler,
     RenameMediaTagHandler,

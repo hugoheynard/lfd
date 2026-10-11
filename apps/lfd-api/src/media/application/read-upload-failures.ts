@@ -10,7 +10,7 @@ import { MediaFailureLog, type LoggedFailure } from "../domain/ports/media-failu
  * le fichier n'existe plus sur le disque de personne et la ligne n'apprend
  * plus rien.
  */
-const MAX_FAILURES = 200;
+export const UPLOAD_FAILURES_MAX = 200;
 const DEFAULT_FAILURES = 50;
 
 /** Les derniers dépôts refusés, du plus récent au plus ancien. */
@@ -40,7 +40,7 @@ export class ReadUploadFailuresHandler implements IQueryHandler<
   async execute(query: ReadUploadFailuresQuery): Promise<readonly MediaUploadFailureView[]> {
     // Borné ICI comme la bibliothèque, et pour la même raison : le contrôleur
     // peut se tromper, un test aussi.
-    const limit = Math.min(Math.max(Math.trunc(query.limit), 1), MAX_FAILURES);
+    const limit = Math.min(Math.max(Math.trunc(query.limit), 1), UPLOAD_FAILURES_MAX);
     const rows = await this.failures.recent(limit);
     return rows.map(viewOf);
   }

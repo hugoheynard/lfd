@@ -38,7 +38,7 @@ export interface StorefrontState {
   readonly updatedAt: Date | null;
   /**
    * Qui a enregistré en dernier — la fiche INTERNE. Absent ou `null` : jamais
-   * enregistrée. Un recadrage venu de la médiathèque le garde (L10).
+   * enregistrée. Un recadrage venu de la médiathèque le garde (§7 bis de la médiathèque).
    */
   readonly updatedByStaffId?: string | null | undefined;
   readonly pages: readonly StorefrontPageInput[];
@@ -65,6 +65,14 @@ export interface StorefrontSaving {
   readonly at: Date;
   readonly staffId: string;
 }
+
+/**
+ * Quand la vitrine est recadrée — sans `staffId` : un recadrage n'est le geste
+ * de personne ici ({@link Storefront.refocus}). Même place que
+ * {@link StorefrontSaving} dans les signatures, pour que `repointImage` et
+ * `refocus` se lisent pareil.
+ */
+export type StorefrontRefocusing = Pick<StorefrontSaving, "at">;
 
 /** Ce que l'adaptateur écrit après un `compose()`. */
 export interface StorefrontWrite {
@@ -180,8 +188,8 @@ export class Storefront {
 
   /**
    * **Remplace une image de la médiathèque** partout où la vitrine la montre
-   * — contenus des objets vivants, porte de l'accueil (L7 du plan de la
-   * médiathèque, 2026-10-10). Le texte alternatif reste celui du porteur.
+   * — contenus des objets vivants, porte de l'accueil (depuis le 2026-10-10,
+   * `documentation/mediatheque/mediatheque.md` §2). Le texte alternatif reste celui du porteur.
    *
    * Rend le nombre de porteurs changés. À zéro, rien n'est à écrire : la
    * révision ne monte pas, et un éditeur ouvert n'est pas refusé pour rien.
@@ -207,8 +215,8 @@ export class Storefront {
 
   /**
    * **Recadre une image de la médiathèque** partout où la vitrine la montre,
-   * sur le point focal que la médiathèque vient de lui donner (L10 du plan de
-   * la médiathèque, 2026-10-11). `null` : retour au centre.
+   * sur le point focal que la médiathèque vient de lui donner (depuis le
+   * 2026-10-11, `documentation/mediatheque/mediatheque.md` §7 bis). `null` : retour au centre.
    *
    * Rend le nombre de porteurs changés, comme {@link repointImage} : à zéro
    * (image absente, ou déjà sur ce point), rien n'est à écrire et la révision
@@ -222,7 +230,7 @@ export class Storefront {
    *
    * @throws {InvalidStorefrontError} point focal hors de l'image.
    */
-  refocus(url: string, focal: StorefrontFocal | null, at: Date): number {
+  refocus(url: string, focal: StorefrontFocal | null, refocusing: StorefrontRefocusing): number {
     const point = storefrontFocal(focal);
     if (this.updatedByStaffId === null) {
       return 0;
@@ -235,7 +243,7 @@ export class Storefront {
     if (carriers > 0) {
       this.objects = objects;
       this.pages = pages;
-      this.saving = { at, staffId: this.updatedByStaffId, archived: [] };
+      this.saving = { at: refocusing.at, staffId: this.updatedByStaffId, archived: [] };
     }
     return carriers;
   }

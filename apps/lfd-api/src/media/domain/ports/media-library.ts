@@ -13,7 +13,7 @@ export interface MediaFacts {
 export interface RegisteredMedia extends MediaFacts {
   readonly id: string;
   readonly url: string;
-  /** La série de l'image (L3) — `null` = aucune. */
+  /** La série de l'image — `null` = aucune. */
   readonly seriesId: string | null;
 }
 
@@ -32,6 +32,10 @@ export abstract class MediaLibrary {
    * Le ticket dit qu'on a tracé le dépôt — ou nommé
    * pourquoi pas : écrire sans rien affirmer ne compile pas (2026-10-10, comme
    * `MediaLibraryWriter`).
+   *
+   * @throws {MediaAlreadyRegisteredError} une inscription porte déjà cette URL
+   *   — un dépôt simultané des mêmes octets l'a précédé. L'adaptateur traduit
+   *   l'unicité de la base : aucune erreur de persistance ne franchit le port.
    */
   abstract register(
     entry: Omit<RegisteredMedia, "id">,
@@ -41,7 +45,7 @@ export abstract class MediaLibrary {
   /**
    * L'inscription qui porte DÉJÀ cette URL, ou `null`.
    *
-   * Sert au redépôt (D2, 2026-10-10) : les mêmes octets tombent sur la même
+   * Sert au redépôt (2026-10-10) : les mêmes octets tombent sur la même
    * URL, et l'image déjà au fonds garde tout — sa série comprise. Sans cette
    * lecture, le second dépôt butait sur l'unicité de l'URL et rendait un 409
    * « Cette ressource existe déjà » (constaté le 2026-10-10).

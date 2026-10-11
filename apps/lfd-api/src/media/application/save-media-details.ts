@@ -7,12 +7,14 @@ import { MediaAssetDescribedFact } from "../channels/carriers/media-asset-descri
 import { changesBetween } from "../../platform/journal/changes.js";
 import { MEDIA_EVENTS, MediaJournal } from "../journal/media-journal.js";
 import { MediaLibraryReader } from "../domain/ports/media-library-reader.js";
-import { MediaLibraryWriter } from "../domain/ports/media-library-writer.js";
+import { MediaLibraryWriter, type MediaDetails } from "../domain/ports/media-library-writer.js";
 import { MediaSeriesReader, type MediaSeriesLabel } from "../domain/ports/media-series.js";
 import { MediaSeriesNotFoundError } from "../domain/errors/media-series-errors.js";
-import { altText, SOURCE_LOCALE } from "../domain/value-objects/alt-text.js";
+import type { WriteTicket } from "../../platform/journal/scoped-journal.js";
+import { imageAlt } from "../domain/value-objects/alt-text.js";
 import {
   focalPoint,
+  mediaLabel,
   MediaNotInLibraryError,
   mediaTags,
   type FocalPoint,
@@ -33,7 +35,7 @@ export class SaveMediaDetailsCommand {
     readonly alt: Readonly<Record<string, string>>,
     readonly focal: FocalPoint | null,
     /**
-     * La série (L3) : un identifiant la rattache, `null` la détache, et
+     * La série : un identifiant la rattache, `null` la détache, et
      * `undefined` n'y touche PAS — le panneau renvoie tous ses champs à chaque
      * geste, et un champ absent ne doit rien changer.
      */
@@ -62,67 +64,49 @@ export class SaveMediaDetailsHandler implements ICommandHandler<SaveMediaDetails
       // recopiée à la main, ou une image que le ramassage vient de retirer.
       throw new MediaNotInLibraryError(url);
     }
-
-    // La normalisation et les bornes vivent dans le DOMAINE, pas ici : ce
-    // handler orchestre, il ne décide pas de ce qu'est un tag acceptable. Le
-    // contrôleur, lui, n'a validé que la FORME du corps reçu.
+    // La normalisation, les bornes et le repli de l'alternative vivent dans le
+    // DOMAINE : ce handler orchestre. Le contrôleur n'a validé que la FORME.
     const details = {
       name: command.name.trim(),
       tags: mediaTags(command.tags),
-      // 🔴 Le repli sur l'URL, et pas un refus. Le value object exige une
-      // langue source — à juste titre : une alternative sans français n'en est
-      // pas une. Mais « je n'ai pas encore écrit d'alternative » est un état
-      // légitime de la bibliothèque, et l'exiger interdirait de poser un
-      // mot-clé sur une image qu'on n'a pas encore décrite.
-      //
-      // Le repli est l'URL, comme partout ailleurs dans ce dépôt : une
-      // alternative absente doit se VOIR, jamais se confondre avec une
-      // alternative rédigée.
-      alt: altText(
-        "texte alternatif",
-        command.alt[SOURCE_LOCALE] === undefined ? { [SOURCE_LOCALE]: url } : command.alt,
-      ),
+      alt: imageAlt(command.alt, url),
       focal: focalPoint(command.focal),
     };
     const series = await this.seriesAfter(command.seriesId, before.series);
-
     const changes = changesBetween(
-      {
-        name: before.name,
-        tags: [...before.tags],
-        alt: before.alt,
-        focal: before.focal,
-        series: namedSeries(before.series),
-      },
-      {
-        name: details.name,
-        tags: [...details.tags],
-        alt: details.alt,
-        focal: details.focal,
-        series: namedSeries(series),
-      },
+      decisionsOf(before, before.series),
+      decisionsOf(details, series),
     );
-
     await this.uow.run(async () => {
-      const ticket =
-        Object.keys(changes).length > 0
-          ? await this.journal.trace({
-              type: MEDIA_EVENTS.mediaDescribed,
-              subjectType: "media_asset",
-              // L'URL, parce que c'est l'identité de l'image : les inscriptions
-              // sont recréées à chaque enregistrement de fiche, un identifiant
-              // d'actif ne désignerait rien de durable.
-              subjectId: url,
-              payload: { subjectLabel: labelOf(before.name, url), changes },
-            })
-          : // Réenvoyer les mêmes valeurs est le cas NORMAL : l'écran renvoie
-            // les trois champs à chaque geste, même quand il n'en change qu'un.
-            // Tracer « rien n'a bougé » remplirait le journal de bruit.
-            this.journal.untraced("aucune décision modifiée");
+      const ticket = await this.ticketFor(url, before.name, changes);
       await this.library.describe(url, { ...details, seriesId: series?.id ?? null }, ticket);
       if (CARRIED_FIELDS.some((field) => field in changes)) {
-        await this.durable.publish(new MediaAssetDescribedFact(url, this.ids.next()).durableFact());
+        await this.durable.publish(MediaAssetDescribedFact.announce(url, this.ids));
       }
+    });
+  }
+
+  /**
+   * Le fait « image décrite », ou la dérogation quand rien n'a bougé.
+   *
+   * Réenvoyer les mêmes valeurs est le cas NORMAL : l'écran renvoie tous ses
+   * champs à chaque geste, même quand il n'en change qu'un. Tracer « rien n'a
+   * bougé » remplirait le journal de bruit.
+   */
+  private async ticketFor(
+    url: string,
+    name: string,
+    changes: Readonly<Record<string, unknown>>,
+  ): Promise<WriteTicket> {
+    if (Object.keys(changes).length === 0) {
+      return this.journal.untraced("aucune décision modifiée");
+    }
+    return this.journal.trace({
+      type: MEDIA_EVENTS.mediaDescribed,
+      subjectType: "media_asset",
+      // L'URL, parce que c'est l'identité de l'image — celle que les porteurs citent.
+      subjectId: url,
+      payload: { subjectLabel: mediaLabel(name, url), changes },
     });
   }
 
@@ -150,7 +134,7 @@ export class SaveMediaDetailsHandler implements ICommandHandler<SaveMediaDetails
 
 /**
  * Les champs qu'un porteur recopie — et donc les seuls dont le changement
- * mérite d'être annoncé (L4, 2026-10-10). L'alternative et le point focal
+ * mérite d'être annoncé (2026-10-10, `mediatheque.md` §7). L'alternative et le point focal
  * voyagent jusqu'à la vitrine ; l'étiquette, les tags et la série restent au
  * fonds. Annoncer pour un tag ferait réécrire des fiches pour rien.
  *
@@ -159,20 +143,23 @@ export class SaveMediaDetailsHandler implements ICommandHandler<SaveMediaDetails
  */
 const CARRIED_FIELDS: readonly string[] = ["alt", "focal"];
 
+/** Ce que le journal compare d'une image, avant et après le geste. */
+function decisionsOf(
+  details: Pick<MediaDetails, "name" | "tags" | "alt" | "focal">,
+  series: MediaSeriesLabel | null,
+): Record<string, unknown> {
+  return {
+    name: details.name,
+    tags: [...details.tags],
+    alt: details.alt,
+    focal: details.focal,
+    series: namedSeries(series),
+  };
+}
+
 /** La série telle que le journal la cite : son id et son titre du moment. */
 function namedSeries(
   series: MediaSeriesLabel | null,
 ): { readonly id: string; readonly name: string } | null {
   return series === null ? null : { id: series.id, name: series.title };
-}
-
-/**
- * Le nom sous lequel l'image apparaîtra dans le journal.
- *
- * L'étiquette quand elle existe, le **nom de fichier** sinon — jamais l'URL
- * entière : elle fait cent caractères de hachage, et une ligne de journal se
- * lit par quelqu'un qui n'a pas le code sous les yeux.
- */
-function labelOf(name: string, url: string): string {
-  return name !== "" ? name : (url.split("/").at(-1) ?? url);
 }

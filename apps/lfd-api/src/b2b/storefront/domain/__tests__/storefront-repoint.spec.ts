@@ -7,7 +7,7 @@ import { Storefront } from "../storefront.js";
 import { object, settings } from "./storefront-fixtures.js";
 
 /**
- * **Remplacer une image** dans la vitrine (L7 du plan de la médiathèque) :
+ * **Remplacer une image** dans la vitrine (`documentation/mediatheque/mediatheque.md` §2) :
  * l'agrégat repointe ses contenus et sa porte, compte ses porteurs, et ne
  * monte la révision que s'il a changé quelque chose. Aucune horloge ici :
  * l'instant n'est qu'inscrit.

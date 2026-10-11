@@ -1,7 +1,8 @@
 import { PALETTE_LIMITS, imagePaletteSchema } from '@lfd/pim-contracts';
 import { describe, expect, it } from 'vitest';
 
-import { OUTLIER_MAX, deltaE76, extractPalette, hexToLab, rgbToHex } from './palette-extract';
+import { deltaE76, hexToLab, rgbToHex } from './color-math';
+import { OUTLIER_MAX, extractPalette } from './palette-extract';
 
 type Rgba = readonly [number, number, number, number];
 

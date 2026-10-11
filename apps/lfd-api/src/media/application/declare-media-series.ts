@@ -8,7 +8,7 @@ import { MediaSeriesRepository } from "../domain/ports/media-series.js";
 import { MEDIA_EVENTS, MediaJournal } from "../journal/media-journal.js";
 import { parisToday } from "./series-today.js";
 
-/** Ouvre une série de la médiathèque (L3, 2026-10-10). Rend son identifiant. */
+/** Ouvre une série de la médiathèque (2026-10-10). Rend son identifiant. */
 export class DeclareMediaSeriesCommand {
   constructor(readonly description: MediaSeriesDescription) {}
 }

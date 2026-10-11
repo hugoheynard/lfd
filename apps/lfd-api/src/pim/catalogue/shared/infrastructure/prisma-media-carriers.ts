@@ -149,6 +149,10 @@ export class PrismaMediaCarriers extends MediaCarriers {
    * qui le montrent en `hero` ou `thumbnail`.
    */
   async repoint({ from, to }: ImageReplacement, ticket: WriteTicket): Promise<number> {
+    // Le laissez-passer n'est pas LU, et c'est voulu : il n'a pas de contenu à
+    // écrire ici. Sa seule existence prouve que la médiathèque a tracé le
+    // remplacement (`media_asset.replaced`) dans la même transaction — le port
+    // l'exige pour rendre une écriture sans trace inexprimable (2026-10-10).
     void ticket;
     const products = await this.repointProducts(from, to);
     const categories = await this.repointCategories(from, to);

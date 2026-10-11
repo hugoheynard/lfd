@@ -1,3 +1,4 @@
+import type { UnitPoint } from "../../../../platform/shared/geometry/unit-point.js";
 import type { CatalogOperationAudience } from "../operation-audience.js";
 
 /** Un texte d'annonce dans ses langues — le français toujours (D10). */
@@ -8,17 +9,14 @@ export interface OperationText {
 }
 
 /** Un point focal : deux fractions de 0 à 1, depuis le coin haut gauche. */
-export interface OperationFocal {
-  readonly x: number;
-  readonly y: number;
-}
+export type OperationFocal = UnitPoint;
 
 /**
  * L'image d'une opération, telle que reçue. `focal` est lu à la médiathèque
- * AU PUSH (L10 du plan de la médiathèque, 2026-10-11) : il ne suit une
- * redescription qu'au push suivant, comme l'image elle-même. Absent ou `null`
- * — un envoi d'avant L10, ou personne ne s'est prononcé : la boutique recadre
- * au centre.
+ * AU PUSH (depuis le 2026-10-11, `documentation/mediatheque/mediatheque.md`
+ * §7 bis) : il ne suit une redescription qu'au push suivant, comme l'image
+ * elle-même. Absent ou `null` — un envoi d'avant ce jour-là, ou personne ne
+ * s'est prononcé : la boutique recadre au centre.
  */
 export interface OperationImageFacts {
   readonly url: string;

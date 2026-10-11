@@ -1,6 +1,7 @@
 import { Logger } from "@nestjs/common";
 import { CommandHandler, type ICommandHandler } from "@nestjs/cqrs";
 
+import type { WriteTicket } from "../../platform/journal/scoped-journal.js";
 import { Clock } from "../../platform/time/clock.js";
 import { MediaStore } from "../../platform/storage/media-store.js";
 import { MediaCarriers } from "../channels/carriers/media-carriers.js";
@@ -61,6 +62,22 @@ export interface OrphanSweepReport {
 
 export class SweepOrphanMediaCommand {}
 
+/** Le sort d'une candidate redevenue vivante, ou jamais morte. */
+const SPARED = "spared";
+
+/**
+ * Un porteur l'affiche-t-il ? — la SEULE lecture du compte, pour le
+ * recensement comme pour la relecture d'avant suppression.
+ *
+ * Elles en avaient deux jusqu'au 2026-10-11 : `> 0` au recensement, « une
+ * entrée existe » à la relecture. Un porteur qui répondrait par un zéro
+ * explicite aurait fait épargner pour toujours une image que personne
+ * n'affiche.
+ */
+function isInUse(uses: ReadonlyMap<string, number>, url: string): boolean {
+  return (uses.get(url) ?? 0) > 0;
+}
+
 /**
  * Ramasse les visuels que plus aucune fiche ne porte.
  *
@@ -91,9 +108,8 @@ export class SweepOrphanMediaCommand {}
  * fermer — seul un verrou la fermerait, pour un risque qui ne le mérite pas.
  * Le pire cas est un visuel cassé sur une fiche, réparable en redéposant le
  * même fichier : l'adressage par contenu rend le remède identique à la cause.
- */
-/**
- * `@sans-journal` — **un ramassage n'a pas d'auteur.**
+ *
+ * ## `@sans-journal` — un ramassage n'a pas d'auteur
  *
  * Le journal répond à « qui a changé ça, et quand ». Ici, personne : une passe
  * automatique, sans `Principal`, sur des objets que plus aucun porteur
@@ -131,10 +147,6 @@ export class SweepOrphanMediaHandler implements ICommandHandler<
     // seul qu'un automate sans auteur puisse présenter est celui-ci.
     const ticket = this.journal.untraced("ramassage automatique, sans auteur");
 
-    let removed = 0;
-    let forgotten = 0;
-    let spared = 0;
-
     // 🔴 **Qui affiche quoi, c'est aux PORTEURS de le dire.** La bibliothèque
     // ne lit pas leurs tables (`lint:prisma-model-ownership`), et depuis que la
     // clé étrangère est tombée, plus rien en base ne refuse la suppression d'une
@@ -147,37 +159,57 @@ export class SweepOrphanMediaHandler implements ICommandHandler<
     // pire mode de défaillance imaginable pour ce handler.
     const uses = await this.carriers.usesOf(candidates.map((candidate) => candidate.url));
 
+    let removed = 0;
+    let forgotten = 0;
     for (const candidate of candidates) {
-      if ((uses.get(candidate.url) ?? 0) > 0) {
-        spared += 1;
-        continue;
+      const outcome = isInUse(uses, candidate.url)
+        ? SPARED
+        : await this.sweepOne(candidate.storageKey, before, ticket);
+      if (outcome !== SPARED) {
+        removed += 1;
+        forgotten += outcome;
       }
-      // Rejoué juste avant la suppression : entre le recensement et ce
-      // moment-ci, quelqu'un peut avoir redéposé la même image.
-      const url = await this.library.stillOld(candidate.storageKey, before);
-      if (url === null || (await this.carriers.usesOf([url])).get(url) !== undefined) {
-        spared += 1;
-        continue;
-      }
-      await this.store.remove(candidate.storageKey);
-      forgotten += await this.library.forget(candidate.storageKey, ticket);
-      removed += 1;
     }
-
-    // ⚠️ APRÈS le ramassage des objets, et hors de sa boucle : c'est une tâche
-    // d'entretien sans rapport avec les orphelines, et la faire d'abord
-    // retarderait le travail qui compte pour des lignes que personne n'attend.
-    const failuresForgotten = await this.failures.forgetBefore(this.retentionCutoff());
-
     const report = {
       removed,
       forgotten,
-      spared,
+      spared: candidates.length - removed,
       capped: candidates.length === MAX_PER_RUN,
-      failuresForgotten,
+      failuresForgotten: await this.forgetOldFailures(),
     };
     this.report(report);
     return report;
+  }
+
+  /**
+   * Supprime UNE orpheline — l'objet d'abord, les lignes ensuite — après
+   * avoir rejoué l'âge et le compte des porteurs : entre le recensement et ce
+   * moment-ci, quelqu'un peut avoir redéposé la même image et l'attacher.
+   *
+   * @returns le nombre de lignes oubliées, ou {@link SPARED}.
+   */
+  private async sweepOne(
+    storageKey: string,
+    before: Date,
+    ticket: WriteTicket,
+  ): Promise<number | typeof SPARED> {
+    const url = await this.library.stillOld(storageKey, before);
+    if (url === null || isInUse(await this.carriers.usesOf([url]), url)) {
+      return SPARED;
+    }
+    await this.store.remove(storageKey);
+    return this.library.forget(storageKey, ticket);
+  }
+
+  /**
+   * L'historique des refus, passé sa rétention.
+   *
+   * ⚠️ APRÈS le ramassage des objets, et hors de sa boucle : c'est une tâche
+   * d'entretien sans rapport avec les orphelines, et la faire d'abord
+   * retarderait le travail qui compte pour des lignes que personne n'attend.
+   */
+  private forgetOldFailures(): Promise<number> {
+    return this.failures.forgetBefore(this.retentionCutoff());
   }
 
   private graceCutoff(): Date {

@@ -5,7 +5,11 @@ import { MediaStore } from "../../platform/storage/media-store.js";
 import { MEDIA_EVENTS, MediaJournal } from "../journal/media-journal.js";
 import { MediaLibraryReader } from "../domain/ports/media-library-reader.js";
 import { MediaLibraryWriter } from "../domain/ports/media-library-writer.js";
-import { MediaNotInLibraryError, MediaStillInUseError } from "../domain/value-objects/image.js";
+import {
+  mediaLabel,
+  MediaNotInLibraryError,
+  MediaStillInUseError,
+} from "../domain/value-objects/image.js";
 
 /** Retire une image de la bibliothèque — octets compris. */
 export class DiscardMediaCommand {
@@ -73,7 +77,7 @@ export class DiscardMediaHandler implements ICommandHandler<DiscardMediaCommand,
         type: MEDIA_EVENTS.mediaDiscarded,
         subjectType: "media_asset",
         subjectId: url,
-        payload: { subjectLabel: image.name !== "" ? image.name : (url.split("/").at(-1) ?? url) },
+        payload: { subjectLabel: mediaLabel(image.name, url) },
       });
       await this.writer.discard(url, ticket);
     });

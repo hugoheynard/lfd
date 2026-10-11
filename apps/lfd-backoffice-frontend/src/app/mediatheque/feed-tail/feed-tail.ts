@@ -28,7 +28,7 @@ const AHEAD = '0px 0px 600px 0px';
  * Elle s'observe elle-même : quand elle approche de l'écran, elle demande la
  * suite. 🔴 L'observation est REPOSÉE à chaque retour à `more` : un
  * observateur ne parle que lorsqu'une intersection CHANGE, et une page courte
- * (le filtre « Inutilisées » en rend, plan L2 point 3) laisse la sentinelle
+ * (le filtre « Inutilisées » en rend, `mediatheque.md` §5) laisse la sentinelle
  * dans l'écran sans jamais la faire entrer — le fil s'arrêterait là. Une
  * observation neuve rend l'état courant d'emblée.
  *

@@ -28,7 +28,7 @@ type KeysetReader = (prisma: MediaPrismaService, request: KeysetRequest) => Prom
  * Un ordre ABSENT de cette table (`uses`) ne peut pas s'écrire en SQL — ses
  * clés viennent des porteurs — et l'adaptateur le classe en mémoire.
  *
- * 🔴 Une table, pas un `switch` : la prise de vue (`shot`, L3) est une entrée
+ * 🔴 Une table, pas un `switch` : la prise de vue (`shot`) est une entrée
  * de plus.
  */
 export const KEYSET_READERS: Readonly<Partial<Record<LibrarySort, KeysetReader>>> = {
@@ -106,7 +106,7 @@ const UNDATED: Prisma.MediaAssetWhereInput = {
 
 /**
  * Par prise de vue de la série, la plus récente d'abord, les images sans date
- * EN DERNIER (L3, 2026-10-10).
+ * EN DERNIER (2026-10-10).
  *
  * Deux segments, comme {@link byName} : les datées (jour décroissant, puis URL),
  * puis les autres (URL). Une position de clé `''` est dans le second.

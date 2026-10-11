@@ -39,7 +39,7 @@ export interface EditorState {
   readonly templates: readonly StorefrontTemplate[];
   /**
    * L'image de la porte « Je passe la prendre » — un réglage de la page
-   * Accueil, pas un objet de la grille (R10 du plan de la médiathèque).
+   * Accueil, pas un objet de la grille (mediatheque.md §7 bis).
    * 🔴 Elle repart à chaque `PUT` : le serveur tient une porte absente pour
    * `null`, et un éditeur qui ne la renverrait pas l'effacerait.
    */

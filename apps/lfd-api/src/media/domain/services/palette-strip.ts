@@ -25,7 +25,7 @@ export interface PaletteStrip {
 }
 
 /**
- * **Découpe le fonds en colonnes de frise** — fonction pure (L9).
+ * **Découpe le fonds en colonnes de frise** — fonction pure.
  *
  * Les images arrivent DANS L'ORDRE chronologique ; elles sont partagées en au
  * plus `columns` tranches consécutives de même effectif (à une image près) :

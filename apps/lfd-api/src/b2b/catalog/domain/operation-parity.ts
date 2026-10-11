@@ -1,3 +1,5 @@
+import { sameUnitPoint } from "../../../platform/shared/geometry/unit-point.js";
+
 import type { CatalogOperationFacts, OperationText } from "./entities/catalog-operation.js";
 
 /**
@@ -90,8 +92,17 @@ function sameOptionalText(left: OperationText | null, right: OperationText | nul
   return left === null || right === null ? left === right : sameText(left, right);
 }
 
+/**
+ * Le point focal compte : la référence le lit à la médiathèque au moment de
+ * l'aperçu, comme le push (`FeedProjectionService.focused`, relu le
+ * 2026-10-11). Le déplacer change ce que la bannière montre, et l'envoi qui le
+ * porterait ne doit pas se dire « à jour ». Absent ou `null` se valent : un
+ * envoi d'avant le point focal n'en portait pas.
+ */
 function sameImage(left: ReferenceOperation["image"], right: ReferenceOperation["image"]): boolean {
   return left === null || right === null
     ? left === right
-    : left.url === right.url && left.alt === right.alt;
+    : left.url === right.url &&
+        left.alt === right.alt &&
+        sameUnitPoint(left.focal ?? null, right.focal ?? null);
 }

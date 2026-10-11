@@ -21,7 +21,7 @@ function noel(image: SyncOperation["image"]): SyncOperation {
   };
 }
 
-describe("operationFactsOf — le point focal de l'image (L10)", () => {
+describe("operationFactsOf — le point focal de l'image", () => {
   it("garde le point que le push a lu à la médiathèque", () => {
     const facts = operationFactsOf(
       noel({ url: "https://m/noel.jpg", alt: "", focal: { x: 0.1, y: 0.9 } }),
@@ -31,7 +31,7 @@ describe("operationFactsOf — le point focal de l'image (L10)", () => {
     expect(facts.image).toEqual({ url: "https://m/noel.jpg", alt: "", focal: { x: 0.1, y: 0.9 } });
   });
 
-  it("lit `null` dans un envoi d'avant L10, qui n'en porte pas : la bannière recadre au centre", () => {
+  it("lit `null` dans un envoi d'avant le point focal (2026-10-11), qui n'en porte pas : la bannière recadre au centre", () => {
     const facts = operationFactsOf(noel({ url: "https://m/noel.jpg", alt: "" }), RECEIVED);
 
     expect(facts.image?.focal).toBeNull();

@@ -4,7 +4,7 @@ import { mediaTags } from "./image.js";
 
 /**
  * **Le vocabulaire du fonds** — les mots-clés vus d'en haut, et les deux gestes
- * qui les touchent partout à la fois (L1, 2026-10-10).
+ * qui les touchent partout à la fois (2026-10-10).
  *
  * 🔴 Un mot-clé n'a pas de table : il n'existe que porté par des images. Le
  * renommer, c'est donc réécrire la liste de CHAQUE image qui le porte — et la

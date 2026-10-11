@@ -50,7 +50,7 @@ export interface InfoContentState {
  * sans aucun texte vaut « hérité ».
  */
 export interface InfoContentInput extends Omit<InfoContentState, "operationKey" | "image"> {
-  /** `focal` facultatif (L10 du plan de la médiathèque) : absent, l'image se recadre au centre. */
+  /** `focal` facultatif (depuis le 2026-10-11, §7 bis de la médiathèque) : absent, l'image se recadre au centre. */
   readonly image: StorefrontImageInput | null;
   readonly operationKey?: string | null | undefined;
   readonly action?: InfoAction | undefined;

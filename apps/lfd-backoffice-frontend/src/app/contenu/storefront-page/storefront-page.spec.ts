@@ -775,7 +775,7 @@ function homeView(): StorefrontView {
   };
 }
 
-describe('StorefrontPage — l’Accueil (L6)', () => {
+describe('StorefrontPage — l’Accueil', () => {
   it('l’Accueil vient en tête du choix de page, à part des rayons, et n’est jamais un rayon disparu', async () => {
     const { page, store } = await setup({ view: homeView() });
     const options = page['shelfOptions']();

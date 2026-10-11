@@ -19,7 +19,7 @@ export interface MediaDetails {
   readonly alt: LocalizedText;
   /** `null` = personne ne s'est prononcé, jamais « au centre ». */
   readonly focal: FocalPoint | null;
-  /** La série de l'image (L3) — `null` = aucune. Déjà vérifiée par l'appelant. */
+  /** La série de l'image — `null` = aucune. Déjà vérifiée par l'appelant. */
   readonly seriesId: string | null;
 }
 
@@ -29,6 +29,24 @@ export interface MediaDetails {
  * Port distinct de la lecture (`MediaLibraryReader`) et du dépôt
  * (`MediaLibrary`) : un consommateur ne dépend que de ce qu'il appelle.
  * L'écran de la médiathèque nomme et tague ; il ne ramasse pas d'orphelins.
+ *
+ * ## Pourquoi pas d'agrégat `load` → `save`
+ *
+ * `CLAUDE.md` §3.1 pose la question de tri : « existe-t-il une règle qui peut
+ * refuser cette écriture ? ». Pour la description d'une image, non — vérifié
+ * le 2026-10-11 en relisant son seul appelant, `SaveMediaDetailsHandler` :
+ *
+ * - ce qu'on refuse est de la FORME, et les value-objects le tiennent avant
+ *   d'arriver ici (`mediaTags`, `focalPoint`, `imageAlt`) ;
+ * - l'image n'a ni état ni transition : nommer, taguer, pointer valent à tout
+ *   moment de sa vie, et aucun ne dépend d'un autre champ ou de l'état d'avant ;
+ * - ce qui dépend d'AILLEURS — la série existe-t-elle, un porteur l'affiche-t-il
+ *   encore — appartient à un autre agrégat ou à un autre bloc, et un agrégat
+ *   « image » ne le garantirait pas mieux que le handler.
+ *
+ * Un agrégat ici serait de la cérémonie. Le jour où une règle d'état
+ * apparaît (une image « validée » qu'on ne retague plus, par exemple), ce port
+ * devient `load`/`save`.
  */
 export abstract class MediaLibraryWriter {
   /*
@@ -38,22 +56,18 @@ export abstract class MediaLibraryWriter {
    * même mécanique que les ports d'écriture du reste du référentiel.
    */
   /**
-   * Écrit ce qu'on a décidé de CETTE image.
+   * Écrit ce qu'on a décidé de CETTE image, en remplaçant toutes ses décisions.
    *
-   * 🔴 Clé = l'URL, et l'écriture vise **toutes** les inscriptions qui la
-   * portent. La table des actifs est un journal de lignes — `replaceMedia` en
-   * recrée une par visuel à chaque enregistrement de fiche — et l'URL, adressée
-   * par contenu, est la seule identité qui traverse deux sauvegardes. Écrire
-   * une seule ligne laisserait les autres dire le contraire, et la lecture
-   * groupée en choisirait une au hasard de sa date.
+   * Clé = l'URL : elle est unique depuis le 2026-09-23 (une image, une ligne),
+   * et c'est l'identité que les porteurs citent.
    *
-   * @returns `false` si aucune inscription ne porte cette URL — la route en
-   *   fait un 404 plutôt qu'un succès silencieux.
+   * @returns `false` si aucune inscription ne porte cette URL — l'image a
+   *   disparu entre la lecture et l'écriture.
    */
   abstract describe(url: string, details: MediaDetails, ticket: WriteTicket): Promise<boolean>;
 
   /**
-   * Oublie **toutes** les inscriptions portant cette URL.
+   * Oublie l'inscription portant cette URL.
    *
    * Par l'URL et non par la clé de stockage : les deux sont équivalentes pour
    * ce qu'on héberge — la clé est le hachage du contenu et l'URL en dérive —

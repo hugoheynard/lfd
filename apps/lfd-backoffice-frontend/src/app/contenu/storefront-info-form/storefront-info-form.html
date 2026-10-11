@@ -122,7 +122,12 @@
   <div class="field-group">
     <span class="caption">Image</span>
     @if (info().image; as image) {
-      <img class="preview" [src]="image.url" [alt]="textIn(image.alt, 'fr')" />
+      <img
+        class="preview"
+        [src]="image.url"
+        [alt]="textIn(image.alt, 'fr')"
+        [style.object-position]="positionOf(image.focal)"
+      />
       <fold-input
         size="sm"
         [label]="labelOf('Texte alternatif')"

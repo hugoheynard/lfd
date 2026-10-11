@@ -271,7 +271,7 @@ describe("le diff d'une arrivée › la vitrine", () => {
   });
 
   /**
-   * L4 (2026-10-10) : déplacer le point focal change ce que la vignette
+   * Depuis le 2026-10-10 : déplacer le point focal change ce que la vignette
    * montre d'une pièce. Le comparer comme les dimensions — sans quoi il
    * passerait en vente sans relecture.
    */

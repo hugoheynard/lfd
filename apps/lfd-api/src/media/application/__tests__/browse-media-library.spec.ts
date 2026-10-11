@@ -11,7 +11,7 @@ import {
 } from "../../domain/value-objects/library-cursor.js";
 import type { LibraryPosition } from "../../domain/value-objects/library-order.js";
 import { InvalidDepositPeriodError } from "../library-period.js";
-import { UnsupportedLibraryOffsetError } from "../browse-media-library.js";
+import { UnsupportedLibraryOffsetError } from "../../domain/value-objects/library-window.js";
 
 /**
  * Un lecteur qui n'interroge rien et **retient ce qu'on lui demande**.
@@ -190,7 +190,7 @@ describe("BrowseMediaLibrary — les filtres", () => {
     ).rejects.toBeInstanceOf(InvalidDepositPeriodError);
   });
 
-  it("transmet la période de prise de vue en jours, et la refuse à l'envers (L11)", async () => {
+  it("transmet la période de prise de vue en jours, et la refuse à l'envers", async () => {
     const reader = new SpyingReader();
     const handler = handlerOn(reader);
 

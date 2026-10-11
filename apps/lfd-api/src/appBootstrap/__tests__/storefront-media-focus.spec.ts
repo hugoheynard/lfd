@@ -13,7 +13,7 @@ import { RefocusStorefrontOnMediaDescribed } from "../storefront-media-focus.js"
 
 const URL = "https://media.example/fournil.jpg";
 
-describe("RefocusStorefrontOnMediaDescribed — le point focal suit jusqu'à la vitrine (L10)", () => {
+describe("RefocusStorefrontOnMediaDescribed — le point focal suit jusqu'à la vitrine", () => {
   async function subject(focals: ReadonlyMap<string, CatalogueFocal | null>) {
     const sent: unknown[] = [];
     const module = await Test.createTestingModule({

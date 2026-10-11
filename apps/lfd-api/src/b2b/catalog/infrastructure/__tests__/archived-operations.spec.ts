@@ -15,8 +15,8 @@ const ARCHIVED = {
   receivedAt: "2026-10-11T08:00:00.000Z",
 };
 
-describe("les opérations archivées avec un envoi — le point focal (L10)", () => {
-  it("relit un envoi archivé avant L10, dont l'image n'a pas de point", () => {
+describe("les opérations archivées avec un envoi — le point focal", () => {
+  it("relit un envoi archivé avant le point focal, dont l'image n'a pas de point", () => {
     const [operation] =
       readArchivedOperations([{ ...ARCHIVED, image: { url: "https://m/a.jpg", alt: "" } }]) ?? [];
 

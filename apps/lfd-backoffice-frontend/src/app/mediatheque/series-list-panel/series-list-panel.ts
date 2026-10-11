@@ -34,7 +34,7 @@ interface SeriesLine {
 /**
  * **Les séries du fonds** — les lire, les corriger, en ouvrir une.
  *
- * Pas de suppression : le serveur n'en a pas (plan L3). Une série vide reste
+ * Pas de suppression : le serveur n'en a pas. Une série vide reste
  * listée, avec son compte à zéro.
  */
 @Component({

@@ -10,7 +10,7 @@ import { DomainError } from "../../../platform/shared/errors/app-error.js";
 export type { ImagePalette, PaletteSwatch };
 
 /**
- * **La palette d'une image**, revalidée (plan L9, R28, 2026-10-11).
+ * **La palette d'une image**, revalidée (2026-10-11).
  *
  * Elle est calculée par le navigateur : le serveur ne peut pas la refaire, il
  * peut seulement refuser ce qui ne peut pas en être une. Les bornes sont

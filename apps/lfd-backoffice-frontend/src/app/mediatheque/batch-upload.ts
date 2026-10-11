@@ -2,17 +2,17 @@ import { Injectable, computed, inject, signal } from '@angular/core';
 import { httpErrorMessage } from '@lfd/endpoints';
 
 import { MediaLibraryHttpApi } from './media-library-http-api';
-import { PALETTE_READER } from './palette-extract';
+import { PALETTE_READER } from './palette-reader';
 import { IMAGE_MEASURE, checkBeforeUpload } from './upload-check';
 
 /**
- * Où en est UN fichier du lot. `déjà au fonds` n'est pas un échec : les
- * octets y étaient, et rien n'a changé — pas même la série (D2).
+ * Où en est UN fichier du lot. `already_in_library` (« déjà au fonds ») n'est pas un échec : les
+ * octets y étaient, et rien n'a changé — pas même la série.
  */
-export type UploadState = 'attente' | 'envoi' | 'déposé' | 'déjà au fonds' | 'refusé';
+export type UploadState = 'waiting' | 'sending' | 'deposited' | 'already_in_library' | 'refused';
 
 /** Qui a refusé : le poste, avant l'envoi, ou le serveur. */
-export type RefusedBy = 'poste' | 'serveur';
+export type RefusedBy = 'device' | 'server';
 
 /**
  * Un fichier du lot, et ce qu'il est devenu.
@@ -31,7 +31,7 @@ export interface UploadEntry {
   readonly refusedBy: RefusedBy | null;
   /**
    * La série que l'image porte APRÈS le dépôt — celle d'origine si elle était
-   * déjà au fonds (D2). `null` : aucune, ou pas encore déposée.
+   * déjà au fonds. `null` : aucune, ou pas encore déposée.
    */
   readonly seriesId: string | null;
 }
@@ -69,17 +69,17 @@ export class BatchUploadStore {
 
   readonly running = signal(false);
 
-  readonly deposited = computed(() => this.countOf('déposé'));
-  readonly alreadyKnown = computed(() => this.countOf('déjà au fonds'));
-  readonly refused = computed(() => this.countOf('refusé'));
-  readonly remaining = computed(() => this.countOf('attente') + this.countOf('envoi'));
+  readonly deposited = computed(() => this.countOf('deposited'));
+  readonly alreadyKnown = computed(() => this.countOf('already_in_library'));
+  readonly refused = computed(() => this.countOf('refused'));
+  readonly remaining = computed(() => this.countOf('waiting') + this.countOf('sending'));
 
   /**
    * Y a-t-il de quoi réessayer ? Seuls les refus du SERVEUR comptent : un
    * fichier refusé par le poste le serait à nouveau, octets inchangés.
    */
   readonly hasRefused = computed(() =>
-    this.queue().some((entry) => entry.state === 'refusé' && entry.refusedBy === 'serveur'),
+    this.queue().some((entry) => entry.state === 'refused' && entry.refusedBy === 'server'),
   );
 
   /**
@@ -103,7 +103,7 @@ export class BatchUploadStore {
       files.map((file) => ({
         file,
         name: file.name,
-        state: 'attente',
+        state: 'waiting',
         reason: null,
         refusedBy: null,
         seriesId: null,
@@ -122,8 +122,8 @@ export class BatchUploadStore {
   async retry(): Promise<number> {
     this.queue.update((current) =>
       current.map((entry) =>
-        entry.state === 'refusé' && entry.refusedBy === 'serveur'
-          ? { ...entry, state: 'attente', reason: null, refusedBy: null }
+        entry.state === 'refused' && entry.refusedBy === 'server'
+          ? { ...entry, state: 'waiting', reason: null, refusedBy: null }
           : entry,
       ),
     );
@@ -142,24 +142,24 @@ export class BatchUploadStore {
       // Par index et non par itération sur une copie : l'état de chaque entrée
       // est réécrit au fur et à mesure, et l'écran doit le voir avancer.
       for (const [index, entry] of this.queue().entries()) {
-        if (entry.state !== 'attente') {
+        if (entry.state !== 'waiting') {
           continue;
         }
-        this.mark(index, { state: 'envoi' });
+        this.mark(index, { state: 'sending' });
         // Vérifié AVANT l'envoi : un fichier que le serveur refuserait ne
         // traverse pas le réseau pour l'apprendre. Le serveur reste l'autorité.
         const local = await checkBeforeUpload(entry.file, this.measure);
         if (local !== null) {
-          this.mark(index, { state: 'refusé', reason: local, refusedBy: 'poste' });
+          this.mark(index, { state: 'refused', reason: local, refusedBy: 'device' });
           continue;
         }
-        // La palette (L9) : un échec rend `null`, jamais un refus — le
+        // La palette (`mediatheque.md` §9 bis) : un échec rend `null`, jamais un refus — le
         // rattrapage de l'écran la posera plus tard.
         const palette = await this.readPalette(entry.file).catch(() => null);
         try {
           const uploaded = await this.api.upload(entry.file, this.seriesId, palette);
           this.mark(index, {
-            state: uploaded.alreadyInLibrary ? 'déjà au fonds' : 'déposé',
+            state: uploaded.alreadyInLibrary ? 'already_in_library' : 'deposited',
             seriesId: uploaded.seriesId,
           });
           sent += 1;
@@ -169,9 +169,9 @@ export class BatchUploadStore {
           // française du backend qu'il faut rendre, celle qui nomme le format
           // attendu ou le poids dépassé.
           this.mark(index, {
-            state: 'refusé',
+            state: 'refused',
             reason: httpErrorMessage(caught, 'Dépôt refusé.'),
-            refusedBy: 'serveur',
+            refusedBy: 'server',
           });
         }
       }

@@ -21,7 +21,7 @@ import { archivedOperationsJson, readArchivedOperations } from "./archived-opera
  * journée et qu'on a raison de revalider strictement.
  */
 /**
- * Le point focal d'un visuel archivé (L4, 2026-10-10). `nullish` : toutes les
+ * Le point focal d'un visuel archivé (depuis le 2026-10-10). `nullish` : toutes les
  * versions figées avant ce jour l'ignorent, et « au centre » y est exact.
  */
 const archivedFocalSchema = z

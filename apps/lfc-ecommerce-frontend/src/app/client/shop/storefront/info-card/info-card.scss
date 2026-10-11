@@ -263,10 +263,10 @@
   }
 }
 
-/* 🔴 LA BANNIÈRE TIENT LE 21/9 (D9 du plan de la médiathèque), à toutes les
-   largeurs : la grille ne connaît que des cases, c'est le rendu qui fixe le
-   format. L'image couvre, recadrée AU CENTRE — la vitrine ne porte pas le
-   point focal (R12) —, et le texte passe par-dessus, sur le voile du « plein »
+/* 🔴 LA BANNIÈRE TIENT LE 21/9 (documentation/mediatheque/mediatheque.md §6), à
+   toutes les largeurs : la grille ne connaît que des cases, c'est le rendu qui
+   fixe le format. L'image couvre, recadrée sur son point focal (§7 bis, centre
+   à défaut), et le texte passe par-dessus, sur le voile du « plein »
    (seul côté que la forme permet). La phrase se coupe à deux lignes : sur un
    téléphone, la bannière ne mesure que 160 px de haut. */
 :host(.shape-banner) {

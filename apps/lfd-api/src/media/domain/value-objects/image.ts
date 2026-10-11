@@ -1,3 +1,6 @@
+import { isUnitPoint } from "../../../platform/shared/geometry/unit-point.js";
+import { MEDIA_MAX_TAGS_PER_IMAGE } from "@lfd/pim-contracts";
+
 import {
   BusinessError,
   DomainError,
@@ -14,14 +17,15 @@ import {
  */
 
 /** Plafonds des tags. Bornés parce qu'un champ libre non borné finit par
- *  recevoir un paragraphe collé depuis un tableur. */
+ *  recevoir un paragraphe collé depuis un tableur. Le nombre est au contrat,
+ *  que le schéma du corps lit aussi : une seule borne. */
 const MAX_TAG_LENGTH = 40;
-const MAX_TAGS = 30;
+const MAX_TAGS = MEDIA_MAX_TAGS_PER_IMAGE;
 
 export class TooManyMediaTagsError extends DomainError {
   constructor(readonly count: number) {
     super(
-      "catalogue.media.too_many_tags",
+      "media.too_many_tags",
       `Trop de mots-clés sur une image : ${String(count)} pour ${String(MAX_TAGS)} au plus.`,
     );
   }
@@ -79,7 +83,7 @@ export interface FocalPoint {
 
 export class InvalidFocalPointError extends DomainError {
   constructor() {
-    super("catalogue.media.invalid_focal_point", "Le point focal se donne en fractions de 0 à 1.");
+    super("media.invalid_focal_point", "Le point focal se donne en fractions de 0 à 1.");
   }
 }
 
@@ -92,20 +96,16 @@ export function focalPoint(input: FocalPoint | null): FocalPoint | null {
   if (input === null) {
     return null;
   }
-  if (!inUnit(input.x) || !inUnit(input.y)) {
+  if (!isUnitPoint(input)) {
     throw new InvalidFocalPointError();
   }
   return { x: input.x, y: input.y };
 }
 
-function inUnit(value: number): boolean {
-  return Number.isFinite(value) && value >= 0 && value <= 1;
-}
-
 /** L'URL visée n'est portée par aucune inscription de la bibliothèque (→ 404). */
 export class MediaNotInLibraryError extends ResourceNotFoundError {
   constructor(url: string) {
-    super("catalogue.media.not_in_library", `Image absente de la bibliothèque : ${url}`);
+    super("media.not_in_library", `Image absente de la bibliothèque : ${url}`);
   }
 }
 
@@ -119,16 +119,32 @@ export class MediaNotInLibraryError extends ResourceNotFoundError {
  * lesquelles.
  *
  * ⚠️ Le compte ne peut pas devenir une autorisation : il vaut au moment de la
- * lecture, et rien ne ferme la fenêtre qui suit (assumée, D6 — cf.
+ * lecture, et rien ne ferme la fenêtre qui suit (assumée le 2026-10-10 — cf.
  * `documentation/mediatheque/mediatheque.md` §8).
  */
 export class MediaStillInUseError extends BusinessError {
   constructor(readonly uses: number) {
     super(
-      "catalogue.media.still_in_use",
+      "media.still_in_use",
       uses === 1
-        ? "Cette image est affichée par une fiche : retirez-la d'abord."
-        : `Cette image est affichée par ${String(uses)} fiches : retirez-la d'abord.`,
+        ? "Cette image est affichée à un emplacement (fiche, famille, vitrine ou opération) : " +
+            "retirez-la de cet emplacement, ou remplacez-la partout, avant de la supprimer."
+        : `Cette image est affichée à ${String(uses)} emplacements (fiches, familles, vitrine ` +
+            "ou opérations) : retirez-la de chacun, ou remplacez-la partout, avant de la supprimer.",
     );
   }
+}
+
+/**
+ * Le nom sous lequel une image se lit dans le journal : son étiquette quand
+ * elle en a une, le **nom de fichier** sinon — jamais l'URL entière, qui fait
+ * cent caractères de hachage pour quelqu'un qui n'a pas le code sous les yeux.
+ */
+export function mediaLabel(name: string, url: string): string {
+  return name !== "" ? name : mediaFileName(url);
+}
+
+/** Le dernier segment d'une URL ou d'une clé de bucket — le nom du fichier. */
+export function mediaFileName(urlOrKey: string): string {
+  return urlOrKey.split("/").at(-1) ?? urlOrKey;
 }

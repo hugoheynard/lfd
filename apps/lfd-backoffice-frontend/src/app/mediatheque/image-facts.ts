@@ -20,16 +20,6 @@ const ONE_DECIMAL = new Intl.NumberFormat('fr-FR', {
   maximumFractionDigits: 1,
 });
 
-/** L'heure de PARIS, pas celle du navigateur : c'est le fuseau de la boulangerie. */
-const PARIS_MOMENT = new Intl.DateTimeFormat('fr-FR', {
-  timeZone: 'Europe/Paris',
-  day: 'numeric',
-  month: 'long',
-  year: 'numeric',
-  hour: '2-digit',
-  minute: '2-digit',
-});
-
 /** « 4808 × 3205 px ». */
 export function formatDimensions(width: number | null, height: number | null): string | null {
   if (width === null || height === null) {
@@ -57,10 +47,6 @@ export function formatContentType(contentType: string | null): string | null {
   return subtype.replace(/\+.*$/, '').toUpperCase();
 }
 
-export function formatParisMoment(iso: string): string {
-  return PARIS_MOMENT.format(new Date(iso));
-}
-
 /**
  * Le dernier segment de l'adresse — le nom sous lequel le stockage sert le
  * fichier. Le nom envoyé par le navigateur au dépôt n'est pas conservé : c'est
@@ -69,14 +55,6 @@ export function formatParisMoment(iso: string): string {
 export function fileNameOf(url: string): string {
   const path = url.split(/[?#]/)[0] ?? url;
   return path.slice(path.lastIndexOf('/') + 1) || url;
-}
-
-/** « Inutilisée », « 1 emploi », « 3 emplois ». */
-export function usesWording(uses: number): string {
-  if (uses === 0) {
-    return 'Inutilisée';
-  }
-  return uses === 1 ? '1 emploi' : `${String(uses)} emplois`;
 }
 
 /**

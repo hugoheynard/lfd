@@ -2,7 +2,7 @@
  * **Une couleur dans l'espace Lab** (CIE 1976, illuminant D65) — l'espace où
  * une distance euclidienne ressemble à ce que l'œil voit (ΔE76).
  *
- * Sert à la frise des couleurs (L9) : deux dominantes « presque pareilles »
+ * Sert à la frise des couleurs : deux dominantes « presque pareilles »
  * de deux photos voisines doivent fusionner, et cette proximité ne se mesure
  * pas en RVB.
  */

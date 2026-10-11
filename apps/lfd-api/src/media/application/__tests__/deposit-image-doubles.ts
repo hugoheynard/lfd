@@ -21,7 +21,7 @@ import {
 import { MediaPalettes, type PaletteOutcome } from "../../domain/ports/media-palettes.js";
 import type { ImagePalette } from "../../domain/value-objects/image-palette.js";
 
-/** Les doublés du dépôt, partagés par ses deux suites (sortis le 2026-10-11, L9). */
+/** Les doublés du dépôt, partagés par ses deux suites (sortis le 2026-10-11). */
 
 export function png(width: number, height: number): Buffer {
   const buffer = Buffer.alloc(24);
@@ -119,7 +119,7 @@ export class FakeLibrary extends MediaLibrary {
 
 /**
  * Les palettes posées, une par URL — `paintIfBlank` n'écrit que sur une image
- * sans palette, comme la condition en base (L9).
+ * sans palette, comme la condition en base.
  */
 export class RecordingPalettes extends MediaPalettes {
   readonly painted = new Map<string, ImagePalette>();

@@ -9,6 +9,8 @@ import {
   FoldPanelRef,
 } from 'fold-ng';
 
+import { imagesLabel } from '../media-wording';
+
 /** Le mot à retirer, avec le compte qui fait la question. */
 export interface TagRemovePanelData {
   readonly tag: MediaTagView;
@@ -54,9 +56,4 @@ export class TagRemovePanel {
   protected cancel(): void {
     this.ref.close();
   }
-}
-
-/** « 1 image », « 3 images » — partagé avec le message de succès. */
-export function imagesLabel(count: number): string {
-  return count === 1 ? '1 image' : `${String(count)} images`;
 }

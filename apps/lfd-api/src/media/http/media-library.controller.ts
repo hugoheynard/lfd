@@ -14,9 +14,11 @@ import { FileInterceptor } from "@nestjs/platform-express";
 import { CommandBus, QueryBus } from "@nestjs/cqrs";
 import {
   mediaDetailsPayloadSchema,
+  type MediaDetailsPayload,
   mediaLibraryQuerySchema,
   type MediaLibraryQuery,
   renameMediaTagPayloadSchema,
+  type RenameMediaTagPayload,
   type MediaTagView,
   type MediaLibraryPageView,
   type UploadedMediaView,
@@ -30,7 +32,19 @@ import { ZodBody, ZodQuery } from "../../platform/shared/http/zod-body.pipe.js";
 import { depositFieldsSchema, type DepositFields } from "./deposit-fields.js";
 import { DepositImageCommand, type DepositImageResult } from "../application/deposit-image.js";
 import { UnsupportedImageError } from "../domain/value-objects/image-bytes.js";
-import { BrowseMediaLibraryQuery } from "../application/browse-media-library.js";
+import {
+  BrowseMediaLibraryQuery,
+  type BrowsedLibraryPage,
+} from "../application/browse-media-library.js";
+import { libraryPageView, uploadedView } from "./library-media-view.js";
+import {
+  failuresQuerySchema,
+  imageUrlQuerySchema,
+  tagQuerySchema,
+  type FailuresQuery,
+  type ImageUrlQuery,
+  type TagQuery,
+} from "./media-query-params.js";
 import { ListMediaCarriersQuery } from "../application/list-media-carriers.js";
 import { ReadUploadFailuresQuery } from "../application/read-upload-failures.js";
 import { DiscardMediaCommand } from "../application/discard-media.js";
@@ -50,12 +64,10 @@ const IMAGE_UPLOAD_HARD_LIMIT = MEDIA_LIMITS.transportMaxBytes;
 /**
  * Le peu qu'on lit du fichier Multer.
  *
- * ⚠️ Cette note disait « le nom d'origine ne sert à RIEN ici : la clé vient du
- * hachage du contenu, et le type des octets ». C'était exact pour le DÉPÔT, et
- * ça l'est encore. Ce qui a changé le 2026-09-23, c'est le REFUS : sur un lot
- * de cinquante fichiers, « lequel n'est pas passé » n'a de réponse que par ce
- * nom-là. Il ne sert donc à rien quand ça marche, et il est la seule prise
- * quand ça échoue.
+ * Le nom d'origine ne sert à rien au DÉPÔT — la clé vient du hachage du
+ * contenu, le type des octets. Il sert au REFUS (depuis le 2026-09-23) : sur
+ * un lot de cinquante fichiers, « lequel n'est pas passé » n'a de réponse que
+ * par lui.
  *
  * 🔴 **Donnée d'utilisateur** : plafonnée à l'écriture, jamais interpolée dans
  * un message sans échappement.
@@ -74,11 +86,6 @@ interface UploadedFilePart {
  * fiches en portent, les familles aussi (`CategoryMedia`), et les contenus de
  * la vitrine en porteront. Le domaine le dit depuis que les value-objects sont
  * sortis de `product/` : « ni l'un ni l'autre ne possède la bibliothèque ».
- *
- * ✅ **Le préfixe `/pim` est tombé** le 2026-09-23, avec le schéma et le bloc.
- * Cette note disait qu'il « reste » et que les deux tomberaient ensemble, au
- * déclencheur du premier visuel de vitrine : c'est arrivé plus tôt, par le
- * déménagement lui-même.
  *
  * 🔴 **Son propre droit depuis le 2026-09-23** — `media_library`, et non plus
  * `pim_catalog`. L'emprunt décrivait la réalité tant que la bibliothèque
@@ -115,7 +122,7 @@ export class MediaLibraryController {
   async browse(
     @Query(new ZodQuery(mediaLibraryQuerySchema)) query: MediaLibraryQuery,
   ): Promise<MediaLibraryPageView> {
-    return this.queries.execute<BrowseMediaLibraryQuery, MediaLibraryPageView>(
+    const page = await this.queries.execute<BrowseMediaLibraryQuery, BrowsedLibraryPage>(
       new BrowseMediaLibraryQuery({
         limit: query.limit,
         offset: query.offset,
@@ -132,6 +139,7 @@ export class MediaLibraryController {
         series: query.series,
       }),
     );
+    return libraryPageView(page);
   }
 
   /**
@@ -145,9 +153,11 @@ export class MediaLibraryController {
    * Elle dit quoi retrouver et pourquoi ça a échoué.
    */
   @Get("failures")
-  async failures(@Query("limit") limit?: string): Promise<readonly MediaUploadFailureView[]> {
+  async failures(
+    @Query(new ZodQuery(failuresQuerySchema)) query: FailuresQuery,
+  ): Promise<readonly MediaUploadFailureView[]> {
     return this.queries.execute<ReadUploadFailuresQuery, readonly MediaUploadFailureView[]>(
-      new ReadUploadFailuresQuery(numberOr(limit, DEFAULT_FAILURES_PAGE)),
+      new ReadUploadFailuresQuery(query.limit),
     );
   }
 
@@ -164,9 +174,11 @@ export class MediaLibraryController {
    * chose qui sert d'identité ici. C'est déjà le choix de `DELETE /media`.
    */
   @Get("carriers")
-  async carriers(@Query("url") url?: string): Promise<readonly MediaCarrierView[]> {
+  async carriers(
+    @Query(new ZodQuery(imageUrlQuerySchema)) query: ImageUrlQuery,
+  ): Promise<readonly MediaCarrierView[]> {
     return this.queries.execute<ListMediaCarriersQuery, readonly MediaCarrierView[]>(
-      new ListMediaCarriersQuery(url ?? ""),
+      new ListMediaCarriersQuery(query.url ?? ""),
     );
   }
 
@@ -190,8 +202,9 @@ export class MediaLibraryController {
    */
   @Put("tags/rename")
   @HttpCode(204)
-  async renameTag(@Body() body: unknown): Promise<void> {
-    const payload = renameMediaTagPayloadSchema.parse(body);
+  async renameTag(
+    @Body(new ZodBody(renameMediaTagPayloadSchema)) payload: RenameMediaTagPayload,
+  ): Promise<void> {
     await this.commands.execute<RenameMediaTagCommand, void>(
       new RenameMediaTagCommand(payload.from, payload.to),
     );
@@ -203,8 +216,10 @@ export class MediaLibraryController {
    */
   @Delete("tags")
   @HttpCode(204)
-  async removeTag(@Query("tag") tag?: string): Promise<void> {
-    await this.commands.execute<RemoveMediaTagCommand, void>(new RemoveMediaTagCommand(tag ?? ""));
+  async removeTag(@Query(new ZodQuery(tagQuerySchema)) query: TagQuery): Promise<void> {
+    await this.commands.execute<RemoveMediaTagCommand, void>(
+      new RemoveMediaTagCommand(query.tag ?? ""),
+    );
   }
 
   /**
@@ -219,8 +234,9 @@ export class MediaLibraryController {
    * elle vit dans `mediaTags`.
    */
   @Put()
-  async describe(@Body() body: unknown): Promise<void> {
-    const payload = mediaDetailsPayloadSchema.parse(body);
+  async describe(
+    @Body(new ZodBody(mediaDetailsPayloadSchema)) payload: MediaDetailsPayload,
+  ): Promise<void> {
     await this.commands.execute<SaveMediaDetailsCommand, void>(
       new SaveMediaDetailsCommand(
         payload.url,
@@ -245,23 +261,30 @@ export class MediaLibraryController {
    */
   @Delete()
   @HttpCode(204)
-  async discard(@Query("url") url?: string): Promise<void> {
-    await this.commands.execute<DiscardMediaCommand, void>(new DiscardMediaCommand(url ?? ""));
+  async discard(@Query(new ZodQuery(imageUrlQuerySchema)) query: ImageUrlQuery): Promise<void> {
+    await this.commands.execute<DiscardMediaCommand, void>(
+      new DiscardMediaCommand(query.url ?? ""),
+    );
   }
 
   /**
    * Dépose une image et rend son entrée de bibliothèque.
    *
    * Aucune validation d'image ici : le contrôleur ne fait que le transport.
-   * Le champ `seriesId`, facultatif, range l'image NEUVE dans une série (D3) ;
-   * une image déjà au fonds garde la sienne (D2). C'est `productImage` qui décide, en relisant les octets — ni le `Content-Type`
-   * annoncé, ni l'extension ne sont crus.
+   * Le champ `seriesId`, facultatif, range l'image NEUVE dans une série ; une
+   * image déjà au fonds garde la sienne. C'est `productImage` qui décide, en
+   * relisant les octets — ni le `Content-Type` annoncé, ni l'extension ne
+   * sont crus.
+   *
+   * La réponse est TRADUITE, pas relayée : le résultat du handler porte la
+   * clé de bucket, qu'aucun écran n'a à connaître (elle sortait jusqu'au
+   * 2026-10-11, quand `GET /media` la taisait déjà).
    */
   @Post()
   @UseInterceptors(FileInterceptor("file", { limits: { fileSize: IMAGE_UPLOAD_HARD_LIMIT } }))
   async upload(
     @UploadedFile() file: UploadedFilePart | undefined,
-    // La série et la palette sont des champs texte du MÊME multipart (D3, L9) :
+    // La série et la palette sont des champs texte du MÊME multipart :
     // la forme seulement, une palette illisible est un 400 nommé.
     @Body(new ZodBody(depositFieldsSchema)) fields: DepositFields,
   ): Promise<UploadedMediaView> {
@@ -269,19 +292,12 @@ export class MediaLibraryController {
       throw new UnsupportedImageError("aucun fichier reçu.");
     }
     const { seriesId, palette } = fields;
-    return this.commands.execute<DepositImageCommand, DepositImageResult>(
+    const deposited = await this.commands.execute<DepositImageCommand, DepositImageResult>(
       // Le nom de fichier ne sert PAS au dépôt — la clé est le SHA-256 du
       // contenu. Il sert au refus : sur un lot de cinquante, « lequel n'est
       // pas passé » n'a de réponse que par lui.
       new DepositImageCommand(file.buffer, file.originalname, seriesId ?? null, palette ?? null),
     );
+    return uploadedView(deposited);
   }
-}
-
-/** Ce que l'écran demande par défaut à l'historique des refus. */
-const DEFAULT_FAILURES_PAGE = 50;
-
-function numberOr(raw: string | undefined, fallback: number): number {
-  const parsed = Number(raw);
-  return Number.isFinite(parsed) ? parsed : fallback;
 }

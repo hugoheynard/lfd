@@ -84,7 +84,7 @@ export class StorefrontEditorStore implements StorefrontObjectHost {
   /** Tous les objets, de tous les rayons. */
   readonly blocks = signal<readonly EditorBlock[]>([]);
   readonly templates = signal<readonly StorefrontTemplate[]>([]);
-  /** La photo de la porte « Je passe la prendre » — un réglage de la page Accueil (R10). */
+  /** La photo de la porte « Je passe la prendre » — un réglage de la page Accueil, pas un objet de la grille. */
   readonly pickupDoorImage = signal<StorefrontImage | null>(null);
   /**
    * La vitrine telle que chargée ou enregistrée, en payload : le point de comparaison.

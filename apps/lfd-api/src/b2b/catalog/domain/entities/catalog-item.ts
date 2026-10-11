@@ -186,8 +186,8 @@ export interface PimImage {
   readonly width: number | null;
   readonly height: number | null;
   /**
-   * Le **point focal** posé à la médiathèque, en fractions de 0 à 1 (L4,
-   * 2026-10-10). `null` = personne ne s'est prononcé, ou un envoi d'avant :
+   * Le **point focal** posé à la médiathèque, en fractions de 0 à 1 (depuis
+   * le 2026-10-10). `null` = personne ne s'est prononcé, ou un envoi d'avant :
    * la vitrine recadre au centre, ce qu'elle a toujours fait.
    */
   readonly focal: ImageFocal | null;

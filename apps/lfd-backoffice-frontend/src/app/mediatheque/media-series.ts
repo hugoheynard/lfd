@@ -1,51 +1,28 @@
 import { Injectable, inject, signal } from '@angular/core';
-import type { MediaSeriesPayload, MediaSeriesView } from '@lfd/pim-contracts';
+import type { MediaSeriesPayload, MediaSeriesRefView, MediaSeriesView } from '@lfd/pim-contracts';
 import { httpErrorMessage } from '@lfd/endpoints';
+import type { FoldSelectOption } from 'fold-ng';
 
 import { MediaLibraryHttpApi } from './media-library-http-api';
+import { civilDayLabel, civilMonthLabel } from './paris-calendar';
 
 /** Les plafonds d'une série — ceux que le domaine du serveur applique (`MediaSeries`). */
 export const SERIES_LIMITS = { title: 120, note: 2000 } as const;
 
-const DAY = /^(\d{4})-(\d{2})-(\d{2})$/;
-
 /**
- * Un jour nu lu comme un jour, sans fuseau : `2026-03-01` est le 1er mars
- * partout. Le passer à `new Date()` le lirait à minuit UTC, et un poste réglé
- * à l'ouest le dirait le 28 février.
+ * « Aucune » dans une liste de séries — une série n'a jamais un identifiant
+ * vide, donc la valeur ne peut pas en désigner une.
  */
-function dayOf(shotOn: string): Date | null {
-  const match = DAY.exec(shotOn);
-  if (match === null) {
-    return null;
-  }
-  return new Date(Date.UTC(Number(match[1]), Number(match[2]) - 1, Number(match[3])));
-}
-
-const MONTH = new Intl.DateTimeFormat('fr-FR', { timeZone: 'UTC', month: 'long', year: 'numeric' });
-const FULL = new Intl.DateTimeFormat('fr-FR', {
-  timeZone: 'UTC',
-  day: 'numeric',
-  month: 'long',
-  year: 'numeric',
-});
-const PARIS_DAY = new Intl.DateTimeFormat('en-CA', {
-  timeZone: 'Europe/Paris',
-  year: 'numeric',
-  month: '2-digit',
-  day: '2-digit',
-});
+export const NO_SERIES = '';
 
 /** « mars 2026 » — la date courte d'une pastille. `null` : jour inconnu. */
 export function seriesMonth(shotOn: string | null): string | null {
-  const day = shotOn === null ? null : dayOf(shotOn);
-  return day === null ? null : MONTH.format(day);
+  return shotOn === null ? null : civilMonthLabel(shotOn);
 }
 
 /** « 12 mars 2026 » — la date d'une ligne de liste. */
 export function seriesDay(shotOn: string | null): string | null {
-  const day = shotOn === null ? null : dayOf(shotOn);
-  return day === null ? null : FULL.format(day);
+  return shotOn === null ? null : civilDayLabel(shotOn);
 }
 
 /** « Shooting carte 2026 · mars 2026 », ou le titre seul faute de date. */
@@ -57,14 +34,27 @@ export function seriesLabel(series: {
   return month === null ? series.title : `${series.title} · ${month}`;
 }
 
-/**
- * Aujourd'hui à Paris, `AAAA-MM-JJ` — la borne haute d'une prise de vue.
- *
- * Le serveur reste l'autorité (il refuse un jour à venir) ; l'écran ne fait
- * que griser ce qu'il refuserait.
- */
-export function parisToday(at: Date = new Date()): string {
-  return PARIS_DAY.format(at);
+/** La référence qu'une image porte, tirée d'une série de la liste ; `null` sans série. */
+export function seriesRefOf(series: MediaSeriesView | null | undefined): MediaSeriesRefView | null {
+  if (series === null || series === undefined) {
+    return null;
+  }
+  return { id: series.id, title: series.title, shotOn: series.shotOn };
+}
+
+/** Le choix d'une série : « Aucune série » d'abord, puis chacune par son libellé. */
+export function seriesOptions(
+  series: readonly MediaSeriesView[],
+): readonly FoldSelectOption<string>[] {
+  return [
+    { value: NO_SERIES, label: 'Aucune série' },
+    ...series.map((entry) => ({ value: entry.id, label: seriesLabel(entry) })),
+  ];
+}
+
+/** L'identifiant choisi, ou `null` pour « Aucune série ». */
+export function chosenSeriesId(value: string): string | null {
+  return value === NO_SERIES ? null : value;
 }
 
 /**

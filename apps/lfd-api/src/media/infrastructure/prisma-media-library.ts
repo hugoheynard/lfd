@@ -3,12 +3,14 @@ import { altColumn } from "./alt-columns.js";
 
 import { MediaPrismaService } from "../infra/database/media-prisma.service.js";
 import { UuidGenerator } from "../../platform/id/uuid-generator.js";
+import { isUniqueViolation } from "../../platform/database/json-columns.js";
+import { MediaAlreadyRegisteredError } from "../domain/errors/media-library-errors.js";
 import {
   MediaLibrary,
   type MediaFacts,
   type RegisteredMedia,
 } from "../domain/ports/media-library.js";
-import { altText, SOURCE_LOCALE } from "../domain/value-objects/alt-text.js";
+import { imageAlt } from "../domain/value-objects/alt-text.js";
 
 @Injectable()
 export class PrismaMediaLibrary extends MediaLibrary {
@@ -21,15 +23,29 @@ export class PrismaMediaLibrary extends MediaLibrary {
 
   async register(entry: Omit<RegisteredMedia, "id">): Promise<RegisteredMedia> {
     const id = this.ids.next();
+    try {
+      await this.insert(id, entry);
+    } catch (caught) {
+      // L'URL est unique : seul un dépôt simultané des mêmes octets peut la
+      // prendre entre la lecture et cette écriture.
+      if (isUniqueViolation(caught)) {
+        throw new MediaAlreadyRegisteredError(entry.url);
+      }
+      throw caught;
+    }
+    return { id, ...entry };
+  }
+
+  private async insert(id: string, entry: Omit<RegisteredMedia, "id">): Promise<void> {
     await this.prisma.mediaAsset.create({
       data: {
         id,
         url: entry.url,
-        // Le texte alternatif se saisit au rattachement, sur la fiche, par
-        // quelqu'un qui sait ce que le produit raconte. Au dépôt il n'y a
-        // personne pour l'écrire : la colonne est obligatoire, on y met l'URL,
-        // comme le fait déjà le rattachement quand le champ est laissé vide.
-        alt: altColumn(altText("texte alternatif", { [SOURCE_LOCALE]: entry.url })),
+        // Le texte alternatif se saisit à la médiathèque, sur l'image (plus
+        // sur la fiche depuis le 2026-09-23). Au dépôt personne n'est là pour
+        // l'écrire : la colonne est obligatoire, elle porte le repli sur l'URL
+        // — la même règle que la description, au domaine (`imageAlt`).
+        alt: altColumn(imageAlt(null, entry.url)),
         storageKey: entry.storageKey,
         contentType: entry.contentType,
         width: entry.width,
@@ -38,7 +54,6 @@ export class PrismaMediaLibrary extends MediaLibrary {
         seriesId: entry.seriesId,
       },
     });
-    return { id, ...entry };
   }
 
   async alreadyRegistered(url: string): Promise<RegisteredMedia | null> {

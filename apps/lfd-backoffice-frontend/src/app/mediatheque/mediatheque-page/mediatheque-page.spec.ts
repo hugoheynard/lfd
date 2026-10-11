@@ -160,7 +160,7 @@ function page(): MediathequePage {
  * la première est jetée.
  */
 async function reread(screen: MediathequePage): Promise<void> {
-  await screen['feed'].restart(screen['criteria']());
+  await screen['feed'].restart(screen['view'].criteria());
 }
 
 // `library` est construit dans `page()`, mais le fournisseur doit exister avant
@@ -217,7 +217,7 @@ describe('la médiathèque', () => {
     await screen['feed'].more();
 
     expect(screen['feed'].items().map((item) => item.url)).toEqual(['a', 'b', 'c']);
-    // 🔴 Plus aucun `offset` ne part (plan L2) : la suite se lit par `after`.
+    // 🔴 Plus aucun `offset` ne part (par curseur depuis le 2026-10-10) : la suite se lit par `after`.
     expect(library.calls.map((call) => call.after)).toEqual([undefined, undefined, 'c1']);
     expect(library.calls.some((call) => 'offset' in call)).toBe(false);
     expect(screen['feed'].hasMore()).toBe(false);
@@ -244,7 +244,7 @@ describe('la médiathèque', () => {
     expect(screen['rows']().map((row) => row.kind)).toEqual(['divider', 'image']);
 
     library.pages = [{ items: [image('a')], total: 1, next: null }];
-    await screen['show']({ ...screen['criteria'](), sort: 'name' });
+    await screen['view'].show({ ...screen['view'].criteria(), sort: 'name' });
     expect(screen['rows']().map((row) => row.kind)).toEqual(['image']);
   });
 });
@@ -257,7 +257,7 @@ describe('la médiathèque — la recherche', () => {
    */
   it('envoie le critère au SERVEUR', async () => {
     const screen = page();
-    await screen['show']({ ...screen['criteria'](), q: 'croissant' });
+    await screen['view'].show({ ...screen['view'].criteria(), q: 'croissant' });
 
     expect(library.calls.at(-1)?.q).toBe('croissant');
   });
@@ -272,7 +272,7 @@ describe('la médiathèque — la recherche', () => {
     ];
     await reread(screen);
 
-    await screen['show']({ ...screen['criteria'](), q: 'croissant' });
+    await screen['view'].show({ ...screen['view'].criteria(), q: 'croissant' });
 
     expect(screen['feed'].items().map((item) => item.url)).toEqual(['c']);
     expect(library.calls.at(-1)).not.toHaveProperty('after');
@@ -281,8 +281,8 @@ describe('la médiathèque — la recherche', () => {
   it('restreint en cumulant les mots-clés retenus', async () => {
     const screen = page();
 
-    await screen['toggleFilterTag']('viennoiserie');
-    await screen['toggleFilterTag']('packshot');
+    await screen['view'].toggleTag('viennoiserie');
+    await screen['view'].toggleTag('packshot');
 
     expect(library.calls.at(-1)?.tags).toEqual(['viennoiserie', 'packshot']);
   });
@@ -290,11 +290,11 @@ describe('la médiathèque — la recherche', () => {
   it('relâche un mot-clé retenu deux fois', async () => {
     const screen = page();
 
-    await screen['toggleFilterTag']('viennoiserie');
-    await screen['toggleFilterTag']('viennoiserie');
+    await screen['view'].toggleTag('viennoiserie');
+    await screen['view'].toggleTag('viennoiserie');
 
     expect(library.calls.at(-1)?.tags).toEqual([]);
-    expect(screen['filtering']()).toBe(false);
+    expect(screen['view'].filtering()).toBe(false);
   });
 });
 
@@ -312,7 +312,7 @@ describe('la médiathèque — les mots-clés', () => {
     expect(screen['palette'].all()).toEqual([{ tag: 'croissant', count: 12, fresh: false }]);
   });
 
-  /** D1 : le retrait est immédiat, et l'annulation repose le mot à SA place. */
+  /** Le retrait est immédiat, et l'annulation repose le mot à SA place (Hugo, 2026-10-10). */
   it('repose un mot retiré d’une tuile, à sa place, par le même PUT', async () => {
     const screen = page();
     library.pages = [
@@ -320,16 +320,16 @@ describe('la médiathèque — les mots-clés', () => {
     ];
     await reread(screen);
 
-    await screen['strip'](screen['feed'].items()[0]!, 'croissant');
+    await screen['gestures'].strip(screen['feed'].items()[0]!, 'croissant');
     expect(screen['feed'].items()[0]?.tags).toEqual(['beurre', 'pain']);
-    const [last] = screen['stripped']();
+    const [last] = screen['gestures'].stripped();
     expect(last?.tag).toBe('croissant');
 
-    await screen['undoStrip'](last!);
+    await screen['gestures'].undo(last!);
 
     expect(screen['feed'].items()[0]?.tags).toEqual(['beurre', 'croissant', 'pain']);
     expect(library.described.at(-1)?.tags).toEqual(['beurre', 'croissant', 'pain']);
-    expect(screen['stripped']()).toEqual([]);
+    expect(screen['gestures'].stripped()).toEqual([]);
   });
 
   /**
@@ -343,10 +343,10 @@ describe('la médiathèque — les mots-clés', () => {
     library.pages = [{ items: [described], total: 1, next: null }];
     await reread(screen);
 
-    await screen['strip'](screen['feed'].items()[0]!, 'croissant');
+    await screen['gestures'].strip(screen['feed'].items()[0]!, 'croissant');
     expect(library.described.at(-1)?.alt).toEqual({ fr: 'Croissant doré' });
 
-    await screen['apply'](screen['feed'].items()[0]!, 'beurre');
+    await screen['gestures'].apply(screen['feed'].items()[0]!, 'beurre');
     expect(library.described.at(-1)?.alt).toEqual({ fr: 'Croissant doré' });
   });
 
@@ -354,14 +354,14 @@ describe('la médiathèque — les mots-clés', () => {
     const screen = page();
     library.vocabulary = [{ tag: 'croisant', count: 3 }];
     await screen['palette'].refresh();
-    await screen['toggleFilterTag']('croisant');
+    await screen['view'].toggleTag('croisant');
     panelResult = { to: 'croissant' };
 
     await screen['rename']({ tag: 'croisant', count: 3, fresh: false });
 
     expect(library.renamed).toEqual([{ from: 'croisant', to: 'croissant' }]);
     expect(notify.successes).toEqual(['Mot-clé renommé']);
-    expect(screen['criteria']().tags).toEqual(['croissant']);
+    expect(screen['view'].criteria().tags).toEqual(['croissant']);
   });
 
   it('dit « fusionnés » quand le mot existait déjà, et passe les comptes au panneau', async () => {
@@ -407,7 +407,7 @@ describe('la médiathèque — les mots-clés', () => {
 
   it('retire partout après confirmation, en disant de combien d’images', async () => {
     const screen = page();
-    await screen['toggleFilterTag']('croisant');
+    await screen['view'].toggleTag('croisant');
     panelResult = true;
 
     await screen['removeEverywhere']({ tag: 'croisant', count: 3, fresh: false });
@@ -415,7 +415,7 @@ describe('la médiathèque — les mots-clés', () => {
     expect(opened[0]).toEqual({ tag: { tag: 'croisant', count: 3 } });
     expect(library.removed).toEqual(['croisant']);
     expect(notify.successes).toEqual(['Mot-clé retiré de 3 images']);
-    expect(screen['criteria']().tags).toEqual([]);
+    expect(screen['view'].criteria().tags).toEqual([]);
   });
 });
 
@@ -424,8 +424,8 @@ describe("la médiathèque — l'adresse porte la vue", () => {
     const screen = page();
     await TestBed.inject(Router).navigateByUrl('/?sort=uses&tags=a,b&unused=1');
 
-    await vi.waitFor(() => expect(screen['criteria']().sort).toBe('uses'));
-    expect(screen['criteria']()).toEqual({
+    await vi.waitFor(() => expect(screen['view'].criteria().sort).toBe('uses'));
+    expect(screen['view'].criteria()).toEqual({
       ...ALL_MEDIA,
       sort: 'uses',
       tags: ['a', 'b'],
@@ -441,7 +441,7 @@ describe("la médiathèque — l'adresse porte la vue", () => {
     await reread(screen);
     const before = library.calls.length;
 
-    await screen['show']({ ...screen['criteria'](), untagged: true, from: '2026-10-01' });
+    await screen['view'].show({ ...screen['view'].criteria(), untagged: true, from: '2026-10-01' });
 
     await vi.waitFor(() => expect(router.url).toContain('untagged=1'));
     expect(router.url).toContain('from=2026-10-01');
@@ -452,15 +452,15 @@ describe("la médiathèque — l'adresse porte la vue", () => {
   it('« Tout afficher » rend l’adresse nue mais garde le tri', async () => {
     const screen = page();
     const router = TestBed.inject(Router);
-    await screen['show']({ ...ALL_MEDIA, sort: 'name', q: 'croissant', unused: true });
+    await screen['view'].show({ ...ALL_MEDIA, sort: 'name', q: 'croissant', unused: true });
 
-    await screen['clearFilter']();
+    await screen['view'].clearFilter();
 
     await vi.waitFor(() => expect(router.url).toBe('/?sort=name'));
   });
 });
 
-describe('la médiathèque — la série d’une image (L3)', () => {
+describe('la médiathèque — la série d’une image', () => {
   const CARTE: MediaSeriesView = {
     id: 's1',
     title: 'Shooting carte 2026',
@@ -477,7 +477,7 @@ describe('la médiathèque — la série d’une image (L3)', () => {
     library.pages = [{ items: [image('a')], total: 1, next: null }];
     await reread(screen);
 
-    const saved = await screen['writeDescription']({
+    const saved = await screen['actions']['writer'].write({
       url: 'a',
       name: '',
       alt: { fr: '' },
@@ -506,7 +506,7 @@ describe('la médiathèque — la série d’une image (L3)', () => {
     ];
     await reread(screen);
 
-    await screen['apply'](screen['feed'].items()[0]!, 'beurre');
+    await screen['gestures'].apply(screen['feed'].items()[0]!, 'beurre');
 
     expect(library.described.at(-1)).not.toHaveProperty('seriesId');
   });
@@ -522,7 +522,7 @@ describe('la médiathèque — la série d’une image (L3)', () => {
     ];
     await reread(screen);
 
-    screen['describe'](screen['feed'].items()[0]!);
+    screen['actions'].describe(screen['feed'].items()[0]!);
 
     expect(opened.at(-1)).toMatchObject({ series: { id: 's1' } });
   });

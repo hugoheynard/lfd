@@ -3,7 +3,7 @@ import type { MediaSeriesView } from "@lfd/pim-contracts";
 
 import { MediaSeriesReader } from "../domain/ports/media-series.js";
 
-/** Les séries du fonds, avec leur compte d'images (L3, 2026-10-10). */
+/** Les séries du fonds, avec leur compte d'images (2026-10-10). */
 export class ListMediaSeriesQuery {}
 
 /** Triées par prise de vue décroissante — sans date en dernier —, puis par création. */

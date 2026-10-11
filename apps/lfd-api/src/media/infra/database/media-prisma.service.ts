@@ -24,6 +24,6 @@ export abstract class MediaPrismaService {
   abstract readonly mediaAsset: PrismaService["mediaAsset"];
   /** L'historique des dépôts refusés — des TENTATIVES, pas des images. */
   abstract readonly mediaUploadFailure: PrismaService["mediaUploadFailure"];
-  /** Les séries du fonds (L3, 2026-10-10) — un regroupement d'images. */
+  /** Les séries du fonds (2026-10-10) — un regroupement d'images. */
   abstract readonly mediaSeries: PrismaService["mediaSeries"];
 }

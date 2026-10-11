@@ -11,7 +11,7 @@ import type { ImagePalette } from "../value-objects/image-palette.js";
 export type PaletteOutcome = "painted" | "already_painted" | "not_in_library";
 
 /**
- * **L'écriture de la palette d'une image** (plan L9, 2026-10-11).
+ * **L'écriture de la palette d'une image** (2026-10-11).
  *
  * Un port à part, et pas une méthode de plus sur `MediaLibraryWriter` : le
  * dépôt et le rattrapage ont besoin de ce geste-là seulement (ISP).

@@ -56,10 +56,10 @@ function grouping(
  *
  * - Tri par DÉPÔT : le mois de dépôt, à l'heure de Paris.
  * - Tri par PRISE DE VUE : la série (titre · mois), puis « Sans série » —
- *   le serveur range les images sans série ou sans date en dernier (L3).
+ *   le serveur range les images sans série ou sans date en dernier.
  *
  * Sous un autre ordre, deux images du même groupe ne se suivent pas, et
- * l'intercalaire se répéterait. Jamais par tag (D4, Hugo 2026-10-10) : une
+ * l'intercalaire se répéterait. Jamais par tag (Hugo, 2026-10-10) : une
  * image à trois tags paraîtrait trois fois.
  *
  * ⚠️ Deux séries sans date se suivent sous « prise de vue » : la clé est

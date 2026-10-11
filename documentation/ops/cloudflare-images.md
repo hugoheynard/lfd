@@ -37,15 +37,16 @@ flowchart LR
 
 Relevé le 2026-10-10 :
 
-| Réglage                     | Où dans le tableau de bord                                    | Valeur                                                         |
-| --------------------------- | ------------------------------------------------------------- | -------------------------------------------------------------- |
-| Bucket                      | R2 Object Storage → `lfc-media`                               | région **Western Europe (WEUR)**, créé le 2026-08-22           |
-| Domaine public              | `lfc-media` → Settings → Custom Domains                       | `media.lafoliecoffee.info`, **Active**, accès **Enabled**      |
-| TLS minimum du domaine      | même ligne, « … » → Configure options                         | **1.2** (était 1.0, relevé le 2026-10-10 sur décision de Hugo) |
-| URL de développement r2.dev | `lfc-media` → Settings → Public Development URL               | **désactivée** — un domaine sert                               |
-| Transformations d'images    | Images & Stream → Transformations (zone `lafoliecoffee.info`) | **actives** (cf. §3)                                           |
-| Offre Images & Stream       | Images & Stream → Plans                                       | **non souscrite** : palier gratuit (cf. §5)                    |
-| Ramassage des orphelines    | Workers → `lfd-api` → Settings → Trigger events               | cron `30 3 * * *` (UTC)                                        |
+| Réglage                     | Où dans le tableau de bord                                    | Valeur                                                                                                                                                                                                                                                     |
+| --------------------------- | ------------------------------------------------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| Bucket                      | R2 Object Storage → `lfc-media`                               | région **Western Europe (WEUR)**, créé le 2026-08-22                                                                                                                                                                                                       |
+| Domaine public              | `lfc-media` → Settings → Custom Domains                       | `media.lafoliecoffee.info`, **Active**, accès **Enabled**                                                                                                                                                                                                  |
+| TLS minimum du domaine      | même ligne, « … » → Configure options                         | **1.2** (était 1.0, relevé le 2026-10-10 sur décision de Hugo)                                                                                                                                                                                             |
+| CORS                        | `lfc-media` → Settings → CORS Policy                          | `GET`/`HEAD` depuis `https://lfd-backoffice.com`, `https://lfd-backoffice.pages.dev`, `http://localhost:7317` (posé le 2026-10-11) : la frise des couleurs lit les pixels dans un canvas. La boutique n'en a pas besoin : un `<img>` ne lit pas les pixels |
+| URL de développement r2.dev | `lfc-media` → Settings → Public Development URL               | **désactivée** — un domaine sert                                                                                                                                                                                                                           |
+| Transformations d'images    | Images & Stream → Transformations (zone `lafoliecoffee.info`) | **actives** (cf. §3)                                                                                                                                                                                                                                       |
+| Offre Images & Stream       | Images & Stream → Plans                                       | **non souscrite** : palier gratuit (cf. §5)                                                                                                                                                                                                                |
+| Ramassage des orphelines    | Workers → `lfd-api` → Settings → Trigger events               | cron `30 3 * * *` (UTC)                                                                                                                                                                                                                                    |
 
 **Un bucket à part, avec son propre jeton.** Le KBIS est privé (URL signée,
 `attachment` forcé, aucun cache) ; l'image est publique (URL stable, `inline`,
@@ -135,12 +136,13 @@ surveiller le poids servi en approchant des 1 250 images.
 
 ## 6. Vérifier
 
-| Question                              | Geste                                                                                                         | Ce qui est attendu                                                        |
-| ------------------------------------- | ------------------------------------------------------------------------------------------------------------- | ------------------------------------------------------------------------- |
-| La transformation marche-t-elle ?     | `curl -sI -H 'Accept: image/avif' https://media.lafoliecoffee.info/cdn-cgi/image/width=360,format=auto/<clé>` | `cf-resized: internal=ok`, `content-type: image/avif`, quelques Ko        |
-| Une image neuve est-elle immuable ?   | `curl -sI https://media.lafoliecoffee.info/<clé>`                                                             | `cache-control: public, max-age=31536000, immutable`                      |
-| Le ramassage tourne-t-il ?            | Workers → `lfd-api` → Observability, recherche `media/sweep`, 7 jours                                         | des succès quotidiens, 0 erreur (10 succès sur les 7 jours au 2026-10-10) |
-| A-t-il plafonné ?                     | le rapport du passage (`capped`) dans le même journal                                                         | `false` ; `true` dit qu'il reste du travail                               |
-| Le domaine refuse-t-il le vieux TLS ? | R2 → `lfc-media` → Settings → Custom Domains                                                                  | Minimum TLS **1.2**                                                       |
+| Question                                 | Geste                                                                                                         | Ce qui est attendu                                                        |
+| ---------------------------------------- | ------------------------------------------------------------------------------------------------------------- | ------------------------------------------------------------------------- |
+| La transformation marche-t-elle ?        | `curl -sI -H 'Accept: image/avif' https://media.lafoliecoffee.info/cdn-cgi/image/width=360,format=auto/<clé>` | `cf-resized: internal=ok`, `content-type: image/avif`, quelques Ko        |
+| Une image neuve est-elle immuable ?      | `curl -sI https://media.lafoliecoffee.info/<clé>`                                                             | `cache-control: public, max-age=31536000, immutable`                      |
+| Le ramassage tourne-t-il ?               | Workers → `lfd-api` → Observability, recherche `media/sweep`, 7 jours                                         | des succès quotidiens, 0 erreur (10 succès sur les 7 jours au 2026-10-10) |
+| A-t-il plafonné ?                        | le rapport du passage (`capped`) dans le même journal                                                         | `false` ; `true` dit qu'il reste du travail                               |
+| Le back-office peut-il lire les pixels ? | `curl -sI -H 'Origin: https://lfd-backoffice.com' https://media.lafoliecoffee.info/<clé>`                     | `access-control-allow-origin: https://lfd-backoffice.com`                 |
+| Le domaine refuse-t-il le vieux TLS ?    | R2 → `lfc-media` → Settings → Custom Domains                                                                  | Minimum TLS **1.2**                                                       |
 
 Une clé se lit dans R2 → `lfc-media` → Objects → `products/`.

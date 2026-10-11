@@ -2,12 +2,13 @@ import { CommandHandler, type ICommandHandler } from "@nestjs/cqrs";
 
 import { UnitOfWork } from "../../platform/database/unit-of-work.js";
 import { MediaJournal } from "../journal/media-journal.js";
+import { PALETTE_IS_DEDUCED } from "./deposit-palette.js";
 import { MediaPalettes } from "../domain/ports/media-palettes.js";
 import { MediaNotInLibraryError } from "../domain/value-objects/image.js";
 import { imagePalette, type PaletteSwatch } from "../domain/value-objects/image-palette.js";
 
 /**
- * **Rattraper la palette d'une image** (plan L9, 2026-10-11) — l'écran la
+ * **Rattraper la palette d'une image** (2026-10-11, `mediatheque.md` §9 bis) — l'écran la
  * calcule pour les images visibles qui n'en ont pas, et la pose ici.
  */
 export class PaintMediaPaletteCommand {
@@ -39,14 +40,7 @@ export class PaintMediaPaletteHandler implements ICommandHandler<PaintMediaPalet
     const url = command.url.trim();
     const palette = imagePalette(command.palette);
     const outcome = await this.uow.run(() =>
-      this.palettes.paintIfBlank(
-        url,
-        palette,
-        // Le plan l'écrit (L9, « Stockage ») : la palette se DÉDUIT du contenu,
-        // qui est l'identité de l'image. Elle ne change rien à l'image, donc
-        // aucun fait à nommer.
-        this.journal.untraced("la palette se déduit des octets : aucune décision n'est prise"),
-      ),
+      this.palettes.paintIfBlank(url, palette, this.journal.untraced(PALETTE_IS_DEDUCED)),
     );
     if (outcome === "not_in_library") {
       throw new MediaNotInLibraryError(url);

@@ -9,7 +9,7 @@ export interface SellableOperation {
   readonly key: string;
   readonly name: OperationText;
   readonly lede: OperationText | null;
-  /** `focal` : celui que le dernier push a lu à la médiathèque (L10). */
+  /** `focal` : celui que le dernier push a lu à la médiathèque (§7 bis de la médiathèque). */
   readonly image: OperationImageFacts | null;
   readonly announceFrom: Date;
   /** `null` = on commande dès l'annonce. */

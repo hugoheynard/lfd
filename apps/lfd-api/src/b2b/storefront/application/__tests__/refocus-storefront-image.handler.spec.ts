@@ -59,7 +59,7 @@ function handler(repository: StoredStorefront): RefocusStorefrontImageHandler {
   return new RefocusStorefrontImageHandler(repository, new DirectUnitOfWork(), new FixedClock(NOW));
 }
 
-describe("RefocusStorefrontImageHandler (L10)", () => {
+describe("RefocusStorefrontImageHandler", () => {
   it("charge, recadre par l'agrégat, enregistre sous la révision suivante", async () => {
     const repository = new StoredStorefront();
 

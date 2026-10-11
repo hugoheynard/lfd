@@ -1,3 +1,5 @@
+import type { MediaCarrierKind } from "@lfd/pim-contracts";
+
 import type { WriteTicket } from "../../../platform/journal/scoped-journal.js";
 
 /**
@@ -53,11 +55,13 @@ export interface Carrier {
    *
    * `operation` depuis le 2026-09-24 : une opération datée du référentiel
    * (`id` = sa clé), dont l'image paraît dans l'annonce de la boutique.
-   * Depuis le 2026-10-10 (R18), la COPIE que le commerce en a reçue au push se
+   * Depuis le 2026-10-10, la COPIE que le commerce en a reçue au push se
    * nomme aussi `operation`, même clé, libellé « Boutique — opération … » :
    * elle retient l'ancienne image jusqu'au push suivant et ne se repointe pas.
+   *
+   * La liste vit au contrat (`MEDIA_CARRIER_KINDS`), que l'écran lit aussi.
    */
-  readonly kind: "product" | "category" | "storefront" | "operation";
+  readonly kind: MediaCarrierKind;
   readonly id: string;
   /**
    * Ce qu'on lit à l'écran. Jamais vide : un porteur sans nom se désigne par
@@ -76,7 +80,7 @@ export interface Carrier {
  * laisserait un éditeur ouvert réécrire l'ancienne image sans être refusé.
  */
 export interface ImageReplacement {
-  /** L'URL remplacée — elle reste au fonds (D5). */
+  /** L'URL remplacée — elle reste au fonds. */
   readonly from: string;
   /** L'URL qui la remplace, déjà au fonds. */
   readonly to: string;

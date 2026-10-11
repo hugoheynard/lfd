@@ -33,7 +33,9 @@ export class RefocusStorefrontImageHandler implements ICommandHandler<
   execute(command: RefocusStorefrontImageCommand): Promise<number> {
     return this.uow.run(async () => {
       const storefront = await this.storefronts.load();
-      const carriers = storefront.refocus(command.url, command.focal, this.clock.now());
+      const carriers = storefront.refocus(command.url, command.focal, {
+        at: this.clock.now(),
+      });
       if (carriers > 0) {
         await this.storefronts.save(storefront);
       }

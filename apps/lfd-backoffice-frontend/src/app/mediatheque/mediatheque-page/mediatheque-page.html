@@ -16,12 +16,12 @@
   </a>
 
   <!-- LE DÉPÔT EN LOT : la série du lot, la zone de dépôt, le compte rendu
-       et les refus passés (L3). Il dit quand un lot est passé ; la page relit
+       et les refus passés. Il dit quand un lot est passé ; la page relit
        alors le fonds, une fois. -->
-  <app-media-deposit class="deposit" (passed)="reload()" />
+  <app-media-deposit class="deposit" (passed)="feed.reload()" />
 
   <!-- LA BANDE DE TAGS. Le vocabulaire du fonds ENTIER, compté au serveur
-       (L1, 2026-10-10) — plus ce qu'on vient d'écrire sans l'avoir posé. -->
+       (depuis le 2026-10-10) — plus ce qu'on vient d'écrire sans l'avoir posé. -->
   <fold-page-section
     title="Mots-clés"
     description="Cliquez un mot pour l'armer, puis une image pour le poser — ou glissez-le dessus."
@@ -33,7 +33,7 @@
       }
 
       <app-tag-band
-        [filterTags]="criteria().tags"
+        [filterTags]="view.criteria().tags"
         (renameRequested)="rename($event)"
         (removeRequested)="removeEverywhere($event)"
       />
@@ -42,8 +42,8 @@
         <p class="hint">
           « {{ tag }} » est armé : cliquez une image pour le poser.
           <!-- Le même mot sert à POSER et à CHERCHER. -->
-          <button foldButton emphasis="soft" size="sm" (click)="toggleFilterTag(tag)">
-            {{ isFiltering(tag) ? 'Ne plus filtrer dessus' : 'Filtrer sur ce mot-clé' }}
+          <button foldButton emphasis="soft" size="sm" (click)="view.toggleTag(tag)">
+            {{ view.isFilteringOn(tag) ? 'Ne plus filtrer dessus' : 'Filtrer sur ce mot-clé' }}
           </button>
         </p>
       }
@@ -51,21 +51,21 @@
   </fold-page-section>
 
   <!-- LA GRILLE ET SA BARRE. Tout part au SERVEUR, et l'adresse porte la vue
-       (plan L2) : filtrer ce qui est chargé ne cherche pas, ça trie un
+       (`mediatheque.md` §5) : filtrer ce qui est chargé ne cherche pas, ça trie un
        échantillon. La barre reste au-dessus de tous les états — un tri
        refusé ou un filtre sans résultat se défait d'ici. -->
   <div class="feed">
     <app-media-toolbar
-      [criteria]="criteria()"
+      [criteria]="view.criteria()"
       [total]="feed.total()"
       [series]="series.all()"
-      (changed)="show($event)"
+      (changed)="view.show($event)"
       (manageSeries)="manageSeries()"
     />
 
-    <!-- LA FRISE DES COULEURS (L9) : agrégée au SERVEUR sur tout le filtre,
+    <!-- LA FRISE DES COULEURS (`mediatheque.md` §9 bis) : agrégée au SERVEUR sur tout le filtre,
          dans l'ordre du temps quel que soit le tri. Un clic sur une colonne
-         filtre le feed sur sa période de prise de vue (L11). Hors des états
+         filtre le feed sur sa période de prise de vue. Hors des états
          du feed : elle mesure sa largeur avant même la première lecture. -->
     @if (colorStrip.failure(); as message) {
       <fold-callout variant="alert">{{ message }}</fold-callout>
@@ -73,9 +73,9 @@
     <app-palette-strip
       [view]="colorStrip.view()"
       (columnsChange)="resizeStrip($event)"
-      (rangeChosen)="openShotRange($event)"
+      (rangeChosen)="view.showShotRange($event)"
     />
-    @if (shotLabel(); as shot) {
+    @if (view.shotLabel(); as shot) {
       <p class="shot-range">
         <button
           foldButton
@@ -83,7 +83,7 @@
           size="sm"
           icon="close"
           [attr.aria-label]="shot + ' — retirer ce filtre'"
-          (click)="clearShotRange()"
+          (click)="view.clearShotRange()"
         >
           {{ shot }}
         </button>
@@ -106,7 +106,7 @@
         <fold-icon empty-icon name="image" [size]="40" />
         <button foldButton emphasis="outline" icon="reset" (click)="feed.retry()">Réessayer</button>
       </fold-empty-state>
-    } @else if (feed.items().length === 0 && !feed.hasMore() && filtering()) {
+    } @else if (feed.items().length === 0 && !feed.hasMore() && view.filtering()) {
       <!-- Un fonds VIDE et un filtre sans résultat ne se disent pas pareil : le
            premier demande de déposer, le second d'élargir. -->
       <fold-empty-state
@@ -114,7 +114,7 @@
         subtitle="Élargissez la recherche, ou retirez un critère du filtre."
       >
         <fold-icon empty-icon name="image" [size]="40" />
-        <button foldButton emphasis="outline" icon="reset" (click)="clearFilter()">
+        <button foldButton emphasis="outline" icon="reset" (click)="view.clearFilter()">
           Tout afficher
         </button>
       </fold-empty-state>
@@ -146,7 +146,7 @@
         @for (row of rows(); track row.key) {
           @if (row.kind === 'divider') {
             <!-- L'INTERCALAIRE : le mois sous le tri par dépôt (heure de Paris),
-                 la série sous le tri par prise de vue. Jamais par tag (D4) :
+                 la série sous le tri par prise de vue. Jamais par tag (Hugo, 2026-10-10) :
                  une image y paraîtrait deux fois. -->
             <li class="month">{{ row.label }}</li>
           } @else {
@@ -160,7 +160,7 @@
               <!-- L'aperçu est le point de dépôt ET le bouton de pose : les deux
                    gestes visent la même chose, ils ne peuvent pas viser deux
                    surfaces différentes. -->
-              <button type="button" class="frame" (click)="apply(item, palette.armed())">
+              <button type="button" class="frame" (click)="gestures.apply(item, palette.armed())">
                 <img [src]="item.url" [alt]="label(item)" loading="lazy" />
               </button>
               <span class="name" [class.name-missing]="item.name === ''" [title]="fileOf(item)">
@@ -174,7 +174,9 @@
               @if (item.tags.length > 0) {
                 <ul class="worn">
                   @for (tag of item.tags; track tag) {
-                    <li><app-tag-chip [tag]="tag" removable (removed)="strip(item, tag)" /></li>
+                    <li>
+                      <app-tag-chip [tag]="tag" removable (removed)="gestures.strip(item, tag)" />
+                    </li>
                   }
                 </ul>
               }
@@ -190,7 +192,7 @@
                     type="button"
                     class="uses-link"
                     [attr.aria-label]="usesLabel(item) + ' — voir où'"
-                    (click)="showCarriers(item)"
+                    (click)="actions.showCarriers(item)"
                   >
                     <fold-badge variant="accent" [content]="usesLabel(item)" />
                   </button>
@@ -200,18 +202,31 @@
                     icon="edit"
                     size="sm"
                     tooltip="Décrire"
-                    (clicked)="describe(item)"
+                    (clicked)="actions.describe(item)"
                   />
                   <!-- Proposé SEULEMENT quand rien ne la porte ; le serveur
                        reste le dernier mot et refuse quand même. -->
                   @if (item.uses === 0) {
-                    <fold-button-icon
-                      icon="bin"
-                      size="sm"
-                      tone="critical"
-                      tooltip="Retirer du fonds"
-                      (clicked)="discard(item)"
-                    />
+                    <!-- La confirmation dit ce qui se PERD : redéposer le même
+                         fichier retombe sur la même URL, l'image revient ;
+                         ses mots-clés, son étiquette et son point, non. -->
+                    <fold-inline-confirm
+                      confirmIcon="bin"
+                      [message]="
+                        'Retirer « ' +
+                        label(item) +
+                        ' » ? Ses mots-clés et son point focal seront perdus.'
+                      "
+                      [labels]="{ confirm: 'Retirer' }"
+                      (confirmed)="actions.discard(item)"
+                    >
+                      <fold-button-icon
+                        icon="bin"
+                        size="sm"
+                        tone="critical"
+                        tooltip="Retirer du fonds"
+                      />
+                    </fold-inline-confirm>
                   }
                 </span>
               </div>
@@ -226,16 +241,16 @@
     }
   </div>
 
-  <!-- L'ANNULATION d'un retrait sur tuile (D1). Un `fold-toast` posé à part
+  <!-- L'ANNULATION d'un retrait sur tuile (Hugo, 2026-10-10). Un `fold-toast` posé à part
        plutôt que la file du service : celle-ci ne porte que du texte, et le
        geste demande un bouton. Le compte à rebours se met en pause sous le
        pointeur ou le clavier — on a le temps de l'atteindre. -->
-  @for (last of stripped(); track last.id) {
+  @for (last of gestures.stripped(); track last.id) {
     <div class="undo">
-      <fold-toast variant="info" dismissible [duration]="undoMs" (dismiss)="dismissStrip()">
+      <fold-toast variant="info" dismissible [duration]="undoMs" (dismiss)="gestures.dismiss()">
         <span class="undo-line">
           « {{ last.tag }} » retiré
-          <button foldButton emphasis="soft" size="sm" icon="undo" (click)="undoStrip(last)">
+          <button foldButton emphasis="soft" size="sm" icon="undo" (click)="gestures.undo(last)">
             Annuler
           </button>
         </span>

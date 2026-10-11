@@ -25,8 +25,8 @@ const FEBRUARY = 2;
 const LEAP_FEBRUARY_DAYS = 29;
 
 /**
- * **Une série** — des images prises ensemble, sous un titre (plan L3,
- * 2026-10-10).
+ * **Une série** — des images prises ensemble, sous un titre (2026-10-10,
+ * `mediatheque.md` §5).
  *
  * Elle regroupe, elle ne possède pas : c'est l'image qui porte sa série, et
  * rien ne la supprime.

@@ -34,13 +34,28 @@ export const IMAGE_MEASURE = new InjectionToken<ImageMeasure>('IMAGE_MEASURE', {
 
 const ACCEPTED: readonly string[] = MEDIA_LIMITS.acceptedTypes;
 
+/**
+ * **Ce que le dépôt accepte**, dit AVANT qu'on essaie — lu du CONTRAT,
+ * jamais recopié. Partagé par le dépôt en lot et le remplacement. La garde de
+ * transport (25 Mo) n'est pas annoncée : ce n'est pas une règle mais une
+ * protection.
+ */
+export const UPLOAD_LIMITS = {
+  accept: MEDIA_LIMITS.accept,
+  hint: [
+    MEDIA_LIMITS.formatLabels.join(' · '),
+    `${String(MEDIA_LIMITS.maxBytes / (1024 * 1024))} Mo par image`,
+    `${String(MEDIA_LIMITS.minEdgePixels)} × ${String(MEDIA_LIMITS.minEdgePixels)} px minimum`,
+  ].join(' · '),
+} as const;
+
 /** Les mégaoctets tels que le serveur les écrit : une décimale, virgule française. */
 function megabytes(count: number): string {
   return (count / (1024 * 1024)).toFixed(1).replace('.', ',');
 }
 
 /**
- * **Vérifier avant d'envoyer** (plan L3, point 1) — rend le refus que le
+ * **Vérifier avant d'envoyer** (`mediatheque.md` §5, « Les séries ») — rend le refus que le
  * serveur aurait donné, ou `null`.
  *
  * 🔴 Les phrases sont CELLES du serveur (`image-bytes.ts`, relu le

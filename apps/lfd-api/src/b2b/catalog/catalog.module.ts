@@ -184,7 +184,8 @@ import { PrismaCatalogMediaCopies } from "./infrastructure/prisma-catalog-media-
     // Le froid des produits (fil v12, lot 4 bis) : un lecteur à lui, que seul
     // le relais vers la livraison lit.
     { provide: CatalogColdReader, useClass: PrismaCatalogColdReader },
-    // Les copies d'images que la médiathèque doit compter (R18) : le canal
+    // Les copies d'images que la médiathèque doit compter (depuis le 2026-10-10,
+    // `documentation/mediatheque/mediatheque.md` §2) : le canal
     // est lu par `appBootstrap/`, jamais par `media/`.
     { provide: CatalogMediaCopies, useClass: PrismaCatalogMediaCopies },
   ],

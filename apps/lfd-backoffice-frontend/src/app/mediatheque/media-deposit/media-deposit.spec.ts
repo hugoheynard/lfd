@@ -8,11 +8,12 @@ import { MediaLibraryHttpApi } from '../media-library-http-api';
 import { MediaSeriesStore } from '../media-series';
 import { SeriesEditor } from '../series-editor';
 import { IMAGE_MEASURE } from '../upload-check';
-import { MediaDeposit, NEW_SERIES, NO_SERIES, alreadyNote } from './media-deposit';
+import { NO_SERIES } from '../media-series';
+import { MediaDeposit, NEW_SERIES, alreadyNote } from './media-deposit';
 
 /**
  * Ce que ces cas tiennent : **la série du lot part avec chaque fichier**, et
- * une image déjà au fonds le DIT sans alarme — elle garde sa série (D2).
+ * une image déjà au fonds le DIT sans alarme — elle garde sa série.
  */
 
 const CARTE: MediaSeriesView = {
@@ -29,7 +30,7 @@ function entry(seriesId: string | null): UploadEntry {
   return {
     file: new File([new Uint8Array(1)], 'a.png', { type: 'image/png' }),
     name: 'a.png',
-    state: 'déjà au fonds',
+    state: 'already_in_library',
     reason: null,
     refusedBy: null,
     seriesId,
@@ -38,7 +39,7 @@ function entry(seriesId: string | null): UploadEntry {
 
 const titles = (id: string): string | null => (id === 's0' ? 'Atelier' : null);
 
-describe('le compte rendu — déjà au fonds (D2)', () => {
+describe('le compte rendu — déjà au fonds', () => {
   it('nomme la série d’origine qu’elle garde', () => {
     expect(alreadyNote(entry('s0'), 's1', titles)).toBe(
       'Elle garde sa série d’origine, « Atelier ».',
@@ -111,7 +112,7 @@ async function mount(created: string | undefined = undefined) {
 const png = (name: string): File =>
   new File([new Uint8Array([1, 2, 3])], name, { type: 'image/png' });
 
-describe('la série au dépôt (D3)', () => {
+describe('la série au dépôt', () => {
   it('est facultative : sans choix, le lot part sans série', async () => {
     const { deposit, api, passed } = await mount();
 

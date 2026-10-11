@@ -5,15 +5,15 @@ import { MediaCarriers, type Carrier } from "../media/channels/carriers/media-ca
 
 /**
  * **Ce que les COPIES du catalogue du commerce répondent à la médiathèque**
- * (décision R18, 2026-10-10) : une opération reçue qui montre une image la
+ * (depuis le 2026-10-10, `documentation/mediatheque/mediatheque.md` §2) : une opération reçue qui montre une image la
  * retient, même quand le référentiel ne la porte plus.
  *
  * Ici, dans `appBootstrap/`, pour la raison de `StorefrontMediaCarriers` : la
  * ligne `b2b` de la matrice n'a pas `media`.
  *
  * `kind: "operation"`, et non un `kind` neuf : le lien mène à l'opération du
- * référentiel, là où son image se décide, et le libellé dit que c'est la copie
- * de la boutique. Un `kind` neuf aurait touché le contrat `MediaCarrierView` et
+ * référentiel, là où son image se décide, et le libellé — rédigé par le commerce,
+ * `catalogMediaCopyLabel` — dit que c'est la copie de la boutique. Un `kind` neuf aurait touché le contrat `MediaCarrierView` et
  * la table des destinations de l'écran.
  */
 @Injectable()
@@ -28,10 +28,10 @@ export class CatalogCopyMediaCarriers extends MediaCarriers {
 
   async carriersOf(url: string): Promise<readonly Carrier[]> {
     const copies = await this.copies.copiesOf(url);
-    return copies.map(({ operationKey, name }) => ({
+    return copies.map(({ operationKey, label }) => ({
       kind: "operation",
       id: operationKey,
-      label: `Boutique — opération « ${name} » (copie, suit au prochain envoi du catalogue)`,
+      label,
     }));
   }
 

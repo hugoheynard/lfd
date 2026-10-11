@@ -8,7 +8,7 @@ import { MediaCarriers } from "../channels/carriers/media-carriers.js";
 import { MediaAssetDescribedFact } from "../channels/carriers/media-asset-described.fact.js";
 import { MediaLibraryReader } from "../domain/ports/media-library-reader.js";
 import { imageReplacement } from "../domain/value-objects/image-replacement.js";
-import { MediaNotInLibraryError } from "../domain/value-objects/image.js";
+import { mediaLabel, MediaNotInLibraryError } from "../domain/value-objects/image.js";
 import { MEDIA_EVENTS, MediaJournal } from "../journal/media-journal.js";
 
 /** Remplace l'image `from` par l'image `to` chez tous ceux qui l'affichent. */
@@ -40,7 +40,7 @@ export class ReplaceMediaCommand {
  *
  * ## Ce qu'il ne fait pas
  *
- * - **Il ne retire pas l'ancienne** (D5) : elle reste au fonds, et le
+ * - **Il ne retire pas l'ancienne** : elle reste au fonds, et le
  *   ramassage l'emportera après 7 jours si plus rien ne l'affiche.
  * - **Il ne dépose rien** : la nouvelle image est déjà au fonds. Déposer
  *   écrit dans un bucket, hors de toute transaction — l'écran fait les deux
@@ -50,7 +50,7 @@ export class ReplaceMediaCommand {
  *
  * ⚠️ La lecture des deux images n'est pas un verrou : une image retirée entre
  * la lecture et le repointage laisserait ses porteurs sur une URL disparue.
- * C'est la fenêtre du retrait (`mediatheque.md` §8, D6), et elle est assumée.
+ * C'est la fenêtre du retrait (`mediatheque.md` §8), et elle est assumée.
  */
 @CommandHandler(ReplaceMediaCommand)
 export class ReplaceMediaHandler implements ICommandHandler<ReplaceMediaCommand, void> {
@@ -88,7 +88,7 @@ export class ReplaceMediaHandler implements ICommandHandler<ReplaceMediaCommand,
         subjectType: "media_asset",
         subjectId: from,
         payload: {
-          subjectLabel: replaced.name !== "" ? replaced.name : (from.split("/").at(-1) ?? from),
+          subjectLabel: mediaLabel(replaced.name, from),
           to,
           carriers: shown.length,
         },
@@ -98,7 +98,7 @@ export class ReplaceMediaHandler implements ICommandHandler<ReplaceMediaCommand,
         ticket,
       );
       if (repointed > 0) {
-        await this.durable.publish(new MediaAssetDescribedFact(to, this.ids.next()).durableFact());
+        await this.durable.publish(MediaAssetDescribedFact.announce(to, this.ids));
       }
     });
   }

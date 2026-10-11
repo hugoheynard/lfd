@@ -88,8 +88,19 @@ describe('StorefrontInfoForm', () => {
     await Promise.resolve();
     await Promise.resolve();
     expect(opened).toEqual([{ already: [], single: true }]);
-    // L10 : la boutique recadre autour du point posé à la médiathèque.
+    // La boutique recadre autour du point posé à la médiathèque.
     expect(changes.at(-1)?.image).toEqual({ url: IMAGE.url, alt: null, focal: { x: 0.3, y: 0.6 } });
+  });
+
+  it('l’aperçu de l’image se recadre sur son point focal, comme la carte de la boutique', () => {
+    const { fixture } = setup({
+      ...emptyInfo(),
+      image: { url: IMAGE.url, alt: null, focal: { x: 0.3, y: 0.6 } },
+    });
+    const root = fixture.nativeElement as HTMLElement;
+    expect(root.querySelector<HTMLImageElement>('img.preview')?.style.objectPosition).toBe(
+      '30% 60%',
+    );
   });
 
   it('renoncer au sélecteur ne change rien', async () => {

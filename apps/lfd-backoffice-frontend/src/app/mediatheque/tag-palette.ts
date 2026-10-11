@@ -16,7 +16,7 @@ export interface PaletteTag {
  *
  * 🔴 Il n'y a pas de table de tags (décision Hugo, 2026-09-23) : un mot existe
  * tant qu'une image le porte. Le serveur le compte sur TOUT le fonds depuis le
- * 2026-10-10 (L1) ; la bande le dérivait jusque-là des images CHARGÉES, donc un
+ * 2026-10-10 ; la bande le dérivait jusque-là des images CHARGÉES, donc un
  * mot porté seulement hors de la page n'y figurait pas.
  *
  * Ce que quelqu'un vient d'écrire sans l'avoir posé reste affiché, à zéro,

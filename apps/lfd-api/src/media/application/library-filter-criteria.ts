@@ -3,7 +3,7 @@ import { depositPeriodOf, shotPeriodOf } from "./library-period.js";
 
 /**
  * **Les filtres du fonds, tels qu'un écran les demande** — ce que le feed et
- * la frise des couleurs partagent (L9, L11) : les deux doivent montrer le même
+ * la frise des couleurs partagent : les deux doivent montrer le même
  * fonds, donc traduire leurs critères au même endroit.
  */
 export interface LibraryFilterCriteria {
@@ -14,12 +14,12 @@ export interface LibraryFilterCriteria {
   /** Premier et dernier jour de DÉPÔT, inclus, `AAAA-MM-JJ` à l'heure de Paris. */
   readonly from?: string | undefined;
   readonly to?: string | undefined;
-  /** Premier et dernier jour de PRISE DE VUE (série, sinon dépôt), inclus (L11). */
+  /** Premier et dernier jour de PRISE DE VUE (série, sinon dépôt), inclus. */
   readonly shotFrom?: string | undefined;
   readonly shotTo?: string | undefined;
   readonly untagged?: boolean | undefined;
   readonly unused?: boolean | undefined;
-  /** Seulement les images de cette série (L3). */
+  /** Seulement les images de cette série. */
   readonly series?: string | undefined;
 }
 

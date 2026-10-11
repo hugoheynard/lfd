@@ -2,7 +2,7 @@ import type { StripImage } from "../services/palette-strip.js";
 import type { LibraryFilter } from "./media-library-reader.js";
 
 /**
- * **La lecture de la frise des couleurs** (L9, 2026-10-11).
+ * **La lecture de la frise des couleurs** (2026-10-11).
  *
  * Un port à part du feed (ISP) : la frise ne lit ni page, ni curseur, ni
  * étiquette — seulement l'URL, la date retenue et la palette de TOUT le

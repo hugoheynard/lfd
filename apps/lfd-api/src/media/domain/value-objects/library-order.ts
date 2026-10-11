@@ -6,7 +6,7 @@
  * l'image, et sans elle deux dépôts du même instant pourraient changer de place
  * entre deux lectures.
  *
- * 🔴 Une table d'ordres, pas un `switch` : la prise de vue (`shot`, L3) y est
+ * 🔴 Une table d'ordres, pas un `switch` : la prise de vue (`shot`) y est
  * entrée comme une ligne de plus, sans branche ajoutée ailleurs.
  */
 export const LIBRARY_SORTS = ["deposited", "name", "uses", "shot"] as const;

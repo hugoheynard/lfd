@@ -1,7 +1,7 @@
 import { z } from "zod";
 
 import { localizedTextSchema, optionalLocalizedTextSchema } from "./localized.js";
-import { setMediaPayloadSchema, type AttachedMediaView } from "./media.js";
+import { setMediaPayloadSchema, type AttachedMediaView } from "./attached-media.js";
 import type { LocalizedText, SalesChannels } from "./shared.js";
 
 /**

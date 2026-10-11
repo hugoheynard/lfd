@@ -10,7 +10,8 @@ import { Storefront, type StorefrontComposition } from "../storefront.js";
 import { object, settings } from "./storefront-fixtures.js";
 
 /**
- * L'accueil de la vitrine (plan de la médiathèque, L6, D7, D9) : la page
+ * L'accueil de la vitrine (`documentation/mediatheque/mediatheque.md` §7 bis,
+ * « L'accueil de la vitrine ») : la page
  * `home`, la bannière 21/9, et l'image de la porte « Je passe la prendre ».
  * Les instants ne sont comparés qu'à eux-mêmes : aucune horloge ici.
  */

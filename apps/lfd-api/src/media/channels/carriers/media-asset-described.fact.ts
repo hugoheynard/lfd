@@ -1,4 +1,5 @@
 import type { DurableEvent, DurableFact } from "../../../platform/outbox/durable-event.js";
+import type { UuidGenerator } from "../../../platform/id/uuid-generator.js";
 import { TechnicalError } from "../../../platform/shared/errors/app-error.js";
 
 /** Nom STABLE du fait, clé de routage vers `@DurableHandler`. */
@@ -7,7 +8,7 @@ export const MEDIA_ASSET_DESCRIBED = "media.asset_described";
 /**
  * **Ce que les porteurs montrent d'une image a changé** — fait DURABLE que la
  * médiathèque DÉCLARE dans son canal vers les porteurs, et écrit dans la
- * transaction de `SaveMediaDetailsHandler` (cf.
+ * transaction de la description ou du remplacement d'une image (cf.
  * `documentation/mediatheque/mediatheque.md` §7, 2026-10-10).
  *
  * Sans lui, déplacer le point focal à la médiathèque ne changeait rien en
@@ -37,6 +38,14 @@ export class MediaAssetDescribedFact implements DurableEvent {
     /** Identifiant du geste, tiré par l'émetteur : il rend la clé unique par enregistrement. */
     readonly gestureId: string,
   ) {}
+
+  /**
+   * Le fait à publier pour un geste neuf sur cette image — un identifiant de
+   * geste tiré à chaque appel, pour que deux gestes ne se confondent pas.
+   */
+  static announce(url: string, ids: UuidGenerator): DurableFact {
+    return new MediaAssetDescribedFact(url, ids.next()).durableFact();
+  }
 
   durableFact(): DurableFact {
     return {

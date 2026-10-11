@@ -52,7 +52,7 @@ describe("ReadPaletteStripHandler", () => {
     ]);
   });
 
-  it("transmet la période de prise de vue telle que le feed la lit (L11)", async () => {
+  it("transmet la période de prise de vue telle que le feed la lit", async () => {
     const reader = new FakeStripReader([]);
     await new ReadPaletteStripHandler(reader).execute(
       new ReadPaletteStripQuery({ shotFrom: "2026-03-01", shotTo: "2026-03-02" }),

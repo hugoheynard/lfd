@@ -1,5 +1,7 @@
 import { describeFormat, type PlacedBlock } from "@lfd/storefront-layout";
 
+import { sameUnitPoint } from "../../../platform/shared/geometry/unit-point.js";
+
 import {
   type ObjectSettingsInput,
   ObjectSettings,
@@ -12,7 +14,7 @@ import {
   type StorefrontContentState,
 } from "./storefront-content.js";
 import { InvalidStorefrontError } from "./storefront-errors.js";
-import { sameFocal, type StorefrontFocal } from "./storefront-image.js";
+import { type StorefrontFocal } from "./storefront-image.js";
 
 /** Un objet, en primitives validées. */
 export interface StorefrontObjectState {
@@ -116,14 +118,14 @@ export class StorefrontObject {
 
   /**
    * Le même objet, ses images `url` recadrées sur `focal` — ou `this` s'il
-   * n'en montrait aucune, ou déjà sur ce point (L10 du plan de la médiathèque).
+   * n'en montrait aucune, ou déjà sur ce point (§7 bis de la médiathèque).
    */
   withImageRefocused(url: string, focal: StorefrontFocal | null): StorefrontObject {
     const shows = (content: StorefrontContentState): boolean =>
       content.kind === "info" &&
       content.image !== null &&
       content.image.url === url &&
-      !sameFocal(content.image.focal, focal);
+      !sameUnitPoint(content.image.focal, focal);
     if (!this.state.contents.some(shows)) {
       return this;
     }

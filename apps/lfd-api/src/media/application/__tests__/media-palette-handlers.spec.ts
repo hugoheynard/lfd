@@ -4,6 +4,8 @@ import type { RegisteredMedia } from "../../domain/ports/media-library.js";
 import { MediaNotInLibraryError } from "../../domain/value-objects/image.js";
 import { InvalidImagePaletteError } from "../../domain/value-objects/image-palette.js";
 import { DepositImageCommand, DepositImageHandler } from "../deposit-image.js";
+import { DepositPalette } from "../deposit-palette.js";
+import { DepositRefusals } from "../deposit-refusals.js";
 import { PaintMediaPaletteCommand, PaintMediaPaletteHandler } from "../paint-media-palette.js";
 import {
   FakeLibrary,
@@ -36,13 +38,13 @@ function depositHandler(
     library,
     new FakeSeries(),
     new RecordingMediaJournal(),
-    new RecordingFailures(),
+    new DepositRefusals(new RecordingFailures()),
     new DirectUnitOfWork(),
-    palettes,
+    new DepositPalette(palettes, new RecordingMediaJournal()),
   );
 }
 
-describe("la palette au dépôt (L9)", () => {
+describe("la palette au dépôt", () => {
   it("pose la palette revalidée d'une image neuve", async () => {
     const palettes = new RecordingPalettes();
     await depositHandler(new FakeLibrary(), palettes).execute(

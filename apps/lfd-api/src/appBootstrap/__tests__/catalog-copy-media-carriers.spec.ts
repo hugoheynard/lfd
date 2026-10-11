@@ -1,4 +1,5 @@
 import {
+  catalogMediaCopyLabel,
   CatalogMediaCopies,
   type CatalogMediaCopy,
 } from "../../b2b/catalog/channels/media/catalog-media-copies.js";
@@ -33,9 +34,9 @@ describe("CatalogCopyMediaCarriers", () => {
     expect(await carriers.usesOf([IMAGE])).toEqual(new Map([[IMAGE, 1]]));
   });
 
-  it("nomme chaque copie en opération de la boutique, la clé pour identifiant", async () => {
+  it("relaie le libellé que le commerce rédige, la clé pour identifiant", async () => {
     const carriers = new CatalogCopyMediaCarriers(
-      new StubCopies(new Map(), [{ operationKey: "noel", name: "Noël" }]),
+      new StubCopies(new Map(), [{ operationKey: "noel", label: catalogMediaCopyLabel("Noël") }]),
     );
 
     expect(await carriers.carriersOf(IMAGE)).toEqual([
@@ -47,11 +48,13 @@ describe("CatalogCopyMediaCarriers", () => {
     ]);
   });
 
-  /** R18 : la copie suit au push suivant — la réécrire ici devancerait le référentiel. */
+  /** Une copie suit au push suivant — la réécrire ici devancerait le référentiel. */
   it("ne repointe rien et rend 0, même quand une copie montre l'image", async () => {
     // Typé par le port : c'est par lui que le composite l'appelle.
     const carriers: MediaCarriers = new CatalogCopyMediaCarriers(
-      new StubCopies(new Map([[IMAGE, 1]]), [{ operationKey: "noel", name: "Noël" }]),
+      new StubCopies(new Map([[IMAGE, 1]]), [
+        { operationKey: "noel", label: catalogMediaCopyLabel("Noël") },
+      ]),
     );
     const replacement = {
       from: IMAGE,

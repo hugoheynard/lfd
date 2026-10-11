@@ -1,3 +1,4 @@
+import { sameUnitPoint } from "../../../platform/shared/geometry/unit-point.js";
 import type { PimContextPrice, PimImage } from "./entities/catalog-item.js";
 
 /**
@@ -207,20 +208,11 @@ function sameImage(left: PimImage | null, right: PimImage | null): boolean {
     left.alt === right.alt &&
     left.width === right.width &&
     left.height === right.height &&
-    sameFocal(left.focal, right.focal)
+    // Le point focal compte comme les dimensions (depuis le 2026-10-10) : le
+    // déplacer change ce que la vignette montre d'une pièce, et un diff qui
+    // l'ignorerait le ferait passer en vente sans relecture.
+    sameUnitPoint(left.focal, right.focal)
   );
-}
-
-/**
- * Le point focal compte comme les dimensions (L4, 2026-10-10) : le déplacer
- * change ce que la vignette montre d'une pièce, et un diff qui l'ignorerait le
- * ferait passer en vente sans relecture.
- */
-function sameFocal(left: PimImage["focal"], right: PimImage["focal"]): boolean {
-  if (left === null || right === null) {
-    return left === right;
-  }
-  return left.x === right.x && left.y === right.y;
 }
 
 /** Les champs qui diffèrent entre ce qui arrive et ce qu'on tient. */

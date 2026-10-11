@@ -8,7 +8,7 @@ const DAY_START = "00:00";
 
 /**
  * **La date d'une image, telle que la frise la range et que le feed la filtre**
- * (L9, L11) : le jour de prise de vue de sa série, à minuit à Paris, sinon son
+ * : le jour de prise de vue de sa série, à minuit à Paris, sinon son
  * dépôt.
  *
  * 🔴 Ce fichier est le SEUL à définir cette date, pour la lecture

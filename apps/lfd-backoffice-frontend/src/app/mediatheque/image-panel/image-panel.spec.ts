@@ -3,7 +3,8 @@ import { type ComponentFixture, TestBed } from '@angular/core/testing';
 import { FoldPanelRef } from 'fold-ng';
 import { describe, expect, it, vi } from 'vitest';
 
-import { ImagePanel, type ImagePanelData, type ImagePanelResult } from './image-panel';
+import type { ImagePanelData, ImagePanelResult } from '../image-description';
+import { ImagePanel } from './image-panel';
 
 /**
  * Ce que ces cas tiennent : **le panneau ne fait pas passer un repli pour une
@@ -78,18 +79,18 @@ describe('décrire une image', () => {
   it('n’affiche PAS l’URL de repli comme si c’était une alternative', () => {
     const { panel: screen } = panel(bare);
 
-    expect(screen['valueOf']('fr')).toBe('');
+    expect(screen['alt'].valueOf('fr')).toBe('');
   });
 
   it('affiche une alternative vraiment écrite', () => {
     const { panel: screen } = panel({ ...bare, alt: { fr: 'Croissant doré' } });
 
-    expect(screen['valueOf']('fr')).toBe('Croissant doré');
+    expect(screen['alt'].valueOf('fr')).toBe('Croissant doré');
   });
 
   it('rend une source vide plutôt qu’un texte creux', () => {
     const { panel: screen, closed } = panel({ ...bare, alt: { fr: 'Croissant', en: 'Croissant' } });
-    screen['write']('fr', '   ');
+    screen['alt'].write('fr', '   ');
 
     screen['submit']();
 
@@ -101,7 +102,7 @@ describe('décrire une image', () => {
   it('écrit une langue sans effacer les autres', () => {
     const { panel: screen, closed } = panel({ ...bare, alt: { fr: 'Croissant' } });
 
-    screen['write']('it', 'Cornetto');
+    screen['alt'].write('it', 'Cornetto');
     screen['submit']();
 
     expect(closed[0]?.alt).toEqual({ fr: 'Croissant', it: 'Cornetto' });
@@ -173,28 +174,28 @@ describe('décrire une image — les mots-clés', () => {
   it('ajoute la saisie normalisée, et la rend avec le reste', () => {
     const { panel: screen, closed } = panel(tagged);
 
-    screen['tagDraft'].set('  Beurre ');
-    expect(screen['tagWritten']()).toBe('beurre');
-    screen['addTag'](screen['tagDraft']());
+    screen['tagEditor'].draft.set('  Beurre ');
+    expect(screen['tagEditor'].written()).toBe('beurre');
+    screen['tagEditor'].add(screen['tagEditor'].draft());
     screen['submit']();
 
     expect(closed[0]?.tags).toEqual(['croissant', 'beurre']);
-    expect(screen['tagDraft']()).toBe('');
+    expect(screen['tagEditor'].draft()).toBe('');
   });
 
   it('ne double pas un mot déjà porté, et ignore une saisie vide', () => {
     const { panel: screen } = panel(tagged);
 
-    screen['addTag']('Croissant');
-    screen['addTag']('   ');
+    screen['tagEditor'].add('Croissant');
+    screen['tagEditor'].add('   ');
 
-    expect(screen['tags']()).toEqual(['croissant']);
+    expect(screen['tagEditor'].tags()).toEqual(['croissant']);
   });
 
   it('retire un mot', () => {
     const { panel: screen, closed } = panel(tagged);
 
-    screen['removeTag']('croissant');
+    screen['tagEditor'].remove('croissant');
     screen['submit']();
 
     expect(closed[0]?.tags).toEqual([]);
@@ -203,14 +204,14 @@ describe('décrire une image — les mots-clés', () => {
   it('propose les mots existants qui contiennent la saisie, hors ceux portés', () => {
     const { panel: screen } = panel(tagged);
 
-    screen['tagDraft'].set('CHOC');
-    expect(screen['suggestions']()).toEqual(['pain au chocolat', 'chocolatine']);
+    screen['tagEditor'].draft.set('CHOC');
+    expect(screen['tagEditor'].suggestions()).toEqual(['pain au chocolat', 'chocolatine']);
 
-    screen['tagDraft'].set('crois');
-    expect(screen['suggestions']()).toEqual([]);
+    screen['tagEditor'].draft.set('crois');
+    expect(screen['tagEditor'].suggestions()).toEqual([]);
 
-    screen['tagDraft'].set('');
-    expect(screen['suggestions']()).toEqual([]);
+    screen['tagEditor'].draft.set('');
+    expect(screen['tagEditor'].suggestions()).toEqual([]);
   });
 });
 
@@ -235,12 +236,12 @@ describe('décrire une image — le texte alternatif', () => {
   it('compte les caractères, et avertit au-delà de 125 sans bloquer', () => {
     const { panel: screen, closed } = panel(bare);
 
-    screen['write']('fr', 'a'.repeat(125));
-    expect(screen['lengthOf']('fr')).toBe(125);
-    expect(screen['tooLong']('fr')).toBe(false);
+    screen['alt'].write('fr', 'a'.repeat(125));
+    expect(screen['alt'].lengthOf('fr')).toBe(125);
+    expect(screen['alt'].tooLong('fr')).toBe(false);
 
-    screen['write']('fr', 'a'.repeat(126));
-    expect(screen['tooLong']('fr')).toBe(true);
+    screen['alt'].write('fr', 'a'.repeat(126));
+    expect(screen['alt'].tooLong('fr')).toBe(true);
     screen['submit']();
 
     expect(closed[0]?.alt.fr).toHaveLength(126);
@@ -249,8 +250,8 @@ describe('décrire une image — le texte alternatif', () => {
   it('affiche le repli sur l’URL comme un champ vide, compté zéro', () => {
     const { panel: screen } = panel(bare);
 
-    expect(screen['valueOf']('fr')).toBe('');
-    expect(screen['lengthOf']('fr')).toBe(0);
+    expect(screen['alt'].valueOf('fr')).toBe('');
+    expect(screen['alt'].lengthOf('fr')).toBe(0);
     // Ouvrir une image non décrite n'est pas la modifier.
     expect(screen['dirty']()).toBe(false);
   });
@@ -280,14 +281,14 @@ describe('décrire une image — enregistrer et partir', () => {
 
   it('demande avant de jeter une saisie, et la garde si l’on continue', () => {
     const { panel: screen, dismissed } = panel(bare);
-    screen['addTag']('beurre');
+    screen['tagEditor'].add('beurre');
 
     screen['cancel']();
     expect(screen['leaving']()).toBe(true);
     expect(dismissed()).toBe(0);
 
     screen['keepEditing']();
-    expect(screen['tags']()).toEqual(['beurre']);
+    expect(screen['tagEditor'].tags()).toEqual(['beurre']);
 
     screen['cancel']();
     screen['discard']();
@@ -428,7 +429,7 @@ describe('décrire une image — les informations', () => {
   });
 });
 
-describe('décrire une image — sa série (L3)', () => {
+describe('décrire une image — sa série', () => {
   const carte = {
     id: 's1',
     title: 'Shooting carte 2026',
@@ -447,17 +448,17 @@ describe('décrire une image — sa série (L3)', () => {
   it('part de la série actuelle, et n’est pas « modifié » à l’ouverture', () => {
     const { panel: screen } = panel(inCarte);
 
-    expect(screen['series']()?.id).toBe('s1');
+    expect(screen['seriesChoice'].current()?.id).toBe('s1');
     expect(screen['dirty']()).toBe(false);
   });
 
   it('change de série : modifié, et la nouvelle part au même enregistrement', () => {
     const { panel: screen, closed } = panel(inCarte);
 
-    screen['changingSeries'].set(true);
-    screen['chooseSeries']('s2');
+    screen['seriesChoice'].changing.set(true);
+    screen['seriesChoice'].choose('s2');
     expect(screen['dirty']()).toBe(true);
-    expect(screen['changingSeries']()).toBe(false);
+    expect(screen['seriesChoice'].changing()).toBe(false);
 
     screen['submit']();
     expect(closed[0]?.seriesId).toBe('s2');
@@ -466,7 +467,7 @@ describe('décrire une image — sa série (L3)', () => {
   it('« Aucune série » détache — `null`, pas l’absence', () => {
     const { panel: screen, closed } = panel(inCarte);
 
-    screen['chooseSeries']('');
+    screen['seriesChoice'].choose('');
     screen['submit']();
 
     expect(closed[0]?.seriesId).toBeNull();
@@ -475,8 +476,8 @@ describe('décrire une image — sa série (L3)', () => {
   it('revenir à la série d’origine n’est plus une modification', () => {
     const { panel: screen } = panel(inCarte);
 
-    screen['chooseSeries']('s2');
-    screen['chooseSeries']('s1');
+    screen['seriesChoice'].choose('s2');
+    screen['seriesChoice'].choose('s1');
 
     expect(screen['dirty']()).toBe(false);
   });
@@ -484,7 +485,7 @@ describe('décrire une image — sa série (L3)', () => {
   it('propose « Aucune série » en tête, puis les séries datées', () => {
     const { panel: screen } = panel(inCarte);
 
-    expect(screen['seriesOptions']().map((option) => option.label)).toEqual([
+    expect(screen['seriesChoice'].options().map((option) => option.label)).toEqual([
       'Aucune série',
       'Shooting carte 2026 · mars 2026',
       'Atelier',
@@ -494,6 +495,6 @@ describe('décrire une image — sa série (L3)', () => {
   it('sans liste de séries, la série se lit mais ne se change pas', () => {
     const { panel: screen } = panel({ ...bare, series: inCarte.series });
 
-    expect(screen['canChangeSeries']()).toBe(false);
+    expect(screen['seriesChoice'].canChange()).toBe(false);
   });
 });

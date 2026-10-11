@@ -15,6 +15,9 @@ import {
 
 import type { MediaPaletteStripView, PaletteStripColumnView } from '@lfd/pim-contracts';
 
+import { photosWording } from '../media-wording';
+import { parisDayLabel, parisDayOf } from '../paris-calendar';
+
 /** La largeur minimale d'une colonne, en px CSS : en deçà, elle ne se lit plus. */
 export const MIN_COLUMN_PX = 3;
 
@@ -24,34 +27,20 @@ export interface StripRange {
   readonly to: string;
 }
 
-const PARIS_DAY = new Intl.DateTimeFormat('en-CA', {
-  timeZone: 'Europe/Paris',
-  year: 'numeric',
-  month: '2-digit',
-  day: '2-digit',
-});
-const PARIS_LABEL = new Intl.DateTimeFormat('fr-FR', {
-  timeZone: 'Europe/Paris',
-  day: 'numeric',
-  month: 'long',
-  year: 'numeric',
-});
-
 /** La plage d'une colonne en jours de Paris. */
 export function rangeOf(column: PaletteStripColumnView): StripRange {
   return {
-    from: PARIS_DAY.format(new Date(column.from)),
-    to: PARIS_DAY.format(new Date(column.to)),
+    from: parisDayOf(column.from),
+    to: parisDayOf(column.to),
   };
 }
 
 /** « 3 octobre 2026 · 1 photo », ou « 3 octobre 2026 – 9 octobre 2026 · 12 photos ». */
 export function columnLabel(column: PaletteStripColumnView): string {
   const range = rangeOf(column);
-  const from = PARIS_LABEL.format(new Date(column.from));
-  const dates =
-    range.from === range.to ? from : `${from} – ${PARIS_LABEL.format(new Date(column.to))}`;
-  return `${dates} · ${String(column.count)} photo${column.count > 1 ? 's' : ''}`;
+  const from = parisDayLabel(column.from);
+  const dates = range.from === range.to ? from : `${from} – ${parisDayLabel(column.to)}`;
+  return `${dates} · ${photosWording(column.count)}`;
 }
 
 /** Combien de colonnes tiennent dans une largeur. */
@@ -64,12 +53,12 @@ const OUTLIER_PX = 2;
 const HATCH_PX = 4;
 
 /**
- * **La frise des couleurs** (plan L9) — des colonnes AGRÉGÉES par le serveur,
+ * **La frise des couleurs** (`mediatheque.md` §9 bis) — des colonnes AGRÉGÉES par le serveur,
  * dessinées sur UN canvas : la frise ne dépend pas du nombre de photos.
  *
  * Elle annonce sa largeur en colonnes ({@link columnsChange}) ; la page relit
  * la frise à cette largeur. Survol : la plage, le compte, une vignette. Clic
- * (L11, R32 révisée) : la plage de la colonne, en jours de Paris, que la page
+ * (`mediatheque.md` §9 bis) : la plage de la colonne, en jours de Paris, que la page
  * pose en filtre de prise de vue — la date même par laquelle la frise range.
  */
 @Component({
@@ -84,7 +73,7 @@ export class PaletteStrip {
   private readonly columns = computed(() => this.view()?.columns ?? []);
   /** Le nombre de colonnes qui tiennent dans la largeur, à chaque changement. */
   readonly columnsChange = output<number>();
-  /** La plage de la colonne cliquée, en jours de Paris, bornes incluses (L11). */
+  /** La plage de la colonne cliquée, en jours de Paris, bornes incluses. */
   readonly rangeChosen = output<StripRange>();
 
   private readonly host = inject<ElementRef<HTMLElement>>(ElementRef);
