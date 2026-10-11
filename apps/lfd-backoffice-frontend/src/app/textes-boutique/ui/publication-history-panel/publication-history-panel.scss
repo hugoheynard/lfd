@@ -1,0 +1,31 @@
+.ph-list,
+.ph-changes {
+  display: flex;
+  flex-direction: column;
+  gap: var(--fold-space-md);
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.ph-summary {
+  display: inline-flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: var(--fold-space-xs);
+}
+
+.ph-change {
+  display: flex;
+  flex-direction: column;
+  gap: var(--fold-space-xs);
+
+  dt {
+    font-weight: var(--fold-weight-semibold);
+  }
+
+  dd {
+    margin: 0;
+    color: var(--fold-color-text-muted);
+  }
+}

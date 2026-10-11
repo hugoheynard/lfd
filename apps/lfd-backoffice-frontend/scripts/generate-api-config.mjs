@@ -76,10 +76,20 @@ const banner =
 // ignorer les alertes.
 const sentryDsn = (process.env['SENTRY_DSN'] ?? fileVars['SENTRY_DSN'] ?? '').trim();
 
+// L'application d'aperçu des textes de la boutique (plan-textes-de-la-boutique.md,
+// §10 B3), encadrée par l'éditeur des textes. Vide = l'éditeur dit « Aperçu
+// indisponible » et reste utilisable : facultative, donc hors de l'avertissement.
+const shopPreviewUrl = (
+  process.env['SHOP_PREVIEW_URL'] ??
+  fileVars['SHOP_PREVIEW_URL'] ??
+  ''
+).trim();
+
 const body =
   `export const B2B_API_BASE_VALUE = ${JSON.stringify(apiBaseUrl)};\n` +
   `export const SENTRY_DSN_VALUE = ${JSON.stringify(sentryDsn)};\n` +
-  `export const APP_REVISION_VALUE = ${JSON.stringify(appRevision)};\n`;
+  `export const APP_REVISION_VALUE = ${JSON.stringify(appRevision)};\n` +
+  `export const SHOP_PREVIEW_URL_VALUE = ${JSON.stringify(shopPreviewUrl)};\n`;
 
 mkdirSync(dirname(outPath), { recursive: true });
 writeFileSync(outPath, banner + body);

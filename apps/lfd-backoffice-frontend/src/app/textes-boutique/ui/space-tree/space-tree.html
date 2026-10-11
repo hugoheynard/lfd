@@ -1,0 +1,51 @@
+<div class="st-tree">
+  <fold-checkbox
+    label="Seulement ce que l’aperçu montre"
+    [hint]="navigation.visibleKeys() === null ? 'L’aperçu n’a encore rien affiché.' : ''"
+    [disabled]="navigation.visibleKeys() === null"
+    [checked]="navigation.onlyVisible()"
+    (checkedChange)="navigation.onlyVisible.set($event)"
+  />
+
+  @if (navigation.tree().length === 0) {
+    <fold-empty-state
+      title="Aucun espace"
+      subtitle="Aucun texte ne répond à la recherche ou au filtre."
+    />
+  } @else {
+    <fold-menu level="tertiary" navLabel="Espaces de la boutique" [expanded]="true">
+      @if (journey().length > 0) {
+        <fold-menu-separator label="Parcours de commande" />
+        @for (node of journey(); track node.space) {
+          @let b = badge(node);
+          <button
+            fold-menu-item
+            type="button"
+            icon="shopping-cart"
+            [label]="node.title"
+            [active]="navigation.currentSpace()?.space === node.space"
+            [badge]="b?.text"
+            [badgeTone]="b?.tone ?? 'follow'"
+            (click)="navigation.openSpace(node.space)"
+          ></button>
+        }
+      }
+      @if (others().length > 0) {
+        <fold-menu-separator label="Le reste de la boutique" />
+        @for (node of others(); track node.space) {
+          @let b = badge(node);
+          <button
+            fold-menu-item
+            type="button"
+            icon="store"
+            [label]="node.title"
+            [active]="navigation.currentSpace()?.space === node.space"
+            [badge]="b?.text"
+            [badgeTone]="b?.tone ?? 'follow'"
+            (click)="navigation.openSpace(node.space)"
+          ></button>
+        }
+      }
+    </fold-menu>
+  }
+</div>

@@ -613,6 +613,16 @@ export const B2B_VIEWS: readonly WorkspaceView[] = [
     section: 'Contenu',
     needs: 'b2b_storefront:read',
   },
+  {
+    // Même liste pour le rail ET les tuiles du menu mobile (cf. l'entrée
+    // ci-dessus) ; même droit que la vitrine (plan-textes-de-la-boutique.md, §7).
+    key: 'textes-boutique',
+    label: 'Textes de la boutique',
+    link: '/textes-boutique',
+    icon: 'edit',
+    section: 'Contenu',
+    needs: 'b2b_storefront:read',
+  },
   // LES CINQ MENTIONS LÉGALES, une entrée chacune et non une page d'index : on
   // vient corriger une mention précise, et un index n'aurait ajouté qu'un clic
   // entre le menu et le texte. Elles sont DÉRIVÉES du vocabulaire — leur ordre

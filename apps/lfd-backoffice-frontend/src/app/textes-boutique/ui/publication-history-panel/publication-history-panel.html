@@ -1,0 +1,55 @@
+<fold-panel-header
+  title="Historique des publications"
+  subtitle="Textes de la boutique"
+  icon="timeline"
+/>
+
+<fold-panel-body>
+  @switch (status()) {
+    @case ('loading') {
+      <fold-loading message="Lecture de l’historique…" />
+    }
+    @case ('failed') {
+      <fold-empty-state tone="alert" title="L’historique n’a pas pu être lu" [subtitle]="error()">
+        <button foldButton type="button" (click)="load()">Réessayer</button>
+      </fold-empty-state>
+    }
+    @case ('ready') {
+      @if (publications().length === 0) {
+        <fold-empty-state
+          title="Aucune publication"
+          subtitle="Les textes de la boutique n’ont encore jamais été publiés."
+        >
+          <fold-icon empty-icon name="timeline" />
+        </fold-empty-state>
+      } @else {
+        <ol class="ph-list">
+          @for (publication of publications(); track publication.id) {
+            <li>
+              <fold-disclosure>
+                <span summary class="ph-summary">
+                  @if (publication.version !== null) {
+                    <fold-badge variant="neutral" [content]="'Version ' + publication.version" />
+                  }
+                  {{ when(publication.occurredAt) }} — {{ publication.author }} ·
+                  {{ publication.changes.length }} texte{{
+                    publication.changes.length > 1 ? 's' : ''
+                  }}
+                </span>
+                <dl class="ph-changes">
+                  @for (change of publication.changes; track change.key + change.locale) {
+                    <div class="ph-change">
+                      <dt>{{ change.key }} · {{ change.locale }}</dt>
+                      <dd>Avant : {{ change.before ?? 'le texte du code' }}</dd>
+                      <dd>Après : {{ change.after ?? 'le texte du code' }}</dd>
+                    </div>
+                  }
+                </dl>
+              </fold-disclosure>
+            </li>
+          }
+        </ol>
+      }
+    }
+  }
+</fold-panel-body>

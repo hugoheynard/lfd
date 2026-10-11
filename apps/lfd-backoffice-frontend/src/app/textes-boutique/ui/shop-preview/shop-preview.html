@@ -1,0 +1,42 @@
+<div class="sp-column">
+  @if (src; as url) {
+    <div class="sp-toolbar">
+      <fold-listbox
+        size="sm"
+        label="Parcours"
+        [options]="journeys"
+        [value]="link.journey()"
+        (selectionChange)="link.journey.set($event)"
+      />
+      <fold-view-toggle
+        size="sm"
+        ariaLabel="Langue de l’aperçu"
+        [options]="localeOptions"
+        [value]="link.locale()"
+        (valueChange)="setLocale($event)"
+      />
+      <fold-view-toggle
+        size="sm"
+        ariaLabel="Largeur de l’aperçu"
+        [options]="viewportOptions"
+        [value]="link.viewport()"
+        (valueChange)="setViewport($event)"
+      />
+    </div>
+    <iframe
+      #frame
+      class="sp-frame"
+      title="Aperçu de la boutique"
+      [class.sp-frame-mobile]="link.viewport() === 'mobile'"
+      [src]="url"
+      (load)="loaded()"
+    ></iframe>
+  } @else {
+    <fold-empty-state
+      title="Aperçu indisponible"
+      subtitle="L’adresse de l’application d’aperçu n’est pas configurée pour ce back-office. Les textes s’éditent et se publient quand même."
+    >
+      <fold-icon empty-icon name="eye-off" />
+    </fold-empty-state>
+  }
+</div>

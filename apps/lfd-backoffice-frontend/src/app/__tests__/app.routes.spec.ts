@@ -176,6 +176,10 @@ const SCREENS: Readonly<Record<string, ScreenAccess>> = {
   // (plan-vitrine-enregistrement.md, D7). L'ancienne adresse redirige.
   vitrine: 'b2b_storefront:read',
 
+  // **Textes de la boutique** — même métier et même mur que la vitrine
+  // (`@AdminSurface("b2b_storefront")`, plan-textes-de-la-boutique.md, §7).
+  'textes-boutique': 'b2b_storefront:read',
+
   // **Outils agent** — hors de `pim/`, et gardé PLUS SERRÉ que lui : le
   // référentiel s'ouvre en lecture (`pim_catalog:read`), cet atelier écrit. Il
   // ne peut donc pas hériter, sinon un lecteur du catalogue armerait des outils

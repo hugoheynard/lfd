@@ -1,0 +1,28 @@
+.ce-body,
+.ce-locale {
+  display: flex;
+  flex-direction: column;
+  gap: var(--fold-space-sm);
+}
+
+.ce-body {
+  gap: var(--fold-space-md);
+}
+
+.ce-variables,
+.ce-foot {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: var(--fold-space-xs);
+}
+
+.ce-original {
+  flex: 1 1 auto;
+  margin: 0;
+  color: var(--fold-color-text-muted);
+}
+
+.ce-original-label {
+  font-weight: var(--fold-weight-semibold);
+}

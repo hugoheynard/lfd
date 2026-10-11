@@ -1,0 +1,11 @@
+// Trois colonnes au bureau (espaces · textes · aperçu), empilées en mobile.
+.sc-columns {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr);
+  gap: var(--fold-space-lg);
+  align-items: start;
+
+  @media (min-width: 1200px) {
+    grid-template-columns: auto minmax(0, 1fr) minmax(0, 1fr);
+  }
+}

@@ -102,6 +102,17 @@ export const routes: Routes = [
       import('./contenu/storefront-page/storefront-page').then((m) => m.StorefrontPage),
   },
   {
+    // **Textes de la boutique** — reformuler ce que la boutique dit, en trois
+    // langues (plan-textes-de-la-boutique.md, §7). Même métier et même droit
+    // que la vitrine, donc premier niveau à côté d'elle : `b2b_storefront:read`
+    // pour voir, `:write` (lu par l'écran) pour écrire et publier.
+    path: 'textes-boutique',
+    canActivate: [permissionGuard('b2b_storefront:read')],
+    title: 'Textes de la boutique — LFC B2B admin',
+    loadComponent: () =>
+      import('./textes-boutique/ui/shop-copy-page/shop-copy-page').then((m) => m.ShopCopyPage),
+  },
+  {
     // **Outils agent** — l'écran est l'interrupteur : les outils WebMCP du
     // référentiel ne sont déclarés que par ce composant, donc ils n'existent
     // que tant qu'on est dessus. Route de premier niveau, hors de `pim/` : ce

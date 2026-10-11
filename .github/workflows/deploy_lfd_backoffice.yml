@@ -85,6 +85,8 @@ jobs:
           APP_REVISION: ${{ github.sha }}
           SENTRY_DSN: ${{ vars.SENTRY_DSN }}
           B2B_ADMIN_API_BASE_URL: ${{ vars.LFD_API_URL }}
+          # L'application d'aperçu des textes de la boutique ; vide = « Aperçu indisponible ».
+          SHOP_PREVIEW_URL: ${{ vars.SHOP_PREVIEW_URL }}
         run: node scripts/generate-api-config.mjs
 
       - name: Generate Auth0 config (public build vars)

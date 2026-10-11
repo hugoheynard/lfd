@@ -1,0 +1,76 @@
+<fold-page-layout icon="edit" title="Textes de la boutique">
+  <p description>
+    Reformuler ce que la boutique dit, en français, en anglais et en italien. Chaque frappe est
+    gardée en brouillon ; rien ne change pour les clients avant « Publier ». Un texte est du texte
+    brut : ni mise en forme, ni lien.
+  </p>
+
+  @if (store.status() === 'ready') {
+    <ng-container pageActions>
+      <fold-badge
+        [variant]="store.pendingCount() > 0 ? 'warning' : 'neutral'"
+        [content]="pendingLabel(store.pendingCount())"
+      />
+      <button
+        foldButton
+        emphasis="outline"
+        intent="neutral"
+        icon="timeline"
+        type="button"
+        (click)="openHistory()"
+      >
+        Historique
+      </button>
+      @if (store.canWrite()) {
+        <fold-inline-confirm
+          intent="primary"
+          message="Les clients verront ces textes tout de suite."
+          (confirmed)="publish()"
+        >
+          <button
+            foldButton
+            icon="publish"
+            type="button"
+            [loading]="store.publishing()"
+            [disabled]="store.pendingCount() === 0"
+          >
+            Publier
+          </button>
+        </fold-inline-confirm>
+      }
+    </ng-container>
+  }
+
+  @switch (store.status()) {
+    @case ('loading') {
+      <fold-loading message="Lecture des textes de la boutique…" />
+    }
+    @case ('failed') {
+      <fold-empty-state
+        tone="alert"
+        title="Les textes de la boutique n’ont pas pu être lus"
+        [subtitle]="store.loadError() ?? ''"
+      >
+        <button foldButton type="button" (click)="store.load()">Réessayer</button>
+      </fold-empty-state>
+    }
+    @case ('ready') {
+      @if (store.loadError(); as error) {
+        <fold-callout variant="alert">{{ error }}</fold-callout>
+      }
+      <fold-search
+        placeholder="Chercher un texte, dans les trois langues"
+        ariaLabel="Chercher un texte"
+        [value]="navigation.query()"
+        [resultCount]="navigation.resultCount()"
+        resultLabel="textes"
+        (searchChange)="navigation.query.set($event)"
+      />
+      <div class="sc-columns">
+        <app-space-tree />
+        <app-copy-texts />
+        <app-shop-preview />
+      </div>
+    }
+  }
+</fold-page-layout>

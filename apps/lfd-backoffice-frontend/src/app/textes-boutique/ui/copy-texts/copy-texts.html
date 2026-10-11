@@ -1,0 +1,28 @@
+<div class="ct-column">
+  @if (navigation.currentSpace(); as space) {
+    <fold-page-section [title]="space.title" [description]="space.count + ' textes'">
+      <div class="ct-list">
+        @for (entry of navigation.spaceEntries(); track entry.key) {
+          <app-copy-entry [entry]="entry" />
+        }
+      </div>
+    </fold-page-section>
+  } @else {
+    <fold-empty-state title="Aucun texte" subtitle="Rien ne répond à la recherche ou au filtre.">
+      <fold-icon empty-icon name="search" />
+    </fold-empty-state>
+  }
+
+  @if (navigation.orphans().length > 0) {
+    <fold-page-section
+      title="Textes que le code ne connaît plus"
+      description="Leur clé a quitté la boutique : ils ne sont plus affichés. Revenir à l’original les efface au prochain Publier."
+    >
+      <div class="ct-list">
+        @for (entry of navigation.orphans(); track entry.key) {
+          <app-copy-entry [entry]="entry" />
+        }
+      </div>
+    </fold-page-section>
+  }
+</div>

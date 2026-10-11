@@ -1,0 +1,10 @@
+.ct-column,
+.ct-list {
+  display: flex;
+  flex-direction: column;
+  gap: var(--fold-space-md);
+}
+
+.ct-column {
+  gap: var(--fold-space-lg);
+}

@@ -1,0 +1,80 @@
+<fold-card [surface]="selected() ? 'accent' : 'card'">
+  <div class="ce-body" (focusin)="select()">
+    <fold-element-title
+      variant="title"
+      [title]="entry().key"
+      [subtitle]="entry().space === null ? 'Le code ne connaît plus ce texte' : ''"
+    >
+      @if (entry().variables.length > 0) {
+        <span titleAction class="ce-variables">
+          @for (name of entry().variables; track name) {
+            <fold-badge variant="accent" [content]="'{' + name + '}'" />
+          }
+        </span>
+      }
+    </fold-element-title>
+
+    @if (conflict()) {
+      <fold-callout variant="alert">
+        Quelqu’un a modifié ce texte pendant que vous l’éditiez. Sa version est rechargée ; refaites
+        votre modification si elle tient toujours.
+      </fold-callout>
+    }
+
+    @for (locale of locales; track locale) {
+      <div class="ce-locale">
+        <fold-textarea
+          [label]="labels[locale]"
+          [rows]="2"
+          [readOnly]="!store.canWrite() || entry().space === null"
+          [value]="writer.textOf(entry(), locale)"
+          (valueChange)="writer.edit(entry(), locale, $event)"
+        />
+        @if (writer.missing(entry(), locale); as missing) {
+          @if (missing.length > 0) {
+            <fold-callout variant="alert">
+              Ce texte a perdu {{ missing.length > 1 ? 'les variables' : 'la variable' }}
+              {{ missing.join(', ') }} : il n’est pas enregistré tant qu’elle n’est pas remise.
+            </fold-callout>
+          }
+        }
+        @if (locale !== 'fr' && isStale(locale)) {
+          <fold-callout variant="warning"
+            >Le français a changé depuis cette traduction.</fold-callout
+          >
+        }
+        @let original = entry().locales[locale].original;
+        <div class="ce-foot">
+          @if (original !== null) {
+            <p class="ce-original">
+              <span class="ce-original-label">Texte du code :</span>
+              @for (segment of segments(original); track $index) {
+                @if (segment.kind === 'variable') {
+                  <fold-badge variant="neutral" [content]="'{' + segment.value + '}'" />
+                } @else {
+                  {{ segment.value }}
+                }
+              }
+            </p>
+          }
+          @if (stateLabel(locale); as label) {
+            <fold-badge variant="info" [content]="label" />
+          }
+          @if (store.canWrite() && canReset(locale)) {
+            <button
+              foldButton
+              size="sm"
+              emphasis="soft"
+              intent="neutral"
+              icon="undo"
+              type="button"
+              (click)="writer.reset(entry(), locale)"
+            >
+              Revenir à l’original
+            </button>
+          }
+        </div>
+      </div>
+    }
+  </div>
+</fold-card>

@@ -1,0 +1,28 @@
+.sp-column {
+  display: flex;
+  flex-direction: column;
+  gap: var(--fold-space-md);
+  position: sticky;
+  top: var(--fold-space-md);
+}
+
+.sp-toolbar {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: end;
+  gap: var(--fold-space-sm);
+}
+
+.sp-frame {
+  width: 100%;
+  height: 80vh;
+  border: 1px solid var(--fold-color-border);
+  border-radius: var(--fold-radius-md);
+  background: var(--fold-color-bg-page);
+}
+
+// La largeur d'un téléphone : le mot « mobile » doit se voir, pas seulement se dire.
+.sp-frame-mobile {
+  max-width: 390px;
+  align-self: center;
+}
