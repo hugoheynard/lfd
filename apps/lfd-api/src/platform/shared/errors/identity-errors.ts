@@ -31,6 +31,31 @@ export class IdentityProviderUnavailableError extends TechnicalError {
 }
 
 /**
+ * Le fournisseur répond, mais le jeton M2M n'a pas la **portée** qu'exige la
+ * route (`403 insufficient_scope`).
+ *
+ * Sous-classe de l'indisponibilité, et c'est voulu : pour un appelant qui ne
+ * sait pas la distinguer, c'est toujours « le fournisseur a refusé » (même
+ * statut, même catégorie). Celui qui sait la lire, lui, tient un refus qui ne
+ * changera pas tant qu'on n'aura pas coché la portée dans le dashboard — et
+ * cesse de le redemander.
+ */
+export class IdentityProviderScopeMissingError extends IdentityProviderUnavailableError {
+  /** Les portées qu'Auth0 dit attendre — vide si son message ne les nomme pas. */
+  readonly expectedScopes: readonly string[];
+
+  constructor(expectedScopes: readonly string[]) {
+    const named = expectedScopes.length === 0 ? "une portée" : expectedScopes.join(", ");
+    super(
+      `L'application M2M n'a pas le droit ${named} : le cocher dans Auth0 → APIs → ` +
+        "Auth0 Management API → Machine to Machine Applications.",
+      403,
+    );
+    this.expectedScopes = expectedScopes;
+  }
+}
+
+/**
  * Le `sub` que **nous** avons stocké n'existe pas chez le fournisseur.
  *
  * Distincte d'une panne, et c'est tout l'intérêt : le canal répond très bien, il

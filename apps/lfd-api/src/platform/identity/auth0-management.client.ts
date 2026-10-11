@@ -1,7 +1,10 @@
 import { Injectable, Logger } from "@nestjs/common";
 
 import { AppConfig } from "../config/app-config.js";
-import { IdentityProviderUnavailableError } from "../shared/errors/identity-errors.js";
+import {
+  IdentityProviderScopeMissingError,
+  IdentityProviderUnavailableError,
+} from "../shared/errors/identity-errors.js";
 import {
   missingManagementScopes,
   scopesFromAccessToken,
@@ -99,11 +102,18 @@ export class Auth0ManagementClient {
       return BAD_REQUEST;
     }
     if (!response.ok) {
+      const text = await response.text();
+      const missingScopes = response.status === 403 ? insufficientScopes(text) : null;
+      if (missingScopes !== null) {
+        // Pas une panne : un réglage du tenant, stable jusqu'à ce qu'on le
+        // change. Un WARN qui nomme le geste, pas un ERROR.
+        const error = new IdentityProviderScopeMissingError(missingScopes);
+        this.logger.warn(`${method} ${path} refusé (403) — ${error.message}`);
+        throw error;
+      }
       // Le corps Auth0 peut porter des détails de tenant : il est TRACÉ, jamais
       // renvoyé au client.
-      this.logger.error(
-        `${method} ${path} a échoué (${String(response.status)}) : ${await response.text()}`,
-      );
+      this.logger.error(`${method} ${path} a échoué (${String(response.status)}) : ${text}`);
       // Le statut voyage avec l'erreur : c'est le seul indice qui sortira de
       // la production, et il ne dit rien de plus qu'un numéro.
       throw new IdentityProviderUnavailableError(
@@ -235,6 +245,40 @@ export const BAD_REQUEST = Symbol("auth0.bad_request");
 
 /** Sentinelle de `404` — l'identité visée n'existe pas chez le fournisseur. */
 export const NOT_FOUND = Symbol("auth0.not_found");
+
+/** Ce qui précède la liste des portées dans le message `insufficient_scope` d'Auth0. */
+const EXPECTED_SCOPES_MARKER = "expected any of:";
+
+/**
+ * Les portées attendues si le corps est un refus `insufficient_scope`, `null`
+ * sinon. Exemple de corps (relevé le 2026-10-11) :
+ * `{"errorCode":"insufficient_scope","message":"Insufficient scope, expected any of: read:stats"}`.
+ */
+export function insufficientScopes(body: string): readonly string[] | null {
+  let parsed: unknown;
+  try {
+    parsed = JSON.parse(body);
+  } catch {
+    return null;
+  }
+  if (typeof parsed !== "object" || parsed === null) {
+    return null;
+  }
+  const record: Record<string, unknown> = { ...parsed };
+  if (record["errorCode"] !== "insufficient_scope") {
+    return null;
+  }
+  const message = typeof record["message"] === "string" ? record["message"] : "";
+  const at = message.indexOf(EXPECTED_SCOPES_MARKER);
+  if (at < 0) {
+    return [];
+  }
+  return message
+    .slice(at + EXPECTED_SCOPES_MARKER.length)
+    .split(",")
+    .map((scope) => scope.trim())
+    .filter((scope) => scope !== "");
+}
 
 /** Réponse `/oauth/token`, validée : elle vient du réseau, donc de `unknown`. */
 function parseTokenPayload(raw: unknown): { accessToken: string; expiresInSeconds: number } {
