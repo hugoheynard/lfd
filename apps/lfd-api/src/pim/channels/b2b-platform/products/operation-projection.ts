@@ -85,7 +85,9 @@ export interface OperationImageFocal {
  * **Le point focal des images d'opération**, posé sur une projection déjà
  * faite (cf. `documentation/mediatheque/mediatheque.md` §7 bis,
  * 2026-10-11). Pure : les points sont lus à la médiathèque par l'appelant,
- * AU PUSH — une redescription ne suit qu'au push suivant, comme l'image.
+ * AU PUSH. Entre deux push, un remplacement ou une redescription suivent par
+ * le fait `pim.operation_image_changed` (`operations/application/
+ * on-media-asset-described.ts`).
  *
  * Une image que la médiathèque ne connaît pas, ou dont personne n'a posé le
  * point, part avec `focal: null` : la bannière recadre au centre.

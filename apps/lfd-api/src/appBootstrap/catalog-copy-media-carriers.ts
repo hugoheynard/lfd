@@ -36,10 +36,19 @@ export class CatalogCopyMediaCarriers extends MediaCarriers {
   }
 
   /**
-   * **Ne repointe rien, et rend 0.** Une copie suit son original au prochain
-   * push du catalogue, et seulement là : la réécrire ici ferait dire au
-   * commerce ce que le référentiel n'a pas encore envoyé. Tant que ce push
-   * n'a pas eu lieu, l'ancienne image reste « employée » — c'est le but.
+   * **Ne repointe rien, et rend 0** — et c'est toujours juste depuis que la
+   * copie suit sans push (2026-10-11, `mediatheque.md` §7 bis). Le
+   * remplacement écrit `media.asset_described` sur la nouvelle ; le
+   * référentiel la réannonce pour chaque opération qui l'affiche
+   * (`pim.operation_image_changed`), et le commerce projette la copie
+   * (`catalog.project-operation-image`). La réécrire ici, dans la transaction
+   * du geste, ferait un second écrivain sans ordre de geste, qui dirait au
+   * commerce ce que le référentiel n'a pas encore annoncé.
+   *
+   * Jusqu'à la livraison du fait — quelques secondes, ou le prochain push si
+   * l'image a été changée sur l'opération elle-même —, l'ancienne image reste
+   * « employée » par la copie : c'est ce qui empêche de la ramasser pendant
+   * que la boutique la sert encore.
    */
   repoint(): Promise<number> {
     return Promise.resolve(0);

@@ -32,7 +32,11 @@ export function storefrontOperationsOf(
         key: facts.key,
         name: facts.name,
         lede: facts.lede,
-        image: facts.image,
+        // Le point focal suit : l'aperçu hérité se recadre comme la boutique.
+        image:
+          facts.image === null
+            ? null
+            : { url: facts.image.url, alt: facts.image.alt, focal: facts.image.focal ?? null },
         state: stateOf(dated, effective.isHidden || effective.audience === "none", now),
         announceFrom: facts.announceFrom.toISOString(),
         orderFrom: opensAt(dated).toISOString(),

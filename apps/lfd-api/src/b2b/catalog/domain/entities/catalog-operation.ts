@@ -13,10 +13,10 @@ export type OperationFocal = UnitPoint;
 
 /**
  * L'image d'une opération, telle que reçue. `focal` est lu à la médiathèque
- * AU PUSH (depuis le 2026-10-11, `documentation/mediatheque/mediatheque.md`
- * §7 bis) : il ne suit une redescription qu'au push suivant, comme l'image
- * elle-même. Absent ou `null` — un envoi d'avant ce jour-là, ou personne ne
- * s'est prononcé : la boutique recadre au centre.
+ * (`documentation/mediatheque/mediatheque.md` §7 bis, 2026-10-11) : au push,
+ * et sans push quand la médiathèque remplace ou redécrit l'image
+ * (`pim.operation_image_changed`). Absent ou `null` — un envoi d'avant ce
+ * jour-là, ou personne ne s'est prononcé : la boutique recadre au centre.
  */
 export interface OperationImageFacts {
   readonly url: string;

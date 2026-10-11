@@ -146,7 +146,12 @@
       </div>
     } @else {
       @if (inheritedImage(); as image) {
-        <img class="preview" [src]="image.url" [alt]="image.alt" />
+        <img
+          class="preview"
+          [src]="image.url"
+          [alt]="image.alt"
+          [style.object-position]="positionOf(image.focal)"
+        />
         <span class="caption">L’image de l’opération.</span>
       }
       <button foldButton type="button" size="sm" emphasis="outline" (click)="chooseImage()">

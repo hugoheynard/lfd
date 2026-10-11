@@ -470,7 +470,8 @@ export const syncOperationSchema = z.object({
   /**
    * Une image de la médiathèque, ou `null`. Sans dimensions : l'annonce les
    * recadre — autour de `focal`, lu à la médiathèque au moment du push (cf.
-   * `documentation/mediatheque/mediatheque.md` §7 bis, 2026-10-11).
+   * `documentation/mediatheque/mediatheque.md` §7 bis, 2026-10-11 ; entre
+   * deux push, le fait `pim.operation_image_changed` le fait suivre).
    * Facultatif et sans changer de version, pour la raison de
    * {@link syncMediaSchema} : un envoi qui l'omet dit « centre ».
    */

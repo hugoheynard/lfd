@@ -331,7 +331,19 @@ export const storefrontCatalogOperationSchema = z.object({
   key: z.string(),
   name: storefrontTextSchema,
   lede: storefrontTextSchema.nullable(),
-  image: z.object({ url: z.string(), alt: z.string() }).nullable(),
+  /**
+   * L'image reçue et son point focal — l'aperçu de l'éditeur s'y recadre
+   * comme la bannière de la boutique (cf.
+   * `documentation/mediatheque/mediatheque.md` §7 bis). Facultatif : absent
+   * ou `null` se lit « au centre ».
+   */
+  image: z
+    .object({
+      url: z.string(),
+      alt: z.string(),
+      focal: storefrontFocalSchema.nullable().optional(),
+    })
+    .nullable(),
   state: z.enum(STOREFRONT_OPERATION_STATES),
   announceFrom: z.string(),
   orderFrom: z.string(),

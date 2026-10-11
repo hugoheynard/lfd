@@ -6,13 +6,16 @@ import { ChangeOperationAudienceHandler } from "./application/change-operation-a
 import { EditOperationHandler } from "./application/edit-operation.js";
 import { GetOperationHandler } from "./application/get-operation.js";
 import { ListOperationsHandler } from "./application/list-operations.js";
+import { OnMediaAssetDescribedForOperationsHandler } from "./application/on-media-asset-described.js";
 import { PrepareOperationHandler } from "./application/prepare-operation.js";
 import { RescheduleOperationHandler } from "./application/reschedule-operation.js";
 import { SetOperationSelectionHandler } from "./application/set-operation-selection.js";
+import { OperationImageUsage } from "./domain/ports/operation-image-usage.js";
 import { OperationSkuCatalogue } from "./domain/ports/operation-sku.catalogue.js";
 import { OperationReader } from "./domain/ports/operation.reader.js";
 import { OperationRepository } from "./domain/ports/operation.repository.js";
 import { OperationController } from "./http/operation.controller.js";
+import { PrismaOperationImageUsage } from "./infrastructure/prisma-operation-image-usage.js";
 import { PrismaOperationSkuCatalogue } from "./infrastructure/prisma-operation-sku.catalogue.js";
 import { PrismaOperationReader } from "./infrastructure/prisma-operation.reader.js";
 import { PrismaOperationRepository } from "./infrastructure/prisma-operation.repository.js";
@@ -43,6 +46,9 @@ import { PrismaOperationRepository } from "./infrastructure/prisma-operation.rep
     ArchiveOperationHandler,
     ListOperationsHandler,
     GetOperationHandler,
+    // L'image d'une opération suit la médiathèque sans push (mediatheque.md §7 bis).
+    { provide: OperationImageUsage, useClass: PrismaOperationImageUsage },
+    OnMediaAssetDescribedForOperationsHandler,
   ],
   exports: [OperationReader],
 })

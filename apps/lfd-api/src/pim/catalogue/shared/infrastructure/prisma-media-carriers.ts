@@ -145,8 +145,10 @@ export class PrismaMediaCarriers extends MediaCarriers {
    *
    * ⚠️ Pas de réannonce ici : la médiathèque publie dans la même transaction
    * le fait durable `media.asset_described` sur `to`, que le référentiel
-   * écoute déjà (`on-media-asset-described.ts`) pour réannoncer les fiches
-   * qui le montrent en `hero` ou `thumbnail`.
+   * écoute déjà pour réannoncer les fiches qui le montrent en `hero` ou
+   * `thumbnail` (`catalogue/product/application/on-media-asset-described.ts`)
+   * et les opérations qui l'affichent
+   * (`operations/application/on-media-asset-described.ts`, 2026-10-11).
    */
   async repoint({ from, to }: ImageReplacement, ticket: WriteTicket): Promise<number> {
     // Le laissez-passer n'est pas LU, et c'est voulu : il n'a pas de contenu à

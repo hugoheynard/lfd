@@ -4,12 +4,14 @@
  * (depuis le 2026-10-10, `documentation/mediatheque/mediatheque.md` §2).
  *
  * 🔴 Une copie n'est pas un porteur comme les autres : elle ne se repointe
- * pas. L'image d'une opération datée est recopiée dans `catalog_operations`
- * au push du catalogue, et seulement là. Après un remplacement, ou un
- * changement d'image de l'opération au référentiel, la boutique sert encore
- * l'ancienne URL jusqu'au prochain push — alors que le référentiel ne la porte
- * plus. Sans ce canal, le ramassage ou le retrait pouvaient effacer du bucket
- * une image que la boutique affiche.
+ * pas dans la transaction du geste. L'image d'une opération datée est
+ * recopiée dans `catalog_operations` au push, et — depuis le 2026-10-11 —
+ * par la projection du fait `pim.operation_image_changed` quand la
+ * médiathèque remplace ou redécrit l'image. Entre le geste et la livraison de
+ * ce fait (ou le push suivant, quand l'image a été changée sur l'opération
+ * elle-même au référentiel), la boutique sert encore l'ancienne URL alors que
+ * le référentiel ne la porte plus. Sans ce canal, le ramassage ou le retrait
+ * pouvaient effacer du bucket une image que la boutique affiche.
  *
  * Publié ICI et branché ailleurs, comme `b2b/storefront/channels/media/` : le
  * commerce n'importe pas la médiathèque (`b2b → media` est hors de la
@@ -49,8 +51,10 @@ export interface CatalogMediaCopy {
 }
 
 /**
- * Le libellé d'une copie, à partir du nom français reçu (la clé à défaut) :
- * il dit au personnel que l'image suivra au prochain envoi, et pas avant.
+ * Le libellé d'une copie, à partir du nom français reçu (la clé à défaut).
+ * « Au prochain envoi » reste le pire cas : un remplacement à la médiathèque
+ * la fait suivre dès la livraison de son fait, mais une image changée sur
+ * l'opération elle-même n'y paraît qu'au push.
  */
 export function catalogMediaCopyLabel(name: string): string {
   return `Boutique — opération « ${name} » (copie, suit au prochain envoi du catalogue)`;

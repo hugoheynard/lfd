@@ -11,6 +11,7 @@ import { SetPublicVisibilityHandler } from "./application/commands/set-public-vi
 import { SetCatalogFeaturedHandler } from "./application/commands/set-catalog-featured.handler.js";
 import { SetCatalogVisibilityHandler } from "./application/commands/set-catalog-visibility.handler.js";
 import { IngestCatalogService } from "./application/ingest-catalog.service.js";
+import { OnOperationImageChangedHandler } from "./application/handlers/on-operation-image-changed.handler.js";
 import { OnProductMediaChangedHandler } from "./application/handlers/on-product-media-changed.handler.js";
 import { CatalogAdminReader } from "./domain/ports/catalog-admin.reader.js";
 import { CatalogCategoryProjection } from "./domain/ports/catalog-category.projection.js";
@@ -18,6 +19,7 @@ import { AcceptDeliveryHandler } from "./application/commands/accept-delivery.ha
 import { GetPendingDeliveryHandler } from "./application/queries/get-pending-delivery.handler.js";
 import { CatalogDeliveryRepository } from "./domain/ports/catalog-delivery.repository.js";
 import { CatalogItemRepository } from "./domain/ports/catalog-item.repository.js";
+import { CatalogOperationImageProjection } from "./domain/ports/catalog-operation-image.projection.js";
 import { CatalogVisualsProjection } from "./domain/ports/catalog-visuals.projection.js";
 import { CatalogVersionReader } from "./domain/ports/catalog-version.reader.js";
 import { CatalogVersionRepository } from "./domain/ports/catalog-version.repository.js";
@@ -29,6 +31,7 @@ import { PrismaCatalogAdminReader } from "./infrastructure/prisma-catalog-admin.
 import { PrismaCatalogCategoryProjection } from "./infrastructure/prisma-catalog-category.projection.js";
 import { PrismaCatalogDeliveryRepository } from "./infrastructure/prisma-catalog-delivery.repository.js";
 import { PrismaCatalogItemRepository } from "./infrastructure/prisma-catalog-item.repository.js";
+import { PrismaCatalogOperationImageProjection } from "./infrastructure/prisma-catalog-operation-image.projection.js";
 import { PrismaCatalogVisualsProjection } from "./infrastructure/prisma-catalog-visuals.projection.js";
 import {
   PrismaCatalogVersionReader,
@@ -120,6 +123,8 @@ import { PrismaCatalogMediaCopies } from "./infrastructure/prisma-catalog-media-
     // L'abonné qui projette les visuels d'une fiche sans attendre un push.
     // Il n'importe pas le référentiel : il reçoit un fait du bus.
     OnProductMediaChangedHandler,
+    // Même chose pour l'image d'une opération reçue (mediatheque.md §7 bis).
+    OnOperationImageChangedHandler,
     IngestCatalogService,
     CheckCatalogParityService,
     // Le contrôle de SANTÉ : même comparateur, autre référent — la dernière
@@ -145,6 +150,7 @@ import { PrismaCatalogMediaCopies } from "./infrastructure/prisma-catalog-media-
     SetCatalogFeaturedHandler,
     { provide: CatalogItemRepository, useClass: PrismaCatalogItemRepository },
     { provide: CatalogVisualsProjection, useClass: PrismaCatalogVisualsProjection },
+    { provide: CatalogOperationImageProjection, useClass: PrismaCatalogOperationImageProjection },
     { provide: CatalogCategoryProjection, useClass: PrismaCatalogCategoryProjection },
     { provide: CatalogReader, useClass: PrismaCatalogReader },
     // 🔴 **L'autorité de prix du checkout**, ramenée là d'où vient sa donnée le

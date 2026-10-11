@@ -200,9 +200,10 @@ export interface ShopOperationView {
   readonly name: ShopOperationText;
   readonly lede: ShopOperationText | null;
   /**
-   * `focal` : le point focal lu à la médiathèque au dernier push (L10 du plan
-   * de la médiathèque, 2026-10-11). Facultatif — absent ou `null`, la
-   * bannière recadre au centre.
+   * `focal` : le point focal lu à la médiathèque — au push, et sans push
+   * quand la médiathèque remplace ou redécrit l'image (cf.
+   * `documentation/mediatheque/mediatheque.md` §7 bis, 2026-10-11).
+   * Facultatif — absent ou `null`, la bannière recadre au centre.
    */
   readonly image: {
     readonly url: string;

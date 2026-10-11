@@ -20,11 +20,16 @@ model CatalogOperation {
   name Json
   lede Json?
 
-  imageUrl    String? @map("image_url")
-  imageAlt    String? @map("image_alt")
-  /// Le point focal de l'image, lu à la médiathèque au push (L10). `NULL` = centre.
-  imageFocalX Float?  @map("image_focal_x")
-  imageFocalY Float?  @map("image_focal_y")
+  imageUrl       String? @map("image_url")
+  imageAlt       String? @map("image_alt")
+  /// Le point focal de l'image, lu à la médiathèque au push (L10) ou projeté
+  /// sans push (`pim.operation_image_changed`). `NULL` = centre.
+  imageFocalX    Float?  @map("image_focal_x")
+  imageFocalY    Float?  @map("image_focal_y")
+  /// Le geste (UUID v7 du référentiel) de la dernière image PROJETÉE sans push
+  /// (`pim.operation_image_changed`) : un fait plus ancien n'écrit rien.
+  /// `NULL` = aucune projection encore. Le push ne le touche pas.
+  imageGestureId String? @map("image_gesture_id")
 
   announceFrom DateTime  @map("announce_from") @db.Timestamptz(3)
   orderFrom    DateTime? @map("order_from") @db.Timestamptz(3)

@@ -23,7 +23,7 @@ const NOEL: StorefrontCatalogOperation = {
   key: 'noel-2026',
   name: { fr: 'Noël', en: 'Christmas' },
   lede: { fr: 'Bûches et papillotes.' },
-  image: { url: 'https://cdn.example/buche.jpg', alt: 'Une bûche' },
+  image: { url: 'https://cdn.example/buche.jpg', alt: 'Une bûche', focal: { x: 0.2, y: 0.8 } },
   state: 'closed',
   announceFrom: '2026-10-31T23:00:00.000Z',
   orderFrom: '2026-11-14T23:00:00.000Z',
@@ -162,6 +162,18 @@ describe('StorefrontInfoForm', () => {
       // Pas d'anglais pour la phrase : la boutique montrera le français.
       expect(form['inheritedLede']()).toBe('Bûches et papillotes.');
       expect(form['inheritedImage']()?.url).toBe(NOEL.image?.url);
+    });
+
+    /**
+     * Régression du 2026-10-11 : le contrat admin des opérations ne portait
+     * pas le point focal, et l'aperçu hérité restait centré.
+     */
+    it('l’aperçu de l’image héritée se recadre sur le point focal de l’opération', () => {
+      const { fixture } = setup(linked);
+      const root = fixture.nativeElement as HTMLElement;
+      expect(root.querySelector<HTMLImageElement>('img.preview')?.style.objectPosition).toBe(
+        '20% 80%',
+      );
     });
 
     it('la croix vide le champ dans toutes ses langues : l’opération reprend la main', () => {
