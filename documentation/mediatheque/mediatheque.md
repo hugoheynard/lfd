@@ -386,6 +386,33 @@ Un cron Cloudflare (`apps/lfd-api/wrangler.jsonc`, `30 3`, via
 
 ---
 
+## 9 bis. La frise des couleurs
+
+Une bande au-dessus du feed montre l'évolution de la colorimétrie du fonds
+filtré, dans l'ordre de la prise de vue (dépôt à défaut).
+
+```mermaid
+flowchart LR
+    F["Fichier ou URL"] -->|"canvas 64 px<br/>palette-extract.ts"| P["palette<br/>5 dominantes + ≤ 3 écarts"]
+    P -->|"POST /media (champ palette)<br/>PUT /media/palette"| DB[("media_asset.palette<br/>jsonb, posée une fois")]
+    DB -->|"GET /media/palette-strip<br/>filtres du feed + columns"| S["≤ 400 colonnes<br/>fusionnées"]
+    S --> C["un canvas"]
+```
+
+- **La palette se calcule dans le navigateur** : l'API n'a pas de décodeur.
+  Le serveur la revalide (`imagePaletteSchema`) et ne l'écrase jamais —
+  l'identité d'une image est son contenu. Aucun fait n'est journalisé.
+- **Le rattrapage** : à l'ouverture, l'écran peint par lots de 20 les images
+  chargées qui n'ont pas de palette, une tentative par image.
+- **La frise a la taille de l'écran, pas du fonds** : le serveur découpe les
+  images filtrées en tranches consécutives de même effectif et fusionne leurs
+  palettes (`merge-palettes.ts`). Pré-agrégation à prévoir au-delà d'environ
+  20 000 images filtrées (estimé).
+- ⚠️ Le canvas ne lit une image servie par R2 que si le bucket l'autorise
+  (CORS). Sans quoi la colonne reste hachurée, sans erreur. Vérifié en dev,
+  pas en production.
+- Pas de clic (le feed ne filtre pas par prise de vue), pas de clavier.
+
 ## 10. Ce qui est journalisé
 
 Les faits d'une image, avec l'URL pour sujet :
