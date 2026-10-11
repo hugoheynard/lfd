@@ -87,6 +87,16 @@ describe('datedEventOf — la carte', () => {
     expect(image?.alt).toBe('Une bûche');
   });
 
+  it('recadre la photo sur le point focal lu au push (L10), au centre sans lui', () => {
+    expect(datedEventOf(op(), NOW, 'fr', fr).image?.position).toBe('50% 50%');
+    const image = {
+      url: 'https://media.example.test/noel.jpg',
+      alt: '',
+      focal: { x: 0.1, y: 0.9 },
+    };
+    expect(datedEventOf(op({ image }), NOW, 'fr', fr).image?.position).toBe('10% 90%');
+  });
+
   it('sans image ni accroche : rien d’inventé', () => {
     const event = datedEventOf(op({ image: null, lede: null }), NOW, 'fr', fr);
     expect(event.image).toBeNull();

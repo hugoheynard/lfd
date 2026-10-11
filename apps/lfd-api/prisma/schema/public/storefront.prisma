@@ -48,6 +48,10 @@ model StorefrontPage {
   pickupDoorImageUrl String? @map("pickup_door_image_url")
   /// Texte alternatif localisé `{ fr, en?, it? }`.
   pickupDoorImageAlt Json?   @map("pickup_door_image_alt")
+  /// Le point focal de la porte, en fractions de 0 à 1 (L10). `NULL` = centre.
+  /// Les deux ou aucun (CHECK de `20261011140000_le_point_focal_jusqu_a_la_vitrine`).
+  pickupDoorFocalX   Float?  @map("pickup_door_focal_x")
+  pickupDoorFocalY   Float?  @map("pickup_door_focal_y")
 
   @@map("storefront_page")
   @@schema("public")
@@ -124,6 +128,9 @@ model StorefrontContent {
   lede         Json?
   imageUrl     String? @map("image_url")
   imageAlt     Json?   @map("image_alt")
+  /// Le point focal de l'image, en fractions de 0 à 1 (L10). `NULL` = centre.
+  imageFocalX  Float?  @map("image_focal_x")
+  imageFocalY  Float?  @map("image_focal_y")
   linkShelfKey String? @map("link_shelf_key")
   /// L'opération datée qu'annonce une info (D11 de
   /// `architecture-operations-datees.md`) — clé OPAQUE du miroir, sans clé

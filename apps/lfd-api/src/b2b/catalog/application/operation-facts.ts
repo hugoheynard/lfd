@@ -18,7 +18,14 @@ export function operationFactsOf(
     key: operation.key,
     name: textOf(operation.name),
     lede: operation.lede === null ? null : textOf(operation.lede),
-    image: operation.image === null ? null : { url: operation.image.url, alt: operation.image.alt },
+    image:
+      operation.image === null
+        ? null
+        : {
+            url: operation.image.url,
+            alt: operation.image.alt,
+            focal: operation.image.focal ?? null,
+          },
     announceFrom: new Date(operation.announceFrom),
     orderFrom: operation.orderFrom === null ? null : new Date(operation.orderFrom),
     orderUntil: new Date(operation.orderUntil),

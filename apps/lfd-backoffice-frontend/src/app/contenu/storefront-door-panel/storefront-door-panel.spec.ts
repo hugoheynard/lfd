@@ -45,6 +45,7 @@ describe('StorefrontDoorPanel', () => {
         height: 900,
         bytes: 1000,
         contentType: 'image/jpeg',
+        focal: { x: 0.1, y: 0.4 },
       },
     ];
     const { root, emitted, opened, button } = setup(null, picked);
@@ -55,7 +56,10 @@ describe('StorefrontDoorPanel', () => {
     await Promise.resolve();
     expect(opened).toEqual([{ already: [], single: true }]);
     // Une image neuve repart sans alternative : celle de l'ancienne ne la décrit pas.
-    expect(emitted).toEqual([{ url: 'https://media.test/neuve.jpg', alt: null }]);
+    // Son point focal, lui, vient de la médiathèque (L10).
+    expect(emitted).toEqual([
+      { url: 'https://media.test/neuve.jpg', alt: null, focal: { x: 0.1, y: 0.4 } },
+    ]);
   });
 
   it('avec photo : l’aperçu, son alternative, et « Retirer » rend `null`', () => {

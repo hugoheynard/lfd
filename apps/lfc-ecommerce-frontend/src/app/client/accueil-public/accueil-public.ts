@@ -49,6 +49,7 @@ import { PublicSteps } from '../shop/public-steps/public-steps';
 import { ServiceDoors } from '../shop/service-doors/service-doors';
 import { SlotPickerDialog } from '../shop/slot-picker-dialog/slot-picker-dialog';
 import { sizedMedia, SHEET_WIDTHS } from '../shop/media-source';
+import { objectPositionOf } from '../shop/shelf-display';
 import { ShopStorefront } from '../shop/storefront/shop-storefront.store';
 import { HOME_PAGE } from '@lfd/storefront-layout';
 import { HomeStorefront } from './home-storefront/home-storefront';
@@ -416,12 +417,21 @@ export class AccueilPublic {
 
   /**
    * La photo, en valeur CSS, servie à la largeur d'une fiche (elle couvre la
-   * largeur de la page) et recadrée au centre (R12). `null` : la porte garde
-   * le fond de la palette.
+   * largeur de la page). `null` : la porte garde le fond de la palette.
    */
   protected readonly doorPhoto = computed(() => {
     const image = this.doorImage();
     return image === null ? null : `url(${JSON.stringify(sizedMedia(image.url, SHEET_WIDTHS[1]))})`;
+  });
+
+  /**
+   * Où recadrer la photo de la porte (`background-position`) : son point
+   * focal, par le calcul des fiches (L10, R12 révisée). `null` sans photo ;
+   * le centre sans point posé.
+   */
+  protected readonly doorPosition = computed(() => {
+    const image = this.doorImage();
+    return image === null ? null : objectPositionOf(image);
   });
 
   /** Son texte alternatif dans la langue du visiteur, le français sinon ; `null` : décorative. */

@@ -8,6 +8,7 @@ import { PrismaMediaCarriers } from "../pim/catalogue/shared/infrastructure/pris
 import { CatalogCopyMediaCarriers } from "./catalog-copy-media-carriers.js";
 import { CompositeMediaCarriers } from "./composite-media-carriers.js";
 import { StorefrontMediaCarriers } from "./storefront-media-carriers.js";
+import { RefocusStorefrontOnMediaDescribed } from "./storefront-media-focus.js";
 
 /**
  * **Le fil des porteurs, relié.** Le pendant exact d'`ImageCatalogueModule`, et
@@ -37,6 +38,8 @@ import { StorefrontMediaCarriers } from "./storefront-media-carriers.js";
   providers: [
     StorefrontMediaCarriers,
     CatalogCopyMediaCarriers,
+    // L10 : le point focal suit jusqu'à la vitrine, par un fait durable.
+    RefocusStorefrontOnMediaDescribed,
     // L'adaptateur du référentiel vient du module qui le construit ; celui de
     // la vitrine vit ici, faute de droit `b2b → media` dans la matrice.
     {

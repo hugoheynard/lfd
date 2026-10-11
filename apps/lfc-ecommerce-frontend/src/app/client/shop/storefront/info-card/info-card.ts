@@ -15,6 +15,7 @@ import { ClientLocale, type LocaleCode } from '../../../client-locale.service';
 import { ClientCopyService } from '../../../copy/client-copy.service';
 import { mediaSrcset, sizedMedia, SHEET_WIDTHS } from '../../media-source';
 import { operationShelfId } from '../../operations';
+import { objectPositionOf } from '../../shelf-display';
 import { operationBadge } from '../operation-badge';
 import { StorefrontActions } from '../storefront-actions';
 import type { StorefrontRenderer } from '../storefront-renderers';
@@ -103,6 +104,12 @@ export class InfoCard implements StorefrontRenderer {
   protected readonly imageSrcset = computed(() => {
     const image = this.image();
     return image === null ? '' : mediaSrcset(image.url, SHEET_WIDTHS);
+  });
+
+  /** Où recadrer l'image : son point focal (L10), le centre sans lui. */
+  protected readonly imagePosition = computed(() => {
+    const image = this.image();
+    return image === null ? null : objectPositionOf(image);
   });
 
   /** Le texte alternatif ; vide quand la médiathèque n'en a pas — l'image est alors décorative. */

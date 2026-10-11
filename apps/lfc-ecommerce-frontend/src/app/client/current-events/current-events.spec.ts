@@ -11,7 +11,12 @@ const EVENT: DatedEvent = {
   title: 'Noël au fournil',
   dates: 'Retrait du 20 au 24 déc.',
   teaser: 'Neuf bûches.',
-  image: { src: 'https://media.example.test/noel.jpg', srcset: '', alt: 'Une bûche' },
+  image: {
+    src: 'https://media.example.test/noel.jpg',
+    srcset: '',
+    alt: 'Une bûche',
+    position: '50% 50%',
+  },
   route: '/boutique',
   queryParams: { rayon: 'op:noel' },
 };

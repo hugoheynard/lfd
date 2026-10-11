@@ -1,5 +1,5 @@
 import type { CatalogOperationAudience } from "../operation-audience.js";
-import type { OperationText } from "../entities/catalog-operation.js";
+import type { OperationImageFacts, OperationText } from "../entities/catalog-operation.js";
 
 /**
  * **Une opération telle qu'un vendeur l'applique** : tenue, non masquée, à
@@ -9,7 +9,8 @@ export interface SellableOperation {
   readonly key: string;
   readonly name: OperationText;
   readonly lede: OperationText | null;
-  readonly image: { readonly url: string; readonly alt: string } | null;
+  /** `focal` : celui que le dernier push a lu à la médiathèque (L10). */
+  readonly image: OperationImageFacts | null;
   readonly announceFrom: Date;
   /** `null` = on commande dès l'annonce. */
   readonly orderFrom: Date | null;

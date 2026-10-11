@@ -81,6 +81,7 @@ export type StorefrontRefusal =
   | "operation"
   | "action"
   | "image"
+  | "focal"
   | "settings"
   | "page"
   | "placement"

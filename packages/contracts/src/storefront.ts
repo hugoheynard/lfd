@@ -69,10 +69,29 @@ export const storefrontProductContentSchema = z.object({
   sku: z.string(),
 });
 
-/** L'image d'une info : une URL de la médiathèque, et son texte alternatif. */
+/**
+ * Le point focal d'une image de vitrine : deux fractions de 0 à 1, depuis le
+ * coin haut gauche — la boutique recadre autour (`object-position`).
+ * Seule la forme est vérifiée ici ; l'agrégat refuse un point hors de l'image.
+ */
+export const storefrontFocalSchema = z.object({ x: z.number(), y: z.number() });
+export type StorefrontFocal = z.infer<typeof storefrontFocalSchema>;
+
+/**
+ * L'image d'une info ou de la porte : une URL de la médiathèque, son texte
+ * alternatif, et son point focal.
+ *
+ * `focal` est **facultatif** (L10 de
+ * `documentation/mediatheque/plan-la-mediatheque-amelioree.md`, 2026-10-11) :
+ * absent ou `null`, la boutique recadre au centre, ce qu'elle a toujours
+ * fait. L'éditeur l'envoie au choix de l'image ; la médiathèque le fait
+ * suivre quand elle redécrit l'image. Le serveur le rend toujours (`null`
+ * compris).
+ */
 export const storefrontImageSchema = z.object({
   url: z.string(),
   alt: storefrontTextSchema.nullable(),
+  focal: storefrontFocalSchema.nullable().optional(),
 });
 export type StorefrontImage = z.infer<typeof storefrontImageSchema>;
 

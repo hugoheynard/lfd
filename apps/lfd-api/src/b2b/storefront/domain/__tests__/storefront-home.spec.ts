@@ -15,7 +15,7 @@ import { object, settings } from "./storefront-fixtures.js";
  * Les instants ne sont comparés qu'à eux-mêmes : aucune horloge ici.
  */
 const SAVING = { at: new Date(Date.UTC(2026, 9, 10, 8, 0)), staffId: "fiche-communication" };
-const DOOR = { url: "https://media.example/fournil.jpg", alt: { fr: "Le fournil" } };
+const DOOR = { url: "https://media.example/fournil.jpg", alt: { fr: "Le fournil" }, focal: null };
 const PAGES: readonly StorefrontPageInput[] = [
   { shelfKey: "all", rows: 4 },
   { shelfKey: HOME_PAGE, rows: 4, pickupDoorImage: null },

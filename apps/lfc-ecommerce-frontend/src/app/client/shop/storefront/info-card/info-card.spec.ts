@@ -46,6 +46,13 @@ describe('InfoCard', () => {
     expect(img?.getAttribute('src')).toContain('buche.jpg');
   });
 
+  it('recadre l’image sur son point focal (L10), au centre sans lui', () => {
+    expect(el().querySelector<HTMLElement>('img')?.style.objectPosition).toBe('50% 50%');
+    const image = { url: 'https://example.test/buche.jpg', alt: null, focal: { x: 0.25, y: 0.8 } };
+    render({ content: { ...NOEL, image } });
+    expect(el().querySelector<HTMLElement>('img')?.style.objectPosition).toBe('25% 80%');
+  });
+
   it('parle la langue du visiteur, et retombe sur le français là où la traduction manque', () => {
     TestBed.inject(ClientLocale).current.set('en');
     fixture.detectChanges();

@@ -10,6 +10,7 @@ import {
   StorefrontNotComposedError,
   StorefrontObjectUnknownError,
 } from "./storefront-errors.js";
+import { storefrontFocal, type StorefrontFocal } from "./storefront-image.js";
 import {
   StorefrontObject,
   type StorefrontObjectInput,
@@ -35,6 +36,11 @@ export interface StorefrontState {
   /** `0` : jamais enregistrée. */
   readonly revision: number;
   readonly updatedAt: Date | null;
+  /**
+   * Qui a enregistré en dernier — la fiche INTERNE. Absent ou `null` : jamais
+   * enregistrée. Un recadrage venu de la médiathèque le garde (L10).
+   */
+  readonly updatedByStaffId?: string | null | undefined;
   readonly pages: readonly StorefrontPageInput[];
   readonly objects: readonly StorefrontObjectInput[];
   readonly templates: readonly StorefrontTemplateInput[];
@@ -98,6 +104,7 @@ export class Storefront {
   private constructor(
     private readonly loadedRevision: number,
     private readonly updatedAt: Date | null,
+    private readonly updatedByStaffId: string | null,
     private pages: readonly StorefrontPage[],
     private objects: readonly StorefrontObject[],
     private templates: readonly StorefrontTemplate[],
@@ -113,7 +120,14 @@ export class Storefront {
     const objects = state.objects.map((object) => StorefrontObject.of(object));
     const templates = state.templates.map((template) => StorefrontTemplate.of(template));
     assertPlacements(objects, pages);
-    return new Storefront(state.revision, state.updatedAt, pages, objects, templates);
+    return new Storefront(
+      state.revision,
+      state.updatedAt,
+      state.updatedByStaffId ?? null,
+      pages,
+      objects,
+      templates,
+    );
   }
 
   get revision(): number {
@@ -187,6 +201,41 @@ export class Storefront {
       this.objects = objects;
       this.pages = pages;
       this.saving = { ...saving, archived: [] };
+    }
+    return carriers;
+  }
+
+  /**
+   * **Recadre une image de la médiathèque** partout où la vitrine la montre,
+   * sur le point focal que la médiathèque vient de lui donner (L10 du plan de
+   * la médiathèque, 2026-10-11). `null` : retour au centre.
+   *
+   * Rend le nombre de porteurs changés, comme {@link repointImage} : à zéro
+   * (image absente, ou déjà sur ce point), rien n'est à écrire et la révision
+   * ne monte pas. Sinon elle monte, et un éditeur ouvert avant est refusé —
+   * il aurait réécrit l'ancien point au save suivant.
+   *
+   * L'auteur reste celui du dernier enregistrement : un recadrage n'est le
+   * geste de personne ici, il est tracé à la médiathèque
+   * (`media_asset.described`). Une vitrine jamais enregistrée ne montre
+   * aucune image.
+   *
+   * @throws {InvalidStorefrontError} point focal hors de l'image.
+   */
+  refocus(url: string, focal: StorefrontFocal | null, at: Date): number {
+    const point = storefrontFocal(focal);
+    if (this.updatedByStaffId === null) {
+      return 0;
+    }
+    const objects = this.objects.map((object) => object.withImageRefocused(url, point));
+    const pages = this.pages.map((page) => page.withImageRefocused(url, point));
+    const carriers =
+      objects.filter((object, index) => object !== this.objects[index]).length +
+      pages.filter((page, index) => page !== this.pages[index]).length;
+    if (carriers > 0) {
+      this.objects = objects;
+      this.pages = pages;
+      this.saving = { at, staffId: this.updatedByStaffId, archived: [] };
     }
     return carriers;
   }

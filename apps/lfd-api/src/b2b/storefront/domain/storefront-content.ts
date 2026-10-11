@@ -1,7 +1,11 @@
 import { LinkedOperationKey } from "./operation-link.js";
 import { ShelfKey } from "./shelf-key.js";
 import { InvalidStorefrontError } from "./storefront-errors.js";
-import { StorefrontImage, type StorefrontImageState } from "./storefront-image.js";
+import {
+  StorefrontImage,
+  type StorefrontImageInput,
+  type StorefrontImageState,
+} from "./storefront-image.js";
 import {
   STOREFRONT_TEXT_FIELDS,
   StorefrontText,
@@ -45,7 +49,9 @@ export interface InfoContentState {
  * déduite ; présente, elle doit dire la même chose que les cibles. Un titre
  * sans aucun texte vaut « hérité ».
  */
-export interface InfoContentInput extends Omit<InfoContentState, "operationKey"> {
+export interface InfoContentInput extends Omit<InfoContentState, "operationKey" | "image"> {
+  /** `focal` facultatif (L10 du plan de la médiathèque) : absent, l'image se recadre au centre. */
+  readonly image: StorefrontImageInput | null;
   readonly operationKey?: string | null | undefined;
   readonly action?: InfoAction | undefined;
 }

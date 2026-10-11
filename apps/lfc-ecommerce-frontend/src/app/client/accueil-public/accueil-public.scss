@@ -254,7 +254,8 @@
 }
 
 .banner-photo {
-  background: var(--lfc-ink-950) var(--lfc-photo-door, none) center / cover;
+  background: var(--lfc-ink-950) var(--lfc-photo-door, none) var(--lfc-photo-door-at, center) /
+    cover;
 }
 
 /* UN SEUL dégradé diagonal : opaque là où vit le texte, presque clair là où
@@ -931,6 +932,7 @@
    sans que le dépassement bouge d'un octet. */
 app-service-doors {
   --door-photo-pickup: var(--lfc-photo-door, none);
+  --door-photo-pickup-at: var(--lfc-photo-door-at, center);
 }
 
 @media (min-width: 900px) {

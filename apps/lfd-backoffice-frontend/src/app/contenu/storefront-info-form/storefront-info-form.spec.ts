@@ -39,6 +39,7 @@ const IMAGE: PickedMedia = {
   height: 800,
   bytes: 1000,
   contentType: 'image/jpeg',
+  focal: { x: 0.3, y: 0.6 },
 };
 
 function setup(info: InfoContent = emptyInfo(), picked: readonly PickedMedia[] = [IMAGE]) {
@@ -81,13 +82,14 @@ describe('StorefrontInfoForm', () => {
     expect(changes.at(-1)?.badge).toBeNull();
   });
 
-  it('choisit UNE image dans la médiathèque, sans texte alternatif — jamais l’URL', async () => {
+  it('choisit UNE image dans la médiathèque, sans texte alternatif — jamais l’URL — et avec son point focal', async () => {
     const { form, changes, opened } = setup();
     form['chooseImage']();
     await Promise.resolve();
     await Promise.resolve();
     expect(opened).toEqual([{ already: [], single: true }]);
-    expect(changes.at(-1)?.image).toEqual({ url: IMAGE.url, alt: null });
+    // L10 : la boutique recadre autour du point posé à la médiathèque.
+    expect(changes.at(-1)?.image).toEqual({ url: IMAGE.url, alt: null, focal: { x: 0.3, y: 0.6 } });
   });
 
   it('renoncer au sélecteur ne change rien', async () => {

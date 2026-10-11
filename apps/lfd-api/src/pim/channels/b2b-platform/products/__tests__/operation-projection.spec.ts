@@ -1,5 +1,9 @@
 import { Operation } from "../../../../operations/domain/entities/operation.js";
-import { OPERATION_SKU_NOT_SHIPPED, projectOperations } from "../operation-projection.js";
+import {
+  focusOperations,
+  OPERATION_SKU_NOT_SHIPPED,
+  projectOperations,
+} from "../operation-projection.js";
 
 /**
  * Les opérations datées dans le fil v11 (D10). Les dates ne sont comparées
@@ -94,5 +98,31 @@ describe("projectOperations — les opérations du fil v11", () => {
     const { excluded } = projectOperations([noel({ skus: ["PAT-X-1"], archived: true })], SHIPPED);
 
     expect(excluded).toEqual([]);
+  });
+});
+
+describe("focusOperations — le point focal lu au push (L10)", () => {
+  const NOEL = "https://media.example/noel.jpg";
+
+  it("pose sur l'image le point que la médiathèque lui donne", () => {
+    const { operations } = projectOperations([noel()], SHIPPED);
+
+    const [focused] = focusOperations(operations, new Map([[NOEL, { x: 0.2, y: 0.8 }]]));
+
+    expect(focused?.image).toEqual({ url: NOEL, alt: "Une bûche", focal: { x: 0.2, y: 0.8 } });
+  });
+
+  it("part avec `focal: null` quand la médiathèque ne connaît pas l'image, ou n'a pas de point", () => {
+    const { operations } = projectOperations([noel()], SHIPPED);
+
+    expect(focusOperations(operations, new Map())[0]?.image?.focal).toBeNull();
+    expect(focusOperations(operations, new Map([[NOEL, null]]))[0]?.image?.focal).toBeNull();
+  });
+
+  it("laisse intacte une opération sans image", () => {
+    const { operations } = projectOperations([noel()], SHIPPED);
+    const bare = operations.map((operation) => ({ ...operation, image: null }));
+
+    expect(focusOperations(bare, new Map([[NOEL, { x: 0, y: 0 }]]))).toEqual(bare);
   });
 });

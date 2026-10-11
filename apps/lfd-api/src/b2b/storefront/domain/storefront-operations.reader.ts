@@ -1,3 +1,5 @@
+import type { StorefrontFocal } from "./storefront-image.js";
+
 /** Un texte d'opération dans ses langues — le français toujours. */
 export interface ShownOperationText {
   readonly fr: string;
@@ -18,7 +20,12 @@ export interface ShownOperation {
   readonly key: string;
   readonly name: ShownOperationText;
   readonly lede: ShownOperationText | null;
-  readonly image: { readonly url: string; readonly alt: string } | null;
+  /** `focal` absent ou `null` : centre (L10 du plan de la médiathèque). */
+  readonly image: {
+    readonly url: string;
+    readonly alt: string;
+    readonly focal?: StorefrontFocal | null | undefined;
+  } | null;
   readonly state: "announced" | "open" | "closed";
   /** L'ouverture de la commande — l'annonce quand le référentiel n'en fixe pas. */
   readonly orderFrom: Date;

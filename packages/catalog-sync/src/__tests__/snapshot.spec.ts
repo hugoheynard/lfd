@@ -620,3 +620,43 @@ describe("le point focal, facultatif sur le fil (L4)", () => {
     expect(parsed.success).toBe(true);
   });
 });
+
+describe("le point focal de l'image d'opération, facultatif sur le fil (L10)", () => {
+  /** Les dates ne sont comparées qu'au schéma. */
+  const noel = {
+    key: "noel-2026",
+    name: { fr: "Noël" },
+    lede: null,
+    announceFrom: "2026-11-01T00:00:00+01:00",
+    orderFrom: null,
+    orderUntil: "2026-12-21T12:00:00+01:00",
+    pickupFrom: "2026-12-20",
+    pickupUntil: "2026-12-24",
+    audience: "both",
+    skus: [],
+  };
+  const withOperationImage = (image: Record<string, unknown>): Record<string, unknown> => ({
+    ...snapshot,
+    operations: [{ ...noel, image }],
+  });
+  const base = { url: "https://media.example/noel.jpg", alt: "Une bûche" };
+
+  it("accepte une image d'opération qui porte son point focal", () => {
+    const parsed = catalogSnapshotSchema.safeParse(
+      withOperationImage({ ...base, focal: { x: 0.3, y: 0.6 } }),
+    );
+
+    expect(parsed.success && parsed.data.operations[0]?.image?.focal).toEqual({ x: 0.3, y: 0.6 });
+  });
+
+  it("refuse un point focal hors des fractions 0..1", () => {
+    expect(
+      catalogSnapshotSchema.safeParse(withOperationImage({ ...base, focal: { x: 0.5, y: -1 } }))
+        .success,
+    ).toBe(false);
+  });
+
+  it("relit une livraison en attente dont l'image d'opération n'a pas de point focal", () => {
+    expect(storedCatalogSnapshotSchema.safeParse(withOperationImage(base)).success).toBe(true);
+  });
+});

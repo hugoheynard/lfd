@@ -1,5 +1,5 @@
 import { ChangeDetectionStrategy, Component, computed, inject, input, signal } from '@angular/core';
-import type { LibraryMediaView, MediaFactsView } from '@lfd/pim-contracts';
+import type { FocalPoint, LibraryMediaView, MediaFactsView } from '@lfd/pim-contracts';
 import {
   FoldButtonComponent,
   type FoldPanelDefaults,
@@ -38,6 +38,12 @@ export interface LibraryPickerData {
 export interface PickedMedia extends MediaFactsView {
   readonly url: string;
   readonly name: string;
+  /**
+   * Le point focal posé à la médiathèque — `null` : personne ne s'est
+   * prononcé. La vitrine le recopie au choix de l'image (L10 du plan de la
+   * médiathèque, 2026-10-11) ; les fiches le relisent côté serveur.
+   */
+  readonly focal: FocalPoint | null;
 }
 
 /**
@@ -192,6 +198,7 @@ export class LibraryPicker {
                 height: image.height,
                 bytes: image.bytes,
                 contentType: image.contentType,
+                focal: image.focal,
               },
             ];
       }),

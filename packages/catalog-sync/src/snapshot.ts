@@ -467,8 +467,23 @@ export const syncOperationSchema = z.object({
   name: syncLocalizedTextSchema,
   /** `null` = aucune accroche saisie. */
   lede: syncLocalizedTextSchema.nullable(),
-  /** Une image de la médiathèque, ou `null`. Sans dimensions : l'annonce les recadre. */
-  image: z.object({ url: z.string().min(1), alt: z.string() }).nullable(),
+  /**
+   * Une image de la médiathèque, ou `null`. Sans dimensions : l'annonce les
+   * recadre — autour de `focal`, lu à la médiathèque au moment du push (L10 de
+   * `documentation/mediatheque/plan-la-mediatheque-amelioree.md`, 2026-10-11).
+   * Facultatif et sans changer de version, pour la raison de
+   * {@link syncMediaSchema} : un envoi qui l'omet dit « centre ».
+   */
+  image: z
+    .object({
+      url: z.string().min(1),
+      alt: z.string(),
+      focal: z
+        .object({ x: z.number().min(0).max(1), y: z.number().min(0).max(1) })
+        .nullable()
+        .optional(),
+    })
+    .nullable(),
   /**
    * Trois INSTANTS : le rayon paraît, la commande ouvre, la commande ferme.
    * `orderFrom` à `null` = on commande dès l'annonce.

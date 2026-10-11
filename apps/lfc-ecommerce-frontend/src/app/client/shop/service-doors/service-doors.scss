@@ -237,6 +237,7 @@
 
 .door-pickup::before {
   background-image: var(--door-photo-pickup, none);
+  background-position: var(--door-photo-pickup-at, center);
 }
 
 /* 🔴 LE REPLI EST LA PHOTO DU RETRAIT, et ce n'est pas qu'une commodité : la

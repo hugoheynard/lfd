@@ -99,7 +99,7 @@ export class StorefrontDoorPanel {
       .closed.then((picked) => {
         const [chosen] = picked ?? [];
         if (chosen !== undefined) {
-          this.changed.emit({ url: chosen.url, alt: null });
+          this.changed.emit({ url: chosen.url, alt: null, focal: chosen.focal });
         }
       });
   }

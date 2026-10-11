@@ -199,7 +199,16 @@ export interface ShopOperationView {
   readonly key: string;
   readonly name: ShopOperationText;
   readonly lede: ShopOperationText | null;
-  readonly image: { readonly url: string; readonly alt: string } | null;
+  /**
+   * `focal` : le point focal lu à la médiathèque au dernier push (L10 du plan
+   * de la médiathèque, 2026-10-11). Facultatif — absent ou `null`, la
+   * bannière recadre au centre.
+   */
+  readonly image: {
+    readonly url: string;
+    readonly alt: string;
+    readonly focal?: ShopImageFocal | null | undefined;
+  } | null;
   readonly state: ShopOperationState;
   /** Instant ISO d'ouverture de la commande (l'annonce quand le référentiel n'en fixe pas). */
   readonly orderFrom: string;

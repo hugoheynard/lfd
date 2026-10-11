@@ -37,6 +37,7 @@ describe('VisualsForm', () => {
         height: 600,
         bytes: 1024,
         contentType: 'image/png',
+        focal: null,
       },
     ]);
 
@@ -58,6 +59,7 @@ describe('VisualsForm', () => {
         height: 1200,
         bytes: 253952,
         contentType: 'image/png',
+        focal: null,
       },
     ]);
 
@@ -225,6 +227,7 @@ describe('VisualsForm', () => {
       height: 600,
       bytes: 1024,
       contentType: 'image/png',
+      focal: null,
     });
     const callout = (): Element | null => {
       const fixture = TestBed.createComponent(VisualsForm);

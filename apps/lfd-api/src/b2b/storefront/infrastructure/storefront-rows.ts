@@ -2,6 +2,7 @@ import { Prisma } from "../../../platform/database/client/client.js";
 import { TechnicalError } from "../../../platform/shared/errors/app-error.js";
 import type { ObjectSettingsInput, ObjectSettingsState } from "../domain/object-settings.js";
 import type { StorefrontContentState } from "../domain/storefront-content.js";
+import type { StorefrontFocal } from "../domain/storefront-image.js";
 import type { StorefrontObjectInput } from "../domain/storefront-object.js";
 import type { StorefrontPageInput, StorefrontPageState } from "../domain/storefront-page.js";
 import type { StorefrontTemplateInput } from "../domain/storefront-template.js";
@@ -38,6 +39,8 @@ interface ContentColumns {
   readonly lede: Prisma.JsonValue;
   readonly imageUrl: string | null;
   readonly imageAlt: Prisma.JsonValue;
+  readonly imageFocalX: number | null;
+  readonly imageFocalY: number | null;
   readonly linkShelfKey: string | null;
   readonly operationKey: string | null;
 }
@@ -75,6 +78,8 @@ export interface PageRow {
   readonly rows: number;
   readonly pickupDoorImageUrl: string | null;
   readonly pickupDoorImageAlt: Prisma.JsonValue;
+  readonly pickupDoorFocalX: number | null;
+  readonly pickupDoorFocalY: number | null;
 }
 
 export function pageInputOf(row: PageRow): StorefrontPageInput {
@@ -84,7 +89,11 @@ export function pageInputOf(row: PageRow): StorefrontPageInput {
     pickupDoorImage:
       row.pickupDoorImageUrl === null
         ? null
-        : { url: row.pickupDoorImageUrl, alt: textOf(row.pickupDoorImageAlt) },
+        : {
+            url: row.pickupDoorImageUrl,
+            alt: textOf(row.pickupDoorImageAlt),
+            focal: focalOf(row.pickupDoorFocalX, row.pickupDoorFocalY),
+          },
   };
 }
 
@@ -94,12 +103,17 @@ export function pageColumns(page: StorefrontPageState): {
   readonly rows: number;
   readonly pickupDoorImageUrl: string | null;
   readonly pickupDoorImageAlt: NullableJson;
+  readonly pickupDoorFocalX: number | null;
+  readonly pickupDoorFocalY: number | null;
 } {
+  const focal = page.pickupDoorImage?.focal ?? null;
   return {
     shelfKey: page.shelfKey,
     rows: page.rows,
     pickupDoorImageUrl: page.pickupDoorImage?.url ?? null,
     pickupDoorImageAlt: jsonOf(page.pickupDoorImage?.alt ?? null),
+    pickupDoorFocalX: focal?.x ?? null,
+    pickupDoorFocalY: focal?.y ?? null,
   };
 }
 
@@ -171,7 +185,14 @@ function contentOfRow(row: ContentColumns): StorefrontContentState {
     badge: textOf(row.badge),
     title: textOf(row.title),
     lede: textOf(row.lede),
-    image: row.imageUrl === null ? null : { url: row.imageUrl, alt: textOf(row.imageAlt) },
+    image:
+      row.imageUrl === null
+        ? null
+        : {
+            url: row.imageUrl,
+            alt: textOf(row.imageAlt),
+            focal: focalOf(row.imageFocalX, row.imageFocalY),
+          },
     linkShelfKey: row.linkShelfKey,
     operationKey: row.operationKey,
   };
@@ -189,6 +210,8 @@ export function contentColumns(content: StorefrontContentState): {
   readonly lede: NullableJson;
   readonly imageUrl: string | null;
   readonly imageAlt: NullableJson;
+  readonly imageFocalX: number | null;
+  readonly imageFocalY: number | null;
   readonly linkShelfKey: string | null;
   readonly operationKey: string | null;
 } {
@@ -201,6 +224,8 @@ export function contentColumns(content: StorefrontContentState): {
       lede: Prisma.DbNull,
       imageUrl: null,
       imageAlt: Prisma.DbNull,
+      imageFocalX: null,
+      imageFocalY: null,
       linkShelfKey: null,
       operationKey: null,
     };
@@ -213,9 +238,16 @@ export function contentColumns(content: StorefrontContentState): {
     lede: jsonOf(content.lede),
     imageUrl: content.image?.url ?? null,
     imageAlt: jsonOf(content.image?.alt ?? null),
+    imageFocalX: content.image?.focal?.x ?? null,
+    imageFocalY: content.image?.focal?.y ?? null,
     linkShelfKey: content.linkShelfKey,
     operationKey: content.operationKey,
   };
+}
+
+/** Le point focal relu : les deux colonnes, ou aucune (CHECK de la migration L10). */
+function focalOf(x: number | null, y: number | null): StorefrontFocal | null {
+  return x === null || y === null ? null : { x, y };
 }
 
 function jsonOf(text: StorefrontTextState | null): NullableJson {

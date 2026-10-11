@@ -23,7 +23,14 @@ const archivedOperationSchema = z.object({
   key: z.string(),
   name: textSchema,
   lede: textSchema.nullable(),
-  image: z.object({ url: z.string(), alt: z.string() }).nullable(),
+  // `focal` facultatif : les envois archivés avant L10 (2026-10-11) n'en ont pas.
+  image: z
+    .object({
+      url: z.string(),
+      alt: z.string(),
+      focal: z.object({ x: z.number(), y: z.number() }).nullable().optional(),
+    })
+    .nullable(),
   announceFrom: z.coerce.date(),
   orderFrom: z.coerce.date().nullable(),
   orderUntil: z.coerce.date(),
@@ -50,7 +57,14 @@ export function archivedOperationsJson(
     key: operation.key,
     name: { ...operation.name },
     lede: operation.lede === null ? null : { ...operation.lede },
-    image: operation.image === null ? null : { ...operation.image },
+    image:
+      operation.image === null
+        ? null
+        : {
+            url: operation.image.url,
+            alt: operation.image.alt,
+            focal: focalJson(operation.image.focal ?? null),
+          },
     announceFrom: operation.announceFrom.toISOString(),
     orderFrom: operation.orderFrom === null ? null : operation.orderFrom.toISOString(),
     orderUntil: operation.orderUntil.toISOString(),
@@ -60,6 +74,11 @@ export function archivedOperationsJson(
     skus: [...operation.skus],
     receivedAt: operation.receivedAt.toISOString(),
   }));
+}
+
+/** Un point focal en objet JSON littéral — une interface n'a pas de signature d'index. */
+function focalJson(focal: { readonly x: number; readonly y: number } | null) {
+  return focal === null ? null : { x: focal.x, y: focal.y };
 }
 
 function toFacts(row: z.infer<typeof archivedOperationSchema>): CatalogOperationFacts {

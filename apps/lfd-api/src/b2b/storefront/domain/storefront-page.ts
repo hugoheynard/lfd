@@ -2,7 +2,13 @@ import { HOME_PAGE, MAX_ROWS, MIN_ROWS } from "@lfd/storefront-layout";
 
 import { ShelfKey } from "./shelf-key.js";
 import { InvalidStorefrontError } from "./storefront-errors.js";
-import { StorefrontImage, type StorefrontImageState } from "./storefront-image.js";
+import {
+  sameFocal,
+  StorefrontImage,
+  type StorefrontFocal,
+  type StorefrontImageInput,
+  type StorefrontImageState,
+} from "./storefront-image.js";
 
 /** Une page, en primitives validées. */
 export interface StorefrontPageState {
@@ -16,7 +22,7 @@ export interface StorefrontPageState {
 export interface StorefrontPageInput {
   readonly shelfKey: string;
   readonly rows: number;
-  readonly pickupDoorImage?: StorefrontImageState | null | undefined;
+  readonly pickupDoorImage?: StorefrontImageInput | null | undefined;
 }
 
 const DOOR_IMAGE_MISSING =
@@ -75,6 +81,17 @@ export class StorefrontPage {
     return door === null || door.url !== from
       ? this
       : new StorefrontPage({ ...this.state, pickupDoorImage: { ...door, url: to } });
+  }
+
+  /**
+   * La même page, sa porte recadrée sur `focal` si elle montre `url` — ou
+   * `this` si elle ne la montre pas, ou déjà sur ce point (L10).
+   */
+  withImageRefocused(url: string, focal: StorefrontFocal | null): StorefrontPage {
+    const door = this.state.pickupDoorImage;
+    return door === null || door.url !== url || sameFocal(door.focal, focal)
+      ? this
+      : new StorefrontPage({ ...this.state, pickupDoorImage: { ...door, focal } });
   }
 
   /** Est-elle, en tout point, la même que `other` ? Comparaison de valeur. */

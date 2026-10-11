@@ -83,7 +83,15 @@ describe('prendre dans la médiathèque', () => {
    * les omettre ici ferait passer un doublé pour le contrat qu'il joue.
    */
   function picked(url: string, name = ''): PickedMedia {
-    return { url, name, width: 800, height: 600, bytes: 1024, contentType: 'image/png' };
+    return {
+      url,
+      name,
+      width: 800,
+      height: 600,
+      bytes: 1024,
+      contentType: 'image/png',
+      focal: null,
+    };
   }
 
   it('ajoute à la suite, au rôle neutre', () => {

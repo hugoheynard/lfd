@@ -115,7 +115,7 @@ describe("GetPublicStorefrontPageHandler — les annonces d'opération (D11)", (
       ...LINKED,
       title: { fr: "Noël", en: "Christmas" },
       lede: { fr: "Bûches et chocolats" },
-      image: { url: "https://cdn.example/noel.jpg", alt: { fr: "Une bûche" } },
+      image: { url: "https://cdn.example/noel.jpg", alt: { fr: "Une bûche" }, focal: null },
       operation: {
         key: "noel-2026",
         state: "announced",
@@ -181,6 +181,13 @@ describe("GetPublicStorefrontPageHandler — les annonces d'opération (D11)", (
     );
 
     expect(content).toMatchObject({ image: { url: "https://cdn.example/x.jpg", alt: null } });
+  });
+
+  it("une image héritée de l'opération garde le point focal lu au push (L10)", async () => {
+    const image = { url: "https://cdn.example/x.jpg", alt: "", focal: { x: 0.25, y: 0.75 } };
+    const [content] = await read([LINKED], new ShownByAudience({ public: [{ ...NOEL, image }] }));
+
+    expect(content).toMatchObject({ image: { url: image.url, focal: { x: 0.25, y: 0.75 } } });
   });
 
   /** Régression : la tuile Noël paraissait dans le rayon de Noël, qu'elle annonce (2026-09-25). */

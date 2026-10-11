@@ -13,7 +13,12 @@ import { CatalogueReader } from "../../../../catalogue/shared/domain/ports/catal
 import { B2bMembershipService } from "../../membership/membership.service.js";
 import { B2bCatalogFeedProjection } from "../feed-projection.service.js";
 import { EditorialReader } from "../../../../catalogue/product/domain/ports/editorial-reader.js";
-import type { OperationSnapshot } from "../../../../operations/domain/entities/operation.js";
+import {
+  Operation,
+  type OperationSnapshot,
+} from "../../../../operations/domain/entities/operation.js";
+import { ImageCatalogue } from "../../../media/image-catalogue.js";
+import { FocalImageCatalogue } from "../../../media/__tests__/focal-image-catalogue.js";
 import { OperationReader } from "../../../../operations/domain/ports/operation.reader.js";
 
 /**
@@ -59,10 +64,14 @@ const EMPTY_CATALOGUE = {
   effectiveChannels: () => Promise.resolve(new Map()),
 };
 
-/** Aucune opération datée : cette suite parle du rapport pro. */
-class NoOperations extends OperationReader {
+/** Les opérations datées tenues en table — aucune, sauf pour le point focal (L10). */
+class TableOperations extends OperationReader {
+  constructor(private readonly operations: readonly OperationSnapshot[] = []) {
+    super();
+  }
+
   list(): Promise<readonly OperationSnapshot[]> {
-    return Promise.resolve([]);
+    return Promise.resolve(this.operations);
   }
 
   find(): Promise<OperationSnapshot | null> {
@@ -74,12 +83,15 @@ async function build(options: {
   readonly publishedIds: readonly string[];
   readonly ratioBp: number | null;
   readonly catalogue: unknown;
+  readonly operations?: readonly OperationSnapshot[];
+  readonly images?: ImageCatalogue;
 }): Promise<B2bCatalogFeedProjection> {
   const moduleRef = await Test.createTestingModule({
     providers: [
       B2bCatalogFeedProjection,
       { provide: CatalogueReader, useValue: options.catalogue },
-      { provide: OperationReader, useClass: NoOperations },
+      { provide: OperationReader, useValue: new TableOperations(options.operations) },
+      { provide: ImageCatalogue, useValue: options.images ?? new FocalImageCatalogue() },
       // Aucune limite de commande déclarée : le sujet de cette suite est le
       // rapport pro, pas l'heure. Un double vide plutôt qu'un cas de plus.
       { provide: OrderTimeLimitRepository, useValue: { list: () => Promise.resolve([]) } },
@@ -155,5 +167,77 @@ describe("B2bCatalogFeedProjection — le rapport pro est une précondition", ()
     const preview = await service.preview(AT);
     expect(preview.candidates).toBe(1);
     expect(preview.snapshot.products).toEqual([]);
+  });
+});
+
+describe("B2bCatalogFeedProjection — le point focal des opérations (L10)", () => {
+  const IMAGE = "https://media.example/noel.jpg";
+
+  function noel(): OperationSnapshot {
+    const operation = Operation.prepare({
+      key: "noel-2026",
+      name: { fr: "Noël" },
+      lede: null,
+      image: { url: IMAGE, alt: "Une bûche" },
+      schedule: {
+        announceFrom: new Date("2026-10-31T23:00:00.000Z"),
+        orderFrom: null,
+        orderUntil: new Date("2026-12-21T11:00:00.000Z"),
+        pickupFrom: "2026-12-20",
+        pickupUntil: "2026-12-24",
+      },
+      audience: "both",
+    });
+    return operation.snapshot();
+  }
+
+  it("lit le point à la médiathèque au moment du push, et le fait voyager", async () => {
+    const images = new FocalImageCatalogue(new Map([[IMAGE, { x: 0.3, y: 0.7 }]]));
+    const service = await build({
+      publishedIds: [],
+      ratioBp: null,
+      catalogue: CATALOGUE_NEVER_READ,
+      operations: [noel()],
+      images,
+    });
+
+    const preview = await service.preview(AT);
+
+    expect(preview.snapshot.operations[0]?.image).toEqual({
+      url: IMAGE,
+      alt: "Une bûche",
+      focal: { x: 0.3, y: 0.7 },
+    });
+    expect(images.reads).toBe(1);
+  });
+
+  it("l'empreinte change quand le point bouge : le push suivant le porte", async () => {
+    const at = (focal: { x: number; y: number } | null) =>
+      build({
+        publishedIds: [],
+        ratioBp: null,
+        catalogue: CATALOGUE_NEVER_READ,
+        operations: [noel()],
+        images: new FocalImageCatalogue(new Map([[IMAGE, focal]])),
+      }).then((service) => service.preview(AT));
+
+    const [centred, moved] = await Promise.all([at(null), at({ x: 0.1, y: 0.1 })]);
+
+    expect(centred.snapshot.operations[0]?.image?.focal).toBeNull();
+    expect(moved.fingerprint).not.toBe(centred.fingerprint);
+  });
+
+  it("ne lit pas la médiathèque quand aucune opération n'a d'image", async () => {
+    const images = new FocalImageCatalogue();
+    const service = await build({
+      publishedIds: [],
+      ratioBp: null,
+      catalogue: CATALOGUE_NEVER_READ,
+      images,
+    });
+
+    await service.preview(AT);
+
+    expect(images.reads).toBe(0);
   });
 });

@@ -121,7 +121,7 @@ describe("la page d'accueil", () => {
       {
         shelfKey: "home",
         rows: 3,
-        pickupDoorImage: { url: DOOR_IMAGE, alt: { fr: "Le fournil" } },
+        pickupDoorImage: { url: DOOR_IMAGE, alt: { fr: "Le fournil" }, focal: null },
       },
     ]);
     expect(view.objects[0]).toMatchObject({
@@ -142,7 +142,11 @@ describe("la page d'accueil", () => {
     );
 
     expect(page.rows).toBe(3);
-    expect(page.pickupDoorImage).toEqual({ url: DOOR_IMAGE, alt: { fr: "Le fournil" } });
+    expect(page.pickupDoorImage).toEqual({
+      url: DOOR_IMAGE,
+      alt: { fr: "Le fournil" },
+      focal: null,
+    });
     expect(page.objects).toHaveLength(1);
     expect(page.objects[0]).toMatchObject({ shape: "banner", column: 1, row: 1 });
   });

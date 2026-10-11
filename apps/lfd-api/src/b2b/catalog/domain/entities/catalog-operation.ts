@@ -7,6 +7,25 @@ export interface OperationText {
   readonly it?: string;
 }
 
+/** Un point focal : deux fractions de 0 à 1, depuis le coin haut gauche. */
+export interface OperationFocal {
+  readonly x: number;
+  readonly y: number;
+}
+
+/**
+ * L'image d'une opération, telle que reçue. `focal` est lu à la médiathèque
+ * AU PUSH (L10 du plan de la médiathèque, 2026-10-11) : il ne suit une
+ * redescription qu'au push suivant, comme l'image elle-même. Absent ou `null`
+ * — un envoi d'avant L10, ou personne ne s'est prononcé : la boutique recadre
+ * au centre.
+ */
+export interface OperationImageFacts {
+  readonly url: string;
+  readonly alt: string;
+  readonly focal?: OperationFocal | null | undefined;
+}
+
 /**
  * **Ce que le référentiel a dit d'une opération datée**, tel que reçu — sans
  * aucune décision de la plateforme.
@@ -18,7 +37,7 @@ export interface CatalogOperationFacts {
   readonly key: string;
   readonly name: OperationText;
   readonly lede: OperationText | null;
-  readonly image: { readonly url: string; readonly alt: string } | null;
+  readonly image: OperationImageFacts | null;
   /** Trois INSTANTS : le rayon paraît, la commande ouvre, la commande ferme. */
   readonly announceFrom: Date;
   /** `null` = on commande dès l'annonce. */

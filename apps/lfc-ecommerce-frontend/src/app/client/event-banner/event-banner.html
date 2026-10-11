@@ -1,10 +1,11 @@
 <a class="event" [routerLink]="event().route" [queryParams]="event().queryParams">
   @if (event().image; as image) {
-    <!-- La bannière est en 21/9 (D9) : la photo la couvre, centrée faute de
-         point focal porté par l'opération. -->
+    <!-- La bannière est en 21/9 (D9) : la photo la couvre, recadrée sur le
+         point focal que le push a lu à la médiathèque (L10). -->
     <img
       class="photo"
       [src]="image.src"
+      [style.object-position]="image.position"
       [attr.srcset]="image.srcset || null"
       sizes="(min-width: 900px) 50vw, 100vw"
       [alt]="image.alt"

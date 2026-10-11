@@ -20,8 +20,11 @@ model CatalogOperation {
   name Json
   lede Json?
 
-  imageUrl String? @map("image_url")
-  imageAlt String? @map("image_alt")
+  imageUrl    String? @map("image_url")
+  imageAlt    String? @map("image_alt")
+  /// Le point focal de l'image, lu à la médiathèque au push (L10). `NULL` = centre.
+  imageFocalX Float?  @map("image_focal_x")
+  imageFocalY Float?  @map("image_focal_y")
 
   announceFrom DateTime  @map("announce_from") @db.Timestamptz(3)
   orderFrom    DateTime? @map("order_from") @db.Timestamptz(3)

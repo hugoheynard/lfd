@@ -227,7 +227,7 @@ describe("SaveStorefrontHandler", () => {
 });
 
 describe("SaveStorefrontHandler — l'accueil (L6, D7, D9)", () => {
-  const DOOR = { url: "https://media.example/fournil.jpg", alt: { fr: "Le fournil" } };
+  const DOOR = { url: "https://media.example/fournil.jpg", alt: { fr: "Le fournil" }, focal: null };
   const BANNER = {
     ...SETTINGS,
     shape: "banner",

@@ -5,6 +5,7 @@ import type { ClientCopy } from '../copy/client-copy.model';
 import { fill } from '../copy/client-copy.service';
 import { SHEET_WIDTHS, mediaSrcset, sizedMedia } from './media-source';
 import { SHOP_TIME_ZONE } from '../shop-time-zone';
+import { objectPositionOf } from './shelf-display';
 import { SHELF_PARAM } from './shelves';
 import { operationShelfId, operationText, pickupSpan, shortDate } from './operations';
 
@@ -41,6 +42,8 @@ export interface DatedEventImage {
   /** Vide quand l'URL n'est pas du fonds (cf. `media-source.ts`). */
   readonly srcset: string;
   readonly alt: string;
+  /** `object-position` : le point focal lu au push (L10), le centre sans lui. */
+  readonly position: string;
 }
 
 /** La boutique ; le rayon s'ouvre par `?rayon=` (cf. `shelf-address.ts`). */
@@ -145,7 +148,12 @@ function imageOf(operation: ShopOperationView): DatedEventImage | null {
     return null;
   }
   const { url, alt } = operation.image;
-  return { src: sizedMedia(url, SHEET_WIDTHS[0]), srcset: mediaSrcset(url, SHEET_WIDTHS), alt };
+  return {
+    src: sizedMedia(url, SHEET_WIDTHS[0]),
+    srcset: mediaSrcset(url, SHEET_WIDTHS),
+    alt,
+    position: objectPositionOf(operation.image),
+  };
 }
 
 /** La carte d'une opération, lue à `now` dans la langue de l'interface. */

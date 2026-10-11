@@ -51,6 +51,7 @@ export class PrismaStorefrontRepository extends StorefrontRepository {
     return Storefront.reconstitute({
       revision: head?.revision ?? 0,
       updatedAt: head?.updatedAt ?? null,
+      updatedByStaffId: head?.updatedByStaffId ?? null,
       pages: pages.map(pageInputOf),
       objects: objects.map(objectInputOf),
       templates: templates.map(templateInputOf),

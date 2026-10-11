@@ -390,6 +390,7 @@ describe('CategoryFormPage — les visuels', () => {
     height: 600,
     bytes: 1024,
     contentType: 'image/jpeg',
+    focal: null,
   };
 
   it('ajoute le visuel rattaché et envoie la liste ENTIÈRE', async () => {

@@ -107,5 +107,9 @@ function imageOf(image: ShownOperation["image"]): PublicStorefrontInfoContent["i
   if (image === null) {
     return null;
   }
-  return { url: image.url, alt: image.alt.trim() === "" ? null : { fr: image.alt } };
+  return {
+    url: image.url,
+    alt: image.alt.trim() === "" ? null : { fr: image.alt },
+    focal: image.focal ?? null,
+  };
 }

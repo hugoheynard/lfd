@@ -5,6 +5,7 @@ import { CatalogModule } from "../catalog/catalog.module.js";
 import { GetStorefrontCatalogHandler } from "./application/get-storefront-catalog.handler.js";
 import { GetPublicStorefrontPageHandler } from "./application/get-public-storefront-page.handler.js";
 import { GetStorefrontHandler } from "./application/get-storefront.handler.js";
+import { RefocusStorefrontImageHandler } from "./application/refocus-storefront-image.handler.js";
 import { RepointStorefrontImage } from "./application/repoint-storefront-image.js";
 import { SaveStorefrontHandler } from "./application/save-storefront.handler.js";
 import { StorefrontImageRepointing } from "./channels/media/storefront-image-repointing.js";
@@ -51,6 +52,7 @@ import { PrismaStorefrontRepository } from "./infrastructure/prisma-storefront.r
     { provide: StorefrontCatalogReader, useClass: CatalogBackedStorefrontCatalogReader },
     { provide: StorefrontOperationsReader, useClass: CatalogBackedStorefrontOperationsReader },
     SaveStorefrontHandler,
+    RefocusStorefrontImageHandler,
     GetStorefrontHandler,
     GetPublicStorefrontPageHandler,
     GetStorefrontCatalogHandler,

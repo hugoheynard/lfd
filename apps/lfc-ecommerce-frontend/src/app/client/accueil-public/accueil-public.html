@@ -9,7 +9,11 @@
      contextes d'empilement différents ne se superposent pas dans l'ordre qu'on
      veut. Le sur-titre, lui, reprend les tokens de l'en-tête de page du
      dépôt. -->
-<div class="page" [style.--lfc-photo-door]="doorPhoto()">
+<div
+  class="page"
+  [style.--lfc-photo-door]="doorPhoto()"
+  [style.--lfc-photo-door-at]="doorPosition()"
+>
   <header class="intro">
     <!-- 🔴 TROIS ÉTATS, UNE SEULE ACCROCHE (`SPEC.md` §1 du handoff du
          2026-09-20). Le visiteur lit « Bienvenue » et les trois verbes ; le

@@ -64,13 +64,14 @@ describe("Storefront.repointImage", () => {
       item.contents.map((content) => (content.kind === "info" ? content.image : null)),
     );
     expect(images).toEqual([
-      { url: NEW, alt: { fr: "Sa propre alternative" } },
-      { url: NEW, alt: { fr: "Sa propre alternative" } },
+      { url: NEW, alt: { fr: "Sa propre alternative" }, focal: null },
+      { url: NEW, alt: { fr: "Sa propre alternative" }, focal: null },
       null,
     ]);
     expect(written.pages.find((page) => page.shelfKey === HOME_PAGE)?.pickupDoorImage).toEqual({
       url: NEW,
       alt: { fr: "Le fournil" },
+      focal: null,
     });
   });
 

@@ -75,6 +75,35 @@ function toSync(operation: OperationSnapshot, skus: readonly string[]): SyncOper
   };
 }
 
+/** Un point focal tel que la médiathèque le décrit : deux fractions de 0 à 1. */
+export interface OperationImageFocal {
+  readonly x: number;
+  readonly y: number;
+}
+
+/**
+ * **Le point focal des images d'opération**, posé sur une projection déjà
+ * faite (L10 de `documentation/mediatheque/plan-la-mediatheque-amelioree.md`,
+ * 2026-10-11). Pure : les points sont lus à la médiathèque par l'appelant,
+ * AU PUSH — une redescription ne suit qu'au push suivant, comme l'image.
+ *
+ * Une image que la médiathèque ne connaît pas, ou dont personne n'a posé le
+ * point, part avec `focal: null` : la bannière recadre au centre.
+ */
+export function focusOperations(
+  operations: readonly SyncOperation[],
+  focals: ReadonlyMap<string, OperationImageFocal | null>,
+): SyncOperation[] {
+  return operations.map((operation) =>
+    operation.image === null
+      ? operation
+      : {
+          ...operation,
+          image: { ...operation.image, focal: focals.get(operation.image.url) ?? null },
+        },
+  );
+}
+
 /**
  * Le texte localisé, **langues présentes seulement** : le fil refuse une clé
  * `en: undefined` qu'un décompte d'objets lirait comme une traduction.

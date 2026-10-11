@@ -14,13 +14,13 @@ import { LibraryPicker, type LibraryPickerData, type PickedMedia } from './libra
  * désignations est rendu tel quel, et en mode `single` une désignation
  * REMPLACE la précédente — l'image d'une info de vitrine est une seule image.
  */
-function image(url: string): LibraryMediaView {
+function image(url: string, focal: LibraryMediaView['focal'] = null): LibraryMediaView {
   return {
     url,
     name: url,
     tags: [],
     alt: { fr: url },
-    focal: null,
+    focal,
     uses: 0,
     depositedAt: '2026-01-01T00:00:00.000Z',
     series: null,
@@ -85,6 +85,15 @@ describe('LibraryPicker', () => {
     picker['toggle']('a');
     picker['confirm']();
     expect(closed[0]?.[0]).not.toHaveProperty('alt');
+  });
+
+  it('rend le point focal posé à la médiathèque — la vitrine le recopie (L10)', async () => {
+    const { picker, closed } = await setup({ already: [], single: true }, [
+      { items: [image('a', { x: 0.2, y: 0.8 }), image('b')], total: 2, next: null },
+    ]);
+    picker['toggle']('a');
+    picker['confirm']();
+    expect(closed[0]?.[0]?.focal).toEqual({ x: 0.2, y: 0.8 });
   });
 
   it('lit la suite par CURSEUR, jamais par décalage', async () => {

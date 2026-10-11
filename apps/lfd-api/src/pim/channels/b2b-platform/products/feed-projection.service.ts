@@ -1,5 +1,5 @@
 import { Injectable } from "@nestjs/common";
-import { CATALOG_SNAPSHOT_VERSION } from "@lfd/catalog-sync";
+import { CATALOG_SNAPSHOT_VERSION, type SyncOperation } from "@lfd/catalog-sync";
 import { SOURCE_LOCALE } from "@lfd/pim-contracts";
 
 import { ProPriceRatioNotSetError } from "../../../accounting-rules/domain/errors/accounting-rules-errors.js";
@@ -16,7 +16,8 @@ import { B2bMembershipService } from "../membership/membership.service.js";
 import { B2bCatalogFeedPreview, type FeedPreview } from "./feed-preview.js";
 import { projectCatalog } from "./projection.js";
 import { OperationReader } from "../../../operations/domain/ports/operation.reader.js";
-import { projectOperations } from "./operation-projection.js";
+import { ImageCatalogue } from "../../../channels/media/image-catalogue.js";
+import { focusOperations, projectOperations } from "./operation-projection.js";
 
 /** Un canal sans aucun produit publié — rien à envoyer, rien à comparer. */
 const EMPTY_SNAPSHOT_PRODUCTS: readonly [] = [];
@@ -49,6 +50,7 @@ export class B2bCatalogFeedProjection extends B2bCatalogFeedPreview {
     private readonly orderTimeLimits: OrderTimeLimitRepository,
     private readonly editorials: EditorialReader,
     private readonly operations: OperationReader,
+    private readonly images: ImageCatalogue,
   ) {
     super();
   }
@@ -64,7 +66,10 @@ export class B2bCatalogFeedProjection extends B2bCatalogFeedPreview {
       // Les opérations y voyagent aussi, sélection vide : un canal sans article
       // n'en porte aucun, et chaque SKU de sélection est nommé comme écarté.
       const dated = projectOperations(await this.operations.list(), new Set());
-      const empty = { ...emptySnapshot(generatedAt), operations: [...dated.operations] };
+      const empty = {
+        ...emptySnapshot(generatedAt),
+        operations: await this.focused(dated.operations),
+      };
       return {
         snapshot: empty,
         candidates: 0,
@@ -123,7 +128,7 @@ export class B2bCatalogFeedProjection extends B2bCatalogFeedPreview {
     // N articles et rendait son changement indescriptible : le diff d'arrivée
     // compare des SKU, et « la limite globale passe à 16 h » n'est pas un
     // changement de SKU. La boîte de réception annonçait « 0 changement ».
-    const { snapshot, excluded } = projectCatalog(
+    const projected = projectCatalog(
       products,
       categories,
       vatByProduct,
@@ -141,6 +146,11 @@ export class B2bCatalogFeedProjection extends B2bCatalogFeedPreview {
       operations,
       generatedAt,
     );
+    const snapshot = {
+      ...projected.snapshot,
+      operations: await this.focused(projected.snapshot.operations),
+    };
+    const { excluded } = projected;
     // L'empreinte se calcule ICI, sur la projection qu'on vient de produire :
     // c'est la seule façon qu'elle désigne exactement ce que l'appelant tient.
     // La recalculer plus haut, sur un snapshot repassé de main en main, rouvrirait
@@ -151,6 +161,22 @@ export class B2bCatalogFeedProjection extends B2bCatalogFeedPreview {
       excluded,
       fingerprint: projectionFingerprint(snapshot),
     };
+  }
+
+  /**
+   * Les images d'opération et leur point focal, lu à la médiathèque MAINTENANT
+   * (L10) — une seule lecture pour toutes les opérations de l'envoi.
+   */
+  private async focused(operations: readonly SyncOperation[]): Promise<SyncOperation[]> {
+    const urls = operations.flatMap((operation) =>
+      operation.image === null ? [] : [operation.image.url],
+    );
+    if (urls.length === 0) {
+      return [...operations];
+    }
+    const described = await this.images.describe([...new Set(urls)]);
+    const focals = new Map([...described].map(([url, image]) => [url, image.focal]));
+    return focusOperations(operations, focals);
   }
 }
 

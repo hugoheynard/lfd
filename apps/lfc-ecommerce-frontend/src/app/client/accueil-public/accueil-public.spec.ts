@@ -703,6 +703,14 @@ describe('AccueilPublic — la vitrine de l’Accueil (L6)', () => {
     expect(photo?.getAttribute('aria-label')).toBe('Le comptoir');
   });
 
+  it('recadre la photo de la porte sur son point focal (L10)', async () => {
+    const door = { url: 'https://media.test/porte.jpg', alt: null, focal: { x: 0.3, y: 0.7 } };
+    homeState = { status: 'ready', page: { rows: 6, objects: [], pickupDoorImage: door } };
+    const fixture = await mount([point({ id: 'a' })]);
+    const page = (fixture.nativeElement as HTMLElement).querySelector<HTMLElement>('.page');
+    expect(page?.style.getPropertyValue('--lfc-photo-door-at')).toBe('30% 70%');
+  });
+
   it('sans photo choisie, la porte garde le fond de la palette — aucune URL tierce', async () => {
     homeState = { status: 'ready', page: { rows: 6, objects: [], pickupDoorImage: null } };
     const fixture = await mount([point({ id: 'a' })]);

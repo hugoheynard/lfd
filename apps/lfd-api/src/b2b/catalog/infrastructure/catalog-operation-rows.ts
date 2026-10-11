@@ -2,6 +2,7 @@ import { Prisma } from "../../../platform/database/client/client.js";
 import type {
   CatalogOperationFacts,
   CatalogOperationState,
+  OperationFocal,
   OperationText,
 } from "../domain/entities/catalog-operation.js";
 import type { CatalogOperationOverrideState } from "../domain/entities/catalog-operation-override.js";
@@ -16,6 +17,8 @@ export interface OperationRow {
   readonly lede: unknown;
   readonly imageUrl: string | null;
   readonly imageAlt: string | null;
+  readonly imageFocalX: number | null;
+  readonly imageFocalY: number | null;
   readonly announceFrom: Date;
   readonly orderFrom: Date | null;
   readonly orderUntil: Date;
@@ -54,7 +57,14 @@ export function toOperationState(row: OperationRow): CatalogOperationState {
       key: row.key,
       name: readText(row.name, "catalog_operations.name"),
       lede: row.lede === null ? null : readText(row.lede, "catalog_operations.lede"),
-      image: row.imageUrl === null ? null : { url: row.imageUrl, alt: row.imageAlt ?? "" },
+      image:
+        row.imageUrl === null
+          ? null
+          : {
+              url: row.imageUrl,
+              alt: row.imageAlt ?? "",
+              focal: focalOf(row.imageFocalX, row.imageFocalY),
+            },
       announceFrom: row.announceFrom,
       orderFrom: row.orderFrom,
       orderUntil: row.orderUntil,
@@ -77,6 +87,8 @@ export function operationColumns(state: CatalogOperationState) {
     lede: facts.lede === null ? Prisma.DbNull : { ...facts.lede },
     imageUrl: facts.image?.url ?? null,
     imageAlt: facts.image?.alt ?? null,
+    imageFocalX: facts.image?.focal?.x ?? null,
+    imageFocalY: facts.image?.focal?.y ?? null,
     announceFrom: facts.announceFrom,
     orderFrom: facts.orderFrom,
     orderUntil: facts.orderUntil,
@@ -125,6 +137,11 @@ function readText(raw: unknown, column: string): OperationText {
 
 function isRecord(raw: unknown): raw is Readonly<Record<string, unknown>> {
   return typeof raw === "object" && raw !== null && !Array.isArray(raw);
+}
+
+/** Les deux colonnes, ou aucune (CHECK de la migration L10). */
+function focalOf(x: number | null, y: number | null): OperationFocal | null {
+  return x === null || y === null ? null : { x, y };
 }
 
 function dayOf(date: Date): string {

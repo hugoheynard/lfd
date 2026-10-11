@@ -236,7 +236,7 @@ describe("la lecture publique", () => {
       ...LINKED,
       title: { fr: "Noël", en: "Christmas" },
       lede: { fr: "Bûches et chocolats" },
-      image: { url: "https://cdn.example/noel.jpg", alt: { fr: "Une bûche" } },
+      image: { url: "https://cdn.example/noel.jpg", alt: { fr: "Une bûche" }, focal: null },
       operation: {
         key: "noel",
         state: "announced",
@@ -246,6 +246,15 @@ describe("la lecture publique", () => {
         pickupUntil: announced.pickupUntil,
       },
     });
+  });
+
+  it("l'image héritée porte le point focal que le push a lu à la médiathèque (L10)", async () => {
+    const image = { url: "https://cdn.example/noel.jpg", alt: "", focal: { x: 0.3, y: 0.6 } };
+    await receive([noel({ image })]);
+    await compose([LINKED]);
+
+    const [content] = await publicContents();
+    expect(content).toMatchObject({ image: { url: image.url, focal: { x: 0.3, y: 0.6 } } });
   });
 
   it("un champ rempli surcharge l'héritage", async () => {

@@ -235,7 +235,11 @@ export class StorefrontInfoForm {
     this.emit({ image: null });
   }
 
-  /** Une image neuve repart sans alternative : celle de l'ancienne ne la décrit pas. */
+  /**
+   * Une image neuve repart sans alternative : celle de l'ancienne ne la décrit
+   * pas. Son point focal, lui, vient de la médiathèque (L10) : la boutique
+   * recadre autour, et la médiathèque le fait suivre s'il bouge.
+   */
   protected chooseImage(): void {
     const current = this.info().image;
     void this.panels
@@ -245,7 +249,7 @@ export class StorefrontInfoForm {
       .closed.then((picked) => {
         const [chosen] = picked ?? [];
         if (chosen !== undefined) {
-          this.emit({ image: { url: chosen.url, alt: null } });
+          this.emit({ image: { url: chosen.url, alt: null, focal: chosen.focal } });
         }
       });
   }

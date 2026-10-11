@@ -82,6 +82,7 @@ describe('PresentationCard', () => {
         height: 600,
         bytes: 1000,
         contentType: 'image/jpeg',
+        focal: null,
       },
     ];
     const { card, fixture } = setup(panels);

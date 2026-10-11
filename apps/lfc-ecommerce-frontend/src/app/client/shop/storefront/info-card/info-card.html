@@ -7,6 +7,7 @@
           [src]="src"
           [attr.srcset]="imageSrcset() || null"
           [attr.sizes]="sizes()"
+          [style.object-position]="imagePosition()"
           [alt]="imageAlt()"
           loading="lazy"
           decoding="async"

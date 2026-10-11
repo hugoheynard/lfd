@@ -12,6 +12,7 @@ import {
   type StorefrontContentState,
 } from "./storefront-content.js";
 import { InvalidStorefrontError } from "./storefront-errors.js";
+import { sameFocal, type StorefrontFocal } from "./storefront-image.js";
 
 /** Un objet, en primitives validées. */
 export interface StorefrontObjectState {
@@ -108,6 +109,29 @@ export class StorefrontObject {
       contents: this.state.contents.map((content) =>
         content.kind === "info" && content.image !== null && content.image.url === from
           ? { ...content, image: { ...content.image, url: to } }
+          : content,
+      ),
+    });
+  }
+
+  /**
+   * Le même objet, ses images `url` recadrées sur `focal` — ou `this` s'il
+   * n'en montrait aucune, ou déjà sur ce point (L10 du plan de la médiathèque).
+   */
+  withImageRefocused(url: string, focal: StorefrontFocal | null): StorefrontObject {
+    const shows = (content: StorefrontContentState): boolean =>
+      content.kind === "info" &&
+      content.image !== null &&
+      content.image.url === url &&
+      !sameFocal(content.image.focal, focal);
+    if (!this.state.contents.some(shows)) {
+      return this;
+    }
+    return new StorefrontObject({
+      ...this.state,
+      contents: this.state.contents.map((content) =>
+        shows(content) && content.kind === "info" && content.image !== null
+          ? { ...content, image: { ...content.image, focal } }
           : content,
       ),
     });

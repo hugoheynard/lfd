@@ -1,4 +1,4 @@
-import type { ShopImageView, ShopItemView } from '@lfd/contracts';
+import type { ShopImageFocal, ShopImageView, ShopItemView } from '@lfd/contracts';
 
 /**
  * **Ce que la vitrine ajoute au catalogue**, et que le référentiel ne dit pas
@@ -87,6 +87,15 @@ export function tileArtOf(item: ShopItemView): ShopImageView {
   return item.thumbnail ?? artOf(item);
 }
 
+/**
+ * Ce que le calcul lit d'une image : son point focal, et lui seul. Les visuels
+ * des fiches, les images de la vitrine et celles des opérations le portent
+ * tous (L10, 2026-10-11) — une seule fonction pour les trois.
+ */
+export interface FocusedImage {
+  readonly focal?: ShopImageFocal | null | undefined;
+}
+
 /** Le centre : ce que la vitrine fait quand personne ne s'est prononcé. */
 const CENTERED = '50% 50%';
 
@@ -100,7 +109,7 @@ const CENTERED = '50% 50%';
  * donc la pièce reste dans le champ quel que soit le ratio. Absent ou `null`
  * (illustration de rayon, envoi d'avant) : le centre, comme toujours.
  */
-export function objectPositionOf(image: ShopImageView): string {
+export function objectPositionOf(image: FocusedImage): string {
   const focal = image.focal;
   if (focal === null || focal === undefined) {
     return CENTERED;
