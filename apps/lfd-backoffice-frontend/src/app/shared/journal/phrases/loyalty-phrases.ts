@@ -76,6 +76,14 @@ const loyaltySettingsSet: Phrase = (fact) => {
       text(', bons valables '),
       inUnit('days', fact.payload['voucherValidityDays']),
       text(open.length === 0 ? ', fermé à toutes les clientèles' : `, ouvert ${open.join(' et ')}`),
+      // Le bonus de bienvenue (2026-10-11) : absent des faits d'avant, nul s'il est éteint.
+      ...(typeof fact.payload['welcomeBonusPoints'] === 'number'
+        ? [
+            text(', '),
+            points(fact.payload['welcomeBonusPoints']),
+            text(' offerts à la création d’un compte'),
+          ]
+        : []),
     ],
     [
       'subjectLabel',
@@ -84,6 +92,7 @@ const loyaltySettingsSet: Phrase = (fact) => {
       'openToPublic',
       'openToPro',
       'voucherValidityDays',
+      'welcomeBonusPoints',
     ],
   );
 };
