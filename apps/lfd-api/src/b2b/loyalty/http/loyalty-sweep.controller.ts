@@ -7,6 +7,10 @@ import {
   CreditPendingOrderPointsCommand,
   type PendingOrderPointsReport,
 } from "../application/commands/credit-pending-order-points.command.js";
+import {
+  CreditPendingWelcomeBonusesCommand,
+  type PendingWelcomeBonusesReport,
+} from "../application/commands/credit-pending-welcome-bonuses.command.js";
 import { ExpireLoyaltyVouchersCommand } from "../application/commands/expire-loyalty-vouchers.command.js";
 import {
   SettleVoucherRemaindersCommand,
@@ -18,6 +22,8 @@ export interface LoyaltySweepReport extends PendingOrderPointsReport {
   readonly expired: number;
   /** Le rattrapage des bons engagés (lot C) — champ ajouté, le reste inchangé. */
   readonly vouchers: VoucherRemaindersReport;
+  /** La passe du bonus de bienvenue (plan bienvenue, lot C) — champ ajouté, le reste inchangé. */
+  readonly welcome: PendingWelcomeBonusesReport;
 }
 
 /**
@@ -31,7 +37,9 @@ export interface LoyaltySweepReport extends PendingOrderPointsReport {
  * rattrape les crédits que les abonnés ont manqués, puis écrit l'expiration
  * des bons échus — déjà inutilisables avant, parce qu'elle se lit à l'horloge.
  * Depuis le lot C, il solde enfin les reliquats des commandes payées et signale
- * les bons engagés sur une commande restée en suspens.
+ * les bons engagés sur une commande restée en suspens. Depuis le lot C du plan
+ * bienvenue, il crédite aussi le bonus des personnes que les abonnés n'ont pas
+ * servies — abonné perdu, ou adresse prouvée après coup.
  */
 @Controller("admin/loyalty/sweep")
 @Public()
@@ -53,6 +61,10 @@ export class LoyaltySweepController {
       SettleVoucherRemaindersCommand,
       VoucherRemaindersReport
     >(new SettleVoucherRemaindersCommand());
-    return { ...credits, expired, vouchers };
+    const welcome = await this.commands.execute<
+      CreditPendingWelcomeBonusesCommand,
+      PendingWelcomeBonusesReport
+    >(new CreditPendingWelcomeBonusesCommand());
+    return { ...credits, expired, vouchers, welcome };
   }
 }

@@ -152,6 +152,7 @@ async function sweep(): Promise<{
   credited: number;
   expired: number;
   vouchers: { reserved: number; settled: number; stalled: number };
+  welcome: { scanned: number; credited: number };
 }> {
   const response = await ctx
     .http()
@@ -291,6 +292,9 @@ describe("ce qui ne crédite pas", () => {
       credited: 0,
       expired: 0,
       vouchers: { reserved: 0, settled: 0, stalled: 0 },
+      // La passe du bonus de bienvenue (plan bienvenue, lot C) : programme
+      // fermé, elle ne parcourt rien non plus.
+      welcome: { scanned: 0, credited: 0 },
     });
     expect(await earned()).toEqual([]);
   });

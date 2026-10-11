@@ -220,6 +220,13 @@ const MONEY_DELEGATES = new Map([
   // invité rattaché (plan bienvenue, lot A, 2026-10-11) passent par lui ; il
   // appelle `creditEarnedPoints`, donc trace dans la même transaction.
   ["creditPending", join("b2b", "loyalty", "application", "services", "order-points-crediting.ts")],
+  // Le bonus de bienvenue, partagé par les deux abonnés et la passe de nuit
+  // (plan bienvenue, lot C, 2026-10-11) : il trace
+  // `loyalty.welcome_bonus_credited` dans la transaction qui écrit la ligne.
+  [
+    "creditWelcomeBonus",
+    join("b2b", "loyalty", "application", "services", "welcome-bonus-crediting.ts"),
+  ],
   // Le reliquat d'un bon consommé, partagé par la passation (commande sans
   // règlement) et le rattrapage de nuit (plan des points, C5, 2026-09-27) : il
   // trace `loyalty.voucher_remainder_issued` dans la transaction qui l'écrit.

@@ -256,6 +256,11 @@ export class CustomerPrincipalResolver extends PrincipalResolver {
           // (plan bienvenue, B2). Une course perdue n'écrit rien, donc rien ne
           // le réécrit.
           becameAccountAt: this.clock.now(),
+          // La preuve de CE jeton, écrite à la création plutôt qu'à la recopie
+          // qui suit (`record`) : l'abonné du bonus de bienvenue lit la ligne
+          // dès `UserRegisteredEvent`, et ne doit pas la trouver « non
+          // prouvée » le temps d'une requête (plan bienvenue, lot C).
+          emailVerified: tokenProvesAddress(token, token.email ?? ""),
         },
       });
       createdHere = true;

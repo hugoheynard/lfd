@@ -10,12 +10,13 @@ import {
   LoyaltyVoucherNotAvailableError,
 } from "../errors/loyalty-errors.js";
 import type { LoyaltyHolder } from "../value-objects/loyalty-holder.js";
+import { InvalidWelcomeBonusEntryError } from "../errors/welcome-bonus-errors.js";
 import { isPositiveInteger } from "../value-objects/loyalty-ratio.js";
 import type { LoyaltyReason } from "../value-objects/loyalty-reason.js";
 import type { LoyaltySettings } from "../value-objects/loyalty-settings.js";
 import { LoyaltyVoucher } from "./loyalty-voucher.js";
 
-/** Les sortes de lignes du livre (plan D2). `welcome` : le bonus de bienvenue, écrit au lot C du plan bienvenue — le solde, somme du livre, le compte déjà. */
+/** Les sortes de lignes du livre (plan D2). `welcome` : le bonus de bienvenue ({@link LoyaltyAccount.welcome}) — le solde, somme du livre, le compte. */
 export type LoyaltyEntryKind = "earned" | "converted" | "adjusted" | "welcome";
 
 /** Une ligne du livre à écrire — jamais réécrite, jamais effacée. */
@@ -54,6 +55,13 @@ export interface LoyaltyConversion {
 export interface LoyaltyOrderGain {
   readonly entryId: string;
   readonly orderId: string;
+  readonly points: number;
+  readonly at: Date;
+}
+
+/** Le bonus de bienvenue d'une personne — une fois par personne (index partiel). */
+export interface LoyaltyWelcomeGift {
+  readonly entryId: string;
   readonly points: number;
   readonly at: Date;
 }
@@ -167,6 +175,28 @@ export class LoyaltyAccount {
       orderId: gain.orderId,
       voucherId: null,
       at: gain.at,
+      actorUserId: null,
+    });
+  }
+
+  /**
+   * Crédite le bonus de bienvenue (plan bienvenue, lot C). Seulement au livre
+   * d'une personne ; une seule fois — l'appelant le relit sous le verrou, et
+   * l'index partiel `(user_id) WHERE kind = 'welcome'` le garantit en base.
+   *
+   * @throws {InvalidWelcomeBonusEntryError} titulaire société, ou pas un entier strictement positif.
+   */
+  welcome(gift: LoyaltyWelcomeGift): void {
+    if (this.holder.kind !== "user" || !isPositiveInteger(gift.points)) {
+      throw new InvalidWelcomeBonusEntryError(gift.points);
+    }
+    this.append({
+      id: gift.entryId,
+      kind: "welcome",
+      points: gift.points,
+      orderId: null,
+      voucherId: null,
+      at: gift.at,
       actorUserId: null,
     });
   }

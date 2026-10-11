@@ -7,6 +7,8 @@ import type { LoyaltySettings } from "../value-objects/loyalty-settings.js";
 
 export const LOYALTY_SETTINGS_SET = "loyalty_settings.set" satisfies JournalFactType;
 export const LOYALTY_POINTS_EARNED = "loyalty.points_earned" satisfies JournalFactType;
+export const LOYALTY_WELCOME_BONUS_CREDITED =
+  "loyalty.welcome_bonus_credited" satisfies JournalFactType;
 export const LOYALTY_POINTS_ADJUSTED = "loyalty.points_adjusted" satisfies JournalFactType;
 export const LOYALTY_VOUCHER_ISSUED = "loyalty.voucher_issued" satisfies JournalFactType;
 export const LOYALTY_VOUCHER_EXPIRED = "loyalty.voucher_expired" satisfies JournalFactType;
@@ -78,6 +80,22 @@ export class LoyaltyPointsEarnedEvent implements JournaledEvent {
       points: this.points,
       order: { id: this.order.id, name: this.order.number },
     });
+  }
+}
+
+/**
+ * Une personne devenue un compte a reçu le bonus de bienvenue (plan bienvenue,
+ * lot C). Pas un geste humain : la trace dit combien, au réglage du moment —
+ * le seul endroit qui le dira quand le réglage aura changé.
+ */
+export class LoyaltyWelcomeBonusCreditedEvent implements JournaledEvent {
+  constructor(
+    readonly named: NamedHolder,
+    readonly points: number,
+  ) {}
+
+  journalFact(): JournalFact {
+    return onHolder(LOYALTY_WELCOME_BONUS_CREDITED, this.named, { points: this.points });
   }
 }
 

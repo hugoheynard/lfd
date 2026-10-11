@@ -9,6 +9,7 @@ import {
   LoyaltyProgramClosedToClienteleError,
   LoyaltyVoucherNotAvailableError,
 } from "../../errors/loyalty-errors.js";
+import { InvalidWelcomeBonusEntryError } from "../../errors/welcome-bonus-errors.js";
 import { LoyaltyHolder } from "../../value-objects/loyalty-holder.js";
 import { LoyaltyReason } from "../../value-objects/loyalty-reason.js";
 import { LoyaltySettings } from "../../value-objects/loyalty-settings.js";
@@ -197,6 +198,45 @@ describe("LoyaltyAccount.earn — le gain d'une commande définitive", () => {
     const account = LoyaltyAccount.reconstitute(PERSON, 0);
     expect(() => account.earn({ entryId: "e3", orderId: "o1", points, at: AT })).toThrow(
       InvalidEarnedPointsError,
+    );
+    expect(account.pendingEntries).toEqual([]);
+  });
+});
+
+describe("LoyaltyAccount.welcome — le bonus de bienvenue", () => {
+  it("ajoute une ligne `welcome` sans commande ni bon, et le solde suit", () => {
+    const account = LoyaltyAccount.reconstitute(PERSON, 100);
+    account.welcome({ entryId: "w1", points: 500, at: AT });
+
+    expect(account.balance).toBe(600);
+    expect(account.pendingEntries).toEqual([
+      {
+        id: "w1",
+        holder: PERSON,
+        kind: "welcome",
+        points: 500,
+        orderId: null,
+        voucherId: null,
+        occurredAt: AT,
+        actorUserId: null,
+        staffUserId: null,
+        reason: null,
+      },
+    ]);
+  });
+
+  it("refuse le livre d'une société : le bonus va à la personne", () => {
+    const account = LoyaltyAccount.reconstitute(COMPANY, 0);
+    expect(() => account.welcome({ entryId: "w1", points: 500, at: AT })).toThrow(
+      InvalidWelcomeBonusEntryError,
+    );
+    expect(account.pendingEntries).toEqual([]);
+  });
+
+  it.each([0, -5, 1.5])("refuse un bonus de %p points, et n'écrit rien", (points) => {
+    const account = LoyaltyAccount.reconstitute(PERSON, 0);
+    expect(() => account.welcome({ entryId: "w1", points, at: AT })).toThrow(
+      InvalidWelcomeBonusEntryError,
     );
     expect(account.pendingEntries).toEqual([]);
   });

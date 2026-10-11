@@ -104,10 +104,9 @@ fermé » : aucune valeur par défaut n'est inventée.
 
 `welcome` (migrations `20261011210000_la_bienvenue_au_grand_livre` pour la
 valeur seule, `20261011210100_le_bonus_de_bienvenue` pour le `CHECK` et
-l'index) est le bonus offert à une personne qui devient un compte. **Aucun
-chemin ne l'écrit encore** : le crédit est le lot C du plan bienvenue. Le
-solde, le relevé du client (« Bienvenue ») et l'écran des soldes le lisent
-déjà.
+l'index) est le bonus offert à une personne qui devient un compte — son
+crédit est décrit au §4 bis. Le solde, le relevé du client (« Bienvenue ») et
+l'écran des soldes le lisent.
 
 Les formes et les unicités sont des `CHECK` et des index partiels : une ligne
 mal formée, ou un second crédit pour une même commande, est refusée par la
@@ -214,6 +213,66 @@ transaction par commande, et ne fait rien si le programme est fermé.
 Deux passages concurrents sur la même commande s'attendent, et le second ne
 trouve rien à faire. L'index unique `(order_id) WHERE kind = 'earned'` est le
 filet en base.
+
+## 4 bis. Le bonus de bienvenue
+
+Bâti le 2026-10-11 (lot C du [plan bienvenue](plan-bienvenue-et-invite-rattache.md)).
+Une personne qui devient un compte reçoit une fois `welcome_bonus_points`, en
+une ligne `welcome` à son livre — titulaire `user`, toujours : il sert à ses
+commandes de particulier, quelle que soit la société qu'elle rejoint ensuite.
+
+### Les quatre conditions
+
+La règle est une fonction pure, `welcomeBonusFor`
+(`loyalty/domain/services/welcome-bonus.ts`), à côté d'`earningFor`. Il faut
+les quatre ; chaque refus a sa raison nommée.
+
+1. **Le bonus est allumé** : un réglage existe, ouvert au public, avec un
+   `welcome_bonus_points` et un `welcome_bonus_since`
+   (`program_closed`, `clientele_closed`, `bonus_off`).
+2. **La personne est devenue un compte à ou après `welcome_bonus_since`**
+   (`users.became_account_at`) — un compte devenu tel bonus éteint n'en reçoit
+   pas quand on l'allume (`not_an_account`, `before_bonus`).
+3. **Son adresse est prouvée** en base (`users.email_verified`,
+   `address_unproven`).
+4. **Elle n'a pas déjà sa ligne `welcome`** (`already_welcomed`).
+
+Le montant est celui du réglage **au moment du crédit** ; le changer ensuite
+ne touche aucun bonus écrit.
+
+### Quand
+
+| Déclencheur                                                  | Fichier                                            | Ce qu'il rattrape                               |
+| ------------------------------------------------------------ | -------------------------------------------------- | ----------------------------------------------- |
+| une création de compte (`UserRegisteredEvent`)               | `credit-welcome-bonus-on-registered.handler.ts`    | rien si l'adresse n'est pas encore prouvée      |
+| un invité devient un compte (`GuestAccountClaimedEvent`, R1) | `credit-welcome-bonus-on-guest-claimed.handler.ts` | le rattachement exige déjà la preuve            |
+| la passe de nuit                                             | `credit-pending-welcome-bonuses.handler.ts`        | l'abonné perdu, et l'adresse prouvée après coup |
+
+Les deux abonnés sont en mémoire (même bloc que les comptes,
+`lint:durable-cross-block`) et passent par `BackgroundWork`. La création écrit
+la preuve du jeton (`tokenProvesAddress`) **avec** la ligne, pour que l'abonné
+la lise dès le fait.
+
+Une adresse non prouvée à la création — une inscription par mot de passe, ou
+une fiche dont le staff a ouvert l'accès (adresse tapée par un commercial, ce
+chemin n'émet aucun fait) — ne reçoit rien tout de suite. La première entrée
+dont le jeton prouve l'adresse la recopie en base
+(`CustomerPrincipalResolver.record`), et la nuit suivante crédite.
+
+### L'écriture
+
+`WelcomeBonusCrediting.creditWelcomeBonus` juge la règle une première fois
+hors verrou (rien n'est verrouillé pour qui n'a rien à recevoir), puis :
+
+1. prend le verrou du titulaire ;
+2. relit, **sous ce verrou**, si la personne a déjà sa ligne `welcome`, et
+   rejuge la règle ;
+3. écrit la ligne (`LoyaltyAccount.welcome`) et publie
+   `loyalty.welcome_bonus_credited`, dans la même unité de travail.
+
+L'index unique `(user_id) WHERE kind = 'welcome'` est le filet : le dépôt
+traduit son refus en `WelcomeBonusAlreadyCreditedError`, que le crédit lit
+comme « déjà fait », pas comme une panne.
 
 ## 5. Convertir en bon de fidélité
 
@@ -421,6 +480,7 @@ La question complète, posée au cabinet, est rangée dans
 | ---------------------------------- | ------------------------------------------------------------------------------------------------------- |
 | `loyalty_settings.set`             | le réglage change (un réglage identique n'écrit rien) ; porte `welcomeBonusPoints` depuis le 2026-10-11 |
 | `loyalty.points_earned`            | une commande définitive crédite                                                                         |
+| `loyalty.welcome_bonus_credited`   | une personne reçoit le bonus de bienvenue (§4 bis)                                                      |
 | `loyalty.points_adjusted`          | un ajustement du staff                                                                                  |
 | `loyalty.voucher_issued`           | une conversion                                                                                          |
 | `loyalty.voucher_expired`          | la nuit écrit une expiration                                                                            |
@@ -441,7 +501,10 @@ Worker appelle `POST /admin/loyalty/sweep` avec le jeton du recompute
 l'expiration des bons, puis le rattrapage des bons engagés (lot C : reliquat
 des commandes payées, cloche `loyalty.voucher_stalled` pour un bon engagé sur
 une commande ni payée ni annulée passé son jour de service — sans le libérer),
-et rend `{scanned, credited, expired, vouchers}`.
+puis la passe du bonus de bienvenue (§4 bis : comptes devenus tels depuis
+l'allumage, adresse prouvée, sans ligne `welcome`, par lots de 200, une
+transaction par personne ; rien si le bonus est éteint ou le programme fermé
+au public), et rend `{scanned, credited, expired, vouchers, welcome}`.
 
 ⚠️ **Le rattrapage reparcourt toutes les commandes définitives** à chaque nuit,
 en ne lisant que leurs identifiants. Son coût grandit avec l'historique.
@@ -450,10 +513,11 @@ runtime Cloudflare. Son premier passage en production en sera la preuve.
 
 ## 11. Où c'est éprouvé
 
-| Fichier                                                         | Ce qu'il prouve                                                                                                                                                         |
-| --------------------------------------------------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| `src/b2b/loyalty/domain/**/__tests__/`                          | ratio, titulaire, motif, grand livre, bon, règle de gain                                                                                                                |
-| `src/b2b/loyalty/application/commands/__tests__/`               | chaque commande avec ses ports doublés, dont le refus d'ouvrir les pros                                                                                                 |
-| `test/loyalty.e2e-spec.ts`                                      | deux conversions concurrentes (une seule passe), `CHECK` du titulaire, paliers entiers, programme fermé, annulation qui recrédite une seule fois, journal               |
-| `test/loyalty-earning.e2e-spec.ts`                              | crédit dans les deux ordres, jamais deux fois, `not_required`, `pending`, invité, société disparue, programme fermé, port et surtaxe exclus, rattrapage, 401 sans jeton |
-| `apps/lfd-backoffice-frontend/src/app/comptabilite/fidelite/**` | l'écran : réglage, soldes, bons, lecture seule sans le droit d'écriture                                                                                                 |
+| Fichier                                                         | Ce qu'il prouve                                                                                                                                                                            |
+| --------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
+| `src/b2b/loyalty/domain/**/__tests__/`                          | ratio, titulaire, motif, grand livre, bon, règle de gain                                                                                                                                   |
+| `src/b2b/loyalty/application/commands/__tests__/`               | chaque commande avec ses ports doublés, dont le refus d'ouvrir les pros                                                                                                                    |
+| `test/loyalty.e2e-spec.ts`                                      | deux conversions concurrentes (une seule passe), `CHECK` du titulaire, paliers entiers, programme fermé, annulation qui recrédite une seule fois, journal                                  |
+| `test/loyalty-earning.e2e-spec.ts`                              | crédit dans les deux ordres, jamais deux fois, `not_required`, `pending`, invité, société disparue, programme fermé, port et surtaxe exclus, rattrapage, 401 sans jeton                    |
+| `test/loyalty-welcome.e2e-spec.ts`                              | bonus à l'inscription par code et au rattachement, une seule ligne, bonus allumé après coup → rien, adresse prouvée plus tard → la nuit crédite, deux passages simultanés, solde du relevé |
+| `apps/lfd-backoffice-frontend/src/app/comptabilite/fidelite/**` | l'écran : réglage, soldes, bons, lecture seule sans le droit d'écriture                                                                                                                    |

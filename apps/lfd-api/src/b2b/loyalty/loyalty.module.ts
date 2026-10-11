@@ -45,6 +45,15 @@ import { PrismaLoyaltyHolderDirectory } from "./infrastructure/prisma-loyalty-ho
 import { PrismaLoyaltyLedgerReader } from "./infrastructure/prisma-loyalty-ledger.reader.js";
 import { PrismaLoyaltySettingsStore } from "./infrastructure/prisma-loyalty-settings.store.js";
 import { PrismaLoyaltyVoucherRepository } from "./infrastructure/prisma-loyalty-voucher.repository.js";
+import { CreditWelcomeBonusHandler } from "./application/commands/credit-welcome-bonus.handler.js";
+import { CreditPendingWelcomeBonusesHandler } from "./application/commands/credit-pending-welcome-bonuses.handler.js";
+import { CreditWelcomeBonusOnRegistered } from "./application/handlers/credit-welcome-bonus-on-registered.handler.js";
+import { CreditWelcomeBonusOnGuestClaimed } from "./application/handlers/credit-welcome-bonus-on-guest-claimed.handler.js";
+import { WelcomeBonusCrediting } from "./application/services/welcome-bonus-crediting.js";
+import { LoyaltyWelcomedReader } from "./domain/ports/loyalty-welcomed.reader.js";
+import { WelcomeCandidateReader } from "./domain/ports/welcome-candidate.reader.js";
+import { PrismaLoyaltyWelcomedReader } from "./infrastructure/prisma-loyalty-welcomed.reader.js";
+import { PrismaWelcomeCandidateReader } from "./infrastructure/prisma-welcome-candidate.reader.js";
 
 /**
  * Contexte **fidélité** : le grand livre de points, les bons de fidélité, le
@@ -79,6 +88,13 @@ import { PrismaLoyaltyVoucherRepository } from "./infrastructure/prisma-loyalty-
     { provide: HolderLoyaltyReader, useClass: PrismaHolderLoyaltyReader },
     { provide: LoyaltyEarnedOrdersReader, useClass: PrismaLoyaltyEarnedOrdersReader },
     OrderPointsCrediting,
+    { provide: WelcomeCandidateReader, useClass: PrismaWelcomeCandidateReader },
+    { provide: LoyaltyWelcomedReader, useClass: PrismaLoyaltyWelcomedReader },
+    WelcomeBonusCrediting,
+    CreditWelcomeBonusHandler,
+    CreditPendingWelcomeBonusesHandler,
+    CreditWelcomeBonusOnRegistered,
+    CreditWelcomeBonusOnGuestClaimed,
     LoyaltyVoucherQuoting,
     LoyaltyVoucherRedeeming,
     SettleVoucherRemaindersHandler,

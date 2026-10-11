@@ -2,6 +2,7 @@ import { Injectable } from "@nestjs/common";
 
 import { PrismaService } from "../../../platform/database/prisma.service.js";
 import { LoyaltyAccount } from "../domain/entities/loyalty-account.js";
+import { WelcomeBonusAlreadyCreditedError } from "../domain/errors/welcome-bonus-errors.js";
 import { LoyaltyAccountRepository } from "../domain/ports/loyalty-account.repository.js";
 import { LoyaltyHolderLock } from "../domain/ports/loyalty-holder.lock.js";
 import type { LoyaltyHolder } from "../domain/value-objects/loyalty-holder.js";
@@ -37,6 +38,18 @@ export class PrismaLoyaltyAccountRepository extends LoyaltyAccountRepository {
     if (account.pendingEntries.length === 0) {
       return;
     }
+    try {
+      await this.write(account);
+    } catch (error) {
+      const userId = account.holder.userId;
+      if (userId !== null && isWelcomeRace(error, account)) {
+        throw new WelcomeBonusAlreadyCreditedError(userId);
+      }
+      throw error;
+    }
+  }
+
+  private async write(account: LoyaltyAccount): Promise<void> {
     await this.prisma.loyaltyLedgerEntry.createMany({
       data: account.pendingEntries.map((entry) => ({
         id: entry.id,
@@ -53,4 +66,20 @@ export class PrismaLoyaltyAccountRepository extends LoyaltyAccountRepository {
       })),
     });
   }
+}
+
+/**
+ * Le seul refus d'unicité que le domaine sait nommer : la seconde ligne
+ * `welcome` d'une personne, écrite par un passage concurrent malgré le verrou
+ * (index `loyalty_ledger_entries_welcome_user_key`). Un livre qui écrit une
+ * ligne `welcome` n'écrit qu'elle ; tout autre refus remonte tel quel.
+ * `P2002` est duck-typé, sans importer le client.
+ */
+function isWelcomeRace(error: unknown, account: LoyaltyAccount): boolean {
+  return (
+    account.pendingEntries.some((entry) => entry.kind === "welcome") &&
+    typeof error === "object" &&
+    error !== null &&
+    Reflect.get(error, "code") === "P2002"
+  );
 }

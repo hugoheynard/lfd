@@ -226,6 +226,13 @@ export const ACCOUNTING_FACTS = {
     payload({ subjectLabel: subjectLabel().optional(), points: count(), order: named("order") }),
   ),
   /**
+   * Le bonus de bienvenue d'une personne devenue un compte (plan bienvenue,
+   * lot C, 2026-10-11) — une fois par personne, au montant du réglage du moment.
+   */
+  "loyalty.welcome_bonus_credited": fact(
+    payload({ subjectLabel: subjectLabel().optional(), points: count() }),
+  ),
+  /**
    * Un geste motivé du staff sur le livre — signé. `voucher` cite le bon dont
    * l'annulation a recrédité les points ; `null` pour un ajustement libre.
    */

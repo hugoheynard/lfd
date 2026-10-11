@@ -461,6 +461,8 @@ describe("CustomerPrincipalResolver", () => {
           email: "new@client.fr",
           status: UserStatus.active,
           becameAccountAt: NOW,
+          // Le jeton ne porte pas la preuve : l'adresse naît non prouvée.
+          emailVerified: false,
         },
       ]);
       expect(principal).toMatchObject({
@@ -526,7 +528,13 @@ describe("CustomerPrincipalResolver", () => {
       await resolver.resolve({ subject: "auth0|new", scopes: [] });
 
       expect(double.createCalls).toEqual([
-        { auth0Sub: "auth0|new", email: "", status: UserStatus.active, becameAccountAt: NOW },
+        {
+          auth0Sub: "auth0|new",
+          email: "",
+          status: UserStatus.active,
+          becameAccountAt: NOW,
+          emailVerified: false,
+        },
       ]);
     });
 
@@ -670,6 +678,10 @@ describe("CustomerPrincipalResolver", () => {
           email: "Jean@Client.fr ",
           status: UserStatus.active,
           becameAccountAt: NOW,
+          // La preuve du jeton est écrite À la création, pas à la recopie qui
+          // suit : l'abonné du bonus de bienvenue lit la ligne dès
+          // `UserRegisteredEvent` (plan bienvenue, lot C).
+          emailVerified: true,
         },
       ]);
     });
