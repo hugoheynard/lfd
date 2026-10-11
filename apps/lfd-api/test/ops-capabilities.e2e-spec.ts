@@ -75,7 +75,10 @@ describe("la carte des capacités", () => {
     for (const entry of report.missing) {
       expect(["blocking", "degraded"]).toContain(entry.severity);
       expect(entry.capability).not.toBe("");
-      expect(entry.setting).not.toMatch(/:\/\/|=/u);
+      // Un réglage se nomme (« ROUTE_PLANNER_URL (https:// en production) » est
+      // un libellé) ; une valeur fuitée aurait un hôte collé au schéma.
+      expect(entry.setting).toMatch(/^(—|[A-Z][A-Z0-9_]+)/u);
+      expect(entry.setting).not.toMatch(/:\/\/\S/u);
     }
     const body = JSON.stringify(report);
     const secrets = [config.databaseUrl(), config.recomputeToken()].filter(
