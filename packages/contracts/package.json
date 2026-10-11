@@ -23,6 +23,11 @@
       "import": "./dist/workspace.js",
       "require": "./dist/workspace.js"
     },
+    "./shop-copy-preview": {
+      "types": "./src/shop-copy-preview.ts",
+      "import": "./dist/shop-copy-preview.js",
+      "require": "./dist/shop-copy-preview.js"
+    },
     "./shop-values": {
       "types": "./src/shop-values.ts",
       "import": "./dist/shop-values.js",
