@@ -8,3 +8,9 @@ dist/
 .angular/
 .turbo/
 coverage/
+
+# Le recueil des textes de la boutique est GÉNÉRÉ (`pnpm copy:digest`) et
+# comparé octet par octet par `lint:shop-copy-digest`. Prettier y alignerait
+# les colonnes de 1 200 lignes sur la plus longue phrase : le fichier triplerait
+# et le hook de commit réécrirait ce que la porte compare.
+documentation/contenu-ecommerce/textes-de-la-boutique.md

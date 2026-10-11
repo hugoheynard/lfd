@@ -62,7 +62,11 @@
 >   porte une donnée personnelle d'un membre du staff ou d'un réceptionnaire
 >   est au registre `documentation/legal/rgpd-registre.json`, que le texte
 >   d'information du livreur lira — une colonne absente est une donnée qu'on
->   ne lui aura pas annoncée ; les durées non décidées sont comptées. C'est la
+>   ne lui aura pas annoncée ; les durées non décidées sont comptées. Et **43**
+>   depuis le 2026-10-11 avec `lint:shop-copy-digest` : le recueil des textes de
+>   la boutique (`documentation/contenu-ecommerce/textes-de-la-boutique.md`) est
+>   généré depuis les dictionnaires, et un texte changé sans `pnpm copy:digest`
+>   le fait mentir. C'est la
 >   **seule** correction faite dans le corps, parce qu'un chiffre faux se vérifie
 >   en une commande et trompe tout de suite ;
 > - le dossier **`documentation/pricing/`** (ouvert le 2026-09-06) et le dossier
@@ -1190,7 +1194,7 @@ pnpm --filter lfd-api seed:pim       # catalogue rejoué PAR LE BUS (cible local
 pnpm lint               # turbo, toutes les apps
 pnpm test
 pnpm build
-pnpm lint:gates         # les 42 portes du dépôt, d'un coup
+pnpm lint:gates         # les 43 portes du dépôt, d'un coup
 pnpm lint:no-direct-env # gate repo : aucun accès direct à process.env
 ```
 
