@@ -1,6 +1,6 @@
 # Plan — le bonus de bienvenue, et l'invité qui devient un compte
 
-> **Statut : plan ; lots B, A et C bâtis le 2026-10-11 (§7), D reste.** Écrit le 2026-10-11. Touche l'**argent**
+> **Statut : plan ; les quatre lots (B, A, C, D) bâtis le 2026-10-11 (§7).** Écrit le 2026-10-11. Touche l'**argent**
 > (des points qui valent des bons) et une **frontière de sécurité** (prendre
 > possession d'une fiche par son adresse). Contredit par `vitruve` le même jour
 > (3 BLOQUANTS, 9 SÉRIEUX) : le sort de chaque objection est au §7, et les
@@ -201,4 +201,4 @@ Ces corrections **l'emportent** sur les sections 2 à 5 quand elles divergent.
 | ~~**B**~~ | ~~Les deux migrations ; `public_opened_at` et R4 dans `earningFor` ; le réglage du bonus (API, écran) ; `welcome` dans contrat, domaine, relevés.~~ — **bâti le 2026-10-11** (non commité à l'écriture).                         |
 | ~~**A**~~ | ~~`became_account_at` posé par les trois chemins ; R1 (connexions admises, écriture conditionnelle, course, adresse vide) ; crédit immédiat ; `GuestAccountClaimedEvent`.~~ — **bâti le 2026-10-11** (non commité à l'écriture). |
 | ~~**C**~~ | ~~Crédit du bonus aux trois chemins, passe de nuit, unicité.~~ — **bâti le 2026-10-11** (non commité à l'écriture) ; l'ouverture d'accès staff n'émet aucun fait, son bonus vient de la nuit une fois l'adresse prouvée.         |
-| **D**     | La confirmation invité au futur, avec le bonus.                                                                                                                                                                                  |
+| ~~**D**~~ | ~~La confirmation invité au futur, avec le bonus.~~ — **bâti le 2026-10-11** (non commité à l'écriture) ; le bonus annoncé passe par un port à part, `WelcomeBonusPreview`.                                                      |

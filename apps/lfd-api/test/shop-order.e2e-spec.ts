@@ -373,3 +373,58 @@ describe("la commande sans compte — les points qu'un compte aurait rapportés"
     expect(replayed.loyaltyPointsWithAccount).toBeNull();
   });
 });
+
+/**
+ * « Créez votre compte : N points offerts » — le bonus de bienvenue que la
+ * confirmation d'un invité annonce (plan bienvenue, lot D).
+ */
+describe("la commande sans compte — le bonus de bienvenue annoncé", () => {
+  const BONUS = 750;
+
+  /** Ouvre le programme aux particuliers, bonus allumé, par l'agrégat et l'adaptateur. */
+  async function openProgramWithBonus(): Promise<void> {
+    const now = new Date();
+    await ctx.app.get(PrismaLoyaltySettingsStore).write(
+      LoyaltySettings.configure(
+        null,
+        {
+          pointsPerStep: 1_000,
+          stepValueCents: 500,
+          openToPublic: true,
+          openToPro: false,
+          voucherValidityDays: 365,
+          welcomeBonusPoints: BONUS,
+        },
+        now,
+      ),
+      now,
+      E2E_STAFF_ID,
+    );
+  }
+
+  it("la réponse HTTP porte null quand le programme est fermé", async () => {
+    const response = await ctx.http().post("/shop/orders").send(payload()).expect(201);
+    await ctx.drain();
+
+    expect(response.body).toMatchObject({ welcomeBonusPoints: null });
+  });
+
+  it("la réponse HTTP porte le bonus du réglage, bonus allumé", async () => {
+    await openProgramWithBonus();
+
+    const response = await ctx.http().post("/shop/orders").send(payload()).expect(201);
+    await ctx.drain();
+
+    expect(response.body).toMatchObject({ welcomeBonusPoints: BONUS });
+  });
+
+  it("le rejeu rend null", async () => {
+    await openProgramWithBonus();
+    const key = randomUUID();
+    await place({ idempotencyKey: key });
+
+    const replayed = await place({ idempotencyKey: key });
+
+    expect(replayed.welcomeBonusPoints).toBeNull();
+  });
+});

@@ -116,19 +116,29 @@ export class ConfirmationPage {
   protected readonly isGuest = computed(() => !this.auth.isAuthenticated());
 
   /**
-   * « Avec un compte, cette commande vous aurait rapporté N points » quand le
-   * serveur l'a chiffré ; sinon l'invitation générale. Un conditionnel, et rien
-   * de plus : l'invité n'a rien gagné, et la commande ne suivra pas le compte.
+   * L'invitation au FUTUR (plan bienvenue, lot D) : créer son compte avec
+   * cette adresse reprend cette commande, et le bonus de bienvenue s'il est
+   * allumé. Quatre cas — bonus et points, points seuls, bonus seul, aucun —
+   * selon ce que le serveur a chiffré.
+   *
+   * Les points ne sont crédités qu'à une commande retirée ET payée : si elle
+   * reste à régler, la phrase le dit, pour rester vraie.
    */
   protected readonly joinLine = computed(() => {
     const done = this.t().done;
-    const points = this.order()?.loyaltyPointsWithAccount ?? 0;
-    if (points <= 0) {
-      return done.joinLine;
+    const order = this.order();
+    const points = order?.loyaltyPointsWithAccount ?? 0;
+    const bonus = order?.welcomeBonusPoints ?? 0;
+    const format = new Intl.NumberFormat(this.locale.current());
+    const values = {
+      points: format.format(points),
+      bonus: format.format(bonus),
+      when: this.settlementDue() ? done.joinOnceSettledAndHandedOver : done.joinOnceHandedOver,
+    };
+    if (points > 0) {
+      return fill(bonus > 0 ? done.joinBonusAndPoints : done.joinPointsOnly, values);
     }
-    return fill(done.joinPoints, {
-      points: new Intl.NumberFormat(this.locale.current()).format(points),
-    });
+    return bonus > 0 ? fill(done.joinBonusOnly, values) : done.joinLine;
   });
 
   /**

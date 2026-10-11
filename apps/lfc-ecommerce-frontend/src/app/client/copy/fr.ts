@@ -366,7 +366,13 @@ export const FR: ClientCopy = {
     joinTitle: 'Créez votre compte La Folie Coffee',
     joinLine:
       'Cumulez des points de fidélité à chaque commande, et retrouvez vos commandes et vos QR au même endroit.',
-    joinPoints: 'Avec un compte, cette commande vous aurait rapporté {points} points.',
+    joinBonusAndPoints:
+      'Créez votre compte avec cette adresse : {bonus} points offerts, et cette commande vous rapportera {points} points {when}.',
+    joinPointsOnly:
+      'Créez votre compte avec cette adresse : cette commande vous rapportera {points} points {when}.',
+    joinBonusOnly: 'Créez votre compte avec cette adresse : {bonus} points vous sont offerts.',
+    joinOnceHandedOver: 'une fois retirée',
+    joinOnceSettledAndHandedOver: 'une fois réglée et retirée',
     joinAction: 'Créer mon compte',
     recapPickup: 'Retrait',
     recapDelivery: 'Livraison',

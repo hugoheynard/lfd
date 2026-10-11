@@ -13,6 +13,7 @@ import {
 } from "../../domain/errors/order-errors.js";
 import { OrderPlacedEvent } from "../../domain/events/order-placed.event.js";
 import { LoyaltyEarningPreview } from "../../domain/ports/loyalty-earning-preview.js";
+import { WelcomeBonusPreview } from "../../domain/ports/welcome-bonus-preview.js";
 import { GuestBuyerRegistrar } from "../../domain/ports/guest-buyer.registrar.js";
 import { OrderRepository } from "../../domain/ports/order.repository.js";
 import { OrderReader } from "../../domain/ports/order.reader.js";
@@ -73,6 +74,7 @@ export class PlaceShopOrderHandler implements ICommandHandler<
     private readonly durable: DurablePublisher,
     private readonly intake: OrderIntake,
     private readonly earning: LoyaltyEarningPreview,
+    private readonly welcome: WelcomeBonusPreview,
   ) {}
 
   /**
@@ -166,20 +168,26 @@ export class PlaceShopOrderHandler implements ICommandHandler<
       new OrderPlacedEvent(placed.id, placed.orderNumber, buyerUserId, null, order.totalCents),
     );
 
-    // « Avec un compte, cette commande vous aurait rapporté N points » : la
-    // fonction même du crédit, sur l'assiette que la commande a écrite. Le
-    // porteur inscrit n'en gagne aucun — `earningFor` exige un compte.
+    // « Créez votre compte : N points offerts, et cette commande vous
+    // rapportera M points » : la fonction même du crédit, sur l'assiette que la
+    // commande a écrite, et la règle même du bonus. Le porteur inscrit n'en
+    // gagne aucun tant qu'il n'est pas un compte — `earningFor` l'exige.
     const loyaltyPointsWithAccount = await this.earning.pointsToEarn({
       buyerUserId,
       ...order.earningAmounts,
     });
-    if (intent === null) {
-      return { id: placed.id, orderNumber: placed.orderNumber, loyaltyPointsWithAccount };
-    }
-    return {
+    const welcomeBonusPoints = await this.welcome.pointsOnJoining();
+    const base = {
       id: placed.id,
       orderNumber: placed.orderNumber,
       loyaltyPointsWithAccount,
+      welcomeBonusPoints,
+    };
+    if (intent === null) {
+      return base;
+    }
+    return {
+      ...base,
       payment: {
         clientSecret: intent.clientSecret,
         publishableKey: this.payments.publishableKey(),
@@ -214,6 +222,7 @@ export class PlaceShopOrderHandler implements ICommandHandler<
       id: found.view.id,
       orderNumber: found.view.orderNumber,
       loyaltyPointsWithAccount: null,
+      welcomeBonusPoints: null,
     };
   }
 

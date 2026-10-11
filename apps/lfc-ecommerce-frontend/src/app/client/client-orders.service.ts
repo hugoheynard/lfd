@@ -78,6 +78,12 @@ export interface PlacedOrder {
    * passée connecté.
    */
   readonly loyaltyPointsWithAccount?: number;
+  /**
+   * Le bonus de bienvenue qu'offrirait la création du compte maintenant, avec
+   * cette adresse — rendu par `POST /shop/orders` à un visiteur seulement.
+   * Absent quand le bonus est éteint, et sur toute commande passée connecté.
+   */
+  readonly welcomeBonusPoints?: number;
 }
 
 /**
@@ -210,7 +216,8 @@ function isPlaced(value: unknown): value is PlacedOrder {
     Array.isArray(value['lines']) &&
     readNumber(value['pieces']) !== null &&
     (value['loyaltyPointsWithAccount'] === undefined ||
-      readNumber(value['loyaltyPointsWithAccount']) !== null)
+      readNumber(value['loyaltyPointsWithAccount']) !== null) &&
+    (value['welcomeBonusPoints'] === undefined || readNumber(value['welcomeBonusPoints']) !== null)
   );
 }
 
@@ -476,6 +483,7 @@ export class ClientOrders {
       // carte, et le serveur n'en rend aucune sur un total nul.
       settlement: payment === null ? 'not_required' : 'due',
       ...pointsWithAccountOf(placed),
+      ...welcomeBonusOf(placed),
     };
     // 🔴 **L'INTENTION EST GARDÉE, et c'est ce qui rend le règlement possible
     // sans compte.** `POST /shop/orders` la rend avec la commande ; gardée ici,
@@ -796,4 +804,10 @@ function pointsWithAccountOf(placed: PlacedOrderResponse): {
 } {
   const points = placed.loyaltyPointsWithAccount ?? null;
   return points !== null && points > 0 ? { loyaltyPointsWithAccount: points } : {};
+}
+
+/** Le bonus de bienvenue annoncé, gardé seulement s'il y en a — même règle que les points. */
+function welcomeBonusOf(placed: PlacedOrderResponse): { readonly welcomeBonusPoints?: number } {
+  const points = placed.welcomeBonusPoints ?? null;
+  return points !== null && points > 0 ? { welcomeBonusPoints: points } : {};
 }

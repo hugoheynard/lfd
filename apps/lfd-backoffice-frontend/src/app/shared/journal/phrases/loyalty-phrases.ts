@@ -144,6 +144,17 @@ export const LOYALTY_PHRASES = {
       ],
       ['subjectLabel', 'points', 'order'],
     ),
+  'loyalty.welcome_bonus_credited': (fact) =>
+    byActor(
+      fact,
+      [
+        text('a crédité '),
+        points(fact.payload['points']),
+        text(' de bienvenue '),
+        ...holderOf(fact, 'à'),
+      ],
+      ['subjectLabel', 'points'],
+    ),
   'loyalty.points_adjusted': loyaltyPointsAdjusted,
   'loyalty.voucher_issued': onVoucher(
     'a émis',

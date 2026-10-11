@@ -64,6 +64,7 @@ import {
   LoyaltyEarningPreview,
   type LoyaltyEarningBasis,
 } from "../../../domain/ports/loyalty-earning-preview.js";
+import { WelcomeBonusPreview } from "../../../domain/ports/welcome-bonus-preview.js";
 import { OrderReader } from "../../../domain/ports/order.reader.js";
 import { OrderRepository } from "../../../domain/ports/order.repository.js";
 import {
@@ -386,6 +387,17 @@ class FakeEarning extends LoyaltyEarningPreview {
   }
 }
 
+/** Le bonus doublé : il rend le nombre qu'on lui dit. */
+class FakeWelcome extends WelcomeBonusPreview {
+  constructor(private readonly points: number | null) {
+    super();
+  }
+
+  pointsOnJoining(): Promise<number | null> {
+    return Promise.resolve(this.points);
+  }
+}
+
 const KEY = "3f2504e0-4f89-41d3-9a0c-0305e82c3301";
 
 function payload(over: Partial<PlaceShopOrderPayload> = {}): PlaceShopOrderPayload {
@@ -410,6 +422,7 @@ function scene(
     readonly delivery?: DeliveryAvailabilityView;
     readonly opening?: PublicOrderOpeningView;
     readonly points?: number | null;
+    readonly welcomeBonus?: number | null;
   } = {},
 ) {
   const earning = new FakeEarning(options.points ?? null);
@@ -432,6 +445,7 @@ function scene(
     durable,
     intakeAt(options.opening),
     earning,
+    new FakeWelcome(options.welcomeBonus ?? null),
   );
   return { handler, sink, paid, keys, buyers, published, durable, earning };
 }
@@ -594,6 +608,24 @@ describe("PlaceShopOrderHandler — les points qu'un compte aurait rapportés", 
     const placed = await handler.execute(new PlaceShopOrderCommand(payload()));
 
     expect(placed.loyaltyPointsWithAccount).toBeNull();
+  });
+});
+
+describe("PlaceShopOrderHandler — le bonus de bienvenue (plan bienvenue, lot D)", () => {
+  it("rend le bonus que la création du compte offrirait", async () => {
+    const { handler } = scene({ welcomeBonus: 500 });
+
+    const placed = await handler.execute(new PlaceShopOrderCommand(payload()));
+
+    expect(placed.welcomeBonusPoints).toBe(500);
+  });
+
+  it("rend null quand le bonus est éteint", async () => {
+    const { handler } = scene({ welcomeBonus: null });
+
+    const placed = await handler.execute(new PlaceShopOrderCommand(payload()));
+
+    expect(placed.welcomeBonusPoints).toBeNull();
   });
 });
 

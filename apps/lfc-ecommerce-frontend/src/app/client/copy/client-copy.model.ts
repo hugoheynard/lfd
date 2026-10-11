@@ -684,11 +684,18 @@ export interface ClientCopy {
     readonly joinTitle: string;
     readonly joinLine: string;
     /**
-     * Remplace `joinLine` quand le serveur a chiffré les points qu'un compte
-     * aurait rapportés. Un CONDITIONNEL : l'invité ne gagne rien, et la
-     * commande n'est pas rattachée au compte créé ensuite. `{points}` est le nombre.
+     * Remplacent `joinLine` quand le serveur a chiffré les points de cette
+     * commande et/ou le bonus de bienvenue (plan bienvenue, lot D). Au FUTUR :
+     * le compte créé avec cette adresse reprend la commande. `{bonus}` et
+     * `{points}` sont des nombres formatés, `{when}` vaut `joinOnceHandedOver`
+     * ou `joinOnceSettledAndHandedOver`.
      */
-    readonly joinPoints: string;
+    readonly joinBonusAndPoints: string;
+    readonly joinPointsOnly: string;
+    readonly joinBonusOnly: string;
+    /** Les points ne sont crédités qu'à une commande retirée ET payée. */
+    readonly joinOnceHandedOver: string;
+    readonly joinOnceSettledAndHandedOver: string;
     readonly joinAction: string;
     readonly recapPickup: string;
     readonly recapDelivery: string;

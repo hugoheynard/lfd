@@ -35,6 +35,7 @@ import { AdminLoyaltyController } from "./http/admin-loyalty.controller.js";
 import { MyLoyaltyController } from "./http/my-loyalty.controller.js";
 import { GetMyLoyaltyHandler } from "./application/queries/get-my-loyalty.handler.js";
 import { LoyaltyEarningPreviewing } from "./application/services/loyalty-earning-previewing.js";
+import { WelcomeBonusPreviewing } from "./application/services/welcome-bonus-previewing.js";
 import { HolderLoyaltyReader } from "./domain/ports/holder-loyalty.reader.js";
 import { PrismaHolderLoyaltyReader } from "./infrastructure/prisma-holder-loyalty.reader.js";
 import { LoyaltySweepController } from "./http/loyalty-sweep.controller.js";
@@ -114,7 +115,13 @@ import { PrismaWelcomeCandidateReader } from "./infrastructure/prisma-welcome-ca
     ListLoyaltyVouchersHandler,
     GetMyLoyaltyHandler,
     LoyaltyEarningPreviewing,
+    WelcomeBonusPreviewing,
   ],
-  exports: [LoyaltyVoucherQuoting, LoyaltyVoucherRedeeming, LoyaltyEarningPreviewing],
+  exports: [
+    LoyaltyVoucherQuoting,
+    LoyaltyVoucherRedeeming,
+    LoyaltyEarningPreviewing,
+    WelcomeBonusPreviewing,
+  ],
 })
 export class LoyaltyModule {}

@@ -1042,6 +1042,13 @@ export interface PlacedOrderResponse {
    * n'en aurait rapporté aucun, ou sur un rejeu.
    */
   readonly loyaltyPointsWithAccount?: number | null;
+  /**
+   * Le bonus de bienvenue que la personne recevrait en créant son compte
+   * MAINTENANT avec cette adresse (code e-mail ou Google). `null` quand le
+   * bonus est éteint ou le programme fermé au public, et sur un rejeu. Absent
+   * des réponses antérieures au lot D du plan bienvenue.
+   */
+  readonly welcomeBonusPoints?: number | null;
 }
 
 // ─── Surface ADMIN (staff) ───────────────────────────────────────────────────

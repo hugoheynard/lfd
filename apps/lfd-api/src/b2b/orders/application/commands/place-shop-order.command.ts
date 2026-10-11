@@ -38,4 +38,10 @@ export interface PlaceShopOrderResult {
    * rapporté aucun, et toujours sur un rejeu, qui ne recompose pas la commande.
    */
   readonly loyaltyPointsWithAccount: number | null;
+  /**
+   * Le bonus de bienvenue qu'elle recevrait en créant son compte maintenant,
+   * avec cette adresse. `null` quand le bonus est éteint ou le programme fermé
+   * au public, et toujours sur un rejeu.
+   */
+  readonly welcomeBonusPoints: number | null;
 }

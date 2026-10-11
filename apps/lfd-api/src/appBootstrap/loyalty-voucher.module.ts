@@ -3,10 +3,12 @@ import { Global, Module } from "@nestjs/common";
 import { LoyaltyEarningPreviewing } from "../b2b/loyalty/application/services/loyalty-earning-previewing.js";
 import { LoyaltyVoucherQuoting } from "../b2b/loyalty/application/services/loyalty-voucher-quoting.js";
 import { LoyaltyVoucherRedeeming } from "../b2b/loyalty/application/services/loyalty-voucher-redeeming.js";
+import { WelcomeBonusPreviewing } from "../b2b/loyalty/application/services/welcome-bonus-previewing.js";
 import { LoyaltyModule } from "../b2b/loyalty/loyalty.module.js";
 import { LoyaltyEarningPreview } from "../b2b/orders/domain/ports/loyalty-earning-preview.js";
 import { LoyaltyVoucherQuoteReader } from "../b2b/orders/domain/ports/loyalty-voucher-quote.reader.js";
 import { LoyaltyVoucherRedemption } from "../b2b/orders/domain/ports/loyalty-voucher-redemption.js";
+import { WelcomeBonusPreview } from "../b2b/orders/domain/ports/welcome-bonus-preview.js";
 
 /**
  * Le fil qui relie **la commande au bon de fidélité** (plan
@@ -34,7 +36,14 @@ import { LoyaltyVoucherRedemption } from "../b2b/orders/domain/ports/loyalty-vou
     { provide: LoyaltyVoucherRedemption, useExisting: LoyaltyVoucherRedeeming },
     // « Vous gagnerez N points » : le devis connecté le demande (plan E1.2).
     { provide: LoyaltyEarningPreview, useExisting: LoyaltyEarningPreviewing },
+    // « N points vous sont offerts » : la confirmation invité le demande (plan bienvenue, lot D).
+    { provide: WelcomeBonusPreview, useExisting: WelcomeBonusPreviewing },
   ],
-  exports: [LoyaltyVoucherQuoteReader, LoyaltyVoucherRedemption, LoyaltyEarningPreview],
+  exports: [
+    LoyaltyVoucherQuoteReader,
+    LoyaltyVoucherRedemption,
+    LoyaltyEarningPreview,
+    WelcomeBonusPreview,
+  ],
 })
 export class LoyaltyVoucherModule {}

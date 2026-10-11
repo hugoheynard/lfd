@@ -249,6 +249,28 @@ describe('passer commande', () => {
     expect(order && 'loyaltyPointsWithAccount' in order).toBe(false);
   });
 
+  it('un visiteur garde le bonus de bienvenue annoncé', async () => {
+    const order = await placeGuest({
+      id: 'ord_1',
+      orderNumber: 'CMD-0007',
+      welcomeBonusPoints: 500,
+    });
+
+    expect(order?.welcomeBonusPoints).toBe(500);
+    expect(TestBed.inject(ClientOrders).latest()?.welcomeBonusPoints).toBe(500);
+  });
+
+  it('un visiteur ne garde aucun bonus quand le serveur rend null', async () => {
+    const order = await placeGuest({
+      id: 'ord_1',
+      orderNumber: 'CMD-0007',
+      welcomeBonusPoints: null,
+    });
+
+    expect(order).not.toBeNull();
+    expect(order && 'welcomeBonusPoints' in order).toBe(false);
+  });
+
   /** Le numéro vient du SERVEUR : c'est celui qu'on lira au téléphone. */
   it('garde le numéro rendu par le serveur, pas un compteur local', async () => {
     boot();

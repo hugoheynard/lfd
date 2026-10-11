@@ -159,18 +159,52 @@ describe('ConfirmationPage — un visiteur sans compte', () => {
     localStorage.clear();
   });
 
-  it('lui dit combien de points cette commande aurait rapportés avec un compte', () => {
+  /** Plan bienvenue, lot D : la phrase passe au futur, en quatre cas. */
+  it('annonce le bonus ET les points de cette commande, une fois retirée', () => {
+    const { el } = render(
+      false,
+      placed({ loyaltyPointsWithAccount: 1240, welcomeBonusPoints: 500 }),
+    );
+
+    expect(el.querySelector('.join')?.textContent).toMatch(
+      /Créez votre compte avec cette adresse : 500 points offerts, et cette commande vous rapportera 1\s?240 points une fois retirée\./u,
+    );
+  });
+
+  it('annonce les points seuls quand le bonus est éteint', () => {
     const { el } = render(false, placed({ loyaltyPointsWithAccount: 1240 }));
 
     const join = el.querySelector('.join')?.textContent ?? '';
-    expect(join).toMatch(/Avec un compte, cette commande vous aurait rapporté 1\s?240 points\./u);
+    expect(join).toMatch(
+      /Créez votre compte avec cette adresse : cette commande vous rapportera 1\s?240 points une fois retirée\./u,
+    );
     expect(join).not.toContain(FR.done.joinLine);
+  });
+
+  it('dit « une fois réglée et retirée » quand la commande reste à régler', () => {
+    const { el } = render(false, placed({ loyaltyPointsWithAccount: 1240, settlement: 'due' }));
+
+    expect(el.querySelector('.join')?.textContent).toContain('points une fois réglée et retirée.');
+  });
+
+  it('annonce le bonus seul quand la commande ne rapporterait rien', () => {
+    const { el } = render(false, placed({ welcomeBonusPoints: 1500 }));
+
+    expect(el.querySelector('.join')?.textContent).toMatch(
+      /Créez votre compte avec cette adresse : 1\s?500 points vous sont offerts\./u,
+    );
   });
 
   it('garde l’invitation générale quand le nombre manque ou vaut zéro', () => {
     expect(render(false).el.querySelector('.join')?.textContent).toContain(FR.done.joinLine);
     expect(
       render(false, placed({ loyaltyPointsWithAccount: 0 })).el.querySelector('.join')?.textContent,
+    ).toContain(FR.done.joinLine);
+    expect(
+      render(
+        false,
+        placed({ loyaltyPointsWithAccount: 0, welcomeBonusPoints: 0 }),
+      ).el.querySelector('.join')?.textContent,
     ).toContain(FR.done.joinLine);
   });
 

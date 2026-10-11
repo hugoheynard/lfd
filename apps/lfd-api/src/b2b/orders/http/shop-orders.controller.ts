@@ -72,6 +72,7 @@ export class ShopOrdersController {
       id: placed.id,
       orderNumber: placed.orderNumber,
       loyaltyPointsWithAccount: placed.loyaltyPointsWithAccount,
+      welcomeBonusPoints: placed.welcomeBonusPoints,
     };
     return placed.payment === undefined ? base : { ...base, payment: placed.payment };
   }

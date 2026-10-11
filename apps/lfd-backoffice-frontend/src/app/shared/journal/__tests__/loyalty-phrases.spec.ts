@@ -56,6 +56,16 @@ describe('le titulaire hors du cycle d’un bon', () => {
     expect(sentence('loyalty.points_earned', payload)).toContain(' de fidélité à un client pour ');
   });
 
+  it('crédite le bonus de bienvenue « au client », ou « à un client »', () => {
+    const payload = { points: 500 };
+    expect(sentence('loyalty.welcome_bonus_credited', { ...NAMED, ...payload })).toContain(
+      'a crédité 500 points de bienvenue au client « Jeanne Dupont »',
+    );
+    expect(sentence('loyalty.welcome_bonus_credited', payload)).toContain(
+      ' de bienvenue à un client',
+    );
+  });
+
   it('ajuste « le solde de fidélité du client », ou « d’un client »', () => {
     const payload = { points: 500, reason: 'geste' };
     expect(sentence('loyalty.points_adjusted', { ...NAMED, ...payload })).toContain(
