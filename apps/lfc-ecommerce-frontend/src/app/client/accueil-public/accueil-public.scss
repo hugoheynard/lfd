@@ -458,20 +458,17 @@
   display: flex;
 }
 
-/* Le voile de bord : il dit qu'il reste quelque chose à droite, là où une carte
-   coupée net donnerait une liste finie. */
-.rail-edge {
-  position: absolute;
-  top: 0;
-  right: 0;
-  bottom: var(--fold-space-xs);
-  inline-size: 3.25rem;
-  pointer-events: none;
-  background: linear-gradient(
-    90deg,
-    transparent,
-    color-mix(in srgb, var(--lfc-ink-950) 55%, transparent)
-  );
+/* Le fondu de bord : il dit qu'il reste quelque chose à droite, là où une
+   carte coupée net donnerait une liste finie.
+
+   🔴 UN MASQUE, PAS UN VOILE (Hugo, 2026-10-11 : « une ombre moche sur la
+   deuxième carte », puis « des angles carrés » en défilant). Le voile était un
+   rectangle sombre posé PAR-DESSUS les cartes : il assombrissait la carte
+   suivante et dessinait ses angles droits sur des cartes arrondies. Le masque
+   efface le contenu vers le fond de la page, sans forme ni couleur à lui, et
+   s'éteint au bout du rail, où il n'y a plus rien à annoncer. */
+.houses.is-fading {
+  mask-image: linear-gradient(90deg, #000 calc(100% - 3.25rem), transparent);
 }
 
 .house {

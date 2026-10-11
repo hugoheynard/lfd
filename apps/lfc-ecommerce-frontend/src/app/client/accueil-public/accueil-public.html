@@ -157,7 +157,12 @@
               </div>
             } @else {
               <div class="rail">
-                <ul class="houses" #rail (scroll)="onRailScroll()">
+                <ul
+                  class="houses"
+                  #rail
+                  [class.is-fading]="railOverflows() && !railAtEnd()"
+                  (scroll)="onRailScroll()"
+                >
                   @for (house of houses(); track house.point.id) {
                     <li>
                       <button class="house" type="button" (click)="chooseHouse(house)">
@@ -186,12 +191,6 @@
                     </li>
                   }
                 </ul>
-                <!-- Le voile de bord : il dit qu'il reste quelque chose à droite, là
-                 où une carte coupée net donnerait une liste finie. Il disparaît
-                 avec le débordement, pour la même raison. -->
-                @if (railOverflows()) {
-                  <span class="rail-edge" aria-hidden="true"></span>
-                }
               </div>
 
               <p class="houses-note">

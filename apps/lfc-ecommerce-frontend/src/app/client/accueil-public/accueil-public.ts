@@ -461,6 +461,9 @@ export class AccueilPublic {
    */
   protected readonly railOverflows = signal(false);
 
+  /** Le rail est-il défilé jusqu'au bout ? Le fondu n'y annonce plus rien. */
+  protected readonly railAtEnd = signal(false);
+
   /**
    * Les points ont-ils été lus ?
    *
@@ -590,6 +593,7 @@ export class AccueilPublic {
         // Un pixel de tolérance : les largeurs sont fractionnaires, et un
         // arrondi suffirait à annoncer un débordement d'un demi-pixel.
         this.railOverflows.set(rail.scrollWidth > rail.clientWidth + 1);
+        this.railAtEnd.set(rail.scrollLeft + rail.clientWidth >= rail.scrollWidth - 1);
       };
       measure();
       const observer = new ResizeObserver(measure);
@@ -610,6 +614,7 @@ export class AccueilPublic {
     if (rail === undefined || count === 0) {
       return;
     }
+    this.railAtEnd.set(rail.scrollLeft + rail.clientWidth >= rail.scrollWidth - 1);
     const index = Math.round((rail.scrollLeft / rail.scrollWidth) * count);
     this.railIndex.set(Math.min(Math.max(index, 0), count - 1));
   }
