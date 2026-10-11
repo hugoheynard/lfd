@@ -64,6 +64,13 @@ export interface SlotPickerData {
    * ({@link ServicePoints.lastDay}) — au-delà, la commande serait refusée.
    */
   readonly lastDay?: string | null;
+  /**
+   * Le créneau déjà retenu À CETTE MAISON, quand on rouvre l'heure : le
+   * dialogue s'ouvre sur son jour, le présélectionne et le badge « Votre
+   * choix », comme le choix de la maison marque la sienne. `time` est l'heure
+   * de début, au format du créneau (`HH:MM`).
+   */
+  readonly current?: { readonly day: string; readonly time: string } | null;
 }
 
 /**
@@ -242,7 +249,10 @@ export class SlotPickerDialog {
     effect(() => {
       const first = this.data().firstDay;
       if (first !== null && this.day() === '') {
-        this.day.set(first);
+        // Le jour déjà retenu, s'il est encore proposé ; sinon le premier.
+        const kept = this.data().current?.day;
+        const offered = kept !== undefined && this.days().some((tab) => tab.day === kept);
+        this.day.set(offered ? kept : first);
       }
     });
 
@@ -263,6 +273,11 @@ export class SlotPickerDialog {
         if (this.day() === day) {
           this.slots.set(slots);
           this.loading.set(false);
+          // Le créneau déjà retenu revient présélectionné, s'il est encore ouvert.
+          const kept = slots.find((slot) => this.isCurrent(slot) && slot.open);
+          if (kept !== undefined) {
+            this.picked.set(kept);
+          }
         }
       });
     });
@@ -277,6 +292,12 @@ export class SlotPickerDialog {
     if (slot.open) {
       this.picked.set(slot);
     }
+  }
+
+  /** Est-ce le créneau déjà retenu ? Il porte le badge « Votre choix ». */
+  protected isCurrent(slot: PublicPickupSlot): boolean {
+    const current = this.data().current ?? null;
+    return current !== null && current.day === this.day() && current.time === slot.time;
   }
 
   /** L'heure telle qu'elle se lit — « 6 h 30 ». */

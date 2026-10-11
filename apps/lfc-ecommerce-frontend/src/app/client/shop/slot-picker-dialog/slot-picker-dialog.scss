@@ -189,6 +189,25 @@ fold-panel-body {
   white-space: nowrap;
 }
 
+/* « Votre choix » : le badge du choix de la maison, à l'identique — la même
+   question, rouverte, se reconnaît au même signe. */
+.tag {
+  align-self: flex-start;
+  display: inline-flex;
+  align-items: center;
+  height: 22px;
+  padding: 0 10px;
+  border-radius: var(--fold-radius-pill);
+  background: var(--lfc-butter-300);
+  color: var(--lfc-butter-900);
+  font-family: var(--lfc-font-caps);
+  font-size: var(--fold-text-2xs);
+  font-weight: var(--lfc-weight-black);
+  letter-spacing: var(--lfc-tracking-eyebrow);
+  text-transform: uppercase;
+  white-space: nowrap;
+}
+
 .slot.full .hour {
   /* Barré : l'heure existe, elle n'est plus à prendre. */
   text-decoration: line-through;

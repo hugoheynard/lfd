@@ -86,6 +86,9 @@
                      deux fois la même information. On choisit une heure, pas
                      une fenêtre. -->
                 <span class="hour">{{ hourOf(slot) }}</span>
+                @if (isCurrent(slot)) {
+                  <span class="tag">{{ c().current }}</span>
+                }
                 <span class="state">{{ stateOf(slot) }}</span>
 
                 <!-- Là où il n'y a plus de place, la carte ORIENTE : elle nomme

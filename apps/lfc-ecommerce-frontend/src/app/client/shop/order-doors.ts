@@ -143,6 +143,21 @@ export class OrderDoors {
   }
 
   /**
+   * Le créneau retenu à CE point, pour que le dialogue le marque « Votre
+   * choix » — `null` ailleurs : une heure du Labo n'existe pas au Village.
+   */
+  private currentAt(pickupAddressId: string): { day: string; time: string } | null {
+    const choice = this.order.choice();
+    const time = choice?.mode === 'pickup' ? choice.window?.start : undefined;
+    return choice?.mode === 'pickup' &&
+      choice.pickupAddressId === pickupAddressId &&
+      time !== undefined &&
+      time !== null
+      ? { day: choice.date, time }
+      : null;
+  }
+
+  /**
    * L'heure d'un point, puis l'écriture du choix.
    *
    * 🔴 La forme du choix est celle que `pickup-dialog` fabrique déjà — mêmes
@@ -162,6 +177,7 @@ export class OrderDoors {
       // journée demandable ici, et le dialogue le dit plutôt que d'en inventer.
       firstDay: this.points.nextDayFor(pickupAddressId),
       lastDay: this.points.lastDay(),
+      current: this.currentAt(pickupAddressId),
     }).closed;
     if (slot === undefined) {
       return false;

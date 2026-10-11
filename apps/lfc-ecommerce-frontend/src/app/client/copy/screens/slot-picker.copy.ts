@@ -58,6 +58,8 @@ export interface SlotPickerCopy {
   readonly cta: string;
   readonly ctaIdle: string;
   readonly back: string;
+  /** Le badge du créneau déjà retenu — le même mot qu'au choix de la maison. */
+  readonly current: string;
   readonly close: string;
 }
 
@@ -87,6 +89,7 @@ export const SLOT_PICKER_FR: SlotPickerCopy = {
   cta: 'Je prends {time}',
   ctaIdle: 'Choisissez un créneau',
   back: 'Retour',
+  current: 'Votre choix',
   close: 'Fermer',
 };
 
@@ -116,6 +119,7 @@ export const SLOT_PICKER_EN: SlotPickerCopy = {
   cta: 'I’ll take {time}',
   ctaIdle: 'Pick a slot',
   back: 'Back',
+  current: 'Your choice',
   close: 'Close',
 };
 
@@ -145,6 +149,7 @@ export const SLOT_PICKER_IT: SlotPickerCopy = {
   cta: 'Prendo le {time}',
   ctaIdle: 'Scegliete una fascia',
   back: 'Indietro',
+  current: 'La vostra scelta',
   close: 'Chiudi',
 };
 

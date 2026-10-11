@@ -324,3 +324,43 @@ describe('SlotPickerDialog — le dernier jour proposable', () => {
     expect(tabDays(fixture)).toHaveLength(7);
   });
 });
+
+/**
+ * Hugo, 2026-10-11 : « si une heure a été choisie, elle devrait être
+ * highlight avec le badge Votre choix comme l'étape 1 ».
+ */
+describe('SlotPickerDialog — le créneau déjà retenu', () => {
+  it('s’ouvre sur son jour, le présélectionne et le badge « Votre choix »', async () => {
+    const { fixture, slots } = await mount({ ...DATA, current: { day: DAY, time: '07:15' } });
+    slots.serve([slot({ time: '06:30' }), slot({ time: '07:15' })]);
+    await fixture.whenStable();
+    fixture.detectChanges();
+
+    expect(slots.asked).toEqual([DAY]);
+    expect(fixture.componentInstance['picked']()?.time).toBe('07:15');
+    const tagged = (fixture.nativeElement as HTMLElement).querySelectorAll('.slot .tag');
+    expect(tagged).toHaveLength(1);
+    expect(plain(tagged[0]?.closest('.slot')?.textContent ?? '')).toContain('7 h 15');
+    expect(tagged[0]?.textContent).toContain('Votre choix');
+  });
+
+  it('ne présélectionne pas un créneau retenu devenu complet, mais le badge encore', async () => {
+    const { fixture, slots } = await mount({ ...DATA, current: { day: DAY, time: '07:15' } });
+    slots.serve([slot({ time: '07:15', open: false })]);
+    await fixture.whenStable();
+    fixture.detectChanges();
+
+    expect(fixture.componentInstance['picked']()).toBeNull();
+    expect((fixture.nativeElement as HTMLElement).querySelector('.slot .tag')).not.toBeNull();
+  });
+
+  it('sans choix retenu, aucun badge ni présélection', async () => {
+    const { fixture, slots } = await mount();
+    slots.serve([slot({ time: '07:15' })]);
+    await fixture.whenStable();
+    fixture.detectChanges();
+
+    expect(fixture.componentInstance['picked']()).toBeNull();
+    expect((fixture.nativeElement as HTMLElement).querySelector('.slot .tag')).toBeNull();
+  });
+});
