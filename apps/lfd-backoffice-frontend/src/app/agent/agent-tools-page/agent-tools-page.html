@@ -1,16 +1,17 @@
 <fold-page-layout icon="wrench" title="Outils agent">
   <p description>
-    Ce que l'assistant peut faire sur le <strong>référentiel</strong> et la
-    <strong>médiathèque</strong> sans passer par le clic. Les outils visent les mêmes routes que les
-    écrans&nbsp;: mêmes validations, même authentification, et chaque écriture est portée par
-    <strong>votre compte</strong>.
+    Ce que l'assistant peut faire sur le <strong>référentiel</strong>, la
+    <strong>médiathèque</strong> et l'<strong>exploitation</strong> sans passer par le clic. Les
+    outils visent les mêmes routes que les écrans&nbsp;: mêmes validations, même authentification,
+    et chaque écriture est portée par <strong>votre compte</strong>.
   </p>
 
   @if (bridged()) {
     <fold-callout variant="alert">
       <strong>Outils armés.</strong> Un agent est branché sur cette page et peut appeler les outils
-      ci-dessous. Ils écrivent dans le référentiel réel de cet environnement&nbsp;: il n'y a pas de
-      bac à sable. Quitter cette page les retire.
+      ci-dessous. Ceux du référentiel et de la médiathèque écrivent dans les données réelles de cet
+      environnement&nbsp;: il n'y a pas de bac à sable. Ceux de l'exploitation ne font que lire.
+      Quitter cette page les retire.
     </fold-callout>
   } @else {
     <fold-callout variant="info">
@@ -74,6 +75,28 @@
       octets ne reviennent pas&nbsp;; retirer un mot-clé de tout le fonds — on ne retire un mot que
       des images désignées&nbsp;; remplacer une image chez ses porteurs — c'est changer ce que la
       vitrine affiche&nbsp;; déposer — un agent n'a pas de fichier.
+    </p>
+  </section>
+
+  <section class="tools">
+    <h2>Exploitation</h2>
+    @if (opsAllowed) {
+      <ul>
+        @for (tool of opsTools(); track tool) {
+          <li>
+            <code>{{ tool }}</code>
+          </li>
+        }
+      </ul>
+    } @else {
+      <p class="excluded">
+        Non déclarés&nbsp;: votre compte n'a pas le droit de lire la carte de santé.
+      </p>
+    }
+    <p class="excluded">
+      <strong>Ce qui n'est délibérément pas là&nbsp;:</strong> rejouer un message mort — décider que
+      sa cause est levée reste un geste humain, à l'écran de santé&nbsp;; tout recalcul — la carte
+      observe, elle n'agit pas. Ces outils ne font que lire.
     </p>
   </section>
 </fold-page-layout>

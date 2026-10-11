@@ -11,6 +11,7 @@ import { FoldCalloutComponent, FoldPageLayoutComponent } from 'fold-ng';
 
 import { PermissionsStore } from '../../auth/permissions.store';
 import { declareMediaAgentTools } from '../media-agent-tools';
+import { declareOpsAgentTools } from '../ops-agent-tools';
 import { declarePimAgentTools } from '../pim-agent-tools';
 
 /**
@@ -112,13 +113,21 @@ export class AgentToolsPage {
   protected readonly mediaTools = signal<readonly string[]>([]);
 
   /**
+   * La trousse de l'exploitation — vide sans `ops_health:read`, le droit que
+   * toutes ses routes opposent (`@AdminSurface("ops_health")`). Elle ne fait
+   * que lire : la carte de santé n'a pas de geste à prêter à un agent.
+   */
+  protected readonly opsTools = signal<readonly string[]>([]);
+
+  /**
    * Lus une fois : la garde de la route a déjà chargé les permissions. Elle
-   * laisse passer l'un OU l'autre droit ; chaque trousse suit le sien, et la
+   * laisse passer l'un des trois droits ; chaque trousse suit le sien, et la
    * page dit laquelle manque.
    */
   private readonly permissions = inject(PermissionsStore);
   protected readonly pimAllowed = this.permissions.can('pim_catalog:write');
   protected readonly mediaAllowed = this.permissions.can('media_library:write');
+  protected readonly opsAllowed = this.permissions.can('ops_health:read');
 
   /** Un agent est-il branché ? Un signal, puisque la réponse change. */
   protected readonly bridged = signal(false);
@@ -168,9 +177,10 @@ export class AgentToolsPage {
     return true;
   }
 
-  /** Déclare les deux trousses ; à appeler dans le contexte d'injection du composant. */
+  /** Déclare les trois trousses ; à appeler dans le contexte d'injection du composant. */
   private declareAll(): void {
     this.tools.set(this.pimAllowed ? declarePimAgentTools() : []);
     this.mediaTools.set(this.mediaAllowed ? declareMediaAgentTools() : []);
+    this.opsTools.set(this.opsAllowed ? declareOpsAgentTools() : []);
   }
 }

@@ -165,4 +165,23 @@ describe('AgentToolsPage', () => {
     expect(listed.some((name) => name.startsWith('pim_'))).toBe(false);
     expect(root.textContent).toContain("pas le droit d'écrire dans le référentiel");
   });
+
+  it('ne déclare QUE l’exploitation pour un compte qui n’a que la carte de santé', () => {
+    const { root } = render(['ops_health:read']);
+    const listed = [...root.querySelectorAll('code')].map((el) => el.textContent?.trim() ?? '');
+
+    expect(listed).toContain('ops_health');
+    expect(listed).toContain('ops_dead_letters');
+    expect(listed.some((name) => name.startsWith('pim_') || name.startsWith('media_'))).toBe(false);
+    expect(root.textContent).toContain("pas le droit d'écrire dans le référentiel");
+    expect(root.textContent).toContain("pas le droit d'écrire dans la médiathèque");
+  });
+
+  it('dit quel droit manque à qui n’a pas la carte de santé', () => {
+    const { root } = render(['pim_catalog:write']);
+    const listed = [...root.querySelectorAll('code')].map((el) => el.textContent?.trim() ?? '');
+
+    expect(listed.some((name) => name.startsWith('ops_'))).toBe(false);
+    expect(root.textContent).toContain('pas le droit de lire la carte de santé');
+  });
 });
