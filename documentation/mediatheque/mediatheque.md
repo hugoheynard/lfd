@@ -235,7 +235,7 @@ vue, sans le curseur.
 la date de la série, le jour de dépôt à l'heure de Paris à défaut — la même
 date que la frise (§9 bis). Une période inversée est refusée en 400
 (`shotPeriodOf`, `media/application/library-period.ts`). L'écran les montre
-en pastille « Prises du … au … » (`shotRangeLabel`, `media-feed-url.ts`), qui
+en pastille « Prises du … au … » (`shotRangeLabel`, `rules/feed-filters.ts`), qui
 se retire d'un clic.
 
 ### Les séries
@@ -266,7 +266,7 @@ menu intégré), tuile (×), filtre, panneau de l'image (mots portés et
 suggestions). Retirer un mot d'une tuile est immédiat et s'annule pendant six
 secondes. La recherche de la bande ignore accents et casse pour filtrer, mais
 « Créer » reste exact : le serveur tient « eclair » et « éclair » pour deux
-mots, et le filtre montre le voisin (`tag-palette.ts`). Chaque geste de tags renvoie l'alternative de l'image
+mots, et le filtre montre le voisin (`rules/tag-words.ts`). Chaque geste de tags renvoie l'alternative de l'image
 telle qu'elle est : le serveur lit une alternative **absente** comme effacée
 (c'est ainsi que le panneau la vide), et ces gestes l'ont effacée jusqu'au
 2026-10-10.
@@ -275,12 +275,50 @@ telle qu'elle est : le serveur lit une alternative **absente** comme effacée
 un enregistrement de tags concurrent peut écraser le renommage. La fenêtre est
 celle d'une transaction courte, et elle est écrite dans le handler.
 
-Le dépôt en lot (`batch-upload.ts`) est **séquentiel**. Il ne s'arrête jamais
+Le dépôt en lot (`state/batch-upload.ts`) est **séquentiel**. Il ne s'arrête jamais
 sur un refus et garde les `File` refusés pour qu'on puisse les rejouer. Il est
 séquentiel parce que le serveur tient les octets en mémoire pour les mesurer.
 
 L'URL passe en paramètre de requête plutôt que dans le chemin, parce qu'elle
 contient des `/`.
+
+### L'écran : organisation du code
+
+`apps/lfd-backoffice-frontend/src/app/mediatheque/` est rangé en cinq
+dossiers, un par raison de changer. Les dépendances descendent : `ui/` lit
+`state/` et appelle `gestures/` ; `gestures/` et `state/` lisent `data/` ;
+tout le monde lit `rules/`, qui ne lit personne.
+
+```
+mediatheque/
+├── data/      un client HTTP par ressource du serveur — images, mots-clés,
+│              séries, porteurs, palettes et frise —, plus le lecteur de
+│              palette du navigateur (canvas)
+├── state/     les magasins à signaux (fil, critères de l'adresse, frise,
+│              recherche, porteurs, séries, rattrapage des palettes, dépôt en
+│              lot) et les saisies d'un panneau (description, remplacement)
+├── gestures/  les services d'action : un geste ouvre son panneau, écrit,
+│              relit, et le dit (mots-clés, vocabulaire, description,
+│              remplacement, retrait, actions d'une image)
+├── rules/     les fonctions pures, chacune avec sa spec : formats et faits
+│              d'une image, libellés et pluriels, calendrier de Paris,
+│              couleurs et extraction de palette, critères et adresse du fil,
+│              règles du remplacement, pli et vocabulaire des mots-clés
+└── ui/        un dossier par composant (page, panneaux, sections, bande,
+               frise, dépôt, tuiles) — `.ts`, `.html`, `.scss`, `.spec.ts`
+```
+
+| Dossier     | Ce qui y entre                                                                                                                                                                      |
+| ----------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `data/`     | `providedIn: 'root'`, une `Promise` par appel (`firstValueFrom`), les types de `@lfd/pim-contracts`. Aucun état. Un client par ressource : un écran n'injecte que ce qu'il appelle. |
+| `state/`    | Un signal par fait, une mutation qui relit. Fourni par la page (ou le panneau) qui le montre, pour mourir avec elle. Aucun `subscribe()`.                                           |
+| `gestures/` | L'orchestration d'un geste : panneau, écriture, relecture, message. Pas de règle : il l'emprunte à `rules/`.                                                                        |
+| `rules/`    | Une fonction pure, testée sans Angular. Le DOM n'y entre que passé en paramètre (`layoutOf`, `paintStrip`).                                                                         |
+| `ui/`       | L'affichage et ses événements, rien d'autre : une règle va dans `rules/`, un état dans `state/`.                                                                                    |
+
+Un fichier `.ts` y tient en moins de 200 lignes, specs non comprises. Les
+outils agent (`src/app/agent/`) et le sélecteur de la fiche
+(`pim/catalogue/library-picker`) prennent les mêmes clients de `data/`.
 
 ### Le droit
 
@@ -558,7 +596,7 @@ filtré, dans l'ordre de la prise de vue (dépôt à défaut).
 
 ```mermaid
 flowchart LR
-    F["Fichier ou URL"] -->|"canvas 64 px<br/>palette-extract.ts"| P["palette<br/>5 dominantes + ≤ 3 écarts"]
+    F["Fichier ou URL"] -->|"canvas 64 px<br/>rules/palette-extract.ts"| P["palette<br/>5 dominantes + ≤ 3 écarts"]
     P -->|"POST /media (champ palette)<br/>PUT /media/palette"| DB[("media_asset.palette<br/>jsonb, posée une fois")]
     DB -->|"GET /media/palette-strip<br/>filtres du feed + columns"| S["≤ 400 colonnes<br/>fusionnées"]
     S --> C["un canvas"]

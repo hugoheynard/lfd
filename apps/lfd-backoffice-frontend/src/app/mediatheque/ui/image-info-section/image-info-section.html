@@ -1,0 +1,64 @@
+@if (facts(); as info) {
+  <fold-page-section
+    title="Informations"
+    description="Ce que le dépôt a mesuré."
+    [headingLevel]="3"
+  >
+    <fold-field-list>
+      <fold-field label="Format" [empty]="info.format === null">{{ info.format }}</fold-field>
+      <fold-field label="Dimensions" [empty]="info.dimensions === null">{{
+        info.dimensions
+      }}</fold-field>
+      <fold-field label="Poids" [empty]="info.weight === null">{{ info.weight }}</fold-field>
+      <fold-field label="Déposée le">{{ info.depositedAt }}</fold-field>
+      <fold-field label="Fichier"
+        ><span class="file">{{ info.fileName }}</span></fold-field
+      >
+      <fold-field label="Emplois">
+        <span class="uses">
+          {{ info.usesWording }}
+          @if (info.uses > 0 && canShowCarriers()) {
+            <button
+              foldButton
+              emphasis="soft"
+              intent="neutral"
+              size="sm"
+              (click)="showCarriers.emit()"
+            >
+              Voir où
+            </button>
+          }
+        </span>
+      </fold-field>
+    </fold-field-list>
+    <div class="info-actions">
+      <button
+        foldButton
+        emphasis="outline"
+        intent="neutral"
+        size="sm"
+        icon="copy"
+        (click)="copyAddress()"
+      >
+        Copier l’adresse
+      </button>
+      @if (canReplace()) {
+        <!-- Fermé pendant une saisie : le remplacement ferme ce panneau. -->
+        <button
+          foldButton
+          emphasis="outline"
+          intent="neutral"
+          size="sm"
+          icon="reload"
+          [disabled]="locked()"
+          (click)="replace.emit()"
+        >
+          Remplacer…
+        </button>
+        @if (locked()) {
+          <span class="muted">Enregistrez d’abord la description.</span>
+        }
+      }
+    </div>
+  </fold-page-section>
+}

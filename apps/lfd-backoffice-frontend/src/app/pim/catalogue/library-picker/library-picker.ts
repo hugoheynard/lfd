@@ -7,7 +7,7 @@ import {
   FoldPanelRef,
 } from 'fold-ng';
 
-import { MediaLibraryHttpApi } from '../../../mediatheque/media-library-http-api';
+import { MediaImagesApi } from '../../../mediatheque/data/media-images-api';
 
 /**
  * Charge d'ouverture : ce que le porteur porte DÉJÀ.
@@ -85,7 +85,7 @@ export class LibraryPicker {
   static readonly foldPanel: FoldPanelDefaults = { side: 'auto' };
 
   private readonly ref = inject<FoldPanelRef<readonly PickedMedia[]>>(FoldPanelRef);
-  private readonly api = inject(MediaLibraryHttpApi);
+  private readonly api = inject(MediaImagesApi);
 
   readonly data = input.required<LibraryPickerData>();
 

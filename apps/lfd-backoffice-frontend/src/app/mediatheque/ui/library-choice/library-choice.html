@@ -1,0 +1,59 @@
+<fold-search
+  placeholder="Chercher par étiquette"
+  ariaLabel="Chercher dans la médiathèque"
+  [value]="library.term()"
+  (searchChange)="library.searchFor($event)"
+/>
+@if (library.searching()) {
+  <fold-loading message="Lecture de la médiathèque…" size="sm" />
+} @else if (library.failure(); as message) {
+  <fold-empty-state tone="alert" title="Médiathèque illisible" [subtitle]="message">
+    <button foldButton emphasis="outline" size="sm" icon="reload" (click)="library.run()">
+      Réessayer
+    </button>
+  </fold-empty-state>
+} @else if (library.results().length === 0) {
+  <fold-empty-state
+    [title]="library.term().trim() === '' ? 'Médiathèque vide' : 'Aucune image ne correspond'"
+    [subtitle]="
+      library.term().trim() === ''
+        ? 'Déposez plutôt un fichier.'
+        : 'La recherche porte sur l’étiquette des images.'
+    "
+  >
+    <fold-icon empty-icon name="search" />
+  </fold-empty-state>
+} @else {
+  <ul class="grid">
+    @for (image of library.results(); track image.url) {
+      <li>
+        <button
+          type="button"
+          class="tile"
+          [class.is-current]="isCurrent(image.url)"
+          [disabled]="isCurrent(image.url)"
+          (click)="pick(image)"
+        >
+          <img [src]="image.url" alt="" loading="lazy" />
+          <span class="caption">
+            {{ isCurrent(image.url) ? 'Image actuelle' : labelOf(image) }}
+          </span>
+        </button>
+      </li>
+    }
+  </ul>
+  @if (library.hasMore()) {
+    <div>
+      <button
+        foldButton
+        emphasis="soft"
+        intent="neutral"
+        size="sm"
+        [loading]="library.loadingMore()"
+        (click)="library.more()"
+      >
+        Charger la suite
+      </button>
+    </div>
+  }
+}

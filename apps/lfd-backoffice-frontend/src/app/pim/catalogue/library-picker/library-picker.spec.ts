@@ -3,10 +3,8 @@ import type { LibraryMediaView, MediaLibraryPageView } from '@lfd/pim-contracts'
 import { FoldPanelRef } from 'fold-ng';
 import { describe, expect, it, vi } from 'vitest';
 
-import {
-  MediaLibraryHttpApi,
-  type MediaPageRequest,
-} from '../../../mediatheque/media-library-http-api';
+import { MediaImagesApi } from '../../../mediatheque/data/media-images-api';
+import type { MediaPageRequest } from '../../../mediatheque/rules/media-page-request';
 import { LibraryPicker, type LibraryPickerData, type PickedMedia } from './library-picker';
 
 /**
@@ -45,7 +43,7 @@ async function setup(
         useValue: { close: (value?: readonly PickedMedia[]) => closed.push(value) },
       },
       {
-        provide: MediaLibraryHttpApi,
+        provide: MediaImagesApi,
         useValue: {
           page: async (request: MediaPageRequest) => {
             requests.push(request);

@@ -82,7 +82,7 @@ export const routes: Routes = [
     canActivate: [permissionGuard('media_library:read')],
     title: 'Médiathèque — LFC B2B admin',
     loadComponent: () =>
-      import('./mediatheque/mediatheque-page/mediatheque-page').then((m) => m.MediathequePage),
+      import('./mediatheque/ui/mediatheque-page/mediatheque-page').then((m) => m.MediathequePage),
   },
   {
     // **Vitrine** — composer les pages de la boutique. Route de PREMIER niveau,

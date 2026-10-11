@@ -1,0 +1,37 @@
+<!-- Les TROIS langues ensemble : une traduction se juge à côté de sa
+     source, pas de mémoire. -->
+<fold-page-section
+  title="Texte alternatif"
+  description="Ce que lit un lecteur d’écran à la place de l’image."
+  [headingLevel]="3"
+  stack
+>
+  @for (locale of locales; track locale) {
+    <div class="alt">
+      <fold-textarea
+        [label]="names[locale]"
+        [rows]="2"
+        [placeholder]="
+          locale === sourceLocale ? 'Pas encore décrite' : 'Vide : retombe sur le français'
+        "
+        [value]="draft().valueOf(locale)"
+        (valueChange)="draft().write(locale, $event)"
+      />
+      <div class="alt-meta">
+        <span class="muted">
+          @if (locale === sourceLocale) {
+            {{ draft().lengthOf(locale) === 0 ? 'Pas encore décrite.' : 'Le français fait foi.' }}
+          } @else {
+            {{ draft().lengthOf(locale) === 0 ? 'Retombe sur le français.' : 'Traduction.' }}
+          }
+        </span>
+        <span
+          class="count"
+          [class.is-over]="draft().tooLong(locale)"
+          [attr.title]="'Recommandé : ' + recommended + ' caractères au plus'"
+          >{{ draft().lengthOf(locale) }} / {{ recommended }}</span
+        >
+      </div>
+    </div>
+  }
+</fold-page-section>

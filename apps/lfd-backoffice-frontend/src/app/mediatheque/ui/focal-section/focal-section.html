@@ -1,0 +1,46 @@
+<fold-page-section
+  title="Aperçu et cadrage"
+  description="Cliquez sur le sujet : les cadres de la boutique le garderont en vue."
+  [headingLevel]="3"
+  stack
+>
+  <!-- La cible ÉPOUSE l'image : un clic dans une bande autour donnerait une
+       fraction fausse. Le fond de scène, lui, porte les bandes. -->
+  <div class="stage">
+    <span class="target" (click)="point($event)">
+      <img [src]="url()" alt="" />
+      @if (focal(); as point) {
+        <span class="reticle" [style.left.%]="point.x * 100" [style.top.%]="point.y * 100"></span>
+      }
+    </span>
+  </div>
+
+  <div class="crops">
+    @for (crop of crops; track crop.format.short) {
+      <figure class="crop">
+        <span class="frame" [style.aspect-ratio]="crop.format.css">
+          <img [src]="url()" alt="" [style.object-position]="objectPosition()" />
+        </span>
+        <figcaption>{{ crop.label }} · {{ crop.format.short }}</figcaption>
+      </figure>
+    }
+  </div>
+
+  <div class="focal-line">
+    @if (focal(); as point) {
+      <span>Point posé à {{ percent(point.x) }} / {{ percent(point.y) }}</span>
+      <button
+        foldButton
+        emphasis="soft"
+        intent="neutral"
+        size="sm"
+        icon="close"
+        (click)="unpoint()"
+      >
+        Retirer le point
+      </button>
+    } @else {
+      <span>Centré par défaut</span>
+    }
+  </div>
+</fold-page-section>

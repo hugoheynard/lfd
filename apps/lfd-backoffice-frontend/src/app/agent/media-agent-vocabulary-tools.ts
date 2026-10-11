@@ -1,7 +1,9 @@
-import { declareExperimentalWebMcpTool } from '@angular/core';
+import { declareExperimentalWebMcpTool, inject } from '@angular/core';
 import type { LibraryMediaView, MediaDetailsPayload } from '@lfd/pim-contracts';
 
-import type { MediaLibraryHttpApi } from '../mediatheque/media-library-http-api';
+import type { MediaImagesApi } from '../mediatheque/data/media-images-api';
+import { MediaSeriesApi } from '../mediatheque/data/media-series-api';
+import { MediaTagsApi } from '../mediatheque/data/media-tags-api';
 
 import { said } from './agent-tool-text';
 import {
@@ -30,7 +32,7 @@ export const MEDIA_VOCABULARY_TOOLS = [
  * lesquelles reprendre. `PUT /media` n'a pas de forme en lot.
  */
 async function eachImage(
-  media: Pick<MediaLibraryHttpApi, 'one' | 'describe'>,
+  media: Pick<MediaImagesApi, 'one' | 'describe'>,
   urls: readonly string[],
   change: (image: LibraryMediaView) => MediaDetailsPayload | string,
 ): Promise<string> {
@@ -61,7 +63,9 @@ async function eachImage(
  * Absent délibérément : `DELETE /media/tags` (retirer un mot de TOUTES les
  * images) — cf. la JSDoc de `declareMediaAgentTools`.
  */
-export function declareMediaVocabularyTools(media: MediaLibraryHttpApi): void {
+export function declareMediaVocabularyTools(media: MediaImagesApi): void {
+  const tags = inject(MediaTagsApi);
+  const series = inject(MediaSeriesApi);
   const urls = { type: 'array', items: { type: 'string' } } as const;
 
   void declareExperimentalWebMcpTool({
@@ -69,7 +73,7 @@ export function declareMediaVocabularyTools(media: MediaLibraryHttpApi): void {
     description:
       'Le vocabulaire du fonds : chaque mot-clé et combien d’images le portent, sur tout le fonds.',
     inputSchema: { type: 'object', properties: {}, additionalProperties: false },
-    execute: () => said('Lecture des mots-clés', async () => tagsText(await media.tags())),
+    execute: () => said('Lecture des mots-clés', async () => tagsText(await tags.tags())),
   });
 
   void declareExperimentalWebMcpTool({
@@ -125,7 +129,7 @@ export function declareMediaVocabularyTools(media: MediaLibraryHttpApi): void {
     },
     execute: (args) =>
       said('Renommage du mot-clé', async () => {
-        await media.renameTag({ from: args.from, to: args.to });
+        await tags.renameTag({ from: args.from, to: args.to });
         return `« ${args.from} » renommé en « ${args.to} ».`;
       }),
   });
@@ -135,7 +139,7 @@ export function declareMediaVocabularyTools(media: MediaLibraryHttpApi): void {
     description:
       'Les séries (images prises ensemble), la plus récente prise de vue en tête : identifiant, titre, jour, nombre d’images, note.',
     inputSchema: { type: 'object', properties: {}, additionalProperties: false },
-    execute: () => said('Lecture des séries', async () => seriesText(await media.series())),
+    execute: () => said('Lecture des séries', async () => seriesText(await series.series())),
   });
 
   void declareExperimentalWebMcpTool({
@@ -154,7 +158,7 @@ export function declareMediaVocabularyTools(media: MediaLibraryHttpApi): void {
     },
     execute: (args) =>
       said('Ouverture de la série', async () => {
-        const id = await media.openSeries({
+        const id = await series.openSeries({
           title: args.title,
           shotOn: args.shotOn ?? null,
           note: args.note ?? null,

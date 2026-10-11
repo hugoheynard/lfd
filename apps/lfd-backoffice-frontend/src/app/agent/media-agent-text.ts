@@ -9,8 +9,8 @@ import type {
   MediaTagView,
 } from '@lfd/pim-contracts';
 
-import type { MediaLibraryHttpApi } from '../mediatheque/media-library-http-api';
-import { ALL_MEDIA, type MediaFeedCriteria } from '../mediatheque/media-feed-url';
+import type { MediaImagesApi } from '../mediatheque/data/media-images-api';
+import { ALL_MEDIA, type MediaFeedCriteria } from '../mediatheque/rules/media-feed-url';
 
 /**
  * **Ce que les outils de la médiathèque disent à un agent**, et comment ils
@@ -147,7 +147,7 @@ export function stripText(strip: MediaPaletteStripView): string {
  * (404). Tout autre refus remonte : `said` le rendra lisible.
  */
 export async function readImage(
-  api: Pick<MediaLibraryHttpApi, 'one'>,
+  api: Pick<MediaImagesApi, 'one'>,
   url: string,
 ): Promise<LibraryMediaView | null> {
   try {

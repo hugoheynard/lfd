@@ -1,9 +1,10 @@
 import { declareExperimentalWebMcpTool, inject } from '@angular/core';
 import { MEDIA_LIBRARY_SORTS, PALETTE_STRIP_LIMITS, type LocalizedText } from '@lfd/pim-contracts';
 
-import { MediaLibraryHttpApi } from '../mediatheque/media-library-http-api';
-import { toPageRequest } from '../mediatheque/media-feed-url';
-import { PaletteStripApi } from '../mediatheque/palette-strip-api';
+import { MediaCarriersApi } from '../mediatheque/data/media-carriers-api';
+import { MediaImagesApi } from '../mediatheque/data/media-images-api';
+import { toPageRequest } from '../mediatheque/rules/feed-filters';
+import { MediaPaletteApi } from '../mediatheque/data/media-palette-api';
 
 import { said } from './agent-tool-text';
 import {
@@ -33,8 +34,8 @@ const AGENT_STRIP_COLUMNS = Math.min(24, PALETTE_STRIP_LIMITS.defaultColumns);
  * ranger en séries, lire les couleurs.
  *
  * Même philosophie que la trousse du référentiel (`pim-agent-tools.ts`) :
- * chaque outil vise une **route HTTP** par `MediaLibraryHttpApi` /
- * `PaletteStripApi`, jamais un store d'écran — donc la même porte que la
+ * chaque outil vise une **route HTTP** par les clients de `mediatheque/data/`
+ * (images, porteurs, mots-clés, séries, palettes), jamais un store d'écran — donc la même porte que la
  * médiathèque, validations serveur et mur `media_library` compris, et
  * l'authentification de la session par l'intercepteur staff.
  *
@@ -62,8 +63,9 @@ const AGENT_STRIP_COLUMNS = Math.min(24, PALETTE_STRIP_LIMITS.defaultColumns);
  * image : la dernière gagne, comme à l'écran.
  */
 export function declareMediaAgentTools(): readonly string[] {
-  const media = inject(MediaLibraryHttpApi);
-  const strip = inject(PaletteStripApi);
+  const media = inject(MediaImagesApi);
+  const carriers = inject(MediaCarriersApi);
+  const strip = inject(MediaPaletteApi);
 
   void declareExperimentalWebMcpTool({
     name: 'media_search',
@@ -116,7 +118,7 @@ export function declareMediaAgentTools(): readonly string[] {
         if (image === null) {
           return notFound(args.url);
         }
-        return imageDetail(image, await media.carriersOf(args.url));
+        return imageDetail(image, await carriers.carriersOf(args.url));
       }),
   });
 

@@ -1,0 +1,172 @@
+import { Injectable, computed, inject, signal } from '@angular/core';
+import type { MediaTagView } from '@lfd/pim-contracts';
+
+import { MediaTagsApi } from '../data/media-tags-api';
+import { normalizeTag, rankedTags } from '../rules/tag-words';
+
+/** Un mot de la bande : son compte sur tout le fonds, et s'il n'est posé nulle part. */
+export interface PaletteTag {
+  readonly tag: string;
+  readonly count: number;
+  /** Inventé dans cet onglet et posé sur aucune image : il ne survit pas au rechargement. */
+  readonly fresh: boolean;
+}
+
+/**
+ * **La bande de tags** — le vocabulaire du fonds, LU AU SERVEUR.
+ *
+ * 🔴 Il n'y a pas de table de tags (décision Hugo, 2026-09-23) : un mot existe
+ * tant qu'une image le porte. Le serveur le compte sur TOUT le fonds depuis le
+ * 2026-10-10 ; la bande le dérivait jusque-là des images CHARGÉES, donc un
+ * mot porté seulement hors de la page n'y figurait pas.
+ *
+ * Ce que quelqu'un vient d'écrire sans l'avoir posé reste affiché, à zéro,
+ * jusqu'au rechargement : un mot que rien ne porte n'existe pas au fonds.
+ */
+@Injectable()
+export class TagPaletteStore {
+  private readonly api = inject(MediaTagsApi);
+
+  /** Le vocabulaire du fonds, tel que le serveur l'a compté. */
+  private readonly vocabulary = signal<readonly MediaTagView[]>([]);
+  /** Ce que quelqu'un vient d'écrire et n'a pas encore posé. */
+  private readonly drafted = signal<readonly string[]>([]);
+
+  /** L'échec de la dernière lecture, `null` sinon. La bande garde ce qu'elle avait. */
+  readonly failure = signal<string | null>(null);
+
+  readonly search = signal('');
+
+  /**
+   * Le tag ARMÉ — celui qu'un clic sur une image posera.
+   *
+   * Il double le glisser-déposer plutôt que de le remplacer : on ne glisse pas
+   * au clavier, et une bande de tags qu'on ne peut utiliser qu'à la souris
+   * ferme l'écran à qui navigue autrement.
+   */
+  readonly armed = signal<string | null>(null);
+
+  /** Tout le vocabulaire, trié — le fonds et les brouillons confondus. */
+  readonly all = computed<readonly PaletteTag[]>(() => {
+    const known = new Set(this.vocabulary().map((entry) => entry.tag));
+    const fresh = this.drafted()
+      .filter((tag) => !known.has(tag))
+      .map((tag) => ({ tag, count: 0, fresh: true }));
+    const worn = this.vocabulary().map((entry) => ({ ...entry, fresh: false }));
+    return [...worn, ...fresh].sort((a, b) => a.tag.localeCompare(b.tag, 'fr'));
+  });
+
+  /** Les seuls mots, pour qui propose un complément. */
+  readonly words = computed(() => this.all().map((entry) => entry.tag));
+
+  /**
+   * Ce que la bande affiche ({@link rankedTags}). L'ordre par compte sert le
+   * repli à deux rangées : ce qui reste visible quand la bande est repliée,
+   * c'est ce qu'on pose le plus.
+   */
+  readonly shown = computed(() => rankedTags(this.all(), this.search()));
+
+  /**
+   * Le mot que la saisie désigne EXACTEMENT, à la normalisation du serveur près
+   * — `null` s'il n'existe pas encore, et c'est alors lui qu'on propose de créer.
+   *
+   * Exact au sens du serveur, donc accents compris : « eclair » et « éclair »
+   * sont deux mots au fonds, et la bande ne doit pas faire croire le contraire.
+   */
+  readonly exact = computed<string | null>(() => {
+    const typed = normalizeTag(this.search());
+    return typed !== '' && this.words().includes(typed) ? typed : null;
+  });
+
+  /** Ce que « Créer » écrirait, ou `null` quand rien n'est à créer. */
+  readonly creatable = computed<string | null>(() => {
+    const typed = normalizeTag(this.search());
+    return typed === '' || this.exact() !== null ? null : typed;
+  });
+
+  /**
+   * Relit le vocabulaire. Appelé au démarrage et après chaque geste qui
+   * change les tags.
+   *
+   * Absorbe l'échec en le disant (`failure`) : une bande illisible ne doit pas
+   * faire échouer le geste qui vient de réussir.
+   */
+  async refresh(): Promise<void> {
+    try {
+      this.vocabulary.set(await this.api.tags());
+      this.failure.set(null);
+    } catch {
+      this.failure.set("Les mots-clés du fonds n'ont pas pu être relus.");
+    }
+  }
+
+  /** Le compte d'un mot sur tout le fonds — 0 s'il n'est porté nulle part. */
+  countOf(tag: string): number {
+    return this.vocabulary().find((entry) => entry.tag === tag)?.count ?? 0;
+  }
+
+  /**
+   * Ajoute un mot à la bande sans le poser sur quoi que ce soit.
+   *
+   * Normalisé **ici aussi** : le serveur le refera, mais un tag qui s'affiche
+   * « Croissant » puis revient « croissant » donne l'impression d'un écran qui
+   * corrige en douce.
+   *
+   * @returns le mot normalisé, ou `null` si la saisie était vide.
+   */
+  draft(raw: string): string | null {
+    const tag = normalizeTag(raw);
+    if (tag === '') {
+      return null;
+    }
+    if (!this.words().includes(tag)) {
+      this.drafted.update((current) => [...current, tag]);
+    }
+    this.armed.set(tag);
+    return tag;
+  }
+
+  /**
+   * Entrée dans la recherche : arme le mot exact s'il existe, sinon le crée
+   * (et l'arme). La recherche se vide : la bande revient, le mot armé en tête.
+   */
+  submitSearch(): void {
+    const exact = this.exact();
+    if (exact !== null) {
+      this.armed.set(exact);
+      this.search.set('');
+      return;
+    }
+    this.createFromSearch();
+  }
+
+  /** « Créer » : la saisie devient un mot de la bande, armé. */
+  createFromSearch(): void {
+    if (this.draft(this.search()) !== null) {
+      this.search.set('');
+    }
+  }
+
+  /** Arme un tag, ou le désarme si c'était déjà lui. */
+  toggle(tag: string): void {
+    this.armed.update((current) => (current === tag ? null : tag));
+  }
+
+  /**
+   * Renomme partout, puis relit. Le refus du serveur est RELANCÉ : l'écran
+   * doit le dire, et rien n'est appliqué.
+   */
+  async rename(from: string, to: string): Promise<void> {
+    await this.api.renameTag({ from, to });
+    const written = normalizeTag(to);
+    this.armed.update((current) => (current === from ? written : current));
+    await this.refresh();
+  }
+
+  /** Retire partout, puis relit. Même règle d'échec que {@link rename}. */
+  async remove(tag: string): Promise<void> {
+    await this.api.removeTag(tag);
+    this.armed.update((current) => (current === tag ? null : current));
+    await this.refresh();
+  }
+}

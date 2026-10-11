@@ -325,7 +325,7 @@ export class ProductHttpApi {
    * 🔴 **Le dépôt a quitté le client du référentiel le 2026-09-23.** Il visait
    * `POST /media`, c'est-à-dire la médiathèque : une fiche envoyait des octets
    * à un bloc qui n'est pas le sien. Le dépôt se fait dans la médiathèque, par
-   * `MediaLibraryHttpApi` — et la fiche ne fait que RATTACHER une URL.
+   * `MediaImagesApi` — et la fiche ne fait que RATTACHER une URL.
    */
 
   /**

@@ -1,0 +1,6 @@
+/* Projetée dans une section `stack` : elle en reprend le pas (`lg`, le défaut de `--fold-page-section-gap`). */
+:host {
+  display: flex;
+  flex-direction: column;
+  gap: var(--fold-space-lg);
+}

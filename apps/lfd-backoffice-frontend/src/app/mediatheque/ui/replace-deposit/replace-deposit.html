@@ -1,0 +1,19 @@
+<fold-listbox
+  size="sm"
+  label="Série du fichier"
+  hint="Celle de l’image actuelle, par défaut. Un fichier déjà au fonds garde la sienne."
+  [options]="seriesOptions()"
+  [value]="seriesId()"
+  (selectionChange)="seriesId.set($event)"
+/>
+<fold-file-dropzone
+  [accept]="limits.accept"
+  label="Déposer la nouvelle image"
+  [hint]="limits.hint"
+  [busy]="uploading()"
+  busyLabel="Dépôt en cours…"
+  (filesPicked)="deposit($event)"
+/>
+@if (depositRefusal(); as message) {
+  <fold-callout variant="alert">{{ message }}</fold-callout>
+}

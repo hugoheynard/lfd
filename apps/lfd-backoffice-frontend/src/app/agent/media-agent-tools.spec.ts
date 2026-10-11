@@ -9,8 +9,12 @@ import type {
 } from '@lfd/pim-contracts';
 import { afterEach, beforeEach, describe, expect, it } from 'vitest';
 
-import { MediaLibraryHttpApi, type MediaPageRequest } from '../mediatheque/media-library-http-api';
-import { PaletteStripApi } from '../mediatheque/palette-strip-api';
+import { MediaCarriersApi } from '../mediatheque/data/media-carriers-api';
+import { MediaImagesApi } from '../mediatheque/data/media-images-api';
+import { MediaPaletteApi } from '../mediatheque/data/media-palette-api';
+import { MediaSeriesApi } from '../mediatheque/data/media-series-api';
+import { MediaTagsApi } from '../mediatheque/data/media-tags-api';
+import type { MediaPageRequest } from '../mediatheque/rules/media-page-request';
 
 import { declareMediaAgentTools } from './media-agent-tools';
 
@@ -62,10 +66,10 @@ function armTools(fonds: readonly LibraryMediaView[], options: { describeFails?:
   });
 
   const pageSize = 2;
-  const media: Pick<
-    MediaLibraryHttpApi,
-    'page' | 'one' | 'describe' | 'carriersOf' | 'tags' | 'renameTag' | 'series' | 'openSeries'
-  > = {
+  const media: Pick<MediaImagesApi, 'page' | 'one' | 'describe'> &
+    Pick<MediaCarriersApi, 'carriersOf'> &
+    Pick<MediaTagsApi, 'tags' | 'renameTag'> &
+    Pick<MediaSeriesApi, 'series' | 'openSeries'> = {
     page: (request) => {
       requests.push(request);
       const start = request.after === undefined ? 0 : Number(request.after);
@@ -102,7 +106,7 @@ function armTools(fonds: readonly LibraryMediaView[], options: { describeFails?:
     series: () => Promise.resolve([]),
     openSeries: () => Promise.resolve('s1'),
   };
-  const strip: Pick<PaletteStripApi, 'strip'> = {
+  const strip: Pick<MediaPaletteApi, 'strip'> = {
     strip: () => {
       const view: MediaPaletteStripView = { columns: [], total: 0, unpainted: 0 };
       return Promise.resolve(view);
@@ -111,8 +115,11 @@ function armTools(fonds: readonly LibraryMediaView[], options: { describeFails?:
 
   TestBed.configureTestingModule({
     providers: [
-      { provide: MediaLibraryHttpApi, useValue: media },
-      { provide: PaletteStripApi, useValue: strip },
+      { provide: MediaImagesApi, useValue: media },
+      { provide: MediaCarriersApi, useValue: media },
+      { provide: MediaTagsApi, useValue: media },
+      { provide: MediaSeriesApi, useValue: media },
+      { provide: MediaPaletteApi, useValue: strip },
     ],
   });
   const names = runInInjectionContext(TestBed.inject(Injector), () => declareMediaAgentTools());

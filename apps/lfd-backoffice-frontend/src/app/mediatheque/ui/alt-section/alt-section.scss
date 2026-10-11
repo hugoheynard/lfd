@@ -1,0 +1,27 @@
+.alt {
+  display: flex;
+  flex-direction: column;
+  gap: var(--fold-space-xs);
+}
+
+.alt-meta {
+  display: flex;
+  justify-content: space-between;
+  gap: var(--fold-space-sm);
+}
+
+.count {
+  color: var(--fold-color-text-faded);
+  font-size: var(--fold-text-xs);
+  font-variant-numeric: tabular-nums;
+
+  &.is-over {
+    color: var(--fold-color-warning-text);
+  }
+}
+
+.muted {
+  margin: 0;
+  color: var(--fold-color-text-muted);
+  font-size: var(--fold-text-sm);
+}
