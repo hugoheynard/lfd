@@ -23,7 +23,7 @@ describe('copy-labels — un nom lisible pour chaque clé', () => {
   it('traduit le dernier segment connu', () => {
     expect(name('accueilPublic.hello.kicker')).toEqual({ label: 'Surtitre', group: 'hello' });
     expect(name('accueilPublic.title').label).toBe('Titre');
-    expect(name('cart.lede').label).toBe('Chapô');
+    expect(name('cart.lede').label).toBe('Texte d’introduction');
     expect(name('pay.placeholder').label).toBe('Exemple dans le champ');
   });
 

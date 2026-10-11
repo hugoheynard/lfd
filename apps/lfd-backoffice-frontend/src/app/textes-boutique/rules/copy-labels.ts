@@ -14,8 +14,8 @@ const LABELS: Readonly<Record<string, string>> = {
   title: 'Titre',
   screenTitle: 'Titre de l’écran',
   subtitle: 'Sous-titre',
-  lede: 'Chapô',
-  lead: 'Chapô',
+  lede: 'Texte d’introduction',
+  lead: 'Texte d’introduction',
   intro: 'Introduction',
   cta: 'Bouton',
   ctaIdle: 'Bouton (au repos)',
@@ -52,7 +52,7 @@ const ROLE_SUFFIXES: readonly (readonly [string, string])[] = [
   ['Cta', 'Bouton'],
   ['Note', 'Note'],
   ['Kicker', 'Surtitre'],
-  ['Lead', 'Chapô'],
+  ['Lead', 'Texte d’introduction'],
   ['Aria', 'Lecteur d’écran'],
 ];
 

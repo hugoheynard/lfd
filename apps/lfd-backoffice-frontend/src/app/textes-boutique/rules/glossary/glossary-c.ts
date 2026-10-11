@@ -100,4 +100,5 @@ export const GLOSSARY_C: Readonly<Record<string, string>> = {
   ctaBlocked: 'Bouton bloqué',
   ctaReady: 'Bouton prêt',
   current: 'Choix actuel',
+  checking: 'Vérification en cours',
 };

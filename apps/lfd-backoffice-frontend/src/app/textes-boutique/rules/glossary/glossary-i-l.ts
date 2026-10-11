@@ -132,4 +132,5 @@ export const GLOSSARY_I_L: Readonly<Record<string, string>> = {
   longitude: 'Longitude',
   longitudePlaceholder: 'Longitude — exemple',
   loyalty: 'Fidélité',
+  loginPage: 'Page de connexion',
 };

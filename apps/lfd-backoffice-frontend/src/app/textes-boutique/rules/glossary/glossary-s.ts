@@ -102,4 +102,5 @@ export const GLOSSARY_S: Readonly<Record<string, string>> = {
   supportTitle: 'Contacter le service commercial',
   suspended: 'Compte suspendu',
   switchLabel: 'Type de compte',
+  signUp: 'Bouton « Créer un compte »',
 };
