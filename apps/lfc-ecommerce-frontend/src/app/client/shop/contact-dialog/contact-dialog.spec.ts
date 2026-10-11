@@ -13,6 +13,7 @@ import { ClientLocale, type LocaleCode } from '../../client-locale.service';
 import { contactDialogCopy } from '../../copy/screens/contact-dialog.copy';
 import { ContactGateway } from '../contact.gateway';
 import { ContactDialog } from './contact-dialog';
+import { ShopCopyOverrides } from '../../copy/shop-copy-overrides';
 
 /**
  * **« Nous écrire »** — ce que le dialogue propose, ce qu'il pré-remplit, et ce
@@ -219,5 +220,14 @@ describe('ContactDialog', () => {
     fixture.detectChanges();
 
     expect(el(fixture).querySelector('fold-listbox')).not.toBeNull();
+  });
+
+  /** Lot T4 des textes : un remplacement reçu redessine l'écran, sans rechargement. */
+  it('se redessine quand un remplacement de son texte arrive', async () => {
+    const { fixture } = await mount();
+    TestBed.inject(ShopCopyOverrides).receive('fr', { 'contactDialog.title': 'Écrivez-nous' });
+    fixture.detectChanges();
+
+    expect(el(fixture).textContent).toContain('Écrivez-nous');
   });
 });

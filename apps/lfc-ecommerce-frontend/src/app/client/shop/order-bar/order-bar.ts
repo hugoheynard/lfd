@@ -9,6 +9,7 @@ import { ClientAudience } from '../../client-audience.service';
 import { ClientLocale } from '../../client-locale.service';
 import { ClientCopyService, fill } from '../../copy/client-copy.service';
 import { commandTermsCopy } from '../../copy/screens/command-terms.copy';
+import { screenCopy } from '../../copy/shop-copy-composer';
 import { serviceWhenLabel } from '../../format-day';
 import { OrderContextStore } from '../../order-context.store';
 import { pickupOffer } from '../pickup-discount';
@@ -73,7 +74,7 @@ export class OrderBar {
   /** Un visiteur est `b2c` — et le défaut penche de ce côté tant qu'on ne sait pas. */
   private readonly audience = inject(ClientAudience).shown;
 
-  protected readonly c = computed(() => commandTermsCopy(this.locale.current()));
+  protected readonly c = screenCopy('commandTerms', commandTermsCopy);
 
   protected readonly choice = this.order.choice;
 

@@ -12,10 +12,11 @@
  *
  * ⚠️ La limite — elle est structurelle, pas un défaut de réglage :
  *
- * - seules les chaînes servies par `ClientCopyService.t` sont marquées. Les
- *   fonctions d'écran (`slotPickerCopy(locale)`…) et les textes en dur des
- *   gabarits ne passent pas par lui (ils y viendront en T4) : un clic dessus ne
- *   rend rien ;
+ * - seules les chaînes servies par `ShopCopyComposer` sont marquées — le
+ *   dictionnaire général et les fonctions d'écran (`screenCopy`, lot T4). Un
+ *   texte encore en dur dans un gabarit, ou une phrase écrite en fonction
+ *   (`deliveryProcedure.editor.stepNumber`), n'a pas de clé : un clic dessus
+ *   ne rend rien ;
  * - un texte que le CODE transforme avant de l'afficher (`split`, `slice`,
  *   comparaison, longueur) voit son marqueur avec lui : un `split('\n')` le
  *   laisse sur la première ligne seulement, une comparaison d'égalité à une
@@ -49,11 +50,15 @@ export class CopyMarkers {
     return `${START}${bits}${END}`;
   }
 
-  /** Chaque chaîne d'un dictionnaire, précédée du marqueur de sa clé — prêt pour `overlayCopy`. */
-  markAll(dictionary: object): Readonly<Record<string, string>> {
+  /**
+   * Chaque chaîne d'un dictionnaire, précédée du marqueur de sa clé — prêt pour
+   * `overlayCopy`. Les clés rendues sont relatives au dictionnaire ; le
+   * marqueur, lui, porte la clé du manifeste (`space` en préfixe).
+   */
+  markAll(dictionary: object, space = ''): Readonly<Record<string, string>> {
     const texts: Record<string, string> = {};
-    for (const [key, text] of stringLeaves(dictionary, '')) {
-      texts[key] = this.markerOf(key) + text;
+    for (const [path, text] of stringLeaves(dictionary, '')) {
+      texts[path] = this.markerOf(space === '' ? path : `${space}.${path}`) + text;
     }
     return texts;
   }

@@ -10,10 +10,10 @@ import {
 import { FoldButtonComponent, FoldCardComponent, FoldInputComponent } from 'fold-ng';
 
 import type { ProRegistration } from '../../../auth/auth.facade';
-import { ClientLocale } from '../../../client/client-locale.service';
 import { CallbackBlock } from '../../../client/callback-block/callback-block';
 import { ClientCopyService } from '../../../client/copy/client-copy.service';
 import { proAccountCopy } from '../../../client/copy/screens/pro-account.copy';
+import { screenCopy } from '../../../client/copy/shop-copy-composer';
 
 /**
  * **La porte PRO** — quatre informations et le nom de l'établissement.
@@ -67,10 +67,8 @@ export class ProStep {
   readonly wantsCallback = output<void>();
   readonly cancelledCallback = output<void>();
 
-  private readonly locale = inject(ClientLocale);
-
   protected readonly t = inject(ClientCopyService).t;
-  protected readonly copy = computed(() => proAccountCopy(this.locale.current()));
+  protected readonly copy = screenCopy('proAccount', proAccountCopy);
 
   protected readonly firstName = signal('');
   protected readonly lastName = signal('');

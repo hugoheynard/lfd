@@ -186,6 +186,19 @@ export interface ClientCopy {
     readonly fine: string;
     readonly fineInline: string;
     readonly legal: string;
+    /**
+     * La page `/login` — où renvoie le garde d'authentification quand une
+     * route demande une session (`/mon-compte`…). Ses textes étaient en dur
+     * dans le gabarit jusqu'au lot T4 des textes de la boutique.
+     */
+    readonly loginPage: {
+      readonly title: string;
+      readonly lead: string;
+      readonly checking: string;
+      readonly signIn: string;
+      readonly signUp: string;
+      readonly hint: string;
+    };
   };
   readonly rappel: {
     readonly asapGroup: string;

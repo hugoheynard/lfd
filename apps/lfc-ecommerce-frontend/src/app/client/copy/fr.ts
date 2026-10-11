@@ -110,6 +110,14 @@ export const FR: ClientCopy = {
     fineInline: 'Un code reçu par e-mail pour entrer, sans mot de passe à retenir.',
     legal:
       'En continuant, vous acceptez les conditions générales de vente et notre politique de données. Aucun paiement n’est demandé à l’inscription.',
+    loginPage: {
+      title: 'Espace professionnel',
+      lead: 'Connectez-vous pour accéder à votre boutique, vos commandes et votre catalogue.',
+      checking: 'Vérification de votre session…',
+      signIn: 'Se connecter',
+      signUp: 'Créer un compte',
+      hint: 'Vous serez redirigé vers la page sécurisée, puis ramené ici.',
+    },
   },
   rappel: {
     asapGroup: 'Dès que possible',

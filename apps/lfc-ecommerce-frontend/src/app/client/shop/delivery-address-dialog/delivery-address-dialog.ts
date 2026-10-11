@@ -26,9 +26,9 @@ import {
 } from 'fold-ng';
 
 import { addressAt, ClientAddresses } from '../../client-addresses.service';
-import { ClientLocale } from '../../client-locale.service';
 import { fill } from '../../copy/client-copy.service';
 import { deliveryAddressCopy } from '../../copy/screens/delivery-address.copy';
+import { screenCopy } from '../../copy/shop-copy-composer';
 import { formatWindow } from '../../format-hour';
 import { formatCents, formatRate } from '../../format-money';
 import type { ServiceChoice } from '../../order-context.store';
@@ -152,7 +152,6 @@ export class DeliveryAddressDialog {
   readonly data = input.required<DeliveryAddressData>();
 
   private readonly points = inject(ServicePoints);
-  private readonly locale = inject(ClientLocale);
   private readonly ref = inject(FoldPanelRef);
 
   /**
@@ -162,7 +161,7 @@ export class DeliveryAddressDialog {
    */
   private readonly book = inject(ClientAddresses).deliveries;
 
-  protected readonly c = computed(() => deliveryAddressCopy(this.locale.current()));
+  protected readonly c = screenCopy('deliveryAddress', deliveryAddressCopy);
 
   protected readonly picked = signal<string | null>(null);
 

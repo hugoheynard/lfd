@@ -12,6 +12,7 @@ import { COMMAND_TERMS_FR } from '../../copy/screens/command-terms.copy';
 import { OrderContextStore, type ServiceChoice } from '../../order-context.store';
 import { ServicePoints } from '../pickup-points.store';
 import { OrderBar } from './order-bar';
+import { ShopCopyOverrides } from '../../copy/shop-copy-overrides';
 
 const LABO_ID = 'pick_labo';
 
@@ -222,5 +223,14 @@ describe('OrderBar', () => {
     acts[1]?.click();
 
     expect(asked).toEqual(['maison', 'heure']);
+  });
+
+  /** Lot T4 des textes : un remplacement reçu redessine l'écran, sans rechargement. */
+  it('se redessine quand un remplacement de son texte arrive', () => {
+    const fixture = boot();
+    TestBed.inject(ShopCopyOverrides).receive('fr', { 'commandTerms.empty': 'Rien encore.' });
+    fixture.detectChanges();
+
+    expect(textOf(fixture, '.empty')).toBe('Rien encore.');
   });
 });

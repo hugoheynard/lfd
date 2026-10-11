@@ -23,8 +23,24 @@ export function embeddedShopCopyManifest(): ShopCopyManifest {
   return ShopCopyManifest.of(entries);
 }
 
-/** Les renommages `ancienne clé → nouvelle`, dans l'ordre du fichier. */
+/**
+ * Les renommages `ancienne clé → nouvelle`, dans l'ordre du fichier.
+ *
+ * Une entrée `"ancienne.cle": null` est un texte **retiré** du code, voulu
+ * (lot T4) : il n'y a rien à reporter. Elle n'est pas rendue ici ; le
+ * remplacement posé sous l'ancienne clé reste orphelin — jamais servi
+ * (`GetPublishedShopCopyHandler` filtre par le manifeste), montré à l'éditeur
+ * (`shopCopyAdminView`).
+ */
 export function embeddedShopCopyRenames(): readonly (readonly [string, string])[] {
-  const renames: Readonly<Record<string, string>> = renamesJson.renames;
-  return Object.entries(renames);
+  return relocationsOf(renamesJson.renames);
+}
+
+/** Les seules entrées qui déplacent : un retrait (`null`) n'a rien à reporter. */
+export function relocationsOf(
+  renames: Readonly<Record<string, string | null>>,
+): readonly (readonly [string, string])[] {
+  return Object.entries(renames).flatMap(([from, to]) =>
+    to === null ? [] : [[from, to] as const],
+  );
 }

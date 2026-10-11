@@ -87,7 +87,9 @@ export class ClientShell {
    * réserve s'allonge avec elle. Un `min-width` en rem serait juste jusqu'à la
    * première retouche du dictionnaire, et faux en silence ensuite.
    */
-  protected readonly signInLabels = this.copy.everyLocale((copy) => copy.chrome.signIn);
+  protected readonly signInLabels = computed(() =>
+    this.copy.everyLocale((copy) => copy.chrome.signIn),
+  );
   protected readonly identityConflict = inject(IdentityConflictNotice);
   private readonly auth = inject(AuthFacade);
   private readonly router = inject(Router);

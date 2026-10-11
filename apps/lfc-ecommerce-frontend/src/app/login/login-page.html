@@ -5,24 +5,22 @@
       <span class="login-wordmark">La Folie Coffee</span>
     </div>
 
-    <h1 class="login-title">Espace professionnel</h1>
-    <p class="login-lead">
-      Connectez-vous pour accéder à votre boutique, vos commandes et votre catalogue.
-    </p>
+    <h1 class="login-title">{{ copy().title }}</h1>
+    <p class="login-lead">{{ copy().lead }}</p>
 
     @if (facade.isLoading()) {
       <div class="login-loading" role="status">
         <fold-spinner />
-        <span>Vérification de votre session…</span>
+        <span>{{ copy().checking }}</span>
       </div>
     } @else {
       <button foldButton emphasis="solid" intent="primary" block type="button" (click)="signIn()">
-        Se connecter
+        {{ copy().signIn }}
       </button>
       <button foldButton emphasis="outline" intent="neutral" block type="button" (click)="signUp()">
-        Créer un compte
+        {{ copy().signUp }}
       </button>
-      <p class="login-hint">Vous serez redirigé vers la page sécurisée, puis ramené ici.</p>
+      <p class="login-hint">{{ copy().hint }}</p>
     }
   </section>
 </main>

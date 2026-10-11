@@ -21,8 +21,8 @@ import type {
   EstablishmentField,
   EstablishmentRefusal,
 } from '../../../account/establishment';
-import { ClientLocale } from '../../client-locale.service';
 import { proAccountCopy } from '../../copy/screens/pro-account.copy';
+import { screenCopy } from '../../copy/shop-copy-composer';
 import { ProOnboarding } from '../../pro-onboarding.service';
 
 /** Une erreur serveur, sous la forme que `fold-input` sait afficher. */
@@ -70,9 +70,8 @@ const NO_ERRORS: readonly ServerFieldError[] = [];
 export class DossierCard {
   private readonly account = inject(AccountService);
   private readonly onboarding = inject(ProOnboarding);
-  private readonly locale = inject(ClientLocale);
 
-  protected readonly copy = computed(() => proAccountCopy(this.locale.current()));
+  protected readonly copy = screenCopy('proAccount', proAccountCopy);
 
   protected readonly firstName = signal('');
   protected readonly lastName = signal('');

@@ -1,4 +1,4 @@
-import { ChangeDetectionStrategy, Component, computed, inject, input } from '@angular/core';
+import { ChangeDetectionStrategy, Component, inject, input } from '@angular/core';
 import {
   FoldButtonComponent,
   FoldPanelBodyComponent,
@@ -9,8 +9,8 @@ import {
   FoldPanelRef,
 } from 'fold-ng';
 
-import { ClientLocale } from '../../client-locale.service';
 import { contactDialogCopy } from '../../copy/screens/contact-dialog.copy';
+import { screenCopy } from '../../copy/shop-copy-composer';
 import { dialogSide } from '../../panel-side';
 import { ContactDialog } from '../contact-dialog/contact-dialog';
 import { telHref, type ShownPhone } from '../contact-settings.store';
@@ -55,9 +55,8 @@ export class CallDialog {
 
   private readonly ref = inject(FoldPanelRef);
   private readonly panels = inject(FoldPanelHostService);
-  private readonly locale = inject(ClientLocale).current;
 
-  protected readonly c = computed(() => contactDialogCopy(this.locale()));
+  protected readonly c = screenCopy('contactDialog', contactDialogCopy);
   protected readonly telHref = telHref;
 
   /** Écrire plutôt qu'appeler : ce dialogue cède la place à « Nous écrire ». */

@@ -8,6 +8,7 @@ import { ClientAddresses } from '../../client-addresses.service';
 import type { ServiceChoice } from '../../order-context.store';
 import { ServicePoints } from '../pickup-points.store';
 import { DeliveryAddressDialog } from './delivery-address-dialog';
+import { ShopCopyOverrides } from '../../copy/shop-copy-overrides';
 
 /** Une zone à 6,90 € — un MONTANT, la forme la plus simple à assurer. */
 const ZONE: DeliveryZoneView = {
@@ -250,5 +251,16 @@ describe('DeliveryAddressDialog', () => {
     cta(fixture)?.click();
 
     expect(closed[0]).toMatchObject({ window: { start: null, end: '05:30' } });
+  });
+
+  /** Lot T4 des textes : un remplacement reçu redessine l'écran, sans rechargement. */
+  it('se redessine quand un remplacement de son texte arrive', () => {
+    const { fixture } = boot([]);
+    TestBed.inject(ShopCopyOverrides).receive('fr', { 'deliveryAddress.title': 'Livrer où ?' });
+    fixture.detectChanges();
+
+    expect((fixture.nativeElement as HTMLElement).querySelector('.screen')?.textContent).toBe(
+      'Livrer où ?',
+    );
   });
 });

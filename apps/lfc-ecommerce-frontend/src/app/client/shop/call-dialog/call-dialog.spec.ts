@@ -5,6 +5,7 @@ import { describe, expect, it, vi } from 'vitest';
 import { contactDialogCopy } from '../../copy/screens/contact-dialog.copy';
 import { ContactDialog } from '../contact-dialog/contact-dialog';
 import { CallDialog } from './call-dialog';
+import { ShopCopyOverrides } from '../../copy/shop-copy-overrides';
 
 /** **« Nous appeler »** — une ligne `tel:` par contact, et la bascule vers « Nous écrire ». */
 
@@ -64,5 +65,14 @@ describe('CallDialog', () => {
     expect(closed).toEqual([undefined]);
     expect(opened).toEqual([ContactDialog]);
     vi.unstubAllGlobals();
+  });
+
+  /** Lot T4 des textes : un remplacement reçu redessine l'écran, sans rechargement. */
+  it('se redessine quand un remplacement de son texte arrive', () => {
+    const { fixture } = mount();
+    TestBed.inject(ShopCopyOverrides).receive('fr', { 'contactDialog.callWrite': 'Un message ?' });
+    fixture.detectChanges();
+
+    expect((fixture.nativeElement as HTMLElement).textContent).toContain('Un message ?');
   });
 });

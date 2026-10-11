@@ -1,6 +1,6 @@
 # Plan — éditer les textes de la boutique, avec aperçu et parcours simulés
 
-> **Statut : T0 et T1 bâtis (2026-10-11), T2 à T5 à faire.** Écrit le 2026-10-11, contredit par
+> **Statut : T0, T1 et T4 bâtis (2026-10-11) ; T5 à faire ; T2 et T3, voir le §10.** Écrit le 2026-10-11, contredit par
 > `vitruve` le même jour (3 BLOQUANTS, 7 SÉRIEUX). **Le §10 l'emporte** sur
 > les sections 1 à 9 : il remplace notamment l'aperçu « vraie boutique en
 > production dans une iframe » par une **application d'aperçu séparée**.
@@ -299,7 +299,7 @@ ne le peut pas sur une autre origine) quand le navigateur le permet.
 | ~~**T1**~~ | ~~Table à trois états, routes admin et publique, validation contre le manifeste embarqué, renommages ; la boutique attend ses remplacements (≤ 300 ms) et les fusionne — dictionnaire général d'abord~~ — **bâti le 2026-10-11** |
 | **T2**     | L'éditeur (arbre, trois langues, recherche, Publier, historique)                                                                                                                                                                 |
 | **T3**     | L'application d'aperçu (composition, données de démonstration, en-têtes, messages), ses 8 parcours ; migration des accès directs à `localStorage`                                                                                |
-| **T4**     | Écran par écran du parcours de commande : fonctions → chaînes, textes en dur → dictionnaires, `legacy/` compris                                                                                                                  |
+| ~~**T4**~~ | ~~Écran par écran du parcours de commande : fonctions → chaînes, textes en dur → dictionnaires, `legacy/` compris~~ — **bâti le 2026-10-11** (voir « Ce que T4 a posé »)                                                         |
 | **T5**     | Le reste de la boutique                                                                                                                                                                                                          |
 
 ### Ce que T1 a posé (2026-10-11)
@@ -327,3 +327,51 @@ ne le peut pas sur une autre origine) quand le navigateur le permet.
 - **Boutique** : `ClientCopyService.t` superpose les remplacements de la
   langue courante ; un appel par langue et par visite ; le démarrage attend au
   plus 300 ms. Les fonctions d'écran restent pour T4.
+
+### Ce que T4 a posé (2026-10-11)
+
+Le symptôme (Hugo, 2026-10-11) : « mes modifications ne sont pas en temps réel
+dans la fenêtre déportée ». L'éditeur envoyait chaque frappe, l'aperçu la
+posait dans `ShopCopyOverrides`, mais seul le dictionnaire général la lisait.
+
+- **Un seul point de superposition** : `ShopCopyComposer`
+  (`apps/lfc-ecommerce-frontend/src/app/client/copy/shop-copy-composer.ts`), `compose(espace, texte du code, langue)`.
+  `ClientCopyService.t` l'appelle avec l'espace vide ; chaque écran passe par
+  `screenCopy(espace, xxxCopy)` — un `computed` qui lit la langue ET les
+  remplacements de l'espace (`slotPicker.` → `slotPicker`). Les **neuf**
+  fonctions d'écran et leurs **seize** appels sont migrés, clés inchangées.
+- **`everyLocale`** passe aussi par la superposition ; le shell le lit dans un
+  `computed`, la place réservée suit donc l'arrivée des remplacements.
+- **L'aperçu** remplace `ShopCopyComposer` à la composition
+  (`MarkedShopCopyComposer`) : le dictionnaire général ET les textes d'écran
+  portent le marqueur de leur clé complète ; le clic et `visible-keys` les
+  couvrent. Rien de l'aperçu n'entre dans le bundle de production (mesuré :
+  initial 1 290 882 → 1 292 472 octets, +1,6 kB pour un budget de +5 kB).
+- **Les textes en dur** : les gabarits servis du parcours de commande (`client/`)
+  n'en portaient plus. Le seul servi était **`/login`**, où renvoie le garde
+  d'authentification : ses six textes sont entrés au dictionnaire
+  (`signup.loginPage.*`, EN et IT traduits à ce lot, **à relire**).
+- **Le retrait d'une clé** : `shop-copy-renames.json` accepte
+  `"ancienne.cle": null`. La porte y lit une disparition voulue ; l'API ne
+  reporte rien, et le remplacement reste orphelin — jamais servi, montré à
+  l'éditeur.
+
+### T5 — ce qui reste
+
+- **Les phrases écrites en fonctions** de la procédure de livraison
+  (`deliveryProcedure.editor.stepNumber`, `.photoAlt`, `.reviseHeading`) :
+  leur TYPE (`DeliveryProcedureEditorLabels`) et leur français vivent dans
+  `packages/b2b-ui`, et servent aussi le back-office. Les réécrire en chaînes
+  à jetons est un changement du paquet ; elles restent « non recensées ».
+- **Les gabarits `legacy/`**, non servis aujourd'hui (`FEATURE_PRO_SPACE =
+false`, vérifié le 2026-10-11) — l'espace pro hérité et son cadre
+  (`app.html`) : `legacy/commandes/reglement-page`, `legacy/orders/stripe-payment`,
+  `legacy/commandes/commande-page`, `legacy/commandes/recurring-order-panel`,
+  `legacy/commandes/occurrence-override-panel`, `legacy/footer/site-footer`,
+  `legacy/contact/contact-panel`, `legacy/dashboard/dashboard-page`,
+  `legacy/entreprises/*` (dix gabarits), `legacy/profil/*`, `legacy/reglages/*`.
+  À traduire s'ils reviennent en service, à retirer sinon.
+- **Le pied de la boutique** : l'`aria-label="Mentions"` de `client/foot` ;
+  ses autres textes viennent du contenu de la vitrine, pas des dictionnaires.
+- `auth/dev-auth0-signup-page` : écran de développement, absent du build de
+  production — hors champ.

@@ -12,13 +12,13 @@ import { provideFoldCommonLabels, provideFoldToasts } from 'fold-ng';
 import { routes } from '../../../src/app/app.routes';
 import { AuthFacade } from '../../../src/app/auth/auth.facade';
 import { workspaceInterceptor } from '../../../src/app/client/client-workspace.interceptor';
-import { ClientCopyService } from '../../../src/app/client/copy/client-copy.service';
+import { ShopCopyComposer } from '../../../src/app/client/copy/shop-copy-composer';
 import { ClientFeatureAccess } from '../../../src/app/client/feature-access/client-feature-access.service';
 import { StripeLoader } from '../../../src/app/client/stripe-loader.service';
 import { AddressesService } from '../../../src/app/legacy/entreprises/addresses.service';
 import { NotifyService } from '../../../src/app/notify.service';
 import { CopyMarkers } from '../copy-picking/copy-markers';
-import { MarkedCopyService } from '../copy-picking/marked-copy.service';
+import { MarkedShopCopyComposer } from '../copy-picking/marked-shop-copy-composer';
 import { PREVIEW_WORLD, type PreviewWorld } from '../journeys/preview-world';
 import { DemoAuthFacade } from './demo-auth.facade';
 import { DemoHttpBackend } from './demo-http-backend';
@@ -50,7 +50,8 @@ const FOLD_COMMON_LABELS = {
  * Ce qui est REMPLACÉ : l'authentification (`DemoAuthFacade`), le réseau
  * (`DemoHttpBackend` — le seul `HttpBackend`, donc la seule sortie, et elle
  * n'en est pas une), Stripe (`DemoStripeLoader`), les textes
- * (`MarkedCopyService` : les mêmes, marqués de leur clé).
+ * (`MarkedShopCopyComposer` : les mêmes, marqués de leur clé — dictionnaire
+ * général et textes d'écran).
  *
  * Ce qui est ABSENT, et c'est la frontière : Auth0 (`provideAuth`), Sentry,
  * les mesures (`provideWebVitals`), l'installation PWA, le rechargement d'un
@@ -74,7 +75,7 @@ export function previewConfig(world: PreviewWorld, markers: CopyMarkers): Applic
       { provide: AuthFacade, useClass: DemoAuthFacade },
       { provide: StripeLoader, useClass: DemoStripeLoader },
       { provide: CopyMarkers, useValue: markers },
-      { provide: ClientCopyService, useClass: MarkedCopyService },
+      { provide: ShopCopyComposer, useClass: MarkedShopCopyComposer },
       provideAppInitializer(() => {
         void inject(ClientFeatureAccess).load();
       }),

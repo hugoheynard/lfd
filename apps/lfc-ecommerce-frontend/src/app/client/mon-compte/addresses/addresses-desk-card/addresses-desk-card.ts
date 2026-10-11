@@ -5,9 +5,9 @@ import { CompletionCallout } from '../../completion/completion-callout/completio
 import type { CompletionItem, CompletionTarget } from '../../completion/completion-items';
 import { ClientAddresses } from '../../../client-addresses.service';
 import { ClientCompany } from '../../../client-company.service';
-import { ClientLocale } from '../../../client-locale.service';
 import { ClientCopyService } from '../../../copy/client-copy.service';
 import { deliveryProcedureCopy } from '../../../copy/screens/delivery-procedure.copy';
+import { screenCopy } from '../../../copy/shop-copy-composer';
 import { ServicePoints } from '../../../shop/pickup-points.store';
 import { BillingAddressDialog } from '../billing-address-dialog/billing-address-dialog';
 import {
@@ -49,8 +49,7 @@ export class AddressesDeskCard {
   readonly completionAction = output<CompletionTarget>();
 
   protected readonly t = inject(ClientCopyService).t;
-  private readonly locale = inject(ClientLocale);
-  private readonly procedureCopy = computed(() => deliveryProcedureCopy(this.locale.current()));
+  private readonly procedureCopy = screenCopy('deliveryProcedure', deliveryProcedureCopy);
   private readonly client = inject(ClientCompany);
   private readonly addresses = inject(ClientAddresses);
   private readonly service = inject(ServicePoints);

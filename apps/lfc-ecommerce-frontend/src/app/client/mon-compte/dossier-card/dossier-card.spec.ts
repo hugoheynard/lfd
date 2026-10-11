@@ -10,6 +10,7 @@ import type {
 import { PRO_ACCOUNT_FR } from '../../copy/screens/pro-account.copy';
 import { ProOnboarding } from '../../pro-onboarding.service';
 import { DossierCard } from './dossier-card';
+import { ShopCopyOverrides } from '../../copy/shop-copy-overrides';
 
 /** Le profil d'un inscrit de `/bienvenue` : prénom et téléphone, pas de nom. */
 const PROFILE = {
@@ -175,5 +176,17 @@ describe('DossierCard', () => {
     await settle();
 
     expect(field(1).textContent).toContain('Nom : obligatoire');
+  });
+
+  /** Lot T4 des textes : un remplacement reçu redessine l'écran, sans rechargement. */
+  it('se redessine quand un remplacement de son texte arrive', async () => {
+    boot({ profile: PROFILE });
+    await settle();
+    TestBed.inject(ShopCopyOverrides).receive('fr', {
+      'proAccount.dossier.pitch': 'Dites-nous tout.',
+    });
+    fixture.detectChanges();
+
+    expect(el().querySelector('.pitch')?.textContent).toBe('Dites-nous tout.');
   });
 });

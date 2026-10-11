@@ -1,7 +1,7 @@
-import { ChangeDetectionStrategy, Component, computed, inject, input } from '@angular/core';
+import { ChangeDetectionStrategy, Component, computed, input } from '@angular/core';
 
-import { ClientLocale } from '../../client-locale.service';
 import { stepsCopy, type StepCopy } from '../../copy/screens/steps.copy';
+import { screenCopy } from '../../copy/shop-copy-composer';
 
 /** Le rang d'une étape — il n'y en a que trois, et c'est le type qui le dit. */
 export type StepRank = 1 | 2 | 3;
@@ -78,10 +78,10 @@ export class PublicSteps {
    */
   readonly pro = input(false);
 
-  private readonly locale = inject(ClientLocale);
+  private readonly copy = screenCopy('steps', stepsCopy);
 
   protected readonly steps = computed<readonly Step[]>(() => {
-    const dictionary = stepsCopy(this.locale.current());
+    const dictionary = this.copy();
     // Les trois étapes du registre demandé — mêmes rangs, mêmes rôles.
     const copy = this.pro() ? dictionary.pro : dictionary;
     const here = this.current();
@@ -100,5 +100,5 @@ export class PublicSteps {
     }));
   });
 
-  protected readonly doneLabel = computed(() => stepsCopy(this.locale.current()).doneLabel);
+  protected readonly doneLabel = computed(() => this.copy().doneLabel);
 }

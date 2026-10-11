@@ -11,9 +11,9 @@ import {
 } from 'fold-ng';
 
 import { ClientAudience } from '../../client-audience.service';
-import { ClientLocale } from '../../client-locale.service';
 import { ClientCopyService, fill } from '../../copy/client-copy.service';
 import { housePickerCopy } from '../../copy/screens/house-picker.copy';
+import { screenCopy } from '../../copy/shop-copy-composer';
 import { formatHour } from '../../format-hour';
 import { dialogSide } from '../../panel-side';
 import { ORDER_DIALOG } from '../order-dialog';
@@ -104,14 +104,13 @@ export class PublicHousePickerDialog {
   readonly data = input.required<HousePickerData>();
 
   private readonly points = inject(ServicePoints);
-  private readonly locale = inject(ClientLocale);
   private readonly t = inject(ClientCopyService).t;
   private readonly ref = inject(FoldPanelRef);
 
   /** Un visiteur est `b2c` — et le défaut penche de ce côté tant qu'on ne sait pas. */
   private readonly audience = inject(ClientAudience).shown;
 
-  protected readonly c = computed(() => housePickerCopy(this.locale.current()));
+  protected readonly c = screenCopy('housePicker', housePickerCopy);
 
   constructor() {
     // Idempotent : la boutique les a souvent déjà lus.

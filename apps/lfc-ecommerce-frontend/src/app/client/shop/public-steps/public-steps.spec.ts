@@ -2,6 +2,7 @@ import { type ComponentFixture, TestBed } from '@angular/core/testing';
 import { describe, expect, it } from 'vitest';
 
 import { PublicSteps, type StepRank } from './public-steps';
+import { ShopCopyOverrides } from '../../copy/shop-copy-overrides';
 
 function boot(
   current: StepRank,
@@ -93,5 +94,14 @@ describe('PublicSteps', () => {
     const rendered = steps(boot(2, [null]));
 
     expect(textOf(rendered[0], '.step-hint')).toBe('La maison qui vous arrange');
+  });
+
+  /** Lot T4 des textes : un remplacement reçu redessine l'écran, sans rechargement. */
+  it('se redessine quand un remplacement de son texte arrive', () => {
+    const fixture = boot(2);
+    TestBed.inject(ShopCopyOverrides).receive('fr', { 'steps.when.label': 'Quand' });
+    fixture.detectChanges();
+
+    expect(textOf(steps(fixture)[1], '.step-label')).toBe('Quand');
   });
 });

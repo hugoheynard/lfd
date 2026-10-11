@@ -10,6 +10,7 @@ import { formatCents } from '../../format-money';
 import { OrderContextStore, type ServiceChoice } from '../../order-context.store';
 import { ClientCart } from '../client-cart.service';
 import { CartBar } from './cart-bar';
+import { ShopCopyOverrides } from '../../copy/shop-copy-overrides';
 
 /** Le choix tel que l'accueil l'écrit, sur la journée du jour. */
 function choiceToday(): ServiceChoice {
@@ -148,5 +149,14 @@ describe('CartBar — le pied collé', () => {
     edit?.click();
 
     expect(edited).toBe(1);
+  });
+
+  /** Lot T4 des textes : un remplacement reçu redessine l'écran, sans rechargement. */
+  it('se redessine quand un remplacement de son texte arrive', () => {
+    const fixture = boot();
+    TestBed.inject(ShopCopyOverrides).receive('fr', { 'commandTerms.edit': 'Retoucher' });
+    fixture.detectChanges();
+
+    expect(el(fixture).querySelector('.edit')?.textContent?.trim()).toBe('Retoucher');
   });
 });

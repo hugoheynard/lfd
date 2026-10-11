@@ -8,6 +8,7 @@ import { describe, expect, it } from 'vitest';
 import { ClientAudience } from '../../client-audience.service';
 import { ServicePoints } from '../pickup-points.store';
 import { PublicHousePickerDialog } from './public-house-picker-dialog';
+import { ShopCopyOverrides } from '../../copy/shop-copy-overrides';
 
 /** Un point COMPLET : aucun cast, donc rien qui puisse mentir sur sa forme. */
 function point(
@@ -155,5 +156,16 @@ describe('PublicHousePickerDialog', () => {
 
     expect(rendered[0]?.querySelector('.offer')?.classList.contains('is-plain')).toBe(true);
     expect(rendered[1]?.querySelector('.offer')?.classList.contains('is-plain')).toBe(false);
+  });
+
+  /** Lot T4 des textes : un remplacement reçu redessine l'écran, sans rechargement. */
+  it('se redessine quand un remplacement de son texte arrive', () => {
+    const { fixture } = boot();
+    TestBed.inject(ShopCopyOverrides).receive('fr', { 'housePicker.title': 'Quelle maison ?' });
+    fixture.detectChanges();
+
+    expect((fixture.nativeElement as HTMLElement).querySelector('.screen')?.textContent).toBe(
+      'Quelle maison ?',
+    );
   });
 });

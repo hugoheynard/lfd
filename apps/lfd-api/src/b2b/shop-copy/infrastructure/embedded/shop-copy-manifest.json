@@ -874,6 +874,48 @@
           "en": "By continuing, you accept the terms of sale and our data policy. No payment is asked for at sign-up.",
           "it": "Continuando, accettate le condizioni generali di vendita e la nostra politica sui dati. Nessun pagamento è richiesto all’iscrizione.",
           "variables": []
+        },
+        {
+          "key": "signup.loginPage.title",
+          "fr": "Espace professionnel",
+          "en": "Professional area",
+          "it": "Area professionale",
+          "variables": []
+        },
+        {
+          "key": "signup.loginPage.lead",
+          "fr": "Connectez-vous pour accéder à votre boutique, vos commandes et votre catalogue.",
+          "en": "Sign in to reach your shop, your orders and your catalogue.",
+          "it": "Accedi per raggiungere la tua boutique, i tuoi ordini e il tuo catalogo.",
+          "variables": []
+        },
+        {
+          "key": "signup.loginPage.checking",
+          "fr": "Vérification de votre session…",
+          "en": "Checking your session…",
+          "it": "Verifica della sessione…",
+          "variables": []
+        },
+        {
+          "key": "signup.loginPage.signIn",
+          "fr": "Se connecter",
+          "en": "Sign in",
+          "it": "Accedi",
+          "variables": []
+        },
+        {
+          "key": "signup.loginPage.signUp",
+          "fr": "Créer un compte",
+          "en": "Create an account",
+          "it": "Crea un account",
+          "variables": []
+        },
+        {
+          "key": "signup.loginPage.hint",
+          "fr": "Vous serez redirigé vers la page sécurisée, puis ramené ici.",
+          "en": "You will be taken to the secure page, then brought back here.",
+          "it": "Verrai indirizzato alla pagina sicura, poi riportato qui.",
+          "variables": []
         }
       ],
       "unrecorded": []

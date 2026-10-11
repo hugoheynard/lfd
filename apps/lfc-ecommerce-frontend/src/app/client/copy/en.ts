@@ -115,6 +115,15 @@ export const EN: ClientCopy = {
     fineInline: 'A code sent by email to get in, no password to remember.',
     legal:
       'By continuing, you accept the terms of sale and our data policy. No payment is asked for at sign-up.',
+    // Traduit au lot T4 des textes de la boutique : à relire.
+    loginPage: {
+      title: 'Professional area',
+      lead: 'Sign in to reach your shop, your orders and your catalogue.',
+      checking: 'Checking your session…',
+      signIn: 'Sign in',
+      signUp: 'Create an account',
+      hint: 'You will be taken to the secure page, then brought back here.',
+    },
   },
   rappel: {
     asapGroup: 'As soon as possible',

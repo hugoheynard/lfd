@@ -4,7 +4,7 @@
 >
 > La base de la reformulation (plan [`plan-textes-de-la-boutique.md`](plan-textes-de-la-boutique.md), §7 bis). Il dit le texte **du code**. `∅` : la clé manque dans cette langue ; `_(vide)_` : elle y vaut la chaîne vide.
 
-## Sommaire — 1246 textes
+## Sommaire — 1252 textes
 
 Clés présentes dans une langue et absentes d'une autre : 0.
 
@@ -16,7 +16,7 @@ Clés présentes dans une langue et absentes d'une autre : 0.
 | [Accueil — l'en-tête de bienvenue](#espace-hero) | `hero` | 4 |
 | [Accueil — les portes d'entrée](#espace-doors) | `doors` | 23 |
 | [Accueil — la carte d'événement](#espace-event) | `event` | 5 |
-| [Connexion et création de compte](#espace-signup) | `signup` | 18 |
+| [Connexion et création de compte](#espace-signup) | `signup` | 24 |
 | [Commander — l'écran d'entrée de la commande](#espace-commande) | `commande` | 39 |
 | [Rayon / boutique](#espace-shop) | `shop` | 36 |
 | [Rayon — la fiche produit](#espace-product) | `product` | 12 |
@@ -45,7 +45,7 @@ Clés présentes dans une langue et absentes d'une autre : 0.
 | [La procédure de livraison d’une adresse](#espace-deliveryprocedure) | `deliveryProcedure` | 47 (+ 3 non recensé) |
 | [Le dialogue « Nous écrire »](#espace-contactdialog) | `contactDialog` | 25 |
 | [Les documents légaux](#espace-legaldocument) | `legalDocument` | 7 |
-| **Total** | | **1246** |
+| **Total** | | **1252** |
 
 ## Le parcours de commande
 
@@ -200,7 +200,7 @@ Source : `fr.ts · en.ts · it.ts` · 5 textes.
 
 ### Connexion et création de compte — `signup`
 
-Source : `fr.ts · en.ts · it.ts` · 18 textes.
+Source : `fr.ts · en.ts · it.ts` · 24 textes.
 
 | Clé | FR | EN | IT | Variables |
 | --- | --- | --- | --- | --- |
@@ -222,6 +222,12 @@ Source : `fr.ts · en.ts · it.ts` · 18 textes.
 | `signup.fine` | Un code reçu par e-mail pour entrer, sans mot de passe à retenir. | A code sent by email to get in, no password to remember. | Un codice ricevuto via e-mail per entrare, nessuna password da ricordare. |  |
 | `signup.fineInline` | Un code reçu par e-mail pour entrer, sans mot de passe à retenir. | A code sent by email to get in, no password to remember. | Un codice ricevuto via e-mail per entrare, nessuna password da ricordare. |  |
 | `signup.legal` | En continuant, vous acceptez les conditions générales de vente et notre politique de données. Aucun paiement n’est demandé à l’inscription. | By continuing, you accept the terms of sale and our data policy. No payment is asked for at sign-up. | Continuando, accettate le condizioni generali di vendita e la nostra politica sui dati. Nessun pagamento è richiesto all’iscrizione. |  |
+| `signup.loginPage.title` | Espace professionnel | Professional area | Area professionale |  |
+| `signup.loginPage.lead` | Connectez-vous pour accéder à votre boutique, vos commandes et votre catalogue. | Sign in to reach your shop, your orders and your catalogue. | Accedi per raggiungere la tua boutique, i tuoi ordini e il tuo catalogo. |  |
+| `signup.loginPage.checking` | Vérification de votre session… | Checking your session… | Verifica della sessione… |  |
+| `signup.loginPage.signIn` | Se connecter | Sign in | Accedi |  |
+| `signup.loginPage.signUp` | Créer un compte | Create an account | Crea un account |  |
+| `signup.loginPage.hint` | Vous serez redirigé vers la page sécurisée, puis ramené ici. | You will be taken to the secure page, then brought back here. | Verrai indirizzato alla pagina sicura, poi riportato qui. |  |
 
 <a id="espace-commande"></a>
 

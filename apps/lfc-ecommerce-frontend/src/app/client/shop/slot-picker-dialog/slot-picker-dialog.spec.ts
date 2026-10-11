@@ -7,6 +7,7 @@ import { describe, expect, it } from 'vitest';
 import { ClientLocale } from '../../client-locale.service';
 import { PublicSlots } from '../public-slots.gateway';
 import { SlotPickerDialog, type SlotPickerData } from './slot-picker-dialog';
+import { ShopCopyOverrides } from '../../copy/shop-copy-overrides';
 
 /**
  * **Le sélecteur d'heure public.**
@@ -362,5 +363,16 @@ describe('SlotPickerDialog — le créneau déjà retenu', () => {
 
     expect(fixture.componentInstance['picked']()).toBeNull();
     expect((fixture.nativeElement as HTMLElement).querySelector('.slot .tag')).toBeNull();
+  });
+
+  /** Lot T4 des textes : un remplacement reçu redessine l'écran, sans rechargement. */
+  it('se redessine quand un remplacement de son texte arrive', async () => {
+    const { fixture } = await mount();
+    TestBed.inject(ShopCopyOverrides).receive('fr', { 'slotPicker.title': 'Quelle heure ?' });
+    fixture.detectChanges();
+
+    expect((fixture.nativeElement as HTMLElement).querySelector('.screen')?.textContent).toBe(
+      'Quelle heure ?',
+    );
   });
 });

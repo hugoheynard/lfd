@@ -1,4 +1,8 @@
-import { embeddedShopCopyManifest, embeddedShopCopyRenames } from "../embedded-shop-copy.js";
+import {
+  embeddedShopCopyManifest,
+  embeddedShopCopyRenames,
+  relocationsOf,
+} from "../embedded-shop-copy.js";
 
 describe("le manifeste embarqué", () => {
   const manifest = embeddedShopCopyManifest();
@@ -24,5 +28,9 @@ describe("le manifeste embarqué", () => {
 
   it("lit les renommages comme des paires", () => {
     expect(Array.isArray(embeddedShopCopyRenames())).toBe(true);
+  });
+
+  it("ne reporte pas un texte retiré (null) : son remplacement reste orphelin", () => {
+    expect(relocationsOf({ "a.old": "a.new", "a.gone": null })).toEqual([["a.old", "a.new"]]);
   });
 });

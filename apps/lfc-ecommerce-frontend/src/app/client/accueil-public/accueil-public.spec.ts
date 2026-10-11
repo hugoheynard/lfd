@@ -32,6 +32,7 @@ import type { StorefrontPageState } from '../shop/storefront/shop-storefront.sto
 import { ShopStorefront } from '../shop/storefront/shop-storefront.store';
 import { NOEL, storefrontObject } from '../shop/storefront/storefront.fixture';
 import { AccueilPublic } from './accueil-public';
+import { ShopCopyOverrides } from '../copy/shop-copy-overrides';
 
 /**
  * **L'accueil public** — ce que voit un visiteur sans compte.
@@ -756,5 +757,18 @@ describe('AccueilPublic — la vitrine de l’Accueil (L6)', () => {
       root.querySelector<HTMLElement>('.page')?.style.getPropertyValue('--lfc-photo-door'),
     ).toBe('');
     expect(root.querySelector('.banner-photo')?.getAttribute('aria-hidden')).toBe('true');
+  });
+
+  /** Lot T4 des textes : un remplacement reçu redessine l'écran, sans rechargement. */
+  it('se redessine quand un remplacement de son texte arrive', async () => {
+    const fixture = await mount([point({ id: 'a' })]);
+    TestBed.inject(ShopCopyOverrides).receive('fr', {
+      'accueilPublic.lede': 'Choisissez, on prépare.',
+    });
+    fixture.detectChanges();
+
+    expect((fixture.nativeElement as HTMLElement).querySelector('.screen-lede')?.textContent).toBe(
+      'Choisissez, on prépare.',
+    );
   });
 });

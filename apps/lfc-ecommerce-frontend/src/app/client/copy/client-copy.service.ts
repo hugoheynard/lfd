@@ -5,10 +5,10 @@ import type { ClientCopy } from './client-copy.model';
 import { EN } from './en';
 import { FR } from './fr';
 import { IT } from './it';
-import { overlayCopy } from './shop-copy-overlay';
-import { ShopCopyOverrides } from './shop-copy-overrides';
+import { DICTIONARY_SPACE, ShopCopyComposer } from './shop-copy-composer';
 
 const DICTIONARIES: Record<LocaleCode, ClientCopy> = { fr: FR, en: EN, it: IT };
+const LOCALE_CODES: readonly LocaleCode[] = ['fr', 'en', 'it'];
 
 /**
  * Ce que l'app dit, dans la langue choisie.
@@ -16,20 +16,19 @@ const DICTIONARIES: Record<LocaleCode, ClientCopy> = { fr: FR, en: EN, it: IT };
  * Un `computed` et rien d'autre : changer de langue change la valeur, et tout ce
  * qui la lit se redessine. Aucun abonnement, aucun rechargement.
  *
- * C'est le SEUL point où les remplacements publiés (`ShopCopyOverrides`) se
- * superposent au texte du code — clé par clé, une clé inconnue ignorée ; c'est
- * `ShopCopyLoader`, au démarrage, qui les lit (plan
- * `plan-textes-de-la-boutique.md`, lot T1). Les fonctions d'écran
- * (`*Copy(locale)`) n'en passent pas encore par là : elles migrent en T4.
+ * Les remplacements publiés se superposent par `ShopCopyComposer`, le même
+ * point que les fonctions d'écran (`screenCopy`) — clé par clé, une clé
+ * inconnue ignorée ; c'est `ShopCopyLoader`, au démarrage, qui les lit (plan
+ * `plan-textes-de-la-boutique.md`, lots T1 et T4).
  */
 @Injectable({ providedIn: 'root' })
 export class ClientCopyService {
   private readonly locale = inject(ClientLocale);
-  private readonly overrides = inject(ShopCopyOverrides);
+  private readonly composer = inject(ShopCopyComposer);
 
   readonly t = computed<ClientCopy>(() => {
     const locale = this.locale.current();
-    return overlayCopy(DICTIONARIES[locale], this.overrides.texts(locale));
+    return this.composer.compose(DICTIONARY_SPACE, DICTIONARIES[locale], locale);
   });
 
   /**
@@ -43,9 +42,14 @@ export class ClientCopyService {
    * ⚠️ Ce n'est pas une façon de LIRE une autre langue que la sienne : rien de
    * ce que ça rend n'est destiné à être affiché. Ce qu'on affiche vient de `t`,
    * et lui seul.
+   *
+   * Remplacements compris : la place réservée est celle du texte servi. Lu
+   * dans un `computed`, le résultat suit leur arrivée.
    */
   everyLocale<T>(pick: (copy: ClientCopy) => T): readonly T[] {
-    return Object.values(DICTIONARIES).map(pick);
+    return LOCALE_CODES.map((locale) =>
+      pick(this.composer.compose(DICTIONARY_SPACE, DICTIONARIES[locale], locale)),
+    );
   }
 }
 

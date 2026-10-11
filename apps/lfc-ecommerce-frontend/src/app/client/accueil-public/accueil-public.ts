@@ -27,6 +27,7 @@ import {
   type ContactBandCopy,
   type DoorCopy,
 } from '../copy/screens/accueil-public.copy';
+import { screenCopy } from '../copy/shop-copy-composer';
 import { OrderContextStore } from '../order-context.store';
 import { formatHour } from '../format-hour';
 import { bestPickupDiscount, discountLabel, pickupOffer } from '../shop/pickup-discount';
@@ -127,7 +128,7 @@ export class AccueilPublic {
   private readonly panels = inject(FoldPanelHostService);
 
   protected readonly t = inject(ClientCopyService).t;
-  protected readonly c = computed(() => accueilPublicCopy(this.locale.current()));
+  protected readonly c = screenCopy('accueilPublic', accueilPublicCopy);
 
   /** Un visiteur est `b2c` — et le défaut penche de ce côté tant qu'on ne sait pas. */
   private readonly audience = inject(ClientAudience).shown;

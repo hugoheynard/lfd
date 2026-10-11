@@ -4,6 +4,7 @@ import { FoldButtonComponent } from 'fold-ng';
 
 import { ClientLocale } from '../../client-locale.service';
 import { commandTermsCopy } from '../../copy/screens/command-terms.copy';
+import { screenCopy } from '../../copy/shop-copy-composer';
 import { serviceWhenLabel } from '../../format-day';
 import { formatCents } from '../../format-money';
 import { OrderContextStore } from '../../order-context.store';
@@ -45,7 +46,7 @@ export class CartBar {
   private readonly cart = inject(ClientCart);
   private readonly locale = inject(ClientLocale);
 
-  protected readonly c = computed(() => commandTermsCopy(this.locale.current()));
+  protected readonly c = screenCopy('commandTerms', commandTermsCopy);
 
   protected readonly choice = inject(OrderContextStore).choice;
 

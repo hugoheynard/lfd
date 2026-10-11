@@ -11,9 +11,9 @@ import {
 
 import { ClientAddresses } from '../../../client-addresses.service';
 import { ClientCompany } from '../../../client-company.service';
-import { ClientLocale } from '../../../client-locale.service';
 import { ClientCopyService } from '../../../copy/client-copy.service';
 import { deliveryProcedureCopy } from '../../../copy/screens/delivery-procedure.copy';
+import { screenCopy } from '../../../copy/shop-copy-composer';
 import { panelSide } from '../../../panel-side';
 import { ServicePoints } from '../../../shop/pickup-points.store';
 import { BillingAddressDialog } from '../billing-address-dialog/billing-address-dialog';
@@ -97,8 +97,7 @@ export class AddressesPanel {
   readonly data = input.required<AddressesPanelData>();
 
   protected readonly t = inject(ClientCopyService).t;
-  private readonly locale = inject(ClientLocale);
-  private readonly procedureCopy = computed(() => deliveryProcedureCopy(this.locale.current()));
+  private readonly procedureCopy = screenCopy('deliveryProcedure', deliveryProcedureCopy);
   private readonly addresses = inject(ClientAddresses);
   private readonly client = inject(ClientCompany);
   private readonly service = inject(ServicePoints);

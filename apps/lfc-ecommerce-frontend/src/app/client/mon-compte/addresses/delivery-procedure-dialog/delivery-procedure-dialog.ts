@@ -16,9 +16,9 @@ import {
 
 import { ClientAddresses } from '../../../client-addresses.service';
 import { clientDeliveryProcedureGateway } from '../../../client-delivery-procedure.gateway';
-import { ClientLocale } from '../../../client-locale.service';
 import { ClientCopyService } from '../../../copy/client-copy.service';
 import { deliveryProcedureCopy } from '../../../copy/screens/delivery-procedure.copy';
+import { screenCopy } from '../../../copy/shop-copy-composer';
 import { dialogSide } from '../../../panel-side';
 import { canWriteAddresses, postalLine } from '../addresses-section';
 
@@ -37,7 +37,7 @@ export interface DeliveryProcedureDialogData {
  */
 function removeConfirmLabels(): FoldInlineConfirmLabels {
   const account = inject(ClientCopyService).t().account;
-  const procedure = deliveryProcedureCopy(inject(ClientLocale).current());
+  const procedure = screenCopy('deliveryProcedure', deliveryProcedureCopy)();
   return {
     ...FOLD_INLINE_CONFIRM_DEFAULT_LABELS,
     confirm: procedure.editor.removeAction,
@@ -102,9 +102,8 @@ export class DeliveryProcedureDialog {
   readonly data = input.required<DeliveryProcedureDialogData>();
 
   protected readonly t = inject(ClientCopyService).t;
-  private readonly locale = inject(ClientLocale);
   /** Hors de `ClientCopy` : voir `delivery-procedure.copy.ts`. */
-  protected readonly procedure = computed(() => deliveryProcedureCopy(this.locale.current()));
+  protected readonly procedure = screenCopy('deliveryProcedure', deliveryProcedureCopy);
   private readonly addresses = inject(ClientAddresses);
   private readonly ref = inject(FoldPanelRef);
 

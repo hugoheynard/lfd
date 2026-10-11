@@ -102,4 +102,25 @@ describe('les parcours de l’aperçu', () => {
 
     expect(app.injector.get(ClientCart).count()).toBe(3);
   });
+
+  /**
+   * Lot T4 : les textes d'ÉCRAN (`screenCopy`) portent leur clé comme le
+   * dictionnaire général — un clic sur le titre du dialogue « où » rend
+   * `housePicker.title`, et la liste des clés visibles couvre l'espace.
+   */
+  it('« visitor-choosing-place » : un texte d’écran rend sa clé', async () => {
+    shadowBrowserStorage(window);
+    const markers = new CopyMarkers();
+    const journey = PREVIEW_JOURNEYS['visitor-choosing-place'];
+    app = await bootstrapApplication(App, previewConfig(journey.world, markers));
+    await journey.enter(app.injector);
+    await new Promise((resolve) => setTimeout(resolve, SETTLE_MS));
+    await app.whenStable();
+
+    const title = document.body.querySelector('fold-panel-body .screen')?.textContent ?? '';
+    expect(markers.keyAt(title, title.length - 1)).toBe('housePicker.title');
+    expect(visibleKeys(document.body, markers)).toEqual(
+      expect.arrayContaining(['housePicker.title', 'housePicker.lead']),
+    );
+  });
 });

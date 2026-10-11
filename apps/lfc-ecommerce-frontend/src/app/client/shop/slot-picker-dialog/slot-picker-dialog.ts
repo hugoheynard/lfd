@@ -23,6 +23,7 @@ import {
 import { ClientLocale } from '../../client-locale.service';
 import { fill } from '../../copy/client-copy.service';
 import { slotPickerCopy } from '../../copy/screens/slot-picker.copy';
+import { screenCopy } from '../../copy/shop-copy-composer';
 import { formatHour } from '../../format-hour';
 import { serviceDayLabel } from '../../format-day';
 import { dialogSide } from '../../panel-side';
@@ -166,7 +167,7 @@ export class SlotPickerDialog {
   private readonly locale = inject(ClientLocale);
   private readonly ref = inject(FoldPanelRef);
 
-  protected readonly c = computed(() => slotPickerCopy(this.locale.current()));
+  protected readonly c = screenCopy('slotPicker', slotPickerCopy);
 
   /** Le jour regardé. Vide tant que la première journée n'est pas connue. */
   protected readonly day = signal('');

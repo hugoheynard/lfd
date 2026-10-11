@@ -26,6 +26,7 @@ import { ClientIdentity } from '../../client-identity.service';
 import { ClientLocale } from '../../client-locale.service';
 import { fill } from '../../copy/client-copy.service';
 import { contactDialogCopy } from '../../copy/screens/contact-dialog.copy';
+import { screenCopy } from '../../copy/shop-copy-composer';
 import { dialogSide } from '../../panel-side';
 import { ContactGateway } from '../contact.gateway';
 import { localizedOr } from '../contact-settings.store';
@@ -84,7 +85,7 @@ export class ContactDialog {
   private readonly authenticated = inject(AuthFacade).isAuthenticated;
   private readonly identity = inject(ClientIdentity);
 
-  protected readonly c = computed(() => contactDialogCopy(this.locale()));
+  protected readonly c = screenCopy('contactDialog', contactDialogCopy);
   protected readonly bounds = CONTACT_BOUNDS;
 
   protected readonly state = signal<SubjectsState>('loading');

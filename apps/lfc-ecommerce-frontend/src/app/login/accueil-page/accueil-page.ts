@@ -14,8 +14,8 @@ import { ClientChrome } from '../../client/client-chrome.service';
 import { ClientPage } from '../../client/shell-bienvenue/client-page';
 import { ClientCopyService } from '../../client/copy/client-copy.service';
 import { ClientIdentity } from '../../client/client-identity.service';
-import { ClientLocale } from '../../client/client-locale.service';
 import { proAccountCopy } from '../../client/copy/screens/pro-account.copy';
+import { screenCopy } from '../../client/copy/shop-copy-composer';
 import { WORKSPACE_HOME_ROUTE } from '../../client/client-workspace-switch.service';
 
 import { SignInDialog } from '../sign-in-dialog/sign-in-dialog';
@@ -72,7 +72,6 @@ export class AccueilPage {
   private readonly chrome = inject(ClientChrome);
   private readonly auth = inject(AuthFacade);
   private readonly router = inject(Router);
-  private readonly locale = inject(ClientLocale);
 
   protected readonly t = inject(ClientCopyService).t;
 
@@ -100,7 +99,7 @@ export class AccueilPage {
 
   private readonly panels = inject(FoldPanelHostService);
 
-  private readonly proCopy = computed(() => proAccountCopy(this.locale.current()));
+  private readonly proCopy = screenCopy('proAccount', proAccountCopy);
 
   protected readonly kicker = computed(() =>
     this.door() === 'pro' ? this.proCopy().door.kicker : this.t().chrome.kickerWelcome,

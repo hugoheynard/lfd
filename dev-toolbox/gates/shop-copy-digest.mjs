@@ -14,7 +14,7 @@
  *    boutique, à l'octet : l'API valide contre ce qu'elle a compilé (B1).
  * 3. Une clé du manifeste COMMITÉ (`HEAD`) qui disparaît du manifeste
  *    régénéré doit avoir son entrée dans `shop-copy-renames.json`, vers une clé
- *    qui existe. Sans elle, un remplacement publié deviendrait orphelin sans
+ *    qui existe — ou `null`, un retrait voulu. Sans elle, un remplacement publié deviendrait orphelin sans
  *    que personne l'ait décidé.
  */
 import { existsSync, readFileSync } from "node:fs";
@@ -72,7 +72,7 @@ if (vanished.length > 0) {
   console.error("\n✖ Des clés du manifeste commité disparaissent sans renommage :\n");
   for (const key of vanished) console.error(`  ${key}`);
   console.error(
-    `\n  Un remplacement publié sur l'une d'elles deviendrait orphelin. Déclarer\n  « ancienne → nouvelle » dans ${RENAMES_PATH}, puis \`${REGENERATE}\`.\n`,
+    `\n  Un remplacement publié sur l'une d'elles deviendrait orphelin. Déclarer\n  « ancienne → nouvelle » dans ${RENAMES_PATH} — ou « ancienne : null » si le\n  texte est retiré —, puis \`${REGENERATE}\`.\n`,
   );
   process.exit(1);
 }

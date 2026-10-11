@@ -1,8 +1,9 @@
-import { ChangeDetectionStrategy, Component, effect, inject } from '@angular/core';
+import { ChangeDetectionStrategy, Component, computed, effect, inject } from '@angular/core';
 import { ActivatedRoute, Router } from '@angular/router';
 import { FoldButtonComponent, FoldPanelHostService, FoldSpinnerComponent } from 'fold-ng';
 
 import { AuthFacade } from '../auth/auth.facade';
+import { ClientCopyService } from '../client/copy/client-copy.service';
 import { SignInDialog } from './sign-in-dialog/sign-in-dialog';
 
 /**
@@ -25,6 +26,8 @@ export class LoginPage {
   private readonly router = inject(Router);
   protected readonly facade = inject(AuthFacade);
   private readonly panels = inject(FoldPanelHostService);
+  private readonly t = inject(ClientCopyService).t;
+  protected readonly copy = computed(() => this.t().signup.loginPage);
 
   /** Route à rejoindre après connexion (deep-link préservé par le guard). */
   private readonly returnTo = this.route.snapshot.queryParamMap.get('returnTo') ?? '/';

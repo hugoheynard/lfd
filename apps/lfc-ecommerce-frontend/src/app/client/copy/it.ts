@@ -117,6 +117,15 @@ export const IT: ClientCopy = {
     fineInline: 'Un codice ricevuto via e-mail per entrare, nessuna password da ricordare.',
     legal:
       'Continuando, accettate le condizioni generali di vendita e la nostra politica sui dati. Nessun pagamento è richiesto all’iscrizione.',
+    // Tradotto al lotto T4 dei testi della boutique : da rileggere.
+    loginPage: {
+      title: 'Area professionale',
+      lead: 'Accedi per raggiungere la tua boutique, i tuoi ordini e il tuo catalogo.',
+      checking: 'Verifica della sessione…',
+      signIn: 'Accedi',
+      signUp: 'Crea un account',
+      hint: 'Verrai indirizzato alla pagina sicura, poi riportato qui.',
+    },
   },
   rappel: {
     asapGroup: 'Prima possibile',

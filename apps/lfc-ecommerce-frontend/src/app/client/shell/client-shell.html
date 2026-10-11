@@ -163,7 +163,7 @@
              constat qui a ouvert tout ce chantier. La PHRASE, elle, y mène
              toujours : c'est son travail. -->
         <button class="sign-cta" type="button" (click)="signIn()">
-          @for (label of signInLabels; track label) {
+          @for (label of signInLabels(); track label) {
             <span class="sign-ghost" aria-hidden="true">{{ label }}</span>
           }
           <span class="sign-word">{{ t().chrome.signIn }}</span>

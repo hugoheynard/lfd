@@ -26,7 +26,13 @@ export const EMBEDDED_COPIES = [
   [RENAMES_PATH, `${API_EMBEDDED_DIR}/shop-copy-renames.json`],
 ];
 
-/** Les renommages `ancienne clé → nouvelle`, relus et vérifiés dans leur forme. */
+/**
+ * Les renommages `ancienne clé → nouvelle`, relus et vérifiés dans leur forme.
+ *
+ * `null` à la place de la nouvelle clé dit un texte **retiré** du code, voulu :
+ * la porte l'accepte comme une disparition décidée, et l'API laisse le
+ * remplacement orphelin (jamais servi, montré à l'éditeur) — lot T4.
+ */
 export function readRenames() {
   const raw = JSON.parse(readFileSync(join(ROOT, RENAMES_PATH), "utf8"));
   const renames = raw.renames;
@@ -34,8 +40,11 @@ export function readRenames() {
     throw new Error(`${RENAMES_PATH} : la clé « renames » doit être un objet ancienne → nouvelle.`);
   }
   for (const [from, to] of Object.entries(renames)) {
+    if (to === null) continue;
     if (typeof to !== "string" || to.length === 0 || to === from) {
-      throw new Error(`${RENAMES_PATH} : « ${from} » doit pointer vers une autre clé, non vide.`);
+      throw new Error(
+        `${RENAMES_PATH} : « ${from} » doit pointer vers une autre clé, non vide — ou valoir null s'il est retiré.`,
+      );
     }
   }
   return renames;
@@ -67,14 +76,16 @@ export function committedManifest() {
 
 /**
  * Les clés du manifeste commité qui disparaissent sans renommage vers une clé
- * qui existe. Un remplacement publié sur l'une d'elles deviendrait orphelin en
- * silence : un renommage doit être un geste explicite (§10).
+ * qui existe, ni retrait déclaré (`null`). Un remplacement publié sur l'une
+ * d'elles deviendrait orphelin en silence : renommer ou retirer doit être un
+ * geste explicite (§10, T4).
  */
 export function vanishedKeys(committedJson, nextJson, renames) {
   if (committedJson === null) return [];
   const next = keysOf(nextJson);
   return [...keysOf(committedJson)]
     .filter((key) => !next.has(key))
+    .filter((key) => renames[key] !== null)
     .filter((key) => renames[key] === undefined || !next.has(renames[key]));
 }
 

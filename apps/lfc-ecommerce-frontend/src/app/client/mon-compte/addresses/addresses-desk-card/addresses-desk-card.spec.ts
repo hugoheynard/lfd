@@ -13,6 +13,7 @@ import { BillingAddressDialog } from '../billing-address-dialog/billing-address-
 import { DeliveryAddressDialog } from '../delivery-address-dialog/delivery-address-dialog';
 import { DeliveryProcedureDialog } from '../delivery-procedure-dialog/delivery-procedure-dialog';
 import { AddressesDeskCard } from './addresses-desk-card';
+import { ShopCopyOverrides } from '../../../copy/shop-copy-overrides';
 
 const SIEGE: BillingAddressView = {
   id: 'adr_siege',
@@ -179,5 +180,17 @@ describe('AddressesDeskCard', () => {
     expect(reader.querySelectorAll('button.row-edit').length).toBe(0);
     readerEntries[0]?.click();
     expect(openedPanel()?.data).toMatchObject({ canEdit: false });
+  });
+
+  /** Lot T4 des textes : un remplacement reçu redessine l'écran, sans rechargement. */
+  it('se redessine quand un remplacement de son texte arrive', () => {
+    vi.stubGlobal('matchMedia', matchMediaAt(false));
+    const fixture = bootCard(AddressesDeskCard, [TOMMEUSES], carnet(SIEGE, [CHALET]));
+    TestBed.inject(ShopCopyOverrides).receive('fr', { 'deliveryProcedure.entry': 'Accès livreur' });
+    fixture.detectChanges();
+
+    expect(
+      (fixture.nativeElement as HTMLElement).querySelector('button.procedure')?.textContent,
+    ).toContain('Accès livreur');
   });
 });

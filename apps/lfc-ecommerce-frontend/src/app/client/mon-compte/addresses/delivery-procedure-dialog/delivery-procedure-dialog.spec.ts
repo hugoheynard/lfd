@@ -18,6 +18,7 @@ import {
   DeliveryProcedureDialog,
   type DeliveryProcedureDialogData,
 } from './delivery-procedure-dialog';
+import { ShopCopyOverrides } from '../../../copy/shop-copy-overrides';
 
 const CHALET: DeliveryAddressView = {
   id: 'adr_1',
@@ -227,5 +228,16 @@ describe('DeliveryProcedureDialog', () => {
     await settle(fixture);
     expect(gateway.removed).toEqual(['stp_1']);
     expect(refreshed).toEqual(['cmp_1']);
+  });
+
+  /** Lot T4 des textes : un remplacement reçu redessine le dialogue, éditeur compris. */
+  it('se redessine quand un remplacement de son texte arrive', async () => {
+    const fixture = await boot({ companyId: 'cmp_1', address: CHALET, canEdit: true });
+    TestBed.inject(ShopCopyOverrides).receive('fr', {
+      'deliveryProcedure.editor.emptyTitle': 'Rien d’écrit encore',
+    });
+    await settle(fixture);
+
+    expect(text(fixture)).toContain('Rien d’écrit encore');
   });
 });

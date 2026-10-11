@@ -19,6 +19,7 @@ import { BillingAddressDialog } from '../billing-address-dialog/billing-address-
 import { DeliveryAddressDialog } from '../delivery-address-dialog/delivery-address-dialog';
 import { DeliveryProcedureDialog } from '../delivery-procedure-dialog/delivery-procedure-dialog';
 import { AddressesPanel, type AddressesPanelData } from './addresses-panel';
+import { ShopCopyOverrides } from '../../../copy/shop-copy-overrides';
 
 const CHALET: DeliveryAddressView = {
   id: 'adr_1',
@@ -386,5 +387,15 @@ describe('AddressesPanel', () => {
 
     fixture = boot(DELIVERY, { billing: SIEGE, deliveries: [CHALET] });
     expect(el().querySelector('.head')?.textContent?.trim()).toBe('1 adresse');
+  });
+
+  /** Lot T4 des textes : un remplacement reçu redessine l'écran, sans rechargement. */
+  it('se redessine quand un remplacement de son texte arrive', () => {
+    vi.stubGlobal('matchMedia', matchMediaAt(true));
+    fixture = boot(DELIVERY, { billing: SIEGE, deliveries: [CHALET] });
+    TestBed.inject(ShopCopyOverrides).receive('fr', { 'deliveryProcedure.entry': 'Accès livreur' });
+    fixture.detectChanges();
+
+    expect(el().querySelector('button.procedure')?.textContent).toContain('Accès livreur');
   });
 });
