@@ -567,10 +567,14 @@ export interface ClientCopy {
      */
     readonly whoTitle: string;
     readonly whoHint: string;
-    /** La porte de qui n'a pas de compte. */
+    /** Le sur-titre de la porte de qui n'a pas de compte. */
     readonly whoRegister: string;
-    /** La porte de qui en a un. */
+    /** Son bouton : commander sans créer de compte. */
+    readonly whoGuestCta: string;
+    /** Le sur-titre de la porte de qui en a un. */
     readonly whoSignIn: string;
+    /** Son bouton : se connecter. */
+    readonly whoSignInCta: string;
     /**
      * **La saisie d'un visiteur sans compte** — le dialogue « Qui commande ? ».
      *

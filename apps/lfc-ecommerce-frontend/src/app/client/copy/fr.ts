@@ -302,6 +302,8 @@ export const FR: ClientCopy = {
     whoTitle: 'Qui passe cette commande ?',
     whoHint: 'Il nous faut un nom et une adresse pour vous envoyer votre QR de retrait.',
     whoRegister: 'Je commande pour la première fois',
+    whoGuestCta: 'Commander en tant qu’invité',
+    whoSignInCta: 'Me connecter',
     whoSignIn: "J'ai déjà un compte",
     back: 'Retour à la boutique',
     guestTitle: 'Qui vient chercher ?',

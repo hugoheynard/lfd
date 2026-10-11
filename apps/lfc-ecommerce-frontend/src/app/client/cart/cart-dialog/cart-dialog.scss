@@ -75,8 +75,26 @@
 /* Les deux portes ont le MÊME poids : on ne pousse pas vers la création de
    compte quelqu'un qui en a déjà un, et l'inverse non plus. Seul le fond les
    distingue. */
+.who-door-block {
+  flex: 1 1 12rem;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+/* Le sur-titre d'une porte : petites capitales desserrées, comme les autres
+   sur-titres du panier. */
+.who-kicker {
+  margin: 0;
+  color: var(--lfc-color-on-accent);
+  font-family: var(--lfc-font-caps);
+  font-size: var(--fold-text-2xs);
+  font-weight: var(--lfc-weight-black);
+  letter-spacing: var(--lfc-tracking-eyebrow);
+  text-transform: uppercase;
+}
+
 .who-door {
-  flex: 1 1 auto;
   min-height: 40px;
   padding: 0 14px;
   border: 1px solid var(--lfc-color-accent-border);

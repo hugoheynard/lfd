@@ -307,6 +307,8 @@ export const IT: ClientCopy = {
     whoTitle: 'Chi effettua questo ordine?',
     whoHint: 'Ci servono un nome e un indirizzo per inviarle il QR di ritiro.',
     whoRegister: 'È il mio primo ordine',
+    whoGuestCta: 'Ordina come ospite',
+    whoSignInCta: 'Accedi',
     whoSignIn: 'Ho già un account',
     back: 'Torna alla bottega',
     guestTitle: 'Chi viene a ritirare?',

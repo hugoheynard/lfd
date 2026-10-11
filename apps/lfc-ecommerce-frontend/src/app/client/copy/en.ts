@@ -304,6 +304,8 @@ export const EN: ClientCopy = {
     whoTitle: 'Who is placing this order?',
     whoHint: 'We need a name and an address to send you your pickup QR.',
     whoRegister: 'This is my first order',
+    whoGuestCta: 'Order as a guest',
+    whoSignInCta: 'Sign in',
     whoSignIn: 'I already have an account',
     back: 'Back to the shop',
     guestTitle: 'Who is collecting?',

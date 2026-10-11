@@ -187,6 +187,21 @@ describe('le panier demande qui commande', () => {
     expect(el(fixture).querySelectorAll('.who-door')).toHaveLength(2);
   });
 
+  /** Hugo, 2026-10-11 : la situation en sur-titre, le geste en bouton, et le bloc en tête. */
+  it('ouvre le panier sur « qui », chaque porte avec son sur-titre et son geste', () => {
+    const fixture = boot({ auth: VISITEUR });
+    const blocks = [...el(fixture).querySelectorAll('.who-door-block')].map((block) => [
+      block.querySelector('.who-kicker')?.textContent?.trim(),
+      block.querySelector('.who-door')?.textContent?.trim(),
+    ]);
+
+    expect(el(fixture).querySelector('.page > *')?.classList).toContain('who');
+    expect(blocks).toEqual([
+      ['Je commande pour la première fois', 'Commander en tant qu’invité'],
+      ["J'ai déjà un compte", 'Me connecter'],
+    ]);
+  });
+
   /**
    * 🔴 **Le cas qui justifie `isLoading()`.** Le SDK Auth0 résout la session au
    * premier chargement, et `isAuthenticated` vaut `false` pendant ce temps-là
