@@ -14,6 +14,7 @@ import { FR } from '../../../client/copy/fr';
 import { COMMAND_TERMS_FR } from '../../copy/screens/command-terms.copy';
 import { ClientChrome } from '../../client-chrome.service';
 import { AuthFacade } from '../../../auth/auth.facade';
+import { OrderDoors } from '../order-doors';
 import { provideWorkspace, workspaceDouble } from '../../client-workspace.fixture';
 import { NOEL, storefrontObject } from '../storefront/storefront.fixture';
 import { ShopPage } from './shop-page';
@@ -116,8 +117,7 @@ describe('ShopPage', () => {
     el().querySelector<HTMLButtonElement>('app-cart-bar .pay')?.click();
     fixture.detectChanges();
 
-    // Sans mode de service, `pay()` renvoie à l'accueil pour le demander : la
-    // barre a donc bien déclenché le PARCOURS de règlement, pas un panneau.
+    // La barre a bien déclenché le PARCOURS de règlement, pas un panneau.
     expect(TestBed.inject(Router).url).not.toBe('/boutique');
   });
 
@@ -275,13 +275,34 @@ describe('ShopPage', () => {
    * la maison n'est pas connue des points chargés — le cas de ce harnais —,
    * il retombe sur l'accueil, où la question se pose entière.
    */
-  it('« Modifier » du pied, sans maison connue, retombe sur l’accueil', () => {
-    const router = TestBed.inject(Router);
-    const navigate = vi.spyOn(router, 'navigate').mockResolvedValue(true);
+  /**
+   * Régression (Hugo, 2026-10-11 : « quand je fais Régler dans la barre ça me
+   * ramène sur bienvenue ») : sans maison connue, la page renvoyait à l'accueil
+   * au lieu d'ouvrir les dialogues que le panier et l'accueil ouvrent sur place.
+   */
+  it('« Modifier » du pied rouvre l’heure de la maison prise, sans quitter le rayon', async () => {
+    const time = vi.spyOn(TestBed.inject(OrderDoors), 'time').mockResolvedValue(false);
+    const navigate = vi.spyOn(TestBed.inject(Router), 'navigate').mockResolvedValue(true);
 
     el().querySelector<HTMLButtonElement>('app-cart-bar .edit')?.click();
+    await fixture.whenStable();
 
-    expect(navigate).toHaveBeenCalledWith(['/bienvenue']);
+    expect(time).toHaveBeenCalledWith('pick_labo', 'Le Labo', 'Route de la Balme, Val d’Isère');
+    expect(navigate).not.toHaveBeenCalled();
+  });
+
+  it('« Régler » sans service le pose en dialogues, et renoncer laisse sur le rayon', async () => {
+    TestBed.inject(OrderContextStore).choice.set(null);
+    const pickup = vi.spyOn(TestBed.inject(OrderDoors), 'pickup').mockResolvedValue(false);
+    const navigate = vi.spyOn(TestBed.inject(Router), 'navigate').mockResolvedValue(true);
+    cart.add('VIE-001');
+    fixture.detectChanges();
+
+    el().querySelector<HTMLButtonElement>('app-cart-bar .pay')?.click();
+    await fixture.whenStable();
+
+    expect(pickup).toHaveBeenCalledWith(null);
+    expect(navigate).not.toHaveBeenCalled();
   });
 
   /** Le chevron est parti : le logo reprend le coin (Hugo, 2026-09-24). */

@@ -9,7 +9,6 @@ import {
   untracked,
 } from '@angular/core';
 import { Router } from '@angular/router';
-import { instantToLocal, type PickupAddressView } from '@lfd/contracts';
 import {
   FoldButtonComponent,
   FoldEmptyStateComponent,
@@ -30,12 +29,9 @@ import { Shop } from '../shop.service';
 import { ShopStorefront } from '../storefront/shop-storefront.store';
 import { ShopStore } from '../shop.store';
 import { ShelfAddress } from '../shelf-address';
-import { formatHour } from '../../format-hour';
 import { CartFulfillmentDays } from '../cart-fulfillment-days.service';
-import { ServicePoints } from '../pickup-points.store';
-import { SlotPickerDialog } from '../slot-picker-dialog/slot-picker-dialog';
 import { OrderBar } from '../order-bar/order-bar';
-import { PublicHousePickerDialog } from '../public-house-picker-dialog/public-house-picker-dialog';
+import { OrderDoors } from '../order-doors';
 import { CartBar } from '../../cart/cart-bar/cart-bar';
 import { ClientBannerOutlet } from '../../nav/client-banner';
 import { ProductSheet } from '../product-sheet/product-sheet';
@@ -93,8 +89,8 @@ export class ShopPage {
   private readonly router = inject(Router);
   private readonly order = inject(OrderContextStore);
   private readonly panels = inject(FoldPanelHostService);
-  private readonly points = inject(ServicePoints);
   private readonly orders = inject(ClientOrders);
+  private readonly doors = inject(OrderDoors);
   private readonly auth = inject(AuthFacade);
 
   protected readonly t = inject(ClientCopyService).t;
@@ -182,8 +178,7 @@ export class ShopPage {
     this.chrome.kicker.set(this.t().chrome.kickerShop);
     this.chrome.barOnDesktop.set(true);
     // Pas de chevron : le logo reprend le coin (Hugo, 2026-09-24 — « ça
-    // ressemble à de l'ancien flow »). `backToService()` sert encore à
-    // `pay()` et à `changeTime()` sans maison.
+    // ressemble à de l'ancien flow »).
     this.chrome.back.set(null);
     // La poignée de la languette, en pile (plan lot 3) : le chrome la dessine,
     // l'écran la demande — et la rend en partant.
@@ -211,88 +206,42 @@ export class ShopPage {
   }
 
   /**
-   * La flèche de retour : **l'accueil**.
-   *
-   * 🔴 Elle menait à l'écran du mode de service, qui n'existe plus : ses deux
-   * questions se posent en dialogues, depuis l'accueil comme depuis ici. Revenir
-   * en arrière depuis le rayon, c'est donc revenir là d'où l'on y est entré.
-   */
-  protected backToService(): void {
-    void this.router.navigate(['/bienvenue']);
-  }
-
-  /**
-   * Changer de maison ouvre un DIALOGUE, sans quitter le rayon : le panier est
-   * composé, et partir le ferait perdre de vue.
-   *
-   * 🔴 Puis l'heure est REDEMANDÉE, toujours. Les créneaux appartiennent à un
-   * point : une heure retenue au Labo n'existe pas forcément au Village, et la
-   * garder poserait une commande que le serveur refuserait au règlement.
+   * Changer de maison ouvre les DIALOGUES, sans quitter le rayon : le panier
+   * est composé, et partir le ferait perdre de vue. La séquence (maison, puis
+   * heure redemandée) est celle d'{@link OrderDoors}, comme au panier et à
+   * l'accueil.
    */
   protected async changeHouse(): Promise<void> {
-    const service = this.choice();
-    const ref = PublicHousePickerDialog.open(this.panels, {
-      currentId: service?.mode === 'pickup' ? service.pickupAddressId : null,
-    });
-    const point = await ref.closed;
-    if (point === undefined) {
-      return;
-    }
-    await this.askTime(point);
+    await this.openService(false);
   }
 
-  /**
-   * Changer l'heure se fait SANS quitter le rayon, et sans redemander la maison.
-   *
-   * Le repli sur l'écran du mode de service couvre la livraison et le point par
-   * défaut : il n'y a alors pas de maison sur laquelle rouvrir le sélecteur, et
-   * c'est là-bas que la question se pose entièrement.
-   */
+  /** Changer l'heure sans redemander la maison — ou poser le service s'il manque. */
   protected async changeTime(): Promise<void> {
-    const service = this.choice();
-    const point =
-      service?.mode === 'pickup' && service.pickupAddressId !== null
-        ? this.points.pickups().find((candidate) => candidate.id === service.pickupAddressId)
-        : undefined;
-    if (point === undefined) {
-      this.backToService();
-      return;
-    }
-    await this.askTime(point);
+    await this.openService(true);
   }
 
   /**
-   * Le sélecteur d'heure, puis le choix posé — la fin commune aux deux gestes.
+   * Rouvre la porte du service tel qu'il est.
    *
-   * 🔴 Le choix ne s'écrit QU'APRÈS l'heure. Poser la maison d'abord laisserait,
-   * le temps du dialogue, une maison avec l'heure de la précédente ; et refermer
-   * sans choisir figerait cet état-là. Renoncer en cours de route ne change
-   * donc rien : c'est ce qu'on attend d'un dialogue qu'on ferme.
+   * 🔴 Régression (Hugo, 2026-10-11 : « quand je fais Régler dans la barre ça
+   * me ramène sur bienvenue ») : sans service choisi, cet écran renvoyait à
+   * l'accueil au lieu d'ouvrir les dialogues que le panier et l'accueil
+   * ouvrent déjà sur place.
+   *
+   * @returns `true` quand un service est posé en sortant.
    */
-  private async askTime(point: PickupAddressView): Promise<void> {
-    const place = point.label || point.ville;
-    const ref = SlotPickerDialog.open(this.panels, {
-      pickupAddressId: point.id,
-      place,
-      firstDay: this.points.nextDayFor(point.id),
-      lastDay: this.points.lastDay(),
-    });
-    const slot = await ref.closed;
-    if (slot === undefined) {
-      return;
+  private async openService(timeOnly: boolean): Promise<boolean> {
+    const service = this.choice();
+    if (service === null) {
+      return this.doors.pickup(null);
     }
-    // La même forme que `pickup-dialog` et que l'accueil : l'identité du point,
-    // jamais un montant ; le libellé pour l'écran, la fenêtre pour le serveur.
-    this.order.choice.set({
-      mode: 'pickup',
-      place,
-      at: `au ${place}`,
-      address: `${point.ligne1}, ${point.ville}`,
-      pickupAddressId: point.id,
-      slot: formatHour(slot.time),
-      window: { start: slot.time, end: instantToLocal(new Date(slot.endAt)).time },
-      date: slot.day,
-    });
+    if (service.mode === 'delivery') {
+      return this.doors.delivery(service.deliveryAddressId ?? null);
+    }
+    if (timeOnly && service.pickupAddressId !== null) {
+      return this.doors.time(service.pickupAddressId, service.place, service.address);
+    }
+    return this.doors.pickup(service.pickupAddressId);
   }
 
   /**
@@ -311,8 +260,9 @@ export class ShopPage {
    * pas en inventer une.
    */
   protected async pay(): Promise<void> {
-    if (this.needsService()) {
-      this.backToService();
+    // Sans service, on le pose ICI, en dialogues, puis on enchaîne : fermer
+    // sans choisir laisse le panier tel quel.
+    if (this.needsService() && !(await this.doors.pickup(null))) {
       return;
     }
     // 🔴 **ON PEUT COMMANDER SANS COMPTE** (Hugo, 2026-09-21), et cette barre
