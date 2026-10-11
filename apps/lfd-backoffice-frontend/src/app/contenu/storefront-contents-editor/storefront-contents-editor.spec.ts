@@ -92,6 +92,18 @@ describe('StorefrontContentsEditor', () => {
     expect(editor.selected()).toBe(1);
   });
 
+  /** Hugo, 2026-10-11 : « j'ai article et info, mais pas opération ». */
+  it('ajoute une opération : une info déjà réglée pour ouvrir l’opération', () => {
+    const { editor, emitted, fixture, root } = setup(block([croissant]));
+
+    editor['addOperation']();
+    fixture.detectChanges();
+
+    expect(emitted.at(-1)?.at(-1)).toMatchObject({ kind: 'info', action: 'operation' });
+    expect(editor.selected()).toBe(1);
+    expect(root.textContent).toContain('+ Opération');
+  });
+
   it('réordonne et retire le contenu sélectionné, et la sélection le suit', () => {
     const { editor, emitted } = setup(block([croissant, gone]));
     editor['move'](1);

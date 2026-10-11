@@ -16,7 +16,13 @@ import type { ShelfOption, StorefrontCatalog } from '../storefront-catalog';
 import { StorefrontInfoForm } from '../storefront-info-form/storefront-info-form';
 import { operationOf, operationWarning } from '../storefront-operations';
 import { StorefrontProductPicker } from '../storefront-product-picker/storefront-product-picker';
-import { emptyInfo, type InfoContent, infoIssues, linkedOperation } from '../storefront-text';
+import {
+  emptyInfo,
+  type InfoContent,
+  infoActionOf,
+  infoIssues,
+  linkedOperation,
+} from '../storefront-text';
 
 /** Un article en cours de choix, avant qu'il n'entre dans la liste. */
 type Adding = 'product' | null;
@@ -183,6 +189,28 @@ export class StorefrontContentsEditor {
     this.itemsChange.emit([...this.items(), emptyInfo()]);
     this.adding.set(null);
     this.selected.set(index);
+  }
+
+  /**
+   * **« + Opération »** (Hugo, 2026-10-11 : « j'ai article et info, mais pas
+   * opération »). L'annonce d'une opération EST une info dont le clic ouvre
+   * l'opération : on la pose déjà réglée ainsi, plutôt que de laisser chercher
+   * ce réglage dans « Au clic ». Elle reprend le titre et la pastille de
+   * l'opération choisie tant qu'on ne les remplace pas.
+   */
+  protected addOperation(): void {
+    const index = this.items().length;
+    this.itemsChange.emit([...this.items(), { ...emptyInfo(), action: 'operation' }]);
+    this.adding.set(null);
+    this.selected.set(index);
+  }
+
+  /** Le nom d'un contenu dans ses onglets : ce que l'éditeur a ajouté. */
+  protected kindLabel(item: StorefrontContent): string {
+    if (item.kind === 'product') {
+      return 'Article';
+    }
+    return infoActionOf(item) === 'operation' ? 'Opération' : 'Info';
   }
 
   protected startAddingProduct(): void {

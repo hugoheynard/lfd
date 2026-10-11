@@ -22,7 +22,7 @@
           <span class="number">{{ $index + 1 }}</span>
           <span class="tab-text">
             <span class="kind">
-              {{ item.kind === 'product' ? 'Article' : 'Info' }}
+              {{ kindLabel(item) }}
               @if (secondsOf($index); as seconds) {
                 · {{ seconds }} s
               }
@@ -42,6 +42,7 @@
           + Article
         </button>
         <button type="button" class="tab add-tab" (click)="addInfo()">+ Info</button>
+        <button type="button" class="tab add-tab" (click)="addOperation()">+ Opération</button>
       }
     </div>
   }
@@ -65,7 +66,7 @@
           @if (multiple()) {
             Contenu {{ current() + 1 }} sur {{ items().length }} ·
           }
-          {{ item.kind === 'product' ? 'Article' : 'Info' }}
+          {{ kindLabel(item) }}
           @if (secondsOf(current()); as seconds) {
             · affiché {{ seconds }} s
           }
@@ -145,6 +146,9 @@
         </button>
         <button foldButton type="button" size="sm" emphasis="outline" (click)="addInfo()">
           Ajouter une info
+        </button>
+        <button foldButton type="button" size="sm" emphasis="outline" (click)="addOperation()">
+          Ajouter une opération
         </button>
       </div>
     } @else if (items().length > 0) {
