@@ -133,10 +133,25 @@ class InMemoryOperationReader extends OperationReader {
   }
 }
 
-/** La médiathèque : elle ne connaît que {@link KNOWN_IMAGE}. */
+/** Le point focal de {@link KNOWN_IMAGE} à la médiathèque. */
+export const KNOWN_FOCAL = { x: 0.3, y: 0.7 };
+
+/** La médiathèque : elle ne connaît que {@link KNOWN_IMAGE}, décrite avec {@link KNOWN_FOCAL}. */
 export class TableImageCatalogue extends ImageCatalogue {
-  describe(): Promise<ReadonlyMap<string, CatalogueImage>> {
-    return Promise.resolve(new Map());
+  describe(urls: readonly string[]): Promise<ReadonlyMap<string, CatalogueImage>> {
+    const known: CatalogueImage = {
+      url: KNOWN_IMAGE,
+      name: "buche",
+      alt: { fr: "Une bûche" },
+      width: 800,
+      height: 600,
+      bytes: null,
+      contentType: null,
+      focal: KNOWN_FOCAL,
+    };
+    return Promise.resolve(
+      new Map(urls.filter((url) => url === KNOWN_IMAGE).map((url) => [url, known])),
+    );
   }
 
   has(url: string): Promise<boolean> {

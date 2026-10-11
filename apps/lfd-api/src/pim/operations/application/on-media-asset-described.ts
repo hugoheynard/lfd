@@ -11,9 +11,9 @@ import {
   type DurableSubscriber,
 } from "../../../platform/outbox/durable-handler.js";
 import { DurablePublisher } from "../../../platform/outbox/durable-publisher.js";
-import { OperationImageChangedFact } from "../../channels/b2b-platform/operations/operation-image-changed.fact.js";
 import { ImageCatalogue } from "../../channels/media/image-catalogue.js";
 import { OperationImageUsage } from "../domain/ports/operation-image-usage.js";
+import { announceOperationImages } from "./operation-image-announcement.js";
 
 /** Nom STABLE de l'abonné — clé de son reçu dans la boîte d'envoi. */
 export const REANNOUNCE_OPERATION_MEDIA = "pim.reannounce-operation-media";
@@ -64,10 +64,9 @@ export class OnMediaAssetDescribedForOperationsHandler implements DurableSubscri
     }
     // Une image inconnue du fonds (retirée entre-temps) part sans point :
     // l'annonce recadre au centre, comme au push.
-    const focal = (await this.images.describe([url])).get(url)?.focal ?? null;
-    for (const { key, image } of operations) {
-      const fact = new OperationImageChangedFact(key, this.ids.next(), { ...image, focal });
-      await this.durable.publish(fact.durableFact());
-    }
+    await announceOperationImages(
+      { images: this.images, durable: this.durable, ids: this.ids },
+      operations,
+    );
   }
 }

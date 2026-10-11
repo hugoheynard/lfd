@@ -1,3 +1,8 @@
+import {
+  CountingPimIds,
+  RecordingDurable,
+} from "../../../catalogue/product/application/__tests__/durable-doubles.js";
+import { PIM_OPERATION_IMAGE_CHANGED } from "../../../channels/b2b-platform/operations/operation-image-changed.fact.js";
 import { UnknownImageError } from "../../../channels/media/image-catalogue.js";
 import { Operation } from "../../domain/entities/operation.js";
 import {
@@ -13,6 +18,7 @@ import {
   dayIn,
   doubles,
   inDays,
+  KNOWN_FOCAL,
   KNOWN_IMAGE,
   prepared,
   type Doubles,
@@ -94,7 +100,90 @@ describe("PrepareOperationHandler", () => {
 });
 
 describe("EditOperationHandler", () => {
-  const edit = (d: Doubles) => new EditOperationHandler(d.operations, d.images, d.journal, d.uow);
+  const edit = (d: Doubles, durable = new RecordingDurable()) =>
+    new EditOperationHandler(
+      d.operations,
+      d.images,
+      d.journal,
+      d.uow,
+      durable,
+      new CountingPimIds(),
+    );
+  const NAME = { fr: "Noël 2026" };
+  const LEDE = { fr: "Les bûches sont là." };
+
+  /** Régression du 2026-10-11 : changer l'image d'une opération attendait le push. */
+  it("annonce la nouvelle alternative à la boutique, avec le point de la médiathèque", async () => {
+    const d = doubles();
+    seeded(d);
+    const durable = new RecordingDurable();
+
+    await edit(d, durable).execute(
+      new EditOperationCommand("noel-2026", {
+        name: NAME,
+        lede: LEDE,
+        image: { url: KNOWN_IMAGE, alt: "Une bûche au chocolat" },
+      }),
+    );
+
+    expect(durable.facts).toEqual([
+      {
+        type: PIM_OPERATION_IMAGE_CHANGED,
+        key: `${PIM_OPERATION_IMAGE_CHANGED}:noel-2026:geste_1`,
+        payload: {
+          operationKey: "noel-2026",
+          gestureId: "geste_1",
+          image: { url: KNOWN_IMAGE, alt: "Une bûche au chocolat", focal: KNOWN_FOCAL },
+        },
+      },
+    ]);
+  });
+
+  it("annonce le retrait de l'image par `image: null`", async () => {
+    const d = doubles();
+    seeded(d);
+    const durable = new RecordingDurable();
+
+    await edit(d, durable).execute(
+      new EditOperationCommand("noel-2026", { name: NAME, lede: LEDE, image: null }),
+    );
+
+    expect(durable.facts.map((fact) => fact.payload["image"])).toEqual([null]);
+  });
+
+  it("n'annonce rien quand seul le nom change : il attend le push", async () => {
+    const d = doubles();
+    seeded(d);
+    const durable = new RecordingDurable();
+
+    await edit(d, durable).execute(
+      new EditOperationCommand("noel-2026", {
+        name: { fr: "Noël" },
+        lede: LEDE,
+        image: { url: KNOWN_IMAGE, alt: "Une bûche" },
+      }),
+    );
+
+    expect(durable.facts).toEqual([]);
+    expect(d.operations.writes).toEqual(["save:noel-2026"]);
+  });
+
+  it("n'annonce rien d'une image refusée", async () => {
+    const d = doubles();
+    seeded(d);
+    const durable = new RecordingDurable();
+
+    await expect(
+      edit(d, durable).execute(
+        new EditOperationCommand("noel-2026", {
+          name: NAME,
+          lede: LEDE,
+          image: { url: "https://ailleurs.test/x.jpg", alt: "" },
+        }),
+      ),
+    ).rejects.toThrow(UnknownImageError);
+    expect(durable.facts).toEqual([]);
+  });
 
   it("journalise seulement ce qui a changé", async () => {
     const d = doubles();

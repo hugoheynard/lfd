@@ -129,6 +129,22 @@ async function pushNoelShowing(image: string): Promise<void> {
     });
 }
 
+/** Réécrit l'annonce de « noel » au référentiel : même nom, même accroche, image `image`. */
+async function editNoelImage(image: { url: string; alt: string } | null): Promise<void> {
+  await staff()
+    .put("/pim/operations/noel/presentation")
+    .send({ name: { fr: "Noël" }, lede: null, image })
+    .expect(200);
+}
+
+/** Le VRAI envoi du référentiel : la copie est exactement sa projection. */
+async function pushRealFeed(): Promise<void> {
+  const preview = await ctx.app.get(B2bCatalogFeedPreview).preview(daysAgo(0));
+  await ctx.app
+    .get(B2bCatalogDriver)
+    .send(preview.snapshot, { revisionId: "rev_parity", fingerprint: preview.fingerprint });
+}
+
 /** Livre tout ce qui attend dans la boîte d'envoi — y compris les faits en cascade. */
 async function settle(): Promise<void> {
   for (let round = 0; round < 3; round += 1) {
@@ -216,16 +232,66 @@ describe("l'image d'une opération suit la médiathèque, sans push", () => {
     expect(row.imageGestureId).toBe(newer);
   });
 
+  /** Régression du 2026-10-11 : changer l'image d'une opération au référentiel attendait le push. */
+  it("changer l'image et son alternative au référentiel se lit en boutique, sans push", async () => {
+    const a = await deposit(1001);
+    const b = await deposit(1002);
+    await describeFocal(b, { x: 0.2, y: 0.8 });
+    await prepareNoel(a);
+    await pushNoelShowing(a);
+    await settle();
+
+    await editNoelImage({ url: b, alt: "Une bûche au chocolat" });
+    await settle();
+
+    expect(await shopNoelImage()).toEqual({
+      url: b,
+      alt: "Une bûche au chocolat",
+      focal: { x: 0.2, y: 0.8 },
+    });
+    expect(await carriersOf(a)).toEqual([]);
+  });
+
+  it("retirer l'image au référentiel la retire de la boutique, sans push", async () => {
+    const a = await deposit(1001);
+    await prepareNoel(a);
+    await pushNoelShowing(a);
+    await settle();
+    expect(await shopNoelImage()).toMatchObject({ url: a });
+
+    await editNoelImage(null);
+    await settle();
+
+    expect(await shopNoelImage()).toBeNull();
+    const row = await ctx.prisma.catalogOperation.findUniqueOrThrow({ where: { key: "noel" } });
+    expect(row).toMatchObject({ imageUrl: null, imageAlt: null, imageFocalX: null });
+  });
+
+  it("la parité des opérations reste verte après une édition de l'image, sans push", async () => {
+    const a = await deposit(1001);
+    const b = await deposit(1002);
+    await describeFocal(b, { x: 0.4, y: 0.6 });
+    await prepareNoel(a);
+    await pushRealFeed();
+    await settle();
+
+    await editNoelImage({ url: b, alt: "Une autre bûche" });
+    await settle();
+    const changed = await ctx.app.get(CheckCatalogParityService).confront();
+    expect(changed.operations.map((change) => change.change)).toEqual(["unchanged"]);
+
+    await editNoelImage(null);
+    await settle();
+    const removed = await ctx.app.get(CheckCatalogParityService).confront();
+    expect(removed.operations.map((change) => change.change)).toEqual(["unchanged"]);
+  });
+
   it("la parité des opérations reste verte après un remplacement, sans push", async () => {
     const a = await deposit(1001);
     const b = await deposit(1002);
     await describeFocal(b, { x: 0.4, y: 0.6 });
     await prepareNoel(a);
-    // Le VRAI envoi du référentiel : la copie est exactement sa projection.
-    const preview = await ctx.app.get(B2bCatalogFeedPreview).preview(daysAgo(0));
-    await ctx.app
-      .get(B2bCatalogDriver)
-      .send(preview.snapshot, { revisionId: "rev_parity", fingerprint: preview.fingerprint });
+    await pushRealFeed();
     await settle();
     const before = await ctx.app.get(CheckCatalogParityService).confront();
     expect(before.operations.map((change) => change.change)).toEqual(["unchanged"]);

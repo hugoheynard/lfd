@@ -43,7 +43,7 @@ describe("CatalogCopyMediaCarriers", () => {
       {
         kind: "operation",
         id: "noel",
-        label: "Boutique — opération « Noël » (copie, suit au prochain envoi du catalogue)",
+        label: "Boutique — opération « Noël » (copie, suit en quelques secondes)",
       },
     ]);
   });

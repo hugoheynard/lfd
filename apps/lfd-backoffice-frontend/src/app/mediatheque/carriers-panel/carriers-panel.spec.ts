@@ -127,7 +127,7 @@ describe('CarriersPanel', () => {
       {
         kind: 'operation',
         id: 'paques',
-        label: 'Boutique — opération « Pâques » (copie, suit au prochain envoi du catalogue)',
+        label: 'Boutique — opération « Pâques » (copie, suit en quelques secondes)',
       },
     ];
 
@@ -138,6 +138,6 @@ describe('CarriersPanel', () => {
 
     const host = fixture.nativeElement as HTMLElement;
     expect(host.querySelectorAll('.carrier').length).toBe(2);
-    expect(host.textContent).toContain('copie, suit au prochain envoi');
+    expect(host.textContent).toContain('copie, suit en quelques secondes');
   });
 });

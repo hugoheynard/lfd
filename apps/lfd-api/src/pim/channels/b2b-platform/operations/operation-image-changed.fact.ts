@@ -10,10 +10,11 @@ export const PIM_OPERATION_IMAGE_CHANGED = "pim.operation_image_changed";
 export type OperationImageOnWire = SyncOperation["image"];
 
 /**
- * **L'image d'une opération a changé à la médiathèque** — remplacée (A → B)
- * ou redécrite (point focal) — fait DURABLE que le référentiel déclare dans
- * son canal vers la plateforme (cf. `documentation/mediatheque/mediatheque.md`
- * §7 bis, 2026-10-11).
+ * **L'image d'une opération a changé** — remplacée (A → B) ou redécrite
+ * (point focal) à la médiathèque, ou posée, changée, retirée sur l'opération
+ * au référentiel — fait DURABLE que le référentiel déclare dans son canal
+ * vers la plateforme (cf. `documentation/mediatheque/mediatheque.md` §7 bis,
+ * 2026-10-11). `image: null` = l'opération n'en affiche plus.
  *
  * Avant lui, l'annonce en boutique (`catalog_operations.image_*`) ne suivait
  * qu'au push du catalogue : une copie restait sur l'ancienne image, et le
@@ -29,7 +30,8 @@ export type OperationImageOnWire = SyncOperation["image"];
  * plus récent (`image_gesture_id`).
  *
  * ⚠️ **Il ne se journalise pas** : la décision est `media_asset.replaced` ou
- * `media_asset.described`, à la médiathèque. ⚠️ **Il ne remplace pas le
+ * `media_asset.described` à la médiathèque, `operation.edited` au
+ * référentiel. ⚠️ **Il ne remplace pas le
  * push** : il ne porte que l'image ; dates, sélection et clientèle ne
  * traversent qu'au push.
  */

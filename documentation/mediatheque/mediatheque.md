@@ -84,13 +84,13 @@ l'ancienne URL.
   n'écrase jamais une description sans geste.
 
 ⚠️ **Une copie au commerce compte comme porteur.** L'image d'une opération
-est copiée au commerce (`catalog_operations`) au push, et suit un
-remplacement sans push (§7 bis) : la copie passe à la nouvelle dès que le
-fait `pim.operation_image_changed` est livré. Tant que la copie affiche
-l'ancienne image — ces quelques secondes, ou jusqu'au push quand l'image a
-été changée sur l'opération elle-même au référentiel —, celle-ci n'est ni
-retirable ni ramassable : le panneau des porteurs la nomme « Boutique —
-opération « X » (copie, suit au prochain envoi du catalogue) ». Le
+est copiée au commerce (`catalog_operations`) au push, et suit sans push
+un remplacement comme une image changée sur l'opération au référentiel
+(§7 bis) : la copie passe à la nouvelle dès que le fait
+`pim.operation_image_changed` est livré. Tant que la copie affiche
+l'ancienne image — ces quelques secondes —, celle-ci n'est ni retirable ni
+ramassable : le panneau des porteurs la nomme « Boutique — opération « X »
+(copie, suit en quelques secondes) ». Le
 repointage de la copie dans la transaction du remplacement reste à zéro
 (`CatalogCopyMediaCarriers.repoint`) : c'est le fait qui la fait suivre,
 avec l'ordre de ses gestes. Une opération finie ou masquée compte encore
@@ -464,8 +464,22 @@ sequenceDiagram
   push, qui reste la réparation et ne touche pas au geste. La parité du
   catalogue reste verte : la projection du référentiel et la copie disent la
   même image.
-- **Une image changée sur l'opération elle-même** (édition au référentiel)
-  ne suit encore qu'au push.
+- **Une image changée sur l'opération elle-même** (édition au référentiel :
+  posée, changée, retirée, ou son alternative réécrite) suit aussi sans
+  push. `EditOperationHandler`
+  (`apps/lfd-api/src/pim/operations/application/edit-operation.ts`) publie
+  le même fait dans SA transaction, à côté de l'écriture et de la trace —
+  seulement si l'image ou son alternative a changé ; un nom ou une accroche
+  seuls ne publient rien. Les deux émetteurs partagent une seule
+  construction de la charge utile (`announceOperationImages`,
+  `apps/lfd-api/src/pim/operations/application/operation-image-announcement.ts`) : l'URL et l'alternative de
+  l'opération, le point relu à la médiathèque. Une image **retirée** part en
+  `image: null`, sous le même ordre par geste, et le commerce efface
+  `image_url`, `image_alt` et le point : la boutique sert l'opération sans
+  image (`image: null`), exactement ce qu'un push sans image aurait écrit, et
+  la parité reste `unchanged`. Il n'existe plus de cas où l'image d'une
+  opération attend le push ; ses **dates, sa sélection et sa clientèle**,
+  elles, n'y traversent toujours qu'au push.
 - **L'éditeur de vitrine** reçoit le point des opérations
   (`storefrontCatalogOperationSchema.image.focal`, facultatif) : l'aperçu
   d'une image héritée se recadre par `focalPositionOf`.

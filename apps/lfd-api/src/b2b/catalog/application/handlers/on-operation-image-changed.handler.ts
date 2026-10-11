@@ -20,7 +20,8 @@ export const PROJECT_OPERATION_IMAGE = "catalog.project-operation-image";
  *
  * `catalog_operations.image_*` est une COPIE écrite par l'ingestion d'un
  * envoi. Un remplacement A → B ou une redescription du point focal à la
- * médiathèque n'y paraissaient qu'au push suivant. Cet abonné projette le
+ * médiathèque, comme une image posée, changée ou retirée sur l'opération au
+ * référentiel, n'y paraissaient qu'au push suivant. Cet abonné projette le
  * fait que le référentiel déclare dans son canal vers la plateforme, comme
  * `OnProductMediaChangedHandler` le fait pour les fiches.
  *
@@ -29,7 +30,8 @@ export const PROJECT_OPERATION_IMAGE = "catalog.project-operation-image";
  * - **L'ordre** : un fait plus ancien livré après un plus récent n'écrit
  *   rien (`showIfNewer`, sur `image_gesture_id`).
  * - **Il lève** : sous la boîte d'envoi, lever fait rejouer.
- * - **Il ne journalise rien** : la décision est tracée à la médiathèque.
+ * - **Il ne journalise rien** : la décision est tracée à la médiathèque ou
+ *   au référentiel.
  */
 @Injectable()
 @DurableHandler({ type: PIM_OPERATION_IMAGE_CHANGED, subscriber: PROJECT_OPERATION_IMAGE })

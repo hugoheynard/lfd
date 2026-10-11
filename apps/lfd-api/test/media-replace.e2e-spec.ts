@@ -333,7 +333,7 @@ describe("POST /media/replace — la copie de la boutique retient l'ancienne ima
   const COPY = {
     kind: "operation",
     id: "noel",
-    label: "Boutique — opération « Noël » (copie, suit au prochain envoi du catalogue)",
+    label: "Boutique — opération « Noël » (copie, suit en quelques secondes)",
   };
 
   async function replacedWhileShopShowsA(): Promise<{ a: string; b: string; hero: string }> {

@@ -7,10 +7,10 @@
  * pas dans la transaction du geste. L'image d'une opération datée est
  * recopiée dans `catalog_operations` au push, et — depuis le 2026-10-11 —
  * par la projection du fait `pim.operation_image_changed` quand la
- * médiathèque remplace ou redécrit l'image. Entre le geste et la livraison de
- * ce fait (ou le push suivant, quand l'image a été changée sur l'opération
- * elle-même au référentiel), la boutique sert encore l'ancienne URL alors que
- * le référentiel ne la porte plus. Sans ce canal, le ramassage ou le retrait
+ * médiathèque remplace ou redécrit l'image, ou que l'opération change la
+ * sienne au référentiel. Entre le geste et la livraison de ce fait, la
+ * boutique sert encore l'ancienne URL alors que le référentiel ne la porte
+ * plus. Sans ce canal, le ramassage ou le retrait
  * pouvaient effacer du bucket une image que la boutique affiche.
  *
  * Publié ICI et branché ailleurs, comme `b2b/storefront/channels/media/` : le
@@ -52,10 +52,10 @@ export interface CatalogMediaCopy {
 
 /**
  * Le libellé d'une copie, à partir du nom français reçu (la clé à défaut).
- * « Au prochain envoi » reste le pire cas : un remplacement à la médiathèque
- * la fait suivre dès la livraison de son fait, mais une image changée sur
- * l'opération elle-même n'y paraît qu'au push.
+ * « En quelques secondes » depuis le 2026-10-11 : un remplacement à la
+ * médiathèque comme une image changée sur l'opération au référentiel la font
+ * suivre dès la livraison de `pim.operation_image_changed`, sans push.
  */
 export function catalogMediaCopyLabel(name: string): string {
-  return `Boutique — opération « ${name} » (copie, suit au prochain envoi du catalogue)`;
+  return `Boutique — opération « ${name} » (copie, suit en quelques secondes)`;
 }
