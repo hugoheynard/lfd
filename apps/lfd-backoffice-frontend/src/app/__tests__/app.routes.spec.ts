@@ -130,6 +130,7 @@ const SCREENS: Readonly<Record<string, ScreenAccess>> = {
   // Les Réglages vidés le 2026-10-10 : la facturation est une page de la
   // Documentation, les réglages commerciaux une vue de l'Exploitation.
   'documentation/facturation': OPEN,
+  'documentation/mediatheque': OPEN,
   exploitation: OPEN,
   'exploitation/commercial': 'b2b_growth:read',
 
