@@ -1,0 +1,30 @@
+.ot-ref {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--fold-space-sm);
+  font-variant-numeric: tabular-nums;
+}
+
+.ot-who {
+  display: inline-flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: var(--fold-space-xs);
+}
+
+.ot-when {
+  display: flex;
+  flex-direction: column;
+}
+
+.ot-day {
+  color: var(--fold-color-text-muted);
+  font-size: var(--fold-text-xs);
+}
+
+/* La seule colonne qu'on parcourt de haut en bas : chiffres de largeur fixe,
+   sans quoi les montants ne s'alignent pas d'une ligne à l'autre. */
+.ot-total {
+  font-weight: 700;
+  font-variant-numeric: tabular-nums;
+}

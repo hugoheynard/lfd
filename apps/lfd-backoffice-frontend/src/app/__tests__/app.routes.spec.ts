@@ -48,6 +48,8 @@ const SCREENS: Readonly<Record<string, ScreenAccess>> = {
   'b2b/contenu/mentions/:mention': null,
   'commercial/comptes-clients': 'b2b_companies:read',
   'comptes-clients/nouveau': 'b2b_companies:write',
+  // La liste de TOUTES les commandes (plan-page-commandes.md, C2).
+  commandes: 'b2b_orders:read',
   'commandes/:orderId': 'b2b_orders:read',
   'comptes-clients/:id/nouvelle-commande': 'b2b_place_order:write',
   // Cible du QR de colisage imprimé sur la fiche d'atelier — c'est une VALEUR
@@ -88,7 +90,8 @@ const SCREENS: Readonly<Record<string, ScreenAccess>> = {
   'comptes-clients/:id/sous-comptes': null,
   // Les notes de la commerciale : ni la comptabilité ni le support, qui lisent pourtant la fiche.
   'comptes-clients/:id/notes': 'b2b_client_notes:read',
-  'comptes-clients/:id/commandes': null,
+  // Posé le 2026-10-12 : qui ne lit que les comptes prenait un 403 sur la liste.
+  'comptes-clients/:id/commandes': 'b2b_orders:read',
   // La MÊME commande que `commandes/:orderId`, sous le bandeau de son compte, et
   // derrière le MÊME droit : la coquille n'ouvre que `b2b_companies:read`, et
   // hériter ici laisserait lire les commandes à qui ne le peut pas ailleurs.

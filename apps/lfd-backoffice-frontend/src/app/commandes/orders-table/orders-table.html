@@ -1,0 +1,58 @@
+<fold-data-table
+  hover
+  clickable
+  density="compact"
+  [caption]="caption()"
+  [columns]="columns()"
+  [rows]="rows()"
+  [rowKey]="rowKey"
+  [empty]="empty()"
+  [loading]="loading()"
+  (rowClick)="opened.emit($event)"
+>
+  <ng-template foldCell="orderNumber" let-row>
+    <span class="ot-ref">
+      <span>{{ row.orderNumber }}</span>
+      @if (origin(row); as pill) {
+        <fold-badge variant="accent" [content]="pill" />
+      }
+    </span>
+  </ng-template>
+
+  <ng-template foldCell="customer" let-row>
+    <span class="ot-who">
+      <span>{{ row.customerLabel }}</span>
+      @if (clientele(row); as who) {
+        <fold-badge
+          radius="square"
+          [variant]="row.clientele === 'pro' ? 'info' : 'neutral'"
+          [content]="who"
+          data-clientele
+        />
+      }
+    </span>
+  </ng-template>
+
+  <ng-template foldCell="site" let-row>{{ site(row) }}</ng-template>
+
+  <ng-template foldCell="placedAt" let-row>{{ date(row) }}</ng-template>
+
+  <ng-template foldCell="fulfillment" let-row>
+    <span class="ot-when">
+      <span>{{ method(row) }}</span>
+      <span class="ot-day">{{ day(row) ?? '—' }}</span>
+    </span>
+  </ng-template>
+
+  <ng-template foldCell="status" let-row>
+    <fold-badge [variant]="statusTone(row)" [content]="status(row)" />
+  </ng-template>
+
+  <ng-template foldCell="paymentStatus" let-row>
+    <fold-badge [variant]="paymentTone(row)" [content]="payment(row)" />
+  </ng-template>
+
+  <ng-template foldCell="totalCents" let-row>
+    <span class="ot-total">{{ total(row) }}</span>
+  </ng-template>
+</fold-data-table>

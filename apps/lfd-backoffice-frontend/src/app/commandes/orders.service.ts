@@ -34,17 +34,12 @@ export class AdminOrdersService {
    */
   async list(filters: Partial<AdminOrdersQuery> = {}): Promise<AdminOrdersPage> {
     const params = new URLSearchParams();
-    if (filters.companyId !== undefined) {
-      params.set('companyId', filters.companyId);
-    }
-    if (filters.status !== undefined) {
-      params.set('status', filters.status);
-    }
-    if (filters.withSubAccounts === true) {
-      params.set('withSubAccounts', 'true');
-    }
-    if (filters.limit !== undefined) {
-      params.set('limit', `${filters.limit}`);
+    // `withSubAccounts` n'a de sens qu'à vrai ; les autres passent tels quels.
+    for (const [key, value] of Object.entries(filters)) {
+      if (value === undefined || value === false) {
+        continue;
+      }
+      params.set(key, `${value}`);
     }
     const query = params.toString();
     return firstValueFrom(

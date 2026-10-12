@@ -1,0 +1,143 @@
+<fold-page-layout icon="shopping-cart" title="Commandes">
+  <p description>Toutes les commandes, pro et particuliers — la plus récente en tête.</p>
+
+  <!-- Les filtres restent à l'écran dans les quatre états : c'est par eux qu'on
+       sort d'une liste vide ou d'un échec. -->
+  <section class="ol-filters" aria-label="Filtres">
+    <fold-search
+      class="ol-search"
+      placeholder="Référence, société, enseigne, nom du client…"
+      ariaLabel="Rechercher une commande"
+      [value]="filters().q ?? ''"
+      (searchChange)="setSearch($event)"
+      data-filter="q"
+    />
+    <div class="ol-row">
+      <fold-listbox
+        size="sm"
+        label="Clientèle"
+        [options]="clienteleChoices"
+        [value]="choice('clientele')"
+        (selectionChange)="setChoice('clientele', $event)"
+        data-filter="clientele"
+      />
+      <fold-listbox
+        size="sm"
+        label="Mode"
+        [options]="methodChoices"
+        [value]="choice('method')"
+        (selectionChange)="setChoice('method', $event)"
+        data-filter="method"
+      />
+      <fold-listbox
+        size="sm"
+        label="Avancement"
+        [options]="statusChoices"
+        [value]="choice('status')"
+        (selectionChange)="setChoice('status', $event)"
+        data-filter="status"
+      />
+      <fold-listbox
+        size="sm"
+        label="Règlement"
+        [options]="paymentChoices"
+        [value]="choice('paymentStatus')"
+        (selectionChange)="setChoice('paymentStatus', $event)"
+        data-filter="paymentStatus"
+      />
+    </div>
+    <div class="ol-row">
+      <fold-date
+        size="sm"
+        label="Passée du"
+        [value]="filters().placedFrom ?? ''"
+        (valueChange)="setDay('placedFrom', $event)"
+        data-filter="placedFrom"
+      />
+      <fold-date
+        size="sm"
+        label="au"
+        [value]="filters().placedTo ?? ''"
+        (valueChange)="setDay('placedTo', $event)"
+        data-filter="placedTo"
+      />
+      <fold-date
+        size="sm"
+        label="Pour le (retrait ou livraison) du"
+        [value]="filters().fulfillmentFrom ?? ''"
+        (valueChange)="setDay('fulfillmentFrom', $event)"
+        data-filter="fulfillmentFrom"
+      />
+      <fold-date
+        size="sm"
+        label="au"
+        [value]="filters().fulfillmentTo ?? ''"
+        (valueChange)="setDay('fulfillmentTo', $event)"
+        data-filter="fulfillmentTo"
+      />
+      @if (filtered()) {
+        <button
+          foldButton
+          class="ol-clear"
+          emphasis="soft"
+          intent="neutral"
+          size="sm"
+          (click)="clearFilters()"
+          data-clear-filters
+        >
+          Retirer les filtres
+        </button>
+      }
+    </div>
+  </section>
+
+  @switch (state()) {
+    @case ('loading') {
+      <fold-loading message="Chargement des commandes…" />
+    }
+    @case ('error') {
+      <fold-empty-state
+        tone="alert"
+        title="Impossible de charger les commandes"
+        subtitle="La lecture a échoué — les commandes, elles, sont intactes."
+      >
+        <button foldButton (click)="load()">Réessayer</button>
+      </fold-empty-state>
+    }
+    @default {
+      @if (rows().length === 0) {
+        <fold-empty-state
+          icon="shopping-cart"
+          [title]="empty().title"
+          [subtitle]="empty().subtitle ?? ''"
+        />
+      } @else {
+        <app-orders-table
+          caption="Toutes les commandes"
+          [wide]="true"
+          [rows]="rows()"
+          [empty]="empty()"
+          (opened)="openOrder($event)"
+        />
+      }
+
+      @if (more() === 'error') {
+        <fold-callout variant="alert" data-more-error>
+          La suite de la liste n'a pas pu être lue — ce qui est affiché reste juste.
+          <button foldButton size="sm" emphasis="outline" (click)="loadMore()">Réessayer</button>
+        </fold-callout>
+      } @else if (nextCursor() !== null) {
+        <button
+          foldButton
+          class="ol-more"
+          emphasis="outline"
+          [loading]="more() === 'loading'"
+          (click)="loadMore()"
+          data-load-more
+        >
+          Charger plus
+        </button>
+      }
+    }
+  }
+</fold-page-layout>

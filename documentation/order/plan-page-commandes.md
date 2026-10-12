@@ -1,6 +1,6 @@
 # Plan — la page Commandes du back-office
 
-> **Plan**, écrit le 2026-10-12. C1 (le serveur) est bâti ; C2 à C4 restent à faire. Ne touche ni à
+> **Plan**, écrit le 2026-10-12. C1 (le serveur) et C2 (l'écran) sont bâtis ; C3 et C4 restent à faire. Ne touche ni à
 > l'argent, ni à une migration de données, ni à une frontière de sécurité
 > (lecture sous `b2b_orders:read`, déjà accordée) : pas de `vitruve` d'office
 > (CLAUDE.md §9 bis) ; l'existant a été relu ce jour-là.
@@ -79,6 +79,33 @@
   insertion, chaque filtre, mur `b2b_orders:read`).
 
 ## 3. L'écran (lot C2)
+
+> ✅ **C2 bâti le 2026-10-12** (non commité à l'écriture). Ce qui diffère du
+> texte ci-dessous, ou qu'il ne disait pas :
+>
+> - la liste est `commandes/orders-list-page/` ; le tableau est **partagé** avec
+>   l'onglet Commandes de la fiche (`commandes/orders-table/`, entrée `wide` pour
+>   le client et « Pour le », `siteOf` pour la colonne Site d'un principal) ;
+> - les filtres sont des queryParams aux noms de `GET /admin/orders`, liés en
+>   `input()` (`withComponentInputBinding`) ; une valeur inconnue tombe à « Tous »
+>   au lieu de partir au serveur ; un filtre posé réécrit l'adresse
+>   (`replaceUrl`) ;
+> - **le retour du détail garde les filtres par l'historique**, pas par un lien :
+>   `fold-back-link` ne transmet pas de `queryParams` (vérifié dans
+>   `fold-ng.d.ts`). Venue de la liste (état de navigation `fromOrderList`), la
+>   commande remonte l'historique ; ouverte autrement, elle mène à `/commandes`
+>   nue. Le retour menait aux comptes clients ; un `queryParams` sur
+>   `fold-back-link` serait un chantier fold ;
+> - l'onglet Commandes de la fiche est **masqué** sans `b2b_orders:read`, en plus
+>   de sa garde de route ;
+> - **le détail n'a rien gagné d'autre que son retour** : le statut et la frise
+>   d'avancement (`lfd-order-detail`, `audience="staff"`), la composition et
+>   l'explication du prix (`app-price-explain`, qui appelle déjà
+>   `…/lines/:sku/rules`) y étaient. **L'historique au sens du journal de la
+>   commande n'existe pas** : aucune route `/admin/orders/:id/…` ne sert les
+>   faits de la commande (le seul journal par sujet est celui de la
+>   tarification). Il demande une route serveur — à décider ;
+> - pas de filtre par point de retrait (cf. C1).
 
 - Route `/commandes` (garde `b2b_orders:read`), entrée de menu dans **les deux
   arbres** (rail et tuiles, CLAUDE.md du back-office).

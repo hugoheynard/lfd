@@ -139,6 +139,17 @@ export const routes: Routes = [
       import('./agent/agent-tools-page/agent-tools-page').then((m) => m.AgentToolsPage),
   },
   {
+    // TOUTES les commandes, pro et particuliers (plan-page-commandes.md, C2).
+    // Les filtres sont des queryParams, liés en `input()` : l'adresse se
+    // partage, et le retour depuis le détail la retrouve.
+    path: 'commandes',
+    pathMatch: 'full',
+    canActivate: [permissionGuard('b2b_orders:read')],
+    title: 'Commandes — LFC B2B admin',
+    loadComponent: () =>
+      import('./commandes/orders-list-page/orders-list-page').then((m) => m.OrdersListPage),
+  },
+  {
     // Le détail d'une commande vit AUSSI hors de la fiche client : une commande
     // « zéro friction » n'a pas d'entreprise, donc pas de fiche où la loger.
     //

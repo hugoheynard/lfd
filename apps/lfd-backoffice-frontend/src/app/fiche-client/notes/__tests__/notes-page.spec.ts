@@ -217,11 +217,18 @@ describe('l’onglet Notes — qui le voit', () => {
   }
 
   it('l’onglet paraît entre Informations et Commandes pour qui a le droit', async () => {
-    expect(await shellTabs([READ])).toEqual(['/informations', '/notes', '/commandes']);
+    expect(await shellTabs([READ, 'b2b_orders:read'])).toEqual([
+      '/informations',
+      '/notes',
+      '/commandes',
+    ]);
   });
 
   it('l’onglet n’est pas proposé à qui lit la fiche sans lire les notes', async () => {
-    expect(await shellTabs(['b2b_companies:read'])).toEqual(['/informations', '/commandes']);
+    expect(await shellTabs(['b2b_companies:read', 'b2b_orders:read'])).toEqual([
+      '/informations',
+      '/commandes',
+    ]);
   });
 });
 

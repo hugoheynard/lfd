@@ -45,6 +45,21 @@
         ></a>
       }
 
+      @if (canSeeOrders()) {
+        <!-- COMMANDES — toutes, pro et particuliers (Hugo, 2026-10-12 : « dans le
+             primary menu »). La même entrée est aux tuiles plus bas. -->
+        <a
+          fold-menu-item
+          icon="shopping-cart"
+          label="Commandes"
+          routerLink="/commandes"
+          routerLinkActive
+          #ordersRla="routerLinkActive"
+          [active]="ordersRla.isActive"
+          (click)="mobileNavOpen.set(false)"
+        ></a>
+      }
+
       @if (canSeeOperationsApps()) {
         <!-- APP EXPLOITATION — les postes du jour, de la supervision au
              coursier (Hugo, 2026-10-12), en vert pomme : on y vient pour
@@ -594,6 +609,19 @@
             ></a>
           }
         </fold-nav-group>
+      }
+      @if (canSeeOrders()) {
+        <!-- La MÊME entrée qu'au rail : les deux arbres ne partagent pas leur modèle. -->
+        <a
+          fold-nav-tile
+          icon="shopping-cart"
+          label="Commandes"
+          routerLink="/commandes"
+          routerLinkActive
+          #ordersTile="routerLinkActive"
+          [active]="ordersTile.isActive"
+          (click)="mobileNavOpen.set(false)"
+        ></a>
       }
       @if (canSeeSupervision()) {
         <!-- La MÊME entrée qu'au rail : les deux arbres ne partagent pas leur modèle. -->

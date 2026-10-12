@@ -10,29 +10,18 @@ import {
 } from '@angular/core';
 import { Router, RouterLink } from '@angular/router';
 import {
-  FoldBadgeComponent,
   FoldButtonComponent,
   FoldCalloutComponent,
-  FoldDataTableComponent,
   FoldEmptyStateComponent,
-  FoldDataTableCellDirective,
   FoldListboxComponent,
   type FoldSelectOption,
-  type FoldTableColumn,
   type FoldTableEmpty,
 } from 'fold-ng';
-import { ORDER_ORIGIN_LABELS, type AdminOrderRow, type CustomerSheetView } from '@lfd/contracts';
-import {
-  formatCents,
-  formatOrderDate,
-  orderStatusLabel,
-  orderStatusVariant,
-  paymentStatusLabel,
-  paymentStatusVariant,
-} from '@lfd/b2b-ui/order';
+import type { AdminOrderRow, CustomerSheetView } from '@lfd/contracts';
 
 import { CustomerSheetService } from '../../commercial/calendrier/customer-sheet/customer-sheet.service';
 import { AdminOrdersService } from '../../commandes/orders.service';
+import { OrdersTable } from '../../commandes/orders-table/orders-table';
 import { ALL_SITES, siteChoicesOf, siteLabelOf } from './order-sites';
 
 type LoadState = 'loading' | 'ready' | 'error';
@@ -64,13 +53,11 @@ const PAGE_SIZE = 50;
   selector: 'app-client-commandes-page',
   changeDetection: ChangeDetectionStrategy.OnPush,
   imports: [
-    FoldBadgeComponent,
     FoldButtonComponent,
     FoldCalloutComponent,
-    FoldDataTableComponent,
     FoldEmptyStateComponent,
-    FoldDataTableCellDirective,
     FoldListboxComponent,
+    OrdersTable,
     RouterLink,
   ],
   templateUrl: './commandes-page.html',
@@ -100,63 +87,17 @@ export class ClientCommandesPage {
   /** Vrai quand la page est pleine : au-delà, il manque peut-être des commandes. */
   protected readonly maybeTruncated = computed(() => this.rows().length === PAGE_SIZE);
 
-  /**
-   * Les colonnes, dans l'ordre où on les lit : ce qui identifie, puis quand,
-   * puis où ça en est, puis combien. Le montant à droite et en `tabular-nums`,
-   * parce que c'est la seule colonne qu'on compare de haut en bas.
-   */
-  protected readonly columns = computed<readonly FoldTableColumn[]>(() => [
-    { key: 'orderNumber', label: 'Commande' },
-    ...(this.hasSites() ? [{ key: 'site', label: 'Site' }] : []),
-    { key: 'placedAt', label: 'Passée le', width: '9rem' },
-    { key: 'status', label: 'Avancement', width: '10rem' },
-    { key: 'paymentStatus', label: 'Règlement', width: '10rem' },
-    { key: 'totalCents', label: 'Total TTC', width: '8rem', align: 'right' },
-  ]);
-
   protected readonly emptyState: FoldTableEmpty = {
     title: 'Aucune commande',
     subtitle: "Ce compte n'a encore rien commandé.",
   };
 
-  protected readonly rowKey = (row: AdminOrderRow): string => row.id;
-
-  protected date(row: AdminOrderRow): string {
-    return formatOrderDate(row.placedAt);
-  }
-
-  protected siteOf(row: AdminOrderRow): string {
-    return siteLabelOf(row, this.id());
-  }
+  /** Une flèche, pour être passée telle quelle au tableau partagé. */
+  protected readonly siteOf = (row: AdminOrderRow): string => siteLabelOf(row, this.id());
 
   protected onSite(site: string): void {
     this.site.set(site);
     void this.load();
-  }
-
-  protected total(row: AdminOrderRow): string {
-    return formatCents(row.totalCents);
-  }
-
-  protected status(row: AdminOrderRow): string {
-    return orderStatusLabel(row.status);
-  }
-
-  protected statusTone(row: AdminOrderRow): ReturnType<typeof orderStatusVariant> {
-    return orderStatusVariant(row.status);
-  }
-
-  protected payment(row: AdminOrderRow): string {
-    return paymentStatusLabel(row.paymentStatus);
-  }
-
-  protected paymentTone(row: AdminOrderRow): ReturnType<typeof paymentStatusVariant> {
-    return paymentStatusVariant(row.paymentStatus);
-  }
-
-  /** La provenance, sauf quand c'est le cas normal — cf. `OrderRow`. */
-  protected origin(row: AdminOrderRow): string | null {
-    return row.origin === 'self_service' ? null : ORDER_ORIGIN_LABELS[row.origin];
   }
 
   constructor() {

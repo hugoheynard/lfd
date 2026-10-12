@@ -1,0 +1,25 @@
+.ol-filters {
+  display: flex;
+  flex-direction: column;
+  gap: var(--fold-space-md);
+}
+
+.ol-search {
+  max-width: 32rem;
+}
+
+.ol-row {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: flex-end;
+  gap: var(--fold-space-md);
+}
+
+.ol-clear,
+.ol-more {
+  align-self: flex-start;
+}
+
+.ol-row .ol-clear {
+  align-self: flex-end;
+}

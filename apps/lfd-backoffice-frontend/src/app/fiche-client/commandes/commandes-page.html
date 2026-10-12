@@ -29,41 +29,14 @@
         />
       }
 
-      <fold-data-table
+      <app-orders-table
         caption="Commandes du compte"
-        hover
-        clickable
-        density="compact"
-        [columns]="columns()"
         [rows]="rows()"
-        [rowKey]="rowKey"
+        [siteOf]="hasSites() ? siteOf : null"
         [loading]="state() === 'loading'"
         [empty]="emptyState"
-        (rowClick)="openOrder($event)"
-      >
-        <ng-template foldCell="orderNumber" let-row>
-          <span class="cmd-ref">{{ row.orderNumber }}</span>
-          @if (origin(row); as pill) {
-            <fold-badge variant="accent" [content]="pill" />
-          }
-        </ng-template>
-
-        <ng-template foldCell="site" let-row>{{ siteOf(row) }}</ng-template>
-
-        <ng-template foldCell="placedAt" let-row>{{ date(row) }}</ng-template>
-
-        <ng-template foldCell="status" let-row>
-          <fold-badge [variant]="statusTone(row)" [content]="status(row)" />
-        </ng-template>
-
-        <ng-template foldCell="paymentStatus" let-row>
-          <fold-badge [variant]="paymentTone(row)" [content]="payment(row)" />
-        </ng-template>
-
-        <ng-template foldCell="totalCents" let-row>
-          <span class="cmd-total">{{ total(row) }}</span>
-        </ng-template>
-      </fold-data-table>
+        (opened)="openOrder($event)"
+      />
 
       @if (maybeTruncated()) {
         <!-- Une liste plafonnée qui se tait passe pour exhaustive. -->

@@ -166,6 +166,11 @@ export class App {
     this.counts.accessPending() > 0 ? this.counts.accessPending() : undefined,
   );
   protected readonly canSeeCommercial = computed(() => this.permissions.can('b2b_growth:read'));
+  /**
+   * Toutes les commandes (plan-page-commandes.md, C2) : le droit même de la
+   * route, pour que l'entrée ne mène jamais à une redirection muette.
+   */
+  protected readonly canSeeOrders = computed(() => this.permissions.can('b2b_orders:read'));
   /** Le fournil lit les commandes ; il n'a rien à voir avec le commercial. */
   /**
    * Analytics lit le même droit que Commercial (`growth:read`) — c'est la même

@@ -13,27 +13,10 @@
   font-weight: 700;
 }
 
-/* Une commande issue d'un panier récurrent : un rythme, pas un achat isolé. */
-.cmd-pill {
-  padding: 0.05rem 0.4rem;
-  border-radius: var(--fold-radius-pill);
-  background: color-mix(in srgb, var(--fold-color-primary) 16%, transparent);
-  color: var(--fold-color-primary);
-  font-size: var(--fold-text-xs);
-  font-weight: 700;
-  white-space: nowrap;
-}
-
 .cmd-note {
   margin: 0;
   color: var(--fold-color-text-muted);
   font-size: var(--fold-text-xs);
-}
-
-.cmd-total {
-  font-weight: 700;
-  font-variant-numeric: tabular-nums;
-  text-align: end;
 }
 
 .cmd-count {
@@ -54,13 +37,5 @@
   flex-wrap: wrap;
 }
 
-.cmd-ref {
-  margin-right: var(--fold-space-sm);
-  font-variant-numeric: tabular-nums;
-}
-
 /* La seule colonne qu'on parcourt de haut en bas : chiffres de largeur fixe,
    sans quoi les montants ne s'alignent pas d'une ligne à l'autre. */
-.cmd-total {
-  font-variant-numeric: tabular-nums;
-}

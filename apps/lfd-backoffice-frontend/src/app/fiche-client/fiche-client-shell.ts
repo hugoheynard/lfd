@@ -102,7 +102,7 @@ const ALL_TABS: readonly GuardedTab[] = [
     label: 'Commandes',
     link: 'commandes',
     icon: 'shopping-cart',
-    permission: null,
+    permission: 'b2b_orders:read',
   },
   // Juste après les commandes : ce qu'il paie se lit à côté de ce qu'il achète.
   { key: 'tarifs', label: 'Tarifs', link: 'tarifs', icon: 'tag', permission: 'b2b_pricing:read' },

@@ -1,15 +1,18 @@
 <fold-page-layout icon="list" [title]="title()">
-  <button
-    pageActions
-    foldButton
-    emphasis="outline"
-    intent="neutral"
-    size="sm"
-    icon="chevron-left"
-    (click)="back()"
-  >
-    Comptes clients
-  </button>
+  <!-- Venue de la liste : le retour remonte l'historique, donc retrouve l'adresse
+       et ses filtres. Ouverte autrement (lien partagé, un autre écran) : la
+       liste nue. `fold-back-link` ne porte pas de queryParams. -->
+  @if (fromList) {
+    <fold-back-link pageEyebrow icon="arrow-back" label="Commandes" data-back />
+  } @else {
+    <fold-back-link
+      pageEyebrow
+      icon="arrow-back"
+      label="Commandes"
+      routerLink="/commandes"
+      data-back
+    />
+  }
 
   <app-order-view [orderId]="orderId()" (loaded)="onLoaded($event)" />
 </fold-page-layout>
