@@ -100,20 +100,20 @@ flowchart TD
 | Où voir, pour un jour, où en est chaque commande et lesquelles sont en retard ? | [`plan-supervision-du-jour.md`](plan-supervision-du-jour.md)                                        |
 | Quelle journée un client public peut demander ?                                 | [`plan-heure-limite-par-clientele.md`](plan-heure-limite-par-clientele.md) — doc-first              |
 | Quel créneau de retrait un visiteur peut choisir ?                              | [`plan-creneaux-de-retrait.md`](plan-creneaux-de-retrait.md)                                        |
-| Quels écrans le client traverse, et avec quels mots ?                           | [`parcours-client-compte-actif.md`](parcours-client-compte-actif.md)                                |
+| Quels écrans le client traverse, et avec quels mots ?                           | [`flux-de-commande.md`](flux-de-commande.md)                                                        |
 | De quoi est faite la pièce qu'on imprime, envoie, affiche ?                     | [`architecture-bon-de-commande.md`](architecture-bon-de-commande.md)                                |
 | Où sont rangés les papiers d'un client, et sous quelle clé ?                    | [`architecture-pieces-en-r2.md`](architecture-pieces-en-r2.md)                                      |
 
 **Je veux IMPLÉMENTER.**
 
-| Ce que je m'apprête à faire                      | Le document                                                                                                                                       |
-| ------------------------------------------------ | ------------------------------------------------------------------------------------------------------------------------------------------------- |
-| Ajouter une remise, un frais, une taxe au panier | [`../pricing/ajouter-un-terme-au-panier.md`](../pricing/ajouter-un-terme-au-panier.md)                                                            |
-| Toucher au calcul d'un prix de ligne             | [`../pricing/README.md`](../pricing/README.md)                                                                                                    |
-| Retirer `OrderCutoff`                            | [`demontage-order-cutoff.md`](demontage-order-cutoff.md)                                                                                          |
-| Rendre le bon de commande dans un format de plus | [`architecture-bon-de-commande.md`](architecture-bon-de-commande.md)                                                                              |
-| Écrire le gabarit du courriel de confirmation    | [`architecture-bon-de-commande.md`](architecture-bon-de-commande.md) §4 + [`parcours-client-compte-actif.md`](parcours-client-compte-actif.md) §2 |
-| Émettre un document comptable                    | [`../b2b/architecture-facturation.md`](../b2b/architecture-facturation.md) — doc-first                                                            |
+| Ce que je m'apprête à faire                      | Le document                                                                            |
+| ------------------------------------------------ | -------------------------------------------------------------------------------------- |
+| Ajouter une remise, un frais, une taxe au panier | [`../pricing/ajouter-un-terme-au-panier.md`](../pricing/ajouter-un-terme-au-panier.md) |
+| Toucher au calcul d'un prix de ligne             | [`../pricing/README.md`](../pricing/README.md)                                         |
+| Retirer `OrderCutoff`                            | [`demontage-order-cutoff.md`](demontage-order-cutoff.md)                               |
+| Rendre le bon de commande dans un format de plus | [`architecture-bon-de-commande.md`](architecture-bon-de-commande.md)                   |
+| Écrire le gabarit du courriel de confirmation    | [`architecture-bon-de-commande.md`](architecture-bon-de-commande.md) §4                |
+| Émettre un document comptable                    | [`../b2b/architecture-facturation.md`](../b2b/architecture-facturation.md) — doc-first |
 
 **Je veux savoir CE QUI CLOCHE.**
 

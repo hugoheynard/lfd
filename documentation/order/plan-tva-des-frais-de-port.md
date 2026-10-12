@@ -10,7 +10,7 @@
 > pas. Plan v2 — contredit par `vitruve` le
 > même jour (deux BLOQUANTS, sept SÉRIEUX, repris au § 5). Hugo : « bâtis le choix de TVA
 > livraison, réglage global ». Reprend la décision du 2026-09-21 et le
-> constat de [`todo-tva-des-frais-de-port.md`](todo-tva-des-frais-de-port.md).
+> constat du 2026-09-21 (le TODO qui le portait est supprimé : résolu, voir `packages/money/src/vat.ts`).
 > Touche **l'argent** et ajoute des colonnes : `vitruve` avant de bâtir.
 > Affirmations vérifiées dans le dépôt le 2026-10-08.
 

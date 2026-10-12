@@ -704,7 +704,8 @@ exactement les six documents séparés que ce dossier vient défaire.
 ## 9. Ce que ce document ne dit pas
 
 - **Le parcours client** qui mène au bon :
-  [`parcours-client-compte-actif.md`](parcours-client-compte-actif.md).
+  [`flux-de-commande.md`](flux-de-commande.md) ; ses textes sont dans
+  [`../contenu-ecommerce/textes-de-la-boutique.md`](../contenu-ecommerce/textes-de-la-boutique.md).
 - **Le contenu de l'avenant** — qui l'émet, qui le signe, ce qu'il corrige. Le
   handoff le nomme « le point ouvert du système entier », et il a raison. Ce
   document n'en prend qu'un compteur.
