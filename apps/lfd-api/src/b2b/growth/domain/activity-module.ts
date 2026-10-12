@@ -169,6 +169,11 @@ const PREFIXES: Readonly<Record<ActivityModule, readonly string[]>> = {
     // envoyé, révoqué par le staff sous `b2b_payments` — le client peut aussi
     // en préparer un et y joindre sa preuve. Sous `comptes` jusqu'au 2026-09-19.
     "payment_mandate.",
+    // Le mode de facturation d'un payeur (mensuel, deux fois par mois, chaque
+    // semaine), réglé sous `b2b_accounting` (plan rythme de facturation, M1,
+    // 2026-10-12). Le préfixe est `payer.billing_mode` et non `payer.` : rien
+    // d'autre ne porte ce sujet, et un préfixe plus large en happerait demain.
+    "payer.billing_mode",
     // Les liens de paiement libres, créés et annulés sous `b2b_accounting`
     // (plan liens de paiement §2b, 2026-09-25).
     "payment_link.",
