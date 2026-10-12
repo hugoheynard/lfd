@@ -1,7 +1,8 @@
 import { type ComponentFixture, TestBed } from '@angular/core/testing';
-import type { OrderOpeningPatch, OrderOpeningView } from '@lfd/contracts';
+import type { OrderOpeningPatch, OrderOpeningView, StaffPermission } from '@lfd/contracts';
 import { describe, expect, it } from 'vitest';
 
+import { PermissionsStore } from '../../../auth/permissions.store';
 import { OrderOpeningService } from '../order-opening.service';
 import { OrderOpeningPage } from './order-opening-page';
 
@@ -46,11 +47,20 @@ class FakeOpening {
   }
 }
 
-async function mount(api: FakeOpening): Promise<ComponentFixture<OrderOpeningPage>> {
+async function mount(
+  api: FakeOpening,
+  permissions: readonly StaffPermission[] = ['b2b_settings:read', 'b2b_settings:write'],
+): Promise<ComponentFixture<OrderOpeningPage>> {
   TestBed.resetTestingModule();
   TestBed.configureTestingModule({
     imports: [OrderOpeningPage],
-    providers: [{ provide: OrderOpeningService, useValue: api }],
+    providers: [
+      { provide: OrderOpeningService, useValue: api },
+      {
+        provide: PermissionsStore,
+        useValue: { can: (p: StaffPermission): boolean => permissions.includes(p) },
+      },
+    ],
   });
   const fixture = TestBed.createComponent(OrderOpeningPage);
   fixture.detectChanges();
@@ -91,6 +101,16 @@ describe('OrderOpeningPage', () => {
     expect(text).toContain('La boutique prend les commandes des particuliers');
     expect(row(fixture, 'b2b').textContent).toContain('Ouverte');
     expect(row(fixture, 'b2c').textContent).toContain('Ouverte');
+  });
+
+  it('🔴 sans `b2b_settings:write`, montre l’état sans aucune bascule', async () => {
+    // Écart 5 de droits-des-commandes.md (2026-10-12) : la route d'écriture
+    // exige `b2b_settings:write`, la page seulement la lecture.
+    const fixture = await mount(new FakeOpening(OPEN), ['b2b_settings:read']);
+
+    expect(row(fixture, 'b2b').textContent).toContain('Ouverte');
+    expect(host(fixture).querySelector('fold-inline-confirm')).toBeNull();
+    expect(host(fixture).querySelector('li button')).toBeNull();
   });
 
   it("n'écrit rien au premier clic : la confirmation dit d'abord l'effet", async () => {

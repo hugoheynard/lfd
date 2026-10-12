@@ -10,6 +10,7 @@ import {
   type FoldPanelDefaults,
 } from 'fold-ng';
 
+import { PermissionsStore } from '../../auth/permissions.store';
 import { NotifyService } from '../../notify.service';
 import { AdminOrdersService } from '../../commandes/orders.service';
 import { saveBlob } from '../../shared/download/save-blob';
@@ -87,6 +88,13 @@ export class SheetPanel implements FoldPanelContent<SheetPanelData> {
   private readonly api = inject(AdminOrdersService);
   private readonly notify = inject(NotifyService);
   private readonly panel = inject(FoldPanelRef);
+  private readonly permissions = inject(PermissionsStore);
+
+  /**
+   * `GET /admin/orders/:id/bon.pdf` exige `b2b_orders:read`, la file seulement
+   * `handover_counter:read` : sans le droit, le bouton promettrait un 403.
+   */
+  protected readonly canDownload = computed(() => this.permissions.can('b2b_orders:read'));
 
   protected readonly busy = signal(false);
 

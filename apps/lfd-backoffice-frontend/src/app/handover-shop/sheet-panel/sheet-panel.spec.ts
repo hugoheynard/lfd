@@ -4,6 +4,9 @@ import { describe, expect, it } from 'vitest';
 
 import type { OrderHandoverLine, OrderHandoverView } from '@lfd/contracts';
 
+import type { StaffPermission } from '@lfd/contracts';
+
+import { PermissionsStore } from '../../auth/permissions.store';
 import { AdminOrdersService } from '../../commandes/orders.service';
 import { SheetPanel, type SheetPanelData } from './sheet-panel';
 
@@ -66,10 +69,17 @@ class FakeOrders {
   }
 }
 
-async function render(data: SheetPanelData): Promise<ComponentFixture<SheetPanel>> {
+async function render(
+  data: SheetPanelData,
+  permissions: readonly StaffPermission[] = ['handover_counter:read', 'b2b_orders:read'],
+): Promise<ComponentFixture<SheetPanel>> {
   TestBed.configureTestingModule({
     imports: [SheetPanel],
     providers: [
+      {
+        provide: PermissionsStore,
+        useValue: { can: (p: StaffPermission): boolean => permissions.includes(p) },
+      },
       { provide: AdminOrdersService, useValue: new FakeOrders() },
       { provide: FoldPanelRef, useValue: new FoldPanelRef(1, () => undefined) },
     ],
@@ -132,6 +142,14 @@ describe('SheetPanel', () => {
     const fixture = await render(data());
 
     expect(text(fixture)).toContain('tarifé');
+  });
+
+  it('🔴 sans `b2b_orders:read`, aucun téléchargement du bon n’est proposé', async () => {
+    // Écart 3 de droits-des-commandes.md (2026-10-12) : la route du PDF exige
+    // `b2b_orders:read`, la file seulement `handover_counter:read`.
+    const fixture = await render(data(), ['handover_counter:read']);
+
+    expect((fixture.nativeElement as HTMLElement).querySelector('[data-sheet-pdf]')).toBeNull();
   });
 
   it('reporte la note du client quand il y en a une', async () => {

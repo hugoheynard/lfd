@@ -53,6 +53,7 @@ interface Options {
   readonly now?: Date;
   readonly reminded?: ReadonlySet<string>;
   readonly busyId?: string | null;
+  readonly canRemind?: boolean;
 }
 
 function render(
@@ -66,6 +67,7 @@ function render(
   fixture.componentRef.setInput('now', options.now ?? new Date(`${DAY}T07:00:00`));
   fixture.componentRef.setInput('reminded', options.reminded ?? new Set());
   fixture.componentRef.setInput('busyId', options.busyId ?? null);
+  fixture.componentRef.setInput('canRemind', options.canRemind ?? true);
   fixture.detectChanges();
   return fixture;
 }
@@ -248,6 +250,20 @@ describe('QueueTable', () => {
 
     expect(button?.hasAttribute('disabled')).toBe(true);
     expect(note(fixture)).toContain('pas encore déclarée prête');
+  });
+
+  it('🔴 sans `b2b_orders:write`, le retard est dit mais aucun rappel n’est proposé', () => {
+    // Écart 2 de droits-des-commandes.md (2026-10-12) : la route exige
+    // `b2b_orders:write`, la file seulement `handover_counter:read`.
+    const fixture = render([entry({ window: LATE, readyAt: `${DAY}T05:00:00.000Z` })], {
+      now: new Date(`${DAY}T09:00:00`),
+      canRemind: false,
+    });
+
+    expect(note(fixture)).toContain('sur la tranche convenue');
+    expect(
+      (fixture.nativeElement as HTMLElement).querySelector('tr.folddt-note-row button'),
+    ).toBeNull();
   });
 
   it('un rappel déjà parti ne se réarme pas à l’identique', () => {

@@ -72,8 +72,17 @@
     <button foldButton emphasis="outline" (click)="close()">Fermer</button>
     <!-- Le document COMPLET, celui que le client a reçu : il porte les prix, et
          le libellé le dit — on ne tire pas un papier tarifé sans le savoir. -->
-    <button foldButton emphasis="soft" icon="download" [loading]="busy()" (click)="download()">
-      Télécharger le bon tarifé (PDF)
-    </button>
+    @if (canDownload()) {
+      <button
+        foldButton
+        emphasis="soft"
+        icon="download"
+        [loading]="busy()"
+        (click)="download()"
+        data-sheet-pdf
+      >
+        Télécharger le bon tarifé (PDF)
+      </button>
+    }
   </fold-panel-footer>
 }

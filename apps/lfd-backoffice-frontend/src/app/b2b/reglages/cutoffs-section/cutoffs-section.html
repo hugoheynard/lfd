@@ -8,7 +8,11 @@
         jour précis passe avant le point tous jours, qui passe avant le défaut.
       </p>
     </div>
-    <button foldButton size="sm" icon="plus" (click)="add()">Ajouter une règle</button>
+    @if (canWrite()) {
+      <button foldButton size="sm" icon="plus" (click)="add()" data-cutoff-add>
+        Ajouter une règle
+      </button>
+    }
   </div>
 
   @switch (state()) {
@@ -65,34 +69,36 @@
                 }
               </span>
 
-              <div class="rule-actions">
-                @if (pendingRemoval() === rule.id) {
-                  <!-- `confirmLabel` N'EXISTE PAS sur ce composant : il posait un
+              @if (canWrite()) {
+                <div class="rule-actions">
+                  @if (pendingRemoval() === rule.id) {
+                    <!-- `confirmLabel` N'EXISTE PAS sur ce composant : il posait un
                        attribut muet, et le bouton disait « Confirmer », le mot du
                        fournisseur global. Le libellé passe par `labels` (corrigé
                        le 2026-09-16). -->
-                  <fold-inline-confirm
-                    message="Supprimer cette règle ?"
-                    [labels]="{ confirm: 'Supprimer' }"
-                    (confirmed)="remove(rule)"
-                    (cancelled)="cancelRemove()"
-                  />
-                } @else {
-                  <button foldButton emphasis="soft" size="sm" icon="edit" (click)="edit(rule)">
-                    Modifier
-                  </button>
-                  <button
-                    foldButton
-                    emphasis="soft"
-                    intent="danger"
-                    size="sm"
-                    icon="bin"
-                    (click)="askRemove(rule)"
-                  >
-                    Supprimer
-                  </button>
-                }
-              </div>
+                    <fold-inline-confirm
+                      message="Supprimer cette règle ?"
+                      [labels]="{ confirm: 'Supprimer' }"
+                      (confirmed)="remove(rule)"
+                      (cancelled)="cancelRemove()"
+                    />
+                  } @else {
+                    <button foldButton emphasis="soft" size="sm" icon="edit" (click)="edit(rule)">
+                      Modifier
+                    </button>
+                    <button
+                      foldButton
+                      emphasis="soft"
+                      intent="danger"
+                      size="sm"
+                      icon="bin"
+                      (click)="askRemove(rule)"
+                    >
+                      Supprimer
+                    </button>
+                  }
+                </div>
+              }
             </li>
           }
         </ul>

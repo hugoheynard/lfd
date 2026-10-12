@@ -32,6 +32,7 @@ import { QueueTable } from '../queue-table/queue-table';
 import { HandoverDetail } from '../handover-detail/handover-detail';
 import { SCANNED, ScanDialog, type ScanDialogData } from '../scan-dialog/scan-dialog';
 import { AdminOrdersService } from '../../commandes/orders.service';
+import { PermissionsStore } from '../../auth/permissions.store';
 
 /** Le seuil de `fold-aside-layout` (`@container (max-width: 1040px)`, lu le 2026-10-12). */
 const STACK_AT_PX = 1040;
@@ -90,6 +91,10 @@ export class HandoverShopPage {
   private readonly orders = inject(AdminOrdersService);
   private readonly panels = inject(FoldPanelHostService);
   private readonly notify = inject(NotifyService);
+  private readonly permissions = inject(PermissionsStore);
+
+  /** `POST /admin/orders/:id/rappel-retrait` exige `b2b_orders:write`, pas la garde de la file. */
+  protected readonly canRemind = computed(() => this.permissions.can('b2b_orders:write'));
 
   /**
    * Le terme cherché. Il vit ICI parce que la barre le porte, et il descend à

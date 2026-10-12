@@ -105,6 +105,13 @@ export class QueueTable {
   readonly reminded = input<ReadonlySet<string>>(new Set());
 
   /**
+   * Le staff peut-il envoyer un rappel ? La route exige `b2b_orders:write`, la
+   * file seulement `handover_counter:read` : sans le droit, le retard reste dit,
+   * mais aucun bouton ne promet un 403.
+   */
+  readonly canRemind = input<boolean>(true);
+
+  /**
    * Le terme cherché, ou `''` — un **filtre de ce qui est affiché**, jamais une
    * requête.
    *

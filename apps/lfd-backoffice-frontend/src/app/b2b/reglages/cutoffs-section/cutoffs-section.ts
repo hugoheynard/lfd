@@ -12,6 +12,7 @@ import {
   FoldPanelHostService,
 } from 'fold-ng';
 
+import { PermissionsStore } from '../../../auth/permissions.store';
 import { NotifyService } from '../../../notify.service';
 import { OrderCutoffsService } from '../order-cutoffs.service';
 import { CutoffPanel, type CutoffPanelData } from './cutoff-panel/cutoff-panel';
@@ -47,6 +48,14 @@ export class CutoffsSection {
   private readonly api = inject(OrderCutoffsService);
   private readonly panelHost = inject(FoldPanelHostService);
   private readonly notify = inject(NotifyService);
+  private readonly permissions = inject(PermissionsStore);
+
+  /**
+   * `POST`/`DELETE /admin/order-cutoffs` exigent `b2b_settings:write` ; la page,
+   * la lecture seule. Sans le droit, les règles se lisent et aucun geste ne
+   * promet un refus.
+   */
+  protected readonly canWrite = computed(() => this.permissions.can('b2b_settings:write'));
 
   /**
    * Les points de retrait, pour le sélecteur de portée du panneau. Fournis par la

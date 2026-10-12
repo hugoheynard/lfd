@@ -2,6 +2,7 @@ import { type ComponentFixture, TestBed } from '@angular/core/testing';
 import type { PickupAddressView } from '@lfd/contracts';
 import { describe, expect, it } from 'vitest';
 
+import { PermissionsStore } from '../../../auth/permissions.store';
 import { OrderCutoffsService } from '../order-cutoffs.service';
 import { PickupAddressesService } from '../pickup-addresses.service';
 import { OrderCutoffsPage } from './order-cutoffs-page';
@@ -24,6 +25,7 @@ async function mount(
         },
       },
       { provide: OrderCutoffsService, useValue: { list: () => Promise.resolve([]) } },
+      { provide: PermissionsStore, useValue: { can: (): boolean => true } },
     ],
   });
   const fixture = TestBed.createComponent(OrderCutoffsPage);

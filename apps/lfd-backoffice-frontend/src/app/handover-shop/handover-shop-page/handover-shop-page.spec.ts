@@ -5,6 +5,7 @@ import { describe, expect, it, vi } from 'vitest';
 
 import type { HandoverQueueEntryView, HandoverQueueView } from '@lfd/contracts';
 
+import { PermissionsStore } from '../../auth/permissions.store';
 import { AdminOrdersService } from '../../commandes/orders.service';
 import { type DayWatch, DayVersionWatcher } from '../../shared/day-version/day-version-watcher';
 import { HandoverMasthead } from '../handover-masthead/handover-masthead';
@@ -134,6 +135,7 @@ async function render(api: FakeQueue): Promise<ComponentFixture<RetraitHost>> {
     providers: [
       { provide: HandoverQueueService, useValue: api },
       { provide: AdminOrdersService, useValue: new FakeOrders() },
+      { provide: PermissionsStore, useValue: { can: (): boolean => true } },
       { provide: DayVersionWatcher, useValue: fakeWatcher },
       { provide: PickupAddressesService, useValue: { list: () => Promise.resolve([]) } },
     ],

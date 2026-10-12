@@ -4,6 +4,7 @@ import { companyDisplayName, type CatalogItemView, type OrderQuoteView } from '@
 import { formatEuros } from '@lfd/catalog-ui';
 import {
   FoldButtonComponent,
+  FoldCalloutComponent,
   FoldEmptyStateComponent,
   FoldSelectComponent,
   FoldInputComponent,
@@ -13,6 +14,7 @@ import type { AdminCompany } from '../../../comptes-clients/admin-company';
 import { AdminCompaniesService } from '../../../comptes-clients/admin-companies.service';
 import { AdminCatalogService } from '../../../commandes/catalog.service';
 import { AdminOrdersService } from '../../../commandes/orders.service';
+import { PermissionsStore } from '../../../auth/permissions.store';
 import { NotifyService } from '../../../notify.service';
 import { benchRow, probeQuantities, stepDownMillicents, type BenchRow } from './quote-bench';
 import { SCENARIOS, projectionLevels, scenarioOf, type Scenario } from './commitment-bench';
@@ -47,6 +49,7 @@ const WALK_IN = '';
   imports: [
     RouterLink,
     FoldButtonComponent,
+    FoldCalloutComponent,
     FoldEmptyStateComponent,
     FoldInputComponent,
     FoldSelectComponent,
@@ -60,6 +63,14 @@ export class SimulateurPage {
   private readonly orders = inject(AdminOrdersService);
   private readonly notify = inject(NotifyService);
   private readonly tarification = inject(TarificationService);
+  private readonly permissions = inject(PermissionsStore);
+
+  /**
+   * Le devis passe par `POST /admin/orders/quote`, qui exige
+   * `b2b_place_order:write` — pas la garde du bloc `/b2b`. Sans lui, la page ne
+   * sonde rien et dit quel droit manque, au lieu d'un 403 à chaque essai.
+   */
+  protected readonly canQuote = computed(() => this.permissions.can('b2b_place_order:write'));
 
   protected readonly euros = formatEuros;
 
@@ -127,7 +138,7 @@ export class SimulateurPage {
    */
   protected async run(): Promise<void> {
     const sku = this.sku();
-    if (sku === '' || this.running()) {
+    if (sku === '' || this.running() || !this.canQuote()) {
       return;
     }
     this.running.set(true);

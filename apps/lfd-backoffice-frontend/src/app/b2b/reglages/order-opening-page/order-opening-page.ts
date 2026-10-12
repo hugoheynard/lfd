@@ -13,6 +13,7 @@ import {
   FoldPageLayoutComponent,
 } from 'fold-ng';
 
+import { PermissionsStore } from '../../../auth/permissions.store';
 import { OrderOpeningService } from '../order-opening.service';
 
 type LoadState = 'loading' | 'ready' | 'error';
@@ -79,6 +80,10 @@ interface AudienceRow {
 })
 export class OrderOpeningPage {
   private readonly service = inject(OrderOpeningService);
+  private readonly permissions = inject(PermissionsStore);
+
+  /** `PATCH /admin/order-opening` exige `b2b_settings:write` ; la page, la lecture seule. */
+  protected readonly canWrite = computed(() => this.permissions.can('b2b_settings:write'));
 
   protected readonly state = signal<LoadState>('loading');
   protected readonly settings = signal<OrderOpeningView | null>(null);

@@ -112,6 +112,7 @@
                   [now]="store.now()"
                   [busyId]="remindingId()"
                   [reminded]="remindedIds()"
+                  [canRemind]="canRemind()"
                   (opened)="select($event)"
                   (reminder)="remind($event)"
                 />

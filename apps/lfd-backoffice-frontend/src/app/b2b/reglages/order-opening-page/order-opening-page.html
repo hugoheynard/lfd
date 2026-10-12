@@ -33,22 +33,24 @@
                 [variant]="row.open ? 'success' : 'warning'"
                 [content]="row.open ? 'Ouverte' : 'Fermée'"
               />
-              <fold-inline-confirm
-                [intent]="row.open ? 'warning' : 'primary'"
-                [message]="effect(row)"
-                [loading]="pending() === row.audience"
-                (confirmed)="toggle(row)"
-              >
-                <button
-                  foldButton
-                  size="sm"
-                  emphasis="outline"
+              @if (canWrite()) {
+                <fold-inline-confirm
                   [intent]="row.open ? 'warning' : 'primary'"
-                  [disabled]="pending() !== null"
+                  [message]="effect(row)"
+                  [loading]="pending() === row.audience"
+                  (confirmed)="toggle(row)"
                 >
-                  {{ row.open ? 'Fermer' : 'Rouvrir' }}
-                </button>
-              </fold-inline-confirm>
+                  <button
+                    foldButton
+                    size="sm"
+                    emphasis="outline"
+                    [intent]="row.open ? 'warning' : 'primary'"
+                    [disabled]="pending() !== null"
+                  >
+                    {{ row.open ? 'Fermer' : 'Rouvrir' }}
+                  </button>
+                </fold-inline-confirm>
+              }
             </li>
           }
         </ul>

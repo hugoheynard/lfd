@@ -20,6 +20,7 @@ import {
 import type { AdminOrderRow, CustomerSheetView } from '@lfd/contracts';
 
 import { CustomerSheetService } from '../../commercial/calendrier/customer-sheet/customer-sheet.service';
+import { PermissionsStore } from '../../auth/permissions.store';
 import { AdminOrdersService } from '../../commandes/orders.service';
 import { OrdersTable } from '../../commandes/orders-table/orders-table';
 import { ALL_SITES, siteChoicesOf, siteLabelOf } from './order-sites';
@@ -69,6 +70,10 @@ export class ClientCommandesPage {
   private readonly sheets = inject(CustomerSheetService);
   private readonly orders = inject(AdminOrdersService);
   private readonly router = inject(Router);
+  private readonly permissions = inject(PermissionsStore);
+
+  /** La saisie exige `b2b_place_order:write` : sans lui, le lien promettrait un refus. */
+  protected readonly canPlaceOrder = computed(() => this.permissions.can('b2b_place_order:write'));
 
   protected readonly state = signal<LoadState>('loading');
   protected readonly rows = signal<readonly AdminOrderRow[]>([]);

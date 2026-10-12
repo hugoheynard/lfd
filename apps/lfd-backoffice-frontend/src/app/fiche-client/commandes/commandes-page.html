@@ -12,9 +12,15 @@
     <section class="cmd">
       <header class="cmd-head">
         <h2 class="cmd-h2">Commandes</h2>
-        <a foldButton [routerLink]="['/comptes-clients', id(), 'nouvelle-commande']">
-          Passer une commande
-        </a>
+        @if (canPlaceOrder()) {
+          <a
+            foldButton
+            [routerLink]="['/comptes-clients', id(), 'nouvelle-commande']"
+            data-place-order
+          >
+            Passer une commande
+          </a>
+        }
       </header>
 
       @if (hasSites()) {

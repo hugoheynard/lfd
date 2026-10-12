@@ -50,7 +50,7 @@ Graine : `A` admin · `Co` commercial · `Cp` comptabilité · `Ct` vendeur comp
 | `b2b_counter`                | Comptoir                     | la carte et le détail d'un client, côté comptoir                                        | R   | R   | R   | —   | —   |
 | `b2b_supervision`            | Supervision                  | la vue du jour ; `W` = les contrôles qualité                                            | —   | —   | —   | —   | —   |
 | `handover_counter`           | Retrait au comptoir          | la file de retrait, le scan, le retrait attesté                                         | W   | W   | W   | R   | —   |
-| `production_plan`            | Production — Plan du soir    | le compte à produire, le prévisionnel                                                   | W   | W   | W   | R   | —   |
+| `production_plan`            | Production — Plan du soir    | le compte à produire, le prévisionnel                                                   | R   | R   | R   | R   | —   |
 | `production_count_stop`      | Production — Arrêt du plan   | arrêter le plan (clore la journée)                                                      | W   | W   | W   | —   | —   |
 | `production_worksheet`       | Production — Fiche d'atelier | la fiche d'atelier, les fiches PDF par commande                                         | W   | W   | W   | R   | —   |
 | `production_packing`         | Production — Colisage        | mettre les commandes au bac                                                             | W   | W   | W   | R   | —   |
@@ -200,7 +200,8 @@ l'entrée de menu et le bandeau du comptoir (`can('handover_counter:read')`).
 | `GET /admin/production/batch/:date/due-thresholds`, `/status`             | `production_plan:read` |
 
 Aucune route n'exige `production_plan:write` à ce jour : l'arrêt du plan en
-est sorti (ci-dessous). **Back-office** : `/prod-manager` (garde
+est sorti (ci-dessous), et la graine ne l'accorde plus qu'à l'admin depuis le
+2026-10-12. **Back-office** : `/prod-manager` (garde
 `production_plan:read`) et son entrée de menu.
 
 ## `production_count_stop` — Arrêt du plan
@@ -329,41 +330,42 @@ affiche en lecture sous `b2b_orders:read` (`order-refunds-card`).
 
 ## Écarts constatés
 
-Relevés le 2026-10-12, **non corrigés**. Chacun est un bouton ou un écran qui
-s'affiche alors que l'API refusera — le serveur tient, l'écran ment.
+Relevés le 2026-10-12, et **corrigés le même jour** (sauf le 6, assumé).
+Chacun était un bouton ou un écran qui s'affichait alors que l'API refuserait
+— le serveur tenait, l'écran mentait. La règle de correction : un bouton ne
+promet jamais un geste que le serveur refusera ; il est caché quand
+`PermissionsStore.can(...)` ne tient pas le droit qu'exige la route. Aucun
+droit exigé côté API n'a changé.
 
-1. **« Passer une commande » sur la fiche client sans condition.**
-   `fiche-client/commandes/commandes-page.html` montre le lien vers
-   `/comptes-clients/:id/nouvelle-commande` sans `can('b2b_place_order:write')`.
-   Qui lit les comptes sans passer de commande (graine : `support`) voit le
-   lien, et la garde de route le refuse au clic.
-2. **Le rappel de retrait depuis la file, sous un autre droit.** La file
-   `/comptoir/retrait` est gardée par `handover_counter:read`, mais son bouton
-   « rappel » appelle `POST /admin/orders/:id/rappel-retrait`, qui exige
-   `b2b_orders:write`. Aucun `can(...)` dans `handover-shop-page`. Graine :
-   `support` (`handover_counter:read`, `b2b_orders:read`) voit le bouton et
-   reçoit un 403.
-3. **Le bon PDF depuis la file, sous un autre droit.** Le panneau
-   `handover-shop/sheet-panel` télécharge `GET /admin/orders/:id/bon.pdf`
-   (`b2b_orders:read`) depuis un écran gardé par `handover_counter:read`. Un
-   vendeur à qui l'on aurait retiré `b2b_orders` à l'écran garde la file et
-   perd le bon.
-4. **Le simulateur de prix appelle une route de saisie.**
-   `/b2b/tarification/simulateur` n'a que la garde du bloc `/b2b`
-   (`b2b_settings:read`), mais calcule par `POST /admin/orders/quote`, qui exige
-   `b2b_place_order:write`. Graine : `dev` ouvre la page et chaque devis
-   échoue.
-5. **Ouverture de la boutique et heures limites : contrôles d'écriture sans
-   `can`.** `order-opening-page` et `cutoffs-section` / `cutoff-panel` n'appellent
-   jamais `can(...)` ; leurs boutons s'affichent à qui tient
-   `b2b_settings:read` (graine : `commercial`, `comptabilite`, `dev`), et
-   `PATCH /admin/order-opening` / `POST`/`DELETE /admin/order-cutoffs` exigent
-   `b2b_settings:write`.
-6. **`b2b_orders:write` ne protège plus qu'un rappel.** Depuis la sortie des
-   gestes (2026-10-01) puis de l'annulation (2026-10-12), la seule route qui
-   l'exige est `POST /admin/orders/:id/rappel-retrait`. Le libellé
-   « Commandes » en écriture promet plus que ce qu'il donne — à garder en tête
-   en réglant un rôle à `/admin/staff-roles`.
-7. **`production_plan:write` n'ouvre aucune route.** L'arrêt du plan en est
-   sorti le 2026-10-06 ; la graine continue de l'accorder en `W` à
-   `commercial`, `comptabilite` et `comptoir`.
+1. **« Passer une commande » sur la fiche client.** Corrigé le 2026-10-12 :
+   `fiche-client/commandes/commandes-page` ne montre le lien qu'avec
+   `can('b2b_place_order:write')` (une spec le tient).
+2. **Le rappel de retrait depuis la file.** Corrigé le 2026-10-12 :
+   `handover-shop-page` lit `can('b2b_orders:write')` et le passe à
+   `queue-table` (`canRemind`) ; sans lui, le retard reste dit sous la ligne,
+   sans bouton ni phrase sur le rappel (une spec le tient).
+3. **Le bon PDF depuis la file.** Corrigé le 2026-10-12 : le panneau
+   `handover-shop/sheet-panel` n'offre le téléchargement qu'avec
+   `can('b2b_orders:read')` (une spec le tient).
+4. **Le simulateur de prix appelle une route de saisie.** Corrigé le
+   2026-10-12 : sans `b2b_place_order:write`, `/b2b/tarification/simulateur`
+   remplace le banc de devis par une `fold-callout` qui nomme le droit
+   manquant (« Passer une commande pro » en écriture), et `run()` ne lance
+   aucun devis (une spec le tient). La projection d'engagement,
+   qui passe par une autre route, reste à l'écran.
+5. **Ouverture de la boutique et heures limites.** Corrigé le 2026-10-12 :
+   `order-opening-page` cache les bascules, et `cutoffs-section` cache
+   « Ajouter une règle », « Modifier » et « Supprimer », sans
+   `can('b2b_settings:write')` ; l'état et les règles restent lisibles (une spec le tient).
+6. **`b2b_orders:write` ne protège plus qu'un rappel — assumé.** Depuis la
+   sortie des gestes (2026-10-01) puis de l'annulation (2026-10-12), la seule
+   route qui l'exige est `POST /admin/orders/:id/rappel-retrait`. Ce n'est pas
+   un défaut : « Commandes » en écriture donne ce rappel et rien d'autre, et
+   c'est voulu — à garder en tête en réglant un rôle à `/admin/staff-roles`.
+7. **`production_plan:write` n'ouvre aucune route.** Corrigé le 2026-10-12
+   dans la **graine seule** (`ROLE_GRANTS`, `packages/contracts`) :
+   `commercial`, `comptabilite` et `comptoir` y reçoivent `production_plan`
+   en `read` (la lecture ouvre le plan, le prévisionnel et leurs PDF) ;
+   l'admin garde `write`, il couvre tout. En production, rien ne change par
+   là : les droits se règlent à `/admin/staff-roles`, et aucune migration
+   n'y touche.

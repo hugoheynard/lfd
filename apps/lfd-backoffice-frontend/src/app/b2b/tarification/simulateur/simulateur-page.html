@@ -21,44 +21,54 @@
     </fold-empty-state>
   }
   @case ('ready') {
-    <section class="stage">
-      <div class="controls">
-        <fold-select label="Client" [value]="companyId()" (valueChange)="companyId.set($event)">
-          <option value="">Client de passage — sans société</option>
-          @for (company of companies(); track company.id) {
-            <option [value]="company.id">{{ company.raisonSociale }}</option>
-          }
-        </fold-select>
+    @if (!canQuote()) {
+      <!-- Chaque ligne du banc est un devis par \`POST /admin/orders/quote\`, qui
+           exige la saisie de commande : sans elle, on le dit au lieu d'échouer. -->
+      <fold-callout variant="info" data-quote-forbidden>
+        <strong>Sonder un prix demande le droit de passer une commande</strong> (« Passer une
+        commande pro » en écriture). Chaque ligne est un devis réel, calculé par la saisie de
+        commande. Demandez-le à un administrateur, depuis les rôles du personnel.
+      </fold-callout>
+    } @else {
+      <section class="stage">
+        <div class="controls">
+          <fold-select label="Client" [value]="companyId()" (valueChange)="companyId.set($event)">
+            <option value="">Client de passage — sans société</option>
+            @for (company of companies(); track company.id) {
+              <option [value]="company.id">{{ company.raisonSociale }}</option>
+            }
+          </fold-select>
 
-        <fold-select label="Article" [value]="sku()" (valueChange)="sku.set($event)">
-          @for (item of catalog(); track item.sku) {
-            <option [value]="item.sku">
-              {{ item.name }} — {{ euros(item.unitPriceMillicents) }}
-            </option>
-          }
-        </fold-select>
+          <fold-select label="Article" [value]="sku()" (valueChange)="sku.set($event)">
+            @for (item of catalog(); track item.sku) {
+              <option [value]="item.sku">
+                {{ item.name }} — {{ euros(item.unitPriceMillicents) }}
+              </option>
+            }
+          </fold-select>
 
-        <fold-input
-          label="Quantité à vérifier"
-          hint="En plus des seuils du barème. Vide = seulement les seuils."
-          placeholder="3200"
-          [value]="freeQuantity()"
-          (valueChange)="freeQuantity.set($event)"
-        />
+          <fold-input
+            label="Quantité à vérifier"
+            hint="En plus des seuils du barème. Vide = seulement les seuils."
+            placeholder="3200"
+            [value]="freeQuantity()"
+            (valueChange)="freeQuantity.set($event)"
+          />
 
-        <button foldButton [disabled]="!canRun()" (click)="run()">
-          {{ running() ? 'Sondage…' : 'Sonder le prix' }}
-        </button>
-      </div>
+          <button foldButton [disabled]="!canRun()" (click)="run()">
+            {{ running() ? 'Sondage…' : 'Sonder le prix' }}
+          </button>
+        </div>
 
-      <!-- Ce que la simulation NE dit pas. Écrit ici et pas en bas de page :
+        <!-- Ce que la simulation NE dit pas. Écrit ici et pas en bas de page :
            un commercial qui annonce un total au téléphone doit savoir avant de
            parler que la TVA et l'acheminement n'y sont pas. -->
-      <p class="caveat">
-        Prix <strong>HT</strong>, hors acheminement : remise de retrait, frais de zone et TVA
-        dépendent d'une livraison qu'un devis ne connaît pas encore.
-      </p>
-    </section>
+        <p class="caveat">
+          Prix <strong>HT</strong>, hors acheminement : remise de retrait, frais de zone et TVA
+          dépendent d'une livraison qu'un devis ne connaît pas encore.
+        </p>
+      </section>
+    }
 
     <!-- Le mode TEMPOREL. Une seconde surface et non un onglet : les deux
          questions se posent sur le même article et le même client, et passer de
