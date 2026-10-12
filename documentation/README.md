@@ -467,6 +467,12 @@ chacune renvoie ici pour ses points ouverts.
 | [`todos/todo-releve-version-deployee.md`](todos/todo-releve-version-deployee.md)                           | 🔴   | **Relevé de ce qui ne va pas sur la version DÉPLOYÉE**, ouvert le 2026-09-22 en parcourant la boutique avec un compte perso. Liste qui grandit. §1 : « Mon compte » ouvre une déclaration d'établissement à qui n'a demandé que son compte — trois pièces cohérentes séparément, et le compte de la PERSONNE (ouverture pro, méthodes d'authentification, mot de passe) n'a nulle part où vivre.                                                                                                                                      |
 | [`todos/todo-e2e-dependantes-de-l-ordre.md`](todos/todo-e2e-dependantes-de-l-ordre.md)                     | 🟡   | Trois e2e (`production-batch`, `client-notes`, `appointments`) échouent par intermittence sous la suite complète et passent seules. Constaté le 2026-09-21, non diagnostiqué — les trois pistes et le geste qui trouve le coupable.                                                                                                                                                                                                                                                                                                   |
 
+## Outillage — ce qui aide à travailler dans le dépôt
+
+| Doc                                              | État | Ce qu'il couvre                                                                                                                        |
+| ------------------------------------------------ | ---- | -------------------------------------------------------------------------------------------------------------------------------------- |
+| [`outillage/graphify.md`](outillage/graphify.md) | ✅   | Le graphe du dépôt : installé au `pnpm install`, rafraîchi par les hooks git, pour s'orienter avant d'ouvrir les fichiers (2026-10-12) |
+
 ## Ailleurs dans le dépôt
 
 - [`../CLAUDE.md`](../CLAUDE.md) — les conventions : architecture, qualité, commits, langue.

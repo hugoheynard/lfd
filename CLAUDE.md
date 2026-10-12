@@ -1199,3 +1199,35 @@ pnpm lint:no-direct-env # gate repo : aucun accès direct à process.env
 ```
 
 Configurations WebStorm en un clic : `.run/`.
+
+---
+
+## 10 bis. Le graphe du dépôt — graphify (depuis le 2026-10-12)
+
+**Installé tout seul** : le `prepare` de `pnpm install` lance
+`dev-toolbox/graphify/install-graphify.mjs`, qui installe `graphifyy` à la
+version épinglée (`dev-toolbox/graphify/graphify-version.mjs`, `uv tool`,
+hors du dépôt) et construit le premier graphe. Les hooks `post-commit`,
+`post-merge`, `post-checkout` le rafraîchissent, détachés : un geste git
+n'attend jamais. Rien en CI ; `LFD_SKIP_GRAPHIFY=1` pour s'en passer. Le
+graphe vit dans `graphify-out/`, local, jamais commité. Doc :
+[`documentation/outillage/graphify.md`](documentation/outillage/graphify.md).
+
+**Quand s'en servir — d'office, avant `Explore` et avant un grep large :**
+
+```bash
+graphify query "où se décide la clôture d'un lot de prélèvement ?"
+graphify explain "CollectionBatch"        # un nœud et ses voisins
+graphify path "OrderCollection" "Invoice"  # le chemin entre deux nœuds
+```
+
+et le rapport GRAPH_REPORT de `graphify-out/` pour les nœuds centraux et les liens
+inattendus entre groupes — un lien qui traverse deux blocs est exactement le
+couplage que la matrice du §3 interdit.
+
+🔴 **Le graphe ORIENTE, il ne PROUVE pas.** Il ne voit que le code au dernier
+rafraîchissement, et ni les `.sql` (extracteur absent) ni le sens d'un
+commentaire. Une affirmation sur le code se vérifie en **ouvrant le fichier**
+— la règle du §9 bis tient toujours : un graphe en retard d'un commit dit
+« absent » avec aplomb, comme un grep vide. Une absence dans le graphe n'est
+jamais une absence dans le dépôt.
