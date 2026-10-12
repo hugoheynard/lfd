@@ -600,3 +600,44 @@ modes ; chaque client choisit un mode.** Plus aucune date propre à un client.
 | M2  | Facture par client à sa clôture (passage, bouton, rattrapage)                                                                           |
 | M3  | Lot et automatisme sur le calendrier (`constitute`, tentative à chaque clôture, `priorOrderCount`, lot manqué, `lastClosure`)           |
 | M4  | Relevé/dossier par client ; écrans : dates des modes, mode du client, restes « mois »                                                   |
+
+### 16.6 Révision après `vitruve` (2026-10-12) — l'emporte sur 16.1–16.5
+
+1. **Les dates d'un mode sont un HISTORIQUE, comme le mode d'un client.**
+   Table append-only `billing_mode_dates` (`legal_entity_id`, `mode`,
+   `effective_from`, `days`, `cancelled_at`). La timeline d'un mode est la
+   suite de ses segments non annulés. Rien ne s'efface : une clôture passée,
+   un relevé ou un dossier ancien se relisent toujours sous les dates qui
+   étaient en vigueur. C'est ce qui rend sûre la règle « au temps ».
+   `BillingRhythmSetting` (courant + programmé) n'est plus la source ; il
+   reste une vue.
+2. **Un seul changement à la fois, au temps** : un nouveau segment est
+   refusé tant qu'un segment non annulé a `effective_from` ≥ maintenant (par
+   mode ; par client pour son mode). **Annuler** un segment programmé reste
+   admis avant sa prise d'effet (`cancelled_at`), par mode comme par client.
+   Le passé ne bouge pas, quel que soit l'écart entre la clôture et le
+   passage de la facture.
+3. **Prise d'effet** : la prochaine clôture de la TIMELINE actuelle (segment
+   programmé compris), jamais des seules dates courantes. Un client qui
+   change de mode à la clôture T de son ancien mode commence son premier
+   segment du nouveau mode à T, jusqu'à la prochaine clôture du nouveau.
+4. **Pas de reprise des colonnes R2.** R2 n'a jamais servi en production ;
+   les valeurs de dev sont des essais. Les colonnes `billing_rhythm_*` et
+   `next_billing_rhythm_*` (migration `20261012100000`) sont mortes à leur
+   naissance. **Décision de Hugo demandée** : les garder à vie (colonnes
+   vides) ou les supprimer dans une migration du même déploiement (elles ne
+   portent aucune donnée de production ; la suppression demande son ordre,
+   CLAUDE.md §0).
+5. **Le mode ne se pose que sur un PAYEUR** (celui de `billedPayerOf`) : la
+   route refuse un site qui facture chez un autre, en le nommant. Un bon est
+   rattaché à son payeur **à sa date** (`billedPayerOf` est daté) et entre
+   dans la facture de ce payeur à sa clôture ; un site qui change de payeur
+   ne fait donc ni doublon ni trou (un bon n'est facturé qu'une fois,
+   garantie existante).
+6. **Le calendrier de l'entité** = l'union des modes qui ont au moins un
+   client en service, plus le mensuel (défaut). Pas de tentative ni d'alerte
+   `missed` un lundi pour une entité sans client hebdomadaire.
+7. **Faits** : `legal_entity.billing_mode_dates_changed` (mode, dates avant/
+   après, prise d'effet, ou annulation) et `payer.billing_mode_changed`.
+   **Droit** : `b2b_accounting`, aucune ressource neuve.
+8. **Irréversible dès le merge** : les deux tables et les deux faits.
