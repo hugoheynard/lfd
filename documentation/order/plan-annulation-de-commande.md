@@ -475,6 +475,8 @@ blocage de `vitruve` :
   ferait facturer ou prélever une annulée. Le dépôt la refuse déjà
   (`CancelledOrdersReader`), l'émission non.
 
+→ Repris et conçu en **Lot C5** (2026-10-12).
+
 ### C3.10 Sort des objections de `vitruve` (§9) pour ce lot
 
 | #   | Sort                         | Comment                                                                                                                                                         |
@@ -1044,6 +1046,414 @@ Le gabarit `customer.order-cancelled` lit `voucher` au lieu du booléen
 | S relecture de `settleRemainder` sans `FOR UPDATE`                 | **réglée** (C3b.1, C3b.5)                                                                  |
 | m lecteurs de `LoyaltyVoucherStatus`                               | **recomptés** (C3b.2)                                                                      |
 | m transition du cas 4                                              | **nommée** : `lapse` (C3b.4)                                                               |
+
+### Lot C5 — annuler une commande AU COMPTE, par le staff (conçu le 2026-10-12, contredit, révisé)
+
+> Hugo, 2026-10-12 : annuler une commande au compte vient **après le lot
+> livraison et avant le remboursement (C4)**. Il a demandé l'enchaînement sans
+> arrêt : les questions techniques sont tranchées ici, seules celles du §C5.9
+> lui reviennent. `vitruve` est passé le même jour (sort en C5.10) ; la
+> révision suit **« interdire plutôt que vérifier »** : l'annulation **ferme**
+> la ligne d'encaissement, et aucun geste comptable ne sait plus la toucher.
+>
+> Il reprend C3 tel quel (route, droit `b2b_cancel_order`, retrait au fournil,
+> transaction, fait durable, journal, courriel, C3b pour le bon) et n'y ajoute
+> que la **frontière avec la comptabilité** que C3.9 avait sortie.
+
+#### C5.1 Ce que le code dit — ouvert le 2026-10-12
+
+1. **L'assiette est écrite une fois** : `billableOrderWhere`
+   (`b2b/accounting/infrastructure/billable-order-criterion.ts`) =
+   `not_required ∧ total > 0 ∧ status <> cancelled ∧ company_id non nul ∧
+created_at ∈ [from, to[`. L'émission (`prisma-monthly-invoicing.reader.ts:33`),
+   la constitution (`prisma-collection-candidates.reader.ts:44`) et
+   `PrismaOrderCollectionRepository.load` la lisent. Une annulée **validée
+   avant** leur lecture n'y entre jamais : le trou est la course seule.
+2. **L'émission mensuelle prépare hors transaction** (`issue-monthly-invoices.handler.ts:137`,
+   `uninvoicedOrders` `:167`) puis émet **groupe par groupe** (`:143`) dans une
+   transaction courte (`:235`), **sans relire le statut ni prendre
+   `OrderInvoicingLock`** (BLOQUANT 1, confirmé). `InvoiceIssuer.issue`
+   (`application/services/invoice-issuer.ts:57`) ne prend qu'un verrou : la
+   ligne du compteur (`prisma-invoice-numbering.ts`, `INSERT … ON CONFLICT DO
+UPDATE`, tenue jusqu'au `COMMIT`). Aucune ligne `orders`.
+3. **Le groupe d'une facture** est `invoiceGroupKey(payeur, mandat effectif)`
+   (`domain/services/monthly-invoicing.ts:71`), formé par `byMandate` (`:131`)
+   avec `billable` et `unbillable`. **`effectiveMandateOf`**
+   (`domain/services/collection-verdict.ts:91`) se calcule **bon par bon**, sur
+   le bon, les suivis et les mandats — jamais sur les autres bons du groupe.
+   Retirer un bon ne change donc ni le mandat ni la clé des autres.
+4. **La constitution** prend un verrou consultatif par entité
+   (`constitute-collection-batches.handler.ts:108`) puis appelle `readAssembly`
+   (`application/collection-constitution-support.ts`), qui lit les candidats
+   (`collectableOrders`, `:110` du support) **et appelle déjà
+   `assembleCollection`** (`:124-138`). Un filtre « après `readAssembly` »
+   arriverait trop tard (BLOQUANT 1 de la révision). `get-collection-preview.handler.ts:70`
+   appelle le même `readAssembly`, sans transaction.
+5. **`OrderInvoicingLock` est un `SELECT … FOR UPDATE` sur la ligne `orders`**
+   (`prisma-order-invoicing-lock.ts`) — le verrou que C3 prend en premier
+   (`prisma-order-cancellation.repository.ts:28-34`).
+6. **« Facturée »** : `invoice_order` (380, unicité `invoice_order_invoiced_once`).
+7. **`order_collection`** (`order_id` PK, `state`, `batch_id`, `line_rank`) —
+   pas `collection_batch_line`. L'absence de ligne vaut `due`. Transitions de
+   l'agrégat `OrderCollection` (`domain/entities/order-collection.ts`), **toutes
+   gardées par `assertIn`** : `batch`/`exclude` (depuis `due|excluded`),
+   `release` (`batched`), `collect` (`batched`), `bounce` (`collected`),
+   `represent` (`returned`), `writeOff` (`returned`), `settleReturned`
+   (`returned`), `settleOtherwise` (`due|excluded`).
+8. **`saveAll` est un `upsert` inconditionnel** (`prisma-order-collection.repository.ts`) :
+   le dernier écrivain gagne. `load` lit sans verrou.
+9. **Le relevé de cycle** (`billing_statement`, `@@unique([batchId, lineRank])`,
+   bons dans `billing_statement_order`) : un relevé `active` qui porte la
+   commande ⇔ sa ligne est vivante ⇔ `state ∈ {batched, collected, returned,
+written_off}`. Le test sur `order_collection` suffit.
+10. **Un rejet bancaire** est un `collection_return` rattaché à une **ligne**
+    (`end_to_end_id`). Une commande re-présentée revient à `due` avec
+    `batch_id = null` : son rejet ne se retrouve que par
+    `billing_statement_order → billing_statement (batch, rang) → collection_return`.
+11. **Les verrous de C3/C3b ne touchent aucune ligne `orders`** :
+    `ProductionDayLock` = consultatif `production_day:<jour>` + `FOR UPDATE` sur
+    `production_day` (`prisma-production-day.lock.ts:50-54`) ; titulaire du bon
+    = consultatif (`prisma-loyalty-holder.lock.ts:45`), la commande y est relue
+    **sans** `FOR UPDATE` (`loyalty-voucher-redeeming.ts:182`).
+12. **Collation** : les bases de dev et de test sont en `en_US.utf8` (lu le
+    2026-10-12 dans `pg_database`). Un `ORDER BY id` y n'est pas l'ordre
+    binaire ; on ne s'y fie pas (C5.3).
+13. **`collectableOrders` lit AUSSI `order_collection`**
+    (`prisma-collection-candidates.reader.ts:42-73`, états `:54-56`, rendus
+    `:71`) : l'état d'encaissement des candidats est lu **avant** tout verrou,
+    puis réécrit par `saveAll` (upsert sans version,
+    `prisma-order-collection.repository.ts:54-63`). **Course préexistante à
+    C5** : un `settleOtherwise` validé entre cette lecture et le `COMMIT` de la
+    constitution est écrasé, et une commande déjà réglée est prélevée.
+14. **Le relevé ne porte que les bons réellement débités** : `buildStatements`
+    (`application/billing-statement-support.ts:41`) écrit
+    `orders: draft.orders` — les bons du débit de **cette** ligne — et rien
+    pour une ligne qui règle des factures. Un relevé ne passe `cancelled` que
+    par `cancelForBatch` (`prisma-billing-statement.repository.ts:53`, appelé
+    par `cancel-collection-batch.handler.ts:51`) : un lot annulé **avant
+    dépôt**, qui ne peut porter aucun retour.
+15. **`cancellationOf`** refuse `account` d'office (`order-cancellation.ts:100`,
+    phrase `:164`) ; le contrôle hors verrou de `cancel-order.handler.ts:98/106`
+    appelle `cancellationStateOf(subject, null)`.
+
+#### C5.2 Le critère
+
+Une commande de régime `account` (`not_required ∧ total > 0`) est annulable
+**ssi**, dans cet ordre de refus :
+
+| #   | Condition                                                                                 | Où                                   |
+| --- | ----------------------------------------------------------------------------------------- | ------------------------------------ |
+| 1-2 | `placed` (inchangé)                                                                       | `orders.status`                      |
+| 3   | **non facturée** : aucune ligne `invoice_order` 380                                       | `invoice_order`                      |
+| 4   | **non engagée** : `order_collection` absente, ou `state ∈ {due, excluded}`                | `order_collection`                   |
+| 5   | **jamais rejetée par la banque** (aucun `collection_return` sur une ligne qui l'a portée) | C5.1, 10                             |
+| 6   | non inscrite au fournil (C3)                                                              | `OrderWithdrawalDesk.withdraw`       |
+| 7   | bon : C3b tel quel                                                                        | `LoyaltyVoucherRedemption.reinstate` |
+
+États bloquants : `batched`, `collected`, `returned`, `written_off`,
+`settled_otherwise` (et `cancelled`, C5.4 — inatteignable : la commande est
+déjà refusée en 1). `due`/`excluded` n'engagent rien. Une `excluded` facturée
+(« plusieurs mandats ») tombe en 3.
+
+**Condition 5 — choix par défaut (S4)** : une commande re-présentée est `due`,
+mais elle a déjà été présentée, rejetée, son relevé et son avis sont partis.
+L'annuler effacerait une histoire bancaire que l'équipe suit dans les retours.
+Refusée dans ce lot ; question métier pour plus tard (C5.9, 3). En pratique
+une re-présentée est presque toujours facturée et tombe en 3 ; la condition
+tient le cas sans facture (plancher de facturation nul).
+
+Ordre dans la transaction : `FOR UPDATE` (1-2), comptabilité (3-5), fournil
+(6), bon (7) — un refus comptable ne verrouille pas la journée.
+
+#### C5.3 Le verrou commun — décision
+
+**La ligne `orders`, `FOR UPDATE`, partout où une commande au compte entre dans
+une facture, un lot, ou change d'état d'encaissement hors lot.** Pas de verrou
+par payeur (il faudrait résoudre le payeur avant de verrouiller : la course
+même) ni par entité (toutes les annulations derrière une constitution).
+
+**Un seul mécanisme d'ordre (S7)** : un adaptateur unique,
+`PrismaOrderRowsLock.lockAll(ids)`, à côté de `PrismaOrderInvoicingLock` :
+
+```sql
+SELECT id FROM public.orders WHERE id = ANY($1) ORDER BY id COLLATE "C" FOR UPDATE
+```
+
+Postgres verrouille dans l'ordre de sortie du tri. `COLLATE "C"` rend l'ordre
+binaire quelle que soit la collation de la base (C5.1, 12). L'émission **et**
+la constitution passent par lui ; l'annulation, qui ne prend qu'une ligne, n'a
+pas d'ordre à respecter. `OrderInvoicingLock.lock(id)` reste pour une ligne.
+
+**Côté émission** (`issueFor`, dans la transaction `:235`, avant `issuer.issue`) :
+
+1. `lockAll` sur **tous** les bons du groupe, `billable` **et** `unbillable`
+   (MINEUR : un bon non facturable annulé ne doit pas rester signalé) ;
+2. `CancelledOrdersReader.cancelledAmong(ids)` (port existant) ;
+3. **retirer les annulées des deux listes du groupe** — rien d'autre. Ce n'est
+   pas un recalcul dans le handler : le prix se calcule **ensuite**, dans
+   `draftOf` → `simulateInvoiceDossier`, sur la liste restante. Le mandat et la
+   clé des bons restants ne bougent pas (C5.1, 3) : « replanifier » rendrait
+   exactement le même groupe moins les annulées, on n'appelle donc pas
+   `planMonthlyInvoices` ;
+4. **recalculer `outcomeKey`** (`issue-monthly-invoices.handler.ts:228`) sur
+   le groupe filtré : elle liste les bons non facturables du groupe ;
+5. le groupe **disparaît** (plus aucun bon) → rien d'émis, rien de signalé,
+   l'issue rangée « sans objet » ; il ne reste que des `unbillable` → le
+   signalement existant ; sinon émettre.
+
+Le groupe ne peut pas **changer de clé** : la clé dépend du payeur et du mandat
+lus dans `prepare`, que l'annulation ne touche pas. Un bon passé **après**
+`prepare` n'y entre pas (il attend la période suivante, comportement
+d'aujourd'hui). Le verrou est tenu jusqu'au `COMMIT` qui écrit `invoice_order` :
+une annulation qui l'attend relit une commande facturée → refus 3.
+
+**Côté constitution — dans `readAssembly`** (B1, et BLOQUANT du 2ᵉ passage) :
+la lecture des candidats est **coupée en deux**, et **rien** de ce qui est lu
+avant le verrou ne sert à constituer :
+
+1. `CollectionCandidatesReader.collectableOrderIds(floor, closesAt)` — les
+   seuls ids de l'assiette, sans état ni contenu ;
+2. **en mode constitution** : `lockAll(ids)` ;
+3. `collectableOrders(ids)` — **relit sous verrou** les commandes
+   (`billableOrderWhere ∧ id ∈ ids` : une annulée validée entre 1 et 2 en sort)
+   **et** leur `order_collection` (une réglée autrement ou fermée entre 1 et 2
+   n'est plus ouverte, `isOpen` l'écarte) ;
+4. `invoicesOf`, `billingFollowsOf`, `assembleCollection` sur cette relecture
+   seulement.
+
+Sous le verrou, aucun écrivain d'état hors lot ne peut plus passer : l'annulation
+et `settle-order-otherwise` prennent la même ligne (C5.4). La relecture n'a donc
+plus besoin de `cancelledAmong`. Cela ferme aussi la **course préexistante**
+« réglée autrement × constitution » (C5.1, 13), qui n'avait rien à voir avec
+l'annulation.
+
+`AssemblyMode` gagne `lockRows: boolean` : `TO_CONSTITUTE` le porte, l'**aperçu**
+(`get-collection-preview.handler.ts:70`) non. L'aperçu fait les mêmes 1, 3, 4
+sans verrou : il écarte les annulées et les réglées validées, et dit l'état du
+moment, comme aujourd'hui.
+
+**Ordre des verrous, sans cycle** :
+
+| Geste                   | Ordre                                                                |
+| ----------------------- | -------------------------------------------------------------------- |
+| annulation (C3/C3b/C5)  | ligne `orders` (une) → journée du fournil → titulaire du bon         |
+| émission mensuelle      | lignes `orders` du groupe (`COLLATE "C"`) → compteur de numérotation |
+| constitution            | consultatif entité → lignes `orders` des candidats (`COLLATE "C"`)   |
+| réglée autrement (C5.4) | ligne `orders` (une)                                                 |
+| facture carte, avoirs   | ligne `orders` (une) → compteur                                      |
+
+Vérifié (C5.1, 2 et 11) : ni le compteur, ni la journée, ni le titulaire ne
+prennent de ligne `orders` ; l'annulation ne prend ni entité ni compteur ;
+les deux preneurs de plusieurs lignes les prennent dans le même ordre. Coût
+accepté : la constitution tient les lignes de ses candidats jusqu'au `COMMIT`.
+
+#### C5.4 Fermer la ligne d'encaissement (B2, S5)
+
+**L'annulation d'une commande au compte écrit, dans sa transaction, un état
+terminal `cancelled` de sa ligne `order_collection`.** Une vérification ne
+suffit pas : `saveAll` écrase (C5.1, 8). Une fois `cancelled`, plus aucune
+transition de l'agrégat ne l'accepte.
+
+- **Migration additive, deux fichiers** : `ALTER TYPE "OrderCollectionState"
+ADD VALUE 'cancelled'` seul dans le sien (une valeur ajoutée ne s'emploie pas
+  dans la transaction qui l'ajoute), le code l'emploie ensuite. Aucune donnée
+  réécrite.
+- **Agrégat** : `OrderCollection.close(at)` — `due|excluded → cancelled`,
+  `batch_id`/`line_rank`/`exclusion_reason` à `null` ; et
+  `OrderCollection.closedAtCancellation(orderId, amount, at)` quand la ligne
+  n'existe pas (absence = `due`). **Aucune `assertIn` existante ne nomme
+  `cancelled`** (C5.1, 7) : `batch`, `exclude`, `release`, `collect`, `bounce`,
+  `represent`, `writeOff`, `settleReturned`, `settleOtherwise` la refusent
+  d'office. Un test par transition le prouve.
+- **Frontière** : la commande ne l'écrit pas elle-même. Le port de C5.5 devient
+  **lecture + écriture** sous le verrou de l'appelant : `AccountOrderEngagement`
+  (déclaré par `b2b/orders`, implémenté par la comptabilité) avec
+  `engagementOf(orderId)` et `closeForCancellation(orderId, at)`, exécutés
+  **dans l'unité de travail** de l'annulation (précédent : `BinDesk`,
+  `OrderWithdrawalDesk`). Un `ISP` : l'aperçu du détail ne reçoit que la lecture
+  (`AccountOrderEngagementReader`).
+- **Libellé** : `OrderCollectionStateView` (`packages/contracts/src/collection-batch.ts:42`)
+  et `ORDER_COLLECTION_STATE_LABELS` (`:52`) gagnent `cancelled: "Commande
+annulée"`. `packages/**` bouge : `pnpm test` à la racine.
+- **Mapper** : `toOrderCollectionState` (`order-collection.mapper.ts:5`) recopie
+  `row.state` tel quel, et `rehydrate` ne filtre rien : `cancelled` passe dès
+  que le client Prisma est régénéré. Un test d'aller-retour ligne → agrégat →
+  ligne le tient.
+
+**Les écrivains d'`order_collection`, un par un** (lus le 2026-10-12) :
+
+| Écrivain                                                                                                        | Part de            | Peut-il croiser l'annulation ? Comment c'est tenu                                                                                                                                                                                                                                                                                                                |
+| --------------------------------------------------------------------------------------------------------------- | ------------------ | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| constitution (`batch`, `exclude`)                                                                               | `due`, `excluded`  | **oui** — tenu par `lockAll` puis **relecture sous verrou** des commandes et de leur `order_collection` (C5.3). La version du 1ᵉʳ passage la disait fermée alors qu'elle gardait l'état lu avant le verrou : c'était faux                                                                                                                                        |
+| `settle-order-otherwise` (`settleOtherwise`)                                                                    | `due`, `excluded`  | **oui**, avec l'annulation **et** avec la constitution (course préexistante, C5.1, 13) — `load` sans verrou puis `upsert`. **Prend désormais `OrderInvoicingLock.lock(orderId)` avant `load`** ; `load` relit par `billableOrderWhere` → annulée = `null` → refus existant ; et `close` l'aurait de toute façon rendue `cancelled`, que `settleOtherwise` refuse |
+| `cancel-collection-batch` (`release`)                                                                           | `batched`          | non : l'annulation refuse `batched`. Si le lot est annulé pendant, l'annulation a relu `batched` sous son verrou → refus (sens sûr) ; elle repasse après                                                                                                                                                                                                         |
+| `deposit-collection-batch` (`collect`)                                                                          | `batched`          | non (même raison)                                                                                                                                                                                                                                                                                                                                                |
+| `record-collection-return`, `confirm-collection-return-import` (`bounce`, `collection-return-support.ts:49-54`) | `collected`        | non : jamais d'une ligne annulable                                                                                                                                                                                                                                                                                                                               |
+| `represent-collection-return` (`represent`)                                                                     | `returned` → `due` | non : `returned` refusé ; après, `due` **avec rejet** → refus 5                                                                                                                                                                                                                                                                                                  |
+| `write-off-collection-return` (`writeOff`)                                                                      | `returned`         | non                                                                                                                                                                                                                                                                                                                                                              |
+| `settle-collection-return` (`settleReturned`)                                                                   | `returned`         | non                                                                                                                                                                                                                                                                                                                                                              |
+
+Les écrivains par lot n'atteignent qu'une ligne vivante (`ofBatch`, `ofLine`) :
+une `cancelled` n'a pas de `batch_id`, ils ne la voient jamais.
+
+**Les lecteurs** :
+
+| Lecteur                                                                                                                                          | Ce qu'il fait de `cancelled`                                                                                                                                                   |
+| ------------------------------------------------------------------------------------------------------------------------------------------------ | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
+| `collectableOrders` (`isOpen`, `:178`)                                                                                                           | n'est pas ouverte → écartée (et la commande l'est déjà par l'assiette)                                                                                                         |
+| `get-collection-preview` (même `readAssembly`, sans verrou)                                                                                      | idem : absente de l'aperçu                                                                                                                                                     |
+| `buildStatements` (`billing-statement-support.ts:41`)                                                                                            | ne la voit jamais : elle n'est dans aucun débit                                                                                                                                |
+| `invoice-dossier-support.ts`                                                                                                                     | ne lit pas `order_collection` (vérifié) : rien                                                                                                                                 |
+| `prisma-cycle-orders.reader.ts` → `get-cycle-statement.handler.ts:101` (`collectionState`)                                                       | la commande sort de `billableOrderWhere` : jamais rendue                                                                                                                       |
+| `ORDER_COLLECTION_STATE_LABELS` (`packages/contracts/src/collection-batch.ts:52`, `Record<OrderCollectionStateView, string>`)                    | **doit** gagner `cancelled` — le `Record` exhaustif ne compile pas sans (et c'est voulu)                                                                                       |
+| front : `cycle-statement-card.ts:230` (indexe le `Record`) ; `shared/journal/values/accounting-values.ts:43-44` (ne nomme que `due`, `excluded`) | le premier suit le libellé ; le second n'a rien à faire (valeurs du journal de constitution). Aucun `switch` sur `OrderCollectionStateView` côté front (recensé le 2026-10-12) |
+| `prisma-cycle-orders.reader.ts:69`                                                                                                               | ne la lit pas : la commande sort de `billableOrderWhere`                                                                                                                       |
+| `prisma-collection-batch.reader.ts:118` (`exclusions`)                                                                                           | lit `state = excluded` : une fermée n'y est plus — c'est ce qu'on veut                                                                                                         |
+| `prisma-detached-unpaid.reader.ts` (`excluded / payer_detached`)                                                                                 | idem : n'y est plus. Le trou du 1ᵉʳ passage (annulée affichée comme impayé) est fermé par l'état                                                                               |
+| `collection-return-support.ts` (`ofLine`)                                                                                                        | ne la voit pas (pas de ligne)                                                                                                                                                  |
+| `PrismaOrderCollectionRepository.load`                                                                                                           | rend `null` (assiette)                                                                                                                                                         |
+
+#### C5.5 Le port côté commande
+
+```ts
+type AccountOrderEngagement =
+  | { kind: "free" }
+  | { kind: "invoiced"; invoiceNumber: string; issuedOn: string }
+  | {
+      kind: "collecting";
+      state: "batched";
+      collectionDay: string | null;
+      statementNumber: string | null;
+    }
+  | { kind: "collected"; state: "collected" | "returned"; collectionDay: string | null }
+  | { kind: "written_off" }
+  | { kind: "returned_before" } // re-présentée (C5.2, 5)
+  | { kind: "settled_otherwise" };
+```
+
+**`returned_before` se lit étroitement** : `billing_statement_order (order_id)`
+→ `billing_statement` **`status = active`** → la ligne `(batch_id, line_rank)`
+→ un `collection_return` sur son `end_to_end_id`. Le relevé ne porte que les
+bons du débit de sa ligne (C5.1, 14) : un rejet ainsi trouvé est bien un rejet
+**de cette commande**. Les relevés `cancelled` sont exclus : ce sont des lots
+annulés avant dépôt, sans retour possible. Un bon réglé par une ligne de
+**factures** n'a pas de relevé — il est alors facturé et tombe en 3.
+
+`CancellationState` gagne `engagement: AccountOrderEngagement | null`.
+**`null` n'est admis que hors régime `account`** ; pour `account`, `null` est
+une incohérence et `cancellationOf` rend un bloc `engagement_unknown` (refus),
+jamais « annulable » (S6). Le contrôle **hors verrou** de
+`cancel-order.handler.ts:98/106` lit donc aussi l'engagement pour `account` —
+même port de lecture — et refuse tôt sans rien toucher ; la relecture sous
+verrou reste l'autorité.
+
+`CancellableRegime` gagne `"account"` ; le bloc `{ kind: "account" }` et sa
+phrase `:164` disparaissent. `cancel()` gagne son troisième `updateMany`
+(`not_required ∧ totalCents > 0`, règlement inchangé), disjoint des deux autres.
+
+#### C5.6 Les refus nommés
+
+| Bloc                 | Phrase (`BusinessError` 409, code `orders.cancel.<bloc>`)                                                                                                                                       |
+| -------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `invoiced`           | « Cette commande a été facturée le JJ/MM/AAAA (facture n° F…). Une facture émise ne s'efface pas : il faut un avoir, que l'équipe ne peut pas encore émettre ici. Voyez avec la comptabilité. » |
+| `collecting`         | « Cette commande est dans le lot de prélèvement du JJ/MM/AAAA (relevé n° …). Annulez d'abord ce lot depuis la comptabilité s'il n'est pas déposé, puis revenez ici. »                           |
+| `collected`          | « Cette commande a déjà été prélevée (lot du JJ/MM/AAAA). L'annulation avec remboursement n'existe pas encore : voyez avec la comptabilité. »                                                   |
+| `written_off`        | « Cette commande a été passée en perte après un rejet de prélèvement. Elle ne s'annule pas : voyez avec la comptabilité. » (sans date : la ligne n'en garde pas)                                |
+| `returned_before`    | « Le prélèvement de cette commande a déjà été rejeté par la banque puis représenté. L'annulation d'une commande représentée n'existe pas encore : voyez avec la comptabilité. »                 |
+| `settled_otherwise`  | « Cette commande a été réglée hors prélèvement. L'annulation avec remboursement n'existe pas encore : voyez avec la comptabilité. »                                                             |
+| `engagement_unknown` | « L'état de facturation de cette commande n'a pas pu être lu : rien n'a été annulé. Signalez-le à l'équipe technique. »                                                                         |
+
+Une date absente s'écrit sans date, jamais inventée.
+
+#### C5.7 Ce que devient la commande, et les autres blocs
+
+- **Commande** : `cancelled`, règlement inchangé, colonnes de C3.5. **Aucun
+  appel Stripe** : `closeIntent` n'est appelé que pour `due` (garde éprouvée).
+- **`order_collection`** : `cancelled` (C5.4). **Facture, relevé, avis** :
+  aucun (refusés en amont).
+- **Fournil** : C3 tel quel ; « inscrite » sera le refus le plus fréquent.
+- **Bon** : C3b tel quel (total > 0, donc `reinstate` rend ou refond).
+- **Croissance** : abonné existant, inchangé.
+- **Journal** `order.cancelled` : la charge porte le régime ; `account`
+  s'ajoute. 🔴 **Une valeur de charge écrite en base ne se renomme que par
+  migration de données** (CLAUDE.md §8, exceptions) : `account` est
+  **irréversible** dès la première annulation en production. Le nom est
+  celui de `settlementRegimeOf` ; on ne l'invente pas.
+- **Courriel** `customer.order-cancelled`, variante `account` en fr/en/it :
+  « Rien ne sera facturé ni prélevé pour cette commande. »
+
+#### C5.8 L'écran
+
+Rien de neuf : le bouton et la confirmation de C3 lisent `cancellability`,
+désactivé avec la phrase de C5.6, confirmation avec la phrase du courriel
+`account`. La comptabilité affiche l'état `cancelled` par son libellé.
+
+#### C5.9 Les tests
+
+- **domaine** : `cancellationOf` par `account` × chaque engagement × inscrite ;
+  `account` + `null` → `engagement_unknown` ; ordre des refus ; `close` depuis
+  `due`/`excluded`, refusé ailleurs ; **chaque** transition refuse
+  `cancelled` (neuf tests) ; groupe de facture filtré : clé inchangée, vide →
+  rien.
+- **application** : pas d'appel au prestataire pour `account` ; engagement lu
+  hors verrou puis sous verrou ; `closeForCancellation` dans l'unité de
+  travail ; refus comptable → ni `withdraw`, ni `reinstate`, ni fait.
+  `settle-order-otherwise` : verrou pris avant `load`.
+- **e2e** (`--runInBand`) :
+  - **annulation × émission**, deux ordres, barrière entre `prepare` et
+    `issueFor` ; un bon `unbillable` annulé n'est plus signalé ;
+  - **annulation × constitution**, deux ordres, barrière entre
+    `collectableOrders` et `lockAll` ; l'aperçu, lui, ne bloque pas une
+    annulation concurrente ;
+  - **annulation × réglée autrement**, deux ordres → jamais `settled_otherwise`
+    sur une annulée ;
+  - **réglée autrement × constitution**, deux ordres, barrière entre
+    `collectableOrderIds` et `lockAll` → une réglée n'entre jamais au lot
+    (**régression** : la course préexistait à C5, C5.1, 13) ;
+  - `returned_before` : un rejet sur la ligne d'un **autre** bon du même payeur
+    ne bloque pas ; un relevé `cancelled` ne compte pas ;
+  - mapper : `cancelled` fait l'aller-retour ;
+  - **pas d'interblocage** : annulation, émission, constitution, ensemble, dix
+    fois → aucun `40P01` ;
+  - ids choisis pour que l'ordre `en_US` et l'ordre binaire diffèrent (minuscule
+    et majuscule si un id de test le permet) → même ordre des deux côtés ;
+  - lot annulé avant dépôt → l'annulation passe ; re-présentée → refus
+    `returned_before` ; `collected`/`written_off`/`settled_otherwise` → refus ;
+  - annulée → `order_collection.state = cancelled`, absente de l'émission, de
+    la constitution, des exclusions, des impayés détachés ;
+  - bon rendu (C3b) ; courriel `account` une fois ; journal régime `account` ;
+  - cohérence : toute `batched` a un `billing_statement_order` sous un relevé
+    `active` de sa ligne.
+
+#### C5.9 bis Questions pour Hugo — choix métier, défauts appliqués
+
+Non tranchées par Hugo au 2026-10-12 ; le lot se bâtit sur les défauts.
+
+1. 🟠 **MÉTIER — lot non déposé.** Le refus dit « annulez d'abord le lot »,
+   qui le retire pour tous ses payeurs. **Défaut** : refus. Plus tard : un
+   geste « retirer une commande d'un lot non déposé » ?
+2. 🟠 **MÉTIER — commande facturée.** **Défaut** : refus ; l'avoir sur facture
+   mensuelle rejoint C4.
+3. 🟠 **MÉTIER — commande re-présentée après un rejet bancaire (S4).**
+   **Défaut** : refus. Plus tard : l'annuler en clôturant son retour ?
+
+#### C5.10 Sort des objections de `vitruve` (2026-10-12)
+
+| #      | Objection                                      | Sort                                                                                         |
+| ------ | ---------------------------------------------- | -------------------------------------------------------------------------------------------- |
+| B1     | filtre après `readAssembly`, trop tard         | **réglée** : `lockAll` + relecture **dans** `readAssembly`, mode constitution (C5.3)         |
+| B2     | `order_collection` laissée ouverte, écrasable  | **réglée** : état terminal `cancelled`, écrit dans la transaction (C5.4)                     |
+| S3     | replanifier change le groupe                   | **réglée** : filtre du seul groupe, clé stable par `effectiveMandateOf` (C5.1, 3 ; C5.3)     |
+| S4     | `due` re-présentée                             | **défaut** : refusée, question métier (C5.2, 5 ; C5.9 bis, 3)                                |
+| S5     | écrivains et lecteurs non recensés             | **réglée** : recensés (C5.4) ; `settle-order-otherwise` prend le verrou                      |
+| S6     | contrôle hors verrou aveugle à l'engagement    | **réglée** : lu aussi hors verrou ; `account` + `null` refusé (C5.5)                         |
+| S7     | deux mécanismes d'ordre, collation             | **réglée** : un adaptateur, `ORDER BY id COLLATE "C"` ; base en `en_US.utf8` (C5.1, 12)      |
+| S8     | `account` dans la charge                       | **dit** : irréversible une fois en base (C5.7)                                               |
+| m      | `written_off` daté ; `unbillable` hors verrou  | **réglées** (C5.6 ; C5.3)                                                                    |
+| NV     | `InvoiceIssuer.issue`, verrous de C3           | **vérifiés** : compteur seul ; journée et titulaire sans ligne `orders` (C5.1, 2 et 11)      |
+| B (2ᵉ) | état d'encaissement lu avant `lockAll`, écrasé | **réglée** : ids, verrou, relecture sous verrou (C5.3) ; course préexistante dite (C5.1, 13) |
+| S (2ᵉ) | relevé trop large, lecteurs incomplets         | **vérifié** : relevé = bons débités ; `active` seul ; lecteurs complétés (C5.1, 14 ; C5.4)   |
+| m (2ᵉ) | `outcomeKey`, mapper                           | **réglées** (C5.3 ; C5.4)                                                                    |
 
 ### Suite immédiate — C4, le remboursement
 
