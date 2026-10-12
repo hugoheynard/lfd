@@ -5,6 +5,12 @@
 > `vitruve` avant Hugo. **Contredit le 2026-10-12 : quatre BLOQUANTS ; la
 > révision est au §9 et l'emporte sur les §2 à §5 là où ils divergent.**
 >
+> 🔴🔴 **Re-révisé par Hugo le 2026-10-12 au soir : le rythme est PAR CLIENT**
+> (« j'ai des clients au mois, d'autres à la semaine »), l'entité donnant le
+> défaut. La décision du §10 venait d'un malentendu. **Le §15 fait foi** ;
+> R1–R5a restent bâtis et servent de socle (le rythme de l'entité devient le
+> défaut).
+>
 > 🔴 **Révisé par Hugo le 2026-10-12 : « le rythme est défini par l'entité ».**
 > Aucun rythme par payeur. Tout ce qui parle de `payer_billing_rhythm`, de
 > période propre au payeur ou de rythmes mêlés est caduc (§10).
@@ -362,3 +368,161 @@ clôtures manquées.
 - **Un lot manuel annulé ne couvre plus rien** : ses clôtures redeviennent
   manquées (Hugo, 2026-10-12, « oui d'accord ») — l'argent n'a pas été
   prélevé.
+
+## 15. Le rythme par client (Hugo, 2026-10-12 au soir) — plan de refonte
+
+> « ah mince mais j'ai mal compris, j'ai des clients au mois, d'autres à la
+> semaine »
+
+Le §10 retirait le rythme par payeur sur un malentendu. Il revient, et avec
+lui les objections B3 et B4 de `vitruve` (§9), que le §10 avait fait tomber.
+
+### 15.1 Ce qui est déjà bâti et reste vrai
+
+- `BillingRhythm`, `periodAt`, `nextClosureAfter`, `closureAfter`,
+  `previousClosureOf`, `closuresToAttempt` (R1, R3) : purs, ne savent pas à
+  qui appartient le rythme.
+- `BillingRhythmSetting` (courant + programmé, §12) : réutilisé tel quel pour
+  le payeur.
+- Le rythme de l'entité (R2) : devient **le défaut**.
+- `invoice_monthly_outcome` est déjà clé par (entité, `period_closes_at`,
+  payeur, mandat) : une issue par payeur et par SA clôture tient sans
+  changement.
+
+### 15.2 Le modèle
+
+- **Table `payer_billing_rhythm`** (comptabilité, schéma `public`) :
+  `legal_entity_id`, `payer_company_id` (le payeur de `billedPayerOf`, jamais
+  le site), mêmes colonnes que `legal_entities` pour le courant et le
+  programmé (même fonction CHECK `billing_rhythm_is_well_formed`). **Absente =
+  le payeur suit l'entité.** Clé (`legal_entity_id`, `payer_company_id`).
+  Migration additive.
+- **Le rythme d'un payeur à un instant** = son propre `rhythmAt(instant)` s'il
+  en a un, sinon celui de l'entité. Un seul port de lecture
+  (`PayerRhythmsReader.timelinesOf(entité, payeurs)`), qui rend une timeline
+  par payeur.
+- **Changer le défaut de l'entité** ne touche que les payeurs qui le suivent ;
+  la règle §12 (un seul changement à la fois) reste sur l'entité. **Poser ou
+  retirer un rythme propre** à un payeur est un changement de SON rythme :
+  même règle §12, sur lui (prise d'effet à la prochaine clôture de son
+  rythme actuel, refus tant qu'elle n'est pas facturée pour lui).
+- Faits : `payer.billing_rhythm_changed` (sujet : le payeur, l'entité en
+  charge).
+
+### 15.3 La facture
+
+- Le passage du soir (23h55) facture, pour chaque entité, **les payeurs dont
+  la clôture tombe à minuit**, et eux seuls. Une tentative par (entité,
+  clôture) reste la clé de `invoice_autopilot_run` ; une clôture = l'union
+  des clôtures des rythmes en service (défaut + rythmes propres).
+- Bornes d'un payeur : `[sa clôture précédente réelle, sa clôture)` pour la
+  période ; lecture des bons `[plancher, clôture)` **restreinte à ce payeur**
+  (R3 lisait tous les payeurs). Un bon d'un payeur mensuel n'est jamais lu
+  par une clôture hebdomadaire d'un autre.
+- Le bouton manuel prend une clôture ET facture les payeurs qui y closent.
+- Rattrapage : `closuresToAttempt` sur l'union, payeur par payeur.
+
+### 15.4 Le lot (le gros morceau — B3 revient)
+
+R4 lit des **bons** `[clôture précédente, clôture)` puis remonte aux
+factures : faux dès que les rythmes se mêlent (un lot de lundi ramasserait
+les bons d'un mensuel pas encore facturé).
+
+- **Après le plancher, le lot ne lit plus aucun bon : il lit les FACTURES
+  émises non encore prélevées** (`invoice` 380 avec `payment_means` SEPA,
+  sans ligne de lot vivante), par payeur et par mandat, quelle que soit leur
+  période. Un bon non facturé n'est simplement pas encore prélevable.
+- Les bons d'avant le plancher gardent l'arrêté (chemin inchangé).
+- **Quand** : un lot à chaque clôture où au moins une facture a été émise
+  (l'union), une tentative par (entité, clôture) — clé existante. Les
+  factures d'un mensuel émises la veille du 1er partent dans le lot du 1er ;
+  celles d'un hebdomadaire, dans le lot de son lundi.
+- Échéance, préavis, avis, D4, `frozenCollectionDay` : inchangés (clôture du
+  lot + N).
+- Lot manqué (§14) : la couverture se lit par factures restées sans lot, pas
+  par clôtures.
+
+### 15.5 Le relevé et les écrans
+
+- Relevé et dossier d'un payeur : SES périodes (`?periodClosesAt=` déjà là ;
+  `/cycles` prend le payeur).
+- Fiche du client, section facturation : « Suit l'entité (mensuel, le 1er) »
+  ou son rythme propre, le programmé, l'avertissement §12, ses 3 prochaines
+  clôtures.
+- Fiche de l'entité (R5b) : la carte devient « Rythme par défaut » et
+  compte les payeurs qui ont un rythme propre.
+- « Prélèvement du mois » : par clôture, avec les payeurs facturés à chacune.
+
+### 15.6 Lots
+
+| Lot | Contenu                                                                                       |
+| --- | --------------------------------------------------------------------------------------------- |
+| P1  | `payer_billing_rhythm` (migration), agrégat/VO réutilisé, route + fait, timelines par payeur  |
+| P2  | Facture par payeur à sa clôture (passage, bouton, rattrapage, lecture des bons par payeur)    |
+| P3  | Le lot lit les factures émises non prélevées ; automatisme et lot manqué sur l'union          |
+| P4  | Relevé / dossier par payeur ; écrans : fiche client, carte entité « par défaut », prélèvement |
+
+### 15.7 Ouvert
+
+- Un payeur et ses **sites** : le rythme est celui du payeur ; un site qui
+  commande pour lui suit son rythme. Vérifier qu'aucun écran ne laisse
+  croire qu'un site a le sien.
+- **Changer le rythme d'un payeur** pendant qu'il a des bons non facturés :
+  la règle « prise d'effet à la prochaine clôture de l'ancien » suffit-elle ?
+- Le nombre de lots par mois (jusqu'à ~5 dépôts) : c'est déjà accepté.
+
+### 15.8 Révision après `vitruve` (2026-10-12) — l'emporte sur 15.2 à 15.6
+
+**Ce que `vitruve` a corrigé dans la prémisse.** Le lot lit déjà les bons
+`[plancher, clôture)` et ne prélève que les bons **déjà facturés** (un bon
+sans facture « attend la sienne », `collection-assembly.ts`). Le mélange des
+rythmes ne fait donc PAS ramasser un mensuel non facturé par un lot du
+lundi. **P3 ne réécrit pas la lecture du lot** : elle garde bons → factures,
+`unbillable`, `invoice_split`, mandats des sites, re-présentation, arrêté.
+
+**Les décisions qui remplacent 15.2–15.4 :**
+
+1. **Le rythme d'un payeur est un HISTORIQUE, pas un courant + programmé.**
+   Table `payer_billing_rhythm_segment` (append-only) : `legal_entity_id`,
+   `payer_company_id`, `effective_from` (une clôture), `kind`/`days` ou NULL
+   (= suit l'entité). Idem pour l'entité : son réglage R2 est relu comme
+   l'historique à deux segments qu'il est. La **timeline d'un payeur** se
+   compose de ses segments et, là où il suit l'entité, des segments de
+   l'entité. `previousClosureOf` sur cette timeline composée rend la clôture
+   précédente réelle — aucun trou, aucun chevauchement, quel que soit le
+   nombre de bascules. Cela remplace la nécessité du §12 pour la
+   **justesse** ; le §12 reste pour la **lisibilité** (cf. 4).
+2. **Un calendrier d'entité = l'union des timelines** de ses payeurs en
+   service et de son défaut : type `ClosureCalendar` (next/previous sur
+   l'union). `CollectionBatch.constitute` accepte une clôture du calendrier ;
+   `readCycle`, `closuresToAttempt`, `missedClosures` le prennent à la place
+   d'une timeline unique.
+3. **L'automatisme tente à chaque clôture du calendrier**, même sans facture
+   (`nothing_to_collect`) : sinon R4b la signalerait `missed`.
+4. **§12 par payeur, sur le temps et pas sur la facture** : un nouveau rythme
+   est refusé tant que la prise d'effet du précédent est dans le futur
+   (`effective_from > now`). Plus de dépendance à `invoice_autopilot_run`
+   (faux dans un sens, bloquant pour un payeur sans commande). Annuler le
+   programmé reste admis avant la prise d'effet. Même règle pour l'entité.
+5. **La facture** : passage par clôture du calendrier ; payeurs facturés =
+   ceux dont la timeline clôt à cet instant. La lecture SQL reste
+   `[plancher, clôture)` pour tous ; le filtre par payeur se fait en mémoire
+   par `billedPayerOf` (jamais un `where` sur la société : on perdrait les
+   sites).
+6. **`priorOrderCount`** se calcule sur la période DU PAYEUR, pas sur celle du
+   lot.
+7. **Échéance** : le lot garde `frozenCollectionDay` ; une facture rattrapée
+   dont `dueOn` serait antérieure à l'échéance du lot est prélevée à
+   l'échéance du lot (jamais plus tôt que l'avis) — la facture ne se réécrit
+   pas, comme aujourd'hui (D4).
+8. **Droit** : le réglage du payeur est sous `b2b_accounting` comme les
+   autres réglages de facturation ; aucune ressource neuve.
+9. **Irréversible** : la table et le fait `payer.billing_rhythm_changed`
+   restent dès le premier merge (pré-release : acceptable, Hugo le sait).
+10. Avoirs et factures carte : inchangés (le lot ne lit que les 380 ;
+    l'avoir n'a pas de période).
+
+Lots révisés : **P1** historique + timelines composées + calendrier d'union
+(pur, puis migration) · **P2** facture par payeur · **P3** automatisme et lot
+sur le calendrier (tentative à chaque clôture, `priorOrderCount`, échéance)
+· **P4** relevé et écrans.
