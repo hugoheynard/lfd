@@ -1,4 +1,3 @@
-import { ComptoirTabs } from '../comptoir-tabs/comptoir-tabs';
 import { ChangeDetectionStrategy, Component } from '@angular/core';
 import { FoldEmptyStateComponent, FoldIconComponent, FoldPageLayoutComponent } from 'fold-ng';
 
@@ -11,7 +10,7 @@ import { FoldEmptyStateComponent, FoldIconComponent, FoldPageLayoutComponent } f
 @Component({
   selector: 'app-reassort-boutique-page',
   changeDetection: ChangeDetectionStrategy.OnPush,
-  imports: [ComptoirTabs, FoldPageLayoutComponent, FoldEmptyStateComponent, FoldIconComponent],
+  imports: [FoldPageLayoutComponent, FoldEmptyStateComponent, FoldIconComponent],
   templateUrl: './reassort-boutique-page.html',
 })
 export class ReassortBoutiquePage {}

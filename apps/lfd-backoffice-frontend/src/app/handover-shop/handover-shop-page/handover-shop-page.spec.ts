@@ -1,3 +1,4 @@
+import { Component } from '@angular/core';
 import { type ComponentFixture, TestBed } from '@angular/core/testing';
 import { describe, expect, it, vi } from 'vitest';
 
@@ -5,7 +6,9 @@ import type { HandoverQueueEntryView, HandoverQueueView } from '@lfd/contracts';
 
 import { AdminOrdersService } from '../../commandes/orders.service';
 import { type DayWatch, DayVersionWatcher } from '../../shared/day-version/day-version-watcher';
+import { HandoverMasthead } from '../handover-masthead/handover-masthead';
 import { HandoverQueueService } from '../handover-queue.service';
+import { HandoverQueueStore } from '../handover-queue.store';
 import { HandoverShopPage } from './handover-shop-page';
 
 /**
@@ -25,6 +28,20 @@ import { HandoverShopPage } from './handover-shop-page';
  */
 
 const DAY = '2026-09-10';
+
+/**
+ * La vue telle que le comptoir la monte : la part retrait de la bande de tête
+ * AU-DESSUS, et le store que l'espace fournit. Depuis le 2026-10-12, onglets
+ * de point, compteurs et journée vivent dans la bande — les cas qui les
+ * touchent passent donc par elle, comme le doigt.
+ */
+@Component({
+  selector: 'app-retrait-host',
+  imports: [HandoverMasthead, HandoverShopPage],
+  providers: [HandoverQueueStore],
+  template: '<app-handover-masthead /><app-handover-shop-page />',
+})
+class RetraitHost {}
 
 function entry(over: Partial<HandoverQueueEntryView> = {}): HandoverQueueEntryView {
   return {
@@ -88,7 +105,7 @@ class FakeOrders {
  * interroge `matchMedia` à sa construction, une seule fois, et le laisser en
  * place déborderait sur les cas suivants.
  */
-async function renderNarrow(api: FakeQueue): Promise<ComponentFixture<HandoverShopPage>> {
+async function renderNarrow(api: FakeQueue): Promise<ComponentFixture<RetraitHost>> {
   const original = window.matchMedia;
   Object.defineProperty(window, 'matchMedia', {
     configurable: true,
@@ -110,22 +127,22 @@ async function renderNarrow(api: FakeQueue): Promise<ComponentFixture<HandoverSh
   }
 }
 
-async function render(api: FakeQueue): Promise<ComponentFixture<HandoverShopPage>> {
+async function render(api: FakeQueue): Promise<ComponentFixture<RetraitHost>> {
   TestBed.configureTestingModule({
-    imports: [HandoverShopPage],
+    imports: [RetraitHost],
     providers: [
       { provide: HandoverQueueService, useValue: api },
       { provide: AdminOrdersService, useValue: new FakeOrders() },
       { provide: DayVersionWatcher, useValue: fakeWatcher },
     ],
   });
-  const fixture: ComponentFixture<HandoverShopPage> = TestBed.createComponent(HandoverShopPage);
+  const fixture: ComponentFixture<RetraitHost> = TestBed.createComponent(RetraitHost);
   await fixture.whenStable();
   fixture.detectChanges();
   return fixture;
 }
 
-const text = (fixture: ComponentFixture<HandoverShopPage>): string =>
+const text = (fixture: ComponentFixture<RetraitHost>): string =>
   (fixture.nativeElement as HTMLElement).textContent ?? '';
 
 /**
@@ -136,7 +153,7 @@ const text = (fixture: ComponentFixture<HandoverShopPage>): string =>
  * lignes. Les compter ferait passer un tri pour cassé alors qu'il est juste —
  * c'est ce qui est arrivé en écrivant ce fichier.
  */
-const rowTexts = (fixture: ComponentFixture<HandoverShopPage>): readonly string[] =>
+const rowTexts = (fixture: ComponentFixture<RetraitHost>): readonly string[] =>
   [...(fixture.nativeElement as HTMLElement).querySelectorAll('tbody tr.folddt-row')].map(
     (row) => row.textContent ?? '',
   );
@@ -360,7 +377,7 @@ describe('HandoverShopPage', () => {
  * flèches.
  */
 describe('HandoverShopPage — changer de journée', () => {
-  const step = (fixture: ComponentFixture<HandoverShopPage>, label: string): HTMLButtonElement => {
+  const step = (fixture: ComponentFixture<RetraitHost>, label: string): HTMLButtonElement => {
     const found = (fixture.nativeElement as HTMLElement).querySelector<HTMLButtonElement>(
       `button[aria-label="${label}"]`,
     );
@@ -371,7 +388,7 @@ describe('HandoverShopPage — changer de journée', () => {
   };
 
   const press = async (
-    fixture: ComponentFixture<HandoverShopPage>,
+    fixture: ComponentFixture<RetraitHost>,
     button: HTMLButtonElement,
   ): Promise<void> => {
     button.click();

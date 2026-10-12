@@ -1,15 +1,13 @@
-import { ComptoirTabs } from '../../comptoir/comptoir-tabs/comptoir-tabs';
 import {
   ChangeDetectionStrategy,
   Component,
   computed,
-  DestroyRef,
   effect,
   inject,
   signal,
-  viewChild,
+  untracked,
 } from '@angular/core';
-import { addDays, type HandoverQueueEntryView } from '@lfd/contracts';
+import type { HandoverQueueEntryView } from '@lfd/contracts';
 import {
   FoldButtonComponent,
   FoldCalloutComponent,
@@ -19,62 +17,18 @@ import {
   FoldLoadingStateComponent,
   FoldAsideLayoutComponent,
   FoldPageLayoutComponent,
-  FoldPageSectionComponent,
   FoldPanelHostService,
-  FoldSurfaceDirective,
   FoldTabPanelComponent,
-  FoldTabsComponent,
-  type FoldTabItem,
 } from 'fold-ng';
 
-import { DayVersionWatcher } from '../../shared/day-version/day-version-watcher';
 import { narrowViewport } from '../../shared/viewport/narrow-viewport';
 import { NotifyService } from '../../notify.service';
-import { HandoverQueueService } from '../handover-queue.service';
-import {
-  atTheCounter,
-  matchingQueue,
-  clockOf,
-  entriesForTab,
-  formatHour,
-  pickupTabs,
-  queueCounters,
-  type QueueCounters,
-} from '../handover-queue';
+import { matchingQueue } from '../handover-queue';
+import { HandoverQueueStore } from '../handover-queue.store';
 import { QueueTable } from '../queue-table/queue-table';
 import { HandoverDetail } from '../handover-detail/handover-detail';
 import { SCANNED, ScanDialog, type ScanDialogData } from '../scan-dialog/scan-dialog';
 import { AdminOrdersService } from '../../commandes/orders.service';
-
-type LoadState = 'loading' | 'ready' | 'error';
-
-/**
- * « samedi 16 août » — la journée regardée, en toutes lettres.
- *
- * Déclaré ICI et non repris de `production/worksheet-day.ts`, qui porte le même
- * format : ce sont deux blocs, et le comptoir n'a pas à dépendre du fournil pour
- * écrire une date. Trois lignes dupliquées coûtent moins qu'un import qui
- * traverse une frontière.
- */
-const DAY_LABEL = new Intl.DateTimeFormat('fr-FR', {
-  weekday: 'long',
-  day: 'numeric',
-  month: 'long',
-});
-
-/** `AAAA-MM-JJ` d'un instant, en heure locale — le jour tel que l'équipe le dit. */
-function isoDay(date: Date): string {
-  const month = `${date.getMonth() + 1}`.padStart(2, '0');
-  const day = `${date.getDate()}`.padStart(2, '0');
-  return `${date.getFullYear()}-${month}-${day}`;
-}
-
-/**
- * Le battement de l'horloge de comptoir. Trente secondes : une ligne bascule
- * « en retard » au plus une demi-minute après l'avoir été, et le navigateur ne
- * repeint que deux fois par minute une page qui reste ouverte toute la matinée.
- */
-const TICK_MS = 30_000;
 
 /**
  * **La file de retrait** — qui attend au comptoir, ce jour-là.
@@ -96,25 +50,18 @@ const TICK_MS = 30_000;
  * l'équipe puisse dire à quelqu'un qui se présente pourquoi on ne lui donne
  * rien — la masquer transformerait un refus explicable en commande disparue.
  *
- * ## L'horloge tourne, et c'est le sujet
+ * ## La file est celle du comptoir, pas de cette vue
  *
- * 🔴 L'instant du jugement était **figé à la lecture**. Sur un écran qu'on
- * laisse ouvert du premier au dernier client, cela voulait dire qu'aucune ligne
- * ne passait jamais en retard : il fallait recharger pour l'apprendre. Il bat
- * désormais toutes les trente secondes, et reste un signal — donc les tests le
- * posent où ils veulent, sans attendre.
- *
- * ## Un seul appel, des onglets locaux
- *
- * Le serveur rend la journée entière, tous points confondus, et les onglets
- * sont dérivés des `pickupLabel` reçus. Aucun nom de point n'est écrit ici : un
- * comptoir ouvert demain apparaît sans qu'on y touche.
+ * La file du jour, la journée, l'horloge, le point ouvert et ses compteurs
+ * vivent dans `HandoverQueueStore`, fourni par l'espace du comptoir : la bande
+ * de tête les affiche sur les trois vues, et ils survivent au changement
+ * d'onglet (Hugo, 2026-10-12). Cette vue n'y ajoute que ce qui est à elle — la
+ * recherche, la ligne choisie, le scan, le rappel.
  */
 @Component({
   selector: 'app-handover-shop-page',
   changeDetection: ChangeDetectionStrategy.OnPush,
   imports: [
-    ComptoirTabs,
     FoldButtonComponent,
     FoldCalloutComponent,
     FoldElementTitleComponent,
@@ -123,14 +70,7 @@ const TICK_MS = 30_000;
     FoldEmptyStateComponent,
     FoldLoadingStateComponent,
     FoldPageLayoutComponent,
-    FoldPageSectionComponent,
-    // 🔴 La directive, et pas seulement l'attribut dans le gabarit : sans elle
-    // `foldSurface="chrome"` est du HTML inerte qu'Angular ignore. Le fond
-    // sombre serait peint, la polarité jamais basculée, et le titre rendu à
-    // 1,18 de contraste — invisible au typecheck comme à l'AOT.
-    FoldSurfaceDirective,
     FoldTabPanelComponent,
-    FoldTabsComponent,
     QueueTable,
     HandoverDetail,
   ],
@@ -138,19 +78,11 @@ const TICK_MS = 30_000;
   styleUrl: './handover-shop-page.scss',
 })
 export class HandoverShopPage {
-  private readonly api = inject(HandoverQueueService);
+  /** La file du comptoir — partagée avec la bande de tête. */
+  protected readonly store = inject(HandoverQueueStore);
   private readonly orders = inject(AdminOrdersService);
   private readonly panels = inject(FoldPanelHostService);
   private readonly notify = inject(NotifyService);
-
-  /**
-   * L'instance des onglets, pour le `fold-tab-panel` qui la réclame.
-   *
-   * ⚠️ Par requête de vue et non par variable de gabarit : `#tabBar` déclaré
-   * dans la bande de tête ne franchirait pas le bloc `@if` qui l'entoure, et le
-   * panneau vit dans une autre branche du `@switch`.
-   */
-  protected readonly tabBar = viewChild(FoldTabsComponent);
 
   /**
    * Le terme cherché. Il vit ICI parce que la barre le porte, et il descend à
@@ -175,63 +107,6 @@ export class HandoverShopPage {
    * ne fait pas.
    */
   protected readonly stacked = narrowViewport('(max-width: 1040px)');
-
-  protected readonly state = signal<LoadState>('loading');
-
-  /**
-   * La dernière relecture de fond a échoué : la file affichée est celle d'avant,
-   * et l'écran le DIT au lieu de la présenter comme à jour. Retombe à la
-   * relecture suivante qui aboutit.
-   */
-  protected readonly refreshFailed = signal(false);
-  /**
-   * Le jour de service affiché.
-   *
-   * ## L'histoire de ce champ, parce qu'elle explique sa forme
-   *
-   * Un sélecteur de date vivait dans la bande jusqu'au **2026-09-11**, puis il a
-   * été retiré, avec une raison qui reste vraie : « un comptoir travaille sur le
-   * jour qu'il est en train de vivre, et l'offrir en tête d'écran mettait à
-   * portée du doigt le seul geste qui peut faire tendre un sac en croyant être
-   * un autre jour ». Ce retrait laissait un besoin ouvert, et la page le disait
-   * elle-même — relire la file d'hier pour régler une contestation.
-   *
-   * 🔴 **La navigation revient le 2026-09-17** (Hugo), et le garde-fou avec
-   * elle : ce n'est plus un calendrier — deux flèches, un jour à la fois — et
-   * l'écran **crie** dès qu'on n'est pas sur aujourd'hui ({@link isToday}). Le
-   * risque nommé en septembre n'était pas le déplacement, c'était de ne pas
-   * savoir où l'on est ; un sélecteur muet le permettait, une bande qui affiche
-   * « VOUS N'ÊTES PAS SUR AUJOURD'HUI » ne le permet plus.
-   */
-  protected readonly day = signal<string>(isoDay(new Date()));
-
-  /**
-   * Suit-on l'horloge, ou consulte-t-on une autre journée ?
-   *
-   * 🔴 **C'est ce drapeau qui empêche la bascule de minuit d'annuler un geste.**
-   * L'horloge de comptoir remet la file sur le jour courant toutes les trente
-   * secondes ; sans distinguer les deux situations, quelqu'un qui ouvre la
-   * veille pour une contestation se ferait ramener à aujourd'hui en une
-   * demi-minute, sans comprendre pourquoi. On ne suit l'horloge que tant que
-   * personne n'a demandé autre chose — et {@link backToToday} y ramène.
-   */
-  private readonly followingClock = signal<boolean>(true);
-
-  /** Sommes-nous sur la journée en cours ? La bande en dépend entièrement. */
-  protected readonly isToday = computed(() => this.day() === isoDay(this.now()));
-
-  /** « samedi 16 août » — la journée regardée, écrite en toutes lettres. */
-  protected readonly dayLabel = computed(() =>
-    DAY_LABEL.format(new Date(`${this.day()}T00:00:00`)),
-  );
-  private readonly entries = signal<readonly HandoverQueueEntryView[]>([]);
-
-  /**
-   * L'instant qui sert à juger un retard. Un **signal**, battu par une horloge
-   * plutôt que lu au rendu : le lire au rendu ferait dépendre l'affichage du
-   * moment où Angular repeint, et rendrait l'écran intestable.
-   */
-  protected readonly now = signal<Date>(new Date());
 
   /** La commande dont on envoie le rappel — au plus une, et le bouton le dit. */
   private readonly reminding = signal<string | null>(null);
@@ -263,42 +138,6 @@ export class HandoverShopPage {
    */
   private readonly selectedId = signal<string | null>(null);
 
-  /** La clé d'onglet demandée par l'utilisateur — pas forcément encore valide. */
-  private readonly requestedTab = signal<string>('');
-
-  protected readonly tabs = computed<readonly FoldTabItem[]>(() =>
-    pickupTabs(this.entries()).map((tab) => ({
-      key: tab.key,
-      label: tab.label,
-      badge: tab.count,
-    })),
-  );
-
-  /**
-   * L'onglet réellement actif. Il retombe sur le premier dès que la clé
-   * demandée n'existe plus — changer de jour change les points de retrait
-   * présents, et une clé morte laisserait une file vide sans rien expliquer.
-   */
-  protected readonly activeTab = computed<string>(() => {
-    const tabs = this.tabs();
-    const requested = this.requestedTab();
-    if (tabs.some((tab) => tab.key === requested)) {
-      return requested;
-    }
-    return tabs[0]?.key ?? '';
-  });
-
-  /**
-   * Les lignes de l'onglet ouvert. **Pas ordonnées ici** : l'ordre de la file
-   * appartient à la file, et `app-queue-table` le pose — un appelant qui
-   * oublierait de trier obtiendrait une liste juste et illisible.
-   */
-  protected readonly rows = computed<readonly HandoverQueueEntryView[]>(() =>
-    entriesForTab(this.entries(), this.activeTab()),
-  );
-
-  protected readonly total = computed(() => this.entries().length);
-
   /**
    * Combien de lignes le terme laisse — ce que la boîte annonce à voix haute.
    *
@@ -308,37 +147,16 @@ export class HandoverShopPage {
    * peuvent pas diverger ; une barre qui interroge sa table, si.
    */
   protected readonly matches = computed<number | null>(() =>
-    this.query() === '' ? null : matchingQueue(this.rows(), this.query()).length,
+    this.query() === '' ? null : matchingQueue(this.store.rows(), this.query()).length,
   );
 
   /** Ce que le rail montre — la ligne choisie, relue dans la file courante. */
   protected readonly selected = computed<HandoverQueueEntryView | null>(() => {
     const id = this.selectedId();
-    return id === null ? null : (this.entries().find((entry) => entry.orderId === id) ?? null);
+    return id === null
+      ? null
+      : (this.store.entries().find((entry) => entry.orderId === id) ?? null);
   });
-
-  /**
-   * Les trois nombres de la bande : sur le POINT OUVERT, pas sur la journée.
-   *
-   * 🔴 Ils portaient sur la journée entière jusqu'au 2026-09-11, et l'argument
-   * — « combien reste-t-il ce matin » — était celui d'un gérant. Personne ne
-   * tient ce comptoir-là : qui lit cet écran est DANS un point, et « 3 en
-   * retard » dont deux au Village le fait chercher deux sacs qui ne sont pas
-   * chez lui. C'est le même raisonnement qui a fait tomber l'onglet « Tous les
-   * points » ; laisser les compteurs derrière aurait gardé la vue qu'on venait
-   * de retirer.
-   *
-   * ⚠️ Depuis `rows()` et non depuis la file peinte : `rows` suit l'onglet,
-   * jamais la RECHERCHE, qui vit plus bas. Un comptoir qui cherche un nom ne
-   * doit pas voir son nombre de retards tomber à zéro sous ses yeux — il
-   * lirait que le problème est réglé.
-   */
-  protected readonly counters = computed<QueueCounters>(() =>
-    queueCounters(this.rows(), this.day(), this.now()),
-  );
-
-  /** L'heure, telle qu'on la dit — « 7 h 26 ». */
-  protected readonly clock = computed<string>(() => formatHour(clockOf(this.now())));
 
   /**
    * Le sur-titre de la file. Il nomme l'onglet ouvert parce que c'est ce qu'on
@@ -346,101 +164,32 @@ export class HandoverShopPage {
    * qu'un onglet en cache la moitié.
    */
   protected readonly eyebrow = computed<string>(() => {
-    const active = this.activeTab();
+    const active = this.store.activeTab();
     if (active === '') {
       return 'La file';
     }
-    const tab = this.tabs().find((item) => item.key === active);
+    const tab = this.store.tabs().find((item) => item.key === active);
     return `La file · ${tab?.label ?? active}`;
   });
 
   constructor() {
+    // 🔴 Changer de jour — à la main ou à minuit — referme le sac et vide la
+    // recherche : le sac ouvert appartenait à la journée qu'on quitte, et un
+    // terme qui survit laisse une file amputée sous des yeux qui veulent tout
+    // voir. Les gestes vivent dans la bande ; la vue suit le fait.
     effect(() => {
-      void this.load(this.day());
-    });
-
-    // L'horloge de comptoir. `window.setInterval` et non `setInterval` : le
-    // premier rend un `number`, le second un `Timeout` sous les types Node —
-    // et cette app n'a pas de rendu serveur (`ssr: false`), donc rien à garder.
-    //
-    // 🔴 Elle fait AUSSI basculer la journée. Sans cela, un poste laissé ouvert
-    // la nuit garderait la file de la veille pour toujours — et depuis que le
-    // sélecteur de date a disparu (2026-09-11), plus rien ne permettrait d'en
-    // sortir sans recharger la page. L'écran montrerait alors, au petit matin,
-    // une file vide et des retards de douze heures.
-    const tick = window.setInterval(() => {
-      const instant = new Date();
-      this.now.set(instant);
-      const today = isoDay(instant);
-      // ⚠️ **Seulement si l'on suit l'horloge.** Sinon cette ligne annulerait,
-      // au plus tard trente secondes après, le geste de quelqu'un venu relire
-      // la veille — et l'écran sauterait sous ses doigts sans rien expliquer.
-      if (this.followingClock() && today !== this.day()) {
-        this.day.set(today);
+      this.store.day();
+      untracked(() => {
         this.clearSelection();
-      }
-    }, TICK_MS);
-    inject(DestroyRef).onDestroy(() => window.clearInterval(tick));
-    // 🔴 La file se relit quand l'une des deux journées bouge (D6,
-    // `plan-version-par-journee.md`) : une commande passée au téléphone
-    // (commerce) ou un sac fermé au fournil (production). Filet de 5 min inclus.
-    inject(DayVersionWatcher).watch({
-      journals: ['orders', 'production'],
-      date: this.day,
-      reload: () => this.refresh(),
+        this.query.set('');
+      });
     });
-  }
-
-  protected async load(day: string = this.day()): Promise<void> {
-    this.state.set('loading');
-    try {
-      const view = await this.api.forDay(day);
-      // 🔴 La coupe est faite UNE fois, à la lecture : les onglets, les
-      // compteurs, la file et la sélection en dérivent tous. Filtrée plus bas,
-      // elle aurait manqué l'un d'eux — et c'est le compteur qu'elle aurait
-      // manqué, puisqu'il lit `entries` en direct.
-      this.entries.set(atTheCounter(view.entries));
-      this.now.set(new Date());
-      this.refreshFailed.set(false);
-      this.state.set('ready');
-    } catch {
-      this.entries.set([]);
-      this.state.set('error');
-    }
-  }
-
-  /**
-   * **Relecture de fond**, sans repasser par « Lecture de la file… » : l'écran
-   * reste sous les doigts. Un échec garde la file et le dit ; une réponse d'un
-   * jour qu'on a quitté entre-temps est jetée.
-   */
-  protected async refresh(): Promise<void> {
-    const day = this.day();
-    if (this.state() !== 'ready') {
-      return this.load(day);
-    }
-    try {
-      const view = await this.api.forDay(day);
-      if (day === this.day()) {
-        this.entries.set(atTheCounter(view.entries));
-        this.refreshFailed.set(false);
-      }
-    } catch {
-      this.refreshFailed.set(true);
-    }
-  }
-
-  /**
-   * 🔴 Changer d'onglet ou de jour VIDE la recherche.
-   *
-   * Un terme qui survit à ce geste laisse une file amputée sous un onglet qu'on
-   * vient d'ouvrir pour tout voir : on lit « Le Village 2 » et on n'a qu'une
-   * ligne devant soi. C'est exactement ce que `[(value)]` permet — une boîte à
-   * sens unique garderait un terme que les résultats n'honorent plus.
-   */
-  protected onTab(key: string): void {
-    this.requestedTab.set(key);
-    this.query.set('');
+    // Même raison pour l'onglet de point : un terme qui survit à ce geste fait
+    // lire « Le Village 2 » avec une seule ligne devant soi.
+    effect(() => {
+      this.store.requestedTab();
+      untracked(() => this.query.set(''));
+    });
   }
 
   /**
@@ -465,12 +214,12 @@ export class HandoverShopPage {
       // point de retrait dans son titre et dans ses trois compteurs. Sans cette
       // clé, le scan remettait un sac du Village sans qu'une ligne ne l'ait
       // jamais montré (revue du 2026-09-11, point 3).
-      openTab: this.activeTab(),
+      openTab: this.store.activeTab(),
     };
     const ref = this.panels.open<ScanDialogData, string>(ScanDialog, { data });
     void ref.closed.then((result) => {
       if (result === SCANNED) {
-        void this.load();
+        void this.store.load();
       }
     });
   }
@@ -494,35 +243,6 @@ export class HandoverShopPage {
     } finally {
       this.reminding.set(null);
     }
-  }
-
-  /**
-   * **Change de journée**, d'un jour à la fois.
-   *
-   * Deux flèches et non un calendrier : au comptoir, le besoin est « la veille »
-   * ou « demain », et un champ de date ouvre la porte à un saut de trois
-   * semaines qu'on ne relit pas. La sélection tombe — le sac ouvert appartenait
-   * à la journée qu'on quitte — et la recherche aussi, pour la raison écrite
-   * dans {@link onTab} : un terme qui survit laisse une file amputée sous un
-   * onglet qu'on vient d'ouvrir.
-   */
-  protected shiftDay(days: number): void {
-    const target = addDays(this.day(), days);
-    // On ne « suit l'horloge » que si le geste ramène exactement sur le jour
-    // courant : revenir à aujourd'hui par la flèche doit rendre à l'écran son
-    // comportement de comptoir, bascule de minuit comprise.
-    this.followingClock.set(target === isoDay(this.now()));
-    this.day.set(target);
-    this.clearSelection();
-    this.query.set('');
-  }
-
-  /** Revient au jour de service, et **rend la main à l'horloge**. */
-  protected backToToday(): void {
-    this.followingClock.set(true);
-    this.day.set(isoDay(this.now()));
-    this.clearSelection();
-    this.query.set('');
   }
 
   /** Referme le rail. Il reste à l'écran, vide — rien ne disparaît. */

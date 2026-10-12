@@ -1,0 +1,31 @@
+/* ── LA BANDE DE TÊTE DU COMPTOIR ────────────────────────────────────────────
+   Collée sous la barre de l'app, pleine largeur : l'espace du comptoir n'est
+   pas dans un `fold-page-layout`, et la coquille de l'app n'ajoute aucune
+   gouttière — la bande pose donc la gouttière de page elle-même.
+
+   🔴 Ni titre ni description : l'onglet actif nomme déjà l'écran, et sur un
+   poste de comptoir la hauteur est ce qui manque. */
+.masthead {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: var(--fold-space-sm) var(--fold-space-lg);
+  padding: var(--fold-space-sm) var(--fold-page-gutter);
+  font-size: var(--fold-text-base);
+
+  // 🔴 **Deux gestes, et il en faut DEUX.** `foldSurface="chrome"` bascule la
+  // polarité ; il ne peint pas le fond. C'est à l'élément qui possède la
+  // surface de le poser — sans quoi l'encre claire s'écrit sur l'ivoire.
+  //
+  // La teinte DÉRIVE de la barre de l'app, un cran plus claire (Hugo,
+  // 2026-10-12) : un masthead sous la barre, pas son prolongement. Dérivée et
+  // non choisie, elle suit le thème ; l'encre claire du chrome reste lisible.
+  background: oklch(from var(--fold-color-bg-header) calc(l + 0.08) c h);
+}
+
+/* Les onglets du comptoir ne s'étirent pas : ils partagent leur rangée avec
+   le retrait, et `fold-view-nav` se poserait sinon en pleine largeur. */
+.masthead-views {
+  flex: 0 0 auto;
+  width: auto;
+}

@@ -1,102 +1,6 @@
-<!-- Pas de `title` sur le layout : la page porte son `<h1>` dans la bande, et
-     deux titres de premier niveau sur un écran n'en font aucun. Même partition
-     que le poste commercial et la tarification — le verdict sur le chrome, la
-     file sur le papier. -->
+<!-- Pas de `title` sur le layout : la bande de tête du comptoir, au-dessus,
+     porte les onglets, le point ouvert et la journée (Hugo, 2026-10-12). -->
 <fold-page-layout>
-  <!--
-    **La bande de tête du comptoir.** Ce qu'on vient y chercher en levant les
-    yeux : où j'en suis, combien il en reste, et quelle heure il est — les trois
-    au même endroit, sur le support sombre, hors de la file qu'on lit ligne à
-    ligne.
-  -->
-  <!--
-    **La bande de tête du comptoir** : on choisit à gauche, on constate à
-    droite, et la journée se change à l'extrémité.
-
-    🔴 Ni titre ni phrase d'explication. Le rail de l'app nomme déjà l'écran, et
-    sur un poste de comptoir la hauteur est ce qui manque : chaque ligne prise
-    par de la prose est une commande de moins visible sans faire défiler. Ce que
-    la page fait se lit dans ce qu'elle montre.
-  -->
-  <fold-page-section bleed class="masthead" foldSurface="chrome">
-    <div class="masthead-bar">
-      <!-- Les onglets sont DÉRIVÉS des points de retrait reçus : aucun nom
-           n'est écrit ici, et un comptoir ouvert demain apparaît seul. -->
-      @if (state() === 'ready' && total() > 0) {
-        <fold-tabs
-          direction="horizontal"
-          [tabs]="tabs()"
-          [activeKey]="activeTab()"
-          (activeKeyChange)="onTab($event)"
-        />
-
-        <!-- Les compteurs portent sur le POINT OUVERT. Qui lit cet écran est
-             DANS un point : « 3 en retard » dont deux ailleurs le ferait
-             chercher des sacs qui ne sont pas chez lui. Les onglets, eux,
-             gardent le compte de chaque point pour qu'on voie d'un coup où ça
-             s'accumule. -->
-        <p class="masthead-counters">
-          <span class="mc-done"
-            >{{ counters().handedOver }} retrait{{ counters().handedOver > 1 ? 's' : '' }}</span
-          >
-          <span class="mc-waiting">{{ counters().waiting }} en attente</span>
-          <!-- Un SOUS-compte des attendues (lot QC5) : une retenue reste à tendre. -->
-          @if (counters().held > 0) {
-            <span class="mc-held">{{ counters().held }} en vérification</span>
-          }
-          @if (counters().late > 0) {
-            <span class="mc-late">{{ counters().late }} en retard</span>
-          }
-          <span class="mc-clock">{{ clock() }}</span>
-        </p>
-      }
-
-      <!-- 🔴 **La journée se change ici, et elle a son histoire** (2026-09-17).
-           Un sélecteur de date a vécu dans cette bande jusqu'au 2026-09-11, puis
-           a été retiré : il mettait à portée du doigt « le seul geste qui peut
-           faire tendre un sac en croyant être un autre jour ». Le besoin qu'il
-           servait — relire la file d'hier pour une contestation — est resté
-           ouvert, et c'est lui qu'on rouvre.
-
-           Ce qui change par rapport à l'ancien : deux flèches au lieu d'un
-           calendrier (le besoin est « la veille », pas « le 3 du mois »), la
-           journée écrite en toutes lettres plutôt qu'en chiffres, et un retour
-           à aujourd'hui qui n'apparaît QUE lorsqu'on s'en est éloigné. -->
-      <div class="masthead-day">
-        <button
-          class="day-step"
-          type="button"
-          aria-label="Journée précédente"
-          (click)="shiftDay(-1)"
-        >
-          ‹
-        </button>
-        <span class="day-label">{{ dayLabel() }}</span>
-        <button class="day-step" type="button" aria-label="Journée suivante" (click)="shiftDay(1)">
-          ›
-        </button>
-        @if (!isToday()) {
-          <button class="day-today" type="button" (click)="backToToday()">Aujourd’hui</button>
-        }
-      </div>
-    </div>
-
-    <!-- 🔴 **L'avertissement qui rend la navigation sûre.** Le risque nommé en
-         septembre n'était pas de se déplacer, c'était de ne pas SAVOIR qu'on
-         s'était déplacé : un comptoir qui tend un sac en croyant être un autre
-         jour. Un sélecteur muet le permettait ; cette bande ne le permet plus.
-         Elle ne paraît jamais sur la journée en cours — sinon on cesserait de
-         la voir. -->
-    @if (!isToday()) {
-      <p class="masthead-warning" role="status">
-        Vous consultez une autre journée — ne remettez rien depuis cet écran.
-      </p>
-    }
-  </fold-page-section>
-
-  <!-- Les onglets du comptoir, SOUS le sélecteur de point (Hugo, 2026-10-12). -->
-  <app-comptoir-tabs />
-
   <!--
     **La file et le sac, côte à côte.** Un `fold-aside-layout` et non un panneau
     modal : au comptoir on lit la file ET ce qu'on tend, on passe de l'une à
@@ -124,7 +28,7 @@
     [class.has-selection]="selected() !== null"
   >
     <div class="board-queue" [inert]="stacked() && selected() !== null">
-      @switch (state()) {
+      @switch (store.state()) {
         @case ('loading') {
           <fold-loading message="Lecture de la file…" />
         }
@@ -134,28 +38,27 @@
             title="File illisible"
             subtitle="La lecture a échoué — les commandes, elles, sont intactes."
           >
-            <button foldButton (click)="load()">Réessayer</button>
+            <button foldButton (click)="store.load()">Réessayer</button>
           </fold-empty-state>
         }
         @default {
-          @if (refreshFailed()) {
+          @if (store.refreshFailed()) {
             <fold-callout variant="alert">
               La file n'a pas pu être relue — elle peut ne plus être à jour.
             </fold-callout>
           }
-          @if (total() === 0) {
+          @if (store.total() === 0) {
             <fold-empty-state
               icon="package-check"
               title="Personne n'attend ce jour-là"
               subtitle="Aucune commande n'est attendue au comptoir à cette date."
             />
           } @else {
-            <!-- ⚠️ Le panneau veut l'INSTANCE des onglets, et une variable de
-               gabarit ne franchit pas un bloc `@if` : `#tabBar` déclaré dans la
-               bande serait introuvable ici. La requête de vue, elle, traverse —
+            <!-- ⚠️ Le panneau veut l'INSTANCE des onglets, qui vivent dans la
+               bande de tête — un autre composant. La bande la publie au store ;
                d'où le `@if` qui attend qu'elle se résolve, une passe plus tard. -->
-            @if (tabBar(); as bar) {
-              <fold-tab-panel [tabs]="bar" [key]="activeTab()">
+            @if (store.tabBar(); as bar) {
+              <fold-tab-panel [tabs]="bar" [key]="store.activeTab()">
                 <!--
                 **La barre de la file.** Le scan est ici et nulle part ailleurs
                 depuis le 2026-09-11 : il y en avait un par ligne ET un dans la
@@ -200,10 +103,10 @@
                 </div>
 
                 <app-queue-table
-                  [entries]="rows()"
+                  [entries]="store.rows()"
                   [query]="query()"
-                  [day]="day()"
-                  [now]="now()"
+                  [day]="store.day()"
+                  [now]="store.now()"
                   [busyId]="remindingId()"
                   [reminded]="remindedIds()"
                   (opened)="select($event)"
@@ -219,8 +122,8 @@
     <app-handover-detail
       asideRight
       [entry]="selected()"
-      [day]="day()"
-      (remitted)="load()"
+      [day]="store.day()"
+      (remitted)="store.load()"
       (scanned)="scan($event)"
       (cleared)="clearSelection()"
     />

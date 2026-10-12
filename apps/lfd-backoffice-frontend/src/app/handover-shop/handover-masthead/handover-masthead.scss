@@ -1,0 +1,121 @@
+/* Le point, le verdict, la journée : une ligne, qui passe à la ligne EN BLOC
+   quand la bande manque de largeur. Ce sont trois gestes distincts — on
+   choisit, on constate, on change de jour. */
+:host {
+  display: flex;
+  flex: 1 1 auto;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: var(--fold-space-sm) var(--fold-space-lg);
+  min-width: 0;
+}
+
+/* 🔴 `width: auto`, et c'est le geste qui compte. `fold-tabs` se pose en pleine
+   largeur — juste quand il est la navigation d'une page, faux quand il partage
+   sa ligne. `flex: 0 1 auto` ne suffisait PAS : une largeur explicite l'emporte
+   sur une base `auto` (vérifié à l'écran le 2026-09-11). */
+fold-tabs {
+  flex: 0 1 auto;
+  width: auto;
+  min-width: 0;
+}
+
+/* La journée, à l'extrémité. `flex: 0 0 auto` : une date à demi lisible sur un
+   poste de comptoir est pire qu'une date qui passe à la ligne. */
+.masthead-day {
+  display: flex;
+  flex: 0 0 auto;
+  align-items: center;
+  gap: var(--fold-space-xs);
+  font-size: var(--fold-text-base);
+}
+
+/* Les deux flèches. Des boutons NATIFS et non `foldButton` : un attribut
+   inconnu sur un composant fold ne lève rien. Cibles de 48 px : la bande sert
+   sur une tablette, au doigt (Hugo, 2026-10-12). */
+.day-step {
+  min-width: 3rem;
+  min-height: 3rem;
+  padding: 0 var(--fold-space-xs);
+  border: 0;
+  border-radius: var(--fold-radius-sm);
+  background: transparent;
+  color: inherit;
+  font: inherit;
+  font-size: var(--fold-text-xl);
+  line-height: 1;
+  cursor: pointer;
+}
+
+.day-step:hover {
+  background: var(--fold-color-surface-raised);
+}
+
+.day-label {
+  font-variant-numeric: tabular-nums;
+  /* Première lettre en capitale : `Intl` rend « samedi », la bande dit « Samedi ». */
+  text-transform: capitalize;
+}
+
+/* Le retour, et il ne paraît QUE hors de la journée en cours. */
+.day-today {
+  min-height: 3rem;
+  padding: 0 var(--fold-space-md);
+  border: 0;
+  border-radius: var(--fold-radius-pill);
+  background: var(--fold-color-surface-raised);
+  color: inherit;
+  font: inherit;
+  font-size: var(--fold-text-sm);
+  cursor: pointer;
+}
+
+/* 🔴 L'avertissement occupe toute la largeur sous la bande : un liseré discret
+   se lirait comme une décoration, et c'est lui qui rend la navigation sûre. */
+.masthead-warning {
+  flex: 1 0 100%;
+  margin: 0;
+  padding: var(--fold-space-xs) var(--fold-space-sm);
+  border-radius: var(--fold-radius-sm);
+  background: var(--fold-color-warning-surface, var(--fold-color-surface-raised));
+  color: inherit;
+  font-size: var(--fold-text-sm);
+}
+
+.masthead-counters {
+  display: flex;
+  flex: 0 0 auto;
+  align-items: baseline;
+  gap: var(--fold-space-md);
+  margin: 0;
+  margin-inline-start: auto;
+  font-size: var(--fold-text-base);
+  font-variant-numeric: tabular-nums;
+}
+
+/* Quatre rôles, quatre encres. Le retard est le seul qui appelle une couleur
+   d'alerte — les autres sont des constats, pas des alarmes. */
+.mc-done {
+  color: var(--fold-color-success-text);
+  font-weight: var(--fold-weight-semibold);
+}
+
+.mc-waiting {
+  color: var(--fold-color-text);
+  font-weight: var(--fold-weight-semibold);
+}
+
+.mc-late {
+  color: var(--fold-color-warning-text);
+  font-weight: var(--fold-weight-semibold);
+}
+
+.mc-held {
+  color: var(--fold-color-alert-text);
+  font-weight: var(--fold-weight-semibold);
+}
+
+.mc-clock {
+  color: var(--fold-color-text-muted);
+  font-family: var(--fold-font-mono);
+}

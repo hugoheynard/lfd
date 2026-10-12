@@ -337,16 +337,10 @@ export function isExploitationUrl(url: string): boolean {
  * verrait l'entrée, pour un refus du garde.
  */
 export const COMPTOIR_VIEWS: readonly WorkspaceView[] = [
-  // Ordre voulu par Hugo (2026-10-12) : la commande d'abord, le retrait, puis
-  // le réassort. Il pilote les ONGLETS du comptoir, les tuiles du lanceur
-  // mobile, et l'onglet qu'ouvre l'entrée « Comptoir » (le premier permis).
-  {
-    key: 'nouvelle-commande',
-    label: 'Nouvelle commande pro',
-    link: '/comptoir/nouvelle-commande',
-    icon: 'basket',
-    needs: ['b2b_counter:read', 'b2b_place_order:write'],
-  },
+  // Ordre voulu par Hugo (2026-10-12, revu le même jour) : le retrait d'abord,
+  // le réassort, puis la commande pro. Il pilote les ONGLETS du comptoir (dans
+  // sa bande de tête), les tuiles du lanceur mobile, et l'onglet qu'ouvre
+  // l'entrée « Comptoir » (le premier permis).
   {
     key: 'retrait',
     label: 'Retrait boutique',
@@ -362,6 +356,13 @@ export const COMPTOIR_VIEWS: readonly WorkspaceView[] = [
     link: '/comptoir/reassort',
     icon: 'package',
     needs: 'handover_counter:read',
+  },
+  {
+    key: 'nouvelle-commande',
+    label: 'Nouvelle commande pro',
+    link: '/comptoir/nouvelle-commande',
+    icon: 'basket',
+    needs: ['b2b_counter:read', 'b2b_place_order:write'],
   },
 ];
 

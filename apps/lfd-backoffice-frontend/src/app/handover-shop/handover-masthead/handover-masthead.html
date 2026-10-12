@@ -1,0 +1,66 @@
+<!-- Les onglets sont DÉRIVÉS des points de retrait reçus : aucun nom n'est
+     écrit ici, et un comptoir ouvert demain apparaît seul. -->
+@if (store.state() === 'ready' && store.total() > 0) {
+  <fold-tabs
+    direction="horizontal"
+    size="comfortable"
+    [tabs]="store.tabs()"
+    [activeKey]="store.activeTab()"
+    (activeKeyChange)="store.selectTab($event)"
+  />
+
+  <!-- Les compteurs portent sur le POINT OUVERT. Qui lit cet écran est DANS un
+       point : « 3 en retard » dont deux ailleurs le ferait chercher des sacs qui
+       ne sont pas chez lui. Les onglets, eux, gardent le compte de chaque point
+       pour qu'on voie d'un coup où ça s'accumule. -->
+  <p class="masthead-counters">
+    <span class="mc-done"
+      >{{ store.counters().handedOver }} retrait{{
+        store.counters().handedOver > 1 ? 's' : ''
+      }}</span
+    >
+    <span class="mc-waiting">{{ store.counters().waiting }} en attente</span>
+    <!-- Un SOUS-compte des attendues (lot QC5) : une retenue reste à tendre. -->
+    @if (store.counters().held > 0) {
+      <span class="mc-held">{{ store.counters().held }} en vérification</span>
+    }
+    @if (store.counters().late > 0) {
+      <span class="mc-late">{{ store.counters().late }} en retard</span>
+    }
+    <span class="mc-clock">{{ store.clock() }}</span>
+  </p>
+}
+
+<!-- 🔴 **La journée se change ici, et elle a son histoire** (2026-09-17). Un
+     sélecteur de date a vécu dans cette bande jusqu'au 2026-09-11, puis a été
+     retiré : il mettait à portée du doigt « le seul geste qui peut faire tendre
+     un sac en croyant être un autre jour ». Deux flèches au lieu d'un
+     calendrier, la journée en toutes lettres, et un retour à aujourd'hui qui
+     n'apparaît QUE lorsqu'on s'en est éloigné. -->
+<div class="masthead-day">
+  <button
+    class="day-step"
+    type="button"
+    aria-label="Journée précédente"
+    (click)="store.shiftDay(-1)"
+  >
+    ‹
+  </button>
+  <span class="day-label">{{ store.dayLabel() }}</span>
+  <button class="day-step" type="button" aria-label="Journée suivante" (click)="store.shiftDay(1)">
+    ›
+  </button>
+  @if (!store.isToday()) {
+    <button class="day-today" type="button" (click)="store.backToToday()">Aujourd’hui</button>
+  }
+</div>
+
+<!-- 🔴 **L'avertissement qui rend la navigation sûre.** Le risque nommé en
+     septembre n'était pas de se déplacer, c'était de ne pas SAVOIR qu'on
+     s'était déplacé. Il ne paraît jamais sur la journée en cours — sinon on
+     cesserait de le voir. -->
+@if (!store.isToday()) {
+  <p class="masthead-warning" role="status">
+    Vous consultez une autre journée — ne remettez rien depuis cet écran.
+  </p>
+}
