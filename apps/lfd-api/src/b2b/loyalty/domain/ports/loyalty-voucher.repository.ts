@@ -21,8 +21,17 @@ export abstract class LoyaltyVoucherRepository {
   ): Promise<readonly LoyaltyVoucher[]>;
 
   /**
+   * Le reliquat NON REFONDU de ce bon (`status <> merged_back`), ou `null` —
+   * au plus un, par l'index unique partiel (lot C3b, C3b.4).
+   */
+  abstract loadLiveRemainderOf(parentId: string): Promise<LoyaltyVoucher | null>;
+
+  /**
    * Création ou mise à jour, selon que l'id existe pour ce titulaire ; un id déjà
    * pris par un autre est refusé, jamais réécrit (2026-10-07).
+   *
+   * Un bon reconstitué ne s'écrit que si la base porte encore le statut chargé
+   * (lot C3b) ; sinon `LoyaltyVoucherChangedMeanwhileError`, rejouable.
    */
   abstract save(voucher: LoyaltyVoucher): Promise<void>;
 }

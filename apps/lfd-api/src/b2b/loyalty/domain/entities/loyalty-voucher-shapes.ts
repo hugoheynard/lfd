@@ -9,8 +9,13 @@ import type { LoyaltySettings } from "../value-objects/loyalty-settings.js";
  * Les états d'un bon (plan D7). `reserved` : engagé sur une commande vivante,
  * depuis le lot C. Il n'y a pas d'état `used` — un bon réservé sur une commande
  * qui vit EST consommé, et n'en revient que par l'annulation de la commande.
+ *
+ * `merged_back` (lot C3b) : un **reliquat refondu** dans son bon d'origine,
+ * à l'annulation de la commande qui l'avait fait naître. Terminal ; la
+ * valeur est revenue au parent, le reliquat reste comme pièce.
  */
-export type LoyaltyVoucherStatus = "available" | "expired" | "cancelled" | "reserved";
+export type LoyaltyVoucherStatus =
+  "available" | "expired" | "cancelled" | "reserved" | "merged_back";
 
 /**
  * L'état d'un bon **lu à cet instant** : disponible mais passé sa date limite,
@@ -44,6 +49,9 @@ export interface LoyaltyVoucherSnapshot {
   readonly cancelledAt: Date | null;
   readonly cancelledByStaffId: string | null;
   readonly cancellationReason: string | null;
+  /** La refusion d'un reliquat : l'instant, et la commande annulée qui l'a causée (lot C3b). */
+  readonly mergedBackAt: Date | null;
+  readonly mergedBackOrderId: string | null;
 }
 
 /** Ce qu'il faut pour émettre un bon — les paliers ont déjà été payés en points. */
@@ -68,3 +76,27 @@ export type VoucherRemainder =
   | { readonly kind: "settled" }
   | { readonly kind: "issued"; readonly voucher: LoyaltyVoucher }
   | { readonly kind: "lapsed"; readonly remainderCents: number };
+
+/**
+ * Ce que {@link LoyaltyVoucher.reinstate} a fait du bon (lot C3b, C3b.3) :
+ * - `returned` : le parent est redevenu disponible ;
+ * - `merged` : `remainder` est refondu, le parent retrouve sa valeur ;
+ * - `lapsed` : le parent est écrit expiré ; `remainderExpired` dit si son
+ *   reliquat disponible l'a été avec lui ;
+ * - `blocked` : rien n'a bougé — le reliquat a servi ailleurs, ou a été annulé ;
+ * - `already` : rien n'a bougé — le bon n'est plus engagé par cette commande.
+ */
+export type VoucherReinstatement =
+  | { readonly kind: "returned" }
+  | { readonly kind: "merged"; readonly remainder: LoyaltyVoucher }
+  | {
+      readonly kind: "lapsed";
+      readonly remainder: LoyaltyVoucher | null;
+      readonly remainderExpired: boolean;
+    }
+  | {
+      readonly kind: "blocked";
+      readonly cause: "remainder_engaged" | "remainder_cancelled";
+      readonly remainder: LoyaltyVoucher;
+    }
+  | { readonly kind: "already" };

@@ -21,7 +21,8 @@ export const SEND_ORDER_CANCELLED_MAIL = "orders.send-order-cancelled-mail";
  *
  * Ni QR — une commande annulée ne se retire pas —, ni motif — il est interne.
  * Le corps dit ce qu'il advient de l'argent : rien à facturer (total nul), ou
- * rien de prélevé (carte non payée) ; et le bon rendu, s'il y en avait un.
+ * rien de prélevé (carte non payée) ; et le bon rendu ou refondu, s'il y en
+ * avait un — rien sur un bon échu (lot C3b).
  *
  * Un seul envoi : le fait n'est publié qu'au franchissement, et la clé
  * `order.cancelled:<orderId>` absorbe un rejeu de la boîte d'envoi.
@@ -53,7 +54,10 @@ export class SendOrderCancelledMail implements DurableSubscriber {
       data: {
         sheet: clientSheetOf(owned.view, owned.billedCustomer, owned.buyerPhone),
         regime: event.regime,
-        voucherReturned: event.voucherReturned,
+        voucher:
+          event.voucher === null
+            ? null
+            : { ...event.voucher, expiresAt: event.voucher.expiresAt.toISOString() },
         locale: DEFAULT_MAIL_LOCALE,
       },
       idempotencyKey: `${ORDER_CANCELLED}:${event.orderId}`,

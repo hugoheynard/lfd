@@ -320,8 +320,11 @@ export const ORDERS_PRODUCTION_FACTS = {
    * Le sujet est le client ; `cancelledBy` la fiche staff qui a annulé, sous
    * son nom du moment ; `reason` le motif saisi (jamais montré au client) ;
    * `regime` ce qui était dû — `free` (total nul) ou `due` (carte non payée,
-   * fermée chez Stripe) ; `voucherReturned` dit si un bon de fidélité a été
-   * rendu.
+   * fermée chez Stripe) ; `voucher` ce que l'annulation a fait du bon de
+   * fidélité (lot C3b) — rendu, refondu avec son reliquat, ou échu —, `null`
+   * sans bon. Montants en centimes HT, l'unité du bon ; `expiresAt` sa date
+   * limite d'origine. Remplace le booléen `voucherReturned` de C3, jamais servi
+   * en production.
    */
   "order.cancelled": fact(
     payload({
@@ -331,7 +334,14 @@ export const ORDERS_PRODUCTION_FACTS = {
       cancelledBy: namedOrBare("staff_user"),
       reason: z.string(),
       regime: z.enum(["free", "due"]),
-      voucherReturned: z.boolean(),
+      voucher: z
+        .object({
+          outcome: z.enum(["returned", "merged", "lapsed"]),
+          voucherValueCents: cents(),
+          remainderValueCents: cents().nullable(),
+          expiresAt: instant(),
+        })
+        .nullable(),
     }),
   ),
   "order.handed_over": fact(

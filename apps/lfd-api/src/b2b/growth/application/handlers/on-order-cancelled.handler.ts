@@ -26,7 +26,7 @@ export const RECORD_ORDER_CANCELLED = "b2b.growth.record-order-cancelled";
  * Même raison que l'abandon et le retrait : une annulation qui ne vivrait que
  * sur des colonnes qu'on peut réécrire n'atteste rien. Le sujet est le client ;
  * la charge dit qui a annulé (la fiche, sous son nom du moment), pourquoi, et
- * sous quel régime. Visible dans l'historique du détail staff, qui lit le
+ * sous quel régime, et ce qu'il est advenu du bon de fidélité (lot C3b). Visible dans l'historique du détail staff, qui lit le
  * journal par `orderId`.
  *
  * C'est aussi la « croissance soustraite » de S5 : le journal EST ce que la
@@ -61,7 +61,10 @@ export class OnOrderCancelled implements DurableSubscriber {
         cancelledBy: by,
         reason: event.reason,
         regime: event.regime,
-        voucherReturned: event.voucherReturned,
+        voucher:
+          event.voucher === null
+            ? null
+            : { ...event.voucher, expiresAt: event.voucher.expiresAt.toISOString() },
       },
     });
   }

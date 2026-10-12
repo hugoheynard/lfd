@@ -10,19 +10,25 @@ import {
   OrderNotCancellableError,
 } from "../../../domain/errors/order-cancellation-errors.js";
 import { OrderNotFoundError } from "../../../domain/errors/order-errors.js";
-import { OrderCancelledEvent } from "../../../domain/events/order-cancelled.event.js";
+import {
+  OrderCancelledEvent,
+  type CancelledOrderVoucher,
+} from "../../../domain/events/order-cancelled.event.js";
+import type { VoucherRestitution } from "../../../domain/ports/loyalty-voucher-redemption.js";
+import { VoucherRestitutionRefusal } from "../../services/voucher-restitution-refusal.js";
 import type { CancellationSubject } from "../../../domain/ports/cancellation-subject.reader.js";
 import { CancelOrderCommand } from "../cancel-order.command.js";
 import { CancelOrderHandler } from "../cancel-order.handler.js";
 import {
   cancellationSubject,
+  FixedInscriptions,
   FixedSubjects,
   InMemoryCancellations,
   ScriptedCancelGateway,
   ScriptedDesk,
 } from "./cancellation-doubles.js";
 import { RecordingDurable } from "./durable-doubles.js";
-import { RecordingRedemption } from "./voucher-doubles.js";
+import { RecordingRedemption, RETURNED } from "./voucher-doubles.js";
 
 /**
  * L'annulation staff, orchestrée (plan `order/plan-annulation-de-commande.md`,
@@ -40,6 +46,9 @@ interface Scene {
   readonly stripe?: IntentCancellation;
   readonly desk?: OrderWithdrawalOutcome;
   readonly failures?: number;
+  readonly restitution?: VoucherRestitution;
+  /** Les autres commandes, par id — celle qui porte un reliquat (cas 5). */
+  readonly others?: Readonly<Record<string, CancellationSubject>>;
 }
 
 function scene(options: Scene = {}) {
@@ -48,14 +57,16 @@ function scene(options: Scene = {}) {
   const rows = new InMemoryCancellations(subject, trace);
   rows.failures = options.failures ?? 0;
   const gateway = new ScriptedCancelGateway(options.stripe ?? { kind: "cancelled" }, trace);
-  const vouchers = new RecordingRedemption();
+  const vouchers = new RecordingRedemption(false, options.restitution ?? RETURNED);
   const durable = new RecordingDurable();
+  const subjects = new FixedSubjects(subject, options.others ?? {});
   const handler = new CancelOrderHandler(
-    new FixedSubjects(subject),
+    subjects,
     rows,
     gateway,
     new ScriptedDesk(options.desk ?? "withdrawn", trace),
     vouchers,
+    new VoucherRestitutionRefusal(subjects, new FixedInscriptions()),
     durable,
     new DirectUnitOfWork(),
     new FixedClock(NOW),
@@ -66,7 +77,10 @@ function scene(options: Scene = {}) {
 const cancel = (reason = "Le client a appelé : il part en vacances") =>
   new CancelOrderCommand("ord_1", STAFF, reason);
 
-function eventOf(regime: "free" | "due", voucherReturned = false): OrderCancelledEvent {
+function eventOf(
+  regime: "free" | "due",
+  voucher: CancelledOrderVoucher | null = null,
+): OrderCancelledEvent {
   return new OrderCancelledEvent(
     "ord_1",
     "CMD-0001",
@@ -74,9 +88,17 @@ function eventOf(regime: "free" | "due", voucherReturned = false): OrderCancelle
     STAFF,
     "Le client a appelé : il part en vacances",
     regime,
-    voucherReturned,
+    voucher,
   );
 }
+
+/** Ce que le fait dit d'un bon rendu par {@link RETURNED}. */
+const RETURNED_IN_FACT: CancelledOrderVoucher = {
+  outcome: "returned",
+  voucherValueCents: 1_200,
+  remainderValueCents: null,
+  expiresAt: new Date(Date.UTC(2030, 10, 30, 12)),
+};
 
 describe("CancelOrderHandler — carte non payée (décision 7)", () => {
   it("ferme l'intention chez Stripe AVANT la transaction, puis verrou, retrait, écriture", async () => {
@@ -135,15 +157,15 @@ describe("CancelOrderHandler — carte non payée (décision 7)", () => {
     },
   );
 
-  it("le bon engagé sur une carte non payée est rendu, une fois, et le fait le dit", async () => {
+  it("le bon engagé sur une carte non payée est restitué, une fois, et le fait le dit", async () => {
     const { handler, vouchers, durable } = scene({
       subject: cancellationSubject({ loyaltyVoucherId: "bon_1" }),
     });
 
     await handler.execute(cancel());
 
-    expect(vouchers.calls).toEqual(["release:bon_1"]);
-    expect(durable.facts).toEqual([eventOf("due", true).durableFact()]);
+    expect(vouchers.calls).toEqual(["reinstate:bon_1>ord_1"]);
+    expect(durable.facts).toEqual([eventOf("due", RETURNED_IN_FACT).durableFact()]);
   });
 });
 
@@ -163,13 +185,91 @@ describe("CancelOrderHandler — total nul", () => {
     expect(durable.facts).toEqual([eventOf("free").durableFact()]);
   });
 
-  it("⚠️ refuse un total nul qui porte un bon déjà soldé à la passation (hors plan, en attente)", async () => {
-    const { handler, trace } = scene({ subject: { ...FREE, loyaltyVoucherId: "bon_1" } });
+  it("un total nul qui porte un bon s'annule : le bon est restitué (lot C3b)", async () => {
+    const merged: VoucherRestitution = {
+      kind: "merged",
+      voucherValueCents: 1_200,
+      remainderValueCents: 450,
+      expiresAt: RETURNED_IN_FACT.expiresAt,
+    };
+    const { handler, vouchers, durable } = scene({
+      subject: { ...FREE, loyaltyVoucherId: "bon_1" },
+      restitution: merged,
+    });
+
+    await handler.execute(cancel());
+
+    expect(vouchers.calls).toEqual(["reinstate:bon_1>ord_1"]);
+    expect(durable.facts).toEqual([
+      eventOf("free", {
+        outcome: "merged",
+        voucherValueCents: 1_200,
+        remainderValueCents: 450,
+        expiresAt: RETURNED_IN_FACT.expiresAt,
+      }).durableFact(),
+    ]);
+  });
+
+  it("un bon déjà rendu (`already`) : l'annulation s'écrit, le fait ne cite pas le bon", async () => {
+    const { handler, durable } = scene({
+      subject: { ...FREE, loyaltyVoucherId: "bon_1" },
+      restitution: { kind: "already" },
+    });
+
+    await handler.execute(cancel());
+
+    expect(durable.facts).toEqual([eventOf("free").durableFact()]);
+  });
+
+  it("cas 5, l'autre commande s'annule : refus qui propose de l'annuler d'abord, rien publié", async () => {
+    const { handler, durable } = scene({
+      subject: { ...FREE, loyaltyVoucherId: "bon_1" },
+      restitution: {
+        kind: "blocked",
+        cause: "remainder_engaged",
+        remainderValueCents: 450,
+        order: { id: "ord_2", number: "C-2" },
+      },
+      others: { ord_2: { ...FREE, orderId: "ord_2", orderNumber: "C-2" } },
+    });
+
+    const refusal = handler.execute(cancel());
+
+    await expect(refusal).rejects.toBeInstanceOf(OrderNotCancellableError);
+    const error: unknown = await refusal.catch((caught: unknown) => caught);
+    expect(error).toMatchObject({ code: "orders.cancel.voucher_remainder_engaged" });
+    expect(error instanceof Error ? error.message : "").toContain(
+      "C-2 : annulez-la d'abord, puis celle-ci.",
+    );
+    expect(durable.facts).toEqual([]);
+  });
+
+  it("cas 5, l'autre commande ne s'annule plus : la phrase ne le propose pas", async () => {
+    const { handler } = scene({
+      subject: { ...FREE, loyaltyVoucherId: "bon_1" },
+      restitution: {
+        kind: "blocked",
+        cause: "remainder_engaged",
+        remainderValueCents: 450,
+        order: { id: "ord_2", number: "C-2" },
+      },
+      others: { ord_2: { ...FREE, orderId: "ord_2", status: "fulfilled" } },
+    });
+
+    const error: unknown = await handler.execute(cancel()).catch((caught: unknown) => caught);
+    expect(error instanceof Error ? error.message : "").toContain("qui ne peut plus être annulée");
+  });
+
+  it("cas 6, reste annulé par l'équipe : refus, rien publié", async () => {
+    const { handler, durable } = scene({
+      subject: { ...FREE, loyaltyVoucherId: "bon_1" },
+      restitution: { kind: "blocked", cause: "remainder_cancelled", remainderValueCents: 450 },
+    });
 
     await expect(handler.execute(cancel())).rejects.toMatchObject({
-      code: "orders.cancel.voucher_settled",
+      code: "orders.cancel.voucher_remainder_cancelled",
     });
-    expect(trace).toEqual([]);
+    expect(durable.facts).toEqual([]);
   });
 
   it("une commande sans jour de service n'a rien à retirer au fournil", async () => {
@@ -254,6 +354,7 @@ describe("CancelOrderHandler — les refus", () => {
       new ScriptedCancelGateway({ kind: "cancelled" }),
       new ScriptedDesk(),
       new RecordingRedemption(),
+      new VoucherRestitutionRefusal(new FixedSubjects(null), new FixedInscriptions()),
       new RecordingDurable(),
       new DirectUnitOfWork(),
       new FixedClock(NOW),

@@ -501,7 +501,31 @@ le passage à `vitruve` (argent, frontière `b2b → production`).
 > faudra que ça soit spécifié en admin si la manip est faite par un staff,
 > expliquer la réconciliation du bon ».
 
-📐 **Plan prêt à bâtir, rien n'est bâti.** Touche **l'argent** et porte une
+> 🔨 **Bâti le 2026-10-12, non commité** (`apps/lfd-api`, `packages/contracts`,
+> journal et confirmation d'annulation du back-office) : migrations
+> `20261012800000_le_reliquat_refondu` et `20261012800100_la_refusion_du_bon` ;
+> prérequis (expiration de nuit sous verrou et relue, `save` conditionné au
+> statut chargé, relecture de la commande dans `settleRemainder`) ;
+> `voucherRestitutionOf`, `LoyaltyVoucher.reinstate/mergeBackInto/lapse`,
+> `release` resserré ; `LoyaltyVoucherRedemption.reinstate` et le port de
+> lecture `VoucherRestitutionPreview` ; refus `voucher_remainder_engaged` /
+> `voucher_remainder_cancelled` ; fait `loyalty.voucher_reinstated` ;
+> `voucher` remplace `voucherReturned` ; `cancellability.voucher` ; e2e
+> `order-staff-cancel-voucher.e2e-spec.ts` et
+> `order-staff-cancel-voucher-races.e2e-spec.ts`. **Écarts au bâti** : (1) l'aperçu
+> est implémenté par une classe à part, `LoyaltyVoucherRestitutionPreviewing`,
+> et rend le même type `VoucherRestitution` (le plan donnait au port et à son
+> type le même nom) ; (2) la relecture de `settleRemainder` vérifie que la
+> commande relue est celle du lot et que son règlement n'est pas en suspens
+> (`pending`/`failed`) — exiger `paid` aurait bloqué le solde à la passation
+> d'un total nul (`not_required`) ; (3) `reinstate` reçoit « engagé ailleurs »
+> en entrée, lu par le service au port `VoucherOrderReader` ; (4) l'écran des
+> bons du staff affiche `merged_back` comme « Refondu dans le bon d'origine »,
+> sans nommer le parent ; (5) l'annulation HTTP d'un reliquat par le staff
+> tombe en 500 (recrédit de 0 point refusé par `loyalty_ledger_entries_kind_shape`)
+> — le cas 6 n'est produit en e2e que par l'agrégat, hors de ce lot.
+
+📐 **Plan.** Touche **l'argent** et porte une
 **migration**. Contredit par `vitruve` le 2026-10-12 (2 BLOQUANT, 5 SÉRIEUX,
 2 mineurs, tous intégrés ci-dessous — C3b.11) ; Q1 à Q3 tranchées par Hugo le
 même jour. `lecteur-de-migrations` au bâti. Lève le refus

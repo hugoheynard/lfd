@@ -15,8 +15,19 @@ export interface OrderCancelledMailData {
   readonly sheet: ClientSheet;
   /** `free` : total nul ; `due` : carte non payée, fermée chez Stripe. */
   readonly regime: "free" | "due";
-  /** Un bon de fidélité utilisé a été rendu avec l'annulation. */
-  readonly voucherReturned: boolean;
+  /**
+   * Ce que l'annulation a fait du bon de fidélité (lot C3b) — `null` sans bon.
+   * `lapsed` (bon échu) n'est pas annoncé : le courriel se tait sur un bon
+   * qui ne revient pas (Q2), au lieu de dire « rendu » pour un bon mort.
+   */
+  readonly voucher: {
+    readonly outcome: "returned" | "merged" | "lapsed";
+    /** Centimes HT, l'unité du bon. */
+    readonly voucherValueCents: number;
+    readonly remainderValueCents: number | null;
+    /** Instant ISO 8601 : la date limite d'origine du bon. */
+    readonly expiresAt: string;
+  } | null;
   readonly locale: ContentLocale;
 }
 
@@ -40,8 +51,30 @@ function bodyOf(data: OrderCancelledMailData, copy: OrderCancelledCopy): string 
   const day = dayInWords(data.sheet.requestedFor, data.locale);
   const intro = day === null ? fill(copy.introWithoutDay, { ref }) : fill(copy.intro, { ref, day });
   const money = data.regime === "free" ? copy.nothingBilled : copy.nothingCharged;
-  const voucher = data.voucherReturned ? `\n\n${copy.voucherReturned}` : "";
-  return `${intro}\n\n${money}${voucher}`;
+  const voucher = voucherSentenceOf(data, copy);
+  return `${intro}\n\n${money}${voucher === null ? "" : `\n\n${voucher}`}`;
+}
+
+function voucherSentenceOf(data: OrderCancelledMailData, copy: OrderCancelledCopy): string | null {
+  const voucher = data.voucher;
+  if (voucher === null || voucher.outcome === "lapsed") {
+    return null;
+  }
+  const value = euros(voucher.voucherValueCents, data.locale);
+  const day = new Intl.DateTimeFormat(data.locale, {
+    day: "numeric",
+    month: "long",
+    timeZone: "Europe/Paris",
+  }).format(new Date(voucher.expiresAt));
+  if (voucher.outcome === "merged" && voucher.remainderValueCents !== null) {
+    const remainder = euros(voucher.remainderValueCents, data.locale);
+    return fill(copy.voucherMerged, { value, day, remainder });
+  }
+  return fill(copy.voucherReturned, { value, day });
+}
+
+function euros(cents: number, locale: ContentLocale): string {
+  return new Intl.NumberFormat(locale, { style: "currency", currency: "EUR" }).format(cents / 100);
 }
 
 /**

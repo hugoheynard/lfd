@@ -51,9 +51,10 @@ function setup(order: VoucherOrder | null, now: Date = NIGHT) {
   vouchers.rows.set(voucher.id, voucher.toPersistence());
   const events = new RecordingPublisher();
   const notifier = new RecordingNotifier();
+  const orders = new FixedVoucherOrders(order === null ? [] : [order]);
   const handler = new SettleVoucherRemaindersHandler(
     vouchers,
-    new FixedVoucherOrders(order === null ? [] : [order]),
+    orders,
     new LoyaltyVoucherRedeeming(
       vouchers,
       new RecordingLock(vouchers.calls),
@@ -61,6 +62,7 @@ function setup(order: VoucherOrder | null, now: Date = NIGHT) {
       new FixedIdGenerator("rem"),
       events,
       new DirectUnitOfWork(),
+      orders,
     ),
     notifier,
     new FixedClock(now),

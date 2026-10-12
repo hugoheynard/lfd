@@ -21,7 +21,13 @@ import {
   type ServiceDay,
 } from "../src/production/channels/commerce/index.js";
 import { ADMIN_VERIFIER_OVERRIDE } from "./delivery-rounds-scene.js";
-import { bootstrapE2e, E2E_STAFF_SUB, serviceDay, type E2eContext } from "./e2e-harness.js";
+import {
+  bootstrapE2e,
+  E2E_STAFF_SUB,
+  serviceDay,
+  type E2eContext,
+  type E2eOverride,
+} from "./e2e-harness.js";
 import { attachTo, createCompany, createUser } from "./factories.js";
 
 /**
@@ -116,7 +122,8 @@ const flakyDesk = {
   },
 };
 
-export async function bootScene(): Promise<E2eContext> {
+/** `extra` : d'autres doublures, propres à une suite (l'horloge du bon, lot C3b). */
+export async function bootScene(extra: readonly E2eOverride[] = []): Promise<E2eContext> {
   scene.ctx = await bootstrapE2e({
     overrides: [
       ADMIN_VERIFIER_OVERRIDE,
@@ -124,6 +131,7 @@ export async function bootScene(): Promise<E2eContext> {
       { token: MAILER, value: recordingMailer },
       { token: DayOrdersReader, value: dayOrders },
       { token: OrderWithdrawalDesk, value: flakyDesk },
+      ...extra,
     ],
   });
   return scene.ctx;

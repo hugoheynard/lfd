@@ -1,6 +1,10 @@
 import type { OrderStatus, PaymentStatus } from "@lfd/contracts";
 
 import type { CancellationSubject } from "../ports/cancellation-subject.reader.js";
+import {
+  remainderCancelledRefusalOf,
+  remainderEngagedRefusalOf,
+} from "./order-cancellation-voucher.js";
 import { settlementRegimeOf } from "./settlement-regime.js";
 
 /**
@@ -22,8 +26,6 @@ export interface CancellationState {
   readonly serviceDay: string | null;
   /** L'instant d'une annulation STAFF ; `null` pour une annulation automatique. */
   readonly cancelledAt: Date | null;
-  /** Un bon de fidélité a servi sur cette commande. */
-  readonly carriesVoucher: boolean;
   /**
    * Le jour où le fournil l'a inscrite, ou `null`. Inconnu avant la
    * transaction : le guichet du fournil le tranche sous verrou.
@@ -46,7 +48,6 @@ export function cancellationStateOf(
     totalCents: subject.totalCents,
     serviceDay: subject.serviceDay,
     cancelledAt: subject.cancelledAt,
-    carriesVoucher: subject.loyaltyVoucherId !== null,
     inscribedDay,
   };
 }
@@ -59,8 +60,20 @@ export type CancellationBlock =
   | { readonly kind: "fulfilled" }
   | { readonly kind: "account" }
   | { readonly kind: "paid" }
-  | { readonly kind: "voucher_settled" }
-  | { readonly kind: "inscribed"; readonly day: string | null };
+  | { readonly kind: "inscribed"; readonly day: string | null }
+  /**
+   * Lot C3b, cas 5 : le reste du bon a servi sur `order`, vivante ;
+   * `otherCancellable` dit si celle-là s'annule — la phrase ne propose que le
+   * possible. Lu par la restitution du bon, pas par {@link cancellationOf}.
+   */
+  | {
+      readonly kind: "voucher_remainder_engaged";
+      readonly remainderValueCents: number;
+      readonly order: { readonly id: string; readonly number: string };
+      readonly otherCancellable: boolean;
+    }
+  /** Lot C3b, cas 6 : le reste du bon a été annulé par l'équipe. */
+  | { readonly kind: "voucher_remainder_cancelled"; readonly remainderValueCents: number };
 
 /** Les deux régimes annulables par ce lot : total nul, ou carte non payée. */
 export type CancellableRegime = "free" | "due";
@@ -77,14 +90,6 @@ export type CancellationDecision =
  * inscrite. `confirmed` et `in_production` se lisent comme « inscrite » : le
  * seul chemin qui écrit `confirmed` est l'absorption par le plan du soir
  * (`absorbIntoPlan`, vérifié le 2026-10-12), et rien n'écrit `in_production`.
- *
- * ⚠️ **`voucher_settled` n'est pas dans le plan** — refus conservatoire posé
- * au bâti (2026-10-12) en attendant une décision. Un total nul qui porte un
- * bon a vu son reliquat SOLDÉ dès la passation (`PlaceOrderHandler.persist`,
- * `settleRemainder` quand il n'y a pas d'intention, vérifié le 2026-10-12) :
- * rendre le bon le remettrait `available` à pleine valeur À CÔTÉ du reliquat
- * déjà émis — le client compterait deux fois la même valeur. Une carte non
- * payée n'a pas ce problème : son reliquat ne se solde qu'après encaissement.
  */
 export function cancellationOf(state: CancellationState): CancellationDecision {
   const byStatus = statusBlock(state);
@@ -98,9 +103,6 @@ export function cancellationOf(state: CancellationState): CancellationDecision {
   if (state.inscribedDay !== null || state.status !== "placed") {
     const day = state.inscribedDay ?? state.serviceDay;
     return { cancellable: false, block: { kind: "inscribed", day } };
-  }
-  if (regime === "free" && state.carriesVoucher) {
-    return { cancellable: false, block: { kind: "voucher_settled" } };
   }
   return { cancellable: true, regime };
 }
@@ -169,12 +171,14 @@ export function cancellationRefusalOf(block: CancellationBlock): string {
         "Cette commande a été payée par carte en ligne. L'annulation avec remboursement " +
         "n'existe pas encore : remboursez depuis Stripe, puis prévenez le client."
       );
-    case "voucher_settled":
-      return (
-        "Cette commande est réglée par un bon de fidélité, déjà soldé à la passation. " +
-        "Rendre ce bon n'est pas encore possible : l'annulation de cette commande attend " +
-        "une décision. Voyez avec la direction."
+    case "voucher_remainder_engaged":
+      return remainderEngagedRefusalOf(
+        block.remainderValueCents,
+        block.order.number,
+        block.otherCancellable,
       );
+    case "voucher_remainder_cancelled":
+      return remainderCancelledRefusalOf(block.remainderValueCents);
     case "inscribed":
       return block.day === null
         ? "Le fournil a déjà inscrit cette commande au compte à produire : elle sera fabriquée. Voyez avec le fournil."

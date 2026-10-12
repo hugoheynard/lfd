@@ -92,7 +92,9 @@ export const MAIL_EN: MailCopy = {
     nothingBilled: "You will not be charged anything for this order.",
     nothingCharged: "No payment has been taken.",
     voucherReturned:
-      "Your loyalty voucher has been returned to you: you can use it on a future order.",
+      "Your loyalty voucher of {value} has been returned to you: you can use it on a future order until {day}.",
+    voucherMerged:
+      "Your loyalty voucher is back to its value of {value}, valid until {day}. The {remainder} voucher you were given as the remainder is replaced by this one.",
     footer:
       "Unsure, or think this is a mistake? Call us — Le Labo · route de la Balme, Val d'Isère.",
   },

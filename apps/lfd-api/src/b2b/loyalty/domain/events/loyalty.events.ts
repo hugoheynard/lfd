@@ -17,6 +17,7 @@ export const LOYALTY_VOUCHER_REMAINDER_ISSUED =
   "loyalty.voucher_remainder_issued" satisfies JournalFactType;
 export const LOYALTY_VOUCHER_REMAINDER_LAPSED =
   "loyalty.voucher_remainder_lapsed" satisfies JournalFactType;
+export const LOYALTY_VOUCHER_REINSTATED = "loyalty.voucher_reinstated" satisfies JournalFactType;
 
 /** Le nom du réglage, seul libellé qu'une ligne unique puisse porter. */
 const SETTINGS_LABEL = "Programme de fidélité";
@@ -209,6 +210,34 @@ export class LoyaltyVoucherRemainderLapsedEvent implements JournaledEvent {
       voucher: voucherName(this.parent),
       order: { id: this.order.id, name: this.order.number },
       remainderCents: this.remainderCents,
+    });
+  }
+}
+
+/**
+ * Le bon d'une commande annulée par l'équipe est rendu au client (plan
+ * `order/plan-annulation-de-commande.md`, lot C3b, C3b.6) : tel quel
+ * (`returned`), ou en refondant son reliquat (`merged`). La trace dit quelle
+ * commande, ce que le bon vaut de nouveau, jusqu'à quand, et le reliquat
+ * refondu. Aucun point ne bouge : la trace ne cite pas le livre.
+ */
+export class LoyaltyVoucherReinstatedEvent implements JournaledEvent {
+  constructor(
+    readonly named: NamedHolder,
+    readonly parent: LoyaltyVoucher,
+    readonly remainder: LoyaltyVoucher | null,
+    readonly order: VoucherOrderRef,
+  ) {}
+
+  journalFact(): JournalFact {
+    return onHolder(LOYALTY_VOUCHER_REINSTATED, this.named, {
+      voucher: voucherName(this.parent),
+      remainder: this.remainder === null ? null : voucherName(this.remainder),
+      order: { id: this.order.id, name: this.order.number },
+      outcome: this.remainder === null ? "returned" : "merged",
+      valueCents: this.parent.valueCents,
+      remainderCents: this.remainder?.valueCents ?? null,
+      expiresAt: this.parent.expiresAt.toISOString(),
     });
   }
 }

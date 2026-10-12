@@ -67,9 +67,27 @@ export interface LoyaltyBalanceView {
  *
  * `reserved` (lot C) : engagé sur une commande vivante. Faute d'état `used`,
  * c'est la commande qui dit s'il a servi — cf. {@link LoyaltyVoucherView.usedOn}.
+ *
+ * `merged_back` (plan `order/plan-annulation-de-commande.md`, lot C3b) : un
+ * reliquat refondu dans son bon d'origine, à l'annulation de la commande qui
+ * l'avait fait naître. Le staff le voit ; le client, jamais
+ * ({@link MyLoyaltyVoucherStatus}) — il retrouve le bon d'origine.
  */
-export const loyaltyVoucherStatusSchema = z.enum(["available", "expired", "cancelled", "reserved"]);
+export const loyaltyVoucherStatusSchema = z.enum([
+  "available",
+  "expired",
+  "cancelled",
+  "reserved",
+  "merged_back",
+]);
 export type LoyaltyVoucherStatus = z.infer<typeof loyaltyVoucherStatusSchema>;
+
+/**
+ * L'état d'un bon **à soi** : tout sauf `merged_back`. Un reliquat refondu
+ * n'est pas un bon perdu — le client retrouve le parent, et ne doit pas lire
+ * le reliquat parmi ses bons morts (lot C3b, C3b.2).
+ */
+export type MyLoyaltyVoucherStatus = Exclude<LoyaltyVoucherStatus, "merged_back">;
 
 /** Un bon de fidélité : son montant, son coût et le ratio figés à l'émission. */
 export interface LoyaltyVoucherView {
@@ -126,8 +144,8 @@ export interface MyLoyaltyVoucherView {
   /** Instants ISO 8601. */
   readonly issuedAt: string;
   readonly expiresAt: string;
-  /** L'état lu à l'horloge, comme {@link LoyaltyVoucherView.status}. */
-  readonly status: LoyaltyVoucherStatus;
+  /** L'état lu à l'horloge, comme {@link LoyaltyVoucherView.status} — jamais `merged_back`. */
+  readonly status: MyLoyaltyVoucherStatus;
   /** La commande vivante qui porte un bon `reserved` — « utilisé sur … » ; `null` sinon. */
   readonly usedOn: { readonly orderId: string; readonly orderNumber: string } | null;
 }

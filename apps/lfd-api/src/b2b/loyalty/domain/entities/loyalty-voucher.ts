@@ -7,6 +7,12 @@ import {
   LoyaltyVoucherNotUsableError,
   LoyaltyVoucherReservedError,
 } from "../errors/loyalty-errors.js";
+import {
+  LoyaltyVoucherNotLapsableError,
+  LoyaltyVoucherNotMergeableError,
+  LoyaltyVoucherRemainderSettledError,
+} from "../errors/voucher-restitution-errors.js";
+import { voucherRestitutionOf } from "../services/voucher-restitution.js";
 import { LoyaltyHolder } from "../value-objects/loyalty-holder.js";
 import { LoyaltyRatio } from "../value-objects/loyalty-ratio.js";
 import type { LoyaltyReason } from "../value-objects/loyalty-reason.js";
@@ -16,6 +22,7 @@ import {
   type LoyaltyVoucherSnapshot,
   type LoyaltyVoucherStatus,
   type VoucherRemainder,
+  type VoucherReinstatement,
 } from "./loyalty-voucher-shapes.js";
 
 export {
@@ -24,6 +31,7 @@ export {
   type LoyaltyVoucherSnapshot,
   type LoyaltyVoucherStatus,
   type VoucherRemainder,
+  type VoucherReinstatement,
 } from "./loyalty-voucher-shapes.js";
 
 const MS_PER_DAY = 86_400_000;
@@ -34,14 +42,25 @@ interface Cancellation {
   readonly reason: string;
 }
 
+interface MergeBack {
+  readonly at: Date;
+  readonly orderId: string;
+}
+
 /**
  * **Un bon de fidélité**, né d'une conversion de points (plan D5, D7).
  *
  * Son montant, son coût et le ratio appliqué sont figés à l'émission : changer
  * le réglage ne touche aucun bon émis. `available` sort vers `reserved`
  * (passation), `expired` ou `cancelled` ; `reserved` ne revient à `available`
- * — ou ne tombe à `expired` — que par l'annulation de la commande ; `expired`
- * et `cancelled` sont terminaux.
+ * — ou ne tombe à `expired` — que par l'annulation de la commande ; un
+ * reliquat `available` peut être refondu (`merged_back`) dans son parent à
+ * l'annulation de la commande qui l'a fait naître (lot C3b) ; `expired`,
+ * `cancelled` et `merged_back` sont terminaux.
+ *
+ * `persistedStatus` est le statut lu en base à la reconstitution (`null` pour
+ * un bon neuf) : la sauvegarde ne s'écrit que si la base le porte encore
+ * (lot C3b, C3b.2) — un instantané périmé n'écrase jamais un état plus récent.
  *
  * L'expiration se LIT à l'horloge ({@link isExpiredAt}) : un bon disponible
  * dont la date limite est passée n'est plus utilisable ni annulable, même
@@ -61,6 +80,8 @@ export class LoyaltyVoucher {
     private expiredAtValue: Date | null,
     private cancellationValue: Cancellation | null,
     private remainderSettledAtValue: Date | null = null,
+    private mergeBackValue: MergeBack | null = null,
+    readonly persistedStatus: LoyaltyVoucherStatus | null = null,
   ) {}
 
   /**
@@ -105,6 +126,10 @@ export class LoyaltyVoucher {
       row.expiredAt,
       cancellation,
       row.remainderSettledAt,
+      row.mergedBackAt !== null && row.mergedBackOrderId !== null
+        ? { at: row.mergedBackAt, orderId: row.mergedBackOrderId }
+        : null,
+      row.status,
     );
   }
 
@@ -206,13 +231,117 @@ export class LoyaltyVoucher {
     if (this.statusValue !== "reserved") {
       throw new LoyaltyVoucherNotReservedError(this.statusValue);
     }
+    if (this.remainderSettledAtValue !== null) {
+      // Le rendre à pleine valeur À CÔTÉ de son reliquat doublerait la
+      // valeur : seul `reinstate` sait refondre (lot C3b, C3b.4).
+      throw new LoyaltyVoucherRemainderSettledError(this.id);
+    }
     if (now.getTime() >= this.expiresAt.getTime()) {
-      this.statusValue = "expired";
-      this.expiredAtValue = now;
+      this.lapse(now);
       return "expired";
     }
     this.statusValue = "available";
     return "available";
+  }
+
+  /**
+   * La commande qui portait ce bon est annulée (lot C3b, C3b.3, C3b.4) : le
+   * rendre, refondre son reliquat, ou constater qu'il est éteint — l'issue de
+   * {@link voucherRestitutionOf}, appliquée ici. Les refus (`blocked`) ne lèvent
+   * pas : la commande seule sait dire si l'autre commande s'annule.
+   *
+   * C'est la SEULE méthode qui remet `remainderSettledAt` à `null` : réengagé
+   * plus tard, le bon laissera un nouveau reliquat. Aucun point ne bouge.
+   *
+   * @param remainder le reliquat NON REFONDU de ce bon, ou `null`.
+   * @throws {LoyaltyVoucherNotMergeableError} `remainder` n'est pas celui de ce bon.
+   */
+  reinstate(input: {
+    readonly remainder: LoyaltyVoucher | null;
+    readonly at: Date;
+    readonly orderId: string;
+    readonly engagedElsewhere: boolean;
+  }): VoucherReinstatement {
+    const { remainder, at } = input;
+    if (remainder !== null && remainder.parentVoucherId !== this.id) {
+      throw new LoyaltyVoucherNotMergeableError(
+        remainder.id,
+        `il n'est pas le reliquat de ${this.id}`,
+      );
+    }
+    const issue = voucherRestitutionOf({
+      parent: this,
+      remainder,
+      now: at,
+      engagedElsewhere: input.engagedElsewhere,
+    });
+    switch (issue.kind) {
+      case "already":
+      case "blocked":
+        return issue;
+      case "lapsed":
+        this.lapse(at);
+        return {
+          kind: "lapsed",
+          remainder: issue.remainder,
+          remainderExpired: issue.remainder?.expire(at) ?? false,
+        };
+      case "returned":
+        this.restore();
+        return { kind: "returned" };
+      case "merged":
+        issue.remainder.mergeBackInto(this, at, input.orderId);
+        this.restore();
+        return issue;
+    }
+  }
+
+  /**
+   * Ce reliquat est refondu dans son bon d'origine, à l'annulation de la
+   * commande `orderId` (lot C3b) : `available → merged_back`. Il n'est jamais
+   * supprimé — son montant, ses dates et son parent restent.
+   *
+   * @throws {LoyaltyVoucherNotMergeableError} pas le reliquat de `parent`, pas disponible, ou échu.
+   */
+  mergeBackInto(parent: LoyaltyVoucher, at: Date, orderId: string): void {
+    if (this.parentVoucherId !== parent.id) {
+      throw new LoyaltyVoucherNotMergeableError(
+        this.id,
+        `il n'est pas le reliquat de ${parent.id}`,
+      );
+    }
+    if (this.statusValue !== "available") {
+      throw new LoyaltyVoucherNotMergeableError(this.id, `état : ${this.statusValue}`);
+    }
+    if (this.isExpiredAt(at)) {
+      throw new LoyaltyVoucherNotMergeableError(this.id, "sa date limite est passée");
+    }
+    this.statusValue = "merged_back";
+    this.mergeBackValue = { at, orderId };
+  }
+
+  /**
+   * Un bon engagé, échu à `at`, dont la commande est annulée : `reserved →
+   * expired` (cas 4 du lot C3b). `expire()` ne convient pas : il ne part que
+   * d'`available`.
+   *
+   * @throws {LoyaltyVoucherNotLapsableError} pas engagé, ou pas échu à `at`.
+   */
+  lapse(at: Date): void {
+    if (this.statusValue !== "reserved") {
+      throw new LoyaltyVoucherNotLapsableError(this.id, `état : ${this.statusValue}`);
+    }
+    if (at.getTime() < this.expiresAt.getTime()) {
+      throw new LoyaltyVoucherNotLapsableError(this.id, "sa date limite n'est pas passée");
+    }
+    this.statusValue = "expired";
+    this.expiredAtValue = at;
+  }
+
+  /** Le parent retrouve sa valeur et sa date d'origine, sans marque de solde. */
+  private restore(): void {
+    this.statusValue = "available";
+    this.remainderSettledAtValue = null;
   }
 
   /**
@@ -270,6 +399,8 @@ export class LoyaltyVoucher {
         null,
         null,
         null,
+        null,
+        null,
       ),
     };
   }
@@ -292,6 +423,8 @@ export class LoyaltyVoucher {
       cancelledAt: this.cancellationValue?.at ?? null,
       cancelledByStaffId: this.cancellationValue?.byStaffId ?? null,
       cancellationReason: this.cancellationValue?.reason ?? null,
+      mergedBackAt: this.mergeBackValue?.at ?? null,
+      mergedBackOrderId: this.mergeBackValue?.orderId ?? null,
     };
   }
 }

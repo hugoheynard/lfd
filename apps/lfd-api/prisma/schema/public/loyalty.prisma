@@ -29,11 +29,14 @@ enum LoyaltyEntryKind {
 
 /// L'état d'un bon. `reserved` (lot C, migration `20260927100000_le_bon_sur_la_commande`) :
 /// engagé sur une commande vivante — la commande porte le lien, pas le bon.
+/// `merged_back` (lot C3b, migration `20261012800000_le_reliquat_refondu`) : un
+/// reliquat refondu dans son bon d'origine à l'annulation de sa commande.
 enum LoyaltyVoucherStatus {
   available
   expired
   cancelled
   reserved
+  merged_back
 
   @@schema("public")
 }
@@ -136,10 +139,13 @@ model LoyaltyVoucher {
 
   status LoyaltyVoucherStatus
 
-  /// Le bon d'origine d'un reliquat (lot C). Unique : un bon ne laisse qu'un reliquat.
-  parentVoucherId String?         @unique @map("parent_voucher_id")
-  parentVoucher   LoyaltyVoucher? @relation("LoyaltyVoucherRemainder", fields: [parentVoucherId], references: [id], onDelete: Restrict)
-  remainder       LoyaltyVoucher? @relation("LoyaltyVoucherRemainder")
+  /// Le bon d'origine d'un reliquat (lot C). Un seul reliquat NON REFONDU par
+  /// bon : index unique partiel `loyalty_vouchers_live_remainder_key`
+  /// (`status IN ('available', 'reserved', 'expired', 'cancelled')`), écrit à
+  /// la main dans `20261012800100_la_refusion_du_bon` — Prisma ne l'exprime pas.
+  parentVoucherId String?          @map("parent_voucher_id")
+  parentVoucher   LoyaltyVoucher?  @relation("LoyaltyVoucherRemainder", fields: [parentVoucherId], references: [id], onDelete: Restrict)
+  remainders      LoyaltyVoucher[] @relation("LoyaltyVoucherRemainder")
 
   /// Le reliquat de ce bon est soldé (émis, éteint, ou rien à émettre) — lot C.
   /// Index partiel `status = 'reserved' AND remainder_settled_at IS NULL`,
@@ -149,6 +155,11 @@ model LoyaltyVoucher {
   cancelledAt        DateTime? @map("cancelled_at")
   cancelledByStaffId String?   @map("cancelled_by_staff_id")
   cancellationReason String?   @map("cancellation_reason")
+  /// La refusion d'un reliquat (lot C3b) : l'instant, et la commande annulée
+  /// qui l'a causée — identifiant opaque, sans clé étrangère. Les deux, ou
+  /// aucun, selon le statut `merged_back` (contrainte `CHECK`).
+  mergedBackAt       DateTime? @map("merged_back_at") @db.Timestamptz(3)
+  mergedBackOrderId  String?   @map("merged_back_order_id")
 
   entries LoyaltyLedgerEntry[]
   /// Les commandes qui l'ont porté — une seule VIVANTE au plus (index unique

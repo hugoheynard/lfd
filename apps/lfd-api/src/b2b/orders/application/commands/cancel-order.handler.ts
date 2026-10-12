@@ -17,7 +17,10 @@ import {
   OrderNotCancellableError,
 } from "../../domain/errors/order-cancellation-errors.js";
 import { OrderNotFoundError } from "../../domain/errors/order-errors.js";
-import { OrderCancelledEvent } from "../../domain/events/order-cancelled.event.js";
+import {
+  OrderCancelledEvent,
+  type CancelledOrderVoucher,
+} from "../../domain/events/order-cancelled.event.js";
 import {
   CancellationSubjectReader,
   type CancellationSubject,
@@ -30,6 +33,7 @@ import {
   type CancellableRegime,
 } from "../../domain/services/order-cancellation.js";
 import { CancellationReason } from "../../domain/value-objects/cancellation-reason.js";
+import { VoucherRestitutionRefusal } from "../services/voucher-restitution-refusal.js";
 import { CancelOrderCommand } from "./cancel-order.command.js";
 
 /**
@@ -46,8 +50,16 @@ import { CancelOrderCommand } from "./cancel-order.command.js";
  *    les clientèles (décision 7). Pas d'appel réseau sous un verrou, et jamais
  *    une annulée encore payable.
  * 3. La transaction (C3.4 ter) : ligne `orders` verrouillée et relue, retrait
- *    au fournil sous le verrou de la journée, écriture conditionnée, bon rendu
- *    et fait durable si — et seulement si — l'écriture a franchi.
+ *    au fournil sous le verrou de la journée, écriture conditionnée, bon
+ *    restitué et fait durable si — et seulement si — l'écriture a franchi.
+ *
+ * ## Le bon (lot C3b)
+ *
+ * La restitution (`reinstate`) rend le bon, refond son reliquat, ou constate
+ * qu'il est échu — sous le verrou du titulaire, pris APRÈS la ligne `orders`
+ * et la journée. Si le reste du bon a servi ailleurs, ou a été annulé par
+ * l'équipe, elle rend `blocked` : le refus qui en sort annule TOUTE la
+ * transaction, retrait au fournil compris.
  *
  * ## La transaction qui échoue après Stripe (C3.4 ter)
  *
@@ -72,6 +84,7 @@ export class CancelOrderHandler implements ICommandHandler<CancelOrderCommand, v
     private readonly payments: PaymentGateway,
     private readonly desk: OrderWithdrawalDesk,
     private readonly vouchers: LoyaltyVoucherRedemption,
+    private readonly refusals: VoucherRestitutionRefusal,
     private readonly durable: DurablePublisher,
     private readonly unitOfWork: UnitOfWork,
     private readonly clock: Clock,
@@ -196,7 +209,7 @@ export class CancelOrderHandler implements ICommandHandler<CancelOrderCommand, v
     }
   }
 
-  /** Le bon rendu et le fait durable — seulement quand l'écriture a franchi. */
+  /** Le bon restitué et le fait durable — seulement quand l'écriture a franchi. */
   private async afterCancelled(
     locked: CancellationSubject,
     staffUserId: string,
@@ -204,9 +217,7 @@ export class CancelOrderHandler implements ICommandHandler<CancelOrderCommand, v
     regime: CancellableRegime,
     now: Date,
   ): Promise<void> {
-    if (locked.loyaltyVoucherId !== null) {
-      await this.vouchers.release(locked.loyaltyVoucherId, now);
-    }
+    const voucher = await this.restitute(locked, now);
     await this.durable.publish(
       new OrderCancelledEvent(
         locked.orderId,
@@ -215,9 +226,43 @@ export class CancelOrderHandler implements ICommandHandler<CancelOrderCommand, v
         staffUserId,
         reason.value,
         regime,
-        locked.loyaltyVoucherId !== null,
+        voucher,
       ).durableFact(),
     );
+  }
+
+  /**
+   * Le bon de la commande, rendu ou refondu (C3b.5). `already` ne dit rien au
+   * fait — il n'a rien fait ; `blocked` refuse, et le refus annule tout.
+   */
+  private async restitute(
+    locked: CancellationSubject,
+    now: Date,
+  ): Promise<CancelledOrderVoucher | null> {
+    if (locked.loyaltyVoucherId === null) {
+      return null;
+    }
+    const restitution = await this.vouchers.reinstate(
+      locked.loyaltyVoucherId,
+      { id: locked.orderId, number: locked.orderNumber },
+      now,
+    );
+    switch (restitution.kind) {
+      case "already":
+        return null;
+      case "blocked":
+        throw new OrderNotCancellableError(
+          locked.orderId,
+          await this.refusals.blockOf(restitution),
+        );
+      default:
+        return {
+          outcome: restitution.kind,
+          voucherValueCents: restitution.voucherValueCents,
+          remainderValueCents: restitution.remainderValueCents,
+          expiresAt: restitution.expiresAt,
+        };
+    }
   }
 }
 

@@ -1,4 +1,8 @@
-import type { AdminOrderCancellability, AdminOrderView } from "@lfd/contracts";
+import type {
+  AdminCancellationVoucher,
+  AdminOrderCancellability,
+  AdminOrderView,
+} from "@lfd/contracts";
 import { QueryHandler, type IQueryHandler } from "@nestjs/cqrs";
 
 import { OrderInscriptionReader } from "../../../../production/channels/commerce/index.js";
@@ -6,12 +10,17 @@ import { StaffAuthorDirectory } from "../../../../staff/directory/domain/staff-a
 import { OrderNotFoundError } from "../../domain/errors/order-errors.js";
 import { AdminOrderAuthorReader } from "../../domain/ports/admin-order-author.reader.js";
 import { CancellationSubjectReader } from "../../domain/ports/cancellation-subject.reader.js";
+import { Clock } from "../../../../platform/time/clock.js";
+import type { VoucherRestitution } from "../../domain/ports/loyalty-voucher-redemption.js";
 import { OrderReader } from "../../domain/ports/order.reader.js";
+import { VoucherRestitutionPreview } from "../../domain/ports/voucher-restitution-preview.js";
+import { cancellationVoucherSentenceOf } from "../../domain/services/order-cancellation-voucher.js";
 import {
   cancellationBlocker,
   cancellationRefusalOf,
   cancellationStateOf,
 } from "../../domain/services/order-cancellation.js";
+import { VoucherRestitutionRefusal } from "../services/voucher-restitution-refusal.js";
 import { GetAdminOrderQuery } from "./get-admin-order.query.js";
 
 /**
@@ -25,6 +34,10 @@ import { GetAdminOrderQuery } from "./get-admin-order.query.js";
  * dit aussi si la commande s'annule, par la MÊME règle que le geste
  * (`cancellationBlocker`), sans verrou : c'est un affichage. L'inscription au
  * fournil se demande au fournil, par son canal.
+ *
+ * Lot C3b (C3b.7) : quand la règle de commande laisse passer et que la
+ * commande porte un bon, l'aperçu de la restitution dit ce que deviendra le
+ * bon (`voucher`, avec sa phrase) — ou en fait le refus des cas 5 et 6.
  */
 @QueryHandler(GetAdminOrderQuery)
 export class GetAdminOrderHandler implements IQueryHandler<GetAdminOrderQuery, AdminOrderView> {
@@ -34,6 +47,9 @@ export class GetAdminOrderHandler implements IQueryHandler<GetAdminOrderQuery, A
     private readonly staff: StaffAuthorDirectory,
     private readonly subjects: CancellationSubjectReader,
     private readonly inscriptions: OrderInscriptionReader,
+    private readonly restitutions: VoucherRestitutionPreview,
+    private readonly refusals: VoucherRestitutionRefusal,
+    private readonly clock: Clock,
   ) {}
 
   async execute(query: GetAdminOrderQuery): Promise<AdminOrderView> {
@@ -67,8 +83,41 @@ export class GetAdminOrderHandler implements IQueryHandler<GetAdminOrderQuery, A
       return null;
     }
     const block = cancellationBlocker(cancellationStateOf(subject, inscribedDay));
-    return block === null
-      ? { cancellable: true }
-      : { cancellable: false, reason: cancellationRefusalOf(block) };
+    if (block !== null) {
+      return { cancellable: false, reason: cancellationRefusalOf(block) };
+    }
+    if (subject.loyaltyVoucherId === null) {
+      return { cancellable: true, voucher: null };
+    }
+    const restitution = await this.restitutions.previewOf(
+      subject.loyaltyVoucherId,
+      this.clock.now(),
+    );
+    if (restitution.kind === "blocked") {
+      const voucherBlock = await this.refusals.blockOf(restitution);
+      return { cancellable: false, reason: cancellationRefusalOf(voucherBlock) };
+    }
+    return { cancellable: true, voucher: voucherPreviewOf(restitution) };
   }
+}
+
+/** L'issue annoncée, avec sa phrase ; `already` (impossible sur une commande vivante) n'annonce rien. */
+function voucherPreviewOf(restitution: VoucherRestitution): AdminCancellationVoucher | null {
+  if (restitution.kind === "already" || restitution.kind === "blocked") {
+    return null;
+  }
+  const { voucherValueCents, remainderValueCents, expiresAt } = restitution;
+  const at = expiresAt.toISOString();
+  if (restitution.kind === "merged" && remainderValueCents !== null) {
+    const merged = {
+      outcome: "merged",
+      voucherValueCents,
+      remainderValueCents,
+      expiresAt,
+    } as const;
+    return { ...merged, expiresAt: at, sentence: cancellationVoucherSentenceOf(merged) };
+  }
+  const outcome = restitution.kind === "lapsed" ? "lapsed" : "returned";
+  const plain = { outcome, voucherValueCents, expiresAt } as const;
+  return { ...plain, expiresAt: at, sentence: cancellationVoucherSentenceOf(plain) };
 }

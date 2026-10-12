@@ -231,4 +231,40 @@ export const LOYALTY_PHRASES = {
       ],
       ['subjectLabel', 'remainderCents', 'voucher', 'order'],
     ),
+  // Lot C3b (2026-10-12) : le bon d'une commande annulée par l'équipe, rendu.
+  'loyalty.voucher_reinstated': (fact) =>
+    byActor(
+      fact,
+      [
+        text('a rendu '),
+        ...cite(LOYALTY_VOUCHER, fact.payload['voucher']),
+        text(' '),
+        ...holderOf(fact, 'à'),
+        text(', d’une valeur de '),
+        inUnit('cents', fact.payload['valueCents']),
+        text(', après l’annulation de '),
+        ...cite(ORDER, fact.payload['order']),
+        ...(fact.payload['remainder'] === null || fact.payload['remainder'] === undefined
+          ? []
+          : [
+              text(' ; '),
+              ...cite(LOYALTY_VOUCHER, fact.payload['remainder']),
+              text(', laissé en reliquat ('),
+              inUnit('cents', fact.payload['remainderCents']),
+              text('), est refondu dedans'),
+            ]),
+        text('. Valable jusqu’au '),
+        inUnit('instant', fact.payload['expiresAt']),
+      ],
+      [
+        'subjectLabel',
+        'voucher',
+        'valueCents',
+        'order',
+        'remainder',
+        'remainderCents',
+        'outcome',
+        'expiresAt',
+      ],
+    ),
 } as const satisfies Partial<Record<JournalFactType, Phrase>>;

@@ -84,3 +84,37 @@ describe('le titulaire hors du cycle d’un bon', () => {
     expect(sentence('loyalty.voucher_remainder_issued', payload)).toContain(' pour un client, ');
   });
 });
+
+describe('le bon rendu à l’annulation d’une commande (loyalty.voucher_reinstated, lot C3b)', () => {
+  const base = {
+    ...NAMED,
+    voucher: { id: 'lv_1', name: 'Bon de 12,00 €' },
+    order: { id: 'ord_1', name: 'C-7' },
+    valueCents: 1_200,
+    expiresAt: '2030-11-30T12:00:00.000Z',
+  };
+
+  it('rendu tel quel : ni reliquat, ni « refondu »', () => {
+    const said = sentence('loyalty.voucher_reinstated', {
+      ...base,
+      outcome: 'returned',
+      remainder: null,
+      remainderCents: null,
+    });
+    expect(said).toContain('a rendu le bon « Bon de 12,00 € »');
+    expect(said).toContain('au client « Jeanne Dupont »');
+    expect(said).toContain('C-7');
+    expect(said).not.toContain('refondu');
+  });
+
+  it('refondu : nomme le reliquat et son montant', () => {
+    const said = sentence('loyalty.voucher_reinstated', {
+      ...base,
+      outcome: 'merged',
+      remainder: { id: 'lv_2', name: 'Bon de 4,50 €' },
+      remainderCents: 450,
+    });
+    expect(said).toContain('« Bon de 4,50 € », laissé en reliquat');
+    expect(said).toContain('est refondu dedans');
+  });
+});

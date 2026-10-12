@@ -2,6 +2,18 @@ import type { DurableEvent, DurableFact } from "../../../../platform/outbox/dura
 import { OrderSettlementPayloadError } from "../errors/order-settlement-payload.error.js";
 import type { CancellableRegime } from "../services/order-cancellation.js";
 
+/**
+ * Ce que l'annulation a fait du bon de fidélité de la commande (lot C3b,
+ * C3b.6) — `null` dans le fait quand la commande n'en portait pas, ou que la
+ * restitution n'a rien eu à faire. Centimes HT, l'unité du bon.
+ */
+export interface CancelledOrderVoucher {
+  readonly outcome: "returned" | "merged" | "lapsed";
+  readonly voucherValueCents: number;
+  readonly remainderValueCents: number | null;
+  readonly expiresAt: Date;
+}
+
 /** Nom STABLE du fait, clé de routage vers `@DurableHandler`. */
 export const ORDER_CANCELLED = "order.cancelled";
 
@@ -17,6 +29,11 @@ export const ORDER_CANCELLED = "order.cancelled";
  * Abonnés : le journal (`order.cancelled`) et le courriel au client.
  *
  * Le motif voyage avec le fait pour le journal ; le courriel ne le lit pas.
+ *
+ * `voucher` a REMPLACÉ le booléen `voucherReturned` (lot C3b, 2026-10-12),
+ * sans lecture de l'ancienne forme : C3 n'avait jamais été promu sur `main`,
+ * aucun fait `order.cancelled` n'existait en production (plan, C3b.6). Si un
+ * jour C3 part sans C3b, cette lecture redevient nécessaire.
  */
 export class OrderCancelledEvent implements DurableEvent {
   constructor(
@@ -28,7 +45,7 @@ export class OrderCancelledEvent implements DurableEvent {
     readonly cancelledBy: string,
     readonly reason: string,
     readonly regime: CancellableRegime,
-    readonly voucherReturned: boolean,
+    readonly voucher: CancelledOrderVoucher | null,
   ) {}
 
   durableFact(): DurableFact {
@@ -42,7 +59,10 @@ export class OrderCancelledEvent implements DurableEvent {
         cancelledBy: this.cancelledBy,
         reason: this.reason,
         regime: this.regime,
-        voucherReturned: this.voucherReturned,
+        voucher:
+          this.voucher === null
+            ? null
+            : { ...this.voucher, expiresAt: this.voucher.expiresAt.toISOString() },
       },
     };
   }
@@ -59,7 +79,7 @@ export class OrderCancelledEvent implements DurableEvent {
     const cancelledBy = text("cancelledBy");
     const reason = text("reason");
     const regime = payload["regime"];
-    const voucherReturned = payload["voucherReturned"];
+    const voucher = voucherOf(payload["voucher"]);
     if (
       orderId === null ||
       orderNumber === null ||
@@ -67,7 +87,7 @@ export class OrderCancelledEvent implements DurableEvent {
       cancelledBy === null ||
       reason === null ||
       (regime !== "free" && regime !== "due") ||
-      typeof voucherReturned !== "boolean"
+      voucher === undefined
     ) {
       throw new OrderSettlementPayloadError(ORDER_CANCELLED);
     }
@@ -78,7 +98,36 @@ export class OrderCancelledEvent implements DurableEvent {
       cancelledBy,
       reason,
       regime,
-      voucherReturned,
+      voucher,
     );
   }
+}
+
+/** `undefined` : hors forme. */
+function voucherOf(raw: unknown): CancelledOrderVoucher | null | undefined {
+  if (raw === null) {
+    return null;
+  }
+  if (typeof raw !== "object" || raw === undefined) {
+    return undefined;
+  }
+  const field = (key: string): unknown => (key in raw ? Reflect.get(raw, key) : undefined);
+  const outcome = field("outcome");
+  const value = field("voucherValueCents");
+  const remainder = field("remainderValueCents");
+  const expiresAt = field("expiresAt");
+  if (
+    (outcome !== "returned" && outcome !== "merged" && outcome !== "lapsed") ||
+    typeof value !== "number" ||
+    !Number.isInteger(value) ||
+    !(remainder === null || (typeof remainder === "number" && Number.isInteger(remainder))) ||
+    typeof expiresAt !== "string"
+  ) {
+    return undefined;
+  }
+  const at = new Date(expiresAt);
+  if (Number.isNaN(at.getTime())) {
+    return undefined;
+  }
+  return { outcome, voucherValueCents: value, remainderValueCents: remainder, expiresAt: at };
 }

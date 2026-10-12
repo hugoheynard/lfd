@@ -63,6 +63,7 @@ import { PrismaVoucherOrderReader } from "./infrastructure/prisma-voucher-order.
 import { PrismaOrderRecipientReader } from "./infrastructure/prisma-order-recipient.reader.js";
 import { AbandonOrderHandler } from "./application/commands/abandon-order.handler.js";
 import { CancelOrderHandler } from "./application/commands/cancel-order.handler.js";
+import { VoucherRestitutionRefusal } from "./application/services/voucher-restitution-refusal.js";
 import { SendOrderCancelledMail } from "./application/handlers/send-order-cancelled-mail.handler.js";
 import { CancellationSubjectReader } from "./domain/ports/cancellation-subject.reader.js";
 import { OrderCancellationRepository } from "./domain/ports/order-cancellation.repository.js";
@@ -250,6 +251,7 @@ import { AdminSupervisionController } from "./http/admin-supervision.controller.
     // C3) : le geste, son courriel, et ses deux ports — lire et écrire (ISP).
     // Le guichet du fournil vient de `ProductionDeskFeedModule`.
     CancelOrderHandler,
+    VoucherRestitutionRefusal,
     SendOrderCancelledMail,
     { provide: CancellationSubjectReader, useClass: PrismaCancellationSubjectReader },
     { provide: OrderCancellationRepository, useClass: PrismaOrderCancellationRepository },

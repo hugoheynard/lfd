@@ -96,6 +96,13 @@ export const CANCELLATION_REGIME = domain('régime d’une annulation', {
   due: 'Carte non réglée, paiement fermé chez Stripe',
 });
 
+/** Ce que l'annulation par l'équipe a fait du bon de fidélité (`order.cancelled`, lot C3b). */
+export const CANCELLATION_VOUCHER_OUTCOME = domain('sort du bon à une annulation', {
+  returned: 'Rendu au client',
+  merged: 'Rendu, reliquat refondu dedans',
+  lapsed: 'Échu, non rendu',
+});
+
 /** Le statut d'un remboursement chez Stripe (`order.refund_*`, `payment_refund.unmatched`). */
 export const REFUND_STATUS = domain('statut d’un remboursement', {
   pending: 'En cours',
@@ -185,6 +192,7 @@ export const ORDERS_VALUES: ValueFamily = {
     PROPOSAL_MODE,
     ABANDON_OUTCOME,
     CANCELLATION_REGIME,
+    CANCELLATION_VOUCHER_OUTCOME,
     REFUND_STATUS,
     REFUND_REJECTION,
     REFUND_NOT_CREDITED,

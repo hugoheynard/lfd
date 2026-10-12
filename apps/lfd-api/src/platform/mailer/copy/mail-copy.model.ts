@@ -234,8 +234,14 @@ export interface OrderCancelledCopy {
   readonly nothingBilled: string;
   /** Carte non payée, fermée chez Stripe : rien n'a été prélevé. */
   readonly nothingCharged: string;
-  /** Un bon de fidélité utilisé est rendu. */
+  /** Le bon de fidélité utilisé est rendu (lot C3b). `{value}`, `{day}` — sa date limite. */
   readonly voucherReturned: string;
+  /**
+   * Le bon retrouve sa valeur, son reliquat refondu dedans (lot C3b).
+   * `{value}`, `{day}`, `{remainder}`. Un bon échu n'a pas de phrase : le
+   * courriel se tait sur lui (Q2).
+   */
+  readonly voucherMerged: string;
   readonly footer: string;
 }
 

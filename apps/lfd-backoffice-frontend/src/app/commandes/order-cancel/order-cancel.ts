@@ -70,6 +70,15 @@ export class OrderCancelComponent {
     return c.cancellable ? null : c.reason;
   });
 
+  /**
+   * Ce que l'annulation fera du bon de fidélité, dans les mots du serveur
+   * (plan, C3b.7) — montré sous la phrase de confirmation ; `null` sans bon.
+   */
+  protected readonly voucherSentence = computed(() => {
+    const c = this.cancellability();
+    return c.cancellable ? (c.voucher?.sentence ?? null) : null;
+  });
+
   protected readonly open = signal(false);
   protected readonly reason = signal('');
   protected readonly saving = signal(false);

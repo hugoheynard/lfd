@@ -96,7 +96,9 @@ export const MAIL_FR: MailCopy = {
     nothingBilled: "Rien ne vous sera facturé pour cette commande.",
     nothingCharged: "Aucun paiement n'a été prélevé.",
     voucherReturned:
-      "Votre bon de fidélité vous est rendu : vous pourrez l'utiliser sur une prochaine commande.",
+      "Votre bon de fidélité de {value} vous est rendu : vous pourrez l'utiliser sur une prochaine commande jusqu'au {day}.",
+    voucherMerged:
+      "Votre bon de fidélité retrouve sa valeur de {value}, valable jusqu'au {day}. Le bon de {remainder} qui vous avait été remis en reliquat est remplacé par celui-ci.",
     footer:
       "Un doute ou une erreur ? Appelez le fournil — Le Labo · route de la Balme, Val d'Isère.",
   },

@@ -12,6 +12,7 @@ import { SetLoyaltySettingsHandler } from "./application/commands/set-loyalty-se
 import { SettleVoucherRemaindersHandler } from "./application/commands/settle-voucher-remainders.handler.js";
 import { LoyaltyVoucherQuoting } from "./application/services/loyalty-voucher-quoting.js";
 import { LoyaltyVoucherRedeeming } from "./application/services/loyalty-voucher-redeeming.js";
+import { LoyaltyVoucherRestitutionPreviewing } from "./application/services/loyalty-voucher-restitution-previewing.js";
 import { LoyaltyHolderLock } from "./domain/ports/loyalty-holder.lock.js";
 import { PrismaLoyaltyHolderLock } from "./infrastructure/prisma-loyalty-holder.lock.js";
 import { CreditPointsOnHandover } from "./application/handlers/credit-points-on-handover.handler.js";
@@ -98,6 +99,7 @@ import { PrismaWelcomeCandidateReader } from "./infrastructure/prisma-welcome-ca
     CreditWelcomeBonusOnGuestClaimed,
     LoyaltyVoucherQuoting,
     LoyaltyVoucherRedeeming,
+    LoyaltyVoucherRestitutionPreviewing,
     SettleVoucherRemaindersHandler,
     CreditOrderPointsHandler,
     CreditPendingOrderPointsHandler,
@@ -120,6 +122,7 @@ import { PrismaWelcomeCandidateReader } from "./infrastructure/prisma-welcome-ca
   exports: [
     LoyaltyVoucherQuoting,
     LoyaltyVoucherRedeeming,
+    LoyaltyVoucherRestitutionPreviewing,
     LoyaltyEarningPreviewing,
     WelcomeBonusPreviewing,
   ],

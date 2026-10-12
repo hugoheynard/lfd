@@ -483,7 +483,7 @@ describe('l’annulation par l’équipe (order.cancelled)', () => {
       cancelledBy: { id: 'stf_1', name: 'Cécile Martin' },
       reason: 'Commande passée en double',
       regime: 'due',
-      voucherReturned: false,
+      voucher: null,
     },
   });
 
@@ -499,5 +499,26 @@ describe('l’annulation par l’équipe (order.cancelled)', () => {
 
     expect(renderFact(bare).namesActor).toBe(true);
     expect(row(bare, 'Annulée par')).toBe('(identifiant stf_1)');
+  });
+
+  it('dit au détail ce qu’il est advenu du bon de fidélité (lot C3b)', () => {
+    const merged = {
+      ...current,
+      payload: {
+        ...current.payload,
+        regime: 'free',
+        voucher: {
+          outcome: 'merged',
+          voucherValueCents: 1_200,
+          remainderValueCents: 450,
+          expiresAt: '2030-11-30T12:00:00.000Z',
+        },
+      },
+    };
+
+    expect(sentence(merged)).toBe('Cécile Martin a annulé la commande ORD-7 — Jean Dupont');
+    expect(renderFact(merged).unlabelled).toEqual([]);
+    expect(row(merged, 'Bon de fidélité › Issue')).toBe('Rendu, reliquat refondu dedans');
+    expect(row(merged, 'Bon de fidélité › Valeur du reliquat')).toBe('4,50 €');
   });
 });

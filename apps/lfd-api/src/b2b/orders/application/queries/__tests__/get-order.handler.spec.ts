@@ -1,4 +1,4 @@
-import type { OrderView } from "@lfd/contracts";
+import type { AdminOrderCancellability, OrderView } from "@lfd/contracts";
 
 import {
   StaffAuthors,
@@ -18,6 +18,10 @@ import {
   FixedSubjects,
 } from "../../commands/__tests__/cancellation-doubles.js";
 import { orderView } from "../../handlers/__tests__/payment-failure-doubles.js";
+import { FixedClock } from "../../../../../platform/time/fixed-clock.js";
+import type { VoucherRestitution } from "../../../domain/ports/loyalty-voucher-redemption.js";
+import { VoucherRestitutionPreview } from "../../../domain/ports/voucher-restitution-preview.js";
+import { VoucherRestitutionRefusal } from "../../services/voucher-restitution-refusal.js";
 import { GetAdminOrderHandler } from "../get-admin-order.handler.js";
 import { GetAdminOrderQuery } from "../get-admin-order.query.js";
 import { GetOrderHandler } from "../get-order.handler.js";
@@ -179,6 +183,30 @@ class FixedInscription extends OrderInscriptionReader {
   }
 }
 
+/** L'aperçu de la fidélité doublé : rend l'issue qu'on lui donne, et note le bon demandé. */
+class FixedRestitutionPreview extends VoucherRestitutionPreview {
+  readonly asked: string[] = [];
+
+  constructor(private readonly restitution: VoucherRestitution) {
+    super();
+  }
+
+  previewOf(voucherId: string): Promise<VoucherRestitution> {
+    this.asked.push(voucherId);
+    return Promise.resolve(this.restitution);
+  }
+}
+
+/** Ce que l'aperçu dit en mots : la phrase du bon, ou la raison du refus. */
+function said(cancellability: AdminOrderCancellability): string {
+  return cancellability.cancellable
+    ? (cancellability.voucher?.sentence ?? "")
+    : cancellability.reason;
+}
+
+/** Une date limite sans rapport avec l'horloge du test : seule sa mise en forme est lue. */
+const VOUCHER_EXPIRES = new Date(Date.UTC(2030, 10, 30, 12));
+
 /** Le détail staff, avec ce que l'annulation lit d'elle (par défaut : annulable). */
 function adminHandler(
   owned: OwnedOrder | null,
@@ -186,13 +214,20 @@ function adminHandler(
   staff: StaffAuthorDirectory = directory(),
   subject: CancellationSubject | null = cancellationSubject(),
   inscribedDay: string | null = null,
+  preview: VoucherRestitutionPreview = new FixedRestitutionPreview({ kind: "already" }),
+  others: Readonly<Record<string, CancellationSubject>> = {},
 ): GetAdminOrderHandler {
+  const subjects = new FixedSubjects(subject, others);
+  const inscriptions = new FixedInscription(inscribedDay);
   return new GetAdminOrderHandler(
     reader(owned),
     authors(author),
     staff,
-    new FixedSubjects(subject),
-    new FixedInscription(inscribedDay),
+    subjects,
+    inscriptions,
+    preview,
+    new VoucherRestitutionRefusal(subjects, inscriptions),
+    new FixedClock(VOUCHER_EXPIRES),
   );
 }
 
@@ -208,7 +243,108 @@ describe("GetAdminOrderHandler", () => {
       ...VIEW,
       clientele: "pro",
       placedBy: { customer: CUSTOMER, company: COMPANY, staffName: null },
-      cancellability: { cancellable: true },
+      cancellability: { cancellable: true, voucher: null },
+    });
+  });
+
+  describe("ce que l'annulation fera du bon (lot C3b, C3b.7)", () => {
+    const withVoucher = cancellationSubject({ loyaltyVoucherId: "bon_1" });
+    const of = (restitution: VoucherRestitution, others = {}) => {
+      const preview = new FixedRestitutionPreview(restitution);
+      const handler = adminHandler(
+        ofCompany("cmp_1"),
+        { customer: CUSTOMER, company: COMPANY, placedByStaffId: null },
+        directory(),
+        withVoucher,
+        null,
+        preview,
+        others,
+      );
+      return { preview, view: handler.execute(new GetAdminOrderQuery("ord_1")) };
+    };
+
+    it("rendu : la phrase dit la valeur et la date limite", async () => {
+      const { preview, view } = of({
+        kind: "returned",
+        voucherValueCents: 1_200,
+        remainderValueCents: null,
+        expiresAt: VOUCHER_EXPIRES,
+      });
+
+      const { cancellability } = await view;
+      expect(cancellability).toMatchObject({
+        cancellable: true,
+        voucher: {
+          outcome: "returned",
+          voucherValueCents: 1_200,
+          expiresAt: VOUCHER_EXPIRES.toISOString(),
+        },
+      });
+      expect(said(cancellability)).toMatch(
+        /^Le bon de fidélité de 12,00\s€ utilisé sur cette commande sera rendu au client, valable jusqu'au 30\/11\.$/u,
+      );
+      expect(preview.asked).toEqual(["bon_1"]);
+    });
+
+    it("refondu : nomme le reliquat qui sera annulé", async () => {
+      const { view } = of({
+        kind: "merged",
+        voucherValueCents: 1_200,
+        remainderValueCents: 450,
+        expiresAt: VOUCHER_EXPIRES,
+      });
+
+      const { cancellability } = await view;
+      expect(cancellability).toMatchObject({
+        cancellable: true,
+        voucher: { outcome: "merged", remainderValueCents: 450 },
+      });
+      expect(said(cancellability)).toContain("avait laissé un reliquat de 4,50");
+    });
+
+    it("échu : dit qu'il ne sera pas rendu", async () => {
+      const { view } = of({
+        kind: "lapsed",
+        voucherValueCents: 1_200,
+        remainderValueCents: null,
+        expiresAt: VOUCHER_EXPIRES,
+      });
+
+      const { cancellability } = await view;
+      expect(cancellability).toMatchObject({ cancellable: true, voucher: { outcome: "lapsed" } });
+      expect(said(cancellability)).toContain("il ne sera pas rendu");
+    });
+
+    it("reste engagé ailleurs : refus qui nomme l'autre commande", async () => {
+      const { view } = of(
+        {
+          kind: "blocked",
+          cause: "remainder_engaged",
+          remainderValueCents: 450,
+          order: { id: "ord_2", number: "C-2" },
+        },
+        { ord_2: cancellationSubject({ orderId: "ord_2", status: "ready" }) },
+      );
+
+      const { cancellability } = await view;
+      expect(cancellability.cancellable).toBe(false);
+      expect(said(cancellability)).toContain("C-2, qui ne peut plus être annulée");
+    });
+
+    it("une commande déjà refusée par sa règle ne demande rien à la fidélité", async () => {
+      const preview = new FixedRestitutionPreview({ kind: "already" });
+      const handler = adminHandler(
+        ofCompany("cmp_1"),
+        { customer: CUSTOMER, company: COMPANY, placedByStaffId: null },
+        directory(),
+        cancellationSubject({ loyaltyVoucherId: "bon_1", paymentStatus: "paid" }),
+        null,
+        preview,
+      );
+
+      await handler.execute(new GetAdminOrderQuery("ord_1"));
+
+      expect(preview.asked).toEqual([]);
     });
   });
 

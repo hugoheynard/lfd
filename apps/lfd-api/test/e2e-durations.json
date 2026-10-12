@@ -182,6 +182,8 @@
   "test/order-settlement-reminders.e2e-spec.ts": 3100,
   "test/order-sheet-archive.e2e-spec.ts": 4557,
   "test/order-staff-cancel-races.e2e-spec.ts": 8000,
+  "test/order-staff-cancel-voucher-races.e2e-spec.ts": 9000,
+  "test/order-staff-cancel-voucher.e2e-spec.ts": 13000,
   "test/order-staff-cancel.e2e-spec.ts": 16000,
   "test/order-unsettled-shop-expiry.e2e-spec.ts": 5000,
   "test/order-waivers-journal.e2e-spec.ts": 5340,

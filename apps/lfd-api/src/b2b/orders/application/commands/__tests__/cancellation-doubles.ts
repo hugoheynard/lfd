@@ -6,6 +6,7 @@ import {
   type RetrievedIntent,
 } from "../../../../payments/domain/payment-gateway.js";
 import {
+  OrderInscriptionReader,
   OrderWithdrawalDesk,
   type OrderWithdrawalOutcome,
   type ServiceDay,
@@ -46,12 +47,27 @@ export function cancellationSubject(
 
 /** La lecture sans verrou : la commande telle qu'elle est au premier regard. */
 export class FixedSubjects extends CancellationSubjectReader {
-  constructor(private readonly subject: CancellationSubject | null) {
+  constructor(
+    private readonly subject: CancellationSubject | null,
+    /** D'autres commandes, par id — celle qui porte un reliquat (lot C3b, cas 5). */
+    private readonly others: Readonly<Record<string, CancellationSubject>> = {},
+  ) {
     super();
   }
 
-  find(): Promise<CancellationSubject | null> {
-    return Promise.resolve(this.subject);
+  find(orderId: string): Promise<CancellationSubject | null> {
+    return Promise.resolve(this.others[orderId] ?? this.subject);
+  }
+}
+
+/** Le fournil doublé : le jour où il a inscrit chaque commande, ou rien. */
+export class FixedInscriptions extends OrderInscriptionReader {
+  constructor(private readonly days: Readonly<Record<string, string>> = {}) {
+    super();
+  }
+
+  inscribedDayOf(orderId: string): Promise<string | null> {
+    return Promise.resolve(this.days[orderId] ?? null);
   }
 }
 

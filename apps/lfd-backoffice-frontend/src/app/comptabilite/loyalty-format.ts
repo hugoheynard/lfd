@@ -50,5 +50,9 @@ export function voucherStatusBadge(status: LoyaltyVoucherStatus): {
     // commande qui le dit (plan des points, §11 bis S6).
     case 'reserved':
       return { label: 'Utilisé', variant: 'info' };
+    // Un reliquat refondu dans son bon d'origine à l'annulation de sa
+    // commande (plan d'annulation, lot C3b) : sa valeur est revenue au parent.
+    case 'merged_back':
+      return { label: "Refondu dans le bon d'origine", variant: 'neutral' };
   }
 }

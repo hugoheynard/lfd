@@ -91,7 +91,9 @@ export const MAIL_IT: MailCopy = {
     nothingBilled: "Non le verrà addebitato nulla per questo ordine.",
     nothingCharged: "Nessun pagamento è stato prelevato.",
     voucherReturned:
-      "Il suo buono fedeltà le è stato restituito: potrà usarlo per un prossimo ordine.",
+      "Il suo buono fedeltà di {value} le è stato restituito: potrà usarlo per un prossimo ordine fino al {day}.",
+    voucherMerged:
+      "Il suo buono fedeltà ritrova il suo valore di {value}, valido fino al {day}. Il buono di {remainder} che le era stato dato come residuo è sostituito da questo.",
     footer: "Un dubbio o un errore? Ci chiami — Le Labo · route de la Balme, Val d'Isère.",
   },
   invoiceIssued: {

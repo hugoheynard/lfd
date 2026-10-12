@@ -349,6 +349,24 @@ export const ACCOUNTING_FACTS = {
       remainderCents: cents(),
     }),
   ),
+  /**
+   * Le bon d'une commande annulée par l'équipe est rendu au client (plan
+   * `order/plan-annulation-de-commande.md`, lot C3b) : tel quel (`returned`),
+   * ou en refondant son reliquat `remainder` (`merged`). `valueCents` est ce
+   * que le bon vaut de nouveau, jusqu'à `expiresAt` — sa date d'origine.
+   */
+  "loyalty.voucher_reinstated": fact(
+    payload({
+      subjectLabel: subjectLabel().optional(),
+      voucher: named("loyalty_voucher"),
+      remainder: named("loyalty_voucher").nullable(),
+      order: named("order"),
+      outcome: z.enum(["returned", "merged"]),
+      valueCents: cents(),
+      remainderCents: cents().nullable(),
+      expiresAt: instant(),
+    }),
+  ),
 
   // Le lot de prélèvement figé (2026-10-05) — `collection.ts`.
   ...COLLECTION_FACTS,

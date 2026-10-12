@@ -15,6 +15,7 @@ import {
   VoucherOrderReader,
   type VoucherOrder,
 } from "../../../../orders/domain/ports/voucher-order.reader.js";
+import { LoyaltyVoucherChangedMeanwhileError } from "../../../domain/errors/voucher-restitution-errors.js";
 import { LoyaltyEarnedOrdersReader } from "../../../domain/ports/loyalty-earned-orders.reader.js";
 import { LoyaltyAccountRepository } from "../../../domain/ports/loyalty-account.repository.js";
 import { LoyaltyConversionGate } from "../../../domain/ports/loyalty-conversion.gate.js";
@@ -110,7 +111,20 @@ export class InMemoryVouchers extends LoyaltyVoucherRepository {
     return Promise.resolve(found.map((row) => LoyaltyVoucher.reconstitute(row)));
   }
 
+  loadLiveRemainderOf(parentId: string): Promise<LoyaltyVoucher | null> {
+    const row = [...this.rows.values()].find(
+      (candidate) => candidate.parentVoucherId === parentId && candidate.status !== "merged_back",
+    );
+    return Promise.resolve(row === undefined ? null : LoyaltyVoucher.reconstitute(row));
+  }
+
+  /** Conditionné au statut chargé, comme l'adaptateur Prisma (lot C3b). */
   save(voucher: LoyaltyVoucher): Promise<void> {
+    const stored = this.rows.get(voucher.id);
+    const loaded = voucher.persistedStatus;
+    if (loaded !== null && stored !== undefined && stored.status !== loaded) {
+      return Promise.reject(new LoyaltyVoucherChangedMeanwhileError(voucher.id));
+    }
     this.calls.push("voucher.save");
     this.rows.set(voucher.id, voucher.toPersistence());
     return Promise.resolve();

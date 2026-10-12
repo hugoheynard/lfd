@@ -35,7 +35,13 @@ const FACT = new OrderCancelledEvent(
   "fiche-marie",
   "Le client a appelé",
   "due",
-  true,
+  {
+    outcome: "merged",
+    voucherValueCents: 1_200,
+    remainderValueCents: 450,
+    // Recopiée dans le courriel, jamais comparée à l'horloge.
+    expiresAt: new Date(Date.UTC(2030, 10, 30, 12)),
+  },
 ).durableFact();
 
 describe("SendOrderCancelledMail", () => {
@@ -49,7 +55,15 @@ describe("SendOrderCancelledMail", () => {
       to: "camille@example.test",
       template: "customer.order-cancelled",
       idempotencyKey: "order.cancelled:order_1",
-      data: { regime: "due", voucherReturned: true },
+      data: {
+        regime: "due",
+        voucher: {
+          outcome: "merged",
+          voucherValueCents: 1_200,
+          remainderValueCents: 450,
+          expiresAt: "2030-11-30T12:00:00.000Z",
+        },
+      },
     });
     expect(JSON.stringify(mailer.sent[0]?.data)).not.toContain("Le client a appelé");
   });

@@ -60,7 +60,7 @@ describe('annuler une commande depuis son détail staff', () => {
   });
 
   it('n’existe pas sans `b2b_cancel_order:write`', () => {
-    const { fixture } = mount({ cancellable: true }, ['b2b_orders:read']);
+    const { fixture } = mount({ cancellable: true, voucher: null }, ['b2b_orders:read']);
 
     expect(el(fixture).querySelector('[data-cancel-trigger]')).toBeNull();
   });
@@ -75,7 +75,7 @@ describe('annuler une commande depuis son détail staff', () => {
   });
 
   it('est actif quand la commande s’annule, et le motif ne s’ouvre qu’avec la confirmation', () => {
-    const { fixture } = mount({ cancellable: true });
+    const { fixture } = mount({ cancellable: true, voucher: null });
 
     const trigger = el(fixture).querySelector<HTMLButtonElement>('[data-cancel-trigger]');
     expect(trigger?.disabled).toBe(false);
@@ -85,8 +85,26 @@ describe('annuler une commande depuis son détail staff', () => {
     expect(el(fixture).querySelector('[data-cancel-reason]')).not.toBeNull();
   });
 
+  it('dit, dans la confirmation, ce que deviendra le bon de fidélité (C3b)', () => {
+    const sentence =
+      'Le bon de fidélité de 12,00 € utilisé sur cette commande sera rendu au client, valable jusqu’au 30/11.';
+    const { fixture } = mount({
+      cancellable: true,
+      voucher: {
+        outcome: 'returned',
+        voucherValueCents: 1_200,
+        expiresAt: '2030-11-30T12:00:00.000Z',
+        sentence,
+      },
+    });
+    expect(el(fixture).querySelector('[data-cancel-voucher]')).toBeNull();
+
+    openWith(fixture, '');
+    expect(el(fixture).querySelector('[data-cancel-voucher]')?.textContent?.trim()).toBe(sentence);
+  });
+
   it('refuse de confirmer sans motif, et le dit', async () => {
-    const { fixture, cancel } = mount({ cancellable: true });
+    const { fixture, cancel } = mount({ cancellable: true, voucher: null });
     openWith(fixture, '   ');
 
     await fixture.componentInstance['confirm']();
@@ -97,7 +115,7 @@ describe('annuler une commande depuis son détail staff', () => {
   });
 
   it('refuse un motif de plus de 500 caractères sans appeler le serveur', async () => {
-    const { fixture, cancel } = mount({ cancellable: true });
+    const { fixture, cancel } = mount({ cancellable: true, voucher: null });
     openWith(fixture, 'x'.repeat(501));
 
     await fixture.componentInstance['confirm']();
@@ -106,7 +124,7 @@ describe('annuler une commande depuis son détail staff', () => {
   });
 
   it('envoie le motif nettoyé, referme, et demande la relecture', async () => {
-    const { fixture, cancel, done } = mount({ cancellable: true });
+    const { fixture, cancel, done } = mount({ cancellable: true, voucher: null });
     openWith(fixture, '  Commande passée en double  ');
 
     await fixture.componentInstance['confirm']();
@@ -118,7 +136,7 @@ describe('annuler une commande depuis son détail staff', () => {
 
   it('affiche telle quelle la phrase d’un refus 409', async () => {
     const sentence = 'Cette commande est déjà annulée.';
-    const { fixture, done } = mount({ cancellable: true }, CAN, async () => {
+    const { fixture, done } = mount({ cancellable: true, voucher: null }, CAN, async () => {
       throw httpError(409, 'orders.cancel.already_cancelled', sentence);
     });
     openWith(fixture, 'Doublon');
@@ -131,7 +149,7 @@ describe('annuler une commande depuis son détail staff', () => {
   });
 
   it('dit d’après le CODE le 500 `not_recorded`, dont le message serveur est masqué', async () => {
-    const { fixture } = mount({ cancellable: true }, CAN, async () => {
+    const { fixture } = mount({ cancellable: true, voucher: null }, CAN, async () => {
       throw httpError(500, 'orders.cancel.not_recorded', 'Une erreur interne est survenue.');
     });
     openWith(fixture, 'Doublon');

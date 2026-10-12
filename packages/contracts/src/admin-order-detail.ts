@@ -34,9 +34,41 @@ export interface AdminOrderView extends OrderView {
 /**
  * `reason` est la phrase du serveur, à montrer telle quelle sous le bouton
  * désactivé : elle nomme le cas et le geste de sortie.
+ *
+ * `voucher` (lot C3b) : ce que l'annulation fera du bon de fidélité que la
+ * commande porte, `null` sans bon.
  */
 export type AdminOrderCancellability =
-  { readonly cancellable: true } | { readonly cancellable: false; readonly reason: string };
+  | { readonly cancellable: true; readonly voucher: AdminCancellationVoucher | null }
+  | { readonly cancellable: false; readonly reason: string };
+
+/**
+ * Ce que l'annulation fera du bon — calculé par la même règle que le geste,
+ * sans verrou (plan `order/plan-annulation-de-commande.md`, C3b.7).
+ * `sentence` est la phrase du serveur, à montrer telle quelle dans la
+ * confirmation ; les montants (centimes HT, l'unité du bon) servent à la mise
+ * en forme. `expiresAt` : instant ISO 8601, la date limite d'origine du bon.
+ */
+export type AdminCancellationVoucher =
+  | {
+      readonly outcome: "returned";
+      readonly voucherValueCents: number;
+      readonly expiresAt: string;
+      readonly sentence: string;
+    }
+  | {
+      readonly outcome: "merged";
+      readonly voucherValueCents: number;
+      readonly remainderValueCents: number;
+      readonly expiresAt: string;
+      readonly sentence: string;
+    }
+  | {
+      readonly outcome: "lapsed";
+      readonly voucherValueCents: number;
+      readonly expiresAt: string;
+      readonly sentence: string;
+    };
 
 /**
  * Le corps de `POST /admin/orders/:id/cancel` — la FORME seule. Le motif vide

@@ -2,12 +2,14 @@ import { Global, Module } from "@nestjs/common";
 
 import { LoyaltyEarningPreviewing } from "../b2b/loyalty/application/services/loyalty-earning-previewing.js";
 import { LoyaltyVoucherQuoting } from "../b2b/loyalty/application/services/loyalty-voucher-quoting.js";
+import { LoyaltyVoucherRestitutionPreviewing } from "../b2b/loyalty/application/services/loyalty-voucher-restitution-previewing.js";
 import { LoyaltyVoucherRedeeming } from "../b2b/loyalty/application/services/loyalty-voucher-redeeming.js";
 import { WelcomeBonusPreviewing } from "../b2b/loyalty/application/services/welcome-bonus-previewing.js";
 import { LoyaltyModule } from "../b2b/loyalty/loyalty.module.js";
 import { LoyaltyEarningPreview } from "../b2b/orders/domain/ports/loyalty-earning-preview.js";
 import { LoyaltyVoucherQuoteReader } from "../b2b/orders/domain/ports/loyalty-voucher-quote.reader.js";
 import { LoyaltyVoucherRedemption } from "../b2b/orders/domain/ports/loyalty-voucher-redemption.js";
+import { VoucherRestitutionPreview } from "../b2b/orders/domain/ports/voucher-restitution-preview.js";
 import { WelcomeBonusPreview } from "../b2b/orders/domain/ports/welcome-bonus-preview.js";
 
 /**
@@ -34,6 +36,8 @@ import { WelcomeBonusPreview } from "../b2b/orders/domain/ports/welcome-bonus-pr
   providers: [
     { provide: LoyaltyVoucherQuoteReader, useExisting: LoyaltyVoucherQuoting },
     { provide: LoyaltyVoucherRedemption, useExisting: LoyaltyVoucherRedeeming },
+    // « Ce que l'annulation fera du bon » : le détail staff le demande (lot C3b).
+    { provide: VoucherRestitutionPreview, useExisting: LoyaltyVoucherRestitutionPreviewing },
     // « Vous gagnerez N points » : le devis connecté le demande (plan E1.2).
     { provide: LoyaltyEarningPreview, useExisting: LoyaltyEarningPreviewing },
     // « N points vous sont offerts » : la confirmation invité le demande (plan bienvenue, lot D).
@@ -42,6 +46,7 @@ import { WelcomeBonusPreview } from "../b2b/orders/domain/ports/welcome-bonus-pr
   exports: [
     LoyaltyVoucherQuoteReader,
     LoyaltyVoucherRedemption,
+    VoucherRestitutionPreview,
     LoyaltyEarningPreview,
     WelcomeBonusPreview,
   ],

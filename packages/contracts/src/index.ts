@@ -319,6 +319,7 @@ export type {
   MyLoyaltyConversionResponse,
   MyLoyaltyEntryKind,
   MyLoyaltyEntryView,
+  MyLoyaltyVoucherStatus,
   MyLoyaltyView,
   MyLoyaltyVoucherView,
   SetLoyaltySettingsPayload,
@@ -597,6 +598,7 @@ export type { VatShareView } from "./order.js";
 export type { AdminOrderRow, AdminOrdersPage, AdminOrdersQuery } from "./admin-order-list.js";
 export type {
   AdminCancelOrderPayload,
+  AdminCancellationVoucher,
   AdminOrderCancellability,
   AdminOrderCompanyView,
   AdminOrderCustomerView,

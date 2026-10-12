@@ -14,6 +14,14 @@ const REGISTRY = b2bMailTemplates({
 });
 const mail = REGISTRY["customer.order-cancelled"];
 
+/** Recopiée dans le texte, jamais comparée à l'horloge. */
+const RETURNED = {
+  outcome: "returned",
+  voucherValueCents: 1_200,
+  remainderValueCents: null,
+  expiresAt: "2030-11-30T12:00:00.000Z",
+} as const;
+
 function sheet(overrides: Partial<ClientSheet> = {}): ClientSheet {
   return {
     orderId: "order_1",
@@ -75,7 +83,7 @@ function sheet(overrides: Partial<ClientSheet> = {}): ClientSheet {
 
 describe("le courriel « commande annulée par l'équipe »", () => {
   it("nomme la commande et son jour, et dit que rien ne sera facturé (total nul)", () => {
-    const rendered = mail({ sheet: sheet(), regime: "free", voucherReturned: false, locale: "fr" });
+    const rendered = mail({ sheet: sheet(), regime: "free", voucher: null, locale: "fr" });
 
     expect(rendered.subject).toBe("Commande ORD-4812 annulée");
     expect(rendered.html).toContain("Votre commande ORD-4812 pour le mardi 8 septembre");
@@ -83,18 +91,47 @@ describe("le courriel « commande annulée par l'équipe »", () => {
     expect(rendered.html).not.toContain("bon de fidélité");
   });
 
-  it("une carte non payée : aucun paiement prélevé ; le bon rendu est annoncé", () => {
-    const rendered = mail({ sheet: sheet(), regime: "due", voucherReturned: true, locale: "fr" });
+  it("une carte non payée : aucun paiement prélevé ; le bon rendu est annoncé, avec sa date", () => {
+    const rendered = mail({ sheet: sheet(), regime: "due", voucher: RETURNED, locale: "fr" });
 
     expect(rendered.html).toContain("Aucun paiement n&#39;a été prélevé.");
-    expect(rendered.html).toContain("Votre bon de fidélité vous est rendu");
+    expect(rendered.html).toMatch(/Votre bon de fidélité de 12,00\s€ vous est rendu/u);
+    expect(rendered.html).toContain("jusqu&#39;au 30 novembre");
+  });
+
+  it("un reliquat refondu : le bon retrouve sa valeur, le reliquat est remplacé (lot C3b)", () => {
+    const rendered = mail({
+      sheet: sheet(),
+      regime: "free",
+      voucher: { ...RETURNED, outcome: "merged", remainderValueCents: 450 },
+      locale: "fr",
+    });
+
+    expect(rendered.html).toMatch(/retrouve sa valeur de 12,00\s€/u);
+    expect(rendered.html).toMatch(/Le bon de 4,50\s€ qui vous avait été remis en reliquat/u);
+  });
+
+  /**
+   * Régression (lot C3b, C3b.1, 5) : C3 disait « votre bon vous est rendu »
+   * pour un bon tombé `expired` à l'annulation — un bon mort annoncé rendu.
+   */
+  it("un bon échu à l'annulation : le courriel se tait sur le bon", () => {
+    const rendered = mail({
+      sheet: sheet(),
+      regime: "due",
+      voucher: { ...RETURNED, outcome: "lapsed" },
+      locale: "fr",
+    });
+
+    expect(rendered.html).not.toContain("bon de fidélité");
+    expect(rendered.html).not.toContain("rendu");
   });
 
   it("sans jour de service, la phrase se passe du jour", () => {
     const rendered = mail({
       sheet: sheet({ requestedFor: null }),
       regime: "free",
-      voucherReturned: false,
+      voucher: null,
       locale: "fr",
     });
 
@@ -102,14 +139,14 @@ describe("le courriel « commande annulée par l'équipe »", () => {
   });
 
   it("ne porte ni QR ni lien de retrait", () => {
-    const rendered = mail({ sheet: sheet(), regime: "due", voucherReturned: false, locale: "fr" });
+    const rendered = mail({ sheet: sheet(), regime: "due", voucher: null, locale: "fr" });
 
     expect(rendered.attachments).toBeUndefined();
     expect(rendered.html).not.toContain("/retrait/");
   });
 
   it("parle italien quand on le lui demande", () => {
-    const rendered = mail({ sheet: sheet(), regime: "free", voucherReturned: false, locale: "it" });
+    const rendered = mail({ sheet: sheet(), regime: "free", voucher: null, locale: "it" });
 
     expect(rendered.subject).toBe("Ordine ORD-4812 annullato");
   });

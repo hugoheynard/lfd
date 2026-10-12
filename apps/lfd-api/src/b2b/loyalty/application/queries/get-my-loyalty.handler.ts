@@ -77,7 +77,7 @@ export class GetMyLoyaltyHandler implements IQueryHandler<GetMyLoyaltyQuery, MyL
     const carriers = await this.carriers.liveOrdersCarrying(
       live.filter((row) => row.status === "reserved").map((row) => row.id),
     );
-    const views = [...live, ...closed].map((row) => toVoucherView(row, now, carriers));
+    const views = [...live, ...closed].flatMap((row) => toVoucherView(row, now, carriers));
     const open = views.filter((view) => view.status === "available" || view.status === "reserved");
     const lapsed = views
       .filter((view) => view.status === "expired" || view.status === "cancelled")
@@ -99,17 +99,27 @@ function toVoucherView(
   row: HolderVoucherRow,
   now: Date,
   carriers: ReadonlyMap<string, { readonly orderId: string; readonly orderNumber: string }>,
-): MyLoyaltyVoucherView {
+): readonly MyLoyaltyVoucherView[] {
+  const status = voucherStatusAt(row.status, row.expiresAt, now);
+  // Un reliquat refondu n'est pas un bon du client : il a retrouvé le parent
+  // (lot C3b). Les lectures ne le sélectionnent pas ; le type le dit aussi.
+  if (status === "merged_back") {
+    return [];
+  }
   const carrier = row.status === "reserved" ? carriers.get(row.id) : undefined;
-  return {
-    id: row.id,
-    valueCents: row.valueCents,
-    issuedAt: row.issuedAt.toISOString(),
-    expiresAt: row.expiresAt.toISOString(),
-    status: voucherStatusAt(row.status, row.expiresAt, now),
-    usedOn:
-      carrier === undefined ? null : { orderId: carrier.orderId, orderNumber: carrier.orderNumber },
-  };
+  return [
+    {
+      id: row.id,
+      valueCents: row.valueCents,
+      issuedAt: row.issuedAt.toISOString(),
+      expiresAt: row.expiresAt.toISOString(),
+      status,
+      usedOn:
+        carrier === undefined
+          ? null
+          : { orderId: carrier.orderId, orderNumber: carrier.orderNumber },
+    },
+  ];
 }
 
 function toEntryView(

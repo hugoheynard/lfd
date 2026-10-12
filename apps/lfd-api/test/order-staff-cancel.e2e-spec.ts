@@ -74,7 +74,7 @@ describe("POST /admin/orders/:id/cancel — carte non payée (décision 7)", () 
     expect(state.cancelledAt).not.toBeNull();
     expect(await withdrawals()).toMatchObject([{ orderId, serviceDay: DAY }]);
     expect(cancelledMails()).toHaveLength(1);
-    expect(cancelledMails()[0]?.data).toMatchObject({ regime: "due", voucherReturned: false });
+    expect(cancelledMails()[0]?.data).toMatchObject({ regime: "due", voucher: null });
     const journal = await ctx.prisma.activityEvent.findMany({ where: { type: "order.cancelled" } });
     expect(journal).toHaveLength(1);
     expect(journal[0]?.payload).toMatchObject({ orderId, reason: REASON, regime: "due" });
@@ -293,19 +293,10 @@ describe("le bon de fidélité", () => {
 
     expect(await voucherStatus(voucherId)).toBe("available");
     expect(cancelledMails()).toHaveLength(1);
-    expect(cancelledMails()[0]?.data).toMatchObject({ voucherReturned: true });
+    expect(cancelledMails()[0]?.data).toMatchObject({ voucher: { outcome: "returned" } });
   });
-
-  it("⚠️ un total nul couvert par un bon (reliquat soldé à la passation) est refusé — hors plan, en attente", async () => {
-    const { id, voucherId } = await placeWithVoucher(1);
-
-    const response = await cancelRequest(id);
-
-    expect(response.status).toBe(409);
-    expect(codeOf(response)).toBe("orders.cancel.voucher_settled");
-    expect(await voucherStatus(voucherId)).toBe("reserved");
-    expect((await orderState(id)).status).toBe(OrderStatus.placed);
-  });
+  // Le total nul couvert par un bon (reliquat soldé à la passation) n'est plus
+  // refusé depuis le lot C3b : `order-staff-cancel-voucher.e2e-spec.ts`.
 });
 
 describe("le guichet du fournil", () => {
@@ -349,7 +340,7 @@ describe("GET /admin/orders/:id — cancellability (C3.8)", () => {
       await ctx.asSub(E2E_STAFF_SUB).get(`/admin/orders/${orderId}`).expect(200),
     );
 
-    expect(before.cancellability).toEqual({ cancellable: true });
+    expect(before.cancellability).toEqual({ cancellable: true, voucher: null });
     expect(after.cancellability).toMatchObject({ cancellable: false });
     expect(after.cancellability).toHaveProperty(
       "reason",

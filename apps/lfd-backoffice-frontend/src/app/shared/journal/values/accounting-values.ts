@@ -101,8 +101,15 @@ export const COLLECTION_RETURN_RESOLUTION = domain('suite d’un retour bancaire
   written_off: COLLECTION_RETURN_RESOLUTION_LABELS.written_off,
 });
 
+/** Comment le bon d'une commande annulée a été rendu (`loyalty.voucher_reinstated`, lot C3b). */
+const VOUCHER_REINSTATEMENT = domain('restitution d’un bon de fidélité', {
+  returned: 'Rendu tel quel',
+  merged: 'Rendu, reliquat refondu dedans',
+});
+
 export const ACCOUNTING_VALUES: ValueFamily = {
   enums: [
+    VOUCHER_REINSTATEMENT,
     SEPA_SCHEME,
     BILLING_RHYTHM_KIND,
     MANDATE_STATUS,

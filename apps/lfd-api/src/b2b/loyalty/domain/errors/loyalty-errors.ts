@@ -319,9 +319,11 @@ const USE_WORDS: Readonly<Record<string, string>> = {
   reserved: "Ce bon de fidélité a déjà servi sur une autre commande",
   expired: "Ce bon de fidélité a expiré",
   cancelled: "Ce bon de fidélité a été annulé",
+  merged_back: "Ce reliquat a été refondu dans son bon d'origine, qui a retrouvé sa valeur",
 };
 
 const STATUS_WORDS: Readonly<Record<string, string>> = {
   expired: "expiré",
   cancelled: "déjà annulé",
+  merged_back: "refondu dans son bon d'origine",
 };

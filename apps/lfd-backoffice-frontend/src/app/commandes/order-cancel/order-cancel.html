@@ -33,6 +33,11 @@
           [(value)]="reason"
           data-cancel-reason
         />
+        @if (voucherSentence(); as voucher) {
+          <fold-callout appearance="inset" variant="info" data-cancel-voucher>{{
+            voucher
+          }}</fold-callout>
+        }
       }
       <fold-inline-confirm
         message="Le client recevra un courriel d'annulation. L'annulation est définitive."

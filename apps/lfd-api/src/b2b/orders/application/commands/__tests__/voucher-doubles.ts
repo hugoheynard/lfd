@@ -3,6 +3,7 @@ import type { OrderVoucher } from "../../../domain/entities/order.js";
 import { LoyaltyVoucherQuoteReader } from "../../../domain/ports/loyalty-voucher-quote.reader.js";
 import {
   LoyaltyVoucherRedemption,
+  type VoucherRestitution,
   type VoucherSettlement,
 } from "../../../domain/ports/loyalty-voucher-redemption.js";
 
@@ -45,8 +46,17 @@ export class RecordingRedemption extends LoyaltyVoucherRedemption {
   readonly calls: string[] = [];
   readonly settlements: VoucherSettlement[] = [];
 
-  constructor(private readonly reserveFails = false) {
+  constructor(
+    private readonly reserveFails = false,
+    /** Ce que `reinstate` rend — un bon rendu par défaut. */
+    private readonly restitution: VoucherRestitution = RETURNED,
+  ) {
     super();
+  }
+
+  reinstate(voucherId: string, order: { readonly id: string }): Promise<VoucherRestitution> {
+    this.calls.push(`reinstate:${voucherId}>${order.id}`);
+    return Promise.resolve(this.restitution);
   }
 
   reserve(voucherId: string, holderUserId: string): Promise<void> {
@@ -65,3 +75,11 @@ export class RecordingRedemption extends LoyaltyVoucherRedemption {
     return Promise.resolve();
   }
 }
+
+/** Un bon de 12,00 € rendu, valable jusqu'à une date sans rapport avec l'horloge du test. */
+export const RETURNED: VoucherRestitution = {
+  kind: "returned",
+  voucherValueCents: 1_200,
+  remainderValueCents: null,
+  expiresAt: new Date(Date.UTC(2030, 10, 30, 12)),
+};
