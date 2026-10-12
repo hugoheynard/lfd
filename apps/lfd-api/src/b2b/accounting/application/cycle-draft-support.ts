@@ -4,7 +4,8 @@ import type { BillableOrdersReader } from "../domain/ports/billable-orders.reade
 import type { CreditorReader } from "../domain/ports/creditor.reader.js";
 import type { DebtorMandateReader } from "../domain/ports/debtor-mandate.reader.js";
 import type { RecordedClosureReader } from "../domain/ports/recorded-closure.reader.js";
-import { cycleAt } from "../domain/services/billing-cycle.js";
+import type { BillingRhythmReader } from "../domain/ports/billing-rhythm.reader.js";
+import { entityCycleAt } from "../domain/services/entity-closures.js";
 import { cycleTagOf, isSchemeFileDepositable, renderPain008 } from "../domain/services/pain008.js";
 import type { SepaScheme } from "../domain/value-objects/sepa-scheme.js";
 
@@ -25,6 +26,7 @@ export interface CycleDraftDeps {
   readonly billable: BillableOrdersReader;
   readonly debtors: DebtorMandateReader;
   readonly closures: RecordedClosureReader;
+  readonly rhythms: BillingRhythmReader;
   readonly clock: Clock;
 }
 
@@ -60,7 +62,12 @@ export async function buildCycleDraft(
   const now = deps.clock.now();
   // La dernière clôture ENREGISTRÉE de l'entité — le lot figé l'écrit depuis
   // le 2026-10-05 (plan `lot-de-prelevement-fige.md`).
-  const cycle = cycleAt(now, await deps.closures.lastClosure(legalEntityId));
+  // Au rythme de facturation de l'entité depuis R4 (plan-rythme-de-facturation, §10).
+  const rhythm = await deps.rhythms.settingOf(legalEntityId);
+  if (rhythm === null) {
+    throw new LegalEntityNotFoundError(legalEntityId);
+  }
+  const cycle = entityCycleAt(now, rhythm, await deps.closures.lastClosure(legalEntityId));
   const lines = await deps.billable.billableBetween(cycle.startsAt, cycle.closesAt);
 
   // Une seule lecture pour TOUT le cycle, tous schémas confondus, et APRÈS

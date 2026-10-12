@@ -1,4 +1,7 @@
-import { InvalidBillingRhythmError } from "../../errors/billing-rhythm-errors.js";
+import {
+  BillingRhythmChangePendingError,
+  InvalidBillingRhythmError,
+} from "../../errors/billing-rhythm-errors.js";
 import { BillingRhythm } from "../../value-objects/billing-rhythm.js";
 import { LegalAddress } from "../../value-objects/legal-address.js";
 import { Siren } from "../../value-objects/siren.js";
@@ -48,7 +51,7 @@ describe("LegalEntity — le rythme de facturation", () => {
   it("programme le nouveau rythme à la prochaine clôture de l'ANCIEN", () => {
     const entity = declared();
 
-    const change = entity.changeBillingRhythm(WEEKLY_MONDAY, AT);
+    const change = entity.changeBillingRhythm(WEEKLY_MONDAY, AT, false);
 
     expect(change).toEqual({ from: MONTHLY_FIRST, to: WEEKLY_MONDAY, effectiveAt: NEXT_FIRST });
     // La période en cours n'est pas coupée : le mensuel fait foi jusqu'à sa clôture.
@@ -63,25 +66,51 @@ describe("LegalEntity — le rythme de facturation", () => {
     const entity = declared();
     const before = entity.toPersistence();
 
-    expect(entity.changeBillingRhythm(BillingRhythm.monthly(1), AT)).toBeNull();
+    expect(entity.changeBillingRhythm(BillingRhythm.monthly(1), AT, false)).toBeNull();
     expect(entity.toPersistence()).toEqual(before);
   });
 
-  it("un second changement avant la prise d'effet REMPLACE le programmé", () => {
+  it("refuse un second changement tant que la clôture de prise d'effet n'est pas facturée", () => {
     const entity = declared();
-    entity.changeBillingRhythm(WEEKLY_MONDAY, AT);
+    entity.changeBillingRhythm(WEEKLY_MONDAY, AT, false);
+    const before = entity.toPersistence();
 
-    const change = entity.changeBillingRhythm(SEMIMONTHLY, AT);
+    expect(() => entity.changeBillingRhythm(SEMIMONTHLY, AT, false)).toThrow(
+      BillingRhythmChangePendingError,
+    );
+    expect(() => entity.changeBillingRhythm(SEMIMONTHLY, AT, false)).toThrow(/1 novembre 2026/);
+    expect(entity.toPersistence()).toEqual(before);
+  });
 
-    expect(change).toEqual({ from: MONTHLY_FIRST, to: SEMIMONTHLY, effectiveAt: NEXT_FIRST });
-    expect(entity.billingRhythm.scheduled?.rhythm.equals(SEMIMONTHLY)).toBe(true);
+  it("refuse encore APRÈS la prise d'effet si la facture n'a pas tenté la clôture", () => {
+    const entity = declared();
+    entity.changeBillingRhythm(WEEKLY_MONDAY, AT, false);
+
+    expect(() => entity.changeBillingRhythm(MONTHLY_FIRST, LATER, false)).toThrow(
+      BillingRhythmChangePendingError,
+    );
+  });
+
+  it("dans la fenêtre 23h55-minuit, une clôture facturée ouvre un changement après elle", () => {
+    const entity = declared();
+    entity.changeBillingRhythm(WEEKLY_MONDAY, AT, false);
+    const eve = new Date(NEXT_FIRST.getTime() - 60_000);
+
+    const change = entity.changeBillingRhythm(SEMIMONTHLY, eve, true);
+
+    // Le hebdomadaire part bien du 1er novembre : le suivant attend SA clôture.
+    expect(change).toEqual({
+      from: WEEKLY_MONDAY,
+      to: SEMIMONTHLY,
+      effectiveAt: new Date("2026-11-01T23:00:00.000Z"),
+    });
   });
 
   it("revenir au rythme en vigueur ANNULE le programmé", () => {
     const entity = declared();
-    entity.changeBillingRhythm(WEEKLY_MONDAY, AT);
+    entity.changeBillingRhythm(WEEKLY_MONDAY, AT, false);
 
-    const change = entity.changeBillingRhythm(MONTHLY_FIRST, AT);
+    const change = entity.changeBillingRhythm(MONTHLY_FIRST, AT, false);
 
     expect(change).toEqual({ from: MONTHLY_FIRST, to: MONTHLY_FIRST, effectiveAt: null });
     expect(entity.billingRhythm.scheduled).toBeNull();
@@ -90,16 +119,16 @@ describe("LegalEntity — le rythme de facturation", () => {
 
   it("redemander le rythme déjà programmé n'est pas un fait", () => {
     const entity = declared();
-    entity.changeBillingRhythm(WEEKLY_MONDAY, AT);
+    entity.changeBillingRhythm(WEEKLY_MONDAY, AT, false);
 
-    expect(entity.changeBillingRhythm(BillingRhythm.weekly(1), AT)).toBeNull();
+    expect(entity.changeBillingRhythm(BillingRhythm.weekly(1), AT, false)).toBeNull();
   });
 
   it("après la prise d'effet, l'ancien programmé est le rythme de départ", () => {
     const entity = declared();
-    entity.changeBillingRhythm(WEEKLY_MONDAY, AT);
+    entity.changeBillingRhythm(WEEKLY_MONDAY, AT, false);
 
-    const change = entity.changeBillingRhythm(MONTHLY_FIRST, LATER);
+    const change = entity.changeBillingRhythm(MONTHLY_FIRST, LATER, true);
 
     // Le hebdomadaire fait foi depuis le 1er novembre : le mensuel ne revient
     // qu'à SA prochaine clôture, le lundi suivant.
@@ -121,7 +150,7 @@ describe("LegalEntity — le rythme de facturation", () => {
 describe("LegalEntity — le rythme à la relecture", () => {
   it("fait l'aller-retour avec un rythme programmé", () => {
     const entity = declared();
-    entity.changeBillingRhythm(SEMIMONTHLY, AT);
+    entity.changeBillingRhythm(SEMIMONTHLY, AT, false);
     const written = entity.toPersistence();
 
     expect(written).toMatchObject({

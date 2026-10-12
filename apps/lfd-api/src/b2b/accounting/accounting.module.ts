@@ -77,6 +77,8 @@ import { MonthlyInvoicingReader } from "./domain/ports/monthly-invoicing.reader.
 import { AdminCardInvoicesController } from "./http/admin-card-invoices.controller.js";
 import { AdminMonthlyInvoicesController } from "./http/admin-monthly-invoices.controller.js";
 import { PrismaInvoiceAutopilotRuns } from "./infrastructure/prisma-invoice-autopilot-runs.js";
+import { InvoicedClosuresReader } from "./domain/ports/invoiced-closures.reader.js";
+import { PrismaInvoicedClosuresReader } from "./infrastructure/prisma-invoiced-closures.reader.js";
 import { PrismaMonthlyInvoiceOutcomes } from "./infrastructure/prisma-monthly-invoice-outcomes.js";
 import { PrismaMonthlyInvoicesReader } from "./infrastructure/prisma-monthly-invoices.reader.js";
 import { PrismaMonthlyInvoicingReader } from "./infrastructure/prisma-monthly-invoicing.reader.js";
@@ -240,6 +242,7 @@ import { PrismaLegalEntityRepository } from "./infrastructure/prisma-legal-entit
     { provide: MonthlyInvoiceOutcomes, useClass: PrismaMonthlyInvoiceOutcomes },
     { provide: MonthlyInvoicesReader, useClass: PrismaMonthlyInvoicesReader },
     { provide: InvoiceAutopilotRuns, useClass: PrismaInvoiceAutopilotRuns },
+    { provide: InvoicedClosuresReader, useClass: PrismaInvoicedClosuresReader },
     { provide: AutomaticMonthlyInvoicer, useClass: BusAutomaticMonthlyInvoicer },
     IssueMonthlyInvoicesHandler,
     RunInvoiceAutopilotHandler,

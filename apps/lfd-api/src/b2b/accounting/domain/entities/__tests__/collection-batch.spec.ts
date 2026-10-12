@@ -4,9 +4,11 @@ import {
   ClosureNotAfterPreviousError,
   CycleNotClosedError,
   DepositRecheckFailedError,
-  FirstClosureNotOnFirstOfMonthError,
+  FirstClosureOffRhythmError,
 } from "../../errors/collection-errors.js";
 import { CollectionNoticesNotSentError } from "../../errors/collection-notice-errors.js";
+import { BillingRhythm } from "../../value-objects/billing-rhythm.js";
+import { BillingRhythmSetting } from "../../value-objects/billing-rhythm-setting.js";
 import { CollectionBatch, type ConstituteBatchInput } from "../collection-batch.js";
 
 const SEPTEMBER = {
@@ -26,6 +28,7 @@ function input(overrides: Partial<ConstituteBatchInput> = {}): ConstituteBatchIn
     scheme: "B2B",
     cycle: SEPTEMBER,
     previousClosure: null,
+    rhythm: BillingRhythmSetting.initial(),
     constituted: CONSTITUTED,
     unmandatedCompanies: [],
     requestedCollectionDay: "2026-10-15",
@@ -64,14 +67,35 @@ describe("le lot de prélèvement", () => {
     ).toThrow(CycleNotClosedError);
   });
 
-  it("la PREMIÈRE clôture tombe un 1er du mois à 00h00 de Paris", () => {
+  it("la PREMIÈRE clôture est une clôture du rythme de l'entité — au 1er par défaut", () => {
     const offCalendar = {
       startsAt: SEPTEMBER.startsAt,
       closesAt: new Date("2026-09-19T22:00:00.000Z"),
     };
 
     expect(() => CollectionBatch.constitute(input({ cycle: offCalendar }))).toThrow(
-      FirstClosureNotOnFirstOfMonthError,
+      FirstClosureOffRhythmError,
+    );
+  });
+
+  it("la première clôture d'une entité hebdomadaire du lundi tombe un lundi", () => {
+    const weekly = BillingRhythmSetting.of(BillingRhythm.weekly(1), null);
+    // Lundi 28 septembre 2026, 00h00 Paris.
+    const monday = { startsAt: SEPTEMBER.startsAt, closesAt: new Date("2026-09-27T22:00:00.000Z") };
+    const tuesday = {
+      startsAt: SEPTEMBER.startsAt,
+      closesAt: new Date("2026-09-28T22:00:00.000Z"),
+    };
+
+    expect(() =>
+      CollectionBatch.constitute(input({ cycle: monday, rhythm: weekly })),
+    ).not.toThrow();
+    expect(() => CollectionBatch.constitute(input({ cycle: tuesday, rhythm: weekly }))).toThrow(
+      FirstClosureOffRhythmError,
+    );
+    // Le 1er octobre n'est pas une clôture du lundi.
+    expect(() => CollectionBatch.constitute(input({ rhythm: weekly }))).toThrow(
+      FirstClosureOffRhythmError,
     );
   });
 

@@ -35,15 +35,18 @@ export class CycleNotClosedError extends BusinessError {
 }
 
 /**
- * La première clôture enregistrée ne tombe pas sur un 1er du mois (§6 bis).
- * Inatteignable par la constitution d'aujourd'hui, qui ne clôture qu'au 1er ;
- * écrite pour le jour où une clôture anticipée sera proposée.
+ * La première clôture enregistrée n'est pas une clôture du rythme de
+ * facturation de l'entité (§6 bis ; au rythme depuis R4 du plan
+ * `plan-rythme-de-facturation.md` — avant, « un 1er du mois »). Inatteignable
+ * par la constitution, qui ne clôture qu'aux clôtures du rythme ; écrite pour
+ * le jour où une clôture anticipée sera proposée. Le code garde sa valeur
+ * d'origine : une valeur n'est pas un nom.
  */
-export class FirstClosureNotOnFirstOfMonthError extends DomainError {
+export class FirstClosureOffRhythmError extends DomainError {
   constructor(readonly closesAt: Date) {
     super(
       "accounting.collection.first_closure_off_calendar",
-      `La première clôture enregistrée doit tomber un 1er du mois à 00h00 (Paris) — reçu ${closesAt.toISOString()}. Le relevé de cycle a déjà montré des mois civils aux clients.`,
+      `La première clôture enregistrée doit être une clôture du rythme de facturation de l'entité, à 00h00 (Paris) — reçu ${closesAt.toISOString()}. Le lot doit fermer la même période que les factures qu'il encaisse.`,
     );
   }
 }
@@ -74,7 +77,7 @@ export class CollectionNotYetOpenError extends BusinessError {
   ) {
     super(
       "accounting.collection.not_yet_open",
-      `Le premier mois prélevable se clôt le ${parisLongDay(firstClosure)} : les commandes passées avant le ${parisLongDay(floorAt)} (mise en service du prélèvement) n'entrent dans aucun lot.`,
+      `La première période prélevable se clôt le ${parisLongDay(firstClosure)} : les commandes passées avant le ${parisLongDay(floorAt)} (mise en service du prélèvement) n'entrent dans aucun lot.`,
     );
   }
 }

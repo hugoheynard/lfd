@@ -477,13 +477,20 @@ export class LegalEntity {
   /**
    * Change le rythme de facturation. **La période en cours n'est jamais
    * coupée** : le nouveau rythme prend effet à la prochaine clôture de
-   * l'ancien ; un second changement avant cette clôture remplace le premier,
-   * et revenir au rythme en vigueur l'annule (plan, §2.3 et §10).
+   * l'ancien. Un seul changement à la fois : tant que la clôture de prise
+   * d'effet n'a pas été tentée par la facture (`scheduledInvoiced`), un autre
+   * rythme est refusé, et revenir au rythme en vigueur annule le programmé
+   * (plan, §2.3, §10 et §12).
    *
    * @returns ce qui a changé, ou `null` — une saisie rejouée n'est pas un fait.
+   * @throws {BillingRhythmChangePendingError} un changement est en attente.
    */
-  changeBillingRhythm(rhythm: BillingRhythm, at: Date): BillingRhythmChange | null {
-    const outcome = this.billingRhythmValue.change(rhythm, at);
+  changeBillingRhythm(
+    rhythm: BillingRhythm,
+    at: Date,
+    scheduledInvoiced: boolean,
+  ): BillingRhythmChange | null {
+    const outcome = this.billingRhythmValue.change(rhythm, at, scheduledInvoiced);
     if (outcome === null) {
       return null;
     }

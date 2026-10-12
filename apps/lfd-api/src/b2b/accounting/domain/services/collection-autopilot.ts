@@ -1,4 +1,5 @@
-import { cycleToConstitute } from "./billing-cycle.js";
+import { lastClosureAtOrBefore } from "./entity-closures.js";
+import type { RhythmTimeline } from "./invoicing-closures.js";
 
 const HOUR_MS = 3_600_000;
 
@@ -15,15 +16,34 @@ export interface AutopilotTurn {
 /**
  * **Le tour de l'automatisme pour une entité** (plan
  * `prelevement-automatique.md`, PA3) : le cycle qu'on constituerait à
- * `now` — le dernier clos, comme le bouton (`cycleToConstitute`) — et si son
+ * `now` — le dernier clos, comme le bouton (`entityCycleToConstitute`) — et si son
  * heure de constitution prévue (clôture + délai) est passée.
  *
- * Pur : l'instant et le délai sont donnés. La clôture ne dépend pas de la
- * dernière clôture enregistrée, seulement du calendrier : c'est ce qui en
- * fait une clé stable pour « déjà tenté ce cycle ».
+ * Depuis R4 (plan `plan-rythme-de-facturation.md`, §10), la clôture est la
+ * dernière du RYTHME DE L'ENTITÉ atteinte à `now` — le mensuel au 1er rend la
+ * clôture d'avant. Une tentative par (entité, clôture) : la table est clée
+ * par l'instant depuis PA3.
+ *
+ * ## Pas de rattrapage clôture par clôture, à dessein
+ *
+ * Une clôture manquée (passage arrêté) n'est pas rejouée seule : la
+ * constitution ne choisit pas sa clôture, elle prend toujours la dernière, et
+ * elle lit les bons depuis le plancher (`collectableOrders(floor, clôture)`)
+ * — ceux d'une période manquée entrent donc dans le lot de la suivante. Le
+ * délai (≤ 23 h, `AUTO_COLLECTION_DELAY_MAX_HOURS`) est plus court que la
+ * plus courte période (une semaine) : la clôture visée est toujours celle
+ * dont l'heure prévue vient de passer, ou n'est pas encore venue.
+ *
+ * Pur : l'instant, le délai et le rythme sont donnés. La clôture ne dépend
+ * pas de la dernière clôture enregistrée, seulement du rythme : c'est ce qui
+ * en fait une clé stable pour « déjà tenté ce cycle ».
  */
-export function autopilotTurn(now: Date, autoCollectionDelayHours: number): AutopilotTurn {
-  const cycleClosesAt = cycleToConstitute(now, null).closesAt;
+export function autopilotTurn(
+  now: Date,
+  autoCollectionDelayHours: number,
+  timeline: RhythmTimeline,
+): AutopilotTurn {
+  const cycleClosesAt = lastClosureAtOrBefore(now, timeline);
   const plannedConstitutionAt = new Date(
     cycleClosesAt.getTime() + autoCollectionDelayHours * HOUR_MS,
   );

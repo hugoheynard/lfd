@@ -4,13 +4,15 @@ import {
   ClosureNotAfterPreviousError,
   CycleNotClosedError,
   DepositRecheckFailedError,
-  FirstClosureNotOnFirstOfMonthError,
+  FirstClosureOffRhythmError,
 } from "../errors/collection-errors.js";
 import {
   CollectionNoticesNotSentError,
   type UnsentNotice,
 } from "../errors/collection-notice-errors.js";
-import { isCalendarClosure, type BillingCycle } from "../services/billing-cycle.js";
+import type { BillingCycle } from "../services/billing-cycle.js";
+import { isEntityClosure } from "../services/entity-closures.js";
+import type { RhythmTimeline } from "../services/invoicing-closures.js";
 import type { SequenceType } from "../services/pain008-document.js";
 import type { SepaScheme } from "../value-objects/sepa-scheme.js";
 import type { CollectionNoticeStatus } from "./collection-notice.js";
@@ -118,6 +120,11 @@ export interface ConstituteBatchInput {
   readonly cycle: BillingCycle;
   /** La dernière clôture enregistrée avant celle-ci, `null` s'il n'y en a pas. */
   readonly previousClosure: Date | null;
+  /**
+   * Le rythme de facturation de l'entité (R4) : la première clôture d'un lot
+   * doit en être une, pour fermer la même période que la facture encaissée.
+   */
+  readonly rhythm: RhythmTimeline;
   readonly constituted: ConstitutionStamp;
   readonly unmandatedCompanies: readonly string[];
   readonly lines: readonly CollectionBatchLine[];
@@ -150,7 +157,7 @@ export class CollectionBatch {
 
   /**
    * @throws {CycleNotClosedError} la clôture est dans le futur.
-   * @throws {FirstClosureNotOnFirstOfMonthError} première clôture hors calendrier.
+   * @throws {FirstClosureOffRhythmError} première clôture hors du rythme de l'entité.
    * @throws {ClosureNotAfterPreviousError} la clôture ne suit pas la précédente.
    */
   static constitute(input: ConstituteBatchInput): CollectionBatch {
@@ -158,8 +165,8 @@ export class CollectionBatch {
     if (cycle.closesAt.getTime() > constituted.at.getTime()) {
       throw new CycleNotClosedError(cycle.closesAt);
     }
-    if (previousClosure === null && !isCalendarClosure(cycle.closesAt)) {
-      throw new FirstClosureNotOnFirstOfMonthError(cycle.closesAt);
+    if (previousClosure === null && !isEntityClosure(cycle.closesAt, input.rhythm)) {
+      throw new FirstClosureOffRhythmError(cycle.closesAt);
     }
     if (previousClosure !== null && previousClosure.getTime() >= cycle.closesAt.getTime()) {
       throw new ClosureNotAfterPreviousError(cycle.closesAt, previousClosure);

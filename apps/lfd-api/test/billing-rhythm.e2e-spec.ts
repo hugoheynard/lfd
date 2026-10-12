@@ -5,7 +5,8 @@
  * Ce que seul le vrai serveur prouve : les colonnes et leurs CHECK acceptent ce
  * que le domaine écrit, le rythme programmé se relit sur la fiche avec sa
  * prise d'effet, un 29 traverse le filtre en 400, le fait tombe au journal, et
- * la route est murée par le droit d'écriture comptable.
+ * la route est murée par le droit d'écriture comptable. Depuis §12, un second
+ * changement en attente est refusé en 409.
  *
  * Aucune date absolue : la prise d'effet attendue est calculée par le domaine
  * depuis l'instant présent.
@@ -123,6 +124,27 @@ describe("le rythme de facturation de l'entité", () => {
       .expect(204);
 
     expect((await read(id)).nextBillingRhythm).toBeNull();
+  });
+
+  /**
+   * §12 : un seul changement à la fois. Le second ne remplace plus le
+   * programmé tant que la facture n'a pas tenté sa clôture de prise d'effet.
+   */
+  it("refuse en 409 un second changement, en nommant la prise d'effet, sans rien écrire", async () => {
+    const id = await declare();
+    await staff()
+      .put(`${BASE}/${id}/billing-rhythm`)
+      .send({ kind: "weekly", days: [1] })
+      .expect(204);
+    const before = await read(id);
+
+    const response = await staff()
+      .put(`${BASE}/${id}/billing-rhythm`)
+      .send({ kind: "semimonthly", days: [1, 16] })
+      .expect(409);
+
+    expect(JSON.stringify(response.body)).toContain("Un seul changement à la fois");
+    expect((await read(id)).nextBillingRhythm).toEqual(before.nextBillingRhythm);
   });
 
   it("refuse le 29 en 400, en disant ce qui est attendu, sans rien écrire", async () => {

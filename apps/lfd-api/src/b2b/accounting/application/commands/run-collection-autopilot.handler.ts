@@ -17,6 +17,7 @@ import {
   type AutoCollectionEntity,
 } from "../../domain/ports/auto-collection-entities.reader.js";
 import { AutomaticCollectionConstituter } from "../../domain/ports/automatic-collection-constituter.js";
+import { BillingRhythmReader } from "../../domain/ports/billing-rhythm.reader.js";
 import { CollectionAutopilotRuns } from "../../domain/ports/collection-autopilot-runs.js";
 import { autopilotTurn } from "../../domain/services/collection-autopilot.js";
 import {
@@ -27,14 +28,14 @@ import {
 
 /** Une constitution qui n'a fait qu'écarter : aucun lot, rien à annoncer. */
 const ONLY_EXCLUSIONS =
-  "Aucun lot : les commandes du mois ont toutes été écartées. Leurs raisons sont à l'écran « Prélèvement du mois ».";
+  "Aucun lot : les commandes de la période ont toutes été écartées. Leurs raisons sont à l'écran « Prélèvement du mois ».";
 
 /**
  * **Le passage de la constitution automatique** (plan
  * `prelevement-automatique.md`, PA3).
  *
  * Pour chaque entité dont l'automatisme est activé et dont l'heure de
- * constitution prévue (clôture + délai) est passée : si le cycle n'a jamais
+ * constitution prévue (dernière clôture de SON rythme + délai, R4) est passée : si le cycle n'a jamais
  * été tenté, UNE tentative — la même constitution que le bouton, sous
  * l'auteur `system`, avis compris (PA2). Son issue est rangée et journalisée.
  *
@@ -60,6 +61,7 @@ export class RunCollectionAutopilotHandler implements ICommandHandler<
 
   constructor(
     private readonly entities: AutoCollectionEntitiesReader,
+    private readonly rhythms: BillingRhythmReader,
     private readonly runs: CollectionAutopilotRuns,
     private readonly constituter: AutomaticCollectionConstituter,
     private readonly events: DomainEventPublisher,
@@ -82,7 +84,11 @@ export class RunCollectionAutopilotHandler implements ICommandHandler<
   /** Le tour d'une entité : `null` quand il n'y avait rien à tenter. */
   private async turn(entity: AutoCollectionEntity, now: Date): Promise<AutopilotRunReport | null> {
     const { legalEntityId } = entity;
-    const turn = autopilotTurn(now, entity.autoCollectionDelayHours);
+    const setting = await this.rhythms.settingOf(legalEntityId);
+    if (setting === null) {
+      return null;
+    }
+    const turn = autopilotTurn(now, entity.autoCollectionDelayHours, setting);
     if (!turn.due || (await this.runs.attempted(legalEntityId, turn.cycleClosesAt))) {
       return null;
     }

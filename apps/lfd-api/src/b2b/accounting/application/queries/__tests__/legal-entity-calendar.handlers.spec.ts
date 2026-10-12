@@ -9,7 +9,10 @@ import {
 } from "../../../domain/ports/last-autopilot-run.reader.js";
 import { RecordedClosureReader } from "../../../domain/ports/recorded-closure.reader.js";
 import { toView } from "../../../infrastructure/legal-entity.mapper.js";
+import { BillingRhythm } from "../../../domain/value-objects/billing-rhythm.js";
+import { BillingRhythmSetting } from "../../../domain/value-objects/billing-rhythm-setting.js";
 import { declaredEntity } from "../../commands/__tests__/mandate-setting-doubles.js";
+import { FixedRhythms } from "../../commands/__tests__/monthly-invoice-doubles.js";
 import { GetLegalEntityHandler } from "../get-legal-entity.handler.js";
 import { ListLegalEntitiesHandler } from "../list-legal-entities.handler.js";
 import { GetLegalEntityQuery } from "../legal-entity-queries.js";
@@ -74,6 +77,7 @@ describe("la fiche d'une entité porte le calendrier de son cycle en cours", () 
       new OneEntity(record()),
       new NoClosure(),
       new NoRun(),
+      new FixedRhythms(),
       new FixedClock(NOW),
     );
 
@@ -96,12 +100,14 @@ describe("la fiche d'une entité porte le calendrier de son cycle en cours", () 
       reader,
       new NoClosure(),
       new NoRun(),
+      new FixedRhythms(),
       clock,
     ).execute();
     const one = await new GetLegalEntityHandler(
       reader,
       new NoClosure(),
       new NoRun(),
+      new FixedRhythms(),
       clock,
     ).execute(new GetLegalEntityQuery("le1"));
 
@@ -113,6 +119,7 @@ describe("la fiche d'une entité porte le calendrier de son cycle en cours", () 
       new OneEntity(record()),
       new NoClosure(),
       new OneRun(),
+      new FixedRhythms(),
       new FixedClock(NOW),
     );
 
@@ -131,9 +138,26 @@ describe("la fiche d'une entité porte le calendrier de son cycle en cours", () 
       new OneEntity(record()),
       new NoClosure(),
       new NoRun(),
+      new FixedRhythms(),
       new FixedClock(NOW),
     ).execute(new GetLegalEntityQuery("le1"));
 
     expect(view.lastAutopilotRun).toBeNull();
+  });
+
+  it("une entité hebdomadaire du lundi : le calendrier court jusqu'au lundi suivant (R4)", async () => {
+    const view = await new GetLegalEntityHandler(
+      new OneEntity(record()),
+      new NoClosure(),
+      new NoRun(),
+      new FixedRhythms(BillingRhythmSetting.of(BillingRhythm.weekly(1), null)),
+      new FixedClock(NOW),
+    ).execute(new GetLegalEntityQuery("le1"));
+
+    // Jeudi 8 octobre → lundi 12 octobre 00h00 Paris ; délai de deux heures.
+    expect(view.nextCollection).toMatchObject({
+      closesAt: "2026-10-11T22:00:00.000Z",
+      plannedConstitutionAt: "2026-10-12T00:00:00.000Z",
+    });
   });
 });

@@ -19,7 +19,7 @@ import { GetCollectionPreviewHandler } from "../get-collection-preview.handler.j
  */
 function previewWorld() {
   const w = world();
-  const preview = new GetCollectionPreviewHandler(w.candidates, w.mandates, w.clock);
+  const preview = new GetCollectionPreviewHandler(w.candidates, w.mandates, w.rhythms, w.clock);
   return { ...w, preview };
 }
 

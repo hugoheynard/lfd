@@ -13,6 +13,8 @@ import {
   mandate,
   order,
 } from "../../../domain/services/__tests__/collection-fixtures.js";
+import { BillingRhythm } from "../../../domain/value-objects/billing-rhythm.js";
+import { BillingRhythmSetting } from "../../../domain/value-objects/billing-rhythm-setting.js";
 import { world } from "./collection-world.js";
 import { sendAllQueued } from "./notice-doubles.js";
 
@@ -167,7 +169,7 @@ describe("constituer, annuler, déposer un lot", () => {
 
     await expect(refusal).rejects.toThrow(CollectionNotYetOpenError);
     await expect(refusal).rejects.toThrow(
-      "Le premier mois prélevable se clôt le 1er novembre 2026 : les commandes passées avant le 5 octobre 2026 (mise en service du prélèvement) n'entrent dans aucun lot.",
+      "La première période prélevable se clôt le 1er novembre 2026 : les commandes passées avant le 5 octobre 2026 (mise en service du prélèvement) n'entrent dans aucun lot.",
     );
     expect(w.batches.saved.size).toBe(0);
   });
@@ -182,5 +184,42 @@ describe("constituer, annuler, déposer un lot", () => {
     );
 
     expect(ids).toHaveLength(1);
+  });
+
+  describe("au rythme de l'entité (R4)", () => {
+    const WEEKLY_MONDAY = BillingRhythmSetting.of(BillingRhythm.weekly(1), null);
+    /** Mercredi 7 octobre 2026, midi à Paris. */
+    const WEDNESDAY = new Date("2026-10-07T10:00:00.000Z");
+    /** Lundi 5 octobre 2026, 00h00 Paris : la dernière clôture hebdomadaire atteinte. */
+    const MONDAY_5 = new Date("2026-10-04T22:00:00.000Z");
+
+    it("une entité hebdomadaire constitue la semaine close au dernier lundi", async () => {
+      const w = world(WEEKLY_MONDAY);
+      w.clock.set(WEDNESDAY);
+      w.candidates.orders = [order("c_port")];
+      w.mandates.mandates = [mandate("c_port")];
+
+      const [id] = await w.constitute.execute(
+        new ConstituteCollectionBatchesCommand(ENTITY_ID, STAFF_AUTHOR),
+      );
+
+      expect(w.batches.saved.get(id ?? "")?.toPersistence().cycle).toEqual({
+        startsAt: new Date("2026-09-27T22:00:00.000Z"),
+        closesAt: MONDAY_5,
+      });
+    });
+
+    it("plancher après la clôture : nomme le lundi qui ouvre la première période", async () => {
+      const w = world(WEEKLY_MONDAY);
+      w.clock.set(WEDNESDAY);
+      w.candidates.orders = [order("c_port")];
+      w.mandates.mandates = [mandate("c_port")];
+      // Mardi 6 octobre, Paris : après la clôture du lundi 5.
+      w.candidates.floorAt = new Date("2026-10-06T08:00:00.000Z");
+
+      await expect(
+        w.constitute.execute(new ConstituteCollectionBatchesCommand(ENTITY_ID, STAFF_AUTHOR)),
+      ).rejects.toThrow("La première période prélevable se clôt le 12 octobre 2026");
+    });
   });
 });

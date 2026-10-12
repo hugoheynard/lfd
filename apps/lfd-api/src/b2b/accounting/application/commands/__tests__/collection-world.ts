@@ -2,6 +2,7 @@ import { DirectUnitOfWork } from "../../../../../platform/database/__tests__/dir
 import { RecordingPublisher } from "../../../../../platform/events/__tests__/recording-publisher.js";
 import { FixedClock } from "../../../../../platform/time/fixed-clock.js";
 import { CREDITOR } from "../../../domain/services/__tests__/collection-fixtures.js";
+import { BillingRhythmSetting } from "../../../domain/value-objects/billing-rhythm-setting.js";
 import { CancelCollectionBatchHandler } from "../cancel-collection-batch.handler.js";
 import { ConstituteCollectionBatchesHandler } from "../constitute-collection-batches.handler.js";
 import { DepositCollectionBatchHandler } from "../deposit-collection-batch.handler.js";
@@ -20,6 +21,7 @@ import {
   Steps,
   UlidSequence,
 } from "./collection-doubles.js";
+import { FixedRhythms } from "./monthly-invoice-doubles.js";
 import {
   FixedNoticeContacts,
   FixedRejections,
@@ -38,7 +40,11 @@ import {
 /** Après la clôture de septembre ; comparé au cycle seulement, jamais au mur. */
 export const AFTER_CLOSE = new Date("2026-10-02T09:00:00.000Z");
 
-export function world() {
+/**
+ * @param setting le rythme de facturation de l'entité — mensuel au 1er par
+ *        défaut, le comportement d'avant R4.
+ */
+export function world(setting: BillingRhythmSetting = BillingRhythmSetting.initial()) {
   const steps = new Steps();
   const batches = new MemoryBatches(steps);
   const noticeStore = new NoticeStore();
@@ -57,11 +63,13 @@ export function world() {
     cancelled: new FakeCancelled(),
     events: new RecordingPublisher(),
     clock: new FixedClock(AFTER_CLOSE),
+    rhythms: new FixedRhythms(setting),
   };
   const constitute = new ConstituteCollectionBatchesHandler(
     new FixedCreditors(CREDITOR),
     w.candidates,
     w.mandates,
+    w.rhythms,
     w.batches,
     w.orders,
     w.statements,

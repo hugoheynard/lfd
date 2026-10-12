@@ -18,6 +18,7 @@ import {
   CollectionBatchConstitutedEvent,
   type BatchEntity,
 } from "../../domain/events/collection.events.js";
+import { BillingRhythmReader } from "../../domain/ports/billing-rhythm.reader.js";
 import { BillingStatementRepository } from "../../domain/ports/billing-statement.repository.js";
 import { CollectionBatchRepository } from "../../domain/ports/collection-batch.repository.js";
 import { CollectionCandidatesReader } from "../../domain/ports/collection-candidates.reader.js";
@@ -36,8 +37,9 @@ import { noticesOf } from "../collection-notice-support.js";
 import { ConstituteCollectionBatchesCommand } from "./constitute-collection-batches.command.js";
 
 /**
- * **Constitue les lots** d'une entité pour le dernier cycle clos (plan
- * `lot-de-prelevement-fige.md`).
+ * **Constitue les lots** d'une entité pour le dernier cycle clos — à la
+ * dernière clôture du rythme de l'entité depuis R4 (plans
+ * `lot-de-prelevement-fige.md` et `plan-rythme-de-facturation.md`, §10).
  *
  * Tout se passe sous `pg_advisory_xact_lock` par entité, dans UNE transaction :
  * deux clics simultanés se suivent, et le second ne trouve plus rien à
@@ -76,6 +78,7 @@ export class ConstituteCollectionBatchesHandler implements ICommandHandler<
     private readonly creditors: CreditorReader,
     private readonly candidates: CollectionCandidatesReader,
     private readonly mandates: CollectionMandatesReader,
+    private readonly rhythms: BillingRhythmReader,
     private readonly batches: CollectionBatchRepository,
     private readonly orders: OrderCollectionRepository,
     private readonly statements: BillingStatementRepository,
@@ -102,7 +105,7 @@ export class ConstituteCollectionBatchesHandler implements ICommandHandler<
       await this.lock.acquire(legalEntityId);
       const at = this.clock.now();
       const read = await readAssembly(
-        { candidates: this.candidates, mandates: this.mandates },
+        { candidates: this.candidates, mandates: this.mandates, rhythms: this.rhythms },
         legalEntityId,
         at,
       );

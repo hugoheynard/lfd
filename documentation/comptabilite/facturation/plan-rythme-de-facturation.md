@@ -302,3 +302,26 @@ Remplace la règle « un second changement remplace le programmé » (R2).
 - Ce qui ferme : l'historique des rythmes n'est plus nécessaire (§11), puisque
   aucune clôture ne peut être relue sous un rythme qui l'a précédée de deux
   bascules.
+
+## 13. Ce que R4 a laissé ouvert (2026-10-12)
+
+Bâti : §12 (refus 409 `BillingRhythmChangePendingError`, lu par
+`InvoicedClosuresReader` sur `invoice_autopilot_run`) ; le lot, son
+automatisme, l'aperçu, le brouillon et le calendrier de la fiche au rythme de
+l'entité (`apps/lfd-api/src/b2b/accounting/domain/services/entity-closures.ts`, mensuel au 1er prouvé égal sur
+24 mois) ; la première clôture d'un lot est une clôture du rythme
+(`FirstClosureOffRhythmError`, code inchangé). Pas de migration.
+
+- **Le relevé de cycle reste en mois civils** : la route `statements/cycles`
+  et `?month=` ne nomment aucune entité, une commande non plus — quel rythme
+  lire n'est pas décidé ; et l'identité `AAAA-MM` est partagée avec le
+  dossier de facturation (§11).
+- **`GET /admin/accounting/billing-cycle`** (cycle courant, sans entité) reste
+  au 1er, pour la même raison.
+- **Pas de rattrapage clôture par clôture du lot** : la constitution prend la
+  dernière clôture et lit les bons depuis le plancher ; une période manquée
+  entre dans le lot suivant.
+- **Les prochaines clôtures** ne sont pas exposées dans la vue de l'entité
+  (`upcomingClosures` existe, pur) : contrat et neuf fixtures du back-office.
+- **Les libellés de lot** (`Lot B2B 202611`, `cycleTagOf`) ne distinguent pas
+  deux semaines d'un même mois ; les noms de fichiers, si (identifiant du lot).

@@ -71,7 +71,11 @@ describe("legalEntityColumns", () => {
   it("écrit le rythme en vigueur et le programmé, jours compris", () => {
     const entity = declared();
     // Comparée à aucune horloge : seule la prise d'effet recopiée compte.
-    entity.changeBillingRhythm(BillingRhythm.weekly(3), new Date("2026-10-12T10:00:00.000Z"));
+    entity.changeBillingRhythm(
+      BillingRhythm.weekly(3),
+      new Date("2026-10-12T10:00:00.000Z"),
+      false,
+    );
 
     expect(legalEntityColumns(entity.toPersistence(), CIPHER)).toMatchObject({
       billingRhythmKind: "monthly",

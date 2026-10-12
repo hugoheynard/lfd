@@ -569,6 +569,52 @@ describe("la facture par clôture d'un rythme hebdomadaire (R3)", () => {
   });
 });
 
+describe("le lot par clôture d'un rythme hebdomadaire (R4)", () => {
+  it("le mois, puis la semaine : chaque facture est prélevée par le lot de SA clôture", async () => {
+    const id = await entity();
+    const company = await payer(id);
+    clock.set(new Date(month.cycle().startsAt.getTime() + HOUR_MS));
+    const closingDay = instantToLocal(closesAt).day;
+    const isoWeekday = weekdayOf(closingDay) === 0 ? 7 : weekdayOf(closingDay);
+    await staff()
+      .put(`${ENTITIES}/${id}/billing-rhythm`)
+      .send({ kind: "weekly", days: [isoWeekday] })
+      .expect(204);
+    const week = nextClosureAfter(closesAt, BillingRhythm.weekly(isoWeekday));
+
+    // La facture du mois, puis son lot, deux heures après la clôture du mois.
+    clock.set(new Date(issuableFrom.getTime() + 2 * 60 * 1000));
+    await invoicePass();
+    clock.set(new Date(closesAt.getTime() + 2 * HOUR_MS));
+    expect((await pass()).runs.map((run) => run.outcome)).toEqual(["constituted"]);
+
+    // Un bon de la première semaine ; sa facture la veille de la clôture
+    // hebdomadaire, son lot deux heures après — l'automatisme suit le rythme.
+    await laterOrder(company.id, new Date(closesAt.getTime() + 2 * DAY_MS));
+    clock.set(new Date(invoicingMomentOf(week).getTime() + 2 * 60 * 1000));
+    await invoicePass();
+    clock.set(new Date(week.getTime() + 2 * HOUR_MS));
+    const weekly = await pass();
+
+    expect(weekly.runs.map((run) => run.outcome)).toEqual(["constituted"]);
+    const batches = await ctx.prisma.collectionBatch.findMany({
+      orderBy: { cycleClosesAt: "asc" },
+      include: { lines: { include: { invoices: true } } },
+    });
+    expect(batches.map((batch) => [batch.cycleStartsAt, batch.cycleClosesAt])).toEqual([
+      [month.cycle().startsAt, closesAt],
+      [closesAt, week],
+    ]);
+    const invoices = await ctx.prisma.invoice.findMany({ orderBy: { rank: "asc" } });
+    expect(
+      batches.map((batch) => batch.lines.flatMap((l) => l.invoices.map((i) => i.invoiceId))),
+    ).toEqual([[invoices[0]?.id], [invoices[1]?.id]]);
+    expect(batches[1]?.lines[0]?.amountCents).toBe(invoices[1]?.totalTtcCents);
+    // Rejouer le passage ne tente pas une seconde fois la semaine.
+    expect((await pass()).runs).toEqual([]);
+  });
+});
+
 /** Un bon de plus au compte de ce payeur, passé à `createdAt`. */
 async function laterOrder(companyId: string, createdAt: Date): Promise<void> {
   seq += 1;

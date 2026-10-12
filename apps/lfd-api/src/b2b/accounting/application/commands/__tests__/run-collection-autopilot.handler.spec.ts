@@ -23,7 +23,10 @@ import {
 } from "../../../domain/services/__tests__/collection-fixtures.js";
 import { ConstituteCollectionBatchesCommand } from "../constitute-collection-batches.command.js";
 import { RunCollectionAutopilotHandler } from "../run-collection-autopilot.handler.js";
+import { BillingRhythm } from "../../../domain/value-objects/billing-rhythm.js";
+import { BillingRhythmSetting } from "../../../domain/value-objects/billing-rhythm-setting.js";
 import { world } from "./collection-world.js";
+import { FixedRhythms } from "./monthly-invoice-doubles.js";
 
 /**
  * Le cycle de septembre se clôt le 1er octobre 2026 à 00h00 de Paris (22h00
@@ -107,11 +110,13 @@ function autopilot(
   constituter: AutomaticCollectionConstituter,
   at: Date = AFTER_PLANNED,
   entities: readonly AutoCollectionEntity[] = [ENTITY],
+  rhythms: FixedRhythms = new FixedRhythms(),
 ) {
   const runs = new MemoryRuns();
   const events = new RecordingPublisher();
   const handler = new RunCollectionAutopilotHandler(
     new FixedAutoEntities(entities),
+    rhythms,
     runs,
     constituter,
     events,
@@ -246,5 +251,37 @@ describe("le passage de la constitution automatique (PA3)", () => {
     expect(batch?.toPersistence().constituted.by).toEqual({ kind: "system" });
     // Les avis partent comme pour le bouton (PA2).
     expect(w.events.factTypes()).toContain("collection.notice_queued");
+  });
+
+  describe("au rythme de l'entité (R4)", () => {
+    const weekly = new FixedRhythms(BillingRhythmSetting.of(BillingRhythm.weekly(1), null));
+    /** Lundi 5 et lundi 12 octobre 2026, 00h00 Paris. */
+    const MONDAY_5 = new Date("2026-10-04T22:00:00.000Z");
+    const MONDAY_12 = new Date("2026-10-11T22:00:00.000Z");
+
+    it("une entité hebdomadaire est tentée à chaque lundi, une fois chacun", async () => {
+      const constituter = new ScriptedConstituter(["b1"]);
+      const first = autopilot(constituter, new Date("2026-10-05T08:00:00.000Z"), [ENTITY], weekly);
+      const second = autopilot(constituter, new Date("2026-10-12T08:00:00.000Z"), [ENTITY], weekly);
+
+      const reports = [await first.handler.execute()];
+      first.runs.rows.forEach((row, k) => second.runs.rows.set(k, row));
+      reports.push(await second.handler.execute(), await second.handler.execute());
+
+      expect(reports.map((report) => report.runs.map((run) => run.cycleClosesAt))).toEqual([
+        [MONDAY_5.toISOString()],
+        [MONDAY_12.toISOString()],
+        [],
+      ]);
+      expect(constituter.calls).toEqual([ENTITY_ID, ENTITY_ID]);
+    });
+
+    it("une entité disparue entre deux lectures n'est pas tentée", async () => {
+      const constituter = new ScriptedConstituter(["b1"]);
+      const { handler } = autopilot(constituter, AFTER_PLANNED, [ENTITY], new FixedRhythms(null));
+
+      expect((await handler.execute()).runs).toEqual([]);
+      expect(constituter.calls).toEqual([]);
+    });
   });
 });

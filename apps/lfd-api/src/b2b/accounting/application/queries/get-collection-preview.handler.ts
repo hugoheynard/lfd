@@ -7,9 +7,10 @@ import { QueryHandler, type IQueryHandler } from "@nestjs/cqrs";
 
 import { Clock } from "../../../../platform/time/clock.js";
 import { CollectionNotYetOpenError } from "../../domain/errors/collection-errors.js";
+import { BillingRhythmReader } from "../../domain/ports/billing-rhythm.reader.js";
 import { CollectionCandidatesReader } from "../../domain/ports/collection-candidates.reader.js";
 import { CollectionMandatesReader } from "../../domain/ports/collection-mandates.reader.js";
-import { cycleAt } from "../../domain/services/billing-cycle.js";
+import { entityCycleAt } from "../../domain/services/entity-closures.js";
 import { readAssembly, type ReadAssembly } from "../collection-constitution-support.js";
 import { GetCollectionPreviewQuery } from "./collection-batch-queries.js";
 
@@ -20,8 +21,8 @@ import { GetCollectionPreviewQuery } from "./collection-batch-queries.js";
  * ## Calculé comme le lot, par le même chemin
  *
  * `readAssembly` puis `assembleCollection`, exactement ceux de la
- * constitution — seul le cycle change (`cycleAt`, celui qui court, au lieu
- * du dernier clos). Le montant d'une ligne est donc le total de SA facture,
+ * constitution — seul le cycle change (`entityCycleAt`, celui qui court au
+ * rythme de l'entité, au lieu du dernier clos). Le montant d'une ligne est donc le total de SA facture,
  * pas la somme de ses bons : un aperçu qui sommerait les bons annoncerait un
  * autre chiffre que celui du fichier.
  *
@@ -45,16 +46,17 @@ export class GetCollectionPreviewHandler implements IQueryHandler<
   constructor(
     private readonly candidates: CollectionCandidatesReader,
     private readonly mandates: CollectionMandatesReader,
+    private readonly rhythms: BillingRhythmReader,
     private readonly clock: Clock,
   ) {}
 
   async execute(query: GetCollectionPreviewQuery): Promise<CollectionPreviewView> {
     try {
       const read = await readAssembly(
-        { candidates: this.candidates, mandates: this.mandates },
+        { candidates: this.candidates, mandates: this.mandates, rhythms: this.rhythms },
         query.legalEntityId,
         this.clock.now(),
-        { cycleOf: cycleAt, simulateUninvoiced: true },
+        { cycleOf: entityCycleAt, simulateUninvoiced: true },
       );
       return toView(read);
     } catch (caught) {
