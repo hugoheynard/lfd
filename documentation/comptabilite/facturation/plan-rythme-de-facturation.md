@@ -358,3 +358,7 @@ clôtures manquées.
   `AutopilotCoverageReader` ; migration `20261012300000_la_tentative_manquee`
   (CHECK de l'issue élargi à `missed`).
 - Un lot manuel annulé ne couvre plus : ses clôtures redeviennent manquées.
+
+- **Un lot manuel annulé ne couvre plus rien** : ses clôtures redeviennent
+  manquées (Hugo, 2026-10-12, « oui d'accord ») — l'argent n'a pas été
+  prélevé.
