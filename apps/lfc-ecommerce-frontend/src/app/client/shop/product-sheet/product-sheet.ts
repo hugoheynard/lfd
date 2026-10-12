@@ -45,7 +45,7 @@ export type SheetCtaState = 'add' | 'update' | 'inCart';
  *
  * Ce que la maquette montre et que le serveur ne sert pas — pièce, allergènes,
  * clôture — n'a PAS de ligne ici : une ligne vide ou inventée mentirait
- * (plan `plan-boutique-pro-cartes-et-fiche.md`).
+ * (plan `architecture-boutique-pro-cartes-et-fiche.md`).
  */
 @Component({
   selector: 'app-product-sheet',
