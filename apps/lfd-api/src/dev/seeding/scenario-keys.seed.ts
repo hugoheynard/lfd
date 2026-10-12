@@ -5,7 +5,7 @@ import type { PlacedOrder } from "./order-placing.seed.js";
 
 /**
  * **Retrouver, d'une requête à l'autre, les commandes du jour que le scénario a
- * posées** (2026-10-05, `documentation/order/plan-jeu-de-donnees-par-etapes.md`).
+ * posées** (2026-10-05, `documentation/order/architecture-jeu-de-donnees-par-etapes.md`).
  *
  * Tant que la journée se jouait d'une traite, les commandes passaient d'une
  * fonction à l'autre en mémoire. Découpée en étapes, chaque étape est une

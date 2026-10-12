@@ -3,7 +3,7 @@
  * échéance.
  *
  * Sortis de `orders.seed.ts` le 2026-10-05, quand la journée du jour a été
- * découpée en étapes (`documentation/order/plan-jeu-de-donnees-par-etapes.md`) :
+ * découpée en étapes (`documentation/order/architecture-jeu-de-donnees-par-etapes.md`) :
  * la file du comptoir (`counter-day.seed.ts`) et l'historique tirent leurs
  * lignes de la même recette, et deux recettes finiraient par se contredire.
  * Pur : aucune lecture, aucune écriture.

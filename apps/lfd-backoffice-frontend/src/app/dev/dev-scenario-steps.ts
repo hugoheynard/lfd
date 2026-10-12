@@ -1,6 +1,6 @@
 /**
  * **Les textes des six étapes de la journée de démo**, mot pour mot du plan
- * (`documentation/order/plan-jeu-de-donnees-par-etapes.md` §1 et §3.2, ordre
+ * (`documentation/order/architecture-jeu-de-donnees-par-etapes.md` §1 et §3.2, ordre
  * validé par Hugo le 2026-10-05 : les tournées sont composées avant la
  * production).
  *

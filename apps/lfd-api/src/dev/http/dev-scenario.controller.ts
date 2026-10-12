@@ -11,7 +11,7 @@ import { DevScenarioService } from "../dev-scenario.service.js";
 
 /**
  * **Le scénario du jour, étape par étape**, depuis la page « Jeu de données »
- * (2026-10-05, `documentation/order/plan-jeu-de-donnees-par-etapes.md` §2).
+ * (2026-10-05, `documentation/order/architecture-jeu-de-donnees-par-etapes.md` §2).
  *
  * Trois routes et pas de « sauter à » : chaque étape reste un geste court, et
  * l'écran qui enchaîne les `next` sait toujours ce qui est en train de se

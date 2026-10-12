@@ -2,7 +2,7 @@ import type { Prisma, PrismaClient } from "../../../platform/database/client/cli
 
 /**
  * **Ce qui appartient au scénario de commandes** — le périmètre de la remise à
- * l'état de base (`documentation/order/plan-jeu-de-donnees-par-etapes.md`
+ * l'état de base (`documentation/order/architecture-jeu-de-donnees-par-etapes.md`
  * §2 bis : « seulement ce qui appartient aux journées et aux clients du
  * scénario : jamais une table entière »).
  *
