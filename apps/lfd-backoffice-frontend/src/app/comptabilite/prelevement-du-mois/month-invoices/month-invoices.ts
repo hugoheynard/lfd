@@ -1,5 +1,9 @@
 import { ChangeDetectionStrategy, Component, computed, input, output } from '@angular/core';
-import type { MonthlyInvoiceAutopilotRunView, MonthlyInvoicesView } from '@lfd/contracts';
+import {
+  instantToLocal,
+  type MonthlyInvoiceAutopilotRunView,
+  type MonthlyInvoicesView,
+} from '@lfd/contracts';
 import {
   FoldButtonComponent,
   FoldCalloutComponent,
@@ -12,7 +16,7 @@ import {
   type FoldTableColumn,
 } from 'fold-ng';
 
-import { longDay, monthKeyName, ofMonth } from '../../collection-month-wording';
+import { longDay } from '../../collection-month-wording';
 import { day, euros, instant } from '../../invoice-dossier-format';
 
 const INVOICE_COLUMNS: readonly FoldTableColumn[] = [
@@ -39,7 +43,7 @@ export interface MonthlyInvoiceRow {
   readonly due: string;
   /** « — » quand aucun mandat unique n'a été figé. */
   readonly mandate: string;
-  /** « Émise en retard, le … » quand elle l'a été après le mois ; `null` sinon. */
+  /** « Émise en retard, le … » quand elle l'a été après la période ; `null` sinon. */
   readonly late: string | null;
   /** « Bons non facturables : … », ou `null`. */
   readonly unbillable: string | null;
@@ -54,11 +58,13 @@ export interface MonthlySignalRow {
 }
 
 /**
- * Une facture émise après le mois porte le jour réel de son émission —
- * jamais antidatée : l'écran le dit, la période facturée reste le mois.
+ * Une facture émise après le dernier jour de sa période porte le jour réel de
+ * son émission — jamais antidatée : l'écran le dit, la période reste la même.
+ *
+ * @param lastDay `AAAA-MM-JJ`, la veille de la clôture (R3).
  */
-export function lateSentence(issuedOn: string, month: string): string | null {
-  return issuedOn.slice(0, 7) > month ? `Émise en retard, le ${day(issuedOn)}` : null;
+export function lateSentence(issuedOn: string, lastDay: string): string | null {
+  return issuedOn > lastDay ? `Émise en retard, le ${day(issuedOn)}` : null;
 }
 
 /** La tentative automatique du mois, en une phrase. */
@@ -79,9 +85,14 @@ export function autopilotSentence(run: MonthlyInvoiceAutopilotRunView): string {
   }
 }
 
+/** `AAAA-MM-JJ` — le dernier jour (Paris) de la période : la veille de sa clôture. */
+export function periodLastDay(periodClosesAtIso: string): string {
+  return instantToLocal(new Date(new Date(periodClosesAtIso).getTime() - 1)).day;
+}
+
 /**
- * **Les factures du mois** (plan `facture-emise.md`) :
- * émises le dernier jour à 23h55, une par payeur légal et par mandat (E4b) ;
+ * **Les factures de la période** (plan `facture-emise.md` ; par clôture depuis R3) :
+ * émises la veille de la clôture à 23h55, une par payeur légal et par mandat (E4b) ;
  * les factures SIGNALÉES (refusées, avec le geste de sortie) ; le bouton qui émet ou reprend.
  * Le lot du 1er encaisse ces factures — il n'y a plus d'arrêté à figer.
  */
@@ -113,17 +124,12 @@ export class MonthInvoices {
   protected readonly signalColumns = SIGNAL_COLUMNS;
   protected readonly rowKey = (row: { readonly key: string }): string => row.key;
 
-  /** « septembre ». */
-  protected readonly monthName = computed(() => {
-    const view = this.view();
-    return view === null ? '' : monthKeyName(view.month);
-  });
+  /** « du 1er au 30 septembre 2026 » — la période de la dernière clôture (R3). */
+  protected readonly periodLabel = computed(() => this.view()?.periodLabel ?? '');
 
-  protected readonly title = computed(() => `Les factures ${ofMonth(this.monthName())}`);
+  protected readonly title = computed(() => `Les factures ${this.periodLabel()}`);
 
-  protected readonly issueLabel = computed(
-    () => `Émettre les factures ${ofMonth(this.monthName())}`,
-  );
+  protected readonly issueLabel = computed(() => `Émettre les factures ${this.periodLabel()}`);
 
   protected readonly subtitle = computed(() => {
     const view = this.view();
@@ -132,7 +138,7 @@ export class MonthInvoices {
     }
     return (
       `Une facture par payeur et par mandat, émise le ${longDay(view.issuableFrom)} à 23h55 ; ` +
-      'le lot du 1er les prélève.'
+      'le lot de la clôture les prélève.'
     );
   });
 
@@ -158,7 +164,8 @@ export class MonthInvoices {
       total: euros(invoice.totalCents),
       due: invoice.dueOn === null ? '—' : day(invoice.dueOn),
       mandate: invoice.mandateReference ?? '—',
-      late: view === null ? null : lateSentence(invoice.issuedOn, view.month),
+      late:
+        view === null ? null : lateSentence(invoice.issuedOn, periodLastDay(view.periodClosesAt)),
       unbillable:
         invoice.unbillableOrders.length === 0
           ? null
@@ -186,7 +193,7 @@ export class MonthInvoices {
   protected onIssue(): void {
     const view = this.view();
     if (view !== null) {
-      this.issue.emit(view.month);
+      this.issue.emit(view.periodClosesAt);
     }
   }
 }

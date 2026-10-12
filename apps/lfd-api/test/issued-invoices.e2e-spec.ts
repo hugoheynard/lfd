@@ -25,7 +25,7 @@ import type { SendMailArgs } from "@lfd/mailer";
 import { InvoiceIssuer } from "../src/b2b/accounting/application/services/invoice-issuer.js";
 import { Invoice } from "../src/b2b/accounting/domain/entities/invoice.js";
 import { InvoiceReader } from "../src/b2b/accounting/domain/ports/invoice.reader.js";
-import { invoicingMomentOf } from "../src/b2b/accounting/domain/services/monthly-invoicing.js";
+import { invoicingMomentOf } from "../src/b2b/accounting/domain/services/invoicing-closures.js";
 import { noticeAmount } from "../src/b2b/accounting/domain/services/collection-notice-wording.js";
 import { StatementMonth } from "../src/b2b/accounting/domain/value-objects/statement-month.js";
 import { AdminTokenVerifier } from "../src/platform/auth/admin-token.verifier.js";
@@ -93,7 +93,7 @@ beforeEach(async () => {
   seq = 0;
   month = StatementMonth.containing(new Date(daysAgo(0))).previous();
   closesAt = month.cycle().closesAt;
-  clock.set(new Date(invoicingMomentOf(month).getTime() + 5 * 60 * 1000));
+  clock.set(new Date(invoicingMomentOf(closesAt).getTime() + 5 * 60 * 1000));
   const startsAt = month.cycle().startsAt;
   await ctx.prisma.collectionFloor.create({ data: { id: true, floorAt: startsAt } });
   await ctx.prisma.invoicingFloor.create({ data: { id: true, floorAt: startsAt } });
@@ -242,7 +242,7 @@ async function billingContact(companyId: string, email: string): Promise<void> {
 async function issue(entityId: string): Promise<void> {
   await staff()
     .post(MONTHLY)
-    .send({ legalEntityId: entityId, month: month.toString() })
+    .send({ legalEntityId: entityId, periodClosesAt: closesAt.toISOString() })
     .expect(200);
   await ctx.drain();
 }

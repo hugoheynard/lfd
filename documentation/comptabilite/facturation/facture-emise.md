@@ -132,11 +132,17 @@ domaine `domain/services/monthly-invoicing.ts`. Routes
   le plancher jusqu'à la fin du mois, qu'aucune 380 ne porte encore ; payeur par
   `billedPayerOf`, mandat par `effectiveMandateOf` (la règle du lot). Les bons
   sans mandat effectif font leur facture, sans moyen de paiement.
-- **Le moment** : `MONTHLY_INVOICE_TIME` = 23:55 ouvre l'émission ET le bouton
-  (`MonthNotYetInvoiceableError` avant). Le cron UTC tombe deux fois ; le
+- **La période** (depuis R3, 2026-10-12,
+  [`plan-rythme-de-facturation.md`](plan-rythme-de-facturation.md)) : une
+  **clôture** du rythme de l'entité, plus un mois. Les issues et les tentatives
+  sont clées par `period_closes_at` (migration `20261012200000`) ; `month`
+  reste en base, nulle et plus écrite. Le passage rattrape dans l'ordre toutes
+  les clôtures manquées (`closuresToAttempt`, au plus 12).
+- **Le moment** : `PERIOD_INVOICE_TIME` = 23:55 la veille de la clôture ouvre
+  l'émission ET le bouton (`PeriodNotYetInvoiceableError` avant). Le cron UTC tombe deux fois ; le
   handler décide sur l'heure de Paris. Le passage horaire du lot (`15 * * * *`)
   garde la facture en tête, en rattrapage seulement. Une tentative par (entité,
-  mois) dans `invoice_autopilot_run`. Ne dépend pas de « préparer le lot tout
+  clôture) dans `invoice_autopilot_run`. Ne dépend pas de « préparer le lot tout
   seul ». L'émission refuse sous une entité qui n'est pas la seule
   (`NotTheInvoicingEntityError`).
 - **Jamais d'antidate** : `issued_on` = dernier jour du mois si l'émission a lieu

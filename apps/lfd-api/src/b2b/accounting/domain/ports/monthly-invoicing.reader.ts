@@ -30,8 +30,11 @@ export abstract class MonthlyInvoicingReader {
   abstract companyNames(companyIds: readonly string[]): Promise<ReadonlyMap<string, string>>;
 
   /**
-   * Les factures déjà émises par l'entité pour ce mois (`AAAA-MM`), en clés
-   * `invoiceGroupKey` (payeur × mandat effectif, E4b).
+   * Les factures déjà émises par l'entité pour la période qui se clôt à
+   * `periodClosesAt`, en clés `invoiceGroupKey` (payeur × mandat effectif, E4b).
    */
-  abstract invoicedGroups(legalEntityId: string, month: string): Promise<ReadonlySet<string>>;
+  abstract invoicedGroups(
+    legalEntityId: string,
+    periodClosesAt: Date,
+  ): Promise<ReadonlySet<string>>;
 }

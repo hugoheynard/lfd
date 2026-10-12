@@ -38,7 +38,7 @@ import { BankReturns } from './bank-returns/bank-returns';
 import { BatchHistory, type HistoryDownload } from './batch-history/batch-history';
 import { ExcludedOrders } from './excluded-orders/excluded-orders';
 import { CardInvoiceSignals } from './card-invoice-signals/card-invoice-signals';
-import { MonthInvoices } from './month-invoices/month-invoices';
+import { MonthInvoices, periodLastDay } from './month-invoices/month-invoices';
 import { MonthPreview } from './month-preview/month-preview';
 import { MonthSchedule } from './month-schedule/month-schedule';
 import { PendingBatch, type PendingBatchGesture } from './pending-batch/pending-batch';
@@ -228,18 +228,19 @@ export class PrelevementDuMoisPage {
   }
 
   /** « Émettre les factures de … » — rejouable ; le compte rendu dit ce qui est parti. */
-  protected async issueInvoices(month: string): Promise<void> {
+  protected async issueInvoices(periodClosesAt: string): Promise<void> {
     const entityId = this.entityId();
     if (entityId !== null) {
       await this.act('invoices', async () => {
-        const report = await this.invoicesApi.issue({ legalEntityId: entityId, month });
-        const late = report.issued.find((issued) => issued.issuedOn.slice(0, 7) > month);
+        const report = await this.invoicesApi.issue({ legalEntityId: entityId, periodClosesAt });
+        const lastDay = periodLastDay(periodClosesAt);
+        const late = report.issued.find((issued) => issued.issuedOn > lastDay);
         this.notify.success(
           (late === undefined ? '' : `Émise(s) en retard, le ${day(late.issuedOn)} — `) +
             `${String(report.issued.length)} facture(s) émise(s), ` +
             `${String(report.blocked.length)} facture(s) signalée(s)` +
             (report.alreadyInvoiced > 0
-              ? `, ${String(report.alreadyInvoiced)} déjà émise(s) pour ce mois.`
+              ? `, ${String(report.alreadyInvoiced)} déjà émise(s) pour cette période.`
               : '.'),
         );
       });

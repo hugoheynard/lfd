@@ -103,9 +103,9 @@ export class PrismaMonthlyInvoicingReader extends MonthlyInvoicingReader {
     return new Map(rows.map((row) => [row.id, row.raisonSociale]));
   }
 
-  async invoicedGroups(legalEntityId: string, month: string): Promise<ReadonlySet<string>> {
+  async invoicedGroups(legalEntityId: string, periodClosesAt: Date): Promise<ReadonlySet<string>> {
     const rows = await this.prisma.invoiceMonthlyOutcome.findMany({
-      where: { legalEntityId, month, outcome: ISSUED_OUTCOME },
+      where: { legalEntityId, periodClosesAt, outcome: ISSUED_OUTCOME },
       select: { payerCompanyId: true, mandateId: true },
     });
     return new Set(

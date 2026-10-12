@@ -1,10 +1,8 @@
-import { addDays, instantToLocal, localToInstant } from "@lfd/contracts";
+import { instantToLocal } from "@lfd/contracts";
 
 import { SEPA_DIRECT_DEBIT, type InvoicePaymentMeans } from "../entities/invoice.types.js";
-import { BillingCycleBoundaryError } from "../errors/accounting-errors.js";
 import type { CollectionMandate } from "../ports/collection-mandates.reader.js";
 import type { BillingFollow } from "../ports/statement-billing.reader.js";
-import { StatementMonth } from "../value-objects/statement-month.js";
 import { billedPayerOf } from "./billed-payer.js";
 import { effectiveMandateOf, type VerdictContext } from "./collection-verdict.js";
 import type { DossierHandoverFact, DossierStopFact } from "./invoice-dossier-history.js";
@@ -15,49 +13,13 @@ import type { FrozenInvoiceOrder } from "./invoice-dossier.types.js";
 /**
  * **La facture du mois**, sa partie pure (plan
  * `documentation/comptabilite/facturation/facture-emise.md`) :
- * quand elle s'émet, à quelle date, qui elle facture, sous quel moyen.
+ * qui elle facture, sous quel moyen.
  *
  * Ni horloge, ni port : l'instant et les bons sont donnés.
  */
 
-/**
- * L'heure de l'émission, le dernier jour du mois, à Paris (§ 4) — 23h55
- * depuis E4b (Hugo, 2026-10-08) : les bons du soir restent sur leur mois.
- * Cinq minutes avant minuit, la plus petite fenêtre que le cron
- * (`55 21,22 * * *`, UTC) tient en heure d'été comme d'hiver ; un bon passé
- * entre 23h55 et minuit va à la facture du mois suivant (arbitré).
- */
-export const MONTHLY_INVOICE_TIME = "23:55";
-
-/** Le dernier jour (local) d'un mois — la date d'émission de ses factures. */
-export function lastDayOf(month: StatementMonth): string {
-  return addDays(instantToLocal(month.cycle().closesAt).day, -1);
-}
-
-/**
- * L'instant à partir duquel les factures d'un mois s'émettent : son dernier
- * jour à 23h55, heure de Paris.
- *
- * @throws {BillingCycleBoundaryError} l'heure n'existe pas ce jour-là (jamais à Paris).
- */
-export function invoicingMomentOf(month: StatementMonth): Date {
-  const day = lastDayOf(month);
-  const moment = localToInstant(day, MONTHLY_INVOICE_TIME);
-  if (moment === null) {
-    throw new BillingCycleBoundaryError(day, MONTHLY_INVOICE_TIME);
-  }
-  return moment;
-}
-
-/**
- * Le mois dont on émet les factures à `now` : le dernier dont l'instant
- * d'émission est passé — le mois courant à partir de son dernier jour 23h55,
- * le précédent avant. Ce qui fait du mois une clé stable pour « déjà tenté ».
- */
-export function monthToInvoice(now: Date): StatementMonth {
-  const current = StatementMonth.containing(now);
-  return invoicingMomentOf(current).getTime() <= now.getTime() ? current : current.previous();
-}
+// Quand elle s'émet et quelle période elle ferme : `invoicing-closures.ts`
+// (R3, la période est une clôture du rythme de l'entité).
 
 /** Un bon passé au compte, pas encore facturé, avec ce qu'il a figé. */
 export interface InvoiceableOrder {
@@ -92,7 +54,7 @@ export interface PayerInvoicePlan {
 
 export interface MonthlyInvoicePlan {
   readonly invoices: readonly PayerInvoicePlan[];
-  /** Les factures (clés `invoiceGroupKey`) déjà émises pour ce mois : rien de neuf pour elles. */
+  /** Les factures (clés `invoiceGroupKey`) déjà émises pour cette période : rien de neuf pour elles. */
   readonly alreadyInvoiced: readonly string[];
 }
 
@@ -103,7 +65,7 @@ export type MandateContext = Pick<
 >;
 
 /**
- * La clé d'une facture du mois dans son mois : le payeur ET le mandat
+ * La clé d'une facture dans sa période (clôture) : le payeur ET le mandat
  * effectif (`null` = aucun). C'est elle qui dit « déjà facturé ».
  */
 export function invoiceGroupKey(payerId: string, mandateId: string | null): string {
@@ -139,9 +101,9 @@ export function ordersByPayer(
  *
  * Ordre déterministe, donc numérotation aussi : les payeurs dans l'ordre de
  * leur premier bon, puis, chez un payeur, ses factures dans l'ordre du
- * premier bon de chacune. Une facture déjà émise pour ce mois ne l'est pas
- * deux fois : ses bons passés depuis (entre 23h55 et minuit) attendent la
- * facture du mois suivant.
+ * premier bon de chacune. Une facture déjà émise pour cette clôture ne
+ * l'est pas deux fois : ses bons passés depuis (entre 23h55 et minuit)
+ * attendent la facture de la période suivante.
  */
 export function planMonthlyInvoices(
   payers: readonly PayerOrders[],

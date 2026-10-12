@@ -41,7 +41,7 @@ export class PrismaMonthlyInvoiceOutcomes extends MonthlyInvoiceOutcomes {
   async recordIssued(key: MonthlyInvoiceOutcomeKey, invoiceId: string): Promise<void> {
     const columns = { ...this.columns(key), outcome: ISSUED_OUTCOME, invoiceId, message: null };
     await this.prisma.invoiceMonthlyOutcome.upsert({
-      where: { legalEntityId_month_payerCompanyId_mandateId: this.id(key) },
+      where: { legalEntityId_periodClosesAt_payerCompanyId_mandateId: this.id(key) },
       create: columns,
       update: columns,
     });
@@ -64,7 +64,7 @@ export class PrismaMonthlyInvoiceOutcomes extends MonthlyInvoiceOutcomes {
   private id(key: MonthlyInvoiceOutcomeKey) {
     return {
       legalEntityId: key.legalEntityId,
-      month: key.month,
+      periodClosesAt: key.periodClosesAt,
       payerCompanyId: key.payerCompanyId,
       mandateId: mandateColumnOf(key.mandateId),
     };

@@ -22,7 +22,7 @@ import {
   camt054,
   pain002,
 } from "../src/b2b/accounting/domain/services/__tests__/bank-return-file-fixtures.js";
-import { invoicingMomentOf } from "../src/b2b/accounting/domain/services/monthly-invoicing.js";
+import { invoicingMomentOf } from "../src/b2b/accounting/domain/services/invoicing-closures.js";
 import { StatementMonth } from "../src/b2b/accounting/domain/value-objects/statement-month.js";
 import { MAILER } from "../src/platform/mailer/mailer.tokens.js";
 import { Clock } from "../src/platform/time/clock.js";
@@ -72,7 +72,7 @@ beforeEach(async () => {
   closesAt = month.cycle().closesAt;
   nextClosesAt = StatementMonth.containing(new Date(closesAt.getTime() + DAY_MS)).cycle().closesAt;
   // Le dernier jour, 23h57 à Paris : la facture du mois est due (E4b).
-  clock.set(new Date(invoicingMomentOf(month).getTime() + 2 * 60 * 1000));
+  clock.set(new Date(invoicingMomentOf(closesAt).getTime() + 2 * 60 * 1000));
   const startsAt = month.cycle().startsAt;
   await ctx.prisma.collectionFloor.create({ data: { id: true, floorAt: startsAt } });
   await ctx.prisma.invoicingFloor.create({ data: { id: true, floorAt: startsAt } });
@@ -86,7 +86,7 @@ function staff(): ReturnType<E2eContext["asSub"]> {
 async function depositedLine(entityId: string): Promise<{ batchId: string; e2e: string }> {
   await staff()
     .post("/admin/accounting/monthly-invoices")
-    .send({ legalEntityId: entityId, month: month.toString() })
+    .send({ legalEntityId: entityId, periodClosesAt: closesAt.toISOString() })
     .expect(200);
   clock.set(new Date(closesAt.getTime() + 2 * HOUR_MS));
   await staff().post(`${COLLECTION}/batches`).send({ legalEntityId: entityId }).expect(201);

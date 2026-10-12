@@ -30,7 +30,8 @@ export interface HourlyAccountingReport extends CollectionAutopilotReport {
  * d'abord la facture du mois. Depuis E4b (2026-10-08), elle s'émet à 23h55
  * par son cron propre (`invoice-autopilot.controller.ts`) : ici, elle ne
  * part plus que pour RATTRAPER un 23h55 manqué — au plus tôt à 00h15 le 1er,
- * jamais avant 23h55 (`monthToInvoice`). La facture passe AVANT le lot :
+ * jamais avant 23h55 la veille (`closuresToAttempt`, R3, qui rattrape toutes
+ * les clôtures manquées). La facture passe AVANT le lot :
  * quand un passage manqué les rend dus ensemble, le lot trouve les factures.
  */
 @Controller("admin/accounting/collection/autopilot")

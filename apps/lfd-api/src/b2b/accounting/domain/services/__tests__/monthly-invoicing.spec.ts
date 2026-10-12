@@ -1,12 +1,8 @@
 import type { BillingFollow } from "../../ports/statement-billing.reader.js";
-import { StatementMonth } from "../../value-objects/statement-month.js";
 import {
   deliveredOnOf,
   invoiceGroupKey,
   invoicePaymentMeansOf,
-  invoicingMomentOf,
-  lastDayOf,
-  monthToInvoice,
   ordersByPayer,
   planMonthlyInvoices,
   type InvoiceableOrder,
@@ -18,10 +14,6 @@ import { ENTITY_ID, frozenOrder, mandate } from "./collection-fixtures.js";
  * La facture du mois, sa partie pure (lot E4). Les dates sont le SUJET des
  * tests et ne sont comparées qu'entre elles : aucune horloge n'est lue.
  */
-
-const SEPTEMBER = StatementMonth.parse("2026-09");
-/** 30 septembre 2026, 23h55 à Paris (heure d'été, UTC+2) — E4b. */
-const SEPTEMBER_MOMENT = new Date("2026-09-30T21:55:00.000Z");
 
 let seq = 0;
 function bon(companyId: string, overrides: Partial<InvoiceableOrder> = {}): InvoiceableOrder {
@@ -75,29 +67,6 @@ function plan(
 ) {
   return planMonthlyInvoices(ordersByPayer(orders, context.follows), context, already);
 }
-
-describe("quand la facture du mois s'émet", () => {
-  it("le dernier jour du mois, à 23h55 heure de Paris (E4b)", () => {
-    expect(lastDayOf(SEPTEMBER)).toBe("2026-09-30");
-    expect(invoicingMomentOf(SEPTEMBER)).toEqual(SEPTEMBER_MOMENT);
-    // Février d'une année non bissextile, à l'heure d'hiver (UTC+1).
-    const february = StatementMonth.parse("2027-02");
-    expect(lastDayOf(february)).toBe("2027-02-28");
-    expect(invoicingMomentOf(february)).toEqual(new Date("2027-02-28T22:55:00.000Z"));
-  });
-
-  it("le mois à facturer est le dernier dont l'heure est passée", () => {
-    expect(monthToInvoice(new Date(SEPTEMBER_MOMENT.getTime() - 1)).toString()).toBe("2026-08");
-    expect(monthToInvoice(SEPTEMBER_MOMENT).toString()).toBe("2026-09");
-    // Le 8 octobre : septembre, tant que le 31 octobre 23h55 n'est pas atteint.
-    expect(monthToInvoice(new Date("2026-10-08T09:00:00.000Z")).toString()).toBe("2026-09");
-  });
-
-  /** Régression E4b : à 22h le dernier jour, on émettait déjà ; plus avant 23h55. */
-  it("à 22h le dernier jour, le mois court encore", () => {
-    expect(monthToInvoice(new Date("2026-09-30T20:00:00.000Z")).toString()).toBe("2026-08");
-  });
-});
 
 describe("ordersByPayer — les bons par payeur légal", () => {
   it("le bon d'un site qui suit sa facturation va au principal (Q3)", () => {

@@ -7,7 +7,9 @@ import {
   type OrderHandoverHistoryFact,
 } from "../../../../../handover/channels/commerce/index.js";
 import type { Invoice } from "../../../domain/entities/invoice.js";
+import { BillingRhythmReader } from "../../../domain/ports/billing-rhythm.reader.js";
 import { InvoiceIssuersReader } from "../../../domain/ports/invoice-issuers.reader.js";
+import { InvoicingFloorReader } from "../../../domain/ports/invoicing-floor.reader.js";
 import { InvoiceNumbering } from "../../../domain/ports/invoice-numbering.js";
 import { InvoiceRepository } from "../../../domain/ports/invoice.repository.js";
 import {
@@ -21,6 +23,7 @@ import {
   invoiceGroupKey,
   type InvoiceableOrder,
 } from "../../../domain/services/monthly-invoicing.js";
+import { BillingRhythmSetting } from "../../../domain/value-objects/billing-rhythm-setting.js";
 import type { CollectionFormName } from "../../../domain/value-objects/collection-form.js";
 import { InvoiceNumber } from "../../../domain/value-objects/invoice-number.js";
 
@@ -84,14 +87,14 @@ export class FakeMonthlyReader extends MonthlyInvoicingReader {
   companyNames(ids: readonly string[]): Promise<ReadonlyMap<string, string>> {
     return Promise.resolve(new Map(ids.map((id) => [id, `Société ${id}`])));
   }
-  invoicedGroups(legalEntityId: string, month: string): Promise<ReadonlySet<string>> {
+  invoicedGroups(legalEntityId: string, periodClosesAt: Date): Promise<ReadonlySet<string>> {
     return Promise.resolve(
       new Set(
         [...this.outcomes.rows.values()]
           .filter(
             (row) =>
               row.key.legalEntityId === legalEntityId &&
-              row.key.month === month &&
+              row.key.periodClosesAt.getTime() === periodClosesAt.getTime() &&
               row.invoiceId !== null,
           )
           .map((row) => invoiceGroupKey(row.key.payerCompanyId, row.key.mandateId)),
@@ -145,5 +148,26 @@ export class NoHandovers extends OrderHandoverHistoryReader {
 export class NoStops extends OrderDeliveryHistoryReader {
   ofOrders(): Promise<readonly OrderDeliveryStopFact[]> {
     return Promise.resolve([]);
+  }
+}
+
+/** Le même réglage pour toute entité connue ; mensuel au 1er par défaut. */
+export class FixedRhythms extends BillingRhythmReader {
+  constructor(
+    private readonly setting: BillingRhythmSetting | null = BillingRhythmSetting.initial(),
+  ) {
+    super();
+  }
+  settingOf(): Promise<BillingRhythmSetting | null> {
+    return Promise.resolve(this.setting);
+  }
+}
+
+export class FixedFloor extends InvoicingFloorReader {
+  constructor(private readonly at: Date | null) {
+    super();
+  }
+  floor(): Promise<Date | null> {
+    return Promise.resolve(this.at);
   }
 }

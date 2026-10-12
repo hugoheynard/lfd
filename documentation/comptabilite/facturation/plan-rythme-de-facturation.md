@@ -249,15 +249,36 @@ prélevés ensemble. Ce que ça retire et ce qui reste :
 
 Lots révisés :
 
-| Lot | Contenu                                                                                                                                                                                                                                      |
-| --- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| R1  | `BillingRhythm` + `nextClosureAfter` / `periodAt`, purs (heure d'été, février, fin d'année)                                                                                                                                                  |
-| R2  | ✅ 2026-10-12 — migration `20261012100000` (rythme et rythme programmé sur `legal_entities`), `LegalEntity.changeBillingRhythm`, `PUT …/billing-rhythm`, fait `legal_entity.billing_rhythm_changed`                                          |
-| R3  | Re-clé `invoice_monthly_outcome` / `invoice_autopilot_run` par `period_closes_at` (sorti de R2 : il part avec ses lecteurs) ; facture par clôture (23h55 la veille), passe automatique et rattrapage de toutes les clôtures manquées, bouton |
-| R4  | Lot et automatisme par clôture, relevé client par période                                                                                                                                                                                    |
-| R5  | Carte de l'entité (choix du rythme et des dates), « Prélèvement du mois » par clôture                                                                                                                                                        |
+| Lot | Contenu                                                                                                                                                                                                                                                                                   |
+| --- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| R1  | `BillingRhythm` + `nextClosureAfter` / `periodAt`, purs (heure d'été, février, fin d'année)                                                                                                                                                                                               |
+| R2  | ✅ 2026-10-12 — migration `20261012100000` (rythme et rythme programmé sur `legal_entities`), `LegalEntity.changeBillingRhythm`, `PUT …/billing-rhythm`, fait `legal_entity.billing_rhythm_changed`                                                                                       |
+| R3  | ✅ 2026-10-12 (migration `20261012200000`) — Re-clé `invoice_monthly_outcome` / `invoice_autopilot_run` par `period_closes_at` (sorti de R2 : il part avec ses lecteurs) ; facture par clôture (23h55 la veille), passe automatique et rattrapage de toutes les clôtures manquées, bouton |
+| R4  | Lot et automatisme par clôture, relevé client par période                                                                                                                                                                                                                                 |
+| R5  | Carte de l'entité (choix du rythme et des dates), « Prélèvement du mois » par clôture                                                                                                                                                                                                     |
 
 **Préavis (Hugo, 2026-10-12) : « on le réduira ».** Le délai de pré-notification
 sera abaissé (jusqu'à 2 jours ouvrés en SEPA B2B) ; la clause CGV et mandat
 est à écrire avec le cabinet AVANT d'abaisser le réglage. R4 n'en dépend
 plus : le délai reste un réglage de l'entité.
+
+## 11. Ce que R3 a laissé ouvert (2026-10-12)
+
+- **La lecture des bons reste `[plancher, clôture)`**, pas `[clôture
+précédente, clôture)` : un bon passé entre 23h55 et minuit la veille d'une
+  clôture déjà facturée est repris par la suivante. La période sert à valider
+  la clôture demandée, au libellé et au rapport.
+- **L'historique des rythmes n'est pas conservé** : `BillingRhythmSetting`
+  ne garde que le courant et le programmé. Un rattrapage qui chevaucherait
+  deux bascules relirait une vieille clôture sous le mauvais rythme. À
+  fermer avant d'ouvrir le réglage à l'écran (R5), par une table d'historique
+  ou en refusant un second changement tant que le premier n'est pas facturé.
+- **Le journal et `IssuedInvoiceSummaryView.period` disent encore `AAAA-MM`**
+  (le mois où la période s'achève) : deux semaines du même mois portent la
+  même étiquette. R4/R5.
+- **Le simulateur de dossier** reste par mois (`StatementMonth`). R4/R5.
+- **Déploiement** : entre `migrate deploy` et la bascule du code, une
+  insertion de l'ancienne API dans ces tables échoue (`period_closes_at`
+  NOT NULL). Ne pas pousser autour de 23h55.
+- **Retour arrière** de la migration : restaurer aussi l'ancienne fonction
+  `invoice_monthly_outcome_final` (message en `OLD."month"`).

@@ -17,8 +17,9 @@ import {
  * Il ne passe QUE la facture, jamais le lot : à 23h55 le dernier jour, la
  * clôture n'est pas atteinte, et le lot reste au passage horaire
  * (`collection-autopilot.controller.ts`). C'est le handler qui décide sur
- * l'heure de Paris (`monthToInvoice`) : les autres jours, et le passage de
- * l'heure qui ne tombe pas à 23h55, se taisent sur un mois déjà tenté.
+ * l'heure de Paris et le rythme de l'entité (`closuresToAttempt`, R3) : les
+ * soirs sans clôture le lendemain, et le passage de l'heure qui ne tombe pas
+ * à 23h55, se taisent sur une clôture déjà tentée.
  */
 @Controller("admin/accounting/monthly-invoices/autopilot")
 @Public()

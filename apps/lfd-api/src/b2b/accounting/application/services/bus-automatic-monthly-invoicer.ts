@@ -29,7 +29,7 @@ export class BusAutomaticMonthlyInvoicer extends AutomaticMonthlyInvoicer {
     super();
   }
 
-  issue(legalEntityId: string, month: string): Promise<MonthlyInvoiceReport> {
+  issue(legalEntityId: string, periodClosesAt: Date): Promise<MonthlyInvoiceReport> {
     const seed = {
       now: this.clock.now(),
       traceId: currentRequestContext()?.traceId ?? newTraceId(),
@@ -37,7 +37,7 @@ export class BusAutomaticMonthlyInvoicer extends AutomaticMonthlyInvoicer {
     };
     return runWithRequestContext(seed, () =>
       this.commands.execute<IssueMonthlyInvoicesCommand, MonthlyInvoiceReport>(
-        new IssueMonthlyInvoicesCommand(legalEntityId, month),
+        new IssueMonthlyInvoicesCommand(legalEntityId, periodClosesAt.toISOString()),
       ),
     );
   }

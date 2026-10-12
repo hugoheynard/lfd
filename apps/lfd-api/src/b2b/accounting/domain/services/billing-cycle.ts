@@ -188,8 +188,11 @@ export function nextClosureAfter(instant: Date, rhythm: BillingRhythm): Date {
 /**
  * La clôture du rythme atteinte à `instant` (≤ `instant`) : celle qui ouvre la
  * période en cours quand aucune clôture n'est enregistrée.
+ *
+ * Elle ignore tout changement de rythme : la clôture précédente RÉELLE d'une
+ * entité se lit par `previousClosureOf` (`invoicing-closures.ts`).
  */
-function closureAtOrBefore(instant: Date, rhythm: BillingRhythm): Date {
+export function closureAtOrBefore(instant: Date, rhythm: BillingRhythm): Date {
   return atLocalMidnight(closingDayFrom(instantToLocal(instant).day, rhythm, -1));
 }
 

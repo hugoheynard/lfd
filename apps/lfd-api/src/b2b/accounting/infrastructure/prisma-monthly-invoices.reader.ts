@@ -22,18 +22,18 @@ const OUTCOMES: readonly MonthlyInvoiceAutopilotOutcomeView[] = [
   "failed",
 ];
 
-/** Les issues du mois, leurs factures, et la tentative automatique — trois lectures. */
+/** Les issues d'une clôture, leurs factures, et la tentative automatique — trois lectures. */
 @Injectable()
 export class PrismaMonthlyInvoicesReader extends MonthlyInvoicesReader {
   constructor(private readonly prisma: PrismaService) {
     super();
   }
 
-  async ofMonth(legalEntityId: string, month: string): Promise<MonthlyInvoicesRead> {
+  async ofPeriod(legalEntityId: string, periodClosesAt: Date): Promise<MonthlyInvoicesRead> {
     const [floor, outcomes, run] = await Promise.all([
       this.prisma.invoicingFloor.findUnique({ where: { id: true } }),
       this.prisma.invoiceMonthlyOutcome.findMany({
-        where: { legalEntityId, month },
+        where: { legalEntityId, periodClosesAt },
         orderBy: [{ payerName: "asc" }, { mandateReference: "asc" }],
         include: {
           invoice: {
@@ -50,7 +50,7 @@ export class PrismaMonthlyInvoicesReader extends MonthlyInvoicesReader {
         },
       }),
       this.prisma.invoiceAutopilotRun.findUnique({
-        where: { legalEntityId_month: { legalEntityId, month } },
+        where: { legalEntityId_periodClosesAt: { legalEntityId, periodClosesAt } },
       }),
     ]);
     return {
@@ -91,7 +91,7 @@ export class PrismaMonthlyInvoicesReader extends MonthlyInvoicesReader {
 }
 
 function runView(run: {
-  readonly month: string;
+  readonly periodClosesAt: Date;
   readonly ranAt: Date;
   readonly outcome: string;
   readonly message: string | null;
@@ -101,7 +101,12 @@ function runView(run: {
   if (outcome === undefined) {
     return null;
   }
-  return { month: run.month, ranAt: run.ranAt.toISOString(), outcome, message: run.message };
+  return {
+    periodClosesAt: run.periodClosesAt.toISOString(),
+    ranAt: run.ranAt.toISOString(),
+    outcome,
+    message: run.message,
+  };
 }
 
 function dayOf(column: Date): string {

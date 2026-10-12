@@ -5,14 +5,14 @@
  * Montants en centimes.
  */
 
-/** Une facture émise pour le mois. */
+/** Une facture émise pour la période. */
 export interface MonthlyInvoiceView {
   readonly invoiceId: string;
   /** `FA-AAAA-NNNNNN`. */
   readonly number: string;
   readonly payerCompanyId: string;
   readonly payerName: string;
-  /** `AAAA-MM-JJ` — le dernier jour du mois, ou le jour réel si émise après (jamais antidatée). */
+  /** `AAAA-MM-JJ` — la veille de la clôture, ou le jour réel si émise après (jamais antidatée). */
   readonly issuedOn: string;
   /** `AAAA-MM-JJ` — la date de prélèvement annoncée. */
   readonly dueOn: string | null;
@@ -40,13 +40,13 @@ export interface MonthlyInvoiceSignalView {
   readonly recordedAt: string;
 }
 
-/** Issue de la tentative automatique (une par mois). */
+/** Issue de la tentative automatique (une par clôture). */
 export type MonthlyInvoiceAutopilotOutcomeView =
   "pending" | "issued" | "nothing_to_invoice" | "not_yet_open" | "failed";
 
 export interface MonthlyInvoiceAutopilotRunView {
-  /** `AAAA-MM`. */
-  readonly month: string;
+  /** ISO — la clôture tentée. */
+  readonly periodClosesAt: string;
   /** ISO. */
   readonly ranAt: string;
   readonly outcome: MonthlyInvoiceAutopilotOutcomeView;
@@ -55,34 +55,45 @@ export interface MonthlyInvoiceAutopilotRunView {
 
 /** `GET admin/accounting/monthly-invoices?legalEntityId=` */
 export interface MonthlyInvoicesView {
-  /** `AAAA-MM` — le dernier mois dont l'heure d'émission est passée. */
-  readonly month: string;
-  /** ISO — le dernier jour du mois, 23h55 à Paris. */
+  /**
+   * ISO — la dernière clôture de l'entité dont l'heure d'émission est passée
+   * (R3 : la période suit le rythme de l'entité, plus le mois civil).
+   */
+  readonly periodClosesAt: string;
+  /** ISO — sa clôture précédente réelle : la période est `[periodStartsAt, periodClosesAt[`. */
+  readonly periodStartsAt: string;
+  /** « du 1er au 30 septembre 2026 » — jours locaux, dernier jour inclus. */
+  readonly periodLabel: string;
+  /** ISO — la veille de la clôture, 23h55 à Paris. */
   readonly issuableFrom: string;
   /** ISO — la mise en service ; `null` si la ligne a disparu (409 à l'émission). */
   readonly floorAt: string | null;
-  /** Le mois se clôt après la mise en service : il se facture. */
+  /** La période se clôt après la mise en service : elle se facture. */
   readonly open: boolean;
   readonly invoices: readonly MonthlyInvoiceView[];
   readonly signaled: readonly MonthlyInvoiceSignalView[];
-  /** La tentative automatique de CE mois ; `null` s'il n'y en a pas eu. */
+  /** La tentative automatique de CETTE clôture ; `null` s'il n'y en a pas eu. */
   readonly autopilotRun: MonthlyInvoiceAutopilotRunView | null;
 }
 
-/** `POST admin/accounting/monthly-invoices` — l'entité et le mois sont demandés, jamais devinés. */
+/** `POST admin/accounting/monthly-invoices` — l'entité et la clôture sont demandées, jamais devinées. */
 export interface IssueMonthlyInvoicesPayload {
   readonly legalEntityId: string;
-  /** `AAAA-MM`. */
-  readonly month: string;
+  /** ISO — une clôture du rythme de l'entité (celle que rend `MonthlyInvoicesView`). */
+  readonly periodClosesAt: string;
 }
 
 /** La réponse du bouton : ce que ce passage a fait. */
 export interface MonthlyInvoiceReportView {
-  readonly month: string;
+  /** ISO. */
+  readonly periodClosesAt: string;
+  /** ISO. */
+  readonly periodStartsAt: string;
+  readonly periodLabel: string;
   readonly issued: readonly {
     readonly payerCompanyId: string;
     readonly number: string;
-    /** Après le mois : émise en retard, ce jour-là. */
+    /** Après la veille de la clôture : émise en retard, ce jour-là. */
     readonly issuedOn: string;
   }[];
   readonly blocked: readonly { readonly payerCompanyId: string; readonly message: string }[];

@@ -7,5 +7,5 @@ import type { MonthlyInvoiceReport } from "../services/monthly-invoice-report.js
  */
 export abstract class AutomaticMonthlyInvoicer {
   /** @throws ce que la facture du mois refuse ; le passage le range. */
-  abstract issue(legalEntityId: string, month: string): Promise<MonthlyInvoiceReport>;
+  abstract issue(legalEntityId: string, periodClosesAt: Date): Promise<MonthlyInvoiceReport>;
 }

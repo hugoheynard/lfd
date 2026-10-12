@@ -8,16 +8,15 @@ import { UnitOfWork } from "../../../../platform/database/unit-of-work.js";
 import { DomainEventPublisher } from "../../../../platform/events/domain-event-publisher.js";
 import { IdGenerator } from "../../../../platform/id/id-generator.js";
 import { Clock } from "../../../../platform/time/clock.js";
-import type { CreditorSnapshot } from "../../domain/creditor-snapshot.js";
-import { statementSellerOf } from "../../domain/entities/billing-statement.js";
 import { InvoiceSignalledEvent } from "../../domain/events/invoice-autopilot.events.js";
 import { LegalEntityNotFoundError } from "../../domain/errors/accounting-errors.js";
 import {
   InvoicingFloorMissingError,
   InvoicingNotYetOpenError,
-  MonthNotYetInvoiceableError,
   NotTheInvoicingEntityError,
+  PeriodNotYetInvoiceableError,
 } from "../../domain/errors/monthly-invoice-errors.js";
+import { BillingRhythmReader } from "../../domain/ports/billing-rhythm.reader.js";
 import { CollectionMandatesReader } from "../../domain/ports/collection-mandates.reader.js";
 import { CreditorReader } from "../../domain/ports/creditor.reader.js";
 import { InvoiceIssuersReader } from "../../domain/ports/invoice-issuers.reader.js";
@@ -27,58 +26,54 @@ import {
 } from "../../domain/ports/monthly-invoice-outcomes.js";
 import { MonthlyInvoicingReader } from "../../domain/ports/monthly-invoicing.reader.js";
 import { StatementBuyerReader } from "../../domain/ports/statement-buyer.reader.js";
+import type { BillingCycle } from "../../domain/services/billing-cycle.js";
 import { collectionDayOf } from "../../domain/services/collection-calendar.js";
-import { invoiceFromDossier } from "../../domain/services/invoice-from-dossier.js";
 import type { InvoiceSellerFacts } from "../../domain/services/invoice-issuance-blockers.js";
-import { simulateInvoiceDossier } from "../../domain/services/invoice-dossier.js";
 import type { MonthlyInvoiceReport } from "../../domain/services/monthly-invoice-report.js";
 import {
-  invoicePaymentMeansOf,
+  invoicedPeriodOf,
   invoicingMomentOf,
   lastDayOf,
+  parsePeriodClosure,
+  periodLabelOf,
+  periodMonthOf,
+} from "../../domain/services/invoicing-closures.js";
+import {
   ordersByPayer,
   planMonthlyInvoices,
   type MonthlyInvoicePlan,
   type PayerInvoicePlan,
 } from "../../domain/services/monthly-invoicing.js";
-import { StatementMonth } from "../../domain/value-objects/statement-month.js";
-import { readMonthlyContext, unique, type MonthlyContext } from "../monthly-invoice-support.js";
+import {
+  draftOf,
+  later,
+  outcomeKey,
+  report,
+  type Issuance,
+  type PayerIssue,
+} from "../monthly-invoice-issuance.js";
+import { readMonthlyContext, unique } from "../monthly-invoice-support.js";
 import { InvoiceIssuer } from "../services/invoice-issuer.js";
 import { IssueMonthlyInvoicesCommand } from "./issue-monthly-invoices.command.js";
 
-/** Ce qui ne change pas d'un payeur à l'autre dans un passage. */
-interface Issuance {
-  readonly legalEntityId: string;
-  readonly month: StatementMonth;
-  readonly issuedOn: string;
-  readonly dueOn: string;
-  readonly creditor: CreditorSnapshot;
-  readonly sellerFacts: InvoiceSellerFacts;
-  readonly context: MonthlyContext;
-  readonly at: Date;
-}
-
-type PayerIssue =
-  | {
-      readonly kind: "issued";
-      readonly payerCompanyId: string;
-      readonly number: string;
-      readonly issuedOn: string;
-    }
-  | { readonly kind: "blocked"; readonly payerCompanyId: string; readonly message: string };
-
 /**
- * **La facture du mois** (plan `facture-emise.md`).
+ * **La facture de la période** (plan `facture-emise.md` ; par clôture depuis
+ * R3, `plan-rythme-de-facturation.md`).
+ *
+ * La période est une CLÔTURE du rythme de l'entité (`invoicedPeriodOf`) ; une
+ * clôture qui n'en est pas une est refusée. Les bons lus vont du plancher à la
+ * clôture, pas de la clôture précédente : un bon passé entre 23h55 et minuit
+ * la veille d'une clôture déjà facturée est rattrapé par la suivante.
  *
  * Pour chaque payeur légal (`billedPayerOf`) qui a des bons passés au compte
- * dans le mois et pas encore facturés : UNE facture 380 **par mandat
+ * avant la clôture et pas encore facturés : UNE facture 380 **par mandat
  * effectif** de ses bons (E4b, option b — une seule s'il n'en a qu'un, ou
  * aucun), calculée par
  * `simulateInvoiceDossier` puis `invoiceFromDossier`, numérotée et écrite
  * par `InvoiceIssuer` — **une transaction courte par payeur**, pour ne pas
- * tenir le compteur pendant tout le mois des autres.
+ * tenir le compteur pendant toute la période des autres.
  *
- * - émise le **dernier jour du mois** (jour local), échéance = la date de
+ * - émise la **veille de la clôture** (jour local), échéance = la date de
  *   prélèvement du calendrier (`collectionDayOf`) ;
  * - moyen de paiement figé : le mandat effectif de la facture (BG-16), aucun
  *   pour la facture des bons sans mandat ;
@@ -101,6 +96,7 @@ export class IssueMonthlyInvoicesHandler implements ICommandHandler<
 
   constructor(
     private readonly reader: MonthlyInvoicingReader,
+    private readonly rhythms: BillingRhythmReader,
     private readonly creditors: CreditorReader,
     private readonly issuers: InvoiceIssuersReader,
     private readonly buyers: StatementBuyerReader,
@@ -117,23 +113,33 @@ export class IssueMonthlyInvoicesHandler implements ICommandHandler<
 
   async execute(command: IssueMonthlyInvoicesCommand): Promise<MonthlyInvoiceReport> {
     const at = this.clock.now();
-    const month = StatementMonth.parse(command.month);
-    const opensAt = invoicingMomentOf(month);
+    const period = await this.periodOf(command);
+    const opensAt = invoicingMomentOf(period.closesAt);
     if (at.getTime() < opensAt.getTime()) {
-      throw new MonthNotYetInvoiceableError(month.toString(), opensAt);
+      throw new PeriodNotYetInvoiceableError(periodLabelOf(period), opensAt);
     }
-    const { plan, invoiced, issuance } = await this.prepare(command.legalEntityId, month, at);
+    const { plan, invoiced, issuance } = await this.prepare(command.legalEntityId, period, at);
     const issues: PayerIssue[] = [];
     for (const invoice of plan.invoices) {
       issues.push(await this.issueFor(invoice, issuance));
     }
-    return report(month, issues, invoiced.size, plan.invoices);
+    return report(issuance, issues, invoiced.size, plan.invoices);
+  }
+
+  /** La période que ferme la clôture demandée, sous le rythme de l'entité. */
+  private async periodOf(command: IssueMonthlyInvoicesCommand): Promise<BillingCycle> {
+    const closesAt = parsePeriodClosure(command.periodClosesAt);
+    const setting = await this.rhythms.settingOf(command.legalEntityId);
+    if (setting === null) {
+      throw new LegalEntityNotFoundError(command.legalEntityId);
+    }
+    return invoicedPeriodOf(closesAt, setting);
   }
 
   /** Tout ce qu'on lit avant la première facture — une fois pour tous les payeurs. */
   private async prepare(
     legalEntityId: string,
-    month: StatementMonth,
+    period: BillingCycle,
     at: Date,
   ): Promise<{
     readonly plan: MonthlyInvoicePlan;
@@ -145,11 +151,12 @@ export class IssueMonthlyInvoicesHandler implements ICommandHandler<
       throw new LegalEntityNotFoundError(legalEntityId);
     }
     const sellerFacts = await this.soleSeller(legalEntityId);
-    const { closesAt } = month.cycle();
-    const floor = await this.openFloor(month, closesAt);
+    const { closesAt } = period;
+    const periodLabel = periodLabelOf(period);
+    const floor = await this.openFloor(periodLabel, closesAt);
     const orders = await this.reader.uninvoicedOrders(floor, closesAt);
     const follows = await this.reader.billingFollowsOf(unique(orders.map((o) => o.companyId)));
-    const invoiced = await this.reader.invoicedGroups(legalEntityId, month.toString());
+    const invoiced = await this.reader.invoicedGroups(legalEntityId, closesAt);
     const payers = ordersByPayer(orders, follows);
     const readers = {
       reader: this.reader,
@@ -161,12 +168,13 @@ export class IssueMonthlyInvoicesHandler implements ICommandHandler<
     const context = await readMonthlyContext(readers, payers, follows, at);
     const plan = planMonthlyInvoices(payers, { legalEntityId, ...context }, invoiced);
     const { preNotificationDays, collectionDaysAfterClosure } = creditor;
-    // Jamais d'antidate : émise après le dernier jour, la facture porte le
-    // jour réel (Paris) ; la période facturée reste le mois.
-    const issuedOn = later(lastDayOf(month), instantToLocal(at).day);
+    // Jamais d'antidate : émise après la veille de la clôture, la facture
+    // porte le jour réel (Paris) ; la période facturée reste la même.
+    const issuedOn = later(lastDayOf(closesAt), instantToLocal(at).day);
     const issuance: Issuance = {
       legalEntityId,
-      month,
+      period,
+      periodLabel,
       issuedOn,
       dueOn: later(
         issuedOn,
@@ -190,13 +198,13 @@ export class IssueMonthlyInvoicesHandler implements ICommandHandler<
     return sole;
   }
 
-  private async openFloor(month: StatementMonth, closesAt: Date): Promise<Date> {
+  private async openFloor(periodLabel: string, closesAt: Date): Promise<Date> {
     const floor = await this.reader.invoicingFloor();
     if (floor === null) {
       throw new InvoicingFloorMissingError();
     }
     if (floor.getTime() >= closesAt.getTime()) {
-      throw new InvoicingNotYetOpenError(month.toString(), floor);
+      throw new InvoicingNotYetOpenError(periodLabel, floor);
     }
     return floor;
   }
@@ -206,7 +214,7 @@ export class IssueMonthlyInvoicesHandler implements ICommandHandler<
     const key = outcomeKey(payer, issuance);
     const { payerId } = payer;
     if (payer.billable.length === 0) {
-      const message = `Aucun bon facturable ce mois-ci : ${key.unbillableOrders.join(", ")} (bon incohérent ou sans taux de TVA) — le signaler à l'équipe technique.`;
+      const message = `Aucun bon facturable sur la période ${issuance.periodLabel} : ${key.unbillableOrders.join(", ")} (bon incohérent ou sans taux de TVA) — le signaler à l'équipe technique.`;
       return this.signal(key, message);
     }
     try {
@@ -234,7 +242,7 @@ export class IssueMonthlyInvoicesHandler implements ICommandHandler<
       await this.events.publishTraced(
         new InvoiceSignalledEvent(
           { id: key.payerCompanyId, name: key.payerName },
-          key.month,
+          periodMonthOf(key.periodClosesAt),
           message,
           key.at,
         ),
@@ -242,76 +250,4 @@ export class IssueMonthlyInvoicesHandler implements ICommandHandler<
     });
     return { kind: "blocked", payerCompanyId: key.payerCompanyId, message };
   }
-}
-
-/** La facture d'un payeur, une fois son numéro réservé — rien n'y est recalculé. */
-function draftOf(
-  payer: PayerInvoicePlan,
-  issuance: Issuance,
-  id: string,
-  number: Parameters<typeof invoiceFromDossier>[0]["number"],
-): ReturnType<typeof invoiceFromDossier> {
-  const { context } = issuance;
-  return invoiceFromDossier({
-    id,
-    number,
-    issuedOn: issuance.issuedOn,
-    dueOn: issuance.dueOn,
-    sellerFacts: issuance.sellerFacts,
-    seller: statementSellerOf(issuance.creditor),
-    buyer: context.buyers.get(payer.payerId) ?? null,
-    // L'adresse de livraison n'est pas figée par bon : aucune n'est imprimée
-    // plutôt qu'une parmi plusieurs (rapport du lot E4).
-    deliveryAddressLines: null,
-    orders: payer.billable.map((order) => ({
-      orderId: order.orderId,
-      reference: order.orderNumber,
-      deliveredOn: context.deliveredOn.get(order.orderId) ?? null,
-    })),
-    paymentMeans: invoicePaymentMeansOf(payer.mandate),
-    // Rien n'est payé d'avance sur un bon au compte : il sera prélevé.
-    prepayment: null,
-    computed: simulateInvoiceDossier(payer.billable.map((order) => order.frozen)).invoice,
-  });
-}
-
-function outcomeKey(payer: PayerInvoicePlan, issuance: Issuance): MonthlyInvoiceOutcomeKey {
-  return {
-    legalEntityId: issuance.legalEntityId,
-    month: issuance.month.toString(),
-    payerCompanyId: payer.payerId,
-    payerName: issuance.context.names.get(payer.payerId) ?? payer.payerId,
-    mandateId: payer.mandate?.mandateId ?? null,
-    mandateReference: payer.mandate?.reference ?? null,
-    unbillableOrders: payer.unbillable.map((order) => order.orderNumber),
-    at: issuance.at,
-  };
-}
-
-function report(
-  month: StatementMonth,
-  issues: readonly PayerIssue[],
-  alreadyInvoiced: number,
-  invoices: readonly PayerInvoicePlan[],
-): MonthlyInvoiceReport {
-  return {
-    month: month.toString(),
-    issued: issues.flatMap((issue) =>
-      issue.kind === "issued"
-        ? [{ payerCompanyId: issue.payerCompanyId, number: issue.number, issuedOn: issue.issuedOn }]
-        : [],
-    ),
-    blocked: issues.flatMap((issue) =>
-      issue.kind === "blocked"
-        ? [{ payerCompanyId: issue.payerCompanyId, message: issue.message }]
-        : [],
-    ),
-    alreadyInvoiced,
-    unbillableOrders: invoices.reduce((sum, invoice) => sum + invoice.unbillable.length, 0),
-  };
-}
-
-/** Le plus tard de deux jours `AAAA-MM-JJ`. */
-function later(left: string, right: string): string {
-  return left >= right ? left : right;
 }

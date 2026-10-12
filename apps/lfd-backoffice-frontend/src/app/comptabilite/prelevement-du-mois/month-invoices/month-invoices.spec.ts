@@ -13,7 +13,9 @@ import { MonthInvoices, autopilotSentence } from './month-invoices';
  */
 
 const VIEW: MonthlyInvoicesView = {
-  month: '2026-09',
+  periodClosesAt: '2026-09-30T22:00:00.000Z',
+  periodStartsAt: '2026-08-31T22:00:00.000Z',
+  periodLabel: 'du 1er au 30 septembre 2026',
   issuableFrom: '2026-09-30T21:55:00.000Z',
   floorAt: '2026-09-01T00:00:00.000Z',
   open: true,
@@ -57,7 +59,7 @@ describe('MonthInvoices', () => {
   it('nomme le mois, liste ses factures, et dit qu’aucun mandat n’a été figé', async () => {
     const { host } = await render(VIEW);
 
-    expect(host.textContent).toContain('Les factures de septembre');
+    expect(host.textContent).toContain('Les factures du 1er au 30 septembre 2026');
     const table = host.querySelector('[data-invoices-table]')?.textContent ?? '';
     expect(table).toContain('FA-2026-000001');
     expect(table).toMatch(/105,50\s€/u);
@@ -70,7 +72,7 @@ describe('MonthInvoices', () => {
 
     host.querySelector<HTMLButtonElement>('[data-issue-invoices]')?.click();
 
-    expect(issued).toEqual(['2026-09']);
+    expect(issued).toEqual(['2026-09-30T22:00:00.000Z']);
   });
 
   it('un mois d’avant la mise en service le dit, sans bouton', async () => {
@@ -104,7 +106,7 @@ describe('MonthInvoices', () => {
     });
 
     expect(host.querySelector('[data-invoices-signaled]')?.textContent).toContain(
-      'Émettre les factures de septembre',
+      'Émettre les factures du 1er au 30 septembre 2026',
     );
     expect(host.querySelector('[data-signaled-table]')?.textContent).toContain('pas de SIREN');
   });
@@ -161,7 +163,11 @@ describe('lateSentence', () => {
 
 describe('autopilotSentence', () => {
   it('dit l’issue de la tentative automatique, et le geste quand elle a échoué', () => {
-    const run = { month: '2026-09', ranAt: '2026-09-30T20:15:00.000Z', message: null };
+    const run = {
+      periodClosesAt: '2026-09-30T22:00:00.000Z',
+      ranAt: '2026-09-30T20:15:00.000Z',
+      message: null,
+    };
     expect(autopilotSentence({ ...run, outcome: 'issued' })).toContain('émises automatiquement');
     expect(autopilotSentence({ ...run, outcome: 'failed', message: 'boum' })).toContain(
       'Le bouton la reprend',

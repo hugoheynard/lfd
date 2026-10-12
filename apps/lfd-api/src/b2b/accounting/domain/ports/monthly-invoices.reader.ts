@@ -4,7 +4,7 @@ import type {
   MonthlyInvoiceView,
 } from "@lfd/contracts";
 
-/** Ce que l'écran lit d'un mois de factures. */
+/** Ce que l'écran lit des factures d'une période. */
 export interface MonthlyInvoicesRead {
   readonly floorAt: Date | null;
   readonly invoices: readonly MonthlyInvoiceView[];
@@ -18,5 +18,5 @@ export interface MonthlyInvoicesRead {
  * Rend des vues : aucun agrégat n'y est relu.
  */
 export abstract class MonthlyInvoicesReader {
-  abstract ofMonth(legalEntityId: string, month: string): Promise<MonthlyInvoicesRead>;
+  abstract ofPeriod(legalEntityId: string, periodClosesAt: Date): Promise<MonthlyInvoicesRead>;
 }

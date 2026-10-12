@@ -144,8 +144,11 @@ model InvoiceNumberCounter {
 model InvoiceMonthlyOutcome {
   legalEntityId    String      @map("legal_entity_id")
   legalEntity      LegalEntity @relation(fields: [legalEntityId], references: [id], onDelete: Restrict)
-  /// `AAAA-MM` — le mois des COMMANDES (Q2).
-  month            String
+  /// `AAAA-MM` — l'ancienne clé (E4). MORTE depuis R3 : plus écrite, gardée
+  /// en base (CLAUDE.md §0), NULL pour toute issue d'après.
+  month            String?
+  /// La clôture de la période facturée — clé depuis R3 (rythme de l'entité).
+  periodClosesAt   DateTime    @map("period_closes_at") @db.Timestamptz(3)
   /// Le payeur légal — opaque.
   payerCompanyId   String      @map("payer_company_id")
   payerName        String      @map("payer_name")
@@ -164,22 +167,25 @@ model InvoiceMonthlyOutcome {
   unbillableOrders String[]    @default([]) @map("unbillable_orders")
   recordedAt       DateTime    @map("recorded_at") @db.Timestamptz(3)
 
-  @@id([legalEntityId, month, payerCompanyId, mandateId])
+  @@id([legalEntityId, periodClosesAt, payerCompanyId, mandateId])
   @@map("invoice_monthly_outcome")
   @@schema("public")
 }
 
-/// UNE tentative du passage automatique de la facture du mois par (entité, mois).
+/// UNE tentative du passage automatique de la facture par (entité, clôture) — R3.
 model InvoiceAutopilotRun {
-  legalEntityId String      @map("legal_entity_id")
-  legalEntity   LegalEntity @relation(fields: [legalEntityId], references: [id], onDelete: Restrict)
-  month         String
-  ranAt         DateTime    @map("ran_at") @db.Timestamptz(3)
+  legalEntityId  String      @map("legal_entity_id")
+  legalEntity    LegalEntity @relation(fields: [legalEntityId], references: [id], onDelete: Restrict)
+  /// `AAAA-MM` — l'ancienne clé (E4). MORTE depuis R3 : plus écrite.
+  month          String?
+  /// La clôture tentée — clé depuis R3.
+  periodClosesAt DateTime    @map("period_closes_at") @db.Timestamptz(3)
+  ranAt          DateTime    @map("ran_at") @db.Timestamptz(3)
   /// `pending` | `issued` | `nothing_to_invoice` | `not_yet_open` | `failed`.
-  outcome       String
-  message       String?
+  outcome        String
+  message        String?
 
-  @@id([legalEntityId, month])
+  @@id([legalEntityId, periodClosesAt])
   @@map("invoice_autopilot_run")
   @@schema("public")
 }

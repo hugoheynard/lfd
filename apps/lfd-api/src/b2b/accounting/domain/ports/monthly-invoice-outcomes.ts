@@ -1,14 +1,14 @@
 /** Ce que la facture du mois retient d'un payeur. */
 export interface MonthlyInvoiceOutcomeKey {
   readonly legalEntityId: string;
-  /** `AAAA-MM`. */
-  readonly month: string;
+  /** La clôture de la période facturée (R3) — avec l'entité, le payeur et le mandat, la clé. */
+  readonly periodClosesAt: Date;
   readonly payerCompanyId: string;
   readonly payerName: string;
   /**
    * Le mandat effectif de la facture (E4b : une facture par payeur ET par
-   * mandat) ; `null` pour celle des bons sans mandat. Avec le payeur et le
-   * mois, la clé de l'issue.
+   * mandat) ; `null` pour celle des bons sans mandat. Avec le payeur et la
+   * clôture, la clé de l'issue.
    */
   readonly mandateId: string | null;
   /** Sa RUM, pour que l'écran nomme le mandat d'un payeur signalé. */
@@ -29,6 +29,6 @@ export abstract class MonthlyInvoiceOutcomes {
   /** Dans la transaction de l'émission : la facture et son issue partent ensemble. */
   abstract recordIssued(key: MonthlyInvoiceOutcomeKey, invoiceId: string): Promise<void>;
 
-  /** Le refus en clair ; remplace un refus antérieur du même mois. */
+  /** Le refus en clair ; remplace un refus antérieur de la même clôture. */
   abstract recordBlocked(key: MonthlyInvoiceOutcomeKey, message: string): Promise<void>;
 }

@@ -6,8 +6,9 @@ import type { StatementBuyer } from "../../../domain/entities/billing-statement.
 import { SELLER_FACTS } from "../../../domain/entities/__tests__/invoice-fixtures.js";
 import {
   InvoicingNotYetOpenError,
-  MonthNotYetInvoiceableError,
+  NotABillingClosureError,
   NotTheInvoicingEntityError,
+  PeriodNotYetInvoiceableError,
 } from "../../../domain/errors/monthly-invoice-errors.js";
 import { StatementBuyerReader } from "../../../domain/ports/statement-buyer.reader.js";
 import {
@@ -20,6 +21,8 @@ import {
   invoiceGroupKey,
   type InvoiceableOrder,
 } from "../../../domain/services/monthly-invoicing.js";
+import { BillingRhythm } from "../../../domain/value-objects/billing-rhythm.js";
+import { BillingRhythmSetting } from "../../../domain/value-objects/billing-rhythm-setting.js";
 import { InvoiceIssuer } from "../../services/invoice-issuer.js";
 import { RecordingDurable } from "./notice-doubles.js";
 import { IssueMonthlyInvoicesCommand } from "../issue-monthly-invoices.command.js";
@@ -29,6 +32,7 @@ import {
   CountingNumbering,
   FakeMonthlyReader,
   FixedIssuers,
+  FixedRhythms,
   MemoryInvoices,
   MemoryOutcomes,
   NoHandovers,
@@ -36,12 +40,16 @@ import {
 } from "./monthly-invoice-doubles.js";
 
 /**
- * La facture du mois (lot E4) — l'orchestration, ports doublés à la main.
- * Les dates sont le SUJET : l'horloge est FIXE et posée par rapport au mois
- * demandé, aucune ne se compare au calendrier réel.
+ * La facture par période (lot E4, par clôture depuis R3) — l'orchestration,
+ * ports doublés à la main. Les dates sont le SUJET : l'horloge est FIXE et
+ * posée par rapport à la clôture demandée, aucune ne se compare au
+ * calendrier réel.
  */
 
+/** Le mois que le journal lit encore (`periodMonthOf`). */
 const MONTH = "2026-09";
+/** Le 1er octobre 2026 à 00h00, heure de Paris : la clôture de septembre (mensuel au 1er). */
+const CLOSURE = "2026-09-30T22:00:00.000Z";
 /** Le 30 septembre 2026 à 23h56, heure de Paris (E4b : l'émission est à 23h55). */
 const AFTER_MOMENT = new Date("2026-09-30T21:56:00.000Z");
 const FLOOR = new Date("2026-08-31T22:00:00.000Z");
@@ -82,7 +90,14 @@ class BuyersWithout extends StatementBuyerReader {
   }
 }
 
-function harness(options: { buyers?: StatementBuyerReader; at?: Date } = {}) {
+function harness(
+  options: {
+    buyers?: StatementBuyerReader;
+    at?: Date;
+    rhythm?: BillingRhythmSetting;
+    closure?: string;
+  } = {},
+) {
   const invoices = new MemoryInvoices();
   const outcomes = new MemoryOutcomes();
   const reader = new FakeMonthlyReader(invoices, outcomes);
@@ -96,6 +111,7 @@ function harness(options: { buyers?: StatementBuyerReader; at?: Date } = {}) {
   const issuer = new InvoiceIssuer(new CountingNumbering(), invoices, clock, events, uow, durable);
   const handler = new IssueMonthlyInvoicesHandler(
     reader,
+    new FixedRhythms(options.rhythm),
     new FixedCreditors(CREDITOR),
     new FixedIssuers([SELLER_FACTS]),
     options.buyers ?? new FixedBuyers(),
@@ -109,7 +125,8 @@ function harness(options: { buyers?: StatementBuyerReader; at?: Date } = {}) {
     clock,
     uow,
   );
-  const run = () => handler.execute(new IssueMonthlyInvoicesCommand(ENTITY_ID, MONTH));
+  const run = () =>
+    handler.execute(new IssueMonthlyInvoicesCommand(ENTITY_ID, options.closure ?? CLOSURE));
   return { reader, invoices, outcomes, events, durable, mandates, run };
 }
 
@@ -347,7 +364,7 @@ describe("IssueMonthlyInvoices — la facture du mois (E4)", () => {
   it("avant le dernier jour 23h55 : refus, rien n'est lu — 22h ne suffit plus (E4b)", async () => {
     const h = harness({ at: new Date("2026-09-30T21:54:00.000Z") });
 
-    await expect(h.run()).rejects.toThrow(MonthNotYetInvoiceableError);
+    await expect(h.run()).rejects.toThrow(PeriodNotYetInvoiceableError);
     expect(h.reader.asked).toEqual([]);
   });
 
@@ -360,11 +377,12 @@ describe("IssueMonthlyInvoices — la facture du mois (E4)", () => {
 
   it("refuse sous une entité qui n'est pas la seule en service", async () => {
     const h = harness();
-    const other = new IssueMonthlyInvoicesCommand("le_other", MONTH);
+    const other = new IssueMonthlyInvoicesCommand("le_other", CLOSURE);
 
     await expect(
       new IssueMonthlyInvoicesHandler(
         h.reader,
+        new FixedRhythms(),
         new FixedCreditors({ ...CREDITOR, legalEntityId: "le_other" }),
         new FixedIssuers([SELLER_FACTS]),
         new FixedBuyers(),
@@ -386,5 +404,74 @@ describe("IssueMonthlyInvoices — la facture du mois (E4)", () => {
         new DirectUnitOfWork(),
       ).execute(other),
     ).rejects.toThrow(NotTheInvoicingEntityError);
+  });
+
+  it("le rapport nomme la période : sa clôture, sa clôture précédente et son libellé", async () => {
+    const h = harness();
+    h.reader.orders = [bon("c_port")];
+
+    const report = await h.run();
+
+    expect(report).toMatchObject({
+      periodClosesAt: CLOSURE,
+      periodStartsAt: "2026-08-31T22:00:00.000Z",
+      periodLabel: "du 1er au 30 septembre 2026",
+    });
+    expect(h.outcomes.rows.get(PORT)?.key.periodClosesAt).toEqual(new Date(CLOSURE));
+  });
+
+  it("refuse un instant qui n'est pas une clôture du rythme de l'entité, sans rien lire", async () => {
+    // Le 15 septembre à 00h00 à Paris : un jour quelconque pour un mensuel au 1er.
+    const h = harness({ closure: "2026-09-14T22:00:00.000Z" });
+
+    await expect(h.run()).rejects.toThrow(NotABillingClosureError);
+    expect(h.reader.asked).toEqual([]);
+  });
+
+  it("hebdomadaire au lundi : la période du lundi au dimanche, émise le dimanche à 23h55", async () => {
+    const h = harness({
+      rhythm: BillingRhythmSetting.of(BillingRhythm.weekly(1), null),
+      // Le lundi 28 septembre 2026 à 00h00 à Paris.
+      closure: "2026-09-27T22:00:00.000Z",
+      // Le dimanche 27 septembre à 23h56.
+      at: new Date("2026-09-27T21:56:00.000Z"),
+    });
+    h.reader.orders = [bon("c_port")];
+
+    const report = await h.run();
+
+    expect(report.periodLabel).toBe("du 21 au 27 septembre 2026");
+    expect(report.issued.map((issue) => issue.issuedOn)).toEqual(["2026-09-27"]);
+    expect(h.reader.asked).toEqual([{ from: FLOOR, to: new Date("2026-09-27T22:00:00.000Z") }]);
+  });
+
+  it("hebdomadaire : avant le dimanche 23h55, la semaine court encore", async () => {
+    const h = harness({
+      rhythm: BillingRhythmSetting.of(BillingRhythm.weekly(1), null),
+      closure: "2026-09-27T22:00:00.000Z",
+      at: new Date("2026-09-27T21:54:00.000Z"),
+    });
+
+    await expect(h.run()).rejects.toThrow(PeriodNotYetInvoiceableError);
+  });
+
+  it("au changement de rythme, la première période du nouveau part de la dernière clôture de l'ancien", async () => {
+    // Mensuel au 1er, hebdomadaire au lundi à partir du 1er octobre (clôture de l'ancien).
+    const switchAt = new Date(CLOSURE);
+    const h = harness({
+      rhythm: BillingRhythmSetting.of(BillingRhythm.default(), {
+        rhythm: BillingRhythm.weekly(1),
+        effectiveAt: switchAt,
+      }),
+      // Le lundi 5 octobre 2026 à 00h00 à Paris.
+      closure: "2026-10-04T22:00:00.000Z",
+      at: new Date("2026-10-04T21:56:00.000Z"),
+    });
+    h.reader.orders = [bon("c_port")];
+
+    const report = await h.run();
+
+    expect(report.periodStartsAt).toBe(CLOSURE);
+    expect(report.periodLabel).toBe("du 1er au 4 octobre 2026");
   });
 });

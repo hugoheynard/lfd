@@ -80,6 +80,10 @@ import { PrismaInvoiceAutopilotRuns } from "./infrastructure/prisma-invoice-auto
 import { PrismaMonthlyInvoiceOutcomes } from "./infrastructure/prisma-monthly-invoice-outcomes.js";
 import { PrismaMonthlyInvoicesReader } from "./infrastructure/prisma-monthly-invoices.reader.js";
 import { PrismaMonthlyInvoicingReader } from "./infrastructure/prisma-monthly-invoicing.reader.js";
+import { BillingRhythmReader } from "./domain/ports/billing-rhythm.reader.js";
+import { InvoicingFloorReader } from "./domain/ports/invoicing-floor.reader.js";
+import { PrismaBillingRhythmReader } from "./infrastructure/prisma-billing-rhythm.reader.js";
+import { PrismaInvoicingFloorReader } from "./infrastructure/prisma-invoicing-floor.reader.js";
 import { AdminDetachedUnpaidController } from "./http/admin-detached-unpaid.controller.js";
 import { CompanyDetachedUnpaidController } from "./http/company-detached-unpaid.controller.js";
 import { DetachedUnpaidReader } from "./domain/ports/detached-unpaid.reader.js";
@@ -231,6 +235,8 @@ import { PrismaLegalEntityRepository } from "./infrastructure/prisma-legal-entit
     InvoiceIssuer,
     // La facture du mois, et le lot qui encaisse des factures (E4).
     { provide: MonthlyInvoicingReader, useClass: PrismaMonthlyInvoicingReader },
+    { provide: BillingRhythmReader, useClass: PrismaBillingRhythmReader },
+    { provide: InvoicingFloorReader, useClass: PrismaInvoicingFloorReader },
     { provide: MonthlyInvoiceOutcomes, useClass: PrismaMonthlyInvoiceOutcomes },
     { provide: MonthlyInvoicesReader, useClass: PrismaMonthlyInvoicesReader },
     { provide: InvoiceAutopilotRuns, useClass: PrismaInvoiceAutopilotRuns },

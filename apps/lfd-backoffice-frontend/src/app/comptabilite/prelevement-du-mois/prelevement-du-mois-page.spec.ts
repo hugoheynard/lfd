@@ -115,7 +115,9 @@ class FakeApi {
 }
 
 const SEPTEMBER_INVOICES: MonthlyInvoicesView = {
-  month: '2026-09',
+  periodClosesAt: '2026-09-30T22:00:00.000Z',
+  periodStartsAt: '2026-08-31T22:00:00.000Z',
+  periodLabel: 'du 1er au 30 septembre 2026',
   issuableFrom: '2026-09-30T20:00:00.000Z',
   floorAt: '2026-09-01T00:00:00.000Z',
   open: true,
@@ -154,10 +156,12 @@ class FakeInvoicesApi {
   month(): Promise<MonthlyInvoicesView> {
     return this.refusal === null ? Promise.resolve(this.view) : Promise.reject(this.refusal);
   }
-  issue(payload: { readonly month: string }): Promise<MonthlyInvoiceReportView> {
-    this.issued.push(payload.month);
+  issue(payload: { readonly periodClosesAt: string }): Promise<MonthlyInvoiceReportView> {
+    this.issued.push(payload.periodClosesAt);
     return Promise.resolve({
-      month: payload.month,
+      periodClosesAt: payload.periodClosesAt,
+      periodStartsAt: '2026-08-31T22:00:00.000Z',
+      periodLabel: 'du 1er au 30 septembre 2026',
       issued: [],
       blocked: [],
       alreadyInvoiced: 1,
@@ -246,7 +250,7 @@ describe('PrelevementDuMoisPage', () => {
     const order = [
       'Le calendrier du mois',
       'Le mois en cours — octobre',
-      'Les factures de septembre',
+      'Les factures du 1er au 30 septembre 2026',
       'Le lot à traiter',
     ].map((heading) => body.indexOf(heading));
     expect(order.every((index) => index >= 0)).toBe(true);
@@ -263,10 +267,10 @@ describe('PrelevementDuMoisPage', () => {
     expect(host(fixture).querySelector('[data-signaled-table]')?.textContent).toContain(
       'Chalet Sans SIREN',
     );
-    button(fixture, 'Émettre les factures de septembre')?.click();
+    button(fixture, 'Émettre les factures du 1er au 30 septembre 2026')?.click();
     await settle(fixture);
 
-    expect(invoicesApi.issued).toEqual(['2026-09']);
+    expect(invoicesApi.issued).toEqual(['2026-09-30T22:00:00.000Z']);
   });
 
   it('sans le droit d’écrire, pas de bouton d’émission', async () => {
