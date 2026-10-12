@@ -124,7 +124,17 @@ describe('l’hôte de l’aperçu', () => {
     expect(document.querySelector('fold-page-layout, app-client-shell')).toBeNull();
 
     deliver(EDITOR, parent, show);
-    await settle(800);
+    // Attendre la RÉPONSE, pas une durée (borne sous les 5 s du test) : 800 ms fixes ne suffisaient pas sur
+    // la CI chargée (deux échecs de suite le 2026-10-12), où la scène monte
+    // plus lentement qu'en local.
+    await vi.waitFor(
+      () => {
+        expect(parent.postMessage.mock.calls.some(([message]) => isVisibleKeys(message))).toBe(
+          true,
+        );
+      },
+      { timeout: 4_500, interval: 50 },
+    );
 
     const targets = new Set(parent.postMessage.mock.calls.map(([, origin]) => origin));
     expect([...targets]).toEqual([EDITOR]);
@@ -176,7 +186,14 @@ describe('l’hôte de l’aperçu', () => {
       expect(resizeTo).not.toHaveBeenCalled();
 
       deliver(EDITOR, opener, SHOW);
-      await settle(800);
+      // Même raison qu'au-dessus : attendre la réponse, pas une durée.
+      await vi.waitFor(
+        () => {
+          expect(opener.postMessage).toHaveBeenCalled();
+          expect(resizeTo).toHaveBeenCalled();
+        },
+        { timeout: 4_500, interval: 50 },
+      );
 
       const targets = new Set(opener.postMessage.mock.calls.map(([, origin]) => origin));
       expect([...targets]).toEqual([EDITOR]);
