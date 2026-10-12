@@ -37,7 +37,7 @@ import { reglagesRoutes } from './reglages/reglages.routes';
  * (`b2b_counter:read`) ET passer une commande (`b2b_place_order:write`, sortie
  * de `b2b_orders` le 2026-10-01 — `documentation/livraisons/droits/plan-droits-par-geste.md`, 5.1 bis). L'un sans
  * l'autre ouvrirait un écran dont la moitié des appels répondrait 403
- * (`documentation/order/architecture-commande-au-comptoir.md`, Front). Deux gardes
+ * (`documentation/comptoir/architecture-commande-au-comptoir.md`, Front). Deux gardes
  * plutôt qu'un garde composé : chacun porte sa permission, que la table des
  * routes relit.
  */
@@ -652,7 +652,7 @@ export const routes: Routes = [
     // LA SUPERVISION DU JOUR — une VUE, pas un espace de travail : elle regarde
     // la production, le colisage et le retrait sans rien y faire. D'où le
     // premier niveau, hors de Production et de Comptoir, et un droit à elle
-    // (`documentation/order/architecture-supervision-du-jour.md`, Front).
+    // (`documentation/supervision/architecture-supervision-du-jour.md`, Front).
     path: 'supervision',
     canActivate: [permissionGuard('b2b_supervision:read')],
     title: 'Supervision du jour — LFC B2B admin',

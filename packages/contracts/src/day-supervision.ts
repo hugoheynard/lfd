@@ -5,7 +5,7 @@ import { fulfillmentMethodSchema, fulfillmentSourceSchema } from "./order.js";
 /**
  * Contrat de fil de la **Supervision du jour** : où en est chaque commande d'une
  * date de service, entre la passation et le retrait, et lesquelles sont en
- * retard (`documentation/order/architecture-supervision-du-jour.md`).
+ * retard (`documentation/supervision/architecture-supervision-du-jour.md`).
  *
  * Servi sous `b2b_supervision:read`. 🔴 **Aucun montant, aucun contact** : un
  * champ ajouté ici s'ajoute à ce que lit, de TOUS les clients du jour —

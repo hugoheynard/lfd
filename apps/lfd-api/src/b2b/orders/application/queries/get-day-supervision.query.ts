@@ -1,6 +1,6 @@
 /**
  * Query **staff** : la Supervision d'une date de service, `AAAA-MM-JJ`
- * (`documentation/order/architecture-supervision-du-jour.md`).
+ * (`documentation/supervision/architecture-supervision-du-jour.md`).
  *
  * `day` absent : le handler prend le jour courant de son `Clock`, à l'heure de
  * Paris (plan §5) — jamais l'horloge du poste.

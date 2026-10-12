@@ -21,7 +21,7 @@ type SupervisionHandoverQuery = z.infer<typeof supervisionHandoverQuerySchema>;
 
 /**
  * **Le retrait vu depuis la Supervision** — la colonne 3, aucun geste
- * (`documentation/order/architecture-supervision-du-jour.md`, §3).
+ * (`documentation/supervision/architecture-supervision-du-jour.md`, §3).
  *
  * Une seconde PORTE sur la file du comptoir : même query que
  * `HandoverController.queue`, sous `b2b_supervision` au lieu de `b2b_orders` —

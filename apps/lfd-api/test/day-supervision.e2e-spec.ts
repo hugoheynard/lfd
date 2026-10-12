@@ -1,6 +1,6 @@
 /**
  * E2E de la **Supervision du jour** (`GET /admin/supervision/day`) — plan
- * `documentation/order/architecture-supervision-du-jour.md`.
+ * `documentation/supervision/architecture-supervision-du-jour.md`.
  *
  * Ce qui ne se prouve qu'avec du vrai SQL : le jour (colonne `date`), le filtre
  * d'argent partagé avec le dossier du jour, le compte des commandes sans date,

@@ -9,7 +9,7 @@ export type { CounterCustomerCard } from "@lfd/contracts";
  * Il ne rend que la **carte** d'une société `active` — le seul statut qui
  * commande au prix pro. Cross-tenant par nature : le vendeur sert tous les
  * clients, gardé en amont par `@AdminSurface("b2b_counter")`. Plan :
- * `documentation/order/architecture-commande-au-comptoir.md`.
+ * `documentation/comptoir/architecture-commande-au-comptoir.md`.
  */
 export abstract class CounterCustomerReader {
   /** Les sociétés actives, par enseigne puis raison sociale. */

@@ -11,7 +11,7 @@ import { B2B_API_BASE } from '../api/api-config';
  * `b2b_companies`.
  *
  * Le vendeur de comptoir n'a pas la fiche client (crédit, KBIS, contacts) ; il
- * a ce qu'il faut pour vendre (`documentation/order/architecture-commande-au-comptoir.md`).
+ * a ce qu'il faut pour vendre (`documentation/comptoir/architecture-commande-au-comptoir.md`).
  * Lire ces sociétés par `AdminCompaniesService` le condamnerait au 403.
  */
 @Injectable({ providedIn: 'root' })

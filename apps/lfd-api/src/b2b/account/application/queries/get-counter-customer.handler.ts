@@ -13,7 +13,7 @@ import { GetCounterCustomerQuery } from "./get-counter-customer.query.js";
 
 /**
  * Sert au Comptoir le détail d'un client **actif** — ce qu'il faut pour lui
- * vendre, rien de plus (`documentation/order/architecture-commande-au-comptoir.md`).
+ * vendre, rien de plus (`documentation/comptoir/architecture-commande-au-comptoir.md`).
  *
  * 🔴 `settlesOnAccount` est rendu par l'**agrégat** (`Company.settlesOnAccount`),
  * pas réécrit ici : la règle — un crédit accordé, un prélèvement non bloqué —

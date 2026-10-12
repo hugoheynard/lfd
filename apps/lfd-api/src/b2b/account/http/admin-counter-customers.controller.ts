@@ -8,7 +8,7 @@ import { ListCounterCustomersQuery } from "../application/queries/list-counter-c
 
 /**
  * Surface du **Comptoir** : ce qu'un vendeur voit d'un client pour lui prendre
- * une commande (`documentation/order/architecture-commande-au-comptoir.md`).
+ * une commande (`documentation/comptoir/architecture-commande-au-comptoir.md`).
  *
  * Elle vit dans `account` parce que la société y vit. Elle déclare pourtant
  * `b2b_counter`, pas `b2b_companies` : la fiche client — crédit, KBIS,

@@ -6,7 +6,7 @@ import { companyStatusSchema } from "./customer-sheet.js";
 
 /**
  * Contrat de fil du **Comptoir** : ce que le vendeur voit d'un client pour lui
- * vendre, et rien de plus (`documentation/order/architecture-commande-au-comptoir.md`).
+ * vendre, et rien de plus (`documentation/comptoir/architecture-commande-au-comptoir.md`).
  *
  * Servi sous `b2b_counter:read`, jamais sous `b2b_companies` : la fiche client
  * — crédit accordé, KBIS, contacts, conditions — n'en fait pas partie. Un champ
