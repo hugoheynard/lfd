@@ -328,7 +328,7 @@ export function deliveryAddressIssue(): { message: string; path: PropertyKey[] }
  * `uuid()` la borne par son type. Un index btree refuse une entrée au-delà de
  * 2704 octets ; un en-tête HTTP libre en accepte seize mille.
  *
- * Cf. `documentation/order/plan-idempotence-de-passation.md`.
+ * Cf. `documentation/order/architecture-idempotence-de-passation.md`.
  */
 export const idempotencyKeySchema = z.string().uuid("clé d'idempotence attendue (UUID)");
 

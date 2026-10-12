@@ -564,7 +564,7 @@ model OrderDeliveryVat {
 /// la durée de l'appel — long, puisqu'il ré-résout les prix, lit l'heure limite
 /// et attend le prestataire.
 ///
-/// Le plan : `documentation/order/plan-idempotence-de-passation.md`.
+/// Le plan : `documentation/order/architecture-idempotence-de-passation.md`.
 model OrderIdempotency {
   id String @id @default(cuid())
 

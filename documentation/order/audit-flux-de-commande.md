@@ -33,7 +33,7 @@
 > `git show d285e715:documentation/order/audit-flux-de-commande.md`.
 >
 > La numérotation **T1–T12 est conservée** — d'autres documents la citent
-> (`plan-idempotence-de-passation.md` renvoie à T12). Deux défauts nouveaux
+> (`architecture-idempotence-de-passation.md` renvoie à T12). Deux défauts nouveaux
 > portent les numéros suivants.
 
 ---
@@ -233,7 +233,7 @@ rien n'est codé.
 
 `POST /orders` et la commande boutique sont idempotents — clé au contrat,
 table `order_idempotency`, résolution dans la transaction qui écrit la commande.
-Plan et contradiction : [`plan-idempotence-de-passation.md`](plan-idempotence-de-passation.md).
+Plan et contradiction : [`architecture-idempotence-de-passation.md`](architecture-idempotence-de-passation.md).
 
 Trois bords restent ouverts :
 
