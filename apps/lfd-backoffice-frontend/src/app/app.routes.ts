@@ -2,6 +2,7 @@ import { type Routes } from '@angular/router';
 import { NEW_VERSION_BANNER } from '@lfd/front-ops';
 
 import { anyPermissionGuard, permissionGuard } from './auth/permission.guard';
+import { comptoirLanding } from './comptoir/comptoir-landing';
 import {
   ORDER_ENTRY_ORIGIN_KEY,
   type OrderEntryOrigin,
@@ -655,7 +656,8 @@ export const routes: Routes = [
         (m) => m.ComptoirWorkspacePage,
       ),
     children: [
-      { path: '', pathMatch: 'full', redirectTo: 'retrait' },
+      // Le premier onglet PERMIS, dans l'ordre de `COMPTOIR_VIEWS` (2026-10-12).
+      { path: '', pathMatch: 'full', redirectTo: comptoirLanding },
       {
         path: 'retrait',
         canActivate: [permissionGuard('handover_counter:read')],
@@ -672,6 +674,17 @@ export const routes: Routes = [
         loadComponent: () =>
           import('./comptoir/nouvelle-commande-pro/nouvelle-commande-pro-page').then(
             (m) => m.NouvelleCommandeProPage,
+          ),
+      },
+      {
+        // LE RÉASSORT — pas encore construit (2026-10-12). Le droit du retrait :
+        // c'est le même poste (à confirmer).
+        path: 'reassort',
+        canActivate: [permissionGuard('handover_counter:read')],
+        title: 'Réassort boutique — LFC B2B admin',
+        loadComponent: () =>
+          import('./comptoir/reassort-boutique-page/reassort-boutique-page').then(
+            (m) => m.ReassortBoutiquePage,
           ),
       },
       {

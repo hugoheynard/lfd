@@ -1,3 +1,4 @@
+import { ComptoirTabs } from '../comptoir-tabs/comptoir-tabs';
 import { ChangeDetectionStrategy, Component, computed, inject, signal } from '@angular/core';
 import { Router } from '@angular/router';
 import { companyDisplayName, type CounterCustomerCard } from '@lfd/contracts';
@@ -57,6 +58,7 @@ interface CompanyRow {
   selector: 'app-nouvelle-commande-pro-page',
   changeDetection: ChangeDetectionStrategy.OnPush,
   imports: [
+    ComptoirTabs,
     FoldButtonComponent,
     FoldCalloutComponent,
     FoldCardComponent,

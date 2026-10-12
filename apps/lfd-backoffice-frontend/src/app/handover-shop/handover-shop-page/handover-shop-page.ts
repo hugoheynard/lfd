@@ -1,3 +1,4 @@
+import { ComptoirTabs } from '../../comptoir/comptoir-tabs/comptoir-tabs';
 import {
   ChangeDetectionStrategy,
   Component,
@@ -113,6 +114,7 @@ const TICK_MS = 30_000;
   selector: 'app-handover-shop-page',
   changeDetection: ChangeDetectionStrategy.OnPush,
   imports: [
+    ComptoirTabs,
     FoldButtonComponent,
     FoldCalloutComponent,
     FoldElementTitleComponent,

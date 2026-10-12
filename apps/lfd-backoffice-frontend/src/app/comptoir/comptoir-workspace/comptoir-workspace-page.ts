@@ -1,16 +1,18 @@
-import { ChangeDetectionStrategy, Component, inject } from '@angular/core';
+import { ChangeDetectionStrategy, Component } from '@angular/core';
 import { RouterOutlet } from '@angular/router';
 
-import { provideWorkspaceRail } from '../../shared/workspace-rail/workspace-rail.store';
-import { WorkspaceCatalogue } from '../../shared/workspace-rail/workspaces';
-
 /**
- * **L'espace de travail du comptoir** — la coquille qui publie son rail.
+ * **L'espace de travail du comptoir** — la vue, qui pose elle-même les onglets
+ * (`ComptoirTabs`) : sous le sélecteur de point au retrait (Hugo, 2026-10-12).
  *
- * Même motif que la production : elle ne dessine rien, parce que ses deux vues
- * n'ont pas de sommet commun — la file de retrait vit du jour, la commande pro
- * commence par une recherche de compte. Son seul travail est de publier les
- * vues à l'entrée et de les effacer à la sortie.
+ * Plus de rail secondaire depuis le 2026-10-12 (Hugo) : le comptoir sert sur
+ * une tablette, et ses vues sont des gros onglets en tête de page, à portée de
+ * doigt, plutôt qu'un second rail qui mange la largeur. Les onglets sont lus
+ * dans `COMPTOIR_VIEWS` — la même table que les tuiles du lanceur mobile, donc
+ * filtrés par les mêmes droits, et un onglet sans droit n'apparaît pas.
+ *
+ * L'onglet actif suit l'URL : chaque onglet est un lien (`link`), et fold le
+ * marque par `routerLinkActive`.
  *
  * ⚠️ **Elle n'est pas une page** : aucun `fold-page-layout` ici, chaque vue
  * porte le sien — deux layouts imbriqués empileraient les gouttières.
@@ -22,8 +24,4 @@ import { WorkspaceCatalogue } from '../../shared/workspace-rail/workspaces';
   templateUrl: './comptoir-workspace-page.html',
   styleUrl: './comptoir-workspace-page.scss',
 })
-export class ComptoirWorkspacePage {
-  constructor() {
-    provideWorkspaceRail(inject(WorkspaceCatalogue).rail('comptoir'));
-  }
-}
+export class ComptoirWorkspacePage {}

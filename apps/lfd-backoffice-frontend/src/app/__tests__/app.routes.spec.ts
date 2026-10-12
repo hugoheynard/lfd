@@ -3,6 +3,7 @@ import type { StaffPermission } from '@lfd/contracts';
 import { describe, expect, it } from 'vitest';
 
 import { routes } from '../app.routes';
+import { comptoirLanding } from '../comptoir/comptoir-landing';
 import type { AnyPermissionGuard, PermissionGuard } from '../auth/permission.guard';
 
 /**
@@ -247,6 +248,8 @@ const SCREENS: Readonly<Record<string, ScreenAccess>> = {
   supervision: 'b2b_supervision:read',
   comptoir: OPEN,
   'comptoir/retrait': 'handover_counter:read',
+  // Le réassort (2026-10-12, pas encore construit) : le poste du retrait.
+  'comptoir/reassort': 'handover_counter:read',
   // Lire les clients du comptoir ET commander : deux gardes, deux droits
   // (plan-commande-au-comptoir.md). `b2b_companies` n'y apparaît pas — c'est le
   // point : le vendeur de comptoir n'a pas la fiche client.
@@ -518,10 +521,12 @@ describe("l'arbre de routes du back-office", () => {
     expect(supervision && declaredPermission(supervision)).toEqual(['b2b_supervision:read']);
   });
 
-  it('ouvre le comptoir sur la file de retrait', () => {
+  it('ouvre le comptoir sur le premier onglet permis', () => {
+    // Plus une redirection fixe vers le retrait (2026-10-12) : le poste qui ne
+    // tient que la commande pro était renvoyé hors du comptoir par le garde.
     const comptoir = routes.find((route) => route.path === 'comptoir');
     const root = comptoir?.children?.find((child) => child.path === '');
-    expect(root?.redirectTo).toBe('retrait');
+    expect(root?.redirectTo).toBe(comptoirLanding);
   });
 
   it('ne laisse hériter que les écrans dont le parent est gardé', () => {

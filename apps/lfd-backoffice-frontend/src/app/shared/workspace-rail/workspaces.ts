@@ -320,8 +320,12 @@ export function isExploitationUrl(url: string): boolean {
 /**
  * Les vues du **Comptoir** — ce qui se passe quand un client est DEVANT nous.
  *
+ * Ce sont des ONGLETS dans la page depuis le 2026-10-12 (Hugo), plus un rail
+ * secondaire : le comptoir est une tablette, et le rail mangeait sa largeur.
+ *
  * Deux gestes, et c'est ce qui les réunit : rendre une commande déjà faite, et
- * en prendre une nouvelle pour un pro venu sans l'avoir passée. La commande pro
+ * en prendre une nouvelle pour un pro venu sans l'avoir passée. Le réassort
+ * (regarnir la boutique) s'y ajoute, pas encore construit. La commande pro
  * n'est pas un second écran de saisie : elle cherche le compte, puis ouvre le
  * même `comptes-clients/:id/nouvelle-commande` que le Commercial — deux saisies
  * divergeraient au premier changement de règle.
@@ -333,6 +337,16 @@ export function isExploitationUrl(url: string): boolean {
  * verrait l'entrée, pour un refus du garde.
  */
 export const COMPTOIR_VIEWS: readonly WorkspaceView[] = [
+  // Ordre voulu par Hugo (2026-10-12) : la commande d'abord, le retrait, puis
+  // le réassort. Il pilote les ONGLETS du comptoir, les tuiles du lanceur
+  // mobile, et l'onglet qu'ouvre l'entrée « Comptoir » (le premier permis).
+  {
+    key: 'nouvelle-commande',
+    label: 'Nouvelle commande pro',
+    link: '/comptoir/nouvelle-commande',
+    icon: 'basket',
+    needs: ['b2b_counter:read', 'b2b_place_order:write'],
+  },
   {
     key: 'retrait',
     label: 'Retrait boutique',
@@ -340,12 +354,14 @@ export const COMPTOIR_VIEWS: readonly WorkspaceView[] = [
     icon: 'package-check',
     needs: 'handover_counter:read',
   },
+  // Pas encore construit (2026-10-12) : un état vide qui le dit. Le droit du
+  // retrait, parce que c'est le même poste — à confirmer par Hugo.
   {
-    key: 'nouvelle-commande',
-    label: 'Nouvelle commande pro',
-    link: '/comptoir/nouvelle-commande',
-    icon: 'basket',
-    needs: ['b2b_counter:read', 'b2b_place_order:write'],
+    key: 'reassort',
+    label: 'Réassort boutique',
+    link: '/comptoir/reassort',
+    icon: 'package',
+    needs: 'handover_counter:read',
   },
 ];
 
