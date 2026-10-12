@@ -66,7 +66,9 @@
 >   depuis le 2026-10-11 avec `lint:shop-copy-digest` : le recueil des textes de
 >   la boutique (`documentation/contenu-ecommerce/textes-de-la-boutique.md`) est
 >   généré depuis les dictionnaires, et un texte changé sans `pnpm copy:digest`
->   le fait mentir. C'est la
+>   le fait mentir. Et **44** depuis le 2026-10-12 avec `lint:doc-orphans` :
+>   aucune doc de `documentation/` qui ne soit citée par une autre — le
+>   graphe d'Obsidian les montrait, la porte les tient. C'est la
 >   **seule** correction faite dans le corps, parce qu'un chiffre faux se vérifie
 >   en une commande et trompe tout de suite ;
 > - le dossier **`documentation/pricing/`** (ouvert le 2026-09-06) et le dossier
