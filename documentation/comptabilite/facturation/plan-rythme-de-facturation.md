@@ -641,3 +641,9 @@ modes ; chaque client choisit un mode.** Plus aucune date propre à un client.
    après, prise d'effet, ou annulation) et `payer.billing_mode_changed`.
    **Droit** : `b2b_accounting`, aucune ressource neuve.
 8. **Irréversible dès le merge** : les deux tables et les deux faits.
+
+**Décision de Hugo (2026-10-12) : « supprime-les ».** M1 supprime, dans une
+migration NEUVE du même déploiement, les cinq colonnes R2 de
+`legal_entities` et leurs deux CHECK ; la fonction
+`billing_rhythm_is_well_formed` reste si M1 la réutilise, sinon elle part
+aussi. Elles n'ont jamais porté de donnée de production.
