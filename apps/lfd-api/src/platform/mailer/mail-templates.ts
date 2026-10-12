@@ -241,7 +241,7 @@ export interface B2bMails {
   /**
    * **Une commande vient d'être passée avec votre adresse** — destinataire : le
    * propriétaire du compte, jamais celui qui commande (plan
-   * `plan-commande-sans-compte.md`, D7).
+   * `architecture-commande-sans-compte.md`, D7).
    *
    * 🔴 **C'est le seul canal par lequel cette information peut sortir.** Une
    * surface publique qui répondrait « ce compte existe » laisserait n'importe

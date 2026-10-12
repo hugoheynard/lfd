@@ -48,7 +48,7 @@ export interface KnownAccount {
    * `sub` du fournisseur d'identité — de quoi lui ré-émettre un lien.
    *
    * 🔴 **`null` = un INVITÉ** : quelqu'un qui a commandé sans compte, connu par
-   * son adresse et par elle seule (plan `plan-commande-sans-compte.md`, D1). Il
+   * son adresse et par elle seule (plan `architecture-commande-sans-compte.md`, D1). Il
    * n'y a alors AUCUNE identité chez le fournisseur, donc aucun lien à
    * ré-émettre : l'ouverture d'accès doit en **provisionner** une, et non
    * demander un ticket pour un sujet qui n'existe pas.

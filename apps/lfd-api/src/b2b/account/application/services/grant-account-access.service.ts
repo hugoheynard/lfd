@@ -123,7 +123,7 @@ export class GrantAccountAccess extends AccountAccessGranter {
     // 🔴 **Deux situations, un seul chemin : personne ne peut se connecter.**
     //
     // `invited` — l'identité existe, le mot de passe n'a jamais été posé.
-    // `subject === null` — un INVITÉ au sens du plan `plan-commande-sans-compte.md`
+    // `subject === null` — un INVITÉ au sens du plan `architecture-commande-sans-compte.md`
     // (D1) : il a commandé sans compte, et il n'a **rien** à quoi se connecter.
     //
     // Pas de garde d'adresse ici, et c'est délibéré dans les deux cas : on
@@ -208,7 +208,7 @@ export class GrantAccountAccess extends AccountAccessGranter {
   private async linkForKnown(known: KnownAccount, email: string): Promise<string> {
     // 🔴 **Un INVITÉ n'a pas de sujet du tout** — il a commandé sans compte, et
     // son identité de connexion n'existe nulle part (plan
-    // `plan-commande-sans-compte.md`, D1 et §4.1). Lui demander un lien pour un
+    // `architecture-commande-sans-compte.md`, D1 et §4.1). Lui demander un lien pour un
     // sujet nul n'est pas un cas limite : c'est le seul endroit où l'absence de
     // sujet CASSE un chemin qui marche — « le commercial ouvre un accès à
     // quelqu'un qui a déjà commandé en public ».

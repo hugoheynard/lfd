@@ -78,7 +78,7 @@ flowchart TD
   persister `settlement` ou le dériver d'un fait déjà porté. Aucune idempotence
   dans `place-order-for-customer.handler.ts` (vérifié le 2026-10-12). La
   boutique publique a sa propre table, `shop_order_idempotency`
-  ([`plan-commande-sans-compte.md`](plan-commande-sans-compte.md)).
+  ([`architecture-commande-sans-compte.md`](architecture-commande-sans-compte.md)).
 - **La purge** : les lignes s'accumulent, une par commande, sans fin. Aucune
   suppression hors `src/dev/` (vérifié le 2026-10-12). Chore d'exploitation à
   nommer, ou tâche du worker.

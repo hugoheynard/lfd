@@ -1,7 +1,7 @@
 /**
  * Une identité publique, telle que le panier la recueille : trois champs, et
  * rien de plus. C'est exactement ce que l'écran demande à un visiteur qui refuse
- * de créer un compte (plan `plan-commande-sans-compte.md` §8 bis).
+ * de créer un compte (plan `architecture-commande-sans-compte.md` §8 bis).
  */
 export interface GuestBuyer {
   readonly firstName: string;

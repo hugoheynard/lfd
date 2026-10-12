@@ -42,7 +42,7 @@ Donc :
   gabarit de mercuriale « Fidélité »).
 - **Toute commande a une personne** : `Order.placedByUserId` → `User`, y
   compris sans compte. Un invité est un `User` dont `auth0_sub` est `NULL`
-  (`account.prisma`, plan `order/plan-commande-sans-compte.md`). `companyId`,
+  (`account.prisma`, plan `order/architecture-commande-sans-compte.md`). `companyId`,
   lui, est nul pour le public.
 - **La commande porte `clientele`** (`pro` | `public`), nullable
   (`orders.prisma:109`).
@@ -108,7 +108,7 @@ sur le bon.
   personne, et ce que ce refus leur fait.
 - **Seul un compte connecté gagne** (`auth0_sub` non nul) :
   - `User.email` n'est pas unique, et une commande sans compte reste
-    rattachée à l'invité neuf (`plan-commande-sans-compte.md`) ;
+    rattachée à l'invité neuf (`architecture-commande-sans-compte.md`) ;
   - les points d'un invité seraient donc inaccessibles, et s'attribuer ceux
     d'une adresse serait une faille.
 - **Qui convertit, chez un pro** : toute personne active rattachée à la

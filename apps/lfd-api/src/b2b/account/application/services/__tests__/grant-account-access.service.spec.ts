@@ -178,7 +178,7 @@ function account(status: MemberStatus, userId = "user_known", emailVerified = tr
 
 /**
  * Un **invité** : quelqu'un qui a commandé sans compte (plan
- * `plan-commande-sans-compte.md`, D1).
+ * `architecture-commande-sans-compte.md`, D1).
  *
  * Les trois traits comptent ensemble, et c'est leur combinaison qui piège :
  * `subject: null` (aucune identité de connexion), `status: "active"` — D1

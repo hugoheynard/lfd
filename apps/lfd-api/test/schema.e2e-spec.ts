@@ -33,7 +33,7 @@ describe("contraintes de la db commerce", () => {
 
   it("laisse coexister autant d'INVITÉS qu'il en vient", async () => {
     // Un invité n'a aucune identité de connexion (plan
-    // `plan-commande-sans-compte.md`, D1) : sa colonne `auth0_sub` est nulle.
+    // `architecture-commande-sans-compte.md`, D1) : sa colonne `auth0_sub` est nulle.
     // Deux `NULL` ne s'apparient pas dans un index unique Postgres — c'est ce
     // qui permet à l'unicité ci-dessus de survivre à la bascule, et c'est une
     // propriété de la BASE, donc elle ne se vérifie qu'ici.

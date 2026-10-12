@@ -221,7 +221,7 @@ import { AdminSupervisionController } from "./http/admin-supervision.controller.
     // Porte machine, elle aussi : l'expiration des commandes boutique non
     // réglées, au cron de rafraîchissement (plan commandes non réglées, §4.5).
     UnsettledShopOrdersController,
-    // La commande SANS compte (plan-commande-sans-compte.md, §6) : ouverte le
+    // La commande SANS compte (architecture-commande-sans-compte.md, §6) : ouverte le
     // 2026-10-11, Hugo ayant tranché que le visiteur paie le prix et la TVA
     // d'un particulier connecté — ce que `OrderDrafting` sans société calcule.
     ShopOrdersController,
@@ -373,7 +373,7 @@ import { AdminSupervisionController } from "./http/admin-supervision.controller.
     { provide: OrderRepository, useClass: PrismaOrderRepository },
     // Le registre des clés de passation : un double clic ne fait qu'une commande.
     { provide: OrderIdempotencyStore, useClass: PrismaOrderIdempotencyStore },
-    // La commande **sans compte** — plan `plan-commande-sans-compte.md`, lot C.
+    // La commande **sans compte** — plan `architecture-commande-sans-compte.md`, lot C.
     //
     // Sa route, `ShopOrdersController`, est ouverte depuis le 2026-10-11 (§6).
     PlaceShopOrderHandler,

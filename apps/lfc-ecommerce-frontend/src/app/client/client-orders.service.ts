@@ -395,7 +395,7 @@ export class ClientOrders {
 
   /**
    * **Passe la commande d'un visiteur sans compte** — `POST /shop/orders`, plan
-   * `documentation/order/plan-commande-sans-compte.md`, lot C.
+   * `documentation/order/architecture-commande-sans-compte.md`, lot C.
    *
    * ## Pourquoi une seconde voie, et pas un paramètre de {@link place}
    *

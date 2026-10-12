@@ -17,7 +17,7 @@ import { OrderReader } from "../../domain/ports/order.reader.js";
 
 /**
  * Le canal du registre d'unicité, à côté de `resend` — plan
- * `plan-commande-sans-compte.md`, D7.
+ * `architecture-commande-sans-compte.md`, D7.
  */
 const NOTICE_CHANNEL = "guest-order-notice";
 

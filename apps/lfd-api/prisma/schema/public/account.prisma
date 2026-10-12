@@ -364,7 +364,7 @@ model User {
   //
   // 🔴 **NULL = un INVITÉ** : une personne connue par son adresse, qui n'a
   // **rien** à quoi se connecter. C'est la porte de la commande sans compte —
-  // plan `documentation/order/plan-commande-sans-compte.md`, D1.
+  // plan `documentation/order/architecture-commande-sans-compte.md`, D1.
   //
   // Se connecter lui est **inexprimable**, et c'est tout l'intérêt de porter la
   // distinction ici plutôt que sur `status` : un statut déclaratif peut diverger

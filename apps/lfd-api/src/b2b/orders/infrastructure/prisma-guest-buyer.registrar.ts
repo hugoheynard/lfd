@@ -10,7 +10,7 @@ import { GuestBuyerRegistrar, type GuestBuyer } from "../domain/ports/guest-buye
  * ## Les trois colonnes qui comptent, et pourquoi chacune vaut ce qu'elle vaut
  *
  * - **`auth0Sub` absent, donc `NULL`.** C'est ce qui FAIT l'invité (plan
- *   `plan-commande-sans-compte.md`, D1) : se connecter lui est inexprimable,
+ *   `architecture-commande-sans-compte.md`, D1) : se connecter lui est inexprimable,
  *   plutôt que refusé. Rien à écrire pour ça — c'est l'absence qui porte le
  *   sens.
  * - **`status: active`, et c'est le piège à garder sous les yeux.** D1 l'impose :

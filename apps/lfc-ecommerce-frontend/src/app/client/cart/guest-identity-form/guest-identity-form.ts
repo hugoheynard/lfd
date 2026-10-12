@@ -79,7 +79,7 @@ const PLAUSIBLE_EMAIL = /^[^\s@]+@[^\s@]+\.[^\s@]+$/u;
 
 /**
  * **« Qui passe cette commande ? »** — la saisie d'un visiteur sans compte,
- * plan `documentation/order/plan-commande-sans-compte.md` (D9, point 1).
+ * plan `documentation/order/architecture-commande-sans-compte.md` (D9, point 1).
  *
  * 🔴 **DANS la carte du panier, ouverte d'office** (Hugo, 2026-10-11). Elle a
  * été un dialogue empilé sur le panier, derrière un bouton « Commander en tant
