@@ -47,7 +47,7 @@ async function setup(canWrite = true) {
       source: frame,
       data: { source: SOURCE, type: 'edit', ...data },
     });
-  return { api, frame, edit, writer: TestBed.inject(DraftWriter) };
+  return { api, frame, edit, link, writer: TestBed.inject(DraftWriter) };
 }
 
 describe('PreviewLink — un texte tapé dans l’aperçu', () => {
@@ -98,5 +98,41 @@ describe('PreviewLink — un texte tapé dans l’aperçu', () => {
       expect.objectContaining({ type: 'edit-refused', key: 'cart.count' }),
       ORIGIN,
     );
+  });
+});
+
+/**
+ * Régression (Hugo, 2026-10-12 : « quand je clique sur les numéros ça ne fait
+ * rien ») : l'aperçu envoie `ready` PENDANT son chargement, et l'éditeur
+ * rebranchait l'iframe à son `load`, juste après — ce qui effaçait le `ready`.
+ * La première scène s'affichait, la frise ne pilotait plus rien.
+ */
+describe('PreviewLink — le ready reçu avant le load de l’iframe', () => {
+  afterEach(() => TestBed.resetTestingModule());
+
+  it('rebrancher la MÊME fenêtre garde le ready : un changement d’étape part', async () => {
+    const { frame, link } = await setup();
+    link.receive({ origin: ORIGIN, source: frame, data: { source: SOURCE, type: 'ready' } });
+    link.attach(frame);
+    TestBed.tick();
+    frame.postMessage.mockClear();
+
+    link.setStep('time');
+    TestBed.tick();
+
+    expect(frame.postMessage).toHaveBeenCalledWith(
+      expect.objectContaining({ type: 'show', step: 'time' }),
+      ORIGIN,
+    );
+  });
+
+  it('une AUTRE fenêtre attend de nouveau son ready', async () => {
+    const { link } = await setup();
+    const other = { postMessage: vi.fn() };
+    link.attach(other);
+    link.setStep('time');
+    TestBed.tick();
+
+    expect(other.postMessage).not.toHaveBeenCalled();
   });
 });

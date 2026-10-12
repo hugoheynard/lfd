@@ -3,6 +3,7 @@ import {
   Component,
   computed,
   DestroyRef,
+  effect,
   ElementRef,
   inject,
   signal,
@@ -150,6 +151,18 @@ export class ShopPreview {
     const host: HTMLElement = inject(ElementRef<HTMLElement>).nativeElement;
     const resize = new ResizeObserver(() => this.columnWidth.set(host.clientWidth));
     resize.observe(host);
+    // L'iframe se branche DÈS qu'elle existe, pas à son `load` : l'aperçu
+    // envoie `ready` pendant son chargement, AVANT l'événement `load` — branché
+    // au `load`, l'éditeur refusait ce `ready` (source inconnue) ou l'effaçait
+    // juste après l'avoir reçu, et la frise ne pilotait plus rien (régression
+    // constatée par Hugo le 2026-10-12 : « quand je clique sur les numéros ça
+    // ne fait rien »).
+    effect(() => {
+      const frame = this.frame()?.nativeElement.contentWindow ?? null;
+      if (frame !== null && !this.link.detached()) {
+        this.link.attach(frame);
+      }
+    });
     inject(DestroyRef).onDestroy(() => {
       window.removeEventListener('message', listener);
       resize.disconnect();
@@ -201,7 +214,11 @@ export class ShopPreview {
     }
   }
 
-  /** L'iframe a (re)chargé : on lui parle de nouveau dès son `ready`. */
+  /**
+   * L'iframe a (re)chargé. Sa fenêtre est la même (un `WindowProxy` survit à la
+   * navigation) : `attach` ne remet rien à zéro, et l'aperçu rechargé renverra
+   * `ready`, auquel l'éditeur répond par l'état courant.
+   */
   protected loaded(): void {
     this.link.attach(this.frame()?.nativeElement.contentWindow ?? null);
   }

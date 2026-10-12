@@ -119,8 +119,17 @@ export class PreviewLink {
     this.requestedStep.set(step);
   }
 
-  /** L'iframe s'est (re)chargée : on attend de nouveau son `ready`. */
+  /**
+   * La cible des messages. Une NOUVELLE fenêtre attend son `ready` ; la même
+   * (l'iframe qui recharge, ou rebranchée à son `load`) garde son état : un
+   * aperçu rechargé renvoie `ready`, et l'éditeur lui répond par l'état
+   * courant (cf. `receive`). Remettre `ready` à faux sur la même fenêtre
+   * effaçait un `ready` reçu pendant le chargement, avant le `load`.
+   */
   attach(frame: PreviewWindow | null): void {
+    if (frame === this.frame) {
+      return;
+    }
     this.frame = frame;
     this.ready.set(false);
   }
