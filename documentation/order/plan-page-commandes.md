@@ -92,7 +92,7 @@
 >   (`replaceUrl`) ;
 > - **le retour du détail garde les filtres par l'historique**, pas par un lien :
 >   `fold-back-link` ne transmet pas de `queryParams` (vérifié dans
->   `fold-ng.d.ts`). Venue de la liste (état de navigation `fromOrderList`), la
+>   ses déclarations de types fold). Venue de la liste (état de navigation `fromOrderList`), la
 >   commande remonte l'historique ; ouverte autrement, elle mène à `/commandes`
 >   nue. Le retour menait aux comptes clients ; un `queryParams` sur
 >   `fold-back-link` serait un chantier fold ;
@@ -115,6 +115,41 @@
 - Les filtres vivent dans l'URL (partageables, retour arrière juste).
 - Une ligne ouvre `/commandes/:orderId` (le détail existant).
 - La garde manquante de l'onglet « Commandes » de la fiche client est posée.
+
+## 3 bis. L'historique de la commande (lot C2b)
+
+> Décidé par Hugo le 2026-10-12 (« oui fais l'historique de la commande »).
+> Relu ce jour-là dans la base de dev et le code.
+
+**Les faits existent déjà** au journal (`growth.activity_events`), sous deux
+sujets :
+
+- sujet `user` = l'auteur de la commande, avec `payload.orderId` :
+  `order.placed`, `order.ready`, `order.handed_over`, `order.abandoned` ;
+- sujet `order` = l'id de la commande : `delivery_bin.*`, `packing_container.*`.
+
+**Route** : `GET /admin/orders/:id/history`, garde `b2b_orders:read` (celle du
+détail). Réponse `ActivityEventView[]` (le contrat du journal, `@lfd/contracts`),
+du plus récent au plus ancien, bornée à 200 faits — une commande en porte une
+dizaine ; pas de pagination. Commande inconnue → 404.
+
+**Lecture** : `(subject_type = 'order' AND subject_id = :id) OR (subject_type =
+'user' AND subject_id = :placedById AND payload->>'orderId' = :id)` — la
+seconde branche passe par l'index `(subject_type, subject_id, occurred_at)` ;
+aucune lecture de la charge sur toute la table. Commande sans auteur : la
+première branche seule. Un port `OrderHistoryReader` dans `b2b/orders`,
+l'adaptateur Prisma lit `activityEvent` (même bloc `b2b` que `growth`, la porte
+de propriété l'admet). Le `module` de la vue se calcule comme dans le journal
+(`moduleOf`).
+
+**Écran** : une carte « Historique » dans le détail (`/commandes/:orderId`),
+une ligne par fait mise en phrase par le moteur existant (`toLine` de
+`admin/journal/journal-line.ts`) : quand, par qui, ce qui s'est passé. Vide :
+« Aucun fait enregistré pour cette commande. »
+
+**Ce qu'il ne montre pas** : le paiement et le remboursement ne sont pas
+journalisés (`order.paid` est un fait de bus, pas une ligne du journal) ; le
+règlement reste lu dans sa carte.
 
 ## 4. La fiche d'un client particulier — à part
 

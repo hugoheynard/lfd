@@ -13,6 +13,7 @@ import {
   adminPlaceOrderPayloadSchema,
   type AdminPlacedOrderResponse,
   type OrderHandoverProofResponse,
+  type ActivityEventView,
   type OrderView,
   orderQuotePayloadSchema,
   type OrderQuotePayload,
@@ -51,6 +52,7 @@ import { SendHandoverReminderCommand } from "../application/commands/send-handov
 import { GetAdminOrderSheetPdfQuery } from "../application/queries/get-admin-order-sheet-pdf.query.js";
 import type { OrderSheetPdf } from "../application/services/order-sheet-archive.service.js";
 import { GetAdminOrderQuery } from "../application/queries/get-admin-order.query.js";
+import { GetAdminOrderHistoryQuery } from "../application/queries/get-admin-order-history.query.js";
 import { ListAdminOrdersQuery } from "../application/queries/list-admin-orders.query.js";
 import { GetOrderHandoverProofImageQuery } from "../application/queries/get-order-handover-proof-image.query.js";
 import { GetOrderHandoverProofQuery } from "../application/queries/get-order-handover-proof.query.js";
@@ -208,6 +210,18 @@ export class AdminOrdersController {
   @Get(":id")
   async one(@Param("id") id: string): Promise<OrderView> {
     return this.queries.execute<GetAdminOrderQuery, OrderView>(new GetAdminOrderQuery(id));
+  }
+
+  /**
+   * **L'historique** d'une commande : les faits du journal qui la concernent,
+   * du plus récent au plus ancien, bornés à 200 (plan-page-commandes, §3 bis).
+   * Même garde que le détail : `b2b_orders:read`, par le verbe.
+   */
+  @Get(":id/history")
+  history(@Param("id") id: string): Promise<readonly ActivityEventView[]> {
+    return this.queries.execute<GetAdminOrderHistoryQuery, readonly ActivityEventView[]>(
+      new GetAdminOrderHistoryQuery(id),
+    );
   }
 
   /**

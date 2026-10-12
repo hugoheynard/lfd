@@ -14,6 +14,7 @@
   "test/admin-company-contacts.e2e-spec.ts": 8360,
   "test/admin-company-pieces.e2e-spec.ts": 9364,
   "test/admin-order-drafts.e2e-spec.ts": 5160,
+  "test/admin-order-history.e2e-spec.ts": 6000,
   "test/admin-orders-list.e2e-spec.ts": 11008,
   "test/admin-orders.e2e-spec.ts": 5119,
   "test/admin-place-order.e2e-spec.ts": 9364,
