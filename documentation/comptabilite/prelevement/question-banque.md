@@ -341,72 +341,157 @@ Les codes reçus sont déjà rangés dans `collection_return.reason_code`
 
 ## Le texte à envoyer
 
+> Restructuré le 2026-10-12 (Hugo) : les questions suivent le **parcours
+> réel**, du contrat jusqu'aux impayés. Chaque étape suppose la précédente
+> réglée, et la banque peut répondre dans l'ordre. Les questions détaillées
+> ci-dessus restent la référence ; le tableau « Ce que chaque réponse
+> débloque » garde leur numérotation.
+
+> **Objet : Prélèvements SEPA — nos questions pour préparer nos premières remises**
+>
 > Bonjour,
 >
 > Merci pour le retour de votre service EDI sur l'import des mandats. Nous
 > préparons nos premières remises de prélèvement SEPA et voulons que nos
-> fichiers soient justes du premier coup. Voici notre situation, puis nos
-> questions.
+> fichiers soient justes du premier coup. Pour vous faciliter la réponse, nos
+> questions suivent l'ordre dans lequel nous allons procéder : le contrat,
+> les mandats signés par nos clients, l'import des RIB puis des mandats sur
+> votre portail, la préparation et le dépôt des remises, et enfin les rejets
+> et les retours.
 >
-> **Notre situation** : nous facturons des clients professionnels et les
-> prélevons par SEPA, en B2B pour la plupart et en CORE pour quelques-uns,
-> sous mandats récurrents (quelques ponctuels). Nous produisons nous-mêmes un
-> fichier XML `pain.008.001.02` et le déposons sur le portail. Selon les
-> clients, nous facturerons chaque mois, deux fois par mois ou chaque
-> semaine — jusqu'à cinq remises par mois. Nous souhaitons aussi réduire le
-> délai de pré-notification de 14 jours.
+> **Notre situation, en quelques lignes**
 >
-> **1. RIB destinataires** — Pouvez-vous nous envoyer le modèle d'import
-> (colonnes, ordre, encodage, en-tête, format de l'IBAN, BIC obligatoire ?) ?
-> Comment le RIB est-il ensuite rattaché au mandat ? Quand nous ajoutons des
-> clients, faut-il envoyer seulement les nouveaux, ou peut-on renvoyer toute
-> la liste — et dans ce cas, les RIB déjà connus sont-ils ignorés, mis à jour
-> ou doublés ? Comment remplacer le RIB d'un client qui change de compte ?
+> Nous facturons des clients professionnels et les prélevons par SEPA : en
+> **B2B** pour la plupart, en **CORE** pour quelques petits clients, sous
+> mandats **récurrents** (quelques ponctuels). Nous produisons nous-mêmes un
+> fichier XML **`pain.008.001.02`** et le déposons **à la main sur votre
+> portail** (pas d'EBICS pour l'instant). Chaque remise compte **un débit par
+> client**. Selon notre réglage, nous facturerons **chaque mois, deux fois par
+> mois ou chaque semaine**, soit jusqu'à **cinq remises par mois**. Nous
+> démarrons avec quelques dizaines de clients, pour des débits de quelques
+> centaines à quelques milliers d'euros.
 >
-> **2. Mandats** — Valeurs exactes des colonnes F (format de date), G
-> (séquence : `RCUR`/`OOFF`, `FRST`, ou libellé ?) et H (`CORE`/`B2B` ?).
-> Encodage, longueur maximale du nom, `;` final attendu ? Quand nous ajoutons
-> des clients, faut-il importer seulement les nouveaux mandats, ou peut-on
-> renvoyer l'ensemble trié — un mandat déjà connu est-il alors ignoré, mis à
-> jour ou refusé, et un refus bloque-t-il tout le fichier ? Comment savoir
-> qu'un import a réussi ligne par ligne ? Comment déclarer un mandat modifié
-> (colonnes « ancien IBAN / ancienne RUM » ?), un mandat révoqué, et un
-> mandat repris d'un ancien créancier ? Un débit sous une RUM non importée
-> est-il rejeté ?
+> ---
 >
-> **3. Remise** — Acceptez-vous `pain.008.001.02`, et jusqu'à quand ?
-> Avez-vous un guide d'implémentation (champs exigés au-delà de la norme,
-> dont le BIC du débiteur) ? CORE et B2B dans un même fichier ou séparés ?
-> Plusieurs échéances par fichier ? Crédit global ou par débit ? Taille
-> maximale, nommage ? Délai de dépôt avant l'échéance et heure limite, en CORE
-> et en B2B ? Limite ou frais pour plusieurs remises par mois ? Plafond de
-> remise sur notre contrat ? Premier prélèvement : `FRST` ou `RCUR` ?
-> Contrôlez-vous les doublons de `MsgId` ? Peut-on tester une remise à blanc ?
-> Comment savoir qu'une remise est reçue puis acceptée ?
+> **Étape 1 — Notre contrat de prélèvement**
 >
-> **4. Rejet d'un fichier ou d'un lot** — Quand un débit est invalide, tout le
-> fichier est-il refusé, ou seulement ce débit ? Pouvez-vous nous donner la
-> liste des motifs de rejet d'un fichier au dépôt, avec leurs codes ? Comment
-> et sous quel délai le rejet nous est-il notifié ? Pour redéposer, un fichier
-> corrigé avec un nouvel identifiant suffit-il, et l'échéance d'origine
-> reste-t-elle possible ? Peut-on annuler une remise déjà déposée, ou un seul
-> débit, et jusqu'à quand ? Y a-t-il des frais de rejet ?
+> 1. Pouvez-vous nous confirmer notre **BIC** et notre **ICS** (identifiant
+>    créancier SEPA) ?
+> 2. Le schéma **B2B** est-il bien ouvert sur notre contrat, en plus du CORE ?
+> 3. Avons-nous un **plafond** (par remise, par jour ou par mois) ? Que se
+>    passe-t-il si une remise le dépasse ?
+> 4. Quels sont les **frais** : abonnement au service, par remise, par débit,
+>    par rejet de fichier, par impayé ? Y a-t-il une limite ou un coût
+>    particulier si nous déposons jusqu'à cinq remises par mois ?
 >
-> **5. Retours** — Sous quelle forme recevons-nous rejets et impayés (fichier
-> `pain.002`, `camt.054`, portail seul) ? Sous quel délai ? Quels frais par
-> retour ?
+> **Étape 2 — Les mandats signés par nos clients**
 >
-> **6. Pré-notification** — Quel délai minimum acceptez-vous en CORE et en
-> B2B ? La clause dans nos CGV et nos mandats suffit-elle, ou faut-il un
-> avenant avec vous ? Pour les mandats déjà signés, faut-il les faire
-> re-signer ? Un e-mail par prélèvement (montant, date, RUM, ICS, factures)
-> convient-il ?
+> 5. **Délai de pré-notification** : nous souhaitons réduire le délai de
+>    14 jours. Quel **minimum** acceptez-vous, en CORE et en B2B ? Une clause
+>    dans nos CGV et nos mandats suffit-elle, ou faut-il un **avenant** à
+>    notre contrat avec vous ? Pour les mandats **déjà signés**, faut-il les
+>    faire re-signer, ou une modification des CGV notifiée au client
+>    suffit-elle ?
+> 6. **Forme de la pré-notification** : nous envoyons un e-mail par
+>    prélèvement (montant, date, RUM, ICS, numéros de facture). Cela vous
+>    convient-il ?
+> 7. **Signature électronique** du mandat : l'acceptez-vous, et à quel niveau
+>    (simple, avancée, qualifiée) ? Une acceptation en ligne sur notre espace
+>    client suffit-elle ?
+> 8. **Mandats B2B** : le client doit enregistrer le mandat auprès de sa
+>    propre banque. Avez-vous une exigence de votre côté ? Que se passe-t-il
+>    s'il ne l'a pas fait ?
 >
-> **7. Mandats B2B et signature** — Exigences de votre côté pour le B2B ?
-> Acceptez-vous un mandat signé électroniquement, et à quel niveau ?
+> **Étape 3 — L'import des RIB destinataires** (à faire avant les mandats,
+> d'après votre service EDI)
 >
-> **8. Notre compte** — Pouvez-vous confirmer notre BIC et notre ICS, et nous
-> indiquer les frais (par remise, par débit, par rejet, par retour,
-> abonnement) ?
+> 9. Pouvez-vous nous envoyer le **modèle d'import** : colonnes obligatoires
+>    et facultatives, ordre, longueurs, séparateur, encodage, ligne d'en-tête
+>    ou non, IBAN avec ou sans espaces, **BIC obligatoire** ou non ?
+> 10. Comment un RIB est-il ensuite **rattaché à son mandat** : par l'IBAN, par
+>     le nom, ou par un identifiant que nous fournissons ?
+> 11. Quand nous **ajoutons des clients**, faut-il envoyer **seulement les
+>     nouveaux RIB**, ou pouvons-nous renvoyer **toute la liste** ? Dans ce
+>     cas, les RIB déjà connus sont-ils ignorés, mis à jour ou créés en
+>     double ?
+> 12. Un client qui **change de compte** : comment remplacer son RIB ?
+>
+> **Étape 4 — L'import des mandats** (modèle `ModeleImportMandats` reçu)
+>
+> 13. **Valeurs exactes** des colonnes : F « date de signature »
+>     (`JJ/MM/AAAA` ou `AAAA-MM-JJ` ?), G « séquence » (`RCUR`/`OOFF`,
+>     `FRST`, ou un libellé ?), H « nature » (`CORE`/`B2B` ?).
+> 14. **Format** : nous envoyons de l'ASCII sans accents, `;` en séparateur et
+>     en fin de ligne, sans en-tête. Est-ce correct ? Longueur maximale du nom
+>     du débiteur ?
+> 15. Quand nous **ajoutons des clients** : faut-il importer **seulement les
+>     nouveaux mandats** (c'est ce que fait notre outil aujourd'hui), ou
+>     pouvons-nous renvoyer **l'ensemble trié** ? Dans ce cas, un mandat déjà
+>     connu (même RUM) est-il ignoré, mis à jour ou refusé — et un refus
+>     bloque-t-il tout le fichier ? Un ordre de tri est-il attendu ?
+> 16. Comment savoir qu'un import a **réussi, ligne par ligne** (compte rendu,
+>     fichier d'erreurs) ?
+> 17. Comment déclarer un **mandat modifié** (nouveau compte du client :
+>     colonnes « ancien IBAN / ancienne RUM » ?), un **mandat révoqué**, et un
+>     mandat **repris d'un ancien créancier** ?
+> 18. Un débit présenté sous une RUM **pas encore importée** est-il rejeté —
+>     seul, ou avec toute la remise ?
+>
+> **Étape 5 — La préparation de la remise**
+>
+> 19. Acceptez-vous le format **`pain.008.001.02`**, et jusqu'à quand ? Ou
+>     faut-il le `pain.008.001.08` ?
+> 20. Avez-vous un **guide d'implémentation** propre à la Caisse d'Épargne
+>     (champs exigés au-delà de la norme, notamment le BIC du débiteur) ?
+> 21. **Structure** : CORE et B2B dans **un même fichier** ou séparés ?
+>     Plusieurs dates d'échéance dans un fichier ? Taille maximale, nommage
+>     imposé ?
+> 22. **Crédit** sur notre compte : un seul montant global par remise, ou un
+>     par débit ?
+> 23. Premier prélèvement sous un mandat neuf : **`FRST` ou `RCUR`** ? Et après
+>     un changement de banque du client ?
+> 24. Contrôlez-vous les **doublons** (identifiant de fichier `MsgId`,
+>     identifiant de débit) ? Sur quelle durée ?
+>
+> **Étape 6 — Le dépôt**
+>
+> 25. **Délai de dépôt** : combien de jours ouvrés avant l'échéance, et avant
+>     quelle heure, en CORE et en B2B ?
+> 26. Pouvons-nous **tester** une remise avant la première vraie (recette, ou
+>     dépôt à blanc contrôlé sans exécution) ?
+> 27. Comment savoir que la remise est **reçue**, puis **acceptée** (accusé sur
+>     le portail, e-mail, fichier) ? Sous quel délai ?
+>
+> **Étape 7 — Le rejet d'un fichier ou d'une remise**
+>
+> 28. Quand un débit est invalide (IBAN faux, RUM inconnue, mandat révoqué),
+>     refusez-vous **tout le fichier**, **le bloc** concerné, ou **seulement
+>     ce débit** ?
+> 29. Pouvez-vous nous donner la **liste des motifs** de rejet d'un fichier au
+>     dépôt, avec leurs codes et libellés ? (Nous avons listé ceux que nous
+>     connaissons : format XML, totaux, caractères, doublon, délai non tenu,
+>     jour non ouvré, plafond… — est-ce complet ?)
+> 30. Comment et **sous quel délai** un rejet nous est-il notifié ? Jusqu'à
+>     quand un fichier peut-il être rejeté après son dépôt ?
+> 31. Pour **redéposer** : un fichier corrigé avec un nouvel identifiant
+>     suffit-il ? L'échéance d'origine reste-t-elle possible si le délai de
+>     dépôt n'est plus tenu ?
+> 32. Peut-on **annuler** une remise déjà déposée, ou un seul débit, et
+>     jusqu'à quand ?
+>
+> **Étape 8 — Les retours après règlement (impayés, contestations)**
+>
+> 33. Sous quelle forme les recevons-nous : fichier **`pain.002`**, relevé
+>     **`camt.054`**, ou seulement à l'écran ? Peut-on les **télécharger en
+>     fichier** ?
+> 34. Sous quel délai ? Le montant retourné et les frais sont-ils débités
+>     **séparément** ou en une seule écriture ?
+>
+> ---
+>
+> Nous savons que la liste est longue : des réponses partielles nous aident
+> déjà, en priorité les étapes 1, 3 et 4, qui conditionnent nos premiers
+> imports. Si un échange téléphonique est plus simple pour certains points,
+> nous sommes disponibles.
 >
 > Merci beaucoup pour votre aide,
