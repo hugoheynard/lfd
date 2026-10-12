@@ -10,6 +10,7 @@ import {
 import { FoldCalloutComponent, FoldPageLayoutComponent } from 'fold-ng';
 
 import { PermissionsStore } from '../../auth/permissions.store';
+import { declareCustomerAgentTools } from '../customer-agent-tools';
 import { declareMediaAgentTools } from '../media-agent-tools';
 import { declareOpsAgentTools } from '../ops-agent-tools';
 import { declarePimAgentTools } from '../pim-agent-tools';
@@ -120,14 +121,22 @@ export class AgentToolsPage {
   protected readonly opsTools = signal<readonly string[]>([]);
 
   /**
+   * La trousse des comptes clients — vide sans `b2b_companies:read`, le droit
+   * de la fiche client (`fiche-client.routes.ts`) et de ses routes
+   * (`@AdminSurface("b2b_companies")`). Elle ne fait que lire (2026-10-12).
+   */
+  protected readonly customerTools = signal<readonly string[]>([]);
+
+  /**
    * Lus une fois : la garde de la route a déjà chargé les permissions. Elle
-   * laisse passer l'un des trois droits ; chaque trousse suit le sien, et la
+   * laisse passer l'un des quatre droits ; chaque trousse suit le sien, et la
    * page dit laquelle manque.
    */
   private readonly permissions = inject(PermissionsStore);
   protected readonly pimAllowed = this.permissions.can('pim_catalog:write');
   protected readonly mediaAllowed = this.permissions.can('media_library:write');
   protected readonly opsAllowed = this.permissions.can('ops_health:read');
+  protected readonly customersAllowed = this.permissions.can('b2b_companies:read');
 
   /** Un agent est-il branché ? Un signal, puisque la réponse change. */
   protected readonly bridged = signal(false);
@@ -177,10 +186,11 @@ export class AgentToolsPage {
     return true;
   }
 
-  /** Déclare les trois trousses ; à appeler dans le contexte d'injection du composant. */
+  /** Déclare les quatre trousses ; à appeler dans le contexte d'injection du composant. */
   private declareAll(): void {
     this.tools.set(this.pimAllowed ? declarePimAgentTools() : []);
     this.mediaTools.set(this.mediaAllowed ? declareMediaAgentTools() : []);
     this.opsTools.set(this.opsAllowed ? declareOpsAgentTools() : []);
+    this.customerTools.set(this.customersAllowed ? declareCustomerAgentTools() : []);
   }
 }

@@ -184,4 +184,25 @@ describe('AgentToolsPage', () => {
     expect(listed.some((name) => name.startsWith('ops_'))).toBe(false);
     expect(root.textContent).toContain('pas le droit de lire la carte de santé');
   });
+
+  it('ne déclare QUE les comptes clients, en lecture, pour un compte qui n’a que `b2b_companies:read`', () => {
+    const { root } = render(['b2b_companies:read']);
+    const listed = [...root.querySelectorAll('code')].map((el) => el.textContent?.trim() ?? '');
+
+    expect(listed).toContain('accounts_search');
+    expect(listed).toContain('signups_pending');
+    expect(
+      listed.some(
+        (name) => name.startsWith('pim_') || name.startsWith('media_') || name.startsWith('ops_'),
+      ),
+    ).toBe(false);
+  });
+
+  it('dit quel droit manque à qui ne lit pas les comptes clients', () => {
+    const { root } = render(['pim_catalog:write']);
+    const listed = [...root.querySelectorAll('code')].map((el) => el.textContent?.trim() ?? '');
+
+    expect(listed.some((name) => name.startsWith('account'))).toBe(false);
+    expect(root.textContent).toContain('pas le droit de lire les comptes clients');
+  });
 });

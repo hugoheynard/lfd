@@ -121,11 +121,18 @@ export const routes: Routes = [
     //
     // Le garde demande l'ÉCRITURE pour les deux trousses qui écrivent (le
     // référentiel, la médiathèque) et la LECTURE de la carte de santé pour la
-    // troisième, qui ne fait que lire (2026-10-11). L'un des trois suffit : la
+    // troisième, qui ne fait que lire (2026-10-11) ; la LECTURE des comptes
+    // clients pour la quatrième, en lecture seule elle aussi (2026-10-12).
+    // L'un des quatre suffit : la
     // page ne déclare que les trousses dont le compte a le droit.
     path: 'outils-agent',
     canActivate: [
-      anyPermissionGuard('pim_catalog:write', 'media_library:write', 'ops_health:read'),
+      anyPermissionGuard(
+        'pim_catalog:write',
+        'media_library:write',
+        'ops_health:read',
+        'b2b_companies:read',
+      ),
     ],
     title: 'Outils agent — LFC B2B admin',
     loadComponent: () =>
