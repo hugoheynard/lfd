@@ -105,7 +105,11 @@ claude install`) : pas installé, il contredit « on ouvre avant
 
 ## Obsidian sur `documentation/`
 
-Ouvrir le dossier `documentation/` comme coffre (« Open folder as vault »).
+**`pnpm docs`** ouvre `documentation/` dans Obsidian et l'enregistre comme
+coffre au premier appel (`dev-toolbox/obsidian/open-docs.mjs`, lien
+`obsidian://open?path=`). Obsidian lui-même s'installe une fois
+(`brew install --cask obsidian`) : une application de bureau ne s'installe
+pas en silence au `pnpm install`.
 Trois réglages sont partagés par le dépôt, le reste de `.obsidian/` reste à
 chaque poste (ignoré par git) :
 

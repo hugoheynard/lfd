@@ -1183,6 +1183,8 @@ brew install uv          # ou : curl -LsSf https://astral.sh/uv/install.sh | sh
 ```
 
 Pas besoin d'installer Python : uv télécharge celui que graphify demande.
+Facultatif : Obsidian (`brew install --cask obsidian`), puis `pnpm docs`
+ouvre la documentation comme coffre.
 Sans uv, `pnpm install` réussit quand même et dit la commande à lancer.
 
 ```bash

@@ -9,6 +9,7 @@
   "scripts": {
     "prepare": "git config core.hooksPath .githooks || true; node dev-toolbox/graphify/install-graphify.mjs || true",
     "setup:hooks": "git config core.hooksPath .githooks",
+    "docs": "node dev-toolbox/obsidian/open-docs.mjs",
     "build": "turbo run build",
     "dev:infra": "node dev-toolbox/ensure-docker.mjs && node dev-toolbox/ensure-map-data.mjs && docker compose --env-file apps/lfd-route-planner/osrm-version.env -f docker-compose.dev.yml up -d",
     "dev:map:refresh": "node dev-toolbox/ensure-docker.mjs && node dev-toolbox/ensure-map-data.mjs --refresh && docker compose --env-file apps/lfd-route-planner/osrm-version.env -f docker-compose.dev.yml up -d",
