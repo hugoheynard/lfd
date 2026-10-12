@@ -1174,6 +1174,17 @@ Les deux se complètent : le hook interdit, Cerbère informe.
 
 ## 10. Commandes utiles
 
+**Poste neuf — les prérequis, à installer une fois avant `pnpm install` :**
+Node et pnpm (versions du `package.json` racine), Docker (Postgres de dev,
+`pnpm dev:infra`), et **uv** (installe graphify et son Python, §10 bis) :
+
+```bash
+brew install uv          # ou : curl -LsSf https://astral.sh/uv/install.sh | sh
+```
+
+Pas besoin d'installer Python : uv télécharge celui que graphify demande.
+Sans uv, `pnpm install` réussit quand même et dit la commande à lancer.
+
 ```bash
 pnpm dev:infra          # Postgres de dev (localhost:5433) — requis pour les e2e
 pnpm dev:infra:down     # arrêt, données conservées

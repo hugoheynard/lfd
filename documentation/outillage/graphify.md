@@ -8,6 +8,15 @@ appels, et des **groupes** de nœuds très liés entre eux. On s'en sert pour
 s'orienter — où vit un concept, qui dépend de quoi — avant d'ouvrir les
 fichiers.
 
+## Le seul prérequis : uv
+
+`brew install uv` (ou l'installeur d'astral.sh), une fois par poste — c'est
+écrit dans les prérequis de CLAUDE.md §10. **Python n'est pas un prérequis** :
+uv télécharge le Python épinglé (`GRAPHIFY_PYTHON`, 3.12) et le garde à part,
+sans toucher à celui du système. uv lui-même n'est PAS installé
+automatiquement : son installeur s'exécute depuis le réseau sans version
+épinglée, ce qu'un `pnpm install` ne doit jamais faire en silence.
+
 ## Ce qui se passe tout seul
 
 ```mermaid
