@@ -79,3 +79,27 @@ Commandes montre le nom du particulier sur ses commandes, comme aujourd'hui.
 
 La trousse des commandes (outils nommés, lecture seule) se bâtit sur la route
 de C1, après lui.
+
+## 6. Précisions de Hugo (2026-10-12)
+
+> « en t'inspirant de commandes d'un pro car ça va être le même esprit : une
+> grande fold table, filtre public / pro, retrait / livraison, page détail avec
+> historique, composition, explication du prix, statut, etc., bouton
+> annulation qui répond aux règles qu'on a définies, et bouton remboursement,
+> retour arrière vers la page de liste ; il faudra adapter les comportements de
+> remboursement en fonction des cas de figure, on verra ça à la fin »
+
+- **Modèle** : l'onglet « Commandes » de la fiche client
+  (`fiche-client/commandes/commandes-page`) — même table fold, mêmes colonnes,
+  étendue à toutes les commandes.
+- **Détail** : `/commandes/:orderId` existe (`app-order-view`) ; il gagne un
+  retour vers la liste qui garde les filtres, l'historique (journal de la
+  commande), la composition et l'explication du prix
+  (`GET /admin/orders/:id/lines/:sku/rules` existe), le statut.
+- **Annuler** et **Rembourser** : lots à part, **après** le plan
+  d'annulation corrigé (`plan-annulation-de-commande.md`, ses décisions
+  ouvertes) et son passage par `vitruve` (argent). Les boutons n'arrivent
+  qu'avec leurs règles serveur.
+
+Ordre : C1 (serveur de la liste) → C2 (liste et détail enrichi) → C3
+(annulation) → C4 (remboursement, par cas).
