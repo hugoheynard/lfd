@@ -817,3 +817,7 @@ l'issue, e-mail de période ; specs des écrans.
 
 **Décisions de Hugo à demander avant M4a** : la colonne `period_starts_at`
 (2), l'e-mail par période (3), le compte de `payerCount` (6).
+
+**Décisions de Hugo (2026-10-12) : « oui aux trois »** — `period_starts_at`
+rangée sur l'issue de facture ; l'e-mail dit la période ; la carte dit « N
+clients ont choisi ce mode » (le mensuel par défaut n'est pas compté).
