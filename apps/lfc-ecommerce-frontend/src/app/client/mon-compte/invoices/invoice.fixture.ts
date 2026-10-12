@@ -12,6 +12,8 @@ export const SEPTEMBER: IssuedInvoiceSummaryView = {
   issuedOn: '2026-09-30',
   dueOn: '2026-10-15',
   period: '2026-09',
+  periodClosesAt: '2026-09-30T22:00:00.000Z',
+  periodLabel: 'du 1er au 30 septembre 2026',
   totalHtCents: 10_000,
   totalVatCents: 550,
   totalTtcCents: 10_550,
@@ -26,6 +28,8 @@ export const CREDIT_NOTE: IssuedInvoiceSummaryView = {
   correctedInvoiceNumber: 'FA-2026-000007',
   dueOn: null,
   period: null,
+  periodClosesAt: null,
+  periodLabel: null,
   totalTtcCents: 1_055,
 };
 

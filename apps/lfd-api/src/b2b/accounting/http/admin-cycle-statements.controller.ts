@@ -1,5 +1,5 @@
 import {
-  statementMonthSchema,
+  statementPeriodSchema,
   type CycleStatementView,
   type StatementCyclesView,
 } from "@lfd/contracts";
@@ -20,8 +20,11 @@ import {
   ListStatementCyclesQuery,
 } from "../application/queries/cycle-statement-queries.js";
 
-/** `?month=AAAA-MM`, facultatif : absent, c'est le cycle en cours (plan, Q2). */
-const monthQuerySchema = statementMonthSchema.optional();
+/**
+ * `?periodClosesAt=<ISO>`, facultatif : absent, c'est la période en cours. La
+ * période suit le rythme de l'entité en service (R5).
+ */
+const periodQuerySchema = statementPeriodSchema.optional();
 
 /**
  * Surface **staff** du relevé de cycle (plan `agregation-des-commandes`, A1).
@@ -37,7 +40,7 @@ const monthQuerySchema = statementMonthSchema.optional();
 export class AdminCycleStatementsController {
   constructor(private readonly queries: QueryBus) {}
 
-  /** Les cycles proposés au sélecteur — mois civils, le plus récent d'abord. */
+  /** Les périodes proposées au sélecteur — au rythme de l'entité, la plus récente d'abord. */
   @Get("cycles")
   @RequireAnyPermission("b2b_accounting:read", "b2b_companies:read")
   async cycles(): Promise<StatementCyclesView> {
@@ -48,16 +51,17 @@ export class AdminCycleStatementsController {
 
   /**
    * Le relevé **provisoire** d'une société pour un cycle. `404` si la société
-   * n'existe pas, `400` pour un mois mal formé ou pas encore commencé.
+   * n'existe pas, `400` pour une clôture mal formée, qui n'en est pas une, ou une période pas encore commencée ;
+   * `409` si plusieurs entités sont en service.
    */
   @Get("companies/:companyId")
   @RequireAnyPermission("b2b_accounting:read", "b2b_companies:read")
   async statement(
     @Param("companyId") companyId: string,
-    @Query("month", new ZodQuery(monthQuerySchema)) month: string | undefined,
+    @Query("periodClosesAt", new ZodQuery(periodQuerySchema)) periodClosesAt: string | undefined,
   ): Promise<CycleStatementView> {
     return this.queries.execute<GetCycleStatementQuery, CycleStatementView>(
-      new GetCycleStatementQuery(companyId, month),
+      new GetCycleStatementQuery(companyId, periodClosesAt),
     );
   }
 
@@ -66,11 +70,11 @@ export class AdminCycleStatementsController {
   @Header("Content-Type", "text/csv; charset=utf-8")
   async export(
     @Param("companyId") companyId: string,
-    @Query("month", new ZodQuery(monthQuerySchema)) month: string | undefined,
+    @Query("periodClosesAt", new ZodQuery(periodQuerySchema)) periodClosesAt: string | undefined,
     @Res({ passthrough: true }) response: Response,
   ): Promise<string> {
     const file = await this.queries.execute<ExportCycleStatementQuery, CycleStatementFile>(
-      new ExportCycleStatementQuery(companyId, month),
+      new ExportCycleStatementQuery(companyId, periodClosesAt),
     );
     response.setHeader(
       "Content-Disposition",

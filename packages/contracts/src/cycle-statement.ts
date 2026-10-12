@@ -5,29 +5,38 @@ import type { VatShareView } from "./order.js";
 
 /**
  * **Le relevé de cycle** — les commandes passées au compte par une société sur
- * un mois, et leurs totaux. Ce n'est pas une facture : ni numéro, ni mentions
- * (plan `documentation/order/plan-agregation-des-commandes.md`).
+ * une PÉRIODE de facturation, et leurs totaux. Ce n'est pas une facture : ni
+ * numéro, ni mentions (plan `documentation/order/plan-agregation-des-commandes.md`).
+ *
+ * La période suit le rythme de facturation de l'entité émettrice en service
+ * (plan `plan-rythme-de-facturation.md`, §13-14, lot R5) : un mois civil pour
+ * le mensuel au 1er, une semaine pour l'hebdomadaire.
  */
 
 /**
- * `?month=AAAA-MM` — la FORME seulement. Le serveur refuse aussi un mois futur,
- * mais c'est une règle, pas une forme : elle vit dans le domaine.
+ * `?periodClosesAt=<ISO>` — la FORME seulement. Le serveur refuse aussi une
+ * période qui n'a pas commencé, ou un instant qui n'est pas une clôture de
+ * l'entité : ce sont des règles, elles vivent dans le domaine.
  */
-export const statementMonthSchema = z.string().regex(/^\d{4}-(0[1-9]|1[0-2])$/u);
+export const statementPeriodSchema = z.iso.datetime();
 
-/** Un cycle de relevé : un mois civil, dans le fuseau des affaires. */
+/** Une période de relevé : `[periodStartsAt, periodClosesAt[`, dans le fuseau des affaires. */
 export interface StatementCycleView {
-  /** `2026-09` — l'identité du cycle, à renvoyer en `?month=`. */
-  readonly month: string;
-  /** Inclusif, ISO. */
-  readonly startsAt: string;
-  /** **Exclusif**, ISO. */
-  readonly closesAt: string;
-  /** Le cycle contient l'instant présent : il accumule encore. */
+  /** ISO, **exclusif** — l'identité de la période, à renvoyer en `?periodClosesAt=`. */
+  readonly periodClosesAt: string;
+  /** ISO, inclusif — la clôture précédente réelle. */
+  readonly periodStartsAt: string;
+  /** « du 1er au 30 septembre 2026 » — jours locaux, dernier jour inclus. */
+  readonly periodLabel: string;
+  /** La période contient l'instant présent : elle accumule encore. */
   readonly inProgress: boolean;
 }
 
-/** Les cycles proposés au sélecteur, le plus récent d'abord. */
+/**
+ * Les périodes proposées au sélecteur, la plus récente d'abord : celle en
+ * cours, puis celles qui se sont closes APRÈS la mise en service de la facture
+ * par période (au plus douze).
+ */
 export interface StatementCyclesView {
   readonly cycles: readonly StatementCycleView[];
 }

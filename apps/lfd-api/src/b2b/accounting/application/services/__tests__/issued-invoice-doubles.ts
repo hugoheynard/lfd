@@ -5,6 +5,7 @@ import type { StoredDocument } from "../../../../../platform/storage/document-st
 import type { Invoice } from "../../../domain/entities/invoice.js";
 import { CompanyInvoicesReader } from "../../../domain/ports/company-invoices.reader.js";
 import { InvoicePeriodsReader } from "../../../domain/ports/invoice-periods.reader.js";
+import type { BillingCycle } from "../../../domain/services/billing-cycle.js";
 import { InvoiceReader } from "../../../domain/ports/invoice.reader.js";
 import { PayerNoticeContactsReader } from "../../../domain/ports/payer-notice-contacts.reader.js";
 import {
@@ -59,11 +60,17 @@ export class MemoryCompanyInvoices extends CompanyInvoicesReader {
   }
 }
 
+/** La période de septembre 2026 (mensuel au 1er) — dates comparées entre elles seulement. */
+export const SEPTEMBER_2026: BillingCycle = {
+  startsAt: new Date("2026-08-31T22:00:00.000Z"),
+  closesAt: new Date("2026-09-30T22:00:00.000Z"),
+};
+
 export class FixedInvoicePeriods extends InvoicePeriodsReader {
-  constructor(private readonly periods: ReadonlyMap<string, string>) {
+  constructor(private readonly periods: ReadonlyMap<string, BillingCycle>) {
     super();
   }
-  periodsOf(invoiceIds: readonly string[]): Promise<ReadonlyMap<string, string>> {
+  periodsOf(invoiceIds: readonly string[]): Promise<ReadonlyMap<string, BillingCycle>> {
     return Promise.resolve(
       new Map([...this.periods].filter(([invoiceId]) => invoiceIds.includes(invoiceId))),
     );

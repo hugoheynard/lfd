@@ -7,6 +7,7 @@ import {
   LastAutopilotRunReader,
   type AutopilotRunRecord,
 } from "../../../domain/ports/last-autopilot-run.reader.js";
+import { InvoicedClosuresReader } from "../../../domain/ports/invoiced-closures.reader.js";
 import { RecordedClosureReader } from "../../../domain/ports/recorded-closure.reader.js";
 import { toView } from "../../../infrastructure/legal-entity.mapper.js";
 import { BillingRhythm } from "../../../domain/value-objects/billing-rhythm.js";
@@ -61,6 +62,37 @@ class NoClosure extends RecordedClosureReader {
   }
 }
 
+/** La facture a tenté les clôtures données, et elles seules. */
+class NoInvoicedClosure extends InvoicedClosuresReader {
+  constructor(private readonly attemptedAt: readonly string[] = []) {
+    super();
+  }
+  attempted(_legalEntityId: string, periodClosesAt: Date): Promise<boolean> {
+    return Promise.resolve(this.attemptedAt.includes(periodClosesAt.toISOString()));
+  }
+}
+
+/** Mensuel au 1er, passage programmé à l'hebdomadaire du lundi au 1er novembre. */
+const SCHEDULED_WEEKLY = BillingRhythmSetting.of(BillingRhythm.default(), {
+  rhythm: BillingRhythm.weekly(1),
+  effectiveAt: new Date("2026-10-31T23:00:00.000Z"),
+});
+
+function handlerWith(
+  rhythms: FixedRhythms,
+  invoiced: InvoicedClosuresReader,
+  now: Date = NOW,
+): GetLegalEntityHandler {
+  return new GetLegalEntityHandler(
+    new OneEntity(record()),
+    new NoClosure(),
+    new NoRun(),
+    rhythms,
+    invoiced,
+    new FixedClock(now),
+  );
+}
+
 function record(): LegalEntityRecord {
   const entity = declaredEntity();
   entity.setCollectionSchedule({
@@ -78,6 +110,7 @@ describe("la fiche d'une entité porte le calendrier de son cycle en cours", () 
       new NoClosure(),
       new NoRun(),
       new FixedRhythms(),
+      new NoInvoicedClosure(),
       new FixedClock(NOW),
     );
 
@@ -101,6 +134,7 @@ describe("la fiche d'une entité porte le calendrier de son cycle en cours", () 
       new NoClosure(),
       new NoRun(),
       new FixedRhythms(),
+      new NoInvoicedClosure(),
       clock,
     ).execute();
     const one = await new GetLegalEntityHandler(
@@ -108,6 +142,7 @@ describe("la fiche d'une entité porte le calendrier de son cycle en cours", () 
       new NoClosure(),
       new NoRun(),
       new FixedRhythms(),
+      new NoInvoicedClosure(),
       clock,
     ).execute(new GetLegalEntityQuery("le1"));
 
@@ -120,6 +155,7 @@ describe("la fiche d'une entité porte le calendrier de son cycle en cours", () 
       new NoClosure(),
       new OneRun(),
       new FixedRhythms(),
+      new NoInvoicedClosure(),
       new FixedClock(NOW),
     );
 
@@ -139,6 +175,7 @@ describe("la fiche d'une entité porte le calendrier de son cycle en cours", () 
       new NoClosure(),
       new NoRun(),
       new FixedRhythms(),
+      new NoInvoicedClosure(),
       new FixedClock(NOW),
     ).execute(new GetLegalEntityQuery("le1"));
 
@@ -151,6 +188,7 @@ describe("la fiche d'une entité porte le calendrier de son cycle en cours", () 
       new NoClosure(),
       new NoRun(),
       new FixedRhythms(BillingRhythmSetting.of(BillingRhythm.weekly(1), null)),
+      new NoInvoicedClosure(),
       new FixedClock(NOW),
     ).execute(new GetLegalEntityQuery("le1"));
 
@@ -159,5 +197,87 @@ describe("la fiche d'une entité porte le calendrier de son cycle en cours", () 
       closesAt: "2026-10-11T22:00:00.000Z",
       plannedConstitutionAt: "2026-10-12T00:00:00.000Z",
     });
+  });
+});
+
+describe("la fiche annonce les prochaines clôtures (R5)", () => {
+  it("les trois prochaines, au rythme de l'entité, avec leur période et le jour de leur facture", async () => {
+    const view = await handlerWith(
+      new FixedRhythms(BillingRhythmSetting.of(BillingRhythm.weekly(1), null)),
+      new NoInvoicedClosure(),
+    ).execute(new GetLegalEntityQuery("le1"));
+
+    expect(view.upcomingClosures).toEqual([
+      {
+        closesAt: "2026-10-11T22:00:00.000Z",
+        periodLabel: "du 5 au 11 octobre 2026",
+        invoicedOn: "2026-10-11",
+      },
+      {
+        closesAt: "2026-10-18T22:00:00.000Z",
+        periodLabel: "du 12 au 18 octobre 2026",
+        invoicedOn: "2026-10-18",
+      },
+      {
+        closesAt: "2026-10-25T23:00:00.000Z",
+        periodLabel: "du 19 au 25 octobre 2026",
+        invoicedOn: "2026-10-25",
+      },
+    ]);
+  });
+
+  it("suivent le rythme programmé dès sa prise d'effet", async () => {
+    const view = await handlerWith(
+      new FixedRhythms(SCHEDULED_WEEKLY),
+      new NoInvoicedClosure(),
+    ).execute(new GetLegalEntityQuery("le1"));
+
+    expect(view.upcomingClosures.map((closure) => closure.periodLabel)).toEqual([
+      "du 1er au 31 octobre 2026",
+      "du 1er au 1er novembre 2026",
+      "du 2 au 8 novembre 2026",
+    ]);
+  });
+});
+
+describe("la fiche dit AVANT le geste qu'un changement de rythme attend sa facture (§12)", () => {
+  it("rien de programmé : aucun verrou", async () => {
+    const view = await handlerWith(new FixedRhythms(), new NoInvoicedClosure()).execute(
+      new GetLegalEntityQuery("le1"),
+    );
+    expect(view.billingRhythmChangeLock).toBeNull();
+  });
+
+  it("programmé, prise d'effet pas atteinte : verrouillé, la facture qui libère, et l'annulation possible", async () => {
+    const view = await handlerWith(
+      new FixedRhythms(SCHEDULED_WEEKLY),
+      new NoInvoicedClosure(),
+    ).execute(new GetLegalEntityQuery("le1"));
+
+    expect(view.billingRhythmChangeLock).toEqual({
+      effectiveAt: "2026-10-31T23:00:00.000Z",
+      unlocksAfterInvoiceOn: "2026-10-31",
+      canCancel: true,
+    });
+  });
+
+  it("prise d'effet passée, facture pas encore tentée : toujours verrouillé, plus d'annulation", async () => {
+    const view = await handlerWith(
+      new FixedRhythms(SCHEDULED_WEEKLY),
+      new NoInvoicedClosure(),
+      new Date("2026-11-03T09:00:00.000Z"),
+    ).execute(new GetLegalEntityQuery("le1"));
+
+    expect(view.billingRhythmChangeLock).toMatchObject({ canCancel: false });
+  });
+
+  it("la clôture de prise d'effet tentée par la facture : le verrou tombe", async () => {
+    const view = await handlerWith(
+      new FixedRhythms(SCHEDULED_WEEKLY),
+      new NoInvoicedClosure(["2026-10-31T23:00:00.000Z"]),
+      new Date("2026-11-03T09:00:00.000Z"),
+    ).execute(new GetLegalEntityQuery("le1"));
+
+    expect(view.billingRhythmChangeLock).toBeNull();
   });
 });

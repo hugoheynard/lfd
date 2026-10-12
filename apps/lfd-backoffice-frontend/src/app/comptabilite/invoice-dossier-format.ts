@@ -160,7 +160,7 @@ export function hasAlerts(dossier: InvoiceDossierView): boolean {
   return (
     dossier.neverHandedOver.length > 0 ||
     dossier.inconsistentOrders.length > 0 ||
-    dossier.otherMonthOrders.length > 0 ||
+    dossier.outsidePeriodOrders.length > 0 ||
     dossier.ordersWithoutDate.length > 0 ||
     dossier.issuanceBlockers.length > 0 ||
     !dossier.threeGapInvariantHolds

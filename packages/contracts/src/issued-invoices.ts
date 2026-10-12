@@ -24,8 +24,16 @@ export interface IssuedInvoiceSummaryView {
   readonly issuedOn: string;
   /** `AAAA-MM-JJ` ; `null` pour un avoir. */
   readonly dueOn: string | null;
-  /** `AAAA-MM` — le mois des commandes facturées ; `null` hors facture du mois. */
+  /**
+   * `AAAA-MM` — le mois où s'achève la période facturée ; `null` hors facture
+   * de période. Gardé pour « Mes factures » : deux semaines d'un même mois y
+   * portent la même valeur, `periodClosesAt` les distingue.
+   */
   readonly period: string | null;
+  /** ISO — la clôture de la période facturée ; `null` hors facture de période. */
+  readonly periodClosesAt: string | null;
+  /** « du 1er au 30 septembre 2026 » ; `null` hors facture de période. */
+  readonly periodLabel: string | null;
   readonly totalHtCents: number;
   readonly totalVatCents: number;
   readonly totalTtcCents: number;

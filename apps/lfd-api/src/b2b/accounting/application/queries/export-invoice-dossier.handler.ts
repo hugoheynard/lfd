@@ -3,6 +3,8 @@ import { QueryHandler, type IQueryHandler } from "@nestjs/cqrs";
 import { OrderDeliveryHistoryReader } from "../../../../delivery/channels/commerce/index.js";
 import { OrderHandoverHistoryReader } from "../../../../handover/channels/commerce/index.js";
 import { Clock } from "../../../../platform/time/clock.js";
+import { BillingRhythmReader } from "../../domain/ports/billing-rhythm.reader.js";
+import { InvoiceIssuersReader } from "../../domain/ports/invoice-issuers.reader.js";
 import { InvoiceDossierReader } from "../../domain/ports/invoice-dossier.reader.js";
 import { StatementBillingReader } from "../../domain/ports/statement-billing.reader.js";
 import {
@@ -11,6 +13,7 @@ import {
   ordersCsv,
   type InvoiceDossierCsvHeading,
 } from "../../domain/services/invoice-dossier-csv.js";
+import { periodTagOf } from "../../domain/services/invoicing-closures.js";
 import { buildInvoiceDossier, type BuiltInvoiceDossier } from "../invoice-dossier-support.js";
 import { ExportInvoiceDossierQuery, type InvoiceDossierSheet } from "./invoice-dossier-queries.js";
 
@@ -48,6 +51,8 @@ export class ExportInvoiceDossierHandler implements IQueryHandler<
     private readonly handovers: OrderHandoverHistoryReader,
     private readonly deliveries: OrderDeliveryHistoryReader,
     private readonly clock: Clock,
+    private readonly issuers: InvoiceIssuersReader,
+    private readonly rhythms: BillingRhythmReader,
   ) {}
 
   async execute(query: ExportInvoiceDossierQuery): Promise<InvoiceDossierFile> {
@@ -58,19 +63,21 @@ export class ExportInvoiceDossierHandler implements IQueryHandler<
         handovers: this.handovers,
         deliveries: this.deliveries,
         clock: this.clock,
+        issuers: this.issuers,
+        rhythms: this.rhythms,
       },
       query.companyId,
-      query.month,
+      query.periodClosesAt,
     );
-    const month = built.month.toString();
+    const { cycle, label, inProgress } = built.period;
     const sheet = SHEETS[query.sheet];
     return {
       csv: sheet.render(built, {
         companyName: built.companyName,
-        month,
-        inProgress: built.inProgress,
+        period: label,
+        inProgress,
       }),
-      fileName: `DOSSIER-${sheet.prefix}-${built.companyName}-${month}.csv`,
+      fileName: `DOSSIER-${sheet.prefix}-${built.companyName}-${periodTagOf(cycle.closesAt)}.csv`,
     };
   }
 }

@@ -16,13 +16,13 @@
  * lecture et l'agrégation. Elles prennent l'instant de la base, donc tombent
  * dans le cycle en cours sans aucune date écrite ici.
  */
-import {
-  instantToLocal,
-  type CycleStatementOrderView,
-  type CycleStatementView,
-  type StatementCyclesView,
+import type {
+  CycleStatementOrderView,
+  CycleStatementView,
+  StatementCyclesView,
 } from "@lfd/contracts";
 
+import { StatementMonth } from "../src/b2b/accounting/domain/value-objects/statement-month.js";
 import { AdminTokenVerifier } from "../src/platform/auth/admin-token.verifier.js";
 import { bootstrapE2e, daysAgo, jsonBody, type E2eContext } from "./e2e-harness.js";
 import { createCompany, createUser } from "./factories.js";
@@ -190,10 +190,11 @@ describe("le relevé d'un cycle", () => {
     expect(totals.totalCents).toBe(14_770);
   });
 
-  it("lit un mois passé à part du mois en cours", async () => {
+  it("lit une période passée à part de la période en cours", async () => {
     const port = await client("Boulangerie du Port");
     const past = new Date(daysAgo(40));
-    const pastMonth = instantToLocal(past).day.slice(0, 7);
+    // Aucune entité semée : le rythme par défaut, mensuel au 1er (R5).
+    const pastClosesAt = StatementMonth.containing(past).cycle().closesAt.toISOString();
     const old = await seedOrder({
       ...port,
       subtotalCents: 1_000,
@@ -202,8 +203,8 @@ describe("le relevé d'un cycle", () => {
       createdAt: past,
     });
 
-    const view = await statement(port.companyId, `?month=${pastMonth}`);
-    expect(view.cycle).toMatchObject({ month: pastMonth, inProgress: false });
+    const view = await statement(port.companyId, `?periodClosesAt=${pastClosesAt}`);
+    expect(view.cycle).toMatchObject({ periodClosesAt: pastClosesAt, inProgress: false });
     expect(ordersOf(view).map((order) => order.orderNumber)).toEqual([old]);
     expect(ordersOf(await statement(port.companyId))).toEqual([]);
   });
@@ -215,20 +216,29 @@ describe("le relevé d'un cycle", () => {
     expect(view.totals).toMatchObject({ orderCount: 0, vatCents: 0, totalCents: 0 });
   });
 
-  it("refuse une société inconnue (404) et un mois mal formé (400)", async () => {
+  it("refuse une société inconnue (404), une clôture mal formée ou qui n'en est pas une (400)", async () => {
     await staff().get(`${BASE}/companies/absente`).expect(404);
     const port = await client("Boulangerie du Port");
-    await staff().get(`${BASE}/companies/${port.companyId}?month=2026-13`).expect(400);
+    await staff().get(`${BASE}/companies/${port.companyId}?periodClosesAt=2026-13`).expect(400);
+    const notAClosure = new Date(daysAgo(40)).toISOString();
+    await staff()
+      .get(`${BASE}/companies/${port.companyId}?periodClosesAt=${notAClosure}`)
+      .expect(400);
   });
 });
 
 describe("les cycles proposés", () => {
-  it("rend douze mois civils, le premier en cours", async () => {
+  it("rend la période en cours d'abord, puis celles closes après la mise en service, sans trou", async () => {
     const { cycles } = jsonBody<StatementCyclesView>(
       await staff().get(`${BASE}/cycles`).expect(200),
     );
-    expect(cycles).toHaveLength(12);
+    expect(cycles.length).toBeGreaterThanOrEqual(1);
+    expect(cycles.length).toBeLessThanOrEqual(12);
     expect(cycles[0]?.inProgress).toBe(true);
+    expect(cycles[0]?.periodLabel).toMatch(/^du /u);
+    for (let rank = 1; rank < cycles.length; rank += 1) {
+      expect(cycles[rank]?.periodClosesAt).toBe(cycles[rank - 1]?.periodStartsAt);
+    }
     expect(cycles.filter((cycle) => cycle.inProgress)).toHaveLength(1);
   });
 });

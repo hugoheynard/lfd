@@ -79,7 +79,8 @@ export class InvoiceDossierPage {
   protected readonly companies = signal<readonly DirectDebitBlockView[]>([]);
   protected readonly cycles = signal<readonly StatementCycleView[]>([]);
   protected readonly companyId = signal<string | null>(null);
-  protected readonly month = signal<string | null>(null);
+  /** La période choisie — sa clôture ISO, son identité (R5). */
+  protected readonly period = signal<string | null>(null);
 
   protected readonly state = signal<DossierState>('idle');
   /** Le message du serveur sur un 409 — il nomme le bon, on l'affiche tel quel. */
@@ -95,7 +96,7 @@ export class InvoiceDossierPage {
   );
 
   protected readonly cycleChoices = computed<FoldSelectOption<string>[]>(() =>
-    this.cycles().map((cycle) => ({ value: cycle.month, label: cycleLabel(cycle) })),
+    this.cycles().map((cycle) => ({ value: cycle.periodClosesAt, label: cycleLabel(cycle) })),
   );
 
   constructor() {
@@ -111,7 +112,7 @@ export class InvoiceDossierPage {
       ]);
       this.companies.set(companies);
       this.cycles.set(cycles);
-      this.month.set(cycles[0]?.month ?? null);
+      this.period.set(cycles[0]?.periodClosesAt ?? null);
     } catch {
       this.choicesFailed.set(true);
     }
@@ -122,20 +123,20 @@ export class InvoiceDossierPage {
     void this.load();
   }
 
-  protected onMonth(month: string): void {
-    this.month.set(month);
+  protected onPeriod(period: string): void {
+    this.period.set(period);
     void this.load();
   }
 
   protected async load(): Promise<void> {
     const companyId = this.companyId();
-    const month = this.month();
-    if (companyId === null || month === null) {
+    const period = this.period();
+    if (companyId === null || period === null) {
       return;
     }
     this.state.set('loading');
     try {
-      this.dossier.set(await this.api.dossier(companyId, month));
+      this.dossier.set(await this.api.dossier(companyId, period));
       this.state.set('ready');
     } catch (error) {
       this.dossier.set(null);
@@ -146,14 +147,14 @@ export class InvoiceDossierPage {
 
   protected async download(sheet: InvoiceDossierSheet): Promise<void> {
     const companyId = this.companyId();
-    const month = this.month();
-    if (companyId === null || month === null) {
+    const period = this.period();
+    if (companyId === null || period === null) {
       return;
     }
     this.exporting.set(sheet);
     try {
-      const file = await this.api.exportCsv(companyId, month, sheet);
-      saveBlob(file.blob, file.fileName ?? `DOSSIER-SIMULE-${sheet}-${month}.csv`);
+      const file = await this.api.exportCsv(companyId, period, sheet);
+      saveBlob(file.blob, file.fileName ?? `DOSSIER-SIMULE-${sheet}.csv`);
     } catch (error) {
       this.notify.error(error, 'Le téléchargement a échoué. Réessayez dans un instant.');
     } finally {

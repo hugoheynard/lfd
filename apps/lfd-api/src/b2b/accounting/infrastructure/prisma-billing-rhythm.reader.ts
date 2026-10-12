@@ -27,22 +27,36 @@ export class PrismaBillingRhythmReader extends BillingRhythmReader {
         nextBillingRhythmEffectiveAt: true,
       },
     });
-    if (row === null) {
-      return null;
-    }
-    const current = BillingRhythm.fromRecord({
-      kind: row.billingRhythmKind,
-      days: row.billingRhythmDays,
-    });
-    if (row.nextBillingRhythmKind === null || row.nextBillingRhythmEffectiveAt === null) {
-      return BillingRhythmSetting.of(current, null);
-    }
-    return BillingRhythmSetting.of(current, {
-      rhythm: BillingRhythm.fromRecord({
-        kind: row.nextBillingRhythmKind,
-        days: row.nextBillingRhythmDays,
-      }),
-      effectiveAt: row.nextBillingRhythmEffectiveAt,
-    });
+    return row === null ? null : billingRhythmSettingOf(row);
   }
+}
+
+/** Les cinq colonnes du rythme sur `legal_entities`, telles que Prisma les rend. */
+export interface BillingRhythmColumns {
+  readonly billingRhythmKind: string;
+  readonly billingRhythmDays: readonly number[];
+  readonly nextBillingRhythmKind: string | null;
+  readonly nextBillingRhythmDays: readonly number[];
+  readonly nextBillingRhythmEffectiveAt: Date | null;
+}
+
+/**
+ * Le réglage relu par les factories du value object — partagé avec la lecture
+ * des périodes des factures, qui joint l'entité de l'issue.
+ */
+export function billingRhythmSettingOf(row: BillingRhythmColumns): BillingRhythmSetting {
+  const current = BillingRhythm.fromRecord({
+    kind: row.billingRhythmKind,
+    days: row.billingRhythmDays,
+  });
+  if (row.nextBillingRhythmKind === null || row.nextBillingRhythmEffectiveAt === null) {
+    return BillingRhythmSetting.of(current, null);
+  }
+  return BillingRhythmSetting.of(current, {
+    rhythm: BillingRhythm.fromRecord({
+      kind: row.nextBillingRhythmKind,
+      days: row.nextBillingRhythmDays,
+    }),
+    effectiveAt: row.nextBillingRhythmEffectiveAt,
+  });
 }

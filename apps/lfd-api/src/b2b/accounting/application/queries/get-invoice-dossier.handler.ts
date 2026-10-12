@@ -8,6 +8,7 @@ import { QueryHandler, type IQueryHandler } from "@nestjs/cqrs";
 import { OrderDeliveryHistoryReader } from "../../../../delivery/channels/commerce/index.js";
 import { OrderHandoverHistoryReader } from "../../../../handover/channels/commerce/index.js";
 import { Clock } from "../../../../platform/time/clock.js";
+import { BillingRhythmReader } from "../../domain/ports/billing-rhythm.reader.js";
 import { InvoiceDossierReader } from "../../domain/ports/invoice-dossier.reader.js";
 import { InvoiceIssuersReader } from "../../domain/ports/invoice-issuers.reader.js";
 import { StatementBuyerReader } from "../../domain/ports/statement-buyer.reader.js";
@@ -22,6 +23,7 @@ import type {
   DossierOrderRecord,
 } from "../../domain/services/invoice-dossier-history.js";
 import { buildInvoiceDossier, type BuiltInvoiceDossier } from "../invoice-dossier-support.js";
+import { statementCycleView } from "../statement-period-support.js";
 import { GetInvoiceDossierQuery } from "./invoice-dossier-queries.js";
 
 /**
@@ -41,6 +43,7 @@ export class GetInvoiceDossierHandler implements IQueryHandler<
     private readonly clock: Clock,
     private readonly issuers: InvoiceIssuersReader,
     private readonly buyers: StatementBuyerReader,
+    private readonly rhythms: BillingRhythmReader,
   ) {}
 
   async execute(query: GetInvoiceDossierQuery): Promise<InvoiceDossierView> {
@@ -51,9 +54,11 @@ export class GetInvoiceDossierHandler implements IQueryHandler<
         handovers: this.handovers,
         deliveries: this.deliveries,
         clock: this.clock,
+        issuers: this.issuers,
+        rhythms: this.rhythms,
       },
       query.companyId,
-      query.month,
+      query.periodClosesAt,
     );
     return toView(built, await this.issuanceBlockers(built.companyId));
   }
@@ -80,12 +85,7 @@ function toView(
   return {
     companyId: built.companyId,
     companyName: built.companyName,
-    cycle: {
-      month: built.month.toString(),
-      startsAt: built.cycle.startsAt.toISOString(),
-      closesAt: built.cycle.closesAt.toISOString(),
-      inProgress: built.inProgress,
-    },
+    cycle: statementCycleView(built.period),
     scope: STATEMENT_SCOPE,
     invoice: dossier.invoice,
     neverHandedOver: built.neverHandedOver,
@@ -95,7 +95,7 @@ function toView(
     gaps: dossier.gaps,
     inconsistentOrders: dossier.inconsistentOrders,
     threeGapInvariantHolds: dossier.threeGapInvariantHolds,
-    otherMonthOrders: built.calendar.otherMonth,
+    outsidePeriodOrders: built.calendar.outsidePeriod,
     ordersWithoutDate: built.calendar.withoutDate,
     issuanceBlockers,
   };

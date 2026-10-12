@@ -12,6 +12,8 @@ import { InvoiceNotFoundError } from "../domain/errors/invoice-access-errors.js"
 import type { InvoicePeriodsReader } from "../domain/ports/invoice-periods.reader.js";
 import type { InvoiceReader } from "../domain/ports/invoice.reader.js";
 import type { OrderInvoicesReader } from "../domain/ports/order-invoices.reader.js";
+import type { BillingCycle } from "../domain/services/billing-cycle.js";
+import { periodLabelOf, periodMonthOf } from "../domain/services/invoicing-closures.js";
 
 /** Les deux ports qu'une lecture de facture appelle. */
 export interface IssuedInvoiceReaders {
@@ -93,7 +95,7 @@ export async function orderInvoicesOf(
   };
 }
 
-function summaryOf(invoice: Invoice, period: string | null): IssuedInvoiceSummaryView {
+function summaryOf(invoice: Invoice, period: BillingCycle | null): IssuedInvoiceSummaryView {
   const state = invoice.toState();
   return {
     invoiceId: state.id,
@@ -102,7 +104,9 @@ function summaryOf(invoice: Invoice, period: string | null): IssuedInvoiceSummar
     correctedInvoiceNumber: state.correctedInvoiceNumber,
     issuedOn: state.issuedOn,
     dueOn: state.dueOn,
-    period,
+    period: period === null ? null : periodMonthOf(period.closesAt),
+    periodClosesAt: period === null ? null : period.closesAt.toISOString(),
+    periodLabel: period === null ? null : periodLabelOf(period),
     totalHtCents: state.vat.taxableBaseCents,
     totalVatCents: state.vat.vatCents,
     totalTtcCents: state.vat.totalCents,
@@ -114,7 +118,7 @@ const sum = (parts: readonly InvoiceVatPart[]): number =>
   parts.reduce((total, part) => total + part.amountCents, 0);
 
 /** Le vendeur sans son IBAN ni son BIC : une facture se lit, elle ne fait pas virer. */
-function detailOf(invoice: Invoice, period: string | null): IssuedInvoiceView {
+function detailOf(invoice: Invoice, period: BillingCycle | null): IssuedInvoiceView {
   const state = invoice.toState();
   const { seller, buyer, vat, mentions } = state;
   return {

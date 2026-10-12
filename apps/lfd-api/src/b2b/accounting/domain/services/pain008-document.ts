@@ -4,6 +4,7 @@ import type { CreditorSnapshot } from "../creditor-snapshot.js";
 import type { MandatePaymentType } from "../value-objects/mandate-defaults.js";
 import type { SepaScheme } from "../value-objects/sepa-scheme.js";
 import { CreditorBicMissingError } from "../errors/accounting-errors.js";
+import { periodTagOf } from "./invoicing-closures.js";
 
 /**
  * **Le corps d'un `pain.008`**, quels que soient ses identifiants.
@@ -207,13 +208,21 @@ export function cyclePeriod(cycleStart: Date, cycleEnd: Date): string {
 }
 
 /**
- * L'étiquette du cycle — `202609` pour un cycle clos le 1er octobre.
+ * L'étiquette du cycle — `20260930` pour un cycle clos le 1er octobre
+ * (`AAAAMM` jusqu'à R5, qui confondait deux semaines d'un même mois).
  *
  * 🔴 Dérivée du **dernier jour COMPRIS**, pas de l'instant de clôture : la borne
  * haute est exclusive.
+ *
+ * ⚠️ Elle n'entre dans AUCUN identifiant figé : le `MsgId`, les `PmtInfId` et
+ * les `EndToEndId` d'un lot sont tirés de son ULID (`collection-identifiers.ts`),
+ * et son XML est stocké, jamais re-rendu (`lot-de-prelevement-fige.md`, vérifié
+ * le 2026-10-12). Elle ne nomme que le brouillon (re-rendu à chaque appel), les
+ * noms de fichiers et les libellés de lot — ceux déjà écrits au journal gardent
+ * l'ancienne forme.
  */
 export function cycleTagOf(cycleEnd: Date): string {
-  return localDay(dayBefore(cycleEnd)).slice(0, 7).replace("-", "");
+  return periodTagOf(cycleEnd);
 }
 
 /** Un nom dans un commentaire XML : jeu SEPA, et jamais `--`, qui le fermerait. */

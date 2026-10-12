@@ -1,7 +1,7 @@
 import { dossierCalendarNotes } from "../invoice-dossier-calendar.js";
 import type { FrozenInvoiceOrder } from "../invoice-dossier.types.js";
 
-/** Les dates ne sont comparées qu'au mois passé en argument : aucune horloge. */
+/** Les dates ne sont comparées qu'à la période passée en argument : aucune horloge. */
 function bon(reference: string, requestedDeliveryDate: string | null): FrozenInvoiceOrder {
   return {
     reference,
@@ -20,23 +20,43 @@ function bon(reference: string, requestedDeliveryDate: string | null): FrozenInv
   };
 }
 
+/** Octobre 2026 au mensuel au 1er : du 1er au 31, à 00h00 Paris. */
+const OCTOBER = {
+  startsAt: new Date("2026-09-30T22:00:00.000Z"),
+  closesAt: new Date("2026-10-31T23:00:00.000Z"),
+};
+/** La semaine du lundi 5 au dimanche 11 octobre 2026. */
+const WEEK = {
+  startsAt: new Date("2026-10-04T22:00:00.000Z"),
+  closesAt: new Date("2026-10-11T22:00:00.000Z"),
+};
+
 describe("dossierCalendarNotes", () => {
-  it("signale un bon livré un autre mois et liste à part un bon sans date", () => {
+  it("signale un bon livré hors de la période et liste à part un bon sans date", () => {
     const notes = dossierCalendarNotes(
       [bon("CMD-1", "2026-10-31"), bon("CMD-2", "2026-11-02"), bon("CMD-3", null)],
-      "2026-10",
+      OCTOBER,
     );
 
     expect(notes).toEqual({
-      otherMonth: [{ reference: "CMD-2", requestedDeliveryDate: "2026-11-02" }],
+      outsidePeriod: [{ reference: "CMD-2", requestedDeliveryDate: "2026-11-02" }],
       withoutDate: ["CMD-3"],
     });
   });
 
-  it("ne dit rien quand tous les bons sont livrés dans le mois", () => {
-    expect(dossierCalendarNotes([bon("CMD-1", "2026-10-01")], "2026-10")).toEqual({
-      otherMonth: [],
-      withoutDate: [],
-    });
+  it("ne dit rien quand tous les bons sont livrés dans la période, bornes comprises", () => {
+    expect(
+      dossierCalendarNotes([bon("CMD-1", "2026-10-01"), bon("CMD-2", "2026-10-31")], OCTOBER),
+    ).toEqual({ outsidePeriod: [], withoutDate: [] });
+  });
+
+  it("à la semaine, signale le bon livré la semaine suivante, dans le même mois", () => {
+    const notes = dossierCalendarNotes(
+      [bon("CMD-1", "2026-10-05"), bon("CMD-2", "2026-10-11"), bon("CMD-3", "2026-10-12")],
+      WEEK,
+    );
+    expect(notes.outsidePeriod).toEqual([
+      { reference: "CMD-3", requestedDeliveryDate: "2026-10-12" },
+    ]);
   });
 });

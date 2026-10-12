@@ -10,10 +10,24 @@ import { dossier } from '../../__tests__/invoice-dossier-fixture';
 import { InvoiceDossierService } from '../../invoice-dossier.service';
 import { InvoiceDossierPage, stateOfFailure } from '../invoice-dossier-page';
 
+/** Les clôtures d'octobre et de septembre 2026 — identités des périodes, jamais comparées à l'horloge. */
+const OCTOBER = '2026-10-31T23:00:00.000Z';
+const SEPTEMBER = '2026-09-30T22:00:00.000Z';
+
 const CYCLES = {
   cycles: [
-    { month: '2026-10', startsAt: '', closesAt: '', inProgress: true },
-    { month: '2026-09', startsAt: '', closesAt: '', inProgress: false },
+    {
+      periodClosesAt: OCTOBER,
+      periodStartsAt: '',
+      periodLabel: 'du 1er au 31 octobre 2026',
+      inProgress: true,
+    },
+    {
+      periodClosesAt: SEPTEMBER,
+      periodStartsAt: '',
+      periodLabel: 'du 1er au 30 septembre 2026',
+      inProgress: false,
+    },
   ],
 };
 
@@ -66,8 +80,8 @@ describe("l'écran du dossier de facturation", () => {
     const { page, read } = await mount(dossier());
 
     expect(page['state']()).toBe('idle');
-    expect(page['month']()).toBe('2026-10');
-    expect(page['cycleChoices']()[0]?.label).toBe('octobre 2026 — en cours, non clos');
+    expect(page['period']()).toBe(OCTOBER);
+    expect(page['cycleChoices']()[0]?.label).toBe('du 1er au 31 octobre 2026 — en cours, non clos');
     // Sans enseigne, la raison sociale nomme la société.
     expect(page['companyChoices']()[0]?.label).toBe('SARL Port — C-1');
     expect(read).not.toHaveBeenCalled();
@@ -78,8 +92,8 @@ describe("l'écran du dossier de facturation", () => {
 
     page['onCompany']('c1');
     await vi.waitFor(() => expect(page['state']()).toBe('ready'));
-    page['onMonth']('2026-09');
-    await vi.waitFor(() => expect(read).toHaveBeenLastCalledWith('c1', '2026-09'));
+    page['onPeriod'](SEPTEMBER);
+    await vi.waitFor(() => expect(read).toHaveBeenLastCalledWith('c1', SEPTEMBER));
     expect(page['dossier']()?.companyName).toBe('Café du Port');
   });
 

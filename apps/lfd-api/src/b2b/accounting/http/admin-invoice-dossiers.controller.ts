@@ -1,4 +1,4 @@
-import { statementMonthSchema, type InvoiceDossierView } from "@lfd/contracts";
+import { statementPeriodSchema, type InvoiceDossierView } from "@lfd/contracts";
 import { Controller, Get, Header, Param, Query, Res } from "@nestjs/common";
 import { QueryBus } from "@nestjs/cqrs";
 import { contentDispositionAttachment, sanitiseFileName } from "@lfd/storage";
@@ -13,8 +13,8 @@ import {
   type InvoiceDossierSheet,
 } from "../application/queries/invoice-dossier-queries.js";
 
-/** `?month=AAAA-MM`, facultatif : la même forme que le relevé, dont le dossier prend le périmètre. */
-const monthQuerySchema = statementMonthSchema.optional();
+/** `?periodClosesAt=<ISO>`, facultatif : la même période que le relevé, dont le dossier prend le périmètre. */
+const periodQuerySchema = statementPeriodSchema.optional();
 
 /**
  * Surface **staff** du dossier de facturation simulé (plan
@@ -34,10 +34,10 @@ export class AdminInvoiceDossiersController {
   @Get("companies/:companyId")
   async dossier(
     @Param("companyId") companyId: string,
-    @Query("month", new ZodQuery(monthQuerySchema)) month: string | undefined,
+    @Query("periodClosesAt", new ZodQuery(periodQuerySchema)) periodClosesAt: string | undefined,
   ): Promise<InvoiceDossierView> {
     return this.queries.execute<GetInvoiceDossierQuery, InvoiceDossierView>(
-      new GetInvoiceDossierQuery(companyId, month),
+      new GetInvoiceDossierQuery(companyId, periodClosesAt),
     );
   }
 
@@ -46,10 +46,10 @@ export class AdminInvoiceDossiersController {
   @Header("Content-Type", "text/csv; charset=utf-8")
   async invoice(
     @Param("companyId") companyId: string,
-    @Query("month", new ZodQuery(monthQuerySchema)) month: string | undefined,
+    @Query("periodClosesAt", new ZodQuery(periodQuerySchema)) periodClosesAt: string | undefined,
     @Res({ passthrough: true }) response: Response,
   ): Promise<string> {
-    return this.export(companyId, month, "invoice", response);
+    return this.export(companyId, periodClosesAt, "invoice", response);
   }
 
   /** Les bons, un par ligne, et ce que le calendrier en dit. */
@@ -57,10 +57,10 @@ export class AdminInvoiceDossiersController {
   @Header("Content-Type", "text/csv; charset=utf-8")
   async orders(
     @Param("companyId") companyId: string,
-    @Query("month", new ZodQuery(monthQuerySchema)) month: string | undefined,
+    @Query("periodClosesAt", new ZodQuery(periodQuerySchema)) periodClosesAt: string | undefined,
     @Res({ passthrough: true }) response: Response,
   ): Promise<string> {
-    return this.export(companyId, month, "orders", response);
+    return this.export(companyId, periodClosesAt, "orders", response);
   }
 
   /** Les écarts, terme par terme, et leur somme. */
@@ -68,20 +68,20 @@ export class AdminInvoiceDossiersController {
   @Header("Content-Type", "text/csv; charset=utf-8")
   async gaps(
     @Param("companyId") companyId: string,
-    @Query("month", new ZodQuery(monthQuerySchema)) month: string | undefined,
+    @Query("periodClosesAt", new ZodQuery(periodQuerySchema)) periodClosesAt: string | undefined,
     @Res({ passthrough: true }) response: Response,
   ): Promise<string> {
-    return this.export(companyId, month, "gaps", response);
+    return this.export(companyId, periodClosesAt, "gaps", response);
   }
 
   private async export(
     companyId: string,
-    month: string | undefined,
+    periodClosesAt: string | undefined,
     sheet: InvoiceDossierSheet,
     response: Response,
   ): Promise<string> {
     const file = await this.queries.execute<ExportInvoiceDossierQuery, InvoiceDossierFile>(
-      new ExportInvoiceDossierQuery(companyId, month, sheet),
+      new ExportInvoiceDossierQuery(companyId, periodClosesAt, sheet),
     );
     response.setHeader(
       "Content-Disposition",

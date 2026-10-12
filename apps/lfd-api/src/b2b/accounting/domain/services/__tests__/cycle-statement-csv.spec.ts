@@ -8,7 +8,7 @@ import { rateLabel, statementCsv, STATEMENT_SCOPE } from "../cycle-statement-csv
  */
 const SEPTEMBER = {
   companyName: "Boulangerie du Port",
-  month: "2026-09",
+  period: "du 1er au 30 septembre 2026",
   startsAt: new Date("2026-08-31T22:00:00.000Z"),
   closesAt: new Date("2026-09-30T22:00:00.000Z"),
   inProgress: false,

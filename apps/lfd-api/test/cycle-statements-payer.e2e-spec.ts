@@ -12,10 +12,12 @@
  * Les dates sont posées relativement au cycle que le serveur annonce, jamais
  * écrites en dur.
  */
-import type { CycleStatementView, StatementCycleView, StatementCyclesView } from "@lfd/contracts";
+import type { CycleStatementView } from "@lfd/contracts";
 
 import { AdminTokenVerifier } from "../src/platform/auth/admin-token.verifier.js";
-import { bootstrapE2e, jsonBody, type E2eContext } from "./e2e-harness.js";
+import type { BillingCycle } from "../src/b2b/accounting/domain/services/billing-cycle.js";
+import { StatementMonth } from "../src/b2b/accounting/domain/value-objects/statement-month.js";
+import { bootstrapE2e, daysAgo, jsonBody, type E2eContext } from "./e2e-harness.js";
 import { createCompany, createUser } from "./factories.js";
 
 const stubAdminVerifier = {
@@ -100,19 +102,24 @@ async function seedOrder(
   return orderNumber;
 }
 
-/** Un mois CLOS, annoncé par le serveur : deux mois avant le mois en cours. */
-async function closedCycle(): Promise<StatementCycleView> {
-  const { cycles } = jsonBody<StatementCyclesView>(await staff().get(`${BASE}/cycles`).expect(200));
-  const cycle = cycles[2];
-  if (cycle === undefined) {
-    throw new Error("Le serveur n'annonce pas trois cycles.");
-  }
-  return cycle;
+/**
+ * Une période CLOSE : deux mois avant le mois en cours. Aucune entité n'est
+ * semée, le relevé suit donc le rythme par défaut — mensuel au 1er (R5). Le
+ * sélecteur (`/cycles`) ne la propose plus forcément : il s'arrête à la mise
+ * en service de la facture par période ; le serveur la lit quand même.
+ */
+function closedCycle(): BillingCycle {
+  return StatementMonth.containing(new Date(daysAgo(0)))
+    .previous()
+    .previous()
+    .cycle();
 }
 
-async function statement(companyId: string, month: string): Promise<CycleStatementView> {
+async function statement(companyId: string, periodClosesAt: string): Promise<CycleStatementView> {
   return jsonBody<CycleStatementView>(
-    await staff().get(`${BASE}/companies/${companyId}?month=${month}`).expect(200),
+    await staff()
+      .get(`${BASE}/companies/${companyId}?periodClosesAt=${periodClosesAt}`)
+      .expect(200),
   );
 }
 
@@ -121,7 +128,8 @@ interface Group {
   readonly arolle: string;
   readonly edelweiss: string;
   readonly club: string;
-  readonly month: string;
+  /** ISO — la clôture de la période, son identité. */
+  readonly period: string;
   readonly numbers: Readonly<Record<string, string>>;
 }
 
@@ -131,8 +139,8 @@ interface Group {
  * est rattaché sans suivre `billing`.
  */
 async function seedGroup(): Promise<Group> {
-  const cycle = await closedCycle();
-  const start = new Date(cycle.startsAt).getTime();
+  const cycle = closedCycle();
+  const start = cycle.startsAt.getTime();
   const day = (n: number): Date => new Date(start + n * DAY_MS);
 
   const principal = await company("SAS Alpes Chalets", "Alpes Chalets");
@@ -147,7 +155,7 @@ async function seedGroup(): Promise<Group> {
     arolle,
     edelweiss,
     club,
-    month: cycle.month,
+    period: cycle.closesAt.toISOString(),
     numbers: {
       own: await seedOrder(principal, day(2), 10_000),
       arolle: await seedOrder(arolle, day(3), 2_000),
@@ -161,7 +169,7 @@ async function seedGroup(): Promise<Group> {
 describe("le relevé d'un principal — la vue payeur", () => {
   it("groupe ses commandes puis celles de chaque site suivi à leur date, et liste l'entité à part", async () => {
     const group = await seedGroup();
-    const view = await statement(group.principal, group.month);
+    const view = await statement(group.principal, group.period);
 
     expect(
       view.groups.map((g) => [g.label, g.ownOrders, g.orders.map((o) => o.orderNumber)]),
@@ -176,7 +184,7 @@ describe("le relevé d'un principal — la vue payeur", () => {
 
   it("totalise le relevé comme la somme des groupes, au centime", async () => {
     const group = await seedGroup();
-    const { groups, totals } = await statement(group.principal, group.month);
+    const { groups, totals } = await statement(group.principal, group.period);
 
     const sum = (pick: (t: CycleStatementView["totals"]) => number): number =>
       groups.reduce((total, g) => total + pick(g.totals), 0);
@@ -188,7 +196,7 @@ describe("le relevé d'un principal — la vue payeur", () => {
 
   it("garde le relevé d'un site à ses seules commandes, et nomme le principal sur celles qu'il a réglées", async () => {
     const group = await seedGroup();
-    const view = await statement(group.edelweiss, group.month);
+    const view = await statement(group.edelweiss, group.period);
 
     expect(view.groups).toHaveLength(1);
     expect(view.groups[0]?.orders.map((o) => [o.orderNumber, o.paidBy?.name ?? null])).toEqual([
@@ -200,7 +208,7 @@ describe("le relevé d'un principal — la vue payeur", () => {
   it("renseigne la colonne Site du CSV", async () => {
     const group = await seedGroup();
     const response = await staff()
-      .get(`${BASE}/companies/${group.principal}/export.csv?month=${group.month}`)
+      .get(`${BASE}/companies/${group.principal}/export.csv?periodClosesAt=${group.period}`)
       .expect(200);
 
     expect(response.text).toContain(`"${group.numbers["arolle"] ?? ""}";"Chalet Arolle"`);

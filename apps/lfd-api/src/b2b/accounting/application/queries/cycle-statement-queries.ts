@@ -5,15 +5,15 @@
  * relevé est recalculé à chaque lecture, et il le dit (`provisional`).
  */
 
-/** Les derniers cycles proposés au sélecteur, le plus récent d'abord. */
+/** Les dernières périodes proposées au sélecteur, la plus récente d'abord. */
 export class ListStatementCyclesQuery {}
 
-/** Le relevé d'une société pour un mois — le mois en cours si `month` est absent. */
+/** Le relevé d'une société pour une période — celle en cours si `periodClosesAt` est absent. */
 export class GetCycleStatementQuery {
   constructor(
     readonly companyId: string,
-    /** `AAAA-MM`, ou `undefined` pour le cycle en cours. */
-    readonly month: string | undefined,
+    /** ISO — la clôture de la période, ou `undefined` pour la période en cours. */
+    readonly periodClosesAt: string | undefined,
   ) {}
 }
 
@@ -21,6 +21,6 @@ export class GetCycleStatementQuery {
 export class ExportCycleStatementQuery {
   constructor(
     readonly companyId: string,
-    readonly month: string | undefined,
+    readonly periodClosesAt: string | undefined,
   ) {}
 }

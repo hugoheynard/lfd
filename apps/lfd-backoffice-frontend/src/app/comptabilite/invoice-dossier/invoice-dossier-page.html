@@ -27,8 +27,8 @@
           label="Cycle"
           hint="Les bons passés dans le mois, comme au relevé et au prélèvement."
           [options]="cycleChoices()"
-          [value]="month()"
-          (selectionChange)="onMonth($event)"
+          [value]="period()"
+          (selectionChange)="onPeriod($event)"
           data-dossier-cycle
         />
       </div>

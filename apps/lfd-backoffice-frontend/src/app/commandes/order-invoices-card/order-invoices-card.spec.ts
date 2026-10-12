@@ -16,6 +16,8 @@ const INVOICE: IssuedInvoiceSummaryView = {
   issuedOn: '2026-09-30',
   dueOn: '2026-09-30',
   period: null,
+  periodClosesAt: null,
+  periodLabel: null,
   totalHtCents: 1_000,
   totalVatCents: 55,
   totalTtcCents: 1_055,

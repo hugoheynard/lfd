@@ -13,7 +13,7 @@
           size="sm"
           emphasis="outline"
           icon="download"
-          [disabled]="month() === null || exporting()"
+          [disabled]="period() === null || exporting()"
           (click)="exportCsv()"
           data-statement-export
         >
@@ -29,8 +29,8 @@
         label="Cycle"
         hint="Un cycle va du 1er du mois à 00h00 au 1er du mois suivant, heure de Paris."
         [options]="cycleChoices()"
-        [value]="month()"
-        (selectionChange)="onMonth($event)"
+        [value]="period()"
+        (selectionChange)="onPeriod($event)"
         data-statement-cycle
       />
     }

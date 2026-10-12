@@ -129,7 +129,7 @@ describe("renderPain008 — le brouillon, et ce qui le rend indéposable", () =>
   it("porte l'avertissement dans l'en-tête ET dans l'identifiant du message", () => {
     const xml = render();
     expect(xml).toContain("CE FICHIER NE PEUT PAS ETRE DEPOSE");
-    expect(xml).toContain("<MsgId>BROUILLON-202609-B2B</MsgId>");
+    expect(xml).toContain("<MsgId>BROUILLON-20260930-B2B</MsgId>");
   });
 
   it("rend les MÊMES octets deux fois — sans quoi rien n'est comparable", () => {
@@ -180,7 +180,7 @@ describe("renderPain008 — ce qui fait rejeter un lot", () => {
    */
   it("garde des EndToEndId courts et distincts", () => {
     const ids = values(render(LINES, ALL_MANDATES), "EndToEndId");
-    expect(ids).toEqual(["202609-B2B-001", "202609-B2B-002"]);
+    expect(ids).toEqual(["20260930-B2B-001", "20260930-B2B-002"]);
   });
 
   it("borne le libellé de remise à 140 caractères", () => {
@@ -222,11 +222,11 @@ describe("renderPain008 — un fichier par schéma", () => {
     const core = render(LINES, MIXED_MANDATES, CREDITOR, "CORE");
     const b2b = render(LINES, MIXED_MANDATES, CREDITOR, "B2B");
 
-    expect(values(core, "MsgId")).toEqual(["202609-CORE"]);
-    expect(values(b2b, "MsgId")).toEqual(["202609-B2B"]);
-    expect(values(core, "PmtInfId")).toEqual(["202609-CORE-RCUR"]);
-    expect(values(core, "EndToEndId")).toEqual(["202609-CORE-001"]);
-    expect(values(b2b, "EndToEndId")).toEqual(["202609-B2B-001"]);
+    expect(values(core, "MsgId")).toEqual(["20260930-CORE"]);
+    expect(values(b2b, "MsgId")).toEqual(["20260930-B2B"]);
+    expect(values(core, "PmtInfId")).toEqual(["20260930-CORE-RCUR"]);
+    expect(values(core, "EndToEndId")).toEqual(["20260930-CORE-001"]);
+    expect(values(b2b, "EndToEndId")).toEqual(["20260930-B2B-001"]);
   });
 
   it("tient les 35 caractères même dans le pire cas : brouillon, CORE, ponctuel", () => {
@@ -235,7 +235,7 @@ describe("renderPain008 — un fichier par schéma", () => {
     ]);
     const xml = render(LINES, mandates, CREDITOR, "CORE");
 
-    expect(values(xml, "PmtInfId")).toEqual(["BROUILLON-202609-CORE-OOFF"]);
+    expect(values(xml, "PmtInfId")).toEqual(["BROUILLON-20260930-CORE-OOFF"]);
     for (const id of [
       ...values(xml, "MsgId"),
       ...values(xml, "PmtInfId"),
@@ -280,7 +280,7 @@ describe("renderPain008 — une société sans mandat dans un cycle à deux sch�
 
     for (const scheme of ["CORE", "B2B"] as const) {
       const xml = render(withB2b, mandates, CREDITOR, scheme);
-      expect(xml).toContain(`<MsgId>BROUILLON-202609-${scheme}</MsgId>`);
+      expect(xml).toContain(`<MsgId>BROUILLON-20260930-${scheme}</MsgId>`);
       expect(xml).toContain("- Boulangerie Emile Fils");
       expect(isSchemeFileDepositable(withB2b, mandates, scheme)).toBe(false);
     }
@@ -308,13 +308,13 @@ describe("renderPain008 — la séquence suit le MANDAT", () => {
     ]);
     const xml = render(LINES, mandates);
 
-    expect(values(xml, "PmtInfId")).toEqual(["202609-B2B-RCUR", "202609-B2B-OOFF"]);
+    expect(values(xml, "PmtInfId")).toEqual(["20260930-B2B-RCUR", "20260930-B2B-OOFF"]);
     expect(values(xml, "SeqTp")).toEqual(["RCUR", "OOFF"]);
     // Le groupe somme tout ; chaque bloc ne somme que les siens.
     expect(values(xml, "NbOfTxs")).toEqual(["2", "1", "1"]);
     expect(values(xml, "CtrlSum")).toEqual(["1936.98", "1516.48", "420.50"]);
     // Le rang court sur le fichier : deux blocs ne partagent pas une référence.
-    expect(values(xml, "EndToEndId")).toEqual(["202609-B2B-001", "202609-B2B-002"]);
+    expect(values(xml, "EndToEndId")).toEqual(["20260930-B2B-001", "20260930-B2B-002"]);
   });
 
   it("n'émet qu'un seul bloc quand une seule séquence est présente", () => {
@@ -341,13 +341,22 @@ describe("cycleTagOf", () => {
    * même fichier qui se contredisent, ce qu'on ne remarque qu'en les comparant
    * à la main.
    */
-  it("désigne le mois COUVERT, pas celui de la clôture", () => {
-    expect(cycleTagOf(CYCLE_END)).toBe("202609");
+  it("désigne le DERNIER JOUR couvert, pas celui de la clôture", () => {
+    expect(cycleTagOf(CYCLE_END)).toBe("20260930");
   });
 
   it("tient aussi au passage à l'heure d'hiver", () => {
     // Clôture du 1er novembre : minuit à Paris vaut 23h UTC, pas 22h.
-    expect(cycleTagOf(new Date("2026-10-31T23:00:00.000Z"))).toBe("202610");
+    expect(cycleTagOf(new Date("2026-10-31T23:00:00.000Z"))).toBe("20261031");
+  });
+
+  /**
+   * R5 : `AAAAMM` donnait la même étiquette aux deux semaines d'un mois — deux
+   * brouillons au même `MsgId`, deux lots au même libellé.
+   */
+  it("distingue deux semaines d'un même mois", () => {
+    expect(cycleTagOf(new Date("2026-10-11T22:00:00.000Z"))).toBe("20261011");
+    expect(cycleTagOf(new Date("2026-10-18T22:00:00.000Z"))).toBe("20261018");
   });
 });
 

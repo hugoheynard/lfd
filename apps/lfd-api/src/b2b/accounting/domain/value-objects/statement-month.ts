@@ -12,10 +12,10 @@ const MONTHS_PER_YEAR = 12;
 /**
  * **Le mois civil d'un relevé** — `AAAA-MM`, dans le fuseau des affaires.
  *
- * Avant S4-0, aucune clôture n'est enregistrée : un cycle passé ne se
- * reconstitue qu'en mois civil (plan `agregation-des-commandes`, §2). Ce value
- * object est donc l'identité d'un cycle de relevé, et il le restera tant que la
- * première clôture enregistrée tombera sur un 1er — contrainte que S4-0 hérite.
+ * ⚠️ **Ce n'est plus l'identité d'un cycle de relevé** depuis R5 (plan
+ * `plan-rythme-de-facturation.md`, §14) : le relevé et le dossier suivent les
+ * périodes du rythme de l'entité (`statement-periods.ts`). Le mois civil reste
+ * pour ceux qui construisent un mois — les épreuves et les e2e de la facture.
  *
  * Immuable, auto-validé : un mois mal formé ne circule pas en `string`.
  */

@@ -328,7 +328,11 @@ describe("« Mes factures » — le mur client (E6)", () => {
     for (const sub of [port.owner, compta]) {
       const list = jsonBody<IssuedInvoicesView>(await ctx.asSub(sub).get(base).expect(200));
       expect(list.invoices).toHaveLength(1);
-      expect(list.invoices[0]).toMatchObject({ kind: "invoice", period: month.toString() });
+      expect(list.invoices[0]).toMatchObject({
+        kind: "invoice",
+        period: month.toString(),
+        periodClosesAt: closesAt.toISOString(),
+      });
     }
     const [mine] = jsonBody<IssuedInvoicesView>(
       await ctx.asSub(port.owner).get(base).expect(200),

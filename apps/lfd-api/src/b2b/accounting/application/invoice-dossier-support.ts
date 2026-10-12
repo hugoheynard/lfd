@@ -11,7 +11,6 @@ import type {
   StatementBillingReader,
 } from "../domain/ports/statement-billing.reader.js";
 import { billedPayerOf } from "../domain/services/billed-payer.js";
-import type { BillingCycle } from "../domain/services/billing-cycle.js";
 import {
   dossierCalendarNotes,
   type DossierCalendarNotes,
@@ -27,7 +26,8 @@ import type {
   FrozenInvoiceOrder,
   InvoiceDossier,
 } from "../domain/services/invoice-dossier.types.js";
-import { StatementMonth } from "../domain/value-objects/statement-month.js";
+import type { StatementPeriod } from "../domain/services/statement-periods.js";
+import { resolveStatementPeriod, type StatementRhythmDeps } from "./statement-period-support.js";
 
 /**
  * Le dossier de facturation, **construit une seule fois pour quatre sorties** —
@@ -35,7 +35,7 @@ import { StatementMonth } from "../domain/value-objects/statement-month.js";
  * export qui passerait par un autre chemin que l'écran finirait par ne plus
  * dire la même chose.
  */
-export interface InvoiceDossierDeps {
+export interface InvoiceDossierDeps extends StatementRhythmDeps {
   readonly dossiers: InvoiceDossierReader;
   readonly billing: StatementBillingReader;
   /** Le retrait de chaque bon — déclaré et implémenté par `handover` (DF3). */
@@ -48,9 +48,7 @@ export interface InvoiceDossierDeps {
 export interface BuiltInvoiceDossier {
   readonly companyId: string;
   readonly companyName: string;
-  readonly month: StatementMonth;
-  readonly cycle: BillingCycle;
-  readonly inProgress: boolean;
+  readonly period: StatementPeriod;
   /** Les bons du dossier, du plus ancien au plus récent. */
   readonly orders: readonly FrozenInvoiceOrder[];
   /** Les mêmes bons, dans le même ordre, avec leur lieu et leur frise. */
@@ -62,8 +60,14 @@ export interface BuiltInvoiceDossier {
 }
 
 /**
- * @throws {InvalidStatementMonthError} `month` n'est pas `AAAA-MM`.
- * @throws {FutureStatementMonthError} `month` n'a pas commencé.
+ * La période est celle du relevé (`resolveStatementPeriod`) : même identité,
+ * même rythme — celui de l'entité en service.
+ *
+ * @param requestedClosure `periodClosesAt` (ISO), ou `undefined` pour la période en cours.
+ * @throws {InvalidStatementPeriodError} la clôture demandée n'est pas un instant.
+ * @throws {NotAStatementPeriodError} elle n'est pas une clôture de l'entité.
+ * @throws {FutureStatementPeriodError} la période n'a pas commencé.
+ * @throws {SeveralStatementIssuersError} plusieurs entités sont en service.
  * @throws {StatementCompanyNotFoundError} la société n'existe pas.
  * @throws {InvoiceDossierLateFeeRateMissingError} un bon porte une surtaxe sans taux.
  * @throws {InvoiceDossierUnreadableVatRateError} un bon porte un taux de ligne illisible.
@@ -71,17 +75,14 @@ export interface BuiltInvoiceDossier {
 export async function buildInvoiceDossier(
   deps: InvoiceDossierDeps,
   companyId: string,
-  requestedMonth: string | undefined,
+  requestedClosure: string | undefined,
 ): Promise<BuiltInvoiceDossier> {
-  const now = deps.clock.now();
-  const current = StatementMonth.containing(now);
-  const month =
-    requestedMonth === undefined ? current : StatementMonth.requested(requestedMonth, now);
+  const period = await resolveStatementPeriod(deps, requestedClosure);
   const companyName = await deps.dossiers.dossierCompanyName(companyId);
   if (companyName === null) {
     throw new StatementCompanyNotFoundError(companyId);
   }
-  const cycle = month.cycle();
+  const { cycle } = period;
   const towards = await deps.billing.followsTowards(companyId, cycle);
   const siteIds = [...new Set(towards.map((follow) => follow.companyId))];
   const read = await deps.dossiers.dossierOrders([companyId, ...siteIds], cycle);
@@ -91,14 +92,12 @@ export async function buildInvoiceDossier(
   return {
     companyId,
     companyName,
-    month,
-    cycle,
-    inProgress: month.equals(current),
+    period,
     orders,
     records,
     neverHandedOver: neverHandedOver(records),
     dossier: simulateInvoiceDossier(orders),
-    calendar: dossierCalendarNotes(orders, month.toString()),
+    calendar: dossierCalendarNotes(orders, cycle),
   };
 }
 

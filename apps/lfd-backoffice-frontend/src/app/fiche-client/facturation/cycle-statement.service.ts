@@ -30,10 +30,11 @@ export class CycleStatementService {
     return firstValueFrom(this.http.get<StatementCyclesView>(`${BASE}/cycles`));
   }
 
-  async statement(companyId: string, month: string): Promise<CycleStatementView> {
+  /** `periodClosesAt` : la clôture ISO de la période, son identité (R5). */
+  async statement(companyId: string, periodClosesAt: string): Promise<CycleStatementView> {
     return firstValueFrom(
       this.http.get<CycleStatementView>(`${BASE}/companies/${encodeURIComponent(companyId)}`, {
-        params: { month },
+        params: { periodClosesAt },
       }),
     );
   }
@@ -42,10 +43,10 @@ export class CycleStatementService {
    * `responseType: 'blob'` et non `'text'` : le corps porte un BOM UTF-8, qu'une
    * chaîne JavaScript collerait au premier caractère du fichier enregistré.
    */
-  async exportCsv(companyId: string, month: string): Promise<StatementFile> {
+  async exportCsv(companyId: string, periodClosesAt: string): Promise<StatementFile> {
     const response = await firstValueFrom(
       this.http.get(`${BASE}/companies/${encodeURIComponent(companyId)}/export.csv`, {
-        params: { month },
+        params: { periodClosesAt },
         responseType: 'blob',
         observe: 'response',
       }),

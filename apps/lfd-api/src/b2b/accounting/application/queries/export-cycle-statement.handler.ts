@@ -1,9 +1,12 @@
 import { QueryHandler, type IQueryHandler } from "@nestjs/cqrs";
 
 import { Clock } from "../../../../platform/time/clock.js";
+import { BillingRhythmReader } from "../../domain/ports/billing-rhythm.reader.js";
+import { InvoiceIssuersReader } from "../../domain/ports/invoice-issuers.reader.js";
 import { CycleOrdersReader } from "../../domain/ports/cycle-orders.reader.js";
 import { StatementBillingReader } from "../../domain/ports/statement-billing.reader.js";
 import { statementCsv } from "../../domain/services/cycle-statement-csv.js";
+import { periodTagOf } from "../../domain/services/invoicing-closures.js";
 import { buildStatement } from "../cycle-statement-support.js";
 import { ExportCycleStatementQuery } from "./cycle-statement-queries.js";
 
@@ -28,24 +31,32 @@ export class ExportCycleStatementHandler implements IQueryHandler<
     private readonly orders: CycleOrdersReader,
     private readonly billing: StatementBillingReader,
     private readonly clock: Clock,
+    private readonly issuers: InvoiceIssuersReader,
+    private readonly rhythms: BillingRhythmReader,
   ) {}
 
   async execute(query: ExportCycleStatementQuery): Promise<CycleStatementFile> {
     const built = await buildStatement(
-      { orders: this.orders, billing: this.billing, clock: this.clock },
+      {
+        orders: this.orders,
+        billing: this.billing,
+        clock: this.clock,
+        issuers: this.issuers,
+        rhythms: this.rhythms,
+      },
       query.companyId,
-      query.month,
+      query.periodClosesAt,
     );
-    const month = built.month.toString();
+    const { cycle, label, inProgress } = built.period;
     return {
       csv: statementCsv(built.statement, {
         companyName: built.companyName,
-        month,
-        startsAt: built.cycle.startsAt,
-        closesAt: built.cycle.closesAt,
-        inProgress: built.inProgress,
+        period: label,
+        startsAt: cycle.startsAt,
+        closesAt: cycle.closesAt,
+        inProgress,
       }),
-      fileName: `RELEVE-PROVISOIRE-${built.companyName}-${month}.csv`,
+      fileName: `RELEVE-PROVISOIRE-${built.companyName}-${periodTagOf(cycle.closesAt)}.csv`,
     };
   }
 }

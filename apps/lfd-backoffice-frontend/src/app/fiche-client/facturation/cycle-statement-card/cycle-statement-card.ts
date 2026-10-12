@@ -37,7 +37,7 @@ import {
 import { PermissionsStore } from '../../../auth/permissions.store';
 import { NotifyService } from '../../../notify.service';
 import { saveBlob } from '../../../shared/download/save-blob';
-import { cycleLabel, monthLabel, vatRateLabel } from '../cycle-statement-labels';
+import { cycleLabel, vatRateLabel } from '../cycle-statement-labels';
 import { CycleStatementService } from '../cycle-statement.service';
 
 type LoadState = 'loading' | 'ready' | 'error';
@@ -88,7 +88,8 @@ export class CycleStatementCard {
 
   protected readonly state = signal<LoadState>('loading');
   protected readonly cycles = signal<readonly StatementCycleView[]>([]);
-  protected readonly month = signal<string | null>(null);
+  /** La période choisie — sa clôture ISO, son identité (R5). */
+  protected readonly period = signal<string | null>(null);
   protected readonly statement = signal<CycleStatementView | null>(null);
   protected readonly exporting = signal(false);
 
@@ -96,7 +97,7 @@ export class CycleStatementCard {
   protected readonly canExport = computed(() => this.permissions.can('b2b_accounting:read'));
 
   protected readonly cycleChoices = computed<FoldSelectOption<string>[]>(() =>
-    this.cycles().map((cycle) => ({ value: cycle.month, label: cycleLabel(cycle) })),
+    this.cycles().map((cycle) => ({ value: cycle.periodClosesAt, label: cycleLabel(cycle) })),
   );
 
   protected readonly columns: readonly FoldTableColumn[] = [
@@ -134,7 +135,7 @@ export class CycleStatementCard {
   }
 
   protected title(statement: CycleStatementView): string {
-    return `Relevé de ${monthLabel(statement.cycle.month)}`;
+    return `Relevé ${statement.cycle.periodLabel}`;
   }
 
   /** Les groupes qui ont des commandes — un site sans commande ne fait pas de bloc. */
@@ -162,9 +163,9 @@ export class CycleStatementCard {
     return null;
   }
 
-  protected onMonth(month: string): void {
-    this.month.set(month);
-    void this.loadStatement(this.companyId(), month);
+  protected onPeriod(period: string): void {
+    this.period.set(period);
+    void this.loadStatement(this.companyId(), period);
   }
 
   /** La commande s'ouvre sous la fiche de la société qui l'a passée — le site. */
@@ -173,22 +174,23 @@ export class CycleStatementCard {
   }
 
   protected async retry(): Promise<void> {
-    const month = this.month();
-    await (month === null
+    const period = this.period();
+    await (period === null
       ? this.loadCycles(this.companyId())
-      : this.loadStatement(this.companyId(), month));
+      : this.loadStatement(this.companyId(), period));
   }
 
   protected async exportCsv(): Promise<void> {
-    const month = this.month();
-    if (month === null) {
+    const period = this.period();
+    if (period === null) {
       return;
     }
     this.exporting.set(true);
     try {
-      const file = await this.service.exportCsv(this.companyId(), month);
-      saveBlob(file.blob, file.fileName ?? `RELEVE-PROVISOIRE-${month}.csv`);
-      this.notify.success(`Relevé de ${monthLabel(month)} exporté.`);
+      const file = await this.service.exportCsv(this.companyId(), period);
+      saveBlob(file.blob, file.fileName ?? 'RELEVE-PROVISOIRE.csv');
+      const shown = this.statement()?.cycle.periodLabel;
+      this.notify.success(shown === undefined ? 'Relevé exporté.' : `Relevé ${shown} exporté.`);
     } catch (error) {
       this.notify.error(error, "L'export du relevé a échoué. Réessayez dans un instant.");
     } finally {
@@ -206,17 +208,17 @@ export class CycleStatementCard {
         this.state.set('error');
         return;
       }
-      this.month.set(first.month);
-      await this.loadStatement(companyId, first.month);
+      this.period.set(first.periodClosesAt);
+      await this.loadStatement(companyId, first.periodClosesAt);
     } catch {
       this.state.set('error');
     }
   }
 
-  private async loadStatement(companyId: string, month: string): Promise<void> {
+  private async loadStatement(companyId: string, period: string): Promise<void> {
     this.state.set('loading');
     try {
-      this.statement.set(await this.service.statement(companyId, month));
+      this.statement.set(await this.service.statement(companyId, period));
       this.state.set('ready');
     } catch {
       this.state.set('error');

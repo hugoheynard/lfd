@@ -11,8 +11,8 @@ import type { VatShareView } from "./order.js";
  * prélevé sur sa base. Tous les montants en centimes.
  *
  * ⚠️ Des interfaces seulement, comme `cycle-statement.ts` : le serveur ne lit
- * à l'exécution que `statementMonthSchema`, déjà publié. Le `?month=` du
- * dossier est celui du relevé.
+ * à l'exécution que `statementPeriodSchema`. Le `?periodClosesAt=` du
+ * dossier est celui du relevé : la même période (R5).
  */
 
 /** Le mode de TVA du port : taux normal, ou au prorata des marchandises. */
@@ -217,8 +217,11 @@ export interface InvoiceDossierView {
   readonly inconsistentOrders: readonly InvoiceDossierInconsistentOrderView[];
   /** Faux dès qu'un bon est incohérent : la différence a un quatrième terme. */
   readonly threeGapInvariantHolds: boolean;
-  /** Bons livrés un autre mois que celui de leur passation — signalés, pas retirés. */
-  readonly otherMonthOrders: readonly {
+  /**
+   * Bons dont la livraison demandée tombe hors de la période où ils ont été
+   * passés — signalés, pas retirés.
+   */
+  readonly outsidePeriodOrders: readonly {
     readonly reference: string;
     readonly requestedDeliveryDate: string;
   }[];

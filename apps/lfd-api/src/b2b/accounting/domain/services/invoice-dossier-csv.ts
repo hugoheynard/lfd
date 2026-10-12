@@ -8,8 +8,8 @@ import type { FrozenInvoiceOrder, InvoiceDossier } from "./invoice-dossier.types
 /** Ce que l'en-tête de chaque fichier dit de lui-même. */
 export interface InvoiceDossierCsvHeading {
   readonly companyName: string;
-  /** `2026-10`. */
-  readonly month: string;
+  /** « du 1er au 31 octobre 2026 » — la période du dossier. */
+  readonly period: string;
   readonly inProgress: boolean;
 }
 
@@ -75,7 +75,7 @@ export function ordersCsv(
   calendar: DossierCalendarNotes,
   heading: InvoiceDossierCsvHeading,
 ): string {
-  const otherMonth = new Set(calendar.otherMonth.map((order) => order.reference));
+  const outsidePeriod = new Set(calendar.outsidePeriod.map((order) => order.reference));
   const rows = [
     row([
       "Référence",
@@ -107,7 +107,7 @@ export function ordersCsv(
         csvEuros(order.lateFeeCents),
         csvEuros(order.vatCents),
         csvEuros(order.totalCents),
-        csvQuoted(remarkOf(order, otherMonth)),
+        csvQuoted(remarkOf(order, outsidePeriod)),
         csvQuoted(historyCell(history)),
       ].join(CSV_SEPARATOR),
     ),
@@ -179,17 +179,17 @@ function millicentsAsEuros(millicents: number): string {
   return `${sign}${units},${decimals}`;
 }
 
-function remarkOf(order: FrozenInvoiceOrder, otherMonth: ReadonlySet<string>): string {
+function remarkOf(order: FrozenInvoiceOrder, outsidePeriod: ReadonlySet<string>): string {
   if (order.requestedDeliveryDate === null) {
     return "sans date demandée";
   }
-  return otherMonth.has(order.reference) ? "livré un autre mois" : "";
+  return outsidePeriod.has(order.reference) ? "livré hors de la période" : "";
 }
 
 function headingRows(title: string, heading: InvoiceDossierCsvHeading): readonly string[] {
   const state = heading.inProgress ? "cycle en cours, non clos" : "cycle clos";
   return [
-    csvQuoted(`${title} — ${heading.companyName} — ${heading.month} (${state})`),
+    csvQuoted(`${title} — ${heading.companyName} — ${heading.period} (${state})`),
     csvQuoted(STATEMENT_SCOPE),
     csvQuoted("Simulation : ce n'est pas une facture émise, et rien n'est prélevé sur sa base."),
   ];

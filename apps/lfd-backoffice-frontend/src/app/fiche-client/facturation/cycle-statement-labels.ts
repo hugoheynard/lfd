@@ -14,9 +14,9 @@ export function monthLabel(month: string): string {
   });
 }
 
-/** Le libellé d'un cycle au sélecteur — le cycle en cours le dit (plan, Q2). */
+/** Le libellé d'une période au sélecteur — celle en cours le dit (plan, Q2). */
 export function cycleLabel(cycle: StatementCycleView): string {
-  const label = monthLabel(cycle.month);
+  const label = cycle.periodLabel;
   return cycle.inProgress ? `${label} — en cours, non clos` : label;
 }
 

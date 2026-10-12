@@ -155,6 +155,17 @@ export function periodMonthOf(closesAt: Date): string {
 }
 
 /**
+ * L'étiquette d'une période — `AAAAMMJJ`, son DERNIER jour compris (la veille
+ * de la clôture, la borne haute étant exclusive) : `20260930` pour la période
+ * close le 1er octobre. Deux semaines d'un même mois ne la partagent jamais,
+ * ce que faisait l'ancienne `AAAAMM` (R5). Sert aux noms de fichiers et aux
+ * libellés de lot (`cycleTagOf`).
+ */
+export function periodTagOf(closesAt: Date): string {
+  return lastDayOf(closesAt).replace(/-/gu, "");
+}
+
+/**
  * Lit une clôture demandée (ISO 8601) ; la forme est vérifiée par le
  * contrôleur, l'instant ici.
  *

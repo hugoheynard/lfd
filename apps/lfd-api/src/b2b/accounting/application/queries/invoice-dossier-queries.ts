@@ -7,12 +7,12 @@
 /** Les trois fichiers du dossier — un par sortie. */
 export type InvoiceDossierSheet = "invoice" | "orders" | "gaps";
 
-/** Le dossier d'un payeur pour un mois — le mois en cours si `month` est absent. */
+/** Le dossier d'un payeur pour une période — celle en cours si `periodClosesAt` est absent. */
 export class GetInvoiceDossierQuery {
   constructor(
     readonly companyId: string,
-    /** `AAAA-MM`, ou `undefined` pour le cycle en cours. */
-    readonly month: string | undefined,
+    /** ISO — la clôture de la période (celle du relevé), ou `undefined` pour la période en cours. */
+    readonly periodClosesAt: string | undefined,
   ) {}
 }
 
@@ -20,7 +20,7 @@ export class GetInvoiceDossierQuery {
 export class ExportInvoiceDossierQuery {
   constructor(
     readonly companyId: string,
-    readonly month: string | undefined,
+    readonly periodClosesAt: string | undefined,
     readonly sheet: InvoiceDossierSheet,
   ) {}
 }

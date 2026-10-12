@@ -259,7 +259,7 @@ export type {
   BillingStatementStatusView,
   BillingStatementView,
 } from "./billing-statement.js";
-export { statementMonthSchema } from "./cycle-statement.js";
+export { statementPeriodSchema } from "./cycle-statement.js";
 export type {
   CycleStatementGroupView,
   CycleStatementOrderView,
@@ -351,6 +351,8 @@ export type {
   BillingRhythmKind,
   BillingRhythmView,
   ScheduledBillingRhythmView,
+  UpcomingClosureView,
+  BillingRhythmChangeLockView,
   SetBillingRhythmPayload,
   InvoicePaymentTermsView,
   SetInvoicePaymentTermsPayload,

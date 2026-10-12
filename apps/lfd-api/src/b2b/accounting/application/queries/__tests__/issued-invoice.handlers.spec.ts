@@ -8,6 +8,7 @@ import {
 import { InvoiceNumber } from "../../../domain/value-objects/invoice-number.js";
 import {
   FixedInvoicePeriods,
+  SEPTEMBER_2026,
   FixedRoles,
   MemoryCompanyInvoices,
   MemoryInvoiceReader,
@@ -43,7 +44,7 @@ const OTHER_PAYER = Invoice.issue(
 );
 
 const invoices = new MemoryInvoiceReader([SEPTEMBER, OCTOBER, OTHER_PAYER]);
-const periods = new FixedInvoicePeriods(new Map([["inv_1", "2026-09"]]));
+const periods = new FixedInvoicePeriods(new Map([["inv_1", SEPTEMBER_2026]]));
 const roles = new FixedRoles(
   new Map([
     ["u_owner:c_port", "owner"],
@@ -95,6 +96,8 @@ describe("« Mes factures » côté client (E6)", () => {
       issuedOn: "2026-09-30",
       dueOn: "2026-10-14",
       period: "2026-09",
+      periodClosesAt: "2026-09-30T22:00:00.000Z",
+      periodLabel: "du 1er au 30 septembre 2026",
       totalHtCents: 1_500,
       totalVatCents: 155,
       totalTtcCents: 1_655,

@@ -25,10 +25,10 @@ const BASE = `${B2B_API_BASE}/admin/accounting/invoice-dossiers`;
 export class InvoiceDossierService {
   private readonly http = inject(HttpClient);
 
-  async dossier(companyId: string, month: string): Promise<InvoiceDossierView> {
+  async dossier(companyId: string, periodClosesAt: string): Promise<InvoiceDossierView> {
     return firstValueFrom(
       this.http.get<InvoiceDossierView>(`${BASE}/companies/${encodeURIComponent(companyId)}`, {
-        params: { month },
+        params: { periodClosesAt },
       }),
     );
   }
@@ -36,12 +36,12 @@ export class InvoiceDossierService {
   /** En blob et non en texte : le corps porte un BOM, qu'une chaîne collerait au fichier. */
   async exportCsv(
     companyId: string,
-    month: string,
+    periodClosesAt: string,
     sheet: InvoiceDossierSheet,
   ): Promise<NamedBlob> {
     const response = await firstValueFrom(
       this.http.get(`${BASE}/companies/${encodeURIComponent(companyId)}/${sheet}.csv`, {
-        params: { month },
+        params: { periodClosesAt },
         responseType: 'blob',
         observe: 'response',
       }),

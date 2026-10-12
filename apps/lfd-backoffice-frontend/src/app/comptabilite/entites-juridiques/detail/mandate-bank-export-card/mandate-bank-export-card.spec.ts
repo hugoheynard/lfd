@@ -48,6 +48,8 @@ const BASE_ENTITY: LegalEntityView = {
   autoCollectionDelayHours: 1,
   billingRhythm: { kind: 'monthly', days: [1] },
   nextBillingRhythm: null,
+  billingRhythmChangeLock: null,
+  upcomingClosures: [],
   collectionDaysAfterClosure: null,
   depositCutoff: null,
   nextCollection: {

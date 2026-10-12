@@ -79,7 +79,14 @@ describe("le rythme de facturation de l'entité", () => {
     expect(await read(id)).toMatchObject({
       billingRhythm: { kind: "monthly", days: [1] },
       nextBillingRhythm: null,
+      billingRhythmChangeLock: null,
     });
+    // R5 : les trois prochaines clôtures, la plus proche d'abord.
+    const { upcomingClosures } = await read(id);
+    expect(upcomingClosures).toHaveLength(3);
+    expect(upcomingClosures[0]?.closesAt).toBe(
+      nextClosureAfter(new Date(daysAgo(0)), BillingRhythm.default()).toISOString(),
+    );
   });
 
   it("programme le nouveau rythme à la prochaine clôture de l'ancien, et le journalise", async () => {
@@ -94,6 +101,8 @@ describe("le rythme de facturation de l'entité", () => {
     expect(await read(id)).toMatchObject({
       billingRhythm: { kind: "monthly", days: [1] },
       nextBillingRhythm: { kind: "weekly", days: [1], effectiveAt: effectiveAt.toISOString() },
+      // §12, dit AVANT le geste (R5) : le suivant attend la facture de cette clôture.
+      billingRhythmChangeLock: { effectiveAt: effectiveAt.toISOString(), canCancel: true },
     });
     const facts = await ctx.prisma.activityEvent.findMany({
       where: { subjectId: id, type: "legal_entity.billing_rhythm_changed" },

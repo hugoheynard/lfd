@@ -7,8 +7,8 @@ import type { StatementAggregate, StatementLine, StatementTotals } from "./cycle
 /** Ce que l'en-tête du fichier doit dire de lui-même. */
 export interface StatementCsvHeading {
   readonly companyName: string;
-  /** `2026-09`. */
-  readonly month: string;
+  /** « du 1er au 30 septembre 2026 » — la période du relevé. */
+  readonly period: string;
   readonly startsAt: Date;
   readonly closesAt: Date;
   readonly inProgress: boolean;
@@ -47,7 +47,7 @@ export function statementCsv(statement: StatementAggregate, heading: StatementCs
 function headingRows(heading: StatementCsvHeading): readonly string[] {
   const state = heading.inProgress ? "cycle en cours, non clos" : "cycle clos";
   return [
-    csvQuoted(`Relevé PROVISOIRE — ${heading.companyName} — ${heading.month} (${state})`),
+    csvQuoted(`Relevé PROVISOIRE — ${heading.companyName} — ${heading.period} (${state})`),
     csvQuoted(
       `Du ${localDay(heading.startsAt)} 00h00 inclus au ${localDay(heading.closesAt)} 00h00 exclu, heure de Paris.`,
     ),
@@ -90,7 +90,7 @@ function orderRow(
     // Le payeur est la société du relevé, sauf pour la commande d'un site qui
     // suivait `billing` à sa date : le relevé de ce site nomme alors qui paie.
     csvQuoted(line.paidBy?.name ?? heading.companyName),
-    csvQuoted(heading.month),
+    csvQuoted(heading.period),
     csvEuros(line.subtotalCents),
     csvEuros(line.discountCents),
     csvEuros(line.voucherDiscountCents),

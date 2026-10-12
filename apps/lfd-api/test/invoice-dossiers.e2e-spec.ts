@@ -174,7 +174,7 @@ describe("le dossier de facturation d'un cycle", () => {
     expect(view.threeGapInvariantHolds).toBe(true);
   });
 
-  it("signale un bon livré un autre mois et un bon sans date, sans les retirer", async () => {
+  it("signale un bon livré hors de la période et un bon sans date, sans les retirer", async () => {
     const port = await client("Boulangerie du Port");
     await seedOrder({ ...port, quantity: 1 });
     const later = await seedOrder({ ...port, quantity: 1, requestedDay: OTHER_MONTH_DAY });
@@ -183,7 +183,7 @@ describe("le dossier de facturation d'un cycle", () => {
     const view = await dossier(port.companyId);
 
     expect(view.orders).toHaveLength(3);
-    expect(view.otherMonthOrders).toEqual([
+    expect(view.outsidePeriodOrders).toEqual([
       { reference: later, requestedDeliveryDate: OTHER_MONTH_DAY },
     ]);
     expect(view.ordersWithoutDate).toEqual([undated]);
@@ -203,10 +203,10 @@ describe("le dossier de facturation d'un cycle", () => {
     expect(JSON.stringify(response.body)).toContain(broken);
   });
 
-  it("refuse une société inconnue (404) et un mois mal formé (400)", async () => {
+  it("refuse une société inconnue (404) et une clôture mal formée (400)", async () => {
     await staff().get(`${BASE}/companies/absente`).expect(404);
     const port = await client("Boulangerie du Port");
-    await staff().get(`${BASE}/companies/${port.companyId}?month=2026-13`).expect(400);
+    await staff().get(`${BASE}/companies/${port.companyId}?periodClosesAt=2026-13`).expect(400);
   });
 });
 

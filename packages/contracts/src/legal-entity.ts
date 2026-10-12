@@ -56,6 +56,40 @@ export interface ScheduledBillingRhythmView extends BillingRhythmView {
   readonly effectiveAt: string;
 }
 
+/**
+ * Une clôture À VENIR de l'entité et la période qu'elle ferme (plan
+ * `plan-rythme-de-facturation.md`, §6) — calculée par le serveur au rythme
+ * qui fera foi ce jour-là, bascule programmée comprise.
+ */
+export interface UpcomingClosureView {
+  /** ISO — la clôture, 00h00 heure de Paris (exclusive). */
+  readonly closesAt: string;
+  /** « du 1er au 31 octobre 2026 » — jours locaux, dernier jour inclus. */
+  readonly periodLabel: string;
+  /** `AAAA-MM-JJ` — le jour où sa facture s'émet : la veille de la clôture. */
+  readonly invoicedOn: string;
+}
+
+/**
+ * **Un changement de rythme attend sa première facture** (plan, §12) : tout
+ * autre changement est refusé (409) tant que la clôture de prise d'effet n'a
+ * pas été tentée par la facture. L'écran le dit AVANT le geste.
+ */
+export interface BillingRhythmChangeLockView {
+  /** ISO — la clôture où le rythme programmé prend effet. */
+  readonly effectiveAt: string;
+  /**
+   * `AAAA-MM-JJ` — le jour de la facture de cette clôture (sa veille) : le
+   * changement suivant redevient possible une fois cette facture tentée.
+   */
+  readonly unlocksAfterInvoiceOn: string;
+  /**
+   * Revenir au rythme en vigueur ANNULE encore le changement : vrai tant que
+   * la prise d'effet n'est pas atteinte. Après, plus rien jusqu'à la facture.
+   */
+  readonly canCancel: boolean;
+}
+
 /** Une limite locale — un jour et une heure de Paris. */
 export interface LocalDeadlineView {
   /** `AAAA-MM-JJ`. */
@@ -177,6 +211,13 @@ export interface LegalEntityView {
    * coupée.
    */
   readonly nextBillingRhythm: ScheduledBillingRhythmView | null;
+  /**
+   * `null` : un nouveau rythme peut être réglé. Sinon, le changement en
+   * attente et la date à partir de laquelle le suivant sera admis (§12).
+   */
+  readonly billingRhythmChangeLock: BillingRhythmChangeLockView | null;
+  /** Les trois prochaines clôtures de l'entité, la plus proche d'abord. */
+  readonly upcomingClosures: readonly UpcomingClosureView[];
   /** Le calendrier du cycle EN COURS, avec les réglages ci-dessus. */
   readonly nextCollection: CollectionCalendarView;
   /**

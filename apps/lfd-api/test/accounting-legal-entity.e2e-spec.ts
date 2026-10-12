@@ -489,8 +489,8 @@ describe("Le brouillon de prélèvement — un fichier par schéma", () => {
     );
 
     // Tout le cycle est mandaté : aucun des deux n'est un brouillon.
-    expect(core.headers["content-disposition"]).toMatch(/prelevement-CORE-552100554-\d{6}\.xml/u);
-    expect(b2b.headers["content-disposition"]).toMatch(/prelevement-B2B-552100554-\d{6}\.xml/u);
+    expect(core.headers["content-disposition"]).toMatch(/prelevement-CORE-552100554-\d{8}\.xml/u);
+    expect(b2b.headers["content-disposition"]).toMatch(/prelevement-B2B-552100554-\d{8}\.xml/u);
     expect(core.headers["content-disposition"]).not.toContain("BROUILLON");
     expect(b2b.text).not.toContain("BROUILLON");
   });

@@ -17,18 +17,18 @@ import { CycleStatementCard } from './cycle-statement-card';
 
 /** Des dates seulement affichées : aucune n'est comparée à l'horloge. */
 const CURRENT: StatementCycleView = {
-  month: '2026-10',
-  startsAt: '2026-09-30T22:00:00.000Z',
-  closesAt: '2026-10-31T23:00:00.000Z',
+  periodClosesAt: '2026-10-31T23:00:00.000Z',
+  periodStartsAt: '2026-09-30T22:00:00.000Z',
+  periodLabel: 'du 1er au 31 octobre 2026',
   inProgress: true,
 };
 const CYCLES: StatementCyclesView = {
   cycles: [
     CURRENT,
     {
-      month: '2026-09',
-      startsAt: '2026-08-31T22:00:00.000Z',
-      closesAt: '2026-09-30T22:00:00.000Z',
+      periodClosesAt: '2026-09-30T22:00:00.000Z',
+      periodStartsAt: '2026-08-31T22:00:00.000Z',
+      periodLabel: 'du 1er au 30 septembre 2026',
       inProgress: false,
     },
   ],
@@ -74,7 +74,7 @@ function statementOf(month: string, unventilatedVatCents = 0): CycleStatementVie
   return {
     companyId: 'c1',
     companyName: 'Boulangerie du Port',
-    cycle: CYCLES.cycles.find((cycle) => cycle.month === month) ?? CURRENT,
+    cycle: CYCLES.cycles.find((cycle) => cycle.periodClosesAt === month) ?? CURRENT,
     provisional: true,
     scope: 'Périmètre : commandes passées au compte. Hors commandes payées par carte.',
     groups: [
@@ -171,7 +171,7 @@ describe('CycleStatementCard', () => {
     const { fixture, wire } = boot(['b2b_companies:read']);
     await settle(fixture);
 
-    expect(wire.asked).toEqual(['2026-10']);
+    expect(wire.asked).toEqual([CURRENT.periodClosesAt]);
     expect(text(fixture)).toContain('Relevé provisoire');
     expect(text(fixture)).toContain('Hors commandes payées par carte');
     expect(text(fixture)).toContain('en cours, non clos');

@@ -6,12 +6,15 @@ import type {
 import { QueryHandler, type IQueryHandler } from "@nestjs/cqrs";
 
 import { Clock } from "../../../../platform/time/clock.js";
+import { BillingRhythmReader } from "../../domain/ports/billing-rhythm.reader.js";
+import { InvoiceIssuersReader } from "../../domain/ports/invoice-issuers.reader.js";
 import { CycleOrdersReader } from "../../domain/ports/cycle-orders.reader.js";
 import { StatementBillingReader } from "../../domain/ports/statement-billing.reader.js";
 import { STATEMENT_SCOPE } from "../../domain/services/cycle-statement-csv.js";
 import type { StatementLine } from "../../domain/services/cycle-statement.js";
 import type { StatementGroup } from "../../domain/services/payer-statement.js";
 import { buildStatement, type BuiltStatement } from "../cycle-statement-support.js";
+import { statementCycleView } from "../statement-period-support.js";
 import { GetCycleStatementQuery } from "./cycle-statement-queries.js";
 
 /**
@@ -27,13 +30,21 @@ export class GetCycleStatementHandler implements IQueryHandler<
     private readonly orders: CycleOrdersReader,
     private readonly billing: StatementBillingReader,
     private readonly clock: Clock,
+    private readonly issuers: InvoiceIssuersReader,
+    private readonly rhythms: BillingRhythmReader,
   ) {}
 
   async execute(query: GetCycleStatementQuery): Promise<CycleStatementView> {
     const built = await buildStatement(
-      { orders: this.orders, billing: this.billing, clock: this.clock },
+      {
+        orders: this.orders,
+        billing: this.billing,
+        clock: this.clock,
+        issuers: this.issuers,
+        rhythms: this.rhythms,
+      },
       query.companyId,
-      query.month,
+      query.periodClosesAt,
     );
     return toView(built);
   }
@@ -44,12 +55,7 @@ function toView(built: BuiltStatement): CycleStatementView {
   return {
     companyId: built.companyId,
     companyName: built.companyName,
-    cycle: {
-      month: built.month.toString(),
-      startsAt: built.cycle.startsAt.toISOString(),
-      closesAt: built.cycle.closesAt.toISOString(),
-      inProgress: built.inProgress,
-    },
+    cycle: statementCycleView(built.period),
     provisional: true,
     scope: STATEMENT_SCOPE,
     groups: statement.groups.map(toGroupView),

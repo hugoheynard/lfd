@@ -69,20 +69,21 @@
     </fold-callout>
   }
 
-  @if (d.otherMonthOrders.length > 0) {
+  @if (d.outsidePeriodOrders.length > 0) {
     <fold-callout variant="warning" data-dossier-other-month>
       <div class="block">
         <span>
           <strong
-            >{{ count(d.otherMonthOrders.length) }} livré{{
-              d.otherMonthOrders.length > 1 ? 's' : ''
+            >{{ count(d.outsidePeriodOrders.length) }} livré{{
+              d.outsidePeriodOrders.length > 1 ? 's' : ''
             }}
-            un autre mois</strong
+            hors de la période</strong
           >
-          — passé{{ d.otherMonthOrders.length > 1 ? 's' : '' }} dans ce cycle, donc dans ce dossier.
+          — passé{{ d.outsidePeriodOrders.length > 1 ? 's' : '' }} dans ce cycle, donc dans ce
+          dossier.
         </span>
         <ul class="list">
-          @for (order of d.otherMonthOrders; track order.reference) {
+          @for (order of d.outsidePeriodOrders; track order.reference) {
             <li>
               <span class="refs">{{ order.reference }}</span
               >&nbsp;: livraison demandée le {{ day(order.requestedDeliveryDate) }} ({{

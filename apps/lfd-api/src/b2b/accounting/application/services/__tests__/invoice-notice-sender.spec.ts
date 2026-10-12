@@ -15,6 +15,7 @@ import type { PayerNoticeContacts } from "../../../domain/services/collection-no
 import { InvoiceNoticeSender } from "../invoice-notice-sender.js";
 import {
   FixedInvoicePeriods,
+  SEPTEMBER_2026,
   FixedPayerContacts,
   MemoryInvoiceReader,
 } from "./issued-invoice-doubles.js";
@@ -71,7 +72,7 @@ function setup(
   const sites = new FixedSites(options.sites ?? []);
   const sender = new InvoiceNoticeSender(
     new MemoryInvoiceReader([MONTHLY]),
-    new FixedInvoicePeriods(new Map([[MONTHLY.id, "2026-09"]])),
+    new FixedInvoicePeriods(new Map([[MONTHLY.id, SEPTEMBER_2026]])),
     new FixedPayerContacts(
       new Map(
         options.payer === undefined
