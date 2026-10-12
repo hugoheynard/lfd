@@ -43,8 +43,10 @@ décrirait dans le runbook, sans outil.
 - **Écrit au premier téléchargement**, jamais à la passation
   (`OrderSheetArchive.pdfOf`), et best-effort : un R2 en panne rend le PDF sans
   l'archiver.
-- **Le courriel de confirmation ne joint PAS le bon.** Il ne porte que le QR de
-  retrait en image. Le pari « seule une fraction des commandes est archivée »
+- ~~**Le courriel de confirmation ne joint PAS le bon.**~~ **Faux depuis le
+  2026-10-09, relu le 2026-10-12** : il le joint (`order-sheet-attachment.service.ts`,
+  par `OrderSheetArchive`, qui archive à la passation). Ancien constat : il ne
+  portait que le QR de retrait en image. Le pari « seule une fraction des commandes est archivée »
   tient donc toujours — le TODO d'origine le croyait sur le point de tomber.
 - **Aucun code ne supprime une clé `orders/`** — et depuis le 2026-09-17,
   aucun ne le peut (§4). Les seuls appelants de
@@ -52,7 +54,10 @@ décrirait dans le runbook, sans outil.
   (`mandate-proof-purge.ts`), les photos de notes et de cartes. Aucune règle de
   cycle de vie n'est déclarée dans le dépôt ; la configuration du bucket côté
   Cloudflare n'est pas vérifiable d'ici.
-- 🔴 **VÉRIFIÉ le 2026-09-21 : `R2_CUSTOMERS_EU_*` n'existe nulle part.** Ni
+- ✅ **Corrigé le 2026-10-12** : les `R2_CUSTOMERS_EU_*` et `R2_PRODUCTION_*` ont
+  été posés le 2026-09-21 (`../ops/secrets-et-variables.md`), l'archive écrit.
+  Le constat ci-dessous est celui du matin même, avant la pose.
+- 🔴 **VÉRIFIÉ le 2026-09-21 (avant la pose) : `R2_CUSTOMERS_EU_*` n'existe nulle part.** Ni
   secret, ni variable de dépôt — les quatre noms sont absents (22 secrets et 18
   variables listés ; `R2_KBIS_*` et `R2_MEDIA_*`, eux, sont bien là). La boucle
   de synchronisation du déploiement ne pousse un nom que **s'il est non vide**
@@ -102,5 +107,6 @@ très au-dessus du réel. La décision ne coûte rien de mesurable.
    choisi de **sceller** le taxe compris plutôt que de le dériver
    ([`plan-bon-de-commande-public-en-ttc.md`](plan-bon-de-commande-public-en-ttc.md)).
 
-4. **Le jour où le courriel joindra le bon**, l'archiver au même moment : le
-   document envoyé doit être celui qui est gardé.
+4. ~~**Le jour où le courriel joindra le bon**, l'archiver au même moment~~ :
+   fait — le courriel joint le document que `OrderSheetArchive` garde (relu le
+   2026-10-12).

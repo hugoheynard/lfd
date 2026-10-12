@@ -7,12 +7,22 @@ la fidélité, ouvert à la demande de Hugo. Rien n'est pris.
 
 - À la clôture, `PendingSettlementSweepService.tryCancel` **épargne** une
   commande dont Stripe dit le paiement `in_progress`
-  (`pending-settlement-sweep.service.ts`, vers les lignes 90-101).
+  (`pending-settlement-sweep.service.ts`, `tryCancel`, branche
+  `already_paid` / `in_progress` vers la ligne 130 ; relu le 2026-10-12 — les
+  lignes 90-101 d'origine ont glissé).
 - Si Stripe envoie ensuite `payment_failed`, la commande passe
   `placed` / `failed`, et plus rien ne la relit : le balayage ne lit qu'une
   journée (`prisma-unsettled-settlement.reader.ts`), celle qui est close.
 - Seul un abandon par le client la fait sortir. Sinon, elle reste pendante
   pour toujours, hors du plan de production, sans cloche.
+
+> Relu le 2026-10-12 : depuis le lot E4b (2026-10-10), `order.payment_failed`
+> et `order.paid_after_cancellation` sont publiés **durablement** par
+> `confirm-order-payment.handler.ts`, et `failAtClosing` **libère le bon** de
+> fidélité (`vouchers.release`) quand il annule. Ces deux faits ne règlent pas
+> la question ci-dessous (un refus après la clôture n'annule toujours pas la
+> commande épargnée) ; je n'ai pas rouvert le chemin du webhook pour le
+> confirmer.
 
 ## Pourquoi c'est un problème
 

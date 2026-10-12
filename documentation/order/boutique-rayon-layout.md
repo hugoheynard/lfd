@@ -190,6 +190,12 @@ boutique — à regarder avant de toucher au code.
 > Repris le 2026-10-12 du TODO de l’éditeur de vitrine, supprimé (noté le
 > 2026-09-24, Hugo : « on peut vivre sans pour le moment »). Vérifié ce jour :
 > aucun des gestes n'est bâti, et `sampleCount` est toujours enregistré.
+>
+> ⚠️ **Corrigé le 2026-10-12, même jour, en ouvrant le code** : « changer la
+> forme » (`apps/lfd-backoffice-frontend/src/app/contenu/storefront-reshape.ts`)
+> et le **glisser-déposer** (`.../contenu/storefront-drag.ts`) **sont bâtis**.
+> Restent à faire les trois gestes ci-dessous (pousser vers le bas, rangées,
+> sélection multiple et miroir) et `sampleCount`.
 
 ### Les gestes de l'éditeur (`apps/lfd-backoffice-frontend/src/app/contenu/`)
 

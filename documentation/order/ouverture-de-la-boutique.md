@@ -1,5 +1,11 @@
 # L'ouverture de la boutique à la commande
 
+> ⚠️ **Relu le 2026-10-12.** `POST /shop/orders` est **servie** depuis le
+> 2026-10-11 (`shop-orders.controller.ts`, `orders.module.ts`). La migration
+> `20261009130000_la_boutique_reste_fermee` reprend `feature_access_overrides.shop`
+> (`closed` ou `browse`) en fermant les deux clientèles dans
+> `order_opening_settings` ; la ligne `shop` n'est ni lue ensuite ni effacée.
+
 > État au 2026-10-09 — **implémenté** (non commité à l'écriture). Demande de
 > Hugo du 2026-10-09 ; remplace la clé `shop` de l'accès aux fonctionnalités,
 > retirée le même jour (`63fde9aac`).

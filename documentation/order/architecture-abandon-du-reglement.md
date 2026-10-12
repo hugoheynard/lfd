@@ -1,5 +1,14 @@
 # L'abandon du règlement
 
+> ⚠️ **Relu le 2026-10-12.** Le **remboursement Stripe est constaté** par
+> `record-order-refund.handler.ts` (agrégat `OrderRefundLedger`, relation
+> `Order.refunds`) : seule son **initiation** manque. Le **lot 10 est bâti** :
+> `admin-settlement-reminders.controller.ts`, déclenché par `container/worker.ts`
+> (`triggerSettlementReminders`). La cause `PaymentFailureCause` a deux valeurs
+> de plus que le corps : `expired` (impayé de la boutique dépassé) et `replaced`
+> (nouvelle commande du même particulier), sans courriel ni cloche. Les passages
+> du corps qui disent « le remboursement n'existe pas » sont antérieurs.
+
 > État : **implémenté** au 2026-09-26, lot 10 compris (`9c10d2d2c` : un lien
 > de paiement non réglé à l'heure limite fait sonner la cloche, une fois, par
 > un cron horaire). Écrit à l'affirmative

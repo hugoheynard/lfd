@@ -17,7 +17,8 @@ et sur une sélection, pas sur tout un cycle.
 
 - **Le lien de paiement** (`PaymentLink`, `accounting.prisma`) : un montant
   en centimes, un libellé, une session Stripe hébergée, un état
-  `open → paid | cancelled`. Aujourd'hui, il est créé **par le staff**, pour
+  `open → paid | cancelled | expired` (`expired` ajouté depuis ; relu le
+  2026-10-12). Aujourd'hui, il est créé **par le staff**, pour
   une société, pour un **montant libre** : il ne connaît pas les commandes
   qu'il règle.
 - **Le relevé de cycle** (`plan-agregation-des-commandes.md`, A1-A2) sait
@@ -49,6 +50,11 @@ et sur une sélection, pas sur tout un cycle.
    sélectionnées et la mention « réglée » ou « à régler par virement ». Elle
    dépend du lot facture (nous produirons la facture, avant l'échéance de
    2027).
+
+> Relu le 2026-10-12 : le payeur figé **existe** (`orders.billed_company_id`,
+> `orders.prisma`) et `settled_otherwise` **existe** (`collection.prisma`,
+> `collection-return.prisma`). Ce qui manque reste le lien de paiement attaché
+> aux commandes (`payment_link_orders` : aucun modèle) et la facture de sélection.
 
 ## Ce qui bloque, et dans quel ordre
 

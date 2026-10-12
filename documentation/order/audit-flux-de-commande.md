@@ -1,5 +1,19 @@
 # Audit — le flux de commande, de bout en bout
 
+> ⚠️ **Relu le 2026-10-12 contre le code — trois constats ont changé.**
+>
+> - **T4 / T7** : `cancelled` **s'écrit** (`markAbandoned`, `failAtClosing`,
+>   expiration des impayés de la boutique : `prisma-order.repository.ts`,
+>   `prisma-unsettled-shop-order.canceller.ts`).
+> - **T8** : les factures carte sont **émises** par `b2b/accounting`
+>   (`issue-card-invoice-on-paid.handler.ts`,
+>   `issue-card-invoice-on-fulfilled.handler.ts`).
+> - **T13** : il y a **trois** listes de statuts, dont
+>   `pricing/infrastructure/prisma-customer-volume.reader.ts` (`COUNTED_STATUSES` :
+>   `placed`, `confirmed`, `in_production`, `fulfilled`).
+>
+> Le corps n'est pas réécrit : une photo porte sa date.
+
 > **Écrit le 2026-09-07, nettoyé le 2026-09-18 contre le code.** Méthode : lecture
 > du **code**, pas des documents. Chaque constat porte sa preuve — un fichier, une
 > ligne, ou l'absence d'un fichier. Périmètre : tout ce qu'une commande

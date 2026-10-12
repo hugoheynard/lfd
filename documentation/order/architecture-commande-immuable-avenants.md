@@ -99,6 +99,10 @@ Saisie dans **Réglages → Retraits & livraisons**. Reste à **consommer** ces
 règles : le checkout ne les applique pas encore, et c'est l'avenant qui en sera
 le premier lecteur.
 
+> ✅ **Corrigé le 2026-10-12** : la passation les applique déjà
+> (`ensureWithinOrderCutoff`, `order-drafting.service.ts:320-335`, avec la
+> dérogation `order_cutoff_waiver`). Seul l'avenant reste à bâtir.
+
 ### Le règlement suit le régime, et il attend la production
 
 | Régime du client                      | Ce qui se passe à l'acceptation                    |
@@ -167,6 +171,11 @@ L'UI **compose le récapitulatif** : elle décide quelles lignes il contient
 quel ordre, avec quels libellés, et sous quelles conditions (la remise
 n'apparaît que si elle est > 0). Elle dérive aussi le libellé de la remise du
 snapshot d'adresse.
+
+> ⚠️ Relu le 2026-10-12 : le **total HT** du récapitulatif est calculé côté
+> front, dans `packages/b2b-ui/src/order/order-pricing.ts:182`
+> (`totalCents - vatCents`) — de la soustraction, pas du prix, mais le « front
+> sans arithmétique » ci-dessus ne tient plus à la lettre.
 
 Ce n'est pas du calcul, mais c'est **de la règle métier dans le gabarit** — et
 elle ne survivra pas aux avenants : « Avoir du 12/08 », « Complément réglé »,

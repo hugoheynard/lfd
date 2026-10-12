@@ -33,7 +33,18 @@ if (row === null || row.email.trim() === "") {
 }
 ```
 
-**Deux chemins de courriel en dépendent**, pas un :
+**Sept chemins de courriel en dépendent** (corrigé le 2026-10-12 ; le texte
+d'origine en comptait deux) :
+
+- `order-placed-mail.service.ts`
+- `send-order-placed-mail.handler.ts`
+- `order-ready-mail.service.ts` — il porte le QR de retrait
+- `delivery-en-route-mail.service.ts`
+- `send-payment-expired-mail.handler.ts`
+- `send-payment-failed-mail.handler.ts`
+- `resend-order-payment-link.handler.ts`
+
+Les deux du tableau d'origine :
 
 | Chemin                                | Ce qui ne part pas                                      |
 | ------------------------------------- | ------------------------------------------------------- |
@@ -48,6 +59,11 @@ chercher sa commande — sans que personne l'apprenne.
 crée une ligne `User` (`auth0Sub: null`, `emailVerified: false`) portant
 l'adresse tapée au panier, et la commande pointe vers cette personne. L'adresse
 est donc rangée sur la **personne**, jamais sur la commande — même faiblesse.
+
+⚠️ Relu le 2026-10-12 : quand le même invité revient, `register` rend la ligne
+connue **sans la mettre à jour** (`prisma-guest-buyer.registrar.ts`, `known`) —
+il garde son ancien prénom et son ancien téléphone, et le courriel part au
+prénom d'alors.
 
 ---
 

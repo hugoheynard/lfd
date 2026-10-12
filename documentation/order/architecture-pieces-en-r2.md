@@ -1,5 +1,13 @@
 # Les pièces d'un client dans R2 — ce qu'on range, et où
 
+> ⚠️ **Relu le 2026-10-12.** Le courriel de confirmation **joint** le bon
+> (`order-sheet-attachment.service.ts`, via `OrderSheetArchive`), qui est donc
+> archivé à la passation et non plus au premier téléchargement. Les clés
+> `R2_CUSTOMERS_EU_*` et `R2_PRODUCTION_*` ont été **posées le 2026-09-21**
+> (`../ops/secrets-et-variables.md`). Les factures **sont émises** : modèle
+> `Invoice` (`prisma/schema/public/invoice.prisma`), la ligne « déposée par le
+> comptable » du §3 est périmée.
+
 **Ouvert le 2026-09-07**, complété le jour même. Les deux buckets **existent en
 code, en dev et en test** ; ce qui les sépare est ci-dessous.
 

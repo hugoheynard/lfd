@@ -1,5 +1,11 @@
 # Le règlement, et ce que le fournil fabrique
 
+> ⚠️ **Relu le 2026-10-12.** Les remboursements Stripe sont **constatés**
+> (`record-order-refund.handler.ts`) ; seule l'initiation d'un remboursement
+> manque. Le lot 10 est bâti (`admin-settlement-reminders.controller.ts`,
+> `container/worker.ts`). `PaymentFailureCause` compte cinq causes, dont
+> `expired` et `replaced` (voir `architecture-abandon-du-reglement.md`).
+
 **Statut** : ✅ décrit **tel qu'il est**, relu dans le code le 2026-09-17 en fin
 de journée — la règle d'entrée au compte de production, les deux courriels du
 règlement et le dossier du jour. 🟠 **Une proposition non implémentée** : le

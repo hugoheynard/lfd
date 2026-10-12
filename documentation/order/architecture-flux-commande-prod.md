@@ -1,5 +1,12 @@
 # Flux commande → stock → plan de prod (0 always-on)
 
+> ⚠️ **Relu le 2026-10-12 : la topologie ci-dessous est abandonnée.** Il n'y a
+> ni Workers par brique, ni « pas de pub/sub » : l'API est **un seul backend
+> NestJS** (un container), et les faits entre blocs passent par le bus durable
+> `apps/lfd-api/src/platform/outbox/` (`@DurableHandler`) en plus du bus en
+> mémoire. Le corps n'est pas réécrit : lire le schéma comme une intention
+> d'origine, jamais comme l'état.
+
 Principe : **rien ne tourne en continu**. Chaque brique est **toujours joignable**
 mais **jamais allumée** — elle se réveille sur un déclencheur (requête HTTP,
 webhook Shopify, ou horloge), traite, puis se rendort. Aucun serveur ne se paie à
