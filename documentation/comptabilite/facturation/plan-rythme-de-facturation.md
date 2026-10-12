@@ -594,12 +594,12 @@ modes ; chaque client choisit un mode.** Plus aucune date propre à un client.
 
 ### 16.5 Lots
 
-| Lot | Contenu                                                                                                                                                                               |
-| --- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| M1  | Trois définitions sur l'entité + mode du client (migration, agrégats, routes, faits, timelines, calendrier d'union, règle §12 au temps) — **bâti le 2026-10-12, non commité** (§16.7) |
-| M2  | Facture par client à sa clôture (passage, bouton, rattrapage)                                                                                                                         |
-| M3  | Lot et automatisme sur le calendrier (`constitute`, tentative à chaque clôture, `priorOrderCount`, lot manqué, `lastClosure`)                                                         |
-| M4  | Relevé/dossier par client ; écrans : dates des modes, mode du client, restes « mois » — **M4a (serveur) bâti le 2026-10-12** (§16.11), M4b (écrans) à faire                           |
+| Lot | Contenu                                                                                                                                                                                          |
+| --- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
+| M1  | Trois définitions sur l'entité + mode du client (migration, agrégats, routes, faits, timelines, calendrier d'union, règle §12 au temps) — **bâti le 2026-10-12, non commité** (§16.7)            |
+| M2  | Facture par client à sa clôture (passage, bouton, rattrapage)                                                                                                                                    |
+| M3  | Lot et automatisme sur le calendrier (`constitute`, tentative à chaque clôture, `priorOrderCount`, lot manqué, `lastClosure`)                                                                    |
+| M4  | Relevé/dossier par client ; écrans : dates des modes, mode du client, restes « mois » — **M4a (serveur) bâti le 2026-10-12** (§16.11), **M4b (écrans) bâti le 2026-10-12, non commité** (§16.12) |
 
 ### 16.6 Révision après `vitruve` (2026-10-12) — l'emporte sur 16.1–16.5
 
@@ -979,3 +979,59 @@ dans `IssueMonthlyInvoicesHandler`, quand `at ≥ C`, prendre aussi
 `collectionDayOf(calendar.closureAfter(at), …)` dans le `later(…)` de
 `dueOn` — l'échéance du lot qui prendra réellement la facture. À décider :
 c'est une date imprimée sur une pièce.
+
+### 16.12 M4b bâti (2026-10-12, non commité) — les écrans
+
+Ni contrat, ni serveur touchés.
+
+- **Fiche de l'entité — « Dates des modes »** : `billing-modes-card` devient
+  l'éditeur ; une ligne par mode (`billing-mode-row`) : dates en vigueur
+  (jour 1–28 / deux jours distincts, envoyés triés / jour de semaine),
+  programmé et prise d'effet, « Annuler ce changement »
+  (`DELETE …/billing-modes/:mode/scheduled`), avertissement PERMANENT §12,
+  champs fermés jusqu'à `changeLockedUntil` avec la date, confirmation qui
+  nomme la 1re des `upcomingClosures`, trois clôtures, « N clients ont choisi
+  ce mode » (le mensuel dit que ses clients par défaut ne sont pas comptés),
+  une ligne « la date est celle de la clôture à 00h00, la facture part la
+  veille à 23h55 ». Repris de R5b : `billing-rhythm-wording` (phrase, forme
+  de la saisie, période courte, ligne de clôture) ; retirés : le choix de
+  genre à trois et ses jours par défaut (`RHYTHM_KIND_CHOICES`,
+  `defaultDays`).
+- **Fiche du client — `payer-billing-mode-card`** (onglet Facturation,
+  service `PayerBillingModeService`, à côté du relevé) : « Mode
+  de facturation » (Mensuel — par défaut / Deux fois par mois / Chaque
+  semaine) chez l'entité en service (choix de l'entité s'il y en a
+  plusieurs), programmé et annulation, avertissement, trois clôtures ; refus
+  du serveur affiché tel quel. Un sous-compte qui suit `billing` (même
+  lecture que `billedPayerOf`) affiche « Suit le mode de {payeur} », sans
+  formulaire ni lecture.
+- **Relevé et dossier** : `cycles(companyId)` ; la carte du relevé lit les
+  périodes DU client ; le dossier part du calendrier de l'entité, puis le
+  payeur choisi apporte les siennes (la période choisie reste si elle en est
+  une, sinon la plus récente).
+- **« Prélèvement du mois »** (nom gardé, §6) : le lot à préparer se nomme
+  par `lastClosure` (« Préparer le lot du 5 octobre 2026 »), « déjà là »
+  compare la clôture du lot à `lastClosure` ; les lots figés se nomment par
+  leur période (`cycleStartsAt`/`cycleClosesAt`, même forme que
+  `periodLabelOf`) ; titres « Le calendrier de la prochaine clôture », « La
+  période en cours — clôture du … » ; « facture par période ».
+- **Restes « mois »** : tableau de bord (« la première période
+  prélevable »), journal (« Période pas encore prélevable », « Facture par
+  période pas encore en service », « une facture par période — avoir à
+  émettre à la main »). Les phrases de repli « du mois AAAA-MM » des faits
+  d'avant M4a restent.
+
+**Non fait, faute de champ** : le libellé du lot quand les rythmes sont
+mêlés (« du 1er au 4 octobre — clients hebdomadaires et mensuels ») — la
+fiche de l'entité ne porte ni le début de la période de `lastClosure`, ni
+les modes qui y clôturent ; et l'écran n'est pas « organisé par clôture
+avec, pour chacune, les clients facturés » : `MonthlyInvoicesView` ne rend
+qu'une clôture. Les deux demandent un champ serveur (p. ex.
+`lastClosurePeriod { startsAt, label, modes[] }`).
+
+**Échéance d'une facture rattrapée (Hugo, 2026-10-12 : « applique le
+correctif »).** Bâti : `invoiceDueDay` (domaine) — émise avant sa clôture C,
+l'échéance est celle de C ; émise après, celle de la clôture suivante.
+Approximation écrite dans son JSDoc : si le lot de C n'est pas encore
+préparé, le prélèvement tombe avant la date de la facture, l'avis du lot
+disant la vraie date (préavis tenu par D4).

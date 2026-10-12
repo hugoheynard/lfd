@@ -29,9 +29,9 @@ import { MonthlyInvoicingReader } from "../../domain/ports/monthly-invoicing.rea
 import { PayerBillingModesReader } from "../../domain/ports/payer-billing-modes.reader.js";
 import { StatementBuyerReader } from "../../domain/ports/statement-buyer.reader.js";
 import type { BillingCycle } from "../../domain/services/billing-cycle.js";
-import { collectionDayOf } from "../../domain/services/collection-calendar.js";
 import type { InvoiceSellerFacts } from "../../domain/services/invoice-issuance-blockers.js";
 import type { MonthlyInvoiceReport } from "../../domain/services/monthly-invoice-report.js";
+import { invoiceDueDay } from "../../domain/services/invoice-due-day.js";
 import type { InvoicingCalendar } from "../../domain/services/invoicing-calendar.js";
 import {
   invoicingMomentOf,
@@ -81,7 +81,7 @@ import { IssueMonthlyInvoicesCommand } from "./issue-monthly-invoices.command.js
  * tenir le compteur pendant toute la période des autres.
  *
  * - émise la **veille de la clôture** (jour local), échéance = la date de
- *   prélèvement du calendrier (`collectionDayOf`) ;
+ *   prélèvement du lot qui la prendra (`invoiceDueDay`) ;
  * - moyen de paiement figé : le mandat effectif de la facture (BG-16), aucun
  *   pour la facture des bons sans mandat ;
  * - un refus (manque nommé, numérotation, base) : la facture n'est pas
@@ -192,7 +192,7 @@ export class IssueMonthlyInvoicesHandler implements ICommandHandler<
       issuedOn,
       dueOn: later(
         issuedOn,
-        collectionDayOf(closesAt, preNotificationDays, collectionDaysAfterClosure),
+        invoiceDueDay(closesAt, at, calendar, { preNotificationDays, collectionDaysAfterClosure }),
       ),
       creditor,
       sellerFacts,
