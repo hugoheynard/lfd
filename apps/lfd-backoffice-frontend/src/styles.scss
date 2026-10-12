@@ -206,7 +206,9 @@ router-outlet ~ * {
 @media (pointer: coarse) {
   input:not([type='checkbox']):not([type='radio']),
   select,
-  textarea {
+  textarea,
+  [contenteditable='true'],
+  [contenteditable='plaintext-only'] {
     font-size: 16px !important;
   }
 }
