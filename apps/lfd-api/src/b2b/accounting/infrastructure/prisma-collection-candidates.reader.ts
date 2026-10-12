@@ -35,7 +35,7 @@ export class PrismaCollectionCandidatesReader extends CollectionCandidatesReader
   }
 
   async floor(): Promise<Date | null> {
-    const row = await this.prisma.collectionFloor.findUnique({ where: { id: true } });
+    const row = await this.prisma.collectionFloor.findFirst({ where: { id: true } });
     return row?.floorAt ?? null;
   }
 
@@ -137,7 +137,7 @@ export class PrismaCollectionCandidatesReader extends CollectionCandidatesReader
   }
 
   async invoicingFloor(): Promise<Date | null> {
-    const row = await this.prisma.invoicingFloor.findUnique({ where: { id: true } });
+    const row = await this.prisma.invoicingFloor.findFirst({ where: { id: true } });
     return row?.floorAt ?? null;
   }
 

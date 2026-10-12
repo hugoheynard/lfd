@@ -11,7 +11,7 @@ export class PrismaInvoicingFloorReader extends InvoicingFloorReader {
   }
 
   async floor(): Promise<Date | null> {
-    const row = await this.prisma.invoicingFloor.findUnique({ where: { id: true } });
+    const row = await this.prisma.invoicingFloor.findFirst({ where: { id: true } });
     return row?.floorAt ?? null;
   }
 }

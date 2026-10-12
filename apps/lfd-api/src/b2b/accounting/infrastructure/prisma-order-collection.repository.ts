@@ -18,7 +18,7 @@ export class PrismaOrderCollectionRepository extends OrderCollectionRepository {
   }
 
   async load(orderId: string): Promise<OrderCollection | null> {
-    const floor = await this.prisma.collectionFloor.findUnique({ where: { id: true } });
+    const floor = await this.prisma.collectionFloor.findFirst({ where: { id: true } });
     if (floor === null) {
       return null;
     }

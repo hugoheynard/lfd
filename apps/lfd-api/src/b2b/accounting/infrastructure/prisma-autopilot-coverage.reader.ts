@@ -20,7 +20,8 @@ export class PrismaAutopilotCoverageReader extends AutopilotCoverageReader {
 
   async coverageOf(legalEntityId: string, before: Date): Promise<AutopilotCoverage> {
     const [floor, runs, batch] = await Promise.all([
-      this.prisma.collectionFloor.findUnique({ where: { id: true } }),
+      // `findFirst` : cf. prisma-monthly-invoices.reader.ts (findUnique parallèles → `in` refusé).
+      this.prisma.collectionFloor.findFirst({ where: { id: true } }),
       this.prisma.collectionAutopilotRun.findMany({
         where: { legalEntityId, cycleClosesAt: { lt: before } },
         select: { cycleClosesAt: true },
