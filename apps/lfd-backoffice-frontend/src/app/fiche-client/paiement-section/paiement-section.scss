@@ -95,6 +95,18 @@ fold-danger-zone {
   border-top: 1px solid var(--fold-color-border-subtle);
 }
 
+.pm-row--missing {
+  margin-inline: calc(-1 * var(--fold-space-sm));
+  padding-inline: var(--fold-space-sm);
+  border-radius: var(--fold-radius-sm);
+  background: var(--fold-color-warning-surface);
+}
+
+.pm-row--missing .pm-label,
+.pm-row--missing .pm-note {
+  color: var(--fold-color-warning-text);
+}
+
 .pm-what {
   display: grid;
   gap: 2px;

@@ -144,9 +144,30 @@
             </div>
           </div>
 
+          @if (signable()) {
+            <div class="pm-row">
+              <div class="pm-what">
+                <span class="pm-label">Le mandat à faire signer</span>
+                <span class="pm-note">
+                  Il porte la référence <strong>{{ m.reference }}</strong> et n'a plus de mention
+                  EXEMPLE. À relire, puis à envoyer au client — ou à imprimer si vous le remettez en
+                  main propre.
+                </span>
+              </div>
+              <div class="pm-state">
+                <button foldButton emphasis="outline" type="button" (click)="openMandate()">
+                  Voir le mandat
+                </button>
+              </div>
+            </div>
+          }
+
           <!-- La pièce qui prouve le consentement. Le RIB ne prouve rien : il
                  donne des coordonnées, pas une autorisation. -->
-          <div class="pm-row">
+          <!-- En avertissement tant que le scan manque (Hugo, 2026-10-12) : sans
+               lui, le mandat ne s'active pas. Après « à faire signer », dans
+               l'ordre du geste : on envoie, puis on dépose ce qui revient. -->
+          <div class="pm-row" [class.pm-row--missing]="!m.hasProof">
             <div class="pm-what">
               <span class="pm-label">Mandat signé</span>
               <span class="pm-note">
@@ -185,24 +206,6 @@
               }
             </div>
           </div>
-
-          @if (signable()) {
-            <div class="pm-row">
-              <div class="pm-what">
-                <span class="pm-label">Le mandat à faire signer</span>
-                <span class="pm-note">
-                  Il porte la référence <strong>{{ m.reference }}</strong> et n'a plus de mention
-                  EXEMPLE. À relire, puis à envoyer au client — ou à imprimer si vous le remettez en
-                  main propre.
-                </span>
-              </div>
-              <div class="pm-state">
-                <button foldButton emphasis="outline" type="button" (click)="openMandate()">
-                  Voir le mandat
-                </button>
-              </div>
-            </div>
-          }
 
           @if (signable()) {
             <div class="pm-row">
