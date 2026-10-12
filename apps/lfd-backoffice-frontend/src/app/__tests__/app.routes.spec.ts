@@ -256,7 +256,7 @@ const SCREENS: Readonly<Record<string, ScreenAccess>> = {
   // Le réassort (2026-10-12, pas encore construit) : le poste du retrait.
   'comptoir/reassort': 'handover_counter:read',
   // Lire les clients du comptoir ET commander : deux gardes, deux droits
-  // (plan-commande-au-comptoir.md). `b2b_companies` n'y apparaît pas — c'est le
+  // (architecture-commande-au-comptoir.md). `b2b_companies` n'y apparaît pas — c'est le
   // point : le vendeur de comptoir n'a pas la fiche client.
   'comptoir/nouvelle-commande': ['b2b_counter:read', 'b2b_place_order:write'],
   // La MÊME saisie que `comptes-clients/:id/nouvelle-commande`, montée sous le

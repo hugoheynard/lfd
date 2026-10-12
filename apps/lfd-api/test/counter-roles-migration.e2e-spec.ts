@@ -1,6 +1,6 @@
 /**
  * E2E des **droits migrés du Comptoir** — `20260926100100_le_comptoir_est_accorde`,
- * rejouée (plan `documentation/order/plan-commande-au-comptoir.md`, « Droits »).
+ * rejouée (plan `documentation/order/architecture-commande-au-comptoir.md`, « Droits »).
  *
  * 🔴 Ce que ce test garde de plus que ses prédécesseurs : la migration choisit
  * les rôles par leur CONTENU (`b2b_orders:write`), jamais par leur clé — des

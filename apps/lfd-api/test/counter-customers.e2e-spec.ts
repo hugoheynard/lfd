@@ -1,6 +1,6 @@
 /**
  * E2E du **Comptoir** (`/admin/counter/customers`) — plan
- * `documentation/order/plan-commande-au-comptoir.md`.
+ * `documentation/order/architecture-commande-au-comptoir.md`.
  *
  * 🔴 La preuve qui compte est le parcours ENTIER sous le rôle `comptoir`, qui
  * n'a pas `b2b_companies` : chacune des lectures de l'écran de commande répond

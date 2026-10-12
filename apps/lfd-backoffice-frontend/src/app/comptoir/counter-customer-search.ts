@@ -7,7 +7,7 @@ import type { CounterCustomerCard } from '@lfd/contracts';
  *
  * Pas de propriétaire de l'espace, à la différence de la liste des comptes :
  * la carte du comptoir ne le porte pas, et c'est voulu (plan
- * `plan-commande-au-comptoir.md`).
+ * `architecture-commande-au-comptoir.md`).
  */
 export function matchesCounterSearch(card: CounterCustomerCard, query: string): boolean {
   const needle = normalise(query);

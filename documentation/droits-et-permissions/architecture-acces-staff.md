@@ -316,7 +316,7 @@ Les choix qui ne se devinent pas :
   privilège, c'est la façon dont on apprend qu'il s'est passé quelque chose.
   `comptoir` compris (Hugo, 2026-09-25).
 - **`comptoir` (« Vendeur comptoir ») n'a que `b2b_counter: r`,
-  `b2b_orders: w` et la cloche** (2026-09-25, `documentation/order/plan-commande-au-comptoir.md`).
+  `b2b_orders: w` et la cloche** (2026-09-25, `documentation/order/architecture-commande-au-comptoir.md`).
   Il prend la commande d'un pro sans lire sa fiche : ni crédit, ni KBIS, ni
   contacts. `b2b_counter` est reconduit en lecture à tout rôle — et à tout
   écart individuel — qui écrit `b2b_orders`, sélectionné par son contenu :

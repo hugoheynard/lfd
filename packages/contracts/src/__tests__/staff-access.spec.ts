@@ -283,7 +283,7 @@ describe("la médiathèque", () => {
 
 describe("le comptoir", () => {
   /**
-   * Le rôle pour lequel `plan-commande-au-comptoir.md` existe : prendre la
+   * Le rôle pour lequel `architecture-commande-au-comptoir.md` existe : prendre la
    * commande d'un pro sans lire sa fiche. Si ce cas rougit parce qu'on a donné
    * `b2b_companies` au comptoir, c'est la décision qu'il faut reprendre, pas le
    * test.

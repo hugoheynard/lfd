@@ -13,7 +13,7 @@ enum StaffRole {
   /// le 2026-09-23 pour un métier qu'aucun rôle ne portait.
   communication
   /// Le VENDEUR DE COMPTOIR — prend la commande d'un pro sans lire sa fiche.
-  /// Ouvert le 2026-09-25 (`documentation/order/plan-commande-au-comptoir.md`).
+  /// Ouvert le 2026-09-25 (`documentation/order/architecture-commande-au-comptoir.md`).
   comptoir
   support
   dev
@@ -62,7 +62,7 @@ enum StaffResource {
   /// 2026-10-01 (`documentation/livraisons/droits/plan-droits-par-geste.md`, 5.1 bis).
   b2b_place_order
   /// Le COMPTOIR — la carte et le détail d'un client, taillés pour la prise de
-  /// commande (2026-09-25, `plan-commande-au-comptoir.md`).
+  /// commande (2026-09-25, `architecture-commande-au-comptoir.md`).
   b2b_counter
   /// La SUPERVISION — la vue du jour, en lecture seule, de la passation au
   /// retrait (2026-09-25, `plan-supervision-du-jour.md`).

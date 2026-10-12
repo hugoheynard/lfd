@@ -37,7 +37,7 @@ import { reglagesRoutes } from './reglages/reglages.routes';
  * (`b2b_counter:read`) ET passer une commande (`b2b_place_order:write`, sortie
  * de `b2b_orders` le 2026-10-01 — `documentation/livraisons/droits/plan-droits-par-geste.md`, 5.1 bis). L'un sans
  * l'autre ouvrirait un écran dont la moitié des appels répondrait 403
- * (`documentation/order/plan-commande-au-comptoir.md`, Front). Deux gardes
+ * (`documentation/order/architecture-commande-au-comptoir.md`, Front). Deux gardes
  * plutôt qu'un garde composé : chacun porte sa permission, que la table des
  * routes relit.
  */

@@ -11,7 +11,7 @@ import { PimCapabilitiesStore } from '../pim/capabilities/pim-capabilities.store
 import { WorkspaceCatalogue } from '../shared/workspace-rail/workspaces';
 
 /**
- * **Qui prend une commande pro au comptoir** (plan-commande-au-comptoir.md) :
+ * **Qui prend une commande pro au comptoir** (architecture-commande-au-comptoir.md) :
  * il faut lire les clients du comptoir (`b2b_counter:read`) ET commander
  * (`b2b_place_order:write`, sorti de `b2b_orders` le 2026-10-01). Le rail et
  * les gardes disent la même chose.

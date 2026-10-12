@@ -4,7 +4,7 @@ import { ResourceNotFoundError } from "../../../../platform/shared/errors/app-er
  * Le client demandé au Comptoir n'est pas servi : inconnu, **ou** non actif.
  *
  * Un seul refus pour les deux, et c'est voulu (plan
- * `documentation/order/plan-commande-au-comptoir.md`) : le comptoir ne
+ * `documentation/order/architecture-commande-au-comptoir.md`) : le comptoir ne
  * distingue pas un compte suspendu d'un compte absent — il n'a pas à lire
  * l'état commercial d'un client, seulement à savoir s'il peut lui vendre.
  *

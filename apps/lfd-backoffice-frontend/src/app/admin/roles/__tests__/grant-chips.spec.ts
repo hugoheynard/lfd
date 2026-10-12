@@ -64,7 +64,7 @@ describe('grantGroups', () => {
    * suspendre le prélèvement d'un client n'est pas ouvrir la comptabilité.
    *
    * `b2b_counter` l'a fait passer à 27 le 2026-09-25 : vendre au comptoir
-   * n'est pas lire la fiche client (plan-commande-au-comptoir.md).
+   * n'est pas lire la fiche client (architecture-commande-au-comptoir.md).
    *
    * `b2b_supervision` l'a fait passer à 28 le 2026-09-25 : regarder la
    * journée entière n'est pas lire les commandes (plan-supervision-du-jour.md).

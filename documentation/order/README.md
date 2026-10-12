@@ -96,7 +96,7 @@ flowchart TD
 | Comment la commande alimente le plan de production ?                            | [`architecture-flux-commande-prod.md`](architecture-flux-commande-prod.md) — **topologie obsolète** |
 | Quels parcours existent, par profil de client ?                                 | [`flux-de-commande.md`](flux-de-commande.md)                                                        |
 | Comment un visiteur commande sans compte ?                                      | [`plan-commande-sans-compte.md`](plan-commande-sans-compte.md)                                      |
-| Comment le comptoir commande-t-il pour un pro sans la fiche client ?            | [`plan-commande-au-comptoir.md`](plan-commande-au-comptoir.md)                                      |
+| Comment le comptoir commande-t-il pour un pro sans la fiche client ?            | [`architecture-commande-au-comptoir.md`](architecture-commande-au-comptoir.md)                      |
 | Où voir, pour un jour, où en est chaque commande et lesquelles sont en retard ? | [`plan-supervision-du-jour.md`](plan-supervision-du-jour.md)                                        |
 | Quelle journée un client public peut demander ?                                 | [`plan-heure-limite-par-clientele.md`](plan-heure-limite-par-clientele.md) — doc-first              |
 | Quel créneau de retrait un visiteur peut choisir ?                              | [`plan-creneaux-de-retrait.md`](plan-creneaux-de-retrait.md)                                        |

@@ -126,7 +126,7 @@ export const staffResourceSchema = z.enum([
   /**
    * **Le Comptoir** — ce qu'il faut voir d'un client pour lui vendre, rien de
    * plus : une carte de recherche, et au détail ses adresses, ses acheteurs et
-   * s'il règle au compte (`documentation/order/plan-commande-au-comptoir.md`).
+   * s'il règle au compte (`documentation/order/architecture-commande-au-comptoir.md`).
    *
    * Détachée de `b2b_companies` (Hugo, 2026-09-25 : « celui qui manipulera
    * comptoir ne sera pas forcément autorisé à utiliser commercial »). Sans
@@ -520,7 +520,7 @@ export const staffRoleSchema = z.enum([
   "communication",
   /**
    * **Le vendeur de comptoir** — prend la commande d'un client pro au
-   * comptoir, et rien d'autre (`documentation/order/plan-commande-au-comptoir.md`).
+   * comptoir, et rien d'autre (`documentation/order/architecture-commande-au-comptoir.md`).
    *
    * Ouvert le 2026-09-25 pour la phrase de Hugo qui a fait tout le plan :
    * « celui qui manipulera comptoir ne sera pas forcément autorisé à utiliser
@@ -869,7 +869,7 @@ export const ROLE_GRANTS: Readonly<Record<StaffRole, RoleGrants>> = {
   },
   /**
    * **Le vendeur de comptoir** — le Comptoir et la passation, rien d'autre
-   * (`documentation/order/plan-commande-au-comptoir.md`).
+   * (`documentation/order/architecture-commande-au-comptoir.md`).
    *
    * 🔴 Pas `b2b_companies` : c'est tout l'objet du rôle. Il voit d'un client
    * ce qu'il faut pour lui vendre — `b2b_counter:read` — et non sa fiche.
