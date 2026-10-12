@@ -146,3 +146,11 @@
   // 3,5 rem : le décalage collant par défaut de fold (24 px) plus sa marge basse (2 rem).
   --fold-aside-layout-rail-max: calc(100cqh - 3.5rem);
 }
+
+/* Le sac remplit la colonne, sans la dépasser : sa hauteur par défaut se
+   calcule sur `100dvh` moins un surplomb mesuré AVANT la bande du comptoir à
+   deux rangées — il dépassait la colonne, qui défilait pour rien. Même borne
+   que la colonne ; en pile, `.board.is-stacked` (plus spécifique) reprend la main. */
+.board app-handover-detail {
+  --hd-height: calc(100cqh - 3.5rem);
+}

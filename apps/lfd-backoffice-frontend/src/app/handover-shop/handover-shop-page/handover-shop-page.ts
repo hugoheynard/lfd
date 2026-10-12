@@ -3,9 +3,11 @@ import {
   Component,
   computed,
   effect,
+  ElementRef,
   inject,
   signal,
   untracked,
+  viewChild,
 } from '@angular/core';
 import type { HandoverQueueEntryView } from '@lfd/contracts';
 import {
@@ -30,6 +32,9 @@ import { QueueTable } from '../queue-table/queue-table';
 import { HandoverDetail } from '../handover-detail/handover-detail';
 import { SCANNED, ScanDialog, type ScanDialogData } from '../scan-dialog/scan-dialog';
 import { AdminOrdersService } from '../../commandes/orders.service';
+
+/** Le seuil de `fold-aside-layout` (`@container (max-width: 1040px)`, lu le 2026-10-12). */
+const STACK_AT_PX = 1040;
 
 /**
  * **La file de retrait** — qui attend au comptoir, ce jour-là.
@@ -103,12 +108,18 @@ export class HandoverShopPage {
    * media query, elle suit la classe que ce signal allume. Deux définitions
    * dériveraient, et l'écran basculerait en deux temps.
    *
-   * ⚠️ Approximation assumée : fold interroge la largeur de son CONTENEUR,
-   * nous celle de la fenêtre. Elles ne diffèrent que si un jour cet écran est
-   * posé dans une colonne étroite d'une page large — ce qu'un poste de comptoir
-   * ne fait pas.
+   * 🔴 fold interroge la largeur de son CONTENEUR. La fenêtre seule ne suffit
+   * plus (2026-10-12) : à 1180 px avec le menu, la grille fait ~915 px, fold
+   * empile, et le sac restait en colonne SOUS la file au lieu de monter en
+   * feuille — la page défilait. On lit donc aussi la largeur de la grille ; la
+   * fenêtre reste lue pour le premier rendu, avant toute mesure.
    */
-  protected readonly stacked = narrowViewport('(max-width: 1040px)');
+  private readonly narrowWindow = narrowViewport('(max-width: 1040px)');
+  private readonly boardRef = viewChild('board', { read: ElementRef<HTMLElement> });
+  private readonly boardWidth = signal(0);
+  protected readonly stacked = computed(
+    () => this.narrowWindow() || (this.boardWidth() > 0 && this.boardWidth() <= STACK_AT_PX),
+  );
 
   /** La commande dont on envoie le rappel — au plus une, et le bouton le dit. */
   private readonly reminding = signal<string | null>(null);
@@ -175,6 +186,18 @@ export class HandoverShopPage {
   });
 
   constructor() {
+    effect((onCleanup) => {
+      const board = this.boardRef()?.nativeElement;
+      if (board === undefined || typeof ResizeObserver === 'undefined') {
+        return;
+      }
+      const observer = new ResizeObserver(([entry]) => {
+        this.boardWidth.set(entry?.contentRect.width ?? 0);
+      });
+      observer.observe(board);
+      onCleanup(() => observer.disconnect());
+    });
+
     // 🔴 Changer de jour — à la main ou à minuit — referme le sac et vide la
     // recherche : le sac ouvert appartenait à la journée qu'on quitte, et un
     // terme qui survit laisse une file amputée sous des yeux qui veulent tout
