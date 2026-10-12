@@ -7,13 +7,14 @@
 } @else if (locked()) {
   <app-staff-login />
 } @else {
-  <!-- `mobileQuery="phoneOrTablet"` : le shell passe mobile sur téléphone ET sur
-       tablette tactile jusqu'à 1366 px (iPad portrait ou paysage, décision Hugo
-       2026-10-05). `mobileNav="none"` : en mobile le shell ne rend AUCUN tiroir —
+  <!-- `touchOrPhone` : le shell passe mobile sur téléphone ET sur tout écran
+       dont le pointeur principal est tactile, quelle que soit sa largeur (Hugo,
+       2026-10-12 : « si tactile, menu burger »). La clé `phoneOrTablet` de fold
+       bornait à 1366 px et lisait `any-pointer` : un iPad Pro restait en rail. `mobileNav="none"` : en mobile le shell ne rend AUCUN tiroir —
        le rail s'efface et le lanceur de tuiles, plus bas, prend le relais. -->
   <fold-app-shell
     #shell="foldAppShell"
-    mobileQuery="phoneOrTablet"
+    [mobileQuery]="touchOrPhone"
     mobileNav="none"
     [(mobileNavOpen)]="mobileNavOpen"
   >

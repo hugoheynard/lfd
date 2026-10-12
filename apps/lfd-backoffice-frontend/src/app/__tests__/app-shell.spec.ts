@@ -59,7 +59,8 @@ describe('App — la coquille', () => {
       .componentInstance as FoldAppShellComponent;
   }
 
-  it('passe en mobile sur téléphone ET tablette (`phoneOrTablet`)', () => {
-    expect(render().mobileQuery()).toBe('phoneOrTablet');
+  /** Régression : `phoneOrTablet` bornait à 1366 px, un iPad Pro paysage gardait le rail. */
+  it('passe en mobile sur téléphone ET sur tout écran tactile, sans borne de largeur', () => {
+    expect(render().mobileQuery()).toBe('(max-width: 768px), (pointer: coarse)');
   });
 });

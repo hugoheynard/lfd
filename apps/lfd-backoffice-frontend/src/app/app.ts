@@ -35,6 +35,7 @@ import {
   FoldSpinnerComponent,
   FoldSurfaceDirective,
   FoldToastContainerComponent,
+  foldMediaQuery,
 } from 'fold-ng';
 
 import { PermissionsStore } from './auth/permissions.store';
@@ -93,12 +94,14 @@ export class App {
   /** Rail primaire : déployé par défaut, repliable via le chevron intégré. */
   protected readonly menuExpanded = signal<boolean | undefined>(true);
   /**
-   * Navigation mobile — quand le shell est mobile (`mobileQuery="phoneOrTablet"` :
-   * téléphone, ou écran tactile jusqu'à 1366 px, iPad compris). Le shell ne rend aucun tiroir
+   * Navigation mobile — quand le shell est mobile ({@link touchOrPhone} :
+   * téléphone, ou écran tactile de toute largeur). Le shell ne rend aucun tiroir
    * (`mobileNav="none"`) : ce drapeau ouvre la grille de tuiles, et le burger
    * de l'en-tête le bascule.
    */
   protected readonly mobileNavOpen = signal(false);
+  /** Mobile = étroit, OU pointeur principal tactile (une souris branchée sur un portable tactile garde le rail). */
+  protected readonly touchOrPhone = foldMediaQuery('(max-width: 768px), (pointer: coarse)');
 
   private readonly auth = inject(StaffAuth);
   private readonly permissions = inject(PermissionsStore);
