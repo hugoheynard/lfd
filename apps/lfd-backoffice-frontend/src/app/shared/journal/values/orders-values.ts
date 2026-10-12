@@ -90,6 +90,12 @@ export const ABANDON_OUTCOME = domain('issue d’un abandon de règlement', {
   failed: 'Commande à régler',
 });
 
+/** Ce qui était dû sur la commande annulée par l'équipe (`order.cancelled`). */
+export const CANCELLATION_REGIME = domain('régime d’une annulation', {
+  free: 'Rien à régler (total nul)',
+  due: 'Carte non réglée, paiement fermé chez Stripe',
+});
+
 /** Le statut d'un remboursement chez Stripe (`order.refund_*`, `payment_refund.unmatched`). */
 export const REFUND_STATUS = domain('statut d’un remboursement', {
   pending: 'En cours',
@@ -178,6 +184,7 @@ export const ORDERS_VALUES: ValueFamily = {
     BIN_HALF,
     PROPOSAL_MODE,
     ABANDON_OUTCOME,
+    CANCELLATION_REGIME,
     REFUND_STATUS,
     REFUND_REJECTION,
     REFUND_NOT_CREDITED,

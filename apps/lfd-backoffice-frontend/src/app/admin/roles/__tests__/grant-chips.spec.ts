@@ -98,9 +98,11 @@ describe('grantGroups', () => {
    * `production_settings` (ses réglages), arret-du-plan.md, lot A1. Puis à
    * 47 le 2026-10-09 : `b2b_contact` (« Nous écrire », demandes-clients.md).
    * 49 le 2026-10-10 : `delivery_availability` et `delivery_fee`, sortis de
-   * `b2b_settings` avec l'écran des zones.
+   * `b2b_settings` avec l'écran des zones. 50 le 2026-10-12 :
+   * `b2b_cancel_order`, annuler une commande n'est pas la passer
+   * (plan-annulation-de-commande.md, C3.8).
    */
   it('compte les domaines du catalogue', () => {
-    expect(RESOURCE_COUNT).toBe(49);
+    expect(RESOURCE_COUNT).toBe(50);
   });
 });

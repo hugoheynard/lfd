@@ -13,6 +13,7 @@ import type {
   OrderQuotePayload,
   OrderQuoteView,
   AdminOrderView,
+  AdminCancelOrderPayload,
 } from '@lfd/contracts';
 
 import { B2B_API_BASE } from '../api/api-config';
@@ -134,6 +135,21 @@ export class AdminOrdersService {
       this.http.post<void>(
         `${B2B_API_BASE}/admin/orders/${encodeURIComponent(id)}/rappel-retrait`,
         {},
+      ),
+    );
+  }
+
+  /**
+   * **Annule la commande**, motif à l'appui (plan
+   * `plan-annulation-de-commande.md`, C3.8). `204` sans corps : l'écran relit
+   * le détail. Les refus (`409 orders.cancel.*`) remontent tels quels — leur
+   * message est la phrase à montrer.
+   */
+  async cancel(id: string, payload: AdminCancelOrderPayload): Promise<void> {
+    await firstValueFrom(
+      this.http.post<void>(
+        `${B2B_API_BASE}/admin/orders/${encodeURIComponent(id)}/cancel`,
+        payload,
       ),
     );
   }

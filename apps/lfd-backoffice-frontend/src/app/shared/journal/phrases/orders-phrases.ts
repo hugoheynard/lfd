@@ -107,6 +107,22 @@ function orderHandedOver(fact: PhraseFact): Said {
   );
 }
 
+/**
+ * L'annulation par l'équipe : « Cécile Martin a annulé la commande ORD-142 ».
+ * Le fait s'écrit HORS de la requête (abonné durable `OnOrderCancelled`) :
+ * la phrase nomme donc `cancelledBy`, et ne retombe sur l'auteur de la ligne
+ * que pour une fiche que l'annuaire ne nommait pas. Le motif, le régime et le
+ * bon rendu restent au détail (plan `plan-annulation-de-commande.md`, C3.5).
+ */
+function orderCancelled(fact: PhraseFact): Said {
+  return staffGesture(
+    fact,
+    'cancelledBy',
+    [text(' a annulé la commande '), name(orDash(fact.payload['orderNumber']))],
+    ['orderNumber'],
+  );
+}
+
 /** Le client d'une dérogation : nommé depuis le lot B, par son seul id avant. */
 const TO_CLIENT: Noun = { the: 'au client', a: 'à un client' };
 
@@ -327,6 +343,7 @@ export const ORDERS_PHRASES = {
   'order.placed': orderPlaced,
   'order.ready': orderReady,
   'order.abandoned': orderAbandoned,
+  'order.cancelled': orderCancelled,
   'order.handed_over': orderHandedOver,
 
   'order_cutoff_waiver.granted': (fact) =>

@@ -24,12 +24,15 @@
         (lineSelected)="explainedSku.set($event)"
         (documentAsked)="onDocument($event)"
       >
-        <!-- Le rail d'actions reste vide, et se dit : un écran sans bouton
-             laisse croire à un oubli, une phrase dit que c'est une décision. -->
-        <fold-callout actions variant="info">
-          Aucune action staff sur une commande passée : elle est un fait daté. Les corrections
-          passeront par des avenants.
-        </fold-callout>
+        <!-- Le seul geste staff sur une commande passée : l'annuler, tant
+             qu'elle n'est pas au compte à produire (plan-annulation-de-commande.md,
+             C3.8). Absent sans le droit, désactivé avec la raison sinon. -->
+        <app-order-cancel
+          actions
+          [orderId]="o.id"
+          [cancellability]="o.cancellability"
+          (cancelled)="load()"
+        />
       </lfd-order-detail>
 
       <!-- Les remboursements Stripe constatés : rien quand il n'y en a pas. -->

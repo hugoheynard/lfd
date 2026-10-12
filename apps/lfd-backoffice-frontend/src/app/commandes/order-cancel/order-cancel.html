@@ -1,0 +1,58 @@
+@if (allowed()) {
+  <div class="cancel">
+    @if (blocker(); as why) {
+      <fold-callout appearance="inset" variant="info" data-cancel-blocked>
+        {{ why }}
+        <div actions>
+          <button
+            foldButton
+            size="sm"
+            emphasis="outline"
+            intent="danger"
+            disabled
+            data-cancel-trigger
+          >
+            Annuler la commande
+          </button>
+        </div>
+      </fold-callout>
+    } @else {
+      @if (open()) {
+        <fold-textarea
+          label="Motif"
+          required
+          [rows]="3"
+          placeholder="Demande du client, commande passée en double…"
+          [hint]="
+            missing()
+              ? 'Le motif est obligatoire.'
+              : tooLong()
+                ? 'Au plus ' + maxLength + ' caractères.'
+                : 'Gardé au journal, jamais montré au client. Au plus ' + maxLength + ' caractères.'
+          "
+          [(value)]="reason"
+          data-cancel-reason
+        />
+      }
+      <fold-inline-confirm
+        message="Le client recevra un courriel d'annulation. L'annulation est définitive."
+        [labels]="{ confirm: 'Confirmer l’annulation', cancel: 'Garder la commande' }"
+        keepOpenOnConfirm
+        [loading]="saving()"
+        [open]="open()"
+        (openChange)="onOpenChange($event)"
+        (confirmed)="confirm()"
+      >
+        <button foldButton size="sm" emphasis="outline" intent="danger" data-cancel-trigger>
+          Annuler la commande
+        </button>
+      </fold-inline-confirm>
+    }
+
+    @if (error(); as message) {
+      <fold-callout appearance="inset" variant="alert" announce data-cancel-error>{{
+        message
+      }}</fold-callout>
+    }
+  </div>
+}

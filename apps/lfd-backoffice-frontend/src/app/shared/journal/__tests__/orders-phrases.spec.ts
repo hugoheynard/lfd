@@ -470,3 +470,34 @@ describe('la flotte et le départ des tournées (delivery_vehicle.*, delivery_de
     );
   });
 });
+
+describe('l’annulation par l’équipe (order.cancelled)', () => {
+  const current = fact({
+    type: 'order.cancelled',
+    subjectType: 'user',
+    actorName: 'Système',
+    payload: {
+      subjectLabel: 'Jean Dupont',
+      orderId: 'ord_1',
+      orderNumber: 'ORD-7',
+      cancelledBy: { id: 'stf_1', name: 'Cécile Martin' },
+      reason: 'Commande passée en double',
+      regime: 'due',
+      voucherReturned: false,
+    },
+  });
+
+  it('nomme la fiche qui a annulé, et garde le motif au détail', () => {
+    expect(sentence(current)).toBe('Cécile Martin a annulé la commande ORD-7 — Jean Dupont');
+    expect(renderFact(current).namesActor).toBe(false);
+    expect(row(current, 'Motif')).toBe('Commande passée en double');
+    expect(row(current, 'Ce qui était dû')).toBe('Carte non réglée, paiement fermé chez Stripe');
+  });
+
+  it('nomme l’auteur de la ligne quand la fiche n’est citée que par son identifiant', () => {
+    const bare = { ...current, payload: { ...current.payload, cancelledBy: 'stf_1' } };
+
+    expect(renderFact(bare).namesActor).toBe(true);
+    expect(row(bare, 'Annulée par')).toBe('(identifiant stf_1)');
+  });
+});

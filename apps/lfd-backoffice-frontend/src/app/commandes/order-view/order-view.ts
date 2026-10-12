@@ -8,17 +8,13 @@ import {
   output,
   signal,
 } from '@angular/core';
-import type { AdminOrderView, OrderLineView, OrderView } from '@lfd/contracts';
+import type { AdminOrderView, OrderLineView } from '@lfd/contracts';
 import { OrderDetail, orderDocuments, type OrderDocument } from '@lfd/b2b-ui/order';
-import {
-  FoldButtonComponent,
-  FoldCalloutComponent,
-  FoldEmptyStateComponent,
-  FoldLoadingStateComponent,
-} from 'fold-ng';
+import { FoldButtonComponent, FoldEmptyStateComponent, FoldLoadingStateComponent } from 'fold-ng';
 
 import { NotifyService } from '../../notify.service';
 import { HandoverProofCard } from '../handover-proof-card/handover-proof-card';
+import { OrderCancelComponent } from '../order-cancel/order-cancel';
 import { OrderHistoryCard } from '../order-history-card/order-history-card';
 import { OrderInvoicesCard } from '../order-invoices-card/order-invoices-card';
 import { OrderRefundsCard } from '../order-refunds-card/order-refunds-card';
@@ -48,10 +44,10 @@ type LoadState = 'loading' | 'ready' | 'error';
   changeDetection: ChangeDetectionStrategy.OnPush,
   imports: [
     FoldButtonComponent,
-    FoldCalloutComponent,
     FoldLoadingStateComponent,
     FoldEmptyStateComponent,
     HandoverProofCard,
+    OrderCancelComponent,
     OrderDetail,
     OrderHistoryCard,
     OrderInvoicesCard,
@@ -77,7 +73,7 @@ export class OrderViewComponent {
   private readonly notify = inject(NotifyService);
 
   protected readonly state = signal<LoadState>('loading');
-  protected readonly order = signal<OrderView | null>(null);
+  protected readonly order = signal<AdminOrderView | null>(null);
 
   /**
    * La ligne dont on demande « pourquoi ce prix ». Le SKU identifie la ligne :
