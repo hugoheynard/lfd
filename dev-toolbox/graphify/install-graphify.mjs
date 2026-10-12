@@ -37,6 +37,9 @@ function main() {
     return;
   }
   if (installedVersion() === GRAPHIFY_VERSION) {
+    // Une ligne, et pas le silence : sans elle, un dev qui lance le script à
+    // la main croit qu'il n'a rien fait (constaté par Hugo le 2026-10-12).
+    console.log(`${PREFIX} ${GRAPHIFY_VERSION} déjà installé.`);
     return;
   }
   const spec = `${GRAPHIFY_PACKAGE}==${GRAPHIFY_VERSION}`;
