@@ -1,5 +1,4 @@
 import { LegalEntity } from "../../domain/entities/legal-entity.js";
-import { BillingRhythm } from "../../domain/value-objects/billing-rhythm.js";
 import { Bic } from "../../domain/value-objects/bic.js";
 import { CreditorAccount } from "../../domain/value-objects/creditor-account.js";
 import { Iban } from "../../domain/value-objects/iban.js";
@@ -66,24 +65,6 @@ describe("legalEntityColumns", () => {
       .sort();
 
     expect(written).toEqual(expected);
-  });
-
-  it("écrit le rythme en vigueur et le programmé, jours compris", () => {
-    const entity = declared();
-    // Comparée à aucune horloge : seule la prise d'effet recopiée compte.
-    entity.changeBillingRhythm(
-      BillingRhythm.weekly(3),
-      new Date("2026-10-12T10:00:00.000Z"),
-      false,
-    );
-
-    expect(legalEntityColumns(entity.toPersistence(), CIPHER)).toMatchObject({
-      billingRhythmKind: "monthly",
-      billingRhythmDays: [1],
-      nextBillingRhythmKind: "weekly",
-      nextBillingRhythmDays: [3],
-      nextBillingRhythmEffectiveAt: new Date("2026-10-31T23:00:00.000Z"),
-    });
   });
 
   it("n'écrit PAS l'identifiant — il n'a rien à faire dans un update", () => {

@@ -1,5 +1,6 @@
 import { AdminIssuedInvoicesController } from "./http/admin-issued-invoices.controller.js";
 import { CompanyInvoicesController } from "./http/company-invoices.controller.js";
+import { BILLING_MODE_CONTROLLERS, BILLING_MODE_PROVIDERS } from "./billing-mode.providers.js";
 import { CARD_INVOICE_PROVIDERS } from "./card-invoice.providers.js";
 import { MANDATE_BANK_EXPORT_PROVIDERS } from "./mandate-bank-export.providers.js";
 import { COLLECTION_RETURN_PROVIDERS } from "./collection-return.providers.js";
@@ -79,14 +80,10 @@ import { MonthlyInvoicingReader } from "./domain/ports/monthly-invoicing.reader.
 import { AdminCardInvoicesController } from "./http/admin-card-invoices.controller.js";
 import { AdminMonthlyInvoicesController } from "./http/admin-monthly-invoices.controller.js";
 import { PrismaInvoiceAutopilotRuns } from "./infrastructure/prisma-invoice-autopilot-runs.js";
-import { InvoicedClosuresReader } from "./domain/ports/invoiced-closures.reader.js";
-import { PrismaInvoicedClosuresReader } from "./infrastructure/prisma-invoiced-closures.reader.js";
 import { PrismaMonthlyInvoiceOutcomes } from "./infrastructure/prisma-monthly-invoice-outcomes.js";
 import { PrismaMonthlyInvoicesReader } from "./infrastructure/prisma-monthly-invoices.reader.js";
 import { PrismaMonthlyInvoicingReader } from "./infrastructure/prisma-monthly-invoicing.reader.js";
-import { BillingRhythmReader } from "./domain/ports/billing-rhythm.reader.js";
 import { InvoicingFloorReader } from "./domain/ports/invoicing-floor.reader.js";
-import { PrismaBillingRhythmReader } from "./infrastructure/prisma-billing-rhythm.reader.js";
 import { PrismaInvoicingFloorReader } from "./infrastructure/prisma-invoicing-floor.reader.js";
 import { AdminDetachedUnpaidController } from "./http/admin-detached-unpaid.controller.js";
 import { CompanyDetachedUnpaidController } from "./http/company-detached-unpaid.controller.js";
@@ -118,7 +115,6 @@ import { SetMandateDefaultsHandler } from "./application/commands/set-mandate-de
 import { SetMandateSchemeHandler } from "./application/commands/set-mandate-scheme.handler.js";
 import { SetPreNotificationHandler } from "./application/commands/set-pre-notification.handler.js";
 import { SetCollectionScheduleHandler } from "./application/commands/set-collection-schedule.handler.js";
-import { SetBillingRhythmHandler } from "./application/commands/set-billing-rhythm.handler.js";
 import { SetAutoCollectionHandler } from "./application/commands/set-auto-collection.handler.js";
 import { SetInvoicePaymentTermsHandler } from "./application/commands/set-invoice-payment-terms.handler.js";
 import { ExportCycleAuditHandler } from "./application/queries/export-cycle-audit.handler.js";
@@ -206,6 +202,7 @@ import { PrismaLegalEntityRepository } from "./infrastructure/prisma-legal-entit
     CompanyDetachedUnpaidController,
     AdminIssuedInvoicesController,
     CompanyInvoicesController,
+    ...BILLING_MODE_CONTROLLERS,
   ],
   providers: [
     { provide: LegalEntityRepository, useClass: PrismaLegalEntityRepository },
@@ -239,12 +236,10 @@ import { PrismaLegalEntityRepository } from "./infrastructure/prisma-legal-entit
     InvoiceIssuer,
     // La facture du mois, et le lot qui encaisse des factures (E4).
     { provide: MonthlyInvoicingReader, useClass: PrismaMonthlyInvoicingReader },
-    { provide: BillingRhythmReader, useClass: PrismaBillingRhythmReader },
     { provide: InvoicingFloorReader, useClass: PrismaInvoicingFloorReader },
     { provide: MonthlyInvoiceOutcomes, useClass: PrismaMonthlyInvoiceOutcomes },
     { provide: MonthlyInvoicesReader, useClass: PrismaMonthlyInvoicesReader },
     { provide: InvoiceAutopilotRuns, useClass: PrismaInvoiceAutopilotRuns },
-    { provide: InvoicedClosuresReader, useClass: PrismaInvoicedClosuresReader },
     { provide: AutomaticMonthlyInvoicer, useClass: BusAutomaticMonthlyInvoicer },
     IssueMonthlyInvoicesHandler,
     RunInvoiceAutopilotHandler,
@@ -258,6 +253,7 @@ import { PrismaLegalEntityRepository } from "./infrastructure/prisma-legal-entit
     SendCollectionNotice,
     ...ISSUED_INVOICE_PROVIDERS,
     ...CARD_INVOICE_PROVIDERS,
+    ...BILLING_MODE_PROVIDERS,
     ...MANDATE_BANK_EXPORT_PROVIDERS,
     ...COLLECTION_RETURN_PROVIDERS,
     // La constitution automatique (PA3).
@@ -289,7 +285,6 @@ import { PrismaLegalEntityRepository } from "./infrastructure/prisma-legal-entit
     SetMandateSchemeHandler,
     SetPreNotificationHandler,
     SetCollectionScheduleHandler,
-    SetBillingRhythmHandler,
     SetAutoCollectionHandler,
     SetInvoicePaymentTermsHandler,
     SetLegalEntityArchivedHandler,

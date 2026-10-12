@@ -42,23 +42,8 @@ export const BILLING_RHYTHM_KIND_LABELS: Readonly<Record<BillingRhythmKind, stri
 };
 
 /**
- * Un rythme de facturation : son genre et ses jours de clôture (00h00 Paris).
- * Jours du mois de 1 à 28 (un pour le mensuel, deux triés pour le bimensuel),
- * ou jour de semaine de 1 = lundi à 7 = dimanche pour l'hebdomadaire.
- */
-export interface BillingRhythmView {
-  readonly kind: BillingRhythmKind;
-  readonly days: readonly number[];
-}
-
-/** Un rythme programmé, et l'instant ISO — une clôture de l'ancien — où il prend effet. */
-export interface ScheduledBillingRhythmView extends BillingRhythmView {
-  readonly effectiveAt: string;
-}
-
-/**
- * Une clôture À VENIR de l'entité et la période qu'elle ferme (plan
- * `plan-rythme-de-facturation.md`, §6) — calculée par le serveur au rythme
+ * Une clôture À VENIR et la période qu'elle ferme (plan
+ * `plan-rythme-de-facturation.md`, §6) — calculée par le serveur sur la suite
  * qui fera foi ce jour-là, bascule programmée comprise.
  */
 export interface UpcomingClosureView {
@@ -71,23 +56,61 @@ export interface UpcomingClosureView {
 }
 
 /**
- * **Un changement de rythme attend sa première facture** (plan, §12) : tout
- * autre changement est refusé (409) tant que la clôture de prise d'effet n'a
- * pas été tentée par la facture. L'écran le dit AVANT le geste.
+ * Les dates d'un mode : jours du mois de 1 à 28 (un pour le mensuel, deux
+ * triés pour deux fois par mois), ou jour de semaine de 1 = lundi à 7 =
+ * dimanche pour l'hebdomadaire. Clôture à 00h00 heure de Paris.
  */
-export interface BillingRhythmChangeLockView {
-  /** ISO — la clôture où le rythme programmé prend effet. */
+export interface BillingModeDatesView {
+  readonly days: readonly number[];
+  /** ISO — depuis quand elles font foi ; `null` = les dates par défaut, jamais réglées. */
+  readonly since: string | null;
+}
+
+/** Des dates programmées, et la clôture du mode (ISO) où elles prennent effet. */
+export interface ScheduledBillingModeDatesView {
+  readonly days: readonly number[];
   readonly effectiveAt: string;
+}
+
+/**
+ * **Un mode de facturation de l'entité** (plan `plan-rythme-de-facturation.md`,
+ * §16) : ses dates, le changement programmé, le verrou « un seul à la fois »
+ * et ses trois prochaines clôtures.
+ */
+export interface LegalEntityBillingModeView {
+  readonly mode: BillingRhythmKind;
+  readonly current: BillingModeDatesView;
+  readonly scheduled: ScheduledBillingModeDatesView | null;
   /**
-   * `AAAA-MM-JJ` — le jour de la facture de cette clôture (sa veille) : le
-   * changement suivant redevient possible une fois cette facture tentée.
+   * ISO — tant qu'un changement n'a pas pris effet, un autre est refusé (409) ;
+   * c'est la date à partir de laquelle il redevient possible. `null` : libre.
+   * Le programmé, lui, s'annule jusqu'à cette date.
    */
-  readonly unlocksAfterInvoiceOn: string;
+  readonly changeLockedUntil: string | null;
+  /** Les trois prochaines clôtures du mode, la plus proche d'abord. */
+  readonly upcomingClosures: readonly UpcomingClosureView[];
   /**
-   * Revenir au rythme en vigueur ANNULE encore le changement : vrai tant que
-   * la prise d'effet n'est pas atteinte. Après, plus rien jusqu'à la facture.
+   * Les payeurs qui ont CHOISI ce mode (en vigueur ou programmé). ⚠️ Pour le
+   * mensuel, ne compte pas ceux qui n'ont rien choisi — ils sont mensuels par
+   * défaut, et la comptabilité ne tient pas la liste des payeurs.
    */
-  readonly canCancel: boolean;
+  readonly payerCount: number;
+}
+
+/**
+ * **Le mode de facturation d'un payeur** (`GET …/payers/:companyId/billing-mode`) :
+ * en vigueur, programmé, verrou, et ses trois prochaines clôtures.
+ */
+export interface PayerBillingModeView {
+  readonly legalEntityId: string;
+  readonly payerCompanyId: string;
+  readonly mode: BillingRhythmKind;
+  /** ISO — depuis quand ; `null` = mensuel par défaut, jamais choisi. */
+  readonly since: string | null;
+  readonly scheduled: { readonly mode: BillingRhythmKind; readonly effectiveAt: string } | null;
+  /** ISO — un autre changement est refusé jusqu'à cette date ; `null` : libre. */
+  readonly changeLockedUntil: string | null;
+  readonly upcomingClosures: readonly UpcomingClosureView[];
 }
 
 /** Une limite locale — un jour et une heure de Paris. */
@@ -203,21 +226,13 @@ export interface LegalEntityView {
   readonly collectionDaysAfterClosure: number | null;
   /** `null` = « à renseigner ». */
   readonly depositCutoff: DepositCutoffView | null;
-  /** Le rythme de facturation EN VIGUEUR — celui de tous les payeurs de l'entité. */
-  readonly billingRhythm: BillingRhythmView;
+  /** Les dates des trois modes de facturation (§16), mensuel d'abord. */
+  readonly billingModes: readonly LegalEntityBillingModeView[];
   /**
-   * Le rythme programmé, ou `null`. Il prend effet à `effectiveAt`, la
-   * prochaine clôture du rythme en vigueur : la période en cours n'est jamais
-   * coupée.
+   * ISO — la dernière clôture atteinte du calendrier de l'entité (union des
+   * modes en service et du mensuel, §16.3) : celle du lot à préparer.
    */
-  readonly nextBillingRhythm: ScheduledBillingRhythmView | null;
-  /**
-   * `null` : un nouveau rythme peut être réglé. Sinon, le changement en
-   * attente et la date à partir de laquelle le suivant sera admis (§12).
-   */
-  readonly billingRhythmChangeLock: BillingRhythmChangeLockView | null;
-  /** Les trois prochaines clôtures de l'entité, la plus proche d'abord. */
-  readonly upcomingClosures: readonly UpcomingClosureView[];
+  readonly lastClosure: string;
   /** Le calendrier du cycle EN COURS, avec les réglages ci-dessus. */
   readonly nextCollection: CollectionCalendarView;
   /**
@@ -486,15 +501,20 @@ export const setCollectionSchedulePayloadSchema = z.strictObject({
 export type SetCollectionSchedulePayload = z.infer<typeof setCollectionSchedulePayloadSchema>;
 
 /**
- * Le rythme de facturation de l'entité. La FORME seulement : les bornes des
- * jours et leur nombre selon le genre sont opposés par le value object, dont le
- * refus dit ce qui a été reçu et ce qui est attendu.
+ * Les dates d'un mode (`PUT …/billing-modes/:mode`). La FORME seulement : les
+ * bornes et le nombre de jours selon le mode sont opposés par le value object,
+ * dont le refus dit ce qui a été reçu et ce qui est attendu.
  */
-export const setBillingRhythmPayloadSchema = z.strictObject({
-  kind: billingRhythmKindSchema,
+export const setBillingModeDatesPayloadSchema = z.strictObject({
   days: z.array(z.int()),
 });
-export type SetBillingRhythmPayload = z.infer<typeof setBillingRhythmPayloadSchema>;
+export type SetBillingModeDatesPayload = z.infer<typeof setBillingModeDatesPayloadSchema>;
+
+/** Le mode d'un payeur (`PUT …/payers/:companyId/billing-mode`). */
+export const setPayerBillingModePayloadSchema = z.strictObject({
+  mode: billingRhythmKindSchema,
+});
+export type SetPayerBillingModePayload = z.infer<typeof setPayerBillingModePayloadSchema>;
 
 /** Activer ou désactiver la constitution automatique — un geste à part. */
 export const setAutoCollectionPayloadSchema = z.strictObject({ enabled: z.boolean() });

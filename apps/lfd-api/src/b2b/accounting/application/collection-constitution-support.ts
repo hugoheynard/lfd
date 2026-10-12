@@ -137,7 +137,7 @@ async function readCycle(
   readonly previousClosure: Date | null;
   readonly cycle: BillingCycle;
 }> {
-  const rhythm = await readers.rhythms.settingOf(legalEntityId);
+  const rhythm = await readers.rhythms.timelineOf(legalEntityId);
   if (rhythm === null) {
     throw new LegalEntityNotFoundError(legalEntityId);
   }

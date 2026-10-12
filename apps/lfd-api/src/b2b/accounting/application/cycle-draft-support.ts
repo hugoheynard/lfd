@@ -63,7 +63,7 @@ export async function buildCycleDraft(
   // La dernière clôture ENREGISTRÉE de l'entité — le lot figé l'écrit depuis
   // le 2026-10-05 (plan `lot-de-prelevement-fige.md`).
   // Au rythme de facturation de l'entité depuis R4 (plan-rythme-de-facturation, §10).
-  const rhythm = await deps.rhythms.settingOf(legalEntityId);
+  const rhythm = await deps.rhythms.timelineOf(legalEntityId);
   if (rhythm === null) {
     throw new LegalEntityNotFoundError(legalEntityId);
   }

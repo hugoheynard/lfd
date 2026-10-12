@@ -1,15 +1,15 @@
 import type { LegalEntityView } from "@lfd/contracts";
 
 /**
- * La vue SANS son calendrier, ses prochaines clôtures, l'état du changement
- * de rythme ni la dernière tentative de l'automatisme : le calendrier et les
+ * La vue SANS son calendrier, les dates de ses modes, sa dernière clôture ni
+ * la dernière tentative de l'automatisme : le calendrier et les
  * clôtures dépendent de l'heure et de la dernière clôture,
  * que l'application ajoute (`legal-entity-view-support.ts`) — un adaptateur
  * de lecture ne lit pas l'horloge — et la tentative a son propre port.
  */
 export type LegalEntityRecord = Omit<
   LegalEntityView,
-  "nextCollection" | "lastAutopilotRun" | "upcomingClosures" | "billingRhythmChangeLock"
+  "nextCollection" | "lastAutopilotRun" | "billingModes" | "lastClosure"
 >;
 
 /**

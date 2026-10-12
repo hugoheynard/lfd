@@ -17,17 +17,14 @@
  */
 import {
   instantToLocal,
-  weekdayOf,
   type MonthlyInvoiceReportView,
   type MonthlyInvoicesView,
 } from "@lfd/contracts";
 
-import { nextClosureAfter } from "../src/b2b/accounting/domain/services/billing-cycle.js";
 import {
   invoicingMomentOf,
   lastDayOf,
 } from "../src/b2b/accounting/domain/services/invoicing-closures.js";
-import { BillingRhythm } from "../src/b2b/accounting/domain/value-objects/billing-rhythm.js";
 import { StatementMonth } from "../src/b2b/accounting/domain/value-objects/statement-month.js";
 import { AdminTokenVerifier } from "../src/platform/auth/admin-token.verifier.js";
 import { CustomerRole } from "../src/platform/database/client/client.js";
@@ -527,122 +524,6 @@ describe("la facture du mois, puis le lot qui l'encaisse (E4)", () => {
     expect(await ctx.prisma.invoice.count()).toBe(2);
   });
 });
-
-describe("la facture par clôture d'un rythme hebdomadaire (R3)", () => {
-  it("après la bascule, la semaine se facture la veille de sa clôture, sur [clôture du mois, lundi[", async () => {
-    const id = await entity();
-    const company = await payer(id);
-    // Réglé pendant le mois : l'hebdomadaire prend effet à la clôture du mois (§2.3),
-    // au jour de semaine de cette clôture — la première semaine dure donc sept jours.
-    clock.set(new Date(month.cycle().startsAt.getTime() + HOUR_MS));
-    const closingDay = instantToLocal(closesAt).day;
-    const isoWeekday = weekdayOf(closingDay) === 0 ? 7 : weekdayOf(closingDay);
-    await staff()
-      .put(`${ENTITIES}/${id}/billing-rhythm`)
-      .send({ kind: "weekly", days: [isoWeekday] })
-      .expect(204);
-    const week = nextClosureAfter(closesAt, BillingRhythm.weekly(isoWeekday));
-    await laterOrder(company.id, new Date(closesAt.getTime() + 2 * DAY_MS));
-    // La veille de la clôture hebdomadaire, 23h57 à Paris.
-    clock.set(new Date(invoicingMomentOf(week).getTime() + 2 * 60 * 1000));
-
-    const evening = await invoicePass();
-
-    // Le rattrapage tente la clôture du mois (manquée), puis la semaine, dans l'ordre.
-    expect(evening.runs).toEqual([
-      { legalEntityId: id, periodClosesAt: closesAt.toISOString(), outcome: "issued" },
-      { legalEntityId: id, periodClosesAt: week.toISOString(), outcome: "issued" },
-    ]);
-    const invoices = await ctx.prisma.invoice.findMany({ orderBy: { rank: "asc" } });
-    // Jamais d'antidate : la facture du mois, rattrapée le soir de la semaine,
-    // porte le jour réel de son émission — la période facturée reste le mois.
-    expect(invoices.map((i) => i.issuedOn.toISOString().slice(0, 10))).toEqual([
-      lastDayOf(week),
-      lastDayOf(week),
-    ]);
-    const screen = await view(id);
-    expect(screen).toMatchObject({
-      periodClosesAt: week.toISOString(),
-      periodStartsAt: closesAt.toISOString(),
-    });
-    expect(screen.invoices.map((i) => i.number)).toEqual([invoices[1]?.number]);
-  });
-});
-
-describe("le lot par clôture d'un rythme hebdomadaire (R4)", () => {
-  it("le mois, puis la semaine : chaque facture est prélevée par le lot de SA clôture", async () => {
-    const id = await entity();
-    const company = await payer(id);
-    clock.set(new Date(month.cycle().startsAt.getTime() + HOUR_MS));
-    const closingDay = instantToLocal(closesAt).day;
-    const isoWeekday = weekdayOf(closingDay) === 0 ? 7 : weekdayOf(closingDay);
-    await staff()
-      .put(`${ENTITIES}/${id}/billing-rhythm`)
-      .send({ kind: "weekly", days: [isoWeekday] })
-      .expect(204);
-    const week = nextClosureAfter(closesAt, BillingRhythm.weekly(isoWeekday));
-
-    // La facture du mois, puis son lot, deux heures après la clôture du mois.
-    clock.set(new Date(issuableFrom.getTime() + 2 * 60 * 1000));
-    await invoicePass();
-    clock.set(new Date(closesAt.getTime() + 2 * HOUR_MS));
-    expect((await pass()).runs.map((run) => run.outcome)).toEqual(["constituted"]);
-
-    // Un bon de la première semaine ; sa facture la veille de la clôture
-    // hebdomadaire, son lot deux heures après — l'automatisme suit le rythme.
-    await laterOrder(company.id, new Date(closesAt.getTime() + 2 * DAY_MS));
-    clock.set(new Date(invoicingMomentOf(week).getTime() + 2 * 60 * 1000));
-    await invoicePass();
-    clock.set(new Date(week.getTime() + 2 * HOUR_MS));
-    const weekly = await pass();
-
-    expect(weekly.runs.map((run) => run.outcome)).toEqual(["constituted"]);
-    const batches = await ctx.prisma.collectionBatch.findMany({
-      orderBy: { cycleClosesAt: "asc" },
-      include: { lines: { include: { invoices: true } } },
-    });
-    expect(batches.map((batch) => [batch.cycleStartsAt, batch.cycleClosesAt])).toEqual([
-      [month.cycle().startsAt, closesAt],
-      [closesAt, week],
-    ]);
-    const invoices = await ctx.prisma.invoice.findMany({ orderBy: { rank: "asc" } });
-    expect(
-      batches.map((batch) => batch.lines.flatMap((l) => l.invoices.map((i) => i.invoiceId))),
-    ).toEqual([[invoices[0]?.id], [invoices[1]?.id]]);
-    expect(batches[1]?.lines[0]?.amountCents).toBe(invoices[1]?.totalTtcCents);
-    // Rejouer le passage ne tente pas une seconde fois la semaine.
-    expect((await pass()).runs).toEqual([]);
-  });
-});
-
-/** Un bon de plus au compte de ce payeur, passé à `createdAt`. */
-async function laterOrder(companyId: string, createdAt: Date): Promise<void> {
-  seq += 1;
-  const user = await createUser(ctx.prisma, { auth0Sub: `r3-later-${String(seq)}` });
-  await ctx.prisma.order.create({
-    data: {
-      orderNumber: `CMD-R3-${String(seq)}`,
-      companyId,
-      placedByUserId: user.id,
-      subtotalCents: 10_000,
-      totalCents: 10_550,
-      vatCents: 550,
-      vatShares: [{ rate: 5.5, amountCents: 550 }],
-      paymentStatus: "not_required",
-      createdAt,
-      lines: {
-        create: {
-          sku: "PAIN-R3",
-          productNameSnapshot: "Pain de la semaine",
-          unitPriceMillicents: 10_000_000,
-          vatRate: 5.5,
-          quantity: 1,
-          lineTotalCents: 10_000,
-        },
-      },
-    },
-  });
-}
 
 /**
  * Un site qui suit la facturation du principal, prélevé sur SON mandat

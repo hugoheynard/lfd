@@ -129,7 +129,7 @@ export class IssueMonthlyInvoicesHandler implements ICommandHandler<
   /** La période que ferme la clôture demandée, sous le rythme de l'entité. */
   private async periodOf(command: IssueMonthlyInvoicesCommand): Promise<BillingCycle> {
     const closesAt = parsePeriodClosure(command.periodClosesAt);
-    const setting = await this.rhythms.settingOf(command.legalEntityId);
+    const setting = await this.rhythms.timelineOf(command.legalEntityId);
     if (setting === null) {
       throw new LegalEntityNotFoundError(command.legalEntityId);
     }

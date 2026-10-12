@@ -125,23 +125,13 @@ export class PrelevementDuMoisPage {
     this.entities().map((entity) => ({ value: entity.id, label: entity.name })),
   );
 
-  /** Le rythme de l'entité est-il mensuel ? Alors le lot se nomme par son mois. */
-  protected readonly monthly = computed(
-    () => (this.entity()?.billingRhythm.kind ?? 'monthly') === 'monthly',
-  );
-
   /**
-   * Sous un autre rythme, le lot se nomme par sa période — celle de la
-   * dernière clôture facturée (`periodLabel` des factures) ; à défaut,
-   * « de la dernière clôture ».
+   * Le lot se nomme par son mois : depuis M1 (plan
+   * `plan-rythme-de-facturation.md`, §16), le lot suit le MODE MENSUEL de
+   * l'entité, en attendant le calendrier d'union (M3) et les restes « mois »
+   * de l'écran (M4).
    */
-  private readonly lotName = computed(() => {
-    if (this.monthly()) {
-      return ofMonth(this.monthToPrepare());
-    }
-    const period = this.invoices()?.periodLabel;
-    return period === undefined ? 'de la dernière clôture' : period;
-  });
+  private readonly lotName = computed(() => ofMonth(this.monthToPrepare()));
 
   /** « septembre » : le mois clos dont on prépare le lot. */
   protected readonly monthToPrepare = computed(() => {
@@ -154,7 +144,7 @@ export class PrelevementDuMoisPage {
   /** Pourquoi il n'y a aucun lot à déposer — jamais un vide muet. */
   protected readonly nothingToProcess = computed(() => {
     const lot = `Le lot ${this.lotName()}`;
-    const next = this.monthly() ? 'après la fin du mois' : 'après la prochaine clôture';
+    const next = 'après la fin du mois';
     return this.alreadyPrepared()
       ? `${lot} est déjà déposé ; le suivant se prépare ${next}.`
       : `${lot} n’est pas encore préparé.`;
@@ -184,14 +174,6 @@ export class PrelevementDuMoisPage {
     const entity = this.entity();
     if (entity === null) {
       return false;
-    }
-    if (!this.monthly()) {
-      // La clôture du lot à préparer : la dernière facturée. Faute de factures
-      // lisibles, le bouton reste — le serveur refusera un second lot.
-      const closesAt = this.invoices()?.periodClosesAt;
-      return (this.view()?.batches ?? []).some(
-        (batch) => batch.status !== 'cancelled' && batch.cycleClosesAt === closesAt,
-      );
     }
     const month = monthToPrepareKey(entity.nextCollection.closesAt);
     return (this.view()?.batches ?? []).some(

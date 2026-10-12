@@ -59,10 +59,8 @@ function entity(over: Partial<LegalEntityView> = {}): LegalEntityView {
     preNotificationDays: 14,
     autoCollectionEnabled: false,
     autoCollectionDelayHours: 1,
-    billingRhythm: { kind: 'monthly', days: [1] },
-    nextBillingRhythm: null,
-    billingRhythmChangeLock: null,
-    upcomingClosures: [],
+    billingModes: [],
+    lastClosure: '2026-09-30T22:00:00.000Z',
     collectionDaysAfterClosure: null,
     depositCutoff: null,
     nextCollection: {

@@ -3,7 +3,8 @@ import type { LegalEntityView } from "@lfd/contracts";
 
 import { Clock } from "../../../../platform/time/clock.js";
 import { BillingRhythmReader } from "../../domain/ports/billing-rhythm.reader.js";
-import { InvoicedClosuresReader } from "../../domain/ports/invoiced-closures.reader.js";
+import { BillingModeDatesReader } from "../../domain/ports/billing-mode-dates.reader.js";
+import { PayerBillingModesReader } from "../../domain/ports/payer-billing-modes.reader.js";
 import { LastAutopilotRunReader } from "../../domain/ports/last-autopilot-run.reader.js";
 import { LegalEntityReader } from "../../domain/ports/legal-entity.reader.js";
 import { RecordedClosureReader } from "../../domain/ports/recorded-closure.reader.js";
@@ -29,7 +30,8 @@ export class ListLegalEntitiesHandler implements IQueryHandler<
     private readonly closures: RecordedClosureReader,
     private readonly autopilotRuns: LastAutopilotRunReader,
     private readonly rhythms: BillingRhythmReader,
-    private readonly invoicedClosures: InvoicedClosuresReader,
+    private readonly modeDates: BillingModeDatesReader,
+    private readonly payerModes: PayerBillingModesReader,
     private readonly clock: Clock,
   ) {}
 
@@ -44,7 +46,7 @@ export class ListLegalEntitiesHandler implements IQueryHandler<
             closures: this.closures,
             autopilotRuns: this.autopilotRuns,
             rhythms: this.rhythms,
-            invoicedClosures: this.invoicedClosures,
+            modes: { modeDates: this.modeDates, payerModes: this.payerModes },
           },
           now,
         ),

@@ -1,7 +1,6 @@
 import {
   BILLING_RHYTHM_KIND_LABELS,
   type BillingRhythmKind,
-  type BillingRhythmView,
   type UpcomingClosureView,
 } from '@lfd/contracts';
 
@@ -15,6 +14,12 @@ import { day } from './invoice-dossier-format';
  * Aucune date n'est calculée ici : les clôtures à venir, la prise d'effet et
  * le verrou arrivent du serveur. Ce fichier ne fait que les DIRE.
  */
+
+/** Un mode et ses dates — la forme que la phrase et la comparaison lisent. */
+export interface RhythmShape {
+  readonly kind: BillingRhythmKind;
+  readonly days: readonly number[];
+}
 
 /** Le jour de semaine du contrat : 1 = lundi … 7 = dimanche. */
 export const WEEKDAY_LABELS: Readonly<Record<number, string>> = {
@@ -60,7 +65,7 @@ export function defaultDays(kind: BillingRhythmKind): readonly number[] {
 const ordinal = (day: number): string => (day === 1 ? '1er' : String(day));
 
 /** « Chaque mois, clôture le 1er » ; « Chaque semaine, clôture le lundi ». */
-export function rhythmSentence(rhythm: BillingRhythmView): string {
+export function rhythmSentence(rhythm: RhythmShape): string {
   switch (rhythm.kind) {
     case 'monthly':
       return `Chaque mois, clôture le ${ordinal(rhythm.days[0] ?? 1)}`;
@@ -72,7 +77,7 @@ export function rhythmSentence(rhythm: BillingRhythmView): string {
 }
 
 /** Les deux rythmes disent-ils la même chose ? Alors « enregistrer » n'aurait rien à faire. */
-export function sameRhythm(a: BillingRhythmView, b: BillingRhythmView): boolean {
+export function sameRhythm(a: RhythmShape, b: RhythmShape): boolean {
   return (
     a.kind === b.kind && a.days.length === b.days.length && a.days.every((d, i) => d === b.days[i])
   );

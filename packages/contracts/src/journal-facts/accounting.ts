@@ -16,6 +16,7 @@ import {
   named,
   payload,
   ref,
+  retired,
   subjectLabel,
   type JournalFactFamily,
 } from "./fact.js";
@@ -97,16 +98,46 @@ export const ACCOUNTING_FACTS = {
     depositCutoffTime: clockTime().nullable(),
   }),
   /**
-   * Le rythme de facturation (plan `plan-rythme-de-facturation.md`, §2.3) :
-   * `from` est celui en vigueur au moment du réglage, `to` celui demandé, et
-   * `effectiveAt` la clôture de `from` où `to` prend effet — `null` quand le
-   * réglage ANNULE un rythme programmé (`to` égal à `from`).
+   * Le rythme UNIQUE de l'entité (R2) — RETIRÉ en M1 (plan
+   * `plan-rythme-de-facturation.md`, §16.6) : le geste n'existe plus, les dates
+   * se règlent par mode. Gardé pour que ses lignes de dev se lisent encore.
    */
-  "legal_entity.billing_rhythm_changed": labelled({
-    from: billingRhythm(),
-    to: billingRhythm(),
-    effectiveAt: instant().nullable(),
+  "legal_entity.billing_rhythm_changed": retired(
+    payload({
+      subjectLabel: subjectLabel(),
+      from: billingRhythm(),
+      to: billingRhythm(),
+      effectiveAt: instant().nullable(),
+    }),
+  ),
+  /**
+   * Les dates d'un MODE de facturation (§16.6-7) : `from` les dates en vigueur
+   * à la prise d'effet, `to` celles programmées, `effectiveAt` la clôture du
+   * mode où elles prennent effet. `cancelled` : le programmé `from` est annulé,
+   * `to` reste en vigueur.
+   */
+  "legal_entity.billing_mode_dates_changed": labelled({
+    mode: billingRhythmKindSchema,
+    from: z.array(z.number().int()),
+    to: z.array(z.number().int()),
+    effectiveAt: instant(),
+    cancelled: z.boolean(),
   }),
+  /**
+   * Le mode de facturation d'un PAYEUR (§16.6-7) — sujet : le payeur.
+   * `effectiveAt` : la prochaine clôture de sa suite actuelle. `cancelled` :
+   * le passage à `from` est annulé, `to` reste en vigueur.
+   */
+  "payer.billing_mode_changed": fact(
+    payload({
+      subjectLabel: subjectLabel(),
+      legalEntity: named("legal_entity"),
+      from: billingRhythmKindSchema,
+      to: billingRhythmKindSchema,
+      effectiveAt: instant(),
+      cancelled: z.boolean(),
+    }),
+  ),
   /** La constitution automatique — un fait distinct du calendrier. */
   "legal_entity.auto_collection_enabled": labelled({}),
   "legal_entity.auto_collection_disabled": labelled({}),

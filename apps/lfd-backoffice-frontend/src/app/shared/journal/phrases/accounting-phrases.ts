@@ -40,7 +40,7 @@ import {
 // ─── L'entité émettrice ─────────────────────────────────────────────────────
 
 /** L'entité émettrice, après sa préposition : « de l'entité… », « d'une entité… ». */
-const ENTITY: Readonly<Record<'' | 'de' | 'à', Noun>> = {
+export const ENTITY: Readonly<Record<'' | 'de' | 'à', Noun>> = {
   '': { the: 'l’entité émettrice', a: 'une entité émettrice' },
   de: { the: 'de l’entité émettrice', a: 'd’une entité émettrice' },
   à: { the: 'à l’entité émettrice', a: 'à une entité émettrice' },
@@ -50,7 +50,7 @@ const ENTITY: Readonly<Record<'' | 'de' | 'à', Noun>> = {
  * « l'entité émettrice « La Folie Douce SAS » », liée à sa fiche. Une forme
  * d'avant le lot B qui ne porte pas son nom dit « une entité émettrice ».
  */
-function entity(fact: PhraseFact, prep: keyof typeof ENTITY): Segment[] {
+export function entity(fact: PhraseFact, prep: keyof typeof ENTITY): Segment[] {
   const label = subjectLabelOf(fact) ?? optional(fact.payload['name']);
   const noun = ENTITY[prep];
   return label === null
@@ -111,7 +111,7 @@ const WEEKDAYS = ['lundi', 'mardi', 'mercredi', 'jeudi', 'vendredi', 'samedi', '
  * « chaque mois le 1er », « deux fois par mois, le 1er et le 16 », « chaque
  * semaine le lundi ». Une forme inconnue se dit « — ».
  */
-function billingRhythm(raw: unknown): string {
+export function billingRhythm(raw: unknown): string {
   if (typeof raw !== 'object' || raw === null) {
     return '—';
   }

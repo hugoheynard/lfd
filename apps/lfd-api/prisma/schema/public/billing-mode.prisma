@@ -1,0 +1,52 @@
+// ─────────────────────────────────────────────────────────────────────────────
+// Les dates des modes, le mode du payeur — lot M1
+// (`documentation/comptabilite/facturation/plan-rythme-de-facturation.md`, §16.6)
+// ─────────────────────────────────────────────────────────────────────────────
+
+/// Un **segment de dates d'un mode de facturation** de l'entité, à partir
+/// d'une clôture (`effective_from`). Append-only : un déclencheur refuse le
+/// DELETE et tout UPDATE sauf la pose, une fois, de l'annulation. Aucune ligne
+/// pour un mode = ses dates par défaut (mensuel le 1er, deux fois par mois le
+/// 1er et le 16, hebdomadaire le lundi). Forme tenue par `BillingRhythm` ET par
+/// le CHECK `billing_rhythm_is_well_formed(mode, days)`.
+model BillingModeDates {
+  id                 String      @id
+  legalEntityId      String      @map("legal_entity_id")
+  legalEntity        LegalEntity @relation(fields: [legalEntityId], references: [id], onDelete: Restrict)
+  /// `monthly` | `semimonthly` | `weekly`.
+  mode               String
+  effectiveFrom      DateTime    @map("effective_from") @db.Timestamptz(3)
+  days               Int[]
+  /// Posée une fois, avant la prise d'effet ; le segment ne compte plus.
+  cancelledAt        DateTime?   @map("cancelled_at") @db.Timestamptz(3)
+  /// L'id de fiche staff, pas une clé étrangère : la trace survit au départ.
+  cancelledByStaffId String?     @map("cancelled_by_staff_id")
+  createdAt          DateTime    @map("created_at") @db.Timestamptz(3)
+  createdByStaffId   String      @map("created_by_staff_id")
+
+  @@index([legalEntityId, mode, effectiveFrom], map: "billing_mode_dates_entity_mode_effective_from_idx")
+  @@map("billing_mode_dates")
+  @@schema("public")
+}
+
+/// Le **mode de facturation d'un payeur** (celui de `billedPayerOf`), à partir
+/// d'une clôture de son mode d'avant. Append-only, même déclencheur. Aucune
+/// ligne = mensuel. `payer_company_id` est opaque : aucune clé étrangère vers
+/// le compte client.
+model PayerBillingMode {
+  id                 String      @id
+  legalEntityId      String      @map("legal_entity_id")
+  legalEntity        LegalEntity @relation(fields: [legalEntityId], references: [id], onDelete: Restrict)
+  payerCompanyId     String      @map("payer_company_id")
+  effectiveFrom      DateTime    @map("effective_from") @db.Timestamptz(3)
+  /// `monthly` | `semimonthly` | `weekly`.
+  mode               String
+  cancelledAt        DateTime?   @map("cancelled_at") @db.Timestamptz(3)
+  cancelledByStaffId String?     @map("cancelled_by_staff_id")
+  createdAt          DateTime    @map("created_at") @db.Timestamptz(3)
+  createdByStaffId   String      @map("created_by_staff_id")
+
+  @@index([legalEntityId, payerCompanyId, effectiveFrom], map: "payer_billing_mode_entity_payer_effective_from_idx")
+  @@map("payer_billing_mode")
+  @@schema("public")
+}

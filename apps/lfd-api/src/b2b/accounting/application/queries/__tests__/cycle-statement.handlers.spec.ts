@@ -54,7 +54,7 @@ class RhythmsByEntity extends BillingRhythmReader {
   constructor(private readonly settings: ReadonlyMap<string, BillingRhythmSetting>) {
     super();
   }
-  settingOf(legalEntityId: string): Promise<BillingRhythmSetting | null> {
+  timelineOf(legalEntityId: string): Promise<BillingRhythmSetting | null> {
     return Promise.resolve(this.settings.get(legalEntityId) ?? null);
   }
 }

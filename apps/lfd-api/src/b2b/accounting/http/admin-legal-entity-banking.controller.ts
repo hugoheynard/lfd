@@ -11,8 +11,6 @@ import {
   setPreNotificationPayloadSchema,
   setAutoCollectionPayloadSchema,
   setCollectionSchedulePayloadSchema,
-  setBillingRhythmPayloadSchema,
-  type SetBillingRhythmPayload,
   type SetAutoCollectionPayload,
   type SetCollectionSchedulePayload,
   type AssignCreditorIdentifierPayload,
@@ -30,7 +28,6 @@ import {
   SetCreditorAccountCommand,
   SetPreNotificationCommand,
 } from "../application/commands/legal-entity-commands.js";
-import { SetBillingRhythmCommand } from "../application/commands/set-billing-rhythm.command.js";
 import { SetMandateSchemeCommand } from "../application/commands/set-mandate-scheme.command.js";
 import { GetMandateSchemeUsageQuery } from "../application/queries/get-mandate-scheme-usage.query.js";
 
@@ -185,21 +182,6 @@ export class AdminLegalEntityBankingController {
     @Body(new ZodBody(setCollectionSchedulePayloadSchema)) payload: SetCollectionSchedulePayload,
   ): Promise<void> {
     await this.commands.execute(new SetCollectionScheduleCommand(id, payload));
-  }
-
-  /**
-   * Le rythme de facturation : mensuel, deux fois par mois ou chaque semaine,
-   * et ses jours de clôture. Répond **400** sur un jour hors bornes ou un
-   * nombre de jours faux pour le genre. Le nouveau rythme prend effet à la
-   * prochaine clôture de l'ancien : la fiche relue dit quand.
-   */
-  @Put(":id/billing-rhythm")
-  @HttpCode(HttpStatus.NO_CONTENT)
-  async setBillingRhythm(
-    @Param("id") id: string,
-    @Body(new ZodBody(setBillingRhythmPayloadSchema)) payload: SetBillingRhythmPayload,
-  ): Promise<void> {
-    await this.commands.execute(new SetBillingRhythmCommand(id, payload.kind, payload.days));
   }
 
   /**

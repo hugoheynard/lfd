@@ -151,14 +151,18 @@ export class NoStops extends OrderDeliveryHistoryReader {
   }
 }
 
-/** Le même réglage pour toute entité connue ; mensuel au 1er par défaut. */
+/**
+ * Le même réglage pour toute entité connue ; mensuel au 1er par défaut. Il
+ * double l'adaptateur de transition de M1 (`BillingRhythmReader`) : un réglage
+ * hebdomadaire y éprouve encore la mécanique que M2–M4 reprendront par payeur.
+ */
 export class FixedRhythms extends BillingRhythmReader {
   constructor(
     private readonly setting: BillingRhythmSetting | null = BillingRhythmSetting.initial(),
   ) {
     super();
   }
-  settingOf(): Promise<BillingRhythmSetting | null> {
+  timelineOf(): Promise<BillingRhythmSetting | null> {
     return Promise.resolve(this.setting);
   }
 }

@@ -116,16 +116,13 @@ export class MonthPreview {
   protected readonly downloadError = signal<string | null>(null);
 
   /**
-   * Sous le rythme mensuel, le mois se nomme ; sous un autre, la période en
-   * cours se dit par ses jours, lus dans la première clôture à venir.
+   * Le mois se nomme : depuis M1 (plan `plan-rythme-de-facturation.md`, §16),
+   * l'aperçu suit le MODE MENSUEL de l'entité ; la période d'un autre mode se
+   * dira par ses jours avec M3/M4.
    */
-  protected readonly title = computed(() => {
-    const entity = this.entity();
-    const period = entity.upcomingClosures[0]?.periodLabel;
-    return entity.billingRhythm.kind === 'monthly' || period === undefined
-      ? `Le mois en cours — ${currentMonthName(entity.nextCollection.closesAt)}`
-      : `La période en cours — ${period}`;
-  });
+  protected readonly title = computed(
+    () => `Le mois en cours — ${currentMonthName(this.entity().nextCollection.closesAt)}`,
+  );
   protected readonly subtitle = computed(
     () =>
       `Aperçu de ce qui serait prélevé à la clôture (${longDay(this.entity().nextCollection.closesAt)}), ` +

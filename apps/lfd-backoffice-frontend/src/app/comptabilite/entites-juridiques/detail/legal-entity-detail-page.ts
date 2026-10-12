@@ -36,7 +36,7 @@ import { saveBlob } from '../../../shared/download/save-blob';
 import { DeclarePanel } from '../declare-panel/declare-panel';
 import { LegalEntitiesService } from '../../legal-entities.service';
 import { MandateSettingsCard } from './mandate-settings-card/mandate-settings-card';
-import { BillingRhythmCard } from './billing-rhythm-card/billing-rhythm-card';
+import { BillingModesCard } from './billing-modes-card/billing-modes-card';
 import { CollectionSettingsCard } from './collection-settings-card/collection-settings-card';
 import { InvoiceTermsCard } from './invoice-terms-card/invoice-terms-card';
 import { MandateBankExportCard } from './mandate-bank-export-card/mandate-bank-export-card';
@@ -105,7 +105,7 @@ const MANDATE_FILE_NAME = 'mandat-sepa-exemple.pdf';
     FoldInlineConfirmComponent,
     FoldInputComponent,
     MandateSettingsCard,
-    BillingRhythmCard,
+    BillingModesCard,
     CollectionSettingsCard,
     InvoiceTermsCard,
     MandateBankExportCard,

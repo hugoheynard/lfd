@@ -1,7 +1,4 @@
-import type { BillingRhythmView } from "@lfd/contracts";
-
 import type { LegalEntityRecord } from "../domain/ports/legal-entity.reader.js";
-import type { BillingRhythm } from "../domain/value-objects/billing-rhythm.js";
 
 import type { FieldCipher } from "../../../platform/crypto/field-cipher.js";
 import type { LegalEntity as LegalEntityRow } from "../../../platform/database/client/client.js";
@@ -97,24 +94,11 @@ export function toView(entity: LegalEntity, isLastActive: boolean): LegalEntityR
     // interne du bucket, et une clé qui SORT d'une API est une clé qu'on finit
     // par accepter en ENTRÉE. Un e2e le tient.
     hasLogo: entity.hasLogo,
-    billingRhythm: billingRhythmView(entity.billingRhythm.current),
-    nextBillingRhythm:
-      entity.billingRhythm.scheduled === null
-        ? null
-        : {
-            ...billingRhythmView(entity.billingRhythm.scheduled.rhythm),
-            effectiveAt: entity.billingRhythm.scheduled.effectiveAt.toISOString(),
-          },
     // Passé plutôt que déduit : le mapper voit UNE entité, et « la dernière »
     // est une propriété de l'ensemble. Le lui faire calculer supposerait de lui
     // donner un dépôt, c'est-à-dire d'en faire autre chose qu'un mapper.
     isLastActive,
   };
-}
-
-/** Le rythme tel que le contrat le porte : un genre et ses jours. */
-function billingRhythmView(rhythm: BillingRhythm): BillingRhythmView {
-  return { kind: rhythm.kind, days: [...rhythm.days] };
 }
 
 /** Ligne → état complet, sans reconstruire l'agrégat. */
@@ -156,11 +140,6 @@ function toSnapshot(row: LegalEntityRow, cipher: FieldCipher): LegalEntitySnapsh
     invoiceLatePenaltyRateBasisPoints: row.invoiceLatePenaltyRateBasisPoints,
     invoiceRecoveryIndemnityCents: row.invoiceRecoveryIndemnityCents,
     invoiceEarlyPaymentDiscount: row.invoiceEarlyPaymentDiscount,
-    billingRhythmKind: row.billingRhythmKind,
-    billingRhythmDays: row.billingRhythmDays,
-    nextBillingRhythmKind: row.nextBillingRhythmKind,
-    nextBillingRhythmDays: row.nextBillingRhythmDays,
-    nextBillingRhythmEffectiveAt: row.nextBillingRhythmEffectiveAt,
   };
 }
 
@@ -196,14 +175,8 @@ function toSnapshot(row: LegalEntityRow, cipher: FieldCipher): LegalEntitySnapsh
 export function legalEntityColumns(
   snapshot: LegalEntitySnapshot,
   cipher: FieldCipher,
-): Omit<
-  LegalEntitySnapshot,
-  "id" | "creditorIban" | "firstMandateIssuedAt" | "billingRhythmDays" | "nextBillingRhythmDays"
-> & {
+): Omit<LegalEntitySnapshot, "id" | "creditorIban" | "firstMandateIssuedAt"> & {
   readonly creditorIbanSealed: string | null;
-  // Des copies mutables : Prisma attend un `number[]`, l'état rend du `readonly`.
-  readonly billingRhythmDays: number[];
-  readonly nextBillingRhythmDays: number[];
 } {
   return {
     name: snapshot.name,
@@ -243,10 +216,5 @@ export function legalEntityColumns(
     invoiceLatePenaltyRateBasisPoints: snapshot.invoiceLatePenaltyRateBasisPoints,
     invoiceRecoveryIndemnityCents: snapshot.invoiceRecoveryIndemnityCents,
     invoiceEarlyPaymentDiscount: snapshot.invoiceEarlyPaymentDiscount,
-    billingRhythmKind: snapshot.billingRhythmKind,
-    billingRhythmDays: [...snapshot.billingRhythmDays],
-    nextBillingRhythmKind: snapshot.nextBillingRhythmKind,
-    nextBillingRhythmDays: [...snapshot.nextBillingRhythmDays],
-    nextBillingRhythmEffectiveAt: snapshot.nextBillingRhythmEffectiveAt,
   };
 }

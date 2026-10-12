@@ -31,7 +31,7 @@ export class GetMonthlyInvoicesHandler implements IQueryHandler<
 
   /** @throws {LegalEntityNotFoundError} l'entité n'existe pas. */
   async execute(query: GetMonthlyInvoicesQuery): Promise<MonthlyInvoicesView> {
-    const setting = await this.rhythms.settingOf(query.legalEntityId);
+    const setting = await this.rhythms.timelineOf(query.legalEntityId);
     if (setting === null) {
       throw new LegalEntityNotFoundError(query.legalEntityId);
     }

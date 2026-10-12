@@ -1,0 +1,32 @@
+<fold-page-section
+  title="Dates des modes de facturation"
+  description="Chaque client suit un mode — mensuel par défaut. À chaque clôture de son mode, sa période se ferme : sa facture part, puis son lot de prélèvement se prépare."
+  separator
+>
+  <div class="bm-stack">
+    @for (line of modes(); track line.mode) {
+      <section class="bm-block" [attr.data-billing-mode]="line.mode">
+        <h3 class="bm-heading">{{ line.label }}</h3>
+        <p class="bm-state" data-mode-current>{{ line.current }}.</p>
+        @if (line.scheduled; as scheduled) {
+          <fold-callout appearance="inset" variant="info" data-mode-scheduled>
+            Programmé&nbsp;: {{ scheduled }}.
+          </fold-callout>
+        }
+        @if (line.locked; as locked) {
+          <p class="bm-said" data-mode-locked>{{ locked }}</p>
+        }
+        <ul class="bm-list" data-mode-closures>
+          @for (closure of line.closures; track closure) {
+            <li>{{ closure }}</li>
+          }
+        </ul>
+        <p class="bm-said" data-mode-payers>{{ line.payers }}</p>
+      </section>
+    }
+    <fold-callout appearance="inset" variant="info" data-modes-readonly>
+      Le réglage des dates et du mode de chaque client arrive avec le prochain écran&nbsp;: cette
+      carte ne fait que les dire.
+    </fold-callout>
+  </div>
+</fold-page-section>

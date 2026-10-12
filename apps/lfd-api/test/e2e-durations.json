@@ -21,7 +21,7 @@
   "test/appointments.e2e-spec.ts": 11928,
   "test/b2b-legal-documents.e2e-spec.ts": 6637,
   "test/b2b-legal-sections.e2e-spec.ts": 5507,
-  "test/billing-rhythm.e2e-spec.ts": 9474,
+  "test/billing-modes.e2e-spec.ts": 7498,
   "test/billing-statements.e2e-spec.ts": 6751,
   "test/card-invoices.e2e-spec.ts": 9150,
   "test/catalog-delivery-review.e2e-spec.ts": 10343,

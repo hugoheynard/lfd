@@ -10,7 +10,6 @@ import type {
   LegalEntityView,
   MandateSchemeUsageView,
   SetAutoCollectionPayload,
-  SetBillingRhythmPayload,
   SetCollectionSchedulePayload,
   SetCreditorAccountPayload,
   SetInvoicePaymentTermsPayload,
@@ -172,16 +171,6 @@ export class LegalEntitiesService {
    */
   async setCollectionSchedule(id: string, payload: SetCollectionSchedulePayload): Promise<void> {
     await firstValueFrom(this.http.put<void>(`${this.base}/${id}/collection-schedule`, payload));
-  }
-
-  /**
-   * Le rythme de facturation de l'entité (plan `plan-rythme-de-facturation.md`).
-   * Il prend effet à la prochaine clôture ; renvoyer le rythme en vigueur
-   * ANNULE un changement programmé. Un second changement pendant qu'un premier
-   * attend sa facture est refusé (409) — le message s'affiche tel quel.
-   */
-  async setBillingRhythm(id: string, payload: SetBillingRhythmPayload): Promise<void> {
-    await firstValueFrom(this.http.put<void>(`${this.base}/${id}/billing-rhythm`, payload));
   }
 
   /** Activer ou désactiver la constitution automatique — un geste à part, journalisé. */

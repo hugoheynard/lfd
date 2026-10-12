@@ -84,7 +84,7 @@ export class RunInvoiceAutopilotHandler implements ICommandHandler<
     now: Date,
     floor: Date | null,
   ): Promise<readonly Date[]> {
-    const setting = await this.rhythms.settingOf(legalEntityId);
+    const setting = await this.rhythms.timelineOf(legalEntityId);
     if (setting === null) {
       return [];
     }

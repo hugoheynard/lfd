@@ -34,6 +34,9 @@ describe("le catalogue des faits", () => {
     expect(retired.sort()).toEqual([
       "company.delivery_procedure_edited_by_staff",
       "company.kbis_uploaded_by_staff",
+      // Le rythme UNIQUE de l'entité (R2), retiré en M1 (2026-10-12) : les dates
+      // se règlent par mode (`legal_entity.billing_mode_dates_changed`).
+      "legal_entity.billing_rhythm_changed",
       // Remplacé le 2026-09-22 par `product.allergens_saved` et
       // `product.nutrition_saved` : les deux moitiés de la fiche réglementaire
       // s'enregistrent séparément. Ses lignes restent lisibles, charge entière.

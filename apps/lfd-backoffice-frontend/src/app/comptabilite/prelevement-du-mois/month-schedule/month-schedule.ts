@@ -1,4 +1,4 @@
-import { ChangeDetectionStrategy, Component, computed, input } from '@angular/core';
+import { ChangeDetectionStrategy, Component, input } from '@angular/core';
 import { RouterLink } from '@angular/router';
 import type { LegalEntityView } from '@lfd/contracts';
 import { FoldButtonComponent, FoldCardComponent, FoldElementTitleComponent } from 'fold-ng';
@@ -32,13 +32,9 @@ export class MonthSchedule {
   readonly entity = input.required<LegalEntityView>();
 
   /**
-   * « du mois » sous le rythme mensuel, « de la prochaine clôture » sinon :
-   * deux clôtures ferment le même mois sous un autre rythme (plan
-   * `plan-rythme-de-facturation.md`, §6).
+   * « du mois » : depuis M1 (plan `plan-rythme-de-facturation.md`, §16), le
+   * lot suit le MODE MENSUEL de l'entité. « de la prochaine clôture » reviendra
+   * avec le calendrier d'union (M3/M4).
    */
-  protected readonly title = computed(() =>
-    this.entity().billingRhythm.kind === 'monthly'
-      ? 'Le calendrier du mois'
-      : 'Le calendrier de la prochaine clôture',
-  );
+  protected readonly title = 'Le calendrier du mois';
 }

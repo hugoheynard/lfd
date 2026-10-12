@@ -594,12 +594,12 @@ modes ; chaque client choisit un mode.** Plus aucune date propre à un client.
 
 ### 16.5 Lots
 
-| Lot | Contenu                                                                                                                                 |
-| --- | --------------------------------------------------------------------------------------------------------------------------------------- |
-| M1  | Trois définitions sur l'entité + mode du client (migration, agrégats, routes, faits, timelines, calendrier d'union, règle §12 au temps) |
-| M2  | Facture par client à sa clôture (passage, bouton, rattrapage)                                                                           |
-| M3  | Lot et automatisme sur le calendrier (`constitute`, tentative à chaque clôture, `priorOrderCount`, lot manqué, `lastClosure`)           |
-| M4  | Relevé/dossier par client ; écrans : dates des modes, mode du client, restes « mois »                                                   |
+| Lot | Contenu                                                                                                                                                                               |
+| --- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| M1  | Trois définitions sur l'entité + mode du client (migration, agrégats, routes, faits, timelines, calendrier d'union, règle §12 au temps) — **bâti le 2026-10-12, non commité** (§16.7) |
+| M2  | Facture par client à sa clôture (passage, bouton, rattrapage)                                                                                                                         |
+| M3  | Lot et automatisme sur le calendrier (`constitute`, tentative à chaque clôture, `priorOrderCount`, lot manqué, `lastClosure`)                                                         |
+| M4  | Relevé/dossier par client ; écrans : dates des modes, mode du client, restes « mois »                                                                                                 |
 
 ### 16.6 Révision après `vitruve` (2026-10-12) — l'emporte sur 16.1–16.5
 
@@ -647,3 +647,59 @@ migration NEUVE du même déploiement, les cinq colonnes R2 de
 `legal_entities` et leurs deux CHECK ; la fonction
 `billing_rhythm_is_well_formed` reste si M1 la réutilise, sinon elle part
 aussi. Elles n'ont jamais porté de donnée de production.
+
+### 16.7 M1 bâti (2026-10-12) — ce qui existe, ce que M2–M4 reprennent
+
+**Migration** `20261012400000_les_dates_des_modes_et_le_mode_du_client` :
+`billing_mode_dates` et `payer_billing_mode`, append-only (déclencheur : ni
+DELETE, ni UPDATE sauf la pose unique de `cancelled_at` + son auteur), CHECK de
+forme par `billing_rhythm_is_well_formed` (gardée), index unique partiel sur les
+segments vivants (`legal_entity_id`, mode ou payeur, `effective_from`). Aucune
+ligne semée. Les cinq colonnes R2 et leurs deux CHECK sont supprimées (ordre
+ci-dessus). `payer_company_id` est opaque, sans clé étrangère vers `companies`
+(comme `invoice_monthly_outcome`). Auteurs au registre RGPD.
+
+**Domaine** : `ModeDatesTimeline` (segments vivants d'un mode, défauts sans
+ligne), `PayerTimeline` (composition par `rhythmAt` : `closureAfter` et
+`previousClosureOf` de R3 rendent la suite réelle), `ClosureCalendar` (union
+des modes suivis + mensuel), agrégats `BillingModeDatesHistory` et
+`PayerBillingModeHistory` (règle au temps : refus tant qu'un segment vivant a
+`effective_from` ≥ maintenant, annulation strictement avant), garde
+`requireBillingPayer` (même lecture datée que `billedPayerOf`).
+`BillingRhythmSetting` reste une vue sans `change`.
+
+**Routes** (`b2b_accounting`) : `PUT|DELETE …/billing-modes/:mode[/scheduled]`,
+`GET|PUT|DELETE …/payers/:companyId/billing-mode[/scheduled]`. `PUT
+…/billing-rhythm` est retiré, `legal_entity.billing_rhythm_changed` est
+**retiré du catalogue** (`retired`, lignes de dev encore lisibles), les deux
+faits neufs y sont.
+
+**Vue** : `LegalEntityView.billingModes[3]` + `lastClosure` (dernière clôture
+du calendrier d'union) ; `PayerBillingModeView`. Back-office : carte en lecture
+seule « Dates des modes de facturation » (l'écran de réglage est M4).
+
+**🔴 L'adaptateur de transition** — `BillingRhythmReader.timelineOf(entité)`
+rend la timeline du **mode mensuel**. Le lisent encore, et sont à reprendre :
+
+| Lot                  | Appelants                                                                                                                                                                                                                                                                                      |
+| -------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| M2 (facture)         | `issue-monthly-invoices.handler`, `run-invoice-autopilot.handler`, `get-monthly-invoices.handler`                                                                                                                                                                                              |
+| M3 (lot)             | `collection-constitution-support` (donc `constitute-collection-batches.handler`, `get-collection-preview.handler`), `run-collection-autopilot.handler`, `cycle-draft-support` (`export-cycle-draft`, `export-cycle-audit`), `legal-entity-view-support` (le seul `nextCollection` de la fiche) |
+| M4 (relevé, dossier) | `statement-period-support` (`get-current-billing-cycle`, `list-statement-cycles`, `get-cycle-statement`, `export-cycle-statement`, `get-invoice-dossier`, `export-invoice-dossier`), et `PrismaInvoicePeriodsReader`, qui lit le mensuel en jointure SANS passer par le port                   |
+
+Les écrans de prélèvement du back-office (`month-schedule`, `month-preview`,
+`prelevement-du-mois-page`) ont perdu leur branche « autre rythme » : en M1 le
+lot suit le mensuel. M4 la rend, par période.
+
+**Deux e2e retirés, à rétablir** (`test/monthly-invoices.e2e-spec.ts`) : ils
+réglaient le rythme unique (`PUT …/billing-rhythm`, supprimé) et ne peuvent
+pas passer tant que facture et lot suivent l'adaptateur mensuel :
+« la facture par clôture d'un rythme hebdomadaire (R3) » — à rétablir en
+**M2** sur un payeur hebdomadaire ; « le lot par clôture d'un rythme
+hebdomadaire (R4) » — à rétablir en **M3**.
+
+**Ce que M1 n'a pas tranché** : « payeur en service » (§16.6-6) n'est pas
+défini — le calendrier d'union compte tout payeur qui a un segment vivant
+dont le mode est en vigueur ou programmé, sans regarder si le compte est
+actif ; et `payerCount` du mensuel ne compte que ceux qui l'ont CHOISI, la
+comptabilité ne tenant pas la liste des payeurs mensuels par défaut.

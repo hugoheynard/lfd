@@ -14,7 +14,7 @@ import {
   requestedStatementPeriod,
   type StatementPeriod,
 } from "../domain/services/statement-periods.js";
-import { BillingRhythmSetting } from "../domain/value-objects/billing-rhythm-setting.js";
+import { ModeDatesTimeline } from "../domain/services/mode-dates-timeline.js";
 
 /** Ce qu'il faut pour savoir quel rythme suit le relevé. */
 export interface StatementRhythmDeps {
@@ -24,6 +24,8 @@ export interface StatementRhythmDeps {
 
 /**
  * **Le rythme que suit le relevé** : celui de l'entité émettrice en service
+ * — ⚠️ en M1, la timeline de son MODE MENSUEL (`BillingRhythmReader`,
+ * adaptateur de transition ; M4 passera aux périodes du payeur)
  * (plan `plan-rythme-de-facturation.md`, §14 ; Q4 de `lot-de-prelevement-fige.md` :
  * une seule encaisse). Le relevé, le dossier et le cycle courant ne nomment
  * aucune entité — c'est celle en service qui fait foi, comme pour le mandat
@@ -41,36 +43,23 @@ export interface StatementRhythmDeps {
  */
 export async function statementTimeline(deps: StatementRhythmDeps): Promise<RhythmTimeline> {
   const active = await deps.issuers.activeIssuers();
-  const settings = await Promise.all(
+  const timelines = await Promise.all(
     active.map(async ({ legalEntityId }) => {
-      const setting = await deps.rhythms.settingOf(legalEntityId);
-      if (setting === null) {
+      const timeline = await deps.rhythms.timelineOf(legalEntityId);
+      if (timeline === null) {
         throw new LegalEntityNotFoundError(legalEntityId);
       }
-      return setting;
+      return timeline;
     }),
   );
-  const [first, ...others] = settings;
+  const [first, ...others] = timelines;
   if (first === undefined) {
-    return BillingRhythmSetting.initial();
+    return ModeDatesTimeline.defaultOf("monthly");
   }
-  if (others.some((other) => !sameSetting(first, other))) {
-    throw new SeveralStatementIssuersError(settings.length);
+  if (others.some((other) => !first.equals(other))) {
+    throw new SeveralStatementIssuersError(timelines.length);
   }
   return first;
-}
-
-function sameSetting(a: BillingRhythmSetting, b: BillingRhythmSetting): boolean {
-  if (!a.current.equals(b.current)) {
-    return false;
-  }
-  if (a.scheduled === null || b.scheduled === null) {
-    return a.scheduled === b.scheduled;
-  }
-  return (
-    a.scheduled.rhythm.equals(b.scheduled.rhythm) &&
-    a.scheduled.effectiveAt.getTime() === b.scheduled.effectiveAt.getTime()
-  );
 }
 
 /**

@@ -179,8 +179,7 @@ const ENTITY: Partial<LegalEntityView> = {
   archivedAt: null,
   autoCollectionEnabled: false,
   lastAutopilotRun: null,
-  billingRhythm: { kind: 'monthly', days: [1] },
-  upcomingClosures: [],
+  billingModes: [],
   nextCollection: {
     closesAt: NEXT_CLOSURE,
     plannedConstitutionAt: '2026-11-01T00:00:00.000Z',
@@ -521,27 +520,6 @@ describe('PrelevementDuMoisPage', () => {
     expect(host(fixture).querySelector('[data-prepare]')).toBeNull();
     expect(button(fixture, 'Marquer déposé')).toBeUndefined();
     expect(button(fixture, 'Fichier')).toBeDefined();
-  });
-
-  it('deux fois par mois : la période se nomme par ses jours, pas par un mois', async () => {
-    const api = new FakeApi();
-    api.view = { batches: [], exclusions: [] };
-    const fixture = await render(api, undefined, {
-      ...ENTITY,
-      billingRhythm: { kind: 'semimonthly', days: [1, 16] },
-      upcomingClosures: [
-        {
-          closesAt: NEXT_CLOSURE,
-          periodLabel: 'du 16 au 31 octobre 2026',
-          invoicedOn: '2026-10-31',
-        },
-      ],
-    });
-
-    expect(text(fixture)).toContain('Le calendrier de la prochaine clôture');
-    expect(text(fixture)).toContain('La période en cours — du 16 au 31 octobre 2026');
-    expect(button(fixture, 'Préparer le lot du 1er au 30 septembre 2026')).toBeDefined();
-    expect(text(fixture)).not.toContain('Préparer le lot de septembre');
   });
 
   it('une clôture manquée (R4b) se voit en avertissement, en tête de l’écran', async () => {

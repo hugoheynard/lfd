@@ -35,10 +35,13 @@ export const ACCOUNTING_FACTS = {
   /** Le calendrier de prélèvement : délai de constitution, échéance N, cut-off de dépôt. */
   collectionScheduleChanged: "legal_entity.collection_schedule_changed",
   /**
-   * Le rythme de facturation est réglé — programmé à la prochaine clôture de
-   * l'ancien, ou un programmé annulé (plan `plan-rythme-de-facturation.md`).
+   * Les dates d'un mode de facturation sont programmées à la prochaine clôture
+   * de ce mode, ou un programmé est annulé (plan `plan-rythme-de-facturation.md`,
+   * §16.6-7). Remplace `legal_entity.billing_rhythm_changed`, retiré en M1.
    */
-  billingRhythmChanged: "legal_entity.billing_rhythm_changed",
+  billingModeDatesChanged: "legal_entity.billing_mode_dates_changed",
+  /** Le mode de facturation d'un payeur est programmé, ou annulé (§16.6-7). */
+  payerBillingModeChanged: "payer.billing_mode_changed",
   /** La constitution automatique est activée — des lots partiront sans clic. */
   autoCollectionEnabled: "legal_entity.auto_collection_enabled",
   autoCollectionDisabled: "legal_entity.auto_collection_disabled",

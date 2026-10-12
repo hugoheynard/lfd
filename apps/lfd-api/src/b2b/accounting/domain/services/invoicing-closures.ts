@@ -5,7 +5,7 @@ import {
   InvalidPeriodClosureError,
   NotABillingClosureError,
 } from "../errors/monthly-invoice-errors.js";
-import type { BillingRhythmSetting } from "../value-objects/billing-rhythm-setting.js";
+import type { BillingRhythm } from "../value-objects/billing-rhythm.js";
 import { closureAtOrBefore, nextClosureAfter, type BillingCycle } from "./billing-cycle.js";
 
 /**
@@ -37,8 +37,15 @@ export const PERIOD_INVOICE_TIME = "23:55";
  */
 export const MAX_CLOSURES_PER_PASS = 12;
 
-/** Le rythme en vigueur à un instant — le réglage de l'entité (R2). */
-export type RhythmTimeline = Pick<BillingRhythmSetting, "rhythmAt">;
+/**
+ * Le rythme en vigueur à un instant : la timeline des dates d'un mode
+ * (`ModeDatesTimeline`), celle d'un payeur (`PayerTimeline`), ou un réglage à
+ * deux segments (`BillingRhythmSetting`). Chaque bascule tombe sur une
+ * clôture de la suite d'avant — c'est ce qui rend `closureAfter` sans trou.
+ */
+export interface RhythmTimeline {
+  rhythmAt(instant: Date): BillingRhythm;
+}
 
 /** Le dernier jour (local) d'une période — la veille de sa clôture, date d'émission. */
 export function lastDayOf(closesAt: Date): string {
@@ -63,7 +70,7 @@ export function invoicingMomentOf(closesAt: Date): Date {
 /**
  * La prochaine clôture de l'entité STRICTEMENT après `instant`, sous le rythme
  * en vigueur à cet instant. Un rythme programmé prend effet à une clôture de
- * l'ancien (`BillingRhythmSetting.change`) : la suite des clôtures n'a donc
+ * l'ancien (`ModeDatesTimeline`, `PayerTimeline`) : la suite des clôtures n'a donc
  * jamais de trou ni de chevauchement.
  */
 export function closureAfter(instant: Date, timeline: RhythmTimeline): Date {

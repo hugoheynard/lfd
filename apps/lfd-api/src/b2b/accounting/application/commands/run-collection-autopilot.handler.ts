@@ -97,7 +97,7 @@ export class RunCollectionAutopilotHandler implements ICommandHandler<
   /** Le tour d'une entité : `null` quand il n'y avait rien à tenter. */
   private async turn(entity: AutoCollectionEntity, now: Date): Promise<AutopilotRunReport | null> {
     const { legalEntityId } = entity;
-    const setting = await this.rhythms.settingOf(legalEntityId);
+    const setting = await this.rhythms.timelineOf(legalEntityId);
     if (setting === null) {
       return null;
     }

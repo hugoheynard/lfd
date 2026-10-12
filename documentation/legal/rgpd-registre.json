@@ -1116,6 +1116,42 @@
       "information": false
     },
     {
+      "colonne": "public.billing_mode_dates.cancelled_by_staff_id",
+      "personne": "staff",
+      "categorie": "auteur-geste",
+      "finalite": "Tracer quel membre du staff a annulé des dates programmées d'un mode de facturation (`billing_mode_dates`, plan-rythme-de-facturation §16.6).",
+      "conservation": "aucune-limite-decidee",
+      "purge": null,
+      "information": false
+    },
+    {
+      "colonne": "public.billing_mode_dates.created_by_staff_id",
+      "personne": "staff",
+      "categorie": "auteur-geste",
+      "finalite": "Tracer quel membre du staff a programmé les dates d'un mode de facturation (`billing_mode_dates`, plan-rythme-de-facturation §16.6).",
+      "conservation": "aucune-limite-decidee",
+      "purge": null,
+      "information": false
+    },
+    {
+      "colonne": "public.payer_billing_mode.cancelled_by_staff_id",
+      "personne": "staff",
+      "categorie": "auteur-geste",
+      "finalite": "Tracer quel membre du staff a annulé le mode de facturation programmé d'un client (`payer_billing_mode`, plan-rythme-de-facturation §16.6).",
+      "conservation": "aucune-limite-decidee",
+      "purge": null,
+      "information": false
+    },
+    {
+      "colonne": "public.payer_billing_mode.created_by_staff_id",
+      "personne": "staff",
+      "categorie": "auteur-geste",
+      "finalite": "Tracer quel membre du staff a programmé le mode de facturation d'un client (`payer_billing_mode`, plan-rythme-de-facturation §16.6).",
+      "conservation": "aucune-limite-decidee",
+      "purge": null,
+      "information": false
+    },
+    {
       "colonne": "public.payment_links.cancelled_by_staff_id",
       "personne": "staff",
       "categorie": "auteur-geste",

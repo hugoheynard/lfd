@@ -4,12 +4,13 @@ import { PrismaService } from "../../../platform/database/prisma.service.js";
 import { InvoicePeriodsReader } from "../domain/ports/invoice-periods.reader.js";
 import type { BillingCycle } from "../domain/services/billing-cycle.js";
 import { previousClosureOf } from "../domain/services/invoicing-closures.js";
-import { billingRhythmSettingOf } from "./prisma-billing-rhythm.reader.js";
+import { modeTimelinesOf } from "./billing-mode.mapper.js";
+import { MODE_DATES_SELECT } from "./prisma-billing-mode-dates.reader.js";
 
 /**
  * La période de l'issue `issued` de la facture par période — une seule par
  * facture (`invoice_id` unique) : sa clôture rangée, et la clôture qui la
- * précède sous le rythme de son entité (R5).
+ * précède sous le rythme de son entité (R5) — en M1, le mode mensuel.
  */
 @Injectable()
 export class PrismaInvoicePeriodsReader extends InvoicePeriodsReader {
@@ -28,11 +29,12 @@ export class PrismaInvoicePeriodsReader extends InvoicePeriodsReader {
         periodClosesAt: true,
         legalEntity: {
           select: {
-            billingRhythmKind: true,
-            billingRhythmDays: true,
-            nextBillingRhythmKind: true,
-            nextBillingRhythmDays: true,
-            nextBillingRhythmEffectiveAt: true,
+            // ⚠️ M1 : la timeline du mode MENSUEL (adaptateur de transition,
+            // `BillingRhythmReader`) — M4 lira la période du payeur.
+            billingModeDates: {
+              where: { mode: "monthly", cancelledAt: null },
+              select: MODE_DATES_SELECT,
+            },
           },
         },
       },
@@ -43,7 +45,10 @@ export class PrismaInvoicePeriodsReader extends InvoicePeriodsReader {
           return [];
         }
         const closesAt = row.periodClosesAt;
-        const startsAt = previousClosureOf(closesAt, billingRhythmSettingOf(row.legalEntity));
+        const startsAt = previousClosureOf(
+          closesAt,
+          modeTimelinesOf(row.legalEntity.billingModeDates).monthly,
+        );
         return [[row.invoiceId, { startsAt, closesAt }] as const];
       }),
     );
