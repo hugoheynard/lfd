@@ -68,6 +68,8 @@ type BillingRhythm =
 
 ### 2.2 Où il vit
 
+> ⚠️ Caduc pour le payeur (§10) : seul le défaut sur l'entité reste.
+
 - **Défaut** : sur `LegalEntity` (colonnes `billing_rhythm_kind`,
   `billing_rhythm_days int[]`), défaut en base = mensuel, `{1}`. Une CHECK
   tient la forme (1 jour pour mensuel et hebdomadaire, 2 pour bimensuel,
@@ -255,4 +257,7 @@ Lots révisés :
 | R4  | Lot et automatisme par clôture, relevé client par période                                                                |
 | R5  | Carte de l'entité (choix du rythme et des dates), « Prélèvement du mois » par clôture                                    |
 
-Reste à trancher avant R4 : le préavis de 14 jours contre l'hebdomadaire.
+**Préavis (Hugo, 2026-10-12) : « on le réduira ».** Le délai de pré-notification
+sera abaissé (jusqu'à 2 jours ouvrés en SEPA B2B) ; la clause CGV et mandat
+est à écrire avec le cabinet AVANT d'abaisser le réglage. R4 n'en dépend
+plus : le délai reste un réglage de l'entité.

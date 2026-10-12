@@ -1,6 +1,8 @@
-import { instantToLocal, localToInstant } from "@lfd/contracts";
+import { addDays, instantToLocal, localToInstant, weekdayOf } from "@lfd/contracts";
 
 import { BillingCycleBoundaryError } from "../errors/accounting-errors.js";
+import { InvalidBillingRhythmError } from "../errors/billing-rhythm-errors.js";
+import type { BillingRhythm } from "../value-objects/billing-rhythm.js";
 
 /**
  * **Le cycle de prélèvement** — la fenêtre dont on somme les commandes.
@@ -156,4 +158,79 @@ export function cycleToConstitute(now: Date, previousClosure: Date | null): Bill
       previousClosure !== null && previousClosure < closesAt ? previousClosure : calendarStart,
     closesAt,
   };
+}
+
+/**
+ * La plus longue attente entre deux clôtures, en jours, avec marge : un
+ * mensuel le 28 attend au plus 31 jours. Au-delà, le rythme ne clôt jamais —
+ * ce que le value object rend impossible, et qu'on refuse plutôt que boucler.
+ */
+const RHYTHM_SEARCH_DAYS = 62;
+const SUNDAY_ISO = 7;
+
+/**
+ * **La prochaine clôture du rythme**, STRICTEMENT après `instant`, à 00h00
+ * locales (`CYCLE_CLOSING_TIME`).
+ *
+ * Strictement : une clôture n'appartient pas à la période qu'elle ouvre. À
+ * l'instant exact d'une clôture, la période en cours est déjà la suivante, et
+ * sa borne haute est la clôture d'après — même convention que `cycleAt`.
+ *
+ * La recherche se fait sur les JOURS locaux, jamais en ajoutant des
+ * millisecondes : un jour de passage d'heure dure 23 ou 25 heures.
+ *
+ * @throws {BillingCycleBoundaryError} l'heure de clôture n'existe pas ce jour-là.
+ */
+export function nextClosureAfter(instant: Date, rhythm: BillingRhythm): Date {
+  return atLocalMidnight(closingDayFrom(instantToLocal(instant).day, rhythm, 1));
+}
+
+/**
+ * La clôture du rythme atteinte à `instant` (≤ `instant`) : celle qui ouvre la
+ * période en cours quand aucune clôture n'est enregistrée.
+ */
+function closureAtOrBefore(instant: Date, rhythm: BillingRhythm): Date {
+  return atLocalMidnight(closingDayFrom(instantToLocal(instant).day, rhythm, -1));
+}
+
+/**
+ * **La période qui contient `now`**, pour un rythme quelconque — `cycleAt`
+ * généralisé (plan `plan-rythme-de-facturation.md`, §3 et §10).
+ *
+ * La borne basse est la clôture ENREGISTRÉE si elle précède la clôture à venir
+ * — c'est elle, pas le calendrier, qui garantit qu'une commande n'est que dans
+ * une période ; sinon, la clôture du rythme qui précède. Le mensuel au 1er rend
+ * exactement `cycleAt`.
+ *
+ * @throws {BillingCycleBoundaryError} l'heure de clôture n'existe pas ce jour-là.
+ */
+export function periodAt(
+  now: Date,
+  rhythm: BillingRhythm,
+  previousClosure: Date | null,
+): BillingCycle {
+  const closesAt = nextClosureAfter(now, rhythm);
+  if (previousClosure !== null && previousClosure < closesAt) {
+    return { startsAt: previousClosure, closesAt };
+  }
+  return { startsAt: closureAtOrBefore(now, rhythm), closesAt };
+}
+
+/**
+ * Le premier jour de clôture en partant de `day`, dans le sens `step`.
+ * Vers l'avant, `day` lui-même est exclu (sa clôture de 00h00 est déjà passée) ;
+ * vers l'arrière, il est inclus.
+ */
+function closingDayFrom(day: string, rhythm: BillingRhythm, step: 1 | -1): string {
+  const first = step === 1 ? 1 : 0;
+  for (let offset = first; offset <= RHYTHM_SEARCH_DAYS; offset += 1) {
+    const candidate = addDays(day, offset * step);
+    const isoWeekday = weekdayOf(candidate) === 0 ? SUNDAY_ISO : weekdayOf(candidate);
+    if (rhythm.closesOn(Number(candidate.slice(8, 10)), isoWeekday)) {
+      return candidate;
+    }
+  }
+  throw new InvalidBillingRhythmError(
+    `aucune clôture dans les ${String(RHYTHM_SEARCH_DAYS)} jours autour du ${day} (${rhythm.kind}).`,
+  );
 }
