@@ -12,22 +12,7 @@
   }
 
   @if (header(); as h) {
-    <fold-element-title
-      variant="title"
-      [title]="h.number"
-      [subtitle]="h.subtitle"
-      data-order-header
-    >
-      @if (h.clientele; as c) {
-        <fold-badge
-          titleAction
-          radius="square"
-          [variant]="c.variant"
-          [content]="c.label"
-          data-order-clientele
-        />
-      }
-    </fold-element-title>
+    <app-order-detail-header [header]="h" />
   }
 
   @if (order(); as o) {

@@ -23,7 +23,7 @@ describe('placedByLines', () => {
       email: 'chef@halles.fr',
       phone: '0611223344',
       company: 'Les Halles (Café des Halles SAS)',
-      onBehalf: null,
+      enteredBy: null,
     });
   });
 
@@ -45,9 +45,7 @@ describe('placedByLines', () => {
       placedBy: { ...PRO, staffName: 'Hugo H' },
       placedByStaffId: 'stf_1',
     });
-    expect(lines.onBehalf).toBe(
-      'Saisie par Hugo H pour le compte de Les Halles (Café des Halles SAS)',
-    );
+    expect(lines.enteredBy).toBe('saisie par Hugo H');
   });
 
   it("n'invente pas de nom quand l'annuaire ne le connaît plus", () => {
@@ -55,7 +53,7 @@ describe('placedByLines', () => {
       placedBy: { ...PRO, company: null },
       placedByStaffId: 'stf_parti',
     });
-    expect(lines.onBehalf).toBe('Saisie par l’équipe pour le compte de Paul Durand');
+    expect(lines.enteredBy).toBe('saisie par l’équipe');
   });
 
   it('sans nom, la personne se dit par son e-mail', () => {
@@ -78,17 +76,31 @@ describe('OrderPlacedByComponent', () => {
     return fixture.nativeElement as HTMLElement;
   }
 
+  it('tient en une ligne discrète, sans carte ni champs', () => {
+    const el = render(PRO, null);
+    expect(el.querySelector('fold-card')).toBeNull();
+    expect(el.querySelector('fold-field')).toBeNull();
+    expect(el.querySelector('[data-placed-by]')?.tagName).toBe('P');
+  });
+
   it("rend l'e-mail en lien mailto, le téléphone et la société", () => {
     const el = render(PRO, null);
     const mail = el.querySelector('[data-placed-by-email] a');
     expect(mail?.getAttribute('href')).toBe('mailto:chef@halles.fr');
-    expect(el.querySelector('[data-placed-by-phone]')?.textContent).toContain('0611223344');
+    expect(el.querySelector('[data-placed-by-phone] a')?.getAttribute('href')).toBe(
+      'tel:0611223344',
+    );
     expect(el.querySelector('[data-placed-by-company]')?.textContent).toContain('Les Halles');
     expect(el.querySelector('[data-placed-by-staff]')).toBeNull();
   });
 
   it("dit la saisie par l'équipe quand elle a eu lieu", () => {
     const el = render({ ...PRO, staffName: 'Hugo H' }, 'stf_1');
-    expect(el.querySelector('[data-placed-by-staff]')?.textContent).toContain('Saisie par Hugo H');
+    expect(el.querySelector('[data-placed-by-staff]')?.textContent).toContain('saisie par Hugo H');
+  });
+
+  it('ne dit rien du téléphone quand il manque', () => {
+    const el = render({ ...PRO, customer: { ...PRO.customer, phone: null } }, null);
+    expect(el.querySelector('[data-placed-by-phone]')).toBeNull();
   });
 });

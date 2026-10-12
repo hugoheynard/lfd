@@ -1,0 +1,10 @@
+@let h = header();
+<div class="order-header" data-order-header>
+  <fold-element-title variant="title" [title]="h.number" />
+  <p class="meta">
+    @if (h.clientele; as c) {
+      <fold-badge radius="square" [variant]="c.variant" [content]="c.label" data-order-clientele />
+    }
+    <span data-order-subtitle>{{ h.subtitle }}</span>
+  </p>
+</div>

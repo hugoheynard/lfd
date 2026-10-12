@@ -1,0 +1,6 @@
+@if (data(); as d) {
+  <fold-panel-header title="Chemin du prix" [subtitle]="d.line.productName" closeLabel="Fermer" />
+  <fold-panel-body>
+    <app-price-explain [line]="d.line" [orderId]="d.orderId" (dismissed)="close()" />
+  </fold-panel-body>
+}

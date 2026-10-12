@@ -21,7 +21,7 @@
         [order]="o"
         [documents]="documents()"
         [selectableLines]="true"
-        (lineSelected)="explainedSku.set($event)"
+        (lineSelected)="explain($event)"
         (documentAsked)="onDocument($event)"
       >
         <!-- Le seul geste staff sur une commande passée : l'annuler, tant
@@ -46,10 +46,6 @@
 
       <!-- Les faits du journal qui touchent la commande, le plus récent d'abord. -->
       <app-order-history-card [orderId]="o.id" />
-
-      @if (explained(); as line) {
-        <app-price-explain [line]="line" [orderId]="o.id" (dismissed)="explainedSku.set(null)" />
-      }
     }
   }
 }

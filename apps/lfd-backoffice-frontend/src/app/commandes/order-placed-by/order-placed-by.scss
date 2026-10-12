@@ -1,0 +1,17 @@
+/* Une ligne discrète sous l'en-tête : les éléments se séparent d'un point
+   médian, et passent à la ligne quand la largeur manque. */
+.placed-by {
+  margin: 0;
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: var(--fold-space-xs) var(--fold-space-sm);
+  font-size: var(--fold-text-sm);
+  color: var(--fold-color-text-secondary);
+}
+
+.item + .item::before {
+  content: '·';
+  padding-inline-end: var(--fold-space-sm);
+  color: var(--fold-color-text-muted);
+}

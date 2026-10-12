@@ -1,19 +1,19 @@
-<fold-card data-placed-by>
-  <fold-element-title cardHeader variant="title" icon="user" title="Passée par" />
-  @let l = lines();
-  @if (l.onBehalf; as onBehalf) {
-    <p data-placed-by-staff>{{ onBehalf }}</p>
+@let l = lines();
+<p class="placed-by" data-placed-by>
+  <fold-icon name="user" size="sm" tone="muted" title="Passée par" />
+  <span class="item" data-placed-by-person>{{ l.person }}</span>
+  <span class="item" data-placed-by-email>
+    <fold-link [href]="'mailto:' + l.email">{{ l.email }}</fold-link>
+  </span>
+  @if (l.phone; as phone) {
+    <span class="item" data-placed-by-phone>
+      <fold-link [href]="'tel:' + phone">{{ phone }}</fold-link>
+    </span>
   }
-  <fold-field-list>
-    <fold-field label="Client" data-placed-by-person>{{ l.person }}</fold-field>
-    <fold-field label="E-mail">
-      <fold-link [href]="'mailto:' + l.email" data-placed-by-email>{{ l.email }}</fold-link>
-    </fold-field>
-    <fold-field label="Téléphone" [empty]="l.phone === null" data-placed-by-phone>
-      {{ l.phone }}
-    </fold-field>
-    @if (l.company; as company) {
-      <fold-field label="Société" data-placed-by-company>{{ company }}</fold-field>
-    }
-  </fold-field-list>
-</fold-card>
+  @if (l.company; as company) {
+    <span class="item" data-placed-by-company>{{ company }}</span>
+  }
+  @if (l.enteredBy; as enteredBy) {
+    <span class="item" data-placed-by-staff>{{ enteredBy }}</span>
+  }
+</p>

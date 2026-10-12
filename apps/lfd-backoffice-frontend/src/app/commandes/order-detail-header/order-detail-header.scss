@@ -1,0 +1,16 @@
+.order-header {
+  display: flex;
+  flex-direction: column;
+  gap: var(--fold-space-xs);
+}
+
+/* Le badge ouvre la ligne du mode : c'est la première chose qu'on lit sous la référence. */
+.meta {
+  margin: 0;
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: var(--fold-space-sm);
+  font-size: var(--fold-text-sm);
+  color: var(--fold-color-text-secondary);
+}

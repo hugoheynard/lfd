@@ -8,9 +8,14 @@ import {
   output,
   signal,
 } from '@angular/core';
-import type { AdminOrderView, OrderLineView } from '@lfd/contracts';
+import type { AdminOrderView } from '@lfd/contracts';
 import { OrderDetail, orderDocuments, type OrderDocument } from '@lfd/b2b-ui/order';
-import { FoldButtonComponent, FoldEmptyStateComponent, FoldLoadingStateComponent } from 'fold-ng';
+import {
+  FoldButtonComponent,
+  FoldEmptyStateComponent,
+  FoldLoadingStateComponent,
+  FoldPanelHostService,
+} from 'fold-ng';
 
 import { NotifyService } from '../../notify.service';
 import { HandoverProofCard } from '../handover-proof-card/handover-proof-card';
@@ -20,7 +25,10 @@ import { OrderInvoicesCard } from '../order-invoices-card/order-invoices-card';
 import { OrderRefundsCard } from '../order-refunds-card/order-refunds-card';
 import { isOrderSheet } from '../commande-page/order-sheet-key';
 import { AdminOrdersService } from '../orders.service';
-import { PriceExplain } from '../price-explain/price-explain';
+import {
+  PriceExplainPanel,
+  type PriceExplainPanelData,
+} from '../price-explain-panel/price-explain-panel';
 
 type LoadState = 'loading' | 'ready' | 'error';
 
@@ -52,7 +60,6 @@ type LoadState = 'loading' | 'ready' | 'error';
     OrderHistoryCard,
     OrderInvoicesCard,
     OrderRefundsCard,
-    PriceExplain,
   ],
   templateUrl: './order-view.html',
 })
@@ -71,22 +78,28 @@ export class OrderViewComponent {
 
   private readonly api = inject(AdminOrdersService);
   private readonly notify = inject(NotifyService);
+  private readonly panels = inject(FoldPanelHostService);
 
   protected readonly state = signal<LoadState>('loading');
   protected readonly order = signal<AdminOrderView | null>(null);
 
   /**
-   * La ligne dont on demande « pourquoi ce prix ». Le SKU identifie la ligne :
-   * une commande ne porte jamais deux lignes du même article (la passation les
-   * fusionne).
+   * Ouvre « pourquoi ce prix » dans un panneau latéral, au-dessus de la page.
+   *
+   * Il se dépliait sous l'historique, hors de vue au moment du clic (Hugo,
+   * 2026-10-12). Le SKU identifie la ligne : une commande ne porte jamais deux
+   * lignes du même article (la passation les fusionne). Le panneau se referme
+   * seul — croix d'en-tête, croix du chemin, Échap.
    */
-  protected readonly explainedSku = signal<string | null>(null);
-
-  /** La ligne à expliquer, ou `null` — l'article a pu disparaître d'un rechargement. */
-  protected readonly explained = computed<OrderLineView | null>(() => {
-    const sku = this.explainedSku();
-    return sku === null ? null : (this.order()?.lines.find((line) => line.sku === sku) ?? null);
-  });
+  protected explain(sku: string): void {
+    const order = this.order();
+    const line = order?.lines.find((candidate) => candidate.sku === sku);
+    if (order === null || line === undefined) {
+      return;
+    }
+    const data: PriceExplainPanelData = { line, orderId: order.id };
+    this.panels.open<PriceExplainPanelData>(PriceExplainPanel, { data });
+  }
 
   protected readonly documents = computed<readonly OrderDocument[]>(() => {
     const order = this.order();

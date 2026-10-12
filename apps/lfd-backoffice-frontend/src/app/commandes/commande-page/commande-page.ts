@@ -2,13 +2,9 @@ import { ChangeDetectionStrategy, Component, computed, inject, input, signal } f
 import { Location } from '@angular/common';
 import { Router } from '@angular/router';
 import type { AdminOrderView } from '@lfd/contracts';
-import {
-  FoldBackLinkComponent,
-  FoldBadgeComponent,
-  FoldElementTitleComponent,
-  FoldPageLayoutComponent,
-} from 'fold-ng';
+import { FoldBackLinkComponent, FoldPageLayoutComponent } from 'fold-ng';
 
+import { OrderDetailHeaderComponent } from '../order-detail-header/order-detail-header';
 import { orderHeader } from '../order-header';
 import { cameFromOrderList } from '../order-list-return';
 import { OrderPlacedByComponent } from '../order-placed-by/order-placed-by';
@@ -32,9 +28,8 @@ import { OrderViewComponent } from '../order-view/order-view';
   changeDetection: ChangeDetectionStrategy.OnPush,
   imports: [
     FoldBackLinkComponent,
-    FoldBadgeComponent,
-    FoldElementTitleComponent,
     FoldPageLayoutComponent,
+    OrderDetailHeaderComponent,
     OrderPlacedByComponent,
     OrderViewComponent,
   ],
