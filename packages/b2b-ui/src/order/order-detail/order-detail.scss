@@ -94,10 +94,6 @@
    appartiennent à `fold-timeline`. Il ne reste ici que la zone de libellé, la
    seule que le composant délègue — et les deux nuances qu'il ne sait pas porter :
    l'échec (aucun ton par nœud) et le jalon que rien ne suit encore. */
-.od-track {
-  display: block;
-}
-
 .od-node {
   display: block;
   font-size: var(--fold-text-sm);
@@ -116,8 +112,7 @@
 
 /* Un jalon franchi garde son détail lisible ; un jalon à venir l'estompe avec
    lui, sans quoi la glose brillerait plus que l'étape qu'elle décrit. */
-.od-node[data-state='upcoming'] + .od-node-detail,
-.od-node[data-state='untracked'] + .od-node-detail {
+.od-node:is([data-state='upcoming'], [data-state='untracked']) + .od-node-detail {
   opacity: 0.7;
 }
 
@@ -166,6 +161,7 @@ fold-aside-layout {
 
 /* La colonne centrale : composition, puis ce qui décrit la commande. */
 .od-lines {
+  container-type: inline-size;
   display: flex;
   flex-direction: column;
   gap: var(--fold-space-lg);
@@ -198,6 +194,9 @@ fold-aside-layout {
   padding: var(--fold-space-sm) 0;
   border-bottom: 1px solid var(--fold-color-border-subtle);
   vertical-align: baseline;
+  /* Le libellé passe à la ligne : c'est lui qui cède, jamais un montant
+     (`nowrap` sur les colonnes chiffrées). */
+  overflow-wrap: anywhere;
 }
 
 .od-col-qty {
@@ -221,6 +220,28 @@ fold-aside-layout {
   color: var(--fold-color-text-muted);
   font-size: var(--fold-text-xs);
   white-space: nowrap;
+}
+
+/* Un écart entre deux colonnes : sans lui, un SKU long touchait la quantité et
+   un montant collait au libellé. */
+.od-table tr > * + * {
+  padding-inline-start: var(--fold-space-sm);
+}
+
+/* La largeur utile dépend des rails ET du menu du back-office : on interroge la
+   colonne, pas l'écran. iPad portrait, ou paysage menu ouvert : la TVA, la
+   moins lue, cède (le taux reste au récapitulatif). Plus étroit, le prix
+   unitaire cède aussi — le total de ligne reste. */
+@container (max-width: 36rem) {
+  .od-col-vat {
+    display: none;
+  }
+}
+
+@container (max-width: 26rem) {
+  .od-col-unit {
+    display: none;
+  }
 }
 
 .od-muted {
@@ -254,8 +275,7 @@ fold-aside-layout {
   font-size: var(--fold-text-sm);
 }
 
-.od-total-row dt,
-.od-total-row dd {
+.od-total-row > * {
   margin: 0;
   white-space: nowrap;
 }
@@ -374,7 +394,7 @@ fold-aside-layout {
   padding: var(--fold-space-sm) var(--fold-space-xs);
   border: 0;
   border-radius: var(--fold-radius-sm);
-  background: transparent;
+  background: none;
   font: inherit;
   text-align: start;
 }
@@ -457,7 +477,6 @@ fold-aside-layout {
 }
 
 .od-pill--add {
-  margin-inline-start: var(--fold-space-xs);
   background: color-mix(in srgb, var(--fold-color-success) 16%, transparent);
   color: var(--fold-color-success);
 }
@@ -472,29 +491,34 @@ fold-aside-layout {
 // concurrencer le montant.
 .od-step {
   display: inline-block;
-  margin-left: var(--fold-space-xs, 0.25rem);
-  padding: 0 var(--fold-space-xs, 0.25rem);
-  border-radius: var(--fold-radius-sm, 3px);
-  background: var(--fold-color-surface-sunken, rgb(0 0 0 / 4%));
+  padding: 0 var(--fold-space-xs);
+  border-radius: var(--fold-radius-sm);
+  background: var(--fold-color-surface-sunken);
   color: var(--fold-color-text-muted);
   font-size: 0.75rem;
+}
+
+// Ce qui suit le nom d'un article s'en écarte d'autant.
+.od-pill--add,
+.od-step,
+.od-why {
+  margin-inline-start: var(--fold-space-xs);
 }
 
 // Le prix relevé par une limite : une règle n'y a PAS produit son effet, et
 // c'est exactement ce qu'un client remarque avant nous.
 .od-pill--floor {
-  background: var(--fold-color-warning-surface, rgb(180 120 0 / 10%));
+  background: var(--fold-color-warning-surface);
 }
 
 .od-was {
-  margin-right: var(--fold-space-xs, 0.25rem);
+  margin-right: var(--fold-space-xs);
   color: var(--fold-color-text-muted);
 }
 
 /* Le geste d'explication : discret dans la ligne, lisible au clavier. Aucune
    couleur écrite — la teinte vient du lien de la surface courante. */
 .od-why {
-  margin-left: var(--fold-space-xs);
   padding: 0;
   border: 0;
   background: none;

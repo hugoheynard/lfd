@@ -72,8 +72,8 @@
               <th scope="col" class="od-col-sku">SKU</th>
               <th scope="col" class="od-col-qty">Qté</th>
               <th scope="col">Article</th>
-              <th scope="col" class="od-col-num">PU HT</th>
-              <th scope="col" class="od-col-num">TVA</th>
+              <th scope="col" class="od-col-num od-col-unit">PU HT</th>
+              <th scope="col" class="od-col-num od-col-vat">TVA</th>
               <th scope="col" class="od-col-num">Total HT</th>
             </tr>
           </thead>
@@ -110,7 +110,7 @@
                     </button>
                   }
                 </td>
-                <td class="od-col-num">
+                <td class="od-col-num od-col-unit">
                   @if (entryPriceOf(line); as entry) {
                     <!-- Le tarif d'entrée, barré : c'est lui qui rend la remise
                          lisible. `<s>` et non une classe — la rature doit exister
@@ -119,7 +119,7 @@
                   }
                   {{ fmtMillicents(line.unitPriceMillicents) }}
                 </td>
-                <td class="od-col-num od-muted">{{ fmtVat(line.vatRate) }}</td>
+                <td class="od-col-num od-col-vat od-muted">{{ fmtVat(line.vatRate) }}</td>
                 <td class="od-col-num">{{ fmtCents(line.lineTotalCents) }}</td>
               </tr>
             }
