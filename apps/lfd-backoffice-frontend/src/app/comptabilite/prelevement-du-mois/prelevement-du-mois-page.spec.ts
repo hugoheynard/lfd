@@ -180,6 +180,7 @@ const ENTITY: Partial<LegalEntityView> = {
   autoCollectionEnabled: false,
   lastAutopilotRun: null,
   billingModes: [],
+  lastClosure: SEPTEMBER_CLOSURE,
   nextCollection: {
     closesAt: NEXT_CLOSURE,
     plannedConstitutionAt: '2026-11-01T00:00:00.000Z',
@@ -247,12 +248,12 @@ function button(
 }
 
 describe('PrelevementDuMoisPage', () => {
-  it('se lit dans l’ordre du mois : calendrier, aperçu, factures, lot à traiter', async () => {
+  it('se lit clôture par clôture : calendrier, aperçu, factures, lot à traiter', async () => {
     const body = text(await render(new FakeApi()));
 
     const order = [
-      'Le calendrier du mois',
-      'Le mois en cours — octobre',
+      'Le calendrier de la prochaine clôture',
+      'La période en cours — clôture du 1er novembre 2026',
       'Les factures du 1er au 30 septembre 2026',
       'Le lot à traiter',
     ].map((heading) => body.indexOf(heading));
@@ -353,7 +354,7 @@ describe('PrelevementDuMoisPage', () => {
     );
   });
 
-  it('pas encore prélevable : nomme la clôture du premier mois prélevable', async () => {
+  it('pas encore prélevable : nomme la clôture de la première période prélevable', async () => {
     const api = new FakeApi();
     api.previewView = {
       state: 'not_yet_open',
@@ -376,19 +377,19 @@ describe('PrelevementDuMoisPage', () => {
     expect(button(fixture, 'Marquer déposé')).toBeDefined();
   });
 
-  it('le bouton nomme le mois clos, et prépare son lot', async () => {
+  it('le bouton nomme la dernière clôture, et prépare son lot (M4b)', async () => {
     const api = new FakeApi();
     api.view = { batches: [], exclusions: [] };
     const fixture = await render(api);
 
-    expect(text(fixture)).toContain('Le lot de septembre n’est pas encore préparé.');
-    button(fixture, 'Préparer le lot de septembre')?.click();
+    expect(text(fixture)).toContain('Le lot du 1er octobre 2026 n’est pas encore préparé.');
+    button(fixture, 'Préparer le lot du 1er octobre 2026')?.click();
     await settle(fixture);
 
     expect(api.constituted).toBe(1);
   });
 
-  it('le lot de septembre déjà là : pas de bouton à refuser', async () => {
+  it('le lot de la dernière clôture déjà là : pas de bouton à refuser', async () => {
     const fixture = await render(new FakeApi());
 
     expect(host(fixture).querySelector('[data-prepare]')).toBeNull();
@@ -398,12 +399,14 @@ describe('PrelevementDuMoisPage', () => {
     const api = new FakeApi();
     api.view = { batches: [], exclusions: [] };
     const fixture = await render(api);
-    api.refuse = { error: { message: 'Le premier mois prélevable se clôt le 1er novembre 2026.' } };
+    api.refuse = {
+      error: { message: 'La première période prélevable se clôt le 1er novembre 2026.' },
+    };
 
-    button(fixture, 'Préparer le lot de septembre')?.click();
+    button(fixture, 'Préparer le lot du 1er octobre 2026')?.click();
     await settle(fixture);
 
-    expect(text(fixture)).toContain('Le premier mois prélevable se clôt le 1er novembre 2026.');
+    expect(text(fixture)).toContain('La première période prélevable se clôt le 1er novembre 2026.');
   });
 
   it('le lot à traiter : ses dates, son signalement, et le dépôt bloqué sans mandat', async () => {
@@ -423,7 +426,7 @@ describe('PrelevementDuMoisPage', () => {
     };
     const fixture = await render(api);
 
-    expect(text(fixture)).toContain('Lot de septembre — B2B');
+    expect(text(fixture)).toContain('Lot du 1er au 30 septembre 2026 — B2B');
     expect(text(fixture)).toContain('15 oct. 2026');
     expect(text(fixture)).toContain('à renseigner');
     expect(host(fixture).querySelector('[data-unmandated]')?.textContent).toContain(
@@ -507,9 +510,13 @@ describe('PrelevementDuMoisPage', () => {
     api.view = { batches: [batch({ status: 'deposited' })], exclusions: [] };
     const fixture = await render(api);
 
-    expect(host(fixture).querySelector('[data-history]')?.textContent).toContain('septembre');
+    expect(host(fixture).querySelector('[data-history]')?.textContent).toContain(
+      'du 1er au 30 septembre 2026',
+    );
     expect(button(fixture, 'Marquer déposé')).toBeUndefined();
-    expect(text(fixture)).toContain('Le lot de septembre est déjà déposé');
+    expect(text(fixture)).toContain(
+      'Le lot du 1er octobre 2026 est déjà déposé ; le suivant se prépare après la clôture du 1er novembre 2026.',
+    );
   });
 
   it('sans droit d’écriture, ni préparer ni déposer', async () => {

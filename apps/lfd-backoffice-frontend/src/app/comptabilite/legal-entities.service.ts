@@ -4,12 +4,14 @@ import { firstValueFrom } from 'rxjs';
 
 import type {
   AssignCreditorIdentifierPayload,
+  BillingRhythmKind,
   CorrectLegalEntityPayload,
   CreatedIdResponse,
   DeclareLegalEntityPayload,
   LegalEntityView,
   MandateSchemeUsageView,
   SetAutoCollectionPayload,
+  SetBillingModeDatesPayload,
   SetCollectionSchedulePayload,
   SetCreditorAccountPayload,
   SetInvoicePaymentTermsPayload,
@@ -185,6 +187,27 @@ export class LegalEntitiesService {
    */
   async setInvoicePaymentTerms(id: string, payload: SetInvoicePaymentTermsPayload): Promise<void> {
     await firstValueFrom(this.http.put<void>(`${this.base}/${id}/invoice-payment-terms`, payload));
+  }
+
+  /**
+   * Les dates d'un mode de facturation (plan `plan-rythme-de-facturation.md`,
+   * §16) — elles prennent effet à la prochaine clôture du mode, pour tous ses
+   * clients. Un second changement avant la prise d'effet revient en 409, avec
+   * les mots du serveur.
+   */
+  async setBillingModeDates(
+    id: string,
+    mode: BillingRhythmKind,
+    payload: SetBillingModeDatesPayload,
+  ): Promise<void> {
+    await firstValueFrom(this.http.put<void>(`${this.base}/${id}/billing-modes/${mode}`, payload));
+  }
+
+  /** Retire les dates programmées d'un mode, tant que leur prise d'effet n'est pas atteinte. */
+  async cancelScheduledBillingModeDates(id: string, mode: BillingRhythmKind): Promise<void> {
+    await firstValueFrom(
+      this.http.delete<void>(`${this.base}/${id}/billing-modes/${mode}/scheduled`),
+    );
   }
 
   async setArchived(id: string, archived: boolean): Promise<void> {

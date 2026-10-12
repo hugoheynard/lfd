@@ -118,9 +118,25 @@ export class InvoiceDossierPage {
     }
   }
 
-  protected onCompany(companyId: string): void {
+  /**
+   * Le payeur choisi, ses périodes (lot M4a) : un client hebdomadaire a ses
+   * semaines. La période choisie reste si elle est aussi l'une des siennes,
+   * sinon la plus récente des siennes la remplace.
+   */
+  protected async onCompany(companyId: string): Promise<void> {
     this.companyId.set(companyId);
-    void this.load();
+    this.state.set('loading');
+    try {
+      const { cycles } = await this.cyclesApi.cycles(companyId);
+      this.cycles.set(cycles);
+      const kept = cycles.find((cycle) => cycle.periodClosesAt === this.period());
+      this.period.set(kept?.periodClosesAt ?? cycles[0]?.periodClosesAt ?? null);
+    } catch {
+      this.dossier.set(null);
+      this.state.set('error');
+      return;
+    }
+    await this.load();
   }
 
   protected onPeriod(period: string): void {

@@ -49,6 +49,13 @@
       </article>
     </section>
 
+    <!-- Le mode de facturation du client (plan-rythme-de-facturation §16, M4b) :
+         il dit quand ses périodes se ferment, avant les factures qu'elles
+         produisent. -->
+    @if (company(); as company) {
+      <app-payer-billing-mode-card [company]="company" />
+    }
+
     <!-- Les factures émises (facture-emise.md) : les pièces
          figées, adressées à ce payeur. Le registre plus bas reste un relevé
          des commandes, pas des factures. -->

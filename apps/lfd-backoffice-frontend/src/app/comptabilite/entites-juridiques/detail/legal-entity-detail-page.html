@@ -303,11 +303,11 @@
       </fold-page-section>
     </fold-card>
 
-    <!-- Le rythme AVANT le prélèvement : c'est lui qui pose les clôtures que
-         le calendrier de prélèvement compte ensuite (plan
-         `plan-rythme-de-facturation.md`, §6). -->
+    <!-- Les dates des modes AVANT le prélèvement : ce sont elles qui posent
+         les clôtures que le calendrier de prélèvement compte ensuite (plan
+         `plan-rythme-de-facturation.md`, §16). -->
     <fold-card>
-      <app-billing-modes-card [entity]="entity" />
+      <app-billing-modes-card [entity]="entity" [busy]="busy()" (saved)="runSaved($event)" />
     </fold-card>
 
     <!-- Juste après le délai de pré-notification : l'échéance ne peut pas le

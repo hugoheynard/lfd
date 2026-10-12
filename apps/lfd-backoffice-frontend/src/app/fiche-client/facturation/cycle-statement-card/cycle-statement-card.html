@@ -4,7 +4,7 @@
     variant="title"
     icon="receipt"
     title="Relevé de cycle"
-    subtitle="Les commandes passées au compte sur un mois, et ce qu’elles doivent. Calculé par le serveur, au centime du prélèvement."
+    subtitle="Les commandes passées au compte sur une période, et ce qu’elles doivent. Calculé par le serveur, au centime du prélèvement."
   >
     <span titleAction class="actions">
       @if (canExport()) {
@@ -27,7 +27,7 @@
     @if (cycleChoices().length > 0) {
       <fold-listbox
         label="Cycle"
-        hint="Un cycle va du 1er du mois à 00h00 au 1er du mois suivant, heure de Paris."
+        hint="Les périodes de ce client, selon son mode de facturation : chacune va d’une clôture à 00h00 (heure de Paris) à la suivante."
         [options]="cycleChoices()"
         [value]="period()"
         (selectionChange)="onPeriod($event)"

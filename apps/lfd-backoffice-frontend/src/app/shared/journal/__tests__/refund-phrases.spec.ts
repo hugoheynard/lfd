@@ -77,7 +77,7 @@ describe('les remboursements constatés', () => {
         }),
       ),
     ).toBe(
-      'Un remboursement Stripe de 5,00 € sur la commande CMD-142 reste sans avoir automatique sur la facture « FA-2026-000004 » : la commande est sur une facture du mois — avoir à émettre à la main',
+      'Un remboursement Stripe de 5,00 € sur la commande CMD-142 reste sans avoir automatique sur la facture « FA-2026-000004 » : la commande est sur une facture par période — avoir à émettre à la main',
     );
   });
 

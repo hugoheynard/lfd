@@ -27,7 +27,7 @@ import {
 
 import { httpErrorMessage } from '@lfd/endpoints';
 
-import { batchMonthName, ofMonth } from '../../collection-month-wording';
+import { periodBetween } from '../../collection-month-wording';
 import { CollectionReturnsService } from '../../collection-returns.service';
 import { euros } from '../../invoice-dossier-format';
 import { ImportReturnsPanel } from '../import-returns-panel/import-returns-panel';
@@ -93,7 +93,7 @@ export class BankReturns {
   protected readonly options = computed(() =>
     this.batches().map((batch) => ({
       value: batch.id,
-      label: `Lot ${ofMonth(batchMonthName(batch.cycleClosesAt))} — ${batch.scheme}`,
+      label: `Lot ${periodBetween(batch.cycleStartsAt, batch.cycleClosesAt)} — ${batch.scheme}`,
     })),
   );
 

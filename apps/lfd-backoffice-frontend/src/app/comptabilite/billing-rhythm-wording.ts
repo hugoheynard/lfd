@@ -4,6 +4,7 @@ import {
   type UpcomingClosureView,
 } from '@lfd/contracts';
 
+import { longDay } from './collection-month-wording';
 import { day } from './invoice-dossier-format';
 
 /**
@@ -40,26 +41,49 @@ export const SHORT_PERIOD_DAYS = 3;
 
 const MS_PER_DAY = 86_400_000;
 
-/** Le genre, tel que le choix à trois le dit — « Chaque mois » plutôt que « Mensuel ». */
-export const RHYTHM_KIND_CHOICES: readonly {
+/**
+ * Le mode d'un client, tel que le choix à trois le dit (plan §16.9, M4b) : le
+ * mensuel porte « par défaut », parce qu'un client qui n'a rien choisi l'est.
+ */
+export const PAYER_MODE_CHOICES: readonly {
   readonly value: BillingRhythmKind;
   readonly label: string;
 }[] = [
-  { value: 'monthly', label: 'Chaque mois' },
+  { value: 'monthly', label: `${BILLING_RHYTHM_KIND_LABELS.monthly} — par défaut` },
   { value: 'semimonthly', label: BILLING_RHYTHM_KIND_LABELS.semimonthly },
   { value: 'weekly', label: BILLING_RHYTHM_KIND_LABELS.weekly },
 ];
 
-/** Les jours par défaut quand on change de genre : 1er ; 1er et 16 ; lundi. */
-export function defaultDays(kind: BillingRhythmKind): readonly number[] {
-  switch (kind) {
-    case 'monthly':
-      return [1];
-    case 'semimonthly':
-      return [1, 16];
-    case 'weekly':
-      return [1];
-  }
+/** L'avertissement permanent « un seul changement à la fois » (§12), écrit une fois. */
+export const ONE_CHANGE_AT_A_TIME =
+  'Un seul changement à la fois : le nouveau réglage prend effet à la prochaine clôture ; ' +
+  'le suivant ne sera possible qu’après.';
+
+/** La ligne qui dit ce qu'est une date de clôture — la même sur les deux fiches. */
+export const CLOSURE_TIME_SENTENCE =
+  'La date est celle de la clôture, à 00h00 : la facture de la période part la veille à 23h55.';
+
+/**
+ * « 3 clients ont choisi ce mode ». Le mensuel ne compte pas ceux qui n'ont
+ * rien choisi (décision de Hugo, plan §16.9-6) — la phrase le dit plutôt que
+ * de laisser croire à un total.
+ */
+export function payersSentence(mode: BillingRhythmKind, count: number): string {
+  const chosen =
+    count === 0
+      ? 'Aucun client n’a choisi ce mode'
+      : `${String(count)} client${count > 1 ? 's ont' : ' a'} choisi ce mode`;
+  return mode === 'monthly'
+    ? `${chosen} ; les clients qui n’ont rien choisi sont aussi au mensuel, et ne sont pas comptés.`
+    : `${chosen}.`;
+}
+
+/** « Prise d'effet à la clôture du 1er novembre 2026 » — la première clôture à venir. */
+export function effectiveClosureSentence(closures: readonly UpcomingClosureView[]): string {
+  const first = closures[0];
+  return first === undefined
+    ? 'à la prochaine clôture'
+    : `à la clôture du ${longDay(first.closesAt)}`;
 }
 
 const ordinal = (day: number): string => (day === 1 ? '1er' : String(day));

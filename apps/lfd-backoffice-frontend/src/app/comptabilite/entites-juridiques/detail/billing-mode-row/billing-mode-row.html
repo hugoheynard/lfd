@@ -1,0 +1,102 @@
+<section class="bm-row" [attr.data-billing-mode]="mode().mode">
+  <h3 class="bm-heading">{{ label() }}</h3>
+  <p class="bm-state" data-mode-current>{{ current() }}.</p>
+
+  @if (scheduled(); as next) {
+    <fold-callout appearance="inset" variant="info" data-mode-scheduled>
+      Programmé&nbsp;: {{ next.sentence }}, à partir de la clôture du {{ next.effectiveOn }}.
+      <div actions>
+        <fold-inline-confirm
+          intent="primary"
+          message="Garder les dates en vigueur et retirer le changement programmé ?"
+          [labels]="{ confirm: 'Annuler le changement' }"
+          (confirmed)="cancelScheduled()"
+        >
+          <button foldButton size="sm" emphasis="outline" [disabled]="busy()" data-mode-cancel>
+            Annuler ce changement
+          </button>
+        </fold-inline-confirm>
+      </div>
+    </fold-callout>
+  }
+  @if (shortPeriod(); as sentence) {
+    <fold-callout appearance="inset" variant="warning" data-mode-short>{{ sentence }}</fold-callout>
+  }
+
+  <ul class="bm-list" data-mode-closures>
+    @for (line of closures(); track line) {
+      <li>{{ line }}</li>
+    } @empty {
+      <li>Aucune clôture à venir n'est annoncée.</li>
+    }
+  </ul>
+  <p class="bm-said" data-mode-payers>{{ payers() }}</p>
+
+  <fold-callout appearance="inset" variant="warning" data-mode-rule>{{ rule }}</fold-callout>
+  @if (lockedUntil(); as until) {
+    <p class="bm-said" data-mode-locked>
+      Un changement attend sa prise d'effet&nbsp;: ces dates seront de nouveau modifiables à partir
+      du {{ until }}.
+    </p>
+  }
+
+  <div class="bm-fields">
+    @switch (mode().mode) {
+      @case ('monthly') {
+        <fold-number-input
+          [label]="'Jour de clôture (1 à ' + lastDay + ')'"
+          integer
+          [min]="1"
+          [max]="lastDay"
+          [disabled]="lockedUntil() !== null"
+          [value]="daysDraft()[0] ?? null"
+          (valueChange)="setDay(0, $event)"
+        />
+      }
+      @case ('semimonthly') {
+        <fold-number-input
+          [label]="'Première clôture (1 à ' + lastDay + ')'"
+          integer
+          [min]="1"
+          [max]="lastDay"
+          [disabled]="lockedUntil() !== null"
+          [value]="daysDraft()[0] ?? null"
+          (valueChange)="setDay(0, $event)"
+        />
+        <fold-number-input
+          [label]="'Seconde clôture (1 à ' + lastDay + ')'"
+          integer
+          [min]="1"
+          [max]="lastDay"
+          [disabled]="lockedUntil() !== null"
+          [value]="daysDraft()[1] ?? null"
+          (valueChange)="setDay(1, $event)"
+        />
+      }
+      @case ('weekly') {
+        <fold-listbox
+          label="Jour de clôture"
+          [options]="weekdayChoices"
+          [disabled]="lockedUntil() !== null"
+          [value]="daysDraft()[0] ?? null"
+          (valueChange)="setDay(0, $event)"
+        />
+      }
+    }
+  </div>
+
+  @if (lockedUntil() === null && problem(); as message) {
+    <p class="bm-said" data-mode-problem>{{ message }}</p>
+  }
+
+  <div class="bm-actions">
+    <fold-inline-confirm
+      intent="primary"
+      [message]="confirmMessage()"
+      [labels]="{ confirm: 'Changer les dates' }"
+      (confirmed)="save()"
+    >
+      <button foldButton [disabled]="!canSave()" data-mode-save>Enregistrer</button>
+    </fold-inline-confirm>
+  </div>
+</section>

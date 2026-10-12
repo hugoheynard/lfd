@@ -4,7 +4,7 @@
     variant="title"
     icon="receipt"
     title="Dossier de facturation"
-    subtitle="La facture d’un payeur pour un cycle, calculée en une fois, à côté des bons qu’elle couvre et des écarts qui les séparent. Simulée : rien n’est émis ni prélevé sur sa base."
+    subtitle="La facture d’un payeur pour une de ses périodes, calculée en une fois, à côté des bons qu’elle couvre et des écarts qui les séparent. Simulée : rien n’est émis ni prélevé sur sa base."
   />
 
   <div class="choose">
@@ -25,7 +25,7 @@
         />
         <fold-listbox
           label="Cycle"
-          hint="Les bons passés dans le mois, comme au relevé et au prélèvement."
+          hint="Les périodes du payeur choisi, selon son mode de facturation — comme au relevé et au prélèvement."
           [options]="cycleChoices()"
           [value]="period()"
           (selectionChange)="onPeriod($event)"

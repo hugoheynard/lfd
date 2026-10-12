@@ -333,7 +333,7 @@ describe('TableauDeBordPage — le résumé du prélèvement du mois', () => {
     };
     const { fixture } = await render(new FakeDashboard(), ready(), batches);
 
-    expect(text(fixture)).toContain('le premier mois prélevable se clôt le 1er décembre 2026');
+    expect(text(fixture)).toContain('la première période prélevable se clôt le 1er décembre 2026');
   });
 
   it('🔴 un aperçu illisible coûte sa phrase, pas la carte', async () => {

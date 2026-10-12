@@ -43,8 +43,8 @@ import { CycleStatementService } from '../cycle-statement.service';
 type LoadState = 'loading' | 'ready' | 'error';
 
 /**
- * **Le relevé de cycle** d'un client — ce qu'il doit pour un mois, commande
- * par commande (plan `agregation-des-commandes`, A2).
+ * **Le relevé de cycle** d'un client — ce qu'il doit pour une de SES
+ * périodes (celles de son mode de facturation), commande par commande (plan `agregation-des-commandes`, A2).
  *
  * Provisoire, et l'écran le dit : tant qu'aucun lot n'est figé (S4-0), le
  * relevé est recalculé à chaque lecture, et une commande annulée après coup en
@@ -201,7 +201,7 @@ export class CycleStatementCard {
   private async loadCycles(companyId: string): Promise<void> {
     this.state.set('loading');
     try {
-      const { cycles } = await this.service.cycles();
+      const { cycles } = await this.service.cycles(companyId);
       this.cycles.set(cycles);
       const first = cycles[0];
       if (first === undefined) {

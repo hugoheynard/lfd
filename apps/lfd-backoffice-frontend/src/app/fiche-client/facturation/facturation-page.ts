@@ -33,6 +33,7 @@ import { CycleStatementCard } from './cycle-statement-card/cycle-statement-card'
 import { CollectionReturnsCard } from '../collection-returns-card/collection-returns-card';
 import { DetachedUnpaidCard } from '../detached-unpaid-card/detached-unpaid-card';
 import { IssuedInvoicesCard } from '../issued-invoices-card/issued-invoices-card';
+import { PayerBillingModeCard } from '../payer-billing-mode-card/payer-billing-mode-card';
 import {
   groupByYear,
   ledgerRows,
@@ -72,6 +73,7 @@ const ORDERS_WINDOW = 200;
     CycleStatementCard,
     DetachedUnpaidCard,
     IssuedInvoicesCard,
+    PayerBillingModeCard,
     FoldBadgeComponent,
     FoldButtonComponent,
     FoldCalloutComponent,
@@ -92,7 +94,7 @@ export class ClientFacturationPage {
 
   protected readonly state = signal<LoadState>('loading');
   private readonly rows = signal<readonly AdminOrderRow[]>([]);
-  private readonly company = signal<AdminCompanyDetail | null>(null);
+  protected readonly company = signal<AdminCompanyDetail | null>(null);
 
   protected readonly split = computed(() => splitForBilling(this.rows(), new Date()));
 

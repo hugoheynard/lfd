@@ -1,7 +1,7 @@
 <fold-page-layout title="Prélèvement du mois" separator>
   <p description>
-    Le mois se lit de haut en bas&nbsp;: ses dates, ce qui sera prélevé à sa fin, ses factures, le
-    lot à déposer à la banque, puis les lots passés.
+    L'écran se lit de haut en bas, clôture par clôture&nbsp;: les dates de la prochaine, ce qui sera
+    prélevé, les factures de la période close, le lot à déposer à la banque, puis les lots passés.
   </p>
 
   @if (loading()) {
@@ -25,13 +25,13 @@
         />
       }
 
-      <!-- 1. Le calendrier du mois. -->
+      <!-- 1. Le calendrier de la prochaine clôture. -->
       <app-month-schedule [entity]="current" />
 
-      <!-- 2. Le mois en cours : l'aperçu, calculé comme le lot. -->
+      <!-- 2. La période en cours : l'aperçu, calculé comme le lot. -->
       <app-month-preview [entity]="current" [preview]="preview()" [error]="previewError()" />
 
-      <!-- 3. Les factures du mois : le lot du 1er les encaisse. -->
+      <!-- 3. Les factures de la période close : le lot de cette clôture les encaisse. -->
       <app-month-invoices
         [view]="invoices()"
         [error]="invoicesError()"

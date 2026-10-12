@@ -109,7 +109,7 @@ export const REFUND_REJECTION = domain('motif de refus d’un remboursement', {
 
 /** Pourquoi un remboursement réussi reste sans avoir automatique (`order.refund_not_credited`, E5b). */
 export const REFUND_NOT_CREDITED = domain('motif d’un remboursement sans avoir', {
-  account_invoice: 'La commande est sur une facture du mois — avoir à émettre à la main',
+  account_invoice: 'La commande est sur une facture par période — avoir à émettre à la main',
   exceeds_invoice: 'Au-delà de ce que la facture porte encore',
 });
 

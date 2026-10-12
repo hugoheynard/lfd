@@ -14,8 +14,8 @@
       [rowKey]="rowKey"
       data-history
     >
-      <ng-template foldCell="month" let-row>
-        {{ monthOf(row) }}
+      <ng-template foldCell="period" let-row>
+        {{ periodOf(row) }}
         @if (row.constitutedBy === 'system') {
           <span class="bh-auto" data-batch-auto>· préparé automatiquement</span>
         }

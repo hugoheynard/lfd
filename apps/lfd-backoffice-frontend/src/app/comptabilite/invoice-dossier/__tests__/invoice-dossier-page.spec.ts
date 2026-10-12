@@ -14,6 +14,19 @@ import { InvoiceDossierPage, stateOfFailure } from '../invoice-dossier-page';
 const OCTOBER = '2026-10-31T23:00:00.000Z';
 const SEPTEMBER = '2026-09-30T22:00:00.000Z';
 
+/** Les semaines d'un payeur hebdomadaire — ce que `/cycles?companyId=` lui rend. */
+const WEEK = '2026-10-11T22:00:00.000Z';
+const WEEKS = {
+  cycles: [
+    {
+      periodClosesAt: WEEK,
+      periodStartsAt: '',
+      periodLabel: 'du 5 au 11 octobre 2026',
+      inProgress: false,
+    },
+  ],
+};
+
 const CYCLES = {
   cycles: [
     {
@@ -34,7 +47,9 @@ const CYCLES = {
 async function mount(answer: InvoiceDossierView | HttpErrorResponse): Promise<{
   readonly page: InvoiceDossierPage;
   readonly read: ReturnType<typeof vi.fn>;
+  readonly cyclesOf: (string | undefined)[];
 }> {
+  const cyclesOf: (string | undefined)[] = [];
   const read = vi.fn(async () => {
     if (answer instanceof HttpErrorResponse) {
       throw answer;
@@ -44,7 +59,15 @@ async function mount(answer: InvoiceDossierView | HttpErrorResponse): Promise<{
   TestBed.configureTestingModule({
     providers: [
       { provide: InvoiceDossierService, useValue: { dossier: read, exportCsv: vi.fn() } },
-      { provide: CycleStatementService, useValue: { cycles: async () => CYCLES } },
+      {
+        provide: CycleStatementService,
+        useValue: {
+          cycles: async (companyId?: string) => {
+            cyclesOf.push(companyId);
+            return companyId === 'weekly' ? WEEKS : CYCLES;
+          },
+        },
+      },
       {
         provide: DirectDebitBlocksService,
         useValue: {
@@ -64,7 +87,7 @@ async function mount(answer: InvoiceDossierView | HttpErrorResponse): Promise<{
   });
   const page = TestBed.runInInjectionContext(() => new InvoiceDossierPage());
   await TestBed.runInInjectionContext(() => page['loadChoices']());
-  return { page, read };
+  return { page, read, cyclesOf };
 }
 
 function httpError(status: number, message: string): HttpErrorResponse {
@@ -95,6 +118,18 @@ describe("l'écran du dossier de facturation", () => {
     page['onPeriod'](SEPTEMBER);
     await vi.waitFor(() => expect(read).toHaveBeenLastCalledWith('c1', SEPTEMBER));
     expect(page['dossier']()?.companyName).toBe('Café du Port');
+  });
+
+  it('le payeur choisi apporte SES périodes, et la période suit (M4b)', async () => {
+    const { page, read, cyclesOf } = await mount(dossier());
+
+    page['onCompany']('weekly');
+    await vi.waitFor(() => expect(read).toHaveBeenLastCalledWith('weekly', WEEK));
+    expect(cyclesOf.at(0)).toBeUndefined();
+    expect(cyclesOf.at(-1)).toBe('weekly');
+    expect(page['cycleChoices']().map((choice) => choice.label)).toEqual([
+      'du 5 au 11 octobre 2026',
+    ]);
   });
 
   it('affiche tel quel le message du 409, qui nomme le bon', async () => {

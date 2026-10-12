@@ -119,6 +119,8 @@ function payerStatementOf(month: string): CycleStatementView {
 
 interface Wire {
   readonly asked: string[];
+  /** Le client passé à chaque lecture des périodes. */
+  readonly cyclesOf: (string | undefined)[];
   unventilated: number;
   /** Remplace le relevé simple. */
   view: ((month: string) => CycleStatementView) | null;
@@ -128,7 +130,7 @@ function boot(permissions: readonly StaffPermission[]): {
   fixture: ComponentFixture<CycleStatementCard>;
   wire: Wire;
 } {
-  const wire: Wire = { asked: [], unventilated: 0, view: null };
+  const wire: Wire = { asked: [], cyclesOf: [], unventilated: 0, view: null };
   TestBed.resetTestingModule();
   TestBed.configureTestingModule({
     providers: [
@@ -141,7 +143,10 @@ function boot(permissions: readonly StaffPermission[]): {
       {
         provide: CycleStatementService,
         useValue: {
-          cycles: () => Promise.resolve(CYCLES),
+          cycles: (companyId?: string) => {
+            wire.cyclesOf.push(companyId);
+            return Promise.resolve(CYCLES);
+          },
           statement: (_id: string, month: string) => {
             wire.asked.push(month);
             return Promise.resolve(wire.view?.(month) ?? statementOf(month, wire.unventilated));
@@ -167,6 +172,13 @@ async function settle(fixture: ComponentFixture<CycleStatementCard>): Promise<vo
 }
 
 describe('CycleStatementCard', () => {
+  it('le sélecteur propose les périodes DU client (M4b)', async () => {
+    const { fixture, wire } = boot(['b2b_companies:read']);
+    await settle(fixture);
+
+    expect(wire.cyclesOf).toEqual(['c1']);
+  });
+
   it('ouvre sur le cycle en cours, et le dit provisoire avec son périmètre', async () => {
     const { fixture, wire } = boot(['b2b_companies:read']);
     await settle(fixture);

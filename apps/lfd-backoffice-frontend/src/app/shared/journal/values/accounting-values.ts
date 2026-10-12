@@ -63,7 +63,7 @@ export const NOTICE_RECIPIENT_SOURCE = domain('destinataire d’un avis de prél
 export const AUTOPILOT_OUTCOME = domain('issue de la préparation automatique', {
   constituted: 'Lot préparé',
   nothing_to_collect: 'Rien à prélever',
-  not_yet_open: 'Mois pas encore prélevable',
+  not_yet_open: 'Période pas encore prélevable',
   failed: 'Échec',
   missed: 'Passage manqué, lot à préparer à la main',
 });
@@ -72,7 +72,7 @@ export const AUTOPILOT_OUTCOME = domain('issue de la préparation automatique', 
 export const INVOICE_AUTOPILOT_OUTCOME = domain('issue du passage automatique de la facture', {
   issued: 'Factures émises',
   nothing_to_invoice: 'Rien à facturer',
-  not_yet_open: 'Facture du mois pas encore en service',
+  not_yet_open: 'Facture par période pas encore en service',
   failed: 'Échec',
 });
 

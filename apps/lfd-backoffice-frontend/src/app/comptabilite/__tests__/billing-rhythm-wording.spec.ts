@@ -1,7 +1,9 @@
 import { describe, expect, it } from 'vitest';
 
 import {
-  defaultDays,
+  effectiveClosureSentence,
+  PAYER_MODE_CHOICES,
+  payersSentence,
   rhythmDraftProblem,
   rhythmSentence,
   sameRhythm,
@@ -18,10 +20,33 @@ describe('les mots du rythme de facturation', () => {
     expect(rhythmSentence({ kind: 'weekly', days: [1] })).toBe('Chaque semaine, clôture le lundi');
   });
 
-  it('propose 1er, 1er et 16, lundi', () => {
-    expect(defaultDays('monthly')).toEqual([1]);
-    expect(defaultDays('semimonthly')).toEqual([1, 16]);
-    expect(defaultDays('weekly')).toEqual([1]);
+  it('propose les trois modes d’un client, le mensuel par défaut', () => {
+    expect(PAYER_MODE_CHOICES.map((choice) => choice.label)).toEqual([
+      'Mensuel — par défaut',
+      'Deux fois par mois',
+      'Chaque semaine',
+    ]);
+  });
+
+  it('compte les clients qui ont choisi, et dit que le mensuel par défaut ne l’est pas', () => {
+    expect(payersSentence('weekly', 1)).toBe('1 client a choisi ce mode.');
+    expect(payersSentence('semimonthly', 0)).toBe('Aucun client n’a choisi ce mode.');
+    expect(payersSentence('monthly', 3)).toBe(
+      '3 clients ont choisi ce mode ; les clients qui n’ont rien choisi sont aussi au mensuel, et ne sont pas comptés.',
+    );
+  });
+
+  it('nomme la prise d’effet par la première clôture à venir', () => {
+    expect(
+      effectiveClosureSentence([
+        {
+          closesAt: '2026-10-31T23:00:00.000Z',
+          periodLabel: 'du 1er au 31 octobre 2026',
+          invoicedOn: '2026-10-31',
+        },
+      ]),
+    ).toBe('à la clôture du 1er novembre 2026');
+    expect(effectiveClosureSentence([])).toBe('à la prochaine clôture');
   });
 
   it('refuse la forme : vide, au-delà du 28, deux jours égaux', () => {

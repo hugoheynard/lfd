@@ -1,21 +1,17 @@
 /**
  * Les mots de l'écran **Prélèvement du mois** (plan
- * `documentation/comptabilite/prelevement/prelevement-automatique.md`, PA4) : un mois
- * se nomme par son nom, jamais par « cycle » ni par une plage d'instants.
+ * `documentation/comptabilite/prelevement/prelevement-automatique.md`, PA4).
+ * Depuis M4b (plan `plan-rythme-de-facturation.md`, §16.9), un lot se nomme
+ * par sa CLÔTURE et sa période, plus par un mois : les clients hebdomadaires
+ * et bimensuels en ferment plusieurs par mois. L'écran garde son nom, que
+ * trois messages du serveur citent.
  *
- * ## Le mois d'une clôture se lit à Paris
+ * ## Une clôture se lit à Paris
  *
- * Une clôture est le 1er à 00h00 de Paris, soit la veille au soir en UTC. Le
- * mois qu'elle FERME est celui de l'instant juste avant elle, lu dans le
- * fuseau des affaires — le lire en UTC nommerait le bon mois par hasard
- * seulement.
+ * Une clôture est à 00h00 de Paris, soit la veille au soir en UTC. Le dernier
+ * jour qu'elle FERME est celui de l'instant juste avant elle, lu dans le
+ * fuseau des affaires.
  */
-
-const PARIS_MONTH = new Intl.DateTimeFormat('fr-FR', {
-  year: 'numeric',
-  month: 'numeric',
-  timeZone: 'Europe/Paris',
-});
 
 const LONG_DAY = new Intl.DateTimeFormat('fr-FR', {
   day: 'numeric',
@@ -24,78 +20,48 @@ const LONG_DAY = new Intl.DateTimeFormat('fr-FR', {
   timeZone: 'Europe/Paris',
 });
 
-interface YearMonth {
-  readonly year: number;
-  /** 1 à 12. */
-  readonly month: number;
+interface DayParts {
+  readonly day: string;
+  readonly month: string;
+  readonly year: string;
 }
 
-/** Le mois civil (Paris) que cette clôture ferme. */
-function monthClosedBy(closesAtIso: string): YearMonth {
-  const before = new Date(new Date(closesAtIso).getTime() - 1);
-  const parts = PARIS_MONTH.formatToParts(before);
-  const value = (type: 'year' | 'month'): number =>
-    Number(parts.find((part) => part.type === type)?.value);
-  return { year: value('year'), month: value('month') };
+function partsOf(instant: Date): DayParts {
+  const parts = LONG_DAY.formatToParts(instant);
+  const part = (type: Intl.DateTimeFormatPartTypes): string =>
+    parts.find((entry) => entry.type === type)?.value ?? '';
+  const day = part('day');
+  return { day: day === '1' ? '1er' : day, month: part('month'), year: part('year') };
 }
 
-function previous({ year, month }: YearMonth): YearMonth {
-  return month === 1 ? { year: year - 1, month: 12 } : { year, month: month - 1 };
+/**
+ * « du 1er au 30 septembre 2026 », « du 28 septembre au 4 octobre 2026 » — la
+ * période `[startsAt, closesAt[` d'un lot, jours de Paris, dernier jour
+ * inclus : la forme du libellé que le serveur écrit (`periodLabelOf`), pour
+ * les lots figés dont la vue ne porte que les deux instants.
+ */
+export function periodBetween(startsAtIso: string, closesAtIso: string): string {
+  const first = partsOf(new Date(startsAtIso));
+  const last = partsOf(new Date(new Date(closesAtIso).getTime() - 1));
+  const lastText = `${last.day} ${last.month} ${last.year}`;
+  if (first.year !== last.year) {
+    return `du ${first.day} ${first.month} ${first.year} au ${lastText}`;
+  }
+  if (first.month !== last.month) {
+    return `du ${first.day} ${first.month} au ${lastText}`;
+  }
+  return `du ${first.day} au ${lastText}`;
 }
 
-function nameOf({ year, month }: YearMonth): string {
-  return new Date(Date.UTC(year, month - 1, 15)).toLocaleDateString('fr-FR', {
-    month: 'long',
-    timeZone: 'UTC',
-  });
-}
-
-/** « octobre » — le mois que la PROCHAINE clôture fermera : celui de l'aperçu. */
-export function currentMonthName(nextClosesAtIso: string): string {
-  return nameOf(monthClosedBy(nextClosesAtIso));
-}
-
-/** « septembre » — le mois déjà clos, dont on prépare le lot. */
-export function monthToPrepareName(nextClosesAtIso: string): string {
-  return nameOf(previous(monthClosedBy(nextClosesAtIso)));
-}
-
-/** « septembre » — le mois d'un lot, lu sur la clôture qu'il porte. */
-export function batchMonthName(cycleClosesAtIso: string): string {
-  return nameOf(monthClosedBy(cycleClosesAtIso));
-}
-
-/** « septembre » — un mois écrit `AAAA-MM` (la facture du mois, E4). */
-export function monthKeyName(key: string): string {
-  return nameOf({ year: Number(key.slice(0, 4)), month: Number(key.slice(5, 7)) });
-}
-
-/** `2026-09` — le mois qu'une clôture ferme, comparable d'une année à l'autre. */
-export function closedMonthKey(cycleClosesAtIso: string): string {
-  return keyOf(monthClosedBy(cycleClosesAtIso));
-}
-
-/** `2026-09` — le mois clos dont on prépare le lot. */
-export function monthToPrepareKey(nextClosesAtIso: string): string {
-  return keyOf(previous(monthClosedBy(nextClosesAtIso)));
-}
-
-function keyOf({ year, month }: YearMonth): string {
-  return `${String(year)}-${String(month).padStart(2, '0')}`;
-}
-
-/** « de septembre », « d’octobre » : l'élision devant une voyelle. */
-export function ofMonth(name: string): string {
-  return /^[aeiouyàâéèêîôû]/iu.test(name) ? `d’${name}` : `de ${name}`;
+/** Deux instants ISO désignent-ils la même clôture ? Comparés en instants, pas en chaînes. */
+export function sameClosure(a: string, b: string): boolean {
+  return new Date(a).getTime() === new Date(b).getTime();
 }
 
 /** « 1er novembre 2026 » — un instant, en jour de Paris. */
 export function longDay(iso: string): string {
-  const parts = LONG_DAY.formatToParts(new Date(iso));
-  const part = (type: Intl.DateTimeFormatPartTypes): string =>
-    parts.find((entry) => entry.type === type)?.value ?? '';
-  const date = part('day') === '1' ? '1er' : part('day');
-  return `${date} ${part('month')} ${part('year')}`;
+  const { day, month, year } = partsOf(new Date(iso));
+  return `${day} ${month} ${year}`;
 }
 
 /** Pourquoi l'aperçu est vide quand la mise en service tombe après la clôture. */

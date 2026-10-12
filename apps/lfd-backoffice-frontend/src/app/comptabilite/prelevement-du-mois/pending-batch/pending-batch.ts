@@ -11,7 +11,7 @@ import {
 } from 'fold-ng';
 
 import { DEPOSIT_UNKNOWN } from '../../collection-schedule-wording';
-import { batchMonthName, ofMonth } from '../../collection-month-wording';
+import { periodBetween } from '../../collection-month-wording';
 import { unsentNoticePayers } from '../../collection-notice-wording';
 import { batchAuthorLabel } from '../../autopilot-run-wording';
 import { day, euros, instant } from '../../invoice-dossier-format';
@@ -54,7 +54,7 @@ export class PendingBatch {
 
   protected readonly title = computed(() => {
     const batch = this.batch();
-    return `Lot ${ofMonth(batchMonthName(batch.cycleClosesAt))} — ${batch.scheme}`;
+    return `Lot ${periodBetween(batch.cycleStartsAt, batch.cycleClosesAt)} — ${batch.scheme}`;
   });
 
   protected readonly collectionDay = computed(() => {

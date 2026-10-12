@@ -25,12 +25,7 @@ import {
 import { httpErrorMessage } from '@lfd/endpoints';
 
 import { saveBlob } from '../../../shared/download/save-blob';
-import {
-  currentMonthName,
-  emptyPreviewSentence,
-  longDay,
-  notYetOpenSentence,
-} from '../../collection-month-wording';
+import { emptyPreviewSentence, longDay, notYetOpenSentence } from '../../collection-month-wording';
 import { ComptabiliteDashboardService } from '../../comptabilite-dashboard.service';
 import { euros, signedEuros } from '../../invoice-dossier-format';
 
@@ -72,7 +67,7 @@ interface PreviewLineRow {
  *
  * ## Vide n'est jamais muet
  *
- * « Pas encore prélevable » nomme la clôture du premier mois prélevable ; un
+ * « Pas encore prélevable » nomme la clôture de la première période prélevable ; un
  * aperçu vide dit qu'il ne reste rien depuis la mise en service. Un zéro sans
  * phrase ferait chercher une panne.
  *
@@ -116,12 +111,12 @@ export class MonthPreview {
   protected readonly downloadError = signal<string | null>(null);
 
   /**
-   * Le mois se nomme : depuis M1 (plan `plan-rythme-de-facturation.md`, §16),
-   * l'aperçu suit le MODE MENSUEL de l'entité ; la période d'un autre mode se
-   * dira par ses jours avec M3/M4.
+   * La période en cours se nomme par sa clôture — celle du calendrier de
+   * l'entité, la plus proche de tous ses modes (plan
+   * `plan-rythme-de-facturation.md`, §16.10), plus par un mois.
    */
   protected readonly title = computed(
-    () => `Le mois en cours — ${currentMonthName(this.entity().nextCollection.closesAt)}`,
+    () => `La période en cours — clôture du ${longDay(this.entity().nextCollection.closesAt)}`,
   );
   protected readonly subtitle = computed(
     () =>

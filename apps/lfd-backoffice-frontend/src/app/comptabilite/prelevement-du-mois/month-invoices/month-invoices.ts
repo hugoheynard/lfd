@@ -77,7 +77,7 @@ export function autopilotSentence(run: MonthlyInvoiceAutopilotRunView): string {
     case 'nothing_to_invoice':
       return `Émission automatique tentée le ${at} : rien à facturer${detail}.`;
     case 'not_yet_open':
-      return `Émission automatique tentée le ${at} : la facture du mois n’était pas encore en service.`;
+      return `Émission automatique tentée le ${at} : la facture par période n’était pas encore en service.`;
     case 'failed':
       return `Émission automatique en échec le ${at}${detail}. Le bouton la reprend.`;
     case 'pending':
@@ -149,8 +149,8 @@ export class MonthInvoices {
       return null;
     }
     return view.floorAt === null
-      ? 'La date de mise en service de la facture du mois est absente : prévenir la technique.'
-      : `La facture du mois est en service à partir du ${longDay(view.floorAt)} ; ` +
+      ? 'La date de mise en service de la facture par période est absente : prévenir la technique.'
+      : `La facture par période est en service à partir du ${longDay(view.floorAt)} ; ` +
           `les bons d’avant gardent l’arrêté de facturation du lot.`;
   });
 

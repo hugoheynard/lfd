@@ -1,0 +1,31 @@
+/* Les blocs se séparent par le gap, jamais par une marge. */
+.body {
+  display: flex;
+  flex-direction: column;
+  gap: var(--fold-space-sm);
+}
+
+.state {
+  margin: 0;
+  font-size: var(--fold-text-sm);
+}
+
+.said {
+  margin: 0;
+  color: var(--fold-color-text-muted);
+  font-size: var(--fold-text-sm);
+  max-width: 65ch;
+}
+
+.list {
+  margin: 0;
+  display: flex;
+  flex-direction: column;
+  gap: var(--fold-space-xs);
+  font-size: var(--fold-text-sm);
+}
+
+.actions {
+  display: flex;
+  justify-content: flex-end;
+}

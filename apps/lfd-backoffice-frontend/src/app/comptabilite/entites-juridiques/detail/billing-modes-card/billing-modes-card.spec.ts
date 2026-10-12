@@ -2,6 +2,9 @@ import { type ComponentFixture, TestBed } from '@angular/core/testing';
 import type { LegalEntityView } from '@lfd/contracts';
 import { describe, expect, it } from 'vitest';
 
+import { LegalEntitiesService } from '../../../legal-entities.service';
+import type { BillingModeSaved } from '../billing-mode-row/billing-mode-row';
+
 import { BillingModesCard } from './billing-modes-card';
 
 /** Les instants ne sont comparés qu'entre eux et aux libellés : aucune lecture du mur. */
@@ -94,45 +97,44 @@ function entity(over: Partial<LegalEntityView> = {}): LegalEntityView {
 
 function boot(over: Partial<LegalEntityView> = {}): ComponentFixture<BillingModesCard> {
   TestBed.resetTestingModule();
-  TestBed.configureTestingModule({ imports: [BillingModesCard] });
+  TestBed.configureTestingModule({
+    imports: [BillingModesCard],
+    providers: [{ provide: LegalEntitiesService, useValue: {} }],
+  });
   const fixture = TestBed.createComponent(BillingModesCard);
   fixture.componentRef.setInput('entity', entity(over));
   fixture.detectChanges();
   return fixture;
 }
 
-const block = (fixture: ComponentFixture<BillingModesCard>, mode: string): string =>
-  (
-    (fixture.nativeElement as HTMLElement).querySelector(`[data-billing-mode="${mode}"]`)
-      ?.textContent ?? ''
-  ).replace(/\s+/gu, ' ');
+const host = (fixture: ComponentFixture<BillingModesCard>): HTMLElement =>
+  fixture.nativeElement as HTMLElement;
 
-describe('BillingModesCard — les dates des trois modes, en lecture (M1)', () => {
-  it('dit chaque mode, ses dates en vigueur et le nombre de clients qui l’ont choisi', () => {
+describe('BillingModesCard — les dates des trois modes (M4b)', () => {
+  it('une ligne par mode, dans l’ordre du serveur', () => {
+    const rows = [...host(boot()).querySelectorAll('[data-billing-mode]')].map((row) =>
+      row.getAttribute('data-billing-mode'),
+    );
+
+    expect(rows).toEqual(['monthly', 'semimonthly', 'weekly']);
+  });
+
+  it('dit une fois ce qu’est une date de clôture', () => {
+    expect(host(boot()).querySelector('[data-modes-closure-time]')?.textContent).toContain(
+      'la facture de la période part la veille à 23h55',
+    );
+  });
+
+  it('remonte le geste d’une ligne à la page, qui relit et annonce', () => {
     const fixture = boot();
+    const saved: BillingModeSaved[] = [];
+    fixture.componentInstance.saved.subscribe((request) => saved.push(request));
+    const request: BillingModeSaved = { action: () => Promise.resolve(), said: 'fait' };
 
-    expect(block(fixture, 'semimonthly')).toContain('Deux fois par mois, clôtures le 1er et le 16');
-    expect(block(fixture, 'weekly')).toContain('Chaque semaine, clôture le lundi');
-    expect(block(fixture, 'weekly')).toContain('2 clients l’ont choisi');
-    expect(block(fixture, 'monthly')).toContain(
-      'c’est aussi le mode de tout client qui n’a rien choisi',
-    );
-  });
+    fixture.debugElement
+      .query((node) => node.name === 'app-billing-mode-row')
+      .triggerEventHandler('saved', request);
 
-  it('dit le programmé, le verrou et les prochaines clôtures, tels que le serveur les donne', () => {
-    const monthly = block(boot(), 'monthly');
-
-    expect(monthly).toContain(
-      'Programmé : Chaque mois, clôture le 15, à partir de la clôture du 1er novembre 2026',
-    );
-    expect(monthly).toContain('un autre sera possible à partir du 1er novembre 2026');
-    expect(monthly).toContain('Période du 1er au 31 octobre 2026');
-  });
-
-  it('ne propose aucun geste : elle ne fait que dire', () => {
-    const host = boot().nativeElement as HTMLElement;
-
-    expect(host.querySelector('button')).toBeNull();
-    expect(host.querySelector('[data-modes-readonly]')).not.toBeNull();
+    expect(saved).toEqual([request]);
   });
 });

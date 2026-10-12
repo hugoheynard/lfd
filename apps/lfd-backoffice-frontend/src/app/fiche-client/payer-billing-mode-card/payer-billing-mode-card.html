@@ -1,0 +1,116 @@
+<fold-card>
+  <fold-element-title
+    cardHeader
+    variant="title"
+    icon="calendar"
+    title="Mode de facturation"
+    subtitle="À chaque clôture de son mode, la période du client se ferme et sa facture part. Les dates de chaque mode se règlent sur la fiche de l’entité émettrice."
+  />
+
+  <div class="body">
+    @if (followedPayer(); as payer) {
+      <p class="said" data-payer-follows>
+        Suit le mode de <strong>{{ payer }}</strong
+        >&nbsp;: ce site est facturé à son nom, à ses clôtures.
+      </p>
+    } @else {
+      @switch (state()) {
+        @case ('loading') {
+          <fold-loading message="Lecture du mode de facturation…" />
+        }
+        @case ('error') {
+          <fold-empty-state tone="alert" title="Impossible de lire le mode de facturation">
+            <button foldButton (click)="load()">Réessayer</button>
+          </fold-empty-state>
+        }
+        @case ('no-entity') {
+          <fold-empty-state
+            title="Aucune entité émettrice en service"
+            subtitle="Le mode de facturation se choisit chez l’entité qui émet les factures."
+          >
+            <fold-icon empty-icon name="banknote" />
+          </fold-empty-state>
+        }
+        @default {
+          @if (entityOptions().length > 1) {
+            <fold-listbox
+              label="Entité émettrice"
+              [options]="entityOptions()"
+              [value]="entityId()"
+              (selectionChange)="chooseEntity($event)"
+            />
+          }
+
+          <p class="state" data-payer-mode-current>{{ current() }}.</p>
+
+          @if (scheduled(); as next) {
+            <fold-callout appearance="inset" variant="info" data-payer-mode-scheduled>
+              Programmé&nbsp;: {{ next.label }}, à partir de la clôture du {{ next.effectiveOn }}.
+              <div actions>
+                <fold-inline-confirm
+                  intent="primary"
+                  message="Garder le mode en vigueur et retirer le changement programmé ?"
+                  [labels]="{ confirm: 'Annuler le changement' }"
+                  (confirmed)="cancelScheduled()"
+                >
+                  <button
+                    foldButton
+                    size="sm"
+                    emphasis="outline"
+                    [disabled]="busy()"
+                    data-payer-mode-cancel
+                  >
+                    Annuler ce changement
+                  </button>
+                </fold-inline-confirm>
+              </div>
+            </fold-callout>
+          }
+
+          <ul class="list" data-payer-mode-closures>
+            @for (line of closures(); track line) {
+              <li>{{ line }}</li>
+            } @empty {
+              <li>Aucune clôture à venir n'est annoncée.</li>
+            }
+          </ul>
+          <p class="said">{{ closureTime }}</p>
+
+          <fold-callout appearance="inset" variant="warning" data-payer-mode-rule>{{
+            rule
+          }}</fold-callout>
+          @if (lockedUntil(); as until) {
+            <p class="said" data-payer-mode-locked>
+              Un changement attend sa prise d'effet&nbsp;: le mode sera de nouveau modifiable à
+              partir du {{ until }}.
+            </p>
+          }
+
+          <fold-listbox
+            label="Mode de facturation"
+            [options]="choices"
+            [disabled]="lockedUntil() !== null"
+            [value]="draft()"
+            (selectionChange)="chooseMode($event)"
+            data-payer-mode-choice
+          />
+
+          @if (refusal(); as message) {
+            <fold-callout appearance="inset" variant="alert" announce>{{ message }}</fold-callout>
+          }
+
+          <div class="actions">
+            <fold-inline-confirm
+              intent="primary"
+              [message]="confirmMessage()"
+              [labels]="{ confirm: 'Changer de mode' }"
+              (confirmed)="save()"
+            >
+              <button foldButton [disabled]="!canSave()" data-payer-mode-save>Enregistrer</button>
+            </fold-inline-confirm>
+          </div>
+        }
+      }
+    }
+  </div>
+</fold-card>

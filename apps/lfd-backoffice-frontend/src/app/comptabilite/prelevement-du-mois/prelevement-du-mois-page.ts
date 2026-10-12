@@ -25,12 +25,7 @@ import { PermissionsStore } from '../../auth/permissions.store';
 import { NotifyService } from '../../notify.service';
 import { saveBlob } from '../../shared/download/save-blob';
 import { CollectionBatchesService } from '../collection-batches.service';
-import {
-  closedMonthKey,
-  monthToPrepareKey,
-  monthToPrepareName,
-  ofMonth,
-} from '../collection-month-wording';
+import { longDay, sameClosure } from '../collection-month-wording';
 import { LegalEntitiesService } from '../legal-entities.service';
 import { day } from '../invoice-dossier-format';
 import { MonthlyInvoicesService } from '../monthly-invoices.service';
@@ -126,17 +121,14 @@ export class PrelevementDuMoisPage {
   );
 
   /**
-   * Le lot se nomme par son mois : depuis M1 (plan
-   * `plan-rythme-de-facturation.md`, §16), le lot suit le MODE MENSUEL de
-   * l'entité, en attendant le calendrier d'union (M3) et les restes « mois »
-   * de l'écran (M4).
+   * Le lot se nomme par sa CLÔTURE — la dernière atteinte du calendrier de
+   * l'entité (`lastClosure`, plan `plan-rythme-de-facturation.md`, §16.10) :
+   * avec des clients hebdomadaires, il y en a plusieurs par mois, et le nom du
+   * mois n'en désignerait aucune.
    */
-  private readonly lotName = computed(() => ofMonth(this.monthToPrepare()));
-
-  /** « septembre » : le mois clos dont on prépare le lot. */
-  protected readonly monthToPrepare = computed(() => {
+  private readonly lotName = computed(() => {
     const entity = this.entity();
-    return entity === null ? '' : monthToPrepareName(entity.nextCollection.closesAt);
+    return entity === null ? '' : `du ${longDay(entity.lastClosure)}`;
   });
 
   protected readonly prepareLabel = computed(() => `Préparer le lot ${this.lotName()}`);
@@ -144,9 +136,11 @@ export class PrelevementDuMoisPage {
   /** Pourquoi il n'y a aucun lot à déposer — jamais un vide muet. */
   protected readonly nothingToProcess = computed(() => {
     const lot = `Le lot ${this.lotName()}`;
-    const next = 'après la fin du mois';
+    const next = this.entity()?.nextCollection.closesAt;
+    const after =
+      next === undefined ? 'après la prochaine clôture' : `après la clôture du ${longDay(next)}`;
     return this.alreadyPrepared()
-      ? `${lot} est déjà déposé ; le suivant se prépare ${next}.`
+      ? `${lot} est déjà déposé ; le suivant se prépare ${after}.`
       : `${lot} n’est pas encore préparé.`;
   });
 
@@ -167,17 +161,18 @@ export class PrelevementDuMoisPage {
   );
 
   /**
-   * Le lot du mois clos est-il déjà là (préparé ou déposé) ? Alors le bouton
-   * n'a rien à préparer : il disparaît plutôt que d'attendre son refus.
+   * Le lot de la dernière clôture est-il déjà là (préparé ou déposé) ? Alors
+   * le bouton n'a rien à préparer : il disparaît plutôt que d'attendre son
+   * refus.
    */
   protected readonly alreadyPrepared = computed(() => {
     const entity = this.entity();
     if (entity === null) {
       return false;
     }
-    const month = monthToPrepareKey(entity.nextCollection.closesAt);
     return (this.view()?.batches ?? []).some(
-      (batch) => batch.status !== 'cancelled' && closedMonthKey(batch.cycleClosesAt) === month,
+      (batch) =>
+        batch.status !== 'cancelled' && sameClosure(batch.cycleClosesAt, entity.lastClosure),
     );
   });
 

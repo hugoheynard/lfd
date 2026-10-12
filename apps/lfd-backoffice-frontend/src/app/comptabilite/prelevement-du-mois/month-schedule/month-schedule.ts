@@ -31,10 +31,6 @@ import { CollectionCalendar } from '../../collection-calendar/collection-calenda
 export class MonthSchedule {
   readonly entity = input.required<LegalEntityView>();
 
-  /**
-   * « du mois » : depuis M1 (plan `plan-rythme-de-facturation.md`, §16), le
-   * lot suit le MODE MENSUEL de l'entité. « de la prochaine clôture » reviendra
-   * avec le calendrier d'union (M3/M4).
-   */
-  protected readonly title = 'Le calendrier du mois';
+  /** Le lot suit le calendrier de l'entité (plan `plan-rythme-de-facturation.md`, §16.10). */
+  protected readonly title = 'Le calendrier de la prochaine clôture';
 }

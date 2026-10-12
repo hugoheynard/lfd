@@ -26,8 +26,17 @@ const BASE = `${B2B_API_BASE}/admin/accounting/statements`;
 export class CycleStatementService {
   private readonly http = inject(HttpClient);
 
-  async cycles(): Promise<StatementCyclesView> {
-    return firstValueFrom(this.http.get<StatementCyclesView>(`${BASE}/cycles`));
+  /**
+   * Les périodes proposées au sélecteur. Avec un client (lot M4a) : SES
+   * périodes — ses semaines s'il est hebdomadaire ; sans client : celles du
+   * calendrier de l'entité en service.
+   */
+  async cycles(companyId?: string): Promise<StatementCyclesView> {
+    return firstValueFrom(
+      this.http.get<StatementCyclesView>(`${BASE}/cycles`, {
+        params: companyId === undefined ? {} : { companyId },
+      }),
+    );
   }
 
   /** `periodClosesAt` : la clôture ISO de la période, son identité (R5). */

@@ -129,7 +129,7 @@ export class TableauDeBordPage {
       return null;
     }
     if (view.state === 'not_yet_open') {
-      return `Pas encore prélevable : le premier mois prélevable se clôt le ${longDay(view.firstClosureAt)}.`;
+      return `Pas encore prélevable : la première période prélevable se clôt le ${longDay(view.firstClosureAt)}.`;
     }
     return `Aperçu du mois en cours : ${euros(view.totalCents)} à prélever.`;
   });
