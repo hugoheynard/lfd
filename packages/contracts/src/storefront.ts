@@ -13,7 +13,7 @@ import type { ShopOperationState } from "./shop-catalogue.js";
 /**
  * **La vitrine** — le contrat de l'éditeur (admin) et de la boutique (public).
  *
- * Plan : `documentation/order/plan-vitrine-enregistrement.md` (D2 à D8).
+ * Plan : `documentation/order/boutique-rayon-layout.md` (D2 à D8).
  * Conception : `documentation/order/boutique-rayon-layout.md`, « Composer une
  * page ».
  *

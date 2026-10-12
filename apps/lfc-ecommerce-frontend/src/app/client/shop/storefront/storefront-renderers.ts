@@ -7,7 +7,7 @@ import { StorefrontProduct } from './storefront-product/storefront-product';
 
 /**
  * Ce que TOUT rendu de contenu reçoit, quel que soit son type
- * (`plan-vitrine-enregistrement.md`, D10). La case les passe par
+ * (`boutique-rayon-layout.md`, D10). La case les passe par
  * `ngComponentOutletInputs` : un nom qui manquerait ici lèverait à
  * l'exécution, pas à la compilation — d'où ce contrat.
  */

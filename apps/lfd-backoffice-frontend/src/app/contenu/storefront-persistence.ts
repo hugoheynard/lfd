@@ -19,7 +19,7 @@ export interface SaveRefusal {
  * Le chargement et l'enregistrement de la vitrine éditée.
  *
  * Il charge la vitrine ENTIÈRE et la renvoie entière, avec la révision lue
- * (`plan-vitrine-enregistrement.md`, D2 et D6) : enregistrer publie. Un `409`
+ * (`boutique-rayon-layout.md`, D2 et D6) : enregistrer publie. Un `409`
  * dit que quelqu'un a enregistré entre-temps ; on recharge, on ne force pas.
  *
  * Séparé de {@link StorefrontEditorStore} pour que la composition ne sache rien

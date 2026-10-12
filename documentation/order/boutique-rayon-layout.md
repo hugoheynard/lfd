@@ -3,9 +3,10 @@
 > **État : relu et réécrit le 2026-09-24**, contre le code aux commits cités.
 > Ce document dit **ce qu'est** une page de rayon composée : sa grille, ses
 > formes, ses réglages, ses règles. **Comment** elle s'enregistre et se lit —
-> modèle, droit, verrou, rendu — est dans
-> [`plan-vitrine-enregistrement.md`](plan-vitrine-enregistrement.md). Ce qui
-> reste à faire est en fin de document (§ Reste à faire).
+> modèle, droit, verrou, rendu — est la section « L'enregistrement et la
+> lecture » ci-dessous (fondue le 2026-10-12 depuis `plan-vitrine-enregistrement`,
+> supprimé ; historique dans git). Ce qui reste à faire est en fin de document
+> (§ Reste à faire).
 >
 > Toutes les décisions ci-dessous sont de Hugo, le 2026-09-24, sauf mention.
 
@@ -176,6 +177,94 @@ formule et l'opération vivent ailleurs.
 **Prochaine étape convenue** : une maquette de l'éditeur (le panneau d'une
 annonce et le choix de son action) et de ce que chaque action ouvre en
 boutique — à regarder avant de toucher au code.
+
+## L'enregistrement et la lecture
+
+Relu contre le code le 2026-10-12. Validé par Hugo le 2026-09-24 (« oui aux
+trois »), après contradiction par `vitruve`.
+
+```mermaid
+flowchart LR
+  E["éditeur /vitrine<br/>b2b_storefront"] -->|"PUT /admin/storefront<br/>révision attendue"| A["agrégat Storefront<br/>compose() : collision, bornes"]
+  A --> T[("storefront · _page · _object<br/>_object_shelf · _content · _template")]
+  T --> R["GET /shop/storefront/:shelfKey (public)<br/>GET …/:shelfKey/mine (muré, société)"]
+  R --> B["boutique : composeShelf<br/>@lfd/storefront-layout"]
+  T -.->|"porteur d'images"| M["médiathèque : composite de MediaCarriers"]
+```
+
+- **Un contexte `b2b/storefront`** (`apps/lfd-api/src/b2b/storefront/`), un
+  **agrégat** : la vitrine entière (pages, objets, gabarits), chargée et
+  enregistrée d'un bloc. Un objet partagé paraît sur N rayons à la même position,
+  donc la collision se vérifie sur chacun ; deux agrégats « page » ne peuvent pas
+  garder cet invariant ensemble. `Storefront.compose()` refuse chevauchement et
+  débordement.
+- **Le verrou est global — assumé** : deux personnes qui éditent deux rayons se
+  refusent l'une l'autre ; l'équipe qui compose tient en une ou deux personnes. Si
+  l'usage le contredit, la révision passe par rayon **avant** d'ouvrir l'éditeur
+  à plus de deux personnes.
+- **Le modèle** (schéma `public`, `prisma/schema/public/storefront.prisma`) :
+  `storefront` (ligne `main`, `revision`), `storefront_page` (`shelf_key`, `rows`),
+  `storefront_object` (forme, position, cadrage, défilement, `tone`, `archived_at`),
+  `storefront_object_shelf`, `storefront_content` (un produit ne porte **que le
+  SKU**, un info porte titre / chapô localisés / image / lien), `storefront_template`.
+  `shelf_key` est l'identifiant de catégorie du référentiel ou `all`, **sans clé
+  étrangère** vers le PIM. Les bornes sont des CHECK écrits en toutes lettres
+  (`rows 1..12`, `col 1..5`, intervalles de défilement, `(kind='product') =
+(product_sku IS NOT NULL)`…) ; la collision reste une règle de l'agrégat.
+- **Un contenu produit ne porte que le SKU** : la boutique le résout dans le
+  catalogue qu'elle a déjà, recopier le prix le ferait dériver. Un SKU que le
+  catalogue ne sert plus n'est pas rendu (sa case retombe au reste du rayon) et
+  l'éditeur le marque « article plus en vente » ; une page dont le `shelf_key` n'est
+  plus une famille est « rayon disparu ».
+- **`tone`** : `light` (défaut), `dark`, `accent` ; un produit en carte 1×1 garde
+  le rendu standard du rayon.
+- **Enregistrer = un PUT de la vitrine entière, sa révision tenue en base** : un
+  seul ordre SQL dans la transaction du `save` (`INSERT … ON CONFLICT (id) DO
+UPDATE … WHERE revision = $attendue`, `prisma-storefront.repository.ts`) ; zéro
+  ligne touchée → `StorefrontChangedError` (409) ; comparer dans le handler
+  laisserait deux PUT passer. Pas de ligne semée (absente = `{ revision: 0 }`, le
+  premier PUT l'insère). **Un objet absent du payload est archivé**, jamais
+  supprimé ; ses rayons et contenus sont remplacés. Enregistrer **publie tout de
+  suite** (pas de brouillon), et le fait `storefront.saved` est la seule trace de
+  qui a vidé un rayon.
+- **Le droit `b2b_storefront`** (read / write) pour `admin` et `communication`
+  (nom tranché par Hugo : le préfixe est le bloc de `src/`). **La route est
+  `/vitrine`, hors de l'espace b2b** (`app.routes.ts`) : changer la garde du parent
+  `b2b` aurait ouvert tous ses onglets à `communication` ; l'ancienne
+  `/b2b/contenu/vitrine` redirige. L'admin porte `@AdminSurface("b2b_storefront")`.
+- **La lecture publique** : `GET /shop/storefront/:shelfKey` (`@Public()`,
+  `@Throttle`) rend `{ rows, objects }` (archivés exclus) ; `GET
+/shop/storefront/:shelfKey/mine` est la variante **murée par la société** (les
+  annonces d'une opération réservée aux pros s'y allument ; sans société résolue,
+  la page est celle d'un visiteur).
+- **Un paquet de composition `@lfd/storefront-layout`**, TypeScript pur, sans zod ni
+  Angular : table des formes, collision, cases libres en ordre de lecture, pile
+  mobile, séquence du défilement. L'éditeur, la boutique et le serveur emploient la
+  même table : deux implémentations auraient divergé à la première forme ajoutée.
+- **Rendu côté boutique** : le placement est pur (`composeShelf` rend des cases
+  résolues, bureau et mobile dans le même DOM, le CSS choisit), le rendu passe par
+  un registre indexé par **type de contenu** (`STOREFRONT_RENDERERS` : `product`,
+  `info`), la forme n'est pas une clé du registre (elle arrive en classe d'hôte et
+  les composants se mettent en page par container queries), et le défilement est un
+  enveloppeur écrit une fois (`StorefrontSlot`). Vérifié le 2026-10-12 :
+  `apps/lfc-ecommerce-frontend/src/app/client/shop/storefront/`.
+- **La vitrine est un porteur d'images de la médiathèque** : l'adaptateur vit dans
+  `appBootstrap/` (la matrice ne bouge pas), `MediaCarriers` est un composite qui
+  **somme** les usages et **concatène** les porteurs, et **si un porteur échoue, le
+  composite échoue** — un porteur muet doit arrêter la suppression. `Carrier.kind`
+  vaut aussi `"storefront"`.
+- **Migrations** : `20260924100000_la_vitrine_a_son_droit` (valeur d'enum) puis
+  `20260924100100_la_vitrine_s_enregistre` (tables, et `UPDATE
+staff_role_definitions` pour `admin` et `communication`). ⚠️ **Cette seconde
+  migration accorde un droit à des rôles** : elle est **antérieure à la règle du
+  2026-10-01** (une migration n'écrit pas de droit à un rôle), exception
+  historique qui ne se rejoue pas ; les `migration.sql` ne se touchent pas. La
+  valeur d'enum `b2b_storefront` ne se retire pas (inoffensive, inutilisée si les
+  tables partent). Le garde de la route lit `ROLE_GRANTS` au runtime ; la table lue
+  par l'écran des rôles est un miroir — d'où un test des rôles migrés.
+- **Fenêtres de dates** (une opération qui s'allume et s'éteint seule) et
+  **audience** (pro / particulier) : décidées dans la conception, non construites ;
+  les colonnes `valid_from` / `valid_until` s'ajouteront sans migration de données.
 
 ## Pas encore décidé
 

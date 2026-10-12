@@ -4,7 +4,7 @@ import { DEFAULT_TONE, type PlacedBlock, type StorefrontTone } from '@lfd/storef
 /**
  * Un objet tel que l'éditeur « Vitrine » le tient : la forme posée du paquet
  * (`@lfd/storefront-layout`), plus ce que le paquet ne porte pas — le ton et
- * la liste ORDONNÉE des contenus (`plan-vitrine-enregistrement.md`, D3 et D4).
+ * la liste ORDONNÉE des contenus (`boutique-rayon-layout.md`, D3 et D4).
  *
  * `items` et non `contents` : le paquet appelle déjà `contents` le mode « un
  * seul / plusieurs ».

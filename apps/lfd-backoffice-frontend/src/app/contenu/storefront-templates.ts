@@ -22,7 +22,7 @@ export { TEMPLATE_DESCRIPTION_MAX, TEMPLATE_NAME_MAX };
  * Les gabarits de la vitrine — un objet réglé, enregistré sous un nom.
  *
  * Ils font partie de la vitrine : chargés avec elle, renvoyés dans le même
- * `PUT` (`plan-vitrine-enregistrement.md`, D3 et D6). Un gabarit NEUF porte un
+ * `PUT` (`boutique-rayon-layout.md`, D3 et D6). Un gabarit NEUF porte un
  * identifiant local jusqu'à l'enregistrement ; le serveur lui en donne un.
  *
  * Un gabarit porte un nom (unique), une description facultative, la forme, le ton et ses réglages — cadrage, côté, mobile, un ou

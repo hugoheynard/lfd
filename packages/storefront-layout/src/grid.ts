@@ -6,7 +6,7 @@
  * des R rangées » (`documentation/order/boutique-rayon-layout.md`, « Composer
  * une page »), et elle a TROIS lecteurs : l'éditeur la refuse à la pose, le
  * serveur à l'écriture (`b2b/storefront`, agrégat `Storefront`), la boutique
- * en compose ses pages (`documentation/order/plan-vitrine-enregistrement.md`,
+ * en compose ses pages (`documentation/order/boutique-rayon-layout.md`,
  * D8). Une seule table des formes : deux implémentations divergeraient à la
  * première forme ajoutée.
  *

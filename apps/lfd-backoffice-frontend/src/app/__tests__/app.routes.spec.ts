@@ -177,7 +177,7 @@ const SCREENS: Readonly<Record<string, ScreenAccess>> = {
 
   // **Vitrine** — hors de l'espace B2B, derrière SA ressource : sous `b2b`, le
   // mur `b2b_settings` l'aurait fermée à la communication, qui la compose
-  // (plan-vitrine-enregistrement.md, D7). L'ancienne adresse redirige.
+  // (boutique-rayon-layout.md, D7). L'ancienne adresse redirige.
   vitrine: 'b2b_storefront:read',
 
   // **Textes de la boutique** — même métier et même mur que la vitrine

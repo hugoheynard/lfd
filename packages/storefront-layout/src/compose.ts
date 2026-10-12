@@ -1,6 +1,6 @@
 /**
  * La COMPOSITION d'une page de rayon — où va chaque chose, sans rien rendre
- * (`documentation/order/plan-vitrine-enregistrement.md`, D10 ; règles :
+ * (`documentation/order/boutique-rayon-layout.md`, D10 ; règles :
  * `documentation/order/boutique-rayon-layout.md`, « Une page par rayon »).
  *
  * Elle reçoit la page servie et le rayon, et rend des **cases résolues** :

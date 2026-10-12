@@ -1,5 +1,5 @@
 /**
- * E2E de la **vitrine** — plan `documentation/order/plan-vitrine-enregistrement.md`
+ * E2E de la **vitrine** — plan `documentation/order/boutique-rayon-layout.md`
  * (D2, D3, D6, D7, D8).
  *
  * Ce que seul le vrai Postgres prouve : que le verrou de révision tient contre

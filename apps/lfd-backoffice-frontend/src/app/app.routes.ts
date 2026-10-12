@@ -89,7 +89,7 @@ export const routes: Routes = [
     // **Vitrine** — composer les pages de la boutique. Route de PREMIER niveau,
     // hors de l'espace `b2b` : ce parent est gardé par `b2b_settings:read`, et
     // l'ouvrir à la communication, qui compose la vitrine, lui aurait ouvert
-    // tous les onglets de l'espace (plan-vitrine-enregistrement.md, D7).
+    // tous les onglets de l'espace (boutique-rayon-layout.md, D7).
     // L'ancienne adresse `/b2b/contenu/vitrine` y redirige.
     //
     // `b2b_storefront:read` : le mur que la route serveur oppose

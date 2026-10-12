@@ -16,7 +16,7 @@ import { SaveStorefrontCommand } from "../application/save-storefront.command.js
 
 /**
  * **L'éditeur de la vitrine** — charger, enregistrer (plan
- * `documentation/order/plan-vitrine-enregistrement.md`, D6 et D7).
+ * `documentation/order/boutique-rayon-layout.md`, D6 et D7).
  *
  * Murée par sa propre ressource, `b2b_storefront` : `GET` demande
  * `b2b_storefront:read`, `PUT` `b2b_storefront:write`. Accordée à `admin` et

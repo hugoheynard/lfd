@@ -29,7 +29,7 @@ const REDUCED_MOTION = '(prefers-reduced-motion: reduce)';
 
 /**
  * **Une case composée** : un contenu, ou plusieurs qui défilent à la même
- * place (`plan-vitrine-enregistrement.md`, D10 §3).
+ * place (`boutique-rayon-layout.md`, D10 §3).
  *
  * Elle choisit le rendu dans le registre ({@link STOREFRONT_RENDERERS}) par le
  * TYPE du contenu, et lui passe les entrées communes. Les rendus ne savent

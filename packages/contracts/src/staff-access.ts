@@ -272,7 +272,7 @@ export const staffResourceSchema = z.enum([
   "b2b_settings",
   /**
    * **La vitrine** — composer les pages de la boutique : formes, positions,
-   * rayons, contenus, gabarits (`documentation/order/plan-vitrine-enregistrement.md`,
+   * rayons, contenus, gabarits (`documentation/order/boutique-rayon-layout.md`,
    * D7).
    *
    * Détachée de `b2b_settings` parce que ce n'est pas le même métier : la
@@ -862,7 +862,7 @@ export const ROLE_GRANTS: Readonly<Record<StaffRole, RoleGrants>> = {
   communication: {
     media_library: "write",
     // Composer la vitrine est son métier au même titre qu'illustrer
-    // (plan-vitrine-enregistrement.md, D7 — Hugo, 2026-09-24).
+    // (boutique-rayon-layout.md, D7 — Hugo, 2026-09-24).
     b2b_storefront: "write",
     pim_catalog: "read",
     staff_notifications: "write",

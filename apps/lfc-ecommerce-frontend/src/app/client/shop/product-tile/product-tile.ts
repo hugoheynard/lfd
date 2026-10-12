@@ -34,7 +34,7 @@ import { ShopPriceBasis } from '../shop-price-basis.service';
  * la photo et le stepper « au-delà du pli » ont disparu au profit de ce seul
  * bouton de 44 px, cible tenable au pouce comme à la souris.
  *
- * **Sa forme décide de sa mise en page** (`plan-vitrine-enregistrement.md`,
+ * **Sa forme décide de sa mise en page** (`boutique-rayon-layout.md`,
  * D10). Posée par la vitrine, elle reçoit sa forme, son cadrage, son côté
  * d'image et son ton : en carte 1×1, c'est la vignette d'aujourd'hui ; sur une
  * forme plus grande, c'est le best-seller — photo à côté au bureau si le côté

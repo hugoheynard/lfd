@@ -103,7 +103,7 @@ export const COMMERCE_FACTS = {
   ),
 
   /**
-   * **La vitrine enregistrée** (`plan-vitrine-enregistrement.md`, D6). Enregistrer
+   * **La vitrine enregistrée** (`boutique-rayon-layout.md`, D6). Enregistrer
    * publie tout de suite : ce fait est la SEULE trace de qui a vidé un rayon.
    *
    * `subjectLabel` : « Vitrine » — il n'y en a qu'une. Les objets sont cités

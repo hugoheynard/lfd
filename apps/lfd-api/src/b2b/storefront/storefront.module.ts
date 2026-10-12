@@ -27,7 +27,7 @@ import { PrismaStorefrontRepository } from "./infrastructure/prisma-storefront.r
 
 /**
  * **La vitrine** — les pages composées de la boutique (plan
- * `documentation/order/plan-vitrine-enregistrement.md`).
+ * `documentation/order/boutique-rayon-layout.md`).
  *
  * Quatre ports, un par consommateur (ISP) : l'écriture prend l'agrégat entier,
  * l'éditeur lit tout, la boutique lit la page d'un rayon — et l'éditeur lit le

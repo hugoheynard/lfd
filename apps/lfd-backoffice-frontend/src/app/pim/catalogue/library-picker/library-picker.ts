@@ -21,7 +21,7 @@ export interface LibraryPickerData {
   /**
    * UNE image, pas une liste : désigner en remplace la désignation précédente.
    * Absent : plusieurs, dans l'ordre où on les désigne. L'image d'une info de
-   * vitrine n'en porte qu'une (`plan-vitrine-enregistrement.md`, D3).
+   * vitrine n'en porte qu'une (`boutique-rayon-layout.md`, D3).
    */
   readonly single?: boolean;
 }

@@ -17,7 +17,7 @@ import { StorefrontSlot } from '../../storefront/storefront-slot/storefront-slot
  *
  * ## Deux rendus, choisis par la page du rayon
  *
- * - **Composée** (`plan-vitrine-enregistrement.md`, D10) : la page du rayon
+ * - **Composée** (`boutique-rayon-layout.md`, D10) : la page du rayon
  *   pose au moins un objet affichable. `composeShelf` du paquet
  *   `@lfd/storefront-layout` rend des cases résolues, et la grille les pose
  *   par variables CSS — sa place au bureau ET dans la pile, dans le même DOM :

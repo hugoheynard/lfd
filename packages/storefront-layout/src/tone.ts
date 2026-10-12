@@ -1,6 +1,6 @@
 /**
  * Le ton d'un objet de vitrine — son allure de fond
- * (`plan-vitrine-enregistrement.md`, D3, Hugo 2026-09-24).
+ * (`boutique-rayon-layout.md`, D3, Hugo 2026-09-24).
  *
  * - `light` : papier crème, cerne or — l'allure du best-seller ; le défaut ;
  * - `dark` : encre noire — la tuile Noël ;

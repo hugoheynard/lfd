@@ -106,7 +106,7 @@ const ACCOUNT_ZONE = "account";
 const SETTINGS_ZONES = ["delivery-zones", "pickup-addresses", "order-cutoffs"];
 
 /**
- * **La vitrine** (2026-09-24, `documentation/order/plan-vitrine-enregistrement.md`,
+ * **La vitrine** (2026-09-24, `documentation/order/boutique-rayon-layout.md`,
  * D6) : enregistrer la publie, et le fait `storefront.saved` est la SEULE
  * trace de qui a vidé un rayon — une vitrine se réécrit en bloc. Tous ses
  * handlers d'écriture sont staff ; sa route publique ne fait que lire.

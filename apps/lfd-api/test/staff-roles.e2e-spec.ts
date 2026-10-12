@@ -61,7 +61,7 @@ const SURFACES: readonly { readonly resource: StaffResource; readonly path: stri
   { resource: "media_library", path: "/media" },
   /**
    * La VITRINE (2026-09-24) — sa propre ressource, pour que la communication
-   * la compose sans ouvrir `b2b_settings` (plan-vitrine-enregistrement.md, D7).
+   * la compose sans ouvrir `b2b_settings` (boutique-rayon-layout.md, D7).
    */
   { resource: "b2b_storefront", path: "/admin/storefront" },
   /**

@@ -58,7 +58,7 @@ export const b2bRoutes: Routes = [
             // L'ANCIENNE adresse de la vitrine. Elle a quitté l'espace pour
             // `/vitrine`, gardée par son propre droit : sous ce parent, le mur
             // `b2b_settings` aurait fermé l'éditeur à la communication, qui la
-            // compose (plan-vitrine-enregistrement.md, D7). La redirection
+            // compose (boutique-rayon-layout.md, D7). La redirection
             // s'applique AVANT les gardes : le mur de l'espace ne la voit pas.
             path: 'vitrine',
             pathMatch: 'full',

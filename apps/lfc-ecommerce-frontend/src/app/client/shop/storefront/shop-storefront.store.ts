@@ -28,7 +28,7 @@ const PAGE_TIMEOUT_MS = 4000;
 
 /**
  * **La page de vitrine de chaque rayon**, lue une fois par rayon ET par
- * lecteur (`plan-vitrine-enregistrement.md`, lot 4). « Tout » est la clé `all`
+ * lecteur (`boutique-rayon-layout.md`, lot 4). « Tout » est la clé `all`
  * ({@link ALL_SHELVES}).
  *
  * Comme le catalogue ({@link ShopCatalogue}), elle n'est pas rafraîchie pendant

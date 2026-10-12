@@ -3,7 +3,7 @@
  *
  * TypeScript PUR, sans aucune dépendance (ni zod, ni Angular) : il ne pèse rien
  * dans le budget de la boutique, et le serveur, l'éditeur et la boutique y
- * lisent la MÊME table des formes (`documentation/order/plan-vitrine-enregistrement.md`,
+ * lisent la MÊME table des formes (`documentation/order/boutique-rayon-layout.md`,
  * D8).
  */
 export * from "./grid.js";

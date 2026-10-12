@@ -6,7 +6,7 @@ import { firstValueFrom } from 'rxjs';
 import { B2B_API_BASE } from '../api/api-config';
 
 /**
- * **La vitrine** — charger, enregistrer (`plan-vitrine-enregistrement.md`, D6).
+ * **La vitrine** — charger, enregistrer (`boutique-rayon-layout.md`, D6).
  *
  * Murée côté serveur par `@AdminSurface("b2b_storefront")` : `GET` demande la
  * lecture, `PUT` l'écriture.
