@@ -11,9 +11,14 @@ import {
 import { MAX_CLOSURES_PER_PASS } from "../../../domain/services/invoicing-closures.js";
 import type { MonthlyInvoiceReport } from "../../../domain/services/monthly-invoice-report.js";
 import { RunInvoiceAutopilotHandler } from "../run-invoice-autopilot.handler.js";
-import { BillingRhythm } from "../../../domain/value-objects/billing-rhythm.js";
-import { BillingRhythmSetting } from "../../../domain/value-objects/billing-rhythm-setting.js";
-import { FixedFloor, FixedIssuers, FixedRhythms } from "./monthly-invoice-doubles.js";
+import type { PayerModeSegments } from "../../../domain/ports/payer-billing-modes.reader.js";
+import { paris } from "../../../domain/services/__tests__/billing-mode-fixtures.js";
+import {
+  FixedFloor,
+  FixedIssuers,
+  FixedModeDates,
+  FixedPayerModes,
+} from "./monthly-invoice-doubles.js";
 
 /**
  * Le passage automatique de la facture par période (E4, par clôture depuis
@@ -28,6 +33,11 @@ const SEP_1 = "2026-08-31T22:00:00.000Z";
 const OCT_1 = "2026-09-30T22:00:00.000Z";
 const NOV_1 = "2026-10-31T23:00:00.000Z";
 const DEC_1 = "2026-11-30T23:00:00.000Z";
+/** Un payeur hebdomadaire au lundi depuis le 1er août 2026 (une clôture du mensuel). */
+const WEEKLY: PayerModeSegments = {
+  payerCompanyId: "c_port",
+  segments: [{ effectiveFrom: paris("2026-08-01"), mode: "weekly" }],
+};
 
 class MemoryRuns extends InvoiceAutopilotRuns {
   readonly rows = new Map<string, { outcome: string; message: string | null }>();
@@ -83,7 +93,8 @@ const ISSUED: MonthlyInvoiceReport = {
 };
 
 interface Calendar {
-  readonly rhythm?: BillingRhythmSetting;
+  /** Les payeurs qui ont choisi un mode ; aucun : tous mensuels au 1er. */
+  readonly payers?: readonly PayerModeSegments[];
   /** Le plancher ; absent : aucun rattrapage depuis lui. */
   readonly floor?: Date | null;
 }
@@ -94,7 +105,8 @@ function harness(answer: () => MonthlyInvoiceReport, at = AT_MOMENT, calendar: C
   const events = new RecordingPublisher();
   const handler = new RunInvoiceAutopilotHandler(
     new FixedIssuers([SELLER_FACTS]),
-    new FixedRhythms(calendar.rhythm),
+    new FixedModeDates(),
+    new FixedPayerModes(calendar.payers),
     new FixedFloor(calendar.floor ?? null),
     runs,
     invoicer,
@@ -258,7 +270,7 @@ describe("RunInvoiceAutopilot — une tentative par (entité, clôture)", () => 
   });
 
   it("hebdomadaire au lundi : le dimanche à 23h55, la semaine se facture", async () => {
-    const weekly = { rhythm: BillingRhythmSetting.of(BillingRhythm.weekly(1), null) };
+    const weekly = { payers: [WEEKLY] };
     // Le dimanche 27 septembre 2026 à 23h55 à Paris ; la clôture est le lundi 28 à 00h00.
     const h = harness(() => ISSUED, new Date("2026-09-27T21:55:00.000Z"), weekly);
 
@@ -269,7 +281,7 @@ describe("RunInvoiceAutopilot — une tentative par (entité, clôture)", () => 
 
   it("hebdomadaire : le lundi matin, les semaines manquées depuis le plancher sont rattrapées", async () => {
     const h = harness(() => ISSUED, new Date("2026-09-28T08:00:00.000Z"), {
-      rhythm: BillingRhythmSetting.of(BillingRhythm.weekly(1), null),
+      payers: [WEEKLY],
       // Le lundi 14 septembre à 00h00 à Paris.
       floor: new Date("2026-09-13T22:00:00.000Z"),
     });
@@ -283,7 +295,7 @@ describe("RunInvoiceAutopilot — une tentative par (entité, clôture)", () => 
   });
 
   it("hebdomadaire, passage à l'heure d'hiver : le cron de 22h55 UTC émet, son jumeau de 21h55 UTC se tait", async () => {
-    const weekly = { rhythm: BillingRhythmSetting.of(BillingRhythm.weekly(1), null) };
+    const weekly = { payers: [WEEKLY] };
     // Le dimanche 25 octobre 2026, jour du passage : 23h55 à Paris = 22h55 UTC.
     const late = harness(() => ISSUED, new Date("2026-10-25T22:55:00.000Z"), weekly);
     await late.handler.execute();
@@ -294,12 +306,34 @@ describe("RunInvoiceAutopilot — une tentative par (entité, clôture)", () => 
     expect(early.invoicer.calls).toEqual([`${ENTITY}:2026-10-18T22:00:00.000Z`]);
   });
 
-  it("au changement de rythme, la clôture de l'ancien est tentée sur l'ancien, les suivantes sur le nouveau", async () => {
+  it("rythmes mêlés : les lundis de l'hebdomadaire et le 1er du mensuel, dans l'ordre", async () => {
+    // Le samedi 3 octobre 2026, 10h à Paris ; dernière tentée : le lundi 21 septembre.
+    const h = harness(() => ISSUED, new Date("2026-10-03T08:00:00.000Z"), { payers: [WEEKLY] });
+    h.runs.rows.set(`${ENTITY}:2026-09-20T22:00:00.000Z`, { outcome: "issued", message: null });
+
+    await h.handler.execute();
+
+    expect(h.invoicer.calls).toEqual([`${ENTITY}:2026-09-27T22:00:00.000Z`, `${ENTITY}:${OCT_1}`]);
+  });
+
+  it("sans payeur hebdomadaire, aucun lundi n'est tenté", async () => {
+    const h = harness(() => ISSUED, new Date("2026-10-03T08:00:00.000Z"), {
+      floor: new Date(SEP_1),
+    });
+
+    await h.handler.execute();
+
+    expect(h.invoicer.calls).toEqual([`${ENTITY}:${OCT_1}`]);
+  });
+
+  it("un payeur devenu hebdomadaire au 1er octobre ne fait pas tenter les lundis de septembre", async () => {
     const h = harness(() => ISSUED, new Date("2026-10-12T08:00:00.000Z"), {
-      rhythm: BillingRhythmSetting.of(BillingRhythm.default(), {
-        rhythm: BillingRhythm.weekly(1),
-        effectiveAt: new Date(OCT_1),
-      }),
+      payers: [
+        {
+          payerCompanyId: "c_port",
+          segments: [{ effectiveFrom: new Date(OCT_1), mode: "weekly" }],
+        },
+      ],
       floor: new Date(SEP_1),
     });
 
@@ -315,7 +349,13 @@ describe("RunInvoiceAutopilot — une tentative par (entité, clôture)", () => 
 
   it("un plancher très ancien ne lance pas plus de MAX_CLOSURES_PER_PASS tentatives d'un coup", async () => {
     const h = harness(() => ISSUED, new Date("2026-09-28T08:00:00.000Z"), {
-      rhythm: BillingRhythmSetting.of(BillingRhythm.weekly(1), null),
+      // Hebdomadaire depuis le 1er décembre 2025, bien avant le plancher.
+      payers: [
+        {
+          payerCompanyId: "c_port",
+          segments: [{ effectiveFrom: paris("2025-12-01"), mode: "weekly" }],
+        },
+      ],
       // Le lundi 5 janvier 2026 à 00h00 à Paris.
       floor: new Date("2026-01-04T23:00:00.000Z"),
     });

@@ -10,17 +10,19 @@ import {
 } from "../../domain/events/invoice-autopilot.events.js";
 import { InvoicingNotYetOpenError } from "../../domain/errors/monthly-invoice-errors.js";
 import { AutomaticMonthlyInvoicer } from "../../domain/ports/automatic-monthly-invoicer.js";
-import { BillingRhythmReader } from "../../domain/ports/billing-rhythm.reader.js";
+import { BillingModeDatesReader } from "../../domain/ports/billing-mode-dates.reader.js";
 import { InvoiceAutopilotRuns } from "../../domain/ports/invoice-autopilot-runs.js";
 import { InvoiceIssuersReader } from "../../domain/ports/invoice-issuers.reader.js";
 import { InvoicingFloorReader } from "../../domain/ports/invoicing-floor.reader.js";
-import { closuresToAttempt, periodMonthOf } from "../../domain/services/invoicing-closures.js";
+import { PayerBillingModesReader } from "../../domain/ports/payer-billing-modes.reader.js";
+import { periodMonthOf } from "../../domain/services/invoicing-closures.js";
 import type { MonthlyInvoiceReport } from "../../domain/services/monthly-invoice-report.js";
 import {
   RunInvoiceAutopilotCommand,
   type InvoiceAutopilotReport,
   type InvoiceAutopilotRunReport,
 } from "./run-invoice-autopilot.command.js";
+import { readInvoicingCalendar } from "../invoicing-calendar-support.js";
 
 /** L'entité émettrice telle que le passage la nomme au journal. */
 interface Issuer {
@@ -32,7 +34,8 @@ interface Issuer {
  * **Le passage automatique de la facture par période** (lot E4 ; par clôture
  * depuis R3, `plan-rythme-de-facturation.md` §9 et §10).
  *
- * Pour chaque entité émettrice en service : les clôtures de SON rythme dont
+ * Pour chaque entité émettrice en service : les clôtures de SON calendrier
+ * (M2 : celles d'au moins un payeur, ou du mensuel — `InvoicingCalendar`) dont
  * la veille à 23h55 est passée et qui n'ont jamais été tentées — la dernière,
  * et toutes celles manquées depuis la dernière tentée (ou depuis le
  * plancher), de la plus ancienne à la plus récente. Pour chacune, UNE
@@ -54,7 +57,8 @@ export class RunInvoiceAutopilotHandler implements ICommandHandler<
 
   constructor(
     private readonly issuers: InvoiceIssuersReader,
-    private readonly rhythms: BillingRhythmReader,
+    private readonly modeDates: BillingModeDatesReader,
+    private readonly payerModes: PayerBillingModesReader,
     private readonly floors: InvoicingFloorReader,
     private readonly runs: InvoiceAutopilotRuns,
     private readonly invoicer: AutomaticMonthlyInvoicer,
@@ -84,12 +88,12 @@ export class RunInvoiceAutopilotHandler implements ICommandHandler<
     now: Date,
     floor: Date | null,
   ): Promise<readonly Date[]> {
-    const setting = await this.rhythms.timelineOf(legalEntityId);
-    if (setting === null) {
-      return [];
-    }
+    const calendar = await readInvoicingCalendar(
+      { modeDates: this.modeDates, payerModes: this.payerModes },
+      legalEntityId,
+    );
     const last = await this.runs.lastAttempted(legalEntityId);
-    return closuresToAttempt(now, setting, latest(last, floor));
+    return calendar.closuresToAttempt(now, latest(last, floor));
   }
 
   /** Une clôture : tentée une fois, son issue rangée et journalisée ensemble. */

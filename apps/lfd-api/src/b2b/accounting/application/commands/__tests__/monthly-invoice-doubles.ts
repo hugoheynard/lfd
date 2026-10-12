@@ -7,6 +7,7 @@ import {
   type OrderHandoverHistoryFact,
 } from "../../../../../handover/channels/commerce/index.js";
 import type { Invoice } from "../../../domain/entities/invoice.js";
+import { BillingModeDatesReader } from "../../../domain/ports/billing-mode-dates.reader.js";
 import { BillingRhythmReader } from "../../../domain/ports/billing-rhythm.reader.js";
 import { InvoiceIssuersReader } from "../../../domain/ports/invoice-issuers.reader.js";
 import { InvoicingFloorReader } from "../../../domain/ports/invoicing-floor.reader.js";
@@ -17,6 +18,12 @@ import {
   type MonthlyInvoiceOutcomeKey,
 } from "../../../domain/ports/monthly-invoice-outcomes.js";
 import { MonthlyInvoicingReader } from "../../../domain/ports/monthly-invoicing.reader.js";
+import {
+  PayerBillingModesReader,
+  type PayerModeSegments,
+} from "../../../domain/ports/payer-billing-modes.reader.js";
+import { defaultModes } from "../../../domain/services/__tests__/billing-mode-fixtures.js";
+import type { ModeTimelines, PayerModeSegment } from "../../../domain/services/payer-timeline.js";
 import type { BillingFollow } from "../../../domain/ports/statement-billing.reader.js";
 import type { InvoiceSellerFacts } from "../../../domain/services/invoice-issuance-blockers.js";
 import {
@@ -173,5 +180,33 @@ export class FixedFloor extends InvoicingFloorReader {
   }
   floor(): Promise<Date | null> {
     return Promise.resolve(this.at);
+  }
+}
+
+/** Les dates des trois modes, les mêmes pour toute entité ; par défaut celles d'usine (M2). */
+export class FixedModeDates extends BillingModeDatesReader {
+  constructor(private readonly modes: ModeTimelines = defaultModes()) {
+    super();
+  }
+  timelinesOf(): Promise<ModeTimelines> {
+    return Promise.resolve(this.modes);
+  }
+}
+
+/** Les payeurs qui ont choisi un mode ; aucun par défaut : tous mensuels (M2). */
+export class FixedPayerModes extends PayerBillingModesReader {
+  constructor(private readonly payers: readonly PayerModeSegments[] = []) {
+    super();
+  }
+  segmentsOf(): Promise<readonly PayerModeSegments[]> {
+    return Promise.resolve(this.payers);
+  }
+  segmentsOfPayer(
+    _legalEntityId: string,
+    payerCompanyId: string,
+  ): Promise<readonly PayerModeSegment[]> {
+    return Promise.resolve(
+      this.payers.find((payer) => payer.payerCompanyId === payerCompanyId)?.segments ?? [],
+    );
   }
 }

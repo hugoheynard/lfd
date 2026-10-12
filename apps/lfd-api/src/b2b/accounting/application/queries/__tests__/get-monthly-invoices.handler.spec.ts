@@ -4,9 +4,18 @@ import {
   MonthlyInvoicesReader,
   type MonthlyInvoicesRead,
 } from "../../../domain/ports/monthly-invoices.reader.js";
-import { BillingRhythm } from "../../../domain/value-objects/billing-rhythm.js";
-import { BillingRhythmSetting } from "../../../domain/value-objects/billing-rhythm-setting.js";
-import { FixedRhythms } from "../../commands/__tests__/monthly-invoice-doubles.js";
+import {
+  LegalEntityReader,
+  type LegalEntityRecord,
+} from "../../../domain/ports/legal-entity.reader.js";
+import type { PayerModeSegments } from "../../../domain/ports/payer-billing-modes.reader.js";
+import { paris } from "../../../domain/services/__tests__/billing-mode-fixtures.js";
+import { toView } from "../../../infrastructure/legal-entity.mapper.js";
+import {
+  FixedModeDates,
+  FixedPayerModes,
+} from "../../commands/__tests__/monthly-invoice-doubles.js";
+import { declaredEntity } from "../../commands/__tests__/mandate-setting-doubles.js";
 import { GetMonthlyInvoicesHandler } from "../get-monthly-invoices.handler.js";
 import { GetMonthlyInvoicesQuery } from "../get-monthly-invoices.query.js";
 
@@ -26,14 +35,31 @@ class RecordingReader extends MonthlyInvoicesReader {
   }
 }
 
-function run(at: Date, setting: BillingRhythmSetting | null = BillingRhythmSetting.initial()) {
+class OnlyLe1 extends LegalEntityReader {
+  list(): Promise<readonly LegalEntityRecord[]> {
+    return Promise.resolve([]);
+  }
+  byId(id: string): Promise<LegalEntityRecord | null> {
+    return Promise.resolve(id === "le_1" ? toView(declaredEntity(), true) : null);
+  }
+}
+
+/** Un payeur hebdomadaire au lundi depuis le 1er août 2026. */
+const WEEKLY: PayerModeSegments = {
+  payerCompanyId: "c_port",
+  segments: [{ effectiveFrom: paris("2026-08-01"), mode: "weekly" }],
+};
+
+function run(at: Date, payers: readonly PayerModeSegments[] = [], entityId = "le_1") {
   const reader = new RecordingReader();
   const handler = new GetMonthlyInvoicesHandler(
-    new FixedRhythms(setting),
+    new OnlyLe1(),
+    new FixedModeDates(),
+    new FixedPayerModes(payers),
     reader,
     new FixedClock(at),
   );
-  return { reader, view: handler.execute(new GetMonthlyInvoicesQuery("le_1")) };
+  return { reader, view: handler.execute(new GetMonthlyInvoicesQuery(entityId)) };
 }
 
 describe("GetMonthlyInvoices — la dernière clôture de l'entité", () => {
@@ -50,13 +76,21 @@ describe("GetMonthlyInvoices — la dernière clôture de l'entité", () => {
     expect(reader.asked).toEqual([new Date("2026-09-30T22:00:00.000Z")]);
   });
 
-  it("hebdomadaire au lundi : la semaine qui s'achève le dimanche", async () => {
-    const weekly = BillingRhythmSetting.of(BillingRhythm.weekly(1), null);
-    const { view } = run(new Date("2026-09-30T08:00:00.000Z"), weekly);
+  it("un payeur hebdomadaire : la dernière clôture est son lundi, sa semaine", async () => {
+    const { view } = run(new Date("2026-09-30T08:00:00.000Z"), [WEEKLY]);
 
     expect(await view).toMatchObject({
       periodClosesAt: "2026-09-27T22:00:00.000Z",
       periodLabel: "du 21 au 27 septembre 2026",
+    });
+  });
+
+  it("rythmes mêlés, au 1er : la clôture du mensuel, son mois entier", async () => {
+    const { view } = run(new Date("2026-09-30T21:55:00.000Z"), [WEEKLY]);
+
+    expect(await view).toMatchObject({
+      periodClosesAt: "2026-09-30T22:00:00.000Z",
+      periodLabel: "du 1er au 30 septembre 2026",
     });
   });
 
@@ -67,7 +101,7 @@ describe("GetMonthlyInvoices — la dernière clôture de l'entité", () => {
   });
 
   it("une entité inconnue : 404", async () => {
-    await expect(run(new Date("2026-09-30T21:55:00.000Z"), null).view).rejects.toThrow(
+    await expect(run(new Date("2026-09-30T21:55:00.000Z"), [], "le_x").view).rejects.toThrow(
       LegalEntityNotFoundError,
     );
   });

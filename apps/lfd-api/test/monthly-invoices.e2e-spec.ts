@@ -17,14 +17,17 @@
  */
 import {
   instantToLocal,
+  weekdayOf,
   type MonthlyInvoiceReportView,
   type MonthlyInvoicesView,
 } from "@lfd/contracts";
 
+import { nextClosureAfter } from "../src/b2b/accounting/domain/services/billing-cycle.js";
 import {
   invoicingMomentOf,
   lastDayOf,
 } from "../src/b2b/accounting/domain/services/invoicing-closures.js";
+import { BillingRhythm } from "../src/b2b/accounting/domain/value-objects/billing-rhythm.js";
 import { StatementMonth } from "../src/b2b/accounting/domain/value-objects/statement-month.js";
 import { AdminTokenVerifier } from "../src/platform/auth/admin-token.verifier.js";
 import { CustomerRole } from "../src/platform/database/client/client.js";
@@ -524,6 +527,141 @@ describe("la facture du mois, puis le lot qui l'encaisse (E4)", () => {
     expect(await ctx.prisma.invoice.count()).toBe(2);
   });
 });
+
+describe("la facture par clôture d'un rythme hebdomadaire (R3, rétabli en M2)", () => {
+  it("un payeur passé à l'hebdomadaire : sa semaine se facture la veille de sa clôture, sur [clôture du mois, lundi[", async () => {
+    const id = await entity();
+    const company = await payer(id);
+    const startsAt = month.cycle().startsAt;
+    const closingDay = instantToLocal(closesAt).day;
+    const isoWeekday = weekdayOf(closingDay) === 0 ? 7 : weekdayOf(closingDay);
+    // Huit jours avant le mois : les dates de l'hebdomadaire passent au jour de
+    // semaine de la clôture du mois, à la prochaine clôture hebdomadaire —
+    // avant le mois. La première semaine du payeur durera donc sept jours.
+    clock.set(new Date(startsAt.getTime() - 8 * DAY_MS + HOUR_MS));
+    await staff()
+      .put(`${ENTITIES}/${id}/billing-modes/weekly`)
+      .send({ days: [isoWeekday] })
+      .expect(204);
+    // Pendant le mois : le payeur passe à l'hebdomadaire à la clôture du mois.
+    clock.set(new Date(startsAt.getTime() + HOUR_MS));
+    await staff()
+      .put(`${ENTITIES}/${id}/payers/${company.id}/billing-mode`)
+      .send({ mode: "weekly" })
+      .expect(204);
+    const week = nextClosureAfter(closesAt, BillingRhythm.weekly(isoWeekday));
+    await laterOrder(company.id, new Date(closesAt.getTime() + 2 * DAY_MS));
+    // La veille de la clôture hebdomadaire, 23h57 à Paris.
+    clock.set(new Date(invoicingMomentOf(week).getTime() + 2 * 60 * 1000));
+
+    const evening = await invoicePass();
+
+    // Le rattrapage tente la clôture du mois (manquée), puis la semaine, dans l'ordre.
+    expect(evening.runs).toEqual([
+      { legalEntityId: id, periodClosesAt: closesAt.toISOString(), outcome: "issued" },
+      { legalEntityId: id, periodClosesAt: week.toISOString(), outcome: "issued" },
+    ]);
+    const invoices = await ctx.prisma.invoice.findMany({ orderBy: { rank: "asc" } });
+    // Jamais d'antidate : la facture du mois, rattrapée le soir de la semaine,
+    // porte le jour réel de son émission — la période facturée reste le mois.
+    expect(invoices.map((i) => i.issuedOn.toISOString().slice(0, 10))).toEqual([
+      lastDayOf(week),
+      lastDayOf(week),
+    ]);
+    const screen = await view(id);
+    expect(screen).toMatchObject({
+      periodClosesAt: week.toISOString(),
+      periodStartsAt: closesAt.toISOString(),
+    });
+    expect(screen.invoices.map((i) => i.number)).toEqual([invoices[1]?.number]);
+  });
+});
+
+describe("rythmes mêlés : chaque payeur facturé à SA clôture (M2)", () => {
+  it("au lundi le seul hebdomadaire, au 1er le mensuel ; aucun bon facturé deux fois ni oublié", async () => {
+    const id = await entity();
+    const monthly = await payer(id);
+    const weekly = await payer(id);
+    const startsAt = month.cycle().startsAt;
+    // Avant le mois : le second payeur est hebdomadaire (lundi) dès son ouverture.
+    clock.set(new Date(startsAt.getTime() - HOUR_MS));
+    await staff()
+      .put(`${ENTITIES}/${id}/payers/${weekly.id}/billing-mode`)
+      .send({ mode: "weekly" })
+      .expect(204);
+    // Un bon de la première semaine du mois ; l'autre (de `payer`) deux jours avant la clôture.
+    await laterOrder(weekly.id, new Date(startsAt.getTime() + HOUR_MS));
+    const firstMonday = nextClosureAfter(startsAt, BillingRhythm.weekly(1));
+    const lastWeek = nextClosureAfter(
+      new Date(closesAt.getTime() - 2 * DAY_MS),
+      BillingRhythm.weekly(1),
+    );
+
+    // Le dimanche soir de la première semaine : le seul hebdomadaire.
+    clock.set(new Date(invoicingMomentOf(firstMonday).getTime() + 2 * 60 * 1000));
+    expect(await invoicePass()).toEqual({
+      runs: [{ legalEntityId: id, periodClosesAt: firstMonday.toISOString(), outcome: "issued" }],
+    });
+    expect(await payersInvoiced()).toEqual([weekly.id]);
+
+    // La veille du 1er : le mensuel a son mois ; les lundis entre-temps sont tentés.
+    clock.set(new Date(issuableFrom.getTime() + 2 * 60 * 1000));
+    await invoicePass();
+    const monthlyOutcome = await ctx.prisma.invoiceMonthlyOutcome.findFirstOrThrow({
+      where: { payerCompanyId: monthly.id },
+    });
+    expect(monthlyOutcome.periodClosesAt).toEqual(closesAt);
+
+    // Puis la semaine qui porte le dernier bon de l'hebdomadaire, si elle clôt après le mois.
+    const last = lastWeek.getTime() > closesAt.getTime() ? lastWeek : closesAt;
+    clock.set(new Date(invoicingMomentOf(last).getTime() + 2 * 60 * 1000));
+    await invoicePass();
+
+    const links = await ctx.prisma.invoiceOrder.findMany({ select: { orderId: true } });
+    const orders = await ctx.prisma.order.findMany({ select: { id: true } });
+    expect(links.map((link) => link.orderId).sort()).toEqual(orders.map((o) => o.id).sort());
+    expect([...(await payersInvoiced())].sort()).toEqual([monthly.id, weekly.id].sort());
+    expect(await ctx.prisma.invoice.count({ where: { payerCompanyId: monthly.id } })).toBe(1);
+  });
+});
+
+/** Les payeurs facturés, dans l'ordre d'émission, chacun une fois. */
+async function payersInvoiced(): Promise<readonly string[]> {
+  const invoices = await ctx.prisma.invoice.findMany({
+    orderBy: { rank: "asc" },
+    select: { payerCompanyId: true },
+  });
+  return [...new Set(invoices.map((invoice) => invoice.payerCompanyId))];
+}
+
+/** Un bon de plus au compte de ce payeur, passé à `createdAt`. */
+async function laterOrder(companyId: string, createdAt: Date): Promise<void> {
+  seq += 1;
+  const user = await createUser(ctx.prisma, { auth0Sub: `r3-later-${String(seq)}` });
+  await ctx.prisma.order.create({
+    data: {
+      orderNumber: `CMD-R3-${String(seq)}`,
+      companyId,
+      placedByUserId: user.id,
+      subtotalCents: 10_000,
+      totalCents: 10_550,
+      vatCents: 550,
+      vatShares: [{ rate: 5.5, amountCents: 550 }],
+      paymentStatus: "not_required",
+      createdAt,
+      lines: {
+        create: {
+          sku: "PAIN-R3",
+          productNameSnapshot: "Pain de la semaine",
+          unitPriceMillicents: 10_000_000,
+          vatRate: 5.5,
+          quantity: 1,
+          lineTotalCents: 10_000,
+        },
+      },
+    },
+  });
+}
 
 /**
  * Un site qui suit la facturation du principal, prélevé sur SON mandat

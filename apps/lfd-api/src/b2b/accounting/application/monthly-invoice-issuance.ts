@@ -2,6 +2,8 @@ import type { CreditorSnapshot } from "../domain/creditor-snapshot.js";
 import { statementSellerOf } from "../domain/entities/billing-statement.js";
 import type { MonthlyInvoiceOutcomeKey } from "../domain/ports/monthly-invoice-outcomes.js";
 import type { BillingCycle } from "../domain/services/billing-cycle.js";
+import type { InvoicingCalendar } from "../domain/services/invoicing-calendar.js";
+import { periodLabelOf } from "../domain/services/invoicing-closures.js";
 import { invoiceFromDossier } from "../domain/services/invoice-from-dossier.js";
 import type { InvoiceSellerFacts } from "../domain/services/invoice-issuance-blockers.js";
 import { simulateInvoiceDossier } from "../domain/services/invoice-dossier.js";
@@ -23,7 +25,10 @@ import type { MonthlyContext } from "./monthly-invoice-support.js";
 export interface Issuance {
   readonly legalEntityId: string;
   readonly period: BillingCycle;
+  /** La période affichée de la clôture — la plus longue de celles qui s'y closent. */
   readonly periodLabel: string;
+  /** Le calendrier des payeurs : la période de CHACUN se lit dessus (M2). */
+  readonly calendar: InvoicingCalendar;
   readonly issuedOn: string;
   readonly dueOn: string;
   readonly creditor: CreditorSnapshot;
@@ -108,6 +113,11 @@ export function report(
     alreadyInvoiced,
     unbillableOrders: invoices.reduce((sum, invoice) => sum + invoice.unbillable.length, 0),
   };
+}
+
+/** « du 21 au 27 septembre 2026 » : la période du payeur, sur SA suite (M2). */
+export function payerPeriodLabelOf(payerId: string, issuance: Issuance): string {
+  return periodLabelOf(issuance.calendar.payerPeriodOf(payerId, issuance.period.closesAt));
 }
 
 /** Le plus tard de deux jours `AAAA-MM-JJ`. */

@@ -21,8 +21,8 @@ import {
   invoiceGroupKey,
   type InvoiceableOrder,
 } from "../../../domain/services/monthly-invoicing.js";
-import { BillingRhythm } from "../../../domain/value-objects/billing-rhythm.js";
-import { BillingRhythmSetting } from "../../../domain/value-objects/billing-rhythm-setting.js";
+import type { PayerModeSegments } from "../../../domain/ports/payer-billing-modes.reader.js";
+import { paris } from "../../../domain/services/__tests__/billing-mode-fixtures.js";
 import { InvoiceIssuer } from "../../services/invoice-issuer.js";
 import { RecordingDurable } from "./notice-doubles.js";
 import { IssueMonthlyInvoicesCommand } from "../issue-monthly-invoices.command.js";
@@ -32,7 +32,8 @@ import {
   CountingNumbering,
   FakeMonthlyReader,
   FixedIssuers,
-  FixedRhythms,
+  FixedModeDates,
+  FixedPayerModes,
   MemoryInvoices,
   MemoryOutcomes,
   NoHandovers,
@@ -94,7 +95,8 @@ function harness(
   options: {
     buyers?: StatementBuyerReader;
     at?: Date;
-    rhythm?: BillingRhythmSetting;
+    /** Les payeurs qui ont choisi un mode ; aucun : tous mensuels au 1er. */
+    payers?: readonly PayerModeSegments[];
     closure?: string;
   } = {},
 ) {
@@ -111,7 +113,8 @@ function harness(
   const issuer = new InvoiceIssuer(new CountingNumbering(), invoices, clock, events, uow, durable);
   const handler = new IssueMonthlyInvoicesHandler(
     reader,
-    new FixedRhythms(options.rhythm),
+    new FixedModeDates(),
+    new FixedPayerModes(options.payers),
     new FixedCreditors(CREDITOR),
     new FixedIssuers([SELLER_FACTS]),
     options.buyers ?? new FixedBuyers(),
@@ -382,7 +385,8 @@ describe("IssueMonthlyInvoices — la facture du mois (E4)", () => {
     await expect(
       new IssueMonthlyInvoicesHandler(
         h.reader,
-        new FixedRhythms(),
+        new FixedModeDates(),
+        new FixedPayerModes(),
         new FixedCreditors({ ...CREDITOR, legalEntityId: "le_other" }),
         new FixedIssuers([SELLER_FACTS]),
         new FixedBuyers(),
@@ -428,9 +432,9 @@ describe("IssueMonthlyInvoices — la facture du mois (E4)", () => {
     expect(h.reader.asked).toEqual([]);
   });
 
-  it("hebdomadaire au lundi : la période du lundi au dimanche, émise le dimanche à 23h55", async () => {
+  it("payeur hebdomadaire au lundi : sa semaine, émise le dimanche à 23h55", async () => {
     const h = harness({
-      rhythm: BillingRhythmSetting.of(BillingRhythm.weekly(1), null),
+      payers: [WEEKLY_PORT],
       // Le lundi 28 septembre 2026 à 00h00 à Paris.
       closure: "2026-09-27T22:00:00.000Z",
       // Le dimanche 27 septembre à 23h56.
@@ -447,7 +451,7 @@ describe("IssueMonthlyInvoices — la facture du mois (E4)", () => {
 
   it("hebdomadaire : avant le dimanche 23h55, la semaine court encore", async () => {
     const h = harness({
-      rhythm: BillingRhythmSetting.of(BillingRhythm.weekly(1), null),
+      payers: [WEEKLY_PORT],
       closure: "2026-09-27T22:00:00.000Z",
       at: new Date("2026-09-27T21:54:00.000Z"),
     });
@@ -455,23 +459,111 @@ describe("IssueMonthlyInvoices — la facture du mois (E4)", () => {
     await expect(h.run()).rejects.toThrow(PeriodNotYetInvoiceableError);
   });
 
-  it("au changement de rythme, la première période du nouveau part de la dernière clôture de l'ancien", async () => {
-    // Mensuel au 1er, hebdomadaire au lundi à partir du 1er octobre (clôture de l'ancien).
-    const switchAt = new Date(CLOSURE);
+  it("un lundi sans aucun payeur hebdomadaire n'est pas une clôture de l'entité", async () => {
     const h = harness({
-      rhythm: BillingRhythmSetting.of(BillingRhythm.default(), {
-        rhythm: BillingRhythm.weekly(1),
-        effectiveAt: switchAt,
-      }),
+      closure: "2026-09-27T22:00:00.000Z",
+      at: new Date("2026-09-27T21:56:00.000Z"),
+    });
+
+    await expect(h.run()).rejects.toThrow(NotABillingClosureError);
+    expect(h.reader.asked).toEqual([]);
+  });
+
+  it("rythmes mêlés, au lundi : seul l'hebdomadaire est facturé, le mensuel attend le 1er", async () => {
+    const h = harness({
+      payers: [WEEKLY_PORT],
+      closure: "2026-09-27T22:00:00.000Z",
+      at: new Date("2026-09-27T21:56:00.000Z"),
+    });
+    h.reader.orders = [bon("c_port"), bon("c_principal")];
+
+    const report = await h.run();
+
+    expect(report.issued.map((issue) => issue.payerCompanyId)).toEqual(["c_port"]);
+    expect(report.blocked).toEqual([]);
+    expect(h.outcomes.rows.has(PRINCIPAL)).toBe(false);
+  });
+
+  it("rythmes mêlés, au 1er : le mensuel a son mois entier, l'hebdomadaire ne clôt pas", async () => {
+    // Le jeudi 1er octobre 2026 n'est pas un lundi : seul le mensuel clôt.
+    const h = harness({ payers: [WEEKLY_PORT] });
+    const weekly = bon("c_port");
+    const monthly = bon("c_principal");
+    h.reader.orders = [weekly, monthly];
+
+    const report = await h.run();
+
+    expect(report.issued.map((issue) => issue.payerCompanyId)).toEqual(["c_principal"]);
+    expect(report.periodLabel).toBe("du 1er au 30 septembre 2026");
+    expect(h.invoices.inserted[0]?.toState().orders.map((o) => o.orderId)).toEqual([
+      monthly.orderId,
+    ]);
+  });
+
+  it("le site d'un payeur hebdomadaire est facturé avec lui, au lundi", async () => {
+    const h = harness({
+      payers: [{ payerCompanyId: "c_principal", segments: WEEKLY_SINCE_AUGUST }],
+      closure: "2026-09-27T22:00:00.000Z",
+      at: new Date("2026-09-27T21:56:00.000Z"),
+    });
+    h.reader.follows = [CHALET_FOLLOWS_PRINCIPAL];
+    const chalet = bon("c_chalet");
+    h.reader.orders = [chalet, bon("c_port")];
+
+    const report = await h.run();
+
+    expect(report.issued.map((issue) => issue.payerCompanyId)).toEqual(["c_principal"]);
+    expect(h.invoices.inserted[0]?.toState().orders.map((o) => o.orderId)).toEqual([
+      chalet.orderId,
+    ]);
+  });
+
+  it("un payeur qui passe à l'hebdomadaire au 1er : facturé au 1er sur son mois, puis sur sa première semaine", async () => {
+    // Mensuel jusqu'au 1er octobre, hebdomadaire au lundi ensuite.
+    const switching: PayerModeSegments = {
+      payerCompanyId: "c_port",
+      segments: [{ effectiveFrom: new Date(CLOSURE), mode: "weekly" }],
+    };
+    const atFirst = harness({ payers: [switching] });
+    atFirst.reader.orders = [bon("c_port")];
+    expect((await atFirst.run()).issued.map((issue) => issue.payerCompanyId)).toEqual(["c_port"]);
+    expect(atFirst.outcomes.rows.get(PORT)?.key.periodClosesAt).toEqual(new Date(CLOSURE));
+
+    const atMonday = harness({
+      payers: [switching],
       // Le lundi 5 octobre 2026 à 00h00 à Paris.
       closure: "2026-10-04T22:00:00.000Z",
       at: new Date("2026-10-04T21:56:00.000Z"),
     });
-    h.reader.orders = [bon("c_port")];
+    atMonday.reader.orders = [bon("c_port", { placedAt: new Date("2026-10-02T08:00:00.000Z") })];
 
-    const report = await h.run();
+    const report = await atMonday.run();
 
     expect(report.periodStartsAt).toBe(CLOSURE);
     expect(report.periodLabel).toBe("du 1er au 4 octobre 2026");
+    expect(report.issued.map((issue) => issue.payerCompanyId)).toEqual(["c_port"]);
+  });
+
+  it("le signalement d'un payeur hebdomadaire nomme SA semaine, pas le mois du calendrier", async () => {
+    // Le lundi 1er février 2027 : clôture du mensuel ET de l'hebdomadaire.
+    const h = harness({
+      payers: [WEEKLY_PORT],
+      closure: "2027-01-31T23:00:00.000Z",
+      at: new Date("2027-01-31T22:56:00.000Z"),
+    });
+    const broken = bon("c_port");
+    h.reader.orders = [
+      { ...broken, frozen: { ...broken.frozen, lateFeeCents: 100, lateFeeVatRate: null } },
+    ];
+
+    const report = await h.run();
+
+    // La clôture affiche la plus longue des périodes qui s'y closent.
+    expect(report.periodLabel).toBe("du 1er au 31 janvier 2027");
+    expect(h.outcomes.rows.get(PORT)?.message).toContain("du 25 au 31 janvier 2027");
   });
 });
+
+/** Hebdomadaire au lundi depuis le 1er août 2026 (une clôture du mensuel). */
+const WEEKLY_SINCE_AUGUST = [{ effectiveFrom: paris("2026-08-01"), mode: "weekly" as const }];
+const WEEKLY_PORT: PayerModeSegments = { payerCompanyId: "c_port", segments: WEEKLY_SINCE_AUGUST };

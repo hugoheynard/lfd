@@ -683,7 +683,7 @@ rend la timeline du **mode mensuel**. Le lisent encore, et sont à reprendre :
 
 | Lot                  | Appelants                                                                                                                                                                                                                                                                                      |
 | -------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| M2 (facture)         | `issue-monthly-invoices.handler`, `run-invoice-autopilot.handler`, `get-monthly-invoices.handler`                                                                                                                                                                                              |
+| M2 (facture)         | ~~`issue-monthly-invoices.handler`, `run-invoice-autopilot.handler`, `get-monthly-invoices.handler`~~ — **quittés en M2** (§16.8)                                                                                                                                                              |
 | M3 (lot)             | `collection-constitution-support` (donc `constitute-collection-batches.handler`, `get-collection-preview.handler`), `run-collection-autopilot.handler`, `cycle-draft-support` (`export-cycle-draft`, `export-cycle-audit`), `legal-entity-view-support` (le seul `nextCollection` de la fiche) |
 | M4 (relevé, dossier) | `statement-period-support` (`get-current-billing-cycle`, `list-statement-cycles`, `get-cycle-statement`, `export-cycle-statement`, `get-invoice-dossier`, `export-invoice-dossier`), et `PrismaInvoicePeriodsReader`, qui lit le mensuel en jointure SANS passer par le port                   |
 
@@ -703,3 +703,53 @@ défini — le calendrier d'union compte tout payeur qui a un segment vivant
 dont le mode est en vigueur ou programmé, sans regarder si le compte est
 actif ; et `payerCount` du mensuel ne compte que ceux qui l'ont CHOISI, la
 comptabilité ne tenant pas la liste des payeurs mensuels par défaut.
+
+### 16.8 M2 bâti (2026-10-12, non commité) — la facture par payeur à sa clôture
+
+**Calendrier de la facture** — `InvoicingCalendar` (domaine, pur) : l'union
+de la timeline de chaque payeur qui a choisi un mode (`PayerTimeline`) et du
+mensuel de l'entité (tout payeur sans ligne). Il porte `isClosure`,
+`closesFor(payeur, C)`, `payerPeriodOf(payeur, C)`, `periodOf(C)`,
+`closureToInvoice` et `closuresToAttempt` (ceux de R3, sur le calendrier ;
+même plafond `MAX_CLOSURES_PER_PASS`). Lu une fois par passage
+(`readInvoicingCalendar` : dates des modes + segments des payeurs).
+
+⚠️ **Écart assumé avec `ClosureCalendar`** : celui de M1 réunit des MODES
+(statiques), celui-ci des SUITES (datées). Ils coïncident tant que personne ne
+change de mode ; dans le passé, `ClosureCalendar` ferait tenter les lundis de
+septembre pour un payeur devenu hebdomadaire au 1er octobre — ce que §16.6-6
+refuse. La fiche (`lastClosure`, M1) lit encore `ClosureCalendar` ; M3 devra
+choisir lequel fait foi pour le lot (même question).
+
+- **Passage automatique** : une tentative par (entité, clôture du calendrier)
+  dans `invoice_autopilot_run`, rattrapage dans l'ordre depuis la dernière
+  tentée ou le plancher. Aucun lundi tenté sans payeur hebdomadaire à ce
+  moment-là.
+- **Facture à une clôture C** : lecture SQL inchangée `[plancher, C)` pour
+  tous ; filtre en mémoire `calendar.closesFor(billedPayerOf, C)` — un site suit
+  la suite de son payeur. Un payeur qui ne clôt pas à C n'est ni facturé ni
+  signalé ; ses bons attendent sa clôture. `issuedOn` = veille de C au plus
+  tôt (jamais antidaté), `dueOn` = `collectionDayOf(C)` — inchangés.
+- **Bouton** `POST …/monthly-invoices` : refuse un instant qui n'est pas une
+  clôture du calendrier (`NotABillingClosureError`, avant toute lecture des
+  bons) ; facture les payeurs qui y closent.
+- **Vue** `GET …/monthly-invoices` : la dernière clôture du calendrier dont
+  l'heure d'émission est passée ; 404 par `LegalEntityReader.byId`.
+- **Période affichée d'une clôture** (rapport, vue, refus « pas encore
+  facturable ») : la PLUS LONGUE de celles qui s'y closent (`periodOf`) — le
+  mois quand un lundi tombe le 1er. Le signalement d'un payeur nomme SA
+  période (`payerPeriodLabelOf`). Le contrat ne porte qu'une période par
+  clôture : la période par payeur à l'écran est M4.
+- **Mensuel au 1er strictement identique** : prouvé par égalité avec les
+  fonctions de R3 sur trois sondes par jour de 2026
+  (spec domaine du calendrier de la facture) ; les tests E4 du handler passent inchangés.
+- **e2e** (`test/monthly-invoices.e2e-spec.ts`) : « la facture par clôture d'un
+  rythme hebdomadaire (R3, rétabli en M2) » sur `PUT …/billing-modes/weekly` +
+  `PUT …/payers/:id/billing-mode`, et « rythmes mêlés » (un mensuel, un
+  hebdomadaire ; chaque bon dans exactement une facture). Écrits, **non
+  lancés** par le bâtisseur.
+- Ni migration, ni contrat, ni back-office touché.
+
+**Reste par l'adaptateur `BillingRhythmReader`** : M3 et M4 du tableau
+ci-dessus, inchangés. Le journal (`invoice.autopilot_ran`, `invoice.signalled`)
+dit encore le MOIS de la clôture (`periodMonthOf`).
