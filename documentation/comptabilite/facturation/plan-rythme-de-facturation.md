@@ -325,3 +325,16 @@ l'entité (`apps/lfd-api/src/b2b/accounting/domain/services/entity-closures.ts`,
   (`upcomingClosures` existe, pur) : contrat et neuf fixtures du back-office.
 - **Les libellés de lot** (`Lot B2B 202611`, `cycleTagOf`) ne distinguent pas
   deux semaines d'un même mois ; les noms de fichiers, si (identifiant du lot).
+
+## 14. Décisions de Hugo sur le §13 (2026-10-12)
+
+- **Le relevé de cycle passe par période en R5** (avec `billing-cycle`).
+- **Un lot manqué se signale et se refait à la main** — il n'est PAS absorbé
+  en silence par le lot suivant. Lot R4b :
+  - l'automatisme ne constitue pas tout seul quand une clôture antérieure de
+    l'entité n'a jamais été tentée (processus mort, panne) : il range une
+    tentative `missed` pour chaque clôture manquée, la journalise
+    (`collection.autopilot_ran`, issue `missed`) et la dit à l'écran ;
+  - la reprise est le bouton « Préparer le lot » existant, geste humain ;
+  - l'automatisme reprend seul dès que plus aucune clôture n'est manquée
+    (le lot manuel a été préparé).
