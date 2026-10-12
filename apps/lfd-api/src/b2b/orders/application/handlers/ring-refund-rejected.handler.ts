@@ -13,7 +13,7 @@ import { OrderRefundRejectedEvent } from "../../domain/events/order-refund-rejec
  * incohérents. L'argent est peut-être déjà rendu chez Stripe ; chez nous,
  * rien n'a été écrit. Quelqu'un doit comparer les deux.
  *
- * Sans destinataire nommé, comme `RingRefundDue` : visible de tout le
+ * Sans destinataire nommé, comme `order.refund_attention` : visible de tout le
  * back-office. Une clé par remboursement et par motif : Stripe qui réémet
  * (`refund.created` puis `refund.updated`) ne sonne pas deux fois.
  */

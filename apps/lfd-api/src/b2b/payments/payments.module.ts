@@ -4,6 +4,7 @@ import { AccountingModule } from "../accounting/accounting.module.js";
 import { FeatureAccessModule } from "../feature-access/feature-access.module.js";
 
 import { PaymentGateway } from "./domain/payment-gateway.js";
+import { PaymentRefunder } from "./domain/payment-refunder.js";
 import { PaymentMandateRepository } from "./domain/payment-mandate.repository.js";
 import { BankAccountGuardReader } from "./domain/ports/bank-account-guard.reader.js";
 import { CompanyBankAccountRepository } from "./domain/ports/company-bank-account.repository.js";
@@ -40,6 +41,7 @@ import { PrismaSiteMandatesReader } from "./infrastructure/prisma-site-mandates.
 import { SiteMandateRevoker } from "./application/site-mandate-revoker.js";
 import { PrismaPaymentMandateRepository } from "./infrastructure/prisma-payment-mandate.repository.js";
 import { StripePaymentGateway } from "./infrastructure/stripe-payment-gateway.js";
+import { StripePaymentRefunder } from "./infrastructure/stripe-payment-refunder.js";
 import { AdminCompanyBankAccountController } from "./http/admin-company-bank-account.controller.js";
 import { CompanyBankAccountController } from "./http/company-bank-account.controller.js";
 import { AdminMandatesController } from "./http/admin-mandates.controller.js";
@@ -105,6 +107,8 @@ import { StripeCheckoutGateway } from "./infrastructure/stripe-checkout-gateway.
   ],
   providers: [
     { provide: PaymentGateway, useClass: StripePaymentGateway },
+    // Le remboursement d'une commande annulée (lot C4) : un port à part (ISP).
+    { provide: PaymentRefunder, useClass: StripePaymentRefunder },
     { provide: PaymentMandateRepository, useClass: PrismaPaymentMandateRepository },
     { provide: MandateDebtorReader, useClass: PrismaMandateDebtorReader },
     { provide: SiteMandatesReader, useClass: PrismaSiteMandatesReader },
@@ -155,6 +159,6 @@ import { StripeCheckoutGateway } from "./infrastructure/stripe-checkout-gateway.
     SetMyCompanyMandateOptionsHandler,
     GetMyCompanyMandateOptionsHandler,
   ],
-  exports: [PaymentGateway, SiteMandateRevoker],
+  exports: [PaymentGateway, PaymentRefunder, SiteMandateRevoker],
 })
 export class PaymentsModule {}

@@ -101,6 +101,37 @@ describe("le courriel « commande annulée par l'équipe »", () => {
     expect(rendered.html).toContain(sentence);
   });
 
+  it("payée par carte (lot C4) : le montant à rendre sur la même carte, dès l'annulation", () => {
+    const rendered = mail({
+      sheet: sheet(),
+      regime: "paid",
+      voucher: null,
+      refund: { announcedCents: 2_340 },
+      locale: "fr",
+    });
+
+    expect(rendered.html).toMatch(
+      /Le montant de 23,40\s€ payé par carte, qui ne vous a pas déjà été remboursé/u,
+    );
+    expect(rendered.html).toContain("sous 5 à 10 jours ouvrés");
+  });
+
+  it.each([
+    ["fr", "Le paiement de cette commande vous a déjà été remboursé."],
+    ["en", "The payment for this order has already been refunded to you."],
+    ["it", "Il pagamento di questo ordine vi è già stato rimborsato."],
+  ] as const)("payée, déjà rendue en entier (lot C4, %s) : rien ne part", (locale, sentence) => {
+    const rendered = mail({ sheet: sheet(), regime: "paid", voucher: null, refund: null, locale });
+
+    expect(rendered.html).toContain(sentence);
+  });
+
+  it("payée, et un envoi d'avant C4 sans `refund` : se lit « déjà remboursé » plutôt que d'inventer un montant", () => {
+    const rendered = mail({ sheet: sheet(), regime: "paid", voucher: null, locale: "fr" });
+
+    expect(rendered.html).toContain("vous a déjà été remboursé");
+  });
+
   it("une carte non payée : aucun paiement prélevé ; le bon rendu est annoncé, avec sa date", () => {
     const rendered = mail({ sheet: sheet(), regime: "due", voucher: RETURNED, locale: "fr" });
 

@@ -53,6 +53,12 @@ class InMemoryRefunds extends OrderRefundRepository {
     );
   }
 
+  loadByOrder(orderId: string): Promise<OrderRefundLedger | null> {
+    return orderId === this.stored?.orderId
+      ? this.loadByPaymentIntent(this.intent)
+      : Promise.resolve(null);
+  }
+
   save(ledger: OrderRefundLedger): Promise<void> {
     this.saves += 1;
     this.stored = ledger;
@@ -210,5 +216,48 @@ describe("RecordOrderRefundHandler — le fait durable d'un remboursement réuss
     await send({ ...report(500, "re_1"), status: "pending" });
 
     expect(durable.facts).toEqual([]);
+  });
+});
+
+describe("RecordOrderRefundHandler — un remboursement qui n'a pas rendu l'argent (lot C4)", () => {
+  const failing = (amountCents: number, status: RefundReport["status"]): RefundReport => ({
+    ...report(amountCents),
+    status,
+  });
+
+  it("en attente puis échoué : `order.refund_failed`, une fois", async () => {
+    const { durable, send } = build();
+
+    await send(failing(500, "pending"));
+    await send(failing(500, "failed"));
+    await send(failing(500, "failed"));
+
+    expect(durable.facts).toEqual([
+      {
+        type: "order.refund_failed",
+        key: "order.refund_failed:ref_000001",
+        payload: { orderId: "ord_1", refundId: "ref_000001", stripeRefundId: "re_1" },
+      },
+    ]);
+  });
+
+  it("réussi puis échoué : `order.refund_reversed` — le reste à rendre remonte", async () => {
+    const { durable, send } = build();
+
+    await send(failing(500, "succeeded"));
+    await send(failing(500, "failed"));
+
+    expect(durable.facts.map((fact) => fact.type)).toEqual([
+      "order.refund_succeeded",
+      "order.refund_reversed",
+    ]);
+  });
+
+  it("annulé chez Stripe : `order.refund_failed`", async () => {
+    const { durable, send } = build();
+
+    await send(failing(500, "canceled"));
+
+    expect(durable.facts.map((fact) => fact.type)).toEqual(["order.refund_failed"]);
   });
 });

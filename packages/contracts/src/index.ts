@@ -598,7 +598,10 @@ export type { VatShareView } from "./order.js";
 export type { AdminOrderRow, AdminOrdersPage, AdminOrdersQuery } from "./admin-order-list.js";
 export type {
   AdminCancelOrderPayload,
+  AdminCancellationRefund,
   AdminCancellationVoucher,
+  AdminOrderRefund,
+  AdminOrderRefundState,
   AdminOrderCancellability,
   AdminOrderCompanyView,
   AdminOrderCustomerView,

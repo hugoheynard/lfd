@@ -1488,6 +1488,43 @@ Non tranchées par Hugo au 2026-10-12 ; le lot se bâtit sur les défauts.
 
 ### Lot C4 — annuler une commande PAYÉE par carte, avec remboursement (conçu le 2026-10-12, contredit, révisé)
 
+> 🔨 **Bâti le 2026-10-12, non commité** (`apps/lfd-api`, `packages/contracts`,
+> `apps/lfd-backoffice-frontend`, `container/worker.ts`, porte
+> `clock-port`). Migration `20261012950000_la_demande_de_remboursement`
+> (type `OrderRefundCause` créé avec ses trois valeurs, table
+> `order_refund_request`, contraintes `CHECK`). Agrégat `OrderRefundRequest`
+> et `refundRequestStateOf` ; port `WallClock` (`platform/time/`) ;
+> `IssueOrderRefundHandler` (bail, recherche puis création hors transaction,
+> issue par `RefundIssuanceRecorder`) ; balayage `admin/orders/refunds/sweep`
+> au cron ; `POST admin/orders/:id/refund/retry` (`202`) ; abonnés
+> `orders.refund-paid-after-cancellation` (remplace `RingRefundDue`, retirée),
+> `orders.ring-refund-failed`, `orders.reopen-refund-on-reversal` ; lecteur
+> « encaissé après annulation » limité à `failed` ; bloc `paid_just_now` ;
+> courriel `paid` fr/en/it ; journal (`regime: paid`, `refund`,
+> `order.refund_attempt_failed`, `order.refund_issued`) ; `cancellability.refund`
+> et bandeau à quatre états avec « Relancer » au détail staff. E2E
+> `order-staff-cancel-refund*.e2e-spec.ts` (le double de Stripe refuse d'être
+> appelé sous transaction).
+> **Écarts au plan, à relire** : (1) le remboursement est un port À PART,
+> `PaymentRefunder` (`refundRemainder` + `findRefund`), pas une méthode de
+> `PaymentGateway` : celle-ci est doublée par une cinquantaine de suites e2e
+> qui n'ont rien à rembourser (ISP) ; (2) `order.refund_issued` ne porte PAS
+> `refundId` : le contrat du journal n'admet aucun identifiant Stripe
+> (`journal-facts/order-refunds.ts`) ; (3) `order.refund_failed` et
+> `order.refund_reversed` sont des faits DURABLES publiés pour tout
+> remboursement qui passe `failed`/`canceled` (`reversed` s'il avait réussi) —
+> ce sont les abonnés qui filtrent « une demande dont c'est le `re_…` » et
+> « commande annulée » ; (4) le refus « le `re_…` appartient à une autre
+> commande » n'est pas codé : la recherche et la création se font sur
+> l'intention de la commande, `@unique` — l'impossibilité est structurelle ;
+> (5) « Relancer » a un quatrième refus, `awaiting_bank` (émis, en attente de
+> la banque) ; (6) une demande sans intention Stripe (impossible sur une
+> payée) s'arrête en `no_payment_intent` avec la cloche « refusé » plutôt que
+> de rester muette ; (7) le bandeau « remboursé » ne donne pas de date : la vue
+> ne connaît que l'instant d'émission ; (8) la phrase de confirmation garde
+> « (livraison comprise) » même sur un retrait ; (9) le filtre « remboursement
+> à faire » de la liste `/commandes` n'est **pas** bâti (reste à faire).
+
 > Hugo, 2026-10-12 : « je pense que souvent l'annulation aura lieu post
 > paiement », « il faudra adapter les comportements de remboursement en
 > fonction des cas de figure ». Enchaînement sans arrêt : les questions

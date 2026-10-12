@@ -17,6 +17,8 @@ import { R2MediaStore } from "../storage/r2-media-store.js";
 import { S3DocumentStore } from "../storage/s3-document-store.js";
 import { Clock } from "../time/clock.js";
 import { SystemClock } from "../time/system-clock.js";
+import { SystemWallClock } from "../time/system-wall-clock.js";
+import { WallClock } from "../time/wall-clock.js";
 
 /**
  * Fondations **cross-cutting** : les ports `Clock`, `IdGenerator`,
@@ -35,6 +37,8 @@ import { SystemClock } from "../time/system-clock.js";
 @Module({
   providers: [
     { provide: Clock, useClass: SystemClock },
+    // L'heure du mur, pour un bail et une échéance de reprise seulement (C4.7).
+    { provide: WallClock, useClass: SystemWallClock },
     { provide: IdGenerator, useClass: UlidGenerator },
     { provide: UuidGenerator, useClass: UuidV7Generator },
     { provide: SecretGenerator, useClass: RandomSecretGenerator },
@@ -75,6 +79,7 @@ import { SystemClock } from "../time/system-clock.js";
   ],
   exports: [
     Clock,
+    WallClock,
     IdGenerator,
     UuidGenerator,
     SecretGenerator,

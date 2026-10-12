@@ -96,6 +96,9 @@ export const MAIL_FR: MailCopy = {
     nothingBilled: "Rien ne vous sera facturé pour cette commande.",
     nothingCharged: "Aucun paiement n'a été prélevé.",
     nothingInvoiced: "Rien ne sera facturé ni prélevé pour cette commande.",
+    refundToCard:
+      "Le montant de {amount} payé par carte, qui ne vous a pas déjà été remboursé, vous sera remboursé sur cette même carte. Selon votre banque, il apparaît sous 5 à 10 jours ouvrés.",
+    alreadyRefunded: "Le paiement de cette commande vous a déjà été remboursé.",
     voucherReturned:
       "Votre bon de fidélité de {value} vous est rendu : vous pourrez l'utiliser sur une prochaine commande jusqu'au {day}.",
     voucherMerged:

@@ -9,6 +9,12 @@ import { Clock } from "../../../../platform/time/clock.js";
 import type { OrderRefundLedger } from "../../domain/entities/order-refund-ledger.js";
 import { RefundRejectedError } from "../../domain/errors/order-refund-errors.js";
 import { OrderRefundSucceededFact } from "../../domain/events/order-refund-succeeded.fact.js";
+import {
+  ORDER_REFUND_FAILED,
+  ORDER_REFUND_REVERSED,
+  OrderRefundFailedFact,
+} from "../../domain/events/order-refund-failed.fact.js";
+import type { RefundStatus } from "../../domain/entities/order-refund.js";
 import { OrderRefundRejectedEvent } from "../../domain/events/order-refund-rejected.event.js";
 import { RefundWithoutOrderEvent } from "../../domain/events/refund-without-order.event.js";
 import { OrderRefundRepository } from "../../domain/ports/order-refund.repository.js";
@@ -77,6 +83,7 @@ export class RecordOrderRefundHandler implements ICommandHandler<RecordOrderRefu
       return { kind: "unmatched" };
     }
     try {
+      const before = ledger.statusOf(command.report.stripeRefundId);
       const recorded = ledger.record(command.report, this.ids.next(), this.clock.now());
       if (recorded.kind === "recorded") {
         await this.refunds.save(ledger);
@@ -89,6 +96,7 @@ export class RecordOrderRefundHandler implements ICommandHandler<RecordOrderRefu
           const fact = new OrderRefundSucceededFact(ledger.orderId, recorded.refund.id);
           await this.durable.publish(fact.durableFact());
         }
+        await this.publishFailure(ledger.orderId, recorded.refund, before);
       }
       return { kind: "done" };
     } catch (error) {
@@ -97,6 +105,26 @@ export class RecordOrderRefundHandler implements ICommandHandler<RecordOrderRefu
       }
       return this.reject(ledger, command, error);
     }
+  }
+
+  /**
+   * Lot C4 (C4.7, C4.11 bis) : un remboursement qui n'a pas rendu l'argent.
+   * `order.refund_reversed` quand il AVAIT réussi (le reste à rendre
+   * remonte), `order.refund_failed` sinon. Les abonnés décident : une
+   * commande sans demande ni annulation n'appelle rien.
+   */
+  private async publishFailure(
+    orderId: string,
+    refund: { readonly id: string; readonly stripeRefundId: string; readonly status: RefundStatus },
+    before: RefundStatus | null,
+  ): Promise<void> {
+    if (refund.status !== "failed" && refund.status !== "canceled") {
+      return;
+    }
+    const type = before === "succeeded" ? ORDER_REFUND_REVERSED : ORDER_REFUND_FAILED;
+    await this.durable.publish(
+      new OrderRefundFailedFact(type, orderId, refund.id, refund.stripeRefundId).durableFact(),
+    );
   }
 
   /** Le refus se TRACE : le journal d'abord, la cloche après la transaction. */

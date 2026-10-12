@@ -65,6 +65,7 @@ export class OnOrderCancelled implements DurableSubscriber {
           event.voucher === null
             ? null
             : { ...event.voucher, expiresAt: event.voucher.expiresAt.toISOString() },
+        refund: event.refund,
       },
     });
   }

@@ -29,6 +29,38 @@ export interface AdminOrderView extends OrderView {
    * bouton actif peut donc encore rendre un 409, avec la même phrase.
    */
   readonly cancellability: AdminOrderCancellability;
+  /**
+   * **L'argent à rendre d'une commande annulée** (plan
+   * `documentation/order/plan-annulation-de-commande.md`, lot C4, C4.9) —
+   * `null` quand aucun remboursement n'a été demandé.
+   */
+  readonly refund: AdminOrderRefund | null;
+}
+
+/**
+ * L'état d'un remboursement demandé, LU au carnet (jamais stocké) :
+ * `to_issue` pas encore accepté par Stripe ; `issued` envoyé, en attente de
+ * la banque ; `refunded` rendu ; `failed` échoué chez Stripe — à relancer ou
+ * à régler autrement.
+ */
+export type AdminOrderRefundState = "to_issue" | "issued" | "refunded" | "failed";
+
+export interface AdminOrderRefund {
+  readonly state: AdminOrderRefundState;
+  /** Ce que l'annulation a promis, en centimes TTC. */
+  readonly announcedCents: number;
+  /** Ce que Stripe a rendu pour la génération courante, `null` avant émission. */
+  readonly issuedCents: number | null;
+  /** Instant ISO 8601. */
+  readonly requestedAt: string;
+  /** Instant ISO 8601 ; `null` avant émission. */
+  readonly issuedAt: string | null;
+  /** Appels faits pour la génération courante. */
+  readonly attempts: number;
+  /** La phrase du serveur sur le dernier échec, ou `null`. */
+  readonly lastFailure: string | null;
+  /** « Relancer » a-t-il un sens maintenant (à émettre ou échoué, et personne ne le traite) ? */
+  readonly retryable: boolean;
 }
 
 /**
@@ -37,9 +69,16 @@ export interface AdminOrderView extends OrderView {
  *
  * `voucher` (lot C3b) : ce que l'annulation fera du bon de fidélité que la
  * commande porte, `null` sans bon.
+ *
+ * `refund` (lot C4, C4.9) : l'argent payé par carte qui sera rendu, avec sa
+ * phrase — `null` hors commande payée par carte.
  */
 export type AdminOrderCancellability =
-  | { readonly cancellable: true; readonly voucher: AdminCancellationVoucher | null }
+  | {
+      readonly cancellable: true;
+      readonly voucher: AdminCancellationVoucher | null;
+      readonly refund: AdminCancellationRefund | null;
+    }
   | { readonly cancellable: false; readonly reason: string };
 
 /**
@@ -69,6 +108,16 @@ export type AdminCancellationVoucher =
       readonly expiresAt: string;
       readonly sentence: string;
     };
+
+/**
+ * Ce que l'annulation d'une commande payée rendra (lot C4, C4.9) :
+ * `amountCents` le reste payé par carte et pas encore rendu (centimes TTC),
+ * `0` s'il a déjà été rendu en entier ; `sentence` la phrase du serveur.
+ */
+export interface AdminCancellationRefund {
+  readonly amountCents: number;
+  readonly sentence: string;
+}
 
 /**
  * Le corps de `POST /admin/orders/:id/cancel` — la FORME seule. Le motif vide

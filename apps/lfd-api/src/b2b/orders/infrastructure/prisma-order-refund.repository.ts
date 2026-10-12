@@ -46,6 +46,19 @@ export class PrismaOrderRefundRepository extends OrderRefundRepository {
     if (orderId === undefined) {
       return null;
     }
+    return this.read(orderId);
+  }
+
+  async loadByOrder(orderId: string): Promise<OrderRefundLedger | null> {
+    const locked = await this.prisma.$queryRaw<{ id: string }[]>`
+      SELECT "id" FROM "public"."orders"
+      WHERE "id" = ${orderId}
+      FOR UPDATE`;
+    return locked.length === 0 ? null : this.read(orderId);
+  }
+
+  /** La lecture, une fois la ligne verrouillée. */
+  private async read(orderId: string): Promise<OrderRefundLedger> {
     const row = await this.prisma.order.findUniqueOrThrow({
       where: { id: orderId },
       select: {

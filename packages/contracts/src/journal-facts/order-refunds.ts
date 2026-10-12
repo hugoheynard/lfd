@@ -61,6 +61,27 @@ export const ORDER_REFUND_FACTS = {
     }),
   ),
   /**
+   * Lot C4 (`plan-annulation-de-commande.md`, C4.8) : un essai d'émettre le
+   * remboursement demandé à l'annulation n'a pas rendu l'argent. `generation`
+   * la génération de la demande ; `failure` son code lisible (`unavailable`,
+   * `nothing_left`, `declined:<code>`). 🔴 Valeur de type irréversible.
+   */
+  "order.refund_attempt_failed": fact(
+    payload({
+      subjectLabel: subjectLabel(),
+      generation: z.number().int().positive(),
+      failure: z.string().min(1),
+    }),
+  ),
+  /**
+   * Lot C4 (C4.4, C4.8) : Stripe a rendu un autre montant que celui promis à
+   * l'annulation — un remboursement partiel fait entre-temps depuis le
+   * tableau de bord. 🔴 Valeur de type irréversible.
+   */
+  "order.refund_issued": fact(
+    payload({ subjectLabel: subjectLabel(), announcedCents: cents(), issuedCents: cents() }),
+  ),
+  /**
    * La facture carte de la commande n'a pas pu être émise (lot E5a) :
    * acheteur sans SIREN ou sans TVA, pas d'émetteur, bon incohérent…
    * `message` dit le refus en clair ; l'écran Comptabilité la montre et

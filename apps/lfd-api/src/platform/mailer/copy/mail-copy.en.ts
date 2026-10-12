@@ -92,6 +92,9 @@ export const MAIL_EN: MailCopy = {
     nothingBilled: "You will not be charged anything for this order.",
     nothingCharged: "No payment has been taken.",
     nothingInvoiced: "Nothing will be invoiced or debited for this order.",
+    refundToCard:
+      "The amount of {amount} paid by card and not already refunded to you will be refunded to the same card. Depending on your bank, it appears within 5 to 10 business days.",
+    alreadyRefunded: "The payment for this order has already been refunded to you.",
     voucherReturned:
       "Your loyalty voucher of {value} has been returned to you: you can use it on a future order until {day}.",
     voucherMerged:

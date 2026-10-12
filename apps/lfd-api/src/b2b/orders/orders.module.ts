@@ -38,7 +38,7 @@ import { PrismaUnsettledShopOrderReader } from "./infrastructure/prisma-unsettle
 import { PrismaUnsettledShopOrderCanceller } from "./infrastructure/prisma-unsettled-shop-order.canceller.js";
 import { CancelledOrderPaymentReader } from "./domain/ports/cancelled-order-payment.reader.js";
 import { PrismaCancelledOrderPaymentReader } from "./infrastructure/prisma-cancelled-order-payment.reader.js";
-import { RingRefundDue } from "./application/handlers/ring-refund-due.handler.js";
+import { ORDER_REFUND_CONTROLLERS, ORDER_REFUND_PROVIDERS } from "./order-refund.providers.js";
 import { RecordOrderRefundHandler } from "./application/commands/record-order-refund.handler.js";
 import { RingRefundRejected } from "./application/handlers/ring-refund-rejected.handler.js";
 import { OrderRefundRepository } from "./domain/ports/order-refund.repository.js";
@@ -204,6 +204,7 @@ import { AdminSupervisionController } from "./http/admin-supervision.controller.
     PricerModule,
   ],
   controllers: [
+    ...ORDER_REFUND_CONTROLLERS,
     OrdersController,
     MyShopCatalogueController,
     MyShopQuoteController,
@@ -317,13 +318,15 @@ import { AdminSupervisionController } from "./http/admin-supervision.controller.
     { provide: UnsettledShopOrderReader, useClass: PrismaUnsettledShopOrderReader },
     { provide: UnsettledShopOrderCanceller, useClass: PrismaUnsettledShopOrderCanceller },
     // Son prix : une intention restée vivante peut être payée sur une commande
-    // annulée. La base ne la rouvre pas ; la cloche dit « à rembourser » (6 bis).
-    RingRefundDue,
+    // annulée. La base ne la rouvre pas ; depuis le lot C4, elle se rembourse
+    // toute seule (`ORDER_REFUND_PROVIDERS`).
     { provide: CancelledOrderPaymentReader, useClass: PrismaCancelledOrderPaymentReader },
     // Les remboursements Stripe, CONSTATÉS (plan facture carte, lot R1).
     RecordOrderRefundHandler,
     RingRefundRejected,
     { provide: OrderRefundRepository, useClass: PrismaOrderRefundRepository },
+    // Lot C4 : rembourser une commande payée qu'on annule.
+    ...ORDER_REFUND_PROVIDERS,
     // Le composeur de l'accusé, partagé par les deux chemins ci-dessus.
     OrderPlacedMail,
     // Prévient le propriétaire d'une adresse qu'une commande sans compte l'a

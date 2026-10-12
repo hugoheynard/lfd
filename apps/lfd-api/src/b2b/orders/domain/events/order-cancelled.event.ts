@@ -14,6 +14,15 @@ export interface CancelledOrderVoucher {
   readonly expiresAt: Date;
 }
 
+/**
+ * L'argent que l'annulation d'une commande payée a promis de rendre (lot C4,
+ * C4.8) — `null` hors régime `paid`, ou quand il n'y avait plus rien à rendre.
+ * Centimes TTC, l'unité de l'encaissement.
+ */
+export interface CancelledOrderRefund {
+  readonly announcedCents: number;
+}
+
 /** Nom STABLE du fait, clé de routage vers `@DurableHandler`. */
 export const ORDER_CANCELLED = "order.cancelled";
 
@@ -34,6 +43,9 @@ export const ORDER_CANCELLED = "order.cancelled";
  * sans lecture de l'ancienne forme : C3 n'avait jamais été promu sur `main`,
  * aucun fait `order.cancelled` n'existait en production (plan, C3b.6). Si un
  * jour C3 part sans C3b, cette lecture redevient nécessaire.
+ *
+ * `refund` (lot C4, C4.8) est ajouté de façon ADDITIVE : un fait sans la clé se
+ * lit `null` — si C3 part avant C4, ses faits restent lisibles.
  */
 export class OrderCancelledEvent implements DurableEvent {
   constructor(
@@ -46,6 +58,7 @@ export class OrderCancelledEvent implements DurableEvent {
     readonly reason: string,
     readonly regime: CancellableRegime,
     readonly voucher: CancelledOrderVoucher | null,
+    readonly refund: CancelledOrderRefund | null = null,
   ) {}
 
   durableFact(): DurableFact {
@@ -63,6 +76,7 @@ export class OrderCancelledEvent implements DurableEvent {
           this.voucher === null
             ? null
             : { ...this.voucher, expiresAt: this.voucher.expiresAt.toISOString() },
+        refund: this.refund,
       },
     };
   }
@@ -80,14 +94,16 @@ export class OrderCancelledEvent implements DurableEvent {
     const reason = text("reason");
     const regime = payload["regime"];
     const voucher = voucherOf(payload["voucher"]);
+    const refund = refundOf(payload["refund"]);
     if (
       orderId === null ||
       orderNumber === null ||
       placedByUserId === null ||
       cancelledBy === null ||
       reason === null ||
-      (regime !== "free" && regime !== "due" && regime !== "account") ||
-      voucher === undefined
+      (regime !== "free" && regime !== "due" && regime !== "account" && regime !== "paid") ||
+      voucher === undefined ||
+      refund === undefined
     ) {
       throw new OrderSettlementPayloadError(ORDER_CANCELLED);
     }
@@ -99,8 +115,24 @@ export class OrderCancelledEvent implements DurableEvent {
       reason,
       regime,
       voucher,
+      refund,
     );
   }
+}
+
+/** `undefined` : hors forme. Une clé absente (fait d'avant C4) se lit `null`. */
+function refundOf(raw: unknown): CancelledOrderRefund | null | undefined {
+  if (raw === null || raw === undefined) {
+    return null;
+  }
+  if (typeof raw !== "object") {
+    return undefined;
+  }
+  const announced = "announcedCents" in raw ? Reflect.get(raw, "announcedCents") : undefined;
+  if (typeof announced !== "number" || !Number.isInteger(announced) || announced <= 0) {
+    return undefined;
+  }
+  return { announcedCents: announced };
 }
 
 /** `undefined` : hors forme. */

@@ -38,6 +38,11 @@
             voucher
           }}</fold-callout>
         }
+        @if (refundSentence(); as refund) {
+          <fold-callout appearance="inset" variant="info" data-cancel-refund>{{
+            refund
+          }}</fold-callout>
+        }
       }
       <fold-inline-confirm
         message="Le client recevra un courriel d'annulation. L'annulation est définitive."

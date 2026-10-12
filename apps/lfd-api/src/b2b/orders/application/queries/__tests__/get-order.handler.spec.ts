@@ -25,6 +25,9 @@ import { FixedClock } from "../../../../../platform/time/fixed-clock.js";
 import type { VoucherRestitution } from "../../../domain/ports/loyalty-voucher-redemption.js";
 import { VoucherRestitutionPreview } from "../../../domain/ports/voucher-restitution-preview.js";
 import { VoucherRestitutionRefusal } from "../../services/voucher-restitution-refusal.js";
+import { FixedWallClock } from "../../../../../platform/time/fixed-wall-clock.js";
+import { AdminOrderRefundView } from "../../services/admin-order-refund-view.js";
+import { InMemoryRefundReader, RefundStore } from "../../commands/__tests__/refund-doubles.js";
 import { GetAdminOrderHandler } from "../get-admin-order.handler.js";
 import { GetAdminOrderQuery } from "../get-admin-order.query.js";
 import { GetOrderHandler } from "../get-order.handler.js";
@@ -220,6 +223,7 @@ function adminHandler(
   preview: VoucherRestitutionPreview = new FixedRestitutionPreview({ kind: "already" }),
   others: Readonly<Record<string, CancellationSubject>> = {},
   engagement: AccountEngagement | null = { kind: "free" },
+  refunds: RefundStore = new RefundStore(),
 ): GetAdminOrderHandler {
   const subjects = new FixedSubjects(subject, others);
   const inscriptions = new FixedInscription(inscribedDay);
@@ -233,6 +237,10 @@ function adminHandler(
     preview,
     new VoucherRestitutionRefusal(subjects, inscriptions, rule),
     rule,
+    new AdminOrderRefundView(
+      new InMemoryRefundReader(refunds),
+      new FixedWallClock(VOUCHER_EXPIRES),
+    ),
     new FixedClock(VOUCHER_EXPIRES),
   );
 }
@@ -249,7 +257,8 @@ describe("GetAdminOrderHandler", () => {
       ...VIEW,
       clientele: "pro",
       placedBy: { customer: CUSTOMER, company: COMPANY, staffName: null },
-      cancellability: { cancellable: true, voucher: null },
+      cancellability: { cancellable: true, voucher: null, refund: null },
+      refund: null,
     });
   });
 
@@ -343,7 +352,8 @@ describe("GetAdminOrderHandler", () => {
         ofCompany("cmp_1"),
         { customer: CUSTOMER, company: COMPANY, placedByStaffId: null },
         directory(),
-        cancellationSubject({ loyaltyVoucherId: "bon_1", paymentStatus: "paid" }),
+        // Prête : refusée par sa règle (une payée s'annule depuis le lot C4).
+        cancellationSubject({ loyaltyVoucherId: "bon_1", status: "ready" }),
         null,
         preview,
       );
@@ -372,17 +382,63 @@ describe("GetAdminOrderHandler", () => {
     });
   });
 
-  it("dit pourquoi elle ne s'annule pas : payée par carte", async () => {
+  it("payée par carte : annulable, et la confirmation dit le montant rendu (lot C4, C4.9)", async () => {
     const handler = adminHandler(
       ofCompany("cmp_1"),
       { customer: CUSTOMER, company: COMPANY, placedByStaffId: null },
       directory(),
-      cancellationSubject({ paymentStatus: "paid" }),
+      cancellationSubject({
+        paymentStatus: "paid",
+        refunds: { refundableCents: 2_340, inFlightCents: 0 },
+      }),
+    );
+
+    const view = await handler.execute(new GetAdminOrderQuery("ord_1"));
+
+    expect(view.cancellability).toMatchObject({
+      cancellable: true,
+      voucher: null,
+      refund: { amountCents: 2_340 },
+    });
+    expect(view.cancellability.cancellable && view.cancellability.refund?.sentence).toMatch(
+      /^Le client sera remboursé de 23,40\s€ sur sa carte/u,
+    );
+  });
+
+  it("déjà rendue en entier depuis Stripe : annulable, rien ne partira (lot C4)", async () => {
+    const handler = adminHandler(
+      ofCompany("cmp_1"),
+      { customer: CUSTOMER, company: COMPANY, placedByStaffId: null },
+      directory(),
+      cancellationSubject({ paymentStatus: "refunded" }),
+    );
+
+    const view = await handler.execute(new GetAdminOrderQuery("ord_1"));
+
+    expect(view.cancellability).toMatchObject({
+      cancellable: true,
+      refund: {
+        amountCents: 0,
+        sentence: "Le paiement a déjà été remboursé en entier depuis Stripe : rien ne partira.",
+      },
+    });
+  });
+
+  it("un remboursement en vol refuse, avec son montant (lot C4)", async () => {
+    const handler = adminHandler(
+      ofCompany("cmp_1"),
+      { customer: CUSTOMER, company: COMPANY, placedByStaffId: null },
+      directory(),
+      cancellationSubject({
+        paymentStatus: "paid",
+        refunds: { refundableCents: 2_340, inFlightCents: 500 },
+      }),
     );
 
     const view = await handler.execute(new GetAdminOrderQuery("ord_1"));
 
     expect(view.cancellability).toMatchObject({ cancellable: false });
+    expect(said(view.cancellability)).toContain("est en cours chez Stripe");
   });
 
   it("au compte, dit l'engagement comptable par la même phrase que le geste (lot C5)", async () => {
@@ -416,7 +472,7 @@ describe("GetAdminOrderHandler", () => {
 
     const view = await handler.execute(new GetAdminOrderQuery("ord_1"));
 
-    expect(view.cancellability).toEqual({ cancellable: true, voucher: null });
+    expect(view.cancellability).toEqual({ cancellable: true, voucher: null, refund: null });
   });
 
   it("rend aussi une commande personnelle, qu'aucun mur d'entreprise ne couvre", async () => {

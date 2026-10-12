@@ -284,10 +284,13 @@ describe("un pro non réglé à la clôture (Q7)", () => {
 describe("un encaissement après la clôture (lot 6 bis)", () => {
   /**
    * Le prix de B1 : Stripe injoignable à la clôture laisse une intention
-   * vivante, que le client finit de payer. La base ne rouvre pas l'annulée, et
-   * quelqu'un doit rembourser.
+   * vivante, que le client finit de payer. La base ne rouvre pas l'annulée.
+   *
+   * Depuis le lot C4 (C4.11, plan `order/plan-annulation-de-commande.md`), le
+   * remboursement n'est plus une cloche « à rembourser depuis Stripe » : une
+   * demande automatique s'ouvre, une seule fois, et l'exécuteur la porte.
    */
-  it("la commande reste annulée, et la cloche dit « à rembourser » une seule fois", async () => {
+  it("la commande reste annulée, et UNE demande de remboursement s'ouvre, sans l'ancienne cloche", async () => {
     await paidOrder();
     const late = await seedOrder();
     cancellation = { kind: "unavailable", reason: "ECONNRESET" };
@@ -299,11 +302,9 @@ describe("un encaissement après la clôture (lot 6 bis)", () => {
     await ctx.drain();
 
     expect(await stateOf(late.orderId)).toEqual({ ...CANCELLED, paidAt: null });
-    expect(await notices("order.paid_after_cancellation")).toEqual([
-      {
-        subject: expect.stringContaining("Encaissé sur une commande annulée") as string,
-        body: expect.stringContaining("à rembourser") as string,
-      },
-    ]);
+    expect(
+      await ctx.prisma.orderRefundRequest.findMany({ select: { orderId: true, cause: true } }),
+    ).toEqual([{ orderId: late.orderId, cause: "paid_after_cancellation" }]);
+    expect(await notices("order.paid_after_cancellation")).toEqual([]);
   });
 });

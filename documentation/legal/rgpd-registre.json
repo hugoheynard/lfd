@@ -1098,6 +1098,15 @@
       "information": false
     },
     {
+      "colonne": "public.order_refund_request.requested_by",
+      "personne": "staff",
+      "categorie": "auteur-geste",
+      "finalite": "Tracer quel membre du staff a demandé le remboursement (`requested_by`) en annulant une commande payée — plan d'annulation, C4.5.",
+      "conservation": "aucune-limite-decidee",
+      "purge": null,
+      "information": false
+    },
+    {
       "colonne": "public.orders.handed_over_by",
       "personne": "livreur",
       "categorie": "auteur-geste",

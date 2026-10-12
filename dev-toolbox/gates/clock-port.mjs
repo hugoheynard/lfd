@@ -58,6 +58,11 @@ const ALLOWED = [
   // où le temps entre dans l'application, et c'est exactement ce que §3.2
   // décrit — pas une entorse, le mécanisme.
   "src/platform/context/request-context.middleware.ts",
+  // L'heure du MUR (`WallClock`, plan `order/plan-annulation-de-commande.md`,
+  // C4.7) : `SystemClock` rend l'instant gelé à l'ingress, en retard de toute
+  // la durée d'un appel Stripe. Elle ne mesure qu'un BAIL et une échéance de
+  // reprise — jamais un instant écrit comme fait métier, qui reste au `Clock`.
+  "src/platform/time/system-wall-clock.ts",
 
   // ── Observabilité : ni écrit en base, ni comparé à du métier ───────────
   // Horodatage de ligne de journal technique.
@@ -144,5 +149,5 @@ if (offences.length > 0) {
 
 console.log(`✓ clock-port : les ${scanned} fichiers de production lisent le temps par le port.`);
 console.log(
-  `  Dérogations déclarées : ${ALLOWED.length} (adaptateur, ingress, sondes, log, jeton)`,
+  `  Dérogations déclarées : ${ALLOWED.length} (adaptateurs, ingress, sondes, log, jeton)`,
 );

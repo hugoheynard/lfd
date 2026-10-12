@@ -1,5 +1,7 @@
 import type { OrderStatus, PaymentStatus } from "@lfd/contracts";
 
+import type { RefundPosition } from "../entities/order-refund.js";
+
 /**
  * **Une commande, vue de l'annulation staff** — ce que la règle lit, et ce
  * que le geste emporte (l'intention Stripe, le bon de fidélité, l'auteur).
@@ -17,6 +19,12 @@ export interface CancellationSubject {
   readonly cancelledAt: Date | null;
   readonly stripePaymentIntentId: string | null;
   readonly loyaltyVoucherId: string | null;
+  /**
+   * Ce qui reste à rendre et ce qui est en vol, lu au carnet (`order_refund`)
+   * avec la commande — sous le verrou de sa ligne quand c'est `lock()` qui
+   * lit (lot C4, C4.4, C4.6).
+   */
+  readonly refunds: RefundPosition;
 }
 
 /**

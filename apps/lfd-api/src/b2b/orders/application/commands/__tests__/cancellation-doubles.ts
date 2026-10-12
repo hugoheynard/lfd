@@ -45,6 +45,7 @@ export function cancellationSubject(
     cancelledAt: null,
     stripePaymentIntentId: "pi_1",
     loyaltyVoucherId: null,
+    refunds: { refundableCents: 0, inFlightCents: 0 },
     ...overrides,
   };
 }

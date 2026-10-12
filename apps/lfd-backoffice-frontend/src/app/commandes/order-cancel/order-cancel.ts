@@ -79,6 +79,15 @@ export class OrderCancelComponent {
     return c.cancellable ? (c.voucher?.sentence ?? null) : null;
   });
 
+  /**
+   * L'argent payé par carte qui sera rendu (plan, C4.9) — montré APRÈS la
+   * phrase du bon ; `null` hors commande payée par carte.
+   */
+  protected readonly refundSentence = computed(() => {
+    const c = this.cancellability();
+    return c.cancellable ? (c.refund?.sentence ?? null) : null;
+  });
+
   protected readonly open = signal(false);
   protected readonly reason = signal('');
   protected readonly saving = signal(false);

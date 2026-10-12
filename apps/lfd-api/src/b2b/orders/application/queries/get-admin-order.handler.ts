@@ -1,4 +1,5 @@
 import type {
+  AdminCancellationRefund,
   AdminCancellationVoucher,
   AdminOrderCancellability,
   AdminOrderView,
@@ -19,6 +20,10 @@ import {
   cancellationBlocker,
   cancellationRefusalOf,
 } from "../../domain/services/order-cancellation.js";
+import { cancellationRefundSentenceOf } from "../../domain/services/order-cancellation-refund.js";
+import { settlementRegimeOf } from "../../domain/services/settlement-regime.js";
+import type { CancellationSubject } from "../../domain/ports/cancellation-subject.reader.js";
+import { AdminOrderRefundView } from "../services/admin-order-refund-view.js";
 import { CancellationRule } from "../services/cancellation-rule.js";
 import { VoucherRestitutionRefusal } from "../services/voucher-restitution-refusal.js";
 import { GetAdminOrderQuery } from "./get-admin-order.query.js";
@@ -50,14 +55,16 @@ export class GetAdminOrderHandler implements IQueryHandler<GetAdminOrderQuery, A
     private readonly restitutions: VoucherRestitutionPreview,
     private readonly refusals: VoucherRestitutionRefusal,
     private readonly rule: CancellationRule,
+    private readonly refunds: AdminOrderRefundView,
     private readonly clock: Clock,
   ) {}
 
   async execute(query: GetAdminOrderQuery): Promise<AdminOrderView> {
-    const [owned, author, cancellability] = await Promise.all([
+    const [owned, author, cancellability, refund] = await Promise.all([
       this.orders.findById(query.orderId),
       this.authors.authorOf(query.orderId),
       this.cancellabilityOf(query.orderId),
+      this.refunds.of(query.orderId),
     ]);
     if (owned === null || author === null || cancellability === null) {
       throw new OrderNotFoundError(query.orderId);
@@ -72,6 +79,7 @@ export class GetAdminOrderHandler implements IQueryHandler<GetAdminOrderQuery, A
         staffName: staffAuthors.nameOf(author.placedByStaffId),
       },
       cancellability,
+      refund,
     };
   }
 
@@ -89,8 +97,9 @@ export class GetAdminOrderHandler implements IQueryHandler<GetAdminOrderQuery, A
     if (block !== null) {
       return { cancellable: false, reason: cancellationRefusalOf(block) };
     }
+    const refund = refundPreviewOf(subject);
     if (subject.loyaltyVoucherId === null) {
-      return { cancellable: true, voucher: null };
+      return { cancellable: true, voucher: null, refund };
     }
     const restitution = await this.restitutions.previewOf(
       subject.loyaltyVoucherId,
@@ -100,8 +109,17 @@ export class GetAdminOrderHandler implements IQueryHandler<GetAdminOrderQuery, A
       const voucherBlock = await this.refusals.blockOf(restitution);
       return { cancellable: false, reason: cancellationRefusalOf(voucherBlock) };
     }
-    return { cancellable: true, voucher: voucherPreviewOf(restitution) };
+    return { cancellable: true, voucher: voucherPreviewOf(restitution), refund };
   }
+}
+
+/** Lot C4 (C4.9) : ce que l'annulation d'une payée rendra — `null` hors carte payée. */
+function refundPreviewOf(subject: CancellationSubject): AdminCancellationRefund | null {
+  if (settlementRegimeOf(subject.paymentStatus, subject.totalCents) !== "paid") {
+    return null;
+  }
+  const amountCents = subject.refunds.refundableCents;
+  return { amountCents, sentence: cancellationRefundSentenceOf(amountCents) };
 }
 
 /** L'issue annoncée, avec sa phrase ; `already` (impossible sur une commande vivante) n'annonce rien. */

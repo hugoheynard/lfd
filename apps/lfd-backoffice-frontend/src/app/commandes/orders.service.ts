@@ -154,6 +154,21 @@ export class AdminOrdersService {
     );
   }
 
+  /**
+   * **« Relancer le remboursement »** d'une commande annulée (plan
+   * `plan-annulation-de-commande.md`, C4.9). `202` : le serveur n'attend pas
+   * Stripe — l'écran relit le détail. Les refus (`404`, `409
+   * orders.refund_request.*`) portent leur phrase.
+   */
+  async retryRefund(id: string): Promise<void> {
+    await firstValueFrom(
+      this.http.post<void>(
+        `${B2B_API_BASE}/admin/orders/${encodeURIComponent(id)}/refund/retry`,
+        {},
+      ),
+    );
+  }
+
   async sheetPdf(id: string): Promise<Blob> {
     return firstValueFrom(
       this.http.get(`${B2B_API_BASE}/admin/orders/${encodeURIComponent(id)}/bon.pdf`, {

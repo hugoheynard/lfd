@@ -309,6 +309,8 @@ model Order {
 
   lines              OrderLine[]
   refunds            OrderRefund[]
+  /// L'argent à rendre après une annulation (lot C4) — une demande au plus.
+  refundRequest      OrderRefundRequest?
   /// L'issue de sa facture carte (E5a), s'il y en a une.
   cardInvoiceOutcome CardInvoiceOutcome?
 

@@ -1,0 +1,49 @@
+@if (refund(); as r) {
+  <fold-callout
+    appearance="inset"
+    [variant]="variant()"
+    data-refund-banner
+    [attr.data-state]="r.state"
+  >
+    @switch (r.state) {
+      @case ('issued') {
+        Remboursement de {{ amount() }} — envoyé à Stripe le
+        {{ r.issuedAt | date: "dd/MM 'à' HH:mm" }}, en attente de la banque.
+      }
+      @case ('refunded') {
+        Remboursement de {{ amount() }} — remboursé.
+      }
+      @case ('failed') {
+        Remboursement de {{ amount() }} — <strong>à faire</strong> : {{ r.lastFailure }}
+      }
+      @default {
+        @if (toDo()) {
+          Remboursement de {{ amount() }} — <strong>à faire</strong> : {{ r.lastFailure }}
+        } @else {
+          Remboursement de {{ amount() }} — demandé le
+          {{ r.requestedAt | date: "dd/MM 'à' HH:mm" }}, en cours d'envoi à Stripe.
+        }
+      }
+    }
+    @if (canRetry()) {
+      <div actions>
+        <button
+          foldButton
+          size="sm"
+          emphasis="outline"
+          [disabled]="!allowed() || !r.retryable"
+          [loading]="saving()"
+          (click)="retry()"
+          data-refund-retry
+        >
+          Relancer le remboursement
+        </button>
+      </div>
+    }
+  </fold-callout>
+  @if (error(); as message) {
+    <fold-callout appearance="inset" variant="alert" announce data-refund-error>{{
+      message
+    }}</fold-callout>
+  }
+}

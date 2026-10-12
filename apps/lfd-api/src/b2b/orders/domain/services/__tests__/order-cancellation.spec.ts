@@ -22,6 +22,7 @@ function state(overrides: Partial<CancellationState> = {}): CancellationState {
     cancelledAt: null,
     inscribedDay: null,
     engagement: null,
+    refunds: { refundableCents: 0, inFlightCents: 0 },
     ...overrides,
   };
 }
@@ -36,6 +37,13 @@ describe("cancellationOf — ce qui s'annule", () => {
       state({ paymentStatus: "not_required", engagement: { kind: "free" } }),
       "account",
     ],
+    // Lot C4 : la branche qui refusait une payée est INVERSÉE (C4.11 bis).
+    [
+      "payée par carte (lot C4)",
+      state({ paymentStatus: "paid", refunds: { refundableCents: 2_110, inFlightCents: 0 } }),
+      "paid",
+    ],
+    ["remboursée en entier depuis Stripe (lot C4)", state({ paymentStatus: "refunded" }), "paid"],
   ] as const)("%s → annulable, régime %s", (_, subject, regime) => {
     expect(cancellationOf(subject)).toEqual({ cancellable: true, regime });
   });
@@ -60,13 +68,27 @@ describe("cancellationBlocker — les refus, dans l'ordre du plan (C3.3)", () =>
       state({ paymentStatus: "not_required" }),
       "engagement_unknown",
     ],
-    ["payée", state({ paymentStatus: "paid" }), "paid"],
-    ["remboursée (payée d'abord)", state({ paymentStatus: "refunded" }), "paid"],
+    [
+      "payée, un remboursement en vol (lot C4)",
+      state({ paymentStatus: "paid", refunds: { refundableCents: 2_110, inFlightCents: 500 } }),
+      "refund_in_flight",
+    ],
+    [
+      "payée et inscrite au fournil (lot C4)",
+      state({ paymentStatus: "paid", inscribedDay: "2026-10-13" }),
+      "inscribed",
+    ],
     ["inscrite au fournil, encore placed", state({ inscribedDay: "2026-10-13" }), "inscribed"],
     ["confirmée par le plan du soir", state({ status: "confirmed" }), "inscribed"],
     ["en production", state({ status: "in_production" }), "inscribed"],
   ] as const)("%s → %s", (_, subject, kind) => {
     expect(cancellationBlocker(subject)?.kind).toBe(kind);
+  });
+
+  it("un remboursement en vol n'est lu que sur une payée : une carte attendue l'ignore", () => {
+    expect(
+      cancellationBlocker(state({ refunds: { refundableCents: 0, inFlightCents: 500 } })),
+    ).toBeNull();
   });
 
   it("le statut annulé l'emporte sur tout le reste", () => {
@@ -142,8 +164,17 @@ describe("cancellationRefusalOf — les phrases (C3.7)", () => {
     );
   });
 
-  it("payée nomme le geste de sortie", () => {
-    expect(cancellationRefusalOf({ kind: "paid" })).toContain("remboursez depuis Stripe");
+  it("un remboursement en vol nomme son montant et le geste de sortie (C4.4)", () => {
+    const sentence = cancellationRefusalOf({ kind: "refund_in_flight", amountCents: 2_340 });
+
+    expect(sentence).toMatch(/^Un remboursement de 23,40\s€ est en cours chez Stripe/u);
+    expect(sentence).toContain("Attendez son issue, puis annulez.");
+  });
+
+  it("une carte qui aboutit pendant le clic dit de recharger (C4.6)", () => {
+    expect(cancellationRefusalOf({ kind: "paid_just_now" })).toContain(
+      "l'annulation proposera le remboursement",
+    );
   });
 
   it("au compte, la phrase est celle de la comptabilité (C5.6)", () => {

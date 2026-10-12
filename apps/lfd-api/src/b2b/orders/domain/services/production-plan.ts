@@ -59,9 +59,9 @@ import type { OrderStatus, PaymentStatus } from "@lfd/contracts";
  * ⚠️ **Le prix de cette règle, et il est réel** : un paiement dont le webhook
  * arrive APRÈS la clôture laisse une commande payée hors du plan. La clôture
  * l'épargne quand Stripe dit l'argent pris ou en route, et annule le reste ;
- * un encaissement sur une commande annulée sonne « à rembourser »
- * (`pending-settlement-sweep.service.ts`, `ring-refund-due.handler.ts`,
- * vérifié le 2026-09-26). Une commande `paid` restée `placed` après une
+ * un encaissement sur une commande annulée se rembourse tout seul
+ * (`pending-settlement-sweep.service.ts` vérifié le 2026-09-26 ;
+ * `refund-paid-after-cancellation.handler.ts`, lot C4, le 2026-10-12). Une commande `paid` restée `placed` après une
  * clôture reste une anomalie à trancher à la main, pas un cas normal.
  *
  * Le sens du choix est celui-ci : produire pour rien coûte de la marchandise

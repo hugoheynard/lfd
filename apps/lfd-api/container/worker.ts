@@ -441,6 +441,22 @@ async function triggerUnsettledShopOrderExpiry(env: Env): Promise<void> {
 }
 
 /**
+ * Réveille le container et passe les remboursements dus : une commande payée
+ * annulée dont le remboursement n'a pas pu partir après l'annulation (Stripe
+ * injoignable, processus mort) est reprise ici, au plus 20 par passage (plan
+ * `documentation/order/plan-annulation-de-commande.md`, C4.7 (b)). Sur le cron
+ * de RAFRAÎCHISSEMENT ; même porte et même jeton que la boîte d'envoi ;
+ * idempotent — le bail de l'exécuteur exclut deux appels à Stripe.
+ */
+async function triggerOrderRefundSweep(env: Env): Promise<void> {
+  const token = env.RECOMPUTE_TOKEN;
+  if (!token) {
+    return;
+  }
+  await postSweep(env, token, "admin/orders/refunds/sweep");
+}
+
+/**
  * Les balayages du cron de rafraîchissement, chacun pour soi : un échec de
  * l'un (container qui répond mal, réseau) ne prive pas les suivants de leur
  * tour. Le prochain passage est dans cinq minutes ; l'échec ne fait pas
@@ -453,6 +469,7 @@ async function refreshSweeps(env: Env): Promise<void> {
     triggerAutoClose(env),
     triggerRoundsGapBell(env),
     triggerUnsettledShopOrderExpiry(env),
+    triggerOrderRefundSweep(env),
   ]);
 }
 

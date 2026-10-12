@@ -18,6 +18,12 @@ export abstract class OrderRefundRepository {
    */
   abstract loadByPaymentIntent(paymentIntentId: string): Promise<OrderRefundLedger | null>;
 
+  /**
+   * Le même carnet, par l'id de la commande, sous le même verrou (lot C4 :
+   * l'abonné de l'encaissé après annulation, qui ne connaît que la commande).
+   */
+  abstract loadByOrder(orderId: string): Promise<OrderRefundLedger | null>;
+
   /** Écrit les remboursements du carnet et, s'il a bougé, le règlement de la commande. */
   abstract save(ledger: OrderRefundLedger): Promise<void>;
 }

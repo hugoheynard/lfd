@@ -31,6 +31,7 @@ import { AccountOrderEngagement } from "../../domain/ports/account-order-engagem
 import type { CancellableRegime } from "../../domain/services/order-cancellation.js";
 import { CancellationReason } from "../../domain/value-objects/cancellation-reason.js";
 import { CancellationRule } from "../services/cancellation-rule.js";
+import { CancellationRefundRequester } from "../services/cancellation-refund-requester.js";
 import { VoucherRestitutionRefusal } from "../services/voucher-restitution-refusal.js";
 import { CancelOrderCommand } from "./cancel-order.command.js";
 
@@ -76,9 +77,17 @@ import { CancelOrderCommand } from "./cancel-order.command.js";
  * FERMÉE (`order_collection` → `cancelled`) dans la même transaction : plus
  * aucun geste comptable ne sait la reprendre. Aucun appel à Stripe.
  *
+ * ## La commande payée (lot C4)
+ *
+ * L'INVERSE de la carte non payée : la base d'abord, Stripe ensuite (C4.3).
+ * Aucun appel à Stripe dans la requête ; l'argent à rendre devient une
+ * demande persistée, écrite dans la même transaction, et l'exécuteur part
+ * après validation. Le rejeu de C3.4 ter ne s'applique pas : Stripe n'a rien
+ * fait, un échec de transaction rend une erreur simple.
+ *
  * ## Ce qu'il ne fait pas
  *
- * Aucun mur client (la route est staff), aucun remboursement (C4).
+ * Aucun mur client (la route est staff).
  */
 @CommandHandler(CancelOrderCommand)
 export class CancelOrderHandler implements ICommandHandler<CancelOrderCommand, void> {
@@ -93,6 +102,7 @@ export class CancelOrderHandler implements ICommandHandler<CancelOrderCommand, v
     private readonly refusals: VoucherRestitutionRefusal,
     private readonly rule: CancellationRule,
     private readonly engagements: AccountOrderEngagement,
+    private readonly refunds: CancellationRefundRequester,
     private readonly durable: DurablePublisher,
     private readonly unitOfWork: UnitOfWork,
     private readonly clock: Clock,
@@ -134,7 +144,9 @@ export class CancelOrderHandler implements ICommandHandler<CancelOrderCommand, v
       case "already_cancelled":
         return;
       case "already_paid":
-        throw new OrderNotCancellableError(subject.orderId, { kind: "paid" });
+        // La carte a abouti pendant le clic : l'annulation proposera le
+        // remboursement une fois la commande rechargée (C4.6).
+        throw new OrderNotCancellableError(subject.orderId, { kind: "paid_just_now" });
       case "in_progress":
         throw new OrderCancellationPaymentInProgressError(subject.orderId);
       case "unavailable":
@@ -223,6 +235,9 @@ export class CancelOrderHandler implements ICommandHandler<CancelOrderCommand, v
       await this.engagements.closeForCancellation(locked.orderId, locked.totalCents, now);
     }
     const voucher = await this.restitute(locked, now);
+    // Lot C4 : APRÈS le bon — un bon qui refuse annule tout, demande comprise.
+    const refund =
+      regime === "paid" ? await this.refunds.requestFor(locked, staffUserId, now) : null;
     await this.durable.publish(
       new OrderCancelledEvent(
         locked.orderId,
@@ -232,6 +247,7 @@ export class CancelOrderHandler implements ICommandHandler<CancelOrderCommand, v
         reason.value,
         regime,
         voucher,
+        refund,
       ).durableFact(),
     );
   }

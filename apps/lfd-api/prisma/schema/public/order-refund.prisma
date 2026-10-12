@@ -54,3 +54,64 @@ model OrderRefund {
   @@map("order_refund")
   @@schema("public")
 }
+
+/// **Pourquoi de l'argent est à rendre** (plan
+/// `documentation/order/plan-annulation-de-commande.md`, lot C4, C4.5,
+/// C4.11, C4.11 bis). 🔴 Valeurs écrites en base : elles ne se renomment que
+/// par migration. Propriétaire : `src/b2b/orders/`.
+enum OrderRefundCause {
+  /// L'équipe a annulé une commande payée par carte.
+  cancellation
+  /// La carte a été débitée APRÈS l'annulation.
+  paid_after_cancellation
+  /// Un remboursement réussi a échoué ensuite, sur une commande annulée.
+  refund_reversed
+
+  @@schema("public")
+}
+
+/// **La demande de remboursement d'une commande annulée** (plan
+/// `documentation/order/plan-annulation-de-commande.md`, lot C4, C4.5) —
+/// l'argent à rendre devenu un ÉTAT PERSISTÉ, écrit dans la transaction de
+/// l'annulation ; Stripe vient après, rejouable, par un exécuteur unique.
+///
+/// Aucun statut stocké : l'état se lit au carnet (`order_refund`), par
+/// `refundRequestStateOf`. La demande ne dit que ce qui a été promis et ce
+/// qui a été tenté. Écrite par l'agrégat `OrderRefundRequest`.
+model OrderRefundRequest {
+  /// Une demande par commande : le second clic ne peut pas en écrire une seconde.
+  orderId String @id @map("order_id")
+  order   Order  @relation(fields: [orderId], references: [id], onDelete: Restrict)
+
+  cause          OrderRefundCause
+  /// Ce que l'annulation a promis, en centimes (> 0, tenu par l'agrégat ET par un `CHECK`).
+  announcedCents Int              @map("announced_cents")
+  /// `Clock` — un instant métier.
+  requestedAt    DateTime         @map("requested_at") @db.Timestamptz(3)
+  /// Id de la fiche staff, jamais un `sub` ; nul pour une cause automatique.
+  requestedBy    String?          @map("requested_by")
+
+  /// Entre dans la clé d'idempotence ; +1 quand un remboursement émis échoue.
+  generation     Int       @default(1)
+  /// Le `re_…` de la génération courante.
+  stripeRefundId String?   @unique @map("stripe_refund_id")
+  issuedAt       DateTime? @map("issued_at") @db.Timestamptz(3)
+  /// Appels faits pour la génération.
+  attempts       Int       @default(0)
+  /// Code lisible (`unavailable`, `declined:<code>`…), jamais un message brut.
+  lastFailure    String?   @map("last_failure")
+  lastAttemptAt  DateTime? @map("last_attempt_at") @db.Timestamptz(3)
+  /// Entre dans la clé ; +1 après une issue `unavailable`, remis à 1 par génération.
+  round          Int       @default(1)
+
+  /// Le bail de l'exécuteur (5 min), mesuré à l'horloge MURALE (`WallClock`).
+  claimedUntil  DateTime? @map("claimed_until") @db.Timestamptz(3)
+  /// Le jeton du porteur du bail : seul lui relâche et écrit l'issue.
+  claimToken    String?   @map("claim_token")
+  /// Quand le balayage peut la reprendre ; nul quand rejouer ne changerait rien.
+  nextAttemptAt DateTime? @map("next_attempt_at") @db.Timestamptz(3)
+
+  @@index([nextAttemptAt])
+  @@map("order_refund_request")
+  @@schema("public")
+}

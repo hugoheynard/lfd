@@ -32,6 +32,8 @@ export const KEY_LABELS: Readonly<Record<string, string>> = {
   aligned: 'Aligné sur le défaut',
   allergens: 'Allergènes',
   alt: 'Texte alternatif',
+  // Lot C4 : le montant promis à l'annulation d'une payée (`order.cancelled`, `order.refund_issued`).
+  announcedCents: 'Montant annoncé',
   announceFrom: 'Annonce',
   appellation: 'Appellation',
   appellationId: 'Appellation',
@@ -120,6 +122,8 @@ export const KEY_LABELS: Readonly<Record<string, string>> = {
   fromLabel: 'Rôle d’avant',
   fulfillmentDate: 'Jour de retrait ou de livraison',
   fulfillmentMethod: 'Mode de retrait ou de livraison',
+  // Lot C4 : la génération d'une demande de remboursement (`order.refund_attempt_failed`).
+  generation: 'Génération du remboursement',
   glycemicIndex: 'Index glycémique',
   graceMinutes: 'Tolérance',
   grants: 'Droits',
@@ -203,6 +207,8 @@ export const KEY_LABELS: Readonly<Record<string, string>> = {
   reason: 'Motif',
   recurrence: 'Récurrence',
   reference: 'Référence',
+  // Lot C4 : ce que l'annulation d'une payée a promis de rendre (`order.cancelled`).
+  refund: 'Remboursement promis',
   regime: 'Ce qui était dû',
   remainderValueCents: 'Valeur du reliquat',
   removed: 'Retirés',

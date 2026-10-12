@@ -236,6 +236,10 @@ export interface OrderCancelledCopy {
   readonly nothingCharged: string;
   /** Au compte, ni facturée ni prélevée (lot C5). */
   readonly nothingInvoiced: string;
+  /** Lot C4 : `{amount}` le reste payé par carte, rendu sur la même carte. */
+  readonly refundToCard: string;
+  /** Lot C4 : le paiement a déjà été rendu en entier — rien ne part. */
+  readonly alreadyRefunded: string;
   /** Le bon de fidélité utilisé est rendu (lot C3b). `{value}`, `{day}` — sa date limite. */
   readonly voucherReturned: string;
   /**

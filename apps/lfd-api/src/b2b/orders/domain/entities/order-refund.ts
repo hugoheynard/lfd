@@ -72,3 +72,34 @@ export function refundTransition(from: RefundStatus, to: RefundStatus): RefundTr
   }
   return "stale";
 }
+
+/**
+ * **Ce qu'il reste à rendre, et ce qui est en vol** (plan
+ * `documentation/order/plan-annulation-de-commande.md`, C4.4) :
+ *
+ * - `refundableCents` = encaissé − Σ `succeeded` — seul un remboursement
+ *   réussi a rendu l'argent ;
+ * - `inFlightCents` = Σ `pending` + `requires_action` — un remboursement
+ *   en vol refuse l'annulation (C4.2, 4) : son échec ultérieur laisserait un
+ *   reste que personne ne rend.
+ */
+export interface RefundPosition {
+  readonly refundableCents: number;
+  readonly inFlightCents: number;
+}
+
+export function refundPositionOf(
+  chargedCents: number,
+  refunds: readonly { readonly amountCents: number; readonly status: RefundStatus }[],
+): RefundPosition {
+  let succeeded = 0;
+  let inFlight = 0;
+  for (const refund of refunds) {
+    if (refund.status === "succeeded") {
+      succeeded += refund.amountCents;
+    } else if (OPEN.has(refund.status)) {
+      inFlight += refund.amountCents;
+    }
+  }
+  return { refundableCents: Math.max(0, chargedCents - succeeded), inFlightCents: inFlight };
+}

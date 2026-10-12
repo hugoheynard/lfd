@@ -15,9 +15,16 @@ export interface OrderCancelledMailData {
   readonly sheet: ClientSheet;
   /**
    * `free` : total nul ; `due` : carte non payée, fermée chez Stripe ;
-   * `account` : au compte, ni facturée ni prélevée (lot C5).
+   * `account` : au compte, ni facturée ni prélevée (lot C5) ; `paid` : payée
+   * par carte, remboursée (lot C4).
    */
-  readonly regime: "free" | "due" | "account";
+  readonly regime: "free" | "due" | "account" | "paid";
+  /**
+   * Lot C4 (C4.8) : ce qui sera rendu sur la carte, en centimes TTC — `null`
+   * hors `paid`, ou quand le paiement a déjà été rendu en entier. Absent des
+   * envois d'avant C4 : lu `null`.
+   */
+  readonly refund?: { readonly announcedCents: number } | null;
   /**
    * Ce que l'annulation a fait du bon de fidélité (lot C3b) — `null` sans bon.
    * `lapsed` (bon échu) n'est pas annoncé : le courriel se tait sur un bon
@@ -51,18 +58,27 @@ export function renderOrderCancelledMail(
 
 /** Ce que le courriel dit de l'argent, par régime. */
 const MONEY_SENTENCE: Readonly<
-  Record<OrderCancelledMailData["regime"], (copy: OrderCancelledCopy) => string>
+  Record<
+    OrderCancelledMailData["regime"],
+    (copy: OrderCancelledCopy, data: OrderCancelledMailData) => string
+  >
 > = {
   free: (copy) => copy.nothingBilled,
   due: (copy) => copy.nothingCharged,
   account: (copy) => copy.nothingInvoiced,
+  paid: (copy, data) => {
+    const refund = data.refund ?? null;
+    return refund === null
+      ? copy.alreadyRefunded
+      : fill(copy.refundToCard, { amount: euros(refund.announcedCents, data.locale) });
+  },
 };
 
 function bodyOf(data: OrderCancelledMailData, copy: OrderCancelledCopy): string {
   const ref = data.sheet.reference;
   const day = dayInWords(data.sheet.requestedFor, data.locale);
   const intro = day === null ? fill(copy.introWithoutDay, { ref }) : fill(copy.intro, { ref, day });
-  const money = MONEY_SENTENCE[data.regime](copy);
+  const money = MONEY_SENTENCE[data.regime](copy, data);
   const voucher = voucherSentenceOf(data, copy);
   return `${intro}\n\n${money}${voucher === null ? "" : `\n\n${voucher}`}`;
 }

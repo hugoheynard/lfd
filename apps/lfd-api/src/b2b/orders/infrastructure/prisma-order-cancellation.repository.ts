@@ -11,6 +11,8 @@ import { CANCELLATION_SUBJECT_SELECT, toCancellationSubject } from "./cancellati
 
 /** Une carte non encaissée : en attente, ou refusée et encore reprenable. */
 const DUE: readonly PaymentStatus[] = [PaymentStatus.pending, PaymentStatus.failed];
+/** Une carte encaissée — rendue en entier ou non (lot C4). */
+const PAID: readonly PaymentStatus[] = [PaymentStatus.paid, PaymentStatus.refunded];
 
 /**
  * L'adaptateur de l'annulation staff. Par le client ROUTÉ : dans l'unité de
@@ -85,6 +87,15 @@ export class PrismaOrderCancellationRepository extends OrderCancellationReposito
       },
       data: stamp,
     });
-    return account.count === 1;
+    if (account.count === 1) {
+      return true;
+    }
+    // Lot C4 : payée par carte. Règlement INCHANGÉ — c'est le carnet qui le
+    // fera passer `refunded` quand Stripe aura rendu l'argent (C4.6).
+    const paid = await this.prisma.order.updateMany({
+      where: { id: orderId, status: OrderStatus.placed, paymentStatus: { in: [...PAID] } },
+      data: stamp,
+    });
+    return paid.count === 1;
   }
 }

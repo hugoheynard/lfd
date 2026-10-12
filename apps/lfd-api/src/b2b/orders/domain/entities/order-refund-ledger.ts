@@ -1,10 +1,14 @@
 import { RefundRejectedError } from "../errors/order-refund-errors.js";
 import {
   REFUND_CURRENCY,
+  refundPositionOf,
   refundTransition,
   type OrderRefundState,
+  type RefundPosition,
   type RefundReport,
+  type RefundStatus,
 } from "./order-refund.js";
+import type { RefundLedgerView } from "./order-refund-request.js";
 
 /** Le règlement d'une commande, tel que l'énumération `PaymentStatus` le dit. */
 export type LedgerPaymentStatus = "not_required" | "pending" | "paid" | "failed" | "refunded";
@@ -86,6 +90,24 @@ export class OrderRefundLedger {
   /** Le cumul des remboursements réussis, en centimes. */
   refundedCents(): number {
     return succeededSum(this.refunds);
+  }
+
+  /** Ce qui reste à rendre, et ce qui est en vol (lot C4, C4.4). */
+  position(): RefundPosition {
+    return refundPositionOf(this.chargedCents, this.refunds);
+  }
+
+  /** Le statut connu d'un `re_…`, ou `null` s'il n'est pas au carnet. */
+  statusOf(stripeRefundId: string): RefundStatus | null {
+    return this.refunds.find((refund) => refund.stripeRefundId === stripeRefundId)?.status ?? null;
+  }
+
+  /** Ce que l'état d'une demande lit du carnet (`refundRequestStateOf`). */
+  view(): RefundLedgerView {
+    return {
+      remainderCents: this.position().refundableCents,
+      statusOf: (id) => this.statusOf(id),
+    };
   }
 
   /**

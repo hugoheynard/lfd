@@ -116,6 +116,37 @@ const cardInvoiceBlocked: Phrase = (fact) =>
     ['subjectLabel', 'message'],
   );
 
+/**
+ * Lot C4 : un essai d'émettre le remboursement demandé n'a pas rendu
+ * l'argent. Le code de l'échec reste au détail : il se lit, il ne se traduit pas.
+ */
+const refundAttemptFailed: Phrase = (fact) =>
+  said(
+    [
+      text('Un essai de remboursement de '),
+      ...order(fact),
+      text(' n’a pas abouti chez Stripe ('),
+      text(typeof fact.payload['failure'] === 'string' ? fact.payload['failure'] : '—'),
+      text(')'),
+    ],
+    ['subjectLabel', 'failure'],
+  );
+
+/** Lot C4 : Stripe a rendu un autre montant que celui promis à l'annulation. */
+const refundIssued: Phrase = (fact) =>
+  said(
+    [
+      text('Stripe a remboursé '),
+      inUnit('cents', fact.payload['issuedCents']),
+      text(' sur '),
+      ...order(fact),
+      text(', au lieu des '),
+      inUnit('cents', fact.payload['announcedCents']),
+      text(' annoncés à l’annulation'),
+    ],
+    ['subjectLabel', 'issuedCents', 'announcedCents'],
+  );
+
 export const REFUND_PHRASES = {
   'order.refund_recorded': refundRecorded,
   'order.fully_refunded': fullyRefunded,
@@ -123,4 +154,6 @@ export const REFUND_PHRASES = {
   'payment_refund.unmatched': refundUnmatched,
   'order.refund_not_credited': refundNotCredited,
   'order.card_invoice_blocked': cardInvoiceBlocked,
+  'order.refund_attempt_failed': refundAttemptFailed,
+  'order.refund_issued': refundIssued,
 } as const satisfies Partial<Record<JournalFactType, Phrase>>;

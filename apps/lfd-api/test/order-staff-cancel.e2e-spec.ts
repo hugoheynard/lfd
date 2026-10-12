@@ -108,7 +108,8 @@ describe("POST /admin/orders/:id/cancel — carte non payée (décision 7)", () 
   });
 
   it.each([
-    ["payée entre-temps", { kind: "already_paid" }, "orders.cancel.paid"],
+    // Lot C4 : la carte a abouti pendant le clic — rechargez, C4 proposera le remboursement.
+    ["payée entre-temps", { kind: "already_paid" }, "orders.cancel.paid_just_now"],
     ["paiement en traitement", { kind: "in_progress" }, "orders.cancel.payment_in_progress"],
     [
       "Stripe injoignable",
@@ -163,9 +164,13 @@ describe("POST /admin/orders/:id/cancel — total nul", () => {
   });
 });
 
+/**
+ * Lot C4 : le refus `orders.cancel.paid` de C3 a disparu — une commande payée
+ * par carte s'annule, avec remboursement. Ses gestes et ses refus sont éprouvés
+ * par `order-staff-cancel-refund*.e2e-spec.ts`.
+ */
 describe("POST /admin/orders/:id/cancel — les refus nommés", () => {
   it.each([
-    ["payée par carte", { payment: PaymentStatus.paid }, "orders.cancel.paid"],
     ["prête", { status: OrderStatus.ready }, "orders.cancel.ready"],
     ["confirmée par le plan", { status: OrderStatus.confirmed }, "orders.cancel.inscribed"],
   ] as const)("%s : 409, sans appeler Stripe", async (_, seed, code) => {
@@ -353,7 +358,7 @@ describe("GET /admin/orders/:id — cancellability (C3.8)", () => {
       await ctx.asSub(E2E_STAFF_SUB).get(`/admin/orders/${orderId}`).expect(200),
     );
 
-    expect(before.cancellability).toEqual({ cancellable: true, voucher: null });
+    expect(before.cancellability).toEqual({ cancellable: true, voucher: null, refund: null });
     expect(after.cancellability).toMatchObject({ cancellable: false });
     expect(after.cancellability).toHaveProperty(
       "reason",

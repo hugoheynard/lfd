@@ -325,7 +325,10 @@ export const ORDERS_PRODUCTION_FACTS = {
    * fidélité (lot C3b) — rendu, refondu avec son reliquat, ou échu —, `null`
    * sans bon. Montants en centimes HT, l'unité du bon ; `expiresAt` sa date
    * limite d'origine. Remplace le booléen `voucherReturned` de C3, jamais servi
-   * en production.
+   * en production. Lot C4 : `regime` gagne `paid` (payée par carte — valeur
+   * irréversible), et `refund` dit ce que l'annulation a promis de rendre sur
+   * la carte (centimes TTC), `null` hors `paid` ou reste nul ; absent des faits
+   * d'avant C4.
    */
   "order.cancelled": fact(
     payload({
@@ -334,7 +337,7 @@ export const ORDERS_PRODUCTION_FACTS = {
       orderNumber: z.string(),
       cancelledBy: namedOrBare("staff_user"),
       reason: z.string(),
-      regime: z.enum(["free", "due", "account"]),
+      regime: z.enum(["free", "due", "account", "paid"]),
       voucher: z
         .object({
           outcome: z.enum(["returned", "merged", "lapsed"]),
@@ -343,6 +346,7 @@ export const ORDERS_PRODUCTION_FACTS = {
           expiresAt: instant(),
         })
         .nullable(),
+      refund: z.object({ announcedCents: cents() }).nullable().optional(),
     }),
   ),
   "order.handed_over": fact(

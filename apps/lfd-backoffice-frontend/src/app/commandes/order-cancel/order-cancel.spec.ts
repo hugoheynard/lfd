@@ -60,7 +60,9 @@ describe('annuler une commande depuis son détail staff', () => {
   });
 
   it('n’existe pas sans `b2b_cancel_order:write`', () => {
-    const { fixture } = mount({ cancellable: true, voucher: null }, ['b2b_orders:read']);
+    const { fixture } = mount({ cancellable: true, voucher: null, refund: null }, [
+      'b2b_orders:read',
+    ]);
 
     expect(el(fixture).querySelector('[data-cancel-trigger]')).toBeNull();
   });
@@ -75,7 +77,7 @@ describe('annuler une commande depuis son détail staff', () => {
   });
 
   it('est actif quand la commande s’annule, et le motif ne s’ouvre qu’avec la confirmation', () => {
-    const { fixture } = mount({ cancellable: true, voucher: null });
+    const { fixture } = mount({ cancellable: true, voucher: null, refund: null });
 
     const trigger = el(fixture).querySelector<HTMLButtonElement>('[data-cancel-trigger]');
     expect(trigger?.disabled).toBe(false);
@@ -96,6 +98,7 @@ describe('annuler une commande depuis son détail staff', () => {
         expiresAt: '2030-11-30T12:00:00.000Z',
         sentence,
       },
+      refund: null,
     });
     expect(el(fixture).querySelector('[data-cancel-voucher]')).toBeNull();
 
@@ -103,8 +106,31 @@ describe('annuler une commande depuis son détail staff', () => {
     expect(el(fixture).querySelector('[data-cancel-voucher]')?.textContent?.trim()).toBe(sentence);
   });
 
+  it('une commande payée : la confirmation dit le bon, PUIS le montant rendu sur la carte (C4.9)', () => {
+    const refund =
+      'Le client sera remboursé de 23,40 € sur sa carte (livraison comprise). Le remboursement part automatiquement chez Stripe après l’annulation.';
+    const { fixture } = mount({
+      cancellable: true,
+      voucher: {
+        outcome: 'returned',
+        voucherValueCents: 1_200,
+        expiresAt: '2030-11-30T12:00:00.000Z',
+        sentence: 'Le bon sera rendu.',
+      },
+      refund: { amountCents: 2_340, sentence: refund },
+    });
+    expect(el(fixture).querySelector('[data-cancel-refund]')).toBeNull();
+
+    openWith(fixture, '');
+    const callouts = [
+      ...el(fixture).querySelectorAll('[data-cancel-voucher], [data-cancel-refund]'),
+    ];
+    expect(callouts.map((node) => node.hasAttribute('data-cancel-refund'))).toEqual([false, true]);
+    expect(el(fixture).querySelector('[data-cancel-refund]')?.textContent?.trim()).toBe(refund);
+  });
+
   it('refuse de confirmer sans motif, et le dit', async () => {
-    const { fixture, cancel } = mount({ cancellable: true, voucher: null });
+    const { fixture, cancel } = mount({ cancellable: true, voucher: null, refund: null });
     openWith(fixture, '   ');
 
     await fixture.componentInstance['confirm']();
@@ -115,7 +141,7 @@ describe('annuler une commande depuis son détail staff', () => {
   });
 
   it('refuse un motif de plus de 500 caractères sans appeler le serveur', async () => {
-    const { fixture, cancel } = mount({ cancellable: true, voucher: null });
+    const { fixture, cancel } = mount({ cancellable: true, voucher: null, refund: null });
     openWith(fixture, 'x'.repeat(501));
 
     await fixture.componentInstance['confirm']();
@@ -124,7 +150,7 @@ describe('annuler une commande depuis son détail staff', () => {
   });
 
   it('envoie le motif nettoyé, referme, et demande la relecture', async () => {
-    const { fixture, cancel, done } = mount({ cancellable: true, voucher: null });
+    const { fixture, cancel, done } = mount({ cancellable: true, voucher: null, refund: null });
     openWith(fixture, '  Commande passée en double  ');
 
     await fixture.componentInstance['confirm']();
@@ -136,9 +162,13 @@ describe('annuler une commande depuis son détail staff', () => {
 
   it('affiche telle quelle la phrase d’un refus 409', async () => {
     const sentence = 'Cette commande est déjà annulée.';
-    const { fixture, done } = mount({ cancellable: true, voucher: null }, CAN, async () => {
-      throw httpError(409, 'orders.cancel.already_cancelled', sentence);
-    });
+    const { fixture, done } = mount(
+      { cancellable: true, voucher: null, refund: null },
+      CAN,
+      async () => {
+        throw httpError(409, 'orders.cancel.already_cancelled', sentence);
+      },
+    );
     openWith(fixture, 'Doublon');
 
     await fixture.componentInstance['confirm']();
@@ -149,7 +179,7 @@ describe('annuler une commande depuis son détail staff', () => {
   });
 
   it('dit d’après le CODE le 500 `not_recorded`, dont le message serveur est masqué', async () => {
-    const { fixture } = mount({ cancellable: true, voucher: null }, CAN, async () => {
+    const { fixture } = mount({ cancellable: true, voucher: null, refund: null }, CAN, async () => {
       throw httpError(500, 'orders.cancel.not_recorded', 'Une erreur interne est survenue.');
     });
     openWith(fixture, 'Doublon');

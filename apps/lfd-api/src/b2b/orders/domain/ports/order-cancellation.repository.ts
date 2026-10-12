@@ -15,7 +15,7 @@ export interface CancellationRecord {
  * 🔴 **Écriture nue, conditionnée en base, et c'est voulu** — comme
  * `absorbIntoPlan` et `markAbandoned` : `Order` est un agrégat de PASSATION qui
  * ne sait pas se recharger, et la règle tient entière dans le `where` (`placed`,
- * total nul, carte non encaissée, ou au compte — lot C5). La règle qui NOMME le refus est
+ * total nul, carte non encaissée, au compte — lot C5 —, ou carte payée — lot C4). La règle qui NOMME le refus est
  * `cancellationBlocker`, pure, relue sous le verrou par le handler.
  *
  * Les deux méthodes n'ont de sens que DANS une unité de travail : le verrou de
@@ -31,7 +31,8 @@ export abstract class OrderCancellationRepository {
 
   /**
    * `placed` → `cancelled`, avec l'auteur, le motif et l'instant ; une carte
-   * non payée passe aussi `failed`, comme l'abandon. Rend `true` si la ligne a
+   * non payée passe aussi `failed`, comme l'abandon ; une carte payée garde
+   * son règlement (lot C4 : le carnet le fera passer `refunded`). Rend `true` si la ligne a
    * franchi — c'est ce `true`, et lui seul, qui rend le bon et publie le fait.
    */
   abstract cancel(orderId: string, record: CancellationRecord): Promise<boolean>;

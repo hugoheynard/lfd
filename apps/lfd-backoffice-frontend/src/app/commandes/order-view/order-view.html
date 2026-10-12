@@ -35,6 +35,9 @@
         />
       </lfd-order-detail>
 
+      <!-- L'argent à rendre d'une commande annulée (C4.9) : rien sans demande. -->
+      <app-order-refund-banner [orderId]="o.id" [refund]="o.refund" (retried)="load()" />
+
       <!-- Les remboursements Stripe constatés : rien quand il n'y en a pas. -->
       <app-order-refunds-card [refunds]="o.refunds" />
 

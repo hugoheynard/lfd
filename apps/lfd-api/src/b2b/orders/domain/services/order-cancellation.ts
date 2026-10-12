@@ -1,5 +1,6 @@
 import type { OrderStatus, PaymentStatus } from "@lfd/contracts";
 
+import type { RefundPosition } from "../entities/order-refund.js";
 import type { AccountEngagement } from "../ports/account-order-engagement.js";
 import type { CancellationSubject } from "../ports/cancellation-subject.reader.js";
 import {
@@ -7,6 +8,7 @@ import {
   engagementRefusalOf,
   type EngagementBlock,
 } from "./order-cancellation-account.js";
+import { PAID_JUST_NOW_REFUSAL, refundInFlightRefusalOf } from "./order-cancellation-refund.js";
 import {
   remainderCancelledRefusalOf,
   remainderEngagedRefusalOf,
@@ -44,6 +46,8 @@ export interface CancellationState {
    * « annulable » (S6).
    */
   readonly engagement: AccountEngagement | null;
+  /** Lot C4 : le reste à rendre et ce qui est en vol, lus au carnet. */
+  readonly refunds: RefundPosition;
 }
 
 /**
@@ -64,6 +68,7 @@ export function cancellationStateOf(
     cancelledAt: subject.cancelledAt,
     inscribedDay,
     engagement,
+    refunds: subject.refunds,
   };
 }
 
@@ -75,7 +80,13 @@ export type CancellationBlock =
   | { readonly kind: "fulfilled" }
   /** Lot C5 : au compte, et déjà engagée en comptabilité (C5.6). */
   | EngagementBlock
-  | { readonly kind: "paid" }
+  /** Lot C4 : un remboursement attend encore son issue chez Stripe (C4.4). */
+  | { readonly kind: "refund_in_flight"; readonly amountCents: number }
+  /**
+   * Lot C4 : une carte attendue a abouti pendant le clic (`cancelIntent` →
+   * `already_paid`). Lu par le geste, pas par {@link cancellationOf}.
+   */
+  | { readonly kind: "paid_just_now" }
   | { readonly kind: "inscribed"; readonly day: string | null }
   /**
    * Lot C3b, cas 5 : le reste du bon a servi sur `order`, vivante ;
@@ -92,12 +103,13 @@ export type CancellationBlock =
   | { readonly kind: "voucher_remainder_cancelled"; readonly remainderValueCents: number };
 
 /**
- * Les régimes annulables : total nul, carte non payée, et — depuis le lot C5 —
- * au compte, tant que la comptabilité n'a rien engagé. 🔴 `account` est une
- * VALEUR écrite dans le fait `order.cancelled` : irréversible dès la première
- * annulation en production (C5.7).
+ * Les régimes annulables : total nul, carte non payée, au compte tant que la
+ * comptabilité n'a rien engagé (lot C5), et — depuis le lot C4 — payée par
+ * carte, remboursement compris. 🔴 `account` et `paid` sont des VALEURS écrites
+ * dans le fait `order.cancelled` : irréversibles dès la première annulation en
+ * production (C5.7, C4.8).
  */
-export type CancellableRegime = "free" | "due" | "account";
+export type CancellableRegime = "free" | "due" | "account" | "paid";
 
 /** La décision : annulable sous tel régime, ou bloquée, et pourquoi. */
 export type CancellationDecision =
@@ -107,9 +119,10 @@ export type CancellationDecision =
 /**
  * Annulable, et sous quel régime — ou ce qui l'empêche.
  *
- * Ordre du plan (C3.3, C5.2) : statut annulé, statuts sans retour, payée,
- * engagement comptable d'une commande au compte (facturée, engagée, rejetée
- * avant), inscrite. `confirmed` et `in_production` se lisent comme « inscrite » : le
+ * Ordre du plan (C3.3, C5.2, C4.2) : statut annulé, statuts sans retour,
+ * remboursement en vol d'une payée, engagement comptable d'une commande au
+ * compte (facturée, engagée, rejetée avant), inscrite. Une payée s'annule
+ * depuis le lot C4 : la branche qui la refusait est INVERSÉE (C4.11 bis). `confirmed` et `in_production` se lisent comme « inscrite » : le
  * seul chemin qui écrit `confirmed` est l'absorption par le plan du soir
  * (`absorbIntoPlan`, vérifié le 2026-10-12), et rien n'écrit `in_production`.
  */
@@ -119,8 +132,11 @@ export function cancellationOf(state: CancellationState): CancellationDecision {
     return { cancellable: false, block: byStatus };
   }
   const regime = settlementRegimeOf(state.paymentStatus, state.totalCents);
-  if (regime === "paid") {
-    return { cancellable: false, block: { kind: "paid" } };
+  if (regime === "paid" && state.refunds.inFlightCents > 0) {
+    return {
+      cancellable: false,
+      block: { kind: "refund_in_flight", amountCents: state.refunds.inFlightCents },
+    };
   }
   if (regime === "account") {
     const engaged = engagementBlockOf(state.engagement);
@@ -197,11 +213,10 @@ export function cancellationRefusalOf(block: CancellationBlock): string {
     case "settled_otherwise":
     case "engagement_unknown":
       return engagementRefusalOf(block);
-    case "paid":
-      return (
-        "Cette commande a été payée par carte en ligne. L'annulation avec remboursement " +
-        "n'existe pas encore : remboursez depuis Stripe, puis prévenez le client."
-      );
+    case "refund_in_flight":
+      return refundInFlightRefusalOf(block.amountCents);
+    case "paid_just_now":
+      return PAID_JUST_NOW_REFUSAL;
     case "voucher_remainder_engaged":
       return remainderEngagedRefusalOf(
         block.remainderValueCents,
