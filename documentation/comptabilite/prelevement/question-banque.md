@@ -383,9 +383,11 @@ Les codes reçus sont déjà rangés dans `collection_return.reason_code`
 > 4. **Forme de la pré-notification** : nous envoyons un e-mail par
 >    prélèvement (montant, date, RUM, ICS, numéros de facture). Cela vous
 >    convient-il ?
-> 5. **Signature électronique** du mandat : l'acceptez-vous, et à quel niveau
->    (simple, avancée, qualifiée) ? Une acceptation en ligne sur notre espace
->    client suffit-elle ?
+> 5. **Preuve du mandat** : en cas de contestation, ou si vous nous la
+>    demandez, sous quelle forme devons-nous vous fournir le mandat signé
+>    (PDF, original papier), et dans quel délai ? Si le mandat est signé
+>    électroniquement, quel **niveau de signature** exigez-vous (simple,
+>    avancée, qualifiée au sens du règlement eIDAS) ?
 >
 > **Étape 3 — L'import des RIB destinataires** (à faire avant les mandats,
 > d'après votre service EDI)
