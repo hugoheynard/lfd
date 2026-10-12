@@ -7,7 +7,8 @@
 >
 > 🔴🔴 **Re-révisé par Hugo le 2026-10-12 au soir : le rythme est PAR CLIENT**
 > (« j'ai des clients au mois, d'autres à la semaine »), l'entité donnant le
-> défaut. La décision du §10 venait d'un malentendu. **Le §15 fait foi** ;
+> défaut. La décision du §10 venait d'un malentendu. **Le §16 fait foi** (le
+> §15 le précède et en garde les leçons) ;
 > R1–R5a restent bâtis et servent de socle (le rythme de l'entité devient le
 > défaut).
 >
@@ -526,3 +527,76 @@ Lots révisés : **P1** historique + timelines composées + calendrier d'union
 (pur, puis migration) · **P2** facture par payeur · **P3** automatisme et lot
 sur le calendrier (tentative à chaque clôture, `priorOrderCount`, échéance)
 · **P4** relevé et écrans.
+
+## 16. Les dates par MODE, le mode par client (Hugo, 2026-10-12) — fait foi
+
+> « dans la comptabilité on ne fait que fixer les dates (identiques pour tous
+> ceux d'une période) » · « mensuel par défaut, et oui pour les dates »
+
+C'était la demande du §0 : **l'entité fixe les dates de chacun des trois
+modes ; chaque client choisit un mode.** Plus aucune date propre à un client.
+
+### 16.1 Le modèle
+
+- **Sur l'entité, trois définitions**, chacune avec son courant et son
+  programmé (le `BillingRhythmSetting` de R2, réutilisé trois fois) :
+  - mensuel : un jour (défaut le 1er) ;
+  - deux fois par mois : deux jours (défaut 1 et 16) ;
+  - hebdomadaire : un jour de semaine (défaut lundi).
+    Migration additive : trois jeux de colonnes (courant, programmé, prise
+    d'effet) sur `legal_entities`. Les colonnes R2 `billing_rhythm_*` (un seul
+    rythme) deviennent mortes ; leur valeur, si elle n'est pas le défaut,
+    initialise la définition de son mode.
+- **Sur le client (payeur de `billedPayerOf`), un mode** — historique
+  append-only `payer_billing_mode` (`legal_entity_id`, `payer_company_id`,
+  `effective_from` = une clôture, `mode`). Aucune ligne = **mensuel** (Hugo).
+- **Changer les dates d'un mode** (entité) : prend effet pour tous les
+  clients de ce mode à la prochaine clôture de ce mode ; **un seul changement
+  à la fois par mode** (§12), refusé tant que la prise d'effet est future
+  (règle de temps, §15.8-4 : plus de lecture de `invoice_autopilot_run`).
+- **Changer le mode d'un client** : prend effet à la prochaine clôture de son
+  mode ACTUEL ; même règle d'un seul changement à la fois, pour lui. Fait
+  `payer.billing_mode_changed`.
+
+### 16.2 La timeline d'un client, le calendrier de l'entité
+
+- **Timeline d'un client** = ses segments de mode, chacun lu sur la timeline
+  de dates de ce mode. `previousClosureOf` sur cette composition rend la
+  clôture précédente réelle (bascule de mode ou de dates comprise).
+- **Calendrier de l'entité** = l'union des trois timelines de modes
+  (`ClosureCalendar`). Au plus trois suites de dates connues.
+
+### 16.3 Facture, lot, relevé — ce que reprend le §15.8
+
+- Facture : passage à chaque clôture du calendrier ; clients facturés = ceux
+  dont la timeline clôt à cet instant ; lecture SQL `[plancher, clôture)`
+  inchangée, filtre par payeur en mémoire (`billedPayerOf`, sites compris).
+- Lot : lecture inchangée (bons depuis le plancher → factures émises) ;
+  tentative à chaque clôture du calendrier, `nothing_to_collect` comprise ;
+  `CollectionBatch.constitute` accepte une clôture du calendrier ;
+  `priorOrderCount` sur la période du client ; échéance du lot (D4).
+- Lot manqué (R4b) : sur le calendrier.
+- Relevé et dossier : les périodes DU client.
+- La vue de l'entité porte `lastClosure` (clôture du lot à préparer), signalé
+  par R5b.
+
+### 16.4 Écrans
+
+- **Fiche de l'entité** : la carte « Rythme de facturation » (R5b) devient
+  « Dates des modes » — trois lignes, chacune avec ses dates, son programmé,
+  son avertissement §12 et ses prochaines clôtures ; le nombre de clients
+  par mode.
+- **Fiche du client, section facturation** : le mode (Mensuel par défaut),
+  le programmé et sa prise d'effet, l'avertissement §12, ses prochaines
+  clôtures.
+- Restes « mois » : tableau de bord, journal (« Mois pas encore
+  prélevable »), message du refus de préparation.
+
+### 16.5 Lots
+
+| Lot | Contenu                                                                                                                                 |
+| --- | --------------------------------------------------------------------------------------------------------------------------------------- |
+| M1  | Trois définitions sur l'entité + mode du client (migration, agrégats, routes, faits, timelines, calendrier d'union, règle §12 au temps) |
+| M2  | Facture par client à sa clôture (passage, bouton, rattrapage)                                                                           |
+| M3  | Lot et automatisme sur le calendrier (`constitute`, tentative à chaque clôture, `priorOrderCount`, lot manqué, `lastClosure`)           |
+| M4  | Relevé/dossier par client ; écrans : dates des modes, mode du client, restes « mois »                                                   |
