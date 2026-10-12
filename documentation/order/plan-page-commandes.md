@@ -101,5 +101,8 @@ de C1, après lui.
   ouvertes) et son passage par `vitruve` (argent). Les boutons n'arrivent
   qu'avec leurs règles serveur.
 
+- **Entrée « Commandes » dans le menu PRIMAIRE** (Hugo, 2026-10-12), dans les
+  deux arbres (rail et tuiles).
+
 Ordre : C1 (serveur de la liste) → C2 (liste et détail enrichi) → C3
 (annulation) → C4 (remboursement, par cas).
