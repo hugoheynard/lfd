@@ -240,6 +240,20 @@ export class App {
   protected readonly devTools = DEV_TOOLS;
 
   /** Le PIM — même droit que le catalogue, puisque c'est le catalogue. */
+  /** La section « App exploitation » : au moins un des postes du jour ouvert. */
+  protected readonly canSeeOperationsApps = computed(
+    () =>
+      this.canSeeSupervision() ||
+      this.canSeeProdManager() ||
+      this.canSeeTourManager() ||
+      this.canSeeBakehouse() ||
+      this.canSeePacking() ||
+      this.canSeeCounter() ||
+      this.canSeeCourier(),
+  );
+  /** Le vert pomme de la section : le vert de fold, tiré vers le jaune. */
+  protected readonly operationsTint =
+    'color-mix(in oklab, var(--fold-ref-green-550), var(--fold-ref-amber-550) 35%)';
   protected readonly canSeePim = computed(() => this.permissions.can('pim_catalog:read'));
 
   /**

@@ -18,7 +18,7 @@
     [(mobileNavOpen)]="mobileNavOpen"
   >
     <!-- Rail primaire — le menu de l'app. Déployé par défaut, repliable. -->
-    <fold-menu railPrimary collapsible tint="primary" level="primary" [(expanded)]="menuExpanded">
+    <fold-menu railPrimary collapsible tint="follow" level="primary" [(expanded)]="menuExpanded">
       <a header class="rail-brand" routerLink="/" aria-label="LFC B2B admin — accueil">
         <!-- LFC, l'enseigne — pas « B2B », qui nommait un canal parmi d'autres.
              L'outil sert le PIM, la production, le commercial et la plateforme
@@ -44,115 +44,124 @@
         ></a>
       }
 
-      @if (canSeeSupervision()) {
-        <!-- LA SUPERVISION DU JOUR — une vue, à part des espaces de travail :
-             celui qui regarde l'ensemble, pas celui qui fait. Revenue au premier
-             niveau le 2026-10-06, avant l'Exploitation qu'elle surplombe. -->
-        <a
-          fold-menu-item
-          icon="eye"
-          label="Supervision"
-          routerLink="/supervision"
-          routerLinkActive
-          #supervisionRla="routerLinkActive"
-          [active]="supervisionRla.isActive"
-          (click)="mobileNavOpen.set(false)"
-        ></a>
-      }
+      @if (canSeeOperationsApps()) {
+        <!-- APP EXPLOITATION — les postes du jour, de la supervision au
+             coursier (Hugo, 2026-10-12), en vert pomme : on y vient pour
+             TRAVAILLER, pas pour régler. La section n'existe que si l'une au
+             moins de ses entrées est ouverte. Le lanceur mobile n'a pas de
+             sections : il garde ses tuiles. -->
+        <fold-menu-section label="App exploitation" [color]="operationsTint">
+          @if (canSeeSupervision()) {
+            <!-- LA SUPERVISION DU JOUR — une vue, à part des espaces de travail :
+               celui qui regarde l'ensemble, pas celui qui fait. Revenue au premier
+               niveau le 2026-10-06, avant l'Exploitation qu'elle surplombe. -->
+            <a
+              fold-menu-item
+              icon="eye"
+              label="Supervision"
+              routerLink="/supervision"
+              routerLinkActive
+              #supervisionRla="routerLinkActive"
+              [active]="supervisionRla.isActive"
+              (click)="mobileNavOpen.set(false)"
+            ></a>
+          }
 
-      @if (canSeeProdManager()) {
-        <!-- PROD MANAGER — le prévisionnel, sorti de l'Exploitation (2026-10-10)
-             et rangé au-dessus du Fournil : la semaine avant la fournée. -->
-        <a
-          fold-menu-item
-          icon="calendar"
-          label="Prod manager"
-          routerLink="/prod-manager"
-          routerLinkActive
-          #prodManagerRla="routerLinkActive"
-          [active]="prodManagerRla.isActive"
-          (click)="mobileNavOpen.set(false)"
-        ></a>
-      }
+          @if (canSeeProdManager()) {
+            <!-- PROD MANAGER — le prévisionnel, sorti de l'Exploitation (2026-10-10)
+               et rangé au-dessus du Fournil : la semaine avant la fournée. -->
+            <a
+              fold-menu-item
+              icon="calendar"
+              label="Prod manager"
+              routerLink="/prod-manager"
+              routerLinkActive
+              #prodManagerRla="routerLinkActive"
+              [active]="prodManagerRla.isActive"
+              (click)="mobileNavOpen.set(false)"
+            ></a>
+          }
 
-      @if (canSeeTourManager()) {
-        <!-- TOUR MANAGER — l'organisation des tournées, sortie de la Livraison
-             (2026-10-10, Hugo) et rangée sous Prod manager. -->
-        <a
-          fold-menu-item
-          icon="places"
-          label="Tour manager"
-          routerLink="/tour-manager"
-          routerLinkActive
-          #tourManagerRla="routerLinkActive"
-          [active]="tourManagerRla.isActive"
-          (click)="mobileNavOpen.set(false)"
-        ></a>
-      }
+          @if (canSeeTourManager()) {
+            <!-- TOUR MANAGER — l'organisation des tournées, sortie de la Livraison
+               (2026-10-10, Hugo) et rangée sous Prod manager. -->
+            <a
+              fold-menu-item
+              icon="places"
+              label="Tour manager"
+              routerLink="/tour-manager"
+              routerLinkActive
+              #tourManagerRla="routerLinkActive"
+              [active]="tourManagerRla.isActive"
+              (click)="mobileNavOpen.set(false)"
+            ></a>
+          }
 
-      @if (canSeeBakehouse()) {
-        <!-- FOURNIL — la fournée du jour, sortie de la production (2026-10-06)
-             comme le colisage : un poste, pas une vue d'espace. -->
-        <a
-          fold-menu-item
-          icon="croissant"
-          label="Fournil"
-          badge="app"
-          routerLink="/fournil"
-          routerLinkActive
-          #bakehouseRla="routerLinkActive"
-          [active]="bakehouseRla.isActive"
-          (click)="mobileNavOpen.set(false)"
-        ></a>
-      }
+          @if (canSeeBakehouse()) {
+            <!-- FOURNIL — la fournée du jour, sortie de la production (2026-10-06)
+               comme le colisage : un poste, pas une vue d'espace. -->
+            <a
+              fold-menu-item
+              icon="croissant"
+              label="Fournil"
+              badge="app"
+              routerLink="/fournil"
+              routerLinkActive
+              #bakehouseRla="routerLinkActive"
+              [active]="bakehouseRla.isActive"
+              (click)="mobileNavOpen.set(false)"
+            ></a>
+          }
 
-      @if (canSeePacking()) {
-        <!-- COLISAGE — un poste à part de la production (2026-10-04) : ses
-             données restent au fournil, son geste a son entrée. -->
-        <a
-          fold-menu-item
-          icon="package"
-          label="Colisage"
-          badge="app"
-          routerLink="/colisage"
-          routerLinkActive
-          #packingRla="routerLinkActive"
-          [active]="packingRla.isActive"
-          (click)="mobileNavOpen.set(false)"
-        ></a>
-      }
+          @if (canSeePacking()) {
+            <!-- COLISAGE — un poste à part de la production (2026-10-04) : ses
+               données restent au fournil, son geste a son entrée. -->
+            <a
+              fold-menu-item
+              icon="package"
+              label="Colisage"
+              badge="app"
+              routerLink="/colisage"
+              routerLinkActive
+              #packingRla="routerLinkActive"
+              [active]="packingRla.isActive"
+              (click)="mobileNavOpen.set(false)"
+            ></a>
+          }
 
-      @if (canSeeCounter()) {
-        <!-- LE COMPTOIR — la file de retrait et la commande pro. Juste après la
-             production parce que c'est la suite du même flux : on fabrique, on
-             rend. Ses deux vues ont chacune leur droit depuis le 2026-10-01. -->
-        <a
-          fold-menu-item
-          icon="package-check"
-          label="Comptoir"
-          badge="app"
-          routerLink="/comptoir"
-          routerLinkActive
-          #comptoirRla="routerLinkActive"
-          [active]="comptoirRla.isActive"
-          (click)="mobileNavOpen.set(false)"
-        ></a>
-      }
+          @if (canSeeCounter()) {
+            <!-- LE COMPTOIR — la file de retrait et la commande pro. Juste après la
+               production parce que c'est la suite du même flux : on fabrique, on
+               rend. Ses deux vues ont chacune leur droit depuis le 2026-10-01. -->
+            <a
+              fold-menu-item
+              icon="package-check"
+              label="Comptoir"
+              badge="app"
+              routerLink="/comptoir"
+              routerLinkActive
+              #comptoirRla="routerLinkActive"
+              [active]="comptoirRla.isActive"
+              (click)="mobileNavOpen.set(false)"
+            ></a>
+          }
 
-      @if (canSeeCourier()) {
-        <!-- COURSIER — la page du livreur : sa tournée, son chargement. Un
-             espace à part (2026-10-03), que le livreur voit sans la Livraison. -->
-        <a
-          fold-menu-item
-          icon="map-pin"
-          label="Coursier"
-          badge="app"
-          routerLink="/coursier"
-          routerLinkActive
-          #courierRla="routerLinkActive"
-          [active]="courierRla.isActive"
-          (click)="mobileNavOpen.set(false)"
-        ></a>
+          @if (canSeeCourier()) {
+            <!-- COURSIER — la page du livreur : sa tournée, son chargement. Un
+               espace à part (2026-10-03), que le livreur voit sans la Livraison. -->
+            <a
+              fold-menu-item
+              icon="map-pin"
+              label="Coursier"
+              badge="app"
+              routerLink="/coursier"
+              routerLinkActive
+              #courierRla="routerLinkActive"
+              [active]="courierRla.isActive"
+              (click)="mobileNavOpen.set(false)"
+            ></a>
+          }
+        </fold-menu-section>
       }
 
       @if (canSeePim()) {
