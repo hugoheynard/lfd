@@ -4,6 +4,10 @@
 > **l'argent** et porte une **migration de données** : contredit par
 > `vitruve` avant Hugo. **Contredit le 2026-10-12 : quatre BLOQUANTS ; la
 > révision est au §9 et l'emporte sur les §2 à §5 là où ils divergent.**
+>
+> 🔴 **Révisé par Hugo le 2026-10-12 : « le rythme est défini par l'entité ».**
+> Aucun rythme par payeur. Tout ce qui parle de `payer_billing_rhythm`, de
+> période propre au payeur ou de rythmes mêlés est caduc (§10).
 
 ## 0. La demande
 
@@ -224,3 +228,31 @@ Chaque lot passe en `test` complet ; R2 passe par `lecteur-de-migrations`.
 
 - **Le préavis de 14 jours contre l'hebdomadaire** (ex-question 1) : il
   conditionne le calendrier des lots, ce n'est plus une question ouverte.
+
+## 10. Le rythme est celui de l'entité (Hugo, 2026-10-12)
+
+> « non le rythme est défini par l'entité »
+
+Une seule suite de clôtures par entité, donc tous ses payeurs facturés et
+prélevés ensemble. Ce que ça retire et ce qui reste :
+
+| Objection de `vitruve`                         | Après cette décision                                                                                                                |
+| ---------------------------------------------- | ----------------------------------------------------------------------------------------------------------------------------------- |
+| B1 — tables du mois non convertibles           | **Reste** : tables neuves `invoice_period_outcome` / `invoice_period_run` clés par `period_closes_at`                               |
+| B2 — l'automatisme ne tente qu'au 1er          | **Reste** : `autopilotTurn` et `cycleToConstitute` suivent la dernière clôture du rythme de l'entité                                |
+| B3 — un lot ramasserait des bons non facturés  | **Tombe** : tous les payeurs closent ensemble ; le lot garde sa lecture `[clôture précédente, clôture)`                             |
+| B4 — une suite de clôtures par entité          | **Tombe** : c'est justement le modèle ; `cycleAt` / `lastClosure` / `isCalendarClosure` se généralisent au rythme au lieu du 1er    |
+| Agrégat du rythme par payeur, `effective_from` | **Tombe** ; reste la règle sur `LegalEntity` : un changement prend effet à la prochaine clôture de l'ancien rythme, fait journalisé |
+| Relevé client en mois civils                   | **Reste** : il énumère les périodes de l'entité                                                                                     |
+
+Lots révisés :
+
+| Lot | Contenu                                                                                                                  |
+| --- | ------------------------------------------------------------------------------------------------------------------------ |
+| R1  | `BillingRhythm` + `nextClosureAfter` / `periodAt`, purs (heure d'été, février, fin d'année)                              |
+| R2  | Migration : rythme sur `legal_entities` (+ rythme suivant et sa prise d'effet), tables de période neuves ; `LegalEntity` |
+| R3  | Facture par clôture (23h55 la veille), passe automatique et rattrapage de toutes les clôtures manquées, bouton           |
+| R4  | Lot et automatisme par clôture, relevé client par période                                                                |
+| R5  | Carte de l'entité (choix du rythme et des dates), « Prélèvement du mois » par clôture                                    |
+
+Reste à trancher avant R4 : le préavis de 14 jours contre l'hebdomadaire.
