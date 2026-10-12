@@ -4,9 +4,8 @@
 > Ce document dit **ce qu'est** une page de rayon composée : sa grille, ses
 > formes, ses réglages, ses règles. **Comment** elle s'enregistre et se lit —
 > modèle, droit, verrou, rendu — est dans
-> [`plan-vitrine-enregistrement.md`](plan-vitrine-enregistrement.md). Les
-> gestes de mise en page remis à plus tard sont dans
-> [`todo-vitrine-editeur.md`](todo-vitrine-editeur.md).
+> [`plan-vitrine-enregistrement.md`](plan-vitrine-enregistrement.md). Ce qui
+> reste à faire est en fin de document (§ Reste à faire).
 >
 > Toutes les décisions ci-dessous sont de Hugo, le 2026-09-24, sauf mention.
 
@@ -184,5 +183,45 @@ boutique — à regarder avant de toucher au code.
   [`architecture-operations-datees.md`](../operations-datees/architecture-operations-datees.md) —
   le contenu s'éteint avec son opération, l'objet ne porte pas de date.
 - **Cibler** : pour quel public — pro, particulier, les deux.
-- **Les gestes de mise en page** — poser en poussant, gérer les rangées,
-  miroir : [`todo-vitrine-editeur.md`](todo-vitrine-editeur.md).
+- **Les gestes de mise en page** — cf. § Reste à faire.
+
+## Reste à faire
+
+> Repris le 2026-10-12 du TODO de l’éditeur de vitrine, supprimé (noté le
+> 2026-09-24, Hugo : « on peut vivre sans pour le moment »). Vérifié ce jour :
+> aucun des gestes n'est bâti, et `sampleCount` est toujours enregistré.
+
+### Les gestes de l'éditeur (`apps/lfd-backoffice-frontend/src/app/contenu/`)
+
+**À trancher d'abord — un objet partagé est à la même position sur tous ses
+rayons.** Tout geste qui déplace des objets sur UN rayon les déplacerait
+ailleurs, où la place n'est peut-être pas libre. Proposé, non validé : le geste
+est **refusé** s'il déplace un objet partagé, et le refus nomme l'objet et ses
+autres rayons. Écarté : reproduire le décalage partout (cascades invisibles).
+
+1. **Poser en poussant vers le bas** — les objets qui gênent descendent en
+   cascade ; refusé au-delà de R ; les cases « article du rayon » ne comptent
+   pas.
+2. **Gérer les rangées dans la limite R** — insérer (ce qui suit descend),
+   supprimer une rangée vide seulement (le refus nomme l'occupant), échanger
+   avec la voisine sauf objet à cheval.
+3. **Sélection multiple (Maj+clic) et miroir** horizontal / vertical dans le
+   rectangle englobant ; refusé si un objet non sélectionné y est ; à valider :
+   le miroir horizontal inverse aussi le côté de l'image.
+
+1 et 2 d'abord (même fonction pure de décalage), puis 3 ; en fonctions pures
+testées, dans `@lfd/storefront-layout` si le serveur s'en sert.
+
+### Retirer `sampleCount`
+
+Le « nombre de contenus » que l'aperçu simulait avant les onglets
+(`11d3967f7`) ; l'aperçu compte désormais les contenus réels, mais le champ
+reste enregistré et validé (vérifié le 2026-10-12) : `CarouselSettings` de
+`@lfd/storefront-layout`, `storefrontCarouselSchema` de `@lfd/contracts`,
+`object-settings.ts` et `storefront-rows.ts` de l'API, colonnes
+`sample_count` `NOT NULL` + `CHECK` de `storefront_object` et
+`storefront_template` (migration `20260924100100`). En trois temps
+(pré-release : le 1 et le 2 peuvent partir ensemble, sur décision de Hugo) :
+le rendre facultatif et cesser de le valider (`DROP NOT NULL`, retrait des
+`CHECK`), plus aucun lecteur (`slideAt` prend le nombre de contenus), puis
+`DROP COLUMN`. `lecteur-de-migrations` sur les migrations.
