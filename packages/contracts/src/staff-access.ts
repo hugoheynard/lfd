@@ -749,9 +749,10 @@ export const ROLE_GRANTS: Readonly<Record<StaffRole, RoleGrants>> = {
     b2b_orders: "write",
     // Les gestes sortis de `b2b_orders` le 2026-10-01, reçus par la bascule.
     b2b_place_order: "write",
-    production_plan: "write",
-    // L'arrêt du plan, sorti de `production_plan:write` le 2026-10-06 : la
-    // graine le reconduit ; voir les heures d'arrêt sans les régler.
+    // `read` : depuis la sortie de l'arrêt du plan (2026-10-06), aucune route
+    // n'exige `production_plan:write` (vérifié le 2026-10-12) — la graine ne
+    // l'accorde plus. L'arrêt a son propre droit, que la graine reconduit.
+    production_plan: "read",
     production_count_stop: "write",
     production_settings: "read",
     production_worksheet: "write",
@@ -822,9 +823,10 @@ export const ROLE_GRANTS: Readonly<Record<StaffRole, RoleGrants>> = {
     // `b2b_orders:write` — le colisage compris (DG-Q3 : Hugo le retire à
     // l'écran s'il le veut).
     b2b_place_order: "write",
-    production_plan: "write",
-    // L'arrêt du plan, sorti de `production_plan:write` le 2026-10-06 : la
-    // graine le reconduit ; voir les heures d'arrêt sans les régler.
+    // `read` : depuis la sortie de l'arrêt du plan (2026-10-06), aucune route
+    // n'exige `production_plan:write` (vérifié le 2026-10-12) — la graine ne
+    // l'accorde plus. L'arrêt a son propre droit, que la graine reconduit.
+    production_plan: "read",
     production_count_stop: "write",
     production_settings: "read",
     production_worksheet: "write",
@@ -897,9 +899,10 @@ export const ROLE_GRANTS: Readonly<Record<StaffRole, RoleGrants>> = {
     b2b_orders: "write",
     // Reçus par la bascule du 2026-10-01.
     b2b_place_order: "write",
-    production_plan: "write",
-    // L'arrêt du plan, sorti de `production_plan:write` le 2026-10-06 : la
-    // graine le reconduit ; voir les heures d'arrêt sans les régler.
+    // `read` : depuis la sortie de l'arrêt du plan (2026-10-06), aucune route
+    // n'exige `production_plan:write` (vérifié le 2026-10-12) — la graine ne
+    // l'accorde plus. L'arrêt a son propre droit, que la graine reconduit.
+    production_plan: "read",
     production_count_stop: "write",
     production_settings: "read",
     production_worksheet: "write",
