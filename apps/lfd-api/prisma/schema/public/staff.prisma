@@ -65,7 +65,7 @@ enum StaffResource {
   /// commande (2026-09-25, `architecture-commande-au-comptoir.md`).
   b2b_counter
   /// La SUPERVISION — la vue du jour, en lecture seule, de la passation au
-  /// retrait (2026-09-25, `plan-supervision-du-jour.md`).
+  /// retrait (2026-09-25, `architecture-supervision-du-jour.md`).
   b2b_supervision
   b2b_subscriptions
   b2b_catalog

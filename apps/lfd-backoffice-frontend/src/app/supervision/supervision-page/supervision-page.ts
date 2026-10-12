@@ -68,8 +68,8 @@ import {
 const BOARD_NARROW = '(max-width: 900px)';
 
 /**
- * **La Supervision du jour** — on voit, on n'agit pas (plans
- * `plan-supervision-du-jour.md`, puis `plan-supervision-v2.md`).
+ * **La Supervision du jour** — on voit, on n'agit pas (doc d'état
+ * `architecture-supervision-du-jour.md`).
  *
  * Trois colonnes dont l'unité change — le rayon, la commande, le créneau —,
  * chacune servie par sa propre lecture sous `b2b_supervision:read`, avec son

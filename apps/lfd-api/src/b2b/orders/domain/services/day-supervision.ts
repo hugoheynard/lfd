@@ -12,7 +12,7 @@ import type { HandoverQueueWindow } from "../ports/order.reader.js";
 
 /**
  * **Les règles de la Supervision du jour**, en fonctions pures
- * (`documentation/order/plan-supervision-du-jour.md`, « Serveur »).
+ * (`documentation/order/architecture-supervision-du-jour.md`, « Serveur »).
  *
  * Elles ne lisent que la commande, sa date de service et l'instant qu'on leur
  * passe — jamais le mur : le temps vient du `Clock`, par l'appelant.

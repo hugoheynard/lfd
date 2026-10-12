@@ -16,7 +16,7 @@ import { GetProductionWorksheetQuery } from "../application/queries/get-producti
 
 /**
  * **Le fournil vu depuis la Supervision** — aucun geste
- * (`documentation/order/plan-supervision-du-jour.md`, §3).
+ * (`documentation/order/architecture-supervision-du-jour.md`, §3).
  *
  * Une seconde PORTE sur les lectures du fournil, pas une seconde lecture :
  * chaque route envoie exactement la query que `ProductionWorksheetController`

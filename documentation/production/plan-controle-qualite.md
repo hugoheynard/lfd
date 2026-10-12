@@ -46,7 +46,7 @@ dit un superviseur (« je fais une réserve ») ; `warning` reste le nom de code
 | Q5  | Où se fait le geste ?               | **Sur la Supervision.**                                                                                                                      |
 
 Conséquence de Q5, dite pour qu'elle ne passe pas en douce : la Supervision
-était **une vue qui n'agit pas** (`order/plan-supervision-du-jour.md`, §1). Le
+était **une vue qui n'agit pas** (`order/architecture-supervision-du-jour.md`, §1). Le
 contrôle y devient **le seul geste**. La règle se réécrit : _la Supervision
 n'agit pas sur la commande — elle la juge_. Aucune coche, aucun colisage,
 aucun retrait n'y entre.

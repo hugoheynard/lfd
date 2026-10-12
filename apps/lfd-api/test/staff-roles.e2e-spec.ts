@@ -71,7 +71,7 @@ const SURFACES: readonly { readonly resource: StaffResource; readonly path: stri
   { resource: "b2b_counter", path: "/admin/counter/customers" },
   /**
    * La SUPERVISION (2026-09-25) — la vue du jour, de la passation au retrait
-   * (plan-supervision-du-jour.md). Sans date, le jour courant du serveur.
+   * (architecture-supervision-du-jour.md). Sans date, le jour courant du serveur.
    */
   { resource: "b2b_supervision", path: "/admin/supervision/day?date=2026-01-01" },
   /**

@@ -7,7 +7,7 @@ import type { HandoverQueueWindow } from "../domain/ports/order.reader.js";
  * **La lecture du JSON `orders.fulfillment`**, écrite UNE fois.
  *
  * Trois lecteurs en ont besoin — la fiche de commande, la file du retrait et la
- * Supervision du jour (`documentation/order/plan-supervision-du-jour.md`). Les
+ * Supervision du jour (`documentation/order/architecture-supervision-du-jour.md`). Les
  * deux premiers portaient chacun sa copie, identique au caractère près
  * (constaté le 2026-09-25) ; la troisième en aurait fait une de plus. Une
  * seconde copie d'un parseur ne diverge pas le jour où on l'écrit, mais le jour

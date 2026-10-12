@@ -16,7 +16,7 @@ import { GetOrderDayVersionQuery } from "../application/queries/get-order-day-ve
 
 /**
  * La **Supervision du jour** — une vue en lecture seule, à part des postes de
- * terrain (`documentation/order/plan-supervision-du-jour.md`).
+ * terrain (`documentation/order/architecture-supervision-du-jour.md`).
  *
  * Sa propre ressource, `b2b_supervision`, et non `b2b_orders` : elle ouvre le
  * nom des clients du jour, sans lignes ni montants, à qui n'a pas forcément

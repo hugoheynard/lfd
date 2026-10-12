@@ -249,7 +249,7 @@ const SCREENS: Readonly<Record<string, ScreenAccess>> = {
   // commande pro (`b2b_place_order`) sont deux droits. Attester un retrait
   // passe par `retrait/:token`, qui exige l'écriture.
   // UNE VUE à part des espaces, sous son propre droit : elle montre le nom des
-  // clients du jour sans ouvrir les commandes (plan-supervision-du-jour.md).
+  // clients du jour sans ouvrir les commandes (architecture-supervision-du-jour.md).
   supervision: 'b2b_supervision:read',
   comptoir: OPEN,
   'comptoir/retrait': 'handover_counter:read',
@@ -520,7 +520,7 @@ describe("l'arbre de routes du back-office", () => {
 
   it('monte la Supervision au premier niveau, sous son seul droit', () => {
     // Pas sous `b2b_orders:read` : c'est le point — elle se donne à qui supervise
-    // sans ouvrir les commandes (plan-supervision-du-jour.md, Front).
+    // sans ouvrir les commandes (architecture-supervision-du-jour.md, Front).
     const supervision = routes.find((route) => route.path === 'supervision');
 
     expect(supervision && declaredPermission(supervision)).toEqual(['b2b_supervision:read']);

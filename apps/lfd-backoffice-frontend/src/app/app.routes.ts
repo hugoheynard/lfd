@@ -652,7 +652,7 @@ export const routes: Routes = [
     // LA SUPERVISION DU JOUR — une VUE, pas un espace de travail : elle regarde
     // la production, le colisage et le retrait sans rien y faire. D'où le
     // premier niveau, hors de Production et de Comptoir, et un droit à elle
-    // (`documentation/order/plan-supervision-du-jour.md`, Front).
+    // (`documentation/order/architecture-supervision-du-jour.md`, Front).
     path: 'supervision',
     canActivate: [permissionGuard('b2b_supervision:read')],
     title: 'Supervision du jour — LFC B2B admin',

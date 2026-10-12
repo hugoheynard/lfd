@@ -19,7 +19,7 @@ export interface SupervisedOrder {
 
 /**
  * Port de **lecture** de la Supervision du jour
- * (`documentation/order/plan-supervision-du-jour.md`).
+ * (`documentation/order/architecture-supervision-du-jour.md`).
  *
  * Étroit exprès, et séparé d'`OrderReader` : la vue n'en appelle rien d'autre,
  * et ses doublés de test n'ont pas à jouer les verbes qu'elle n'appelle pas.

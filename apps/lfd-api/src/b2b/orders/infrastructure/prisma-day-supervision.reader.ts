@@ -21,7 +21,7 @@ const SUPERVISION_SELECT = {
 
 /**
  * La Supervision du jour, lue sur les seules tables du commerce
- * (`documentation/order/plan-supervision-du-jour.md`).
+ * (`documentation/order/architecture-supervision-du-jour.md`).
  *
  * 🔴 **Le filtre d'argent est celui du dossier du jour** — `settlementWhere`, pas
  * `planWhere` : on garde les commandes prêtes et retirées, qui sont justement

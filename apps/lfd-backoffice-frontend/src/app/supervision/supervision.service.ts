@@ -13,7 +13,7 @@ import { B2B_API_BASE } from '../api/api-config';
 
 /**
  * **Les quatre lectures de la Supervision du jour**, toutes sous
- * `b2b_supervision:read` (`documentation/order/plan-supervision-du-jour.md`, §3).
+ * `b2b_supervision:read` (`documentation/order/architecture-supervision-du-jour.md`, §3).
  *
  * Chacune rejoue au serveur la query du poste qui opère — fiche d'atelier,
  * colisage, file de retrait — et rend donc EXACTEMENT son contrat : l'écran

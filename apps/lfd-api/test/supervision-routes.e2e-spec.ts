@@ -1,6 +1,6 @@
 import { randomUUID } from "node:crypto";
 /**
- * E2E des **portes de la Supervision** — `documentation/order/plan-supervision-du-jour.md`,
+ * E2E des **portes de la Supervision** — `documentation/order/architecture-supervision-du-jour.md`,
  * §3, §4 et lot 1.
  *
  * Deux lectures des postes (fiche d'atelier, file du comptoir) rouvertes sous

@@ -67,7 +67,7 @@ describe('grantGroups', () => {
    * n'est pas lire la fiche client (architecture-commande-au-comptoir.md).
    *
    * `b2b_supervision` l'a fait passer à 28 le 2026-09-25 : regarder la
-   * journée entière n'est pas lire les commandes (plan-supervision-du-jour.md).
+   * journée entière n'est pas lire les commandes (architecture-supervision-du-jour.md).
    *
    * `lfc_price_limits` l'a fait passer à 29 le 2026-09-26 : poser une limite de
    * prix n'est pas négocier un prix (limites-de-prix.md).

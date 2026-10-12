@@ -323,7 +323,7 @@ Les choix qui ne se devinent pas :
   personne ne perd la saisie au comptoir. Ni `comptoir` ni `communication`
   n'ont de colonne ci-dessus ; `ROLE_GRANTS` fait foi.
 - **`b2b_supervision` n'est qu'à `admin`** (Hugo, 2026-09-25,
-  `documentation/order/plan-supervision-du-jour.md`). La vue est en lecture
+  `documentation/order/architecture-supervision-du-jour.md`). La vue est en lecture
   seule, mais `admin` la reçoit en `write` : l'administrateur couvre tout. Elle
   ouvre le nom des clients du jour, particuliers compris, toutes sociétés —
   moins que `b2b_orders:read`, mais un élargissement pour qui n'a pas ce droit.

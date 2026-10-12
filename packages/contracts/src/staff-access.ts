@@ -139,7 +139,7 @@ export const staffResourceSchema = z.enum([
   /**
    * **La Supervision** — une vue du jour, en lecture seule : où en est chaque
    * commande entre la passation et le retrait, et lesquelles sont en retard
-   * (`documentation/order/plan-supervision-du-jour.md`).
+   * (`documentation/order/architecture-supervision-du-jour.md`).
    *
    * Ce qu'elle ouvre, écrit : le NOM des clients du jour, particuliers compris,
    * toutes sociétés — ni lignes, ni montants, ni contact. C'est moins que
