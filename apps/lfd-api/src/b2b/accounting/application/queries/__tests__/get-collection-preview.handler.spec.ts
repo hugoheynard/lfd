@@ -1,6 +1,11 @@
 import type { CollectionPreviewOpenView } from "@lfd/contracts";
 
+import { LegalEntityNotFoundError } from "../../../domain/errors/accounting-errors.js";
 import { CollectionFloorMissingError } from "../../../domain/errors/collection-errors.js";
+import {
+  LegalEntityReader,
+  type LegalEntityRecord,
+} from "../../../domain/ports/legal-entity.reader.js";
 import {
   ENTITY_ID,
   STAFF_AUTHOR,
@@ -9,6 +14,12 @@ import {
 } from "../../../domain/services/__tests__/collection-fixtures.js";
 import { ConstituteCollectionBatchesCommand } from "../../commands/constitute-collection-batches.command.js";
 import { world } from "../../commands/__tests__/collection-world.js";
+import { entityRecord } from "../../commands/__tests__/mandate-bank-export-doubles.js";
+import {
+  FixedModeDates,
+  FixedPayerModes,
+} from "../../commands/__tests__/monthly-invoice-doubles.js";
+import { paris } from "../../../domain/services/__tests__/billing-mode-fixtures.js";
 import { GetCollectionPreviewQuery } from "../collection-batch-queries.js";
 import { GetCollectionPreviewHandler } from "../get-collection-preview.handler.js";
 
@@ -17,9 +28,26 @@ import { GetCollectionPreviewHandler } from "../get-collection-preview.handler.j
  * celle du monde du lot (2 octobre 2026) : le mois qui court se clôt le
  * 1er novembre. Les dates ne sont comparées qu'au cycle, jamais au mur.
  */
+/** L'entité du monde du lot, et elle seule. */
+class EntityOfTheWorld extends LegalEntityReader {
+  list(): Promise<readonly LegalEntityRecord[]> {
+    return Promise.resolve([{ ...entityRecord(), id: ENTITY_ID }]);
+  }
+  byId(id: string): Promise<LegalEntityRecord | null> {
+    return Promise.resolve(id === ENTITY_ID ? { ...entityRecord(), id } : null);
+  }
+}
+
 function previewWorld() {
   const w = world();
-  const preview = new GetCollectionPreviewHandler(w.candidates, w.mandates, w.rhythms, w.clock);
+  const preview = new GetCollectionPreviewHandler(
+    new EntityOfTheWorld(),
+    w.candidates,
+    w.mandates,
+    new FixedModeDates(),
+    w.payerModes,
+    w.clock,
+  );
   return { ...w, preview };
 }
 
@@ -101,5 +129,42 @@ describe("l'aperçu du mois", () => {
     await expect(w.preview.execute(new GetCollectionPreviewQuery(ENTITY_ID))).rejects.toThrow(
       CollectionFloorMissingError,
     );
+  });
+
+  it("une entité inconnue : 404, avant toute lecture du lot", async () => {
+    const w = previewWorld();
+
+    await expect(w.preview.execute(new GetCollectionPreviewQuery("le_ghost"))).rejects.toThrow(
+      LegalEntityNotFoundError,
+    );
+  });
+
+  it("un payeur hebdomadaire : l'aperçu court jusqu'au lundi qui vient, pas jusqu'au 1er (M3)", async () => {
+    const w = previewWorld();
+    const weekly = new FixedPayerModes([
+      {
+        payerCompanyId: "c_port",
+        segments: [{ effectiveFrom: paris("2026-09-01"), mode: "weekly" as const }],
+      },
+    ]);
+    const preview = new GetCollectionPreviewHandler(
+      new EntityOfTheWorld(),
+      w.candidates,
+      w.mandates,
+      new FixedModeDates(),
+      weekly,
+      w.clock,
+    );
+    w.candidates.orders = [order("c_port")];
+    w.mandates.mandates = [mandate("c_port")];
+
+    const view = await preview.execute(new GetCollectionPreviewQuery(ENTITY_ID));
+
+    // Le 2 octobre 2026 (vendredi) : du jeudi 1er au lundi 5 octobre, Paris.
+    expect(view).toMatchObject({
+      state: "open",
+      cycleStartsAt: paris("2026-10-01").toISOString(),
+      cycleClosesAt: paris("2026-10-05").toISOString(),
+    });
   });
 });

@@ -46,7 +46,7 @@ export class FirstClosureOffRhythmError extends DomainError {
   constructor(readonly closesAt: Date) {
     super(
       "accounting.collection.first_closure_off_calendar",
-      `La première clôture enregistrée doit être une clôture du rythme de facturation de l'entité, à 00h00 (Paris) — reçu ${closesAt.toISOString()}. Le lot doit fermer la même période que les factures qu'il encaisse.`,
+      `La première clôture enregistrée doit être une clôture du calendrier de facturation de l'entité (celle d'au moins un de ses clients), à 00h00 (Paris) — reçu ${closesAt.toISOString()}. Le lot doit se clore à l'instant où se clôt une facture qu'il encaisse.`,
     );
   }
 }

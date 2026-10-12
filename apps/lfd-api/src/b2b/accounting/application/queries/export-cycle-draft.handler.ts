@@ -5,7 +5,8 @@ import { buildCycleDraft } from "../cycle-draft-support.js";
 import { BillableOrdersReader } from "../../domain/ports/billable-orders.reader.js";
 import { CreditorReader } from "../../domain/ports/creditor.reader.js";
 import { DebtorMandateReader } from "../../domain/ports/debtor-mandate.reader.js";
-import { BillingRhythmReader } from "../../domain/ports/billing-rhythm.reader.js";
+import { BillingModeDatesReader } from "../../domain/ports/billing-mode-dates.reader.js";
+import { PayerBillingModesReader } from "../../domain/ports/payer-billing-modes.reader.js";
 import { RecordedClosureReader } from "../../domain/ports/recorded-closure.reader.js";
 import { ExportCycleDraftQuery } from "./billing-cycle-queries.js";
 
@@ -39,7 +40,8 @@ export class ExportCycleDraftHandler implements IQueryHandler<
     private readonly billable: BillableOrdersReader,
     private readonly debtors: DebtorMandateReader,
     private readonly closures: RecordedClosureReader,
-    private readonly rhythms: BillingRhythmReader,
+    private readonly modeDates: BillingModeDatesReader,
+    private readonly payerModes: PayerBillingModesReader,
     private readonly clock: Clock,
   ) {}
 
@@ -50,7 +52,7 @@ export class ExportCycleDraftHandler implements IQueryHandler<
         billable: this.billable,
         debtors: this.debtors,
         closures: this.closures,
-        rhythms: this.rhythms,
+        calendar: { modeDates: this.modeDates, payerModes: this.payerModes },
         clock: this.clock,
       },
       query.legalEntityId,

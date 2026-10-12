@@ -24,7 +24,7 @@ function input(orders: readonly CollectableOrder[]): AssemblyInput {
   return {
     legalEntityId: ENTITY_ID,
     at: AT,
-    cycleStartsAt: SEPTEMBER.startsAt,
+    payerPeriodStartsAt: () => SEPTEMBER.startsAt,
     orders,
     follows: [],
     mandates: [mandate("c_port"), mandate("c_quai")],

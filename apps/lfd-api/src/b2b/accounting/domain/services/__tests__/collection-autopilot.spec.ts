@@ -1,7 +1,8 @@
 import { BillingRhythmSetting } from "../../value-objects/billing-rhythm-setting.js";
 import { autopilotTurn } from "../collection-autopilot.js";
+import { InvoicingCalendar } from "../invoicing-calendar.js";
 
-const MONTHLY = BillingRhythmSetting.initial();
+const MONTHLY = InvoicingCalendar.following(BillingRhythmSetting.initial());
 
 /**
  * Le cycle de septembre se clôt le 1er octobre 2026 à 00h00 de Paris

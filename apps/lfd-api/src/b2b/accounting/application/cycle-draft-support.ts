@@ -4,10 +4,13 @@ import type { BillableOrdersReader } from "../domain/ports/billable-orders.reade
 import type { CreditorReader } from "../domain/ports/creditor.reader.js";
 import type { DebtorMandateReader } from "../domain/ports/debtor-mandate.reader.js";
 import type { RecordedClosureReader } from "../domain/ports/recorded-closure.reader.js";
-import type { BillingRhythmReader } from "../domain/ports/billing-rhythm.reader.js";
-import { entityCycleAt } from "../domain/services/entity-closures.js";
+import { calendarCycleAt } from "../domain/services/calendar-cycles.js";
 import { cycleTagOf, isSchemeFileDepositable, renderPain008 } from "../domain/services/pain008.js";
 import type { SepaScheme } from "../domain/value-objects/sepa-scheme.js";
+import {
+  readInvoicingCalendar,
+  type InvoicingCalendarReaders,
+} from "./invoicing-calendar-support.js";
 
 /**
  * Le brouillon du cycle, **construit une seule fois pour deux sorties**.
@@ -26,7 +29,8 @@ export interface CycleDraftDeps {
   readonly billable: BillableOrdersReader;
   readonly debtors: DebtorMandateReader;
   readonly closures: RecordedClosureReader;
-  readonly rhythms: BillingRhythmReader;
+  /** Le calendrier de la facture : le cycle du brouillon est celui du lot (M3). */
+  readonly calendar: InvoicingCalendarReaders;
   readonly clock: Clock;
 }
 
@@ -62,12 +66,10 @@ export async function buildCycleDraft(
   const now = deps.clock.now();
   // La dernière clôture ENREGISTRÉE de l'entité — le lot figé l'écrit depuis
   // le 2026-10-05 (plan `lot-de-prelevement-fige.md`).
-  // Au rythme de facturation de l'entité depuis R4 (plan-rythme-de-facturation, §10).
-  const rhythm = await deps.rhythms.timelineOf(legalEntityId);
-  if (rhythm === null) {
-    throw new LegalEntityNotFoundError(legalEntityId);
-  }
-  const cycle = entityCycleAt(now, rhythm, await deps.closures.lastClosure(legalEntityId));
+  // Sur le calendrier de la facture depuis M3 (plan-rythme-de-facturation,
+  // §16.3) — le même que le lot : le brouillon montre le cycle qu'il préparera.
+  const calendar = await readInvoicingCalendar(deps.calendar, legalEntityId);
+  const cycle = calendarCycleAt(now, calendar, await deps.closures.lastClosure(legalEntityId));
   const lines = await deps.billable.billableBetween(cycle.startsAt, cycle.closesAt);
 
   // Une seule lecture pour TOUT le cycle, tous schémas confondus, et APRÈS

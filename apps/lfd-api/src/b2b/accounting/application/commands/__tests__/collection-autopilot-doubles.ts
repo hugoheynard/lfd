@@ -5,6 +5,7 @@ import {
   AutoCollectionEntitiesReader,
   type AutoCollectionEntity,
 } from "../../../domain/ports/auto-collection-entities.reader.js";
+import type { PayerModeSegments } from "../../../domain/ports/payer-billing-modes.reader.js";
 import { AutomaticCollectionConstituter } from "../../../domain/ports/automatic-collection-constituter.js";
 import {
   AutopilotCoverageReader,
@@ -17,7 +18,7 @@ import {
 } from "../../../domain/ports/collection-autopilot-runs.js";
 import { ENTITY_ID } from "../../../domain/services/__tests__/collection-fixtures.js";
 import { RunCollectionAutopilotHandler } from "../run-collection-autopilot.handler.js";
-import { FixedRhythms } from "./monthly-invoice-doubles.js";
+import { FixedModeDates, FixedPayerModes } from "./monthly-invoice-doubles.js";
 
 /**
  * Les doubles du passage automatique (PA3, R4b), partagés par
@@ -130,14 +131,15 @@ export function autopilot(
   constituter: AutomaticCollectionConstituter,
   at: Date = AFTER_PLANNED,
   entities: readonly AutoCollectionEntity[] = [ENTITY],
-  rhythms: FixedRhythms = new FixedRhythms(),
+  payers: readonly PayerModeSegments[] = [],
 ) {
   const runs = new MemoryRuns();
   const coverage = new MemoryCoverage(runs);
   const events = new RecordingPublisher();
   const handler = new RunCollectionAutopilotHandler(
     new FixedAutoEntities(entities),
-    rhythms,
+    new FixedModeDates(),
+    new FixedPayerModes(payers),
     runs,
     coverage,
     constituter,

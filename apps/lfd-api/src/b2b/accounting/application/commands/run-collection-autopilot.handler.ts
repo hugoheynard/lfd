@@ -18,11 +18,13 @@ import {
 } from "../../domain/ports/auto-collection-entities.reader.js";
 import { AutopilotCoverageReader } from "../../domain/ports/autopilot-coverage.reader.js";
 import { AutomaticCollectionConstituter } from "../../domain/ports/automatic-collection-constituter.js";
-import { BillingRhythmReader } from "../../domain/ports/billing-rhythm.reader.js";
+import { BillingModeDatesReader } from "../../domain/ports/billing-mode-dates.reader.js";
 import { CollectionAutopilotRuns } from "../../domain/ports/collection-autopilot-runs.js";
+import { PayerBillingModesReader } from "../../domain/ports/payer-billing-modes.reader.js";
 import { autopilotTurn } from "../../domain/services/collection-autopilot.js";
-import type { RhythmTimeline } from "../../domain/services/invoicing-closures.js";
+import type { InvoicingCalendar } from "../../domain/services/invoicing-calendar.js";
 import { missedClosures, missedClosuresMessage } from "../../domain/services/missed-closures.js";
+import { readInvoicingCalendar } from "../invoicing-calendar-support.js";
 import {
   RunCollectionAutopilotCommand,
   type AutopilotRunReport,
@@ -38,7 +40,8 @@ const ONLY_EXCLUSIONS =
  * `prelevement-automatique.md`, PA3).
  *
  * Pour chaque entité dont l'automatisme est activé et dont l'heure de
- * constitution prévue (dernière clôture de SON rythme + délai, R4) est passée : si le cycle n'a jamais
+ * constitution prévue (dernière clôture de SON calendrier de facture + délai,
+ * M3 — celle d'au moins un payeur) est passée : si le cycle n'a jamais
  * été tenté, UNE tentative — la même constitution que le bouton, sous
  * l'auteur `system`, avis compris (PA2). Son issue est rangée et journalisée.
  *
@@ -57,7 +60,7 @@ const ONLY_EXCLUSIONS =
  *
  * ## Une clôture manquée suspend l'automatisme (R4b)
  *
- * Si une clôture antérieure de l'entité n'a jamais été tentée ni couverte
+ * Si une clôture antérieure du calendrier n'a jamais été tentée ni couverte
  * par un lot (passage arrêté, panne), le passage ne constitue PAS : il range
  * la tentative `missed`, son message nomme les clôtures, et la journalise.
  * Le lot manqué n'est jamais absorbé en silence par le suivant ; « Préparer
@@ -73,7 +76,8 @@ export class RunCollectionAutopilotHandler implements ICommandHandler<
 
   constructor(
     private readonly entities: AutoCollectionEntitiesReader,
-    private readonly rhythms: BillingRhythmReader,
+    private readonly modeDates: BillingModeDatesReader,
+    private readonly payerModes: PayerBillingModesReader,
     private readonly runs: CollectionAutopilotRuns,
     private readonly coverage: AutopilotCoverageReader,
     private readonly constituter: AutomaticCollectionConstituter,
@@ -97,11 +101,11 @@ export class RunCollectionAutopilotHandler implements ICommandHandler<
   /** Le tour d'une entité : `null` quand il n'y avait rien à tenter. */
   private async turn(entity: AutoCollectionEntity, now: Date): Promise<AutopilotRunReport | null> {
     const { legalEntityId } = entity;
-    const setting = await this.rhythms.timelineOf(legalEntityId);
-    if (setting === null) {
-      return null;
-    }
-    const turn = autopilotTurn(now, entity.autoCollectionDelayHours, setting);
+    const calendar = await readInvoicingCalendar(
+      { modeDates: this.modeDates, payerModes: this.payerModes },
+      legalEntityId,
+    );
+    const turn = autopilotTurn(now, entity.autoCollectionDelayHours, calendar);
     if (!turn.due || (await this.runs.attempted(legalEntityId, turn.cycleClosesAt))) {
       return null;
     }
@@ -109,7 +113,7 @@ export class RunCollectionAutopilotHandler implements ICommandHandler<
     if (!(await this.runs.claim(legalEntityId, turn.cycleClosesAt, now))) {
       return null;
     }
-    const issue = await this.issueOf(legalEntityId, turn.cycleClosesAt, setting);
+    const issue = await this.issueOf(legalEntityId, turn.cycleClosesAt, calendar);
     await this.uow.run(async () => {
       await this.runs.settle(legalEntityId, turn.cycleClosesAt, issue.outcome, issue.message);
       await this.events.publishTraced(
@@ -132,10 +136,10 @@ export class RunCollectionAutopilotHandler implements ICommandHandler<
   private async issueOf(
     legalEntityId: string,
     cycleClosesAt: Date,
-    timeline: RhythmTimeline,
+    calendar: InvoicingCalendar,
   ): Promise<AutopilotIssue> {
     const coverage = await this.coverage.coverageOf(legalEntityId, cycleClosesAt);
-    const missed = missedClosures(cycleClosesAt, timeline, coverage);
+    const missed = missedClosures(cycleClosesAt, calendar, coverage);
     if (missed.length > 0) {
       return { outcome: "missed", batchCount: 0, message: missedClosuresMessage(missed) };
     }

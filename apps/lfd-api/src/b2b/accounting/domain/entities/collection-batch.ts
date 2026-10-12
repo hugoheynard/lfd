@@ -11,8 +11,7 @@ import {
   type UnsentNotice,
 } from "../errors/collection-notice-errors.js";
 import type { BillingCycle } from "../services/billing-cycle.js";
-import { isEntityClosure } from "../services/entity-closures.js";
-import type { RhythmTimeline } from "../services/invoicing-closures.js";
+import type { ClosureSequence } from "../services/calendar-cycles.js";
 import type { SequenceType } from "../services/pain008-document.js";
 import type { SepaScheme } from "../value-objects/sepa-scheme.js";
 import type { CollectionNoticeStatus } from "./collection-notice.js";
@@ -121,10 +120,11 @@ export interface ConstituteBatchInput {
   /** La dernière clôture enregistrée avant celle-ci, `null` s'il n'y en a pas. */
   readonly previousClosure: Date | null;
   /**
-   * Le rythme de facturation de l'entité (R4) : la première clôture d'un lot
-   * doit en être une, pour fermer la même période que la facture encaissée.
+   * Le calendrier de la facture de l'entité (M3, `InvoicingCalendar`) : la
+   * première clôture d'un lot doit en être une — celle d'au moins un payeur —,
+   * pour fermer à l'instant où une facture se clôt.
    */
-  readonly rhythm: RhythmTimeline;
+  readonly calendar: Pick<ClosureSequence, "isClosure">;
   readonly constituted: ConstitutionStamp;
   readonly unmandatedCompanies: readonly string[];
   readonly lines: readonly CollectionBatchLine[];
@@ -157,7 +157,7 @@ export class CollectionBatch {
 
   /**
    * @throws {CycleNotClosedError} la clôture est dans le futur.
-   * @throws {FirstClosureOffRhythmError} première clôture hors du rythme de l'entité.
+   * @throws {FirstClosureOffRhythmError} première clôture hors du calendrier de l'entité.
    * @throws {ClosureNotAfterPreviousError} la clôture ne suit pas la précédente.
    */
   static constitute(input: ConstituteBatchInput): CollectionBatch {
@@ -165,7 +165,7 @@ export class CollectionBatch {
     if (cycle.closesAt.getTime() > constituted.at.getTime()) {
       throw new CycleNotClosedError(cycle.closesAt);
     }
-    if (previousClosure === null && !isEntityClosure(cycle.closesAt, input.rhythm)) {
+    if (previousClosure === null && !input.calendar.isClosure(cycle.closesAt)) {
       throw new FirstClosureOffRhythmError(cycle.closesAt);
     }
     if (previousClosure !== null && previousClosure.getTime() >= cycle.closesAt.getTime()) {

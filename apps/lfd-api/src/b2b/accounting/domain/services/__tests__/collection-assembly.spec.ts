@@ -9,7 +9,7 @@ function input(overrides: Partial<AssemblyInput>): AssemblyInput {
   return {
     legalEntityId: ENTITY_ID,
     at: AT,
-    cycleStartsAt: SEPTEMBER.startsAt,
+    payerPeriodStartsAt: () => SEPTEMBER.startsAt,
     orders: [],
     follows: [],
     mandates: [],
@@ -56,6 +56,24 @@ describe("assembleCollection — qui paie quoi, sous quel mandat", () => {
       priorOrderCount: 1,
     });
     expect(result.exclusions).toEqual([]);
+  });
+
+  it("compte les reprises sur la période DU PAYEUR, pas sur celle du lot (M3)", () => {
+    // Le lot d'un lundi : le payeur mensuel garde son mois, l'hebdomadaire sa semaine.
+    const monday = new Date("2026-09-20T22:00:00.000Z");
+    const midMonth = new Date("2026-09-10T08:00:00.000Z");
+    const result = assembleCollection(
+      input({
+        orders: [order("c_port", { placedAt: midMonth }), order("c_week", { placedAt: midMonth })],
+        mandates: [mandate("c_port"), mandate("c_week")],
+        payerPeriodStartsAt: (payer) => (payer === "c_week" ? monday : SEPTEMBER.startsAt),
+      }),
+    );
+
+    const lines = result.debits.get("B2B") ?? [];
+    const priorOf = (payer: string) => lines.find((l) => l.payerId === payer)?.priorOrderCount;
+    expect(priorOf("c_port")).toBe(0);
+    expect(priorOf("c_week")).toBe(1);
   });
 
   it("écarte `no_mandate` et NOMME la société — le lot ne se déposera pas (Q2)", () => {

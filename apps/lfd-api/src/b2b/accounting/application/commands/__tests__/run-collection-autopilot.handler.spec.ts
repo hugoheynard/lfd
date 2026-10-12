@@ -11,8 +11,7 @@ import {
   order,
 } from "../../../domain/services/__tests__/collection-fixtures.js";
 import { ConstituteCollectionBatchesCommand } from "../constitute-collection-batches.command.js";
-import { BillingRhythm } from "../../../domain/value-objects/billing-rhythm.js";
-import { BillingRhythmSetting } from "../../../domain/value-objects/billing-rhythm-setting.js";
+import { paris } from "../../../domain/services/__tests__/billing-mode-fixtures.js";
 import {
   AFTER_PLANNED,
   BEFORE_PLANNED,
@@ -23,7 +22,6 @@ import {
   key,
 } from "./collection-autopilot-doubles.js";
 import { world } from "./collection-world.js";
-import { FixedRhythms } from "./monthly-invoice-doubles.js";
 
 describe("le passage de la constitution automatique (PA3)", () => {
   it("constitue une fois l'heure passée, range l'issue et la journalise", async () => {
@@ -152,13 +150,18 @@ describe("le passage de la constitution automatique (PA3)", () => {
     expect(w.events.factTypes()).toContain("collection.notice_queued");
   });
 
-  describe("au rythme de l'entité (R4)", () => {
-    const weekly = new FixedRhythms(BillingRhythmSetting.of(BillingRhythm.weekly(1), null));
+  describe("sur le calendrier de la facture : un payeur hebdomadaire du lundi (R4, M3)", () => {
+    const weekly = [
+      {
+        payerCompanyId: "c_port",
+        segments: [{ effectiveFrom: paris("2026-09-01"), mode: "weekly" as const }],
+      },
+    ];
     /** Lundi 5 et lundi 12 octobre 2026, 00h00 Paris. */
     const MONDAY_5 = new Date("2026-10-04T22:00:00.000Z");
     const MONDAY_12 = new Date("2026-10-11T22:00:00.000Z");
 
-    it("une entité hebdomadaire est tentée à chaque lundi, une fois chacun", async () => {
+    it("l'entité est tentée à chaque lundi, une fois chacun", async () => {
       const constituter = new ScriptedConstituter(["b1"]);
       const first = autopilot(constituter, new Date("2026-10-05T08:00:00.000Z"), [ENTITY], weekly);
       const second = autopilot(constituter, new Date("2026-10-12T08:00:00.000Z"), [ENTITY], weekly);
@@ -173,14 +176,6 @@ describe("le passage de la constitution automatique (PA3)", () => {
         [],
       ]);
       expect(constituter.calls).toEqual([ENTITY_ID, ENTITY_ID]);
-    });
-
-    it("une entité disparue entre deux lectures n'est pas tentée", async () => {
-      const constituter = new ScriptedConstituter(["b1"]);
-      const { handler } = autopilot(constituter, AFTER_PLANNED, [ENTITY], new FixedRhythms(null));
-
-      expect((await handler.execute()).runs).toEqual([]);
-      expect(constituter.calls).toEqual([]);
     });
   });
 });

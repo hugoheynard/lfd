@@ -22,9 +22,9 @@ import { PrismaPayerStandingReader } from "./infrastructure/prisma-payer-standin
 /**
  * Les providers du lot M1 (plan `plan-rythme-de-facturation.md`, §16) : les
  * dates des modes, le mode des payeurs — et l'adaptateur de transition
- * `BillingRhythmReader` (le mode mensuel) que lisent encore lot, relevé et
- * dossier jusqu'à M4 (la facture l'a quitté en M2). À part du module, qui dépasse déjà la taille
- * d'un fichier.
+ * `BillingRhythmReader` (le mode mensuel) que lisent encore relevé et
+ * dossier jusqu'à M4 (la facture l'a quitté en M2, le lot et la fiche en M3).
+ * À part du module, qui dépasse déjà la taille d'un fichier.
  */
 export const BILLING_MODE_PROVIDERS: readonly Provider[] = [
   { provide: BillingRhythmReader, useClass: PrismaBillingRhythmReader },

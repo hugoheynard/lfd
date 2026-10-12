@@ -72,8 +72,13 @@ export interface AssemblyInput {
   readonly legalEntityId: string;
   /** L'instant de la constitution — celui auquel on juge le détachement. */
   readonly at: Date;
-  /** Début du cycle : une commande d'avant est « reprise » (`RmtInf`). */
-  readonly cycleStartsAt: Date;
+  /**
+   * Début de la période DU PAYEUR que le lot encaisse : une commande d'avant
+   * est « reprise » (`RmtInf`). Pas le début du lot — le lot d'un lundi peut
+   * encaisser le mois d'un payeur mensuel (M3, plan
+   * `plan-rythme-de-facturation.md` §15.8-6).
+   */
+  readonly payerPeriodStartsAt: (payerCompanyId: string) => Date;
   readonly orders: readonly CollectableOrder[];
   readonly follows: readonly BillingFollow[];
   readonly mandates: readonly CollectionMandate[];

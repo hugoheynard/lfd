@@ -2,10 +2,10 @@ import type { RhythmTimeline } from "../services/invoicing-closures.js";
 
 /**
  * ⚠️ **ADAPTATEUR DE TRANSITION (lot M1, plan `plan-rythme-de-facturation.md`,
- * §16)** — la suite des clôtures que lisent encore le lot, le relevé, le
- * dossier et la fiche, écrits pour le rythme UNIQUE de l'entité (R2–R5b). La
- * facture ne le lit plus depuis M2 (`InvoicingCalendar`, vérifié le
- * 2026-10-12).
+ * §16)** — la suite des clôtures que lisent encore le relevé et le dossier,
+ * écrits pour le rythme UNIQUE de l'entité (R2–R5b). La facture ne le lit
+ * plus depuis M2, le lot, son automatisme, le brouillon et la fiche depuis M3
+ * (`InvoicingCalendar`, vérifié le 2026-10-12).
  *
  * Depuis M1, il n'y a plus de rythme unique : l'entité fixe les dates de trois
  * modes, chaque payeur en choisit un. En attendant que M2 (facture), M3 (lot)

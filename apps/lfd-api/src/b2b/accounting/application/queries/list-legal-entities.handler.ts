@@ -2,7 +2,6 @@ import { QueryHandler, type IQueryHandler } from "@nestjs/cqrs";
 import type { LegalEntityView } from "@lfd/contracts";
 
 import { Clock } from "../../../../platform/time/clock.js";
-import { BillingRhythmReader } from "../../domain/ports/billing-rhythm.reader.js";
 import { BillingModeDatesReader } from "../../domain/ports/billing-mode-dates.reader.js";
 import { PayerBillingModesReader } from "../../domain/ports/payer-billing-modes.reader.js";
 import { LastAutopilotRunReader } from "../../domain/ports/last-autopilot-run.reader.js";
@@ -29,7 +28,6 @@ export class ListLegalEntitiesHandler implements IQueryHandler<
     private readonly entities: LegalEntityReader,
     private readonly closures: RecordedClosureReader,
     private readonly autopilotRuns: LastAutopilotRunReader,
-    private readonly rhythms: BillingRhythmReader,
     private readonly modeDates: BillingModeDatesReader,
     private readonly payerModes: PayerBillingModesReader,
     private readonly clock: Clock,
@@ -45,7 +43,6 @@ export class ListLegalEntitiesHandler implements IQueryHandler<
           {
             closures: this.closures,
             autopilotRuns: this.autopilotRuns,
-            rhythms: this.rhythms,
             modes: { modeDates: this.modeDates, payerModes: this.payerModes },
           },
           now,

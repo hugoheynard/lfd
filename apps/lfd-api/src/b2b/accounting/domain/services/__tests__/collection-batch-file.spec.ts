@@ -10,7 +10,7 @@ function debits() {
   const result = assembleCollection({
     legalEntityId: ENTITY_ID,
     at: CONSTITUTED_AT,
-    cycleStartsAt: SEPTEMBER.startsAt,
+    payerPeriodStartsAt: () => SEPTEMBER.startsAt,
     orders: [order("c_port", { placedAt: new Date("2026-08-10T08:00:00.000Z") }), order("c_port")],
     follows: [],
     mandates: [mandate("c_port")],

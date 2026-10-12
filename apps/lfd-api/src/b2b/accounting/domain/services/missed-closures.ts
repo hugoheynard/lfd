@@ -1,6 +1,6 @@
 import { parisLongDay } from "../errors/collection-errors.js";
 import type { AutopilotCoverage } from "../ports/autopilot-coverage.reader.js";
-import { closureAfter, type RhythmTimeline } from "./invoicing-closures.js";
+import type { ClosureSequence } from "./calendar-cycles.js";
 
 /**
  * **Les clôtures manquées** d'une entité avant la clôture `current` (plan
@@ -8,7 +8,9 @@ import { closureAfter, type RhythmTimeline } from "./invoicing-closures.js";
  * manqué se signale et se refait à la main »).
  *
  * Une clôture est manquée quand elle suit la borne, précède `current`, et n'a
- * AUCUNE tentative de l'automatisme. La borne est la plus récente de :
+ * AUCUNE tentative de l'automatisme. Les clôtures sont celles du calendrier de
+ * la facture depuis M3 : un lundi sans payeur hebdomadaire n'en est pas une,
+ * il ne peut donc pas manquer. La borne est la plus récente de :
  *
  * - la **première tentative** de l'entité — sans elle, rien n'est manqué :
  *   le jour du déploiement ne signale pas toutes les clôtures depuis le
@@ -23,7 +25,7 @@ import { closureAfter, type RhythmTimeline } from "./invoicing-closures.js";
  */
 export function missedClosures(
   current: Date,
-  timeline: RhythmTimeline,
+  calendar: Pick<ClosureSequence, "closureAfter">,
   coverage: AutopilotCoverage,
 ): readonly Date[] {
   const bound = boundOf(coverage);
@@ -33,9 +35,9 @@ export function missedClosures(
   const attempted = new Set(coverage.attemptedClosures.map((closure) => closure.getTime()));
   const missed: Date[] = [];
   for (
-    let cursor = closureAfter(bound, timeline);
+    let cursor = calendar.closureAfter(bound);
     cursor.getTime() < current.getTime();
-    cursor = closureAfter(cursor, timeline)
+    cursor = calendar.closureAfter(cursor)
   ) {
     if (!attempted.has(cursor.getTime())) {
       missed.push(cursor);

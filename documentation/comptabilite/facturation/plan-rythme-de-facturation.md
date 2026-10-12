@@ -681,11 +681,11 @@ seule « Dates des modes de facturation » (l'écran de réglage est M4).
 **🔴 L'adaptateur de transition** — `BillingRhythmReader.timelineOf(entité)`
 rend la timeline du **mode mensuel**. Le lisent encore, et sont à reprendre :
 
-| Lot                  | Appelants                                                                                                                                                                                                                                                                                      |
-| -------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| M2 (facture)         | ~~`issue-monthly-invoices.handler`, `run-invoice-autopilot.handler`, `get-monthly-invoices.handler`~~ — **quittés en M2** (§16.8)                                                                                                                                                              |
-| M3 (lot)             | `collection-constitution-support` (donc `constitute-collection-batches.handler`, `get-collection-preview.handler`), `run-collection-autopilot.handler`, `cycle-draft-support` (`export-cycle-draft`, `export-cycle-audit`), `legal-entity-view-support` (le seul `nextCollection` de la fiche) |
-| M4 (relevé, dossier) | `statement-period-support` (`get-current-billing-cycle`, `list-statement-cycles`, `get-cycle-statement`, `export-cycle-statement`, `get-invoice-dossier`, `export-invoice-dossier`), et `PrismaInvoicePeriodsReader`, qui lit le mensuel en jointure SANS passer par le port                   |
+| Lot                  | Appelants                                                                                                                                                                                                                                                                                                                      |
+| -------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
+| M2 (facture)         | ~~`issue-monthly-invoices.handler`, `run-invoice-autopilot.handler`, `get-monthly-invoices.handler`~~ — **quittés en M2** (§16.8)                                                                                                                                                                                              |
+| M3 (lot)             | ~~`collection-constitution-support` (donc `constitute-collection-batches.handler`, `get-collection-preview.handler`), `run-collection-autopilot.handler`, `cycle-draft-support` (`export-cycle-draft`, `export-cycle-audit`), `legal-entity-view-support` (le seul `nextCollection` de la fiche)~~ — **quittés en M3** (§16.9) |
+| M4 (relevé, dossier) | `statement-period-support` (`get-current-billing-cycle`, `list-statement-cycles`, `get-cycle-statement`, `export-cycle-statement`, `get-invoice-dossier`, `export-invoice-dossier`), et `PrismaInvoicePeriodsReader`, qui lit le mensuel en jointure SANS passer par le port                                                   |
 
 Les écrans de prélèvement du back-office (`month-schedule`, `month-preview`,
 `prelevement-du-mois-page`) ont perdu leur branche « autre rythme » : en M1 le
@@ -694,9 +694,9 @@ lot suit le mensuel. M4 la rend, par période.
 **Deux e2e retirés, à rétablir** (`test/monthly-invoices.e2e-spec.ts`) : ils
 réglaient le rythme unique (`PUT …/billing-rhythm`, supprimé) et ne peuvent
 pas passer tant que facture et lot suivent l'adaptateur mensuel :
-« la facture par clôture d'un rythme hebdomadaire (R3) » — à rétablir en
-**M2** sur un payeur hebdomadaire ; « le lot par clôture d'un rythme
-hebdomadaire (R4) » — à rétablir en **M3**.
+« la facture par clôture d'un rythme hebdomadaire (R3) » — **rétabli en
+M2** sur un payeur hebdomadaire ; « le lot par clôture d'un rythme
+hebdomadaire (R4) » — **rétabli en M3** (§16.9).
 
 **Ce que M1 n'a pas tranché** : « payeur en service » (§16.6-6) n'est pas
 défini — le calendrier d'union compte tout payeur qui a un segment vivant
@@ -719,7 +719,8 @@ même plafond `MAX_CLOSURES_PER_PASS`). Lu une fois par passage
 change de mode ; dans le passé, `ClosureCalendar` ferait tenter les lundis de
 septembre pour un payeur devenu hebdomadaire au 1er octobre — ce que §16.6-6
 refuse. La fiche (`lastClosure`, M1) lit encore `ClosureCalendar` ; M3 devra
-choisir lequel fait foi pour le lot (même question).
+choisir lequel fait foi pour le lot (même question) — **tranché en M3 :
+`InvoicingCalendar`, `ClosureCalendar` retiré** (§16.9).
 
 - **Passage automatique** : une tentative par (entité, clôture du calendrier)
   dans `invoice_autopilot_run`, rattrapage dans l'ordre depuis la dernière
@@ -751,7 +752,7 @@ choisir lequel fait foi pour le lot (même question).
 - Ni migration, ni contrat, ni back-office touché.
 
 **Reste par l'adaptateur `BillingRhythmReader`** : M3 et M4 du tableau
-ci-dessus, inchangés. Le journal (`invoice.autopilot_ran`, `invoice.signalled`)
+ci-dessus, inchangés (M3 l'a quitté depuis, §16.9). Le journal (`invoice.autopilot_ran`, `invoice.signalled`)
 dit encore le MOIS de la clôture (`periodMonthOf`).
 
 ### 16.9 M4 préparé (2026-10-12, pendant M3) — le relevé et les écrans
@@ -821,3 +822,83 @@ l'issue, e-mail de période ; specs des écrans.
 **Décisions de Hugo (2026-10-12) : « oui aux trois »** — `period_starts_at`
 rangée sur l'issue de facture ; l'e-mail dit la période ; la carte dit « N
 clients ont choisi ce mode » (le mensuel par défaut n'est pas compté).
+
+### 16.10 M3 bâti (2026-10-12) — le lot et son automatisme sur le calendrier de la facture
+
+**Un seul calendrier fait foi : `InvoicingCalendar`** — pour la facture (M2),
+le lot, son automatisme, le brouillon du cycle et la fiche de l'entité.
+`ClosureCalendar` (union des MODES suivis, M1) est **retiré** avec sa spec :
+son seul lecteur était `lastClosure` de la fiche, et le garder aurait laissé
+deux suites de clôtures diverger dans le passé (un payeur devenu hebdomadaire
+au 1er octobre ferait tenter, à tort, les lundis de septembre — ce que
+§16.6-6 refuse). Une facture et le lot qui l'encaisse se closent ainsi
+toujours au même instant.
+
+- **Domaine** : `ClosureSequence` (à côté de `calendarCycleAt`) — ce que le lot
+  demande au calendrier (`closureAfter`, `closureBefore`,
+  `lastClosureAtOrBefore`, `isClosure`) ; `InvoicingCalendar` l'implémente.
+  `calendarCycleAt` / `calendarCycleToConstitute` remplacent `entityCycleAt` /
+  `entityCycleToConstitute` pour le lot (ceux-ci restent pour le relevé, M4).
+  `CollectionBatch.constitute` prend `calendar` (au lieu de `rhythm`) : la
+  première clôture doit être une clôture du calendrier, celle d'au moins un
+  payeur. `autopilotTurn` et `missedClosures` (R4b) raisonnent sur le
+  calendrier. `InvoicingCalendar.following(timeline)` : le calendrier d'une
+  entité où personne n'a choisi de mode (= `of(modes, [])`).
+- **Le cycle d'un lot** = `]clôture précédente du calendrier (ou dernière
+enregistrée), dernière clôture du calendrier ≤ maintenant]`. Avec un payeur
+  hebdomadaire, le lot du lundi 5 octobre va du 1er (clôture du mensuel) au
+  lundi : les cycles des lots suivent l'union, pas la période d'un payeur.
+- **Lecture du lot inchangée** (`assembleCollection`, `collectableOrders(floor,
+clôture)`, factures émises, `unbillable`, `invoice_split`, mandats des sites,
+  re-présentation, arrêté d'avant le plancher). Seul `cycleStartsAt` a quitté
+  l'assemblage, remplacé par `payerPeriodStartsAt(payeur)`.
+- **`priorOrderCount`** : sur la période DU PAYEUR —
+  `InvoicingCalendar.payerPeriodStartAt(payeur, clôture du lot)`, le début de
+  la période que ferme sa dernière clôture ≤ celle du lot. Au mensuel au 1er,
+  identique à avant quand le lot précédent est au 1er précédent ; s'il manque
+  un mois, les bons du mois manqué ne sont plus comptés « repris » par rapport
+  à la borne du lot mais à la période du payeur (c'est la règle §15.8-6).
+- **Automatisme** : une tentative par (entité, clôture du calendrier) —
+  `nothing_to_collect` comprise, mécanique inchangée — ; R4b sur le même
+  calendrier : pas de lundi manqué tant qu'aucun payeur n'est hebdomadaire,
+  y compris dans le passé d'un payeur qui l'est devenu.
+- **Échéance** : le lot garde `frozenCollectionDay` (D4), calculée sur SA
+  clôture. Rien dans le chemin du lot ne lit `invoice.dueOn` (vérifié le
+  2026-10-12 : seuls la facture, son PDF, Factur-X et l'avis de facture la
+  lisent). Une facture rattrapée dont `dueOn` est antérieure est donc prélevée
+  à l'échéance du lot, et ne se réécrit pas. ⚠️ Le courriel de la facture
+  (`invoice-notice-wording`) a annoncé, lui, `dueOn` : pour une facture
+  rattrapée, la date annoncée par la facture et celle du lot diffèrent ;
+  l'avis de prélèvement suit le lot (non vérifié au-delà de
+  `frozenCollectionDay` → XML → lot → avis, D4).
+- **Fiche** : `nextCollection` (`calendarCycleAt`) et `lastClosure` lisent le
+  même `InvoicingCalendar`, lu une fois par fiche.
+- **Aperçu** (`get-collection-preview`) : il vérifiait l'existence de l'entité
+  par l'adaptateur ; il lit désormais `LegalEntityReader.byId` (404 avant
+  toute lecture du lot), comme la vue de la facture en M2.
+- **Mensuel au 1er strictement identique** : la spec domaine des cycles du
+  lot sur le calendrier compare,
+  sur trois sondes par jour de 2026 et trois bornes enregistrées, cycle en
+  cours, cycle à constituer, clôture, tour de l'automatisme, clôture
+  précédente et début de période du payeur à `entity-closures` de R4 ; les
+  tests d'avant passent en enveloppant leur réglage dans
+  `InvoicingCalendar.following`, assertions inchangées.
+- **Tests retouchés** : le test d'application « une entité hebdomadaire
+  constitue la semaine close au dernier lundi » est devenu un payeur
+  hebdomadaire, et son cycle s'ouvre au 1er (clôture du mensuel des autres) au
+  lieu du lundi d'avant — c'est le calendrier d'union, pas une régression.
+  « Une entité disparue entre deux lectures n'est pas tentée » est **retiré** :
+  il éprouvait le `null` de l'adaptateur, et les dates des modes rendent les
+  défauts pour toute entité (une entité ne se supprime pas).
+- **e2e** (`test/monthly-invoices.e2e-spec.ts`) : « le lot par clôture d'un
+  rythme hebdomadaire (R4, rétabli en M3) » sur les routes de M1 ; « rythmes
+  mêlés » étendu jusqu'au lot — le lot du premier lundi ne prélève que la
+  facture de l'hebdomadaire, chaque clôture du calendrier est préparée (aucune
+  `missed`), le lot du 1er prélève celle du mensuel, chaque facture est dans
+  exactement une ligne de lot. Écrits, **non lancés** par le bâtisseur.
+- Ni migration, ni contrat, ni back-office touché.
+
+**Reste par l'adaptateur `BillingRhythmReader`** : M4 seul —
+`statement-period-support` (relevé, dossier, cycles) et
+`PrismaInvoicePeriodsReader`. Le journal `invoice.autopilot_ran` dit encore
+le MOIS de la clôture (§16.8).

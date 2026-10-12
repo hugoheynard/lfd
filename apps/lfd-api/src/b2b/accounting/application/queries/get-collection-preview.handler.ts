@@ -6,11 +6,14 @@ import type {
 import { QueryHandler, type IQueryHandler } from "@nestjs/cqrs";
 
 import { Clock } from "../../../../platform/time/clock.js";
+import { LegalEntityNotFoundError } from "../../domain/errors/accounting-errors.js";
 import { CollectionNotYetOpenError } from "../../domain/errors/collection-errors.js";
-import { BillingRhythmReader } from "../../domain/ports/billing-rhythm.reader.js";
+import { BillingModeDatesReader } from "../../domain/ports/billing-mode-dates.reader.js";
 import { CollectionCandidatesReader } from "../../domain/ports/collection-candidates.reader.js";
 import { CollectionMandatesReader } from "../../domain/ports/collection-mandates.reader.js";
-import { entityCycleAt } from "../../domain/services/entity-closures.js";
+import { LegalEntityReader } from "../../domain/ports/legal-entity.reader.js";
+import { PayerBillingModesReader } from "../../domain/ports/payer-billing-modes.reader.js";
+import { calendarCycleAt } from "../../domain/services/calendar-cycles.js";
 import { readAssembly, type ReadAssembly } from "../collection-constitution-support.js";
 import { GetCollectionPreviewQuery } from "./collection-batch-queries.js";
 
@@ -21,8 +24,8 @@ import { GetCollectionPreviewQuery } from "./collection-batch-queries.js";
  * ## Calculé comme le lot, par le même chemin
  *
  * `readAssembly` puis `assembleCollection`, exactement ceux de la
- * constitution — seul le cycle change (`entityCycleAt`, celui qui court au
- * rythme de l'entité, au lieu du dernier clos). Le montant d'une ligne est donc le total de SA facture,
+ * constitution — seul le cycle change (`calendarCycleAt`, celui qui court sur
+ * le calendrier de la facture, au lieu du dernier clos). Le montant d'une ligne est donc le total de SA facture,
  * pas la somme de ses bons : un aperçu qui sommerait les bons annoncerait un
  * autre chiffre que celui du fichier.
  *
@@ -44,19 +47,29 @@ export class GetCollectionPreviewHandler implements IQueryHandler<
   CollectionPreviewView
 > {
   constructor(
+    private readonly entities: LegalEntityReader,
     private readonly candidates: CollectionCandidatesReader,
     private readonly mandates: CollectionMandatesReader,
-    private readonly rhythms: BillingRhythmReader,
+    private readonly modeDates: BillingModeDatesReader,
+    private readonly payerModes: PayerBillingModesReader,
     private readonly clock: Clock,
   ) {}
 
+  /** @throws {LegalEntityNotFoundError} l'entité n'existe pas. */
   async execute(query: GetCollectionPreviewQuery): Promise<CollectionPreviewView> {
+    if ((await this.entities.byId(query.legalEntityId)) === null) {
+      throw new LegalEntityNotFoundError(query.legalEntityId);
+    }
     try {
       const read = await readAssembly(
-        { candidates: this.candidates, mandates: this.mandates, rhythms: this.rhythms },
+        {
+          candidates: this.candidates,
+          mandates: this.mandates,
+          calendar: { modeDates: this.modeDates, payerModes: this.payerModes },
+        },
         query.legalEntityId,
         this.clock.now(),
-        { cycleOf: entityCycleAt, simulateUninvoiced: true },
+        { cycleOf: calendarCycleAt, simulateUninvoiced: true },
       );
       return toView(read);
     } catch (caught) {

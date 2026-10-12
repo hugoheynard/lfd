@@ -2,7 +2,7 @@ import { DirectUnitOfWork } from "../../../../../platform/database/__tests__/dir
 import { RecordingPublisher } from "../../../../../platform/events/__tests__/recording-publisher.js";
 import { FixedClock } from "../../../../../platform/time/fixed-clock.js";
 import { CREDITOR } from "../../../domain/services/__tests__/collection-fixtures.js";
-import { BillingRhythmSetting } from "../../../domain/value-objects/billing-rhythm-setting.js";
+import type { PayerModeSegments } from "../../../domain/ports/payer-billing-modes.reader.js";
 import { CancelCollectionBatchHandler } from "../cancel-collection-batch.handler.js";
 import { ConstituteCollectionBatchesHandler } from "../constitute-collection-batches.handler.js";
 import { DepositCollectionBatchHandler } from "../deposit-collection-batch.handler.js";
@@ -21,7 +21,7 @@ import {
   Steps,
   UlidSequence,
 } from "./collection-doubles.js";
-import { FixedRhythms } from "./monthly-invoice-doubles.js";
+import { FixedModeDates, FixedPayerModes } from "./monthly-invoice-doubles.js";
 import {
   FixedNoticeContacts,
   FixedRejections,
@@ -41,10 +41,10 @@ import {
 export const AFTER_CLOSE = new Date("2026-10-02T09:00:00.000Z");
 
 /**
- * @param setting le rythme de facturation de l'entité — mensuel au 1er par
- *        défaut, le comportement d'avant R4.
+ * @param payers les payeurs qui ont choisi un mode (M3) — aucun par défaut :
+ *        tous au mensuel du 1er, le comportement d'avant R4.
  */
-export function world(setting: BillingRhythmSetting = BillingRhythmSetting.initial()) {
+export function world(payers: readonly PayerModeSegments[] = []) {
   const steps = new Steps();
   const batches = new MemoryBatches(steps);
   const noticeStore = new NoticeStore();
@@ -63,13 +63,14 @@ export function world(setting: BillingRhythmSetting = BillingRhythmSetting.initi
     cancelled: new FakeCancelled(),
     events: new RecordingPublisher(),
     clock: new FixedClock(AFTER_CLOSE),
-    rhythms: new FixedRhythms(setting),
+    payerModes: new FixedPayerModes(payers),
   };
   const constitute = new ConstituteCollectionBatchesHandler(
     new FixedCreditors(CREDITOR),
     w.candidates,
     w.mandates,
-    w.rhythms,
+    new FixedModeDates(),
+    w.payerModes,
     w.batches,
     w.orders,
     w.statements,

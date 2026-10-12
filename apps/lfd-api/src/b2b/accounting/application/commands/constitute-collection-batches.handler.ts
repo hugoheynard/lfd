@@ -18,7 +18,7 @@ import {
   CollectionBatchConstitutedEvent,
   type BatchEntity,
 } from "../../domain/events/collection.events.js";
-import { BillingRhythmReader } from "../../domain/ports/billing-rhythm.reader.js";
+import { BillingModeDatesReader } from "../../domain/ports/billing-mode-dates.reader.js";
 import { BillingStatementRepository } from "../../domain/ports/billing-statement.repository.js";
 import { CollectionBatchRepository } from "../../domain/ports/collection-batch.repository.js";
 import { CollectionCandidatesReader } from "../../domain/ports/collection-candidates.reader.js";
@@ -28,6 +28,7 @@ import { CollectionNoticeRepository } from "../../domain/ports/collection-notice
 import { CreditorReader } from "../../domain/ports/creditor.reader.js";
 import { CycleNoticesReader } from "../../domain/ports/cycle-notices.reader.js";
 import { OrderCollectionRepository } from "../../domain/ports/order-collection.repository.js";
+import { PayerBillingModesReader } from "../../domain/ports/payer-billing-modes.reader.js";
 import { PayerNoticeContactsReader } from "../../domain/ports/payer-notice-contacts.reader.js";
 import { RepresentedRejectionsReader } from "../../domain/ports/represented-rejections.reader.js";
 import { StatementBuyerReader } from "../../domain/ports/statement-buyer.reader.js";
@@ -38,7 +39,8 @@ import { ConstituteCollectionBatchesCommand } from "./constitute-collection-batc
 
 /**
  * **Constitue les lots** d'une entité pour le dernier cycle clos — à la
- * dernière clôture du rythme de l'entité depuis R4 (plans
+ * dernière clôture du calendrier de la facture depuis M3 (celle d'au moins un
+ * payeur, `InvoicingCalendar`), du rythme de l'entité de R4 à M2 (plans
  * `lot-de-prelevement-fige.md` et `plan-rythme-de-facturation.md`, §10).
  *
  * Tout se passe sous `pg_advisory_xact_lock` par entité, dans UNE transaction :
@@ -78,7 +80,8 @@ export class ConstituteCollectionBatchesHandler implements ICommandHandler<
     private readonly creditors: CreditorReader,
     private readonly candidates: CollectionCandidatesReader,
     private readonly mandates: CollectionMandatesReader,
-    private readonly rhythms: BillingRhythmReader,
+    private readonly modeDates: BillingModeDatesReader,
+    private readonly payerModes: PayerBillingModesReader,
     private readonly batches: CollectionBatchRepository,
     private readonly orders: OrderCollectionRepository,
     private readonly statements: BillingStatementRepository,
@@ -105,7 +108,11 @@ export class ConstituteCollectionBatchesHandler implements ICommandHandler<
       await this.lock.acquire(legalEntityId);
       const at = this.clock.now();
       const read = await readAssembly(
-        { candidates: this.candidates, mandates: this.mandates, rhythms: this.rhythms },
+        {
+          candidates: this.candidates,
+          mandates: this.mandates,
+          calendar: { modeDates: this.modeDates, payerModes: this.payerModes },
+        },
         legalEntityId,
         at,
       );

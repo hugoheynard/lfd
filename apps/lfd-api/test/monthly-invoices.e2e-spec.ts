@@ -577,8 +577,62 @@ describe("la facture par clôture d'un rythme hebdomadaire (R3, rétabli en M2)"
   });
 });
 
-describe("rythmes mêlés : chaque payeur facturé à SA clôture (M2)", () => {
-  it("au lundi le seul hebdomadaire, au 1er le mensuel ; aucun bon facturé deux fois ni oublié", async () => {
+describe("le lot par clôture d'un rythme hebdomadaire (R4, rétabli en M3)", () => {
+  it("le mois, puis la semaine : chaque facture est prélevée par le lot de SA clôture", async () => {
+    const id = await entity();
+    const company = await payer(id);
+    const startsAt = month.cycle().startsAt;
+    const closingDay = instantToLocal(closesAt).day;
+    const isoWeekday = weekdayOf(closingDay) === 0 ? 7 : weekdayOf(closingDay);
+    // Les dates de l'hebdomadaire, avant le mois ; le payeur y passe pendant
+    // le mois, à la clôture du mois (comme le R3 rétabli en M2).
+    clock.set(new Date(startsAt.getTime() - 8 * DAY_MS + HOUR_MS));
+    await staff()
+      .put(`${ENTITIES}/${id}/billing-modes/weekly`)
+      .send({ days: [isoWeekday] })
+      .expect(204);
+    clock.set(new Date(startsAt.getTime() + HOUR_MS));
+    await staff()
+      .put(`${ENTITIES}/${id}/payers/${company.id}/billing-mode`)
+      .send({ mode: "weekly" })
+      .expect(204);
+    const week = nextClosureAfter(closesAt, BillingRhythm.weekly(isoWeekday));
+
+    // La facture du mois, puis son lot, deux heures après la clôture du mois.
+    clock.set(new Date(issuableFrom.getTime() + 2 * 60 * 1000));
+    await invoicePass();
+    clock.set(new Date(closesAt.getTime() + 2 * HOUR_MS));
+    expect((await pass()).runs.map((run) => run.outcome)).toEqual(["constituted"]);
+
+    // Un bon de la première semaine ; sa facture la veille de la clôture
+    // hebdomadaire, son lot deux heures après — l'automatisme suit le calendrier.
+    await laterOrder(company.id, new Date(closesAt.getTime() + 2 * DAY_MS));
+    clock.set(new Date(invoicingMomentOf(week).getTime() + 2 * 60 * 1000));
+    await invoicePass();
+    clock.set(new Date(week.getTime() + 2 * HOUR_MS));
+    const weekly = await pass();
+
+    expect(weekly.runs.map((run) => run.outcome)).toEqual(["constituted"]);
+    const batches = await ctx.prisma.collectionBatch.findMany({
+      orderBy: { cycleClosesAt: "asc" },
+      include: { lines: { include: { invoices: true } } },
+    });
+    expect(batches.map((batch) => [batch.cycleStartsAt, batch.cycleClosesAt])).toEqual([
+      [startsAt, closesAt],
+      [closesAt, week],
+    ]);
+    const invoices = await ctx.prisma.invoice.findMany({ orderBy: { rank: "asc" } });
+    expect(
+      batches.map((batch) => batch.lines.flatMap((l) => l.invoices.map((i) => i.invoiceId))),
+    ).toEqual([[invoices[0]?.id], [invoices[1]?.id]]);
+    expect(batches[1]?.lines[0]?.amountCents).toBe(invoices[1]?.totalTtcCents);
+    // Rejouer le passage ne tente pas une seconde fois la semaine.
+    expect((await pass()).runs).toEqual([]);
+  });
+});
+
+describe("rythmes mêlés : chaque payeur facturé à SA clôture (M2), prélevé au lot de SA clôture (M3)", () => {
+  it("au lundi le seul hebdomadaire, au 1er le mensuel ; aucun bon facturé ni aucune facture prélevée deux fois", async () => {
     const id = await entity();
     const monthly = await payer(id);
     const weekly = await payer(id);
@@ -603,19 +657,38 @@ describe("rythmes mêlés : chaque payeur facturé à SA clôture (M2)", () => {
       runs: [{ legalEntityId: id, periodClosesAt: firstMonday.toISOString(), outcome: "issued" }],
     });
     expect(await payersInvoiced()).toEqual([weekly.id]);
+    // Le lundi, deux heures après : le lot ne prélève que la facture émise (M3).
+    clock.set(new Date(firstMonday.getTime() + 2 * HOUR_MS));
+    expect((await pass()).runs.map((run) => run.outcome)).toEqual(["constituted"]);
+    expect(await invoicesCollectedAt(firstMonday)).toEqual(await invoiceIdsOf([weekly.id]));
 
-    // La veille du 1er : le mensuel a son mois ; les lundis entre-temps sont tentés.
-    clock.set(new Date(issuableFrom.getTime() + 2 * 60 * 1000));
-    await invoicePass();
+    // Chaque clôture du calendrier ensuite : la facture la veille, le lot le
+    // jour — aucune n'est manquée, un lundi sans facture compris (M3).
+    const last = lastWeek.getTime() > closesAt.getTime() ? lastWeek : closesAt;
+    for (const closure of closuresBetween(firstMonday, last)) {
+      clock.set(new Date(invoicingMomentOf(closure).getTime() + 2 * 60 * 1000));
+      await invoicePass();
+      clock.set(new Date(closure.getTime() + 2 * HOUR_MS));
+      const [run] = (await pass()).runs;
+      expect(["constituted", "nothing_to_collect"]).toContain(run?.outcome);
+    }
     const monthlyOutcome = await ctx.prisma.invoiceMonthlyOutcome.findFirstOrThrow({
       where: { payerCompanyId: monthly.id },
     });
     expect(monthlyOutcome.periodClosesAt).toEqual(closesAt);
+    // Le lot du 1er prélève la facture du mensuel.
+    expect(await invoicesCollectedAt(closesAt)).toEqual(
+      expect.arrayContaining(await invoiceIdsOf([monthly.id])),
+    );
 
-    // Puis la semaine qui porte le dernier bon de l'hebdomadaire, si elle clôt après le mois.
-    const last = lastWeek.getTime() > closesAt.getTime() ? lastWeek : closesAt;
-    clock.set(new Date(invoicingMomentOf(last).getTime() + 2 * 60 * 1000));
-    await invoicePass();
+    // Chaque facture prélevée par exactement UN lot.
+    const collected = await ctx.prisma.collectionBatchLineInvoice.findMany({
+      select: { invoiceId: true },
+    });
+    const allInvoices = await ctx.prisma.invoice.findMany({ select: { id: true } });
+    expect(collected.map((link) => link.invoiceId).sort()).toEqual(
+      allInvoices.map((invoice) => invoice.id).sort(),
+    );
 
     const links = await ctx.prisma.invoiceOrder.findMany({ select: { orderId: true } });
     const orders = await ctx.prisma.order.findMany({ select: { id: true } });
@@ -624,6 +697,37 @@ describe("rythmes mêlés : chaque payeur facturé à SA clôture (M2)", () => {
     expect(await ctx.prisma.invoice.count({ where: { payerCompanyId: monthly.id } })).toBe(1);
   });
 });
+
+/** Les clôtures du calendrier (lundis de l'hebdomadaire ∪ 1ers du mensuel) dans `]after, until]`. */
+function closuresBetween(after: Date, until: Date): readonly Date[] {
+  const closures: Date[] = [];
+  let cursor = after;
+  while (cursor.getTime() < until.getTime()) {
+    const monday = nextClosureAfter(cursor, BillingRhythm.weekly(1));
+    const first = nextClosureAfter(cursor, BillingRhythm.default());
+    cursor = monday.getTime() < first.getTime() ? monday : first;
+    closures.push(cursor);
+  }
+  return closures;
+}
+
+/** Les factures prélevées par le lot clos à `closesAt`, triées. */
+async function invoicesCollectedAt(closesAt: Date): Promise<readonly string[]> {
+  const links = await ctx.prisma.collectionBatchLineInvoice.findMany({
+    where: { line: { batch: { cycleClosesAt: closesAt } } },
+    select: { invoiceId: true },
+  });
+  return links.map((link) => link.invoiceId).sort();
+}
+
+/** Les factures de ces payeurs, triées. */
+async function invoiceIdsOf(payers: readonly string[]): Promise<readonly string[]> {
+  const invoices = await ctx.prisma.invoice.findMany({
+    where: { payerCompanyId: { in: [...payers] } },
+    select: { id: true },
+  });
+  return invoices.map((invoice) => invoice.id).sort();
+}
 
 /** Les payeurs facturés, dans l'ordre d'émission, chacun une fois. */
 async function payersInvoiced(): Promise<readonly string[]> {

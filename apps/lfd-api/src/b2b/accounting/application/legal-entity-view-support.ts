@@ -3,10 +3,10 @@ import type { CollectionCalendarView, LegalEntityView } from "@lfd/contracts";
 import type { LastAutopilotRunReader } from "../domain/ports/last-autopilot-run.reader.js";
 import type { LegalEntityRecord } from "../domain/ports/legal-entity.reader.js";
 import type { RecordedClosureReader } from "../domain/ports/recorded-closure.reader.js";
-import { LegalEntityNotFoundError } from "../domain/errors/accounting-errors.js";
-import type { BillingRhythmReader } from "../domain/ports/billing-rhythm.reader.js";
-import { entityCycleAt } from "../domain/services/entity-closures.js";
-import { entityBillingModes, type BillingModesReaders } from "./billing-modes-view-support.js";
+import { calendarCycleAt } from "../domain/services/calendar-cycles.js";
+import { InvoicingCalendar } from "../domain/services/invoicing-calendar.js";
+import { entityBillingModes } from "./billing-modes-view-support.js";
+import type { InvoicingCalendarReaders } from "./invoicing-calendar-support.js";
 import {
   collectionCalendar,
   type CollectionCalendar,
@@ -16,8 +16,7 @@ import {
 export interface EntityViewReaders {
   readonly closures: RecordedClosureReader;
   readonly autopilotRuns: LastAutopilotRunReader;
-  readonly rhythms: BillingRhythmReader;
-  readonly modes: BillingModesReaders;
+  readonly modes: InvoicingCalendarReaders;
 }
 
 /**
@@ -27,11 +26,9 @@ export interface EntityViewReaders {
  * plan `plan-rythme-de-facturation.md` §16) et par la dernière tentative de
  * l'automatisme (PA3).
  *
- * ⚠️ M1 : le cycle en cours suit encore la timeline du MODE MENSUEL
- * (`BillingRhythmReader`, adaptateur de transition) ; M3 le passera au
- * calendrier d'union.
- *
- * @throws {LegalEntityNotFoundError} l'entité a disparu entre deux lectures.
+ * Depuis M3, `nextCollection` et `lastClosure` lisent le MÊME calendrier que
+ * la facture et le lot (`InvoicingCalendar`, lu une fois ici) : la fiche
+ * annonce le lot que l'automatisme préparera.
  *
  * Partagé par la fiche et la liste : deux lectures, un calcul. Le calendrier
  * vient de `collectionCalendar`, la même fonction que le fichier du lot
@@ -42,11 +39,12 @@ export async function withNextCollection(
   readers: EntityViewReaders,
   now: Date,
 ): Promise<LegalEntityView> {
-  const rhythm = await readers.rhythms.timelineOf(record.id);
-  if (rhythm === null) {
-    throw new LegalEntityNotFoundError(record.id);
-  }
-  const cycle = entityCycleAt(now, rhythm, await readers.closures.lastClosure(record.id));
+  const [modes, payers] = await Promise.all([
+    readers.modes.modeDates.timelinesOf(record.id),
+    readers.modes.payerModes.segmentsOf(record.id),
+  ]);
+  const invoicing = InvoicingCalendar.of(modes, payers);
+  const cycle = calendarCycleAt(now, invoicing, await readers.closures.lastClosure(record.id));
   const calendar = collectionCalendar(cycle.closesAt, {
     preNotificationDays: record.preNotificationDays,
     collectionDaysAfterClosure: record.collectionDaysAfterClosure,
@@ -56,7 +54,7 @@ export async function withNextCollection(
   const run = await readers.autopilotRuns.lastOf(record.id);
   return {
     ...record,
-    ...(await entityBillingModes(record.id, readers.modes, now)),
+    ...entityBillingModes(modes, payers, invoicing, now),
     nextCollection: calendarView(calendar),
     lastAutopilotRun:
       run === null

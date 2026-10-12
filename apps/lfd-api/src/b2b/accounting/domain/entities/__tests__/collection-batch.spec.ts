@@ -9,6 +9,8 @@ import {
 import { CollectionNoticesNotSentError } from "../../errors/collection-notice-errors.js";
 import { BillingRhythm } from "../../value-objects/billing-rhythm.js";
 import { BillingRhythmSetting } from "../../value-objects/billing-rhythm-setting.js";
+import { defaultModes, paris } from "../../services/__tests__/billing-mode-fixtures.js";
+import { InvoicingCalendar } from "../../services/invoicing-calendar.js";
 import { CollectionBatch, type ConstituteBatchInput } from "../collection-batch.js";
 
 const SEPTEMBER = {
@@ -28,7 +30,7 @@ function input(overrides: Partial<ConstituteBatchInput> = {}): ConstituteBatchIn
     scheme: "B2B",
     cycle: SEPTEMBER,
     previousClosure: null,
-    rhythm: BillingRhythmSetting.initial(),
+    calendar: InvoicingCalendar.following(BillingRhythmSetting.initial()),
     constituted: CONSTITUTED,
     unmandatedCompanies: [],
     requestedCollectionDay: "2026-10-15",
@@ -79,7 +81,9 @@ describe("le lot de prélèvement", () => {
   });
 
   it("la première clôture d'une entité hebdomadaire du lundi tombe un lundi", () => {
-    const weekly = BillingRhythmSetting.of(BillingRhythm.weekly(1), null);
+    const weekly = InvoicingCalendar.following(
+      BillingRhythmSetting.of(BillingRhythm.weekly(1), null),
+    );
     // Lundi 28 septembre 2026, 00h00 Paris.
     const monday = { startsAt: SEPTEMBER.startsAt, closesAt: new Date("2026-09-27T22:00:00.000Z") };
     const tuesday = {
@@ -88,13 +92,32 @@ describe("le lot de prélèvement", () => {
     };
 
     expect(() =>
-      CollectionBatch.constitute(input({ cycle: monday, rhythm: weekly })),
+      CollectionBatch.constitute(input({ cycle: monday, calendar: weekly })),
     ).not.toThrow();
-    expect(() => CollectionBatch.constitute(input({ cycle: tuesday, rhythm: weekly }))).toThrow(
+    expect(() => CollectionBatch.constitute(input({ cycle: tuesday, calendar: weekly }))).toThrow(
       FirstClosureOffRhythmError,
     );
     // Le 1er octobre n'est pas une clôture du lundi.
-    expect(() => CollectionBatch.constitute(input({ rhythm: weekly }))).toThrow(
+    expect(() => CollectionBatch.constitute(input({ calendar: weekly }))).toThrow(
+      FirstClosureOffRhythmError,
+    );
+  });
+
+  it("rythmes mêlés : le 1er ET le lundi d'un payeur hebdomadaire sont des clôtures du lot (M3)", () => {
+    const mixed = InvoicingCalendar.of(defaultModes(), [
+      {
+        payerCompanyId: "c_week",
+        segments: [{ effectiveFrom: paris("2026-08-01"), mode: "weekly" as const }],
+      },
+    ]);
+    const monday = { startsAt: paris("2026-09-21"), closesAt: paris("2026-09-28") };
+    const tuesday = { startsAt: paris("2026-09-21"), closesAt: paris("2026-09-29") };
+
+    expect(() => CollectionBatch.constitute(input({ calendar: mixed }))).not.toThrow();
+    expect(() =>
+      CollectionBatch.constitute(input({ cycle: monday, calendar: mixed })),
+    ).not.toThrow();
+    expect(() => CollectionBatch.constitute(input({ cycle: tuesday, calendar: mixed }))).toThrow(
       FirstClosureOffRhythmError,
     );
   });

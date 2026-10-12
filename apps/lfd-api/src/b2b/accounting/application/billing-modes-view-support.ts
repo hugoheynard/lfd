@@ -4,12 +4,8 @@ import type {
   UpcomingClosureView,
 } from "@lfd/contracts";
 
-import type { BillingModeDatesReader } from "../domain/ports/billing-mode-dates.reader.js";
-import type {
-  PayerBillingModesReader,
-  PayerModeSegments,
-} from "../domain/ports/payer-billing-modes.reader.js";
-import { ClosureCalendar } from "../domain/services/closure-calendar.js";
+import type { PayerModeSegments } from "../domain/ports/payer-billing-modes.reader.js";
+import type { InvoicingCalendar } from "../domain/services/invoicing-calendar.js";
 import { upcomingClosures } from "../domain/services/entity-closures.js";
 import {
   lastDayOf,
@@ -24,12 +20,6 @@ import { BILLING_MODES, type BillingMode } from "../domain/value-objects/billing
 /** Combien de prochaines clôtures l'écran annonce (plan `plan-rythme-de-facturation.md`, §6). */
 export const UPCOMING_CLOSURES_SHOWN = 3;
 
-/** Ce que les dates des modes lisent. */
-export interface BillingModesReaders {
-  readonly modeDates: BillingModeDatesReader;
-  readonly payerModes: PayerBillingModesReader;
-}
-
 /** Les dates des trois modes, et la dernière clôture du calendrier de l'entité. */
 export interface EntityBillingModes {
   readonly billingModes: readonly LegalEntityBillingModeView[];
@@ -38,18 +28,16 @@ export interface EntityBillingModes {
 
 /**
  * Les modes de l'entité tels que la fiche les montre (§16.4), et la dernière
- * clôture atteinte de son calendrier (§16.3) : l'union des modes qu'au moins
- * un payeur suit (en vigueur ou programmé), plus le mensuel.
+ * clôture atteinte du calendrier de la facture (§16.3) — celui que suivent
+ * aussi la facture et le lot depuis M3 (`InvoicingCalendar`).
  */
-export async function entityBillingModes(
-  legalEntityId: string,
-  readers: BillingModesReaders,
+export function entityBillingModes(
+  modes: ModeTimelines,
+  payers: readonly PayerModeSegments[],
+  calendar: InvoicingCalendar,
   now: Date,
-): Promise<EntityBillingModes> {
-  const modes = await readers.modeDates.timelinesOf(legalEntityId);
-  const payers = await readers.payerModes.segmentsOf(legalEntityId);
+): EntityBillingModes {
   const followed = payers.map((payer) => PayerTimeline.of(payer.segments, modes).modesFrom(now));
-  const calendar = ClosureCalendar.of(modes, followed.flat());
   return {
     billingModes: BILLING_MODES.map((mode) =>
       modeView(mode, modes[mode], payerCountOf(mode, followed), now),

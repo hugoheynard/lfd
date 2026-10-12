@@ -35,7 +35,7 @@ function draftOf(group: DebitGroup, input: AssemblyInput): DebitDraft {
     debtorName: nameOf(group.payerId, input.companyNames),
     mandate: group.mandate,
     orders,
-    priorOrderCount: orders.filter((order) => order.placedAt < input.cycleStartsAt).length,
+    priorOrderCount: priorOrderCount(orders, input.payerPeriodStartsAt(group.payerId)),
   };
   if (group.invoices !== null) {
     const invoices = [...group.invoices].sort((left, right) =>
@@ -55,6 +55,11 @@ function draftOf(group: DebitGroup, input: AssemblyInput): DebitDraft {
     amountCents: dossier.invoice.totalCents,
     ordersTotalCents: dossier.ordersTotalCents,
   };
+}
+
+/** Les bons d'avant la période du payeur : repris d'un cycle antérieur. */
+function priorOrderCount(orders: readonly { readonly placedAt: Date }[], startsAt: Date): number {
+  return orders.filter((order) => order.placedAt < startsAt).length;
 }
 
 /** RCUR puis OOFF (l'ordre des blocs du fichier), puis par nom, puis par id. */

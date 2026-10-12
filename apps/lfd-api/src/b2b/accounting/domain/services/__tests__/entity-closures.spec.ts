@@ -15,6 +15,7 @@ import {
   lastClosureAtOrBefore,
   upcomingClosures,
 } from "../entity-closures.js";
+import { InvoicingCalendar } from "../invoicing-calendar.js";
 
 /**
  * Le cycle de prélèvement au rythme de l'entité (R4). Les dates sont le SUJET
@@ -90,7 +91,7 @@ describe("mensuel au 1er — EXACTEMENT le cycle calendaire d'avant le rythme", 
   it("le tour de l'automatisme vise la même clôture qu'avant le rythme", () => {
     for (const cycle of CYCLES) {
       for (const now of probesOf(cycle)) {
-        expect(autopilotTurn(now, 1, MONTHLY).cycleClosesAt).toEqual(
+        expect(autopilotTurn(now, 1, InvoicingCalendar.following(MONTHLY)).cycleClosesAt).toEqual(
           cycleToConstitute(now, null).closesAt,
         );
       }
@@ -143,9 +144,13 @@ describe("hebdomadaire du lundi", () => {
   });
 
   it("l'automatisme tente chaque lundi, une fois l'heure prévue passée", () => {
-    const turn = autopilotTurn(new Date(MONDAY_12.getTime() + 30 * 60_000), 1, WEEKLY_MONDAY);
+    const turn = autopilotTurn(
+      new Date(MONDAY_12.getTime() + 30 * 60_000),
+      1,
+      InvoicingCalendar.following(WEEKLY_MONDAY),
+    );
     expect(turn).toMatchObject({ cycleClosesAt: MONDAY_12, due: false });
-    expect(autopilotTurn(WEDNESDAY, 1, WEEKLY_MONDAY)).toMatchObject({
+    expect(autopilotTurn(WEDNESDAY, 1, InvoicingCalendar.following(WEEKLY_MONDAY))).toMatchObject({
       cycleClosesAt: MONDAY_12,
       due: true,
     });

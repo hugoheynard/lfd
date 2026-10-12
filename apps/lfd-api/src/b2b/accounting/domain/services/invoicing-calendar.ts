@@ -1,5 +1,6 @@
 import type { PayerModeSegments } from "../ports/payer-billing-modes.reader.js";
 import type { BillingCycle } from "./billing-cycle.js";
+import type { ClosureSequence } from "./calendar-cycles.js";
 import { lastClosureAtOrBefore } from "./entity-closures.js";
 import {
   closureAfter,
@@ -17,15 +18,20 @@ import { PayerTimeline, type ModeTimelines } from "./payer-timeline.js";
  * un mode et de celle du mensuel — la suite de tout payeur qui n'a rien
  * choisi.
  *
- * Il coïncide avec `ClosureCalendar` (union des MODES suivis) tant que les
- * modes ne changent pas ; il en diffère dans le passé, et c'est voulu : un
+ * Il coïncidait avec le `ClosureCalendar` de M1 (union des MODES suivis,
+ * retiré en M3) tant que les modes ne changent pas ; il en diffère dans le
+ * passé, et c'est voulu : un
  * payeur devenu hebdomadaire au 1er octobre ne fait pas tenter les lundis de
  * septembre (§16.6-6, « pas de tentative un lundi pour une entité sans client
  * hebdomadaire ») — un rattrapage relit l'histoire, pas les modes d'aujourd'hui.
  *
+ * Depuis M3, il fait foi aussi pour le LOT, son automatisme et la fiche
+ * (`ClosureSequence`) : une seule suite de clôtures pour la facture et pour
+ * ce qui l'encaisse.
+ *
  * Pur et immuable.
  */
-export class InvoicingCalendar {
+export class InvoicingCalendar implements ClosureSequence {
   private constructor(
     private readonly byDefault: RhythmTimeline,
     private readonly payers: ReadonlyMap<string, PayerTimeline>,
@@ -38,6 +44,14 @@ export class InvoicingCalendar {
         payers.map((payer) => [payer.payerCompanyId, PayerTimeline.of(payer.segments, modes)]),
       ),
     );
+  }
+
+  /**
+   * Le calendrier d'une entité où personne n'a choisi de mode : la suite de
+   * son mensuel, seule — ce que rend `of(modes, [])`.
+   */
+  static following(monthly: RhythmTimeline): InvoicingCalendar {
+    return new InvoicingCalendar(monthly, new Map());
   }
 
   /** La suite d'un payeur : la sienne s'il a choisi un mode, le mensuel sinon. */
@@ -53,6 +67,17 @@ export class InvoicingCalendar {
   /** La période d'un payeur close à `closesAt` : `[sa clôture précédente réelle, closesAt[`. */
   payerPeriodOf(payerCompanyId: string, closesAt: Date): BillingCycle {
     return { startsAt: previousClosureOf(closesAt, this.timelineOf(payerCompanyId)), closesAt };
+  }
+
+  /**
+   * Le début de la période du payeur que le lot clos à `closesAt` encaisse :
+   * celle que ferme sa dernière clôture ≤ `closesAt` (M3, `priorOrderCount`).
+   * Un bon d'avant est « repris » ; jamais la période du lot, qui peut être
+   * la semaine d'un autre payeur.
+   */
+  payerPeriodStartAt(payerCompanyId: string, closesAtInstant: Date): Date {
+    const timeline = this.timelineOf(payerCompanyId);
+    return previousClosureOf(lastClosureAtOrBefore(closesAtInstant, timeline), timeline);
   }
 
   /** Cet instant est-il la clôture d'au moins un payeur (ou du mensuel) ? */
@@ -78,6 +103,11 @@ export class InvoicingCalendar {
     return new Date(
       Math.min(...this.timelines().map((timeline) => closureAfter(instant, timeline).getTime())),
     );
+  }
+
+  /** La dernière clôture du calendrier strictement avant `instant`. */
+  closureBefore(instant: Date): Date {
+    return this.lastClosureAtOrBefore(new Date(instant.getTime() - 1));
   }
 
   /** La dernière clôture du calendrier atteinte à `now` (≤ `now`). */

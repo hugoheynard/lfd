@@ -10,9 +10,7 @@ import {
 import { RecordedClosureReader } from "../../../domain/ports/recorded-closure.reader.js";
 import { toView } from "../../../infrastructure/legal-entity.mapper.js";
 import { BillingRhythm } from "../../../domain/value-objects/billing-rhythm.js";
-import { BillingRhythmSetting } from "../../../domain/value-objects/billing-rhythm-setting.js";
 import { declaredEntity } from "../../commands/__tests__/mandate-setting-doubles.js";
-import { FixedRhythms } from "../../commands/__tests__/monthly-invoice-doubles.js";
 import {
   ModeDatesStore,
   PayerModesStore,
@@ -67,28 +65,17 @@ class NoClosure extends RecordedClosureReader {
   }
 }
 
-/** Mensuel au 1er, passage programmé à l'hebdomadaire du lundi au 1er novembre. */
-const SCHEDULED_WEEKLY = BillingRhythmSetting.of(BillingRhythm.default(), {
-  rhythm: BillingRhythm.weekly(1),
-  effectiveAt: new Date("2026-10-31T23:00:00.000Z"),
-});
-
 /** Les dates des modes et les modes des payeurs : vides par défaut — tout est au défaut. */
 class Modes {
   readonly dates = new ModeDatesStore();
   readonly payers = new PayerModesStore();
 }
 
-function handlerWith(
-  rhythms: FixedRhythms,
-  modes = new Modes(),
-  now: Date = NOW,
-): GetLegalEntityHandler {
+function handlerWith(modes = new Modes(), now: Date = NOW): GetLegalEntityHandler {
   return new GetLegalEntityHandler(
     new OneEntity(record()),
     new NoClosure(),
     new NoRun(),
-    rhythms,
     new StoreModeDatesReader(modes.dates),
     new StorePayerModesReader(modes.payers),
     new FixedClock(now),
@@ -111,7 +98,6 @@ describe("la fiche d'une entité porte le calendrier de son cycle en cours", () 
       new OneEntity(record()),
       new NoClosure(),
       new NoRun(),
-      new FixedRhythms(),
       new StoreModeDatesReader(new ModeDatesStore()),
       new StorePayerModesReader(new PayerModesStore()),
       new FixedClock(NOW),
@@ -136,7 +122,6 @@ describe("la fiche d'une entité porte le calendrier de son cycle en cours", () 
       reader,
       new NoClosure(),
       new NoRun(),
-      new FixedRhythms(),
       new StoreModeDatesReader(new ModeDatesStore()),
       new StorePayerModesReader(new PayerModesStore()),
       clock,
@@ -145,7 +130,6 @@ describe("la fiche d'une entité porte le calendrier de son cycle en cours", () 
       reader,
       new NoClosure(),
       new NoRun(),
-      new FixedRhythms(),
       new StoreModeDatesReader(new ModeDatesStore()),
       new StorePayerModesReader(new PayerModesStore()),
       clock,
@@ -159,7 +143,6 @@ describe("la fiche d'une entité porte le calendrier de son cycle en cours", () 
       new OneEntity(record()),
       new NoClosure(),
       new OneRun(),
-      new FixedRhythms(),
       new StoreModeDatesReader(new ModeDatesStore()),
       new StorePayerModesReader(new PayerModesStore()),
       new FixedClock(NOW),
@@ -180,7 +163,6 @@ describe("la fiche d'une entité porte le calendrier de son cycle en cours", () 
       new OneEntity(record()),
       new NoClosure(),
       new NoRun(),
-      new FixedRhythms(),
       new StoreModeDatesReader(new ModeDatesStore()),
       new StorePayerModesReader(new PayerModesStore()),
       new FixedClock(NOW),
@@ -189,16 +171,10 @@ describe("la fiche d'une entité porte le calendrier de son cycle en cours", () 
     expect(view.lastAutopilotRun).toBeNull();
   });
 
-  it("une entité hebdomadaire du lundi : le calendrier court jusqu'au lundi suivant (R4)", async () => {
-    const view = await new GetLegalEntityHandler(
-      new OneEntity(record()),
-      new NoClosure(),
-      new NoRun(),
-      new FixedRhythms(BillingRhythmSetting.of(BillingRhythm.weekly(1), null)),
-      new StoreModeDatesReader(new ModeDatesStore()),
-      new StorePayerModesReader(new PayerModesStore()),
-      new FixedClock(NOW),
-    ).execute(new GetLegalEntityQuery("le1"));
+  it("un payeur hebdomadaire du lundi : le calendrier court jusqu'au lundi suivant (R4, M3)", async () => {
+    const view = await handlerWith(weeklyPayerFrom(new Date("2026-09-30T22:00:00.000Z"))).execute(
+      new GetLegalEntityQuery("le1"),
+    );
 
     // Jeudi 8 octobre → lundi 12 octobre 00h00 Paris ; délai de deux heures.
     expect(view.nextCollection).toMatchObject({
@@ -208,18 +184,35 @@ describe("la fiche d'une entité porte le calendrier de son cycle en cours", () 
   });
 });
 
-describe("le cycle en cours suit encore le mode mensuel (adaptateur M1)", () => {
-  it("un réglage programmé dans l'adaptateur décale la clôture du cycle en cours", async () => {
-    const view = await handlerWith(
-      new FixedRhythms(SCHEDULED_WEEKLY),
-      new Modes(),
-      new Date("2026-11-03T09:00:00.000Z"),
-    ).execute(new GetLegalEntityQuery("le1"));
+describe("le cycle en cours suit le calendrier de la facture (M3)", () => {
+  it("un payeur qui passe à l'hebdomadaire au 1er novembre décale la clôture du cycle en cours", async () => {
+    const modes = weeklyPayerFrom(new Date("2026-10-31T23:00:00.000Z"));
+    const before = await handlerWith(modes).execute(new GetLegalEntityQuery("le1"));
+    const after = await handlerWith(modes, new Date("2026-11-03T09:00:00.000Z")).execute(
+      new GetLegalEntityQuery("le1"),
+    );
 
-    // Lundi 9 novembre 00h00 Paris : l'hebdomadaire a pris effet le 1er.
-    expect(view.nextCollection.closesAt).toBe("2026-11-08T23:00:00.000Z");
+    // Le 8 octobre : personne n'est encore hebdomadaire, le cycle court jusqu'au 1er novembre.
+    expect(before.nextCollection.closesAt).toBe("2026-10-31T23:00:00.000Z");
+    // Le 3 novembre : lundi 9 novembre 00h00 Paris, le premier lundi du payeur.
+    expect(after.nextCollection.closesAt).toBe("2026-11-08T23:00:00.000Z");
+    expect(after.lastClosure).toBe("2026-11-01T23:00:00.000Z");
   });
 });
+
+/** Un payeur hebdomadaire à partir de `effectiveFrom` (une clôture du mensuel). */
+function weeklyPayerFrom(effectiveFrom: Date): Modes {
+  const modes = new Modes();
+  modes.payers.rows.push({
+    ...STAMP,
+    id: "p_week",
+    legalEntityId: "le1",
+    payerCompanyId: "cmp_week",
+    effectiveFrom,
+    mode: "weekly",
+  });
+  return modes;
+}
 
 const STAMP = {
   createdAt: new Date("2026-10-01T08:00:00.000Z"),
@@ -230,7 +223,7 @@ const STAMP = {
 
 describe("la fiche porte les dates des trois modes et la dernière clôture (M1, §16)", () => {
   it("rien de réglé : les trois défauts, aucun programmé, aucun verrou, aucun payeur", async () => {
-    const view = await handlerWith(new FixedRhythms()).execute(new GetLegalEntityQuery("le1"));
+    const view = await handlerWith().execute(new GetLegalEntityQuery("le1"));
 
     expect(
       view.billingModes.map((mode) => ({
@@ -278,9 +271,7 @@ describe("la fiche porte les dates des trois modes et la dernière clôture (M1,
       rhythm: BillingRhythm.monthly(15),
     });
 
-    const view = await handlerWith(new FixedRhythms(), modes).execute(
-      new GetLegalEntityQuery("le1"),
-    );
+    const view = await handlerWith(modes).execute(new GetLegalEntityQuery("le1"));
     const monthly = view.billingModes[0];
 
     expect(monthly?.scheduled).toEqual({ days: [15], effectiveAt: "2026-10-31T23:00:00.000Z" });
@@ -303,9 +294,7 @@ describe("la fiche porte les dates des trois modes et la dernière clôture (M1,
       mode: "weekly",
     });
 
-    const view = await handlerWith(new FixedRhythms(), modes).execute(
-      new GetLegalEntityQuery("le1"),
-    );
+    const view = await handlerWith(modes).execute(new GetLegalEntityQuery("le1"));
 
     expect(view.billingModes.map((mode) => mode.payerCount)).toEqual([0, 0, 1]);
     // Jeudi 8 octobre : le dernier lundi atteint est le 5 octobre.

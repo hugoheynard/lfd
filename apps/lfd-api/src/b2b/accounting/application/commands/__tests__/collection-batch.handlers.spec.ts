@@ -13,8 +13,7 @@ import {
   mandate,
   order,
 } from "../../../domain/services/__tests__/collection-fixtures.js";
-import { BillingRhythm } from "../../../domain/value-objects/billing-rhythm.js";
-import { BillingRhythmSetting } from "../../../domain/value-objects/billing-rhythm-setting.js";
+import { paris } from "../../../domain/services/__tests__/billing-mode-fixtures.js";
 import { world } from "./collection-world.js";
 import { sendAllQueued } from "./notice-doubles.js";
 
@@ -186,14 +185,19 @@ describe("constituer, annuler, déposer un lot", () => {
     expect(ids).toHaveLength(1);
   });
 
-  describe("au rythme de l'entité (R4)", () => {
-    const WEEKLY_MONDAY = BillingRhythmSetting.of(BillingRhythm.weekly(1), null);
+  describe("sur le calendrier de la facture : un payeur hebdomadaire du lundi (R4, M3)", () => {
+    const WEEKLY_MONDAY = [
+      {
+        payerCompanyId: "c_port",
+        segments: [{ effectiveFrom: paris("2026-09-01"), mode: "weekly" as const }],
+      },
+    ];
     /** Mercredi 7 octobre 2026, midi à Paris. */
     const WEDNESDAY = new Date("2026-10-07T10:00:00.000Z");
     /** Lundi 5 octobre 2026, 00h00 Paris : la dernière clôture hebdomadaire atteinte. */
     const MONDAY_5 = new Date("2026-10-04T22:00:00.000Z");
 
-    it("une entité hebdomadaire constitue la semaine close au dernier lundi", async () => {
+    it("le lot clos au dernier lundi, ouvert au 1er — la clôture du mensuel qui le précède", async () => {
       const w = world(WEEKLY_MONDAY);
       w.clock.set(WEDNESDAY);
       w.candidates.orders = [order("c_port")];
@@ -204,7 +208,8 @@ describe("constituer, annuler, déposer un lot", () => {
       );
 
       expect(w.batches.saved.get(id ?? "")?.toPersistence().cycle).toEqual({
-        startsAt: new Date("2026-09-27T22:00:00.000Z"),
+        // Le calendrier réunit le lundi du payeur et le 1er des autres (M3).
+        startsAt: new Date("2026-09-30T22:00:00.000Z"),
         closesAt: MONDAY_5,
       });
     });

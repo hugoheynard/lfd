@@ -1,9 +1,10 @@
 import { BillingRhythm } from "../../value-objects/billing-rhythm.js";
 import { BillingRhythmSetting } from "../../value-objects/billing-rhythm-setting.js";
+import { InvoicingCalendar } from "../invoicing-calendar.js";
 import { missedClosures, missedClosuresMessage } from "../missed-closures.js";
 
-const MONTHLY = BillingRhythmSetting.initial();
-const WEEKLY = BillingRhythmSetting.of(BillingRhythm.weekly(1), null);
+const MONTHLY = InvoicingCalendar.following(BillingRhythmSetting.initial());
+const WEEKLY = InvoicingCalendar.following(BillingRhythmSetting.of(BillingRhythm.weekly(1), null));
 
 /**
  * Les 1ers juillet → octobre 2026 à 00h00 de Paris. Les instants ne sont

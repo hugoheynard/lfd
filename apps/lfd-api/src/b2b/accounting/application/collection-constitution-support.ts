@@ -10,15 +10,20 @@ import type {
   CollectionCandidatesReader,
 } from "../domain/ports/collection-candidates.reader.js";
 import type { CollectionMandatesReader } from "../domain/ports/collection-mandates.reader.js";
-import type { BillingRhythmReader } from "../domain/ports/billing-rhythm.reader.js";
-import { LegalEntityNotFoundError } from "../domain/errors/accounting-errors.js";
 import { billedPayerOf } from "../domain/services/billed-payer.js";
 import type { BillingCycle } from "../domain/services/billing-cycle.js";
-import { entityCycleToConstitute } from "../domain/services/entity-closures.js";
-import { closureAfter, type RhythmTimeline } from "../domain/services/invoicing-closures.js";
+import {
+  calendarCycleToConstitute,
+  type ClosureSequence,
+} from "../domain/services/calendar-cycles.js";
+import type { InvoicingCalendar } from "../domain/services/invoicing-calendar.js";
 import { assembleCollection, type Assembly } from "../domain/services/collection-assembly.js";
 import { renderBatchFile } from "../domain/services/collection-batch-file.js";
 import { frozenCollectionDay } from "../domain/services/collection-calendar.js";
+import {
+  readInvoicingCalendar,
+  type InvoicingCalendarReaders,
+} from "./invoicing-calendar-support.js";
 
 /**
  * Les deux moitiés de la constitution d'un lot, sorties du handler pour qu'il
@@ -29,15 +34,18 @@ import { frozenCollectionDay } from "../domain/services/collection-calendar.js";
 export interface ConstitutionReaders {
   readonly candidates: CollectionCandidatesReader;
   readonly mandates: CollectionMandatesReader;
-  /** Le rythme de l'entité : le cycle va de clôture en clôture de SON rythme (R4). */
-  readonly rhythms: BillingRhythmReader;
+  /**
+   * Le calendrier de la facture (M3) : le cycle du lot va de clôture en
+   * clôture du calendrier — celles d'au moins un payeur.
+   */
+  readonly calendar: InvoicingCalendarReaders;
 }
 
 export interface ReadAssembly {
   readonly cycle: BillingCycle;
   readonly previousClosure: Date | null;
-  /** Le rythme de l'entité, que le lot relit pour juger sa première clôture. */
-  readonly rhythm: RhythmTimeline;
+  /** Le calendrier de la facture, que le lot relit pour juger sa première clôture. */
+  readonly calendar: InvoicingCalendar;
   /** La mise en service du prélèvement : aucune commande antérieure n'entre. */
   readonly floor: Date;
   readonly assembly: Assembly;
@@ -47,13 +55,13 @@ export interface ReadAssembly {
 
 /**
  * Quel cycle on assemble : celui qu'on CONSTITUE (le dernier clos, par
- * défaut) ou celui qui COURT (l'aperçu, PA4), au rythme de l'entité (R4).
- * Même signature que `entityCycleToConstitute` et `entityCycleAt`, qui sont les
- * deux valeurs admises.
+ * défaut) ou celui qui COURT (l'aperçu, PA4), sur le calendrier de la
+ * facture (M3). Même signature que `calendarCycleToConstitute` et
+ * `calendarCycleAt`, qui sont les deux valeurs admises.
  */
 export type CycleChoice = (
   at: Date,
-  timeline: RhythmTimeline,
+  calendar: ClosureSequence,
   previousClosure: Date | null,
 ) => BillingCycle;
 
@@ -68,10 +76,15 @@ export interface AssemblyMode {
   readonly simulateUninvoiced: boolean;
 }
 
-const TO_CONSTITUTE: AssemblyMode = { cycleOf: entityCycleToConstitute, simulateUninvoiced: false };
+const TO_CONSTITUTE: AssemblyMode = {
+  cycleOf: calendarCycleToConstitute,
+  simulateUninvoiced: false,
+};
 
 /**
- * @throws {LegalEntityNotFoundError} l'entité n'existe pas.
+ * N'atteste pas que l'entité existe : chaque appelant le vérifie par le port
+ * qu'il lit déjà (créancier, entité).
+ *
  * @throws {CollectionFloorMissingError} le plancher n'est pas posé.
  * @throws {CollectionNotYetOpenError} le cycle se clôt avant le plancher.
  */
@@ -87,12 +100,12 @@ export async function readAssembly(
   if (floor === null) {
     throw new CollectionFloorMissingError();
   }
-  const { rhythm, previousClosure, cycle } = await readCycle(readers, legalEntityId, at, cycleOf);
+  const { calendar, previousClosure, cycle } = await readCycle(readers, legalEntityId, at, cycleOf);
   // Rien ne peut être après le plancher ET avant la clôture : le dire tel
   // quel, plutôt que « aucune commande à prélever ». La première clôture
-  // prélevable est la première du rythme après le plancher.
+  // prélevable est la première du calendrier après le plancher.
   if (floor >= cycle.closesAt) {
-    throw new CollectionNotYetOpenError(floor, closureAfter(floor, rhythm));
+    throw new CollectionNotYetOpenError(floor, calendar.closureAfter(floor));
   }
   const orders = await candidates.collectableOrders(floor, cycle.closesAt);
   const invoices = await candidates.invoicesOf(orders.map((order) => order.orderId));
@@ -111,7 +124,7 @@ export async function readAssembly(
   const assembly = assembleCollection({
     legalEntityId,
     at,
-    cycleStartsAt: cycle.startsAt,
+    payerPeriodStartsAt: (payer) => calendar.payerPeriodStartAt(payer, cycle.closesAt),
     orders,
     follows,
     mandates,
@@ -123,27 +136,24 @@ export async function readAssembly(
     invoices,
     invoicingFloor: mode.simulateUninvoiced ? null : await candidates.invoicingFloor(),
   });
-  return { cycle, previousClosure, rhythm, floor, assembly, companyNames };
+  return { cycle, previousClosure, calendar, floor, assembly, companyNames };
 }
 
-/** Le rythme de l'entité, sa dernière clôture enregistrée, et le cycle choisi. */
+/** Le calendrier de la facture, la dernière clôture enregistrée, et le cycle choisi. */
 async function readCycle(
   readers: ConstitutionReaders,
   legalEntityId: string,
   at: Date,
   cycleOf: CycleChoice,
 ): Promise<{
-  readonly rhythm: RhythmTimeline;
+  readonly calendar: InvoicingCalendar;
   readonly previousClosure: Date | null;
   readonly cycle: BillingCycle;
 }> {
-  const rhythm = await readers.rhythms.timelineOf(legalEntityId);
-  if (rhythm === null) {
-    throw new LegalEntityNotFoundError(legalEntityId);
-  }
-  const target = cycleOf(at, rhythm, null).closesAt;
+  const calendar = await readInvoicingCalendar(readers.calendar, legalEntityId);
+  const target = cycleOf(at, calendar, null).closesAt;
   const previousClosure = await readers.candidates.previousClosure(legalEntityId, target);
-  return { rhythm, previousClosure, cycle: cycleOf(at, rhythm, previousClosure) };
+  return { calendar, previousClosure, cycle: cycleOf(at, calendar, previousClosure) };
 }
 
 export interface BuildInput {
@@ -185,7 +195,7 @@ export function buildBatches(input: BuildInput): readonly CollectionBatch[] {
       scheme,
       cycle: read.cycle,
       previousClosure: read.previousClosure,
-      rhythm: read.rhythm,
+      calendar: read.calendar,
       constituted: { at: input.at, by: input.author },
       unmandatedCompanies: read.assembly.unmandatedCompanies,
       lines: file.lines,
