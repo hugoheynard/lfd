@@ -262,18 +262,21 @@ export class App {
    * 2026-09-23 ; l'entrée suivait encore `pim_catalog` jusqu'au 2026-10-02.
    */
   protected readonly canSeeMedia = computed(() => this.permissions.can('media_library:read'));
-  /**
-   * La section **Communication** du rail : la vitrine et les textes de la
-   * boutique, sous le droit qui ouvre les deux (`b2b_storefront`). Elle ne
-   * dépend plus des Réglages (`b2b_settings`), sous lesquels le lanceur mobile
-   * cachait ces deux écrans à qui n'avait que la vitrine.
-   */
   /** La teinte de la section Communication : un rose fait de tokens fold. */
   protected readonly communicationTint =
     'color-mix(in oklab, var(--fold-ref-red-450), var(--fold-ref-grape-500) 45%)';
 
-  protected readonly canSeeCommunication = computed(() =>
-    this.permissions.can('b2b_storefront:read'),
+  /** La vitrine et les textes de la boutique : le droit de la vitrine. */
+  protected readonly canSeeStorefront = computed(() => this.permissions.can('b2b_storefront:read'));
+  /**
+   * La section **Communication** : la médiathèque, la vitrine et les textes
+   * de la boutique (Hugo, 2026-10-12). Elle existe dès que l'une de ses
+   * entrées est ouverte ; chacune garde son droit. Elle ne dépend pas des
+   * Réglages (`b2b_settings`), sous lesquels le lanceur mobile cachait la
+   * vitrine à qui ne l'avait pas.
+   */
+  protected readonly canSeeCommunication = computed(
+    () => this.canSeeMedia() || this.canSeeStorefront(),
   );
 
   /**

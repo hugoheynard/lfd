@@ -182,28 +182,6 @@
         ></a>
       }
 
-      @if (canSeeMedia()) {
-        <!-- LA MÉDIATHÈQUE — le fonds d'images, indépendamment de ce qui
-             l'affiche. Entrée de premier niveau, juste après le PIM : c'est là
-             qu'on va chercher une photo, et la bibliothèque n'appartient à
-             aucun référentiel — les fiches en portent, les familles aussi, les
-             contenus de la vitrine en porteront.
-
-             `media_library:read`, le mur que la route serveur oppose
-             (`@AdminSurface("media_library")`, depuis le 2026-09-23 ; garde
-             réaligné le 2026-10-02 — il demandait encore `pim_catalog`). -->
-        <a
-          fold-menu-item
-          icon="image"
-          label="Médiathèque"
-          routerLink="/mediatheque"
-          routerLinkActive
-          #mediaRla="routerLinkActive"
-          [active]="mediaRla.isActive"
-          (click)="mobileNavOpen.set(false)"
-        ></a>
-      }
-
       @if (canSeeSettings()) {
         <!-- B2B — ce que la plateforme client VEND, et à quel prix. Ses deux
              écrans vivaient dans les Réglages, entre les heures de retrait et
@@ -232,26 +210,49 @@
              où fold le dilue — survol, sélection — tout en restant lisible
              sur le trait de la section. -->
         <fold-menu-section label="Communication" [color]="communicationTint">
-          <a
-            fold-menu-item
-            icon="view"
-            label="Vitrine boutique"
-            routerLink="/vitrine"
-            routerLinkActive
-            #vitrineRla="routerLinkActive"
-            [active]="vitrineRla.isActive"
-            (click)="mobileNavOpen.set(false)"
-          ></a>
-          <a
-            fold-menu-item
-            icon="edit"
-            label="Textes de la boutique"
-            routerLink="/textes-boutique"
-            routerLinkActive
-            #copyRla="routerLinkActive"
-            [active]="copyRla.isActive"
-            (click)="mobileNavOpen.set(false)"
-          ></a>
+          @if (canSeeMedia()) {
+            <!-- LA MÉDIATHÈQUE — le fonds d'images, indépendamment de ce qui
+                 l'affiche. Entrée de premier niveau, juste après le PIM : c'est là
+                 qu'on va chercher une photo, et la bibliothèque n'appartient à
+                 aucun référentiel — les fiches en portent, les familles aussi, les
+                 contenus de la vitrine en porteront.
+
+                 `media_library:read`, le mur que la route serveur oppose
+                 (`@AdminSurface("media_library")`, depuis le 2026-09-23 ; garde
+                 réaligné le 2026-10-02 — il demandait encore `pim_catalog`). -->
+            <a
+              fold-menu-item
+              icon="image"
+              label="Médiathèque"
+              routerLink="/mediatheque"
+              routerLinkActive
+              #mediaRla="routerLinkActive"
+              [active]="mediaRla.isActive"
+              (click)="mobileNavOpen.set(false)"
+            ></a>
+          }
+          @if (canSeeStorefront()) {
+            <a
+              fold-menu-item
+              icon="view"
+              label="Vitrine boutique"
+              routerLink="/vitrine"
+              routerLinkActive
+              #vitrineRla="routerLinkActive"
+              [active]="vitrineRla.isActive"
+              (click)="mobileNavOpen.set(false)"
+            ></a>
+            <a
+              fold-menu-item
+              icon="edit"
+              label="Textes de la boutique"
+              routerLink="/textes-boutique"
+              routerLinkActive
+              #copyRla="routerLinkActive"
+              [active]="copyRla.isActive"
+              (click)="mobileNavOpen.set(false)"
+            ></a>
+          }
         </fold-menu-section>
       }
 
@@ -333,7 +334,9 @@
            en dur derrière un `@if`, l'entrée y laissait son texte, le
            compilateur de gabarits ne retirant pas une branche morte. -->
       @for (tool of devTools; track tool.route) {
+        <!-- Au PIED du menu (Hugo, 2026-10-12) : un outil, pas un poste. -->
         <a
+          footer
           fold-menu-item
           [icon]="tool.icon"
           [label]="tool.label"
@@ -720,21 +723,6 @@
           }
         </fold-nav-group>
       }
-      @if (canSeeMedia()) {
-        <!-- La MÊME entrée qu'au rail. Deux arbres, deux modèles : une entrée
-             posée d'un seul côté est invisible de l'autre, et c'est déjà
-             arrivé. -->
-        <a
-          fold-nav-tile
-          icon="image"
-          label="Médiathèque"
-          routerLink="/mediatheque"
-          routerLinkActive
-          #mediaTile="routerLinkActive"
-          [active]="mediaTile.isActive"
-          (click)="mobileNavOpen.set(false)"
-        ></a>
-      }
 
       @if (canSeeSettings()) {
         <!-- LE B2B, qui n'avait AUCUNE tuile : ses vues n'existaient qu'au rail
@@ -760,26 +748,43 @@
       @if (canSeeCommunication()) {
         <!-- La MÊME section qu'au rail : les deux arbres ne partagent pas leur modèle. -->
         <fold-nav-group icon="edit" label="Communication" [entryCountLabel]="entriesLabel">
-          <a
-            fold-nav-tile
-            icon="view"
-            label="Vitrine boutique"
-            routerLink="/vitrine"
-            routerLinkActive
-            #vitrineTile="routerLinkActive"
-            [active]="vitrineTile.isActive"
-            (click)="mobileNavOpen.set(false)"
-          ></a>
-          <a
-            fold-nav-tile
-            icon="edit"
-            label="Textes de la boutique"
-            routerLink="/textes-boutique"
-            routerLinkActive
-            #copyTile="routerLinkActive"
-            [active]="copyTile.isActive"
-            (click)="mobileNavOpen.set(false)"
-          ></a>
+          @if (canSeeMedia()) {
+            <!-- La MÊME entrée qu'au rail. Deux arbres, deux modèles : une entrée
+                 posée d'un seul côté est invisible de l'autre, et c'est déjà
+                 arrivé. -->
+            <a
+              fold-nav-tile
+              icon="image"
+              label="Médiathèque"
+              routerLink="/mediatheque"
+              routerLinkActive
+              #mediaTile="routerLinkActive"
+              [active]="mediaTile.isActive"
+              (click)="mobileNavOpen.set(false)"
+            ></a>
+          }
+          @if (canSeeStorefront()) {
+            <a
+              fold-nav-tile
+              icon="view"
+              label="Vitrine boutique"
+              routerLink="/vitrine"
+              routerLinkActive
+              #vitrineTile="routerLinkActive"
+              [active]="vitrineTile.isActive"
+              (click)="mobileNavOpen.set(false)"
+            ></a>
+            <a
+              fold-nav-tile
+              icon="edit"
+              label="Textes de la boutique"
+              routerLink="/textes-boutique"
+              routerLinkActive
+              #copyTile="routerLinkActive"
+              [active]="copyTile.isActive"
+              (click)="mobileNavOpen.set(false)"
+            ></a>
+          }
         </fold-nav-group>
       }
       @if (canSeeAccounting()) {
