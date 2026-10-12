@@ -1,9 +1,25 @@
-// Une coquille qui ne dessine rien doit quand même laisser passer la HAUTEUR :
-// fold chaîne des colonnes flex jusqu'à `fold-page-layout`, et un hôte resté en
-// `display: block` rompt la chaîne (même raison que la coquille de production).
+// L'espace tient EXACTEMENT la hauteur de l'écran (Hugo, 2026-10-12 : « que le
+// main content ne dépasse pas de l'écran ») : la bande reste en place, et c'est
+// la vue qui défile sous elle. `flex: 1 1 0` + `min-height: 0` le borne au
+// conteneur de la coquille au lieu de grandir avec son contenu.
 :host {
   display: flex;
   flex-direction: column;
-  flex: 1 0 auto;
+  flex: 1 1 0;
   min-height: 0;
+  overflow: hidden;
+}
+
+app-comptoir-masthead {
+  flex: none;
+}
+
+// La vue routée (l'hôte posé après `router-outlet`) prend le reste, et défile.
+// `::ng-deep` : un hôte inséré par le routeur ne porte pas l'attribut de scope.
+:host > ::ng-deep router-outlet + * {
+  display: flex;
+  flex-direction: column;
+  flex: 1 1 0;
+  min-height: 0;
+  overflow-y: auto;
 }
