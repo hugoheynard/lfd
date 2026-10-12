@@ -51,7 +51,7 @@ d'une commande déjà dans le plan.
 > (C3.0) et les objections de `vitruve` (C3.9), puis **élargi** le même jour
 > par l'option (a) de Hugo : l'annulation ferme l'intention chez Stripe pour
 > une carte non payée (C3.2, C3.4 bis). Le remboursement vient juste après
-> (« Suite immédiate », fin de section).
+> (Lot C4).
 > Numérotation : celle de [`plan-page-commandes.md`](plan-page-commandes.md)
 > (C1 liste, C2 écran).
 
@@ -1167,6 +1167,9 @@ Ordre dans la transaction : `FOR UPDATE` (1-2), comptabilité (3-5), fournil
 
 #### C5.3 Le verrou commun — décision
 
+> Schémas de l'ordre des verrous et des courses :
+> [`verrous-de-l-annulation.md`](verrous-de-l-annulation.md).
+
 **La ligne `orders`, `FOR UPDATE`, partout où une commande au compte entre dans
 une facture, un lot, ou change d'état d'encaissement hors lot.** Pas de verrou
 par payeur (il faudrait résoudre le payeur avant de verrouiller : la course
@@ -1455,14 +1458,473 @@ Non tranchées par Hugo au 2026-10-12 ; le lot se bâtit sur les défauts.
 | S (2ᵉ) | relevé trop large, lecteurs incomplets         | **vérifié** : relevé = bons débités ; `active` seul ; lecteurs complétés (C5.1, 14 ; C5.4)   |
 | m (2ᵉ) | `outcomeKey`, mapper                           | **réglées** (C5.3 ; C5.4)                                                                    |
 
-### Suite immédiate — C4, le remboursement
+### Lot C4 — annuler une commande PAYÉE par carte, avec remboursement (conçu le 2026-10-12, à contredire)
 
-Lot à part, qui suit C3 sans attendre : Hugo pense que l'annulation aura
-souvent lieu **après** le paiement. C4 rendra annulable une commande `paid`
-non inscrite au fournil, et reprendra ce que le §2 (D4, D5) et le §9 (B2,
-B3, S3, S5) disent de l'argent à rendre. Il n'est pas conçu ici ; il partira
-du mécanisme de C3 (retrait au fournil, transaction, fait durable, droit,
-écran), pas de l'ancien D3.
+> Hugo, 2026-10-12 : « je pense que souvent l'annulation aura lieu post
+> paiement », « il faudra adapter les comportements de remboursement en
+> fonction des cas de figure ». Enchaînement sans arrêt : les questions
+> techniques sont tranchées ici ; les choix métier sont en C4.10, **chacun
+> avec un défaut prudent que le lot applique**.
+
+📐 **Plan.** Touche **l'argent** (un remboursement Stripe est **irréversible**)
+et porte une **migration** : `vitruve` obligatoire avant Hugo,
+`lecteur-de-migrations` au bâti. Reprend C3 (route, droit `b2b_cancel_order`,
+retrait au fournil, transaction, fait durable, courriel) et C3b (le bon) tels
+quels ; n'ajoute que **l'argent à rendre**. Indépendant de C5 : les deux
+élargissent `CancellableRegime` et `cancel()` d'une branche disjointe.
+
+#### C4.1 Ce que le code dit — ouvert le 2026-10-12
+
+1. **La passerelle ne sait pas rembourser.** `PaymentGateway`
+   (`b2b/payments/domain/payment-gateway.ts`) a `createIntent`,
+   `retrieveIntent`, `cancelIntent`, `parseWebhook` ; aucun `refund`.
+   `stripe-payment-gateway.ts` n'emploie **aucune** clé d'idempotence
+   aujourd'hui.
+2. **Les remboursements sont déjà CONSTATÉS** (lot R1,
+   `facture-carte-et-remboursements.md`) : `refund.created|updated|failed` →
+   `RecordOrderRefundHandler` → agrégat `OrderRefundLedger`
+   (`orders/domain/entities/order-refund-ledger.ts`), chargé par
+   `loadByPaymentIntent` **sous `FOR UPDATE` de la ligne `orders`**.
+   L'agrégat est idempotent par `stripe_refund_id` (`order_refund`, `@unique`),
+   refuse un statut qui régresse, un montant changé, une autre devise, et
+   **Σ `succeeded` > `chargedCents`** ; il passe `paid → refunded` quand le
+   cumul atteint le total, et revient à `paid` si un réussi échoue. Un
+   `succeeded` publie le fait durable `order.refund_succeeded`.
+3. **Le montant encaissé est `orders.total_cents`**, déjà **net du bon**
+   (`Order.place` : `computeOrderTotals(… voucherDiscountCents …)`) et
+   **frais de livraison et surtaxe de retard compris** ; l'intention est
+   dimensionnée dessus (`order-settlement.ts:50`). Rembourser `total_cents`
+   ne rend donc **rien** de la part payée en bon.
+4. **Une `paid` entre au plan dès l'encaissement** : `planWhere()` =
+   `status ∈ STATUS_IN_PLAN ∧ paymentStatus ∉ {failed, refunded, pending}`
+   (`plan-filter.ts:47`, `production-plan.ts:108,127`). Elle est donc
+   **producible** pour son jour de service, et **inscrite à l'arrêt** de cette
+   journée (clôture, ou retirage d'une journée close). Une `refunded` (rendue
+   en entier depuis le tableau de bord Stripe) n'est **jamais** inscrite.
+5. **Aucune facture carte ne peut exister sur une `paid` annulable.**
+   `cardInvoiceVerdict` (`accounting/domain/services/card-invoicing.ts`) ne
+   rend `issuable` que pour une commande **pro, encaissée ET retirée**
+   (`handedOverAt` non nul) ; une commande retirée est `fulfilled`, refusée par
+   C3.3 ; `markHandedOver` porte `status <> cancelled`
+   (`prisma-order.repository.ts:352`), et une annulée est `not_card` pour
+   toujours. Le particulier n'a jamais de facture carte.
+6. **L'avoir suit déjà le remboursement** : `ReconcileRefundsOnRefund`
+   (durable, sur `order.refund_succeeded`) émet l'avoir **s'il y a une facture
+   carte**, rien sinon ; `RingRefundNotCredited` ne sonne que pour
+   `account_invoice` / `exceeds_invoice`. Une annulée remboursée ne sonne donc
+   pas.
+7. **La croissance ne compte pas deux fois** : `revenue-scope.ts` exclut
+   `cancelled` et `refunded`, et ne lit pas `order_refund` (vérifié le
+   2026-10-09 dans le fichier, relu ce jour).
+8. **« Encaissé après annulation »** : `settle()` refuse de rouvrir une
+   annulée et publie `OrderPaidAfterCancellationEvent` ; `RingRefundDue`
+   (durable) sonne « à rembourser depuis Stripe ». Le carnet, lui, laisse le
+   règlement `failed` (`RefundSettlement`, `unchanged`).
+9. **Le passage de nuit des reliquats** ne vise que les commandes `paid`
+   vivantes (C3b.1) : une `paid` annulée après la nuit a un bon **soldé** —
+   C3b le traite (cas 2, 3, 5, 6), relecture sous verrou déjà bâtie.
+10. **L'outbox rejoue** : un abonné durable qui lève est relivré avec
+    attente croissante (`retry-policy.ts`), jusqu'à `MAX_DELIVERY_ATTEMPTS =
+10`, puis lettre morte visible (`/admin/outbox/dead-letters`) et
+    rejouable ; `OutboxRelayTrigger.wake()` le relaie dès la validation. Le
+    cron de rafraîchissement appelle `admin/outbox/sweep`
+    (`container/worker.ts:389`).
+11. **`cancel()`** (`prisma-order-cancellation.repository.ts:57-69`) a deux
+    `updateMany` disjoints (`due`, `free`) ; aucune branche `paid`.
+
+#### C4.2 Le critère
+
+Une commande de régime `paid` (`paymentStatus ∈ {paid, refunded}`) est
+annulable **ssi** :
+
+| #   | Condition                                  | Où                                                 |
+| --- | ------------------------------------------ | -------------------------------------------------- |
+| 1-2 | `placed` (inchangé)                        | `orders.status`                                    |
+| 3   | **non inscrite au fournil** (C3, inchangé) | `OrderWithdrawalDesk.withdraw`, sous verrou        |
+| 4   | **aucun remboursement en vol** (C4.4)      | `order_refund` : aucun `pending`/`requires_action` |
+| 5   | bon : C3b tel quel                         | `LoyaltyVoucherRedemption.reinstate`               |
+
+**Concrètement, une commande payée s'annule de son paiement jusqu'à l'arrêt
+de sa journée de service** (C4.1, 4) — le soir d'avant, à l'heure de l'arrêt
+automatique, ou plus tôt si l'équipe arrête à la main. Après l'arrêt : refus
+« inscrite » (C3.7), inchangé ; annuler une commande fabriquée est hors de ce
+lot (C4.10, Q4). Une `paid` sans jour de service n'est jamais producible : rien
+à retirer.
+
+`refunded` (rendue en entier depuis Stripe avant l'annulation) est annulable
+**sans** remboursement : il n'y a plus rien à rendre (C4.4).
+
+#### C4.3 L'ordre des gestes — la base d'abord, Stripe ensuite
+
+**L'inverse de C3.** Pour fermer une intention, Stripe d'abord : l'échec
+Stripe n'écrit rien, et le geste est réversible des deux côtés. Un
+**remboursement ne se reprend pas** : le faire avant la transaction rendrait
+l'argent d'une commande que le fournil vient d'inscrire (refus 3 sous verrou)
+ou dont le bon refuse (C3b cas 5-6) — de l'argent rendu pour une commande
+fabriquée. C'est B2/B3 (§9.1) : **l'argent à rendre devient un état persisté,
+écrit dans la transaction de l'annulation** ; Stripe vient après, rejouable.
+
+```mermaid
+sequenceDiagram
+  participant S as Staff
+  participant C as CancelOrderHandler
+  participant DB as Postgres (une transaction)
+  participant O as Outbox
+  participant R as IssueOrderRefund
+  participant ST as Stripe
+  S->>C: POST /admin/orders/:id/cancel
+  C->>C: cancellationOf (hors verrou)
+  C->>DB: orders FOR UPDATE → retrait fournil → cancel() → reinstate(bon)<br/>→ INSERT order_refund_request → faits durables
+  DB-->>C: COMMIT
+  C-->>S: 204
+  O->>R: order.refund_requested
+  R->>ST: refunds.create (clé d'idempotence, métadonnée)
+  ST-->>R: re_… (pending | succeeded)
+  R->>DB: carnet.record(re_…) + demande « émise » (orders FOR UPDATE)
+  ST-)DB: webhook refund.updated → carnet (déjà connu : stale ou transition)
+```
+
+1. Hors verrou : `cancellationOf` (régime `paid` admis) ; aucun appel
+   Stripe — **`closeIntent` ne s'appelle que pour `due`**, garde inchangée.
+2. Transaction, ordre de C3.4 ter : `orders FOR UPDATE` → relire → retrait
+   au fournil → `cancel()` (3ᵉ branche, C4.6) → `reinstate` (C3b) → **la
+   demande de remboursement** (C4.5), montant calculé **sous ce verrou** sur
+   le carnet relu → `order.cancelled` (régime `paid`, `refund` renseigné) et
+   `order.refund_requested`, durables.
+3. Après `COMMIT`, le relais livre `order.refund_requested` à l'abonné
+   `orders.issue-refund` (C4.7) — en général dans la seconde.
+4. La réponse au staff est `204` dès la transaction validée : **l'annulation
+   est faite**, le remboursement est **demandé**. L'écran relit et dit où il
+   en est (C4.9).
+
+**Le rejeu de transaction de C3.4 ter ne s'applique pas** : il n'existe que
+parce que Stripe a déjà agi. Ici Stripe n'a rien fait ; un échec de
+transaction rend une erreur simple, rien n'est écrit, le staff relance.
+
+#### C4.4 Le montant
+
+**Défaut appliqué (Q1) : remboursement intégral de ce qui a été encaissé par
+carte et pas encore rendu** — produits, frais de livraison et surtaxe de
+retard compris : avant l'arrêt, rien n'est fabriqué ni chargé.
+
+```
+à rendre = chargedCents − Σ order_refund.amount où status ∈ {succeeded, pending, requires_action}
+```
+
+- lu **sous le verrou de la ligne `orders`**, le même que `loadByPaymentIntent`
+  : un webhook de remboursement concurrent attend ;
+- `pending`/`requires_action` comptent : un remboursement en vol peut encore
+  réussir. **Mais** un remboursement en vol **refuse** l'annulation (C4.2, 4,
+  bloc `refund_in_flight`) : sinon son échec ultérieur laisserait un reste
+  que personne ne rend. Phrase : « Un remboursement de X € est en cours chez
+  Stripe sur cette commande. Attendez son issue, puis annulez. » ;
+- `= 0` (déjà rendue en entier, ou `refunded`) → annulée **sans** demande ;
+  courriel variante « déjà remboursée » ;
+- **la part payée en bon n'est jamais remboursée en argent** :
+  `total_cents` est déjà net du bon (C4.1, 3) ; le bon suit C3b ;
+- un remboursement partiel antérieur (tableau de bord) : on rend le reste.
+
+**Stripe rembourse le reste, pas un montant que nous lui imposons.** L'appel
+ne passe **pas** `amount` : Stripe rend ce qui reste remboursable sur
+l'intention. Un remboursement partiel fait depuis le tableau de bord **entre**
+notre calcul et notre appel ne peut alors pas faire déborder (Stripe refuserait
+un montant supérieur au reste) ; le montant **émis** est celui que Stripe
+rend, consigné par le carnet, qui tient le plafond. Si l'émis diffère de
+l'annoncé, le journal porte les deux (C4.8). Le montant annoncé reste celui
+de la demande.
+
+#### C4.5 L'état persisté : `order_refund_request`
+
+Table neuve, schéma `public`, possédée par `b2b/orders`. Migration
+**additive** :
+
+| Colonne            | Type                      | Rôle                                                                                         |
+| ------------------ | ------------------------- | -------------------------------------------------------------------------------------------- |
+| `order_id`         | `text` PK, FK `orders`    | **une demande par commande** — le second clic ne peut pas en écrire une seconde              |
+| `cause`            | enum `OrderRefundCause`   | `cancellation` \| `paid_after_cancellation` (C4.11)                                          |
+| `announced_cents`  | `int` `CHECK > 0`         | ce que l'annulation a promis                                                                 |
+| `requested_at`     | `timestamptz(3)`          | `Clock`                                                                                      |
+| `requested_by`     | `text` nullable           | id staff interne (jamais un `sub`) ; nul pour une cause automatique                          |
+| `generation`       | `int` défaut 1            | entre dans la clé d'idempotence ; +1 seulement quand un remboursement émis **échoue** (C4.7) |
+| `stripe_refund_id` | `text` nullable unique    | le `re_…` de la génération courante                                                          |
+| `issued_at`        | `timestamptz(3)` nullable | quand Stripe l'a accepté                                                                     |
+| `attempts`         | `int` défaut 0            | appels faits pour la génération                                                              |
+| `last_failure`     | `text` nullable           | code lisible (`unavailable`, `declined:<code Stripe>`), jamais un message brut au client     |
+| `last_attempt_at`  | `timestamptz(3)` nullable |                                                                                              |
+
+`CHECK ((stripe_refund_id IS NULL) = (issued_at IS NULL))`. **Aucun statut
+stocké** : l'état se lit (règle pure `refundRequestStateOf(request, ledger)`)
+— `to_issue` (pas de `re_…`), `issued` (le `re_…` est `pending` au carnet),
+`refunded` (`succeeded`), `failed` (`failed`/`canceled` → la prochaine
+génération est due). L'argent vrai reste au carnet ; la demande ne dit que
+**ce qui a été promis et ce qui a été tenté**. Deux sources qui pourraient
+diverger sur le statut, c'est exactement ce qu'on évite.
+
+Agrégat `OrderRefundRequest` (`orders/domain/entities/`) : `request(…)`
+(factory, refuse `announced ≤ 0`), `attempted(at, failure)`,
+`issued(refundId, at)` (refuse si déjà émis pour la génération),
+`reopenAfterFailure(ledger)` (seulement si le `re_…` courant est
+`failed`/`canceled` au carnet → `generation + 1`, `re_…` et `issued_at` à
+nul). Port `OrderRefundRequestRepository` `load`/`save` ; `save` conditionné
+à la génération chargée (une écriture concurrente lève, rejouable — le geste
+de C3b.2).
+
+**Pas de valeur ajoutée à `PaymentStatus`** (le `voided` du §2 D5 reste
+abandonné, S7) : une annulée remboursée finit `cancelled` + `refunded` par le
+carnet ; en attente, `cancelled` + `paid` **avec une demande** — l'écran et
+la cloche lisent la demande, pas le statut.
+
+#### C4.6 La transaction d'annulation
+
+- `CancellableRegime` gagne `"paid"` ; le bloc `{ kind: "paid" }` et sa phrase
+  (`order-cancellation.ts:100`, `:169`) disparaissent ; bloc neuf
+  `refund_in_flight { amountCents }` ; l'issue `already_paid` de `cancelIntent`
+  (une `due` encaissée pendant le clic) lève le bloc neuf `paid_just_now`.
+  `CancellationState` gagne
+  `refunds: { refundableCents; inFlightCents }`, lus par
+  `CancellationSubjectReader` (sans verrou) et par `lock()` (sous verrou).
+- `cancel()` gagne sa 3ᵉ branche, disjointe :
+  `where { id, status: placed, paymentStatus: { in: [paid, refunded] } }`,
+  **règlement inchangé** (le carnet le fera passer `refunded`).
+- Puis, si `refundableCents > 0` : `OrderRefundRequest.request(…)` et `save`,
+  **dans la même unité de travail**, et le fait `order.refund_requested
+{ orderId, generation }`. Échec d'insertion (PK) : impossible sous le
+  verrou de la ligne `orders` après un `cancel()` qui a franchi ; s'il
+  survenait, tout s'annule.
+- **Ordre des verrous inchangé** : `orders` → journée → titulaire du bon. La
+  demande est sur `orders` (même ligne déjà tenue) ; `order_refund_request`
+  n'est verrouillée par personne d'autre avant `orders`.
+
+#### C4.7 Émettre le remboursement — `IssueOrderRefundCommand`
+
+Un seul chemin, appelé par l'abonné durable **et** par le bouton « Relancer »
+(C4.9). Commande + handler séparés (B2B).
+
+**Le port** — `PaymentGateway.refundRemainder(params)` :
+
+```ts
+interface RefundRequestParams {
+  readonly paymentIntentId: string;
+  /** `lfd-order-refund:<orderId>:<generation>` — clé Stripe ET métadonnée. */
+  readonly key: string;
+}
+type RefundIssuance =
+  | { kind: "issued"; report: RefundReport } // re_…, montant, statut, instant Stripe
+  | { kind: "nothing_left" } // charge_already_refunded
+  | { kind: "declined"; code: string } // refus Stripe définitif (litige, etc.)
+  | { kind: "unavailable"; reason: string }; // réseau, 5xx, canal non configuré
+```
+
+Ne lève jamais (comme `cancelIntent`). Implémentation :
+
+1. **chercher d'abord** : `refunds.list({ payment_intent })` et retenir celui
+   dont `metadata.lfd_key === key` → `issued` avec lui. C'est ce qui rend le
+   rejeu sûr **au-delà des 24 h** où Stripe garde une clé d'idempotence ;
+2. sinon `refunds.create({ payment_intent, metadata: { lfd_key: key,
+lfd_order_id }, reason: "requested_by_customer" }, { idempotencyKey: key })`,
+   **sans `amount`** (C4.4) ;
+3. `charge_already_refunded` → `nothing_left` ; un autre `StripeInvalidRequestError`
+   / `StripeCardError` → `declined` avec son `code` ; réseau, 5xx, 429 →
+   `unavailable`.
+
+Le parent n'appelle jamais Stripe sous un verrou de base.
+
+**Le handler** :
+
+1. charger la demande (sans verrou) ; état `refunded`/`issued` → rien
+   (rejeu, ou abonné et bouton en même temps) ; `failed` → `reopenAfterFailure`
+   dans une courte transaction, puis continuer avec la génération neuve ;
+2. `refundRemainder({ intent, key(generation) })` ;
+3. selon l'issue, **une transaction** : `loadByPaymentIntent` (verrou `orders`)
+   puis
+   - `issued` → `ledger.record(report)` (**exactement** ce que fait le
+     webhook : si le webhook est passé avant, l'agrégat rend `unchanged` ou une
+     transition, jamais un double) ; `request.issued(re_…)` ; journal du
+     carnet (`recordedFacts`) ; `order.refund_succeeded` si `succeeded` ;
+   - `nothing_left` → `request.attempted(…, "nothing_left")` ; journal ;
+     **cloche** « Rien à rembourser chez Stripe — vérifier le tableau de
+     bord » (le carnet ne connaît pas de remboursement qui l'explique : un
+     remboursement fait ailleurs dont le webhook manque) ;
+   - `declined` → `attempted(…, "declined:<code>")` ; journal ; **cloche**
+     « Remboursement refusé par Stripe » ; **pas** de levée (rejouer ne
+     change rien) ;
+   - `unavailable` → `attempted(…, "unavailable")` ; **cloche au premier
+     échec seulement** (clé par commande et génération) ; puis **lever**
+     `TechnicalError` : l'outbox rejoue avec attente croissante, dix fois, puis
+     lettre morte. Le bouton reste disponible tout du long.
+
+**Pourquoi la demande ne porte pas de verrou pendant l'appel** : deux
+exécuteurs simultanés (abonné + bouton) envoient la **même clé** ; Stripe rend
+le même `re_…` au second (ou la recherche du 1. le trouve) ; le carnet
+l'enregistre une fois (`stripe_refund_id` unique), `issued()` du second voit
+le même id et ne change rien. La clé fait le verrou, sans tenir une ligne
+pendant un appel réseau.
+
+**Le webhook avant notre écriture** (`refund.created` arrive avant que la
+transaction du 3. valide) : le carnet l'a déjà enregistré ; notre `record`
+rend `unchanged` ; `issued()` pose l'id. **Le webhook après** : transition
+`pending → succeeded`, `order.refund_succeeded`, comme aujourd'hui. Le
+carnet est la seule écriture de l'argent ; aucun chemin ne compte deux fois.
+
+**Remboursement émis puis `failed`** (webhook `refund.failed`, carte fermée) :
+le carnet l'enregistre (aujourd'hui). Un abonné neuf, sur un fait
+`order.refund_failed` publié par `RecordOrderRefundHandler` **quand une
+demande existe pour la commande**, sonne « Remboursement échoué chez Stripe —
+à traiter » ; l'état lu devient `failed` ; « Relancer » ouvre la génération
+suivante. **Pas** de relance automatique (Q3) : une carte fermée refusera
+encore, et la sortie (virement) est un geste humain.
+
+#### C4.8 Journal, courriel, cloche
+
+- **`order.cancelled`** : `regime` gagne `"paid"` — 🔴 **irréversible** dès la
+  première en production (§8, valeurs du journal ; même mise en garde que
+  C5.7) ; charge gagne `refund: null | { announcedCents }`. Le contrat
+  (`journal-facts/orders-production.ts`), la phrase du back-office et
+  `key-labels.ts` suivent. Remplacement additif : C3 n'est pas sur `main`
+  (C3b.6) — si C3 part avant C4, `refund` absent se lit `null`.
+- **Les faits de l'argent** : ceux du carnet (`recordedFacts`, inchangés) ; neufs
+  `order.refund_requested` (durable, sert aussi l'historique),
+  `order.refund_attempt_failed { generation, failure }` (`Journal.append`, la
+  trace d'un argent non rendu doit être opposable), et `order.refund_issued
+{ announcedCents, issuedCents, refundId }` quand l'émis diffère de
+  l'annoncé.
+- **Courriel** `customer.order-cancelled`, variante `paid`, fr/en/it, **à
+  l'annulation** (la promesse est vraie même si Stripe hoquette : la demande
+  est persistée et rejouée) :
+  « Le montant de 23,40 € payé par carte vous sera remboursé sur cette même
+  carte. Selon votre banque, il apparaît sous 5 à 10 jours ouvrés. » ;
+  variante `refunded`/reste nul : « Le paiement de cette commande vous a déjà
+  été remboursé. » ; plus la phrase du bon de C3b.8. **Aucun second
+  courriel** au remboursement réussi (Q2).
+- **Cloche** `order.refund_attention`, sans destinataire nommé (comme
+  `RingRefundDue`), clé `notification:order.refund_attention:<orderId>:<generation>:<cause>`,
+  lien `/commandes/:id` : `unavailable` (premier échec), `declined`,
+  `nothing_left`, `failed` (webhook). Aucune cloche quand tout va bien.
+
+#### C4.9 L'écran et les routes
+
+- `AdminOrderCancellability` (forme `cancellable: true`) gagne
+  `refund: null | { amountCents; sentence }` : « Le client sera remboursé de
+  23,40 € sur sa carte (livraison comprise). Le remboursement part
+  automatiquement chez Stripe après l'annulation. » ; avec reste nul : « Le
+  paiement a déjà été remboursé en entier depuis Stripe : rien ne partira. »
+  La confirmation en ligne affiche `voucher.sentence` puis `refund.sentence`.
+- `GET /admin/orders/:id` gagne `refund: null | AdminOrderRefund` :
+  `{ state: "to_issue" | "issued" | "refunded" | "failed"; announcedCents;
+issuedCents | null; requestedAt; issuedAt | null; lastFailure: string | null
+(phrase du serveur) ; retryable: boolean }`, lu par une query
+  (`refundRequestStateOf` + carnet). Bandeau sur le détail d'une annulée :
+  « Remboursement de 23,40 € — envoyé à Stripe le 12/10 à 14:03, en attente
+  de la banque » / « remboursé le … » / « **à faire** : Stripe n'a pas répondu
+  (3 essais). » + bouton « Relancer le remboursement ».
+- `POST /admin/orders/:id/refund/retry`, `204`,
+  `@RequirePermission("b2b_cancel_order:write")` (le droit qui a créé la
+  demande ; pas de ressource neuve). Refus nommés : pas de demande (404
+  métier), déjà remboursé, déjà émis et en attente (« Stripe traite déjà ce
+  remboursement »).
+- **Liste** `/commandes` : un filtre « remboursement à faire » (états
+  `to_issue` avec `attempts > 0`, et `failed`) — l'écran « à régulariser »
+  de §9.1, rendu par une lecture, pas par une table de plus.
+
+#### C4.10 Questions pour Hugo — choix métier, défauts appliqués
+
+Non tranchées au 2026-10-12 ; le lot se bâtit sur les défauts.
+
+1. 🟠 **Combien rendre ?** **Défaut : tout ce qui a été encaissé par carte**,
+   livraison et surtaxe de retard comprises (rien n'est fabriqué ni chargé
+   avant l'arrêt). Plus tard : une retenue (frais de livraison gardés si
+   l'annulation vient du client tard, par exemple) — ce serait un montant
+   choisi à l'écran, et le port devrait alors passer `amount`.
+2. 🟠 **Prévenir le client quand l'argent est parti ?** **Défaut : non** — le
+   courriel d'annulation l'annonce déjà ; un second courriel dirait « c'est
+   parti » sans que la banque l'ait crédité.
+3. 🟠 **Remboursement refusé ou échoué chez Stripe** (carte fermée, litige) :
+   **défaut : cloche + bouton, aucune relance automatique**, l'équipe règle
+   à la main (virement) — le système ne sait pas encore noter un
+   « remboursé autrement ». Plus tard : ce geste, sur le modèle de
+   `settle-order-otherwise`.
+4. 🟠 **Annuler après l'arrêt** (commande inscrite, donc fabriquée) :
+   **défaut : refus, inchangé**. Plus tard : un remboursement **sans**
+   annulation de production (geste commercial), qui est un autre lot.
+5. 🟠 **Encaissé après annulation** (C4.1, 8) : **défaut : rembourser
+   automatiquement**, par le même mécanisme (C4.11) — la commande est annulée
+   et ne sera pas produite, l'argent n'est pas à nous. Alternative : garder la
+   cloche manuelle d'aujourd'hui.
+
+#### C4.11 L'encaissé après annulation, par le même chemin (défaut de Q5)
+
+`RingRefundDue` est **remplacé** par l'abonné durable
+`orders.refund-paid-after-cancellation` sur
+`order.paid_after_cancellation` : dans une unité de travail, verrou `orders`,
+carnet relu, `OrderRefundRequest.request({ cause: paid_after_cancellation,
+requested_by: null, announced: reste })` **si aucune demande n'existe** (PK :
+idempotent si le fait est relivré), puis `order.refund_requested`. La suite
+est C4.7. Le carnet laisse ces commandes `failed` (C4.1, 8) : le reste se
+calcule sur `chargedCents` et les remboursements, jamais sur le statut.
+Courriel : aucun de plus que ceux d'aujourd'hui (Q2). Clé de la cloche
+d'origine retirée avec son abonné ; la cloche ne sonne plus que sur incident.
+
+⚠️ **Exige `chargedCents = total_cents` aussi pour ces commandes** : vrai
+tant qu'une commande n'a qu'une intention (C3.4 ter, vérifié le 2026-10-12)
+et qu'elle est dimensionnée sur `total_cents`.
+
+#### C4.12 Les tests
+
+- **domaine** : `cancellationOf` × régime `paid` × `refunded` × en vol ×
+  inscrite ; `refundableCents` (succeeded, pending, failed, canceled
+  mélangés) ; `OrderRefundRequest` : factory refuse 0, `issued` deux fois avec
+  le même id → sans effet, avec un autre → refus, `reopenAfterFailure`
+  seulement sur `failed`/`canceled`, la clé change avec la génération ;
+  `refundRequestStateOf` sur les quatre états.
+- **application** : l'annulation `paid` n'appelle **jamais** Stripe dans la
+  requête ; inscrite → ni demande, ni fait ; bon `blocked` → ni demande ;
+  reste nul → pas de demande, courriel variante ; `IssueOrderRefund` : les
+  quatre issues du port ; `unavailable` lève (rejeu outbox) et sonne une
+  fois ; `declined` ne lève pas ; demande déjà émise → aucun appel.
+- **passerelle** (double HTTP de Stripe) : recherche par métadonnée avant
+  création ; clé passée ; pas d'`amount` ; traduction des erreurs Stripe.
+- **e2e** (`order-staff-cancel-refund*.e2e-spec.ts`, dates relatives,
+  `--runInBand`) :
+  - `paid` non inscrite → annulée, une demande, un `re_…` sur le double du
+    prestataire, carnet `pending`, puis webhook `succeeded` → `refunded`,
+    `order.refund_succeeded` une fois ;
+  - **double clic / deux staffs** → une annulation, une demande, un
+    remboursement, un courriel ; le second « déjà annulée » (409) ;
+  - **course webhook** : `refund.created` livré **avant** l'écriture du
+    handler (barrière) → une ligne `order_refund`, pas de refus `exceeds_charge` ;
+    et **après** → idem ;
+  - **abonné × bouton** simultanés → un seul `re_…` (même clé) ;
+  - **échec Stripe** : `unavailable` trois fois puis succès → un remboursement,
+    une cloche ; `declined` → cloche, aucun rejeu ; `nothing_left` → cloche ;
+  - **rejeu après 24 h** (double qui oublie la clé) → la recherche par
+    métadonnée retrouve le `re_…`, aucun second ;
+  - `refund.failed` → cloche, état `failed`, « Relancer » → génération 2, un
+    second `re_…`, carnet cohérent (Σ succeeded ≤ total) ;
+  - remboursement partiel antérieur → le reste ; `refunded` → annulée sans
+    demande ; remboursement en vol → refus `refund_in_flight` ;
+  - **course clôture × annulation** (C3, sur une `paid`) → jamais une commande
+    inscrite ET remboursée : la barrière entre `producibleFor` et le verrou ;
+  - **paiement qui aboutit pendant l'annulation** : commande `pending` au
+    clic, `cancelIntent` → `already_paid` → refus « le paiement vient
+    d'aboutir : rechargez, l'annulation proposera le remboursement » (phrase
+    neuve sur le bloc `paid_just_now`) ; après le webhook, l'annulation passe
+    par C4 ;
+  - bon soldé par la nuit sur une `paid` → C3b cas 3 + remboursement du seul
+    `total_cents` ;
+  - encaissé après annulation → demande `paid_after_cancellation`,
+    remboursement automatique, aucune cloche ;
+  - aucune facture carte émise, aucun avoir, aucune cloche « sans avoir » ;
+  - sans `b2b_cancel_order:write` → 403 sur l'annulation et sur « Relancer ».
+- **front** : la confirmation montre le montant ; le bandeau des quatre états ;
+  « Relancer » désactivé sans droit ou quand Stripe traite.
+
+#### C4.13 Ce que C4 ne fait pas
+
+Remboursement partiel choisi à l'écran (Q1), « remboursé autrement » (Q3),
+remboursement d'une commande fabriquée (Q4), annulation par le client (S2),
+avoir sur facture mensuelle (C5, Q2). Le §2 D4/D5 et le §9 B2/B3/S3/S5 sont
+**repris ici** : D4 (« synchrone, sans webhook ») et D5 (`voided`) sont
+**abandonnés** — l'état persisté et le carnet les remplacent.
 
 ## 1. L'existant (ouvert et vérifié le 2026-09-17)
 
