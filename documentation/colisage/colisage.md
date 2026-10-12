@@ -324,8 +324,8 @@ Les supprimer est un geste à part, sur ordre de Hugo.
 
 - ~~**Côté livraison, retirer les routes de déclaration que le poste n'appelle
   plus**~~ ✅ **2026-10-10, voie (b)** (tranchée par Hugo le même jour) : `POST
-admin/livraison/colisage/bacs`, `POST …/bacs/partage`, `GET …/bacs/partenaires`
-  et `GET admin/livraison/colisage/proposition` sont retirées, avec les
+admin/delivery/packing/bins`, `POST …/bacs/partage`, `GET …/bacs/partenaires`
+  et `GET admin/delivery/packing/proposal` sont retirées, avec les
   commandes `DeclareDeliveryBins` / `ShareDeliveryBin` et leurs schémas au
   contrat. Les e2e de chargement, de départ et de porte posent leurs bacs par
   `BinDesk` (`apps/lfd-api/test/delivery-loading-scene.ts`, `declareTypedBins` / `shareBin`) :

@@ -5,7 +5,7 @@ import { firstValueFrom } from 'rxjs';
 
 import { B2B_API_BASE } from '../api/api-config';
 
-const DECIDE = `${B2B_API_BASE}/admin/livraison/a-decider`;
+const DECIDE = `${B2B_API_BASE}/admin/delivery/stop-decisions`;
 
 /**
  * **« À décider »** (`documentation/livraisons/livreur/a-la-porte.md`, B3) —
@@ -21,13 +21,13 @@ export class StopDecisionsService {
 
   async authorizeDeposit(stopId: string): Promise<void> {
     await firstValueFrom(
-      this.http.post<void>(`${DECIDE}/${encodeURIComponent(stopId)}/autoriser-depot`, null),
+      this.http.post<void>(`${DECIDE}/${encodeURIComponent(stopId)}/allow-drop-off`, null),
     );
   }
 
   async bringBack(stopId: string): Promise<void> {
     await firstValueFrom(
-      this.http.post<void>(`${DECIDE}/${encodeURIComponent(stopId)}/rapporter`, null),
+      this.http.post<void>(`${DECIDE}/${encodeURIComponent(stopId)}/bring-back`, null),
     );
   }
 

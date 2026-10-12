@@ -24,10 +24,10 @@ import { Clock } from "../src/platform/time/clock.js";
 import { E2E_STAFF_ID, jsonBody, type E2eContext } from "./e2e-harness.js";
 import { addVehicle, admin, assign, openRound, seedDelivery } from "./delivery-rounds-scene.js";
 
-export const LOADING = "/admin/livraison";
+export const LOADING = "/admin/delivery";
 
 /** Les bacs déclarés d'une commande — les lire, en ouvrir la fiche, les annuler. */
-export const BINS = `${LOADING}/colisage/bacs`;
+export const BINS = `${LOADING}/packing/bins`;
 
 /** Le type de bac cloisonnable des suites, créé au premier besoin (la base est remise à zéro par suite). */
 export const E2E_BIN_TYPE = "Bac M e2e";
@@ -41,13 +41,13 @@ export async function binTypeId(
   name: string = E2E_BIN_TYPE,
   options: { readonly divisible?: boolean } = {},
 ): Promise<string> {
-  const { types } = jsonBody<BinTypesView>(await admin(ctx).get(`${LOADING}/bacs`).expect(200));
+  const { types } = jsonBody<BinTypesView>(await admin(ctx).get(`${LOADING}/bins`).expect(200));
   const found = types.find((binType) => binType.name === name && binType.archivedAt === null);
   if (found !== undefined) {
     return found.id;
   }
   const response = await admin(ctx)
-    .post(`${LOADING}/bacs`)
+    .post(`${LOADING}/bins`)
     .send({
       name,
       outer: { lengthMm: 600, widthMm: 400, heightMm: 220 },
@@ -128,7 +128,7 @@ export async function shareBin(
 
 export async function orderBins(ctx: E2eContext, orderId: string): Promise<DeliveryOrderBinsView> {
   return jsonBody<DeliveryOrderBinsView>(
-    await admin(ctx).get(`${BINS}?commande=${orderId}`).expect(200),
+    await admin(ctx).get(`${BINS}?order=${orderId}`).expect(200),
   );
 }
 
@@ -137,7 +137,7 @@ export async function loadingOf(
   roundId: string,
 ): Promise<DeliveryLoadingRoundView> {
   return jsonBody<DeliveryLoadingRoundView>(
-    await admin(ctx).get(`${LOADING}/chargement/${roundId}`).expect(200),
+    await admin(ctx).get(`${LOADING}/loading/${roundId}`).expect(200),
   );
 }
 
@@ -147,13 +147,13 @@ export function loadBin(
   roundId: string,
   body: { readonly binId: string } | { readonly code: string },
 ): request.Test {
-  return admin(ctx).post(`${LOADING}/chargement/${roundId}/bacs`).send(body);
+  return admin(ctx).post(`${LOADING}/loading/${roundId}/bins`).send(body);
 }
 
 /** « Partir » à la version courante de la tournée. */
 export async function depart(ctx: E2eContext, roundId: string): Promise<request.Response> {
   const { version } = await loadingOf(ctx, roundId);
-  return admin(ctx).post(`${LOADING}/tournees/${roundId}/depart`).send({ version });
+  return admin(ctx).post(`${LOADING}/rounds/${roundId}/departure`).send({ version });
 }
 
 /** Une tournée d'un véhicule, et une commande composée dedans. */

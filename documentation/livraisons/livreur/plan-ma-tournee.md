@@ -57,7 +57,7 @@
 - **Partir** : `DeliveryRound.depart(at, readiness)`
   (`delivery/domain/entities/delivery-round-on-the-road.ts:39`, fichier et
   ligne recalés le 2026-10-07), route
-  `POST admin/livraison/tournees/:roundId/depart` sous **`delivery_loading`**.
+  `POST admin/delivery/rounds/:roundId/departure` sous **`delivery_loading`**.
   Refus nommés : tournée vide, arrêt non chargé, bac partagé « à refaire », déjà
   partie.
 - **Le droit du chargement** ouvre aussi le scan et le plan de chargement : le
@@ -130,9 +130,9 @@ rôle ; un admin qui veut voir une tournée a l'écran Tournées. _(À contredir
 
 | Route                                             | Droit                          | Ce qu'elle fait                                                                                                                                                                                |
 | ------------------------------------------------- | ------------------------------ | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| `GET admin/livraison/ma-tournee?date=`            | `delivery_driving:read`        | **mes** tournées du jour (souvent une) : véhicule, passage, état (au dépôt / partie), nombre d'arrêts                                                                                          |
-| `GET admin/livraison/ma-tournee/:roundId`         | `delivery_driving:read` + mur  | la tournée : arrêts **dans l'ordre**, et pour chacun ce que le livreur a besoin de savoir à la porte (cf. MT-D5), son point GPS, son état (à faire / clos : `closedAt`, écrit depuis le lot 6) |
-| `POST admin/livraison/ma-tournee/:roundId/depart` | `delivery_driving:write` + mur | **le même** `DepartDeliveryRoundCommand` que le chargement, avec la version lue ; mêmes refus                                                                                                  |
+| `GET admin/delivery/my-round?date=`               | `delivery_driving:read`        | **mes** tournées du jour (souvent une) : véhicule, passage, état (au dépôt / partie), nombre d'arrêts                                                                                          |
+| `GET admin/delivery/my-round/:roundId`            | `delivery_driving:read` + mur  | la tournée : arrêts **dans l'ordre**, et pour chacun ce que le livreur a besoin de savoir à la porte (cf. MT-D5), son point GPS, son état (à faire / clos : `closedAt`, écrit depuis le lot 6) |
+| `POST admin/delivery/my-round/:roundId/departure` | `delivery_driving:write` + mur | **le même** `DepartDeliveryRoundCommand` que le chargement, avec la version lue ; mêmes refus                                                                                                  |
 
 L'ancienne route de départ (`tournees/:roundId/depart` sous `delivery_loading`)
 **reste** : le chargeur peut toujours faire partir une tournée (un livreur

@@ -207,14 +207,14 @@ réparties suivent, sous « Hors tournée », dans l'ordre des références.
   « **Retenue au contrôle** » (un verdict bloquant du superviseur, lu par le
   fournil : `PackingSheet.qualityHeld`, même règle que le comptoir) et
   « **À refaire : annuler et recoliser** » (un bac partagé à refaire, § 5.5).
-- La lecture est `GET admin/livraison/colisage/tournees?jour=`, sous
+- La lecture est `GET admin/delivery/packing/rounds?day=`, sous
   `production_packing:read` **ou** `delivery_loading:read`. Le fournil
   n'importe pas la livraison : c'est l'écran qui lit les deux. Sans elle, la
   liste garde l'ordre servi et le dit. Elle se relit avec la journée du
   fournil, et au plus tard toutes les cinq minutes (le filet du veilleur) :
   une tournée recomposée sans geste au fournil peut attendre ce délai.
   **2026-10-02** : le poste suit aussi la journée de la **livraison**
-  (`GET admin/livraison/version`) — mais seulement s'il porte
+  (`GET admin/delivery/version`) — mais seulement s'il porte
   `delivery_rounds:read` ou `delivery_loading:read`, les deux droits de cette
   route ; elle ne s'ouvre pas à `production_packing:read`, et ce lot ne l'a pas
   élargie. Un poste qui n'a que le colisage garde le filet de cinq minutes.
@@ -357,7 +357,7 @@ d'abord.
 
 Dans l'écran de chargement d'une tournée, la carte « Plan de chargement »
 (`livraison/loading-plan/`, lue par
-`GET admin/livraison/chargement/:roundId/plan`) montre, pour la tournée :
+`GET admin/delivery/loading/:roundId/plan`) montre, pour la tournée :
 
 - **L'ordre suggéré** : des étapes dans l'ordre **inverse de la tournée** — le
   dernier arrêt livré est chargé d'abord, au fond. Un arrêt sans bac garde son

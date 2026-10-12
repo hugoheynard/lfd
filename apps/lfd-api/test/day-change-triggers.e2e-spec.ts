@@ -428,7 +428,7 @@ describe("le balayage des journaux", () => {
     await seedTraces();
     const response = await ctx
       .http()
-      .post("/admin/livraison/journal/sweep")
+      .post("/admin/delivery/journal/sweep")
       .set("x-lfc-recompute-token", TEST_RECOMPUTE_TOKEN)
       .expect(200);
     expect(response.body).toEqual({ pruned: 1 });
@@ -439,6 +439,6 @@ describe("le balayage des journaux", () => {
   });
 
   it("refuse le balayage de la livraison sans le jeton machine", async () => {
-    await ctx.http().post("/admin/livraison/journal/sweep").expect(401);
+    await ctx.http().post("/admin/delivery/journal/sweep").expect(401);
   });
 });

@@ -78,7 +78,7 @@ describe("le rechargement affecte la tournée chargée à qui clique", () => {
       // Toutes les tournées du jour sont composées et chargées, pas parties.
       expect(report.delivery.rounds).toBe(report.delivery.vehicles);
       const loading = jsonBody<DeliveryLoadingRoundView>(
-        await admin(ctx).get(`${MY_ROUND}/${roundId}/chargement`).expect(200),
+        await admin(ctx).get(`${MY_ROUND}/${roundId}/loading`).expect(200),
       );
       const toLoad = loading.stops.flatMap((stop) =>
         stop.bins.filter((bin) => bin.loadedAt === null),
@@ -93,7 +93,7 @@ describe("le rechargement affecte la tournée chargée à qui clique", () => {
       );
 
       // Prête à partir : tous les arrêts chargés, aucun bac à refaire.
-      await admin(ctx).post(`${MY_ROUND}/${roundId}/depart`).send({ version }).expect(204);
+      await admin(ctx).post(`${MY_ROUND}/${roundId}/departure`).send({ version }).expect(204);
     },
     FULL_RELOAD_TIMEOUT_MS,
   );

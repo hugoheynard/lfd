@@ -24,10 +24,10 @@ export class RunSheetService {
     const also =
       alsoOrderIds.length === 0
         ? ''
-        : `&commandes=${alsoOrderIds.map((id) => encodeURIComponent(id)).join(',')}`;
+        : `&orders=${alsoOrderIds.map((id) => encodeURIComponent(id)).join(',')}`;
     return firstValueFrom(
       this.http.get<DeliveryRunSheetView>(
-        `${B2B_API_BASE}/admin/livraison/feuille-de-route?jour=${encodeURIComponent(day)}${also}`,
+        `${B2B_API_BASE}/admin/delivery/run-sheet?day=${encodeURIComponent(day)}${also}`,
       ),
     );
   }

@@ -93,7 +93,7 @@ export class HandoverShopPage {
   private readonly notify = inject(NotifyService);
   private readonly permissions = inject(PermissionsStore);
 
-  /** `POST /admin/orders/:id/rappel-retrait` exige `b2b_orders:write`, pas la garde de la file. */
+  /** `POST /admin/orders/:id/pickup-reminder` exige `b2b_orders:write`, pas la garde de la file. */
   protected readonly canRemind = computed(() => this.permissions.can('b2b_orders:write'));
 
   /**

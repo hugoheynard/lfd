@@ -119,7 +119,7 @@ function codeOf(response: { body: unknown }): unknown {
 /** La contenance d'un bac ENTIER de ce type, posée par la vraie route de la grille. */
 async function capacity(typeId: string, units: number): Promise<void> {
   await admin(ctx)
-    .put(`${LOADING}/contenances`)
+    .put(`${LOADING}/capacities`)
     .send({ binTypeId: typeId, sku: CROISSANT, units })
     .expect(204);
 }

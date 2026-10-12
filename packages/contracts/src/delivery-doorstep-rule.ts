@@ -18,7 +18,7 @@ import { z } from "zod";
  * Le client ne la règle pas.
  *
  * Routes :
- * - `GET|PUT admin/livraison/a-la-porte` → {@link DoorstepSettingsView} /
+ * - `GET|PUT admin/delivery/doorstep` → {@link DoorstepSettingsView} /
  *   {@link DoorstepSettingsPayload}, sous `delivery_settings` ;
  * - `GET|PUT admin/companies/:companyId/delivery-addresses/:addressId/doorstep-rule`
  *   → {@link AddressDoorstepRuleView} / {@link AddressDoorstepRulePayload},

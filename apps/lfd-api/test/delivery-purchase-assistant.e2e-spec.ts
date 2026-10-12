@@ -8,7 +8,7 @@ import type { PurchaseAssistantPayload, PurchaseAssistantView, StaffRole } from 
 import { bootstrapE2e, jsonBody, type E2eContext } from "./e2e-harness.js";
 import { ADMIN_VERIFIER_OVERRIDE, admin, forgetCustomer } from "./delivery-rounds-scene.js";
 
-const ASSISTANT = "/admin/livraison/assistant-achat";
+const ASSISTANT = "/admin/delivery/purchase-assistant";
 
 let ctx: E2eContext;
 
@@ -53,7 +53,7 @@ async function counts(): Promise<readonly number[]> {
   ]);
 }
 
-describe("POST admin/livraison/assistant-achat (G-D3)", () => {
+describe("POST admin/delivery/purchase-assistant (G-D3)", () => {
   it("rend le rangement par rangées de chaque format, et n'écrit rien", async () => {
     const before = await counts();
 

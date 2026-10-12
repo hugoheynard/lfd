@@ -19,10 +19,10 @@ import { checkJournalFact } from "@lfd/contracts/journal-facts";
 import { ADMIN_VERIFIER_OVERRIDE, admin } from "./delivery-rounds-scene.js";
 import { bootstrapE2e, jsonBody, type E2eContext } from "./e2e-harness.js";
 
-const SCENARIOS = "/admin/livraison/assistant-achat/scenarios";
-const TABLE = "/admin/livraison/assistant-achat/tableau";
-const LIBRARY_VEHICLES = "/admin/livraison/bibliotheque/vehicules";
-const LIBRARY_BINS = "/admin/livraison/bibliotheque/bacs";
+const SCENARIOS = "/admin/delivery/purchase-assistant/scenarios";
+const TABLE = "/admin/delivery/purchase-assistant/table";
+const LIBRARY_VEHICLES = "/admin/delivery/library/vehicles";
+const LIBRARY_BINS = "/admin/delivery/library/bins";
 
 const KANGOO = {
   name: "Kangoo L2",
@@ -156,19 +156,19 @@ describe("archiver, réactiver", () => {
     const { payload } = await scene();
     const id = await created(SCENARIOS, payload);
 
-    await admin(ctx).post(`${SCENARIOS}/${id}/archiver`).expect(204);
+    await admin(ctx).post(`${SCENARIOS}/${id}/archive`).expect(204);
     expect((await list()).scenarios).toEqual([]);
     expect((await list("?archives=inclure")).scenarios).toMatchObject([{ id }]);
-    expect(code(await admin(ctx).post(`${SCENARIOS}/${id}/archiver`).expect(409))).toBe(
+    expect(code(await admin(ctx).post(`${SCENARIOS}/${id}/archive`).expect(409))).toBe(
       "delivery.purchase_scenario_already_archived",
     );
 
     const twin = await created(SCENARIOS, payload);
-    expect(code(await admin(ctx).post(`${SCENARIOS}/${id}/reactiver`).expect(409))).toBe(
+    expect(code(await admin(ctx).post(`${SCENARIOS}/${id}/reactivate`).expect(409))).toBe(
       "delivery.purchase_scenario_name_taken",
     );
-    await admin(ctx).post(`${SCENARIOS}/${twin}/archiver`).expect(204);
-    await admin(ctx).post(`${SCENARIOS}/${id}/reactiver`).expect(204);
+    await admin(ctx).post(`${SCENARIOS}/${twin}/archive`).expect(204);
+    await admin(ctx).post(`${SCENARIOS}/${id}/reactivate`).expect(204);
     expect((await list()).scenarios).toMatchObject([{ id }]);
   });
 });
@@ -181,7 +181,7 @@ describe("relire un scénario dont un élément a disparu (B-D5)", () => {
       ...payload,
       selection: { ...payload.selection, formats: [...payload.selection.formats, ghost] },
     });
-    await admin(ctx).post(`${LIBRARY_BINS}/${doomed}/archiver`).expect(204);
+    await admin(ctx).post(`${LIBRARY_BINS}/${doomed}/archive`).expect(204);
 
     const view = await read(id);
 
@@ -223,7 +223,7 @@ describe("relire un scénario dont un élément a disparu (B-D5)", () => {
       "delivery.purchase_scenario_unreadable",
     );
     expect((await list()).scenarios).toMatchObject([{ id, vehicles: 0, formats: 0 }]);
-    await admin(ctx).post(`${SCENARIOS}/${id}/archiver`).expect(204);
+    await admin(ctx).post(`${SCENARIOS}/${id}/archive`).expect(204);
   });
 });
 
@@ -235,8 +235,8 @@ describe("le journal", () => {
       .put(`${SCENARIOS}/${id}`)
       .send({ ...payload, name: "Renommé" })
       .expect(204);
-    await admin(ctx).post(`${SCENARIOS}/${id}/archiver`).expect(204);
-    await admin(ctx).post(`${SCENARIOS}/${id}/reactiver`).expect(204);
+    await admin(ctx).post(`${SCENARIOS}/${id}/archive`).expect(204);
+    await admin(ctx).post(`${SCENARIOS}/${id}/reactivate`).expect(204);
 
     const facts = await ctx.prisma.activityEvent.findMany({
       where: { type: { startsWith: "delivery_purchase_scenario." } },
@@ -290,7 +290,7 @@ describe("les droits du simulateur (B-D6)", () => {
       .send({ ...payload, name: "Autre" })
       .expect(403);
     await reader.put(`${SCENARIOS}/${id}`).send(payload).expect(403);
-    await reader.post(`${SCENARIOS}/${id}/archiver`).expect(403);
+    await reader.post(`${SCENARIOS}/${id}/archive`).expect(403);
   });
 
   it("sans droit sur les tournées, rien ne se lit (403)", async () => {

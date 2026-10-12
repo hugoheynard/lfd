@@ -18,7 +18,7 @@ import { GetRoutingSettingsQuery } from "../application/queries/get-routing-sett
  * L7-C15). Sous `delivery_settings`, comme la flotte et le départ, sur l'écran
  * « Point de départ ». Il n'injecte que les bus.
  */
-@Controller("admin/livraison/calcul")
+@Controller("admin/delivery/routing-settings")
 @AdminSurface("delivery_settings")
 export class RoutingSettingsController {
   constructor(

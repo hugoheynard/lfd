@@ -287,7 +287,7 @@ repli « à vol d'oiseau » (retiré, faux en montagne).
 
 ### 4.3 Ce que la livraison dit aux autres
 
-- **ses routes HTTP** (`admin/livraison/*`), que lisent les écrans — et, pour
+- **ses routes HTTP** (`admin/delivery/*`), que lisent les écrans — et, pour
   ses balayages, le cron du Worker (`container/worker.ts`) ;
 - **ses faits de journal** (`delivery_round.*`, `delivery_bin.*`,
   `delivery_purchase_*`, …), publiés par le publieur du socle ;
@@ -313,7 +313,7 @@ tournées du bureau n'en suit aucun (relevé le 2026-10-07).
 | `public.day_change`     | les commandes (`orders`)                                                                                                                                                                                                    | `GET` version du commerce                                                                                                                                                 |
 | `production.day_change` | les tables du fournil                                                                                                                                                                                                       | `GET admin/production/version`, `admin/supervision/production-version`                                                                                                    |
 | `packing.day_change`    | les tables du colisage (2026-10-04, K2)                                                                                                                                                                                     | les mêmes routes que le fournil : sa version **additionne** celle du colisage, par `PackingDayVersionReader` (`production/channels/packing/`, que le colisage implémente) |
-| `delivery.day_change`   | **sept** tables : `delivery_round`, `delivery_round_stop`, `delivery_stop_execution`, `delivery_bin_load`, `delivery_incident`, `stop_decision` ; `delivery_bin` par la journée des arrêts de sa commande (2026-10-01, PL4) | `GET admin/livraison/version` (suivie par le poste de colisage) ; `GET admin/livraison/ma-tournee/version` (avec le commerce, par son port)                               |
+| `delivery.day_change`   | **sept** tables : `delivery_round`, `delivery_round_stop`, `delivery_stop_execution`, `delivery_bin_load`, `delivery_incident`, `stop_decision` ; `delivery_bin` par la journée des arrêts de sa commande (2026-10-01, PL4) | `GET admin/delivery/version` (suivie par le poste de colisage) ; `GET admin/delivery/my-round/version` (avec le commerce, par son port)                                   |
 
 **Jusqu'au 2026-09-30, les tables de livraison écrivaient dans le journal du
 fournil**, par douze déclencheurs branchés sur une fonction du fournil. C'était

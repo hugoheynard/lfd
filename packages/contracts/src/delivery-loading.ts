@@ -21,7 +21,7 @@ import type { DeliveryOrderRoundPlaceView } from "./delivery-packing.js";
  * schémas, sont retirés le 2026-10-10 (`documentation/colisage/colisage.md`
  * §9, voie (b)).
  *
- * Routes (`admin/livraison/…`, sous `delivery_loading`) :
+ * Routes (`admin/delivery/…`, sous `delivery_loading`) :
  *
  * - `GET colisage/bacs?commande=` → {@link DeliveryOrderBinsView} ;
  * - `GET colisage/bacs/:binId` → {@link DeliveryBinDetailView} (le QR ouvert) ;
@@ -188,7 +188,7 @@ export interface DeliveryLoadingRoundSummaryView {
 }
 
 /**
- * **Les tournées d'un jour, vues du dépôt** (`GET admin/livraison/chargement?jour=`)
+ * **Les tournées d'un jour, vues du dépôt** (`GET admin/delivery/loading?day=`)
  * — sous `delivery_loading:read`, pour que l'écran de chargement ne demande pas
  * aussi le droit de composer.
  */

@@ -10,7 +10,7 @@ import { firstValueFrom } from 'rxjs';
 
 import { B2B_API_BASE } from '../api/api-config';
 
-const SCENARIOS = `${B2B_API_BASE}/admin/livraison/assistant-achat/scenarios`;
+const SCENARIOS = `${B2B_API_BASE}/admin/delivery/purchase-assistant/scenarios`;
 
 /**
  * **Les scénarios d'achat** (`documentation/livraisons/chargement/plan-bibliotheque-d-achat.md`,
@@ -47,10 +47,10 @@ export class PurchaseScenariosService {
   }
 
   async archive(id: string): Promise<void> {
-    await firstValueFrom(this.http.post(`${SCENARIOS}/${encodeURIComponent(id)}/archiver`, {}));
+    await firstValueFrom(this.http.post(`${SCENARIOS}/${encodeURIComponent(id)}/archive`, {}));
   }
 
   async reactivate(id: string): Promise<void> {
-    await firstValueFrom(this.http.post(`${SCENARIOS}/${encodeURIComponent(id)}/reactiver`, {}));
+    await firstValueFrom(this.http.post(`${SCENARIOS}/${encodeURIComponent(id)}/reactivate`, {}));
   }
 }

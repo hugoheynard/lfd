@@ -16,10 +16,10 @@ import {
 } from "./delivery-rounds-scene.js";
 import { bootstrapE2e, jsonBody, type E2eContext } from "./e2e-harness.js";
 
-const TABLE = "/admin/livraison/assistant-achat/tableau";
-const LIBRARY_VEHICLES = "/admin/livraison/bibliotheque/vehicules";
-const LIBRARY_BINS = "/admin/livraison/bibliotheque/bacs";
-const REAL_BINS = "/admin/livraison/bacs";
+const TABLE = "/admin/delivery/purchase-assistant/table";
+const LIBRARY_VEHICLES = "/admin/delivery/library/vehicles";
+const LIBRARY_BINS = "/admin/delivery/library/bins";
+const REAL_BINS = "/admin/delivery/bins";
 
 const KANGOO = {
   name: "Kangoo L2",
@@ -80,7 +80,7 @@ async function counts(): Promise<readonly number[]> {
   ]);
 }
 
-describe("POST admin/livraison/assistant-achat/tableau (B-D4)", () => {
+describe("POST admin/delivery/purchase-assistant/table (B-D4)", () => {
   it("croise candidats et réels, rend les coûts connus et null sinon, sans rien écrire", async () => {
     const candidate = await create(LIBRARY_VEHICLES, KANGOO);
     const fleet = await create(VEHICLES, {
@@ -186,7 +186,7 @@ describe("POST admin/livraison/assistant-achat/tableau (B-D4)", () => {
   it("un format archivé : 409 qui le nomme ; un véhicule sans plancher : 409", async () => {
     const candidate = await create(LIBRARY_VEHICLES, KANGOO);
     const caisse = await create(LIBRARY_BINS, CAISSE);
-    await admin(ctx).post(`${LIBRARY_BINS}/${caisse}/archiver`).expect(204);
+    await admin(ctx).post(`${LIBRARY_BINS}/${caisse}/archive`).expect(204);
     const bare = await create(VEHICLES, { name: "Nu", plate: "EF-456-GH" });
     const bacM = await create(REAL_BINS, BAC_M);
 

@@ -5,8 +5,8 @@ import { firstValueFrom } from 'rxjs';
 
 import { B2B_API_BASE } from '../api/api-config';
 
-const VEHICLES = `${B2B_API_BASE}/admin/livraison/vehicules`;
-const DEPARTURE = `${B2B_API_BASE}/admin/livraison/depart`;
+const VEHICLES = `${B2B_API_BASE}/admin/delivery/vehicles`;
+const DEPARTURE = `${B2B_API_BASE}/admin/delivery/departure`;
 
 /**
  * **Les bases paramétrables de la livraison** — la flotte et le point de
@@ -34,7 +34,7 @@ export class DeliverySettingsService {
   }
 
   async retireVehicle(id: string): Promise<void> {
-    await firstValueFrom(this.http.post(`${VEHICLES}/${encodeURIComponent(id)}/retrait`, {}));
+    await firstValueFrom(this.http.post(`${VEHICLES}/${encodeURIComponent(id)}/retirement`, {}));
   }
 
   async reactivateVehicle(id: string): Promise<void> {

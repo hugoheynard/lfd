@@ -13,7 +13,7 @@ import { GetDepartureQuery } from "../application/queries/get-departure.query.js
  * (`plan-preparation-de-tournee.md`, Q9). Sous `delivery_settings`, comme la
  * flotte. Il n'injecte que les bus.
  */
-@Controller("admin/livraison/depart")
+@Controller("admin/delivery/departure")
 @AdminSurface("delivery_settings")
 export class DepartureController {
   constructor(

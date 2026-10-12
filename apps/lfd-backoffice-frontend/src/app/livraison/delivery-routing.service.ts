@@ -16,9 +16,9 @@ import { firstValueFrom } from 'rxjs';
 
 import { B2B_API_BASE } from '../api/api-config';
 
-const ROUNDS = `${B2B_API_BASE}/admin/livraison/tournees`;
-const SETTINGS = `${B2B_API_BASE}/admin/livraison/calcul`;
-const SIMULATOR = `${B2B_API_BASE}/admin/livraison/simulateur`;
+const ROUNDS = `${B2B_API_BASE}/admin/delivery/rounds`;
+const SETTINGS = `${B2B_API_BASE}/admin/delivery/routing-settings`;
+const SIMULATOR = `${B2B_API_BASE}/admin/delivery/simulator`;
 
 /** Ce qu'on demande au calculateur. `vehicleIds: null` : ceux qui roulent ce jour-là. */
 export interface ProposalRequest {
@@ -42,22 +42,22 @@ export class DeliveryRoutingService {
 
   async locate(day: string): Promise<void> {
     await firstValueFrom(
-      this.http.post(`${ROUNDS}/situer`, null, { params: new HttpParams().set('jour', day) }),
+      this.http.post(`${ROUNDS}/locate`, null, { params: new HttpParams().set('day', day) }),
     );
   }
 
   propose(request: ProposalRequest): Promise<DeliveryRoundProposalView> {
     let params = new HttpParams()
-      .set('jour', request.day)
-      .set('toutRecomposer', String(request.recomposeAll));
+      .set('day', request.day)
+      .set('recomposeAll', String(request.recomposeAll));
     if (request.mode !== null) {
       params = params.set('mode', request.mode);
     }
     if (request.vehicleIds !== null) {
-      params = params.set('vehicules', request.vehicleIds.join(','));
+      params = params.set('vehicles', request.vehicleIds.join(','));
     }
     return firstValueFrom(
-      this.http.get<DeliveryRoundProposalView>(`${ROUNDS}/proposition`, { params }),
+      this.http.get<DeliveryRoundProposalView>(`${ROUNDS}/proposal`, { params }),
     );
   }
 
@@ -68,14 +68,14 @@ export class DeliveryRoutingService {
    */
   suggestions(day: string): Promise<DeliveryPlacementSuggestionsView> {
     return firstValueFrom(
-      this.http.get<DeliveryPlacementSuggestionsView>(`${ROUNDS}/places-suggerees`, {
-        params: new HttpParams().set('jour', day),
+      this.http.get<DeliveryPlacementSuggestionsView>(`${ROUNDS}/suggested-slots`, {
+        params: new HttpParams().set('day', day),
       }),
     );
   }
 
   async apply(payload: ApplyDeliveryProposalPayload): Promise<void> {
-    await firstValueFrom(this.http.post(`${ROUNDS}/proposition`, payload));
+    await firstValueFrom(this.http.post(`${ROUNDS}/proposal`, payload));
   }
 
   /**
@@ -86,7 +86,7 @@ export class DeliveryRoutingService {
    */
   time(payload: TimeDeliveryRoundsPayload): Promise<DeliveryRoundTimingView> {
     return firstValueFrom(
-      this.http.post<DeliveryRoundTimingView>(`${ROUNDS}/proposition/chronometrer`, payload),
+      this.http.post<DeliveryRoundTimingView>(`${ROUNDS}/proposal/time`, payload),
     );
   }
 

@@ -18,7 +18,7 @@ import { GetDeliveryDayVersionQuery } from "../application/queries/get-delivery-
  * 2026-09-30) ; exiger l'un seul refuserait une dérogation qui n'ouvre que
  * l'autre, pour un simple numéro.
  */
-@Controller("admin/livraison")
+@Controller("admin/delivery")
 @AdminSurface("delivery_rounds")
 export class DeliveryDayVersionController {
   constructor(private readonly queries: QueryBus) {}

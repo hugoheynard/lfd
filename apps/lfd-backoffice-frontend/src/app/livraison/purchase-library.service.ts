@@ -12,10 +12,10 @@ import { firstValueFrom } from 'rxjs';
 
 import { B2B_API_BASE } from '../api/api-config';
 
-const LIBRARY = `${B2B_API_BASE}/admin/livraison/bibliotheque`;
-const VEHICLES = `${LIBRARY}/vehicules`;
-const BINS = `${LIBRARY}/bacs`;
-const TABLE = `${B2B_API_BASE}/admin/livraison/assistant-achat/tableau`;
+const LIBRARY = `${B2B_API_BASE}/admin/delivery/library`;
+const VEHICLES = `${LIBRARY}/vehicles`;
+const BINS = `${LIBRARY}/bins`;
+const TABLE = `${B2B_API_BASE}/admin/delivery/purchase-assistant/table`;
 
 /**
  * **La bibliothèque d'achat et son tableau croisé**
@@ -48,11 +48,11 @@ export class PurchaseLibraryService {
   }
 
   async archiveVehicleCandidate(id: string): Promise<void> {
-    await firstValueFrom(this.http.post(`${VEHICLES}/${encodeURIComponent(id)}/archiver`, {}));
+    await firstValueFrom(this.http.post(`${VEHICLES}/${encodeURIComponent(id)}/archive`, {}));
   }
 
   async reactivateVehicleCandidate(id: string): Promise<void> {
-    await firstValueFrom(this.http.post(`${VEHICLES}/${encodeURIComponent(id)}/reactiver`, {}));
+    await firstValueFrom(this.http.post(`${VEHICLES}/${encodeURIComponent(id)}/reactivate`, {}));
   }
 
   binCandidates(includeArchived: boolean): Promise<PurchaseBinCandidatesView> {
@@ -70,11 +70,11 @@ export class PurchaseLibraryService {
   }
 
   async archiveBinCandidate(id: string): Promise<void> {
-    await firstValueFrom(this.http.post(`${BINS}/${encodeURIComponent(id)}/archiver`, {}));
+    await firstValueFrom(this.http.post(`${BINS}/${encodeURIComponent(id)}/archive`, {}));
   }
 
   async reactivateBinCandidate(id: string): Promise<void> {
-    await firstValueFrom(this.http.post(`${BINS}/${encodeURIComponent(id)}/reactiver`, {}));
+    await firstValueFrom(this.http.post(`${BINS}/${encodeURIComponent(id)}/reactivate`, {}));
   }
 
   /** Un POST parce que la sélection est un corps, mais une LECTURE : rien n'est écrit. */

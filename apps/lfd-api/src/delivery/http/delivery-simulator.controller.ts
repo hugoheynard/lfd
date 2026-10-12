@@ -15,7 +15,7 @@ import { SimulateDeliveryRoundsQuery } from "../application/queries/simulate-del
 
 /** Le jour de service, validé dans sa FORME — le message nomme le paramètre. */
 const dayQuerySchema = z.object({
-  jour: z.string().regex(/^\d{4}-\d{2}-\d{2}$/u, "jour attendu au format AAAA-MM-JJ"),
+  day: z.string().regex(/^\d{4}-\d{2}-\d{2}$/u, "day attendu au format AAAA-MM-JJ"),
 });
 type DayQuery = z.infer<typeof dayQuerySchema>;
 
@@ -26,7 +26,7 @@ type DayQuery = z.infer<typeof dayQuerySchema>;
  * Un `POST` parce que le scénario est un corps, pas parce qu'on écrit (L9-C1) :
  * la route se lit sous `delivery_rounds:read`. Il n'injecte que le bus.
  */
-@Controller("admin/livraison/simulateur")
+@Controller("admin/delivery/simulator")
 @AdminSurface("delivery_rounds")
 export class DeliverySimulatorController {
   constructor(private readonly queries: QueryBus) {}
@@ -48,12 +48,12 @@ export class DeliverySimulatorController {
    * inventés, sans identifiant de commande. Sous `delivery_rounds:read`, le
    * droit qui montre déjà ces noms.
    */
-  @Get("depuis-journee")
+  @Get("from-day")
   fromDay(
     @Query(new ZodQuery(dayQuerySchema)) query: DayQuery,
   ): Promise<DeliverySimulationFromDayView> {
     return this.queries.execute<GetSimulationFromDayQuery, DeliverySimulationFromDayView>(
-      new GetSimulationFromDayQuery(query.jour),
+      new GetSimulationFromDayQuery(query.day),
     );
   }
 }

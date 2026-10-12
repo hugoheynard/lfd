@@ -56,7 +56,7 @@ au cache part à la Base Adresse Nationale. Il suffit pour cela que la clé
 
 - ~~**La purge du cache de géocodage à 365 jours n'est pas bâtie.**~~ Bâtie le
   2026-10-06 (`7b251c122`) : le cron de nuit `45 3 * * *` du Worker appelle
-  `admin/livraison/geocodage/sweep` (`apps/lfd-api/container/worker.ts:311`),
+  `admin/delivery/geocoding/sweep` (`apps/lfd-api/container/worker.ts:311`),
   servi par `geocode-purge-sweep.controller.ts`, puis
   `purge-stale-geocodes.handler.ts` et `prisma-geocode-cache.pruner.ts`. Le
   balayage ne part que si le Worker porte `RECOMPUTE_TOKEN`

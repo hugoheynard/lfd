@@ -83,7 +83,7 @@ export interface Computed {
  * **L'assistant d'achat** (`documentation/livraisons/chargement/plan-geometrie-du-plancher.md`,
  * G-D3, lot G3) : combien de bacs de tel format tiennent dans tel plancher.
  *
- * Le calcul est au serveur (`POST admin/livraison/assistant-achat`), reposé à
+ * Le calcul est au serveur (`POST admin/delivery/purchase-assistant`), reposé à
  * chaque saisie après un court repos ; un refus 400 s'affiche avec la phrase
  * du serveur, et aucun résultat ne reste à l'écran sur une question refusée.
  * Rien n'est écrit : ni véhicule, ni type de bac.

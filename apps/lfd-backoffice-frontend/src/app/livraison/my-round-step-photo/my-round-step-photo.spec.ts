@@ -48,9 +48,7 @@ describe('MyRoundStepPhoto', () => {
     const { element, asked } = await mount(() => of(new Blob(['x'])));
 
     const [url, options] = asked[0] as [string, { params: { rev: string }; responseType: string }];
-    expect(url).toMatch(
-      /\/admin\/livraison\/ma-tournee\/r-1\/arrets\/s-1\/procedure\/st-1\/photo$/u,
-    );
+    expect(url).toMatch(/\/admin\/delivery\/my-round\/r-1\/stops\/s-1\/procedure\/st-1\/photo$/u);
     expect(url).not.toContain('companies');
     expect(options).toEqual({ params: { rev: 'rev-1' }, responseType: 'blob' });
     expect(element.querySelector('img')?.getAttribute('src')).toBe('blob:step');

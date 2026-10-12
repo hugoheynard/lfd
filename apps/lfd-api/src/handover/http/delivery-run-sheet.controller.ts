@@ -18,10 +18,10 @@ const MAX_ORDER_ID_LENGTH = 64;
 
 /** Le jour de service, validé dans sa FORME — le message nomme le paramètre. */
 const runSheetQuerySchema = z.object({
-  jour: z.string().regex(/^\d{4}-\d{2}-\d{2}$/u, "jour attendu au format AAAA-MM-JJ"),
+  day: z.string().regex(/^\d{4}-\d{2}-\d{2}$/u, "day attendu au format AAAA-MM-JJ"),
   // Les livraisons d'un autre jour placées ce jour-là (commandes rapportées),
   // séparées par des virgules. Bornées : c'est une poignée, pas un export.
-  commandes: z
+  orders: z
     .string()
     .optional()
     .transform((value) => (value ?? "").split(",").filter((id) => id.length > 0))
@@ -47,26 +47,26 @@ type RunSheetQuery = z.infer<typeof runSheetQuerySchema>;
  * depuis le 2026-10-01 (`plan-droits-par-geste.md`, DG-D8) : sans ce droit, la
  * feuille part avec des procédures vides.
  *
- * `commandes` (2026-10-02) : les livraisons d'un autre jour que l'écran des
+ * `orders` (2026-10-02) : les livraisons d'un autre jour que l'écran des
  * tournées sait placées ce jour-là — une commande rapportée replacée. Même
  * droit, même masque de procédure : ce droit ouvre déjà toutes les
- * livraisons de tous les jours, en changeant `jour`.
+ * livraisons de tous les jours, en changeant `day`.
  */
-@Controller("admin/livraison")
+@Controller("admin/delivery")
 @AdminSurface("delivery_run_sheet")
 export class DeliveryRunSheetController {
   constructor(private readonly queries: QueryBus) {}
 
-  @Get("feuille-de-route")
+  @Get("run-sheet")
   runSheet(
     @Query(new ZodQuery(runSheetQuerySchema)) query: RunSheetQuery,
     @StaffPermissions() permissions: readonly StaffPermission[],
   ): Promise<DeliveryRunSheetView> {
     return this.queries.execute<GetDeliveryRunSheetQuery, DeliveryRunSheetView>(
       new GetDeliveryRunSheetQuery(
-        query.jour,
+        query.day,
         hasStaffPermission(permissions, "delivery_procedures:read"),
-        query.commandes,
+        query.orders,
       ),
     );
   }

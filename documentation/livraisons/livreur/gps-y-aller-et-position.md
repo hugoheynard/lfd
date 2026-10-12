@@ -135,7 +135,7 @@ position : personne n'est à la porte.
 sequenceDiagram
   participant L as Livreur (écran)
   participant N as Navigateur
-  participant A as API /admin/livraison/ma-tournee
+  participant A as API /admin/delivery/my-round
   participant D as Domaine
   L->>N: geste (arrivée, remise, dépôt, clôture)
   N-->>L: getCurrentPosition — 8 s max, précision haute, ≤ 30 s d'âge
@@ -218,7 +218,7 @@ prochain « Commencer ma tournée ».
 
 ```mermaid
 flowchart LR
-  W["Worker — cron nocturne<br/>QUALITY_UPLOAD_SWEEP_CRON"] -->|"postSweep, jeton machine"| R["POST admin/livraison/positions/sweep<br/>RecomputeGuard"]
+  W["Worker — cron nocturne<br/>QUALITY_UPLOAD_SWEEP_CRON"] -->|"postSweep, jeton machine"| R["POST admin/delivery/positions/sweep<br/>RecomputeGuard"]
   R --> H["PurgeStalePositionsHandler<br/>avant = now − POSITION_RETENTION_DAYS"]
   H --> C["delivery_round_stop<br/>closed_* = NULL si closed_at &lt; avant"]
   H --> A["delivery_stop_execution<br/>arrived_* = NULL si arrived_at &lt; avant"]
@@ -324,7 +324,7 @@ erreur dans ses logs).
 
 Règle validée par Hugo le 2026-10-06 ; bâti le même jour. Écran
 `/livraison/carnet-a-corriger` (« Carnet à corriger »), route
-`admin/livraison/carnet-a-corriger`.
+`admin/delivery/address-corrections`.
 
 ### La règle (CC-D1)
 

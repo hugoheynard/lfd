@@ -106,7 +106,7 @@ describe("les signaux d'arrêt (Q11 : retirés à la main)", () => {
     const stopId = await assign(ctx, DAY, kangoo, order.id);
 
     await admin(ctx)
-      .post(`${ROUNDS}/${kangoo}/arrets/${stopId}/retrait`)
+      .post(`${ROUNDS}/${kangoo}/stops/${stopId}/removal`)
       .send({ version: 2 })
       .expect(204);
 
@@ -138,7 +138,7 @@ describe("retirer un véhicule (C14)", () => {
     const round = await openRound(ctx, tomorrow, kangoo);
     await assign(ctx, tomorrow, round, (await seedDelivery(ctx, tomorrow)).id);
 
-    const refused = await admin(ctx).post(`${VEHICLES}/${kangoo}/retrait`).expect(409);
+    const refused = await admin(ctx).post(`${VEHICLES}/${kangoo}/retirement`).expect(409);
 
     expect(JSON.stringify(refused.body)).toContain(tomorrow);
     const vehicle = await ctx.prisma.deliveryVehicle.findUniqueOrThrow({ where: { id: kangoo } });
@@ -150,14 +150,14 @@ describe("retirer un véhicule (C14)", () => {
     const kangoo = await addVehicle(ctx, "Kangoo");
     await openRound(ctx, tomorrow, kangoo);
 
-    await admin(ctx).post(`${VEHICLES}/${kangoo}/retrait`).expect(204);
+    await admin(ctx).post(`${VEHICLES}/${kangoo}/retirement`).expect(204);
   });
 });
 
 describe("le droit `delivery_rounds` (Q12)", () => {
   it("refuse le support en lecture comme en écriture (403)", async () => {
     const support = await asRole("support");
-    await support.get(`${ROUNDS}?jour=${DAY}`).expect(403);
+    await support.get(`${ROUNDS}?day=${DAY}`).expect(403);
     await support.post(ROUNDS).send({ day: DAY, vehicleId: "x" }).expect(403);
   });
 
@@ -165,7 +165,7 @@ describe("le droit `delivery_rounds` (Q12)", () => {
     const kangoo = await addVehicle(ctx, "Kangoo");
     const counter = await asRole("comptoir");
     await counter.post(ROUNDS).send({ day: DAY, vehicleId: kangoo }).expect(201);
-    await counter.get(`${ROUNDS}?jour=${DAY}`).expect(200);
+    await counter.get(`${ROUNDS}?day=${DAY}`).expect(200);
   });
 });
 
@@ -178,10 +178,10 @@ describe("C13 — deux déplacements croisés", () => {
 
     const responses = await Promise.all([
       admin(ctx)
-        .post(`${ROUNDS}/${a}/arrets/${stopA}/deplacement`)
+        .post(`${ROUNDS}/${a}/stops/${stopA}/move`)
         .send({ toRoundId: b, fromVersion: 2, toVersion: 2 }),
       admin(ctx)
-        .post(`${ROUNDS}/${b}/arrets/${stopB}/deplacement`)
+        .post(`${ROUNDS}/${b}/stops/${stopB}/move`)
         .send({ toRoundId: a, fromVersion: 2, toVersion: 2 }),
     ]);
 

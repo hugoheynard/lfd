@@ -84,7 +84,7 @@ ressource.
 | `GET /admin/orders/day-version`                            | `b2b_orders:read` **ou** `handover_counter:read`                                      |
 | `GET /admin/orders/:id/lines/:sku/rules`                   | `b2b_orders:read` — l'explication du prix d'une ligne (`AdminOrderPricingController`) |
 | `GET /admin/catalog`, `/sellable`, `/companies/:companyId` | `b2b_orders:read` — le catalogue de la saisie (`AdminCatalogController`)              |
-| `POST /admin/orders/:id/rappel-retrait`                    | `b2b_orders:write` — **la seule route** que `b2b_orders:write` ouvre encore           |
+| `POST /admin/orders/:id/pickup-reminder`                   | `b2b_orders:write` — **la seule route** que `b2b_orders:write` ouvre encore           |
 
 Les autres `POST` du contrôleur portent leur propre droit
 (`b2b_place_order`, `b2b_cancel_order`), et les preuves de livraison le leur
@@ -233,8 +233,8 @@ Touche une commande par sa fiche PDF ; le reste est la production du jour.
 | `GET /admin/packing/:date/orders/:orderId/proposal`, `/shareable-halves`                                                                               | `production_packing:read`                                               |
 | `POST /admin/packing/:date/orders/:orderId/containers…` (créer, poser une ligne, retirer, transférer, annuler un contenant, appliquer une proposition) | `production_packing:write`                                              |
 | `POST /admin/packing/:date/orders/:orderId/close`, `/reopen`                                                                                           | `production_packing:write` — clore / rouvrir le colisage d'une commande |
-| `GET /admin/livraison/colisage/bacs/:binId`, `GET …/colisage/tournees`                                                                                 | `production_packing:read` **ou** `delivery_loading:read`                |
-| `GET /admin/livraison/colisage/bacs`, `POST …/bacs/:binId/annulation`                                                                                  | `production_packing:write` **ou** `delivery_loading:write`              |
+| `GET /admin/delivery/packing/bins/:binId`, `GET …/colisage/tournees`                                                                                   | `production_packing:read` **ou** `delivery_loading:read`                |
+| `GET /admin/delivery/packing/bins`, `POST …/bacs/:binId/annulation`                                                                                    | `production_packing:write` **ou** `delivery_loading:write`              |
 
 **Back-office** : `/colisage` (garde `production_packing:read`),
 `/colisage/:reference` (garde `production_packing:write`), `…/bac/:binId` et
@@ -253,9 +253,9 @@ prévisionnel (`can('production_settings:read')`).
 
 ## `delivery_proofs` — Preuves de livraison
 
-| Méthode et chemin                                                | Exige                                                                                    |
-| ---------------------------------------------------------------- | ---------------------------------------------------------------------------------------- |
-| `GET /admin/orders/:id/preuve-livraison`, `/photo`, `/signature` | `delivery_proofs:read` (`DELIVERY_PROOF_PERMISSION`, qui **remplace** `b2b_orders:read`) |
+| Méthode et chemin                                              | Exige                                                                                    |
+| -------------------------------------------------------------- | ---------------------------------------------------------------------------------------- |
+| `GET /admin/orders/:id/delivery-proof`, `/photo`, `/signature` | `delivery_proofs:read` (`DELIVERY_PROOF_PERMISSION`, qui **remplace** `b2b_orders:read`) |
 
 **Back-office** : la carte de preuve du détail (`commandes/handover-proof-card`) ;
 le service ne l'appelle que si `can(DELIVERY_PROOF_PERMISSION)`.
@@ -359,7 +359,7 @@ droit exigé côté API n'a changé.
    `can('b2b_settings:write')` ; l'état et les règles restent lisibles (une spec le tient).
 6. **`b2b_orders:write` ne protège plus qu'un rappel — assumé.** Depuis la
    sortie des gestes (2026-10-01) puis de l'annulation (2026-10-12), la seule
-   route qui l'exige est `POST /admin/orders/:id/rappel-retrait`. Ce n'est pas
+   route qui l'exige est `POST /admin/orders/:id/pickup-reminder`. Ce n'est pas
    un défaut : « Commandes » en écriture donne ce rappel et rien d'autre, et
    c'est voulu — à garder en tête en réglant un rôle à `/admin/staff-roles`.
 7. **`production_plan:write` n'ouvre aucune route.** Corrigé le 2026-10-12

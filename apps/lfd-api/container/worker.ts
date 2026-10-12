@@ -308,9 +308,9 @@ async function triggerQualityUploadSweep(env: Env): Promise<void> {
   // L'échec est écrit dans les logs du Worker, puis rattrapé la nuit suivante.
   for (const path of [
     "admin/production/quality/sweep",
-    "admin/livraison/journal/sweep",
-    "admin/livraison/geocodage/sweep",
-    "admin/livraison/positions/sweep",
+    "admin/delivery/journal/sweep",
+    "admin/delivery/geocoding/sweep",
+    "admin/delivery/positions/sweep",
     // L'anonymisation des messages « Nous écrire » traités depuis douze mois
     // (`documentation/contenu-ecommerce/demandes-clients.md`, §5.3).
     "admin/contact/messages/anonymization/sweep",
@@ -420,7 +420,7 @@ async function triggerRoundsGapBell(env: Env): Promise<void> {
   if (!token) {
     return;
   }
-  await postSweep(env, token, "admin/livraison/hors-tournee/sweep");
+  await postSweep(env, token, "admin/delivery/off-round/sweep");
 }
 
 /**

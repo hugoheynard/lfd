@@ -10,10 +10,10 @@ import { firstValueFrom } from 'rxjs';
 import { B2B_API_BASE } from '../api/api-config';
 import type { LoadingGateway } from './loading-gateway';
 
-const MY_ROUND = `${B2B_API_BASE}/admin/livraison/ma-tournee`;
+const MY_ROUND = `${B2B_API_BASE}/admin/delivery/my-round`;
 
 function loadingUrl(roundId: string): string {
-  return `${MY_ROUND}/${encodeURIComponent(roundId)}/chargement`;
+  return `${MY_ROUND}/${encodeURIComponent(roundId)}/loading`;
 }
 
 /**
@@ -37,12 +37,12 @@ export class MyDeliveryLoadingService implements LoadingGateway {
   }
 
   async load(roundId: string, payload: LoadDeliveryBinPayload): Promise<void> {
-    await firstValueFrom(this.http.post(`${loadingUrl(roundId)}/bacs`, payload));
+    await firstValueFrom(this.http.post(`${loadingUrl(roundId)}/bins`, payload));
   }
 
   async unload(roundId: string, binId: string): Promise<void> {
     await firstValueFrom(
-      this.http.post(`${loadingUrl(roundId)}/bacs/${encodeURIComponent(binId)}/dechargement`, {}),
+      this.http.post(`${loadingUrl(roundId)}/bins/${encodeURIComponent(binId)}/unloading`, {}),
     );
   }
 }

@@ -56,12 +56,12 @@ export async function departedStop(
   await loadBin(ctx, roundId, { binId: bins[0] ?? "" }).expect(204);
   const { version } = await roundOf(ctx, DOOR_DAY, roundId);
   await admin(ctx)
-    .put(`${ROUNDS}/${roundId}/livreur`)
+    .put(`${ROUNDS}/${roundId}/driver`)
     .send({ staffUserId: driver.id, version })
     .expect(204);
   await beforeDeparture(orderId);
   await driver.agent
-    .post(`${MY_ROUND}/${roundId}/depart`)
+    .post(`${MY_ROUND}/${roundId}/departure`)
     .send({ version: (await myRound(driver.agent, roundId)).version })
     .expect(204);
   const stop = await ctx.prisma.deliveryRoundStop.findFirstOrThrow({
@@ -99,11 +99,11 @@ export async function departedStops(
   }
   const { version } = await roundOf(ctx, DOOR_DAY, roundId);
   await admin(ctx)
-    .put(`${ROUNDS}/${roundId}/livreur`)
+    .put(`${ROUNDS}/${roundId}/driver`)
     .send({ staffUserId: driver.id, version })
     .expect(204);
   await driver.agent
-    .post(`${MY_ROUND}/${roundId}/depart`)
+    .post(`${MY_ROUND}/${roundId}/departure`)
     .send({ version: (await myRound(driver.agent, roundId)).version })
     .expect(204);
   const rows = await ctx.prisma.deliveryRoundStop.findMany({

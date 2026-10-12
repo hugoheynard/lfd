@@ -39,7 +39,7 @@ import { ListPurchaseScenariosQuery } from "../application/queries/list-purchase
  * aucune route ici. Relancer le tableau n'est pas ici : l'écran envoie la
  * sélection relue au `POST …/tableau` existant. Il n'injecte que les bus.
  */
-@Controller("admin/livraison/assistant-achat/scenarios")
+@Controller("admin/delivery/purchase-assistant/scenarios")
 @AdminSurface("delivery_rounds")
 export class PurchaseScenariosController {
   constructor(
@@ -92,7 +92,7 @@ export class PurchaseScenariosController {
     );
   }
 
-  @Post(":id/archiver")
+  @Post(":id/archive")
   @HttpCode(HttpStatus.NO_CONTENT)
   async archive(@Param("id") id: string, @StaffUserId() staffUserId: string): Promise<void> {
     await this.commands.execute<ArchivePurchaseScenarioCommand, void>(
@@ -100,7 +100,7 @@ export class PurchaseScenariosController {
     );
   }
 
-  @Post(":id/reactiver")
+  @Post(":id/reactivate")
   @HttpCode(HttpStatus.NO_CONTENT)
   async reactivate(@Param("id") id: string, @StaffUserId() staffUserId: string): Promise<void> {
     await this.commands.execute<ReactivatePurchaseScenarioCommand, void>(

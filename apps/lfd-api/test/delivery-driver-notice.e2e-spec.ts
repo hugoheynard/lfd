@@ -10,7 +10,7 @@ import { bootstrapE2e, jsonBody, type E2eContext } from "./e2e-harness.js";
 import { ADMIN_VERIFIER_OVERRIDE } from "./delivery-rounds-scene.js";
 import { seedDriverRole, staffWithRole } from "./delivery-driver-scene.js";
 
-const NOTICE = "/admin/livraison/mes-donnees";
+const NOTICE = "/admin/delivery/my-data";
 
 let ctx: E2eContext;
 
@@ -47,7 +47,10 @@ describe("« Mes données » du livreur", () => {
     const lea = await staffWithRole(ctx, "livreur-lea");
     const { notice } = await noticeOf(paul.agent);
 
-    await paul.agent.post(`${NOTICE}/accuse`).send({ version: notice.version }).expect(204);
+    await paul.agent
+      .post(`${NOTICE}/acknowledgement`)
+      .send({ version: notice.version })
+      .expect(204);
 
     expect((await noticeOf(paul.agent)).acknowledgedAt).not.toBeNull();
     expect((await noticeOf(lea.agent)).acknowledgedAt).toBeNull();
@@ -59,9 +62,15 @@ describe("« Mes données » du livreur", () => {
     const paul = await staffWithRole(ctx, "livreur-paul");
     const { notice } = await noticeOf(paul.agent);
 
-    await paul.agent.post(`${NOTICE}/accuse`).send({ version: notice.version }).expect(204);
+    await paul.agent
+      .post(`${NOTICE}/acknowledgement`)
+      .send({ version: notice.version })
+      .expect(204);
     const first = (await noticeOf(paul.agent)).acknowledgedAt;
-    await paul.agent.post(`${NOTICE}/accuse`).send({ version: notice.version }).expect(204);
+    await paul.agent
+      .post(`${NOTICE}/acknowledgement`)
+      .send({ version: notice.version })
+      .expect(204);
 
     expect((await noticeOf(paul.agent)).acknowledgedAt).toBe(first);
     expect(await ctx.prisma.deliveryDriverNoticeAcknowledgement.count()).toBe(1);
@@ -72,7 +81,7 @@ describe("« Mes données » du livreur", () => {
     const { notice } = await noticeOf(paul.agent);
 
     const refused = await paul.agent
-      .post(`${NOTICE}/accuse`)
+      .post(`${NOTICE}/acknowledgement`)
       .send({ version: notice.version + 1 })
       .expect(409);
 
@@ -86,8 +95,8 @@ describe("« Mes données » du livreur", () => {
     const paul = await staffWithRole(ctx, "livreur-paul");
     const vendeur = await staffWithRole(ctx, "vendeur", "comptoir", "comptoir");
 
-    await paul.agent.post(`${NOTICE}/accuse`).send({ version: "1" }).expect(400);
+    await paul.agent.post(`${NOTICE}/acknowledgement`).send({ version: "1" }).expect(400);
     await vendeur.agent.get(NOTICE).expect(403);
-    await vendeur.agent.post(`${NOTICE}/accuse`).send({ version: 1 }).expect(403);
+    await vendeur.agent.post(`${NOTICE}/acknowledgement`).send({ version: 1 }).expect(403);
   });
 });

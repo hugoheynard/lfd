@@ -22,7 +22,7 @@ import { GetAddressPointSuggestionsQuery } from "../application/queries/get-addr
  * (décision du 2026-10-06). `delivery_rounds:read` voit les tournées, pas
  * l'endroit où des livreurs se sont arrêtés. Il n'injecte que les bus.
  */
-@Controller("admin/livraison/carnet-a-corriger")
+@Controller("admin/delivery/address-corrections")
 @AdminSurface("delivery_rounds")
 export class AddressPointSuggestionsController {
   constructor(
@@ -39,7 +39,7 @@ export class AddressPointSuggestionsController {
   }
 
   /** « Appliquer » — 204 ; 409 si la suggestion a changé depuis l'affichage. */
-  @Post(":addressId/appliquer")
+  @Post(":addressId/apply")
   @HttpCode(HttpStatus.NO_CONTENT)
   async apply(
     @StaffUserId() staffUserId: string,
@@ -52,7 +52,7 @@ export class AddressPointSuggestionsController {
   }
 
   /** « Ignorer » — 204 ; 409 si la suggestion a changé depuis l'affichage. */
-  @Post(":addressId/ignorer")
+  @Post(":addressId/dismiss")
   @HttpCode(HttpStatus.NO_CONTENT)
   async ignore(
     @StaffUserId() staffUserId: string,

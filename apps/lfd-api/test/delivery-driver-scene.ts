@@ -15,7 +15,7 @@ import type request from "supertest";
 
 import { E2E_STAFF_SUB, type E2eContext } from "./e2e-harness.js";
 
-export const MY_ROUND = "/admin/livraison/ma-tournee";
+export const MY_ROUND = "/admin/delivery/my-round";
 
 /**
  * Le rôle tel qu'Hugo le crée à l'écran : conduire, ET les gestes à la porte

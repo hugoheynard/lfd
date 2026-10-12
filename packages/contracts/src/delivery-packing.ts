@@ -196,7 +196,7 @@ export interface DeliveryPackingRoundView {
 
 /**
  * **Les tournées d'un jour, vues du poste de colisage**
- * (`GET admin/livraison/colisage/tournees?jour=`, lot PC2). Sous
+ * (`GET admin/delivery/packing/rounds?day=`, lot PC2). Sous
  * `production_packing:read` OU `delivery_loading:read` : qui ouvre le poste
  * lit où vont ses commandes, sans recevoir le droit de composer.
  */

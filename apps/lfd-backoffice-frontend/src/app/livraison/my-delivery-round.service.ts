@@ -14,14 +14,14 @@ import { firstValueFrom } from 'rxjs';
 import { B2B_API_BASE } from '../api/api-config';
 import { appendPosition } from './gesture-position';
 
-const MY_ROUND = `${B2B_API_BASE}/admin/livraison/ma-tournee`;
+const MY_ROUND = `${B2B_API_BASE}/admin/delivery/my-round`;
 
 function roundUrl(roundId: string): string {
   return `${MY_ROUND}/${encodeURIComponent(roundId)}`;
 }
 
 function stopUrl(roundId: string, stopId: string): string {
-  return `${roundUrl(roundId)}/arrets/${encodeURIComponent(stopId)}`;
+  return `${roundUrl(roundId)}/stops/${encodeURIComponent(stopId)}`;
 }
 
 /** Un signalement, tel que l'écran le compose (`a-la-porte.md`, § 3). */
@@ -83,7 +83,7 @@ export class MyDeliveryRoundService {
   /** « Commencer ma tournée », avec la version lue : une tournée modifiée entre-temps est refusée. */
   async depart(roundId: string, payload: DepartDeliveryRoundPayload): Promise<void> {
     await firstValueFrom(
-      this.http.post(`${MY_ROUND}/${encodeURIComponent(roundId)}/depart`, payload),
+      this.http.post(`${MY_ROUND}/${encodeURIComponent(roundId)}/departure`, payload),
     );
   }
 
@@ -94,7 +94,7 @@ export class MyDeliveryRoundService {
    * ressource pour le cache.
    */
   stepPhoto(roundId: string, stopId: string, stepId: string, revision: string): Promise<Blob> {
-    const path = [roundId, 'arrets', stopId, 'procedure', stepId, 'photo']
+    const path = [roundId, 'stops', stopId, 'procedure', stepId, 'photo']
       .map((part) => encodeURIComponent(part))
       .join('/');
     return firstValueFrom(
@@ -110,7 +110,7 @@ export class MyDeliveryRoundService {
     stopId: string,
     position: GesturePositionFields | null,
   ): Promise<void> {
-    await firstValueFrom(this.http.post(`${stopUrl(roundId, stopId)}/arrivee`, position ?? {}));
+    await firstValueFrom(this.http.post(`${stopUrl(roundId, stopId)}/arrival`, position ?? {}));
   }
 
   /** « Déclarer un problème » — en multipart, la photo sous `photo`. */
@@ -138,7 +138,7 @@ export class MyDeliveryRoundService {
     payload: CloseStopWithoutHandoverPayload,
   ): Promise<void> {
     await firstValueFrom(
-      this.http.post(`${stopUrl(roundId, stopId)}/cloture-sans-remise`, payload),
+      this.http.post(`${stopUrl(roundId, stopId)}/close-without-handover`, payload),
     );
   }
 
@@ -155,7 +155,7 @@ export class MyDeliveryRoundService {
       body.append('signature', handover.signature, 'signature.png');
     }
     appendPosition(body, handover.position);
-    await firstValueFrom(this.http.post(`${stopUrl(roundId, stopId)}/remise`, body));
+    await firstValueFrom(this.http.post(`${stopUrl(roundId, stopId)}/handover`, body));
   }
 
   /**
@@ -167,12 +167,12 @@ export class MyDeliveryRoundService {
     body.append('version', String(deposit.version));
     body.append('photo', deposit.photo, 'depot.jpg');
     appendPosition(body, deposit.position);
-    await firstValueFrom(this.http.post(`${stopUrl(roundId, stopId)}/depot`, body));
+    await firstValueFrom(this.http.post(`${stopUrl(roundId, stopId)}/drop-off`, body));
   }
 
   /** « Tournée terminée » (PL2) — rejouée, la route répond pareil. */
   async returnToDepot(roundId: string): Promise<void> {
-    await firstValueFrom(this.http.post(`${roundUrl(roundId)}/retour`, null));
+    await firstValueFrom(this.http.post(`${roundUrl(roundId)}/return`, null));
   }
 
   /** La photo d'un signalement de MA tournée, en blob : un `<img src>` nu n'enverrait pas le jeton. */

@@ -23,7 +23,7 @@ import { GetDoorstepSettingsQuery } from "../application/queries/get-doorstep-se
  * de départ. Une adresse la redéfinit sur la fiche société
  * (`admin/companies/…/doorstep-rule`). Il n'injecte que les bus.
  */
-@Controller("admin/livraison/a-la-porte")
+@Controller("admin/delivery/doorstep")
 @AdminSurface("delivery_procedures")
 export class DoorstepSettingsController {
   constructor(

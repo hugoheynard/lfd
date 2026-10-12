@@ -51,7 +51,7 @@ géocodée pile à la frontière est encore lue, donc gardée.
 sequenceDiagram
     participant CF as Cron Cloudflare "45 3 * * *" (UTC)
     participant W as container/worker.ts
-    participant API as POST /admin/livraison/geocodage/sweep
+    participant API as POST /admin/delivery/geocoding/sweep
     participant H as PurgeStaleGeocodesHandler
     participant DB as delivery.delivery_geocode
     CF->>W: scheduled (QUALITY_UPLOAD_SWEEP_CRON)

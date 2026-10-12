@@ -26,7 +26,7 @@ type DateQuery = z.infer<typeof dateQuerySchema>;
  * montre. « Non remis » est une vue, il ne débloque rien. Il n'injecte que le
  * bus de lecture.
  */
-@Controller("admin/livraison")
+@Controller("admin/delivery")
 @AdminSurface("delivery_rounds")
 export class DeliveryIncidentsController {
   constructor(private readonly queries: QueryBus) {}
@@ -38,7 +38,7 @@ export class DeliveryIncidentsController {
     );
   }
 
-  @Get("non-remis")
+  @Get("not-handed-over")
   undelivered(): Promise<UndeliveredStopsView> {
     return this.queries.execute<GetUndeliveredStopsQuery, UndeliveredStopsView>(
       new GetUndeliveredStopsQuery(),

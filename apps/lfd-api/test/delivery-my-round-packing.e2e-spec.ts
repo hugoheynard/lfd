@@ -87,7 +87,7 @@ async function myRoundOfTwo(staffUserId: string): Promise<{
   await assign(ctx, DAY, roundId, first);
   await assign(ctx, DAY, roundId, second);
   const { version } = await roundOf(ctx, DAY, roundId);
-  await admin(ctx).put(`${ROUNDS}/${roundId}/livreur`).send({ staffUserId, version }).expect(204);
+  await admin(ctx).put(`${ROUNDS}/${roundId}/driver`).send({ staffUserId, version }).expect(204);
   return { roundId, orders: [first, second] };
 }
 
@@ -180,7 +180,7 @@ describe("la version de « ma tournée » (PL4)", () => {
     const before = await versionOf(paul.agent);
 
     await admin(ctx)
-      .post(`/admin/livraison/colisage/bacs/${binId ?? ""}/annulation`)
+      .post(`/admin/delivery/packing/bins/${binId ?? ""}/cancellation`)
       .expect(204);
 
     expect(await versionOf(paul.agent)).toBeGreaterThan(before);
@@ -199,15 +199,15 @@ describe("charger depuis « Ma tournée » (PL1)", () => {
     await declareBins(ctx, orders[0], 1);
 
     const loading = jsonBody<DeliveryLoadingRoundView>(
-      await paul.agent.get(`${MY_ROUND}/${roundId}/chargement`).expect(200),
+      await paul.agent.get(`${MY_ROUND}/${roundId}/loading`).expect(200),
     );
     expect(loading).toEqual(await loadingOf(ctx, roundId));
     const plan = jsonBody<DeliveryLoadingPlanView>(
-      await paul.agent.get(`${MY_ROUND}/${roundId}/chargement/plan`).expect(200),
+      await paul.agent.get(`${MY_ROUND}/${roundId}/loading/plan`).expect(200),
     );
     expect(plan).toEqual(
       jsonBody<DeliveryLoadingPlanView>(
-        await admin(ctx).get(`/admin/livraison/chargement/${roundId}/plan`).expect(200),
+        await admin(ctx).get(`/admin/delivery/loading/${roundId}/plan`).expect(200),
       ),
     );
   });
@@ -217,7 +217,7 @@ describe("charger depuis « Ma tournée » (PL1)", () => {
     const { roundId, orders } = await myRoundOfTwo(paul.id);
     const [binId] = await declareBins(ctx, orders[0], 1);
 
-    await paul.agent.post(`${MY_ROUND}/${roundId}/chargement/bacs`).send({ binId }).expect(204);
+    await paul.agent.post(`${MY_ROUND}/${roundId}/loading/bins`).send({ binId }).expect(204);
 
     const load = await ctx.prisma.deliveryBinLoad.findFirstOrThrow({
       where: { binId: binId ?? "" },
@@ -226,7 +226,7 @@ describe("charger depuis « Ma tournée » (PL1)", () => {
     expect(load).toEqual({ loadedBy: paul.id, loadedVia: "scan" });
 
     await paul.agent
-      .post(`${MY_ROUND}/${roundId}/chargement/bacs/${binId ?? ""}/dechargement`)
+      .post(`${MY_ROUND}/${roundId}/loading/bins/${binId ?? ""}/unloading`)
       .expect(204);
     const unloaded = await ctx.prisma.deliveryBinLoad.findFirstOrThrow({
       where: { binId: binId ?? "" },
@@ -241,9 +241,9 @@ describe("charger depuis « Ma tournée » (PL1)", () => {
     const { roundId, orders } = await myRoundOfTwo(paul.id);
     const [binId] = await declareBins(ctx, orders[0], 1);
 
-    await lea.agent.get(`${MY_ROUND}/${roundId}/chargement`).expect(404);
-    await lea.agent.get(`${MY_ROUND}/${roundId}/chargement/plan`).expect(404);
-    await lea.agent.post(`${MY_ROUND}/${roundId}/chargement/bacs`).send({ binId }).expect(404);
+    await lea.agent.get(`${MY_ROUND}/${roundId}/loading`).expect(404);
+    await lea.agent.get(`${MY_ROUND}/${roundId}/loading/plan`).expect(404);
+    await lea.agent.post(`${MY_ROUND}/${roundId}/loading/bins`).send({ binId }).expect(404);
 
     expect(await ctx.prisma.deliveryBinLoad.count({ where: { loadedAt: { not: null } } })).toBe(0);
   });
@@ -252,6 +252,6 @@ describe("charger depuis « Ma tournée » (PL1)", () => {
     const paul = await staffWithRole(ctx, "livreur-paul");
     const { roundId } = await myRoundOfTwo(paul.id);
 
-    await paul.agent.get(`/admin/livraison/chargement/${roundId}`).expect(403);
+    await paul.agent.get(`/admin/delivery/loading/${roundId}`).expect(403);
   });
 });

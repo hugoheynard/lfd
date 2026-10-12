@@ -20,7 +20,7 @@ export interface DeliveryDayChangeSweepReport {
  * de réglage Cloudflare de plus. Une route à part, parce que le fournil ne
  * connaît pas la livraison — ni son code, ni son journal.
  */
-@Controller("admin/livraison/journal/sweep")
+@Controller("admin/delivery/journal/sweep")
 @Public()
 @UseGuards(RecomputeGuard)
 export class DeliveryDayChangeSweepController {

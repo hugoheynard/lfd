@@ -106,20 +106,20 @@ describe("le mur de droits du livreur (MT1)", () => {
     const refused: readonly (readonly [string, () => request.Test])[] = [
       ["la cloche", () => agent.get("/admin/notifications")],
       ["les commandes", () => agent.get("/admin/orders")],
-      ["la feuille de route", () => agent.get(`/admin/livraison/feuille-de-route?jour=${DAY}`)],
-      ["le chargement", () => agent.get(`/admin/livraison/chargement?jour=${DAY}`)],
-      ["la tournée au chargement", () => agent.get(`/admin/livraison/chargement/${roundId}`)],
-      ["les tournées", () => agent.get(`/admin/livraison/tournees?jour=${DAY}`)],
-      ["les livreurs proposables", () => agent.get("/admin/livraison/tournees/livreurs")],
+      ["la feuille de route", () => agent.get(`/admin/delivery/run-sheet?day=${DAY}`)],
+      ["le chargement", () => agent.get(`/admin/delivery/loading?day=${DAY}`)],
+      ["la tournée au chargement", () => agent.get(`/admin/delivery/loading/${roundId}`)],
+      ["les tournées", () => agent.get(`/admin/delivery/rounds?day=${DAY}`)],
+      ["les livreurs proposables", () => agent.get("/admin/delivery/rounds/drivers")],
       [
         "le départ du chargeur",
-        () => agent.post(`/admin/livraison/tournees/${roundId}/depart`).send({ version: 1 }),
+        () => agent.post(`/admin/delivery/rounds/${roundId}/departure`).send({ version: 1 }),
       ],
       [
         "l'affectation",
         () =>
           agent
-            .put(`/admin/livraison/tournees/${roundId}/livreur`)
+            .put(`/admin/delivery/rounds/${roundId}/driver`)
             .send({ staffUserId: "x", version: 1 }),
       ],
     ];
@@ -143,7 +143,7 @@ describe("un livreur affectable tient les deux droits (audit 2026-10-07, B8)", (
   /** Les livreurs que l'écran Tournées propose. */
   async function proposed(): Promise<readonly string[]> {
     const { drivers } = jsonBody<DeliveryDriversView>(
-      await admin(ctx).get(`${ROUNDS}/livreurs`).expect(200),
+      await admin(ctx).get(`${ROUNDS}/drivers`).expect(200),
     );
     return drivers.map((driver) => driver.staffUserId);
   }
@@ -151,7 +151,7 @@ describe("un livreur affectable tient les deux droits (audit 2026-10-07, B8)", (
   /** Affecte `staffUserId` à la version courante, par la route de la composition. */
   async function assignDriver(roundId: string, staffUserId: string): Promise<Response> {
     const { version } = await roundOf(ctx, DAY, roundId);
-    return admin(ctx).put(`${ROUNDS}/${roundId}/livreur`).send({ staffUserId, version });
+    return admin(ctx).put(`${ROUNDS}/${roundId}/driver`).send({ staffUserId, version });
   }
 
   /**

@@ -13,7 +13,7 @@ import { cmToMm, mmToCm } from './delivery-bins';
  * ce qu'on saisit à l'écran, et ce qui part au serveur.
  *
  * Le CALCUL n'est pas ici : il est côté serveur (`POST
- * admin/livraison/assistant-achat`). Ce fichier ne fait que traduire la
+ * admin/delivery/purchase-assistant`). Ce fichier ne fait que traduire la
  * saisie en corps, et dessiner ce qui revient. Les bornes des dimensions, du
  * jeu et de la pile sont celles du domaine : l'écran ne les recopie pas, il
  * affiche le refus du serveur tel quel.

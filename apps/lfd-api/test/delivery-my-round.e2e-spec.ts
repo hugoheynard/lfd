@@ -64,7 +64,7 @@ function messageOf(response: Response): string {
 async function assignDriver(roundId: string, staffUserId: string, status = 204): Promise<Response> {
   const { version } = await roundOf(ctx, DAY, roundId);
   return admin(ctx)
-    .put(`${ROUNDS}/${roundId}/livreur`)
+    .put(`${ROUNDS}/${roundId}/driver`)
     .send({ staffUserId, version })
     .expect(status);
 }
@@ -98,7 +98,7 @@ describe("affecter un livreur (MT2)", () => {
     });
 
     const { drivers } = jsonBody<DeliveryDriversView>(
-      await admin(ctx).get(`${ROUNDS}/livreurs`).expect(200),
+      await admin(ctx).get(`${ROUNDS}/drivers`).expect(200),
     );
 
     expect(drivers.map((driver) => driver.staffUserId).sort()).toEqual(
@@ -137,7 +137,7 @@ describe("affecter un livreur (MT2)", () => {
     await assignDriver(roundId, paul.id);
     const { version } = await roundOf(ctx, DAY, roundId);
 
-    await admin(ctx).post(`${ROUNDS}/${roundId}/livreur/retrait`).send({ version }).expect(204);
+    await admin(ctx).post(`${ROUNDS}/${roundId}/driver/removal`).send({ version }).expect(204);
 
     expect((await roundOf(ctx, DAY, roundId)).driver).toBeNull();
     const facts = await ctx.prisma.activityEvent.findMany({
@@ -175,7 +175,7 @@ describe("le mur du livreur, dans la requête (MT-D3)", () => {
     );
     expect(theirs.rounds).toEqual([]);
     await lea.agent.get(`${MY_ROUND}/${roundId}`).expect(404);
-    await lea.agent.post(`${MY_ROUND}/${roundId}/depart`).send({ version: 2 }).expect(404);
+    await lea.agent.post(`${MY_ROUND}/${roundId}/departure`).send({ version: 2 }).expect(404);
     expect((await roundOf(ctx, DAY, roundId)).departedAt).toBeNull();
   });
 
@@ -200,7 +200,7 @@ describe("« Commencer ma tournée » (MT3)", () => {
     const { version } = await myRound(paul.agent, roundId);
 
     const refused = await paul.agent
-      .post(`${MY_ROUND}/${roundId}/depart`)
+      .post(`${MY_ROUND}/${roundId}/departure`)
       .send({ version })
       .expect(409);
 
@@ -216,7 +216,7 @@ describe("« Commencer ma tournée » (MT3)", () => {
     await assignDriver(roundId, paul.id);
 
     const refused = await paul.agent
-      .post(`${MY_ROUND}/${roundId}/depart`)
+      .post(`${MY_ROUND}/${roundId}/departure`)
       .send({ version: 1 })
       .expect(409);
 
@@ -233,7 +233,7 @@ describe("« Commencer ma tournée » (MT3)", () => {
     expect(before.stops[0]).toMatchObject({ rank: 1, gps: POINT, bins: 1, coldBins: 0 });
 
     await paul.agent
-      .post(`${MY_ROUND}/${roundId}/depart`)
+      .post(`${MY_ROUND}/${roundId}/departure`)
       .send({ version: before.version })
       .expect(204);
 
@@ -263,7 +263,7 @@ describe("« Commencer ma tournée » (MT3)", () => {
     expect(JSON.stringify(after)).not.toMatch(/cents|price|total|amount|prix|montant/iu);
 
     const again = await paul.agent
-      .post(`${MY_ROUND}/${roundId}/depart`)
+      .post(`${MY_ROUND}/${roundId}/departure`)
       .send({ version: after.version })
       .expect(409);
     expect(messageOf(again)).toContain("déjà partie");

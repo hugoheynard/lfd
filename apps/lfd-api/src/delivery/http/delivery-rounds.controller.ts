@@ -47,7 +47,7 @@ import { ListDeliveryDriversQuery } from "../application/queries/list-delivery-d
 
 /** Le jour de service, validé dans sa FORME — le message nomme le paramètre. */
 const dayQuerySchema = z.object({
-  jour: z.string().regex(/^\d{4}-\d{2}-\d{2}$/u, "jour attendu au format AAAA-MM-JJ"),
+  day: z.string().regex(/^\d{4}-\d{2}-\d{2}$/u, "day attendu au format AAAA-MM-JJ"),
 });
 type DayQuery = z.infer<typeof dayQuerySchema>;
 
@@ -68,7 +68,7 @@ interface AssignedStopResponse {
  * Affecter un livreur est un geste de COMPOSITION (plan « Ma tournée »,
  * MT-D2) : même droit, même version.
  */
-@Controller("admin/livraison/tournees")
+@Controller("admin/delivery/rounds")
 @AdminSurface("delivery_rounds")
 export class DeliveryRoundsController {
   constructor(
@@ -79,7 +79,7 @@ export class DeliveryRoundsController {
   @Get()
   day(@Query(new ZodQuery(dayQuerySchema)) query: DayQuery): Promise<DeliveryRoundsDayView> {
     return this.queries.execute<GetDeliveryRoundsDayQuery, DeliveryRoundsDayView>(
-      new GetDeliveryRoundsDayQuery(query.jour),
+      new GetDeliveryRoundsDayQuery(query.day),
     );
   }
 
@@ -87,14 +87,14 @@ export class DeliveryRoundsController {
    * Les livreurs qu'on peut affecter : les droits effectifs de conduire ET des
    * gestes à la porte (audit 2026-10-07, B8), pas la clé du rôle.
    */
-  @Get("livreurs")
+  @Get("drivers")
   drivers(): Promise<DeliveryDriversView> {
     return this.queries.execute<ListDeliveryDriversQuery, DeliveryDriversView>(
       new ListDeliveryDriversQuery(),
     );
   }
 
-  @Put(":roundId/livreur")
+  @Put(":roundId/driver")
   @HttpCode(HttpStatus.NO_CONTENT)
   async assignDriver(
     @Param("roundId") roundId: string,
@@ -105,7 +105,7 @@ export class DeliveryRoundsController {
     );
   }
 
-  @Post(":roundId/livreur/retrait")
+  @Post(":roundId/driver/removal")
   @HttpCode(HttpStatus.NO_CONTENT)
   async unassignDriver(
     @Param("roundId") roundId: string,
@@ -121,7 +121,7 @@ export class DeliveryRoundsController {
    * PL2) — quand le livreur a oublié, ou qu'aucun livreur n'était affecté.
    * 204, même rejoué.
    */
-  @Post(":roundId/retour")
+  @Post(":roundId/return")
   @HttpCode(HttpStatus.NO_CONTENT)
   async returnToDepot(
     @StaffUserId() staffUserId: string,
@@ -143,7 +143,7 @@ export class DeliveryRoundsController {
     return { id };
   }
 
-  @Post(":roundId/arrets")
+  @Post(":roundId/stops")
   @HttpCode(HttpStatus.CREATED)
   async assign(
     @Param("roundId") roundId: string,
@@ -155,7 +155,7 @@ export class DeliveryRoundsController {
     return { stopId };
   }
 
-  @Post(":roundId/arrets/:stopId/deplacement")
+  @Post(":roundId/stops/:stopId/move")
   @HttpCode(HttpStatus.NO_CONTENT)
   async move(
     @Param("roundId") roundId: string,
@@ -167,7 +167,7 @@ export class DeliveryRoundsController {
     );
   }
 
-  @Put(":roundId/ordre")
+  @Put(":roundId/sequence")
   @HttpCode(HttpStatus.NO_CONTENT)
   async reorder(
     @Param("roundId") roundId: string,
@@ -178,7 +178,7 @@ export class DeliveryRoundsController {
     );
   }
 
-  @Post(":roundId/arrets/:stopId/retrait")
+  @Post(":roundId/stops/:stopId/removal")
   @HttpCode(HttpStatus.NO_CONTENT)
   async remove(
     @Param("roundId") roundId: string,

@@ -27,7 +27,7 @@ import { GetMyLoadingRoundQuery } from "../application/queries/get-my-loading-ro
  * la commande ou la lecture du chargement. Partir reste la route
  * `ma-tournee/:roundId/depart`. Il n'injecte que les bus.
  */
-@Controller("admin/livraison/ma-tournee")
+@Controller("admin/delivery/my-round")
 @AdminSurface("delivery_driving")
 export class MyDeliveryLoadingController {
   constructor(
@@ -35,7 +35,7 @@ export class MyDeliveryLoadingController {
     private readonly queries: QueryBus,
   ) {}
 
-  @Get(":roundId/chargement")
+  @Get(":roundId/loading")
   round(
     @StaffUserId() staffUserId: string,
     @Param("roundId") roundId: string,
@@ -45,7 +45,7 @@ export class MyDeliveryLoadingController {
     );
   }
 
-  @Get(":roundId/chargement/plan")
+  @Get(":roundId/loading/plan")
   plan(
     @StaffUserId() staffUserId: string,
     @Param("roundId") roundId: string,
@@ -55,7 +55,7 @@ export class MyDeliveryLoadingController {
     );
   }
 
-  @Post(":roundId/chargement/bacs")
+  @Post(":roundId/loading/bins")
   @HttpCode(HttpStatus.NO_CONTENT)
   async load(
     @StaffUserId() staffUserId: string,
@@ -67,7 +67,7 @@ export class MyDeliveryLoadingController {
     );
   }
 
-  @Post(":roundId/chargement/bacs/:binId/dechargement")
+  @Post(":roundId/loading/bins/:binId/unloading")
   @HttpCode(HttpStatus.NO_CONTENT)
   async unload(
     @StaffUserId() staffUserId: string,

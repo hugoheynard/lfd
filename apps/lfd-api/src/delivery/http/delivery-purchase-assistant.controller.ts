@@ -22,7 +22,7 @@ import { CrossPurchaseTableQuery } from "../application/queries/cross-purchase-t
  * route se lit sous `delivery_rounds:read`, le droit du simulateur — pas de
  * droit neuf. Il n'injecte que le bus.
  */
-@Controller("admin/livraison/assistant-achat")
+@Controller("admin/delivery/purchase-assistant")
 @AdminSurface("delivery_rounds")
 export class DeliveryPurchaseAssistantController {
   constructor(private readonly queries: QueryBus) {}
@@ -44,7 +44,7 @@ export class DeliveryPurchaseAssistantController {
    * B-D4) : une sélection de véhicules et de formats, candidats ou réels,
    * relus par identifiant. Rien n'est écrit.
    */
-  @Post("tableau")
+  @Post("table")
   @HttpCode(HttpStatus.OK)
   @RequirePermission("delivery_rounds:read")
   table(

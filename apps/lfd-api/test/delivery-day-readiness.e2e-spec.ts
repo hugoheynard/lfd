@@ -61,7 +61,7 @@ async function retakePlan(): Promise<void> {
 
 async function readiness(): Promise<DeliveryDayReadinessView> {
   return jsonBody<DeliveryDayReadinessView>(
-    await admin(ctx).get(`${ROUNDS}/plan-arrete?jour=${DAY}`).expect(200),
+    await admin(ctx).get(`${ROUNDS}/plan-stopped?day=${DAY}`).expect(200),
   );
 }
 
@@ -215,7 +215,7 @@ describe("l'alerte « hors tournée » avant le jour J", () => {
   function sweep() {
     return ctx
       .http()
-      .post("/admin/livraison/hors-tournee/sweep")
+      .post("/admin/delivery/off-round/sweep")
       .set("x-lfc-recompute-token", TEST_RECOMPUTE_TOKEN)
       .expect(200);
   }
@@ -238,7 +238,7 @@ describe("l'alerte « hors tournée » avant le jour J", () => {
     await closeToday();
 
     const view = jsonBody<DeliveryDayReadinessView>(
-      await admin(ctx).get(`${ROUNDS}/plan-arrete?jour=${TODAY}`).expect(200),
+      await admin(ctx).get(`${ROUNDS}/plan-stopped?day=${TODAY}`).expect(200),
     );
     expect(view.arrested).toMatchObject({ due: "today", unplacedCount: 2 });
 
@@ -268,6 +268,6 @@ describe("l'alerte « hors tournée » avant le jour J", () => {
   });
 
   it("sans jeton machine, la route refuse", async () => {
-    await ctx.http().post("/admin/livraison/hors-tournee/sweep").expect(401);
+    await ctx.http().post("/admin/delivery/off-round/sweep").expect(401);
   });
 });

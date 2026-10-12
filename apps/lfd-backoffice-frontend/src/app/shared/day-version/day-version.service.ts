@@ -37,8 +37,8 @@ const JOURNAL_PATHS: Readonly<Record<DayJournal, string>> = {
   orders: 'admin/orders/day-version',
   'supervision-production': 'admin/supervision/production-version',
   production: 'admin/production/version',
-  delivery: 'admin/livraison/version',
-  'my-round': 'admin/livraison/ma-tournee/version',
+  delivery: 'admin/delivery/version',
+  'my-round': 'admin/delivery/my-round/version',
 };
 
 /** Lit la version d'une journée dans un journal — une opération, rien d'autre. */

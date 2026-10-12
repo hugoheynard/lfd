@@ -1,6 +1,6 @@
 import { randomUUID } from "node:crypto";
 /**
- * E2E de **la feuille de route du jour** (`GET admin/livraison/feuille-de-route`,
+ * E2E de **la feuille de route du jour** (`GET admin/delivery/run-sheet`,
  * plan `documentation/livraisons/tournees/plan-preparation-de-tournee.md`, lot 1), sur
  * le vrai Postgres jetable.
  *
@@ -178,13 +178,13 @@ async function place(
 
 async function runSheet(): Promise<DeliveryRunSheetView> {
   return jsonBody<DeliveryRunSheetView>(
-    await staff().get(`/admin/livraison/feuille-de-route?jour=${DAY}`).expect(200),
+    await staff().get(`/admin/delivery/run-sheet?day=${DAY}`).expect(200),
   );
 }
 
 describe("la feuille de route du jour", () => {
   it("refuse un jour mal formé (400)", async () => {
-    await staff().get(`/admin/livraison/feuille-de-route?jour=demain`).expect(400);
+    await staff().get(`/admin/delivery/run-sheet?day=demain`).expect(400);
   });
 
   /**
@@ -392,7 +392,7 @@ describe("la procédure, sous `delivery_procedures`", () => {
     const support = await staffAs("support", true);
 
     const view = jsonBody<DeliveryRunSheetView>(
-      await support.get(`/admin/livraison/feuille-de-route?jour=${DAY}`).expect(200),
+      await support.get(`/admin/delivery/run-sheet?day=${DAY}`).expect(200),
     );
 
     const stop = view.stops.find((entry) => entry.orderId === orderId);
@@ -405,7 +405,7 @@ describe("la procédure, sous `delivery_procedures`", () => {
     const commercial = await staffAs("commercial");
 
     const view = jsonBody<DeliveryRunSheetView>(
-      await commercial.get(`/admin/livraison/feuille-de-route?jour=${DAY}`).expect(200),
+      await commercial.get(`/admin/delivery/run-sheet?day=${DAY}`).expect(200),
     );
 
     const stop = view.stops.find((entry) => entry.orderId === orderId);

@@ -13,11 +13,11 @@ export interface GeocodePurgeSweepReport {
 /**
  * Endpoint **batch** de la purge du cache du géocodage
  * (`documentation/legal/rgpd-purge-du-geocodage.md`). Même porte
- * machine-à-machine que `admin/livraison/journal/sweep` : le `RecomputeGuard`
+ * machine-à-machine que `admin/delivery/journal/sweep` : le `RecomputeGuard`
  * et son jeton. Appelé par le cron nocturne `QUALITY_UPLOAD_SWEEP_CRON`
  * (`container/worker.ts`), juste après le journal de la livraison.
  */
-@Controller("admin/livraison/geocodage/sweep")
+@Controller("admin/delivery/geocoding/sweep")
 @Public()
 @UseGuards(RecomputeGuard)
 export class GeocodePurgeSweepController {

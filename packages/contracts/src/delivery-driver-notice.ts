@@ -9,7 +9,7 @@ import { z } from "zod";
  * le consentement n'est pas une base valable. L'accusé de lecture prouve que
  * le texte a été montré, il n'autorise rien.
  *
- * Routes (`admin/livraison/mes-donnees`, sous `delivery_driving`) :
+ * Routes (`admin/delivery/my-data`, sous `delivery_driving`) :
  * - `GET` → {@link MyDriverNoticeView} : le texte courant, et si la personne
  *   connectée l'a déjà accusé ;
  * - `POST /accuse` (corps {@link AcknowledgeDriverNoticePayload}) → 204,

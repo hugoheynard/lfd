@@ -17,12 +17,12 @@ import { GetRoundPaperPdfQuery } from "../application/queries/get-round-paper-pd
  * `delivery_procedures` (DG-D8) : sans ce droit, le papier part sans étapes,
  * comme la feuille de route. Aucun montant. Il n'injecte que le `QueryBus`.
  */
-@Controller("admin/livraison/tournees")
+@Controller("admin/delivery/rounds")
 @AdminSurface("delivery_rounds")
 export class DeliveryRoundPaperController {
   constructor(private readonly queries: QueryBus) {}
 
-  @Get(":roundId/tournee.pdf")
+  @Get(":roundId/round.pdf")
   async paper(
     @Param("roundId") roundId: string,
     @StaffPermissions() permissions: readonly StaffPermission[],

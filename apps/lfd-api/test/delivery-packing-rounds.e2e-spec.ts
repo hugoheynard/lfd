@@ -19,7 +19,7 @@ import {
 import { BINS, LOADING } from "./delivery-loading-scene.js";
 
 const DAY = serviceDay();
-const ROUNDS = `${LOADING}/colisage/tournees`;
+const ROUNDS = `${LOADING}/packing/rounds`;
 
 let ctx: E2eContext;
 
@@ -65,14 +65,14 @@ async function asRole(role: StaffRole): Promise<ReturnType<E2eContext["asSub"]>>
   return ctx.asSub(sub);
 }
 
-describe("GET colisage/tournees", () => {
+describe("GET packing/rounds", () => {
   it("range les arrêts du dernier au premier, et compte les prêtes au serveur", async () => {
     const { roundId, orders } = await threeStops();
     // Le commerce dit « prête » : c'est sa source, pas celle du fournil.
     await ctx.prisma.order.update({ where: { id: orders[1].id }, data: { status: "ready" } });
 
     const view = jsonBody<DeliveryPackingRoundsView>(
-      await admin(ctx).get(`${ROUNDS}?jour=${DAY}`).expect(200),
+      await admin(ctx).get(`${ROUNDS}?day=${DAY}`).expect(200),
     );
 
     expect(view.day).toBe(DAY);
@@ -88,21 +88,21 @@ describe("GET colisage/tournees", () => {
   });
 
   it("refuse un jour mal formé (400)", async () => {
-    await admin(ctx).get(`${ROUNDS}?jour=demain`).expect(400);
+    await admin(ctx).get(`${ROUNDS}?day=demain`).expect(400);
   });
 
   it("s'ouvre à qui ouvre le poste (support : colisage en lecture), pas à la communication", async () => {
-    await (await asRole("support")).get(`${ROUNDS}?jour=${DAY}`).expect(200);
-    await (await asRole("communication")).get(`${ROUNDS}?jour=${DAY}`).expect(403);
+    await (await asRole("support")).get(`${ROUNDS}?day=${DAY}`).expect(200);
+    await (await asRole("communication")).get(`${ROUNDS}?day=${DAY}`).expect(403);
   });
 });
 
-describe("GET colisage/bacs?commande= — l'étiquette porte la tournée (PC3)", () => {
+describe("GET packing/bins?order= — l'étiquette porte la tournée (PC3)", () => {
   it("rend la tournée et la position de l'arrêt de la commande", async () => {
     const { roundId, orders } = await threeStops();
 
     const view = jsonBody<DeliveryOrderBinsView>(
-      await admin(ctx).get(`${BINS}?commande=${orders[1].id}`).expect(200),
+      await admin(ctx).get(`${BINS}?order=${orders[1].id}`).expect(200),
     );
 
     expect(view.round).toMatchObject({ roundId, day: DAY, position: 2, departedAt: null });
@@ -112,7 +112,7 @@ describe("GET colisage/bacs?commande= — l'étiquette porte la tournée (PC3)",
     const order = await seedDelivery(ctx, DAY);
 
     const view = jsonBody<DeliveryOrderBinsView>(
-      await admin(ctx).get(`${BINS}?commande=${order.id}`).expect(200),
+      await admin(ctx).get(`${BINS}?order=${order.id}`).expect(200),
     );
 
     expect(view.round).toBeNull();

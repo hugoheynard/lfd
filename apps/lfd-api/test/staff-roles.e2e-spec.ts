@@ -94,9 +94,9 @@ const SURFACES: readonly { readonly resource: StaffResource; readonly path: stri
    * La LIVRAISON (2026-09-29, plan de tournée Q7/Q8) — la feuille de route
    * sortie de `b2b_orders`, et les réglages de la flotte et du départ.
    */
-  { resource: "delivery_run_sheet", path: "/admin/livraison/feuille-de-route?jour=2026-01-01" },
-  { resource: "delivery_settings", path: "/admin/livraison/vehicules" },
-  { resource: "delivery_settings", path: "/admin/livraison/depart" },
+  { resource: "delivery_run_sheet", path: "/admin/delivery/run-sheet?day=2026-01-01" },
+  { resource: "delivery_settings", path: "/admin/delivery/vehicles" },
+  { resource: "delivery_settings", path: "/admin/delivery/departure" },
   /**
    * La DISPONIBILITÉ DE LA LIVRAISON (2026-10-10) — sortie de `b2b_settings`
    * avec l'écran des zones. `delivery_fee` n'a pas de lecture staff à
@@ -107,12 +107,12 @@ const SURFACES: readonly { readonly resource: StaffResource; readonly path: stri
    * COMPOSER LES TOURNÉES (2026-09-29, plan de tournée lot 3, Q12) — lecture
    * et écriture pour l'administrateur et le comptoir.
    */
-  { resource: "delivery_rounds", path: "/admin/livraison/tournees?jour=2026-01-01" },
+  { resource: "delivery_rounds", path: "/admin/delivery/rounds?day=2026-01-01" },
   /**
    * LE CHARGEMENT (2026-09-29, plan de tournée lot 4, Q21) — lecture et
    * écriture pour l'administrateur et le comptoir.
    */
-  { resource: "delivery_loading", path: "/admin/livraison/chargement?jour=2026-01-01" },
+  { resource: "delivery_loading", path: "/admin/delivery/loading?day=2026-01-01" },
 ];
 
 /** Le produit cartésien rôle × surface : tout ce qu'il y a à vérifier. */

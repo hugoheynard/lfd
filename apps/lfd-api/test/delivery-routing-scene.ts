@@ -28,8 +28,8 @@ import { binTypeId, LOADING } from "./delivery-loading-scene.js";
 import { admin, ROUNDS } from "./delivery-rounds-scene.js";
 import { attachTo, createCompany, createUser } from "./factories.js";
 
-export const PROPOSAL = `${ROUNDS}/proposition`;
-export const TIMING = `${PROPOSAL}/chronometrer`;
+export const PROPOSAL = `${ROUNDS}/proposal`;
+export const TIMING = `${PROPOSAL}/time`;
 
 /**
  * **La carte routière, doublée** (L10b-C5) — une frontière SORTANTE, comme
@@ -76,7 +76,7 @@ export const BREAD_PER_BIN = 10;
 export async function seedBinCatalog(ctx: E2eContext): Promise<string> {
   const typeId = await binTypeId(ctx);
   await admin(ctx)
-    .put(`${LOADING}/contenances`)
+    .put(`${LOADING}/capacities`)
     .send({ binTypeId: typeId, sku: BREAD_SKU, units: BREAD_PER_BIN })
     .expect(204);
   return typeId;

@@ -10,7 +10,9 @@ import { GetDeliveryBinQuery } from "../application/queries/get-delivery-bin.que
 import { GetDeliveryOrderBinsQuery } from "../application/queries/get-delivery-order-bins.query.js";
 
 /** La commande dont on lit les bacs, validée dans sa FORME. */
-const orderQuerySchema = z.object({ commande: z.string().trim().min(1, "commande requise") });
+const orderQuerySchema = z.object({
+  order: z.string().trim().min(1, "order requis (identifiant de la commande)"),
+});
 type OrderQuery = z.infer<typeof orderQuerySchema>;
 
 /**
@@ -23,7 +25,7 @@ type OrderQuery = z.infer<typeof orderQuerySchema>;
  * un bac naît au poste de colisage, par `BinDesk`, et les routes
  * `POST`, `POST partage` et `GET partenaires` sont retirées.
  *
- * Sous `admin/livraison/colisage/bacs` : `admin/livraison/bacs` est le
+ * Sous `admin/delivery/packing/bins` : `admin/delivery/bins` est le
  * CATALOGUE des types (tranche A), un réglage — un bac déclaré est un fait du
  * colisage d'une commande.
  *
@@ -49,7 +51,7 @@ type OrderQuery = z.infer<typeof orderQuerySchema>;
  * PANNEAU du geste, que la lecture du
  * colisage n'ouvre pas (plan 5.3 ; `gesture-rights.e2e-spec.ts` le tient).
  */
-@Controller("admin/livraison/colisage/bacs")
+@Controller("admin/delivery/packing/bins")
 @AdminSurface("delivery_loading")
 export class DeliveryBinsController {
   constructor(
@@ -63,7 +65,7 @@ export class DeliveryBinsController {
     @Query(new ZodQuery(orderQuerySchema)) query: OrderQuery,
   ): Promise<DeliveryOrderBinsView> {
     return this.queries.execute<GetDeliveryOrderBinsQuery, DeliveryOrderBinsView>(
-      new GetDeliveryOrderBinsQuery(query.commande),
+      new GetDeliveryOrderBinsQuery(query.order),
     );
   }
 
@@ -75,7 +77,7 @@ export class DeliveryBinsController {
     );
   }
 
-  @Post(":binId/annulation")
+  @Post(":binId/cancellation")
   @RequireAnyPermission("production_packing:write", "delivery_loading:write")
   @HttpCode(HttpStatus.NO_CONTENT)
   async void(@Param("binId") binId: string): Promise<void> {

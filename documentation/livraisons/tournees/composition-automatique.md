@@ -370,7 +370,7 @@ flowchart TD
   Clé `(jour, nombre hors tournée)` : une par jour et par compte ; un compte
   qui change sonne de nouveau, un compte déjà sonné (même la veille) non.
 - **Aucune deuxième planification** : la route machine
-  `POST /admin/livraison/hors-tournee/sweep` (`RecomputeGuard`, même jeton)
+  `POST /admin/delivery/off-round/sweep` (`RecomputeGuard`, même jeton)
   est appelée par le cron de rafraîchissement `*/5` (`refreshSweeps`,
   `container/worker.ts`), à côté du tour de l'arrêt du plan du fournil. Au
   plus cinq minutes de retard sur 16 h. Aucune table, aucune migration :
@@ -553,7 +553,7 @@ flowchart TD
      tournées neuves. « Insérer » et l'affectation à la main gardent, eux, les
      tournées chargées éligibles (décision du 2026-09-29, § 4).
    - **La lecture** : une query à part, `GET
-/admin/livraison/tournees/places-suggerees?jour=`
+/admin/delivery/rounds/suggested-slots?day=`
      (`GetDeliveryPlacementSuggestionsQuery`). « Insérer » place les
      commandes ENSEMBLE et améliore ; la suggestion les juge une à une : ce
      n'est pas le même calcul, et l'écran l'appelle à chaque lecture du jour,

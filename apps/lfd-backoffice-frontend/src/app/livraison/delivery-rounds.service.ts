@@ -16,10 +16,10 @@ import { firstValueFrom } from 'rxjs';
 
 import { B2B_API_BASE } from '../api/api-config';
 
-const ROUNDS = `${B2B_API_BASE}/admin/livraison/tournees`;
+const ROUNDS = `${B2B_API_BASE}/admin/delivery/rounds`;
 
 function stopUrl(roundId: string, stopId: string): string {
-  return `${ROUNDS}/${encodeURIComponent(roundId)}/arrets/${encodeURIComponent(stopId)}`;
+  return `${ROUNDS}/${encodeURIComponent(roundId)}/stops/${encodeURIComponent(stopId)}`;
 }
 
 /**
@@ -41,7 +41,7 @@ export class DeliveryRoundsService {
    */
   roundPdf(roundId: string): Promise<Blob> {
     return firstValueFrom(
-      this.http.get(`${ROUNDS}/${encodeURIComponent(roundId)}/tournee.pdf`, {
+      this.http.get(`${ROUNDS}/${encodeURIComponent(roundId)}/round.pdf`, {
         responseType: 'blob',
       }),
     );
@@ -49,7 +49,7 @@ export class DeliveryRoundsService {
 
   day(day: string): Promise<DeliveryRoundsDayView> {
     return firstValueFrom(
-      this.http.get<DeliveryRoundsDayView>(`${ROUNDS}?jour=${encodeURIComponent(day)}`),
+      this.http.get<DeliveryRoundsDayView>(`${ROUNDS}?day=${encodeURIComponent(day)}`),
     );
   }
 
@@ -57,7 +57,7 @@ export class DeliveryRoundsService {
   readiness(day: string): Promise<DeliveryDayReadinessView> {
     return firstValueFrom(
       this.http.get<DeliveryDayReadinessView>(
-        `${ROUNDS}/plan-arrete?jour=${encodeURIComponent(day)}`,
+        `${ROUNDS}/plan-stopped?day=${encodeURIComponent(day)}`,
       ),
     );
   }
@@ -67,9 +67,7 @@ export class DeliveryRoundsService {
   }
 
   async assign(roundId: string, payload: AssignDeliveryStopPayload): Promise<void> {
-    await firstValueFrom(
-      this.http.post(`${ROUNDS}/${encodeURIComponent(roundId)}/arrets`, payload),
-    );
+    await firstValueFrom(this.http.post(`${ROUNDS}/${encodeURIComponent(roundId)}/stops`, payload));
   }
 
   async move(roundId: string, stopId: string, payload: MoveDeliveryStopPayload): Promise<void> {
@@ -77,7 +75,9 @@ export class DeliveryRoundsService {
   }
 
   async reorder(roundId: string, payload: ReorderDeliveryRoundPayload): Promise<void> {
-    await firstValueFrom(this.http.put(`${ROUNDS}/${encodeURIComponent(roundId)}/ordre`, payload));
+    await firstValueFrom(
+      this.http.put(`${ROUNDS}/${encodeURIComponent(roundId)}/sequence`, payload),
+    );
   }
 
   async remove(roundId: string, stopId: string, payload: RemoveDeliveryStopPayload): Promise<void> {
@@ -86,23 +86,21 @@ export class DeliveryRoundsService {
 
   /** Qui peut conduire : le droit EFFECTIF `delivery_driving:write` (MT-D2 v2). */
   drivers(): Promise<DeliveryDriversView> {
-    return firstValueFrom(this.http.get<DeliveryDriversView>(`${ROUNDS}/livreurs`));
+    return firstValueFrom(this.http.get<DeliveryDriversView>(`${ROUNDS}/drivers`));
   }
 
   async assignDriver(roundId: string, payload: AssignDeliveryDriverPayload): Promise<void> {
-    await firstValueFrom(
-      this.http.put(`${ROUNDS}/${encodeURIComponent(roundId)}/livreur`, payload),
-    );
+    await firstValueFrom(this.http.put(`${ROUNDS}/${encodeURIComponent(roundId)}/driver`, payload));
   }
 
   async unassignDriver(roundId: string, payload: UnassignDeliveryDriverPayload): Promise<void> {
     await firstValueFrom(
-      this.http.post(`${ROUNDS}/${encodeURIComponent(roundId)}/livreur/retrait`, payload),
+      this.http.post(`${ROUNDS}/${encodeURIComponent(roundId)}/driver/removal`, payload),
     );
   }
 
   /** « Déclarer rentrée » depuis Tournées (PL2), sous `delivery_rounds:write` — rejouée, pareil. */
   async returnToDepot(roundId: string): Promise<void> {
-    await firstValueFrom(this.http.post(`${ROUNDS}/${encodeURIComponent(roundId)}/retour`, null));
+    await firstValueFrom(this.http.post(`${ROUNDS}/${encodeURIComponent(roundId)}/return`, null));
   }
 }

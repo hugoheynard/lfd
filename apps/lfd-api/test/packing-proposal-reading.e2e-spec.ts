@@ -93,14 +93,14 @@ async function withLines(
 
 async function setCapacity(binType: string, sku: string, units: number): Promise<void> {
   await admin(ctx)
-    .put(`${LOADING}/contenances`)
+    .put(`${LOADING}/capacities`)
     .send({ binTypeId: binType, sku, units })
     .expect(204);
 }
 
 async function isothermType(): Promise<string> {
   const response = await admin(ctx)
-    .post(`${LOADING}/bacs`)
+    .post(`${LOADING}/bins`)
     .send({
       name: "Bac S isotherme e2e",
       outer: { lengthMm: 400, widthMm: 300, heightMm: 200 },
@@ -199,11 +199,11 @@ describe("GET …/proposal", () => {
     await declareTypedBins(ctx, { orderId: orders[2].id, whole: 1, half: false, innerBags: 0 });
     for (const orderId of orders.map((order) => order.id)) {
       const { bins } = jsonBody<{ bins: { binId: string }[] }>(
-        await admin(ctx).get(`${BINS}?commande=${orderId}`).expect(200),
+        await admin(ctx).get(`${BINS}?order=${orderId}`).expect(200),
       );
       for (const bin of bins) {
         await admin(ctx)
-          .post(`${LOADING}/chargement/${roundId}/bacs`)
+          .post(`${LOADING}/loading/${roundId}/bins`)
           .send({ binId: bin.binId })
           .expect(204);
       }

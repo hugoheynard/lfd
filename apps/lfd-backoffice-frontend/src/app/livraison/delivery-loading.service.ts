@@ -13,9 +13,9 @@ import { firstValueFrom } from 'rxjs';
 
 import { B2B_API_BASE } from '../api/api-config';
 
-const BASE = `${B2B_API_BASE}/admin/livraison`;
-/** Les bacs DÉCLARÉS — `admin/livraison/bacs` est le catalogue des types (tranche A). */
-const BINS = `${BASE}/colisage/bacs`;
+const BASE = `${B2B_API_BASE}/admin/delivery`;
+/** Les bacs DÉCLARÉS — `admin/delivery/bins` est le catalogue des types (tranche A). */
+const BINS = `${BASE}/packing/bins`;
 
 function id(value: string): string {
   return encodeURIComponent(value);
@@ -45,13 +45,13 @@ export class DeliveryLoadingService {
    */
   packingRounds(day: string): Promise<DeliveryPackingRoundsView> {
     return firstValueFrom(
-      this.http.get<DeliveryPackingRoundsView>(`${BASE}/colisage/tournees?jour=${id(day)}`),
+      this.http.get<DeliveryPackingRoundsView>(`${BASE}/packing/rounds?day=${id(day)}`),
     );
   }
 
   /** Les bacs d'une commande — pour l'étiquetage. Une lecture : imprimer ne crée rien. */
   orderBins(orderId: string): Promise<DeliveryOrderBinsView> {
-    return firstValueFrom(this.http.get<DeliveryOrderBinsView>(`${BINS}?commande=${id(orderId)}`));
+    return firstValueFrom(this.http.get<DeliveryOrderBinsView>(`${BINS}?order=${id(orderId)}`));
   }
 
   /** Ce qu'on voit en ouvrant le QR d'un bac. Ouvrir n'écrit rien (L4-C13). */
@@ -60,40 +60,38 @@ export class DeliveryLoadingService {
   }
 
   async voidBin(binId: string): Promise<void> {
-    await firstValueFrom(this.http.post(`${BINS}/${id(binId)}/annulation`, {}));
+    await firstValueFrom(this.http.post(`${BINS}/${id(binId)}/cancellation`, {}));
   }
 
   /** Les tournées d'un jour, vues du dépôt — sous `delivery_loading:read` seul. */
   day(day: string): Promise<DeliveryLoadingDayView> {
-    return firstValueFrom(
-      this.http.get<DeliveryLoadingDayView>(`${BASE}/chargement?jour=${id(day)}`),
-    );
+    return firstValueFrom(this.http.get<DeliveryLoadingDayView>(`${BASE}/loading?day=${id(day)}`));
   }
 
   round(roundId: string): Promise<DeliveryLoadingRoundView> {
     return firstValueFrom(
-      this.http.get<DeliveryLoadingRoundView>(`${BASE}/chargement/${id(roundId)}`),
+      this.http.get<DeliveryLoadingRoundView>(`${BASE}/loading/${id(roundId)}`),
     );
   }
 
   /** Le plan de chargement (L4b-C7, v2-5) : un ordre SUGGÉRÉ et un volume. Une lecture. */
   plan(roundId: string): Promise<DeliveryLoadingPlanView> {
     return firstValueFrom(
-      this.http.get<DeliveryLoadingPlanView>(`${BASE}/chargement/${id(roundId)}/plan`),
+      this.http.get<DeliveryLoadingPlanView>(`${BASE}/loading/${id(roundId)}/plan`),
     );
   }
 
   async load(roundId: string, payload: LoadDeliveryBinPayload): Promise<void> {
-    await firstValueFrom(this.http.post(`${BASE}/chargement/${id(roundId)}/bacs`, payload));
+    await firstValueFrom(this.http.post(`${BASE}/loading/${id(roundId)}/bins`, payload));
   }
 
   async unload(roundId: string, binId: string): Promise<void> {
     await firstValueFrom(
-      this.http.post(`${BASE}/chargement/${id(roundId)}/bacs/${id(binId)}/dechargement`, {}),
+      this.http.post(`${BASE}/loading/${id(roundId)}/bins/${id(binId)}/unloading`, {}),
     );
   }
 
   async depart(roundId: string, version: number): Promise<void> {
-    await firstValueFrom(this.http.post(`${BASE}/tournees/${id(roundId)}/depart`, { version }));
+    await firstValueFrom(this.http.post(`${BASE}/rounds/${id(roundId)}/departure`, { version }));
   }
 }

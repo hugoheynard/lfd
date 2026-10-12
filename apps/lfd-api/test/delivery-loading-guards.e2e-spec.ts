@@ -89,7 +89,7 @@ describe("les gestes concurrents sur un même bac", () => {
     const [binId] = await declareBins(ctx, order.id, 1);
 
     await Promise.all([
-      admin(ctx).post(`${BINS}/${binId ?? ""}/annulation`),
+      admin(ctx).post(`${BINS}/${binId ?? ""}/cancellation`),
       loadBin(ctx, roundId, { binId: binId ?? "" }),
     ]);
 
@@ -123,7 +123,7 @@ describe("les bacs chargés ne bougent pas en silence", () => {
     await loadBin(ctx, roundId, { binId: binId ?? "" }).expect(204);
 
     const refused = await admin(ctx)
-      .post(`${BINS}/${binId ?? ""}/annulation`)
+      .post(`${BINS}/${binId ?? ""}/cancellation`)
       .expect(409);
 
     expect(messageOf(refused)).toContain("déchargez-le d'abord");
@@ -137,7 +137,7 @@ describe("les bacs chargés ne bougent pas en silence", () => {
     await loadBin(ctx, from.roundId, { binId: binId ?? "" }).expect(204);
 
     const refused = await admin(ctx)
-      .post(`${ROUNDS}/${from.roundId}/arrets/${from.stopId}/deplacement`)
+      .post(`${ROUNDS}/${from.roundId}/stops/${from.stopId}/move`)
       .send({
         toRoundId: to.roundId,
         fromVersion: (await roundOf(ctx, DAY, from.roundId)).version,
@@ -198,7 +198,7 @@ describe("« Partir » refusé tant qu'un arrêt n'est pas chargé (Q14)", () =>
     const { roundId, order } = await composedOrder(ctx, DAY, "Kangoo");
     const [kept, extra] = await declareBins(ctx, order.id, 2);
     await admin(ctx)
-      .post(`${BINS}/${extra ?? ""}/annulation`)
+      .post(`${BINS}/${extra ?? ""}/cancellation`)
       .expect(204);
     await loadBin(ctx, roundId, { binId: kept ?? "" }).expect(204);
 
@@ -226,9 +226,9 @@ describe("le droit `delivery_loading` (Q21)", () => {
     const { roundId } = await composedOrder(ctx, DAY, "Kangoo");
     const support = await asRole("support");
 
-    await support.get(`${LOADING}/chargement/${roundId}`).expect(403);
-    await support.get(`${LOADING}/chargement?jour=${DAY}`).expect(403);
-    await support.post(`${LOADING}/tournees/${roundId}/depart`).send({ version: 1 }).expect(403);
+    await support.get(`${LOADING}/loading/${roundId}`).expect(403);
+    await support.get(`${LOADING}/loading?day=${DAY}`).expect(403);
+    await support.post(`${LOADING}/rounds/${roundId}/departure`).send({ version: 1 }).expect(403);
     expect(await ctx.prisma.deliveryBin.count()).toBe(0);
   });
 
@@ -240,6 +240,6 @@ describe("le droit `delivery_loading` (Q21)", () => {
     const counter = await asRole("comptoir");
 
     const [binId] = await declareBins(ctx, order.id, 1);
-    await counter.post(`${LOADING}/chargement/${roundId}/bacs`).send({ binId }).expect(204);
+    await counter.post(`${LOADING}/loading/${roundId}/bins`).send({ binId }).expect(204);
   });
 });

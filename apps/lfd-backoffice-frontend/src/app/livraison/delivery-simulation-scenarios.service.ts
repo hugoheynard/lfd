@@ -11,8 +11,8 @@ import { firstValueFrom } from 'rxjs';
 
 import { B2B_API_BASE } from '../api/api-config';
 
-const SCENARIOS = `${B2B_API_BASE}/admin/livraison/simulateur/scenarios`;
-const FROM_DAY = `${B2B_API_BASE}/admin/livraison/simulateur/depuis-journee`;
+const SCENARIOS = `${B2B_API_BASE}/admin/delivery/simulator/scenarios`;
+const FROM_DAY = `${B2B_API_BASE}/admin/delivery/simulator/from-day`;
 
 /**
  * **Les scénarios du simulateur** (`plan-preparation-de-tournee.md`, lot 9,
@@ -44,17 +44,17 @@ export class DeliverySimulationScenariosService {
   }
 
   async duplicate(id: string): Promise<void> {
-    await firstValueFrom(this.http.post(`${SCENARIOS}/${encodeURIComponent(id)}/dupliquer`, null));
+    await firstValueFrom(this.http.post(`${SCENARIOS}/${encodeURIComponent(id)}/duplicate`, null));
   }
 
   async archive(id: string): Promise<void> {
-    await firstValueFrom(this.http.post(`${SCENARIOS}/${encodeURIComponent(id)}/archiver`, null));
+    await firstValueFrom(this.http.post(`${SCENARIOS}/${encodeURIComponent(id)}/archive`, null));
   }
 
   fromDay(day: string): Promise<DeliverySimulationFromDayView> {
     return firstValueFrom(
       this.http.get<DeliverySimulationFromDayView>(FROM_DAY, {
-        params: new HttpParams().set('jour', day),
+        params: new HttpParams().set('day', day),
       }),
     );
   }

@@ -12,9 +12,9 @@ import { DeliveryLoadingService } from './delivery-loading.service';
  * chargement et son plan ont besoin, sans dire par quelle porte.
  *
  * Deux portes servent les MÊMES vues et les MÊMES corps
- * (`delivery-my-round.ts`, PL1) : celle du dépôt (`admin/livraison/chargement`,
+ * (`delivery-my-round.ts`, PL1) : celle du dépôt (`admin/delivery/loading`,
  * sous `delivery_loading`), et celle du livreur
- * (`admin/livraison/ma-tournee/:roundId/chargement`, sous `delivery_driving`,
+ * (`admin/delivery/my-round/:roundId/loading`, sous `delivery_driving`,
  * murée à SES tournées). Les composants du chargement dépendent de cette
  * abstraction ; la page qui les héberge choisit la porte.
  *

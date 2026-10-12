@@ -28,7 +28,7 @@ import { ADMIN_VERIFIER_OVERRIDE, forgetCustomer } from "./delivery-rounds-scene
 import { forgetRoutingScene } from "./delivery-routing-scene.js";
 import { bootstrapE2e, E2E_STAFF_SUB, jsonBody, type E2eContext } from "./e2e-harness.js";
 
-const GLOBAL = "/admin/livraison/a-la-porte";
+const GLOBAL = "/admin/delivery/doorstep";
 
 /** Les réglages de la livraison, sans les conditions : ce que le global n'exige plus. */
 const SETTINGS_ONLY_ROLE = {
@@ -145,7 +145,7 @@ describe("la décision réglée d'avance à la porte (B3 bis)", () => {
     });
     const version = (await myRound(paul.agent, roundId)).version;
     await paul.agent
-      .post(`${MY_ROUND}/${roundId}/arrets/${stopId}/depot`)
+      .post(`${MY_ROUND}/${roundId}/stops/${stopId}/drop-off`)
       .field("version", String(version))
       .attach("photo", JPEG, "depot.jpg")
       .expect(204);

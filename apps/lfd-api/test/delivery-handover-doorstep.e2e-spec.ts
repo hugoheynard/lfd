@@ -95,7 +95,7 @@ async function handOver(
 ): Promise<Response> {
   const version = (await myRound(agent, roundId)).version;
   let call = agent
-    .post(`${MY_ROUND}/${roundId}/arrets/${stopId}/remise`)
+    .post(`${MY_ROUND}/${roundId}/stops/${stopId}/handover`)
     .field("version", String(version))
     .field("receiverName", pieces.name ?? "Mme Durand");
   if (pieces.photo ?? true) {
@@ -181,7 +181,7 @@ describe("« Remis au client » (B1)", () => {
     const { roundId, orderId, stopId } = await departedStop(paul);
     await ctx.prisma.order.update({ where: { id: orderId }, data: { status: "cancelled" } });
     await paul.agent
-      .post(`${MY_ROUND}/${roundId}/arrets/${stopId}/cloture-sans-remise`)
+      .post(`${MY_ROUND}/${roundId}/stops/${stopId}/close-without-handover`)
       .send({ version: (await myRound(paul.agent, roundId)).version })
       .expect(204);
 
@@ -220,7 +220,7 @@ describe("« Remis au client » (B1)", () => {
     const version = (await myRound(paul.agent, roundId)).version;
 
     await lea.agent
-      .post(`${MY_ROUND}/${roundId}/arrets/${stopId}/remise`)
+      .post(`${MY_ROUND}/${roundId}/stops/${stopId}/handover`)
       .field("version", String(version))
       .field("receiverName", "Mme Durand")
       .attach("photo", JPEG, "remise.jpg")

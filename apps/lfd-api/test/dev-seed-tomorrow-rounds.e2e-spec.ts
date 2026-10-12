@@ -52,7 +52,7 @@ afterAll(async () => {
 
 async function propose(query: string): Promise<DeliveryRoundProposalView> {
   return jsonBody<DeliveryRoundProposalView>(
-    await admin(ctx).get(`${PROPOSAL}?jour=${tomorrow}&${query}`).expect(200),
+    await admin(ctx).get(`${PROPOSAL}?day=${tomorrow}&${query}`).expect(200),
   );
 }
 
@@ -161,7 +161,7 @@ describe("les tournées de demain du semis", () => {
         select: { id: true },
       });
       expect(two).toHaveLength(2);
-      const view = await propose(`mode=new_rounds&vehicules=${two.map((v) => v.id).join(",")}`);
+      const view = await propose(`mode=new_rounds&vehicles=${two.map((v) => v.id).join(",")}`);
 
       expect(view.rounds.length).toBeLessThanOrEqual(2);
       expect(view.unfit.length + view.overflow.length).toBeGreaterThan(0);

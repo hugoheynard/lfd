@@ -5,7 +5,7 @@ import { firstValueFrom } from 'rxjs';
 
 import { B2B_API_BASE } from '../api/api-config';
 
-const MY_NOTICE = `${B2B_API_BASE}/admin/livraison/mes-donnees`;
+const MY_NOTICE = `${B2B_API_BASE}/admin/delivery/my-data`;
 
 /**
  * **« Mes données »** — le texte d'information du livreur et son accusé
@@ -22,6 +22,6 @@ export class DriverNoticeService {
 
   /** « J'ai compris » — la version LUE ; rejouée, la route répond pareil. */
   async acknowledge(version: number): Promise<void> {
-    await firstValueFrom(this.http.post(`${MY_NOTICE}/accuse`, { version }));
+    await firstValueFrom(this.http.post(`${MY_NOTICE}/acknowledgement`, { version }));
   }
 }

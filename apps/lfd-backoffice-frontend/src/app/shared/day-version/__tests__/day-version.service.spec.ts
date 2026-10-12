@@ -22,7 +22,7 @@ describe('DayVersionService', () => {
   it('lit la journée de la livraison sur sa route', async () => {
     const asked = TestBed.inject(DayVersionService).version('delivery', '2026-10-02');
     http
-      .expectOne(`${B2B_API_BASE}/admin/livraison/version?date=2026-10-02`)
+      .expectOne(`${B2B_API_BASE}/admin/delivery/version?date=2026-10-02`)
       .flush({ date: '2026-10-02', version: 7 });
     expect(await asked).toBe(7);
   });

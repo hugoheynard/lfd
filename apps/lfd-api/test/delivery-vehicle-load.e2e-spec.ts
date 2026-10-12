@@ -19,7 +19,7 @@ const stubAdminVerifier = {
     Promise.resolve({ subject: token, scopes: [] }),
 };
 
-const VEHICLES = "/admin/livraison/vehicules";
+const VEHICLES = "/admin/delivery/vehicles";
 
 /** Un grand fourgon : 330 × 170 × 176 cm = 9 873 L, et 400 L de froid. */
 const CARGO = { lengthCm: 330, widthCm: 170, heightCm: 176 };

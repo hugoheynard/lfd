@@ -13,7 +13,7 @@ import {
   seedDeparture,
 } from "./delivery-routing-scene.js";
 
-const SIMULATOR = "/admin/livraison/simulateur";
+const SIMULATOR = "/admin/delivery/simulator";
 
 let ctx: E2eContext;
 
@@ -67,7 +67,7 @@ async function deliveryCounts(): Promise<readonly number[]> {
   ]);
 }
 
-describe("POST admin/livraison/simulateur (L9-C1)", () => {
+describe("POST admin/delivery/simulator (L9-C1)", () => {
   it("rend une proposition depuis le point de départ réglé, et n'écrit rien", async () => {
     await seedDeparture(ctx);
     const before = await deliveryCounts();

@@ -109,12 +109,14 @@
       </div>
 
       @if (!preview.active()) {
-        <app-day-readiness-banner
-          [day]="day()"
-          [refresh]="state()"
-          [canWrite]="canWrite()"
-          (propose)="plannerOpen.set(true)"
-        />
+        @if (lastLoad(); as loaded) {
+          <app-day-readiness-banner
+            [day]="loaded.day"
+            [refresh]="loaded.count"
+            [canWrite]="canWrite()"
+            (propose)="plannerOpen.set(true)"
+          />
+        }
       }
 
       @if (preview.proposal(); as proposal) {

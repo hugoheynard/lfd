@@ -5,7 +5,7 @@ import type { DeliveryBinHalf } from "./delivery-loading.js";
  * place des piles au sol (`documentation/livraisons/tournees/plan-preparation-de-tournee.md`,
  * lot 4 bis, L4b-C7 et v2-5, tranche D ; `plan-geometrie-du-plancher.md`, G-D4).
  *
- * `GET admin/livraison/chargement/:roundId/plan` → {@link DeliveryLoadingPlanView},
+ * `GET admin/delivery/loading/:roundId/plan` → {@link DeliveryLoadingPlanView},
  * sous `delivery_loading:read` — le droit des autres lectures du chargement.
  *
  * Le plan SUGGÈRE un ordre de scan ; il ne l'impose pas : charger un bac hors

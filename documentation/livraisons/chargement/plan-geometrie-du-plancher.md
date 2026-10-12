@@ -83,7 +83,7 @@ flowchart TB
   S --> A
   W --> B
   S --> B
-  A --> QA["POST admin/livraison/assistant-achat<br/>lecture, aucune table"]
+  A --> QA["POST admin/delivery/purchase-assistant<br/>lecture, aucune table"]
   B --> QB["GET plan de chargement<br/>+ positions des piles"]
 ```
 
@@ -202,7 +202,7 @@ du volume du véhicule, ce qui limite la hauteur (la pile ou le plafond), et
 les rangées (position, sens, nombre) pour dessiner le plancher.
 
 **Surface** : une **lecture**, comme le simulateur de tournée (lot 9) —
-`POST admin/livraison/assistant-achat` parce que le scénario est un corps. Ni
+`POST admin/delivery/purchase-assistant` parce que le scénario est un corps. Ni
 table, ni journal. Droit : `delivery_rounds:read`, celui du simulateur ; pas
 de droit neuf. Bornes : 10 formats, dimensions dans les bornes de
 `CargoSpace` (1 à 1 000 cm) et de `BinTypeDimensions` (10 à 3 000 mm,
@@ -281,7 +281,7 @@ nouvelles clés (`onVehicle`, comme `cargo` le 2026-09-30).
 | Lot                                                 | Contenu                                                                                                                                                                                    | Qui                               |
 | --------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ | --------------------------------- |
 | **G1** ✅ 2026-09-30 (`4318e1430`)                  | `CargoFloor`, `WheelArches`, `freeWidthMm` (d'abord `freeWidthCm`), `stackLevels` — pur, tests aux bords (saillie ≥ demi-largeur, passage au ras du fond, tranche qui effleure le passage) | `batisseur` + `sonic-unit-tester` |
-| **G2** ✅ 2026-09-30 (`4318e1430`)                  | Stratégie A + `POST admin/livraison/assistant-achat` + contrat + e2e (200 sans écriture, 400 bornes, 403)                                                                                  | `batisseur`                       |
+| **G2** ✅ 2026-09-30 (`4318e1430`)                  | Stratégie A + `POST admin/delivery/purchase-assistant` + contrat + e2e (200 sans écriture, 400 bornes, 403)                                                                                | `batisseur`                       |
 | **G3** ✅ 2026-09-30 (`57c88aabd`)                  | Onglet **« Assistant d'achat »** de l'espace Livraison : la maquette, reliée à l'API, pré-remplie par les véhicules et les types en service                                                | `pablo`                           |
 | **G4** ✅ 2026-09-30 (`4715142a7`, `f62dbbf3b`)     | Passages de roue sur le véhicule : migration additive, écran Véhicules, journal                                                                                                            | `batisseur` + `pablo`             |
 | **G2 bis** ✅ 2026-09-30 (`a18d3ad31`, `f62dbbf3b`) | Empiler par-dessus les passages de roue (G-D2 bis) : `maximize-format`, contrat, plancher de l'écran                                                                                       | `batisseur` + `pablo`             |

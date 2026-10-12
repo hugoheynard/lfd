@@ -5,11 +5,20 @@ import type { DeliveryRoundsDayView, DeliveryRunSheetView } from '@lfd/contracts
 import { afterEach, describe, expect, it, vi } from 'vitest';
 
 import { PermissionsStore } from '../../auth/permissions.store';
+import { type DayWatch, DayVersionWatcher } from '../../shared/day-version/day-version-watcher';
 import { DeliveryRoundsService } from '../delivery-rounds.service';
 import { parisDayOf, shiftDay } from '../run-sheet';
 import { stopOf } from '../run-sheet.fixture';
 import { RunSheetService } from '../run-sheet.service';
 import { DeliveryPage } from './livraison-page';
+
+/** Le veilleur de journée, doublé : le test déclenche la relecture qu'on lui confie. */
+const watched: DayWatch[] = [];
+const fakeWatcher = {
+  watch: (spec: DayWatch): void => {
+    watched.push(spec);
+  },
+};
 
 async function mount(
   read: (day: string) => Promise<DeliveryRunSheetView>,
@@ -46,6 +55,7 @@ async function mount(
           },
         },
       },
+      { provide: DayVersionWatcher, useValue: fakeWatcher },
       {
         provide: PermissionsStore,
         useValue: {
@@ -64,6 +74,7 @@ async function mount(
 
 afterEach(() => {
   vi.restoreAllMocks();
+  watched.length = 0;
 });
 
 describe('DeliveryPage', () => {
@@ -296,5 +307,43 @@ describe('DeliveryPage', () => {
     const { element } = await mount((day) => Promise.resolve({ day, roundCount: 0, stops: [] }));
     expect(element.querySelector('[data-rounds-link]')).toBeNull();
     expect(element.querySelector('[data-explain]')?.textContent).toContain('Tournées');
+  });
+});
+
+describe('DeliveryPage — la relecture de la journée', () => {
+  const composition = (day: string): Promise<DeliveryRoundsDayView> =>
+    Promise.resolve({ day, rounds: [], unassigned: [], incidents: [] });
+
+  it('suit la journée de la livraison quand le poste peut en lire la version', async () => {
+    await mount(
+      (day) => Promise.resolve({ day, roundCount: 0, stops: [] }),
+      false,
+      {},
+      composition,
+    );
+    expect(watched.at(-1)?.journals).toEqual(['delivery']);
+    expect(watched.at(-1)?.date()).toBe(shiftDay(parisDayOf(new Date()), 1));
+  });
+
+  it('sans le droit des tournées ni du chargement, ne branche aucune sonde', async () => {
+    await mount((day) => Promise.resolve({ day, roundCount: 0, stops: [] }));
+    expect(watched).toHaveLength(0);
+  });
+
+  it('une version qui bouge relit la feuille sans repasser par « chargement »', async () => {
+    const { fixture, element, asked } = await mount(
+      (day) => Promise.resolve({ day, roundCount: 0, stops: [stopOf({})] }),
+      false,
+      {},
+      composition,
+    );
+    await fixture.whenStable();
+    fixture.detectChanges();
+    expect(element.querySelector('fold-loading')).toBeNull();
+    const reload = watched.at(-1)?.reload();
+    fixture.detectChanges();
+    expect(element.querySelector('fold-loading')).toBeNull();
+    await reload;
+    expect(asked).toHaveLength(2);
   });
 });

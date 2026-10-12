@@ -44,7 +44,7 @@ beforeEach(async () => {
 });
 
 function proofUrl(orderId: string): string {
-  return `/admin/orders/${orderId}/preuve-livraison`;
+  return `/admin/orders/${orderId}/delivery-proof`;
 }
 
 async function proofOf(orderId: string): Promise<OrderHandoverProofResponse> {
@@ -72,7 +72,7 @@ async function handOverSigned(
 ): Promise<Response> {
   const version = (await myRound(agent, roundId)).version;
   return agent
-    .post(`${MY_ROUND}/${roundId}/arrets/${stopId}/remise`)
+    .post(`${MY_ROUND}/${roundId}/stops/${stopId}/handover`)
     .field("version", String(version))
     .field("receiverName", "Mme Durand")
     .attach("photo", JPEG, "remise.jpg")
@@ -86,7 +86,7 @@ async function deposited(agent: request.Agent, roundId: string, stopId: string):
   });
   const version = (await myRound(agent, roundId)).version;
   return agent
-    .post(`${MY_ROUND}/${roundId}/arrets/${stopId}/depot`)
+    .post(`${MY_ROUND}/${roundId}/stops/${stopId}/drop-off`)
     .field("version", String(version))
     .attach("photo", JPEG, "depot.jpg");
 }

@@ -27,7 +27,7 @@ import { ADMIN_VERIFIER_OVERRIDE, forgetCustomer } from "./delivery-rounds-scene
 import { forgetRoutingScene } from "./delivery-routing-scene.js";
 import { bootstrapE2e, E2E_STAFF_SUB, jsonBody, type E2eContext } from "./e2e-harness.js";
 
-const SUGGESTIONS = "/admin/livraison/carnet-a-corriger";
+const SUGGESTIONS = "/admin/delivery/address-corrections";
 /** Le point du carnet que la scène sème (`delivery-handover-scene.ts`). */
 const CARNET = { lat: 45.6, lng: 6.1 };
 /** Un degré de latitude ≈ 111 km : `north(120)` est 120 m au nord du carnet. */
@@ -64,7 +64,7 @@ function positionOf(point: GpsPoint): Record<string, string> {
 async function handOver(driver: DoorDriver, roundId: string, stopId: string, at: GpsPoint) {
   const version = (await myRound(driver.agent, roundId)).version;
   let call = driver.agent
-    .post(`${MY_ROUND}/${roundId}/arrets/${stopId}/remise`)
+    .post(`${MY_ROUND}/${roundId}/stops/${stopId}/handover`)
     .field("version", String(version))
     .field("receiverName", "Réception");
   for (const [name, value] of Object.entries(positionOf(at))) {
@@ -101,7 +101,7 @@ async function deliveredAt(
     const arrival = arrivals[index];
     if (arrival !== undefined) {
       await paul.agent
-        .post(`${MY_ROUND}/${roundId}/arrets/${stop.stopId}/arrivee`)
+        .post(`${MY_ROUND}/${roundId}/stops/${stop.stopId}/arrival`)
         .send({ positionLat: arrival.lat, positionLng: arrival.lng, positionAccuracyM: 6 })
         .expect(204);
     }
@@ -156,7 +156,7 @@ describe("« Appliquer » et « Ignorer »", () => {
     for (const suggestion of shown) {
       await ctx
         .asSub(E2E_STAFF_SUB)
-        .post(`${SUGGESTIONS}/${suggestion.addressId}/appliquer`)
+        .post(`${SUGGESTIONS}/${suggestion.addressId}/apply`)
         .send({ kind: suggestion.kind, point: suggestion.suggested })
         .expect(204);
     }
@@ -197,7 +197,7 @@ describe("« Appliquer » et « Ignorer »", () => {
 
     await ctx
       .asSub(E2E_STAFF_SUB)
-      .post(`${SUGGESTIONS}/${shown?.addressId ?? ""}/ignorer`)
+      .post(`${SUGGESTIONS}/${shown?.addressId ?? ""}/dismiss`)
       .send({ kind: "door", point: shown?.suggested })
       .expect(204);
 
@@ -215,7 +215,7 @@ describe("« Appliquer » et « Ignorer »", () => {
 
     await ctx
       .asSub(E2E_STAFF_SUB)
-      .post(`${SUGGESTIONS}/${shown?.addressId ?? ""}/appliquer`)
+      .post(`${SUGGESTIONS}/${shown?.addressId ?? ""}/apply`)
       .send({ kind: "door", point: north(400) })
       .expect(409);
 
@@ -229,7 +229,7 @@ describe("les droits — les positions ne se voient qu'en organisant les tourné
 
     await paul.agent.get(SUGGESTIONS).expect(403);
     await paul.agent
-      .post(`${SUGGESTIONS}/x/ignorer`)
+      .post(`${SUGGESTIONS}/x/dismiss`)
       .send({ kind: "door", point: north(120) })
       .expect(403);
   });

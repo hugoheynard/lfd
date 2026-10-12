@@ -107,7 +107,7 @@ describe("déclarer des bacs typés", () => {
     const { orders } = await threeStops();
     const rigid = await binTypeId(ctx, "Bac S rigide", { divisible: false });
     const old = await binTypeId(ctx, "Bac ancien");
-    await admin(ctx).post(`${LOADING}/bacs/${old}/archiver`).expect(204);
+    await admin(ctx).post(`${LOADING}/bins/${old}/archive`).expect(204);
 
     const body = { orderId: orders[0].id, innerBags: 0 };
     await expect(
@@ -137,7 +137,7 @@ describe("l'unicité des moitiés, en base", () => {
       ctx.prisma.deliveryBin.create({ data: { ...row, half: "middle" } }),
     ).rejects.toThrow();
     // Annulée, la moitié libère son côté.
-    await admin(ctx).post(`${BINS}/${halfId}/annulation`).expect(204);
+    await admin(ctx).post(`${BINS}/${halfId}/cancellation`).expect(204);
     await ctx.prisma.deliveryBin.create({ data: row });
   });
 });
@@ -195,7 +195,7 @@ describe("le bac partagé — deux arrêts consécutifs (v2-4)", () => {
     const [a, b, c] = stopIds;
     const { version } = await roundOf(ctx, DAY, roundId);
     await admin(ctx)
-      .put(`${ROUNDS}/${roundId}/ordre`)
+      .put(`${ROUNDS}/${roundId}/sequence`)
       .send({ stopIds: [a, c, b], version })
       .expect(204);
 
@@ -213,7 +213,7 @@ describe("le bac partagé — deux arrêts consécutifs (v2-4)", () => {
     ).toBeNull();
 
     await admin(ctx)
-      .put(`${ROUNDS}/${roundId}/ordre`)
+      .put(`${ROUNDS}/${roundId}/sequence`)
       .send({ stopIds: [a, b, c], version: broken.version })
       .expect(204);
     expect(

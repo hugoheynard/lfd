@@ -4,7 +4,7 @@
  * § 10, lot « voir les preuves »).
  *
  * Aucune clé de stockage ne traverse : les images se demandent par la
- * commande (`GET admin/orders/:id/preuve-livraison/photo|signature`), et le
+ * commande (`GET admin/orders/:id/delivery-proof/photo|signature`), et le
  * serveur retrouve lui-même la pièce de CETTE commande.
  */
 import type { StaffPermission } from "./staff-access.js";
@@ -12,7 +12,7 @@ import type { StaffPermission } from "./staff-access.js";
 /**
  * **Le droit de voir une preuve de livraison** — `delivery_proofs:read`, sorti
  * de `b2b_orders:read` le 2026-10-02 (lot « correctifs de droits ») : il garde
- * les trois routes `preuve-livraison` et la carte de la fiche commande.
+ * les trois routes `delivery-proof` et la carte de la fiche commande.
  * `write` n'ouvre rien aujourd'hui.
  */
 export const DELIVERY_PROOF_PERMISSION = "delivery_proofs:read" as const satisfies StaffPermission;

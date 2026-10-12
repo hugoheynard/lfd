@@ -15,7 +15,7 @@
 > d'office.
 >
 > 2026-10-02 : la décision réglée d'avance à la porte, réglage **global**
-> (`admin/livraison/a-la-porte`), passe de `delivery_settings` à
+> (`admin/delivery/doorstep`), passe de `delivery_settings` à
 > `delivery_procedures` — une condition de livraison, réglée par le
 > commercial (`a-la-porte.md`, B3 bis).
 >
@@ -32,7 +32,7 @@
 > Avant, l'écran exigeait l'écriture : un rôle en lecture seule ne voyait rien.
 >
 > 2026-10-02 : **`delivery_proofs`** (« Preuves de livraison ») — les trois
-> routes `GET admin/orders/:id/preuve-livraison(/photo|/signature)` et la
+> routes `GET admin/orders/:id/delivery-proof(/photo|/signature)` et la
 > carte de la fiche commande quittent `b2b_orders:read`. Admin et commercial
 > en **lecture** ; l'écriture n'ouvre rien aujourd'hui.
 >
@@ -74,7 +74,7 @@
 
 Le comptoir sans `delivery_settings` ni `delivery_rounds` garde « + Nouveau
 bac » au colisage : le poste charge les formats de bac par
-`GET admin/livraison/bacs` (`packing-container-board.ts:382`), qui accepte
+`GET admin/delivery/bins` (`packing-container-board.ts:382`), qui accepte
 `production_packing:write` depuis le 2026-10-07, en plus des deux droits de
 livraison (audit du dossier, B4). L'écriture et pas la lecture : le poste ne
 lit les formats que pour déclarer un bac neuf, et ce bouton n'existe qu'avec

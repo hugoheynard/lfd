@@ -19,9 +19,9 @@ const stubAdminVerifier = {
     Promise.resolve({ subject: token, scopes: [] }),
 };
 
-const VEHICLES = "/admin/livraison/vehicules";
-const DEPARTURE = "/admin/livraison/depart";
-const ROUTING = "/admin/livraison/calcul";
+const VEHICLES = "/admin/delivery/vehicles";
+const DEPARTURE = "/admin/delivery/departure";
+const ROUTING = "/admin/delivery/routing-settings";
 
 let ctx: E2eContext;
 

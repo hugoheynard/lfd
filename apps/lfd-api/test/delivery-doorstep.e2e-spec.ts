@@ -94,12 +94,12 @@ async function departedRound(
   }
   const { version } = await roundOf(ctx, day, roundId);
   await admin(ctx)
-    .put(`${ROUNDS}/${roundId}/livreur`)
+    .put(`${ROUNDS}/${roundId}/driver`)
     .send({ staffUserId: driver.id, version })
     .expect(204);
   const view = await myRound(driver.agent, roundId);
   await driver.agent
-    .post(`${MY_ROUND}/${roundId}/depart`)
+    .post(`${MY_ROUND}/${roundId}/departure`)
     .send({ version: view.version })
     .expect(204);
   return { roundId, orderIds };
@@ -124,12 +124,12 @@ describe("« Je suis arrivé » (AP-D6)", () => {
     const { roundId, orderIds } = await departedRound(paul, 1);
     const stopId = await stopIdOf(orderIds[0] ?? "");
 
-    await paul.agent.post(`${MY_ROUND}/${roundId}/arrets/${stopId}/arrivee`).expect(204);
+    await paul.agent.post(`${MY_ROUND}/${roundId}/stops/${stopId}/arrival`).expect(204);
     const first = await ctx.prisma.deliveryStopExecution.findUniqueOrThrow({
       where: { stopId },
       select: { arrivedAt: true },
     });
-    await paul.agent.post(`${MY_ROUND}/${roundId}/arrets/${stopId}/arrivee`).expect(204);
+    await paul.agent.post(`${MY_ROUND}/${roundId}/stops/${stopId}/arrival`).expect(204);
 
     const again = await ctx.prisma.deliveryStopExecution.findUniqueOrThrow({
       where: { stopId },
@@ -153,7 +153,7 @@ describe("« Je suis arrivé » (AP-D6)", () => {
     const { roundId, orderIds } = await departedRound(paul, 1);
     const stopId = await stopIdOf(orderIds[0] ?? "");
 
-    await lea.agent.post(`${MY_ROUND}/${roundId}/arrets/${stopId}/arrivee`).expect(404);
+    await lea.agent.post(`${MY_ROUND}/${roundId}/stops/${stopId}/arrival`).expect(404);
 
     const execution = await ctx.prisma.deliveryStopExecution.findUniqueOrThrow({
       where: { stopId },
@@ -183,7 +183,7 @@ describe("« Je suis arrivé » (AP-D6)", () => {
       })
       .expect(204);
 
-    await paul.agent.post(`${MY_ROUND}/${roundId}/arrets/${stopId}/arrivee`).expect(403);
+    await paul.agent.post(`${MY_ROUND}/${roundId}/stops/${stopId}/arrival`).expect(403);
   });
 });
 
@@ -195,7 +195,7 @@ describe("clore sans remise (AP-D2)", () => {
     const { version } = await myRound(paul.agent, roundId);
 
     const refused = await paul.agent
-      .post(`${MY_ROUND}/${roundId}/arrets/${stopId}/cloture-sans-remise`)
+      .post(`${MY_ROUND}/${roundId}/stops/${stopId}/close-without-handover`)
       .send({ version })
       .expect(409);
 
@@ -215,15 +215,15 @@ describe("clore sans remise (AP-D2)", () => {
     expect(before.stops.map((stop) => stop.orderState)).toEqual(["cancelled", "open"]);
 
     await lea.agent
-      .post(`${MY_ROUND}/${roundId}/arrets/${stopId}/cloture-sans-remise`)
+      .post(`${MY_ROUND}/${roundId}/stops/${stopId}/close-without-handover`)
       .send({ version: before.version })
       .expect(404);
     await paul.agent
-      .post(`${MY_ROUND}/${roundId}/arrets/${stopId}/cloture-sans-remise`)
+      .post(`${MY_ROUND}/${roundId}/stops/${stopId}/close-without-handover`)
       .send({ version: before.version })
       .expect(204);
     await paul.agent
-      .post(`${MY_ROUND}/${roundId}/arrets/${stopId}/cloture-sans-remise`)
+      .post(`${MY_ROUND}/${roundId}/stops/${stopId}/close-without-handover`)
       .send({ version: before.version })
       .expect(204);
 
@@ -287,7 +287,7 @@ describe("le dépôt autorisé, figé au départ, et la signature qui l'emporte 
     }
     const { version } = await roundOf(ctx, DAY, roundId);
     await admin(ctx)
-      .put(`${ROUNDS}/${roundId}/livreur`)
+      .put(`${ROUNDS}/${roundId}/driver`)
       .send({ staffUserId: paul.id, version })
       .expect(204);
     const atDepot = await myRound(paul.agent, roundId);
@@ -297,7 +297,7 @@ describe("le dépôt autorisé, figé au départ, et la signature qui l'emporte 
     ]);
 
     await paul.agent
-      .post(`${MY_ROUND}/${roundId}/depart`)
+      .post(`${MY_ROUND}/${roundId}/departure`)
       .send({ version: atDepot.version })
       .expect(204);
 
@@ -359,7 +359,7 @@ describe("« Déclarer un problème » (§ 3)", () => {
     await report(paul.agent, roundId, { family: "road", reason: "road_closed" }).expect(201);
 
     const ofDay = jsonBody<DeliveryIncidentsDayView>(
-      await admin(ctx).get(`/admin/livraison/incidents?date=${DAY}`).expect(200),
+      await admin(ctx).get(`/admin/delivery/incidents?date=${DAY}`).expect(200),
     );
     expect(
       ofDay.incidents.map((incident) => [incident.family, incident.stopId, incident.hasPhoto]),
@@ -377,7 +377,7 @@ describe("« Déclarer un problème » (§ 3)", () => {
     expect((await myRound(paul.agent, roundId)).incidents).toHaveLength(2);
 
     const served = await admin(ctx)
-      .get(`/admin/livraison/incidents/${created.id}/photo`)
+      .get(`/admin/delivery/incidents/${created.id}/photo`)
       .expect(200);
     expect(served.headers["content-type"]).toBe("image/jpeg");
     await paul.agent.get(`${MY_ROUND}/${roundId}/incidents/${created.id}/photo`).expect(200);
@@ -424,7 +424,7 @@ describe("« Non remis » (AP-D7)", () => {
     await departedRound(paul, 1, DAY);
 
     const view = jsonBody<UndeliveredStopsView>(
-      await admin(ctx).get("/admin/livraison/non-remis").expect(200),
+      await admin(ctx).get("/admin/delivery/not-handed-over").expect(200),
     );
 
     expect(view.stops.map((stop) => [stop.roundId, stop.serviceDay])).toEqual([
@@ -458,18 +458,18 @@ describe("« Tournée terminée » (PL2)", () => {
     const { version: closing } = await myRound(paul.agent, roundId);
     await paul.agent
       .post(
-        `${MY_ROUND}/${roundId}/arrets/${await stopIdOf(orderIds[0] ?? "")}/cloture-sans-remise`,
+        `${MY_ROUND}/${roundId}/stops/${await stopIdOf(orderIds[0] ?? "")}/close-without-handover`,
       )
       .send({ version: closing })
       .expect(204);
 
-    await lea.agent.post(`${MY_ROUND}/${roundId}/retour`).expect(404);
-    await paul.agent.post(`${MY_ROUND}/${roundId}/retour`).expect(204);
+    await lea.agent.post(`${MY_ROUND}/${roundId}/return`).expect(404);
+    await paul.agent.post(`${MY_ROUND}/${roundId}/return`).expect(204);
     const first = await ctx.prisma.deliveryRound.findUniqueOrThrow({
       where: { id: roundId },
       select: { returnedAt: true, returnedBy: true, returnedByName: true },
     });
-    await paul.agent.post(`${MY_ROUND}/${roundId}/retour`).expect(204);
+    await paul.agent.post(`${MY_ROUND}/${roundId}/return`).expect(204);
 
     expect(first.returnedAt).not.toBeNull();
     expect([first.returnedBy, first.returnedByName]).toEqual([paul.id, "livreur-paul Test"]);
@@ -492,11 +492,11 @@ describe("« Tournée terminée » (PL2)", () => {
     const roundId = await openRound(ctx, DAY, await addVehicle(ctx, "Kangoo"));
     const { version } = await roundOf(ctx, DAY, roundId);
     await admin(ctx)
-      .put(`${ROUNDS}/${roundId}/livreur`)
+      .put(`${ROUNDS}/${roundId}/driver`)
       .send({ staffUserId: paul.id, version })
       .expect(204);
 
-    const refused = await paul.agent.post(`${MY_ROUND}/${roundId}/retour`).expect(409);
+    const refused = await paul.agent.post(`${MY_ROUND}/${roundId}/return`).expect(409);
 
     expect(messageOf(refused)).toContain("n'est pas partie");
     expect((await roundOf(ctx, DAY, roundId)).returnedAt).toBeNull();
@@ -511,11 +511,11 @@ describe("« Tournée terminée » (PL2)", () => {
       data: { status: "cancelled" },
     });
     // L'arrêt reste ouvert pour éprouver les refus : seule la rentrée staff le permet (B4).
-    await admin(ctx).post(`${ROUNDS}/${roundId}/retour`).expect(204);
+    await admin(ctx).post(`${ROUNDS}/${roundId}/return`).expect(204);
     const { version } = await myRound(paul.agent, roundId);
 
     const arrival = await paul.agent
-      .post(`${MY_ROUND}/${roundId}/arrets/${stopId}/arrivee`)
+      .post(`${MY_ROUND}/${roundId}/stops/${stopId}/arrival`)
       .expect(409);
     const incident = await paul.agent
       .post(`${MY_ROUND}/${roundId}/incidents`)
@@ -523,7 +523,7 @@ describe("« Tournée terminée » (PL2)", () => {
       .field("reason", "accident")
       .expect(409);
     const closing = await paul.agent
-      .post(`${MY_ROUND}/${roundId}/arrets/${stopId}/cloture-sans-remise`)
+      .post(`${MY_ROUND}/${roundId}/stops/${stopId}/close-without-handover`)
       .send({ version })
       .expect(409);
 
@@ -537,15 +537,15 @@ describe("« Tournée terminée » (PL2)", () => {
     const paul = await staffWithRole(ctx, "livreur-paul");
     const { roundId } = await departedRound(paul, 2);
     const before = jsonBody<UndeliveredStopsView>(
-      await admin(ctx).get("/admin/livraison/non-remis").expect(200),
+      await admin(ctx).get("/admin/delivery/not-handed-over").expect(200),
     );
     expect(before.stops).toEqual([]);
 
-    await admin(ctx).post(`${ROUNDS}/${roundId}/retour`).expect(204);
-    await admin(ctx).post(`${ROUNDS}/${roundId}/retour`).expect(204);
+    await admin(ctx).post(`${ROUNDS}/${roundId}/return`).expect(204);
+    await admin(ctx).post(`${ROUNDS}/${roundId}/return`).expect(204);
 
     const after = jsonBody<UndeliveredStopsView>(
-      await admin(ctx).get("/admin/livraison/non-remis").expect(200),
+      await admin(ctx).get("/admin/delivery/not-handed-over").expect(200),
     );
     expect(after.stops.map((stop) => [stop.roundId, stop.serviceDay])).toEqual([
       [roundId, DAY],

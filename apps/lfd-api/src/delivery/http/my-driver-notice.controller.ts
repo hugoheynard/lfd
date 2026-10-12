@@ -21,7 +21,7 @@ import { GetMyDriverNoticeQuery } from "../application/queries/get-my-driver-not
  * un identifiant de tournée. La personne n'est jamais un paramètre : c'est la
  * fiche de la requête — on ne lit et n'accuse que pour soi.
  */
-@Controller("admin/livraison/mes-donnees")
+@Controller("admin/delivery/my-data")
 @AdminSurface("delivery_driving")
 export class MyDriverNoticeController {
   constructor(
@@ -36,7 +36,7 @@ export class MyDriverNoticeController {
     );
   }
 
-  @Post("accuse")
+  @Post("acknowledgement")
   @HttpCode(HttpStatus.NO_CONTENT)
   async acknowledge(
     @StaffUserId() staffUserId: string,

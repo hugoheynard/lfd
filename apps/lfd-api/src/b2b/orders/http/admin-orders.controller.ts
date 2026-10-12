@@ -110,7 +110,7 @@ export class AdminOrdersController {
    *
    * Rend `204` : il n'y a rien à relire. Un refus, lui, porte sa phrase.
    */
-  @Post(":id/rappel-retrait")
+  @Post(":id/pickup-reminder")
   @HttpCode(HttpStatus.NO_CONTENT)
   async remindHandover(@Param("id") id: string, @StaffUserId() staffUserId: string): Promise<void> {
     await this.commands.execute<SendHandoverReminderCommand, void>(
@@ -266,7 +266,7 @@ export class AdminOrdersController {
    * de droits ») — `b2b_orders:read` avant : voir une commande n'est pas voir
    * la porte d'un client ni sa signature. Les deux pièces suivent.
    */
-  @Get(":id/preuve-livraison")
+  @Get(":id/delivery-proof")
   @RequirePermission(DELIVERY_PROOF_PERMISSION)
   handoverProof(@Param("id") id: string): Promise<OrderHandoverProofResponse> {
     return this.queries.execute<GetOrderHandoverProofQuery, OrderHandoverProofResponse>(
@@ -278,7 +278,7 @@ export class AdminOrdersController {
    * La photo de la remise. La pièce est retrouvée par la COMMANDE, jamais
    * par une clé reçue d'ici : une autre commande, ou aucune, rend 404.
    */
-  @Get(":id/preuve-livraison/photo")
+  @Get(":id/delivery-proof/photo")
   @RequirePermission(DELIVERY_PROOF_PERMISSION)
   handoverProofPhoto(
     @Param("id") id: string,
@@ -288,7 +288,7 @@ export class AdminOrdersController {
   }
 
   /** La signature au doigt, quand la remise en porte une. */
-  @Get(":id/preuve-livraison/signature")
+  @Get(":id/delivery-proof/signature")
   @RequirePermission(DELIVERY_PROOF_PERMISSION)
   handoverProofSignature(
     @Param("id") id: string,

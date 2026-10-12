@@ -193,7 +193,7 @@ describe("situer l'adresse dès la commande (CA0)", () => {
  * la route machine efface ce que la lecture ne croit plus, garde le reste, et
  * refuse sans jeton.
  */
-const PURGE_ROUTE = "/admin/livraison/geocodage/sweep";
+const PURGE_ROUTE = "/admin/delivery/geocoding/sweep";
 const OLD_FINGERPRINT = "a".repeat(64);
 const RECENT_FINGERPRINT = "b".repeat(64);
 

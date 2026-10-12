@@ -33,8 +33,8 @@ const stubAdminVerifier = {
     Promise.resolve({ subject: token, scopes: [] }),
 };
 
-const VEHICLES = "/admin/livraison/vehicules";
-const DEPARTURE = "/admin/livraison/depart";
+const VEHICLES = "/admin/delivery/vehicles";
+const DEPARTURE = "/admin/delivery/departure";
 
 let ctx: E2eContext;
 
@@ -121,7 +121,7 @@ describe("la flotte", () => {
 
   it("refuse une plaque mal formée (400) et un véhicule inconnu (404)", async () => {
     await admin().post(VEHICLES).send({ name: "X", plate: "AB-12" }).expect(400);
-    await admin().post(`${VEHICLES}/absent/retrait`).expect(404);
+    await admin().post(`${VEHICLES}/absent/retirement`).expect(404);
   });
 
   it("🔴 refuse une plaque portée par un véhicule en service, en le NOMMANT (409)", async () => {
@@ -139,8 +139,8 @@ describe("la flotte", () => {
   it("retire à une date, libère la plaque, et la réactivation bute sur le nouveau porteur", async () => {
     const old = await addVehicle("Kangoo blanc", "AB-123-CD");
 
-    await admin().post(`${VEHICLES}/${old}/retrait`).expect(204);
-    await admin().post(`${VEHICLES}/${old}/retrait`).expect(409);
+    await admin().post(`${VEHICLES}/${old}/retirement`).expect(204);
+    await admin().post(`${VEHICLES}/${old}/retirement`).expect(409);
     const retired = (await fleet()).vehicles.find((vehicle) => vehicle.id === old);
     expect(retired?.retiredAt).not.toBeNull();
     expect(Date.parse(retired?.retiredAt ?? "")).toBeGreaterThanOrEqual(
@@ -156,7 +156,7 @@ describe("la flotte", () => {
     const id = await addVehicle("Kangoo blanc", "AB-123-CD");
     await admin().post(`${VEHICLES}/${id}/reactivation`).expect(409);
 
-    await admin().post(`${VEHICLES}/${id}/retrait`).expect(204);
+    await admin().post(`${VEHICLES}/${id}/retirement`).expect(204);
     await admin().post(`${VEHICLES}/${id}/reactivation`).expect(204);
 
     expect((await fleet()).vehicles[0]?.retiredAt).toBeNull();
@@ -165,7 +165,7 @@ describe("la flotte", () => {
   it("journalise chaque geste au nom de l'administrateur", async () => {
     const id = await addVehicle("Kangoo blanc", "AB-123-CD");
     await admin().put(`${VEHICLES}/${id}`).send({ name: "Kangoo", plate: "AB-123-CD" }).expect(204);
-    await admin().post(`${VEHICLES}/${id}/retrait`).expect(204);
+    await admin().post(`${VEHICLES}/${id}/retirement`).expect(204);
     await admin().post(`${VEHICLES}/${id}/reactivation`).expect(204);
 
     const facts = await ctx.prisma.activityEvent.findMany({
@@ -294,7 +294,7 @@ describe("les droits de la livraison", () => {
   it("laisse le support lire la feuille de route, qui n'est plus sous `b2b_orders`", async () => {
     const support = await asRole("support");
     const accounting = await asRole("comptabilite");
-    const path = "/admin/livraison/feuille-de-route?jour=2026-01-01";
+    const path = "/admin/delivery/run-sheet?day=2026-01-01";
 
     expect((await support.get(path)).status).toBe(200);
     // Elle avait `b2b_orders:write` : la feuille lui est désormais fermée (Q8).

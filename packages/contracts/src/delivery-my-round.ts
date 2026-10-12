@@ -8,7 +8,7 @@ import type { FulfillmentSource } from "./order.js";
  * **« Ma tournée » — ce que voit le livreur** (`documentation/livraisons/livreur/plan-ma-tournee.md`,
  * MT-D4, MT-D5 v2).
  *
- * Routes (`admin/livraison/ma-tournee…`, sous `delivery_driving`) :
+ * Routes (`admin/delivery/my-round…`, sous `delivery_driving`) :
  * - `GET ?date=AAAA-MM-JJ` → {@link MyDeliveryRoundsView} ;
  * - `GET /:roundId` → {@link MyDeliveryRoundView} ;
  * - `POST /:roundId/depart` (corps `DepartDeliveryRoundPayload`) → 204 ;

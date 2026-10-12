@@ -57,7 +57,7 @@ import { serveStepPhoto } from "./step-photo-http.js";
  * elle entre dans le `where` de chaque lecture et de chaque verrou. Une tournée
  * d'un autre rend 404. Il n'injecte que les bus.
  */
-@Controller("admin/livraison/ma-tournee")
+@Controller("admin/delivery/my-round")
 @AdminSurface("delivery_doorstep")
 export class MyDeliveryDoorstepController {
   constructor(
@@ -66,7 +66,7 @@ export class MyDeliveryDoorstepController {
   ) {}
 
   /** « Je suis arrivé » — 204, même rejoué ; la position facultative (YA-D4). */
-  @Post(":roundId/arrets/:stopId/arrivee")
+  @Post(":roundId/stops/:stopId/arrival")
   @HttpCode(HttpStatus.NO_CONTENT)
   async arrive(
     @StaffUserId() staffUserId: string,
@@ -96,7 +96,7 @@ export class MyDeliveryDoorstepController {
   }
 
   /** Clore l'arrêt sans remise — la commande est déjà retirée, ou annulée. 204, même rejoué. */
-  @Post(":roundId/arrets/:stopId/cloture-sans-remise")
+  @Post(":roundId/stops/:stopId/close-without-handover")
   @HttpCode(HttpStatus.NO_CONTENT)
   async closeWithoutHandover(
     @StaffUserId() staffUserId: string,
@@ -114,7 +114,7 @@ export class MyDeliveryDoorstepController {
    * « Remis au client » (B1) — multipart : le nom et la version, la photo
    * (toujours), la signature (quand l'arrêt l'exige). 204, même rejouée.
    */
-  @Post(":roundId/arrets/:stopId/remise")
+  @Post(":roundId/stops/:stopId/handover")
   @HttpCode(HttpStatus.NO_CONTENT)
   @UseInterceptors(handoverPicturesUpload())
   async handOver(
@@ -143,7 +143,7 @@ export class MyDeliveryDoorstepController {
    * sa décision l'emporte sur la signature exigée (LB-Q5, `depositPermitted`
    * dans `deposit-rule.ts`, vérifié le 2026-10-07). 204, même rejoué.
    */
-  @Post(":roundId/arrets/:stopId/depot")
+  @Post(":roundId/stops/:stopId/drop-off")
   @HttpCode(HttpStatus.NO_CONTENT)
   @UseInterceptors(incidentPhotoUpload())
   async deposit(
@@ -162,7 +162,7 @@ export class MyDeliveryDoorstepController {
    * « Tournée terminée » (`parcours-du-livreur.md`, PL2) — les bacs vides sont
    * rentrés. 204, même rejoué.
    */
-  @Post(":roundId/retour")
+  @Post(":roundId/return")
   @HttpCode(HttpStatus.NO_CONTENT)
   async returnToDepot(
     @StaffUserId() staffUserId: string,

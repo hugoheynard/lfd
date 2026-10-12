@@ -153,7 +153,7 @@ describe("« Proposer » respecte les zones", () => {
     const kangoo = await addVehicle("Kangoo", [nord]);
     const trafic = await addVehicle("Trafic", [sud]);
 
-    const view = await propose(ctx, `jour=${DAY}`);
+    const view = await propose(ctx, `day=${DAY}`);
 
     const of = (vehicleId: string): readonly string[] =>
       view.rounds
@@ -169,7 +169,7 @@ describe("« Proposer » respecte les zones", () => {
     const { nord, south } = await scene();
     await addVehicle("Kangoo", [nord]);
 
-    const view = await propose(ctx, `jour=${DAY}`);
+    const view = await propose(ctx, `day=${DAY}`);
 
     expect(view.unfit.map((order) => [order.orderId, order.reason]).sort()).toEqual(
       [...south].sort().map((orderId) => [orderId, "zone"]),

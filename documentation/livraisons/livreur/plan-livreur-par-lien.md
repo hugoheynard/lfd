@@ -26,7 +26,7 @@
 
 ## 0. Relevé de l'existant (vérifié dans le code le 2026-10-06)
 
-- **Les routes du livreur** vivent sous `admin/livraison/ma-tournee` dans trois
+- **Les routes du livreur** vivent sous `admin/delivery/my-round` dans trois
   contrôleurs : `my-delivery-round.controller.ts` (liste, version, détail,
   `depart`, photo d'étape), `my-delivery-loading.controller.ts` (chargement,
   plan, `bacs`, `dechargement`), `my-delivery-doorstep.controller.ts` (gestes à
@@ -34,7 +34,7 @@
   sont `@AdminSurface("delivery_driving")` ; le troisième est
   `@AdminSurface("delivery_doorstep")` (`my-delivery-doorstep.controller.ts:61`,
   AP-D9). _Corrigé le 2026-10-07 : ce paragraphe les disait tous sous
-  `delivery_driving`._ S'y ajoute `admin/livraison/mes-donnees`
+  `delivery_driving`._ S'y ajoute `admin/delivery/my-data`
   (`my-driver-notice.controller.ts`, sous `delivery_driving`). Chaque route
   d'une tournée prend le livreur par `@StaffUserId()` — sauf `GET version`,
   sans mur (voulu, `get-my-round-version.handler.ts`). Il n'est jamais un
@@ -71,7 +71,7 @@ receptionnaire}` (`rgpd-staff.mjs:51`). Son point 4 lie l'empreinte des
 - **Le dialogue d'information du livreur** est **commité** (`188858264`,
   2026-10-06 ; _ce paragraphe le disait « en cours, non commité », corrigé le
   2026-10-07_) : `my-driver-notice.controller.ts`
-  (`admin/livraison/mes-donnees`, `GET` + `POST accuse`),
+  (`admin/delivery/my-data`, `GET` + `POST accuse`),
   `DriverNoticeAcknowledgement`, migration
   `20261007150000_l_accuse_du_texte_du_livreur`. L'accusé est rattaché à un
   `staffUserId`.

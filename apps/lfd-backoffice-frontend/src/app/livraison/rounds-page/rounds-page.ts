@@ -23,6 +23,7 @@ import {
 } from 'fold-ng';
 
 import { PermissionsStore } from '../../auth/permissions.store';
+import { DayVersionWatcher } from '../../shared/day-version/day-version-watcher';
 import { DAY_OPTIONS } from '../day-choice';
 import { DayReadinessBanner } from '../day-readiness-banner/day-readiness-banner';
 import type { MapDeparture } from '../delivery-map/delivery-map';
@@ -108,6 +109,8 @@ export class RoundsPage {
   protected readonly dayChoice = this.read.dayChoice;
 
   protected readonly state = this.read.state;
+  /** La dernière lecture finie : le bandeau du plan arrêté se relit une fois par lecture. */
+  protected readonly lastLoad = this.read.lastLoad;
   private readonly reload = signal(0);
 
   protected readonly canWrite = computed(() => this.permissions.can('delivery_rounds:write'));
@@ -208,6 +211,14 @@ export class RoundsPage {
       const day = this.day();
       this.reload();
       untracked(() => void this.read.load(day));
+    });
+    // Ne relire que si la journée de la livraison a bougé — un autre poste a
+    // composé, un livreur est parti (`plan-version-par-journee.md`, D4).
+    // L'écran s'ouvre sous `delivery_rounds:read`, la porte de la version aussi.
+    inject(DayVersionWatcher).watch({
+      journals: ['delivery'],
+      date: () => this.day(),
+      reload: () => this.read.load(this.read.day()),
     });
     effect(() => {
       this.day();

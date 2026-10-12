@@ -5,7 +5,7 @@ import { firstValueFrom } from 'rxjs';
 
 import { B2B_API_BASE } from '../api/api-config';
 
-const DELIVERY = `${B2B_API_BASE}/admin/livraison`;
+const DELIVERY = `${B2B_API_BASE}/admin/delivery`;
 
 /**
  * **Les signalements et « Non remis », côté admin**
@@ -18,7 +18,7 @@ export class DeliveryIncidentsService {
   private readonly http = inject(HttpClient);
 
   undelivered(): Promise<UndeliveredStopsView> {
-    return firstValueFrom(this.http.get<UndeliveredStopsView>(`${DELIVERY}/non-remis`));
+    return firstValueFrom(this.http.get<UndeliveredStopsView>(`${DELIVERY}/not-handed-over`));
   }
 
   /** La photo d'un signalement, en blob : un `<img src>` nu n'enverrait pas le jeton. */

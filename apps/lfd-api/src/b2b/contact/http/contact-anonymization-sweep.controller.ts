@@ -15,7 +15,7 @@ export interface ContactAnonymizationSweepReport {
  * depuis douze mois — photos supprimées du stockage. Le chemin garde son nom
  * d'origine (`admin/contact/messages/…`) : le cron de `container/worker.ts`
  * l'appelle tel quel (relu le 2026-10-09). Même porte machine-à-machine que
- * `admin/livraison/positions/sweep` : le `RecomputeGuard` et son jeton.
+ * `admin/delivery/positions/sweep` : le `RecomputeGuard` et son jeton.
  * Appelé par le cron nocturne `QUALITY_UPLOAD_SWEEP_CRON` (`container/worker.ts`).
  */
 @Controller("admin/contact/messages/anonymization/sweep")

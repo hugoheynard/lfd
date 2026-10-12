@@ -29,7 +29,7 @@ import { forgetRoutingScene } from "./delivery-routing-scene.js";
 import { bootstrapE2e, daysAgo, E2E_STAFF_SUB, jsonBody, type E2eContext } from "./e2e-harness.js";
 import { TEST_RECOMPUTE_TOKEN } from "./setup-env.js";
 
-const SWEEP = "/admin/livraison/positions/sweep";
+const SWEEP = "/admin/delivery/positions/sweep";
 const AT_DOOR = { positionLat: 45.4612, positionLng: 6.9031, positionAccuracyM: 14 };
 
 let ctx: E2eContext;
@@ -57,7 +57,7 @@ async function handOver(
 ): Promise<Response> {
   const version = (await myRound(driver.agent, roundId)).version;
   let call = driver.agent
-    .post(`${MY_ROUND}/${roundId}/arrets/${stopId}/remise`)
+    .post(`${MY_ROUND}/${roundId}/stops/${stopId}/handover`)
     .field("version", String(version))
     .field("receiverName", "Mme Durand");
   for (const [name, value] of Object.entries(position)) {
@@ -138,10 +138,10 @@ describe("YA-D4 — la position au geste", () => {
     const stopId = stops[0]?.stopId ?? "";
 
     await paul.agent
-      .post(`${MY_ROUND}/${roundId}/arrets/${stopId}/arrivee`)
+      .post(`${MY_ROUND}/${roundId}/stops/${stopId}/arrival`)
       .send(AT_DOOR)
       .expect(204);
-    await paul.agent.post(`${MY_ROUND}/${roundId}/arrets/${stopId}/arrivee`).expect(204);
+    await paul.agent.post(`${MY_ROUND}/${roundId}/stops/${stopId}/arrival`).expect(204);
 
     const execution = await ctx.prisma.deliveryStopExecution.findUniqueOrThrow({
       where: { stopId },
@@ -167,7 +167,7 @@ describe("la purge des positions à 60 jours", () => {
     const [old = { stopId: "" }, recent = { stopId: "" }] = stops;
     for (const stop of [old, recent]) {
       await paul.agent
-        .post(`${MY_ROUND}/${roundId}/arrets/${stop.stopId}/arrivee`)
+        .post(`${MY_ROUND}/${roundId}/stops/${stop.stopId}/arrival`)
         .send(AT_DOOR)
         .expect(204);
       expect((await handOver(paul, roundId, stop.stopId, AT_DOOR)).status).toBe(204);
@@ -218,7 +218,7 @@ describe("la v2 du texte d'information", () => {
     });
 
     const before = jsonBody<MyDriverNoticeView>(
-      await paul.agent.get("/admin/livraison/mes-donnees").expect(200),
+      await paul.agent.get("/admin/delivery/my-data").expect(200),
     );
     expect(before.notice.version).toBe(2);
     expect(before.acknowledgedAt).toBeNull();

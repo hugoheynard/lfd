@@ -9,12 +9,12 @@ import { GetDeliveryPackingRoundsQuery } from "../application/queries/get-delive
 
 /** Le jour de service, validé dans sa FORME — le message nomme le paramètre. */
 const dayQuerySchema = z.object({
-  jour: z.string().regex(/^\d{4}-\d{2}-\d{2}$/u, "jour attendu au format AAAA-MM-JJ"),
+  day: z.string().regex(/^\d{4}-\d{2}-\d{2}$/u, "day attendu au format AAAA-MM-JJ"),
 });
 type DayQuery = z.infer<typeof dayQuerySchema>;
 
 /**
- * **Le colisage vu de la livraison** — `admin/livraison/colisage/…`.
+ * **Le colisage vu de la livraison** — `admin/delivery/packing/…`.
  *
  * La proposition de colisage d'une commande (`GET proposition`, lot 4 bis,
  * L4b-C4) est retirée le 2026-10-10 (`documentation/colisage/colisage.md` §9,
@@ -22,7 +22,7 @@ type DayQuery = z.infer<typeof dayQuerySchema>;
  * :orderId/proposal`), qui passe par `BinDesk` jusqu'au même cas de lecture.
  * Il n'injecte que le bus des requêtes.
  */
-@Controller("admin/livraison/colisage")
+@Controller("admin/delivery/packing")
 @AdminSurface("delivery_loading")
 export class DeliveryPackingController {
   constructor(private readonly queries: QueryBus) {}
@@ -33,11 +33,11 @@ export class DeliveryPackingController {
    * qui OUVRE le poste (`production_packing:read`) ou celui du chargement :
    * ranger ses bacs ne demande pas de pouvoir en déclarer.
    */
-  @Get("tournees")
+  @Get("rounds")
   @RequireAnyPermission("production_packing:read", "delivery_loading:read")
   rounds(@Query(new ZodQuery(dayQuerySchema)) query: DayQuery): Promise<DeliveryPackingRoundsView> {
     return this.queries.execute<GetDeliveryPackingRoundsQuery, DeliveryPackingRoundsView>(
-      new GetDeliveryPackingRoundsQuery(query.jour),
+      new GetDeliveryPackingRoundsQuery(query.day),
     );
   }
 }

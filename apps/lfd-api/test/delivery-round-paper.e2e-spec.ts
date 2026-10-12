@@ -55,7 +55,7 @@ async function asRole(role: StaffRole): Promise<ReturnType<E2eContext["asSub"]>>
   return ctx.asSub(sub);
 }
 
-describe("GET /admin/livraison/tournees/:roundId/tournee.pdf", () => {
+describe("GET /admin/delivery/rounds/:roundId/round.pdf", () => {
   it("sert le PDF de la tournée, arrêts dans l'ordre, « Arrêt i/N »", async () => {
     const round = await openRound(ctx, DAY, await addVehicle(ctx, "Kangoo blanc"));
     const first = await seedDelivery(ctx, DAY);
@@ -64,7 +64,7 @@ describe("GET /admin/livraison/tournees/:roundId/tournee.pdf", () => {
     await assign(ctx, DAY, round, first.id);
 
     const response = await admin(ctx)
-      .get(`${ROUNDS}/${round}/tournee.pdf`)
+      .get(`${ROUNDS}/${round}/round.pdf`)
       .buffer(true)
       .parse((res, callback) => {
         const chunks: Buffer[] = [];
@@ -94,12 +94,12 @@ describe("GET /admin/livraison/tournees/:roundId/tournee.pdf", () => {
   });
 
   it("répond 404 pour une tournée inconnue", async () => {
-    await admin(ctx).get(`${ROUNDS}/inconnue/tournee.pdf`).expect(404);
+    await admin(ctx).get(`${ROUNDS}/inconnue/round.pdf`).expect(404);
   });
 
   it("refuse le support, qui n'a pas `delivery_rounds` (403)", async () => {
     const round = await openRound(ctx, DAY, await addVehicle(ctx, "Kangoo"));
     const support = await asRole("support");
-    await support.get(`${ROUNDS}/${round}/tournee.pdf`).expect(403);
+    await support.get(`${ROUNDS}/${round}/round.pdf`).expect(403);
   });
 });

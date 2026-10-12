@@ -185,7 +185,7 @@ Imprimable, lisible sur téléphone. **Aucun montant.**
 > (« adresse non reliée au carnet ») plutôt que de deviner l'adresse en
 > comparant des textes.
 >
-> Décidé au même moment : une route à part (`GET admin/livraison/feuille-de-route`),
+> Décidé au même moment : une route à part (`GET admin/delivery/run-sheet`),
 > sous le droit `b2b_orders` qui garde déjà `/livraison`. Un port séparé du
 > lecteur de file, pour que le comptoir ne paie pas adresses et procédures, mais
 > qui **partage** le filtre « attendu ce jour » : pas de seconde vérité sur ce
@@ -210,7 +210,7 @@ Imprimable, lisible sur téléphone. **Aucun montant.**
   câblé comme `QualityHoldsReader`). Il n'est vrai **que si la journée de
   production est close** et que la commande n'est pas dans son plan : journée
   ouverte, toutes les livraisons du lendemain crieraient ;
-- `GET admin/livraison/feuille-de-route?jour=`, sous `b2b_orders` ; la photo
+- `GET admin/delivery/run-sheet?day=`, sous `b2b_orders` ; la photo
   d'étape porte sa révision (`photoRevision`, la même que la vue de procédure
   staff), donc le cache sert d'une lecture à l'autre ;
 - l'écran `/livraison` : choix du jour (Demain par défaut), en-tête chiffré,
@@ -468,7 +468,7 @@ d'un électrique en montagne : étape suivante possible).
 >   un champ absent vaut `null` et EFFACE — jamais « inchangé ». `VehicleView`
 >   gagne `cargo` (avec `volumeLiters` dérivé, arrondi à l'entier inférieur) et
 >   `refrigeration`, `null` quand inconnus ; c'est la même vue que lisent
->   l'écran Véhicules, Planifier et le simulateur (`GET /admin/livraison/vehicules`).
+>   l'écran Véhicules, Planifier et le simulateur (`GET /admin/delivery/vehicles`).
 > - **Domaine** : `CargoSpace` (1–1 000 cm, volume dérivé) et
 >   `RefrigeratedCompartment` (1–20 000 L, −30..+15 °C, min ≤ max) ; « réfrigéré
 >   ≤ utile » est tenu par `Vehicle`, qui valide toute la fiche avant d'en
@@ -584,7 +584,7 @@ perdrait le jour sur une suppression en cascade (avertissement écrit dans la
 migration `20260928140000_la_version_par_journee`). ⚠️ Ces déclencheurs
 avancent la version de journée **du fournil** (`production.day_change`)
 [corrigé le 2026-10-07 : de la **livraison**, `delivery.day_change`, depuis le
-2026-09-30, servie par `GET admin/livraison/version` ; l'organisateur des
+2026-09-30, servie par `GET admin/delivery/version` ; l'organisateur des
 tournées ne la suit pas, le poste de colisage si (`colisage.ts`, vérifié le
 2026-10-07)] :
 l'écran de composition la suit ; la feuille de route, qui lit des commandes,
@@ -1194,9 +1194,9 @@ calculateur de tournée, hors de ce lot.
 > ligne) : tables `production.delivery_bin_type` et
 > `production.delivery_bin_capacity` (migration additive
 > `20260929230000_les_types_de_bacs`, nom unique parmi les non archivés par
-> index partiel, CHECK intérieur ≤ extérieur) ; routes `admin/livraison/bacs`
+> index partiel, CHECK intérieur ≤ extérieur) ; routes `admin/delivery/bins`
 > (liste, création, correction, `archiver`, `reactiver`) et
-> `admin/livraison/contenances` (grille, `PUT` d'une case, `null` la vide) ;
+> `admin/delivery/capacities` (grille, `PUT` d'une case, `null` la vide) ;
 > la liste des produits arrive par `DeliveryProductsReader`
 > (`delivery/channels/commerce/`), que le catalogue B2B implémente. Contrat :
 > `packages/contracts/src/delivery-bins.ts`. Faits : `delivery_bin_type.added`
@@ -1246,13 +1246,13 @@ DEFAULT false` — une fiche n'est pas froide tant qu'on ne l'a pas dit) ;
 > colisage, par `BinDesk` (`documentation/colisage/colisage.md` §9, voie (b)).
 > Le texte ci-dessous décrit le bâti du 2026-09-29.
 >
-> Routes (`admin/livraison/…`, `delivery_loading`) : `colisage/bacs` (POST
+> Routes (`admin/delivery/…`, `delivery_loading`) : `colisage/bacs` (POST
 > déclarer `{ orderId, binTypeId, whole, half, innerBags }` → `{ binIds }` ;
 > GET `?commande=`), `colisage/bacs/partage` (POST `{ orderId, partnerBinId,
 innerBags }` → `{ binId }`), `colisage/bacs/:binId` (le QR ouvert),
 > `colisage/bacs/:binId/annulation`, `chargement/:roundId/bacs` (scan,
 > inchangé : un QR = une moitié ou un bac entier) et
-> `…/bacs/:binId/dechargement`. `admin/livraison/bacs` reste le CATALOGUE des
+> `…/bacs/:binId/dechargement`. `admin/delivery/bins` reste le CATALOGUE des
 > types (tranche A) — d'où `colisage/` pour les bacs déclarés. Contrat :
 > `packages/contracts/src/delivery-loading.ts`. Faits : `delivery_bin.declared`
 > (`binType`, `innerBags`, `bins[] = { bin, half }`), `delivery_bin.shared`
@@ -1282,7 +1282,7 @@ innerBags }` → `{ binId }`), `colisage/bacs/:binId` (le QR ouvert),
 > **(C) serveur bâti le 2026-09-29** (non commité à l'écriture de cette
 > ligne) — le colisage PROPOSÉ, une lecture ; la déclaration (B) reste le
 > geste qui fait foi. Aucune migration. Routes (`delivery_loading`) :
-> `GET admin/livraison/colisage/proposition?commande=` →
+> `GET admin/delivery/packing/proposal?order=` →
 > `DeliveryPackingProposalView` et `GET …/colisage/bacs/partenaires?commande=`
 > → `DeliveryBinFreeHalvesView` (la place de la commande dans sa tournée, et
 > les moitiés libres de ses arrêts consécutifs — remplace la recherche front
@@ -1306,7 +1306,7 @@ innerBags }` → `{ binId }`), `colisage/bacs/:binId` (le QR ouvert),
 
 > **(D) serveur bâti le 2026-09-29** (non commité à l'écriture de cette
 > ligne) — le plan de chargement v1, une lecture ; aucune migration. Route
-> `GET admin/livraison/chargement/:roundId/plan` → `DeliveryLoadingPlanView`
+> `GET admin/delivery/loading/:roundId/plan` → `DeliveryLoadingPlanView`
 > (`packages/contracts/src/delivery-loading-plan.ts`), sous
 > `delivery_loading:read` comme les autres lectures du chargement. Cœur pur :
 > `planLoading` (`apps/lfd-api/src/delivery/domain/services/loading-plan.ts`,
@@ -2240,7 +2240,7 @@ arrêts inventés, pour ne jamais écrire dans la vraie composition.
 avance » ; les choix ci-dessous sont les plus réversibles, et restent ouverts
 dans les questions de fin) :
 
-- **L9-C1 — Une LECTURE, sans table.** `POST admin/livraison/simulateur` prend
+- **L9-C1 — Une LECTURE, sans table.** `POST admin/delivery/simulator` prend
   le scénario entier (arrêts, véhicules, réglages) et rend une proposition au
   format du lot 7 (`DeliveryRoundProposalView` réduit : pas de `versions`, pas
   de `kept`, pas d'identifiant de commande — un **libellé** d'arrêt). POST parce
@@ -2278,7 +2278,7 @@ dans les questions de fin) :
   en tournées neuves, véhicules `v1..vn`, arrêts sous des identifiants internes
   (ceux de l'écran peuvent se répéter). Mise en forme `HH:MM` partagée avec le
   lot 7 (`tourTimesView`, `stopTimesView`, `timeWindowOf`). Route
-  `POST admin/livraison/simulateur` (`apps/lfd-api/src/delivery/http/delivery-simulator.controller.ts`,
+  `POST admin/delivery/simulator` (`apps/lfd-api/src/delivery/http/delivery-simulator.controller.ts`,
   `delivery_rounds:read`). Tests : 9 unitaires du handler, 5 e2e
   (`apps/lfd-api/test/delivery-simulator.e2e-spec.ts` — 200 sans écriture, 409, 400 ×2, 403).
   Front : à bâtir.
@@ -2323,11 +2323,11 @@ déjà ces noms). Enregistré, le scénario garde ces noms — assumé.
   `deliverySimulationPayloadSchema` à chaque relecture : un scénario devenu
   invalide se rouvre en 409 qui le nomme, reste listé (zéro arrêt) et
   s'archive.
-- **Routes** sous `admin/livraison/simulateur/scenarios` (lister, rouvrir,
+- **Routes** sous `admin/delivery/simulator/scenarios` (lister, rouvrir,
   créer, remplacer, `…/dupliquer` — « X (copie) », « X (copie 2) »… —,
   `…/archiver`), lecture `delivery_rounds:read`, écriture
   `delivery_rounds:write` ; quatre faits `delivery_simulation_scenario.*`
-  au journal. `GET admin/livraison/simulateur/depuis-journee?jour=` lit la
+  au journal. `GET admin/delivery/simulator/from-day?day=` lit la
   journée par le canal `DeliveryOrdersReader` (`expectedOn`, `byIds`,
   `stopPointsOf`), le point par le carnet puis le cache du géocodage (comme
   « Proposer », sans réseau), la flotte active ce jour-là et les réglages en
@@ -2455,7 +2455,7 @@ signature, procédure. Le survol relie une ligne et son repère.
 
 **L10b-C2 — Glisser-déposer** : on glisse un arrêt d'une camionnette à l'autre
 ou dans sa colonne. Ce n'est pas écrit : la proposition est **re-chronométrée**
-par le serveur (`POST admin/livraison/tournees/proposition/chronometrer`,
+par le serveur (`POST admin/delivery/rounds/proposal/time`,
 lecture, `delivery_rounds:read`) avec la composition éditée, et « Appliquer »
 envoie la composition éditée — même contrat et mêmes versions que le lot 7.
 Une tournée **partie ou chargée** ne se glisse pas (I6), ni vers elle ni hors
@@ -2489,7 +2489,7 @@ chargés par le seul écran, jamais au démarrage.
 
 - **Chronométrer** (L10b-C2) — `TimeDeliveryRoundsQuery` + handler
   (`delivery/application/queries/`), route
-  `POST admin/livraison/tournees/proposition/chronometrer` sous
+  `POST admin/delivery/rounds/proposal/time` sous
   `delivery_rounds:read`, contrat `timeDeliveryRoundsPayloadSchema` →
   `DeliveryRoundTimingView`. Service pur `timeComposition`
   (`apps/lfd-api/src/delivery/domain/services/time-composition.ts`) : l'ordre donné, `timeRoute`,

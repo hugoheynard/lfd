@@ -81,6 +81,15 @@ export class RoundsDay {
   /** Un numéro par lecture : une réponse lente d'un autre jour n'écrase pas la bonne. */
   private request = 0;
 
+  /**
+   * **La dernière lecture terminée** — son jour, et un compteur qui n'avance
+   * qu'une fois par lecture, à sa fin (réussie ou ratée). Le bandeau du plan
+   * arrêté s'y relit : suivre `state` le faisait lire deux fois par chargement,
+   * au passage à `loading` puis à `ready` (corrigé le 2026-10-12).
+   * `null` tant qu'aucune lecture n'est finie.
+   */
+  readonly lastLoad = signal<{ readonly day: string; readonly count: number } | null>(null);
+
   readonly incidents = computed(() => {
     const state = this.state();
     return state.status === 'ready' ? state.incidents : [];
@@ -162,6 +171,9 @@ export class RoundsDay {
       if (request === this.request) {
         this.state.set({ status: 'error' });
       }
+    }
+    if (request === this.request) {
+      this.lastLoad.update((last) => ({ day, count: (last?.count ?? 0) + 1 }));
     }
   }
 

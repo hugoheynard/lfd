@@ -72,8 +72,8 @@ const ROUTES = {
   packed: (agent) => agent.post(`/admin/packing/${DAY}/orders/commande-inconnue/close`),
   version: (agent) => agent.get(`/admin/production/version?date=${DAY}`),
   handoverQueue: (agent) => agent.get(`/admin/handover/file?jour=${DAY}`),
-  binsOfOrder: (agent) => agent.get("/admin/livraison/colisage/bacs?commande=CMD-INCONNUE"),
-  binSheet: (agent) => agent.get("/admin/livraison/colisage/bacs/bac-inconnu"),
+  binsOfOrder: (agent) => agent.get("/admin/delivery/packing/bins?order=CMD-INCONNUE"),
+  binSheet: (agent) => agent.get("/admin/delivery/packing/bins/bac-inconnu"),
   procedure: (agent) =>
     agent.get("/admin/companies/societe-inconnue/delivery-addresses/adresse-inconnue/procedure"),
 } satisfies Record<string, Call>;

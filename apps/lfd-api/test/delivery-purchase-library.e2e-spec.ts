@@ -19,9 +19,9 @@ import { checkJournalFact } from "@lfd/contracts/journal-facts";
 import { ADMIN_VERIFIER_OVERRIDE, admin, VEHICLES } from "./delivery-rounds-scene.js";
 import { bootstrapE2e, jsonBody, type E2eContext } from "./e2e-harness.js";
 
-const LIBRARY_VEHICLES = "/admin/livraison/bibliotheque/vehicules";
-const LIBRARY_BINS = "/admin/livraison/bibliotheque/bacs";
-const REAL_BINS = "/admin/livraison/bacs";
+const LIBRARY_VEHICLES = "/admin/delivery/library/vehicles";
+const LIBRARY_BINS = "/admin/delivery/library/bins";
+const REAL_BINS = "/admin/delivery/bins";
 
 const KANGOO = {
   name: "Kangoo L2",
@@ -123,8 +123,8 @@ describe("les véhicules candidats", () => {
 
   it("archive hors de la liste courante, visible sur demande ; libère le nom", async () => {
     const id = await declare(LIBRARY_VEHICLES, KANGOO);
-    await admin(ctx).post(`${LIBRARY_VEHICLES}/${id}/archiver`).expect(204);
-    expect(code(await admin(ctx).post(`${LIBRARY_VEHICLES}/${id}/archiver`).expect(409))).toBe(
+    await admin(ctx).post(`${LIBRARY_VEHICLES}/${id}/archive`).expect(204);
+    expect(code(await admin(ctx).post(`${LIBRARY_VEHICLES}/${id}/archive`).expect(409))).toBe(
       "delivery.purchase_vehicle_candidate_already_archived",
     );
 
@@ -132,7 +132,7 @@ describe("les véhicules candidats", () => {
     expect((await vehicles("?archives=inclure")).candidates.map((c) => c.id)).toEqual([id]);
 
     await declare(LIBRARY_VEHICLES, KANGOO);
-    expect(code(await admin(ctx).post(`${LIBRARY_VEHICLES}/${id}/reactiver`).expect(409))).toBe(
+    expect(code(await admin(ctx).post(`${LIBRARY_VEHICLES}/${id}/reactivate`).expect(409))).toBe(
       "delivery.purchase_vehicle_candidate_name_taken",
     );
     expect(await ctx.prisma.deliveryPurchaseVehicleCandidate.count()).toBe(2); // jamais supprimé
@@ -156,7 +156,7 @@ describe("les véhicules candidats", () => {
     expect(code(await admin(ctx).post(LIBRARY_VEHICLES).send(negative).expect(400))).toBe(
       "delivery.purchase_price_invalid",
     );
-    expect(code(await admin(ctx).post(`${LIBRARY_VEHICLES}/nope/archiver`).expect(404))).toBe(
+    expect(code(await admin(ctx).post(`${LIBRARY_VEHICLES}/nope/archive`).expect(404))).toBe(
       "delivery.purchase_vehicle_candidate_not_found",
     );
   });
@@ -177,10 +177,10 @@ describe("les formats de bacs candidats", () => {
       { id, ...CAISSE, innerVolumeLiters: 54, archivedAt: null },
     ]);
 
-    await admin(ctx).post(`${LIBRARY_BINS}/${id}/archiver`).expect(204);
+    await admin(ctx).post(`${LIBRARY_BINS}/${id}/archive`).expect(204);
     expect((await bins()).candidates).toEqual([]);
-    await admin(ctx).post(`${LIBRARY_BINS}/${id}/reactiver`).expect(204);
-    expect(code(await admin(ctx).post(`${LIBRARY_BINS}/${id}/reactiver`).expect(409))).toBe(
+    await admin(ctx).post(`${LIBRARY_BINS}/${id}/reactivate`).expect(204);
+    expect(code(await admin(ctx).post(`${LIBRARY_BINS}/${id}/reactivate`).expect(409))).toBe(
       "delivery.purchase_bin_candidate_not_archived",
     );
   });
@@ -316,8 +316,8 @@ describe("le journal", () => {
       .put(`${LIBRARY_VEHICLES}/${vehicle}`)
       .send({ ...KANGOO, priceCentsExclVat: 2_400_000 })
       .expect(204);
-    await admin(ctx).post(`${LIBRARY_VEHICLES}/${vehicle}/archiver`).expect(204);
-    await admin(ctx).post(`${LIBRARY_VEHICLES}/${vehicle}/reactiver`).expect(204);
+    await admin(ctx).post(`${LIBRARY_VEHICLES}/${vehicle}/archive`).expect(204);
+    await admin(ctx).post(`${LIBRARY_VEHICLES}/${vehicle}/reactivate`).expect(204);
     const bin = await declare(LIBRARY_BINS, CAISSE);
     await admin(ctx)
       .put(`${LIBRARY_BINS}/${bin}`)

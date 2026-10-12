@@ -22,7 +22,7 @@ import { ADMIN_VERIFIER_OVERRIDE, admin, forgetCustomer, ROUNDS } from "./delive
 import { forgetRoutingScene } from "./delivery-routing-scene.js";
 import { bootstrapE2e, E2E_STAFF_SUB, jsonBody, type E2eContext } from "./e2e-harness.js";
 
-const DECIDE = "/admin/livraison/a-decider";
+const DECIDE = "/admin/delivery/stop-decisions";
 
 let ctx: E2eContext;
 
@@ -46,7 +46,7 @@ function messageOf(response: Response): string {
 }
 
 function finish(agent: request.Agent, roundId: string): request.Test {
-  return agent.post(`${MY_ROUND}/${roundId}/retour`);
+  return agent.post(`${MY_ROUND}/${roundId}/return`);
 }
 
 async function returnedAt(roundId: string): Promise<Date | null> {
@@ -78,7 +78,7 @@ describe("« Tournée terminée » exige un sort pour chaque arrêt (B4)", () =>
     expect(await returnFacts(roundId)).toBe(0);
 
     await paul.agent
-      .post(`${MY_ROUND}/${roundId}/arrets/${stopId}/remise`)
+      .post(`${MY_ROUND}/${roundId}/stops/${stopId}/handover`)
       .field("version", String(before.version))
       .field("receiverName", "Mme Durand")
       .attach("photo", JPEG, "remise.jpg")
@@ -104,7 +104,7 @@ describe("« Tournée terminée » exige un sort pour chaque arrêt (B4)", () =>
     const pending = await finish(paul.agent, roundId).expect(409);
     expect(messageOf(pending)).toContain("attendez la décision du commercial");
 
-    await lea.agent.post(`${DECIDE}/${stopId}/rapporter`).expect(204);
+    await lea.agent.post(`${DECIDE}/${stopId}/bring-back`).expect(204);
     await finish(paul.agent, roundId).expect(204);
 
     expect(await returnedAt(roundId)).not.toBeNull();
@@ -115,11 +115,11 @@ describe("« Tournée terminée » exige un sort pour chaque arrêt (B4)", () =>
     const { roundId, stopId } = await departedStop(ctx, paul);
     await finish(paul.agent, roundId).expect(409);
 
-    await admin(ctx).post(`${ROUNDS}/${roundId}/retour`).expect(204);
+    await admin(ctx).post(`${ROUNDS}/${roundId}/return`).expect(204);
     await finish(paul.agent, roundId).expect(204);
 
     const undelivered = jsonBody<UndeliveredStopsView>(
-      await admin(ctx).get("/admin/livraison/non-remis").expect(200),
+      await admin(ctx).get("/admin/delivery/not-handed-over").expect(200),
     );
     expect(undelivered.stops.map((stop) => stop.stopId)).toEqual([stopId]);
     expect(await returnFacts(roundId)).toBe(1);

@@ -119,7 +119,7 @@ corrige la flotte ; le candidat garde ce qu'on croyait en l'achetant.
 
 ### B-D4 — Le tableau croisé
 
-Une **lecture** : `POST admin/livraison/assistant-achat/tableau`, corps =
+Une **lecture** : `POST admin/delivery/purchase-assistant/table`, corps =
 une sélection (véhicules et formats, candidats ou réels, jeu entre bacs).
 Chaque case appelle la stratégie A de G2 (`maximize-format`) : 10 véhicules
 × 10 formats = 100 calculs purs, sans base. Bornes : 10 × 10.

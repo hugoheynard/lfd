@@ -77,7 +77,7 @@ export class AdminOrdersService {
   async handoverProof(id: string): Promise<OrderHandoverProofResponse> {
     return firstValueFrom(
       this.http.get<OrderHandoverProofResponse>(
-        `${B2B_API_BASE}/admin/orders/${encodeURIComponent(id)}/preuve-livraison`,
+        `${B2B_API_BASE}/admin/orders/${encodeURIComponent(id)}/delivery-proof`,
       ),
     );
   }
@@ -89,7 +89,7 @@ export class AdminOrdersService {
   async handoverProofImage(id: string, piece: 'photo' | 'signature'): Promise<Blob> {
     return firstValueFrom(
       this.http.get(
-        `${B2B_API_BASE}/admin/orders/${encodeURIComponent(id)}/preuve-livraison/${piece}`,
+        `${B2B_API_BASE}/admin/orders/${encodeURIComponent(id)}/delivery-proof/${piece}`,
         { responseType: 'blob' },
       ),
     );
@@ -133,7 +133,7 @@ export class AdminOrdersService {
   async remindHandover(id: string): Promise<void> {
     await firstValueFrom(
       this.http.post<void>(
-        `${B2B_API_BASE}/admin/orders/${encodeURIComponent(id)}/rappel-retrait`,
+        `${B2B_API_BASE}/admin/orders/${encodeURIComponent(id)}/pickup-reminder`,
         {},
       ),
     );

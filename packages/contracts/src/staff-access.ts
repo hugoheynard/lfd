@@ -345,7 +345,7 @@ export const staffResourceSchema = z.enum([
   // bâti resterait pour toujours.
   /**
    * **La feuille de route du jour** — les livraisons d'une journée, en lecture
-   * (`GET /admin/livraison/feuille-de-route`).
+   * (`GET /admin/delivery/run-sheet`).
    *
    * Sortie de `b2b_orders` le 2026-09-29 : elle montre les adresses et les
    * contacts de TOUTES les livraisons, et c'est désormais un droit qu'on donne
@@ -356,8 +356,8 @@ export const staffResourceSchema = z.enum([
   "delivery_run_sheet",
   /**
    * **Les réglages de la livraison** — la flotte (véhicules, plaques, retraits)
-   * et le point de départ des tournées (`/admin/livraison/vehicules`,
-   * `/admin/livraison/depart`).
+   * et le point de départ des tournées (`/admin/delivery/vehicles`,
+   * `/admin/delivery/departure`).
    *
    * Pas `delivery_availability` ni `delivery_fee` : ceux-là règlent l'OFFRE
    * faite au client (à qui l'on livre, à quel prix) ; celui-ci l'EXPLOITATION
@@ -386,7 +386,7 @@ export const staffResourceSchema = z.enum([
   "delivery_fee",
   /**
    * **Composer les tournées** — répartir les livraisons d'un jour entre les
-   * véhicules, puis ordonner chaque tournée (`/admin/livraison/tournees`,
+   * véhicules, puis ordonner chaque tournée (`/admin/delivery/rounds`,
    * plan de tournée, lot 3).
    *
    * Lecture ET écriture pour `admin` et `comptoir` (Hugo, 2026-09-29, Q12) :
@@ -397,7 +397,7 @@ export const staffResourceSchema = z.enum([
   /**
    * **Le chargement, véhicule par véhicule** — déclarer les sacs d'une
    * commande, les charger dans la tournée, faire partir le véhicule
-   * (`/admin/livraison/sacs`, `/admin/livraison/chargement`, plan de tournée,
+   * (`/admin/delivery/sacs`, `/admin/delivery/loading`, plan de tournée,
    * lot 4).
    *
    * Lecture ET écriture pour `admin` et `comptoir` (Hugo, 2026-09-29, Q21) :
@@ -408,7 +408,7 @@ export const staffResourceSchema = z.enum([
   "delivery_loading",
   /**
    * **Conduire SA tournée** — lire la tournée qui vous est affectée et la
-   * commencer (`/admin/livraison/ma-tournee`, plan « Ma tournée », MT-D1 v2).
+   * commencer (`/admin/delivery/my-round`, plan « Ma tournée », MT-D1 v2).
    *
    * Le rôle `livreur` n'a pas de valeur `StaffRole` : il vit par sa clé en
    * base, créé à l'écran — sa migration a été retirée avant la mise en ligne

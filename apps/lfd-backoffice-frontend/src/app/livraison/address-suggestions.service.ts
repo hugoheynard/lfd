@@ -5,7 +5,7 @@ import { firstValueFrom } from 'rxjs';
 
 import { B2B_API_BASE } from '../api/api-config';
 
-const SUGGESTIONS = `${B2B_API_BASE}/admin/livraison/carnet-a-corriger`;
+const SUGGESTIONS = `${B2B_API_BASE}/admin/delivery/address-corrections`;
 
 /**
  * **« Carnet à corriger »** (`documentation/livraisons/livreur/gps-y-aller-et-position.md`,
@@ -21,13 +21,13 @@ export class AddressSuggestionsService {
 
   async apply(addressId: string, decision: AddressPointDecisionPayload): Promise<void> {
     await firstValueFrom(
-      this.http.post<void>(`${SUGGESTIONS}/${encodeURIComponent(addressId)}/appliquer`, decision),
+      this.http.post<void>(`${SUGGESTIONS}/${encodeURIComponent(addressId)}/apply`, decision),
     );
   }
 
   async ignore(addressId: string, decision: AddressPointDecisionPayload): Promise<void> {
     await firstValueFrom(
-      this.http.post<void>(`${SUGGESTIONS}/${encodeURIComponent(addressId)}/ignorer`, decision),
+      this.http.post<void>(`${SUGGESTIONS}/${encodeURIComponent(addressId)}/dismiss`, decision),
     );
   }
 }

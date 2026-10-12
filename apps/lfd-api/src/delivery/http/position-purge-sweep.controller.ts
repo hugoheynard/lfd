@@ -13,11 +13,11 @@ export interface PositionPurgeSweepReport {
 /**
  * Endpoint **batch** de la purge des positions au geste
  * (`documentation/livraisons/livreur/gps-y-aller-et-position.md`). Même porte
- * machine-à-machine que `admin/livraison/geocodage/sweep` : le `RecomputeGuard`
+ * machine-à-machine que `admin/delivery/geocoding/sweep` : le `RecomputeGuard`
  * et son jeton. Appelé par le cron nocturne `QUALITY_UPLOAD_SWEEP_CRON`
  * (`container/worker.ts`), juste après la purge du géocodage.
  */
-@Controller("admin/livraison/positions/sweep")
+@Controller("admin/delivery/positions/sweep")
 @Public()
 @UseGuards(RecomputeGuard)
 export class PositionPurgeSweepController {

@@ -19,6 +19,7 @@ import { afterEach, describe, expect, it, vi } from 'vitest';
 
 import { PermissionsStore } from '../../auth/permissions.store';
 import { NotifyService } from '../../notify.service';
+import { type DayWatch, DayVersionWatcher } from '../../shared/day-version/day-version-watcher';
 import { DeliveryIncidentsService } from '../delivery-incidents.service';
 import { DeliveryRoundsService } from '../delivery-rounds.service';
 import { DeliveryRoutingService } from '../delivery-routing.service';
@@ -165,6 +166,20 @@ const PROPOSAL: DeliveryRoundProposalView = {
   ],
 };
 
+/**
+ * Le veilleur de journée, doublé : il garde la relecture que l'écran lui
+ * confie, et le test la déclenche comme le ferait une version qui bouge.
+ */
+const watched: DayWatch[] = [];
+const fakeWatcher = {
+  watch: (spec: DayWatch): void => {
+    watched.push(spec);
+  },
+};
+
+/** Les lectures du plan arrêté (CA6a), tenues à part de `wire.reads`. */
+const readinessReads: string[] = [];
+
 interface Wire {
   readonly calls: string[];
   readonly reads: { rounds: string[]; sheets: string[]; also: (readonly string[])[] };
@@ -242,6 +257,7 @@ async function boot(
   query: Record<string, string> = {},
 ): Promise<{ fixture: ComponentFixture<RoundsPage>; element: HTMLElement }> {
   wire = { calls: [], reads: { rounds: [], sheets: [], also: [] }, refuse: null };
+  readinessReads.length = 0;
   TestBed.resetTestingModule();
   TestBed.configureTestingModule({
     providers: [
@@ -280,7 +296,10 @@ async function boot(
           unassignDriver: (roundId: string, payload: unknown) =>
             outcome(`unassignDriver ${roundId} ${JSON.stringify(payload)}`),
           returnToDepot: (roundId: string) => outcome(`return ${roundId}`),
-          readiness: (day: string) => Promise.resolve({ day, arrested }),
+          readiness: (day: string) => {
+            readinessReads.push(day);
+            return Promise.resolve({ day, arrested });
+          },
         } satisfies Partial<Record<keyof DeliveryRoundsService, unknown>>,
       },
       {
@@ -337,6 +356,7 @@ async function boot(
         } satisfies Partial<Record<keyof DeliveryIncidentsService, unknown>>,
       },
       { provide: NotifyService, useValue: { success: () => undefined } },
+      { provide: DayVersionWatcher, useValue: fakeWatcher },
       {
         provide: PermissionsStore,
         useValue: { can: (permission: StaffPermission) => grants.includes(permission) },
@@ -993,5 +1013,42 @@ describe('RoundsPage — le plan arrêté (CA6a)', () => {
     const planner = fixture.debugElement.query(By.directive(PlannerPopover))
       .componentInstance as PlannerPopover;
     expect(planner.open()).toBe(true);
+  });
+});
+
+describe('RoundsPage — la relecture de la journée', () => {
+  /**
+   * Régression : le bandeau suivait `state()` tout entier, qui passe par
+   * `loading` puis `ready` — deux lectures du plan arrêté par chargement
+   * (corrigé le 2026-10-12).
+   */
+  it('lit le plan arrêté une seule fois par chargement', async () => {
+    const { fixture } = await boot();
+    expect(readinessReads).toHaveLength(1);
+
+    await watched.at(-1)?.reload();
+    await settle(fixture);
+
+    expect(wire.reads.rounds).toHaveLength(2);
+    expect(readinessReads).toHaveLength(2);
+  });
+
+  it('suit la journée de la livraison, pour le jour affiché', async () => {
+    await boot();
+    const watch = watched.at(-1);
+    expect(watch?.journals).toEqual(['delivery']);
+    expect(watch?.date()).toBe(shiftDay(parisDayOf(new Date()), 1));
+  });
+
+  it('une version qui bouge relit la composition et la feuille, sans repasser par « chargement »', async () => {
+    const { fixture, element } = await boot();
+    const reload = watched.at(-1)?.reload();
+    fixture.detectChanges();
+    expect(element.querySelectorAll('[data-round]')).toHaveLength(2);
+    await reload;
+    await settle(fixture);
+
+    expect(wire.reads.rounds).toHaveLength(2);
+    expect(wire.reads.sheets).toHaveLength(2);
   });
 });

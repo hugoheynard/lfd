@@ -15,7 +15,7 @@ import type { StaffPermission } from "./staff-access.js";
  * - `bring_back` — « Rapporter » : l'arrêt se CLÔT « rapporté » (LB-Q2) ; la
  *   commande reste prête, non livrée, et peut repartir dans une autre tournée.
  *
- * Routes (`admin/livraison/a-decider…`, sous `delivery_decisions` — `read`
+ * Routes (`admin/delivery/stop-decisions…`, sous `delivery_decisions` — `read`
  * pour les `GET`, `write` pour répondre ; `b2b_companies:write` jusqu'au
  * 2026-10-02) :
  * - `GET` → {@link PendingStopDecisionsView} ;

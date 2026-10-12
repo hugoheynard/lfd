@@ -23,7 +23,7 @@ import { ListVehiclesQuery } from "../application/queries/list-vehicles.query.js
  * l'écriture pour qui règle la flotte. Retirer et réactiver sont des `POST`
  * nommés — des gestes, pas une colonne qu'on écrit. Il n'injecte que les bus.
  */
-@Controller("admin/livraison/vehicules")
+@Controller("admin/delivery/vehicles")
 @AdminSurface("delivery_settings")
 export class VehiclesController {
   constructor(
@@ -63,7 +63,7 @@ export class VehiclesController {
     );
   }
 
-  @Post(":id/retrait")
+  @Post(":id/retirement")
   @HttpCode(HttpStatus.NO_CONTENT)
   async retire(@Param("id") id: string): Promise<void> {
     await this.commands.execute<RetireVehicleCommand, void>(new RetireVehicleCommand(id));

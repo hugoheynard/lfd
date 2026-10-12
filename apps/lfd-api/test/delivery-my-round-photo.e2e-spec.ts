@@ -74,7 +74,7 @@ async function myRoundWithStop(
   await assign(ctx, DAY, roundId, orderId);
   const { version } = await roundOf(ctx, DAY, roundId);
   await admin(ctx)
-    .put(`${ROUNDS}/${roundId}/livreur`)
+    .put(`${ROUNDS}/${roundId}/driver`)
     .send({ staffUserId: driverId, version })
     .expect(204);
   return { roundId, orderId };
@@ -86,7 +86,7 @@ async function stopIdOf(agent: request.Agent, roundId: string): Promise<string> 
 }
 
 function photoUrl(roundId: string, stopId: string, stepId: string): string {
-  return `${MY_ROUND}/${roundId}/arrets/${stopId}/procedure/${stepId}/photo`;
+  return `${MY_ROUND}/${roundId}/stops/${stopId}/procedure/${stepId}/photo`;
 }
 
 describe("la photo d'une étape, pour le livreur (MT-D5 v2)", () => {

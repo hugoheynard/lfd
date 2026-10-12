@@ -1,6 +1,6 @@
 /**
  * **Le plan arrêté, vu par l'écran des tournées** (plan de composition
- * automatique, §16.5, CA6a) — `GET /admin/livraison/tournees/plan-arrete?jour=`,
+ * automatique, §16.5, CA6a) — `GET /admin/delivery/rounds/plan-stopped?day=`,
  * sous `delivery_rounds:read`.
  *
  * Trois états : `arrested` nul (le plan n'est pas arrêté : rien à dire),

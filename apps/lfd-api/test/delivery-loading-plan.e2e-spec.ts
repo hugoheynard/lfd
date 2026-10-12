@@ -37,7 +37,7 @@ beforeEach(async () => {
 });
 
 function planOf(roundId: string) {
-  return admin(ctx).get(`${LOADING}/chargement/${roundId}/plan`);
+  return admin(ctx).get(`${LOADING}/loading/${roundId}/plan`);
 }
 
 /** Un véhicule de 1 000 L utiles, dont 100 L réfrigérés — par la route de la flotte. */
@@ -79,7 +79,7 @@ describe("le plan de chargement d'une tournée composée", () => {
       half: false,
       innerBags: 0,
     });
-    await admin(ctx).post(`${BINS}/${voided}/annulation`).expect(204);
+    await admin(ctx).post(`${BINS}/${voided}/cancellation`).expect(204);
     await declareTypedBins(ctx, { orderId: orders[2].id, whole: 2, half: false, innerBags: 0 });
     const positions = (await loadingOf(ctx, roundId)).stops.map((stop) => stop.position);
 
@@ -199,7 +199,7 @@ describe("le plan de chargement d'une tournée composée", () => {
         })
         .expect(201);
       const manne = await admin(ctx)
-        .post(`${LOADING}/bacs`)
+        .post(`${LOADING}/bins`)
         .send({
           name: "Manne à pain",
           outer: { lengthMm: 665, widthMm: 460, heightMm: 715 },
@@ -261,7 +261,7 @@ describe("le plan de chargement d'une tournée composée", () => {
         })
         .expect(201);
       const manne = await admin(ctx)
-        .post(`${LOADING}/bacs`)
+        .post(`${LOADING}/bins`)
         .send({
           name: "Manne à pain",
           outer: { lengthMm: 665, widthMm: 460, heightMm: 715 },
@@ -316,7 +316,7 @@ describe("le droit `delivery_loading` (Q21)", () => {
   it("le support ne lit pas le plan (403) ; le comptoir le lit", async () => {
     const roundId = await openRound(ctx, DAY, await addVehicle(ctx, "Kangoo"));
 
-    await (await asRole("support")).get(`${LOADING}/chargement/${roundId}/plan`).expect(403);
-    await (await asRole("comptoir")).get(`${LOADING}/chargement/${roundId}/plan`).expect(200);
+    await (await asRole("support")).get(`${LOADING}/loading/${roundId}/plan`).expect(403);
+    await (await asRole("comptoir")).get(`${LOADING}/loading/${roundId}/plan`).expect(200);
   });
 });

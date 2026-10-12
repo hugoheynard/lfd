@@ -51,7 +51,7 @@ describe("« Proposer » sans socle", () => {
     await binTypeId(ctx);
     await addVehicle(ctx, "Kangoo");
 
-    const refused = await admin(ctx).get(`${PROPOSAL}?jour=${DAY}`).expect(409);
+    const refused = await admin(ctx).get(`${PROPOSAL}?day=${DAY}`).expect(409);
 
     expect(refusal(refused)).toMatchObject({
       code: "delivery.no_measured_vehicle",
@@ -63,7 +63,7 @@ describe("« Proposer » sans socle", () => {
   it("🔴 sans type de bac en service : 409, la phrase qui renvoie aux bacs", async () => {
     await addVehicle(ctx, "Master", MEASURED);
 
-    const refused = await admin(ctx).get(`${PROPOSAL}?jour=${DAY}`).expect(409);
+    const refused = await admin(ctx).get(`${PROPOSAL}?day=${DAY}`).expect(409);
 
     expect(refusal(refused)).toMatchObject({ code: "delivery.no_active_bin_type" });
     expect(refusal(refused).message).toContain("Livraison → Bacs");
@@ -73,7 +73,7 @@ describe("« Proposer » sans socle", () => {
     await binTypeId(ctx);
     await addVehicle(ctx, "Master", MEASURED);
 
-    await admin(ctx).get(`${PROPOSAL}?jour=${DAY}`).expect(200);
+    await admin(ctx).get(`${PROPOSAL}?day=${DAY}`).expect(200);
   });
 });
 
@@ -82,13 +82,13 @@ describe("aucun geste ne défait le socle", () => {
     const master = await addVehicle(ctx, "Master", MEASURED);
     await addVehicle(ctx, "Kangoo");
 
-    const refused = await admin(ctx).post(`${VEHICLES}/${master}/retrait`).expect(409);
+    const refused = await admin(ctx).post(`${VEHICLES}/${master}/retirement`).expect(409);
     expect(refusal(refused).code).toBe("delivery.last_measured_vehicle");
     expect(refusal(refused).message).toContain("« Master » est le dernier en service");
     expect(await ctx.prisma.deliveryVehicle.count({ where: { retiredAt: null } })).toBe(2);
 
     await addVehicle(ctx, "Trafic", MEASURED);
-    await admin(ctx).post(`${VEHICLES}/${master}/retrait`).expect(204);
+    await admin(ctx).post(`${VEHICLES}/${master}/retirement`).expect(204);
   });
 
   it("🔴 refuse d'effacer les cotes du dernier véhicule mesuré", async () => {
@@ -111,19 +111,19 @@ describe("aucun geste ne défait le socle", () => {
   it("🔴 refuse d'archiver le dernier type de bac en service", async () => {
     const only = await binTypeId(ctx);
 
-    const refused = await admin(ctx).post(`${LOADING}/bacs/${only}/archiver`).expect(409);
+    const refused = await admin(ctx).post(`${LOADING}/bins/${only}/archive`).expect(409);
 
     expect(refusal(refused).code).toBe("delivery.last_active_bin_type");
     expect(refusal(refused).message).toContain("Livraison → Bacs");
     expect(await ctx.prisma.deliveryBinType.count({ where: { archivedAt: null } })).toBe(1);
 
     await binTypeId(ctx, "Bac L e2e");
-    await admin(ctx).post(`${LOADING}/bacs/${only}/archiver`).expect(204);
+    await admin(ctx).post(`${LOADING}/bins/${only}/archive`).expect(204);
   });
 
   it("une flotte déjà sans cotes n'est pas figée : un véhicule sans cotes se retire", async () => {
     const kangoo = await addVehicle(ctx, "Kangoo");
 
-    await admin(ctx).post(`${VEHICLES}/${kangoo}/retrait`).expect(204);
+    await admin(ctx).post(`${VEHICLES}/${kangoo}/retirement`).expect(204);
   });
 });

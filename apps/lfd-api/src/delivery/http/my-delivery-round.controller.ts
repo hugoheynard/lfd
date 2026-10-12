@@ -54,7 +54,7 @@ type DateQuery = z.infer<typeof dateQuerySchema>;
  * La porte du chargeur (`tournees/:roundId/depart`, sous `delivery_loading`)
  * reste en service, inchangée (MT-Q5). Il n'injecte que les bus.
  */
-@Controller("admin/livraison/ma-tournee")
+@Controller("admin/delivery/my-round")
 @AdminSurface("delivery_driving")
 export class MyDeliveryRoundController {
   constructor(
@@ -96,7 +96,7 @@ export class MyDeliveryRoundController {
     );
   }
 
-  @Post(":roundId/depart")
+  @Post(":roundId/departure")
   @HttpCode(HttpStatus.NO_CONTENT)
   async depart(
     @StaffUserId() staffUserId: string,
@@ -112,7 +112,7 @@ export class MyDeliveryRoundController {
    * La photo d'une étape de la procédure d'un arrêt de MA tournée — mêmes
    * en-têtes que la route du staff (`serveStepPhoto`) : l'écran porte `?rev=`.
    */
-  @Get(":roundId/arrets/:stopId/procedure/:stepId/photo")
+  @Get(":roundId/stops/:stopId/procedure/:stepId/photo")
   async stepPhoto(
     @StaffUserId() staffUserId: string,
     @Param("roundId") roundId: string,

@@ -29,7 +29,7 @@ import {
 } from "./delivery-routing-scene.js";
 
 const DAY = serviceDay();
-const SUGGESTIONS = `${ROUNDS}/places-suggerees`;
+const SUGGESTIONS = `${ROUNDS}/suggested-slots`;
 
 let ctx: E2eContext;
 
@@ -50,7 +50,7 @@ beforeEach(async () => {
 
 async function suggestions(): Promise<DeliveryPlacementSuggestionsView> {
   return jsonBody<DeliveryPlacementSuggestionsView>(
-    await admin(ctx).get(`${SUGGESTIONS}?jour=${DAY}`).expect(200),
+    await admin(ctx).get(`${SUGGESTIONS}?day=${DAY}`).expect(200),
   );
 }
 
@@ -102,7 +102,7 @@ describe("la place suggérée d'une livraison arrivée sur un jour appliqué (CA
     expect(place.extraMinutes).toBeGreaterThanOrEqual(0);
 
     await admin(ctx)
-      .post(`${ROUNDS}/${roundId}/arrets`)
+      .post(`${ROUNDS}/${roundId}/stops`)
       .send({ orderId: late, version: place.roundVersion, after: place.after })
       .expect(201);
 
@@ -120,11 +120,11 @@ describe("la place suggérée d'une livraison arrivée sur un jour appliqué (CA
     const two = suggested(view, second);
 
     await admin(ctx)
-      .post(`${ROUNDS}/${roundId}/arrets`)
+      .post(`${ROUNDS}/${roundId}/stops`)
       .send({ orderId: first, version: one.roundVersion, after: one.after })
       .expect(201);
     await admin(ctx)
-      .post(`${ROUNDS}/${two.roundId}/arrets`)
+      .post(`${ROUNDS}/${two.roundId}/stops`)
       .send({ orderId: second, version: two.roundVersion, after: two.after })
       .expect(409);
 
@@ -138,7 +138,7 @@ describe("la place suggérée d'une livraison arrivée sur un jour appliqué (CA
     const { version } = await roundOf(ctx, DAY, roundId);
 
     await admin(ctx)
-      .post(`${ROUNDS}/${roundId}/arrets`)
+      .post(`${ROUNDS}/${roundId}/stops`)
       .send({ orderId: late, version, after: 5 })
       .expect(400);
 
@@ -150,6 +150,6 @@ describe("la place suggérée d'une livraison arrivée sur un jour appliqué (CA
     await seedPlannableDelivery(ctx, DAY, { lat: 45.69, lng: 5.91 });
 
     expect(await suggestions()).toEqual({ day: DAY, suggestions: [] });
-    await admin(ctx).get(`${SUGGESTIONS}?jour=demain`).expect(400);
+    await admin(ctx).get(`${SUGGESTIONS}?day=demain`).expect(400);
   });
 });

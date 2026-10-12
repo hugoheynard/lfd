@@ -39,7 +39,7 @@ import {
 import { forgetRoutingScene } from "./delivery-routing-scene.js";
 import { bootstrapE2e, E2E_STAFF_SUB, jsonBody, type E2eContext } from "./e2e-harness.js";
 
-const DECIDE = "/admin/livraison/a-decider";
+const DECIDE = "/admin/delivery/stop-decisions";
 
 let ctx: E2eContext;
 
@@ -91,7 +91,7 @@ async function pending(agent: request.Agent): Promise<PendingStopDecisionsView> 
 async function deposit(agent: request.Agent, roundId: string, stopId: string): Promise<Response> {
   const version = (await myRound(agent, roundId)).version;
   return agent
-    .post(`${MY_ROUND}/${roundId}/arrets/${stopId}/depot`)
+    .post(`${MY_ROUND}/${roundId}/stops/${stopId}/drop-off`)
     .field("version", String(version))
     .attach("photo", JPEG, "depot.jpg");
 }
@@ -118,7 +118,7 @@ describe("« À décider » — le commercial décide (B3)", () => {
     const before = await myRound(paul.agent, roundId);
     expect(stopOf(before)).toMatchObject({ canDeposit: false, decision: { state: "pending" } });
 
-    await lea.agent.post(`${DECIDE}/${stopId}/autoriser-depot`).expect(204);
+    await lea.agent.post(`${DECIDE}/${stopId}/allow-drop-off`).expect(204);
 
     const after = await myRound(paul.agent, roundId);
     expect(after.version).toBe(before.version);
@@ -147,7 +147,7 @@ describe("« À décider » — le commercial décide (B3)", () => {
     const { paul, lea, roundId, orderId, stopId } = await scene();
     await reportNobody(paul.agent, roundId, stopId);
 
-    await lea.agent.post(`${DECIDE}/${stopId}/rapporter`).expect(204);
+    await lea.agent.post(`${DECIDE}/${stopId}/bring-back`).expect(204);
     await ctx.drain();
 
     const stop = await ctx.prisma.deliveryRoundStop.findUniqueOrThrow({ where: { id: stopId } });
@@ -172,9 +172,9 @@ describe("« À décider » — le commercial décide (B3)", () => {
   it("🔴 « Autoriser » puis « Rapporter » : la dernière l'emporte, et le dépôt est refusé en le disant", async () => {
     const { paul, lea, roundId, orderId, stopId } = await scene(false);
     await reportNobody(paul.agent, roundId, stopId);
-    await lea.agent.post(`${DECIDE}/${stopId}/autoriser-depot`).expect(204);
+    await lea.agent.post(`${DECIDE}/${stopId}/allow-drop-off`).expect(204);
 
-    await lea.agent.post(`${DECIDE}/${stopId}/rapporter`).expect(204);
+    await lea.agent.post(`${DECIDE}/${stopId}/bring-back`).expect(204);
 
     const refused = await deposit(paul.agent, roundId, stopId);
     expect(refused.status).toBe(409);
@@ -193,7 +193,7 @@ describe("« À décider » — le commercial décide (B3)", () => {
     await reportNobody(paul.agent, roundId, stopId);
     expect((await deposit(paul.agent, roundId, stopId)).status).toBe(204);
 
-    const closed = await lea.agent.post(`${DECIDE}/${stopId}/rapporter`);
+    const closed = await lea.agent.post(`${DECIDE}/${stopId}/bring-back`);
     expect(closed.status).toBe(409);
     expect(messageOf(closed)).toMatch(/déjà clos/u);
   });
@@ -202,9 +202,9 @@ describe("« À décider » — le commercial décide (B3)", () => {
     const { paul, lea, roundId, stopId } = await scene(false);
     await reportNobody(paul.agent, roundId, stopId);
     // Le livreur ne peut plus terminer avec un arrêt en attente (B4) : la rentrée staff le peut.
-    await admin(ctx).post(`${ROUNDS}/${roundId}/retour`).expect(204);
+    await admin(ctx).post(`${ROUNDS}/${roundId}/return`).expect(204);
 
-    const returned = await lea.agent.post(`${DECIDE}/${stopId}/autoriser-depot`);
+    const returned = await lea.agent.post(`${DECIDE}/${stopId}/allow-drop-off`);
 
     expect(returned.status).toBe(409);
     expect(messageOf(returned)).toMatch(/est rentrée/u);
@@ -217,8 +217,8 @@ describe("« À décider » — le commercial décide (B3)", () => {
 
     await paul.agent.get(DECIDE).expect(403);
     await compta.agent.get(DECIDE).expect(403);
-    await compta.agent.post(`${DECIDE}/${stopId}/autoriser-depot`).expect(403);
-    await paul.agent.post(`${DECIDE}/${stopId}/rapporter`).expect(403);
+    await compta.agent.post(`${DECIDE}/${stopId}/allow-drop-off`).expect(403);
+    await paul.agent.post(`${DECIDE}/${stopId}/bring-back`).expect(403);
     expect(
       await ctx.prisma.deliveryStopDecision.findUniqueOrThrow({ where: { stopId } }),
     ).toMatchObject({ outcome: null });
@@ -257,10 +257,10 @@ describe("« À décider » — le commercial décide (B3)", () => {
     await reportNobody(paul.agent, roundId, stopId);
 
     await accounts.agent.get(DECIDE).expect(403);
-    await accounts.agent.post(`${DECIDE}/${stopId}/rapporter`).expect(403);
+    await accounts.agent.post(`${DECIDE}/${stopId}/bring-back`).expect(403);
     expect((await pending(reader.agent)).decisions).toHaveLength(1);
-    await reader.agent.post(`${DECIDE}/${stopId}/rapporter`).expect(403);
-    await decider.agent.post(`${DECIDE}/${stopId}/rapporter`).expect(204);
+    await reader.agent.post(`${DECIDE}/${stopId}/bring-back`).expect(403);
+    await decider.agent.post(`${DECIDE}/${stopId}/bring-back`).expect(204);
     expect(
       await ctx.prisma.deliveryStopDecision.findUniqueOrThrow({ where: { stopId } }),
     ).toMatchObject({ outcome: "bring_back" });
@@ -269,7 +269,7 @@ describe("« À décider » — le commercial décide (B3)", () => {
   it("un arrêt sans signalement n'a pas de décision : 404 nommé", async () => {
     const { lea, stopId } = await scene();
 
-    const missing = await lea.agent.post(`${DECIDE}/${stopId}/autoriser-depot`);
+    const missing = await lea.agent.post(`${DECIDE}/${stopId}/allow-drop-off`);
 
     expect(missing.status).toBe(404);
     expect(messageOf(missing)).toMatch(/Aucune décision/u);
@@ -314,7 +314,7 @@ describe("« À décider » — le commercial décide (B3)", () => {
     await paul.agent.get(`${DECIDE}/${stopId}/incidents/${nobody}/photo`).expect(403);
 
     // Rapportée, la décision n'est plus vivante : la photo ne se sert plus ici.
-    await lea.agent.post(`${DECIDE}/${stopId}/rapporter`).expect(204);
+    await lea.agent.post(`${DECIDE}/${stopId}/bring-back`).expect(204);
     await lea.agent.get(`${DECIDE}/${stopId}/incidents/${nobody}/photo`).expect(404);
   });
 });

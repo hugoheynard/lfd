@@ -70,7 +70,7 @@ describe("sans OSRM, le calcul refuse — plus de vol d'oiseau (L10b-C5)", () =>
     await addVehicle(ctx, "Kangoo", MEASURED);
     await seedPlannableDelivery(ctx, DAY, { lat: 45.69, lng: 5.91 });
 
-    const refused = await admin(ctx).get(`${PROPOSAL}?jour=${DAY}`).expect(409);
+    const refused = await admin(ctx).get(`${PROPOSAL}?day=${DAY}`).expect(409);
 
     expect(messageOf(refused)).toBe(REFUSAL);
     expect(await ctx.prisma.deliveryRound.count()).toBe(0);
@@ -104,7 +104,7 @@ describe("sans OSRM, le calcul refuse — plus de vol d'oiseau (L10b-C5)", () =>
       departure: null,
     };
 
-    const refused = await admin(ctx).post("/admin/livraison/simulateur").send(scenario).expect(409);
+    const refused = await admin(ctx).post("/admin/delivery/simulator").send(scenario).expect(409);
 
     expect(messageOf(refused)).toBe(REFUSAL);
   });

@@ -16,7 +16,7 @@ import { GetBinCapacitiesQuery } from "../application/queries/get-bin-capacities
  * tranchée, la contenance est une donnée de la livraison). Une case à la
  * fois : `PUT` avec `units`, ou `null` pour la vider. Il n'injecte que les bus.
  */
-@Controller("admin/livraison/contenances")
+@Controller("admin/delivery/capacities")
 @AdminSurface("delivery_settings")
 export class BinCapacitiesController {
   constructor(

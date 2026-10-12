@@ -54,7 +54,7 @@ async function deposit(
 ): Promise<Response> {
   const version = (await myRound(agent, roundId)).version;
   const call = agent
-    .post(`${MY_ROUND}/${roundId}/arrets/${stopId}/depot`)
+    .post(`${MY_ROUND}/${roundId}/stops/${stopId}/drop-off`)
     .field("version", String(version));
   return withPhoto ? call.attach("photo", JPEG, "depot.jpg") : call;
 }
@@ -146,7 +146,7 @@ describe("« Déposé avec preuve » (B2)", () => {
     const version = (await myRound(paul.agent, roundId)).version;
 
     await lea.agent
-      .post(`${MY_ROUND}/${roundId}/arrets/${stopId}/depot`)
+      .post(`${MY_ROUND}/${roundId}/stops/${stopId}/drop-off`)
       .field("version", String(version))
       .attach("photo", JPEG, "depot.jpg")
       .expect(404);

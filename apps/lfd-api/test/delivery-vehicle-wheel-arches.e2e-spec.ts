@@ -16,7 +16,7 @@ const stubAdminVerifier = {
     Promise.resolve({ subject: token, scopes: [] }),
 };
 
-const VEHICLES = "/admin/livraison/vehicules";
+const VEHICLES = "/admin/delivery/vehicles";
 
 /** Un Trafic : 290 × 166 × 139 cm, passages à 60 cm du fond. */
 const CARGO = { lengthCm: 290, widthCm: 166, heightCm: 139 };

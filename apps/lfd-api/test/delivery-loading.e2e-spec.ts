@@ -134,7 +134,7 @@ describe("déclarer, puis charger", () => {
     await loadBin(ctx, roundId, { binId: binId ?? "" }).expect(204);
 
     const view = jsonBody<DeliveryLoadingDayView>(
-      await admin(ctx).get(`${LOADING}/chargement?jour=${DAY}`).expect(200),
+      await admin(ctx).get(`${LOADING}/loading?day=${DAY}`).expect(200),
     );
 
     expect(view.rounds).toEqual([
@@ -156,7 +156,7 @@ describe("déclarer, puis charger", () => {
     await loadBin(ctx, roundId, { binId: binId ?? "" }).expect(204);
     const { version } = await roundOf(ctx, DAY, roundId);
     await admin(ctx)
-      .post(`${ROUNDS}/${roundId}/arrets/${stopId}/retrait`)
+      .post(`${ROUNDS}/${roundId}/stops/${stopId}/removal`)
       .send({ version })
       .expect(204);
 
@@ -174,7 +174,7 @@ describe("déclarer, puis charger", () => {
     await loadBin(ctx, roundId, { binId: binId ?? "" }).expect(204);
 
     await admin(ctx)
-      .post(`${LOADING}/chargement/${roundId}/bacs/${binId ?? ""}/dechargement`)
+      .post(`${LOADING}/loading/${roundId}/bins/${binId ?? ""}/unloading`)
       .expect(204);
 
     const row = await ctx.prisma.deliveryBinLoad.findFirstOrThrow();
@@ -211,13 +211,13 @@ describe("partir (Q14, L4-C4)", () => {
     expect((await roundOf(ctx, DAY, roundId)).departedAt).toBe(view.departedAt);
 
     await admin(ctx)
-      .post(`${LOADING}/chargement/${roundId}/bacs/${binId ?? ""}/dechargement`)
+      .post(`${LOADING}/loading/${roundId}/bins/${binId ?? ""}/unloading`)
       .expect(409);
     await admin(ctx)
-      .post(`${BINS}/${binId ?? ""}/annulation`)
+      .post(`${BINS}/${binId ?? ""}/cancellation`)
       .expect(409);
     await admin(ctx)
-      .post(`${ROUNDS}/${roundId}/arrets/${stopId}/retrait`)
+      .post(`${ROUNDS}/${roundId}/stops/${stopId}/removal`)
       .send({ version: view.version })
       .expect(409);
     await expect(declareBins(ctx, order.id, 1)).rejects.toMatchObject({

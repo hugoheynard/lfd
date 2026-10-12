@@ -75,7 +75,7 @@ describe("la composition a changé depuis la proposition", () => {
     await seedDeparture(ctx);
     const manual = await composed("Kangoo", NORTH);
     await seedPlannableDelivery(ctx, DAY, SOUTH);
-    const view = await propose(ctx, `jour=${DAY}&toutRecomposer=true`);
+    const view = await propose(ctx, `day=${DAY}&recomposeAll=true`);
     // Quelqu'un compose entre la proposition et l'application.
     await assign(ctx, DAY, manual.roundId, await seedPlannableDelivery(ctx, DAY, NORTH));
     const before = await roundOf(ctx, DAY, manual.roundId);
@@ -98,7 +98,7 @@ describe("ce que la proposition ne touche jamais (L7-C5)", () => {
     await addVehicle(ctx, "Trafic", MEASURED);
     await seedPlannableDelivery(ctx, DAY, SOUTH);
 
-    const view = await propose(ctx, `jour=${DAY}&toutRecomposer=true`);
+    const view = await propose(ctx, `day=${DAY}&recomposeAll=true`);
 
     expect(view.kept).toEqual([
       expect.objectContaining({ roundId: gone.roundId, reason: "departed" }),
@@ -114,7 +114,7 @@ describe("ce que la proposition ne touche jamais (L7-C5)", () => {
     await loadBin(ctx, loaded.roundId, { binId: binId ?? "" }).expect(204);
     const traficId = await addVehicle(ctx, "Trafic", MEASURED);
 
-    const view = await propose(ctx, `jour=${DAY}&toutRecomposer=true`);
+    const view = await propose(ctx, `day=${DAY}&recomposeAll=true`);
     expect(view.kept).toEqual([
       expect.objectContaining({ roundId: loaded.roundId, reason: "loaded" }),
     ]);
@@ -174,7 +174,7 @@ describe("le départ doit être situé", () => {
     await seedDeparture(ctx, false);
     await addVehicle(ctx, "Kangoo", MEASURED);
 
-    const refused = await admin(ctx).get(`${PROPOSAL}?jour=${DAY}`).expect(409);
+    const refused = await admin(ctx).get(`${PROPOSAL}?day=${DAY}`).expect(409);
 
     expect(messageOf(refused)).toContain("Point de départ");
   });
@@ -184,11 +184,11 @@ describe("le droit (L7-C7) : celui de la composition, rien de neuf", () => {
   it("refuse le support en lecture comme en écriture (403)", async () => {
     const support = await asRole("support");
 
-    await support.get(`${PROPOSAL}?jour=${DAY}`).expect(403);
+    await support.get(`${PROPOSAL}?day=${DAY}`).expect(403);
     await support.post(PROPOSAL).send({ day: DAY, rounds: [], versions: [] }).expect(403);
-    await support.post(`${ROUNDS}/situer?jour=${DAY}`).expect(403);
+    await support.post(`${ROUNDS}/locate?day=${DAY}`).expect(403);
     await support.post(TIMING).send({ day: DAY, rounds: [] }).expect(403);
-    await support.get("/admin/livraison/calcul").expect(403);
+    await support.get("/admin/delivery/routing-settings").expect(403);
   });
 });
 

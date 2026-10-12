@@ -264,7 +264,7 @@ précède, **elle l'emporte**.
 
 | Contrôleur                                                            | Route                                                                                                                                                               | Ressource cible                                                                                |
 | --------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ---------------------------------------------------------------------------------------------- |
-| `b2b/orders/http/admin-orders.controller.ts` (`admin/orders`)         | `GET` liste · `GET :id` · `GET :id/bon.pdf` · `POST` passer · `POST quote` · `POST :id/rappel-retrait` · `GET day-version`                                          | `b2b_orders`                                                                                   |
+| `b2b/orders/http/admin-orders.controller.ts` (`admin/orders`)         | `GET` liste · `GET :id` · `GET :id/bon.pdf` · `POST` passer · `POST quote` · `POST :id/pickup-reminder` · `GET day-version`                                         | `b2b_orders`                                                                                   |
 | `b2b/orders/http/admin-order-drafts.controller.ts`                    | `GET/PUT/DELETE :companyId`                                                                                                                                         | `b2b_orders`                                                                                   |
 | `b2b/orders/http/admin-order-pricing.controller.ts`                   | `GET :id/lines/:sku/rules`                                                                                                                                          | `b2b_orders`                                                                                   |
 | `b2b/orders/http/admin-catalog.controller.ts`                         | `GET sellable` · `GET companies/:companyId`                                                                                                                         | `b2b_orders`                                                                                   |
@@ -308,7 +308,7 @@ Côté écran, en plus des lignes de § 1.1 : `auth/permission.guard.ts:20`
 | `POST admin/orders/quote` (le devis qui précède)                                                                                       | `b2b_place_order`        |
 | `GET/PUT/DELETE admin/order-drafts/:companyId` (le brouillon)                                                                          | `b2b_place_order`        |
 | `GET admin/catalog/sellable` · `GET admin/catalog/companies/:companyId` (ce qu'on peut vendre, l'historique du client — pour composer) | `b2b_place_order`        |
-| `GET admin/orders` · `GET :id` · `GET :id/bon.pdf` · traçabilité tarifaire · `POST :id/rappel-retrait`                                 | **restent** `b2b_orders` |
+| `GET admin/orders` · `GET :id` · `GET :id/bon.pdf` · traçabilité tarifaire · `POST :id/pickup-reminder`                                | **restent** `b2b_orders` |
 
 Ressource à **une action** utile (`write`) : il n'y a rien à « lire » dans le
 geste de passer une commande ; lire les commandes reste `b2b_orders:read`.
@@ -484,7 +484,7 @@ l'écran montrait un geste que l'API refusait, ou cachait ce qu'elle ouvrait.
   fournil et le filet de 5 min. ✅ Corrigé le 2026-10-07 : la route accepte
   aussi `handover_counter:read` (audit, B6).
 - **`delivery_decisions:read` n'affiche rien** : il ouvre
-  `GET admin/livraison/a-decider` (`stop-decisions.controller.ts`), et la
+  `GET admin/delivery/stop-decisions` (`stop-decisions.controller.ts`), et la
   fiche des rôles dit « Voir À décider » (`staff-resource-scopes.ts:221`),
   mais la route d'écran et le rail exigent l'écriture (`app.routes.ts` du
   back-office, l. 401 ; `workspaces.ts:198`). ✋ À trancher (audit, Q5) :

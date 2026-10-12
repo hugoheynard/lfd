@@ -59,9 +59,9 @@ Rien d'autre : ni `delivery_loading`, ni `delivery_rounds`, ni
 `delivery_procedures`, ni `delivery_run_sheet`, ni `staff_notifications`.
 Chaque route d'une tournée est en plus **murée sur SES tournées**
 (`driver_staff_id`) : le droit ouvre la surface, le mur choisit les lignes. Les
-routes sont `admin/livraison/ma-tournee/*` (`my-delivery-round`,
+routes sont `admin/delivery/my-round/*` (`my-delivery-round`,
 `my-delivery-loading` sous `delivery_driving` ; `my-delivery-doorstep` sous
-`delivery_doorstep`) et `admin/livraison/mes-donnees` (`my-driver-notice`, sous
+`delivery_doorstep`) et `admin/delivery/my-data` (`my-driver-notice`, sous
 `delivery_driving`) ; un GET demande `read`, un POST `write`.
 
 **Une exception au mur, voulue** : `GET ma-tournee/version` rend un numéro de
@@ -340,7 +340,7 @@ l'étape 2 n'est pas tranché non plus._
 ### Les lots qui en sortent
 
 > ✅ **PL1 et PL4 bâtis le 2026-10-01** — serveur (`06522cdac`) : routes
-> `admin/livraison/ma-tournee/:roundId/chargement…` (PL1), fiche et
+> `admin/delivery/my-round/:roundId/loading…` (PL1), fiche et
 > avancement dans `MyDeliveryStopView`, route `ma-tournee/version`, trois
 > déclencheurs sur `delivery_bin`
 > (`20261001150000_le_bac_fait_bouger_la_journee`) (PL4) ; écran

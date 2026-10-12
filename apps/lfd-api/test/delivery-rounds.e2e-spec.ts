@@ -45,7 +45,7 @@ describe("ouvrir", () => {
     const first = await openRound(ctx, DAY, kangoo);
     const second = await openRound(ctx, DAY, kangoo);
     await admin(ctx)
-      .put(`/admin/livraison/vehicules/${kangoo}`)
+      .put(`/admin/delivery/vehicles/${kangoo}`)
       .send({ name: "Kangoo gris", plate: "AB-101-CD" })
       .expect(204);
 
@@ -110,7 +110,7 @@ describe("affecter", () => {
 
     const { version } = await roundOf(ctx, OTHER_DAY, later);
     const refused = await admin(ctx)
-      .post(`${ROUNDS}/${later}/arrets`)
+      .post(`${ROUNDS}/${later}/stops`)
       .send({ orderId: order.id, version })
       .expect(409);
     expect(JSON.stringify(refused.body)).toContain(DAY);
@@ -139,7 +139,7 @@ describe("déplacer — I7", () => {
     const stopId = await assign(ctx, DAY, from, order.id);
 
     await admin(ctx)
-      .post(`${ROUNDS}/${from}/arrets/${stopId}/deplacement`)
+      .post(`${ROUNDS}/${from}/stops/${stopId}/move`)
       .send({ toRoundId: to, fromVersion: 2, toVersion: 1 })
       .expect(204);
 
@@ -163,7 +163,7 @@ describe("déplacer — I7", () => {
     const stopId = await assign(ctx, DAY, from, (await seedDelivery(ctx, DAY)).id);
 
     const refused = await admin(ctx)
-      .post(`${ROUNDS}/${from}/arrets/${stopId}/deplacement`)
+      .post(`${ROUNDS}/${from}/stops/${stopId}/move`)
       .send({ toRoundId: to, fromVersion: 1, toVersion: 1 })
       .expect(409);
 
@@ -191,7 +191,7 @@ describe("réordonner — I2", () => {
     const [a, b, c] = stops;
 
     await admin(ctx)
-      .put(`${ROUNDS}/${round}/ordre`)
+      .put(`${ROUNDS}/${round}/sequence`)
       .send({ stopIds: [c, a, b], version: 4 })
       .expect(204);
 
@@ -205,7 +205,7 @@ describe("réordonner — I2", () => {
     const { round, stops } = await threeStops();
 
     await admin(ctx)
-      .put(`${ROUNDS}/${round}/ordre`)
+      .put(`${ROUNDS}/${round}/sequence`)
       .send({ stopIds: stops, version: 4 })
       .expect(204);
 
@@ -220,11 +220,11 @@ describe("réordonner — I2", () => {
     const [a, b] = stops;
 
     await admin(ctx)
-      .put(`${ROUNDS}/${round}/ordre`)
+      .put(`${ROUNDS}/${round}/sequence`)
       .send({ stopIds: [a, b], version: 4 })
       .expect(400);
     await admin(ctx)
-      .put(`${ROUNDS}/${round}/ordre`)
+      .put(`${ROUNDS}/${round}/sequence`)
       .send({ stopIds: [...stops].reverse(), version: 3 })
       .expect(409);
   });
@@ -238,17 +238,14 @@ describe("réordonner — I2", () => {
     await ctx.prisma.deliveryRoundStop.update({ where: { id: c }, data: { closedAt } });
 
     await admin(ctx)
-      .put(`${ROUNDS}/${round}/ordre`)
+      .put(`${ROUNDS}/${round}/sequence`)
       .send({ stopIds: [b, a], version: 4 })
       .expect(204);
     await admin(ctx)
-      .put(`${ROUNDS}/${round}/ordre`)
+      .put(`${ROUNDS}/${round}/sequence`)
       .send({ stopIds: [c, a, b], version: 5 })
       .expect(409);
-    await admin(ctx)
-      .post(`${ROUNDS}/${round}/arrets/${c}/retrait`)
-      .send({ version: 5 })
-      .expect(409);
+    await admin(ctx).post(`${ROUNDS}/${round}/stops/${c}/removal`).send({ version: 5 }).expect(409);
 
     const closed = await ctx.prisma.deliveryRoundStop.findUniqueOrThrow({ where: { id: c } });
     expect(closed).toMatchObject({ closedAt, removedAt: null, position: 3 });

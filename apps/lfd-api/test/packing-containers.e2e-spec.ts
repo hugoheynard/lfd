@@ -204,7 +204,7 @@ describe("la colonne Contenants — le colisage tient le contenu, la livraison g
     // Un type reste en service : le catalogue ne se vide pas.
     await binTypeId(ctx);
     const typeId = await binTypeId(ctx, "Bac retiré e2e");
-    await staff().post(`${LOADING}/bacs/${typeId}/archiver`).expect(204);
+    await staff().post(`${LOADING}/bins/${typeId}/archive`).expect(204);
 
     const refused = await staff()
       .post(`${base(delivery.orderId)}/containers`)

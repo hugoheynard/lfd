@@ -26,7 +26,7 @@ L6-C14) est dans [`plan-preparation-de-tournee.md`](../tournees/plan-preparation
 
 Tournée partie, **sa** tournée (le livreur n'est jamais un paramètre d'URL :
 une tournée d'un autre rend 404). Routes sous
-`admin/livraison/ma-tournee/:roundId`, ressource `delivery_doorstep`
+`admin/delivery/my-round/:roundId`, ressource `delivery_doorstep`
 (`my-delivery-doorstep.controller.ts`, vérifié le 2026-10-06).
 
 ```mermaid
@@ -102,8 +102,8 @@ note (≤ 500) et une photo facultatives. Table `delivery.delivery_incident`.
 - Un signalement est un fait daté, auteur le livreur ; il ne touche pas la
   commande. Un problème technique ou routier **se signale seulement** : il
   n'arrête pas la tournée (AP-Q4).
-- Côté admin, sous `delivery_rounds` (lecture) : `GET admin/livraison/incidents`,
-  leur photo, et **« Non remis »** (`GET admin/livraison/non-remis`) — les
+- Côté admin, sous `delivery_rounds` (lecture) : `GET admin/delivery/incidents`,
+  leur photo, et **« Non remis »** (`GET admin/delivery/not-handed-over`) — les
   arrêts encore ouverts d'une tournée partie qui est **rentrée**, ou, rentrée
   ou non, d'un jour antérieur à aujourd'hui (heure de Paris ;
   `PrismaUndeliveredStopsReader`). C'est une **vue** : elle ne débloque rien
@@ -127,7 +127,7 @@ Refus nommés : `DepositSignatureRequiredError`, puis `DepositNotAllowedError`.
 
 **La décision du commercial (B3)** — table `delivery.stop_decision`, une par
 arrêt, conditionnée par sa `version`, tracée (qui, quand, `source` = `staff` ou
-`setting`). Routes `admin/livraison/a-decider` sous `delivery_decisions`
+`setting`). Routes `admin/delivery/stop-decisions` sous `delivery_decisions`
 (`GET` la liste et la photo du signalement en lecture ; `POST
 :stopId/autoriser-depot` et `:stopId/rapporter` en écriture), écran
 `/livraison/a-decider`. « Autoriser » n'écrit pas la tournée ; « Rapporter »
@@ -152,7 +152,7 @@ et `delivery-stop-decision.e2e-spec.ts`.
 
 **La décision réglée d'avance (B3 bis, LB-Q6)** — `ask` | `deposit` |
 `bring_back`. Un **global** (`delivery.delivery_doorstep_settings`,
-`GET|PUT admin/livraison/a-la-porte` sous `delivery_procedures`, carte en tête
+`GET|PUT admin/delivery/doorstep` sous `delivery_procedures`, carte en tête
 de « À décider »), que le commercial **redéfinit par adresse**
 (`public.addresses.doorstep_rule`, nulle = hérite ;
 `GET|PUT admin/companies/:c/delivery-addresses/:a/doorstep-rule` sous
@@ -224,7 +224,7 @@ rapportée repart dans n'importe quelle tournée d'un autre jour, au même prix
 `production.order_handover_proof` : **une ligne par commande** remise à la
 porte (photo, nom — nul pour un dépôt —, signature, livreur). Au back-office,
 carte « Preuve de livraison » sur la fiche commande, sous
-**`delivery_proofs:read`** : `GET admin/orders/:id/preuve-livraison`, `…/photo`,
+**`delivery_proofs:read`** : `GET admin/orders/:id/delivery-proof`, `…/photo`,
 `…/signature`, retrouvées par la commande et jamais par une clé, servies en
 `private, no-store` (`HandoverProofReader`, `handover/channels/commerce/`).
 Une attestation sans pièce se lit « Preuve effacée ».

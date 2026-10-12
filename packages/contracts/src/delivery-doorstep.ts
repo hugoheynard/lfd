@@ -5,7 +5,7 @@ import { z } from "zod";
  * que l'admin en relit (`documentation/livraisons/livreur/a-la-porte.md`, § 3,
  * AP-D2, AP-D6, AP-D7, AP-D9).
  *
- * Routes du livreur (`admin/livraison/ma-tournee/:roundId…`, sous
+ * Routes du livreur (`admin/delivery/my-round/:roundId…`, sous
  * `delivery_doorstep`, le même mur que « Ma tournée ») :
  * - `POST /arrets/:stopId/arrivee` (corps facultatif
  *   {@link declareStopArrivalPayloadSchema}) → 204, idempotente ;
@@ -25,10 +25,10 @@ import { z } from "zod";
  * - `POST /retour` → 204, idempotente — « Tournée terminée »
  *   (`parcours-du-livreur.md`, PL2).
  *
- * Et l'admin, depuis Tournées : `POST admin/livraison/tournees/:roundId/retour`
+ * Et l'admin, depuis Tournées : `POST admin/delivery/rounds/:roundId/return`
  * → 204, sous `delivery_rounds:write`.
  *
- * Routes de l'admin (`admin/livraison…`, sous `delivery_rounds:read`) :
+ * Routes de l'admin (`admin/delivery…`, sous `delivery_rounds:read`) :
  * - `GET incidents?date=AAAA-MM-JJ` → {@link DeliveryIncidentsDayView} ;
  * - `GET non-remis` → {@link UndeliveredStopsView} ;
  * - `GET incidents/:incidentId/photo` → l'image.

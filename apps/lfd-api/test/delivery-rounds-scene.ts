@@ -15,8 +15,8 @@ import { AdminTokenVerifier } from "../src/platform/auth/admin-token.verifier.js
 import { E2E_STAFF_SUB, jsonBody, type E2eContext } from "./e2e-harness.js";
 import { createUser } from "./factories.js";
 
-export const ROUNDS = "/admin/livraison/tournees";
-export const VEHICLES = "/admin/livraison/vehicules";
+export const ROUNDS = "/admin/delivery/rounds";
+export const VEHICLES = "/admin/delivery/vehicles";
 
 /** Le jeton porteur EST le `sub` : chaque rôle est une vraie fiche en base. */
 export const ADMIN_VERIFIER_OVERRIDE = {
@@ -93,7 +93,7 @@ export async function openRound(ctx: E2eContext, day: string, vehicleId: string)
 }
 
 export async function dayView(ctx: E2eContext, day: string): Promise<DeliveryRoundsDayView> {
-  return jsonBody<DeliveryRoundsDayView>(await admin(ctx).get(`${ROUNDS}?jour=${day}`).expect(200));
+  return jsonBody<DeliveryRoundsDayView>(await admin(ctx).get(`${ROUNDS}?day=${day}`).expect(200));
 }
 
 export async function roundOf(
@@ -117,7 +117,7 @@ export async function assign(
 ): Promise<string> {
   const { version } = await roundOf(ctx, day, roundId);
   const response = await admin(ctx)
-    .post(`${ROUNDS}/${roundId}/arrets`)
+    .post(`${ROUNDS}/${roundId}/stops`)
     .send({ orderId, version })
     .expect(201);
   return jsonBody<{ stopId: string }>(response).stopId;

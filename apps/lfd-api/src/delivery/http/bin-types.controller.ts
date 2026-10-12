@@ -23,7 +23,7 @@ import { ListBinTypesQuery } from "../application/queries/list-bin-types.query.j
  * lit les tournées, et à qui colise (ci-dessous) ; archiver et réactiver sont
  * des `POST` nommés. Il n'injecte que les bus.
  */
-@Controller("admin/livraison/bacs")
+@Controller("admin/delivery/bins")
 @AdminSurface("delivery_settings")
 export class BinTypesController {
   constructor(
@@ -78,13 +78,13 @@ export class BinTypesController {
     );
   }
 
-  @Post(":id/archiver")
+  @Post(":id/archive")
   @HttpCode(HttpStatus.NO_CONTENT)
   async archive(@Param("id") id: string): Promise<void> {
     await this.commands.execute<ArchiveBinTypeCommand, void>(new ArchiveBinTypeCommand(id));
   }
 
-  @Post(":id/reactiver")
+  @Post(":id/reactivate")
   @HttpCode(HttpStatus.NO_CONTENT)
   async reactivate(@Param("id") id: string): Promise<void> {
     await this.commands.execute<ReactivateBinTypeCommand, void>(new ReactivateBinTypeCommand(id));

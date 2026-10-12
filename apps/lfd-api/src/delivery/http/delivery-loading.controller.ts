@@ -23,7 +23,7 @@ import { GetDeliveryLoadingRoundQuery } from "../application/queries/get-deliver
 
 /** Le jour de service, validé dans sa FORME — le message nomme le paramètre. */
 const dayQuerySchema = z.object({
-  jour: z.string().regex(/^\d{4}-\d{2}-\d{2}$/u, "jour attendu au format AAAA-MM-JJ"),
+  day: z.string().regex(/^\d{4}-\d{2}-\d{2}$/u, "day attendu au format AAAA-MM-JJ"),
 });
 type DayQuery = z.infer<typeof dayQuerySchema>;
 
@@ -37,7 +37,7 @@ type DayQuery = z.infer<typeof dayQuerySchema>;
  * dernier geste du CHARGEMENT : composer n'ouvre pas le droit de partir. Il
  * n'injecte que les bus.
  */
-@Controller("admin/livraison")
+@Controller("admin/delivery")
 @AdminSurface("delivery_loading")
 export class DeliveryLoadingController {
   constructor(
@@ -45,14 +45,14 @@ export class DeliveryLoadingController {
     private readonly queries: QueryBus,
   ) {}
 
-  @Get("chargement")
+  @Get("loading")
   day(@Query(new ZodQuery(dayQuerySchema)) query: DayQuery): Promise<DeliveryLoadingDayView> {
     return this.queries.execute<GetDeliveryLoadingDayQuery, DeliveryLoadingDayView>(
-      new GetDeliveryLoadingDayQuery(query.jour),
+      new GetDeliveryLoadingDayQuery(query.day),
     );
   }
 
-  @Get("chargement/:roundId")
+  @Get("loading/:roundId")
   round(@Param("roundId") roundId: string): Promise<DeliveryLoadingRoundView> {
     return this.queries.execute<GetDeliveryLoadingRoundQuery, DeliveryLoadingRoundView>(
       new GetDeliveryLoadingRoundQuery(roundId),
@@ -60,14 +60,14 @@ export class DeliveryLoadingController {
   }
 
   /** Le plan de chargement (lot 4 bis, v2-5) : il suggère l'ordre de scan, sans l'imposer. */
-  @Get("chargement/:roundId/plan")
+  @Get("loading/:roundId/plan")
   plan(@Param("roundId") roundId: string): Promise<DeliveryLoadingPlanView> {
     return this.queries.execute<GetDeliveryLoadingPlanQuery, DeliveryLoadingPlanView>(
       new GetDeliveryLoadingPlanQuery(roundId),
     );
   }
 
-  @Post("chargement/:roundId/bacs")
+  @Post("loading/:roundId/bins")
   @HttpCode(HttpStatus.NO_CONTENT)
   async load(
     @Param("roundId") roundId: string,
@@ -79,7 +79,7 @@ export class DeliveryLoadingController {
     );
   }
 
-  @Post("chargement/:roundId/bacs/:binId/dechargement")
+  @Post("loading/:roundId/bins/:binId/unloading")
   @HttpCode(HttpStatus.NO_CONTENT)
   async unload(@Param("roundId") roundId: string, @Param("binId") binId: string): Promise<void> {
     await this.commands.execute<UnloadDeliveryBinCommand, void>(
@@ -87,7 +87,7 @@ export class DeliveryLoadingController {
     );
   }
 
-  @Post("tournees/:roundId/depart")
+  @Post("rounds/:roundId/departure")
   @HttpCode(HttpStatus.NO_CONTENT)
   async depart(
     @Param("roundId") roundId: string,

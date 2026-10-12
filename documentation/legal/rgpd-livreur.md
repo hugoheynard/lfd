@@ -139,7 +139,7 @@ livraison** en cas de litige. **Jamais** suivre ses déplacements, ni mesurer
 sa vitesse ou son temps de travail.
 
 **Purge** : `POSITION_RETENTION_DAYS` = 60, chaque nuit
-(`admin/livraison/positions/sweep`, `PurgeStalePositionsHandler`) : les trois
+(`admin/delivery/positions/sweep`, `PurgeStalePositionsHandler`) : les trois
 colonnes reviennent à `NULL`, la ligne et l'heure du geste restent.
 
 **Qui la voit** : aucun écran ne montre un geste ni sa position. Depuis le

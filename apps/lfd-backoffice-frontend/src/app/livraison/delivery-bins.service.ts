@@ -12,9 +12,9 @@ import { firstValueFrom } from 'rxjs';
 
 import { B2B_API_BASE } from '../api/api-config';
 
-const BINS = `${B2B_API_BASE}/admin/livraison/bacs`;
-const CAPACITIES = `${B2B_API_BASE}/admin/livraison/contenances`;
-const PURCHASE_ASSISTANT = `${B2B_API_BASE}/admin/livraison/assistant-achat`;
+const BINS = `${B2B_API_BASE}/admin/delivery/bins`;
+const CAPACITIES = `${B2B_API_BASE}/admin/delivery/capacities`;
+const PURCHASE_ASSISTANT = `${B2B_API_BASE}/admin/delivery/purchase-assistant`;
 
 /**
  * **Les bacs de la livraison** — le catalogue des types et la grille des
@@ -45,11 +45,11 @@ export class DeliveryBinsService {
   }
 
   async archiveBinType(id: string): Promise<void> {
-    await firstValueFrom(this.http.post(`${BINS}/${encodeURIComponent(id)}/archiver`, {}));
+    await firstValueFrom(this.http.post(`${BINS}/${encodeURIComponent(id)}/archive`, {}));
   }
 
   async reactivateBinType(id: string): Promise<void> {
-    await firstValueFrom(this.http.post(`${BINS}/${encodeURIComponent(id)}/reactiver`, {}));
+    await firstValueFrom(this.http.post(`${BINS}/${encodeURIComponent(id)}/reactivate`, {}));
   }
 
   capacities(): Promise<BinCapacitiesView> {

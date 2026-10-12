@@ -21,7 +21,7 @@ import {
 
 const DAY = serviceDay();
 const OTHER_DAY = serviceDay(8);
-const ROUTE = "/admin/livraison/version";
+const ROUTE = "/admin/delivery/version";
 
 let ctx: E2eContext;
 
@@ -49,7 +49,7 @@ async function productionVersion(day: string = DAY): Promise<number> {
   return jsonBody<DayVersionView>(response).version;
 }
 
-describe("GET admin/livraison/version", () => {
+describe("GET admin/delivery/version", () => {
   it("rend zéro pour une journée que rien n'a touchée", async () => {
     expect(await version()).toBe(0);
   });

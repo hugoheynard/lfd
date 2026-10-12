@@ -33,7 +33,7 @@ import { serveStepPhoto } from "./step-photo-http.js";
  * peut RÉPONDRE (`STOP_DECISION_PERMISSION`, en écriture). Il n'injecte que
  * les bus.
  */
-@Controller("admin/livraison/a-decider")
+@Controller("admin/delivery/stop-decisions")
 @AdminSurface("delivery_decisions")
 export class StopDecisionsController {
   constructor(
@@ -66,7 +66,7 @@ export class StopDecisionsController {
   }
 
   /** « Autoriser le dépôt cette fois » — 204, même répétée. */
-  @Post(":stopId/autoriser-depot")
+  @Post(":stopId/allow-drop-off")
   @HttpCode(HttpStatus.NO_CONTENT)
   async authorize(
     @StaffUserId() staffUserId: string,
@@ -78,7 +78,7 @@ export class StopDecisionsController {
   }
 
   /** « Rapporter » — 204 ; l'arrêt se clôt « rapporté ». */
-  @Post(":stopId/rapporter")
+  @Post(":stopId/bring-back")
   @HttpCode(HttpStatus.NO_CONTENT)
   async bringBack(
     @StaffUserId() staffUserId: string,

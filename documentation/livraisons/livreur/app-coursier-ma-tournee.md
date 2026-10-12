@@ -51,11 +51,11 @@ Une tournée porte au plus un livreur, `delivery.delivery_round.driver_staff_id`
 nullable, sans clé étrangère vers l'annuaire. Qui **compose** l'affecte, depuis
 l'écran Tournées (`livraison/round-driver/round-driver.ts`) :
 
-| Méthode | Route                                                | Droit                   | Contrôleur                                       |
-| ------- | ---------------------------------------------------- | ----------------------- | ------------------------------------------------ |
-| `GET`   | `/admin/livraison/tournees/livreurs`                 | `delivery_rounds:read`  | `delivery/http/delivery-rounds.controller.ts:90` |
-| `PUT`   | `/admin/livraison/tournees/:roundId/livreur`         | `delivery_rounds:write` | `delivery-rounds.controller.ts:97`               |
-| `POST`  | `/admin/livraison/tournees/:roundId/livreur/retrait` | `delivery_rounds:write` | `delivery-rounds.controller.ts:108`              |
+| Méthode | Route                                            | Droit                   | Contrôleur                                       |
+| ------- | ------------------------------------------------ | ----------------------- | ------------------------------------------------ |
+| `GET`   | `/admin/delivery/rounds/drivers`                 | `delivery_rounds:read`  | `delivery/http/delivery-rounds.controller.ts:90` |
+| `PUT`   | `/admin/delivery/rounds/:roundId/driver`         | `delivery_rounds:write` | `delivery-rounds.controller.ts:97`               |
+| `POST`  | `/admin/delivery/rounds/:roundId/driver/removal` | `delivery_rounds:write` | `delivery-rounds.controller.ts:108`              |
 
 La règle « qui peut livrer » vit une fois, dans
 `delivery/domain/value-objects/driver-access.ts` (`DriverAccess`) : une
@@ -127,7 +127,7 @@ si la version courante du texte d'information est accusée ; sinon le
 dialogue s'ouvre, et le départ attend l'accusé. Un échec de lecture ne démarre
 pas.
 
-La porte du chargeur, `POST /admin/livraison/tournees/:roundId/depart` sous
+La porte du chargeur, `POST /admin/delivery/rounds/:roundId/departure` sous
 `delivery_loading` (`delivery/http/delivery-loading.controller.ts:90`), reste
 en service et **n'exige pas** de livreur affecté (MT-Q5). La route du livreur,
 elle, l'exige par construction : son verrou porte `driver_staff_id`.
@@ -221,7 +221,7 @@ de rôle (JSDoc de `my-delivery-round.controller.ts`).
 
 ## 4. Les routes HTTP
 
-Toutes sous `/admin/livraison/`. L'action se déduit du verbe : `GET` demande
+Toutes sous `/admin/delivery/`. L'action se déduit du verbe : `GET` demande
 `read`, le reste `write` (`platform/auth/admin-surface.decorator.ts`).
 
 | Méthode | Chemin                                                       | Droit                     | Contrôleur (`apps/lfd-api/src/delivery/http/`) |

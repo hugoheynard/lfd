@@ -37,7 +37,7 @@ import { ListPurchaseBinCandidatesQuery } from "../application/queries/list-purc
  * aucune route ici. Archiver et réactiver sont des `POST` nommés. Il n'injecte
  * que les bus.
  */
-@Controller("admin/livraison/bibliotheque/bacs")
+@Controller("admin/delivery/library/bins")
 @AdminSurface("delivery_rounds")
 export class PurchaseBinCandidatesController {
   constructor(
@@ -79,7 +79,7 @@ export class PurchaseBinCandidatesController {
     );
   }
 
-  @Post(":id/archiver")
+  @Post(":id/archive")
   @HttpCode(HttpStatus.NO_CONTENT)
   async archive(@Param("id") id: string, @StaffUserId() staffUserId: string): Promise<void> {
     await this.commands.execute<ArchivePurchaseBinCandidateCommand, void>(
@@ -87,7 +87,7 @@ export class PurchaseBinCandidatesController {
     );
   }
 
-  @Post(":id/reactiver")
+  @Post(":id/reactivate")
   @HttpCode(HttpStatus.NO_CONTENT)
   async reactivate(@Param("id") id: string, @StaffUserId() staffUserId: string): Promise<void> {
     await this.commands.execute<ReactivatePurchaseBinCandidateCommand, void>(

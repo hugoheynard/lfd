@@ -24,7 +24,7 @@ import { ListSimulationScenariosQuery } from "../application/queries/list-simula
  * `delivery_rounds:read`, écrire sous `delivery_rounds:write` : le verbe HTTP
  * dit l'action, et il ne ment sur aucune route ici. Il n'injecte que les bus.
  */
-@Controller("admin/livraison/simulateur/scenarios")
+@Controller("admin/delivery/simulator/scenarios")
 @AdminSurface("delivery_rounds")
 export class DeliverySimulationScenariosController {
   constructor(
@@ -74,7 +74,7 @@ export class DeliverySimulationScenariosController {
     );
   }
 
-  @Post(":id/dupliquer")
+  @Post(":id/duplicate")
   @HttpCode(HttpStatus.CREATED)
   async duplicate(
     @Param("id") id: string,
@@ -86,7 +86,7 @@ export class DeliverySimulationScenariosController {
     return { id: copyId };
   }
 
-  @Post(":id/archiver")
+  @Post(":id/archive")
   @HttpCode(HttpStatus.NO_CONTENT)
   async archive(@Param("id") id: string, @StaffUserId() staffUserId: string): Promise<void> {
     await this.commands.execute<ArchiveSimulationScenarioCommand, void>(

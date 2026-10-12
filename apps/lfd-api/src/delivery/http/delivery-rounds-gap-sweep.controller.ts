@@ -17,7 +17,7 @@ import {
  * `container/worker.ts`), à côté du tour de l'arrêt du plan : au plus cinq
  * minutes de retard sur 16 h, aucun réglage Cloudflare de plus. Idempotent.
  */
-@Controller("admin/livraison/hors-tournee/sweep")
+@Controller("admin/delivery/off-round/sweep")
 @Public()
 @UseGuards(RecomputeGuard)
 export class DeliveryRoundsGapSweepController {

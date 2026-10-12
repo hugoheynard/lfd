@@ -6,7 +6,7 @@ import { z } from "zod";
  * chaque véhicule choisi × chaque format choisi, par la stratégie « maximiser
  * un format » de l'assistant.
  *
- * Une LECTURE : `POST admin/livraison/assistant-achat/tableau` parce que la
+ * Une LECTURE : `POST admin/delivery/purchase-assistant/table` parce que la
  * sélection est un corps. La sélection CITE des identifiants, candidats ou
  * réels ; le serveur relit les cotes et les prix d'aujourd'hui. Le schéma ne
  * tient que la forme ; le jeu est borné par le domaine.

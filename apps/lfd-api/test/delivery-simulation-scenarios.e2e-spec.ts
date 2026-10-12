@@ -25,8 +25,8 @@ import {
   seedLocatedDelivery,
 } from "./delivery-routing-scene.js";
 
-const SCENARIOS = "/admin/livraison/simulateur/scenarios";
-const FROM_DAY = "/admin/livraison/simulateur/depuis-journee";
+const SCENARIOS = "/admin/delivery/simulator/scenarios";
+const FROM_DAY = "/admin/delivery/simulator/from-day";
 const DAY = serviceDay();
 
 let ctx: E2eContext;
@@ -121,12 +121,12 @@ describe("les scénarios du simulateur (L9-C7)", () => {
     const first = await record("Mardi");
     await admin(ctx).post(SCENARIOS).send({ name: "Mardi", scenario: SCENARIO }).expect(409);
 
-    await admin(ctx).post(`${SCENARIOS}/${first}/archiver`).expect(204);
+    await admin(ctx).post(`${SCENARIOS}/${first}/archive`).expect(204);
     const second = await record("Mardi");
 
     expect((await list()).map((s) => s.id)).toEqual([second]);
     await admin(ctx).get(`${SCENARIOS}/${first}`).expect(404);
-    await admin(ctx).post(`${SCENARIOS}/${first}/archiver`).expect(409); // déjà archivé
+    await admin(ctx).post(`${SCENARIOS}/${first}/archive`).expect(409); // déjà archivé
     expect(await ctx.prisma.deliverySimulationScenario.count()).toBe(2); // jamais supprimé
   });
 
@@ -134,9 +134,9 @@ describe("les scénarios du simulateur (L9-C7)", () => {
     const mardi = await record("Mardi");
 
     const first = jsonBody<CreatedIdResponse>(
-      await admin(ctx).post(`${SCENARIOS}/${mardi}/dupliquer`).expect(201),
+      await admin(ctx).post(`${SCENARIOS}/${mardi}/duplicate`).expect(201),
     );
-    await admin(ctx).post(`${SCENARIOS}/${mardi}/dupliquer`).expect(201);
+    await admin(ctx).post(`${SCENARIOS}/${mardi}/duplicate`).expect(201);
 
     expect((await list()).map((s) => s.name)).toEqual([
       "Mardi",
@@ -156,7 +156,7 @@ describe("les scénarios du simulateur (L9-C7)", () => {
     const refused = await admin(ctx).get(`${SCENARIOS}/${id}`).expect(409);
     expect(JSON.stringify(refused.body)).toContain("Mardi");
     expect((await list())[0]).toMatchObject({ stops: 0 });
-    await admin(ctx).post(`${SCENARIOS}/${id}/archiver`).expect(204);
+    await admin(ctx).post(`${SCENARIOS}/${id}/archive`).expect(204);
   });
 
   it("refuse un nom vide ou un scénario invalide (400)", async () => {
@@ -175,8 +175,8 @@ describe("les scénarios du simulateur (L9-C7)", () => {
     await reader.get(`${SCENARIOS}/${id}`).expect(200);
     await reader.post(SCENARIOS).send({ name: "Autre", scenario: SCENARIO }).expect(403);
     await reader.put(`${SCENARIOS}/${id}`).send({ name: "Autre", scenario: SCENARIO }).expect(403);
-    await reader.post(`${SCENARIOS}/${id}/dupliquer`).expect(403);
-    await reader.post(`${SCENARIOS}/${id}/archiver`).expect(403);
+    await reader.post(`${SCENARIOS}/${id}/duplicate`).expect(403);
+    await reader.post(`${SCENARIOS}/${id}/archive`).expect(403);
   });
 });
 
@@ -188,7 +188,7 @@ describe("partir d'une vraie journée (L9-C8)", () => {
     const reader = await roundsReader();
 
     const view = jsonBody<DeliverySimulationFromDayView>(
-      await reader.get(`${FROM_DAY}?jour=${DAY}`).expect(200),
+      await reader.get(`${FROM_DAY}?day=${DAY}`).expect(200),
     );
 
     expect(view.day).toBe(DAY);
@@ -210,6 +210,6 @@ describe("partir d'une vraie journée (L9-C8)", () => {
   });
 
   it("refuse un jour mal formé (400)", async () => {
-    await admin(ctx).get(`${FROM_DAY}?jour=demain`).expect(400);
+    await admin(ctx).get(`${FROM_DAY}?day=demain`).expect(400);
   });
 });

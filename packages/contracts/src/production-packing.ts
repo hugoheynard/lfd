@@ -91,8 +91,8 @@ export interface PackingLine {
 export interface PackingSheet {
   /**
    * L'identifiant de la commande (ajouté le 2026-09-29, plan de tournée lot 4) :
-   * déclarer les sacs d'une commande (`POST admin/livraison/sacs`) et les lire
-   * (`GET admin/livraison/sacs?commande=`) le demandent, et le colisage n'avait
+   * déclarer les sacs d'une commande (`POST admin/delivery/sacs`) et les lire
+   * (`GET admin/delivery/sacs?order=`) le demandent, et le colisage n'avait
    * que la référence.
    */
   readonly orderId: string;

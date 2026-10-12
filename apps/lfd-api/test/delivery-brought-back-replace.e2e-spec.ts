@@ -52,8 +52,8 @@ import {
   type E2eContext,
 } from "./e2e-harness.js";
 
-const DECIDE = "/admin/livraison/a-decider";
-const RUN_SHEET = "/admin/livraison/feuille-de-route";
+const DECIDE = "/admin/delivery/stop-decisions";
+const RUN_SHEET = "/admin/delivery/run-sheet";
 /** Le lendemain du jour demandé : là où la commande rapportée repart. */
 const NEXT_DAY = serviceDay(8);
 
@@ -87,7 +87,7 @@ async function broughtBack() {
     .field("note", "")
     .field("stopId", stop.stopId)
     .expect(201);
-  await lea.agent.post(`${DECIDE}/${stop.stopId}/rapporter`).expect(204);
+  await lea.agent.post(`${DECIDE}/${stop.stopId}/bring-back`).expect(204);
   await ctx.drain();
   const decision = await ctx.prisma.deliveryStopDecision.findUniqueOrThrow({
     where: { stopId: stop.stopId },
@@ -130,11 +130,11 @@ describe("Une commande rapportée repart (RL1)", () => {
     expect([reload.status, reload.text]).toEqual([204, ""]);
     const { version } = await roundOf(ctx, NEXT_DAY, roundId);
     await admin(ctx)
-      .put(`${ROUNDS}/${roundId}/livreur`)
+      .put(`${ROUNDS}/${roundId}/driver`)
       .send({ staffUserId: paul.id, version })
       .expect(204);
     const departed = await paul.agent
-      .post(`${MY_ROUND}/${roundId}/depart`)
+      .post(`${MY_ROUND}/${roundId}/departure`)
       .send({ version: (await myRound(paul.agent, roundId)).version });
     expect([departed.status, departed.text]).toEqual([204, ""]);
     await ctx.drain();
@@ -154,7 +154,7 @@ describe("Une commande rapportée repart (RL1)", () => {
       where: { orderId, roundId },
     });
     await paul.agent
-      .post(`${MY_ROUND}/${roundId}/arrets/${stop.id}/remise`)
+      .post(`${MY_ROUND}/${roundId}/stops/${stop.id}/handover`)
       .field("version", String((await myRound(paul.agent, roundId)).version))
       .field("receiverName", "Mme Durand")
       .attach("photo", JPEG, "remise.jpg")
@@ -173,7 +173,7 @@ describe("Une commande rapportée repart (RL1)", () => {
     const roundId = await openRound(ctx, NEXT_DAY, await addVehicle(ctx, "Trafic", MEASURED));
     const { version } = await roundOf(ctx, NEXT_DAY, roundId);
 
-    const refused = await admin(ctx).post(`${ROUNDS}/${roundId}/arrets`).send({ orderId, version });
+    const refused = await admin(ctx).post(`${ROUNDS}/${roundId}/stops`).send({ orderId, version });
 
     expect(refused.status).toBe(409);
     expect(unassignedOf(await dayView(ctx, NEXT_DAY), orderId)).toBeUndefined();
@@ -183,10 +183,10 @@ describe("Une commande rapportée repart (RL1)", () => {
     const { orderId } = await broughtBack();
     const roundId = await openRound(ctx, NEXT_DAY, await addVehicle(ctx, "Trafic", MEASURED));
     await assign(ctx, NEXT_DAY, roundId, orderId);
-    const own = (await runSheet(`jour=${DOOR_DAY}`)).stops.find((s) => s.orderId === orderId);
+    const own = (await runSheet(`day=${DOOR_DAY}`)).stops.find((s) => s.orderId === orderId);
 
-    const plain = await runSheet(`jour=${NEXT_DAY}`);
-    const named = await runSheet(`jour=${NEXT_DAY}&commandes=${orderId}`);
+    const plain = await runSheet(`day=${NEXT_DAY}`);
+    const named = await runSheet(`day=${NEXT_DAY}&orders=${orderId}`);
 
     // Le jour seul ne la connaît pas : c'est la composition qui l'a placée.
     expect(plain.stops.map((stop) => stop.orderId)).toEqual([]);
@@ -209,7 +209,7 @@ describe("Une commande rapportée repart (RL1)", () => {
     // Et une demande en bacs connue (CA4) : un pain, un Bac M estimé.
     await withBread(ctx, orderId);
 
-    const view = await propose(ctx, `jour=${NEXT_DAY}`);
+    const view = await propose(ctx, `day=${NEXT_DAY}`);
 
     expect(view.rounds.flatMap((round) => round.stops.map((stop) => stop.orderId))).toEqual([
       orderId,

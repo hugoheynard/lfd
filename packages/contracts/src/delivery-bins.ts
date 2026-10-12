@@ -7,7 +7,7 @@ import { z } from "zod";
  * `delivery` : ni la fiche produit du référentiel, ni la table commerce
  * `delivery_settings`.
  *
- * Routes (`admin/livraison/…`) — lecture `delivery_settings:read` OU
+ * Routes (`admin/delivery/…`) — lecture `delivery_settings:read` OU
  * `delivery_rounds:read`, écriture `delivery_settings:write` :
  *
  * - `GET bacs` → {@link BinTypesView} ; `POST bacs` ({@link BinTypePayload}) →

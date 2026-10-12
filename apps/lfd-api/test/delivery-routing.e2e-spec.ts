@@ -37,8 +37,8 @@ import {
 } from "./delivery-routing-scene.js";
 
 const DAY = serviceDay();
-const SETTINGS = "/admin/livraison/calcul";
-const BINS = "/admin/livraison/bacs";
+const SETTINGS = "/admin/delivery/routing-settings";
+const BINS = "/admin/delivery/bins";
 
 let ctx: E2eContext;
 
@@ -161,7 +161,7 @@ describe("situer les arrêts (L7-C9)", () => {
     await seedDeparture(ctx);
     await seedPlannableDelivery(ctx, DAY, null);
 
-    const refused = await admin(ctx).post(`${ROUNDS}/situer?jour=${DAY}`).expect(409);
+    const refused = await admin(ctx).post(`${ROUNDS}/locate?day=${DAY}`).expect(409);
 
     expect(jsonBody<{ message: string }>(refused).message).toContain("points GPS");
     expect(await ctx.prisma.deliveryGeocode.count()).toBe(0);
@@ -193,7 +193,7 @@ describe("proposer, puis appliquer (L7-C3 à C6)", () => {
   it("propose SANS réseau à partir des GPS du carnet, dit les non situés, et n'écrit rien", async () => {
     const { north, south, lost } = await scene();
 
-    const view = await propose(ctx, `jour=${DAY}`);
+    const view = await propose(ctx, `day=${DAY}`);
 
     // Réécrit le 2026-09-29 (lot 7 bis) : l'attente était « une vallée par
     // véhicule », ce que faisait la répartition par proximité. Les quatre
@@ -237,12 +237,12 @@ describe("proposer, puis appliquer (L7-C3 à C6)", () => {
   it("deux « Proposer » sur le même état rendent la même proposition (L7-C12)", async () => {
     await scene();
 
-    expect(await propose(ctx, `jour=${DAY}`)).toEqual(await propose(ctx, `jour=${DAY}`));
+    expect(await propose(ctx, `day=${DAY}`)).toEqual(await propose(ctx, `day=${DAY}`));
   });
 
   it("appliquer ouvre les tournées, dans l'ordre proposé, et trace UN fait", async () => {
     const { lost } = await scene();
-    const view = await propose(ctx, `jour=${DAY}`);
+    const view = await propose(ctx, `day=${DAY}`);
 
     await apply(ctx, payloadOf(view)).expect(204);
 
@@ -259,7 +259,7 @@ describe("proposer, puis appliquer (L7-C3 à C6)", () => {
 
   it("appliquer garde l'horaire prévu par le serveur ; réordonner à la main l'efface (I10)", async () => {
     await scene();
-    const view = await propose(ctx, `jour=${DAY}`);
+    const view = await propose(ctx, `day=${DAY}`);
     const proposed = view.rounds[0];
 
     await apply(ctx, payloadOf(view)).expect(204);
@@ -274,7 +274,7 @@ describe("proposer, puis appliquer (L7-C3 à C6)", () => {
 
     const stopIds = (round?.stops ?? []).map((stop) => stop.stopId);
     await admin(ctx)
-      .put(`${ROUNDS}/${round?.id ?? ""}/ordre`)
+      .put(`${ROUNDS}/${round?.id ?? ""}/sequence`)
       .send({ stopIds: [...stopIds].reverse(), version: round?.version })
       .expect(204);
 
@@ -294,7 +294,7 @@ describe("proposer, puis appliquer (L7-C3 à C6)", () => {
     const vehicles = await ctx.prisma.deliveryVehicle.findMany({ orderBy: { name: "asc" } });
     const kangoo = vehicles.find((vehicle) => vehicle.name === "Kangoo")?.id ?? "";
 
-    const view = await propose(ctx, `jour=${DAY}&vehicules=${kangoo}`);
+    const view = await propose(ctx, `day=${DAY}&vehicles=${kangoo}`);
 
     expect(view.rounds.every((round) => round.vehicleId === kangoo)).toBe(true);
     expect(view.rounds.flatMap((round) => round.stops)).toHaveLength(4);
@@ -311,7 +311,7 @@ describe("proposer, puis appliquer (L7-C3 à C6)", () => {
     await assign(ctx, DAY, roundId, near);
     const fresh = await seedPlannableDelivery(ctx, DAY, { lat: 45.65, lng: 5.91 });
 
-    const view = await propose(ctx, `jour=${DAY}&mode=insert`);
+    const view = await propose(ctx, `day=${DAY}&mode=insert`);
     expect(view.mode).toBe("insert");
     expect(view.rounds.map((round) => round.roundId)).toEqual([roundId]);
     await apply(ctx, payloadOf(view)).expect(204);
@@ -322,11 +322,11 @@ describe("proposer, puis appliquer (L7-C3 à C6)", () => {
   });
 
   it("refuse un mode inconnu (400)", async () => {
-    await admin(ctx).get(`${ROUNDS}/proposition?jour=${DAY}&mode=tout`).expect(400);
+    await admin(ctx).get(`${ROUNDS}/proposal?day=${DAY}&mode=tout`).expect(400);
   });
 
   it("refuse un jour mal formé (400)", async () => {
-    await admin(ctx).get(`${ROUNDS}/proposition?jour=demain`).expect(400);
+    await admin(ctx).get(`${ROUNDS}/proposal?day=demain`).expect(400);
   });
 });
 
@@ -356,7 +356,7 @@ describe("la place des véhicules dans « Proposer » (CA4)", () => {
     const huge = await delivery(60);
     const unknown = await delivery(null);
 
-    const view = await propose(ctx, `jour=${DAY}`);
+    const view = await propose(ctx, `day=${DAY}`);
 
     expect(view.rounds.every((round) => round.vehicleId === bike)).toBe(true);
     expect(view.rounds.map((round) => round.stops.map((stop) => stop.orderId))).toHaveLength(2);
@@ -403,7 +403,7 @@ describe("le contenant par défaut d'une commande (2026-10-06)", () => {
     await settingsWith({ binTypeId: manne, count: 1 });
     const { known, bare } = await scene();
 
-    const view = await propose(ctx, `jour=${DAY}`);
+    const view = await propose(ctx, `day=${DAY}`);
 
     // Une pile de Bacs M, une pile de mannes : deux piles pour un plancher qui n'en tient qu'une.
     expect(view.rounds.map((round) => round.stops.map((stop) => stop.orderId)).sort()).toEqual(
@@ -423,7 +423,7 @@ describe("le contenant par défaut d'une commande (2026-10-06)", () => {
   it("vide : la commande sans ligne est placée sans contrôle, « place non vérifiée »", async () => {
     const { known, bare } = await scene();
 
-    const view = await propose(ctx, `jour=${DAY}`);
+    const view = await propose(ctx, `day=${DAY}`);
 
     expect(view.rounds.map((round) => round.stops.map((stop) => stop.orderId).sort())).toEqual([
       [known, bare].sort(),
@@ -436,18 +436,18 @@ describe("le contenant par défaut d'une commande (2026-10-06)", () => {
     const manne = await binTypeId(ctx, "Manne");
     await settingsWith({ binTypeId: manne, count: 2 });
 
-    const refused = await admin(ctx).post(`${BINS}/${manne}/archiver`).expect(409);
+    const refused = await admin(ctx).post(`${BINS}/${manne}/archive`).expect(409);
     const body = jsonBody<{ code: string; message: string }>(refused);
     expect(body.code).toBe("delivery.default_container_bin_type_archive");
     expect(body.message).toContain("« Manne » est le contenant par défaut");
 
     await settingsWith(null);
-    await admin(ctx).post(`${BINS}/${manne}/archiver`).expect(204);
+    await admin(ctx).post(`${BINS}/${manne}/archive`).expect(204);
   });
 
   it("refuse un type archivé comme contenant par défaut (409), sans rien écrire", async () => {
     const manne = await binTypeId(ctx, "Manne");
-    await admin(ctx).post(`${BINS}/${manne}/archiver`).expect(204);
+    await admin(ctx).post(`${BINS}/${manne}/archive`).expect(204);
 
     const current = jsonBody<DeliveryRoutingSettingsView>(
       await admin(ctx).get(SETTINGS).expect(200),

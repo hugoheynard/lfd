@@ -20,19 +20,19 @@ import { GetDeliveryPlacementSuggestionsQuery } from "../application/queries/get
 import { GetDeliveryRoundProposalQuery } from "../application/queries/get-delivery-round-proposal.query.js";
 import { TimeDeliveryRoundsQuery } from "../application/queries/time-delivery-rounds.query.js";
 
-const dayField = z.string().regex(/^\d{4}-\d{2}-\d{2}$/u, "jour attendu au format AAAA-MM-JJ");
+const dayField = z.string().regex(/^\d{4}-\d{2}-\d{2}$/u, "day attendu au format AAAA-MM-JJ");
 
-const dayQuerySchema = z.object({ jour: dayField });
+const dayQuerySchema = z.object({ day: dayField });
 type DayQuery = z.infer<typeof dayQuerySchema>;
 
 /**
- * `vehicules=a,b` — absent : tous ceux qui roulent ce jour-là.
- * `toutRecomposer=true` — absent ou autre chose que `true` : compléter seulement.
+ * `vehicles=a,b` — absent : tous ceux qui roulent ce jour-là.
+ * `recomposeAll=true` — absent ou autre chose que `true` : compléter seulement.
  * `mode=insert|new_rounds` — absent : le mode par défaut des réglages.
  */
 const proposalQuerySchema = z.object({
-  jour: dayField,
-  vehicules: z
+  day: dayField,
+  vehicles: z
     .string()
     .optional()
     .transform((value) =>
@@ -43,8 +43,8 @@ const proposalQuerySchema = z.object({
             .map((id) => id.trim())
             .filter((id) => id !== ""),
     ),
-  toutRecomposer: z
-    .enum(["true", "false"], { message: "toutRecomposer vaut true ou false" })
+  recomposeAll: z
+    .enum(["true", "false"], { message: "recomposeAll vaut true ou false" })
     .optional()
     .transform((value) => value === "true"),
   mode: deliveryProposalModeSchema.optional().transform((value) => value ?? null),
@@ -58,7 +58,7 @@ type ProposalQuery = z.infer<typeof proposalQuerySchema>;
  * Sous `delivery_rounds`, sans droit neuf (L7-C7) : proposer se lit, situer et
  * appliquer écrivent — c'est de la composition. Il n'injecte que les bus.
  */
-@Controller("admin/livraison/tournees")
+@Controller("admin/delivery/rounds")
 @AdminSurface("delivery_rounds")
 export class DeliveryProposalController {
   constructor(
@@ -67,26 +67,21 @@ export class DeliveryProposalController {
   ) {}
 
   /** Géocode ce qui manque (L7-C9) : un geste, qui sort sur le réseau. */
-  @Post("situer")
+  @Post("locate")
   @HttpCode(HttpStatus.NO_CONTENT)
   async locate(@Query(new ZodQuery(dayQuerySchema)) query: DayQuery): Promise<void> {
     await this.commands.execute<LocateDeliveryStopsCommand, void>(
-      new LocateDeliveryStopsCommand(query.jour),
+      new LocateDeliveryStopsCommand(query.day),
     );
   }
 
   /** Une proposition calculée, jamais écrite (L7-C6). */
-  @Get("proposition")
+  @Get("proposal")
   propose(
     @Query(new ZodQuery(proposalQuerySchema)) query: ProposalQuery,
   ): Promise<DeliveryRoundProposalView> {
     return this.queries.execute<GetDeliveryRoundProposalQuery, DeliveryRoundProposalView>(
-      new GetDeliveryRoundProposalQuery(
-        query.jour,
-        query.vehicules,
-        query.toutRecomposer,
-        query.mode,
-      ),
+      new GetDeliveryRoundProposalQuery(query.day, query.vehicles, query.recomposeAll, query.mode),
     );
   }
 
@@ -95,14 +90,14 @@ export class DeliveryProposalController {
    * qui a des tournées enregistrées. Une lecture ; « Placer ici » est
    * l'affectation `POST :roundId/arrets` avec son rang.
    */
-  @Get("places-suggerees")
+  @Get("suggested-slots")
   suggestions(
     @Query(new ZodQuery(dayQuerySchema)) query: DayQuery,
   ): Promise<DeliveryPlacementSuggestionsView> {
     return this.queries.execute<
       GetDeliveryPlacementSuggestionsQuery,
       DeliveryPlacementSuggestionsView
-    >(new GetDeliveryPlacementSuggestionsQuery(query.jour));
+    >(new GetDeliveryPlacementSuggestionsQuery(query.day));
   }
 
   /**
@@ -110,7 +105,7 @@ export class DeliveryProposalController {
    * que la composition est un corps ; c'est une LECTURE — rien n'est écrit —,
    * donc sous le droit de lecture.
    */
-  @Post("proposition/chronometrer")
+  @Post("proposal/time")
   @HttpCode(HttpStatus.OK)
   @RequirePermission("delivery_rounds:read")
   time(
@@ -122,7 +117,7 @@ export class DeliveryProposalController {
   }
 
   /** Applique la proposition vue, sous les versions lues : tout ou rien. */
-  @Post("proposition")
+  @Post("proposal")
   @HttpCode(HttpStatus.NO_CONTENT)
   async apply(
     @Body(new ZodBody(applyDeliveryProposalPayloadSchema)) payload: ApplyDeliveryProposalPayload,

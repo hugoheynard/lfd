@@ -20,8 +20,8 @@ const stubAdminVerifier = {
     Promise.resolve({ subject: token, scopes: [] }),
 };
 
-const BINS = "/admin/livraison/bacs";
-const CAPACITIES = "/admin/livraison/contenances";
+const BINS = "/admin/delivery/bins";
+const CAPACITIES = "/admin/delivery/capacities";
 
 /** Un bac Euronorm 60 × 40 × 22, intérieur 56 × 36 × 20 = 40 L — en millimètres. */
 const BAC_M = {
@@ -90,12 +90,12 @@ describe("le catalogue des bacs", () => {
     const id = await addBin();
     // Un autre type reste en service : archiver le Bac M ne défait pas le socle (CA-D3).
     await addBin({ ...BAC_M, name: "Bac L" });
-    await admin().post(`${BINS}/${id}/archiver`).expect(204);
-    const again = await admin().post(`${BINS}/${id}/archiver`).expect(409);
+    await admin().post(`${BINS}/${id}/archive`).expect(204);
+    const again = await admin().post(`${BINS}/${id}/archive`).expect(409);
     expect(code(again)).toBe("delivery.bin_type_already_archived");
 
     await addBin();
-    const refused = await admin().post(`${BINS}/${id}/reactiver`).expect(409);
+    const refused = await admin().post(`${BINS}/${id}/reactivate`).expect(409);
     expect(code(refused)).toBe("delivery.bin_type_name_taken");
 
     const types = (await catalog()).types;
@@ -113,7 +113,7 @@ describe("le catalogue des bacs", () => {
     expect(code(await admin().post(BINS).send(tooWide).expect(400))).toBe(
       "delivery.bin_inner_exceeds_outer",
     );
-    expect(code(await admin().post(`${BINS}/nope/archiver`).expect(404))).toBe(
+    expect(code(await admin().post(`${BINS}/nope/archive`).expect(404))).toBe(
       "delivery.bin_type_not_found",
     );
   });
@@ -126,8 +126,8 @@ describe("le catalogue des bacs", () => {
       .put(`${BINS}/${id}`)
       .send({ ...BAC_M, maxStack: 8 })
       .expect(204);
-    await admin().post(`${BINS}/${id}/archiver`).expect(204);
-    await admin().post(`${BINS}/${id}/reactiver`).expect(204);
+    await admin().post(`${BINS}/${id}/archive`).expect(204);
+    await admin().post(`${BINS}/${id}/reactivate`).expect(204);
 
     const facts = await ctx.prisma.activityEvent.findMany({
       where: { type: { startsWith: "delivery_bin_type." } },
@@ -151,7 +151,7 @@ describe("la grille des contenances", () => {
   it("sert les produits du catalogue B2B et les types en service", async () => {
     const kept = await addBin();
     const archived = await addBin({ ...BAC_M, name: "Bac S" });
-    await admin().post(`${BINS}/${archived}/archiver`).expect(204);
+    await admin().post(`${BINS}/${archived}/archive`).expect(204);
 
     const view = await grid();
 
@@ -208,7 +208,7 @@ describe("la grille des contenances", () => {
     expect(zero.status).toBe(400);
     expect(code(zero)).toBe("delivery.bin_capacity_invalid");
 
-    await admin().post(`${BINS}/${id}/archiver`).expect(204);
+    await admin().post(`${BINS}/${id}/archive`).expect(204);
     const archived = await admin()
       .put(CAPACITIES)
       .send({ binTypeId: id, sku: CROISSANT, units: 5 })
@@ -345,7 +345,7 @@ describe("les bacs — les droits", () => {
       .post(BINS)
       .send({ ...BAC_M, name: "Bac L" })
       .expect(403);
-    await reader.post(`${BINS}/${id}/archiver`).expect(403);
+    await reader.post(`${BINS}/${id}/archive`).expect(403);
     await reader.put(CAPACITIES).send({ binTypeId: id, sku: CROISSANT, units: 3 }).expect(403);
     expect(await ctx.prisma.deliveryBinType.count()).toBe(1);
     expect(await ctx.prisma.deliveryBinCapacity.count()).toBe(0);

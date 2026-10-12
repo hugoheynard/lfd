@@ -23,6 +23,7 @@ import {
 } from 'fold-ng';
 
 import { PermissionsStore } from '../../auth/permissions.store';
+import { DayVersionWatcher } from '../../shared/day-version/day-version-watcher';
 import { ordersFromOtherDays } from '../delivery-rounds';
 import { DeliveryRoundsService } from '../delivery-rounds.service';
 import {
@@ -42,7 +43,7 @@ import { RunSheetStop } from '../run-sheet-stop/run-sheet-stop';
 type SheetState =
   | { readonly status: 'loading' }
   | { readonly status: 'error' }
-  | { readonly status: 'ready'; readonly view: DeliveryRunSheetView };
+  | { readonly status: 'ready'; readonly day: string; readonly view: DeliveryRunSheetView };
 
 const TODAY = '0';
 const TOMORROW = '1';
@@ -144,6 +145,23 @@ export class DeliveryPage {
       this.reload();
       untracked(() => void this.load(day));
     });
+    // Ne relire que si la journée de la livraison a bougé (`plan-version-par-journee.md`,
+    // D4) — et seulement si le poste peut lire sa version : la feuille s'ouvre
+    // sous `delivery_run_sheet`, la porte de la version sous les tournées ou le
+    // chargement. Sans elle, la page garde son comportement d'avant.
+    if (this.canReadDeliveryVersion()) {
+      inject(DayVersionWatcher).watch({
+        journals: ['delivery'],
+        date: () => this.day(),
+        reload: () => this.load(this.day()),
+      });
+    }
+  }
+
+  private canReadDeliveryVersion(): boolean {
+    return (
+      this.permissions.can('delivery_rounds:read') || this.permissions.can('delivery_loading:read')
+    );
   }
 
   protected pickChoice(value: string): void {
@@ -181,7 +199,11 @@ export class DeliveryPage {
 
   private async load(day: string): Promise<void> {
     const request = ++this.request;
-    this.state.set({ status: 'loading' });
+    // Une relecture du même jour garde la feuille à l'écran.
+    const current = this.state();
+    if (current.status !== 'ready' || current.day !== day) {
+      this.state.set({ status: 'loading' });
+    }
     try {
       // Sans le droit, aucune attente de plus : la page lit comme avant.
       const also = this.permissions.can('delivery_rounds:read')
@@ -189,7 +211,7 @@ export class DeliveryPage {
         : [];
       const view = await this.service.day(day, also);
       if (request === this.request) {
-        this.state.set({ status: 'ready', view });
+        this.state.set({ status: 'ready', day, view });
       }
     } catch {
       if (request === this.request) {
@@ -204,7 +226,7 @@ export class DeliveryPage {
    * geste que l'écran des tournées, sans canal de plus.
    *
    * Appelée seulement sous `delivery_rounds:read` (le droit de
-   * `GET admin/livraison/tournees`) : sans lui, la page ne lit pas la composition et garde son comportement d'avant : la
+   * `GET admin/delivery/rounds`) : sans lui, la page ne lit pas la composition et garde son comportement d'avant : la
    * feuille du jour seule, sans ces commandes. Une composition illisible
    * (réseau, 5xx) dégrade de même plutôt que de priver la page de sa feuille.
    */

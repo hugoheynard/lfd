@@ -5,7 +5,7 @@ import { firstValueFrom } from 'rxjs';
 
 import { B2B_API_BASE } from '../api/api-config';
 
-const DOORSTEP = `${B2B_API_BASE}/admin/livraison/a-la-porte`;
+const DOORSTEP = `${B2B_API_BASE}/admin/delivery/doorstep`;
 
 /**
  * **La décision réglée d'avance à la porte, globale** (`a-la-porte.md`,
