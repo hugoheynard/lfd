@@ -1,16 +1,22 @@
-<fold-page-layout icon="list" [title]="title()">
+<fold-page-layout>
   <!-- Venue de la liste : le retour remonte l'historique, donc retrouve l'adresse
        et ses filtres. Ouverte autrement (lien partagé, un autre écran) : la
-       liste nue. `fold-back-link` ne porte pas de queryParams. -->
+       liste nue. `fold-back-link` ne porte pas de queryParams.
+       Hors de `pageEyebrow` : `fold-page-layout` ne rend son bandeau (donc
+       l'eyebrow) qu'avec un titre, et la ligne « icône + numéro » du bandeau a
+       été retirée (Hugo, 2026-10-12) — le numéro vit dans l'en-tête ci-dessous. -->
   @if (fromList) {
-    <fold-back-link pageEyebrow icon="arrow-back" label="Commandes" data-back />
+    <fold-back-link icon="arrow-back" label="Commandes" data-back />
   } @else {
-    <fold-back-link
-      pageEyebrow
-      icon="arrow-back"
-      label="Commandes"
-      routerLink="/commandes"
-      data-back
+    <fold-back-link icon="arrow-back" label="Commandes" routerLink="/commandes" data-back />
+  }
+
+  @if (header(); as h) {
+    <fold-element-title
+      variant="title"
+      [title]="h.number"
+      [subtitle]="h.subtitle"
+      data-order-header
     />
   }
 

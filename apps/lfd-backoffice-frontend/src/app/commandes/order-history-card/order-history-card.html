@@ -1,0 +1,48 @@
+<fold-card data-order-history>
+  <fold-element-title cardHeader variant="title" icon="timeline" title="Historique" />
+  @switch (state()) {
+    @case ('loading') {
+      <fold-loading message="Lecture de l’historique…" />
+    }
+    @case ('error') {
+      <fold-empty-state
+        tone="alert"
+        title="L’historique de cette commande n’a pas pu être lu."
+        data-order-history-error
+      >
+        <button foldButton (click)="retry()">Réessayer</button>
+      </fold-empty-state>
+    }
+    @default {
+      @if (lines().length === 0) {
+        <fold-empty-state
+          title="Aucun fait enregistré pour cette commande."
+          data-order-history-empty
+        >
+          <fold-icon empty-icon name="timeline" [size]="40" />
+        </fold-empty-state>
+      } @else {
+        <ol class="oh-list">
+          @for (line of lines(); track line.event.id) {
+            <li class="oh-row" data-order-history-line>
+              @if (line.title) {
+                <span class="oh-title">{{ line.title }}</span>
+              }
+              <app-fact-sentence class="oh-sentence" [segments]="line.segments" />
+              <p class="oh-meta">
+                <span>{{ line.when }}</span>
+                @if (!line.sentenceNamesActor) {
+                  <span
+                    >, par <span class="oh-actor">{{ line.actor }}</span></span
+                  >
+                }
+                <code class="oh-type">{{ line.event.type }}</code>
+              </p>
+              <app-fact-detail [rows]="line.detail" />
+            </li>
+          }
+        </ol>
+      }
+    }
+  }
+</fold-card>

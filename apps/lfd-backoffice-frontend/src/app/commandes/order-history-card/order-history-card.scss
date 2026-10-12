@@ -1,0 +1,41 @@
+.oh-list {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+}
+
+.oh-row {
+  display: flex;
+  flex-direction: column;
+  gap: var(--fold-space-xs);
+  padding: var(--fold-space-sm) 0;
+  border-top: 1px solid var(--fold-color-border-subtle);
+}
+
+.oh-title {
+  color: var(--fold-color-text);
+  font-weight: var(--fold-weight-semibold);
+}
+
+.oh-sentence {
+  color: var(--fold-color-text);
+}
+
+/* La ligne de contexte se lit comme une phrase : pas de `gap`, qui séparerait
+   « par » de son nom. */
+.oh-meta {
+  margin: 0;
+  font-size: var(--fold-text-sm);
+  color: var(--fold-color-text-muted);
+}
+
+.oh-actor {
+  color: var(--fold-color-text-secondary);
+}
+
+.oh-type {
+  font-family: var(--fold-font-mono);
+  font-size: 0.85em;
+}

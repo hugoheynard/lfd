@@ -2,8 +2,9 @@ import { ChangeDetectionStrategy, Component, computed, inject, input, signal } f
 import { Location } from '@angular/common';
 import { Router } from '@angular/router';
 import type { OrderView } from '@lfd/contracts';
-import { FoldBackLinkComponent, FoldPageLayoutComponent } from 'fold-ng';
+import { FoldBackLinkComponent, FoldElementTitleComponent, FoldPageLayoutComponent } from 'fold-ng';
 
+import { orderHeader } from '../order-header';
 import { cameFromOrderList } from '../order-list-return';
 import { OrderViewComponent } from '../order-view/order-view';
 
@@ -23,7 +24,12 @@ import { OrderViewComponent } from '../order-view/order-view';
 @Component({
   selector: 'app-admin-commande-page',
   changeDetection: ChangeDetectionStrategy.OnPush,
-  imports: [FoldBackLinkComponent, FoldPageLayoutComponent, OrderViewComponent],
+  imports: [
+    FoldBackLinkComponent,
+    FoldElementTitleComponent,
+    FoldPageLayoutComponent,
+    OrderViewComponent,
+  ],
   templateUrl: './commande-page.html',
   styleUrl: './commande-page.scss',
 })
@@ -41,8 +47,19 @@ export class AdminCommandePage {
 
   private readonly order = signal<OrderView | null>(null);
 
-  /** La RÉFÉRENCE dans le bandeau : c'est elle qu'on dicte au téléphone. */
-  protected readonly title = computed(() => this.order()?.orderNumber ?? 'Commande');
+  /**
+   * L'en-tête du détail : la RÉFÉRENCE (c'est elle qu'on dicte au téléphone),
+   * puis le mode et son jour, puis le client. La ligne « icône + numéro » du
+   * bandeau a été retirée (Hugo, 2026-10-12) : le numéro vit ici.
+   *
+   * Le badge Pro / Particulier de la liste n'y est pas : `OrderView` ne porte
+   * pas `clientele` (vérifié le 2026-10-12), et le déduire de `companyId`
+   * inventerait une valeur pour les commandes d'avant la distinction.
+   */
+  protected readonly header = computed(() => {
+    const order = this.order();
+    return order === null ? null : orderHeader(order);
+  });
 
   protected onLoaded(order: OrderView): void {
     this.order.set(order);

@@ -3,6 +3,7 @@ import { inject, Injectable } from '@angular/core';
 import { firstValueFrom } from 'rxjs';
 
 import type {
+  ActivityEventView,
   AdminOrdersPage,
   AdminOrdersQuery,
   AdminPlaceOrderPayload,
@@ -53,6 +54,18 @@ export class AdminOrdersService {
   async byId(id: string): Promise<OrderView> {
     return firstValueFrom(
       this.http.get<OrderView>(`${B2B_API_BASE}/admin/orders/${encodeURIComponent(id)}`),
+    );
+  }
+
+  /**
+   * **L'historique d'une commande** — les faits du journal qui la touchent, le
+   * plus récent d'abord, bornés côté serveur (plan `plan-page-commandes.md` §3 bis).
+   */
+  async history(id: string): Promise<readonly ActivityEventView[]> {
+    return firstValueFrom(
+      this.http.get<ActivityEventView[]>(
+        `${B2B_API_BASE}/admin/orders/${encodeURIComponent(id)}/history`,
+      ),
     );
   }
 

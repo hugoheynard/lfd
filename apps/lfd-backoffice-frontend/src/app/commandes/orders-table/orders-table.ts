@@ -59,11 +59,13 @@ export class OrdersTable {
    * combien. Le montant à droite, seule colonne qu'on compare de haut en bas.
    */
   protected readonly columns = computed<readonly FoldTableColumn[]>(() => [
-    { key: 'orderNumber', label: 'Commande' },
-    ...(this.wide() ? [{ key: 'customer', label: 'Client' }] : []),
-    ...(this.siteOf() !== null ? [{ key: 'site', label: 'Site' }] : []),
+    // Les dates d'abord, puis qui, puis la référence (Hugo, 2026-10-12) :
+    // on parcourt la table par le temps, la référence ne sert qu'à citer.
     { key: 'placedAt', label: 'Passée le', width: '9rem' },
     ...(this.wide() ? [{ key: 'fulfillment', label: 'Pour le', width: '11rem' }] : []),
+    ...(this.wide() ? [{ key: 'customer', label: 'Client' }] : []),
+    ...(this.siteOf() !== null ? [{ key: 'site', label: 'Site' }] : []),
+    { key: 'orderNumber', label: 'Commande' },
     { key: 'status', label: 'Avancement', width: '10rem' },
     { key: 'paymentStatus', label: 'Règlement', width: '10rem' },
     { key: 'totalCents', label: 'Total TTC', width: '8rem', align: 'right' },
