@@ -27,7 +27,6 @@ import {
 
 import { httpErrorMessage } from '@lfd/endpoints';
 
-import { periodBetween } from '../../collection-month-wording';
 import { CollectionReturnsService } from '../../collection-returns.service';
 import { euros } from '../../invoice-dossier-format';
 import { ImportReturnsPanel } from '../import-returns-panel/import-returns-panel';
@@ -37,6 +36,7 @@ import {
 } from '../resolve-return-panel/resolve-return-panel';
 import { ReturnPanel, type ReturnPanelData } from '../return-panel/return-panel';
 import { ReturnRows, type ReturnGestureEvent } from '../return-rows/return-rows';
+import { periodWithModes } from '../../collection-month-wording';
 
 const COLUMNS: readonly FoldTableColumn[] = [
   { key: 'rank', label: 'Ligne', numeric: true },
@@ -93,7 +93,7 @@ export class BankReturns {
   protected readonly options = computed(() =>
     this.batches().map((batch) => ({
       value: batch.id,
-      label: `Lot ${periodBetween(batch.cycleStartsAt, batch.cycleClosesAt)} — ${batch.scheme}`,
+      label: `Lot ${periodWithModes(batch.periodLabel, batch.payerModes)} — ${batch.scheme}`,
     })),
   );
 

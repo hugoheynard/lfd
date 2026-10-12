@@ -10,8 +10,8 @@ import {
   type FoldTableColumn,
 } from 'fold-ng';
 
-import { periodBetween } from '../../collection-month-wording';
 import { day, euros } from '../../invoice-dossier-format';
+import { periodWithModes } from '../../collection-month-wording';
 
 const COLUMNS: readonly FoldTableColumn[] = [
   { key: 'period', label: 'Période' },
@@ -58,7 +58,7 @@ export class BatchHistory {
   protected readonly rowKey = (row: CollectionBatchView): string => row.id;
 
   protected periodOf(row: CollectionBatchView): string {
-    return periodBetween(row.cycleStartsAt, row.cycleClosesAt);
+    return periodWithModes(row.periodLabel, row.payerModes);
   }
 
   protected statusOf(row: CollectionBatchView): string {

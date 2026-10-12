@@ -37,6 +37,11 @@
             ><span class="mp-amount">{{ sums.gap }}</span></fold-field
           >
           <fold-field label="Payeurs">{{ sums.payers }}</fold-field>
+          @if (clients() !== '') {
+            <fold-field label="Modes"
+              ><span data-preview-modes>{{ clients() }}</span></fold-field
+            >
+          }
         </fold-field-list>
       }
 

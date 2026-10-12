@@ -300,4 +300,34 @@ describe("la fiche porte les dates des trois modes et la dernière clôture (M1,
     // Jeudi 8 octobre : le dernier lundi atteint est le 5 octobre.
     expect(view.lastClosure).toBe("2026-10-04T22:00:00.000Z");
   });
+
+  it("la période du lot à préparer : du 1er (clôture du mensuel) au lundi 5, sans modes : ceux du lot sont ceux de ses clients (M4c)", async () => {
+    const modes = new Modes();
+    modes.payers.rows.push({
+      ...STAMP,
+      id: "p1",
+      legalEntityId: "le1",
+      payerCompanyId: "cmp_1",
+      effectiveFrom: new Date("2026-09-30T22:00:00.000Z"),
+      mode: "weekly",
+    });
+
+    const view = await handlerWith(modes).execute(new GetLegalEntityQuery("le1"));
+
+    expect(view.lastClosurePeriod).toEqual({
+      closesAt: "2026-10-04T22:00:00.000Z",
+      startsAt: "2026-09-30T22:00:00.000Z",
+      label: "du 1er au 4 octobre 2026",
+    });
+  });
+
+  it("personne n'a choisi : la période du mois (M4c)", async () => {
+    const view = await handlerWith().execute(new GetLegalEntityQuery("le1"));
+
+    expect(view.lastClosurePeriod).toEqual({
+      closesAt: "2026-09-30T22:00:00.000Z",
+      startsAt: "2026-08-31T22:00:00.000Z",
+      label: "du 1er au 30 septembre 2026",
+    });
+  });
 });

@@ -1,6 +1,7 @@
 import type {
   CollectionExclusionView,
   CollectionPreviewLineView,
+  CollectionPreviewOpenView,
   CollectionPreviewView,
 } from "@lfd/contracts";
 import { QueryHandler, type IQueryHandler } from "@nestjs/cqrs";
@@ -11,9 +12,13 @@ import { CollectionNotYetOpenError } from "../../domain/errors/collection-errors
 import { BillingModeDatesReader } from "../../domain/ports/billing-mode-dates.reader.js";
 import { CollectionCandidatesReader } from "../../domain/ports/collection-candidates.reader.js";
 import { CollectionMandatesReader } from "../../domain/ports/collection-mandates.reader.js";
+import { InvoicePeriodsReader } from "../../domain/ports/invoice-periods.reader.js";
 import { LegalEntityReader } from "../../domain/ports/legal-entity.reader.js";
 import { PayerBillingModesReader } from "../../domain/ports/payer-billing-modes.reader.js";
 import { calendarCycleAt } from "../../domain/services/calendar-cycles.js";
+import type { DebitDraft } from "../../domain/services/collection-assembly.js";
+import type { LotPayerRef } from "../../domain/services/lot-payer-modes.js";
+import { readLotPayerModes } from "../lot-payer-modes-support.js";
 import { readAssembly, type ReadAssembly } from "../collection-constitution-support.js";
 import { GetCollectionPreviewQuery } from "./collection-batch-queries.js";
 
@@ -52,6 +57,7 @@ export class GetCollectionPreviewHandler implements IQueryHandler<
     private readonly mandates: CollectionMandatesReader,
     private readonly modeDates: BillingModeDatesReader,
     private readonly payerModes: PayerBillingModesReader,
+    private readonly periods: InvoicePeriodsReader,
     private readonly clock: Clock,
   ) {}
 
@@ -71,7 +77,11 @@ export class GetCollectionPreviewHandler implements IQueryHandler<
         this.clock.now(),
         { cycleOf: calendarCycleAt, simulateUninvoiced: true },
       );
-      return toView(read);
+      const debits = [...read.assembly.debits.values()].flat();
+      const [payerModes] = await readLotPayerModes(this.periods, read.calendar, [
+        { payerRefs: debits.flatMap(payerRefsOf), closesAt: read.cycle.closesAt },
+      ]);
+      return { ...toView(read), payerModes: payerModes ?? [] };
     } catch (caught) {
       if (caught instanceof CollectionNotYetOpenError) {
         return {
@@ -85,7 +95,17 @@ export class GetCollectionPreviewHandler implements IQueryHandler<
   }
 }
 
-function toView(read: ReadAssembly): CollectionPreviewView {
+/** Les payeurs d'une ligne : un par facture, un seul pour une ligne d'arrêté. */
+function payerRefsOf(debit: DebitDraft): readonly LotPayerRef[] {
+  return debit.settles.kind === "invoices"
+    ? debit.settles.invoices.map((invoice) => ({
+        payerCompanyId: debit.payerId,
+        invoiceId: invoice.invoiceId,
+      }))
+    : [{ payerCompanyId: debit.payerId, invoiceId: null }];
+}
+
+function toView(read: ReadAssembly): Omit<CollectionPreviewOpenView, "payerModes"> {
   const lines: CollectionPreviewLineView[] = [...read.assembly.debits.entries()].flatMap(
     ([scheme, debits]) =>
       debits.map((debit) => ({

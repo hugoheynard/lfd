@@ -1,6 +1,10 @@
 import { FixedClock } from "../../../../../platform/time/fixed-clock.js";
 import { LegalEntityNotFoundError } from "../../../domain/errors/accounting-errors.js";
 import {
+  ClosureBatchesReader,
+  type ClosureBatchRead,
+} from "../../../domain/ports/closure-batches.reader.js";
+import {
   MonthlyInvoicesReader,
   type MonthlyInvoicesRead,
 } from "../../../domain/ports/monthly-invoices.reader.js";
@@ -35,6 +39,35 @@ class RecordingReader extends MonthlyInvoicesReader {
   }
 }
 
+/** Un lot CORE par clôture listée dans `closed` ; enregistre les clôtures demandées. */
+class FixedBatches extends ClosureBatchesReader {
+  readonly asked: (readonly Date[])[] = [];
+  constructor(private readonly closed: readonly Date[] = []) {
+    super();
+  }
+  ofClosures(
+    _legalEntityId: string,
+    closures: readonly Date[],
+  ): Promise<readonly ClosureBatchRead[]> {
+    this.asked.push(closures);
+    return Promise.resolve(
+      this.closed
+        .filter((closesAt) => closures.some((asked) => asked.getTime() === closesAt.getTime()))
+        .map((closesAt) => ({
+          closesAt,
+          batch: {
+            batchId: `b_${closesAt.toISOString()}`,
+            scheme: "CORE" as const,
+            status: "constituted" as const,
+            periodLabel: "libellé du lot",
+            lineCount: 1,
+            totalCents: 10_550,
+          },
+        })),
+    );
+  }
+}
+
 class OnlyLe1 extends LegalEntityReader {
   list(): Promise<readonly LegalEntityRecord[]> {
     return Promise.resolve([]);
@@ -50,16 +83,22 @@ const WEEKLY: PayerModeSegments = {
   segments: [{ effectiveFrom: paris("2026-08-01"), mode: "weekly" }],
 };
 
-function run(at: Date, payers: readonly PayerModeSegments[] = [], entityId = "le_1") {
+function run(
+  at: Date,
+  payers: readonly PayerModeSegments[] = [],
+  entityId = "le_1",
+  batches = new FixedBatches(),
+) {
   const reader = new RecordingReader();
   const handler = new GetMonthlyInvoicesHandler(
     new OnlyLe1(),
     new FixedModeDates(),
     new FixedPayerModes(payers),
     reader,
+    batches,
     new FixedClock(at),
   );
-  return { reader, view: handler.execute(new GetMonthlyInvoicesQuery(entityId)) };
+  return { reader, batches, view: handler.execute(new GetMonthlyInvoicesQuery(entityId)) };
 }
 
 describe("GetMonthlyInvoices — la dernière clôture de l'entité", () => {
@@ -73,7 +112,11 @@ describe("GetMonthlyInvoices — la dernière clôture de l'entité", () => {
       issuableFrom: "2026-09-30T21:55:00.000Z",
       open: true,
     });
-    expect(reader.asked).toEqual([new Date("2026-09-30T22:00:00.000Z")]);
+    // Une lecture par clôture montrée : le 1er septembre (la dernière atteinte) et le 1er octobre.
+    expect(reader.asked).toEqual([
+      new Date("2026-08-31T22:00:00.000Z"),
+      new Date("2026-09-30T22:00:00.000Z"),
+    ]);
   });
 
   it("un payeur hebdomadaire : la dernière clôture est son lundi, sa semaine", async () => {
@@ -104,5 +147,39 @@ describe("GetMonthlyInvoices — la dernière clôture de l'entité", () => {
     await expect(run(new Date("2026-09-30T21:55:00.000Z"), [], "le_x").view).rejects.toThrow(
       LegalEntityNotFoundError,
     );
+  });
+});
+
+describe("GetMonthlyInvoices — les clôtures du mois (M4c)", () => {
+  it("rythmes mêlés, le mardi 6 octobre : le 1er puis chaque lundi, chacun avec ses modes", async () => {
+    const { view } = run(paris("2026-10-06", "08:00"), [WEEKLY]);
+    const closures = (await view).closures;
+
+    expect(closures.map((closure) => [closure.periodClosesAt, closure.modes])).toEqual([
+      [paris("2026-10-01").toISOString(), ["monthly"]],
+      [paris("2026-10-05").toISOString(), ["weekly"]],
+      [paris("2026-10-12").toISOString(), ["weekly"]],
+      [paris("2026-10-19").toISOString(), ["weekly"]],
+      [paris("2026-10-26").toISOString(), ["weekly"]],
+    ]);
+    expect(closures.map((closure) => closure.reached)).toEqual([true, true, false, false, false]);
+    expect(closures[1]?.periodLabel).toBe("du 28 septembre au 4 octobre 2026");
+  });
+
+  it("chaque clôture porte SES lots, et la vue du haut est la clôture à émettre", async () => {
+    const batches = new FixedBatches([paris("2026-10-01"), paris("2026-10-05")]);
+    const { view } = run(paris("2026-10-06", "08:00"), [WEEKLY], "le_1", batches);
+    const read = await view;
+
+    expect(read.closures.map((closure) => closure.batches.map((batch) => batch.batchId))).toEqual([
+      [`b_${paris("2026-10-01").toISOString()}`],
+      [`b_${paris("2026-10-05").toISOString()}`],
+      [],
+      [],
+      [],
+    ]);
+    expect(read.periodClosesAt).toBe(paris("2026-10-05").toISOString());
+    expect(read.batches).toHaveLength(1);
+    expect(batches.asked).toHaveLength(1);
   });
 });

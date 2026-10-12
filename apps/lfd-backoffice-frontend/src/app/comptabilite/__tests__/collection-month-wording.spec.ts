@@ -4,7 +4,8 @@ import {
   emptyPreviewSentence,
   longDay,
   notYetOpenSentence,
-  periodBetween,
+  modesClients,
+  periodWithModes,
   sameClosure,
 } from '../collection-month-wording';
 
@@ -16,17 +17,21 @@ const OCTOBER_FIRST = '2026-09-30T22:00:00.000Z';
 const OCTOBER_FIFTH = '2026-10-04T22:00:00.000Z';
 
 describe('les mots du prélèvement, clôture par clôture', () => {
-  it('dit la période d’un lot en jours de Paris, dernier jour inclus', () => {
-    expect(periodBetween(OCTOBER_FIRST, NOVEMBER_FIRST)).toBe('du 1er au 31 octobre 2026');
-    expect(periodBetween(OCTOBER_FIRST, OCTOBER_FIFTH)).toBe('du 1er au 4 octobre 2026');
+  // La période d'un lot vient du serveur (`periodLabel`, M4c) : l'écran ne la recalcule plus.
+  it('dit qui clôt quand les modes sont mêlés, du plus court au plus long', () => {
+    expect(modesClients(['monthly', 'weekly'])).toBe('clients hebdomadaires et mensuels');
+    expect(modesClients(['monthly', 'semimonthly', 'weekly'])).toBe(
+      'clients hebdomadaires, facturés deux fois par mois et mensuels',
+    );
   });
 
-  it('nomme les deux mois, puis les deux années, quand la période les traverse', () => {
-    expect(periodBetween('2026-09-27T22:00:00.000Z', OCTOBER_FIFTH)).toBe(
-      'du 28 septembre au 4 octobre 2026',
+  it('ne dit rien des modes quand un seul clôt', () => {
+    expect(modesClients(['weekly'])).toBe('');
+    expect(periodWithModes('du 1er au 30 septembre 2026', ['monthly'])).toBe(
+      'du 1er au 30 septembre 2026',
     );
-    expect(periodBetween('2026-12-27T23:00:00.000Z', '2027-01-03T23:00:00.000Z')).toBe(
-      'du 28 décembre 2026 au 3 janvier 2027',
+    expect(periodWithModes('du 1er au 4 octobre 2026', ['weekly', 'monthly'])).toBe(
+      'du 1er au 4 octobre 2026 — clients hebdomadaires et mensuels',
     );
   });
 

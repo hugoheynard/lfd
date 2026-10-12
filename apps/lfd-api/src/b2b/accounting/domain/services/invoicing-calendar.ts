@@ -10,6 +10,11 @@ import {
   type RhythmTimeline,
 } from "./invoicing-closures.js";
 import { PayerTimeline, type ModeTimelines } from "./payer-timeline.js";
+import {
+  BILLING_MODES,
+  DEFAULT_BILLING_MODE,
+  type BillingMode,
+} from "../value-objects/billing-mode.js";
 
 /**
  * **Le calendrier de la facture d'une entité** (plan
@@ -96,6 +101,49 @@ export class InvoicingCalendar implements ClosureSequence {
       .filter((timeline) => closesAt(closesAtInstant, timeline))
       .map((timeline) => previousClosureOf(closesAtInstant, timeline).getTime());
     return { startsAt: new Date(Math.min(...starts)), closesAt: closesAtInstant };
+  }
+
+  /**
+   * Les modes sous lesquels des payeurs closent à `instant`, dans l'ordre de
+   * `BILLING_MODES` (M4c). Le mode d'un payeur est celui de la période que
+   * l'instant ferme (en vigueur juste avant lui) : un payeur devenu
+   * hebdomadaire au 1er clôt ce 1er en mensuel. Le mensuel y est dès que sa
+   * date tombe ici — c'est la suite de quiconque n'a rien choisi, et le
+   * calendrier ne sait pas s'il en reste (`isClosure` raisonne de même).
+   */
+  modesClosingAt(instant: Date): readonly BillingMode[] {
+    const before = new Date(instant.getTime() - 1);
+    const modes = new Set<BillingMode>();
+    if (closesAt(instant, this.byDefault)) {
+      modes.add(DEFAULT_BILLING_MODE);
+    }
+    for (const payer of this.payers.values()) {
+      if (closesAt(instant, payer)) {
+        modes.add(payer.modeAt(before).mode);
+      }
+    }
+    return BILLING_MODES.filter((mode) => modes.has(mode));
+  }
+
+  /**
+   * Le mode sous lequel ce payeur a clos la période fermée à `closesAt` —
+   * celui en vigueur juste avant (un payeur devenu hebdomadaire au 1er a
+   * clos ce 1er en mensuel). Sans choix, le mensuel.
+   */
+  payerModeClosingAt(payerCompanyId: string, closesAtInstant: Date): BillingMode {
+    const timeline = this.payers.get(payerCompanyId);
+    return timeline === undefined
+      ? DEFAULT_BILLING_MODE
+      : timeline.modeAt(new Date(closesAtInstant.getTime() - 1)).mode;
+  }
+
+  /**
+   * La période du calendrier que ferme `closesAtInstant` : de la clôture
+   * précédente du calendrier (de n'importe quel payeur) à elle — le cycle de
+   * son lot (§16.10), « du 1er au 4 octobre » quand un hebdomadaire clôt le 5.
+   */
+  cycleClosedAt(closesAtInstant: Date): BillingCycle {
+    return { startsAt: this.closureBefore(closesAtInstant), closesAt: closesAtInstant };
   }
 
   /** La prochaine clôture du calendrier, strictement après `instant`. */

@@ -18,6 +18,7 @@
 import {
   instantToLocal,
   weekdayOf,
+  type CollectionCycleView,
   type IssuedInvoicesView,
   type MonthlyInvoiceReportView,
   type MonthlyInvoicesView,
@@ -784,6 +785,76 @@ describe("rythmes mêlés : chaque payeur facturé à SA clôture (M2), prélev�
     expect(links.map((link) => link.orderId).sort()).toEqual(orders.map((o) => o.id).sort());
     expect([...(await payersInvoiced())].sort()).toEqual([monthly.id, weekly.id].sort());
     expect(await ctx.prisma.invoice.count({ where: { payerCompanyId: monthly.id } })).toBe(1);
+  });
+});
+
+describe("l'écran par clôture, rythmes mêlés (M4c)", () => {
+  it("la vue rend le 1er et le premier lundi qui suit, chacun avec ses payeurs et son lot", async () => {
+    const id = await entity();
+    const monthly = await payer(id);
+    const weekly = await payer(id);
+    // Avant la clôture du 1er : le second payeur passe à l'hebdomadaire, en
+    // vigueur à cette clôture (la prochaine de son mode actuel, le mensuel).
+    clock.set(new Date(closesAt.getTime() - 3 * DAY_MS));
+    await staff()
+      .put(`${ENTITIES}/${id}/payers/${weekly.id}/billing-mode`)
+      .send({ mode: "weekly" })
+      .expect(204);
+    const firstMonday = nextClosureAfter(closesAt, BillingRhythm.weekly(1));
+
+    // Le 1er : les deux payeurs closent leur mois (le second l'a fini en mensuel).
+    clock.set(new Date(issuableFrom.getTime() + 2 * 60 * 1000));
+    await invoicePass();
+    clock.set(new Date(closesAt.getTime() + 2 * HOUR_MS));
+    expect((await pass()).runs.map((run) => run.outcome)).toEqual(["constituted"]);
+    // Un bon de la première semaine, chez l'hebdomadaire seul.
+    await laterOrder(weekly.id, new Date(closesAt.getTime() + 3 * HOUR_MS));
+
+    // Le premier lundi : sa facture la veille, son lot le jour.
+    clock.set(new Date(invoicingMomentOf(firstMonday).getTime() + 2 * 60 * 1000));
+    await invoicePass();
+    clock.set(new Date(firstMonday.getTime() + 2 * HOUR_MS));
+    expect((await pass()).runs.map((run) => run.outcome)).toEqual(["constituted"]);
+
+    const read = await view(id);
+    const first = read.closures.find(
+      (closure) => closure.periodClosesAt === closesAt.toISOString(),
+    );
+    const monday = read.closures.find(
+      (closure) => closure.periodClosesAt === firstMonday.toISOString(),
+    );
+    expect(first?.modes).toEqual(["monthly"]);
+    expect(first?.invoices.map((invoice) => invoice.payerCompanyId).sort()).toEqual(
+      [monthly.id, weekly.id].sort(),
+    );
+    expect(first?.batches.map((batch) => batch.status)).toEqual(["constituted"]);
+    expect(monday?.modes).toEqual(["weekly"]);
+    expect(monday?.invoices.map((invoice) => invoice.payerCompanyId)).toEqual([weekly.id]);
+    expect(monday?.batches.map((batch) => batch.periodLabel)).toEqual([
+      periodLabelOf({ startsAt: closesAt, closesAt: firstMonday }),
+    ]);
+    // Dans l'ordre, et la fiche nomme le lot du lundi par sa période.
+    const order = read.closures.map((closure) => closure.periodClosesAt);
+    expect(order).toEqual([...order].sort());
+    const fiche = jsonBody<{ lastClosurePeriod: unknown }>(
+      await staff().get(`${ENTITIES}/${id}`).expect(200),
+    );
+    expect(fiche.lastClosurePeriod).toEqual({
+      closesAt: firstMonday.toISOString(),
+      startsAt: closesAt.toISOString(),
+      label: periodLabelOf({ startsAt: closesAt, closesAt: firstMonday }),
+    });
+    // Les modes d'un lot sont ceux des clients qu'il PRÉLÈVE (Hugo, 2026-10-12) :
+    // au 1er les deux payeurs, chacun en mensuel ; au lundi l'hebdomadaire seul.
+    const cycle = jsonBody<CollectionCycleView>(
+      await staff().get(`${COLLECTION}/cycle?legalEntityId=${id}`).expect(200),
+    );
+    const modesAt = (at: Date) =>
+      cycle.batches
+        .filter((batch) => batch.cycleClosesAt === at.toISOString())
+        .map((batch) => batch.payerModes);
+    expect(modesAt(closesAt)).toEqual([["monthly"]]);
+    expect(modesAt(firstMonday)).toEqual([["weekly"]]);
   });
 });
 

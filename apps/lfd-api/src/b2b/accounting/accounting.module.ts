@@ -76,12 +76,14 @@ import { AutomaticMonthlyInvoicer } from "./domain/ports/automatic-monthly-invoi
 import { InvoiceAutopilotRuns } from "./domain/ports/invoice-autopilot-runs.js";
 import { MonthlyInvoiceOutcomes } from "./domain/ports/monthly-invoice-outcomes.js";
 import { MonthlyInvoicesReader } from "./domain/ports/monthly-invoices.reader.js";
+import { ClosureBatchesReader } from "./domain/ports/closure-batches.reader.js";
 import { MonthlyInvoicingReader } from "./domain/ports/monthly-invoicing.reader.js";
 import { AdminCardInvoicesController } from "./http/admin-card-invoices.controller.js";
 import { AdminMonthlyInvoicesController } from "./http/admin-monthly-invoices.controller.js";
 import { PrismaInvoiceAutopilotRuns } from "./infrastructure/prisma-invoice-autopilot-runs.js";
 import { PrismaMonthlyInvoiceOutcomes } from "./infrastructure/prisma-monthly-invoice-outcomes.js";
 import { PrismaMonthlyInvoicesReader } from "./infrastructure/prisma-monthly-invoices.reader.js";
+import { PrismaClosureBatchesReader } from "./infrastructure/prisma-closure-batches.reader.js";
 import { PrismaMonthlyInvoicingReader } from "./infrastructure/prisma-monthly-invoicing.reader.js";
 import { InvoicingFloorReader } from "./domain/ports/invoicing-floor.reader.js";
 import { PrismaInvoicingFloorReader } from "./infrastructure/prisma-invoicing-floor.reader.js";
@@ -239,6 +241,7 @@ import { PrismaLegalEntityRepository } from "./infrastructure/prisma-legal-entit
     { provide: InvoicingFloorReader, useClass: PrismaInvoicingFloorReader },
     { provide: MonthlyInvoiceOutcomes, useClass: PrismaMonthlyInvoiceOutcomes },
     { provide: MonthlyInvoicesReader, useClass: PrismaMonthlyInvoicesReader },
+    { provide: ClosureBatchesReader, useClass: PrismaClosureBatchesReader },
     { provide: InvoiceAutopilotRuns, useClass: PrismaInvoiceAutopilotRuns },
     { provide: AutomaticMonthlyInvoicer, useClass: BusAutomaticMonthlyInvoicer },
     IssueMonthlyInvoicesHandler,

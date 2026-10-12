@@ -9,9 +9,12 @@ import { PrismaService } from "../../../platform/database/prisma.service.js";
 import {
   CollectionBatchReader,
   type StoredBatchFile,
+  type StoredBatchView,
 } from "../domain/ports/collection-batch.reader.js";
 import type { BatchCsvLine } from "../domain/services/collection-batch-csv.js";
 import { depositDeadlineOf } from "../domain/services/collection-calendar.js";
+import { periodLabelOf } from "../domain/services/invoicing-closures.js";
+import type { LotPayerRef } from "../domain/services/lot-payer-modes.js";
 
 /** Lecture des lots — jamais le fichier dans la liste, il est lourd. */
 @Injectable()
@@ -20,7 +23,7 @@ export class PrismaCollectionBatchReader extends CollectionBatchReader {
     super();
   }
 
-  async list(legalEntityId: string): Promise<readonly CollectionBatchView[]> {
+  async list(legalEntityId: string): Promise<readonly StoredBatchView[]> {
     const rows = await this.prisma.collectionBatch.findMany({
       where: { legalEntityId },
       orderBy: [{ constitutedAt: "desc" }, { scheme: "asc" }],
@@ -48,8 +51,11 @@ export class PrismaCollectionBatchReader extends CollectionBatchReader {
             amountCents: true,
             ordersTotalCents: true,
             orderCount: true,
+            debtorCompanyId: true,
             statement: { select: { id: true } },
-            invoices: { select: { invoice: { select: { number: true } } } },
+            invoices: {
+              select: { invoice: { select: { id: true, number: true, payerCompanyId: true } } },
+            },
           },
         },
         notices: {
@@ -69,6 +75,7 @@ export class PrismaCollectionBatchReader extends CollectionBatchReader {
       scheme: row.scheme,
       cycleStartsAt: row.cycleStartsAt.toISOString(),
       cycleClosesAt: row.cycleClosesAt.toISOString(),
+      periodLabel: periodLabelOf({ startsAt: row.cycleStartsAt, closesAt: row.cycleClosesAt }),
       status: row.status,
       constitutedAt: row.constitutedAt.toISOString(),
       // Le genre de l'auteur, jamais sa fiche : « préparé automatiquement »
@@ -83,6 +90,14 @@ export class PrismaCollectionBatchReader extends CollectionBatchReader {
       depositable: row.lines.length > 0 && row.unmandatedCompanies.length === 0,
       ...batchCalendar(row.requestedCollectionDay, row.legalEntity),
       postponedFromDay: row.postponedFromDay?.toISOString().slice(0, 10) ?? null,
+      payerRefs: row.lines.flatMap((line): readonly LotPayerRef[] =>
+        line.invoices.length === 0
+          ? [{ payerCompanyId: line.debtorCompanyId, invoiceId: null }]
+          : line.invoices.map((link) => ({
+              payerCompanyId: link.invoice.payerCompanyId,
+              invoiceId: link.invoice.id,
+            })),
+      ),
       // Un lot d'avant F3 n'a pas d'arrêté : `null`, jamais un identifiant inventé.
       lines: row.lines.map((line) => ({
         rank: line.rank,

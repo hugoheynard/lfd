@@ -1,3 +1,6 @@
+import type { CollectionBatchStatusView } from "./collection-batch.js";
+import type { BillingRhythmKind } from "./legal-entity.js";
+
 /**
  * **La facture du mois**, telle que l'écran « Prélèvement du mois » la lit
  * (plan `documentation/comptabilite/facturation/facture-emise.md`).
@@ -53,19 +56,41 @@ export interface MonthlyInvoiceAutopilotRunView {
   readonly message: string | null;
 }
 
-/** `GET admin/accounting/monthly-invoices?legalEntityId=` */
-export interface MonthlyInvoicesView {
-  /**
-   * ISO — la dernière clôture de l'entité dont l'heure d'émission est passée
-   * (R3 : la période suit le rythme de l'entité, plus le mois civil).
-   */
+/** Un lot vivant ou passé d'une clôture, tel que la liste des clôtures le résume. */
+export interface MonthlyClosureBatchView {
+  readonly batchId: string;
+  readonly scheme: "CORE" | "B2B";
+  readonly status: CollectionBatchStatusView;
+  /** « du 1er au 4 octobre 2026 » — la période du lot (`periodLabelOf`). */
+  readonly periodLabel: string;
+  readonly lineCount: number;
+  readonly totalCents: number;
+}
+
+/**
+ * **Une clôture du calendrier de l'entité** (plan
+ * `plan-rythme-de-facturation.md`, §16.13, M4c) : sa période, les modes qui
+ * s'y closent, les factures et les signalements de ses payeurs, ses lots.
+ */
+export interface MonthlyClosureView {
+  /** ISO — la clôture. */
   readonly periodClosesAt: string;
-  /** ISO — sa clôture précédente réelle : la période est `[periodStartsAt, periodClosesAt[`. */
+  /**
+   * ISO — le début de la période affichée : la PLUS LONGUE de celles qui s'y
+   * closent (celle du mensuel au 1er quand un hebdomadaire clôt le même jour).
+   */
   readonly periodStartsAt: string;
   /** « du 1er au 30 septembre 2026 » — jours locaux, dernier jour inclus. */
   readonly periodLabel: string;
+  /**
+   * Les modes dont des payeurs closent ici, mensuel d'abord. Le mensuel y est
+   * dès que sa date tombe ici : c'est le mode de quiconque n'a rien choisi.
+   */
+  readonly modes: readonly BillingRhythmKind[];
   /** ISO — la veille de la clôture, 23h55 à Paris. */
   readonly issuableFrom: string;
+  /** L'heure d'émission est passée : le bouton peut émettre ou reprendre. */
+  readonly reached: boolean;
   /** ISO — la mise en service ; `null` si la ligne a disparu (409 à l'émission). */
   readonly floorAt: string | null;
   /** La période se clôt après la mise en service : elle se facture. */
@@ -74,6 +99,22 @@ export interface MonthlyInvoicesView {
   readonly signaled: readonly MonthlyInvoiceSignalView[];
   /** La tentative automatique de CETTE clôture ; `null` s'il n'y en a pas eu. */
   readonly autopilotRun: MonthlyInvoiceAutopilotRunView | null;
+  /** Les lots clos à cet instant (un par schéma), annulés compris ; vide s'il n'y en a pas. */
+  readonly batches: readonly MonthlyClosureBatchView[];
+}
+
+/**
+ * `GET admin/accounting/monthly-invoices?legalEntityId=` — la clôture dont on
+ * émet les factures maintenant (la dernière dont l'heure d'émission est
+ * passée, R3), et depuis M4c la liste des clôtures du mois en cours.
+ */
+export interface MonthlyInvoicesView extends MonthlyClosureView {
+  /**
+   * Les clôtures du calendrier tombées dans le mois en cours (Paris), plus la
+   * dernière atteinte et celle dont on émet les factures si elles n'y sont
+   * pas — la plus ancienne d'abord.
+   */
+  readonly closures: readonly MonthlyClosureView[];
 }
 
 /** `POST admin/accounting/monthly-invoices` — l'entité et la clôture sont demandées, jamais devinées. */

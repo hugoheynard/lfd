@@ -11,11 +11,11 @@ import {
 } from 'fold-ng';
 
 import { DEPOSIT_UNKNOWN } from '../../collection-schedule-wording';
-import { periodBetween } from '../../collection-month-wording';
 import { unsentNoticePayers } from '../../collection-notice-wording';
 import { batchAuthorLabel } from '../../autopilot-run-wording';
 import { day, euros, instant } from '../../invoice-dossier-format';
 import { BatchLines } from '../batch-lines/batch-lines';
+import { periodWithModes } from '../../collection-month-wording';
 
 /** Un geste sur le lot, que la page exécute — elle tient l'attente et les refus. */
 export type PendingBatchGesture = 'xml' | 'csv' | 'deposit' | 'cancel';
@@ -54,7 +54,7 @@ export class PendingBatch {
 
   protected readonly title = computed(() => {
     const batch = this.batch();
-    return `Lot ${periodBetween(batch.cycleStartsAt, batch.cycleClosesAt)} — ${batch.scheme}`;
+    return `Lot ${periodWithModes(batch.periodLabel, batch.payerModes)} — ${batch.scheme}`;
   });
 
   protected readonly collectionDay = computed(() => {

@@ -20,6 +20,7 @@ import {
   FixedPayerModes,
 } from "../../commands/__tests__/monthly-invoice-doubles.js";
 import { paris } from "../../../domain/services/__tests__/billing-mode-fixtures.js";
+import { FixedInvoicePeriods } from "../../services/__tests__/issued-invoice-doubles.js";
 import { GetCollectionPreviewQuery } from "../collection-batch-queries.js";
 import { GetCollectionPreviewHandler } from "../get-collection-preview.handler.js";
 
@@ -46,6 +47,7 @@ function previewWorld() {
     w.mandates,
     new FixedModeDates(),
     w.payerModes,
+    new FixedInvoicePeriods(new Map()),
     w.clock,
   );
   return { ...w, preview };
@@ -153,6 +155,7 @@ describe("l'aperçu du mois", () => {
       w.mandates,
       new FixedModeDates(),
       weekly,
+      new FixedInvoicePeriods(new Map()),
       w.clock,
     );
     w.candidates.orders = [order("c_port")];

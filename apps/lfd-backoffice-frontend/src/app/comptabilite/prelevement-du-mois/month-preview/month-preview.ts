@@ -25,7 +25,12 @@ import {
 import { httpErrorMessage } from '@lfd/endpoints';
 
 import { saveBlob } from '../../../shared/download/save-blob';
-import { emptyPreviewSentence, longDay, notYetOpenSentence } from '../../collection-month-wording';
+import {
+  emptyPreviewSentence,
+  longDay,
+  modesClients,
+  notYetOpenSentence,
+} from '../../collection-month-wording';
 import { ComptabiliteDashboardService } from '../../comptabilite-dashboard.service';
 import { euros, signedEuros } from '../../invoice-dossier-format';
 
@@ -123,6 +128,13 @@ export class MonthPreview {
       `Aperçu de ce qui serait prélevé à la clôture (${longDay(this.entity().nextCollection.closesAt)}), ` +
       'calculé comme le lot : une facture par payeur. Rien n’est figé.',
   );
+
+  /**
+   * « clients hebdomadaires et mensuels » — les modes des clients que ce lot
+   * prélèverait, calculés par le serveur (Hugo, 2026-10-12) ; vide s'il n'y
+   * en a qu'un.
+   */
+  protected readonly clients = computed(() => modesClients(this.open()?.payerModes ?? []));
 
   protected readonly open = computed((): CollectionPreviewOpenView | null => {
     const view = this.preview();

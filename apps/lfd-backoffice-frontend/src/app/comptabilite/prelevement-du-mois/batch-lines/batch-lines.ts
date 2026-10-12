@@ -11,9 +11,9 @@ import {
   type FoldTableColumn,
 } from 'fold-ng';
 
-import { periodBetween } from '../../collection-month-wording';
 import { noticeBadge, type NoticeBadge } from '../../collection-notice-wording';
 import { euros, signedEuros } from '../../invoice-dossier-format';
+import { periodWithModes } from '../../collection-month-wording';
 
 const COLUMNS: readonly FoldTableColumn[] = [
   { key: 'rank', label: 'Ligne', numeric: true },
@@ -72,7 +72,7 @@ export class BatchLines {
 
   protected readonly title = computed(() => {
     const batch = this.batch();
-    return `Lignes du lot ${periodBetween(batch.cycleStartsAt, batch.cycleClosesAt)} — ${batch.scheme}`;
+    return `Lignes du lot ${periodWithModes(batch.periodLabel, batch.payerModes)} — ${batch.scheme}`;
   });
 
   protected readonly rows = computed(() => this.batch().lines.map(toRow));

@@ -32,6 +32,7 @@ const PREVIEW: CollectionPreviewView = {
   lines: [],
   totalCents: 0,
   ordersTotalCents: 0,
+  payerModes: ['monthly'],
   exclusions: [
     {
       orderId: 'o1',

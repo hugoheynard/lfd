@@ -172,6 +172,20 @@ export interface CollectionAutopilotRunView {
  * reconnaître le compte, ce qui est la seule question qu'on se pose devant une
  * fiche.
  */
+/**
+ * La période close par la dernière clôture du calendrier. Sans les modes :
+ * ceux d'un lot sont ceux des clients qu'il prélève (Hugo, 2026-10-12), et
+ * la fiche ne lit pas le lot — l'aperçu et le lot constitué les portent.
+ */
+export interface LastClosurePeriodView {
+  /** ISO — `lastClosure`. */
+  readonly closesAt: string;
+  /** ISO — la clôture précédente du calendrier. */
+  readonly startsAt: string;
+  /** « du 1er au 4 octobre 2026 » — jours de Paris, dernier jour inclus. */
+  readonly label: string;
+}
+
 export interface LegalEntityView {
   readonly id: string;
   readonly name: string;
@@ -236,6 +250,12 @@ export interface LegalEntityView {
    * modes en service et du mensuel, §16.3) : celle du lot à préparer.
    */
   readonly lastClosure: string;
+  /**
+   * La période que ferme `lastClosure` dans ce calendrier — celle du lot à
+   * préparer : de la clôture précédente du calendrier (de n'importe quel
+   * payeur) à `lastClosure` (M4c, §16.13).
+   */
+  readonly lastClosurePeriod: LastClosurePeriodView;
   /** Le calendrier du cycle EN COURS, avec les réglages ci-dessus. */
   readonly nextCollection: CollectionCalendarView;
   /**

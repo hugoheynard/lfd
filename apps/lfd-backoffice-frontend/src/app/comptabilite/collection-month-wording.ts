@@ -4,7 +4,9 @@
  * Depuis M4b (plan `plan-rythme-de-facturation.md`, §16.9), un lot se nomme
  * par sa CLÔTURE et sa période, plus par un mois : les clients hebdomadaires
  * et bimensuels en ferment plusieurs par mois. L'écran garde son nom, que
- * trois messages du serveur citent.
+ * trois messages du serveur citent. Depuis M4c, le libellé d'une période
+ * vient du serveur (`periodLabel`, `lastClosurePeriod`) : une seule
+ * définition, `periodLabelOf`.
  *
  * ## Une clôture se lit à Paris
  *
@@ -12,6 +14,8 @@
  * jour qu'elle FERME est celui de l'instant juste avant elle, lu dans le
  * fuseau des affaires.
  */
+
+import type { BillingRhythmKind } from '@lfd/contracts';
 
 const LONG_DAY = new Intl.DateTimeFormat('fr-FR', {
   day: 'numeric',
@@ -34,23 +38,31 @@ function partsOf(instant: Date): DayParts {
   return { day: day === '1' ? '1er' : day, month: part('month'), year: part('year') };
 }
 
+/** Les modes, du plus court au plus long : « hebdomadaires et mensuels ». */
+const MODE_ORDER: readonly BillingRhythmKind[] = ['weekly', 'semimonthly', 'monthly'];
+
+const MODE_CLIENTS: Readonly<Record<BillingRhythmKind, string>> = {
+  weekly: 'hebdomadaires',
+  semimonthly: 'facturés deux fois par mois',
+  monthly: 'mensuels',
+};
+
 /**
- * « du 1er au 30 septembre 2026 », « du 28 septembre au 4 octobre 2026 » — la
- * période `[startsAt, closesAt[` d'un lot, jours de Paris, dernier jour
- * inclus : la forme du libellé que le serveur écrit (`periodLabelOf`), pour
- * les lots figés dont la vue ne porte que les deux instants.
+ * « clients hebdomadaires et mensuels » — qui clôt à une clôture, en mots
+ * (M4c). Rien quand un seul mode y clôt : le libellé de la période suffit.
  */
-export function periodBetween(startsAtIso: string, closesAtIso: string): string {
-  const first = partsOf(new Date(startsAtIso));
-  const last = partsOf(new Date(new Date(closesAtIso).getTime() - 1));
-  const lastText = `${last.day} ${last.month} ${last.year}`;
-  if (first.year !== last.year) {
-    return `du ${first.day} ${first.month} ${first.year} au ${lastText}`;
+export function modesClients(modes: readonly BillingRhythmKind[]): string {
+  const words = MODE_ORDER.filter((mode) => modes.includes(mode)).map((mode) => MODE_CLIENTS[mode]);
+  if (words.length < 2) {
+    return '';
   }
-  if (first.month !== last.month) {
-    return `du ${first.day} ${first.month} au ${lastText}`;
-  }
-  return `du ${first.day} au ${lastText}`;
+  return `clients ${words.slice(0, -1).join(', ')} et ${words[words.length - 1] ?? ''}`;
+}
+
+/** « du 1er au 4 octobre 2026 — clients hebdomadaires et mensuels », ou le seul libellé. */
+export function periodWithModes(label: string, modes: readonly BillingRhythmKind[]): string {
+  const clients = modesClients(modes);
+  return clients === '' ? label : `${label} — ${clients}`;
 }
 
 /** Deux instants ISO désignent-ils la même clôture ? Comparés en instants, pas en chaînes. */

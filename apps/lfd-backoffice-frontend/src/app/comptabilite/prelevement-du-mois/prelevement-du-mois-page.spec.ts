@@ -10,6 +10,7 @@ import type {
   CollectionPreviewView,
   ConstitutedBatchesView,
   LegalEntityView,
+  MonthlyClosureView,
   MonthlyInvoiceReportView,
   MonthlyInvoicesView,
   StaffPermission,
@@ -38,6 +39,8 @@ import { PrelevementDuMoisPage } from './prelevement-du-mois-page';
 const NEXT_CLOSURE = '2026-10-31T23:00:00.000Z';
 /** Le 1er octobre 2026, 00h00 de Paris : la clôture de septembre. */
 const SEPTEMBER_CLOSURE = '2026-09-30T22:00:00.000Z';
+/** Le lundi 5 octobre 2026, 00h00 de Paris : une clôture de l'hebdomadaire. */
+const OCTOBER_FIFTH = '2026-10-04T22:00:00.000Z';
 
 function batch(over: Partial<CollectionBatchView> = {}): CollectionBatchView {
   return {
@@ -45,6 +48,7 @@ function batch(over: Partial<CollectionBatchView> = {}): CollectionBatchView {
     scheme: 'B2B',
     cycleStartsAt: '2026-08-31T22:00:00.000Z',
     cycleClosesAt: SEPTEMBER_CLOSURE,
+    periodLabel: 'du 1er au 30 septembre 2026',
     status: 'constituted',
     constitutedAt: '2026-10-02T09:00:00.000Z',
     constitutedBy: 'staff',
@@ -54,6 +58,7 @@ function batch(over: Partial<CollectionBatchView> = {}): CollectionBatchView {
     orderCount: 5,
     totalCents: 123_400,
     unmandatedCompanies: [],
+    payerModes: ['monthly'],
     depositable: true,
     requestedCollectionDay: '2026-10-15',
     postponedFromDay: null,
@@ -82,6 +87,7 @@ const OPEN_PREVIEW: CollectionPreviewView = {
   ordersTotalCents: 24,
   exclusions: [],
   unmandatedCompanies: [],
+  payerModes: ['monthly'],
 };
 
 class FakeApi {
@@ -116,11 +122,13 @@ class FakeApi {
   }
 }
 
-const SEPTEMBER_INVOICES: MonthlyInvoicesView = {
+const SEPTEMBER: MonthlyClosureView = {
   periodClosesAt: '2026-09-30T22:00:00.000Z',
   periodStartsAt: '2026-08-31T22:00:00.000Z',
   periodLabel: 'du 1er au 30 septembre 2026',
+  modes: ['monthly'],
   issuableFrom: '2026-09-30T20:00:00.000Z',
+  reached: true,
   floorAt: '2026-09-01T00:00:00.000Z',
   open: true,
   invoices: [
@@ -148,7 +156,19 @@ const SEPTEMBER_INVOICES: MonthlyInvoicesView = {
     },
   ],
   autopilotRun: null,
+  batches: [
+    {
+      batchId: 'b1',
+      scheme: 'B2B',
+      status: 'constituted',
+      periodLabel: 'du 1er au 30 septembre 2026',
+      lineCount: 2,
+      totalCents: 123_400,
+    },
+  ],
 };
+
+const SEPTEMBER_INVOICES: MonthlyInvoicesView = { ...SEPTEMBER, closures: [SEPTEMBER] };
 
 class FakeInvoicesApi {
   view: MonthlyInvoicesView = SEPTEMBER_INVOICES;
@@ -181,6 +201,11 @@ const ENTITY: Partial<LegalEntityView> = {
   lastAutopilotRun: null,
   billingModes: [],
   lastClosure: SEPTEMBER_CLOSURE,
+  lastClosurePeriod: {
+    closesAt: SEPTEMBER_CLOSURE,
+    startsAt: '2026-08-31T22:00:00.000Z',
+    label: 'du 1er au 30 septembre 2026',
+  },
   nextCollection: {
     closesAt: NEXT_CLOSURE,
     plannedConstitutionAt: '2026-11-01T00:00:00.000Z',
@@ -377,13 +402,13 @@ describe('PrelevementDuMoisPage', () => {
     expect(button(fixture, 'Marquer déposé')).toBeDefined();
   });
 
-  it('le bouton nomme la dernière clôture, et prépare son lot (M4b)', async () => {
+  it('le bouton nomme la période de la dernière clôture, et prépare son lot (M4c)', async () => {
     const api = new FakeApi();
     api.view = { batches: [], exclusions: [] };
     const fixture = await render(api);
 
-    expect(text(fixture)).toContain('Le lot du 1er octobre 2026 n’est pas encore préparé.');
-    button(fixture, 'Préparer le lot du 1er octobre 2026')?.click();
+    expect(text(fixture)).toContain('Le lot du 1er au 30 septembre 2026 n’est pas encore préparé.');
+    button(fixture, 'Préparer le lot du 1er au 30 septembre 2026')?.click();
     await settle(fixture);
 
     expect(api.constituted).toBe(1);
@@ -403,7 +428,7 @@ describe('PrelevementDuMoisPage', () => {
       error: { message: 'La première période prélevable se clôt le 1er novembre 2026.' },
     };
 
-    button(fixture, 'Préparer le lot du 1er octobre 2026')?.click();
+    button(fixture, 'Préparer le lot du 1er au 30 septembre 2026')?.click();
     await settle(fixture);
 
     expect(text(fixture)).toContain('La première période prélevable se clôt le 1er novembre 2026.');
@@ -515,7 +540,7 @@ describe('PrelevementDuMoisPage', () => {
     );
     expect(button(fixture, 'Marquer déposé')).toBeUndefined();
     expect(text(fixture)).toContain(
-      'Le lot du 1er octobre 2026 est déjà déposé ; le suivant se prépare après la clôture du 1er novembre 2026.',
+      'Le lot du 1er au 30 septembre 2026 est déjà déposé ; le suivant se prépare après la clôture du 1er novembre 2026.',
     );
   });
 
@@ -553,5 +578,107 @@ describe('PrelevementDuMoisPage', () => {
     for (const word of ['cycle', 'constitu', 'cut-off', 'target2']) {
       expect(body).not.toContain(word);
     }
+  });
+
+  it('le bouton dit la seule période de la dernière clôture (M4c)', async () => {
+    const api = new FakeApi();
+    api.view = { batches: [], exclusions: [] };
+    const fixture = await render(api, undefined, {
+      ...ENTITY,
+      lastClosure: OCTOBER_FIFTH,
+      lastClosurePeriod: {
+        closesAt: OCTOBER_FIFTH,
+        startsAt: SEPTEMBER_CLOSURE,
+        label: 'du 1er au 4 octobre 2026',
+      },
+    });
+
+    expect(button(fixture, 'Préparer le lot du 1er au 4 octobre 2026')).toBeDefined();
+  });
+
+  /**
+   * Hugo, 2026-10-12 : les modes d'un lot sont ceux des clients qu'il
+   * prélève — le lot du lundi 5 qui rattrape une facture mensuelle dit les deux.
+   */
+  it('un lot préparé aux clients mêlés le dit dans son nom', async () => {
+    const api = new FakeApi();
+    api.view = {
+      batches: [
+        batch({
+          cycleStartsAt: SEPTEMBER_CLOSURE,
+          cycleClosesAt: OCTOBER_FIFTH,
+          periodLabel: 'du 1er au 4 octobre 2026',
+          payerModes: ['monthly', 'weekly'],
+        }),
+      ],
+      exclusions: [],
+    };
+    const fixture = await render(api);
+
+    expect(text(fixture)).toContain(
+      'Lot du 1er au 4 octobre 2026 — clients hebdomadaires et mensuels — B2B',
+    );
+  });
+
+  it('l’aperçu dit les modes des clients que le lot prélèverait, quand ils sont mêlés', async () => {
+    const api = new FakeApi();
+    api.previewView = { ...OPEN_PREVIEW, payerModes: ['monthly', 'weekly'] };
+    const fixture = await render(api);
+
+    expect(host(fixture).querySelector('[data-preview-modes]')?.textContent).toContain(
+      'clients hebdomadaires et mensuels',
+    );
+  });
+
+  it('une carte par clôture du mois, celle du lot à préparer en tête, chacune avec ses lots (M4c)', async () => {
+    const invoicesApi = new FakeInvoicesApi();
+    const monday: MonthlyClosureView = {
+      ...SEPTEMBER,
+      periodClosesAt: OCTOBER_FIFTH,
+      periodStartsAt: '2026-09-27T22:00:00.000Z',
+      periodLabel: 'du 28 septembre au 4 octobre 2026',
+      modes: ['weekly'],
+      invoices: [],
+      signaled: [],
+      batches: [],
+    };
+    const later: MonthlyClosureView = {
+      ...monday,
+      periodClosesAt: '2026-10-11T22:00:00.000Z',
+      periodLabel: 'du 5 au 11 octobre 2026',
+      reached: false,
+    };
+    invoicesApi.view = { ...monday, closures: [SEPTEMBER, monday, later] };
+    const fixture = await render(
+      new FakeApi(),
+      undefined,
+      {
+        ...ENTITY,
+        lastClosure: OCTOBER_FIFTH,
+        lastClosurePeriod: {
+          closesAt: OCTOBER_FIFTH,
+          startsAt: SEPTEMBER_CLOSURE,
+          label: 'du 1er au 4 octobre 2026',
+        },
+      },
+      invoicesApi,
+    );
+
+    const body = text(fixture);
+    const order = [
+      'Les factures du 28 septembre au 4 octobre 2026',
+      'Les factures du 1er au 30 septembre 2026',
+      'Les factures du 5 au 11 octobre 2026',
+    ].map((title) => body.indexOf(title));
+    expect(order.every((index) => index >= 0)).toBe(true);
+    expect([...order].sort((a, b) => a - b)).toEqual(order);
+    const batches = Array.from(host(fixture).querySelectorAll('[data-closure-batches]')).map(
+      (node) => node.textContent?.trim() ?? '',
+    );
+    expect(batches[0]).toContain('Aucun lot préparé pour cette clôture.');
+    expect(batches[1]).toContain('Lot du 1er au 30 septembre 2026 — B2B : préparé, à déposer');
+    expect(batches[2]).toContain('Le lot se prépare après la clôture du 12 octobre 2026.');
+    // Une clôture dont l'heure n'est pas venue ne s'émet pas.
+    expect(button(fixture, 'Émettre les factures du 5 au 11 octobre 2026')).toBeUndefined();
   });
 });

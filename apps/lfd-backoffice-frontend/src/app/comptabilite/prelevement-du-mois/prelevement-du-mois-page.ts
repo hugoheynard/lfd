@@ -47,8 +47,10 @@ import { SettlePanel } from './settle-panel/settle-panel';
  * 1. le **calendrier** du mois et l'état de la préparation automatique ;
  * 2. le **mois en cours** : l'aperçu de ce qui sera prélevé, calculé comme le
  *    lot (une facture par payeur), et pourquoi il est vide ;
- * 3. les **factures du mois** (plan `facture-emise.md`) :
- *    émises le dernier jour à 23h55, les factures signalées, le bouton qui émet ;
+ * 3. les **clôtures du mois** (plan `facture-emise.md`, par clôture depuis
+ *    M4c) : la clôture du lot à préparer en tête, puis les autres dans
+ *    l'ordre ; pour chacune ses factures, ses signalements, ses lots et le
+ *    bouton qui émet ;
  * 4. le **lot à traiter** : préparé, pas encore déposé — ses lignes, ses
  *    signalements, ses gestes ; et le bouton qui prépare le lot du mois clos,
  *    nommé par ce mois ;
@@ -121,17 +123,30 @@ export class PrelevementDuMoisPage {
   );
 
   /**
-   * Le lot se nomme par sa CLÔTURE — la dernière atteinte du calendrier de
-   * l'entité (`lastClosure`, plan `plan-rythme-de-facturation.md`, §16.10) :
-   * avec des clients hebdomadaires, il y en a plusieurs par mois, et le nom du
-   * mois n'en désignerait aucune.
+   * Le lot se nomme par la période que ferme la dernière clôture du
+   * calendrier (`lastClosurePeriod`, plan `plan-rythme-de-facturation.md`,
+   * §16.13) : « du 1er au 4 octobre 2026 ». Le libellé vient du serveur. Les
+   * modes d'un lot sont ceux des clients qu'il prélève (Hugo, 2026-10-12) :
+   * un lot préparé les porte, le bouton ne les connaît pas.
    */
-  private readonly lotName = computed(() => {
-    const entity = this.entity();
-    return entity === null ? '' : `du ${longDay(entity.lastClosure)}`;
-  });
+  private readonly lotName = computed(() => this.entity()?.lastClosurePeriod.label ?? '');
 
   protected readonly prepareLabel = computed(() => `Préparer le lot ${this.lotName()}`);
+
+  /**
+   * Les clôtures du mois (M4c), la clôture du lot à préparer en tête, puis
+   * les autres dans l'ordre du calendrier.
+   */
+  protected readonly closures = computed(() => {
+    const all = this.invoices()?.closures ?? [];
+    const entity = this.entity();
+    const isToPrepare = (closesAt: string): boolean =>
+      entity !== null && sameClosure(closesAt, entity.lastClosurePeriod.closesAt);
+    return [
+      ...all.filter((closure) => isToPrepare(closure.periodClosesAt)),
+      ...all.filter((closure) => !isToPrepare(closure.periodClosesAt)),
+    ].map((closure) => ({ closure, toPrepare: isToPrepare(closure.periodClosesAt) }));
+  });
 
   /** Pourquoi il n'y a aucun lot à déposer — jamais un vide muet. */
   protected readonly nothingToProcess = computed(() => {

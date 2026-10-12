@@ -1,7 +1,7 @@
 import { TestBed } from '@angular/core/testing';
 import { describe, expect, it } from 'vitest';
 
-import type { MonthlyInvoicesView } from '@lfd/contracts';
+import type { MonthlyClosureView } from '@lfd/contracts';
 
 import { MonthInvoices, autopilotSentence } from './month-invoices';
 
@@ -12,11 +12,13 @@ import { MonthInvoices, autopilotSentence } from './month-invoices';
  * mois en service. Les dates ne sont comparées qu'entre elles.
  */
 
-const VIEW: MonthlyInvoicesView = {
+const VIEW: MonthlyClosureView = {
   periodClosesAt: '2026-09-30T22:00:00.000Z',
   periodStartsAt: '2026-08-31T22:00:00.000Z',
   periodLabel: 'du 1er au 30 septembre 2026',
+  modes: ['monthly'],
   issuableFrom: '2026-09-30T21:55:00.000Z',
+  reached: true,
   floorAt: '2026-09-01T00:00:00.000Z',
   open: true,
   invoices: [
@@ -35,10 +37,11 @@ const VIEW: MonthlyInvoicesView = {
   ],
   signaled: [],
   autopilotRun: null,
+  batches: [],
 };
 
 async function render(
-  view: MonthlyInvoicesView | null,
+  view: MonthlyClosureView | null,
   options: { readonly canWrite?: boolean; readonly error?: string } = {},
 ): Promise<{ host: HTMLElement; issued: string[] }> {
   TestBed.configureTestingModule({ imports: [MonthInvoices] });
@@ -133,6 +136,45 @@ describe('MonthInvoices', () => {
     expect(host.querySelector('[data-invoices-signaled]')?.textContent).toContain(
       '2 facture(s) signalée(s)',
     );
+  });
+
+  it('rythmes mêlés : le titre dit les modes qui closent ici (M4c)', async () => {
+    const { host } = await render({ ...VIEW, modes: ['monthly', 'weekly'] });
+
+    expect(host.textContent).toContain(
+      'Les factures du 1er au 30 septembre 2026 — clients hebdomadaires et mensuels',
+    );
+    // Le bouton garde la seule période : c'est elle qu'il émet.
+    expect(host.querySelector('[data-issue-invoices]')?.textContent).toContain(
+      'Émettre les factures du 1er au 30 septembre 2026',
+    );
+  });
+
+  it('nomme les lots de la clôture, et en dit l’absence (M4c)', async () => {
+    const withBatch = await render({
+      ...VIEW,
+      batches: [
+        {
+          batchId: 'b1',
+          scheme: 'B2B',
+          status: 'deposited',
+          periodLabel: 'du 1er au 30 septembre 2026',
+          lineCount: 2,
+          totalCents: 21_100,
+        },
+      ],
+    });
+    expect(withBatch.host.querySelector('[data-closure-batch]')?.textContent).toMatch(
+      /Lot du 1er au 30 septembre 2026 — B2B : déposé, 2 ligne\(s\), 211,00\s€/u,
+    );
+    TestBed.resetTestingModule();
+
+    const upcoming = await render({ ...VIEW, reached: false, invoices: [] });
+    expect(upcoming.host.querySelector('[data-closure-no-batch]')?.textContent).toContain(
+      'Le lot se prépare après la clôture du 1er octobre 2026.',
+    );
+    // Une clôture dont l'heure n'est pas venue ne s'émet pas.
+    expect(upcoming.host.querySelector('[data-issue-invoices]')).toBeNull();
   });
 
   it('une lecture en échec ne montre que son message', async () => {

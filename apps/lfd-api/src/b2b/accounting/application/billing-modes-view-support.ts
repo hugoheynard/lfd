@@ -1,4 +1,5 @@
 import type {
+  LastClosurePeriodView,
   LegalEntityBillingModeView,
   PayerBillingModeView,
   UpcomingClosureView,
@@ -24,6 +25,7 @@ export const UPCOMING_CLOSURES_SHOWN = 3;
 export interface EntityBillingModes {
   readonly billingModes: readonly LegalEntityBillingModeView[];
   readonly lastClosure: string;
+  readonly lastClosurePeriod: LastClosurePeriodView;
 }
 
 /**
@@ -43,6 +45,21 @@ export function entityBillingModes(
       modeView(mode, modes[mode], payerCountOf(mode, followed), now),
     ),
     lastClosure: calendar.lastClosureAtOrBefore(now).toISOString(),
+    lastClosurePeriod: lastClosurePeriodOf(calendar, now),
+  };
+}
+
+/**
+ * La période du lot à préparer (M4c) : la dernière clôture du calendrier et
+ * la précédente — « du 1er au 4 octobre 2026 ». Sans modes : ceux d'un lot
+ * sont ceux des clients qu'il prélève, que seule la lecture du lot connaît.
+ */
+function lastClosurePeriodOf(calendar: InvoicingCalendar, now: Date): LastClosurePeriodView {
+  const cycle = calendar.cycleClosedAt(calendar.lastClosureAtOrBefore(now));
+  return {
+    closesAt: cycle.closesAt.toISOString(),
+    startsAt: cycle.startsAt.toISOString(),
+    label: periodLabelOf(cycle),
   };
 }
 

@@ -81,6 +81,8 @@ describe('les mots du rythme de facturation', () => {
     ];
 
     expect(shortPeriodWarning(effectiveAt, short)).toContain('qu’un seul jour');
+    // M4c : la carte règle les dates d'un MODE ; « nouveau rythme » ne désignait plus rien.
+    expect(shortPeriodWarning(effectiveAt, short)).toContain('de ce mode aux nouvelles dates');
     expect(shortPeriodWarning(effectiveAt, normal)).toBeNull();
   });
 });

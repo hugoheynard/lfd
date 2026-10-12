@@ -136,3 +136,35 @@ describe("InvoicingCalendar — la facture par payeur à sa clôture (M2)", () =
     expect(closures[0]).toEqual(paris("2026-08-03"));
   });
 });
+
+describe("InvoicingCalendar — qui clôt, et le cycle du lot (M4c)", () => {
+  const mixed = InvoicingCalendar.of(defaultModes(), [WEEKLY_SINCE_AUGUST]);
+
+  it("au 1er le mensuel, au lundi l'hebdomadaire, un lundi 1er les deux (mensuel d'abord)", () => {
+    expect(mixed.modesClosingAt(paris("2026-10-01"))).toEqual(["monthly"]);
+    expect(mixed.modesClosingAt(paris("2026-10-05"))).toEqual(["weekly"]);
+    expect(mixed.modesClosingAt(paris("2027-02-01"))).toEqual(["monthly", "weekly"]);
+  });
+
+  it("un instant qui ne clôt rien : aucun mode", () => {
+    expect(mixed.modesClosingAt(paris("2026-10-06"))).toEqual([]);
+  });
+
+  it("un payeur devenu hebdomadaire au 1er clôt ce 1er en mensuel : le mode de la période fermée", () => {
+    const calendar = InvoicingCalendar.of(defaultModes(), [
+      {
+        payerCompanyId: "c_switch",
+        segments: [{ effectiveFrom: paris("2026-10-01"), mode: "weekly" }],
+      },
+    ]);
+    expect(calendar.modesClosingAt(paris("2026-10-01"))).toEqual(["monthly"]);
+    expect(calendar.modesClosingAt(paris("2026-10-05"))).toEqual(["weekly"]);
+  });
+
+  it("le cycle du lot du lundi 5 va du 1er (clôture du mensuel) au lundi", () => {
+    expect(mixed.cycleClosedAt(paris("2026-10-05"))).toEqual({
+      startsAt: paris("2026-10-01"),
+      closesAt: paris("2026-10-05"),
+    });
+  });
+});

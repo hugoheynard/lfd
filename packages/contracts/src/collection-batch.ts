@@ -1,5 +1,7 @@
 import { z } from "zod";
 
+import type { BillingRhythmKind } from "./legal-entity.js";
+
 /**
  * **Les lots de prélèvement figés**, tels que l'écran du cycle les lit (plan
  * `documentation/comptabilite/prelevement/lot-de-prelevement-fige.md`).
@@ -121,6 +123,20 @@ export interface CollectionBatchView {
   readonly cycleStartsAt: string;
   /** ISO — exclusif. */
   readonly cycleClosesAt: string;
+  /**
+   * « du 1er au 4 octobre 2026 » — `[cycleStartsAt, cycleClosesAt[` en jours
+   * de Paris, dernier jour inclus, écrit par le serveur (`periodLabelOf`) :
+   * l'écran ne le recalcule pas (M4c).
+   */
+  readonly periodLabel: string;
+  /**
+   * Les modes des clients que ce lot prélève, mensuel d'abord (Hugo,
+   * 2026-10-12) : pour chaque facture, celui sous lequel son payeur a clos
+   * SA période — une facture mensuelle rattrapée par le lot d'un lundi y
+   * compte en mensuel. Une ligne d'arrêté compte au mode du payeur à la
+   * clôture du lot. L'écran les dit quand il y en a plusieurs.
+   */
+  readonly payerModes: readonly BillingRhythmKind[];
   readonly status: CollectionBatchStatusView;
   readonly constitutedAt: string;
   /**
@@ -224,6 +240,8 @@ export interface CollectionPreviewOpenView {
   readonly exclusions: readonly CollectionExclusionView[];
   /** Les payeurs sans mandat — ils rendraient le lot non déposable. */
   readonly unmandatedCompanies: readonly string[];
+  /** Les modes des clients que ce lot prélèverait (même règle que `CollectionBatchView.payerModes`). */
+  readonly payerModes: readonly BillingRhythmKind[];
 }
 
 /**

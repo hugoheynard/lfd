@@ -68,6 +68,11 @@ function entity(over: Partial<LegalEntityView> = {}): LegalEntityView {
     autoCollectionDelayHours: 1,
     billingModes: MODES,
     lastClosure: '2026-09-30T22:00:00.000Z',
+    lastClosurePeriod: {
+      closesAt: '2026-09-30T22:00:00.000Z',
+      startsAt: '2026-08-31T22:00:00.000Z',
+      label: 'du 1er au 30 septembre 2026',
+    },
     collectionDaysAfterClosure: null,
     depositCutoff: null,
     nextCollection: {

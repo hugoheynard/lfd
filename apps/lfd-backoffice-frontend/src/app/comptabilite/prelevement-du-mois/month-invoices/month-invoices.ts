@@ -1,8 +1,9 @@
 import { ChangeDetectionStrategy, Component, computed, input, output } from '@angular/core';
 import {
   instantToLocal,
+  type MonthlyClosureBatchView,
+  type MonthlyClosureView,
   type MonthlyInvoiceAutopilotRunView,
-  type MonthlyInvoicesView,
 } from '@lfd/contracts';
 import {
   FoldButtonComponent,
@@ -16,7 +17,7 @@ import {
   type FoldTableColumn,
 } from 'fold-ng';
 
-import { longDay } from '../../collection-month-wording';
+import { longDay, periodWithModes } from '../../collection-month-wording';
 import { day, euros, instant } from '../../invoice-dossier-format';
 
 const INVOICE_COLUMNS: readonly FoldTableColumn[] = [
@@ -57,6 +58,21 @@ export interface MonthlySignalRow {
   readonly message: string;
 }
 
+/** L'état d'un lot dans la carte d'une clôture — les mots de l'écran, pas ceux de la banque. */
+const BATCH_STATE: Readonly<Record<MonthlyClosureBatchView['status'], string>> = {
+  constituted: 'préparé, à déposer',
+  deposited: 'déposé',
+  cancelled: 'annulé',
+};
+
+/** « Lot du 1er au 4 octobre 2026 — B2B : préparé, à déposer, 2 ligne(s), 211,00 € ». */
+export function batchSentence(batch: MonthlyClosureBatchView): string {
+  return (
+    `Lot ${batch.periodLabel} — ${batch.scheme} : ${BATCH_STATE[batch.status]}, ` +
+    `${String(batch.lineCount)} ligne(s), ${euros(batch.totalCents)}`
+  );
+}
+
 /**
  * Une facture émise après le dernier jour de sa période porte le jour réel de
  * son émission — jamais antidatée : l'écran le dit, la période reste la même.
@@ -95,6 +111,10 @@ export function periodLastDay(periodClosesAtIso: string): string {
  * émises la veille de la clôture à 23h55, une par payeur légal et par mandat (E4b) ;
  * les factures SIGNALÉES (refusées, avec le geste de sortie) ; le bouton qui émet ou reprend.
  * Le lot du 1er encaisse ces factures — il n'y a plus d'arrêté à figer.
+ *
+ * Depuis M4c (plan `plan-rythme-de-facturation.md`, §16.13), une carte par
+ * CLÔTURE : son titre dit les modes qui y closent quand ils sont mêlés, et
+ * elle nomme ses lots. Le bouton n'émet qu'une clôture dont l'heure est passée.
  */
 @Component({
   selector: 'app-month-invoices',
@@ -113,7 +133,9 @@ export function periodLastDay(periodClosesAtIso: string): string {
   styleUrl: './month-invoices.scss',
 })
 export class MonthInvoices {
-  readonly view = input.required<MonthlyInvoicesView | null>();
+  readonly view = input.required<MonthlyClosureView | null>();
+  /** La clôture du lot à préparer : la carte le dit dans son titre. */
+  readonly toPrepare = input(false);
   /** L'échec de la lecture : il ne coûte que cette carte. */
   readonly error = input<string | null>(null);
   readonly canWrite = input(false);
@@ -127,7 +149,11 @@ export class MonthInvoices {
   /** « du 1er au 30 septembre 2026 » — la période de la dernière clôture (R3). */
   protected readonly periodLabel = computed(() => this.view()?.periodLabel ?? '');
 
-  protected readonly title = computed(() => `Les factures ${this.periodLabel()}`);
+  protected readonly title = computed(() => {
+    const view = this.view();
+    const period = view === null ? '' : periodWithModes(view.periodLabel, view.modes);
+    return `Les factures ${period}`;
+  });
 
   protected readonly issueLabel = computed(() => `Émettre les factures ${this.periodLabel()}`);
 
@@ -136,10 +162,30 @@ export class MonthInvoices {
     if (view === null) {
       return '';
     }
+    const lead = this.toPrepare() ? 'La clôture du lot à préparer. ' : '';
     return (
-      `Une facture par payeur et par mandat, émise le ${longDay(view.issuableFrom)} à 23h55 ; ` +
-      'le lot de la clôture les prélève.'
+      `${lead}Clôture du ${longDay(view.periodClosesAt)}. Une facture par payeur et par mandat, ` +
+      `émise le ${longDay(view.issuableFrom)} à 23h55 ; le lot de la clôture les prélève.`
     );
+  });
+
+  /** Les lots de cette clôture, en une phrase chacun. */
+  protected readonly batches = computed(() =>
+    (this.view()?.batches ?? []).map((batch) => ({
+      key: batch.batchId,
+      text: batchSentence(batch),
+    })),
+  );
+
+  /** Pourquoi la clôture n'a pas de lot — jamais un vide muet. */
+  protected readonly noBatch = computed(() => {
+    const view = this.view();
+    if (view === null) {
+      return '';
+    }
+    return view.reached
+      ? 'Aucun lot préparé pour cette clôture.'
+      : `Le lot se prépare après la clôture du ${longDay(view.periodClosesAt)}.`;
   });
 
   /** Le mois se clôt avant la mise en service : il garde l'arrêté du lot. */
@@ -188,7 +234,10 @@ export class MonthInvoices {
     return run === null ? null : autopilotSentence(run);
   });
 
-  protected readonly canIssue = computed(() => this.canWrite() && (this.view()?.open ?? false));
+  protected readonly canIssue = computed(() => {
+    const view = this.view();
+    return this.canWrite() && view !== null && view.open && view.reached;
+  });
 
   protected onIssue(): void {
     const view = this.view();

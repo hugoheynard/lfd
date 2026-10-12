@@ -31,7 +31,11 @@ export class PrismaMonthlyInvoicesReader extends MonthlyInvoicesReader {
 
   async ofPeriod(legalEntityId: string, periodClosesAt: Date): Promise<MonthlyInvoicesRead> {
     const [floor, outcomes, run] = await Promise.all([
-      this.prisma.invoicingFloor.findUnique({ where: { id: true } }),
+      // `findFirst`, jamais `findUnique` : Prisma regroupe les `findUnique`
+      // simultanés en un `id: { in: [...] }`, qu'une clé booléenne refuse
+      // (« Unknown argument `in` ») — la vue lit une clôture par carte, en
+      // parallèle, depuis M4c (régression : 500 sur `GET monthly-invoices`).
+      this.prisma.invoicingFloor.findFirst({ where: { id: true } }),
       this.prisma.invoiceMonthlyOutcome.findMany({
         where: { legalEntityId, periodClosesAt },
         orderBy: [{ payerName: "asc" }, { mandateReference: "asc" }],

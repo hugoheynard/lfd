@@ -136,7 +136,7 @@ export function closureLine(closure: UpcomingClosureView): string {
 }
 
 /**
- * La première période sous le rythme programmé, quand elle est si courte
+ * La première période d'un mode sous ses dates programmées, quand elle est si courte
  * qu'elle surprendrait : elle commence à la prise d'effet et finit à la
  * première clôture qui la suit. `null` sinon.
  */
@@ -155,7 +155,7 @@ export function shortPeriodWarning(
   }
   const length = days <= 1 ? 'qu’un seul jour' : `que ${String(days)} jours`;
   return (
-    `La première période du nouveau rythme ne dure ${length} (${first.periodLabel}) : ` +
+    `La première période de ce mode aux nouvelles dates ne dure ${length} (${first.periodLabel}) : ` +
     'elle aura sa propre facture.'
   );
 }

@@ -9,7 +9,7 @@ import type { LegalEntityView } from "@lfd/contracts";
  */
 export type LegalEntityRecord = Omit<
   LegalEntityView,
-  "nextCollection" | "lastAutopilotRun" | "billingModes" | "lastClosure"
+  "nextCollection" | "lastAutopilotRun" | "billingModes" | "lastClosure" | "lastClosurePeriod"
 >;
 
 /**

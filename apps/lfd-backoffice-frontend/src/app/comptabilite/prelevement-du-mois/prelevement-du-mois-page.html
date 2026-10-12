@@ -1,7 +1,8 @@
 <fold-page-layout title="Prélèvement du mois" separator>
   <p description>
-    L'écran se lit de haut en bas, clôture par clôture&nbsp;: les dates de la prochaine, ce qui sera
-    prélevé, les factures de la période close, le lot à déposer à la banque, puis les lots passés.
+    L'écran se lit de haut en bas&nbsp;: les dates de la prochaine clôture, ce qui sera prélevé, les
+    clôtures du mois (celle du lot à préparer en tête), chacune avec ses factures et ses lots, le
+    lot à déposer à la banque, puis les lots passés.
   </p>
 
   @if (loading()) {
@@ -31,14 +32,20 @@
       <!-- 2. La période en cours : l'aperçu, calculé comme le lot. -->
       <app-month-preview [entity]="current" [preview]="preview()" [error]="previewError()" />
 
-      <!-- 3. Les factures de la période close : le lot de cette clôture les encaisse. -->
-      <app-month-invoices
-        [view]="invoices()"
-        [error]="invoicesError()"
-        [canWrite]="canWrite()"
-        [pending]="pending() === 'invoices'"
-        (issue)="issueInvoices($event)"
-      />
+      <!-- 3. Les clôtures du mois : celle du lot à préparer en tête, chacune avec ses factures et ses lots. -->
+      @if (invoicesError(); as message) {
+        <app-month-invoices [view]="null" [error]="message" />
+      } @else {
+        @for (row of closures(); track row.closure.periodClosesAt) {
+          <app-month-invoices
+            [view]="row.closure"
+            [toPrepare]="row.toPrepare"
+            [canWrite]="canWrite()"
+            [pending]="pending() === 'invoices'"
+            (issue)="issueInvoices($event)"
+          />
+        }
+      }
 
       <!-- 3 bis. Les factures carte qui ne sont pas parties (E5a) : rien quand il n'y en a pas. -->
       <app-card-invoice-signals [canWrite]="canWrite()" />

@@ -16,3 +16,9 @@
   display: block;
   color: var(--fold-color-text-muted);
 }
+
+.mi-batches {
+  display: flex;
+  flex-direction: column;
+  gap: var(--fold-space-xs);
+}

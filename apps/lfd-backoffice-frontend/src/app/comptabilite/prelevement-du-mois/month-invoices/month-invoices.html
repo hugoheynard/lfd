@@ -16,6 +16,16 @@
       }
     </fold-element-title>
 
+    @if (view() !== null) {
+      <div class="mi-batches" data-closure-batches>
+        @for (batch of batches(); track batch.key) {
+          <p class="mi-said" data-closure-batch>{{ batch.text }}</p>
+        } @empty {
+          <p class="mi-said mi-muted" data-closure-no-batch>{{ noBatch() }}</p>
+        }
+      </div>
+    }
+
     @if (error(); as message) {
       <fold-callout variant="alert" data-invoices-error>{{ message }}</fold-callout>
     } @else if (notYetOpen(); as sentence) {

@@ -1035,3 +1035,66 @@ l'échéance est celle de C ; émise après, celle de la clôture suivante.
 Approximation écrite dans son JSDoc : si le lot de C n'est pas encore
 préparé, le prélèvement tombe avant la date de la facture, l'avis du lot
 disant la vraie date (préavis tenu par D4).
+
+### 16.13 M4c bâti (2026-10-12, non commité) — le lot aux rythmes mêlés, l'écran par clôture
+
+Ni migration, ni `migration.sql` touché.
+
+- **Domaine** : `InvoicingCalendar.modesClosingAt(instant)` — les modes sous
+  lesquels des payeurs closent à cet instant (mode de la période FERMÉE, en
+  vigueur juste avant ; mensuel dès que sa date tombe là, comme `isClosure`),
+  ordre `BILLING_MODES` ; `cycleClosedAt(closesAt)` — `[closureBefore, closesAt[`,
+  le cycle du lot. `closuresOfMonth(calendar, now)` : les
+  clôtures dont l'INSTANT tombe dans le mois de Paris de `now`, plus la
+  dernière atteinte et la clôture à émettre si elles n'y sont pas, triées.
+- **Contrats** (additifs) : `LegalEntityView.lastClosurePeriod`
+  (`LastClosurePeriodView { closesAt, startsAt, label, modes }`) ;
+  `CollectionBatchView.periodLabel` (`periodLabelOf` du cycle du lot) ;
+  `MonthlyClosureView` (les champs de période de l'ancienne vue + `modes`,
+  `reached`, `batches: MonthlyClosureBatchView[]`) dont
+  `MonthlyInvoicesView` hérite, + `closures`. La vue du haut reste la
+  clôture à émettre (rien de retiré).
+- **Serveur** : `GetMonthlyInvoicesHandler` lit `ofPeriod` par clôture
+  montrée et les lots par un port étroit `ClosureBatchesReader`
+  (`PrismaClosureBatchesReader`, un résumé par lot, annulés compris) ;
+  `closureView` (support de l’application) assemble une clôture.
+- **Écran** : le bouton dit « Préparer le lot du 1er au 4 octobre 2026 —
+  clients hebdomadaires et mensuels » (`periodWithModes`, rien si un seul
+  mode) ; « Prélèvement du mois » montre une carte par clôture
+  (`MonthInvoices` prend une `MonthlyClosureView`, `toPrepare`), celle du
+  lot à préparer en tête puis l'ordre du calendrier, chacune avec ses
+  factures, ses signalements et ses lots ; le bouton n'émet qu'une clôture
+  `reached`. `periodBetween` est **retiré** : les lots se nomment par
+  `periodLabel`. `shortPeriodWarning` dit « de ce mode aux nouvelles dates ».
+- **e2e** (`test/monthly-invoices.e2e-spec.ts`, « l'écran par clôture,
+  rythmes mêlés (M4c) ») : le 1er (mensuel, deux payeurs, son lot) et le
+  premier lundi (hebdomadaire, son payeur, son lot), et `lastClosurePeriod`
+  de la fiche. Écrit, **non lancé** par le bâtisseur.
+
+**Correctif des 500 (2026-10-12)** : `GET monthly-invoices` lit une clôture
+par carte, en parallèle ; Prisma regroupe les `findUnique` simultanés en
+`id: { in: [...] }`, que la clé booléenne d'`invoicing_floor` refuse
+(« Unknown argument `in` », masqué en `persistence.failure`). La lecture du
+plancher y passe en `findFirst`. Seul l'e2e pouvait le voir.
+
+**Les modes d'un lot sont ceux des clients qu'il PRÉLÈVE (Hugo,
+2026-10-12)**, pas ceux qui closent à l'instant :
+
+- `lotPayerModes` (domaine) : pour chaque facture prélevée, le mode sous
+  lequel son payeur a clos SA période (`InvoicingCalendar.payerModeClosingAt`,
+  période lue par `InvoicePeriodsReader`) ; une ligne d'arrêté compte à la
+  clôture du lot. Le lot du lundi 5 octobre 2026 qui rattrape une facture
+  mensuelle dit « hebdomadaires et mensuels ».
+- `CollectionBatchView.payerModes` : le lecteur des lots rend les payeurs de
+  chaque ligne (`payerRefs`), `GetCollectionCycleHandler` calcule.
+- `CollectionPreviewOpenView.payerModes` : l'aperçu, par la même fonction sur
+  ses lignes, et l'écran les affiche (« Modes »).
+- **Le bouton « Préparer le lot … » ne dit plus de modes**, et
+  `lastClosurePeriod.modes` est retiré. Les donner exigerait d'assembler le
+  lot à constituer (`readAssembly`, toutes ses lectures) à chaque lecture de la
+  fiche ou de la liste des entités. L'aperçu ne convient pas non plus : il
+  porte le cycle QUI COURT, pas le lot à préparer. Les modes s'affichent donc
+  sur l'aperçu et sur chaque lot préparé. À trancher si le bouton doit les
+  porter : il faudrait une lecture dédiée au lot à préparer.
+- `modesClosingAt` reste : les cartes de clôture (`MonthlyClosureView.modes`)
+  disent qui clôt à cet instant, ce qui est bien leur sujet.
