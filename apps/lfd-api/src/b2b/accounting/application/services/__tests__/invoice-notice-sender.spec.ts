@@ -12,6 +12,7 @@ import { issueInput } from "../../../domain/entities/__tests__/invoice-fixtures.
 import { InvoiceMailOrigins } from "../../../domain/ports/invoice-mail-origins.js";
 import { InvoiceSiteContactsReader } from "../../../domain/ports/invoice-site-contacts.reader.js";
 import type { PayerNoticeContacts } from "../../../domain/services/collection-notice-recipient.js";
+import type { BillingCycle } from "../../../domain/services/billing-cycle.js";
 import { InvoiceNoticeSender } from "../invoice-notice-sender.js";
 import {
   FixedInvoicePeriods,
@@ -65,6 +66,7 @@ function setup(
     readonly payer?: PayerNoticeContacts;
     readonly sites?: readonly string[];
     readonly origin?: string | null;
+    readonly period?: BillingCycle;
   } = {},
 ) {
   const mailer = new RecordingMailer();
@@ -72,7 +74,7 @@ function setup(
   const sites = new FixedSites(options.sites ?? []);
   const sender = new InvoiceNoticeSender(
     new MemoryInvoiceReader([MONTHLY]),
-    new FixedInvoicePeriods(new Map([[MONTHLY.id, SEPTEMBER_2026]])),
+    new FixedInvoicePeriods(new Map([[MONTHLY.id, options.period ?? SEPTEMBER_2026]])),
     new FixedPayerContacts(
       new Map(
         options.payer === undefined
@@ -96,6 +98,19 @@ function setup(
 }
 
 describe("« Votre facture » part à l'émission (E6, Q3)", () => {
+  it("dit la période rangée du payeur — une semaine, pas le mois où elle s'achève (M4a)", async () => {
+    const h = setup({
+      period: {
+        startsAt: new Date("2026-10-04T22:00:00.000Z"),
+        closesAt: new Date("2026-10-11T22:00:00.000Z"),
+      },
+    });
+
+    await h.sender.send(MONTHLY.id, null);
+
+    expect(h.mailer.sent[0]?.data).toMatchObject({ period: "du 5 au 11 octobre 2026" });
+  });
+
   it("au payeur et aux sous-comptes, une clé par facture et par adresse, puis le journal", async () => {
     const h = setup({ sites: ["compta@chalet.test"] });
 
@@ -117,7 +132,7 @@ describe("« Votre facture » part à l'émission (E6, Q3)", () => {
     ]);
     expect(h.mailer.sent[0]?.data).toMatchObject({
       invoiceNumber: "FA-2026-000001",
-      period: "septembre 2026",
+      period: "du 1er au 30 septembre 2026",
       total: "16,55\u00A0€",
       paymentMeans: "Prélèvement SEPA — mandat RUM-PORT-1",
       invoicesUrl: "https://boutique.test/mon-compte#compte-invoices",

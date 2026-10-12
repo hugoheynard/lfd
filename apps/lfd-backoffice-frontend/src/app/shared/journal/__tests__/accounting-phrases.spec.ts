@@ -605,4 +605,44 @@ describe('la facture du mois — passage automatique et payeur signalé (2026-10
       'a signalé le client « Café des Halles » à la facture du mois 2026-09 : « SIREN manquant »',
     );
   });
+
+  it('M4a : dit la période du client plutôt que le mois — sa semaine', () => {
+    const said = sentence({
+      ...entity('invoice.signalled', {
+        subjectLabel: 'Café des Halles',
+        month: '2026-10',
+        periodClosesAt: '2026-10-11T22:00:00.000Z',
+        periodLabel: 'du 5 au 11 octobre 2026',
+        reason: 'SIREN manquant',
+      }),
+      subjectType: 'company',
+      subjectId: 'co_1',
+    });
+
+    expect(said).toContain(
+      'a signalé le client « Café des Halles » à la facture du 5 au 11 octobre 2026 : « SIREN manquant »',
+    );
+    expect(said).not.toContain('2026-10');
+  });
+
+  it('M4a : le passage automatique dit la période de la clôture', () => {
+    const said = sentence({
+      ...entity('invoice.autopilot_ran', {
+        subjectLabel: ENTITY,
+        month: '2026-09',
+        periodClosesAt: '2026-09-30T22:00:00.000Z',
+        periodLabel: 'du 1er au 30 septembre 2026',
+        outcome: 'nothing_to_invoice',
+        issuedCount: 0,
+        signalledCount: 0,
+        message: null,
+      }),
+      actorName: null,
+      actorType: 'system',
+    });
+
+    expect(said).toContain(
+      'a tenté la facture du 1er au 30 septembre 2026 de l’entité émettrice « La Folie Douce SAS »',
+    );
+  });
 });

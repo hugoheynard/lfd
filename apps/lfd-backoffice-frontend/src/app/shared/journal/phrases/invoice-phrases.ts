@@ -181,17 +181,32 @@ const documentRenderFailed: Phrase = (fact) =>
   );
 
 /**
- * « … a tenté la facture du mois 2026-09 de l'entité émettrice « X » :
- * factures émises (3 facture(s), 1 payeur(s) signalé(s)) — « message » ».
- * Copie de `collection.autopilot_ran` ; l'auteur est le système.
+ * La période d'un fait de la facture : son libellé (« du 5 au 11 octobre
+ * 2026 », M4a), ou le mois des faits écrits avant (« du mois 2026-09 »). La
+ * clôture n'est pas redite : le libellé la porte.
+ */
+function invoicedPeriod(fact: PhraseFact): Segment[] {
+  const label = optional(fact.payload['periodLabel']);
+  return label === null
+    ? [text('du mois '), value(optional(fact.payload['month']) ?? '—')]
+    : [value(label)];
+}
+
+/** Les clés que `invoicedPeriod` dit — le mois et la clôture compris. */
+const PERIOD_KEYS = ['month', 'periodClosesAt', 'periodLabel'];
+
+/**
+ * « … a tenté la facture du 1er au 30 septembre 2026 de l'entité émettrice
+ * « X » : factures émises (3 facture(s), 1 payeur(s) signalé(s)) —
+ * « message » ». Copie de `collection.autopilot_ran` ; l'auteur est le système.
  */
 const autopilotRan: Phrase = (fact) => {
   const message = optional(fact.payload['message']);
   return byActor(
     fact,
     [
-      text('a tenté la facture du mois '),
-      value(optional(fact.payload['month']) ?? '—'),
+      text('a tenté la facture '),
+      ...invoicedPeriod(fact),
       text(' de '),
       ...piece(fact, ENTITY),
       text(' : '),
@@ -203,26 +218,29 @@ const autopilotRan: Phrase = (fact) => {
       text(')'),
       ...(message === null ? [] : [text(' — « '), name(message), text(' »')]),
     ],
-    ['subjectLabel', 'month', 'outcome', 'issuedCount', 'signalledCount', 'message'],
+    ['subjectLabel', ...PERIOD_KEYS, 'outcome', 'issuedCount', 'signalledCount', 'message'],
   );
 };
 
 const PAYER: Noun = { the: 'le client', a: 'un client' };
 
-/** « … a signalé le client « X » à la facture du mois 2026-09 : « raison » » — jamais un montant. */
+/**
+ * « … a signalé le client « X » à la facture du 5 au 11 octobre 2026 :
+ * « raison » » — la période DU client ; jamais un montant.
+ */
 const signalled: Phrase = (fact) =>
   byActor(
     fact,
     [
       text('a signalé '),
       ...piece(fact, PAYER),
-      text(' à la facture du mois '),
-      value(optional(fact.payload['month']) ?? '—'),
+      text(' à la facture '),
+      ...invoicedPeriod(fact),
       text(' : « '),
       name(optional(fact.payload['reason']) ?? '—'),
       text(' »'),
     ],
-    ['subjectLabel', 'month', 'reason'],
+    ['subjectLabel', ...PERIOD_KEYS, 'reason'],
   );
 
 export const INVOICE_PHRASES = {

@@ -81,6 +81,8 @@ export function outcomeKey(payer: PayerInvoicePlan, issuance: Issuance): Monthly
   return {
     legalEntityId: issuance.legalEntityId,
     periodClosesAt: issuance.period.closesAt,
+    periodStartsAt: issuance.calendar.payerPeriodOf(payer.payerId, issuance.period.closesAt)
+      .startsAt,
     payerCompanyId: payer.payerId,
     payerName: issuance.context.names.get(payer.payerId) ?? payer.payerId,
     mandateId: payer.mandate?.mandateId ?? null,

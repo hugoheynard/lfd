@@ -18,14 +18,17 @@
 import {
   instantToLocal,
   weekdayOf,
+  type IssuedInvoicesView,
   type MonthlyInvoiceReportView,
   type MonthlyInvoicesView,
+  type StatementCyclesView,
 } from "@lfd/contracts";
 
 import { nextClosureAfter } from "../src/b2b/accounting/domain/services/billing-cycle.js";
 import {
   invoicingMomentOf,
   lastDayOf,
+  periodLabelOf,
 } from "../src/b2b/accounting/domain/services/invoicing-closures.js";
 import { BillingRhythm } from "../src/b2b/accounting/domain/value-objects/billing-rhythm.js";
 import { StatementMonth } from "../src/b2b/accounting/domain/value-objects/statement-month.js";
@@ -68,13 +71,17 @@ const stubAdminVerifier = {
 
 /** `<gabarit> → <destinataire>` : depuis E6, la facture prévient aussi. */
 const sentMails: string[] = [];
+/** Les données de chaque courriel, dans l'ordre d'envoi (M4a : la période dite). */
+const sentData: unknown[] = [];
 const recordingMailer = {
   enabled: true,
   send: (args: {
     readonly to: string;
     readonly template: string;
+    readonly data?: unknown;
   }): Promise<{ providerId: null }> => {
     sentMails.push(`${args.template} → ${args.to}`);
+    sentData.push(args.data);
     return Promise.resolve({ providerId: null });
   },
 };
@@ -104,6 +111,7 @@ afterAll(async () => {
 beforeEach(async () => {
   await ctx.reset();
   sentMails.splice(0);
+  sentData.splice(0);
   // La base est purgée : les RUM et les comptes repartent de 1 à chaque test.
   seq = 0;
   month = StatementMonth.containing(new Date(daysAgo(0))).previous();
@@ -387,7 +395,13 @@ describe("la facture du mois, puis le lot qui l'encaisse (E4)", () => {
       month: month.toString(),
       reason: signaled[0]?.message,
     });
-    expect(Object.keys(flagged.payload ?? {}).sort()).toEqual(["month", "reason", "subjectLabel"]);
+    expect(Object.keys(flagged.payload ?? {}).sort()).toEqual([
+      "month",
+      "periodClosesAt",
+      "periodLabel",
+      "reason",
+      "subjectLabel",
+    ]);
 
     await ctx.prisma.company.update({
       where: { id: incomplete.id },
@@ -574,6 +588,81 @@ describe("la facture par clôture d'un rythme hebdomadaire (R3, rétabli en M2)"
       periodStartsAt: closesAt.toISOString(),
     });
     expect(screen.invoices.map((i) => i.number)).toEqual([invoices[1]?.number]);
+  });
+});
+
+describe("le relevé, la période rangée et l'e-mail d'un payeur hebdomadaire (M4a)", () => {
+  it("ses semaines au sélecteur, sa période rangée sur l'issue et relue, l'e-mail qui la dit", async () => {
+    const id = await entity();
+    const company = await payer(id);
+    const monthlyPayer = await payer(id);
+    const startsAt = month.cycle().startsAt;
+    const closingDay = instantToLocal(closesAt).day;
+    const isoWeekday = weekdayOf(closingDay) === 0 ? 7 : weekdayOf(closingDay);
+    // Même mise en place que le R3 rétabli en M2 : le payeur devient
+    // hebdomadaire à la clôture du mois.
+    clock.set(new Date(startsAt.getTime() - 8 * DAY_MS + HOUR_MS));
+    await staff()
+      .put(`${ENTITIES}/${id}/billing-modes/weekly`)
+      .send({ days: [isoWeekday] })
+      .expect(204);
+    clock.set(new Date(startsAt.getTime() + HOUR_MS));
+    await staff()
+      .put(`${ENTITIES}/${id}/payers/${company.id}/billing-mode`)
+      .send({ mode: "weekly" })
+      .expect(204);
+    const week = nextClosureAfter(closesAt, BillingRhythm.weekly(isoWeekday));
+    await laterOrder(company.id, new Date(closesAt.getTime() + 2 * DAY_MS));
+    clock.set(new Date(invoicingMomentOf(week).getTime() + 2 * 60 * 1000));
+    await invoicePass();
+
+    // La période rangée : le mois pour la facture rattrapée, la semaine ensuite.
+    const outcomes = await ctx.prisma.invoiceMonthlyOutcome.findMany({
+      where: { payerCompanyId: company.id, outcome: "issued" },
+      orderBy: { periodClosesAt: "asc" },
+    });
+    expect(outcomes.map((o) => [o.periodStartsAt, o.periodClosesAt])).toEqual([
+      [startsAt, closesAt],
+      [closesAt, week],
+    ]);
+    // Relue par la fiche du payeur : la semaine, pas le mois où elle s'achève.
+    const weekLabel = periodLabelOf({ startsAt: closesAt, closesAt: week });
+    const listed = jsonBody<IssuedInvoicesView>(
+      await staff().get(`/admin/companies/${company.id}/invoices`).expect(200),
+    );
+    expect(listed.invoices.map((i) => i.periodLabel)).toEqual([
+      weekLabel,
+      periodLabelOf({ startsAt, closesAt }),
+    ]);
+    // L'e-mail de la facture de la semaine dit la semaine.
+    expect(sentData).toContainEqual(expect.objectContaining({ period: weekLabel }));
+
+    // Le sélecteur du relevé : SES semaines ; un payeur resté mensuel, ses mois.
+    const cycles = jsonBody<StatementCyclesView>(
+      await staff().get(`/admin/accounting/statements/cycles?companyId=${company.id}`).expect(200),
+    );
+    expect(cycles.cycles.slice(0, 2).map((c) => [c.periodStartsAt, c.periodClosesAt])).toEqual([
+      [closesAt.toISOString(), week.toISOString()],
+      [startsAt.toISOString(), closesAt.toISOString()],
+    ]);
+    const monthlyCycles = jsonBody<StatementCyclesView>(
+      await staff()
+        .get(`/admin/accounting/statements/cycles?companyId=${monthlyPayer.id}`)
+        .expect(200),
+    );
+    expect(monthlyCycles.cycles[0]?.periodStartsAt).toBe(closesAt.toISOString());
+    expect(monthlyCycles.cycles[0]?.periodClosesAt).not.toBe(week.toISOString());
+    // Le relevé de la semaine se lit ; chez le mensuel, ce lundi ne clôt rien.
+    await staff()
+      .get(
+        `/admin/accounting/statements/companies/${company.id}?periodClosesAt=${week.toISOString()}`,
+      )
+      .expect(200);
+    await staff()
+      .get(
+        `/admin/accounting/statements/companies/${monthlyPayer.id}?periodClosesAt=${week.toISOString()}`,
+      )
+      .expect(400);
   });
 });
 

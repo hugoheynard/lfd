@@ -149,6 +149,10 @@ model InvoiceMonthlyOutcome {
   month            String?
   /// La clôture de la période facturée — clé depuis R3 (rythme de l'entité).
   periodClosesAt   DateTime    @map("period_closes_at") @db.Timestamptz(3)
+  /// Le début de la période DU PAYEUR (sa clôture précédente réelle), écrit à
+  /// l'émission depuis M4a. NULL pour une issue d'avant : le lecteur la
+  /// recalcule sous le mensuel de l'entité.
+  periodStartsAt   DateTime?   @map("period_starts_at") @db.Timestamptz(3)
   /// Le payeur légal — opaque.
   payerCompanyId   String      @map("payer_company_id")
   payerName        String      @map("payer_name")

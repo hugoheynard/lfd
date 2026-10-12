@@ -3,6 +3,11 @@ export interface MonthlyInvoiceOutcomeKey {
   readonly legalEntityId: string;
   /** La clôture de la période facturée (R3) — avec l'entité, le payeur et le mandat, la clé. */
   readonly periodClosesAt: Date;
+  /**
+   * Le début de la période DU PAYEUR — sa clôture précédente réelle (M4a).
+   * Rangé pour que la facture dise sa vraie période sans la recalculer.
+   */
+  readonly periodStartsAt: Date;
   readonly payerCompanyId: string;
   readonly payerName: string;
   /**

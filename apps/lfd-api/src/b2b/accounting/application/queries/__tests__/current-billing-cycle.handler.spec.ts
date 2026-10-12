@@ -1,9 +1,12 @@
 import { FixedClock } from "../../../../../platform/time/fixed-clock.js";
 import { SELLER_FACTS } from "../../../domain/entities/__tests__/invoice-fixtures.js";
 import { RecordedClosureReader } from "../../../domain/ports/recorded-closure.reader.js";
-import { BillingRhythm } from "../../../domain/value-objects/billing-rhythm.js";
-import { BillingRhythmSetting } from "../../../domain/value-objects/billing-rhythm-setting.js";
-import { FixedIssuers, FixedRhythms } from "../../commands/__tests__/monthly-invoice-doubles.js";
+import {
+  FixedIssuers,
+  FixedModeDates,
+  FixedPayerModes,
+  weeklySince2026,
+} from "../../commands/__tests__/monthly-invoice-doubles.js";
 import { GetCurrentBillingCycleHandler } from "../get-current-billing-cycle.handler.js";
 
 /** Jeudi 8 octobre 2026, 11h à Paris — horloge FIXE, jamais le mur. */
@@ -21,18 +24,22 @@ class FixedClosure extends RecordedClosureReader {
   }
 }
 
-const handler = (closures: FixedClosure, rhythms: FixedRhythms): GetCurrentBillingCycleHandler =>
+const handler = (
+  closures: FixedClosure,
+  payers: FixedPayerModes = new FixedPayerModes(),
+): GetCurrentBillingCycleHandler =>
   new GetCurrentBillingCycleHandler(
     new FixedClock(NOW),
     closures,
     new FixedIssuers([SELLER_FACTS]),
-    rhythms,
+    new FixedModeDates(),
+    payers,
   );
 
-describe("GetCurrentBillingCycleHandler — au rythme de l'entité en service (R5)", () => {
+describe("GetCurrentBillingCycleHandler — sur le calendrier de l'entité en service (M4a)", () => {
   it("mensuel au 1er, aucun lot : le mois civil, la clôture de toutes les entités lue", async () => {
     const closures = new FixedClosure(null);
-    const cycle = await handler(closures, new FixedRhythms()).execute();
+    const cycle = await handler(closures).execute();
 
     expect(cycle).toEqual({
       startsAt: "2026-09-30T22:00:00.000Z",
@@ -41,11 +48,8 @@ describe("GetCurrentBillingCycleHandler — au rythme de l'entité en service (R
     expect(closures.asked).toEqual([null]);
   });
 
-  it("hebdomadaire du lundi : la semaine en cours", async () => {
-    const cycle = await handler(
-      new FixedClosure(null),
-      new FixedRhythms(BillingRhythmSetting.of(BillingRhythm.weekly(1), null)),
-    ).execute();
+  it("un payeur hebdomadaire du lundi : la semaine en cours du calendrier", async () => {
+    const cycle = await handler(new FixedClosure(null), weeklySince2026("c_week")).execute();
 
     expect(cycle).toEqual({
       startsAt: "2026-10-04T22:00:00.000Z",
@@ -55,10 +59,7 @@ describe("GetCurrentBillingCycleHandler — au rythme de l'entité en service (R
 
   it("borné en bas par la dernière clôture enregistrée quand elle précède la clôture à venir", async () => {
     const recorded = new Date("2026-10-06T22:00:00.000Z");
-    const cycle = await handler(
-      new FixedClosure(recorded),
-      new FixedRhythms(BillingRhythmSetting.of(BillingRhythm.weekly(1), null)),
-    ).execute();
+    const cycle = await handler(new FixedClosure(recorded), weeklySince2026("c_week")).execute();
 
     expect(cycle.startsAt).toBe(recorded.toISOString());
   });

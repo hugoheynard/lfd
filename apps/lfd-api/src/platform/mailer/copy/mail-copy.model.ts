@@ -202,7 +202,7 @@ export interface InvoiceIssuedCopy {
   readonly greeting: string;
   /** `{seller}`, `{number}`, `{buyer}`, `{period}` (la clause, ou vide), `{total}`. */
   readonly intro: string;
-  /** `{period}` — « pour les commandes de septembre 2026 », précédée d'une espace. */
+  /** `{period}` — « pour les commandes du 5 au 11 octobre 2026 », précédée d’une espace. */
   readonly periodClause: string;
   readonly attachedNote: string;
   readonly invoiceLabel: string;

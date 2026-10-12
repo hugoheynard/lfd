@@ -146,6 +146,8 @@ describe("RunInvoiceAutopilot — une tentative par (entité, clôture)", () => 
         payload: {
           subjectLabel: SELLER_FACTS.name,
           month: "2026-09",
+          periodClosesAt: "2026-09-30T22:00:00.000Z",
+          periodLabel: "du 1er au 30 septembre 2026",
           outcome: "issued",
           issuedCount: 1,
           signalledCount: 1,

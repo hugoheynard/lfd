@@ -73,6 +73,7 @@ export class PrismaMonthlyInvoiceOutcomes extends MonthlyInvoiceOutcomes {
   private columns(key: MonthlyInvoiceOutcomeKey) {
     return {
       ...this.id(key),
+      periodStartsAt: key.periodStartsAt,
       payerName: key.payerName,
       mandateReference: key.mandateReference,
       unbillableOrders: [...key.unbillableOrders],

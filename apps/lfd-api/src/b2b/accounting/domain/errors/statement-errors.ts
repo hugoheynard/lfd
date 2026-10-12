@@ -58,15 +58,16 @@ export class InvalidStatementPeriodError extends DomainError {
 }
 
 /**
- * L'instant demandé n'est pas une clôture du rythme de facturation de
- * l'entité : il ne ferme aucune période.
+ * L'instant demandé n'est pas une clôture de la société du relevé (lue comme
+ * payeur, M4a) : il ne ferme aucune de ses périodes.
  */
 export class NotAStatementPeriodError extends DomainError {
   constructor(readonly closesAt: Date) {
     super(
       "accounting.statement.not_a_period",
-      `Le ${LONG_MOMENT.format(closesAt)} (heure de Paris) ne clôt aucune période du rythme de ` +
-        "facturation de l'entité : choisissez une période proposée par le sélecteur du relevé.",
+      `Le ${LONG_MOMENT.format(closesAt)} (heure de Paris) ne clôt aucune période de facturation ` +
+        "de ce client (son mode, ou le mensuel par défaut) : choisissez une période proposée par " +
+        "le sélecteur du relevé.",
     );
   }
 }
@@ -86,17 +87,18 @@ export class FutureStatementPeriodError extends DomainError {
 }
 
 /**
- * Plusieurs entités émettrices sont en service, à des rythmes de facturation
- * différents : le relevé ne sait pas lequel lire, et n'en choisit pas un au
+ * Plusieurs entités émettrices sont en service, à des dates de facturation
+ * différentes : le relevé ne sait pas lesquelles lire, et n'en choisit pas au
  * hasard (Q4 : une seule encaisse).
  */
 export class SeveralStatementIssuersError extends BusinessError {
   constructor(readonly count: number) {
     super(
       "accounting.statement.several_issuers",
-      `${String(count)} entités émettrices sont en service, à des rythmes de facturation ` +
-        "différents : le relevé ne sait pas lequel suivre. Archivez celle qui n'encaisse pas, " +
-        "ou alignez leurs rythmes (Comptabilité › Entités juridiques).",
+      `${String(count)} entités émettrices sont en service, à des dates de facturation ` +
+        "différentes (dates des modes, ou mode d'un client) : le relevé ne sait pas lesquelles " +
+        "suivre. Archivez celle qui n'encaisse pas, ou alignez leurs dates (Comptabilité › " +
+        "Entités juridiques).",
     );
   }
 }

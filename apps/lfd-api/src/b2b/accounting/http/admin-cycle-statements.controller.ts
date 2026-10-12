@@ -1,4 +1,5 @@
 import {
+  statementPayerSchema,
   statementPeriodSchema,
   type CycleStatementView,
   type StatementCyclesView,
@@ -22,9 +23,12 @@ import {
 
 /**
  * `?periodClosesAt=<ISO>`, facultatif : absent, c'est la période en cours. La
- * période suit le rythme de l'entité en service (R5).
+ * période suit le mode du payeur (M4a).
  */
 const periodQuerySchema = statementPeriodSchema.optional();
+
+/** `?companyId=<payeur>`, facultatif : absent, le calendrier de l'entité (M4a). */
+const payerQuerySchema = statementPayerSchema.optional();
 
 /**
  * Surface **staff** du relevé de cycle (plan `agregation-des-commandes`, A1).
@@ -40,12 +44,17 @@ const periodQuerySchema = statementPeriodSchema.optional();
 export class AdminCycleStatementsController {
   constructor(private readonly queries: QueryBus) {}
 
-  /** Les périodes proposées au sélecteur — au rythme de l'entité, la plus récente d'abord. */
+  /**
+   * Les périodes proposées au sélecteur, la plus récente d'abord — celles du
+   * payeur `?companyId=`, sinon celles du calendrier de l'entité (M4a).
+   */
   @Get("cycles")
   @RequireAnyPermission("b2b_accounting:read", "b2b_companies:read")
-  async cycles(): Promise<StatementCyclesView> {
+  async cycles(
+    @Query("companyId", new ZodQuery(payerQuerySchema)) companyId: string | undefined,
+  ): Promise<StatementCyclesView> {
     return this.queries.execute<ListStatementCyclesQuery, StatementCyclesView>(
-      new ListStatementCyclesQuery(),
+      new ListStatementCyclesQuery(companyId ?? null),
     );
   }
 

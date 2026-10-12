@@ -115,7 +115,7 @@ export type RepresentationRefusal =
 
 const REFUSALS: Readonly<Record<RepresentationRefusal, string>> = {
   statement_line:
-    "la ligne prélevait un arrêté de facturation (bons d'avant la facture du mois) : la re-présenter la referait facturer. Régler autrement, ou passer en perte",
+    "la ligne prélevait un arrêté de facturation (bons d'avant la facture par période) : la re-présenter la referait facturer. Régler autrement, ou passer en perte",
   legacy_line:
     "la ligne est d'un lot d'avant l'arrêté de facturation : la re-présenter la referait facturer. Régler autrement, ou passer en perte",
   mandate_not_active:

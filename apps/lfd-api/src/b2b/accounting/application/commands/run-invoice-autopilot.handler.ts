@@ -15,7 +15,7 @@ import { InvoiceAutopilotRuns } from "../../domain/ports/invoice-autopilot-runs.
 import { InvoiceIssuersReader } from "../../domain/ports/invoice-issuers.reader.js";
 import { InvoicingFloorReader } from "../../domain/ports/invoicing-floor.reader.js";
 import { PayerBillingModesReader } from "../../domain/ports/payer-billing-modes.reader.js";
-import { periodMonthOf } from "../../domain/services/invoicing-closures.js";
+import type { BillingCycle } from "../../domain/services/billing-cycle.js";
 import type { MonthlyInvoiceReport } from "../../domain/services/monthly-invoice-report.js";
 import {
   RunInvoiceAutopilotCommand,
@@ -72,8 +72,8 @@ export class RunInvoiceAutopilotHandler implements ICommandHandler<
     const floor = await this.floors.floor();
     const reports: InvoiceAutopilotRunReport[] = [];
     for (const issuer of await this.issuers.activeIssuers()) {
-      for (const closesAt of await this.closuresOf(issuer.legalEntityId, now, floor)) {
-        const report = await this.tryClosure(issuer, closesAt, now);
+      for (const period of await this.periodsOf(issuer.legalEntityId, now, floor)) {
+        const report = await this.tryClosure(issuer, period, now);
         if (report !== null) {
           reports.push(report);
         }
@@ -82,26 +82,33 @@ export class RunInvoiceAutopilotHandler implements ICommandHandler<
     return { runs: reports };
   }
 
-  /** Les clôtures à tenter : depuis la dernière tentée, ou le plancher, le plus tard des deux. */
-  private async closuresOf(
+  /**
+   * Les clôtures à tenter, chacune avec la période qu'en dit le journal (la
+   * plus longue qui s'y clôt) : depuis la dernière tentée, ou le plancher, le
+   * plus tard des deux.
+   */
+  private async periodsOf(
     legalEntityId: string,
     now: Date,
     floor: Date | null,
-  ): Promise<readonly Date[]> {
+  ): Promise<readonly BillingCycle[]> {
     const calendar = await readInvoicingCalendar(
       { modeDates: this.modeDates, payerModes: this.payerModes },
       legalEntityId,
     );
     const last = await this.runs.lastAttempted(legalEntityId);
-    return calendar.closuresToAttempt(now, latest(last, floor));
+    return calendar
+      .closuresToAttempt(now, latest(last, floor))
+      .map((closesAt) => calendar.periodOf(closesAt));
   }
 
   /** Une clôture : tentée une fois, son issue rangée et journalisée ensemble. */
   private async tryClosure(
     { legalEntityId, name }: Issuer,
-    closesAt: Date,
+    period: BillingCycle,
     now: Date,
   ): Promise<InvoiceAutopilotRunReport | null> {
+    const { closesAt } = period;
     if (await this.runs.attempted(legalEntityId, closesAt)) {
       return null;
     }
@@ -113,12 +120,7 @@ export class RunInvoiceAutopilotHandler implements ICommandHandler<
     await this.uow.run(async () => {
       await this.runs.settle(legalEntityId, closesAt, issue.outcome, issue.message);
       await this.events.publishTraced(
-        new InvoiceAutopilotRanEvent(
-          { id: legalEntityId, name },
-          periodMonthOf(closesAt),
-          issue,
-          now,
-        ),
+        new InvoiceAutopilotRanEvent({ id: legalEntityId, name }, period, issue, now),
       );
     });
     return { legalEntityId, periodClosesAt: closesAt.toISOString(), outcome: issue.outcome };

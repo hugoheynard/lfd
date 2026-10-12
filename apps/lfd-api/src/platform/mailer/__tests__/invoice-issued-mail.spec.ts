@@ -18,7 +18,7 @@ function render(overrides: Partial<Parameters<typeof invoice>[0]> = {}) {
     sellerName: "La Folie Douce",
     buyerName: "Boulangerie du Port",
     issuedOn: "mercredi 30 septembre 2026",
-    period: "septembre 2026",
+    period: "du 5 au 11 octobre 2026",
     total: "1 234,56 €",
     dueOn: "jeudi 15 octobre 2026",
     paymentMeans: "Prélèvement SEPA — mandat RUM-PORT-1",
@@ -37,7 +37,7 @@ describe("le courriel « votre facture »", () => {
     for (const expected of [
       "FA-2026-000007",
       "mercredi 30 septembre 2026",
-      "septembre 2026",
+      "pour les commandes du 5 au 11 octobre 2026",
       "Boulangerie du Port",
       "jeudi 15 octobre 2026",
       "RUM-PORT-1",

@@ -201,10 +201,16 @@ describe("IssueMonthlyInvoices — la facture du mois (E4)", () => {
     expect(signalled).toMatchObject({
       subjectType: "company",
       subjectId: "c_principal",
-      payload: { month: MONTH, reason: h.outcomes.rows.get(PRINCIPAL)?.message },
+      payload: {
+        month: MONTH,
+        periodLabel: "du 1er au 30 septembre 2026",
+        reason: h.outcomes.rows.get(PRINCIPAL)?.message,
+      },
     });
     expect(Object.keys(signalled?.payload ?? {}).sort()).toEqual([
       "month",
+      "periodClosesAt",
+      "periodLabel",
       "reason",
       "subjectLabel",
     ]);
@@ -446,6 +452,10 @@ describe("IssueMonthlyInvoices — la facture du mois (E4)", () => {
 
     expect(report.periodLabel).toBe("du 21 au 27 septembre 2026");
     expect(report.issued.map((issue) => issue.issuedOn)).toEqual(["2026-09-27"]);
+    // M4a : le début de SA période est rangé sur l'issue, pas recalculé au mensuel.
+    expect(h.outcomes.rows.get(PORT)?.key.periodStartsAt).toEqual(
+      new Date("2026-09-20T22:00:00.000Z"),
+    );
     expect(h.reader.asked).toEqual([{ from: FLOOR, to: new Date("2026-09-27T22:00:00.000Z") }]);
   });
 
@@ -542,6 +552,7 @@ describe("IssueMonthlyInvoices — la facture du mois (E4)", () => {
     expect(report.periodStartsAt).toBe(CLOSURE);
     expect(report.periodLabel).toBe("du 1er au 4 octobre 2026");
     expect(report.issued.map((issue) => issue.payerCompanyId)).toEqual(["c_port"]);
+    expect(atMonday.outcomes.rows.get(PORT)?.key.periodStartsAt).toEqual(new Date(CLOSURE));
   });
 
   it("le signalement d'un payeur hebdomadaire nomme SA semaine, pas le mois du calendrier", async () => {
@@ -561,6 +572,15 @@ describe("IssueMonthlyInvoices — la facture du mois (E4)", () => {
     // La clôture affiche la plus longue des périodes qui s'y closent.
     expect(report.periodLabel).toBe("du 1er au 31 janvier 2027");
     expect(h.outcomes.rows.get(PORT)?.message).toContain("du 25 au 31 janvier 2027");
+    // Le journal dit la même semaine que le refus rangé (M4a).
+    const signalled = h.events.traced
+      .map((event) => event.journalFact())
+      .find((fact) => fact.type === "invoice.signalled");
+    expect(signalled?.payload).toMatchObject({
+      month: "2027-01",
+      periodClosesAt: "2027-01-31T23:00:00.000Z",
+      periodLabel: "du 25 au 31 janvier 2027",
+    });
   });
 });
 

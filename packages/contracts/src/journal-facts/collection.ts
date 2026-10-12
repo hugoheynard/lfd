@@ -74,11 +74,26 @@ const invoiceDocument = {
 const invoicedMonth = () => z.string().min(1);
 
 /**
+ * La période d'un fait de la facture (lot M4a, plan
+ * `plan-rythme-de-facturation.md` §16.9) : sa clôture et son libellé —
+ * « du 5 au 11 octobre 2026 » pour un payeur hebdomadaire, ce que `month` ne
+ * sait pas dire. `month` reste, pour les lecteurs d'avant. Les faits écrits
+ * avant M4a n'ont que `month` : leur forme est dans l'historique du type.
+ */
+const invoicedPeriod = {
+  month: invoicedMonth(),
+  /** ISO — la clôture de la période, exclusive. */
+  periodClosesAt: instant(),
+  /** « du 1er au 30 septembre 2026 » — jours locaux, dernier jour inclus. */
+  periodLabel: z.string().min(1),
+};
+
+/**
  * Le passage automatique de la facture du mois (plan `facture-emise.md`,
  * E4). Sujet : `legal_entity`. Copie de `autopilotRun`, au mois plutôt
- * qu'au cycle.
+ * qu'au cycle — la forme d'avant M4a, gardée dans l'historique du type.
  */
-const invoiceAutopilotRun = {
+const invoiceAutopilotRunBefore = {
   subjectLabel: subjectLabel(),
   month: invoicedMonth(),
   outcome: z.enum(["issued", "nothing_to_invoice", "not_yet_open", "failed"]),
@@ -89,6 +104,9 @@ const invoiceAutopilotRun = {
   /** Le refus tel quel en `failed`, l'explication sinon. */
   message: z.string().nullable(),
 };
+
+/** Depuis M4a : la période affichée de la clôture — la plus longue qui s'y clôt. */
+const invoiceAutopilotRun = { ...invoiceAutopilotRunBefore, ...invoicedPeriod };
 
 /**
  * L'avis de prélèvement d'un payeur (plan
@@ -228,13 +246,15 @@ export const COLLECTION_FACTS = {
   /** Le rendu a échoué : la pièce reste sans PDF, `failure` dit pourquoi. */
   "invoice.document_render_failed": fact(payload({ ...invoiceDocument, failure: z.string() })),
   /** Le passage automatique a tenté la facture du mois : son issue, jamais avalée. */
-  "invoice.autopilot_ran": fact(payload(invoiceAutopilotRun)),
+  "invoice.autopilot_ran": fact(payload(invoiceAutopilotRun), [payload(invoiceAutopilotRunBefore)]),
   /**
    * Un payeur n'est pas facturé ce mois-ci (sujet : `company`) : la raison
    * rangée dans `invoice_monthly_outcome`. JAMAIS un montant non facturé.
    */
   "invoice.signalled": fact(
-    payload({ subjectLabel: subjectLabel(), month: invoicedMonth(), reason: z.string() }),
+    // La période DU PAYEUR — celle que sa facture aurait portée (M4a).
+    payload({ subjectLabel: subjectLabel(), ...invoicedPeriod, reason: z.string() }),
+    [payload({ subjectLabel: subjectLabel(), month: invoicedMonth(), reason: z.string() })],
   ),
   /** L'avis est mis en file, dans la transaction du lot — pas encore envoyé. */
   "collection.notice_queued": fact(payload(notice)),

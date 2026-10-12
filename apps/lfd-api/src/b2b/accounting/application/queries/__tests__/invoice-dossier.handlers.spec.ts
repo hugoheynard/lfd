@@ -26,7 +26,10 @@ import { StatementBuyerReader } from "../../../domain/ports/statement-buyer.read
 import type { StatementBuyer } from "../../../domain/entities/billing-statement.js";
 import type { InvoiceSellerFacts } from "../../../domain/services/invoice-issuance-blockers.js";
 import { InvoicePaymentTerms } from "../../../domain/value-objects/invoice-payment-terms.js";
-import { FixedRhythms } from "../../commands/__tests__/monthly-invoice-doubles.js";
+import {
+  FixedModeDates,
+  FixedPayerModes,
+} from "../../commands/__tests__/monthly-invoice-doubles.js";
 import type { BillingCycle } from "../../../domain/services/billing-cycle.js";
 import type { FrozenInvoiceOrder } from "../../../domain/services/invoice-dossier.types.js";
 import { ExportInvoiceDossierHandler } from "../export-invoice-dossier.handler.js";
@@ -245,7 +248,8 @@ function getHandler(
     new FixedClock(NOW),
     issuers,
     buyers,
-    new FixedRhythms(),
+    new FixedModeDates(),
+    new FixedPayerModes(),
   );
 }
 
@@ -459,7 +463,8 @@ describe("ExportInvoiceDossierHandler", () => {
     new FixedStops(),
     new FixedClock(NOW),
     new FixedIssuers([COMPLETE_SELLER]),
-    new FixedRhythms(),
+    new FixedModeDates(),
+    new FixedPayerModes(),
   );
 
   it("rend la facture en CSV, euros à la virgule, et la nomme simulée", async () => {

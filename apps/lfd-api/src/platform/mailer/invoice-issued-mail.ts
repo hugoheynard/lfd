@@ -23,7 +23,7 @@ export interface InvoiceIssuedMailData {
   readonly buyerName: string;
   /** « mercredi 30 septembre 2026 ». */
   readonly issuedOn: string;
-  /** « septembre 2026 » ; `null` hors facture du mois. */
+  /** « du 5 au 11 octobre 2026 » — la période du payeur ; `null` hors facture de période. */
   readonly period: string | null;
   /** « 1 234,56 € ». */
   readonly total: string;

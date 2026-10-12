@@ -8,9 +8,9 @@ import type { VatShareView } from "./order.js";
  * une PÉRIODE de facturation, et leurs totaux. Ce n'est pas une facture : ni
  * numéro, ni mentions (plan `documentation/order/plan-agregation-des-commandes.md`).
  *
- * La période suit le rythme de facturation de l'entité émettrice en service
- * (plan `plan-rythme-de-facturation.md`, §13-14, lot R5) : un mois civil pour
- * le mensuel au 1er, une semaine pour l'hebdomadaire.
+ * La période suit le mode de facturation DU PAYEUR (plan
+ * `plan-rythme-de-facturation.md`, §16.9, lot M4a) : un mois civil pour le
+ * mensuel au 1er, une semaine pour l'hebdomadaire.
  */
 
 /**
@@ -19,6 +19,13 @@ import type { VatShareView } from "./order.js";
  * l'entité : ce sont des règles, elles vivent dans le domaine.
  */
 export const statementPeriodSchema = z.iso.datetime();
+
+/**
+ * `?companyId=` de `GET …/statements/cycles` (lot M4a) — la FORME seulement :
+ * le payeur dont le sélecteur propose les périodes (ses semaines s'il est
+ * hebdomadaire). Absent : le calendrier de l'entité en service.
+ */
+export const statementPayerSchema = z.string().min(1);
 
 /** Une période de relevé : `[periodStartsAt, periodClosesAt[`, dans le fuseau des affaires. */
 export interface StatementCycleView {

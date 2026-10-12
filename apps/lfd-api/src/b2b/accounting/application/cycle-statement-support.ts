@@ -33,7 +33,7 @@ export interface BuiltStatement {
 /**
  * @param requestedClosure `periodClosesAt` (ISO), ou `undefined` pour la période en cours.
  * @throws {InvalidStatementPeriodError} la clôture demandée n'est pas un instant.
- * @throws {NotAStatementPeriodError} elle n'est pas une clôture de l'entité.
+ * @throws {NotAStatementPeriodError} elle n'est pas une clôture de la société, lue comme payeur.
  * @throws {FutureStatementPeriodError} la période n'a pas commencé.
  * @throws {SeveralStatementIssuersError} plusieurs entités sont en service.
  * @throws {StatementCompanyNotFoundError} la société n'existe pas.
@@ -44,7 +44,7 @@ export async function buildStatement(
   requestedClosure: string | undefined,
 ): Promise<BuiltStatement> {
   const now = deps.clock.now();
-  const period = await resolveStatementPeriod(deps, requestedClosure);
+  const period = await resolveStatementPeriod(deps, companyId, requestedClosure);
 
   const company = await deps.orders.statementCompany(companyId);
   if (company === null) {

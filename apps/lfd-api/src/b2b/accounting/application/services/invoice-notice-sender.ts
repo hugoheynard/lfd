@@ -10,7 +10,6 @@ import type { Invoice } from "../../domain/entities/invoice.js";
 import { InvoiceNoticeEvent } from "../../domain/events/invoice.events.js";
 import { InvoiceMailOrigins } from "../../domain/ports/invoice-mail-origins.js";
 import { InvoicePeriodsReader } from "../../domain/ports/invoice-periods.reader.js";
-import { periodMonthOf } from "../../domain/services/invoicing-closures.js";
 import { InvoiceSiteContactsReader } from "../../domain/ports/invoice-site-contacts.reader.js";
 import { InvoiceReader } from "../../domain/ports/invoice.reader.js";
 import { PayerNoticeContactsReader } from "../../domain/ports/payer-notice-contacts.reader.js";
@@ -138,12 +137,12 @@ export class InvoiceNoticeSender {
   ): Promise<InvoiceIssuedMailData | null> {
     const state = invoice.toState();
     const period = (await this.periods.periodsOf([state.id])).get(state.id) ?? null;
-    // L'e-mail dit encore le mois où s'achève la période (« commandes de
-    // septembre 2026 ») : sa phrase n'est pas écrite pour un libellé de période.
+    // La période du payeur, rangée à l'émission (M4a) : « commandes du 5 au
+    // 11 octobre 2026 ».
     const client = this.origins.clientBaseUrl();
     const content = invoiceNoticeContent(
       state,
-      period === null ? null : periodMonthOf(period.closesAt),
+      period,
       client === null ? "" : `${client}${INVOICES_PATH}`,
     );
     if (content === null) {

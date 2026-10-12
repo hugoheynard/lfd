@@ -94,7 +94,7 @@ export const MAIL_FR: MailCopy = {
     greeting: "Bonjour,",
     intro:
       "{seller} a émis la facture {number} adressée à {buyer}{period}, d'un montant de {total} TTC.",
-    periodClause: " pour les commandes de {period}",
+    periodClause: " pour les commandes {period}",
     attachedNote:
       "Elle est jointe à ce message au format PDF Factur-X : votre logiciel comptable peut en lire les données.",
     invoiceLabel: "Facture",

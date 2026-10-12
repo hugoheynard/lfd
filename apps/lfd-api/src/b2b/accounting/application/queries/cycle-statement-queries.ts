@@ -6,7 +6,12 @@
  */
 
 /** Les dernières périodes proposées au sélecteur, la plus récente d'abord. */
-export class ListStatementCyclesQuery {}
+export class ListStatementCyclesQuery {
+  constructor(
+    /** Le payeur dont on veut les périodes ; `null` : le calendrier de l'entité. */
+    readonly payerCompanyId: string | null = null,
+  ) {}
+}
 
 /** Le relevé d'une société pour une période — celle en cours si `periodClosesAt` est absent. */
 export class GetCycleStatementQuery {

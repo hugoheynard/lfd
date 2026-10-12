@@ -52,13 +52,14 @@ export class InvoicingNotYetOpenError extends BusinessError {
   }
 }
 
-/** L'instant demandé ne ferme aucune période du rythme de l'entité. */
+/** L'instant demandé ne ferme la période d'aucun client de l'entité. */
 export class NotABillingClosureError extends DomainError {
   constructor(readonly closesAt: Date) {
     super(
       "accounting.monthly_invoice.not_a_closure",
-      `Le ${LONG_MOMENT.format(closesAt)} (heure de Paris) n'est pas une clôture du rythme de ` +
-        "facturation de l'entité : choisir la période proposée par l'écran « Prélèvement du mois ».",
+      `Le ${LONG_MOMENT.format(closesAt)} (heure de Paris) ne clôt la période d'aucun client de ` +
+        "l'entité (ni le mensuel, ni un mode choisi) : choisir la clôture proposée par l'écran " +
+        "« Prélèvement du mois ».",
     );
   }
 }
@@ -79,7 +80,7 @@ export class InvoicingFloorMissingError extends BusinessError {
   constructor() {
     super(
       "accounting.monthly_invoice.floor_missing",
-      "La date de mise en service de la facture du mois (invoicing_floor) est absente de la base : " +
+      "La date de mise en service de la facture par période (invoicing_floor) est absente de la base : " +
         "aucune facture n'est émise sans elle. Prévenir la technique.",
     );
   }
@@ -90,8 +91,8 @@ export class NotTheInvoicingEntityError extends BusinessError {
   constructor(readonly legalEntityId: string) {
     super(
       "accounting.monthly_invoice.not_the_issuer",
-      `L'entité ${legalEntityId} n'est pas la seule entité émettrice en service : la facture du ` +
-        "mois ne sait facturer que sous l'entité unique (comme le mandat). Archiver l'autre entité, " +
+      `L'entité ${legalEntityId} n'est pas la seule entité émettrice en service : la facture par ` +
+        "période ne sait facturer que sous l'entité unique (comme le mandat). Archiver l'autre entité, " +
         "ou attendre la décision sur la numérotation à plusieurs entités (plan, § 8.3).",
     );
   }

@@ -6,8 +6,9 @@ import type {
 import { QueryHandler, type IQueryHandler } from "@nestjs/cqrs";
 
 import { Clock } from "../../../../platform/time/clock.js";
-import { BillingRhythmReader } from "../../domain/ports/billing-rhythm.reader.js";
+import { BillingModeDatesReader } from "../../domain/ports/billing-mode-dates.reader.js";
 import { InvoiceIssuersReader } from "../../domain/ports/invoice-issuers.reader.js";
+import { PayerBillingModesReader } from "../../domain/ports/payer-billing-modes.reader.js";
 import { CycleOrdersReader } from "../../domain/ports/cycle-orders.reader.js";
 import { StatementBillingReader } from "../../domain/ports/statement-billing.reader.js";
 import { STATEMENT_SCOPE } from "../../domain/services/cycle-statement-csv.js";
@@ -31,7 +32,8 @@ export class GetCycleStatementHandler implements IQueryHandler<
     private readonly billing: StatementBillingReader,
     private readonly clock: Clock,
     private readonly issuers: InvoiceIssuersReader,
-    private readonly rhythms: BillingRhythmReader,
+    private readonly modeDates: BillingModeDatesReader,
+    private readonly payerModes: PayerBillingModesReader,
   ) {}
 
   async execute(query: GetCycleStatementQuery): Promise<CycleStatementView> {
@@ -41,7 +43,8 @@ export class GetCycleStatementHandler implements IQueryHandler<
         billing: this.billing,
         clock: this.clock,
         issuers: this.issuers,
-        rhythms: this.rhythms,
+        modeDates: this.modeDates,
+        payerModes: this.payerModes,
       },
       query.companyId,
       query.periodClosesAt,

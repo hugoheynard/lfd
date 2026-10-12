@@ -599,7 +599,7 @@ modes ; chaque client choisit un mode.** Plus aucune date propre à un client.
 | M1  | Trois définitions sur l'entité + mode du client (migration, agrégats, routes, faits, timelines, calendrier d'union, règle §12 au temps) — **bâti le 2026-10-12, non commité** (§16.7) |
 | M2  | Facture par client à sa clôture (passage, bouton, rattrapage)                                                                                                                         |
 | M3  | Lot et automatisme sur le calendrier (`constitute`, tentative à chaque clôture, `priorOrderCount`, lot manqué, `lastClosure`)                                                         |
-| M4  | Relevé/dossier par client ; écrans : dates des modes, mode du client, restes « mois »                                                                                                 |
+| M4  | Relevé/dossier par client ; écrans : dates des modes, mode du client, restes « mois » — **M4a (serveur) bâti le 2026-10-12** (§16.11), M4b (écrans) à faire                           |
 
 ### 16.6 Révision après `vitruve` (2026-10-12) — l'emporte sur 16.1–16.5
 
@@ -766,7 +766,7 @@ LECTURE des trois modes (`billing-modes-card`) ; la fiche du client
 l'adaptateur mensuel après M3 : `statement-period-support` (cycle courant,
 relevé, dossier et leurs CSV) et `PrismaInvoicePeriodsReader` (en SQL).
 
-**M4a — serveur (`batisseur`)**
+**M4a — serveur (`batisseur`)** — **bâti le 2026-10-12, non commité** (§16.11)
 
 1. **Relevé et dossier par payeur** : `statement-period-support` lit la
    `PayerTimeline` DU payeur demandé (relevé, dossier, CSV) ; `/cycles` prend
@@ -902,3 +902,80 @@ clôture)`, factures émises, `unbillable`, `invoice_split`, mandats des sites,
 `statement-period-support` (relevé, dossier, cycles) et
 `PrismaInvoicePeriodsReader`. Le journal `invoice.autopilot_ran` dit encore
 le MOIS de la clôture (§16.8).
+
+### 16.11 M4a bâti (2026-10-12, non commité) — le relevé du payeur, la période rangée
+
+**Plus aucun lecteur de l'adaptateur mensuel** : `BillingRhythmReader` et
+`PrismaBillingRhythmReader` sont **retirés** (port, adaptateur, provider,
+double de test `FixedRhythms`).
+
+- **Relevé et dossier par payeur** : `statement-period-support` lit le
+  calendrier de l'entité en service (`statementCalendar` : dates des modes +
+  modes des payeurs, `InvoicingCalendar`) et en tire la suite DU payeur
+  (`statementPeriodsOf(deps, payeur)` → `timelinePeriods(calendar.timelineOf(payeur))`).
+  Relevé, dossier et leurs CSV passent la société demandée, lue comme
+  payeur (un site n'a de suite propre que s'il en a choisi une). Les
+  fonctions de `statement-periods.ts` prennent une `StatementPeriodSequence`
+  (`closureAfter`, `closureBefore`) : une timeline (`timelinePeriods`) ou le
+  calendrier lui-même.
+- **`GET …/statements/cycles?companyId=`** (facultatif, `statementPayerSchema`
+  au contrat) : les périodes de ce payeur ; sans payeur, celles du calendrier
+  (une période va d'une clôture de n'importe quel payeur à la suivante —
+  « du 1er au 4 octobre » quand un hebdomadaire clôt le lundi 5). Le cycle
+  courant (`GET …/billing-cycle/current`) suit le calendrier
+  (`calendarCycleAt`), comme le lot.
+- **Plusieurs entités en service** : refusées si leurs dates diffèrent
+  (`sameBillingDates` : dates des trois modes ET segments de TOUS les
+  payeurs). ⚠️ Plus strict que nécessaire pour le relevé d'un seul payeur ;
+  assumé (une seule encaisse, et la facture refuse déjà deux entités). Une
+  entité absente ne lève plus `LegalEntityNotFoundError` : les dates rendent
+  les défauts.
+- **Migration `20261012500000_la_periode_rangee_de_la_facture`** :
+  `invoice_monthly_outcome.period_starts_at timestamptz(3)` NULLABLE + CHECK
+  `period_starts_at IS NULL OR period_starts_at < period_closes_at`. Aucune
+  ligne mise à jour. Écrite à l'émission (`outcomeKey` :
+  `calendar.payerPeriodOf(payeur, C).startsAt`), à l'INSERT ou à la bascule
+  d'un refus en émission — que le déclencheur `invoice_monthly_outcome_final`
+  admet ; aussi sur un refus rangé. `PrismaInvoicePeriodsReader` la lit,
+  repli sur le calcul au mensuel pour une ligne NULL. `IssuedInvoiceSummaryView`
+  (`periodLabel`, `periodClosesAt`, `period` gardé) et la vue de la facture
+  disent donc la vraie période sans changement de contrat.
+- **L'e-mail « Votre facture »** dit la période du payeur : « pour les
+  commandes du 5 au 11 octobre 2026 » (`invoiceNoticeContent` prend la
+  période, `periodLabelOf` ; `invoicePeriodLabel` retiré). Gabarits fr/en/it :
+  `periodClause` sans « de ». ⚠️ en/it impriment le libellé français, comme
+  ils imprimaient déjà le mois français.
+- **Journal** : `invoice.signalled` (période DU payeur) et
+  `invoice.autopilot_ran` (période affichée de la clôture, la plus longue)
+  portent `periodClosesAt` et `periodLabel`, REQUIS, à côté de `month`
+  (gardé) ; l'ancienne forme est dans l'historique du type (`fact(…, [avant])`).
+  Phrases du back-office : « a tenté la facture du 1er au 30 septembre
+  2026 », « à la facture du 5 au 11 octobre 2026 » ; repli « du mois
+  AAAA-MM » pour les faits d'avant.
+- **Restes « mois » côté serveur** : `NotAStatementPeriodError` (« ne clôt
+  aucune période de facturation de ce client »), `NotABillingClosureError`
+  (« ne clôt la période d'aucun client »), `SeveralStatementIssuersError`
+  (« dates de facturation »), `InvoicingFloorMissingError` et
+  `NotTheInvoicingEntityError` (« facture par période »), le refus de
+  re-présentation d'un arrêté. Le refus de préparation (« La première
+  période prélevable… ») l'était déjà. Le nom d'écran « Prélèvement du
+  mois » cité par trois messages reste : il bouge avec l'écran (M4b).
+- **`payerCount`** : documenté au contrat — les payeurs qui ont CHOISI le
+  mode ; le libellé d'écran est M4b.
+- **e2e** (`test/monthly-invoices.e2e-spec.ts`, « le relevé, la période
+  rangée et l'e-mail d'un payeur hebdomadaire (M4a) ») : `period_starts_at`
+  rangée (mois rattrapé, puis semaine), relue par la fiche du payeur,
+  l'e-mail de la semaine, le sélecteur du payeur (ses semaines) et d'un
+  payeur mensuel, relevé d'une semaine accepté chez l'un, refusé (400) chez
+  l'autre. Écrit, **non lancé** par le bâtisseur.
+
+**⚠️ L'échéance d'une facture rattrapée (§16.10)** : `dueOn =
+later(issuedOn, collectionDayOf(C))`, calculée sur la clôture C de la
+facture. Rattrapée après C (cas de l'e2e R3), elle est prélevée par le lot de
+la clôture suivante du calendrier, à `frozenCollectionDay` de CE lot — plus
+tard. L'e-mail (et la facture, son PDF, Factur-X) annoncent donc une échéance
+antérieure au prélèvement réel. **Geste le plus simple proposé, non fait** :
+dans `IssueMonthlyInvoicesHandler`, quand `at ≥ C`, prendre aussi
+`collectionDayOf(calendar.closureAfter(at), …)` dans le `later(…)` de
+`dueOn` — l'échéance du lot qui prendra réellement la facture. À décider :
+c'est une date imprimée sur une pièce.

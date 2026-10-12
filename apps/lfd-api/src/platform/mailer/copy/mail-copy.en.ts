@@ -90,7 +90,7 @@ export const MAIL_EN: MailCopy = {
     greeting: "Hello,",
     intro:
       "{seller} has issued invoice {number} addressed to {buyer}{period}, for {total} including VAT.",
-    periodClause: " for the orders of {period}",
+    periodClause: " for the orders {period}",
     attachedNote:
       "It is attached to this message as a Factur-X PDF: your accounting software can read its data.",
     invoiceLabel: "Invoice",

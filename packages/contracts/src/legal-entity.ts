@@ -92,7 +92,10 @@ export interface LegalEntityBillingModeView {
   /**
    * Les payeurs qui ont CHOISI ce mode (en vigueur ou programmé). ⚠️ Pour le
    * mensuel, ne compte pas ceux qui n'ont rien choisi — ils sont mensuels par
-   * défaut, et la comptabilité ne tient pas la liste des payeurs.
+   * défaut, et la comptabilité ne tient pas la liste des payeurs. Décidé par
+   * Hugo le 2026-10-12 (plan `plan-rythme-de-facturation.md`, §16.9-6) :
+   * l'écran le dit « N clients ont choisi ce mode », sans prétendre compter
+   * les autres.
    */
   readonly payerCount: number;
 }

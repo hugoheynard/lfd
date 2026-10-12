@@ -8,7 +8,6 @@ import {
 } from "../../../../../handover/channels/commerce/index.js";
 import type { Invoice } from "../../../domain/entities/invoice.js";
 import { BillingModeDatesReader } from "../../../domain/ports/billing-mode-dates.reader.js";
-import { BillingRhythmReader } from "../../../domain/ports/billing-rhythm.reader.js";
 import { InvoiceIssuersReader } from "../../../domain/ports/invoice-issuers.reader.js";
 import { InvoicingFloorReader } from "../../../domain/ports/invoicing-floor.reader.js";
 import { InvoiceNumbering } from "../../../domain/ports/invoice-numbering.js";
@@ -22,7 +21,7 @@ import {
   PayerBillingModesReader,
   type PayerModeSegments,
 } from "../../../domain/ports/payer-billing-modes.reader.js";
-import { defaultModes } from "../../../domain/services/__tests__/billing-mode-fixtures.js";
+import { defaultModes, paris } from "../../../domain/services/__tests__/billing-mode-fixtures.js";
 import type { ModeTimelines, PayerModeSegment } from "../../../domain/services/payer-timeline.js";
 import type { BillingFollow } from "../../../domain/ports/statement-billing.reader.js";
 import type { InvoiceSellerFacts } from "../../../domain/services/invoice-issuance-blockers.js";
@@ -30,7 +29,6 @@ import {
   invoiceGroupKey,
   type InvoiceableOrder,
 } from "../../../domain/services/monthly-invoicing.js";
-import { BillingRhythmSetting } from "../../../domain/value-objects/billing-rhythm-setting.js";
 import type { CollectionFormName } from "../../../domain/value-objects/collection-form.js";
 import { InvoiceNumber } from "../../../domain/value-objects/invoice-number.js";
 
@@ -158,22 +156,6 @@ export class NoStops extends OrderDeliveryHistoryReader {
   }
 }
 
-/**
- * Le même réglage pour toute entité connue ; mensuel au 1er par défaut. Il
- * double l'adaptateur de transition de M1 (`BillingRhythmReader`) : un réglage
- * hebdomadaire y éprouve encore la mécanique que M2–M4 reprendront par payeur.
- */
-export class FixedRhythms extends BillingRhythmReader {
-  constructor(
-    private readonly setting: BillingRhythmSetting | null = BillingRhythmSetting.initial(),
-  ) {
-    super();
-  }
-  timelineOf(): Promise<BillingRhythmSetting | null> {
-    return Promise.resolve(this.setting);
-  }
-}
-
 export class FixedFloor extends InvoicingFloorReader {
   constructor(private readonly at: Date | null) {
     super();
@@ -209,4 +191,15 @@ export class FixedPayerModes extends PayerBillingModesReader {
       this.payers.find((payer) => payer.payerCompanyId === payerCompanyId)?.segments ?? [],
     );
   }
+}
+
+/**
+ * Un payeur hebdomadaire depuis le 1er janvier 2026 (une clôture du mensuel) :
+ * ce qui remplace, depuis M4a, l'entité « au rythme hebdomadaire » des tests
+ * d'avant — le relevé suit le payeur, plus l'entité.
+ */
+export function weeklySince2026(payerCompanyId: string): FixedPayerModes {
+  return new FixedPayerModes([
+    { payerCompanyId, segments: [{ effectiveFrom: paris("2026-01-01"), mode: "weekly" }] },
+  ]);
 }

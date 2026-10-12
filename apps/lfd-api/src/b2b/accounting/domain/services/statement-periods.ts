@@ -13,15 +13,36 @@ import {
 /**
  * **Les périodes du relevé** (plan
  * `documentation/comptabilite/facturation/plan-rythme-de-facturation.md`,
- * §13-14, lot R5) : le relevé et le dossier de facturation suivent les
- * clôtures du rythme de l'entité, plus les mois civils.
+ * §13-14, lot R5) : le relevé et le dossier de facturation suivent des
+ * clôtures, plus les mois civils — depuis M4a (§16.9), celles du PAYEUR.
  *
  * Une période est `[clôture précédente réelle, clôture[` — la même que la
  * facture (`invoicedPeriodOf`), bascule de rythme comprise. Le mensuel au 1er
  * rend exactement les mois civils d'avant R5.
  *
- * Pur : l'instant, le rythme et la mise en service sont donnés.
+ * Pur : l'instant, la suite et la mise en service sont donnés.
  */
+
+/**
+ * Une suite de périodes : ce que le relevé demande à la suite qu'il lit (lot
+ * M4a). Celle d'un PAYEUR (`timelinePeriods` sur sa `PayerTimeline`) pour le
+ * relevé et le dossier ; le calendrier de la facture (`InvoicingCalendar`)
+ * quand aucun payeur n'est nommé. Une période est `[closureBefore(C), C[`.
+ */
+export interface StatementPeriodSequence {
+  /** La prochaine clôture, strictement après `instant`. */
+  closureAfter(instant: Date): Date;
+  /** La clôture qui ouvre la période close à `closesAt` — la précédente réelle. */
+  closureBefore(closesAt: Date): Date;
+}
+
+/** La suite des périodes d'une timeline (un payeur, un mode). */
+export function timelinePeriods(timeline: RhythmTimeline): StatementPeriodSequence {
+  return {
+    closureAfter: (instant) => closureAfter(instant, timeline),
+    closureBefore: (closesAt) => previousClosureOf(closesAt, timeline),
+  };
+}
 
 /** Au plus tant de périodes proposées au sélecteur ; au-delà, `?periodClosesAt=`. */
 export const STATEMENT_PERIODS_LISTED = 12;
@@ -34,8 +55,11 @@ export interface StatementPeriod {
 }
 
 /** La période qui contient `now`. */
-export function currentStatementPeriod(now: Date, timeline: RhythmTimeline): StatementPeriod {
-  return periodClosedBy(closureAfter(now, timeline), timeline, true);
+export function currentStatementPeriod(
+  now: Date,
+  sequence: StatementPeriodSequence,
+): StatementPeriod {
+  return periodClosedBy(sequence.closureAfter(now), sequence, true);
 }
 
 /**
@@ -47,11 +71,11 @@ export function currentStatementPeriod(now: Date, timeline: RhythmTimeline): Sta
 export function requestedStatementPeriod(
   closesAt: Date,
   now: Date,
-  timeline: RhythmTimeline,
+  sequence: StatementPeriodSequence,
 ): StatementPeriod {
-  const current = closureAfter(now, timeline);
-  const period = periodClosedBy(closesAt, timeline, closesAt.getTime() === current.getTime());
-  if (closureAfter(period.cycle.startsAt, timeline).getTime() !== closesAt.getTime()) {
+  const current = sequence.closureAfter(now);
+  const period = periodClosedBy(closesAt, sequence, closesAt.getTime() === current.getTime());
+  if (sequence.closureAfter(period.cycle.startsAt).getTime() !== closesAt.getTime()) {
     throw new NotAStatementPeriodError(closesAt);
   }
   if (closesAt.getTime() > current.getTime()) {
@@ -69,27 +93,27 @@ export function requestedStatementPeriod(
  */
 export function listedStatementPeriods(
   now: Date,
-  timeline: RhythmTimeline,
+  sequence: StatementPeriodSequence,
   floor: Date | null,
 ): readonly StatementPeriod[] {
-  const current = currentStatementPeriod(now, timeline);
+  const current = currentStatementPeriod(now, sequence);
   const periods: StatementPeriod[] = [current];
   let closesAt = current.cycle.startsAt;
   while (
     periods.length < STATEMENT_PERIODS_LISTED &&
     (floor === null || closesAt.getTime() > floor.getTime())
   ) {
-    periods.push(periodClosedBy(closesAt, timeline, false));
-    closesAt = previousClosureOf(closesAt, timeline);
+    periods.push(periodClosedBy(closesAt, sequence, false));
+    closesAt = sequence.closureBefore(closesAt);
   }
   return periods;
 }
 
 function periodClosedBy(
   closesAt: Date,
-  timeline: RhythmTimeline,
+  sequence: StatementPeriodSequence,
   inProgress: boolean,
 ): StatementPeriod {
-  const cycle = { startsAt: previousClosureOf(closesAt, timeline), closesAt };
+  const cycle = { startsAt: sequence.closureBefore(closesAt), closesAt };
   return { cycle, label: periodLabelOf(cycle), inProgress };
 }

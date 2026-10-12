@@ -9,8 +9,12 @@ import { MODE_DATES_SELECT } from "./prisma-billing-mode-dates.reader.js";
 
 /**
  * La période de l'issue `issued` de la facture par période — une seule par
- * facture (`invoice_id` unique) : sa clôture rangée, et la clôture qui la
- * précède sous le rythme de son entité (R5) — en M1, le mode mensuel.
+ * facture (`invoice_id` unique) : sa clôture et son début, RANGÉS à
+ * l'émission depuis M4a (`period_starts_at`, la période du payeur).
+ *
+ * Repli pour une issue d'avant M4a (colonne NULL ; aucune en production au
+ * 2026-10-12) : la clôture qui précède sous le mode MENSUEL de l'entité — ce
+ * que le lecteur faisait avant, exact pour un payeur resté mensuel.
  */
 @Injectable()
 export class PrismaInvoicePeriodsReader extends InvoicePeriodsReader {
@@ -27,10 +31,11 @@ export class PrismaInvoicePeriodsReader extends InvoicePeriodsReader {
       select: {
         invoiceId: true,
         periodClosesAt: true,
+        periodStartsAt: true,
         legalEntity: {
           select: {
-            // ⚠️ M1 : la timeline du mode MENSUEL (adaptateur de transition,
-            // `BillingRhythmReader`) — M4 lira la période du payeur.
+            // Le repli seulement — lu pour toute ligne, ignoré dès qu'elle
+            // porte son début.
             billingModeDates: {
               where: { mode: "monthly", cancelledAt: null },
               select: MODE_DATES_SELECT,
@@ -45,10 +50,9 @@ export class PrismaInvoicePeriodsReader extends InvoicePeriodsReader {
           return [];
         }
         const closesAt = row.periodClosesAt;
-        const startsAt = previousClosureOf(
-          closesAt,
-          modeTimelinesOf(row.legalEntity.billingModeDates).monthly,
-        );
+        const startsAt =
+          row.periodStartsAt ??
+          previousClosureOf(closesAt, modeTimelinesOf(row.legalEntity.billingModeDates).monthly);
         return [[row.invoiceId, { startsAt, closesAt }] as const];
       }),
     );

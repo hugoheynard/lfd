@@ -1,90 +1,98 @@
 import type { StatementCycleView } from "@lfd/contracts";
 
 import type { Clock } from "../../../platform/time/clock.js";
-import { LegalEntityNotFoundError } from "../domain/errors/accounting-errors.js";
 import {
   InvalidStatementPeriodError,
   SeveralStatementIssuersError,
 } from "../domain/errors/statement-errors.js";
-import type { BillingRhythmReader } from "../domain/ports/billing-rhythm.reader.js";
 import type { InvoiceIssuersReader } from "../domain/ports/invoice-issuers.reader.js";
-import type { RhythmTimeline } from "../domain/services/invoicing-closures.js";
+import { sameBillingDates } from "../domain/services/entity-billing-dates.js";
+import { InvoicingCalendar } from "../domain/services/invoicing-calendar.js";
+import { ModeDatesTimeline } from "../domain/services/mode-dates-timeline.js";
 import {
   currentStatementPeriod,
   requestedStatementPeriod,
+  timelinePeriods,
   type StatementPeriod,
+  type StatementPeriodSequence,
 } from "../domain/services/statement-periods.js";
-import { ModeDatesTimeline } from "../domain/services/mode-dates-timeline.js";
+import { readBillingDates, type InvoicingCalendarReaders } from "./invoicing-calendar-support.js";
 
-/** Ce qu'il faut pour savoir quel rythme suit le relevé. */
-export interface StatementRhythmDeps {
+/** Ce qu'il faut pour savoir quelles périodes suit le relevé. */
+export interface StatementRhythmDeps extends InvoicingCalendarReaders {
   readonly issuers: InvoiceIssuersReader;
-  readonly rhythms: BillingRhythmReader;
 }
 
 /**
- * **Le rythme que suit le relevé** : celui de l'entité émettrice en service
- * — ⚠️ en M1, la timeline de son MODE MENSUEL (`BillingRhythmReader`,
- * adaptateur de transition ; M4 passera aux périodes du payeur)
- * (plan `plan-rythme-de-facturation.md`, §14 ; Q4 de `lot-de-prelevement-fige.md` :
- * une seule encaisse). Le relevé, le dossier et le cycle courant ne nomment
- * aucune entité — c'est celle en service qui fait foi, comme pour le mandat
- * (`soleIssuer`) et la facture (`soleSeller`).
+ * **Le calendrier que suit le relevé** : celui de l'entité émettrice en
+ * service (plan `plan-rythme-de-facturation.md`, §16.9, lot M4a ; Q4 de
+ * `lot-de-prelevement-fige.md` : une seule encaisse). Le relevé, le dossier et
+ * le cycle courant ne nomment aucune entité — c'est celle en service qui fait
+ * foi, comme pour le mandat (`soleIssuer`) et la facture (`soleSeller`).
  *
- * - Aucune entité en service : le rythme de toute entité qui n'a rien réglé
- *   (mensuel au 1er). Rien n'est alors ni facturé ni prélevé, et le relevé
- *   reste ce qu'il était avant R5 — une lecture des bons par mois civil.
- * - Plusieurs, toutes au même réglage : ce réglage — rien n'est choisi, et le
- *   dossier peut encore dire « plusieurs entités » comme un manque.
- * - Plusieurs, à des réglages différents : refusé, plutôt que d'en choisir un.
+ * - Aucune entité en service : le calendrier d'une entité où rien n'est réglé
+ *   (mensuel au 1er). Rien n'est alors ni facturé ni prélevé.
+ * - Plusieurs, toutes aux mêmes dates : ces dates — rien n'est choisi.
+ * - Plusieurs, à des dates différentes : refusé, plutôt que d'en choisir une.
  *
- * @throws {SeveralStatementIssuersError} plusieurs entités en service, à des rythmes différents.
- * @throws {LegalEntityNotFoundError} une entité a disparu entre deux lectures.
+ * @throws {SeveralStatementIssuersError} plusieurs entités en service, à des dates différentes.
  */
-export async function statementTimeline(deps: StatementRhythmDeps): Promise<RhythmTimeline> {
+export async function statementCalendar(deps: StatementRhythmDeps): Promise<InvoicingCalendar> {
   const active = await deps.issuers.activeIssuers();
-  const timelines = await Promise.all(
-    active.map(async ({ legalEntityId }) => {
-      const timeline = await deps.rhythms.timelineOf(legalEntityId);
-      if (timeline === null) {
-        throw new LegalEntityNotFoundError(legalEntityId);
-      }
-      return timeline;
-    }),
+  const dates = await Promise.all(
+    active.map(({ legalEntityId }) => readBillingDates(deps, legalEntityId)),
   );
-  const [first, ...others] = timelines;
+  const [first, ...others] = dates;
   if (first === undefined) {
-    return ModeDatesTimeline.defaultOf("monthly");
+    return InvoicingCalendar.following(ModeDatesTimeline.defaultOf("monthly"));
   }
-  if (others.some((other) => !first.equals(other))) {
-    throw new SeveralStatementIssuersError(timelines.length);
+  if (others.some((other) => !sameBillingDates(first, other))) {
+    throw new SeveralStatementIssuersError(dates.length);
   }
-  return first;
+  return InvoicingCalendar.of(first.modes, first.payers);
 }
 
 /**
- * La période demandée (`periodClosesAt`, ISO), ou celle en cours si rien
- * n'est demandé.
+ * **Les périodes d'un relevé** : celles du payeur nommé — sa `PayerTimeline`,
+ * ou le mensuel s'il n'a rien choisi — ou, sans payeur, celles du calendrier
+ * de l'entité (une période y va d'une clôture de n'importe quel payeur à la
+ * suivante). Un site est lu comme payeur : il n'a de suite propre que s'il en
+ * a choisi une quand il réglait seul.
+ *
+ * @throws {SeveralStatementIssuersError} plusieurs entités en service, à des dates différentes.
+ */
+export async function statementPeriodsOf(
+  deps: StatementRhythmDeps,
+  payerCompanyId: string | null,
+): Promise<StatementPeriodSequence> {
+  const calendar = await statementCalendar(deps);
+  return payerCompanyId === null ? calendar : timelinePeriods(calendar.timelineOf(payerCompanyId));
+}
+
+/**
+ * La période demandée (`periodClosesAt`, ISO) du payeur, ou celle en cours
+ * si rien n'est demandé.
  *
  * @throws {InvalidStatementPeriodError} la chaîne n'est pas un instant.
- * @throws {NotAStatementPeriodError} l'instant n'est pas une clôture de l'entité.
+ * @throws {NotAStatementPeriodError} l'instant n'est pas une clôture du payeur.
  * @throws {FutureStatementPeriodError} la période n'a pas commencé.
  * @throws {SeveralStatementIssuersError} plusieurs entités sont en service.
  */
 export async function resolveStatementPeriod(
   deps: StatementRhythmDeps & { readonly clock: Clock },
+  payerCompanyId: string,
   requested: string | undefined,
 ): Promise<StatementPeriod> {
   const now = deps.clock.now();
-  const timeline = await statementTimeline(deps);
+  const periods = await statementPeriodsOf(deps, payerCompanyId);
   if (requested === undefined) {
-    return currentStatementPeriod(now, timeline);
+    return currentStatementPeriod(now, periods);
   }
   const closesAt = new Date(requested);
   if (Number.isNaN(closesAt.getTime())) {
     throw new InvalidStatementPeriodError(requested);
   }
-  return requestedStatementPeriod(closesAt, now, timeline);
+  return requestedStatementPeriod(closesAt, now, periods);
 }
 
 /** La période telle que le contrat la porte — partagée par le relevé, le dossier et le sélecteur. */

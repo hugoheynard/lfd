@@ -38,7 +38,6 @@ import {
   lastDayOf,
   parsePeriodClosure,
   periodLabelOf,
-  periodMonthOf,
 } from "../../domain/services/invoicing-closures.js";
 import {
   ordersByPayer,
@@ -257,7 +256,7 @@ export class IssueMonthlyInvoicesHandler implements ICommandHandler<
       await this.events.publishTraced(
         new InvoiceSignalledEvent(
           { id: key.payerCompanyId, name: key.payerName },
-          periodMonthOf(key.periodClosesAt),
+          { startsAt: key.periodStartsAt, closesAt: key.periodClosesAt },
           message,
           key.at,
         ),

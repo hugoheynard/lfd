@@ -9,13 +9,16 @@ import {
   listedStatementPeriods,
   requestedStatementPeriod,
   STATEMENT_PERIODS_LISTED,
+  timelinePeriods,
 } from "../statement-periods.js";
 
 /** Lundi 12 octobre 2026, 11h à Paris. Comparé aux seules clôtures calculées. */
 const NOW = new Date("2026-10-12T09:00:00.000Z");
-const MONTHLY = BillingRhythmSetting.initial();
-const WEEKLY = BillingRhythmSetting.of(BillingRhythm.weekly(1), null);
-const SEMIMONTHLY = BillingRhythmSetting.of(BillingRhythm.semimonthly(1, 16), null);
+const MONTHLY = timelinePeriods(BillingRhythmSetting.initial());
+const WEEKLY = timelinePeriods(BillingRhythmSetting.of(BillingRhythm.weekly(1), null));
+const SEMIMONTHLY = timelinePeriods(
+  BillingRhythmSetting.of(BillingRhythm.semimonthly(1, 16), null),
+);
 
 describe("currentStatementPeriod", () => {
   it("rend la période qui contient l'instant, en cours, avec son libellé", () => {

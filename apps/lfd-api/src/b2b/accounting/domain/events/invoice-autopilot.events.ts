@@ -1,8 +1,27 @@
 import type { JournalFact, JournaledEvent } from "../../../../platform/journal/journal-fact.js";
 import type { SettledInvoiceAutopilotOutcome } from "../ports/invoice-autopilot-runs.js";
+import type { BillingCycle } from "../services/billing-cycle.js";
+import { periodLabelOf, periodMonthOf } from "../services/invoicing-closures.js";
 import { INVOICE_FACT_TYPES } from "./accounting-facts.js";
 
-/** L'entité émettrice dont le passage a tenté le mois, avec son nom du moment. */
+/**
+ * La période d'un fait de la facture (M4a) : `month` (`AAAA-MM`, gardé pour
+ * les lecteurs d'avant), la clôture et le libellé — « du 5 au 11 octobre
+ * 2026 » pour un payeur hebdomadaire, que le mois ne savait pas dire.
+ */
+function periodPayload(period: BillingCycle): {
+  readonly month: string;
+  readonly periodClosesAt: string;
+  readonly periodLabel: string;
+} {
+  return {
+    month: periodMonthOf(period.closesAt),
+    periodClosesAt: period.closesAt.toISOString(),
+    periodLabel: periodLabelOf(period),
+  };
+}
+
+/** L'entité émettrice dont le passage a tenté la clôture, avec son nom du moment. */
 export interface InvoiceAutopilotEntity {
   readonly id: string;
   readonly name: string;
@@ -25,7 +44,8 @@ export interface InvoiceAutopilotIssue {
 export class InvoiceAutopilotRanEvent implements JournaledEvent {
   constructor(
     readonly entity: InvoiceAutopilotEntity,
-    readonly month: string,
+    /** La période affichée de la clôture tentée — la plus longue qui s'y clôt. */
+    readonly period: BillingCycle,
     readonly issue: InvoiceAutopilotIssue,
     readonly at: Date,
   ) {}
@@ -38,7 +58,7 @@ export class InvoiceAutopilotRanEvent implements JournaledEvent {
       occurredAt: this.at,
       payload: {
         subjectLabel: this.entity.name,
-        month: this.month,
+        ...periodPayload(this.period),
         outcome: this.issue.outcome,
         issuedCount: this.issue.issuedCount,
         signalledCount: this.issue.signalledCount,
@@ -64,7 +84,8 @@ export interface SignalledPayer {
 export class InvoiceSignalledEvent implements JournaledEvent {
   constructor(
     readonly payer: SignalledPayer,
-    readonly month: string,
+    /** La période DU PAYEUR, celle que sa facture aurait portée. */
+    readonly period: BillingCycle,
     readonly reason: string,
     readonly at: Date,
   ) {}
@@ -75,7 +96,11 @@ export class InvoiceSignalledEvent implements JournaledEvent {
       subjectType: "company",
       subjectId: this.payer.id,
       occurredAt: this.at,
-      payload: { subjectLabel: this.payer.name, month: this.month, reason: this.reason },
+      payload: {
+        subjectLabel: this.payer.name,
+        ...periodPayload(this.period),
+        reason: this.reason,
+      },
     };
   }
 }

@@ -17,16 +17,24 @@ import {
 } from "../../../domain/ports/statement-billing.reader.js";
 import type { BillingCycle } from "../../../domain/services/billing-cycle.js";
 import { SELLER_FACTS } from "../../../domain/entities/__tests__/invoice-fixtures.js";
-import { BillingRhythmReader } from "../../../domain/ports/billing-rhythm.reader.js";
+import {
+  PayerBillingModesReader,
+  type PayerModeSegments,
+} from "../../../domain/ports/payer-billing-modes.reader.js";
+import type { PayerModeSegment } from "../../../domain/services/payer-timeline.js";
 import { STATEMENT_PERIODS_LISTED } from "../../../domain/services/statement-periods.js";
-import { BillingRhythm } from "../../../domain/value-objects/billing-rhythm.js";
-import { BillingRhythmSetting } from "../../../domain/value-objects/billing-rhythm-setting.js";
 import {
   FixedFloor,
   FixedIssuers,
-  FixedRhythms,
+  FixedModeDates,
+  FixedPayerModes,
+  weeklySince2026,
 } from "../../commands/__tests__/monthly-invoice-doubles.js";
-import { ExportCycleStatementQuery, GetCycleStatementQuery } from "../cycle-statement-queries.js";
+import {
+  ExportCycleStatementQuery,
+  GetCycleStatementQuery,
+  ListStatementCyclesQuery,
+} from "../cycle-statement-queries.js";
 import { ExportCycleStatementHandler } from "../export-cycle-statement.handler.js";
 import { GetCycleStatementHandler } from "../get-cycle-statement.handler.js";
 import { ListStatementCyclesHandler } from "../list-statement-cycles.handler.js";
@@ -49,18 +57,24 @@ const issuers = (count = 1): FixedIssuers =>
     })),
   );
 
-/** Un réglage par entité. */
-class RhythmsByEntity extends BillingRhythmReader {
-  constructor(private readonly settings: ReadonlyMap<string, BillingRhythmSetting>) {
+/** Les payeurs de chaque entité ; une entité absente n'en a aucun. */
+class PayerModesByEntity extends PayerBillingModesReader {
+  constructor(private readonly byEntity: ReadonlyMap<string, readonly PayerModeSegments[]>) {
     super();
   }
-  timelineOf(legalEntityId: string): Promise<BillingRhythmSetting | null> {
-    return Promise.resolve(this.settings.get(legalEntityId) ?? null);
+  segmentsOf(legalEntityId: string): Promise<readonly PayerModeSegments[]> {
+    return Promise.resolve(this.byEntity.get(legalEntityId) ?? []);
+  }
+  segmentsOfPayer(legalEntityId: string, payerId: string): Promise<readonly PayerModeSegment[]> {
+    const payers = this.byEntity.get(legalEntityId) ?? [];
+    return Promise.resolve(
+      payers.find((payer) => payer.payerCompanyId === payerId)?.segments ?? [],
+    );
   }
 }
 
-/** Chaque lundi : la semaine du 5 octobre 2026 se clôt le lundi 12. */
-const WEEKLY = new FixedRhythms(BillingRhythmSetting.of(BillingRhythm.weekly(1), null));
+/** c1 paie chaque lundi : sa semaine du 5 octobre 2026 se clôt le lundi 12. */
+const WEEKLY = weeklySince2026("c1");
 
 /** Retient la fenêtre demandée : c'est elle que le handler doit calculer. */
 class RecordingCycleOrders extends CycleOrdersReader {
@@ -114,7 +128,8 @@ function getHandler(
     billing,
     new FixedClock(NOW),
     issuers(),
-    new FixedRhythms(),
+    new FixedModeDates(),
+    new FixedPayerModes(),
   );
 }
 
@@ -137,20 +152,23 @@ const ORDER: CycleOrder = {
 };
 
 const listHandler = (
-  rhythms: FixedRhythms,
+  payers: PayerBillingModesReader,
   floor: Date | null,
   issuerCount = 1,
 ): ListStatementCyclesHandler =>
   new ListStatementCyclesHandler(
     new FixedClock(NOW),
     issuers(issuerCount),
-    rhythms,
+    new FixedModeDates(),
+    payers,
     new FixedFloor(floor),
   );
 
+const ofC1 = new ListStatementCyclesQuery("c1");
+
 describe("ListStatementCyclesHandler", () => {
   it("au mensuel au 1er sans mise en service : douze mois civils, le mois en cours d'abord et lui seul « en cours »", async () => {
-    const { cycles } = await listHandler(new FixedRhythms(), null).execute();
+    const { cycles } = await listHandler(new FixedPayerModes(), null).execute(ofC1);
     expect(cycles).toHaveLength(STATEMENT_PERIODS_LISTED);
     expect(cycles[0]).toEqual({
       periodClosesAt: "2026-10-31T23:00:00.000Z",
@@ -162,54 +180,59 @@ describe("ListStatementCyclesHandler", () => {
     expect(cycles.at(-1)?.periodStartsAt).toBe("2025-10-31T23:00:00.000Z");
   });
 
-  it("au rythme hebdomadaire de l'entité : des semaines, pas des mois", async () => {
-    const { cycles } = await listHandler(WEEKLY, null).execute();
+  it("un payeur hebdomadaire : SES semaines, pas des mois", async () => {
+    const { cycles } = await listHandler(WEEKLY, null).execute(ofC1);
     expect(cycles.slice(0, 2).map((cycle) => cycle.periodLabel)).toEqual([
       "du 5 au 11 octobre 2026",
       "du 28 septembre au 4 octobre 2026",
     ]);
   });
 
+  it("un autre payeur de la même entité, qui n'a rien choisi : des mois (M4a)", async () => {
+    const { cycles } = await listHandler(WEEKLY, null).execute(new ListStatementCyclesQuery("c2"));
+    expect(cycles[0]?.periodLabel).toBe("du 1er au 31 octobre 2026");
+  });
+
+  it("sans payeur : le calendrier de l'entité — la semaine d'un payeur coupe le mois", async () => {
+    const { cycles } = await listHandler(WEEKLY, null).execute(new ListStatementCyclesQuery());
+    expect(cycles.slice(0, 3).map((cycle) => cycle.periodLabel)).toEqual([
+      "du 5 au 11 octobre 2026",
+      "du 1er au 4 octobre 2026",
+      "du 28 au 30 septembre 2026",
+    ]);
+  });
+
   it("ne propose aucune période close avant la mise en service, mais toujours celle en cours", async () => {
     const floor = new Date("2026-09-27T22:00:00.000Z"); // lundi 28 septembre, 00h00
-    const weekly = await listHandler(WEEKLY, floor).execute();
+    const weekly = await listHandler(WEEKLY, floor).execute(ofC1);
     expect(weekly.cycles.map((cycle) => cycle.periodClosesAt)).toEqual([
       "2026-10-11T22:00:00.000Z",
       "2026-10-04T22:00:00.000Z",
     ]);
 
     const future = await listHandler(
-      new FixedRhythms(),
+      new FixedPayerModes(),
       new Date("2026-12-01T00:00:00Z"),
-    ).execute();
+    ).execute(ofC1);
     expect(future.cycles).toHaveLength(1);
     expect(future.cycles[0]?.inProgress).toBe(true);
   });
 
-  it("plusieurs entités au même rythme : ce rythme, sans en choisir une", async () => {
-    const { cycles } = await listHandler(WEEKLY, null, 2).execute();
+  it("plusieurs entités aux mêmes dates : ces dates, sans en choisir une", async () => {
+    const { cycles } = await listHandler(WEEKLY, null, 2).execute(ofC1);
     expect(cycles[0]?.periodLabel).toBe("du 5 au 11 octobre 2026");
   });
 
-  it("refuse de choisir un rythme quand plusieurs entités en service n'ont pas le même", async () => {
-    const rhythms = new RhythmsByEntity(
-      new Map([
-        ["le_0", BillingRhythmSetting.initial()],
-        ["le_1", BillingRhythmSetting.of(BillingRhythm.weekly(1), null)],
-      ]),
+  it("refuse de choisir quand plusieurs entités en service n'ont pas les mêmes dates", async () => {
+    const weekly = await weeklySince2026("c1").segmentsOf();
+    const payers = new PayerModesByEntity(new Map([["le_1", weekly]]));
+    await expect(listHandler(payers, null, 2).execute(ofC1)).rejects.toBeInstanceOf(
+      SeveralStatementIssuersError,
     );
-    await expect(
-      new ListStatementCyclesHandler(
-        new FixedClock(NOW),
-        issuers(2),
-        rhythms,
-        new FixedFloor(null),
-      ).execute(),
-    ).rejects.toBeInstanceOf(SeveralStatementIssuersError);
   });
 
-  it("sans entité en service, suit le rythme par défaut (mensuel au 1er)", async () => {
-    const { cycles } = await listHandler(WEEKLY, null, 0).execute();
+  it("sans entité en service, suit le mensuel au 1er", async () => {
+    const { cycles } = await listHandler(WEEKLY, null, 0).execute(ofC1);
     expect(cycles[0]?.periodLabel).toBe("du 1er au 31 octobre 2026");
   });
 });
@@ -244,13 +267,14 @@ describe("GetCycleStatementHandler", () => {
     expect(reader.asked[0]?.cycle.closesAt.toISOString()).toBe(SEPTEMBER_CLOSES_AT);
   });
 
-  it("lit la semaine demandée au rythme hebdomadaire de l'entité", async () => {
+  it("lit la semaine demandée d'un payeur hebdomadaire", async () => {
     const reader = new RecordingCycleOrders("Boulangerie du Port", []);
     const handler = new GetCycleStatementHandler(
       reader,
       new FixedBilling(),
       new FixedClock(NOW),
       issuers(),
+      new FixedModeDates(),
       WEEKLY,
     );
     const view = await handler.execute(
@@ -332,7 +356,8 @@ describe("ExportCycleStatementHandler", () => {
       new FixedBilling(),
       new FixedClock(NOW),
       issuers(),
-      new FixedRhythms(),
+      new FixedModeDates(),
+      new FixedPayerModes(),
     ).execute(new ExportCycleStatementQuery("c1", SEPTEMBER_CLOSES_AT));
     expect(file.fileName).toBe("RELEVE-PROVISOIRE-Boulangerie du Port-20260930.csv");
     expect(file.csv).toContain('"CMD-1"');

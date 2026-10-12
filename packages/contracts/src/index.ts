@@ -260,7 +260,7 @@ export type {
   BillingStatementStatusView,
   BillingStatementView,
 } from "./billing-statement.js";
-export { statementPeriodSchema } from "./cycle-statement.js";
+export { statementPayerSchema, statementPeriodSchema } from "./cycle-statement.js";
 export type {
   CycleStatementGroupView,
   CycleStatementOrderView,

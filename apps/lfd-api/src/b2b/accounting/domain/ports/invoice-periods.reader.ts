@@ -6,11 +6,10 @@ import type { BillingCycle } from "../services/billing-cycle.js";
  * (`invoice_monthly_outcome.period_closes_at`). Une pièce absente de la carte
  * n'est pas une facture de période (un avoir, une facture carte).
  *
- * La borne basse est la clôture précédente réelle sous le rythme de l'entité
- * (`previousClosureOf`). ⚠️ Le rythme n'a pas d'historique (§12 du plan
- * `plan-rythme-de-facturation.md`) : elle est relue sous le réglage du jour,
- * exacte tant que l'entité n'a pas changé deux fois de rythme depuis la pièce.
- * La clôture, elle, est rangée — exacte toujours.
+ * Les deux bornes sont rangées sur l'issue depuis M4a (plan
+ * `plan-rythme-de-facturation.md`, §16.9) : la borne basse est la clôture
+ * précédente réelle DU PAYEUR au jour de l'émission. Une issue d'avant (borne
+ * basse absente) la recalcule sous le mode mensuel de l'entité.
  *
  * Port à part d'`InvoiceReader` (ISP) : seules les vues l'appellent.
  */

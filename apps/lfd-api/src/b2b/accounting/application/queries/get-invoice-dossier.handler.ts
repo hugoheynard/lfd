@@ -8,9 +8,10 @@ import { QueryHandler, type IQueryHandler } from "@nestjs/cqrs";
 import { OrderDeliveryHistoryReader } from "../../../../delivery/channels/commerce/index.js";
 import { OrderHandoverHistoryReader } from "../../../../handover/channels/commerce/index.js";
 import { Clock } from "../../../../platform/time/clock.js";
-import { BillingRhythmReader } from "../../domain/ports/billing-rhythm.reader.js";
+import { BillingModeDatesReader } from "../../domain/ports/billing-mode-dates.reader.js";
 import { InvoiceDossierReader } from "../../domain/ports/invoice-dossier.reader.js";
 import { InvoiceIssuersReader } from "../../domain/ports/invoice-issuers.reader.js";
+import { PayerBillingModesReader } from "../../domain/ports/payer-billing-modes.reader.js";
 import { StatementBuyerReader } from "../../domain/ports/statement-buyer.reader.js";
 import {
   payerIssuanceBlockers,
@@ -43,7 +44,8 @@ export class GetInvoiceDossierHandler implements IQueryHandler<
     private readonly clock: Clock,
     private readonly issuers: InvoiceIssuersReader,
     private readonly buyers: StatementBuyerReader,
-    private readonly rhythms: BillingRhythmReader,
+    private readonly modeDates: BillingModeDatesReader,
+    private readonly payerModes: PayerBillingModesReader,
   ) {}
 
   async execute(query: GetInvoiceDossierQuery): Promise<InvoiceDossierView> {
@@ -55,7 +57,8 @@ export class GetInvoiceDossierHandler implements IQueryHandler<
         deliveries: this.deliveries,
         clock: this.clock,
         issuers: this.issuers,
-        rhythms: this.rhythms,
+        modeDates: this.modeDates,
+        payerModes: this.payerModes,
       },
       query.companyId,
       query.periodClosesAt,
