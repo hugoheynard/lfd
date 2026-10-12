@@ -129,8 +129,13 @@ export interface HandoverTab {
  * ils portent sur le point ouvert, et non sur la journée. Les laisser à la
  * journée aurait gardé, en chiffres, la vue qu'on venait de retirer en onglets.
  */
-export function pickupTabs(entries: readonly HandoverQueueEntryView[]): readonly HandoverTab[] {
-  const counts = new Map<string, number>();
+export function pickupTabs(
+  entries: readonly HandoverQueueEntryView[],
+  places: readonly string[] = [],
+): readonly HandoverTab[] {
+  // Tous les points connus, même sans commande (Hugo, 2026-10-12) : le
+  // réassort se fait par point, et un point vide doit rester choisissable.
+  const counts = new Map<string, number>(places.map((place) => [place, 0]));
   let withoutPickup = 0;
   for (const entry of entries) {
     const label = entry.pickupLabel;
@@ -158,8 +163,7 @@ export function entriesForTab(
   if (key === NO_PICKUP) {
     return entries.filter((entry) => entry.pickupLabel === null || entry.pickupLabel.trim() === '');
   }
-  const known = entries.some((entry) => entry.pickupLabel === key);
-  return known ? entries.filter((entry) => entry.pickupLabel === key) : entries;
+  return key === '' ? entries : entries.filter((entry) => entry.pickupLabel === key);
 }
 
 /**

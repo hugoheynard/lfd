@@ -47,12 +47,14 @@
               La file n'a pas pu être relue — elle peut ne plus être à jour.
             </fold-callout>
           }
-          @if (store.total() === 0) {
+          <!-- Par POINT : un point sans commande a désormais son onglet. -->
+          @if (store.rows().length === 0) {
             <fold-empty-state
-              icon="package-check"
               title="Personne n'attend ce jour-là"
-              subtitle="Aucune commande n'est attendue au comptoir à cette date."
-            />
+              subtitle="Aucune commande n'est attendue à ce point de retrait à cette date."
+            >
+              <fold-icon empty-icon name="package-check" />
+            </fold-empty-state>
           } @else {
             <!-- ⚠️ Le panneau veut l'INSTANCE des onglets, qui vivent dans la
                bande de tête — un autre composant. La bande la publie au store ;

@@ -1,3 +1,4 @@
+import { PickupAddressesService } from '../../b2b/reglages/pickup-addresses.service';
 import { Component } from '@angular/core';
 import { type ComponentFixture, TestBed } from '@angular/core/testing';
 import { describe, expect, it, vi } from 'vitest';
@@ -134,6 +135,7 @@ async function render(api: FakeQueue): Promise<ComponentFixture<RetraitHost>> {
       { provide: HandoverQueueService, useValue: api },
       { provide: AdminOrdersService, useValue: new FakeOrders() },
       { provide: DayVersionWatcher, useValue: fakeWatcher },
+      { provide: PickupAddressesService, useValue: { list: () => Promise.resolve([]) } },
     ],
   });
   const fixture: ComponentFixture<RetraitHost> = TestBed.createComponent(RetraitHost);

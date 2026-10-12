@@ -1,18 +1,16 @@
-<!-- Une rangée : on va à une vue à gauche, et le retrait dit où il en est à
-     droite. Si la largeur manque, la part du retrait passe dessous, EN BLOC,
-     dans la même bande. -->
+<!-- Deux rangées (Hugo, 2026-10-12) : d'abord où l'on est — point de retrait,
+     compteurs, journée —, puis les vues du comptoir dessous, en pleine largeur. -->
 <header class="masthead" foldSurface="chrome">
-  <fold-view-nav
-    class="masthead-views"
-    [items]="views()"
-    direction="horizontal"
-    size="comfortable"
-    justify="start"
-    activeStyle="fill"
-    background="transparent"
-  />
-
   @if (holdsCounter()) {
     <app-handover-masthead />
   }
+
+  <fold-view-nav
+    [items]="views()"
+    direction="horizontal"
+    size="comfortable"
+    justify="stretch"
+    activeStyle="fill"
+    background="transparent"
+  />
 </header>

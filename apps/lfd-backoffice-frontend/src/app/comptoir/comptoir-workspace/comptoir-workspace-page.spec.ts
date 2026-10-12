@@ -1,3 +1,4 @@
+import { PickupAddressesService } from '../../b2b/reglages/pickup-addresses.service';
 import { Component } from '@angular/core';
 import { TestBed } from '@angular/core/testing';
 import { Router, provideRouter } from '@angular/router';
@@ -86,6 +87,7 @@ async function open(
       { provide: CustomerRequestsService, useValue: {} },
       { provide: HandoverQueueService, useValue: queue },
       { provide: DayVersionWatcher, useValue: { watch: () => undefined } },
+      { provide: PickupAddressesService, useValue: { list: () => Promise.resolve([]) } },
     ],
   });
   const harness = await RouterTestingHarness.create();

@@ -11,6 +11,7 @@ import { addDays, type HandoverQueueEntryView } from '@lfd/contracts';
 import type { FoldTabItem, FoldTabsContext } from 'fold-ng';
 
 import { DayVersionWatcher } from '../shared/day-version/day-version-watcher';
+import { PickupAddressesService } from '../b2b/reglages/pickup-addresses.service';
 import { HandoverQueueService } from './handover-queue.service';
 import {
   atTheCounter,
@@ -88,6 +89,10 @@ const TICK_MS = 30_000;
 @Injectable()
 export class HandoverQueueStore {
   private readonly api = inject(HandoverQueueService);
+  private readonly pickupAddresses = inject(PickupAddressesService);
+
+  /** Les noms de TOUS les points de retrait, pour qu'un point sans commande ait son onglet. */
+  private readonly places = signal<readonly string[]>([]);
 
   readonly state = signal<HandoverQueueLoadState>('loading');
 
@@ -140,7 +145,7 @@ export class HandoverQueueStore {
   readonly dayLabel = computed(() => DAY_LABEL.format(new Date(`${this.day()}T00:00:00`)));
 
   readonly tabs = computed<readonly FoldTabItem[]>(() =>
-    pickupTabs(this.entries()).map((tab) => ({
+    pickupTabs(this.entries(), this.places()).map((tab) => ({
       key: tab.key,
       label: tab.label,
       badge: tab.count,
@@ -201,6 +206,11 @@ export class HandoverQueueStore {
   readonly tabBar = computed<FoldTabsContext | null>(() => this.tabBarSource()?.() ?? null);
 
   constructor() {
+    // Un échec laisse les onglets dérivés de la file, comme avant.
+    this.pickupAddresses
+      .list()
+      .then((list) => this.places.set(list.map((place) => place.label)))
+      .catch(() => undefined);
     effect(() => {
       void this.load(this.day());
     });

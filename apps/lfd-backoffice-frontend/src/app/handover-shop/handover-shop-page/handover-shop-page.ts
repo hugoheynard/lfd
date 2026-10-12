@@ -19,6 +19,7 @@ import {
   FoldPageLayoutComponent,
   FoldPanelHostService,
   FoldTabPanelComponent,
+  FoldIconComponent,
 } from 'fold-ng';
 
 import { narrowViewport } from '../../shared/viewport/narrow-viewport';
@@ -62,6 +63,7 @@ import { AdminOrdersService } from '../../commandes/orders.service';
   selector: 'app-handover-shop-page',
   changeDetection: ChangeDetectionStrategy.OnPush,
   imports: [
+    FoldIconComponent,
     FoldButtonComponent,
     FoldCalloutComponent,
     FoldElementTitleComponent,

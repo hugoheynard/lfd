@@ -7,9 +7,8 @@
    poste de comptoir la hauteur est ce qui manque. */
 .masthead {
   display: flex;
-  flex-wrap: wrap;
-  align-items: center;
-  gap: var(--fold-space-sm) var(--fold-space-lg);
+  flex-direction: column;
+  gap: var(--fold-space-sm);
   padding: var(--fold-space-sm) var(--fold-page-gutter);
   font-size: var(--fold-text-base);
 
@@ -21,11 +20,4 @@
   // 2026-10-12) : un masthead sous la barre, pas son prolongement. Dérivée et
   // non choisie, elle suit le thème ; l'encre claire du chrome reste lisible.
   background: oklch(from var(--fold-color-bg-header) calc(l + 0.08) c h);
-}
-
-/* Les onglets du comptoir ne s'étirent pas : ils partagent leur rangée avec
-   le retrait, et `fold-view-nav` se poserait sinon en pleine largeur. */
-.masthead-views {
-  flex: 0 0 auto;
-  width: auto;
 }

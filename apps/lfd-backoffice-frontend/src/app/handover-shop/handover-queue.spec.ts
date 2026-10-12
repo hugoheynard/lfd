@@ -75,6 +75,18 @@ function entry(over: Partial<HandoverQueueEntryView> = {}): HandoverQueueEntryVi
 }
 
 describe('pickupTabs', () => {
+  /** Régression : Val Village sans commande n'avait pas d'onglet, et le réassort en dépend (2026-10-12). */
+  it('donne un onglet à chaque point connu, même sans commande, et sa file est vide', () => {
+    const entries = [entry({ orderId: 'a', pickupLabel: 'Laboratoire' })];
+    const tabs = pickupTabs(entries, ['Laboratoire', 'Val Village']);
+
+    expect(tabs.map((tab) => [tab.key, tab.count])).toEqual([
+      ['Laboratoire', 1],
+      ['Val Village', 0],
+    ]);
+    expect(entriesForTab(entries, 'Val Village')).toEqual([]);
+  });
+
   it('dérive un onglet par point présent, compté, sans nom écrit en dur', () => {
     const tabs = pickupTabs([
       entry({ orderId: 'a', pickupLabel: 'Val Thorens' }),

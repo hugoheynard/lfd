@@ -1,6 +1,6 @@
 <!-- Les onglets sont DÉRIVÉS des points de retrait reçus : aucun nom n'est
      écrit ici, et un comptoir ouvert demain apparaît seul. -->
-@if (store.state() === 'ready' && store.total() > 0) {
+@if (store.state() === 'ready' && store.tabs().length > 0) {
   <fold-tabs
     direction="horizontal"
     size="comfortable"
