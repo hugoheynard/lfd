@@ -638,7 +638,7 @@ export interface ClientCopy {
      * « Je règle depuis « Mes commandes » » (jusqu'au 2026-09-26) : deux
      * promesses de délai pour un geste qui ne marquait rien. Rien dans « Mes
      * commandes » ne menait au règlement. Depuis le lot 8 du plan
-     * `documentation/order/plan-abandon-du-reglement.md`, elle TENTE
+     * `documentation/order/architecture-abandon-du-reglement.md`, elle TENTE
      * `POST /orders/:id/abandon` et navigue quoi qu'il arrive.
      */
     readonly abandon: string;

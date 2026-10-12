@@ -301,7 +301,7 @@ export const ORDERS_PRODUCTION_FACTS = {
   ),
   /**
    * Le client a **abandonné le règlement** de sa commande en quittant l'écran
-   * de carte (plan `documentation/order/plan-abandon-du-reglement.md`, D1).
+   * de carte (plan `documentation/order/architecture-abandon-du-reglement.md`, D1).
    * Le sujet est ce client, seul à pouvoir le faire (Q2). `cancelled` : la
    * commande d'un particulier est annulée ; `failed` : celle d'un pro garde
    * son statut, son seul règlement est tombé (D4).

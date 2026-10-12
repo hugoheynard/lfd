@@ -17,7 +17,7 @@ import { AuthFacade } from '../auth/auth.facade';
  *   « annulée » serait faux ;
  * - `unsettled` : rien n'a été écrit — Stripe injoignable, réseau, refus de
  *   l'auteur, visiteur sans compte. La commande reste en attente, et la clôture
- *   de sa journée la balaiera (plan `plan-abandon-du-reglement.md`, §5).
+ *   de sa journée la balaiera (plan `architecture-abandon-du-reglement.md`, §5).
  */
 export type AbandonOutcome = 'abandoned' | 'settled' | 'unsettled';
 

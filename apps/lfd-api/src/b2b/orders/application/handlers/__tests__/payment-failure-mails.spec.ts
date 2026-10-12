@@ -13,7 +13,7 @@ import {
 } from "./payment-failure-doubles.js";
 
 /**
- * **Le courriel suit la cause** (plan `plan-abandon-du-reglement.md`, Q4, §9
+ * **Le courriel suit la cause** (plan `architecture-abandon-du-reglement.md`, Q4, §9
  * bis S9) : un refus dit « votre banque a refusé », la clôture dit « pas à
  * temps, rien n'a été débité », et l'abandon ne dit rien — le client vient de
  * cliquer.

@@ -36,7 +36,7 @@ export interface RetrievedIntent extends CreatedIntent {
 /**
  * Issue d'une demande d'annulation d'intention — **jamais une exception** pour
  * un cas métier, parce que chacun appelle un geste différent de l'appelant
- * (plan `documentation/order/plan-abandon-du-reglement.md`, §5) :
+ * (plan `documentation/order/architecture-abandon-du-reglement.md`, §5) :
  *
  * - `cancelled` — annulée par cet appel ;
  * - `already_cancelled` — elle l'était déjà. C'est le **second clic** : l'état

@@ -18,7 +18,7 @@ export const RING_REFUND_DUE = "orders.ring-refund-due";
 
 /**
  * **« Encaissé sur une commande annulée — à rembourser »** (plan
- * `documentation/order/plan-abandon-du-reglement.md`, lot 6 bis).
+ * `documentation/order/architecture-abandon-du-reglement.md`, lot 6 bis).
  *
  * Toutes clientèles : c'est de l'argent à rendre, particulier ou pro. Sans
  * destinataire nommé, comme la cloche des règlements tombés : visible de tout

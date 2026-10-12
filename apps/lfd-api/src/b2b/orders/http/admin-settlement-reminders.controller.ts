@@ -11,7 +11,7 @@ import {
 
 /**
  * Endpoint **batch** du rappel de règlement (plan
- * `documentation/order/plan-abandon-du-reglement.md`, Q6, S5) : prévient le
+ * `documentation/order/architecture-abandon-du-reglement.md`, Q6, S5) : prévient le
  * commercial des liens de paiement non réglés à l'heure limite.
  *
  * Même porte machine-à-machine que `admin/loyalty/sweep` — le `RecomputeGuard`

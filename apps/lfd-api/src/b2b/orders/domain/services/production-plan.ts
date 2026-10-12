@@ -48,7 +48,7 @@ import type { OrderStatus, PaymentStatus } from "@lfd/contracts";
  *
  * 🔴 **`pending` N'EST PAS ABSORBÉ, pour PERSONNE** — décidé par Hugo le
  * 2026-09-17 pour le public, étendu au pro le 2026-09-22 (D2,
- * `documentation/order/plan-abandon-du-reglement.md`).
+ * `documentation/order/architecture-abandon-du-reglement.md`).
  *
  * **On ne produit que ce qui est payé, ou ce qui n'a pas à l'être.** Un
  * règlement encore en vol ne donne droit à aucune fabrication : une carte
@@ -109,7 +109,7 @@ export const PAYMENTS_REFUSED: readonly PaymentStatus[] = ["failed", "refunded"]
 
 /**
  * 🔴 **Le règlement EN VOL — jamais produit, pour PERSONNE** (D2, Hugo,
- * 2026-09-22 ; `documentation/order/plan-abandon-du-reglement.md`).
+ * 2026-09-22 ; `documentation/order/architecture-abandon-du-reglement.md`).
  *
  * `pending` veut dire « Stripe n'a pas encore répondu ». Jusqu'au 2026-09-22,
  * seul le visiteur en était exclu : le pro restait produit parce qu'il « a un

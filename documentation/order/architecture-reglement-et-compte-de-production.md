@@ -249,7 +249,7 @@ flowchart TD
 
 🔴 **La règle a changé le 2026-09-22 (D2, Hugo)** : on ne produit que ce qui
 est payé et ce qui n'a pas à l'être. **Un règlement en vol ne produit pour
-personne**, pro compris ([`plan-abandon-du-reglement.md`](plan-abandon-du-reglement.md)
+personne**, pro compris ([`architecture-abandon-du-reglement.md`](architecture-abandon-du-reglement.md)
 §4 ; appliqué dans le code le 2026-09-26, lots 1–2).
 
 ```mermaid

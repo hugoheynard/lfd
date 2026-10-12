@@ -21,7 +21,7 @@ export const SEND_PAYMENT_EXPIRED_MAIL = "orders.send-payment-expired-mail";
 /**
  * **« Votre paiement n'a pas abouti à temps »** — la clôture de la journée a
  * coupé un règlement resté en l'air, et la commande est annulée (plan
- * `documentation/order/plan-abandon-du-reglement.md`, Q4, Q7).
+ * `documentation/order/architecture-abandon-du-reglement.md`, Q4, Q7).
  *
  * Distinct du courriel de refus : personne n'a refusé la carte, et il n'y a
  * plus rien à reprendre — d'où l'absence de bouton. La phrase qui compte est

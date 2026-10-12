@@ -242,7 +242,7 @@ describe('ReglementPage', () => {
   /**
    * Régression : « Je règle depuis « Mes commandes » » appelait `later()`, qui ne
    * marquait rien et menait à la confirmation d'une commande que personne ne
-   * payait (plan `plan-abandon-du-reglement.md`, §1).
+   * payait (plan `architecture-abandon-du-reglement.md`, §1).
    */
   it('dit la conséquence AVANT d’abandonner, et n’appelle rien sans confirmation', async () => {
     const { fixture, gone, abandoned } = await boot(stripeThatAnswers({}));

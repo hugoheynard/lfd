@@ -219,7 +219,7 @@ export class OrdersController {
 
   /**
    * **Abandonner le règlement** : le client quitte l'écran de carte (plan
-   * `plan-abandon-du-reglement.md`, D1). `204` aussi au second clic.
+   * `architecture-abandon-du-reglement.md`, D1). `204` aussi au second clic.
    *
    * Seul l'auteur l'obtient (`403` pour un autre membre, `404` pour un
    * étranger). Un `409` quand Stripe n'a pas confirmé la mort de l'intention —

@@ -270,7 +270,7 @@ async function triggerLoyaltySweep(env: Env): Promise<void> {
 
 /**
  * Réveille le container et déclenche le rappel des liens de paiement non réglés
- * à l'heure limite (plan `documentation/order/plan-abandon-du-reglement.md`, Q6).
+ * à l'heure limite (plan `documentation/order/architecture-abandon-du-reglement.md`, Q6).
  *
  * Même porte et même jeton que le recompute. La passe est idempotente : un tour
  * manqué est rattrapé au suivant, un tour rejoué ne sonne pas deux fois.

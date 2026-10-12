@@ -60,7 +60,7 @@ type Phase = 'loading' | 'ready' | 'paying' | 'unavailable' | 'closed';
  * commandes » » : deux promesses de délai pour un geste — `later()` — qui ne
  * marquait rien et menait à la confirmation d'une commande que personne ne
  * payait. Depuis le 2026-09-26 (lot 8 du plan
- * `documentation/order/plan-abandon-du-reglement.md`), la sortie s'appelle
+ * `documentation/order/architecture-abandon-du-reglement.md`), la sortie s'appelle
  * « Abandonner ma commande », dit sa conséquence AVANT d'agir, TENTE
  * `POST /orders/:id/abandon`, et navigue **quoi qu'il arrive**.
  *

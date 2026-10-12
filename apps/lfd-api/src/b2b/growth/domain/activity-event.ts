@@ -60,7 +60,7 @@ export const ACTIVITY_TYPES = {
   orderReady: "order.ready",
   /**
    * Le client a **abandonné le règlement** de sa commande (plan
-   * `plan-abandon-du-reglement.md`). Un fait de cycle de vie, pas un signal :
+   * `architecture-abandon-du-reglement.md`). Un fait de cycle de vie, pas un signal :
    * savoir si le momentum d'un lead doit reculer quand sa commande meurt est
    * une question OUVERTE (§9, S11) — aucun score ne le lit au 2026-09-26.
    */

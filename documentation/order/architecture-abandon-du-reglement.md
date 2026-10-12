@@ -21,10 +21,12 @@
 > clôture balaie), `8ceed327b` (un encaissement part aussi d'un refus),
 > `6c9b47c32` et `d987090d7` (l'écran).
 >
-> L'histoire est dans [`plan-abandon-du-reglement.md`](plan-abandon-du-reglement.md) :
-> le constat, les deux contradictions de `vitruve`, les réponses de Hugo
-> (D1–D4, Q1–Q8). Ce document décrit ce que le code **fait**, et c'est lui
-> qui fait foi.
+> Le plan qui a précédé ce chantier (ouvert le 2026-09-22, contredit deux fois
+> par `vitruve`) a été **fondu ici le 2026-10-12** et supprimé : ses décisions
+> sont au §10, ce qu'il avait contesté est dans le code et ses JSDoc datés.
+> L'historique complet (constat, objections, lots) reste lisible dans git :
+> `git log --follow -- documentation/order/plan-abandon-du-reglement`.
+> Ce document décrit ce que le code **fait**, et c'est lui qui fait foi.
 
 ## 1. En une phrase
 
@@ -351,10 +353,17 @@ substituent un faux `PaymentGateway`.
 
 ## 9. Ce qui n'est pas bâti
 
-- **Le lot 10 — prévenir le commercial à l'heure limite** (Q6) : une commande
-  saisie par l'équipe avec lien de paiement, toujours pas réglée à l'heure
-  limite du jour, ne sonne pas encore. **En cours** au 2026-09-26 ; rien dans
-  `src/` au moment de l'écriture.
+- ~~**Le lot 10 — prévenir le commercial à l'heure limite**~~ ✅ **bâti**
+  (vérifié le 2026-10-12) : `POST /admin/orders/settlement-reminders`
+  (`admin-settlement-reminders.controller.ts`, `send-settlement-reminders.handler.ts`),
+  déclenché par le cron horaire du worker (`container/worker.ts`,
+  `triggerSettlementReminders`). Il oppose la règle **par défaut** de la journée
+  de service : une commande ne garde ni l'identifiant de son point de retrait ni
+  la limite de ses articles, donc une règle propre à un point ne décale rien, et
+  sans règle par défaut rien ne sonne (🔵 écart à trancher par Hugo s'il compte).
+- **L'initiation du remboursement** : « à rembourser » sonne, le remboursement
+  est **constaté** (`record-order-refund.handler.ts`) mais le geste de le lancer
+  vers Stripe n'existe pas.
 - **La colonne « Carte » de « Mes commandes »** n'a pas changé : une commande
   `pending` ou annulée l'affiche toujours
   (`apps/lfc-ecommerce-frontend/src/app/client/mes-commandes/order-rows.ts`).
@@ -372,3 +381,25 @@ substituent un faux `PaymentGateway`.
 - **La croissance** (S11) : `order.placed` reste compté après un abandon.
 - Les JSDoc de code que ce chantier périmait (`PAYMENTS_AWAITING`,
   `absorbedByPlan`, `ClientOrders.paymentFor`) sont réécrits le 2026-09-26.
+
+## 10. Les décisions de Hugo, reprises du plan
+
+| #      | Décision                                                                                                                                      |
+| ------ | --------------------------------------------------------------------------------------------------------------------------------------------- |
+| **D1** | Sortir de l'écran de règlement **annule** la commande (2026-09-22).                                                                           |
+| **D2** | Un règlement en vol **ne produit plus, pour personne** : l'exception « pro » tombe.                                                           |
+| **D3** | « Payé après la clôture » est **interdit**, pas surveillé : la clôture tue les règlements en vol de la journée.                               |
+| **D4** | Un règlement pro qui meurt **sonne**, il ne s'annule pas en journée (carte pro refusée : `placed` + `failed`, reprenable jusqu'à la clôture). |
+| **Q1** | La clôture annule d'abord, compte ensuite ; le refus « journée vide » ne dit plus que la vérité (2026-09-26).                                 |
+| **Q2** | Seul l'**auteur** (`placedByUserId`) abandonne la commande d'une société ; la lecture reste ouverte à tout membre.                            |
+| **Q3** | Une commande abandonnée passe aussi `paymentStatus = failed` ; un pro qui abandonne fait sonner la cloche.                                    |
+| **Q4** | Le mail suit la cause : `refused` ou `day_closed` (`expired` et `replaced` n'en envoient aucun, ajoutés depuis).                              |
+| **Q5** | Une commande sans jour de retrait est rattachée à son jour de passation pour la clôture.                                                      |
+| **Q6** | On prévient le commercial d'une commande saisie par l'équipe, avec lien, non réglée à l'heure limite (la cloche du back-office).              |
+| **Q7** | À la clôture, une commande pro non réglée devient `cancelled` + `failed`, comme une publique, et la cloche sonne (`day_closed`).              |
+
+**Ce que ce chantier ne fait pas** : annuler une commande **payée**
+(remboursement) — c'est
+[`plan-annulation-de-commande.md`](plan-annulation-de-commande.md) ; aucune
+annulation de masse des commandes déjà orphelines (le §0 du `CLAUDE.md` l'interdit
+d'autorité, elles sont balayées à la première clôture de leur jour).
